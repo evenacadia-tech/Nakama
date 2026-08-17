@@ -13,6 +13,11 @@ Kandidaten aus der User-autorisierten Richtung: Klangkörper-Silhouette ·
 Balance-Ring · P01-Perkolation im Glas (einzige abgenommene Ästhetik).
 Vision kommt vom User — Referenzen erfragen, treu übersetzen.
 
+**Denk-Leinwand steht (18.08.):** `eq-copilot/design/prisma/
+prisma-prototyp.html` — drehbares Prisma aus 60 vorgerenderten
+Cycles-Frames (klar, 120°-Periode, `renders/dreh/`); Ziehen/Einrasten,
+Tasten 1–3, `?winkel=` friert ein. Bewusst ohne Daten-/Effektebene.
+
 Werkzeug steht: `eq-copilot/design/prisma/prisma-material-still.py`
 (Blender 5.1 headless, Cycles CPU — nie GPU, Arc-Landmine; CLI: --variante
 --samples --breite --hoehe --energie --kamera --ziel --nur-strahl).

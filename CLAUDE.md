@@ -106,6 +106,16 @@ cargo test --manifest-path plugin-hub-app/src-tauri/Cargo.toml eq_copilot
 
 ## Design-Arbeitsmodell
 
+**KREATIV-SCHLEUSE (User-Regel 17.08., nicht verhandelbar):** Der kreative
+Prozess wird NIE übersprungen. Eine Idee wird im Gespräch ausgearbeitet und
+konkretisiert, solange bis der User eine Vorstellung hat und sie freigibt —
+erst dann wird gebaut. Kunst ist wertlos ohne ihren Entstehungsprozess.
+Mechanisch erzwungen: `tools/hooks/kreativ-schleuse.sh` blockt Write/Edit
+unter `eq-copilot/design/`, solange `.claude/kreativ-freigabe.md` fehlt oder
+älter als 24 h ist; der Marker hält die freigegebene Vorstellung in den
+Worten des Users fest und wird NUR nach dessen ausdrücklicher Freigabe
+geschrieben.
+
 Design-Phase lebt im **Browser-Musterblatt** (Sekunden-Schleife), nicht im
 Plugin (Minuten + UAC + FL-Neustart). Erst „Werte kopieren"-JSON vom User =
 **Design-Freeze**, dann JUCE-Umbau nach Bauplan 2.0 §13. Der Bauplan

@@ -23,7 +23,8 @@
 
 | Probe | Stil-/Technik-Achse | User-Reaktion (wörtlich) | Destillat |
 |---|---|---|---|
-| 01 Perkolation | WebGL-Punktwolke, Physik (Fallen/Altern/Sediment), additive Lichtmischung, 2D-Raum | *ausstehend* | *ausstehend* |
+| 01 Perkolation (v1) | WebGL-Punktwolke, Physik (Fallen/Altern/Sediment), additive Lichtmischung, 2D-Raum | „Der effekt sieht optisch sehr gut aus, farblich ist da aber zu wenig unterschied. aber grundsätzlich gefällt mir stil, optik, technische darstellung. nur der rote betonklotz ergibt für mich technisch und optisch kein sinn" | **Punktwolken-Ästhetik bestätigt** (Stil + Optik + Technik). **Farbe braucht echte Trennung** — ein monochromer Verlauf (blau→violett) reicht nicht, das Bild braucht mehrere klar unterscheidbare Farbwelten. **Massive flächige Formen fallen durch** — das Sediment las sich als „Betonklotz": Akkumulation als kompakte Masse ist weder technisch noch optisch überzeugend. Leichtigkeit und Licht schlagen Masse. |
+| 01 Perkolation (v2) | wie v1, aber: Sediment entfernt; Farbe zweidimensional (Frequenzbereich färbt, Alter lässt zur Glut abkühlen) | *ausstehend* | *ausstehend* |
 
 ## Geplante Achsen (je Probe eine andere Welt — Reihenfolge flexibel)
 

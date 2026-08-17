@@ -36,9 +36,11 @@ Cycles CPU) + `renders/prisma-{klar,rauchig,frostig}.png` (1600×1000,
 1536 Samples). Aufbau: Dark-Field-Glasfotografie (schmale vertikale
 Streifen-Softboxen zeichnen Kanten, Raum bleibt schwarz), Winter-Nexus-
 Screenshot als Rückwand-Ebene 0, Drei-IOR-Dispersion (R/G/B-Glass-BSDFs
-additiv — Blender 5.1 hat KEINE native Dispersion). **User-Urteil steht
-aus:** Gimmick oder ernstzunehmend + welche Anmutung (klar · rauchig ·
-frostig).
+additiv — Blender 5.1 hat KEINE native Dispersion). **User-Urteil (18.08.):
+„Klar ist zumindest auf dein bildern mein favorit, dann rauchig"** —
+Arbeitsrichtung: KLAR, rauchig als Reserve, Frost raus. Vorbehalt
+„zumindest auf den Bildern": endgültige Anmutungs-Abnahme am lebenden
+Objekt (drehbar, mit Daten), nicht am Standbild.
 
 **Cycles-Grenzen, teuer erkundet (17.08., für alle Folge-Renders):**
 Spot-Watt sind KUGELnormiert — enger Kegel maskiert statt bündelt

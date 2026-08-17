@@ -62,6 +62,18 @@ gelesen; „lesbares System" allein reicht NICHT):**
 | 03 Tropfenklingen | Vektor-Präzision (scharfe Canvas-Pfade, kein Glow); Gefäß-System: gestaute Energie → Überlauf → Tropfen-Ereignis; Detailliebe (Meniskus, Glanzkante, Abriss, Nachschwingen) | „optisch: smartphone app minispiel niveau, nichtssagend, kein charakter, weder kein logischer denkzusammenhang noch kreativer denkvorgang, ‚es ist einfach da' Die Darstellung ist die definition von Generisch. Der Zusammenhang ist konstruiert, kein grund für eq bedienung noch künstlerischer perspektive dass es da ist, aber es ist da" | **Klar abgelehnt — Quelle der Verschärfung 3a–3c.** Lesbares System reicht nicht: die Metapher (Gefäß/Tropfen) war beliebig gewählt, nichts an Musik oder EQ verlangt sie. Glossy Vektor-Objekte = Minispiel-Optik. |
 | 04 Interferenz | Echte 2D-Wellengleichung (9 Band-Oszillatoren, Kick-Kreiswelle), Muster durch wirkliche Interferenz, Punkt-Rendering | „auch das paradebeispiel für generik. zwei elemente die für sich gesehen beliebt sind. viele lichter und schwarzer nebel. zusammen ist es jedoch wie ein musikstück dass zusammengesetzt ist auf basis von algorythmen. es klingt objektiv nicht schlecht, es ist aber einfach egal. es ist da. […] der technische und visuelle eindruck sehr schlecht, weil es einfach nicht gut aussieht. qualitativ sowie die animation wirken wieder billig" | **Klar abgelehnt — auch physikalische Notwendigkeit rettet nicht.** Beliebte Einzelelemente kombiniert ≠ Werk. Der User hört den Algorithmus. |
 
+## Prisma-Material-Stills (17.08. spät / 18.08. — außerhalb der Proben-Serie)
+
+Drei Cycles-Stills derselben Szene (`design/prisma/renders/`), nur das
+Glasmaterial variiert: klar/museal · dunkel-rauchig (Absorption) · frostig
+(Mikrostruktur). User wörtlich: **„Klar ist zumindest auf dein bildern mein
+favorit, dann rauchig"** — Frost fällt damit. Destillat: **makellose
+Transparenz schlägt Effekt-Material** (passt zu Gesetz 2: einfach mit
+Handschrift statt Material-Effekt); der texturierte helle Frostkörper war
+der auffälligste und verlor trotzdem. Vorbehalt ernst nehmen: „zumindest
+auf den Bildern" — die endgültige Abnahme fällt am lebenden Objekt
+(drehbar, mit Daten), nicht am Standbild.
+
 ## META-ERKENNTNIS nach vier Proben (17.08. — wichtigste Zeile des Dokuments)
 
 **Bestanden hat NUR die Übersetzung eines autorisierten menschlichen Werks

@@ -5,11 +5,13 @@
 
 ## Der eine nächste Schritt
 
-**User-Urteil zu den Material-Probestills einholen** (gerendert 17.08. spät,
-dem User gezeigt): `eq-copilot/design/prisma/renders/prisma-{klar,rauchig,
-frostig}.png`. Der User beurteilt NUR „Gimmick oder ernstzunehmend" und
-wählt ggf. die Anmutung. Erst nach Abnahme: Flächen-Inhalt + Bündel-Inhalt
-gemeinsam entwickeln, dann Übergangssequenzen.
+**Flächen-Inhalt + Bündel-Inhalt IM GESPRÄCH entwickeln** (nicht bauen!
+KREATIV-SCHLEUSE: erst ausarbeiten, bis der User eine Vorstellung freigibt).
+Material-Urteil ist da (18.08.): **klar** vorn, rauchig Reserve, Frost raus
+(„zumindest auf den Bildern" — Anmutungs-Endabnahme am lebenden Objekt).
+Kandidaten aus der User-autorisierten Richtung: Klangkörper-Silhouette ·
+Balance-Ring · P01-Perkolation im Glas (einzige abgenommene Ästhetik).
+Vision kommt vom User — Referenzen erfragen, treu übersetzen.
 
 Werkzeug steht: `eq-copilot/design/prisma/prisma-material-still.py`
 (Blender 5.1 headless, Cycles CPU — nie GPU, Arc-Landmine; CLI: --variante

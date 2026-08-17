@@ -47,14 +47,31 @@ BEWEIS-KANON (nie "fertig" ohne die betroffenen Beweise, alle headless):
   nie gegen den Produktions-Broker) · cargo test eq_copilot.
   Befund-Standard: "ausgeführt und gesehen", nie "sollte funktionieren".
 
-DESIGN-ARBEITSMODELL:
-  Design-Phase lebt im Browser-Musterblatt (Sekunden-Schleife), NICHT im
-  Plugin (Minuten/UAC/FL-Neustart). Erst "Werte kopieren"-JSON vom User
-  = Design-Freeze, DANN JUCE-Umbau nach Bauplan 2.0.
-  - eq-copilot/design/nakama-spectral-field-claude.html  = Claudes Blatt
-  - eq-copilot/design/nakama-spectral-field-vorentwurf.html = CODEX-BESITZ,
-    nie editieren
-  - Verbindlicher Zielvertrag: eq-copilot/docs/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md
+DESIGN-ARBEITSMODELL (Stand 17.08. abends — PRISMA-Richtung):
+  Aktive Richtung: User-autorisiertes PRISMA (3 Flächen = Tiefen/Mitten/
+  Höhen, Drehen = Selektion, Klick = Bündeln/Newton) als kompakter
+  Dauerbegleiter; Darstellung = Film-Compositing (Blender-5.1-Cycles auf
+  CPU! + Unicorn-Hintergrund Ebene 0 + live Daten-Ebene). Einstieg:
+  docs/NEXT-SESSION.md + docs/design-stand.md. GEPARKT, nie ungefragt
+  reaktivieren: Tiefenfeld, Bauplan 2.0, Kunstwerk-Studie.
+  eq-copilot/design/nakama-spectral-field-vorentwurf.html = CODEX-BESITZ.
+
+DESIGN-VERFASSUNG (Geschmacksprofil — 4 Proben, teuer bezahlt 17.08.):
+  1 SCHÄRFE: Detail aus Auflösung in echte Punkte/Struktur; Glow/Bloom/
+    Weichzeichner = "billig" (Unity-Baukasten-Effekte verboten).
+  2 HANDSCHRIFT: lieber einfach mit persönlichem Stil + Liebe zum Detail
+    als komplex-generisch.
+  3 SICHTBARER DENKVORGANG mit Distanz: laut→hell = Tautologie. Verschärft:
+    NOTWENDIG statt konstruiert ("kein Grund, dass es da ist" = Todesurteil)
+    und ENTDECKT statt entworfen (Phänomen/Emergenz schlägt Designer-Objekt).
+  META: Claudes freie Bilderfindung = Mode-Collapse ("wie algorithmisch
+    komponierte Musik — objektiv ok, aber egal"). Vision + Referenzen
+    kommen vom USER; Claude übersetzt treu, verdatet ehrlich, verfeinert
+    unter seinem Auge. Einzige abgenommene Ästhetik: P01-Perkolation
+    (scharfe Punktwolke, Bandfarben Amber/Magenta/Eis).
+  Volltext + wörtliche Urteile: docs/geschmacksprofil.md — vor JEDER
+  Design-Entscheidung lesen. KREATIV-SCHLEUSE: erst ausarbeiten, Marker
+  (.claude/kreativ-freigabe.md, 24 h), dann bauen — Hook erzwingt es.
 
 ANTI-CONFLATION (jede Zeile war ein echter teurer Irrweg):
   - Pixel-Beweis ≠ Schönheits-Beweis (E0–E5 war 18/18 bewiesen und hässlich;

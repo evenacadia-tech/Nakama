@@ -116,13 +116,30 @@ unter `eq-copilot/design/`, solange `.claude/kreativ-freigabe.md` fehlt oder
 Worten des Users fest und wird NUR nach dessen ausdrücklicher Freigabe
 geschrieben.
 
-Design-Phase lebt im **Browser-Musterblatt** (Sekunden-Schleife), nicht im
-Plugin (Minuten + UAC + FL-Neustart). Erst „Werte kopieren"-JSON vom User =
-**Design-Freeze**, dann JUCE-Umbau nach Bauplan 2.0 §13. Der Bauplan
-(`eq-copilot/docs/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md`) ist der verbindliche
-Zielvertrag der neuen Hauptansicht; aktueller Mechanismus + Verwürfe:
-`docs/design-stand.md` (hier). Kein Schritt zeigt erfundene Diagnosewerte —
-fehlt ein Produktionsfeld, bleibt die Darstellung verborgen.
+Design-Phase lebt im **Browser** (Sekunden-Schleife), nicht im Plugin
+(Minuten + UAC + FL-Neustart). **Aktive Richtung seit 17.08.: das PRISMA**
+(User-autorisiert; Drehen = Selektion Tiefen/Mitten/Höhen, Klick = Bündeln;
+Film-Compositing mit Blender-Cycles auf CPU) — Einstieg
+`docs/NEXT-SESSION.md` + `docs/design-stand.md`. Geparkt, nie ungefragt
+reaktivieren: Tiefenfeld, Bauplan 2.0, Kunstwerk-Studie. Kein Schritt zeigt
+erfundene Diagnosewerte — fehlt ein Produktionsfeld, bleibt die Darstellung
+verborgen.
+
+**DESIGN-VERFASSUNG (4 Proben, teuer bezahlt — Volltext mit wörtlichen
+User-Urteilen: `docs/geschmacksprofil.md`, vor jeder Design-Entscheidung
+lesen):**
+1. **Schärfe:** Detail aus Auflösung in echte Punkte/Struktur; Glow/Bloom/
+   Weichzeichner = „billig", Unity-Baukasten-Effekte verboten.
+2. **Handschrift:** lieber einfach mit persönlichem Stil und Liebe zum
+   Detail als komplex-generisch.
+3. **Sichtbarer Denkvorgang mit Distanz:** laut→hell ist Tautologie;
+   NOTWENDIG statt konstruiert („kein Grund, dass es da ist" = Todesurteil);
+   ENTDECKT statt entworfen (Phänomen/Emergenz schlägt Designer-Objekt).
+4. **Meta:** Claudes freie Bilderfindung = Mode-Collapse („wie
+   algorithmisch komponierte Musik — objektiv ok, aber egal"). Vision und
+   Referenzen kommen vom User; Claude übersetzt treu, verdatet ehrlich,
+   verfeinert unter seinem Auge. Einzige abgenommene Ästhetik:
+   P01-Perkolation (scharfe Punktwolke, Bandfarben Amber/Magenta/Eis).
 
 ## Maschinen-Landmine
 

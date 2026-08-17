@@ -32,12 +32,19 @@ Latenz, kein Tail) und ruft Claude nur auf bewussten Klick. Der Audiothread
 enthält keine Sperren, keine Allokationen, keine Datei-/Pipe-/Netz-Zugriffe,
 kein Logging. Überlast verwirft Analyseframes, nie Audio.
 
+**Die eine dokumentierte Ausnahme (seit 0.3.0):** die **Hör-Markierung**
+färbt auf bewussten Klick das Monitorsignal (Solo/Puls je Befund), streng
+verriegelt: nur bei bewiesener Echtzeit ∧ Editor offen ∧ Transport ∧
+`!isNonRealtime()`. **Render/Export bleibt bitidentisch** (MarkierungTest
+beweist es); der Analyse-Abgriff sitzt VOR der Färbung. Jede weitere
+Audio-Ausnahme braucht denselben Verriegelungs- und Beweisstandard.
+
 ## Bauen & Beweisen (aus `C:\Users\phili\FL-Studio\` heraus)
 
 ```powershell
 $cmake = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
 & $cmake -S eq-copilot -B eq-copilot/build -G "Visual Studio 17 2022" -A x64
-& $cmake --build eq-copilot/build --config Release --target EqCopilot_VST3 EqCopShot EqCopPaintBench EqCopNullTest EqCopGoldenTest EqCopPipeProbe
+& $cmake --build eq-copilot/build --config Release --target EqCopilot_VST3 EqCopShot EqCopPaintBench EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopPipeProbe
 ```
 
 Beweis-Kanon (alles headless; Standard der Befund-Docs: **„ausgeführt und
@@ -46,6 +53,7 @@ gesehen"**, nie „sollte funktionieren"):
 ```powershell
 eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe
 eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures
+eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe
 cargo test --manifest-path plugin-hub-app/src-tauri/Cargo.toml eq_copilot
 ```
 
@@ -90,7 +98,9 @@ cargo test --manifest-path plugin-hub-app/src-tauri/Cargo.toml eq_copilot
   dann optimieren.
 - **`claude.html` ≠ `vorentwurf.html`** — Claudes Design-Blatt vs.
   Codex-Besitz (Guard-Hook blockt Edits am Codex-Blatt).
-- **Probe-Pipe ≠ Produktions-Pipe** — `…m2probe` für Tests.
+- **Probe-Pipe ≠ Produktions-Pipe** — Produktion ist
+  `\\.\pipe\evenacadia.eq-copilot.v1` (Name bleibt „v1", die
+  Protokollversion wird im Handshake verhandelt); Tests nutzen `…m2probe`.
 - **FL-Notennamen:** FL zeigt MIDI 60 als **C5** (Oktave = MIDI div 12) —
   116 Hz = A#3. Nie die Standard-Oktavzählung annehmen.
 

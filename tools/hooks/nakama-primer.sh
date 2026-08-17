@@ -22,6 +22,9 @@ GRUNDGESETZ (nicht verhandelbar):
   verändert kein Audio (Passthrough sampleidentisch, 0 Latenz, kein Tail).
   Audiothread: keine Sperren, Allokationen, Datei-/Pipe-/Netz-Zugriffe,
   kein Logging. Überlast verwirft Analyseframes, nie Audio.
+  Einzige dokumentierte Ausnahme (0.3.0): die Hör-Markierung färbt auf
+  bewussten Klick das MONITORSIGNAL (streng verriegelt: Echtzeit bewiesen ∧
+  Editor offen ∧ Transport ∧ !isNonRealtime) — Render bleibt bitidentisch.
 
 CODE LEBT IM FL-STUDIO-REPO (dieses Workspace = nur Kontext/Wissen/Handoffs):
   eq-copilot/plugin/src/      AnalyseEngine · PluginProcessor · PluginEditor ·
@@ -37,10 +40,11 @@ CODE LEBT IM FL-STUDIO-REPO (dieses Workspace = nur Kontext/Wissen/Handoffs):
 
 BEWEIS-KANON (nie "fertig" ohne die betroffenen Beweise, alle headless):
   EqCopGoldenTest (Fixtures, zuletzt 239/239) · EqCopNullTest (bitgleicher
-  Passthrough) · pluginval --strictness-level 8 · EqCopShot (Offscreen-PNG
-  mit echter 20-s-Messung) · EqCopPaintBench (paint()-Kosten) ·
-  EqCopPipeProbe (NUR gegen eigenen Probe-Pipenamen ...m2probe — nie gegen
-  den Produktions-Broker) · cargo test eq_copilot.
+  Passthrough) · EqCopMarkierungTest (30/30, Hör-Markierung inkl.
+  Render-bitidentisch) · pluginval --strictness-level 8 · EqCopShot
+  (Offscreen-PNG mit echter 20-s-Messung) · EqCopPaintBench (paint()-
+  Kosten) · EqCopPipeProbe (NUR gegen eigenen Probe-Pipenamen ...m2probe —
+  nie gegen den Produktions-Broker) · cargo test eq_copilot.
   Befund-Standard: "ausgeführt und gesehen", nie "sollte funktionieren".
 
 DESIGN-ARBEITSMODELL:

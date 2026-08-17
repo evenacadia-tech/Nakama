@@ -28,10 +28,27 @@ mausreaktiv) → live gerechnete Daten-Ebene (P01-Punktästhetik),
 perspektivisch auf Flächen gewarpt → vorgerenderter Glas-Pass obendrauf.
 Nur 3 Ruhezustände + kurze Übergangssequenzen (120°-Snap, Bündeln) —
 speicherleicht, JUCE-freundlich (Bilder + kleine Live-Schicht, kein
-GPU-Zwang). **Nächster Schritt: EIN Material-Probestill** (Glas + Licht +
-User-Hintergrund, keine Animation) — der User beurteilt NUR die
-Materialfrage, bevor irgendwas animiert wird. Glas-Anmutung noch offen
-(klar/museal · dunkel-rauchig · frostig).
+GPU-Zwang).
+
+**Material-Probestills GERENDERT (17.08. spät, „ausgeführt und gesehen"):**
+`eq-copilot/design/prisma/prisma-material-still.py` (Blender 5.1 headless,
+Cycles CPU) + `renders/prisma-{klar,rauchig,frostig}.png` (1600×1000,
+1536 Samples). Aufbau: Dark-Field-Glasfotografie (schmale vertikale
+Streifen-Softboxen zeichnen Kanten, Raum bleibt schwarz), Winter-Nexus-
+Screenshot als Rückwand-Ebene 0, Drei-IOR-Dispersion (R/G/B-Glass-BSDFs
+additiv — Blender 5.1 hat KEINE native Dispersion). **User-Urteil steht
+aus:** Gimmick oder ernstzunehmend + welche Anmutung (klar · rauchig ·
+frostig).
+
+**Cycles-Grenzen, teuer erkundet (17.08., für alle Folge-Renders):**
+Spot-Watt sind KUGELnormiert — enger Kegel maskiert statt bündelt
+(3°-„Laser" braucht ~300 kW). Der Newton-Spektralfächer durch ZWEI
+Glasflächen ist unidirektional praktisch unsampelbar (NEE geht nicht
+durch Glas; MNEE/`is_caustics_*` löst nur EINE Fläche); tragfähig ist
+ein kleines Flächenlicht NAH hinter dem Glas (großer Raumwinkel →
+sampelbar; Quellwinkel < 4.75° Dispersionsspreizung, sonst Weiß).
+Für echte Bündel-/Fächer-Sequenzen später: bidirektionaler Renderer
+(LuxCore) oder Compositing-Pass.
 
 **Unicorn-Workflow (steht, verifiziert):** User gestaltet in
 unicorn.studio; `design/unicorn-bruecke.html` lädt die Szene

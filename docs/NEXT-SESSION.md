@@ -5,20 +5,17 @@
 
 ## Der eine nächste Schritt
 
-**Prisma-Material-Probestill rendern** (User hat zugestimmt, wartet darauf):
+**User-Urteil zu den Material-Probestills einholen** (gerendert 17.08. spät,
+dem User gezeigt): `eq-copilot/design/prisma/renders/prisma-{klar,rauchig,
+frostig}.png`. Der User beurteilt NUR „Gimmick oder ernstzunehmend" und
+wählt ggf. die Anmutung. Erst nach Abnahme: Flächen-Inhalt + Bündel-Inhalt
+gemeinsam entwickeln, dann Übergangssequenzen.
 
-1. Blender 5.1 liegt unter `%ProgramFiles%\Blender Foundation\Blender 5.1`
-   (nicht im PATH). Headless per Skript, **Cycles auf CPU** — niemals GPU
-   (Arc-A770-Lüfter-Landmine, CLAUDE.md).
-2. Dreiseitiges Prisma, echtes Glas mit Dispersion/Kaustik, EIN Still
-   (keine Animation, keine Daten) — komponiert über dem User-Hintergrund
-   (Screenshot der Unicorn-Szene oder dunkler Platzhalter).
-3. **Glas-Anmutung ist noch offen** — User wollte ggf. noch sagen: klar/
-   museal · dunkel-rauchig · frostig (passend zu Winter Nexus). Falls
-   keine Antwort kam: 2–3 Material-Varianten als Stills anbieten.
-4. Der User beurteilt am Still NUR „Gimmick oder ernstzunehmend". Erst
-   nach Abnahme: Flächen-Inhalt + Bündel-Inhalt gemeinsam entwickeln,
-   dann Übergangssequenzen.
+Werkzeug steht: `eq-copilot/design/prisma/prisma-material-still.py`
+(Blender 5.1 headless, Cycles CPU — nie GPU, Arc-Landmine; CLI: --variante
+--samples --breite --hoehe --energie --kamera --ziel --nur-strahl).
+Cycles-Grenzen (Spot-Kugelnormierung, Fächer-Sampelbarkeit, MNEE nur eine
+Fläche) stehen in `design-stand.md`, Abschnitt AKTIVE RICHTUNG.
 
 ## Warum Prisma (Kurzform)
 

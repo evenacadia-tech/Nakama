@@ -45,9 +45,11 @@ Bleistift-Plan wird Relief; der Graph selbst erzählt die Befunde.
 - Kalibrier-Panel: 10 Regler (u. a. `nebel`, `feld`, `schatten`) +
   **Farbwahl je Graph-Element** (10 Picker, pro Welt gespeichert; das
   Kopier-JSON trägt `farben` mit). `?kali=auf` · `?zeit=` friert ein.
-- Renders: `node eq-copilot/design/render-blatt.mjs` →
-  `vorentwurf-renders/t2-*.png` (Welten, Befund-Solos, Kali-Menü) und
-  `t3-*.png` (jedes Sichtwerkzeug einzeln + kombiniert).
+- Renders: `node eq-copilot/design/render-blatt.mjs` → deterministischer
+  `vorentwurf-renders/n4-*.png`-Satz (semantische Zustände + die drei
+  vertraglichen Referenzgrößen); `… pruefe` fährt sechs Semantik-/
+  Gegenpfadchecks (Nebel↔Licht, Leerzustand, Resize-Klassen, Stop↔Start).
+  Ältere `t3-*`-Serien bleiben als Verlaufsbelege liegen.
 
 ## Nächster Schritt (liegt beim User)
 

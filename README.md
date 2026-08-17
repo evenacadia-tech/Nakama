@@ -15,6 +15,7 @@ Workspace hat per `.claude/settings.json` Zugriff darauf.
 | `docs/offene-punkte.md` | Durables Offen-Set (nie stillschweigend löschen) |
 | `docs/handoffs/` | Automatische Session-Handoffs (Cap 5) |
 | `tools/hooks/` | SessionStart-Primer, Depth-Primer, Handoff-Hooks, Guards |
+| `.claude/skills/prompt/` | `/prompt [nur] <anweisung>` — Opus formt die Rohanweisung Fable-5-optimal um, zeigt sie, führt sie aus |
 
 Sessions in diesem Folder starten mit injizierter Systemkarte + Live-Git-Stand
 des FL-Studio-Repos. Code-Commits gehen ins FL-Studio-Repo, Wissens-Commits

@@ -42,6 +42,12 @@ Bleistift-Plan wird Relief; der Graph selbst erzählt die Befunde.
   Dicke = Schwere, wogt nur live) · **Pool** = Zeitgedächtnis.
 - **Chips = Befund-DATEN** (Resonanz · Mulm · Loch · Härte; Tasten 1–4,
   `?aus=resonanz,…`) — Kurve, Fahne, Nebel und Licht antworten gemeinsam.
+- **30-s-Songschleife** (17.08., User-Wunsch „bewegt sich zu wenig"):
+  deterministische Musiksimulation — Arrangement (Intro · Strophe · Chorus ·
+  Ausklang), Kick/Snare/Hats bei 96 BPM, achtstufiger E-Moll-Basslauf.
+  Wandert in Plan UND Strich gleichermaßen, damit die Fahne exakt die
+  Befund-Abweichung bleibt; `?zeit=` friert jeden Moment reproduzierbar ein,
+  `prefers-reduced-motion` legt den Beat-Puls still.
 - Kalibrier-Panel: 10 Regler (u. a. `nebel`, `feld`, `schatten`) +
   **Farbwahl je Graph-Element** (10 Picker, pro Welt gespeichert; das
   Kopier-JSON trägt `farben` mit). `?kali=auf` · `?zeit=` friert ein.

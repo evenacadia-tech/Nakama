@@ -4,7 +4,51 @@
 > Design-Commit im FL-Studio-Repo hier nachziehen. Bei Widerspruch gewinnt
 > der Code (`eq-copilot/design/…`) und der Bauplan dort.
 
-## RICHTUNGSWECHSEL 17.08.: Kunstwerk statt Graph (AKTIV)
+## AKTIVE RICHTUNG (Stand 17.08. abends): DAS PRISMA
+
+Nach der Proben-Kalibrierung (unten) hat der **User selbst** das Konzept
+autorisiert — und es ist das tragfähigste des Projekts:
+
+**Ein dreiseitiges, drehbares Prisma als kompakter Dauerbegleiter.**
+Drei Flächen = drei Blickrichtungen (Tiefen / Mitten / Höhen); Drehen ist
+SELEKTION („was will ich gerade sehen"), kein Deko. Klick = Bündel-Modus:
+die zerlegten Bänder rekombinieren zur Gesamtsicht (Newton: zweites
+Prisma bündelt Spektrum zu Weiß — physikalisch echt, mathematisch die
+Inverse der Analyse). Produktpositionierung: kleines, ruhiges Objekt für
+den DAUERGEBRAUCH („nie überladen") — trifft den Namen Nakama/Gefährte
+wörtlich. Offen (User-Vorstellung): was auf einer Fläche lebt, was das
+Gebündelte formt (Kandidaten: Klangkörper-Silhouette · Balance-Ring ·
+P01-Perkolation im Glas).
+
+**Darstellungs-Entscheidung (User-geprüft, Gimmick-Test):**
+Film-Compositing statt Spiel-Engine. Prisma offline pfadverfolgt
+(Blender 5.1 Cycles, **CPU** — Arc-Landmine!) mit echter Dispersion/
+Kaustik; zur Laufzeit Ebenen-Sandwich: Unicorn-Hintergrund (Ebene 0,
+mausreaktiv) → live gerechnete Daten-Ebene (P01-Punktästhetik),
+perspektivisch auf Flächen gewarpt → vorgerenderter Glas-Pass obendrauf.
+Nur 3 Ruhezustände + kurze Übergangssequenzen (120°-Snap, Bündeln) —
+speicherleicht, JUCE-freundlich (Bilder + kleine Live-Schicht, kein
+GPU-Zwang). **Nächster Schritt: EIN Material-Probestill** (Glas + Licht +
+User-Hintergrund, keine Animation) — der User beurteilt NUR die
+Materialfrage, bevor irgendwas animiert wird. Glas-Anmutung noch offen
+(klar/museal · dunkel-rauchig · frostig).
+
+**Unicorn-Workflow (steht, verifiziert):** User gestaltet in
+unicorn.studio; `design/unicorn-bruecke.html` lädt die Szene
+(`?projekt=<ID>`) und füttert pro Frame die Standard-Variablen
+(bass/mitten/hoehen/kick/…, Tafel zeigt Verdrahtung, Taste T).
+User-Hintergrund „Winter Nexus": ID `6YU0kFPu0uCBf0ZOTXOC`, JSON-Backup
+`design/unicorn/hintergrund-winter-nexus.json`. Lizenz/Legend-Frage für
+Auslieferung: NAK-11.
+
+**Geschmacks-Kalibrierung (abgeschlossen, 4 Proben unter
+`design/proben/`):** P01 Perkolation ✓ abgenommen · P02 Lichtschleier ✗ ·
+P03 Tropfenklingen ✗ · P04 Interferenz ✗. Die drei Gesetze + Verschärfung
+3a–3c + **Meta-Erkenntnis** (Vision kommt vom User; Claudes freie
+Bilderfindung = Mode-Collapse) stehen wörtlich in
+`docs/geschmacksprofil.md` — **vor jeder Design-Entscheidung lesen.**
+
+## Vorheriger Richtungswechsel 17.08.: Kunstwerk statt Graph
 
 User-Entscheid: Das Tiefenfeld (2D-Graph, unten dokumentiert) ist
 **GEPARKT — nicht verworfen**; Dateien und Bauplan 2.0 bleiben unverändert

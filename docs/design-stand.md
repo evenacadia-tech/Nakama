@@ -1,8 +1,50 @@
 # Design-Stand — an welchem Prototypen wir arbeiten
 
-> **Stand: 2026-08-17.** Lebendes Dokument — nach jedem Design-Commit im
-> FL-Studio-Repo hier nachziehen. Bei Widerspruch gewinnt der Code
-> (`eq-copilot/design/…`) und der Bauplan dort.
+> **Stand: 2026-08-17 (abends).** Lebendes Dokument — nach jedem
+> Design-Commit im FL-Studio-Repo hier nachziehen. Bei Widerspruch gewinnt
+> der Code (`eq-copilot/design/…`) und der Bauplan dort.
+
+## RICHTUNGSWECHSEL 17.08.: Kunstwerk statt Graph (AKTIV)
+
+User-Entscheid: Das Tiefenfeld (2D-Graph, unten dokumentiert) ist
+**GEPARKT — nicht verworfen**; Dateien und Bauplan 2.0 bleiben unverändert
+liegen. Neues Ziel: Der Nutzer sieht seine Musik als **Kunstwerk, mit dem
+er interagiert** — kein wabernder Analysegraph. Entschieden (AskUser):
+Bauplan-2.0-Grammatik ist mitgeparkt (nur das Grundgesetz bleibt bindend) ·
+Hineinhören (bestehende Hör-Markierung) gehört ins Interaktionskonzept ·
+das Kunstwerk IST die Hauptansicht, kein Zweitmodus.
+
+**Neues Blatt:** `eq-copilot/design/nakama-kunstwerk-claude.html` — drei
+umschaltbare Bildwelten (Tasten 1–3, `?welt=`) auf derselben 30-s-Songschleife,
+jede mit strikter Eins-zu-eins-Messgrammatik (Legende im Blatt):
+
+1. **GARTEN** — Musik wächst als Beet über der Log-f-Achse. Halmhöhe =
+   Energie-Gedächtnis · Wiegen = Jetzt · Blattdichte = P50 · Flackern =
+   P95−P50 · dunkle Blüte = Resonanz (Puls = Persistenz) · kahle Stelle =
+   Loch · Moos = Mulm · Bodennebel = fehlende Abdeckung · Fähnchen = Befund.
+2. **GEWEBE** — die Session webt das Lied: 1 Reihe = 1 s Aktivzeit,
+   Tintendichte = Energie, Knoten = Resonanz-Ereignis, Kettfaden =
+   Persistenz, fadenscheinig = Loch, verfilzt = Mulm, Webkante =
+   Stereobreite. Das Arrangement wird als Stofftextur sichtbar.
+3. **WESEN** — der Mix ist EIN Lebewesen: Winkel = Frequenz, Kontur =
+   Gedächtnis, Atem = Lautheit, Herzschlag = Kick, Stacheln =
+   Resonanz/Härte, Delle = Loch, Kernfarbe = Klangschwerpunkt.
+
+**Hineinhören als Interaktion:** Befund-Element anklicken → Karte
+(Messdaten + Empfehlung) mit SOLO/PULS — Zwei-Pass-Render: Szene hinter
+dunklem Schleier, nur das gewählte Element leuchtet (Puls im
+250-ms-Raster). `?hoeren=reso-low:solo` als Deep-Link. Loch kann nicht
+pulsen (wie im Plugin). Kein Maskierungs-Befund im Blatt (Paar-Phänomen
+des Brokers, in Solo-Ansicht nicht ehrlich zeigbar).
+
+**Beweise:** `node eq-copilot/design/render-kunstwerk.mjs` → `k1-*`-Satz
+(Seitenfehler = Abbruch); Welten-/Solo-/Leerzustand-Renders gesehen.
+**Nächster Schritt (liegt beim User):** Blatt im Browser öffnen, Richtung
+wählen — Claudes Empfehlung: GARTEN vorn, GEWEBE als zweite Kraft.
+
+Nicht gegangener Weg (notiert, nicht verworfen): „Schriftrolle" — die
+Session schreibt asemische Schriftzeichen je 10-s-Fenster; als Hauptansicht
+zu informationsarm, als Beiblatt/Export-Idee weiter denkbar.
 
 ## Die zwei Ebenen
 
@@ -26,7 +68,7 @@
    `nakama-spectral-field-vorentwurf.html` ist **Codex-Besitz** — nie
    editieren (PreToolUse-Guard blockt das).
 
-## Aktueller Mechanismus: das TIEFENFELD
+## GEPARKT seit 17.08.: das TIEFENFELD (Stand beim Parken)
 
 Nach zwei Verwürfen gilt: **EIN Mechanismus** — die Abweichung vom
 Bleistift-Plan wird Relief; der Graph selbst erzählt die Befunde.
@@ -57,13 +99,11 @@ Bleistift-Plan wird Relief; der Graph selbst erzählt die Befunde.
   Gegenpfadchecks (Nebel↔Licht, Leerzustand, Resize-Klassen, Stop↔Start).
   Ältere `t3-*`-Serien bleiben als Verlaufsbelege liegen.
 
-## Nächster Schritt (liegt beim User)
+### Falls das Tiefenfeld je entparkt wird
 
-Musterblatt im Browser öffnen — der Nebel atmet nur live, Renders sind
-Standbilder. Wenn es sitzt: **„Werte kopieren"-JSON in den Chat = Design-
-Freeze** → wird 1:1 JUCE-Voreinstellung → dann Umbau der produktiven
-Ansicht nach Bauplan §13 (Reihenfolge verbindlich, 12 Schritte, beginnend
-mit freiem Resize ohne 750:520-Ratio).
+Musterblatt im Browser öffnen; „Werte kopieren"-JSON = Design-Freeze →
+1:1 JUCE-Voreinstellung → Umbau nach Bauplan §13. Bauplan 2.0 ist mit dem
+Tiefenfeld geparkt; für die Kunstwerk-Richtung gilt er NICHT.
 
 ## Verworfene Richtungen — nie neu vorschlagen (teuer bezahlt)
 

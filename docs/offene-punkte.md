@@ -20,6 +20,7 @@
 | NAK-08 | 08-14 | Claude-Anbindung: `--bare` scheitert an OAuth → Agent-SDK-/API-Adapter nötig (M4-Thema; Grundgesetz: Aufruf nur auf bewussten Klick). |
 | NAK-09 | 08-15 | Kalibrier-Protokoll Runde 2 (helle Instrumente ODER EQ-Fehler-Blindtest), `eq-copilot/kalibration/`. |
 | NAK-10 | 08-17 | Broker liest das `hoermarkierung`-Heartbeat-Flag noch nicht (serde verwirft still; `protokoll.rs` MessStand ohne Feld) — Aggregat soll laut `eq-ipc.schema.json` während Markierung pausieren/markieren. Bewusst nach dem Harness-Lauf, s. HOER-MARKIERUNG-KONZEPT. |
+| NAK-11 | 08-17 | Unicorn-Studio-Weg: Offline-/Selbsthosting der Szenen-JSON braucht den „Legend"-Plan; SDK-Lizenz („nur für legitime Unicorn-Studio-Projekte") vor einem JUCE-WebView-Einsatz im ausgelieferten Plugin klären. Design-Phase (CDN-Embed) ist unkritisch. |
 
 ## Geschlossen
 

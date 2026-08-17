@@ -8,6 +8,10 @@ fühlen und sehen was schön ist").
 
 **Scope:** Stil-/Technik-Proben-Serie unter `eq-copilot/design/proben/`
 zur Geschmacks-Kalibrierung, auf der bestehenden 30-s-Songschleife.
+**Erweitert 17.08. (User-Idee):** Unicorn-Studio-Workflow — User baut
+Elemente in unicorn.studio, Claude baut/pflegt die Daten-Brücke
+(`eq-copilot/design/unicorn-bruecke.html`), die Szenen-Variablen pro
+Frame mit der Songschleife füttert.
 Eine Probe je Runde, User-Reaktion dazwischen, Reaktionen werden in
 `docs/geschmacksprofil.md` gesammelt. Kein finales Konzept, kein
 JUCE-Umbau. Referenzanker der ersten Probe: Wasser-Perkolation

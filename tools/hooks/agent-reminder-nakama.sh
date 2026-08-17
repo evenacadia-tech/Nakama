@@ -13,26 +13,17 @@ CONTEXT=""
 
 case "$FILE" in
   *eq-copilot/plugin/src/*|*eq-copilot\\plugin\\src\\*)
-    CONTEXT="[nakama-realtime] Edit in plugin/src erkannt: $(basename "$FILE")
-Vor 'fertig' gelten die Grundgesetz-Regeln und der Beweis-Kanon:
-- processBlock: keine Sperre, keine Allokation, keine Datei/Pipe/Netz/Logs;
-  Passthrough bleibt sampleidentisch (NullTest beweist es).
-- NaN-Riegel und Nyquist-Kappe nicht umgehen; neue Rechenwege NaN-ehrlich.
-- Editor: Component::SafePointer in Async-/Popover-Callbacks; ein
-  Snapshot-Zug pro Timer-Tick; malen nur bei neuer Revision.
-- Betroffene Beweise laufen lassen: EqCopGoldenTest + EqCopNullTest,
-  bei Editor-Sicht EqCopShot, bei paint-Kosten EqCopPaintBench,
-  bei Pipe-Themen EqCopPipeProbe (eigener Probe-Pipename!)."
+    CONTEXT="[nakama-realtime] Edit in plugin/src: $(basename "$FILE") — es gelten
+Grundgesetz (processBlock: keine Sperre/Allokation/IO; Passthrough
+sampleidentisch; NaN-Riegel + Nyquist-Kappe; Editor: SafePointer, ein
+Snapshot-Zug pro Tick) und der Beweis-Kanon: die vom Edit betroffenen
+Beweise vor 'fertig' laufen lassen und das Ergebnis nennen."
     ;;
   *eq-copilot/schemas/*.schema.json|*eq-copilot\\schemas\\*.schema.json)
-    CONTEXT="[nakama-schema] Schema-Edit erkannt: $(basename "$FILE")
-Schemas sind versionierte Verträge (Bauplan §1/§8.3):
-- Neue Felder erfordern ZUERST eine Versionierung.
-- Alte Snapshots müssen ohne die neuen Felder weiter laden.
-- Unbekannte neue Felder dürfen alte Consumer (Plugin UND Broker UND
-  Hub-App) nicht zerstören.
-- Save und Load im selben Änderungssatz testen (cargo test eq_copilot +
-  GoldenTest, wenn Snapshot-Format betroffen)."
+    CONTEXT="[nakama-schema] Schema-Edit: $(basename "$FILE") — Schemas sind
+versionierte Verträge: neue Felder ⇒ ERST Versionierung; alte Snapshots
+laden weiter; unbekannte Felder brechen keine Consumer (Plugin, Broker,
+Hub-App); Save + Load im selben Änderungssatz testen."
     ;;
   *)
     exit 0

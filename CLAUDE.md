@@ -137,10 +137,18 @@ laufen in Software (SwiftShader) und bleiben Einzelläufe.
 ## Arbeitsweise
 
 - Code ist die einzige Wahrheit — Datei öffnen vor jeder Doku-/Memory-Behauptung.
-- Beweise vor „fertig"; Selbstaudit nach jedem Commit (Realtime-Kanten,
-  SafePointer, Schema-Verträge, Querbezüge).
+- Fortschritts- und Fertig-Meldungen nur mit Beleg aus dieser Session
+  (Testlauf, Render, Diff); nicht Verifiziertes explizit als offen nennen.
+  Selbstaudit nach jedem Commit; größere Änderungssätze von einem frischen
+  Verifikations-Subagenten gegen Bauplan + Grundgesetz prüfen lassen.
+- Im Auftrag bleiben: keine Neben-Refactors, kein „Modernisieren" von
+  Legacy-Namen oder Front nebenbei. Problembeschreibung ⇒ Befund liefern,
+  erst auf Zuruf fixen.
+- Breite mechanische Suchen parallel an Explore-Agenten delegieren und
+  währenddessen weiterarbeiten; Design-Urteil bleibt im Hauptlauf.
 - Out-of-scope-Funde → `docs/offene-punkte.md` (datierte Zeile mit ID).
 - Nach großen Schritten: `docs/design-stand.md` bzw. `docs/plugin-wissen.md`
-  nachziehen + Session-Memo ins Memory (`project_session_*.md`, Cap 6).
+  nachziehen + Session-Memo ins Memory (`project_session_*.md`, Cap 6 —
+  eine Lehre pro Datei, mit dem Warum; Falsches löschen statt stapeln).
 - Alle Texte dieses Projekts (Docs, Commits, UI) auf Deutsch — bestehende
   Konvention des eq-copilot-Baums.

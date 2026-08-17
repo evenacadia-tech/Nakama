@@ -60,6 +60,20 @@ gelesen; „lesbares System" allein reicht NICHT):**
 | 01 Perkolation (v2) | wie v1, aber: Sediment entfernt; Farbe zweidimensional (Frequenzbereich färbt, Alter lässt zur Glut abkühlen) | „gefällt mir, musst nicht weiter dran tweaken, das kann man machen falls es für nakama zum einsatz kommt" | **Abgenommen als Kalibrier-Datum.** Bandfarben-Palette (Amber/Magenta/Eis) + Punktwolken-Substanz bestätigt. Feinschliff bewusst vertagt auf einen echten Nakama-Einsatz. |
 | 02 Lichtschleier | GLSL-Fragment-Shader, Licht als KONTINUIERLICHE Materie (Aurora-Vorhang, Faltenwurf per fbm, Kick-Woge, Reinhard-Tonemapping); gleiche Palette wie 01 → Vergleich misst nur die Substanz (Körnung vs. Fluss) | „optisch und künstlerisch sehr schlecht und nichtssagend […] unscharf, keine besonderen details, wirkt ‚billig'. aus künstlerischer sicht […] ideenlos, charakterlos, trägt keine stimmung, weil es kein stil hat. […] lieber einfache effekte mit einem persönlichen stil […] und maximal mit liebe zum detail, als komplex aber mit generischen effekten aus dem unity baukasten. […] Blasse lichtshader mit aufblitzen als Bass sind einfallslos aus menschlicher sicht, weil beides zu nah aneinander liegt." | **Klar abgelehnt — Quelle der drei Gesetze (siehe oben).** Weiche kontinuierliche Lichtfelder ohne lesbares System sind für diesen User wertlos, egal wie technisch aufwendig. |
 | 03 Tropfenklingen | Vektor-Präzision (scharfe Canvas-Pfade, kein Glow); Gefäß-System: gestaute Energie → Überlauf → Tropfen-Ereignis; Detailliebe (Meniskus, Glanzkante, Abriss, Nachschwingen) | „optisch: smartphone app minispiel niveau, nichtssagend, kein charakter, weder kein logischer denkzusammenhang noch kreativer denkvorgang, ‚es ist einfach da' Die Darstellung ist die definition von Generisch. Der Zusammenhang ist konstruiert, kein grund für eq bedienung noch künstlerischer perspektive dass es da ist, aber es ist da" | **Klar abgelehnt — Quelle der Verschärfung 3a–3c.** Lesbares System reicht nicht: die Metapher (Gefäß/Tropfen) war beliebig gewählt, nichts an Musik oder EQ verlangt sie. Glossy Vektor-Objekte = Minispiel-Optik. |
+| 04 Interferenz | Echte 2D-Wellengleichung (9 Band-Oszillatoren, Kick-Kreiswelle), Muster durch wirkliche Interferenz, Punkt-Rendering | „auch das paradebeispiel für generik. zwei elemente die für sich gesehen beliebt sind. viele lichter und schwarzer nebel. zusammen ist es jedoch wie ein musikstück dass zusammengesetzt ist auf basis von algorythmen. es klingt objektiv nicht schlecht, es ist aber einfach egal. es ist da. […] der technische und visuelle eindruck sehr schlecht, weil es einfach nicht gut aussieht. qualitativ sowie die animation wirken wieder billig" | **Klar abgelehnt — auch physikalische Notwendigkeit rettet nicht.** Beliebte Einzelelemente kombiniert ≠ Werk. Der User hört den Algorithmus. |
+
+## META-ERKENNTNIS nach vier Proben (17.08. — wichtigste Zeile des Dokuments)
+
+**Bestanden hat NUR die Übersetzung eines autorisierten menschlichen Werks
+(P01 = Perkolations-Referenz des Users). Alle drei von Claude frei
+erfundenen Bildideen fielen identisch durch** („generisch, charakterlos,
+es ist da") — unabhängig von Substanz, System oder physikalischer
+Begründung. Claudes freie Bilderfindung produziert das statistische
+Mittel („wie algorithmisch komponierte Musik" — User). Konsequenz für
+alle künftige Design-Arbeit: **Die Vision kommt vom User** (Referenzen,
+Gefühl, Richtung — kuratiert von ihm); **Claude übersetzt, verdatet
+ehrlich und verfeinert nach seinem Auge** (der P01-v1→v2-Zyklus hat genau
+so funktioniert). Keine weiteren frei erfundenen Mechanismus-Proben.
 
 ## Geplante Achsen — REVIDIERT nach P02/P03-Ablehnung
 

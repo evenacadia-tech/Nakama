@@ -1,18 +1,23 @@
-# Kreativ-Freigabe — 2026-08-17
+# Kreativ-Freigabe — 2026-08-17 (fortgesetzt in Folgesession)
 
-**Vom User freigegeben (Wortlaut):** „wir bauen nacheinander verschiedene
-konzepte jeweils in unterschiedlichen stilen sowohl kreativ wie praktisch.
-also 2d 3d, unterschiedliche technikfundamente" — Zweck: einen gemeinsamen
-Nenner für Schönheit finden („ich bin schlechter in logik aber kann dafür
-fühlen und sehen was schön ist").
+**Vom User freigegebene Vorstellung (17.08. abends, Prisma-Richtung):**
+Ein dreiseitiges, drehbares Prisma als kompakter Dauerbegleiter — drei
+Flächen = Tiefen/Mitten/Höhen, Drehen = Selektion, Klick = Bündeln
+(Newton-Rekombination). Darstellung als Film-Compositing: Blender-Cycles
+auf CPU (Prisma-Pass mit echter Dispersion/Kaustik) über
+Unicorn-Hintergrund + live Daten-Ebene in P01-Punktästhetik. Der User
+hat dem **Material-Probestill als nächstem Schritt zugestimmt** und
+wartet darauf; „machen wir weiter" (Folgesession) setzt genau diesen
+Schritt fort.
 
-**Scope:** Stil-/Technik-Proben-Serie unter `eq-copilot/design/proben/`
-zur Geschmacks-Kalibrierung, auf der bestehenden 30-s-Songschleife.
-**Erweitert 17.08. (User-Idee):** Unicorn-Studio-Workflow — User baut
-Elemente in unicorn.studio, Claude baut/pflegt die Daten-Brücke
-(`eq-copilot/design/unicorn-bruecke.html`), die Szenen-Variablen pro
-Frame mit der Songschleife füttert.
-Eine Probe je Runde, User-Reaktion dazwischen, Reaktionen werden in
-`docs/geschmacksprofil.md` gesammelt. Kein finales Konzept, kein
-JUCE-Umbau. Referenzanker der ersten Probe: Wasser-Perkolation
-(Partikel, Altern, Sediment), User-Referenzbilder vom 17.08.
+**Scope dieser Freigabe:** EIN Material-Probestill-Satz (keine Animation,
+keine Daten, kein JUCE-Umbau) — da die Glas-Anmutung offen blieb, laut
+Handoff 2–3 Material-Varianten (klar/museal · dunkel-rauchig · frostig)
+als Stills über dem User-Hintergrund (Winter-Nexus-Screenshot oder
+dunkler Platzhalter). Der User beurteilt am Still NUR „Gimmick oder
+ernstzunehmend". Alles Weitere (Flächen-Inhalt, Bündel-Inhalt,
+Übergangssequenzen) erst NACH seiner Abnahme und neuer Ausarbeitung.
+
+**Werkzeuge im Scope:** Blender 5.1 headless (Cycles CPU — nie GPU,
+Arc-Landmine), Szenen-/Render-Skript unter `eq-copilot/design/prisma/`,
+frischer Unicorn-Screenshot über die bestehende Brücke.

@@ -1,23 +1,18 @@
-# Kreativ-Freigabe — 2026-08-17 (fortgesetzt in Folgesession)
+# Kreativ-Freigabe — 2026-08-18
 
-**Vom User freigegebene Vorstellung (17.08. abends, Prisma-Richtung):**
-Ein dreiseitiges, drehbares Prisma als kompakter Dauerbegleiter — drei
-Flächen = Tiefen/Mitten/Höhen, Drehen = Selektion, Klick = Bündeln
-(Newton-Rekombination). Darstellung als Film-Compositing: Blender-Cycles
-auf CPU (Prisma-Pass mit echter Dispersion/Kaustik) über
-Unicorn-Hintergrund + live Daten-Ebene in P01-Punktästhetik. Der User
-hat dem **Material-Probestill als nächstem Schritt zugestimmt** und
-wartet darauf; „machen wir weiter" (Folgesession) setzt genau diesen
-Schritt fort.
+**Vom User freigegeben (Wortlaut):** „willst du nicht schonmal die
+designprototyp seite mit dem prisma einrichten mit drehfunktion, ich
+überlege wegen der effektdarstellung"
 
-**Scope dieser Freigabe:** EIN Material-Probestill-Satz (keine Animation,
-keine Daten, kein JUCE-Umbau) — da die Glas-Anmutung offen blieb, laut
-Handoff 2–3 Material-Varianten (klar/museal · dunkel-rauchig · frostig)
-als Stills über dem User-Hintergrund (Winter-Nexus-Screenshot oder
-dunkler Platzhalter). Der User beurteilt am Still NUR „Gimmick oder
-ernstzunehmend". Alles Weitere (Flächen-Inhalt, Bündel-Inhalt,
-Übergangssequenzen) erst NACH seiner Abnahme und neuer Ausarbeitung.
+**Kontext:** Material-Urteil vom 18.08. steht (klar vorn, rauchig Reserve,
+Frost raus — Geschmacksprofil). Der User überlegt selbst an der
+Effektdarstellung (Flächen-/Bündel-Inhalt) weiter — DIE bleibt
+unangetastet, bis er seine Vorstellung freigibt.
 
-**Werkzeuge im Scope:** Blender 5.1 headless (Cycles CPU — nie GPU,
-Arc-Landmine), Szenen-/Render-Skript unter `eq-copilot/design/prisma/`,
-frischer Unicorn-Screenshot über die bestehende Brücke.
+**Scope dieser Freigabe:** Design-Prototyp-Seite unter
+`eq-copilot/design/prisma/` — drehbares Prisma (vorgerenderte
+Cycles-CPU-Drehsequenz der KLAREN Variante, 120°-Symmetrieperiode;
+Film-Compositing-Ansatz, keine Spiel-Engine), Drehen per Ziehen mit
+Einrasten auf die drei Flächen (Tiefen/Mitten/Höhen). KEINE Daten-/
+Effekt-Ebene, keine erfundenen Diagnosewerte, kein Bündel-Modus —
+alles Weitere erst nach Ausarbeitung mit dem User.

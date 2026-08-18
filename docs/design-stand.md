@@ -120,6 +120,31 @@ räumt das Glas NICHT frei — Musik erzeugt überall kleine Gradienten.
 nicht vier — die Vierer-Ablesung wäre eine Behauptung über ein Bild, das es
 nicht gibt), Bündel-Modus, Mehrfachbefunde (NAK-14).
 
+**SCHLIEREN-EFFEKT IN UNICORN — INSTRUMENT KALIBRIERT (18.08., gemessen):**
+Projekt `ilYX64xlvU811imBKfxV` („Copy of Untitled project"), Effekt „Schlieren
+Probe Field" (KI-Effekt-Editor, iterativ nach Mess-Prompts korrigiert).
+Regler: Probe Center · Deflection · Zone Width · Vertical Extent · Convergence ·
+Line Count · Grain Intensity · Line Color · Speed. Gebunden an die Variablen
+`befundOrt`/`befundStaerke`/`befundBreite`/`befundTiefe`/`befundVorzeichen`/
+`bandFarbe` (Typ Percent bzw. Color); Line Count/Grain/Speed bleiben ungebunden
+= Design-Konstanten.
+
+Abnahme am Export (1440x900, Line Count 24, Zone Width 30, Nennabstand ~79 px):
+- Deflection 100: groesste Luecke 153,5 px = **195 %**, engster Abstand
+  60,5 px = **77 %** — keine Ueberlappung, zaehlbar.
+- Deflection 40 (Normalfall, ~2,4 dB): groesste Luecke 106 px = **134 %**.
+- **Antwort strikt linear** (Ueberschuss 26,7 px bei 40 vs 74,9 px bei 100).
+- **Spiegelsymmetrie exakt 0,0 px** ueber fuenf Linienpaare, bei 40 wie bei 100.
+- **Mittellinie steht** (719,5 bei Bildmitte 720,0) — der Beweis, dass der Shader
+  die ABLEITUNG der Abweichung rechnet und nicht die Glocke selbst.
+
+OFFEN: (a) Farbe — gemessen rgb(189,169,121) statt E8A34C, und der Farbton
+wandert mit der Helligkeit (bei Alpha 128 → rgb(255,255,241)); Ursache noch
+nicht getrennt (Adjust-Ebene liegt drueber). (b) SUBSTANZ — es sind weiterhin
+duenne Striche; das User-Urteil „trostlos" ist damit noch nicht beantwortet.
+(c) Der Effekt lebt noch nicht IM Prisma. (d) Bruecke zeigt noch auf die alte
+Projekt-ID `tRg2ubAR1fLKQqov1YLd`.
+
 **Geschmacks-Kalibrierung (abgeschlossen, 4 Proben unter
 `design/proben/`):** P01 Perkolation ✓ abgenommen · P02 Lichtschleier ✗ ·
 P03 Tropfenklingen ✗ · P04 Interferenz ✗. Die drei Gesetze + Verschärfung

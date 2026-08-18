@@ -86,6 +86,10 @@ oder Szenen-Fehler werden verschluckt, der dunkle Grund bleibt.
 (der Hintergrund animiert frei; Element-Screenshots von `#bild` bleiben
 davon unberührt). Hinter der Drei-String-Szene wird Ebene 0 erst sichtbar,
 wenn deren schwarzer Gradient-Layer in Unicorn unsichtbar wird.
+**Grenze des heutigen Stands:** Ebene 0 RAHMT das Blatt nur — die
+Drehframes selbst sind ohne Alpha (Studio eingebacken); fürs freigestellte
+Prisma in der App siehe **NAK-15** (`docs/offene-punkte.md`:
+film_transparent-Neurender + Shadow-Catcher-Frage, Fakten verifiziert).
 
 **FALLE (18.08., teuer bezahlt): Wer in Unicorn Studio einen REGLER von Hand
 verschiebt, LÖST damit seine Variablen-Bindung.** Danach zeigt das

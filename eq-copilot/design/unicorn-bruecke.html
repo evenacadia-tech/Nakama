@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unicorn-Brücke · Nakama</title>
+<style>
+@font-face {
+  font-family: "Manrope";
+  src: url("./fonts/Manrope-Variable.ttf") format("truetype");
+  font-weight: 200 800;
+  font-display: swap;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; background: #04060b; }
+body { font-family: "Manrope", system-ui, sans-serif; color: #cfd6e4; user-select: none; }
+#szene { position: absolute; inset: 0; }
+#szene > div { width: 100%; height: 100%; }
+header {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+  display: flex; align-items: baseline; gap: 14px; padding: 16px 20px;
+  pointer-events: none;
+}
+.marke { font-size: 11px; letter-spacing: 4px; color: #6d7789; }
+.name { font-size: 15px; letter-spacing: 2.5px; color: #e8edf6; }
+footer {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+  display: flex; justify-content: space-between; gap: 16px; padding: 12px 20px;
+  font-size: 9.5px; letter-spacing: 1.6px; color: #5d6678; pointer-events: none;
+}
+#zeit { font-variant-numeric: tabular-nums; white-space: nowrap; }
+#tafel {
+  position: absolute; top: 64px; right: 18px; z-index: 4; max-width: 340px;
+  background: rgba(10, 14, 22, 0.92); border: 1px solid rgba(207, 214, 228, 0.16);
+  border-radius: 10px; padding: 14px 16px; font-size: 11px; line-height: 1.75;
+}
+#tafel h2 { font-size: 11px; letter-spacing: 2px; margin-bottom: 8px; color: #e8edf6; }
+#tafel code {
+  font-family: Consolas, monospace; font-size: 10.5px;
+  background: rgba(207, 214, 228, 0.10); padding: 1px 5px; border-radius: 4px;
+}
+#tafel .ok { color: #7dd8a0; }
+#tafel .frei { color: #6d7789; }
+#anleitung {
+  position: absolute; inset: 0; z-index: 2;
+  display: flex; align-items: center; justify-content: center;
+}
+#anleitung[hidden], #tafel[hidden] { display: none; }
+#anleitung .karte {
+  max-width: 560px; padding: 28px 32px; line-height: 1.9; font-size: 13px;
+  background: rgba(10, 14, 22, 0.9); border: 1px solid rgba(207, 214, 228, 0.16);
+  border-radius: 12px;
+}
+#anleitung h1 { font-size: 15px; letter-spacing: 2px; margin-bottom: 12px; }
+#anleitung ol { margin: 10px 0 10px 20px; }
+#anleitung code {
+  font-family: Consolas, monospace; font-size: 12px;
+  background: rgba(207, 214, 228, 0.10); padding: 1px 6px; border-radius: 4px;
+}
+</style>
+</head>
+<body>
+<div id="szene"></div>
+<header>
+  <span class="marke">NAKAMA</span>
+  <span class="name">UNICORN-BRÜCKE</span>
+</header>
+<footer>
+  <span>DEINE SZENE + UNSERE MUSIKDATEN: DIE 30-S-SONGSCHLEIFE FÜTTERT PRO FRAME DIE VARIABLEN DEINER UNICORN-STUDIO-SZENE · LEERTASTE HÄLT DIE MUSIK AN</span>
+  <span id="zeit">00:00</span>
+</footer>
+<div id="tafel" hidden></div>
+
+<div id="anleitung">
+  <div class="karte">
+    <h1>UNICORN-BRÜCKE — SO GEHT ES</h1>
+    <ol>
+      <li>Baue deine Szene in <b>unicorn.studio</b>.</li>
+      <li>Lege dort <b>Variablen</b> an (Typ Zahl, 0–1) und binde sie an
+          beliebige Eigenschaften deiner Effekte. Diese Namen werden
+          automatisch mit Musik gefüttert:<br>
+          <code>bass</code> <code>mitten</code> <code>hoehen</code>
+          <code>kick</code> <code>snare</code> <code>hat</code>
+          <code>dichte</code> <code>chorus</code> <code>lufs</code>
+          <code>zaehlzeit</code> <code>band1</code>…<code>band8</code>
+          sowie <code>zeit</code> und <code>beat</code> (fortlaufend).</li>
+      <li>Im Export-Panel die <b>Project-ID</b> kopieren.</li>
+      <li>Dieses Blatt öffnen mit <code>?projekt=DEINE_ID</code>.</li>
+    </ol>
+    Die Tafel rechts zeigt dann, welche deiner Variablen verdrahtet sind.
+    Du gestaltest, die Brücke liefert die Musik.
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ── UNICORN-BRÜCKE ─────────────────────────────────────────────────────
+   Rollenverteilung nach Geschmacksprofil-Meta-Erkenntnis (17.08.):
+   Die Vision autorisiert der User in Unicorn Studio; dieses Blatt ist
+   Claudes Handwerksseite — es lädt die Szene (unicornstudio.js v2.2.10)
+   und setzt pro Frame die Szenen-Variablen aus der deterministischen
+   30-s-Songschleife. ?projekt=<ID> lädt, ?zeit=SEK friert die MUSIKWERTE
+   auf einen Moment (die Eigenzeit der Szene läuft weiter — Unicorns
+   interne Uhr ist nicht von außen einfrierbar).                          */
+
+const F_MIN = 20, F_MAX = 18000;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function smoothstep(e0, e1, v) {
+  const t = clamp((v - e0) / Math.max(1e-9, e1 - e0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+const gaussian = (t, c, w) => Math.exp(-0.5 * ((t - c) / w) ** 2);
+const tForFrequency = f => Math.log10(f / F_MIN) / Math.log10(F_MAX / F_MIN);
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ── Songschleife (identisch zu den Musterblättern — portiert, nicht neu) ── */
+const SONG = { laenge: 30, bpm: 96 };
+function songLage(time) {
+  const lt = ((time % SONG.laenge) + SONG.laenge) % SONG.laenge;
+  const beat = Math.max(0, time) * SONG.bpm / 60;
+  const zaehlzeit = beat - Math.floor(beat);
+  const strophe = smoothstep(4.5, 7, lt) * (1 - smoothstep(13, 15.5, lt));
+  const chorus = smoothstep(13, 15.5, lt) * (1 - smoothstep(23, 25.5, lt));
+  const ausklang = smoothstep(23, 25.5, lt);
+  const intro = 1 - smoothstep(4.5, 7, lt);
+  const dichte = 0.25 * intro + 0.62 * strophe + 1.0 * chorus + 0.38 * ausklang;
+  const puls = reducedMotion ? 0.2 : 1;
+  const kick = Math.exp(-8 * zaehlzeit) * (0.35 + 0.65 * dichte) * puls;
+  const snare = (Math.floor(beat) % 2 === 1 ? Math.exp(-10 * zaehlzeit) : 0) * dichte * puls;
+  const achtel = beat * 2 - Math.floor(beat * 2);
+  const hat = Math.exp(-13 * achtel) * (0.15 + 0.85 * dichte) * puls;
+  const NOTEN = [41.2, 41.2, 49.0, 55.0, 41.2, 36.7, 49.0, 61.7];
+  const note = NOTEN[((Math.floor(beat) % 8) + 8) % 8];
+  const bassHalt = (0.55 + 0.45 * Math.exp(-2.5 * zaehlzeit)) * (0.35 + 0.65 * dichte);
+  return { lt, beat, zaehlzeit, dichte, chorus, kick, snare, hat, note, bassHalt };
+}
+function musikDb(t, lage) {
+  return lage.kick * 4.2 * gaussian(t, tForFrequency(52), 0.045)
+    + lage.bassHalt * (3.0 * gaussian(t, tForFrequency(lage.note), 0.05)
+                     + 1.2 * gaussian(t, tForFrequency(lage.note * 2), 0.045))
+    + lage.snare * (3.2 * gaussian(t, tForFrequency(190), 0.07)
+                  + 3.6 * gaussian(t, tForFrequency(4200), 0.20))
+    + lage.hat * 3.0 * smoothstep(0.70, 0.94, t)
+    + lage.chorus * 2.0 * gaussian(t, tForFrequency(760), 0.26)
+        * (0.75 + 0.25 * Math.sin((lage.lt + Math.floor(lage.beat / 48) * 30) * 2.3))
+    + (lage.dichte - 0.9) * 1.8
+    - 1.5 * lage.kick * lage.dichte * (1 - gaussian(t, tForFrequency(52), 0.06));
+}
+function baselineDb(t) {
+  const high = Math.max(0, (t - 0.82) / 0.18);
+  return -16.2 - 2.8 * t - 7.8 * t * t - 8.8 * Math.pow(high, 1.5)
+    + 1.7 * gaussian(t, 0.13, 0.11);
+}
+const energie01 = (t, lage) => clamp((baselineDb(t) + musikDb(t, lage) + 40) / 30, 0, 1);
+
+function bereich01(von, bis, lage, proben) {
+  let s = 0;
+  for (let k = 0; k < proben; k++) s += energie01(lerp01(von, bis, (k + 0.5) / proben), lage);
+  return clamp(s / proben, 0, 1);
+}
+const lerp01 = (a, b, k) => a + (b - a) * k;
+
+/* Der Standard-Datensatz, den die Brücke jeder Szene anbietet */
+function musikWerte(zeit) {
+  const lage = songLage(zeit);
+  const w = {
+    zeit, beat: lage.beat, zaehlzeit: lage.zaehlzeit,
+    dichte: lage.dichte, chorus: lage.chorus,
+    kick: lage.kick, snare: lage.snare, hat: lage.hat,
+    bass: bereich01(tForFrequency(20), tForFrequency(200), lage, 6),
+    mitten: bereich01(tForFrequency(200), tForFrequency(2500), lage, 6),
+    hoehen: bereich01(tForFrequency(2500), tForFrequency(16000), lage, 6),
+    lufs: bereich01(0, 1, lage, 10)
+  };
+  for (let b = 0; b < 8; b++)
+    w["band" + (b + 1)] = bereich01(b / 8, (b + 1) / 8, lage, 4);
+  return w;
+}
+
+/* ── Szene laden & verdrahten ──────────────────────────────────────────── */
+const PARAMS = new URLSearchParams(location.search);
+const PROJEKT = PARAMS.get("projekt");
+const ZEIT_FREEZE = (() => {
+  const roh = PARAMS.get("zeit");
+  const w = roh === null ? NaN : parseFloat(roh);
+  return isFinite(w) ? w : null;
+})();
+
+const zeitEl = document.getElementById("zeit");
+const tafel = document.getElementById("tafel");
+let laeuft = true, zeit = 0, letzter = performance.now();
+document.addEventListener("keydown", ev => {
+  if (ev.key === " ") { ev.preventDefault(); laeuft = !laeuft; letzter = performance.now(); }
+  if (ev.key === "t" || ev.key === "T") tafel.hidden = !tafel.hidden;
+});
+
+if (!PROJEKT) {
+  // Anleitung bleibt stehen — nichts zu laden.
+} else {
+  document.getElementById("anleitung").hidden = true;
+  const halter = document.createElement("div");
+  halter.setAttribute("data-us-project", PROJEKT);
+  document.getElementById("szene").appendChild(halter);
+
+  const s = document.createElement("script");
+  s.src = "https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.10/dist/unicornStudio.umd.js";
+  s.onload = () => {
+    UnicornStudio.init().then(szenen => {
+      const szene = szenen[0];
+      if (!szene) { zeigeTafel(null, []); return; }
+      // Verdrahtung: nur Variablen setzen, die die Szene wirklich definiert
+      let vorhanden = [];
+      try {
+        const manifest = szene.getVariableManifest ? szene.getVariableManifest() : null;
+        if (manifest) vorhanden = manifest.map(v => v.name || v.id).filter(Boolean);
+      } catch (e) { /* ältere SDK-Stände: blind setzen */ }
+      const alle = Object.keys(musikWerte(0));
+      const verdrahtet = vorhanden.length
+        ? alle.filter(n => vorhanden.includes(n))
+        : alle;
+      zeigeTafel(vorhanden, verdrahtet);
+
+      function frame(now) {
+        const dt = Math.min(0.05, Math.max(0.001, (now - letzter) / 1000));
+        letzter = now;
+        if (laeuft && ZEIT_FREEZE === null) zeit += dt;
+        const t = ZEIT_FREEZE !== null ? ZEIT_FREEZE : zeit;
+        const werte = musikWerte(t);
+        try {
+          for (const n of verdrahtet) szene.setVariable(n, werte[n]);
+        } catch (e) { /* Szene ggf. zerstört */ }
+        const sek = Math.floor(t);
+        zeitEl.textContent = ZEIT_FREEZE !== null
+          ? "STAND " + String(sek).padStart(2, "0") + " s"
+          : String(Math.floor(sek / 60)).padStart(2, "0") + ":" + String(sek % 60).padStart(2, "0");
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }).catch(err => {
+      tafel.hidden = false;
+      tafel.innerHTML = "<h2>SZENE LÄDT NICHT</h2>" +
+        "Projekt-ID prüfen (Export-Panel in Unicorn Studio) und Internetverbindung. " +
+        "<code>" + String(err).replace(/</g, "&lt;") + "</code>";
+    });
+  };
+  s.onerror = () => {
+    tafel.hidden = false;
+    tafel.innerHTML = "<h2>SDK LÄDT NICHT</h2>Keine Verbindung zum unicornstudio.js-CDN — Internet nötig.";
+  };
+  document.head.appendChild(s);
+}
+
+function zeigeTafel(vorhanden, verdrahtet) {
+  tafel.hidden = false;
+  if (vorhanden === null) {
+    tafel.innerHTML = "<h2>KEINE SZENE GEFUNDEN</h2>Projekt-ID prüfen.";
+    return;
+  }
+  const alle = Object.keys(musikWerte(0));
+  let html = "<h2>VERDRAHTUNG</h2>";
+  if (!vorhanden.length) {
+    html += "Die Szene meldet keine Variablen — die Standardnamen werden "
+      + "blind gesetzt (wirkt erst, wenn du sie in Unicorn anlegst). "
+      + "Taste T blendet diese Tafel aus.<br><br>";
+    html += alle.map(n => `<code>${n}</code> <span class="frei">— blind</span>`).join("<br>");
+    tafel.innerHTML = html;
+    return;
+  }
+  html += alle.map(n => {
+    const an = verdrahtet.includes(n) && vorhanden.includes(n);
+    return `<code>${n}</code> <span class="${an ? "ok" : "frei"}">${an ? "✓ verdrahtet" : "— frei"}</span>`;
+  }).join("<br>");
+  if (vorhanden.length) {
+    const fremd = vorhanden.filter(n => !alle.includes(n));
+    if (fremd.length)
+      html += "<br><br>In der Szene, aber ohne Musikdaten: " + fremd.map(n => `<code>${n}</code>`).join(" ");
+  }
+  tafel.innerHTML = html;
+}
+</script>
+</body>
+</html>

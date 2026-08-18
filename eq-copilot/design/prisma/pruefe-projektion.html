@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Prüfung: JS-Kameraprojektion gegen Blender</title>
+<!--
+  Beweis-Werkzeug für die Punkt-Ebene des Prisma-Prototyps: projiziert
+  dieselben PRISMA-LOKALEN Koordinaten wie renders/debug-kugeln-frei.png
+  (Blender, ohne Glas) mit der JS-Kamera-Mathematik und zeichnet Kreuze.
+  Kreuz deckt Kugel = Projektion stimmt. Parameter identisch zur Sequenz:
+  Kamera (-1.65,-3.53,0.95) -> (0,0,0.8), 65 mm, Sensor 36 (fit: Hochkant),
+  768x1024, Prisma-Rotation 86.333333 Grad.
+-->
+<style>
+  body { margin: 0; background: #04060b; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="cv" width="768" height="1024"></canvas>
+<script>
+"use strict";
+const W = 768, H = 1024;
+const LENS = 65, SENSOR = 36;
+const F_PIX = LENS / SENSOR * Math.max(W, H);    // sensor_fit AUTO: größere Kante
+const POS = [-1.65, -3.53, 0.95];
+const ZIEL = [0, 0, 0.8];
+const ROT = 86.333333 * Math.PI / 180;
+
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const kreuz = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const norm = a => { const l = Math.hypot(...a); return [a[0] / l, a[1] / l, a[2] / l]; };
+
+// Kamerabasis wie to_track_quat("-Z","Y"): -Z blickt aufs Ziel, +Y ~ Welt-Z
+const f = norm(sub(ZIEL, POS));
+const camZ = [-f[0], -f[1], -f[2]];
+const upRoh = sub([0, 0, 1], f.map(v => v * f[2]));
+const camY = norm(upRoh);
+const camX = kreuz(camY, camZ);
+
+function projiziere(lokal) {
+  const [lx, ly, lz] = lokal;
+  const wx = lx * Math.cos(ROT) - ly * Math.sin(ROT);
+  const wy = lx * Math.sin(ROT) + ly * Math.cos(ROT);
+  const p = [wx, wy, lz + 0.002];
+  const d = sub(p, POS);
+  const xc = dot(d, camX), yc = dot(d, camY), zc = dot(d, camZ);
+  return [W / 2 + F_PIX * xc / (-zc), H / 2 - F_PIX * yc / (-zc)];
+}
+
+const LOKAL = [[0, 0, 0.1], [0, 0, 1.5], [0.3, 0, 0.8], [-0.2, 0.25, 0.4], [0, -0.3, 1.2]];
+const cv = document.getElementById("cv"), c = cv.getContext("2d");
+const bild = new Image();
+bild.src = "renders/debug-kugeln-frei.png";
+bild.onload = () => {
+  c.drawImage(bild, 0, 0);
+  c.strokeStyle = "#ff4444";
+  c.lineWidth = 1;
+  for (const l of LOKAL) {
+    const [u, v] = projiziere(l);
+    c.beginPath();
+    c.moveTo(u - 10, v); c.lineTo(u + 10, v);
+    c.moveTo(u, v - 10); c.lineTo(u, v + 10);
+    c.stroke();
+  }
+};
+</script>
+</body>
+</html>

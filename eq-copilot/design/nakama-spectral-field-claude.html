@@ -1,0 +1,2609 @@
+<!doctype html>
+<html lang="de" data-theme="nebel-nacht">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="data:," />
+<title>Nakama · Tusche-Musterblatt</title>
+<style>
+@font-face {
+  font-family: "Manrope Variable";
+  src: url("./fonts/Manrope-Variable.ttf") format("truetype");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Nakama Phase";
+  src:
+    url("./fonts/NakamaPhase-Regular.woff2") format("woff2"),
+    url("./fonts/NakamaPhase-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+/* ── NAKAMA-MUSTERBLATT, reine 2D-Tuschezeichnung.
+   Verworfen: Shader-/3D-Weg (16.08.), Tusche-Einzelmarken (17.08.,
+   „Stroh"/„Kochhut"), die HELLEN Welten (17.08.: „Weiß fliegt raus —
+   erkennt man nichts, weder Nebel noch Licht"). Es gilt das TIEFENFELD
+   auf DUNKLEM Papier: Der Strich ist die Messung, kurze Bleistiftstücke sind
+   ausschließlich lokale Diagnosebasen. Unsichere Befunde kondensieren als
+   Nebel; mit wachsender Evidenz lösen sie sich in gerichtetes Licht auf.
+   Zwei dunkle Welten: „Tusche & Gold · Dunkel" · „Nebel & Nacht". */
+
+:root {
+  color-scheme: dark;
+  /* Tusche & Gold — dunkel (mit Tusche vollgesogenes Blatt, Zeichnung creme) */
+  --bg: #090806;
+  --field: #171410;
+  --field-raised: #1f1b15;
+  --surface: #1c1913;
+  --edge: #4a4234;
+  --grid-major: #322c22;
+  --grid-minor: #241f18;
+  --text: #ece2cb;
+  --text-soft: #b3a98e;
+  --text-muted: #9e947b;
+  --ink: #efe5cd;
+  --ink-soft: #b9ae92;
+  --curve: var(--ink);
+  --curve-live: #b9ae9254;
+  --diagnostic-basis: #b9ae9270;
+  --seal: #c14432;
+  --accent: var(--seal);
+  --brand-gold: #c69c50;
+  --gold: #c69c50;
+  --compare: var(--gold);
+  --success: #7d8f6b;
+  --fault: #c25a41;
+  --issue-resonance: var(--seal);
+  --issue-balance: var(--ink-soft);
+  --issue-transient: var(--seal);
+  --issue-masking: var(--ink-soft);
+  --mask-zone: var(--ink-soft);
+  --paper-hi: #f0e6cc;
+  --paper-lo: #000000;
+  --wash: #d8cba6;
+  --grain-opacity: 0.20;
+  --shadow: rgba(0, 0, 0, 0.55);
+  --panel-shadow: rgba(0, 0, 0, 0.66);
+}
+
+html[data-theme="nebel-nacht"] {
+  color-scheme: dark;
+  /* Nebel & Nacht — dunkel (Petrol-Nachtpapier, Strohmond-Tinte, Ukiyo-e) */
+  --bg: #0b1216;
+  --field: #182831;
+  --field-raised: #1e313b;
+  --surface: #1c2e37;
+  --edge: #47606c;
+  --grid-major: #2b4450;
+  --grid-minor: #21363f;
+  --text: #ead9b8;
+  --text-soft: #b7ab8d;
+  --text-muted: #a0a38f;
+  --ink: #ecdcb4;
+  --ink-soft: #b1a687;
+  --curve: var(--ink);
+  --curve-live: #b1a68754;
+  --diagnostic-basis: #b1a68770;
+  --seal: #c14e35;
+  --accent: var(--seal);
+  --brand-gold: #d0b57e;
+  --gold: #d0b57e;
+  --compare: var(--gold);
+  --success: #7f9573;
+  --fault: #c46247;
+  --issue-resonance: var(--seal);
+  --issue-balance: var(--ink-soft);
+  --issue-transient: var(--seal);
+  --issue-masking: var(--ink-soft);
+  --mask-zone: var(--ink-soft);
+  --paper-hi: #e9dcb6;
+  --paper-lo: #030b0f;
+  --wash: #d9c99c;
+  --grain-opacity: 0.17;
+  --shadow: rgba(2, 8, 11, 0.55);
+  --panel-shadow: rgba(2, 8, 11, 0.68);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+body {
+  color: var(--text);
+  font-family: "Manrope Variable", "Segoe UI", sans-serif;
+  font-synthesis: none;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+button { font: inherit; }
+
+#stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(80% 72% at 46% 38%, color-mix(in srgb, var(--field-raised) 62%, transparent), transparent 72%),
+    linear-gradient(180deg, var(--field) 0%, color-mix(in srgb, var(--field) 93%, var(--bg)) 66%, var(--bg) 100%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--edge) 42%, transparent);
+}
+
+#field {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.brand {
+  position: absolute;
+  z-index: 12;
+  top: clamp(18px, 3.1vh, 30px);
+  left: clamp(26px, 3.4vw, 58px);
+  display: block;
+  width: clamp(36px, 3.25vw, 50px);
+  aspect-ratio: 510 / 890;
+  color: var(--text);
+  filter: drop-shadow(0 5px 8px color-mix(in srgb, var(--shadow) 72%, transparent));
+}
+
+.brand svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.brand-ink { fill: currentColor; }
+.brand-accent { fill: var(--brand-gold); }
+
+.tools {
+  position: absolute;
+  z-index: 20;
+  top: clamp(14px, 2.7vh, 26px);
+  right: clamp(18px, 2.7vw, 42px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tool-button,
+.panel-close {
+  appearance: none;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(38px, 3vw, 46px);
+  height: clamp(38px, 3vw, 46px);
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--edge) 72%, transparent);
+  border-radius: 50%;
+  color: var(--text-soft);
+  background:
+    linear-gradient(145deg,
+      color-mix(in srgb, var(--surface) 84%, var(--text) 3%),
+      color-mix(in srgb, var(--field-raised) 92%, var(--bg)));
+  box-shadow:
+    0 8px 18px var(--shadow),
+    inset 0 1px 0 color-mix(in srgb, var(--text) 7%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--bg) 70%, transparent);
+  cursor: pointer;
+  transition: transform 150ms cubic-bezier(.2,.8,.2,1), border-color 150ms ease, color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.tool-button svg,
+.panel-close svg {
+  width: 19px;
+  height: 19px;
+  overflow: visible;
+  fill: currentColor;
+}
+
+.tool-button::after,
+.panel-close::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  width: 8px;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.3;
+  transform: rotate(42deg);
+  transform-origin: center;
+  transition: opacity 150ms ease, transform 180ms cubic-bezier(.2,.8,.2,1);
+}
+
+.tool-button:hover::after,
+.tool-button:focus-visible::after,
+.tool-button.active::after,
+.tool-button.running::after,
+.panel-close:hover::after,
+.panel-close:focus-visible::after {
+  opacity: 0.82;
+  transform: rotate(42deg) translateX(1px);
+}
+
+.tool-button:hover,
+.tool-button:focus-visible,
+.panel-close:hover,
+.panel-close:focus-visible {
+  outline: none;
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--text) 42%, var(--edge));
+  transform: translateY(-1px);
+}
+
+.tool-button:focus-visible,
+.panel-close:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--field),
+    0 0 0 4px color-mix(in srgb, var(--accent) 76%, var(--text)),
+    0 8px 18px var(--shadow);
+}
+
+.tool-button:active,
+.panel-close:active { transform: translateY(1px) scale(0.98); }
+
+.tool-button.active {
+  color: var(--bg);
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--accent) 11%, transparent),
+    0 8px 20px var(--shadow),
+    inset 0 1px 0 color-mix(in srgb, white 28%, transparent);
+}
+
+.tool-button.report.has-reports {
+  color: color-mix(in srgb, var(--accent) 76%, var(--text-soft));
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--edge));
+  box-shadow:
+    0 0 16px color-mix(in srgb, var(--accent) 23%, transparent),
+    0 8px 18px var(--shadow),
+    inset 0 1px 0 color-mix(in srgb, var(--text) 7%, transparent);
+}
+
+.tool-button.play {
+  width: clamp(44px, 3.35vw, 52px);
+  height: clamp(44px, 3.35vw, 52px);
+  margin-left: 3px;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--edge));
+}
+
+.tool-button.play.running {
+  color: var(--bg);
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.floating-panel {
+  position: absolute;
+  z-index: 40;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-8px) scale(0.985);
+  transform-origin: top right;
+  border: 1px solid color-mix(in srgb, var(--edge) 82%, transparent);
+  background:
+    linear-gradient(145deg,
+      color-mix(in srgb, var(--field-raised) 96%, var(--text) 2%),
+      color-mix(in srgb, var(--field) 97%, var(--bg)));
+  box-shadow:
+    0 24px 60px var(--panel-shadow),
+    inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent);
+  transition: opacity 150ms ease, transform 170ms cubic-bezier(.2,.8,.2,1), visibility 0s linear 170ms;
+}
+
+.floating-panel.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  transition-delay: 0s;
+}
+
+.theme-panel {
+  top: clamp(64px, 8.8vh, 86px);
+  right: clamp(18px, 2.7vw, 42px);
+  width: min(330px, calc(100vw - 28px));
+  padding: 14px;
+  border-radius: 16px;
+}
+
+/* ── Kalibrier-Menü: alle neuen Stärken selbst einstellbar ── */
+.kali-panel {
+  top: clamp(64px, 8.8vh, 86px);
+  right: clamp(18px, 2.7vw, 42px);
+  width: min(340px, calc(100vw - 28px));
+  max-height: min(78vh, 640px);
+  overflow-y: auto;
+  padding: 14px 16px;
+  border-radius: 16px 5px 16px 5px;
+  scrollbar-width: thin;
+}
+
+.kali-titel {
+  margin: 2px 0 10px;
+  color: var(--text-muted);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+}
+
+.kali-gruppe {
+  margin: 15px 0 9px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--edge) 48%, transparent);
+  color: var(--text-muted);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+}
+
+.kali-gruppe:first-child { margin-top: 2px; padding-top: 0; border-top: 0; }
+
+.kali-zeile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.kali-zeile label {
+  grid-column: 1 / -1;
+  color: var(--text-soft);
+  font-size: 11.5px;
+  font-weight: 560;
+  letter-spacing: 0.03em;
+}
+
+.kali-zeile input[type="range"] {
+  width: 100%;
+  accent-color: var(--seal);
+}
+
+.kali-wert {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Farbwahl je Graph-Element (pro Welt gespeichert) */
+.kali-zeile.farb-zeile { grid-template-columns: minmax(0, 1fr) 44px; }
+.kali-zeile.farb-zeile label { grid-column: 1; }
+.kali-zeile.farb-zeile input[type="color"] {
+  width: 44px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--edge) 82%, transparent);
+  border-radius: 7px;
+  background: none;
+  cursor: pointer;
+}
+
+.kali-knoepfe {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.kali-knoepfe button {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--ink) 26%, transparent);
+  border-radius: 999px;
+  color: var(--text-soft);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.kali-knoepfe button:hover { color: var(--text); }
+
+.kali-knoepfe button.kopiert {
+  color: var(--seal);
+  border-color: color-mix(in srgb, var(--seal) 62%, transparent);
+}
+
+#grain { opacity: calc(var(--grain-opacity, 0.05) * var(--grain-mult, 1)); }
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.theme-choice {
+  appearance: none;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--edge) 68%, transparent);
+  border-radius: 11px 4px 11px 4px;
+  color: var(--text-soft);
+  background: color-mix(in srgb, var(--surface) 52%, transparent);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+}
+
+.theme-choice:hover,
+.theme-choice:focus-visible,
+.theme-choice.selected {
+  outline: none;
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 66%, var(--edge));
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+}
+
+.theme-choice span:last-child {
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.theme-swatch {
+  position: relative;
+  display: block;
+  width: 38px;
+  height: 28px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--swatch-bg);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.14);
+}
+
+.theme-swatch::before,
+.theme-swatch::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+}
+
+.theme-swatch::before {
+  left: 5px;
+  right: 5px;
+  top: 9px;
+  height: 2px;
+  background: var(--swatch-curve);
+  transform: rotate(-7deg);
+}
+
+.theme-swatch::after {
+  right: 5px;
+  bottom: 5px;
+  width: 8px;
+  height: 8px;
+  background: var(--swatch-accent);
+}
+
+.report-panel {
+  top: 18px;
+  right: 18px;
+  bottom: 18px;
+  width: clamp(360px, 29vw, 460px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  border-radius: 20px;
+  transform: translateX(20px) scale(0.992);
+  transform-origin: center right;
+}
+
+.report-panel.open { transform: translateX(0) scale(1); }
+
+.report-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 24px 18px;
+  border-bottom: 1px solid color-mix(in srgb, var(--edge) 54%, transparent);
+}
+
+.report-title {
+  margin: 0;
+  color: var(--text);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0.145em;
+}
+
+.report-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.13em;
+}
+
+.report-meta .state-glyph {
+  width: 14px;
+  height: 14px;
+  color: var(--success);
+  fill: currentColor;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--success) 32%, transparent));
+}
+
+.panel-close {
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.report-list {
+  overflow-y: auto;
+  padding: 12px 12px 24px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--edge) 76%, transparent) transparent;
+}
+
+.report-card {
+  position: relative;
+  margin-bottom: 8px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--edge) 56%, transparent);
+  border-radius: 14px 5px 14px 5px;
+  background: color-mix(in srgb, var(--surface) 46%, transparent);
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.report-card::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: 18px;
+  width: 17px;
+  height: 2px;
+  background: color-mix(in srgb, var(--text-muted) 48%, transparent);
+  transition: width 170ms cubic-bezier(.2,.8,.2,1), background 150ms ease;
+}
+
+.report-card.open {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--edge));
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+}
+
+.report-card.open::after {
+  width: 29px;
+  background: var(--issue-color, var(--accent));
+}
+
+.report-card-head {
+  appearance: none;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.report-card-head:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.report-glyph {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+}
+
+.report-glyph svg { position: absolute; inset: 0; width: 36px; height: 36px; }
+.report-glyph .gauge-track { stroke: color-mix(in srgb, var(--text) 82%, transparent); stroke-dasharray: 68 4 19 9; }
+.report-glyph .gauge-value { stroke: var(--issue-color, var(--accent)); }
+.report-glyph .marker-symbol { fill: var(--text); }
+
+.report-name {
+  display: block;
+  color: var(--text);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.report-kind {
+  display: block;
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.13em;
+}
+
+.report-freq {
+  color: var(--text-soft);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.075em;
+  white-space: nowrap;
+}
+
+.disclosure-glyph {
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  fill: currentColor;
+  transition: transform 180ms cubic-bezier(.2,.8,.2,1), color 150ms ease;
+}
+
+.report-card.open .disclosure-glyph {
+  color: var(--issue-color, var(--accent));
+  transform: rotate(180deg);
+}
+
+.report-detail {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 180ms cubic-bezier(.2,.8,.2,1);
+}
+
+.report-card.open .report-detail { grid-template-rows: 1fr; }
+.report-detail-inner { overflow: hidden; }
+
+.report-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0 14px 14px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--edge) 48%, transparent);
+  border-radius: 10px 3px 10px 3px;
+  background: color-mix(in srgb, var(--edge) 48%, transparent);
+}
+
+.report-stat {
+  min-height: 58px;
+  padding: 10px 11px;
+  background: color-mix(in srgb, var(--field) 88%, transparent);
+}
+
+.report-stat span {
+  display: block;
+  color: var(--text-muted);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+}
+
+.report-stat strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 590;
+}
+
+.report-action {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin: 0 14px 15px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  color: var(--text-soft);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  font-size: 12px;
+  font-weight: 560;
+  line-height: 1.35;
+}
+
+.report-action svg { width: 18px; height: 18px; color: var(--accent); }
+
+.report-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 48px;
+  padding: 10px 24px;
+  border-top: 1px solid color-mix(in srgb, var(--edge) 48%, transparent);
+  color: var(--text-muted);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.13em;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 100;
+  max-width: 260px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--edge) 72%, transparent);
+  border-radius: 8px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--field-raised) 96%, var(--bg));
+  box-shadow: 0 12px 28px var(--panel-shadow);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 100ms ease, transform 100ms ease;
+}
+
+.tooltip.visible { opacity: 1; transform: translateY(0); }
+
+.issue-marker {
+  --issue-color: var(--accent);
+  cursor: pointer;
+  outline: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: opacity 120ms ease;
+}
+
+.issue-marker .marker-hit { fill: transparent; pointer-events: all; }
+
+.issue-marker .marker-bed {
+  fill: color-mix(in srgb, var(--field-raised) 91%, transparent);
+  stroke: none;
+}
+
+.issue-marker .marker-track {
+  fill: none;
+  stroke: color-mix(in srgb, var(--text) 82%, transparent);
+  stroke-width: 2.35;
+  stroke-dasharray: 68 4 19 9;
+}
+
+.issue-marker .marker-value {
+  fill: none;
+  stroke: var(--issue-color);
+  stroke-width: 3.15;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+.issue-marker .marker-symbol {
+  fill: var(--text);
+  stroke: none;
+  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--bg) 56%, transparent));
+}
+
+.issue-marker.selected .marker-bed,
+.issue-marker:focus-visible .marker-bed {
+  stroke: color-mix(in srgb, var(--issue-color) 58%, transparent);
+  stroke-width: 1;
+}
+
+.issue-marker.critical .marker-bed {
+  fill: color-mix(in srgb, var(--issue-color) 14%, var(--field-raised));
+}
+
+.issue-marker[data-type="resonance"],
+.report-card[data-type="resonance"] { --issue-color: var(--issue-resonance); }
+
+.issue-marker[data-type="balance"],
+.report-card[data-type="balance"] { --issue-color: var(--issue-balance); }
+
+.issue-marker[data-type="transient"],
+.report-card[data-type="transient"] { --issue-color: var(--issue-transient); }
+
+.issue-marker[data-type="masking"],
+.report-card[data-type="masking"] { --issue-color: var(--issue-masking); }
+
+.axis-text {
+  fill: var(--text-muted);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 11.5px;
+  font-weight: 400;
+  letter-spacing: 0.085em;
+}
+
+.axis-unit {
+  fill: var(--text-muted);
+  font-size: 9.5px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+}
+
+.nakama-tool-glyph,
+.report-action svg,
+.report-action use {
+  fill: currentColor;
+}
+
+@media (max-width: 900px) {
+  .brand { top: 18px; left: 28px; width: 32px; }
+  .tools { top: 14px; right: 16px; gap: 6px; }
+  .tool-button { width: 44px; height: 44px; }
+  .tool-button.play { width: 48px; height: 48px; }
+  .tool-button.snapshot { display: none; }
+  .theme-panel { top: 64px; right: 14px; }
+  .report-panel {
+    top: auto;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+    height: min(72vh, 560px);
+    border-radius: 18px;
+    transform: translateY(20px) scale(.992);
+  }
+  .report-panel.open { transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 620px) {
+  .brand { top: 16px; left: 20px; width: 29px; }
+  .tool-button.palette { display: none; }
+  .report-head { padding: 18px 18px 14px; }
+  .report-list { padding: 9px 9px 18px; }
+  .report-foot { padding: 9px 18px; }
+  .theme-grid { grid-template-columns: 1fr; }
+}
+
+/* ── MUSTERBLATT-SCHICHTEN: Washi-Canvas (statische Wolken + Fasern),
+   Korn-Overlay, Demo-Leiste. Alles token-basiert. */
+
+#glowCanvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+#field { z-index: 1; }
+
+/* Stufe „material": Filmkorn über dem ganzen Bild (statisch, unter den
+   Panels), plus tiefere Vignette am Feldrand — Gerät statt Diagramm. */
+#grain {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  opacity: calc(var(--grain-opacity, 0.05) * var(--grain-mult, 1));
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+#stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(118% 96% at 50% 32%,
+    transparent 52%,
+    color-mix(in srgb, var(--bg) 62%, transparent) 100%);
+}
+
+body[data-fx-material="off"] #grain,
+body[data-fx-material="off"] #stage::after { display: none; }
+
+/* Stufe „anchor": Marker bekommen Stiel + Bodenlicht (Zeichnung im JS);
+   ausgewählter Marker atmet mit einem Halo. */
+.issue-marker .marker-halo {
+  fill: none;
+  stroke: var(--issue-color);
+  stroke-width: 1.1;
+  opacity: 0;
+}
+
+.issue-marker.selected .marker-halo {
+  animation: markerHalo 2100ms cubic-bezier(.25,.6,.35,1) infinite;
+}
+
+body[data-running="false"] .issue-marker.selected .marker-halo {
+  animation-play-state: paused;
+}
+
+@keyframes markerHalo {
+  0%   { opacity: 0.42; transform: scale(1); }
+  70%  { opacity: 0;    transform: scale(1.85); }
+  100% { opacity: 0;    transform: scale(1.85); }
+}
+
+/* ── Musterblatt: Demo-Leiste (Randnotizen des Musterbogens) ──
+   Nur fürs Entscheiden da — vier Papier-Ereignisse einzeln schaltbar. */
+.muster {
+  position: absolute;
+  z-index: 20;
+  left: clamp(24px, 3.2vw, 56px);
+  bottom: clamp(12px, 2vh, 22px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.muster-label {
+  margin-right: 4px;
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 640;
+  letter-spacing: 0.14em;
+}
+
+.muster-chip {
+  appearance: none;
+  padding: 5px 10px 6px;
+  border: 1px solid color-mix(in srgb, var(--ink) 26%, transparent);
+  border-radius: 999px;
+  color: var(--text-soft);
+  background: color-mix(in srgb, var(--field-raised) 55%, transparent);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: color 130ms ease, border-color 130ms ease, background 130ms ease;
+}
+
+.muster-chip:hover { color: var(--text); }
+
+.muster-chip.an {
+  color: var(--seal);
+  border-color: color-mix(in srgb, var(--seal) 62%, transparent);
+  background: color-mix(in srgb, var(--seal) 9%, transparent);
+}
+
+@media (max-width: 900px) {
+  /* Reine Entwurfssteuerung, kein Produktbestandteil: in der kompakten
+     Referenzgröße räumt sie den Achsen und dem Plot den Platz frei. */
+  .muster { display: none; }
+}
+
+/* Marke als Hanko-Siegel: rote Platte, Zeichnung in Papierton. */
+.brand.siegel {
+  width: clamp(36px, 3vw, 48px);
+  aspect-ratio: 510 / 890;
+  padding: 6px 5px;
+  box-sizing: content-box;
+  border-radius: 9px;
+  background:
+    radial-gradient(120% 120% at 30% 20%, color-mix(in srgb, var(--seal) 88%, #fff 6%), var(--seal) 58%,
+      color-mix(in srgb, var(--seal) 82%, #000 14%) 100%);
+  box-shadow:
+    0 4px 14px color-mix(in srgb, var(--shadow) 80%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, #000 18%, transparent);
+  color: var(--field);
+  filter: none;
+}
+
+.brand.siegel .brand-accent { fill: color-mix(in srgb, var(--field) 72%, var(--seal)); }
+
+@media (max-width: 900px) {
+  .brand.siegel { width: 32px; padding: 5px 4px; }
+}
+
+@media (max-width: 620px) {
+  .brand.siegel { width: 29px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+</style>
+</head>
+<body data-running="true">
+<main id="stage" aria-label="Nakama Spektralanalyse">
+  <canvas id="glowCanvas" aria-hidden="true"></canvas>
+  <svg id="field" role="img" aria-label="Echtzeit-Spektrum von 20 Hertz bis 20 Kilohertz">
+    <defs>
+      <!-- NAKAMA_SYMBOLS_START · generated from assets/nakama-symbols.svg -->
+      <symbol id="nakama-logo-base" viewBox="0 0 510 890">
+        <path fill-rule="evenodd" d="M184.5,17.0 L196.0,23.5 L198.0,22.5 L202.0,24.5 L227.0,41.5 L246.5,62.0 L251.5,73.0 L251.5,83.0 L205.5,147.0 L168.5,193.0 L186.0,205.5 L195.5,215.0 L202.5,228.0 L202.5,234.0 L199.5,240.0 L196.5,292.0 L190.5,341.0 L185.5,362.0 L184.5,347.0 L182.5,365.0 L175.5,384.0 L173.5,384.0 L172.0,379.5 L167.5,380.0 L165.5,374.0 L160.5,371.0 L156.5,360.0 L161.5,284.0 L161.5,227.0 L159.5,204.0 L157.5,205.0 L117.0,245.5 L84.0,273.5 L59.0,292.5 L57.5,292.0 L82.0,267.5 L52.0,294.5 L22.0,317.5 L20.5,317.0 L49.5,288.0 L93.5,233.0 L123.5,190.0 L156.5,135.0 L182.5,81.0 L191.5,53.0 L190.5,34.0 Z M288.5,23.0 L333.0,44.5 L352.0,57.5 L366.5,73.0 L369.5,81.0 L369.5,87.0 L363.5,97.0 L362.5,103.0 L360.0,148.5 L426.0,131.5 L436.0,131.5 L449.0,134.5 L466.0,141.5 L477.5,151.0 L481.5,160.0 L481.5,167.0 L478.5,173.0 L472.0,177.5 L438.0,212.5 L418.5,227.0 L434.0,230.5 L445.5,240.0 L444.5,247.0 L437.0,254.5 L424.0,258.5 L387.0,260.5 L354.5,265.0 L354.5,287.0 L348.5,360.0 L338.5,420.0 L338.5,382.0 L336.5,411.0 L331.0,442.5 L330.5,412.0 L328.5,439.0 L323.5,468.0 L323.5,401.0 L321.0,410.5 L319.5,401.0 L316.5,272.0 L286.0,277.5 L278.0,276.5 L273.0,283.5 L268.0,285.5 L261.0,282.5 L255.5,277.0 L247.5,261.0 L248.5,259.0 L222.5,175.0 L212.5,155.0 L213.0,153.5 L226.0,161.5 L230.0,161.5 L255.0,175.5 L314.5,159.0 L310.5,97.0 L305.5,65.0 L298.5,42.0 Z M410.0,167.5 L358.5,177.0 L355.5,230.0 L355.5,234.0 L358.0,233.5 L378.0,230.5 L385.5,225.0 L395.5,210.0 L411.5,178.0 L413.5,169.0 Z M314.0,186.5 L282.0,196.5 L269.5,198.0 L278.5,244.0 L279.5,250.0 L283.0,250.5 L316.5,243.0 L315.5,188.0 Z M406.5,442.0 L415.0,442.5 L441.0,456.5 L454.5,467.0 L459.5,477.0 L458.5,485.0 L452.5,494.0 L450.5,508.0 L447.5,563.0 L447.5,602.0 L450.5,687.0 L460.5,799.0 L461.5,827.0 L457.5,844.0 L448.0,855.5 L434.0,860.5 L422.0,854.5 L328.0,757.5 L322.0,757.5 L315.0,753.5 L307.0,743.5 L272.0,745.5 L252.0,749.5 L243.0,749.5 L237.0,755.5 L228.0,754.5 L223.5,749.0 L218.5,737.0 L220.5,719.0 L220.5,656.0 L216.5,634.0 L212.5,625.0 L237.0,639.5 L240.0,639.5 L299.0,620.5 L306.0,615.5 L313.0,614.5 L332.0,623.5 L343.5,632.0 L348.5,640.0 L348.5,646.0 L342.5,657.0 L340.5,740.0 L337.5,750.0 L333.5,755.0 L330.5,757.0 L331.0,758.5 L350.0,772.5 L370.0,790.5 L352.0,771.5 L384.0,788.5 L401.0,794.5 L407.0,795.5 L411.5,790.0 L412.5,769.0 L404.5,632.0 L401.5,483.0 L399.0,478.5 L396.0,478.5 L337.5,495.0 L338.0,520.5 L377.0,511.5 L394.0,517.5 L397.5,523.0 L392.5,527.0 L392.0,529.5 L382.0,534.5 L347.0,541.5 L338.0,541.5 L336.5,544.0 L336.5,568.0 L376.0,560.5 L393.0,566.5 L397.5,570.0 L396.5,573.0 L392.0,578.5 L383.0,583.5 L332.0,592.5 L328.0,597.5 L325.0,597.5 L321.0,600.5 L310.5,593.0 L303.5,578.0 L304.5,530.0 L302.5,496.0 L298.5,474.0 L292.5,460.0 L313.0,469.5 L326.0,478.5 L388.0,452.5 L403.0,442.5 Z M229.5,456.0 L240.0,456.5 L256.0,465.5 L268.5,476.0 L273.5,486.0 L271.5,493.0 L265.5,501.0 L263.5,511.0 L253.5,592.0 L248.5,601.0 L243.0,606.5 L240.0,608.5 L237.0,606.5 L232.0,607.5 L174.5,568.0 L169.5,688.0 L165.5,732.0 L159.5,772.0 L155.5,777.0 L153.5,788.0 L148.5,798.0 L145.5,798.0 L144.0,792.5 L142.0,795.5 L140.5,795.0 L137.5,784.0 L136.0,782.5 L134.0,784.5 L131.5,780.0 L129.5,771.0 L133.5,742.0 L139.5,670.0 L140.5,583.0 L135.5,506.0 L132.5,489.0 L126.5,471.0 L136.0,478.5 L138.0,477.5 L153.0,486.5 L168.5,501.0 L175.5,514.0 L175.5,529.0 L179.0,529.5 L210.0,519.5 L217.0,519.5 L225.0,522.5 L225.5,491.0 L224.0,489.5 L219.0,490.5 L184.0,501.5 L174.0,497.5 L162.5,489.0 L203.0,471.5 L221.0,462.5 L224.0,458.5 Z M224.0,539.5 L188.0,549.5 L185.0,549.5 L175.0,543.5 L174.5,559.0 L178.5,561.0 L204.0,568.5 L222.0,569.5 L224.5,562.0 L225.5,540.0 Z M299.0,643.5 L262.0,653.5 L250.0,654.5 L249.5,680.0 L263.0,678.5 L292.0,671.5 L301.0,674.5 L307.0,679.5 L306.5,645.0 L305.0,643.5 Z M306.0,689.5 L300.0,692.5 L279.0,695.5 L260.0,700.5 L250.0,699.5 L248.5,727.0 L251.0,726.5 L291.0,719.5 L308.0,722.5 L308.5,692.0 Z" />
+      </symbol>
+      <symbol id="nakama-logo-accent" viewBox="0 0 510 890">
+        <path fill-rule="evenodd" d="M196.5,263.0 L197.5,263.0 L196.5,292.0 L190.5,341.0 L185.5,362.0 L184.5,362.0 L185.5,357.0 L185.5,347.0 L184.5,347.0 L182.5,365.0 L178.5,378.0 L175.5,384.0 L174.0,384.5 L173.5,381.0 L172.0,379.5 L169.0,380.5 L165.5,374.0 L160.5,371.0 L159.5,364.0 L156.5,360.0 L156.5,344.0 L159.5,325.0 L160.5,295.0 L166.0,292.5 L177.0,283.5 Z" />
+      </symbol>
+
+      <!--
+        NAKAMA FIELD ALPHABET · v2
+        One grammar across diagnoses and tools: tapered load strokes, one deliberate
+        breath-cut, and a small anchor lozenge. Shapes carry meaning without color.
+      -->
+
+      <!-- Diagnosis family / FIELD -->
+      <symbol id="issue-resonance" viewBox="-12 -12 24 24">
+        <path d="M-11 7.3C-7.8 6.6-6.6 2.4-5.5-2.9C-4.5-8.1-2.7-11-.3-11.2C2.3-11.4 2.7-4.5 4.4.2C5.9 4.2 8.4 6.7 11 7.5L7.7 9.3C5.5 8.3 3.7 6.3 2.5 3.2L.2-3.8C-.9-.1-2.1 4.1-5.2 7.1C-6.9 8.7-9.3 9.2-11 7.3Z"/>
+        <path d="M-.6-11.1 1.2-10.8.5-7.6-1.2-7.9Z" opacity=".48"/>
+      </symbol>
+
+      <symbol id="issue-build-up" viewBox="-12 -12 24 24">
+        <path d="M-11.5 7.8C-9.1-1.5-4.7-8.2.9-9.3 6.1-10.3 9.8-2.9 11.5 7.2L7.4 8.8C6.1 2.8 3.8-1.4.8-1.6-2.8-1.8-6 2.4-7.6 8.9Z"/>
+        <path d="M-8.1 9.2C-4.4 8.2-1 8.1 2.2 8.5L1.2 10.4C-2.4 10.2-5.6 10-8.1 9.2ZM4.4 8.9C5.8 9.1 7.1 9.4 8.3 9.8 7.1 10.3 5.7 10.6 4.1 10.6Z" opacity=".58"/>
+      </symbol>
+
+      <symbol id="issue-hollow" viewBox="-12 -12 24 24">
+        <path d="M-11.4-4.5C-8.7-6.4-5.4-5.5-3.2-1.8L-.2 4.4-2.4 9.8-6.2 3.2C-7.8.4-9.5-.1-11.4.9ZM11.4-4.5C8.7-6.4 5.4-5.5 3.2-1.8L.2 4.4 2.4 9.8 6.2 3.2C7.8.4 9.5-.1 11.4.9Z"/>
+        <path d="m0 7.3 1.3 1.6L0 10.6-1.3 8.9Z" opacity=".52"/>
+      </symbol>
+
+      <symbol id="issue-masking" viewBox="-12 -12 24 24">
+        <path d="M-11.4-5.7C-8.1-8.5-4.8-7.9-1.5-3.9L2.1.6C4.6 3.8 7 4.6 10.9 2.7L11.5 5C7.1 8.2 3.1 7.4-.3 3.1l-3.6-4.5C-6.1-4.2-8.2-4.8-11-3.2Z"/>
+        <path d="M-11.4 5.8C-8.2 8.4-4.9 7.8-1.7 4L2-.5C4.3-3.4 6.6-4.4 9.5-3.2L11.4-5.7C7.1-8.3 3.1-7.4-.3-3.2l-3.5 4.4C-6 4-8.1 4.7-11 3.1Z" opacity=".72"/>
+        <path d="m.1-1.6 1.5 1.5L.1 1.5-1.4-.1Z" opacity=".42"/>
+      </symbol>
+
+      <symbol id="issue-sharpness" viewBox="-12 -12 24 24">
+        <path d="M2.3-11.7C1.3-7.5.5-4.7 1.4-2.4l6.3-3.4C5.9-1.1 3.6 1.8.8 4-1.7 6-3 8.7-4.2 11.8-5.6 7.4-5 3.9-2.5 1L-8.7 4.5C-7.2 0-4.8-3.3-1.3-5.9.4-7.3 1.4-9.4 2.3-11.7Z"/>
+        <path d="m5-10.5 1.8-1.2-.7 3.7-1.7.8Z" opacity=".54"/>
+      </symbol>
+
+      <symbol id="issue-gloss" viewBox="-12 -12 24 24">
+        <path d="M-.8-11.6C.3-7.1.8-4.3 3.1-2.7L8.6-.8 3.2 1.1C.7 2-.1 5.5-.8 11.6-1.9 6.3-2.6 2.9-5.1 1.6L-10.2 0l5.1-1.8C-2.7-2.8-1.8-6.4-.8-11.6Z"/>
+        <path d="m8.6-6.5 1.5 1.4-1.5 1.5-1.4-1.5Z" opacity=".48"/>
+      </symbol>
+
+      <symbol id="issue-drift" viewBox="-12 -12 24 24">
+        <path d="M-11 3.2C-8.2-2.4-4.6-5.4-.7-4.6 2.4-4 4.1-.8 6.6-.4 8.2-.1 9.6-.7 11-2.1L9.8 2C7.8 3.3 5.5 3.1 3.6 1.7 1.4.1.1-1.2-1.9-.4-4.5.7-6.3 5.1-8.6 7.4Z"/>
+        <path d="m-10.2 8.2 1.5-1.1 1.4 1.4-1.5 1.1Zm4.6.6 1.1-.8 1 1-1.1.8Z" opacity=".56"/>
+      </symbol>
+
+      <symbol id="issue-space" viewBox="-12 -12 24 24">
+        <path d="M-1.8-8.8C-6.9-8.2-10.1-4.7-10.7.1c-.5 4.3 1.4 7.7 5.3 10.3L-7.2 6C-9.5 1.6-7.8-2.5-3.6-4.1ZM1.8-8.8C6.9-8.2 10.1-4.7 10.7.1c.5 4.3-1.4 7.7-5.3 10.3L7.2 6C9.5 1.6 7.8-2.5 3.6-4.1Z"/>
+        <path d="m0-1.5 1.5 1.5L0 1.5-1.5 0Z" opacity=".5"/>
+      </symbol>
+
+      <symbol id="issue-contrast" viewBox="-12 -12 24 24">
+        <path d="M-10.8-8.7H8.7L11-5.6H-8.5ZM-10.8-1.6H5.1l2.3 3.1H-8.5ZM-10.8 5.6H1.5l2.3 3.1H-8.5Z"/>
+        <path d="m9.4 4.8 1.6 1.6-1.6 1.7-1.6-1.7Z" opacity=".52"/>
+      </symbol>
+
+      <!-- Tool family / ACTION -->
+      <symbol id="tool-guidance" viewBox="0 0 24 24">
+        <path d="M3.1 12.4C5.4 6.6 8.2 4 12.1 4c3.7 0 6.7 2.6 8.8 7.6l-2.2 1.2C16.8 9 14.7 7.2 12 7.2c-2.8 0-5 1.9-6.8 6.1Z"/>
+        <path d="m12 9.2 2.7 2.7-2.7 2.8-2.7-2.8Zm-7.8 6.1 2.1-.8c1.7 1.8 3.5 2.7 5.7 2.7 2 0 3.8-.7 5.3-2l2.4.6C17.8 18.6 15.1 20 12 20c-3.4 0-6-1.6-7.8-4.7Z" opacity=".72"/>
+      </symbol>
+
+      <symbol id="tool-palette" viewBox="0 0 24 24">
+        <path d="M11.5 2.5c2.7 2.8 3.5 5.3 2.3 7.4-1.1 1.9-3.4 2.4-6.7 1.4.1-3.7 1.5-6.6 4.4-8.8ZM21 11.1c-1 3.8-2.7 5.8-5.2 5.9-2.2.1-3.9-1.6-5.1-4.7 3.2-1.9 6.6-2.3 10.3-1.2ZM7.9 21c-3.7-1.1-5.7-2.9-5.8-5.3-.1-2.2 1.6-3.9 4.8-5 1.8 3.2 2.2 6.6 1 10.3Z"/>
+        <path d="m10.8 10.3 1.8 1.8-1.8 1.9L9 12.1Z" opacity=".48"/>
+      </symbol>
+
+      <symbol id="tool-archive" viewBox="0 0 24 24">
+        <path d="M4 5.2h12.3l3.1 2.6H6.7Zm0 5.4h15.9l-2.5 2.6H4Zm0 5.5h12.3l3.1 2.7H6.7Z"/>
+        <path d="m19.2 3 1.5 1.5-1.5 1.6-1.5-1.6Z" opacity=".52"/>
+      </symbol>
+
+      <symbol id="tool-capture" viewBox="0 0 24 24">
+        <path d="M3.2 3.2h7L8.1 5.9H5.9v3.4l-2.7 2.1Zm17.6 0v7l-2.7-2.1V5.9h-3.4l-2.1-2.7ZM3.2 20.8v-7l2.7 2.1v2.2h3.4l2.1 2.7Zm17.6 0h-7l2.1-2.7h2.2v-3.4l2.7-2.1Z"/>
+        <path d="M7.5 12.6c1.2-2.8 2.7-4.1 4.5-4 1.8.1 2.3 3.3 4.5 3.8l-1 2.3c-2.6-.5-2.9-2.8-4.2-2.8-1.1 0-1.8 1-2.6 2.5Z" opacity=".72"/>
+      </symbol>
+
+      <symbol id="tool-run" viewBox="0 0 24 24">
+        <path d="M6.1 3.6 18.7 11l-4.1 2.2-5.4-3.4v7.3l-3.1 3.3Z"/>
+        <path d="m16.9 15.2 2-1.1v2.3l-2 1.1Z" opacity=".5"/>
+      </symbol>
+
+      <symbol id="tool-stop" viewBox="0 0 24 24">
+        <path d="M5 4h7.2l-2.6 3H8v9.1h3.3l2.5 3H5Zm9.2 0H19v15.1h-4.8l2.5-3h-.7V7h.7Z"/>
+        <path d="m12 10.2 1.8 1.8-1.8 1.8-1.8-1.8Z" opacity=".46"/>
+      </symbol>
+
+      <symbol id="tool-close" viewBox="0 0 24 24">
+        <path d="m4.1 6 2-2 6 6-2 2Zm9.8 9.8 2-2 4 4.1-2 2ZM17.9 4l2 2-6 6-2-2ZM10.1 13.8l2 2-6 6.1-2-2Z"/>
+      </symbol>
+
+      <symbol id="tool-disclosure" viewBox="0 0 24 24">
+        <path d="m4.2 7.7 2.3-2.1 5.7 5.2-2.3 2.1Zm9.9 5.2-2.3-2.1 5.7-5.2 2.3 2.1-5.7 5.2Z"/>
+        <path d="m12 14.5 1.5 1.5-1.5 1.5-1.5-1.5Z" opacity=".48"/>
+      </symbol>
+
+      <symbol id="tool-action" viewBox="0 0 24 24">
+        <path d="M3.2 17.7h4.1l4.2-4.2 2.2 2.2-5.1 5.2H3.2Zm8.9-7 5.1-5.1h-3.1l2.5-2.5h5.7v5.7l-2.5 2.5V8.2l-5.1 5.1Z"/>
+        <path d="m9.8 12.5 1.7-1.7 1.6 1.6-1.7 1.7Z" opacity=".48"/>
+      </symbol>
+
+      <symbol id="state-live" viewBox="0 0 24 24">
+        <path d="M12 3.3c4.8 0 8.7 3.9 8.7 8.7S16.8 20.7 12 20.7 3.3 16.8 3.3 12 7.2 3.3 12 3.3Zm0 3.2A5.5 5.5 0 1 0 12 17.5 5.5 5.5 0 0 0 12 6.5Z" opacity=".36"/>
+        <path d="m12 8.8 3.2 3.2-3.2 3.2L8.8 12Z"/>
+      </symbol>
+      <!-- NAKAMA_SYMBOLS_END -->
+
+      <filter id="weich2" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2" /></filter>
+      <filter id="weich6" x="-20%" y="-30%" width="140%" height="160%"><feGaussianBlur stdDeviation="6" /></filter>
+      <filter id="weich12" x="-25%" y="-40%" width="150%" height="180%"><feGaussianBlur stdDeviation="12" /></filter>
+      <!-- Musterblatt: Tinte blutet ins Papier (Nijimi) — Turbulenz verzieht
+           die Kante des Tusche-Pools wie nasse Tusche im Faserverbund. -->
+      <filter id="inkBleed" x="-8%" y="-14%" width="116%" height="128%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.032 0.055" numOctaves="2" seed="7" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="9" xChannelSelector="R" yChannelSelector="G" />
+        <feGaussianBlur stdDeviation="0.55" />
+      </filter>
+      <linearGradient id="washGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="var(--wash)" stop-opacity="0.09" />
+        <stop offset="0.5" stop-color="var(--wash)" stop-opacity="0.035" />
+        <stop offset="1" stop-color="var(--wash)" stop-opacity="0.008" />
+      </linearGradient>
+      <filter id="markerShadow" x="-100%" y="-100%" width="300%" height="300%">
+        <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="var(--shadow)" flood-opacity="0.78" />
+      </filter>
+      <clipPath id="plotClip"><rect id="plotClipRect" /></clipPath>
+    </defs>
+
+    <g id="gridLayer"></g>
+    <g id="plotLayer" clip-path="url(#plotClip)">
+      <!-- Malstapel „Tiefenfeld" — jedes
+           Werkzeug trägt GENAU EINE Info:
+           washBase       Grund-Lavierung (Körper der Landschaft)
+           nebelFern/Nah  junge/unsichere Evidenz im Befundband
+           inkSoak        Pool = Gedächtnis (wo lange Energie stand)
+           feld*          Abweichung in dB zur lokalen Diagnosebasis
+           tiefenLicht    belastbare Evidenz; Länge = Abweichung in dB
+           talLicht       bestätigte Fehlstelle an der lokalen Basis
+           diagnosticBasis kurze Schulterlinie, niemals globales Soll
+           liveThread     schnelle 3-s-Live-Faser
+           strichSchein   rein visuelle Trennung der Hauptkurve
+           inkStroke/Core/kasure  Strich = Ist (hungert im Tal).
+           Nebel und Licht sind zwei Enden derselben Evidenzachse. -->
+      <path id="washBase" fill="url(#washGrad)" />
+      <path id="nebelFern" fill="none" stroke="var(--wash)" stroke-width="8" stroke-linecap="round" opacity="0.16" filter="url(#weich12)" />
+      <path id="nebelNah" fill="none" stroke="var(--wash)" stroke-width="4.5" stroke-linecap="round" opacity="0.16" filter="url(#weich6)" />
+      <path id="inkSoak" fill="var(--wash)" opacity="0.2" filter="url(#inkBleed)" />
+      <path id="feldMasse" fill="var(--wash)" opacity="0.12" filter="url(#weich6)" />
+      <path id="feldLeicht" fill="none" stroke="var(--wash)" stroke-width="2.2" stroke-linecap="round" stroke-opacity="0.1" />
+      <path id="feldMittel" fill="none" stroke="var(--wash)" stroke-width="2.4" stroke-linecap="round" stroke-opacity="0.19" />
+      <path id="feldDicht" fill="none" stroke="var(--wash)" stroke-width="2.7" stroke-linecap="round" stroke-opacity="0.3" />
+      <path id="tiefenLicht" fill="none" stroke="var(--paper-hi)" stroke-width="2.6" stroke-linecap="round" stroke-opacity="0.1" filter="url(#weich6)" />
+      <path id="talLicht" fill="none" stroke="var(--paper-hi)" stroke-width="2.2" stroke-linecap="round" stroke-opacity="0.12" filter="url(#weich2)" />
+      <path id="diagnosticBasis" fill="none" stroke="var(--diagnostic-basis)" stroke-width="1" stroke-linecap="round" stroke-dasharray="3 4" />
+      <path id="liveThread" fill="none" stroke="var(--curve-live)" stroke-width="0.85" stroke-linecap="round" />
+      <path id="snapshotCurve" fill="none" stroke="var(--gold)" stroke-width="1.7" stroke-opacity="0" />
+      <path id="strichSchein" fill="var(--paper-hi)" fill-opacity="0.1" filter="url(#weich2)" />
+      <path id="inkStroke" fill="var(--ink)" fill-opacity="0.94" />
+      <path id="inkCore" fill="none" stroke="var(--ink)" stroke-width="0.8" stroke-opacity="0.9" />
+      <path id="kasure" fill="none" stroke="var(--field)" stroke-width="0.9" stroke-opacity="0.55" />
+    </g>
+    <g id="markerLayer"></g>
+    <g id="axisLayer"></g>
+  </svg>
+
+  <div class="brand siegel" role="img" aria-label="Nakama">
+    <svg viewBox="0 0 510 890" aria-hidden="true">
+      <use class="brand-ink" href="#nakama-logo-base" />
+      <use class="brand-accent" href="#nakama-logo-accent" />
+    </svg>
+  </div>
+
+  <nav class="muster" aria-label="Musterblatt-Befunde">
+    <span class="muster-label">BEFUNDE</span>
+    <button class="muster-chip an" type="button" data-muster="resonanz">Resonanz</button>
+    <button class="muster-chip an" type="button" data-muster="mulm">Mulm</button>
+    <button class="muster-chip an" type="button" data-muster="loch">Loch</button>
+    <button class="muster-chip an" type="button" data-muster="haerte">Härte</button>
+  </nav>
+
+  <nav class="tools" aria-label="Werkzeuge">
+    <button class="tool-button help" id="helpButton" type="button" aria-label="Hinweise ein- oder ausblenden" aria-pressed="false" data-tip="Hinweise">
+      <svg class="nakama-tool-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#tool-guidance" /></svg>
+    </button>
+    <button class="tool-button palette" id="paletteButton" type="button" aria-label="Farbpaket wählen" aria-expanded="false" data-tip="Farbpakete">
+      <svg class="nakama-tool-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#tool-palette" /></svg>
+    </button>
+    <button class="tool-button report has-reports" id="reportButton" type="button" aria-label="Befundarchiv öffnen" aria-expanded="false" data-tip="Befundarchiv">
+      <svg class="nakama-tool-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#tool-archive" /></svg>
+    </button>
+    <button class="tool-button snapshot" id="snapshotButton" type="button" aria-label="Schnappschuss speichern" data-tip="Schnappschuss">
+      <svg class="nakama-tool-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#tool-capture" /></svg>
+    </button>
+    <button class="tool-button kali" id="kaliButton" type="button" aria-label="Kalibrieren" aria-expanded="false" data-tip="Kalibrieren">
+      <svg class="nakama-tool-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#tool-action" /></svg>
+    </button>
+    <button class="tool-button play running" id="playButton" type="button" aria-label="Messung beenden" data-tip="Messung starten oder beenden">
+      <svg class="nakama-tool-glyph" id="playIcon" viewBox="0 0 24 24" aria-hidden="true"><use href="#tool-stop" /></svg>
+    </button>
+  </nav>
+
+  <aside class="floating-panel kali-panel" id="kaliPanel" aria-label="Kalibrieren">
+    <p class="kali-titel">KALIBRIEREN: DEINE STÄRKEN</p>
+    <div id="kaliZeilen"></div>
+    <div class="kali-knoepfe">
+      <button type="button" id="kaliReset">Zurücksetzen</button>
+      <button type="button" id="kaliKopieren">Werte kopieren</button>
+    </div>
+  </aside>
+
+  <aside class="floating-panel theme-panel" id="themePanel" aria-label="Farbpakete">
+    <div class="theme-grid" id="themeGrid"></div>
+  </aside>
+
+  <aside class="floating-panel report-panel" id="reportPanel" aria-label="Befundarchiv" aria-hidden="true">
+    <header class="report-head">
+      <div>
+        <h2 class="report-title">BEFUNDARCHIV</h2>
+        <div class="report-meta"><svg class="state-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#state-live" /></svg><span>LIVE · GESPEICHERT</span></div>
+      </div>
+      <button class="panel-close" id="reportClose" type="button" aria-label="Befundarchiv schließen">
+        <svg class="nakama-tool-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#tool-close" /></svg>
+      </button>
+    </header>
+    <div class="report-list" id="reportList"></div>
+    <footer class="report-foot"><span>SESSION 04</span><span id="reportTime">00:26</span></footer>
+  </aside>
+
+  <div id="grain" aria-hidden="true"></div>
+  <div class="tooltip" id="tooltip" role="tooltip"></div>
+</main>
+
+<script>
+"use strict";
+
+const NS = "http://www.w3.org/2000/svg";
+const F_MIN = 20;
+const F_MAX = 20000;
+const X_TICKS = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+const Y_TICKS = [-6, -12, -18, -24, -30, -36, -42, -48];
+const SAMPLE_COUNT = 220;
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Nur noch die dunklen Welten (User 17.08.: „Weiß fliegt raus").
+const THEMES = [
+  { id: "tusche-dunkel", label: "Tusche & Gold · Dunkel", bg: "#171410", curve: "#efe5cd", accent: "#c14432" },
+  { id: "nebel-nacht",   label: "Nebel & Nacht · Nacht",  bg: "#182831", curve: "#ecdcb4", accent: "#c14e35" }
+];
+
+const ISSUES = [
+  {
+    id: "reso-low", type: "resonance", glyph: "resonance", name: "Resonanz", kind: "DAUERHAFT · AKUT",
+    freq: 118, fVon: 111, fBis: 126, width: 0.015, staerkeDb: 8.2,
+    severity: 0.86, phase: 0.4, persistence: 0.78, confidence: 0.92, coverage: 0.94,
+    stats: [["ÜBERSTAND", "+8,2 dB"], ["MUSIKZEIT", "78 %"], ["BREITE", "1/6 Okt."], ["SICHERHEIT", "92 %"]],
+    action: "Bell · −3…−5 dB · Q 6–8"
+  },
+  {
+    id: "boom", type: "balance", glyph: "build-up", name: "Aufbau", kind: "BREIT · PRÜFEN",
+    freq: 164, fVon: 105, fBis: 230, width: 0.075, staerkeDb: 3.1,
+    severity: 0.49, phase: 2.1, persistence: 0.57, confidence: 0.81, coverage: 0.88,
+    stats: [["BEREICH", "105–230 Hz"], ["MITTEL", "+3,1 dB"], ["MUSIKZEIT", "54 %"], ["SICHERHEIT", "81 %"]],
+    action: "Low shelf · −1…−2 dB"
+  },
+  {
+    id: "mid-hole", type: "balance", glyph: "hollow", name: "Mittenloch", kind: "BREIT · CHARAKTER",
+    freq: 920, fVon: 520, fBis: 1800, width: 0.16, staerkeDb: -4.6,
+    severity: 0.58, phase: 1.2, persistence: 0.72, confidence: 0.84, coverage: 0.87,
+    stats: [["BEREICH", "520 Hz–1,8 kHz"], ["MITTEL", "−4,6 dB"], ["MUSIKZEIT", "71 %"], ["SICHERHEIT", "84 %"]],
+    action: "Arrangement · Presence prüfen"
+  },
+  {
+    id: "masking", type: "masking", glyph: "masking", name: "Maskierung", kind: "PAAR · AKTIV",
+    freq: 1320, fVon: 780, fBis: 2100, width: 0.125, staerkeDb: 1.5,
+    severity: 0.67, phase: 3.4, persistence: 0.64, confidence: 0.88, coverage: 0.91,
+    stats: [["PAAR", "PIANO ↔ CHOIR"], ["BEREICH", "780 Hz–2,1 kHz"], ["KOLLISION", "67 %"], ["SICHERHEIT", "88 %"]],
+    action: "Pegel · Panorama · Arrangement"
+  },
+  {
+    id: "harsh", type: "transient", glyph: "sharpness", name: "Schärfe", kind: "KURZZEITIG · AKUT",
+    freq: 3450, fVon: 3200, fBis: 3800, width: 0.026, staerkeDb: 6.3,
+    severity: 0.82, phase: 0.1, persistence: 0.28, confidence: 0.87, coverage: 0.90,
+    stats: [["SPITZE", "+6,3 dB"], ["EREIGNISSE", "14"], ["DAUER", "120–380 ms"], ["SICHERHEIT", "87 %"]],
+    action: "Dynamisch · 3,2–3,8 kHz"
+  },
+  {
+    id: "presence", type: "resonance", glyph: "resonance", name: "Resonanz", kind: "ZEITWEISE · PRÜFEN",
+    freq: 3920, fVon: 3650, fBis: 4210, width: 0.022, staerkeDb: 4.1,
+    severity: 0.52, phase: 2.8, persistence: 0.35, confidence: 0.74, coverage: 0.79,
+    stats: [["SPITZE", "+4,1 dB"], ["MUSIKZEIT", "31 %"], ["BREITE", "1/5 Okt."], ["SICHERHEIT", "74 %"]],
+    action: "Hörprüfung · kein statischer Cut"
+  },
+  {
+    id: "air-polish", type: "resonance", glyph: "gloss", name: "Glanzspitze", kind: "ZEITWEISE · POLITUR",
+    freq: 8100, fVon: 7420, fBis: 8850, width: 0.018, staerkeDb: 2.2,
+    severity: 0.24, phase: 4.7, persistence: 0.18, confidence: 0.63, coverage: 0.68,
+    stats: [["SPITZE", "+2,2 dB"], ["MUSIKZEIT", "14 %"], ["BREITE", "1/4 Okt."], ["SICHERHEIT", "63 %"]],
+    action: "Optional · nur bei Härte"
+  }
+];
+
+const view = {
+  width: 0,
+  height: 0,
+  plot: { x: 0, y: 0, w: 0, h: 0, bottom: 0 },
+  running: true,
+  help: false,
+  reportOpen: false,
+  themeOpen: false,
+  selected: null,
+  snapshot: null,
+  startedAt: performance.now(),
+  lastTargetAt: 0,
+  lastFrameAt: performance.now(),
+  time: 0
+};
+
+const state = {
+  y: new Float64Array(SAMPLE_COUNT + 1),
+  v: new Float64Array(SAMPLE_COUNT + 1),
+  a: new Float64Array(SAMPLE_COUNT + 1),
+  targetY: new Float64Array(SAMPLE_COUNT + 1),
+  instantY: new Float64Array(SAMPLE_COUNT + 1)
+};
+
+const el = {
+  stage: document.getElementById("stage"),
+  field: document.getElementById("field"),
+  grid: document.getElementById("gridLayer"),
+  axes: document.getElementById("axisLayer"),
+  clipRect: document.getElementById("plotClipRect"),
+  wash: document.getElementById("washBase"),
+  soakEl: document.getElementById("inkSoak"),
+  nebelFern: document.getElementById("nebelFern"),
+  nebelNah: document.getElementById("nebelNah"),
+  feldMasse: document.getElementById("feldMasse"),
+  feldLeicht: document.getElementById("feldLeicht"),
+  feldMittel: document.getElementById("feldMittel"),
+  feldDicht: document.getElementById("feldDicht"),
+  tiefenLicht: document.getElementById("tiefenLicht"),
+  talLicht: document.getElementById("talLicht"),
+  diagnosticBasis: document.getElementById("diagnosticBasis"),
+  strichSchein: document.getElementById("strichSchein"),
+  ink: document.getElementById("inkStroke"),
+  inkCore: document.getElementById("inkCore"),
+  kasure: document.getElementById("kasure"),
+  paper: document.getElementById("glowCanvas"),
+  musterChips: [...document.querySelectorAll(".muster-chip")],
+  live: document.getElementById("liveThread"),
+  snapshot: document.getElementById("snapshotCurve"),
+  markers: document.getElementById("markerLayer"),
+  play: document.getElementById("playButton"),
+  playIcon: document.getElementById("playIcon"),
+  snapshotButton: document.getElementById("snapshotButton"),
+  reportButton: document.getElementById("reportButton"),
+  reportPanel: document.getElementById("reportPanel"),
+  reportClose: document.getElementById("reportClose"),
+  reportList: document.getElementById("reportList"),
+  reportTime: document.getElementById("reportTime"),
+  helpButton: document.getElementById("helpButton"),
+  paletteButton: document.getElementById("paletteButton"),
+  themePanel: document.getElementById("themePanel"),
+  themeGrid: document.getElementById("themeGrid"),
+  tooltip: document.getElementById("tooltip")
+};
+
+function svg(name, attrs = {}, parent) {
+  const node = document.createElementNS(NS, name);
+  for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+  if (parent) parent.appendChild(node);
+  return node;
+}
+
+function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+function smoothstep(edge0, edge1, value) {
+  const t = clamp((value - edge0) / Math.max(1e-9, edge1 - edge0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+function gaussian(t, center, width) { return Math.exp(-0.5 * ((t - center) / width) ** 2); }
+function tForFrequency(frequency) { return Math.log10(frequency / F_MIN) / Math.log10(F_MAX / F_MIN); }
+function xForFrequency(frequency) { return view.plot.x + tForFrequency(frequency) * view.plot.w; }
+function yForDb(db) { return view.plot.y + ((-6 - db) / 42) * view.plot.h; }
+function pixelForDb(db) { return db * view.plot.h / 42; }
+function dbForPixel(pixels) { return pixels * 42 / Math.max(1, view.plot.h); }
+function formatFrequency(frequency) { return frequency >= 1000 ? `${frequency / 1000}k` : String(frequency); }
+
+function issueActivity(issue, time) {
+  if (issue.type === "transient") {
+    const pulse = Math.max(0, Math.sin(time * 1.54 + issue.phase));
+    return clamp(0.12 + Math.pow(pulse, 10) * issue.severity, 0, 1);
+  }
+  if (issue.type === "masking") {
+    return clamp(issue.severity + 0.16 * Math.sin(time * 0.72 + issue.phase), 0.18, 1);
+  }
+  const drift = 0.045 * Math.sin(time * (0.56 + issue.persistence * 0.22) + issue.phase);
+  return clamp(issue.severity + drift, 0.08, 1);
+}
+
+/* ── MUSTERBLATT „Tiefenfeld" (17.08., belastbare Fassung):
+   · Hauptstrich = LTAS-Komposit; dünne Faser = 3-s-Live-EMA.
+   · Bleistift erscheint nur lokal im Bereich eines Befunds und steht für
+     dessen Eigenkurven-/Schulterbasis — niemals für eine globale Sollkurve.
+   · Fahne = vorzeichenrichtige Abweichung zur lokalen Basis in dB.
+   · Ein Befund bewegt sich mit wachsender Evidenz auf EINER Achse:
+     unsicher/jung = Nebel; belastbar/handlungsreif = gerichtetes Licht.
+   · Pool = Zeitgedächtnis der Energie; Kasure = fehlende Abdeckung.
+   Jede sichtbare Schicht trägt damit genau eine Messinformation. */
+
+const MUSTER = { resonanz: true, mulm: true, loch: true, haerte: true, maskierung: true };
+const MUSTER_GRUPPEN = {
+  resonanz: ["reso-low", "presence", "air-polish"],
+  mulm: ["boom"],
+  loch: ["mid-hole"],
+  haerte: ["harsh"],
+  maskierung: ["masking"]
+};
+let NUR_BEFUNDE = null;
+const issueAktiv = issue => {
+  if (NUR_BEFUNDE && !NUR_BEFUNDE.has(issue.id)) return false;
+  for (const schluessel in MUSTER_GRUPPEN)
+    if (MUSTER_GRUPPEN[schluessel].includes(issue.id)) return MUSTER[schluessel];
+  return true;
+};
+
+// ── Kalibrier-Werte. Diagnose- und Materialregler sind bewusst getrennt;
+// keine Einstellung darf gleichzeitig zwei Bedeutungen verändern.
+const KALI_STANDARD = {
+  pinsel: 82, livefaser: 38, kasure: 25, vorzeichnung: 22,
+  nebel: 90, abweichung: 55, befundlicht: 85, tallicht: 55,
+  gedaechtnis: 30, strichschein: 28,
+  blattlicht: 22, wolken: 15, fasern: 25
+};
+const KALI = Object.assign({}, KALI_STANDARD);
+try {
+  const roh = JSON.parse(localStorage.getItem("nakama-kali-v2") || "{}");
+  for (const k in KALI_STANDARD)
+    if (typeof roh[k] === "number" && isFinite(roh[k])) KALI[k] = roh[k];
+} catch { /* Datei-Vorschau ohne Storage */ }
+
+// ── Farbwahl je Graph-Element (User 17.08.): Übersteuerungen liegen als
+// CSS-Variablen auf :root und sind PRO WELT gespeichert — jede Papierwelt
+// behält ihren eigenen Satz. „Zurücksetzen" löscht nur die aktive Welt.
+const FARB_FELDER = [
+  ["--field", "Papier"],
+  ["--ink", "Tusche-Strich"],
+  ["--curve-live", "Live-Faser"],
+  ["--diagnostic-basis", "Lokale Befundbasis"],
+  ["--wash", "Nebel & Abweichung"],
+  ["--grid-major", "Raster"],
+  ["--text-muted", "Beschriftung"],
+  ["--seal", "Siegelrot"],
+  ["--gold", "Gold"],
+  ["--paper-hi", "Licht-Ton"],
+  ["--paper-lo", "Schatten-Ton"]
+];
+let FARBEN = {};
+try {
+  const roh = JSON.parse(localStorage.getItem("nakama-farben") || "{}");
+  if (roh && typeof roh === "object") FARBEN = roh;
+} catch { /* Datei-Vorschau ohne Storage */ }
+
+function farbenSpeichern() {
+  try { localStorage.setItem("nakama-farben", JSON.stringify(FARBEN)); } catch { /* ok */ }
+}
+
+// #rgb | #rrggbb | #rrggbbaa → #rrggbb (für <input type=color>)
+function hexKurz(roh) {
+  const h = (roh || "").trim().replace("#", "");
+  if (h.length === 3) return "#" + h.split("").map(c => c + c).join("");
+  if (h.length >= 6) return "#" + h.slice(0, 6);
+  return "#888888";
+}
+
+// Welt-Standard eines Tokens lesen (Übersteuerung kurz beiseitelegen) —
+// so bleibt ein Alpha-Anteil des Originals (z.B. Bleistift) erhalten.
+function themeStandard(varName) {
+  const st = document.documentElement.style;
+  const alt = st.getPropertyValue(varName);
+  st.removeProperty(varName);
+  const wert = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  if (alt) st.setProperty(varName, alt);
+  return wert;
+}
+
+function farbenAnwenden() {
+  const st = document.documentElement.style;
+  for (const [varName] of FARB_FELDER) st.removeProperty(varName);
+  st.removeProperty("--grid-minor");
+  st.removeProperty("--brand-gold");
+  const satz = FARBEN[document.documentElement.dataset.theme] || {};
+  for (const varName in satz) {
+    st.setProperty(varName, satz[varName]);
+    if (varName === "--grid-major")
+      st.setProperty("--grid-minor", `color-mix(in srgb, ${satz[varName]} 55%, var(--field))`);
+    if (varName === "--gold")
+      st.setProperty("--brand-gold", satz[varName]);
+  }
+  liesFarben();
+  zeichnePapier();
+}
+const soak = new Float64Array(SAMPLE_COUNT + 1);
+const planY = new Float64Array(SAMPLE_COUNT + 1);
+const xArr = new Float64Array(SAMPLE_COUNT + 1);
+const wavedY = new Float64Array(SAMPLE_COUNT + 1);
+const diagBand = new Float64Array(SAMPLE_COUNT + 1);
+const diagFog = new Float64Array(SAMPLE_COUNT + 1);
+const diagLight = new Float64Array(SAMPLE_COUNT + 1);
+const diagCoverage = new Float64Array(SAMPLE_COUNT + 1);
+let zeitPapier = 0;              // Messzeit; friert mit Kurve und Ringen ein
+let paperCtx = null;
+const farbCache = {};
+
+const rausch = k => { const s = Math.sin(k * 12.9898 + 78.233) * 43758.5453; return s - Math.floor(s); };
+
+// Stand-Bild (?zeit=SEK): deterministische Momentaufnahme für Renders.
+const ZEIT_FREEZE = (() => {
+  const roh = new URLSearchParams(location.search).get("zeit");
+  const wert = roh === null ? NaN : parseFloat(roh);
+  return isFinite(wert) ? wert : null;
+})();
+
+function hexA(hex, a) {
+  const h = (hex || "#888888").replace("#", "");
+  const n = h.length === 3 ? h.split("").map(c => c + c).join("") : h.padEnd(6, "8");
+  return `rgba(${parseInt(n.slice(0, 2), 16)},${parseInt(n.slice(2, 4), 16)},${parseInt(n.slice(4, 6), 16)},${a})`;
+}
+
+function liesFarben() {
+  const cs = getComputedStyle(document.documentElement);
+  for (const name of ["--paper-hi", "--paper-lo"])
+    farbCache[name] = cs.getPropertyValue(name).trim();
+}
+
+// Washi-Grund: tieffrequente Wolken + einzelne lange Fasern. STATISCH —
+// gemalt bei Layout/Weltwechsel/Kalibrierung, nie pro Frame. (Die Beton-
+// Optik der Shader-Runden kam aus hochfrequentem Korn; Washi lebt von
+// großen, leisen Dichteschwankungen.)
+function zeichnePapier() {
+  if (!paperCtx) return;
+  const W = view.width, H = view.height;
+  paperCtx.clearRect(0, 0, W, H);
+  const hi = farbCache["--paper-hi"] || "#ffffff";
+  const lo = farbCache["--paper-lo"] || "#000000";
+  const wolken = clamp(KALI.wolken / 100, 0, 2.5);
+  for (let k = 0; k < 30; k++) {
+    const cx = rausch(k * 1.37) * W;
+    const cy = rausch(k * 2.91 + 5) * H;
+    const r = (0.14 + 0.30 * rausch(k * 3.53 + 11)) * Math.max(W, H);
+    const g = paperCtx.createRadialGradient(cx, cy, r * 0.12, cx, cy, r);
+    const ton = k % 2 ? hi : lo;
+    g.addColorStop(0, hexA(ton, (0.020 + 0.020 * rausch(k + 23)) * wolken));
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    paperCtx.fillStyle = g;
+    paperCtx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  }
+  const fasernZahl = Math.round(60 * (KALI.fasern / 100));
+  paperCtx.lineCap = "round";
+  for (let k = 0; k < fasernZahl; k++) {
+    const x0 = rausch(k * 4.71 + 31) * W;
+    const y0 = rausch(k * 6.13 + 47) * H;
+    const len = 36 + 190 * rausch(k * 2.29 + 3);
+    const wink = (rausch(k * 5.87 + 17) - 0.5) * 0.62;
+    const biege = (rausch(k * 7.23 + 9) - 0.5) * 34;
+    paperCtx.strokeStyle = hexA(k % 3 ? lo : hi, 0.026 + 0.038 * rausch(k + 61));
+    paperCtx.lineWidth = 0.6 + 0.5 * rausch(k * 3.11 + 5);
+    paperCtx.beginPath();
+    paperCtx.moveTo(x0, y0);
+    paperCtx.quadraticCurveTo(
+      x0 + Math.cos(wink) * len * 0.5 + biege * 0.2,
+      y0 + Math.sin(wink) * len * 0.5 + biege,
+      x0 + Math.cos(wink) * len,
+      y0 + Math.sin(wink) * len);
+    paperCtx.stroke();
+  }
+  // Blattlicht ist reine Materialtrennung und deshalb vom diagnostischen
+  // Befundlicht vollständig entkoppelt.
+  const licht = KALI.blattlicht / 100;
+  if (licht > 0.01) {
+    const zug = paperCtx.createLinearGradient(0, 0, 0, H);
+    zug.addColorStop(0, hexA(hi, 0.07 * licht));
+    zug.addColorStop(0.5, "rgba(0,0,0,0)");
+    zug.addColorStop(1, hexA(lo, 0.09 * licht));
+    paperCtx.fillStyle = zug;
+    paperCtx.fillRect(0, 0, W, H);
+  }
+}
+
+// Tinte sammelt sich, wo dauerhaft Energie steht — träge, wie nasses Papier.
+// Der Pool ist ausschließlich Zeitgedächtnis; die momentane Abweichung lebt
+// getrennt in der Fahne und darf ihn nicht sofort mitsättigen.
+function aktualisiereSaugen(dt) {
+  for (let i = 0; i <= SAMPLE_COUNT; i++) {
+    const e = clamp((view.plot.bottom - state.y[i]) / view.plot.h, 0, 1);
+    const ziel = Math.pow(e, 1.6);
+    soak[i] += (ziel - soak[i]) * Math.min(1, dt * 0.10);
+  }
+}
+
+function issueBandWeight(issue, t01) {
+  const von = tForFrequency(issue.fVon || issue.freq / Math.pow(2, issue.width * 2));
+  const bis = tForFrequency(issue.fBis || issue.freq * Math.pow(2, issue.width * 2));
+  const feder = Math.max(0.007, (bis - von) * 0.16, issue.width * 0.32);
+  if (t01 < von - feder || t01 > bis + feder) return 0;
+  if (t01 < von) return smoothstep(von - feder, von, t01);
+  if (t01 > bis) return 1 - smoothstep(bis, bis + feder, t01);
+  return 1;
+}
+
+function aktuelleKonfidenz(issue) {
+  // Im echten Plugin kommt dieser Wert fertig aus Diagnose::Befund. Das
+  // Musterblatt simuliert nur, wie er während der ersten Messsekunden wächst.
+  const reife = smoothstep(0, 1, clamp(view.time / 20, 0, 1));
+  return clamp(issue.confidence * (0.45 + 0.55 * reife), 0, 1);
+}
+
+function lichtAnteil(issue) {
+  const evidenz = aktuelleKonfidenz(issue) * (0.78 + 0.22 * issue.coverage);
+  return smoothstep(0.55, 0.84, evidenz);
+}
+
+function dringlichkeit(issue, activity = issue.severity, confidence = aktuelleKonfidenz(issue)) {
+  const klassenGewicht = issue.type === "transient" || issue.type === "resonance" ? 0.86
+    : issue.type === "masking" ? 0.68 : 0.62;
+  return clamp(0.38 * activity + 0.22 * issue.persistence
+    + 0.25 * confidence + 0.15 * klassenGewicht, 0, 1);
+}
+
+function aktualisiereDiagnoseFeld() {
+  for (let i = 0; i <= SAMPLE_COUNT; i++) {
+    const t01 = i / SAMPLE_COUNT;
+    let band = 0, nebel = 0, licht = 0, abdeckung = 0, gewicht = 0;
+    for (const issue of ISSUES) {
+      if (!issueAktiv(issue)) continue;
+      const fenster = issueBandWeight(issue, t01);
+      if (fenster <= 0.001) continue;
+      const beiwerk = issue.type === "masking" ? 0.55 : issue.id === "air-polish" ? 0.45 : 1;
+      const aktivitaet = issueActivity(issue, view.time);
+      const signal = aktivitaet * (0.45 + 0.55 * issue.persistence) * beiwerk * fenster;
+      const mix = lichtAnteil(issue);
+      nebel += signal * (1 - mix);
+      licht += signal * mix;
+      band = Math.max(band, fenster);
+      abdeckung += issue.coverage * fenster;
+      gewicht += fenster;
+    }
+    diagBand[i] = band;
+    diagFog[i] = clamp(nebel, 0, 1.4);
+    diagLight[i] = clamp(licht, 0, 1.4);
+    diagCoverage[i] = gewicht > 0 ? clamp(abdeckung / gewicht, 0, 1) : 0.93;
+  }
+}
+
+// STIMMIGES GANZES — Nebel und Licht teilen dieselbe Evidenzmenge. Ein
+// einzelner Befund kann deshalb nie gleichzeitig in beiden Werkzeugen voll
+// erscheinen. Alle Schwellen sind dB-basiert und bleiben bei Resize identisch.
+// Läuft NACH renderSurface (braucht wavedY/planY und die Diagnosearrays).
+function renderFeld() {
+  const nebelStaerke = clamp(KALI.nebel / 100, 0, 2);
+  const abweichungStaerke = clamp(KALI.abweichung / 100, 0, 2);
+  const befundLichtStaerke = clamp(KALI.befundlicht / 100, 0, 2);
+  const talLichtStaerke = clamp(KALI.tallicht / 100, 0, 2);
+
+  let dNebelFern = "", dNebelNah = "";
+  let dLeicht = "", dMittel = "", dDicht = "", dMasse = "";
+  let dTiefe = "", dTal = "";
+  let masseSeg = null;
+  const masseSegs = [];
+
+  for (let i = 0; i <= SAMPLE_COUNT; i++) {
+    const xWert = xArr[i];
+    const x = xWert.toFixed(1);
+    const nebel = diagFog[i];
+    const licht = diagLight[i];
+
+    // Nebelhöhe wird in dB-Fläche gedacht, nicht aus dem freien Pixelraum
+    // über der Kurve abgeleitet. Der Regler wirkt genau einmal: auf Opazität.
+    if (nebelStaerke > 0.01 && nebel > 0.045
+        && rausch(i * 9.17 + 23) < clamp(nebel * 1.7, 0, 1)) {
+      const atem = reducedMotion ? 1 : 1 + 0.08 * Math.sin(zeitPapier * 0.48 + i * 0.13);
+      const hoehe = pixelForDb((3.2 + 10 * Math.min(1, nebel)) * atem);
+      const mitte = (planY[i] + wavedY[i]) * 0.5;
+      dNebelFern += `M${x},${(mitte + hoehe * 0.28).toFixed(1)}L${x},${(mitte - hoehe * 0.72).toFixed(1)}`;
+      if (nebel > 0.24 && rausch(i * 13.7 + 5) < clamp(nebel * 1.25, 0, 1))
+        dNebelNah += `M${x},${(mitte + hoehe * 0.18).toFixed(1)}L${x},${(mitte - hoehe * 0.48).toFixed(1)}`;
+    }
+
+    const deltaPixel = planY[i] - wavedY[i]; // >0 = Messung über Basis
+    const deltaDb = dbForPixel(deltaPixel);
+    const betragDb = Math.abs(deltaDb);
+    const imBefund = diagBand[i] > 0.04;
+
+    if (imBefund && betragDb >= 0.65) {
+      const vonY = wavedY[i];
+      const bisY = planY[i];
+      const seg = `M${x},${vonY.toFixed(1)}L${x},${bisY.toFixed(1)}`;
+
+      if (abweichungStaerke > 0.01) {
+        if (betragDb >= 5) dDicht += seg;
+        else if (betragDb >= 2.5) dMittel += seg;
+        else dLeicht += seg;
+        if (!masseSeg) { masseSeg = { o: [], u: [] }; masseSegs.push(masseSeg); }
+        masseSeg.o.push([xWert, Math.min(vonY, bisY)]);
+        masseSeg.u.push([xWert, Math.max(vonY, bisY)]);
+      } else {
+        masseSeg = null;
+      }
+
+      // Belastbare Evidenz wird zu Licht. Segmentlänge bleibt exakt die
+      // gemessene Abweichung; Dichte des Lichtes folgt dem Evidenzanteil.
+      if (befundLichtStaerke > 0.01 && licht > 0.025
+          && rausch(i * 11.31 + 7) < clamp(licht * 1.8, 0, 1))
+        dTiefe += seg;
+
+      if (deltaDb < 0 && talLichtStaerke > 0.01 && licht > 0.045
+          && rausch(i * 7.73 + 41) < clamp(licht * 1.65, 0, 1))
+        dTal += `M${(xWert - 1.8).toFixed(1)},${planY[i].toFixed(1)}`
+              + `L${(xWert + 1.8).toFixed(1)},${planY[i].toFixed(1)}`;
+    } else {
+      masseSeg = null;
+    }
+  }
+
+  for (const s of masseSegs) {
+    if (s.o.length < 2) continue;
+    let d = "";
+    for (let j = 0; j < s.o.length; j++)
+      d += (j ? "L" : "M") + s.o[j][0].toFixed(1) + "," + s.o[j][1].toFixed(1);
+    for (let j = s.u.length - 1; j >= 0; j--)
+      d += "L" + s.u[j][0].toFixed(1) + "," + s.u[j][1].toFixed(1);
+    dMasse += d + "Z";
+  }
+
+  el.nebelFern.setAttribute("d", dNebelFern || "M0,0");
+  el.nebelNah.setAttribute("d", dNebelNah || "M0,0");
+  el.nebelFern.setAttribute("opacity", String(clamp(0.16 * nebelStaerke, 0, 0.32)));
+  el.nebelNah.setAttribute("opacity", String(clamp(0.16 * nebelStaerke, 0, 0.32)));
+  el.feldLeicht.setAttribute("d", dLeicht || "M0,0");
+  el.feldMittel.setAttribute("d", dMittel || "M0,0");
+  el.feldDicht.setAttribute("d", dDicht || "M0,0");
+  el.feldLeicht.setAttribute("stroke-opacity", String(clamp(0.07 * abweichungStaerke, 0, 0.16)));
+  el.feldMittel.setAttribute("stroke-opacity", String(clamp(0.14 * abweichungStaerke, 0, 0.28)));
+  el.feldDicht.setAttribute("stroke-opacity", String(clamp(0.23 * abweichungStaerke, 0, 0.44)));
+  el.feldMasse.setAttribute("d", dMasse || "M0,0");
+  el.feldMasse.setAttribute("opacity", String(clamp(0.075 * abweichungStaerke, 0, 0.16)));
+  el.tiefenLicht.setAttribute("d", dTiefe || "M0,0");
+  el.tiefenLicht.setAttribute("stroke-opacity", String(clamp(0.16 * befundLichtStaerke, 0, 0.31)));
+  el.talLicht.setAttribute("d", dTal || "M0,0");
+  el.talLicht.setAttribute("stroke-opacity", String(clamp(0.16 * talLichtStaerke, 0, 0.32)));
+}
+
+// Stand-Bild: Simulation deterministisch einschwingen lassen, einmal malen.
+function standbild() {
+  zeitPapier = ZEIT_FREEZE;
+  view.time = ZEIT_FREEZE;
+  sampleTarget(view.time);
+  for (let i = 0; i <= SAMPLE_COUNT; i++) { state.y[i] = state.targetY[i]; state.v[i] = 0; }
+  for (let s = 0; s < 60; s++) aktualisiereSaugen(0.5);
+  renderSurface();
+  renderFeld();
+  renderIssueZonesAndMarkers();
+}
+
+function baselineDb(t, time) {
+  const high = Math.max(0, (t - 0.82) / 0.18);
+  return -16.2
+    - 2.8 * t
+    - 7.8 * t * t
+    - 8.8 * Math.pow(high, 1.5)
+    + 1.7 * gaussian(t, 0.13, 0.11)
+    + 0.62 * Math.sin(t * 17 + time * 0.18)
+    + 0.34 * Math.sin(t * 43 - time * 0.11);
+}
+
+// 30-s-Songschleife: Arrangement + Beat + Basslauf, rein deterministisch in
+// der Zeit (?zeit= friert jeden Moment reproduzierbar ein). Die Musik wandert
+// in Plan UND Strich gleichermaßen — die Fahne bleibt exakt die
+// Befund-Abweichung, nur das Blatt bewegt sich wie ein echter Track.
+const SONG = { laenge: 30, bpm: 96 };
+function musikDb(t, time) {
+  const lt = ((time % SONG.laenge) + SONG.laenge) % SONG.laenge;
+  const beat = Math.max(0, time) * SONG.bpm / 60;
+  const zaehlzeit = beat - Math.floor(beat);
+
+  // Arrangement: Intro · Strophe · Chorus · Ausklang (weiche Übergänge)
+  const strophe = smoothstep(4.5, 7, lt) * (1 - smoothstep(13, 15.5, lt));
+  const chorus = smoothstep(13, 15.5, lt) * (1 - smoothstep(23, 25.5, lt));
+  const ausklang = smoothstep(23, 25.5, lt);
+  const intro = 1 - smoothstep(4.5, 7, lt);
+  const dichte = 0.25 * intro + 0.62 * strophe + 1.0 * chorus + 0.38 * ausklang;
+
+  // Kick auf jeder Zählzeit · Snare auf 2 und 4 · Hats in Achteln.
+  // Bei prefers-reduced-motion bleibt nur das Arrangement, der Puls ruht.
+  const puls = reducedMotion ? 0.2 : 1;
+  const kick = Math.exp(-8 * zaehlzeit) * (0.35 + 0.65 * dichte) * puls;
+  const snare = (Math.floor(beat) % 2 === 1 ? Math.exp(-10 * zaehlzeit) : 0) * dichte * puls;
+  const achtel = beat * 2 - Math.floor(beat * 2);
+  const hat = Math.exp(-13 * achtel) * (0.15 + 0.85 * dichte) * puls;
+
+  // Achtstufiger Basslauf (E-Moll-Figur): Grundton + leise Oktave wandern
+  const NOTEN = [41.2, 41.2, 49.0, 55.0, 41.2, 36.7, 49.0, 61.7];
+  const note = NOTEN[((Math.floor(beat) % 8) + 8) % 8];
+  const bassHalt = (0.55 + 0.45 * Math.exp(-2.5 * zaehlzeit)) * (0.35 + 0.65 * dichte);
+
+  // Pegel so kalibriert, dass der lauteste Chorus-Hit (Kick+Bass bzw.
+  // Bass-Oktave unter der 118-Hz-Resonanz) die −6-dB-Decke nie plättet.
+  return kick * 4.2 * gaussian(t, tForFrequency(52), 0.045)
+    + bassHalt * (3.0 * gaussian(t, tForFrequency(note), 0.05)
+                + 1.2 * gaussian(t, tForFrequency(note * 2), 0.045))
+    + snare * (3.2 * gaussian(t, tForFrequency(190), 0.07)
+             + 3.6 * gaussian(t, tForFrequency(4200), 0.20))
+    + hat * 3.0 * smoothstep(0.70, 0.94, t)
+    + chorus * 2.0 * gaussian(t, tForFrequency(760), 0.26)
+        * (0.75 + 0.25 * Math.sin(time * 2.3))
+    + (dichte - 0.9) * 1.8
+    - 1.5 * kick * dichte * (1 - gaussian(t, tForFrequency(52), 0.06));
+}
+
+function sampleTarget(time) {
+  for (let i = 0; i <= SAMPLE_COUNT; i++) {
+    const t = i / SAMPLE_COUNT;
+    const plan = baselineDb(t, time) + musikDb(t, time);
+    planY[i] = yForDb(plan);
+    let db = plan;
+    for (const issue of ISSUES) {
+      if (!issueAktiv(issue)) continue;
+      const activity = issueActivity(issue, time);
+      const center = tForFrequency(issue.freq);
+      let amount = 0;
+      const voll = activity / Math.max(0.08, issue.severity);
+      if (issue.type === "resonance" || issue.type === "balance" || issue.type === "transient")
+        amount = issue.staerkeDb * voll * gaussian(t, center, issue.width);
+      else if (issue.type === "masking") {
+        // Maskierung ist keine Zielkurve, aber ihre Kollisionsenergie darf als
+        // leise lokale Bewegung sichtbar sein.
+        const envelope = gaussian(t, center, issue.width);
+        amount = issue.staerkeDb * voll * envelope
+          + 0.42 * activity * envelope * Math.sin((t - center) * 180);
+      }
+      db += amount;
+    }
+    const micro = 0.22 * Math.sin(t * 91 + time * 0.7) + 0.12 * Math.sin(t * 163 - time * 0.42);
+    const y = yForDb(db + micro);
+    state.targetY[i] = y;
+    state.instantY[i] = yForDb(db + micro * 2.3 + 0.35 * Math.sin(t * 257 + time * 1.2));
+  }
+}
+
+function initializeSurface() {
+  sampleTarget(view.time);
+  for (let i = 0; i <= SAMPLE_COUNT; i++) {
+    state.y[i] = state.targetY[i];
+    state.v[i] = 0;
+    // Saug-Vorprägung, damit das Musterblatt sofort zeigt, wohin es will.
+    const e = clamp((view.plot.bottom - state.y[i]) / Math.max(1, view.plot.h), 0, 1);
+    soak[i] = 0.45 * Math.pow(e, 1.6);
+  }
+}
+
+function updateMaterial(dt) {
+  const step = Math.min(dt, 1 / 30);
+  const stiffness = reducedMotion ? 92 : 68;
+  const damping = reducedMotion ? 18 : 12.5;
+  const tension = reducedMotion ? 12 : 25;
+
+  for (let i = 0; i <= SAMPLE_COUNT; i++) {
+    const left = state.y[Math.max(0, i - 1)];
+    const right = state.y[Math.min(SAMPLE_COUNT, i + 1)];
+    const laplace = left + right - 2 * state.y[i];
+    state.a[i] = (state.targetY[i] - state.y[i]) * stiffness + laplace * tension - state.v[i] * damping;
+  }
+
+  for (let i = 0; i <= SAMPLE_COUNT; i++) {
+    state.v[i] += state.a[i] * step;
+    state.y[i] += state.v[i] * step;
+  }
+}
+
+function linePath(values) {
+  let path = "";
+  for (let i = 0; i <= SAMPLE_COUNT; i++) {
+    const x = view.plot.x + (i / SAMPLE_COUNT) * view.plot.w;
+    path += `${i ? "L" : "M"}${x.toFixed(2)},${values[i].toFixed(2)}`;
+  }
+  return path;
+}
+
+function areaPath(values) {
+  return `${linePath(values)}L${(view.plot.x + view.plot.w).toFixed(2)},${view.plot.bottom.toFixed(2)}L${view.plot.x.toFixed(2)},${view.plot.bottom.toFixed(2)}Z`;
+}
+
+// Der Strich ist HANDZEICHNUNG und bleibt trotzdem Messkurve. Abweichungen
+// werden nur dort markiert, wo ein echter Befund samt lokaler Basis vorliegt.
+function renderSurface() {
+  const t = view.time;
+  for (let i = 0; i <= SAMPLE_COUNT; i++) {
+    xArr[i] = view.plot.x + (i / SAMPLE_COUNT) * view.plot.w;
+    wavedY[i] = state.y[i];
+  }
+  aktualisiereDiagnoseFeld();
+
+  // Lavierter Grund
+  el.wash.setAttribute("d", areaPath(wavedY));
+
+  // Sediment: der Tusche-Pool hängt an der Linie; seine Tiefe ist das
+  // Gedächtnis (soak) — satter, wo dauerhaft Energie stand.
+  const gedaechtnisStaerke = KALI.gedaechtnis / 100;
+  {
+    let dPool = "", mittel = 0;
+    const boden = [];
+    for (let i = 0; i <= SAMPLE_COUNT; i++) {
+      const nass = clamp(soak[i], 0, 1.15);
+      const tiefe = (1.4 + 19 * nass + 1.2 * Math.sin(i * 0.83 + t * 0.35) * nass) * gedaechtnisStaerke;
+      mittel += nass;
+      dPool += (i ? "L" : "M") + xArr[i].toFixed(1) + "," + (wavedY[i] + 0.8).toFixed(1);
+      boden.push([xArr[i], wavedY[i] + Math.max(1.2, tiefe)]);
+    }
+    let u = "";
+    for (let j = boden.length - 1; j >= 0; j--)
+      u += "L" + boden[j][0].toFixed(1) + "," + boden[j][1].toFixed(1);
+    el.soakEl.setAttribute("d", dPool + u + "Z");
+    el.soakEl.setAttribute("opacity",
+      String(clamp(0.09 + 0.2 * (mittel / (SAMPLE_COUNT + 1)), 0, 0.34) * Math.min(1, gedaechtnisStaerke)));
+  }
+
+  // Pinselstrich: Breite = Energie. Kein Bass-Bias, kein dekoratives Atmen.
+  let dCore = "", dKas = "", segTop = "";
+  const segBottom = [];
+  for (let i = 0; i <= SAMPLE_COUNT; i++) {
+    const x = xArr[i], y = wavedY[i];
+    const e = clamp((view.plot.bottom - state.y[i]) / view.plot.h, 0, 1);
+    const tal = clamp(dbForPixel(state.y[i] - planY[i]) / 3.5, 0, 1);
+    const satt = 1 + 0.3 * clamp(soak[i] - 0.5, 0, 0.65);
+    let w = (1.05 + 3.3 * Math.pow(e, 1.25) + 0.3 * Math.sin(i * 1.7 + t * 1.1))
+          * (KALI.pinsel / 100) * satt * (1 - 0.45 * tal);
+    w = Math.max(0.3, w);
+    const oben = y - w * 0.5 + (rausch(i * 1.93 + 3) - 0.5) * 0.9;
+    const unten = y + w * 0.5 + (rausch(i * 2.71 + 7) - 0.5) * 0.9;
+    segTop += (i ? "L" : "M") + x.toFixed(1) + "," + oben.toFixed(1);
+    segBottom.push([x, unten]);
+    dCore += (i ? "L" : "M") + x.toFixed(1) + "," + y.toFixed(1);
+    // Kasure steht für fehlende Abdeckung. Der frühere Rechtsdrall ließ hohe
+    // Frequenzen systematisch schwächer wirken und war diagnostisch falsch.
+    const trocken = clamp(0.12 + 0.72 * (1 - diagCoverage[i]) + 0.24 * (1 - e), 0, 1);
+    if ((i & 1) === 0 && (Math.abs(state.v[i]) > 85
+        || rausch(i * 3.77 + 19) < trocken * (KALI.kasure / 100) * 0.24)) {
+      const dy = (rausch(i * 4.9 + 2) - 0.5) * w * 0.7;
+      dKas += `M${(x - 1.5).toFixed(1)},${(y + dy - 1).toFixed(1)}`
+            + `L${(x + 2.3).toFixed(1)},${(y + dy + 1.1).toFixed(1)}`;
+    }
+  }
+  let u2 = "";
+  for (let j = segBottom.length - 1; j >= 0; j--)
+    u2 += "L" + segBottom[j][0].toFixed(1) + "," + segBottom[j][1].toFixed(1);
+  const dInk = segTop + u2 + "Z";
+  el.ink.setAttribute("d", dInk);
+  // Strich-Schein ist reine Figur/Grund-Trennung und vom Befundlicht getrennt.
+  const strichScheinStaerke = KALI.strichschein / 100;
+  el.strichSchein.setAttribute("d", dInk);
+  el.strichSchein.setAttribute("fill-opacity", String(0.1 * strichScheinStaerke));
+  el.inkCore.setAttribute("d", dCore || "M0,0");
+  el.kasure.setAttribute("d", dKas || "M0,0");
+
+  // Schnelle Live-EMA: echte zweite Messkurve, leise und global.
+  el.live.setAttribute("d", linePath(state.instantY));
+  el.live.setAttribute("stroke-opacity", String(clamp((KALI.livefaser / 100) * 0.75, 0, 0.72)));
+
+  // Lokale Diagnosebasis: kurze Schulterstücke nur an aktiven Befunden.
+  // Es gibt absichtlich keine durchgehende, vermeintliche Sollkurve.
+  let dBasis = "";
+  for (const issue of ISSUES) {
+    if (!issueAktiv(issue)) continue;
+    const von = tForFrequency(issue.fVon);
+    const bis = tForFrequency(issue.fBis);
+    const rand = Math.max(0.012, (bis - von) * 0.22, issue.width * 0.38);
+    const iVon = Math.max(0, Math.floor((von - rand) * SAMPLE_COUNT));
+    const iBis = Math.min(SAMPLE_COUNT, Math.ceil((bis + rand) * SAMPLE_COUNT));
+    for (let i = iVon; i <= iBis; i++)
+      dBasis += (i === iVon ? "M" : "L") + xArr[i].toFixed(1) + "," + planY[i].toFixed(1);
+  }
+  el.diagnosticBasis.setAttribute("d", dBasis || "M0,0");
+  el.diagnosticBasis.setAttribute("stroke-opacity",
+    String(clamp((KALI.vorzeichnung / 100) * 0.92, 0, 0.82)));
+
+  if (view.snapshot) {
+    let dGold = "";
+    for (let i = 0; i <= SAMPLE_COUNT; i++)
+      dGold += (i ? "L" : "M") + xArr[i].toFixed(1) + "," + view.snapshot[i].toFixed(1);
+    el.snapshot.setAttribute("d", dGold);
+    el.snapshot.setAttribute("stroke-opacity", "0.8");
+  } else {
+    el.snapshot.setAttribute("stroke-opacity", "0");
+  }
+}
+
+// Das Raster steht still — das Papier bewegt sich nicht, nur die Tusche
+// lebt. (Das wogende Raster der Shader-Runden las sich als Schmelzen.)
+function renderGrid() {
+  el.grid.textContent = "";
+  el.axes.textContent = "";
+  const { x, y, w, bottom } = view.plot;
+
+  const minorFrequencies = [30, 40, 60, 70, 80, 90, 150, 300, 400, 600, 700, 800, 900, 1500, 3000, 4000, 6000, 7000, 8000, 9000, 15000];
+  for (const frequency of minorFrequencies) {
+    const px = xForFrequency(frequency);
+    svg("line", { x1: px, x2: px, y1: y, y2: bottom, stroke: "var(--grid-minor)", "stroke-width": 1 }, el.grid);
+  }
+
+  for (const frequency of X_TICKS) {
+    const px = xForFrequency(frequency);
+    svg("line", { x1: px, x2: px, y1: y, y2: bottom, stroke: "var(--grid-major)", "stroke-width": 1 }, el.grid);
+    const label = svg("text", { x: px, y: bottom + 24, "text-anchor": "middle", class: "axis-text" }, el.axes);
+    label.textContent = formatFrequency(frequency);
+  }
+
+  for (const db of Y_TICKS) {
+    const py = yForDb(db);
+    svg("line", { x1: x, x2: x + w, y1: py, y2: py, stroke: db === -24 ? "var(--grid-major)" : "var(--grid-minor)", "stroke-width": 1 }, el.grid);
+    const label = svg("text", { x: x - 12, y: py + 4, "text-anchor": "end", class: "axis-text" }, el.axes);
+    label.textContent = String(db).replace("-", "−");
+  }
+
+  const hz = svg("text", { x: x + w, y: bottom + 42, "text-anchor": "end", class: "axis-unit" }, el.axes);
+  hz.textContent = "HZ";
+  // DB-Einheit oben rechts — unten links säße sie in der Chip-Leiste,
+  // oben links unter dem Hanko-Siegel.
+  const dbUnit = svg("text", { x: x + w, y: y - 12, "text-anchor": "end", class: "axis-unit" }, el.axes);
+  dbUnit.textContent = "DB";
+}
+
+function markerSymbol(issue) {
+  const glyph = typeof issue === "string" ? issue : (issue.glyph || issue.type);
+  return `<use class="marker-symbol" href="#issue-${glyph}" x="-10.5" y="-10.5" width="21" height="21" />`;
+}
+
+function createMarkers() {
+  el.markers.textContent = "";
+  for (const issue of ISSUES) {
+    const group = svg("g", {
+      class: "issue-marker",
+      tabindex: 0,
+      role: "button",
+      "aria-label": `${issue.name}, ${issue.freq} Hertz`,
+      "data-issue": issue.id,
+      "data-type": issue.type,
+      "data-tip": issue.name
+    }, el.markers);
+    group.innerHTML = `
+      <circle class="marker-hit" cx="0" cy="0" r="23" />
+      <circle class="marker-halo" cx="0" cy="0" r="18" />
+      <g filter="url(#markerShadow)">
+        <circle class="marker-bed" cx="0" cy="0" r="18" />
+        <circle class="marker-track" cx="0" cy="0" r="15" />
+        <circle class="marker-value" cx="0" cy="0" r="15" pathLength="100" stroke-dasharray="0 100" />
+        ${markerSymbol(issue)}
+      </g>`;
+    group.addEventListener("click", () => selectIssue(issue.id));
+    group.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectIssue(issue.id); }
+    });
+  }
+}
+
+// Marker: reine Anmerkungs-Siegel über der Zeichnung. Die Befund-OPTIK
+// liegt komplett im Feld (renderFeld) — abgeschaltete Befund-Daten
+// verstecken auch ihr Siegel (die Anzeige lügt nie).
+function renderIssueZonesAndMarkers() {
+  const markerNodes = [...el.markers.querySelectorAll(".issue-marker")];
+  ISSUES.forEach((issue, index) => {
+    const node = markerNodes[index];
+    if (!node) return;
+    if (!issueAktiv(issue)) {
+      node.style.display = "none";
+      return;
+    }
+    node.style.display = "";
+    const activity = issueActivity(issue, view.time);
+    const sampleIndex = Math.round(tForFrequency(issue.freq) * SAMPLE_COUNT);
+    const x = xForFrequency(issue.freq);
+    const y = wavedY[sampleIndex] || state.y[sampleIndex];
+    const selected = view.selected === issue.id;
+    const verticalLift = (view.width <= 800 ? 27 : 31) + (index % 2) * (view.width <= 800 ? 6 : 8);
+    node.setAttribute("transform", `translate(${x.toFixed(2)} ${(y - verticalLift).toFixed(2)})`);
+    const score = dringlichkeit(issue, activity);
+    node.style.opacity = String(clamp(0.45 + score * 0.62, 0.45, 1));
+    node.classList.toggle("selected", selected);
+    node.classList.toggle("critical", score >= 0.72);
+    const ring = node.querySelector(".marker-value");
+    ring.setAttribute("stroke-dasharray", `${Math.round(score * 100)} ${Math.round(100 - score * 100)}`);
+    const scale = (view.width <= 800 ? 0.9 : 1)
+      * (issue.type === "transient" ? 0.94 + activity * 0.12 : 1);
+    node.style.scale = String(scale);
+  });
+}
+
+function selectIssue(id) {
+  view.selected = view.selected === id ? null : id;
+  renderIssueZonesAndMarkers();
+}
+
+function gaugeMarkup(issue) {
+  const severity = Math.round(dringlichkeit(issue, issue.severity, issue.confidence) * 100);
+  return `<svg viewBox="0 0 36 36" aria-hidden="true">
+    <circle class="gauge-track" cx="18" cy="18" r="15" fill="none" stroke-width="2.4" />
+    <circle class="gauge-value" cx="18" cy="18" r="15" fill="none" stroke-width="2.8" stroke-linecap="round" pathLength="100" stroke-dasharray="${severity} ${100 - severity}" transform="rotate(-90 18 18)" />
+    <g transform="translate(18 18) scale(.74)">${markerSymbol(issue)}</g>
+  </svg>`;
+}
+
+function renderReports() {
+  el.reportList.textContent = "";
+  ISSUES.slice().sort((a, b) =>
+    dringlichkeit(b, b.severity, b.confidence) - dringlichkeit(a, a.severity, a.confidence))
+    .forEach((issue, index) => {
+    const article = document.createElement("article");
+    article.className = "report-card" + (index === 0 ? " open" : "");
+    article.dataset.report = issue.id;
+    article.dataset.type = issue.type;
+    article.innerHTML = `
+      <button class="report-card-head" type="button" aria-expanded="${index === 0}">
+        <span class="report-glyph">${gaugeMarkup(issue)}</span>
+        <span><span class="report-name">${issue.name}</span><span class="report-kind">${issue.kind}</span></span>
+        <span class="report-freq">${issue.freq >= 1000 ? (issue.freq / 1000).toLocaleString("de-DE", { maximumFractionDigits: 2 }) + " kHz" : issue.freq + " Hz"}</span>
+        <svg class="disclosure-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#tool-disclosure" /></svg>
+      </button>
+      <div class="report-detail"><div class="report-detail-inner">
+        <div class="report-stats">${issue.stats.map(([key, value]) => `<div class="report-stat"><span>${key}</span><strong>${value}</strong></div>`).join("")}</div>
+        <div class="report-action">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#tool-action" /></svg>
+          <span>${issue.action}</span>
+        </div>
+      </div></div>`;
+    const head = article.querySelector(".report-card-head");
+    head.addEventListener("click", () => {
+      const open = !article.classList.contains("open");
+      article.classList.toggle("open", open);
+      head.setAttribute("aria-expanded", String(open));
+    });
+    el.reportList.appendChild(article);
+  });
+}
+
+function renderThemes() {
+  const selected = document.documentElement.dataset.theme;
+  el.themeGrid.textContent = "";
+  for (const theme of THEMES) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "theme-choice" + (theme.id === selected ? " selected" : "");
+    button.dataset.theme = theme.id;
+    button.innerHTML = `<span class="theme-swatch" style="--swatch-bg:${theme.bg};--swatch-curve:${theme.curve};--swatch-accent:${theme.accent}"></span><span>${theme.label}</span>`;
+    button.addEventListener("click", () => applyTheme(theme.id));
+    el.themeGrid.appendChild(button);
+  }
+}
+
+function applyTheme(id) {
+  document.documentElement.dataset.theme = id;
+  try { localStorage.setItem("nakama-theme", id); } catch { /* Datei-Vorschau ohne Storage bleibt nutzbar. */ }
+  renderThemes();
+  farbenAnwenden();   // Welt-Farbsatz + User-Übersteuerungen dieser Welt
+  baueKaliPanel();    // Farb-Swatches zeigen die neue Welt
+}
+
+function setPanel(panel, open) {
+  if (panel === "report") {
+    view.reportOpen = open;
+    el.reportPanel.classList.toggle("open", open);
+    el.reportPanel.setAttribute("aria-hidden", String(!open));
+    el.reportButton.setAttribute("aria-expanded", String(open));
+    if (open) {
+      setPanel("theme", false);
+      setKali(false);
+      setTimeout(() => el.reportClose.focus(), 180);
+    }
+  } else {
+    view.themeOpen = open;
+    el.themePanel.classList.toggle("open", open);
+    el.paletteButton.classList.toggle("active", open);
+    el.paletteButton.setAttribute("aria-expanded", String(open));
+    if (open) {
+      setPanel("report", false);
+      setKali(false);
+    }
+  }
+}
+
+// ── Kalibrier-Menü: Regler für alle neuen Stärken ──
+let kaliOffen = false;
+function setKali(open) {
+  kaliOffen = open;
+  const panel = document.getElementById("kaliPanel");
+  const knopf = document.getElementById("kaliButton");
+  panel.classList.toggle("open", open);
+  knopf.classList.toggle("active", open);
+  knopf.setAttribute("aria-expanded", String(open));
+  if (open) {
+    view.themeOpen = false;
+    el.themePanel.classList.remove("open");
+    el.paletteButton.classList.remove("active");
+    setPanel("report", false);
+  }
+}
+
+const KALI_FELDER = [
+  [null, "DIAGNOSE"],
+  ["vorzeichnung", "Lokale Befundbasis", 0, 100],
+  ["nebel", "Nebel · unsichere Evidenz", 0, 200],
+  ["abweichung", "Abweichung · dB-Fahne", 0, 200],
+  ["befundlicht", "Licht · belastbare Evidenz", 0, 200],
+  ["tallicht", "Lichtkante · Fehlstelle", 0, 200],
+  [null, "MESSKURVE"],
+  ["pinsel", "Pinselbreite", 40, 220],
+  ["livefaser", "Live-Faser · 3-s-EMA", 0, 120],
+  ["kasure", "Kasure · fehlende Abdeckung", 0, 200],
+  ["gedaechtnis", "Tusche-Pool · Zeitgedächtnis", 0, 200],
+  ["strichschein", "Strich-Schein", 0, 160],
+  [null, "BLATTMATERIAL"],
+  ["blattlicht", "Blattlicht", 0, 160],
+  ["wolken", "Papier-Wolken", 0, 250],
+  ["fasern", "Papier-Fasern", 0, 250]
+];
+
+function kaliSpeichern() {
+  try { localStorage.setItem("nakama-kali-v2", JSON.stringify(KALI)); } catch { /* ok */ }
+}
+
+function kaliAnwendenCss() {
+  document.documentElement.style.setProperty("--grain-mult", String(KALI.fasern / 100));
+  zeichnePapier();   // Wolken/Fasern/Lichtzug leben im statischen Washi-Maler
+  if (ZEIT_FREEZE !== null) standbild();
+  else if (view.plot.w > 0) {
+    renderSurface();
+    renderFeld();
+    renderIssueZonesAndMarkers();
+  }
+}
+
+function baueKaliPanel() {
+  const wirt = document.getElementById("kaliZeilen");
+  wirt.textContent = "";
+  for (const [schluessel, name, min, max] of KALI_FELDER) {
+    if (schluessel === null) {
+      const gruppe = document.createElement("p");
+      gruppe.className = "kali-gruppe";
+      gruppe.textContent = name;
+      wirt.appendChild(gruppe);
+      continue;
+    }
+    const zeile = document.createElement("div");
+    zeile.className = "kali-zeile";
+    const label = document.createElement("label");
+    label.textContent = name;
+    const regler = document.createElement("input");
+    regler.type = "range";
+    regler.min = String(min);
+    regler.max = String(max);
+    regler.value = String(KALI[schluessel]);
+    const wert = document.createElement("span");
+    wert.className = "kali-wert";
+    wert.textContent = KALI[schluessel] + " %";
+    regler.addEventListener("input", () => {
+      KALI[schluessel] = Number(regler.value);
+      wert.textContent = regler.value + " %";
+      kaliAnwendenCss();
+      kaliSpeichern();
+    });
+    zeile.append(label, regler, wert);
+    wirt.appendChild(zeile);
+  }
+
+  // Farbwahl je Element — gilt für die AKTIVE Welt, andere Welten
+  // behalten ihren eigenen Satz.
+  const farbTitel = document.createElement("p");
+  farbTitel.className = "kali-titel";
+  farbTitel.style.margin = "16px 0 10px";
+  farbTitel.textContent = "FARBEN: DIESE WELT";
+  wirt.appendChild(farbTitel);
+  for (const [varName, name] of FARB_FELDER) {
+    const zeile = document.createElement("div");
+    zeile.className = "kali-zeile farb-zeile";
+    const label = document.createElement("label");
+    label.textContent = name;
+    const eingabe = document.createElement("input");
+    eingabe.type = "color";
+    eingabe.value = hexKurz(getComputedStyle(document.documentElement).getPropertyValue(varName));
+    eingabe.addEventListener("input", () => {
+      const welt = document.documentElement.dataset.theme;
+      const standard = themeStandard(varName).replace("#", "");
+      const alpha = standard.length === 8 ? standard.slice(6) : "";
+      (FARBEN[welt] = FARBEN[welt] || {})[varName] = eingabe.value + alpha;
+      farbenSpeichern();
+      farbenAnwenden();
+      if (ZEIT_FREEZE !== null) standbild();
+    });
+    zeile.append(label, eingabe);
+    wirt.appendChild(zeile);
+  }
+
+  document.getElementById("kaliReset").onclick = () => {
+    Object.assign(KALI, KALI_STANDARD);
+    delete FARBEN[document.documentElement.dataset.theme];
+    farbenSpeichern();
+    farbenAnwenden();
+    kaliAnwendenCss();
+    kaliSpeichern();
+    baueKaliPanel();
+  };
+  document.getElementById("kaliKopieren").onclick = async () => {
+    const welt = document.documentElement.dataset.theme;
+    const paket = JSON.stringify({
+      welt,
+      blatt: "tiefenfeld-2d",
+      werte: KALI,
+      farben: FARBEN[welt] || {}
+    }, null, 2);
+    const knopf = document.getElementById("kaliKopieren");
+    try {
+      await navigator.clipboard.writeText(paket);
+      knopf.textContent = "Kopiert!";
+    } catch {
+      window.prompt("Werte zum Kopieren:", paket);
+      knopf.textContent = "Siehe Fenster";
+    }
+    knopf.classList.add("kopiert");
+    setTimeout(() => {
+      knopf.textContent = "Werte kopieren";
+      knopf.classList.remove("kopiert");
+    }, 1600);
+  };
+}
+
+function toggleRunning() {
+  view.running = !view.running;
+  document.body.dataset.running = String(view.running);
+  el.play.classList.toggle("running", view.running);
+  el.play.setAttribute("aria-label", view.running ? "Messung beenden" : "Neue Messung starten");
+  el.playIcon.innerHTML = view.running
+    ? '<use href="#tool-stop"></use>'
+    : '<use href="#tool-run"></use>';
+  if (view.running) {
+    view.time = 0;
+    zeitPapier = 0;
+    view.startedAt = performance.now();
+    view.lastTargetAt = 0;
+    initializeSurface();
+    renderSurface();
+    renderFeld();
+    renderIssueZonesAndMarkers();
+    el.reportTime.textContent = "00:00";
+  }
+}
+
+function captureSnapshot() {
+  view.snapshot = Float64Array.from(state.y);
+  el.snapshotButton.classList.add("active");
+  setTimeout(() => el.snapshotButton.classList.remove("active"), 360);
+}
+
+function layout() {
+  const rect = el.stage.getBoundingClientRect();
+  view.width = Math.max(1, rect.width);
+  view.height = Math.max(1, rect.height);
+  el.field.setAttribute("viewBox", `0 0 ${view.width} ${view.height}`);
+
+  const left = clamp(view.width * 0.045, 42, 78);
+  const right = clamp(view.width * 0.035, 30, 62);
+  const topMindestens = view.width <= 900 ? 96 : view.width <= 1300 ? 108 : 78;
+  const top = clamp(view.height * 0.145, topMindestens, 136);
+  const bottomGap = clamp(view.height * 0.095, 54, 88);
+  view.plot = {
+    x: left,
+    y: top,
+    w: Math.max(120, view.width - left - right),
+    h: Math.max(120, view.height - top - bottomGap),
+    bottom: view.height - bottomGap
+  };
+
+  el.clipRect.setAttribute("x", view.plot.x);
+  el.clipRect.setAttribute("y", view.plot.y);
+  el.clipRect.setAttribute("width", view.plot.w);
+  el.clipRect.setAttribute("height", view.plot.h);
+
+  // Papierfalten-Canvas in Gerätepixeln nachziehen.
+  const dpr = window.devicePixelRatio || 1;
+  el.paper.width = Math.max(1, Math.round(view.width * dpr));
+  el.paper.height = Math.max(1, Math.round(view.height * dpr));
+  paperCtx = el.paper.getContext("2d");
+  paperCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  renderGrid();
+  sampleTarget(view.time);
+  initializeSurface();
+  renderSurface();
+  renderFeld();
+  renderIssueZonesAndMarkers();
+  zeichnePapier();
+  if (ZEIT_FREEZE !== null) standbild();
+}
+
+function showTooltip(target) {
+  if (!view.help) return;
+  const text = target.dataset.tip;
+  if (!text) return;
+  el.tooltip.textContent = text;
+  el.tooltip.classList.add("visible");
+  const rect = target.getBoundingClientRect();
+  const tipRect = el.tooltip.getBoundingClientRect();
+  const left = clamp(rect.left + rect.width / 2 - tipRect.width / 2, 10, innerWidth - tipRect.width - 10);
+  const top = rect.bottom + 9 + tipRect.height < innerHeight ? rect.bottom + 9 : rect.top - tipRect.height - 9;
+  el.tooltip.style.left = `${left}px`;
+  el.tooltip.style.top = `${top}px`;
+}
+
+function hideTooltip() { el.tooltip.classList.remove("visible"); }
+
+function bindTooltips() {
+  document.addEventListener("pointerover", event => {
+    const target = event.target.closest("[data-tip]");
+    if (target) showTooltip(target);
+  });
+  document.addEventListener("pointerout", event => {
+    if (event.target.closest("[data-tip]")) hideTooltip();
+  });
+  document.addEventListener("focusin", event => {
+    const target = event.target.closest("[data-tip]");
+    if (target) showTooltip(target);
+  });
+  document.addEventListener("focusout", hideTooltip);
+}
+
+function animate(now) {
+  const dt = Math.min(0.05, Math.max(0.001, (now - view.lastFrameAt) / 1000));
+  view.lastFrameAt = now;
+
+  if (view.running) {
+    view.time = (now - view.startedAt) / 1000;
+    zeitPapier = view.time;
+    if (now - view.lastTargetAt >= (reducedMotion ? 100 : 50)) {
+      sampleTarget(view.time);
+      view.lastTargetAt = now;
+    }
+    updateMaterial(dt);
+    aktualisiereSaugen(dt);
+    const seconds = Math.floor(view.time);
+    el.reportTime.textContent = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+    renderSurface();
+    renderFeld();
+    renderIssueZonesAndMarkers();
+  }
+  requestAnimationFrame(animate);
+}
+
+el.play.addEventListener("click", toggleRunning);
+el.snapshotButton.addEventListener("click", captureSnapshot);
+el.reportButton.addEventListener("click", () => setPanel("report", !view.reportOpen));
+el.reportClose.addEventListener("click", () => { setPanel("report", false); el.reportButton.focus(); });
+el.paletteButton.addEventListener("click", () => setPanel("theme", !view.themeOpen));
+el.helpButton.addEventListener("click", () => {
+  view.help = !view.help;
+  el.helpButton.classList.toggle("active", view.help);
+  el.helpButton.setAttribute("aria-pressed", String(view.help));
+  if (!view.help) hideTooltip();
+});
+
+document.addEventListener("pointerdown", event => {
+  if (view.themeOpen && !el.themePanel.contains(event.target) && !el.paletteButton.contains(event.target)) setPanel("theme", false);
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    if (kaliOffen) setKali(false);
+    else if (view.themeOpen) setPanel("theme", false);
+    else if (view.reportOpen) { setPanel("report", false); el.reportButton.focus(); }
+    else if (view.selected) { view.selected = null; renderIssueZonesAndMarkers(); }
+  }
+  if (event.code === "Space" && event.target === document.body) { event.preventDefault(); toggleRunning(); }
+  if (event.key.toLowerCase() === "r") setPanel("report", !view.reportOpen);
+  if (event.key.toLowerCase() === "h") el.helpButton.click();
+});
+
+let savedTheme = null;
+try { savedTheme = localStorage.getItem("nakama-theme"); } catch { /* kein persistenter Origin */ }
+if (THEMES.some(theme => theme.id === savedTheme)) document.documentElement.dataset.theme = savedTheme;
+
+// Musterblatt: Befund-Chips (+ Tasten 1–4) und Start-Parameter
+// ?welt=…&aus=…&nur=issue-id. `aus=alle` ist der ehrliche Leerzustand.
+// Ein Chip schaltet die DATEN eines Befunds — Kurve und Feld antworten;
+// im Stand-Bild (?zeit=) wird sofort neu eingeschwungen.
+for (const chip of el.musterChips) {
+  chip.addEventListener("click", () => {
+    const schluessel = chip.dataset.muster;
+    MUSTER[schluessel] = !MUSTER[schluessel];
+    chip.classList.toggle("an", MUSTER[schluessel]);
+    if (ZEIT_FREEZE !== null) standbild();
+  });
+}
+document.addEventListener("keydown", event => {
+  const i = ["1", "2", "3", "4"].indexOf(event.key);
+  if (i >= 0 && el.musterChips[i]) el.musterChips[i].click();
+});
+{
+  const params = new URLSearchParams(location.search);
+  const welt = params.get("welt");
+  if (THEMES.some(theme => theme.id === welt)) document.documentElement.dataset.theme = welt;
+  const nur = (params.get("nur") || "").split(",").filter(Boolean);
+  if (nur.length) NUR_BEFUNDE = new Set(nur.filter(id => ISSUES.some(issue => issue.id === id)));
+  const aus = (params.get("aus") || "").split(",").filter(Boolean);
+  for (const schluessel of aus) {
+    if (schluessel === "alle") {
+      for (const key in MUSTER) MUSTER[key] = false;
+      for (const chip of el.musterChips) chip.classList.remove("an");
+    } else if (schluessel in MUSTER) {
+      MUSTER[schluessel] = false;
+      const chip = el.musterChips.find(c => c.dataset.muster === schluessel);
+      if (chip) chip.classList.remove("an");
+    }
+  }
+}
+
+document.getElementById("kaliButton").addEventListener("click", () => setKali(!kaliOffen));
+document.addEventListener("pointerdown", event => {
+  if (kaliOffen && !document.getElementById("kaliPanel").contains(event.target)
+      && !document.getElementById("kaliButton").contains(event.target))
+    setKali(false);
+});
+farbenAnwenden();
+baueKaliPanel();
+kaliAnwendenCss();
+{
+  // ?kali=auf öffnet das Menü; ?kali=befundlicht:160,nebel:0 setzt Regler-
+  // Werte (für Render-Beweise). Beides kombinierbar, Komma-getrennt.
+  const roh = new URLSearchParams(location.search).get("kali");
+  if (roh) {
+    for (const teil of roh.split(",")) {
+      if (teil === "auf") { setKali(true); continue; }
+      const [schluessel, wert] = teil.split(":");
+      if (schluessel in KALI && isFinite(parseFloat(wert)))
+        KALI[schluessel] = parseFloat(wert);
+    }
+    kaliAnwendenCss();
+    baueKaliPanel();
+  }
+}
+
+if (ZEIT_FREEZE !== null) {
+  view.running = false;
+  document.body.dataset.running = "false";
+  el.play.classList.remove("running");
+  el.play.setAttribute("aria-label", "Neue Messung starten");
+  el.playIcon.innerHTML = '<use href="#tool-run"></use>';
+}
+
+createMarkers();
+renderThemes();
+renderReports();
+bindTooltips();
+new ResizeObserver(layout).observe(el.stage);
+layout();
+if (ZEIT_FREEZE === null) requestAnimationFrame(animate);
+</script>
+
+</body>
+</html>

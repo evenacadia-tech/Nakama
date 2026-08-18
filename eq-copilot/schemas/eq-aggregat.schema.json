@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "evenacadia.eq-copilot.aggregat.v1",
+  "title": "EQ-Copilot Aggregat-Snapshot v1 (Broker-Produkt)",
+  "description": "Zeitlich ausgerichteter Sammel-Snapshot ALLER (gefilterten) Sensoren eines Moments — geschrieben vom Tauri-Broker nach %LOCALAPPDATA%\\evenacadia\\EQ-Copilot\\snapshots\\ (Plan §11 M2). Er friert den zuletzt per Heartbeat gemeldeten Messstand jedes Sensors ein; er misst nichts selbst. Zeitausrichtung ist eine EHRLICHE Aussage über Projektzeit-Fenster (Schnittmenge + Warnungen), keine samplegenaue Kausalitätsbehauptung — PDC-Schätzung existiert in M2 nicht (Plan §5.7). Die Einzel-Snapshot-Dateien der Plugins (eq-snapshot.schema.json) bleiben die tiefere Quelle mit voller LTAS-Auflösung.",
+  "type": "object",
+  "required": ["schema", "erzeugt_ms", "broker_version", "sensoren", "paare", "warnungen"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "evenacadia.eq-copilot.aggregat.v1" },
+    "erzeugt_ms": { "type": "integer", "description": "Unix-Millisekunden beim Schreiben" },
+    "broker_version": { "type": "string" },
+    "session_token_kurz": { "type": "string", "description": "erste 8 Zeichen des Broker-Session-Tokens — zum Wiedererkennen in Logs" },
+    "filter": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "profil_id": { "type": ["string", "null"], "description": "nur Sensoren dieser Projektprofil-Bindung" },
+        "host_pid": { "type": ["integer", "null"], "description": "nur Sensoren dieses FL-Prozesses" }
+      }
+    },
+    "gemeinsames_fenster": {
+      "type": ["object", "null"],
+      "description": "Schnitt der Projektzeit-Fenster aller enthaltenen Sensoren mit Messdaten. null, wenn kein Schnitt existiert oder ein Sensor kein Fenster liefert — dann steht der Grund in warnungen.",
+      "required": ["von_samples", "bis_samples"],
+      "additionalProperties": false,
+      "properties": {
+        "von_samples": { "type": "integer" },
+        "bis_samples": { "type": "integer" }
+      }
+    },
+    "warnungen": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Sichtbare Einschränkungen — z. B. »Fenster überlappen nicht«, »Sensor X liefert keine Messdaten (v1-Plugin)«, »Sensor Y hat Loop-/Seek-Sprünge im Fenster«. Nie leer schlucken."
+    },
+    "sensoren": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["sensor_id", "role", "label", "host_pid", "verbunden", "stale", "konflikt", "protokoll_version"],
+        "additionalProperties": false,
+        "properties": {
+          "sensor_id": { "type": "string" },
+          "role": { "enum": ["sensor", "hub", "pre", "post"] },
+          "label": { "type": "string" },
+          "pair_id": { "type": ["string", "null"] },
+          "host_pid": { "type": "integer" },
+          "profil_id": { "type": ["string", "null"], "description": "gebundenes Projektprofil (stabile profile_id der Plugin-Hub-App), null = ungebunden" },
+          "verbunden": { "type": "boolean" },
+          "stale": { "type": "boolean", "description": "verbunden, aber seit > 5 s kein Heartbeat — sichtbar, nie still entfernt" },
+          "konflikt": { "type": "boolean" },
+          "protokoll_version": { "type": "integer" },
+          "plugin_version": { "type": "string" },
+          "samplerate": { "type": "number" },
+          "measurement": {
+            "type": ["object", "null"],
+            "description": "letzter per Heartbeat gemeldeter Messstand (Form: measurement aus eq-ipc.schema.json v2), null bei v1-Plugins oder vor dem ersten Heartbeat"
+          }
+        }
+      }
+    },
+    "paare": {
+      "type": "array",
+      "description": "PRE/POST-Paar-Auswertung zum Zeitpunkt des Snapshots (Plan §5.7). timing wird bei jeder Unsicherheit HERABGESTUFT: »ausgerichtet« nur wenn beide Partner messbereit sind, beide sprungfreie Projektzeit-Fenster liefern und die Fenster sich zu ≥ 80 % des kürzeren decken; »wahrscheinlich« bei teilweiser Deckung oder Sprüngen; sonst »unklar« mit Grund.",
+      "items": {
+        "type": "object",
+        "required": ["pair_id", "status", "timing", "grund"],
+        "additionalProperties": false,
+        "properties": {
+          "pair_id": { "type": "string" },
+          "pre_sensor_id": { "type": ["string", "null"] },
+          "post_sensor_id": { "type": ["string", "null"] },
+          "status": { "enum": ["vollstaendig", "unvollstaendig"] },
+          "timing": { "enum": ["ausgerichtet", "wahrscheinlich", "unklar"] },
+          "grund": { "type": "string", "description": "warum diese Stufe — in Lernsprache formulierbar, nie leer" }
+        }
+      }
+    }
+  }
+}

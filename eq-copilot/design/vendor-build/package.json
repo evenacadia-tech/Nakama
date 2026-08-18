@@ -1,0 +1,9 @@
+{
+  "name": "nakama-design-werkzeug",
+  "private": true,
+  "type": "module",
+  "description": "Laufzeit fuer render-blatt.mjs (Playwright-Screenshots des Tusche-Musterblatts). Einrichten: npm ci. Der three.js-Bau ist mit dem Shader-Weg am 16.08. entfallen.",
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

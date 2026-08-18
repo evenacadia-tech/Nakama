@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "evenacadia.eq-copilot.snapshot.v3",
+  "title": "EQ-Copilot lokaler Mess-Snapshot v3 (M1 + M3-Diagnose + M3a, Plan §11)",
+  "description": "Vertrag der Datei, die das Plugin per Snapshot-Knopf nach %LOCALAPPDATA%\\evenacadia\\EQ-Copilot\\snapshots\\ schreibt (Quelle: PluginProcessor::schreibeSnapshotDatei). Einzelinstanz, ohne Broker. NaN/±inf sind als null kodiert. Roh-Audio ist per Vertrag ausgeschlossen (Plan §0.2/§8.3). NEU in v2 (M3-Kern): `befunde` — die deterministischen Befundkarten der Graph-Diagnose. NEU in v3 (M3a, Benchmark-Studie): `perzentile` (P10/P50/P95 je Band aus dem Pegelhistogramm), `zonen_zeit` (Anteil aktiver 1-s-Ticks jenseits der Zonen-Schwelle) und `konvergenz` („Kurve steht"). Ältere Leser können die Felder ignorieren.",
+  "type": "object",
+  "required": ["snapshot_version", "metrics_version", "created_utc", "sensor", "zustand", "loudness", "ltas", "raw_audio"],
+  "additionalProperties": false,
+  "properties": {
+    "snapshot_version": { "type": "integer", "enum": [1, 2, 3] },
+    "metrics_version": { "type": "string", "description": "versionierte Startwerte §5.10, z. B. m3-2026-08-14 (Kanalenergie-Spektrum statt Mid-Mix, NaN-Sanitisierung, Nyquist-Kappe)" },
+    "diagnose_version": { "type": "string", "description": "versionierte Diagnose-Startwerte, z. B. m3-2026-08-14 (ab v2)" },
+    "befunde": {
+      "type": "array",
+      "description": "Befundkarten §7.3/§7.4, absteigend nach Priorität; top_rang = Top-Drei (§5.9). Kann leer sein — leer heißt: keine Auffälligkeit, kein Fehler.",
+      "items": {
+        "type": "object",
+        "required": ["klasse", "titel", "gemessen", "wirkung", "tu", "warum", "hoeren", "konfidenz", "top_rang"],
+        "additionalProperties": false,
+        "properties": {
+          "klasse": { "enum": ["resonanz", "mitten_loch", "mulm", "haerte", "hoehen_hype"] },
+          "f_von_hz": { "type": "number" },
+          "f_bis_hz": { "type": "number" },
+          "f_schwerpunkt_hz": { "type": "number", "description": "Band-Center — nie feiner als das zuständige Fenster (§5.10.1)" },
+          "staerke_db": { "type": "number", "description": "gemessener Über-/Fehlbetrag; negativ = unter der Schulterlinie" },
+          "titel": { "type": "string" },
+          "gemessen": { "type": "string", "description": "nur Zahlen/Fakten — nie mit der Hypothese verschmolzen (§7.3)" },
+          "wirkung": { "type": "string", "description": "mögliche Wirkung — Hypothese" },
+          "tu": { "type": "string", "description": "konkreter Versuch mit Startwert-Bereichen in Klammern (§7.4)" },
+          "warum": { "type": "string" },
+          "hoeren": { "type": "string", "description": "erwartetes Hörergebnis + Stop-Bedingung" },
+          "konfidenz": { "enum": ["hoch", "mittel", "niedrig"] },
+          "konfidenz_grund": { "type": "string", "description": "begrenzende Komponente (§5.10.7)" },
+          "top_rang": { "type": "boolean" }
+        }
+      }
+    },
+    "created_utc": { "type": "string", "format": "date-time" },
+    "sensor": {
+      "type": "object",
+      "required": ["sensor_id", "role", "samplerate", "channels"],
+      "additionalProperties": false,
+      "properties": {
+        "sensor_id": { "type": "string" },
+        "role": { "enum": ["sensor", "hub", "pre", "post"] },
+        "label": { "type": "string", "description": "vom User — untrusted data" },
+        "pair_id": { "type": ["string", "null"] },
+        "samplerate": { "type": "number" },
+        "channels": { "type": "integer" }
+      }
+    },
+    "zustand": { "enum": ["sammelt", "messbereit"], "description": "keineDaten schreibt keine Datei" },
+    "aktiv_sekunden": { "type": "number", "minimum": 0 },
+    "gesamt_sekunden": { "type": "number", "minimum": 0 },
+    "nan_ersetzt_samples": { "type": "integer", "minimum": 0, "description": "nicht-endliche Eingangssamples, die die ANALYSE seit Messstart durch Stille ersetzt hat (ab metrics m3-2026-08-14); das Audio bleibt unberührt" },
+    "loudness": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "lufs_integriert": { "type": ["number", "null"], "description": "null = kein Block über dem absoluten Gate (BS.1770)" },
+        "lufs_short": { "type": ["number", "null"] },
+        "true_peak_dbtp": { "type": ["number", "null"] },
+        "crest_db": { "type": ["number", "null"] }
+      }
+    },
+    "spektral": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "8192er-Referenzachse (analyze-track-kompatibel); alles null solange keine aktive Signalzeit",
+      "properties": {
+        "centroid_mag_hz": { "type": ["number", "null"] },
+        "rolloff_hz": { "type": ["number", "null"] },
+        "low_frac": { "type": ["number", "null"] },
+        "flatness": { "type": ["number", "null"], "description": "eigene 48-kHz-Achse — NICHT librosa-vergleichbar" },
+        "band_pct": { "type": "array", "minItems": 8, "maxItems": 8, "items": { "type": ["number", "null"] } }
+      }
+    },
+    "stereo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "width": { "type": ["number", "null"] },
+        "corr": { "type": ["number", "null"] },
+        "echt_stereo": { "type": "boolean" }
+      }
+    },
+    "ltas": {
+      "type": "object",
+      "required": ["zentren_hz", "komposit_db", "referenz_8192_db"],
+      "additionalProperties": false,
+      "description": "221 Bänder à 1/24 Oktave ab 30 Hz; dB in analyze-track-Skala ('spectrum'@8192-Äquivalent)",
+      "properties": {
+        "zentren_hz": { "type": "array", "minItems": 221, "maxItems": 221, "items": { "type": "number" } },
+        "komposit_db": { "type": "array", "minItems": 221, "maxItems": 221, "items": { "type": ["number", "null"] }, "description": "Mehrfachauflösung §5.10.1: Bass 16384 / Mitten 4096 / Höhen 2048, Übergabebänder 160–250 Hz und 1,6–2,5 kHz" },
+        "referenz_8192_db": { "type": "array", "minItems": 221, "maxItems": 221, "items": { "type": ["number", "null"] } }
+      }
+    },
+    "abdeckung": {
+      "type": "array",
+      "description": "1/3-Okt-Gruppen (§5.10.2)",
+      "items": {
+        "type": "object",
+        "required": ["zentrum_hz", "anteil", "klasse"],
+        "additionalProperties": false,
+        "properties": {
+          "zentrum_hz": { "type": "number" },
+          "anteil": { "type": "number", "minimum": 0, "maximum": 1 },
+          "klasse": { "enum": ["belastbar", "eingeschraenkt", "nicht_messbar"] }
+        }
+      }
+    },
+    "perzentile": {
+      "type": "object",
+      "description": "M3a (v3): Band-Perzentile aus dem 1-dB-Pegelhistogramm der zuständigen Stufe über aktive Segmente. P95−P50 trennt Moment-Probleme von Dauerzuständen (Werkzeugwahl). null = Band ohne aktive Segmente.",
+      "required": ["p10_db", "p50_db", "p95_db"],
+      "additionalProperties": false,
+      "properties": {
+        "p10_db": { "type": "array", "minItems": 221, "maxItems": 221, "items": { "type": ["number", "null"] } },
+        "p50_db": { "type": "array", "minItems": 221, "maxItems": 221, "items": { "type": ["number", "null"] } },
+        "p95_db": { "type": "array", "minItems": 221, "maxItems": 221, "items": { "type": ["number", "null"] } }
+      }
+    },
+    "zonen_zeit": {
+      "type": "array",
+      "description": "M3a (v3): Zeitverlauf je Diagnose-Zone (ZonenRegeln.h) — Anteil der aktiven 1-s-Ticks, in denen die Zone jenseits ihrer Regel-Schwelle lag. In Pausen vergeht keine Tick-Zeit.",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["zone", "gueltig", "anteil_jenseits", "ticks"],
+        "additionalProperties": false,
+        "properties": {
+          "zone": { "enum": ["mitten_loch", "mulm", "haerte", "hoehen_hype"] },
+          "gueltig": { "type": "boolean" },
+          "anteil_jenseits": { "type": "number", "minimum": 0, "maximum": 1 },
+          "ticks": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "konvergenz": {
+      "type": "object",
+      "description": "M3a (v3): „Kurve steht" — Abweichung der Komposit-LTAS gegen den Stand von vor ~10 s Aktivzeit. Rein informativ; gueltig=false bis das erste Fenster voll ist.",
+      "required": ["gueltig"],
+      "additionalProperties": false,
+      "properties": {
+        "gueltig": { "type": "boolean" },
+        "mean_db": { "type": ["number", "null"] },
+        "max_db": { "type": ["number", "null"] }
+      }
+    },
+    "resonanzen": {
+      "type": "array",
+      "description": "nur Kandidaten in belastbaren Bändern (§5.10.3); leer solange nicht messbereit (§5.3)",
+      "items": {
+        "type": "object",
+        "required": ["freq_hz", "db_over", "persistenz", "klasse"],
+        "additionalProperties": false,
+        "properties": {
+          "freq_hz": { "type": "number", "description": "Band-Center — nie feiner als das Raster des zuständigen Fensters" },
+          "db_over": { "type": "number" },
+          "persistenz": { "type": "number", "minimum": 0, "maximum": 1 },
+          "breite_okt": { "type": "number" },
+          "klasse": { "enum": ["dauerhaft", "zeitweise"] }
+        }
+      }
+    },
+    "raw_audio": { "const": null, "description": "immer null — Roh-Audio wird weder gespeichert noch übertragen" }
+  }
+}

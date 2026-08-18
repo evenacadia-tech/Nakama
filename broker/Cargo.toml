@@ -1,0 +1,23 @@
+[package]
+name = "eqcop-broker"
+version = "0.1.0"
+edition = "2021"
+description = "EQ-Copilot-Broker (Nakama) — eigenständiger Named-Pipe-Server, aus der Plugin-Hub-App herausgelöst (18.08.2026)"
+
+[lib]
+name = "eqcop_broker"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4"] }
+windows-sys = { version = "0.60", features = [
+    "Win32_Foundation",
+    "Win32_System_Pipes",
+    "Win32_Storage_FileSystem",
+    "Win32_Security",
+    "Win32_Security_Authorization",
+    "Win32_System_IO",
+    "Win32_System_Threading",
+] }

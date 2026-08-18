@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "evenacadia.eq-copilot.ipc.v2",
+  "title": "EQ-Copilot IPC-Vertrag v2 (Plugin ↔ Tauri-Broker)",
+  "description": "Transport: Windows Named Pipe (Byte-Modus), ACL nur aktueller User. Framing: u32 Little-Endian Längenpräfix, dann UTF-8-JSON genau dieser Länge. Harte Paketgrenze 262144 Bytes — größere Pakete beenden die Verbindung. Ungültige Pakete werden ohne Crash verworfen (Plan §9.2). Der Client sendet als erstes Paket immer `hello`; der Broker antwortet mit `welcome` oder `reject` und sendet vorher nichts. NEU in v2: der Heartbeat trägt optional den kompakten Messstand (`measurement`), und der Broker beantwortet jeden v2-Heartbeat mit `heartbeat_ack` (trägt das Konflikt-Flag für duplizierte Sensor-IDs, Plan §8.4). Abwärtskompatibilität: der Broker nimmt v1-hello weiterhin an; v1-Verbindungen bekommen keine ACKs und liefern keine Messdaten — die Sensorübersicht markiert sie als »altes Plugin (v1)«.",
+  "type": "object",
+  "required": ["type"],
+  "oneOf": [
+    { "$ref": "#/$defs/hello" },
+    { "$ref": "#/$defs/welcome" },
+    { "$ref": "#/$defs/reject" },
+    { "$ref": "#/$defs/heartbeat" },
+    { "$ref": "#/$defs/heartbeat_ack" },
+    { "$ref": "#/$defs/bye" }
+  ],
+  "$defs": {
+    "hello": {
+      "type": "object",
+      "description": "Erstes Paket des Plugins nach Verbindungsaufbau.",
+      "required": ["type", "protocol_version", "plugin_version", "host_pid", "sensor", "audio"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "hello" },
+        "protocol_version": { "type": "integer", "const": 2 },
+        "plugin_version": { "type": "string" },
+        "host_pid": { "type": "integer", "minimum": 0 },
+        "sensor": {
+          "type": "object",
+          "required": ["sensor_id", "role", "label"],
+          "additionalProperties": false,
+          "properties": {
+            "sensor_id": { "type": "string", "description": "persistente UUID aus dem Plugin-State" },
+            "instance_nonce": { "type": "string", "description": "flüchtige Verbindungs-ID pro Plugin-Instanz-Lebenszeit (Plan §8.2) — unterscheidet zwei lebende Verbindungen derselben sensor_id nach FL-Duplikation" },
+            "role": { "enum": ["sensor", "hub", "pre", "post"] },
+            "label": { "type": "string", "maxLength": 120, "description": "User-Label — untrusted data" },
+            "pair_id": { "type": ["string", "null"], "description": "PRE/POST-Paar-ID, sonst null" }
+          }
+        },
+        "audio": {
+          "type": "object",
+          "required": ["samplerate", "block_size", "channels"],
+          "additionalProperties": false,
+          "properties": {
+            "samplerate": { "type": "number", "minimum": 0 },
+            "block_size": { "type": "integer", "minimum": 0 },
+            "channels": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "welcome": {
+      "type": "object",
+      "description": "Antwort des Brokers auf ein gültiges hello. protocol_version spiegelt die ANGENOMMENE Version (1 oder 2) — der Client verhält sich danach (v1: keine ACKs erwarten).",
+      "required": ["type", "protocol_version", "broker_version", "session_token"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "welcome" },
+        "protocol_version": { "type": "integer", "enum": [1, 2] },
+        "broker_version": { "type": "string" },
+        "session_token": { "type": "string", "description": "zufällig pro Broker-Lauf; Client zitiert es in jedem heartbeat" }
+      }
+    },
+    "reject": {
+      "type": "object",
+      "description": "Klarer Kompatibilitätsfehler statt stillem Scheitern (Plan §9.2).",
+      "required": ["type", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "reject" },
+        "reason": { "type": "string" },
+        "min_protocol": { "type": "integer" },
+        "max_protocol": { "type": "integer" }
+      }
+    },
+    "heartbeat": {
+      "type": "object",
+      "description": "Plugin → Broker, Richtwert 1 Hz. Trägt Live-Statistik und (v2) den kompakten Messstand für Sensorübersicht und aggregierte Snapshots; niemals PCM.",
+      "required": ["type", "session_token", "seq"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "heartbeat" },
+        "session_token": { "type": "string" },
+        "seq": { "type": "integer", "minimum": 0 },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "rms_l": { "type": "number", "description": "linear 0..∞, letzter Block" },
+            "rms_r": { "type": "number" },
+            "frames_dropped": { "type": "integer", "minimum": 0, "description": "verworfene Analyseframes seit Start — Überlast verwirft Analyse, nie Audio (Plan §9.1)" },
+            "nan_seen": { "type": "boolean", "description": "NaN/Inf im Eingang beobachtet (Signal unverändert weitergereicht)" },
+            "transport_playing": { "type": ["boolean", "null"], "description": "aus dem Hostkontext, null wenn der Host nichts liefert" },
+            "project_time_samples": { "type": ["integer", "null"] }
+          }
+        },
+        "measurement": { "$ref": "#/$defs/measurement" }
+      }
+    },
+    "measurement": {
+      "type": "object",
+      "description": "Kompakter Messstand der AnalyseEngine (M1) — die Zahlen, die die Sensorübersicht und der Aggregat-Snapshot brauchen. Quelle ist der akkumulierte Stand seit dem letzten »Neu messen«; Skalar-Semantik wie eq-snapshot.schema.json. null heißt immer »nicht gültig/nicht messbar«, nie 0.",
+      "required": ["zustand", "metrics_version"],
+      "additionalProperties": false,
+      "properties": {
+        "zustand": { "enum": ["keine_daten", "sammelt", "messbereit"] },
+        "metrics_version": { "type": "string" },
+        "hoermarkierung": { "type": "boolean", "description": "Hör-Markierung (Einfärben) ist gerade hörbar — nachgelagerte Sensoren messen gefärbtes Signal; Aggregate anderer Sensoren in diesem Zeitfenster pausieren/markieren (Konzept HOER-MARKIERUNG v2 §5)" },
+        "aktiv_s": { "type": "number", "minimum": 0 },
+        "gesamt_s": { "type": "number", "minimum": 0 },
+        "lufs_i": { "type": ["number", "null"], "description": "BS.1770 integriert; null solange kein Block über dem absoluten Gate" },
+        "lufs_s": { "type": ["number", "null"], "description": "Short-Term 3 s" },
+        "true_peak_db": { "type": ["number", "null"], "description": "dBTP, 8×-Oversampling, ungegated über die Passage" },
+        "crest_db": { "type": ["number", "null"] },
+        "centroid_hz": { "type": ["number", "null"], "description": "MAGNITUDE-gewichtet (Landmine: nie power)" },
+        "low_frac": { "type": ["number", "null"] },
+        "width": { "type": ["number", "null"] },
+        "corr": { "type": ["number", "null"] },
+        "ltas_komposit_db": {
+          "type": ["array", "null"],
+          "maxItems": 512,
+          "items": { "type": ["number", "null"] },
+          "description": "221 Werte auf dem 1/24-Okt-Raster ab 30 Hz (eq-snapshot-Achse), auf 0,1 dB gerundet; null = Band unbelegt. Array-Obergrenze ist ein Robustheits-Guard des Brokers."
+        },
+        "projekt_fenster": {
+          "type": ["object", "null"],
+          "description": "Projektzeit-Fenster der akkumulierten Messung (nur während transport_playing verfolgt). spruenge zählt Loop-/Seek-Diskontinuitäten — 0 heißt zusammenhängend erfasst; >0 heißt: das Fenster [von,bis] enthält Lücken oder Wiederholungen. Grundlage der PRE/POST-Zeitausrichtung (Plan §5.7).",
+          "required": ["von_samples", "bis_samples", "spruenge"],
+          "additionalProperties": false,
+          "properties": {
+            "von_samples": { "type": "integer" },
+            "bis_samples": { "type": "integer" },
+            "spruenge": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "heartbeat_ack": {
+      "type": "object",
+      "description": "Broker → Plugin, Antwort auf jeden v2-Heartbeat. konflikt=true heißt: mindestens eine WEITERE lebende Verbindung meldet dieselbe sensor_id (typisch nach FL-Duplikation). Das Plugin zeigt dann den Hinweis und bietet »neue Kennung« an — die Entscheidung fällt sichtbar beim User, nie still im Broker (Plan §8.4).",
+      "required": ["type", "seq", "konflikt"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "heartbeat_ack" },
+        "seq": { "type": "integer", "minimum": 0, "description": "zitiert die seq des beantworteten Heartbeats" },
+        "konflikt": { "type": "boolean" }
+      }
+    },
+    "bye": {
+      "type": "object",
+      "description": "Geordneter Abschied (Plugin-Destruktor). Fehlt er, greift Last-Seen/Timeout im Broker.",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "bye" },
+        "session_token": { "type": "string" }
+      }
+    }
+  }
+}

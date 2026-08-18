@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROBE 03 · Tropfenklingen</title>
+<style>
+@font-face {
+  font-family: "Manrope";
+  src: url("../fonts/Manrope-Variable.ttf") format("truetype");
+  font-weight: 200 800;
+  font-display: swap;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; background: #05070d; }
+body { font-family: "Manrope", system-ui, sans-serif; color: #cfd6e4; user-select: none; }
+canvas { position: absolute; inset: 0; display: block; }
+header {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+  display: flex; align-items: baseline; gap: 14px; padding: 16px 20px;
+  pointer-events: none;
+}
+.probe { font-size: 11px; letter-spacing: 4px; color: #6d7789; }
+.name { font-size: 15px; letter-spacing: 2.5px; color: #e8edf6; }
+footer {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+  display: flex; justify-content: space-between; gap: 16px; padding: 12px 20px;
+  font-size: 9.5px; letter-spacing: 1.6px; color: #5d6678; pointer-events: none;
+}
+#zeit { font-variant-numeric: tabular-nums; white-space: nowrap; }
+</style>
+</head>
+<body>
+<canvas id="blatt"></canvas>
+<header>
+  <span class="probe">PROBE 03</span>
+  <span class="name">TROPFENKLINGEN</span>
+</header>
+<footer>
+  <span>TECHNIK: VEKTOR-PRÄZISION (SCHARFE PFADE, KEIN GLOW) · DAS SYSTEM: JEDE KLINGE IST EIN GEFÄSS — MUSIK GIESST EIN, DAS GEFÄSS LÄUFT LANGSAM AB, ÜBERLAUF WIRD TROPFEN, DER TROPFEN REISST AB · FARBE = FREQUENZBEREICH · LEERTASTE HÄLT AN</span>
+  <span id="zeit">00:00</span>
+</footer>
+
+<script>
+"use strict";
+/* ── PROBE 03 · TROPFENKLINGEN ──────────────────────────────────────────
+   Nach den drei Gesetzen (Geschmacksprofil 17.08.):
+   1 SCHARF — reine Vektorpfade, kein Glow, kein Weichzeichner.
+   2 HANDSCHRIFT — einfacher Effekt, Liebe im Kleinen: Meniskus,
+     Glanzkante, Tropfen-Dehnung beim Abriss, Klingen-Nachschwingen,
+     Ring auf unsichtbarem Wasser.
+   3 SICHTBARER DENKVORGANG mit Distanz: nicht laut→hell, sondern
+     GESTAUTE Energie → Überlauf → EREIGNIS. Jede Klinge ist ein Gefäß;
+     die Musik gießt ein, das Gefäß läuft träge ab. Nur wer dauerhaft
+     Energie hält, bildet einen Tropfen — Dauer wird sichtbar, nicht
+     Lautstärke. Man kann das System beim Zusehen lesen.
+   Deterministisch: ?zeit=SEK friert reproduzierbar ein.                  */
+
+const F_MIN = 20, F_MAX = 18000;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+function smoothstep(e0, e1, v) {
+  const t = clamp((v - e0) / Math.max(1e-9, e1 - e0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+const gaussian = (t, c, w) => Math.exp(-0.5 * ((t - c) / w) ** 2);
+const tForFrequency = f => Math.log10(f / F_MIN) / Math.log10(F_MAX / F_MIN);
+const rausch = k => { const s = Math.sin(k * 12.9898 + 78.233) * 43758.5453; return s - Math.floor(s); };
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ── Songschleife (identisch zu den Musterblättern — portiert, nicht neu) ── */
+const SONG = { laenge: 30, bpm: 96 };
+function songLage(time) {
+  const lt = ((time % SONG.laenge) + SONG.laenge) % SONG.laenge;
+  const beat = Math.max(0, time) * SONG.bpm / 60;
+  const zaehlzeit = beat - Math.floor(beat);
+  const strophe = smoothstep(4.5, 7, lt) * (1 - smoothstep(13, 15.5, lt));
+  const chorus = smoothstep(13, 15.5, lt) * (1 - smoothstep(23, 25.5, lt));
+  const ausklang = smoothstep(23, 25.5, lt);
+  const intro = 1 - smoothstep(4.5, 7, lt);
+  const dichte = 0.25 * intro + 0.62 * strophe + 1.0 * chorus + 0.38 * ausklang;
+  const puls = reducedMotion ? 0.2 : 1;
+  const kick = Math.exp(-8 * zaehlzeit) * (0.35 + 0.65 * dichte) * puls;
+  const snare = (Math.floor(beat) % 2 === 1 ? Math.exp(-10 * zaehlzeit) : 0) * dichte * puls;
+  const achtel = beat * 2 - Math.floor(beat * 2);
+  const hat = Math.exp(-13 * achtel) * (0.15 + 0.85 * dichte) * puls;
+  const NOTEN = [41.2, 41.2, 49.0, 55.0, 41.2, 36.7, 49.0, 61.7];
+  const note = NOTEN[((Math.floor(beat) % 8) + 8) % 8];
+  const bassHalt = (0.55 + 0.45 * Math.exp(-2.5 * zaehlzeit)) * (0.35 + 0.65 * dichte);
+  return { lt, beat, zaehlzeit, dichte, chorus, kick, snare, hat, note, bassHalt };
+}
+function musikDb(t, lage) {
+  return lage.kick * 4.2 * gaussian(t, tForFrequency(52), 0.045)
+    + lage.bassHalt * (3.0 * gaussian(t, tForFrequency(lage.note), 0.05)
+                     + 1.2 * gaussian(t, tForFrequency(lage.note * 2), 0.045))
+    + lage.snare * (3.2 * gaussian(t, tForFrequency(190), 0.07)
+                  + 3.6 * gaussian(t, tForFrequency(4200), 0.20))
+    + lage.hat * 3.0 * smoothstep(0.70, 0.94, t)
+    + lage.chorus * 2.0 * gaussian(t, tForFrequency(760), 0.26)
+        * (0.75 + 0.25 * Math.sin((lage.lt + Math.floor(lage.beat / 48) * 30) * 2.3))
+    + (lage.dichte - 0.9) * 1.8
+    - 1.5 * lage.kick * lage.dichte * (1 - gaussian(t, tForFrequency(52), 0.06));
+}
+function baselineDb(t) {
+  const high = Math.max(0, (t - 0.82) / 0.18);
+  return -16.2 - 2.8 * t - 7.8 * t * t - 8.8 * Math.pow(high, 1.5)
+    + 1.7 * gaussian(t, 0.13, 0.11);
+}
+const energie01 = (t, lage) => clamp((baselineDb(t) + musikDb(t, lage) + 40) / 30, 0, 1);
+
+/* ── Farbe (bestätigte Palette) ────────────────────────────────────────── */
+function bandFarbe(b) {
+  const mixRgb = (c1, c2, k) => c1.map((v, i) => lerp(v, c2[i], k));
+  const bass = [255, 140, 46], mitte = [245, 51, 158], hoehe = [97, 219, 255];
+  return b < 0.5 ? mixRgb(bass, mitte, b * 2) : mixRgb(mitte, hoehe, (b - 0.5) * 2);
+}
+const rgba = (c, a) => `rgba(${Math.round(c[0])}, ${Math.round(c[1])}, ${Math.round(c[2])}, ${a})`;
+const dunkler = (c, k) => c.map(v => v * k);
+const hellerZuWeiss = (c, k) => c.map(v => lerp(v, 255, k));
+
+/* ── Zustand ───────────────────────────────────────────────────────────── */
+const PARAMS = new URLSearchParams(location.search);
+const ZEIT_FREEZE = (() => {
+  const roh = PARAMS.get("zeit");
+  const w = roh === null ? NaN : parseFloat(roh);
+  return isFinite(w) ? Math.min(w, 60) : null;
+})();
+
+const cv = document.getElementById("blatt");
+const cx2 = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+function layout() {
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  cv.style.width = W + "px"; cv.style.height = H + "px";
+  cx2.setTransform(DPR, 0, 0, DPR, 0, 0);
+  baueKlingen();
+}
+
+/* Klingen: Geometrie einmal deterministisch gewürfelt */
+const ANZAHL = 44;
+const klingen = [];
+function baueKlingen() {
+  klingen.length = 0;
+  for (let i = 0; i < ANZAHL; i++) {
+    const t01 = (i + 0.5) / ANZAHL;
+    klingen.push({
+      t01,
+      x: (t01 + (rausch(i * 3.7) - 0.5) * 0.006) * W,
+      y0: H * 0.07,
+      laenge: H * (0.30 + 0.17 * rausch(i * 5.1)),
+      breite: 8 + 7 * rausch(i * 7.3),
+      rMax: 5.5 + 3.5 * rausch(i * 9.7),
+      fuell: 0.15 + 0.2 * rausch(i * 11.3),
+      tropfenA: 0,
+      swayT0: -9, swayAmp: 0
+    });
+  }
+}
+
+/* Fallende Tropfen + Ringe auf dem unsichtbaren Wasser */
+const tropfen = [];   // {x, y, vy, r, farbe}
+const ringe = [];     // {x, t, farbe}
+const wasserY = () => H * 0.93;
+
+function schritt(dt, zeit) {
+  const lage = songLage(zeit);
+  for (const k of klingen) {
+    const e = energie01(k.t01, lage);
+    // Das Gefäß: Musik gießt ein (quadratisch — nur echte Energie füllt),
+    // der Ablauf ist träge. Dauer staut, Kurzes verrinnt.
+    k.fuell += (0.60 * e * e - 0.11) * dt;
+    k.fuell = clamp(k.fuell, 0, 1.06);
+    if (k.fuell > 1) {
+      k.tropfenA += (k.fuell - 1) * k.laenge * k.breite * 0.5 * dt * 12;
+      k.fuell = 1;
+    } else {
+      k.tropfenA = Math.max(0, k.tropfenA - 1.2 * dt);
+    }
+    const r = Math.sqrt(k.tropfenA / Math.PI);
+    if (r > k.rMax) {
+      // Abriss: der Tropfen fällt, die Klinge schwingt nach
+      tropfen.push({ x: k.x, y: k.y0 + k.laenge + r, vy: H * 0.06, r: r * 0.92, farbe: bandFarbe(k.t01) });
+      k.tropfenA *= 0.12;
+      k.swayT0 = zeit; k.swayAmp = 2.2 + r * 0.25;
+      if (tropfen.length > 260) tropfen.shift();
+    }
+  }
+  const g = H * 1.05;
+  for (let i = tropfen.length - 1; i >= 0; i--) {
+    const t = tropfen[i];
+    t.vy += g * dt;
+    if (t.vy > H * 0.9) t.vy = H * 0.9;
+    t.y += t.vy * dt;
+    if (t.y >= wasserY()) {
+      ringe.push({ x: t.x, t: 0, farbe: t.farbe });
+      if (ringe.length > 70) ringe.shift();
+      tropfen.splice(i, 1);
+    }
+  }
+  for (let i = ringe.length - 1; i >= 0; i--) {
+    ringe[i].t += dt;
+    if (ringe[i].t > 0.5) ringe.splice(i, 1);
+  }
+}
+
+/* ── Zeichnen: scharfe Pfade, kein Schatten, kein Glow ─────────────────── */
+function klingenPfad(k, sway) {
+  const x = k.x + sway, y0 = k.y0, L = k.laenge, w2 = k.breite / 2;
+  const p = new Path2D();
+  p.moveTo(x, y0);                                   // oberer Spitz
+  p.quadraticCurveTo(x + w2, y0 + L * 0.16, x + w2, y0 + L * 0.34);
+  p.quadraticCurveTo(x + w2 * 0.96, y0 + L * 0.72, x, y0 + L);   // unterer Spitz
+  p.quadraticCurveTo(x - w2 * 0.96, y0 + L * 0.72, x - w2, y0 + L * 0.34);
+  p.quadraticCurveTo(x - w2, y0 + L * 0.16, x, y0);
+  p.closePath();
+  return p;
+}
+
+function male(zeit) {
+  cx2.clearRect(0, 0, W, H);
+  cx2.fillStyle = "#05070d";
+  cx2.fillRect(0, 0, W, H);
+
+  for (const k of klingen) {
+    const f = bandFarbe(k.t01);
+    const dtS = zeit - k.swayT0;
+    const sway = dtS < 2 ? k.swayAmp * Math.sin(dtS * 34) * Math.exp(-3.4 * dtS) : 0;
+    const pfad = klingenPfad(k, sway);
+
+    // leerer Körper: dunkles Glas mit feiner Farbkante
+    cx2.fillStyle = "#0a0e18";
+    cx2.fill(pfad);
+    cx2.strokeStyle = rgba(f, 0.30);
+    cx2.lineWidth = 1;
+    cx2.stroke(pfad);
+
+    // Flüssigkeit: sitzt an der Spitze, Füllstand = gestaute Energie
+    if (k.fuell > 0.02) {
+      const tipY = k.y0 + k.laenge;
+      const obenY = tipY - k.laenge * k.fuell * 0.96;
+      cx2.save();
+      cx2.clip(pfad);
+      const gL = cx2.createLinearGradient(0, obenY, 0, tipY);
+      gL.addColorStop(0, rgba(hellerZuWeiss(f, 0.15), 0.95));
+      gL.addColorStop(0.25, rgba(f, 0.9));
+      gL.addColorStop(1, rgba(dunkler(f, 0.45), 0.95));
+      cx2.fillStyle = gL;
+      cx2.fillRect(k.x + sway - k.breite, obenY, k.breite * 2, tipY - obenY);
+      // Meniskus: leicht durchhängende helle Oberkante
+      cx2.beginPath();
+      cx2.moveTo(k.x + sway - k.breite / 2, obenY);
+      cx2.quadraticCurveTo(k.x + sway, obenY + 2.2, k.x + sway + k.breite / 2, obenY);
+      cx2.strokeStyle = rgba(hellerZuWeiss(f, 0.55), 0.9);
+      cx2.lineWidth = 1.4;
+      cx2.stroke();
+      // Glanzkante links: eine harte, schmale Lichtlinie — kein Glow
+      cx2.beginPath();
+      cx2.moveTo(k.x + sway - k.breite * 0.22, obenY + 3);
+      cx2.lineTo(k.x + sway - k.breite * 0.10, tipY - 4);
+      cx2.strokeStyle = "rgba(255,255,255,0.30)";
+      cx2.lineWidth = 1;
+      cx2.stroke();
+      cx2.restore();
+    }
+
+    // hängender Tropfen: schwillt, dehnt sich, will fallen
+    const r = Math.sqrt(k.tropfenA / Math.PI);
+    if (r > 0.7) {
+      const naehe = clamp(r / k.rMax, 0, 1);
+      const dehn = 1 + 0.35 * naehe * naehe;
+      const wobble = reducedMotion ? 0 : Math.sin(zeit * 17 + k.t01 * 40) * 0.6 * naehe;
+      const ty = k.y0 + k.laenge + r * dehn * 0.75 + wobble;
+      cx2.beginPath();
+      cx2.ellipse(k.x + sway, ty, r, r * dehn, 0, 0, Math.PI * 2);
+      const gT = cx2.createLinearGradient(0, ty - r, 0, ty + r);
+      gT.addColorStop(0, rgba(hellerZuWeiss(f, 0.25), 1));
+      gT.addColorStop(1, rgba(dunkler(f, 0.5), 1));
+      cx2.fillStyle = gT;
+      cx2.fill();
+      // Halsansatz zur Spitze
+      cx2.beginPath();
+      cx2.moveTo(k.x + sway - r * 0.4, k.y0 + k.laenge);
+      cx2.quadraticCurveTo(k.x + sway, k.y0 + k.laenge + r * 0.5, k.x + sway + r * 0.4, k.y0 + k.laenge);
+      cx2.fillStyle = rgba(f, 0.9);
+      cx2.fill();
+      // Lichtpunkt
+      cx2.beginPath();
+      cx2.arc(k.x + sway - r * 0.3, ty - r * 0.35, Math.max(0.7, r * 0.18), 0, Math.PI * 2);
+      cx2.fillStyle = "rgba(255,255,255,0.55)";
+      cx2.fill();
+    }
+  }
+
+  // fallende Tropfen: leicht gestreckt, mit Lichtpunkt
+  for (const t of tropfen) {
+    cx2.beginPath();
+    cx2.ellipse(t.x, t.y, t.r, t.r * 1.18, 0, 0, Math.PI * 2);
+    const gT = cx2.createLinearGradient(0, t.y - t.r, 0, t.y + t.r);
+    gT.addColorStop(0, rgba(hellerZuWeiss(t.farbe, 0.2), 1));
+    gT.addColorStop(1, rgba(dunkler(t.farbe, 0.5), 1));
+    cx2.fillStyle = gT;
+    cx2.fill();
+    cx2.beginPath();
+    cx2.arc(t.x - t.r * 0.3, t.y - t.r * 0.35, Math.max(0.6, t.r * 0.18), 0, Math.PI * 2);
+    cx2.fillStyle = "rgba(255,255,255,0.5)";
+    cx2.fill();
+  }
+
+  // Ringe auf dem unsichtbaren Wasser: kurz, dünn, dann fort
+  for (const r of ringe) {
+    const f01 = r.t / 0.5;
+    const rx = 3 + 24 * f01;
+    cx2.beginPath();
+    cx2.ellipse(r.x, wasserY(), rx, rx * 0.2, 0, 0, Math.PI * 2);
+    cx2.strokeStyle = rgba(r.farbe, 0.45 * (1 - f01));
+    cx2.lineWidth = 1;
+    cx2.stroke();
+  }
+}
+
+/* ── Schleife ──────────────────────────────────────────────────────────── */
+window.addEventListener("resize", () => {
+  layout();
+  if (ZEIT_FREEZE !== null) { einschwingen(ZEIT_FREEZE); male(ZEIT_FREEZE); }
+});
+layout();
+
+const zeitEl = document.getElementById("zeit");
+let laeuft = true, zeit = 0, letzter = performance.now();
+
+document.addEventListener("keydown", ev => {
+  if (ev.key === " ") { ev.preventDefault(); laeuft = !laeuft; letzter = performance.now(); }
+});
+
+function einschwingen(bis) {
+  tropfen.length = 0; ringe.length = 0;
+  const dt = 1 / 60;
+  for (let s = 0; s * dt < bis; s++) schritt(dt, s * dt);
+}
+
+if (ZEIT_FREEZE !== null) {
+  einschwingen(ZEIT_FREEZE);
+  male(ZEIT_FREEZE);
+  zeitEl.textContent = "STAND " + String(Math.floor(ZEIT_FREEZE)).padStart(2, "0") + " s";
+} else {
+  function frame(now) {
+    const dt = Math.min(0.033, Math.max(0.001, (now - letzter) / 1000));
+    letzter = now;
+    if (laeuft) { zeit += dt; schritt(dt, zeit); }
+    male(zeit);
+    const s = Math.floor(zeit);
+    zeitEl.textContent =
+      String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>

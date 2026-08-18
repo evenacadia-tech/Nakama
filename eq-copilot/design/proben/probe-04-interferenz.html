@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROBE 04 · Interferenz</title>
+<style>
+@font-face {
+  font-family: "Manrope";
+  src: url("../fonts/Manrope-Variable.ttf") format("truetype");
+  font-weight: 200 800;
+  font-display: swap;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; background: #04060b; }
+body { font-family: "Manrope", system-ui, sans-serif; color: #cfd6e4; user-select: none; }
+canvas { position: absolute; inset: 0; display: block; }
+header {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+  display: flex; align-items: baseline; gap: 14px; padding: 16px 20px;
+  pointer-events: none;
+}
+.probe { font-size: 11px; letter-spacing: 4px; color: #6d7789; }
+.name { font-size: 15px; letter-spacing: 2.5px; color: #e8edf6; }
+footer {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+  display: flex; justify-content: space-between; gap: 16px; padding: 12px 20px;
+  font-size: 9.5px; letter-spacing: 1.6px; color: #5d6678; pointer-events: none;
+}
+#zeit { font-variant-numeric: tabular-nums; white-space: nowrap; }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<header>
+  <span class="probe">PROBE 04</span>
+  <span class="name">INTERFERENZ</span>
+</header>
+<footer>
+  <span>DAS SYSTEM: KLANG IST WELLE — JEDES BAND SCHWINGT EIN ECHTES WELLENFELD AN (BASS = LANGE WELLEN, HÖHEN = FEINE RIPPEL) · DIE MUSTER ENTSTEHEN DURCH WIRKLICHE INTERFERENZ, NICHTS IST GEZEICHNET · KICK = KREISWELLE · FARBE = FREQUENZBEREICH · LEERTASTE HÄLT AN</span>
+  <span id="zeit">00:00</span>
+</footer>
+
+<script>
+"use strict";
+/* ── PROBE 04 · INTERFERENZ ─────────────────────────────────────────────
+   Test der verschärften Gesetze (3a Notwendigkeit · 3b Emergenz · 3c
+   Punkt-Schärfe): Das Bild hat einen unbestreitbaren Grund zu existieren —
+   KLANG IST WELLE. Hier wird die 2D-Wellengleichung wirklich gerechnet:
+   jedes Frequenzband ist ein Oszillator im selben Medium (Bass = lange
+   Wellen, Höhen = feine Rippel), die Wellen laufen, überlagern sich und
+   löschen sich aus. Jedes Muster ist Physik, keines ist gezeichnet.
+   Deterministisch: ?zeit=SEK friert reproduzierbar ein.                  */
+
+const F_MIN = 20, F_MAX = 18000;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function smoothstep(e0, e1, v) {
+  const t = clamp((v - e0) / Math.max(1e-9, e1 - e0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+const gaussian = (t, c, w) => Math.exp(-0.5 * ((t - c) / w) ** 2);
+const tForFrequency = f => Math.log10(f / F_MIN) / Math.log10(F_MAX / F_MIN);
+const rausch = k => { const s = Math.sin(k * 12.9898 + 78.233) * 43758.5453; return s - Math.floor(s); };
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ── Songschleife (identisch zu den Musterblättern — portiert, nicht neu) ── */
+const SONG = { laenge: 30, bpm: 96 };
+function songLage(time) {
+  const lt = ((time % SONG.laenge) + SONG.laenge) % SONG.laenge;
+  const beat = Math.max(0, time) * SONG.bpm / 60;
+  const zaehlzeit = beat - Math.floor(beat);
+  const strophe = smoothstep(4.5, 7, lt) * (1 - smoothstep(13, 15.5, lt));
+  const chorus = smoothstep(13, 15.5, lt) * (1 - smoothstep(23, 25.5, lt));
+  const ausklang = smoothstep(23, 25.5, lt);
+  const intro = 1 - smoothstep(4.5, 7, lt);
+  const dichte = 0.25 * intro + 0.62 * strophe + 1.0 * chorus + 0.38 * ausklang;
+  const puls = reducedMotion ? 0.2 : 1;
+  const kick = Math.exp(-8 * zaehlzeit) * (0.35 + 0.65 * dichte) * puls;
+  const snare = (Math.floor(beat) % 2 === 1 ? Math.exp(-10 * zaehlzeit) : 0) * dichte * puls;
+  const achtel = beat * 2 - Math.floor(beat * 2);
+  const hat = Math.exp(-13 * achtel) * (0.15 + 0.85 * dichte) * puls;
+  const NOTEN = [41.2, 41.2, 49.0, 55.0, 41.2, 36.7, 49.0, 61.7];
+  const note = NOTEN[((Math.floor(beat) % 8) + 8) % 8];
+  const bassHalt = (0.55 + 0.45 * Math.exp(-2.5 * zaehlzeit)) * (0.35 + 0.65 * dichte);
+  return { lt, beat, zaehlzeit, dichte, chorus, kick, snare, hat, note, bassHalt };
+}
+function musikDb(t, lage) {
+  return lage.kick * 4.2 * gaussian(t, tForFrequency(52), 0.045)
+    + lage.bassHalt * (3.0 * gaussian(t, tForFrequency(lage.note), 0.05)
+                     + 1.2 * gaussian(t, tForFrequency(lage.note * 2), 0.045))
+    + lage.snare * (3.2 * gaussian(t, tForFrequency(190), 0.07)
+                  + 3.6 * gaussian(t, tForFrequency(4200), 0.20))
+    + lage.hat * 3.0 * smoothstep(0.70, 0.94, t)
+    + lage.chorus * 2.0 * gaussian(t, tForFrequency(760), 0.26)
+        * (0.75 + 0.25 * Math.sin((lage.lt + Math.floor(lage.beat / 48) * 30) * 2.3))
+    + (lage.dichte - 0.9) * 1.8
+    - 1.5 * lage.kick * lage.dichte * (1 - gaussian(t, tForFrequency(52), 0.06));
+}
+function baselineDb(t) {
+  const high = Math.max(0, (t - 0.82) / 0.18);
+  return -16.2 - 2.8 * t - 7.8 * t * t - 8.8 * Math.pow(high, 1.5)
+    + 1.7 * gaussian(t, 0.13, 0.11);
+}
+const energie01 = (t, lage) => clamp((baselineDb(t) + musikDb(t, lage) + 40) / 30, 0, 1);
+
+/* ── Zustand ───────────────────────────────────────────────────────────── */
+const PARAMS = new URLSearchParams(location.search);
+const ZEIT_FREEZE = (() => {
+  const roh = PARAMS.get("zeit");
+  const w = roh === null ? NaN : parseFloat(roh);
+  return isFinite(w) ? Math.min(w, 60) : null;
+})();
+
+let W = 0, H = 0, DPR = 1;
+const cv = document.getElementById("gl");
+
+/* ── Das Medium: 2D-Wellengleichung auf einem festen Gitter ───────────── */
+const NX = 264, NY = 148, ZELLEN = NX * NY;
+const u = new Float32Array(ZELLEN);
+const uAlt = new Float32Array(ZELLEN);
+const uNeu = new Float32Array(ZELLEN);
+const C2 = 0.22;                 // Ausbreitung (stabil unter 0.25)
+const DAEMPFUNG = 0.998;
+let letzterBeat = -1;
+
+/* Oszillatoren: 9 Bänder, Sichtfrequenz wächst mit der Tonfrequenz —
+   dadurch entstehen die Wellenlängen von selbst (lang links, fein rechts).
+   Wenige kohärente Quellen ergeben lesbare Fronten statt Brei. */
+const QUELLEN = [];
+for (let q = 0; q < 9; q++) {
+  const t01 = (q + 0.5) / 9;
+  QUELLEN.push({
+    t01,
+    cx: Math.round(t01 * (NX - 8)) + 4,
+    cy: Math.round(NY * 0.26),
+    fVis: 0.6 + 5.2 * t01 * t01,
+    phase: rausch(q * 7.1) * Math.PI * 2
+  });
+}
+
+function stampfe(cx, cy, wert) {
+  const i = cy * NX + cx;
+  u[i] += wert;
+  u[i - 1] += wert * 0.5; u[i + 1] += wert * 0.5;
+  u[i - NX] += wert * 0.5; u[i + NX] += wert * 0.5;
+}
+function beule(cx, cy, radius, staerke) {
+  for (let dy = -radius; dy <= radius; dy++)
+    for (let dx = -radius; dx <= radius; dx++) {
+      const x = cx + dx, y = cy + dy;
+      if (x < 1 || x >= NX - 1 || y < 1 || y >= NY - 1) continue;
+      u[y * NX + x] += staerke * Math.exp(-(dx * dx + dy * dy) / (radius * 0.9));
+    }
+}
+
+function schritt(dt, zeit) {
+  const lage = songLage(zeit);
+  // Bänder schwingen das Medium an; Stärke = Bandenergie²
+  for (const q of QUELLEN) {
+    const e = energie01(q.t01, lage);
+    stampfe(q.cx, q.cy, Math.sin(2 * Math.PI * q.fVis * zeit + q.phase) * e * e * 1.7);
+  }
+  // Kick = Kreiswelle im Bassfeld, Snare = Schlag in die Mitte
+  const beatIdx = Math.floor(lage.beat);
+  if (beatIdx !== letzterBeat) {
+    letzterBeat = beatIdx;
+    beule(Math.round(NX * 0.10), Math.round(NY * 0.26), 3, (1.4 + 1.6 * lage.dichte) * (reducedMotion ? 0.3 : 1));
+    if (beatIdx % 2 === 1)
+      beule(Math.round(NX * 0.45), Math.round(NY * 0.26), 2, 1.1 * lage.dichte * (reducedMotion ? 0.3 : 1));
+  }
+  // Wellengleichung (Leapfrog) + Dämpfung
+  for (let y = 1; y < NY - 1; y++) {
+    const z = y * NX;
+    for (let x = 1; x < NX - 1; x++) {
+      const i = z + x;
+      const lap = u[i - 1] + u[i + 1] + u[i - NX] + u[i + NX] - 4 * u[i];
+      uNeu[i] = (2 * u[i] - uAlt[i] + C2 * lap) * DAEMPFUNG;
+    }
+  }
+  // absorbierende Ränder: die Welt endet nicht an einer Wand
+  for (let y = 0; y < NY; y++) {
+    const z = y * NX;
+    for (let k = 0; k < 10; k++) {
+      const f = 0.86 + 0.014 * k;
+      uNeu[z + k] *= f; uNeu[z + NX - 1 - k] *= f;
+    }
+  }
+  for (let k = 0; k < 10; k++) {
+    const f = 0.86 + 0.014 * k;
+    for (let x = 0; x < NX; x++) {
+      uNeu[k * NX + x] *= f; uNeu[(NY - 1 - k) * NX + x] *= f;
+    }
+  }
+  uAlt.set(u);
+  u.set(uNeu);
+}
+
+/* ── WebGL: ein scharfer Punkt je Gitterzelle, additiv ─────────────────── */
+const gl = cv.getContext("webgl2", { antialias: false, alpha: true, premultipliedAlpha: false })
+        || cv.getContext("webgl", { antialias: false, alpha: true, premultipliedAlpha: false });
+if (!gl) document.querySelector(".name").textContent = "INTERFERENZ — WEBGL NICHT VERFÜGBAR";
+
+const VS = `
+attribute vec2 aPos;
+attribute float aBand;
+attribute float aHell;
+uniform vec2 uAufloesung;
+varying float vBand, vHell;
+void main() {
+  vec2 clip = (aPos / uAufloesung) * 2.0 - 1.0;
+  gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
+  gl_PointSize = (2.6 + 2.0 * max(aHell, 0.0)) * ${"" + Math.min(2, window.devicePixelRatio || 1)}.0;
+  vBand = aBand; vHell = aHell;
+}`;
+const FS = `
+precision mediump float;
+varying float vBand, vHell;
+vec3 bandFarbe(float b) {
+  vec3 bass  = vec3(1.00, 0.55, 0.18);
+  vec3 mitte = vec3(0.96, 0.20, 0.62);
+  vec3 hoehe = vec3(0.38, 0.86, 1.00);
+  return b < 0.5 ? mix(bass, mitte, b * 2.0) : mix(mitte, hoehe, (b - 0.5) * 2.0);
+}
+void main() {
+  vec2 d = gl_PointCoord - vec2(0.5);
+  float r = length(d) * 2.0;
+  if (r > 1.0) discard;
+  float kern = smoothstep(1.0, 0.0, r);
+  float kamm = max(vHell, 0.0);          // Wellenkamm leuchtet
+  float tal = max(-vHell, 0.0);          // Wellental bleibt tiefdunkelblau
+  float kern2 = pow(kamm, 2.8);          // nur der Kammkern glüht — dünne Fronten
+  vec3 farbe = bandFarbe(vBand) * kern2 * 1.15
+    + vec3(1.0, 0.97, 0.90) * smoothstep(0.82, 1.0, kamm) * 0.4
+    + vec3(0.08, 0.13, 0.26) * tal * 0.20;
+  float a = kern * (kern2 * 0.8 + tal * 0.07);
+  gl_FragColor = vec4(farbe * kern * 0.9, a);   // vormultipliziert; ONE, ONE
+}`;
+function shader(typ, quelle) {
+  const s = gl.createShader(typ);
+  gl.shaderSource(s, quelle); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+    throw new Error("Shader: " + gl.getShaderInfoLog(s));
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, shader(gl.VERTEX_SHADER, VS));
+gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(prog);
+if (!gl.getProgramParameter(prog, gl.LINK_STATUS))
+  throw new Error("Programm: " + gl.getProgramInfoLog(prog));
+gl.useProgram(prog);
+const uAufloesung = gl.getUniformLocation(prog, "uAufloesung");
+const aPos = gl.getAttribLocation(prog, "aPos");
+const aBand = gl.getAttribLocation(prog, "aBand");
+const aHell = gl.getAttribLocation(prog, "aHell");
+const posBuf = gl.createBuffer(), bandBuf = gl.createBuffer(), hellBuf = gl.createBuffer();
+const posArr = new Float32Array(ZELLEN * 2);
+const bandArr = new Float32Array(ZELLEN);
+const hellArr = new Float32Array(ZELLEN);
+gl.enableVertexAttribArray(aPos);
+gl.enableVertexAttribArray(aBand);
+gl.enableVertexAttribArray(aHell);
+gl.blendFunc(gl.ONE, gl.ONE);
+gl.enable(gl.BLEND);
+gl.disable(gl.DEPTH_TEST);
+
+function layout() {
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  cv.style.width = W + "px"; cv.style.height = H + "px";
+  // Punktpositionen: Zellmitte mit leiser Streuung — kein steriles Raster
+  let n = 0;
+  for (let y = 0; y < NY; y++)
+    for (let x = 0; x < NX; x++) {
+      const jx = (rausch(n * 3.1) - 0.5) * 0.7, jy = (rausch(n * 5.7) - 0.5) * 0.7;
+      posArr[n * 2] = ((x + 0.5 + jx) / NX) * W * DPR;
+      posArr[n * 2 + 1] = ((y + 0.5 + jy) / NY) * H * DPR;
+      bandArr[n] = (x + 0.5) / NX;
+      n++;
+    }
+  gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, posArr, gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER, bandBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, bandArr, gl.STATIC_DRAW);
+}
+window.addEventListener("resize", () => { layout(); if (ZEIT_FREEZE !== null) male(); });
+layout();
+
+function male() {
+  for (let i = 0; i < ZELLEN; i++) hellArr[i] = clamp(u[i] * 2.6, -1, 1);
+  gl.viewport(0, 0, cv.width, cv.height);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.uniform2f(uAufloesung, cv.width, cv.height);
+  gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, bandBuf);
+  gl.vertexAttribPointer(aBand, 1, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, hellBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, hellArr, gl.DYNAMIC_DRAW);
+  gl.vertexAttribPointer(aHell, 1, gl.FLOAT, false, 0, 0);
+  gl.drawArrays(gl.POINTS, 0, ZELLEN);
+}
+
+/* ── Schleife ──────────────────────────────────────────────────────────── */
+const zeitEl = document.getElementById("zeit");
+let laeuft = true, zeit = 0, letzter = performance.now();
+
+document.addEventListener("keydown", ev => {
+  if (ev.key === " ") { ev.preventDefault(); laeuft = !laeuft; letzter = performance.now(); }
+});
+
+if (ZEIT_FREEZE !== null) {
+  const dt = 1 / 60;
+  for (let s = 0; s * dt < ZEIT_FREEZE; s++) schritt(dt, s * dt);
+  male();
+  zeitEl.textContent = "STAND " + String(Math.floor(ZEIT_FREEZE)).padStart(2, "0") + " s";
+} else {
+  function frame(now) {
+    const dt = Math.min(0.033, Math.max(0.001, (now - letzter) / 1000));
+    letzter = now;
+    if (laeuft) { zeit += dt; schritt(1 / 60, zeit); }
+    male();
+    const s = Math.floor(zeit);
+    zeitEl.textContent =
+      String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>

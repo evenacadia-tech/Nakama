@@ -1,2 +1,18 @@
 *.log
 scratch/
+
+# Bau-Artefakte (regenerierbar)
+eq-copilot/build/
+broker/target/
+
+# Vendor (Playwright fuer Design-Renders)
+eq-copilot/design/vendor-build/node_modules/
+
+# Kalibrier-Medien (gross; liegen beim User, Messwerte sind versioniert)
+eq-copilot/kalibration/*.wav
+eq-copilot/kalibration/*.flac
+eq-copilot/kalibration/*.flp
+eq-copilot/kalibration/renders/
+
+# Golden-Fixture-WAVs (tools/eq-copilot/erzeuge_fixtures.py --nur-wav)
+eq-copilot/fixtures/*.wav

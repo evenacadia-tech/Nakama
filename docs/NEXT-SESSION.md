@@ -13,6 +13,12 @@ Kandidaten aus der User-autorisierten Richtung: Klangkörper-Silhouette ·
 Balance-Ring · P01-Perkolation im Glas (einzige abgenommene Ästhetik).
 Vision kommt vom User — Referenzen erfragen, treu übersetzen.
 
+**Sicht-Probe LEBT (18.08.): P01-Perkolation im Glasvolumen** —
+Film-Sandwich in der Prototyp-Seite (Beauty → additive Punkt-Ebene →
+additiver Glas-Deckel), bewiesene Kameraprojektion
+(`pruefe-projektion.html`), Songschleife, Bandwelten Amber/Magenta/Eis
+(FL-Repo 6b5d4eb). Der User schaut sie an, um seine Vorstellung zu formen.
+
 **Denk-Leinwand steht (18.08.):** `eq-copilot/design/prisma/
 prisma-prototyp.html` — drehbares Prisma aus 60 vorgerenderten
 Cycles-Frames (klar, 120°-Periode, `renders/dreh/`); Ziehen/Einrasten,

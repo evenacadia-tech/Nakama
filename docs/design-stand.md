@@ -42,6 +42,17 @@ Arbeitsrichtung: KLAR, rauchig als Reserve, Frost raus. Vorbehalt
 „zumindest auf den Bildern": endgültige Anmutungs-Abnahme am lebenden
 Objekt (drehbar, mit Daten), nicht am Standbild.
 
+**Effektdarstellungs-Festlegungen (User, 18.08. — bindend):**
+1. Reine Lichtbrechung allein trägt NICHT („zu dünn") — sie ist Material,
+   nicht Inhalt.
+2. **Der Raum wird genutzt:** die Bühne um das Prisma (Boden/Wand/Licht)
+   ist Teil der Darstellung, nicht nur Kulisse.
+3. **Der Effekt pro Seite lebt IM Prisma** (im Glasvolumen des
+   3D-Objekts), nicht auf ihm als Overlay.
+4. Qualitätsmaß: **definiert** statt Shaderzirkus — keine generischen
+   Blitzgewitter, keine chaotischen Wallpaper-Visualizer. Technikspektrum
+   bewusst diskutiert (Unreal bis einfachste JUCE-Animation).
+
 **Cycles-Grenzen, teuer erkundet (17.08., für alle Folge-Renders):**
 Spot-Watt sind KUGELnormiert — enger Kegel maskiert statt bündelt
 (3°-„Laser" braucht ~300 kW). Der Newton-Spektralfächer durch ZWEI

@@ -1,8 +1,8 @@
-# Nakama mit Instrumentenbus-Sonden — Produktentwurf 0.1
+# Nakama mit Instrumentenbus-Sonden — Produkt- und Technikentwurf 0.2
 
-- **Stand:** 2026-08-18
-- **Status:** Erster festgehaltener Zielentwurf nach User-Auswahl
-- **Gegenstand:** Funktions- und Interaktionsdesign, bewusst ohne visuelle Gestaltung
+- **Stand:** 2026-08-19
+- **Status:** Technische Entscheidungsgrundlage für den folgenden Implementierungsphasenplan
+- **Gegenstand:** Funktions-, Interaktions-, System- und Technikdesign; bewusst ohne visuelle Gestaltung
 - **Bauentscheidung:** Noch nicht erteilt
 
 ---
@@ -35,9 +35,16 @@ Die übrigen Punkte **3, 6, 7, 8, 11, 15, 19 und 20** stehen gesammelt am Ende a
 Der aktuelle, kanonische Nakama-Vertrag bleibt vorerst unverändert:
 
 - Nakama misst und berät;
-- das Audiosignal bleibt sampleidentisch;
+- der normale Analysepfad bleibt sampleidentisch, mit 0 Samples Latenz und 0 Tail;
 - es gibt keine Parameterfernsteuerung und keinen eigenen hörbaren EQ;
 - der User führt Änderungen selbst aus.
+
+Die bereits gebaute, eng begrenzte Ausnahme ist der bewusst per Toggle aktivierte Hörmarker: bei
+offenem Editor, im Realtime-Modus und heute mit dem Gate `playing || !hasTransport`, nie im
+Offline-Render. Der unbekannte Play-State ist damit derzeit fail-open und wird hier ausdrücklich
+als zu schließende Sicherheitslücke geführt. Der Marker ändert den passiven Grundvertrag nicht;
+die Zielmigration verlangt gültiges `playing=true`. Die spätere Remote-Preview erhält zusätzlich
+echte Hold-to-hear- und Lease-Semantik.
 
 Dieser Entwurf ist deshalb eine **zukünftige Produkterweiterung**, keine Beschreibung des bereits
 Gebauten. Besonders die Punkte **16 und 17** führen erstmals eine aktive Sondenvariante ein. Vor
@@ -45,11 +52,28 @@ einer Umsetzung müssten der kanonische Produktplan, die Schemata, die Audio-Sic
 die Nulltest-Verträge ausdrücklich erweitert werden. Das darf nicht als stiller Ausbau der
 heutigen passiven Instanz geschehen.
 
-Maßgebliche Ist-Quellen bleiben:
+Für den Ist-Stand gilt folgende Quellenhierarchie:
 
-- [`FL-EQ-Copilot-Recherche.md`](FL-EQ-Copilot-Recherche.md)
-- [`eq-copilot/docs/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md`](eq-copilot/docs/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md)
-- [`FL-Inter-Plugin-Kommunikation-Wissen.md`](FL-Inter-Plugin-Kommunikation-Wissen.md)
+- Quellcode und Tests sind die letzte Wahrheit; [`CLAUDE.md`](../CLAUDE.md) und
+  [`plugin-wissen.md`](plugin-wissen.md) beschreiben den aktuellen Standalone-Broker;
+- [`FL-EQ-Copilot-Recherche.md`](../FL-EQ-Copilot-Recherche.md) und
+  [`NAKAMA-SPECTRAL-FIELD-BAUPLAN.md`](../eq-copilot/docs/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md)
+  sind wertvolle historische Entwurfsquellen, enthalten aber noch Verweise auf die entfernte
+  Tauri-Brokerarchitektur und sind dafür **keine** Codewahrheit;
+- [`BENCHMARK-STUDIE-RESO-SMARTEQ-PROQ.md`](../eq-copilot/docs/BENCHMARK-STUDIE-RESO-SMARTEQ-PROQ.md)
+  bleibt eine Forschungsquelle, nicht der Nachweis einer bereits gebauten Funktion.
+
+Die in Fassung 0.1 genannte Datei `FL-Inter-Plugin-Kommunikation-Wissen.md` existiert in diesem
+Repository nicht. Ihre Rolle übernehmen der kanonische Produktplan, `plugin-wissen.md`, die
+versionierten Schemata und der reale Quellcode.
+
+### 0.2 Geltungsbereich dieser Fassung
+
+Teil I (Abschnitte 1–28) hält das gewählte Produktverhalten fest. Teil II (ab Abschnitt 29)
+entscheidet den bestgeeigneten technischen Ansatz für **alle zwölf Kern- und alle acht
+Roadmap-Funktionen**, verankert ihn im heutigen Nakama und definiert messbare Übergabekriterien
+für den nächsten Schritt. Noch nicht enthalten sind visuelles Detaildesign, Aufwandsschätzung,
+Meilensteine und eine Zuordnung zu Implementierungsphasen.
 
 ---
 
@@ -128,8 +152,9 @@ Eine passive Sonde liegt beispielsweise auf:
 - Streicher-/Atmosphärenbus,
 - Reverb- oder Effektbus.
 
-Sie hört genau das Signal an ihrer Insert-Position, misst es und leitet es unverändert weiter.
-Sie ist die sichere Standardform.
+Sie hört genau das Signal an ihrer Insert-Position, misst es und leitet es im normalen Betrieb
+unverändert weiter. Die einzige Ausnahme bleibt der ausdrücklich aktivierte, renderneutrale
+Hörmarker. Sie ist die sichere Standardform.
 
 ### 3.3 Aktive Nakama Probe
 
@@ -160,8 +185,8 @@ weiterhin in Nakama Main innerhalb von FL Studio statt; kein Terminal ist nötig
 
 ## 4. Was Main und Sonden austauschen
 
-Die genaue Transporttechnik wird in diesem Entwurf bewusst nicht festgelegt. Aus Usersicht
-braucht die Zusammenarbeit folgende Inhalte:
+Teil I beschreibt die Zusammenarbeit aus Usersicht; der verbindliche Transport- und
+Transaktionsvertrag folgt in Teil II, Abschnitt 33. Aus Usersicht braucht sie folgende Inhalte:
 
 ### Sonde → Main
 
@@ -559,8 +584,11 @@ Der erste aktive Sondenprozessor bleibt absichtlich EQ- und Korrektur-zentriert:
 - dynamische EQ-Bänder;
 - Bearbeitung von Mitte oder Seite pro geeignetem Band;
 - begrenzte Stereobreite und optional Mono-Bass;
-- Polarität und kurze Laufzeitkorrektur für nachgewiesene Fälle;
 - automatische Lautheitsangleichung für die Vorschau.
+
+Polarität und Laufzeit bleiben zunächst Analysefunktionen. Eine spätere Korrektur braucht einen
+eigenen Kohärenz-, Latenz- und Recallvertrag und wird nur für nachweisliche Aufnahme-/Layerpaare
+in Betracht gezogen.
 
 Ein kompletter Channelstrip mit Sättigung, Reverb, Limiter und kreativen Effekten gehört nicht
 in diesen ersten aktiven Umfang. Nakama soll Ursachen korrigieren und nicht alle vorhandenen
@@ -811,6 +839,9 @@ vollständig passiv.
 - 14 · Vorher/Nachher-Prüfung
 
 **Ergebnis:** Empfehlungen werden nicht nur behauptet, sondern kontrolliert gehört und gemessen.
+Hier entstehen zunächst analytisches PRE/POST, der bestehende lokale Marker sowie manuelle
+`manual_external`-Versuche. Active-A/B und Delta sind keine Voraussetzung für den Active-DSP;
+sie werden danach als Integration aus Experimentkern **und** zwei lokalen DSP-Pfaden ergänzt.
 
 ### Kernbaustein C — Kontrolliert Eingreifen
 
@@ -839,7 +870,7 @@ genug sind. Sonst würde Nakama schneller eingreifen, als es Ursachen beweisen k
 | Konkrete Empfehlung | Ursache, Rolle, Messqualität und Werkzeuggrenze |
 | Vorher/Nachher | Baseline, dieselbe Passage und Lautheitsabgleich |
 | Eigener Sonden-DSP | neue aktive Produktklasse oder ausdrücklich aktiver Modus |
-| Dynamisches Entmaskieren | aktiver DSP, zwei ausgewählte Quellen und Prioritätsrichtung |
+| Dynamisches Entmaskieren | aktiver DSP, zwei ausgewählte Quellen, Prioritätsrichtung und bewiesene FL-Sidechain/PDC |
 | Zentraler Assistent | alle Befunde in einem gemeinsamen Zustandsmodell |
 
 ---
@@ -942,25 +973,22 @@ Der Entwurf gilt funktional als eingelöst, wenn der User in einem echten FL-Pro
 
 ---
 
-## 27. Noch offene Produktentscheidungen
+## 27. Für den Implementierungsplan entschiedene Produktfragen
 
-Vor einem Bau müssen folgende Punkte ausdrücklich entschieden werden:
+| Frage | Verbindliche Entscheidung 0.2 |
+|---|---|
+| Plugin-Einträge | Main, passive Probe und Active Probe erhalten getrennte stabile Class-IDs aus einer gemeinsamen Kernbibliothek. |
+| erster aktiver Umfang | Trim, minimumphasiger statischer/dynamischer EQ, Band-M/S beziehungsweise L/R, begrenzte Breite und Mono-Bass; keine lineare Phase, Laufzeitkorrektur, Sättigung oder Limiting. |
+| Preview | jede vom Main erzeugte Klangänderung beginnt als gehaltene, selbstterminierende Preview; Apply bleibt explizit. |
+| normale Projektgröße | UX für 1 Main + 16 sichtbare Sonden, Verträge und Lasttests bis 32. |
+| Priorität | direkt an Quelle und Passage über Prominence, Funktion, Schutz und gerichtete Beziehung; Userwert gewinnt. |
+| Delta-Hören | nur lokal, wenn eine Instanz beide Audiopfade innerhalb der qualifizierten Subsample-Goldentoleranz ausrichtet; sonst level-gematchtes A/B oder manueller Bypass. |
+| State/Undo/Recall | Probe-State ist DSP-Wahrheit; eigenes Revisions-/Undo-Log; Hostautomation wird synchronisiert, aber nicht als Sicherheitsgarantie verwendet. |
+| dynamische Tiefe | Standardmaximum 1,5 dB, Remote-Hard-Cap 3 dB, engeres Userbudget gewinnt. |
 
-1. Bleiben passive und aktive Sonde zwei klar getrennte Plugin-Einträge oder ein Plugin mit
-   bewusst umschaltbarem Modus?
-2. Welche aktiven Werkzeuge gehören verbindlich in die erste Sonde: nur EQ und Gain oder auch
-   Breite, Polarität und Laufzeitkorrektur?
-3. Soll jede aktive Aktion grundsätzlich zuerst als gehaltene Vorschau beginnen?
-4. Wie viele Busse sollen im normalen Projekt ohne unübersichtliche Einrichtung empfohlen
-   werden?
-5. Wie wird eine musikalische Priorität für die aktuelle Passage am schnellsten gesetzt?
-6. Welche Form des Delta-Hörens ist in FL Studio robust genug, ohne falsche
-   Samplegenauigkeit zu versprechen?
-7. Wie werden aktiver Zustand, Automation, Undo und Projekt-Recall in FL sichtbar und eindeutig?
-8. Welche maximalen Eingriffstiefen gelten ab Werk für dynamisches Entmaskieren?
-
-Diese Fragen ändern nicht die Produktidee. Sie bestimmen, wie sicher und verständlich die aktive
-Stufe umgesetzt werden kann.
+Offen für Messung, nicht für freie Produktinterpretation, bleiben konkrete Kalibrierwerte wie
+Feature-Kadenz, Konfidenzschwelle, Crossfadezeit und CPU-Budget. Sie besitzen in Abschnitt 49
+explizite Goldens und dürfen nur versioniert geändert werden.
 
 ---
 
@@ -976,6 +1004,1998 @@ Das Zielprodukt ist damit:
 > Schritte anbietet und auf Wunsch ausschließlich über den eigenen Sonden-DSP kontrolliert
 > eingreift.**
 
-Die übrigen acht Ideen bleiben erhalten und bilden die nachgelagerte Roadmap. Visuelles Design,
-konkrete Protokolle und Implementierungsmeilensteine sind ausdrücklich nicht Teil dieses ersten
-Entwurfs.
+Die übrigen acht Ideen bleiben erhalten und bilden die nachgelagerte Roadmap. Das technische
+Zielbild, konkrete Protokollklassen und überprüfbare Qualitätsgrenzen folgen in Teil II. Visuelles
+Design und der eigentliche Implementierungsphasenplan bleiben der nächste, getrennte Schritt.
+
+---
+
+# Teil II — Technische Produktspezifikation
+
+## 29. Recherchebasis und Qualitätsmaßstab
+
+### 29.1 Rechercheumfang
+
+Diese Fassung verbindet drei Evidenzstränge:
+
+1. den realen Nakama-Code und seine gebauten Verträge;
+2. aktuelle Herstellerdokumentation ausgewählter etablierter Referenzprodukte;
+3. Normen, offizielle Plattformdokumentation und Primärliteratur.
+
+Die Auswahl ist ein **Funktionsbenchmark**, kein Marktanteils- oder Qualitätsranking.
+Marketingaussagen über angebliche Klangqualität sind keine technische Evidenz. Übernommen werden
+nur dokumentierte Fähigkeiten, Grenzen, nachvollziehbare Produktmuster und messbare Standards.
+
+### 29.2 Relevanter Marktstand am 19.08.2026
+
+| Referenz | geprüfter offizieller Stand | Für Nakama besonders relevant |
+|---|---|---|
+| iZotope Neutron | 5.2.0 · 04.02.2026 | Assistant, Masking Meter, Unmask, Delta, Inter-Plugin-Kommunikation |
+| iZotope Ozone | 12.1.0 · 01.12.2025 | begrenzbarer Custom Assistant, Referenz- und Mastering-Workflow |
+| Tonal Balance Control | 3.1.1 · aktueller Downloadstand | Zielbibliothek, Mixdimensionen, integriertes Capture |
+| FabFilter Pro-Q | 4.13 · 30.06.2026 | Instance List, Kollisionssicht, Dynamic/Spectral EQ, EQ Match, Solo |
+| sonible smart:EQ 4 | 1.1.1 | hierarchisches Cross-Channel-Unmasking und Profile |
+| sonible pure:unmask | 1.0.1 | sample-synchroner Sidechain-Pfad für Echtzeit-Entmaskierung |
+| ADPTR Metric AB | 1.5.0 · 29.07.2026 | Sync/Cue/Loop, Lautheitsabgleich, Referenzvergleich |
+| NUGEN AB Assist 2 | 2.0 · Handbuchstand; kein neuerer Patchstand publiziert | Blindtest, Short-term-LUFS-Match, Mono-Check, sanfte Fades |
+| Melda MCompare/MMultiAnalyzer | Kernel 17.09 | Mehrinstanz-Analyse, Delay-Erkennung, Delta und A/B |
+| Normbasis | ITU-R BS.1770-5 · EBU R128 v5/2023 | Loudness und True Peak |
+
+### 29.3 Leitende Schlussfolgerung
+
+Nakama soll keinen der Benchmarks vollständig kopieren. Seine eigenständige Stärke ist die
+durchgängige und prüfbare Kette:
+
+```text
+Messpunkt → Passage → Quellenhypothese → Userabsicht → Hörbeweis
+          → kleiner Entwurf → sichere Vorschau → Userurteil → Nachmessung
+```
+
+In den ausgewerteten Herstellerunterlagen ist keine Referenz belegt, die diese Kette vollständig
+mit alternativen Ursachen, expliziter Unsicherheit, Stopbedingung und projektgebundenem Rückweg
+verbindet. Diese Evidenzkette ist daher der Produktkern und kein Zusatztext um einen Auto-EQ.
+
+---
+
+## 30. Verbindliche Architekturentscheidungen für den Phasenplan
+
+| Thema | Entscheidung 0.2 | Begründung |
+|---|---|---|
+| Plugin-Aufteilung | gemeinsame C++-Kernbibliothek, aber drei klare VST3-Ziele: **Nakama Main**, **Nakama Probe** und **Nakama Active Probe** | klare Insert-Wahl; der passive Nullvertrag kann nicht durch einen Modusschalter verloren gehen |
+| Feste Bus-Topologie | Passive Probe: Main-I/O; Active Probe: Main-I/O plus getrennte Stereo-Aux-Busse `priority_sidechain` und `compare_pre`; Main: Main-I/O plus eine im Spike festgelegte, kleine Zahl diskreter Contribution-Aux-Busse | Compare und Unmasking werden nie auf einem Aux multiplexed; exakte Beiträge existieren nur bei bewiesenem FL-Fan-in |
+| Kompatibilität | die bestehende Plugin-Class-ID bleibt Kompatibilitäts-/Main-Eintrag; gespeicherte Altrollen `sensor|pre|post` laufen darin passiv weiter; neue passive und aktive Probe erhalten je eine stabile Class-ID | alte Projekte laden ohne Klangänderung; keine stille Umdeutung bestehender Instanzen |
+| Zentrale Instanz | genau ein führendes Main pro aktiver Sitzung; weitere Main-Instanzen sind read-only Spiegel, bis der User die Führung übergibt | verhindert konkurrierende Befehle |
+| Normalgröße | 1 Main + bis zu 16 gleichzeitig sichtbare Sonden; Verträge und Broker werden bis 32 getestet | deckt reale Busprojekte ab, ohne die Kern-UX auf Extremfälle auszulegen |
+| Begleitdienst | der vorhandene eigenständige Rust-Broker bleibt unsichtbare Infrastruktur; keine Pflicht-Desktop-App | Entscheidungen und Capture bleiben in FL bei Main |
+| Audio vs. IPC | Pipe überträgt Identität, Features, Evidenz und Transaktionen, **nie den Echtzeit-Steuerverlauf eines DSPs** | IPC ist nicht sample-synchron und darf den Audiopfad nicht takten |
+| Dynamisches Entmaskieren | priorisierte Quelle gelangt als echter FL-Sidechain/Aux in die aktive Zielsonde | nur der DAW-Audiograph kann den benötigten synchronen Pfad liefern; Freigabe erst nach FL-PDC-Golden |
+| PRE/POST-Delta | analytischer Vergleich über Zeitstempel; hörbares Delta nur bei gemeinsamem Audiopfad und bewiesenem Alignment | zwei unabhängige Telemetrieströme reichen nicht für verlässliche Subtraktion |
+| Persistenz | Plugin-State ist Wahrheit für den lokalen DSP; Broker speichert Experimente append-only in SQLite; Main rekonstruiert aus beiden | Projekt-Recall funktioniert auch ohne Brokerhistorie |
+| Undo | eigenes Transaktions- und Revisionsprotokoll; Host-/Plugin-Undo ist nur zusätzlicher Komfort | extern ausgelöste Änderungen erzeugen nicht in jedem Plugin/Host einen Undo-Schritt |
+| KI | DSP, Evidenz, Grenzen und Aktionsentwurf sind deterministisch; KI darf nur erklären, verdichten und sprachlich anpassen | kein Modell erhält alleinige Klangautorität |
+| Roh-Audio | kein PCM-Dauerstream, kein Roh-Audio in der Datenbank oder an externe Modelle | Datenschutz, Last und klare Systemgrenze |
+
+### 30.1 Aktiver Werkzeugumfang
+
+Der erste belastbar zu implementierende aktive Kern besteht aus:
+
+- Input-/Output-Trim;
+- minimumphasigen Hoch-/Tiefpässen, Bells, Shelves und Notches;
+- statischen und bandbezogenen dynamischen EQ-Bändern;
+- externer Sidechain je dynamischer Beziehung;
+- Stereo-, Links/Rechts- oder Mitte/Seite-Zuordnung pro geeignetem Band;
+- lokalem Dry/Processed/Delta-Hörpfad mit festem Lautheitsabgleich.
+
+Lineare Phase, breitbandige Sättigung, Limiting, Reverb, universelle Laufzeitkorrektur und ein
+vollspektraler FFT-Ducker gehören **nicht** in diesen ersten aktiven Kern. Sie bringen eigene
+Latenz-, Pre-Ringing-, Routing- und Sicherheitsverträge mit. Polaritäts- oder Laufzeitkorrektur
+wird später nur für nachweislich kohärente Aufnahme-/Layerpaare freigegeben, nie pauschal für
+musikalisch unabhängige Busse.
+
+---
+
+## 31. Zielarchitektur
+
+```mermaid
+flowchart TB
+    subgraph FL["FL Studio · Audiograph"]
+        M["Nakama Main\nMaster-Messung + zentrale UI"]
+        P1["Probe passiv\nBus A"]
+        P2["Probe aktiv\nBus B"]
+        SC["priorisierte Quelle\nFL-Sidechain/Aux"]
+        P1 -->|"normaler Audioweg"| M
+        P2 -->|"normaler Audioweg"| M
+        SC -->|"sample-synchroner Control-Audiopfad"| P2
+    end
+
+    P1 --> Q1["SPSC-Blockqueue → Probe-Worker"]
+    P2 --> Q2["SPSC-Blockqueue → Probe-Worker"]
+    M --> QM["SPSC-Blockqueue → Main-Worker"]
+    Q1 -. "Features, nie PCM" .-> B["lokaler Rust-Broker"]
+    Q2 -. "Features + lokaler DSP-Zustand" .-> B
+    QM -. "Main-Features + Subscription" .-> B
+    B --> G["Sessiongraph + Evidenz + Ursachenranking"]
+    B --> DB["SQLite: Versuche, Urteile, Verlauf"]
+    G -. "Aggregat + Vorschläge" .-> M
+    M -. "Draft / Preview-Lease / Apply" .-> B
+    B -. "versionierte Transaktion" .-> P2
+```
+
+### 31.1 Verteilung der Verantwortung
+
+**Audiothread jeder Instanz**
+
+- verarbeitet ausschließlich lokale Audio- und Sidechain-Puffer;
+- schreibt vorallokiert in SPSC-Strukturen;
+- übernimmt fertige DSP-Konfigurationen atomisch am Blockrand;
+- kennt weder Broker, Sessiongraph, SQLite noch KI;
+- wartet niemals auf eine Antwort.
+
+**Plugin-Worker**
+
+- berechnet Spektral-, Loudness-, Dynamik-, Stereo- und Aktivitätsfeatures;
+- erstellt zeitgestempelte, begrenzte Telemetrieframes;
+- verwirft bei Rückstau alte Telemetrie;
+- publiziert lokale Zustandsrevisionen.
+
+**Rust-Broker**
+
+- entdeckt Instanzen, trennt Sitzungen und führt Transportepochen zusammen;
+- baut den quellenbewussten Session- und Evidenzgraphen;
+- rankt Ursachen, erzeugt deterministische Vorschläge und verwaltet Versuche;
+- vermittelt idempotente Befehle und prüft Revisionen;
+- misst oder verändert selbst kein Audio.
+
+**Nakama Main**
+
+- ist die einzige vollständige tägliche Arbeitsfläche;
+- zeigt Quelle, Passage, Evidenz, Unsicherheit und nächsten Schritt;
+- besitzt den User-Intent und die sichtbare Workflow-Zustandsmaschine;
+- ist niemals alleinige Wahrheit über den Zustand einer aktiven Probe.
+
+### 31.2 Fit zum heutigen Code
+
+| Bestand | Wiederverwendung | notwendige Erweiterung |
+|---|---|---|
+| `EqCopilotProcessor::processBlock()` | Scan, Zeit-/Transportgates und der sampleidentische passive Pfad bleiben tragend | passive/aktive Pfade explizit trennen; Ganzblockqueue, zwei Active-Messtaps, getrennte Sidechains und angewendeten DSP vor dem Ausgang ergänzen |
+| `AnalyseEngine` / `MessSnapshot` | Multi-Resolution-LTAS, Loudness, True Peak, Perzentile, Konvergenz | konfigurierbares Probe-Light-Profil, zeitgestempelte Featureframes, Band-Stereo und Ereignislisten |
+| `HoerMarkierungDsp` | vorberechneter Auftrag und lokale Marker-DSP | Editor-/Transport-/Realtime-Gates bleiben Verantwortung des `EqCopilotProcessor`; gemeinsame Preview-Lease, Dry/Processed/Delta-Matrix und Crossfade kommen neu hinzu |
+| `PipeClient` | Named Pipe, Handshake, Heartbeat, Reconnect | voll-duplex Leseschleife, Subscription, priorisierte Queues und Befehls-ACKs |
+| Broker-`Register` | Discovery, Stale, Nonce- und Sensor-ID-Konflikte | Sitzungsführung, Push an Main, Feature-Ringe und Capability-Modell |
+| `paare_auswerten()` | PRE/POST-Vollständigkeit und ehrliche Herabstufung | Restlag-Schätzung, Alignment-Score und Nichtlinearitäts-/Modulationshinweis |
+| JSON-Schemata | versionierte Sprachgrenze, `null` statt erfundener Null | IPC v3, Sessiongraph, Evidenz, Vorschlag, Transaktion und Experiment |
+
+Der heutige Rollenwert `hub` ist nur gespeicherte Metadaten; er ist noch kein Orchestrator. Der
+heutige `PipeClient` sendet einen 1-Hz-Heartbeat und liest nur dessen direktes ACK. Main-
+Subscriptions, Broker-Push und Probe-Befehle sind deshalb echte neue Architekturarbeit und dürfen
+im Phasenplan nicht als vorhandene Infrastruktur verbucht werden.
+
+Der heutige Processor implementiert nur `processBlock(AudioBuffer<float>&)`. Unterstützung für
+64-Bit-Hostpuffer verlangt einen echten `double`-Callback, templatisierte beziehungsweise getrennt
+geprüfte Analyse-/DSP-Kerne und die korrekte Host-Capability; sie ist neue Arbeit in Plugin-Split
+und Active-DSP, keine bereits vorhandene Eigenschaft. Ebenso installiert das heutige Skript nur
+die VST3-DLL. Broker-Executable, Pfadmanifest, Signaturprüfung, Update und Repair/Uninstall müssen
+als gemeinsames Distributionsartefakt neu gebaut werden.
+
+Außerdem sendet C++ heute bereits das Feld `hoermarkierung`, der Rust-`MessStand` übernimmt es
+aber nicht. Bis dieser Vertrag geschlossen ist, darf der Broker hörmarkerbeeinflusste Aggregate
+nicht als garantiert ausgeschlossen ausgeben.
+
+---
+
+## 32. Sitzungs-, Zeit- und Messpunktmodell
+
+### 32.1 Identität
+
+Jede Instanz besitzt getrennte Identitäten:
+
+| Feld | Lebensdauer | Zweck |
+|---|---|---|
+| `instance_id` | im Plugin-State persistent | stabiler Messpunkt; Duplikate werden sichtbar aufgelöst |
+| `runtime_nonce` | pro Laden neu | alte und neue Verbindung derselben Instanz unterscheiden |
+| `project_binding_id` | im FL-Projekt gespeichert | Sonden demselben Projekt zuordnen |
+| `session_epoch` | vom führenden Main pro geöffneter Projektkopie erzeugt | zwei gleichzeitig offene Kopien desselben Projekts trennen; überlebt einen Broker-Neustart |
+| `broker_epoch` | pro Brokerprozess neu | Cache-/Replay-Grenzen erkennen; ist nie Teil der Projektidentität |
+| `transport_epoch` | pro Instanz bis Stop/Seek/Loop/Samplerate-Sprung | lokale Kontinuität eines Frame-Stroms kennzeichnen |
+| `timeline_epoch` | von Main/Broker aus gültiger Projektzeit und Kontinuität abgeleitet | vergleichbare Frames mehrerer Instanzen gruppieren |
+
+Die effektive Steueradresse ist mindestens
+`Windows-Logon-SID + project_binding_id + session_epoch + instance_id + runtime_nonce`.
+`host_pid` bleibt ein starkes Signal, ist wegen Bridging aber kein alleiniger Sitzungsschlüssel.
+Ein Broker-Neustart ändert nur `broker_epoch`; er darf weder Userintent noch Projektbindung oder
+laufende Experimentreferenzen trennen. Die lokalen `transport_epoch`-Zähler verschiedener
+Instanzen müssen nicht denselben Zahlenwert besitzen. Erst gültige Projektsamplebereiche,
+Samplerate und Kontinuitätsregeln erlauben ihre Zuordnung zu einer gemeinsamen `timeline_epoch`.
+
+Neue Sonden treten nur automatisch bei, wenn genau eine eindeutige Main-Sitzung im selben Host
+existiert. Bei Bridge, zwei offenen Projekten oder duplizierten IDs ist eine kurze sichtbare
+Bestätigung Pflicht. Eine fremde Sonde wird nie durch heuristische Ähnlichkeit steuerbar.
+
+### 32.2 Produktklasse, Messposition und Routing
+
+Vier bisher vermischte Achsen werden getrennt gespeichert:
+
+| Achse | Werte/Beispiel | Bedeutung |
+|---|---|---|
+| `plugin_kind` | `main|passive_probe|active_probe|legacy` | ladbare Produktklasse und Capability |
+| `measurement_position` | `insert|pre|post|post_fader_contribution` | Ort und Aussagekraft der Messung |
+| `pair_id` | optionale stabile ID | verbindet genau ein PRE-/POST-Paar |
+| `SourceIntent` | Front/Middle/Back, Funktion, Schutz, Beziehung | musikalische Absicht, nie Technikrolle |
+
+Der heutige einzelne Wert `role=sensor|hub|pre|post` wird explizit migriert: `hub → main+insert`,
+`sensor → legacy+insert`, `pre → legacy+pre` und `post → legacy+post`. `legacy` bleibt passiv und
+behält die bestehende Class-ID; eine neue passive oder Active Probe entsteht nie still durch diese
+Migration.
+Dabei bleibt `sensor_id` bytegleich als `instance_id` erhalten; `label` und `pair_id` werden
+übernommen. `runtime_nonce` entsteht bei jedem Laden neu — der heutige `instance_nonce` war nie
+Projekt-State. Fehlt im Altstate `project_binding_id`, erzeugt nicht jede Probe still eine eigene
+ID: Das führende Main bietet einen sichtbaren Join an und schreibt die bestätigte Bindung erst mit
+Host-Dirty-Meldung in die beteiligten States.
+
+VST3-Channel-Context, Host-Trackname, Farbe und Reihenfolge sind **Hinweise**. Der Username und die
+bestätigte Zuordnung sind Wahrheit. Selbst FabFilter dokumentiert für FL Studio mögliche
+Fehlreihenfolgen bei latenzbehafteten Instanzen. Ein Hosthinweis darf daher einen Usernamen nie
+stillschweigend überschreiben.
+
+Eine normale Insert-Sonde misst außerdem das Signal **an ihrer Insert-Position**, typischerweise
+vor Mixerfader und nachfolgenden Sends. Sie kennt nicht automatisch ihren exakten Beitrag zur
+Mastersumme. Deshalb besitzen Messpositionen zusätzlich eine Aussageklasse:
+
+- `insert`, `pre` und `post`: beobachtend; erlauben Zusammenhangs- und Kettenhypothesen;
+- `post_fader_contribution`: optionaler, vom User eingerichteter post-fader Sidechain-only-Send
+  auf einen **eigenen diskreten Aux-Bus** eines Contribution-Receivers; erlaubt deutlich stärkere
+  Beitragsaussagen.
+
+Beide Klassen dürfen in Text und Konfidenz nie vermischt werden.
+
+Der Receiver ist der Main-Audioprozessor mit einer beim Laden festen, kleinen Zahl benannter
+Contribution-Aux-Busse; sein regulärer Main-Eingang liefert die lokale Summe `Y`. Die Active Probe
+besitzt davon unabhängig genau zwei feste Aux-Busse: Prioritäts-Sidechain und Compare-PRE. Kein
+Bus wird nachträglich umgedeutet oder zwischen diesen Funktionen multiplexed. Kann FL diese
+Topologie, Kanalreihenfolge und PDC im Spike nicht stabil wiederherstellen, meldet der Build die
+betreffende Capability nicht: Standard-Assoziation bleibt, exakte Attribution beziehungsweise
+Audio-Delta entfällt.
+
+### 32.3 Transportstempel
+
+Jeder zeitabhängige Frame trägt Zeitbasis und explizite Gültigkeit:
+
+```json
+{
+  "transport_epoch": 17,
+  "continuity_segment": 3,
+  "sequence": 8241,
+  "time_basis": "project_samples",
+  "project_sample_start": 44108200,
+  "sample_count": 512,
+  "sample_rate": 48000,
+  "playing": true,
+  "recording": false,
+  "cycle": { "active": true, "start": 44000000, "end": 44500000 },
+  "validity": {
+    "project_time": true,
+    "play_state": true,
+    "record_state": true,
+    "cycle_bounds": true
+  }
+}
+```
+
+Wenn gültig, ordnet `project_sample_start` Analyseframes auf der DAW-Zeitachse ein. Eine monotone
+Sequenz erkennt Lücken. Ein Sprung, Stop/Start, Loop-Wrap, Sampleratewechsel oder Hostreset beginnt
+eine neue `transport_epoch`. Ohne gültige Projektzeit darf `time_basis=local_monotonic` nur lokale
+Analyse und IPC-Frische tragen; Cross-Probe-Alignment, Passagevergleich und starke Ursache werden
+gesperrt. Wandzeit beziehungsweise QPC misst nur IPC-Latenz und darf musikalische Frames nicht
+ausrichten.
+
+`continuity_segment` trennt innerhalb derselben echten Transportepoche lokale Analyselücken wie
+Queue-Drop oder Oversize-Block. Es steigt nach einem verlorenen Ganzblock; kein Fenster darf die
+Grenze überbrücken. Die Host-Zeitachse wird dadurch nicht fälschlich als Seek bezeichnet.
+
+Der Broker vergleicht lokale Epochennummern niemals direkt. Er bildet eine `timeline_epoch` nur,
+wenn die Projektzeitintervalle kompatibel sind und keine der beteiligten Instanzen eine Lücke oder
+Discontinuity meldet. Ein einzelner unbekannter Zeitstempel stuft nur die betroffene Beziehung
+herab, nicht die gesamte Sitzung.
+
+Zusätzlich werden optionales `continuous_time_samples`, Cycle-Grenzen sowie rohe Input-/Output-
+Presentation-Latency gespeichert. `ProcessData.processContext` ist in VST3 optional; nur in einem
+vorhandenen Context ist `projectTimeSamples` definiert. JUCE exponiert die Zeit entsprechend als
+Optional. Der heutige Code behandelt das **noch nicht sicher**: Er setzt `hatTransport` bereits
+bei vorhandener `PositionInfo`, aktualisiert `projektZeitSamples` aber nur bei vorhandenem
+`timeInSamples`; Heartbeat/Stats können dadurch 0 oder einen alten Wert als gültig weiterreichen.
+Zielcode und Schema benötigen deshalb ein unabhängiges `has_project_time`, das bei jedem Block
+explizit gesetzt beziehungsweise gelöscht wird. Ein Latenzwert 0 kann außerdem „keine“ oder
+„nicht bekannt“ bedeuten. Welche Presentation-Time-Formel FL Studio bei Insert,
+Sidechain, PDC, Bridging und Offline-Render konsistent liefert, muss ein früher Impuls-Conformance-
+Test entscheiden. Bis dahin bleiben Rohzeit und Latenzhinweise getrennt.
+
+Loop-Grenzen können innerhalb eines Hostblocks liegen. Bei gültigen Cycle-Bounds wird ein solcher
+Block logisch geteilt. Fehlen die Bounds, wird der mögliche Straddle als ungültig markiert und
+spätestens beim Erkennen des Wraps im Folgeblock eine neue Epoche begonnen. Kein FFT-, Loudness-,
+Korrelations- oder Fingerprintfenster darf eine echte oder mögliche Epochengrenze überbrücken.
+Technisch hält deshalb jede Instanz mindestens den letzten Block beziehungsweise noch nicht
+abgeschlossene Fenster in einer Ein-Block-Quarantäne. Erst der monotone Beginn des Folgeblocks
+versiegelt sie zur Veröffentlichung. Stoppt der Callback vorher, bleiben sie unvollständig. So
+kann ein erst nachträglich sichtbarer Loop-Wrap keine bereits persistierte Evidenz kontaminieren;
+eine spätere Rücknahme ist nur zusätzlicher Crash-Fallback, nicht der Normalpfad.
+
+### 32.4 Passage und Content-Fingerprint
+
+Eine `Passage` speichert Start/Ende, Transportepoche, aktive Quellen, Abdeckung, manuelles Label
+und einen robusten Fingerprint aus quantisierten Bandenergie-, Chroma- und Onset-Verläufen. Er
+enthält kein rekonstruierbares PCM und dient nur dazu, grob anderes musikalisches Material zu
+erkennen. Vergleichbarkeit wird aus mehreren Belegen gebildet:
+
+1. identischer Projektbereich;
+2. gleicher Fingerprint beziehungsweise hohe Ähnlichkeit;
+3. vergleichbare aktive Quellen;
+4. gleiche Samplerate und Messpunktklasse;
+5. ausreichende gemeinsame Abdeckung.
+
+Kein einzelner Hash hebt einen Widerspruch der anderen Belege auf.
+
+---
+
+## 33. IPC-, Telemetrie- und Transaktionsvertrag
+
+### 33.1 Transportentscheidung
+
+Die bestehende, pro Windows-User abgesicherte Named Pipe bleibt. IPC v3 nutzt ein gemeinsames
+Längenpräfix und zwei Payloadklassen:
+
+- kanonisches UTF-8-JSON für Handshake, Session, Zustand, Evidenz und Transaktionen;
+- ein versioniertes FlatBuffers-`FeatureBatch` mit CRC32C für die häufigen P2-Featureframes.
+
+Schnelle Live-Arrays verwenden `q_db_0p1_i16` plus Gültigkeitsbitmap. Fokussierte PRE/POST-
+Evidenz darf mit explizitem Encoding `q_db_0p01_i16` oder für komplexe Kreuzstatistik `float32`
+arbeiten; Empfänger raten die Skalierung nie aus dem Nachrichtentyp. Vier bis fünf Liveframes
+dürfen pro Write gebündelt werden. Diese schmale Binärebene vermeidet JSON-Parsing und
+Zahlenexpansion bei vielen Sonden, ohne Steuerung und Persistenz an ein Binärformat zu binden.
+Shared Memory bleibt ausgeschlossen, bis eine gemessene hochauflösende Forensiklast die Pipe
+tatsächlich überfordert.
+
+Nach dem bestehenden `u32`-Längenpräfix beginnt v3 mit `encoding`, `message_family`,
+`schema_major/minor` und Flags. P0/P1 verwenden JSON; P2 verweist auf ein `FeatureBatch`.
+Unbekannte additive Felder werden ignoriert, unbekannte Major-Versionen abgelehnt. v2 und v3
+werden erst nach dem Hello getrennt; kein v2-Parser interpretiert einen Binärframe als JSON.
+Die heutigen v2-Schemas mit `additionalProperties:false` bleiben unverändert streng. V3 markiert
+nur ausdrücklich additive Datenobjekte als erweiterbar; ältere Minor-Parser validieren bekannte
+Pflichtfelder und ignorieren begrenzte unbekannte Properties semantisch. Discriminator,
+Zieladresse, Revision, Capability und sicherheitsrelevante Felder sind **nicht** additiv und
+erzwingen bei unbekannter Bedeutung Ablehnung. Contracttests prüfen beide Policies, damit
+„forward-compatible“ nicht nur im Text steht.
+
+Nach dem Hello öffnet jede v3-Instanz zwei logisch gekoppelte, getrennte Pipe-Verbindungen. Damit
+kann ein bereits geschriebener Telemetriebatch keine Lease oder ein Apply-ACK im Bytestrom
+blockieren:
+
+1. **Control-Pipe, P0/P1:** Welcome/Reject, Preview-Lease, Apply/Revert, ACK, State-Report,
+   Heartbeat, Capability, Stale und Revision;
+2. **Telemetry-Pipe, P2:** verlusttolerante Featureframes und Broker→Main-Liveupdates.
+
+Beide Verbindungen werden durch Session, Nonce und Capability gebunden. P2 darf bei Rückstau
+`drop-oldest` verwenden; sein Ausfall degradiert Analyse, nicht Control. P0 kann dadurch nie
+hinter alten Spektren warten. Alle Pakete bleiben unter dem bestehenden Größenlimit; Parser
+erhalten Tiefen-, Längen- und Nachrichtenratenlimits. Ein v2-Client nutzt weiter nur seine eine
+Heartbeat-Verbindung und erhält keine v3-Steuerfähigkeit.
+
+### 33.2 Datenkadenzen
+
+| Ebene | Kadenz | Inhalt | Verhalten bei Überlast |
+|---|---:|---|---|
+| Heartbeat | 1 Hz | Identität, Capability, Revision, Drop-/Fehlerzähler | Verbindung wird stale, nie Audio |
+| Live-Telemetrie | 10 Hz | 64 perzeptive Bänder, Aktivität, LUFS-S, Peak, Crest/PSR, Breite/Korrelation, Zeitstempel | ältesten Frame verwerfen |
+| Evidenzsnapshot | 1–4 Hz | volle 221 Bänder, P10/P50/P95, Abdeckung, Konvergenz, Ereignisse | Kadenz reduzieren |
+| Fokus-Burst | auf Anfrage, höchstens zwei Beziehungen | 20–50-Hz-Band-/Onset-Features für Alignment und Ursachenprüfung | beenden und als unvollständig markieren |
+
+Diese Zahlen sind Design-Startwerte. Der Phasenplan muss sie gegen CPU, Pipe-Last und sichtbare
+Latenz messen und versioniert anpassen.
+
+### 33.3 Nachrichtenfamilien
+
+IPC v3 benötigt mindestens:
+
+- `hello`, `welcome`, `reject`, `heartbeat`, `heartbeat_ack`;
+- `subscribe_session`, `session_snapshot`, `telemetry_frame`, `evidence_snapshot`;
+- `audible_intervention_begin`, `audible_intervention_end`, `evidence_invalidate`;
+- `draft_offer`, `preview_begin`, `preview_renew`, `preview_end`;
+- `apply_transaction`, `revert_transaction`, `command_ack`, `state_report`;
+- `experiment_begin`, `experiment_result`, `user_verdict`;
+- `error` mit maschinenlesbarem Code, betroffener Revision und Rückweg.
+
+Jede steuernde Nachricht trägt `command_id`, Zieladresse, `base_revision`, begrenzte `ttl_ms` und
+Schema-/Capability-Version. Die Probe leitet beim **ersten** Empfang eine Deadline aus ihrer
+eigenen monotonen Uhr (`steady_clock`/QPC) ab; Sender-Wandzeit darf nie einen Audio-Failsafe
+verlängern. Wiederholung derselben `command_id` ist idempotent und startet die Deadline nicht neu.
+Die Probe lehnt eine veraltete `base_revision` als Konflikt ab, statt einen neueren Zustand zu
+überschreiben.
+
+### 33.4 Preview-Lease und Apply
+
+```mermaid
+stateDiagram-v2
+    [*] --> Neutral
+    Neutral --> Draft: Vorschlag + baseRevision
+    Draft --> Preview: preview_begin + Lease
+    Preview --> Preview: renew
+    Preview --> Draft: Loslassen / Timeout / Stop / Fehler
+    Draft --> Applied: apply_transaction
+    Applied --> Draft: neuer Vorschlag
+    Applied --> Applied: explizites Revert auf Revision
+```
+
+- Eine gehaltene Preview erhält eine signierte `lease_duration_ms`, die die Probe auf einen festen
+  sicheren Bereich — Startwert höchstens 400 ms — klemmt und ab lokalem QPC-Empfang misst. Main
+  erneuert sie ungefähr alle 100 ms; nur eine neue gültige Renew-ID verlängert sie.
+- Läuft sie ab, fährt die Probe lokal mit einem kurzen Ramp in den gespeicherten Zustand zurück.
+- Preview-Zustand wird nie im Projekt gespeichert und nie in einen Offline-Render übernommen.
+- `Apply` schreibt eine neue lokale Revision, aktualisiert den Plugin-State, hängt einen eigenen
+  Undo-Eintrag an und bestätigt `state_hash` plus tatsächlich angewandte Werte.
+- Parameterupdates laufen auf dem Message-Thread mit Host-Geste und
+  `setValueNotifyingHost`; Änderungen an Pairing, Intent oder anderem Nichtparameter-State lösen
+  explizit die JUCE-/Hostmeldung `nonParameterStateChanged` aus. Ein Herkunftstag
+  `host|local_ui|remote_transaction|state_restore` verhindert Listener-/Revisionsschleifen. Der
+  heutige direkte Member-State ohne Host-Dirty-Signal erfüllt diesen Vertrag noch nicht.
+- Remote-Preview und Remote-Apply sind nur erlaubt, wenn `record_state.valid=true` **und**
+  `recording=false`; unbekannter Aufnahmezustand blockiert sichtbar. Spielende Host-Automation
+  gewinnt sichtbar; eine Revision, die dadurch abweicht, macht den Main-Entwurf stale.
+- Remote-Änderungen werden nicht auf das Undo des Hosts oder eines fremden Plugins vertraut.
+
+### 33.5 Persistenz- und Zustandswahrheit
+
+Kein Objekt darf gleichzeitig zwei still konkurrierende Wahrheiten besitzen:
+
+| Objektklasse | autoritative Ablage | Spiegel/Fallback |
+|---|---|---|
+| lokale Plugin-Identität, Produktklasse, Messposition, `project_binding_id`, `pair_id` und bestätigter DSP samt Schutzgrenzen | State der jeweiligen Plugininstanz im FL-Projekt | Broker/Main lesen per `state_report`, überschreiben nie blind |
+| führende Main-Wahl, bestätigte Sitzungsmitgliedschaft, `SourceIntent`, Routingbestätigungen, manuelle Passagen und aktueller `AssistantStep` | `MainProjectState` im State der Main-Instanz | versionierter SQLite-Spiegel für Suche und Crashdiagnose |
+| Evidenz, Findings, Proposals, Transaktionsereignisse, Experimente und Urteile | lokaler SQLite-Experimentstore mit einem Writer | Main-State hält nur kompakte aktuelle IDs und noch nicht bestätigte Outbox-Ereignisse |
+| Sessiongraph, Frische, Subscriptions und Broker-Cache | flüchtiger Brokerzustand | aus Plugin-Reports, Main-State und Store rekonstruierbar |
+| Draft, Preview-Lease, Laufzeit-Nonce und nicht bestätigte DSP-Generation | ausschließlich flüchtiger Speicher | Timeout/Disconnect führt in einen definierten sicheren Zustand |
+
+Damit reist musikalischer Projektintent mit der FL-Projektdatei und der bestätigte Klang mit der
+jeweiligen Probe. Fehlt oder wird die SQLite-Datenbank gelöscht, bleiben Projekt-Recall und DSP
+vollständig; lediglich historische Experimente und gelerntes Ranking fehlen. Umgekehrt darf ein
+alter Datenbankeintrag nie einen neueren Plugin-State zurücksetzen.
+
+Die aktive Probe speichert mindestens:
+
+- `dsp_schema_version`;
+- aktuelle `state_revision` und `state_hash`;
+- bestätigte DSP-Konfiguration;
+- begrenzten Undo-/Redo-Ring, beispielsweise 32 atomische Zustände;
+- aktive Beziehung und Sidechain-Anforderung;
+- User-Schutzbereiche und Hard Caps.
+
+Der Broker speichert dasselbe als Ereignisprotokoll, ist aber nicht berechtigt, beim Reconnect
+blind seinen Cache auf die Probe zu drücken. Zuerst meldet die Probe ihren Zustand; Main gleicht
+ab und lässt Konflikte sichtbar entscheiden.
+
+Der heutige State `schema=1` mit `sensor_id`, `role`, `label` und `pair_id` ist dafür nur die
+Migrationsquelle. Das neue State-Schema benötigt unabhängige Teilversionen für Main-Project-State
+und Probe-DSP. Unbekannte neuere Pflichtfelder führen zu einem sichtbaren read-only/neutralen
+Fallback; additive bekannte Felder bleiben erhalten.
+
+---
+
+## 34. Gemeinsames Evidenz- und Datenmodell
+
+### 34.1 Kernobjekte
+
+| Objekt | Zweck |
+|---|---|
+| `ProbeDescriptor` | Identität, `plugin_kind`, Messposition/-klasse, Fähigkeiten, Frische |
+| `FeatureFrame` | zeitgestempelte, kurzlebige Messfeatures |
+| `Passage` | vergleichbarer Projektabschnitt und Abdeckung |
+| `SourceIntent` | Userabsicht, Schutz und gerichtete Priorität |
+| `Evidence` | unveränderlicher Messbeleg mit Herkunft und Gültigkeit |
+| `Finding` | regelbasierter Befund beziehungsweise Hypothese |
+| `Proposal` | kleinster Versuch mit Grenzen, Hörziel und Stopbedingung |
+| `PreviewLease` | flüchtige Erlaubnis für hörbare Änderung |
+| `DspTransaction` | atomischer, revidierbarer Apply-/Revert-Schritt |
+| `Experiment` | Baseline, Kandidat, Vergleichbarkeit, Deltas und Urteil |
+| `AssistantStep` | persistenter Zustand des geführten Arbeitsablaufs |
+
+### 34.2 Evidenzregeln
+
+Jede Evidenz besitzt:
+
+- ID, Erzeugungs- und Metrikversion;
+- Quelle, Messpunkt, Passage und Transportepoche;
+- Wert, Einheit, Fenster und Kanalmodus;
+- Signalabdeckung, Frische und Qualitätsklasse;
+- Abhängigkeit von Userintent, Zielprofil oder Modell;
+- Ausschlussgrund, falls sie nicht mehr gültig ist.
+
+`Finding`, `Proposal` und KI-Text dürfen nur auf existierende Evidenz-IDs zeigen. Preview, Focus,
+Delta und Hörmarker markieren nachgelagerte Messungen als beeinflusst; sie werden nicht still in
+eine unbeeinflusste Baseline aufgenommen. Ein **angewendeter** DSP-Zustand ist dagegen kein
+dauerhafter Taint: Sein Apply schließt die alte Baseline, segmentiert die Timeline nach
+`state_revision`, macht abhängige Findings stale und erlaubt nach definierter Warm-up-Zeit eine
+neue gültige `post_committed`-Baseline dieser Revision.
+
+Ein 1-Hz-Heartbeat-Boolean reicht dafür nicht: Ein kurzer Hörmarker kann vollständig zwischen zwei
+Heartbeats liegen, und gerade nachgelagerte Instanzen hören das veränderte Signal. Jede hörbare
+Intervention erzeugt deshalb sofortige P0-Begin/End-Ereignisse mit Interventions-ID, gültigem
+Projektsamplebereich soweit verfügbar und konservativem Tail. Main kennt Remote-Previews bereits
+über ihre Lease; lokale Marker schreiben den Ereignisstempel zunächst lockfrei in einen kleinen
+vorallokierten RT→Control-Ring, der Control-Worker sendet ihn. Der Audiothread berührt nie die
+Pipe. Der Broker quarantänisiert den
+überlappenden Routing-/Timelinebereich — bei unbekanntem Routing die ganze Sitzung — und kann
+bereits eingegangene Evidenz per ID/Range invalidieren. Das per Frame übertragene Flag bleibt ein
+zusätzlicher lokaler Beleg, nie die alleinige Garantie.
+
+Dieser Ereignisring verwendet für P0 **kein** `drop-oldest`. Overflow, Control-Disconnect oder
+eine Lücke in der Eventsequenz setzt ein sticky `intervention_state_unknown`. Dann werden alle
+betroffenen `timeline_epoch`-Bereiche seit dem letzten bestätigten Event konservativ
+quarantänisiert beziehungsweise rückwirkend invalidiert; starke Evidenz bleibt bis zu einem
+expliziten Neutral-/Sequenz-Resync gesperrt. Ein verlorenes Begin **oder** End darf damit niemals
+eine scheinbar saubere Baseline erzeugen.
+
+### 34.3 Konfidenz
+
+Die bestehenden Komponenten bleiben erhalten und werden erweitert um:
+
+- Timing-/Alignmentqualität;
+- Messpunkt- und Routingqualität;
+- Alternativerklärungen;
+- Stabilität über Bootstrap-Teilfenster;
+- kontrollierte Gegenprobe, falls vorhanden.
+
+Eine Gesamtklasse wird nicht aus einem schönen Mittelwert gerettet: ein harter Mangel bei Session,
+Passage, Coverage oder Alignment begrenzt die Gesamtaussage. Zahlengewichte und Schwellen gehören
+in eine versionierte `metrics_version` und werden über Reliability-Diagramm, Brier Score und
+adversariale Goldens kalibriert.
+
+---
+
+## 35. Technikdesign Kernfunktion 1 — Globale Mix-Landkarte
+
+### 35.1 Bestmöglicher Ansatz
+
+Die Landkarte wird als **zeitgestempelter Sessiongraph**, nicht als Summe gelegentlicher
+Plugin-Snapshots gebaut. Jede Probe publiziert lokal berechnete Featureframes; der Broker führt
+sie nur zusammen. Damit bleibt die Audioarbeit verteilt und Main erhält das bewährte zentrale
+Navigationsmuster von FabFilters Instance List und Multi-Instance-Analyzern.
+
+Für die Liveansicht werden die vorhandenen 221 Bänder auf 64 perzeptiv gewichtete Bänder
+reduziert. Das volle Raster bleibt für Evidenz und Zoom erhalten. Eine Probe liefert pro Frame:
+
+- Aktivität, RMS, LUFS-S, True Peak, Crest beziehungsweise PSR;
+- 64 Live-Bandenergien und bei Bedarf 221 Evidenzbänder;
+- Band-P50/P95, spektrale Änderungsrate und Transientendichte;
+- Mid-/Side-Energie, Korrelation und Mono-Folddown-Verlust;
+- `plugin_kind`, Messposition/-klasse, DSP-Einfluss, Frische, Coverage und Drop-Zähler.
+
+Die vorhandenen FFT-Größen 16.384/8.192/4.096/2.048 bleiben sinnvoll. Ihre 50-%-Hops werden lokal
+auf das rohe Projektsample-Raster gelegt. Solange FLs PDC-/Presentation-Time-Abbildung nicht
+bewiesen ist, lautet der Schlüssel
+`raw_project_frame_key=(instance_id, transport_epoch, sample_rate, resolution, frame_start)` und
+behauptet **keine** Inhaltsgleichheit zwischen Instanzen. Erst eine validierte Presentation-
+Abbildung plus Alignmentqualität erzeugt
+`aligned_frame_key=(session_epoch, timeline_epoch, sample_rate, resolution, aligned_start)` für
+starke Cross-Probe-Evidenz. Leistungen werden erst linear integriert und danach logarithmiert;
+`dBFS/Hz` und integrierte `dBFS`-Bandleistung bleiben unterschiedliche Einheiten. Übergänge der
+Auflösungen werden über ungefähr eine Oktave gewichtet.
+Die niedrigste 16.384er Auflösung benötigt bei 48 kHz bereits rund 341 ms Eingangsmaterial. Main
+zeigt deshalb Alter und Fensterlänge je Auflösung; die Bassansicht darf nicht dieselbe Frische wie
+ein 2.048-/4.096-Sample-Liveframe vortäuschen.
+
+Aktivität kombiniert einen absoluten Floor mit dem lokalen Rauschboden, beispielsweise
+`level > max(-70 LUFS-M, adaptive_floor + 10 dB)`. Das ist ein zu kalibrierender Startwert. Stille
+und nicht nutzbare Bänder erzeugen `null`/Validity-Bits, keine numerische Null.
+
+Main zeigt drei Informationsdichten: kompakte Quellenliste, vergleichende Heatmap und
+Detailansicht. Suche, Pinning und Fokusgruppe begrenzen die kognitive Last bei 16 bis 32 Sonden.
+Ein Minimap-/Zoomprinzip ist sinnvoller als alle Details gleichzeitig zu zeichnen.
+
+### 35.2 Routing- und Summenwahrheit
+
+Nakama versucht nicht, aus Tracknamen einen verlässlichen Mixerbaum zu erraten. Der User kann
+Buszugehörigkeiten bestätigen; Hosthinweise werden als Vorschlag angezeigt. In einer Auswertung
+darf entweder ein Parent-Bus oder seine bereits enthaltenen Children als Summenbeleg verwendet
+werden, nie beides unbemerkt. Das verhindert Doppelzählung.
+
+Eine Standardsonde erhält das Label `Insert-Beobachtung`. Nur ein bewusst eingerichteter
+post-fader Sidechain-only-Messweg darf als `Beitrag nach Fader` erscheinen. Ohne diesen Messweg
+lautet die Aussage beispielsweise „zeitgleich starke Bassbus-Energie“, nicht „der Bassbus macht
+42 % des Masterpeaks“.
+
+Ein optionaler beitragsgenauer Main-/Receiver-Modus darf weiter gehen, aber nur wenn jeder
+post-fader Tap auf einem **separaten** Aux-Audiobus sowie die pre-nonlineare Summe `Y` im selben
+lokalen Audiocallback vorliegen. Aus dB-Features oder einem bereits zusammengemischten
+Sidechainbus ist das nicht berechenbar. Der Receiver bildet die komplexen `Xᵢ`/`Y` intern und
+publiziert nur aggregierte Kreuzenergien. Für `Y = ΣXᵢ` gilt
+`φᵢ = Re{Xᵢ · conj(Y)}` und `Σφᵢ = |Y|²`. Negative Werte bedeuten destruktive Interferenz.
+
+Der Modus wird nur bei vollständigen diskreten Blättern ohne Parent-Duplikate, hoher
+Summenkohärenz, kleiner Residualenergie und bewiesenem FL-Routing freigegeben. Hinter Kompressor,
+Sättigung oder Limiter ist es wieder eine Einflussanalyse. Nahe Stille werden keine instabilen
+Prozentwerte angezeigt. Kann FL die benötigte Anzahl getrennter Aux-Busse oder ihre PDC nicht
+beweisen, existiert dieser Modus nicht; normale Sonden bleiben bei Assoziation.
+
+### 35.3 Datenfluss und Fehlerfälle
+
+1. Der Audiothread schreibt Audio plus Blockstempel in eine vorallokierte SPSC-Blockqueue.
+2. Der Worker bildet lokale Frames und versieht sie mit `transport_epoch` und Samplebereich.
+3. Der Pipe-Writer hält nur den neuesten Liveframe; Evidenzsnapshots besitzen eine kleine,
+   begrenzte Warteschlange.
+4. Der Broker veröffentlicht Session-Deltas an das führende Main.
+5. Main interpoliert nur die Darstellung, niemals Messwerte über Transportlücken hinweg.
+
+Nach zwei verpassten Heartbeats wird eine Quelle sichtbar als `veraltet` markiert; sie bleibt für
+Orientierung in der Liste. Nach einem Seek beginnt eine neue Zeitreihe. Ein Broker-Neustart löscht
+nicht die lokale Probe-Identität und färbt den Audiopfad nie.
+
+### 35.4 Abnahmekriterien
+
+- 16 Sonden bringen einen **fertig berechneten** 2.048-/4.096-Sample-Liveframe bei normaler Last
+  in höchstens 300 ms p95 bis zum sichtbaren Main-State; die intrinsische Analysefensterdauer ist
+  darin nicht versteckt. Ein 16.384er Bassframe erreicht bei 48 kHz von erstem Sample bis UI in
+  höchstens 750 ms p95. 32 Sonden bestehen den Belastungstest ohne Audio-Dropout.
+- Eine absichtlich gedrosselte Probe verursacht keinen P0-/P1-Stau und wird korrekt als stale
+  markiert.
+- Parent-/Child-Doppelzählung und die beiden Messpunktklassen sind in UI, Export und Evidenz
+  unterscheidbar.
+- Null-, Mono-, Stille-, NaN- und wechselnde Sampleraten erzeugen weder erfundene Werte noch
+  ungebundene Speicherzunahme.
+
+---
+
+## 36. Technikdesign Kernfunktion 2 — Ursachenfinder
+
+### 36.1 Aussageklassen statt Scheinkausalität
+
+Der Ursachenfinder verwendet drei sichtbar getrennte Klassen:
+
+1. **Zusammenhang:** Quelle und Masterproblem treten im selben Bereich und Zeitfenster auf.
+2. **Wirkungsbeleg:** Ein PRE/POST-Paar zeigt eine reproduzierbare Veränderung durch eine Kette.
+3. **Kontrollierter Ursachenbeleg:** Eine begrenzte Preview an genau dieser Quelle reduziert den
+   Zielbefund bei sonst vergleichbarem Material.
+
+Aus paralleler Telemetrie allein entsteht nie Klasse 2 oder 3. Das ist zentral, weil mehrere
+korrelierte Busse, Parent-Routing, Masterbearbeitung und Nichtlinearitäten dieselbe Beobachtung
+erklären können.
+
+### 36.2 Zweistufige Auswertung
+
+**Stufe A — günstiges Screening**
+
+- aktive Quellen und 64 Bänder auf zeitliche Überlappung prüfen;
+- Master-Anomalien, Quellenergie, Onset-/Peak-Koinzidenz und musikalische Priorität verbinden;
+- pro Befund höchstens die besten fünf Kandidaten weiterreichen.
+
+**Stufe B — fokussierte Evidenz**
+
+- 221-Band-Verlauf und relevante Ereignisfenster nachladen;
+- bedingten Uplift vergleichen: Zielmetrik bei aktiver Quelle gegenüber ähnlichen Fenstern ohne
+  diese Aktivität;
+- Stabilität über Block-Bootstrap, alternative Erklärungen und Parent-/Child-Abhängigkeit prüfen;
+- PRE/POST oder eine kontrollierte Preview als stärkere Evidenz einbeziehen.
+
+Der Rang wird aus hart gegateter Vergleichbarkeit und getrennten Komponenten gebildet:
+Bandpassung, zeitliche Koinzidenz, bedingter Uplift, Intent-Relevanz, Wiederholbarkeit und
+Routingqualität. Keine einzelne hohe Komponente darf fehlende Coverage oder falsches Alignment
+kompensieren.
+
+### 36.3 Ergebnisobjekt
+
+Eine `CauseHypothesis` enthält mindestens:
+
+```json
+{
+  "finding_id": "f_204",
+  "claim_class": "association",
+  "target_metric": "master_true_peak_event_rate",
+  "candidate_source": "probe_drums",
+  "passage_id": "chorus_2",
+  "band_hz": [80, 160],
+  "confidence": { "class": "medium", "score": 0.68 },
+  "evidence_ids": ["ev_81", "ev_86"],
+  "alternatives": ["bass_bus", "master_limiter_nonlinearity"],
+  "next_test": "preview_static_cut"
+}
+```
+
+Main formuliert daraus Behauptung, Beleg, Unsicherheit und den billigsten nächsten Beweisschritt.
+Wenn zwei Kandidaten praktisch gleich liegen, zeigt es beide. `Mehr Daten nötig` ist ein reguläres
+Ergebnis.
+
+### 36.4 Abnahmekriterien
+
+- Synthetische Sessions mit bekannter Quelle unterscheiden wahren Kandidaten, korrelierten
+  Distraktor und Parent-Duplikat; Precision/Recall werden pro Ursachenklasse ausgewiesen.
+- Zeitlich verschobene, andere oder zu kurze Passagen können keinen starken Ursachenbeleg
+  erzeugen.
+- Entfernen eines Evidenzobjekts invalidiert abhängige Hypothesen deterministisch.
+- Gleiche Eingaben, derselbe Build und dieselbe ISA liefern bytegleich dasselbe Ranking. Dafür
+  gehören Bootstrap-Seed, Float-Reduktionsreihenfolge, kanonische Eingangsquantisierung und ein
+  stabiler Tie-Break-Key zur `metrics_version`. Plattformübergreifend gelten identische
+  Rangfolge sowie festgelegte numerische Toleranzen statt unrealistischer Bytegleichheit.
+
+---
+
+## 37. Technikdesign Kernfunktion 4 — Musikalische Prioritäten
+
+### 37.1 Intent ist ein eigenes Modell
+
+`plugin_kind` und `measurement_position` aus Abschnitt 32 bleiben strikt getrennt vom
+musikalischen Intent. Ein `SourceIntent` besitzt:
+
+- `prominence`: `foreground|middle|background`;
+- mehrere Funktionstags wie `foundation`, `impulse`, `space`, `texture` oder `lead`;
+- geschützte Frequenzbereiche und Eigenschaften wie Attack, Breite oder Ausklang;
+- gerichtete Beziehungen `A führt vor B` und `A/B dürfen verschmelzen`;
+- optionalen Passage-Scope;
+- Revision, Herkunft `user|template|inferred` und Konfidenz.
+
+Damit wird das bei smart:EQ offiziell als Front/Middle/Back bezeichnete Gruppenmuster um
+gerichtete Beziehungen erweitert. Ein Chor kann im Refrain vorne, in der Strophe aber bewusst
+hinter dem Klavier liegen.
+
+### 37.2 Ableitung und Konfliktregeln
+
+Vorlagen für `Lead`, `Foundation`, `Support`, `Impulse` und `Space` füllen nur Startwerte. Eine
+modellierte Vermutung wird gestrichelt beziehungsweise als Vorschlag behandelt und darf einen
+Userwert nie überschreiben. Bei Konflikten gilt:
+
+1. Schutz-/Sicherheitsgrenze;
+2. expliziter Userintent;
+3. passagespezifischer vor globalem Intent;
+4. bestätigte Vorlage;
+5. abgeleitete Vermutung.
+
+`Gewollte Verschmelzung` wirkt als Veto gegen Entmaskierungsempfehlungen, nicht als Behauptung,
+dass jeder spektrale Konflikt gut ist. Ein gerichteter Graph wird beim Speichern auf Zyklen
+geprüft; ein Zyklus muss aufgelöst oder als nicht steuerbare Gleichrangigkeit gespeichert werden.
+
+### 37.3 Einfluss auf andere Funktionen
+
+Intent verändert nur Ranking, Schutz und erlaubte Tests. Er verändert keine Messwerte. Jede
+darauf basierende Empfehlung referenziert die verwendete Intent-Revision. Ändert der User die
+Rolle, werden Vorschläge stale, nicht still umgerechnet.
+
+### 37.4 Abnahmekriterien
+
+- Derselbe Bus kann ohne Datenverlust verschiedene Rollen in zwei Passagen besitzen.
+- Userwerte überleben Broker-Neustart und Projekt-Recall; abgeleitete Werte bleiben als solche
+  erkennbar.
+- Zyklische Entmaskierungsprioritäten können nicht angewendet werden.
+- Eine geschützte Eigenschaft erscheint als harte Constraint im Vorschlag und im DSP-ACK.
+
+---
+
+## 38. Technikdesign Kernfunktion 5 — PRE/POST-Kettenprüfung
+
+### 38.1 Drei getrennte Ergebnisse
+
+PRE/POST liefert nicht einen einzigen „Difference“-Wert, sondern:
+
+1. **rohe Messdifferenz** derselben Projektfenster;
+2. **ausgerichtetes, pegelbezogenes Delta** nach sicherer Restlag- und Gain-Schätzung;
+3. **interpretierte Wirkung** wie „Kette erhöht kurze Peaks“ oder „verengt 2–8 kHz“.
+
+Die Trennung verhindert, dass mehr Pegel automatisch als mehr Höhen oder eine Laufzeitänderung
+als EQ-Effekt erscheint.
+
+### 38.2 Ausrichtung
+
+Es gibt zwei bewusst verschiedene Qualitätsstufen.
+
+**Verteiltes Feature-Alignment:** Der erste Anker ist `project_sample_start` aus dem Host. Danach
+schätzt der Broker auf gemeinsamem Material einen Restlag über normierte Kreuzkorrelation
+mehrerer bandbegrenzter Hüllkurven und Onsetfolgen. Das funktioniert mit den übertragenen
+Features, erreicht aber keine behauptete Samplegenauigkeit.
+
+**Lokales Audio-Alignment:** Nur wenn eine Compare-Instanz PRE und POST gleichzeitig als echte
+Audiopuffer besitzt, bestimmt sie den Integer-Lag mit GCC-PHAT. Eine Parabel um die Spitze
+beziehungsweise der Phase-Slope verfeinert auf Subsample-Auflösung; Hüllkurven dienen bei
+tonalem Material als Gegenprüfung.
+
+Der maximale Suchraum beider Stufen ist auf ±2 s begrenzt und benötigt dafür mindestens 6 s
+Capture, damit nach dem Shift noch verwertbares Material bleibt. Bei kürzerem Capture wird der
+Suchraum proportional verkleinert; Host-PDC darf ihn um einen erwarteten Offset zentrieren. Ein
+Alignment wird nur akzeptiert, wenn:
+
+- Korrelationsspitze und Peak-to-Sidelobe-Verhältnis ausreichend sind;
+- mehrere Bänder einen konsistenten Lag liefern;
+- der Lag über Teilfenster stabil bleibt;
+- keine Transportlücke oder andere Samplerate vorliegt.
+
+Das Resultat lautet `feature_aligned`, `audio_aligned`, `probable` oder `unclear`; der geschätzte
+Lag, seine Auflösung und Streuung bleiben sichtbar. Host-PDC ist ein Hinweis, kein Ersatz für
+diese Prüfung.
+
+### 38.3 Messung und Interpretationsgrenzen
+
+Nach Alignment werden Lautheit, True Peak, Crest/PSR, Transienten, Band-P10/P50/P95,
+M/S-Verteilung, Korrelation und Mono-Folddown verglichen. Eine zeitvariable oder nichtlineare
+Kette wird über inkonsistente Pegel-/Spektralrelationen markiert. Dann darf Nakama keinen festen
+Übertragungsfrequenzgang behaupten.
+
+Nur im lokalen Compare-Routing wird für eine hinreichend stationäre lineare Kette zusätzlich aus Welch-Cross-Spektren
+`H₁(f)=Sᵧₓ/Sₓₓ` und die Magnitude-Squared Coherence berechnet. Ein Transferwert ist nur in
+Bändern mit genügend PRE-Energie und zunächst mindestens 0,8 Kohärenz zulässig; ab ungefähr 0,9
+kann er als sehr belastbar gelten. Diese Startschwellen werden mit Goldens kalibriert. Unterhalb
+davon und bei verteilten Probes zeigt Nakama robuste P10/P50/P95-Differenzen statt einen
+vermeintlichen Frequenzgang.
+
+Der Vergleichspegel wird für die gewählte Passage vorab gemessen und während A/B eingefroren.
+Eine kontinuierliche automatische Nachregelung während des Umschaltens ist ungeeignet: sie kann
+Transienten und Stille falsch bewerten und wird selbst zum hörbaren Prozessor.
+
+### 38.4 Hörbares Delta
+
+Feature-Telemetrie kann niemals `POST − PRE` als Audio erzeugen. Ausgerichtetes Delta-Hören wird
+daher nur in einem expliziten Compare-Routing angeboten: Die POST-/Compare-Instanz erhält PRE über
+einen Sidechain-/Aux-Eingang, richtet beide Audiopfade mit einem begrenzten polyphasigen
+Windowed-Sinc-Fractional-Delay **subsamplegenau innerhalb einer definierten Goldentoleranz** aus
+und bildet lokal
+`processed − matched_dry`. Ohne diesen Pfad bietet Main nur Messvergleich plus angeleiteten
+manuellen Bypass.
+
+Tapzahl, Fenster, Phasenraster, Koeffizienten und Nutzband des Fractional-Delays sind Teil der
+Metrik-/DSP-Version. Geprüft wird ein 63- bis 127-Tap-Kaiser-/Blackman-Harris-Windowed-Sinc mit
+genügend Polyphasen; ausgeliefert wird nur die kleinste Konfiguration, die im qualifizierten Band
+höchstens 0,05 dB Magnitudenfehler und 0,02 Sample Delayfehler hält. Die FIR-Gruppenlaufzeit wird
+vollständig aus dem ohnehin früheren PRE-Nebenpfad bezahlt. Reicht der gemessene positive PRE→POST-
+Lag dafür nicht aus, wird der hörbare POST-Pfad **nicht** verzögert: Delta ist dann gesperrt oder
+auf ein engeres, separat qualifiziertes Nutzband begrenzt. Für 0- und passend ganzzahligen Lag
+umgeht ein exakter Copy-/Ringpfad den Fractional-Filter vollständig.
+
+Der 0-Sample-Vertrag bleibt dabei erhalten: Der übliche Fall ist, dass POST bereits später als
+PRE anliegt; nur der frühere PRE-Nebenpfad wird aus einem vorallokierten Ring bis zum aktuellen
+POST verzögert. Müsste stattdessen der hörbare POST-Pfad verzögert oder ein Signal „vorgezogen“
+werden, wird Audio-Delta in v1 gesperrt. Nakama meldet dafür keine wechselnde Pluginlatenz.
+
+### 38.5 Abnahmekriterien
+
+- Verteilte Feature-Goldens mit 0 bis 2 s bekannter Verzögerung finden den Lag innerhalb eines
+  Feature-Hops; das lokale Audio-Compare erreicht bei geeignetem Signal höchstens 0,1 Sample
+  Medianfehler und 0,5 Sample p99. Rauschen oder anderes Material wird `unclear`.
+- Im lokalen unquantisierten Audio-Compare liegen Identität, bekannter Gain und bekannte EQ-Kurve
+  im Nutzband innerhalb ±0,05 dB, ±0,05 dB beziehungsweise ±0,1 dB. Der verteilte
+  `q_db_0p1_i16`-Livepfad wird nicht gegen diese Grenze geprüft; fokussierte 0,01-dB-Evidenz muss
+  Gain innerhalb ±0,1 dB samt statistischem Intervall wiederfinden.
+- Identische Signale mit 0-/Integer-Lag ergeben über den Bypass ein Null-Delta innerhalb
+  numerischer Toleranz. Für Fractional-Lag gilt ein separat festgelegter Residual-Golden über
+  Sweep, Impuls, Rauschen und Musik; ein endlicher Interpolator wird nie als mathematisch exakt
+  bezeichnet.
+- Kompression, Modulation, Saturation und wechselnde Latenz erzeugen keine falsche statische
+  EQ-Behauptung.
+- Hörbares Delta wird ohne nachgewiesenes Audio-Routing nicht freigeschaltet.
+
+---
+
+## 39. Technikdesign Kernfunktion 9 — Dynamik- und Headroom-Analyse
+
+### 39.1 Normgerechte Basis und musikalische Ereignisse
+
+Die Grundlage bleibt [ITU-R BS.1770-5](https://www.itu.int/rec/R-REC-BS.1770-5-202311-I/en)
+mit EBU-R128-kompatibler Gating-Logik. Fensterdefinitionen und die Kennzeichnung des LRA-Werts in
+den ersten 60 s als noch nicht stabil folgen
+[EBU Tech 3341](https://tech.ebu.ch/files/live/sites/tech/files/shared/tech/tech3341v4_0.pdf),
+LRA-Algorithmus und Mindesttests
+[EBU Tech 3342](https://tech.ebu.ch/docs/tech/tech3342.pdf):
+
+- Momentary Loudness über 400 ms, Short-term über 3 s und Integrated Loudness;
+- BS.1770-konformer True Peak; der vorhandene 8×-Pfad ist Nakamas zu validierende
+  Implementierungswahl;
+- LRA erst nach mindestens ungefähr 60 s geeignetem Material, vorher `nicht belastbar`;
+- PLR = Passage-True-Peak-Maximum minus LUFS-I; PSR(3 s) = True-Peak-Maximum desselben
+  3-s-Fensters minus LUFS-S;
+- Crest-Faktor in mehreren Fenstern statt nur als globales Maximum.
+
+PLR und PSR werden als ergänzende Produktmetriken, nicht als EBU-Qualitätsurteil bezeichnet. Der
+vorhandene 8×-True-Peak-Pfad bleibt nur, wenn er das vollständige offizielle EBU-Testset bei
+48 kHz sowie äquivalente generierte Mehrsampleraten-Goldens besteht; sonst wird der
+BS.1770-Polyphase-Referenzpfad verwendet.
+
+Parallel erzeugt ein Onset-/Transientendetektor aus spektralem Fluss, Peaksteigung und Crest einen
+begrenzten `DynamicsEvent`-Strom. Jedes Ereignis trägt Samplezeit, Stärke, Bandzentrum, Dauer und
+Qualität. So lässt sich „Sparse Drums treiben einzelne Masterspitzen“ belegen, ohne aus einem
+kumulativen Maximalwert zu raten.
+
+Für den spektralen Fluss wird ein SuperFlux-artiger Maximumfilter über Nachbarbins mit positivem
+Log-Magnitude-Delta und adaptiver Median/MAD-Schwelle genutzt. Das reduziert Vibrato-
+Fehltrigger; ein einfacher Peakpfad bleibt als Gegenbeleg für sehr kurze Impulse erhalten.
+
+### 39.2 Quellenbezug
+
+Der Broker verknüpft Masterereignisse mit Quellereignissen im ausgerichteten Zeitfenster. Bei
+einer Standardsonde lautet das Ergebnis `zeitgleicher Treiberkandidat`. Ein echter
+`post_fader_contribution`-Messpunkt oder ein PRE/POST-Paar um den Limiter erhöht die
+Aussagequalität. Ohne Limiter-Telemetrie behauptet Nakama nie, dessen Gain Reduction exakt zu
+kennen.
+
+Headroom wird in dBTP und als Verteilung über die Passage dargestellt. Ein Peak darf nicht als
+Problem gelten, nur weil er hoch ist; relevant werden Wiederholung, Zielmedium, Userziel,
+Clipping-/Limiterbeleg und hörbarer Nutzen einer Änderung.
+
+### 39.3 Abnahmekriterien
+
+- Loudness und True Peak stimmen auf Standard-Testmaterial mit einer validierten Referenz
+  innerhalb ±0,1 LU beziehungsweise ±0,1 dB überein.
+- LRA wird bei zu kurzem oder zu stillem Material nicht numerisch vorgetäuscht.
+- Bekannte Impulsereignisse bleiben über Blockgrößen und Sampleraten zeitlich stabil.
+- Ein korrelierter, aber nicht kausaler Distraktor wird als Alternative gezeigt und nicht als
+  sicherer Limiterauslöser bezeichnet.
+
+---
+
+## 40. Technikdesign Kernfunktion 10 — Stereo- und Phasenanalyse
+
+### 40.1 Frequenz- und zeitabhängiges Modell
+
+Zwei globale Skalare reichen nicht. Der Worker berechnet aus komplexen L/R-STFTs:
+
+- bandweise Mid-/Side-Energie und Side-Anteil in dB;
+- bandweise Pearson-Korrelation in kurzen und mittleren Fenstern;
+- Magnitude-Squared Coherence und Interchannel-Phase für kohärente Signalanteile;
+- tatsächlich gemessenen Pegelverlust beim Mono-Folddown;
+- L/R-Balance, Zeitperzentile und Persistenz auffälliger Zustände.
+
+M/S wird energienormiert als `M=(L+R)/√2`, `S=(L−R)/√2` berechnet. Der physische Mono-Check
+verwendet dagegen die dokumentierte −6-dB-Summe `mono=(L+R)/2`. Für ein Band gilt
+`Pmono=(PLL+PRR+2·Re{PLR})/4`; Referenz ist die mittlere Stereoenergie
+`Pstereo=(PLL+PRR)/2`. Angezeigt wird `10·log10(Pmono/Pstereo)`. So entspricht der Wert dem
+wirklichen Fold-down und nicht einer Heuristik aus einem Korrelationsskalar.
+
+Magnitude-Squared Coherence ist keine Einzel-FFT-Metrik. Auto- und Cross-Spektren werden über
+mindestens acht gültige, überlappende Welch-Frames gemittelt; Fensterdauer und Freiheitsgrade
+werden Teil der Evidenz. Bei zu wenig Energie oder Frames ist Kohärenz `null`. Interchannel-Phase
+wird nur in ausreichend kohärenten Bändern interpretiert.
+
+Das Live-Raster verwendet 32 bis 64 Bänder; Evidenz kann auf das 221-Band-Raster projiziert
+werden. Low-End-, Mitten- und Höhenaussagen verwenden keine starren drei Zonen, sondern
+versionierte Bereiche mit sichtbaren Grenzwerten.
+
+### 40.2 Interpretation und Korrekturgrenze
+
+Breite ist kein Qualitätswert. Negative Korrelation kann bei Atmosphären gewollt sein; Mono-
+Verlust, zeitliche Persistenz, Userintent und Masterwirkung entscheiden. Eine Laufzeit- oder
+Polaritätskorrektur wird nur angeboten, wenn ein kohärentes Aufnahme-/Layerpaar, stabiler Lag und
+eine eindeutig bessere Mono-Summe nachgewiesen sind. Musikalisch unabhängige Busse werden nie
+automatisch gegeneinander verschoben.
+
+Eine statische Breitenänderung und eine bandbegrenzte M/S-Korrektur müssen als verschiedene
+Vorschlagstypen erscheinen. Der aktive Kern darf nur minimumphasige, latenzfreie M/S-EQ- oder
+begrenzte Width-Operationen anbieten; keine heimliche Allpass-/Delay-Korrektur.
+
+### 40.3 Abnahmekriterien
+
+- Goldens für Mono, identisches Stereo, Polaritätsinvertierung, bekannte Laufzeit und
+  unkorrelierte Kanäle klassifizieren korrekt über alle unterstützten Blockgrößen.
+- Der angezeigte Mono-Verlust entspricht dem wirklich gefalteten Audiopuffer innerhalb 0,25 dB.
+- Bei niedriger Kohärenz gibt es keine Lag-/Polaritätsempfehlung.
+- Jede Stereoempfehlung nennt Frequenzbereich, Passage, Intentbezug und erwartete Monoänderung.
+
+---
+
+## 41. Technikdesign Kernfunktion 12 — Hörbarer Beweis
+
+### 41.1 Vier klar definierte Hörmodi
+
+| Modus | Audiosignal | Zweck |
+|---|---|---|
+| `A/B MATCHED` | gespeicherter Zustand gegen Preview, mit eingefrorenem Match-Gain | faire Gesamtentscheidung |
+| `DELTA` | `Preview − pegelangepasster gespeicherter Zustand` | nur die Änderung hörbar machen |
+| `FOCUS` | bearbeiteter Frequenz-/M/S-Anteil der Zielsonde | wissen, worauf zu hören ist |
+| `MONO CHECK` | echter, pegelkompensierter Mono-Folddown | Stereoentscheidung prüfen |
+
+Alle Signale entstehen lokal in der Instanz, die beide nötigen Audiopfade besitzt. Main sendet nur
+Modus und Preview-Revision. Es gibt kein aus Telemetrie synthetisiertes „Delta“ und kein
+ferngestreamtes Audio.
+
+Für statisches wie dynamisches A/B verarbeitet die aktive Probe Committed und Candidate
+kontinuierlich mit denselben Main- und Sidechain-Samples in zwei getrennten, vorallokierten
+Filter-/Detektorzuständen. Der Kandidat wird mindestens für
+`max(500 ms, 3 · längste Releasezeit)` stumm vorgewärmt; erst danach darf A/B oder Delta öffnen.
+Die Umschaltung wählt nur zwischen den beiden bereits laufenden Ausgängen. Dadurch werden weder
+kalte Filterzustände noch eine andere Hüllkurvenhistorie als Klangunterschied verkauft.
+Main zeigt diese Vorbereitungszeit als `arming` und fordert sie bereits beim Anzeigen des Drafts
+an. Das <100-ms-Previewbudget beginnt erst bei Probe-Status `audible_ready`; ein noch kalter
+Kandidat wird nie zugunsten einer schnelleren UI hörbar gemacht.
+
+### 41.2 Umschalten und Lautheitsabgleich
+
+Vor dem Vergleich sammelt die Probe repräsentatives Material für gespeicherten und Kandidatenpfad.
+Ab 10 s verwendet sie gated LUFS-I, zwischen 7 und 10 s den robusten Median von mindestens fünf
+gültigen LUFS-S-Fenstern, deren Mittelpunkte mindestens 1 s auseinanderliegen. Unter dieser
+effektiven Fensterzahl gibt es standardmäßig keine automatische Klangwertung; höchstens ein klar
+als vorläufig markierter K-weighted/Momentary-Abgleich ist zulässig. Die Probe friert den
+outlier-begrenzten Match-Gain für den Vergleich ein und zeigt ihn. Ein kontinuierlich
+nachregelnder Leveler ist verboten. Reicht das Material nicht, lautet der Modus sichtbar `nicht
+pegelangepasst`.
+
+Der automatische Ausgleich ist produktseitig auf ±6 dB begrenzt; ein größerer Unterschied muss
+zuerst als Gain-Problem behandelt werden. Zwischen hoch korreliertem Dry und Processed wird über
+5–20 ms linear gekreuzt; ein Equal-Power-Fade könnte in der Mitte einen Pegelbuckel erzeugen. Nur
+zwischen unkorrelierten Referenzquellen ist Equal-Power passend. Parameter- und Rückkehr-Ramps
+dürfen je nach Aktion 20–100 ms dauern. Ein eigener Limiter wird nicht heimlich eingeschaltet.
+Reicht der Headroom nicht, werden beide Varianten gemeinsam sicher abgesenkt und dieser Offset
+angezeigt.
+
+### 41.3 Zustands- und Renderregeln
+
+- Hörbeweis ist grundsätzlich `press-and-hold`; die Preview-Lease ist der Totmannschalter.
+- Alle neuen hörbaren Preview-/Focus-/Delta-/Markerpfade verlangen Realtime-Modus sowie
+  `play_state.valid=true && playing=true`; unbekannter oder gestoppter Transport ist fail-closed.
+  Der heutige Legacy-Marker mit `playing || !hasTransport` wird auf dieses Gate migriert.
+- Eine Remote-Preview beginnt nur bei gültigem `recording=false`; Recording **oder unbekannter
+  Record-State** blockiert, damit kein flüchtiger Zustand versehentlich aufgenommen wird.
+- Stop, Sidechainfehler, Lease-Ablauf, Prozessorfehler oder Wechsel der Transportepoche blenden
+  zum gespeicherten Zustand zurück.
+- Preview, Focus und Delta sind im Offline-Render neutral.
+- Ein explizit **angewendeter** DSP-Zustand rendert dagegen hörbar und reproduzierbar. Damit wird
+  die bisherige passive Nullgarantie nicht aufgeweicht, sondern auf die passive Plugin-ID
+  begrenzt.
+- Hörmodi senden die P0-Begin/End-Ereignisse aus Abschnitt 34 und setzen zusätzlich ein
+  samplebereichsbezogenes Telemetrieflag; nachgelagerte Frames werden bis einschließlich
+  definiertem Effekt-Tail quarantänisiert oder rückwirkend invalidiert.
+
+### 41.4 Abnahmekriterien
+
+- 100.000 zufällige Umschaltungen, Blockgrenzen und Lease-Abbrüche erzeugen keine NaNs, Denormals
+  oder harten Sprünge; ein Nulltest des identischen A/B-Paars bleibt stumm.
+- Ein bereits `audible_ready` vorgewärmter Kandidat beginnt nach Hold-Befehl unter normaler lokaler
+  Last in weniger als 100 ms p95; Arming erfüllt das getrennte <2-s-Budget. Nach ausbleibender
+  Erneuerung ist die Probe spätestens nach 500 ms wieder im gespeicherten Zustand.
+- Offline-Bounces enthalten Applied-DSP, aber niemals Preview-, Focus-, Delta- oder Hörmarker-
+  Zustand.
+- Der eingefrorene Match-Gain bleibt während eines Versuchs bitstabil und wird im Experiment
+  protokolliert.
+
+---
+
+## 42. Technikdesign Kernfunktion 13 — Konkrete Bus-Empfehlungen
+
+### 42.1 Struktur vor Sprache
+
+Eine Empfehlung ist zuerst ein validiertes, versioniertes `Proposal` und erst danach Text:
+
+```json
+{
+  "proposal_id": "p_91",
+  "proposal_schema": 1,
+  "target": "probe_piano_active",
+  "base_revision": 14,
+  "passage_id": "chorus_2",
+  "action": "dynamic_eq_cut",
+  "parameters": { "frequency_hz": 930, "q": 1.1, "max_gain_db": -1.5 },
+  "allowed_bounds": { "frequency_hz": [700, 1200], "q": [0.7, 2.0], "gain_db": [-2.0, 0] },
+  "evidence_ids": ["ev_81", "ev_86"],
+  "expected_effect": "reduce_masking_pressure",
+  "protected_traits": ["piano_attack"],
+  "listen_for": "chorus_words_clearer_without_thinner_piano",
+  "stop_if": ["piano_body_loss", "no_repeatable_master_change"],
+  "execution": "previewable",
+  "confidence": "medium"
+}
+```
+
+Das Objekt kennt Zielinstanz, Passage, Evidenz, Voraussetzungen, Grenzwerte, erwartete Wirkung,
+Hörziel und Stopbedingung. `Keine Änderung` ist ein gültiger Vorschlag.
+
+### 42.2 Deterministische Erzeugung
+
+1. Ein Befundtyp wählt eine geprüfte Aktionstemplate, beispielsweise breiter statischer Cut,
+   dynamisches Band, Trim oder reine manuelle Anleitung.
+2. Ein Constraint-Solver entfernt Aktionen, die Intent, Capability, Headroom, Messqualität oder
+   Schutzbereiche verletzen.
+3. Für EQ wird eine regularisierte Zielfunktion verwendet: gewünschte Evidenzverbesserung bei
+   möglichst wenig Bändern, Gain und spektraler Nebenwirkung.
+4. Der kleinste sichere Kandidat gewinnt; Alternativen bleiben sichtbar.
+5. Nur exakt unterstützte eigene DSP-Aktionen werden `previewable`, fremde Werkzeuge bleiben
+   `manual` mit neutralen Parameterbegriffen und optionalem Bedienprofil.
+
+KI darf daraus natürliche Sprache formulieren, aber keine Frequenz, Güte, Gain, Zielinstanz oder
+Grenze erfinden oder verändern.
+
+### 42.3 Sicherheitsbudgets
+
+Startwerte für die spätere Kalibrierung sind:
+
+- höchstens ein musikalischer Eingriff pro Assistentenschritt und höchstens drei EQ-Bänder pro
+  Vorschlag;
+- Remote-Vorschläge für statischen EQ innerhalb ±3 dB; manuelle Probe-Parameter dürfen einen
+  größeren, klar sichtbaren Bereich besitzen;
+- dynamische Reduktion standardmäßig höchstens 1,5 dB, Remote-Hard-Cap 3 dB;
+- kein Lookahead, keine positive automatische Gesamtverstärkung und keine versteckte
+  Normalisierung;
+- engere Usergrenzen gewinnen immer.
+
+Diese Werte sind Produktgrenzen, keine psychoakustischen Naturkonstanten. Jede Änderung benötigt
+eine neue Policy-/Metrikversion und Regressionstests.
+
+### 42.4 Abnahmekriterien
+
+- Jeder angezeigte Zahlenwert lässt sich auf Proposal-Feld, Evidenz und Generatorversion
+  zurückführen.
+- Ungültige, veraltete oder außerhalb der Capability liegende Vorschläge erreichen keine Probe.
+- Derselbe Eingang erzeugt denselben Entwurf; Sprachmodell-Ausfall ändert keine Aktion.
+- Property-Tests beweisen, dass Hard Caps, Schutzbereiche und ein engeres Userbudget nie
+  überschritten werden.
+
+---
+
+## 43. Technikdesign Kernfunktion 14 — Vorher/Nachher-Prüfung
+
+### 43.1 Unveränderliches Experiment
+
+Ein Versuch besteht aus unveränderlichen Referenzen:
+
+- `execution_mode=active_probe|manual_external`;
+- Baseline-Messung und, im Active-Modus, angewendete Zustandsrevision;
+- Proposal und, im Active-Modus, Candidate-Revision;
+- unveränderte Upstream-/Passage-Fingerprints, aktives Quellenset und Messpunktklassen;
+- im Active-Modus erwarteter Baseline-State-Hash und erwarteter, bewusst anderer
+  Candidate-State-Hash;
+- eingefrorener Match-Gain und Alignmentqualität;
+- Resultatmessung, Metrikdeltas, Guardrails und Userurteil.
+
+Eine erneute Änderung erzeugt einen neuen Kandidaten, überschreibt aber nicht die Baseline. Damit
+ist ein Vergleich auch nach Reconnect und UI-Neustart rekonstruierbar.
+
+`manual_external` deckt den wichtigen Kernfall ab, dass der User EQ, Kompressor oder Fader in
+einem fremden Werkzeug ändert: Main verriegelt die Baseline, bittet um die Änderung und erfasst
+danach dieselbe Passage erneut. Weil Nakama diesen Fremdzustand weder lesen noch atomar
+reproduzieren kann, speichert der Versuch statt State-Hashes eine Usernotiz, optional Werkzeugname
+und optional einen vom User bereitgestellten Preset-/Screenshot-Hash. Er ist klar als
+`manuell · nicht automatisch wiederherstellbar` markiert, erlaubt kein Nakama-Revert und erhält
+eine niedrigere Reproduzierbarkeitsklasse. Die Mess- und Hörbewertung bleibt dennoch gültig, wenn
+Passage, Upstream-Fingerprint und Coverage passen.
+
+### 43.2 Vergleichslogik
+
+Main führt erst dieselbe Passage im Baseline- und dann im Kandidatenzustand aus. Transportbereich,
+**unveränderte Upstream-Fingerprints**, aktive Quellen, Coverage und die jeweils erwartete DSP-
+Revision werden im Active-Modus geprüft; bei `manual_external` ersetzt die explizite User-
+Bestätigung diese nicht beobachtbare Zustandsprüfung. Der bearbeitete Downstream-Fingerprint und
+Candidate-State dürfen sich dagegen bestimmungsgemäß ändern. Startgates für starke
+Vergleichbarkeit sind 95 % Zeitüberdeckung,
+Aktivquellen-Jaccard ≥0,9 und Upstream-Feature-Cosine ≥0,95; sie werden am Korpus kalibriert. Die
+Auswertung trennt:
+
+- **Zielmetrik:** Hat sich der konkret adressierte Befund verändert?
+- **Guardrails:** Wurden Loudness, Peak, Transient, Breite oder geschützte Bereiche schlechter?
+- **Effektstabilität:** Bleibt Richtung und Größenordnung über Teilfenster bestehen?
+- **Hörurteil:** besser, gleich, schlechter oder unsicher — ausdrücklich Userdaten, keine Messung.
+
+Metrikdeltas erhalten per Block-Bootstrap ein Unsicherheitsintervall. Für 221 gleichzeitig
+gescannte Bänder werden zusammenhängende Cluster beziehungsweise FDR-Korrektur verwendet. Bei
+anderem Material oder unzureichender Abdeckung gibt es kein Siegerlabel. Ein optionaler
+blind/randomisierter A/B-Modus verringert Erwartungseffekte; Identität und Reihenfolge werden erst
+nach dem Urteil aufgedeckt.
+
+### 43.3 Entscheidung
+
+`Behalten` ist nur möglich, wenn der User es bestätigt. Das System darf sagen:
+
+- Ziel verbessert, Guardrails stabil;
+- messbar anders, musikalisches Urteil offen;
+- keine belastbare Änderung;
+- Ziel verbessert, aber geschützte Eigenschaft verschlechtert;
+- Vergleich nicht gültig.
+
+Es sagt nie allein aus einem Metrikdelta „objektiv besser“.
+
+### 43.4 Abnahmekriterien
+
+- Ein geänderter **Upstream-/Passage**-Fingerprint, ungleicher Messpunkt oder von der jeweils
+  erwarteten Baseline-/Candidate-Revision abweichender State-Hash blockiert im Active-Modus ein
+  starkes Urteil.
+- Baseline, Kandidat und Match-Gain bleiben im Active-Modus nach Broker-/Main-Neustart
+  reproduzierbar; ein manueller Versuch weist seine schwächere Reproduzierbarkeit ehrlich aus.
+- Blind-A/B hält Reihenfolge bis zum Userurteil aus der UI verborgen und bindet sie vorher im
+  append-only Experimentereignis.
+- Ein Experiment kann vollständig inklusive Evidenz-IDs exportiert und ohne PCM gelöscht werden.
+
+---
+
+## 44. Technikdesign Kernfunktion 16 — Fernsteuerbarer Sonden-DSP
+
+### 44.1 Getrennte aktive Produktklasse
+
+Der robusteste Vertrag sind drei stabile Plugin-Identitäten aus einer gemeinsamen C++-
+Kernbibliothek:
+
+- `Nakama Main`: bestehende Class-ID und Projektkompatibilität;
+- `Nakama Probe`: neue passive Class-ID, dauerhaft sampleidentischer Nullpfad;
+- `Nakama Active Probe`: neue aktive Class-ID mit Sidechain und explizitem DSP-Vertrag.
+
+So kann kein Projekt durch einen Modusschalter unbemerkt vom passiven in den rendernden Zustand
+wechseln. Gemeinsame Analyse-, IPC-, UI-Komponenten und Schemas verhindern dennoch drei
+auseinanderlaufende Produkte.
+
+Die bestehende Class-ID lädt alte States weiterhin. Enthält ein Altprojekt `sensor`, `pre` oder
+`post`, verhält sich diese Instanz als passive Legacy-Probe und bietet nur eine explizite
+Migrationsanleitung; sie wird nicht automatisch zum führenden Main umgedeutet. Neue Projekte
+erhalten die drei eindeutigen Einträge.
+
+Der Kompatibilitätseintrag friert die heutigen Buildidentitäten ausdrücklich ein:
+`PLUGIN_MANUFACTURER_CODE=Evna`, `PLUGIN_CODE=Eqcp`, bestehende VST3-Class-ID und bisheriger
+Bundle-/Produktbezug `EQ-Copilot.vst3`. Ein Rename oder neues JUCE-Target darf diese Werte nicht
+neu generieren. Main, passive Probe und Active Probe erhalten bewusst vergebene, dokumentierte
+Codes/Class-IDs; ein Scan-Golden prüft Altprojekt-Recall sowie Koexistenz aller Einträge.
+
+### 44.2 DSP-Kern
+
+Die aktive Probe besitzt acht feste Band-Slots mit stabilen Parameter-IDs und einen versionierten
+State-Tree. Unbenutzte Slots bleiben neutral; die Hostparameterliste ändert sich nie dynamisch.
+Manuelle Parameter dürfen beispielsweise 20 Hz bis `min(20 kHz, 0,45·fₛ)`, ±12 dB und Q
+0,15–24 nutzen. Remote-Proposals bleiben auf ±3 dB und zunächst Q 0,4–2 begrenzt. Der erste Kern
+nutzt:
+
+- minimumphasige RBJ-Biquads als Referenz für statische Bell-, Shelf-, Notch- und Cut-Filter;
+  nahe Nyquist wird ein matched-analog-/Orfanidis-artiges Decramping geprüft;
+- topology-preserving State-Variable-Filter beziehungsweise robuste Biquads für dynamische
+  Bänder;
+- RMS-/Peak-Hüllkurven mit expliziter Attack/Hold/Release-Smoothing;
+- Stereo-, L/R- und M/S-Matrix mit normalisierter Energie;
+- vier vorallokierte Programmbänke: je ein Double-Buffer für Committed und Candidate, damit beide
+  unabhängig warm bleiben und innerhalb ihres Pfads klickfrei die Topologie wechseln können;
+- 64-Bit-Koeffizienten und -Filterzustände; 32-Bit- und 64-Bit-Hostpuffer werden unterstützt.
+
+Der Audiothread liest ein unveränderliches `DspProgram`, allokiert und sperrt nie. Stetige
+Parameter werden geglättet; Bandtyp, Kanalmodus oder Bandanzahl wechseln per kurzem Crossfade
+zwischen zwei vollständig vorbereiteten Programmen. Der erste aktive Kern meldet konstant
+0 Samples Pluginlatenz und verwendet deshalb kein Lookahead oder lineare Phase.
+
+Im Normalbetrieb rechnet nur der aktive Committed-Pfad; Compare rechnet Committed plus Candidate.
+Ein gleichzeitiger Topologiewechsel kann für die begrenzte Fadezeit drei beziehungsweise im
+Worst-Case vier Bänke benötigen. Diese Last ist Teil des Worst-Case-CPU-Goldens. Reicht das
+Realtime-Budget nicht, wird Candidate vor dem Wechsel neutral beendet — nie eine Bank oder ein
+Filterzustand zwischen beiden Pfaden geteilt.
+
+Die vier Slots besitzen ein explizites lockfreies Ownership-Protokoll
+`free → preparing → ready(generation) → audio_active/fading → retired → free`. Der Control-Worker
+schreibt ausschließlich `free`-Slots und publiziert Index plus Generation mit Release-Semantik.
+Der Audiothread übernimmt nur am Blockrand, liest bis Fade-Ende unverändert und meldet die
+ausgediente Generation über einen vorallokierten Audio→Control-SPSC-Ring zurück. Erst nach diesem
+ACK darf der Worker Filterzustand oder Koeffizienten überschreiben. Ist kein Slot frei, erhält der
+Befehl `busy_retry`; es gibt weder In-place-Überschreiben noch Heap-Reclaim, `shared_ptr`-
+Destruktor oder Deallokation im Callback.
+Der ACK-Ring fasst mehr Einträge als es Slots gibt und droppt nie. Ein dennoch erkannter Overflow
+setzt zusätzlich eine atomare `reclaim_pending_mask`; der betroffene Slot bleibt damit
+dauerhaft nicht frei, bis der Worker ihn bestätigt. Reclaim-Sicherheit gewinnt über Verfügbarkeit.
+
+32-/64-Bit-Puffer sind ein Zielvertrag; der heutige Code besitzt nur den Float-Callback. Vor einer
+64-Bit-Capability müssen beide Callbackpfade, Analyse, M/S-Matrix, Filter und Nullpfad denselben
+Golden-Korpus bestehen. Meldet der Build diese Capability nicht, darf der Host keinen impliziten
+Konvertierungspfad als getestete Doppelpräzision ausgeben.
+
+Ein neutraler Active-State besitzt einen expliziten Hard-Bypass vor M/S-Matrix und Filterbank. Er
+schreibt bei In-place-Verarbeitung keine Samples und ist deshalb wie die passive Probe bitgenau
+sampleidentisch; ein rechnerischer Identity-Filter reicht nicht als Nullvertrag.
+
+Die aktive Probe führt drei logisch getrennte Analysetaps: `pre_nakama` vor eigenem DSP,
+`post_committed` hinter dem bestätigten Parallelpfad und, nur im Experiment,
+`post_candidate`. Session-Landkarte und Recall beziehen sich auf `post_committed`; Candidate-
+Frames tragen Experiment-ID und dürfen nie Baseline werden. Preview-/Focus-/Delta-/Marker-Matrix
+liegt **hinter** diesen Taps. Weil nachgelagerte Probes die Intervention dennoch hören, greift
+zusätzlich die sitzungsweite Taint-Logik aus Abschnitt 34. Eigene Reduction-/Gain-Telemetrie
+verbindet Pre und Post, ohne den hörbaren Previewausgang als regulären Messpunkt auszugeben.
+
+### 44.3 Zwei Zustände und atomare Transaktion
+
+`CommittedState` und flüchtiger `PreviewOverlay` sind getrennt. Eine Netzwerk-/UI-Nachricht baut
+und validiert auf einem Nicht-Audiothread ein neues Programm. Erst am Blockrand tauscht die Probe
+atomisch die Generation. Wegen Stop und FL Smart Disable besitzt das ACK zwei Stufen:
+
+1. `accepted_pending_audio`: validiert, hostseitig gespeichert und als fertiges Programm
+   publiziert;
+2. `active`: vom Audiothread am Blockrand übernommen.
+
+Läuft kein Callback, bleibt Main sichtbar bei `gespeichert · wird bei Audio fortgesetzt aktiv`.
+Der nächste `prepareToPlay`/Audioblock übernimmt den bestätigten Zustand **vor** seiner Ausgabe.
+Eine Preview kann ohne laufenden Callback nicht beginnen. Das ACK enthält:
+
+- `command_id`, Ergebnis und angewendete `state_revision`;
+- SHA-256-`state_hash` über RFC-8785-kanonisiertes State-JSON;
+- tatsächlich geklemmte Parameter;
+- aktive Capability-/Policy-Version;
+- Fehler- oder Konfliktcode.
+
+`committed_revision` und `active_generation` bleiben getrennte Felder; ein Timeout darf einen
+gespeicherten Apply nicht fälschlich als verworfen darstellen.
+
+Committed-Parameter werden auf dem Message-Thread mit den exponierten Hostparametern
+synchronisiert. Trotzdem bleibt der eigene Revisions-/Undo-Ring die Rückfallgarantie: Remote-
+Änderungen, MIDI und Automation erzeugen nicht zuverlässig einen Plugin-Undo-Schritt. Remote-
+Apply ist nur bei gültigem `recording=false` zulässig und bei Host-Write/Touch auf einem
+betroffenen Parameter gesperrt.
+
+`state_revision` zählt ausschließlich diskrete Änderungen des bestätigten Basiszustands: Apply,
+Revert, Neutralisieren oder einen abgeschlossenen manuellen Parametergestus. Sample-offset-
+Automationspunkte erzeugen **keine** Revision pro Punkt. Sie bilden einen getrennten flüchtigen
+`AutomationOverlay` mit `automation_epoch`; der Epochzähler wechselt einmal beim Beginn und Ende
+einer Hostgeste beziehungsweise nach einer definierten Ruhegrenze. Jede Aktivität auf einem vom
+Draft betroffenen Parameter macht diesen Draft stale oder blockiert ihn sichtbar. Für Experimente
+wird zusätzlich eine kompakte Automation-Signatur der Passage gespeichert; der `state_hash`
+bezeichnet weiterhin nur den reproduzierbaren Basiszustand. State-Tree-Copy/Replace und
+Parametergesten laufen nie im Audiothread. Sample-Offsets bleiben als Segmentgrenzen erhalten:
+kontinuierliche Werte verwenden eine spezifizierte, an den Hostpunkten endende Sicherheitsrampe;
+diskrete oder topologische Werte wechseln am Offset über das vorbereitete Crossfade. Eine zweite
+freie Glättung darf die Hostautomation nicht zeitlich verschieben. Realtime- und Offline-Render
+müssen denselben Parameterverlauf erzeugen.
+
+Das ist mit dem heute gepinnten JUCE 8.0.9 **nicht** automatisch erfüllt: Sein VST3-Wrapper liest
+zwar `IParamValueQueue`, reicht normalen Pluginparametern aber nur den letzten Blockwert ohne
+Sampleoffset weiter. Der Zielpfad benötigt deshalb einen kleinen, versioniert gepinnten Patch des
+JUCE-VST3-Wrappers mit einer **eigenen internen Parameter-Event-Bridge**, die alle sortierten
+`{parameter_id, sample_offset, value}`-Punkte vor `processBlock` in einen vorallokierten Eventring
+übergibt. Wrapper-Diff und Host-Conformance-Golden werden bei jedem JUCE-Update neu geprüft.
+Scheitert dieser Spike, meldet die Probe `sample_accurate_automation=false`: kontinuierliche Werte
+werden ehrlich nur vom vorigen zum letzten Blockwert gerampt, Topologieautomation wird
+deaktiviert, und Realtime/Offline-Gleichheit wird nur für denselben Event-/Blockverlauf behauptet.
+
+### 44.4 Ausfall- und Recallverhalten
+
+- Bestätigter DSP bleibt bei Main-/Broker-Ausfall lokal unverändert und rendert offline.
+- Preview endet bei Lease-Ablauf und wird nie serialisiert.
+- Ungültiger State lädt neutral und meldet einen reparierbaren Migrationsfehler, statt teilweise
+  Parameter anzuwenden.
+- Ein Reconnect beginnt mit `state_report`; der Broker überschreibt keinen neueren lokalen State.
+- `Neutralisieren` ist selbst eine versionierte Transaktion und kein Löschen der Historie.
+
+### 44.5 Abnahmekriterien
+
+- Passive Probe **und neutraler Hard-Bypass der Active Probe** bestehen bitgenaue Nulltests;
+  Active Probe besteht zusätzlich Filter-, Automations-, State-Migrations- und Offline-Render-
+  Goldens in Float und, sobald deklariert, Double.
+- Audio-Callback: keine Heapallokation, Locks, Pipe-, Log- oder Dateizugriffe; ThreadSanitizer-
+  beziehungsweise äquivalente Stressläufe finden keine Zustandsrennen.
+- 10.000 doppelte, vertauschte und veraltete Befehle erzeugen höchstens eine gültige Revision und
+  niemals einen Mischzustand.
+- Projekt-Reload rekonstruiert denselben State-Hash und innerhalb numerischer Toleranz denselben
+  Audioausgang.
+- Filtergoldens bleiben typisch innerhalb ±0,05 dB und an Extrempunkten innerhalb ±0,1 dB;
+  Automations-Zipperresiduen bleiben im definierten Ramp-Test unter −100 dBFS.
+
+---
+
+## 45. Technikdesign Kernfunktion 17 — Intelligentes dynamisches Entmaskieren
+
+### 45.1 Signalweg
+
+Die priorisierte Quelle wird in FL Studio als echter Sidechain-/Aux-Eingang zur `Nakama Active
+Probe` der nachgebenden Quelle geroutet. Broker und Main konfigurieren nur Beziehung, Grenzen und
+Intent. Der komplette Detektor- und Gain-Verlauf entsteht in dieser einen Probe aus Haupt- und
+Sidechainpuffer. Inter-Plugin-Telemetrie garantiert dafür keine Sample-Synchronität; sonible nennt
+für pure:unmask aus genau diesem Grund einen echten Sidechain als Voraussetzung.
+Auch der echte Bus ist erst nach bestandenem FL-PDC-Impulsgolden freigegeben. Unbekannte oder
+instabile Main↔Sidechain-Latenz deaktiviert dynamische Aktuation; die analytische
+Kollisionsempfehlung bleibt sichtbar.
+
+### 45.2 Detektion und begrenzte Aktuation
+
+1. In der Design-/Preview-Phase bildet ein lokaler Nicht-Audio-Worker aus vorallokiert
+   übergebenen Ziel-/Sidechainblöcken ungefähr 32 ERB-/Bark-nahe Detektorbänder. Ein
+   regularisierter Fitter erzeugt daraus höchstens ein bis drei breite Bandzentren, Q-Werte und
+   relative Aktivitätsschwellen. Er läuft nie im Audiocallback.
+2. Die Pressure-Metrik kombiniert spektrale Überdeckung, Gleichzeitigkeit, adaptiven lokalen
+   dBFS-Untergrund und den gespeicherten Prioritätsbereich. Ohne kalibrierten Abhörpegel macht
+   Nakama ausdrücklich **keine** Aussage über eine absolute menschliche Hörschwelle oder
+   garantierte Hörbarkeit.
+3. Das fertig vorbereitete `UnmaskProgram` wird atomisch publiziert und bleibt nach Apply in
+   seiner Topologie stabil. Im Audiothread laufen nur die kausalen Detektorfilter der gewählten
+   Bänder, Hüllkurven und Gain-Smoothing; kontinuierliches 32-Band-Fitting ist ausgeschlossen.
+4. Energie-Gates verlangen relevante Aktivität **beider** Quellen. Hysterese verhindert Pumpen
+   nahe der relativen Schwelle. Eine spätere Topologie-Neuberechnung ist ein neuer Draft/Versuch,
+   keine unprotokollierte Selbständerung.
+5. Programmabhängige Attack-, Hold- und Release-Zeiten respektieren Transient oder Sustain;
+   Startbereiche sind etwa 15–80 ms Attack, 20–120 ms Hold und 80–500 ms Release.
+6. Reduktion, Q, Frequenzbereich und kumulatives Gain bleiben durch Proposal-, User- und Hard-Cap
+   begrenzt.
+
+Die bestehende Telemetrie darf den Konfliktbereich empfehlen und den Erfolg nachher messen, aber
+keinen Audio-Gainwert pro Frame liefern.
+
+### 45.3 Beziehungs- und Ausfallregeln
+
+- Der erste Kern erlaubt höchstens eine eingehende Prioritätsbeziehung pro Zielsonde; so sind
+  Rückkopplung, Summation mehrerer Ducker und Bedienung beweisbar.
+- Der gerichtete Beziehungsgraph muss azyklisch sein.
+- Sidechain fehlt, Layout ändert sich oder liefert ungültige Daten: Reduktion fährt lokal in
+  höchstens etwa 100 ms auf 0 dB und meldet `sidechain_invalid`.
+- Verstummt die Priorität, geht die Reduktion musikalisch über Release auf 0 dB zurück.
+- Fällt nur Main/Broker aus, arbeitet eine **bestätigte** Beziehung mit lokalem Sidechain und
+  gespeichertem State weiter. Eine bloße Preview endet dagegen mit ihrer Lease.
+- Maximalreduktion startet bei 1,5 dB; 3 dB ist das unveränderliche Remote-Hard-Cap des ersten
+  Kerns. Kein Band darf automatisch boosten.
+
+### 45.4 Erfolgskontrolle
+
+Nach Apply misst Main dieselbe Passage erneut: Ziel-Masking-/Lesbarkeitsbeleg, Reduktions-
+Duty-Cycle, maximale/typische Absenkung sowie Guardrails für Klangkörper, Attack, Loudness und
+Masterpeak. Das lokale `DELTA` lässt ausschließlich das entzogene Signal hören.
+
+### 45.5 Abnahmekriterien
+
+- Der Gainverlauf ist bei identischem Main-/Sidechainaudio unabhängig von Pipe-Latenz und
+  Telemetrieverlust identisch.
+- Sidechain-Trennung, Kanalwechsel, Stille und NaN führen sicher zu 0 dB Reduktion.
+- Hard Cap, Schutzbänder und Zyklusverbot halten unter Fuzz-/Property-Tests.
+- Ein nicht überlappender oder absichtlich verschmelzender Quellenverbund erzeugt keine
+  automatische Reduktion.
+
+---
+
+## 46. Technikdesign Kernfunktion 18 — Zentraler Mix-Assistent
+
+### 46.1 Deterministische Zustandsmaschine
+
+Der Assistent ist kein frei handelnder Chat. Pro aktivem Problem durchläuft er:
+
+```text
+Coverage → Finding → Evidence → Listen → Proposal → Preview → Remeasure → Verdict
+```
+
+Jeder Zustand besitzt Eintrittsbedingungen, Evidenz-IDs, Useraktion, Timeout und sichere
+Rückkante. Es ist immer höchstens ein klanglicher Versuch aktiv. Ein abgebrochener Schritt kann
+nach Main-Neustart aus dem gespeicherten `AssistantStep` rekonstruiert werden.
+
+### 46.2 Priorisierung
+
+Ein deterministisches Ranking berücksichtigt erwarteten Nutzen, Intent-Relevanz, Konfidenz,
+Reversibilität, Messkosten und bereits erfolglose Versuche. Harte Gates entfernen nicht
+vergleichbare oder unsichere Schritte. Der Assistent beginnt mit dem kleinsten hochrelevanten,
+reversiblen Test und kann ausdrücklich `erst Passage messen`, `Routing bestätigen` oder `keine
+Änderung empfohlen` sagen.
+
+Er zeigt gleichzeitig:
+
+- was beobachtet wurde;
+- warum es für den Userintent relevant sein könnte;
+- was noch eine Alternativerklärung ist;
+- was als Nächstes gehört oder gemessen wird;
+- welche Aktion gerade **nicht** aktiv ist.
+
+### 46.3 KI-Grenze
+
+Ein optionaler Sprachadapter erhält nur ein minimiertes, strikt validiertes Schema mit bereits
+freigegebenen Finding-/Proposal-Feldern. Er darf erklären, kürzen, übersetzen und Rückfragen in
+deterministische Intentfelder überführen. Er erhält kein PCM, keine Pipeadresse und kein Tool zum
+Preview/Apply. Seine Ausgabe wird gegen erlaubte Evidenz-IDs und Zahlenfelder geprüft; unbekannte
+Behauptungen werden verworfen. Ohne Modell bleibt der gesamte Workflow funktionsfähig.
+
+### 46.4 Abnahmekriterien
+
+- Für jede Zustandskante existieren Contracttests inklusive Stop, Seek, Stale, Reconnect,
+  Konflikt und Userabbruch.
+- Nie sind zwei Preview-Leases oder zwei schreibende Schritte gleichzeitig aktiv.
+- Ein Sprachmodell-Ausfall, Timeout oder abweichender Text verändert weder Proposal noch DSP-
+  Revision.
+- Jede Session kann als kompakte Ereignisfolge erklärt werden: Beobachtung → Evidenz → Userwahl →
+  Transaktion → Ergebnis.
+
+---
+
+## 47. Technikdesign der acht Roadmap-Funktionen
+
+Diese Funktionen sind nicht bloß Titel für später. Ihr Daten- und Sicherheitsvertrag wird jetzt
+festgelegt, damit der Implementierungsplan keine Sackgassen im Kernfundament erzeugt.
+
+### 47.1 Roadmap 3 — Vollständige Masking-Analyse
+
+**Technikansatz.** Eine vollständige Matrix wird nicht naiv für jedes der `n²` Buspaare in voller
+Auflösung berechnet. Ein 64-Band-Screening ermittelt pro Passage nur gleichzeitig aktive,
+intent-relevante Top-K-Paare. Für diese Kandidaten folgt eine psychoakustische Auswertung aus
+Erregungsmuster, spektraler Verdeckung, partieller Lautheit, zeitlicher Überlappung und Rollen-
+Baseline. Das teurere Modell läuft im Broker/Worker, nie im Audiothread.
+
+Ein Konflikt ist eine rollen- und instrumentabhängige Auffälligkeit, nicht jede spektrale
+Überlappung. Für vergleichbare Rollen werden daher robuste Baselines gebildet und starke
+Ausreißer getrennt von normaler Koexistenz gezeigt. Psychoakustische Modelle sind Evidenz, keine
+Hörwahrheit; Forschung weist selbst auf Grenzen objektiver Masking-Maße für reale Mixurteile hin.
+
+Als Forschungsbasis dienen das Partial-Loudness-Modell von
+[Ward, Reiss und Athwal](https://www.eecs.qmul.ac.uk/~josh/documents/2012/WardReissAthwal-AES133-Multitrackmixingusingamodelofloudnessandpartialloudness.pdf),
+die Visualisierungsübertragung in [MixViz](https://sinc-lab.com/publications/2015-10-01-ford2015mixviz),
+die ausdrücklich vorsichtige Bewertung objektiver Maße bei
+[Hafezi/Reiss](https://aes.org/publications/elibrary-page/?id=17637) und die Analyse
+problematischer statt bloß vorhandener Verdeckung in
+[Quantitative Analysis of Masking](https://secure.aes.org/forum/pubs/conventions/?elib=18450).
+Der häufig zitierte MPEG-inspirierte Entwurf arXiv:1803.09960 ist seit 2021 aus IP-Gründen
+zurückgezogen und wird **nicht** als normative oder Implementierungsbasis verwendet.
+
+**Produktform.** Main bietet Paarmatrix, Konfliktbereich, Zeitpersistenz, Prioritätsrichtung,
+Alternativen und billigsten Gegenversuch. Es aktiviert nie mehrere Entmaskierungen aus einer
+Matrix heraus. Eine bestätigte Beziehung geht erst durch Proposal, Preview und Experiment.
+
+**Abnahme.** Laufzeit skaliert mit aktiven Top-K-Paaren; ein Projekt mit 32 stillen beziehungsweise
+irrelevanten Sonden löst keine 992 hochauflösenden Paaranalysen aus. Bekannte Nicht-Konflikte,
+gewollte Verschmelzung und Parent-/Child-Duplikate bleiben negativ. Datensatzmetriken werden pro
+Instrumentrolle und Frequenzzone ausgewiesen, nicht nur als globaler Score.
+
+### 47.2 Roadmap 6 — Automatische Abschnittsdiagnose
+
+**Technikansatz.** Manuell bestätigte, auf gültige Projektsamples gebundene Marker sind die
+Userwahrheit. Automatische Vorschläge
+entstehen zweistufig:
+
+1. Der Plugin-Worker berechnet Chroma, Onsetstärke, kompakte Tempogramm-/Timbre-Deskriptoren,
+   Loudness und Aktivität aus seiner bestehenden lokalen Blockqueue und sendet nur diese
+   zeitgestempelten Features. Ein Broker-Worker bildet daraus eine Self-Similarity-Matrix;
+   Multi-Scale-Novelty liefert Grenzkandidaten, Fingerprint-Clustering erkennt Wiederholungen.
+2. Optional kann ein lokal ausgeführtes Strukturmodell wie
+   [All-In-One](https://github.com/mir-aidj/all-in-one) Kandidaten und Funktionslabels liefern.
+   Da solche Modelle Waveforminput erwarten, ist das **kein** Broker-Livefeature: Der User wählt
+   ausdrücklich eine lokal gerenderte Datei, ein isolierter Helper liest sie direkt und gibt nur
+   Zeitgrenzen/Labels zurück. Nakama kopiert oder persistiert das PCM nicht. Export, Lizenz,
+   Modellhash, Timeline-Zuordnung und ONNX-Kompatibilität müssen vor Produktintegration geprüft
+   werden; Inferenz läuft außerhalb von Plugin und Audiothread. Ohne Datei/Helper bleibt Stufe 1
+   vollständig funktionsfähig.
+
+Der User kann Grenzen ziehen, verschieben, zusammenlegen, benennen und sperren. Modelllabels wie
+`verse` oder `chorus` bleiben Hypothesen; stabile IDs hängen an Zeitbereich plus Fingerprint, nicht
+nur an einem Namen.
+
+**Abnahme.** Seek, Loop und Tempoänderung erzeugen keine doppelten Passagen. Grenzen werden auf
+einem kuratierten, stilistisch passenden Korpus gegen Usermarker bewertet; zusätzlich zählt die
+Korrekturzeit, weil eine leicht verschiebbare 80-%-Grenze produktiv besser sein kann als eine
+scheinbar präzise, uneditierbare Analyse.
+
+### 47.3 Roadmap 7 — Arrangement-Beratung
+
+**Technikansatz.** Arrangement wird erst angeboten, wenn derselbe Befund in vergleichbaren
+Passagen wiederkehrt und mindestens ein kleiner technischer Gegenversuch erfolglos oder
+unmusikalisch war. Features sind Quellaktivität, Register/CQT, Chroma, Onsetdichte, Sustain,
+Rollen-Intent und Wiederholungsstruktur. Ein Regelgraph formuliert minimale, reversible
+Experimente wie Oktavlage prüfen, Einsatz ausdünnen, Note verkürzen oder eine Stimme im
+Problemfenster pausieren.
+
+Das System behauptet weder Notennamen noch Akkordfunktion, wenn Polyphonie, Effekte oder
+Transposition die Schätzung unsicher machen. Ein Sprachmodell darf eine bereits erzeugte
+Hypothese verständlich formulieren, aber keine Kompositionsentscheidung hinzufügen. Arrangement-
+Vorschläge sind nie direkt ausführbar und nie Teil des Autopiloten.
+
+**Abnahme.** Jede Empfehlung zeigt den wiederholten Messbeleg, vorher versuchte technische
+Alternative und Unsicherheit der Tonhöhen-/Einsatzschätzung. Bei nicht stabiler Quelle oder nur
+einem kurzen Ereignis lautet das Ergebnis `keine belastbare Arrangementaussage`.
+
+### 47.4 Roadmap 8 — Spezialisierter Low-End-Manager
+
+**Technikansatz.** Zwei Analysepfade werden verbunden:
+
+- ein langes, logarithmisches Spektral-/CQT-Raster für 20–250 Hz, Grundtonkandidaten, Sustain und
+  langsame Energieverläufe;
+- ein kurzer Onset-/Peakpfad für Kickimpuls, Bassattack, Subspitzen und zeitliche Staffelung.
+
+Hinzu kommen bandweise M/S-Energie, Kohärenz, Mono-Folddown, True-Peak-Ereignisse und
+Prioritätsrollen `foundation`/`impulse`. Fundamental-Tracking trägt Konfidenz und darf bei
+inharmonischem, verzerrtem oder polyphonem Material ausfallen. Empfehlungen unterscheiden
+Frequenz-, Zeit-, Dynamik- und Arrangementkonflikt.
+
+Eine Genre-Zielkurve wird nicht als universeller Sollwert eingebaut. Zielprofile sind optional,
+quellen- und passagespezifisch und rangieren unter Userintent und direktem A/B-Beleg.
+
+**Abnahme.** Testsignale und echte Stems decken Kick/Bass-Offbeats, gehaltenen Sub, Distortion,
+Pitch-Glide, Stereo-Sub und fehlenden Grundton ab. Das System verwechselt einen musikalisch
+gewollten gemeinsamen Downbeat nicht automatisch mit Masking und empfiehlt bei unsicherer
+Tonhöhe keinen präzisen Notch.
+
+### 47.5 Roadmap 11 — Quellenbewusstes Referenz-Matching
+
+**Technikansatz.** Referenzen werden nach Scope getrennt: Full Mix darf Masterziele, ein
+vergleichbarer Stem darf Busziele informieren. Aus einem gemasterten Stereofile werden keine
+„Klavierbus-Sollwerte“ rekonstruiert. Vergleich erfolgt in passender Passage, nach robustem
+Lautheitsabgleich, über Median-/Perzentilbereiche statt eine exakt zu kopierende Kurve.
+
+Metadaten enthalten Rolle, Stil, Abschnitt, Dynamikziel, Messpunkt und Usernotiz. Optionale lokale
+Embeddings, etwa [MERT](https://github.com/yizhilll/MERT) oder lizenzgeprüfte
+[Essentia-Modelle](https://essentia.upf.edu/models.html), dürfen ähnliche Referenzen **finden**,
+nicht Qualität bewerten. Modellname, Version und Hash werden gespeichert. PCM bleibt lokal und
+wird nach der Analyse nicht in Nakamas Historie kopiert.
+
+**Abnahme.** Ein Masterreferenzfile kann keinen aktiven Bus-DSP-Entwurf freischalten. Loudness-
+Mismatch, anderer Abschnitt oder andere Rolle senken Vergleichbarkeit sichtbar. Ohne Embedding-
+Runtime funktioniert die manuelle Referenzauswahl vollständig.
+
+### 47.6 Roadmap 15 — Verlauf und Versionsvergleich
+
+**Technikansatz.** Der Kern benötigt bereits einen kleinen lokalen SQLite-Experimentstore.
+Roadmap 15 erweitert ihn um projektübergreifende Navigation, Retention, Vergleich und Export. Die
+Datenbank läuft im WAL-Modus mit genau einem Writer, kurzen Transaktionen und versionierten
+Migrationen. Gespeichert werden append-only:
+
+- Sessions, Passagen und Probe-Metadaten;
+- Evidenz-/Finding-/Proposal-Versionen;
+- DSP-Transaktionen und State-Hashes;
+- Experimentresultate und Userurteile;
+- kompakte, optional komprimierte Featurezusammenfassungen — niemals PCM.
+
+Große Liveframes besitzen eine begrenzte Retention; benannte Experimente bleiben, bis der User sie
+löscht. Jeder Datensatz trägt Schema-, Metrik-, Policy- und gegebenenfalls Modellversion. Export
+ist ein portables, validiertes JSON-Paket; Löschen entfernt Projekt- und globale Präferenzbezüge
+nach klarer Vorschau. `Append-only` beschreibt reguläre fachliche Änderungen; eine ausdrückliche
+Datenschutzlöschung entfernt die betreffenden Zeilen und führt außerhalb aktiver Audiolast eine
+sichere Kompaktierung aus, statt nur einen ewigen Tombstone anzuhängen.
+
+**Abnahme.** Prozess-Kill während jeder Schreibkante beschädigt weder zuletzt bestätigte
+Transaktion noch ältere Historie. Migrationen sind vorwärts getestet, Downgrade verweigert sich
+verständlich, und ein Projekt kann ohne Datenbank mit seinem lokalen Plugin-State weiterladen.
+
+### 47.7 Roadmap 19 — Begrenzter Autopilot
+
+**Technikansatz.** Autopilot ist eine deterministische Policy-Schicht über denselben sicheren
+Transaktionen, kein Agent mit freien Werkzeugen. Der User wählt Capability-Allowlist,
+Zielpassage, Quellen, kumulatives Gainbudget und maximal drei Schritte. Zulässig sind nur
+reversible Aktionen an `Nakama Active Probe`; kein fremdes Plugin, Routing, Arrangement oder
+Hostfader.
+
+Jeder Schritt lautet Baseline → Preview → Messung → Policyentscheid → Apply oder Revert. Harte
+Stopps sind fehlende Vergleichbarkeit, schlechter Guardrail, Revisionkonflikt, Sidechainfehler,
+Recording, Userinteraktion und ausgeschöpftes Budget. Ein globaler Schalter neutralisiert alle
+Autopilotänderungen als neue Transaktion. KI hat weder Policy- noch Toolautorität.
+
+**Abnahme.** Model-Checking beziehungsweise zustandsbasierte Property-Tests beweisen, dass kein
+Pfad Hard Caps, Schrittlimit oder User-Allowlist umgehen kann. Strom-/Broker-/Main-Ausfall lässt
+höchstens den zuletzt bestätigten lokalen Zustand zurück; keine Preview bleibt hängen.
+
+### 47.8 Roadmap 20 — Lernen der Userpräferenzen
+
+**Technikansatz.** Zuerst werden transparente Regeln aus expliziten Urteilen gelernt: häufig
+bevorzugte Eingriffstiefe, statisch/dynamisch, geschützte Eigenschaften und `keine Änderung`.
+Erst nach genügend vergleichbaren Urteilen darf ein lokales, interpretierbares paarweises Modell
+wie Bradley–Terry beziehungsweise regularisierte logistische Rangfolge Kandidaten sortieren.
+
+Kontext umfasst Rolle, Passageart, Befundklasse und Eingriffstyp. Das Modell darf nur bereits
+sichere Proposals **ranken**; es ändert keine Messung, Hard Caps, Schutzregeln oder DSP-Parameter.
+Projektpräferenz und globale Präferenz bleiben getrennt. Herkunft, Datenmenge, Unsicherheit und
+letzte Aktualisierung sind sichtbar; der User kann einzelne Regeln korrigieren, veralten lassen,
+exportieren oder vollständig löschen.
+
+**Abnahme.** Ein einzelnes Urteil kann keine starke globale Präferenz erzeugen. Gegenfaktische
+Tests zeigen, dass Sicherheitsgrenzen vom Modelloutput unabhängig sind. Löschen der Lernhistorie
+stellt das deterministische neutrale Ranking wieder her.
+
+---
+
+## 48. Querschnittsdesign
+
+### 48.1 Echtzeit- und Ressourcenvertrag
+
+Für Main, passive und aktive Probe gelten dieselben nicht verhandelbaren Regeln:
+
+- keine Heapallokation, Mutex-, Datei-, Pipe-, Log-, UI- oder Modellarbeit im Audiocallback;
+- Audio → Worker ausschließlich über vorallokierte SPSC-Strukturen und atomare Generationen;
+- bei Analysestau ganzen Analyseblock verwerfen, Audioblock immer weiterverarbeiten;
+- feste Obergrenzen für Sonden, Bänder, Ereignisse, Queue-Tiefe, JSON-Größe und Historie;
+- Denormal-Schutz, NaN-/Inf-Sanitisierung und definierter Mono-/Stereo-/Sidechain-Fallback;
+- gemeldete Pluginlatenz des ersten aktiven Kerns konstant 0 Samples;
+- CPU-Degradation in Reihenfolge Fokus-Burst → 221-Band-Snapshot → 64-Band-Liveframe; P0-Steuerung
+  und Audio bleiben erhalten.
+
+Der heutige Float-FIFO schreibt bei Platzmangel Teilblöcke und verliert Blockzeit. Für jede
+zeitabhängige Analyse wird er daher **ersetzt** durch eine vorallokierte SPSC-Blockqueue, die
+`{project_sample_start, sample_count, flags, audio}` ausschließlich ganz oder gar nicht
+veröffentlicht. Der Worker kombiniert niemals Daten über einen verworfenen Block hinweg. Ein Drop
+erzeugt Zähler, sichtbare Lücke und neue Kontinuitätsgrenze; er wird nie interpoliert. Ein alter
+Float-FIFO darf allenfalls einen ausdrücklich zeitlosen Diagnosewert speisen und nie denselben
+Analysepfad wie die Blockqueue.
+
+`maximumExpectedSamplesPerBlock` ist bei JUCE nur ein Hinweis. Überschreitet ein Hostblock die
+vorallokierte Slotkapazität, wird er **vollständig nur für Analyse** verworfen, erhöht
+`oversize_drop`, schließt alle offenen Analysefenster und startet ein neues
+`continuity_segment`; Audio und bestätigter DSP laufen weiter. Der aktive Klangpfad verarbeitet
+solche Puffer ohne Zusatzallokation in festen internen Chunks, damit weder Scratch-Overflow noch
+Teilblockverlust entstehen. Slotkapazität, größte getestete Hostblockgröße und Chunkgröße gehören
+zur Capability-/QA-Matrix.
+
+Auch Langzeitmetriken sind begrenzt. Die heutige unbeschränkt wachsende `AnalyseEngine::kZellen`-
+Liste und ihre LUFS-I-Vektorkopien werden durch einen fixed-memory `LoudnessAccumulator` aus
+festen Energie-/Loudness-Histogrammbins, kompensierten Summen und einer begrenzten
+Passage-Blockstatistik ersetzt. Benannte Passagen werden finalisiert und als kompakte Evidenz
+persistiert; Live-Worker halten nie die komplette Projektlaufzeit im RAM. Der EBU-Korpus prüft,
+dass Quantisierung und Gating innerhalb der Toleranz aus Abschnitt 49 bleiben.
+
+### 48.2 FL-Studio- und Hostvertrag
+
+- VST3-Hostkontext, Trackname und PDC werden genutzt, aber als Hinweise klassifiziert.
+- Smart Disable/Suspend wird als fehlende Coverage behandelt; nach Resume oder Discontinuity
+  beginnt eine neue Transportepoche.
+- Probe-Buslayouts werden in Mono und Stereo getestet. Active deklariert getrennte feste
+  `priority_sidechain`- und `compare_pre`-Aux-Busse; Main deklariert nur bei validierter
+  Contribution-Capability seine festen diskreten Aux-Busse. Unpassende oder vertauschte Layouts
+  werden verständlich verweigert, nie automatisch umgedeutet.
+- Confirmed State muss Project Save/Reload, Plugin Disable/Enable, Sample-Rate-Wechsel und Offline-
+  Render überleben.
+- Automatisierbare Parameter sind eine feste, vorwärtskompatible Menge. Nicht belegte Bands
+  bleiben neutral; dynamisch wechselnde Hostparameterlisten sind ausgeschlossen.
+
+### 48.3 Broker-Lifecycle
+
+V3 verwendet einen aus dem Hash der Windows-User-SID und der Protokoll-Major-Version abgeleiteten
+Pipe-Namen, ohne die rohe SID offenzulegen. Während der Migration kann der Broker zusätzlich den
+heutigen festen Namen `\\.\pipe\evenacadia.eq-copilot.v1` als strikt v2-/Heartbeat-only Listener
+mit User-DACL anbieten. Alle v3-Instanzen versuchen zuerst die SID-gebundene Pipe. Ist sie nicht
+vorhanden, darf nur ein **positiv als Main klassifizierter** Worker den signierten Broker aus dem
+installierten, verifizierten Pfad **ohne Shell** anfordern: State-Restore beziehungsweise
+Neuanlageklassifikation ist abgeschlossen und der User hat den Main-Editor tatsächlich geöffnet.
+Ein bloßer fehlgeschlagener Connect ist nie ein Startsignal. Der heutige Konstruktorstart von
+Worker und `pipe.start()` wird deshalb in reines Connect-without-spawn plus dieses getrennte
+Main-Lifecycle-Gate zerlegt. Plugin-Scanner, Offline-Render, Legacy- und Probe-Instanzen starten
+keinen Prozess. Ein per-User-Mutex macht den Start idempotent; der Prozess läuft versteckt und
+beendet sich nach einer Leerlauffrist ohne Clients. Der Installer kann zusätzlich einen per-User-
+Autostart als Fallback anbieten. Niemals startet der Audiothread einen Prozess.
+
+Broker- und Pluginversion verhandeln additive Capabilities. Ein v2-Client darf weiter Heartbeats
+senden; Main schaltet v3-Funktionen sichtbar ab. Ein Upgrade darf weder Projektstate noch Audio
+von einer Datenbankmigration abhängig machen.
+
+Frische und Eviction verwenden im laufenden Broker ausschließlich Rust `Instant`; `SystemTime`
+dient nur Anzeige und Persistenz. Nach einer kurzen sichtbaren Tombstone-Frist werden getrennte
+Instanzen aus `Register`, Nonce- und Konfliktindizes entfernt. Per Session und global gelten feste
+Caps mit deterministischer `stale-first`-Eviction; persistente Projektidentität bleibt davon im
+Plugin-/Main-State unberührt. Damit wachsen lange Reload-/Soak-Läufe nicht unbegrenzt und ein
+Wallclock-Sprung macht keine aktive Probe plötzlich frisch oder tot.
+
+### 48.4 Sicherheit und Datenschutz
+
+- Named Pipe mit expliziter DACL nur für aktuelle Windows-User-SID; Remotezugriff deaktiviert;
+- Server prüft Clienttoken, Sitzung, Handshake, Nachrichtentyp, Tiefe, Länge und Rate;
+- Befehle benötigen Ziel-Nonce, Session-Epoche, lokal geklemmte TTL, Revision und
+  Idempotenz-ID; Preview-Deadlines stammen ausschließlich aus der monotonen Uhr der Probe;
+- eine nach sichtbarem Pairing ausgegebene zufällige 256-Bit-`control_capability` authentisiert
+  P0-Nachrichten per HMAC-SHA-256. Sie erscheint nie in Log, Telemetrie oder Export und wird für
+  Same-Machine-Recall DPAPI-geschützt gespeichert; nach Projekttransfer ist erneutes Pairing der
+  sichere Fallback;
+- Datenbank und Logs enthalten Features und IDs, kein Roh-Audio; Tracknamen können im Privacy-
+  Modus lokal pseudonymisiert werden;
+- externe KI ist opt-in, erhält nur minimierte strukturierte Fakten und nie Audio, Pfade,
+  Nutzernamen oder Pipe-Daten;
+- Export, Retention und vollständiges Löschen sind Teil des Datenmodells, nicht nachträgliche UI.
+
+Das schützt vor fremden Windows-Usern, Verwechslung und zufälligen lokalen Clients. Code, der
+bereits unter demselben User in FL injiziert wurde, liegt außerhalb des IPC-Threat-Models; dafür
+bleiben Signaturprüfung, Installationspfad und Betriebssystemschutz maßgeblich.
+
+### 48.5 Versionierung und Reproduzierbarkeit
+
+Mindestens diese Versionen werden getrennt gespeichert:
+
+`ipc_schema`, `plugin_state_schema`, `metrics_version`, `policy_version`, `proposal_schema`,
+`experiment_schema` und optional `model_id + model_hash`.
+
+Ein Finding nennt die Metrikversion, ein Proposal zusätzlich Policy und Schema, eine Transaktion
+den wirklich angewendeten State-Hash. Damit bleibt erklärbar, warum ein alter Projektstand heute
+nicht exakt denselben Vorschlag erhält. Migrationen transformieren nur Datenformen; sie berechnen
+historische Evidenz nicht still mit neuen Regeln um.
+
+---
+
+## 49. Verifikations- und Qualitätsstrategie
+
+### 49.1 Prüfebenen
+
+| Ebene | verbindliche Prüfung |
+|---|---|
+| DSP-Mathematik | analytische Goldens, Sweeps, Impulse, Nulltests, NaN/Inf/Denormal, 32-/64-Bit |
+| Audiothread | Allocation-/Lock-Guards, Worst-Case-CPU, zufällige und über `maximumExpected` liegende Blockgrößen, Bank-Reclaim-, Thread-/Race-Stress |
+| Analyse | Standardreferenzen, Sampleraten, Mono/Stereo, zu kurze/stille/unterbrochene Passagen |
+| IPC | Schema-/Fuzztests, Fragmentierung, Reconnect, Drop/Reorder/Duplicate, Backpressure |
+| Transaktion | veraltete Revision, doppelter Command, Lease-Ablauf, Automation, Recall, Offline-Render |
+| Multi-Instanz | 1/4/8/16/32 Sonden, Bridge/PID-Wechsel, doppelte ID, zwei Projekte und zwei Main |
+| Produktlogik | Gegenbeispiele, Alternativerklärungen, Intentkonflikt, `keine Änderung` und `mehr Daten` |
+| Experiment | identisches/anderes Material, Blind-A/B, feste Lautheit, Guardrail-Verschlechterung |
+
+### 49.2 Harte Systemgates
+
+Ein Build ist nicht freigabefähig, wenn eines dieser Gates fällt:
+
+1. Passive Probe, neutrales Main oder neutraler Hard-Bypass der Active Probe verändert einen
+   gültigen Audiopuffer außerhalb der bereits dokumentierten, useraktivierten Hörmarker-Ausnahme.
+2. Ein IPC-, Broker-, Datenbank-, UI- oder KI-Fehler blockiert den Audiothread.
+3. Eine Preview überlebt Lease, Stop, Offline-Render oder Project-Reload oder beginnt bei
+   Recording beziehungsweise unbekanntem Record-State.
+4. Ein Remote-Apply kann Hard Cap, `base_revision`, Ziel-Nonce, User-Schutz oder das gültige
+   `recording=false`-Gate umgehen.
+5. Telemetrie steuert samplegenauen Gain oder erzeugt hörbares PRE/POST-Delta.
+6. Ein nicht vergleichbares Experiment erhält ein starkes Siegerurteil.
+7. Eine Standard-Insertprobe wird als exakter Mastersummenbeitrag bezeichnet.
+8. Eine KI-Ausgabe kann Zahlen, Ziel oder Aktion außerhalb des validierten Proposal ändern.
+
+### 49.3 Messbare Startbudgets
+
+| Größe | Startziel für den späteren Phasenplan |
+|---|---:|
+| Livekarte, 16 Sonden | < 300 ms p95 fertiger 2.048-/4.096-Frame → sichtbarer Main-State |
+| Bassframe 16.384 bei 48 kHz | < 750 ms p95 erstes Fenstersample → sichtbarer Main-State; Alter wird gezeigt |
+| Candidate-Arming | < 2 s p95 Draft → `audible_ready`; mindestens `max(500 ms, 3 · Release)` |
+| Preview-Befehl lokal | < 100 ms p95 Hold-Aktion → Probe aktiv, nur ab `audible_ready` |
+| Lease-Failsafe | < 500 ms ohne Renew zurück zum Committed State |
+| Pipe-Backlog Telemetrie | höchstens ein aktueller Liveframe je Probe; alte Frames werden verworfen |
+| Pluginlatenz erster Active-Kern | 0 Samples, konstant |
+| Loudness-/True-Peak-Referenz | ±0,1 LU / ±0,1 dB |
+| A/B-Zustandswechsel | kein Klick; identischer Zustand nullt innerhalb numerischer Toleranz |
+| Soak | mindestens 60 min mit 16, mindestens 30 min mit 32 Sonden ohne XRun/ungegrenztes Wachstum |
+
+Diese Budgets sind Hypothesen mit Abnahmetest. Der Implementierungsplan darf sie nach Messung
+ändern, muss Änderung und Userwirkung aber dokumentieren.
+
+### 49.4 Evidenzqualität statt nur Unit-Tests
+
+Für Ursache, Masking und Empfehlungen wird ein versionierter Evaluationskorpus aus synthetischen
+Goldens, kontrollierten Stems, echten Sessions und adversarialen Gegenbeispielen aufgebaut. Neben
+Precision/Recall zählen Kalibrierung, Brier Score, Coverage, Enthaltungsrate und falsche starke
+Behauptungen. Ein konservatives `unsicher` ist besser als eine überzeugende falsche Ursache.
+
+---
+
+## 50. Übergabestruktur für den anschließenden Implementierungsphasenplan
+
+Der Phasenplan soll aus folgenden beweisbaren Arbeitspaketen geschnitten werden. Die Liste ist
+bewusst noch keine Termin- oder Sprintplanung.
+
+```mermaid
+flowchart LR
+    A[Verträge, IDs, Schemas] --> B[Plugin-Split und State]
+    A --> C[Zeitgestempelte Featureframes]
+    A --> D[Duplex-IPC, Session und Kernstore]
+    C --> E[Mix-Landkarte]
+    D --> E
+    C --> F[Dynamik, Stereo, PRE/POST]
+    E --> G[Intent, Evidenz, Ursachen]
+    F --> G
+    G --> H[Proposal und Assistent]
+    F --> I[Passiver und manueller Experimentkern]
+    H --> I
+    D --> I
+    B --> J[Active-DSP und Transaktionen]
+    H --> J
+    I --> K[Active-Compare, Delta und Replay]
+    J --> K
+    J --> L[Sidechain-Unmasking]
+    K --> L
+    G --> M[Roadmap-Analysen]
+    I --> M
+    K --> M
+```
+
+### 50.1 Arbeitspakete und Eintrittsnachweise
+
+| Paket | Ergebnis | darf beginnen, wenn |
+|---|---|---|
+| A · Verträge | kanonische Domänentypen, Versionen, Class-IDs, Capabilitymatrix | Entscheidungen 0.2 akzeptiert |
+| B · Plugin-Split | ladbares Main, passive und aktive Probe mit sicheren State-Migrationen, festen Buslayouts und Float-/Double-Capability | A und Kompatibilitäts-Golden stehen |
+| C · Messkern v2 | Blockstempel, Featureframes, Events, Bandstereo und fixed-memory Loudness-/Passageakkumulatoren | Queue-/Realtime-/EBU-Goldens stehen |
+| D · IPC und Kernstore | SID-gebundene gekoppelte Pipes, Subscription, Prioritäten, monotone Liveness/Eviction, Reconnect, Broker-Lifecycle, signiertes Broker-Paket/Installer/Repair sowie SQLite-Schema, Migrationen, Single-Writer und Outbox | Schema-/Security-/Fuzz-/Kill-/Install-/Soaktests stehen |
+| E · Landkarte | 16-Sonden-Sessiongraph mit Frische und Messpunktwahrheit | C + D unter Last bestanden |
+| F · Vergleichsmetriken | PRE/POST, Dynamik, Stereo, Alignment | Analyse-Referenzkorpus steht |
+| G · Evidenzkern | Intent, CauseHypothesis, Konfidenz, Alternativen | E + F liefern versionierte Evidenz |
+| H · Vorschlag/Assistent | typisierte Proposal-Engine und persistente Zustandsmaschine | G kann auch `keine Änderung` liefern |
+| I · passiver Experimentkern | immutable Baseline/Resultat, feste Passage/Lautheit, Blindurteil und `manual_external` ohne DSP-Replay | D + F + H, Vergleichbarkeitsgoldens bestanden |
+| J · aktiver Kern | eigener Float-/Double-DSP, RT-Bankownership, VST3-Sampleoffset-Bridge, Hard-Bypass, Preview-Lease, Apply/Revert, Recall, Offline-Semantik | B + H, Safety-Gates bestanden |
+| K · Active-Compare | paralleles A/B, Delta, State-Hash-Replay und automatische Wiederholungsmessung | I + J, Null-/Replay-Goldens bestanden |
+| L · Entmaskierung | echter Sidechain, lokaler Detektor, begrenzte dynamische Bänder | J + K stabil und FL-Routing-Golden bestanden |
+| M · Roadmap | Punkte 3/6/7/8/11/15/19/20 in Abhängigkeitsreihenfolge | Kernmetriken und Experimentlog belastbar |
+
+### 50.2 Schneideregeln für die Phasen
+
+- Kein Paket endet mit einer UI, die einen noch nicht existierenden Zustand vortäuscht.
+- Jede schreibende Funktion wird erst nach passivem Beleg, Preview und Revert ausgeliefert.
+- Schema und Testfixture werden vor Produzent und Konsument stabilisiert.
+- Ein vertikaler Slice umfasst Messung → Evidenz → Darstellung → Fehlerfall; nicht nur eine
+  isolierte Backendklasse.
+- Roadmap-Modelle dürfen austauschbar bleiben und keine Kernfunktion oder Projektladung
+  voraussetzen.
+- Erst nach bestandenen Gates werden Aufwand, Reihenfolge, Parallelisierung und Releasegrenzen im
+  eigentlichen Implementierungsphasenplan festgelegt.
+
+---
+
+## 51. Frühe Technikspikes mit festem Fallback
+
+Diese Fragen lassen sich seriös nur am realen FL-Host beweisen. Sie ändern nicht mehr frei die
+Produktidee; jedes Experiment besitzt bereits einen sicheren Rückweg.
+
+| Spike | zu beweisen | Erfolgskriterium | fester Fallback |
+|---|---|---|---|
+| FL-Zeit/PDC | Project Time, Loop-Straddle, Presentation Latency bei Insert und Sidechain | Impulsgoldens über Live/Loop/Seek/Render, bekannte Lags innerhalb Abschnitt 38 | nur rohe Project Time + herabgestufte analytische Aussage |
+| Aux-/Sidechainlayout | getrennte Active-Busse für PRE-Compare/Priorität sowie feste diskrete Main-Contribution-Aux-Busse plus lokale Summe | FL-Projektfixture hält alle Busnamen/-indizes getrennt, PDC-synchron, recallstabil und ohne hörbare Doppelsumme | kein echtes Delta, keine exakte Attribution und keine dynamische Entmaskierungsaktuation; A/B, Assoziation und manueller Vorschlag bleiben |
+| Plugin-IDs/Recall | drei Einträge plus alte States | Altprojekte laden passiv und klangidentisch; neue IDs bleiben scan-/recallstabil | Legacy-ID bleibt eigener Kompatibilitätseintrag |
+| IPC v3 | Duplex-P0 plus binäre P2-Batches unter Last | 32 Sonden, Backpressure/Fuzz/Reconnect ohne P0-Starvation | Livekadenz reduzieren; 221-Band-Burst nur fokussiert |
+| Active-DSP | Filterfehler, Oversize-Chunking, vierfaches Bankownership, Automation, CPU und 0-Latenz | Abschnitt-44- und Abschnitt-49-Goldens auf definierter Mindesthardware | Active Probe nicht ausliefern; passiver Kern bleibt vollständig |
+| Brokerstart | sicherer On-demand-Start im Plugin-Worker | Start nur nach State-Klassifikation + geöffnetem Main-Editor; Scanner/Probe/Connect-Fehler starten nie; signierter Pfad, Single Instance und sauberes Idle-Ende | per-User-Login-Autostart und sichtbare Reparaturdiagnose |
+| Maskingkalibrierung | Rollen-, Instrument- und Stilrobustheit | vorab definierter Hör-/Stemdatenkorpus, kalibrierte Konfidenz, Enthaltung funktioniert | nur Kollisions-/Zusammenhangshinweis, keine automatische Aktion |
+| Automation/Undo | JUCE-VST3-Eventbridge, alle `IParamValueQueue`-Offsets, FL-Aufzeichnung, Parametergesten, Konflikt und Recall | Realtime/Offline-Golden erhält Offsetreihenfolge und lokaler Revisions-Roundtrip | Capability `sample_accurate_automation=false`, blockgenaue Ramp und keine Topologieautomation; eigenes Undo bleibt Wahrheit |
+
+Der folgende Phasenplan soll diese Spikes früh terminieren. Ein fehlgeschlagener Spike darf nicht
+mit vager Folgeforschung enden, sondern aktiviert den in der Tabelle festgelegten kleineren,
+ehrlichen Produktumfang.
+
+---
+
+## 52. Quellenregister
+
+Abrufstand der Onlinequellen: 19.08.2026. Versionsnummern in Abschnitt 29 sind Momentaufnahmen;
+die technischen Entscheidungen beruhen auf dokumentierten Fähigkeiten und Grenzen, nicht auf
+einer bestimmten Patchnummer.
+
+### 52.1 Code- und Projektwahrheit
+
+- [`CLAUDE.md`](../CLAUDE.md) und [`plugin-wissen.md`](plugin-wissen.md) für den aktuellen
+  Produkt-, Realtime-, Sicherheits- und Standalone-Brokervertrag;
+- [`PluginProcessor.cpp`](../eq-copilot/plugin/src/PluginProcessor.cpp),
+  [`AnalyseEngine.cpp`](../eq-copilot/plugin/src/AnalyseEngine.cpp),
+  [`HoerMarkierung.h`](../eq-copilot/plugin/src/HoerMarkierung.h) und
+  [`PipeClient.cpp`](../eq-copilot/plugin/src/PipeClient.cpp) für den realen Pluginpfad;
+- [`protokoll.rs`](../broker/src/protokoll.rs),
+  [`lib.rs`](../broker/src/lib.rs) und
+  [`server.rs`](../broker/src/server.rs) für das tatsächlich gebaute Brokerprotokoll.
+- [`FL-EQ-Copilot-Recherche.md`](../FL-EQ-Copilot-Recherche.md) und
+  [`NAKAMA-SPECTRAL-FIELD-BAUPLAN.md`](../eq-copilot/docs/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md)
+  nur als historische Entwurfsquellen; ihre Tauri-Brokerverweise sind überholt.
+
+### 52.2 Plattformen, Formate und Persistenz
+
+- Steinberg:
+  [VST3 ProcessContext](https://steinbergmedia.github.io/vst3_doc/vstinterfaces/structSteinberg_1_1Vst_1_1ProcessContext.html),
+  [Presentation Latency](https://steinbergmedia.github.io/vst3_doc/vstinterfaces/classSteinberg_1_1Vst_1_1IAudioPresentationLatency.html),
+  [Parameter/Automation](https://steinbergmedia.github.io/vst3_dev_portal/pages/Technical%2BDocumentation/Parameters%2BAutomation/Index.html)
+  und [Data Exchange](https://steinbergmedia.github.io/vst3_dev_portal/pages/Technical%2BDocumentation/Data%2BExchange/Index.html);
+- JUCE: [AudioPlayHead::PositionInfo](https://docs.juce.com/master/classjuce_1_1AudioPlayHead_1_1PositionInfo.html),
+  [VST3ClientExtensions](https://docs.juce.com/master/structjuce_1_1VST3ClientExtensions.html) und
+  [AudioProcessorValueTreeState](https://docs.juce.com/master/classjuce_1_1AudioProcessorValueTreeState.html);
+- Image-Line: [Mixer-Signalfluss und Sidechain](https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/mixer.htm),
+  [Plugin Delay Compensation](https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/mixer_trackprops.htm)
+  und [Wrapper/Smart Disable](https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/plugins/wrapper.htm);
+- Microsoft:
+  [Named-Pipe-Sicherheit](https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights)
+  und [Windows IPC](https://learn.microsoft.com/en-us/windows/apps/develop/communication/interprocess-communication);
+- [JSON Schema 2020-12](https://json-schema.org/draft/2020-12),
+  [JSON Canonicalization Scheme RFC 8785](https://www.rfc-editor.org/rfc/rfc8785),
+  [FlatBuffers](https://flatbuffers.dev/) und [SQLite WAL](https://www.sqlite.org/wal.html);
+- [ONNX Runtime C++](https://onnxruntime.ai/docs/get-started/with-cpp.html) für optionale lokale,
+  nicht-echtzeitfähige Modellinferenz.
+
+### 52.3 Produktbenchmarks
+
+- iZotope:
+  [Neutron 5 Release Notes](https://www.izotope.com/pages/release-notes/neutron),
+  [Neutron](https://www.izotope.com/products/neutron),
+  [Ozone 12 Release Notes](https://www.izotope.com/en/products/release-notes/ozone-standard-release-notes)
+  sowie [Tonal Balance Control 3](https://www.izotope.com/products/tonal-balance-control),
+  dessen [Release Notes](https://www.izotope.com/pages/release-notes/tonal-balance-control) und
+  [aktueller Downloadstand](https://www.izotope.com/pages/product-downloads);
+- FabFilter:
+  [Pro-Q 4.13 Release](https://www.fabfilter.com/news/1782806400/pro-q-413-released),
+  [Pro-Q 4 Instance List](https://www.fabfilter.com/help/pro-q/using/instance-list),
+  [Spectral Dynamics](https://www.fabfilter.com/help/pro-q/using/spectral-dynamics),
+  [EQ Match](https://www.fabfilter.com/help/pro-q/using/eqmatch) und
+  [Undo/A-B](https://www.fabfilter.com/help/pro-q/using/undoredo);
+- sonible:
+  [smart:EQ 4](https://www.sonible.com/smarteq4/),
+  [pure:unmask](https://www.sonible.com/pureunmask/),
+  [Sidechain-Begründung](https://help.sonible.com/hc/en-us/articles/13360860115356-Why-does-pure-unmask-need-a-sidechain-signal)
+  und [true:balance](https://www.sonible.com/truebalance/);
+- Vergleich:
+  [ADPTR Metric AB](https://www.plugin-alliance.com/products/metric-ab),
+  [NUGEN AB Assist 2](https://nugenaudio.com/abassist2/),
+  dessen [2.0-Handbuch](https://nugenaudio.com/files/manuals/AB%20Assist%202%20Manual.pdf) und
+  [MCompare-Handbuch](https://www.meldaproduction.com/download/documentation/MCompare.pdf);
+- Mehrinstanz-/Ducking-Vergleich:
+  [MMultiAnalyzer](https://www.meldaproduction.com/mmultianalyzer),
+  [Melda-Änderungsstand](https://www.meldaproduction.com/changes/?product=MMultiAnalyzer) und
+  [Trackspacer](https://www.wavesfactory.com/audio-plugins/trackspacer).
+
+### 52.4 Normen und Primärliteratur
+
+- [ITU-R BS.1770-5](https://www.itu.int/rec/R-REC-BS.1770-5-202311-I/en),
+  [EBU R128 v5 und Testset](https://tech.ebu.ch/loudness);
+- Welch, [The Use of Fast Fourier Transform for the Estimation of Power Spectra](https://doi.org/10.1109/TAU.1967.1161901),
+  und Knapp/Carter, [Generalized Correlation Method for Estimation of Time Delay](https://doi.org/10.1109/TASSP.1976.1162830);
+- Böck/Widmer, [SuperFlux](https://www.dafx.de/paper-archive/2013/papers/09.dafx2013_submission_12.pdf),
+  sowie [RBJ/W3C Audio EQ Cookbook](https://www.w3.org/TR/audio-eq-cookbook/);
+- [Ward/Reiss/Athwal: Partial Loudness](https://www.eecs.qmul.ac.uk/~josh/documents/2012/WardReissAthwal-AES133-Multitrackmixingusingamodelofloudnessandpartialloudness.pdf),
+  [Hafezi/Reiss: Masking Reduction](https://aes.org/publications/elibrary-page/?id=17637),
+  [MixViz](https://sinc-lab.com/publications/2015-10-01-ford2015mixviz) und
+  [Quantitative Analysis of Masking](https://secure.aes.org/forum/pubs/conventions/?elib=18450);
+- [Guo et al.: Calibration of Modern Neural Networks](https://proceedings.mlr.press/v70/guo17a.html)
+  als methodische Referenz für Konfidenzkalibrierung;
+- optionale Roadmapmodelle:
+  [All-In-One Music Structure](https://github.com/mir-aidj/all-in-one),
+  [MERT](https://github.com/yizhilll/MERT) und
+  [Essentia Models](https://essentia.upf.edu/models.html).

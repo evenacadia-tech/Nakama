@@ -1,8 +1,9 @@
 # Design-Stand — an welchem Prototypen wir arbeiten
 
-> **Stand: 2026-08-17 (abends).** Lebendes Dokument — nach jedem
-> Design-Commit im FL-Studio-Repo hier nachziehen. Bei Widerspruch gewinnt
-> der Code (`eq-copilot/design/…`) und der Bauplan dort.
+> **Stand: 2026-08-18.** Lebendes Dokument — nach jedem Design-Commit
+> hier nachziehen (seit dem Workspace-Umzug 18.08. liegt alles in diesem
+> Repo). Bei Widerspruch gewinnt der Code (`eq-copilot/design/…`) und der
+> Bauplan dort.
 
 ## AKTIVE RICHTUNG (Stand 17.08. abends): DAS PRISMA
 

@@ -144,7 +144,20 @@ def baue_signale() -> dict[str, tuple[np.ndarray, np.ndarray]]:
 
 
 def lade_analyze():
-    pfad = WURZEL / "tools" / "analyze-track.py"
+    # analyze-track.py ist ein lebendes FL-Studio-Werkzeug und blieb beim
+    # Workspace-Umzug (18.08.2026) dort — dokumentierter Fallback, nur für
+    # die Golden-Referenz-Regeneration gebraucht (--nur-wav braucht es nicht).
+    kandidaten = [
+        WURZEL / "tools" / "analyze-track.py",
+        Path.home() / "FL-Studio" / "tools" / "analyze-track.py",
+    ]
+    pfad = next((k for k in kandidaten if k.exists()), None)
+    if pfad is None:
+        raise SystemExit(
+            "analyze-track.py nicht gefunden (gesucht: "
+            + ", ".join(str(k) for k in kandidaten)
+            + ") — fuer reine WAV-Erzeugung --nur-wav nutzen."
+        )
     spec = importlib.util.spec_from_file_location("analyze_track", pfad)
     modul = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(modul)  # type: ignore[union-attr]
@@ -176,7 +189,7 @@ def main() -> int:
             "(konstruierter Fehler wird als seine Klasse gefunden) — eine "
             "analyze-Referenz bewiese dort nichts Zusätzliches."
         ),
-        "erzeugt_mit": "tools/analyze-track.py",
+        "erzeugt_mit": "analyze-track.py (FL-Studio-Werkzeug, Fallback-Suche)",
         "rate_hz": RATE,
         "dauer_s": DAUER_S,
         "wav_sha256": hashes,

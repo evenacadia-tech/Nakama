@@ -16,3 +16,6 @@ eq-copilot/kalibration/renders/
 
 # Golden-Fixture-WAVs (tools/eq-copilot/erzeuge_fixtures.py --nur-wav)
 eq-copilot/fixtures/*.wav
+
+# Python-Bytecode
+__pycache__/

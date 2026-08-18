@@ -27,7 +27,9 @@ import sys
 from pathlib import Path
 
 WURZEL = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(WURZEL / "tools" / "midi-ideen"))
+# smf.py liegt seit dem Workspace-Umzug (18.08.2026) als Kopie direkt hier —
+# keine Abhängigkeit mehr zu FL-Studio\tools\midi-ideen.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import smf  # noqa: E402  (eigener Schreiber, PPQ 96 = FL-Raster)
 
 ZIEL = WURZEL / "eq-copilot" / "kalibration" / "testsong-01"

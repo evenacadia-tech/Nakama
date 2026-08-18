@@ -2,8 +2,10 @@
 
 > **Stand: 2026-08-17** (Plugin 0.3.0 installiert · metrics/diagnose
 > `m4.1-2026-08-15` · Snapshot v3 · Protokoll v2). Quelle der Wahrheit ist
-> der Code unter `C:\Users\phili\FL-Studio\eq-copilot\` — bei Widerspruch
-> gewinnt die Datei. Anker sind `Datei:Zeile` zum Stand dieses Dokuments.
+> der Code unter `eq-copilot/` und `broker/` in DIESEM Workspace
+> (`C:\Users\phili\Projekte\Nakama`, seit dem Umzug 18.08.2026) — bei
+> Widerspruch gewinnt die Datei. Anker sind `Datei:Zeile` zum Stand dieses
+> Dokuments.
 
 ## Zehn-Sekunden-Form
 

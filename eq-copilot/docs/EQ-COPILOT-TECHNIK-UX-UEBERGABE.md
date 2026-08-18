@@ -8,9 +8,15 @@
 > textfreie Werkzeugkreise, überlagerbare Problemsymbole, umschaltbare
 > Farbpakete und ein manuell geöffnetes Befundarchiv.
 
+> **Umzugshinweis 2026-08-18:** Der Workspace ist jetzt
+> `C:\Users\phili\Projekte\Nakama`; der Broker ist eine EIGENSTÄNDIGE
+> Crate in `broker/` (aus `plugin-hub-app` herausgelöst). Absolute
+> `C:\Users\phili\FL-Studio\…`-Pfade im Dokument sind historisch —
+> die gültigen Prüfbefehle stehen in §17 (aktualisiert).
+
 **Stand:** 2026-08-14
-**Workspace:** `C:\Users\phili\FL-Studio`
-**Betroffener Scope:** `eq-copilot` sowie dessen Broker- und Companion-Code in `plugin-hub-app`
+**Workspace (historisch, s. Umzugshinweis):** `C:\Users\phili\FL-Studio`
+**Betroffener Scope:** `eq-copilot` sowie der Broker (damals in `plugin-hub-app`, heute `broker/`)
 **Art der Übergabe:** ausführlicher Review mit priorisiertem technischen Bauplan; in dieser Review-Session wurden keine Produktdateien geändert
 
 > **Umsetzungsstand (fortgeschrieben 2026-08-14, gleicher Tag):**
@@ -751,24 +757,20 @@ Der Build meldete einen Node-Chunk von ungefähr 769 kB minifiziert. Lazy Loadin
 
 ## 17. Verbindliche Prüfbefehle nach Änderungen
 
-PowerShell, Workspace `C:\Users\phili\FL-Studio`:
+PowerShell, Workspace `C:\Users\phili\Projekte\Nakama` (seit dem
+Workspace-Umzug 18.08.2026; der Broker ist eine eigenständige Crate in
+`broker/`, die Hub-App-Kommandos existieren nicht mehr):
 
 ```powershell
-cmake --build C:\Users\phili\FL-Studio\eq-copilot\build --config Release --target EqCopilot_VST3 EqCopPipeProbe EqCopNullTest EqCopGoldenTest
+cmake --build eq-copilot\build --config Release --target EqCopilot_VST3 EqCopPipeProbe EqCopNullTest EqCopGoldenTest
 
-& 'C:\Users\phili\FL-Studio\eq-copilot\build\plugin\tests\Release\EqCopNullTest.exe'
+& 'eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe'
 
-& 'C:\Users\phili\FL-Studio\eq-copilot\build\plugin\tests\Release\EqCopGoldenTest.exe' 'C:\Users\phili\FL-Studio\eq-copilot\fixtures'
+& 'eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe' 'eq-copilot\fixtures'
 
-cargo test --manifest-path C:\Users\phili\FL-Studio\plugin-hub-app\src-tauri\Cargo.toml eq_copilot
+cargo test --manifest-path broker\Cargo.toml
 
-cargo test --manifest-path C:\Users\phili\FL-Studio\plugin-hub-app\src-tauri\Cargo.toml
-
-cargo clippy --manifest-path C:\Users\phili\FL-Studio\plugin-hub-app\src-tauri\Cargo.toml --lib --message-format=short -- -W clippy::undocumented_unsafe_blocks -W clippy::cast_ptr_alignment
-
-npm --prefix C:\Users\phili\FL-Studio\plugin-hub-app run check
-
-npm --prefix C:\Users\phili\FL-Studio\plugin-hub-app run build
+cargo clippy --manifest-path broker\Cargo.toml --lib --message-format=short -- -W clippy::undocumented_unsafe_blocks -W clippy::cast_ptr_alignment
 ```
 
 Zusätzlich den realen Pipe-Probe-Lauf mit einem eindeutigen Test-Pipe-Namen ausführen. Nach UI-Änderungen die JUCE-Oberfläche bei allen drei Fenstergrößen und mehreren Windows-DPI-Stufen visuell prüfen; reine Build-Erfolge reichen dort nicht.

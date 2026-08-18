@@ -1,7 +1,8 @@
 // Prozessgrenzen-Probe des EQ-Copilot-Brokers: fährt den ECHTEN Server
 // (echte Nur-dieser-User-ACL) für n Sekunden, damit die C++-Konsolen-Probe
 // des Plugins (EqCopPipeProbe.exe) Ende-zu-Ende dagegen spricht — dieselben
-// Server-/Register-Funktionen, die auch die Tauri-App in run() anruft.
+// Server-/Register-Funktionen, die auch eqcop-broker.exe (main.rs) fährt
+// (bis 18.08.2026 rief sie die Tauri-Hub-App in run() an — herausgelöst).
 //
 //   eqcop-broker-probe.exe [sekunden] [pipe-name]
 //

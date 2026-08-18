@@ -7,8 +7,8 @@
 > hier destilliert. Dieses Dokument ist der wachsende Nenner — vor jeder
 > Design-Entscheidung lesen.
 >
-> Proben: `eq-copilot/design/proben/probe-NN-*.html` (FL-Studio-Repo),
-> alle auf der 30-s-Songschleife. Renders: `proben/renders/`.
+> Proben: `eq-copilot/design/proben/probe-NN-*.html` (in diesem Workspace,
+> seit 18.08. Nakama), alle auf der 30-s-Songschleife. Renders: `proben/renders/`.
 
 ## Erkenntnisse (Destillat — wächst mit jeder Probe)
 

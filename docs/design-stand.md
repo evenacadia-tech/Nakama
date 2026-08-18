@@ -87,6 +87,26 @@ Eine an den FALSCHEN Regler gebundene Variable ist wieder still — genau der
 Fall, der 18.08. Zeit gekostet hat (`befundStaerke` hing an *Probe Center*
 statt an *Deflection*).
 
+**FALLE, zweite Form (19.08., an `aaCqqL8FX4EQcCNad9Jq` gemessen): NEUE
+Effekt-Layer erben KEINE Bindungen.** Die Drei-String-Layer-Szene hatte
+alle 7 Variablen-DEFINITIONEN (Manifest meldet sie, IDs identisch zur
+Referenz — Szenen-Kopie kopiert Definitionen), aber `bindings: []` leer,
+`data.uniforms: {}` leer, und im kompilierten GLSL standen alle
+Befund-Werte als Literale (`befundStaerke` wörtlich `0.0000`).
+Live-Beweis: `setVariable(befundStaerke 0→1, ort 0.5→0.72)` änderte 0 von
+614 400 Pixeln. **Diagnose am Export:** `variables.bindings` muss je
+gebundener Property einen Eintrag haben (Referenz: 7 Stück, Ziel-Targets
+`ort/staerke/breite/tiefe/vorzeichen/linien/lineColor`), und das Manifest
+liefert `bindingCount` pro Variable. Die Brücken-Tafel prüft
+`bindingCount` seither selbst und zeigt „⚠ definiert, aber UNGEBUNDEN"
+statt eines falschen „✓ verdrahtet". Bei MEHREREN Layern muss JEDER Layer
+seine eigenen Bindungen bekommen. Sicherung des ungebundenen Stands:
+`design/unicorn/drei-string-layer-szene-2026-08-19-ungebunden.json`.
+Achtung zusätzlich: der KI-generierte Drei-Layer-Effekt rechnet
+`disp = -staerke·d·bump·0.08` (fester Gain statt kalibriertem `w·0.76`)
+— die Ablesungs-Kalibrierung der Referenz-Szene (Deflection 100 → Lücke
+195 %) gilt für diese Layer NICHT, selbst nach dem Binden.
+
 **Wertsemantik geklaert (SDK v2.2.10):** `applyBinding()` schreibt per
 `setRuntimeOverride`/`setPropertySource` — die Variable ERSETZT den
 Reglerwert, sie skaliert ihn nicht; der Ausgangswert des Reglers ist nach

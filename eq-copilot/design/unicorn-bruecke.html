@@ -361,18 +361,27 @@ if (!PROJEKT) {
   s.onload = () => {
     UnicornStudio.init().then(szenen => {
       const szene = szenen[0];
-      if (!szene) { zeigeTafel(null, []); return; }
-      // Verdrahtung: nur Variablen setzen, die die Szene wirklich definiert
-      let vorhanden = [];
+      if (!szene) { zeigeTafel(null, [], []); return; }
+      // Verdrahtung: nur Variablen setzen, die die Szene wirklich definiert.
+      // WICHTIG (19.08., an aaCqqL8F… live gemessen): eine DEFINIERTE Variable
+      // kann trotzdem an NICHTS gebunden sein (bindingCount 0) — setVariable
+      // läuft dann fehlerfrei und kein Pixel ändert sich. Die Tafel muss das
+      // anprangern, sonst sieht die stille Falle wie „✓ verdrahtet" aus.
+      let vorhanden = [], ungebunden = [];
       try {
         const manifest = szene.getVariableManifest ? szene.getVariableManifest() : null;
-        if (manifest) vorhanden = manifest.map(v => v.name || v.id).filter(Boolean);
+        if (manifest) {
+          vorhanden = manifest.map(v => v.name || v.id).filter(Boolean);
+          ungebunden = manifest
+            .filter(v => typeof v.bindingCount === "number" && v.bindingCount === 0)
+            .map(v => v.name || v.id).filter(Boolean);
+        }
       } catch (e) { /* ältere SDK-Stände: blind setzen */ }
       const alle = Object.keys(musikWerte(0));
       const verdrahtet = vorhanden.length
         ? alle.filter(n => vorhanden.includes(n))
         : alle;
-      zeigeTafel(vorhanden, verdrahtet);
+      zeigeTafel(vorhanden, verdrahtet, ungebunden);
 
       function frame(now) {
         const dt = Math.min(0.05, Math.max(0.001, (now - letzter) / 1000));
@@ -413,7 +422,7 @@ if (!PROJEKT) {
   document.head.appendChild(s);
 }
 
-function zeigeTafel(vorhanden, verdrahtet) {
+function zeigeTafel(vorhanden, verdrahtet, ungebunden = []) {
   tafel.hidden = false;
   if (vorhanden === null) {
     tafel.innerHTML = "<h2>KEINE SZENE GEFUNDEN</h2>Projekt-ID prüfen.";
@@ -440,9 +449,16 @@ function zeigeTafel(vorhanden, verdrahtet) {
     tafel.innerHTML = html;
     return;
   }
+  if (ungebunden.length)
+    html += "<b>⚠ " + ungebunden.length + " Variablen sind definiert, aber an "
+      + "KEINEN Regler gebunden</b> — setVariable() läuft ins Leere. In "
+      + "Unicorn Studio je Effekt-Layer die Properties an die Variablen "
+      + "binden und neu publizieren.<br><br>";
   html += alle.map(n => {
-    const an = verdrahtet.includes(n) && vorhanden.includes(n);
-    return `<code>${n}</code> <span class="${an ? "ok" : "frei"}">${an ? "✓ verdrahtet" : "— frei"}</span>`;
+    const da = verdrahtet.includes(n) && vorhanden.includes(n);
+    const tot = da && ungebunden.includes(n);
+    if (tot) return `<code>${n}</code> <span class="frei">⚠ definiert, aber UNGEBUNDEN</span>`;
+    return `<code>${n}</code> <span class="${da ? "ok" : "frei"}">${da ? "✓ verdrahtet" : "— frei"}</span>`;
   }).join("<br>");
   if (vorhanden.length) {
     const fremd = vorhanden.filter(n => !alle.includes(n));

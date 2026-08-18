@@ -72,6 +72,17 @@ User-Hintergrund „Winter Nexus": ID `6YU0kFPu0uCBf0ZOTXOC`, JSON-Backup
 `design/unicorn/hintergrund-winter-nexus.json`. Lizenz/Legend-Frage für
 Auslieferung: NAK-11.
 
+**FALLE (18.08., teuer bezahlt): Wer in Unicorn Studio einen REGLER von Hand
+verschiebt, LÖST damit seine Variablen-Bindung.** Danach zeigt das
+Variablen-Panel weiter Werte an, die den Shader nie erreichen — der Effekt
+sieht schlicht kaputt aus. Deshalb strikt trennen: datengetriebene Regler
+(`befundOrt`/`befundStaerke`/`befundBreite`/`befundTiefe`/`befundVorzeichen`/
+`bandFarbe`) werden NUR über die Variable verändert, nie am Regler;
+Design-Konstanten (Line Count, Grain, Speed, Adjust-Ebene) nur am Regler,
+ohne Bindung. Passend dazu: `setVariable()` wirft auch bei unbekanntem Namen
+keinen Fehler (im SDK-Bundle v2.2.10 nachgesehen) — Fehlverdrahtung ist
+IMMER still.
+
 **SICHT-PROBE 18.08.: DIE SCHLIEREN-ABLESUNG** (`eq-copilot/design/prisma/
 sicht-probe-schlieren.html`, Renders `renders/schlieren/`) — Ergebnis eines
 /diverge-duo-Laufs (Claude + Codex blind aufgefächert, gegenseitig

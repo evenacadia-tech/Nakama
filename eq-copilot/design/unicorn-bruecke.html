@@ -111,6 +111,7 @@ function smoothstep(e0, e1, v) {
 }
 const gaussian = (t, c, w) => Math.exp(-0.5 * ((t - c) / w) ** 2);
 const tForFrequency = f => Math.log10(f / F_MIN) / Math.log10(F_MAX / F_MIN);
+const frequencyForT = t => F_MIN * Math.pow(F_MAX / F_MIN, t);
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ── Songschleife (identisch zu den Musterblättern — portiert, nicht neu) ── */
@@ -197,10 +198,13 @@ const BANDFARBEN = ["E8A34C", "D465B0", "9FD3E8"];   // Tiefen · Mitten · Höh
    ~2 dB). Wie der Golden-Test mit Pink Noise wird ein Testsignal ins
    SIGNAL eingespeist; die Diagnose misst danach ganz normal. Die Tafel
    nennt ihn — es ist kein erfundener Diagnosewert. ?pruefton=0 schaltet ab.
-   Seit 18.08. FÄHRT er per Vorgabe (entsteht bei 6 s, wandert 55→150 Hz,
-   verschwindet ab 23 s) — gemessen war mit stehendem Ton Stillstand die
-   korrekte Anzeige; Bewegung braucht einen Befund, der wandert. Identisch
-   in prisma/prisma-schlieren.html. ?fahrt=0 stellt ihn still auf ptonHz. */
+   Seit 18.08. FÄHRT er per Vorgabe (entsteht bei 6 s, verschwindet ab
+   23 s) — gemessen war mit stehendem Ton Stillstand die korrekte Anzeige;
+   Bewegung braucht einen Befund, der wandert. Der Fahrweg gilt im per
+   ?band= gewählten Band (19.08., User: „höhen bewegt sich nicht" — der
+   feste Hub 55→150 Hz lag nur in Band 0): Band 0 55→150 Hz, Band 1
+   ~530→1450 Hz, Band 2 ~5,2→14 kHz. Identisch in
+   prisma/prisma-schlieren.html. ?fahrt=0 stellt ihn still auf ptonHz. */
 const PRUEFTON = {
   an: PARAMS_BEF("pruefton", "1") !== "0",
   // Wer ?ptonHz= explizit setzt, will einen STEHENDEN Ton — sonst wäre der
@@ -212,17 +216,20 @@ const PRUEFTON = {
   db: (v => Number.isFinite(v) ? v : 6)(parseFloat(PARAMS_BEF("ptonDb", "6"))),
   breite: (v => Number.isFinite(v) ? v : 0.016)(parseFloat(PARAMS_BEF("ptonBreite", "0.016"))),
 };
-function prueftonLage(lt) {
+const FAHRT_UV_VON = tForFrequency(55) * 3;    // Feldweg, in Band 0 geeicht
+const FAHRT_UV_BIS = tForFrequency(150) * 3;
+function prueftonLage(lt, bandIdx) {
   const env = smoothstep(6, 9, lt) * (1 - smoothstep(23, 26, lt));
   const u = smoothstep(9, 23, lt);
-  return { fHz: 55 * Math.pow(150 / 55, u), env };
+  const uv = FAHRT_UV_VON + (FAHRT_UV_BIS - FAHRT_UV_VON) * u;
+  return { fHz: frequencyForT((bandIdx + uv) / 3), env };
 }
 
 function messeBefund(zeit, bandIdx) {
   const lage = songLage(zeit);
   let ptonT = tForFrequency(PRUEFTON.fHz), ptonEnv = 1;
   if (PRUEFTON.fahrt) {
-    const fahrt = prueftonLage(lage.lt);
+    const fahrt = prueftonLage(lage.lt, bandIdx);
     ptonT = tForFrequency(fahrt.fHz); ptonEnv = fahrt.env;
   }
   for (let i = 0; i < M_BEF; i++) {
@@ -414,11 +421,15 @@ function zeigeTafel(vorhanden, verdrahtet) {
   }
   const alle = Object.keys(musikWerte(0));
   let html = "<h2>VERDRAHTUNG</h2>";
+  const hzT = v => v >= 1000 ? (v/1000).toFixed(1).replace(".", ",") + " kHz"
+                             : Math.round(v) + " Hz";
   html += PRUEFTON.an
     ? "Prüfton +" + PRUEFTON.db.toFixed(0) + " dB eingespeist"
       + (PRUEFTON.fahrt
-          ? ", fährt 55→150 Hz über die Schleife (<code>?fahrt=0</code> stellt still)"
-          : " @ " + Math.round(PRUEFTON.fHz) + " Hz, stehend")
+          ? ", fährt " + hzT(frequencyForT((BAND + FAHRT_UV_VON) / 3)) + "→"
+            + hzT(frequencyForT((BAND + FAHRT_UV_BIS) / 3))
+            + " über die Schleife (<code>?fahrt=0</code> stellt still)"
+          : " @ " + hzT(PRUEFTON.fHz) + ", stehend")
       + " — <code>?pruefton=0</code> schaltet ab.<br><br>"
     : "Ohne Prüfton — die Schleife ist ein sauberer Mix.<br><br>";
   if (!vorhanden.length) {

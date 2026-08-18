@@ -23,10 +23,13 @@
   Daten: die etablierte 30-s-Songschleife, gemessen gegen die EIGENE
   Schulterlinie (eine Oktave). PRUEFTON deklariert und in der Statuszeile
   benannt — die Schleife ist ein sauberer Mix. Seit 18.08. faehrt der
-  Prueftton per Vorgabe (entsteht bei 6 s, wandert 55->150 Hz, verschwindet
-  ab 23 s): GEMESSEN war mit stehendem Ton Stillstand die korrekte Anzeige
-  (ort in Folgeframes identisch, nur Subpixel-Schimmer aus dem Kick-Atmen).
-  Bewegung braucht einen Befund, der wandert. ?fahrt=0 stellt ihn still.
+  Prueftton per Vorgabe (entsteht bei 6 s, verschwindet ab 23 s): GEMESSEN
+  war mit stehendem Ton Stillstand die korrekte Anzeige (ort in Folgeframes
+  identisch, nur Subpixel-Schimmer aus dem Kick-Atmen). Bewegung braucht
+  einen Befund, der wandert. Der Fahrweg gilt im AKTIVEN Band (19.08.,
+  User: „hoehen bewegt sich nicht" — der feste Hub lag nur in Band 0):
+  Band 0 55->150 Hz, Band 1 ~530->1450 Hz, Band 2 ~5,2->14 kHz.
+  ?fahrt=0 stellt ihn still.
 
   ZIEHEN dreht · 1/2/3 waehlt das Band · LEERTASTE haelt die Musik an ·
   P schaltet den Prueftton · F seine Fahrt · +/- ueberhoeht zur Beurteilung ·
@@ -222,19 +225,24 @@ let pruefton = {
 };
 // Prüfton-Fahrt: der eingespeiste Ton STEHT nicht mehr — er entsteht, wandert
 // eine gute Oktave nach oben und verschwindet, synchron zur Schleife. Der
-// Hub 55→150 Hz bleibt in Band 0 und quert das Prüffeld von links der Mitte
-// bis an den rechten Rand. Alles läuft durch denselben Messpfad — die
-// Anzeige bleibt eine Ablesung, nie eine Behauptung.
-function prueftonLage(lt) {
+// Fahrweg ist in FELD-Koordinaten definiert und gilt damit im AKTIVEN Band
+// (User-Urteil 18.08.: „höhen bewegt sich nicht" — der alte feste Hub
+// 55→150 Hz lag komplett in Band 0, Mitten/Höhen bekamen ihn nie): Band 0
+// fährt 55→150 Hz, Band 1 ~530→1450 Hz, Band 2 ~5,2→14 kHz. Alles läuft
+// durch denselben Messpfad — die Anzeige bleibt eine Ablesung.
+const FAHRT_UV_VON = tForFrequency(55) * 3;    // Feldweg, in Band 0 geeicht
+const FAHRT_UV_BIS = tForFrequency(150) * 3;
+function prueftonLage(lt, bandIdx) {
   const env = smoothstep(6, 9, lt) * (1 - smoothstep(23, 26, lt));
   const u = smoothstep(9, 23, lt);
-  return { fHz: 55 * Math.pow(150 / 55, u), env };
+  const uv = FAHRT_UV_VON + (FAHRT_UV_BIS - FAHRT_UV_VON) * u;
+  return { fHz: frequencyForT((bandIdx + uv) / 3), env };
 }
 function messe(zeit, bandIdx) {
   const lage = songLage(zeit);
   let ptonT = tForFrequency(pruefton.fHz), ptonEnv = 1;
   if (pruefton.fahrt) {
-    const fahrt = prueftonLage(lage.lt);
+    const fahrt = prueftonLage(lage.lt, bandIdx);
     ptonT = tForFrequency(fahrt.fHz); ptonEnv = fahrt.env;
     pruefton.liveHz = fahrt.fHz; pruefton.liveEnv = fahrt.env;
   } else {
@@ -499,6 +507,7 @@ function baueMaske() {
 /* ── Zustand ─────────────────────────────────────────────────────────────── */
 const winkelRoh = parseFloat(PARAMS.get("winkel") ?? String(RUHE));
 let winkel = Number.isFinite(winkelRoh) ? winkelRoh : RUHE;
+let letztesBand = band(winkel);   // start() wärmt die Persistenz fürs Startband
 let tempo = 0, zieht = false, letzteX = 0, zielRuhe = null;
 let eingefroren = PARAMS.has("winkel");
 const zeitRoh = parseFloat(PARAMS.get("zeit") ?? "");
@@ -561,13 +570,16 @@ function zeichne() {
   bandKnoten.forEach(k => k.classList.toggle("aktiv", parseInt(k.dataset.band,10) === aktiv));
 }
 
+// Eine Hz-Schreibweise für Ablesung UND Statuszeile — sonst schreibt die
+// eine "9,3 kHz" und die andere "9260 Hz" für denselben Ton.
+const hzText = v => v >= 1000 ? (v/1000).toFixed(1).replace(".", ",") + " kHz"
+                              : Math.round(v) + " Hz";
 function zeigeAblesung() {
   if (!befund) {
     ablesungKnoten.innerHTML = '<span class="ruhig">RUHIGES FELD · KEIN BEFUND</span>';
     return;
   }
-  const hz = v => v >= 1000 ? (v/1000).toFixed(1).replace(".", ",") + " kHz"
-                            : Math.round(v) + " Hz";
+  const hz = hzText;
   ablesungKnoten.textContent =
     `BEFUND · ${hz(befund.fMax)} · ${hz(befund.fVon)}–${hz(befund.fBis)}`
     + ` · +${befund.db.toFixed(1).replace(".", ",")} dB über eigener Schulter`
@@ -579,6 +591,15 @@ function tick() {
   const dtS = Math.min(0.033, Math.max(0.001, (jetztT - letzteT) / 1000));
   letzteT = jetztT;
   const aktiv = band(winkel);
+  if (aktiv !== letztesBand) {
+    // Persistenz gehört zum GEMESSENEN Band: ohne Neuaufbau leuchtete der
+    // Verlauf des alten Bandes ~5 s als falsche Tiefe im neuen Band nach.
+    // 15 s Vergangenheit deterministisch nachrechnen (TAU 5 s ⇒ >95 %).
+    persistenz.fill(0);
+    const dt = 1 / 60;
+    for (let s = 900; s > 0; s--) { messe(songZeit - s * dt, aktiv); persistenzSchritt(dt); }
+    letztesBand = aktiv;
+  }
   if (laeuft && ZEIT_FREEZE === null) { songZeit += dtS; messe(songZeit, aktiv); persistenzSchritt(dtS); }
   else messe(songZeit, aktiv);
   befundSuchen(aktiv);
@@ -594,10 +615,10 @@ function tick() {
             // effektive dB (db*env) — beim Ein-/Ausblenden nie mehr behaupten
             // als eingespeist ist
             ? " · PRÜFTON WANDERT · +" + (pruefton.db * pruefton.liveEnv).toFixed(0)
-              + " dB @ " + Math.round(pruefton.liveHz) + " Hz EINGESPEIST"
+              + " dB @ " + hzText(pruefton.liveHz) + " EINGESPEIST"
             : " · PRÜFTON WANDERT · GERADE STILL (SAUBERER MIX)")
         : " · PRÜFTON +" + pruefton.db.toFixed(0) + " dB @ "
-          + Math.round(pruefton.fHz) + " Hz EINGESPEIST");
+          + hzText(pruefton.fHz) + " EINGESPEIST");
 
   if (!zieht && !eingefroren) {
     if (zielRuhe === null && Math.abs(tempo) > 0.05) { winkel += tempo; tempo *= 0.94; }

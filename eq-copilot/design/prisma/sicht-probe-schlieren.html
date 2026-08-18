@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>NAKAMA · Sicht-Probe Schlieren-Ablesung</title>
+<!--
+  SICHT-PROBE: DIE SCHLIEREN-ABLESUNG (18.08.2026)
+  ================================================
+  Frage an den User: Formt „gerade Lichtlinien im Glas, die sich
+  verbiegen, wo etwas nicht stimmt" ein Bild?
+
+  Der Befund wird NIE gezeichnet. Sichtbar ist ausschliesslich, wie er
+  ein regelmaessiges Prueffeld gerader Lichtlinien im Glasvolumen
+  verbiegt — das Schlieren-Verfahren, das reale Laborbild fuer
+  unsichtbare Felder. Begruendung: eine Resonanz ist kein Stoff,
+  sondern eine lokale Aenderung des Antwortverhaltens; sie ist nur an
+  ihrer Wirkung auf eine Sonde sichtbar.
+
+  ABLESEGRAMMATIK (jede Groesse genau eine Bedeutung):
+   · Lage der gestoerten Linien   = Frequenz (fVon..fBis, Schwerpunkt)
+   · Versatz in KAMM-EINHEITEN    = Staerke — der Kamm ist das Lineal,
+                                    man zaehlt, man schaetzt nicht
+   · Richtung                     = Ueberschuss buendelt (Sammellinse),
+                                    Fehlbetrag spreizt (Zerstreuung)
+   · senkrechte Ausdehnung        = Persistenz-Anteil (Tastverhaeltnis)
+   · Ruhe                         = gesundes Band
+
+  Schlieren bildet GRADIENTEN ab, nicht Werte: man sieht nie die
+  Glocke, nur was sie dem Licht antut. Deshalb ist die Ablenkung die
+  Ableitung der Abweichung gegen die eigene Schulterlinie — und die
+  Silhouette ist bewusst KEINE EQ-Kurve.
+
+  DATENQUELLE: die etablierte 30-s-Songschleife (identisch portiert aus
+  prisma-prototyp.html). Schulterlinie und Abweichung werden AUS ihr
+  gerechnet — geglaettete Eigenkurve, lokaler Ueberschuss —, wie die
+  echte Diagnose gegen die eigenen Schultern misst. KEINE erfundenen
+  Diagnosewerte. Musterblatt-Werte wandern nie ins Plugin (Bauplan §1.5).
+
+  NICHT enthalten (bewusst, s. .claude/kreativ-freigabe.md):
+  Konfidenz-Darstellung (der Render hat ZWEI Streifen-Softboxen, nicht
+  vier — die Vierer-Ablesung waere eine Behauptung ueber ein Bild, das
+  es nicht gibt), Buendel-Modus, Mehrfachbefunde (NAK-14).
+
+  Bedienung: ZIEHEN dreht · 1/2/3 waehlt das Band · LEERTASTE haelt die
+  Musik an · F schaltet das Prueffeld (immer sichtbar <-> nur wo es
+  ausgelenkt wird) · +/- ueberhoeht den Versatz zur Beurteilung.
+  ?winkel=NN ?zeit=NN frieren deterministisch ein (Renders) ·
+  ?kamm=N ?skala=N ?ueberhoehung=N ?feld=immer|befund ?tiefe=N
+-->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: #06080c; color: #e8edf6;
+    font: 12px/1.5 "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+  header { position: fixed; top: 0; left: 0; right: 0; padding: 14px 20px;
+    display: flex; align-items: baseline; gap: 14px; z-index: 3;
+    letter-spacing: 2px; }
+  header .marke { color: #6d7789; font-size: 10px; }
+  header h1 { font-size: 13px; font-weight: 600; letter-spacing: 3px; }
+  #buehne { position: absolute; inset: 0; display: flex;
+    align-items: center; justify-content: center; cursor: grab;
+    touch-action: none; user-select: none; }
+  #buehne.zieht { cursor: grabbing; }
+  /* nie über Nativgröße skalieren — Hochskalieren las sich als
+     "Auflösung dreht runter" (Prototyp-Lehre). */
+  #bild { max-width: 96vw; max-height: 80vh; background: #000; }
+  #laden { position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 10px; z-index: 2;
+    background: #06080c; transition: opacity .4s; }
+  #laden.fertig { opacity: 0; pointer-events: none; }
+  #laden .balken { width: 220px; height: 2px; background: #1a2230; }
+  #laden .balken i { display: block; height: 100%; width: 0;
+    background: #7d96c0; }
+  #stand { position: fixed; bottom: 0; left: 0; right: 0; padding: 14px 20px;
+    display: flex; flex-direction: column; align-items: center; gap: 7px;
+    z-index: 3; pointer-events: none; }
+  #baender { display: flex; gap: 26px; }
+  .band { letter-spacing: 3px; font-size: 11px; color: #3a4356;
+    transition: color .25s; }
+  .band.aktiv[data-band="0"] { color: #e8a34c; }   /* Tiefen — Amber  */
+  .band.aktiv[data-band="1"] { color: #d465b0; }   /* Mitten — Magenta */
+  .band.aktiv[data-band="2"] { color: #9fd3e8; }   /* Höhen — Eis     */
+  #ablesung { font-size: 11px; letter-spacing: 2px; color: #b9c4d6;
+    font-variant-numeric: tabular-nums; min-height: 17px; }
+  #ablesung .ruhig { color: #46506a; letter-spacing: 3px; }
+  #hinweis { color: #6d7789; font-size: 10px; letter-spacing: 1.5px;
+    text-align: center; }
+  #zaehler { color: #3d4658; font-size: 10px; letter-spacing: 1.5px; }
+</style>
+</head>
+<body>
+<header><span class="marke">NAKAMA</span><h1>SICHT-PROBE · SCHLIEREN-ABLESUNG</h1></header>
+
+<div id="buehne">
+  <canvas id="bild" width="800" height="500"></canvas>
+</div>
+
+<div id="laden">
+  <div>Drehsequenz lädt …</div>
+  <div class="balken"><i id="fortschritt"></i></div>
+</div>
+
+<div id="stand">
+  <div id="baender">
+    <span class="band" data-band="0">TIEFEN</span>
+    <span class="band" data-band="1">MITTEN</span>
+    <span class="band" data-band="2">HÖHEN</span>
+  </div>
+  <div id="ablesung"></div>
+  <div id="hinweis">ZIEHEN DREHT · 1/2/3 WÄHLT DAS BAND · LEERTASTE HÄLT DIE MUSIK AN · F SCHALTET DAS PRÜFFELD · P DEN PRÜFTON · +/− ÜBERHÖHT DEN VERSATZ</div>
+  <div id="zaehler"></div>
+</div>
+
+<script>
+"use strict";
+const PARAMS = new URLSearchParams(location.search);
+const BILDER = parseInt(PARAMS.get("bilder") ?? "72", 10);
+// Ruhelage in Sequenzgrad — identisch zum Prototyp: 58.333333 = Frame 35,
+// dort decken sich Beauty-Frame, Glasmaske und Kameraprojektion.
+const RUHE = parseFloat(PARAMS.get("ruhe") ?? "58.333333");
+const SCHRITT = 120 / BILDER;
+
+const leinwand = document.getElementById("bild");
+const stift = leinwand.getContext("2d");
+const buehne = document.getElementById("buehne");
+const ladeanzeige = document.getElementById("laden");
+const fortschritt = document.getElementById("fortschritt");
+const bandKnoten = [...document.querySelectorAll(".band")];
+const ablesungKnoten = document.getElementById("ablesung");
+
+// ---------------------------------------------------------------- Laden
+const rahmen = [];
+const glasEbene = new Image();                    // Sandwich-Deckel (Alpha = Maske)
+let geladen = 0;
+const LADE_GESAMT = BILDER + 1;
+function geladenEins() {
+  geladen++;
+  fortschritt.style.width = (geladen / LADE_GESAMT * 100) + "%";
+  if (geladen === LADE_GESAMT) start();
+}
+glasEbene.src = "renders/glas-ebene.png";
+glasEbene.onload = geladenEins;
+glasEbene.onerror = () => {
+  ladeanzeige.firstElementChild.textContent =
+    "glas-ebene.png fehlt — mit --nur-glas rendern.";
+};
+for (let i = 0; i < BILDER; i++) {
+  const b = new Image();
+  b.src = `renders/dreh/f${String(i).padStart(3, "0")}.webp`;
+  b.onload = geladenEins;
+  b.onerror = () => {
+    ladeanzeige.firstElementChild.textContent =
+      `Frame f${String(i).padStart(3, "0")}.webp fehlt — Drehsequenz erst rendern (--dreh ${BILDER}).`;
+  };
+  rahmen.push(b);
+}
+
+/* ── Songschleife (identisch portiert aus prisma-prototyp.html) ─────────── */
+const F_MIN = 20, F_MAX = 18000;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function smoothstep(e0, e1, v) {
+  const t = clamp((v - e0) / Math.max(1e-9, e1 - e0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+const gaussian = (t, c, w) => Math.exp(-0.5 * ((t - c) / w) ** 2);
+const tForFrequency = f => Math.log10(f / F_MIN) / Math.log10(F_MAX / F_MIN);
+const frequencyForT = t => F_MIN * Math.pow(F_MAX / F_MIN, t);
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const SONG = { laenge: 30, bpm: 96 };
+function songLage(time) {
+  const lt = ((time % SONG.laenge) + SONG.laenge) % SONG.laenge;
+  const beat = Math.max(0, time) * SONG.bpm / 60;
+  const zaehlzeit = beat - Math.floor(beat);
+  const strophe = smoothstep(4.5, 7, lt) * (1 - smoothstep(13, 15.5, lt));
+  const chorus = smoothstep(13, 15.5, lt) * (1 - smoothstep(23, 25.5, lt));
+  const ausklang = smoothstep(23, 25.5, lt);
+  const intro = 1 - smoothstep(4.5, 7, lt);
+  const dichte = 0.25 * intro + 0.62 * strophe + 1.0 * chorus + 0.38 * ausklang;
+  const puls = reducedMotion ? 0.2 : 1;
+  const kick = Math.exp(-8 * zaehlzeit) * (0.35 + 0.65 * dichte) * puls;
+  const snare = (Math.floor(beat) % 2 === 1 ? Math.exp(-10 * zaehlzeit) : 0) * dichte * puls;
+  const achtel = beat * 2 - Math.floor(beat * 2);
+  const hat = Math.exp(-13 * achtel) * (0.15 + 0.85 * dichte) * puls;
+  const NOTEN = [41.2, 41.2, 49.0, 55.0, 41.2, 36.7, 49.0, 61.7];
+  const note = NOTEN[((Math.floor(beat) % 8) + 8) % 8];
+  const bassHalt = (0.55 + 0.45 * Math.exp(-2.5 * zaehlzeit)) * (0.35 + 0.65 * dichte);
+  return { lt, beat, zaehlzeit, dichte, chorus, kick, snare, hat, note, bassHalt };
+}
+function musikDb(t, lage) {
+  return lage.kick * 4.2 * gaussian(t, tForFrequency(52), 0.045)
+    + lage.bassHalt * (3.0 * gaussian(t, tForFrequency(lage.note), 0.05)
+                     + 1.2 * gaussian(t, tForFrequency(lage.note * 2), 0.045))
+    + lage.snare * (3.2 * gaussian(t, tForFrequency(190), 0.07)
+                  + 3.6 * gaussian(t, tForFrequency(4200), 0.20))
+    + lage.hat * 3.0 * smoothstep(0.70, 0.94, t)
+    + lage.chorus * 2.0 * gaussian(t, tForFrequency(760), 0.26)
+        * (0.75 + 0.25 * Math.sin((lage.lt + Math.floor(lage.beat / 48) * 30) * 2.3))
+    + (lage.dichte - 0.9) * 1.8
+    - 1.5 * lage.kick * lage.dichte * (1 - gaussian(t, tForFrequency(52), 0.06));
+}
+function baselineDb(t) {
+  const high = Math.max(0, (t - 0.82) / 0.18);
+  return -16.2 - 2.8 * t - 7.8 * t * t - 8.8 * Math.pow(high, 1.5)
+    + 1.7 * gaussian(t, 0.13, 0.11);
+}
+
+/* ── Kamera (bewiesen: pruefe-projektion.html — deckungsgleich mit Blender) ── */
+const KAM = (() => {
+  const W = 768, H = 1024, LENS = 65, SENSOR = 36;
+  const POS = [-1.65, -3.53, 0.95], ZIEL = [0, 0, 0.8];
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const kreuzP = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const norm = a => { const l = Math.hypot(...a); return [a[0] / l, a[1] / l, a[2] / l]; };
+  const f = norm(sub(ZIEL, POS));
+  const camZ = [-f[0], -f[1], -f[2]];
+  const camY = norm(sub([0, 0, 1], f.map(v => v * f[2])));
+  const camX = kreuzP(camY, camZ);
+  const F_PIX = LENS / SENSOR * Math.max(W, H);
+  return { W, H, POS, camX, camY, camZ, F_PIX, dot, sub };
+})();
+
+function projiziere(wx, wy, wz) {
+  const d = [wx - KAM.POS[0], wy - KAM.POS[1], wz - KAM.POS[2]];
+  const xc = KAM.dot(d, KAM.camX), yc = KAM.dot(d, KAM.camY), zc = KAM.dot(d, KAM.camZ);
+  const inv = 1 / (-zc);
+  return [KAM.W / 2 + KAM.F_PIX * xc * inv, KAM.H / 2 - KAM.F_PIX * yc * inv, inv];
+}
+
+/* ── Prismengeometrie: das Prüffeld steht IM Volumen ────────────────────────
+   Dreiecksquerschnitt R=0.5, Ecken bei 90/210/330°. Die kamerazugewandte
+   Fläche ist die Seite mit Richtung 60° (= ACHSE, die Frequenzachse des
+   Prototyps); ihre Innennormale zeigt vom Zentrum zur Fläche.
+   Der Kamm liegt auf der Ebene senkrecht dazu, in der TIEFE des Glases —
+   nicht auf der Fläche: der Effekt lebt im Volumen (User-Festlegung 3). */
+const ACHSE = [Math.cos(Math.PI / 3), Math.sin(Math.PI / 3)];
+const N_FLAECHE = [-Math.cos(Math.PI / 6), Math.sin(Math.PI / 6)];  // (-0.866, 0.5)
+const H_GLAS = 1.6;
+const Z0 = 0.06 * H_GLAS, Z1 = 0.97 * H_GLAS;   // Höhenspanne des Prüffelds
+
+const TIEFE = parseFloat(PARAMS.get("tiefe") ?? "0");     // 0 = Volumenmitte
+const KAMM = Math.max(7, parseInt(PARAMS.get("kamm") ?? "27", 10));
+// Halbe Kammlänge: in der Volumenmitte misst der Querschnitt 0.577,
+// mit Rand bleibt 0.26 — die Linien stoßen nie an die Kanten.
+const A_HALB = 0.26;
+const SPALT = (2 * A_HALB) / (KAMM - 1);          // Kamm-Einheit = das Lineal
+const SEG = 44;                                    // Stützstellen je Linie
+
+/* ── Messachse: Spektrum → eigene Schulterlinie → Abweichung ────────────────
+   Wie die echte Diagnose (Diagnose.h): jede Zone misst gegen die log-f-Linie
+   IHRER EIGENEN Schultern. Es gibt keinen globalen Zielkorridor. */
+const M = 97;                                      // Stützstellen je Fläche
+// Die Schultern liegen eine OKTAVE weit weg: eine Oktave = log10(2)/log10(900)
+// = 0.102 in globalem t; eine Fläche spannt t/3, also 0.306 in sub01 ≈ 30 Bins.
+// Ein engeres Fenster mittelt den Buckel mit und löscht ihn (erst gemessen:
+// max. Abweichung 1,45 dB bei ±15 Bins, weil die Schulter dem Buckel folgte).
+const SCHULTER_HALB = 30;
+const SCHWELLE_DB = parseFloat(PARAMS.get("schwelle") ?? "2.0");
+const TAU_PERS = 5.0;                              // Zeitkonstante der Persistenz
+
+const spektrum = new Float64Array(M);
+const schulter = new Float64Array(M);
+const abweichung = new Float64Array(M);
+const steigung = new Float64Array(M);
+const persistenz = new Float64Array(M);
+
+/* PRÜFTON — deklariertes Testsignal, kein erfundener Diagnosewert.
+   Die 30-s-Songschleife ist ein SAUBERER Mix: ihre stärkste Abweichung
+   gegen die eigene Schulter liegt bei ~2 dB (gemessen). Um zu zeigen, wie
+   ein echter Befund aussieht, wird — wie beim Golden-Test mit Pink Noise —
+   ein Testsignal ins SIGNAL eingespeist; die Diagnose misst danach ganz
+   normal gegen die eigenen Schultern. Die Statuszeile nennt ihn immer. */
+let pruefton = {
+  an: (PARAMS.get("pruefton") ?? "1") !== "0",
+  fHz: parseFloat(PARAMS.get("ptonHz") ?? "116"),   // A#3 in FL-Zählung
+  db: parseFloat(PARAMS.get("ptonDb") ?? "6"),
+  breite: parseFloat(PARAMS.get("ptonBreite") ?? "0.016"),
+};
+
+function messe(zeit, bandIdx) {
+  const lage = songLage(zeit);
+  const ptonT = tForFrequency(pruefton.fHz);
+  for (let i = 0; i < M; i++) {
+    const sub01 = i / (M - 1);
+    const t01 = (bandIdx + sub01) / 3;
+    spektrum[i] = baselineDb(t01) + musikDb(t01, lage);
+    if (pruefton.an)
+      spektrum[i] += pruefton.db * gaussian(t01, ptonT, pruefton.breite)
+                   * (0.55 + 0.45 * lage.dichte);   // klingt mit der Musik
+  }
+  // Schulterlinie: breiter gleitender Mittelwert der EIGENEN Kurve.
+  for (let i = 0; i < M; i++) {
+    let summe = 0, n = 0;
+    for (let k = -SCHULTER_HALB; k <= SCHULTER_HALB; k++) {
+      const j = clamp(i + k, 0, M - 1);
+      summe += spektrum[j]; n++;
+    }
+    schulter[i] = summe / n;
+  }
+  for (let i = 0; i < M; i++) abweichung[i] = spektrum[i] - schulter[i];
+  // Schlieren bildet den GRADIENTEN ab, nicht den Wert.
+  const h = 1 / (M - 1);
+  for (let i = 0; i < M; i++) {
+    const a = abweichung[clamp(i - 1, 0, M - 1)];
+    const b = abweichung[clamp(i + 1, 0, M - 1)];
+    steigung[i] = (b - a) / (2 * h);
+  }
+}
+
+function persistenzSchritt(dt) {
+  // persistenzAnteil (AnalyseEngine.h:74): Anteil der aktiven Zeit, in der
+  // das Band über der Schwelle lag — ein ANTEIL, kein Speicher. Deshalb
+  // exponentiell gleitend und nie akkumulierend.
+  const k = 1 - Math.exp(-dt / TAU_PERS);
+  for (let i = 0; i < M; i++) {
+    const drin = abweichung[i] >= SCHWELLE_DB ? 1 : 0;
+    persistenz[i] += (drin - persistenz[i]) * k;
+  }
+}
+
+/* ── Der Befund: stärkster lokaler Überschuss über der eigenen Schulter ──── */
+let befund = null;
+function befundSuchen(bandIdx) {
+  let iMax = 0;
+  for (let i = 1; i < M; i++) if (abweichung[i] > abweichung[iMax]) iMax = i;
+  const spitze = abweichung[iMax];
+  if (spitze < SCHWELLE_DB) { befund = null; return; }
+  const halb = spitze * 0.5;
+  let von = iMax, bis = iMax;
+  while (von > 0 && abweichung[von - 1] >= halb) von--;
+  while (bis < M - 1 && abweichung[bis + 1] >= halb) bis++;
+  const tVon = (bandIdx + von / (M - 1)) / 3;
+  const tBis = (bandIdx + bis / (M - 1)) / 3;
+  const tMax = (bandIdx + iMax / (M - 1)) / 3;
+  befund = {
+    fVon: frequencyForT(tVon), fBis: frequencyForT(tBis),
+    fSchwerpunkt: frequencyForT(tMax),
+    staerkeDb: spitze, persistenz: persistenz[iMax],
+  };
+}
+
+/* ── Prüffeld: gerade Lichtlinien, vom Feld verbogen ────────────────────── */
+// Kalibriert am gemessenen Fall: +4,6 dB Prüfton ⇒ max. Gradient 75,6 ⇒
+// Versatz ≈ 1,8 Kamm-Einheiten. Der Kamm ist das Lineal — ein starker
+// Befund darf die Nachbarlinie überschreiten, aber nie das Feld zerreißen.
+const SKALA = parseFloat(PARAMS.get("skala") ?? "0.0015");
+let ueberhoehung = parseFloat(PARAMS.get("ueberhoehung") ?? "1");
+let feldImmer = (PARAMS.get("feld") ?? "immer") !== "befund";
+
+const FARBEN = ["232,163,76", "212,101,176", "159,211,232"];   // Amber/Magenta/Eis
+
+const feldEbene = document.createElement("canvas");
+feldEbene.width = 768; feldEbene.height = 1024;
+const feldC = feldEbene.getContext("2d");
+
+// Silhouetten-Maske aus der Glas-Ebene: klares Glas hat niedriges Alpha —
+// 40x übereinander gezeichnet konvergiert es gegen 1 (Readback ist bei
+// file://-Bildern tabu, Compositing nicht).
+const maskeEbene = document.createElement("canvas");
+maskeEbene.width = 768; maskeEbene.height = 1024;
+function baueMaske() {
+  const mc = maskeEbene.getContext("2d");
+  for (let i = 0; i < 40; i++) mc.drawImage(glasEbene, 0, 0);
+}
+
+// Interpolierte Messgröße an einer Kammposition (sub01 in 0..1)
+function anStelle(feld, sub01) {
+  const x = clamp(sub01, 0, 1) * (M - 1);
+  const i = Math.min(M - 2, Math.floor(x));
+  const f = x - i;
+  return feld[i] * (1 - f) + feld[i + 1] * f;
+}
+
+function maleFeld(winkelSeq, bandIdx) {
+  feldC.clearRect(0, 0, 768, 1024);
+  feldC.globalCompositeOperation = "lighter";
+  feldC.lineCap = "round";
+  feldC.lineJoin = "round";
+  const rot = (28 + winkelSeq) * Math.PI / 180;    // Sequenz: Frame = 28° + seq
+  const cosR = Math.cos(rot), sinR = Math.sin(rot);
+  const farbe = FARBEN[bandIdx];
+
+  for (let k = 0; k < KAMM; k++) {
+    const aRuhe = -A_HALB + k * SPALT;
+    // Frequenzlage dieser Linie: der Kamm spannt das GANZE Band, tiefe
+    // Frequenzen links (Prototyp-Orientierung: +a = links = tief).
+    const sub01 = clamp(0.5 - aRuhe / (2 * A_HALB), 0, 1);
+    // Ablenkung = Gradient der Abweichung (Sammellinse bei Überschuss).
+    const dSub = SKALA * anStelle(steigung, sub01) * ueberhoehung;
+    const dA = clamp(-(2 * A_HALB) * dSub, -3.2 * SPALT, 3.2 * SPALT);
+    const p = clamp(anStelle(persistenz, sub01), 0, 1);
+    const staerke01 = Math.min(1, Math.abs(dA) / (1.6 * SPALT));
+
+    if (!feldImmer && staerke01 < 0.06) continue;   // Prüffeld nur beim Befund
+
+    feldC.beginPath();
+    let erstes = true;
+    for (let s = 0; s <= SEG; s++) {
+      const u = s / SEG;                             // 0 = unten, 1 = oben
+      // Senkrechte Ausdehnung der Störung = Persistenz-Anteil, mittig.
+      const rand = 0.5 * (1 - p);
+      const profil = smoothstep(rand - 0.09, rand + 0.09, u)
+                   * (1 - smoothstep(1 - rand - 0.09, 1 - rand + 0.09, u));
+      const a = aRuhe + dA * profil;
+      const lx = N_FLAECHE[0] * TIEFE + ACHSE[0] * a;
+      const ly = N_FLAECHE[1] * TIEFE + ACHSE[1] * a;
+      const wx = lx * cosR - ly * sinR;
+      const wy = lx * sinR + ly * cosR;
+      const [ux, vy] = projiziere(wx, wy, Z0 + (Z1 - Z0) * u);
+      if (erstes) { feldC.moveTo(ux, vy); erstes = false; }
+      else feldC.lineTo(ux, vy);
+    }
+    // Schärfe aus Auflösung, nicht aus Gloss: dünne, harte Linie.
+    // Ausgelenkte Linien werden nicht heller — sonst wäre die Ablesung
+    // wieder laut→hell. Sie werden nur VERSETZT; die Helligkeit trägt
+    // ausschließlich, ob überhaupt gemessen wird.
+    feldC.strokeStyle = `rgba(${farbe},${feldImmer ? 0.40 : 0.34 + 0.30 * staerke01})`;
+    feldC.lineWidth = 1.15;
+    feldC.stroke();
+  }
+  feldC.globalAlpha = 1;
+  feldC.globalCompositeOperation = "destination-in";   // Maske: nur im Glas
+  feldC.drawImage(maskeEbene, 0, 0);
+  feldC.globalCompositeOperation = "source-over";
+}
+
+// ---------------------------------------------------------------- Zustand
+const winkelRoh = parseFloat(PARAMS.get("winkel") ?? String(RUHE));
+let winkel = Number.isFinite(winkelRoh) ? winkelRoh : RUHE;   // NaN-Riegel
+let tempo = 0;
+let zieht = false;
+let eingefroren = PARAMS.has("winkel");
+let letzteX = 0;
+let zielRuhe = null;
+
+const zeitRoh = parseFloat(PARAMS.get("zeit") ?? "");
+const ZEIT_FREEZE = Number.isFinite(zeitRoh) ? Math.min(zeitRoh, 60) : null;
+let songZeit = 0;
+let laeuft = ZEIT_FREEZE === null;
+let letzteT = performance.now();
+
+function ruhelagen() { return [RUHE, RUHE + 120, RUHE + 240]; }
+function naechsteRuhe(w) {
+  let beste = RUHE, abstand = 1e9;
+  for (const r of ruhelagen()) {
+    for (const k of [-360, 0, 360]) {
+      const d = Math.abs(w - (r + k));
+      if (d < abstand) { abstand = d; beste = r + k; }
+    }
+  }
+  return beste;
+}
+function band(w) {
+  return Math.round(((w - RUHE) % 360 + 360) % 360 / 120) % 3;
+}
+
+function zeichne() {
+  const pos = (((winkel % 120) + 120) % 120) / SCHRITT;
+  const i0 = Math.floor(pos) % BILDER;
+  const i1 = (i0 + 1) % BILDER;
+  const f = pos - Math.floor(pos);
+  const a = rahmen[i0];
+  if (a && a.complete && a.naturalWidth) {
+    if (leinwand.width !== a.naturalWidth) {
+      leinwand.width = a.naturalWidth;
+      leinwand.height = a.naturalHeight;
+      leinwand.style.maxWidth = a.naturalWidth + "px";
+    }
+    stift.globalAlpha = 1;
+    stift.drawImage(a, 0, 0, leinwand.width, leinwand.height);
+    const b = rahmen[i1];
+    if (f > 0.001 && b && b.complete && b.naturalWidth) {
+      stift.globalAlpha = f;
+      stift.drawImage(b, 0, 0, leinwand.width, leinwand.height);
+      stift.globalAlpha = 1;
+    }
+  }
+  // Prüffeld + Glas-Deckel: nur nahe der Rastpose, wo sich Beauty-Frame,
+  // Maske und Projektion decken — weiches Ein-/Ausblenden beim Drehen.
+  const seq = (((winkel % 120) + 120) % 120);
+  const ruheDist = Math.abs(((seq - RUHE + 60) % 120 + 120) % 120 - 60);
+  const sicht = 1 - smoothstep(1.5, 7, ruheDist);
+  const aktiv = band(winkel);
+  if (sicht > 0.01 && glasEbene.complete && glasEbene.naturalWidth) {
+    maleFeld(seq, aktiv);
+    stift.globalCompositeOperation = "lighter";
+    stift.globalAlpha = sicht;
+    stift.drawImage(feldEbene, 0, 0, leinwand.width, leinwand.height);
+    // Glas-Deckel ADDITIV: refraktives Glas hat in Cycles Alpha ~1 —
+    // source-over würde das Prüffeld zudecken. Additiv tragen nur seine
+    // Reflexe und Kanten auf (dunkle Flächen addieren nichts).
+    stift.globalAlpha = sicht * 0.85;
+    stift.drawImage(glasEbene, 0, 0, leinwand.width, leinwand.height);
+    stift.globalCompositeOperation = "source-over";
+    stift.globalAlpha = 1;
+  }
+  bandKnoten.forEach(k => k.classList.toggle("aktiv", parseInt(k.dataset.band, 10) === aktiv));
+}
+
+function zeigeAblesung() {
+  if (!befund) {
+    ablesungKnoten.innerHTML = '<span class="ruhig">RUHIGES FELD · KEIN BEFUND</span>';
+    return;
+  }
+  const hz = v => v >= 1000 ? (v / 1000).toFixed(1).replace(".", ",") + " kHz"
+                            : Math.round(v) + " Hz";
+  ablesungKnoten.textContent =
+    `BEFUND · ${hz(befund.fSchwerpunkt)} · ${hz(befund.fVon)}–${hz(befund.fBis)}`
+    + ` · +${befund.staerkeDb.toFixed(1).replace(".", ",")} dB über eigener Schulter`
+    + ` · Persistenz ${Math.round(befund.persistenz * 100)} %`;
+}
+
+// ---------------------------------------------------------------- Takt
+function tick() {
+  const jetztT = performance.now();
+  const dtS = Math.min(0.033, Math.max(0.001, (jetztT - letzteT) / 1000));
+  letzteT = jetztT;
+  const aktiv = band(winkel);
+  if (laeuft && ZEIT_FREEZE === null) {
+    songZeit += dtS;
+    messe(songZeit, aktiv);
+    persistenzSchritt(dtS);
+  } else {
+    messe(songZeit, aktiv);            // Band-Wechsel bleibt im Halt sichtbar
+  }
+  befundSuchen(aktiv);
+  zeigeAblesung();
+
+  const sZ = Math.floor(songZeit);
+  document.getElementById("zaehler").textContent =
+    String(Math.floor(sZ / 60)).padStart(2, "0") + ":" + String(sZ % 60).padStart(2, "0")
+    + " · PRÜFFELD " + (feldImmer ? "IMMER" : "NUR BEI BEFUND")
+    + " · ÜBERHÖHUNG ×" + ueberhoehung.toFixed(1).replace(".", ",")
+    + (pruefton.an
+        ? " · PRÜFTON +" + pruefton.db.toFixed(0) + " dB @ " + Math.round(pruefton.fHz)
+          + " Hz EINGESPEIST"
+        : " · OHNE PRÜFTON (SAUBERER MIX)");
+
+  if (!zieht && !eingefroren) {
+    if (zielRuhe === null && Math.abs(tempo) > 0.05) {
+      winkel += tempo;
+      tempo *= 0.94;
+    } else {
+      const ziel = zielRuhe ?? naechsteRuhe(winkel);
+      const d = ziel - winkel;
+      if (Math.abs(d) > 0.02) {
+        winkel += d * 0.12;
+      } else {
+        winkel = ((ziel % 360) + 360) % 360;
+        zielRuhe = null;
+      }
+      tempo = 0;
+    }
+  }
+  winkel = ((winkel % 360) + 360) % 360;
+  zeichne();
+  requestAnimationFrame(tick);
+}
+
+function start() {
+  baueMaske();
+  const aktiv = band(winkel);
+  if (ZEIT_FREEZE !== null) {
+    // Deterministisch einschwingen: fester Schritt bis zum Standpunkt,
+    // damit ?zeit= reproduzierbare Renders liefert.
+    const dt = 1 / 60;
+    for (let s = 0; s * dt < ZEIT_FREEZE; s++) {
+      messe(s * dt, aktiv);
+      persistenzSchritt(dt);
+    }
+    songZeit = ZEIT_FREEZE;
+  } else {
+    // Persistenz startet nicht bei null: eine Sekunde stumm vorlaufen,
+    // sonst zeigt der erste Frame ein Feld ohne Gedächtnis.
+    const dt = 1 / 60;
+    for (let s = 0; s < 60; s++) { messe(s * dt, aktiv); persistenzSchritt(dt); }
+  }
+  messe(songZeit, aktiv);
+  befundSuchen(aktiv);
+  ladeanzeige.classList.add("fertig");
+  letzteT = performance.now();
+  zeichne();
+  requestAnimationFrame(tick);
+}
+
+// ---------------------------------------------------------------- Eingabe
+buehne.addEventListener("pointerdown", ev => {
+  zieht = true; eingefroren = false; zielRuhe = null;
+  letzteX = ev.clientX; tempo = 0;
+  buehne.classList.add("zieht");
+  buehne.setPointerCapture(ev.pointerId);
+});
+buehne.addEventListener("pointermove", ev => {
+  if (!zieht) return;
+  const dx = ev.clientX - letzteX;
+  letzteX = ev.clientX;
+  winkel += dx * 0.4;
+  tempo = dx * 0.4;
+});
+buehne.addEventListener("pointerup", ev => {
+  zieht = false;
+  buehne.classList.remove("zieht");
+  buehne.releasePointerCapture(ev.pointerId);
+});
+buehne.addEventListener("wheel", ev => {
+  ev.preventDefault();
+  eingefroren = false;
+  tempo += Math.sign(ev.deltaY) * 1.6;
+}, { passive: false });
+
+addEventListener("keydown", ev => {
+  if (ev.key === " ") { ev.preventDefault(); laeuft = !laeuft; }
+  if (ev.key === "ArrowLeft" || ev.key === "ArrowRight") {
+    eingefroren = false;
+    tempo += (ev.key === "ArrowLeft" ? -1 : 1) * 1.6;
+  }
+  if (ev.key === "1" || ev.key === "2" || ev.key === "3") {
+    eingefroren = false; tempo = 0;
+    const ziel = RUHE + (parseInt(ev.key, 10) - 1) * 120;
+    let d = ((ziel - winkel) % 360 + 360) % 360;
+    if (d > 180) d -= 360;
+    zielRuhe = winkel + d;
+  }
+  if (ev.key === "f" || ev.key === "F") feldImmer = !feldImmer;
+  if (ev.key === "p" || ev.key === "P") {
+    pruefton.an = !pruefton.an;
+    // Persistenz neu einschwingen, sonst hinkt das Gedächtnis dem Signal nach
+    const dt = 1 / 60, b = band(winkel);
+    for (let s = 0; s < 240; s++) { messe(songZeit + s * dt, b); persistenzSchritt(dt); }
+  }
+  if (ev.key === "+") ueberhoehung = Math.min(6, ueberhoehung + 0.5);
+  if (ev.key === "-") ueberhoehung = Math.max(0.5, ueberhoehung - 0.5);
+});
+</script>
+</body>
+</html>

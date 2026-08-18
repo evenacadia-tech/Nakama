@@ -19,3 +19,6 @@ eq-copilot/fixtures/*.wav
 
 # Python-Bytecode
 __pycache__/
+
+# Playwright-MCP-Arbeitsspuren (Snapshots/Konsolenlogs)
+.playwright-mcp/

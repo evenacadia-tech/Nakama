@@ -98,12 +98,18 @@ void main() {
   float ptIdx     = floor(yy / ptSpacing);
   float distY     = abs(yy - (ptIdx + 0.5) * ptSpacing);
 
-  // Runder Punkt im Pixelmass: Schaerfe kommt aus Aufloesung und Dichte,
-  // nie aus Weichzeichner oder Glow.
-  float fwX   = max(fwidth(x), 1e-6);
-  float fwY   = max(fwidth(uv.y), 1e-6);
-  float rPix  = length(vec2(distX / fwX, distY / fwY));
-  float punkt = 1.0 - smoothstep(0.7, 1.7, rPix);
+  // Punktgroesse ABSOLUT in UV — nicht relativ zur Pixelgroesse. Die alte
+  // Fassung teilte durch fwidth(); bei kleiner Darstellung wird fwidth gross,
+  // der normierte Radius ueberall klein und der Effekt kippt in eine
+  // VOLLFLAECHE (im Editor bei 90 % Zoom live beobachtet). Genau dieser Fall
+  // ist der Ernstfall: im Plugin sitzt das Feld auf einer kleinen
+  // Prismenflaeche. fwidth dient jetzt nur noch der Kantenglaettung, damit
+  // die Punkte bei wenig Aufloesung DUENNER werden statt breiter.
+  float halbBreite = 0.00075;          // halbe Linienbreite in x-UV
+  float punktHalb  = 0.0021;           // halbe Punkthoehe in y-UV
+  float r     = length(vec2(distX / halbBreite, distY / punktHalb));
+  float aa    = max(fwidth(r), 1e-3);
+  float punkt = 1.0 - smoothstep(1.0 - aa, 1.0 + aa, r);
 
   // Koernung: Helligkeit je Punkt aus Hash(Linie, Punkt), plus harte Aussetzer.
   float rnd = randFibo(vec2(lineIdx * 17.13 + 31.7, ptIdx * 43.19 + 71.3));

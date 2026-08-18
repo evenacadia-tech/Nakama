@@ -61,5 +61,5 @@ Auffrischen löschen; Schließen nur mit ID + Commit-SHA.
 Nur bei echt Irreversiblem (force-push, Löschen, externer Versand), echter
 Scope-Entscheidung oder Input, den nur der User geben kann (UAC-Klick,
 Design-Freeze, Optik-Abnahme). Sonst handeln und committen
-(Commit-Autonomie; im geteilten FL-Studio-Repo mit explizitem Pathspec).
+(Commit-Autonomie; bei paralleler Codex-Session mit explizitem Pathspec).
 PRIMER

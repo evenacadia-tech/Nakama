@@ -1,12 +1,12 @@
 #!/bin/bash
 # SessionEnd hook: Auto-Handoff nach docs/handoffs/ schreiben — das Git-Delta
-# der Session über BEIDE Repos (Nakama-Workspace + FL-Studio, wo der Code
-# lebt). SessionEnd kann nicht blocken (die Session stirbt) — rein
+# der Session in DIESEM Workspace (seit dem Umzug 18.08.2026 lebt hier
+# alles: Code, Broker, Design, Wissen). SessionEnd kann nicht blocken — rein
 # bash-generiertes Artefakt, keine Modell-Intelligenz. Das Modell kann
 # während der Session ein reicheres Memo ergänzen.
 #
 # Liest session_id + reason aus dem JSON-stdin, Marker aus SessionStart
-# (4 Zeilen: Start-Epoch · Nakama-HEAD · cwd · FL-Studio-HEAD).
+# (4 Zeilen: Start-Epoch · Nakama-HEAD · cwd · Zeile 4 frei seit Umzug).
 # Immer Exit 0 — SessionEnd-Fehler dürfen keine User-Fehler zeigen.
 
 set -u
@@ -27,7 +27,6 @@ case "$REPO_ROOT" in
   *) exit 0 ;;
 esac
 
-FL="$HOME/FL-Studio"
 HANDOFF_DIR="$REPO_ROOT/docs/handoffs"
 mkdir -p "$HANDOFF_DIR" 2>/dev/null || exit 0
 
@@ -38,15 +37,13 @@ TIME=$(date +%H%M)
 SID_SHORT=$(printf '%s' "$SESSION_ID" | cut -c1-8)
 OUT="$HANDOFF_DIR/auto-handoff-${DATE}-${TIME}-${SID_SHORT}.md"
 
-START_TS=""; START_SHA=""; START_FL_SHA=""
+START_TS=""; START_SHA=""
 if [ -f "$MARKER" ]; then
   START_TS=$(sed -n '1p' "$MARKER")
   START_SHA=$(sed -n '2p' "$MARKER")
-  START_FL_SHA=$(sed -n '4p' "$MARKER")
 fi
 
 END_SHA=$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null || printf 'unknown')
-END_FL_SHA=$(git -C "$FL" rev-parse --short HEAD 2>/dev/null || printf 'unknown')
 
 DURATION=""
 if [ -n "$START_TS" ]; then
@@ -81,18 +78,14 @@ repo_delta() {
   printf '**Session:** `%s`  \n' "$SESSION_ID"
   printf '**Grund:** %s  \n' "$REASON"
   [ -n "$DURATION" ] && printf '**Dauer:** %s  \n' "$DURATION"
-  printf '**Nakama-HEAD:** `%s` → `%s`  \n' "${START_SHA:-?}" "$END_SHA"
-  printf '**FL-Studio-HEAD:** `%s` → `%s`  \n\n' "${START_FL_SHA:-?}" "$END_FL_SHA"
+  printf '**Nakama-HEAD:** `%s` → `%s`  \n\n' "${START_SHA:-?}" "$END_SHA"
 
-  printf '## Nakama-Workspace (Wissen/Kontext)\n\n'
+  printf '## Nakama-Workspace (Code + Broker + Design + Wissen)\n\n'
   repo_delta "$REPO_ROOT" "$START_SHA" "$END_SHA" ""
 
-  printf '## FL-Studio-Repo (Code, Scope eq-copilot + Broker)\n\n'
-  repo_delta "$FL" "$START_FL_SHA" "$END_FL_SHA" "eq-copilot plugin-hub-app"
-
-  STATUS=$(git -C "$FL" status --porcelain -- eq-copilot plugin-hub-app 2>/dev/null)
+  STATUS=$(git -C "$REPO_ROOT" status --porcelain 2>/dev/null)
   if [ -n "$STATUS" ]; then
-    printf '## Uncommitted im FL-Studio-Repo bei Session-Ende\n\n'
+    printf '## Uncommitted bei Session-Ende\n\n'
     printf '```\n%s\n```\n\n' "$STATUS"
   fi
 

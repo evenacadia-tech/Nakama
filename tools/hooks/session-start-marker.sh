@@ -7,7 +7,7 @@
 #   1. Epoch-Sekunden beim Start
 #   2. git-HEAD (kurz) des Nakama-Workspaces (oder "no-git")
 #   3. cwd beim Start
-#   4. git-HEAD (kurz) des FL-Studio-Repos (dort lebt der Code)
+#   4. (frei — bis 18.08.2026 FL-Studio-HEAD; Code lebt seit dem Umzug hier)
 
 set -u
 
@@ -24,7 +24,7 @@ find "$SESSIONS_DIR" -name '*.start' -type f -mtime +7 -delete 2>/dev/null
 MARKER="$SESSIONS_DIR/${SESSION_ID}.start"
 TS=$(date +%s)
 HEAD_SHA=$(git -C "$PWD" rev-parse --short HEAD 2>/dev/null || printf 'no-git')
-FL_SHA=$(git -C "$HOME/FL-Studio" rev-parse --short HEAD 2>/dev/null || printf 'no-git')
+FL_SHA="entfallen-seit-umzug"
 
 {
   printf '%s\n' "$TS"

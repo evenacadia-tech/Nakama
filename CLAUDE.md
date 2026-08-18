@@ -1,28 +1,34 @@
 # NAKAMA
 
 Transparentes Berater-VST3 für FL Studio (Windows 11, JUCE 8/C++20, CMake)
-mit Rust-Broker (Named Pipe) in der Tauri-Hub-App. Produktname **Nakama**;
-Code, Bundle, Pipes und Schemas tragen aus Kompatibilität den Legacy-Namen
-**EQ-Copilot** (`EqCop*`) — das ist Absicht, kein Umbenennungs-Task.
+mit **eigenständigem Rust-Broker** (Named Pipe, `broker/`). Produktname
+**Nakama**; Code, Bundle, Pipes und Schemas tragen aus Kompatibilität den
+Legacy-Namen **EQ-Copilot** (`EqCop*`) — das ist Absicht, kein
+Umbenennungs-Task.
 
-**Dieses Folder ist der Session-Anker** (Kontext, Wissen, Handoffs).
-**Der Code lebt im FL-Studio-Repo** (Zugriff via `additionalDirectories`):
+**Dieser Workspace ist seit 18.08.2026 EIGENSTÄNDIG** — Code, Broker,
+Design, Docs und Wissen leben in EINEM Repo. Git-Historie davor:
+FL-Studio-Repo (`C:\Users\phili\FL-Studio`, bis Commit `7964777`); der
+FL-CLAUDE.md-Auszug liegt wortgleich in
+`docs/fl-claudemd-auszug-2026-08-18.md`.
 
-| Was | Pfad |
+| Was | Pfad (relativ zum Workspace-Root) |
 |---|---|
-| Plugin (JUCE 8 + CMake) | `C:\Users\phili\FL-Studio\eq-copilot\plugin\` |
-| Schemas — versionierte Verträge | `C:\Users\phili\FL-Studio\eq-copilot\schemas\` |
-| Design (Musterblätter, Tokens, Renders, Fonts) | `C:\Users\phili\FL-Studio\eq-copilot\design\` |
-| Projekt-Docs (Baupläne, M0–M3a-Befunde, Testanleitung) | `C:\Users\phili\FL-Studio\eq-copilot\docs\` |
-| Broker (Rust, Pipe-Server, Paare, Aggregat) | `C:\Users\phili\FL-Studio\plugin-hub-app\src-tauri\src\eq_copilot\` |
-| Sensorübersicht (Hub-App-Frontend) | `C:\Users\phili\FL-Studio\plugin-hub-app\src\lib\eq-copilot\` |
-| Fixture-Generator | `C:\Users\phili\FL-Studio\tools\eq-copilot\` |
-| Kanonischer Produkt-/Umsetzungsplan | `C:\Users\phili\FL-Studio\FL-EQ-Copilot-Recherche.md` |
+| Plugin (JUCE 8 + CMake) | `eq-copilot/plugin/` |
+| Schemas — versionierte Verträge | `eq-copilot/schemas/` |
+| Design (Musterblätter, Prisma, Renders, Fonts) | `eq-copilot/design/` |
+| Projekt-Docs (Baupläne, M0–M3a-Befunde, Testanleitung) | `eq-copilot/docs/` |
+| **Broker (eigene Crate, eqcop-broker.exe)** | `broker/` |
+| Sensorübersicht (Svelte-Referenz, ohne Zuhause — NAK-12) | `broker/sensoruebersicht-referenz/` |
+| Fixture-Generator + Testsong-Werkzeuge | `tools/eq-copilot/` |
+| Kanonischer Produkt-/Umsetzungsplan | `FL-EQ-Copilot-Recherche.md` |
+| Wissens-Docs (design-stand, geschmacksprofil, plugin-wissen …) | `docs/` |
 
-**Commit-Routing:** Code-Änderungen → FL-Studio-Repo (Konvention dort:
-`feat(eq-copilot): …`, Deutsch). Wissen/Handoffs/Hooks → dieses Nakama-Repo.
-Das FL-Studio-Repo wird von parallelen Codex-/Harness-Sessions geteilt:
-eigene Edits SOFORT committen, nie `--amend`, fremde rote Tests nie anfassen.
+**Commit-Routing:** EIN Repo — alles hierher, Deutsch, kleine benannte
+Commits. Parallele Codex-Sessions sind möglich (Vorentwurf-Blatt =
+Codex-Besitz): eigene Edits SOFORT committen, nie `--amend`, fremde
+Änderungen nie anfassen. Kein Git-Remote (Push entfällt; bei Bedarf mit
+dem User klären).
 
 ## Grundgesetz (nicht verhandelbar)
 
@@ -39,7 +45,7 @@ verriegelt: nur bei bewiesener Echtzeit ∧ Editor offen ∧ Transport ∧
 beweist es); der Analyse-Abgriff sitzt VOR der Färbung. Jede weitere
 Audio-Ausnahme braucht denselben Verriegelungs- und Beweisstandard.
 
-## Bauen & Beweisen (aus `C:\Users\phili\FL-Studio\` heraus)
+## Bauen & Beweisen (vom Workspace-Root)
 
 ```powershell
 $cmake = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
@@ -54,13 +60,21 @@ gesehen"**, nie „sollte funktionieren"):
 eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe
 eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures
 eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe
-cargo test --manifest-path plugin-hub-app/src-tauri/Cargo.toml eq_copilot
+cargo test --manifest-path broker/Cargo.toml
 ```
 
 - Golden-WAVs einmalig: `py -3.13 tools/eq-copilot/erzeuge_fixtures.py --nur-wav`
 - Editor-Sichtprüfung ohne FL: `EqCopShot.exe <ziel.png> [breite]` (echte 20-s-Messung, offscreen)
 - paint()-Kosten: `EqCopPaintBench` · Host-Härtung: `pluginval --strictness-level 8`
-- Pipe Ende-zu-Ende: `eqcop-broker-probe.exe 30` (Terminal 1) + `EqCopPipeProbe.exe "\\.\pipe\evenacadia.eq-copilot.m2probe"` (Terminal 2) — **immer der eigene Probe-Pipename**, nie der Produktions-Broker (zwei Broker auf einem Namen stahlen sich still Clients; Produktion verweigert per FIRST_PIPE_INSTANCE)
+- **Broker-Betrieb:** `broker\target\release\eqcop-broker.exe [--bindungen <pfad>]`
+  (eigenständiger Prozess; Standard-Bindungen
+  `%APPDATA%\evenacadia\nakama\eq-copilot-bindungen.json`; die Hub-App
+  startet ihn NICHT mehr — Umzug 18.08.)
+- Pipe Ende-zu-Ende: `broker\target\release\eqcop-broker-probe.exe 30`
+  (Terminal 1) + `EqCopPipeProbe.exe "\\.\pipe\evenacadia.eq-copilot.m2probe"`
+  (Terminal 2) — **immer der eigene Probe-Pipename**, nie der
+  Produktions-Broker (zwei Broker auf einem Namen stahlen sich still
+  Clients; Produktion verweigert per FIRST_PIPE_INSTANCE)
 - **Installation = User-Klick:** `eq-copilot\install\Install-EQ-Copilot.ps1` als Admin (UAC), Rollback-Datei liegt daneben. Nie automatisch installieren. Vorher FL beenden.
 
 ## Invarianten — tragend, jede Runde präsent
@@ -87,10 +101,12 @@ cargo test --manifest-path plugin-hub-app/src-tauri/Cargo.toml eq_copilot
 - **Pixel-Beweis ≠ Schönheits-Beweis** — E0–E5 war 18/18 bewiesen und
   hässlich; Optik nimmt der User am lebenden Blatt ab.
 - **VERWORFEN, nie neu vorschlagen:** 3D-Papier-Shader (E0–E5) ·
-  Tusche-Einzelmarken-Piktogramme. Tragfähig: der Graph selbst erzählt mit
-  Licht/Tiefe und bildet Position/Breite/Stärke ab. → `docs/design-stand.md`
+  Tusche-Einzelmarken-Piktogramme · **rohe Energie-Punktwolke als
+  Dauerinhalt** (18.08.: „Wasserfall aus Pixeln" — ein Profi liest daran
+  nichts ab; Inhalt = wenige präzise BEFUND-Objekte). → `docs/design-stand.md`
 - **Musterblatt-Beispieldaten ≠ Plugin-Daten** — HTML-Demo-Werte wandern nie
-  in das Plugin (Bauplan §1.5).
+  in das Plugin (Bauplan §1.5). Die 30-s-Songschleife ist die einzige
+  sanktionierte Design-Datenquelle der Blätter.
 - **`ltasReferenzDb` ≠ Sollkurve** — reine 8192er-Messachse; es gibt KEINEN
   globalen Zielkorridor; Befunde messen gegen ihre eigene Schulterlinie.
 - **paint()-FPS ≠ Datenkadenz** — M3a: 4-Hz-Snapshots sahen aus wie
@@ -103,6 +119,9 @@ cargo test --manifest-path plugin-hub-app/src-tauri/Cargo.toml eq_copilot
   Protokollversion wird im Handshake verhandelt); Tests nutzen `…m2probe`.
 - **FL-Notennamen:** FL zeigt MIDI 60 als **C5** (Oktave = MIDI div 12) —
   116 Hz = A#3. Nie die Standard-Oktavzählung annehmen.
+- **Spot-Watt in Blender sind KUGELnormiert** — enger Kegel maskiert statt
+  bündelt; Zwei-Flächen-Kaustik ist in Cycles unidirektional unsampelbar
+  (Details: `docs/design-stand.md`, Cycles-Grenzen).
 
 ## Design-Arbeitsmodell
 
@@ -116,14 +135,18 @@ unter `eq-copilot/design/`, solange `.claude/kreativ-freigabe.md` fehlt oder
 Worten des Users fest und wird NUR nach dessen ausdrücklicher Freigabe
 geschrieben.
 
-Design-Phase lebt im **Browser** (Sekunden-Schleife), nicht im Plugin
-(Minuten + UAC + FL-Neustart). **Aktive Richtung seit 17.08.: das PRISMA**
-(User-autorisiert; Drehen = Selektion Tiefen/Mitten/Höhen, Klick = Bündeln;
-Film-Compositing mit Blender-Cycles auf CPU) — Einstieg
-`docs/NEXT-SESSION.md` + `docs/design-stand.md`. Geparkt, nie ungefragt
-reaktivieren: Tiefenfeld, Bauplan 2.0, Kunstwerk-Studie. Kein Schritt zeigt
-erfundene Diagnosewerte — fehlt ein Produktionsfeld, bleibt die Darstellung
-verborgen.
+Design-Phase lebt im **Browser** (Sekunden-Schleife), nicht im Plugin.
+**Aktive Richtung: das PRISMA** (User-autorisiert 17.08.; Drehen = Selektion
+Tiefen/Mitten/Höhen, Klick = Bündeln; Film-Compositing mit Blender-Cycles
+auf CPU). **Stand 18.08.:** Prisma-OBJEKT abgenommen („sieht top aus";
+klar > rauchig, Frost raus), drehbarer Prototyp steht
+(`eq-copilot/design/prisma/prisma-prototyp.html`); rohe Punktwolke als
+Dauerinhalt VERWORFEN; **offen: Befund-Verkörperung** (1 Befund = 1
+präzises Objekt im Glas — Resonanz zuerst; WAS es ist, kommt vom User).
+Einstieg `docs/NEXT-SESSION.md` + `docs/design-stand.md`. Geparkt, nie
+ungefragt reaktivieren: Tiefenfeld, Bauplan 2.0, Kunstwerk-Studie. Kein
+Schritt zeigt erfundene Diagnosewerte — fehlt ein Produktionsfeld, bleibt
+die Darstellung verborgen.
 
 **DESIGN-VERFASSUNG (4 Proben, teuer bezahlt — Volltext mit wörtlichen
 User-Urteilen: `docs/geschmacksprofil.md`, vor jeder Design-Entscheidung
@@ -135,31 +158,36 @@ lesen):**
 3. **Sichtbarer Denkvorgang mit Distanz:** laut→hell ist Tautologie;
    NOTWENDIG statt konstruiert („kein Grund, dass es da ist" = Todesurteil);
    ENTDECKT statt entworfen (Phänomen/Emergenz schlägt Designer-Objekt).
+   **Verschärft 18.08.: LESBARKEIT ist der Produktmaßstab** — ein Profi
+   (20 Spuren) muss in 2 Sekunden ABLESEN können; Berater zeigen BEFUNDE,
+   keine Atmosphäre; leeres Glas = gesundes Band.
 4. **Meta:** Claudes freie Bilderfindung = Mode-Collapse („wie
    algorithmisch komponierte Musik — objektiv ok, aber egal"). Vision und
    Referenzen kommen vom User; Claude übersetzt treu, verdatet ehrlich,
-   verfeinert unter seinem Auge. Einzige abgenommene Ästhetik:
-   P01-Perkolation (scharfe Punktwolke, Bandfarben Amber/Magenta/Eis).
+   verfeinert unter seinem Auge. Abgenommen: P01-Perkolations-ÄSTHETIK
+   (scharfe Punktwolke, Bandfarben Amber/Magenta/Eis) + das Prisma-Objekt.
 
 ## Maschinen-Landmine
 
 **Keine GPU-Batch-Render-Loops auf der Arc A770** — der Lüfter-Failsafe
 bleibt nach solchen Loops auf 100 % hängen (überlebt Warm-Reboots; Fix =
 `Win+Ctrl+Shift+B`, sonst echter Kaltstart). Playwright-/Beweis-Renders
-laufen in Software (SwiftShader) und bleiben Einzelläufe.
+laufen in Software (SwiftShader) und bleiben Einzelläufe; Blender-Cycles
+rendert auf CPU.
 
 ## Read before working on
 
 | Bereich | Zuerst lesen |
 |---|---|
-| Wie das Plugin heute funktioniert (Architektur, Datenfluss, IPC) | `docs/plugin-wissen.md` (hier) |
-| Design-Prototyp, Verwürfe, Freeze-Stand | `docs/design-stand.md` (hier) |
+| Wie das Plugin heute funktioniert (Architektur, Datenfluss, IPC) | `docs/plugin-wissen.md` |
+| Design-Prototyp, Verwürfe, Freeze-Stand | `docs/design-stand.md` |
+| Geschmacksprofil (wörtliche User-Urteile) | `docs/geschmacksprofil.md` |
 | Neue Hauptansicht (Ziel, Grammatik, DoD) | `eq-copilot/docs/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md` |
-| DSP-/Realtime-/Broker-Regeln, Produktplan | `FL-EQ-Copilot-Recherche.md` (FL-Studio-Wurzel) |
+| DSP-/Realtime-/Broker-Regeln, Produktplan | `FL-EQ-Copilot-Recherche.md` |
 | Aktuellster Plugin-Stand + Beweise | `eq-copilot/docs/M3A-BEFUND.md` (+ M0–M2, CS1) |
 | Manuelle FL-Prüfungen (liegen beim User) | `eq-copilot/docs/FL-TESTANLEITUNG.md` |
 | Benchmark-Mechaniken (Median-Basislinie, Zonen, Konvergenz) | `eq-copilot/docs/BENCHMARK-STUDIE-RESO-SMARTEQ-PROQ.md` |
-| Offene Punkte (durabel, nie still löschen) | `docs/offene-punkte.md` (hier) |
+| Offene Punkte (durabel, nie still löschen) | `docs/offene-punkte.md` |
 
 ## Arbeitsweise
 
@@ -169,13 +197,12 @@ laufen in Software (SwiftShader) und bleiben Einzelläufe.
   Selbstaudit nach jedem Commit; größere Änderungssätze von einem frischen
   Verifikations-Subagenten gegen Bauplan + Grundgesetz prüfen lassen.
 - Im Auftrag bleiben: keine Neben-Refactors, kein „Modernisieren" von
-  Legacy-Namen oder Front nebenbei. Problembeschreibung ⇒ Befund liefern,
-  erst auf Zuruf fixen.
+  Legacy-Namen nebenbei. Problembeschreibung ⇒ Befund liefern, erst auf
+  Zuruf fixen.
 - Breite mechanische Suchen parallel an Explore-Agenten delegieren und
   währenddessen weiterarbeiten; Design-Urteil bleibt im Hauptlauf.
 - Out-of-scope-Funde → `docs/offene-punkte.md` (datierte Zeile mit ID).
 - Nach großen Schritten: `docs/design-stand.md` bzw. `docs/plugin-wissen.md`
   nachziehen + Session-Memo ins Memory (`project_session_*.md`, Cap 6 —
   eine Lehre pro Datei, mit dem Warum; Falsches löschen statt stapeln).
-- Alle Texte dieses Projekts (Docs, Commits, UI) auf Deutsch — bestehende
-  Konvention des eq-copilot-Baums.
+- Alle Texte dieses Projekts (Docs, Commits, UI) auf Deutsch.

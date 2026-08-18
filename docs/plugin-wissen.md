@@ -11,8 +11,8 @@
 |---|---|---|
 | VST3-Plugin | `eq-copilot/plugin/src/` | JUCE 8.0.9 / C++20 |
 | Verträge | `eq-copilot/schemas/` | JSON Schema 2020-12 |
-| Broker | `plugin-hub-app/src-tauri/src/eq_copilot/` | Rust + windows-sys |
-| Sensorübersicht | `plugin-hub-app/src/lib/eq-copilot/Sensoruebersicht.svelte` | Svelte 5 |
+| Broker (eigenständig seit 18.08., `eqcop-broker.exe`) | `broker/` | Rust + windows-sys |
+| Sensorübersicht (heimatlos, NAK-12 — Referenzkopie) | `broker/sensoruebersicht-referenz/` | Svelte 5 |
 | Fixtures | `tools/eq-copilot/erzeuge_fixtures.py` | Python 3.13 + numpy |
 
 Drei Threads im Plugin: **Audiothread** (processBlock) · **Worker** (besitzt
@@ -163,8 +163,13 @@ aktuell unreferenziert).
   Clients. Ungültige Pakete werden gezählt und verworfen, nie gekürzt.
 - **Probe:** `eqcop-broker-probe.exe [sekunden] [pipe-name]`, Default
   `…m2probe` — nie der Produktionsname.
-- Hub-App-Kommandos: `eq_copilot_status` (1-s-Poll der Sensorübersicht) ·
-  `eq_copilot_profil_binden` · `eq_copilot_aggregat_schreiben`.
+- **Betrieb seit 18.08.2026:** eigenständiger Prozess
+  `broker\target\release\eqcop-broker.exe [--bindungen <pfad>]`
+  (Standard: `%APPDATA%\evenacadia\nakama\eq-copilot-bindungen.json`).
+  Die Hub-App startet und kennt ihn nicht mehr; ihre früheren Kommandos
+  (`eq_copilot_status/profil_binden/aggregat_schreiben`) sind entfernt —
+  `broker_status()`/`profil_binden()`/`aggregat_schreiben()` sind
+  Bibliotheksfunktionen der Crate ohne UI (NAK-12); kein Autostart (NAK-13).
 
 ## 5 · Snapshots & Diagnose
 

@@ -1,5 +1,10 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> **WORKSPACE-UMZUG 18.08.2026:** Alles lebt jetzt HIER
+> (`Projekte\Nakama`) — eq-copilot/, broker/ (eigenständig,
+> eqcop-broker.exe), tools/. FL-Repo-SHAs in älteren Einträgen unten
+> gehören zur FL-Studio-Historie (bis `7964777`).
+
 > Stand: 2026-08-17, Session-Ende. Diese Datei ist der Schnellstart;
 > Tiefe in `docs/design-stand.md` und `docs/geschmacksprofil.md`.
 

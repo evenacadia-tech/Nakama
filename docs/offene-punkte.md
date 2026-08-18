@@ -21,6 +21,8 @@
 | NAK-09 | 08-15 | Kalibrier-Protokoll Runde 2 (helle Instrumente ODER EQ-Fehler-Blindtest), `eq-copilot/kalibration/`. |
 | NAK-10 | 08-17 | Broker liest das `hoermarkierung`-Heartbeat-Flag noch nicht (serde verwirft still; `protokoll.rs` MessStand ohne Feld) — Aggregat soll laut `eq-ipc.schema.json` während Markierung pausieren/markieren. Bewusst nach dem Harness-Lauf, s. HOER-MARKIERUNG-KONZEPT. |
 | NAK-11 | 08-17 | Unicorn-Studio-Weg: Offline-/Selbsthosting der Szenen-JSON braucht den „Legend"-Plan; SDK-Lizenz („nur für legitime Unicorn-Studio-Projekte") vor einem JUCE-WebView-Einsatz im ausgelieferten Plugin klären. Design-Phase (CDN-Embed) ist unkritisch. |
+| NAK-12 | 08-18 | Sensorübersicht heimatlos: Das Svelte-Panel (Profilbindung, Sensor-Status) flog mit der Broker-Herauslösung aus der Hub-App; Referenzkopie in `broker/sensoruebersicht-referenz/`. Braucht ein neues Zuhause (eigene Mini-UI, CLI oder Plugin-Editor) — bis dahin Bindungen nur per JSON-Datei + Broker-Neustart. |
+| NAK-13 | 08-18 | Broker-Autostart fehlt: Früher startete die Hub-App den Broker automatisch; jetzt muss `eqcop-broker.exe` von Hand laufen, sonst misst das Plugin nur lokal (verbindet per Backoff, sobald der Broker da ist — kein Datenverlust, aber keine Paare/Aggregate). Klären: Autostart-Eintrag, Task-Scheduler oder Start auf Zuruf. |
 
 ## Geschlossen
 

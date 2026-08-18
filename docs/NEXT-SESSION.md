@@ -10,6 +10,20 @@
 
 ## Der eine nächste Schritt
 
+**SICHT-PROBE SCHLIEREN-ABLESUNG liegt beim User (18.08.).**
+`eq-copilot/design/prisma/sicht-probe-schlieren.html` im Browser öffnen
+(Renders: `renders/schlieren/`). Der Befund wird NIE gezeichnet — sichtbar
+ist nur, wie er ein Prüffeld gerader Lichtlinien im Glasvolumen verbiegt.
+Tasten: 1/2/3 Band · F Prüffeld immer/nur bei Befund · P Prüfton ·
++/− Überhöhung · Leertaste hält die Musik an.
+Der User beurteilt: (1) formt das ein Bild / trägt die Optik,
+(2) darf das Prüffeld im gesunden Zustand dauerhaft stehen oder
+widerspricht das „leeres Glas = gesundes Band"?
+Herkunft: /diverge-duo (Claude + Codex blind, gegenseitig angegriffen);
+Details + ehrliche Grenzen in `docs/design-stand.md`.
+
+## Vorheriger Stand (P01 im Glas — Inhalt verworfen)
+
 **Flächen-Inhalt + Bündel-Inhalt IM GESPRÄCH entwickeln** (nicht bauen!
 KREATIV-SCHLEUSE: erst ausarbeiten, bis der User eine Vorstellung freigibt).
 Material-Urteil ist da (18.08.): **klar** vorn, rauchig Reserve, Frost raus

@@ -72,6 +72,30 @@ User-Hintergrund „Winter Nexus": ID `6YU0kFPu0uCBf0ZOTXOC`, JSON-Backup
 `design/unicorn/hintergrund-winter-nexus.json`. Lizenz/Legend-Frage für
 Auslieferung: NAK-11.
 
+**SICHT-PROBE 18.08.: DIE SCHLIEREN-ABLESUNG** (`eq-copilot/design/prisma/
+sicht-probe-schlieren.html`, Renders `renders/schlieren/`) — Ergebnis eines
+/diverge-duo-Laufs (Claude + Codex blind aufgefächert, gegenseitig
+angegriffen). **Der Befund wird NIE gezeichnet.** Sichtbar ist nur, wie er
+ein Prüffeld gerader Lichtlinien IM Glasvolumen verbiegt (Schlieren-
+Verfahren). Begründung: eine Resonanz ist kein Stoff, sondern eine lokale
+Änderung des Antwortverhaltens — sichtbar nur an ihrer Wirkung auf eine
+Sonde. Ablesegrammatik: betroffene Linien = fVon..fBis · Versatz in
+KAMM-EINHEITEN = Stärke (der Kamm ist zugleich das Lineal) · senkrechte
+Ausdehnung = Persistenz-Anteil · Überschuss bündelt, Fehlbetrag spreizt.
+Ablenkung = GRADIENT der Abweichung gegen die eigene Schulterlinie, deshalb
+ist die Silhouette bewusst KEINE EQ-Kurve.
+Gemessen und gesehen: Schulterlinie muss über eine OKTAVE mitteln (bei
+halber Oktave frisst die Schulter den Buckel, max. Abweichung 1,45 dB);
+Prüfton +6 dB @ 116 Hz ergibt Befund 115 Hz / 104–126 Hz / +4,6 dB /
+Persistenz 97 % und kneift den Kamm sichtbar.
+**Offen (User-Urteil):** Optik-Abnahme; darf das Prüffeld im gesunden
+Zustand dauerhaft stehen, oder widerspricht das „leeres Glas = gesundes
+Band"? **Ehrlicher Befund aus der Probe:** der Modus „Feld nur bei Befund"
+räumt das Glas NICHT frei — Musik erzeugt überall kleine Gradienten.
+**Nicht dargestellt:** Konfidenz (der Render hat ZWEI Streifen-Softboxen,
+nicht vier — die Vierer-Ablesung wäre eine Behauptung über ein Bild, das es
+nicht gibt), Bündel-Modus, Mehrfachbefunde (NAK-14).
+
 **Geschmacks-Kalibrierung (abgeschlossen, 4 Proben unter
 `design/proben/`):** P01 Perkolation ✓ abgenommen · P02 Lichtschleier ✗ ·
 P03 Tropfenklingen ✗ · P04 Interferenz ✗. Die drei Gesetze + Verschärfung

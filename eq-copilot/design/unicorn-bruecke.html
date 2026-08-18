@@ -167,10 +167,13 @@ const lerp01 = (a, b, k) => a + (b - a) * k;
    es gibt keinen globalen Zielkorridor. Die Schultern liegen eine OKTAVE
    weit weg (= 30 Bins bei M=97, eine Fläche spannt t/3); ein engeres
    Fenster mittelt den Buckel mit und löscht ihn.
-   ACHTUNG SKALA: die befund*-Werte gehen als 0–100 raus, weil Unicorn-
-   Variablen vom Typ „Percent" auf 0–100 laufen. Die älteren Musikwerte
-   (bass/mitten/…) bleiben bei 0–1, damit bestehende Szenen wie „Winter
-   Nexus" nicht kippen — ?musikSkala=100 stellt sie bei Bedarf um.        */
+   ACHTUNG SKALA (am Szenen-Export 18.08. belegt, NICHT geraten): Unicorn
+   speichert Variablen intern 0-1; 'Percent' ist reine ANZEIGE. Im Export
+   steht z. B. befundOrt defaultValue 0.5, waehrend das Panel 50 zeigt.
+   setVariable() reicht den Wert unveraendert durch (SDK v2.2.10), also
+   gehen alle befund*-Werte als 0-1 raus. Eine fruehere Fassung sendete
+   0-100 - das waere hundertfach zu gross gewesen und still danebengelegen.
+   ?musikSkala= bleibt der Schalter fuer die aelteren Musikwerte.        */
 // Eigener Parameter-Leser: PARAMS wird weiter unten deklariert (temporal
 // dead zone), und die Reihenfolge der Datei soll dafür nicht umgebaut werden.
 const PARAMS_BEF = (name, vorgabe) =>
@@ -240,8 +243,8 @@ function befundWerte(bandIdx) {
     if (abweichungBef[i] > abweichungBef[iMax]) iMax = i;
   const spitze = abweichungBef[iMax];
   const ruhe = {
-    befundOrt: 50, befundStaerke: 0, befundBreite: 30,
-    befundTiefe: 100, befundVorzeichen: 100, bandFarbe: BANDFARBEN[bandIdx],
+    befundOrt: 0.5, befundStaerke: 0, befundBreite: 0.3,
+    befundTiefe: 1, befundVorzeichen: 1, bandFarbe: BANDFARBEN[bandIdx],
   };
   if (spitze < SCHWELLE_DB) return ruhe;          // kein Befund ⇒ ruhiges Feld
   const halb = spitze * 0.5;
@@ -249,12 +252,12 @@ function befundWerte(bandIdx) {
   while (von > 0 && abweichungBef[von - 1] >= halb) von--;
   while (bis < M_BEF - 1 && abweichungBef[bis + 1] >= halb) bis++;
   return {
-    befundOrt: clamp(iMax / (M_BEF - 1) * 100, 0, 100),
+    befundOrt: clamp(iMax / (M_BEF - 1), 0, 1),
     // 6 dB Überschuss = Vollausschlag; darüber kappt es ehrlich statt zu lügen
-    befundStaerke: clamp(spitze / 6 * 100, 0, 100),
-    befundBreite: clamp((bis - von) / (M_BEF - 1) * 100 * 2.5, 5, 100),
-    befundTiefe: clamp(persistenzBef[iMax] * 100, 0, 100),
-    befundVorzeichen: 100,                        // Überschuss ⇒ bündeln
+    befundStaerke: clamp(spitze / 6, 0, 1),
+    befundBreite: clamp((bis - von) / (M_BEF - 1) * 2.5, 0.05, 1),
+    befundTiefe: clamp(persistenzBef[iMax], 0, 1),
+    befundVorzeichen: 1,                          // Überschuss ⇒ bündeln
     bandFarbe: BANDFARBEN[bandIdx],
   };
 }
@@ -275,7 +278,7 @@ function musikWerte(zeit) {
     w["band" + (b + 1)] = bereich01(b / 8, (b + 1) / 8, lage, 4);
   if (MUSIK_SKALA !== 1)
     for (const k of Object.keys(w)) if (k !== "zeit" && k !== "beat") w[k] *= MUSIK_SKALA;
-  // Befund-Regler der Schlieren-Ablesung — immer 0–100 (Unicorn „Percent").
+  // Befund-Regler der Schlieren-Ablesung - 0-1 (Unicorn speichert so).
   Object.assign(w, befundWerte(BAND));
   return w;
 }

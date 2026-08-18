@@ -74,6 +74,27 @@ der auffälligste und verlor trotzdem. Vorbehalt ernst nehmen: „zumindest
 auf den Bildern" — die endgültige Abnahme fällt am lebenden Objekt
 (drehbar, mit Daten), nicht am Standbild.
 
+## Sicht-Probe „P01 im Glasvolumen" (18.08.) — Objekt ✓, Inhalt ✗
+
+User wörtlich: **„den positiven punkt zuerst, das prisma sieht top aus.
+alles andere ist so unbrauchbar. fassen wir mal zusammen: der selbe user
+der 20 instrumentenspuren gleichzeitig komponiert blickt auf ein
+wasserfall aus farbigen pixeln und soll dann genau was daran ablesen
+können?"**
+
+Destillat — zwei getrennte Urteile:
+1. **Das Prisma-Objekt ist ABGENOMMEN** („sieht top aus") — erste
+   Optik-Abnahme des Projekts: Cycles-Glas, Dark-Field-Licht, klare
+   Anmutung tragen.
+2. **Rohe Energie-Punktwolke als DAUERINHALT ist VERWORFEN.** Der Maßstab
+   ist nicht Schönheit, sondern LESBARKEIT für einen Profi (20 Spuren
+   gleichzeitig): „Musik emittiert Teilchen" ist laut→hell in neuem
+   Gewand — Gesetz 3/3a auf die Funktion angewandt. Ein Berater zeigt
+   BEFUNDE (wenige, präzise, mit Ort/Ausdehnung/Gewicht), keine
+   Atmosphäre. P01 bleibt als ÄSTHETIK abgenommen (Punkt-Substanz,
+   Farbwelten); verworfen ist ihre Verwendung als informationslose
+   Dauerwolke.
+
 ## META-ERKENNTNIS nach vier Proben (17.08. — wichtigste Zeile des Dokuments)
 
 **Bestanden hat NUR die Übersetzung eines autorisierten menschlichen Werks

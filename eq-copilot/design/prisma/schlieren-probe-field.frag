@@ -98,15 +98,16 @@ void main() {
   float ptIdx     = floor(yy / ptSpacing);
   float distY     = abs(yy - (ptIdx + 0.5) * ptSpacing);
 
-  // Punktgroesse ABSOLUT in UV — nicht relativ zur Pixelgroesse. Die alte
-  // Fassung teilte durch fwidth(); bei kleiner Darstellung wird fwidth gross,
-  // der normierte Radius ueberall klein und der Effekt kippt in eine
-  // VOLLFLAECHE (im Editor bei 90 % Zoom live beobachtet). Genau dieser Fall
-  // ist der Ernstfall: im Plugin sitzt das Feld auf einer kleinen
-  // Prismenflaeche. fwidth dient jetzt nur noch der Kantenglaettung, damit
-  // die Punkte bei wenig Aufloesung DUENNER werden statt breiter.
-  float halbBreite = 0.00075;          // halbe Linienbreite in x-UV
-  float punktHalb  = 0.0021;           // halbe Punkthoehe in y-UV
+  // Punktgroesse: screen-relativ MIT DECKEL. Beide Reinformen sind gemessen
+  // gescheitert: rein screen-relativ (nur fwidth) kippt bei kleiner Darstellung
+  // in eine VOLLFLAECHE, rein absolut in UV wird der Punkt auf einer kleinen
+  // Flaeche kleiner als ein Pixel und VERSCHWINDET (im Prisma beobachtet).
+  // min() nimmt das Beste aus beidem: rund 1,6 Pixel gross, aber nie mehr als
+  // ein Drittel des Kamm- bzw. Punktabstands.
+  float fwX = max(fwidth(x), 1e-7);
+  float fwY = max(fwidth(uv.y), 1e-7);
+  float halbBreite = min(1.6 * fwX, 0.30 * spacing);
+  float punktHalb  = min(1.6 * fwY, 0.32 * ptSpacing);
   float r     = length(vec2(distX / halbBreite, distY / punktHalb));
   float aa    = max(fwidth(r), 1e-3);
   float punkt = 1.0 - smoothstep(1.0 - aa, 1.0 + aa, r);

@@ -160,6 +160,105 @@ function bereich01(von, bis, lage, proben) {
 }
 const lerp01 = (a, b, k) => a + (b - a) * k;
 
+/* ── BEFUND-MESSUNG für die Schlieren-Ablesung ──────────────────────────
+   Portiert aus prisma/sicht-probe-schlieren.html, damit beide Blätter
+   dieselbe Zahl zeigen. Gemessen wird wie in der echten Diagnose
+   (Diagnose.h): jede Zone gegen die log-f-Linie IHRER EIGENEN Schultern —
+   es gibt keinen globalen Zielkorridor. Die Schultern liegen eine OKTAVE
+   weit weg (= 30 Bins bei M=97, eine Fläche spannt t/3); ein engeres
+   Fenster mittelt den Buckel mit und löscht ihn.
+   ACHTUNG SKALA: die befund*-Werte gehen als 0–100 raus, weil Unicorn-
+   Variablen vom Typ „Percent" auf 0–100 laufen. Die älteren Musikwerte
+   (bass/mitten/…) bleiben bei 0–1, damit bestehende Szenen wie „Winter
+   Nexus" nicht kippen — ?musikSkala=100 stellt sie bei Bedarf um.        */
+// Eigener Parameter-Leser: PARAMS wird weiter unten deklariert (temporal
+// dead zone), und die Reihenfolge der Datei soll dafür nicht umgebaut werden.
+const PARAMS_BEF = (name, vorgabe) =>
+  new URLSearchParams(location.search).get(name) ?? vorgabe;
+// ?band=0|1|2 wählt Tiefen/Mitten/Höhen · ?musikSkala=100 stellt die alten
+// Musikwerte auf Unicorns Percent-Bereich um (Vorgabe 1 = unverändert).
+const BAND = clamp(parseInt(PARAMS_BEF("band", "0"), 10) || 0, 0, 2);
+const MUSIK_SKALA = parseFloat(PARAMS_BEF("musikSkala", "1")) || 1;
+
+const M_BEF = 97, SCHULTER_HALB = 30;
+const SCHWELLE_DB = parseFloat(PARAMS_BEF("schwelle", "2.0"));
+const TAU_PERS = 5.0;
+const spektrumBef = new Float64Array(M_BEF);
+const schulterBef = new Float64Array(M_BEF);
+const abweichungBef = new Float64Array(M_BEF);
+const steigungBef = new Float64Array(M_BEF);
+const persistenzBef = new Float64Array(M_BEF);
+const BANDFARBEN = ["E8A34C", "D465B0", "9FD3E8"];   // Tiefen · Mitten · Höhen
+
+/* Prüfton: die Songschleife ist ein SAUBERER Mix (stärkste Abweichung
+   ~2 dB). Wie der Golden-Test mit Pink Noise wird ein Testsignal ins
+   SIGNAL eingespeist; die Diagnose misst danach ganz normal. Die Tafel
+   nennt ihn — es ist kein erfundener Diagnosewert. ?pruefton=0 schaltet ab. */
+const PRUEFTON = {
+  an: PARAMS_BEF("pruefton", "1") !== "0",
+  fHz: parseFloat(PARAMS_BEF("ptonHz", "116")),
+  db: parseFloat(PARAMS_BEF("ptonDb", "6")),
+  breite: parseFloat(PARAMS_BEF("ptonBreite", "0.016")),
+};
+
+function messeBefund(zeit, bandIdx) {
+  const lage = songLage(zeit);
+  const ptonT = tForFrequency(PRUEFTON.fHz);
+  for (let i = 0; i < M_BEF; i++) {
+    const t01 = (bandIdx + i / (M_BEF - 1)) / 3;
+    spektrumBef[i] = baselineDb(t01) + musikDb(t01, lage);
+    if (PRUEFTON.an)
+      spektrumBef[i] += PRUEFTON.db * gaussian(t01, ptonT, PRUEFTON.breite)
+                      * (0.55 + 0.45 * lage.dichte);
+  }
+  for (let i = 0; i < M_BEF; i++) {
+    let summe = 0, n = 0;
+    for (let k = -SCHULTER_HALB; k <= SCHULTER_HALB; k++) {
+      summe += spektrumBef[clamp(i + k, 0, M_BEF - 1)]; n++;
+    }
+    schulterBef[i] = summe / n;
+  }
+  for (let i = 0; i < M_BEF; i++) abweichungBef[i] = spektrumBef[i] - schulterBef[i];
+  const h = 1 / (M_BEF - 1);
+  for (let i = 0; i < M_BEF; i++)
+    steigungBef[i] = (abweichungBef[clamp(i + 1, 0, M_BEF - 1)]
+                    - abweichungBef[clamp(i - 1, 0, M_BEF - 1)]) / (2 * h);
+}
+
+function persistenzSchritt(dt) {
+  // persistenzAnteil (AnalyseEngine.h:74) ist ein ANTEIL, kein Speicher —
+  // deshalb exponentiell gleitend und nie akkumulierend.
+  const k = 1 - Math.exp(-dt / TAU_PERS);
+  for (let i = 0; i < M_BEF; i++)
+    persistenzBef[i] += ((abweichungBef[i] >= SCHWELLE_DB ? 1 : 0) - persistenzBef[i]) * k;
+}
+
+/* Stärkster lokaler Überschuss über der eigenen Schulter → die fünf Regler */
+function befundWerte(bandIdx) {
+  let iMax = 0;
+  for (let i = 1; i < M_BEF; i++)
+    if (abweichungBef[i] > abweichungBef[iMax]) iMax = i;
+  const spitze = abweichungBef[iMax];
+  const ruhe = {
+    befundOrt: 50, befundStaerke: 0, befundBreite: 30,
+    befundTiefe: 100, befundVorzeichen: 100, bandFarbe: BANDFARBEN[bandIdx],
+  };
+  if (spitze < SCHWELLE_DB) return ruhe;          // kein Befund ⇒ ruhiges Feld
+  const halb = spitze * 0.5;
+  let von = iMax, bis = iMax;
+  while (von > 0 && abweichungBef[von - 1] >= halb) von--;
+  while (bis < M_BEF - 1 && abweichungBef[bis + 1] >= halb) bis++;
+  return {
+    befundOrt: clamp(iMax / (M_BEF - 1) * 100, 0, 100),
+    // 6 dB Überschuss = Vollausschlag; darüber kappt es ehrlich statt zu lügen
+    befundStaerke: clamp(spitze / 6 * 100, 0, 100),
+    befundBreite: clamp((bis - von) / (M_BEF - 1) * 100 * 2.5, 5, 100),
+    befundTiefe: clamp(persistenzBef[iMax] * 100, 0, 100),
+    befundVorzeichen: 100,                        // Überschuss ⇒ bündeln
+    bandFarbe: BANDFARBEN[bandIdx],
+  };
+}
+
 /* Der Standard-Datensatz, den die Brücke jeder Szene anbietet */
 function musikWerte(zeit) {
   const lage = songLage(zeit);
@@ -174,6 +273,10 @@ function musikWerte(zeit) {
   };
   for (let b = 0; b < 8; b++)
     w["band" + (b + 1)] = bereich01(b / 8, (b + 1) / 8, lage, 4);
+  if (MUSIK_SKALA !== 1)
+    for (const k of Object.keys(w)) if (k !== "zeit" && k !== "beat") w[k] *= MUSIK_SKALA;
+  // Befund-Regler der Schlieren-Ablesung — immer 0–100 (Unicorn „Percent").
+  Object.assign(w, befundWerte(BAND));
   return w;
 }
 
@@ -225,6 +328,9 @@ if (!PROJEKT) {
         letzter = now;
         if (laeuft && ZEIT_FREEZE === null) zeit += dt;
         const t = ZEIT_FREEZE !== null ? ZEIT_FREEZE : zeit;
+        // Befundmessung VOR musikWerte(): befundWerte() liest die Felder.
+        messeBefund(t, BAND);
+        if (laeuft) persistenzSchritt(dt);
         const werte = musikWerte(t);
         try {
           for (const n of verdrahtet) szene.setVariable(n, werte[n]);
@@ -234,6 +340,12 @@ if (!PROJEKT) {
           ? "STAND " + String(sek).padStart(2, "0") + " s"
           : String(Math.floor(sek / 60)).padStart(2, "0") + ":" + String(sek % 60).padStart(2, "0");
         requestAnimationFrame(frame);
+      }
+      // Persistenz deterministisch einschwingen, sonst zeigt der erste Frame
+      // ein Feld ohne Gedächtnis (Befundtiefe fiele fälschlich auf 0).
+      {
+        const dt = 1 / 60, bis = ZEIT_FREEZE !== null ? ZEIT_FREEZE : 1.0;
+        for (let s = 0; s * dt < bis; s++) { messeBefund(s * dt, BAND); persistenzSchritt(dt); }
       }
       requestAnimationFrame(frame);
     }).catch(err => {

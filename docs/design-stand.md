@@ -160,10 +160,18 @@ Bewegung sichtbar ist, ist ein Pixelzucken" — Bewegung war der offene Punkt.
 - **Eingebaut (Blatt + Brücke, bitgleich — befundOrt beider Seiten
   identisch verifiziert):** Sub-Bin-Interpolation (Parabel-Spitze, linear
   geschnittene Halbwertskanten, Persistenz am interpolierten Ort) und die
-  **Prüfton-Fahrt**: der deklarierte Ton entsteht bei 6 s, wandert
-  55→150 Hz (log, smoothstep 9–23 s), verschwindet ab 23 s. Statuszeile
-  nennt live Hz und EFFEKTIVE dB (db·env); `?fahrt=0` oder explizites
-  `?ptonHz=` stellt ihn still; Taste F schaltet die Fahrt. Gemessen danach:
+  **Prüfton-Fahrt**: der deklarierte Ton entsteht bei 6 s, wandert (log,
+  smoothstep 9–23 s), verschwindet ab 23 s. Statuszeile nennt live Hz und
+  EFFEKTIVE dB (db·env); `?fahrt=0` oder explizites `?ptonHz=` stellt ihn
+  still; Taste F schaltet die Fahrt. **19.08., User: „bass sieht okay aus,
+  höhen bewegt sich nicht" → Fahrt bandrelativ (Commit 168feca):** der
+  Fahrweg ist in Feld-Koordinaten definiert und gilt im aktiven Band —
+  Band 0 55→150 Hz, Band 1 ~530→1450 Hz, Band 2 ~5,2→14 kHz (vorher lag
+  der feste Hub nur in Band 0; Mitten/Höhen standen ehrlich still, weil
+  die Schleife dort nur schulterbreite Anteile hat). Bandwechsel baut die
+  Persistenz jetzt neu auf (15 s Vergangenheit deterministisch nachgerechnet
+  — vorher leuchtete der Verlauf des alten Bandes ~5 s als falsche Tiefe
+  nach). Blatt↔Brücke weiter bitgleich verifiziert. Gemessen danach:
   ort gleitet jeden Frame (~19 % eines Bins), fMax zählt kontinuierlich
   (80,5→80,8→82,7 Hz über 0,15 s); die Störung ist ein kompakter Wirbel
   (Persistenz eines Wanderers ehrlich ~23 % statt 95 %), der das Feld in

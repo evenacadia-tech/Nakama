@@ -12,10 +12,13 @@
 
 **BEWEGUNG IST GEBAUT UND GEMESSEN — die Optik-Abnahme des Users steht aus.**
 `eq-copilot/design/prisma/prisma-schlieren.html` öffnen und den User schauen
-lassen: der Prüfton FÄHRT jetzt (entsteht bei 6 s, wandert 55→150 Hz,
-verschwindet ab 23 s der Schleife) — die Störung quert als kompakter Wirbel
-in ~14 s das Feld. Sein Urteil „nur Pixelzucken" (18.08.) ist damit zu
-beantworten; ob es GENÜGT, entscheidet er am lebenden Blatt.
+lassen: der Prüfton FÄHRT (entsteht bei 6 s, verschwindet ab 23 s der
+Schleife) — die Störung quert als kompakter Wirbel in ~14 s das Feld.
+Erstes Teil-Urteil 19.08.: „bass sieht okay aus, höhen bewegt sich nicht"
+→ Ursache war der feste Hub 55→150 Hz (lag nur in Band 0); seit Commit
+168feca ist die Fahrt BANDRELATIV (Band 1 ~530→1450 Hz, Band 2
+~5,2→14 kHz, gemessen: Höhen-Befund 7,6 kHz wandert). Urteil zu
+Mitten/Höhen und die Gesamt-Abnahme: offen.
 
 Was die Messung ergab (Commit 7148248, Details `docs/design-stand.md`):
 

@@ -138,7 +138,14 @@ Abnahme am Export (1440x900, Line Count 24, Zone Width 30, Nennabstand ~79 px):
 - **Mittellinie steht** (719,5 bei Bildmitte 720,0) — der Beweis, dass der Shader
   die ABLEITUNG der Abweichung rechnet und nicht die Glocke selbst.
 
-OFFEN: (a) Farbe — gemessen rgb(189,169,121) statt E8A34C, und der Farbton
+STAND 18.08. abends: Das Feld liegt IM GLAS
+(`prisma/prisma-schlieren.html`, WebGL auf einer 3D-projizierten Ebene,
+Beschnitt durch den Glaspass). Farbe abgenommen (uLineColor = E8A34C, am
+Szenen-Export belegt). NEUES USER-URTEIL: „das einzige was an Animation oder
+Bewegung sichtbar ist, ist ein Pixelzucken" — Bewegung ist der offene Punkt,
+Diagnose und Reihenfolge in `docs/NEXT-SESSION.md`.
+
+FRUEHER OFFEN: (a) Farbe — gemessen rgb(189,169,121) statt E8A34C, und der Farbton
 wandert mit der Helligkeit (bei Alpha 128 → rgb(255,255,241)); Ursache noch
 nicht getrennt (Adjust-Ebene liegt drueber). (b) SUBSTANZ — es sind weiterhin
 duenne Striche; das User-Urteil „trostlos" ist damit noch nicht beantwortet.

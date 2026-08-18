@@ -10,17 +10,46 @@
 
 ## Der eine nächste Schritt
 
-**SICHT-PROBE SCHLIEREN-ABLESUNG liegt beim User (18.08.).**
-`eq-copilot/design/prisma/sicht-probe-schlieren.html` im Browser öffnen
-(Renders: `renders/schlieren/`). Der Befund wird NIE gezeichnet — sichtbar
-ist nur, wie er ein Prüffeld gerader Lichtlinien im Glasvolumen verbiegt.
-Tasten: 1/2/3 Band · F Prüffeld immer/nur bei Befund · P Prüfton ·
-+/− Überhöhung · Leertaste hält die Musik an.
-Der User beurteilt: (1) formt das ein Bild / trägt die Optik,
-(2) darf das Prüffeld im gesunden Zustand dauerhaft stehen oder
-widerspricht das „leeres Glas = gesundes Band"?
-Herkunft: /diverge-duo (Claude + Codex blind, gegenseitig angegriffen);
-Details + ehrliche Grenzen in `docs/design-stand.md`.
+**DAS FELD BEWEGT SICH NICHT — nur Pixelzucken (User-Urteil 18.08., offen).**
+`eq-copilot/design/prisma/prisma-schlieren.html` steht und zeigt die
+vollständige Idee: abgenommenes Cycles-Prisma, Schlieren-Prüffeld im
+Glasvolumen, Befund nie gezeichnet, Ablesung aus echten Zahlen. Was fehlt,
+ist sichtbare BEWEGUNG. Zwei getrennte Ursachen, beide unbestätigt:
+
+1. **Flimmern statt Struktur (Verdacht, am Code hergeleitet, NICHT gemessen):**
+   `lineIdx` wird aus der VERSCHOBENEN Koordinate berechnet
+   (`floor(x / spacing + 0.5)`). Ändert sich die Ablenkung, kippt ein Fragment
+   auf die Nachbarlinie, damit springen `phase` und `rnd` — die Punkte poppen.
+   Fix-Richtung: Linien-IDENTITÄT aus der UNVERSCHOBENEN Koordinate nehmen und
+   den Kamm aus den verschobenen Linienmitten aufbauen. Dann wandert die
+   Körnung MIT der Linie, wie eine Gravur im Glas es tun müsste.
+2. **Es passiert schlicht zu wenig:** Der Prüfton steht konstant bei 116 Hz,
+   der Befund ändert sich über die 30 s kaum. Ohne Prüfton liefert die
+   Songschleife < 2 dB und das Feld steht völlig still. Für eine ehrliche
+   Bewegungsprobe braucht es einen Befund, der über die Zeit WANDERT und
+   verschwindet — sonst ist Stillstand die korrekte Anzeige.
+
+Erst 1 messen (Einzelbilder zweier aufeinanderfolgender Frames vergleichen),
+dann 2 entscheiden. Nicht beides gleichzeitig ändern.
+
+**KREATIV-SCHLEUSE:** Der Marker `.claude/kreativ-freigabe.md` ist vom
+18.08. 14:08 und gilt 24 h — für Design-Arbeit danach neu schreiben, mit dem,
+was der User freigibt.
+
+## Was steht (18.08., alles gemessen und committet)
+
+- **Instrument kalibriert:** Deflection 100 → Lücke 195 %, engster Abstand
+  77 %; linear; Spiegelsymmetrie 0,0 px; Mittellinie steht (719,5 bei 720,0).
+- **Shader versioniert:** `prisma/schlieren-probe-field.frag` — ab jetzt die
+  Quelle, Unicorn ist nur die Anzeige. Faktor 0,76 IST die Kalibrierung.
+- **Punktgröße** `min(1,6·fwidth, 0,30·Abstand)` — beide Reinformen sind
+  gescheitert (Vollfläche bei klein, unsichtbar bei 4K bzw. auf der
+  Prismenfläche).
+- **Brücke** sendet 0–1 (am Szenen-Export belegt, nicht 0–100),
+  `?projekt=ilYX64xlvU811imBKfxV&band=0`.
+- **Unicorn-Fallen dokumentiert** in `docs/design-stand.md`: Regler von Hand
+  verschieben löst die Bindung; falsch gebundene Variable ist still.
+- Szenen-Sicherung: `eq-copilot/design/unicorn/schlieren-probe-field-szene.json`
 
 ## Vorheriger Stand (P01 im Glas — Inhalt verworfen)
 

@@ -10,27 +10,27 @@
 
 ## Der eine nächste Schritt
 
-**DAS FELD BEWEGT SICH NICHT — nur Pixelzucken (User-Urteil 18.08., offen).**
-`eq-copilot/design/prisma/prisma-schlieren.html` steht und zeigt die
-vollständige Idee: abgenommenes Cycles-Prisma, Schlieren-Prüffeld im
-Glasvolumen, Befund nie gezeichnet, Ablesung aus echten Zahlen. Was fehlt,
-ist sichtbare BEWEGUNG. Zwei getrennte Ursachen, beide unbestätigt:
+**BEWEGUNG IST GEBAUT UND GEMESSEN — die Optik-Abnahme des Users steht aus.**
+`eq-copilot/design/prisma/prisma-schlieren.html` öffnen und den User schauen
+lassen: der Prüfton FÄHRT jetzt (entsteht bei 6 s, wandert 55→150 Hz,
+verschwindet ab 23 s der Schleife) — die Störung quert als kompakter Wirbel
+in ~14 s das Feld. Sein Urteil „nur Pixelzucken" (18.08.) ist damit zu
+beantworten; ob es GENÜGT, entscheidet er am lebenden Blatt.
 
-1. **Flimmern statt Struktur (Verdacht, am Code hergeleitet, NICHT gemessen):**
-   `lineIdx` wird aus der VERSCHOBENEN Koordinate berechnet
-   (`floor(x / spacing + 0.5)`). Ändert sich die Ablenkung, kippt ein Fragment
-   auf die Nachbarlinie, damit springen `phase` und `rnd` — die Punkte poppen.
-   Fix-Richtung: Linien-IDENTITÄT aus der UNVERSCHOBENEN Koordinate nehmen und
-   den Kamm aus den verschobenen Linienmitten aufbauen. Dann wandert die
-   Körnung MIT der Linie, wie eine Gravur im Glas es tun müsste.
-2. **Es passiert schlicht zu wenig:** Der Prüfton steht konstant bei 116 Hz,
-   der Befund ändert sich über die 30 s kaum. Ohne Prüfton liefert die
-   Songschleife < 2 dB und das Feld steht völlig still. Für eine ehrliche
-   Bewegungsprobe braucht es einen Befund, der über die Zeit WANDERT und
-   verschwindet — sonst ist Stillstand die korrekte Anzeige.
+Was die Messung ergab (Commit 7148248, Details `docs/design-stand.md`):
 
-Erst 1 messen (Einzelbilder zweier aufeinanderfolgender Frames vergleichen),
-dann 2 entscheiden. Nicht beides gleichzeitig ändern.
+1. **lineIdx-Verdacht WIDERLEGT** — gemessen (1/60-s-Paar: nur
+   Subpixel-Schimmer, 1 Pixel Vollausschlag; Noise-Floor exakt 0) und aus
+   dem Code bewiesen (sichtbare Punkte enden bei 0,30·spacing, Identität
+   kippt erst bei 0,5·spacing). Den notierten Shader-Umbau NICHT machen.
+2. **Wahre Ursachen behoben:** stehender Prüfton (→ Fahrt, `?fahrt=0` oder
+   `?ptonHz=` stellt still, Taste F) und Bin-Treppe (→ Sub-Bin-Interpolation
+   in Blatt UND Brücke, befundOrt beider Seiten bitgleich verifiziert).
+
+Offen daran: die Persistenz eines Wanderers ist ehrlich niedrig (~23 %) —
+der Wirbel ist deshalb kompakt statt feldhoch. Wenn der User mehr
+Vertikale will, ist das eine Datenfrage (langsamere Fahrt, längerer
+Aufenthalt), keine Zeichenfrage.
 
 **KREATIV-SCHLEUSE:** Der Marker `.claude/kreativ-freigabe.md` ist vom
 18.08. 14:08 und gilt 24 h — für Design-Arbeit danach neu schreiben, mit dem,

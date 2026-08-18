@@ -141,9 +141,33 @@ Abnahme am Export (1440x900, Line Count 24, Zone Width 30, Nennabstand ~79 px):
 STAND 18.08. abends: Das Feld liegt IM GLAS
 (`prisma/prisma-schlieren.html`, WebGL auf einer 3D-projizierten Ebene,
 Beschnitt durch den Glaspass). Farbe abgenommen (uLineColor = E8A34C, am
-Szenen-Export belegt). NEUES USER-URTEIL: „das einzige was an Animation oder
-Bewegung sichtbar ist, ist ein Pixelzucken" — Bewegung ist der offene Punkt,
-Diagnose und Reihenfolge in `docs/NEXT-SESSION.md`.
+Szenen-Export belegt). USER-URTEIL: „das einzige was an Animation oder
+Bewegung sichtbar ist, ist ein Pixelzucken" — Bewegung war der offene Punkt.
+
+**BEWEGUNGS-DIAGNOSE (18.08. spät, gemessen — Commit 7148248):**
+- **lineIdx-Verdacht WIDERLEGT** (Flimmern durch Linien-Identität aus der
+  verschobenen Koordinate): Frame-Paar 1/60 s bei Δstaerke 0,032 → 5330
+  Pixel Subpixel-Schimmer, exakt 1 Pixel Vollausschlag; Noise-Floor
+  (identische Zeit zweimal) exakt 0. Aus dem Code zusätzlich hart bewiesen:
+  ein Punkt leuchtet nur bei distX < 0,30·spacing (Deckel in halbBreite),
+  lineIdx kippt erst bei 0,5·spacing — ein SICHTBARER Punkt kann seine
+  Identität nicht wechseln. Der notierte Fix (Kamm aus verschobenen
+  Linienmitten) ist unnötig; NICHT umbauen.
+- **Wahre Ursachen:** (a) Der Prüfton STAND bei 116 Hz — Stillstand war die
+  korrekte Anzeige; (b) **Bin-Treppe:** ort/breite/fVon/fBis waren auf
+  1/96-Bins gerastert (ort in Folgeframes identisch trotz wachsender
+  Stärke) — echte Wanderung wäre in ~2-px-Stufen gesprungen.
+- **Eingebaut (Blatt + Brücke, bitgleich — befundOrt beider Seiten
+  identisch verifiziert):** Sub-Bin-Interpolation (Parabel-Spitze, linear
+  geschnittene Halbwertskanten, Persistenz am interpolierten Ort) und die
+  **Prüfton-Fahrt**: der deklarierte Ton entsteht bei 6 s, wandert
+  55→150 Hz (log, smoothstep 9–23 s), verschwindet ab 23 s. Statuszeile
+  nennt live Hz und EFFEKTIVE dB (db·env); `?fahrt=0` oder explizites
+  `?ptonHz=` stellt ihn still; Taste F schaltet die Fahrt. Gemessen danach:
+  ort gleitet jeden Frame (~19 % eines Bins), fMax zählt kontinuierlich
+  (80,5→80,8→82,7 Hz über 0,15 s); die Störung ist ein kompakter Wirbel
+  (Persistenz eines Wanderers ehrlich ~23 % statt 95 %), der das Feld in
+  ~14 s quert. **Optik-Abnahme am lebenden Blatt: offen (User).**
 
 FRUEHER OFFEN: (a) Farbe — gemessen rgb(189,169,121) statt E8A34C, und der Farbton
 wandert mit der Helligkeit (bei Alpha 128 → rgb(255,255,241)); Ursache noch

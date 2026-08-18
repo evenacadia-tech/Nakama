@@ -196,22 +196,40 @@ const BANDFARBEN = ["E8A34C", "D465B0", "9FD3E8"];   // Tiefen · Mitten · Höh
 /* Prüfton: die Songschleife ist ein SAUBERER Mix (stärkste Abweichung
    ~2 dB). Wie der Golden-Test mit Pink Noise wird ein Testsignal ins
    SIGNAL eingespeist; die Diagnose misst danach ganz normal. Die Tafel
-   nennt ihn — es ist kein erfundener Diagnosewert. ?pruefton=0 schaltet ab. */
+   nennt ihn — es ist kein erfundener Diagnosewert. ?pruefton=0 schaltet ab.
+   Seit 18.08. FÄHRT er per Vorgabe (entsteht bei 6 s, wandert 55→150 Hz,
+   verschwindet ab 23 s) — gemessen war mit stehendem Ton Stillstand die
+   korrekte Anzeige; Bewegung braucht einen Befund, der wandert. Identisch
+   in prisma/prisma-schlieren.html. ?fahrt=0 stellt ihn still auf ptonHz. */
 const PRUEFTON = {
   an: PARAMS_BEF("pruefton", "1") !== "0",
-  fHz: parseFloat(PARAMS_BEF("ptonHz", "116")),
-  db: parseFloat(PARAMS_BEF("ptonDb", "6")),
-  breite: parseFloat(PARAMS_BEF("ptonBreite", "0.016")),
+  // Wer ?ptonHz= explizit setzt, will einen STEHENDEN Ton — sonst wäre der
+  // dokumentierte Regler still wirkungslos (die Unicorn-Falle, nur hier).
+  fahrt: PARAMS_BEF("fahrt", PARAMS_BEF("ptonHz", null) !== null ? "0" : "1") !== "0",
+  // NaN-Riegel: "?ptonHz=" (leer) würde als NaN durch den ganzen Messpfad
+  // laufen und am Schwellenvergleich vorbeirutschen (NaN < x ist false).
+  fHz: (v => Number.isFinite(v) ? v : 116)(parseFloat(PARAMS_BEF("ptonHz", "116"))),
+  db: (v => Number.isFinite(v) ? v : 6)(parseFloat(PARAMS_BEF("ptonDb", "6"))),
+  breite: (v => Number.isFinite(v) ? v : 0.016)(parseFloat(PARAMS_BEF("ptonBreite", "0.016"))),
 };
+function prueftonLage(lt) {
+  const env = smoothstep(6, 9, lt) * (1 - smoothstep(23, 26, lt));
+  const u = smoothstep(9, 23, lt);
+  return { fHz: 55 * Math.pow(150 / 55, u), env };
+}
 
 function messeBefund(zeit, bandIdx) {
   const lage = songLage(zeit);
-  const ptonT = tForFrequency(PRUEFTON.fHz);
+  let ptonT = tForFrequency(PRUEFTON.fHz), ptonEnv = 1;
+  if (PRUEFTON.fahrt) {
+    const fahrt = prueftonLage(lage.lt);
+    ptonT = tForFrequency(fahrt.fHz); ptonEnv = fahrt.env;
+  }
   for (let i = 0; i < M_BEF; i++) {
     const t01 = (bandIdx + i / (M_BEF - 1)) / 3;
     spektrumBef[i] = baselineDb(t01) + musikDb(t01, lage);
     if (PRUEFTON.an)
-      spektrumBef[i] += PRUEFTON.db * gaussian(t01, ptonT, PRUEFTON.breite)
+      spektrumBef[i] += PRUEFTON.db * ptonEnv * gaussian(t01, ptonT, PRUEFTON.breite)
                       * (0.55 + 0.45 * lage.dichte);
   }
   for (let i = 0; i < M_BEF; i++) {
@@ -247,16 +265,39 @@ function befundWerte(bandIdx) {
     befundTiefe: 1, befundVorzeichen: 1, bandFarbe: BANDFARBEN[bandIdx],
   };
   if (spitze < SCHWELLE_DB) return ruhe;          // kein Befund ⇒ ruhiges Feld
-  const halb = spitze * 0.5;
+  // Sub-Bin-Spitze (Parabel) + linear geschnittene Halbwertskanten — ohne
+  // sie rastern Ort und Breite auf 1/96-Stufen und jede echte Wanderung
+  // springt in Treppen statt zu gleiten. Identisch in prisma-schlieren.html.
+  let p = 0;
+  if (iMax > 0 && iMax < M_BEF - 1) {
+    const ym = abweichungBef[iMax-1], y0 = abweichungBef[iMax], yp = abweichungBef[iMax+1];
+    const nenner = ym - 2*y0 + yp;
+    if (Math.abs(nenner) > 1e-9) p = clamp(0.5 * (ym - yp) / nenner, -0.5, 0.5);
+  }
+  const spitzeI = iMax > 0 && iMax < M_BEF - 1
+    ? spitze - 0.25 * (abweichungBef[iMax-1] - abweichungBef[iMax+1]) * p
+    : spitze;
+  const halb = spitzeI * 0.5;
   let von = iMax, bis = iMax;
   while (von > 0 && abweichungBef[von - 1] >= halb) von--;
   while (bis < M_BEF - 1 && abweichungBef[bis + 1] >= halb) bis++;
+  let vonF = von, bisF = bis;
+  if (von > 0) {
+    const d = abweichungBef[von] - abweichungBef[von - 1];
+    if (d > 1e-9) vonF = von - 1 + (halb - abweichungBef[von - 1]) / d;
+  }
+  if (bis < M_BEF - 1) {
+    const d = abweichungBef[bis] - abweichungBef[bis + 1];
+    if (d > 1e-9) bisF = bis + (abweichungBef[bis] - halb) / d;
+  }
+  const iN = clamp(iMax + Math.sign(p), 0, M_BEF - 1);
+  const tiefeI = persistenzBef[iMax] * (1 - Math.abs(p)) + persistenzBef[iN] * Math.abs(p);
   return {
-    befundOrt: clamp(iMax / (M_BEF - 1), 0, 1),
+    befundOrt: clamp((iMax + p) / (M_BEF - 1), 0, 1),
     // 6 dB Überschuss = Vollausschlag; darüber kappt es ehrlich statt zu lügen
-    befundStaerke: clamp(spitze / 6, 0, 1),
-    befundBreite: clamp((bis - von) / (M_BEF - 1) * 2.5, 0.05, 1),
-    befundTiefe: clamp(persistenzBef[iMax], 0, 1),
+    befundStaerke: clamp(spitzeI / 6, 0, 1),
+    befundBreite: clamp((bisF - vonF) / (M_BEF - 1) * 2.5, 0.05, 1),
+    befundTiefe: clamp(tiefeI, 0, 1),
     befundVorzeichen: 1,                          // Überschuss ⇒ bündeln
     bandFarbe: BANDFARBEN[bandIdx],
   };
@@ -373,6 +414,13 @@ function zeigeTafel(vorhanden, verdrahtet) {
   }
   const alle = Object.keys(musikWerte(0));
   let html = "<h2>VERDRAHTUNG</h2>";
+  html += PRUEFTON.an
+    ? "Prüfton +" + PRUEFTON.db.toFixed(0) + " dB eingespeist"
+      + (PRUEFTON.fahrt
+          ? ", fährt 55→150 Hz über die Schleife (<code>?fahrt=0</code> stellt still)"
+          : " @ " + Math.round(PRUEFTON.fHz) + " Hz, stehend")
+      + " — <code>?pruefton=0</code> schaltet ab.<br><br>"
+    : "Ohne Prüfton — die Schleife ist ein sauberer Mix.<br><br>";
   if (!vorhanden.length) {
     html += "Die Szene meldet keine Variablen — die Standardnamen werden "
       + "blind gesetzt (wirkt erst, wenn du sie in Unicorn anlegst). "

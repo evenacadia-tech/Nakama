@@ -22,11 +22,15 @@
 
   Daten: die etablierte 30-s-Songschleife, gemessen gegen die EIGENE
   Schulterlinie (eine Oktave). PRUEFTON deklariert und in der Statuszeile
-  benannt — die Schleife ist ein sauberer Mix.
+  benannt — die Schleife ist ein sauberer Mix. Seit 18.08. faehrt der
+  Prueftton per Vorgabe (entsteht bei 6 s, wandert 55->150 Hz, verschwindet
+  ab 23 s): GEMESSEN war mit stehendem Ton Stillstand die korrekte Anzeige
+  (ort in Folgeframes identisch, nur Subpixel-Schimmer aus dem Kick-Atmen).
+  Bewegung braucht einen Befund, der wandert. ?fahrt=0 stellt ihn still.
 
   ZIEHEN dreht · 1/2/3 waehlt das Band · LEERTASTE haelt die Musik an ·
-  P schaltet den Prueftton · +/- ueberhoeht zur Beurteilung ·
-  ?winkel= ?zeit= frieren ein · ?kamm= ?tiefe= ?koernung=
+  P schaltet den Prueftton · F seine Fahrt · +/- ueberhoeht zur Beurteilung ·
+  ?winkel= ?zeit= frieren ein · ?kamm= ?tiefe= ?koernung= ?fahrt=0
 -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -72,7 +76,7 @@
     <span class="band" data-band="2">HÖHEN</span>
   </div>
   <div id="ablesung"></div>
-  <div id="hinweis">ZIEHEN DREHT · 1/2/3 WÄHLT DAS BAND · LEERTASTE HÄLT DIE MUSIK AN · P SCHALTET DEN PRÜFTON · +/− ÜBERHÖHT</div>
+  <div id="hinweis">ZIEHEN DREHT · 1/2/3 WÄHLT DAS BAND · LEERTASTE HÄLT DIE MUSIK AN · P SCHALTET DEN PRÜFTON · F SEINE FAHRT · +/− ÜBERHÖHT</div>
   <div id="zaehler"></div>
 </div>
 
@@ -206,18 +210,41 @@ const spektrum = new Float64Array(M), schulter = new Float64Array(M);
 const abweichung = new Float64Array(M), persistenz = new Float64Array(M);
 let pruefton = {
   an: (PARAMS.get("pruefton") ?? "1") !== "0",
-  fHz: parseFloat(PARAMS.get("ptonHz") ?? "116"),
-  db: parseFloat(PARAMS.get("ptonDb") ?? "6"),
-  breite: parseFloat(PARAMS.get("ptonBreite") ?? "0.016"),
+  // Wer ?ptonHz= explizit setzt, will einen STEHENDEN Ton — sonst wäre der
+  // dokumentierte Regler still wirkungslos (die Unicorn-Falle, nur hier).
+  fahrt: (PARAMS.get("fahrt") ?? (PARAMS.has("ptonHz") ? "0" : "1")) !== "0",
+  // NaN-Riegel: "?ptonHz=" (leer) würde als NaN durch den ganzen Messpfad
+  // laufen und am Schwellenvergleich vorbeirutschen (NaN < x ist false).
+  fHz: (v => Number.isFinite(v) ? v : 116)(parseFloat(PARAMS.get("ptonHz") ?? "116")),
+  db: (v => Number.isFinite(v) ? v : 6)(parseFloat(PARAMS.get("ptonDb") ?? "6")),
+  breite: (v => Number.isFinite(v) ? v : 0.016)(parseFloat(PARAMS.get("ptonBreite") ?? "0.016")),
+  liveHz: 116, liveEnv: 1,        // was die Statuszeile diese Runde benennt
 };
+// Prüfton-Fahrt: der eingespeiste Ton STEHT nicht mehr — er entsteht, wandert
+// eine gute Oktave nach oben und verschwindet, synchron zur Schleife. Der
+// Hub 55→150 Hz bleibt in Band 0 und quert das Prüffeld von links der Mitte
+// bis an den rechten Rand. Alles läuft durch denselben Messpfad — die
+// Anzeige bleibt eine Ablesung, nie eine Behauptung.
+function prueftonLage(lt) {
+  const env = smoothstep(6, 9, lt) * (1 - smoothstep(23, 26, lt));
+  const u = smoothstep(9, 23, lt);
+  return { fHz: 55 * Math.pow(150 / 55, u), env };
+}
 function messe(zeit, bandIdx) {
   const lage = songLage(zeit);
-  const ptonT = tForFrequency(pruefton.fHz);
+  let ptonT = tForFrequency(pruefton.fHz), ptonEnv = 1;
+  if (pruefton.fahrt) {
+    const fahrt = prueftonLage(lage.lt);
+    ptonT = tForFrequency(fahrt.fHz); ptonEnv = fahrt.env;
+    pruefton.liveHz = fahrt.fHz; pruefton.liveEnv = fahrt.env;
+  } else {
+    pruefton.liveHz = pruefton.fHz; pruefton.liveEnv = 1;
+  }
   for (let i = 0; i < M; i++) {
     const t01 = (bandIdx + i / (M - 1)) / 3;
     spektrum[i] = baselineDb(t01) + musikDb(t01, lage);
     if (pruefton.an)
-      spektrum[i] += pruefton.db * gaussian(t01, ptonT, pruefton.breite)
+      spektrum[i] += pruefton.db * ptonEnv * gaussian(t01, ptonT, pruefton.breite)
                    * (0.55 + 0.45 * lage.dichte);
   }
   for (let i = 0; i < M; i++) {
@@ -238,19 +265,46 @@ function befundSuchen(bandIdx) {
   for (let i = 1; i < M; i++) if (abweichung[i] > abweichung[iMax]) iMax = i;
   const spitze = abweichung[iMax];
   if (spitze < SCHWELLE_DB) { befund = null; return; }
-  const halb = spitze * 0.5;
+  // Sub-Bin-Spitze (Parabel durch die drei Bins um das Maximum). Ohne sie ist
+  // ort auf 1/96-Stufen gerastert — jede echte Wanderung SPRINGT dann in
+  // ~2-px-Treppen statt zu gleiten (gemessen 18.08.: ort in zwei Folgeframes
+  // identisch trotz wachsender Staerke).
+  let p = 0;
+  if (iMax > 0 && iMax < M - 1) {
+    const ym = abweichung[iMax-1], y0 = abweichung[iMax], yp = abweichung[iMax+1];
+    const nenner = ym - 2*y0 + yp;
+    if (Math.abs(nenner) > 1e-9) p = clamp(0.5 * (ym - yp) / nenner, -0.5, 0.5);
+  }
+  const spitzeI = iMax > 0 && iMax < M - 1
+    ? spitze - 0.25 * (abweichung[iMax-1] - abweichung[iMax+1]) * p
+    : spitze;
+  // Halbwertskanten linear zwischen den Bins geschnitten — sonst rastert
+  // auch die Breite und fVon/fBis springen binweise.
+  const halb = spitzeI * 0.5;
   let von = iMax, bis = iMax;
   while (von > 0 && abweichung[von-1] >= halb) von--;
   while (bis < M-1 && abweichung[bis+1] >= halb) bis++;
+  let vonF = von, bisF = bis;
+  if (von > 0) {
+    const d = abweichung[von] - abweichung[von-1];
+    if (d > 1e-9) vonF = von - 1 + (halb - abweichung[von-1]) / d;
+  }
+  if (bis < M-1) {
+    const d = abweichung[bis] - abweichung[bis+1];
+    if (d > 1e-9) bisF = bis + (abweichung[bis] - halb) / d;
+  }
+  // Persistenz am interpolierten Ort zwischen den Bins gemittelt.
+  const iN = clamp(iMax + Math.sign(p), 0, M - 1);
+  const tiefeI = persistenz[iMax] * (1 - Math.abs(p)) + persistenz[iN] * Math.abs(p);
   befund = {
-    ort: iMax / (M - 1),
-    staerke: clamp(spitze / 6, 0, 1),
-    breite: clamp((bis - von) / (M - 1) * 2.5, 0.05, 1),
-    tiefe: clamp(persistenz[iMax], 0, 1),
-    fVon: frequencyForT((bandIdx + von/(M-1))/3),
-    fBis: frequencyForT((bandIdx + bis/(M-1))/3),
-    fMax: frequencyForT((bandIdx + iMax/(M-1))/3),
-    db: spitze,
+    ort: (iMax + p) / (M - 1),
+    staerke: clamp(spitzeI / 6, 0, 1),
+    breite: clamp((bisF - vonF) / (M - 1) * 2.5, 0.05, 1),
+    tiefe: clamp(tiefeI, 0, 1),
+    fVon: frequencyForT((bandIdx + vonF/(M-1))/3),
+    fBis: frequencyForT((bandIdx + bisF/(M-1))/3),
+    fMax: frequencyForT((bandIdx + (iMax + p)/(M-1))/3),
+    db: spitzeI,
   };
 }
 
@@ -534,9 +588,16 @@ function tick() {
   document.getElementById("zaehler").textContent =
     String(Math.floor(sZ/60)).padStart(2,"0") + ":" + String(sZ%60).padStart(2,"0")
     + " · ÜBERHÖHUNG ×" + ueberhoehung.toFixed(1).replace(".", ",")
-    + (pruefton.an ? " · PRÜFTON +" + pruefton.db.toFixed(0) + " dB @ "
-                     + Math.round(pruefton.fHz) + " Hz EINGESPEIST"
-                   : " · OHNE PRÜFTON (SAUBERER MIX)");
+    + (!pruefton.an ? " · OHNE PRÜFTON (SAUBERER MIX)"
+      : pruefton.fahrt
+        ? (pruefton.liveEnv >= 0.1
+            // effektive dB (db*env) — beim Ein-/Ausblenden nie mehr behaupten
+            // als eingespeist ist
+            ? " · PRÜFTON WANDERT · +" + (pruefton.db * pruefton.liveEnv).toFixed(0)
+              + " dB @ " + Math.round(pruefton.liveHz) + " Hz EINGESPEIST"
+            : " · PRÜFTON WANDERT · GERADE STILL (SAUBERER MIX)")
+        : " · PRÜFTON +" + pruefton.db.toFixed(0) + " dB @ "
+          + Math.round(pruefton.fHz) + " Hz EINGESPEIST");
 
   if (!zieht && !eingefroren) {
     if (zielRuhe === null && Math.abs(tempo) > 0.05) { winkel += tempo; tempo *= 0.94; }
@@ -601,6 +662,7 @@ addEventListener("keydown", ev => {
     const dt = 1/60, b = band(winkel);
     for (let s = 0; s < 240; s++) { messe(songZeit + s*dt, b); persistenzSchritt(dt); }
   }
+  if (ev.key === "f" || ev.key === "F") pruefton.fahrt = !pruefton.fahrt;
   if (ev.key === "+") ueberhoehung = Math.min(6, ueberhoehung + 0.5);
   if (ev.key === "-") ueberhoehung = Math.max(0.5, ueberhoehung - 0.5);
 });

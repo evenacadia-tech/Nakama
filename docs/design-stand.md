@@ -79,9 +79,22 @@ sieht schlicht kaputt aus. Deshalb strikt trennen: datengetriebene Regler
 (`befundOrt`/`befundStaerke`/`befundBreite`/`befundTiefe`/`befundVorzeichen`/
 `bandFarbe`) werden NUR über die Variable verändert, nie am Regler;
 Design-Konstanten (Line Count, Grain, Speed, Adjust-Ebene) nur am Regler,
-ohne Bindung. Passend dazu: `setVariable()` wirft auch bei unbekanntem Namen
-keinen Fehler (im SDK-Bundle v2.2.10 nachgesehen) — Fehlverdrahtung ist
-IMMER still.
+ohne Bindung. Fehlerbilder unterscheiden sich (SDK v2.2.10 gelesen):
+ein unbekannter Variablen-NAME ist still (`setVariable()` wirft nicht, es
+liefert nur eine „Variable anlegen"-URL zurueck), eine kaputte BINDUNG dagegen
+warnt in der Konsole („Unable to apply Unicorn Studio variable binding …").
+Eine an den FALSCHEN Regler gebundene Variable ist wieder still — genau der
+Fall, der 18.08. Zeit gekostet hat (`befundStaerke` hing an *Probe Center*
+statt an *Deflection*).
+
+**Wertsemantik geklaert (SDK v2.2.10):** `applyBinding()` schreibt per
+`setRuntimeOverride`/`setPropertySource` — die Variable ERSETZT den
+Reglerwert, sie skaliert ihn nicht; der Ausgangswert des Reglers ist nach
+dem Binden bedeutungslos. Die Umrechnung passiert nur fuer `color` (Hex mit
+oder ohne `#`, 3/6/8-stellig, → Vec3 0–1); jeder andere Typ wird UNVERAENDERT
+durchgereicht — es gibt KEINE Prozent-Umrechnung zur Laufzeit. Der
+Variablentyp „Percent" ist reine Editor-Kosmetik. Gilt fuer die Laufzeit
+(Embed); die Editor-Vorschau ist anderer Code und ungeprueft.
 
 **SICHT-PROBE 18.08.: DIE SCHLIEREN-ABLESUNG** (`eq-copilot/design/prisma/
 sicht-probe-schlieren.html`, Renders `renders/schlieren/`) — Ergebnis eines

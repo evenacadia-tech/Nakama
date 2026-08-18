@@ -72,6 +72,21 @@ User-Hintergrund „Winter Nexus": ID `6YU0kFPu0uCBf0ZOTXOC`, JSON-Backup
 `design/unicorn/hintergrund-winter-nexus.json`. Lizenz/Legend-Frage für
 Auslieferung: NAK-11.
 
+**EBENE 0 LIVE (19.08., User: „mach das als hintergrund"):** Aktueller
+Hintergrund der Aufzeichnung ist **„Winter Nexus (Remix) 3"**, ID
+`DAGhm8NIQHdX9GhNYmP9` (Backup
+`design/unicorn/hintergrund-winter-nexus-remix3.json`; reine Kunst-Szene,
+keine Variablen). Er liegt live und vollflächig als Ebene 0 HINTER
+`prisma/prisma-schlieren.html` (Bühne) und hinter der Brücke — per
+`UnicornStudio.addScene({elementId, projectId})`, bewusst NACH `init()`,
+damit `szenen[0]` die Hauptszene bleibt (API im UMD v2.2.10 verifiziert;
+addScene läuft auch standalone, am Blatt gesehen). Offline-sicher: CDN-
+oder Szenen-Fehler werden verschluckt, der dunkle Grund bleibt.
+`?hintergrund=0` schaltet ab — **für deterministische Messläufe Pflicht**
+(der Hintergrund animiert frei; Element-Screenshots von `#bild` bleiben
+davon unberührt). Hinter der Drei-String-Szene wird Ebene 0 erst sichtbar,
+wenn deren schwarzer Gradient-Layer in Unicorn unsichtbar wird.
+
 **FALLE (18.08., teuer bezahlt): Wer in Unicorn Studio einen REGLER von Hand
 verschiebt, LÖST damit seine Variablen-Bindung.** Danach zeigt das
 Variablen-Panel weiter Werte an, die den Shader nie erreichen — der Effekt

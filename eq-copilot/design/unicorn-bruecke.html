@@ -14,6 +14,8 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { height: 100%; overflow: hidden; background: #04060b; }
 body { font-family: "Manrope", system-ui, sans-serif; color: #cfd6e4; user-select: none; }
+#ebene0 { position: absolute; inset: 0; pointer-events: none; }
+#ebene0 > div, #ebene0 canvas { width: 100%; height: 100%; }
 #szene { position: absolute; inset: 0; }
 #szene > div { width: 100%; height: 100%; }
 header {
@@ -60,6 +62,7 @@ footer {
 </style>
 </head>
 <body>
+<div id="ebene0"></div>
 <div id="szene"></div>
 <header>
   <span class="marke">NAKAMA</span>
@@ -101,7 +104,9 @@ footer {
    und setzt pro Frame die Szenen-Variablen aus der deterministischen
    30-s-Songschleife. ?projekt=<ID> lädt, ?zeit=SEK friert die MUSIKWERTE
    auf einen Moment (die Eigenzeit der Szene läuft weiter — Unicorns
-   interne Uhr ist nicht von außen einfrierbar).                          */
+   interne Uhr ist nicht von außen einfrierbar). ?hintergrund=<ID> legt
+   eine zweite Szene als Ebene 0 dahinter (Vorgabe: Winter Nexus Remix 3,
+   DAGhm8NIQHdX9GhNYmP9; =0 schaltet ab).                                 */
 
 const F_MIN = 20, F_MAX = 18000;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -348,8 +353,29 @@ document.addEventListener("keydown", ev => {
   if (ev.key === "t" || ev.key === "T") tafel.hidden = !tafel.hidden;
 });
 
-if (!PROJEKT) {
+/* Ebene 0: Unicorn-Hintergrund hinter der getesteten Szene (User 19.08.:
+   "mach das als hintergrund" — Winter Nexus Remix 3). Bewusst per
+   addScene() NACH init(), damit szenen[0] die Hauptszene bleibt. Sichtbar
+   wird er hinter einer Szene nur, wenn deren eigener Hintergrund-Layer
+   nicht deckend ist (die Drei-String-Szene hat aktuell einen SCHWARZEN
+   Gradient-Layer — der muss in Unicorn unsichtbar werden, sonst bleibt
+   Ebene 0 verdeckt). ?hintergrund=0 schaltet ab, ?hintergrund=<ID> tauscht. */
+const HINTERGRUND = PARAMS.get("hintergrund") ?? "DAGhm8NIQHdX9GhNYmP9";
+function ladeHintergrund() {
+  if (HINTERGRUND === "0") return;
+  UnicornStudio.addScene({ elementId: "ebene0", projectId: HINTERGRUND, lazyLoad: false })
+    .catch(() => {});                       // Szene weg/offline: Grund bleibt
+}
+
+if (!PROJEKT && HINTERGRUND === "0") {
   // Anleitung bleibt stehen — nichts zu laden.
+} else if (!PROJEKT) {
+  // Nur der Hintergrund: Anleitung bleibt lesbar darueber stehen.
+  const s = document.createElement("script");
+  s.src = "https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.10/dist/unicornStudio.umd.js";
+  s.onload = ladeHintergrund;
+  s.onerror = () => {};
+  document.head.appendChild(s);
 } else {
   document.getElementById("anleitung").hidden = true;
   const halter = document.createElement("div");
@@ -360,6 +386,7 @@ if (!PROJEKT) {
   s.src = "https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.10/dist/unicornStudio.umd.js";
   s.onload = () => {
     UnicornStudio.init().then(szenen => {
+      ladeHintergrund();
       const szene = szenen[0];
       if (!szene) { zeigeTafel(null, [], []); return; }
       // Verdrahtung: nur Variablen setzen, die die Szene wirklich definiert.

@@ -104,8 +104,12 @@ P01-Punktästhetik + Unicorn-Hintergrund als Ebene 0). Details:
 ## Infrastruktur, die steht
 
 - `eq-copilot/design/unicorn-bruecke.html` — Unicorn-Szene + Musikdaten
-  (`?projekt=6YU0kFPu0uCBf0ZOTXOC` = User-Hintergrund „Winter Nexus",
-  mausreaktiv; JSON-Backup in `design/unicorn/`). Taste T = Tafel.
+  (JSON-Backups in `design/unicorn/`). Taste T = Tafel; die Tafel prüft
+  seit 19.08. `bindingCount` und prangert definierte-aber-UNGEBUNDENE
+  Variablen an. `?hintergrund=<ID>` legt eine zweite Szene als Ebene 0
+  dahinter — Vorgabe „Winter Nexus (Remix) 3" `DAGhm8NIQHdX9GhNYmP9`,
+  liegt auch live hinter `prisma-schlieren.html` (`?hintergrund=0` für
+  Messläufe).
 - `eq-copilot/design/proben/` — 4 Kalibrier-Proben + `render-probe.mjs`
   (generisch: Blatt, Name, Query, Größe, Wartezeit; Einzellauf, SwiftShader).
 - 30-s-Songschleife (`songLage`/`musikDb`) — in jedem Blatt identisch

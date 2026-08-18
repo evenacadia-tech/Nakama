@@ -31,9 +31,17 @@
   Band 0 55->150 Hz, Band 1 ~530->1450 Hz, Band 2 ~5,2->14 kHz.
   ?fahrt=0 stellt ihn still.
 
+  EBENE 0 (User 19.08.: "mach das als hintergrund"): die Unicorn-Szene
+  "Winter Nexus (Remix) 3" (DAGhm8NIQHdX9GhNYmP9) liegt live und
+  vollflaechig HINTER der Buehne — das ist die Ebene 0 des
+  Film-Compositing-Modells. Braucht Internet (CDN); offline bleibt der
+  dunkle Grund stehen, das Blatt funktioniert unveraendert.
+  ?hintergrund=0 schaltet ab (fuer deterministische Messlaeufe),
+  ?hintergrund=<ID> laedt eine andere Szene.
+
   ZIEHEN dreht · 1/2/3 waehlt das Band · LEERTASTE haelt die Musik an ·
   P schaltet den Prueftton · F seine Fahrt · +/- ueberhoeht zur Beurteilung ·
-  ?winkel= ?zeit= frieren ein · ?kamm= ?tiefe= ?koernung= ?fahrt=0
+  ?winkel= ?zeit= frieren ein · ?kamm= ?tiefe= ?koernung= ?fahrt=0 ?hintergrund=0
 -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -43,6 +51,8 @@
     display: flex; align-items: baseline; gap: 14px; z-index: 3; letter-spacing: 2px; }
   header .marke { color: #6d7789; font-size: 10px; }
   header h1 { font-size: 13px; font-weight: 600; letter-spacing: 3px; }
+  #ebene0 { position: absolute; inset: 0; pointer-events: none; }
+  #ebene0 > div, #ebene0 canvas { width: 100%; height: 100%; }
   #buehne { position: absolute; inset: 0; display: flex; align-items: center;
     justify-content: center; cursor: grab; touch-action: none; user-select: none; }
   #buehne.zieht { cursor: grabbing; }
@@ -69,6 +79,7 @@
 </style>
 </head>
 <body>
+<div id="ebene0"></div>
 <header><span class="marke">NAKAMA</span><h1>PRISMA · SCHLIEREN-FELD IM GLAS</h1></header>
 <div id="buehne"><canvas id="bild" width="800" height="500"></canvas></div>
 <div id="laden"><div>Drehsequenz lädt …</div><div class="balken"><i id="fortschritt"></i></div></div>
@@ -89,6 +100,22 @@ const PARAMS = new URLSearchParams(location.search);
 const BILDER = parseInt(PARAMS.get("bilder") ?? "72", 10);
 const RUHE = parseFloat(PARAMS.get("ruhe") ?? "58.333333");
 const SCHRITT = 120 / BILDER;
+
+/* ── Ebene 0: Unicorn-Hintergrund (live, vom User autorisiert 19.08.) ────
+   Offline-sicher: scheitert CDN oder Szene, bleibt der dunkle Grund und
+   das Blatt laeuft unveraendert weiter. addScene() ist die dokumentierte
+   programmatische SDK-API (im UMD v2.2.10 verifiziert). */
+const HINTERGRUND = PARAMS.get("hintergrund") ?? "DAGhm8NIQHdX9GhNYmP9";
+if (HINTERGRUND !== "0") {
+  const sdk = document.createElement("script");
+  sdk.src = "https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.10/dist/unicornStudio.umd.js";
+  sdk.onload = () => {
+    UnicornStudio.addScene({ elementId: "ebene0", projectId: HINTERGRUND, lazyLoad: false })
+      .catch(() => {});                     // Szene weg/offline: Grund bleibt
+  };
+  sdk.onerror = () => {};                   // offline: Grund bleibt
+  document.head.appendChild(sdk);
+}
 
 const leinwand = document.getElementById("bild");
 const stift = leinwand.getContext("2d");

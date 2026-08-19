@@ -1,0 +1,77 @@
+{
+  "quelle_exr": "probe-stmap-s0.exr",
+  "breite": 768,
+  "hoehe": 1024,
+  "format": "RGBA float16 interleaved, Zeile 0 = oben, v nach unten",
+  "kanaele": [
+    "offU (uv-Einheiten)",
+    "offV",
+    "gewichtB (Transmission, 0=TIR/fehl)",
+    "1"
+  ],
+  "kamera": {
+    "lens": 65.0,
+    "sensor": 36.0,
+    "pos": [
+      -1.65,
+      -3.53,
+      0.95
+    ],
+    "ziel": [
+      0.0,
+      0.0,
+      0.8
+    ],
+    "fit": "AUTO (groessere Kante)"
+  },
+  "stats": {
+    "b_histogramm": {
+      "anteil_fehl_oder_tir(B<0.05)": 0.1212,
+      "anteil_zwischen(0.05-0.95)": 0.0086,
+      "anteil_voll(B>0.95)": 0.8702,
+      "min": 0.0,
+      "max": 1.0,
+      "mittel_gueltig": 0.9949
+    },
+    "beweis_direktsicht_offset_px": {
+      "pixel": 392366,
+      "mittel": 0.0135,
+      "p99": 0.0186,
+      "max": 83.9088
+    },
+    "offsets_im_glas_px": {
+      "pixel": 306489,
+      "median": 327.07,
+      "p95": 431.23,
+      "max": 568.41,
+      "max_uv": 0.7369,
+      "anteil_out_of_range": 0.7203,
+      "anteil_tir_im_glas": 0.1212
+    },
+    "ziel_uv_bereich": {
+      "u": {
+        "min": -0.261,
+        "p1": -0.236,
+        "p99": 1.332,
+        "max": 1.495
+      },
+      "v": {
+        "min": -0.092,
+        "p1": 0.114,
+        "p99": 0.885,
+        "max": 0.941
+      }
+    },
+    "half_float_quantisierung_px": {
+      "mittel": 0.0577,
+      "max": 0.1881
+    },
+    "rauschen_seed_vs_seed_px": {
+      "pixel": 306467,
+      "rms": 0.4416,
+      "p99": 0.0365,
+      "max": 28.599,
+      "gueltigkeit_uneins": 40
+    }
+  }
+}

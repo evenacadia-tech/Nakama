@@ -18,6 +18,27 @@
 #   Shadow Catcher war der falsche Weg (gemessen 19.08.: 0 Pfuetzen-Pixel,
 #   Pfuetzen sind GLANZreflexe — der Catcher faengt Schatten/Diffus).
 #
+# ST-MAP-LIVE-REFRAKTION (NAK-16, Pipeline: docs/research/
+# 2026-08-19-stmap-live-refraktion.md — recherche-gehaertet, ZUERST lesen):
+#   ... --nur-stmap    -> Refraktionskarte: Plate emittiert prozedural
+#                         (R=u, G=v, B=1 als Gueltigkeits-/Gewichtskanal),
+#                         Prisma = Refraction BSDF (NICHT Glass — Fresnel-
+#                         Reflexion kontaminiert die Karte), alle Lichter und
+#                         der Boden aus. Filterlos (Box 0,01), Denoise aus,
+#                         Adaptive aus, deterministischer Seed (--seed).
+#                         Output 32f-OpenEXR (umgeht AgX). Die Plate bleibt
+#                         KAMERASICHTBAR: Pixel neben dem Prisma sehen sie
+#                         direkt, ihr rueckprojizierter Offset muss exakt 0
+#                         sein — eingebauter Beweis der ganzen Kette.
+#                         TIR-Pixel liefern Schwarz (B=0) -> Laufzeit zeigt
+#                         dort nur Glanz. -> renders/stmap/*.exr
+#   ... --nur-glanz    -> Oberflaechenglanz + Kanten GEGEN SCHWARZ fuer das
+#                         Live-Composite: Plate + Boden ganz raus (kein
+#                         Eingebackenes, keine fremde Lichtwelt), nur die
+#                         zwei Streifen-Softboxen zeichnen; transparenter
+#                         Film, RGBA-PNG. Anders als --nur-glas ist die
+#                         Plate hier auch durchs Glas UNsichtbar.
+#
 # EIN Still, keine Animation, keine Daten: dreiseitiges Glas-Prisma über dem
 # User-Hintergrund (Winter-Nexus-Plate als Ebene 0), schmaler weißer Strahl
 # durchs Glas -> echter Dispersionsfächer als Kaustik am Boden.
@@ -357,6 +378,118 @@ BODEN_EBENE = "--boden-ebene" in argv
 if BODEN_EBENE:
     plate.visible_camera = False
     prisma.visible_camera = False
+
+# ST-Map (NAK-16): Refraktionskarte backen. Jede Abweichung von den
+# Defaults ist im Research-Report belegt (docs/research/
+# 2026-08-19-stmap-live-refraktion.md) — hier nur die Kurzbegruendung.
+NUR_STMAP = "--nur-stmap" in argv
+if NUR_STMAP:
+    # Plate: pures Emission-Material mit prozeduralem ST-Gradienten —
+    # R=u, G=v, B=1 (Blenders UV-Pass-Konvention; B ist Gueltigkeits-
+    # UND Transmissionsgewicht, u=R/B v=G/B entfernt jede Pfadgewichtung).
+    smat = bpy.data.materials.new("stmap-gradient")
+    smat.use_nodes = True
+    snt = smat.node_tree
+    snt.nodes.remove(snt.nodes["Principled BSDF"])
+    tc = snt.nodes.new("ShaderNodeTexCoord")
+    sep = snt.nodes.new("ShaderNodeSeparateXYZ")
+    kom = snt.nodes.new("ShaderNodeCombineColor")
+    sem = snt.nodes.new("ShaderNodeEmission")
+    snt.links.new(tc.outputs["UV"], sep.inputs["Vector"])
+    snt.links.new(sep.outputs["X"], kom.inputs["Red"])
+    snt.links.new(sep.outputs["Y"], kom.inputs["Green"])
+    kom.inputs["Blue"].default_value = 1.0
+    sem.inputs["Strength"].default_value = 1.0
+    snt.links.new(kom.outputs["Color"], sem.inputs["Color"])
+    snt.links.new(sem.outputs[0], snt.nodes["Material Output"].inputs["Surface"])
+    plate.data.materials.clear()
+    plate.data.materials.append(smat)
+    # Prisma: Refraction BSDF, weiss, Roughness 0, EIN IOR — Glass BSDF
+    # wuerde Fresnel-REFLEXION in die Karte mischen (Kontamination).
+    rmat = bpy.data.materials.new("stmap-refraktion")
+    rmat.use_nodes = True
+    rnt = rmat.node_tree
+    rnt.nodes.remove(rnt.nodes["Principled BSDF"])
+    refr = rnt.nodes.new("ShaderNodeBsdfRefraction")
+    refr.distribution = "GGX"
+    refr.inputs["Color"].default_value = (1.0, 1.0, 1.0, 1.0)
+    refr.inputs["Roughness"].default_value = 0.0
+    refr.inputs["IOR"].default_value = 1.474
+    rnt.links.new(refr.outputs[0], rnt.nodes["Material Output"].inputs["Surface"])
+    prisma.data.materials.clear()
+    prisma.data.materials.append(rmat)
+    # Nur die Plate emittiert; Boden und alle Lichter raus.
+    boden.hide_render = True
+    for licht_ob in (strahl_ob, rand_ob, rand2_ob, faecher_ob, wand_ob):
+        licht_ob.hide_render = True
+    # Karte filterlos und deterministisch: Box 0,01 (Minimum, exakt 0 gibt
+    # es nicht), Denoise AUS (Default ist an — ML-Filter verschmiert
+    # Koordinaten), Adaptive/Guiding aus, kein Clamp, kein Blur-Glossy.
+    # Roughness 0 = Delta-Pfad: Rauschquelle ist nur Subpixel-Jitter.
+    szene.cycles.use_denoising = False
+    szene.cycles.use_adaptive_sampling = False
+    szene.cycles.use_guiding = False
+    szene.cycles.blur_glossy = 0.0
+    szene.cycles.sample_clamp_indirect = 0.0
+    szene.cycles.pixel_filter_type = "BOX"
+    szene.cycles.filter_width = 0.01
+    szene.cycles.seed = int(arg("--seed", "0"))
+    # 32f-EXR: szenenlinear, umgeht AgX; Fehlschuesse (Strahl verfehlt die
+    # Plate) sind Alpha 0 / B 0. PNG wuerde die Datenkanaele zerstoeren.
+    szene.render.film_transparent = True
+    szene.render.image_settings.file_format = "OPEN_EXR"
+    szene.render.image_settings.color_mode = "RGBA"
+    szene.render.image_settings.color_depth = "32"
+    szene.render.image_settings.exr_codec = "ZIP"
+
+# Glanz-Pass (NAK-16): Oberflaechenglanz + Kanten gegen Schwarz — die
+# einzigen Cycles-Anteile im Live-Composite. Plate und Boden GANZ raus
+# (das Glasinnere kommt zur Laufzeit aus der ST-Map, nichts Eingebackenes);
+# von der alten Buehne bleiben nur die zwei Streifen-Softboxen
+# (Dark-Field-Kantenzeichnung). Ob dieses Rig zur Nexus-Lichtwelt passt,
+# entscheidet die Probe am lebenden Blatt.
+NUR_GLANZ = "--nur-glanz" in argv
+if NUR_GLANZ:
+    plate.hide_render = True
+    boden.hide_render = True
+    strahl.energy = 0.0
+    faecher.energy = 0.0
+    wand_licht.energy = 0.0
+    szene.render.film_transparent = True
+    szene.render.image_settings.color_mode = "RGBA"
+    # Kanten-Rig fuer die SEQUENZ-Kamera (Rotation 86,333): das alte
+    # Streifen-Paar stand fuer die Still-Kamera und traf keine
+    # Spiegelrichtung mehr (gemessen: RGB komplett schwarz). Und: die
+    # 4-mm-Fase durchlaeuft 120 Grad Normalen-Sweep — eine 0,12-m-Box
+    # subtendiert ~2,3 Grad, ihre Spiegellinie auf der Fase ist ~0,02 px
+    # breit (gemessen: unsichtbar). Kanten brauchen GROSSE Quellen.
+    # Spiegelwinkel exakt PRO ECKE gerechnet (der 0,5-m-Eckversatz
+    # verschiebt den Winkel um ~10 Grad — mehr als die alte Quelle breit
+    # war): linke Ecke 176,3 Grad sieht die Kamera unter 252 Grad,
+    # rechte Ecke 296,3 Grad unter 239 Grad.
+    # Fase ist FLAT-shaded (segments=2, diskrete Sub-Flaechen) und die
+    # SEITEN-NORMALEN DES MESHES ZEIGEN NACH INNEN (Winding; Cycles
+    # flippt Shading-Normalen automatisch, Glas rendert korrekt — fuer
+    # Spiegelwinkel-Mathe aber toedlich, Befund in docs/offene-punkte.md).
+    # Deshalb GEMESSEN statt hergeleitet (Depsgraph-Dump 19.08.):
+    #   linke Fase  (-0.50,+0.03): sichtbare Sub-Normale 216 Grad
+    #     -> Licht-Azimut 179,9 Grad
+    #   rechte Fase (+0.22,-0.45): sichtbare Sub-Normale 257 Grad
+    #     -> Licht-Azimut 274,6 Grad
+    # Front-Spiegelrichtung (~228 Grad) trifft nur den schwachen Kicker:
+    # Flaeche bleibt dunkel (Dark-Field), Kanten zeichnen.
+    rand2_ob.location = (-3.3, 0.03, 1.3)      # Azimut 179,9 -> linke Fase
+    rand2_ob.data.size = 2.2
+    rand2_ob.data.size_y = 3.0
+    rand2_ob.data.energy = 800.0
+    rand_ob.location = (0.45, -3.24, 1.3)      # Azimut 274,6 -> rechte Fase
+    rand_ob.data.size = 2.2
+    rand_ob.data.size_y = 3.0
+    rand_ob.data.energy = 800.0
+    kicker_ob = streifen("Kicker", (-2.0, -2.2, 1.1), 0.8)
+    richte_auf(rand2_ob, (-0.5, 0.03, 0.9))
+    richte_auf(rand_ob, (0.22, -0.45, 0.9))
+    richte_auf(kicker_ob, (0.0, 0.0, 1.0))
 
 if "--ohne-prisma" in argv:                       # Projektions-Beweis ohne Brechung
     prisma.hide_render = True

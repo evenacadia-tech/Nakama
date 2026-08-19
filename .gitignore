@@ -22,3 +22,7 @@ __pycache__/
 
 # Playwright-MCP-Arbeitsspuren (Snapshots/Konsolenlogs)
 .playwright-mcp/
+
+# ST-Map-Zwischenprodukte (NAK-16; in Sekunden regenerierbar: --nur-stmap + konvertiere-stmap.py)
+eq-copilot/design/prisma/renders/stmap/*.exr
+eq-copilot/design/prisma/renders/stmap/probe-stmap.bin

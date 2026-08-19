@@ -5,8 +5,26 @@
 > eqcop-broker.exe), tools/. FL-Repo-SHAs in älteren Einträgen unten
 > gehören zur FL-Studio-Historie (bis `7964777`).
 
-> Stand: 2026-08-17, Session-Ende. Diese Datei ist der Schnellstart;
+> Stand: 2026-08-19. Diese Datei ist der Schnellstart;
 > Tiefe in `docs/design-stand.md` und `docs/geschmacksprofil.md`.
+
+## Visueller Nordstern — vor jeder Designarbeit lesen
+
+Der User hat am 19.08. das langfristige Zielbild **Nakama als
+Hörkompass** freigegeben. Verbindlicher Zielvertrag und
+Fünf-Keyframe-Storyboard:
+`docs/visuelles-zielbild-hoerkompass.md`.
+
+Kurzform: Der Mix bleibt unsichtbar; nur dort, wo er sich selbst im Weg
+steht, bricht das klare Prisma das Licht. Gesund = leeres Glas. Nur
+belastbare Befunde erzeugen eine lokale Schlieren-Messung. Das Prisma
+wendet die betroffene Fläche zum User; Klick öffnet Ursache, Hörbeweis und
+genau einen nächsten Versuch; nach erfolgreicher Prüfung klärt sich das
+Glas wieder. **Keine neue Grundmetapher und kein Dauer-Visualizer.**
+
+Dieser strategische Lock ersetzt NICHT den unmittelbar freigegebenen
+Technikschritt unten. NAK-16 muss dem Zielbild dienen, darf es aber nicht
+durch einen neuen Effekt oder eine neue Metapher umdeuten.
 
 ## Der eine nächste Schritt
 
@@ -67,9 +85,10 @@ der Wirbel ist deshalb kompakt statt feldhoch. Wenn der User mehr
 Vertikale will, ist das eine Datenfrage (langsamere Fahrt, längerer
 Aufenthalt), keine Zeichenfrage.
 
-**KREATIV-SCHLEUSE:** Der Marker `.claude/kreativ-freigabe.md` ist vom
-18.08. 14:08 und gilt 24 h — für Design-Arbeit danach neu schreiben, mit dem,
-was der User freigibt.
+**KREATIV-SCHLEUSE:** Der aktuelle Marker `.claude/kreativ-freigabe.md`
+enthält getrennt (a) den engen NAK-16-Bau-Scope und (b) den strategischen
+Hörkompass-Lock. Der Nordstern ist keine pauschale Baufreigabe; nach Ablauf
+der 24 h oder für zusätzlichen Scope erneut mit User-Wortlaut schreiben.
 
 ## Was steht (18.08., alles gemessen und committet)
 
@@ -86,10 +105,10 @@ was der User freigibt.
   verschieben löst die Bindung; falsch gebundene Variable ist still.
 - Szenen-Sicherung: `eq-copilot/design/unicorn/schlieren-probe-field-szene.json`
 
-## Vorheriger Stand (P01 im Glas — Inhalt verworfen)
+## Historischer Stand vor dem Hörkompass-Lock (P01 im Glas — verworfen)
 
-**Flächen-Inhalt + Bündel-Inhalt IM GESPRÄCH entwickeln** (nicht bauen!
-KREATIV-SCHLEUSE: erst ausarbeiten, bis der User eine Vorstellung freigibt).
+Dieser Abschnitt ist nur Verlaufsbeleg. Die damalige Suche nach einem
+Flächen-Inhalt ist durch `docs/visuelles-zielbild-hoerkompass.md` beendet.
 Material-Urteil ist da (18.08.): **klar** vorn, rauchig Reserve, Frost raus
 („zumindest auf den Bildern" — Anmutungs-Endabnahme am lebenden Objekt).
 Kandidaten aus der User-autorisierten Richtung: Klangkörper-Silhouette ·
@@ -116,11 +135,13 @@ Fläche) stehen in `design-stand.md`, Abschnitt AKTIVE RICHTUNG.
 ## Warum Prisma (Kurzform)
 
 User-autorisiertes Konzept: 3 Flächen = Tiefen/Mitten/Höhen, Drehen =
-Selektion, Klick = Bündeln (Newton-Rekombination = Analyse↔Synthese),
-kompakter Dauerbegleiter statt Analyzer-Fenster. Darstellung:
-Film-Compositing (vorgerenderte Cycles-Passes + live Daten-Ebene in
-P01-Punktästhetik + Unicorn-Hintergrund als Ebene 0). Details:
-`design-stand.md`, Abschnitt „AKTIVE RICHTUNG".
+Selektion, kompakter Dauerbegleiter statt Analyzer-Fenster. Gesund =
+leeres Glas; nur belastbare Befunde brechen lokal das Prüffeld. Klick auf
+einen Befund öffnet Ursache und Hörbeweis. Der Newton-Bündelmodus bleibt
+als möglicher Gesamtblick erhalten, seine Geste ist noch offen.
+Darstellung: lebender Hintergrund → ST-Map-Live-Refraktion → lokale
+Schlieren-Befundebene → Glanz/Kanten. Details: `design-stand.md` und
+`docs/visuelles-zielbild-hoerkompass.md`.
 
 ## Nicht verhandelbar (aus dieser Session gelernt)
 
@@ -131,7 +152,8 @@ P01-Punktästhetik + Unicorn-Hintergrund als Ebene 0). Details:
 - **Geschmacksprofil lesen** (`docs/geschmacksprofil.md`) vor jeder
   visuellen Entscheidung: die drei Gesetze + 3a–3c + Meta-Erkenntnis
   (Vision kommt vom User; Claudes freie Bilderfindung = Mode-Collapse;
-  P01-Punktästhetik ist die einzige abgenommene).
+  P01-Punktästhetik ist als Ästhetik abgenommen, als rohe Dauerwolke aber
+  ausdrücklich verworfen).
 
 ## Infrastruktur, die steht
 

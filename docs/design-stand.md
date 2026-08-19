@@ -1,6 +1,6 @@
 # Design-Stand — an welchem Prototypen wir arbeiten
 
-> **Stand: 2026-08-18.** Lebendes Dokument — nach jedem Design-Commit
+> **Stand: 2026-08-19.** Lebendes Dokument — nach jedem Design-Commit
 > hier nachziehen (seit dem Workspace-Umzug 18.08. liegt alles in diesem
 > Repo). Bei Widerspruch gewinnt der Code (`eq-copilot/design/…`) und der
 > Bauplan dort.
@@ -12,24 +12,35 @@ autorisiert — und es ist das tragfähigste des Projekts:
 
 **Ein dreiseitiges, drehbares Prisma als kompakter Dauerbegleiter.**
 Drei Flächen = drei Blickrichtungen (Tiefen / Mitten / Höhen); Drehen ist
-SELEKTION („was will ich gerade sehen"), kein Deko. Klick = Bündel-Modus:
-die zerlegten Bänder rekombinieren zur Gesamtsicht (Newton: zweites
-Prisma bündelt Spektrum zu Weiß — physikalisch echt, mathematisch die
-Inverse der Analyse). Produktpositionierung: kleines, ruhiges Objekt für
+SELEKTION („was will ich gerade sehen"), kein Deko. Der physikalische
+Bündelgedanke bleibt als möglicher Gesamtblick erhalten (Newton: zweites
+Prisma bündelt Spektrum zu Weiß — mathematisch die Inverse der Analyse),
+aber seine Geste ist noch offen: Seit dem Hörkompass-Lock öffnet ein Klick
+auf einen sichtbaren Befund Ursache und Hörbeweis. Produktpositionierung:
+kleines, ruhiges Objekt für
 den DAUERGEBRAUCH („nie überladen") — trifft den Namen Nakama/Gefährte
-wörtlich. Offen (User-Vorstellung): was auf einer Fläche lebt, was das
-Gebündelte formt (Kandidaten: Klangkörper-Silhouette · Balance-Ring ·
-P01-Perkolation im Glas).
+wörtlich.
+
+**VISUELLER NORDSTERN (User-Freigabe 19.08.): DER HÖRKOMPASS.** Der Mix
+bleibt unsichtbar; nur dort, wo er sich selbst im Weg steht, bricht das
+Prisma das Licht. Gesund = leeres Glas. Nur ein belastbarer Befund
+aktiviert lokal das Schlieren-Prüffeld; das Prisma wendet die betroffene
+Fläche langsam zum User. Klick = Ursache/Evidenz/Hörbeweis/ein nächster
+Versuch; nach erfolgreicher Prüfung klärt sich das Glas wieder. Keine neue
+Grundmetapher und kein Dauer-Visualizer. Verbindlicher Volltext samt
+Fünf-Keyframe-Storyboard:
+`docs/visuelles-zielbild-hoerkompass.md`.
 
 **Darstellungs-Entscheidung (User-geprüft, Gimmick-Test):**
 Film-Compositing statt Spiel-Engine. Prisma offline pfadverfolgt
 (Blender 5.1 Cycles, **CPU** — Arc-Landmine!) mit echter Dispersion/
-Kaustik; zur Laufzeit Ebenen-Sandwich: Unicorn-Hintergrund (Ebene 0,
-mausreaktiv) → live gerechnete Daten-Ebene (P01-Punktästhetik),
-perspektivisch auf Flächen gewarpt → vorgerenderter Glas-Pass obendrauf.
-Nur 3 Ruhezustände + kurze Übergangssequenzen (120°-Snap, Bündeln) —
-speicherleicht, JUCE-freundlich (Bilder + kleine Live-Schicht, kein
-GPU-Zwang).
+Kaustik. Ziel-Sandwich nach NAK-16: lebender Unicorn-Hintergrund (Ebene 0)
+→ durch die ST-Map live gebrochenes Glasinnere → lokale Schlieren-
+Befundebene → Oberflächenglanz/Kanten. Die frühere rohe
+P01-Punktdatenebene ist als Dauerinhalt verworfen; P01 bleibt nur ein
+Ästhetik-Datum. Drei Ruhelagen + kurze 120°-Übergänge bleiben
+speicherleicht und JUCE-freundlich; Fokus- und Hörbeweiszustände werden
+erst nach dem verbindlichen Storyboard konkret animiert.
 
 **Material-Probestills GERENDERT (17.08. spät, „ausgeführt und gesehen"):**
 `eq-copilot/design/prisma/prisma-material-still.py` (Blender 5.1 headless,
@@ -172,10 +183,12 @@ Gemessen und gesehen: Schulterlinie muss über eine OKTAVE mitteln (bei
 halber Oktave frisst die Schulter den Buckel, max. Abweichung 1,45 dB);
 Prüfton +6 dB @ 116 Hz ergibt Befund 115 Hz / 104–126 Hz / +4,6 dB /
 Persistenz 97 % und kneift den Kamm sichtbar.
-**Offen (User-Urteil):** Optik-Abnahme; darf das Prüffeld im gesunden
-Zustand dauerhaft stehen, oder widerspricht das „leeres Glas = gesundes
-Band"? **Ehrlicher Befund aus der Probe:** der Modus „Feld nur bei Befund"
-räumt das Glas NICHT frei — Musik erzeugt überall kleine Gradienten.
+**Entschieden im Hörkompass-Lock 19.08.:** Im gesunden Zustand steht das
+Prüffeld NICHT dauerhaft; gesund = leeres Glas. Die Produktansicht zeigt
+evidenzbasierte Befunde, nicht jeden kleinen Rohgradienten der Musik. Der
+alte Modus „Feld nur bei Befund" erfüllt das technisch noch nicht — er
+räumt das Glas wegen der Rohgradienten nicht frei und muss später gegen
+die Befundschwelle statt gegen bloße Feldaktivität verriegelt werden.
 **Nicht dargestellt:** Konfidenz (der Render hat ZWEI Streifen-Softboxen,
 nicht vier — die Vierer-Ablesung wäre eine Behauptung über ein Bild, das es
 nicht gibt), Bündel-Modus, Mehrfachbefunde (NAK-14).

@@ -34,3 +34,27 @@ hatte damit genau das Eingebackene bewiesen).
 **Nicht freigegeben:** Änderungen am abgenommenen Prisma-OBJEKT selbst
 (Geometrie, Material klar); Befund-Grammatik des Schlieren-Felds;
 alles außerhalb der Freistellungs-Darstellung.
+
+## Strategischer Zielbild-Lock — Hörkompass (User-Freigabe 19.08.)
+
+**Vom User bestätigt:** Auf das ausgearbeitete Zielbild antwortete der
+User „Das klingt sehr durchdacht, gefällt mir", danach „Ja genau" und bat
+darum, die Information an Claude zu übergeben.
+
+**Nordstern:** „Nakama ist kein Graph im Prisma und kein
+Musikvisualizer. Nakama ist ein ruhiger Hörkompass: Der Mix bleibt
+unsichtbar — nur dort, wo er sich selbst im Weg steht, bricht das Prisma
+das Licht."
+
+Gesund = leeres Glas. Nur belastbare Befunde erzeugen lokal eine
+Schlieren-Messung. Das Prisma wendet die betroffene Fläche langsam zum
+User. Klick = Ursache, Evidenz, Hörbeweis und genau ein nächster Versuch;
+nach erfolgreicher Prüfung klärt sich das Glas wieder. Keine neue
+Grundmetapher und kein Dauer-Visualizer. Volltext:
+`docs/visuelles-zielbild-hoerkompass.md`.
+
+**Scope-Abgrenzung:** Diese Freigabe autorisiert den strategischen
+Zielvertrag und sein Storyboard. Sie erweitert NICHT den oben
+freigegebenen Bau-Scope: Der nächste technische Schritt bleibt zuerst EIN
+ST-Map-Probe-Still. Geometrie, klares Material und Befund-Grammatik bleiben
+ohne erneute konkrete Freigabe unverändert.

@@ -39,6 +39,13 @@
   ?hintergrund=0 schaltet ab (fuer deterministische Messlaeufe),
   ?hintergrund=<ID> laedt eine andere Szene.
 
+  FREIGESTELLT (NAK-15, User 19.08.: "in der App ohne starren Hintergrund"):
+  Vorgabe-Frames sind renders/dreh-frei/ (RGBA, Studio raus — Ebene 0
+  scheint DURCH das Bild); renders/dreh-boden/ liefert die Kontakt-Ebene
+  (Bodenpfuetzen, Alpha aus Helligkeit) UNTER dem Prisma. ?frames=dreh
+  laedt den alten eingebackenen Satz zum Vergleich; ?boden=0 startet ohne
+  Kontakt-Ebene; Taste B schaltet sie live.
+
   ZIEHEN dreht · 1/2/3 waehlt das Band · LEERTASTE haelt die Musik an ·
   P schaltet den Prueftton · F seine Fahrt · +/- ueberhoeht zur Beurteilung ·
   ?winkel= ?zeit= frieren ein · ?kamm= ?tiefe= ?koernung= ?fahrt=0 ?hintergrund=0
@@ -56,7 +63,8 @@
   #buehne { position: absolute; inset: 0; display: flex; align-items: center;
     justify-content: center; cursor: grab; touch-action: none; user-select: none; }
   #buehne.zieht { cursor: grabbing; }
-  #bild { max-width: 96vw; max-height: 80vh; background: #000; }
+  /* transparent: die freigestellten Frames lassen Ebene 0 DURCH das Bild */
+  #bild { max-width: 96vw; max-height: 80vh; background: transparent; }
   #laden { position: absolute; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 10px; z-index: 2;
     background: #06080c; transition: opacity .4s; }
@@ -90,7 +98,7 @@
     <span class="band" data-band="2">HÖHEN</span>
   </div>
   <div id="ablesung"></div>
-  <div id="hinweis">ZIEHEN DREHT · 1/2/3 WÄHLT DAS BAND · LEERTASTE HÄLT DIE MUSIK AN · P SCHALTET DEN PRÜFTON · F SEINE FAHRT · +/− ÜBERHÖHT</div>
+  <div id="hinweis">ZIEHEN DREHT · 1/2/3 WÄHLT DAS BAND · LEERTASTE HÄLT DIE MUSIK AN · P SCHALTET DEN PRÜFTON · F SEINE FAHRT · B DEN BODEN · +/− ÜBERHÖHT</div>
   <div id="zaehler"></div>
 </div>
 
@@ -126,10 +134,22 @@ const bandKnoten = [...document.querySelectorAll(".band")];
 const ablesungKnoten = document.getElementById("ablesung");
 
 /* ── Laden ───────────────────────────────────────────────────────────────── */
-const rahmen = [];
+// Seit NAK-15 sind die freigestellten Frames (renders/dreh-frei/, RGBA) die
+// Vorgabe — Ebene 0 scheint DURCH das Bild. ?frames=dreh laedt den alten
+// eingebackenen Studio-Satz zum Vergleich. Die Boden-Ebene (Kontakt-Licht,
+// renders/dreh-boden/, Alpha aus Helligkeit) liegt UNTER dem Prisma und
+// faellt sanft aus, wenn ihr Satz fehlt.
+const FRAMES_ORDNER = PARAMS.get("frames") ?? "dreh-frei";
+const FREIGESTELLT = FRAMES_ORDNER !== "dreh";
+let bodenAn = FREIGESTELLT && (PARAMS.get("boden") ?? "1") !== "0";
+let bodenVerfuegbar = false;
+const rahmen = [], bodenRahmen = [];
 const glasEbene = new Image();
 let geladen = 0;
-const LADE_GESAMT = BILDER + 1;
+// Boden-Frames laden IMMER mit (Taste B schaltet nur die Anzeige — ein
+// Regler, der je nach Start-URL still tot waere, ist die Unicorn-Falle).
+const BODEN_LADEN = FREIGESTELLT;
+const LADE_GESAMT = BILDER + 1 + (BODEN_LADEN ? BILDER : 0);
 function geladenEins() {
   geladen++;
   fortschritt.style.width = (geladen / LADE_GESAMT * 100) + "%";
@@ -142,13 +162,23 @@ glasEbene.onerror = () => {
 };
 for (let i = 0; i < BILDER; i++) {
   const b = new Image();
-  b.src = `renders/dreh/f${String(i).padStart(3, "0")}.webp`;
+  b.src = `renders/${FRAMES_ORDNER}/f${String(i).padStart(3, "0")}.webp`;
   b.onload = geladenEins;
   b.onerror = () => {
     ladeanzeige.firstElementChild.textContent =
-      `Frame f${String(i).padStart(3, "0")}.webp fehlt.`;
+      `Frame ${FRAMES_ORDNER}/f${String(i).padStart(3, "0")}.webp fehlt.`;
   };
   rahmen.push(b);
+}
+if (BODEN_LADEN) {
+  let bodenTreffer = 0;
+  for (let i = 0; i < BILDER; i++) {
+    const b = new Image();
+    b.src = `renders/dreh-boden/f${String(i).padStart(3, "0")}.webp`;
+    b.onload = () => { bodenTreffer++; bodenVerfuegbar = bodenTreffer === BILDER; geladenEins(); };
+    b.onerror = geladenEins;             // Boden ist optional — nie blockieren
+    bodenRahmen.push(b);
+  }
 }
 
 /* ── Songschleife (identisch portiert) ───────────────────────────────────── */
@@ -565,6 +595,20 @@ function zeichne() {
       leinwand.height = a.naturalHeight;
       leinwand.style.maxWidth = a.naturalWidth + "px";
     }
+    // Alpha-Frames: ohne clearRect stapeln sich Silhouetten zu Geistern.
+    stift.clearRect(0, 0, leinwand.width, leinwand.height);
+    // Kontakt-Ebene (Boden-Pfuetzen) UNTER dem Prisma — Taste B / ?boden=0.
+    if (bodenAn && bodenVerfuegbar) {
+      const ba = bodenRahmen[i0], bb = bodenRahmen[i1];
+      if (ba && ba.complete && ba.naturalWidth) {
+        stift.globalAlpha = 1;
+        stift.drawImage(ba, 0, 0, leinwand.width, leinwand.height);
+        if (f > 0.001 && bb && bb.complete && bb.naturalWidth) {
+          stift.globalAlpha = f;
+          stift.drawImage(bb, 0, 0, leinwand.width, leinwand.height);
+        }
+      }
+    }
     stift.globalAlpha = 1;
     stift.drawImage(a, 0, 0, leinwand.width, leinwand.height);
     const b2 = rahmen[i1];
@@ -711,6 +755,7 @@ addEventListener("keydown", ev => {
     for (let s = 0; s < 240; s++) { messe(songZeit + s*dt, b); persistenzSchritt(dt); }
   }
   if (ev.key === "f" || ev.key === "F") pruefton.fahrt = !pruefton.fahrt;
+  if (ev.key === "b" || ev.key === "B") bodenAn = !bodenAn;
   if (ev.key === "+") ueberhoehung = Math.min(6, ueberhoehung + 0.5);
   if (ev.key === "-") ueberhoehung = Math.max(0.5, ueberhoehung - 0.5);
 });

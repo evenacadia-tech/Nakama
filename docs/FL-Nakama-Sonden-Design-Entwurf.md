@@ -1,7 +1,7 @@
-# Nakama mit Instrumentenbus-Sonden — Produkt- und Technikentwurf 0.2
+# Nakama mit Instrumentenbus-Sonden — Produkt-, Technik- und Implementierungsentwurf 0.3
 
 - **Stand:** 2026-08-19
-- **Status:** Technische Entscheidungsgrundlage für den folgenden Implementierungsphasenplan
+- **Status:** Technische Spezifikation mit ausführbarem Implementierungsphasenplan
 - **Gegenstand:** Funktions-, Interaktions-, System- und Technikdesign; bewusst ohne visuelle Gestaltung
 - **Bauentscheidung:** Noch nicht erteilt
 
@@ -69,11 +69,13 @@ versionierten Schemata und der reale Quellcode.
 
 ### 0.2 Geltungsbereich dieser Fassung
 
-Teil I (Abschnitte 1–28) hält das gewählte Produktverhalten fest. Teil II (ab Abschnitt 29)
+Teil I (Abschnitte 1–28) hält das gewählte Produktverhalten fest. Teil II (Abschnitte 29–52)
 entscheidet den bestgeeigneten technischen Ansatz für **alle zwölf Kern- und alle acht
-Roadmap-Funktionen**, verankert ihn im heutigen Nakama und definiert messbare Übergabekriterien
-für den nächsten Schritt. Noch nicht enthalten sind visuelles Detaildesign, Aufwandsschätzung,
-Meilensteine und eine Zuordnung zu Implementierungsphasen.
+Roadmap-Funktionen** und verankert ihn im heutigen Nakama. Teil III schneidet daraus einen
+ausführbaren, gate-basierten Implementierungsplan mit Releasegrenzen, Zuständigkeiten,
+Dateizielen, Migrationsreihenfolge und erster Ticketfolge. Nicht enthalten sind visuelles
+Detaildesign, Kalender- oder Aufwandsschätzungen; sie dürfen die technische Abhängigkeitsfolge
+nicht ersetzen.
 
 ---
 
@@ -975,7 +977,7 @@ Der Entwurf gilt funktional als eingelöst, wenn der User in einem echten FL-Pro
 
 ## 27. Für den Implementierungsplan entschiedene Produktfragen
 
-| Frage | Verbindliche Entscheidung 0.2 |
+| Frage | Verbindliche Entscheidung 0.3 |
 |---|---|
 | Plugin-Einträge | Main, passive Probe und Active Probe erhalten getrennte stabile Class-IDs aus einer gemeinsamen Kernbibliothek. |
 | erster aktiver Umfang | Trim, minimumphasiger statischer/dynamischer EQ, Band-M/S beziehungsweise L/R, begrenzte Breite und Mono-Bass; keine lineare Phase, Laufzeitkorrektur, Sättigung oder Limiting. |
@@ -1006,7 +1008,7 @@ Das Zielprodukt ist damit:
 
 Die übrigen acht Ideen bleiben erhalten und bilden die nachgelagerte Roadmap. Das technische
 Zielbild, konkrete Protokollklassen und überprüfbare Qualitätsgrenzen folgen in Teil II. Visuelles
-Design und der eigentliche Implementierungsphasenplan bleiben der nächste, getrennte Schritt.
+Design bleibt getrennt. Der verbindliche Implementierungsphasenplan folgt in Teil III.
 
 ---
 
@@ -1059,7 +1061,7 @@ verbindet. Diese Evidenzkette ist daher der Produktkern und kein Zusatztext um e
 
 ## 30. Verbindliche Architekturentscheidungen für den Phasenplan
 
-| Thema | Entscheidung 0.2 | Begründung |
+| Thema | Entscheidung 0.3 | Begründung |
 |---|---|---|
 | Plugin-Aufteilung | gemeinsame C++-Kernbibliothek, aber drei klare VST3-Ziele: **Nakama Main**, **Nakama Probe** und **Nakama Active Probe** | klare Insert-Wahl; der passive Nullvertrag kann nicht durch einen Modusschalter verloren gehen |
 | Feste Bus-Topologie | Passive Probe: Main-I/O; Active Probe: Main-I/O plus getrennte Stereo-Aux-Busse `priority_sidechain` und `compare_pre`; Main: Main-I/O plus eine im Spike festgelegte, kleine Zahl diskreter Contribution-Aux-Busse | Compare und Unmasking werden nie auf einem Aux multiplexed; exakte Beiträge existieren nur bei bewiesenem FL-Fan-in |
@@ -1181,6 +1183,22 @@ Außerdem sendet C++ heute bereits das Feld `hoermarkierung`, der Rust-`MessStan
 aber nicht. Bis dieser Vertrag geschlossen ist, darf der Broker hörmarkerbeeinflusste Aggregate
 nicht als garantiert ausgeschlossen ausgeben.
 
+Die heutige VST3-Identität wird als Kompatibilitäts-Golden eingefroren: Plugin-Code `Eqcp`,
+Audio-Module-Class-ID `ABCDEF019182FAEB45766E6145716370` und Controller-Class-ID
+`ABCDEF011234ABCD45766E6145716370`. Bundle- und Class-ID dieses Eintrags dürfen im Split nicht
+wechseln. Für die neuen Ziele sind die vierstelligen Codes `NkPr` (Passive Probe) und `NkAc`
+(Active Probe) reserviert; ihre Component-/Controller-IDs werden in P0 einmal erzeugt und in ein
+Golden-Manifest übernommen. P1 prüft das erste gebaute `moduleinfo.json` dagegen. Danach werden
+die IDs wie ein Dateiformat behandelt.
+
+Der gepinnte JUCE-8.0.9-VST3-Wrapper bildet außerdem zwei Hostinformationen nicht vollständig auf
+die öffentliche `AudioProcessor`-API ab: Für normale Parameterqueues verwendet er nur den letzten
+Punkt eines Blocks, und eine fehlende `ProcessData.processContext` ist im zurückgegebenen
+`PositionInfo` nicht sicher von einem vorhandenen, mit Nullwerten belegten Context zu
+unterscheiden. `HostBlockContext` und `ParameterEvent` benötigen daher die in Abschnitt 44 und P0
+definierte kleine Wrapper-Bridge. Ohne sie werden Projektzeit, samplegenaue Automation und
+Presentation-Latency nicht behauptet.
+
 ---
 
 ## 32. Sitzungs-, Zeit- und Messpunktmodell
@@ -1271,7 +1289,17 @@ Jeder zeitabhängige Frame trägt Zeitbasis und explizite Gültigkeit:
   "sample_rate": 48000,
   "playing": true,
   "recording": false,
-  "cycle": { "active": true, "start": 44000000, "end": 44500000 },
+  "cycle": {
+    "active": true,
+    "bounds_valid": true,
+    "start_ppq": 918.333333,
+    "end_ppq": 928.750000,
+    "derived_sample_bounds": {
+      "start": 44000000,
+      "end": 44500000,
+      "derivation": "validated_block_mapping"
+    }
+  },
   "validity": {
     "project_time": true,
     "play_state": true,
@@ -1297,20 +1325,25 @@ wenn die Projektzeitintervalle kompatibel sind und keine der beteiligten Instanz
 Discontinuity meldet. Ein einzelner unbekannter Zeitstempel stuft nur die betroffene Beziehung
 herab, nicht die gesamte Sitzung.
 
-Zusätzlich werden optionales `continuous_time_samples`, Cycle-Grenzen sowie rohe Input-/Output-
-Presentation-Latency gespeichert. `ProcessData.processContext` ist in VST3 optional; nur in einem
-vorhandenen Context ist `projectTimeSamples` definiert. JUCE exponiert die Zeit entsprechend als
-Optional. Der heutige Code behandelt das **noch nicht sicher**: Er setzt `hatTransport` bereits
-bei vorhandener `PositionInfo`, aktualisiert `projektZeitSamples` aber nur bei vorhandenem
-`timeInSamples`; Heartbeat/Stats können dadurch 0 oder einen alten Wert als gültig weiterreichen.
-Zielcode und Schema benötigen deshalb ein unabhängiges `has_project_time`, das bei jedem Block
-explizit gesetzt beziehungsweise gelöscht wird. Ein Latenzwert 0 kann außerdem „keine“ oder
-„nicht bekannt“ bedeuten. Welche Presentation-Time-Formel FL Studio bei Insert,
-Sidechain, PDC, Bridging und Offline-Render konsistent liefert, muss ein früher Impuls-Conformance-
-Test entscheiden. Bis dahin bleiben Rohzeit und Latenzhinweise getrennt.
+Zusätzlich werden optionales `continuous_time_samples`, rohe Cycle-Grenzen in Quarter Notes sowie
+rohe Input-/Output-Presentation-Latency mit eigenen Gültigkeitsbits gespeichert.
+`ProcessData.processContext` ist in VST3 optional; nur in einem vorhandenen Context ist
+`projectTimeSamples` definiert. Der öffentliche JUCE-8.0.9-Pfad bewahrt diese
+Context-Anwesenheit jedoch nicht: Der Wrapper nullt seinen internen Context, und
+`VST3PlayHead::getPosition()` kann daraus eine scheinbar vorhandene Samplezeit bilden. Der heutige
+Processor setzt zusätzlich `hatTransport` schon bei irgendeiner `PositionInfo` und löscht einen
+alten `projektZeitSamples`-Wert nicht in jedem Block. Die Wrapper-Bridge liefert deshalb
+`process_context_present` und unabhängige Validity-Bits; ohne Bridge gilt Projektzeit als
+unbewiesen. VST3-Cycle-Grenzen sind PPQ-Werte. Samplegrenzen sind nur ein abgeleitetes Feld, wenn
+PPQ, Projektzeit und Tempo im Block eine durch FL-Goldens validierte Abbildung erlauben. Ein
+Latenzwert 0 kann außerdem „keine“ oder „nicht bekannt“ bedeuten. Welche Presentation-Time-Formel
+FL Studio bei Insert, Sidechain, PDC, Bridging und Offline-Render konsistent liefert, entscheidet
+ein früher Impuls-Conformance-Test. Bis dahin bleiben Rohzeit, abgeleitete Zeit und
+Latenzhinweise getrennt.
 
-Loop-Grenzen können innerhalb eines Hostblocks liegen. Bei gültigen Cycle-Bounds wird ein solcher
-Block logisch geteilt. Fehlen die Bounds, wird der mögliche Straddle als ungültig markiert und
+Loop-Grenzen können innerhalb eines Hostblocks liegen. Bei gültigen, für diesen Hostlauf
+bewiesenen `derived_sample_bounds` wird ein solcher Block logisch geteilt. Liegen nur PPQ-Bounds
+vor oder fehlen die Bounds, wird der mögliche Straddle als ungültig markiert und
 spätestens beim Erkennen des Wraps im Folgeblock eine neue Epoche begonnen. Kein FFT-, Loudness-,
 Korrelations- oder Fingerprintfenster darf eine echte oder mögliche Epochengrenze überbrücken.
 Technisch hält deshalb jede Instanz mindestens den letzten Block beziehungsweise noch nicht
@@ -1354,8 +1387,14 @@ Zahlenexpansion bei vielen Sonden, ohne Steuerung und Persistenz an ein Binärfo
 Shared Memory bleibt ausgeschlossen, bis eine gemessene hochauflösende Forensiklast die Pipe
 tatsächlich überfordert.
 
-Nach dem bestehenden `u32`-Längenpräfix beginnt v3 mit `encoding`, `message_family`,
-`schema_major/minor` und Flags. P0/P1 verwenden JSON; P2 verweist auf ein `FeatureBatch`.
+Nach dem bestehenden little-endian-`u32 frame_len` folgt in v3 ein fester 16-Byte-Header:
+`u8 encoding`, `u8 message_family`, `u8 schema_major`, `u8 schema_minor`, `u32 flags`,
+`u32 payload_len`, `u32 crc32c`. Es gilt exakt `frame_len == 16 + payload_len`; Überlänge,
+Unterlänge, reservierte Flags und ein Frame über 262.144 Bytes werden vor dem Payloadparser
+abgelehnt. `encoding=0` bezeichnet JSON, `encoding=1` FlatBuffers; `message_family=0|1|2`
+bezeichnet P0, P1 oder P2. CRC32C ist für P2 Pflicht und bei JSON exakt 0. Mehrbytefelder sind
+little-endian. CRC32C wird über exakt die `payload_len` Payloadbytes berechnet; Präfix und Header
+gehören nicht in den Digest. P0/P1 verwenden JSON; P2 verweist auf ein `FeatureBatch`.
 Unbekannte additive Felder werden ignoriert, unbekannte Major-Versionen abgelehnt. v2 und v3
 werden erst nach dem Hello getrennt; kein v2-Parser interpretiert einen Binärframe als JSON.
 Die heutigen v2-Schemas mit `additionalProperties:false` bleiben unverändert streng. V3 markiert
@@ -2325,7 +2364,12 @@ zwar `IParamValueQueue`, reicht normalen Pluginparametern aber nur den letzten B
 Sampleoffset weiter. Der Zielpfad benötigt deshalb einen kleinen, versioniert gepinnten Patch des
 JUCE-VST3-Wrappers mit einer **eigenen internen Parameter-Event-Bridge**, die alle sortierten
 `{parameter_id, sample_offset, value}`-Punkte vor `processBlock` in einen vorallokierten Eventring
-übergibt. Wrapper-Diff und Host-Conformance-Golden werden bei jedem JUCE-Update neu geprüft.
+übergibt. Derselbe Patch liefert die rohe Anwesenheit von `ProcessContext` und, soweit FL sie
+anbietet, Presentation-Latency je Bus. Er liegt als
+`third_party/patches/juce-8.0.9-nakama-vst3-bridge.patch` im Repository, wird beim Configure
+idempotent gegen einen gepinnten JUCE-Quellhash angewandt und bricht bei abweichendem
+Quellkontext den Build ab; `_deps` wird nie manuell editiert. Wrapper-Diff und
+Host-Conformance-Golden werden bei jedem JUCE-Update neu geprüft.
 Scheitert dieser Spike, meldet die Probe `sample_accurate_automation=false`: kontinuierliche Werte
 werden ehrlich nur vom vorigen zum letzten Blockwert gerampt, Topologieautomation wird
 deaktiviert, und Realtime/Offline-Gleichheit wird nur für denselben Event-/Blockverlauf behauptet.
@@ -2707,8 +2751,13 @@ dass Quantisierung und Gating innerhalb der Toleranz aus Abschnitt 49 bleiben.
 
 ### 48.3 Broker-Lifecycle
 
-V3 verwendet einen aus dem Hash der Windows-User-SID und der Protokoll-Major-Version abgeleiteten
-Pipe-Namen, ohne die rohe SID offenzulegen. Während der Migration kann der Broker zusätzlich den
+V3 verwendet
+`base32(first_128_bits(SHA-256("evenacadia.nakama|v3|" + uppercase_sid_utf8)))` als Pipe-Token
+und damit `\\.\pipe\evenacadia.nakama.v3.<token>`, ohne die rohe Windows-User-SID offenzulegen.
+RFC-4648-Base32 ist großgeschrieben und ohne Padding. Das Golden
+`S-1-5-21-111111111-222222222-333333333-1001 → BNSM62JZZCCXIDV3PJZAEHMZPA` bindet
+UTF-8-Bytefolge, Digestreihenfolge und Alphabet. Während der
+Migration kann der Broker zusätzlich den
 heutigen festen Namen `\\.\pipe\evenacadia.eq-copilot.v1` als strikt v2-/Heartbeat-only Listener
 mit User-DACL anbieten. Alle v3-Instanzen versuchen zuerst die SID-gebundene Pipe. Ist sie nicht
 vorhanden, darf nur ein **positiv als Main klassifizierter** Worker den signierten Broker aus dem
@@ -2735,13 +2784,22 @@ Wallclock-Sprung macht keine aktive Probe plötzlich frisch oder tot.
 ### 48.4 Sicherheit und Datenschutz
 
 - Named Pipe mit expliziter DACL nur für aktuelle Windows-User-SID; Remotezugriff deaktiviert;
-- Server prüft Clienttoken, Sitzung, Handshake, Nachrichtentyp, Tiefe, Länge und Rate;
+- Server impersoniert den Pipe-Client unmittelbar nach Connect und vor einem akzeptierten Hello,
+  vergleicht dessen Token-User-SID mit der erwarteten SID und beendet die Impersonation in jedem
+  Pfad; PID und Prozesspfad sind nur
+  Diagnose, keine Identität. Danach prüft er Clienttoken, Sitzung, Handshake, Nachrichtentyp,
+  Tiefe, Länge und Rate;
 - Befehle benötigen Ziel-Nonce, Session-Epoche, lokal geklemmte TTL, Revision und
   Idempotenz-ID; Preview-Deadlines stammen ausschließlich aus der monotonen Uhr der Probe;
 - eine nach sichtbarem Pairing ausgegebene zufällige 256-Bit-`control_capability` authentisiert
-  P0-Nachrichten per HMAC-SHA-256. Sie erscheint nie in Log, Telemetrie oder Export und wird für
-  Same-Machine-Recall DPAPI-geschützt gespeichert; nach Projekttransfer ist erneutes Pairing der
-  sichere Fallback;
+  P0-Nachrichten per HMAC-SHA-256. Signiert wird die RFC-8785-kanonische UTF-8-Darstellung des
+  Objekts `{broker_epoch, session_epoch, target_runtime_nonce, command_id, body_without_auth}`;
+  damit existieren keine mehrdeutigen Konkatenationsgrenzen. Vergleiche sind konstantzeitlich,
+  Command-IDs besitzen einen begrenzten Replaycache und
+  RFC-8785-Testvektoren decken NaN/Inf, doppelte Schlüssel und Unicode ab. Die Capability
+  erscheint nie in Log, Telemetrie oder Export und wird mit Current-User-DPAPI und
+  `CRYPTPROTECT_UI_FORBIDDEN`, niemals `LOCAL_MACHINE`, gespeichert; Entschlüsselungsfehler oder
+  Projekttransfer verlangen erneutes Pairing;
 - Datenbank und Logs enthalten Features und IDs, kein Roh-Audio; Tracknamen können im Privacy-
   Modus lokal pseudonymisiert werden;
 - externe KI ist opt-in, erhält nur minimierte strukturierte Fakten und nie Audio, Pfade,
@@ -2799,7 +2857,7 @@ Ein Build ist nicht freigabefähig, wenn eines dieser Gates fällt:
 
 ### 49.3 Messbare Startbudgets
 
-| Größe | Startziel für den späteren Phasenplan |
+| Größe | verbindliches Startbudget ab der zugehörigen Phase |
 |---|---:|
 | Livekarte, 16 Sonden | < 300 ms p95 fertiger 2.048-/4.096-Frame → sichtbarer Main-State |
 | Bassframe 16.384 bei 48 kHz | < 750 ms p95 erstes Fenstersample → sichtbarer Main-State; Alter wird gezeigt |
@@ -2812,8 +2870,8 @@ Ein Build ist nicht freigabefähig, wenn eines dieser Gates fällt:
 | A/B-Zustandswechsel | kein Klick; identischer Zustand nullt innerhalb numerischer Toleranz |
 | Soak | mindestens 60 min mit 16, mindestens 30 min mit 32 Sonden ohne XRun/ungegrenztes Wachstum |
 
-Diese Budgets sind Hypothesen mit Abnahmetest. Der Implementierungsplan darf sie nach Messung
-ändern, muss Änderung und Userwirkung aber dokumentieren.
+Diese Budgets sind Hypothesen mit Abnahmetest. Die ausführende Phase darf sie nach Messung ändern,
+muss Änderung, Evidenz und Userwirkung aber versioniert dokumentieren.
 
 ### 49.4 Evidenzqualität statt nur Unit-Tests
 
@@ -2824,10 +2882,10 @@ Behauptungen. Ein konservatives `unsicher` ist besser als eine überzeugende fal
 
 ---
 
-## 50. Übergabestruktur für den anschließenden Implementierungsphasenplan
+## 50. Abhängigkeitsstruktur der Arbeitspakete
 
-Der Phasenplan soll aus folgenden beweisbaren Arbeitspaketen geschnitten werden. Die Liste ist
-bewusst noch keine Termin- oder Sprintplanung.
+Der Implementierungsplan in Teil III schneidet aus folgenden beweisbaren Arbeitspaketen. Die
+Abhängigkeiten sind verbindlich, aber bewusst keine Termin- oder Sprintschätzung.
 
 ```mermaid
 flowchart LR
@@ -2858,7 +2916,7 @@ flowchart LR
 
 | Paket | Ergebnis | darf beginnen, wenn |
 |---|---|---|
-| A · Verträge | kanonische Domänentypen, Versionen, Class-IDs, Capabilitymatrix | Entscheidungen 0.2 akzeptiert |
+| A · Verträge | kanonische Domänentypen, Versionen, Class-IDs, Capabilitymatrix | Entscheidungen 0.3 akzeptiert |
 | B · Plugin-Split | ladbares Main, passive und aktive Probe mit sicheren State-Migrationen, festen Buslayouts und Float-/Double-Capability | A und Kompatibilitäts-Golden stehen |
 | C · Messkern v2 | Blockstempel, Featureframes, Events, Bandstereo und fixed-memory Loudness-/Passageakkumulatoren | Queue-/Realtime-/EBU-Goldens stehen |
 | D · IPC und Kernstore | SID-gebundene gekoppelte Pipes, Subscription, Prioritäten, monotone Liveness/Eviction, Reconnect, Broker-Lifecycle, signiertes Broker-Paket/Installer/Repair sowie SQLite-Schema, Migrationen, Single-Writer und Outbox | Schema-/Security-/Fuzz-/Kill-/Install-/Soaktests stehen |
@@ -2881,8 +2939,8 @@ flowchart LR
   isolierte Backendklasse.
 - Roadmap-Modelle dürfen austauschbar bleiben und keine Kernfunktion oder Projektladung
   voraussetzen.
-- Erst nach bestandenen Gates werden Aufwand, Reihenfolge, Parallelisierung und Releasegrenzen im
-  eigentlichen Implementierungsphasenplan festgelegt.
+- Teil III ordnet Reihenfolge und Releasegrenzen. Kalenderaufwand und Parallelisierung werden erst
+  aus gemessenen Durchlaufzeiten abgeleitet und dürfen kein Gate überspringen.
 
 ---
 
@@ -2902,7 +2960,7 @@ Produktidee; jedes Experiment besitzt bereits einen sicheren Rückweg.
 | Maskingkalibrierung | Rollen-, Instrument- und Stilrobustheit | vorab definierter Hör-/Stemdatenkorpus, kalibrierte Konfidenz, Enthaltung funktioniert | nur Kollisions-/Zusammenhangshinweis, keine automatische Aktion |
 | Automation/Undo | JUCE-VST3-Eventbridge, alle `IParamValueQueue`-Offsets, FL-Aufzeichnung, Parametergesten, Konflikt und Recall | Realtime/Offline-Golden erhält Offsetreihenfolge und lokaler Revisions-Roundtrip | Capability `sample_accurate_automation=false`, blockgenaue Ramp und keine Topologieautomation; eigenes Undo bleibt Wahrheit |
 
-Der folgende Phasenplan soll diese Spikes früh terminieren. Ein fehlgeschlagener Spike darf nicht
+Der Phasenplan in Teil III terminiert diese Spikes früh. Ein fehlgeschlagener Spike darf nicht
 mit vager Folgeforschung enden, sondern aktiviert den in der Tabelle festgelegten kleineren,
 ehrlichen Produktumfang.
 
@@ -2943,11 +3001,14 @@ einer bestimmten Patchnummer.
   [Plugin Delay Compensation](https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/mixer_trackprops.htm)
   und [Wrapper/Smart Disable](https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/plugins/wrapper.htm);
 - Microsoft:
-  [Named-Pipe-Sicherheit](https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights)
+  [Named-Pipe-Sicherheit](https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights),
+  [Client-Impersonation](https://learn.microsoft.com/en-us/windows/win32/api/namedpipeapi/nf-namedpipeapi-impersonatenamedpipeclient),
+  [DPAPI CryptProtectData](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata)
   und [Windows IPC](https://learn.microsoft.com/en-us/windows/apps/develop/communication/interprocess-communication);
 - [JSON Schema 2020-12](https://json-schema.org/draft/2020-12),
   [JSON Canonicalization Scheme RFC 8785](https://www.rfc-editor.org/rfc/rfc8785),
-  [FlatBuffers](https://flatbuffers.dev/) und [SQLite WAL](https://www.sqlite.org/wal.html);
+  [FlatBuffers Schema Evolution](https://flatbuffers.dev/evolution/) und
+  [SQLite WAL](https://www.sqlite.org/wal.html);
 - [ONNX Runtime C++](https://onnxruntime.ai/docs/get-started/with-cpp.html) für optionale lokale,
   nicht-echtzeitfähige Modellinferenz.
 
@@ -2999,3 +3060,695 @@ einer bestimmten Patchnummer.
   [All-In-One Music Structure](https://github.com/mir-aidj/all-in-one),
   [MERT](https://github.com/yizhilll/MERT) und
   [Essentia Models](https://essentia.upf.edu/models.html).
+
+---
+
+# Teil III — Ausführbarer Implementierungsplan
+
+## 53. Planvertrag und technische Schnittlinien
+
+### 53.1 Ziel dieses Plans
+
+Dieser Teil übersetzt die Produkt- und Technikentscheidungen in eine baubare Reihenfolge. Eine
+Phase ist kein Zeitabschnitt, sondern eine **nachweisbare Fähigkeitsgrenze**. Sie endet erst, wenn
+ihr Vorwärtsweg, ihr inverser Weg und ihr Fehlerweg geprüft sind. Ein grüner Build allein schließt
+keine Phase.
+
+Die Reihenfolge wird von fünf Stopplinien bestimmt:
+
+1. Die alte Class-ID und alter State müssen vor dem Plugin-Split als Golden eingefroren sein.
+2. Mehrinstanzaussagen beginnen erst mit gültiger Zeit-, Lücken- und Messpunktsemantik.
+3. Eine sichtbare Empfehlung beginnt erst mit typisierter Evidenz und einer ehrlichen
+   Enthaltungsmöglichkeit.
+4. Ein hörbarer Remoteweg beginnt erst nach lokalem DSP, Hard-Bypass, Recall, Revert und Lease.
+5. Dynamische Entmaskierung beginnt erst nach einem echten, PDC-geprüften FL-Sidechainpfad.
+
+Keine Phase darf eine spätere Capability simulieren. Fehlende Host- oder Routingbeweise führen zu
+einem kleineren Capabilitysatz, nicht zu einem verdeckten heuristischen Ersatz.
+
+### 53.2 Releasegrenzen
+
+| Grenze | frühestens nach | auslieferbarer Umfang | ausdrücklich noch gesperrt |
+|---|---|---|---|
+| `R0 · Contract/Internal` | P2 | drei neutrale Pluginziele, migrierbarer State, v3-Transport und Messkern für interne Hostfixtures | öffentliche Mehrinstanz-UX, Remote-DSP |
+| `R1 · Passive Alpha` | P3 | Sessionbeitritt, Frische, Messpunktwahrheit und Live-Landkarte für bis zu 16 Sonden | starke Ursache, aktiver DSP |
+| `R2 · Passive Beta` | P5 | Dynamik/Stereo/PRE-POST, Intent, Evidenz, Ursache, Proposal, manueller Versuch und Assistent | Remote-Apply, automatisches Entmaskieren |
+| `R3 · Active Beta` | P7 | lokaler Active-DSP, sichere Preview/Apply/Revert-Transaktion, Active-A/B und Recall | dynamische Sidechain-Aktuation ohne P8-Golden |
+| `R4 · Sonden-Kern 1.0` | P9 | gehärteter Kernumfang einschließlich P8, sofern dessen Host-Capability belegt ist | Roadmappunkte 3/6/7/8/11/15/19/20 |
+
+Fällt der P8-Hostspike endgültig, kann ein Produkt ohne automatische Entmaskierungsaktuation
+veröffentlicht werden, aber nicht unter dem vollständigen `Sonden-Kern 1.0`-Versprechen aus
+Abschnitt 28. Dazu ist eine sichtbare Produktentscheidung nötig; der Plan deutet den fehlenden
+Punkt 17 nicht still um.
+
+### 53.3 Verbindliche Schichten und Abhängigkeitsrichtung
+
+```text
+Plugin-Factory / Hostadapter
+        ↓
+Plugin-Common: Lifecycle, State, Parameter, Capabilities
+        ↓
+Realtime-Core: HostBlockContext, Queue, DSP, Taps
+        ↓                    ↓
+Analysis-Core             IPC-Codec/Client
+        ↓                    ↓
+        Feature-/Domainverträge
+                              ↓
+                  Broker-Coordinator → Store-Writer
+                              ↓
+                     Main-Projektion / UI
+```
+
+- `Realtime-Core` kennt weder Pipe, JSON, SQLite, Logger noch UI.
+- `Analysis-Core` konsumiert versiegelte Blockdeskriptoren und erzeugt Domänenwerte, aber keine
+  Usertexte oder Brokerbefehle.
+- `Plugin-Common` besitzt den lokalen State und übersetzt Hostparameter in vorbereitete
+  Realtime-Programme. Der Broker darf diesen State nur anfragen oder transaktional ändern.
+- Der Broker-Coordinator ist alleiniger Besitzer des flüchtigen Sessiongraphen. I/O-Threads
+  liefern begrenzte Events; sie mutieren keine Domänen-HashMaps unter einem globalen Registerlock.
+- Der Store hat genau einen Writer. Leser erhalten kurze Snapshots und halten keine Transaktion
+  während UI-, Pipe- oder Modellarbeit offen.
+
+### 53.4 Zielmodule im Repository
+
+Die Namen dürfen innerhalb eines Pakets präzisiert werden; die Verantwortungsgrenzen sind
+verbindlich.
+
+```text
+eq-copilot/
+  plugin/
+    identity/plugin-identities-v1.json
+    core/
+      ProductKind.h
+      HostBlockContext.h
+      StampedAudioQueue.h
+      StateCodec.{h,cpp}
+      ParameterSchema.{h,cpp}
+      analysis/{FeatureEngine,LoudnessAccumulator,BandGrid}.{h,cpp}
+      dsp/{DspState,DspProgram,DspBankPool,PreviewController}.{h,cpp}
+      ipc/{WireEnvelope,ControlClient,TelemetryClient}.{h,cpp}
+    targets/{main,passive_probe,active_probe}/
+  schemas/
+    v3/{eq-ipc-control.schema.json,eq-domain.schema.json,
+        eq-experiment.schema.json,feature-batch.fbs}
+    fixtures/v3/{valid,invalid}/
+  generated/{cpp,rust}/
+  tests/{contracts,host,realtime,analysis,dsp,state}/
+broker/src/
+  transport/{legacy_v2.rs,v3.rs}
+  coordinator.rs
+  session.rs
+  evidence.rs
+  proposal.rs
+  store/{mod.rs,migrations/}
+third_party/patches/
+  juce-8.0.9-nakama-vst3-bridge.patch
+```
+
+Die vorhandenen Dateien werden inkrementell hinter diese Grenzen verschoben. P0 und P1 sind kein
+Freibrief für einen Big-Bang-Rename: Zuerst entstehen Tests und Schnittstellen, danach wird jeweils
+ein realer Pfad migriert.
+
+### 53.5 Gebaute Pluginidentitäten und Klassifikation
+
+| Ziel | Bundle/Browser-Kompatibilität | Plugin-Code | Class-ID-Regel |
+|---|---|---|---|
+| Main/Legacy | bestehendes `EQ-Copilot.vst3`; UI darf intern bereits „Nakama Main“ sagen | `Eqcp` | bestehende Component-/Controller-ID bytegleich erhalten |
+| Passive Probe | neues `Nakama Probe.vst3` | `NkPr` | in P0 einmal erzeugen und im Manifest reservieren; P1 verifiziert das erste Moduleinfo/Scanfixture |
+| Active Probe | neues `Nakama Active Probe.vst3` | `NkAc` | in P0 einmal erzeugen und im Manifest reservieren; P1 verifiziert das erste Moduleinfo/Scanfixture |
+
+Der bestehende Entry bleibt beim Laden zunächst `unclassified` und audio-neutral. Erst nach
+vollständigem State-Restore gilt:
+
+- Schema-1-`sensor|pre|post` → `legacy`, immer passiv;
+- Schema-1-`hub` oder bestätigter Schema-2-Main-State → `main`;
+- leerer, nie gespeicherter Altstate → Main erst nach geöffnetem Editor und expliziter
+  Initialisierung; ein Scannerlauf klassifiziert nicht;
+- die beiden neuen Bundles haben eine feste Produktklasse, bleiben aber bis gültigem State
+  neutral.
+
+Alle Instanzen dürfen im Worker nur verbinden. Ausschließlich ein positiv klassifiziertes Main
+mit geöffnetem Editor darf den installierten Broker starten. Klassifikation, Spawn und Pipe-I/O
+liegen nie im Audiocallback.
+
+### 53.6 Capabilityvertrag
+
+Capabilities sind maschinenlesbare Tatsachen aus Build **und** laufendem Host. Ein Capabilitybit
+wird nur nach seinem Golden gesetzt.
+
+| Capability | Beweis | Verhalten ohne Beweis |
+|---|---|---|
+| `host_context_presence` | Wrapperfixture unterscheidet fehlenden/vorhandenen Context | keine starke Projektzeitaussage |
+| `project_time_samples` | FL Live/Seek/Loop/Render-Golden | nur lokaler monotoner Verlauf |
+| `sample_accurate_automation` | alle Queuepunkte und Offsets in Realtime/Render identisch | Blockrampe; Topologieautomation aus |
+| `presentation_latency` | Bus-spezifisches Impulsgolden | keine subtraktive Cross-Probe-Ausrichtung |
+| `aux_compare_pre` | getrenntes, recallstabiles FL-Auxlayout | nur Zustands-A/B, kein lokales Audio-Delta |
+| `aux_priority_sidechain` | PDC-synchroner echter Sidechain | keine dynamische Aktuation |
+| `contribution_aux` | diskrete, post-fader, nicht doppelte Beiträge | nur Assoziation statt exakter Attribution |
+| `float64_processing` | echter Double-Callback plus DSP-/Nullgoldens | Host erhält nur deklarierte Floatfähigkeit |
+| `binary_telemetry` | v3-CRC/Fuzz/Lasttest | reduzierte JSON-Kadenz, kein P0-Verlust |
+| `remote_control` | Pairing, HMAC, Revision, Lease und Revert bestanden | Active nur lokal bedienbar |
+
+Main leitet aus den Einzelbits sichtbare Produktfähigkeiten ab. Ein neuer Minor-Build darf ein Bit
+nicht anhand seiner Versionsnummer vermuten.
+
+### 53.7 Hostbridge und Realtime-Datenträger
+
+Die Wrapper-Bridge schreibt vor jedem Callback genau zwei vorallokierte Strukturen:
+
+```cpp
+struct HostBlockContext {
+    bool processContextPresent;
+    ValidValue<int64_t> projectTimeSamples;
+    ValidValue<int64_t> continuousTimeSamples;
+    ValidValue<bool> playing;
+    ValidValue<bool> recording;
+    ValidValue<double> tempo;
+    ValidValue<double> ppqPosition;
+    ValidCyclePpq cycle;
+    FixedBusLatencyTable presentationLatency;
+};
+
+struct ParameterEvent {
+    StableParameterId id;
+    uint32_t sampleOffset;
+    float normalisedValue;
+};
+```
+
+`ParameterEvent` ist nach Offset und bei gleichem Offset deterministisch nach Queue-/Punktfolge
+sortiert. Überlauf verwirft keine unbekannte Teilmenge: Der ganze Block verliert
+`sample_accurate_automation`, meldet einen Zähler und verwendet den dokumentierten letzten
+Blockwert mit Sicherheitsrampe. Der Audiopfad bleibt gültig.
+
+Die Analyseübergabe ersetzt `AbstractFifo` durch einen produktklassenspezifischen
+`StampedAudioQueue<StreamLayout>` aus zwei festen SPSC-Ringen:
+
+- Sample-Ring: Startbudget 131.072 Frames je im `StreamLayout` deklariertem Stereo-Tap; der
+  gesamte Backing-Store entsteht in `prepareToPlay`. Active besitzt höchstens `pre_nakama`,
+  `post_committed`, `post_candidate`, `priority_sidechain` und `compare_pre`; Main ergänzt nur
+  die im P0-Spike freigegebenen Contribution-Taps. Ein Laufzeit-Bitset verhindert Kopien für
+  inaktive Taps, ohne Speicher nachzuallozieren;
+- Deskriptor-Ring: Startwert 2.048 vollständige `StampedBlock`-Einträge;
+- Producer reserviert Sampleplatz für das gesamte aktivierte Tap-Bundle **und** Deskriptorplatz,
+  kopiert alle zugehörigen Ganzblöcke und publiziert den Deskriptor mit Release-Semantik erst
+  danach; der Consumer liest ihn mit Acquire-Semantik;
+- reicht einer der Ringe nicht, wird der komplette Analyseblock verworfen, der Dropzähler erhöht
+  und der nächste Deskriptor beginnt ein neues `continuity_segment`;
+- Worker hält den jüngsten vollständigen Block in Ein-Block-Quarantäne. Erst der zeitlich
+  konsistente Folgeblock versiegelt ihn. Drop, Seek oder Loop-Wrap verwerfen alle noch offenen
+  Fenster an der Grenze;
+- ein Hostblock über der Analyse-Maximalgröße wird als Ganzes für Analyse verworfen. Der aktive
+  Audiopfad verarbeitet ihn unabhängig davon in vorallokierten Chunks, Startwert 1.024 Samples.
+
+Die Startgrößen sind keine ABI. P2 misst High-Water-Marks und schreibt gewählte Caps in die
+Capability-/QA-Matrix. Reduktion erfolgt über Kadenz und Ganzblockdrop, nie über Teilblockkopien.
+
+### 53.8 Parameter- und Statevertrag
+
+State-Schema 2 verwendet den Root `NakamaState` und unabhängig versionierte Kinder:
+
+```text
+NakamaState schema="2"
+  Common schema="1"           # Identität, Produktklasse, Messpunkt, Binding
+  MainProject schema="1"      # Intent, Mitgliedschaft, Passage, AssistantStep, Outbox
+  Parameters schema="1"       # APVTS-/Hostparameter
+  Dsp schema="1"              # Revision, Schutz, bestätigter DspState, Undo-Ring
+  Pairing schema="1"          # Ziel-IDs und Current-User-DPAPI-Blobs, nie Klartext
+```
+
+`Common` ist Pflicht. `MainProject` existiert nur im klassifizierten Main, `Parameters` und `Dsp`
+nur in der Active Probe, `Pairing` nur in Main und gepaarter Active Probe. Passive/Legacy behalten
+damit null Hostparameter; insbesondere ändert der bestehende `Eqcp`-Eintrag seine Parameterliste
+nicht. Unzulässige Ziel-/Kindkombinationen werden nicht teilweise interpretiert.
+
+Schema 1 wird in einem reinen, deterministischen Migrator gelesen. `sensor_id`, `label` und
+`pair_id` bleiben bytegleich; Rollen folgen Abschnitt 32. Fehlende Main-Projektbindung wird nicht
+pro Probe erfunden. Ein unbekanntes Root-Major lädt audio-neutral und read-only, bewahrt die
+Originalbytes für Diagnose und speichert sie nicht durch einen Teilstate überschreibend zurück.
+
+Der erste feste Parameterbestand lautet:
+
+- global: `v1.global.{bypass,input_trim_db,output_trim_db,width,mono_bass_hz}`;
+- je Slot `0..7`: `enabled`, `type`, `freq_hz`, `q`, `gain_db`, `channel_mode`,
+  `dynamic_enabled`, `dynamic_range_db`, `threshold_db`, `attack_ms`, `hold_ms`, `release_ms` und
+  `sidechain_source`, jeweils unter `v1.band.<slot>.`;
+- freie Slots bleiben neutral; IDs werden nie umbenannt oder wiederverwendet;
+- Remoteverträge verwenden typisierte physikalische Werte, nie VST-normalisierte Zahlen;
+- `type`, `channel_mode`, `dynamic_enabled` und `sidechain_source` sind topologisch. Sie werden im
+  ersten Active-Release nicht samplegenau automatisiert, sondern nur am validierten Blockrand mit
+  vorbereitetem Crossfade gewechselt;
+- kontinuierliche Parameter verwenden genau eine definierte Rampe. Hostautomation, lokale UI und
+  Remote-Transaktion durchlaufen denselben Validator und dieselbe Programmbaugrenze.
+
+`state_hash` umfasst ausschließlich das validierte DSP-DTO in RFC-8785-kanonischem JSON, ohne
+UI-, Undo- oder Transientfelder. Nichtendliche Zahlen, doppelte Schlüssel und unbekannte
+Pflichtfelder werden vor dem Hash abgelehnt.
+
+Das Main und die jeweilige Active Probe speichern ihr gemeinsames Pairingsecret nur als
+Current-User-DPAPI-Blob im eigenen `Pairing`-Teilstate. Der Broker vermittelt die Bestätigung,
+besitzt aber keine dauerhafte Secret-Wahrheit. Das Secret ist weder Teil von `state_hash` noch
+Undo, SQLite, Diagnose oder normalem Export. Kann eine Projektkopie den Blob nicht entschlüsseln,
+bleibt der DSP bestätigt erhalten, während Remote-Control bis zum erneuten Pairing aus ist.
+
+### 53.9 IPC-, Coordinator- und Storebindung
+
+Das Bootstrap bleibt absichtlich klein und eindeutig: Die erste Nachricht jeder Verbindung ist
+ein höchstens 16 KiB großes, wie heute nur mit `u32` längenpräfigiertes JSON-Hello. `protocol=2`
+bleibt danach vollständig im v2-Parser. Bei `protocol=3` authentisiert der Server zuerst den
+Control-Client; seine erste Antwort ist bereits ein v3-gerahmtes
+`welcome {link_id, challenge}`. Erst danach darf ein zweites Bootstrap-Hello mit
+`connection_kind=telemetry`, demselben `runtime_nonce`, `link_id` und der Challenge die
+Telemetry-Verbindung koppeln; auch dessen Antwort ist v3-gerahmt. Nach dem jeweiligen
+Bootstrap-Request verwenden beide Seiten ausschließlich den 16-Byte-v3-Header. Ein ungekoppelter
+Telemetry-Connect und jeder Binärframe anstelle eines Bootstrap-Hellos werden geschlossen.
+
+Damit koppelt `link_id + runtime_nonce` genau eine Control- und eine Telemetry-Verbindung. Die
+lokalen Mindestcaps sind:
+
+| Queue | Startcap | Überlaufpolitik |
+|---|---:|---|
+| P0 Control | 64 | nichts verwerfen; Verbindung schließen, Preview lokal auslaufen lassen |
+| P1 Zustand/Evidenz | 128 | Snapshots nach Objektschlüssel koaleszieren; nicht koaleszierbare Events bei Überlauf über Reconnect/Outbox wiederholen |
+| P2 Live pro Probe | 2 | ältesten ungesendeten Frame ersetzen |
+| Broker-Ingress pro Verbindung | 256 | P2 zuerst droppen; P0-Überlauf trennt Client |
+
+I/O-Worker decodieren nur Envelope, Grenzen und Authentisierung. Sie senden typisierte Events an
+den alleinigen `Coordinator`. Dieser erzeugt Sessionänderungen, Outboxaufträge und Storeevents.
+Antworten gehen über getrennte bounded Writerqueues zurück; ein blockierender Pipe-Write hält
+weder Coordinator noch Storelock.
+
+FlatBuffers-Felder erhalten explizite numerische `id`-Attribute. IDs werden nie wiederverwendet,
+auch nicht nach Entfernen eines Feldes. Eine gepinnte `flatc`-Version erzeugt C++ und Rust; die
+generierten Dateien werden committed und ein Drift-Test verlangt bitgleichen Neugenerierungsdiff.
+Die Bandgitter `nakama_1_24_oct_30_18k_v1` und `nakama_log64_v1` liegen als gemeinsame
+Zahlenfixtures vor. Energie wird linear integriert und erst danach in dB quantisiert;
+Gültigkeitsbitmap, Sättigungsbit und Encoding gehören in jeden Batch.
+
+Der SQLite-Store startet mit diesen Tabellen:
+
+`schema_migrations`, `event_log`, `projects`, `sessions`, `passages`, `evidence`, `findings`,
+`proposals`, `transactions`, `experiments`, `experiment_events`, `user_verdicts` und `outbox`.
+
+`event_log` ist die append-only Wahrheit und besitzt mindestens UUID, Projektbindung,
+`session_epoch`, UTC-Anzeigezeit, `broker_epoch`, eine pro Brokerlauf monotone Sequenz, Typ,
+Schema-Major/-Minor und kanonischen Payload. `(broker_epoch, sequence)` ist eindeutig. Die
+übrigen Domänentabellen sind indizierte, neu aufbaubare Projektionen oder immutable Artefakte.
+Der Writer setzt `foreign_keys=ON`, `journal_mode=WAL`, `synchronous=FULL`, einen begrenzten
+`busy_timeout` und `wal_autocheckpoint=0`. Kurze Leser halten keine Transaktion über externe
+Arbeit. `PASSIVE`-Checkpoint läuft nur im Broker-Idle; `TRUNCATE` nur ohne Leser und aktive
+Capture-Session. WAL- und DB-Dateien liegen lokal, nicht auf einem Netzlaufwerk. Ein Killtest an
+jeder Outboxgrenze beweist at-least-once-Zustellung mit exactly-once-Wirkung: Entweder wird das
+Ereignis erneut gesendet oder als bestätigt rekonstruiert, nie still verloren oder wegen einer
+Wiederholung doppelt angewandt.
+
+---
+
+## 54. P0 — Bestand einfrieren und Hostgrenzen beweisen
+
+**Zweck:** Die späteren Umbauten erhalten eine objektive Rückwärtsgrenze und beenden die
+kritischen hostabhängigen Architekturfragen früh.
+
+**Lieferumfang:**
+
+1. `plugin-identities-v1.json` aus dem echten bestehenden `moduleinfo.json`, einschließlich der
+   beiden bestehenden Class-IDs, Bundle, Vendor und Plugin-Code; die neuen Codes und einmal
+   erzeugten Component-/Controller-IDs werden darin reserviert und in P1 gegen den Build geprüft;
+2. Legacy-FL-Projektfixture mit `sensor`, `hub`, `pre` und `post`, plus Audio-, State- und
+   Scan-Goldens;
+3. repo-eigener JUCE-Bridge-Patch mit Quellhash, Unitfixture und minimalem Host-Trace für
+   Context-Anwesenheit, Parameterpunkte und Buslatenz;
+4. FL-Fixtures für Live, Stop, Seek, Loop-Straddle, Offline-Render, Smart Disable, Float/Double,
+   getrennte Aux-Busse und PDC-Impulse;
+5. Brokerstart-Probe aus installiertem Pfad, ohne Audiothread/Shell, samt Scanner-Negativtest;
+6. dokumentiertes Capability-Ergebnis mit Rohmessdaten, FL-/JUCE-Version und festem Fallback.
+
+**Exit-Gate:** Der heutige Build besteht unverändert, Altprojekte laden bitgleich passiv, die
+Identitätsdatei ist committed und jeder Hostspike endet in `supported` oder dem in Abschnitt 51
+festen Fallback. Kein `unknown, später prüfen` darf P1 passieren.
+
+**Nicht Teil von P0:** neue sichtbare Features, neuer DSP oder ein Umbau des Analysealgorithmus.
+
+---
+
+## 55. P1 — Verträge, State und neutrale Produkt-Shells
+
+**Zweck:** Alle später parallel entstehenden Komponenten sprechen dieselbe versionierte Sprache,
+ohne den Audiopfad zu verändern.
+
+**Lieferumfang:**
+
+- v3-JSON-Schemas, FlatBuffers-Schema, gültige/ungültige Cross-Language-Fixtures und Envelope-
+  Codec;
+- gemeinsame Domain-IDs, Bandgitter und generierter C++-/Rust-Code;
+- `ProductKind`, Capabilitymodell, Parameterlayout und State-Schema 2 mit Schema-1-Migration;
+- drei VST3-Ziele aus gemeinsamen statischen Bibliotheken; ihr erstes `moduleinfo.json` und der
+  FL-Scan müssen exakt dem in P0 eingefrorenen Identitätsmanifest entsprechen;
+- klassifikationsabhängiger Lifecycle: connect-only für alle, Spawn nur für bestätigtes Main;
+- Installer-Manifest für alle drei Bundles plus Broker mit Hash-/Signaturprüfung,
+  Repair/Uninstall und v2-Kompatibilitätslistener;
+- Golden-Tests für State-Roundtrip, unbekanntes Major, Copy/Paste-Duplikat und Browser-Recall.
+
+**Exit-Gate:** Alle drei Ziele scannen und laden in FL; Passive und Active-Hard-Bypass nullen;
+Schema-1-Fixtures migrieren deterministisch und erzeugen keine Brokerstarts im Scanner oder
+Offline-Render. C++ und Rust klassifizieren jedes gültige und ungültige Fixture identisch. R0 ist
+noch nicht erreicht, weil Mess- und Transportkern fehlen.
+
+**Rollback:** Der alte `Eqcp`-Build kann ohne Stateverlust weiter ausgeliefert werden; neue Bundles
+werden nicht installiert, wenn Manifest oder Migration scheitert.
+
+---
+
+## 56. P2 — Zeitkorrekter Messkern, IPC v3 und Kernstore
+
+**Zweck:** Eine Sonde kann vollständige, begrenzte und zeitlich ehrliche Features liefern; der
+Broker kann sie ohne Audiokopplung empfangen und rekonstruieren.
+
+**Lieferumfang:**
+
+- `HostBlockContext`, Ganzblock-SPSC, Quarantäne, Epoch-/Segmentlogik und Droptelemetrie;
+- fixed-memory `LoudnessAccumulator`; keine unbeschränkt wachsenden `kZellen` oder
+  Projektzeitvektoren;
+- FeatureEngine für 64-Live- und 221-Evidenzbänder, Gültigkeitsbitmap, Band-Stereo und Ereignisse;
+- zwei gekoppelte v3-Verbindungen mit P0/P1/P2-Backpressure, CRC, Fuzzgrenzen und v2-Isolation;
+- Coordinator als alleiniger Sessionowner, monotone Liveness/Eviction und Store-Single-Writer;
+- SQLite-Migration 1, append-only Events, Projektionen und Outbox-Killtests;
+- `hoermarkierung` wird durch C++/Rust/Schemata konsistent getragen und invalidiert Evidenz.
+
+**Exit-Gate:** Null-/Realtime-Guards, EBU-/Analyse-Goldens, fragmentierte Frames, Reconnect,
+Drop/Reorder/Duplicate, 32-Sonden-Soak und Store-Killmatrix bestehen. Kein FFT-, Loudness- oder
+Korrelationsfenster überbrückt eine Lücke oder Epoche. Damit ist `R0 · Contract/Internal`
+erreicht.
+
+**Fallback:** P2 reduziert P2-Kadenz oder bleibt bei JSON; es darf nie P0 in denselben
+verlusttoleranten Rückstau verschieben.
+
+---
+
+## 57. P3 — Passive vertikale Landkarte
+
+**Zweck:** Erstmals entsteht ein vollständiger Userpfad von realen Probes bis zu einer ehrlichen
+Main-Ansicht.
+
+**Lieferumfang:**
+
+- Main-Führung, Sessionbeitritt, sichtbare Konfliktlösung für doppelte IDs und zwei Projekte;
+- Main-State für bestätigte Mitglieder, Namen, Messpositionen und Frische;
+- Live-Landkarte für 1 Main + 16 sichtbare Probes, Lastvertrag bis 32;
+- klare Trennung `insert association` versus `post_fader_contribution`;
+- Offline-, stale-, disconnected-, suspended- und unclassified-Zustände;
+- Broker-Rekonstruktion ausschließlich aus State-Reports, Main-State und Storeevents;
+- minimale tägliche UX für Benennen, Join, Entfernen und Fehlerdiagnose; kein aktiver Klangpfad.
+
+**Exit-Gate:** Save/Reload, Duplicate, Bridge/PID-Wechsel, zwei offene Projekte, Brokerneustart und
+60-Minuten-Soak erhalten richtige Mitgliedschaft ohne falsche Steueradresse. Sichtbarer Zustand
+erreicht das Budget aus Abschnitt 49. `R1 · Passive Alpha` ist erreicht.
+
+**Inverse Pfade:** Entfernen hebt Binding sichtbar auf; Main-Übergabe entzieht dem alten Main die
+Schreibfähigkeit; ein stale Client verschwindet nach Tombstone/Eviction aus allen flüchtigen
+Indizes.
+
+---
+
+## 58. P4 — Vergleichsevidenz und manueller Versuch
+
+**Zweck:** Die Landkarte wird von Pegelanzeigen zu belastbarer, passagengebundener Evidenz.
+
+**Lieferumfang:**
+
+- Dynamik-, Headroom-, Stereo-, Korrelations- und Ereignismetriken mit Qualitätsklasse;
+- PRE/POST-Paare, Restlag/Alignment, Coverage und ehrliche Herabstufung bei Modulation oder
+  unbekannter Zeit;
+- manuell markierte Passage, Fingerprint und Comparability-Score;
+- lokaler Hörmarker mit fail-closed `playing=true`, `recording=false`, Realtime und Editor offen;
+- `Experiment` für immutable Baseline/Kandidat, zunächst `manual_external`, Lautheitsabgleich,
+  Blindurteil und Guardrail-Deltas;
+- Invalidierung bei Marker, Preview, Seek, Drop, geändertem Material oder Messpunkt.
+
+**Exit-Gate:** Referenzkorpus, Loop-/Seek-/PDC-Goldens und adversariale Vergleichsfixtures bestehen.
+Kein unbekannter Zeitpfad erzeugt eine starke Cross-Probe- oder PRE/POST-Aussage. Hörmarker- und
+Experimentende schließen alle Taintintervalle; der reguläre Pfad nullt danach wieder.
+
+---
+
+## 59. P5 — Intent, Ursachen, Proposal und passiver Assistent
+
+**Zweck:** Aus Features entsteht eine begründete nächste Handlung, noch ohne Fernänderung.
+
+**Lieferumfang:**
+
+- `SourceIntent` mit Funktion, Front/Middle/Back, Schutz und gerichteter Priorität im Main-State;
+- versionierter Evidenzgraph, `CauseHypothesis`, Alternativen, Ausschlussgründe und Konfidenz;
+- deterministische Policy für den kleinsten `Proposal`, einschließlich `keine Änderung` und
+  `mehr Daten`;
+- persistenter `AssistantStep` mit Abbruch, Zurück, Überspringen und Resume;
+- manueller Busvorschlag und manueller Experimentabschluss;
+- Evaluationskorpus mit Precision/Recall, Kalibrierung, Brier Score, Coverage und Enthaltung;
+- optionale KI nur als Renderer validierter Fakten, nie als Aktions- oder Zahlenquelle.
+
+**Exit-Gate:** Jede sichtbare Behauptung referenziert existente Evidenz-IDs, jedes Proposal nennt
+Ziel, Passage, Grenzen, Hörziel, Stopbedingung und Rückweg. Gegenbeispiele erzwingen nachweislich
+Enthaltung. `R2 · Passive Beta` ist erreicht.
+
+---
+
+## 60. P6 — Active Probe lokal und fernsteuerungsfrei
+
+**Zweck:** Der aktive Audiokern wird zunächst ohne Netzwerkautorität als normales lokales Plugin
+bewiesen.
+
+**Lieferumfang:**
+
+- Hard-Bypass, Input-/Output-Trim, acht feste EQ-Slots, Channelmode, Breite und Mono-Bass;
+- minimumphasige Float-/Double-Kerne entsprechend deklarierter Capability, keine lineare Phase,
+  kein Lookahead und 0 gemeldete Samples Latenz;
+- `DspState → DspProgram → DspBankPool` mit vier festen Ownership-Bänken und atomischem
+  Blockrandtausch;
+- lokale APVTS-/Parameterbedienung, State-Hash, Revisions-/Undo-Ring und Neutralisieren;
+- AutomationOverlay gemäß Hostbridge oder Blockrampen-Fallback;
+- lokale Dry/Processed-A/B-Matrix und drei Analysetaps ohne Candidate-Leak in Baseline;
+- Offline-Render, Smart-Disable-Resume, Oversize-Chunking und Denormal-/NaN-Schutz.
+
+**Exit-Gate:** Filter-, Null-, State-, Automation-, Realtime-/Offline- und Worst-Case-CPU-Goldens
+aus Abschnitt 44/49 bestehen. Ein ungültiger oder neuerer State lädt neutral. Es existiert noch
+kein Remote-Apply-Endpunkt und keine Control-Capability.
+
+**Rollback:** Active-Bundle bleibt unveröffentlicht; P0–P5 und der passive Kern bleiben
+unverändert nutzbar.
+
+---
+
+## 61. P7 — Sichere Remote-Transaktion, Preview und Active-Compare
+
+**Zweck:** Main darf den bereits bewiesenen lokalen DSP unter einer expliziten, widerrufbaren
+Userautorität steuern.
+
+**Lieferumfang:**
+
+- sichtbares Pairing, Current-User-DPAPI, Pipe-Impersonation, HMAC/JCS, Replaycache und Rotation;
+- idempotentes `apply_transaction`, `revert_transaction`, zweistufiges ACK, Conflict und
+  `state_report`;
+- Hold-to-hear-Preview mit lokaler monotoner Lease, Renew, Ramp und sicheren Stop-/Disconnect-/
+  Recording-/Offline-Gates;
+- Hostparametersynchronisation auf dem Message-Thread mit Herkunftstag und
+  `nonParameterStateChanged` für Nichtparameter-State;
+- Active-A/B, Candidate-Tap, State-Hash-Replay, automatische Wiederholungsmessung und, nur bei
+  `aux_compare_pre`, lokales ausgerichtetes Delta;
+- Outbox-Abgleich zwischen Main-State, Probe-ACK und append-only Store;
+- Konflikte mit Hostautomation, neuer Revision oder fremdem führenden Main werden sichtbar und
+  überschreiben nichts.
+
+**Exit-Gate:** 10.000 Duplicate/Reorder/Stale-Befehle, Leaseverlust, Prozesskill an jeder
+Outboxgrenze, Reload, Automation-Write und Offline-Render erzeugen höchstens eine gültige Revision
+und nie eine überlebende Preview. `R3 · Active Beta` ist erreicht.
+
+**Inverse Pfade:** Loslassen/Timeout → Committed; Revert → exakt referenzierte Revision;
+Unpair → Capability gelöscht und Remote gesperrt; Brokerverlust → bestätigter DSP unverändert.
+
+---
+
+## 62. P8 — Dynamische Entmaskierung über echten Sidechain
+
+**Zweck:** Genau eine typisierte Prioritätsbeziehung kann innerhalb der nachgebenden Active Probe
+lokal und begrenzt dynamisch reagieren.
+
+**Eintritt:** `aux_priority_sidechain`, PDC-Golden, P6-DSP und P7-Transaktion sind grün. Ohne diese
+Nachweise beginnt P8 nicht.
+
+**Lieferumfang:**
+
+- bestätigtes Routingobjekt `priority_source → yielding_target` mit Bus-/Kanalidentität;
+- Worker-Fit aus ungefähr 32 Detektorbändern zu höchstens drei breiten, festen DSP-Bändern;
+- audiolokaler Sidechain-Detektor, Energie-Gates, Hysterese, Attack/Hold/Release und
+  Gain-Smoothing;
+- Userlimit ≤ Remote-Hard-Cap 3 dB; Defaultmaximum 1,5 dB; kumulative Schutzgrenze;
+- Sidechainverlust, falsche Kanalzahl oder unbekannte PDC fahren Reduction kontrolliert auf 0;
+- Proposal, Preview, Apply, Telemetrie und Wiederholungsmessung für genau denselben Zustand;
+- Hör-/Stemdatenkorpus mit falschen Positiven, Pumpen, Transienten und Rollenwechseln.
+
+**Exit-Gate:** Kein Telemetrieframe steuert Audio. Dynamik entsteht ausschließlich aus den lokal
+sample-synchronen Puffern. Routing-Recall, Sidechainverlust und Host-Stop hinterlassen keinen
+Gainrest; schlechtere Guardrails gewinnen keinen Versuch.
+
+**Fallback:** Nur Kollisionshinweis und statischer/manueller Vorschlag. Keine versteckte
+Telemetrieaktuation und keine Behauptung von automatischem Entmaskieren.
+
+---
+
+## 63. P9 — Releasehärtung, Distribution und Betriebsbeweis
+
+**Zweck:** Aus funktionierenden Slices wird ein reparierbares, aktualisierbares Produkt.
+
+**Lieferumfang:**
+
+- Installer/Updater für drei Bundles, Broker, Manifest, Signatur, atomaren Austausch,
+  Repair/Uninstall und per-User-Fallbackstart;
+- Migrationstests von jedem publizierten Plugin-, IPC- und DB-Schema;
+- FL-Matrix für unterstützte Versionen, Sampleraten, Blockgrößen, Mono/Stereo, Bridge,
+  Smart Disable, Live/Render, Projektduplikat und zwei parallele Projekte;
+- Pluginval/VST3-Validator, Realtime-Guards, ASan/UBSan beziehungsweise Windows-Äquivalente,
+  Rust-Fuzz/Killtests und 16-/32-Sonden-Soak;
+- Privacy-/Export-/Retention-/Delete-Test und Redaction-Golden für Logs;
+- Diagnosepaket ohne Audio, Capabilitysecret, Username oder rohe SID;
+- Release-Runbook mit Backup, Rollback, DB-Recovery und bekannter Capabilitydegradation.
+
+**Exit-Gate:** Alle harten Gates aus Abschnitt 49 sind grün, keine Queue/Registry/WAL-Datei wächst
+im Soak unbegrenzt, Altprojekte laden passiv, bestätigte Active-States rendern ohne Broker und ein
+fehlgeschlagenes Update kann auf das vorige signierte Paket zurückrollen. Erst dann ist R4
+erreichbar; P8 muss entweder enthalten sein oder durch die sichtbare Produktentscheidung aus
+Abschnitt 53.2 aus dem Versprechen genommen werden.
+
+---
+
+## 64. Abbildung der Arbeitspakete auf Phasen
+
+| Paket aus Abschnitt 50 | primäre Phase | Abschlussnachweis |
+|---|---|---|
+| A · Verträge | P0–P1 | Identity-/Schema-/Capability-Goldens |
+| B · Plugin-Split | P1 | drei scan-/recallstabile, neutrale Ziele |
+| C · Messkern v2 | P2 | Zeit-/Queue-/EBU-/Realtime-Goldens |
+| D · IPC und Kernstore | P2, Distribution in P9 | Fuzz, Backpressure, Kill, Reconnect, Installer |
+| E · Landkarte | P3 | 16/32-Sonden- und Projektisolationsfixture |
+| F · Vergleichsmetriken | P4 | Referenz- und Herabstufungskorpus |
+| G · Evidenzkern | P5 | kalibrierte Ursachen mit Alternativen/Enthaltung |
+| H · Vorschlag/Assistent | P5 | typisierter passiver End-to-End-Slice |
+| I · passiver Experimentkern | P4–P5 | immutable Baseline, Vergleichbarkeit, Urteil |
+| J · aktiver Kern | P6–P7 | lokaler DSP, dann sichere Remote-Transaktion |
+| K · Active-Compare | P7 | Replay-/A/B-/Delta-Goldens |
+| L · Entmaskierung | P8 | echter Sidechain und Ausfall-Nullung |
+| M · Roadmap | nach R4 | eigener Plan; nicht Teil dieser Implementierung |
+
+---
+
+## 65. Erste Ticketfolge
+
+Die Tickets sind absichtlich in Integrationsreihenfolge und nicht nach Team oder Kalender
+sortiert. Ein Ticket darf intern kleiner geschnitten werden, aber sein Gate nicht verlieren.
+
+| ID | Änderung | fertig, wenn |
+|---|---|---|
+| `SONDE-001` | bestehende CIDs, Bundle, Plugin-Code, `moduleinfo` und Schema-1-State einfrieren; neue Codes/CIDs einmal erzeugen und reservieren | Identitätsmanifest sowie bestehende Scan-, State- und Audio-Goldens laufen im CI |
+| `SONDE-002` | Legacy-Hostfixture für Stop/Seek/Loop/Render/Smart Disable und Altrollen | aktuelles Verhalten und bekannte Fehler sind reproduzierbar |
+| `SONDE-003` | JUCE-Bridge-Patch für Context-Anwesenheit, Parameterpunkte und Buslatenz | Quellhashgate plus Wrapper-Unitfixture grün; Fallbackbit geprüft |
+| `SONDE-004` | FL-Aux-/PDC-/Recall-Spike und Capabilityreport | jede Aux-Capability eindeutig supported/unsupported |
+| `SONDE-005` | v3-Domain-/JSON-/FlatBuffers-Schemas, Bandgitter und Cross-Language-Fixtures | C++/Rust validieren identisch; Codegen-Drift ist 0 |
+| `SONDE-006` | State-Schema 2, fester Parameterbestand und reine Schema-1-Migration | Roundtrip, unbekanntes Major, Duplicate und Host-Dirty grün |
+| `SONDE-007` | drei Pluginziele und Lifecycle-Klassifikation | IDs eingefroren; Scanner/Probe/Render spawnen nie Broker |
+| `SONDE-008` | `StampedAudioQueue`, Quarantäne und fixed-memory Loudness | keine Teilblöcke/unbegrenzten Vektoren; RT-/EBU-Goldens grün |
+| `SONDE-009` | FeatureEngine v2 mit Zeit-, Validity-, Event- und Bandverträgen | Drop/Seek/Loop trennt jedes offene Fenster |
+| `SONDE-010` | v3-Control-/Telemetry-Clients und Rust-Envelopeparser | CRC/Fuzz/Backpressure/Reconnect ohne P0-Starvation |
+| `SONDE-011` | Coordinator, monotone Eviction, SQLite-Migration 1 und Outbox | Killmatrix rekonstruiert genau einmal wirksame Ereignisse |
+| `SONDE-012` | passiver Join-/Landkarten-Slice bis Main inklusive Fehlerzustände | P3-Gate und R1 erreicht |
+| `SONDE-013` | Dynamik/Stereo/PRE-POST/Passage und manueller Experimentkern | P4-Korpus und inverse Taintpfade grün |
+| `SONDE-014` | Intent, CauseHypothesis, Proposal und AssistantStep | jede Aussage evidenzgebunden; R2 erreicht |
+| `SONDE-015` | lokaler Active-DSP, Bankpool, State/Automation und A/B | P6-Null-/Filter-/Recall-/CPU-Gates grün |
+| `SONDE-016` | Pairing/HMAC, Preview-Lease und Apply/Revert-State-Machine | Befehlsstress, Unpair, Timeout und Conflict grün |
+| `SONDE-017` | Active-Compare, Replay, Outboxabgleich und Wiederholungsmessung | R3 erreicht; Candidate kontaminiert nie Baseline |
+| `SONDE-018` | lokales Sidechain-Unmasking mit Routing- und Verlustgates | P8-Gate oder dokumentierter Produktfallback |
+| `SONDE-019` | Distributions-, Migrations-, Soak-, Privacy- und Rollbackmatrix | P9-Gate; freigabefähiges signiertes Paket |
+
+`SONDE-001` bis `SONDE-004` sind die erste Implementierungswelle. `SONDE-005` darf parallel zu
+den Hostmessungen vorbereitet, aber erst nach deren Capabilityentscheidung geschlossen werden.
+Kein Active-Ticket wird vor dem passiven R2-Slice vorgezogen.
+
+---
+
+## 66. Testziele und CI-Schnitt
+
+### 66.1 C++-Ziele
+
+| Ziel | bindet ab |
+|---|---|
+| `EqCopIdentityTest` | P0-Manifest, CIDs, Moduleinfo, Plugin-Codes |
+| `EqCopStateMigrationTest` | Schema 1→2, Roundtrip, Unknown-Major, Host-Dirty |
+| `EqCopHostContextTest` | Context-Presence, Validity, Cycle-PPQ, Parameteroffsets |
+| `EqCopQueueStressTest` | Ganzblockaufnahme, Drop, Quarantäne, Wrap und Oversize |
+| `EqCopAnalysisGoldenTest` | EBU, Bandgitter, Stereo, Ereignisse, Epochgrenzen |
+| `EqCopDspGoldenTest` | Hard-Bypass, Filter, Float/Double, Automation, Offline |
+| `EqCopTransactionTest` | Banktausch, Revision, Preview, Revert, State-Hash |
+
+Die vorhandenen Null-, Golden-, Marker- und Pipe-Tests bleiben erhalten und werden nicht durch
+neue Sammeltests ersetzt. Ein neues Ziel muss den echten Produktionsquellpfad linken; Kopien der
+Implementation im Test sind unzulässig.
+
+### 66.2 Rust- und Vertragsziele
+
+- `contract_cross_language`: gültige/ungültige JSON-, JCS-, Envelope- und FlatBuffers-Fixtures;
+- `transport_fuzz`: Längen, Header, Flags, CRC, Fragmentierung und Ratengrenzen;
+- `coordinator_model`: Join, zwei Projekte, Führung, Nonce, stale und Eviction;
+- `store_crash_matrix`: Migration, WAL, Outbox, Killpunkt und Projektion-Rebuild;
+- `security_vectors`: SID-Pipetoken, Impersonationfehler, DPAPI-Transfer, HMAC und Replay;
+- `session_soak`: 1/4/8/16/32 Clients mit langsamen Lesern und Brokerneustart.
+
+### 66.3 Reale Hostabnahme
+
+Automatisierte Tests ersetzen FL Studio nicht. Für jede unterstützte FL-Version existiert eine
+kleine gespeicherte `.flp`-Matrix mit Routingbeschreibung, erwarteter Pluginreihenfolge und
+maschinenlesbarem Ergebnisexport. Abnahme verwendet echte Hostinteraktion, Impuls-/Audiofiles und
+gespeicherten Reload; ein programmatischer DOM-Klick oder ein isolierter Processor-Unit-Test ist
+kein Hostbeweis. Proprietäre `.flp`-Fixtures dürfen im privaten QA-Artefakt liegen, aber ihr
+Fixture-Manifest, Hash und erwartetes Resultat gehören ins Repository.
+
+---
+
+## 67. Definition of Done je Änderung
+
+Jede Änderung, die bindet, speichert, lädt, verbindet, abonniert oder anwendet, beantwortet vor
+Merge diese Fragen:
+
+1. **Vorwärtsweg:** Welche Eingabe erzeugt welchen autoritativen Zustand oder welches Audio?
+2. **Inverser Weg:** Wie werden Unbind, Unsubscribe, Revert, Timeout, Remove oder Migration
+   vollständig ausgeführt?
+3. **Reload:** Welche Bytes reisen im Projekt, welche im Store, welche sind bewusst flüchtig?
+4. **Stale/Conflict:** Was passiert bei alter Revision, alter Nonce, neuer Broker-Epoche,
+   doppelter ID oder zwei Main?
+5. **Realtime:** Welche feste Obergrenze gilt; wo sind Allocation, Lock, I/O und Logging
+   nachweislich ausgeschlossen?
+6. **Userwahrheit:** Welche Capability, Unsicherheit oder Degradation sieht Main tatsächlich?
+7. **Beweis:** Welcher Unit-, Contract-, Integration-, Host- und Negativtest schlägt vor dem Fix
+   fehl und danach grün?
+
+Zusätzlich gilt:
+
+- Schemaänderung: Schema + gültige/ungültige Fixtures → Producer → Consumer → Migration → Doku.
+- DSP-Änderung: analytisches Golden → neutraler/inverser Pfad → Realtime-Stress → Hostrender.
+- State-Änderung: alter Fixtureload → neuer Roundtrip → unbekannte Zukunft → Host-Dirty/Recall.
+- IPC-Änderung: Parsergrenze → Authentisierung → Idempotenz → Backpressure → Reconnect.
+- Jede Phase aktualisiert Capabilitymatrix, bekannte Fallbacks und dieses Dokument, falls eine
+  technische Annahme durch Messung ersetzt wurde.
+- Pfad- und Zeilenangaben im Review werden gegen den finalen Diff geprüft; bestehende fremde
+  Worktreeänderungen sind kein Teil eines Sondentickets.
+
+---
+
+## 68. Entscheidung nach Fassung 0.3
+
+Der technische Weg ist hinreichend bestimmt, um mit `SONDE-001` zu beginnen. Die erste
+Implementierungswelle baut noch kein neues Produktverhalten; sie friert Kompatibilität ein und
+entscheidet die Hostfähigkeiten, von denen ehrliche Zeit-, Automation-, Delta- und
+Sidechainaussagen abhängen.
+
+Die **Bauentscheidung bleibt organisatorisch noch nicht erteilt**. Wird sie erteilt, beginnt die
+Arbeit bei P0 und nicht bei UI, Active-DSP oder KI. Ein gescheiterter Hostspike stoppt nicht den
+passiven Kern, sondern aktiviert den bereits benannten Capabilityfallback. Dadurch bleibt die
+Lieferfolge sowohl technisch streng als auch schrittweise nutzbar.

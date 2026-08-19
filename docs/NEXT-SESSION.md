@@ -28,60 +28,39 @@ durch einen neuen Effekt oder eine neue Metapher umdeuten.
 
 ## Der eine nächste Schritt
 
-**ST-MAP-LIVE-REFRAKTION BAUEN (User-Freigabe 19.08., Marker
-`.claude/kreativ-freigabe.md` — Wortlaut dort). Rendern bewusst in DIESE
-frische Session verschoben.**
+**NAK-16 PROBE-STILL IST GEBAUT UND BESTANDEN (19.08., Commits cba6bd6 +
+602b20a). Nächster Schritt: der User SIEHT SICH DAS LEBENDE BLATT AN —
+`eq-copilot/design/prisma/stmap-probe.html` doppelklicken (Testmuster)
+und mit `?bg=unicorn` (lebender Nexus, braucht Internet).** Optik-Urteil
+gehört ihm: Dispersion-Stärke (`?dispersion=0.035` Vorgabe), Glanz-Rig
+(zwei Kanten + Front-Streifen, Dark-Field), TIR-Zonen (12 % der
+Glasfläche zeigen ehrlich nur Glanz statt Hintergrund).
 
-Warum: Die erste Freistellung (dreh-frei, NAK-15) ist vom User
-VERWORFEN — „das prisma hat in sich die spiegelung des alten
-hintergrundes eingebacken … die beleuchtung komplett falsch … billig
-zusammengeklebt". Volle Analyse: `docs/geschmacksprofil.md`
-(Freistellungs-Probe 19.08.) + NAK-16 in `docs/offene-punkte.md`.
+Was bewiesen ist (`renders/stmap/messung.json` + probe-live-a/b.png +
+probe-live-unicorn.png): **74,2 % der Glaspixel ändern sich mit dem
+Hintergrund-Stand** (Erfolgsmaßstab der Freigabe — Ähnlichkeit zum alten
+Frame bleibt als Metrik VERBOTEN); Konsistenz außerhalb 0/255;
+Direktsicht-Beweis p99 0,019 px; B nicht Fresnel-gewichtet; 64 Samples
+genügen; Half-Float trägt; RGBA16F-Upload ok. Fallen + Details:
+`docs/design-stand.md` (NAK-16-Abschnitt); verbindliche Pipeline
+weiterhin `docs/research/2026-08-19-stmap-live-refraktion.md`.
 
-**DER PLAN IST RECHERCHE-GEHÄRTET** (User 19.08.: „fundiert auf
-fachwissen aus dem 3d/gamedesign … das muss perfekt sein"). Verbindliche
-Pipeline mit Belegen und Begründungen:
-**`docs/research/2026-08-19-stmap-live-refraktion.md`** — ZUERST lesen,
-er ersetzt jede frühere Plan-Fassung. Kernpunkte (Details + Zitate im
-Report):
+**Nach der Abnahme (braucht ggf. frischen Freigabe-Marker):**
+1. 72er-Sequenz backen: `--nur-stmap` (4 s/Frame) + `--nur-glanz`
+   (11 s/Frame) je Drehwinkel ≈ 18 min CPU; Konverter über alle Frames.
+2. Integration ins Prototyp-/Schlieren-Blatt: Ebene 0 braucht ÜBERSTAND
+   (Ziel-UVs bis u=1,5; Probe nutzt 1920×1280 hinter 768×1024-Glas),
+   getContext-Patch (preserveDrawingBuffer) VOR dem Unicorn-SDK-Load
+   mitnehmen; Offsets sind Glas-Canvas-UV → affin in Hintergrund-UV.
+3. Glanz-Rig-Frage ans Zielbild koppeln: Kanten-Panels sind auf die
+   Rastpose gerechnet — für die Sequenz entweder pro Frame am
+   evaluierten Mesh rechnen (NAK-17: Normalen zeigen nach innen!) oder
+   ein rotationsinvariantes Rig bauen.
 
-1. **ST-Map backen** (`prisma-material-still.py` erweitern): Plate mit
-   prozeduralem ST-Gradienten als Emission (R=u, G=v, **B=1 als
-   Gültigkeits-/Gewichtskanal**); Prisma mit **Refraction BSDF** (NICHT
-   Glass — Fresnel-Reflexion kontaminiert sonst die Karte), Color weiß,
-   Roughness 0, EIN IOR 1,474. `film_transparent`, **Denoise AUS**
-   (Default ist an!), **Pixel-Filter Box + 0,01**, ~32–64 Samples
-   (Delta-Pfad), Adaptive Sampling aus. Output **OpenEXR 32-bit Float**
-   (umgeht AgX; NICHT PNG). TIR-Pixel = B≈0 → Laufzeit zeigt dort nur
-   Glanz. **R/B-Normalisierung** liefert entkoppelte UV + Gewicht.
-2. **Konvertierung offline:** EXR → **OFFSET-Form** (uv − Identität mit
-   Halbpixel (x+0,5)/Breite) → Float-Puffer als eigenes Binärformat
-   (NIE durch den Browser-Bildpfad — der zerstört 16-bit-Daten).
-   Offset-Form macht Half-Float tragfähig (Präzisionsrechnung im Report).
-3. **Glanz-Pass:** existiert als `--nur-glas` (normal gefiltert) —
-   liefert zugleich die WEICHE Silhouettenkante (die Karte bleibt hart).
-   Licht-Rig ggf. an die Nexus-Lichtwelt angleichen (Probe entscheidet).
-4. **Blatt (WebGL2):** Karte als **RG16F/RGBA16F** (LINEAR ist
-   WebGL2-Kern; 32F+NEAREST+Shader-Bilinear als Eskalationspfad);
-   Live-Canvas pro Frame per texSubImage2D VOR den Draws,
-   UNPACK_PREMULTIPLY_ALPHA beachten. Composite:
-   `tint · bg(uv+off) · gewichtB + glanz` (Lerp-Form, Fresnel steckt
-   gebacken in B und Glanz). Dispersion: 3 Abgriffe entlang des
-   Offset-Vektors (Standard); 3-Karten-Weg nur als Eskalation.
-5. **Probe-Checkliste (misst die offenen Mittel-Konfidenz-Punkte):**
-   B-Kanal-Werte (Fresnel-Gewichtung ja/nein + TIR-Zonen), Rauschen bei
-   64 Samples, Canvas-Upload-Mikro-Benchmark, RG16F-Upload-Pfad.
-6. **Erfolgsmaßstab (nicht verhandelbar):** Das Glasinnere zeigt den
-   LEBENDEN Hintergrund und bewegt sich mit ihm — zwei Screenshots mit
-   verschiedenem Hintergrund-Stand müssen sich IM Glas unterscheiden.
-   „Ähnlichkeit zum alten Frame" ist als Metrik verboten (damit wurde
-   der Fehler letzte Nacht als Erfolg gemessen).
-
-Stand bis dahin: Das Blatt zeigt als Vorgabe die BEANSTANDETE
-dreh-frei-Fassung (`?frames=dreh` = alter Studio-Satz). Maschinen-Fakten:
-~75 s/Frame bei 320 Samples 768×1024 CPU; Sequenz-Kamera = `KAM` im
-Blatt (lens 65, −1,65/−3,53/0,95 → 0,0,0,78), NICHT die Skript-Defaults;
-`--weiter` überspringt existierende Frames.
+Maschinen-Fakten Sequenz: Kamera = `KAM` im Blatt (lens 65,
+−1,65/−3,53/0,95 → Ziel 0/0/0,8 — Code im Blatt schlägt ältere
+Notizen), 768×1024; `--weiter` überspringt existierende Frames; alte
+Beauty-Frames: ~75 s/Frame bei 320 Samples.
 
 Danach weiter offen (User-Urteile): Boden-Kontaktebene an/aus (Taste B) ·
 bandrelative Fahrt (Tasten 2/3) · Unicorn-Bindungen der

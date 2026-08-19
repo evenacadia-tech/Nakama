@@ -123,6 +123,49 @@ Delta 1,73" war die falsche Metrik — sie bewies das Eingebackene.
 Freigegebener Nachfolger: **NAK-16 ST-Map-Live-Refraktion**
 (`docs/NEXT-SESSION.md` + Geschmacksprofil „Freistellungs-Probe").
 
+**NAK-16 PROBE-STILL GEBAUT UND BESTANDEN (19.08., cba6bd6 + 602b20a —
+„ausgeführt und gesehen"):** Das Glas bricht den LEBENDEN Hintergrund.
+Kette: `prisma-material-still.py --nur-stmap` (Refraction BSDF, Plate
+emittiert u/v/1, filterlos Box 0,01, Denoise/Adaptive aus, 32f-EXR —
+4 s/Frame, Delta-Pfad) + `--nur-glanz` (Kanten gegen Schwarz, 11 s)
+→ `konvertiere-stmap.py` (Blender-Python: u=R/B v=G/B, Plate-UV → Welt
+→ bewiesene Blatt-Kamera → SCREEN-Offsets float16 + Gewicht; Beweis:
+Direktsicht-Offsets neben dem Prisma p99 0,019 px) → `stmap-probe.html`
+(WebGL2: Karte RGBA16F/LINEAR, Composite
+`mix(direkt, bg(uv+off)·B + glanz·a, glanzA)`, 3-Tap-Dispersion).
+Erfolgsmaßstab der Freigabe erfüllt: 74,2 % der Glaspixel ändern sich
+mit dem Hintergrund-Stand (`renders/stmap/messung.json`,
+Screenshot-Paar probe-live-a/b.png, lebender Nexus
+probe-live-unicorn.png). Checkliste beantwortet: Refraction BSDF ist
+NICHT Fresnel-gewichtet (B≈1; Fresnel liegt komplett im Glanz-Pass) ·
+TIR 12 % der Glasfläche (zeigt ehrlich nur Glanz) · 64 Samples genügen
+(Seed-Rauschen p99 0,037 px) · Half-Float trägt (max 0,19 px) ·
+SwiftShader-Boden 53 ms/Frame (echte GPU deutlich schneller).
+**Wichtig für die Blatt-Integration:** Ziel-UVs reichen bis u=1,5 —
+Ebene 0 braucht ÜBERSTAND übers Glasfenster (Probe: Hintergrund
+1920×1280, Glas 768×1024 zentriert); die Offsets sind in
+Glas-Canvas-UV und werden affin in Hintergrund-UV umgerechnet.
+Offen: User-Sichtung am lebenden Blatt (Dispersion `?dispersion=`,
+Glanz-Rig), dann 72er-Sequenz + Integration.
+
+**FALLEN aus dem NAK-16-Bau (jede gemessen, nicht vermutet):**
+1. **Fremde WebGL-Canvases lesen sich SCHWARZ** (texImage2D), wenn sie
+   ohne `preserveDrawingBuffer` erstellt wurden — der Unicorn-Canvas
+   braucht den getContext-Patch VOR dem SDK-Load (steht in
+   `stmap-probe.html`; bei Integration mitnehmen).
+2. Ein per JS erzeugtes `<script>` lädt erst mit `appendChild` — der
+   stille Unicorn-Ausfall war GENAU das (kein Request, kein Fehler).
+3. Unicorn rendert nicht in off-screen positionierte Elemente
+   (left:-9999px) — Ebene 0 sichtbar HINTER dem deckenden Composite
+   platzieren.
+4. **Spiegelwinkel nie aus der Eckenliste herleiten:** die
+   Seiten-Normalen des Prisma-Meshes zeigen nach INNEN (NAK-17) und
+   die Fase ist flat-shaded (diskrete Sub-Normalen) — Licht-Rigs am
+   evaluierten Depsgraph-Mesh messen (`--nur-glanz`-Kommentar).
+5. `gl.finish()` blockt unter ANGLE/SwiftShader nicht ehrlich —
+   Benchmarks brauchen readPixels als Pipeline-Zwang (0,06 ms
+   „gemessen" vs 53 ms echt).
+
 **FALLE (18.08., teuer bezahlt): Wer in Unicorn Studio einen REGLER von Hand
 verschiebt, LÖST damit seine Variablen-Bindung.** Danach zeigt das
 Variablen-Panel weiter Werte an, die den Shader nie erreichen — der Effekt

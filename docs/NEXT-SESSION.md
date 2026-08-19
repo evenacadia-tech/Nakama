@@ -10,15 +10,20 @@
 
 ## Der eine nächste Schritt
 
-**BEWEGUNG IST GEBAUT UND GEMESSEN — die Optik-Abnahme des Users steht aus.**
-`eq-copilot/design/prisma/prisma-schlieren.html` öffnen und den User schauen
-lassen: der Prüfton FÄHRT (entsteht bei 6 s, verschwindet ab 23 s der
-Schleife) — die Störung quert als kompakter Wirbel in ~14 s das Feld.
-Erstes Teil-Urteil 19.08.: „bass sieht okay aus, höhen bewegt sich nicht"
-→ Ursache war der feste Hub 55→150 Hz (lag nur in Band 0); seit Commit
-168feca ist die Fahrt BANDRELATIV (Band 1 ~530→1450 Hz, Band 2
-~5,2→14 kHz, gemessen: Höhen-Befund 7,6 kHz wandert). Urteil zu
-Mitten/Höhen und die Gesamt-Abnahme: offen.
+**ALLES LIEGT AM BLATT ZUR ABNAHME — drei Dinge auf einmal beurteilbar.**
+`eq-copilot/design/prisma/prisma-schlieren.html` öffnen:
+1. **Prisma FREIGESTELLT auf lebendem Nexus** (Nachtarbeit 19.08.,
+   NAK-15 geschlossen): kein Studio-Rechteck mehr, die Ebene 0 scheint
+   durch das Bild; Taste B schaltet die Boden-Kontaktebene (Pfützen)
+   an/aus — beide Anmutungen am lebenden Blatt vergleichen.
+   `?frames=dreh` zeigt den alten eingebackenen Stand.
+2. **Prüfton-Fahrt bandrelativ** (Teil-Urteil 19.08.: „bass sieht okay
+   aus, höhen bewegt sich nicht" → behoben, Commit 168feca): Band 1
+   ~530→1450 Hz, Band 2 ~5,2→14 kHz — Tasten 2/3 prüfen.
+3. **Bewegung selbst** (18.08. „nur Pixelzucken" → Fahrt + Sub-Bin-
+   Interpolation): der Wirbel quert das Feld in ~14 s.
+Ausstehend nur User-Urteile; technische Beweise stehen in
+`docs/design-stand.md`.
 
 Was die Messung ergab (Commit 7148248, Details `docs/design-stand.md`):
 

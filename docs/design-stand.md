@@ -86,10 +86,23 @@ oder Szenen-Fehler werden verschluckt, der dunkle Grund bleibt.
 (der Hintergrund animiert frei; Element-Screenshots von `#bild` bleiben
 davon unberührt). Hinter der Drei-String-Szene wird Ebene 0 erst sichtbar,
 wenn deren schwarzer Gradient-Layer in Unicorn unsichtbar wird.
-**Grenze des heutigen Stands:** Ebene 0 RAHMT das Blatt nur — die
-Drehframes selbst sind ohne Alpha (Studio eingebacken); fürs freigestellte
-Prisma in der App siehe **NAK-15** (`docs/offene-punkte.md`:
-film_transparent-Neurender + Shadow-Catcher-Frage, Fakten verifiziert).
+**FREIGESTELLT (Nacht 19.08., NAK-15 geschlossen, Commit 7de964d):**
+Vorgabe-Frames sind jetzt `renders/dreh-frei/` (72× RGBA-WebP, VP8X+ALPH,
+~1,4 MB): film_transparent, Plate+Boden kameraunsichtbar (bleiben Licht-
+und Spiegelquellen — die Plate ist durchs Glas weiter sichtbar,
+dokumentierter Ebene-0-Kompromiss), Kamera IDENTISCH zur bewiesenen
+JS-Projektion (lens 65, POS −1,65/−3,53/0,95 — die Skript-Defaults sind
+die STILL-Kamera, nicht die Sequenz!). Dazu `renders/dreh-boden/` (72×):
+NUR der Boden mit Pfützen/Glanz, Prisma lichtwirksam aber unsichtbar,
+offline in Alpha-aus-Helligkeit gewandelt — Kontakt-Ebene UNTER dem
+Prisma (Taste B, `?boden=0`). **Shadow Catcher war gemessen der falsche
+Weg** (0 Pfützen-Pixel — die Pfützen sind GLANZreflexe; der Catcher fängt
+Schatten/Diffus). Beweise: RGB-Treue in der Silhouette Mittel-Delta 1,73
+gegen f035 alt; Pixel-Probe neben der Silhouette exakt Body-Farbe (Canvas
+wirklich transparent, Ebene 0 scheint DURCH das Bild); alle
+Funktions-Checks grün, Blatt↔Brücke weiter bitgleich. `?frames=dreh`
+lädt den alten eingebackenen Satz zum Vergleich (bleibt Archiv +
+Prototyp-Quelle). Messläufe: `&hintergrund=0` bleibt Pflicht.
 
 **FALLE (18.08., teuer bezahlt): Wer in Unicorn Studio einen REGLER von Hand
 verschiebt, LÖST damit seine Variablen-Bindung.** Danach zeigt das

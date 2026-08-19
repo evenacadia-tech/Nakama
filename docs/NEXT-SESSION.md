@@ -38,23 +38,40 @@ hintergrundes eingebacken … die beleuchtung komplett falsch … billig
 zusammengeklebt". Volle Analyse: `docs/geschmacksprofil.md`
 (Freistellungs-Probe 19.08.) + NAK-16 in `docs/offene-punkte.md`.
 
-Der Plan (erst EIN Probe-Still komplett beweisen, dann die 72er-Sequenz):
+**DER PLAN IST RECHERCHE-GEHÄRTET** (User 19.08.: „fundiert auf
+fachwissen aus dem 3d/gamedesign … das muss perfekt sein"). Verbindliche
+Pipeline mit Belegen und Begründungen:
+**`docs/research/2026-08-19-stmap-live-refraktion.md`** — ZUERST lesen,
+er ersetzt jede frühere Plan-Fassung. Kernpunkte (Details + Zitate im
+Report):
 
-1. **ST-Map backen** (`prisma-material-still.py` erweitern): Plate-Fläche
-   bekommt statt des Nexus-Bilds einen UV-Koordinatengradienten als
-   Emission; Glas mit EINEM IOR (Mitte 1,474, keine Dispersion in der
-   Karte); hohe Samples, KEIN Denoise (der Denoiser schmiert Gradienten);
-   16-Bit-Präzision nötig — als 8-Bit-PNG mit Hi/Lo-Byte-Split
-   (u→R+G, v→B+A). Rays, die die Plate verfehlen → Alpha 0.
-2. **Glanz-Pass**: existiert schon als `--nur-glas` (Oberflächenglanz +
-   Kanten gegen transparent) — wiederverwenden, ggf. Licht-Rig an die
-   Nexus-Lichtwelt angleichen (Probe entscheidet).
-3. **Blatt**: WebGL-Pass sampelt pro Frame den lebenden Unicorn-Canvas
-   (texImage2D vom Canvas, gleiche Seite = erlaubt) durch die ST-Map;
-   Dispersion optisch durch 3 leicht versetzte Abgriffe (R/G/B) im
-   Shader. Darüber der Glanz-Pass, darunter ggf. Boden-Kontaktebene
-   (dreh-boden bleibt brauchbar).
-4. **Erfolgsmaßstab (nicht verhandelbar):** Das Glasinnere zeigt den
+1. **ST-Map backen** (`prisma-material-still.py` erweitern): Plate mit
+   prozeduralem ST-Gradienten als Emission (R=u, G=v, **B=1 als
+   Gültigkeits-/Gewichtskanal**); Prisma mit **Refraction BSDF** (NICHT
+   Glass — Fresnel-Reflexion kontaminiert sonst die Karte), Color weiß,
+   Roughness 0, EIN IOR 1,474. `film_transparent`, **Denoise AUS**
+   (Default ist an!), **Pixel-Filter Box + 0,01**, ~32–64 Samples
+   (Delta-Pfad), Adaptive Sampling aus. Output **OpenEXR 32-bit Float**
+   (umgeht AgX; NICHT PNG). TIR-Pixel = B≈0 → Laufzeit zeigt dort nur
+   Glanz. **R/B-Normalisierung** liefert entkoppelte UV + Gewicht.
+2. **Konvertierung offline:** EXR → **OFFSET-Form** (uv − Identität mit
+   Halbpixel (x+0,5)/Breite) → Float-Puffer als eigenes Binärformat
+   (NIE durch den Browser-Bildpfad — der zerstört 16-bit-Daten).
+   Offset-Form macht Half-Float tragfähig (Präzisionsrechnung im Report).
+3. **Glanz-Pass:** existiert als `--nur-glas` (normal gefiltert) —
+   liefert zugleich die WEICHE Silhouettenkante (die Karte bleibt hart).
+   Licht-Rig ggf. an die Nexus-Lichtwelt angleichen (Probe entscheidet).
+4. **Blatt (WebGL2):** Karte als **RG16F/RGBA16F** (LINEAR ist
+   WebGL2-Kern; 32F+NEAREST+Shader-Bilinear als Eskalationspfad);
+   Live-Canvas pro Frame per texSubImage2D VOR den Draws,
+   UNPACK_PREMULTIPLY_ALPHA beachten. Composite:
+   `tint · bg(uv+off) · gewichtB + glanz` (Lerp-Form, Fresnel steckt
+   gebacken in B und Glanz). Dispersion: 3 Abgriffe entlang des
+   Offset-Vektors (Standard); 3-Karten-Weg nur als Eskalation.
+5. **Probe-Checkliste (misst die offenen Mittel-Konfidenz-Punkte):**
+   B-Kanal-Werte (Fresnel-Gewichtung ja/nein + TIR-Zonen), Rauschen bei
+   64 Samples, Canvas-Upload-Mikro-Benchmark, RG16F-Upload-Pfad.
+6. **Erfolgsmaßstab (nicht verhandelbar):** Das Glasinnere zeigt den
    LEBENDEN Hintergrund und bewegt sich mit ihm — zwei Screenshots mit
    verschiedenem Hintergrund-Stand müssen sich IM Glas unterscheiden.
    „Ähnlichkeit zum alten Frame" ist als Metrik verboten (damit wurde

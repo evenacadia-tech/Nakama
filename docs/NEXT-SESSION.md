@@ -10,20 +10,47 @@
 
 ## Der eine nächste Schritt
 
-**ALLES LIEGT AM BLATT ZUR ABNAHME — drei Dinge auf einmal beurteilbar.**
-`eq-copilot/design/prisma/prisma-schlieren.html` öffnen:
-1. **Prisma FREIGESTELLT auf lebendem Nexus** (Nachtarbeit 19.08.,
-   NAK-15 geschlossen): kein Studio-Rechteck mehr, die Ebene 0 scheint
-   durch das Bild; Taste B schaltet die Boden-Kontaktebene (Pfützen)
-   an/aus — beide Anmutungen am lebenden Blatt vergleichen.
-   `?frames=dreh` zeigt den alten eingebackenen Stand.
-2. **Prüfton-Fahrt bandrelativ** (Teil-Urteil 19.08.: „bass sieht okay
-   aus, höhen bewegt sich nicht" → behoben, Commit 168feca): Band 1
-   ~530→1450 Hz, Band 2 ~5,2→14 kHz — Tasten 2/3 prüfen.
-3. **Bewegung selbst** (18.08. „nur Pixelzucken" → Fahrt + Sub-Bin-
-   Interpolation): der Wirbel quert das Feld in ~14 s.
-Ausstehend nur User-Urteile; technische Beweise stehen in
-`docs/design-stand.md`.
+**ST-MAP-LIVE-REFRAKTION BAUEN (User-Freigabe 19.08., Marker
+`.claude/kreativ-freigabe.md` — Wortlaut dort). Rendern bewusst in DIESE
+frische Session verschoben.**
+
+Warum: Die erste Freistellung (dreh-frei, NAK-15) ist vom User
+VERWORFEN — „das prisma hat in sich die spiegelung des alten
+hintergrundes eingebacken … die beleuchtung komplett falsch … billig
+zusammengeklebt". Volle Analyse: `docs/geschmacksprofil.md`
+(Freistellungs-Probe 19.08.) + NAK-16 in `docs/offene-punkte.md`.
+
+Der Plan (erst EIN Probe-Still komplett beweisen, dann die 72er-Sequenz):
+
+1. **ST-Map backen** (`prisma-material-still.py` erweitern): Plate-Fläche
+   bekommt statt des Nexus-Bilds einen UV-Koordinatengradienten als
+   Emission; Glas mit EINEM IOR (Mitte 1,474, keine Dispersion in der
+   Karte); hohe Samples, KEIN Denoise (der Denoiser schmiert Gradienten);
+   16-Bit-Präzision nötig — als 8-Bit-PNG mit Hi/Lo-Byte-Split
+   (u→R+G, v→B+A). Rays, die die Plate verfehlen → Alpha 0.
+2. **Glanz-Pass**: existiert schon als `--nur-glas` (Oberflächenglanz +
+   Kanten gegen transparent) — wiederverwenden, ggf. Licht-Rig an die
+   Nexus-Lichtwelt angleichen (Probe entscheidet).
+3. **Blatt**: WebGL-Pass sampelt pro Frame den lebenden Unicorn-Canvas
+   (texImage2D vom Canvas, gleiche Seite = erlaubt) durch die ST-Map;
+   Dispersion optisch durch 3 leicht versetzte Abgriffe (R/G/B) im
+   Shader. Darüber der Glanz-Pass, darunter ggf. Boden-Kontaktebene
+   (dreh-boden bleibt brauchbar).
+4. **Erfolgsmaßstab (nicht verhandelbar):** Das Glasinnere zeigt den
+   LEBENDEN Hintergrund und bewegt sich mit ihm — zwei Screenshots mit
+   verschiedenem Hintergrund-Stand müssen sich IM Glas unterscheiden.
+   „Ähnlichkeit zum alten Frame" ist als Metrik verboten (damit wurde
+   der Fehler letzte Nacht als Erfolg gemessen).
+
+Stand bis dahin: Das Blatt zeigt als Vorgabe die BEANSTANDETE
+dreh-frei-Fassung (`?frames=dreh` = alter Studio-Satz). Maschinen-Fakten:
+~75 s/Frame bei 320 Samples 768×1024 CPU; Sequenz-Kamera = `KAM` im
+Blatt (lens 65, −1,65/−3,53/0,95 → 0,0,0,78), NICHT die Skript-Defaults;
+`--weiter` überspringt existierende Frames.
+
+Danach weiter offen (User-Urteile): Boden-Kontaktebene an/aus (Taste B) ·
+bandrelative Fahrt (Tasten 2/3) · Unicorn-Bindungen der
+Drei-String-Szene (User-seitig).
 
 Was die Messung ergab (Commit 7148248, Details `docs/design-stand.md`):
 

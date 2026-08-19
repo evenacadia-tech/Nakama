@@ -1,45 +1,36 @@
-# Kreativ-Freigabe — 2026-08-18 (Sicht-Probe Schlieren-Ablesung)
+# Kreativ-Freigabe — 2026-08-19 (ST-Map-Live-Refraktion)
 
-**Vom User freigegeben (Wortlaut):** „ich muss das sehen" — gesagt am
-Ende des /diverge-duo-Laufs zur Befund-Verkoerperung, auf die Frage, ob
-„gerade Lichtkanten im Glas, die sich verbiegen, wo etwas nicht stimmt"
-ein Bild in seinem Kopf formt. Es ist derselbe Satz wie bei der letzten
-Freigabe („ich muss es sehen um eine vorstellung zu haben"): der User
-beurteilt am lebenden Bild, nicht an der Beschreibung.
+**Vom User freigegeben (Wortlaut):** „ja aber das rendern machen wir
+nächste session dann mit frischem kontext" — auf den Vorschlag, dass das
+Glas nichts Eingebackenes mehr zeigt, sondern den lebenden Hintergrund
+WIRKLICH bricht.
 
-**Ausgearbeitete Vorstellung (im Gespraech entstanden, zwei Modelle
-blind aufgefaechert + gegenseitig angegriffen):** DIE SCHLIEREN-ABLESUNG.
-Der Befund wird NIE gezeichnet. Sichtbar ist ausschliesslich, wie er ein
-regelmaessiges Prueffeld gerader Lichtlinien im Glasvolumen verbiegt —
-Schlieren-Verfahren, das reale Laborbild fuer unsichtbare Felder.
-Begruendung (Codex' ehrlichste Zeile, uebernommen): eine Resonanz ist
-kein Stoff, sondern eine lokale Aenderung des Antwortverhaltens; sie ist
-nur an ihrer Wirkung auf eine Sonde sichtbar.
+**Das Urteil, das die Richtung erzwang (Wortlaut, 19.08., zur ersten
+Freistellung):** „tut mir leid aber das war keine gute arbeit. das
+prisma hat in sich die spiegelung des alten hintergrundes eingebacken,
+das hättest du erkennen müssen. zudem ist die beleuchtung komplett
+falsch, dadurch wirkt er billig zusammengeklebt mit dem hintergrund."
 
-**Scope dieser Freigabe:** EINE Sicht-Probe als eigene Seite unter
-`eq-copilot/design/prisma/` (der P01-Prototyp bleibt unangetastet als
-Vergleich). Erlaubt:
-- Regelmaessiges Prueffeld senkrechter Lichtlinien IM Glasvolumen,
-  3D-platziert und ueber die bewiesene Kameraprojektion geworfen,
-  durch die Glasmaske beschnitten.
-- Ablenkung = GRADIENT der Abweichung gegen die eigene Schulterlinie
-  (Schlieren bildet Gradienten ab, nicht Werte) — man sieht nie die
-  Glocke, nur was sie dem Licht antut.
-- Ablesung: betroffene Linien = fVon..fBis · Versatz in Kamm-Einheiten
-  = Staerke (der Kamm ist zugleich das Lineal) · senkrechte Ausdehnung
-  der Stoerung = Persistenz-Anteil · Vorzeichen = Ueberschuss buendelt,
-  Fehlbetrag spreizt.
-- Datenquelle: die etablierte 30-s-Songschleife. Schulterlinie und
-  Befund werden AUS ihr gerechnet (geglaettete Eigenkurve, lokaler
-  Ueberschuss) — wie die echte Diagnose gegen die eigenen Schultern
-  misst. KEINE erfundenen Diagnosewerte, keine erfundenen Felder.
+**Freigegebene Richtung:** Pro Drehframe backt Cycles eine
+REFRAKTIONSKARTE (ST-Map — jeder Glaspixel speichert, wohin er auf den
+Hintergrund greift), keine fertigen Bilder mehr. Im Blatt sampelt ein
+WebGL-Pass mit dieser Karte den LEBENDEN Nexus-Canvas in Echtzeit: das
+Glas verbiegt tatsächlich die Partikelströme hinter sich. Vom
+Cycles-Render bleiben nur Oberflächenglanz und Kanten (gegen Schwarz,
+transparent); die Lichtwirkung des Prismas kommt überwiegend aus dem
+gebrochenen Hintergrund selbst — damit stimmt die Beleuchtung von
+alleine zusammen.
 
-**Ausdruecklich NICHT freigegeben / offen:** Konfidenz-Darstellung
-(die Vierer-Ablesung war eine Behauptung ueber ein Bild, das es nicht
-gibt — der Render hat ZWEI Streifen-Softboxen, nicht vier); Buendel-Modus;
-Mehrfachbefunde (NAK-14); Aenderung am abgenommenen Prisma-Objekt.
+**Scope dieser Freigabe:** ERST ein einzelnes Probe-Still komplett
+beweisen (ST-Map rendern, lebenden Nexus im Browser hindurchbrechen,
+ansehen und messen) — erst nach bestandener Probe die 72er-Sequenz.
+Rendern und Bauen ausdrücklich ERST IN DER NÄCHSTEN SESSION (frischer
+Kontext, User-Ansage). Erfolgsmaßstab ist die ANFORDERUNG, nicht der
+alte Zustand: Das Innenleben des Glases muss den lebenden Hintergrund
+zeigen und sich mit ihm bewegen — Ähnlichkeit zum alten Frame ist ein
+FEHLschlag (die erste Freistellung feierte „RGB-Treue Delta 1,73" und
+hatte damit genau das Eingebackene bewiesen).
 
-**Offene Frage an den User (beurteilt er am Bild):** Darf das Prueffeld
-im gesunden Zustand dauerhaft sichtbar sein (regelmaessig = traegt keine
-Information, das Auge ueberliest es), oder widerspricht das „leeres Glas
-= gesundes Band"? Die Probe zeigt beide Zustaende umschaltbar.
+**Nicht freigegeben:** Änderungen am abgenommenen Prisma-OBJEKT selbst
+(Geometrie, Material klar); Befund-Grammatik des Schlieren-Felds;
+alles außerhalb der Freistellungs-Darstellung.

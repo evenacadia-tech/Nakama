@@ -95,6 +95,28 @@ Destillat — zwei getrennte Urteile:
    Farbwelten); verworfen ist ihre Verwendung als informationslose
    Dauerwolke.
 
+## Freistellungs-Probe (19.08.) — Compositing-Ehrlichkeit ✗
+
+User wörtlich: **„tut mir leid aber das war keine gute arbeit. das
+prisma hat in sich die spiegelung des alten hintergrundes eingebacken,
+das hättest du erkennen müssen. zudem ist die beleuchtung komplett
+falsch, dadurch wirkt er billig zusammengeklebt mit dem hintergrund."**
+
+Destillat — Gesetz 1 und 3 gelten auch fürs COMPOSITING:
+1. **Eingebackenes ist eingefrorene Lüge.** Ein Glas, das innen ein
+   Standbild einer anderen (gar älteren) Welt zeigt, während dahinter
+   die echte lebt, verletzt „ENTDECKT statt entworfen" auf der
+   technischen Ebene — die Brechung muss auf dem ECHTEN Hintergrund
+   arbeiten, nicht auf einer Konserve. Einen sichtbaren Widerspruch als
+   „dokumentierten Kompromiss" wegzuschreiben, macht ihn nicht kleiner.
+2. **Fremde Lichtwelt = „billig zusammengeklebt".** Vordergrund und
+   Hintergrund müssen dieselbe Lichtwelt teilen (Compositing-Handwerk);
+   Dark-Field-Studio-Licht auf lebendiger Szene fällt durch.
+3. **Beweismetrik an der ANFORDERUNG ausrichten:** „RGB-Treue zum alten
+   Frame" hat hier den Fehler als Erfolg gemessen — das Innenleben
+   SOLLTE sich ändern. Freigegebener Weg: ST-Map-Live-Refraktion
+   (s. Kreativ-Freigabe 19.08.).
+
 ## META-ERKENNTNIS nach vier Proben (17.08. — wichtigste Zeile des Dokuments)
 
 **Bestanden hat NUR die Übersetzung eines autorisierten menschlichen Werks

@@ -103,6 +103,14 @@ wirklich transparent, Ebene 0 scheint DURCH das Bild); alle
 Funktions-Checks grün, Blatt↔Brücke weiter bitgleich. `?frames=dreh`
 lädt den alten eingebackenen Satz zum Vergleich (bleibt Archiv +
 Prototyp-Quelle). Messläufe: `&hintergrund=0` bleibt Pflicht.
+**NACHTRAG 19.08. — vom User VERWORFEN:** „spiegelung des alten
+hintergrundes eingebacken … beleuchtung komplett falsch … billig
+zusammengeklebt." Die Silhouetten-Freistellung trägt, aber das
+GLASINNERE zeigt weiter die alte Plate (Transmission/Reflexion), und die
+Dark-Field-Lichtwelt passt nicht zur lebenden Szene. Die „RGB-Treue
+Delta 1,73" war die falsche Metrik — sie bewies das Eingebackene.
+Freigegebener Nachfolger: **NAK-16 ST-Map-Live-Refraktion**
+(`docs/NEXT-SESSION.md` + Geschmacksprofil „Freistellungs-Probe").
 
 **FALLE (18.08., teuer bezahlt): Wer in Unicorn Studio einen REGLER von Hand
 verschiebt, LÖST damit seine Variablen-Bindung.** Danach zeigt das

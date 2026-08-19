@@ -325,11 +325,49 @@ Beurteilt wird immer das lebende Gesamtbild.</p>
 </svg>
 </section>
 
+<!-- ══════════════════ TAFEL 4: BLEND-MODI ══════════════════ -->
+<section>
+<h2>TAFEL 4 · BLEND-MODI IN UNICORN — was auf dunklem Grund trägt</h2>
+<p class="lead">Verifiziert am SDK v2.2.10. Es gibt kein echtes „Add" —
+SCREEN ist der Licht-Arbeitsmodus. Und: die Regenbogen-Säume im Glas
+entstehen an KANTEN — großflächig ausgebranntes Weiß bleibt im Glas
+einfach weiß. Dünne helle Filamente auf Schwarz = maximale Farbwirkung.</p>
+<svg viewBox="0 0 1400 400" role="img" aria-label="Blend-Modi">
+  <g font-size="13.5">
+    <text x="60" y="50" fill="#7dc98f" font-size="14" font-weight="600">FUNKTIONIERT (Licht auf dunklem Grund)</text>
+    <text x="60" y="86" fill="#e8edf6" font-weight="600">NORMAL</text>
+    <text x="230" y="86" fill="#b8c4d8">unterste Basis-Ebene (Boden, Tiefe)</text>
+    <text x="60" y="118" fill="#e8edf6" font-weight="600">SCREEN ★</text>
+    <text x="230" y="118" fill="#b8c4d8">erste Wahl für alles Leuchtende — hellt nur auf, brennt nie aus,</text>
+    <text x="230" y="136" fill="#6d7789" font-size="12.5">Schwarz im Layer verschwindet von selbst</text>
+    <text x="60" y="168" fill="#e8edf6" font-weight="600">LIGHTEN</text>
+    <text x="230" y="168" fill="#b8c4d8">feine Strukturen bleiben knackig — Überlappungen addieren sich nicht</text>
+    <text x="60" y="200" fill="#e8edf6" font-weight="600">COLOR_DODGE</text>
+    <text x="230" y="200" fill="#b8c4d8">nur für hellste Lichtkerne, sparsam + niedrige Deckkraft —</text>
+    <text x="230" y="218" fill="#6d7789" font-size="12.5">brennt schnell zu Weiß aus (und Weiß zeigt im Glas KEINE Farbsäume)</text>
+
+    <text x="740" y="50" fill="#c85050" font-size="14" font-weight="600">FALLEN (auf dunklem Grund)</text>
+    <text x="740" y="86" fill="#e8edf6" font-weight="600">MULTIPLY · DARKEN · COLOR_BURN</text>
+    <text x="740" y="106" fill="#6d7789" font-size="12.5">gegen fast-schwarze Basis unsichtbar bis alles-schwarz</text>
+    <text x="740" y="140" fill="#e8edf6" font-weight="600">OVERLAY · HARD_LIGHT · SOFT_LIGHT</text>
+    <text x="740" y="160" fill="#6d7789" font-size="12.5">Kontrast-Modi: unter 50 % Grundhelligkeit wirken sie wie Multiply —</text>
+    <text x="740" y="177" fill="#6d7789" font-size="12.5">auf Nachtgrund fast tot (Remix 3 nutzt HARD_LIGHT über HELLEM Inhalt)</text>
+    <text x="740" y="211" fill="#e8edf6" font-weight="600">DIFFERENCE · EXCLUSION</text>
+    <text x="740" y="231" fill="#6d7789" font-size="12.5">graue Zwischentöne, Flächenunruhe — kollidiert mit „dunkler Grund, echte Schärfe"</text>
+
+    <text x="60" y="290" fill="#e8a34c" font-weight="600">Faustregel:</text>
+    <text x="165" y="290" fill="#b8c4d8">Basis NORMAL → Lichtebenen SCREEN → Knack-Details LIGHTEN → maximal EIN Dodge-Akzent.</text>
+    <text x="60" y="318" fill="#6d7789" font-size="12.5">Blends wirken nur INNERHALB deiner Unicorn-Szene — ins Blatt kommt das fertige Bild, das Glas bricht es danach.</text>
+  </g>
+</svg>
+</section>
+
 <footer>
   Quellen: <code>docs/visuelles-zielbild-hoerkompass.md</code> (Zielvertrag §3/§6/§9) ·
   <code>docs/geschmacksprofil.md</code> (die vier Proben) ·
   <code>docs/design-stand.md</code> (NAK-16-Messwerte, Unicorn-Fallen) ·
-  Messwerte: <code>eq-copilot/design/prisma/renders/stmap/messung.json</code>
+  Messwerte: <code>eq-copilot/design/prisma/renders/stmap/messung.json</code> ·
+  Blend-Modi: UMD v2.2.10 gelesen
 </footer>
 </main>
 </body>

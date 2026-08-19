@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>NAKAMA · ST-Map-Probe (NAK-16)</title>
+<!--
+  ST-Map-Live-Refraktion — Probe-Still (NAK-16).
+  Pipeline: docs/research/2026-08-19-stmap-live-refraktion.md.
+
+  Das Glas zeigt den LEBENDEN Hintergrund: pro Frame wird der
+  Hintergrund-Canvas in eine WebGL-Textur geladen; die gebackene
+  Refraktionskarte (renders/stmap/stmap-daten.js, RGBA-float16:
+  offU/offV/gewichtB, Zeile 0 = oben) sagt pro Glaspixel, WOHIN auf dem
+  Schirm er greift. Composite (Lerp, nicht Addieren):
+    farbe = mix(direkt, tint * bg(uv+off) * gewichtB + glanz.rgb * glanz.a,
+                glanz.a)
+  Gewicht B: 0 = TIR/Fehlschuss (dort nur Glanz — physikalisch ehrlich).
+  Coverage = Alpha des normal gefilterten Glanz-Passes (weiche Kante);
+  die Karte selbst bleibt hart. Dispersion: 3 Abgriffe entlang des
+  Offset-Vektors.
+
+  Der Hintergrund ist GROESSER als das Glasfenster (1920x1280, Glas
+  768x1024 zentriert): die gebackenen Ziel-UVs reichen bis u=1,50 —
+  das Prisma zeigt physikalisch korrekt Inhalt NEBEN dem Sichtfeld,
+  genau wie Ebene 0 im Blatt vollflaechig hinter der Buehne liegt.
+
+  ?bg=test|unicorn   Testmuster (deterministisch) oder lebende
+                     Unicorn-Szene "Winter Nexus (Remix) 3" (CDN)
+  ?bgzeit=N          friert das Testmuster bei Sekunde N ein
+  ?dispersion=0.035  Staerke der 3-Tap-Chromatik (0 = aus)
+  ?messung=1         Erfolgsmassstab + Checkliste (Testmuster):
+                     zwei Hintergrund-Staende -> Differenz IM Glas,
+                     Konsistenz ausserhalb, Upload-Benchmark,
+                     RGBA16F-Upload-Pfad. Ergebnis: window.MESSUNG.
+-->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: #06080c; color: #e8edf6;
+    font: 12px/1.5 "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+  header { position: fixed; top: 0; left: 0; right: 0; padding: 10px 16px;
+    display: flex; align-items: baseline; gap: 14px; z-index: 3;
+    letter-spacing: 2px; pointer-events: none; }
+  header .marke { color: #6d7789; font-size: 10px; }
+  header h1 { font-size: 12px; font-weight: 600; letter-spacing: 3px; }
+  header #takt { color: #4a5468; font-size: 10px; }
+  #buehne { position: absolute; inset: 0; display: flex;
+    align-items: center; justify-content: center; }
+  #comp { max-width: 98vw; max-height: 96vh; background: #000;
+    position: relative; z-index: 1; }
+  /* Ebene 0 lebt SICHTBAR hinter dem deckenden Composite (das SDK
+     rendert off-viewport-Elemente nicht) — gesampelt wird ihr Canvas. */
+  #ebene0 { position: absolute; width: 1920px; height: 1280px;
+    left: 0; top: 0; z-index: 0; }
+  #messwerte { position: fixed; left: 12px; bottom: 12px; z-index: 4;
+    background: rgba(6,8,12,.88); border: 1px solid #1a2230;
+    padding: 10px 12px; font: 11px/1.5 Consolas, monospace;
+    color: #b8c4d8; white-space: pre; display: none; max-height: 90vh;
+    overflow: auto; }
+  #fehler { position: fixed; top: 40%; width: 100%; text-align: center;
+    color: #e8a34c; display: none; z-index: 5; }
+</style>
+</head>
+<body>
+<header><span class="marke">NAKAMA</span><h1>ST-MAP-PROBE</h1><span id="takt"></span></header>
+<div id="buehne"><canvas id="comp" width="1920" height="1280"></canvas></div>
+<div id="ebene0"></div>
+<pre id="messwerte"></pre>
+<div id="fehler"></div>
+
+<script src="renders/stmap/stmap-daten.js"></script>
+<script>
+"use strict";
+const PARAMS = new URLSearchParams(location.search);
+const BG_MODUS = PARAMS.get("bg") ?? "test";
+const bgzeitRoh = parseFloat(PARAMS.get("bgzeit") ?? "NaN");
+const BGZEIT = Number.isFinite(bgzeitRoh) ? bgzeitRoh : null;   // NaN-Riegel
+const dispRoh = parseFloat(PARAMS.get("dispersion") ?? "0.035");
+const DISPERSION = Number.isFinite(dispRoh) ? dispRoh : 0.035;
+const MESSUNG = PARAMS.has("messung");
+
+const fehlerKnoten = document.getElementById("fehler");
+function scheitere(text) {
+  fehlerKnoten.textContent = text;
+  fehlerKnoten.style.display = "block";
+  throw new Error(text);
+}
+if (!window.STMAP_DATEN) {
+  scheitere("stmap-daten.js fehlt — konvertiere-stmap.py erst laufen lassen.");
+}
+
+/* ── Geometrie: Glasfenster zentriert im groesseren Hintergrund ── */
+const GW = STMAP_DATEN.breite, GH = STMAP_DATEN.hoehe;   // 768 x 1024
+const BW = 1920, BH = 1280;
+const GX = (BW - GW) / 2, GY = (BH - GH) / 2;            // 576, 128
+
+/* ── WebGL2 ── */
+const leinwand = document.getElementById("comp");
+const gl = leinwand.getContext("webgl2", { preserveDrawingBuffer: true });
+if (!gl) scheitere("WebGL2 nicht verfuegbar.");
+
+const VS = `#version 300 es
+in vec2 pos; out vec2 vUV;
+void main() {
+  gl_Position = vec4(pos, 0.0, 1.0);
+  vUV = vec2((pos.x + 1.0) * 0.5, 1.0 - (pos.y + 1.0) * 0.5);  // v nach unten
+}`;
+const FS = `#version 300 es
+precision highp float;
+uniform sampler2D uBg, uKarte, uGlanz;
+uniform vec2 uGlasMin, uGlasGroesse;   // in Bg-UV
+uniform float uDispersion;
+in vec2 vUV; out vec4 aus;
+void main() {
+  vec3 direkt = texture(uBg, vUV).rgb;
+  vec2 g = (vUV - uGlasMin) / uGlasGroesse;
+  vec3 farbe = direkt;
+  if (all(greaterThanEqual(g, vec2(0.0))) && all(lessThan(g, vec2(1.0)))) {
+    vec4 karte = texture(uKarte, g);
+    vec4 glanz = texture(uGlanz, g);
+    vec2 zielBg = uGlasMin + (g + karte.rg) * uGlasGroesse;
+    vec2 off = zielBg - vUV;
+    vec3 refr;
+    refr.r = texture(uBg, vUV + off * (1.0 - uDispersion)).r;
+    refr.g = texture(uBg, vUV + off).g;
+    refr.b = texture(uBg, vUV + off * (1.0 + uDispersion)).b;
+    vec3 glas = refr * karte.b + glanz.rgb * glanz.a;
+    farbe = mix(direkt, glas, glanz.a);
+  }
+  aus = vec4(farbe, 1.0);
+}`;
+
+function baueShader(art, quelle) {
+  const s = gl.createShader(art);
+  gl.shaderSource(s, quelle);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    scheitere("Shader: " + gl.getShaderInfoLog(s));
+  }
+  return s;
+}
+const programm = gl.createProgram();
+gl.attachShader(programm, baueShader(gl.VERTEX_SHADER, VS));
+gl.attachShader(programm, baueShader(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(programm);
+if (!gl.getProgramParameter(programm, gl.LINK_STATUS)) {
+  scheitere("Link: " + gl.getProgramInfoLog(programm));
+}
+gl.useProgram(programm);
+
+const eckenPuffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, eckenPuffer);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+const posLage = gl.getAttribLocation(programm, "pos");
+gl.enableVertexAttribArray(posLage);
+gl.vertexAttribPointer(posLage, 2, gl.FLOAT, false, 0, 0);
+
+gl.uniform2f(gl.getUniformLocation(programm, "uGlasMin"), GX / BW, GY / BH);
+gl.uniform2f(gl.getUniformLocation(programm, "uGlasGroesse"), GW / BW, GH / BH);
+gl.uniform1f(gl.getUniformLocation(programm, "uDispersion"), DISPERSION);
+gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+
+function neueTextur(einheit) {
+  const t = gl.createTexture();
+  gl.activeTexture(gl.TEXTURE0 + einheit);
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+
+// Einheit 0: Hintergrund (RGBA8, vorallozieren; pro Frame texSubImage2D
+// VOR den Draws — MDN Best Practice). Einheit 1: Karte (RGBA16F — LINEAR
+// ist WebGL2-Kern; Half-Floats kommen fertig konvertiert aus dem
+// Konverter, keine Treiberkonvertierung). Einheit 2: Glanz (RGBA8,
+// data-URL: taintet nicht, anders als file://-Bilder).
+neueTextur(0);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, BW, BH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+gl.uniform1i(gl.getUniformLocation(programm, "uBg"), 0);
+neueTextur(1);
+gl.uniform1i(gl.getUniformLocation(programm, "uKarte"), 1);
+neueTextur(2);
+gl.uniform1i(gl.getUniformLocation(programm, "uGlanz"), 2);
+
+let karteStatus = "offen", glanzBild = null;
+
+/* ── Testmuster: deterministischer lebender Hintergrund ──
+   Nexus-artig: dunkle Nacht, wandernde Lichtstroeme, treibende Orbs,
+   feines Gitter (Struktur macht die Brechung ablesbar), rote
+   Orientierungs-Marke oben links (deckt Flip-Fehler sofort auf). */
+const bgLeinwand = document.createElement("canvas");
+bgLeinwand.width = BW; bgLeinwand.height = BH;
+const bgC = bgLeinwand.getContext("2d");
+
+function maleTestmuster(t) {
+  bgC.fillStyle = "#070a12";
+  bgC.fillRect(0, 0, BW, BH);
+  // treibende Orbs (Amber / Magenta / Eis — Bandfarben)
+  const orbs = [
+    [255, 140, 46, 0.9, 0.23, 0.31, 260],
+    [245, 51, 158, 0.8, 0.61, 0.47, 300],
+    [97, 219, 255, 0.9, 0.42, 0.72, 240],
+  ];
+  for (const [r, g, b, a, cx, cy, rad] of orbs) {
+    const x = BW * (cx + 0.13 * Math.sin(t * 0.37 + cx * 9));
+    const y = BH * (cy + 0.10 * Math.cos(t * 0.29 + cy * 7));
+    const grad = bgC.createRadialGradient(x, y, 0, x, y, rad);
+    grad.addColorStop(0, `rgba(${r},${g},${b},${a})`);
+    grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+    bgC.fillStyle = grad;
+    bgC.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+  }
+  // wandernde Lichtstroeme (diagonale Baender)
+  bgC.save();
+  bgC.translate(BW / 2, BH / 2);
+  bgC.rotate(-0.42);
+  for (let i = 0; i < 7; i++) {
+    const lage = ((i / 7 + t * 0.045) % 1) * 2200 - 1100;
+    const grad = bgC.createLinearGradient(lage - 26, 0, lage + 26, 0);
+    grad.addColorStop(0, "rgba(140,180,255,0)");
+    grad.addColorStop(0.5, "rgba(140,180,255,0.55)");
+    grad.addColorStop(1, "rgba(140,180,255,0)");
+    bgC.fillStyle = grad;
+    bgC.fillRect(lage - 26, -1400, 52, 2800);
+  }
+  bgC.restore();
+  // feines Gitter
+  bgC.strokeStyle = "rgba(90,110,150,0.16)";
+  bgC.lineWidth = 1;
+  bgC.beginPath();
+  for (let x = 0.5; x < BW; x += 128) { bgC.moveTo(x, 0); bgC.lineTo(x, BH); }
+  for (let y = 0.5; y < BH; y += 128) { bgC.moveTo(0, y); bgC.lineTo(BW, y); }
+  bgC.stroke();
+  // Orientierungs-Marke (oben links = oben links, sonst ist etwas geflippt)
+  bgC.fillStyle = "#c83232";
+  bgC.fillRect(8, 8, 40, 40);
+}
+
+/* ── Ebene 0 live: Unicorn (nur ?bg=unicorn; offline bleibt Testmuster) ── */
+let unicornLeinwand = null;
+if (BG_MODUS === "unicorn") {
+  // Fremde WebGL-Canvases sind ohne preserveDrawingBuffer nach dem
+  // Compositing GELEERT — texImage2D liest dann Schwarz (gemessen).
+  // Deshalb VOR dem SDK-Load getContext patchen: Unicorns Kontext
+  // entsteht mit preserveDrawingBuffer:true.
+  const echtesGetContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (art, opts) {
+    if (art === "webgl" || art === "webgl2") {
+      opts = Object.assign({}, opts, { preserveDrawingBuffer: true });
+    }
+    return echtesGetContext.call(this, art, opts);
+  };
+  const sdk = document.createElement("script");
+  sdk.src = "https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.10/dist/unicornStudio.umd.js";
+  sdk.onload = () => {
+    UnicornStudio.addScene({ elementId: "ebene0", projectId: "DAGhm8NIQHdX9GhNYmP9", lazyLoad: false })
+      .then(() => { unicornLeinwand = document.querySelector("#ebene0 canvas"); })
+      .catch(() => {});                    // offline: Testmuster laeuft weiter
+  };
+  sdk.onerror = () => {};
+  document.head.appendChild(sdk);
+}
+
+let bgGroesse = [BW, BH];
+function ladeHintergrund(t) {
+  const quelle = unicornLeinwand ?? (maleTestmuster(t), bgLeinwand);
+  gl.activeTexture(gl.TEXTURE0);
+  if (quelle.width !== bgGroesse[0] || quelle.height !== bgGroesse[1]) {
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, quelle);
+    bgGroesse = [quelle.width, quelle.height];
+  } else {
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, quelle);
+  }
+}
+
+function zeichne() {
+  gl.viewport(0, 0, BW, BH);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+/* ── Karte + Glanz laden (data-URLs: kein fetch()-Verbot, kein Taint) ── */
+let karteU16 = null;
+const karteBereit = fetch("data:application/octet-stream;base64," + STMAP_DATEN.b64)
+  .then(r => r.arrayBuffer())
+  .then(puffer => {
+    karteU16 = new Uint16Array(puffer);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, GW, GH, 0, gl.RGBA, gl.HALF_FLOAT, karteU16);
+    karteStatus = gl.getError() === gl.NO_ERROR ? "ok" : "FEHLER " + gl.getError();
+  });
+const glanzBereit = new Promise((erfuelle, verwirf) => {
+  const b = new Image();
+  b.onload = () => {
+    gl.activeTexture(gl.TEXTURE2);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, b);
+    glanzBild = b;
+    erfuelle();
+  };
+  b.onerror = () => verwirf(new Error("Glanz-data-URL kaputt"));
+  b.src = STMAP_DATEN.glanzDataUrl;
+});
+
+/* ── Messung: Erfolgsmassstab + Checkliste ── */
+function halb2float(h) {
+  const s = (h & 0x8000) ? -1 : 1, e = (h >> 10) & 0x1f, m = h & 0x3ff;
+  if (e === 0) return s * m * Math.pow(2, -24);
+  if (e === 31) return m ? NaN : s * Infinity;
+  return s * (1 + m / 1024) * Math.pow(2, e - 15);
+}
+
+function liesPixel() {
+  const p = new Uint8Array(BW * BH * 4);
+  gl.readPixels(0, 0, BW, BH, gl.RGBA, gl.UNSIGNED_BYTE, p);
+  return p;                                // Zeile 0 = UNTEN (GL)
+}
+const idxObenLinks = (x, yOben) => ((BH - 1 - yOben) * BW + x) * 4;
+
+function fuehreMessungAus() {
+  // Glasmaske: Karte gueltig (Gewicht > 0.5) UND Coverage (Glanz-Alpha).
+  const deckLeinwand = document.createElement("canvas");
+  deckLeinwand.width = GW; deckLeinwand.height = GH;
+  const dc = deckLeinwand.getContext("2d");
+  dc.drawImage(glanzBild, 0, 0);
+  const deckung = dc.getImageData(0, 0, GW, GH).data;
+
+  const T_A = 3.0, T_B = 9.0;
+  ladeHintergrund(T_A); zeichne();
+  const bufA = liesPixel();
+  ladeHintergrund(T_B); zeichne();
+  const bufB = liesPixel();
+
+  let imGlas = 0, imGlasVerschieden = 0, imGlasSumme = 0;
+  let draussen = 0, draussenVerschieden = 0;
+  for (let gy = 0; gy < GH; gy++) {
+    for (let gx = 0; gx < GW; gx++) {
+      const k = (gy * GW + gx) * 4;
+      const gewicht = halb2float(karteU16[k + 2]);
+      const deckA = deckung[k + 3];
+      const i = idxObenLinks(GX + gx, GY + gy);
+      const d = Math.max(Math.abs(bufA[i] - bufB[i]),
+                         Math.abs(bufA[i + 1] - bufB[i + 1]),
+                         Math.abs(bufA[i + 2] - bufB[i + 2]));
+      if (gewicht > 0.5 && deckA > 128) {
+        imGlas++;
+        imGlasSumme += d;
+        if (d > 2) imGlasVerschieden++;
+      } else if (deckA <= 128) {
+        draussen++;
+        if (d > 2) draussenVerschieden++;
+      }
+    }
+  }
+
+  // Konsistenz: ausserhalb der Coverage muss das Composite exakt das
+  // Testmuster sein (prueft Flip-/Transform-Konvention Ende-zu-Ende).
+  maleTestmuster(T_B);
+  const muster = bgC.getImageData(0, 0, BW, BH).data;
+  let konsistenzMax = 0;
+  const stichproben = [[60, 60], [BW - 80, 90], [100, BH - 90], [BW - 70, BH - 60], [BW / 2, 40]];
+  for (const [sx, sy] of stichproben) {
+    const i = idxObenLinks(sx | 0, sy | 0), j = ((sy | 0) * BW + (sx | 0)) * 4;
+    for (let c = 0; c < 3; c++) {
+      konsistenzMax = Math.max(konsistenzMax, Math.abs(bufB[i + c] - muster[j + c]));
+    }
+  }
+
+  // Upload-Mikro-Benchmark (SwiftShader-Zahl im Runner; die echte
+  // GPU-Zahl entsteht beim interaktiven Ansehen).
+  const N = 60;
+  const einPixel = new Uint8Array(4);
+  const start = performance.now();
+  for (let i = 0; i < N; i++) {
+    ladeHintergrund(i * 0.05);
+    zeichne();
+    // readPixels erzwingt die komplette Pipeline — gl.finish() allein
+    // blockt unter ANGLE nicht ehrlich (gemessen: 0,06 ms "pro Frame").
+    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, einPixel);
+  }
+  const proFrameMs = (performance.now() - start) / N;
+
+  window.MESSUNG = {
+    erfolgsmassstab_glas_bewegt_sich: {
+      glas_pixel: imGlas,
+      anteil_verschieden: +(imGlasVerschieden / Math.max(1, imGlas)).toFixed(4),
+      mittlere_differenz_0_255: +(imGlasSumme / Math.max(1, imGlas)).toFixed(2),
+      bestanden: imGlasVerschieden / Math.max(1, imGlas) > 0.5,
+    },
+    kontrolle_draussen: {
+      pixel: draussen,
+      anteil_verschieden: +(draussenVerschieden / Math.max(1, draussen)).toFixed(4),
+    },
+    konsistenz_ausserhalb_max_0_255: konsistenzMax,
+    rgba16f_upload: karteStatus,
+    upload_und_draw_pro_frame_ms: +proFrameMs.toFixed(2),
+    hinweis: "ms-Zahl unter SwiftShader (Software); echte GPU beim interaktiven Ansehen",
+  };
+  const anzeige = document.getElementById("messwerte");
+  anzeige.textContent = "MESSUNG (Hintergrund-Stand " + T_A + " s vs " + T_B + " s)\n"
+    + JSON.stringify(window.MESSUNG, null, 2);
+  anzeige.style.display = "block";
+  ladeHintergrund(T_A); zeichne();       // definierter Endzustand
+}
+
+/* ── Hauptschleife ── */
+const startZeit = performance.now();
+let frames = 0, fpsStand = performance.now();
+function tick() {
+  const t = BGZEIT ?? (performance.now() - startZeit) / 1000;
+  ladeHintergrund(t);
+  zeichne();
+  frames++;
+  const jetzt = performance.now();
+  if (jetzt - fpsStand > 500) {
+    document.getElementById("takt").textContent =
+      Math.round(frames * 1000 / (jetzt - fpsStand)) + " FPS · KARTE " + karteStatus
+      + " · " + (unicornLeinwand ? "EBENE 0 LIVE" : "TESTMUSTER")
+      + (BGZEIT !== null ? " · EINGEFROREN " + BGZEIT + " s" : "");
+    frames = 0; fpsStand = jetzt;
+  }
+  requestAnimationFrame(tick);
+}
+
+Promise.all([karteBereit, glanzBereit]).then(() => {
+  if (MESSUNG) {
+    fuehreMessungAus();
+    window.BEREIT = true;
+  } else {
+    window.BEREIT = true;
+    tick();
+  }
+}).catch(e => scheitere(String(e)));
+</script>
+</body>
+</html>

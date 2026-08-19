@@ -1,0 +1,16 @@
+{
+  "erfolgsmassstab_glas_bewegt_sich": {
+    "glas_pixel": 304941,
+    "anteil_verschieden": 0.742,
+    "mittlere_differenz_0_255": 51.33,
+    "bestanden": true
+  },
+  "kontrolle_draussen": {
+    "pixel": 437697,
+    "anteil_verschieden": 0.7241
+  },
+  "konsistenz_ausserhalb_max_0_255": 0,
+  "rgba16f_upload": "ok",
+  "upload_und_draw_pro_frame_ms": 53.05,
+  "hinweis": "ms-Zahl unter SwiftShader (Software); echte GPU beim interaktiven Ansehen"
+}

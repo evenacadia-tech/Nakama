@@ -8,6 +8,16 @@
 # Prisma rotiert um seine Achse, Set bleibt — 120° = Symmetrieperiode):
 #   ... -- --variante klar --dreh 60 --samples 320 --breite 800 --hoehe 500
 #
+# FREIGESTELLT (NAK-15, User 19.08.: "in der App ohne starren Hintergrund"):
+#   ... --frei         -> Plate + Boden kameraunsichtbar (bleiben Licht- und
+#                         Spiegelquellen, durchs Glas weiter sichtbar —
+#                         dokumentierter Ebene-0-Kompromiss), Film
+#                         transparent, RGBA. -> renders/dreh-frei/
+#   ... --boden-ebene  -> NUR der Boden (Pfuetzen/Glanz), Prisma+Plate
+#                         unsichtbar aber lichtwirksam. -> renders/dreh-boden/
+#   Shadow Catcher war der falsche Weg (gemessen 19.08.: 0 Pfuetzen-Pixel,
+#   Pfuetzen sind GLANZreflexe — der Catcher faengt Schatten/Diffus).
+#
 # EIN Still, keine Animation, keine Daten: dreiseitiges Glas-Prisma über dem
 # User-Hintergrund (Winter-Nexus-Plate als Ebene 0), schmaler weißer Strahl
 # durchs Glas -> echter Dispersionsfächer als Kaustik am Boden.
@@ -325,6 +335,29 @@ if "--nur-glas" in argv:
     szene.render.film_transparent = True
     szene.render.image_settings.color_mode = "RGBA"
 
+# Freigestellt (NAK-15): Prisma + Boden-Lichtpfuetzen ohne starren
+# Hintergrund. Die Plate bleibt Licht-/Spiegelquelle und ist durchs Glas
+# weiter sichtbar (Refraktion = Transmissions-, nicht Kamerastrahl) —
+# nur der DIREKTE Blick auf sie ist frei fuer die live Ebene 0.
+FREI = "--frei" in argv
+if FREI:
+    plate.visible_camera = False
+    boden.visible_camera = False
+    szene.render.film_transparent = True
+    szene.render.image_settings.color_mode = "RGBA"
+
+# Boden-Ebene (NAK-15, Gegenstueck zu --frei): NUR der Boden mit seinen
+# Lichtpfuetzen/Glanzstreifen — Prisma und Plate wirken aufs Licht, sind
+# aber kameraunsichtbar. Shadow Catcher war der falsche Weg (gemessen
+# 19.08.: 0 Pfuetzen-Pixel — die Pfuetzen sind GLANZreflexe, kein
+# Schatten/Diffus). Diese Ebene ist Fast-Schwarz + Licht und wird offline
+# in Alpha-aus-Helligkeit gewandelt, im Blatt Kontakt-Ebene UNTER dem
+# freigestellten Prisma.
+BODEN_EBENE = "--boden-ebene" in argv
+if BODEN_EBENE:
+    plate.visible_camera = False
+    prisma.visible_camera = False
+
 if "--ohne-prisma" in argv:                       # Projektions-Beweis ohne Brechung
     prisma.hide_render = True
 
@@ -355,12 +388,21 @@ if DREH > 0:
     # damit Frame 0 nahtlos auf Frame N folgt). WebP hält die Sequenz klein.
     szene.render.image_settings.file_format = "WEBP"
     szene.render.image_settings.quality = 95
-    dreh_dir = os.path.join(HIER, "renders", "dreh")
+    if FREI:
+        # Formatwechsel kann color_mode zuruecksetzen — RGBA erneut setzen.
+        szene.render.image_settings.color_mode = "RGBA"
+    unterordner = "dreh-frei" if FREI else ("dreh-boden" if BODEN_EBENE else "dreh")
+    dreh_dir = os.path.join(HIER, "renders", unterordner)
     os.makedirs(dreh_dir, exist_ok=True)
     basis = prisma.rotation_euler.z
+    WEITER = "--weiter" in argv                  # vorhandene Frames ueberspringen
     for i in range(DREH):
+        ziel_datei = os.path.join(dreh_dir, f"f{i:03d}.webp")
+        if WEITER and os.path.exists(ziel_datei):
+            print(f"DREH {i + 1}/{DREH}: uebersprungen (existiert)", flush=True)
+            continue
         prisma.rotation_euler = (0.0, 0.0, basis + math.radians(i * 120.0 / DREH))
-        szene.render.filepath = os.path.join(dreh_dir, f"f{i:03d}.webp")
+        szene.render.filepath = ziel_datei
         bpy.ops.render.render(write_still=True)
         print(f"DREH {i + 1}/{DREH}: {szene.render.filepath}", flush=True)
     print(f"FERTIG: {DREH} Frames ({VARIANTE}, {SAMPLES} Samples, {BREITE}x{HOEHE}, CPU)")

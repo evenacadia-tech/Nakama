@@ -25,13 +25,22 @@
   genau wie Ebene 0 im Blatt vollflaechig hinter der Buehne liegt.
 
   ?bg=test|unicorn   Testmuster (deterministisch) oder lebende
-                     Unicorn-Szene "Winter Nexus (Remix) 3" (CDN)
+                     Unicorn-Szene "Winter Nexus (Remix) 3"
+  ?projekt=<ID>      beliebige Unicorn-Szene als Ebene 0 laden
   ?bgzeit=N          friert das Testmuster bei Sekunde N ein
   ?dispersion=0.035  Staerke der 3-Tap-Chromatik (0 = aus)
   ?messung=1         Erfolgsmassstab + Checkliste (Testmuster):
                      zwei Hintergrund-Staende -> Differenz IM Glas,
                      Konsistenz ausserhalb, Upload-Benchmark,
                      RGBA16F-Upload-Pfad. Ergebnis: window.MESSUNG.
+
+  LADE-PANEL (unten rechts): Projekt-ID eintippen ODER den Unicorn-
+  JSON-Export direkt als Datei laden (kein Publish noetig — der Export
+  wird per Blob-URL als filePath gemountet; Technik aus dem
+  evenacadia-site-Editor, dort produktiv bewiesen). SDK liegt lokal
+  gevendort (design/vendor/unicornStudio-2.2.10.umd.js, CDN nur als
+  Fallback); Szenen-Swap ist serialisiert (nie mitten in der Init
+  zerstoeren), destroy() vor jedem Neu-Mount.
 -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -58,6 +67,21 @@
     overflow: auto; }
   #fehler { position: fixed; top: 40%; width: 100%; text-align: center;
     color: #e8a34c; display: none; z-index: 5; }
+  #lader { position: fixed; right: 12px; bottom: 12px; z-index: 4;
+    background: rgba(6,8,12,.88); border: 1px solid #1a2230;
+    padding: 10px 12px; display: flex; flex-direction: column; gap: 7px;
+    font-size: 11px; letter-spacing: 0.5px; width: 300px; }
+  #lader .zeile { display: flex; gap: 6px; }
+  #lader input[type=text] { flex: 1; background: #0a0e16;
+    border: 1px solid #2a3448; color: #e8edf6; padding: 5px 8px;
+    font: 11px Consolas, monospace; }
+  #lader button { background: #141b28; border: 1px solid #2a3448;
+    color: #b8c4d8; padding: 5px 10px; cursor: pointer; font-size: 11px;
+    letter-spacing: 1px; }
+  #lader button:hover { border-color: #4a5468; color: #e8edf6; }
+  #lader button:disabled { opacity: 0.4; cursor: default; }
+  #laderStatus { color: #6d7789; }
+  #laderTitel { color: #8a95a8; letter-spacing: 2px; font-size: 10px; }
 </style>
 </head>
 <body>
@@ -66,6 +90,19 @@
 <div id="ebene0"></div>
 <pre id="messwerte"></pre>
 <div id="fehler"></div>
+<div id="lader">
+  <span id="laderTitel">EBENE 0 · DEINE LICHTWELT</span>
+  <div class="zeile">
+    <input type="text" id="projektFeld" placeholder="Unicorn-Projekt-ID" spellcheck="false">
+    <button id="ladenKnopf">LADEN</button>
+  </div>
+  <div class="zeile">
+    <button id="jsonKnopf">JSON-EXPORT LADEN …</button>
+    <button id="testKnopf">TESTMUSTER</button>
+  </div>
+  <span id="laderStatus">Testmuster aktiv</span>
+  <input type="file" id="jsonDatei" accept=".json,application/json" style="display:none">
+</div>
 
 <script src="renders/stmap/stmap-daten.js"></script>
 <script>
@@ -238,13 +275,25 @@ function maleTestmuster(t) {
   bgC.fillRect(8, 8, 40, 40);
 }
 
-/* ── Ebene 0 live: Unicorn (nur ?bg=unicorn; offline bleibt Testmuster) ── */
+/* ── Ebene 0 live: Unicorn-Szenen-Manager ──
+   Technik aus dem evenacadia-site-Editor (dort produktiv bewiesen):
+   lokal gevendortes SDK (CDN nur Fallback), Quellen projectId ODER
+   Szenen-JSON per Blob-URL als filePath (kein Publish noetig),
+   serialisierter Mount/Destroy (nie mitten in der Init zerstoeren). */
 let unicornLeinwand = null;
-if (BG_MODUS === "unicorn") {
+const REMIX3 = "DAGhm8NIQHdX9GhNYmP9";
+const laderStatus = document.getElementById("laderStatus");
+const projektFeld = document.getElementById("projektFeld");
+const laderKnoepfe = ["ladenKnopf", "jsonKnopf", "testKnopf"]
+  .map(id => document.getElementById(id));
+
+let sdkVersprochen = null;
+function holeSdk() {
+  if (window.UnicornStudio?.addScene) return Promise.resolve();
+  if (sdkVersprochen) return sdkVersprochen;
   // Fremde WebGL-Canvases sind ohne preserveDrawingBuffer nach dem
   // Compositing GELEERT — texImage2D liest dann Schwarz (gemessen).
-  // Deshalb VOR dem SDK-Load getContext patchen: Unicorns Kontext
-  // entsteht mit preserveDrawingBuffer:true.
+  // Deshalb VOR dem SDK-Load getContext patchen.
   const echtesGetContext = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function (art, opts) {
     if (art === "webgl" || art === "webgl2") {
@@ -252,16 +301,101 @@ if (BG_MODUS === "unicorn") {
     }
     return echtesGetContext.call(this, art, opts);
   };
-  const sdk = document.createElement("script");
-  sdk.src = "https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.10/dist/unicornStudio.umd.js";
-  sdk.onload = () => {
-    UnicornStudio.addScene({ elementId: "ebene0", projectId: "DAGhm8NIQHdX9GhNYmP9", lazyLoad: false })
-      .then(() => { unicornLeinwand = document.querySelector("#ebene0 canvas"); })
-      .catch(() => {});                    // offline: Testmuster laeuft weiter
-  };
-  sdk.onerror = () => {};
-  document.head.appendChild(sdk);
+  sdkVersprochen = new Promise((erfuelle, verwirf) => {
+    window.UnicornStudio = window.UnicornStudio || { isInitialized: false };
+    const lokal = document.createElement("script");
+    lokal.src = "../vendor/unicornStudio-2.2.10.umd.js";   // offline-sicher
+    lokal.onload = () => erfuelle();
+    lokal.onerror = () => {                                // Fallback: CDN
+      const cdn = document.createElement("script");
+      cdn.src = "https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.10/dist/unicornStudio.umd.js";
+      cdn.onload = () => erfuelle();
+      cdn.onerror = () => verwirf(new Error("SDK weder lokal noch per CDN ladbar"));
+      document.head.appendChild(cdn);
+    };
+    document.head.appendChild(lokal);
+  });
+  return sdkVersprochen;
 }
+
+let szeneHandle = null;
+let szeneLaeuft = false;
+async function ladeEbene0(quelle, name) {
+  if (szeneLaeuft) return;               // ein Vorgang zur Zeit (Site-Muster)
+  szeneLaeuft = true;
+  laderKnoepfe.forEach(k => { k.disabled = true; });
+  laderStatus.textContent = quelle ? "lädt " + name + " …" : "räumt auf …";
+  try {
+    unicornLeinwand = null;
+    if (szeneHandle) {
+      try { szeneHandle.destroy?.(); } catch { /* halb-init: egal */ }
+      szeneHandle = null;
+    }
+    document.getElementById("ebene0").innerHTML = "";
+    if (quelle) {
+      await holeSdk();
+      szeneHandle = await UnicornStudio.addScene({
+        elementId: "ebene0",
+        ...quelle,
+        scale: 1,
+        dpi: Math.min(window.devicePixelRatio || 1, 1.5),
+        fps: 60,
+        lazyLoad: false,
+        production: true,
+        interactivity: { mouse: { disableMobile: true } },
+      });
+      unicornLeinwand = document.querySelector("#ebene0 canvas");
+      if (!unicornLeinwand) throw new Error("Szene hat keinen Canvas erzeugt");
+      laderStatus.textContent = "LIVE hinter dem Glas: " + name;
+    } else {
+      laderStatus.textContent = "Testmuster aktiv";
+    }
+  } catch (e) {
+    unicornLeinwand = null;
+    laderStatus.textContent = "Fehler: " + (e && e.message ? e.message : e);
+  } finally {
+    szeneLaeuft = false;
+    laderKnoepfe.forEach(k => { k.disabled = false; });
+  }
+}
+// JSON-Export direkt laden (Blob-URL als filePath — kein Publish noetig).
+// Auch fuer Automation/Messlaeufe von aussen aufrufbar.
+window.ladeSzeneAusText = text => {
+  const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  return ladeEbene0({ filePath: url }, "JSON-Export")
+    .finally(() => setTimeout(() => URL.revokeObjectURL(url), 8000));
+};
+
+document.getElementById("ladenKnopf").addEventListener("click", () => {
+  const id = projektFeld.value.trim();
+  if (!id) return;
+  try { localStorage.setItem("nakama.ebene0.projekt", id); } catch { /* file:// */ }
+  ladeEbene0({ projectId: id }, id.length > 14 ? id.slice(0, 12) + "…" : id);
+});
+projektFeld.addEventListener("keydown", ev => {
+  if (ev.key === "Enter") document.getElementById("ladenKnopf").click();
+});
+document.getElementById("testKnopf").addEventListener("click", () => ladeEbene0(null, ""));
+document.getElementById("jsonKnopf").addEventListener("click", () =>
+  document.getElementById("jsonDatei").click());
+document.getElementById("jsonDatei").addEventListener("change", ev => {
+  const datei = ev.target.files && ev.target.files[0];
+  if (!datei) return;
+  datei.text().then(t => window.ladeSzeneAusText(t));
+  ev.target.value = "";
+});
+try { projektFeld.value = localStorage.getItem("nakama.ebene0.projekt") ?? ""; } catch { /* file:// */ }
+
+// Startzustand aus der URL: ?projekt=<ID> laedt genau diese Szene,
+// ?bg=unicorn den Standard-Hintergrund (Winter Nexus Remix 3).
+const startProjekt = PARAMS.get("projekt");
+if (startProjekt) {
+  projektFeld.value = startProjekt;
+  ladeEbene0({ projectId: startProjekt }, startProjekt.slice(0, 12) + "…");
+} else if (BG_MODUS === "unicorn") {
+  ladeEbene0({ projectId: REMIX3 }, "Winter Nexus (Remix) 3");
+}
+if (MESSUNG) document.getElementById("lader").style.display = "none";
 
 let bgGroesse = [BW, BH];
 function ladeHintergrund(t) {

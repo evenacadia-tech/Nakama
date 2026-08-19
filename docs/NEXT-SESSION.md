@@ -45,6 +45,20 @@ genügen; Half-Float trägt; RGBA16F-Upload ok. Fallen + Details:
 `docs/design-stand.md` (NAK-16-Abschnitt); verbindliche Pipeline
 weiterhin `docs/research/2026-08-19-stmap-live-refraktion.md`.
 
+**Lichtwelt-Workflow steht (19.08. nachmittags):** Der User designt die
+Ebene 0 SELBST in Unicorn („Fläche mit Raumtiefe, Licht von weit her");
+Orientierung: `docs/spielregeln-skizze.html` (4 Tafeln, auch als
+privates Artifact) + `prisma/vorlage-lichtwelt.html` (Referenzbild) +
+`prisma/vorlage-tiefenkarte.html` (Parallax-Depth-Map, ?horizont=).
+Das Probe-Blatt hat ein **Lade-Panel** (unten rechts): Projekt-ID oder
+Unicorn-JSON-Export direkt laden (Blob-URL, kein Publish nötig) —
+Technik aus dem evenacadia-site-Editor übernommen, SDK v2.2.10 lokal
+gevendort (`design/vendor/`), Mount/Destroy serialisiert; alle drei
+Wege headless bewiesen. Front-Kicker aus dem Glanz-Pass ist RAUS
+(User-Befund: statisches Band = eingebackene fremde Beleuchtung).
+Sonifold-Ingredients (WGSL) portiere ich bei Bedarf pro Effekt nach
+GLSL.
+
 **Nach der Abnahme (braucht ggf. frischen Freigabe-Marker):**
 1. 72er-Sequenz backen: `--nur-stmap` (4 s/Frame) + `--nur-glanz`
    (11 s/Frame) je Drehwinkel ≈ 18 min CPU; Konverter über alle Frames.

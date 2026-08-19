@@ -11,6 +11,6 @@
   },
   "konsistenz_ausserhalb_max_0_255": 0,
   "rgba16f_upload": "ok",
-  "upload_und_draw_pro_frame_ms": 53.05,
+  "upload_und_draw_pro_frame_ms": 54.21,
   "hinweis": "ms-Zahl unter SwiftShader (Software); echte GPU beim interaktiven Ansehen"
 }

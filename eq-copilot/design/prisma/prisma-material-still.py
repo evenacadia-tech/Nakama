@@ -486,10 +486,12 @@ if NUR_GLANZ:
     rand_ob.data.size = 2.2
     rand_ob.data.size_y = 3.0
     rand_ob.data.energy = 800.0
-    kicker_ob = streifen("Kicker", (-2.0, -2.2, 1.1), 0.8)
+    # KEIN Front-Kicker mehr (User 19.08.: der statische vertikale
+    # Streifen liest sich ueber dem LEBENDEN Hintergrund als flaches
+    # eingebackenes Band — eine echte Spiegelung muesste sich mit der
+    # Welt aendern). Front bleibt dunkel, nur die Kanten zeichnen.
     richte_auf(rand2_ob, (-0.5, 0.03, 0.9))
     richte_auf(rand_ob, (0.22, -0.45, 0.9))
-    richte_auf(kicker_ob, (0.0, 0.0, 1.0))
 
 if "--ohne-prisma" in argv:                       # Projektions-Beweis ohne Brechung
     prisma.hide_render = True

@@ -65,13 +65,6 @@
     "half_float_quantisierung_px": {
       "mittel": 0.0577,
       "max": 0.1881
-    },
-    "rauschen_seed_vs_seed_px": {
-      "pixel": 306467,
-      "rms": 0.4416,
-      "p99": 0.0365,
-      "max": 28.599,
-      "gueltigkeit_uneins": 40
     }
   }
 }

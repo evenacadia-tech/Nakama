@@ -100,7 +100,12 @@
     <button id="jsonKnopf">JSON-EXPORT LADEN …</button>
     <button id="testKnopf">TESTMUSTER</button>
   </div>
+  <div class="zeile">
+    <span id="lageText" style="flex:1;align-self:center;color:#6d7789;font:10px Consolas,monospace"></span>
+    <button id="lageReset">RESET</button>
+  </div>
   <span id="laderStatus">Testmuster aktiv</span>
+  <span style="color:#4a5468">Ziehen auf dem Bild verschiebt die Welt · Mausrad zoomt</span>
   <input type="file" id="jsonDatei" accept=".json,application/json" style="display:none">
 </div>
 
@@ -146,9 +151,14 @@ precision highp float;
 uniform sampler2D uBg, uKarte, uGlanz;
 uniform vec2 uGlasMin, uGlasGroesse;   // in Bg-UV
 uniform float uDispersion;
+uniform vec3 uBgLage;                  // x,y = Verschiebung (uv), z = Zoom
 in vec2 vUV; out vec4 aus;
+// Manuelle Lage der Ebene 0: die Welt hinter dem Glas verschieben/zoomen —
+// die Karte bleibt glas-fest, nur der Hintergrund bewegt sich (physikalisch
+// dasselbe wie die Welt umstellen).
+vec2 bgKoord(vec2 p) { return (p - 0.5 - uBgLage.xy) / uBgLage.z + 0.5; }
 void main() {
-  vec3 direkt = texture(uBg, vUV).rgb;
+  vec3 direkt = texture(uBg, bgKoord(vUV)).rgb;
   vec2 g = (vUV - uGlasMin) / uGlasGroesse;
   vec3 farbe = direkt;
   if (all(greaterThanEqual(g, vec2(0.0))) && all(lessThan(g, vec2(1.0)))) {
@@ -157,9 +167,9 @@ void main() {
     vec2 zielBg = uGlasMin + (g + karte.rg) * uGlasGroesse;
     vec2 off = zielBg - vUV;
     vec3 refr;
-    refr.r = texture(uBg, vUV + off * (1.0 - uDispersion)).r;
-    refr.g = texture(uBg, vUV + off).g;
-    refr.b = texture(uBg, vUV + off * (1.0 + uDispersion)).b;
+    refr.r = texture(uBg, bgKoord(vUV + off * (1.0 - uDispersion))).r;
+    refr.g = texture(uBg, bgKoord(vUV + off)).g;
+    refr.b = texture(uBg, bgKoord(vUV + off * (1.0 + uDispersion))).b;
     vec3 glas = refr * karte.b + glanz.rgb * glanz.a;
     farbe = mix(direkt, glas, glanz.a);
   }
@@ -194,6 +204,27 @@ gl.vertexAttribPointer(posLage, 2, gl.FLOAT, false, 0, 0);
 gl.uniform2f(gl.getUniformLocation(programm, "uGlasMin"), GX / BW, GY / BH);
 gl.uniform2f(gl.getUniformLocation(programm, "uGlasGroesse"), GW / BW, GH / BH);
 gl.uniform1f(gl.getUniformLocation(programm, "uDispersion"), DISPERSION);
+
+/* ── Manuelle Ebene-0-Lage: Ziehen = verschieben, Rad = zoomen ── */
+const bgLageOrt = gl.getUniformLocation(programm, "uBgLage");
+const lageAusUrl = n => { const v = parseFloat(PARAMS.get(n) ?? "NaN"); return Number.isFinite(v) ? v : null; };
+const bgLage = {
+  x: lageAusUrl("bgx") ?? 0,
+  y: lageAusUrl("bgy") ?? 0,
+  zoom: Math.min(4, Math.max(0.25, lageAusUrl("bgzoom") ?? 1)),
+};
+function zeigeLage() {
+  const el = document.getElementById("lageText");
+  if (!el) return;
+  el.textContent = (bgLage.x === 0 && bgLage.y === 0 && bgLage.zoom === 1)
+    ? "Lage: Standard"
+    : `?bgx=${bgLage.x.toFixed(3)}&bgy=${bgLage.y.toFixed(3)}&bgzoom=${bgLage.zoom.toFixed(2)}`;
+}
+function setzeLage() {
+  gl.uniform3f(bgLageOrt, bgLage.x, bgLage.y, bgLage.zoom);
+  zeigeLage();
+}
+setzeLage();
 gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
 
@@ -385,6 +416,47 @@ document.getElementById("jsonDatei").addEventListener("change", ev => {
   ev.target.value = "";
 });
 try { projektFeld.value = localStorage.getItem("nakama.ebene0.projekt") ?? ""; } catch { /* file:// */ }
+
+// Lage-Eingabe: Ziehen auf dem Composite verschiebt die Welt hinter dem
+// Glas, Mausrad zoomt um den Zeiger (der Punkt unterm Cursor bleibt stehen).
+let lageZieht = false;
+leinwand.style.cursor = "grab";
+leinwand.addEventListener("pointerdown", ev => {
+  lageZieht = true;
+  leinwand.style.cursor = "grabbing";
+  leinwand.setPointerCapture(ev.pointerId);
+});
+leinwand.addEventListener("pointermove", ev => {
+  if (!lageZieht) return;
+  const r = leinwand.getBoundingClientRect();
+  bgLage.x += ev.movementX / r.width;
+  bgLage.y += ev.movementY / r.height;
+  setzeLage();
+});
+leinwand.addEventListener("pointerup", ev => {
+  lageZieht = false;
+  leinwand.style.cursor = "grab";
+  leinwand.releasePointerCapture(ev.pointerId);
+});
+leinwand.addEventListener("wheel", ev => {
+  ev.preventDefault();
+  const r = leinwand.getBoundingClientRect();
+  const p = {
+    x: (ev.clientX - r.left) / r.width,
+    y: (ev.clientY - r.top) / r.height,
+  };
+  const neu = Math.min(4, Math.max(0.25, bgLage.zoom * (ev.deltaY < 0 ? 1.1 : 1 / 1.1)));
+  // Punkt unterm Zeiger festhalten: c = (p-0.5-pan)/zoom bleibt konstant.
+  bgLage.x = (p.x - 0.5) - ((p.x - 0.5 - bgLage.x) / bgLage.zoom) * neu;
+  bgLage.y = (p.y - 0.5) - ((p.y - 0.5 - bgLage.y) / bgLage.zoom) * neu;
+  bgLage.zoom = neu;
+  setzeLage();
+}, { passive: false });
+document.getElementById("lageReset").addEventListener("click", () => {
+  bgLage.x = 0; bgLage.y = 0; bgLage.zoom = 1;
+  setzeLage();
+});
+zeigeLage();
 
 // Startzustand aus der URL: ?projekt=<ID> laedt genau diese Szene,
 // ?bg=unicorn den Standard-Hintergrund (Winter Nexus Remix 3).

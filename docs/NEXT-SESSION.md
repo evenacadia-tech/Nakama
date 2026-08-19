@@ -126,5 +126,11 @@ P01-Punktästhetik + Unicorn-Hintergrund als Ebene 0). Details:
 
 - NAK-11: Unicorn-Lizenz („Legend"-Plan für Offline-JSON) vor
   Plugin-Auslieferung klären — Design-Phase unkritisch.
-- Nakama-Repo hat kein Git-Remote (Push unmöglich) — bei Gelegenheit
-  mit dem User klären, ob eines angelegt werden soll.
+- ~~Nakama-Repo hat kein Git-Remote~~ **Erledigt 19.08.:** privates
+  Remote `https://github.com/evenacadia-tech/Nakama` angelegt und
+  gepusht (User arbeitet wechselnd Desktop/Laptop). Auf dem Laptop
+  einmalig: `git clone`, dann in `eq-copilot/design/vendor-build/`
+  `npm ci` + `npx playwright install chromium` (node_modules sind
+  bewusst nicht im Repo); Broker per `cargo build --release`,
+  Golden-WAVs per `py -3.13 tools/eq-copilot/erzeuge_fixtures.py
+  --nur-wav`. Ab jetzt: nach Commits pushen, vor Arbeitsbeginn pullen.

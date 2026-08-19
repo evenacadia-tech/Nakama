@@ -27,8 +27,11 @@ FL-CLAUDE.md-Auszug liegt wortgleich in
 **Commit-Routing:** EIN Repo — alles hierher, Deutsch, kleine benannte
 Commits. Parallele Codex-Sessions sind möglich (Vorentwurf-Blatt =
 Codex-Besitz): eigene Edits SOFORT committen, nie `--amend`, fremde
-Änderungen nie anfassen. Kein Git-Remote (Push entfällt; bei Bedarf mit
-dem User klären).
+Änderungen nie anfassen. **Remote seit 19.08.:**
+`https://github.com/evenacadia-tech/Nakama` (privat) — nach Commits
+pushen (User arbeitet wechselnd an Desktop und Laptop und zieht per
+Pull); vor Arbeitsbeginn `git pull`, damit der andere Rechner nicht
+überholt wird.
 
 ## Grundgesetz (nicht verhandelbar)
 

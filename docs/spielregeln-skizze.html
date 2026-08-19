@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>NAKAMA · Spielregeln-Skizze</title>
+<!--
+  Visuelle Orientierung fuer die Design-Arbeit in Unicorn/Shadern.
+  Drei Tafeln: 1. Buehnen-Anatomie (Lichtwelt-Regeln, gemessen an der
+  ST-Map-Probe) - 2. Befund-Grammatik auf der Flaeche (Zielvertrag par. 3)
+  - 3. Der Effekt-Weg (Unicorn / Sonifold-Port / eigener GLSL).
+  Quellen: docs/visuelles-zielbild-hoerkompass.md, docs/geschmacksprofil.md,
+  docs/design-stand.md (NAK-16-Abschnitt + Unicorn-Fallen).
+-->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #06080c; color: #e8edf6;
+    font: 14px/1.6 "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 1460px; margin: 0 auto; padding: 28px 30px 60px; }
+  header { padding: 6px 0 2px; letter-spacing: 2px; }
+  header .marke { color: #6d7789; font-size: 11px; }
+  h1 { font-size: 16px; font-weight: 600; letter-spacing: 3px; margin: 2px 0 6px; }
+  .untertitel { color: #8a95a8; font-size: 13px; max-width: 900px; }
+  section { margin-top: 34px; }
+  h2 { font-size: 13px; font-weight: 600; letter-spacing: 2.5px;
+    color: #b8c4d8; border-bottom: 1px solid #1a2230; padding-bottom: 8px; }
+  .lead { color: #8a95a8; font-size: 13px; margin: 10px 0 6px; max-width: 980px; }
+  svg { display: block; width: 100%; height: auto; margin-top: 8px; }
+  svg text { font-family: "Segoe UI", system-ui, sans-serif; }
+  footer { margin-top: 44px; color: #6d7789; font-size: 12px;
+    border-top: 1px solid #1a2230; padding-top: 14px; }
+  code { color: #9fd3e8; font-family: Consolas, monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <span class="marke">NAKAMA · NAK-16 → ZIELBILDER</span>
+  <h1>SPIELREGELN-SKIZZE</h1>
+  <p class="untertitel">Drei Tafeln als Orientierung für deine Design-Arbeit.
+  Alle Zahlen sind gemessen (ST-Map-Probe 19.08.), alle Gesetze sind deine
+  eigenen (Zielvertrag + Geschmacksprofil) — hier nur visuell verdichtet.</p>
+</header>
+
+<!-- ══════════════════ TAFEL 1: DIE BÜHNE ══════════════════ -->
+<section>
+<h2>TAFEL 1 · DIE BÜHNE — wo deine Lichtwelt wirkt</h2>
+<p class="lead">Ebene 0 füllt das ganze Fenster; das Glas hängt davor und
+GREIFT WEIT ZUR SEITE. Was direkt hinter dem Prisma liegt, erscheint im
+Glas nicht an derselben Stelle — es kommt versetzt und mit Farbsäumen an.</p>
+
+<svg viewBox="0 0 1400 780" role="img" aria-label="Bühnen-Anatomie">
+  <!-- Lichtwelt (Ebene 0) -->
+  <rect x="70" y="90" width="960" height="640" fill="#0a0e16" stroke="#2a3448"/>
+  <text x="82" y="78" fill="#8a95a8" font-size="13" letter-spacing="2">EBENE 0 · DEINE LICHTWELT (füllt das Fenster — Unicorn-Szene, je Projekt eine ID)</text>
+
+  <!-- angedeutete Stroeme in der Lichtwelt -->
+  <g stroke="#3d5a8a" stroke-width="2" opacity="0.55" fill="none">
+    <path d="M 90 700 L 400 120"/>
+    <path d="M 210 720 L 520 140"/>
+    <path d="M 330 720 L 640 140"/>
+    <path d="M 700 720 L 1010 140"/>
+    <path d="M 820 720 L 1020 340"/>
+  </g>
+  <circle cx="220" cy="260" r="70" fill="#e8a34c" opacity="0.16"/>
+  <circle cx="235" cy="272" r="26" fill="#e8a34c" opacity="0.30"/>
+  <circle cx="880" cy="480" r="80" fill="#d465b0" opacity="0.14"/>
+  <circle cx="866" cy="470" r="30" fill="#d465b0" opacity="0.28"/>
+  <circle cx="300" cy="600" r="56" fill="#9fd3e8" opacity="0.16"/>
+
+  <!-- Glasfenster -->
+  <rect x="358" y="154" width="384" height="512" fill="none"
+        stroke="#4a5468" stroke-dasharray="7 5" stroke-width="1.5"/>
+  <text x="364" y="148" fill="#6d7789" font-size="12" letter-spacing="1">GLASFENSTER (768×1024)</text>
+
+  <!-- Prisma-Silhouette -->
+  <polygon points="437,222 664,214 656,628 442,634" fill="#04060a" stroke="#5a6478" stroke-width="1.5"/>
+  <!-- TIR-Zonen oben/unten -->
+  <polygon points="437,222 664,214 550,270" fill="#10141c"/>
+  <polygon points="442,634 656,628 548,560" fill="#10141c"/>
+  <text x="493" y="246" fill="#6d7789" font-size="11">TIR — nur Glanz</text>
+  <text x="490" y="606" fill="#6d7789" font-size="11">TIR — nur Glanz</text>
+  <!-- Glanz-Kanten -->
+  <line x1="440" y1="235" x2="443" y2="620" stroke="#cfe0f5" stroke-width="2.5"/>
+  <line x1="661" y1="228" x2="655" y2="614" stroke="#9fb8d8" stroke-width="2"/>
+  <!-- gebrochener Inhalt im Glas (versetzte, gefaecherte Stroeme) -->
+  <g stroke-width="2.5" fill="none" opacity="0.9">
+    <path d="M 470 600 C 520 480 545 380 610 300" stroke="#c85050"/>
+    <path d="M 478 600 C 528 478 553 376 618 296" stroke="#6ac86a"/>
+    <path d="M 486 600 C 536 476 561 372 626 292" stroke="#5878d8"/>
+  </g>
+  <g stroke-width="2" fill="none" opacity="0.7">
+    <path d="M 530 560 C 560 500 590 430 640 390" stroke="#c85050"/>
+    <path d="M 537 558 C 567 496 597 424 647 384" stroke="#5878d8"/>
+  </g>
+  <circle cx="500" cy="330" r="34" fill="#e8a34c" opacity="0.22"/>
+
+  <!-- Greif-Pfeile: von weit NEBEN dem Fenster ins Glas -->
+  <defs>
+    <marker id="pf" markerWidth="9" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#e8a34c"/>
+    </marker>
+  </defs>
+  <g stroke="#e8a34c" stroke-width="2" fill="none" marker-end="url(#pf)">
+    <path d="M 120 430 C 260 430 330 420 445 400"/>
+    <path d="M 990 300 C 880 310 790 330 660 350"/>
+  </g>
+  <text x="96" y="415" fill="#e8a34c" font-size="12.5" font-weight="600">Das Glas holt Inhalt von HIER</text>
+  <text x="96" y="460" fill="#8a95a8" font-size="12">gemessen: Median-Versatz 327 px,</text>
+  <text x="96" y="477" fill="#8a95a8" font-size="12">Griff bis ~1,5 Fensterbreiten seitlich</text>
+
+  <!-- Ueberstand-Klammern -->
+  <g stroke="#4a5468" stroke-width="1.5" fill="none">
+    <path d="M 74 745 L 74 755 L 354 755 L 354 745"/>
+    <path d="M 746 745 L 746 755 L 1026 755 L 1026 745"/>
+  </g>
+  <text x="130" y="774" fill="#8a95a8" font-size="12">ÜBERSTAND — hier muss die Welt WEITERLEBEN</text>
+  <text x="800" y="774" fill="#8a95a8" font-size="12">(kein toter Rand, kein „nur mittig")</text>
+
+  <!-- Regel-Callouts rechts -->
+  <g font-size="13">
+    <text x="1060" y="140" fill="#e8edf6" font-weight="600">REGELN DER LICHTWELT</text>
+    <text x="1060" y="172" fill="#e8a34c">①</text><text x="1082" y="172" fill="#b8c4d8">Welt lebt auch NEBEN dem Fenster</text>
+    <text x="1082" y="190" fill="#6d7789" font-size="12">(Überstand — das Glas greift dorthin)</text>
+    <text x="1060" y="222" fill="#e8a34c">②</text><text x="1082" y="222" fill="#b8c4d8">Nichts „genau hinters Glas" planen —</text>
+    <text x="1082" y="240" fill="#6d7789" font-size="12">im Glas erscheint es versetzt + gesäumt</text>
+    <text x="1060" y="272" fill="#e8a34c">③</text><text x="1082" y="272" fill="#b8c4d8">Bewegung ist Pflicht; feine scharfe</text>
+    <text x="1082" y="290" fill="#6d7789" font-size="12">Strukturen brechen am schönsten</text>
+    <text x="1060" y="322" fill="#e8a34c">④</text><text x="1082" y="322" fill="#b8c4d8">Dunkle Grundstimmung ist sicherer:</text>
+    <text x="1082" y="340" fill="#6d7789" font-size="12">~12 % TIR-Zonen bleiben dunkel; §9 will</text>
+    <text x="1082" y="357" fill="#6d7789" font-size="12">trotzdem EINE hellere Variante</text>
+    <text x="1060" y="389" fill="#e8a34c">⑤</text><text x="1082" y="389" fill="#b8c4d8">Lichtwelt = Bühne, kein Datenlayer</text>
+    <text x="1060" y="421" fill="#e8a34c">⑥</text><text x="1082" y="421" fill="#b8c4d8">Urteile IMMER durchs Glas</text>
+    <text x="1082" y="439" fill="#6d7789" font-size="12">(ID an Claude → hängt sie hinters Blatt)</text>
+    <g stroke="#2a3448"><line x1="1060" y1="466" x2="1360" y2="466"/></g>
+    <text x="1060" y="494" fill="#e8edf6" font-weight="600">AUSSERDEM IM BILD</text>
+    <text x="1060" y="524" fill="#b8c4d8">— Glanz zeichnet nur KANTEN,</text>
+    <text x="1077" y="542" fill="#6d7789" font-size="12">Fläche bleibt dunkel (Dark-Field)</text>
+    <text x="1060" y="572" fill="#b8c4d8">— TIR-Zonen zeigen ehrlich keinen</text>
+    <text x="1077" y="590" fill="#6d7789" font-size="12">Hintergrund (Physik, kein Fehler)</text>
+    <text x="1060" y="620" fill="#b8c4d8">— viel negative Fläche: das Prisma</text>
+    <text x="1077" y="638" fill="#6d7789" font-size="12">darf atmen (Zielvertrag §6)</text>
+    <text x="1060" y="668" fill="#b8c4d8">— Boden/Kontaktlicht nur aus der-</text>
+    <text x="1077" y="686" fill="#6d7789" font-size="12">selben Lichtwelt, sonst weglassen</text>
+  </g>
+</svg>
+</section>
+
+<!-- ══════════════════ TAFEL 2: DIE BEFUND-FLÄCHE ══════════════════ -->
+<section>
+<h2>TAFEL 2 · DIE BEFUND-FLÄCHE — verriegelte Ablesegrammatik</h2>
+<p class="lead">Eine Prismenfläche, abgerollt. Gesund = LEER (kein Dauer-Kamm!).
+Nur ein belastbarer Befund erzeugt ein LOKALES Prüffeld am Frequenzort —
+sichtbar wird seine WIRKUNG auf gerade Linien, kein erfundenes Objekt.</p>
+
+<svg viewBox="0 0 1400 600" role="img" aria-label="Befund-Grammatik">
+  <!-- Band-Chips -->
+  <g font-size="12.5" font-weight="600">
+    <rect x="100" y="52" width="120" height="26" rx="4" fill="#1a1207" stroke="#e8a34c"/>
+    <text x="123" y="70" fill="#e8a34c">TIEFEN</text>
+    <rect x="232" y="52" width="120" height="26" rx="4" fill="#1a0916" stroke="#d465b0"/>
+    <text x="262" y="70" fill="#d465b0">MITTEN</text>
+    <rect x="364" y="52" width="120" height="26" rx="4" fill="#0a161c" stroke="#9fd3e8"/>
+    <text x="394" y="70" fill="#9fd3e8">HÖHEN</text>
+    <text x="500" y="70" fill="#6d7789" font-size="12" font-weight="400">← Fläche = Band · Farbe trägt Bandbedeutung, nie Stimmung (gezeigt: EINE Fläche)</text>
+  </g>
+
+  <!-- Flaeche -->
+  <rect x="100" y="100" width="900" height="360" fill="#0a0e16" stroke="#2a3448"/>
+
+  <!-- gesunder Bereich -->
+  <text x="130" y="170" fill="#3a4356" font-size="13" letter-spacing="1">GESUND = LEER</text>
+  <text x="130" y="190" fill="#3a4356" font-size="12">kein Kamm ohne Befund</text>
+
+  <!-- BEFUND 1: Buendelung (Ueberschuss/Resonanz), hohe Persistenz -->
+  <g stroke="#9fd3e8" stroke-width="1.6" fill="none" opacity="0.9">
+    <path d="M 320 150 Q 337 295 320 440"/>
+    <path d="M 342 150 Q 366 295 342 440"/>
+    <path d="M 364 150 Q 391 295 364 440"/>
+    <path d="M 386 150 Q 410 295 386 440"/>
+    <path d="M 408 150 Q 423 295 408 440"/>
+    <path d="M 430 150 L 430 440"/>
+    <path d="M 452 150 Q 437 295 452 440"/>
+    <path d="M 474 150 Q 450 295 474 440"/>
+    <path d="M 496 150 Q 469 295 496 440"/>
+    <path d="M 518 150 Q 494 295 518 440"/>
+    <path d="M 540 150 Q 523 295 540 440"/>
+  </g>
+  <!-- BEFUND 2: Spreizung (Loch), geringe Persistenz -->
+  <g stroke="#9fd3e8" stroke-width="1.6" fill="none" opacity="0.85">
+    <path d="M 700 250 Q 685 325 700 400"/>
+    <path d="M 722 250 Q 702 325 722 400"/>
+    <path d="M 744 250 Q 724 325 744 400"/>
+    <path d="M 766 250 Q 753 325 766 400"/>
+    <path d="M 788 250 Q 787 325 788 400"/>
+    <path d="M 810 250 Q 821 325 810 400"/>
+    <path d="M 832 250 Q 851 325 832 400"/>
+    <path d="M 854 250 Q 873 325 854 400"/>
+    <path d="M 876 250 Q 892 325 876 400"/>
+  </g>
+
+  <!-- Frequenzachse -->
+  <line x1="100" y1="460" x2="1000" y2="460" stroke="#2a3448"/>
+  <g stroke="#2a3448"><line x1="430" y1="460" x2="430" y2="470"/><line x1="788" y1="460" x2="788" y2="470"/></g>
+  <text x="104" y="484" fill="#6d7789" font-size="12">tief</text>
+  <text x="966" y="484" fill="#6d7789" font-size="12">hoch</text>
+  <text x="470" y="484" fill="#8a95a8" font-size="12">horizontale Lage = FREQUENZ im Band</text>
+
+  <!-- Annotationen Befund 1 -->
+  <g stroke="#e8a34c" stroke-width="1.4" fill="none">
+    <path d="M 320 128 L 320 118 L 540 118 L 540 128"/>
+  </g>
+  <text x="356" y="112" fill="#e8a34c" font-size="12.5">BREITE = betroffener Bereich</text>
+  <defs>
+    <marker id="pf2" markerWidth="8" markerHeight="7" refX="6" refY="3.5" orient="auto">
+      <path d="M0,0 L7,3.5 L0,7 z" fill="#e8a34c"/>
+    </marker>
+  </defs>
+  <line x1="341" y1="295" x2="360" y2="295" stroke="#e8a34c" stroke-width="1.6" marker-end="url(#pf2)"/>
+  <text x="196" y="300" fill="#e8a34c" font-size="12.5">VERSATZ = Stärke</text>
+  <text x="196" y="318" fill="#6d7789" font-size="11.5">(der Kamm ist das Lineal)</text>
+  <g stroke="#8a95a8" stroke-width="1.3" fill="none">
+    <path d="M 560 150 L 570 150 L 570 440 L 560 440"/>
+  </g>
+  <text x="580" y="280" fill="#8a95a8" font-size="12.5">vertikale Ausdehnung</text>
+  <text x="580" y="298" fill="#8a95a8" font-size="12.5">= PERSISTENZ</text>
+  <text x="330" y="524" fill="#e8edf6" font-size="13" font-weight="600">BÜNDELUNG = Überschuss / Resonanz</text>
+  <text x="330" y="543" fill="#6d7789" font-size="12">hier: hoch persistent (volle Höhe)</text>
+  <text x="700" y="524" fill="#e8edf6" font-size="13" font-weight="600">SPREIZUNG = Loch / Fehlbetrag</text>
+  <text x="700" y="543" fill="#6d7789" font-size="12">hier: jung/kurz (geringe Höhe)</text>
+
+  <!-- Regel-Spalte rechts -->
+  <g font-size="13">
+    <text x="1060" y="120" fill="#e8edf6" font-weight="600">GESETZE (verriegelt)</text>
+    <text x="1060" y="152" fill="#b8c4d8">— Schärfe: echte Punkte/Linien.</text>
+    <text x="1077" y="170" fill="#6d7789" font-size="12">Kein Bloom, kein Weichzeichner</text>
+    <text x="1060" y="200" fill="#b8c4d8">— Konfidenz NIE als Unschärfe —</text>
+    <text x="1077" y="218" fill="#6d7789" font-size="12">sie steht als Text außerhalb</text>
+    <text x="1060" y="248" fill="#b8c4d8">— Text/UI außerhalb des Glases,</text>
+    <text x="1077" y="266" fill="#6d7789" font-size="12">z. B.: „Klavierbus ↔ Chor · 840 Hz–1,2 kHz"</text>
+    <text x="1060" y="296" fill="#b8c4d8">— ruhige Bewegung: kein Beat-</text>
+    <text x="1077" y="314" fill="#6d7789" font-size="12">Zucken, keine Erfolgs-Effekte</text>
+    <text x="1060" y="344" fill="#b8c4d8">— 2-Sekunden-Test: grobe Handlung</text>
+    <text x="1077" y="362" fill="#6d7789" font-size="12">ablesbar — auch bei 3–4 Befunden</text>
+    <text x="1060" y="392" fill="#b8c4d8">— verdeckte Flächen: kleine ruhige</text>
+    <text x="1077" y="410" fill="#6d7789" font-size="12">Bandindikatoren, kein Zwangsdrehen</text>
+    <text x="1060" y="440" fill="#b8c4d8">— keine erfundenen Werte: Daten</text>
+    <text x="1077" y="458" fill="#6d7789" font-size="12">kommen aus Songschleife/Brücke</text>
+  </g>
+</svg>
+</section>
+
+<!-- ══════════════════ TAFEL 3: DER EFFEKT-WEG ══════════════════ -->
+<section>
+<h2>TAFEL 3 · DER EFFEKT-WEG — wie dein Entwurf aufs Prisma kommt</h2>
+<p class="lead">Drei Quellen, ein Compositor: Das Blatt (WebGL2) sampelt
+jede Quelle als Textur-Ebene. HINTER dem Glas wird sie gebrochen
+(Lichtwelt), AUF der Fläche wird sie in die Silhouette maskiert (Befund).
+Beurteilt wird immer das lebende Gesamtbild.</p>
+
+<svg viewBox="0 0 1400 560" role="img" aria-label="Effekt-Pipeline">
+  <defs>
+    <marker id="pf3" markerWidth="9" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#4a5468"/>
+    </marker>
+  </defs>
+
+  <!-- Quelle 1: Unicorn -->
+  <rect x="60" y="70" width="330" height="120" rx="6" fill="#0a0e16" stroke="#d465b0"/>
+  <text x="80" y="100" fill="#d465b0" font-size="14" font-weight="600">UNICORN-SZENE (dein Werkzeug)</text>
+  <text x="80" y="124" fill="#b8c4d8" font-size="12.5">je Effekt EINE eigene Projekt-ID</text>
+  <text x="80" y="144" fill="#6d7789" font-size="12">Fallen: Handgriff am Regler löst Bindung ·</text>
+  <text x="80" y="161" fill="#6d7789" font-size="12">neue Layer erben keine Bindungen (Tafel, Taste T)</text>
+  <text x="80" y="181" fill="#6d7789" font-size="12">Export-JSON als Sicherung → design/unicorn/</text>
+
+  <!-- Quelle 2: Sonifold -->
+  <rect x="60" y="220" width="330" height="120" rx="6" fill="#0a0e16" stroke="#9fd3e8"/>
+  <text x="80" y="250" fill="#9fd3e8" font-size="14" font-weight="600">SONIFOLD-INGREDIENT (Port)</text>
+  <text x="80" y="274" fill="#b8c4d8" font-size="12.5">WGSL → GLSL portiert Claude pro Effekt</text>
+  <text x="80" y="294" fill="#6d7789" font-size="12">Vorrat: caustics · interference · voronoi ·</text>
+  <text x="80" y="311" fill="#6d7789" font-size="12">curl-flow · fiber-field · domain-warp ·</text>
+  <text x="80" y="328" fill="#6d7789" font-size="12">metaballs · sdf-ring · ridge-noise · spiral-field</text>
+
+  <!-- Quelle 3: eigener GLSL -->
+  <rect x="60" y="370" width="330" height="120" rx="6" fill="#0a0e16" stroke="#e8a34c"/>
+  <text x="80" y="400" fill="#e8a34c" font-size="14" font-weight="600">EIGENER GLSL-SHADER</text>
+  <text x="80" y="424" fill="#b8c4d8" font-size="12.5">schlieren-probe-field.frag = kalibrierte Quelle</text>
+  <text x="80" y="444" fill="#6d7789" font-size="12">Kalibrierung 0,76: Deflection 100 → Lücke 195 %</text>
+  <text x="80" y="461" fill="#6d7789" font-size="12">Unicorn ist für diese Ebene nur ANZEIGE —</text>
+  <text x="80" y="478" fill="#6d7789" font-size="12">die Wahrheit liegt in der .frag-Datei</text>
+
+  <!-- Pfeile zu Compositor -->
+  <g stroke="#4a5468" stroke-width="2" fill="none" marker-end="url(#pf3)">
+    <path d="M 390 130 C 460 130 470 220 530 250"/>
+    <path d="M 390 280 L 530 280"/>
+    <path d="M 390 430 C 460 430 470 340 530 310"/>
+  </g>
+
+  <!-- Compositor -->
+  <rect x="540" y="200" width="300" height="160" rx="6" fill="#10141c" stroke="#5a6478" stroke-width="1.5"/>
+  <text x="562" y="232" fill="#e8edf6" font-size="14" font-weight="600">DAS BLATT = COMPOSITOR</text>
+  <text x="562" y="252" fill="#8a95a8" font-size="12.5">WebGL2 · sampelt jede Quelle live als Textur</text>
+  <text x="562" y="282" fill="#b8c4d8" font-size="12.5">→ HINTER dem Glas: wird GEBROCHEN</text>
+  <text x="580" y="300" fill="#6d7789" font-size="12">(ST-Map · Lichtwelt-Rolle)</text>
+  <text x="562" y="326" fill="#b8c4d8" font-size="12.5">→ AUF der Fläche: wird MASKIERT</text>
+  <text x="580" y="344" fill="#6d7789" font-size="12">(Silhouette · Befund-Rolle)</text>
+
+  <!-- Pfeil zu Urteil -->
+  <g stroke="#4a5468" stroke-width="2" fill="none" marker-end="url(#pf3)">
+    <path d="M 840 280 L 950 280"/>
+  </g>
+
+  <!-- Urteil -->
+  <rect x="960" y="215" width="330" height="130" rx="6" fill="#0a0e16" stroke="#7dc98f"/>
+  <text x="982" y="248" fill="#7dc98f" font-size="14" font-weight="600">DEIN URTEIL — AM LEBENDEN BLATT</text>
+  <text x="982" y="272" fill="#b8c4d8" font-size="12.5">immer DURCHS Glas, nie an der Szene allein</text>
+  <text x="982" y="292" fill="#6d7789" font-size="12">stmap-probe.html · ?bg=&lt;ID&gt; · ?dispersion=</text>
+  <text x="982" y="312" fill="#6d7789" font-size="12">dein Wortlaut wird festgehalten</text>
+  <text x="982" y="332" fill="#6d7789" font-size="12">(Geschmacksprofil / Freigabe-Marker)</text>
+
+  <!-- Feedback-Schleife -->
+  <g stroke="#3a4356" stroke-width="1.6" fill="none" marker-end="url(#pf3)">
+    <path d="M 1120 345 C 1120 460 500 480 230 495"/>
+  </g>
+  <text x="580" y="452" fill="#6d7789" font-size="12.5">Feedback → nächste Iteration (Sekunden-Schleife im Browser, nie Stunden in Blender)</text>
+</svg>
+</section>
+
+<footer>
+  Quellen: <code>docs/visuelles-zielbild-hoerkompass.md</code> (Zielvertrag §3/§6/§9) ·
+  <code>docs/geschmacksprofil.md</code> (die vier Proben) ·
+  <code>docs/design-stand.md</code> (NAK-16-Messwerte, Unicorn-Fallen) ·
+  Messwerte: <code>eq-copilot/design/prisma/renders/stmap/messung.json</code>
+</footer>
+</main>
+</body>
+</html>

@@ -34,13 +34,15 @@
                      Konsistenz ausserhalb, Upload-Benchmark,
                      RGBA16F-Upload-Pfad. Ergebnis: window.MESSUNG.
 
-  LADE-PANEL (unten rechts): Projekt-ID eintippen ODER den Unicorn-
-  JSON-Export direkt als Datei laden (kein Publish noetig — der Export
-  wird per Blob-URL als filePath gemountet; Technik aus dem
-  evenacadia-site-Editor, dort produktiv bewiesen). SDK liegt lokal
-  gevendort (design/vendor/unicornStudio-2.2.10.umd.js, CDN nur als
-  Fallback); Szenen-Swap ist serialisiert (nie mitten in der Init
-  zerstoeren), destroy() vor jedem Neu-Mount.
+  LADE-PANEL (unten rechts), DREI EBENEN-SLOTS: je Slot Projekt-ID
+  eintippen ODER den Unicorn-JSON-Export direkt als Datei laden (kein
+  Publish noetig — Blob-URL als filePath; Technik aus dem
+  evenacadia-site-Editor, dort produktiv bewiesen). Slot 1 = Basis,
+  Slot 2/3 liegen im SCREEN-Blend darueber (Hintergrund und
+  Lichtquellen getrennt bauen); jede Ebene einzeln verschieb-/zoombar
+  (ZIEHEN WIRKT AUF waehlt das Ziel; ?lage1=x,y,zoom haelt es fest).
+  SDK lokal gevendort (design/vendor/unicornStudio-2.2.10.umd.js, CDN
+  nur Fallback); Mount/Destroy je Slot serialisiert.
 -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -56,9 +58,9 @@
     align-items: center; justify-content: center; }
   #comp { max-width: 98vw; max-height: 96vh; background: #000;
     position: relative; z-index: 1; }
-  /* Ebene 0 lebt SICHTBAR hinter dem deckenden Composite (das SDK
-     rendert off-viewport-Elemente nicht) — gesampelt wird ihr Canvas. */
-  #ebene0 { position: absolute; width: 1920px; height: 1280px;
+  /* Ebene-0-Slots leben SICHTBAR hinter dem deckenden Composite (das SDK
+     rendert off-viewport-Elemente nicht) — gesampelt werden ihre Canvases. */
+  .ebene0 { position: absolute; width: 1920px; height: 1280px;
     left: 0; top: 0; z-index: 0; }
   #messwerte { position: fixed; left: 12px; bottom: 12px; z-index: 4;
     background: rgba(6,8,12,.88); border: 1px solid #1a2230;
@@ -70,7 +72,7 @@
   #lader { position: fixed; right: 12px; bottom: 12px; z-index: 4;
     background: rgba(6,8,12,.88); border: 1px solid #1a2230;
     padding: 10px 12px; display: flex; flex-direction: column; gap: 7px;
-    font-size: 11px; letter-spacing: 0.5px; width: 300px; }
+    font-size: 11px; letter-spacing: 0.5px; width: 430px; }
   #lader .zeile { display: flex; gap: 6px; }
   #lader input[type=text] { flex: 1; background: #0a0e16;
     border: 1px solid #2a3448; color: #e8edf6; padding: 5px 8px;
@@ -87,25 +89,41 @@
 <body>
 <header><span class="marke">NAKAMA</span><h1>ST-MAP-PROBE</h1><span id="takt"></span></header>
 <div id="buehne"><canvas id="comp" width="1920" height="1280"></canvas></div>
-<div id="ebene0"></div>
+<div id="ebene0a" class="ebene0"></div>
+<div id="ebene0b" class="ebene0"></div>
+<div id="ebene0c" class="ebene0"></div>
 <pre id="messwerte"></pre>
 <div id="fehler"></div>
 <div id="lader">
-  <span id="laderTitel">EBENE 0 · DEINE LICHTWELT</span>
+  <span id="laderTitel">EBENE 0 · DEINE LICHTWELT · 3 EBENEN (1 = Basis · 2/3 = SCREEN darüber)</span>
   <div class="zeile">
-    <input type="text" id="projektFeld" placeholder="Unicorn-Projekt-ID" spellcheck="false">
-    <button id="ladenKnopf">LADEN</button>
+    <input type="text" id="projektFeld0" placeholder="Ebene 1 · Basis · Projekt-ID" spellcheck="false">
+    <button data-laden="0">LADEN</button><button data-json="0">JSON</button><button data-leer="0">✕</button>
+    <span id="punkt0" style="align-self:center">○</span>
   </div>
   <div class="zeile">
-    <button id="jsonKnopf">JSON-EXPORT LADEN …</button>
-    <button id="testKnopf">TESTMUSTER</button>
+    <input type="text" id="projektFeld1" placeholder="Ebene 2 · z. B. Lichtströme" spellcheck="false">
+    <button data-laden="1">LADEN</button><button data-json="1">JSON</button><button data-leer="1">✕</button>
+    <span id="punkt1" style="align-self:center">○</span>
+  </div>
+  <div class="zeile">
+    <input type="text" id="projektFeld2" placeholder="Ebene 3 · z. B. Lichtquellen" spellcheck="false">
+    <button data-laden="2">LADEN</button><button data-json="2">JSON</button><button data-leer="2">✕</button>
+    <span id="punkt2" style="align-self:center">○</span>
+  </div>
+  <div class="zeile" id="ziehWahl" style="color:#8a95a8;align-items:center;gap:10px">
+    ZIEHEN WIRKT AUF:
+    <label><input type="radio" name="ziehZiel" value="-1" checked> Gesamt</label>
+    <label><input type="radio" name="ziehZiel" value="0"> 1</label>
+    <label><input type="radio" name="ziehZiel" value="1"> 2</label>
+    <label><input type="radio" name="ziehZiel" value="2"> 3</label>
   </div>
   <div class="zeile">
     <span id="lageText" style="flex:1;align-self:center;color:#6d7789;font:10px Consolas,monospace"></span>
     <button id="lageReset">RESET</button>
   </div>
   <span id="laderStatus">Testmuster aktiv</span>
-  <span style="color:#4a5468">Ziehen auf dem Bild verschiebt die Welt · Mausrad zoomt</span>
+  <span style="color:#4a5468">Ziehen auf dem Bild verschiebt · Mausrad zoomt · ✕ leert die Ebene · alle leer = Testmuster</span>
   <input type="file" id="jsonDatei" accept=".json,application/json" style="display:none">
 </div>
 
@@ -216,9 +234,17 @@ const bgLage = {
 function zeigeLage() {
   const el = document.getElementById("lageText");
   if (!el) return;
-  el.textContent = (bgLage.x === 0 && bgLage.y === 0 && bgLage.zoom === 1)
-    ? "Lage: Standard"
-    : `?bgx=${bgLage.x.toFixed(3)}&bgy=${bgLage.y.toFixed(3)}&bgzoom=${bgLage.zoom.toFixed(2)}`;
+  const gewaehlt = document.querySelector('input[name="ziehZiel"]:checked');
+  const ziel = gewaehlt ? parseInt(gewaehlt.value, 10) : -1;
+  const l = (ziel >= 0 && window.__slots) ? window.__slots[ziel].lage : bgLage;
+  const name = ziel >= 0 ? "Ebene " + (ziel + 1) : "Gesamt";
+  if (l.x === 0 && l.y === 0 && l.zoom === 1) {
+    el.textContent = name + ": Standard";
+  } else if (ziel >= 0) {
+    el.textContent = `?lage${ziel + 1}=${l.x.toFixed(3)},${l.y.toFixed(3)},${l.zoom.toFixed(2)}`;
+  } else {
+    el.textContent = `?bgx=${l.x.toFixed(3)}&bgy=${l.y.toFixed(3)}&bgzoom=${l.zoom.toFixed(2)}`;
+  }
 }
 function setzeLage() {
   gl.uniform3f(bgLageOrt, bgLage.x, bgLage.y, bgLage.zoom);
@@ -306,17 +332,38 @@ function maleTestmuster(t) {
   bgC.fillRect(8, 8, 40, 40);
 }
 
-/* ── Ebene 0 live: Unicorn-Szenen-Manager ──
+/* ── Ebene 0 live: Unicorn-Szenen-Manager, DREI Slots ──
    Technik aus dem evenacadia-site-Editor (dort produktiv bewiesen):
    lokal gevendortes SDK (CDN nur Fallback), Quellen projectId ODER
    Szenen-JSON per Blob-URL als filePath (kein Publish noetig),
-   serialisierter Mount/Destroy (nie mitten in der Init zerstoeren). */
-let unicornLeinwand = null;
+   serialisierter Mount/Destroy (nie mitten in der Init zerstoeren).
+   Slot 1 = Basis (source-over), Slot 2/3 = SCREEN darueber (die
+   Blend-Faustregel aus Tafel 4) — jede Ebene einzeln positionierbar,
+   komponiert werden sie per 2D-Canvas VOR dem Upload (ein Upload,
+   Shader bleibt bei EINER uBg-Textur). */
 const REMIX3 = "DAGhm8NIQHdX9GhNYmP9";
 const laderStatus = document.getElementById("laderStatus");
-const projektFeld = document.getElementById("projektFeld");
-const laderKnoepfe = ["ladenKnopf", "jsonKnopf", "testKnopf"]
-  .map(id => document.getElementById(id));
+const SLOT_HOST = ["ebene0a", "ebene0b", "ebene0c"];
+const slots = SLOT_HOST.map((host, i) => ({
+  host,
+  feld: document.getElementById("projektFeld" + i),
+  punkt: document.getElementById("punkt" + i),
+  handle: null,
+  canvas: null,
+  laeuft: false,
+  lage: { x: 0, y: 0, zoom: 1 },
+}));
+const laderKnoepfe = [...document.querySelectorAll("#lader button")];
+window.__slots = slots;               // fuer zeigeLage (Definitionsreihenfolge)
+// Slot-Lagen aus der URL: ?lage1=x,y,zoom (reproduzierbares Framing)
+slots.forEach((s, i) => {
+  const roh = PARAMS.get("lage" + (i + 1));
+  if (!roh) return;
+  const [x, y, z] = roh.split(",").map(parseFloat);
+  if (Number.isFinite(x)) s.lage.x = x;
+  if (Number.isFinite(y)) s.lage.y = y;
+  if (Number.isFinite(z)) s.lage.zoom = Math.min(4, Math.max(0.25, z));
+});
 
 let sdkVersprochen = null;
 function holeSdk() {
@@ -349,24 +396,24 @@ function holeSdk() {
   return sdkVersprochen;
 }
 
-let szeneHandle = null;
-let szeneLaeuft = false;
-async function ladeEbene0(quelle, name) {
-  if (szeneLaeuft) return;               // ein Vorgang zur Zeit (Site-Muster)
-  szeneLaeuft = true;
+async function ladeSlot(i, quelle, name) {
+  const s = slots[i];
+  if (s.laeuft) return;                  // ein Vorgang je Slot (Site-Muster)
+  s.laeuft = true;
   laderKnoepfe.forEach(k => { k.disabled = true; });
-  laderStatus.textContent = quelle ? "lädt " + name + " …" : "räumt auf …";
+  s.punkt.textContent = "…";
+  laderStatus.textContent = quelle ? `Ebene ${i + 1} lädt ${name} …` : `Ebene ${i + 1} räumt auf …`;
   try {
-    unicornLeinwand = null;
-    if (szeneHandle) {
-      try { szeneHandle.destroy?.(); } catch { /* halb-init: egal */ }
-      szeneHandle = null;
+    s.canvas = null;
+    if (s.handle) {
+      try { s.handle.destroy?.(); } catch { /* halb-init: egal */ }
+      s.handle = null;
     }
-    document.getElementById("ebene0").innerHTML = "";
+    document.getElementById(s.host).innerHTML = "";
     if (quelle) {
       await holeSdk();
-      szeneHandle = await UnicornStudio.addScene({
-        elementId: "ebene0",
+      s.handle = await UnicornStudio.addScene({
+        elementId: s.host,
         ...quelle,
         scale: 1,
         dpi: Math.min(window.devicePixelRatio || 1, 1.5),
@@ -375,47 +422,85 @@ async function ladeEbene0(quelle, name) {
         production: true,
         interactivity: { mouse: { disableMobile: true } },
       });
-      unicornLeinwand = document.querySelector("#ebene0 canvas");
-      if (!unicornLeinwand) throw new Error("Szene hat keinen Canvas erzeugt");
-      laderStatus.textContent = "LIVE hinter dem Glas: " + name;
+      s.canvas = document.querySelector("#" + s.host + " canvas");
+      if (!s.canvas) throw new Error("Szene hat keinen Canvas erzeugt");
+      s.punkt.textContent = "●";
+      laderStatus.textContent = `Ebene ${i + 1} LIVE: ${name}`;
     } else {
-      laderStatus.textContent = "Testmuster aktiv";
+      s.punkt.textContent = "○";
+      laderStatus.textContent = slots.some(x => x.canvas)
+        ? `Ebene ${i + 1} geleert` : "Testmuster aktiv";
     }
   } catch (e) {
-    unicornLeinwand = null;
-    laderStatus.textContent = "Fehler: " + (e && e.message ? e.message : e);
+    s.canvas = null;
+    s.punkt.textContent = "○";
+    laderStatus.textContent = `Ebene ${i + 1} Fehler: ` + (e && e.message ? e.message : e);
   } finally {
-    szeneLaeuft = false;
+    s.laeuft = false;
     laderKnoepfe.forEach(k => { k.disabled = false; });
   }
 }
 // JSON-Export direkt laden (Blob-URL als filePath — kein Publish noetig).
 // Auch fuer Automation/Messlaeufe von aussen aufrufbar.
-window.ladeSzeneAusText = text => {
+window.ladeSzeneAusText = (text, slot = 0) => {
   const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
-  return ladeEbene0({ filePath: url }, "JSON-Export")
+  return ladeSlot(slot, { filePath: url }, "JSON-Export")
     .finally(() => setTimeout(() => URL.revokeObjectURL(url), 8000));
 };
 
-document.getElementById("ladenKnopf").addEventListener("click", () => {
-  const id = projektFeld.value.trim();
-  if (!id) return;
-  try { localStorage.setItem("nakama.ebene0.projekt", id); } catch { /* file:// */ }
-  ladeEbene0({ projectId: id }, id.length > 14 ? id.slice(0, 12) + "…" : id);
-});
-projektFeld.addEventListener("keydown", ev => {
-  if (ev.key === "Enter") document.getElementById("ladenKnopf").click();
-});
-document.getElementById("testKnopf").addEventListener("click", () => ladeEbene0(null, ""));
-document.getElementById("jsonKnopf").addEventListener("click", () =>
-  document.getElementById("jsonDatei").click());
+// Kompositor der drei Ebenen: Basis source-over, 2/3 SCREEN — jede mit
+// eigener Lage (Verschiebung in Canvas-Anteilen, Zoom um die Mitte).
+const bgKomposit = document.createElement("canvas");
+bgKomposit.width = BW; bgKomposit.height = BH;
+const kompositC = bgKomposit.getContext("2d");
+function komponiereEbene0() {
+  if (!slots.some(s => s.canvas)) return null;
+  kompositC.globalCompositeOperation = "source-over";
+  kompositC.fillStyle = "#000";
+  kompositC.fillRect(0, 0, BW, BH);
+  slots.forEach((s, i) => {
+    if (!s.canvas) return;
+    kompositC.globalCompositeOperation = i === 0 ? "source-over" : "screen";
+    const dw = BW * s.lage.zoom, dh = BH * s.lage.zoom;
+    kompositC.drawImage(s.canvas,
+      BW * s.lage.x + (BW - dw) / 2,
+      BH * s.lage.y + (BH - dh) / 2, dw, dh);
+  });
+  kompositC.globalCompositeOperation = "source-over";
+  return bgKomposit;
+}
+
+for (const knopf of document.querySelectorAll("#lader button[data-laden]")) {
+  knopf.addEventListener("click", () => {
+    const i = parseInt(knopf.dataset.laden, 10);
+    const id = slots[i].feld.value.trim();
+    if (!id) return;
+    try { localStorage.setItem("nakama.ebene0.projekt" + i, id); } catch { /* file:// */ }
+    ladeSlot(i, { projectId: id }, id.length > 14 ? id.slice(0, 12) + "…" : id);
+  });
+}
+let jsonZielSlot = 0;
+for (const knopf of document.querySelectorAll("#lader button[data-json]")) {
+  knopf.addEventListener("click", () => {
+    jsonZielSlot = parseInt(knopf.dataset.json, 10);
+    document.getElementById("jsonDatei").click();
+  });
+}
+for (const knopf of document.querySelectorAll("#lader button[data-leer]")) {
+  knopf.addEventListener("click", () => ladeSlot(parseInt(knopf.dataset.leer, 10), null, ""));
+}
 document.getElementById("jsonDatei").addEventListener("change", ev => {
   const datei = ev.target.files && ev.target.files[0];
   if (!datei) return;
-  datei.text().then(t => window.ladeSzeneAusText(t));
+  datei.text().then(t => window.ladeSzeneAusText(t, jsonZielSlot));
   ev.target.value = "";
 });
-try { projektFeld.value = localStorage.getItem("nakama.ebene0.projekt") ?? ""; } catch { /* file:// */ }
+slots.forEach((s, i) => {
+  s.feld.addEventListener("keydown", ev => {
+    if (ev.key === "Enter") document.querySelector(`#lader button[data-laden="${i}"]`).click();
+  });
+  try { s.feld.value = localStorage.getItem("nakama.ebene0.projekt" + i) ?? ""; } catch { /* file:// */ }
+});
 
 // Lage-Eingabe: Ziehen auf dem Composite verschiebt die Welt hinter dem
 // Glas, Mausrad zoomt um den Zeiger (der Punkt unterm Cursor bleibt stehen).
@@ -426,11 +511,19 @@ leinwand.addEventListener("pointerdown", ev => {
   leinwand.style.cursor = "grabbing";
   leinwand.setPointerCapture(ev.pointerId);
 });
+// Ziehen/Zoomen wirkt auf das gewaehlte Ziel: Gesamt (Shader-Uniform)
+// oder eine einzelne Ebene (2D-Kompositor-Lage).
+function ziehZiel() {
+  const w = document.querySelector('input[name="ziehZiel"]:checked');
+  return w ? parseInt(w.value, 10) : -1;
+}
 leinwand.addEventListener("pointermove", ev => {
   if (!lageZieht) return;
   const r = leinwand.getBoundingClientRect();
-  bgLage.x += ev.movementX / r.width;
-  bgLage.y += ev.movementY / r.height;
+  const ziel = ziehZiel();
+  const l = ziel >= 0 ? slots[ziel].lage : bgLage;
+  l.x += ev.movementX / r.width;
+  l.y += ev.movementY / r.height;
   setzeLage();
 });
 leinwand.addEventListener("pointerup", ev => {
@@ -445,33 +538,50 @@ leinwand.addEventListener("wheel", ev => {
     x: (ev.clientX - r.left) / r.width,
     y: (ev.clientY - r.top) / r.height,
   };
-  const neu = Math.min(4, Math.max(0.25, bgLage.zoom * (ev.deltaY < 0 ? 1.1 : 1 / 1.1)));
-  // Punkt unterm Zeiger festhalten: c = (p-0.5-pan)/zoom bleibt konstant.
-  bgLage.x = (p.x - 0.5) - ((p.x - 0.5 - bgLage.x) / bgLage.zoom) * neu;
-  bgLage.y = (p.y - 0.5) - ((p.y - 0.5 - bgLage.y) / bgLage.zoom) * neu;
-  bgLage.zoom = neu;
+  const ziel = ziehZiel();
+  const l = ziel >= 0 ? slots[ziel].lage : bgLage;
+  const neu = Math.min(4, Math.max(0.25, l.zoom * (ev.deltaY < 0 ? 1.1 : 1 / 1.1)));
+  if (ziel < 0) {
+    // Shader-Transform: texCoord = (p-0.5-pan)/zoom+0.5 — c festhalten.
+    l.x = (p.x - 0.5) - ((p.x - 0.5 - l.x) / l.zoom) * neu;
+    l.y = (p.y - 0.5) - ((p.y - 0.5 - l.y) / l.zoom) * neu;
+  } else {
+    // Kompositor-Transform: p = lage + (1-zoom)/2 + q*zoom — q festhalten.
+    const qx = (p.x - l.x - (1 - l.zoom) / 2) / l.zoom;
+    const qy = (p.y - l.y - (1 - l.zoom) / 2) / l.zoom;
+    l.x = p.x - (1 - neu) / 2 - qx * neu;
+    l.y = p.y - (1 - neu) / 2 - qy * neu;
+  }
+  l.zoom = neu;
   setzeLage();
 }, { passive: false });
 document.getElementById("lageReset").addEventListener("click", () => {
-  bgLage.x = 0; bgLage.y = 0; bgLage.zoom = 1;
+  const ziel = ziehZiel();
+  const l = ziel >= 0 ? slots[ziel].lage : bgLage;
+  l.x = 0; l.y = 0; l.zoom = 1;
   setzeLage();
 });
+for (const radio of document.querySelectorAll('input[name="ziehZiel"]')) {
+  radio.addEventListener("change", zeigeLage);
+}
 zeigeLage();
 
-// Startzustand aus der URL: ?projekt=<ID> laedt genau diese Szene,
-// ?bg=unicorn den Standard-Hintergrund (Winter Nexus Remix 3).
-const startProjekt = PARAMS.get("projekt");
-if (startProjekt) {
-  projektFeld.value = startProjekt;
-  ladeEbene0({ projectId: startProjekt }, startProjekt.slice(0, 12) + "…");
-} else if (BG_MODUS === "unicorn") {
-  ladeEbene0({ projectId: REMIX3 }, "Winter Nexus (Remix) 3");
+// Startzustand aus der URL: ?projekt= / ?projekt2= / ?projekt3= laden die
+// Slots direkt; ?bg=unicorn (ohne projekt) den Standard-Hintergrund.
+const startProjekte = [PARAMS.get("projekt"), PARAMS.get("projekt2"), PARAMS.get("projekt3")];
+startProjekte.forEach((id, i) => {
+  if (!id) return;
+  slots[i].feld.value = id;
+  ladeSlot(i, { projectId: id }, id.length > 14 ? id.slice(0, 12) + "…" : id);
+});
+if (!startProjekte.some(Boolean) && BG_MODUS === "unicorn") {
+  ladeSlot(0, { projectId: REMIX3 }, "Winter Nexus (Remix) 3");
 }
 if (MESSUNG) document.getElementById("lader").style.display = "none";
 
 let bgGroesse = [BW, BH];
 function ladeHintergrund(t) {
-  const quelle = unicornLeinwand ?? (maleTestmuster(t), bgLeinwand);
+  const quelle = komponiereEbene0() ?? (maleTestmuster(t), bgLeinwand);
   gl.activeTexture(gl.TEXTURE0);
   if (quelle.width !== bgGroesse[0] || quelle.height !== bgGroesse[1]) {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, quelle);
@@ -621,7 +731,7 @@ function tick() {
   if (jetzt - fpsStand > 500) {
     document.getElementById("takt").textContent =
       Math.round(frames * 1000 / (jetzt - fpsStand)) + " FPS · KARTE " + karteStatus
-      + " · " + (unicornLeinwand ? "EBENE 0 LIVE" : "TESTMUSTER")
+      + " · " + (slots.some(s => s.canvas) ? "EBENE 0 LIVE" : "TESTMUSTER")
       + (BGZEIT !== null ? " · EINGEFROREN " + BGZEIT + " s" : "");
     frames = 0; fpsStand = jetzt;
   }

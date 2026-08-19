@@ -26,3 +26,7 @@ __pycache__/
 # ST-Map-Zwischenprodukte (NAK-16; in Sekunden regenerierbar: --nur-stmap + konvertiere-stmap.py)
 eq-copilot/design/prisma/renders/stmap/*.exr
 eq-copilot/design/prisma/renders/stmap/probe-stmap.bin
+# 72er-Sequenz-EXRs (247 MB; regenerierbar in ~5 min: --nur-stmap --dreh 72)
+eq-copilot/design/prisma/renders/dreh-stmap/
+# Dreh-Test-Screenshots (Beweislaeufe, fluechtig)
+eq-copilot/design/prisma/renders/stmap/dreh-w*.png

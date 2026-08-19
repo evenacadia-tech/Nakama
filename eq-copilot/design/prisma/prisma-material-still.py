@@ -520,23 +520,100 @@ if "--debug-kugeln" in argv:
 DREH = int(arg("--dreh", "0"))
 if DREH > 0:
     # Drehsequenz: Frame i = Basisrotation + i * 120°/N (exklusiv 120°,
-    # damit Frame 0 nahtlos auf Frame N folgt). WebP hält die Sequenz klein.
-    szene.render.image_settings.file_format = "WEBP"
-    szene.render.image_settings.quality = 95
-    if FREI:
-        # Formatwechsel kann color_mode zuruecksetzen — RGBA erneut setzen.
-        szene.render.image_settings.color_mode = "RGBA"
-    unterordner = "dreh-frei" if FREI else ("dreh-boden" if BODEN_EBENE else "dreh")
+    # damit Frame 0 nahtlos auf Frame N folgt).
+    if NUR_STMAP:
+        # 32f-EXR bleibt (Datenkanaele!) — NAK-16-Sequenz.
+        unterordner, endung = "dreh-stmap", "exr"
+    elif NUR_GLANZ:
+        szene.render.image_settings.file_format = "WEBP"
+        szene.render.image_settings.quality = 95
+        szene.render.image_settings.color_mode = "RGBA"   # Formatwechsel-Reset
+        unterordner, endung = "dreh-glanz", "webp"
+    else:
+        szene.render.image_settings.file_format = "WEBP"  # Beauty klein halten
+        szene.render.image_settings.quality = 95
+        if FREI:
+            szene.render.image_settings.color_mode = "RGBA"
+        unterordner = "dreh-frei" if FREI else ("dreh-boden" if BODEN_EBENE else "dreh")
+        endung = "webp"
     dreh_dir = os.path.join(HIER, "renders", unterordner)
     os.makedirs(dreh_dir, exist_ok=True)
     basis = prisma.rotation_euler.z
+
+    # Glanz-Rig PRO FRAME am evaluierten Mesh gerechnet (NAK-17-Lehre:
+    # Winkel messen, nie herleiten — die Seiten-Normalen zeigen nach
+    # innen, die Fase ist flat-shaded). Ein MITDREHENDES Rig war der
+    # falsche Weg (gemessen: die Spiegelbedingung haengt an Licht,
+    # Flaeche UND fester Kamera — bei bestimmten Frames geriet eine
+    # ganze Hauptflaeche in die Panel-Spiegelposition -> Weissbrand).
+    def glanz_rig_setzen():
+        deg = bpy.context.evaluated_depsgraph_get()
+        ev = prisma.evaluated_get(deg)
+        me = ev.to_mesh()
+        m3 = ev.matrix_world.to_3x3()
+        kam_pos = Vector(kam_pos_tupel)
+        haupt, fasen = [], []
+        for p in me.polygons:
+            n = (m3 @ p.normal).normalized()
+            if abs(n.z) > 0.05:
+                continue
+            mitte = ev.matrix_world @ p.center
+            # Winding zeigt nach INNEN — outward ueber die Objektachse.
+            aussen = Vector((mitte.x, mitte.y, 0.0))
+            out = n if (n.x * aussen.x + n.y * aussen.y) > 0 else -n
+            zur_kam = (kam_pos - mitte)
+            eintrag = {
+                "az_n": math.atan2(out.y, out.x),
+                "az_kam": math.atan2(zur_kam.y, zur_kam.x),
+                "sichtbar": out.dot(zur_kam.normalized()) > 0.12,
+                "mitte": mitte,
+            }
+            (haupt if p.area > 0.1 else fasen).append(eintrag)
+        ev.to_mesh_clear()
+
+        def az_diff(a, b):
+            return abs((a - b + math.pi) % (2 * math.pi) - math.pi)
+
+        # Silhouetten-Ecke = Fasen-Subflaeche, deren Nachbar-Hauptflaechen
+        # (Normalen +-30 Grad daneben) genau EINMAL sichtbar sind.
+        kandidaten = []
+        for f in fasen:
+            if not f["sichtbar"]:
+                continue
+            nachbarn = [h for h in haupt
+                        if az_diff(h["az_n"], f["az_n"]) < math.radians(45)]
+            if sum(1 for h in nachbarn if h["sichtbar"]) != 1:
+                continue
+            licht_az = 2 * f["az_n"] - f["az_kam"]
+            # Weissbrand-Riegel: kein Panel nahe der Spiegelrichtung
+            # einer SICHTBAREN Hauptflaeche (Panel ~21 Grad Halbwinkel).
+            if any(h["sichtbar"] and az_diff(licht_az, 2 * h["az_n"] - h["az_kam"])
+                   < math.radians(30) for h in haupt):
+                continue
+            kandidaten.append((licht_az, f["mitte"]))
+        # links/rechts: die zwei mit maximalem Azimut-Abstand
+        kandidaten.sort(key=lambda k: k[0])
+        gewaehlt = ([kandidaten[0], kandidaten[-1]]
+                    if len(kandidaten) >= 2 else kandidaten)
+        panels = (rand2_ob, rand_ob)
+        for ob in panels:
+            ob.data.energy = 0.0
+        for ob, (licht_az, ecke) in zip(panels, gewaehlt):
+            ob.location = (ecke.x + 2.8 * math.cos(licht_az),
+                           ecke.y + 2.8 * math.sin(licht_az), 1.3)
+            ob.data.energy = 800.0
+            richte_auf(ob, (ecke.x, ecke.y, 0.9))
+
+    kam_pos_tupel = kam_pos                      # aus dem Kamera-Block oben
     WEITER = "--weiter" in argv                  # vorhandene Frames ueberspringen
     for i in range(DREH):
-        ziel_datei = os.path.join(dreh_dir, f"f{i:03d}.webp")
+        ziel_datei = os.path.join(dreh_dir, f"f{i:03d}.{endung}")
         if WEITER and os.path.exists(ziel_datei):
             print(f"DREH {i + 1}/{DREH}: uebersprungen (existiert)", flush=True)
             continue
         prisma.rotation_euler = (0.0, 0.0, basis + math.radians(i * 120.0 / DREH))
+        if NUR_GLANZ:
+            glanz_rig_setzen()
         szene.render.filepath = ziel_datei
         bpy.ops.render.render(write_still=True)
         print(f"DREH {i + 1}/{DREH}: {szene.render.filepath}", flush=True)

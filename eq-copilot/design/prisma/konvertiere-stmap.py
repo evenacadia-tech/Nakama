@@ -137,6 +137,105 @@ def berechne_offsets(exr_pfad):
     }
 
 
+# ---------------------------------------------------------- Dreh-Paket
+# --dreh: 72-Frame-Sequenz -> EIN gezipptes Binaerpaket fuers Blatt.
+# Groessenhebel (453 MB roh waeren unhaltbar): halbe Aufloesung
+# (gewichtsgemitteltes 2x2-Box-Downsample — Offsets sind glatt, die
+# weiche Kante wandert ins Gewicht) + Crop auf die Silhouetten-Union
+# aller Frames + gzip. Glanz-Frames als WebP-Bytes im Paket (im Blatt
+# per createImageBitmap(Blob) dekodiert — Blob ist same-origin, kein
+# file://-Taint). Format: "NAKDREH1" | u32 metaLen | meta-JSON |
+# je Frame u32+Karten-f16 und u32+Glanz-WebP.
+if "--dreh" in argv:
+    import gzip
+    import struct
+
+    N = int(arg("--dreh", "72"))
+    STMAP_DIR = pfad(arg("--dreh-stmap", "renders/dreh-stmap"))
+    GLANZ_DIR = pfad(arg("--dreh-glanz", "renders/dreh-glanz"))
+    PAKET = pfad(arg("--paket", "renders/stmap/dreh-karten.bin.gz"))
+
+    karten = []          # je Frame: dict(off_u, off_v, gewicht) halbaufgeloest
+    glanz_bytes = []
+    x0 = y0 = 10**9
+    x1 = y1 = -1
+    voll_w = voll_h = None
+    for i in range(N):
+        exr = os.path.join(STMAP_DIR, f"f{i:03d}.exr")
+        webp = os.path.join(GLANZ_DIR, f"f{i:03d}.webp")
+        if not os.path.exists(exr) or not os.path.exists(webp):
+            raise SystemExit(f"Frame {i:03d} fehlt ({exr} / {webp})")
+        k = berechne_offsets(exr)
+        voll_w, voll_h = k["w"], k["h"]
+        # Crop-Quelle ist die PRISMA-Silhouette (Glanz-Alpha) — die
+        # Karten-Gueltigkeit umfasst auch die Direktsicht neben dem
+        # Prisma und wuerde fast nichts beschneiden (gemessen: 103 MB).
+        gpx, _, _ = lade_pixel(webp)
+        gm = gpx[..., 3] > 0.5
+        if gm.any():
+            ys, xs = np.nonzero(gm)
+            x0 = min(x0, int(xs.min())); x1 = max(x1, int(xs.max()))
+            y0 = min(y0, int(ys.min())); y1 = max(y1, int(ys.max()))
+        # gewichtsgemitteltes 2x2-Downsample (ungueltig zieht nicht mit)
+        def halb(a):
+            return (a[0::2, 0::2] + a[1::2, 0::2] + a[0::2, 1::2] + a[1::2, 1::2]) * 0.25
+        gw = k["gewicht"]
+        s = halb(gw)
+        su = halb(k["off_u"] * gw)
+        sv = halb(k["off_v"] * gw)
+        sicher = np.maximum(s, 1e-6)
+        karten.append({
+            "off_u": (su / sicher).astype(np.float32),
+            "off_v": (sv / sicher).astype(np.float32),
+            "gewicht": s.astype(np.float32),
+        })
+        with open(webp, "rb") as f:
+            glanz_bytes.append(f.read())
+        print(f"gelesen {i + 1}/{N}", flush=True)
+
+    # Crop auf gerade Koordinaten runden (Halbaufloesungs-Gitter) + Rand
+    x0 = max(0, (x0 - 4) // 2 * 2); y0 = max(0, (y0 - 4) // 2 * 2)
+    x1 = min(voll_w, ((x1 + 5) // 2) * 2); y1 = min(voll_h, ((y1 + 5) // 2) * 2)
+    bw, bh = (x1 - x0) // 2, (y1 - y0) // 2
+
+    meta = {
+        "frames": N,
+        "basisRotGrad": 28.0,
+        "schrittGrad": 120.0 / N,
+        "glas": {"w": voll_w, "h": voll_h},
+        "karte": {"x": x0, "y": y0, "w": x1 - x0, "h": y1 - y0, "bw": bw, "bh": bh},
+        "kanaele": "RGBA float16 (offU, offV, gewichtB, 1), Zeile 0 = oben, halbe Aufloesung",
+        "glanzFormat": "webp",
+    }
+    teile = [b"NAKDREH1"]
+    meta_roh = json.dumps(meta, ensure_ascii=False).encode("utf-8")
+    teile.append(struct.pack("<I", len(meta_roh)))
+    teile.append(meta_roh)
+    for i in range(N):
+        kk = karten[i]
+        block = np.empty((bh, bw, 4), dtype=np.float16)
+        sy, sx = y0 // 2, x0 // 2
+        block[..., 0] = kk["off_u"][sy:sy + bh, sx:sx + bw]
+        block[..., 1] = kk["off_v"][sy:sy + bh, sx:sx + bw]
+        block[..., 2] = kk["gewicht"][sy:sy + bh, sx:sx + bw]
+        block[..., 3] = 1.0
+        roh = block.tobytes()
+        teile.append(struct.pack("<I", len(roh)))
+        teile.append(roh)
+        teile.append(struct.pack("<I", len(glanz_bytes[i])))
+        teile.append(glanz_bytes[i])
+    paket_roh = b"".join(teile)
+    os.makedirs(os.path.dirname(PAKET), exist_ok=True)
+    with open(PAKET, "wb") as f:
+        f.write(gzip.compress(paket_roh, 6))
+    print(f"PAKET: {PAKET}")
+    print(json.dumps({
+        "frames": N, "crop": meta["karte"],
+        "roh_mb": round(len(paket_roh) / 2**20, 1),
+        "gz_mb": round(os.path.getsize(PAKET) / 2**20, 1),
+    }, ensure_ascii=False))
+    raise SystemExit(0)
+
 k = berechne_offsets(EXR)
 w, h = k["w"], k["h"]
 

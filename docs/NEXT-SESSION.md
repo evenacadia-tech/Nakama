@@ -59,17 +59,27 @@ Wege headless bewiesen. Front-Kicker aus dem Glanz-Pass ist RAUS
 Sonifold-Ingredients (WGSL) portiere ich bei Bedarf pro Effekt nach
 GLSL.
 
-**Nach der Abnahme (braucht ggf. frischen Freigabe-Marker):**
-1. 72er-Sequenz backen: `--nur-stmap` (4 s/Frame) + `--nur-glanz`
-   (11 s/Frame) je Drehwinkel ≈ 18 min CPU; Konverter über alle Frames.
-2. Integration ins Prototyp-/Schlieren-Blatt: Ebene 0 braucht ÜBERSTAND
-   (Ziel-UVs bis u=1,5; Probe nutzt 1920×1280 hinter 768×1024-Glas),
-   getContext-Patch (preserveDrawingBuffer) VOR dem Unicorn-SDK-Load
-   mitnehmen; Offsets sind Glas-Canvas-UV → affin in Hintergrund-UV.
-3. Glanz-Rig-Frage ans Zielbild koppeln: Kanten-Panels sind auf die
-   Rastpose gerechnet — für die Sequenz entweder pro Frame am
-   evaluierten Mesh rechnen (NAK-17: Normalen zeigen nach innen!) oder
-   ein rotationsinvariantes Rig bauen.
+**72er-SEQUENZ GEBAUT (19.08. abends): das Prisma DREHT im Probe-Blatt.**
+Im Panel „DREHKARTEN LADEN …" →
+`renders/stmap/dreh-karten.bin.gz` wählen (17,4 MB: 72 ST-Maps halbe
+Auflösung + Silhouetten-Crop + Glanz-WebPs, gzip); danach Ziel „Prisma"
+→ Ziehen dreht (Trägheit + Einrasten auf 58,3°), Mausrad schubst.
+Glanz-Rig wird PRO FRAME am evaluierten Mesh gerechnet (Silhouetten-
+Ecken + Weißbrand-Riegel — das mitdrehende Rig war falsch, die
+Spiegelbedingung braucht die feste Kamera). **Gemessene Eigenschaft,
+kein Bug:** in den Edge-on-Zonen (±30° um die Kanten-Pose, 3×/Umdrehung)
+ist der TIR-Anteil 99 % → das Glas verdunkelt beim Wenden und klart an
+den Rastposen (12 %) auf — ehrliche Physik ohne Umgebungs-Spiegelung;
+ob das als Geste trägt, ist User-Urteil (Eskalation wäre eine
+Reflexions-Karte). Regenerieren: `--nur-stmap --dreh 72` (5 min) +
+`--nur-glanz --dreh 72` (13 min) + `konvertiere-stmap.py --dreh 72`;
+EXRs sind gitignored, Paket + Glanz-WebPs versioniert.
+
+**Danach (braucht ggf. frischen Freigabe-Marker):**
+Integration ins Prototyp-/Schlieren-Blatt: Ebene 0 braucht ÜBERSTAND
+(Ziel-UVs bis u=1,5; Probe nutzt 1920×1280 hinter 768×1024-Glas),
+getContext-Patch (preserveDrawingBuffer) VOR dem Unicorn-SDK-Load
+mitnehmen; Offsets sind Glas-Canvas-UV → affin in Hintergrund-UV.
 
 Maschinen-Fakten Sequenz: Kamera = `KAM` im Blatt (lens 65,
 −1,65/−3,53/0,95 → Ziel 0/0/0,8 — Code im Blatt schlägt ältere

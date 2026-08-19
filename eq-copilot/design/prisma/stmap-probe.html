@@ -117,7 +117,13 @@
     <label><input type="radio" name="ziehZiel" value="0"> 1</label>
     <label><input type="radio" name="ziehZiel" value="1"> 2</label>
     <label><input type="radio" name="ziehZiel" value="2"> 3</label>
+    <label><input type="radio" name="ziehZiel" value="p" id="zielPrisma" disabled> Prisma</label>
   </div>
+  <div class="zeile">
+    <button id="drehKnopf">DREHKARTEN LADEN … (dreh-karten.bin.gz)</button>
+    <span id="drehStatus" style="align-self:center;color:#6d7789"></span>
+  </div>
+  <input type="file" id="drehDatei" accept=".gz,.bin" style="display:none">
   <div class="zeile">
     <span id="lageText" style="flex:1;align-self:center;color:#6d7789;font:10px Consolas,monospace"></span>
     <button id="lageReset">RESET</button>
@@ -170,6 +176,7 @@ uniform sampler2D uBg, uKarte, uGlanz;
 uniform vec2 uGlasMin, uGlasGroesse;   // in Bg-UV
 uniform float uDispersion;
 uniform vec3 uBgLage;                  // x,y = Verschiebung (uv), z = Zoom
+uniform vec4 uKarteFenster;            // Karten-Crop in Glas-UV (x,y,w,h)
 in vec2 vUV; out vec4 aus;
 // Manuelle Lage der Ebene 0: die Welt hinter dem Glas verschieben/zoomen —
 // die Karte bleibt glas-fest, nur der Hintergrund bewegt sich (physikalisch
@@ -180,7 +187,9 @@ void main() {
   vec2 g = (vUV - uGlasMin) / uGlasGroesse;
   vec3 farbe = direkt;
   if (all(greaterThanEqual(g, vec2(0.0))) && all(lessThan(g, vec2(1.0)))) {
-    vec4 karte = texture(uKarte, g);
+    vec2 m = (g - uKarteFenster.xy) / uKarteFenster.zw;
+    vec4 karte = (all(greaterThanEqual(m, vec2(0.0))) && all(lessThan(m, vec2(1.0))))
+      ? texture(uKarte, m) : vec4(0.0);
     vec4 glanz = texture(uGlanz, g);
     vec2 zielBg = uGlasMin + (g + karte.rg) * uGlasGroesse;
     vec2 off = zielBg - vUV;
@@ -222,6 +231,8 @@ gl.vertexAttribPointer(posLage, 2, gl.FLOAT, false, 0, 0);
 gl.uniform2f(gl.getUniformLocation(programm, "uGlasMin"), GX / BW, GY / BH);
 gl.uniform2f(gl.getUniformLocation(programm, "uGlasGroesse"), GW / BW, GH / BH);
 gl.uniform1f(gl.getUniformLocation(programm, "uDispersion"), DISPERSION);
+const karteFensterOrt = gl.getUniformLocation(programm, "uKarteFenster");
+gl.uniform4f(karteFensterOrt, 0, 0, 1, 1);   // Einzel-Karte = volles Fenster
 
 /* ── Manuelle Ebene-0-Lage: Ziehen = verschieben, Rad = zoomen ── */
 const bgLageOrt = gl.getUniformLocation(programm, "uBgLage");
@@ -235,6 +246,11 @@ function zeigeLage() {
   const el = document.getElementById("lageText");
   if (!el) return;
   const gewaehlt = document.querySelector('input[name="ziehZiel"]:checked');
+  if (gewaehlt && gewaehlt.value === "p") {
+    const seq = ((drehWinkel % 120) + 120) % 120;
+    el.textContent = `Prisma: ${seq.toFixed(1)}° (Ruhe 58,3°)`;
+    return;
+  }
   const ziel = gewaehlt ? parseInt(gewaehlt.value, 10) : -1;
   const l = (ziel >= 0 && window.__slots) ? window.__slots[ziel].lage : bgLage;
   const name = ziel >= 0 ? "Ebene " + (ziel + 1) : "Gesamt";
@@ -502,6 +518,95 @@ slots.forEach((s, i) => {
   try { s.feld.value = localStorage.getItem("nakama.ebene0.projekt" + i) ?? ""; } catch { /* file:// */ }
 });
 
+/* ── Drehkarten: 72 ST-Maps + Glanz-Frames aus EINEM Paket ──
+   dreh-karten.bin.gz (konvertiere-stmap.py --dreh): gzip ueber
+   "NAKDREH1" | metaJSON | je Frame Karte (f16, halbe Aufloesung,
+   Silhouetten-Crop) + Glanz (WebP-Bytes). Geladen per Datei-Knopf
+   (file:// kann kein fetch); Glanz wird per createImageBitmap(Blob)
+   dekodiert — same-origin, kein Taint. Danach dreht Ziehen das Prisma
+   (Traegheit + Einrasten auf die Ruhelage, wie der Prototyp). */
+const DREH_RUHE = 58.333333;               // Sequenzgrad der Rastpose
+let dreh = null;
+let drehWinkel = DREH_RUHE;
+let drehTempo = 0;
+let glanzLadeLauf = 0;
+
+async function setzeDrehFrame(idx) {
+  if (!dreh || idx === dreh.frameIdx) return;
+  dreh.frameIdx = idx;
+  const f = dreh.meta.karte;
+  gl.activeTexture(gl.TEXTURE1);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, f.bw, f.bh, 0, gl.RGBA, gl.HALF_FLOAT, dreh.karten[idx]);
+  let bmp = dreh.bitmaps.get(idx);
+  if (!bmp) {
+    const lauf = ++glanzLadeLauf;
+    bmp = await createImageBitmap(new Blob([dreh.glanzRoh[idx]], { type: "image/webp" }));
+    dreh.bitmaps.set(idx, bmp);
+    if (lauf !== glanzLadeLauf || dreh.frameIdx !== idx) return;   // veraltet
+  }
+  gl.activeTexture(gl.TEXTURE2);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, bmp);
+}
+
+async function ladeDrehkartenAusPuffer(puffer) {
+  const strom = new Response(
+    new Blob([puffer]).stream().pipeThrough(new DecompressionStream("gzip")));
+  const roh = await strom.arrayBuffer();
+  const dv = new DataView(roh);
+  if (new TextDecoder().decode(new Uint8Array(roh, 0, 8)) !== "NAKDREH1") {
+    throw new Error("kein NAKDREH1-Paket");
+  }
+  let p = 8;
+  const metaLen = dv.getUint32(p, true); p += 4;
+  const meta = JSON.parse(new TextDecoder().decode(new Uint8Array(roh, p, metaLen)));
+  p += metaLen;
+  const karten = [], glanzRoh = [];
+  for (let i = 0; i < meta.frames; i++) {
+    const kl = dv.getUint32(p, true); p += 4;
+    karten.push(new Uint16Array(roh.slice(p, p + kl)));   // slice = aligned
+    p += kl;
+    const gll = dv.getUint32(p, true); p += 4;
+    glanzRoh.push(new Uint8Array(roh, p, gll));
+    p += gll;
+  }
+  dreh = { meta, karten, glanzRoh, bitmaps: new Map(), frameIdx: -1 };
+  const f = meta.karte;
+  gl.uniform4f(karteFensterOrt, f.x / GW, f.y / GH, f.w / GW, f.h / GH);
+  const radio = document.getElementById("zielPrisma");
+  radio.disabled = false;
+  radio.checked = true;
+  drehWinkel = DREH_RUHE;
+  drehTempo = 0;
+  await setzeDrehFrame(Math.round(DREH_RUHE / meta.schrittGrad) % meta.frames);
+  document.getElementById("drehStatus").textContent =
+    meta.frames + " Frames · Ziehen dreht das Prisma";
+  zeigeLage();
+}
+window.ladeDrehkartenAusPuffer = ladeDrehkartenAusPuffer;
+// Test-/Mess-Hook: Winkel setzen und einfrieren (Ziehen taut wieder auf).
+let drehFrost = false;
+window.__setzeDrehWinkel = w => {
+  drehWinkel = w;
+  drehTempo = 0;
+  drehFrost = true;
+  zeigeLage();
+};
+
+document.getElementById("drehKnopf").addEventListener("click", () =>
+  document.getElementById("drehDatei").click());
+document.getElementById("drehDatei").addEventListener("change", ev => {
+  const datei = ev.target.files && ev.target.files[0];
+  if (!datei) return;
+  document.getElementById("drehStatus").textContent = "lädt …";
+  datei.arrayBuffer()
+    .then(b => ladeDrehkartenAusPuffer(b))
+    .catch(e => {
+      document.getElementById("drehStatus").textContent =
+        "Fehler: " + (e && e.message ? e.message : e);
+    });
+  ev.target.value = "";
+});
+
 // Lage-Eingabe: Ziehen auf dem Composite verschiebt die Welt hinter dem
 // Glas, Mausrad zoomt um den Zeiger (der Punkt unterm Cursor bleibt stehen).
 let lageZieht = false;
@@ -511,17 +616,26 @@ leinwand.addEventListener("pointerdown", ev => {
   leinwand.style.cursor = "grabbing";
   leinwand.setPointerCapture(ev.pointerId);
 });
-// Ziehen/Zoomen wirkt auf das gewaehlte Ziel: Gesamt (Shader-Uniform)
-// oder eine einzelne Ebene (2D-Kompositor-Lage).
+// Ziehen/Zoomen wirkt auf das gewaehlte Ziel: Gesamt (Shader-Uniform),
+// eine einzelne Ebene (2D-Kompositor-Lage) oder das PRISMA (Drehkarten).
 function ziehZiel() {
   const w = document.querySelector('input[name="ziehZiel"]:checked');
-  return w ? parseInt(w.value, 10) : -1;
+  return w ? w.value : "-1";
 }
 leinwand.addEventListener("pointermove", ev => {
   if (!lageZieht) return;
   const r = leinwand.getBoundingClientRect();
   const ziel = ziehZiel();
-  const l = ziel >= 0 ? slots[ziel].lage : bgLage;
+  if (ziel === "p") {
+    if (dreh) {
+      drehFrost = false;
+      drehWinkel += ev.movementX * 0.4;
+      drehTempo = ev.movementX * 0.4;
+      zeigeLage();
+    }
+    return;
+  }
+  const l = ziel !== "-1" ? slots[parseInt(ziel, 10)].lage : bgLage;
   l.x += ev.movementX / r.width;
   l.y += ev.movementY / r.height;
   setzeLage();
@@ -539,9 +653,13 @@ leinwand.addEventListener("wheel", ev => {
     y: (ev.clientY - r.top) / r.height,
   };
   const ziel = ziehZiel();
-  const l = ziel >= 0 ? slots[ziel].lage : bgLage;
+  if (ziel === "p") {
+    if (dreh) drehTempo += Math.sign(ev.deltaY) * 1.6;
+    return;
+  }
+  const l = ziel !== "-1" ? slots[parseInt(ziel, 10)].lage : bgLage;
   const neu = Math.min(4, Math.max(0.25, l.zoom * (ev.deltaY < 0 ? 1.1 : 1 / 1.1)));
-  if (ziel < 0) {
+  if (ziel === "-1") {
     // Shader-Transform: texCoord = (p-0.5-pan)/zoom+0.5 — c festhalten.
     l.x = (p.x - 0.5) - ((p.x - 0.5 - l.x) / l.zoom) * neu;
     l.y = (p.y - 0.5) - ((p.y - 0.5 - l.y) / l.zoom) * neu;
@@ -557,7 +675,13 @@ leinwand.addEventListener("wheel", ev => {
 }, { passive: false });
 document.getElementById("lageReset").addEventListener("click", () => {
   const ziel = ziehZiel();
-  const l = ziel >= 0 ? slots[ziel].lage : bgLage;
+  if (ziel === "p") {
+    drehWinkel = DREH_RUHE;
+    drehTempo = 0;
+    zeigeLage();
+    return;
+  }
+  const l = ziel !== "-1" ? slots[parseInt(ziel, 10)].lage : bgLage;
   l.x = 0; l.y = 0; l.zoom = 1;
   setzeLage();
 });
@@ -724,6 +848,26 @@ const startZeit = performance.now();
 let frames = 0, fpsStand = performance.now();
 function tick() {
   const t = BGZEIT ?? (performance.now() - startZeit) / 1000;
+  // Drehphysik (nur mit geladenen Drehkarten): Traegheit + weiches
+  // Einrasten auf die Ruhelage — wie der Prototyp.
+  if (dreh) {
+    if (!drehFrost && !(lageZieht && ziehZiel() === "p")) {
+      if (Math.abs(drehTempo) > 0.05) {
+        drehWinkel += drehTempo;
+        drehTempo *= 0.94;
+        zeigeLage();
+      } else {
+        const seq = ((drehWinkel % 120) + 120) % 120;
+        let d = DREH_RUHE - seq;
+        if (d > 60) d -= 120;
+        if (d < -60) d += 120;
+        if (Math.abs(d) > 0.02) { drehWinkel += d * 0.12; zeigeLage(); }
+        else drehTempo = 0;
+      }
+    }
+    const seq = ((drehWinkel % 120) + 120) % 120;
+    setzeDrehFrame(Math.round(seq / dreh.meta.schrittGrad) % dreh.meta.frames);
+  }
   ladeHintergrund(t);
   zeichne();
   frames++;

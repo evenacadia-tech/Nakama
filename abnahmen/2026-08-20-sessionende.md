@@ -1,5 +1,10 @@
 # 2026-08-20 — Sessionende: Stand und nächster Schritt
 
+> **⚠ ÜBERHOLT.** Der aktuelle Stand steht in
+> [2026-08-21-sessionende](2026-08-21-sessionende.md). Diese Datei ist der
+> Stand von davor und wird nur noch als Verlauf gelesen — ihre Messtabelle
+> war nachweislich in 6 von 15 Feldern falsch.
+
 Diese Datei ist der einzige Wissenstransfer. Was hier nicht steht, ist weg.
 
 ## Wo wir stehen

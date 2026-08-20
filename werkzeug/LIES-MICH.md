@@ -15,6 +15,10 @@ Nichts davon ist ein Gestaltungsvorschlag. Layoutentscheidungen gehören nach
    Läuft bei **1:1**, nichts wird skaliert, und es misst, ab wann Inhalt
    abgeschnitten wird. Muss vor jedem Wireframe entschieden sein.
 
+**Prüfliste** — `PRUEFLISTE.md`: was an jedem Blatt gemessen wird, bevor es
+gezeigt wird, mit dem echten Fehler hinter jeder Regel. Vor jedem neuen Blatt
+lesen; jede Zeile dort hat einmal Arbeit gekostet.
+
 **Stufe 2 — UX Layout**
 4. `wireframe-main.html` — Schritt 1: Wo liegt was? Graustufen, keine Optik.
    **Main zuerst**, danach Active-Probe-Editor, dann Passive-Kachel.

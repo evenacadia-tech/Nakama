@@ -121,8 +121,10 @@ input[type=range]{width:100%;accent-color:#242424}
       letter-spacing:-.01em}
 .einh{font-family:var(--sz);font-size:10px;color:var(--tl);margin-left:2px}
 .mini{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--tl)}
+/* min-width:0, damit die Wertfelder bei hoher Dichte oder schmalem Fenster
+   schrumpfen statt aus der Karte zu laufen (die Karte clippt). */
 .feld{border:1px solid var(--li);border-radius:var(--r);padding:calc(4px * var(--d)) 8px;
-      min-width:70px;background:color-mix(in srgb,var(--f) 100%,#000 8%)}
+      min-width:0;background:color-mix(in srgb,var(--f) 100%,#000 8%)}
 .spz.m-flach .feld{background:transparent}
 .pille{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;
       border-radius:var(--r);border:1px solid var(--ak);color:var(--ak);background:transparent}
@@ -674,10 +676,31 @@ function kontrastStufe(t, stufe){
     linie:       mische(t.grund, hell ? '#000000' : '#ffffff', lz[stufe-1])
   };
 }
-// Grautöne kippen: negativ = kühl (Blau rauf), positiv = warm (Rot/Gelb rauf)
+function hslVon(c){
+  const [r,g,b] = hex(c).map(v=>v/255);
+  const mx = Math.max(r,g,b), mn = Math.min(r,g,b), d = mx - mn, l = (mx+mn)/2;
+  let h = 0, s = 0;
+  if(d){
+    s = l > .5 ? d/(2-mx-mn) : d/(mx+mn);
+    h = 60 * (mx===r ? (g-b)/d + (g<b?6:0) : mx===g ? (b-r)/d + 2 : (r-g)/d + 4);
+  }
+  return [h, s*100, l*100];
+}
+function hexVonHsl(h,s,l){
+  h = ((h%360)+360)%360; s/=100; l/=100;
+  const c = (1-Math.abs(2*l-1))*s, x = c*(1-Math.abs((h/60)%2-1)), m = l-c/2;
+  const [r,g,b] = h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]
+                : h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x];
+  return zuHex((r+m)*255, (g+m)*255, (b+m)*255);
+}
+// Grautöne kippen. Ueber HSL, nicht ueber Kanal-Offsets: die Basisgraus sind
+// bereits blaustichig, ein additiver Offset landet dort im Gruenen statt im
+// Warmen. So bleibt die Helligkeit exakt erhalten und nur der Ton wechselt —
+// sonst waere die Runde eine Helligkeitsfrage im Kostuem einer Farbfrage.
 function temperieren(t, richtung){
-  const k = (c)=>{ const [r,g,b]=hex(c);
-    return zuHex(r + richtung*5, g + richtung*1.5, b - richtung*6); };
+  const ziel = richtung > 0 ? 32 : 214;
+  const k = c => { const [,s,l] = hslVon(c);
+                   return hexVonHsl(ziel, Math.min(16, s + 7), l); };
   return {grund:k(t.grund), flaeche:k(t.flaeche), flaecheHoch:k(t.flaecheHoch),
           linie:k(t.linie), text:k(t.text), textLeise:k(t.textLeise)};
 }
@@ -750,6 +773,11 @@ function mkKnopf(text, fn, dunkel){
 
 function waehlen(n, patch){
   const r = RUNDEN[i];
+  // Wer den Ablehnungstext tippt und dann doch eine Karte anklickt, soll
+  // seinen Text nicht verlieren.
+  const offen = fuss.querySelector('textarea.ablehn');
+  if(offen && offen.value.trim() && !ablehnungen.some(a=>a.id===r.id))
+    ablehnungen.push({id:r.id, frage:r.frage, text:offen.value.trim()});
   verlauf.push({
     id: r.id, gruppe: r.gruppe, frage: r.frage,
     wahl: n, karte: n===null ? null : (r.wdhKarte ? r.wdhKarte[n] : n),
@@ -889,7 +917,7 @@ function finale(){
   $('#frage').textContent = 'Die Summe deiner Entscheidungen';
   $('#hinweis').textContent = 'Lokal richtige Einzelentscheidungen können als Ganzes '
     + 'falsch sein. Deshalb hier alles zusammen — und die Regler bleiben offen.';
-  buehne.innerHTML = ''; fuss.innerHTML = '';
+  buehne.innerHTML = ''; fuss.innerHTML = ''; fuss.style.display = 'none';
 
   const wrap = document.createElement('div');
   wrap.className = 'ergebnis';
@@ -936,7 +964,8 @@ function finale(){
   const pk = document.createElement('p');
   pk.textContent = konsistenz.map(k=>`${k.thema}: ${k.urteil}`).join(' · ')
     + '  —  „abweichend" ist kein Fehler, es heißt nur: da entscheidet der Rahmen mit, '
-    + 'nicht nur das Material. Das notiere ich als offenen Punkt.';
+    + 'nicht nur das Material. Für den Tokensatz oben gilt die erste Antwort; '
+    + 'die Abweichung geht als offener Punkt in die Abnahme.';
   wrap.append(hk, pk);
 
   const he = document.createElement('h2'); he.textContent = 'Ergebnis an Claude geben';
@@ -948,15 +977,26 @@ function finale(){
 
   const kn = document.createElement('div');
   kn.style.cssText = 'display:flex;gap:10px;margin-top:10px';
-  kn.appendChild(mkKnopf('Alles markieren', ()=>{ ta.focus(); ta.select();
-     try{ document.execCommand('copy'); }catch(e){} }, true));
+  // Ehrliche Beschriftung: der Knopf VERSUCHT zu kopieren (execCommand;
+  // navigator.clipboard gibt es auf file:// nicht). Markiert ist danach in
+  // jedem Fall — Strg+C funktioniert immer.
+  kn.appendChild(mkKnopf('Alles markieren — dann Strg+C', ()=>{
+     ta.focus(); ta.select();
+     try{ document.execCommand('copy'); }catch(e){}
+  }, true));
   kn.appendChild(mkKnopf('Als Datei speichern', ()=>{
      try{
        const b = new Blob([ta.value], {type:'application/json'});
+       const url = URL.createObjectURL(b);
        const a = document.createElement('a');
-       a.href = URL.createObjectURL(b);
-       a.download = 'nakama-stilprofil.json'; a.click();
-     }catch(e){ alert('Speichern hat der Browser geblockt — bitte den Text kopieren.'); }
+       a.href = url; a.download = 'nakama-stilprofil.json'; a.click();
+       setTimeout(()=>URL.revokeObjectURL(url), 4000);
+     }catch(e){}
+     // Ein geblockter Download wirft nicht immer — deshalb keine Erfolgsmeldung,
+     // sondern ein Hinweis, der in beiden Faellen stimmt.
+     pe.textContent = 'Wenn im Download-Ordner keine nakama-stilprofil.json '
+       + 'liegt, hat der Browser das Speichern aus einer lokalen Datei geblockt — '
+       + 'dann den Weg über Markieren und Strg+C nehmen.';
   }));
   kn.appendChild(mkKnopf('Nochmal von vorn', ()=>location.reload()));
   wrap.appendChild(kn);

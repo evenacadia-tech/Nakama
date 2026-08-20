@@ -187,6 +187,9 @@ struct Blockbefund
     std::uint64_t unplausibleOffsets   { 0 };   // Offset < 0 oder >= Blockgroesse
     std::uint64_t unplausibleWerte     { 0 };   // NaN/Inf als Parameterwert
     std::uint64_t verworfeneLetztwerte { 0 };   // mehr als kMaxLetztwerte Parameter im Block
+    /** KUMULATIV, nicht pro Block — wie die Latenztabelle selbst, die
+        Setup-Zustand ist und `beginneBlock` ueberlebt. Die vier Zaehler
+        darueber setzen dagegen je Block zurueck. */
     std::uint64_t verworfeneBusse      { 0 };   // Buslatenz-Meldung mit Index ausserhalb [0, kMaxBusse)
 
     /** Letzter Wert je Parameter — auch ohne Samplegenauigkeit gueltig; das ist
@@ -322,18 +325,18 @@ public:
         keinen zweiten Sortierdurchgang. */
     void punkt (StableParameterId id, std::int32_t sampleOffset, double wert) noexcept
     {
-        const float roh = (float) wert;
+        const float f = (float) wert;
 
-        // ZUERST der Rueckfallweg, VOR jedem Ueberlauf-Ausstieg: der letzte
-        // Wert je Parameter ist genau das, was JUCE an den Parameter reicht,
-        // und der Vertrag laesst ihn den Ueberlauf ueberleben (Entwurf §53.7).
-        merkeLetztwert (id, roh);
+        // REIHENFOLGE IST VERTRAG, und sie war hier schon einmal falsch:
+        // Plausibilitaet und Rueckfallweg gelten dem, was der HOST geliefert
+        // hat - NICHT dem, was noch in den Ereignisring passte. Stuende der
+        // Ueberlauf-Ausstieg davor, spraenge er ueber die Zaehler hinweg: ein
+        // NaN als Punkt 513 wuerde stiller Rueckfallwert, waehrend
+        // unplausibleWerte 0 meldet und damit luegt (T2-Runde 2, 21.08.2026).
 
-        if (anzahl >= kMaxParameterEreignisse) { ++ueberlaufImBlock; return; }
-
-        // Numerische Raender, alle drei gemeldet statt still geglaettet:
-        // negativer Offset, Offset jenseits des Blocks, und der Flush-Block
-        // mit blockGroesse == 0 (VST3 erlaubt numSamples 0).
+        // (a) Numerische Raender, alle gemeldet statt still geglaettet:
+        //     negativer Offset, Offset jenseits des Blocks, und der Flush-Block
+        //     mit blockGroesse == 0 (VST3 erlaubt numSamples 0).
         std::uint32_t offset = 0;
         if (sampleOffset < 0)
         {
@@ -353,9 +356,17 @@ public:
             offset = (std::uint32_t) sampleOffset;
         }
 
-        const float f = roh;
+        // (b) NaN/Inf: gezaehlt, nicht sanitisiert.
         if (! std::isfinite (f))
             ++wertImBlock;
+
+        // (c) Der Rueckfallweg. Der letzte Wert je Parameter ist genau das, was
+        //     JUCE an den Parameter reicht, und der Vertrag laesst ihn den
+        //     Ueberlauf ueberleben (Entwurf §53.7).
+        merkeLetztwert (id, f);
+
+        // (d) Erst JETZT die Kapazitaetsfrage des Ereignisrings.
+        if (anzahl >= kMaxParameterEreignisse) { ++ueberlaufImBlock; return; }
 
         // Stabile Einfuegung: hinter ALLE Ereignisse mit kleinerem ODER gleichem
         // Offset. Gleicher Offset behaelt damit die Hostreihenfolge.

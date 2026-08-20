@@ -400,6 +400,39 @@ int main()
                 && senke.letzter.ueberlaeufe == 0,
                 "Zaehler und Fallbackbit werden je Block zurueckgesetzt");
 
+        // (7a) Ringueberlauf UND unplausibler Punkt zugleich - die Kombination,
+        //      die in der ersten Nacharbeit durchrutschte. Der Zaehler muss
+        //      beschreiben, was der HOST geliefert hat, nicht was in den Ring
+        //      passte; sonst meldet er 0 und der NaN wird stiller Rueckfallwert
+        //      (T2-Runde 2, 21.08.2026).
+        b.beginneBlock (1024);
+        for (std::uint32_t i = 0; i < kMaxParameterEreignisse; ++i)
+            b.punkt (55, (std::int32_t) (i % 1024), 0.25);          // Ring randvoll
+        b.punkt (55, 10, std::numeric_limits<double>::quiet_NaN()); // Punkt 513
+        b.uebergib();
+        float nachUeberlauf = 0.0f;
+        pruefe (senke.letzter.ueberlaeufe == 1, "Ring randvoll: der 513. Punkt laeuft ueber");
+        pruefe (senke.letzter.unplausibleWerte == 1,
+                "NaN als Punkt 513 wird GEZAEHLT - der Zaehler beschreibt den Host, nicht die Ringgroesse");
+        pruefe (! senke.letzter.sampleAccurateAutomation, "NaN nach Ueberlauf: Zusicherung faellt");
+        pruefe (senke.letzter.hatLetztenBlockwert (55, nachUeberlauf) && ! (nachUeberlauf == nachUeberlauf),
+                "NaN nach Ueberlauf ist Rueckfallwert - aber ueber den Zaehler als unplausibel erkennbar");
+
+        b.beginneBlock (1024);
+        for (std::uint32_t i = 0; i < kMaxParameterEreignisse; ++i)
+            b.punkt (56, (std::int32_t) (i % 1024), 0.25);
+        b.punkt (56, 99999, 0.5);                                   // Offset weit jenseits
+        b.uebergib();
+        pruefe (senke.letzter.unplausibleOffsets == 1,
+                "unplausibler Offset als Punkt 513 wird ebenfalls gezaehlt");
+
+        b.beginneBlock (1024);
+        for (std::uint32_t i = 0; i < kMaxParameterEreignisse; ++i)
+            b.punkt (57, (std::int32_t) (i % 1024), 0.25);
+        b.punkt (57, 10, std::numeric_limits<double>::infinity());
+        b.uebergib();
+        pruefe (senke.letzter.unplausibleWerte == 1, "Inf als Punkt 513 wird ebenfalls gezaehlt");
+
         // (7b) Die Letztwert-Tabelle hat ihre EIGENE Grenze und ihren eigenen
         //      Zaehler — sonst waere der Rueckfallweg nur eine Grenze weiter
         //      still.

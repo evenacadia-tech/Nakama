@@ -34,7 +34,19 @@ Abnahme / Arbeitsannahme steht jetzt in [LIES-MICH.md](LIES-MICH.md).
 760×430. **Der User hat noch keine Disclosure-Mechanik gewählt.** Das ist die
 nächste Frage — sonst nichts.
 
-Gemessener Stand auf 760×430 (in allen drei Arbeitsschritten):
+> **⚠ NACHGEMESSEN 2026-08-20, die Tabelle unten ist überholt.**
+> Sie stand in 6 von 15 Feldern falsch, und ihre Diagnose war falsch. Zwei
+> Gründe: das Werkzeug maß nur vier CSS-Klassen und übersah verschachteltes
+> `overflow:hidden` (gemeldet 36 px, tatsächlich 111), und mehrere Kästen
+> hatten einen Deckel unter der eigenen Inhaltshöhe. Beides ist behoben.
+> Gemessene Grenzen waren: Focus+Context 11 (nicht 12), semantischer Zoom 13,
+> Overview+Detail **nie** — dessen Rest hing an der Befundkarte, nicht an der
+> Quellenzahl. Der Satz „mit 12 statt 16 würden sie passen" trifft auf keine
+> der drei zu. Der aktuelle Stand steht in `werkzeug/LIES-MICH.md`; dort
+> passen nach der Reparatur alle fünf, und sie unterscheiden sich nur noch
+> darin, wieviel vom Mix **dauerhaft** stehen bleibt.
+
+Gemessener Stand auf 760×430 (in allen drei Arbeitsschritten) — **überholt**:
 
 | Mechanik | Mix lesen | Befund | Urteilen |
 |---|---|---|---|

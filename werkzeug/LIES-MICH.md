@@ -80,21 +80,73 @@ lassen sich dazuschalten — die reale Situation, nicht ein Fenster allein.
 
 ## wireframe-main.html
 
-Stufe 2, Schritt 1. Fünf Anordnungen von **Main** in reinen Graustufen — kein
-Farbton, kein Material, kein Licht. Alle fünf zeigen denselben Pflichtinhalt
-aus `docs/oberflaechen-spezifikation.md`: Quellen (16), vergleichende Heatmap,
-Detail, Befunde, Assistent in fester Fünf-Teile-Form, Vorher/Nachher,
-musikalische Rollen, die vier Bedienebenen und die Statuszeile samt
-degradierter Funktion. Verschieden ist nur, was die Hauptsache ist:
+Stufe 2, Schritt 1. Fünf **Disclosure-Mechaniken** von **Main** auf der
+abgenommenen Größe **760×430**, in reinen Graustufen — kein Farbton, kein
+Material, kein Licht. Varianten unterscheiden sich in der Mechanik, nicht in
+der Kastenanordnung (`docs/DESIGN-GESETZE.md`, verbindliche Folge 3):
 
-1. Quellen links, Bühne mitte, Assistent rechts
-2. Die Heatmap ist die Bühne
-3. Der Assistent führt, alles andere ist Beleg
-4. Die Befunde sind das Rückgrat
-5. Zwei Ebenen statt Nebeneinander
+1. **Schritt für Schritt** — der Bildschirm zeigt genau den Schritt, in dem
+   du bist, sonst nichts.
+2. **Focus + Context** — eine Fläche; was zählt, wächst, der Rest schrumpft
+   zu Streifen.
+3. **Overview + Detail** — dauerhafte kleine Karte oben, wechselnde
+   Arbeitsfläche darunter.
+4. **Nur auf Abruf** — ein Satz, was zu tun ist; alles andere hinter
+   benannten, geschlossenen Türen.
+5. **Semantischer Zoom** — dieselbe Fläche in drei Dichtestufen
+   (Liste → Heatmap → Detail).
 
-Im Raster sind die Strukturen zu erkennen, in der Großansicht die
-Beschriftungen zu lesen — deshalb erst fünf klein, dann zwei groß.
+Alle fünf zeigen denselben Pflichtinhalt aus
+`docs/oberflaechen-spezifikation.md`. Im Raster sind die Strukturen zu
+erkennen, in der Großansicht (Zweikampf, 1:1) die Beschriftungen zu lesen.
+
+### Was das Werkzeug misst, statt es zu behaupten
+
+Drei Messungen laufen bei jeder Neuzeichnung. Sie sind der Grund, warum dem
+Blatt zu trauen ist:
+
+1. **Ehrliche Listen.** Jede Liste zeigt nur, was ganz hineinpasst, schreibt
+   die wahre Zahl in ihren Kopf („2 of 3") und gibt darunter zu, was fehlt
+   („1 more not shown"). Ohne das war der Vergleich wertlos: eine Kachel
+   behauptete im Kopf `11 of 16` und zeigte **fünf** Zeilen.
+2. **Überlauf, den kein Weglassen heilt.** Rekursiv über *alle* Nachfahren.
+   Die alte Messung sah nur vier Klassen; ein verschachteltes
+   `overflow:hidden` schluckte die Überlänge, bevor der Elternkasten sie sah
+   — gemeldet wurden 36 px, tatsächlich fehlten **111**.
+3. **Der Dauerhaft-Vertrag.** Schalter „Was bleibt dauerhaft stehen?".
+   Ein Baustein gilt als dauerhaft, wenn er in **allen drei**
+   Arbeitsschritten auf dem Blatt steht — gemessen, nicht behauptet. Jeder
+   Baustein trägt im Kurzhinweis seinen **Handgriff** und seine **Quelle**
+   (`BELEG` im Code); ein Baustein ohne Beleg wird rot und müsste vom Blatt
+   verschwinden (`DESIGN-GESETZE.md`, Folge 2).
+
+Der Regler **„Quellen im Mix"** (4–16) ist keine Entwurfsentscheidung,
+sondern die Belastungsprobe: was bei 8 trägt und bei 16 bricht, trägt nicht.
+
+### Gemessener Stand (2026-08-20, 760×430, 16 Quellen)
+
+Nach der Reparatur passt **jede** der fünf Mechaniken — kein Blatt schneidet
+mehr ab. Der Unterschied liegt jetzt dort, wo er hingehört: darin, **wieviel
+vom Mix dauerhaft stehen bleibt.**
+
+| Mechanik | dauerhaft sichtbar | davon vom Mix |
+|---|---|---|
+| Schritt für Schritt | Bedienebenen+Status · Wegweiser | **0 von 16** |
+| Nur auf Abruf | Bedienebenen+Status | **0 von 16** |
+| Semantischer Zoom | Bedienebenen+Status · Zoomleiste | **0 von 16** |
+| Focus + Context | Bedienebenen+Status · Heatmap mit Namen | **7 von 16** |
+| Overview + Detail | Bedienebenen+Status · Karte ohne Namen | **11 von 16** |
+
+**Focus + Context erfüllt seine eigene These auf dieser Fläche nicht:** „der
+Kontext verschwindet nie" hält für 7 der 16 Quellen, neun fallen weg. Die
+These im Werkzeug wurde entsprechend berichtigt.
+
+Die frühere Messtabelle (Sessionende 2026-08-20, „drei Mechaniken scheitern,
+mit 12 statt 16 Quellen würden sie passen") ist **überholt und war in 6 von
+15 Feldern falsch**. Nachgemessen galt: Focus+Context brauchte 11, nicht 12;
+semantischer Zoom 13; Overview+Detail scheiterte an der Befundkarte und wäre
+mit *keiner* Quellenzahl heil geworden. Ursache war teils die blinde
+Messung, teils Deckel unter der Inhaltshöhe.
 
 ## licht.html
 

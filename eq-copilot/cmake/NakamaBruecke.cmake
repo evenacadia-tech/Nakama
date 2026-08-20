@@ -85,13 +85,31 @@ function(nakama_bruecke_anwenden juce_quelle patch_datei)
         OUTPUT_VARIABLE _aus
         ERROR_VARIABLE  _fehler)
 
+    # Zweiter Versuch mit toleranter Leerraumbehandlung. Grund: JUCE speichert
+    # den Wrapper im Objektspeicher mit CRLF, der Patch traegt es deshalb
+    # ebenfalls; ein Checkout, der daran etwas dreht (fremdes core.autocrlf,
+    # ein anderer Rechner), laesst die Kontextzeilen um genau ein \r
+    # auseinanderlaufen. Das ist KEINE Aufweichung des Riegels: das Ergebnis
+    # wird unten so oder so nachgemessen, ein falsch angewandter Patch faellt.
     if(NOT _code EQUAL 0)
-        message(FATAL_ERROR
-            "Nakama-Bruecke: 'git apply' fehlgeschlagen (Code ${_code}).\n"
-            "  Patch : ${patch_datei}\n"
-            "  Baum  : ${juce_quelle}\n"
-            "  stdout: ${_aus}\n"
-            "  stderr: ${_fehler}")
+        execute_process(
+            COMMAND "${GIT_EXECUTABLE}" apply --whitespace=nowarn --ignore-whitespace "${patch_datei}"
+            WORKING_DIRECTORY "${juce_quelle}"
+            RESULT_VARIABLE _code2
+            OUTPUT_VARIABLE _aus2
+            ERROR_VARIABLE  _fehler2)
+        if(_code2 EQUAL 0)
+            message(STATUS "Nakama-Bruecke: Patch erst im zweiten Anlauf angewandt (--ignore-whitespace); "
+                           "vermutlich abweichende Zeilenenden im JUCE-Checkout.")
+            set(_code 0)
+        else()
+            message(FATAL_ERROR
+                "Nakama-Bruecke: 'git apply' fehlgeschlagen (Code ${_code}, zweiter Anlauf ${_code2}).\n"
+                "  Patch : ${patch_datei}\n"
+                "  Baum  : ${juce_quelle}\n"
+                "  stderr 1: ${_fehler}${_aus}\n"
+                "  stderr 2: ${_fehler2}${_aus2}")
+        endif()
     endif()
 
     # (4) Nachmessen statt glauben: ein 'git apply', das durchlief, ist noch

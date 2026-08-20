@@ -338,7 +338,15 @@ public:
     }
 
     /** Schliesst den Block ab und reicht ihn an die Senke. Ohne Senke passiert
-        nichts — kein Aufwand, kein Nebeneffekt. */
+        nichts — kein Aufwand, kein Nebeneffekt.
+
+        VERTRAG, und zwar der ehrliche: die Senke sieht, was der Host in DIESEM
+        process()-Aufruf geliefert hat — nicht zwingend einen Block, den der
+        Processor auch verarbeitet. Zwei Faelle im JUCE-Wrapper koennen danach
+        noch abbrechen, bevor processBlock laeuft: der Parameter-Flush
+        (numSamples == 0, am blockGroesse == 0 erkennbar) und der
+        Wavelab-Riegel. Wer 1:1-Paarung mit processBlock annimmt, liegt falsch;
+        wer Parameterpunkte sammelt, will genau diese Faelle sehen. */
     void uebergib() noexcept
     {
         if (senke == nullptr) return;

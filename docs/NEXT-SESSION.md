@@ -73,6 +73,17 @@ innerhalb eines Blocks verhält. Headless ist all das nicht beweisbar — und wi
 deshalb auch nirgends behauptet (`docs/beweise/SONDE-003.md` §0 sagt es
 ausdrücklich).
 
+⚠️ **Termin B hat noch kein Messgerät.** Eine Klickliste allein reicht nicht: der
+User kann nicht mit dem Auge ablesen, welche VST3-Flags in einem Block gesetzt
+waren. Nächste Bau-Session ist deshalb ein **zweites Wegwerf-Target nach dem
+Muster von `SONDE-004a`** — ein Plugin, dessen Processor
+`eqcop::hostbruecke::Senke` implementiert und je Block mitschreibt
+(`processContextPresent`, Validity-Bits, PPQ/Projektzeit-Sprünge,
+Cycle-Grenzen, Parameterpunkte, Buslatenz), am Ende als JSON nach
+`%APPDATA%\evenacadia\nakama\spike\`. Erst der Bridge-Patch macht dieses
+Messgerät überhaupt möglich; vorher hätte es nur JUCEs geschönte Sicht
+aufgeschrieben. Danach die Klickliste dazu, dann liegt Termin B beim User.
+
 ### Danach: S4 → Gate G0
 
 **S4** wertet beide Termine zu einem **Capabilityreport mit Rohmessdaten** aus

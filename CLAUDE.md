@@ -17,10 +17,17 @@ am lebenden Blatt verfeinern:
    Nakama-Zusätzen.
 3. **Passive-Probe-Kachel** — eine kleine Status-/Identitätskachel.
 
-Was jede Oberfläche zeigen MUSS, steht in
-`docs/oberflaechen-spezifikation.md` — das ist die einzige Sachquelle
-dieses Projekts und sie ist vollständig. Alles Gestalterische ist offen
-und wird MIT dem User entwickelt.
+Die vier Projektquellen — vollständig, nichts von außen dazuholen:
+
+- **WAS** jede Oberfläche zeigen muss: `docs/oberflaechen-spezifikation.md`
+- **WIE** gearbeitet wird (UX vor UI, Stufen 1–7, Schlusscheck):
+  `docs/CLAUDE-UX-UI-ARBEITSKERN.md` — bei jeder Designaufgabe befolgen
+- **IN WELCHER REIHENFOLGE**: `docs/arbeitsplan.md` — dort steht der
+  konkrete Einstieg (Phase 0: `/interview designvertrag`, vor jedem Bauen)
+- **Nachschlagewerk** (Quellenkritik, Wahrnehmung, Licht/Material):
+  `docs/UX-UI-WISSENSBASIS-FUER-CLAUDE.md`
+
+Alles Gestalterische ist offen und wird MIT dem User entwickelt.
 
 ## Harte Regeln (nicht verhandelbar)
 
@@ -34,7 +41,9 @@ und wird MIT dem User entwickelt.
 3. **Der User entscheidet die Richtung, du übersetzt.** Bei echten
    Gabelungen 2–3 Varianten NEBENEINANDER zeigen statt selbst zu wählen.
    Nichts Grundsätzliches (Stilrichtung, Metapher, Farbwelt) ohne sein
-   Wort festlegen oder wieder aufmachen.
+   Wort festlegen oder wieder aufmachen. Fehlende oder unklare
+   Vorstellung wird per **`/interview <phase>`** erfragt — Pflicht zu
+   Beginn jeder Arbeitsplan-Phase, jederzeit zusätzlich einsetzbar.
 4. **Abnahmen sind bindend.** Jedes User-Urteil sofort als Datei in
    `abnahmen/` festhalten (Format dort). Festgelegtes wird nicht ohne
    neues User-Wort erneut zur Diskussion gestellt — genau das erzeugt
@@ -59,9 +68,13 @@ und wird MIT dem User entwickelt.
 - **/design**, **/dataviz**: für Layout-Entwürfe und jede Diagramm-/
   Meter-Gestaltung (Heatmap, EQ-Kurve, Pegel) VOR dem Bauen laden.
 - **/diverge**: nur bei echten Gabelungen, nicht für Alltagsfragen.
+- **/interview**: der Fragenkatalog dieses Projekts (Phasen:
+  designvertrag · struktur · richtung · komponente · zustaende ·
+  abnahme) — die Vorstellung des Users erfassen, wörtlich protokollieren.
 - Prototyp = statisches HTML/CSS/JS in `prototyp/`, ohne Build-Kette,
   per Doppelklick lauffähig. Struktur (ein Blatt pro Oberfläche oder
-  Tabs) ist die erste Entscheidung — mit dem User.
+  Tabs) ist die erste Entscheidung — mit dem User. Eine mechanische
+  Schleuse blockt `prototyp/`-Writes, solange `abnahmen/` leer ist.
 
 ## Arbeitsweise
 

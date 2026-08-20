@@ -265,31 +265,31 @@ mehr — gewählt wird über die Zeile darunter.
 Vier gleich aussehende Reiter wären genau der Fehler, den Von Restorff
 beschreibt: fällt alles auf, fällt nichts auf.
 
-### Entschieden: App-Umrandung + markierte Zeile
+### Entschieden: nur die markierte Zeile
 
-> „es ist 1 und 2 eine kombination daraus" …
-> „ich wollte die markierte zeile + die app umrandung" —
-> `abnahmen/2026-08-20-bedienebenen-beides.md`
+> `sieger: "zeile"`, engere Wahl gegen „beides" —
+> `abnahmen/2026-08-20-vorhoeren-markierte-zeile.md`
 
-**Achtung:** die erste Aussage habe ich falsch übersetzt (als Streifen +
-Blattrahmen) und auch so gebaut. Die Nachfrage hat es geklärt. Gemeint sind:
+**Die App-Umrandung ist verworfen** — gebaut, danebengestellt, gehalten und
+abgelehnt. Vorhören zeigt sich **am Ort der Wirkung**: die betroffene Quelle
+in der Karte wird markiert, solange gehalten wird.
 
-| Frage | Ort | Zeichen |
+Drei Zeichen, drei verschiedene Fragen, keines doppelt:
+
+| Zeichen | Ort | beantwortet |
 |---|---|---|
-| *Läuft gerade etwas?* | die **ganze App** | Umrandung, solange gehalten |
-| *Wo wirkt es?* | die **betroffene Zeile** der Karte | Zeile markiert |
+| `AUDITION`-Reiter leuchtet | Streifen | *auf welcher Ebene bin ich?* |
+| Griff sichtbar gedrückt | unter dem Finger | *ich tue es gerade* |
+| Zeile markiert | in der Karte | *und zwar hier* |
 
-**Nichts wird gedämpft.** Die frühere Blatt-Variante dämpfte Streifen und
-Karte; mit einer Markierung *in* der Karte wäre das falsch — das Dämpfen
-arbeitet gegen die Markierung.
+Damit ist die offene Frage der Vorrunde beantwortet: der Reiter leuchtet
+weiter — er ist die einzige globale Auskunft.
 
-Der **Streifen bleibt** und führt weiter Buch: die Spezifikation verlangt
-„vier Bedienebenen, sichtbar getrennt" und „Zustände, die immer ablesbar sein
-müssen". Offen ist, ob sein `AUDITION`-Reiter beim Halten *zusätzlich*
-aufleuchten soll — im Moment tut er es.
-
-Das Blatt zeigt drei Kacheln: die Kombination und die beiden Einzelteile,
-damit prüfbar bleibt, ob wirklich beide gebraucht werden.
+**Der Weg dorthin ist lehrreich und steht deshalb hier:** die Wahl war
+vorher zweimal anders angesagt (erst „1 und 2", was ich falsch als Streifen
++ Blattrahmen übersetzte; dann „markierte Zeile + App-Umrandung"). Erst am
+bedienbaren Blatt, mit gehaltenem Griff, fiel sie endgültig. Genau dafür
+muss eine Zustandsgestaltung bedienbar sein.
 
 ### Drei Befunde, die erst das 1:1-Bild gezeigt hat
 

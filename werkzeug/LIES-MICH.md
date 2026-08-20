@@ -243,6 +243,62 @@ mit sichtbarem Preis. Drei Eingriffe haben ihn beseitigt:
   Streichen einer Variante stand sonst „in allen vier gleich" unter drei
   Kacheln.
 
+## bedienebenen.html
+
+Stufe 2, Main, auf dem abgenommenen Entwurf (Overview + Detail, Karte trägt
+jede Quelle, Überschuss wird geteilt). Die Frage ist die Sicherheitsfrage der
+Spezifikation: **„Vier Bedienebenen, sichtbar getrennt (nie vermischen)"**.
+
+**Dieses Blatt ist bedienbar** — als einziges bisher. Grund: eine
+Zustandsfrage lässt sich am Standbild nicht beurteilen
+(`DESIGN-GESETZE.md`, verbindliche Folge 4). `Audition (hold)` reagiert auf
+echtes `pointerdown`/`pointerup`, nicht auf einen Schalter; `Apply` und
+`Undo` sind bewusste Klicks. Deshalb sind die Kacheln **kein `<button>`**
+mehr — gewählt wird über die Zeile darunter.
+
+### Die vier sind keine vier Geschwister
+
+- **Beobachten** und **Beraten** sind Aufenthalte — man ist dort.
+- **Vorhören** ist eine flüchtige Tat, hörbar nur solange gehalten.
+- **Anwenden** ist eine bewusste Tat, sie bleibt und ist umkehrbar.
+
+Vier gleich aussehende Reiter wären genau der Fehler, den Von Restorff
+beschreibt: fällt alles auf, fällt nichts auf.
+
+### Die drei Antworten
+
+| Mechanik | Zeichen beim Halten | Preis |
+|---|---|---|
+| **Der Streifen führt Buch** | Reiter leuchtet + Chip „release to stop" | die Antwort steht weit weg vom Griff, der sie auslöst |
+| **Das Blatt ist der Zustand** | ganzes Blatt gerahmt, Rest gedämpft, Band unten | starkes Signal, das jede Sekunde mitläuft |
+| **Der Zustand klebt am Ort** | betroffene Kartenzeile gerahmt, Griff gedrückt | keine globale Antwort — wer wegsieht, weiß nichts |
+
+Variante 3 nennt die Ebene **absichtlich nicht** im Streifen. Täte sie es,
+wäre ihr Preis geschönt und der Vergleich mit Variante 1 unscharf.
+
+### Zwei Befunde, die erst das 1:1-Bild gezeigt hat
+
+1. **`ueberlauf()` maß nur die Höhe.** Der Streifen schnitt rechts ab und
+   nichts meldete sich. Misst jetzt **beide Richtungen** — und fand sofort
+   18 px in Ruhe, 36 px beim Halten.
+2. **Die Lage hing erst beim Neuzeichnen am Blatt**, nicht beim ersten
+   Zeichnen. Interaktiv fiel das nie auf; ein frisch gebautes Blatt zeigte
+   einen Zustand nicht, den es hatte.
+
+### Was der Streifen kostet, gemessen
+
+| | Breite |
+|---|---|
+| vier Ebenen-Reiter | 254 px |
+| Statuszeile (frisch/veraltet/getrennt, Messung, degradiert) | 328 px |
+| verfügbar im Blatt | 742 px |
+| **bleibt für den Lage-Chip** | **160 px** |
+
+„Auditioning — release to stop" brauchte 164, „Nothing is changing your mix"
+180. Beides passte nicht. Der Chip sagt jetzt nur noch, **was der Reiter
+nicht sagen kann** — beim Halten „release to stop", nach dem Anwenden
+„1 change applied", sonst nichts.
+
 ## licht.html
 
 Die Fassung steht, offen ist das Licht. Vier **Herkünfte** (nur der Grund

@@ -10,10 +10,23 @@ Diese Datei ist der einzige Wissenstransfer. Was hier nicht steht, ist weg.
 | Was | Entscheidung | Datei |
 |---|---|---|
 | Methode | visuell befragen, auf Weltebene beginnen | [methode-visuelle-befragung](2026-08-20-methode-visuelle-befragung.md) |
-| Welt | Glas und Licht · Place · kühl · wenig Text | [welt-glas-und-licht](2026-08-20-welt-glas-und-licht.md) |
-| Fassung | dunkles Glas, ein Lichtleiter, kein reines Schwarz | [fassung-lichtleiter](2026-08-20-fassung-lichtleiter.md) |
+| Welt | **⚠ Arbeitsannahme** — Glas und Licht · Place · kühl · wenig Text | [welt-glas-und-licht](2026-08-20-welt-glas-und-licht.md) |
+| Fassung | **⚠ Arbeitsannahme** — dunkles Glas, ein Lichtleiter | [fassung-lichtleiter](2026-08-20-fassung-lichtleiter.md) |
 | Größen | Main 760×430 · Active 700×420 · Kachel 260×84 | [groessen-alle-drei](2026-08-20-groessen-alle-drei.md) |
 | Sprache | **App englisch**, Docs/Abnahmen/Commits deutsch | `CLAUDE.md` |
+
+## Wichtig: die visuelle Richtung ist NICHT entschieden
+
+> „nein glas und licht ist nicht entschieden, es war zu dem zeitpunkt logisch.
+> wir werden sehen wenn das layout steht ob es dann noch passt."
+
+Welt und Fassung sind **Arbeitsannahmen mit Prüfpunkt**, keine Abnahmen. Sie
+wurden an einem 448×310-Ausschnitt gewählt, als es weder Layout noch echte
+Fenstergröße gab. Erneut vorgelegt werden sie, **sobald das Layout von Main
+steht — auf 760×430, am echten Layout.** Sie dürfen dort fallen.
+
+Claude darf sie bis dahin nicht als entschieden zitieren. Die Unterscheidung
+Abnahme / Arbeitsannahme steht jetzt in [LIES-MICH.md](LIES-MICH.md).
 
 ## Der nächste Schritt, konkret
 
@@ -55,6 +68,9 @@ sichtbar bleiben, ist eine Entwurfsentscheidung des Users.
 
 Sie stehen hier, damit die nächste Session sie nicht wiederholt.
 
+0. **Vorläufiges als endgültig verbucht.** „Logisch zu diesem Zeitpunkt" ist
+   keine Abnahme. Wo an einem Stellvertreter geurteilt wurde, gehört ein
+   Prüfpunkt dazu — sonst wird eine Annahme zur Fessel.
 1. **Auf der falschen Ebene gefragt.** Erst Radien innerhalb einer Welt, die
    ich selbst gewählt hatte. Regel: erst Welt, dann Fassung, dann Werte.
 2. **Stufen übersprungen.** Licht verhandelt, bevor die Anordnung stand.

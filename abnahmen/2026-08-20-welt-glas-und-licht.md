@@ -1,5 +1,21 @@
 # 2026-08-20 — Die Welt: Glas und Licht
 
+> ## ⚠ ARBEITSANNAHME, KEINE ABNAHME
+>
+> Wörtlich vom User, 2026-08-20 am Sessionende:
+>
+> > „nein glas und licht ist nicht entschieden, es war zu dem zeitpunkt
+> > logisch. wir werden sehen wenn das layout steht ob es dann noch passt."
+>
+> Diese Wahl wurde an einem **Ausschnitt von 448×310** getroffen — zu einem
+> Zeitpunkt, als es weder Layout noch echte Fenstergröße gab. Sie gilt als
+> Arbeitsannahme, nicht als Festlegung.
+>
+> **Prüfpunkt:** sobald das Layout von Main steht (Phase 1 abgeschlossen), wird
+> die Richtung auf **760×430 am echten Layout** erneut vorgelegt. Sie kann dort
+> fallen, ohne dass das ein Rückschritt wäre.
+
+
 ## Das Urteil
 
 Aus `werkzeug/weltenwahl.html`, wörtlich:

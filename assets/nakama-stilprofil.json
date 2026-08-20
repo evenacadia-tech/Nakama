@@ -1,0 +1,251 @@
+{
+ "werkzeug": "nakama-stilbefragung",
+ "version": 1,
+ "zeitpunkt": "2026-08-20T13:35:51.752Z",
+ "tokens": {
+  "grund": "#2b323c",
+  "flaeche": "#454f5b",
+  "flaecheHoch": "#525b67",
+  "linie": "#656f7c",
+  "text": "#e7eaed",
+  "textLeise": "#9eaab9",
+  "akzH": 205,
+  "akzS": 44,
+  "akzL": 53,
+  "warn": "#c9b174",
+  "fehler": "#c68278",
+  "radius": 7,
+  "dichte": 1,
+  "licht": 0.55,
+  "material": "hardware",
+  "schrift": "din",
+  "schriftZahl": "din",
+  "kurve": "flaeche",
+  "farbmodus": "palette",
+  "signal": "farbform",
+  "motionMs": 320,
+  "motionEase": "cubic-bezier(.34,1.42,.64,1)",
+  "meter": "gedaempft"
+ },
+ "akzentAlsFarbe": "hsl(205 44% 53%)",
+ "entscheidungen": [
+  {
+   "id": "welt",
+   "gruppe": "Grundwelt",
+   "wahl": 1,
+   "karte": 1,
+   "patch": {
+    "grund": "#2e3339",
+    "flaeche": "#3a4047",
+    "flaecheHoch": "#454c55",
+    "linie": "#565e69",
+    "text": "#e6e9ee",
+    "textLeise": "#a3aab4",
+    "akzL": 72
+   },
+   "sekunden": "1479.2"
+  },
+  {
+   "id": "kontrast",
+   "gruppe": "Kontrast",
+   "wahl": 1,
+   "karte": 1,
+   "patch": {
+    "flaeche": "#4b5055",
+    "flaecheHoch": "#585c61",
+    "linie": "#6d7074"
+   },
+   "sekunden": "28.3"
+  },
+  {
+   "id": "material",
+   "gruppe": "Material",
+   "wahl": 2,
+   "karte": 2,
+   "patch": {
+    "material": "hardware",
+    "licht": 0.85
+   },
+   "sekunden": "15.1"
+  },
+  {
+   "id": "kante",
+   "gruppe": "Kante",
+   "wahl": 1,
+   "karte": 1,
+   "patch": {
+    "radius": 3
+   },
+   "sekunden": "14.8"
+  },
+  {
+   "id": "licht",
+   "gruppe": "Lichtfarbe",
+   "wahl": 0,
+   "karte": 0,
+   "patch": {
+    "grund": "#2b323c",
+    "flaeche": "#454f5b",
+    "flaecheHoch": "#525b67",
+    "linie": "#656f7c",
+    "text": "#e7eaed",
+    "textLeise": "#9eaab9"
+   },
+   "sekunden": "31.8"
+  },
+  {
+   "id": "fein1",
+   "gruppe": "Feinjustierung",
+   "wahl": "regler",
+   "patch": {
+    "radius": 7,
+    "licht": 0.55,
+    "dichte": 0.75
+   },
+   "sekunden": "65.5"
+  },
+  {
+   "id": "farbmenge",
+   "gruppe": "Farbmenge",
+   "wahl": 1,
+   "karte": 1,
+   "patch": {
+    "farbmodus": "palette"
+   },
+   "sekunden": "10.1"
+  },
+  {
+   "id": "akzentton",
+   "gruppe": "Akzentfarbe",
+   "wahl": 1,
+   "karte": 1,
+   "patch": {
+    "akzH": 188,
+    "akzS": 44
+   },
+   "sekunden": "7.2"
+  },
+  {
+   "id": "fein2",
+   "gruppe": "Feinjustierung",
+   "wahl": "regler",
+   "patch": {
+    "akzH": 205,
+    "akzS": 44,
+    "akzL": 53
+   },
+   "sekunden": "23.0"
+  },
+  {
+   "id": "typo",
+   "gruppe": "Schrift",
+   "wahl": 0,
+   "karte": 0,
+   "patch": {
+    "schrift": "din"
+   },
+   "sekunden": "81.2"
+  },
+  {
+   "id": "zahlen",
+   "gruppe": "Zahlen",
+   "wahl": 1,
+   "karte": 1,
+   "patch": {
+    "schriftZahl": "din"
+   },
+   "sekunden": "25.4"
+  },
+  {
+   "id": "dichte",
+   "gruppe": "Dichte",
+   "wahl": 1,
+   "karte": 1,
+   "patch": {
+    "dichte": 1
+   },
+   "sekunden": "15.0"
+  },
+  {
+   "id": "kurvenstil",
+   "gruppe": "Kurvenfeld",
+   "wahl": 1,
+   "karte": 1,
+   "patch": {
+    "kurve": "flaeche"
+   },
+   "sekunden": "8.1"
+  },
+  {
+   "id": "signal",
+   "gruppe": "Sicherheitsstufe",
+   "wahl": null,
+   "karte": null,
+   "patch": {},
+   "sekunden": "53.1"
+  },
+  {
+   "id": "bewegung",
+   "gruppe": "Bewegung",
+   "wahl": 2,
+   "karte": 2,
+   "patch": {
+    "motionMs": 320,
+    "motionEase": "cubic-bezier(.34,1.42,.64,1)"
+   },
+   "sekunden": "19.8"
+  },
+  {
+   "id": "meter",
+   "gruppe": "Meterlauf",
+   "wahl": 1,
+   "karte": 1,
+   "patch": {
+    "meter": "gedaempft"
+   },
+   "sekunden": "13.0"
+  },
+  {
+   "id": "wdh-material",
+   "gruppe": "Gegenprobe",
+   "wahl": 0,
+   "karte": 2,
+   "patch": {
+    "material": "hardware",
+    "licht": 0.85
+   },
+   "sekunden": "11.3"
+  },
+  {
+   "id": "wdh-farbmenge",
+   "gruppe": "Gegenprobe",
+   "wahl": 1,
+   "karte": 1,
+   "patch": {
+    "farbmodus": "palette"
+   },
+   "sekunden": "11.3"
+  }
+ ],
+ "ablehnungen": [
+  {
+   "id": "signal",
+   "frage": "Wie soll „hoch / mittel / noch unklar\" ablesbar sein?",
+   "text": "viel zu viel text generell. mehr symbolik"
+  }
+ ],
+ "gegenprobe": [
+  {
+   "thema": "material",
+   "urteil": "stabil",
+   "erst": 2,
+   "gegenprobe": 2
+  },
+  {
+   "thema": "farbmenge",
+   "urteil": "stabil",
+   "erst": 1,
+   "gegenprobe": 1
+  }
+ ]
+}

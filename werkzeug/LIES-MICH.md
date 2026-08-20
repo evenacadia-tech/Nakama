@@ -1,42 +1,60 @@
 # Werkzeug — Messinstrumente, keine Entwürfe
 
-Hier liegen Hilfsmittel, mit denen die Vorstellung des Users **gemessen**
-wird. Was hier liegt, ist ausdrücklich kein Gestaltungsvorschlag: die
-gezeigten Spezimen sind Materialproben (ein Kurvenausschnitt, eine
-Bandzeile, eine Listenzeile, eine Befundkarte) — nie ein Layout.
-Layoutentscheidungen gehören in `prototyp/` und in Phase 1 des
-Arbeitsplans.
+Hier liegen Hilfsmittel, mit denen die Vorstellung des Users **gemessen** wird.
+Nichts davon ist ein Gestaltungsvorschlag. Layoutentscheidungen gehören nach
+`prototyp/` und in Phase 1 des Arbeitsplans.
+
+## Reihenfolge — die ist der eigentliche Punkt
+
+1. **`weltenwahl.html`** — zuerst. Welche Welt?
+2. **`stilbefragung.html`** — danach. Welche Werte *innerhalb* dieser Welt?
+
+Diese Reihenfolge war der Fehler der ersten Runde: Stilbefragung wurde gebaut,
+bevor die Welt entschieden war, also fragte sie nach Radien innerhalb einer
+Welt, die Claude sich selbst ausgesucht hatte. Siehe
+`abnahmen/2026-08-20-methode-visuelle-befragung.md`.
+
+## weltenwahl.html
+
+Sechs Formsprachen nebeneinander, **gleiche Information** (Quelle,
+Frequenzkurve, ein Wert, ein Zustand), **alles andere verschieden**: Material,
+Licht, ob es überhaupt ein Gehäuse gibt, wie viel Text, wie bedient wird.
+
+Die Achsen stammen aus `assets/GUI-Tips.pdf` (Voger Design, „Quality GUI
+Checklist", Stufe 1) — Entity Type, Material, Licht, Temperatur — nicht aus
+Claudes Geschmack. Zwei Welten sind direkte Übersetzungen von Referenzen aus
+der Truhe: „Dunkles Gerät" aus `301.zip`, „Helles Objekt" aus `110.zip`.
+
+Ablauf: sechs → zwei in die engere Wahl → Zweikampf groß → Ergebnis als JSON.
 
 ## stilbefragung.html
 
-Visuelle Alternative zum verbalen Interview: statt zu fragen „welche
-Gefühle soll es auslösen", werden Bilder zur Wahl gestellt. Erkennen ist
-für Menschen erheblich präziser als Erfinden.
+18 Runden Zwangswahl auf echtem Nakama-Inhalt, pro Runde genau ein Token
+verschieden. Erst sinnvoll, wenn die Welt steht — dann müssen ihre Spezimen
+auf diese Welt umgestellt werden.
 
-**Aufruf:** Doppelklick. Kein Server, keine Build-Kette, keine
-Netzverbindung. Alle Schriften sind lokal installiert.
+## Prinzipien, die im Code stehen und nicht verhandelbar sind
 
-**Prinzipien, die im Code stehen und nicht verhandelbar sind:**
+1. **Eine Variable pro Runde** — aber nur unterhalb der Weltebene. Auf
+   Weltebene ändert sich absichtlich alles gleichzeitig, weil eine Welt kein
+   Parameter ist.
+2. **Kein Variantenname während der Wahl.** Ein Label wie „technisch" nimmt die
+   Antwort vorweg. Die Kacheln heißen 1 bis 6; die Namen kommen erst im
+   Ergebnis, als Vokabular für das Gespräch danach.
+3. **Neutrales Mittelgrau als Umgebung.** Ein dunkles Werkzeug-Chrome ließe
+   dunkle Kacheln gewinnen, ein helles die hellen.
+4. **Die Großansicht skaliert dieselbe Kachel**, sie baut sie nicht neu — sonst
+   verglichest du in Stufe 2 etwas anderes als das, was du ausgewählt hast.
+5. **Kornstärke ist pro Welt verschieden.** Die Welt, deren Aussage „kein
+   Material" ist, bekommt keine Struktur — sonst widerlegt die Kachel ihre
+   eigene These.
+6. **Demo-Kennzeichnung gehört zum Werkzeug, nicht zum Spezimen.** Sonst wäre
+   sie Teil dessen, was beurteilt wird.
+7. **Ablehnung wird erfasst.** Bei Abneigung sind Menschen präziser als bei
+   Zuneigung, und der Designvertrag braucht Antireferenzen ohnehin.
 
-1. **Eine Variable pro Runde.** Zwischen zwei Karten ändert sich genau ein
-   Token. Nur so ist die Antwort einem Wert zuordenbar statt einer Stimmung.
-2. **Kein Variantenname.** Ein Label wie „technisch" würde die Wahl
-   vorwegnehmen. Die Karten heißen 1, 2, 3.
-3. **Neutrales Mittelgrau als Umgebung.** Ein dunkles Werkzeug-Chrome
-   ließe dunkle Spezimen gewinnen, ein helles die hellen.
-4. **Echter Nakama-Inhalt**, Demo-Daten sichtbar gekennzeichnet — und die
-   Kennzeichnung gehört zum Werkzeug, nicht zum Spezimen.
-5. **Drei Rahmungen statt einer:** „4 Stunden am Stück", eine echte
-   Suchaufgabe, und „einem Freund zeigen". Reines Hübsch-Wählen
-   optimiert auf ein Poster, nicht auf ein Instrument.
-6. **Ablehnung wird erfasst** („alle falsch — und zwar weil …"). Bei
-   Abneigung sind Menschen präziser als bei Zuneigung; der Designvertrag
-   braucht Antireferenzen ohnehin.
-7. **Gegenprobe.** Zwei Entscheidungen kommen später gedreht und anders
-   gerahmt wieder. Weicht die Antwort ab, entscheidet der Rahmen mit —
-   das ist ein Befund, kein Fehler.
+## textur/
 
-**Ergebnis:** ein JSON-Block mit dem fertigen Tokensatz, allen
-Einzelentscheidungen samt Antwortzeit, den Ablehnungstexten und der
-Gegenprobe. Der geht in den Chat und von dort als Abnahme nach
-`abnahmen/`.
+`korn.png` — 512er-Kachel, aus `assets/301.zip` herauskopiert (Mittelwert
+exakt 128, also für `mix-blend-mode: overlay` gebaut), Kanten überblendet damit
+sie nahtlos kachelt. Die Truhe selbst wurde nicht verändert.

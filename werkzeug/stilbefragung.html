@@ -564,10 +564,11 @@ const RUNDEN = [
 { id:'fein1', gruppe:'Feinjustierung', art:'regler', spz:'panel',
   frage:'Jetzt du: schieb Kante, Licht und Dichte dahin, wo sie sitzen sollen.',
   hinweis:'Meine drei Vorgaben waren eine Auswahl, keine Grenze. Hier kannst du sie verlassen.',
+  // Kein Dichteregler hier: die Dichterunde kommt spaeter und wuerde den
+  // eingestellten Wert stillschweigend ueberschreiben. Ihr Regler sitzt dort.
   regler:[
     {t:'radius', l:'Kantenradius', min:0, max:14, step:1, e:'px'},
-    {t:'licht',  l:'Lichtstärke',  min:0, max:1,  step:.05, e:''},
-    {t:'dichte', l:'Dichte',       min:.75,max:1.4,step:.05, e:'×'}
+    {t:'licht',  l:'Lichtstärke',  min:0, max:1,  step:.05, e:''}
   ]},
 
 { id:'farbmenge', gruppe:'Farbmenge', art:'wahl', spz:'liste',
@@ -611,6 +612,11 @@ const RUNDEN = [
   frage:'In welcher Liste findest du „Kontrabass" schneller?',
   hinweis:'Keine Geschmacksfrage — eine Aufgabe. Antworte nach dem, was schneller ging.',
   varianten:[ {p:{dichte:.78}}, {p:{dichte:1}}, {p:{dichte:1.3}} ]},
+
+{ id:'fein3', gruppe:'Feinjustierung', art:'regler', spz:'liste', spzOpt:{anzahl:12},
+  frage:'Und jetzt genau dahin, wo du sie haben willst.',
+  hinweis:'Diesmal bleibt der Wert stehen — danach fasst ihn keine Runde mehr an.',
+  regler:[ {t:'dichte', l:'Dichte', min:.7, max:1.45, step:.05, e:'×'} ]},
 
 { id:'kurvenstil', gruppe:'Kurvenfeld', art:'wahl', spz:'kurve',
   frage:'In welchem siehst du schneller, WO der Eingriff sitzt?',

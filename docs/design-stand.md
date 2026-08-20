@@ -31,6 +31,15 @@ Grundmetapher und kein Dauer-Visualizer. Verbindlicher Volltext samt
 Fünf-Keyframe-Storyboard:
 `docs/visuelles-zielbild-hoerkompass.md`.
 
+**PRODUKTARCHITEKTUR (User-Entscheid 20.08.):** Die Prisma-App ist eine
+**eigenständige Begleit-App**, die NEBEN dem Master-Plugin (Nakama Main)
+und den Sonden existiert — eine Addition, **nie der Master-Hub** für die
+Sonden. Das Master-Plugin bekommt eine bewusst konventionellere Arbeits-UI
+(Quellenliste/Heatmap/Detail, Sondenentwurf §0.3/§35.1); der
+Hörkompass-Zielvertrag oben gilt der Prisma-App, nicht der Plugin-UI.
+Alles hier dokumentierte Prisma-Design ist damit das Design der
+Begleit-App.
+
 **Darstellungs-Entscheidung (User-geprüft, Gimmick-Test):**
 Film-Compositing statt Spiel-Engine. Prisma offline pfadverfolgt
 (Blender 5.1 Cycles, **CPU** — Arc-Landmine!) mit echter Dispersion/

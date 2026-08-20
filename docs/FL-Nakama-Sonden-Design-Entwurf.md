@@ -1,9 +1,21 @@
-# Nakama mit Instrumentenbus-Sonden — Produkt-, Technik- und Implementierungsentwurf 0.3
+# Nakama mit Instrumentenbus-Sonden — Produkt-, Technik- und Implementierungsentwurf 0.4
 
-- **Stand:** 2026-08-19
+- **Stand:** 2026-08-20
 - **Status:** Technische Spezifikation mit ausführbarem Implementierungsphasenplan
 - **Gegenstand:** Funktions-, Interaktions-, System- und Technikdesign; bewusst ohne visuelle Gestaltung
 - **Bauentscheidung:** Noch nicht erteilt
+- **Fassung 0.4 (20.08.2026):** Befunde des unabhängigen Prüfberichts
+  ([`pruefbericht-sondenentwurf-2026-08-20.md`](pruefbericht-sondenentwurf-2026-08-20.md))
+  eingearbeitet — Impersonation-Reihenfolge (§48.4/§66.2), CID-Ableitung
+  samt eingefrorenem `JUCE_VST3_CAN_REPLACE_VST2=0` (§31.2/§44.1/§53.5),
+  Frame-Bündelung entschieden (§33.1), `experiment_abort` (§33.3/§43/§46),
+  Wrapper-NaN- und Tautologie-Nachschärfung (§0.1/§32.3), Zitat-/
+  Datumskorrekturen (§29.2/§37.1), Store-Batching und WAL-Größentrigger
+  (§53.9), Static-Lib-Randbedingung (§53.4), `SONDE-004` an Position 1
+  (§65), Sichtbarkeitsvorbehalt für `aux_compare_pre` (§53.2),
+  `sidechain_source`-Wertebereich (§53.8). Außerdem die
+  **Produktentscheidung des Users vom 20.08.2026** in §0.3 — sie löst
+  Prüfbericht-Befund A auf.
 
 ---
 
@@ -41,8 +53,11 @@ Der aktuelle, kanonische Nakama-Vertrag bleibt vorerst unverändert:
 
 Die bereits gebaute, eng begrenzte Ausnahme ist der bewusst per Toggle aktivierte Hörmarker: bei
 offenem Editor, im Realtime-Modus und heute mit dem Gate `playing || !hasTransport`, nie im
-Offline-Render. Der unbekannte Play-State ist damit derzeit fail-open und wird hier ausdrücklich
-als zu schließende Sicherheitslücke geführt. Der Marker ändert den passiven Grundvertrag nicht;
+Offline-Render. Der `!hasTransport`-Zweig ist formal fail-open; im ausgelieferten VST3-Format ist
+er praktisch ein toter Zweig, weil der JUCE-Wrapper `getPosition()` nie leer liefert und
+`hatTransport` damit ab dem ersten Block immer wahr wird (Prüfbericht 1.2). Der eigentliche
+Mangel ist, dass `hatTransport` „Transport unbekannt" gar nicht ausdrücken kann. Beides wird hier
+ausdrücklich als zu schließende Lücke geführt. Der Marker ändert den passiven Grundvertrag nicht;
 die Zielmigration verlangt gültiges `playing=true`. Die spätere Remote-Preview erhält zusätzlich
 echte Hold-to-hear- und Lease-Semantik.
 
@@ -76,6 +91,30 @@ ausführbaren, gate-basierten Implementierungsplan mit Releasegrenzen, Zuständi
 Dateizielen, Migrationsreihenfolge und erster Ticketfolge. Nicht enthalten sind visuelles
 Detaildesign, Kalender- oder Aufwandsschätzungen; sie dürfen die technische Abhängigkeitsfolge
 nicht ersetzen.
+
+### 0.3 Produktentscheidung 20.08.2026 — Master-Plugin konventionell, Prisma-App als Zusatz
+
+Der User hat am 20.08.2026 die Produktarchitektur ausdrücklich festgelegt:
+
+- **Nakama Main (Master-Plugin) + Sonden sind das Kernprodukt** und erhalten
+  eine bewusst **konventionellere Arbeits-UI** in FL Studio. Quellenliste,
+  Heatmap und Detailansicht (§35.1) sind dort legitime Dauerarbeitsflächen;
+  ihr Maßstab ist die Lesbarkeit (`geschmacksprofil.md`), nicht der
+  Hörkompass-Zielvertrag.
+- **Die Prisma-App ist eine eigenständige Begleit-App**, die NEBEN
+  Hauptplugin und Sonden existiert — eine **Addition, nicht der Master-Hub**
+  für die Sonden. Kein Teil des Sonden-Workflows setzt sie voraus; Main in
+  FL bleibt die einzige vollständige tägliche Arbeitsfläche (§31.1).
+- Der **Hörkompass-Zielvertrag**
+  ([`visuelles-zielbild-hoerkompass.md`](visuelles-zielbild-hoerkompass.md)
+  — gesund = leeres Glas, Befund statt Musik, kein Dauer-Visualizer) **gilt
+  der Prisma-App**, nicht der Master-Plugin-UI. Damit ist der im
+  Prüfbericht als Befund A beschriebene Konflikt zwischen Kernfunktion 1
+  und dem Zielvertrag aufgelöst: Landkarte und Zielvertrag leben in zwei
+  verschiedenen Oberflächen.
+- Technisch bindet sich die Prisma-App, wenn sie gebaut wird, wie eine
+  weitere Main-Instanz als **read-only Spiegel** an Broker und Sitzung an
+  (§30); sie erhält nie eine `control_capability` und steuert keine Sonde.
 
 ---
 
@@ -182,6 +221,10 @@ dazwischenliegende Kette tatsächlich verändert hat.
 Ein lokaler Begleitdienst darf Discovery, Sitzungszuordnung, Speicherung und größere
 Auswertungen übernehmen. Er bleibt aus Usersicht Infrastruktur. Die tägliche Arbeit findet
 weiterhin in Nakama Main innerhalb von FL Studio statt; kein Terminal ist nötig.
+
+Davon getrennt ist die **Prisma-App** (§0.3): eine eigenständige, optionale
+Begleit-App neben Hauptplugin und Sonden. Sie ist Addition, nie Master-Hub —
+kein Sonden-Workflow hängt von ihr ab.
 
 ---
 
@@ -1038,7 +1081,7 @@ nur dokumentierte Fähigkeiten, Grenzen, nachvollziehbare Produktmuster und mess
 | FabFilter Pro-Q | 4.13 · 30.06.2026 | Instance List, Kollisionssicht, Dynamic/Spectral EQ, EQ Match, Solo |
 | sonible smart:EQ 4 | 1.1.1 | hierarchisches Cross-Channel-Unmasking und Profile |
 | sonible pure:unmask | 1.0.1 | sample-synchroner Sidechain-Pfad für Echtzeit-Entmaskierung |
-| ADPTR Metric AB | 1.5.0 · 29.07.2026 | Sync/Cue/Loop, Lautheitsabgleich, Referenzvergleich |
+| ADPTR Metric AB | 1.5.0 · 30.07.2026 | Sync/Cue/Loop, Lautheitsabgleich, Referenzvergleich |
 | NUGEN AB Assist 2 | 2.0 · Handbuchstand; kein neuerer Patchstand publiziert | Blindtest, Short-term-LUFS-Match, Mono-Check, sanfte Fades |
 | Melda MCompare/MMultiAnalyzer | Kernel 17.09 | Mehrinstanz-Analyse, Delay-Erkennung, Delta und A/B |
 | Normbasis | ITU-R BS.1770-5 · EBU R128 v5/2023 | Loudness und True Peak |
@@ -1069,6 +1112,7 @@ verbindet. Diese Evidenzkette ist daher der Produktkern und kein Zusatztext um e
 | Zentrale Instanz | genau ein führendes Main pro aktiver Sitzung; weitere Main-Instanzen sind read-only Spiegel, bis der User die Führung übergibt | verhindert konkurrierende Befehle |
 | Normalgröße | 1 Main + bis zu 16 gleichzeitig sichtbare Sonden; Verträge und Broker werden bis 32 getestet | deckt reale Busprojekte ab, ohne die Kern-UX auf Extremfälle auszulegen |
 | Begleitdienst | der vorhandene eigenständige Rust-Broker bleibt unsichtbare Infrastruktur; keine Pflicht-Desktop-App | Entscheidungen und Capture bleiben in FL bei Main |
+| Prisma-App | eigenständige optionale Begleit-App neben Main und Sonden; bindet sich als read-only Spiegel an, nie als Master-Hub; der Hörkompass-Zielvertrag gilt dort | Produktentscheidung 20.08.2026 (§0.3): konventionelle Master-Plugin-UI, Zusatz-App statt Hub-Architektur |
 | Audio vs. IPC | Pipe überträgt Identität, Features, Evidenz und Transaktionen, **nie den Echtzeit-Steuerverlauf eines DSPs** | IPC ist nicht sample-synchron und darf den Audiopfad nicht takten |
 | Dynamisches Entmaskieren | priorisierte Quelle gelangt als echter FL-Sidechain/Aux in die aktive Zielsonde | nur der DAW-Audiograph kann den benötigten synchronen Pfad liefern; Freigabe erst nach FL-PDC-Golden |
 | PRE/POST-Delta | analytischer Vergleich über Zeitstempel; hörbares Delta nur bei gemeinsamem Audiopfad und bewiesenem Alignment | zwei unabhängige Telemetrieströme reichen nicht für verlässliche Subtraktion |
@@ -1153,7 +1197,9 @@ flowchart TB
 - ist die einzige vollständige tägliche Arbeitsfläche;
 - zeigt Quelle, Passage, Evidenz, Unsicherheit und nächsten Schritt;
 - besitzt den User-Intent und die sichtbare Workflow-Zustandsmaschine;
-- ist niemals alleinige Wahrheit über den Zustand einer aktiven Probe.
+- ist niemals alleinige Wahrheit über den Zustand einer aktiven Probe;
+- bleibt das auch neben der Prisma-App: diese ist nur ein optionaler
+  read-only Spiegel (§0.3), nie Steuer-Hub.
 
 ### 31.2 Fit zum heutigen Code
 
@@ -1186,10 +1232,22 @@ nicht als garantiert ausgeschlossen ausgeben.
 Die heutige VST3-Identität wird als Kompatibilitäts-Golden eingefroren: Plugin-Code `Eqcp`,
 Audio-Module-Class-ID `ABCDEF019182FAEB45766E6145716370` und Controller-Class-ID
 `ABCDEF011234ABCD45766E6145716370`. Bundle- und Class-ID dieses Eintrags dürfen im Split nicht
-wechseln. Für die neuen Ziele sind die vierstelligen Codes `NkPr` (Passive Probe) und `NkAc`
-(Active Probe) reserviert; ihre Component-/Controller-IDs werden in P0 einmal erzeugt und in ein
-Golden-Manifest übernommen. P1 prüft das erste gebaute `moduleinfo.json` dagegen. Danach werden
-die IDs wie ein Dateiformat behandelt.
+wechseln. Diese IDs sind bei JUCE **deterministisch abgeleitet**: Wegen
+`JUCE_VST3_CAN_REPLACE_VST2=0` (`plugin/CMakeLists.txt:38`) verwendet der Wrapper
+`jucePluginId(ManufacturerCode, PluginCode)`; nur der VST2-Ersatzpfad würde den Pluginnamen
+hashen. **Das Define gehört deshalb zur eingefrorenen Identität** — ein Flip auf `1` würde jedes
+bestehende Projekt beim nächsten Laden verwaisen lassen. Für die neuen Ziele sind die
+vierstelligen Codes `NkPr` (Passive Probe) und `NkAc` (Active Probe) reserviert; ihre
+Component-/Controller-IDs stehen damit bereits fest und werden in P0 **verifiziert statt
+erzeugt** (Prüfbericht Befund C):
+
+| Ziel | Component-CID | Controller-CID |
+|---|---|---|
+| `NkPr` Passive Probe | `ABCDEF019182FAEB45766E614E6B5072` | `ABCDEF011234ABCD45766E614E6B5072` |
+| `NkAc` Active Probe | `ABCDEF019182FAEB45766E614E6B4163` | `ABCDEF011234ABCD45766E614E6B4163` |
+
+Sie werden in ein Golden-Manifest übernommen; P1 prüft das erste gebaute `moduleinfo.json`
+dagegen. Danach werden die IDs wie ein Dateiformat behandelt.
 
 Der gepinnte JUCE-8.0.9-VST3-Wrapper bildet außerdem zwei Hostinformationen nicht vollständig auf
 die öffentliche `AudioProcessor`-API ab: Für normale Parameterqueues verwendet er nur den letzten
@@ -1332,7 +1390,11 @@ rohe Input-/Output-Presentation-Latency mit eigenen Gültigkeitsbits gespeichert
 Context-Anwesenheit jedoch nicht: Der Wrapper nullt seinen internen Context, und
 `VST3PlayHead::getPosition()` kann daraus eine scheinbar vorhandene Samplezeit bilden. Der heutige
 Processor setzt zusätzlich `hatTransport` schon bei irgendeiner `PositionInfo` und löscht einen
-alten `projektZeitSamples`-Wert nicht in jedem Block. Die Wrapper-Bridge liefert deshalb
+alten `projektZeitSamples`-Wert nicht in jedem Block. Weil `getPosition()` im VST3-Pfad nie leer
+zurückkommt, ist `hatTransport` dort eine Tautologie. Im genullten Context ist außerdem
+`sampleRate=0`, sodass `getTimeInSeconds()` als `0.0/0.0` ein **NaN** liefert (Prüfbericht 1.2);
+`HostBlockContext` übernimmt `timeInSeconds` deshalb grundsätzlich nicht — verwerfen, nicht
+sanitisieren. Die Wrapper-Bridge liefert deshalb
 `process_context_present` und unabhängige Validity-Bits; ohne Bridge gilt Projektzeit als
 unbewiesen. VST3-Cycle-Grenzen sind PPQ-Werte. Samplegrenzen sind nur ein abgeleitetes Feld, wenn
 PPQ, Projektzeit und Tempo im Block eine durch FL-Goldens validierte Abbildung erlauben. Ein
@@ -1381,8 +1443,13 @@ Längenpräfix und zwei Payloadklassen:
 
 Schnelle Live-Arrays verwenden `q_db_0p1_i16` plus Gültigkeitsbitmap. Fokussierte PRE/POST-
 Evidenz darf mit explizitem Encoding `q_db_0p01_i16` oder für komplexe Kreuzstatistik `float32`
-arbeiten; Empfänger raten die Skalierung nie aus dem Nachrichtentyp. Vier bis fünf Liveframes
-dürfen pro Write gebündelt werden. Diese schmale Binärebene vermeidet JSON-Parsing und
+arbeiten; Empfänger raten die Skalierung nie aus dem Nachrichtentyp. **Bündelung ist entschieden
+(Prüfbericht Befund D):** Ein `FeatureBatch` ist eine Liste von `(source, frame)`-Einträgen mit
+höchstens **einem aktuellen Frame je Quelle**. Sonde→Broker ist der Sonderfall mit genau einem
+Eintrag (Queuecap 2, replace-oldest, §53.9); nur **Broker→Main** bündelt die aktuellen Frames
+mehrerer Sonden — typisch vier bis fünf — in einem Write. Ein Batch trägt nie mehrere Frames
+derselben Quelle; das Schema braucht damit keine zweite Wrapper-Ebene und die Form steht vor dem
+P1-Abschluss fest. Diese schmale Binärebene vermeidet JSON-Parsing und
 Zahlenexpansion bei vielen Sonden, ohne Steuerung und Persistenz an ein Binärformat zu binden.
 Shared Memory bleibt ausgeschlossen, bis eine gemessene hochauflösende Forensiklast die Pipe
 tatsächlich überfordert.
@@ -1439,7 +1506,7 @@ IPC v3 benötigt mindestens:
 - `audible_intervention_begin`, `audible_intervention_end`, `evidence_invalidate`;
 - `draft_offer`, `preview_begin`, `preview_renew`, `preview_end`;
 - `apply_transaction`, `revert_transaction`, `command_ack`, `state_report`;
-- `experiment_begin`, `experiment_result`, `user_verdict`;
+- `experiment_begin`, `experiment_abort`, `experiment_result`, `user_verdict`;
 - `error` mit maschinenlesbarem Code, betroffener Revision und Rückweg.
 
 Jede steuernde Nachricht trägt `command_id`, Zieladresse, `base_revision`, begrenzte `ttl_ms` und
@@ -1625,7 +1692,9 @@ Aktivität kombiniert einen absoluten Floor mit dem lokalen Rauschboden, beispie
 und nicht nutzbare Bänder erzeugen `null`/Validity-Bits, keine numerische Null.
 
 Main zeigt drei Informationsdichten: kompakte Quellenliste, vergleichende Heatmap und
-Detailansicht. Suche, Pinning und Fokusgruppe begrenzen die kognitive Last bei 16 bis 32 Sonden.
+Detailansicht. Das ist die konventionelle Master-Plugin-UI aus §0.3 und als Dauerarbeitsfläche
+legitim; der Hörkompass-Zielvertrag bindet die Prisma-App, nicht diese Ansicht. Suche, Pinning
+und Fokusgruppe begrenzen die kognitive Last bei 16 bis 32 Sonden.
 Ein Minimap-/Zoomprinzip ist sinnvoller als alle Details gleichzeitig zu zeichnen.
 
 ### 35.2 Routing- und Summenwahrheit
@@ -1768,7 +1837,9 @@ musikalischen Intent. Ein `SourceIntent` besitzt:
 - optionalen Passage-Scope;
 - Revision, Herkunft `user|template|inferred` und Konfidenz.
 
-Damit wird das bei smart:EQ offiziell als Front/Middle/Back bezeichnete Gruppenmuster um
+Damit wird das von sonible für smart:EQ dokumentierte Gruppenmuster — Elemente in
+forefront/middle/background staffeln; „Front/Middle/Back" ist Nakamas Kurzform, keine offizielle
+sonible-Bezeichnung (Prüfbericht Befund G) — um
 gerichtete Beziehungen erweitert. Ein Chor kann im Refrain vorne, in der Strophe aber bewusst
 hinter dem Klavier liegen.
 
@@ -2176,6 +2247,11 @@ Ein Versuch besteht aus unveränderlichen Referenzen:
 Eine erneute Änderung erzeugt einen neuen Kandidaten, überschreibt aber nicht die Baseline. Damit
 ist ein Vergleich auch nach Reconnect und UI-Neustart rekonstruierbar.
 
+Der Gegenpfad ist ausdrücklich Teil des Vertrags: `experiment_abort` schließt einen Versuch, den
+der User nie nachmisst — der häufigste Realfall — mit einem terminalen `aborted`-Ereignis im
+append-only Store ab (Prüfbericht Befund F). Ein Experiment ohne Terminalereignis gilt als offen
+und fällt unter die Retention aus Roadmap 15; offene Zeilen sammeln sich nicht unbegrenzt an.
+
 `manual_external` deckt den wichtigen Kernfall ab, dass der User EQ, Kompressor oder Fader in
 einem fremden Werkzeug ändert: Main verriegelt die Baseline, bittet um die Änderung und erfasst
 danach dieselbe Passage erneut. Weil Nakama diesen Fremdzustand weder lesen noch atomar
@@ -2253,7 +2329,8 @@ Migrationsanleitung; sie wird nicht automatisch zum führenden Main umgedeutet. 
 erhalten die drei eindeutigen Einträge.
 
 Der Kompatibilitätseintrag friert die heutigen Buildidentitäten ausdrücklich ein:
-`PLUGIN_MANUFACTURER_CODE=Evna`, `PLUGIN_CODE=Eqcp`, bestehende VST3-Class-ID und bisheriger
+`PLUGIN_MANUFACTURER_CODE=Evna`, `PLUGIN_CODE=Eqcp`, `JUCE_VST3_CAN_REPLACE_VST2=0` (die CID
+hängt an diesem Define, §31.2), bestehende VST3-Class-ID und bisheriger
 Bundle-/Produktbezug `EQ-Copilot.vst3`. Ein Rename oder neues JUCE-Target darf diese Werte nicht
 neu generieren. Main, passive Probe und Active Probe erhalten bewusst vergebene, dokumentierte
 Codes/Class-IDs; ein Scan-Golden prüft Altprojekt-Recall sowie Koexistenz aller Einträge.
@@ -2478,7 +2555,9 @@ Coverage → Finding → Evidence → Listen → Proposal → Preview → Remeas
 
 Jeder Zustand besitzt Eintrittsbedingungen, Evidenz-IDs, Useraktion, Timeout und sichere
 Rückkante. Es ist immer höchstens ein klanglicher Versuch aktiv. Ein abgebrochener Schritt kann
-nach Main-Neustart aus dem gespeicherten `AssistantStep` rekonstruiert werden.
+nach Main-Neustart aus dem gespeicherten `AssistantStep` rekonstruiert **oder per
+`experiment_abort` endgültig verworfen** werden; Verwerfen ist ein terminales Ereignis, kein
+Löschen der Historie.
 
 ### 46.2 Priorisierung
 
@@ -2784,11 +2863,15 @@ Wallclock-Sprung macht keine aktive Probe plötzlich frisch oder tot.
 ### 48.4 Sicherheit und Datenschutz
 
 - Named Pipe mit expliziter DACL nur für aktuelle Windows-User-SID; Remotezugriff deaktiviert;
-- Server impersoniert den Pipe-Client unmittelbar nach Connect und vor einem akzeptierten Hello,
-  vergleicht dessen Token-User-SID mit der erwarteten SID und beendet die Impersonation in jedem
-  Pfad; PID und Prozesspfad sind nur
-  Diagnose, keine Identität. Danach prüft er Clienttoken, Sitzung, Handshake, Nachrichtentyp,
-  Tiefe, Länge und Rate;
+- die Impersonation-Reihenfolge ist verbindlich (Prüfbericht Befund B):
+  `ConnectNamedPipe` → **Bootstrap-Hello lesen** → `ImpersonateNamedPipeClient` →
+  Token-User-SID mit der erwarteten SID vergleichen → `RevertToSelf` in **jedem** Pfad, auch im
+  Fehlerpfad → Hello annehmen oder ablehnen. `ImpersonateNamedPipeClient` impersoniert den
+  Kontext der **zuletzt gelesenen Nachricht**; vor dem ersten Read gibt es nichts zu
+  impersonieren. Ein `FALSE`-Rückgabewert schließt die Verbindung — es wird nie im
+  Serverkontext weitergearbeitet. PID und Prozesspfad sind nur
+  Diagnose, keine Identität. Danach prüft der Server Clienttoken, Sitzung, Handshake,
+  Nachrichtentyp, Tiefe, Länge und Rate;
 - Befehle benötigen Ziel-Nonce, Session-Epoche, lokal geklemmte TTL, Revision und
   Idempotenz-ID; Preview-Deadlines stammen ausschließlich aus der monotonen Uhr der Probe;
 - eine nach sichtbarem Pairing ausgegebene zufällige 256-Bit-`control_capability` authentisiert
@@ -2860,7 +2943,7 @@ Ein Build ist nicht freigabefähig, wenn eines dieser Gates fällt:
 | Größe | verbindliches Startbudget ab der zugehörigen Phase |
 |---|---:|
 | Livekarte, 16 Sonden | < 300 ms p95 fertiger 2.048-/4.096-Frame → sichtbarer Main-State |
-| Bassframe 16.384 bei 48 kHz | < 750 ms p95 erstes Fenstersample → sichtbarer Main-State; Alter wird gezeigt |
+| Bassframe 16.384 bei 48 kHz | < 750 ms p95 erstes Fenstersample → sichtbarer Main-State; Alter wird gezeigt; Bassbänder reisen dafür auf dem 10-Hz-Livepfad, nicht dem 1–4-Hz-Evidenzpfad |
 | Candidate-Arming | < 2 s p95 Draft → `audible_ready`; mindestens `max(500 ms, 3 · Release)` |
 | Preview-Befehl lokal | < 100 ms p95 Hold-Aktion → Probe aktiv, nur ab `audible_ready` |
 | Lease-Failsafe | < 500 ms ohne Renew zurück zum Committed State |
@@ -3101,6 +3184,10 @@ veröffentlicht werden, aber nicht unter dem vollständigen `Sonden-Kern 1.0`-Ve
 Abschnitt 28. Dazu ist eine sichtbare Produktentscheidung nötig; der Plan deutet den fehlenden
 Punkt 17 nicht still um.
 
+Derselbe Sichtbarkeitsvorbehalt gilt für den endgültigen Wegfall von `aux_compare_pre`: Damit
+entfielen der Hörmodus `DELTA` (§41.1) und das hörbare PRE/POST-Delta (§38.4) — auch das ist
+eine sichtbare Produktentscheidung, keine stille Degradation (Prüfbericht §3).
+
 ### 53.3 Verbindliche Schichten und Abhängigkeitsrichtung
 
 ```text
@@ -3169,13 +3256,22 @@ Die vorhandenen Dateien werden inkrementell hinter diese Grenzen verschoben. P0 
 Freibrief für einen Big-Bang-Rename: Zuerst entstehen Tests und Schnittstellen, danach wird jeweils
 ein realer Pfad migriert.
 
+**Static-Lib-Randbedingung (Prüfbericht Befund E):** Das heutige `plugin/CMakeLists.txt` teilt
+bewusst KEINE static-lib („kompilieren die geteilten Quellen erneut … bewusst simpel"), weil
+`juce_add_plugin` pro Target eigene `JucePlugin_*`-Moduldefinitionen erzeugt. Der Wechsel auf
+gemeinsame statische Bibliotheken ist für drei Ziele gerechtfertigt, aber nur unter einer harten
+Regel: Der gemeinsame Kern sieht **keine** `JucePlugin_*`-Konstanten; Identität kommt
+ausschließlich aus `plugin-identities-v1.json` über die dünnen Target-Schichten. Andernfalls
+erhalten zwei der drei Bundles die Identitätskonstanten des dritten — genau die Werte, die §44.1
+einfriert. `SONDE-007` enthält dafür einen expliziten Prüfschritt.
+
 ### 53.5 Gebaute Pluginidentitäten und Klassifikation
 
 | Ziel | Bundle/Browser-Kompatibilität | Plugin-Code | Class-ID-Regel |
 |---|---|---|---|
 | Main/Legacy | bestehendes `EQ-Copilot.vst3`; UI darf intern bereits „Nakama Main“ sagen | `Eqcp` | bestehende Component-/Controller-ID bytegleich erhalten |
-| Passive Probe | neues `Nakama Probe.vst3` | `NkPr` | in P0 einmal erzeugen und im Manifest reservieren; P1 verifiziert das erste Moduleinfo/Scanfixture |
-| Active Probe | neues `Nakama Active Probe.vst3` | `NkAc` | in P0 einmal erzeugen und im Manifest reservieren; P1 verifiziert das erste Moduleinfo/Scanfixture |
+| Passive Probe | neues `Nakama Probe.vst3` | `NkPr` | deterministisch abgeleitete CIDs (§31.2) in P0 verifizieren und im Manifest reservieren; P1 verifiziert das erste Moduleinfo/Scanfixture |
+| Active Probe | neues `Nakama Active Probe.vst3` | `NkAc` | deterministisch abgeleitete CIDs (§31.2) in P0 verifizieren und im Manifest reservieren; P1 verifiziert das erste Moduleinfo/Scanfixture |
 
 Der bestehende Entry bleibt beim Laden zunächst `unclassified` und audio-neutral. Erst nach
 vollständigem State-Restore gilt:
@@ -3294,6 +3390,9 @@ Der erste feste Parameterbestand lautet:
   `dynamic_enabled`, `dynamic_range_db`, `threshold_db`, `attack_ms`, `hold_ms`, `release_ms` und
   `sidechain_source`, jeweils unter `v1.band.<slot>.`;
 - freie Slots bleiben neutral; IDs werden nie umbenannt oder wiederverwendet;
+- `sidechain_source` kennt nur `none|internal|priority_sidechain`: Es existiert genau ein
+  externer Sidechain-Aux (§30) und pro Zielsonde höchstens eine Prioritätsbeziehung (§45.3);
+  der Parameter wählt je Band nur zwischen interner Hüllkurve und diesem einen Bus;
 - Remoteverträge verwenden typisierte physikalische Werte, nie VST-normalisierte Zahlen;
 - `type`, `channel_mode`, `dynamic_enabled` und `sidechain_source` sind topologisch. Sie werden im
   ersten Active-Release nicht samplegenau automatisiert, sondern nur am validierten Blockrand mit
@@ -3355,8 +3454,13 @@ Der SQLite-Store startet mit diesen Tabellen:
 Schema-Major/-Minor und kanonischen Payload. `(broker_epoch, sequence)` ist eindeutig. Die
 übrigen Domänentabellen sind indizierte, neu aufbaubare Projektionen oder immutable Artefakte.
 Der Writer setzt `foreign_keys=ON`, `journal_mode=WAL`, `synchronous=FULL`, einen begrenzten
-`busy_timeout` und `wal_autocheckpoint=0`. Kurze Leser halten keine Transaktion über externe
-Arbeit. `PASSIVE`-Checkpoint läuft nur im Broker-Idle; `TRUNCATE` nur ohne Leser und aktive
+`busy_timeout` und `wal_autocheckpoint=0`. `synchronous=FULL` bedeutet ein fsync **pro Commit**;
+Ereignisse werden deshalb gebündelt committet (Group-Commit über ein kurzes Sammelfenster) —
+nie ein Einzel-fsync pro Event bei 1–4 Hz × bis zu 32 Sonden. Kurze Leser halten keine
+Transaktion über externe
+Arbeit. `PASSIVE`-Checkpoint läuft im Broker-Idle **oder sobald die WAL eine feste
+Größenschwelle überschreitet** — eine lange Mischsession hat kaum Idle, der Größen-Trigger ist
+deshalb Pflicht und das P9-Soak-Gate nur der Backstop. `TRUNCATE` nur ohne Leser und aktive
 Capture-Session. WAL- und DB-Dateien liegen lokal, nicht auf einem Netzlaufwerk. Ein Killtest an
 jeder Outboxgrenze beweist at-least-once-Zustellung mit exactly-once-Wirkung: Entweder wird das
 Ereignis erneut gesendet oder als bestätigt rekonstruiert, nie still verloren oder wegen einer
@@ -3647,7 +3751,7 @@ sortiert. Ein Ticket darf intern kleiner geschnitten werden, aber sein Gate nich
 
 | ID | Änderung | fertig, wenn |
 |---|---|---|
-| `SONDE-001` | bestehende CIDs, Bundle, Plugin-Code, `moduleinfo` und Schema-1-State einfrieren; neue Codes/CIDs einmal erzeugen und reservieren | Identitätsmanifest sowie bestehende Scan-, State- und Audio-Goldens laufen im CI |
+| `SONDE-001` | bestehende CIDs, Bundle, Plugin-Code, `JUCE_VST3_CAN_REPLACE_VST2=0`, `moduleinfo` und Schema-1-State einfrieren; die deterministisch abgeleiteten neuen CIDs (§31.2) verifizieren und reservieren | Identitätsmanifest sowie bestehende Scan-, State- und Audio-Goldens laufen im CI |
 | `SONDE-002` | Legacy-Hostfixture für Stop/Seek/Loop/Render/Smart Disable und Altrollen | aktuelles Verhalten und bekannte Fehler sind reproduzierbar |
 | `SONDE-003` | JUCE-Bridge-Patch für Context-Anwesenheit, Parameterpunkte und Buslatenz | Quellhashgate plus Wrapper-Unitfixture grün; Fallbackbit geprüft |
 | `SONDE-004` | FL-Aux-/PDC-/Recall-Spike und Capabilityreport | jede Aux-Capability eindeutig supported/unsupported |
@@ -3667,7 +3771,10 @@ sortiert. Ein Ticket darf intern kleiner geschnitten werden, aber sein Gate nich
 | `SONDE-018` | lokales Sidechain-Unmasking mit Routing- und Verlustgates | P8-Gate oder dokumentierter Produktfallback |
 | `SONDE-019` | Distributions-, Migrations-, Soak-, Privacy- und Rollbackmatrix | P9-Gate; freigabefähiges signiertes Paket |
 
-`SONDE-001` bis `SONDE-004` sind die erste Implementierungswelle. `SONDE-005` darf parallel zu
+`SONDE-001` bis `SONDE-004` sind die erste Implementierungswelle — **`SONDE-004` (Aux/PDC) steht
+darin an erster Stelle** (Prüfbericht §3: höchstes Erkenntnisrisiko; fällt der Spike, entfallen
+Kernfunktion 17, das hörbare Delta in 5/12 und die exakte Attribution in 1 — und er ist mit
+einer `.flp` und zwei Impulsen billig zu messen). `SONDE-005` darf parallel zu
 den Hostmessungen vorbereitet, aber erst nach deren Capabilityentscheidung geschlossen werden.
 Kein Active-Ticket wird vor dem passiven R2-Slice vorgezogen.
 
@@ -3697,7 +3804,9 @@ Implementation im Test sind unzulässig.
 - `transport_fuzz`: Längen, Header, Flags, CRC, Fragmentierung und Ratengrenzen;
 - `coordinator_model`: Join, zwei Projekte, Führung, Nonce, stale und Eviction;
 - `store_crash_matrix`: Migration, WAL, Outbox, Killpunkt und Projektion-Rebuild;
-- `security_vectors`: SID-Pipetoken, Impersonationfehler, DPAPI-Transfer, HMAC und Replay;
+- `security_vectors`: SID-Pipetoken, Impersonationfehler (Negativtest:
+  `ImpersonateNamedPipeClient`-Fehlschlag ⇒ Verbindung geschlossen, kein Weiterlauf im
+  Serverkontext), DPAPI-Transfer, HMAC und Replay;
 - `session_soak`: 1/4/8/16/32 Clients mit langsamen Lesern und Brokerneustart.
 
 ### 66.3 Reale Hostabnahme
@@ -3741,9 +3850,10 @@ Zusätzlich gilt:
 
 ---
 
-## 68. Entscheidung nach Fassung 0.3
+## 68. Entscheidung nach Fassung 0.4
 
-Der technische Weg ist hinreichend bestimmt, um mit `SONDE-001` zu beginnen. Die erste
+Der technische Weg ist hinreichend bestimmt, um mit der ersten Welle zu
+beginnen — `SONDE-004` zuerst, dann `SONDE-001` bis `SONDE-003` (§65). Die erste
 Implementierungswelle baut noch kein neues Produktverhalten; sie friert Kompatibilität ein und
 entscheidet die Hostfähigkeiten, von denen ehrliche Zeit-, Automation-, Delta- und
 Sidechainaussagen abhängen.

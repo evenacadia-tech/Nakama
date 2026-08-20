@@ -145,6 +145,11 @@ auf CPU). **Visueller Nordstern (User-Freigabe 19.08.): der HÖRKOMPASS** —
 verbindlicher Zielvertrag `docs/visuelles-zielbild-hoerkompass.md`: der Mix
 bleibt unsichtbar, gesund = leeres Glas; nur ein belastbarer Befund bricht
 lokal das Licht; keine neue Grundmetapher, kein Dauer-Visualizer.
+**Produktarchitektur (User-Entscheid 20.08., überall klarzustellen): die
+Prisma-App ist eine EIGENSTÄNDIGE Begleit-App NEBEN Master-Plugin +
+Sonden** — das Master-Plugin (Nakama Main) bekommt eine konventionellere
+Arbeits-UI mit den Sonden; die Prisma-App ist Addition, nie Master-Hub;
+der Hörkompass-Zielvertrag gilt der Prisma-App, nicht der Plugin-UI.
 **Stand 19.08.:** Prisma-OBJEKT abgenommen („sieht top aus";
 klar > rauchig, Frost raus), drehbarer Prototyp steht
 (`eq-copilot/design/prisma/prisma-prototyp.html`); NAK-16
@@ -191,6 +196,7 @@ rendert auf CPU.
 | Wie das Plugin heute funktioniert (Architektur, Datenfluss, IPC) | `docs/plugin-wissen.md` |
 | Design-Prototyp, Verwürfe, Freeze-Stand | `docs/design-stand.md` |
 | Visueller Nordstern — Hörkompass-Zielvertrag (19.08.) | `docs/visuelles-zielbild-hoerkompass.md` |
+| Sonden-Produkt, Technik + Phasenplan (Fassung 0.4) | `docs/FL-Nakama-Sonden-Design-Entwurf.md` (+ `docs/pruefbericht-sondenentwurf-2026-08-20.md`) |
 | Geschmacksprofil (wörtliche User-Urteile) | `docs/geschmacksprofil.md` |
 | Neue Hauptansicht (Ziel, Grammatik, DoD) | `eq-copilot/docs/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md` |
 | DSP-/Realtime-/Broker-Regeln, Produktplan | `FL-EQ-Copilot-Recherche.md` |

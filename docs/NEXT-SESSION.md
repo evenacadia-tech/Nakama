@@ -24,6 +24,13 @@ wendet die betroffene Fläche zum User; Klick öffnet Ursache, Hörbeweis und
 genau einen nächsten Versuch; nach erfolgreicher Prüfung klärt sich das
 Glas wieder. **Keine neue Grundmetapher und kein Dauer-Visualizer.**
 
+**Produktarchitektur (User-Entscheid 20.08.):** Die Prisma-App ist eine
+EIGENSTÄNDIGE Begleit-App NEBEN Master-Plugin + Sonden — Addition, nie
+Master-Hub. Das Master-Plugin (Nakama Main) bekommt eine konventionellere
+Arbeits-UI mit den Sonden; der Hörkompass-Zielvertrag gilt der Prisma-App.
+Verbindlich festgehalten in `docs/FL-Nakama-Sonden-Design-Entwurf.md`
+§0.3 (Fassung 0.4, mit eingearbeitetem Prüfbericht).
+
 Dieser strategische Lock ersetzt NICHT den unmittelbar freigegebenen
 Technikschritt unten. NAK-16 muss dem Zielbild dienen, darf es aber nicht
 durch einen neuen Effekt oder eine neue Metapher umdeuten.

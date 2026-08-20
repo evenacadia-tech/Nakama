@@ -9,6 +9,12 @@
 > **Geltung:** strategischer visueller Nordstern. Der unmittelbar
 > freigegebene technische Schritt bleibt NAK-16, die ST-Map-Live-Refraktion
 > aus `.claude/kreativ-freigabe.md` und `docs/NEXT-SESSION.md`.
+> **Architektur-Klarstellung (User-Entscheid 20.08.2026):** Dieses Zielbild
+> beschreibt die **Prisma-App** — eine eigenständige Begleit-App, die NEBEN
+> dem Master-Plugin (Nakama Main) und den Sonden existiert (Addition, nie
+> Master-Hub). Die Master-Plugin-UI selbst bleibt bewusst konventioneller
+> (Sondenentwurf §0.3); ihr Maßstab ist die Lesbarkeit aus dem
+> Geschmacksprofil, nicht dieser Zielvertrag.
 
 ## Übergabe an Claude in einem Satz
 

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "evenacadia.eq-copilot.aggregat.v1",
   "title": "EQ-Copilot Aggregat-Snapshot v1 (Broker-Produkt)",
-  "description": "Zeitlich ausgerichteter Sammel-Snapshot ALLER (gefilterten) Sensoren eines Moments — geschrieben vom Tauri-Broker nach %LOCALAPPDATA%\\evenacadia\\EQ-Copilot\\snapshots\\ (Plan §11 M2). Er friert den zuletzt per Heartbeat gemeldeten Messstand jedes Sensors ein; er misst nichts selbst. Zeitausrichtung ist eine EHRLICHE Aussage über Projektzeit-Fenster (Schnittmenge + Warnungen), keine samplegenaue Kausalitätsbehauptung — PDC-Schätzung existiert in M2 nicht (Plan §5.7). Die Einzel-Snapshot-Dateien der Plugins (eq-snapshot.schema.json) bleiben die tiefere Quelle mit voller LTAS-Auflösung.",
+  "description": "Zeitlich ausgerichteter Sammel-Snapshot ALLER (gefilterten) Sensoren eines Moments — geschrieben vom Broker (eqcop-broker.exe) nach %LOCALAPPDATA%\\evenacadia\\EQ-Copilot\\snapshots\\ (Plan §11 M2). Er friert den zuletzt per Heartbeat gemeldeten Messstand jedes Sensors ein; er misst nichts selbst. Zeitausrichtung ist eine EHRLICHE Aussage über Projektzeit-Fenster (Schnittmenge + Warnungen), keine samplegenaue Kausalitätsbehauptung — PDC-Schätzung existiert in M2 nicht (Plan §5.7). Die Einzel-Snapshot-Dateien der Plugins (eq-snapshot.schema.json) bleiben die tiefere Quelle mit voller LTAS-Auflösung.",
   "type": "object",
   "required": ["schema", "erzeugt_ms", "broker_version", "sensoren", "paare", "warnungen"],
   "additionalProperties": false,

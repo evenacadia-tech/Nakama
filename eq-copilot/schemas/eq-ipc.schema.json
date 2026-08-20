@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "evenacadia.eq-copilot.ipc.v2",
-  "title": "EQ-Copilot IPC-Vertrag v2 (Plugin ↔ Tauri-Broker)",
+  "title": "EQ-Copilot IPC-Vertrag v2 (Plugin ↔ Broker)",
   "description": "Transport: Windows Named Pipe (Byte-Modus), ACL nur aktueller User. Framing: u32 Little-Endian Längenpräfix, dann UTF-8-JSON genau dieser Länge. Harte Paketgrenze 262144 Bytes — größere Pakete beenden die Verbindung. Ungültige Pakete werden ohne Crash verworfen (Plan §9.2). Der Client sendet als erstes Paket immer `hello`; der Broker antwortet mit `welcome` oder `reject` und sendet vorher nichts. NEU in v2: der Heartbeat trägt optional den kompakten Messstand (`measurement`), und der Broker beantwortet jeden v2-Heartbeat mit `heartbeat_ack` (trägt das Konflikt-Flag für duplizierte Sensor-IDs, Plan §8.4). Abwärtskompatibilität: der Broker nimmt v1-hello weiterhin an; v1-Verbindungen bekommen keine ACKs und liefern keine Messdaten — die Sensorübersicht markiert sie als »altes Plugin (v1)«.",
   "type": "object",
   "required": ["type"],

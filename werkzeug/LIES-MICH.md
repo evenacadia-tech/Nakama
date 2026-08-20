@@ -322,6 +322,63 @@ muss eine Zustandsgestaltung bedienbar sein.
 nicht sagen kann** — beim Halten „release to stop", nach dem Anwenden
 „1 change applied", sonst nichts.
 
+## zustaende.html
+
+Stufe 2, Main, der letzte offene Punkt der Spezifikation:
+
+> „Zustände, die immer ablesbar sein müssen: Quelle frisch / veraltet /
+> getrennt; Messung läuft / unvollständig; eine Funktion ist auf diesem
+> System nicht verfügbar (degradiert) — **ehrlich zeigen, nie kaschieren.**"
+
+Bisher standen sie nur als Text im Streifen. Die Karte trug sechzehn Zeilen,
+die alle gleich aussahen — obwohl drei davon veraltet oder getrennt waren.
+
+### Drei Sorten Zustand, auseinandergehalten
+
+1. **je Quelle** — frisch / veraltet / getrennt → *die Variable dieser Runde*
+2. **global** — Messung läuft / unvollständig
+3. **die App** — eine Funktion ist nicht verfügbar (degradiert)
+
+Nur Sorte 1 unterscheidet die drei Kacheln; 2 und 3 bleiben gleich, sonst
+vergleicht man zwei Dinge gleichzeitig.
+
+### Die drei Antworten
+
+| Mechanik | in der Karte | im Streifen | Preis |
+|---|---|---|---|
+| **Nur die Sammelzeile spricht** | veraltet sieht aus wie frisch | 13 / 2 / 1 | das Blatt weiß mehr, als es sagt |
+| **Jede Zeile trägt ihren Zustand** | Marke an jeder der 16 Zeilen | 13 / 2 / 1 | 16 Marken für etwas, das meist „in Ordnung" heißt |
+| **Nur die Ausnahme spricht** | veraltet = hohl, getrennt = leer | nur Abweichungen | „alles gut" wird durch Abwesenheit gezeigt |
+
+Zustandsbilder in Graustufen, ohne dass eine Zeile ihre Höhe ändert:
+**gefüllt = frisch · hohl = veraltet · Strichlinie = getrennt.**
+Die Höhe darf sich nicht ändern, sonst liest man Energie, wo Alter gemeint ist.
+
+### Die Zustandsmatrix
+
+Sechs Szenarien durchschaltbar (gemischt · alles frisch · viel veraltet ·
+alles getrennt · nur 5 Quellen · keine Quelle), dazu Messung 0/68/100 % und
+degradierte Funktion an/aus. **Ein Blatt, das nur im Schönfall geprüft wurde,
+ist nicht geprüft.**
+
+### Was der schlimme Fall ans Licht gebracht hat
+
+Beim Umschalten auf *alles getrennt* zeigte das Blatt weiter drei Befunde
+über Bass, Choir und Drums — als wäre gerade gemessen worden. Behoben:
+
+- **Befunde tragen den Zustand ihrer Quelle**: „source offline — from last
+  measurement" bzw. „source stale — may be out of date".
+- **Der Assistent lässt auf einer getrennten Quelle nichts mehr zu.** Ein
+  Knopf, der sich drücken lässt und nichts tut, ist eine Lüge in der
+  Oberfläche — dieselbe Regel, die schon in `licht.html` galt.
+- **Messen setzt Kontakt voraus.** „Measurement complete" bei null Quellen
+  und „Measuring 68 %" bei sechzehn getrennten sind dieselbe Lüge in zwei
+  Feinheitsgraden. Jetzt: *Nothing to measure* bzw. *Measurement stalled —
+  no source reachable*.
+
+Der Leerzustand sagt, **warum** nichts da ist. Ein leeres Feld ohne
+Erklärung wäre ein Ausfall, kein Zustand.
+
 ## licht.html
 
 Die Fassung steht, offen ist das Licht. Vier **Herkünfte** (nur der Grund

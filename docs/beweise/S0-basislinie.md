@@ -1,17 +1,17 @@
 # Beweismanifest — S0 · Basislinie
 
-**Lauf:** 2026-08-20 18:26 · **Runner:** `tools/beweise.ps1` · **Urteil:** GRUEN — 4/4 Kanon-Laeufe bestanden · 7 geplante Pruefung(en) noch nicht gebaut · **Exitcode:** 0
+**Lauf:** 2026-08-20 18:29 · **Runner:** `tools/beweise.ps1` · **Urteil:** GRUEN — 4/4 Kanon-Laeufe bestanden · 7 geplante Pruefung(en) noch nicht gebaut · **Exitcode:** 0
 
 ### Kopf — woran gemessen wurde
 
 | Feld | Wert |
 |---|---|
-| Zeitpunkt | 2026-08-20 18:26:19 +02:00 |
+| Zeitpunkt | 2026-08-20 18:29:28 +02:00 |
 | Rechner | SCHUBBINATOR200 · Windows 10.0.26200.0 |
 | Zweig | master |
-| Commit | 734cf50 Bauentscheidung erteilt: Einstieg auf Session 0 gestellt, NAK-19..23 geschlossen |
-| Commit (voll) | 734cf50e7b317666a68ac308d55ed83e802ac57c |
-| Arbeitsbaum | 3 unbestaetigte Datei(en) — dieser Lauf beweist NICHT allein den Commit |
+| Commit | b7d37ce S0: Beweis-Runner, Manifest-Vorlage und Basislinie stehen |
+| Commit (voll) | b7d37ce85ea6f50b38c2a932b488e0b152a1bdad |
+| Arbeitsbaum | 1 unbestaetigte Datei(en) — dieser Lauf beweist NICHT allein den Commit |
 | JUCE gepinnt | 8.0.9 |
 | JUCE auf Platte | 8.0.9 |
 | FL Studio | FL Studio 2025 25.2.5.5319 · FL Studio 2026 26.1.4.5589 |
@@ -23,9 +23,7 @@
 <details><summary>Unbestaetigte Dateien im Arbeitsbaum</summary>
 
 ```text
-?? docs/beweise/
 ?? tmp/
-?? tools/beweise.ps1
 ```
 
 </details>
@@ -44,10 +42,10 @@ Neueste Quelldatei (`plugin/src`, `plugin/tests`, CMakeLists): **2026-08-16 09:0
 
 | # | Behauptung | Befehl | Ergebnis | Dauer | Rohausgabe |
 |---|---|---|---|---|---|
-| A1 | Passthrough ist bitgleich; 0 Samples Latenz, 0 Tail; NaN/Inf werden gezaehlt, aber nicht veraendert. | `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | [OK] Exit 0 | 0,06 s | [↓ A1](#a1) |
-| A2 | AnalyseEngine deckt sich mit der eingefrorenen Offline-Referenz (Fixture-SHA-256 als Determinismus-Riegel). | `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | [OK] Exit 0 | 10,02 s | [↓ A2](#a2) |
-| A3 | Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung. | `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | [OK] Exit 0 | 6,22 s | [↓ A3](#a3) |
-| A4 | Broker-Vertragstests gruen (Framing, Protokoll, Bindung, Aggregat, Server). | `cargo test --manifest-path broker/Cargo.toml --color never` | [OK] Exit 0 | 0,36 s | [↓ A4](#a4) |
+| A1 | Passthrough ist bitgleich; 0 Samples Latenz, 0 Tail; NaN/Inf werden gezaehlt, aber nicht veraendert. | `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | [OK] Exit 0 | 0,17 s | [↓ A1](#a1) |
+| A2 | AnalyseEngine deckt sich mit der eingefrorenen Offline-Referenz (Fixture-SHA-256 als Determinismus-Riegel). | `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | [OK] Exit 0 | 9,80 s | [↓ A2](#a2) |
+| A3 | Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung. | `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | [OK] Exit 0 | 6,27 s | [↓ A3](#a3) |
+| A4 | Broker-Vertragstests gruen (Framing, Protokoll, Bindung, Aggregat, Server). | `cargo test --manifest-path broker/Cargo.toml --color never` | [OK] Exit 0 | 4,13 s | [↓ A4](#a4) |
 | B1 | Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren. | `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | [GEPLANT] geplant (ab P0) | — | — |
 | B2 | State-Schema 2 laedt reine Schema-1-Staende ohne Verlust. | `eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe` | [GEPLANT] geplant (ab P1) | — | — |
 | B3 | Hostkontext (Anwesenheit, Parameterpunkte, Buslatenz) wird gemessen, nicht geraten. | `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | [GEPLANT] geplant (ab P2) | — | — |
@@ -61,7 +59,7 @@ Neueste Quelldatei (`plugin/src`, `plugin/tests`, CMakeLists): **2026-08-16 09:0
 <a id="a1"></a>
 #### A1 · EqCopNullTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` · **Exitcode:** 0 · **Dauer:** 0,06 s
+**Befehl:** `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` · **Exitcode:** 0 · **Dauer:** 0,17 s
 
 stdout:
 
@@ -86,7 +84,7 @@ _(leer)_
 <a id="a2"></a>
 #### A2 · EqCopGoldenTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` · **Exitcode:** 0 · **Dauer:** 10,02 s
+**Befehl:** `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` · **Exitcode:** 0 · **Dauer:** 9,80 s
 
 stdout:
 
@@ -119,7 +117,7 @@ _(leer)_
 <a id="a3"></a>
 #### A3 · EqCopMarkierungTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` · **Exitcode:** 0 · **Dauer:** 6,22 s
+**Befehl:** `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` · **Exitcode:** 0 · **Dauer:** 6,27 s
 
 stdout:
 
@@ -164,19 +162,19 @@ _(leer)_
 <a id="a4"></a>
 #### A4 · broker
 
-**Befehl:** `cargo test --manifest-path broker/Cargo.toml --color never` · **Exitcode:** 0 · **Dauer:** 0,36 s
+**Befehl:** `cargo test --manifest-path broker/Cargo.toml --color never` · **Exitcode:** 0 · **Dauer:** 4,13 s
 
 stdout:
 
 ```text
 
 running 36 tests
-test framing::tests::hin_und_zurueck ... ok
-test framing::tests::abbruch_mitten_im_frame ... ok
 test framing::tests::kein_utf8_wird_verworfen ... ok
-test protokoll::tests::feindliches_ltas_array_faellt_am_guard ... ok
+test framing::tests::abbruch_mitten_im_frame ... ok
 test aggregat::tests::profilfilter_laesst_fremde_sensoren_nie_still_hinein ... ok
 test protokoll::tests::heartbeat_v1_ohne_measurement_parst_weiter ... ok
+test framing::tests::hin_und_zurueck ... ok
+test protokoll::tests::feindliches_ltas_array_faellt_am_guard ... ok
 test framing::tests::laengengrenze_beidseitig ... ok
 test aggregat::tests::schnittfenster_und_paare_im_dokument ... ok
 test aggregat::tests::filter_trennt_prozesse_und_v1_bekommt_warnung ... ok
@@ -208,7 +206,7 @@ test server::tests::feindliches_laengenpraefix_beendet_nur_diese_verbindung ... 
 test server::tests::handshake_heartbeat_und_geordneter_abschied ... ok
 test server::tests::doppelte_sensor_id_wird_als_konflikt_sichtbar ... ok
 
-test result: ok. 36 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+test result: ok. 36 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.33s
 
 
 running 0 tests
@@ -229,7 +227,7 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 stderr:
 
 ```text
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.78s
      Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-a60741d6aa4f32af.exe)
      Running unittests src\main.rs (broker\target\debug\deps\eqcop_broker-b91f868b743e27b1.exe)
      Running unittests src\bin\eqcop-broker-probe.rs (broker\target\debug\deps\eqcop_broker_probe-c17ffc214d5eff74.exe)
@@ -238,7 +236,7 @@ stderr:
 
 ### Bau vor dem Lauf (`-Bauen`)
 
-**build** · Exit 0 · 2,18 s
+**build** · Exit 0 · 2,37 s
 
 <details><summary>Rohe Ausgabe</summary>
 

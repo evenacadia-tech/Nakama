@@ -1,5 +1,6 @@
 *.log
 scratch/
+tmp/
 
 # Bau-Artefakte (regenerierbar)
 eq-copilot/build/

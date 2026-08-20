@@ -196,6 +196,13 @@ lesen):**
 
 ## Maschinen-Landmine
 
+⚠️ **PowerShell: `Start-Process -ArgumentList` quotiert NICHTS** — es klebt die
+Array-Elemente mit Leerzeichen zu einer Kommandozeile zusammen (anders als
+.NETs `ProcessStartInfo.ArgumentList`). Gemessen beim Bau des Beweis-Runners an
+`git log --format=%h %s`: Exit 128, weil `%s` ein eigenes Argument wurde. Jedes
+Argument mit Leerzeichen selbst escapen (`Argument-Quoten` in
+`tools/beweise.ps1`), sonst zerfaellt ein Pfad still.
+
 **Keine GPU-Batch-Render-Loops auf der Arc A770** — der Lüfter-Failsafe
 bleibt nach solchen Loops auf 100 % hängen (überlebt Warm-Reboots; Fix =
 `Win+Ctrl+Shift+B`, sonst echter Kaltstart). Playwright-/Beweis-Renders

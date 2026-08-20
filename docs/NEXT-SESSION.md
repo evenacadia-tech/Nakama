@@ -5,8 +5,10 @@
 > eqcop-broker.exe), tools/. FL-Repo-SHAs in älteren Einträgen unten
 > gehören zur FL-Studio-Historie (bis `7964777`).
 
-> Stand: 2026-08-19. Diese Datei ist der Schnellstart;
+> Stand: 2026-08-19 spätabends. Diese Datei ist der Schnellstart;
 > Tiefe in `docs/design-stand.md` und `docs/geschmacksprofil.md`.
+> **Einstieg nächste Session (User-Ansage 20.08.): ZUERST `/freshen`**
+> (Memory-/CLAUDE.md-Hygiene), dann hier weiter.
 
 ## Visueller Nordstern — vor jeder Designarbeit lesen
 

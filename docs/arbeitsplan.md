@@ -18,16 +18,31 @@ Grenzen (Fenstergrößen, Skalierung), Grad der kreativen Autorenschaft.
 
 **Gate:** Ohne diese Abnahme blockt die Schleuse jeden Prototyp-Write.
 
+## Phase 0.5 — Formfaktor und Größe (VOR jedem Wireframe)
+
+Eine Anordnung ohne bekannte Fläche ist wertlos. Für alle drei Oberflächen
+zuerst festlegen: **Seitenverhältnis, Größe, und ob fest / in Stufen / frei
+ziehbar.** Beurteilt wird ausschließlich bei **1:1** auf dem Zielbildschirm,
+über einem nachgestellten Host — ein skaliertes Bild taugt dafür nicht.
+
+Werkzeug: `werkzeug/formfaktor.html`. Es misst, ab welcher Größe Inhalt
+abgeschnitten wird, und zeigt den Preis in Prozent des Bildschirms.
+
+**Ergebnis:** drei abgenommene Formate. Tote Fläche gilt als Fehler.
+Hintergrund: `abnahmen/2026-08-20-korrektur-formfaktor-zuerst.md`.
+
 ## Phase 1 — Wireframes (Graustufen, keine Optik)
 
 **Reihenfolge: Main zuerst** (dort steckt die eigentliche
 Informationsarchitektur — der teuerste Fehler wird hier billig
 verhindert), dann Active-Editor, dann Passive-Kachel.
 
-**Je Oberfläche:** dominante Leserichtung, Gruppierung, Gewichtung,
-Haupt-/Leer-/Lade-/Fehlerzustand — als graues lebendes Blatt mit
-Zustands-Schaltern. Vorher `/interview struktur` für die betroffene
-Oberfläche.
+**Je Oberfläche:** zuerst die **Aufgabenliste nach Häufigkeit**
+(`docs/DESIGN-GESETZE.md`, verbindliche Folge 1 — ohne sie kein Wireframe),
+dann dominante Leserichtung, Gruppierung, Gewichtung, Haupt-/Leer-/Lade-/
+Fehlerzustand — als graues lebendes Blatt mit Zustands-Schaltern. Varianten
+unterscheiden sich in der **Disclosure-Mechanik**, nicht in der
+Kastenanordnung. Vorher `/interview struktur` für die betroffene Oberfläche.
 
 **Ergebnis:** drei abgenommene Wireframes. Was im Graubild nicht
 funktioniert, wird nicht mit Farbe gerettet.

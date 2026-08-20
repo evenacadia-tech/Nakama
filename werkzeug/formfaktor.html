@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nakama — Formfaktor und Größe</title>
+<style>
+/* ============================================================
+   Dieses Werkzeug zeigt ECHTE PIXEL. Es wird nichts skaliert.
+   Nur so ist eine Groessenentscheidung ueberhaupt beurteilbar.
+   ============================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:#1a1a1a;color:#dcdcdc;
+  font:13px/1.4 'Segoe UI',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+
+/* --- Warnband: sagt ehrlich, ob gerade 1:1 gilt --- */
+#band{position:fixed;left:0;right:0;top:0;z-index:100;padding:7px 14px;
+  font-size:12.5px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+#band.ok{background:#2b3a2b;color:#cfe0cf}
+#band.warn{background:#4a3a22;color:#f0e0c0}
+#band b{font-weight:600}
+#band button{font:inherit;font-size:12px;padding:4px 11px;border:1px solid #6a6a6a;
+  background:#3a3a3a;color:#e8e8e8;cursor:pointer;border-radius:2px}
+#band button:hover{background:#4a4a4a}
+
+/* --- Der nachgestellte Bildschirm (FL Studio, schematisch) --- */
+#schirm{position:absolute;inset:0;background:#232427;overflow:hidden}
+.fl{position:absolute;border:1px solid #34363a;background:#2a2c30}
+.fl > .t{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#5e6167;
+  padding:4px 8px;border-bottom:1px solid #34363a;white-space:nowrap}
+.spur{height:13px;margin:3px 6px;background:#31343a;position:relative}
+.spur i{position:absolute;top:2px;bottom:2px;background:#3f434a;display:block}
+.kanal{height:11px;margin:3px 6px;background:#31343a}
+.mixstreifen{display:flex;gap:4px;padding:6px}
+.mixstreifen span{flex:1;background:#31343a;position:relative}
+.mixstreifen span i{position:absolute;left:2px;right:2px;bottom:2px;background:#43474e;
+  display:block}
+
+/* --- Die Nakama-Fenster --- */
+.fenster{position:absolute;background:#242424;border:1px solid #5c5c5c;
+  box-shadow:0 10px 30px -8px rgba(0,0,0,.8);display:flex;flex-direction:column;
+  overflow:hidden;color:#c9c9c9;font:12px/1.4 'Segoe UI',system-ui,sans-serif}
+.titel{height:22px;flex:none;background:#2e2e2e;border-bottom:1px solid #414141;
+  display:flex;align-items:center;padding:0 8px;gap:8px;cursor:move;user-select:none}
+.titel b{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#9a9a9a;
+  font-weight:400}
+.titel em{font-style:normal;margin-left:auto;font-size:10px;color:#6f6f6f;
+  font-family:'Cascadia Mono','Consolas',monospace}
+.leib{flex:1;display:flex;flex-direction:column;gap:6px;padding:6px;overflow:hidden;
+  align-content:flex-start}
+.griff{position:absolute;right:0;bottom:0;z-index:3;width:14px;height:14px;cursor:nwse-resize;
+  background:linear-gradient(135deg,transparent 46%,#6a6a6a 46%,#6a6a6a 54%,transparent 54%,
+             transparent 70%,#6a6a6a 70%,#6a6a6a 78%,transparent 78%)}
+/* Was nicht mehr hineinpasst, wird abgeschnitten und rot markiert — nicht
+   heimlich zusammengedrueckt. Ein zu kleines Fenster muss weh tun. */
+.fenster.eng{border-color:#8a5a4a}
+.fenster.eng .titel em{color:#c98a72}
+/* Sichtbare Schnittkante: ein zu kleines Fenster darf nicht so tun, als passe alles. */
+.fenster.eng .leib{border-bottom:2px solid #8a5a4a}
+.fenster.eng::after{content:'content cut off';position:absolute;right:0;bottom:0;
+  background:#8a5a4a;color:#1a1a1a;font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;padding:2px 6px;pointer-events:none}
+
+.box{border:1px solid #4c4c4c;background:#2e2e2e;display:flex;flex-direction:column;
+  overflow:hidden;flex:none}
+.box > h4{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#8f8f8f;
+  padding:5px 8px 4px;border-bottom:1px solid #414141;flex:none;display:flex;gap:8px}
+.box > h4 em{font-style:normal;margin-left:auto;color:#6f6f6f;letter-spacing:.06em}
+.inh{padding:6px 8px;flex:1;overflow:hidden;display:flex;flex-direction:column;gap:4px}
+.streifen{height:24px;flex:none;border:1px solid #4c4c4c;background:#2e2e2e;
+  display:flex;align-items:center;padding:0 8px;overflow:hidden}
+.eb{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;padding:4px 9px;
+  color:#9a9a9a;border-right:1px solid #414141}
+.eb:first-child{padding-left:0}
+.eb.an{background:#4a4a4a;color:#e8e8e8}
+.status{margin-left:auto;font-size:9.5px;color:#8f8f8f;display:flex;gap:10px;flex:none}
+.status span{white-space:nowrap}
+.pkt{display:inline-block;width:5px;height:5px;border-radius:50%;background:#9a9a9a;
+  margin-right:4px;vertical-align:1px}
+.pkt.alt{background:#6a6a6a}
+.pkt.weg{background:transparent;border:1px solid #6a6a6a}
+.qz{display:flex;align-items:center;gap:6px;font-size:11px;padding:1px 0}
+.qz .n{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qz .r{font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:#7d7d7d}
+.hmz{display:flex;align-items:center;gap:5px;height:12px}
+.hmz .n{width:74px;font-size:10px;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;flex:none}
+.hmz .z{display:flex;gap:2px;flex:1;height:100%}
+.hmz .z i{flex:1;display:block;height:100%}
+.bf{border:1px solid #454545;background:#333;padding:4px 6px;display:flex;
+  flex-direction:column;gap:1px}
+.bf b{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#9a9a9a;
+  font-weight:400}
+.bf span{font-size:10.5px}
+.ast{display:flex;gap:8px;align-items:baseline}
+.ast b{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:#7d7d7d;
+  width:92px;flex:none;font-weight:400}
+.ast span{font-size:11px;flex:1}
+.knopfreihe{display:flex;gap:5px;margin-top:4px}
+.wfk{font-size:9.5px;padding:3px 8px;border:1px solid #5a5a5a;color:#c2c2c2;
+  background:#3a3a3a;white-space:nowrap}
+.wfk.stark{background:#5a5a5a;color:#eee}
+.kurve{flex:1;border:1px solid #454545;background:#282828;position:relative;min-height:0}
+.kurve svg{position:absolute;inset:0;width:100%;height:100%}
+.vg{display:flex;gap:5px}
+.vg > div{flex:1;border:1px solid #454545;background:#282828;padding:4px 6px;
+  font-size:9.5px;color:#9a9a9a}
+.zurueckzeile{font-size:10px;color:#8f8f8f;display:flex;gap:10px;align-items:center}
+
+/* --- Bedienpanel --- */
+#panel{position:fixed;right:14px;bottom:14px;z-index:90;width:330px;
+  background:#2e2e2e;border:1px solid #555;padding:12px 14px;
+  display:flex;flex-direction:column;gap:11px;
+  box-shadow:0 14px 34px -10px rgba(0,0,0,.85)}
+#panel h3{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9a9a9a;
+  font-weight:400}
+#panel .reihe{display:flex;gap:5px;flex-wrap:wrap}
+#panel button{font:inherit;font-size:11.5px;padding:5px 9px;border:1px solid #565656;
+  background:#3a3a3a;color:#d8d8d8;cursor:pointer;border-radius:2px}
+#panel button:hover{background:#474747}
+#panel button.an{background:#c8c8c8;color:#1a1a1a;border-color:#c8c8c8}
+#panel .zahlen{font:11px/1.7 'Cascadia Mono','Consolas',monospace;color:#b8b8b8;
+  background:#242424;border:1px solid #454545;padding:7px 9px;white-space:pre-line}
+#panel .mini{font-size:11px;color:#8f8f8f;line-height:1.45}
+#panel textarea{width:100%;height:88px;font:10.5px/1.45 'Cascadia Mono','Consolas',monospace;
+  background:#242424;color:#c8c8c8;border:1px solid #454545;padding:7px;resize:vertical}
+#panel.klein .verbergbar{display:none}
+</style>
+</head>
+<body>
+
+<div id="band" class="warn"></div>
+<div id="schirm"></div>
+
+<div id="panel">
+  <div>
+    <h3>Inhaltsmenge</h3>
+    <div class="reihe" id="modus"></div>
+    <div class="mini" id="modusText" style="margin-top:6px"></div>
+  </div>
+  <div class="verbergbar">
+    <h3>Formfaktor — Main</h3>
+    <div class="reihe" id="formen"></div>
+  </div>
+  <div class="verbergbar">
+    <h3>Auch offen</h3>
+    <div class="reihe" id="andere"></div>
+  </div>
+  <div>
+    <h3>Was das kostet</h3>
+    <div class="zahlen" id="zahlen"></div>
+  </div>
+  <div class="reihe">
+    <button id="fertig">Ergebnis zeigen</button>
+    <button id="klapp">Panel klein</button>
+  </div>
+  <textarea id="ausgabe" style="display:none" spellcheck="false"></textarea>
+</div>
+
+<script>
+/* ================================================================
+   NAKAMA — FORMFAKTOR UND GROESSE
+   Vor allem anderen: wie gross darf das Fenster sein, und welche
+   Form hat es? Ein Plugin nimmt dem Arrangement Flaeche weg —
+   deshalb wird hier NICHTS skaliert und alles in echten Pixeln
+   auf einem nachgestellten FL-Studio-Bildschirm gezeigt.
+   ================================================================ */
+
+const SOURCES = [
+  ['Lead Vocal','leads','ok',[1,2,3,5,4,4,3,2,1]],
+  ['Choir','carries','ok',[1,1,3,4,4,5,4,3,2]],
+  ['Piano','carries','ok',[1,3,5,4,3,3,2,2,1]],
+  ['Drums','carries','ok',[4,5,3,2,2,3,4,5,3]],
+  ['Bass','carries','alt',[5,5,4,2,1,1,1,0,0]],
+  ['Guitar','supports','ok',[0,1,3,4,4,4,3,2,1]],
+  ['Strings','supports','ok',[1,2,3,4,4,4,4,3,2]],
+  ['Synth Pad','blended','weg',[1,2,3,3,3,3,4,4,3]],
+  ['Brass','supports','ok',[0,1,2,4,5,4,4,3,2]],
+  ['Percussion','supports','ok',[1,2,2,3,3,4,5,5,4]],
+  ['Double Bass','carries','ok',[5,4,3,2,1,1,0,0,0]],
+  ['Harp','supports','ok',[0,1,2,4,4,3,3,2,1]],
+  ['Organ','protected','ok',[3,4,4,3,3,2,2,1,1]],
+  ['Room Mic','blended','alt',[1,2,3,3,4,4,4,4,3]],
+  ['Backing Vox','supports','ok',[0,1,2,4,4,4,3,2,1]],
+  ['Shaker','supports','ok',[0,0,1,1,2,3,4,5,5]]
+];
+const BAND = ['20','60','120','250','500','1k','2k','4k','8k'];
+const ADVISOR = [
+  ['Priority','Bass against piano, 180–260 Hz'],
+  ['Likely cause','Bass carries 3.4 dB too much there'],
+  ['Smallest test','Bass −2 dB at 220 Hz, Q 1.2'],
+  ['Listen for','piano left hand, bars 33–41'],
+  ['Then','re-check the same passage']
+];
+
+/* Diese Mindestmasse sind Ingenieurentscheidung, keine Messung: sie folgen
+   aus Lesbarkeit bei 100 % Skalierung (Versalien >= 9 px, Werte >= 11 px)
+   plus Zeilenhoehe. Sie gehoeren geprueft, sobald echte Schrift steht. */
+const MINDEST = {
+  streifen: {w:420, h:24},
+  quellen:  {w:210, h:70},
+  heatmap:  {w:300, h:60},
+  detail:   {w:260, h:130},
+  befunde:  {w:240, h:60},
+  advisor:  {w:340, h:126},
+  vergleich:{w:280, h:56}
+};
+
+/* ---------- Bausteine ---------- */
+const kasten = (t,z,i,st='') =>
+  `<div class="box" style="${st}"><h4>${t}${z?`<em>${z}</em>`:''}</h4>
+   <div class="inh">${i}</div></div>`;
+const streifen = (aktiv) => `<div class="streifen">
+  ${['Observe','Advise','Audition','Apply']
+    .map((e,i)=>`<span class="eb${i===aktiv?' an':''}">${e}</span>`).join('')}
+  <span class="status"><span><span class="pkt"></span>12</span>
+    <span><span class="pkt alt"></span>3</span>
+    <span><span class="pkt weg"></span>1</span>
+    <span>Measuring 68 %</span></span></div>`;
+const quellenBox = (n,h) => kasten('Sources', n+' of 16',
+  `<div style="flex:1;overflow:hidden">${SOURCES.slice(0,n).map(([nm,r,f])=>
+    `<div class="qz"><span class="pkt ${f==='ok'?'':f}"></span>
+     <span class="n">${nm}</span><span class="r">${r}</span></div>`).join('')}</div>`,
+  `height:${h}px`);
+const heatmapBox = (n,h,titel='Comparative heatmap',zusatz='list → heatmap → detail') =>
+  kasten(titel, zusatz,
+  `<div class="hmz" style="height:9px"><span class="n"></span>
+     <span class="z" style="font-size:8px;color:#7d7d7d;gap:2px">
+       ${BAND.map(b=>`<i style="background:none;text-align:center">${b}</i>`).join('')}</span></div>
+   <div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow:hidden">
+   ${SOURCES.slice(0,n).map(([nm,,,e])=>
+    `<div class="hmz" style="flex:1"><span class="n">${nm}</span>
+     <span class="z">${e.map(v=>`<i style="background:hsl(0 0% ${14+v*11}%)"></i>`)
+       .join('')}</span></div>`).join('')}</div>`, `height:${h}px`);
+const detailBox = (h) => kasten('Detail · Bass','spectrum · dynamics · width',
+  `<div class="kurve"><svg viewBox="0 0 300 100" preserveAspectRatio="none">
+     <path d="M0 70 C40 68 60 76 90 74 C130 71 150 40 190 36 C230 32 260 44 300 42"
+           fill="none" stroke="#b0b0b0" stroke-width="1.5"/>
+     <path d="M0 50H300" stroke="#3f3f3f" stroke-dasharray="2 3"/></svg></div>`,
+  `height:${h}px`);
+const befundeBox = (h) => kasten('Findings','3 open',
+  [['Bass · 180–260 Hz','Carries 3.4 dB more than the sum can take.'],
+   ['Choir · 2.5–4 kHz','Masks the lead vocal in the loud bars.'],
+   ['Drums · Width','Measurement incomplete — 6 s of 20 s.']]
+   .map(([o,t],i)=>`<div class="bf"${i?'':' style="border-color:#6a6a6a"'}>
+     <b>${o}</b><span>${t}</span></div>`).join(''), `height:${h}px`);
+const advisorBox = (h) => kasten('Advisor','finding 1 of 3',
+  ADVISOR.map(([b,t])=>`<div class="ast"><b>${b}</b><span>${t}</span></div>`).join('')
+  + `<div class="knopfreihe"><span class="wfk">Audition (hold)</span>
+     <span class="wfk stark">Apply</span><span class="wfk">Discard</span></div>`,
+  `height:${h}px`);
+const vergleichBox = (h) => kasten('Before / After','level-matched',
+  `<div class="vg"><div>A — Baseline</div><div>B — Bass −2 dB @ 220</div></div>`,
+  `height:${h}px`);
+
+/* ---------- Inhaltsmengen ---------- */
+// "alles" = die alte Denkweise. "handgriff" = das Gesetz aus
+// docs/DESIGN-GESETZE.md, angewandt auf Aufgabe 2 (einen Befund verstehen).
+const MODI = {
+  alles: {
+    name:'Alles gleichzeitig',
+    text:'Quellen, Heatmap, Detail, Befunde, Assistent, Vorher/Nachher — alles auf '
+       + 'einer Ebene. Die Denkweise, die zu 50 % toter Fläche geführt hat.',
+    mindestW: 900, mindestH: 520,
+    bau:(w,h)=>{
+      // h - Titel(22) - Leibpolster(12) = nutzbar; davon Streifen(24) + 1 Zwischenraum(6)
+      const kopf = 24, l = 6, g = 6;
+      const rest = h - 34 - kopf - g;
+      const linke = Math.round((w - l*2 - g*2) * .30);
+      const mitte = Math.round((w - l*2 - g*2) * .40);
+      const rechte = (w - l*2 - g*2) - linke - mitte;
+      const oben = Math.round(rest * .52), unten = rest - oben - g;
+      return streifen(1) + `<div style="display:flex;gap:${g}px;flex:1;min-height:0">
+        <div style="width:${linke}px;display:flex;flex-direction:column;gap:${g}px">
+          ${quellenBox(Math.max(3,Math.floor(oben/17)), oben)}
+          ${befundeBox(unten)}</div>
+        <div style="width:${mitte}px;display:flex;flex-direction:column;gap:${g}px">
+          ${heatmapBox(Math.max(3,Math.floor(oben/15)), oben)}
+          ${detailBox(unten)}</div>
+        <div style="width:${rechte}px;display:flex;flex-direction:column;gap:${g}px">
+          ${advisorBox(oben)}${vergleichBox(unten)}</div></div>`;
+    }},
+  handgriff: {
+    name:'Nur der Handgriff',
+    text:'Aufgabe 2 der Häufigkeitsliste: einen Befund verstehen. Sichtbar ist der '
+       + 'Ort (zwei Zeilen), der Rat, der Rückweg und der Status. Alles andere ist '
+       + 'einen Schritt entfernt.',
+    mindestW: 420, mindestH: 250,
+    bau:(w,h)=>{
+      // nutzbar = h - 34; davon Streifen(24) + Rueckwegzeile(16) + 3 Zwischenraeume(18)
+      const kopf = 24, g = 6;
+      const rest = h - 34 - kopf - 16 - g*3;
+      const ort = Math.min(96, Math.round(rest * .38));
+      return streifen(1)
+        + `<div class="zurueckzeile"><span>← Back to the mix</span>
+             <span style="margin-left:auto">Finding 1 of 3</span></div>`
+        + heatmapBox(2, ort, 'Where', 'Bass · 180–260 Hz')
+        + advisorBox(rest - ort);
+    }}
+};
+
+/* ---------- Formfaktoren ---------- */
+const FORMEN = [
+  {id:'kompakt', name:'Kompakt', w:760, h:430},
+  {id:'mittel',  name:'Mittel',  w:980, h:560},
+  {id:'gross',   name:'Groß',    w:1240,h:700},
+  {id:'band',    name:'Breitband', w:1600, h:300},
+  {id:'saeule',  name:'Säule',   w:460, h:880},
+  {id:'klein',   name:'Klein',   w:520, h:300}
+];
+const ANDERE = {
+  aktiv:   {name:'Active-Probe-Editor', w:700, h:420,
+            bau:(w,h)=>streifen(3) + heatmapBox(1, 70,'EQ curve','8 bands · dynamic')
+              + detailBox(h-24-70-24) },
+  passiv:  {name:'Passive-Probe-Kachel', w:260, h:84,
+            bau:()=>`<div class="box" style="flex:1"><div class="inh">
+              <div class="qz"><span class="pkt"></span><span class="n">Piano Bus</span>
+                <span class="r">carries</span></div>
+              <div class="qz" style="color:#8f8f8f;font-size:10px">
+                <span class="n">Insert · POST</span><span class="r">fresh</span></div>
+              </div></div>` }
+};
+
+/* ---------- Zustand ---------- */
+const w = { modus:'handgriff', form:'kompakt',
+            main:{x:520, y:300, w:760, h:430},
+            aktivAn:false, passivAn:false,
+            aktiv:{x:120, y:520}, passiv:{x:1560, y:640} };
+
+const $ = s => document.querySelector(s);
+
+/* ---------- Nachgestellter FL-Studio-Bildschirm ---------- */
+function bildschirm(){
+  const s = $('#schirm');
+  const H = s.clientHeight, W = s.clientWidth;
+  const spuren = Math.max(4, Math.floor((H*0.46 - 26) / 19));
+  s.innerHTML = `
+    <div class="fl" style="left:0;top:0;right:0;height:34px">
+      <div class="t">FL Studio — Transport · Tempo · Snap</div></div>
+    <div class="fl" style="left:0;top:34px;width:${Math.round(W*0.14)}px;bottom:0">
+      <div class="t">Browser</div>
+      ${Array.from({length:Math.floor((H-70)/17)},()=>'<div class="kanal"></div>').join('')}</div>
+    <div class="fl" style="left:${Math.round(W*0.14)}px;top:34px;right:0;height:${Math.round(H*0.46)}px">
+      <div class="t">Playlist</div>
+      ${Array.from({length:spuren},(_,i)=>`<div class="spur">
+        <i style="left:${(i*7)%60}%;width:${18+((i*13)%34)}%"></i></div>`).join('')}</div>
+    <div class="fl" style="left:${Math.round(W*0.14)}px;top:${34+Math.round(H*0.46)}px;
+         width:${Math.round(W*0.30)}px;bottom:0">
+      <div class="t">Channel rack</div>
+      ${Array.from({length:Math.floor((H*0.5-40)/15)},()=>'<div class="kanal"></div>').join('')}</div>
+    <div class="fl" style="left:${Math.round(W*0.44)}px;top:${34+Math.round(H*0.46)}px;
+         right:0;bottom:0">
+      <div class="t">Mixer</div>
+      <div class="mixstreifen" style="height:calc(100% - 24px)">
+        ${Array.from({length:18},(_,i)=>`<span><i style="height:${20+((i*17)%64)}%"></i></span>`)
+          .join('')}</div></div>`;
+}
+
+/* ---------- Nakama-Fenster ---------- */
+function fenster(id, titel, x, y, bw, bh, inhalt, mitGriff){
+  const f = document.createElement('div');
+  f.className = 'fenster'; f.id = id;
+  f.style.cssText = `left:${x}px;top:${y}px;width:${bw}px;height:${bh}px`;
+  f.innerHTML = `<div class="titel"><b>${titel}</b><em>${bw}×${bh}</em></div>
+    <div class="leib">${inhalt}</div>${mitGriff?'<div class="griff"></div>':''}`;
+  return f;
+}
+
+function zeichnen(){
+  bildschirm();
+  const s = $('#schirm');
+  const m = MODI[w.modus];
+  const eng = w.main.w < m.mindestW || w.main.h < m.mindestH;
+
+  const haupt = fenster('main','Nakama — Main', w.main.x, w.main.y, w.main.w, w.main.h,
+    m.bau(w.main.w, w.main.h), true);
+  s.appendChild(haupt);
+  zieh(haupt, w.main, true);
+  // Erst nach dem Einhaengen messbar: laeuft der Inhalt wirklich ueber?
+  // Nicht nur der Leib: die Kaesten schrumpfen mit, also wird ihr INHALT
+  // abgeschnitten, nicht der Fensterrahmen. Gemessen wird auf jeder Ebene.
+  const leib = haupt.querySelector('.leib');
+  let fehlt = Math.max(0, leib.scrollHeight - leib.clientHeight);
+  haupt.querySelectorAll('.inh').forEach(i=>{
+    fehlt = Math.max(fehlt, Math.max(0, i.scrollHeight - i.clientHeight));
+  });
+  if(fehlt > 1 || eng){
+    haupt.classList.add('eng');
+    haupt.querySelector('.titel em').textContent =
+      `${w.main.w}×${w.main.h} — ${fehlt > 1 ? fehlt + ' px fehlen' : 'zu klein'}`;
+  }
+  haupt.dataset.fehlt = fehlt;
+
+  if(w.aktivAn){
+    const a = ANDERE.aktiv;
+    const f = fenster('aktiv', 'Nakama — Active Probe', w.aktiv.x, w.aktiv.y, a.w, a.h,
+      a.bau(a.w, a.h), false);
+    s.appendChild(f); zieh(f, w.aktiv, false);
+  }
+  if(w.passivAn){
+    const p = ANDERE.passiv;
+    [0,1,2].forEach(i=>{
+      const f = fenster('passiv'+i, 'Passive', w.passiv.x, w.passiv.y + i*(p.h+8),
+        p.w, p.h, p.bau(), false);
+      s.appendChild(f);
+    });
+  }
+  panel();
+  zahlen(eng);
+}
+
+/* Ziehen und Groessenaendern — direkt, ohne Bibliothek. */
+function zieh(el, ziel, resize){
+  const titel = el.querySelector('.titel');
+  titel.onpointerdown = e => {
+    const sx = e.clientX - ziel.x, sy = e.clientY - ziel.y;
+    const mv = ev => { ziel.x = Math.round(ev.clientX - sx);
+                       ziel.y = Math.round(ev.clientY - sy);
+                       el.style.left = ziel.x + 'px'; el.style.top = ziel.y + 'px'; };
+    const up = () => { removeEventListener('pointermove', mv);
+                       removeEventListener('pointerup', up); zahlen(); };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up);
+  };
+  if(!resize) return;
+  const griff = el.querySelector('.griff');
+  griff.onpointerdown = e => {
+    e.stopPropagation();
+    const sw = ziel.w - e.clientX, sh = ziel.h - e.clientY;
+    const mv = ev => {
+      ziel.w = Math.max(300, Math.round(ev.clientX + sw));
+      ziel.h = Math.max(180, Math.round(ev.clientY + sh));
+      w.form = 'frei'; zeichnen();
+    };
+    const up = () => { removeEventListener('pointermove', mv);
+                       removeEventListener('pointerup', up); };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up);
+  };
+}
+
+/* ---------- Panel ---------- */
+function knopf(text, an, fn){
+  const b = document.createElement('button');
+  b.textContent = text; if(an) b.className = 'an'; b.onclick = fn; return b;
+}
+function panel(){
+  const md = $('#modus'); md.innerHTML = '';
+  Object.entries(MODI).forEach(([id,m])=>
+    md.appendChild(knopf(m.name, w.modus===id, ()=>{ w.modus=id; zeichnen(); })));
+  $('#modusText').textContent = MODI[w.modus].text
+    + ` Mindestmaß dieser Menge: ${MODI[w.modus].mindestW}×${MODI[w.modus].mindestH}.`;
+  const fm = $('#formen'); fm.innerHTML = '';
+  FORMEN.forEach(f => fm.appendChild(knopf(`${f.name} ${f.w}×${f.h}`, w.form===f.id, ()=>{
+    w.form = f.id; w.main.w = f.w; w.main.h = f.h;
+    const s = $('#schirm');
+    w.main.x = Math.max(0, Math.min(w.main.x, s.clientWidth - f.w));
+    w.main.y = Math.max(0, Math.min(w.main.y, s.clientHeight - f.h));
+    zeichnen();
+  })));
+  const an = $('#andere'); an.innerHTML = '';
+  an.appendChild(knopf('Active-Probe 700×420', w.aktivAn,
+    ()=>{ w.aktivAn = !w.aktivAn; zeichnen(); }));
+  an.appendChild(knopf('3× Passive-Kachel 260×84', w.passivAn,
+    ()=>{ w.passivAn = !w.passivAn; zeichnen(); }));
+}
+function zahlen(eng){
+  const fehltPx = +(document.getElementById('main')?.dataset.fehlt || 0);
+  const s = $('#schirm');
+  const SW = screen.width, SH = screen.height;
+  const flaeche = w.main.w * w.main.h;
+  const anteil = flaeche / (SW * SH) * 100;
+  let zusatz = 0;
+  if(w.aktivAn) zusatz += ANDERE.aktiv.w * ANDERE.aktiv.h;
+  if(w.passivAn) zusatz += 3 * ANDERE.passiv.w * ANDERE.passiv.h;
+  const gesamt = (flaeche + zusatz) / (SW * SH) * 100;
+  const m = MODI[w.modus];
+  const zuEng = w.main.w < m.mindestW || w.main.h < m.mindestH;
+  $('#zahlen').textContent =
+      `Main        ${w.main.w}×${w.main.h}\n`
+    + `vom Schirm  ${anteil.toFixed(1)} %  (${SW}×${SH})\n`
+    + `mit allem   ${gesamt.toFixed(1)} %\n`
+    + `Verhältnis  ${(w.main.w/w.main.h).toFixed(2)} : 1\n`
+    + (fehltPx > 1
+        ? `ZU KLEIN für „${m.name}" — ${fehltPx} px Inhalt abgeschnitten`
+        : zuEng ? `unter dem Mindestmaß für „${m.name}"`
+                : `passt für „${m.name}"`);
+}
+
+/* ---------- 1:1-Pruefung, ehrlich ---------- */
+function band(){
+  const b = $('#band');
+  const echt = window.innerWidth === screen.width
+            && Math.abs(window.innerHeight - screen.height) < 4
+            && window.devicePixelRatio === 1;
+  b.className = echt ? 'ok' : 'warn';
+  b.innerHTML = echt
+    ? `<b>1:1</b> — die Fenster hier sind exakt so groß wie später in FL Studio.
+       Bildschirm ${screen.width}×${screen.height}, Skalierung 100 %.`
+    : `<b>Noch nicht 1:1.</b> Fenster ${window.innerWidth}×${window.innerHeight},
+       Bildschirm ${screen.width}×${screen.height}, Zoom ${Math.round(devicePixelRatio*100)} %.
+       Erst im Vollbild stimmen die Größen — sonst ist die Entscheidung wertlos.`;
+  const kn = document.createElement('button');
+  kn.textContent = echt ? 'Vollbild verlassen' : 'Vollbild (F11)';
+  kn.onclick = () => echt ? document.exitFullscreen()
+                          : document.documentElement.requestFullscreen();
+  b.appendChild(kn);
+  $('#schirm').style.top = b.offsetHeight + 'px';
+}
+
+$('#klapp').onclick = () => {
+  const p = $('#panel'); p.classList.toggle('klein');
+  $('#klapp').textContent = p.classList.contains('klein') ? 'Panel groß' : 'Panel klein';
+};
+$('#fertig').onclick = () => {
+  const t = $('#ausgabe');
+  t.style.display = 'block';
+  const SW = screen.width, SH = screen.height;
+  t.value = JSON.stringify({
+    werkzeug:'nakama-formfaktor', version:1, zeitpunkt:new Date().toISOString(),
+    bildschirm:{breite:SW, hoehe:SH, skalierung:devicePixelRatio},
+    inhaltsmenge:w.modus, main:{breite:w.main.w, hoehe:w.main.h,
+      verhaeltnis:+(w.main.w/w.main.h).toFixed(2),
+      anteilSchirmProzent:+((w.main.w*w.main.h)/(SW*SH)*100).toFixed(1)},
+    activeProbe: w.aktivAn ? ANDERE.aktiv : null,
+    passiveKachel: w.passivAn ? ANDERE.passiv : null
+  }, null, 1);
+  t.focus(); t.select();
+  try{ document.execCommand('copy'); }catch(e){}
+};
+addEventListener('resize', ()=>{ band(); zeichnen(); });
+band(); zeichnen();
+</script>
+</body>
+</html>

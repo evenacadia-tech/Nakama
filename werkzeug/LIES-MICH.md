@@ -10,21 +10,26 @@ Nichts davon ist ein Gestaltungsvorschlag. Layoutentscheidungen gehören nach
 1. `weltenwahl.html` — welche Welt? → **Glas und Licht**
 2. `glaswelt.html` — welche Verwirklichung? → **dunkles Glas, ein Lichtleiter**
 
-**Stufe 2 — UX Layout** *(hier stehen wir)*
-3. `wireframe-main.html` — Schritt 1: Wo liegt was? Graustufen, keine Optik.
+**Phase 0.5 — Formfaktor** *(hier stehen wir)*
+3. `formfaktor.html` — wie groß darf das Fenster sein, und welche Form hat es?
+   Läuft bei **1:1**, nichts wird skaliert, und es misst, ab wann Inhalt
+   abgeschnitten wird. Muss vor jedem Wireframe entschieden sein.
+
+**Stufe 2 — UX Layout**
+4. `wireframe-main.html` — Schritt 1: Wo liegt was? Graustufen, keine Optik.
    **Main zuerst**, danach Active-Probe-Editor, dann Passive-Kachel.
-4. *(offen)* Schritt 2: Early Visual Layer — Kontrast und Gruppierung, noch
+5. *(offen)* Schritt 2: Early Visual Layer — Kontrast und Gruppierung, noch
    ohne fertigen Look.
-5. *(offen)* Schritt 3: UI Design Stage — Stil und Feinproportionen.
+6. *(offen)* Schritt 3: UI Design Stage — Stil und Feinproportionen.
 
 **Stufe 5/6 — Licht und Material** *(stillgelegt bis Stufe 2 durch ist)*
-6. `licht.html` — **nicht benutzen.** Zwei Gründe: es kommt zu früh, und sein
+7. `licht.html` — **nicht benutzen.** Zwei Gründe: es kommt zu früh, und sein
    Modell ist falsch (vier sich ausschließende Herkünfte). Licht ist additiv,
    kommt auch aus den UI-Elementen selbst — passiv wie aktiv — und Material
    entscheidet, wie eine Fläche darauf antwortet. Wird vor dem Einsatz neu
    gebaut. Siehe
    `abnahmen/2026-08-20-korrektur-reihenfolge-und-lichtmodell.md`.
-7. `stilbefragung.html` — zuletzt. Ihre Spezimen zeigen noch die verworfene
+8. `stilbefragung.html` — zuletzt. Ihre Spezimen zeigen noch die verworfene
    Welt und müssen vorher umgestellt werden.
 
 Zweimal ist genau dieser Reihenfolgefehler passiert: einmal wurden Radien
@@ -56,6 +61,22 @@ Aussage ist, ein weiches Band im Kurvenfeld sagt, wo sie gilt.
 
 Die Thesen zu den Varianten sind standardmäßig ausgeblendet — wer sie vorher
 liest, wählt den besseren Satz statt das bessere Bild.
+
+## formfaktor.html
+
+Zeigt **echte Pixel** auf einem nachgestellten FL-Studio-Bildschirm. Nichts
+wird skaliert — eine Größenentscheidung ist anders nicht beurteilbar. Ein Band
+oben prüft und meldet, ob gerade wirklich 1:1 gilt, und bietet Vollbild an.
+
+Zwei Inhaltsmengen umschaltbar: **alles gleichzeitig** (die alte Denkweise)
+gegen **nur der aktuelle Handgriff** (Aufgabe 2 der Häufigkeitsliste). Das
+Werkzeug misst auf jeder Ebene — Fensterleib und jeder einzelne Kasten — ob
+Inhalt abgeschnitten wird, und schreibt den Fehlbetrag in den Fenstertitel.
+Gemessenes Ergebnis: 980×560 gegen ~520×340, also **rund dreifache Fläche**
+für dieselbe Aufgabe.
+
+Main ist zieh- und größenveränderbar, Active-Probe und drei Passive-Kacheln
+lassen sich dazuschalten — die reale Situation, nicht ein Fenster allein.
 
 ## wireframe-main.html
 

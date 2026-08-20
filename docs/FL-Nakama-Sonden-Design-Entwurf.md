@@ -15,7 +15,8 @@
   (§65), Sichtbarkeitsvorbehalt für `aux_compare_pre` (§53.2),
   `sidechain_source`-Wertebereich (§53.8). Außerdem die
   **Produktentscheidung des Users vom 20.08.2026** in §0.3 — sie löst
-  Prüfbericht-Befund A auf.
+  Prüfbericht-Befund A auf — und das **Arbeitsmodell Technik-voraus /
+  Design-parallel** in §0.4.
 
 ---
 
@@ -115,6 +116,36 @@ Der User hat am 20.08.2026 die Produktarchitektur ausdrücklich festgelegt:
 - Technisch bindet sich die Prisma-App, wenn sie gebaut wird, wie eine
   weitere Main-Instanz als **read-only Spiegel** an Broker und Sitzung an
   (§30); sie erhält nie eine `control_capability` und steuert keine Sonde.
+
+### 0.4 Arbeitsmodell 20.08.2026 — Technik voraus, visuelles Design als parallele Spur
+
+Vom User festgelegt: Der technische Unterbau wird nach diesem Phasenplan
+mit einer **schlichten, ehrlichen Bedien-UI** vorausgebaut; das visuelle
+Design läuft **parallel und gesondert** und wird nach Abnahme je Ansicht
+als Update eingespielt. Der Plan trägt das ohne Änderung, denn er enthält
+bewusst kein visuelles Design (Kopfzeile, §0.2, §28) — alle Exit-Gates
+prüfen Bedienbarkeit, Ehrlichkeit und Budgets, nie Optik. Verbindlich
+bleiben dabei:
+
+1. **Anzeige-Pflichten sind Verträge, kein Stilmittel.** Frische/stale,
+   Unsicherheit/Konfidenz, `arming`/`audible_ready`, Capability-
+   Degradation, Konfliktauflösung und „welche Aktion gerade nicht aktiv
+   ist" müssen in jeder UI-Fassung sichtbar sein. Die Interims-UI darf
+   schlicht sein, aber nie einen nicht existierenden Zustand vortäuschen
+   (§50.2).
+2. **Design ändert das Kleid, nicht den Vertrag.** Die spätere
+   Design-Fassung gestaltet frei, WIE etwas aussieht. Will die
+   Designarbeit ändern, WAS gezeigt wird (Ansichten, Informationsset),
+   fließt das VOR dem betroffenen Phasen-Gate in diesen Plan zurück
+   (§35.1/§46.2) — nie still im Nachhinein.
+3. **Zwei getrennte Design-Spuren:** die Prisma-App (Hörkompass-
+   Zielvertrag, läuft bereits, vom Phasenplan entkoppelt) und die
+   konventionelle Master-Plugin-UI (Maßstab Lesbarkeit). Beide laufen
+   durch den Kreativ-Prozess des Users.
+4. **Architektur hält den Tausch billig:** UI ist die oberste,
+   austauschbare Schicht (§53.3); Engine und Zustandslogik kennen keine
+   Optik. Erste designrelevante Sichtbarkeitspunkte sind R1/P3
+   (Landkarte + Setup), R2/P5 (Assistent) und R3/P7 (Preview/Apply).
 
 ---
 

@@ -91,12 +91,20 @@ struct MitschriftSenke final : public Senke
         for (std::uint32_t i = 0; i < anzahlKopie; ++i)
             kopie[i] = b.ereignisse[i];
         letzter.ereignisse = kopie;
+
+        letztAnzahlKopie = b.letztwertAnzahl < 256 ? b.letztwertAnzahl : 256;
+        for (std::uint32_t i = 0; i < letztAnzahlKopie; ++i)
+            letztKopie[i] = b.letztwerte[i];
+        letzter.letztwerte      = letztKopie;
+        letzter.letztwertAnzahl = letztAnzahlKopie;
     }
 
     std::uint64_t  aufrufe { 0 };
     Blockbefund    letzter {};
     ParameterEvent kopie[1024] {};
     std::uint32_t  anzahlKopie { 0 };
+    Letztwert      letztKopie[256] {};
+    std::uint32_t  letztAnzahlKopie { 0 };
 };
 
 /** Zeilenende-normalisierter SHA-256 einer Textdatei — dieselbe Vorschrift wie
@@ -329,8 +337,17 @@ int main()
         pruefe (u.anzahl == kMaxParameterEreignisse, "Ueberlauf: es bleiben genau kMaxParameterEreignisse Punkte");
         pruefe (u.ueberlaeufe == 6, "Ueberlauf: alle 6 verworfenen Punkte sind gezaehlt");
         pruefe (! u.sampleAccurateAutomation, "Ueberlauf: sampleAccurateAutomation faellt fuer den GANZEN Block");
+        // DIESE Zeile ist der Vertrag aus Entwurf §53.7/§44.3: der Rueckfallwert
+        // muss GENAU der sein, den JUCE selbst an den Parameter reicht — der
+        // letzte Punkt des Blocks (0.777), nicht der letzte, der noch in den
+        // Ring passte (0.511). Ein Test auf das blosse Bool ginge unter Bug und
+        // Fix gleich aus und saehe den Fehler nie (T2-Befund 21.08.2026).
         float letzter = -1.0f;
-        pruefe (u.hatLetztenBlockwert (42, letzter), "Ueberlauf: letzter Blockwert bleibt abrufbar (Rueckfallweg)");
+        const bool hatLetzten = u.hatLetztenBlockwert (42, letzter);
+        pruefe (hatLetzten && letzter > 0.7769f && letzter < 0.7771f,
+                juce::String ("Ueberlauf: Rueckfallwert ist der LETZTE Hostpunkt 0.777, nicht 0.511 (gemessen: ")
+                    + juce::String (letzter, 4) + ")");
+        pruefe (u.verworfeneLetztwerte == 0, "Ueberlauf des Ereignisrings verwirft KEINEN Letztwert");
 
         // (5) Numerische Raender der Offsets.
         b.beginneBlock (128);
@@ -383,6 +400,36 @@ int main()
                 && senke.letzter.ueberlaeufe == 0,
                 "Zaehler und Fallbackbit werden je Block zurueckgesetzt");
 
+        // (7b) Die Letztwert-Tabelle hat ihre EIGENE Grenze und ihren eigenen
+        //      Zaehler — sonst waere der Rueckfallweg nur eine Grenze weiter
+        //      still.
+        b.beginneBlock (512);
+        for (std::uint32_t id = 0; id < kMaxLetztwerte + 3; ++id)
+            b.punkt ((StableParameterId) id, 0, 0.5);
+        b.uebergib();
+        pruefe (senke.letzter.letztwertAnzahl == kMaxLetztwerte,
+                "Letztwert-Tabelle: genau kMaxLetztwerte Parameter werden gefuehrt");
+        pruefe (senke.letzter.verworfeneLetztwerte == 3,
+                "Letztwert-Tabelle: die 3 ueberzaehligen Parameter sind gezaehlt");
+        pruefe (! senke.letzter.sampleAccurateAutomation,
+                "Letztwert-Ueberlauf laesst die Zusicherung ebenfalls fallen");
+        float fehlt = -1.0f;
+        pruefe (! senke.letzter.hatLetztenBlockwert ((StableParameterId) (kMaxLetztwerte + 1), fehlt),
+                "Letztwert-Ueberlauf: der ueberzaehlige Parameter meldet ehrlich 'nichts'");
+
+        // (7c) Ohne Ueberlauf muss der Rueckfallweg dasselbe sagen wie der Ring.
+        b.beginneBlock (512);
+        b.punkt (9, 0,   0.10);
+        b.punkt (9, 100, 0.20);
+        b.punkt (9, 200, 0.30);
+        b.uebergib();
+        float ohneUeberlauf = -1.0f;
+        pruefe (senke.letzter.hatLetztenBlockwert (9, ohneUeberlauf)
+                && ohneUeberlauf > 0.299f && ohneUeberlauf < 0.301f,
+                "ohne Ueberlauf: Rueckfallwert deckt sich mit dem letzten Ringeintrag (0.30)");
+        pruefe (senke.letzter.ereignisse[senke.letzter.anzahl - 1].normalisedValue > 0.299f,
+                "ohne Ueberlauf: der Ring traegt denselben Wert am Ende");
+
         // (8) Blockstruktur: leerer Block ist gueltig, nicht 'kaputt'.
         b.beginneBlock (128);
         b.uebergib();
@@ -423,6 +470,13 @@ int main()
         b.setzeBuslatenz (false, 9999, 100);
         pruefe (b.verworfeneBusmeldungen() == vorher + 3,
                 "Busindex ausserhalb [0, kMaxBusse): verworfen und gezaehlt, kein Speicherfehler");
+        // Ein Zaehler, den nur die Bruecke selbst lesen kann, ist fuer die Senke
+        // kein Zaehler — im Wrapper ist die Bruecke ein privates Member
+        // (T2-Befund 21.08.2026).
+        b.beginneBlock (64);
+        b.uebergib();
+        pruefe (senke.letzter.verworfeneBusse == vorher + 3,
+                "der Buszaehler steht im Blockbefund, ist also fuer die Senke sichtbar");
         pruefe (! tab.hole (true, -1).gemeldet && ! tab.hole (false, kMaxBusse).gemeldet,
                 "Abfrage ausserhalb des Bereichs liefert einen leeren Eintrag");
     }

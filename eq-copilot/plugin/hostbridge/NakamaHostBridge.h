@@ -34,7 +34,12 @@
 //     traegt jeder Eintrag ein eigenes Bit "hat der Host das je gemeldet".
 //   * Ueberlauf verwirft keine unbekannte Teilmenge: der GANZE Block verliert
 //     sampleAccurateAutomation, meldet einen Zaehler, und der dokumentierte
-//     letzte Blockwert bleibt gueltig (Entwurf §53.7).
+//     letzte Blockwert bleibt gueltig (Entwurf §53.7). Dieser Rueckfallwert
+//     wird DESHALB getrennt vom Ereignisring gefuehrt — ein Ring, der beim
+//     Ueberlauf hinten abschneidet, wuerfe sonst ausgerechnet den Wert weg,
+//     den der Vertrag ueberleben laesst (T2-Befund 21.08.2026: gemessen kam
+//     0.511 statt 0.777 heraus, und zwar ununterscheidbar von einem gueltigen
+//     Wert).
 #pragma once
 
 #include <atomic>
@@ -48,6 +53,7 @@ namespace eqcop::hostbruecke
 // Feste Obergrenzen. Beide sind Vertrag, nicht Geschmack: sie bestimmen die
 // Groesse der vorallokierten Puffer und damit die Allokationsfreiheit.
 inline constexpr std::uint32_t kMaxParameterEreignisse = 512;
+inline constexpr std::uint32_t kMaxLetztwerte          = 128;  // Parameter je Block
 inline constexpr std::int32_t  kMaxBusse               = 16;   // je Richtung
 
 // P0 kennt noch keine stabile Parameter-Identitaet; hier steht die rohe
@@ -139,6 +145,16 @@ struct HostBlockContext
     }
 };
 
+/** Der letzte Wert, den der Host in diesem Block fuer einen Parameter geschickt
+    hat — genau das, was JUCEs eigener Weg an den Parameter reicht
+    (`getPointFromQueue (queue, numPoints - 1)`, Entwurf §44.3). Ueberlebt den
+    Ueberlauf des Ereignisrings, weil der Vertrag ihn als Rueckfallweg benennt. */
+struct Letztwert
+{
+    StableParameterId id   { 0 };
+    float             wert { 0.0f };
+};
+
 /** Ein Automationspunkt. Nach Offset sortiert, bei gleichem Offset in der
     Reihenfolge, in der der Host ihn geliefert hat (stabil). */
 struct ParameterEvent
@@ -156,24 +172,34 @@ struct Blockbefund
     std::uint32_t         anzahl     { 0 };
     std::uint32_t         blockGroesse { 0 };
 
+    /** Rueckfallweg: letzter Wert je Parameter, unabhaengig vom Ereignisring. */
+    const Letztwert*      letztwerte     { nullptr };
+    std::uint32_t         letztwertAnzahl { 0 };
+
     /** Das Fallbackbit des Tickets. false heisst fuer den Verbraucher:
         NICHT samplegenau rampen, sondern vom vorigen zum letzten Blockwert —
         und Topologieautomation aus. */
     bool sampleAccurateAutomation { false };
 
-    // Zaehler statt stiller Korrekturen.
-    std::uint64_t ueberlaeufe          { 0 };   // Ereignisse, die nicht mehr passten
+    // Zaehler statt stiller Korrekturen — ALLE vier sind hier sichtbar, sonst
+    // gilt die Regel nur fuer drei davon (T2-Befund 21.08.2026).
+    std::uint64_t ueberlaeufe          { 0 };   // Ereignisse, die nicht mehr in den Ring passten
     std::uint64_t unplausibleOffsets   { 0 };   // Offset < 0 oder >= Blockgroesse
     std::uint64_t unplausibleWerte     { 0 };   // NaN/Inf als Parameterwert
+    std::uint64_t verworfeneLetztwerte { 0 };   // mehr als kMaxLetztwerte Parameter im Block
+    std::uint64_t verworfeneBusse      { 0 };   // Buslatenz-Meldung mit Index ausserhalb [0, kMaxBusse)
 
-    /** Letzter Wert je Parameter ist auch ohne Samplegenauigkeit gueltig —
-        das ist der dokumentierte Rueckfallweg (Entwurf §53.7). */
+    /** Letzter Wert je Parameter — auch ohne Samplegenauigkeit gueltig; das ist
+        der dokumentierte Rueckfallweg (Entwurf §53.7).
+
+        Liest bewusst die Letztwert-Tabelle, NICHT den Ereignisring: der Ring
+        schneidet beim Ueberlauf hinten ab und verlöre damit genau diesen Wert.
+        false heisst ehrlich „nichts gesehen" — nie „0". */
     bool hatLetztenBlockwert (StableParameterId id, float& heraus) const noexcept
     {
-        bool gefunden = false;
-        for (std::uint32_t i = 0; i < anzahl; ++i)
-            if (ereignisse[i].id == id) { heraus = ereignisse[i].normalisedValue; gefunden = true; }
-        return gefunden;
+        for (std::uint32_t i = 0; i < letztwertAnzahl; ++i)
+            if (letztwerte[i].id == id) { heraus = letztwerte[i].wert; return true; }
+        return false;
     }
 };
 
@@ -233,7 +259,9 @@ public:
     void beginneBlock (std::uint32_t neueBlockGroesse) noexcept
     {
         anzahl = 0;
+        letztwertAnzahl = 0;
         ueberlaufImBlock = 0;
+        letztwertUeberlauf = 0;
         offsetImBlock = 0;
         wertImBlock = 0;
         blockGroesse = neueBlockGroesse;
@@ -294,6 +322,13 @@ public:
         keinen zweiten Sortierdurchgang. */
     void punkt (StableParameterId id, std::int32_t sampleOffset, double wert) noexcept
     {
+        const float roh = (float) wert;
+
+        // ZUERST der Rueckfallweg, VOR jedem Ueberlauf-Ausstieg: der letzte
+        // Wert je Parameter ist genau das, was JUCE an den Parameter reicht,
+        // und der Vertrag laesst ihn den Ueberlauf ueberleben (Entwurf §53.7).
+        merkeLetztwert (id, roh);
+
         if (anzahl >= kMaxParameterEreignisse) { ++ueberlaufImBlock; return; }
 
         // Numerische Raender, alle drei gemeldet statt still geglaettet:
@@ -318,7 +353,7 @@ public:
             offset = (std::uint32_t) sampleOffset;
         }
 
-        const float f = (float) wert;
+        const float f = roh;
         if (! std::isfinite (f))
             ++wertImBlock;
 
@@ -364,12 +399,17 @@ public:
         befund.ereignisse               = puffer;
         befund.anzahl                   = anzahl;
         befund.blockGroesse             = blockGroesse;
+        befund.letztwerte               = letztwerte;
+        befund.letztwertAnzahl          = letztwertAnzahl;
         befund.ueberlaeufe              = ueberlaufImBlock;
         befund.unplausibleOffsets       = offsetImBlock;
         befund.unplausibleWerte         = wertImBlock;
+        befund.verworfeneLetztwerte     = letztwertUeberlauf;
+        befund.verworfeneBusse          = verworfeneBusse.load (std::memory_order_relaxed);
         befund.sampleAccurateAutomation = (ueberlaufImBlock == 0)
                                        && (offsetImBlock == 0)
-                                       && (wertImBlock == 0);
+                                       && (wertImBlock == 0)
+                                       && (letztwertUeberlauf == 0);
 
         senke->nakamaBlockEmpfangen (befund);
     }
@@ -377,10 +417,26 @@ public:
     //== Nur fuer Tests / Diagnose ============================================
 
     std::uint32_t ereignisAnzahl() const noexcept              { return anzahl; }
+    std::uint32_t letztwerteAnzahl() const noexcept            { return letztwertAnzahl; }
     const ParameterEvent& ereignis (std::uint32_t i) const noexcept { return puffer[i]; }
     const HostBlockContext& letzterKontext() const noexcept    { return kontext; }
 
 private:
+    /** Letzten Wert je Parameter fortschreiben. Lineare Suche ueber wenige
+        Eintraege (ein Block hat in der Praxis eine Handvoll automatisierter
+        Parameter); kein Speicher, keine Sortierung. */
+    void merkeLetztwert (StableParameterId id, float wert) noexcept
+    {
+        for (std::uint32_t i = 0; i < letztwertAnzahl; ++i)
+            if (letztwerte[i].id == id) { letztwerte[i].wert = wert; return; }
+
+        if (letztwertAnzahl >= kMaxLetztwerte) { ++letztwertUeberlauf; return; }
+
+        letztwerte[letztwertAnzahl].id   = id;
+        letztwerte[letztwertAnzahl].wert = wert;
+        ++letztwertAnzahl;
+    }
+
     static void entpacke (std::uint64_t wort, FixedBusLatencyTable::Eintrag& ziel) noexcept
     {
         ziel.gemeldet = (wort >> 32) != 0;
@@ -390,13 +446,16 @@ private:
     Senke* senke { nullptr };
 
     ParameterEvent   puffer[kMaxParameterEreignisse] {};
+    Letztwert        letztwerte[kMaxLetztwerte] {};
+    std::uint32_t    letztwertAnzahl { 0 };
     std::uint32_t    anzahl       { 0 };
     std::uint32_t    blockGroesse { 0 };
     HostBlockContext kontext      {};
 
-    std::uint64_t ueberlaufImBlock { 0 };
-    std::uint64_t offsetImBlock    { 0 };
-    std::uint64_t wertImBlock      { 0 };
+    std::uint64_t ueberlaufImBlock   { 0 };
+    std::uint64_t letztwertUeberlauf { 0 };
+    std::uint64_t offsetImBlock      { 0 };
+    std::uint64_t wertImBlock        { 0 };
 
     std::atomic<std::uint64_t> latenzEingang[kMaxBusse] {};
     std::atomic<std::uint64_t> latenzAusgang[kMaxBusse] {};

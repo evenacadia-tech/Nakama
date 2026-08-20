@@ -27,6 +27,11 @@ button.k.an{background:#242424;color:#eee;border-color:#242424}
 textarea.ablehn{width:100%;max-width:880px;height:66px;font:inherit;font-size:13px;
   padding:9px;background:#8a8a8a;border:1px solid #4a4a4a;color:#141414;resize:vertical}
 .hinw{margin-left:auto;font-size:11.5px;color:#3d3d3d}
+#band{padding:6px 26px;font-size:12px;display:flex;gap:12px;align-items:center}
+#band.ok{background:#5c6b5c;color:#eaf2ea}
+#band.warn{background:#6b5c3c;color:#f4ead6}
+#band button{font:inherit;font-size:11.5px;padding:3px 10px;border:1px solid #4a4a4a;
+  background:#8a8a8a;color:#141414;cursor:pointer;border-radius:2px}
 .aufgaben{display:none;margin:8px 0 0;padding:10px 14px;background:#8a8a8a;
   border:1px solid #6a6a6a;max-width:960px;font-size:12.5px}
 body.aufgabenAn .aufgaben{display:block}
@@ -50,14 +55,14 @@ body.thesen .these{display:block}
    WIREFRAME — reine Graustufen. Kein Farbton, kein Material,
    kein Licht. Der Inhalt ist englisch, weil er das Produkt ist.
    ============================================================ */
-.rahmen{position:relative;--s:.5;overflow:hidden;
-  width:calc(840px * var(--s));height:calc(560px * var(--s))}
+.rahmen{position:relative;--s:.58;overflow:hidden;
+  width:calc(760px * var(--s));height:calc(430px * var(--s))}
 .rahmen .wf{transform:scale(var(--s));transform-origin:0 0}
-.rahmen.gross{--s:.82}
-@media (max-width:1400px){ .rahmen{--s:.45} .rahmen.gross{--s:.74} }
-@media (max-width:1220px){ .rahmen{--s:.40} .rahmen.gross{--s:.66} }
+.rahmen.gross{--s:1}   /* Zweikampf: 1:1, sonst ist das Urteil wertlos */
+@media (max-width:1600px){ .rahmen{--s:.52} .rahmen.gross{--s:.92} }
+@media (max-width:1300px){ .rahmen{--s:.46} .rahmen.gross{--s:.82} }
 
-.wf{width:840px;height:560px;background:#242424;color:#c9c9c9;overflow:hidden;
+.wf{width:760px;height:430px;background:#242424;color:#c9c9c9;overflow:hidden;
   border:1px solid #5c5c5c;display:grid;gap:8px;padding:8px;
   font:12px/1.4 'Segoe UI',system-ui,sans-serif}
 .wf > *{min-width:0;min-height:0}
@@ -165,11 +170,12 @@ body.thesen .these{display:block}
 </style>
 </head>
 <body>
+<div id="band"></div>
 <header>
   <div class="stufe" id="stufe">Stufe 2 · Schritt 1 von 3 — Wireframe UX · Main</div>
   <h1 id="frage">Was ist wann sichtbar?</h1>
-  <div class="unter" id="unter">Fünf <b>Disclosure-Mechaniken</b>, nicht fünf
-    Kastenanordnungen. Alle fünf können denselben Pflichtinhalt aus der Spezifikation
+  <div class="unter" id="unter"><b>Auf der abgenommenen Größe 760×430</b>, in echten
+    Pixeln. Fünf <b>Disclosure-Mechaniken</b>, nicht fünf Kastenanordnungen. Alle fünf können denselben Pflichtinhalt aus der Spezifikation
     zeigen — sie unterscheiden sich darin, <i>wann</i> sie was zeigen und wie man an
     den Rest kommt. Graustufen, keine Optik. Alle Kacheln stehen im selben
     Arbeitsschritt; unten kannst du den Schritt wechseln.</div>
@@ -327,7 +333,7 @@ const ENTWUERFE = [
       + 'steht oben, der Rückweg auch. Preis: nie zwei Dinge nebeneinander, also kein '
       + 'spontanes Quervergleichen.',
   bau:(z)=>{
-    if(z==='read') return {gitter:'grid-template-rows:30px 30px 1fr 54px',
+    if(z==='read') return {gitter:'grid-template-rows:30px 30px minmax(0,1fr) auto',
       html: ebenen(0) + schritte(z)
         + `<div style="display:flex">${heatmap(16,true,{zusatz:'the whole mix'})}</div>`
         + `<div style="display:flex">${kasten('','',
@@ -335,7 +341,7 @@ const ENTWUERFE = [
               <span style="font-size:13px;color:#dcdcdc">3 findings · 1 needs more data</span>
               <span class="wfk stark" style="margin-left:auto">Start with the first</span>
               <span class="wfk">Sources &amp; roles</span></div>`)}</div>`};
-    if(z==='finding') return {gitter:'grid-template-rows:30px 30px 168px 1fr',
+    if(z==='finding') return {gitter:'grid-template-rows:30px 30px minmax(0,1fr) auto',
       html: ebenen(1) + schritte(z)
         + `<div style="display:flex">${heatmap(5,true,{fokus:[2,4],band:2,
             titel:'Where', zusatz:'Bass · 180–260 Hz'})}</div>`
@@ -351,16 +357,16 @@ const ENTWUERFE = [
       + 'Streifen, verschwindet aber nie. Preis: der Kontext ist da, aber nicht mehr '
       + 'lesbar — man sieht nur noch, DASS dort etwas ist.',
   bau:(z)=>{
-    if(z==='read') return {gitter:'grid-template-rows:30px 1fr 96px',
+    if(z==='read') return {gitter:'grid-template-rows:30px minmax(0,1fr) auto',
       html: ebenen(0)
         + `<div style="display:flex">${heatmap(16,true,{zusatz:'all 16, equal weight'})}</div>`
         + `<div style="display:flex">${befunde(2)}</div>`};
-    if(z==='finding') return {gitter:'grid-template-rows:30px 1fr 168px',
+    if(z==='finding') return {gitter:'grid-template-rows:30px minmax(0,1fr) auto',
       html: ebenen(1)
         + `<div style="display:flex">${heatmap(16,true,
             {fokus:[2,4],band:2,zusatz:'2 in focus · 14 kept as context'})}</div>`
         + `<div style="display:flex">${advisor('finding 1 of 3')}</div>`};
-    return {gitter:'grid-template-rows:30px 1fr 156px',
+    return {gitter:'grid-template-rows:30px minmax(0,1fr) auto',
       html: ebenen(3)
         + `<div style="display:flex">${heatmap(16,true,
             {fokus:[4],band:2,zusatz:'A vs B in place'})}</div>`
@@ -379,13 +385,13 @@ const ENTWUERFE = [
       zusatz: z==='read' ? 'nothing selected'
             : z==='finding' ? 'Bass · 180–260 Hz' : 'Bass · comparing A/B',
       band: z==='read' ? undefined : 2})}</div>`;
-    if(z==='read') return {gitter:'grid-template-rows:30px 148px 1fr',
+    if(z==='read') return {gitter:'grid-template-rows:30px minmax(0,1fr) minmax(0,1fr)',
       html: ebenen(0) + karte
         + `<div style="display:flex;gap:8px">${befunde(3)}${quellen(11)}</div>`};
-    if(z==='finding') return {gitter:'grid-template-rows:30px 148px 1fr',
+    if(z==='finding') return {gitter:'grid-template-rows:30px minmax(0,1fr) minmax(0,1fr)',
       html: ebenen(1) + karte
         + `<div style="display:flex;gap:8px">${advisor('finding 1 of 3')}${detail()}</div>`};
-    return {gitter:'grid-template-rows:30px 148px 1fr',
+    return {gitter:'grid-template-rows:30px minmax(0,1fr) minmax(0,1fr)',
       html: ebenen(3) + karte
         + `<div style="display:flex;gap:8px">${vergleich()}
              ${detail('Detail · Bass','A vs B',true)}</div>`};
@@ -456,12 +462,12 @@ const ENTWUERFE = [
               <span style="flex:1;height:8px;display:block;
                     background:hsl(0 0% ${(12+s*13).toFixed(0)}%)"></span></div>`}).join('')}
         </div>`)}</div>`};
-    if(z==='finding') return {gitter:'grid-template-rows:30px 30px 1fr 138px',
+    if(z==='finding') return {gitter:'grid-template-rows:30px 30px minmax(0,1fr) auto',
       html: ebenen(1) + leiste
         + `<div style="display:flex">${heatmap(5,true,{band:2,
             titel:'Piano … Bass', zusatz:'180–260 Hz marked'})}</div>`
         + `<div style="display:flex">${advisor('finding 1 of 3')}</div>`};
-    return {gitter:'grid-template-rows:30px 30px 1fr 128px',
+    return {gitter:'grid-template-rows:30px 30px minmax(0,1fr) auto',
       html: ebenen(3) + leiste
         + `<div style="display:flex">${detail('Bass','A vs B',true)}</div>`
         + `<div style="display:flex">${vergleich()}</div>`};
@@ -486,15 +492,30 @@ function kachel(e, i, gross){
   wf.style.cssText = gitter;
   wf.innerHTML = html;
   rahmen.appendChild(wf);
+  b.dataset.mech = e.id;
   const nr = document.createElement('span');
   nr.className = 'nr'; nr.textContent = i + 1;
   const m = document.createElement('span');
   m.className = 'mech'; m.textContent = e.mech;
   const t = document.createElement('span');
   t.className = 'these';
-  t.style.width = (gross ? 690 : 420) + 'px';
+  t.style.width = (gross ? 760 : 440) + 'px';
   t.textContent = e.these;
   b.append(rahmen, m, t, nr);
+  // Auf der echten Groesse zaehlt nur eins: passt es oder wird geschnitten.
+  requestAnimationFrame(()=>{
+    let fehlt = 0;
+    wf.querySelectorAll('.inh, .as, .hm').forEach(x=>{
+      fehlt = Math.max(fehlt, x.scrollHeight - x.clientHeight);
+    });
+    fehlt = Math.max(fehlt, wf.scrollHeight - wf.clientHeight);
+    b.dataset.fehlt = fehlt;
+    if(fehlt > 1){
+      m.textContent = e.mech + ' — ' + fehlt + ' px fehlen';
+      m.style.color = '#7a2f1f';
+      rahmen.style.outline = '2px solid #7a2f1f';
+    }
+  });
   return b;
 }
 function knopf(text, fn, klasse){
@@ -611,6 +632,22 @@ function ergebnis(){
   wrap.appendChild(kn2);
   buehne.appendChild(wrap);
 }
+function band(){
+  const b = document.getElementById('band');
+  const echt = window.innerWidth === screen.width && devicePixelRatio === 1;
+  b.className = echt ? 'ok' : 'warn';
+  b.innerHTML = echt
+    ? '<b>1:1</b> — die Zweikampfansicht zeigt Main in echter Größe, 760×430.'
+    : `<b>Noch nicht 1:1.</b> Nur im Vollbild ist die Zweikampfansicht echte
+       760×430 — im Raster sind alle Kacheln ohnehin verkleinert.`;
+  const k = document.createElement('button');
+  k.textContent = echt ? 'Vollbild verlassen' : 'Vollbild (F11)';
+  k.onclick = () => echt ? document.exitFullscreen()
+                         : document.documentElement.requestFullscreen();
+  b.appendChild(k);
+}
+addEventListener('resize', band);
+band();
 zeichnen();
 </script>
 </body>

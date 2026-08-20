@@ -140,8 +140,14 @@ bleiben dabei:
    (§35.1/§46.2) — nie still im Nachhinein.
 3. **Zwei getrennte Design-Spuren:** die Prisma-App (Hörkompass-
    Zielvertrag, läuft bereits, vom Phasenplan entkoppelt) und die
-   konventionelle Master-Plugin-UI (Maßstab Lesbarkeit). Beide laufen
-   durch den Kreativ-Prozess des Users.
+   konventionelle Plugin-UI (Maßstab Lesbarkeit). Letztere umfasst **drei
+   Oberflächen**: Main (die vollständige Arbeitsfläche, §31.1), den
+   Editor der Active Probe (lokal voll bedienbares EQ-Plugin — acht
+   Band-Slots, manuelle Bereiche ±12 dB, fernsteuerungsfrei bewiesen in
+   P6 — plus Draft-/Preview-/Pairing-Sichtbarkeit) und den Editor der
+   Passive Probe (minimale Status-/Identitätskachel: Name, Verbindung,
+   Frische; null Hostparameter nach §53.8, Bedienung läuft über Main).
+   Beide Spuren laufen durch den Kreativ-Prozess des Users.
 4. **Architektur hält den Tausch billig:** UI ist die oberste,
    austauschbare Schicht (§53.3); Engine und Zustandslogik kennen keine
    Optik. Erste designrelevante Sichtbarkeitspunkte sind R1/P3

@@ -123,6 +123,13 @@ Blatt zu trauen ist:
 Der Regler **„Quellen im Mix"** (4–16) ist keine Entwurfsentscheidung,
 sondern die Belastungsprobe: was bei 8 trägt und bei 16 bricht, trägt nicht.
 
+### Entschieden
+
+**Overview + Detail** ist gewählt (2026-08-20, engere Wahl gegen
+Focus + Context) — `abnahmen/2026-08-20-mechanik-main-overview-detail.md`.
+Das Werkzeug bleibt als Beleg stehen und wird nicht umgebaut: es zeigt, was
+zur Wahl stand und woran gemessen wurde.
+
 ### Gemessener Stand (2026-08-20, 760×430, 16 Quellen)
 
 Nach der Reparatur passt **jede** der fünf Mechaniken — kein Blatt schneidet

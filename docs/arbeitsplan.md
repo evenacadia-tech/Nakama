@@ -44,6 +44,11 @@ Fehlerzustand — als graues lebendes Blatt mit Zustands-Schaltern. Varianten
 unterscheiden sich in der **Disclosure-Mechanik**, nicht in der
 Kastenanordnung. Vorher `/interview struktur` für die betroffene Oberfläche.
 
+**Stand:** Main — Disclosure-Mechanik **abgenommen** (Overview + Detail,
+2026-08-20). Offen für Main: Inhalt der dauerhaften Karte, Arbeitsfläche je
+Schritt, die vier Bedienebenen, Zustandsmatrix. Danach Active-Editor, dann
+Passive-Kachel.
+
 **Ergebnis:** drei abgenommene Wireframes. Was im Graubild nicht
 funktioniert, wird nicht mit Farbe gerettet.
 

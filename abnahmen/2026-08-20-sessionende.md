@@ -30,6 +30,10 @@ Abnahme / Arbeitsannahme steht jetzt in [LIES-MICH.md](LIES-MICH.md).
 
 ## Der nächste Schritt, konkret
 
+> **✔ ERLEDIGT 2026-08-20:** die Mechanik ist gewählt — **Overview + Detail**.
+> Siehe [mechanik-main-overview-detail](2026-08-20-mechanik-main-overview-detail.md).
+> Was unten steht, ist der Stand *vor* dieser Wahl.
+
 `werkzeug/wireframe-main.html` ist offen und läuft auf der echten Größe
 760×430. **Der User hat noch keine Disclosure-Mechanik gewählt.** Das ist die
 nächste Frage — sonst nichts.

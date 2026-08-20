@@ -53,7 +53,7 @@ Audio-Ausnahme braucht denselben Verriegelungs- und Beweisstandard.
 ```powershell
 $cmake = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
 & $cmake -S eq-copilot -B eq-copilot/build -G "Visual Studio 17 2022" -A x64
-& $cmake --build eq-copilot/build --config Release --target EqCopilot_VST3 EqCopShot EqCopPaintBench EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopPipeProbe
+& $cmake --build eq-copilot/build --config Release --target EqCopilot_VST3 EqCopShot EqCopPaintBench EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopPipeProbe EqCopIdentityTest EqCopHostContextTest
 ```
 
 **Ein Befehl für den ganzen Kanon (seit 20.08., ersetzt die bewusst nicht
@@ -76,8 +76,15 @@ gesehen"**, nie „sollte funktionieren"):
 eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe
 eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures
 eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe
+eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe
+eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe
 cargo test --manifest-path broker/Cargo.toml
 ```
+
+**Kanon-Stand 21.08.2026: 6/6 grün** (`docs/beweise/SONDE-003.md`) — Nulltest ·
+Golden · Markierung · Broker · Identitaet · Hostkontext. Fuenf weitere
+Pruefbinaries stehen als „geplant" in der Runner-Tabelle und werden Pflicht,
+sobald ihr Ticket sie baut.
 
 - Golden-WAVs einmalig: `py -3.13 tools/eq-copilot/erzeuge_fixtures.py --nur-wav`
 - Editor-Sichtprüfung ohne FL: `EqCopShot.exe <ziel.png> [breite]` (echte 20-s-Messung, offscreen)
@@ -98,6 +105,24 @@ cargo test --manifest-path broker/Cargo.toml
   (greift auch ohne Bau), faellt bei veraltetem Artefakt, rechnet die
   reservierten CIDs nach und haelt die Schema-1-State-Goldens der vier Rollen
   (`eq-copilot/fixtures/identity/`). Goldens neu schreiben: `--schreibe-goldens`.
+- **Hostbruecke (SONDE-003, seit 21.08.):** der gevendorte JUCE-8.0.9-VST3-Wrapper
+  wird beim **Configure** um drei Beobachtungen erweitert, die die oeffentliche
+  `AudioProcessor`-API nicht traegt — Anwesenheit des `ProcessContext`, ALLE
+  Parameterpunkte mit Sample-Offset, `IAudioPresentationLatency` je Bus.
+  Patch `third_party/patches/juce-8.0.9-nakama-vst3-bridge.patch`, Gate
+  `eq-copilot/cmake/NakamaBruecke.cmake` (unberuehrt ⇒ patchen und **nachmessen** ·
+  gepatcht ⇒ No-Op · fremd ⇒ **Bauabbruch** mit gemessenem Hash; Hash ueber den
+  zeilenende-normalisierten Inhalt). Gegenseite: `plugin/hostbridge/NakamaHostBridge.h`
+  (JUCE-/SDK-frei, vorallokiert, 0 Allokationen im Blockpfad). Pruefer
+  `EqCopHostContextTest` (77 Pruefungen). ⚠️ **`_deps` nie von Hand editieren** —
+  wer den Wrapper anfasst, laesst das Gate beim naechsten Configure fallen.
+  🚨 **Bei jedem JUCE-Update ist der Patch NEU zu beweisen**: beide Hashes im
+  Gate nachziehen, `EqCopHostContextTest` fahren.
+  ⚠️ **Landmine: JUCE speichert den Wrapper im Objektspeicher mit CRLF**
+  (4165/4165 gemessen) — der Patch traegt deshalb CRLF in 149 seiner 163 Zeilen.
+  `.gitattributes` haelt `*.patch` per `-text` bytegleich; ohne das haette git
+  die CR beim Commit entfernt und einen Patch eingecheckt, der auf dem
+  Zweitrechner nicht mehr anwendbar ist (hier waere es nie aufgefallen).
 - **Aux-/PDC-Messgeraet (SONDE-004a, Wegwerfware):** Ziele `EqCopAuxSpike_VST3`
   (Bundle) + `EqCopAuxSpikeTest` (Selbsttest, 41 Pruefungen). Plugin-Code `NkSp`,
   bewusst **ausserhalb** der eingefrorenen Identitaet (`Eqcp`/`NkPr`/`NkAc`).

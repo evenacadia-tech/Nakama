@@ -5,12 +5,13 @@
 > eqcop-broker.exe), tools/. FL-Repo-SHAs in älteren Einträgen unten
 > gehören zur FL-Studio-Historie (bis `7964777`).
 
-> Stand: 2026-08-20 nachts. Diese Datei ist der Schnellstart;
+> Stand: 2026-08-21. Diese Datei ist der Schnellstart;
 > Tiefe in `docs/design-stand.md` und `docs/geschmacksprofil.md`.
 > **🔨 BAUENTSCHEIDUNG ERTEILT (User, 20.08.): der Sondenkern wird gebaut.**
-> **S0, S1 und S2 sind gebaut** (Beweis-Runner + Basislinie · Aux-/PDC-Messgerät
-> · Identität eingefroren, alles 20.08.); Einstieg ist jetzt der Abschnitt
-> „DER EINE NÄCHSTE SCHRITT — S3" unten. Beim User liegt **FL-Termin A**.
+> **S0 bis S3 sind gebaut** (Beweis-Runner + Basislinie · Aux-/PDC-Messgerät ·
+> Identität eingefroren — alles 20.08.; JUCE-Bridge-Patch 21.08.). Der Bau steht
+> jetzt an den **zwei FL-Terminen des Users** — Einstieg ist der Abschnitt
+> „DER EINE NÄCHSTE SCHRITT" unten. Kanon: **6/6 grün**.
 > Sessionplan, Gates und Prüfstufen in `docs/bauaufteilung-sonden.md`.
 > Die Design-Spur läuft parallel weiter und blockiert nichts.
 > **Erledigt am 20.08.:** /freshen gelaufen (+ eigenes Playbook);
@@ -51,58 +52,62 @@ Dieser strategische Lock ersetzt NICHT den unmittelbar freigegebenen
 Technikschritt unten. NAK-16 muss dem Zielbild dienen, darf es aber nicht
 durch einen neuen Effekt oder eine neue Metapher umdeuten.
 
-## ▶ DER EINE NÄCHSTE SCHRITT — S3 · `SONDE-003` (JUCE-Bridge-Patch)
+## ▶ DER EINE NÄCHSTE SCHRITT — 👤 **User-Termin B in FL**, dann S4
 
-**S0, S1 und S2 sind erledigt** (20.08.2026). Beim User liegt **Termin A**
-(Klickliste `eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md`, ca. 20 Minuten) — er
-blockiert den Bau aber nicht.
+**S0–S3 sind gebaut** (Beweis-Runner · Aux-/PDC-Messgerät · Identität eingefroren ·
+JUCE-Bridge-Patch). Der Bau steht damit an einer Stelle, an der er **nur noch
+durch Messungen aus FL** weitergeht: P0 endet mit dem Capabilityreport, und der
+braucht beide User-Termine.
 
-### S3 · `SONDE-003` — das riskanteste kleine Ticket des Plans
+### Was beim User liegt — zwei Termine, beide in FL
 
-Ticketziel im Wortlaut (Entwurf §65): *„JUCE-Bridge-Patch für
-Context-Anwesenheit, Parameterpunkte und Buslatenz — fertig, wenn Quellhashgate
-plus Wrapper-Unitfixture grün sind; Fallbackbit geprüft."*
+| Termin | Klickliste | Dauer | Was zurückkommt |
+|---|---|---|---|
+| **A** — Aux-Layout, Kanalreihenfolge, Recall, PDC-Impulse | `eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md` | ~20 min | zwei JSON aus `%APPDATA%\evenacadia\nakama\spike\` |
+| **B** — Live/Stop/Seek/Loop-Straddle/Render/Smart Disable | *noch zu schreiben* (S4-Vorlauf) | ~20 min | `.flp`-Legacy-Fixture aus §54 + Beobachtungsprotokoll |
 
-Warum riskant: es ist ein **idempotenter Patch am gevendorten JUCE**, der bei
-jedem JUCE-Update neu bewiesen werden muss. Der gepinnte 8.0.9-Wrapper bildet
-zwei Hostinformationen nicht auf die öffentliche `AudioProcessor`-API ab
-(Entwurf §31.2): normale Parameterqueues verwenden nur den **letzten** Punkt
-eines Blocks, und eine fehlende `ProcessData.processContext` ist im
-zurückgegebenen `PositionInfo` nicht sicher von einem vorhandenen, mit Nullen
-belegten Context zu unterscheiden. Ohne die Bridge werden Projektzeit,
-samplegenaue Automation und Presentation-Latency **nicht behauptet**.
+Termin B ist zugleich der **einzige** Weg, die Hostbrücke im echten Host zu
+sehen: ob FL einen `ProcessContext` anlegt, welche Validity-Flags gesetzt sind,
+ob überhaupt Presentation-Latency gemeldet wird und wie sich ein Loop-Straddle
+innerhalb eines Blocks verhält. Headless ist all das nicht beweisbar — und wird
+deshalb auch nirgends behauptet (`docs/beweise/SONDE-003.md` §0 sagt es
+ausdrücklich).
 
-Eigene Session, eigener Prüfer. Danach: **👤 User-Termin B in FL**
-(Live/Stop/Seek/Loop-Straddle/Render/Smart Disable) → **S4** Capabilityreport
-aus beiden Terminen → **Gate G0** (`/c-review` + Codex, Falsifikation gegen die
-harten Gates 1 und 5).
+### Danach: S4 → Gate G0
 
-### Was S2 hinterlassen hat
+**S4** wertet beide Termine zu einem **Capabilityreport mit Rohmessdaten** aus
+(kein Bit wird aus einer Versionsnummer vermutet, Entwurf §53.6). **G0** ist dann
+das erste Phasengate: `/c-review` gegen den Bridge-Patch + **Codex als zweites
+Modell**, mit Falsifikationsauftrag gegen die harten Gates **1** und **5**.
 
-- **`eq-copilot/identity/plugin-identities-v1.json`** — die VST3-Identität ist
-  ab jetzt ein Dateiformat. Aus dem **gebauten** `moduleinfo.json` gemessen,
-  nicht aus dem Entwurf abgeschrieben.
-- **`EqCopIdentityTest`** (63 Prüfungen) misst das Bundle gegen das Manifest,
-  **rechnet die vier reservierten CIDs nach** (alle vier bestätigt — der
-  Entwurf lag richtig) und beweist positiv, dass
-  `JUCE_VST3_CAN_REPLACE_VST2=0` gilt: der VST2-Ersatzpfad würde eine andere
-  CID erzeugen.
-- **Der Freeze sitzt an der QUELLE, nicht nur am Artefakt** (Befund des
-  T2-Prüfers): `PLUGIN_CODE`, `PLUGIN_MANUFACTURER_CODE`, `PRODUCT_NAME` und
-  das Define werden direkt im CMake-Zielblock gemessen, und ein
-  `moduleinfo.json`, das älter ist als die Bauvorschrift, lässt den Test
-  fallen. Alle drei Riegel sind in Sandkisten nachweislich zum Fallen
-  gebracht worden — ein Riegel, den man nicht fallen sieht, ist keiner.
-- **Schema-1-State-Goldens** für `sensor`/`hub`/`pre`/`post` — bytegleich und
-  mit geprüftem Rückweg in eine frische Instanz. Damit hat die Migration in
-  P1 (`SONDE-006`) einen Bezugspunkt.
-- **Der Kanon wuchs von selbst auf 5/5**: die in S0 vorgesehene Zeile
-  „geplant (ab P0)" wurde zur Pflichtprüfung, sobald das Ziel existierte.
+### Was S3 hinterlassen hat (21.08., `1e91d54`)
 
-**Ausdrücklich offen und benannt:** die `.flp`-Legacy-Fixture aus §54
-(`sensor`/`hub`/`pre`/`post` plus Stop/Seek/Loop/Render/Smart Disable) entsteht
-nur in FL und gehört zu Termin B. Der headless beweisbare Teil von
-`SONDE-002` ist erledigt.
+- **`third_party/patches/juce-8.0.9-nakama-vst3-bridge.patch`** — neun
+  anker-genaue Stellen im gevendorten Wrapper. Er **nimmt nichts weg**: JUCEs
+  eigener Parameterweg (nur letzter Punkt) steht unverändert daneben, die
+  Brücke beobachtet zusätzlich. Ohne `NAKAMA_HOST_BRIDGE` ist der Wrapper
+  wortgleich JUCE — der Fallbackweg wird in **jedem** Bau mitkompiliert
+  (`EqCopAuxSpike_VST3` hat das Define nicht).
+- **`eq-copilot/cmake/NakamaBruecke.cmake`** — Quellhash-Gate, alle drei Zweige
+  vorgeführt statt behauptet: unberührt ⇒ patchen **und nachmessen** · gepatcht
+  ⇒ No-Op · fremd ⇒ Bauabbruch mit dem **gemessenen** Hash. Setzt FetchContent
+  die Datei zurück, heilt der nächste Configure von selbst.
+- **`eq-copilot/plugin/hostbridge/NakamaHostBridge.h`** — die Gegenseite,
+  bewusst JUCE- und SDK-frei: die riskante Abbildung liegt damit in UNSEREM Repo
+  und ist headless prüfbar, während der Patch am Fremdcode dünner Klebstoff
+  bleibt und bei jedem JUCE-Update billig neu zu beweisen ist.
+- **`EqCopHostContextTest`** — **77 Prüfungen**. Die Kontext-Abbildung wird
+  gegen den **echten** `Steinberg::Vst::ProcessContext` instanziiert, nicht gegen
+  einen Nachbau; ein falsch abgeschriebenes Flag oder Feld (SDK-Schreibweise
+  `continousTimeSamples`, ohne „u") würde die Kompilierung brechen.
+- **Der Kanon wächst auf 6/6** — `EqCopHostContextTest` war als „geplant (ab P2)"
+  vorgesehen und ist ab jetzt Pflicht.
+
+**Zwei Riegel, die vorher fehlten und nebenbei nachgezogen wurden:** der
+Baustand-Scan des Runners sah `hostbridge/`, `spike/`, `probe/`, `cmake/` und
+den Patch nicht (hätte veraltete Binärdateien als beglaubigt durchgelassen), und
+`.gitattributes` hätte den Patch beim Commit kaputtnormalisiert — JUCE speichert
+den Wrapper mit **CRLF**, der Patch trägt es in 149 von 163 Zeilen.
 
 ### Was beim Bauen gilt
 
@@ -119,6 +124,7 @@ nur in FL und gehört zu Termin B. Der headless beweisbare Teil von
 - Beweislauf: `pwsh -File tools/beweise.ps1 -Bauen -Ziel docs/beweise/<Ticket>.md -Anhaengen`.
 
 ---
+
 
 ## Parallel offen — Design-Spur (User-Aktion, blockiert den Bau NICHT)
 

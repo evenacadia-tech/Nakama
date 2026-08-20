@@ -18,6 +18,12 @@
 | Datum | JJJJ-MM-TT |
 | Prüfstufen | T1 ☐ · T2 ☐ · T3 ☐ (nur am Gate) |
 
+> ⚠️ **Ein Häkchen wird gesetzt, NACHDEM die Stufe gelaufen ist — nie vorher.**
+> In `SONDE-001-002` stand am 20.08. `T2 ✅` im Kopf, bevor der Prüfer überhaupt
+> startete; er hat es selbst gefunden. Wer ein Manifest maschinell erzeugt, baut
+> den Riegel in den Erzeuger ein: kein Urteil eingetragen ⇒ keine Datei
+> geschrieben.
+
 ---
 
 ## 1. Ticket-Behauptungen

@@ -6,7 +6,7 @@
 namespace eqcop::spike
 {
 
-// ─────────────────────────────────────────────────────────── Schnappschuss ──
+// ----------------------------------------------------------- Schnappschuss --
 
 bool Schnappschuss::hatVersatz (size_t busIndex) const
 {
@@ -25,10 +25,10 @@ juce::String Schnappschuss::versatzGrund (size_t busIndex) const
         return "Main hat keinen Impuls";
     if (busse[busIndex].impulsSample < 0)
         return "dieser Bus hat keinen Impuls";
-    // Ein Dauersignal macht "erstes Sample ueber der Schwelle" zufaellig —
+    // Ein Dauersignal macht "erstes Sample ueber der Schwelle" zufaellig -
     // dann waere jede Versatzzahl eine Behauptung, keine Messung.
     if (! busse[0].protokollOk || ! busse[busIndex].protokollOk)
-        return "Dauersignal statt Stille+Impuls — Messprotokoll verletzt";
+        return "Dauersignal statt Stille+Impuls - Messprotokoll verletzt";
     return {};
 }
 
@@ -42,7 +42,7 @@ juce::String berichtAlsJson (const Schnappschuss& s)
 {
     auto* wurzel = new juce::DynamicObject();
     wurzel->setProperty ("werkzeug", "EqCopAuxSpike");
-    wurzel->setProperty ("zweck", "SONDE-004a — FL-Aux-/PDC-/Recall-Spike, Messgeraet fuer User-Termin A");
+    wurzel->setProperty ("zweck", "SONDE-004a - FL-Aux-/PDC-/Recall-Spike, Messgeraet fuer User-Termin A");
     wurzel->setProperty ("zeit", juce::Time::getCurrentTime().toISO8601 (true));
     wurzel->setProperty ("host", s.host);
     wurzel->setProperty ("wrapper", s.wrapper);
@@ -100,7 +100,7 @@ juce::String berichtAlsJson (const Schnappschuss& s)
     return juce::JSON::toString (juce::var (wurzel), false);
 }
 
-// ─────────────────────────────────────────────────────────────── Prozessor ──
+// --------------------------------------------------------------- Prozessor --
 
 AuxSpikeProcessor::AuxSpikeProcessor()
     : juce::AudioProcessor (BusesProperties()
@@ -127,7 +127,7 @@ bool AuxSpikeProcessor::isBusesLayoutSupported (const BusesLayout& layout) const
     const auto aus = layout.getMainOutputChannelSet();
 
     // Main: Mono oder Stereo, Ein == Aus. Nichts wird still umgedeutet
-    // oder heruntergemischt — der Host bekommt ein klares Nein (§48.2).
+    // oder heruntergemischt - der Host bekommt ein klares Nein (Abschnitt 48.2).
     if (ein != aus)
         return false;
     if (ein != juce::AudioChannelSet::mono() && ein != juce::AudioChannelSet::stereo())
@@ -150,7 +150,7 @@ void AuxSpikeProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
 {
     juce::ScopedNoDenormals schutz;
 
-    // Kein Lock, keine Allokation, kein I/O, kein Logging — der Reset kommt
+    // Kein Lock, keine Allokation, kein I/O, kein Logging - der Reset kommt
     // als Flagge herein und wird hier abgeraeumt.
     if (resetAngefordert.exchange (false, std::memory_order_acq_rel))
     {
@@ -212,7 +212,7 @@ void AuxSpikeProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
             if (ersterHier < 0)
                 continue;
 
-            // Frueheste Stelle ueber ALLE Kanaele gewinnt — sonst haengt das
+            // Frueheste Stelle ueber ALLE Kanaele gewinnt - sonst haengt das
             // Ergebnis an der Kanalreihenfolge statt am Signal.
             const float wertHier = std::abs (daten[ersterHier]);
             if (kandidat < 0 || ersterHier < kandidat)

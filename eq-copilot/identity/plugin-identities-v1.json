@@ -1,0 +1,74 @@
+{
+  "schema": "nakama.plugin-identities/v1",
+  "eingefroren_am": "2026-08-20",
+  "ticket": "SONDE-001",
+
+  "was_das_ist": "Die VST3-Identitaet ist ab hier ein Dateiformat, kein Implementierungsdetail. Aendert sich eine dieser Zeilen, verlieren bestehende FL-Projekte ihr Plugin. EqCopIdentityTest misst das gebaute Bundle gegen diese Datei.",
+
+  "quelle": {
+    "gemessen_aus": "eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3/Contents/Resources/moduleinfo.json",
+    "nicht_abgeschrieben_aus": "docs/FL-Nakama-Sonden-Design-Entwurf.md — der Entwurf nennt dieselben Werte, aber die Wahrheit ist das gebaute Bundle"
+  },
+
+  "ableitung": {
+    "funktion": "juce::VST3Interface::jucePluginId(herstellercode, plugincode, typ)",
+    "bedingung": "JUCE_VST3_CAN_REPLACE_VST2 = 0",
+    "warum_das_zur_identitaet_gehoert": "Mit dem Define auf 1 wuerde JUCE stattdessen vst2PluginId(plugincode, produktname) verwenden — dieselbe Quelle ergaebe eine ANDERE Class-ID. Das Define ist damit Teil der eingefrorenen Identitaet, nicht eine Bauoption.",
+    "juce_version_bei_der_messung": "8.0.9",
+    "hinweis_zur_byteordnung": "Die CID-Zeichenkette in moduleinfo.json steht in logischer Reihenfolge; der TUID im Speicher ist unter COM_COMPATIBLE (Windows) in den ersten acht Bytes vertauscht (VST3-SDK funknownimpl.h, UID::toTUID). jucePluginId liefert die vertauschte Form — der Test dreht sie zurueck, bevor er vergleicht."
+  },
+
+  "hersteller": {
+    "name": "evenacadia",
+    "code": "Evna"
+  },
+
+  "nicht_teil_der_identitaet": [
+    "Version (0.1.0 bei der Messung) — steigt mit jedem Release",
+    "SDK-Version (VST 3.7.12) — folgt dem gepinnten JUCE",
+    "Dateigroesse und Hash des Bundles — aendern sich mit jedem Bau"
+  ],
+
+  "ziele": [
+    {
+      "id": "main",
+      "status": "eingefroren",
+      "rolle": "Nakama Main (heutiges EQ-Copilot, ausgeliefert und in Projekten geladen)",
+      "plugin_code": "Eqcp",
+      "bundle": "EQ-Copilot.vst3",
+      "produktname": "EQ-Copilot",
+      "kategorien": ["Fx", "Analyzer"],
+      "component_cid": "ABCDEF019182FAEB45766E6145716370",
+      "controller_cid": "ABCDEF011234ABCD45766E6145716370",
+      "state_schema": 1
+    },
+    {
+      "id": "passive-probe",
+      "status": "reserviert",
+      "rolle": "Passive Probe (SONDE-007b) — noch nicht gebaut",
+      "plugin_code": "NkPr",
+      "bundle": null,
+      "produktname": null,
+      "kategorien": null,
+      "component_cid": "ABCDEF019182FAEB45766E614E6B5072",
+      "controller_cid": "ABCDEF011234ABCD45766E614E6B5072",
+      "state_schema": null
+    },
+    {
+      "id": "active-probe",
+      "status": "reserviert",
+      "rolle": "Active Probe (SONDE-007b) — noch nicht gebaut",
+      "plugin_code": "NkAc",
+      "bundle": null,
+      "produktname": null,
+      "kategorien": null,
+      "component_cid": "ABCDEF019182FAEB45766E614E6B4163",
+      "controller_cid": "ABCDEF011234ABCD45766E614E6B4163",
+      "state_schema": null
+    }
+  ],
+
+  "nicht_hier_vergeben": {
+    "NkSp": "Wegwerf-Messgeraet EqCopAuxSpike (SONDE-004a). Absichtlich AUSSERHALB dieser Datei: es wird nie ausgeliefert und darf nie eingefroren werden."
+  }
+}

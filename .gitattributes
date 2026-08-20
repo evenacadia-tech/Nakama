@@ -1,0 +1,12 @@
+# Golden-Dateien sind BYTES, kein Text. git erkennt sie heute korrekt als
+# binaer (Heuristik ueber NUL-Bytes) - hier steht es ausdruecklich, damit eine
+# Zeilenenden-Normalisierung sie niemals still veraendert. Ein umgeschriebenes
+# Golden wuerde einen Vergleich bestehen lassen, der scheitern muesste.
+*.bin  binary
+*.wav  binary
+*.flac binary
+*.exr  binary
+
+# Alles andere bleibt wie gehabt: core.autocrlf regelt die Arbeitskopie.
+# Werkzeuge, die Quelltext lesen, muessen zeilenendenfest sein - der
+# Identitaetstest normalisiert deshalb selbst (T2-Runde 2, 20.08.2026).

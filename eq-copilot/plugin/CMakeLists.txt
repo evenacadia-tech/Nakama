@@ -133,12 +133,6 @@ target_compile_definitions(EqCopPaintBench PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_C
 target_link_libraries(EqCopPaintBench PRIVATE juce::juce_audio_utils juce::juce_dsp
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 
-# Die Quellen sind UTF-8 (deutsche UI-Texte). Ohne /utf-8 rät MSVC die
-# Codepage — Literale wie „Klavier-Bus“ hingen dann an der Systemlocale.
-foreach(ziel EqCopilot EqCopPipeProbe EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench)
-    target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
-endforeach()
-
 # ── SONDE-004a: Wegwerf-Messgeraet fuer Aux/PDC/Recall (User-Termin A) ──────
 # Eigener Plugin-Code NkSp — bewusst NICHT Teil der eingefrorenen Identitaet
 # (§31.2 reserviert Eqcp, NkPr, NkAc). Das Ziel wird nach dem Capabilityreport
@@ -184,3 +178,28 @@ target_compile_definitions(EqCopAuxSpikeTest PRIVATE
     JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
 target_link_libraries(EqCopAuxSpikeTest PRIVATE juce::juce_audio_utils
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
+# ── SONDE-001/002: Identitaets-Golden + Schema-1-State-Goldens ─────────────
+# Misst das GEBAUTE Bundle gegen eq-copilot/identity/plugin-identities-v1.json
+# und rechnet die reservierten CIDs nach, statt sie zu glauben.
+juce_add_console_app(EqCopIdentityTest PRODUCT_NAME "eqcop-identitytest")
+target_sources(EqCopIdentityTest PRIVATE
+    tests/IdentityTestMain.cpp
+    src/PluginProcessor.cpp
+    src/PluginEditor.cpp
+    src/PipeClient.cpp
+    src/AnalyseEngine.cpp
+    src/Diagnose.cpp
+)
+target_include_directories(EqCopIdentityTest PRIVATE src)
+target_compile_definitions(EqCopIdentityTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopIdentityTest PRIVATE juce::juce_audio_utils juce::juce_dsp
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
+# Die Quellen sind UTF-8 (deutsche UI-Texte). Ohne /utf-8 rät MSVC die
+# Codepage — Literale wie „Klavier-Bus“ hingen dann an der Systemlocale.
+foreach(ziel EqCopilot EqCopPipeProbe EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
+             EqCopIdentityTest EqCopAuxSpike EqCopAuxSpikeTest)
+    target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+endforeach()

@@ -2,7 +2,7 @@
 //
 // Zweck: das LINEAL beweisen, BEVOR der User Zeit in FL investiert. Ein
 // Messgeraet, dessen Versatzrechnung falsch ist, produziert im Termin einen
-// glaubwuerdigen Unsinn — und der waere teurer als gar keine Messung.
+// glaubwuerdigen Unsinn - und der waere teurer als gar keine Messung.
 //
 // Exit 0 nur bei "AUXSPIKE-TEST OK".
 #include "AuxSpikeProcessor.h"
@@ -117,7 +117,7 @@ int main()
 {
     juce::ScopedJuceInitialiser_GUI juceStart;
 
-    // ── Layoutvertrag ────────────────────────────────────────────────────
+    // -- Layoutvertrag ----------------------------------------------------
     {
         AuxSpikeProcessor p;
         pruefe (p.getBusCount (true) == 3, "drei Eingangsbusse deklariert",
@@ -144,7 +144,7 @@ int main()
         pruefe (! p.checkBusesLayoutSupported (schief), "5.1 auf einem Aux-Bus wird abgelehnt");
     }
 
-    // ── Messung: Versatz, Blockgrenze, fehlender Impuls ──────────────────
+    // -- Messung: Versatz, Blockgrenze, fehlender Impuls ------------------
     {
         AuxSpikeProcessor p;
         pruefe (p.setBusesLayout (layoutMit (2)), "Layout mit zwei aktiven Aux-Bussen gesetzt");
@@ -171,7 +171,7 @@ int main()
         pruefe (s.busse[0].protokollOk && s.busse[1].protokollOk && s.busse[2].protokollOk,
                 "Stille + ein Impuls gilt als eingehaltenes Messprotokoll");
 
-        // ── Gegenpfad: Reset ──────────────────────────────────────────────
+        // -- Gegenpfad: Reset ----------------------------------------------
         p.messungZuruecksetzen();
         const auto nachReset = fahre (p, 1, {});
         pruefe (nachReset.busse[0].impulsSample == -1
@@ -182,7 +182,7 @@ int main()
                 juce::String (nachReset.samplesVerarbeitet));
     }
 
-    // ── Dauersignal: bitgleich, aber KEINE erfundene Messung ─────────────
+    // -- Dauersignal: bitgleich, aber KEINE erfundene Messung -------------
     // Der erste Bau ist hier durchgefallen: auf Rauschen meldete "erstes
     // Sample ueber der Schwelle" den Impuls bei 0. Auf einer laufenden
     // Mischung waere das ein glaubwuerdiger Unsinn gewesen.
@@ -206,7 +206,7 @@ int main()
                 "der stille Aux-Bus bleibt davon unberuehrt bewertet");
     }
 
-    // ── Ehrlichkeit: 0 ist nicht 'kein Impuls' ───────────────────────────
+    // -- Ehrlichkeit: 0 ist nicht 'kein Impuls' ---------------------------
     {
         AuxSpikeProcessor p;
         p.setBusesLayout (layoutMit (2));
@@ -226,7 +226,7 @@ int main()
         pruefe (! s.hatVersatz (2), "ohne Impuls gibt es keinen Versatz (nicht 0)");
     }
 
-    // ── Inaktiver Bus wird nie als 'kein Signal' verkauft ────────────────
+    // -- Inaktiver Bus wird nie als 'kein Signal' verkauft ----------------
     {
         AuxSpikeProcessor p;
         p.setBusesLayout (layoutMit (0));
@@ -239,7 +239,7 @@ int main()
                 "inaktiver Bus liefert keine erfundenen Messwerte");
     }
 
-    // ── Bericht: schreiben UND wieder einlesen ───────────────────────────
+    // -- Bericht: schreiben UND wieder einlesen ---------------------------
     {
         AuxSpikeProcessor p;
         p.setBusesLayout (layoutMit (2));
@@ -285,6 +285,6 @@ int main()
 
     std::cout << std::endl
               << (fehler == 0 ? "AUXSPIKE-TEST OK" : "AUXSPIKE-TEST FEHLGESCHLAGEN")
-              << " — " << bestanden << " Pruefungen ok, " << fehler << " Fehler" << std::endl;
+              << " - " << bestanden << " Pruefungen ok, " << fehler << " Fehler" << std::endl;
     return fehler == 0 ? 0 : 1;
 }

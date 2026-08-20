@@ -57,7 +57,7 @@
   ok      Main-Ausgang bleibt bitgleich, auch mit aktiven Aux-Bussen
   ok      Dauersignal auf Main wird als Protokollverletzung erkannt  [0.980]
   ok      bei verletztem Protokoll gibt es KEINEN Versatzwert
-  ok      der Grund steht im Klartext da  [Dauersignal statt Stille+Impuls â Messprotokoll verletzt]
+  ok      der Grund steht im Klartext da  [Dauersignal statt Stille+Impuls - Messprotokoll verletzt]
   ok      der stille Aux-Bus bleibt davon unberuehrt bewertet
   ok      Impuls bei Sample 0 wird als 0 gemeldet
   ok      Versatz 0 ist ein Messwert, kein Fehlen
@@ -76,7 +76,7 @@
   ok      Bericht: fehlender Versatz ist null, nicht 0
   ok      Bericht: fehlender Versatz nennt seinen Grund
 
-AUXSPIKE-TEST OK — 41 Pruefungen ok, 0 Fehler
+AUXSPIKE-TEST OK - 41 Pruefungen ok, 0 Fehler
 ```
 
 <a id="b2"></a>
@@ -85,8 +85,8 @@ AUXSPIKE-TEST OK — 41 Pruefungen ok, 0 Fehler
 ```text
 Pfad:   eq-copilot\build\plugin\EqCopAuxSpike_artefacts\Release\VST3\EqCop-Aux-Spike.vst3\Contents\x86_64-win\EqCop-Aux-Spike.vst3
 Groesse: 6250 KB
-Gebaut:  2026-08-20 19:37:04
-SHA-256: E451D91F729C14B7B4D292E7CBA0CBD0EEFFC645DF7E81B51430619BA098B0C6
+Gebaut:  2026-08-20 21:35:19
+SHA-256: 837345B5C4FD9652A785C285692D3DA29660531B3249965D0E6AD07F7BF5FD00
 ```
 
 <a id="b3"></a>
@@ -141,18 +141,18 @@ Kein Befund offen; keine NAK-Zeile noetig.
 
 ## Kanon-Lauf — SONDE-004a
 
-**Lauf:** 2026-08-20 19:43 · **Runner:** `tools/beweise.ps1` · **Urteil:** GRUEN — 4/4 Kanon-Laeufe bestanden · 7 geplante Pruefung(en) noch nicht gebaut · **Exitcode:** 0
+**Lauf:** 2026-08-20 21:35 · **Runner:** `tools/beweise.ps1` · **Urteil:** GRUEN — 5/5 Kanon-Laeufe bestanden · 6 geplante Pruefung(en) noch nicht gebaut · **Exitcode:** 0
 
 ### Kopf — woran gemessen wurde
 
 | Feld | Wert |
 |---|---|
-| Zeitpunkt | 2026-08-20 19:43:02 +02:00 |
+| Zeitpunkt | 2026-08-20 21:35:27 +02:00 |
 | Rechner | SCHUBBINATOR200 · Windows 10.0.26200.0 |
 | Zweig | master |
-| Commit | 3d820c6 Doku: Basislinien-SHA berichtigt (734cf50 -> b7d37ce) |
-| Commit (voll) | 3d820c6443b6c15b8c732736ce307810e0cf0751 |
-| Arbeitsbaum | 9 unbestaetigte Datei(en) — dieser Lauf beweist NICHT allein den Commit |
+| Commit | df84e20 S1 SONDE-004a: Wegwerf-Messgeraet fuer Aux/PDC/Recall steht |
+| Commit (voll) | df84e203391c5fc8a5bd188ca9ab9d4ebc551d4a |
+| Arbeitsbaum | 20 unbestaetigte Datei(en) — dieser Lauf beweist NICHT allein den Commit |
 | JUCE gepinnt | 8.0.9 |
 | JUCE auf Platte | 8.0.9 |
 | FL Studio | FL Studio 2025 25.2.5.5319 · FL Studio 2026 26.1.4.5589 |
@@ -164,15 +164,26 @@ Kein Befund offen; keine NAK-Zeile noetig.
 <details><summary>Unbestaetigte Dateien im Arbeitsbaum</summary>
 
 ```text
-M .gitignore
- M eq-copilot/plugin/CMakeLists.txt
- M tools/beweise.ps1
-?? docs/beweise/SONDE-004a.md
-?? eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md
-?? eq-copilot/fixtures/aux-spike/
-?? eq-copilot/plugin/spike/
-?? eq-copilot/plugin/tests/AuxSpikeTestMain.cpp
-?? tools/eq-copilot/erzeuge_aux_spike_fixtures.py
+A  .gitattributes
+M  CLAUDE.md
+M  docs/NEXT-SESSION.md
+M  docs/bauaufteilung-sonden.md
+AM docs/beweise/SONDE-001-002.md
+ M docs/beweise/SONDE-004a.md
+M  docs/beweise/VORLAGE.md
+A  eq-copilot/fixtures/identity/state-schema1-hub.bin
+A  eq-copilot/fixtures/identity/state-schema1-post.bin
+A  eq-copilot/fixtures/identity/state-schema1-pre.bin
+A  eq-copilot/fixtures/identity/state-schema1-sensor.bin
+A  eq-copilot/identity/plugin-identities-v1.json
+M  eq-copilot/plugin/CMakeLists.txt
+M  eq-copilot/plugin/spike/AuxSpikeEditor.cpp
+M  eq-copilot/plugin/spike/AuxSpikeEditor.h
+M  eq-copilot/plugin/spike/AuxSpikeProcessor.cpp
+M  eq-copilot/plugin/spike/AuxSpikeProcessor.h
+M  eq-copilot/plugin/tests/AuxSpikeTestMain.cpp
+A  eq-copilot/plugin/tests/IdentityTestMain.cpp
+M  tools/beweise.ps1
 ```
 
 </details>
@@ -184,8 +195,9 @@ M .gitignore
 | `EqCopNullTest` | 2026-08-18 11:46:33 | `A6F71DAE47C7BE10` | frisch (Bau bestaetigt) |
 | `EqCopGoldenTest` | 2026-08-18 11:46:43 | `E01E176529ECCF6A` | frisch (Bau bestaetigt) |
 | `EqCopMarkierungTest` | 2026-08-18 11:47:19 | `3456136DDD939B7F` | frisch (Bau bestaetigt) |
+| `EqCopIdentityTest` | 2026-08-20 21:28:44 | `AFEC07D04C9A80A6` | frisch (Bau bestaetigt) |
 
-Neueste Quelldatei (`plugin/src`, `plugin/tests`, CMakeLists): **2026-08-20 19:35:42**. `cargo test` uebersetzt selbst und ist damit immer frisch.
+Neueste Quelldatei (`plugin/src`, `plugin/tests`, CMakeLists): **2026-08-20 21:28:11**. `cargo test` uebersetzt selbst und ist damit immer frisch.
 
 Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar vor diesem Lauf erfolgreich gebaut, das Buildsystem hat die Abhaengigkeiten also selbst geprueft.
 
@@ -194,10 +206,10 @@ Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar v
 | # | Behauptung | Befehl | Ergebnis | Dauer | Rohausgabe |
 |---|---|---|---|---|---|
 | A1 | Passthrough ist bitgleich; 0 Samples Latenz, 0 Tail; NaN/Inf werden gezaehlt, aber nicht veraendert. | `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | [OK] Exit 0 | 0,06 s | [↓ A1](#a1) |
-| A2 | AnalyseEngine deckt sich mit der eingefrorenen Offline-Referenz (Fixture-SHA-256 als Determinismus-Riegel). | `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | [OK] Exit 0 | 9,89 s | [↓ A2](#a2) |
-| A3 | Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung. | `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | [OK] Exit 0 | 6,24 s | [↓ A3](#a3) |
-| A4 | Broker-Vertragstests gruen (Framing, Protokoll, Bindung, Aggregat, Server). | `cargo test --manifest-path broker/Cargo.toml --color never` | [OK] Exit 0 | 0,33 s | [↓ A4](#a4) |
-| B1 | Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren. | `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | [GEPLANT] geplant (ab P0) | — | — |
+| A2 | AnalyseEngine deckt sich mit der eingefrorenen Offline-Referenz (Fixture-SHA-256 als Determinismus-Riegel). | `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | [OK] Exit 0 | 9,47 s | [↓ A2](#a2) |
+| A3 | Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung. | `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | [OK] Exit 0 | 5,99 s | [↓ A3](#a3) |
+| A4 | Broker-Vertragstests gruen (Framing, Protokoll, Bindung, Aggregat, Server). | `cargo test --manifest-path broker/Cargo.toml --color never` | [OK] Exit 0 | 0,38 s | [↓ A4](#a4) |
+| B1 | Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren. | `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | [OK] Exit 0 | 0,06 s | [↓ B1](#b1) |
 | B2 | State-Schema 2 laedt reine Schema-1-Staende ohne Verlust. | `eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe` | [GEPLANT] geplant (ab P1) | — | — |
 | B3 | Hostkontext (Anwesenheit, Parameterpunkte, Buslatenz) wird gemessen, nicht geraten. | `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | [GEPLANT] geplant (ab P2) | — | — |
 | B4 | StampedAudioQueue haelt Blockgroessen-Stress ohne Allokation/Lock aus. | `eq-copilot\build\plugin\EqCopQueueStressTest_artefacts\Release\EqCopQueueStressTest.exe` | [GEPLANT] geplant (ab P2) | — | — |
@@ -235,7 +247,7 @@ _(leer)_
 <a id="a2"></a>
 #### A2 · EqCopGoldenTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` · **Exitcode:** 0 · **Dauer:** 9,89 s
+**Befehl:** `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` · **Exitcode:** 0 · **Dauer:** 9,47 s
 
 stdout:
 
@@ -268,7 +280,7 @@ _(leer)_
 <a id="a3"></a>
 #### A3 · EqCopMarkierungTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` · **Exitcode:** 0 · **Dauer:** 6,24 s
+**Befehl:** `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` · **Exitcode:** 0 · **Dauer:** 5,99 s
 
 stdout:
 
@@ -313,22 +325,22 @@ _(leer)_
 <a id="a4"></a>
 #### A4 · broker
 
-**Befehl:** `cargo test --manifest-path broker/Cargo.toml --color never` · **Exitcode:** 0 · **Dauer:** 0,33 s
+**Befehl:** `cargo test --manifest-path broker/Cargo.toml --color never` · **Exitcode:** 0 · **Dauer:** 0,38 s
 
 stdout:
 
 ```text
 
 running 36 tests
-test framing::tests::kein_utf8_wird_verworfen ... ok
 test framing::tests::abbruch_mitten_im_frame ... ok
-test framing::tests::hin_und_zurueck ... ok
+test framing::tests::kein_utf8_wird_verworfen ... ok
 test aggregat::tests::profilfilter_laesst_fremde_sensoren_nie_still_hinein ... ok
-test framing::tests::laengengrenze_beidseitig ... ok
+test framing::tests::hin_und_zurueck ... ok
 test protokoll::tests::feindliches_ltas_array_faellt_am_guard ... ok
+test framing::tests::laengengrenze_beidseitig ... ok
 test protokoll::tests::heartbeat_v1_ohne_measurement_parst_weiter ... ok
-test aggregat::tests::filter_trennt_prozesse_und_v1_bekommt_warnung ... ok
 test aggregat::tests::schnittfenster_und_paare_im_dokument ... ok
+test aggregat::tests::filter_trennt_prozesse_und_v1_bekommt_warnung ... ok
 test bindung::tests::runde_laden_schreiben_laden ... ok
 test bindung::tests::beschaedigte_datei_ist_sichtbarer_fehler ... ok
 test protokoll::tests::heartbeat_v2_mit_messstand_und_fenster ... ok
@@ -357,7 +369,7 @@ test server::tests::feindliches_laengenpraefix_beendet_nur_diese_verbindung ... 
 test server::tests::handshake_heartbeat_und_geordneter_abschied ... ok
 test server::tests::doppelte_sensor_id_wird_als_konflikt_sichtbar ... ok
 
-test result: ok. 36 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+test result: ok. 36 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
 
 
 running 0 tests
@@ -372,22 +384,101 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
 running 0 tests
 
-test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 ```
 
 stderr:
 
 ```text
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
      Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-a60741d6aa4f32af.exe)
      Running unittests src\main.rs (broker\target\debug\deps\eqcop_broker-b91f868b743e27b1.exe)
      Running unittests src\bin\eqcop-broker-probe.rs (broker\target\debug\deps\eqcop_broker_probe-c17ffc214d5eff74.exe)
    Doc-tests eqcop_broker
 ```
 
+<a id="b1"></a>
+#### B1 · EqCopIdentityTest
+
+**Befehl:** `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` · **Exitcode:** 0 · **Dauer:** 0,06 s
+
+stdout:
+
+```text
+  ok      Identitaetsmanifest gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\identity\plugin-identities-v1.json]
+  ok      Manifest ist gueltiges JSON
+  ok      Herstellercode im Manifest  [Evna]
+  ok      Manifest kennt drei Ziele  [3]
+  ok      Manifest kennt das heutige Ziel 'main'
+  ok      plugin/CMakeLists.txt gefunden
+  ok      CMake: Zielblock juce_add_plugin(EqCopilot) gefunden
+  ok      CMake: Defineblock von EqCopilot gefunden
+  ok      CMake-Quelle: PLUGIN_CODE unveraendert  [Eqcp]
+  ok      CMake-Quelle: PLUGIN_MANUFACTURER_CODE unveraendert  [Evna]
+  ok      CMake-Quelle: PRODUCT_NAME unveraendert
+  ok      CMake-Quelle: JUCE_VST3_CAN_REPLACE_VST2=0 steht im Zielblock
+  ok      CMake-Quelle: der VST2-Ersatzpfad ist nicht eingeschaltet
+  ok      CMake-Quelle: das Define steht auch sonst nirgends auf 1
+  ok      moduleinfo.json des gebauten Bundles gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\Resources\moduleinfo.json]
+  ok      moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [20 Aug 2026 9:35:31pm vs 20 Aug 2026 8:59:14pm]
+  ok      moduleinfo.json ist nach dem Kommaputz parsebar
+  ok      moduleinfo: Produktname wie im Manifest  [EQ-Copilot]
+  ok      moduleinfo: Vendor wie im Manifest  [evenacadia]
+  ok      moduleinfo: genau zwei Klassen (Component + Controller)  [2]
+  ok      moduleinfo: die Audio-Module-Klasse traegt die Component-CID  [ABCDEF019182FAEB45766E6145716370]
+  ok      moduleinfo: die Controller-Klasse traegt die Controller-CID  [ABCDEF011234ABCD45766E6145716370]
+  ok      moduleinfo: Unterkategorien wie im Manifest
+  ok      moduleinfo: keine der vier reservierten Sonden-CIDs im heutigen Bundle
+  ok      CID nachgerechnet: main Component (Eqcp)  [ABCDEF019182FAEB45766E6145716370]
+  ok      CID nachgerechnet: main Controller (Eqcp)  [ABCDEF011234ABCD45766E6145716370]
+  ok      CID nachgerechnet: passive-probe Component (NkPr)  [ABCDEF019182FAEB45766E614E6B5072]
+  ok      CID nachgerechnet: passive-probe Controller (NkPr)  [ABCDEF011234ABCD45766E614E6B5072]
+  ok      CID nachgerechnet: active-probe Component (NkAc)  [ABCDEF019182FAEB45766E614E6B4163]
+  ok      CID nachgerechnet: active-probe Controller (NkAc)  [ABCDEF011234ABCD45766E614E6B4163]
+  ok      VST2-Ersatzpfad wuerde eine ANDERE CID erzeugen - das Define ist aus  [5653544571637065712D636F70696C6F]
+  ok      die echte CID stammt aus dem jucePluginId-Pfad
+  ok      Golden-Ordner vorhanden  [C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\identity]
+  ok      Rolle 'sensor' geladen  [sensor]
+  ok      Rolle 'sensor': Sensor-ID unveraendert uebernommen
+  ok      Rolle 'sensor': Label uebernommen  [Klavier A]
+  ok      Rolle 'sensor': Paar-ID uebernommen
+  ok      Golden 'sensor' gelesen  [state-schema1-sensor.bin]
+  ok      Schema-1-State 'sensor' ist bytegleich zum Golden  [128 Bytes]
+  ok      Golden 'sensor' laedt in eine frische Instanz zurueck
+  ok      Rolle 'hub' geladen  [hub]
+  ok      Rolle 'hub': Sensor-ID unveraendert uebernommen
+  ok      Rolle 'hub': Label uebernommen  [Leitstand]
+  ok      Rolle 'hub': Paar-ID uebernommen
+  ok      Golden 'hub' gelesen  [state-schema1-hub.bin]
+  ok      Schema-1-State 'hub' ist bytegleich zum Golden  [125 Bytes]
+  ok      Golden 'hub' laedt in eine frische Instanz zurueck
+  ok      Rolle 'pre' geladen  [pre]
+  ok      Rolle 'pre': Sensor-ID unveraendert uebernommen
+  ok      Rolle 'pre': Label uebernommen  [Chor PRE]
+  ok      Rolle 'pre': Paar-ID uebernommen  [paar-chor]
+  ok      Golden 'pre' gelesen  [state-schema1-pre.bin]
+  ok      Schema-1-State 'pre' ist bytegleich zum Golden  [133 Bytes]
+  ok      Golden 'pre' laedt in eine frische Instanz zurueck
+  ok      Rolle 'post' geladen  [post]
+  ok      Rolle 'post': Sensor-ID unveraendert uebernommen
+  ok      Rolle 'post': Label uebernommen  [Chor POST]
+  ok      Rolle 'post': Paar-ID uebernommen  [paar-chor]
+  ok      Golden 'post' gelesen  [state-schema1-post.bin]
+  ok      Schema-1-State 'post' ist bytegleich zum Golden  [135 Bytes]
+  ok      Golden 'post' laedt in eine frische Instanz zurueck
+  ok      fremder ValueTree-Typ wird abgelehnt, Zustand bleibt
+  ok      Muellbytes aendern den Zustand nicht
+
+IDENTITY-TEST OK - 63 Pruefungen ok, 0 Fehler
+```
+
+stderr:
+
+_(leer)_
+
 ### Bau vor dem Lauf (`-Bauen`)
 
-**build** · Exit 0 · 2,11 s
+**build** · Exit 0 · 3,57 s
 
 <details><summary>Rohe Ausgabe</summary>
 
@@ -407,6 +498,20 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
   Checking File Globs
   EqCopMarkierungTest_rc_lib.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopMarkierungTest_rc_lib.dir\Release\EqCopMarkierungTest_rc_lib.lib
   EqCopMarkierungTest.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe
+MSBuild-Version 17.14.40+3e7442088 für .NET Framework
+
+  Checking File Globs
+  EqCopIdentityTest_rc_lib.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopIdentityTest_rc_lib.dir\Release\EqCopIdentityTest_rc_lib.lib
+  EqCopIdentityTest.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe
+MSBuild-Version 17.14.40+3e7442088 für .NET Framework
+
+  Checking File Globs
+  EqCopilot_rc_lib.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot_rc_lib.dir\Release\EqCopilot_rc_lib.lib
+  EqCopilot.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot_artefacts\Release\EQ-Copilot_SharedCode.lib
+  EqCopilot_vst3_helper.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\Release\EqCopilot_vst3_helper.exe
+  EqCopilot_VST3.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3
+  removing moduleinfo.json
+  creating C:/Users/phili/Projekte/Nakama/eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3
 ```
 
 </details>

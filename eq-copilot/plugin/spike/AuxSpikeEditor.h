@@ -1,6 +1,6 @@
 // Arbeitsflaeche des Wegwerf-Messgeraets. Bewusst schmucklos: sie muss in FL
 // in zwei Sekunden ABLESBAR sein und darf keinen Zustand behaupten, den es
-// nicht gibt (Entwurf §0.4 — fehlender Messwert wird als fehlend gezeigt,
+// nicht gibt (Entwurf Abschnitt 0.4 - fehlender Messwert wird als fehlend gezeigt,
 // nie als 0). Keine Designarbeit, kein Kandidat fuer die Produkt-UI.
 #pragma once
 
@@ -21,7 +21,7 @@ public:
 
 private:
     void timerCallback() override;
-    /** Kurzform des Messstands — aendert sie sich nicht, wird nicht gemalt. */
+    /** Kurzform des Messstands - aendert sie sich nicht, wird nicht gemalt. */
     static juce::String signatur (const Schnappschuss&);
 
     AuxSpikeProcessor& prozessor;

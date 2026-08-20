@@ -1,17 +1,17 @@
 #Requires -Version 7.0
 <#
 .SYNOPSIS
-    Nakama-Beweis-Runner — faehrt den kompletten Beweis-Kanon und schreibt die
+    Nakama-Beweis-Runner - faehrt den kompletten Beweis-Kanon und schreibt die
     ROHE Ausgabe in ein Manifest unter docs/beweise/.
 
 .DESCRIPTION
-    Ersatz fuer die bewusst nicht gebaute CI (docs/bauaufteilung-sonden.md §1.1):
+    Ersatz fuer die bewusst nicht gebaute CI (docs/bauaufteilung-sonden.md Abschnitt 1.1):
     eine Maschine, ein Entwickler, ein JUCE-Windows-Build. Ein Befehl statt zehn
-    Handgriffe — das ist der Unterschied zwischen Beweisstandard und
+    Handgriffe - das ist der Unterschied zwischen Beweisstandard und
     Beweisvorsatz.
 
     Der Runner fasst NICHTS zusammen: stdout und stderr jedes Laufs landen
-    unveraendert im Manifest. Er misst ausserdem den BAUSTAND — sind die
+    unveraendert im Manifest. Er misst ausserdem den BAUSTAND - sind die
     Pruefbinaries aelter als die Quellen, verweigert er die Beglaubigung
     (Exitcode 4), statt eine veraltete Messung als Basislinie auszugeben.
 
@@ -34,7 +34,7 @@
     Ueberschrift des Manifests bzw. des angehaengten Abschnitts.
 
 .EXAMPLE
-    pwsh -File tools/beweise.ps1 -Ziel docs/beweise/S0-basislinie.md -Titel 'S0 · Basislinie'
+    pwsh -File tools/beweise.ps1 -Ziel docs/beweise/S0-basislinie.md -Titel 'S0 | Basislinie'
 
 .EXAMPLE
     pwsh -File tools/beweise.ps1 -Bauen -Ziel docs/beweise/SONDE-004.md -Anhaengen
@@ -58,7 +58,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-# Native Befehle duerfen mit Exit != 0 zurueckkommen, ohne das Skript zu toeten —
+# Native Befehle duerfen mit Exit != 0 zurueckkommen, ohne das Skript zu toeten -
 # genau das ist ja der Messwert (PS 7.4+ wuerfe sonst bei ErrorActionPreference=Stop).
 $PSNativeCommandUseErrorActionPreference = $false
 
@@ -70,7 +70,7 @@ $Beginn = Get-Date
 function Argument-Quoten {
     <# Start-Process -ArgumentList klebt die Elemente UNQUOTIERT mit Leerzeichen
        zusammen (anders als ProcessStartInfo.ArgumentList in .NET). Ohne diese
-       Quotierung zerfiele jeder Pfad mit Leerzeichen still in zwei Argumente —
+       Quotierung zerfiele jeder Pfad mit Leerzeichen still in zwei Argumente -
        gemessen an "git log --format=%h %s", das dabei Exit 128 lieferte. #>
     param([string] $Argument)
     if ($null -eq $Argument -or $Argument -eq '') { return '""' }
@@ -136,7 +136,7 @@ function Fuehre-Aus {
 }
 
 function Einzeilig {
-    <# Erste Ausgabezeile eines Programms — fuer Versionsabfragen. #>
+    <# Erste Ausgabezeile eines Programms - fuer Versionsabfragen. #>
     param([string] $Datei, [string[]] $Argumente = @())
     if (-not (Get-Command $Datei -ErrorAction SilentlyContinue) -and -not (Test-Path -LiteralPath $Datei)) {
         return 'nicht gefunden'
@@ -162,7 +162,7 @@ function Zellentext {
 }
 
 function Zaun {
-    <# Waehlt einen Codezaun, der laenger ist als jede Zaunfolge im Inhalt —
+    <# Waehlt einen Codezaun, der laenger ist als jede Zaunfolge im Inhalt -
        sonst zerreisst eine Testausgabe mit dreifachem Backtick das Manifest. #>
     param([string] $Inhalt)
     $laenge = 3
@@ -173,7 +173,7 @@ function Zaun {
 }
 
 function Block {
-    <# Rohausgabe als Codeblock — unveraendert, nur eingezaeunt. #>
+    <# Rohausgabe als Codeblock - unveraendert, nur eingezaeunt. #>
     param([string] $Inhalt, [string] $Sprache = 'text')
     if ([string]::IsNullOrWhiteSpace($Inhalt)) { return '_(leer)_' }
     $zaun = Zaun $Inhalt
@@ -243,7 +243,18 @@ $kanon = @(
     [pscustomobject]@{ Kuerzel='B4'; Name='EqCopQueueStressTest';    Art='plugin'; Argumente=@(); AbPhase='P2'; Behauptung='StampedAudioQueue haelt Blockgroessen-Stress ohne Allokation/Lock aus.' }
     [pscustomobject]@{ Kuerzel='B5'; Name='EqCopAnalysisGoldenTest'; Art='plugin'; Argumente=@(); AbPhase='P2'; Behauptung='FeatureEngine v2 haelt Zeit-, Validity-, Event- und Bandvertraege.' }
     [pscustomobject]@{ Kuerzel='B6'; Name='EqCopDspGoldenTest';      Art='plugin'; Argumente=@(); AbPhase='P6'; Behauptung='Aktiver DSP-Kern liefert die eingefrorene Referenzantwort.' }
-    [pscustomobject]@{ Kuerzel='B7'; Name='EqCopTransactionTest';    Art='plugin'; Argumente=@(); AbPhase='P6'; Behauptung='Apply/Revert ist transaktional — kein halber Zustand ueberlebt.' }
+    [pscustomobject]@{ Kuerzel='B7'; Name='EqCopTransactionTest';    Art='plugin'; Argumente=@(); AbPhase='P6'; Behauptung='Apply/Revert ist transaktional - kein halber Zustand ueberlebt.' }
+)
+
+# Ziele, die nicht selbst im Kanon laufen, aber von einem Kanon-Lauf GEMESSEN
+# werden. Ohne sie prueft der Test ein altes Artefakt und bleibt gruen, waehrend
+# die Quelle laengst etwas anderes sagt (T2-Befund vom 20.08.).
+$gemesseneZiele = @(
+    [pscustomobject]@{
+        Ziel   = 'EqCopilot_VST3'
+        Marker = 'juce_add_plugin(EqCopilot'
+        Wegen  = 'EqCopIdentityTest misst dessen moduleinfo.json'
+    }
 )
 
 # ------------------------------------------------------ Optional: vorher bauen
@@ -266,10 +277,34 @@ function Finde-CMake {
     return $null
 }
 
+function Bau-Abbruch {
+    <# Ein gescheiterter Bau darf seine Ursache nicht mitnehmen. Die rohe
+       Ausgabe wandert neben das Manifest, die Fehlerzeilen zusaetzlich auf
+       die Konsole - sonst steht da nur "Exit 1" und niemand weiss warum.
+       (Selbst erlebt am 20.08.: der Runner verschluckte den Compilerfehler.) #>
+    param([string] $Schritt, [pscustomobject] $Lauf)
+
+    $roh = ($Lauf.StdOut + "`n" + $Lauf.StdErr).Trim()
+    $logDatei = Join-Path $Wurzel ('tmp\bau-fehler-{0}.log' -f $Beginn.ToString('yyyy-MM-dd-HHmm'))
+    $logOrdner = Split-Path -Parent $logDatei
+    if (-not (Test-Path -LiteralPath $logOrdner)) { New-Item -ItemType Directory -Path $logOrdner -Force | Out-Null }
+    Set-Content -LiteralPath $logDatei -Value $roh -Encoding utf8
+
+    $fehlerzeilen = @($roh -split "`r?`n" | Where-Object { $_ -match 'error|fehler' } | Select-Object -First 12)
+    Write-Host ''
+    Write-Host ("Bau ({0}) fehlgeschlagen - Exit {1}. Die ersten Fehlerzeilen:" -f $Schritt, $Lauf.ExitCode) -ForegroundColor Red
+    foreach ($zeile in $fehlerzeilen) { Write-Host ("  " + $zeile.Trim()) -ForegroundColor Red }
+    Write-Host ("Vollstaendiges Bauprotokoll: {0}" -f (RelativZurWurzel $logDatei)) -ForegroundColor Yellow
+    Write-Host ''
+
+    throw ("Bau fehlgeschlagen (Exit {0}) - kein Beweislauf auf kaputtem Baustand. Protokoll: {1}" `
+           -f $Lauf.ExitCode, (RelativZurWurzel $logDatei))
+}
+
 if ($Bauen) {
     $cmakeBefehl = Finde-CMake
     if (-not $cmakeBefehl) {
-        throw 'cmake nicht gefunden — weder im PATH noch unter Visual Studio 2022. -Bauen ist ohne cmake nicht moeglich.'
+        throw 'cmake nicht gefunden - weder im PATH noch unter Visual Studio 2022. -Bauen ist ohne cmake nicht moeglich.'
     }
 
     $bauVerzeichnis = Join-Path $Wurzel 'eq-copilot\build'
@@ -278,16 +313,17 @@ if ($Bauen) {
         Write-Host 'Konfiguriere (erstmalig) ...' -ForegroundColor DarkGray
         $k = Fuehre-Aus -Datei $cmakeBefehl -Argumente @('-S', 'eq-copilot', '-B', 'eq-copilot/build', '-G', 'Visual Studio 17 2022', '-A', 'x64')
         $bauProtokoll += [pscustomobject]@{ Schritt = 'configure'; ExitCode = $k.ExitCode; StdOut = $k.StdOut; StdErr = $k.StdErr; Sekunden = $k.Sekunden }
-        if ($k.ExitCode -ne 0) { throw "cmake-Konfiguration fehlgeschlagen (Exit $($k.ExitCode)) — siehe Manifest bzw. Konsolenausgabe." }
+        if ($k.ExitCode -ne 0) { Bau-Abbruch -Schritt 'configure' -Lauf $k }
     }
 
     # Nur Ziele bauen, die es im CMakeLists wirklich gibt (geplante Tests noch nicht).
     $cmakeText = Get-Content -LiteralPath (Join-Path $Wurzel 'eq-copilot\plugin\CMakeLists.txt') -Raw
     $zuBauen = @($kanon | Where-Object { $_.Art -eq 'plugin' -and $cmakeText -match [regex]::Escape($_.Name) } | ForEach-Object { $_.Name })
+    $zuBauen += @($gemesseneZiele | Where-Object { $cmakeText -match [regex]::Escape($_.Marker) } | ForEach-Object { $_.Ziel })
     Write-Host ('Baue: ' + ($zuBauen -join ', ')) -ForegroundColor DarkGray
     $b = Fuehre-Aus -Datei $cmakeBefehl -Argumente (@('--build', 'eq-copilot/build', '--config', 'Release', '--target') + $zuBauen)
     $bauProtokoll += [pscustomobject]@{ Schritt = 'build'; ExitCode = $b.ExitCode; StdOut = $b.StdOut; StdErr = $b.StdErr; Sekunden = $b.Sekunden }
-    if ($b.ExitCode -ne 0) { throw "Bau fehlgeschlagen (Exit $($b.ExitCode)) — kein Beweislauf auf kaputtem Baustand." }
+    if ($b.ExitCode -ne 0) { Bau-Abbruch -Schritt 'build' -Lauf $b }
 }
 
 # ------------------------------------------------------------------ Kopfdaten
@@ -326,14 +362,14 @@ if ($schmutzig -and $schmutzig -ne 'nicht ermittelbar') {
 
 $kopf = [ordered]@{
     'Zeitpunkt'       = $Beginn.ToString('yyyy-MM-dd HH:mm:ss zzz')
-    'Rechner'         = ('{0} · Windows {1}' -f $env:COMPUTERNAME, [Environment]::OSVersion.Version.ToString())
+    'Rechner'         = ('{0} | Windows {1}' -f $env:COMPUTERNAME, [Environment]::OSVersion.Version.ToString())
     'Zweig'           = (Git-Wert @('rev-parse', '--abbrev-ref', 'HEAD'))
     'Commit'          = (Git-Wert @('log', '-1', '--format=%h %s'))
     'Commit (voll)'   = (Git-Wert @('rev-parse', 'HEAD'))
-    'Arbeitsbaum'     = $(if ($schmutzigeDateien.Count -eq 0) { 'sauber' } else { '{0} unbestaetigte Datei(en) — dieser Lauf beweist NICHT allein den Commit' -f $schmutzigeDateien.Count })
+    'Arbeitsbaum'     = $(if ($schmutzigeDateien.Count -eq 0) { 'sauber' } else { '{0} unbestaetigte Datei(en) - dieser Lauf beweist NICHT allein den Commit' -f $schmutzigeDateien.Count })
     'JUCE gepinnt'    = $juceGepinnt
     'JUCE auf Platte' = $jucePlatte
-    'FL Studio'       = ($flVersionen -join ' · ')
+    'FL Studio'       = ($flVersionen -join ' | ')
     'cargo'           = (Einzeilig 'cargo' @('--version'))
     'rustc'           = (Einzeilig 'rustc' @('--version'))
     'PowerShell'      = $PSVersionTable.PSVersion.ToString()
@@ -414,7 +450,7 @@ foreach ($eintrag in $kanon) {
             $zeile.Status = 'cargo nicht gefunden'
             $fehlendeVoraussetzung++
             $ergebnisse += $zeile
-            Write-Host ('[FEHLT] {0} — {1}' -f $zeile.Name, $zeile.Status) -ForegroundColor Yellow
+            Write-Host ('[FEHLT] {0} - {1}' -f $zeile.Name, $zeile.Status) -ForegroundColor Yellow
             continue
         }
         $lauf = Fuehre-Aus -Datei 'cargo' -Argumente $eintrag.Argumente
@@ -426,9 +462,9 @@ foreach ($eintrag in $kanon) {
         if (-not (Test-Path -LiteralPath $exe)) {
             if ($eintrag.AbPhase -eq 'jetzt') {
                 $zeile.Symbol = '[FEHLT]'
-                $zeile.Status = 'nicht gebaut — mit -Bauen nachziehen'
+                $zeile.Status = 'nicht gebaut - mit -Bauen nachziehen'
                 $fehlendeVoraussetzung++
-                Write-Host ('[FEHLT] {0} — {1}' -f $zeile.Name, $zeile.Status) -ForegroundColor Yellow
+                Write-Host ('[FEHLT] {0} - {1}' -f $zeile.Name, $zeile.Status) -ForegroundColor Yellow
             }
             else {
                 $zeile.Symbol = '[GEPLANT]'
@@ -443,10 +479,10 @@ foreach ($eintrag in $kanon) {
             $wavs = @(Get-ChildItem -LiteralPath $fixtureVerzeichnis -Filter '*.wav' -ErrorAction SilentlyContinue)
             if ($wavs.Count -eq 0) {
                 $zeile.Symbol = '[FEHLT]'
-                $zeile.Status = 'Fixture-WAVs fehlen — py -3.13 tools/eq-copilot/erzeuge_fixtures.py --nur-wav'
+                $zeile.Status = 'Fixture-WAVs fehlen - py -3.13 tools/eq-copilot/erzeuge_fixtures.py --nur-wav'
                 $fehlendeVoraussetzung++
                 $ergebnisse += $zeile
-                Write-Host ('[FEHLT] {0} — {1}' -f $zeile.Name, $zeile.Status) -ForegroundColor Yellow
+                Write-Host ('[FEHLT] {0} - {1}' -f $zeile.Name, $zeile.Status) -ForegroundColor Yellow
                 continue
             }
         }
@@ -462,13 +498,13 @@ foreach ($eintrag in $kanon) {
     if ($lauf.ExitCode -eq 0) {
         $zeile.Symbol = '[OK]'
         $zeile.Status = 'Exit 0'
-        Write-Host ('[OK] {0} — Exit 0 ({1})' -f $zeile.Name, (Dauertext $zeile.Sekunden)) -ForegroundColor Green
+        Write-Host ('[OK] {0} - Exit 0 ({1})' -f $zeile.Name, (Dauertext $zeile.Sekunden)) -ForegroundColor Green
     }
     else {
         $zeile.Symbol = '[ROT]'
         $zeile.Status = ('Exit {0}' -f $lauf.ExitCode)
         $rot++
-        Write-Host ('[ROT] {0} — Exit {1} ({2})' -f $zeile.Name, $lauf.ExitCode, (Dauertext $zeile.Sekunden)) -ForegroundColor Red
+        Write-Host ('[ROT] {0} - Exit {1} ({2})' -f $zeile.Name, $lauf.ExitCode, (Dauertext $zeile.Sekunden)) -ForegroundColor Red
     }
 
     $ergebnisse += $zeile
@@ -480,23 +516,23 @@ $gelaufen = @($ergebnisse | Where-Object { $_.Gelaufen })
 $gruen = @($gelaufen | Where-Object { $_.ExitCode -eq 0 })
 $geplant = @($ergebnisse | Where-Object { $_.Symbol -eq '[GEPLANT]' })
 # Ein "4/4 gruen" waere geschoenigt, solange sieben Kanon-Eintraege nur geplant sind.
-$nachsatz = if ($geplant.Count -gt 0) { " · $($geplant.Count) geplante Pruefung(en) noch nicht gebaut" } else { '' }
+$nachsatz = if ($geplant.Count -gt 0) { " | $($geplant.Count) geplante Pruefung(en) noch nicht gebaut" } else { '' }
 
 $exitcode = 0
 if ($rot -gt 0) {
     $exitcode = 2
-    $urteil = "ROT — $rot von $($gelaufen.Count) Kanon-Laeufen fehlgeschlagen$nachsatz"
+    $urteil = "ROT - $rot von $($gelaufen.Count) Kanon-Laeufen fehlgeschlagen$nachsatz"
 }
 elseif ($fehlendeVoraussetzung -gt 0) {
     $exitcode = 3
-    $urteil = "UNVOLLSTAENDIG — $($gruen.Count) gruen, $fehlendeVoraussetzung Voraussetzung(en) fehlen$nachsatz"
+    $urteil = "UNVOLLSTAENDIG - $($gruen.Count) gruen, $fehlendeVoraussetzung Voraussetzung(en) fehlen$nachsatz"
 }
 elseif ($veraltet) {
     $exitcode = 4
-    $urteil = "NICHT BEGLAUBIGT — $($gruen.Count)/$($gelaufen.Count) gruen, aber Pruefbinaries sind aelter als die Quellen$nachsatz"
+    $urteil = "NICHT BEGLAUBIGT - $($gruen.Count)/$($gelaufen.Count) gruen, aber Pruefbinaries sind aelter als die Quellen$nachsatz"
 }
 else {
-    $urteil = "GRUEN — $($gruen.Count)/$($gelaufen.Count) Kanon-Laeufe bestanden$nachsatz"
+    $urteil = "GRUEN - $($gruen.Count)/$($gelaufen.Count) Kanon-Laeufe bestanden$nachsatz"
 }
 
 # ------------------------------------------------------------------ Manifest
@@ -516,15 +552,15 @@ if ($Anhaengen -and (Test-Path -LiteralPath $Ziel)) {
     $z.Add('')
     $z.Add('---')
     $z.Add('')
-    $z.Add("## Kanon-Lauf — $Titel")
+    $z.Add("## Kanon-Lauf - $Titel")
 }
 else {
-    $z.Add("# Beweismanifest — $Titel")
+    $z.Add("# Beweismanifest - $Titel")
 }
 $z.Add('')
-$z.Add("**Lauf:** $($Beginn.ToString('yyyy-MM-dd HH:mm')) · **Runner:** ``tools/beweise.ps1`` · **Urteil:** $urteil · **Exitcode:** $exitcode")
+$z.Add("**Lauf:** $($Beginn.ToString('yyyy-MM-dd HH:mm')) | **Runner:** ``tools/beweise.ps1`` | **Urteil:** $urteil | **Exitcode:** $exitcode")
 $z.Add('')
-$z.Add('### Kopf — woran gemessen wurde')
+$z.Add('### Kopf - woran gemessen wurde')
 $z.Add('')
 $z.Add('| Feld | Wert |')
 $z.Add('|---|---|')
@@ -558,7 +594,7 @@ else {
 }
 $z.Add('')
 if ($veraltet) {
-    $z.Add('> **VERALTET — dieser Lauf beweist NICHT den aktuellen Quellstand.**')
+    $z.Add('> **VERALTET - dieser Lauf beweist NICHT den aktuellen Quellstand.**')
     $z.Add('> Mindestens eine Pruefbinaerdatei ist aelter als die Quellen. Neu fahren mit `-Bauen`.')
     $z.Add('')
 }
@@ -568,8 +604,8 @@ $z.Add('')
 $z.Add('| # | Behauptung | Befehl | Ergebnis | Dauer | Rohausgabe |')
 $z.Add('|---|---|---|---|---|---|')
 foreach ($e in $ergebnisse) {
-    $dauer = if ($null -ne $e.Sekunden) { Dauertext $e.Sekunden } else { '—' }
-    $link = if ($e.Gelaufen) { "[↓ $($e.Kuerzel)](#$($e.Kuerzel.ToLower()))" } else { '—' }
+    $dauer = if ($null -ne $e.Sekunden) { Dauertext $e.Sekunden } else { '-' }
+    $link = if ($e.Gelaufen) { "[↓ $($e.Kuerzel)](#$($e.Kuerzel.ToLower()))" } else { '-' }
     $z.Add("| $($e.Kuerzel) | $(Zellentext $e.Behauptung) | ``$(Zellentext $e.Befehl)`` | $($e.Symbol) $(Zellentext $e.Status) | $dauer | $link |")
 }
 $z.Add('')
@@ -578,9 +614,9 @@ $z.Add('### Rohe Ausgaben')
 $z.Add('')
 foreach ($e in ($ergebnisse | Where-Object { $_.Gelaufen })) {
     $z.Add("<a id=`"$($e.Kuerzel.ToLower())`"></a>")
-    $z.Add("#### $($e.Kuerzel) · $($e.Name)")
+    $z.Add("#### $($e.Kuerzel) | $($e.Name)")
     $z.Add('')
-    $z.Add("**Befehl:** ``$(Zellentext $e.Befehl)`` · **Exitcode:** $($e.ExitCode) · **Dauer:** $(Dauertext $e.Sekunden)")
+    $z.Add("**Befehl:** ``$(Zellentext $e.Befehl)`` | **Exitcode:** $($e.ExitCode) | **Dauer:** $(Dauertext $e.Sekunden)")
     $z.Add('')
     $z.Add('stdout:')
     $z.Add('')
@@ -596,7 +632,7 @@ if ($bauProtokoll.Count -gt 0) {
     $z.Add('### Bau vor dem Lauf (`-Bauen`)')
     $z.Add('')
     foreach ($b in $bauProtokoll) {
-        $z.Add("**$($b.Schritt)** · Exit $($b.ExitCode) · $(Dauertext $b.Sekunden)")
+        $z.Add("**$($b.Schritt)** | Exit $($b.ExitCode) | $(Dauertext $b.Sekunden)")
         $z.Add('')
         $z.Add('<details><summary>Rohe Ausgabe</summary>')
         $z.Add('')

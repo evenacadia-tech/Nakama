@@ -91,6 +91,13 @@ cargo test --manifest-path broker/Cargo.toml
   (Terminal 2) — **immer der eigene Probe-Pipename**, nie der
   Produktions-Broker (zwei Broker auf einem Namen stahlen sich still
   Clients; Produktion verweigert per FIRST_PIPE_INSTANCE)
+- **Identitaet ist ab P0 ein Dateiformat:** `eq-copilot/identity/plugin-identities-v1.json`
+  friert Bundle, Plugin-Code, beide Class-IDs und `JUCE_VST3_CAN_REPLACE_VST2=0` ein;
+  `NkPr`/`NkAc` sind fuer die Sonden reserviert. `EqCopIdentityTest` misst das
+  GEBAUTE `moduleinfo.json` dagegen, prueft zusaetzlich den **CMake-Quelltext**
+  (greift auch ohne Bau), faellt bei veraltetem Artefakt, rechnet die
+  reservierten CIDs nach und haelt die Schema-1-State-Goldens der vier Rollen
+  (`eq-copilot/fixtures/identity/`). Goldens neu schreiben: `--schreibe-goldens`.
 - **Aux-/PDC-Messgeraet (SONDE-004a, Wegwerfware):** Ziele `EqCopAuxSpike_VST3`
   (Bundle) + `EqCopAuxSpikeTest` (Selbsttest, 41 Pruefungen). Plugin-Code `NkSp`,
   bewusst **ausserhalb** der eingefrorenen Identitaet (`Eqcp`/`NkPr`/`NkAc`).

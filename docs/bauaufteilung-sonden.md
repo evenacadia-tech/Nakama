@@ -212,7 +212,7 @@ Umfangswirkung).
 |---|---|---|---|
 | ~~S1~~ | `SONDE-004a` | ~~Wegwerf-Target mit zwei deklarierten Aux-Bussen + Impulsharness~~ — **erledigt 20.08.**, Selbsttest 41/41, Manifest `docs/beweise/SONDE-004a.md` | T1 ✅ |
 | — | — | **👤 User-Termin A (FL):** Aux-Layout, Kanalreihenfolge, Recall, PDC-Impulse | — |
-| S2 | `SONDE-001` + `002` | Identität einfrieren (CIDs stehen bereits, NAK-20) · `JUCE_VST3_CAN_REPLACE_VST2=0` ins Manifest · `EqCopIdentityTest` · Legacy-FL-Fixture | T1+T2 |
+| ~~S2~~ | `SONDE-001` + `002` | ~~Identität einfrieren~~ — **gebaut 20.08.**: Manifest aus dem gebauten `moduleinfo.json`, `EqCopIdentityTest` (63 Prüfungen: reservierte CIDs nachgerechnet, VST2-Pfad negativ bewiesen, **Freeze auch an der CMake-Quelle**), Schema-1-Goldens für alle vier Rollen. Die `.flp`-Legacy-Fixture bleibt ausdrücklich offen (nur in FL erzeugbar → Termin B). | T1 ✅ · T2 Runde 1 = NEEDS_WORK, Runde 2 siehe `docs/beweise/SONDE-001-002.md` |
 | S3 | `SONDE-003` | JUCE-Bridge-Patch: Context-Anwesenheit, Parameterpunkte, Buslatenz, Quellhash-Gate | T1+T2 |
 | — | — | **👤 User-Termin B (FL):** Live/Stop/Seek/Loop-Straddle/Render/Smart Disable | — |
 | S4 | — | Auswertung beider Termine → Capabilityreport mit Rohmessdaten | T1+T2 |

@@ -1,13 +1,13 @@
-// EqCopAuxSpike — WEGWERF-MESSGERAET fuer SONDE-004a (User-Termin A).
+// EqCopAuxSpike - WEGWERF-MESSGERAET fuer SONDE-004a (User-Termin A).
 //
 // Zweck: in FL Studio beweisen, ob getrennte Aux-Busse ueberhaupt ankommen,
 // in welcher Reihenfolge, mit welchem Versatz (PDC) und ob das Layout einen
-// Speicher-/Ladezyklus ueberlebt. Das Ding misst und zeigt — es greift NIE
+// Speicher-/Ladezyklus ueberlebt. Das Ding misst und zeigt - es greift NIE
 // ins Audio ein: der Main-Ausgang bleibt bitgleich zum Main-Eingang.
 //
 // Ausdruecklich KEIN Produktcode. Es teilt keine Quelle mit dem Plugin, traegt
 // einen eigenen Plugin-Code (`NkSp`, nicht in der eingefrorenen Identitaets-
-// liste §31.2) und wird nach dem Capabilityreport (S4) nicht weitergepflegt.
+// liste Abschnitt 31.2) und wird nach dem Capabilityreport (S4) nicht weitergepflegt.
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -26,12 +26,12 @@ inline constexpr float kRuheSchwelle = 0.02f;
 
 /** Das Messprotokoll ist: Stille, dann EIN Impuls. Liegt mehr als dieser
     Anteil der Samples ueber der Ruheschwelle, laeuft in Wahrheit ein
-    Dauersignal — dann ist "erstes Sample ueber der Schwelle" keine
+    Dauersignal - dann ist "erstes Sample ueber der Schwelle" keine
     Impulsmessung, sondern Zufall. Der Spike verweigert dann den Versatz,
     statt eine glaubwuerdige Zahl zu erfinden. */
 inline constexpr double kMaxLautAnteil = 0.01;
 
-/** Vertragsnamen aus Entwurf §48.2 — Active deklariert genau diese zwei. */
+/** Vertragsnamen aus Entwurf Abschnitt 48.2 - Active deklariert genau diese zwei. */
 inline constexpr const char* kNameAux1 = "priority_sidechain";
 inline constexpr const char* kNameAux2 = "compare_pre";
 
@@ -42,11 +42,11 @@ struct BusBefund
     bool         aktiv        = false;
     int          kanaele      = 0;
     /** Absolute Sampleposition des ersten Impulses; -1 = noch keiner.
-        -1 ist NICHT 0 — "kein Impuls" und "Impuls bei Sample 0" sind
+        -1 ist NICHT 0 - "kein Impuls" und "Impuls bei Sample 0" sind
         verschiedene Aussagen und werden nie vermischt. */
     juce::int64  impulsSample = -1;
     float        impulsSpitze = 0.0f;
-    /** Hoechster gesehener Betrag ueberhaupt — beantwortet "kommt hier
+    /** Hoechster gesehener Betrag ueberhaupt - beantwortet "kommt hier
         irgendetwas an?", auch ohne Impuls. */
     float        spitzeGesamt = 0.0f;
     /** Samples ueber der Ruheschwelle (ueber alle Kanaele gezaehlt). */
@@ -68,14 +68,14 @@ struct Schnappschuss
 
     /** Versatz eines Aux-Busses gegen den Main-Impuls in Samples. Nur gueltig,
         wenn beide Busse einen Impuls haben UND beide das Messprotokoll
-        eingehalten haben — sonst gibt es keinen Wert, nicht etwa 0. */
+        eingehalten haben - sonst gibt es keinen Wert, nicht etwa 0. */
     bool hatVersatz (size_t busIndex) const;
     /** Klartext, warum es keinen Versatz gibt (leer, wenn es einen gibt). */
     juce::String versatzGrund (size_t busIndex) const;
     juce::int64 versatz (size_t busIndex) const;
 };
 
-/** Bericht als JSON. Fehlende Messwerte werden `null`, nie 0 — der Entwurf
+/** Bericht als JSON. Fehlende Messwerte werden `null`, nie 0 - der Entwurf
     verlangt "null statt erfundener Null". */
 juce::String berichtAlsJson (const Schnappschuss& s);
 
@@ -108,7 +108,7 @@ public:
     void getStateInformation (juce::MemoryBlock&) override {}
     void setStateInformation (const void*, int) override {}
 
-    /** Messstand fuer Anzeige und Bericht — Nachrichtenthread. */
+    /** Messstand fuer Anzeige und Bericht - Nachrichtenthread. */
     Schnappschuss schnappschuss() const;
 
     /** Gegenpfad zur Messung: alles auf Anfang. Der Audiothread raeumt beim

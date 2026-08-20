@@ -8,8 +8,9 @@
 > Stand: 2026-08-20 nachts. Diese Datei ist der Schnellstart;
 > Tiefe in `docs/design-stand.md` und `docs/geschmacksprofil.md`.
 > **🔨 BAUENTSCHEIDUNG ERTEILT (User, 20.08.): der Sondenkern wird gebaut.**
-> **S0 ist gebaut** (Beweis-Runner + Manifest-Gerüst + Basislinie, 20.08.);
-> Einstieg ist jetzt der Abschnitt „DER EINE NÄCHSTE SCHRITT — S1" unten;
+> **S0, S1 und S2 sind gebaut** (Beweis-Runner + Basislinie · Aux-/PDC-Messgerät
+> · Identität eingefroren, alles 20.08.); Einstieg ist jetzt der Abschnitt
+> „DER EINE NÄCHSTE SCHRITT — S3" unten. Beim User liegt **FL-Termin A**.
 > Sessionplan, Gates und Prüfstufen in `docs/bauaufteilung-sonden.md`.
 > Die Design-Spur läuft parallel weiter und blockiert nichts.
 > **Erledigt am 20.08.:** /freshen gelaufen (+ eigenes Playbook);
@@ -50,54 +51,58 @@ Dieser strategische Lock ersetzt NICHT den unmittelbar freigegebenen
 Technikschritt unten. NAK-16 muss dem Zielbild dienen, darf es aber nicht
 durch einen neuen Effekt oder eine neue Metapher umdeuten.
 
-## ▶ DER EINE NÄCHSTE SCHRITT — 👤 User-Termin A in FL
+## ▶ DER EINE NÄCHSTE SCHRITT — S3 · `SONDE-003` (JUCE-Bridge-Patch)
 
-**S0 und S1 sind erledigt** (20.08.2026). Der Bau steht jetzt bewusst still:
-der nächste Schritt gehört dem User und lässt sich nicht simulieren.
+**S0, S1 und S2 sind erledigt** (20.08.2026). Beim User liegt **Termin A**
+(Klickliste `eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md`, ca. 20 Minuten) — er
+blockiert den Bau aber nicht.
 
-### Was zu tun ist
+### S3 · `SONDE-003` — das riskanteste kleine Ticket des Plans
 
-`eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md` — Klickliste, ca. 20 Minuten, in
-Lernsprache. Gemessen wird die Frage, an der der halbe Plan hängt: **Kann FL
-zwei getrennte Aux-Wege gleichzeitig, in der richtigen Reihenfolge und
-zeitlich exakt in ein Plugin schicken — und überlebt das einen Speicher- und
-Ladezyklus?**
+Ticketziel im Wortlaut (Entwurf §65): *„JUCE-Bridge-Patch für
+Context-Anwesenheit, Parameterpunkte und Buslatenz — fertig, wenn Quellhashgate
+plus Wrapper-Unitfixture grün sind; Fallbackbit geprüft."*
 
-Ergebnis sind zwei JSON-Dateien aus `%APPDATA%\evenacadia\nakama\spike\`.
-Jede der drei möglichen Antworten (**geht** · **geht mit festem Versatz** ·
-**geht nicht**) ist verwertbar; nur `unknown, später prüfen` darf P0 nicht
-passieren (Exit-Gate §54).
+Warum riskant: es ist ein **idempotenter Patch am gevendorten JUCE**, der bei
+jedem JUCE-Update neu bewiesen werden muss. Der gepinnte 8.0.9-Wrapper bildet
+zwei Hostinformationen nicht auf die öffentliche `AudioProcessor`-API ab
+(Entwurf §31.2): normale Parameterqueues verwenden nur den **letzten** Punkt
+eines Blocks, und eine fehlende `ProcessData.processContext` ist im
+zurückgegebenen `PositionInfo` nicht sicher von einem vorhandenen, mit Nullen
+belegten Context zu unterscheiden. Ohne die Bridge werden Projektzeit,
+samplegenaue Automation und Presentation-Latency **nicht behauptet**.
 
-### Was S1 dafür gebaut hat
+Eigene Session, eigener Prüfer. Danach: **👤 User-Termin B in FL**
+(Live/Stop/Seek/Loop-Straddle/Render/Smart Disable) → **S4** Capabilityreport
+aus beiden Terminen → **Gate G0** (`/c-review` + Codex, Falsifikation gegen die
+harten Gates 1 und 5).
 
-- **`EqCop-Aux-Spike.vst3`** — Wegwerf-Messgerät, Ziele `EqCopAuxSpike_VST3`
-  und `EqCopAuxSpikeTest`. Deklariert Main-I/O plus zwei vorgabe-inaktive
-  Aux-Eingänge (`priority_sidechain`, `compare_pre`, Entwurf §48.2), misst je
-  Bus den Impulsversatz sampledgenau, reicht Audio bitgleich durch und
-  schreibt einen JSON-Bericht. Plugin-Code `NkSp` — bewusst **außerhalb** der
-  eingefrorenen Identität (`Eqcp`, `NkPr`, `NkAc`), damit S2 nichts Falsches
-  einfriert. Kein Produktcode, keine geteilte Quelle.
-- **Selbsttest 41/41** (`EqCopAuxSpikeTest`) — das Lineal ist geprüft, bevor
-  der User Zeit investiert. Er hat dabei einen echten Konstruktionsfehler
-  gefunden: die erste Fassung erkannte „erstes Sample über der Schwelle" als
-  Impuls und hätte auf einer laufenden Mischung eine glaubwürdige falsche Zahl
-  gemeldet. Jetzt prüft der Spike das Messprotokoll (Stille + ein Impuls) und
-  **verweigert** bei Dauersignal den Versatz mit Klartextgrund.
-- **Impuls-Fixtures** je Projektrate (44100/48000), deterministisch erzeugt;
-  Hashes und erwartetes Resultat in `eq-copilot/fixtures/aux-spike/MANIFEST.md`
-  (Entwurf §66.3 — Medien draußen, Manifest drinnen).
-- **Ticket-Manifest** `docs/beweise/SONDE-004a.md` mit Rohausgaben,
-  ausgefüllter T1-Liste und angehängtem Kanon-Lauf.
+### Was S2 hinterlassen hat
 
-### Danach
+- **`eq-copilot/identity/plugin-identities-v1.json`** — die VST3-Identität ist
+  ab jetzt ein Dateiformat. Aus dem **gebauten** `moduleinfo.json` gemessen,
+  nicht aus dem Entwurf abgeschrieben.
+- **`EqCopIdentityTest`** (63 Prüfungen) misst das Bundle gegen das Manifest,
+  **rechnet die vier reservierten CIDs nach** (alle vier bestätigt — der
+  Entwurf lag richtig) und beweist positiv, dass
+  `JUCE_VST3_CAN_REPLACE_VST2=0` gilt: der VST2-Ersatzpfad würde eine andere
+  CID erzeugen.
+- **Der Freeze sitzt an der QUELLE, nicht nur am Artefakt** (Befund des
+  T2-Prüfers): `PLUGIN_CODE`, `PLUGIN_MANUFACTURER_CODE`, `PRODUCT_NAME` und
+  das Define werden direkt im CMake-Zielblock gemessen, und ein
+  `moduleinfo.json`, das älter ist als die Bauvorschrift, lässt den Test
+  fallen. Alle drei Riegel sind in Sandkisten nachweislich zum Fallen
+  gebracht worden — ein Riegel, den man nicht fallen sieht, ist keiner.
+- **Schema-1-State-Goldens** für `sensor`/`hub`/`pre`/`post` — bytegleich und
+  mit geprüftem Rückweg in eine frische Instanz. Damit hat die Migration in
+  P1 (`SONDE-006`) einen Bezugspunkt.
+- **Der Kanon wuchs von selbst auf 5/5**: die in S0 vorgesehene Zeile
+  „geplant (ab P0)" wurde zur Pflichtprüfung, sobald das Ziel existierte.
 
-**S2 `SONDE-001` + `002`** (Identität einfrieren, `EqCopIdentityTest`,
-Legacy-FL-Fixture) → **S3 `SONDE-003`** (JUCE-Bridge-Patch) → 👤 User-Termin B
-→ **S4** Capabilityreport aus beiden Terminen → **Gate G0**.
-
-S2 hängt **nicht** an Termin A und kann sofort beginnen, wenn der User den
-Termin verschieben will — nur `SONDE-018` (Entmaskierung, P8) und der
-Capabilityreport S4 warten wirklich auf das Ergebnis.
+**Ausdrücklich offen und benannt:** die `.flp`-Legacy-Fixture aus §54
+(`sensor`/`hub`/`pre`/`post` plus Stop/Seek/Loop/Render/Smart Disable) entsteht
+nur in FL und gehört zu Termin B. Der headless beweisbare Teil von
+`SONDE-002` ist erledigt.
 
 ### Was beim Bauen gilt
 
@@ -111,11 +116,7 @@ Capabilityreport S4 warten wirklich auf das Ergebnis.
 - Jeder T3-Befund wird **gegen die Quelldatei verifiziert**, bevor gehandelt
   wird (~25 % AI-Auditbefunde waren hier falsch), und verschwindet nie still:
   gefixt, NAK-Zeile oder protokollierte Widerlegung.
-- Verbindliche Lesereihenfolge zum Start: `docs/bauaufteilung-sonden.md` →
-  Entwurf §0.3/§0.4 + §53–§68 → `docs/pruefbericht-sondenentwurf-2026-08-20.md`
-  (nur noch als Beleg; alle fünf Befunde sind in 0.4 eingearbeitet, NAK-19…23
-  geschlossen mit `ab80522`).
-
+- Beweislauf: `pwsh -File tools/beweise.ps1 -Bauen -Ziel docs/beweise/<Ticket>.md -Anhaengen`.
 
 ---
 

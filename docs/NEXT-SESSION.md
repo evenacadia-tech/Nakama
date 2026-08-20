@@ -86,7 +86,7 @@ Capabilityreport → **Gate G0**.
   Befundtabelle und (nur am Gate) T3-Falsifikationsblock. Kopieren, nicht neu
   erfinden.
 - **`docs/beweise/S0-basislinie.md`** — die Regressions-Basislinie: 4/4 Kanon
-  grün auf `734cf50`, JUCE 8.0.9 gepinnt und auf Platte, FL 2026 26.1.4.5589,
+  grün auf `b7d37ce`, JUCE 8.0.9 gepinnt und auf Platte, FL 2026 26.1.4.5589,
   Broker 36/36.
 
 ### Was beim Bauen gilt

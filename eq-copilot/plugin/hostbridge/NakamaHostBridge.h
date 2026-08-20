@@ -186,7 +186,12 @@ struct Blockbefund
     std::uint64_t ueberlaeufe          { 0 };   // Ereignisse, die nicht mehr in den Ring passten
     std::uint64_t unplausibleOffsets   { 0 };   // Offset < 0 oder >= Blockgroesse
     std::uint64_t unplausibleWerte     { 0 };   // NaN/Inf als Parameterwert
-    std::uint64_t verworfeneLetztwerte { 0 };   // mehr als kMaxLetztwerte Parameter im Block
+    /** EINHEIT: verworfene AKTUALISIERUNGEN, nicht Parameter. Traegt ein Block
+        mehr als kMaxLetztwerte verschiedene Parameter, zaehlt jeder weitere
+        Punkt der ueberzaehligen Parameter mit - bei 133 Parametern und vielen
+        Punkten je Parameter also deutlich mehr als 5 (T2-Runde 3 mass 516).
+        Fuer jede Verbraucherentscheidung genuegt ungleich null. */
+    std::uint64_t verworfeneLetztwerte { 0 };
     /** KUMULATIV, nicht pro Block — wie die Latenztabelle selbst, die
         Setup-Zustand ist und `beginneBlock` ueberlebt. Die vier Zaehler
         darueber setzen dagegen je Block zurueck. */

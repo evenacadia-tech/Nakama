@@ -114,7 +114,14 @@ sobald ihr Ticket sie baut.
   gepatcht ⇒ No-Op · fremd ⇒ **Bauabbruch** mit gemessenem Hash; Hash ueber den
   zeilenende-normalisierten Inhalt). Gegenseite: `plugin/hostbridge/NakamaHostBridge.h`
   (JUCE-/SDK-frei, vorallokiert, 0 Allokationen im Blockpfad). Pruefer
-  `EqCopHostContextTest` (77 Pruefungen). ⚠️ **`_deps` nie von Hand editieren** —
+  `EqCopHostContextTest` (91 Pruefungen).
+  🔑 **Zwei teuer bezahlte Regeln aus dem T2-Verfahren dieses Tickets:** (1) ein
+  Puffer, der beim Ueberlauf hinten abschneidet, darf NIE die Quelle eines
+  Wertes sein, den ein Vertrag ueberleben laesst — der Rueckfallwert braucht
+  seine eigene Struktur (hier `Letztwert`-Tabelle). (2) Ein Zaehler muss
+  beschreiben, was der HOST geliefert hat, nicht was in unsere Struktur passte;
+  stand der Kapazitaets-Ausstieg vor den Pruefungen, meldete `unplausibleWerte`
+  0, waehrend ein NaN stiller Rueckfallwert wurde. ⚠️ **`_deps` nie von Hand editieren** —
   wer den Wrapper anfasst, laesst das Gate beim naechsten Configure fallen.
   🚨 **Bei jedem JUCE-Update ist der Patch NEU zu beweisen**: beide Hashes im
   Gate nachziehen, `EqCopHostContextTest` fahren.

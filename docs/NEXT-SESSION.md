@@ -107,10 +107,22 @@ Modell**, mit Falsifikationsauftrag gegen die harten Gates **1** und **5**.
   bewusst JUCE- und SDK-frei: die riskante Abbildung liegt damit in UNSEREM Repo
   und ist headless prüfbar, während der Patch am Fremdcode dünner Klebstoff
   bleibt und bei jedem JUCE-Update billig neu zu beweisen ist.
-- **`EqCopHostContextTest`** — **77 Prüfungen**. Die Kontext-Abbildung wird
+- **`EqCopHostContextTest`** — **91 Prüfungen**. Die Kontext-Abbildung wird
   gegen den **echten** `Steinberg::Vst::ProcessContext` instanziiert, nicht gegen
   einen Nachbau; ein falsch abgeschriebenes Flag oder Feld (SDK-Schreibweise
   `continousTimeSamples`, ohne „u") würde die Kompilierung brechen.
+- **T2 brauchte DREI Runden, und das war den Aufwand wert.** Runde 1 und 2 waren
+  NEEDS_WORK: erst war Entwurf §53.7 nicht eingelöst (der Überlauf verwarf genau
+  den Rückfallwert, den der Vertrag überleben lässt — gemessen 0.511 statt
+  0.777, und zwar mit `true` gemeldet, also ununterscheidbar von einem gültigen
+  Wert), dann baute meine eigene Nacharbeit eine Regression ein (der
+  Überlauf-Ausstieg sprang über die Plausibilitätsprüfungen, ein NaN als Punkt
+  513 wurde stiller Rückfallwert bei `unplausibleWerte == 0`). Beides gefixt,
+  beide Riegel nachweislich zum Fallen gebracht. **Lehre für die nächsten
+  Tickets:** ein Puffer, der beim Überlauf hinten abschneidet, darf nie die
+  Quelle eines Wertes sein, den ein Vertrag überleben lässt — und ein Zähler
+  muss beschreiben, was der HOST geliefert hat, nicht was in unsere Struktur
+  passte.
 - **Der Kanon wächst auf 6/6** — `EqCopHostContextTest` war als „geplant (ab P2)"
   vorgesehen und ist ab jetzt Pflicht.
 

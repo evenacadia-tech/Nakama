@@ -5,29 +5,36 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Nakama — Wireframe Main</title>
 <style>
-/* Werkzeug-Chrome. Neutrales Mittelgrau wie in den anderen Werkzeugen. */
+/* Werkzeug-Chrome (deutsch). Das Produkt darin ist englisch. */
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#737373;color:#1d1d1d;
   font:14px/1.45 'Segoe UI',system-ui,sans-serif;min-height:100vh;
   display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
-header{padding:18px 26px 6px}
+header{padding:16px 26px 4px}
 .stufe{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#3a3a3a}
 h1{font-size:22px;font-weight:600;letter-spacing:-.01em;margin-top:4px}
-.unter{font-size:13px;color:#3d3d3d;max-width:940px;margin-top:5px}
+.unter{font-size:13px;color:#3d3d3d;max-width:960px;margin-top:5px}
 main{flex:1;display:flex;align-items:flex-start;justify-content:center;
-  padding:22px;gap:22px;flex-wrap:wrap;align-content:flex-start}
-footer{padding:14px 26px 20px;display:flex;gap:12px;align-items:center;
+  padding:18px 22px;gap:20px;flex-wrap:wrap;align-content:flex-start}
+footer{padding:12px 26px 20px;display:flex;gap:10px;align-items:center;
   flex-wrap:wrap;border-top:1px solid #8a8a8a}
-button.k{font:inherit;font-size:12.5px;padding:8px 14px;border:1px solid #4a4a4a;
+button.k{font:inherit;font-size:12.5px;padding:8px 13px;border:1px solid #4a4a4a;
   background:#818181;color:#141414;cursor:pointer;border-radius:2px}
 button.k:hover{background:#8d8d8d}
 button.k:disabled{opacity:.38;cursor:default}
 button.k.dunkel{background:#242424;color:#eee;border-color:#242424}
+button.k.an{background:#242424;color:#eee;border-color:#242424}
 textarea.ablehn{width:100%;max-width:880px;height:66px;font:inherit;font-size:13px;
   padding:9px;background:#8a8a8a;border:1px solid #4a4a4a;color:#141414;resize:vertical}
 .hinw{margin-left:auto;font-size:11.5px;color:#3d3d3d}
+.aufgaben{display:none;margin:8px 0 0;padding:10px 14px;background:#8a8a8a;
+  border:1px solid #6a6a6a;max-width:960px;font-size:12.5px}
+body.aufgabenAn .aufgaben{display:block}
+.aufgaben ol{margin:6px 0 0 18px}
+.aufgaben li{margin:2px 0}
+.aufgaben em{font-style:normal;color:#3f3f3f}
 .wahl{position:relative;padding:0;border:0;background:transparent;cursor:pointer;
-  display:flex;flex-direction:column;gap:6px;text-align:left}
+  display:flex;flex-direction:column;gap:5px;text-align:left}
 .wahl .nr{position:absolute;top:-10px;left:-10px;width:22px;height:22px;border-radius:50%;
   background:#2a2a2a;color:#e8e8e8;font-size:11px;font-weight:700;z-index:6;
   display:flex;align-items:center;justify-content:center}
@@ -35,14 +42,13 @@ textarea.ablehn{width:100%;max-width:880px;height:66px;font:inherit;font-size:13
   transition:border-color .12s;pointer-events:none}
 .wahl:hover::after{border-color:#2a2a2a}
 .wahl.eng::after{border-color:#111;border-width:3px}
-.these{font-size:11.5px;line-height:1.4;color:#242424;padding-top:2px;display:none}
+.mech{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#3f3f3f}
+.these{font-size:11.5px;line-height:1.4;color:#242424;display:none}
 body.thesen .these{display:block}
-.marke{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#3f3f3f}
 
 /* ============================================================
-   WIREFRAME-SPRACHE — reine Graustufen, kein Farbton, kein Licht,
-   kein Material. Was hier nicht funktioniert, wird spaeter nicht
-   mit Farbe gerettet.
+   WIREFRAME — reine Graustufen. Kein Farbton, kein Material,
+   kein Licht. Der Inhalt ist englisch, weil er das Produkt ist.
    ============================================================ */
 .rahmen{position:relative;--s:.5;overflow:hidden;
   width:calc(840px * var(--s));height:calc(560px * var(--s))}
@@ -54,6 +60,7 @@ body.thesen .these{display:block}
 .wf{width:840px;height:560px;background:#242424;color:#c9c9c9;overflow:hidden;
   border:1px solid #5c5c5c;display:grid;gap:8px;padding:8px;
   font:12px/1.4 'Segoe UI',system-ui,sans-serif}
+.wf > *{min-width:0;min-height:0}
 .box{border:1px solid #4c4c4c;background:#2e2e2e;display:flex;flex-direction:column;
   overflow:hidden;min-width:0;min-height:0}
 .box > h4{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#8f8f8f;
@@ -62,42 +69,53 @@ body.thesen .these{display:block}
 .box > h4 em{font-style:normal;margin-left:auto;color:#6f6f6f;letter-spacing:.08em}
 .inh{padding:7px 9px;flex:1;overflow:hidden;display:flex;flex-direction:column;gap:5px}
 
-/* Bedienebenen-Streifen: laut Spezifikation immer sichtbar getrennt. */
 .streifen{border:1px solid #4c4c4c;background:#2e2e2e;display:flex;
-  align-items:center;gap:0;padding:0 9px;min-width:0;overflow:hidden}
+  align-items:center;padding:0 9px;min-width:0;overflow:hidden}
 .eb{font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:6px 11px;
   color:#9a9a9a;border-right:1px solid #414141}
 .eb:first-child{padding-left:0}
 .eb.an{background:#4a4a4a;color:#e8e8e8}
-.status{margin-left:auto;font-size:10px;color:#8f8f8f;display:flex;gap:12px;overflow:hidden;flex:none}
+.status{margin-left:auto;font-size:10px;color:#8f8f8f;display:flex;gap:12px;
+  overflow:hidden;flex:none}
 .status span{white-space:nowrap}
 .pkt{display:inline-block;width:5px;height:5px;border-radius:50%;background:#9a9a9a;
   margin-right:4px;vertical-align:1px}
 .pkt.alt{background:#6a6a6a}
 .pkt.weg{background:transparent;border:1px solid #6a6a6a}
 
-/* Quellenzeile */
+/* Schrittleiste — sichtbarer Weg, sichtbarer Rueckweg. */
+.schritte{border:1px solid #4c4c4c;background:#2e2e2e;display:flex;align-items:center;
+  padding:0 9px;overflow:hidden}
+.sch{font-size:10px;letter-spacing:.09em;padding:6px 12px;color:#7d7d7d;
+  border-right:1px solid #414141;white-space:nowrap}
+.sch.an{color:#e8e8e8;background:#4a4a4a}
+.sch.war{color:#a8a8a8}
+.zurueck{margin-left:auto;font-size:10px;color:#9a9a9a;border:1px solid #5a5a5a;
+  padding:3px 9px;white-space:nowrap}
+
 .qz{display:flex;align-items:center;gap:7px;font-size:11px;padding:2px 0;
   border-bottom:1px solid #333}
 .qz .n{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .qz .r{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:#7d7d7d;
-  min-width:52px}
+  min-width:56px}
 .suche{border:1px solid #454545;background:#282828;color:#8f8f8f;font-size:10px;
   padding:4px 7px;flex:none}
 
-/* Heatmap */
 .hm{display:flex;flex-direction:column;gap:2px;flex:1;min-height:0}
 .hmk{display:flex;gap:2px;font-size:8px;color:#7d7d7d;letter-spacing:.06em}
 .hmk span{flex:1;text-align:center}
-/* Die Zeilen wachsen mit dem Kasten: eine vergleichende Karte, die ihren
-   Platz nicht ausfuellt, sieht nach Fehler aus, obwohl das Layout stimmt. */
-.hmz{display:flex;align-items:stretch;gap:5px;flex:1;min-height:9px}
-.hmz .n{width:74px;font-size:10px;white-space:nowrap;overflow:hidden;
+.hmz{display:flex;align-items:stretch;gap:5px;flex:1;min-height:8px}
+.hmz .n{width:76px;font-size:10px;white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis;flex:none;align-self:center}
 .hmz .z{display:flex;gap:2px;flex:1}
-.hmz .z i{flex:1;display:block;height:100%;min-height:8px}
+.hmz .z i{flex:1;display:block;height:100%;min-height:7px}
+/* Kontextzeilen bleiben sichtbar, aber flach — das ist Focus+Context. */
+.hmz.ctx{flex:none;height:5px;opacity:.5}
+.hmz.ctx .n{font-size:0}
+.hmz.fokus{flex:4}
+.hmz.fokus .n{font-size:11px;color:#e4e4e4}
+.markiert{outline:1px solid #a8a8a8;outline-offset:1px}
 
-/* Befund */
 .bf{border:1px solid #454545;background:#333;padding:5px 7px;display:flex;
   flex-direction:column;gap:2px}
 .bf b{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;
@@ -106,49 +124,72 @@ body.thesen .these{display:block}
 .bf i{font-style:normal;font-size:9px;color:#7d7d7d}
 .bf.an{background:#3d3d3d;border-color:#6a6a6a}
 
-/* Assistent — feste Form laut Spezifikation, fuenf Teile in fester Reihenfolge */
-.as{display:flex;flex-direction:column;gap:4px;flex:1;min-height:0}
-.ast{display:flex;gap:7px;align-items:baseline}
+.as{display:flex;flex-direction:column;gap:5px;flex:1;min-height:0}
+.ast{display:flex;gap:8px;align-items:baseline}
 .ast b{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:#7d7d7d;
-  width:88px;flex:none;font-weight:400}
-.ast span{font-size:10.5px;color:#c9c9c9;flex:1}
-.knopfreihe{display:flex;gap:5px;margin-top:auto;padding-top:6px}
+  width:96px;flex:none;font-weight:400}
+.ast span{font-size:11px;color:#c9c9c9;flex:1}
+.as.gross .ast b{width:116px;font-size:9.5px}
+.as.gross .ast span{font-size:14px}
+.knopfreihe{display:flex;gap:5px;margin-top:auto;padding-top:6px;flex-wrap:wrap}
 .wfk{font-size:9.5px;letter-spacing:.06em;padding:4px 9px;border:1px solid #5a5a5a;
-  color:#c2c2c2;background:#3a3a3a}
+  color:#c2c2c2;background:#3a3a3a;white-space:nowrap}
 .wfk.stark{background:#5a5a5a;color:#eee}
+/* Geschlossener Beleg: benannt und sichtbar, nur nicht geoeffnet. */
+.abruf{font-size:10px;color:#9a9a9a;border:1px solid #4a4a4a;background:#292929;
+  padding:5px 8px;display:flex;align-items:center;gap:7px}
+.abruf::before{content:'+';font-size:12px;color:#7d7d7d;width:9px}
+.abruf em{font-style:normal;margin-left:auto;color:#6f6f6f;font-size:9px}
 
-/* Kurve / Detail */
 .kurve{flex:1;border:1px solid #454545;background:#282828;position:relative;
   min-height:0}
 .kurve svg{position:absolute;inset:0;width:100%;height:100%}
 .detailz{display:flex;gap:5px;font-size:9px;color:#8f8f8f}
 .detailz span{flex:1;border:1px solid #454545;background:#282828;padding:3px 5px}
+.vg{display:flex;gap:6px;flex:1;min-height:0}
+.vg > div{flex:1;border:1px solid #454545;background:#282828;padding:6px 7px;
+  font-size:10px;color:#9a9a9a;display:flex;flex-direction:column;gap:4px}
+.vg b{font-size:9px;letter-spacing:.12em;text-transform:uppercase;font-weight:400;
+  color:#8f8f8f}
 
-/* Vergleich */
-.vg{display:flex;gap:5px}
-.vg > div{flex:1;border:1px solid #454545;background:#282828;padding:5px 6px;
-  font-size:9.5px;color:#9a9a9a}
-
-/* Zwei-Ebenen-Variante: zwei Bildschirme in einer Kachel */
-.zwei{display:flex;gap:8px;grid-area:1/1/-1/-1}
-.zwei > .halb{flex:1 1 0;display:grid;gap:6px;min-width:0;overflow:hidden;
-  border:1px dashed #5a5a5a;padding:6px}
-.zwei > .halb > *{min-width:0;overflow:hidden}
-.wf > div{min-width:0;min-height:0}
-.zwei .bez{grid-column:1/-1;font-size:8.5px;letter-spacing:.14em;
-  text-transform:uppercase;color:#7d7d7d}
+.zoomleiste{display:flex;align-items:center;border:1px solid #4c4c4c;
+  background:#2e2e2e;padding:0 9px;overflow:hidden}
+.zs{font-size:10px;letter-spacing:.09em;padding:6px 12px;color:#7d7d7d;
+  border-right:1px solid #414141;white-space:nowrap}
+.zs.an{color:#e8e8e8;background:#4a4a4a}
+.ausschnitt{margin-left:auto;font-size:9.5px;color:#8f8f8f;display:flex;
+  align-items:center;gap:6px;white-space:nowrap}
+.minimap{width:96px;height:12px;border:1px solid #5a5a5a;position:relative;
+  background:#282828;flex:none;display:block}
+.minimap i{position:absolute;top:0;bottom:0;background:#6a6a6a;display:block}
 </style>
 </head>
 <body>
 <header>
-  <div class="stufe" id="stufe">Stufe 2 · Schritt 1 von 3 — Wireframe UX · Oberfläche: Main</div>
-  <h1 id="frage">Wo liegt was?</h1>
-  <div class="unter" id="unter">Graustufen, keine Optik, kein Material, kein Licht — genau wie in
-    deinem Leitfaden („Attention to good layout, controls and typefaces"). Alle fünf
-    zeigen denselben Pflichtinhalt aus der Spezifikation: Quellen, vergleichende
-    Heatmap, Detail, Befunde, Assistent, Vorher/Nachher, die vier Bedienebenen und den
-    Status. Verschieden ist nur, was die Hauptsache ist. Was im Graubild nicht
-    funktioniert, retten Farbe und Glas später nicht.</div>
+  <div class="stufe" id="stufe">Stufe 2 · Schritt 1 von 3 — Wireframe UX · Main</div>
+  <h1 id="frage">Was ist wann sichtbar?</h1>
+  <div class="unter" id="unter">Fünf <b>Disclosure-Mechaniken</b>, nicht fünf
+    Kastenanordnungen. Alle fünf können denselben Pflichtinhalt aus der Spezifikation
+    zeigen — sie unterscheiden sich darin, <i>wann</i> sie was zeigen und wie man an
+    den Rest kommt. Graustufen, keine Optik. Alle Kacheln stehen im selben
+    Arbeitsschritt; unten kannst du den Schritt wechseln.</div>
+  <div class="aufgaben" id="aufgaben">
+    <b>Die Aufgabenliste nach Häufigkeit</b> — laut <code>docs/DESIGN-GESETZE.md</code>
+    die Voraussetzung für jedes Wireframe. Geteilt wird nach Häufigkeit der Aufgabe,
+    nicht nach Können des Nutzers.
+    <ol>
+      <li><b>Den Mix lesen</b> — bei jedem Sessionstart. <em>sehr häufig</em></li>
+      <li><b>Einen Befund verstehen</b> — Ort, Grund, Sicherheit.
+        <em>der Kernakt, vielfach je Session</em></li>
+      <li><b>Den kleinsten Versuch machen</b> — vorhören, anwenden.
+        <em>folgt jedem Befund</em></li>
+      <li><b>Urteilen</b> — A/B, behalten oder verwerfen. <em>folgt jedem Versuch</em></li>
+      <li><b>Eine bestimmte Quelle finden</b> — Suche, Pinnen. <em>gelegentlich</em></li>
+      <li><b>Rollen und Fokusgruppen setzen</b> — <em>selten, meist einmal je Projekt</em></li>
+      <li><b>Status ablesen</b> — Frische, laufende Messung, degradierte Funktion.
+        <em>ständig nebenbei, nie das Ziel</em></li>
+    </ol>
+  </div>
 </header>
 <main id="buehne"></main>
 <footer id="fuss"></footer>
@@ -156,196 +197,279 @@ body.thesen .these{display:block}
 <script>
 /* ================================================================
    NAKAMA — WIREFRAME MAIN
-   Stufe 2 aus GUI-Tips.pdf, Schritt 1: Anordnung und Hierarchie.
-   Inhalt abschliessend aus docs/oberflaechen-spezifikation.md —
-   nichts erfunden, nichts weggelassen.
+   Stufe 2 / Schritt 1. Varianten unterscheiden sich in der
+   Disclosure-Mechanik (docs/DESIGN-GESETZE.md, Regel 3):
+   Schritt-fuer-Schritt · Focus+Context · Overview+Detail ·
+   nur-auf-Abruf · semantischer Zoom.
+   Produkttexte englisch (CLAUDE.md, Arbeitsweise).
    ================================================================ */
 
-const QUELLEN = [
-  ['Lead-Vocal','führt','ok',[1,2,3,5,4,4,3,2,1]],
-  ['Chor','trägt','ok',[1,1,3,4,4,5,4,3,2]],
-  ['Klavier','trägt','ok',[1,3,5,4,3,3,2,2,1]],
-  ['Drums','trägt','ok',[4,5,3,2,2,3,4,5,3]],
-  ['Bass','trägt','alt',[5,5,4,2,1,1,1,0,0]],
-  ['Gitarre','begleitet','ok',[0,1,3,4,4,4,3,2,1]],
-  ['Streicher','begleitet','ok',[1,2,3,4,4,4,4,3,2]],
-  ['Synth-Pad','verschm.','weg',[1,2,3,3,3,3,4,4,3]],
-  ['Blech','begleitet','ok',[0,1,2,4,5,4,4,3,2]],
-  ['Perkussion','begleitet','ok',[1,2,2,3,3,4,5,5,4]],
-  ['Kontrabass','trägt','ok',[5,4,3,2,1,1,0,0,0]],
-  ['Harfe','begleitet','ok',[0,1,2,4,4,3,3,2,1]],
-  ['Orgel','geschützt','ok',[3,4,4,3,3,2,2,1,1]],
-  ['Raum-Mikro','verschm.','alt',[1,2,3,3,4,4,4,4,3]],
-  ['Backing-Vox','begleitet','ok',[0,1,2,4,4,4,3,2,1]],
-  ['Shaker','begleitet','ok',[0,0,1,1,2,3,4,5,5]]
+const SOURCES = [
+  ['Lead Vocal','leads','ok',[1,2,3,5,4,4,3,2,1]],
+  ['Choir','carries','ok',[1,1,3,4,4,5,4,3,2]],
+  ['Piano','carries','ok',[1,3,5,4,3,3,2,2,1]],
+  ['Drums','carries','ok',[4,5,3,2,2,3,4,5,3]],
+  ['Bass','carries','alt',[5,5,4,2,1,1,1,0,0]],
+  ['Guitar','supports','ok',[0,1,3,4,4,4,3,2,1]],
+  ['Strings','supports','ok',[1,2,3,4,4,4,4,3,2]],
+  ['Synth Pad','blended','weg',[1,2,3,3,3,3,4,4,3]],
+  ['Brass','supports','ok',[0,1,2,4,5,4,4,3,2]],
+  ['Percussion','supports','ok',[1,2,2,3,3,4,5,5,4]],
+  ['Double Bass','carries','ok',[5,4,3,2,1,1,0,0,0]],
+  ['Harp','supports','ok',[0,1,2,4,4,3,3,2,1]],
+  ['Organ','protected','ok',[3,4,4,3,3,2,2,1,1]],
+  ['Room Mic','blended','alt',[1,2,3,3,4,4,4,4,3]],
+  ['Backing Vox','supports','ok',[0,1,2,4,4,4,3,2,1]],
+  ['Shaker','supports','ok',[0,0,1,1,2,3,4,5,5]]
 ];
 const BAND = ['20','60','120','250','500','1k','2k','4k','8k'];
-const BEFUNDE = [
-  ['Bass · 180–260 Hz','Trägt 3,4 dB mehr als die Summe verträgt.','Sicherheit hoch'],
-  ['Chor · 2,5–4 kHz','Verdeckt das Lead-Vocal in den lauten Takten.','Sicherheit mittel'],
-  ['Drums · Breite','Messung unvollständig — 6 s von 20 s.','noch unklar']
+const FINDINGS = [
+  ['Bass · 180–260 Hz','Carries 3.4 dB more than the sum can take.','Confidence: high'],
+  ['Choir · 2.5–4 kHz','Masks the lead vocal in the loud bars.','Confidence: medium'],
+  ['Drums · Width','Measurement incomplete — 6 s of 20 s.','Unclear']
 ];
-const ASSIST = [
-  ['Priorität','Bass gegen Klavier, 180–260 Hz'],
-  ['Ursache','Bass trägt dort 3,4 dB zuviel'],
-  ['Kleinster Versuch','Bass −2 dB bei 220 Hz, Q 1.2'],
-  ['Worauf hören','linke Hand des Klaviers, Takt 33–41'],
-  ['Danach','dieselbe Passage erneut prüfen']
+const ADVISOR = [
+  ['Priority','Bass against piano, 180–260 Hz'],
+  ['Likely cause','Bass carries 3.4 dB too much there'],
+  ['Smallest test','Bass −2 dB at 220 Hz, Q 1.2'],
+  ['Listen for','piano left hand, bars 33–41'],
+  ['Then','re-check the same passage']
+];
+const ZUSTAENDE = [
+  ['read','1 · Mix lesen'],
+  ['finding','2 · Befund verstehen'],
+  ['verdict','3 · Urteilen']
 ];
 
-/* ---------- Bausteine ---------- */
-const kasten = (titel, zusatz, inhalt, stil='') =>
-  `<div class="box" style="${stil}"><h4>${titel}${zusatz?`<em>${zusatz}</em>`:''}</h4>
-   <div class="inh">${inhalt}</div></div>`;
+/* ---------- Bausteine (Produkttext englisch) ---------- */
+const kasten = (t, z, i, st='') =>
+  `<div class="box" style="${st}">${t||z?`<h4>${t}${z?`<em>${z}</em>`:''}</h4>`:''}
+   <div class="inh">${i}</div></div>`;
 
-function bQuellen(n, suche=true){
-  const zeilen = QUELLEN.slice(0,n).map(([nm,r,f])=>
-    `<div class="qz"><span class="pkt ${f==='ok'?'':f}"></span>
-     <span class="n">${nm}</span><span class="r">${r}</span></div>`).join('');
-  return kasten('Quellen', n + ' von 16',
-    (suche ? '<div class="suche">Suche · Pinnen · Fokusgruppe</div>' : '')
-    + `<div style="flex:1;overflow:hidden">${zeilen}</div>`);
+function ebenen(aktiv){
+  const eb = ['Observe','Advise','Audition','Apply']
+    .map((e,i)=>`<span class="eb${i===aktiv?' an':''}">${e}</span>`).join('');
+  return `<div class="streifen">${eb}
+    <span class="status"><span><span class="pkt"></span>12 fresh</span>
+      <span><span class="pkt alt"></span>3 stale</span>
+      <span><span class="pkt weg"></span>1 offline</span>
+      <span>Measuring 68 %</span><span>Width: unavailable</span></span></div>`;
 }
-function bHeatmap(n, mitNamen=true){
-  const kopf = `<div class="hmk">${mitNamen?'<span style="width:74px;flex:none"></span>':''}
+function schritte(z){
+  const i = ZUSTAENDE.findIndex(x=>x[0]===z);
+  const namen = ['1 · Read the mix','2 · Understand a finding','3 · Judge the change'];
+  return `<div class="schritte">
+    ${namen.map((n,k)=>`<span class="sch${k===i?' an':k<i?' war':''}">${n}</span>`).join('')}
+    ${i>0?'<span class="zurueck">← Back</span>':''}</div>`;
+}
+function quellen(n, suche=true, titel='Sources'){
+  return kasten(titel, n + ' of 16',
+    (suche?'<div class="suche">Search · Pin · Focus group</div>':'')
+    + `<div style="flex:1;overflow:hidden">${SOURCES.slice(0,n).map(([nm,r,f])=>
+        `<div class="qz"><span class="pkt ${f==='ok'?'':f}"></span>
+         <span class="n">${nm}</span><span class="r">${r}</span></div>`).join('')}</div>`);
+}
+function heatmap(n, namen=true, opt={}){
+  const kopf = `<div class="hmk">${namen?'<span style="width:76px;flex:none"></span>':''}
       ${BAND.map(b=>`<span>${b}</span>`).join('')}</div>`;
-  const zeilen = QUELLEN.slice(0,n).map(([nm,,,e])=>
-    `<div class="hmz">${mitNamen?`<span class="n">${nm}</span>`:''}
-     <span class="z">${e.map(v=>`<i style="background:hsl(0 0% ${(14+v*11)}%)"></i>`)
-       .join('')}</span></div>`).join('');
-  return kasten('Vergleichende Heatmap', 'Liste → Heatmap → Detail',
+  const zeilen = SOURCES.slice(0,n).map(([nm,,,e],i)=>{
+    const kl = opt.fokus ? (opt.fokus.includes(i) ? ' fokus' : ' ctx') : '';
+    return `<div class="hmz${kl}">${namen?`<span class="n">${nm}</span>`:''}
+     <span class="z">${e.map((v,b)=>{
+       const m = (opt.band !== undefined && b === opt.band
+                  && (!opt.fokus || opt.fokus.includes(i))) ? ' class="markiert"' : '';
+       return `<i${m} style="background:hsl(0 0% ${(14+v*11)}%)"></i>`;}).join('')}</span></div>`;
+  }).join('');
+  return kasten(opt.titel || 'Comparative heatmap', opt.zusatz || 'list → heatmap → detail',
     `<div class="hm">${kopf}${zeilen}</div>`);
 }
-function bDetail(){
-  return kasten('Detail · Klavier', 'Spektrum · Lautheit · Dynamik · Breite · Verlauf',
+function detail(titel='Detail · Piano', zusatz='spectrum · loudness · dynamics · width · history', ab=false){
+  return kasten(titel, zusatz,
     `<div class="kurve"><svg viewBox="0 0 300 100" preserveAspectRatio="none">
+       ${ab?`<path d="M0 74 C40 72 60 80 90 78 C130 75 150 44 190 40 C230 36 260 48 300 46"
+             fill="none" stroke="#6a6a6a" stroke-width="1.5" stroke-dasharray="3 3"/>`:''}
        <path d="M0 70 C40 68 60 76 90 74 C130 71 150 40 190 36 C230 32 260 44 300 42"
              fill="none" stroke="#b0b0b0" stroke-width="1.5"/>
        <path d="M0 50H300" stroke="#3f3f3f" stroke-width="1" stroke-dasharray="2 3"/>
      </svg></div>
      <div class="detailz"><span>−8.4 LUFS</span><span>DR 9</span>
-       <span>Breite 62 %</span><span>Verlauf 40 s</span></div>`);
+       <span>Width 62 %</span><span>History 40 s</span></div>`);
 }
-function bBefunde(n, offen=0){
-  return kasten('Befunde', n + ' offen',
-    BEFUNDE.slice(0,n).map(([o,t,s],i)=>
+function befunde(n, offen=0, titel='Findings'){
+  return kasten(titel, n + ' open',
+    FINDINGS.slice(0,n).map(([o,t,s],i)=>
       `<div class="bf${i===offen?' an':''}"><b>${o}</b><span>${t}</span><i>${s}</i></div>`)
       .join(''));
 }
-function bAssistent(zusatz='ein Schritt'){
-  return kasten('Assistent', zusatz,
-    `<div class="as">${ASSIST.map(([b,t])=>
+function advisor(zusatz='one step', gross=false){
+  return kasten('Advisor', zusatz,
+    `<div class="as${gross?' gross':''}">${ADVISOR.map(([b,t])=>
       `<div class="ast"><b>${b}</b><span>${t}</span></div>`).join('')}
-      <div class="knopfreihe"><span class="wfk">Vorhören (halten)</span>
-        <span class="wfk stark">Anwenden</span><span class="wfk">Verwerfen</span></div>
-     </div>`);
+      <div class="knopfreihe"><span class="wfk">Audition (hold)</span>
+        <span class="wfk stark">Apply</span><span class="wfk">Discard</span></div></div>`);
 }
-function bVergleich(){
-  return kasten('Vorher / Nachher', 'level-gematcht',
-    `<div class="vg"><div>A — Baseline</div><div>B — Änderung</div></div>
-     <div class="knopfreihe"><span class="wfk">behalten</span>
-       <span class="wfk">verwerfen</span><span class="wfk">noch unklar</span></div>`);
+function vergleich(){
+  return kasten('Before / After', 'level-matched',
+    `<div class="vg"><div><b>A — Baseline</b><span>−8.4 LUFS</span></div>
+       <div><b>B — Change</b><span>−8.4 LUFS · Bass −2 dB @ 220</span></div></div>
+     <div class="knopfreihe"><span class="wfk stark">Keep</span>
+       <span class="wfk">Discard</span><span class="wfk">Unsure</span></div>`);
 }
-function bRollen(){
-  return kasten('Musikalische Prioritäten', 'Rollen',
-    `<div style="display:flex;gap:4px;flex-wrap:wrap">
-      ${['führt','trägt','begleitet','geschützt','verschmolzen']
-        .map(r=>`<span class="wfk">${r}</span>`).join('')}</div>`);
-}
-function streifen(aktiv=0, feld='strip'){
-  const eb = ['Beobachten','Beraten','Vorhören','Anwenden']
-    .map((e,i)=>`<span class="eb${i===aktiv?' an':''}">${e}</span>`).join('');
-  return `<div class="streifen" style="${feld?`grid-area:${feld}`:''}">${eb}
-    <span class="status"><span><span class="pkt"></span>12 frisch</span>
-      <span><span class="pkt alt"></span>3 veraltet</span>
-      <span><span class="pkt weg"></span>1 getrennt</span>
-      <span>Messung läuft 68 %</span>
-      <span>Breite: nicht verfügbar</span></span></div>`;
-}
+const abruf = (text, was) =>
+  `<div class="abruf">${text}<em>${was}</em></div>`;
+const minimap = (von, bis) =>
+  `<span class="minimap"><i style="left:${von}%;width:${bis-von}%"></i></span>`;
 
-/* ---------- Die fuenf Anordnungen ---------- */
+/* ---------- Die fuenf Mechaniken ---------- */
 const ENTWUERFE = [
-{ id:'spalten', name:'Quellen links, Bühne mitte, Assistent rechts',
-  these:'Die Quelle ist der Anker: erst wählen, dann ansehen, der Rat steht daneben. '
-      + 'Vertraute Werkzeugform. Preis — die Bühne ist schmal, und die Heatmap muss '
-      + 'sich den Platz mit den Befunden teilen.',
-  gitter:`grid-template-columns:208px 1fr 236px;
-          grid-template-rows:34px 1fr 168px;
-          grid-template-areas:"strip strip strip" "q buehne a" "q befunde a"`,
-  bau:()=> streifen(1)
-    + `<div style="grid-area:q;display:flex">${bQuellen(13)}</div>`
-    + `<div style="grid-area:buehne;display:flex">${bHeatmap(10,true)}</div>`
-    + `<div style="grid-area:befunde;display:flex">${bBefunde(3)}</div>`
-    + `<div style="grid-area:a;display:flex;flex-direction:column;gap:8px">
-         ${bAssistent()}${bVergleich()}</div>` },
+{ id:'schritt', mech:'Schritt für Schritt', name:'Ein Ding zur Zeit',
+  these:'Der Bildschirm zeigt genau den Schritt, in dem du bist — sonst nichts. Der Weg '
+      + 'steht oben, der Rückweg auch. Preis: nie zwei Dinge nebeneinander, also kein '
+      + 'spontanes Quervergleichen.',
+  bau:(z)=>{
+    if(z==='read') return {gitter:'grid-template-rows:30px 30px 1fr 54px',
+      html: ebenen(0) + schritte(z)
+        + `<div style="display:flex">${heatmap(16,true,{zusatz:'the whole mix'})}</div>`
+        + `<div style="display:flex">${kasten('','',
+            `<div style="display:flex;align-items:center;gap:12px">
+              <span style="font-size:13px;color:#dcdcdc">3 findings · 1 needs more data</span>
+              <span class="wfk stark" style="margin-left:auto">Start with the first</span>
+              <span class="wfk">Sources &amp; roles</span></div>`)}</div>`};
+    if(z==='finding') return {gitter:'grid-template-rows:30px 30px 168px 1fr',
+      html: ebenen(1) + schritte(z)
+        + `<div style="display:flex">${heatmap(5,true,{fokus:[2,4],band:2,
+            titel:'Where', zusatz:'Bass · 180–260 Hz'})}</div>`
+        + `<div style="display:flex">${advisor('finding 1 of 3', true)}</div>`};
+    return {gitter:'grid-template-rows:30px 30px 1fr',
+      html: ebenen(3) + schritte(z)
+        + `<div style="display:flex;gap:8px">
+             ${detail('Detail · Bass','A vs B', true)}${vergleich()}</div>`};
+  }},
 
-{ id:'karte', name:'Die Heatmap ist die Bühne',
-  these:'Der ganze Mix auf einen Blick: Quellenliste und Heatmap sind EIN Ding, die '
-      + 'Namen sind die linke Achse der Karte. Preis — der Assistent wird schmal, und '
-      + 'das Detail einer einzelnen Quelle muss sich einblenden.',
-  gitter:`grid-template-columns:1fr 214px;
-          grid-template-rows:34px 1fr 132px;
-          grid-template-areas:"strip strip" "karte a" "befunde a"`,
-  bau:()=> streifen(0)
-    + `<div style="grid-area:karte;display:flex">${bHeatmap(14,true)}</div>`
-    + `<div style="grid-area:befunde;display:flex;gap:8px">
-         ${bBefunde(3)}</div>`
-    + `<div style="grid-area:a;display:flex;flex-direction:column;gap:8px">
-         ${bAssistent('ein Schritt')}${bRollen()}</div>` },
+{ id:'fokus', mech:'Focus + Context', name:'Das Umliegende bleibt, aber flach',
+  these:'Eine einzige Fläche. Was gerade zählt, wächst; alles andere schrumpft zu '
+      + 'Streifen, verschwindet aber nie. Preis: der Kontext ist da, aber nicht mehr '
+      + 'lesbar — man sieht nur noch, DASS dort etwas ist.',
+  bau:(z)=>{
+    if(z==='read') return {gitter:'grid-template-rows:30px 1fr 96px',
+      html: ebenen(0)
+        + `<div style="display:flex">${heatmap(16,true,{zusatz:'all 16, equal weight'})}</div>`
+        + `<div style="display:flex">${befunde(2)}</div>`};
+    if(z==='finding') return {gitter:'grid-template-rows:30px 1fr 168px',
+      html: ebenen(1)
+        + `<div style="display:flex">${heatmap(16,true,
+            {fokus:[2,4],band:2,zusatz:'2 in focus · 14 kept as context'})}</div>`
+        + `<div style="display:flex">${advisor('finding 1 of 3')}</div>`};
+    return {gitter:'grid-template-rows:30px 1fr 156px',
+      html: ebenen(3)
+        + `<div style="display:flex">${heatmap(16,true,
+            {fokus:[4],band:2,zusatz:'A vs B in place'})}</div>`
+        + `<div style="display:flex">${vergleich()}</div>`};
+  }},
 
-{ id:'assistent', name:'Der Assistent führt, alles andere ist Beleg',
-  these:'Nakama berät — also ist der eine nächste Schritt die Hauptsache, groß und '
-      + 'mittig, und die Messung steht als Beleg darunter. Preis — wer selbst suchen '
-      + 'will statt geführt zu werden, muss sich erst durchklicken.',
-  gitter:`grid-template-columns:132px 1fr 214px;
-          grid-template-rows:34px 218px 1fr;
-          grid-template-areas:"strip strip strip" "rail a v" "rail beleg v"`,
-  bau:()=> streifen(1)
-    + `<div style="grid-area:rail;display:flex">${bQuellen(13,false)}</div>`
-    + `<div style="grid-area:a;display:flex">${bAssistent('Schritt 1 von 3')}</div>`
-    + `<div style="grid-area:beleg;display:flex;gap:8px">
-         ${bDetail()}${bHeatmap(6,true)}</div>`
-    + `<div style="grid-area:v;display:flex;flex-direction:column;gap:8px">
-         ${bVergleich()}${bBefunde(2)}</div>` },
+{ id:'uebersicht', mech:'Overview + Detail',
+  name:'Kleine Karte bleibt, Arbeitsfläche wechselt',
+  these:'Oben eine dauerhafte kleine Karte des ganzen Mixes, die zeigt, wo du gerade '
+      + 'bist; darunter eine Arbeitsfläche, die mit der Aufgabe wechselt. Preis: die '
+      + 'Karte kostet dauerhaft Platz und muss im Kopf mit der Arbeitsfläche verbunden '
+      + 'werden.',
+  bau:(z)=>{
+    const karte = `<div style="display:flex">${heatmap(16,false,{
+      titel:'Overview',
+      zusatz: z==='read' ? 'nothing selected'
+            : z==='finding' ? 'Bass · 180–260 Hz' : 'Bass · comparing A/B',
+      band: z==='read' ? undefined : 2})}</div>`;
+    if(z==='read') return {gitter:'grid-template-rows:30px 148px 1fr',
+      html: ebenen(0) + karte
+        + `<div style="display:flex;gap:8px">${befunde(3)}${quellen(11)}</div>`};
+    if(z==='finding') return {gitter:'grid-template-rows:30px 148px 1fr',
+      html: ebenen(1) + karte
+        + `<div style="display:flex;gap:8px">${advisor('finding 1 of 3')}${detail()}</div>`};
+    return {gitter:'grid-template-rows:30px 148px 1fr',
+      html: ebenen(3) + karte
+        + `<div style="display:flex;gap:8px">${vergleich()}
+             ${detail('Detail · Bass','A vs B',true)}</div>`};
+  }},
 
-{ id:'befunde', name:'Die Befunde sind das Rückgrat',
-  these:'Die Arbeit ist eine Liste von Befunden, die man abarbeitet: links der Strom, '
-      + 'rechts der geöffnete Befund mit Ort, Begründung und nächstem Schritt. Preis — '
-      + 'der freie Blick auf den ganzen Mix tritt zurück.',
-  gitter:`grid-template-columns:246px 1fr 178px;
-          grid-template-rows:34px 1fr;
-          grid-template-areas:"strip strip strip" "befunde arbeit q"`,
-  bau:()=> streifen(1)
-    + `<div style="grid-area:befunde;display:flex">${bBefunde(3)}</div>`
-    + `<div style="grid-area:arbeit;display:flex;flex-direction:column;gap:8px">
-         <div style="display:flex;gap:8px;flex:1">${bDetail()}${bHeatmap(5,true)}</div>
-         ${bAssistent('zum offenen Befund')}${bVergleich()}</div>`
-    + `<div style="grid-area:q;display:flex">${bQuellen(13,false)}</div>` },
+{ id:'abruf', mech:'Nur auf Abruf', name:'Der Rat, und alles andere als Beleg',
+  these:'Fast leer: ein Satz, was zu tun ist, darunter benannte Belege, die geschlossen '
+      + 'sind bis du sie öffnest. Preis: wer selbst stöbern will, muss erst etwas '
+      + 'aufmachen — und Vertrauen haben, dass nichts unterschlagen wird.',
+  bau:(z)=>{
+    if(z==='read') return {gitter:'grid-template-rows:30px 1fr',
+      html: ebenen(0) + `<div style="display:flex">${kasten('Nakama','mix read',
+        `<div style="display:flex;flex-direction:column;gap:9px;padding:26px 10px">
+          <span style="font-size:18px;color:#dcdcdc">3 findings. One needs more data.</span>
+          <span style="font-size:11px;color:#8f8f8f">Bass · Choir · Drums</span>
+          <div class="knopfreihe" style="margin-top:16px">
+            <span class="wfk stark">Start with Bass</span>
+            <span class="wfk">Show all findings</span>
+            <span class="wfk">Show the mix</span>
+            <span class="wfk">Sources &amp; roles</span></div></div>`)}</div>`};
+    if(z==='finding') return {gitter:'grid-template-rows:30px 1fr',
+      html: ebenen(1) + `<div style="display:flex">${kasten('Advisor','finding 1 of 3',
+        `<div class="as gross">${ADVISOR.map(([b,t])=>
+           `<div class="ast"><b>${b}</b><span>${t}</span></div>`).join('')}
+         <div style="display:flex;flex-direction:column;gap:4px;margin-top:12px">
+           ${abruf('Where exactly','heatmap · 1 row')}
+           ${abruf('Why this cause','2 alternatives ruled out')}
+           ${abruf('Bass in detail','spectrum · dynamics · width')}
+           ${abruf('The other 2 findings','Choir · Drums')}</div>
+         <div class="knopfreihe"><span class="wfk">Audition (hold)</span>
+           <span class="wfk stark">Apply</span><span class="wfk">Discard</span></div>
+        </div>`)}</div>`};
+    return {gitter:'grid-template-rows:30px 1fr',
+      html: ebenen(3) + `<div style="display:flex">${kasten('Judge','level-matched',
+        `<div style="display:flex;flex-direction:column;gap:9px;padding:20px 10px">
+          <span style="font-size:17px;color:#dcdcdc">Bass −2 dB at 220 Hz is applied.</span>
+          <span style="font-size:11px;color:#8f8f8f">Listen to bars 33–41, then decide.</span>
+          <div class="knopfreihe" style="margin-top:8px">
+            <span class="wfk stark">Keep</span><span class="wfk">Discard</span>
+            <span class="wfk">Unsure</span></div>
+          <div style="display:flex;flex-direction:column;gap:4px;margin-top:14px">
+            ${abruf('A / B side by side','level-matched')}
+            ${abruf('What changed','spectrum difference')}</div></div>`)}</div>`};
+  }},
 
-{ id:'zweiebenen', name:'Zwei Ebenen statt Nebeneinander',
-  these:'Nichts teilt sich den Platz: Übersicht und Arbeit sind zwei Vollbilder, '
-      + 'zwischen denen umgeschaltet wird. Jedes Ding wird groß. Preis — man sieht nie '
-      + 'beides gleichzeitig und muss sich erinnern.',
-  gitter:`grid-template-columns:1fr;grid-template-rows:1fr`,
-  bau:()=> `<div class="zwei">
-      <div class="halb" style="grid-template-rows:auto 26px 1fr 96px">
-        <div class="bez">Ebene 1 — Übersicht</div>
-        ${streifen(0,'')}
-        <div style="display:flex">${bHeatmap(11,true)}</div>
-        <div style="display:flex">${bBefunde(2)}</div>
-      </div>
-      <div class="halb" style="grid-template-rows:auto 26px 150px 1fr 84px">
-        <div class="bez">Ebene 2 — Arbeit an einer Quelle</div>
-        ${streifen(2,'')}
-        <div style="display:flex">${bDetail()}</div>
-        <div style="display:flex">${bAssistent()}</div>
-        <div style="display:flex">${bVergleich()}</div>
-      </div>
-    </div>` }
+{ id:'zoom', mech:'Semantischer Zoom', name:'Dieselbe Fläche, drei Dichtestufen',
+  these:'Keine Panele, die auf- und zugehen: es gibt EIN Objekt, und beim Hineingehen '
+      + 'wird dasselbe genauer — Liste, dann Heatmap, dann eine Quelle in Tiefe. Genau '
+      + 'das, was die Spezifikation „Liste → Heatmap → Detail" nennt. Preis: nie zwei '
+      + 'Stufen gleichzeitig, die Orientierung trägt allein die Leiste.',
+  bau:(z)=>{
+    const stufe = z==='read' ? 0 : z==='finding' ? 1 : 2;
+    const ausschnitt = stufe===0 ? [0,100] : stufe===1 ? [12,32] : [25,31];
+    const leiste = `<div class="zoomleiste">
+      ${['1 · List (16)','2 · Heatmap (5)','3 · Source (1)']
+        .map((n,i)=>`<span class="zs${i===stufe?' an':''}">${n}</span>`).join('')}
+      <span class="ausschnitt">showing ${minimap(ausschnitt[0],ausschnitt[1])}
+        ${stufe===0?'all 16':stufe===1?'Piano … Bass':'Bass'}</span></div>`;
+    if(z==='read') return {gitter:'grid-template-rows:30px 30px 1fr',
+      html: ebenen(0) + leiste + `<div style="display:flex">${kasten('The mix','16 sources',
+        `<div style="flex:1;display:flex;flex-direction:column;gap:2px">
+          ${SOURCES.map(([nm,r,f,e])=>{
+            const s = e.reduce((a,b)=>a+b,0)/e.length;
+            return `<div class="qz" style="flex:1;border:0">
+              <span class="pkt ${f==='ok'?'':f}"></span>
+              <span class="n" style="flex:none;width:96px">${nm}</span>
+              <span class="r">${r}</span>
+              <span style="flex:1;height:8px;display:block;
+                    background:hsl(0 0% ${(12+s*13).toFixed(0)}%)"></span></div>`}).join('')}
+        </div>`)}</div>`};
+    if(z==='finding') return {gitter:'grid-template-rows:30px 30px 1fr 138px',
+      html: ebenen(1) + leiste
+        + `<div style="display:flex">${heatmap(5,true,{band:2,
+            titel:'Piano … Bass', zusatz:'180–260 Hz marked'})}</div>`
+        + `<div style="display:flex">${advisor('finding 1 of 3')}</div>`};
+    return {gitter:'grid-template-rows:30px 30px 1fr 128px',
+      html: ebenen(3) + leiste
+        + `<div style="display:flex">${detail('Bass','A vs B',true)}</div>`
+        + `<div style="display:flex">${vergleich()}</div>`};
+  }}
 ];
 
 /* ---------- Ablauf ---------- */
-let stufe = 1, eng = [], sieger = null;
+let stufe = 1, eng = [], sieger = null, zustand = 'finding';
 const ablehnungen = [], zeiten = {};
 let start = performance.now();
 const $ = s => document.querySelector(s);
@@ -358,13 +482,14 @@ function kachel(e, i, gross){
   rahmen.className = 'rahmen' + (gross ? ' gross' : '');
   const wf = document.createElement('div');
   wf.className = 'wf';
-  wf.style.cssText = e.gitter;
-  wf.innerHTML = e.bau();
+  const {gitter, html} = e.bau(zustand);
+  wf.style.cssText = gitter;
+  wf.innerHTML = html;
   rahmen.appendChild(wf);
   const nr = document.createElement('span');
   nr.className = 'nr'; nr.textContent = i + 1;
   const m = document.createElement('span');
-  m.className = 'marke'; m.textContent = 'Demo-Daten · Graustufen';
+  m.className = 'mech'; m.textContent = e.mech;
   const t = document.createElement('span');
   t.className = 'these';
   t.style.width = (gross ? 690 : 420) + 'px';
@@ -372,23 +497,22 @@ function kachel(e, i, gross){
   b.append(rahmen, m, t, nr);
   return b;
 }
-function knopf(text, fn, dunkel){
+function knopf(text, fn, klasse){
   const b = document.createElement('button');
-  b.className = 'k' + (dunkel ? ' dunkel' : '');
+  b.className = 'k' + (klasse ? ' ' + klasse : '');
   b.textContent = text; b.onclick = fn; return b;
 }
-function thesenKnopf(){
-  const an = document.body.classList.contains('thesen');
-  return knopf(an ? 'Thesen ausblenden' : 'Thesen einblenden', ()=>{
-    document.body.classList.toggle('thesen'); zeichnen(); });
+function zustandsKnoepfe(){
+  return ZUSTAENDE.map(([id,n]) =>
+    knopf(n, ()=>{ zustand = id; zeichnen(); }, zustand === id ? 'an' : ''));
 }
 function zeichnen(){
   buehne.innerHTML = ''; fuss.innerHTML = ''; buehne.style.display = 'flex';
   if(stufe === 1) s1(); else if(stufe === 2) s2(); else ergebnis();
 }
 function s1(){
-  $('#stufe').textContent = 'Stufe 2 · Schritt 1 von 3 — Wireframe UX · Oberfläche: Main';
-  $('#frage').textContent = 'Wo liegt was?';
+  $('#stufe').textContent = 'Stufe 2 · Schritt 1 von 3 — Wireframe UX · Main';
+  $('#frage').textContent = 'Was ist wann sichtbar?';
   ENTWUERFE.forEach((e,i)=>{
     const k = kachel(e, i, false);
     if(eng.includes(e.id)) k.classList.add('eng');
@@ -403,17 +527,25 @@ function s1(){
   });
   const w = knopf(eng.length === 2 ? 'Diese zwei groß vergleichen' : 'Zwei auswählen',
     ()=>{ zeiten.s1 = Math.round(performance.now()-start);
-          start = performance.now(); stufe = 2; zeichnen(); }, true);
+          start = performance.now(); stufe = 2; zeichnen(); }, 'dunkel');
   w.disabled = eng.length !== 2;
-  fuss.append(w, thesenKnopf(), knopf('Keine davon — und zwar weil …', ablehnen));
+  fuss.append(w, ...zustandsKnoepfe(),
+    knopf('Aufgabenliste', ()=>{ document.body.classList.toggle('aufgabenAn'); }),
+    knopf(document.body.classList.contains('thesen') ? 'Thesen aus' : 'Thesen ein',
+      ()=>{ document.body.classList.toggle('thesen'); zeichnen(); }),
+    knopf('Keine davon — weil …', ablehnen));
   const h = document.createElement('span');
   h.className = 'hinw';
-  h.textContent = eng.length + ' von 2 gewählt · in Großansicht sind die Beschriftungen lesbar';
+  h.textContent = eng.length + ' von 2 gewählt · alle Kacheln zeigen denselben Schritt';
   fuss.appendChild(h);
 }
 function s2(){
   $('#stufe').textContent = 'Stufe 2 · Schritt 1 von 3 — Zweikampf';
   $('#frage').textContent = 'Und welche von diesen beiden?';
+  $('#unter').textContent = 'Schalt beide durch die drei Schritte. Eine '
+    + 'Disclosure-Gestaltung lässt sich am Standbild nicht beurteilen — entscheidend '
+    + 'ist, was beim Wechsel passiert: was bleibt stehen, was verschwindet, und findest '
+    + 'du zurück.';
   eng.map(id => ENTWUERFE.find(e=>e.id===id)).forEach((e,i)=>{
     const k = kachel(e, i, true);
     k.onclick = ()=>{ sieger = e.id;
@@ -421,55 +553,62 @@ function s2(){
     buehne.appendChild(k);
   });
   fuss.append(knopf('← Zurück zu allen fünf', ()=>{ stufe = 1; zeichnen(); }),
-              thesenKnopf(), knopf('Keine von beiden — weil …', ablehnen));
+    ...zustandsKnoepfe(),
+    knopf(document.body.classList.contains('thesen') ? 'Thesen aus' : 'Thesen ein',
+      ()=>{ document.body.classList.toggle('thesen'); zeichnen(); }),
+    knopf('Keine von beiden — weil …', ablehnen));
 }
 function ablehnen(){
   if(fuss.querySelector('textarea')) return;
   const box = document.createElement('div');
   box.style.cssText = 'width:100%;display:flex;flex-direction:column;gap:8px';
-  box.innerHTML = '<textarea class="ablehn" placeholder="Was fehlt, was liegt falsch? '
-    + 'Welcher Handgriff wäre hier umständlich? Was willst du zuerst sehen und siehst '
-    + 'es nicht?"></textarea>';
+  box.innerHTML = '<textarea class="ablehn" placeholder="Welcher Handgriff wäre hier '
+    + 'umständlich? Was verlierst du beim Wechsel? Was willst du sehen und siehst es '
+    + 'nicht?"></textarea>';
   box.appendChild(knopf('Notieren', ()=>{
     const t = box.querySelector('textarea').value.trim();
-    if(t) ablehnungen.push({stufe, text:t});
+    if(t) ablehnungen.push({stufe, zustand, text:t});
     box.remove();
-  }, true));
+  }, 'dunkel'));
   fuss.appendChild(box);
   box.querySelector('textarea').focus();
 }
 function ergebnis(){
   const e = ENTWUERFE.find(x => x.id === sieger);
   $('#stufe').textContent = 'Ergebnis · Wireframe Main';
-  $('#frage').textContent = e.name;
+  $('#frage').textContent = e.mech + ' — ' + e.name;
   $('#unter').textContent = e.these;
   buehne.innerHTML = ''; buehne.style.display = 'block'; fuss.innerHTML = '';
   const wrap = document.createElement('div');
   wrap.style.cssText = 'max-width:1200px;margin:0 auto;padding:0 26px 34px;width:100%';
   const k = kachel(e, 0, true); k.style.cursor = 'default'; k.onclick = null;
   wrap.appendChild(k);
+  const kn = document.createElement('div');
+  kn.style.cssText = 'display:flex;gap:8px;margin:12px 0';
+  zustandsKnoepfe().forEach(b => kn.appendChild(b));
+  wrap.appendChild(kn);
   const h = document.createElement('h2');
-  h.style.cssText = 'font-size:16px;margin:20px 0 6px';
+  h.style.cssText = 'font-size:16px;margin:14px 0 6px';
   h.textContent = 'Ergebnis an Claude geben';
   const ta = document.createElement('textarea');
-  ta.style.cssText = 'width:100%;height:160px;font:11.5px/1.5 "Cascadia Mono",'
+  ta.style.cssText = 'width:100%;height:150px;font:11.5px/1.5 "Cascadia Mono",'
     + '"Consolas",monospace;background:#2a2a2a;color:#d8dde3;border:0;padding:12px;'
     + 'resize:vertical';
   ta.spellcheck = false;
   ta.value = JSON.stringify({
-    werkzeug:'nakama-wireframe-main', version:1, zeitpunkt:new Date().toISOString(),
+    werkzeug:'nakama-wireframe-main', version:2, zeitpunkt:new Date().toISOString(),
     stufe:'2 / Schritt 1 — Wireframe UX', oberflaeche:'Main',
-    engereWahl:eng, sieger:sieger, siegerName:e.name, these:e.these,
+    engereWahl:eng, sieger:sieger, mechanik:e.mech, name:e.name, these:e.these,
     ablehnungen:ablehnungen,
     sekunden:{schritt1:(zeiten.s1/1000).toFixed(1), schritt2:(zeiten.s2/1000).toFixed(1)}
   }, null, 1);
   wrap.append(h, ta);
-  const kn = document.createElement('div');
-  kn.style.cssText = 'display:flex;gap:10px;margin-top:10px';
-  kn.append(knopf('Alles markieren — dann Strg+C', ()=>{ ta.focus(); ta.select();
-      try{ document.execCommand('copy'); }catch(e){} }, true),
+  const kn2 = document.createElement('div');
+  kn2.style.cssText = 'display:flex;gap:10px;margin-top:10px';
+  kn2.append(knopf('Alles markieren — dann Strg+C', ()=>{ ta.focus(); ta.select();
+      try{ document.execCommand('copy'); }catch(err){} }, 'dunkel'),
     knopf('Doch nochmal ansehen', ()=>{ stufe = 1; sieger = null; zeichnen(); }));
-  wrap.appendChild(kn);
+  wrap.appendChild(kn2);
   buehne.appendChild(wrap);
 }
 zeichnen();

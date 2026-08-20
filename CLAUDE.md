@@ -17,11 +17,15 @@ am lebenden Blatt verfeinern:
    Nakama-Zusätzen.
 3. **Passive-Probe-Kachel** — eine kleine Status-/Identitätskachel.
 
-Die vier Projektquellen — vollständig, nichts von außen dazuholen:
+Die fünf Projektquellen — vollständig, nichts von außen dazuholen:
 
 - **WAS** jede Oberfläche zeigen muss: `docs/oberflaechen-spezifikation.md`
 - **WIE** gearbeitet wird (UX vor UI, Stufen 1–7, Schlusscheck):
   `docs/CLAUDE-UX-UI-ARBEITSKERN.md` — bei jeder Designaufgabe befolgen
+- **WAS SICHTBAR SEIN DARF**: `docs/DESIGN-GESETZE.md` — Progressive
+  Disclosure, Shneiderman-Mantra, Overview+Detail / Focus+Context / Zoom,
+  Aufmerksamkeitsgesetze. **Vor jeder Anordnungs- und
+  Sichtbarkeitsentscheidung lesen.**
 - **IN WELCHER REIHENFOLGE**: `docs/arbeitsplan.md` — dort steht der
   konkrete Einstieg (Phase 0: `/interview designvertrag`, vor jedem Bauen)
 - **Nachschlagewerk** (Quellenkritik, Wahrnehmung, Licht/Material):
@@ -60,6 +64,15 @@ Alles Gestalterische ist offen und wird MIT dem User entwickelt.
    absichtlich vollständig und absichtlich frei von Alt-Ideen. (Es
    existiert daneben eine separate Begleit-App mit eigener Design-Sprache;
    sie ist NICHT Teil dieses Projekts und kein Referenzmaterial.)
+8. **Nur soviel sichtbar wie der aktuelle Handgriff braucht.** Alles
+   andere ist einen Schritt entfernt — nicht weg, aber nicht da.
+   Vor jedem Wireframe die Aufgabenliste nach Häufigkeit schreiben; jedes
+   Element muss beantworten, welchen Handgriff es gerade bedient. Varianten
+   unterscheiden sich in der **Disclosure-Mechanik** (Schritt-für-Schritt,
+   Focus+Context, Overview+Detail, semantischer Zoom, nur-auf-Abruf), nicht
+   in der Kastenanordnung. Begründung und Grenzen: `docs/DESIGN-GESETZE.md`.
+   Merksatz gegen die naheliegende Ausrede: **nach Häufigkeit der Aufgabe
+   teilen, nicht nach Können des Nutzers.**
 
 ## Werkzeuge
 
@@ -78,7 +91,12 @@ Alles Gestalterische ist offen und wird MIT dem User entwickelt.
 
 ## Arbeitsweise
 
-- Alle Texte (UI, Docs, Commits) auf Deutsch.
+- **Die App ist auf Englisch.** Jeder Text, der im Produkt steht —
+  Beschriftungen, Werte, Einheiten, Zustände, Meldungen — ist englisch.
+  Das gilt auch für die Spezimen in `werkzeug/`, weil sie das Produkt
+  zeigen. Das Werkzeug-Chrome darum herum (Fragen an den User) bleibt
+  deutsch.
+- Docs, Abnahmen, Commits und Gespräch auf Deutsch.
 - Kleine, benannte Commits nach jedem abgenommenen Schritt.
 - Sessionende: eine Zeile in `abnahmen/` was offen blieb — kein
   Wissenstransfer über Gedächtnis.

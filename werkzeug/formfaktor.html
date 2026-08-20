@@ -144,6 +144,10 @@ body{background:#1a1a1a;color:#dcdcdc;
     <div class="reihe" id="formen"></div>
   </div>
   <div class="verbergbar">
+    <h3>Skalierung — was „frei skalierbar" heißt</h3>
+    <div class="reihe" id="faktor"></div>
+  </div>
+  <div class="verbergbar">
     <h3>Auch offen</h3>
     <div class="reihe" id="andere"></div>
   </div>
@@ -151,6 +155,10 @@ body{background:#1a1a1a;color:#dcdcdc;
     <h3>Was das kostet</h3>
     <div class="zahlen" id="zahlen"></div>
   </div>
+  <div class="reihe">
+    <button id="pruefen">Alle 7 Aufgaben prüfen</button>
+  </div>
+  <div class="zahlen" id="tabelle" style="display:none"></div>
   <div class="reihe">
     <button id="fertig">Ergebnis zeigen</button>
     <button id="klapp">Panel klein</button>
@@ -208,6 +216,8 @@ const MINDEST = {
 };
 
 /* ---------- Bausteine ---------- */
+const hoehe = h => h === 'flex' ? 'flex:1 1 0;min-height:0'
+                 : (h && h > 0) ? `height:${h}px` : '';
 const kasten = (t,z,i,st='') =>
   `<div class="box" style="${st}"><h4>${t}${z?`<em>${z}</em>`:''}</h4>
    <div class="inh">${i}</div></div>`;
@@ -222,7 +232,7 @@ const quellenBox = (n,h) => kasten('Sources', n+' of 16',
   `<div style="flex:1;overflow:hidden">${SOURCES.slice(0,n).map(([nm,r,f])=>
     `<div class="qz"><span class="pkt ${f==='ok'?'':f}"></span>
      <span class="n">${nm}</span><span class="r">${r}</span></div>`).join('')}</div>`,
-  `height:${h}px`);
+  hoehe(h));
 const heatmapBox = (n,h,titel='Comparative heatmap',zusatz='list → heatmap → detail') =>
   kasten(titel, zusatz,
   `<div class="hmz" style="height:9px"><span class="n"></span>
@@ -232,44 +242,114 @@ const heatmapBox = (n,h,titel='Comparative heatmap',zusatz='list → heatmap →
    ${SOURCES.slice(0,n).map(([nm,,,e])=>
     `<div class="hmz" style="flex:1"><span class="n">${nm}</span>
      <span class="z">${e.map(v=>`<i style="background:hsl(0 0% ${14+v*11}%)"></i>`)
-       .join('')}</span></div>`).join('')}</div>`, `height:${h}px`);
+       .join('')}</span></div>`).join('')}</div>`, hoehe(h));
 const detailBox = (h) => kasten('Detail · Bass','spectrum · dynamics · width',
   `<div class="kurve"><svg viewBox="0 0 300 100" preserveAspectRatio="none">
      <path d="M0 70 C40 68 60 76 90 74 C130 71 150 40 190 36 C230 32 260 44 300 42"
            fill="none" stroke="#b0b0b0" stroke-width="1.5"/>
      <path d="M0 50H300" stroke="#3f3f3f" stroke-dasharray="2 3"/></svg></div>`,
-  `height:${h}px`);
+  hoehe(h));
 const befundeBox = (h) => kasten('Findings','3 open',
   [['Bass · 180–260 Hz','Carries 3.4 dB more than the sum can take.'],
    ['Choir · 2.5–4 kHz','Masks the lead vocal in the loud bars.'],
    ['Drums · Width','Measurement incomplete — 6 s of 20 s.']]
    .map(([o,t],i)=>`<div class="bf"${i?'':' style="border-color:#6a6a6a"'}>
-     <b>${o}</b><span>${t}</span></div>`).join(''), `height:${h}px`);
+     <b>${o}</b><span>${t}</span></div>`).join(''), hoehe(h));
 const advisorBox = (h) => kasten('Advisor','finding 1 of 3',
   ADVISOR.map(([b,t])=>`<div class="ast"><b>${b}</b><span>${t}</span></div>`).join('')
   + `<div class="knopfreihe"><span class="wfk">Audition (hold)</span>
      <span class="wfk stark">Apply</span><span class="wfk">Discard</span></div>`,
-  `height:${h}px`);
+  hoehe(h));
+const sucheZeile = () => `<div class="box" style="flex:none">
+  <div class="inh" style="padding:4px 8px;flex-direction:row;align-items:center;gap:10px">
+    <span style="font-size:11px;color:#8f8f8f">Search…</span>
+    <span class="wfk">Pin</span><span class="wfk">Focus group</span></div></div>`;
+const rollenBox = (h) => kasten('Musical roles','set once per project',
+  `<div style="display:flex;gap:4px;flex-wrap:wrap">
+    ${['leads','carries','supports','protected','blended']
+      .map(r=>`<span class="wfk">${r}</span>`).join('')}</div>`, hoehe(h));
 const vergleichBox = (h) => kasten('Before / After','level-matched',
   `<div class="vg"><div>A — Baseline</div><div>B — Bass −2 dB @ 220</div></div>`,
-  `height:${h}px`);
+  hoehe(h));
 
 /* ---------- Inhaltsmengen ---------- */
 // "alles" = die alte Denkweise. "handgriff" = das Gesetz aus
 // docs/DESIGN-GESETZE.md, angewandt auf Aufgabe 2 (einen Befund verstehen).
+/* Die Aufgaben aus der Haeufigkeitsliste (docs/DESIGN-GESETZE.md).
+   Jede bekommt genau den Inhalt, den SIE braucht — nicht mehr.
+   "alles" bleibt als Vergleichsmass fuer die alte Denkweise stehen. */
 const MODI = {
+  lesen: {
+    name:'1 · Mix lesen', haeufig:'sehr häufig',
+    text:'Der ganze Mix auf einen Blick: 16 Quellen über 9 Bändern, dazu wieviele '
+       + 'Befunde offen sind.',
+    mindestW: 420, mindestH: 300,
+    bau:(w,h)=>{
+      return streifen(0) + heatmapBox(16, 'flex')
+        + `<div class="box" style="flex:none"><div class="inh"
+             style="padding:4px 8px;flex-direction:row;align-items:center;gap:10px">
+             <span style="font-size:10.5px">3 findings</span>
+             <span style="font-size:10px;color:#8f8f8f">Bass · Choir · Drums</span>
+             <span class="wfk" style="margin-left:auto">Open first</span>
+           </div></div>`; }},
+  handgriff: {
+    name:'2 · Befund verstehen', haeufig:'der Kernakt',
+    text:'Sichtbar ist der Ort (zwei Zeilen), der Rat, der Rückweg und der Status. '
+       + 'Alles andere ist einen Schritt entfernt.',
+    mindestW: 420, mindestH: 250,
+    bau:(w,h)=>{ const rest = h - 34 - 24 - 16 - 18;
+      const ort = Math.min(96, Math.round(rest * .38));
+      return streifen(1)
+        + `<div class="zurueckzeile"><span>← Back to the mix</span>
+             <span style="margin-left:auto">Finding 1 of 3</span></div>`
+        + heatmapBox(2, ort, 'Where', 'Bass · 180–260 Hz')
+        + advisorBox('flex'); }},
+  versuch: {
+    name:'3 · Versuch machen', haeufig:'folgt jedem Befund',
+    text:'Vorhören und anwenden — dazu die betroffene Quelle im Detail, damit man '
+       + 'sieht, was man hört.',
+    mindestW: 420, mindestH: 300,
+    bau:(w,h)=>{ const rest = h - 34 - 24 - 16 - 18;
+      const adv = 0;                     // 0 = natuerliche Hoehe, kein Deckel
+      return streifen(2)
+        + `<div class="zurueckzeile"><span>← Back to the finding</span>
+             <span style="margin-left:auto">Audition held</span></div>`
+        + advisorBox(adv) + detailBox('flex'); }},
+  urteil: {
+    name:'4 · Urteilen', haeufig:'folgt jedem Versuch',
+    text:'A gegen B, level-gematcht, und die Entscheidung behalten / verwerfen / '
+       + 'noch unklar.',
+    mindestW: 420, mindestH: 280,
+    bau:(w,h)=>{ const rest = h - 34 - 24 - 16 - 18;
+      const det = Math.round(rest * .58);
+      return streifen(3)
+        + `<div class="zurueckzeile"><span>← Back to the finding</span>
+             <span style="margin-left:auto">Bass −2 dB @ 220 applied</span></div>`
+        + detailBox('flex') + vergleichBox(0); }},
+  finden: {
+    name:'5 · Quelle finden', haeufig:'gelegentlich',
+    text:'Suchen, pinnen, Fokusgruppe — die ganze Liste, aber nur wenn man sie '
+       + 'wirklich braucht.',
+    mindestW: 380, mindestH: 300,
+    bau:(w,h)=>{
+      return streifen(0) + sucheZeile() + quellenBox(16, 'flex'); }},
+  rollen: {
+    name:'6 · Rollen setzen', haeufig:'selten',
+    text:'Musikalische Prioritäten je Quelle. Meist einmal pro Projekt.',
+    mindestW: 380, mindestH: 300,
+    bau:(w,h)=>{
+      return streifen(0) + quellenBox(16, 'flex') + rollenBox(0); }},
   alles: {
-    name:'Alles gleichzeitig',
-    text:'Quellen, Heatmap, Detail, Befunde, Assistent, Vorher/Nachher — alles auf '
-       + 'einer Ebene. Die Denkweise, die zu 50 % toter Fläche geführt hat.',
+    name:'✕ Alles gleichzeitig', haeufig:'Vergleichsmaß',
+    text:'Die alte Denkweise: alles auf einer Ebene. Steht hier nur, um den Preis '
+       + 'sichtbar zu machen.',
     mindestW: 900, mindestH: 520,
     bau:(w,h)=>{
-      // h - Titel(22) - Leibpolster(12) = nutzbar; davon Streifen(24) + 1 Zwischenraum(6)
-      const kopf = 24, l = 6, g = 6;
+      const kopf = 24, g = 6;
       const rest = h - 34 - kopf - g;
-      const linke = Math.round((w - l*2 - g*2) * .30);
-      const mitte = Math.round((w - l*2 - g*2) * .40);
-      const rechte = (w - l*2 - g*2) - linke - mitte;
+      const linke = Math.round((w - 12 - g*2) * .30);
+      const mitte = Math.round((w - 12 - g*2) * .40);
+      const rechte = (w - 12 - g*2) - linke - mitte;
       const oben = Math.round(rest * .52), unten = rest - oben - g;
       return streifen(1) + `<div style="display:flex;gap:${g}px;flex:1;min-height:0">
         <div style="width:${linke}px;display:flex;flex-direction:column;gap:${g}px">
@@ -280,23 +360,6 @@ const MODI = {
           ${detailBox(unten)}</div>
         <div style="width:${rechte}px;display:flex;flex-direction:column;gap:${g}px">
           ${advisorBox(oben)}${vergleichBox(unten)}</div></div>`;
-    }},
-  handgriff: {
-    name:'Nur der Handgriff',
-    text:'Aufgabe 2 der Häufigkeitsliste: einen Befund verstehen. Sichtbar ist der '
-       + 'Ort (zwei Zeilen), der Rat, der Rückweg und der Status. Alles andere ist '
-       + 'einen Schritt entfernt.',
-    mindestW: 420, mindestH: 250,
-    bau:(w,h)=>{
-      // nutzbar = h - 34; davon Streifen(24) + Rueckwegzeile(16) + 3 Zwischenraeume(18)
-      const kopf = 24, g = 6;
-      const rest = h - 34 - kopf - 16 - g*3;
-      const ort = Math.min(96, Math.round(rest * .38));
-      return streifen(1)
-        + `<div class="zurueckzeile"><span>← Back to the mix</span>
-             <span style="margin-left:auto">Finding 1 of 3</span></div>`
-        + heatmapBox(2, ort, 'Where', 'Bass · 180–260 Hz')
-        + advisorBox(rest - ort);
     }}
 };
 
@@ -323,7 +386,7 @@ const ANDERE = {
 };
 
 /* ---------- Zustand ---------- */
-const w = { modus:'handgriff', form:'kompakt',
+const w = { modus:'lesen', form:'kompakt', faktor:1,
             main:{x:520, y:300, w:760, h:430},
             aktivAn:false, passivAn:false,
             aktiv:{x:120, y:520}, passiv:{x:1560, y:640} };
@@ -375,6 +438,11 @@ function zeichnen(){
 
   const haupt = fenster('main','Nakama — Main', w.main.x, w.main.y, w.main.w, w.main.h,
     m.bau(w.main.w, w.main.h), true);
+  // Skalierung aendert das LAYOUT nicht — die Ueberlaufmessung bleibt gueltig.
+  if(w.faktor !== 1){
+    haupt.style.transform = `scale(${w.faktor})`;
+    haupt.style.transformOrigin = '0 0';
+  }
   s.appendChild(haupt);
   zieh(haupt, w.main, true);
   // Erst nach dem Einhaengen messbar: laeuft der Inhalt wirklich ueber?
@@ -457,6 +525,9 @@ function panel(){
     w.main.y = Math.max(0, Math.min(w.main.y, s.clientHeight - f.h));
     zeichnen();
   })));
+  const fa = $('#faktor'); fa.innerHTML = '';
+  [0.75, 1, 1.25, 1.5, 2].forEach(f => fa.appendChild(
+    knopf(Math.round(f*100)+' %', w.faktor===f, ()=>{ w.faktor=f; zeichnen(); })));
   const an = $('#andere'); an.innerHTML = '';
   an.appendChild(knopf('Active-Probe 700×420', w.aktivAn,
     ()=>{ w.aktivAn = !w.aktivAn; zeichnen(); }));
@@ -467,7 +538,8 @@ function zahlen(eng){
   const fehltPx = +(document.getElementById('main')?.dataset.fehlt || 0);
   const s = $('#schirm');
   const SW = screen.width, SH = screen.height;
-  const flaeche = w.main.w * w.main.h;
+  const eb = Math.round(w.main.w * w.faktor), eh = Math.round(w.main.h * w.faktor);
+  const flaeche = eb * eh;
   const anteil = flaeche / (SW * SH) * 100;
   let zusatz = 0;
   if(w.aktivAn) zusatz += ANDERE.aktiv.w * ANDERE.aktiv.h;
@@ -476,7 +548,8 @@ function zahlen(eng){
   const m = MODI[w.modus];
   const zuEng = w.main.w < m.mindestW || w.main.h < m.mindestH;
   $('#zahlen').textContent =
-      `Main        ${w.main.w}×${w.main.h}\n`
+      `Main        ${w.main.w}×${w.main.h}`
+    + (w.faktor !== 1 ? `  →  ${eb}×${eh} bei ${Math.round(w.faktor*100)} %\n` : `\n`)
     + `vom Schirm  ${anteil.toFixed(1)} %  (${SW}×${SH})\n`
     + `mit allem   ${gesamt.toFixed(1)} %\n`
     + `Verhältnis  ${(w.main.w/w.main.h).toFixed(2)} : 1\n`
@@ -506,6 +579,59 @@ function band(){
   b.appendChild(kn);
   $('#schirm').style.top = b.offsetHeight + 'px';
 }
+
+/* Prueft jede Aufgabe in der aktuellen Fenstergroesse und misst, ob etwas
+   abgeschnitten wird. Behauptet nichts — rendert und misst. */
+function alleAufgabenPruefen(){
+  const merk = w.modus, zeilen = [];
+  for(const [id, m] of Object.entries(MODI)){
+    w.modus = id; zeichnen();
+    const f = document.getElementById('main');
+    zeilen.push({id, name:m.name, haeufig:m.haeufig,
+                 fehlt:+f.dataset.fehlt, zuSchmal: w.main.w < m.mindestW});
+  }
+  w.modus = merk; zeichnen();
+  const t = $('#tabelle');
+  t.style.display = 'block';
+  t.textContent = `bei ${w.main.w}×${w.main.h}\n`
+    + zeilen.map(z => {
+        const urteil = z.fehlt > 1 ? `${z.fehlt} px fehlen`
+                     : z.zuSchmal ? 'zu schmal' : 'passt';
+        return (z.name + '                      ').slice(0,24) + urteil;
+      }).join('\n');
+  return zeilen;
+}
+/* Sucht fuer eine Aufgabe die kleinste Groesse ohne Abschnitt. Linear und
+   stumpf, aber gemessen — und damit widerspruchsfaehig. */
+function kleinstesMass(modusId){
+  const merkM = w.modus, merkW = w.main.w, merkH = w.main.h;
+  w.modus = modusId;
+  const fehlt = () => { zeichnen();
+    return +document.getElementById('main').dataset.fehlt; };
+  let h = 200;
+  w.main.w = 1400;                      // erst die Hoehe, breit genug
+  while(h < 900 && (w.main.h = h, fehlt() > 1)) h += 2;
+  const minH = h;
+  let b = 300;
+  w.main.h = minH + 20;
+  while(b < 1400 && (w.main.w = b, fehlt() > 1)) b += 10;
+  const minW = b;
+  w.modus = merkM; w.main.w = merkW; w.main.h = merkH; zeichnen();
+  return {modus:modusId, minW, minH};
+}
+function alleMindestmasse(){
+  const r = Object.keys(MODI).map(kleinstesMass);
+  const t = $('#tabelle'); t.style.display = 'block';
+  t.textContent = 'kleinste Groesse je Aufgabe' + '\n'
+    + r.map(x => (MODI[x.modus].name + '                      ').slice(0,24)
+                 + x.minW + '×' + x.minH).join('\n');
+  return r;
+}
+window.kleinstesMass = kleinstesMass;
+window.alleMindestmasse = alleMindestmasse;
+$('#pruefen').onclick = alleAufgabenPruefen;
+$('#pruefen').oncontextmenu = e => { e.preventDefault(); alleMindestmasse(); };
+window.alleAufgabenPruefen = alleAufgabenPruefen;
 
 $('#klapp').onclick = () => {
   const p = $('#panel'); p.classList.toggle('klein');

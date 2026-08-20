@@ -655,27 +655,49 @@ function streifenBuch(z, nurAbweichung){
 
 
 function statusText(nurAbweichung){
+  /* Der genannte Preis der Ausnahme-Mechanik: Abwesenheit ist mehrdeutig —
+     nichts zu sehen kann "alles gut" heissen oder "die Anzeige ist
+     ausgefallen". Antwort: eine EINZIGE positive Aussage, und zwar genau
+     dann, wenn sonst nichts zu melden waere. Sie kostet nichts im
+     Ernstfall, weil sie dort verschwindet.
+     Zweitens: die Ausnahme spricht mit NAMEN, solange es wenige sind. Eine
+     hohle Zeile in einer namenlosen Karte sagt sonst nur die Position. */
+  const nenn = f => SOURCES.filter(q => q[2] === f).map(q => q[0]);
+  /* Namen nur, solange es eine Aufzaehlung IST. Acht Namen sind keine
+     Aufzaehlung mehr, sondern eine Zahl — und sie sprengen den Streifen:
+     gemessen 42 px Ueberlauf bei "viel veraltet". Die Grenze ist also
+     inhaltlich UND gemessen, nicht gedreht, bis es passt. */
+  const kurz = liste => liste.length <= 2 ? liste.join(', ') : null;
+  const abweichend = nenn('alt').length + nenn('weg').length;
+  if(nurAbweichung && SOURCES.length && !abweichend)
+    return `<span class="status"><span><span class="pkt"></span>All
+      ${SOURCES.length} fresh</span><span>${messText()}</span>${degText()}</span>`;
   const zahlen = [['','ok','fresh'],['alt','alt','stale'],['weg','weg','offline']]
     .filter(([,f]) => !(nurAbweichung && f === 'ok'))
     .map(([k,f,w]) => { const n = SOURCES.filter(q => q[2] === f).length;
-      return n ? `<span><span class="pkt ${k}"></span>${n} ${w}</span>` : ''; })
+      if(!n) return '';
+      const liste = nurAbweichung && f !== 'ok' ? kurz(nenn(f)) : null;
+      const namen = liste ? ` (${liste})` : '';
+      return `<span><span class="pkt ${k}"></span>${n} ${w}${namen}</span>`; })
     .join('');
   // Ohne Quelle kann nichts "vollstaendig gemessen" sein. Der Prozentwert
   // gehoert zu den Quellen; gibt es keine, gibt es auch keinen Fortschritt.
-  // Messen setzt Kontakt voraus. Ohne Quelle gibt es nichts zu messen; ist
-  // keine einzige erreichbar, steht die Messung — ein weiterlaufender
-  // Prozentwert waere dieselbe Luege eine Ebene feiner.
-  const erreichbar = SOURCES.filter(q => q[2] !== 'weg').length;
-  const mess = !SOURCES.length ? 'Nothing to measure'
-             : !erreichbar ? 'Measurement stalled — no source reachable'
-             : WELT.messung >= 100 ? 'Measurement complete'
-             : WELT.messung <= 0 ? 'Measurement not started'
-             : `Measuring ${WELT.messung} %`;
-  // Der degradierte Zustand ist Pflicht: "ehrlich zeigen, nie kaschieren".
-  const deg = WELT.degradiert ? '<span>Width: unavailable</span>' : '';
   const leer = !SOURCES.length ? '<span>No source connected</span>' : '';
-  return `<span class="status">${leer}${zahlen}<span>${mess}</span>${deg}</span>`;
+  return `<span class="status">${leer}${zahlen}<span>${messText()}</span>${degText()}</span>`;
 }
+// Messen setzt Kontakt voraus. Ohne Quelle gibt es nichts zu messen; ist
+// keine einzige erreichbar, steht die Messung — ein weiterlaufender
+// Prozentwert waere dieselbe Luege eine Ebene feiner.
+function messText(){
+  const erreichbar = SOURCES.filter(q => q[2] !== 'weg').length;
+  return !SOURCES.length ? 'Nothing to measure'
+       : !erreichbar ? 'Measurement stalled — no source reachable'
+       : WELT.messung >= 100 ? 'Measurement complete'
+       : WELT.messung <= 0 ? 'Measurement not started'
+       : `Measuring ${WELT.messung} %`;
+}
+// Der degradierte Zustand ist Pflicht: "ehrlich zeigen, nie kaschieren".
+const degText = () => WELT.degradiert ? '<span>Width: unavailable</span>' : '';
 
 /* Die Arbeitsflaeche ist in allen drei gleich — verschieden ist nur, wo der
    Zustand sichtbar wird. */

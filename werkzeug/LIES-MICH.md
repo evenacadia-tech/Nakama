@@ -342,13 +342,28 @@ die alle gleich aussahen — obwohl drei davon veraltet oder getrennt waren.
 Nur Sorte 1 unterscheidet die drei Kacheln; 2 und 3 bleiben gleich, sonst
 vergleicht man zwei Dinge gleichzeitig.
 
-### Die drei Antworten
+### Entschieden: nur die Ausnahme spricht
+
+> „3. ist nicht perfekt aber das einzige was sinn ergibt" —
+> `abnahmen/2026-08-20-zustaende-nur-ausnahme.md`
 
 | Mechanik | in der Karte | im Streifen | Preis |
 |---|---|---|---|
-| **Nur die Sammelzeile spricht** | veraltet sieht aus wie frisch | 13 / 2 / 1 | das Blatt weiß mehr, als es sagt |
-| **Jede Zeile trägt ihren Zustand** | Marke an jeder der 16 Zeilen | 13 / 2 / 1 | 16 Marken für etwas, das meist „in Ordnung" heißt |
-| **Nur die Ausnahme spricht** | veraltet = hohl, getrennt = leer | nur Abweichungen | „alles gut" wird durch Abwesenheit gezeigt |
+| Nur die Sammelzeile spricht | veraltet sieht aus wie frisch | 13 / 2 / 1 | das Blatt weiß mehr, als es sagt |
+| Jede Zeile trägt ihren Zustand | Marke an jeder der 16 Zeilen | 13 / 2 / 1 | 16 Marken für etwas, das meist „in Ordnung" heißt |
+| **Nur die Ausnahme spricht** ✔ | veraltet = hohl, getrennt = leer | nur Abweichungen | „alles gut" wird durch Abwesenheit gezeigt |
+
+**„Nicht perfekt" war die Aufgabe.** Der genannte Preis ist mit zwei
+gemessenen Eingriffen beantwortet:
+
+1. **Abwesenheit bekommt eine positive Aussage.** Ist nichts zu melden,
+   sagt der Streifen „All 16 fresh" — genau dann, wenn sonst nichts dort
+   stünde. Nicht das „13 fresh" der Sammelzeile: das zählte immer mit.
+2. **Die Ausnahme spricht mit Namen**: „2 stale (Room Mic, Backing Vox) ·
+   1 offline (Shaker)". Grenze gemessen, nicht gedreht — bei acht veralteten
+   Quellen sprengt die Namensliste den Streifen um **42 px**. Regel: Namen,
+   solange es eine Aufzählung ist (bis zwei je Sorte); acht Namen sind keine
+   Aufzählung mehr, sondern eine Zahl.
 
 Zustandsbilder in Graustufen, ohne dass eine Zeile ihre Höhe ändert:
 **gefüllt = frisch · hohl = veraltet · Strichlinie = getrennt.**

@@ -82,10 +82,20 @@ body.vertragAn .vertrag{display:flex}
 @media (max-width:1600px){ .rahmen{--s:.52} .rahmen.gross{--s:.92} }
 @media (max-width:1300px){ .rahmen{--s:.46} .rahmen.gross{--s:.82} }
 
+/* Flex-Spalte statt Gitter — und das ist keine Technikfrage, sondern die
+   vom User eingezeichnete Regel: flex-basis:auto verteilt den Ueberschuss
+   ZUSAETZLICH zur natuerlichen Groesse. "1fr 1fr" wuerde die Gesamthoehe
+   halbieren; gemessen an der gelben Linie (250 px) waere das 229 — falsch.
+   Die Karte darf wachsen, aber nicht schrumpfen: sie ist das dauerhafte
+   Ding und muss ihr Versprechen halten. Der Druck landet unten, wo das
+   Blatt ehrlich sagt, was fehlt. */
 .wf{width:760px;height:430px;background:#242424;color:#c9c9c9;overflow:hidden;
-  border:1px solid #5c5c5c;display:grid;gap:8px;padding:8px;
+  border:1px solid #5c5c5c;display:flex;flex-direction:column;gap:8px;padding:8px;
   font:12px/1.4 'Segoe UI',system-ui,sans-serif}
 .wf > *{min-width:0;min-height:0}
+.wf > .streifen{flex:none}
+.wf > .karte{display:flex;flex:1 0 auto}
+.wf > .arbeit{display:flex;gap:8px;flex:1 1 auto}
 /* flex:1 ist Pflicht, nicht Kosmetik: ohne das sind die Kaesten inhaltsbreit
    statt blattbreit, und ein 760er Blatt wird auf 240 px beurteilt. Tote
    Flaeche gilt in docs/arbeitsplan.md ausdruecklich als Fehler. */
@@ -223,16 +233,17 @@ body.vertragAn .vertrag{display:flex}
 <header>
   <div class="stufe" id="stufe">Stufe 2 · Main · Overview + Detail — die Karte</div>
   <h1 id="frage">Was trägt die Karte, die immer da ist?</h1>
-  <div class="unter" id="unter"><b>Overview + Detail ist abgenommen.</b> Offen
-    ist die Karte — das einzige Stück Mix, das <i>dauerhaft</i> dasteht. Alle vier
-    Kacheln haben denselben Streifen und dieselbe Arbeitsfläche; verschieden ist nur,
-    <b>wie die Karte 16 Quellen auf wenig Höhe bringt.</b><br>
-    <b>Die Klemme, gemessen auf 760×430:</b> der Streifen kostet dauerhaft 28 px, für
-    Karte und Arbeitsfläche bleiben <b>370</b>. Eine Kartenzeile kostet rund 10 px, alle
-    16 also <b>212</b> — dann bleiben der Arbeit 158, und der Assistent braucht <b>172</b>.
-    Bekommt der Assistent seine 172, trägt die Karte <b>14</b>. Sollen alle drei Befunde
-    stehen (219 px), sind es <b>neun</b>. Die vier Karten beantworten diese Klemme
-    unterschiedlich — keine umgeht sie.<br>
+  <div class="unter" id="unter"><b>Zwei Dinge sind entschieden.</b>
+    <b>Overview + Detail</b> ist abgenommen, und die <b>Aufteilung</b> steht seit deiner
+    gelben Linie: Karte und Arbeitsfläche bekommen erst ihre natürliche Höhe, der
+    <b>Überschuss wird geteilt</b> — nicht einer Seite ganz zugeschlagen. Gemessen liegt
+    die Grenze damit bei <b>245 px</b>; deine Linie lag bei rund 250. Die Karte darf
+    dabei wachsen, aber nicht schrumpfen: sie ist das dauerhafte Ding.<br>
+    <b>Offen ist nur noch, was die Karte zeigt.</b> Drei Antworten nebeneinander,
+    gleicher Streifen, gleiche Arbeitsfläche. Die Klemme bleibt echt: bei 16 Quellen
+    braucht eine Karte mit je einer Zeile <b>212</b> der 370 px, der Assistent braucht
+    in seiner von der Spezifikation vorgeschriebenen Fünf-Teile-Form <b>172</b>. Beides
+    zugleich geht nicht.<br>
     Graustufen, keine Optik. Unten den Arbeitsschritt wechseln und
     <b>„Was bleibt dauerhaft stehen?"</b> einschalten.</div>
   <div class="aufgaben" id="aufgaben">
@@ -409,7 +420,7 @@ const abruf = (text, was) =>
 const minimap = (von, bis) =>
   `<span class="minimap"><i style="left:${von}%;width:${bis-von}%"></i></span>`;
 
-/* ---------- Die vier Kartenarten ----------
+/* ---------- Die Kartenarten ----------
    Die Mechanik steht (Overview + Detail, abgenommen 2026-08-20). Offen ist,
    WIE die dauerhafte Karte 16 Quellen auf wenig Hoehe bringt — und was sie
    der Arbeitsflaeche dafuer wegnimmt. Gemessen auf 760x430:
@@ -420,6 +431,9 @@ const minimap = (von, bis) =>
    Daraus die Klemme: alle 16 dauerhaft (212) laesst 158 px — der Assistent
    passt nicht. Der Assistent voll (172) laesst 198 px — das sind 14 Quellen.
    ------------------------------------------------------------------ */
+
+const ZAHLWORT = ['keiner','einer','zwei','drei','vier','fünf','sechs'];
+const wieViele = () => ZAHLWORT[ENTWUERFE.length] ?? ENTWUERFE.length;
 
 const ROLLEN = ['leads','carries','supports','protected','blended'];
 const AUFFAELLIG = [1,3,4];   // Choir, Drums, Bass — die drei mit Befund
@@ -450,30 +464,15 @@ const ENTWUERFE = [
 { id:'alle', mech:'Alle 16, gleich hoch', name:'Der ganze Mix, immer',
   these:'Die Karte traegt jede Quelle, jede bekommt dieselbe Zeile. Vergleichen ist '
       + 'ehrlich, weil gleiche Flaeche gleiche Sache heisst. Preis, gemessen bei 16 '
-      + 'Quellen: die Karte kostet 212 der 370 px — dem Assistenten bleiben 158, er '
-      + 'braucht 172. Der Kernakt verliert zwei seiner fuenf vorgeschriebenen Teile.',
+      + 'Quellen: die Karte braucht 212 der 370 px und darf nicht schrumpfen — dem '
+      + 'Assistenten bleiben 155, er braucht 172. Er verliert zwei seiner fuenf '
+      + 'vorgeschriebenen Teile, und beim Mix-Lesen bleibt einer von drei Befunden.',
   bau:(z) => ({
-    // auto, nicht feste 212 px: die Regel lautet "jede Quelle eine volle
-    // Zeile". Ein fester Deckel waere bei kleinem Mix tote Flaeche und bei
-    // grossem eine Luege.
-    gitter:'grid-template-rows:28px auto minmax(0,1fr)',
+    gitter:'',
     html: ebenen(ebene(z))
-      + `<div style="display:flex">${heatmap(SOURCES.length, false,
+      + `<div class="karte">${heatmap(SOURCES.length, false,
           {titel:'Overview', zusatz: ortText(z)})}</div>`
-      + `<div style="display:flex;gap:8px">${arbeit(z)}</div>`
-  })},
-
-{ id:'weicht', mech:'Karte weicht der Arbeit', name:'Erst die Arbeit, dann der Rest',
-  these:'Die Arbeitsflaeche bekommt, was sie braucht; die Karte nimmt, was uebrig '
-      + 'bleibt — mal 14 Quellen, mal neun. Nichts wird je gequetscht. Preis: die eine '
-      + 'dauerhafte Sache auf dem Blatt haelt nicht still. Wer sich an eine Zeilenlage '
-      + 'gewoehnt hat, verliert sie beim Schrittwechsel.',
-  bau:(z) => ({
-    gitter:'grid-template-rows:28px minmax(0,1fr) auto',
-    html: ebenen(ebene(z))
-      + `<div style="display:flex">${heatmap(SOURCES.length, false,
-          {titel:'Overview', zusatz: ortText(z)})}</div>`
-      + `<div style="display:flex;gap:8px">${arbeit(z)}</div>`
+      + `<div class="arbeit">${arbeit(z)}</div>`
   })},
 
 { id:'bedeutung', mech:'Karte nach Bedeutung', name:'Wo etwas los ist, wird es dick',
@@ -482,15 +481,15 @@ const ENTWUERFE = [
       + 'einen Strich. Preis: die Karte ist kein Vergleichsinstrument mehr — gleiche '
       + 'Flaeche heisst nicht mehr gleiche Sache, und Ruhiges wird leicht uebersehen.',
   bau:(z) => ({
-    gitter:'grid-template-rows:28px auto minmax(0,1fr)',
+    gitter:'',
     html: ebenen(ebene(z))
       // "16/16" allein waere geschoent: dreizehn davon sind Striche ohne
       // Namen. Der Kasten sagt daneben, wieviele lesbar sind.
-      + `<div style="display:flex">${heatmap(SOURCES.length, true,
+      + `<div class="karte">${heatmap(SOURCES.length, true,
           {titel:'Overview',
            zusatz: `${ortText(z)} · ${Math.min(AUFFAELLIG.length, SOURCES.length)} named`,
            fokus: AUFFAELLIG, band: z === 'read' ? undefined : 2})}</div>`
-      + `<div style="display:flex;gap:8px">${arbeit(z)}</div>`
+      + `<div class="arbeit">${arbeit(z)}</div>`
   })},
 
 { id:'rollen', mech:'Karte nach Rollen', name:'Fuenf Gruppen statt sechzehn Quellen',
@@ -500,14 +499,14 @@ const ENTWUERFE = [
       + 'Quelle verschwindet im Mittel ihrer Gruppe — die Karte zeigt es erst, wenn es '
       + 'die ganze Rolle betrifft.',
   bau:(z) => ({
-    gitter:'grid-template-rows:28px auto minmax(0,1fr)',
+    gitter:'',
     html: ebenen(ebene(z))
-      + `<div style="display:flex">${rollenkarte()}</div>`
-      + `<div style="display:flex;gap:8px">${arbeit(z)}</div>`
+      + `<div class="karte">${rollenkarte()}</div>`
+      + `<div class="arbeit">${arbeit(z)}</div>`
   })}
 ];
 
-/* Die Arbeitsflaeche ist in allen vier gleich — sonst vergliche man zwei
+/* Die Arbeitsflaeche ist in allen Varianten gleich — sonst vergliche man zwei
    Dinge gleichzeitig. Sie ist Claudes Entwurf, kein Urteil des Users. */
 const ebene = z => z === 'read' ? 0 : z === 'finding' ? 1 : 3;
 const ortText = z => z === 'read' ? 'nothing selected'
@@ -806,8 +805,8 @@ function s1(){
     knopf('Keine davon — weil …', ablehnen));
   const h = document.createElement('span');
   h.className = 'hinw';
-  h.textContent = eng.length + ' von 2 gewählt · Arbeitsfläche in allen vier gleich, '
-    + 'nur die Karte ist verschieden';
+  h.textContent = eng.length + ' von 2 gewählt · Arbeitsfläche in allen '
+    + wieViele() + ' gleich, nur die Karte ist verschieden';
   fuss.appendChild(h);
 }
 function s2(){
@@ -823,7 +822,7 @@ function s2(){
       zeiten.s2 = Math.round(performance.now()-start); stufe = 3; zeichnen(); };
     buehne.appendChild(k);
   });
-  fuss.append(knopf('← Zurück zu allen vier', ()=>{ stufe = 1; zeichnen(); }),
+  fuss.append(knopf('← Zurück zu allen ' + wieViele(), ()=>{ stufe = 1; zeichnen(); }),
     ...zustandsKnoepfe(), vertragKnopf(), quellenRegler(),
     knopf(document.body.classList.contains('thesen') ? 'Thesen aus' : 'Thesen ein',
       ()=>{ document.body.classList.toggle('thesen'); zeichnen(); }),

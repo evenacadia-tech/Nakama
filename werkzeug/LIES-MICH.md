@@ -158,15 +158,38 @@ Messung, teils Deckel unter der Inhaltshöhe.
 ## wireframe-main-karte.html
 
 Stufe 2, Main, **nach** der Abnahme von Overview + Detail. Die Mechanik steht;
-offen ist die **Karte** — das einzige Stück Mix, das dauerhaft dasteht. Vier
-Kartenarten nebeneinander, alle mit demselben Streifen und derselben
-Arbeitsfläche. Verschieden ist nur, **wie die Karte 16 Quellen auf wenig Höhe
-bringt.**
+offen ist die **Karte** — das einzige Stück Mix, das dauerhaft dasteht.
+
+### Die Aufteilung ist entschieden (User, 2026-08-20, per Einzeichnung)
+
+Der User hat auf einem Screenshot magenta markiert, wo die Grenze zwischen
+Karte und Arbeitsfläche in zwei Entwürfen lag, und **gelb, wo sie liegen
+soll**. Ausgemessen aus dem Bild (Maßstab über die bekannte Blattbreite):
+
+| | Grenze ab Blattoberkante |
+|---|---|
+| „Alle 16, gleich hoch" — Karte wuchs nur bis zur natürlichen Höhe | 201 px |
+| „Karte weicht der Arbeit" — Karte nahm allen Rest | 282 px |
+| **gelbe Linie des Users** | **≈ 250 px** |
+
+Die Regel dahinter: **Karte und Arbeitsfläche bekommen erst ihre natürliche
+Höhe, der Überschuss wird geteilt.** Nicht „jede die Hälfte der Gesamthöhe" —
+das wären 229 px gewesen und hätte die Linie verfehlt. In CSS ist das genau
+`flex: 1 1 auto` in einer Flex-Spalte, nicht `1fr 1fr` im Gitter.
+
+Zusatz aus der Abnahme: die **Karte darf wachsen, aber nicht schrumpfen**
+(`flex:1 0 auto`) — sie ist das dauerhafte Ding und muss ihr Versprechen
+halten. Der Druck landet unten, wo das Blatt ehrlich sagt, was fehlt.
+Gemessen liegt die Grenze jetzt bei **245 px** (10 Quellen, Schritt
+„Urteilen").
+
+Damit sind die beiden reinen **Aufteilungs**-Varianten erledigt; übrig
+bleiben die drei, die sich im **Inhalt** der Karte unterscheiden.
 
 ### Die Klemme, gemessen auf 760×430
 
 Der Streifen kostet dauerhaft **28 px**; für Karte und Arbeitsfläche bleiben
-**370**. Gemessene natürliche Höhen bei 744 px Breite:
+**370**. Natürliche Höhen bei 744 px Breite:
 
 | | braucht |
 |---|---|
@@ -174,35 +197,34 @@ Der Streifen kostet dauerhaft **28 px**; für Karte und Arbeitsfläche bleiben
 | Karte **mit** Namen, 16 Quellen | 308 px — geht nicht |
 | Assistent, Fünf-Teile-Form | **172 px** |
 | Alle drei Befunde | 219 px |
-| A/B-Urteil | 120 px · Detail einer Quelle 69 px |
+| A/B-Urteil 120 px · Detail einer Quelle | 69 px |
 
-Daraus: alle 16 dauerhaft (212) lässt der Arbeit **158** — der Assistent
-braucht 172. Bekommt der Assistent seine 172, trägt die Karte **14**. Sollen
-alle drei Befunde stehen (219), sind es **neun**. Die Klemme ist echt und
-keine der vier Karten umgeht sie.
+Beides zugleich — alle 16 Quellen und ein vollständiger Assistent — geht auf
+dieser Fläche nicht.
 
 ### Was jede Kartenart im schlechtesten der drei Schritte liefert
 
 | Kartenart | Karte | Assistent | Befunde |
 |---|---|---|---|
 | Alle 16, gleich hoch | 16/16 | **3/5** | **1/3** |
-| Karte weicht der Arbeit | **7/16** | 5/5 | 3/3 |
 | Karte nach Bedeutung | 16/16 (3 mit Namen) | 5/5 | **1/3** |
 | Karte nach Rollen | 5/5 Gruppen | 5/5 | 3/3 |
 
 Die **Fünf-Teile-Form des Assistenten ist Spezifikation**, kein Geschmack —
 `3/5` heißt, dass zwei vorgeschriebene Teile fehlen.
 
-### Zwei Dinge, die aus Runde 1 gelernt und hier eingebaut sind
+### Was aus Runde 1 gelernt und hier eingebaut ist
 
-- Der Assistent ist eine **ehrliche Liste**: wenn ihm die Höhe fehlt, zeigt er
-  `3/5` und „2 more not shown", statt heimlich abzuschneiden oder bloß rot
-  aufzuleuchten. Man sieht, **welcher** Teil fehlt.
+- Der Assistent ist eine **ehrliche Liste**: fehlt ihm Höhe, zeigt er `3/5`
+  und „2 more not shown" statt heimlich abzuschneiden. Man sieht, **welcher**
+  Teil fehlt.
 - Der gemessene Zähler hat eine **eigene Form** (`3/5`), weil im selben Kopf
-  oft ein geschriebenes „finding 1 of 3" steht. Zwei gleich aussehende Zähler
-  mit verschiedener Bedeutung sind schlimmer als keiner.
+  oft ein geschriebenes „finding 1 of 3" steht.
 - Eine Prüfung schlägt an, wenn **Listenname und Bausteinname auseinander
-  laufen** — genau daran hat der Vertrag in Runde 1 stumm keine Zahl gemeldet.
+  laufen** — daran hat der Vertrag zweimal stumm keine Zahl gemeldet.
+- **Zahlwörter werden hergeleitet, nicht geschrieben** (`wieViele()`): beim
+  Streichen einer Variante stand sonst „in allen vier gleich" unter drei
+  Kacheln.
 
 ## licht.html
 

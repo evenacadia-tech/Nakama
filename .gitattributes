@@ -10,3 +10,10 @@
 # Alles andere bleibt wie gehabt: core.autocrlf regelt die Arbeitskopie.
 # Werkzeuge, die Quelltext lesen, muessen zeilenendenfest sein - der
 # Identitaetstest normalisiert deshalb selbst (T2-Runde 2, 20.08.2026).
+
+# Der JUCE-Bridge-Patch ist ein WERKZEUG-Eingang, kein Lesetext: `git apply`
+# vergleicht seine Kontextzeilen bytegenau. Bekaeme er beim Auschecken CRLF
+# (core.autocrlf auf dem Zweitrechner), traegen alle Zeilen ein zusaetzliches
+# \r und der Patch schlaege fehl - auf genau einer der beiden Maschinen.
+# `-text` haelt ihn bytegleich, in beide Richtungen (SONDE-003, 21.08.2026).
+*.patch -text

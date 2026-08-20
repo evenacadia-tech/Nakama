@@ -32,12 +32,20 @@ target_sources(EqCopilot PRIVATE
     src/Diagnose.cpp
 )
 
+# PUBLIC ist hier Absicht und kein Versehen: JUCE haengt das VST3-Ziel
+# (EqCopilot_VST3) PRIVATE an dieses Ziel, also erreichen nur die INTERFACE-
+# Eigenschaften den gepatchten Wrapper. Genau so kommt schon heute
+# JUCE_VST3_CAN_REPLACE_VST2=0 dort an (vom Identitaetstest bewiesen) —
+# NAKAMA_HOST_BRIDGE=1 nimmt denselben Weg.
 target_compile_definitions(EqCopilot PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0
     JUCE_DISPLAY_SPLASH_SCREEN=0
+    NAKAMA_HOST_BRIDGE=1
 )
+
+target_include_directories(EqCopilot PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/hostbridge")
 
 target_link_libraries(EqCopilot
     PRIVATE
@@ -197,9 +205,33 @@ target_compile_definitions(EqCopIdentityTest PRIVATE
 target_link_libraries(EqCopIdentityTest PRIVATE juce::juce_audio_utils juce::juce_dsp
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 
+# ── SONDE-003: Wrapper-Unitfixture der Hostbruecke ─────────────────────────
+# Zwei Haelften in einem Ziel: das Quellhash-Gate misst die GEPATCHTE
+# JUCE-Datei auf Platte, die Bruecken-Pruefungen fahren die Abbildung gegen den
+# ECHTEN Steinberg::Vst::ProcessContext (kein Nachbau, der still falsch sein
+# koennte). Der gepinnte Quellstand kommt aus cmake/NakamaBruecke.cmake und
+# wird ueber eine generierte Kopfdatei hereingereicht — eine Wahrheit, zwei Leser.
+set(NAKAMA_JUCE_WRAPPER_ABS "${juce_SOURCE_DIR}/${NAKAMA_JUCE_WRAPPER_REL}")
+set(NAKAMA_BRUECKE_PATCH_ABS "${NAKAMA_WURZEL}/third_party/patches/juce-8.0.9-nakama-vst3-bridge.patch")
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/hostbridge/NakamaBrueckeStand.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/nakama-generiert/NakamaBrueckeStand.h"
+    @ONLY)
+
+juce_add_console_app(EqCopHostContextTest PRODUCT_NAME "eqcop-hostcontexttest")
+target_sources(EqCopHostContextTest PRIVATE tests/HostContextTestMain.cpp)
+target_include_directories(EqCopHostContextTest PRIVATE
+    hostbridge
+    "${CMAKE_CURRENT_BINARY_DIR}/nakama-generiert"
+    "${juce_SOURCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK")
+target_compile_definitions(EqCopHostContextTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopHostContextTest PRIVATE juce::juce_core juce::juce_cryptography
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
 # Die Quellen sind UTF-8 (deutsche UI-Texte). Ohne /utf-8 rät MSVC die
 # Codepage — Literale wie „Klavier-Bus“ hingen dann an der Systemlocale.
 foreach(ziel EqCopilot EqCopPipeProbe EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
-             EqCopIdentityTest EqCopAuxSpike EqCopAuxSpikeTest)
+             EqCopIdentityTest EqCopAuxSpike EqCopAuxSpikeTest EqCopHostContextTest)
     target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endforeach()

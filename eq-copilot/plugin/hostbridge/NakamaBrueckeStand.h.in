@@ -1,0 +1,12 @@
+// GENERIERT von CMake aus NakamaBrueckeStand.h.in — nicht von Hand aendern.
+//
+// Traegt den gepinnten Quellstand des Bridge-Patches in den C++-Test, damit
+// Bauvorschrift und Test dieselbe EINE Wahrheit benutzen
+// (eq-copilot/cmake/NakamaBruecke.cmake).
+#pragma once
+
+#define NAKAMA_JUCE_TAG_TEXT                    "@NAKAMA_JUCE_TAG@"
+#define NAKAMA_JUCE_WRAPPER_DATEI               "@NAKAMA_JUCE_WRAPPER_ABS@"
+#define NAKAMA_JUCE_WRAPPER_SHA_UNBERUEHRT_TEXT "@NAKAMA_JUCE_WRAPPER_SHA_UNBERUEHRT@"
+#define NAKAMA_JUCE_WRAPPER_SHA_GEPATCHT_TEXT   "@NAKAMA_JUCE_WRAPPER_SHA_GEPATCHT@"
+#define NAKAMA_BRUECKE_PATCH_DATEI              "@NAKAMA_BRUECKE_PATCH_ABS@"

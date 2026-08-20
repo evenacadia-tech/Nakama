@@ -1,0 +1,163 @@
+diff --git a/modules/juce_audio_plugin_client/juce_audio_plugin_client_VST3.cpp b/modules/juce_audio_plugin_client/juce_audio_plugin_client_VST3.cpp
+index efb9c1589..c4613d0df 100644
+--- a/modules/juce_audio_plugin_client/juce_audio_plugin_client_VST3.cpp
++++ b/modules/juce_audio_plugin_client/juce_audio_plugin_client_VST3.cpp
+@@ -67,6 +67,19 @@ JUCE_BEGIN_NO_SANITIZE ("vptr")
+ #include <juce_audio_processors/format_types/juce_VST3Common.h>
+ #include <juce_audio_plugin_client/VST3/juce_VST3ModuleInfo.h>
+ 
++//==============================================================================
++// NAKAMA-HOSTBRUECKE (SONDE-003, evenacadia). Fuegt dem Wrapper drei
++// Beobachtungen hinzu, die die oeffentliche AudioProcessor-API nicht traegt:
++// Anwesenheit des ProcessContext, ALLE Parameterpunkte mit Sample-Offset und
++// die Presentation-Latency je Bus. Es wird nichts weggenommen und nichts
++// umgerechnet: ohne NAKAMA_HOST_BRIDGE ist dieser Wrapper wortgleich JUCE.
++#ifndef NAKAMA_HOST_BRIDGE
++ #define NAKAMA_HOST_BRIDGE 0
++#endif
++#if NAKAMA_HOST_BRIDGE
++ #include <NakamaHostBridge.h>
++#endif
++
+ #if JUCE_VST3_CAN_REPLACE_VST2 && ! JUCE_FORCE_USE_LEGACY_PARAM_IDS && ! JUCE_IGNORE_VST3_MISMATCHED_PARAMETER_ID_WARNING
+ 
+  // If you encounter this error there may be an issue migrating parameter
+@@ -2645,6 +2658,9 @@ class JuceVST3Component final : public Vst::IComponent,
+                                 public Vst::IUnitInfo,
+                                 public Vst::IConnectionPoint,
+                                 public Vst::IProcessContextRequirements,
++                               #if NAKAMA_HOST_BRIDGE
++                                public Vst::IAudioPresentationLatency,
++                               #endif
+                                #if JucePlugin_Enable_ARA
+                                 public ARA::IPlugInEntryPoint,
+                                 public ARA::IPlugInEntryPoint2,
+@@ -2685,6 +2701,12 @@ public:
+ 
+         pluginInstance->setPlayHead (this);
+ 
++       #if NAKAMA_HOST_BRIDGE
++        // Genau EIN dynamic_cast, hier beim Erzeugen - nie im Audiothread.
++        // Ein Processor ohne Senke merkt von der Bruecke nichts (Fallbackweg).
++        nakamaBruecke.verbinde (dynamic_cast<eqcop::hostbruecke::Senke*> (pluginInstance));
++       #endif
++
+         // Constructing the underlying static object involves dynamic allocation.
+         // This call ensures that the construction won't happen on the audio thread.
+         detail::PluginUtilities::getHostType();
+@@ -3554,6 +3576,19 @@ public:
+         return (Steinberg::uint32) jmax (0, getPluginInstance().getLatencySamples());
+     }
+ 
++   #if NAKAMA_HOST_BRIDGE
++    // Nakama: der Host meldet hier die Presentation-Latency je Bus. Ein Wert 0
++    // heisst laut SDK "keine ODER unbekannt" - die Bruecke merkt sich deshalb
++    // zusaetzlich, DASS gemeldet wurde. Darf ausserhalb des Audiothreads kommen.
++    tresult PLUGIN_API setAudioPresentationLatencySamples (Vst::BusDirection dir,
++                                                           Steinberg::int32 busIndex,
++                                                           Steinberg::uint32 latencyInSamples) override
++    {
++        nakamaBruecke.setzeBuslatenz (dir == Vst::kInput, (Steinberg::int32) busIndex, (Steinberg::uint32) latencyInSamples);
++        return kResultOk;
++    }
++   #endif
++
+     tresult PLUGIN_API setupProcessing (Vst::ProcessSetup& newSetup) override
+     {
+         ScopedInSetupProcessingSetter inSetupProcessingSetter (juceVST3EditController.get());
+@@ -3634,10 +3669,23 @@ public:
+                 }
+                 else
+                #endif
+-                if (const auto change = getPointFromQueue (paramQueue, numPoints - 1))
+                 {
+-                    if (auto* param = comPluginInstance->getParamForVSTParamID (vstParamID))
+-                        setValueAndNotifyIfChanged (*param, (float) change->value);
++                   #if NAKAMA_HOST_BRIDGE
++                    // Nakama: JUCE reicht unten nur den LETZTEN Punkt weiter.
++                    // Hier wird zusaetzlich jeder Punkt mit seinem Sample-Offset
++                    // beobachtet - ohne das Weiterreichen zu veraendern.
++                    for (Steinberg::int32 nakamaPoint = 0; nakamaPoint < numPoints; ++nakamaPoint)
++                        if (const auto nakamaChange = getPointFromQueue (paramQueue, nakamaPoint))
++                            nakamaBruecke.punkt ((eqcop::hostbruecke::StableParameterId) vstParamID,
++                                                 (Steinberg::int32) nakamaChange->offsetSamples,
++                                                 nakamaChange->value);
++                   #endif
++
++                    if (const auto change = getPointFromQueue (paramQueue, numPoints - 1))
++                    {
++                        if (auto* param = comPluginInstance->getParamForVSTParamID (vstParamID))
++                            setValueAndNotifyIfChanged (*param, (float) change->value);
++                    }
+                 }
+             }
+         }
+@@ -3673,10 +3721,19 @@ public:
+         if ((processSetup.symbolicSampleSize == Vst::kSample64) != pluginInstance->isUsingDoublePrecision())
+             return kResultFalse;
+ 
++       #if NAKAMA_HOST_BRIDGE
++        nakamaBruecke.beginneBlock ((Steinberg::uint32) jmax (0, (int) data.numSamples));
++       #endif
++
+         if (data.processContext != nullptr)
+         {
+             processContext = *data.processContext;
+ 
++           #if NAKAMA_HOST_BRIDGE
++            // Nakama: nur HIER ist bewiesen, dass ein Context wirklich anlag.
++            nakamaBruecke.kontextAus (*data.processContext);
++           #endif
++
+             if (juceVST3EditController != nullptr)
+                 juceVST3EditController->vst3IsPlaying = (processContext.state & Vst::ProcessContext::kPlaying) != 0;
+         }
+@@ -3684,6 +3741,12 @@ public:
+         {
+             zerostruct (processContext);
+ 
++           #if NAKAMA_HOST_BRIDGE
++            // Nakama: der genullte Context ist ab hier NICHT mehr von einem
++            // echten Context bei Sample 0 zu unterscheiden - deshalb dieses Bit.
++            nakamaBruecke.kontextFehlt();
++           #endif
++
+             if (juceVST3EditController != nullptr)
+                 juceVST3EditController->vst3IsPlaying = false;
+         }
+@@ -3693,6 +3756,13 @@ public:
+         if (data.inputParameterChanges != nullptr)
+             processParameterChanges (*data.inputParameterChanges);
+ 
++       #if NAKAMA_HOST_BRIDGE
++        // Reihenfolge ist Vertrag: die Senke sieht den Block, BEVOR der
++        // Processor ihn verarbeitet. Beim Parameter-Flush (numSamples == 0)
++        // laeuft processBlock nicht - der Befund traegt dann blockGroesse 0.
++        nakamaBruecke.uebergib();
++       #endif
++
+        #if JucePlugin_WantsMidiInput
+         if (isMidiInputBusEnabled && data.inputEvents != nullptr)
+             MidiEventList::toMidiBuffer (midiBuffer, *data.inputEvents);
+@@ -3768,6 +3838,9 @@ private:
+                                              UniqueBase<Vst::IUnitInfo>{},
+                                              UniqueBase<Vst::IConnectionPoint>{},
+                                              UniqueBase<Vst::IProcessContextRequirements>{},
++                                            #if NAKAMA_HOST_BRIDGE
++                                             UniqueBase<Vst::IAudioPresentationLatency>{},
++                                            #endif
+                                             #if JucePlugin_Enable_ARA
+                                              UniqueBase<ARA::IPlugInEntryPoint>{},
+                                              UniqueBase<ARA::IPlugInEntryPoint2>{},
+@@ -3954,6 +4027,11 @@ private:
+         this object needs to be copied on every call to process() to be up-to-date...
+     */
+     Vst::ProcessContext processContext;
++
++   #if NAKAMA_HOST_BRIDGE
++    // Vorallokiert, eine Instanz je Plugin. Schreibpfad ohne Allokation/Lock.
++    eqcop::hostbruecke::Bruecke nakamaBruecke;
++   #endif
+     Vst::ProcessSetup processSetup;
+ 
+     MidiBuffer midiBuffer;

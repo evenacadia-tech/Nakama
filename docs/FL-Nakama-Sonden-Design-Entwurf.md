@@ -147,7 +147,11 @@ bleiben dabei:
    P6 — plus Draft-/Preview-/Pairing-Sichtbarkeit) und den Editor der
    Passive Probe (minimale Status-/Identitätskachel: Name, Verbindung,
    Frische; null Hostparameter nach §53.8, Bedienung läuft über Main).
-   Beide Spuren laufen durch den Kreativ-Prozess des Users.
+   Beide Spuren laufen durch den Kreativ-Prozess des Users. Die
+   konventionelle Plugin-UI-Spur arbeitet im eigenen, bewusst
+   kontextreinen Projekt `Projekte\Nakama-Design` (Assettruhe +
+   bindendes Abnahmen-Protokoll); Ergebnisse fließen nach User-Abnahme
+   als Design-Update ein.
 4. **Architektur hält den Tausch billig:** UI ist die oberste,
    austauschbare Schicht (§53.3); Engine und Zustandslogik kennen keine
    Optik. Erste designrelevante Sichtbarkeitspunkte sind R1/P3

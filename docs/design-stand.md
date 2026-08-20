@@ -40,6 +40,15 @@ Hörkompass-Zielvertrag oben gilt der Prisma-App, nicht der Plugin-UI.
 Alles hier dokumentierte Prisma-Design ist damit das Design der
 Begleit-App.
 
+**Die konventionelle Plugin-UI-Spur (3 Oberflächen: Main,
+Active-Probe-Editor, Passive-Kachel) lebt seit 20.08. im EIGENEN Projekt
+`C:\Users\phili\Projekte\Nakama-Design`** — bewusst kontextrein (keine
+Nakama-Historie, keine verworfenen Richtungen im Kontext; dortige Regel:
+kein Import aus diesem Repo), mit Assettruhe (`assets/`, erste Quelle)
+und bindendem Abnahmen-Protokoll. Ergebnisse fließen erst nach
+User-Abnahme als Design-Update hierher zurück. Das Prisma-Design bleibt
+vollständig HIER.
+
 **Darstellungs-Entscheidung (User-geprüft, Gimmick-Test):**
 Film-Compositing statt Spiel-Engine. Prisma offline pfadverfolgt
 (Blender 5.1 Cycles, **CPU** — Arc-Landmine!) mit echter Dispersion/

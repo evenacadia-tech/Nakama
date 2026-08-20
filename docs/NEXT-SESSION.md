@@ -29,7 +29,11 @@ EIGENSTÄNDIGE Begleit-App NEBEN Master-Plugin + Sonden — Addition, nie
 Master-Hub. Das Master-Plugin (Nakama Main) bekommt eine konventionellere
 Arbeits-UI mit den Sonden; der Hörkompass-Zielvertrag gilt der Prisma-App.
 Verbindlich festgehalten in `docs/FL-Nakama-Sonden-Design-Entwurf.md`
-§0.3 (Fassung 0.4, mit eingearbeitetem Prüfbericht).
+§0.3 (Fassung 0.4, mit eingearbeitetem Prüfbericht). Die konventionelle
+Plugin-UI-Spur arbeitet seit 20.08. im eigenen, kontextreinen Projekt
+`C:\Users\phili\Projekte\Nakama-Design` (Opus-Sessions; Assettruhe;
+Abnahmen bindend) — von dort nichts hierher spiegeln, bis der User eine
+Abnahme bringt.
 
 Dieser strategische Lock ersetzt NICHT den unmittelbar freigegebenen
 Technikschritt unten. NAK-16 muss dem Zielbild dienen, darf es aber nicht

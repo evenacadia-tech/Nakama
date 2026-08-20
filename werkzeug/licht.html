@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nakama — Wieviel Licht, und woher</title>
+<style>
+/* Werkzeug-Chrome: neutrales Mittelgrau. Bei einer LICHTfrage besonders
+   wichtig — ein dunkles Chrome liesse jede Fassung heller wirken als sie ist. */
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#737373;color:#1d1d1d;
+  font:14px/1.45 'Segoe UI',system-ui,sans-serif;min-height:100vh;
+  display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+header{padding:18px 26px 4px}
+.stufe{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#3a3a3a}
+h1{font-size:22px;font-weight:600;letter-spacing:-.01em;margin-top:4px}
+.unter{font-size:13px;color:#3d3d3d;max-width:900px;margin-top:5px}
+main{flex:1;display:flex;justify-content:center;align-items:flex-start;
+  padding:20px 26px;gap:30px;flex-wrap:wrap}
+footer{padding:12px 26px 20px;display:flex;gap:12px;align-items:center;
+  flex-wrap:wrap;border-top:1px solid #8a8a8a}
+button.k{font:inherit;font-size:12.5px;padding:8px 14px;border:1px solid #4a4a4a;
+  background:#818181;color:#141414;cursor:pointer;border-radius:2px}
+button.k:hover{background:#8d8d8d}
+button.k.dunkel{background:#242424;color:#eee;border-color:#242424}
+button.k.dunkel:hover{background:#3a3a3a}
+textarea.ablehn{width:100%;max-width:860px;height:64px;font:inherit;font-size:13px;
+  padding:9px;background:#8a8a8a;border:1px solid #4a4a4a;color:#141414;resize:vertical}
+.hinw{margin-left:auto;font-size:11.5px;color:#3d3d3d}
+
+/* --- Bedienpanel --- */
+.panel{width:330px;display:flex;flex-direction:column;gap:16px}
+.gruppe{display:flex;flex-direction:column;gap:7px}
+.gruppe > h2{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#333}
+.moden{display:flex;flex-direction:column;gap:5px}
+.mode{font:inherit;font-size:12.5px;text-align:left;padding:8px 11px;cursor:pointer;
+  border:1px solid #4a4a4a;background:#818181;color:#141414;border-radius:2px;
+  line-height:1.35}
+.mode:hover{background:#8d8d8d}
+.mode.an{background:#242424;color:#f0f0f0;border-color:#242424}
+.mode small{display:block;font-size:11px;opacity:.72;margin-top:2px}
+.regler{display:grid;grid-template-columns:104px 1fr 52px;gap:9px 11px;
+  align-items:center;font-size:12px}
+.regler label{color:#2a2a2a}
+.regler output{font:11.5px 'Cascadia Mono','Consolas',monospace;text-align:right}
+input[type=range]{width:100%;accent-color:#242424}
+.werteliste{font:11px/1.7 'Cascadia Mono','Consolas',monospace;color:#2a2a2a;
+  background:#8a8a8a;border:1px solid #6a6a6a;padding:8px 10px;white-space:pre-line}
+.marke{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#3f3f3f;
+  text-align:right;margin-top:6px}
+
+/* ============================================================
+   DAS SPEZIMEN — die abgenommene Fassung „Dunkles Glas, ein
+   Lichtleiter". Alles Licht laeuft ueber CSS-Variablen, damit
+   der Regler unmittelbar wirkt und nichts neu gebaut wird.
+   ============================================================ */
+.rahmen{position:relative;--s:1.6;overflow:hidden;
+  width:calc(448px * var(--s));height:calc(310px * var(--s))}
+.rahmen .g{transform:scale(var(--s));transform-origin:0 0}
+@media (max-width:1360px){ .rahmen{--s:1.32} }
+@media (max-width:1180px){ .rahmen{--s:1.1} }
+
+.g{position:relative;width:448px;height:310px;overflow:hidden;
+  background:var(--grund);border:1px solid #5c5c5c;isolation:isolate;
+  font-family:'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif}
+.g svg{display:block;overflow:visible}
+.zahl{font-variant-numeric:tabular-nums}
+
+/* Die Scheibe: dunkles Glas. Ihre Eigenhelligkeit haengt am Kantenlicht-Modus. */
+.scheibe{position:absolute;inset:20px;border-radius:4px;z-index:2;
+  background:linear-gradient(160deg,
+    rgba(255,255,255,calc(.035 + var(--kante) * .05)),
+    rgba(255,255,255,calc(.008 + var(--kante) * .012)));
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border:1px solid rgba(255,255,255,calc(.09 + var(--kante) * .22));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,calc(var(--kante) * .38)),
+             inset 0 -1px 0 rgba(255,255,255,calc(var(--kante) * .12))}
+
+/* Der Lichtleiter — die Identitaet dieser Fassung, immer da. */
+.leiter{position:absolute;left:20px;top:20px;bottom:20px;width:2px;z-index:5;
+  background:linear-gradient(180deg,transparent 0%,var(--licht) 22%,
+                                    var(--licht) 78%,transparent 100%);
+  box-shadow:0 0 14px var(--lichtWeich), 0 0 40px var(--lichtSchwach)}
+
+/* Streulicht des Leiters: das Licht faellt vom Leiter in den Raum. */
+.spill{position:absolute;left:20px;top:20px;bottom:20px;right:20px;z-index:3;
+  border-radius:4px;pointer-events:none;
+  background:linear-gradient(90deg,var(--licht) 0%,transparent 62%);
+  opacity:calc(var(--spillAn) * var(--lm) * .46);
+  filter:blur(calc(var(--we) * .5px))}
+
+/* Schein hinter dem Glas: eine Quelle im Raum, nicht am Objekt. */
+.bloom{position:absolute;border-radius:50%;z-index:1;pointer-events:none;
+  background:var(--licht);filter:blur(calc(var(--we) * 1px));
+  opacity:calc(var(--bloomAn) * var(--lm) * .46)}
+.b1{width:290px;height:290px;left:-80px;top:-110px}
+.b2{width:240px;height:240px;right:-90px;bottom:-110px;
+  opacity:calc(var(--bloomAn) * var(--lm) * .33)}
+
+.marke-q{position:absolute;left:40px;top:32px;font-size:9px;letter-spacing:.24em;
+  text-transform:uppercase;color:rgba(255,255,255,.52);z-index:6}
+.befund{position:absolute;right:38px;top:26px;width:36px;height:36px;z-index:6}
+.feld{position:absolute;left:40px;right:40px;top:64px;height:134px;z-index:4}
+.steuer{position:absolute;left:40px;bottom:32px;width:74px;height:74px;z-index:6}
+.werte{position:absolute;right:40px;bottom:36px;text-align:right;z-index:6;color:#eaf1ff}
+.werte b{display:block;font-size:29px;font-weight:200;line-height:1;letter-spacing:-.01em}
+.werte i{font-style:normal;font-size:10px;letter-spacing:.18em;
+  color:rgba(255,255,255,.45);display:block;margin-top:7px}
+</style>
+</head>
+<body>
+<header>
+  <div class="stufe">Fassung steht · Dunkles Glas, ein Lichtleiter</div>
+  <h1>Wieviel Licht — und woher?</h1>
+  <div class="unter">Reines Schwarz kann nicht dunkler werden, also kann darauf auch
+    nichts leuchten. „Mehr Licht" ist aber zuerst eine Frage der Herkunft, nicht der
+    Menge: dasselbe bisschen Helligkeit erzählt etwas völlig anderes, je nachdem ob
+    es aus dem Grund kommt, vom Lichtleiter abstrahlt, hinter dem Glas steht oder in
+    den Glaskanten hängt. Wähl die Herkunft, dann dreh die Menge.</div>
+</header>
+<main>
+  <div>
+    <div class="rahmen"><div class="g" id="spz">
+      <div class="bloom b1"></div><div class="bloom b2"></div>
+      <div class="scheibe"></div>
+      <div class="spill"></div>
+      <div class="leiter"></div>
+      <div class="marke-q">Klavier</div>
+      <div class="befund" id="befund"></div>
+      <div class="feld" id="feld"></div>
+      <svg class="steuer" viewBox="0 0 74 74" id="steuer"></svg>
+      <div class="werte">
+        <b class="zahl">410 <span style="font-size:13px;opacity:.5">Hz</span></b>
+        <i class="zahl">−2.5 dB</i></div>
+    </div></div>
+    <div class="marke">Demo-Daten</div>
+  </div>
+
+  <div class="panel">
+    <div class="gruppe">
+      <h2>Woher kommt das Licht</h2>
+      <div class="moden" id="moden"></div>
+    </div>
+    <div class="gruppe">
+      <h2>Wieviel</h2>
+      <div class="regler" id="regler"></div>
+    </div>
+    <div class="gruppe">
+      <h2>Was dabei herauskommt</h2>
+      <div class="werteliste" id="werteliste"></div>
+    </div>
+  </div>
+</main>
+<footer id="fuss"></footer>
+
+<script>
+/* ================================================================
+   NAKAMA — LICHTFASSUNG
+   Abgenommen: Glas und Licht (Place, kühl, wenig Text), Fassung
+   „Dunkles Glas, ein Lichtleiter". Offen: Grundhelligkeit und
+   Herkunft des zusätzlichen Lichts.
+   ================================================================ */
+
+const AUSGANG = { modus:'grund', grundL:0, lm:0, farbe:78, we:60 };  // die gewählte Fassung, unverändert
+const w = { modus:'grund', grundL:5, lm:38, farbe:78, we:60 };       // Startpunkt zum Drehen
+
+const MODEN = [
+  {id:'grund',  name:'Nur der Grund wird angehoben',
+   text:'Kein zusätzliches Leuchten. Das Schwarz wird zu einem sehr dunklen kühlen '
+      + 'Grau — mehr nicht.'},
+  {id:'leiter', name:'Der Lichtleiter strahlt in den Raum',
+   text:'Das Licht hat eine Quelle und eine Richtung: es fällt vom Strich nach '
+      + 'rechts aus und wird schwächer.'},
+  {id:'hinter', name:'Ein Schein hinter dem Glas',
+   text:'Eine Lichtquelle im Raum, nicht am Objekt. Gibt Tiefe, kostet Ruhe.'},
+  {id:'kante',  name:'Die Glaskanten fangen Licht',
+   text:'Kein Leuchten im Raum — nur die Scheibe selbst wird als Material sichtbar.'}
+];
+
+const REGLER = [
+  {t:'grundL', l:'Grundhelligkeit', min:0,  max:12, step:.5, e:'%',
+   wirkt:['grund','leiter','hinter','kante']},
+  {t:'lm',     l:'Lichtmenge',      min:0,  max:100, step:1, e:'%',
+   wirkt:['leiter','hinter','kante']},
+  {t:'farbe',  l:'Farbanteil',      min:0,  max:100, step:1, e:'%',
+   wirkt:['grund','leiter','hinter','kante']},
+  {t:'we',     l:'Streuung',        min:10, max:120, step:2, e:'px',
+   wirkt:['leiter','hinter']}
+];
+
+/* ---------- Spezimeninhalt (fest, identisch zur abgenommenen Fassung) ---------- */
+const FW = 368, FH = 134;
+const BAENDER = [{f:90,q:.8,g:-3.2},{f:410,q:1.4,g:-2.5},{f:3200,q:1.1,g:2.4}];
+const xF = f => FW * Math.log(f/20) / Math.log(1000);
+function pfad(){
+  let d = '';
+  for(let x = 0; x <= FW; x += 2){
+    const f = 20 * Math.pow(1000, x/FW);
+    let db = 0;
+    for(const b of BAENDER){
+      const oct = Math.log2(f/b.f), bw = 1/Math.max(.35, b.q);
+      db += b.g * Math.exp(-(oct*oct)/(2*bw*bw));
+    }
+    d += (x ? 'L' : 'M') + x + ' ' + (FH/2 - (db/8)*(FH/2 - 8)).toFixed(1);
+  }
+  return d;
+}
+function bogen(cx, cy, r, a1, a2){
+  const p = a => [cx + r*Math.cos(a*Math.PI/180), cy + r*Math.sin(a*Math.PI/180)];
+  const [x1,y1] = p(a1), [x2,y2] = p(a2);
+  return `M${x1.toFixed(2)} ${y1.toFixed(2)}A${r} ${r} 0 ${Math.abs(a2-a1)>180?1:0} 1 `
+       + `${x2.toFixed(2)} ${y2.toFixed(2)}`;
+}
+const B1 = xF(180), B2 = xF(260);
+document.getElementById('feld').innerHTML =
+ `<svg viewBox="0 0 ${FW} ${FH}" width="100%" height="100%" preserveAspectRatio="none">
+    <defs><linearGradient id="bd" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="var(--licht)" stop-opacity="0"/>
+      <stop offset=".28" stop-color="var(--licht)" stop-opacity=".10"/>
+      <stop offset=".72" stop-color="var(--licht)" stop-opacity=".10"/>
+      <stop offset="1" stop-color="var(--licht)" stop-opacity="0"/>
+    </linearGradient></defs>
+    <rect x="${(B1-9).toFixed(1)}" y="0" width="${(B2-B1+18).toFixed(1)}"
+          height="${FH}" fill="url(#bd)"/>
+    ${[100,1000,10000].map(f=>`<path d="M${xF(f).toFixed(1)} 0V${FH}"
+          stroke="rgba(255,255,255,.07)" stroke-width="1"/>`).join('')}
+    <path d="M0 ${FH/2}H${FW}" stroke="rgba(255,255,255,.07)" stroke-width="1"/>
+    <path d="${pfad()}" fill="none" stroke="rgba(233,241,247,.92)" stroke-width="1.5"/>
+  </svg>`;
+document.getElementById('befund').innerHTML =
+ `<svg viewBox="0 0 36 36" width="36" height="36">
+    <path d="${bogen(18,18,15,-90,268)}" stroke="rgba(255,255,255,.12)"
+          stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="${bogen(18,18,15,-90,128)}" stroke="var(--licht)" stroke-width="2.5"
+          fill="none" stroke-linecap="round"/>
+    <circle cx="18" cy="18" r="2.6" fill="var(--licht)"/>
+  </svg>`;
+document.getElementById('steuer').innerHTML =
+ `<circle cx="37" cy="37" r="30" fill="none" stroke="rgba(255,255,255,.12)"
+          stroke-width="1"/>
+  <path d="${bogen(37,37,30,140,274)}" stroke="var(--licht)" stroke-width="2"
+        fill="none" stroke-linecap="round"/>`;
+
+/* ---------- Licht rechnen ---------- */
+// Grund und Licht liegen auf demselben kühlen Ton, damit das Bild nicht in zwei
+// Farbwelten zerfaellt. Der Grund ist nie reines Schwarz, sobald grundL > 0.
+function hsl(h,s,l){ return `hsl(${h} ${s.toFixed(0)}% ${l.toFixed(1)}%)`; }
+function anwenden(z){
+  const s = document.getElementById('spz').style;
+  const grund   = hsl(212, 22 * (z.grundL > 0 ? 1 : 0), z.grundL);
+  const lichtL  = 58 + (1 - z.farbe/100) * 30;         // je farbloser, desto heller
+  const licht   = hsl(193, 88 * z.farbe/100, lichtL);
+  s.setProperty('--grund', grund);
+  s.setProperty('--licht', licht);
+  s.setProperty('--lichtWeich',   `hsl(193 ${(88*z.farbe/100).toFixed(0)}% ${lichtL.toFixed(0)}% / .62)`);
+  s.setProperty('--lichtSchwach', `hsl(193 ${(88*z.farbe/100).toFixed(0)}% ${lichtL.toFixed(0)}% / .26)`);
+  s.setProperty('--lm', (z.lm/100).toFixed(3));
+  s.setProperty('--we', z.we);
+  s.setProperty('--spillAn', z.modus === 'leiter' ? 1 : 0);
+  s.setProperty('--bloomAn', z.modus === 'hinter' ? 1 : 0);
+  s.setProperty('--kante',   z.modus === 'kante' ? (z.lm/100).toFixed(3) : 0);
+  return {grund, licht};
+}
+
+function zeichnen(){
+  const abg = anwenden(w);
+  document.getElementById('moden').innerHTML = '';
+  MODEN.forEach(m=>{
+    const b = document.createElement('button');
+    b.className = 'mode' + (m.id === w.modus ? ' an' : '');
+    b.innerHTML = m.name + '<small>' + m.text + '</small>';
+    b.onclick = ()=>{ w.modus = m.id; zeichnen(); };
+    document.getElementById('moden').appendChild(b);
+  });
+  const r = document.getElementById('regler');
+  r.innerHTML = '';
+  REGLER.forEach(s=>{
+    const wirkt = s.wirkt.includes(w.modus);
+    const l = document.createElement('label'); l.textContent = s.l;
+    const i = document.createElement('input');
+    i.type='range'; i.min=s.min; i.max=s.max; i.step=s.step; i.value=w[s.t];
+    i.disabled = !wirkt;
+    const o = document.createElement('output');
+    const z = ()=> o.textContent = wirkt ? w[s.t] + s.e : '—';
+    z();
+    if(!wirkt){ l.style.opacity = .38; o.style.opacity = .38;
+                l.title = 'wirkt in dieser Herkunft nicht'; }
+    i.oninput = ()=>{ w[s.t] = parseFloat(i.value); z();
+                      werte(anwenden(w)); };
+    r.append(l, i, o);
+  });
+  werte(abg);
+  fuss();
+}
+function werte(abg){
+  document.getElementById('werteliste').textContent =
+      `Grund   ${abg.grund}\nLicht   ${abg.licht}\n`
+    + `Herkunft ${MODEN.find(m=>m.id===w.modus).name}`;
+}
+
+/* ---------- Fusszeile ---------- */
+function knopf(text, fn, dunkel){
+  const b = document.createElement('button');
+  b.className = 'k' + (dunkel ? ' dunkel' : '');
+  b.textContent = text; b.onclick = fn; return b;
+}
+function fuss(){
+  const f = document.getElementById('fuss');
+  if(f.dataset.fertig) return;
+  f.dataset.fertig = '1';
+  // Halten zeigt den unveraenderten Ausgangszustand — Vergleich ohne Umschalten,
+  // damit das Auge sich nicht zwischendurch anpasst.
+  const halt = knopf('Original halten (gedrückt)', ()=>{});
+  halt.onmousedown = ()=> anwenden(AUSGANG);
+  halt.onmouseup = halt.onmouseleave = ()=> anwenden(w);
+  f.append(
+    knopf('So sitzt es — Ergebnis zeigen', ergebnis, true),
+    halt,
+    knopf('Zurück auf Ausgang', ()=>{ Object.assign(w, AUSGANG); zeichnen(); }),
+    knopf('Stört etwas — und zwar …', ablehnen)
+  );
+  const h = document.createElement('span');
+  h.className = 'hinw';
+  h.textContent = 'Alles wirkt sofort — nichts wird neu gebaut';
+  f.appendChild(h);
+}
+const ablehnungen = [];
+function ablehnen(){
+  const f = document.getElementById('fuss');
+  if(f.querySelector('textarea')) return;
+  const box = document.createElement('div');
+  box.style.cssText = 'width:100%;display:flex;flex-direction:column;gap:8px';
+  box.innerHTML = '<textarea class="ablehn" placeholder="Was stimmt noch nicht? '
+    + 'Zu kalt, zu grau, das Leuchten am falschen Ort, der Strich zu dünn …"></textarea>';
+  box.appendChild(knopf('Notieren', ()=>{
+    const t = box.querySelector('textarea').value.trim();
+    if(t) ablehnungen.push(t);
+    box.remove();
+  }, true));
+  f.appendChild(box);
+  box.querySelector('textarea').focus();
+}
+function ergebnis(){
+  const abg = anwenden(w);
+  const alt = document.getElementById('ausgabe');
+  if(alt) alt.parentElement.remove();
+  const d = document.createElement('div');
+  d.style.cssText = 'width:100%;margin-top:10px';
+  const ta = document.createElement('textarea');
+  ta.id = 'ausgabe'; ta.spellcheck = false;
+  ta.style.cssText = 'width:100%;max-width:900px;height:150px;font:11.5px/1.5 '
+    + '"Cascadia Mono","Consolas",monospace;background:#2a2a2a;color:#d8dde3;'
+    + 'border:0;padding:12px;resize:vertical';
+  ta.value = JSON.stringify({
+    werkzeug:'nakama-licht', version:1, zeitpunkt:new Date().toISOString(),
+    fassung:'dunkles-glas-lichtleiter',
+    herkunft:w.modus, herkunftName:MODEN.find(m=>m.id===w.modus).name,
+    regler:{grundHelligkeitProzent:w.grundL, lichtmengeProzent:w.lm,
+            farbanteilProzent:w.farbe, streuungPx:w.we},
+    ergebnis:{grund:abg.grund, licht:abg.licht},
+    ablehnungen:ablehnungen
+  }, null, 1);
+  d.appendChild(ta);
+  const k = document.createElement('div');
+  k.style.cssText = 'display:flex;gap:10px;margin-top:8px';
+  k.appendChild(knopf('Alles markieren — dann Strg+C', ()=>{ ta.focus(); ta.select();
+    try{ document.execCommand('copy'); }catch(e){} }, true));
+  d.appendChild(k);
+  document.getElementById('fuss').appendChild(d);
+  ta.focus(); ta.select();
+}
+
+zeichnen();
+</script>
+</body>
+</html>

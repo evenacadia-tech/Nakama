@@ -7,8 +7,12 @@ Nichts davon ist ein Gestaltungsvorschlag. Layoutentscheidungen gehören nach
 ## Reihenfolge — die ist der eigentliche Punkt
 
 1. **`weltenwahl.html`** — zuerst. Welche Welt? *(entschieden: Glas und Licht)*
-2. **`glaswelt.html`** — dann. Welche Verwirklichung dieser Welt?
-3. **`stilbefragung.html`** — zuletzt. Welche Werte *innerhalb* der Verwirklichung?
+2. **`glaswelt.html`** — dann. Welche Verwirklichung? *(entschieden: dunkles
+   Glas, ein Lichtleiter)*
+3. **`licht.html`** — dann. Woher kommt das zusätzliche Licht, und wieviel?
+   Kein Quiz mehr, sondern ein Drehinstrument: vier Herkünfte, vier Regler,
+   alles wirkt sofort.
+4. **`stilbefragung.html`** — zuletzt. Welche Werte *innerhalb* der Fassung?
    Die Spezimen darin zeigen noch die alte, verworfene Welt und müssen vor dem
    nächsten Einsatz umgestellt werden.
 
@@ -42,6 +46,24 @@ Aussage ist, ein weiches Band im Kurvenfeld sagt, wo sie gilt.
 
 Die Thesen zu den Varianten sind standardmäßig ausgeblendet — wer sie vorher
 liest, wählt den besseren Satz statt das bessere Bild.
+
+## licht.html
+
+Die Fassung steht, offen ist das Licht. Vier **Herkünfte** (nur der Grund
+angehoben · der Lichtleiter strahlt in den Raum · ein Schein hinter dem Glas ·
+die Glaskanten fangen Licht) und vier Regler (Grundhelligkeit, Lichtmenge,
+Farbanteil, Streuung).
+
+Zwei Dinge stecken im Code, die leicht zu übersehen wären:
+
+- Alles läuft über CSS-Variablen, nichts wird neu gebaut — der Regler wirkt
+  ohne Sprung, und das Auge kann kleinen Unterschieden folgen.
+- **Regler, die in der gewählten Herkunft nichts bewirken, sind abgeschaltet
+  und zeigen „—".** Ein Regler, der sich bewegen lässt und nichts tut, ist eine
+  Lüge in der Oberfläche.
+
+„Original halten" zeigt gedrückt die unveränderte Ausgangsfassung — Vergleich
+ohne Umschalten, damit sich das Auge zwischendurch nicht anpasst.
 
 ## stilbefragung.html
 

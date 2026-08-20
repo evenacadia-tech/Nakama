@@ -4,22 +4,32 @@ Hier liegen Hilfsmittel, mit denen die Vorstellung des Users **gemessen** wird.
 Nichts davon ist ein Gestaltungsvorschlag. Layoutentscheidungen gehören nach
 `prototyp/` und in Phase 1 des Arbeitsplans.
 
-## Reihenfolge — die ist der eigentliche Punkt
+## Reihenfolge — nach den Stufen aus `assets/GUI-Tips.pdf`
 
-1. **`weltenwahl.html`** — zuerst. Welche Welt? *(entschieden: Glas und Licht)*
-2. **`glaswelt.html`** — dann. Welche Verwirklichung? *(entschieden: dunkles
-   Glas, ein Lichtleiter)*
-3. **`licht.html`** — dann. Woher kommt das zusätzliche Licht, und wieviel?
-   Kein Quiz mehr, sondern ein Drehinstrument: vier Herkünfte, vier Regler,
-   alles wirkt sofort.
-4. **`stilbefragung.html`** — zuletzt. Welche Werte *innerhalb* der Fassung?
-   Die Spezimen darin zeigen noch die alte, verworfene Welt und müssen vor dem
-   nächsten Einsatz umgestellt werden.
+**Stufe 1 — The Feeling** *(abgeschlossen)*
+1. `weltenwahl.html` — welche Welt? → **Glas und Licht**
+2. `glaswelt.html` — welche Verwirklichung? → **dunkles Glas, ein Lichtleiter**
 
-Diese Reihenfolge war der Fehler der ersten Runde: Stilbefragung wurde gebaut,
-bevor die Welt entschieden war, also fragte sie nach Radien innerhalb einer
-Welt, die Claude sich selbst ausgesucht hatte. Siehe
-`abnahmen/2026-08-20-methode-visuelle-befragung.md`.
+**Stufe 2 — UX Layout** *(hier stehen wir)*
+3. `wireframe-main.html` — Schritt 1: Wo liegt was? Graustufen, keine Optik.
+   **Main zuerst**, danach Active-Probe-Editor, dann Passive-Kachel.
+4. *(offen)* Schritt 2: Early Visual Layer — Kontrast und Gruppierung, noch
+   ohne fertigen Look.
+5. *(offen)* Schritt 3: UI Design Stage — Stil und Feinproportionen.
+
+**Stufe 5/6 — Licht und Material** *(stillgelegt bis Stufe 2 durch ist)*
+6. `licht.html` — **nicht benutzen.** Zwei Gründe: es kommt zu früh, und sein
+   Modell ist falsch (vier sich ausschließende Herkünfte). Licht ist additiv,
+   kommt auch aus den UI-Elementen selbst — passiv wie aktiv — und Material
+   entscheidet, wie eine Fläche darauf antwortet. Wird vor dem Einsatz neu
+   gebaut. Siehe
+   `abnahmen/2026-08-20-korrektur-reihenfolge-und-lichtmodell.md`.
+7. `stilbefragung.html` — zuletzt. Ihre Spezimen zeigen noch die verworfene
+   Welt und müssen vorher umgestellt werden.
+
+Zweimal ist genau dieser Reihenfolgefehler passiert: einmal wurden Radien
+innerhalb einer selbst gewählten Welt abgefragt, einmal Licht verhandelt, bevor
+die Anordnung stand. Beide Male hat der User es gemerkt, nicht Claude.
 
 ## weltenwahl.html
 
@@ -46,6 +56,24 @@ Aussage ist, ein weiches Band im Kurvenfeld sagt, wo sie gilt.
 
 Die Thesen zu den Varianten sind standardmäßig ausgeblendet — wer sie vorher
 liest, wählt den besseren Satz statt das bessere Bild.
+
+## wireframe-main.html
+
+Stufe 2, Schritt 1. Fünf Anordnungen von **Main** in reinen Graustufen — kein
+Farbton, kein Material, kein Licht. Alle fünf zeigen denselben Pflichtinhalt
+aus `docs/oberflaechen-spezifikation.md`: Quellen (16), vergleichende Heatmap,
+Detail, Befunde, Assistent in fester Fünf-Teile-Form, Vorher/Nachher,
+musikalische Rollen, die vier Bedienebenen und die Statuszeile samt
+degradierter Funktion. Verschieden ist nur, was die Hauptsache ist:
+
+1. Quellen links, Bühne mitte, Assistent rechts
+2. Die Heatmap ist die Bühne
+3. Der Assistent führt, alles andere ist Beleg
+4. Die Befunde sind das Rückgrat
+5. Zwei Ebenen statt Nebeneinander
+
+Im Raster sind die Strukturen zu erkennen, in der Großansicht die
+Beschriftungen zu lesen — deshalb erst fünf klein, dann zwei groß.
 
 ## licht.html
 

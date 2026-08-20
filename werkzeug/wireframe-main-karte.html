@@ -102,7 +102,7 @@ body.vertragAn .vertrag{display:flex}
 .box{border:1px solid #4c4c4c;background:#2e2e2e;display:flex;flex-direction:column;
   overflow:hidden;min-width:0;min-height:0;flex:1}
 .box > h4{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#8f8f8f;
-  padding:6px 9px 5px;border-bottom:1px solid #414141;flex:none;
+  padding:5px 9px 4px;border-bottom:1px solid #414141;flex:none;
   display:flex;gap:8px;align-items:baseline}
 .box > h4 em{font-style:normal;margin-left:auto;color:#6f6f6f;letter-spacing:.08em}
 .box > h4 .zaehler{font-style:normal;margin-left:8px;padding-left:8px;
@@ -141,7 +141,7 @@ body.vertragAn .vertrag{display:flex}
 .liste{flex:1;min-height:0;display:flex;flex-direction:column;gap:inherit;
   overflow:hidden}
 .hm .liste{gap:2px}
-.as .liste{gap:5px}
+.as .liste{gap:2px}
 .kappe{flex:none;font-size:8.5px;letter-spacing:.08em;color:#8f8f8f;
   border-top:1px dashed #5a5a5a;padding-top:3px;margin-top:2px;
   display:flex;gap:6px;align-items:center}
@@ -187,15 +187,24 @@ body.vertragAn .vertrag{display:flex}
 .bf span{font-size:10.5px;color:#c9c9c9}
 .bf i{font-style:normal;font-size:9px;color:#7d7d7d}
 .bf.an{background:#3d3d3d;border-color:#6a6a6a}
+/* Geschlossener Befund: Ort und Sicherheit bleiben lesbar, die Begruendung
+   ist einen Griff entfernt. Eine Zeile, kein Kaestchen im Kaestchen. */
+.bf.zu{flex-direction:row;align-items:baseline;gap:8px;background:#292929;
+  padding:3px 7px}
+.bf.zu i{margin-left:auto}
 
-.as{display:flex;flex-direction:column;gap:5px;flex:1;min-height:0}
+/* Die fuenf Teile sind Pflicht (Spezifikation), die Abstaende sind es nicht.
+   Bei 16 Quellen laesst die Karte der Arbeitsflaeche 156 px; der Assistent
+   brauchte 172. Die 16 px kommen aus den Abstaenden, nicht aus dem Inhalt
+   und nicht aus der Schriftgroesse — gemessen, nicht bis zum Passen gedreht. */
+.as{display:flex;flex-direction:column;gap:3px;flex:1;min-height:0}
 .ast{display:flex;gap:8px;align-items:baseline}
 .ast b{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:#7d7d7d;
   width:96px;flex:none;font-weight:400}
 .ast span{font-size:11px;color:#c9c9c9;flex:1}
 .as.gross .ast b{width:116px;font-size:9.5px}
 .as.gross .ast span{font-size:14px}
-.knopfreihe{display:flex;gap:5px;margin-top:auto;padding-top:6px;flex-wrap:wrap}
+.knopfreihe{display:flex;gap:5px;margin-top:auto;padding-top:4px;flex-wrap:wrap}
 .wfk{font-size:9.5px;letter-spacing:.06em;padding:4px 9px;border:1px solid #5a5a5a;
   color:#c2c2c2;background:#3a3a3a;white-space:nowrap}
 .wfk.stark{background:#5a5a5a;color:#eee}
@@ -388,9 +397,14 @@ function detail(titel='Detail · Piano', zusatz='spectrum · loudness · dynamic
     {baustein:'Detail einer Quelle'});
 }
 function befunde(n, offen=0, titel='Findings'){
+  // Einer offen, der Rest als benannte Zeile — nicht als Sparmassnahme,
+  // sondern weil die Spezifikation "genau EINEN Schritt zur Zeit" verlangt.
+  // Alle drei bleiben sichtbar; nur die Tiefe ist einen Klick entfernt.
   return kasten(titel, '',
     liste('Befundliste', FINDINGS.length, FINDINGS.slice(0,n).map(([o,t,s],i)=>
-      `<div class="bf${i===offen?' an':''}"><b>${o}</b><span>${t}</span><i>${s}</i></div>`)
+      i === offen
+        ? `<div class="bf an"><b>${o}</b><span>${t}</span><i>${s}</i></div>`
+        : `<div class="bf zu"><b>${o}</b><i>${s}</i></div>`)
       .join('')),
     {baustein:'Befundliste'});
 }
@@ -612,6 +626,43 @@ function einmalEhrlich(wf){
   return bericht;
 }
 
+/* 1b. Aufteilung: Ueberschuss teilen, Mangel NICHT.
+   Der User hat "teilen" fuer den Fall eingezeichnet, dass etwas uebrig ist.
+   Ist zu wenig da, darf die Karte nicht auch noch wachsen — sonst frisst sie
+   genau die Pixel, die dem Assistenten fehlen. Gemessen vor dieser Regel:
+   Karte 230 px, obwohl sie fuer ihre 16 Zeilen nur 212 braucht, waehrend die
+   Arbeitsflaeche auf 138 stand und zwei Assistenten-Teile verlor.
+   Reine CSS-Flexbox kann das nicht: die Listen kuerzen sich NACH dem Layout,
+   dadurch schrumpft die Basis der Arbeitsflaeche und die Karte waechst
+   nach — eine Ratsche. Deshalb wird hier einmal gemessen und festgesetzt. */
+/* Vor jeder Aufteilung: alle Listen wieder voll machen. Sonst misst der
+   zweite Durchgang die bereits gekuerzten Inhalte als "natuerliche Hoehe",
+   die Karte waechst nach, die Arbeitsflaeche kuerzt weiter — dieselbe
+   Ratsche, nur eine Ebene hoeher. */
+function listenZuruecksetzen(wf){
+  wf.querySelectorAll('.liste').forEach(l => {
+    l.querySelectorAll(':scope > .kappe').forEach(x => x.remove());
+    [...l.children].forEach(z => { z.style.display = ''; });
+  });
+}
+function aufteilen(wf){
+  const k = wf.querySelector('.karte'), a = wf.querySelector('.arbeit');
+  if(!k || !a) return;
+  listenZuruecksetzen(wf);
+  k.style.flex = '0 0 auto'; a.style.flex = '0 0 auto';
+  const kn = k.offsetHeight, an = a.offsetHeight;          // natuerliche Hoehen
+  const st = getComputedStyle(wf);
+  const luecke = parseFloat(st.rowGap) || 0;
+  const andere = [...wf.children].filter(c => c !== k && c !== a)
+    .reduce((s, c) => s + c.offsetHeight, 0);
+  const platz = wf.clientHeight - parseFloat(st.paddingTop)
+    - parseFloat(st.paddingBottom) - andere - luecke * (wf.children.length - 1);
+  const rest = platz - kn - an;
+  k.style.flex = `0 0 ${Math.max(0, kn + (rest > 0 ? rest / 2 : 0))}px`;
+  a.style.flex = '1 1 auto';
+  return {kn, an, platz, rest};
+}
+
 /* 2. Ueberlauf, der KEINE Liste ist: feste Textbloecke, die schlicht nicht
    passen. Alle Nachfahren, nicht vier ausgewaehlte Klassen — ein
    verschachteltes overflow:hidden schluckt die Ueberlaenge, bevor der
@@ -648,6 +699,7 @@ function vertrag(e){
     wf.style.cssText = gitter;
     wf.innerHTML = html;
     messbuehne.replaceChildren(wf);
+    aufteilen(wf);
     const listen = listenEhrlich(wf);
     return {
       namen: new Set([...wf.querySelectorAll('[data-baustein]')]
@@ -728,7 +780,8 @@ ${bg[1]}"`
   // Listen werden vorher ehrlich gemacht, danach bleibt nur der Ueberlauf,
   // den kein Weglassen von Zeilen heilt — feste Bloecke, die nicht passen.
   const messen = ()=>{
-    listenEhrlich(wf);
+    aufteilen(wf);        // erst die Hoehen festsetzen, dann kuerzen —
+    listenEhrlich(wf);    // umgekehrt misst die Aufteilung bereits Gekuerztes
     const {fehlt, wo} = ueberlauf(wf);
     b.dataset.fehlt = fehlt;
     if(fehlt > 1){

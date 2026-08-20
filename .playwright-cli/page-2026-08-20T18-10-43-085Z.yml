@@ -1,0 +1,228 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]: Noch nicht 1:1.
+    - text: Nur im Vollbild ist die Zweikampfansicht echte 760×430 — im Raster sind alle Kacheln ohnehin verkleinert.
+    - button "Vollbild (F11)" [ref=e4] [cursor=pointer]
+  - banner [ref=e5]:
+    - generic [ref=e6]: Stufe 2 · Main · Overview + Detail — die Karte
+    - heading "Was trägt die Karte, die immer da ist?" [level=1] [ref=e7]
+    - generic [ref=e8]: "Zwei Dinge sind entschieden. Overview + Detail ist abgenommen, und die Aufteilung steht seit deiner gelben Linie: Karte und Arbeitsfläche bekommen erst ihre natürliche Höhe, der Überschuss wird geteilt — nicht einer Seite ganz zugeschlagen. Gemessen liegt die Grenze damit bei 245 px; deine Linie lag bei rund 250. Die Karte darf dabei wachsen, aber nicht schrumpfen: sie ist das dauerhafte Ding. Offen ist nur noch, was die Karte zeigt. Drei Antworten nebeneinander, gleicher Streifen, gleiche Arbeitsfläche. Die Klemme bleibt echt: bei 16 Quellen braucht eine Karte mit je einer Zeile 212 der 370 px, der Assistent braucht in seiner von der Spezifikation vorgeschriebenen Fünf-Teile-Form 172. Beides zugleich geht nicht. Graustufen, keine Optik. Unten den Arbeitsschritt wechseln und „Was bleibt dauerhaft stehen?\" einschalten."
+  - main [ref=e9]:
+    - 'button "Observe Advise Audition Apply 13 fresh 2 stale 1 offline Measuring 68 % Width: unavailable Overview Bass · 180–260 Hz 16/16 20 60 120 250 500 1k 2k 4k 8k Advisor finding 1 of 3 5/5 Priority Bass against piano, 180–260 Hz Likely cause Bass carries 3.4 dB too much there Smallest test Bass −2 dB at 220 Hz, Q 1.2 Listen for piano left hand, bars 33–41 Then re-check the same passage Audition (hold) Apply Discard Alle 16, gleich hoch 1" [ref=e10] [cursor=pointer]':
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - generic [ref=e14]: Observe
+          - generic [ref=e15]: Advise
+          - generic [ref=e16]: Audition
+          - generic [ref=e17]: Apply
+          - generic [ref=e18]:
+            - generic [ref=e19]: 13 fresh
+            - generic [ref=e21]: 2 stale
+            - generic [ref=e23]: 1 offline
+            - generic [ref=e25]: Measuring 68 %
+            - generic [ref=e26]: "Width: unavailable"
+        - generic [ref=e28]:
+          - heading "Overview Bass · 180–260 Hz 16/16" [level=4] [ref=e29]:
+            - text: Overview
+            - emphasis [ref=e30]: Bass · 180–260 Hz
+            - generic [ref=e31]: 16/16
+          - generic [ref=e34]:
+            - generic [ref=e35]: "20"
+            - generic [ref=e36]: "60"
+            - generic [ref=e37]: "120"
+            - generic [ref=e38]: "250"
+            - generic [ref=e39]: "500"
+            - generic [ref=e40]: 1k
+            - generic [ref=e41]: 2k
+            - generic [ref=e42]: 4k
+            - generic [ref=e43]: 8k
+        - generic [ref=e222]:
+          - heading "Advisor finding 1 of 3 5/5" [level=4] [ref=e223]:
+            - text: Advisor
+            - emphasis [ref=e224]: finding 1 of 3
+            - generic [ref=e225]: 5/5
+          - generic [ref=e227]:
+            - generic [ref=e228]:
+              - generic [ref=e229]:
+                - generic [ref=e230]: Priority
+                - generic [ref=e231]: Bass against piano, 180–260 Hz
+              - generic [ref=e232]:
+                - generic [ref=e233]: Likely cause
+                - generic [ref=e234]: Bass carries 3.4 dB too much there
+              - generic [ref=e235]:
+                - generic [ref=e236]: Smallest test
+                - generic [ref=e237]: Bass −2 dB at 220 Hz, Q 1.2
+              - generic [ref=e238]:
+                - generic [ref=e239]: Listen for
+                - generic [ref=e240]: piano left hand, bars 33–41
+              - generic [ref=e241]:
+                - generic [ref=e242]: Then
+                - generic [ref=e243]: re-check the same passage
+            - generic [ref=e244]:
+              - generic [ref=e245]: Audition (hold)
+              - generic [ref=e246]: Apply
+              - generic [ref=e247]: Discard
+      - generic [ref=e248]: Alle 16, gleich hoch
+      - generic [ref=e249]: "1"
+    - 'button "Observe Advise Audition Apply 13 fresh 2 stale 1 offline Measuring 68 % Width: unavailable Overview Bass · 180–260 Hz · 3 named 16/16 20 60 120 250 500 1k 2k 4k 8k Lead Vocal Choir Piano Drums Bass Guitar Strings Synth Pad Brass Percussion Double Bass Harp Organ Room Mic Backing Vox Shaker Advisor finding 1 of 3 5/5 Priority Bass against piano, 180–260 Hz Likely cause Bass carries 3.4 dB too much there Smallest test Bass −2 dB at 220 Hz, Q 1.2 Listen for piano left hand, bars 33–41 Then re-check the same passage Audition (hold) Apply Discard Karte nach Bedeutung 2" [ref=e250] [cursor=pointer]':
+      - generic [ref=e252]:
+        - generic [ref=e253]:
+          - generic [ref=e254]: Observe
+          - generic [ref=e255]: Advise
+          - generic [ref=e256]: Audition
+          - generic [ref=e257]: Apply
+          - generic [ref=e258]:
+            - generic [ref=e259]: 13 fresh
+            - generic [ref=e261]: 2 stale
+            - generic [ref=e263]: 1 offline
+            - generic [ref=e265]: Measuring 68 %
+            - generic [ref=e266]: "Width: unavailable"
+        - generic [ref=e268]:
+          - heading "Overview Bass · 180–260 Hz · 3 named 16/16" [level=4] [ref=e269]:
+            - text: Overview
+            - emphasis [ref=e270]: Bass · 180–260 Hz · 3 named
+            - generic [ref=e271]: 16/16
+          - generic [ref=e273]:
+            - generic [ref=e274]:
+              - generic [ref=e276]: "20"
+              - generic [ref=e277]: "60"
+              - generic [ref=e278]: "120"
+              - generic [ref=e279]: "250"
+              - generic [ref=e280]: "500"
+              - generic [ref=e281]: 1k
+              - generic [ref=e282]: 2k
+              - generic [ref=e283]: 4k
+              - generic [ref=e284]: 8k
+            - generic [ref=e285]:
+              - generic [ref=e286]: Lead Vocal
+              - generic [ref=e297]: Choir
+              - generic [ref=e309]: Piano
+              - generic [ref=e320]: Drums
+              - generic [ref=e332]: Bass
+              - generic [ref=e344]: Guitar
+              - generic [ref=e355]: Strings
+              - generic [ref=e366]: Synth Pad
+              - generic [ref=e377]: Brass
+              - generic [ref=e388]: Percussion
+              - generic [ref=e399]: Double Bass
+              - generic [ref=e410]: Harp
+              - generic [ref=e421]: Organ
+              - generic [ref=e432]: Room Mic
+              - generic [ref=e443]: Backing Vox
+              - generic [ref=e454]: Shaker
+        - generic [ref=e466]:
+          - heading "Advisor finding 1 of 3 5/5" [level=4] [ref=e467]:
+            - text: Advisor
+            - emphasis [ref=e468]: finding 1 of 3
+            - generic [ref=e469]: 5/5
+          - generic [ref=e471]:
+            - generic [ref=e472]:
+              - generic [ref=e473]:
+                - generic [ref=e474]: Priority
+                - generic [ref=e475]: Bass against piano, 180–260 Hz
+              - generic [ref=e476]:
+                - generic [ref=e477]: Likely cause
+                - generic [ref=e478]: Bass carries 3.4 dB too much there
+              - generic [ref=e479]:
+                - generic [ref=e480]: Smallest test
+                - generic [ref=e481]: Bass −2 dB at 220 Hz, Q 1.2
+              - generic [ref=e482]:
+                - generic [ref=e483]: Listen for
+                - generic [ref=e484]: piano left hand, bars 33–41
+              - generic [ref=e485]:
+                - generic [ref=e486]: Then
+                - generic [ref=e487]: re-check the same passage
+            - generic [ref=e488]:
+              - generic [ref=e489]: Audition (hold)
+              - generic [ref=e490]: Apply
+              - generic [ref=e491]: Discard
+      - generic [ref=e492]: Karte nach Bedeutung
+      - generic [ref=e493]: "2"
+    - 'button "Observe Advise Audition Apply 13 fresh 2 stale 1 offline Measuring 68 % Width: unavailable Overview by role 5/5 20 60 120 250 500 1k 2k 4k 8k n leads 1 carries 5 supports 7 protected 1 blended 2 Advisor finding 1 of 3 5/5 Priority Bass against piano, 180–260 Hz Likely cause Bass carries 3.4 dB too much there Smallest test Bass −2 dB at 220 Hz, Q 1.2 Listen for piano left hand, bars 33–41 Then re-check the same passage Audition (hold) Apply Discard Karte nach Rollen 3" [ref=e494] [cursor=pointer]':
+      - generic [ref=e496]:
+        - generic [ref=e497]:
+          - generic [ref=e498]: Observe
+          - generic [ref=e499]: Advise
+          - generic [ref=e500]: Audition
+          - generic [ref=e501]: Apply
+          - generic [ref=e502]:
+            - generic [ref=e503]: 13 fresh
+            - generic [ref=e505]: 2 stale
+            - generic [ref=e507]: 1 offline
+            - generic [ref=e509]: Measuring 68 %
+            - generic [ref=e510]: "Width: unavailable"
+        - generic [ref=e512]:
+          - heading "Overview by role 5/5" [level=4] [ref=e513]:
+            - text: Overview
+            - emphasis [ref=e514]: by role
+            - generic [ref=e515]: 5/5
+          - generic [ref=e517]:
+            - generic [ref=e518]:
+              - generic [ref=e520]: "20"
+              - generic [ref=e521]: "60"
+              - generic [ref=e522]: "120"
+              - generic [ref=e523]: "250"
+              - generic [ref=e524]: "500"
+              - generic [ref=e525]: 1k
+              - generic [ref=e526]: 2k
+              - generic [ref=e527]: 4k
+              - generic [ref=e528]: 8k
+              - generic [ref=e529]: "n"
+            - generic [ref=e530]:
+              - generic [ref=e531]:
+                - generic [ref=e532]: leads
+                - generic [ref=e543]: "1"
+              - generic [ref=e544]:
+                - generic [ref=e545]: carries
+                - generic [ref=e556]: "5"
+              - generic [ref=e557]:
+                - generic [ref=e558]: supports
+                - generic [ref=e569]: "7"
+              - generic [ref=e570]:
+                - generic [ref=e571]: protected
+                - generic [ref=e582]: "1"
+              - generic [ref=e583]:
+                - generic [ref=e584]: blended
+                - generic [ref=e595]: "2"
+        - generic [ref=e597]:
+          - heading "Advisor finding 1 of 3 5/5" [level=4] [ref=e598]:
+            - text: Advisor
+            - emphasis [ref=e599]: finding 1 of 3
+            - generic [ref=e600]: 5/5
+          - generic [ref=e602]:
+            - generic [ref=e603]:
+              - generic [ref=e604]:
+                - generic [ref=e605]: Priority
+                - generic [ref=e606]: Bass against piano, 180–260 Hz
+              - generic [ref=e607]:
+                - generic [ref=e608]: Likely cause
+                - generic [ref=e609]: Bass carries 3.4 dB too much there
+              - generic [ref=e610]:
+                - generic [ref=e611]: Smallest test
+                - generic [ref=e612]: Bass −2 dB at 220 Hz, Q 1.2
+              - generic [ref=e613]:
+                - generic [ref=e614]: Listen for
+                - generic [ref=e615]: piano left hand, bars 33–41
+              - generic [ref=e616]:
+                - generic [ref=e617]: Then
+                - generic [ref=e618]: re-check the same passage
+            - generic [ref=e619]:
+              - generic [ref=e620]: Audition (hold)
+              - generic [ref=e621]: Apply
+              - generic [ref=e622]: Discard
+      - generic [ref=e623]: Karte nach Rollen
+      - generic [ref=e624]: "3"
+  - contentinfo [ref=e625]:
+    - button "Zwei auswählen" [disabled] [ref=e626]
+    - button "1 · Mix lesen" [ref=e627] [cursor=pointer]
+    - button "2 · Befund verstehen" [ref=e628] [cursor=pointer]
+    - button "3 · Urteilen" [ref=e629] [cursor=pointer]
+    - button "Was bleibt dauerhaft stehen?" [ref=e630] [cursor=pointer]
+    - generic [ref=e631]:
+      - text: Quellen im Mix
+      - slider "Quellen im Mix 16" [ref=e632]: "16"
+      - generic [ref=e633]: "16"
+    - button "Aufgabenliste" [ref=e634] [cursor=pointer]
+    - button "Thesen ein" [ref=e635] [cursor=pointer]
+    - button "Keine davon — weil …" [ref=e636] [cursor=pointer]
+    - generic [ref=e637]: 0 von 2 gewählt · Arbeitsfläche in allen drei gleich, nur die Karte ist verschieden

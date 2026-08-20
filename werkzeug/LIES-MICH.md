@@ -202,16 +202,33 @@ Der Streifen kostet dauerhaft **28 px**; für Karte und Arbeitsfläche bleiben
 Beides zugleich — alle 16 Quellen und ein vollständiger Assistent — geht auf
 dieser Fläche nicht.
 
-### Was jede Kartenart im schlechtesten der drei Schritte liefert
+### Entschieden: „Alle 16, gleich hoch"
+
+Gewählt am 2026-08-20 (engere Wahl gegen „nach Rollen") —
+`abnahmen/2026-08-20-karte-alle-quellen.md`. Die Karte trägt jede Quelle,
+jede bekommt dieselbe Zeile.
+
+**Der genannte Preis ist danach eingelöst worden.** Stand jetzt, 16 Quellen:
 
 | Kartenart | Karte | Assistent | Befunde |
 |---|---|---|---|
-| Alle 16, gleich hoch | 16/16 | **3/5** | **1/3** |
-| Karte nach Bedeutung | 16/16 (3 mit Namen) | 5/5 | **1/3** |
-| Karte nach Rollen | 5/5 Gruppen | 5/5 | 3/3 |
+| **Alle 16, gleich hoch** (gewählt) | 16/16 | 5/5 | 3/3 |
+| Karte nach Bedeutung | 16/16 | 5/5 | 3/3 |
+| Karte nach Rollen | 5/5 | 5/5 | 3/3 |
 
-Die **Fünf-Teile-Form des Assistenten ist Spezifikation**, kein Geschmack —
-`3/5` heißt, dass zwei vorgeschriebene Teile fehlen.
+Zum Zeitpunkt des Urteils stand dort noch `3/5` und `1/3` — die Wahl fiel
+mit sichtbarem Preis. Drei Eingriffe haben ihn beseitigt:
+
+1. **Ratsche in der Aufteilung.** Die Karte wuchs auf 230 px, obwohl sie für
+   16 Zeilen nur 212 braucht: die Arbeitsfläche kürzte ihre Listen, dadurch
+   schrumpfte deren Flex-Basis, und die Karte wuchs nach. Reine CSS-Flexbox
+   kann das nicht auflösen, weil das Kürzen **nach** dem Layout passiert.
+   `aufteilen()` misst deshalb einmal die ungekürzten Höhen und setzt fest:
+   **Überschuss teilen, Mangel nicht.**
+2. **Befunde mit Disclosure**: einer offen, die anderen als Zeile mit Ort und
+   Sicherheit.
+3. **Assistent dichter, nicht kleiner**: die 16 px kamen aus Abständen, nicht
+   aus Inhalt oder Schriftgröße. 154 px bei 156 verfügbaren.
 
 ### Was aus Runde 1 gelernt und hier eingebaut ist
 

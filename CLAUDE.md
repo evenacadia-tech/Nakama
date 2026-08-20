@@ -141,10 +141,16 @@ geschrieben.
 Design-Phase lebt im **Browser** (Sekunden-Schleife), nicht im Plugin.
 **Aktive Richtung: das PRISMA** (User-autorisiert 17.08.; Drehen = Selektion
 Tiefen/Mitten/Höhen, Klick = Bündeln; Film-Compositing mit Blender-Cycles
-auf CPU). **Stand 18.08.:** Prisma-OBJEKT abgenommen („sieht top aus";
+auf CPU). **Visueller Nordstern (User-Freigabe 19.08.): der HÖRKOMPASS** —
+verbindlicher Zielvertrag `docs/visuelles-zielbild-hoerkompass.md`: der Mix
+bleibt unsichtbar, gesund = leeres Glas; nur ein belastbarer Befund bricht
+lokal das Licht; keine neue Grundmetapher, kein Dauer-Visualizer.
+**Stand 19.08.:** Prisma-OBJEKT abgenommen („sieht top aus";
 klar > rauchig, Frost raus), drehbarer Prototyp steht
-(`eq-copilot/design/prisma/prisma-prototyp.html`); rohe Punktwolke als
-Dauerinhalt VERWORFEN; **offen: Befund-Verkörperung** (1 Befund = 1
+(`eq-copilot/design/prisma/prisma-prototyp.html`); NAK-16
+ST-Map-Live-Refraktion: Probe BESTANDEN, 72er-Drehsequenz im Blatt
+(`stmap-probe.html`) — offen: Optik-Abnahme durch den User; rohe Punktwolke
+als Dauerinhalt VERWORFEN; **offen: Befund-Verkörperung** (1 Befund = 1
 präzises Objekt im Glas — Resonanz zuerst; WAS es ist, kommt vom User).
 Einstieg `docs/NEXT-SESSION.md` + `docs/design-stand.md`. Geparkt, nie
 ungefragt reaktivieren: Tiefenfeld, Bauplan 2.0, Kunstwerk-Studie. Kein
@@ -184,6 +190,7 @@ rendert auf CPU.
 |---|---|
 | Wie das Plugin heute funktioniert (Architektur, Datenfluss, IPC) | `docs/plugin-wissen.md` |
 | Design-Prototyp, Verwürfe, Freeze-Stand | `docs/design-stand.md` |
+| Visueller Nordstern — Hörkompass-Zielvertrag (19.08.) | `docs/visuelles-zielbild-hoerkompass.md` |
 | Geschmacksprofil (wörtliche User-Urteile) | `docs/geschmacksprofil.md` |
 | Neue Hauptansicht (Ziel, Grammatik, DoD) | `eq-copilot/docs/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md` |
 | DSP-/Realtime-/Broker-Regeln, Produktplan | `FL-EQ-Copilot-Recherche.md` |

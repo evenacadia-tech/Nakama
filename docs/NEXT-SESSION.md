@@ -5,10 +5,16 @@
 > eqcop-broker.exe), tools/. FL-Repo-SHAs in älteren Einträgen unten
 > gehören zur FL-Studio-Historie (bis `7964777`).
 
-> Stand: 2026-08-19 spätabends. Diese Datei ist der Schnellstart;
+> Stand: 2026-08-20 nachts. Diese Datei ist der Schnellstart;
 > Tiefe in `docs/design-stand.md` und `docs/geschmacksprofil.md`.
-> **Einstieg nächste Session (User-Ansage 20.08.): ZUERST `/freshen`**
-> (Memory-/CLAUDE.md-Hygiene), dann hier weiter.
+> **Erledigt am 20.08.:** /freshen gelaufen (+ eigenes Playbook);
+> Sondenentwurf auf **Fassung 0.4** (Opus-Prüfbericht komplett
+> eingearbeitet, §0.3 Produktarchitektur, §0.4 Arbeitsmodell +
+> Design-Spuren) — technisch baureif, **Bauentscheidung weiter offen**
+> (erste Welle: SONDE-004 zuerst); Design-Projekt
+> `Projekte\Nakama-Design` mit Fundament angelegt (Arbeitsplan,
+> /interview-Skill, Prototyp-Schleuse, UX-Arbeitskern/Wissensbasis).
+> Der User macht die Plugin-UI dort mit Opus; Prisma-Arbeit bleibt HIER.
 
 ## Visueller Nordstern — vor jeder Designarbeit lesen
 

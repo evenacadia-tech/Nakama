@@ -265,23 +265,42 @@ mehr — gewählt wird über die Zeile darunter.
 Vier gleich aussehende Reiter wären genau der Fehler, den Von Restorff
 beschreibt: fällt alles auf, fällt nichts auf.
 
-### Die drei Antworten
+### Entschieden: beides
 
-| Mechanik | Zeichen beim Halten | Preis |
-|---|---|---|
-| **Der Streifen führt Buch** | Reiter leuchtet + Chip „release to stop" | die Antwort steht weit weg vom Griff, der sie auslöst |
-| **Das Blatt ist der Zustand** | ganzes Blatt gerahmt, Rest gedämpft, Band unten | starkes Signal, das jede Sekunde mitläuft |
-| **Der Zustand klebt am Ort** | betroffene Kartenzeile gerahmt, Griff gedrückt | keine globale Antwort — wer wegsieht, weiß nichts |
+> „es ist 1 und 2 eine kombination daraus" —
+> `abnahmen/2026-08-20-bedienebenen-beides.md`
 
-Variante 3 nennt die Ebene **absichtlich nicht** im Streifen. Täte sie es,
-wäre ihr Preis geschönt und der Vergleich mit Variante 1 unscharf.
+**Zwei Fragen, zwei Orte:** der Streifen beantwortet *was ist der Stand?*
+(Reiter leuchtet, „1 change applied" mit Rückweg), das Blatt beantwortet
+*läuft gerade etwas?* (Rahmen, Karte tritt zurück — solange gehalten).
+Die dritte Antwort, „der Zustand klebt am Ort", ist ausgeschieden.
 
-### Zwei Befunde, die erst das 1:1-Bild gezeigt hat
+Das Blatt zeigt jetzt drei Kacheln: die Kombination und die beiden reinen
+Formen daneben, damit prüfbar bleibt, ob die Mischung besser liest.
 
+Zwei Entscheidungen beim Bauen, beide mechanisch:
+
+1. **Der Streifen wird beim Halten nicht mitgedämpft** — sonst verdunkelt
+   das Blatt genau die Auskunft, die man in dem Moment braucht. Gedämpft
+   wird nur die Karte.
+2. **Das Blatt spricht ohne Worte.** Das Band „AUDITIONING — RELEASE TO
+   STOP" ist entfallen: gemessen verdeckte es 6 px des Assistenten-Kastens,
+   und es war das *fünfte* Zeichen für denselben Zustand.
+
+### Drei Befunde, die erst das 1:1-Bild gezeigt hat
+
+0. **Die übergroße Zeile in der Karte war ein Fehler, kein Entwurf.** In
+   `heatmap()` hieß zweierlei gleich: `fokus` als *Disclosure-Mechanik*
+   (eine Zeile vierfach hoch, der Rest 5-px-Streifen) und `fokus` als
+   *Zustand* („welche Quelle geht die Änderung an"). In der Ruhelage griff
+   die falsche Bedeutung. Getrennt in `opt.fokus` und `opt.betroffen`.
 1. **`ueberlauf()` maß nur die Höhe.** Der Streifen schnitt rechts ab und
    nichts meldete sich. Misst jetzt **beide Richtungen** — und fand sofort
    18 px in Ruhe, 36 px beim Halten.
-2. **Die Lage hing erst beim Neuzeichnen am Blatt**, nicht beim ersten
+2. **Overlays fallen durch jede Überlaufmessung.** Das Band lief nicht
+   über — es lag nur über dem Inhalt. Dafür braucht es eine eigene Prüfung
+   (`::after` wirklich lesen, nicht eine Höhe annehmen).
+3. **Die Lage hing erst beim Neuzeichnen am Blatt**, nicht beim ersten
    Zeichnen. Interaktiv fiel das nie auf; ein frisch gebautes Blatt zeigte
    einen Zustand nicht, den es hatte.
 

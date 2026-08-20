@@ -194,11 +194,22 @@ body.vertragAn .vertrag{display:flex}
 /* Variante 2: das ganze Blatt traegt den Zustand. */
 .wf.blattHaelt{outline:3px solid #e4e4e4;outline-offset:-3px}
 .wf.blattHaelt .karte,.wf.blattHaelt .streifen{opacity:.45}
-.wf.blattHaelt::after{content:'AUDITIONING — RELEASE TO STOP';position:absolute;
-  left:0;right:0;bottom:0;background:#e4e4e4;color:#1a1a1a;font-size:9px;
-  letter-spacing:.18em;text-align:center;padding:3px}
+/* Kein Band mehr. Zwei gemessene Gruende: es verdeckte 6 px des
+   Assistenten-Kastens (Verdeckung sieht keine Ueberlaufmessung, weil nichts
+   ueberlaeuft — es liegt nur etwas darueber), und in der Kombination war es
+   das fuenfte Zeichen fuer denselben Zustand. Von Restorff: ein Akzent.
+   Das Blatt spricht jetzt ohne Worte — Rahmen und gedaempfte Karte. Das ist
+   auch die Linie aus der Methoden-Abnahme: mehr Symbolik, weniger Text. */
 .wf.blattBleibt{box-shadow:inset 5px 0 0 #9a9a9a}
 .rahmen .wf{position:relative}
+
+/* Deine Wahl: beides. Der Streifen fuehrt Buch (was ist der Stand?), das
+   Blatt zeigt das Vorhoeren (laeuft gerade etwas?). Der Streifen wird dabei
+   NICHT gedaempft — sonst verdunkelt das Blatt genau die Auskunft, die man
+   in dem Moment braucht. Gedaempft wird nur die Karte: der Zusammenhang
+   tritt zurueck, die Sache bleibt. */
+.wf.beidesHaelt{outline:3px solid #e4e4e4;outline-offset:-3px}
+.wf.beidesHaelt .karte{opacity:.45}
 
 /* Variante 3: die betroffene Zeile traegt den Zustand. */
 .hmz.w-haelt{outline:2px solid #e4e4e4;outline-offset:1px}
@@ -269,18 +280,21 @@ body.vertragAn .vertrag{display:flex}
 <header>
   <div class="stufe" id="stufe">Stufe 2 · Main · Overview + Detail — die Karte</div>
   <h1 id="frage">Was trägt die Karte, die immer da ist?</h1>
-  <div class="unter" id="unter">Der Main-Entwurf steht: <b>Overview + Detail</b>,
-    die Karte trägt jede Quelle, der Überschuss wird geteilt. Offen ist die
-    Sicherheitsfrage der Spezifikation — <b>„Vier Bedienebenen, sichtbar getrennt
-    (nie vermischen)"</b>.<br>
-    Die vier sind <b>keine vier Geschwister</b>: <i>Beobachten</i> und <i>Beraten</i>
-    sind Aufenthalte — man ist dort. <i>Vorhören</i> ist eine flüchtige Tat, hörbar
-    nur solange gehalten. <i>Anwenden</i> ist eine bewusste Tat, sie bleibt und ist
-    umkehrbar. Vier gleich aussehende Reiter wären genau der Fehler, den
-    <code>DESIGN-GESETZE.md</code> Von Restorff nennt: fällt alles auf, fällt nichts auf.<br>
-    <b>Diese Blätter sind bedienbar.</b> Halte <i>Audition (hold)</i> im Blatt gedrückt
-    und lass wieder los; drücke <i>Apply</i> und danach <i>Undo</i>. Ein Standbild taugt
-    für eine Zustandsfrage nicht. Graustufen — der Zustand muss ohne Farbe lesbar sein.</div>
+  <div class="unter" id="unter"><b>Deine Richtung steht: beides.</b> Der Streifen
+    führt Buch — <i>was ist der Stand?</i> — und das Blatt zeigt das Vorhören —
+    <i>läuft gerade etwas?</i> Kachel 1 ist diese Kombination; Kachel 2 und 3 sind die
+    beiden reinen Formen daneben, damit du prüfen kannst, ob die Mischung wirklich
+    besser liest als jede allein.<br>
+    Eine Feinheit, die ich entschieden habe: <b>der Streifen wird beim Halten nicht
+    mitgedämpft.</b> Sonst verdunkelt das Blatt genau die Auskunft, die man in dem
+    Moment braucht. Gedämpft wird nur die Karte — der Zusammenhang tritt zurück,
+    die Sache bleibt.<br>
+    <b>Behoben:</b> die übergroße Zeile in der Karte war ein Fehler, kein Entwurf. Im
+    Werkzeug hieß zweierlei gleich — „welche Quelle ist betroffen" und „Focus+Context-
+    Behandlung". In der Ruhelage griff die falsche Bedeutung.<br>
+    <b>Bedienbar:</b> halte <i>Audition (hold)</i> gedrückt und lass wieder los; drücke
+    <i>Apply</i> und danach <i>Undo</i>. Graustufen — der Zustand muss ohne Farbe
+    lesbar sein.</div>
   <div class="aufgaben" id="aufgaben">
     <b>Die Aufgabenliste nach Häufigkeit</b> — laut <code>docs/DESIGN-GESETZE.md</code>
     die Voraussetzung für jedes Wireframe. Geteilt wird nach Häufigkeit der Aufgabe,
@@ -398,15 +412,21 @@ function heatmap(n, namen=true, opt={}){
   const kopf = `<div class="hmk">${namen?'<span style="width:76px;flex:none"></span>':''}
       ${BAND.map(b=>`<span>${b}</span>`).join('')}</div>`;
   const zeilen = SOURCES.slice(0,n).map(([nm,,,e],i)=>{
-    let kl = opt.fokus && !opt.wirkung
-      ? (opt.fokus.includes(i) ? ' fokus' : ' ctx') : '';
-    // Variante 3: die Wirkung klebt an der betroffenen Zeile, ohne den
-    // Rest zu verflachen — sonst waere es Focus+Context statt Zustand.
-    if(opt.wirkung && opt.fokus && opt.fokus.includes(i)) kl += ' w-' + opt.wirkung;
+    // ZWEI verschiedene Dinge, die nie ein Wort haetten sein duerfen:
+    //   opt.fokus     = Focus+Context-Behandlung (eine Zeile wird gross,
+    //                   der Rest flach) — eine Disclosure-Mechanik.
+    //   opt.betroffen = welche Quelle die Aenderung angeht — ein Zustand.
+    // Solange beides "fokus" hiess, wurde in der Ruhelage eine Zeile
+    // vierfach hoch und der Rest zu 5-px-Streifen. Das war ein Fehler,
+    // kein Entwurf.
+    let kl = opt.fokus ? (opt.fokus.includes(i) ? ' fokus' : ' ctx') : '';
+    if(opt.wirkung && opt.betroffen && opt.betroffen.includes(i))
+      kl += ' w-' + opt.wirkung;
     return `<div class="hmz${namen?' benannt':''}${kl}">${namen?`<span class="n">${nm}</span>`:''}
      <span class="z">${e.map((v,b)=>{
+       const eng = opt.betroffen || opt.fokus;
        const m = (opt.band !== undefined && b === opt.band
-                  && (!opt.fokus || opt.fokus.includes(i))) ? ' class="markiert"' : '';
+                  && (!eng || eng.includes(i))) ? ' class="markiert"' : '';
        return `<i${m} style="background:hsl(0 0% ${(14+v*11)}%)"></i>`;}).join('')}</span></div>`;
   }).join('');
   return kasten(opt.titel || 'Comparative heatmap', opt.zusatz || 'list → heatmap → detail',
@@ -597,33 +617,33 @@ function karteHtml(z, opt = {}){
 }
 
 const ENTWUERFE = [
-{ id:'streifen', mech:'Der Streifen führt Buch', name:'Oben steht immer, was läuft',
-  these:'Eine feste Zeile ganz oben sagt jederzeit, auf welcher Ebene du bist und ob '
-      + 'eine Änderung steht. Beim Halten wandert die Marke, beim Loslassen springt sie '
-      + 'zurück; Angewandtes bleibt dort als Zähler mit Rückweg. Preis: die Antwort auf '
-      + '„was höre ich" steht weit weg von dem Griff, der es auslöst — beim Halten '
-      + 'schaut man nach oben statt auf die Sache.',
+{ id:'beides', mech:'Beides — Streifen führt Buch, Blatt zeigt das Vorhören',
+  name:'Deine Wahl',
+  these:'Der Streifen beantwortet dauerhaft „was ist der Stand?" — welche Ebene, und ob '
+      + 'eine Änderung steht. Das Blatt beantwortet „läuft gerade etwas?" — solange '
+      + 'gehalten wird, ist es gerahmt und die Karte tritt zurück. Zwei Fragen, zwei '
+      + 'Orte, kein doppeltes Gerede. Der Streifen wird dabei absichtlich NICHT '
+      + 'gedämpft: sonst verdunkelt das Blatt genau die Auskunft, die man in dem Moment '
+      + 'braucht. Das Blatt spricht dabei ohne Worte — die Worte stehen im Streifen. '
+      + 'Preis: zwei Zeichen gleichzeitig — es muss klar bleiben, dass sie dasselbe '
+      + 'meinen und nicht zweierlei.',
   bau:(z) => ({ gitter:'',
     html: streifenBuch(z) + karteHtml(z) + `<div class="arbeit">${arbeit(z)}</div>` })},
 
-{ id:'blatt', mech:'Das Blatt ist der Zustand', name:'Solange es läuft, sieht alles anders aus',
-  these:'Kein Wechsel in einer Zeile: solange vorgehört wird, trägt das ganze Blatt ein '
-      + 'unübersehbares Zeichen und der Rest tritt zurück. Angewandtes hinterlässt eine '
-      + 'bleibende Spur am Blattrand. Preis: ein starkes Signal, das jede Sekunde '
-      + 'mitläuft und in Graustufen mit dem Inhalt um Aufmerksamkeit konkurriert.',
+{ id:'streifen', mech:'Nur der Streifen', name:'Zum Vergleich: Buch ohne Blatt',
+  these:'Nur die feste Zeile oben. Beim Halten wandert die Marke, beim Loslassen springt '
+      + 'sie zurück. Preis: die Antwort steht weit weg von dem Griff, der sie auslöst — '
+      + 'beim Halten schaut man nach oben statt auf die Sache.',
   bau:(z) => ({ gitter:'',
-    html: streifenStill(z) + karteHtml(z) + `<div class="arbeit">${arbeit(z)}</div>` })},
+    html: streifenBuch(z) + karteHtml(z) + `<div class="arbeit">${arbeit(z)}</div>` })},
 
-{ id:'ort', mech:'Der Zustand klebt am Ort', name:'Dort, wo es wirkt — sonst nirgends',
-  these:'Die Ebene wird da gezeigt, wo sie wirkt: an der betroffenen Quelle in der Karte '
-      + 'und am gehaltenen Griff selbst. Der Streifen bleibt eine reine Statuszeile. '
-      + 'Preis: es gibt keine globale Antwort — wer gerade woanders hinsieht, weiß nicht, '
-      + 'ob noch etwas läuft.',
+{ id:'blatt', mech:'Nur das Blatt', name:'Zum Vergleich: Blatt ohne Buch',
+  these:'Kein Wechsel in einer Zeile: solange vorgehört wird, trägt das ganze Blatt ein '
+      + 'unübersehbares Zeichen — ohne ein Wort, nur Rahmen und gedämpfte Karte. Preis: '
+      + 'man sieht, DASS etwas läuft, aber nirgends, was der Stand ist, und nirgends, '
+      + 'wie man es beendet.',
   bau:(z) => ({ gitter:'',
-    html: streifenStatus(z)
-      + karteHtml(z, {wirkung: LAGE.haelt ? 'haelt' : LAGE.angewandt ? 'bleibt' : null,
-                      band: 2, fokus:[4]})
-      + `<div class="arbeit">${arbeit(z)}</div>` })}
+    html: streifenStill(z) + karteHtml(z) + `<div class="arbeit">${arbeit(z)}</div>` })}
 ];
 
 
@@ -924,8 +944,10 @@ ${bg[1]}"`
 const kacheln = [];
 function alleNeu(){ kacheln.forEach(k => k.neuZeichnen && k.neuZeichnen()); }
 function lageAnlegen(wf, e){
+  const blattig = e.id === 'blatt' || e.id === 'beides';
   wf.classList.toggle('blattHaelt', e.id === 'blatt' && LAGE.haelt);
-  wf.classList.toggle('blattBleibt', e.id === 'blatt' && LAGE.angewandt);
+  wf.classList.toggle('blattBleibt', blattig && LAGE.angewandt);
+  wf.classList.toggle('beidesHaelt', e.id === 'beides' && LAGE.haelt);
 }
 function verdrahten(wf, b){
   wf.querySelectorAll('[data-griff]').forEach(g => {
@@ -1002,7 +1024,7 @@ function waehlZeile(e, text, fn){
 }
 function s1(){
   $('#stufe').textContent = 'Stufe 2 · Main · die vier Bedienebenen';
-  $('#frage').textContent = 'Woran siehst du, was gerade deinen Mix verändert?';
+  $('#frage').textContent = 'Trägt die Kombination — oder war eine der reinen Formen besser?';
   ENTWUERFE.forEach((e,i)=>{
     const k = kachel(e, i, false);
     if(eng.includes(e.id)) k.classList.add('eng');

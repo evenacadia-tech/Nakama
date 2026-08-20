@@ -56,7 +56,20 @@ $cmake = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\Commo
 & $cmake --build eq-copilot/build --config Release --target EqCopilot_VST3 EqCopShot EqCopPaintBench EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopPipeProbe
 ```
 
-Beweis-Kanon (alles headless; Standard der Befund-Docs: **„ausgeführt und
+**Ein Befehl für den ganzen Kanon (seit 20.08., ersetzt die bewusst nicht
+gebaute CI):**
+
+```powershell
+pwsh -File tools/beweise.ps1 -Bauen -Ziel docs/beweise/SONDE-0NN.md -Anhaengen -Titel 'SONDE-0NN'
+```
+
+Er fährt alles unten, schreibt die **rohe** Ausgabe ins Manifest und misst den
+**Baustand**: sind die Prüfbinaries älter als die Quellen, verweigert er mit
+Exitcode 4 die Beglaubigung, statt eine veraltete Messung als Beweis auszugeben
+(0 grün · 2 rot · 3 Voraussetzung fehlt · 4 nicht beglaubigt). Ticket-Vorlage
+`docs/beweise/VORLAGE.md`, Regressions-Basislinie `docs/beweise/S0-basislinie.md`.
+
+Beweis-Kanon einzeln (alles headless; Standard der Befund-Docs: **„ausgeführt und
 gesehen"**, nie „sollte funktionieren"):
 
 ```powershell

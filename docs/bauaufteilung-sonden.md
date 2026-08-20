@@ -63,6 +63,16 @@ Ohne diesen Runner kostet jedes Manifest 10 Handgriffe und wird deshalb
 irgendwann geschludert. Mit ihm ist es **ein** Befehl — das ist der ganze
 Unterschied zwischen „Beweisstandard" und „Beweisvorsatz".
 
+**Stand 20.08.2026: gebaut und gefahren.** `tools/beweise.ps1` liegt vor,
+`docs/beweise/VORLAGE.md` ist die Ticket-Vorlage, `docs/beweise/S0-basislinie.md`
+ist die Regressions-Basislinie (4/4 grün auf `734cf50`). Zwei Zusätze über die
+Vorgabe hinaus, beide negativ geprüft: der Runner misst den **Baustand**
+(Quell-mtime vs. Binär-mtime + SHA-256) und verweigert mit Exitcode 4 die
+Beglaubigung, wenn die Prüfbinaries älter sind als die Quellen; und die sieben
+**geplanten** Prüfbinaries stehen bereits in seiner Tabelle — sie erscheinen als
+neutrale Zeile „geplant (ab P?)" und laufen automatisch als Pflicht mit, sobald
+das jeweilige Ticket sie gebaut hat.
+
 ### 1.2 ~~NAK-19~~ — erledigt, P3 ist nicht mehr blockiert
 
 Der Produktentscheid vom 20.08. (Entwurf §0.3) löst die Kollision auf: Der
@@ -194,7 +204,7 @@ Umfangswirkung).
 
 | # | Inhalt | Prüfung |
 |---|---|---|
-| **S0** | Beweis-Runner `tools/beweise.ps1`, Manifest-Vorlage, `docs/beweise/` | T1 |
+| ~~**S0**~~ | ~~Beweis-Runner `tools/beweise.ps1`, Manifest-Vorlage, `docs/beweise/`~~ — **erledigt 20.08.**, T1 gefahren | T1 ✅ |
 
 ### P0 · Bestand einfrieren, Hostgrenzen beweisen
 

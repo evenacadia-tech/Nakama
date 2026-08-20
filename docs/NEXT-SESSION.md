@@ -8,7 +8,8 @@
 > Stand: 2026-08-20 nachts. Diese Datei ist der Schnellstart;
 > Tiefe in `docs/design-stand.md` und `docs/geschmacksprofil.md`.
 > **🔨 BAUENTSCHEIDUNG ERTEILT (User, 20.08.): der Sondenkern wird gebaut.**
-> Einstieg ist der Abschnitt „DER EINE NÄCHSTE SCHRITT — Session 0" unten;
+> **S0 ist gebaut** (Beweis-Runner + Manifest-Gerüst + Basislinie, 20.08.);
+> Einstieg ist jetzt der Abschnitt „DER EINE NÄCHSTE SCHRITT — S1" unten;
 > Sessionplan, Gates und Prüfstufen in `docs/bauaufteilung-sonden.md`.
 > Die Design-Spur läuft parallel weiter und blockiert nichts.
 > **Erledigt am 20.08.:** /freshen gelaufen (+ eigenes Playbook);
@@ -49,41 +50,44 @@ Dieser strategische Lock ersetzt NICHT den unmittelbar freigegebenen
 Technikschritt unten. NAK-16 muss dem Zielbild dienen, darf es aber nicht
 durch einen neuen Effekt oder eine neue Metapher umdeuten.
 
-## ▶ DER EINE NÄCHSTE SCHRITT — Bau beginnt: Session 0
+## ▶ DER EINE NÄCHSTE SCHRITT — S1 · `SONDE-004a`
 
-**Die Bauentscheidung ist erteilt** (User, 20.08.: „okay dann fangen wir damit
-nächste session an"). Der Sondenkern wird gebaut. Einstieg ist **nicht** P0
-und **nicht** `SONDE-001`, sondern:
+**S0 ist erledigt** (20.08.2026): Beweis-Runner, Manifest-Vorlage und
+Basislinie stehen und sind an dieser Maschine gefahren worden. Der Bau geht
+weiter bei S1.
 
-### S0 · Beweis-Runner + Manifest-Gerüst
+### S1 · `SONDE-004a` — Wegwerf-Target mit zwei Aux-Bussen + Impulsharness
 
-Grund: Mehrere Tickets sagen „läuft im CI" — `.github/workflows/` **existiert
-nicht** und eine GitHub-CI für einen JUCE-VST3-Windows-Build ist bei einer
-Maschine unverhältnismäßig. Entscheidung (in `docs/bauaufteilung-sonden.md`
-§1.1): **lokaler Beweis-Runner statt CI.**
+Ticketziel im Wortlaut (Entwurf §65): *„FL-Aux-/PDC-/Recall-Spike und
+Capabilityreport — fertig, wenn jede Aux-Capability eindeutig
+supported/unsupported ist."* Er steht bewusst an Position 1 (Prüfbericht
+NAK-22): höchstes Ausfallrisiko, billigste Messung (eine `.flp`, zwei Impulse),
+größte Umfangswirkung. Fällt er, sterben zusammen Kernfunktion 17, das hörbare
+Delta in 5+12 und die exakte Attribution in 1.
 
-Zu bauen:
+Zu bauen ist ein **Wegwerf-VST3** mit zwei deklarierten Aux-Bussen und einem
+Impulsharness — das Messgerät, mit dem der User in FL Aux-Layout,
+Kanalreihenfolge, Recall und PDC-Impulse feststellt. Kein Produktcode.
 
-1. `tools/beweise.ps1` — fährt den kompletten Kanon nacheinander und schreibt
-   die **rohe** Ausgabe (nicht zusammengefasst) in eine Manifestdatei:
-   `EqCopNullTest` · `EqCopGoldenTest <fixtures>` · `EqCopMarkierungTest` ·
-   `cargo test --manifest-path broker/Cargo.toml`. Baustand + Commit-SHA +
-   FL-/JUCE-Version in den Kopf.
-2. `docs/beweise/` anlegen + `VORLAGE.md` (Tabelle: Behauptung · Befehl ·
-   **rohe Ausgabe** · Datum).
-3. Runner einmal gegen den heutigen Stand laufen lassen ⇒
-   `docs/beweise/S0-basislinie.md`. Das ist gleichzeitig die
-   Regressions-Basislinie für alles Weitere.
+Danach in Reihenfolge: **👤 User-Termin A in FL** → S2 (`SONDE-001`+`002`) →
+S3 (`SONDE-003`, JUCE-Bridge-Patch) → **👤 User-Termin B** → S4
+Capabilityreport → **Gate G0**.
 
-Danach in Reihenfolge (Details + Prüfstufen: `docs/bauaufteilung-sonden.md`
-§3): **S1 `SONDE-004a`** (Wegwerf-Target mit zwei deklarierten Aux-Bussen +
-Impulsharness) → **👤 User-Termin A in FL** → S2 `SONDE-001`+`002` → S3
-`SONDE-003` (JUCE-Bridge-Patch) → 👤 User-Termin B → S4 Capabilityreport →
-**Gate G0**.
+### Was S0 hinterlassen hat — ab jetzt Pflicht in jedem Ticket
 
-`SONDE-004` steht bewusst vorn (Prüfbericht NAK-22): höchstes Ausfallrisiko,
-billigste Messung, größte Umfangswirkung. Fällt es, sterben zusammen
-Kernfunktion 17, das hörbare Delta in 5+12 und die exakte Attribution in 1.
+- **`tools/beweise.ps1`** — ein Befehl fährt den ganzen Kanon und schreibt die
+  **rohe** Ausgabe ins Manifest (`NullTest` · `GoldenTest` · `MarkierungTest` ·
+  `cargo test`; die sieben geplanten Prüfbinaries ab P0/P1/P2/P6 stehen schon in
+  der Tabelle und laufen automatisch mit, sobald sie gebaut sind).
+  `-Bauen` baut vorher, `-Anhaengen` hängt an ein Ticket-Manifest an.
+  **Exitcodes:** 0 grün · 2 rot · 3 Voraussetzung fehlt · 4 Binaries älter als
+  die Quellen ⇒ *nicht beglaubigt*. Alle vier Zustände sind negativ geprüft.
+- **`docs/beweise/VORLAGE.md`** — Ticket-Manifest mit T1-Liste, T2-Feld,
+  Befundtabelle und (nur am Gate) T3-Falsifikationsblock. Kopieren, nicht neu
+  erfinden.
+- **`docs/beweise/S0-basislinie.md`** — die Regressions-Basislinie: 4/4 Kanon
+  grün auf `734cf50`, JUCE 8.0.9 gepinnt und auf Platte, FL 2026 26.1.4.5589,
+  Broker 36/36.
 
 ### Was beim Bauen gilt
 
@@ -102,7 +106,9 @@ Kernfunktion 17, das hörbare Delta in 5+12 und die exakte Attribution in 1.
   (nur noch als Beleg; alle fünf Befunde sind in 0.4 eingearbeitet, NAK-19…23
   geschlossen mit `ab80522`).
 
-**Nicht Teil von S0:** neuer DSP, neue Features, Umbau des Analysealgorithmus.
+**Nicht Teil von S1:** Produktcode, neuer DSP, Umbau des Analysealgorithmus.
+Das Wegwerf-Target ist ein Messgerät und wird nach dem Capabilityreport nicht
+weitergepflegt.
 
 ---
 

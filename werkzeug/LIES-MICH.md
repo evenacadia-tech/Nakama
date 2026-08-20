@@ -6,8 +6,11 @@ Nichts davon ist ein Gestaltungsvorschlag. Layoutentscheidungen gehören nach
 
 ## Reihenfolge — die ist der eigentliche Punkt
 
-1. **`weltenwahl.html`** — zuerst. Welche Welt?
-2. **`stilbefragung.html`** — danach. Welche Werte *innerhalb* dieser Welt?
+1. **`weltenwahl.html`** — zuerst. Welche Welt? *(entschieden: Glas und Licht)*
+2. **`glaswelt.html`** — dann. Welche Verwirklichung dieser Welt?
+3. **`stilbefragung.html`** — zuletzt. Welche Werte *innerhalb* der Verwirklichung?
+   Die Spezimen darin zeigen noch die alte, verworfene Welt und müssen vor dem
+   nächsten Einsatz umgestellt werden.
 
 Diese Reihenfolge war der Fehler der ersten Runde: Stilbefragung wurde gebaut,
 bevor die Welt entschieden war, also fragte sie nach Radien innerhalb einer
@@ -26,6 +29,19 @@ Claudes Geschmack. Zwei Welten sind direkte Übersetzungen von Referenzen aus
 der Truhe: „Dunkles Gerät" aus `301.zip`, „Helles Objekt" aus `110.zip`.
 
 Ablauf: sechs → zwei in die engere Wahl → Zweikampf groß → Ergebnis als JSON.
+
+## glaswelt.html
+
+Fünf Verwirklichungen der abgenommenen Welt, gleiche Information an gleicher
+Stelle: Milchglas vor kaltem Licht · die Messung ist die Lichtquelle ·
+geschichtete Scheiben · dunkles Glas mit einem Lichtleiter · Glas mit Griff
+(nimmt Korn und Leuchtring aus dem unterlegenen „dunklen Gerät" mit).
+
+Der Befund erscheint hier erstmals **ohne Text**: ein Ring sagt, wie sicher die
+Aussage ist, ein weiches Band im Kurvenfeld sagt, wo sie gilt.
+
+Die Thesen zu den Varianten sind standardmäßig ausgeblendet — wer sie vorher
+liest, wählt den besseren Satz statt das bessere Bild.
 
 ## stilbefragung.html
 

@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nakama — Welche Glaswelt</title>
+<style>
+/* Werkzeug-Chrome: neutrales Mittelgrau, damit der Rahmen nicht mitentscheidet. */
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#737373;color:#1d1d1d;
+  font:14px/1.45 'Segoe UI',system-ui,sans-serif;min-height:100vh;
+  display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+header{padding:18px 26px 6px}
+.stufe{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#3a3a3a}
+h1{font-size:22px;font-weight:600;letter-spacing:-.01em;margin-top:4px}
+.unter{font-size:13px;color:#3d3d3d;max-width:920px;margin-top:5px}
+main{flex:1;display:flex;align-items:flex-start;justify-content:center;
+  padding:24px;gap:22px;flex-wrap:wrap;align-content:flex-start}
+footer{padding:14px 26px 22px;display:flex;gap:12px;align-items:center;
+  flex-wrap:wrap;border-top:1px solid #8a8a8a}
+button.k{font:inherit;font-size:12.5px;padding:8px 14px;border:1px solid #4a4a4a;
+  background:#818181;color:#141414;cursor:pointer;border-radius:2px}
+button.k:hover{background:#8d8d8d}
+button.k:disabled{opacity:.38;cursor:default}
+button.k.dunkel{background:#242424;color:#eee;border-color:#242424}
+button.k.dunkel:hover{background:#3a3a3a}
+button.k.an{background:#242424;color:#eee;border-color:#242424}
+textarea.ablehn{width:100%;max-width:860px;height:66px;font:inherit;font-size:13px;
+  padding:9px;background:#8a8a8a;border:1px solid #4a4a4a;color:#141414;resize:vertical}
+.hinw{margin-left:auto;font-size:11.5px;color:#3d3d3d}
+
+.wahl{position:relative;padding:0;border:0;background:transparent;cursor:pointer;
+  display:flex;flex-direction:column;gap:6px;text-align:left}
+.wahl .nr{position:absolute;top:-10px;left:-10px;width:22px;height:22px;border-radius:50%;
+  background:#2a2a2a;color:#e8e8e8;font-size:11px;font-weight:700;z-index:6;
+  display:flex;align-items:center;justify-content:center}
+.wahl::after{content:'';position:absolute;inset:-7px;border:2px solid transparent;
+  transition:border-color .12s;pointer-events:none}
+.wahl:hover::after{border-color:#2a2a2a}
+.wahl.eng::after{border-color:#111;border-width:3px}
+.these{font-size:11.5px;line-height:1.4;color:#242424;max-width:100%;
+  padding-top:2px;display:none}
+body.thesen .these{display:block}
+.marke{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#3f3f3f;
+  text-align:right}
+
+/* ============================================================
+   Alle fuenf sind Verwirklichungen DERSELBEN abgenommenen Welt.
+   Die Anordnung ist in allen identisch — sonst waere es wieder eine
+   Layoutfrage im Kostuem einer Materialfrage.
+   ============================================================ */
+.rahmen{position:relative;--s:1;overflow:hidden;
+  width:calc(448px * var(--s));height:calc(310px * var(--s))}
+.rahmen .g{transform:scale(var(--s));transform-origin:0 0}
+.rahmen.gross{--s:1.42}
+@media (max-width:1460px){ .rahmen{--s:.92} .rahmen.gross{--s:1.3} }
+@media (max-width:1280px){ .rahmen{--s:.82} .rahmen.gross{--s:1.16} }
+
+.g{position:relative;width:448px;height:310px;overflow:hidden;background:#07090d;
+  border:1px solid #5c5c5c;isolation:isolate;
+  font-family:'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif}
+.g svg{display:block;overflow:visible}
+.zahl{font-variant-numeric:tabular-nums}
+.quelle{position:absolute;border-radius:50%;pointer-events:none}
+.marke-q{position:absolute;left:40px;top:32px;font-size:9px;letter-spacing:.24em;
+  text-transform:uppercase;color:rgba(255,255,255,.52);z-index:5}
+.befund{position:absolute;right:38px;top:26px;width:36px;height:36px;z-index:5}
+.feld{position:absolute;left:40px;right:40px;top:64px;height:134px;z-index:4}
+.steuer{position:absolute;left:40px;bottom:32px;width:74px;height:74px;z-index:5}
+.werte{position:absolute;right:40px;bottom:36px;text-align:right;z-index:5;
+  color:#eaf1ff}
+.werte b{display:block;font-size:29px;font-weight:300;line-height:1;letter-spacing:-.01em}
+.werte i{font-style:normal;font-size:10px;letter-spacing:.18em;
+  color:rgba(255,255,255,.45);display:block;margin-top:7px}
+
+/* ---------- A · Milchglas vor kaltem Licht ---------- */
+.gA .q1{width:270px;height:270px;left:-70px;top:-95px;background:#2f6bd8;
+  filter:blur(64px);opacity:.32}
+.gA .q2{width:240px;height:240px;right:-85px;bottom:-105px;background:#7a45c8;
+  filter:blur(64px);opacity:.30}
+.gA .scheibe{position:absolute;inset:20px;border-radius:16px;z-index:2;
+  background:linear-gradient(152deg,rgba(255,255,255,.13),rgba(255,255,255,.035));
+  backdrop-filter:blur(24px) saturate(1.15);-webkit-backdrop-filter:blur(24px) saturate(1.15);
+  border:1px solid rgba(255,255,255,.22);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.34), 0 18px 44px -18px rgba(0,0,0,.95)}
+
+/* ---------- B · Die Messung ist die Lichtquelle ---------- */
+.gB{background:#05070a}
+.gB .scheibe{position:absolute;inset:20px;border-radius:16px;z-index:2;
+  background:linear-gradient(155deg,rgba(255,255,255,.045),rgba(255,255,255,.012));
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+/* Das Leuchten sitzt AM Ort der Messung, nicht irgendwo hinter der Scheibe. */
+.gB .schein{position:absolute;border-radius:50%;pointer-events:none;z-index:3;
+  background:radial-gradient(circle,rgba(120,235,255,.34) 0%,rgba(120,235,255,0) 70%);
+  filter:blur(6px)}
+
+/* ---------- C · Geschichtete Scheiben ---------- */
+.gC .q1{width:300px;height:300px;left:-60px;top:-120px;background:#2a5fd0;
+  filter:blur(72px);opacity:.30}
+.gC .q2{width:250px;height:250px;right:-70px;bottom:-110px;background:#6c3fc0;
+  filter:blur(72px);opacity:.26}
+.gC .lage{position:absolute;border-radius:14px;
+  border:1px solid rgba(255,255,255,.13);
+  background:linear-gradient(150deg,rgba(255,255,255,.055),rgba(255,255,255,.015));
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.gC .l3{inset:6px;z-index:1}
+.gC .l2{left:20px;right:20px;top:46px;bottom:20px;z-index:3;
+  border-color:rgba(255,255,255,.17);
+  background:linear-gradient(150deg,rgba(255,255,255,.085),rgba(255,255,255,.02));
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  box-shadow:0 12px 26px -14px rgba(0,0,0,.9)}
+.gC .l1{left:36px;right:36px;top:60px;bottom:30px;z-index:4;
+  border-color:rgba(255,255,255,.24);
+  background:linear-gradient(150deg,rgba(255,255,255,.12),rgba(255,255,255,.035));
+  backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 20px 40px -18px rgba(0,0,0,.95)}
+/* Die weiter hinten liegenden Quellen bleiben als Streifen SICHTBAR — sonst ist
+   die Tiefe nur behauptet und die Kachel zeigt drei leere Rahmen. */
+.gC .hinten{position:absolute;left:24px;right:24px;top:18px;z-index:2;
+  display:flex;gap:16px;opacity:.5}
+.gC .hz{display:flex;align-items:center;gap:5px;font-size:8px;letter-spacing:.12em;
+  text-transform:uppercase;color:rgba(255,255,255,.62);white-space:nowrap}
+.gC .hb{display:flex;gap:1.5px}
+.gC .hb i{width:5px;height:7px;display:block;border-radius:1px}
+.gC .feld{left:52px;right:52px;top:104px;height:96px}
+.gC .steuer{left:52px;bottom:42px;width:58px;height:58px}
+.gC .werte{right:52px;bottom:46px}
+.gC .werte b{font-size:24px}
+.gC .marke-q{left:52px;top:74px}
+.gC .befund{right:50px;top:68px;width:30px;height:30px}
+
+/* ---------- D · Dunkles Glas, ein Lichtleiter ---------- */
+.gD{background:#050709}
+.gD .scheibe{position:absolute;inset:20px;border-radius:4px;z-index:2;
+  background:linear-gradient(160deg,rgba(255,255,255,.035),rgba(255,255,255,.008));
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border:1px solid rgba(255,255,255,.09)}
+/* Ein einziger Lichtleiter — das ganze Farblicht dieser Fassung. */
+.gD .leiter{position:absolute;left:20px;top:20px;bottom:20px;width:2px;z-index:4;
+  background:linear-gradient(180deg,rgba(90,215,255,0) 0%,#5ad7ff 22%,
+                                     #5ad7ff 78%,rgba(90,215,255,0) 100%);
+  box-shadow:0 0 14px rgba(90,215,255,.65), 0 0 40px rgba(90,215,255,.28)}
+.gD .werte b{font-weight:200}
+
+/* ---------- E · Glas mit Griff ---------- */
+.gE .q1{width:270px;height:270px;left:-70px;top:-95px;background:#2f6bd8;
+  filter:blur(64px);opacity:.30}
+.gE .q2{width:240px;height:240px;right:-85px;bottom:-105px;background:#7a45c8;
+  filter:blur(64px);opacity:.28}
+.gE .scheibe{position:absolute;inset:20px;border-radius:16px;z-index:2;
+  background:linear-gradient(152deg,rgba(255,255,255,.13),rgba(255,255,255,.035));
+  backdrop-filter:blur(24px) saturate(1.15);-webkit-backdrop-filter:blur(24px) saturate(1.15);
+  border:1px solid rgba(255,255,255,.22);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.34), 0 18px 44px -18px rgba(0,0,0,.95)}
+/* Der Griff ist das einzige undurchsichtige Teil: echtes Material auf dem Glas. */
+.gE .griff{position:absolute;left:40px;bottom:32px;width:74px;height:74px;z-index:5;
+  border-radius:50%;
+  background:radial-gradient(circle at 36% 28%,#2f353d 0%,#1b1f24 62%,#141719 100%);
+  box-shadow:0 10px 20px -6px rgba(0,0,0,.85), 0 2px 4px rgba(0,0,0,.6),
+             inset 0 1px 0 rgba(255,255,255,.14),
+             inset 0 -2px 5px rgba(0,0,0,.6)}
+.gE .griff::after{content:'';position:absolute;inset:0;border-radius:50%;
+  background-image:url('textur/korn.png');background-size:128px 128px;
+  mix-blend-mode:overlay;opacity:.55}
+</style>
+</head>
+<body>
+<header>
+  <div class="stufe" id="stufe">Stufe 1 von 2 · Glaswelt</div>
+  <h1 id="frage"></h1>
+  <div class="unter" id="unter"></div>
+</header>
+<main id="buehne"></main>
+<footer id="fuss"></footer>
+
+<script>
+/* ================================================================
+   NAKAMA — WELCHE GLASWELT
+   Die Welt steht (abnahmen/2026-08-20-welt-glas-und-licht.md):
+   Place · Glas · farbiges Licht von hinten · kühl · wenig Text.
+   Offen ist, WELCHE Glaswelt. Fuenf Verwirklichungen, gleiche
+   Information an gleicher Stelle.
+   ================================================================ */
+
+const FW = 368, FH = 134;      // Kurvenfeld
+const BAENDER = [{f:90,q:.8,g:-3.2},{f:410,q:1.4,g:-2.5},{f:3200,q:1.1,g:2.4}];
+const xF = f => FW * Math.log(f/20) / Math.log(1000);
+
+function pfad(schliessen){
+  let d = '';
+  for(let x = 0; x <= FW; x += 2){
+    const f = 20 * Math.pow(1000, x/FW);
+    let db = 0;
+    for(const b of BAENDER){
+      const oct = Math.log2(f/b.f), bw = 1/Math.max(.35, b.q);
+      db += b.g * Math.exp(-(oct*oct)/(2*bw*bw));
+    }
+    d += (x ? 'L' : 'M') + x + ' ' + (FH/2 - (db/8)*(FH/2 - 8)).toFixed(1);
+  }
+  return schliessen ? d + `L${FW} ${FH/2}L0 ${FH/2}Z` : d;
+}
+function bogen(cx, cy, r, a1, a2){
+  const p = a => [cx + r*Math.cos(a*Math.PI/180), cy + r*Math.sin(a*Math.PI/180)];
+  const [x1,y1] = p(a1), [x2,y2] = p(a2);
+  return `M${x1.toFixed(2)} ${y1.toFixed(2)}A${r} ${r} 0 ${Math.abs(a2-a1)>180?1:0} 1 `
+       + `${x2.toFixed(2)} ${y2.toFixed(2)}`;
+}
+
+/* Der Befund als Symbol statt als Satz: der Ring sagt, wie sicher die
+   Aussage ist, das Band im Kurvenfeld sagt, WO sie gilt. Kein Text. */
+function befundRing(gr, farbe, dunkel){
+  const r = gr/2 - 3;
+  return `<svg viewBox="0 0 ${gr} ${gr}" width="${gr}" height="${gr}">
+    <path d="${bogen(gr/2,gr/2,r,-90,268)}" stroke="${dunkel}" stroke-width="2.5"
+          fill="none" stroke-linecap="round"/>
+    <path d="${bogen(gr/2,gr/2,r,-90,128)}" stroke="${farbe}" stroke-width="2.5"
+          fill="none" stroke-linecap="round"/>
+    <circle cx="${gr/2}" cy="${gr/2}" r="2.6" fill="${farbe}"/>
+  </svg>`;
+}
+// Der Ort des Befunds: 180–260 Hz.
+const BAND_X1 = xF(180), BAND_X2 = xF(260);
+
+function kurvenSvg(stil){
+  const {linie, fuellung, glut, gitter, band} = stil;
+  return `<svg viewBox="0 0 ${FW} ${FH}" width="100%" height="100%"
+               preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="f${stil.id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${linie}" stop-opacity="${fuellung}"/>
+        <stop offset="1" stop-color="${linie}" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="b${stil.id}" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="${band}" stop-opacity="0"/>
+        <stop offset=".28" stop-color="${band}" stop-opacity="1"/>
+        <stop offset=".72" stop-color="${band}" stop-opacity="1"/>
+        <stop offset="1" stop-color="${band}" stop-opacity="0"/>
+      </linearGradient>
+      <filter id="gl${stil.id}" x="-30%" y="-60%" width="160%" height="220%">
+        <feGaussianBlur stdDeviation="${glut}" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    <rect x="${(BAND_X1-9).toFixed(1)}" y="0" width="${(BAND_X2-BAND_X1+18).toFixed(1)}"
+          height="${FH}" fill="url(#b${stil.id})"/>
+    ${[100,1000,10000].map(f=>`<path d="M${xF(f).toFixed(1)} 0V${FH}"
+          stroke="${gitter}" stroke-width="1"/>`).join('')}
+    <path d="M0 ${FH/2}H${FW}" stroke="${gitter}" stroke-width="1"/>
+    ${fuellung ? `<path d="${pfad(true)}" fill="url(#f${stil.id})"/>` : ''}
+    <path d="${pfad(false)}" fill="none" stroke="${linie}" stroke-width="1.5"
+          ${glut ? `filter="url(#gl${stil.id})"` : ''}/>
+  </svg>`;
+}
+
+const WERTE = `<div class="werte">
+    <b class="zahl">410 <span style="font-size:13px;opacity:.5">Hz</span></b>
+    <i class="zahl">−2.5 dB</i></div>`;
+
+/* ---------- Die fuenf Fassungen ---------- */
+const FASSUNGEN = [
+{ id:'diffus', klasse:'gA', name:'Milchglas vor kaltem Licht',
+  these:'Ruhe durch Streuung: das Licht liegt gleichmäßig hinter allem, nichts sticht '
+      + 'heraus. Preis — Zustände müssen sich gegen ein leuchtendes Feld behaupten.',
+  bau:()=>`
+    <div class="quelle q1"></div><div class="quelle q2"></div>
+    <div class="scheibe"></div>
+    <div class="marke-q">Klavier</div>
+    <div class="befund">${befundRing(36,'#8df0ff','rgba(255,255,255,.14)')}</div>
+    <div class="feld">${kurvenSvg({id:'A',linie:'#8df0ff',fuellung:.34,glut:0,
+        gitter:'rgba(255,255,255,.10)',band:'rgba(141,240,255,.09)'})}</div>
+    <svg class="steuer" viewBox="0 0 74 74">
+      <circle cx="37" cy="37" r="30" fill="rgba(255,255,255,.07)"
+              stroke="rgba(255,255,255,.24)" stroke-width="1"/>
+      <path d="${bogen(37,37,30,140,392)}" stroke="rgba(255,255,255,.13)"
+            stroke-width="3.4" fill="none" stroke-linecap="round"/>
+      <path d="${bogen(37,37,30,140,274)}" stroke="#8df0ff" stroke-width="3.4"
+            fill="none" stroke-linecap="round"/>
+      <circle cx="37" cy="37" r="14" fill="rgba(255,255,255,.10)"
+              stroke="rgba(255,255,255,.2)" stroke-width="1"/>
+    </svg>${WERTE}`},
+
+{ id:'messlicht', klasse:'gB', name:'Die Messung ist die Lichtquelle',
+  these:'Was leuchtet, ist Information — und nur sie. Kein Licht ohne Grund, also '
+      + 'zeigt Helligkeit unmittelbar an, wo etwas los ist. Preis — ein ruhiger Mix '
+      + 'ergibt eine fast dunkle Oberfläche.',
+  bau:()=>{
+    // Der Schein sitzt am hoechsten Punkt der Kurve, in Kachelkoordinaten.
+    const b = BAENDER[2];
+    const gx = 40 + xF(b.f), gy = 64 + FH/2 - (b.g/8)*(FH/2-8);
+    return `
+    <div class="scheibe"></div>
+    <div class="schein" style="width:210px;height:210px;
+         left:${(gx-105).toFixed(0)}px;top:${(gy-105).toFixed(0)}px"></div>
+    <div class="schein" style="width:130px;height:130px;opacity:.5;
+         left:${(40+xF(220)-65).toFixed(0)}px;top:${(64+FH/2-65).toFixed(0)}px"></div>
+    <div class="marke-q">Klavier</div>
+    <div class="befund">${befundRing(36,'#78ebff','rgba(255,255,255,.10)')}</div>
+    <div class="feld">${kurvenSvg({id:'B',linie:'#a8f2ff',fuellung:.16,glut:4,
+        gitter:'rgba(255,255,255,.055)',band:'rgba(120,235,255,.06)'})}</div>
+    <svg class="steuer" viewBox="0 0 74 74">
+      <circle cx="37" cy="37" r="30" fill="none"
+              stroke="rgba(255,255,255,.10)" stroke-width="1"/>
+      <path d="${bogen(37,37,30,140,274)}" stroke="#78ebff" stroke-width="3"
+            fill="none" stroke-linecap="round" opacity=".9"
+            style="filter:drop-shadow(0 0 6px rgba(120,235,255,.9))"/>
+      <circle cx="37" cy="37" r="2.6" fill="#78ebff"/>
+    </svg>${WERTE}`}},
+
+{ id:'schichten', klasse:'gC', name:'Geschichtete Scheiben',
+  these:'Der Raum ordnet statt der Rahmen: was näher liegt, ist wichtiger, was weiter '
+      + 'hinten liegt, ist noch da, aber leise. Preis — Tiefe kostet Fläche und muss '
+      + 'in kleinen Fenstern trotzdem lesbar bleiben.',
+  bau:()=>{
+    const rows = [['Chor',[1,3,4,5,3]],['Drums',[5,3,2,3,5]],['Bass',[5,5,2,1,1]]];
+    return `
+    <div class="quelle q1"></div><div class="quelle q2"></div>
+    <div class="lage l3"></div>
+    <div class="hinten">${rows.map(([n,e])=>`<div class="hz">
+        <span>${n}</span><span class="hb">${
+        e.map(v=>`<i style="background:rgba(141,240,255,${(.08+v*.11).toFixed(2)})"></i>`)
+         .join('')}</span></div>`).join('')}</div>
+    <div class="lage l2"></div>
+    <div class="lage l1"></div>
+    <div class="marke-q">Klavier</div>
+    <div class="befund">${befundRing(30,'#8df0ff','rgba(255,255,255,.14)')}</div>
+    <div class="feld">${kurvenSvg({id:'C',linie:'#8df0ff',fuellung:.30,glut:0,
+        gitter:'rgba(255,255,255,.09)',band:'rgba(141,240,255,.09)'})}</div>
+    <svg class="steuer" viewBox="0 0 58 58">
+      <circle cx="29" cy="29" r="23" fill="rgba(255,255,255,.07)"
+              stroke="rgba(255,255,255,.24)" stroke-width="1"/>
+      <path d="${bogen(29,29,23,140,392)}" stroke="rgba(255,255,255,.13)"
+            stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="${bogen(29,29,23,140,274)}" stroke="#8df0ff" stroke-width="3"
+            fill="none" stroke-linecap="round"/>
+      <circle cx="29" cy="29" r="11" fill="rgba(255,255,255,.10)"
+              stroke="rgba(255,255,255,.2)" stroke-width="1"/>
+    </svg>${WERTE}`}},
+
+{ id:'lichtleiter', klasse:'gD', name:'Dunkles Glas, ein Lichtleiter',
+  these:'Fast schwarz, und alles Farblicht steckt in einem einzigen Strich. Maximale '
+      + 'Ruhe, jede Farbe zählt. Preis — die Welt verliert die Wärme des Leuchtens und '
+      + 'kommt dem „kein Gehäuse" nahe, das du nicht gewählt hast.',
+  bau:()=>`
+    <div class="scheibe"></div>
+    <div class="leiter"></div>
+    <div class="marke-q">Klavier</div>
+    <div class="befund">${befundRing(36,'#5ad7ff','rgba(255,255,255,.12)')}</div>
+    <div class="feld">${kurvenSvg({id:'D',linie:'rgba(233,241,247,.92)',fuellung:0,glut:0,
+        gitter:'rgba(255,255,255,.07)',band:'rgba(90,215,255,.07)'})}</div>
+    <svg class="steuer" viewBox="0 0 74 74">
+      <circle cx="37" cy="37" r="30" fill="none"
+              stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+      <path d="${bogen(37,37,30,140,274)}" stroke="#5ad7ff" stroke-width="2"
+            fill="none" stroke-linecap="round"/>
+    </svg>${WERTE}`},
+
+{ id:'griff', klasse:'gE', name:'Glas mit Griff',
+  these:'Gesehen wird durch Glas, angefasst wird echtes Material — der Regler ist das '
+      + 'einzige undurchsichtige Teil und trägt Korn und Leuchtring aus deiner Truhe. '
+      + 'Nimmt mit, was das dunkle Gerät im Zweikampf richtig gemacht hat.',
+  bau:()=>{
+    let led = '';
+    for(let i = 0; i < 24; i++){
+      const a = (140 + 252*i/23) * Math.PI/180;
+      led += `<circle cx="${(37+34*Math.cos(a)).toFixed(2)}"
+                      cy="${(37+34*Math.sin(a)).toFixed(2)}" r="1.5"
+                      fill="${i < 15 ? '#8df0ff' : 'rgba(255,255,255,.13)'}"/>`;
+    }
+    return `
+    <div class="quelle q1"></div><div class="quelle q2"></div>
+    <div class="scheibe"></div>
+    <div class="marke-q">Klavier</div>
+    <div class="befund">${befundRing(36,'#8df0ff','rgba(255,255,255,.14)')}</div>
+    <div class="feld">${kurvenSvg({id:'E',linie:'#8df0ff',fuellung:.32,glut:0,
+        gitter:'rgba(255,255,255,.10)',band:'rgba(141,240,255,.09)'})}</div>
+    <div class="griff"></div>
+    <svg class="steuer" viewBox="0 0 74 74" style="z-index:6">
+      ${led}
+      <path d="M37 37 L37 17" stroke="#c9d4de" stroke-width="2" stroke-linecap="round"
+            transform="rotate(44 37 37)"/>
+    </svg>${WERTE}`}}
+];
+
+/* ---------- Ablauf ---------- */
+let stufe = 1, eng = [], sieger = null;
+const ablehnungen = []; const zeiten = {};
+let start = performance.now();
+const $ = s => document.querySelector(s);
+const buehne = $('#buehne'), fuss = $('#fuss');
+
+function kachel(f, i, gross){
+  const b = document.createElement('button');
+  b.className = 'wahl'; b.type = 'button';
+  const rahmen = document.createElement('div');
+  rahmen.className = 'rahmen' + (gross ? ' gross' : '');
+  const g = document.createElement('div');
+  g.className = 'g ' + f.klasse;
+  g.innerHTML = f.bau();
+  rahmen.appendChild(g);
+  const nr = document.createElement('span');
+  nr.className = 'nr'; nr.textContent = i + 1;
+  const m = document.createElement('span');
+  m.className = 'marke'; m.textContent = 'Demo-Daten';
+  const t = document.createElement('span');
+  t.className = 'these';
+  t.style.width = (gross ? 636 : 448) + 'px';
+  t.textContent = f.these;
+  b.append(rahmen, m, t, nr);
+  return b;
+}
+
+function knopf(text, fn, dunkel){
+  const b = document.createElement('button');
+  b.className = 'k' + (dunkel ? ' dunkel' : '');
+  b.textContent = text; b.onclick = fn; return b;
+}
+
+function zeichnen(){
+  buehne.innerHTML = ''; fuss.innerHTML = ''; buehne.style.display = 'flex';
+  if(stufe === 1) stufe1(); else if(stufe === 2) stufe2(); else ergebnis();
+}
+
+function stufe1(){
+  $('#stufe').textContent = 'Stufe 1 von 2 · Glaswelt';
+  $('#frage').textContent = 'Welche Art Glaswelt?';
+  $('#unter').textContent = 'Die Welt steht: Raum, Glas, farbiges Licht von hinten, '
+    + 'kühl, wenig Text. Offen ist, welche Verwirklichung. In allen fünf steht '
+    + 'dieselbe Information an derselben Stelle — Quelle, Kurve mit markiertem '
+    + 'Befundbereich, Sicherheitsring, ein Regler, ein Wert. Wähl zwei.';
+  FASSUNGEN.forEach((f,i)=>{
+    const k = kachel(f, i, false);
+    if(eng.includes(f.id)) k.classList.add('eng');
+    k.onclick = ()=>{
+      const p = eng.indexOf(f.id);
+      if(p >= 0) eng.splice(p,1);
+      else if(eng.length < 2) eng.push(f.id);
+      else { eng.shift(); eng.push(f.id); }
+      zeichnen();
+    };
+    buehne.appendChild(k);
+  });
+  const weiter = knopf(eng.length === 2 ? 'Diese zwei groß vergleichen' : 'Zwei auswählen',
+    ()=>{ zeiten.stufe1 = Math.round(performance.now()-start);
+          start = performance.now(); stufe = 2; zeichnen(); }, true);
+  weiter.disabled = eng.length !== 2;
+  fuss.append(weiter, thesenKnopf(), knopf('Keine davon — und zwar weil …', ablehnen));
+  hinweis(eng.length + ' von 2 gewählt');
+}
+
+function stufe2(){
+  $('#stufe').textContent = 'Stufe 2 von 2 · Zweikampf';
+  $('#frage').textContent = 'Und welche von diesen beiden?';
+  $('#unter').textContent = 'Groß und nebeneinander. Denk an einen ruhigen Mix, in dem '
+    + 'fast nichts zu melden ist — welche der beiden ist dann noch angenehm?';
+  eng.map(id => FASSUNGEN.find(f=>f.id===id)).forEach((f,i)=>{
+    const k = kachel(f, i, true);
+    k.onclick = ()=>{ sieger = f.id;
+      zeiten.stufe2 = Math.round(performance.now()-start); stufe = 3; zeichnen(); };
+    buehne.appendChild(k);
+  });
+  fuss.append(knopf('← Zurück zu allen fünf', ()=>{ stufe = 1; zeichnen(); }),
+              thesenKnopf(), knopf('Keine von beiden — weil …', ablehnen));
+}
+
+// Die Thesen sind standardmaessig AUS: erst das Bild wirken lassen, dann die
+// Worte. Wer sie vorher liest, waehlt den besseren Satz statt das bessere Bild.
+function thesenKnopf(){
+  const an = document.body.classList.contains('thesen');
+  return knopf(an ? 'Thesen ausblenden' : 'Thesen einblenden', ()=>{
+    document.body.classList.toggle('thesen'); zeichnen();
+  });
+}
+function hinweis(t){
+  const s = document.createElement('span');
+  s.className = 'hinw'; s.textContent = t; fuss.appendChild(s);
+}
+function ablehnen(){
+  if(fuss.querySelector('textarea')) return;
+  const box = document.createElement('div');
+  box.style.cssText = 'width:100%;display:flex;flex-direction:column;gap:8px';
+  box.innerHTML = '<textarea class="ablehn" placeholder="Was fehlt, was stört? '
+    + 'Zu kalt, zu bunt, zu leer, zu nah an etwas anderem — je konkreter, desto '
+    + 'brauchbarer."></textarea>';
+  box.appendChild(knopf('Notieren', ()=>{
+    const t = box.querySelector('textarea').value.trim();
+    if(t) ablehnungen.push({stufe, text:t});
+    box.remove();
+  }, true));
+  fuss.appendChild(box);
+  box.querySelector('textarea').focus();
+}
+
+function ergebnis(){
+  const f = FASSUNGEN.find(x => x.id === sieger);
+  $('#stufe').textContent = 'Ergebnis';
+  $('#frage').textContent = f.name;
+  $('#unter').textContent = f.these;
+  buehne.innerHTML = ''; buehne.style.display = 'block'; fuss.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'max-width:1180px;margin:0 auto;padding:0 26px 34px;width:100%';
+  const k = kachel(f, 0, true); k.style.cursor = 'default'; k.onclick = null;
+  wrap.appendChild(k);
+  const h = document.createElement('h2');
+  h.style.cssText = 'font-size:16px;margin:22px 0 8px';
+  h.textContent = 'Ergebnis an Claude geben';
+  const ta = document.createElement('textarea');
+  ta.style.cssText = 'width:100%;height:170px;font:11.5px/1.5 "Cascadia Mono",'
+    + '"Consolas",monospace;background:#2a2a2a;color:#d8dde3;border:0;padding:12px;'
+    + 'margin-top:6px;resize:vertical';
+  ta.spellcheck = false;
+  ta.value = JSON.stringify({
+    werkzeug:'nakama-glaswelt', version:1, zeitpunkt:new Date().toISOString(),
+    engereWahl:eng, sieger:sieger, siegerName:f.name, these:f.these,
+    ablehnungen:ablehnungen,
+    sekunden:{stufe1:(zeiten.stufe1/1000).toFixed(1), stufe2:(zeiten.stufe2/1000).toFixed(1)}
+  }, null, 1);
+  wrap.append(h, ta);
+  const kn = document.createElement('div');
+  kn.style.cssText = 'display:flex;gap:10px;margin-top:10px';
+  kn.append(knopf('Alles markieren — dann Strg+C', ()=>{ ta.focus(); ta.select();
+      try{ document.execCommand('copy'); }catch(e){} }, true),
+    knopf('Doch nochmal ansehen', ()=>{ stufe = 1; sieger = null; zeichnen(); }));
+  wrap.appendChild(kn);
+  buehne.appendChild(wrap);
+}
+
+zeichnen();
+</script>
+</body>
+</html>

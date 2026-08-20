@@ -7,6 +7,10 @@
 
 > Stand: 2026-08-20 nachts. Diese Datei ist der Schnellstart;
 > Tiefe in `docs/design-stand.md` und `docs/geschmacksprofil.md`.
+> **🔨 BAUENTSCHEIDUNG ERTEILT (User, 20.08.): der Sondenkern wird gebaut.**
+> Einstieg ist der Abschnitt „DER EINE NÄCHSTE SCHRITT — Session 0" unten;
+> Sessionplan, Gates und Prüfstufen in `docs/bauaufteilung-sonden.md`.
+> Die Design-Spur läuft parallel weiter und blockiert nichts.
 > **Erledigt am 20.08.:** /freshen gelaufen (+ eigenes Playbook);
 > Sondenentwurf auf **Fassung 0.4** (Opus-Prüfbericht komplett
 > eingearbeitet, §0.3 Produktarchitektur, §0.4 Arbeitsmodell +
@@ -45,10 +49,67 @@ Dieser strategische Lock ersetzt NICHT den unmittelbar freigegebenen
 Technikschritt unten. NAK-16 muss dem Zielbild dienen, darf es aber nicht
 durch einen neuen Effekt oder eine neue Metapher umdeuten.
 
-## Der eine nächste Schritt
+## ▶ DER EINE NÄCHSTE SCHRITT — Bau beginnt: Session 0
+
+**Die Bauentscheidung ist erteilt** (User, 20.08.: „okay dann fangen wir damit
+nächste session an"). Der Sondenkern wird gebaut. Einstieg ist **nicht** P0
+und **nicht** `SONDE-001`, sondern:
+
+### S0 · Beweis-Runner + Manifest-Gerüst
+
+Grund: Mehrere Tickets sagen „läuft im CI" — `.github/workflows/` **existiert
+nicht** und eine GitHub-CI für einen JUCE-VST3-Windows-Build ist bei einer
+Maschine unverhältnismäßig. Entscheidung (in `docs/bauaufteilung-sonden.md`
+§1.1): **lokaler Beweis-Runner statt CI.**
+
+Zu bauen:
+
+1. `tools/beweise.ps1` — fährt den kompletten Kanon nacheinander und schreibt
+   die **rohe** Ausgabe (nicht zusammengefasst) in eine Manifestdatei:
+   `EqCopNullTest` · `EqCopGoldenTest <fixtures>` · `EqCopMarkierungTest` ·
+   `cargo test --manifest-path broker/Cargo.toml`. Baustand + Commit-SHA +
+   FL-/JUCE-Version in den Kopf.
+2. `docs/beweise/` anlegen + `VORLAGE.md` (Tabelle: Behauptung · Befehl ·
+   **rohe Ausgabe** · Datum).
+3. Runner einmal gegen den heutigen Stand laufen lassen ⇒
+   `docs/beweise/S0-basislinie.md`. Das ist gleichzeitig die
+   Regressions-Basislinie für alles Weitere.
+
+Danach in Reihenfolge (Details + Prüfstufen: `docs/bauaufteilung-sonden.md`
+§3): **S1 `SONDE-004a`** (Wegwerf-Target mit zwei deklarierten Aux-Bussen +
+Impulsharness) → **👤 User-Termin A in FL** → S2 `SONDE-001`+`002` → S3
+`SONDE-003` (JUCE-Bridge-Patch) → 👤 User-Termin B → S4 Capabilityreport →
+**Gate G0**.
+
+`SONDE-004` steht bewusst vorn (Prüfbericht NAK-22): höchstes Ausfallrisiko,
+billigste Messung, größte Umfangswirkung. Fällt es, sterben zusammen
+Kernfunktion 17, das hörbare Delta in 5+12 und die exakte Attribution in 1.
+
+### Was beim Bauen gilt
+
+- **1 Session = 1 Ticket + Beweismanifest + Frischkontext-Prüfer.** Code ohne
+  Manifest heißt *offen*, nicht *fast fertig*.
+- **T1** Selbstaudit je Commit · **T2** `evaluator`-Subagent je Ticket (sieht
+  nur Diff + Manifest + Gate-Text aus dem Entwurf) · **T3** adversariale Runde
+  je Phasengate in eigener Session (`/c-review`, `/rust-review`,
+  `/security-review` + **Codex als zweites Modell**), mit
+  **Falsifikationsauftrag** statt Prüfliste.
+- Jeder T3-Befund wird **gegen die Quelldatei verifiziert**, bevor gehandelt
+  wird (~25 % AI-Auditbefunde waren hier falsch), und verschwindet nie still:
+  gefixt, NAK-Zeile oder protokollierte Widerlegung.
+- Verbindliche Lesereihenfolge zum Start: `docs/bauaufteilung-sonden.md` →
+  Entwurf §0.3/§0.4 + §53–§68 → `docs/pruefbericht-sondenentwurf-2026-08-20.md`
+  (nur noch als Beleg; alle fünf Befunde sind in 0.4 eingearbeitet, NAK-19…23
+  geschlossen mit `ab80522`).
+
+**Nicht Teil von S0:** neuer DSP, neue Features, Umbau des Analysealgorithmus.
+
+---
+
+## Parallel offen — Design-Spur (User-Aktion, blockiert den Bau NICHT)
 
 **NAK-16 PROBE-STILL IST GEBAUT UND BESTANDEN (19.08., Commits cba6bd6 +
-602b20a). Nächster Schritt: der User SIEHT SICH DAS LEBENDE BLATT AN —
+602b20a). Offen: der User SIEHT SICH DAS LEBENDE BLATT AN —
 `eq-copilot/design/prisma/stmap-probe.html` doppelklicken (Testmuster)
 und mit `?bg=unicorn` (lebender Nexus, braucht Internet).** Optik-Urteil
 gehört ihm: Dispersion-Stärke (`?dispersion=0.035` Vorgabe), Glanz-Rig

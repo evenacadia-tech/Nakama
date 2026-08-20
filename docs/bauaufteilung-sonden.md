@@ -1,12 +1,17 @@
 # Bauaufteilung Sondenkern — Sessions, Gates, adversariale Prüfung
 
 - **Stand:** 2026-08-20
-- **Gehört zu:** `docs/FL-Nakama-Sonden-Design-Entwurf.md` (Fassung 0.3, Codex)
+- **Gehört zu:** `docs/FL-Nakama-Sonden-Design-Entwurf.md` (Fassung 0.4, Codex)
   und `docs/pruefbericht-sondenentwurf-2026-08-20.md`
 - **Was das hier ist:** wie *ich* den Plan bauen würde. Der Entwurf ordnet
   **Fähigkeitsgrenzen** (P0–P9), dieses Dokument ordnet **Arbeitscontainer**
   (Sessions) und die Prüfung dazwischen. Der Entwurf bleibt unangetastet.
-- **Status:** Vorschlag. Bauentscheidung nicht erteilt.
+- **Status:** **Bauentscheidung erteilt** (User, 20.08.2026: „okay dann fangen
+  wir damit nächste session an"). Nächste Session startet bei **S0**.
+- **Nachgezogen 20.08. auf Entwurf 0.4:** Fassung 0.4 hat alle fünf Befunde des
+  Prüfberichts eingearbeitet; NAK-19…23 sind geschlossen (`ab80522`). Phasen
+  P0–P9 und die 19 Tickets sind unverändert — der Sessionplan unten trägt
+  weiter. Zwei Vorlaufpunkte sind dadurch entfallen (§1.2/§1.3).
 
 ---
 
@@ -29,7 +34,9 @@ fertig, sondern **offen** — auch wenn alles kompiliert.
 
 ## 1. Session 0 — was VOR SONDE-001 fehlt
 
-Drei Dinge blockieren sonst ständig. Sie kosten zusammen eine Session.
+Nach der 0.4-Einarbeitung bleibt **ein** echter Vorlaufpunkt (§1.1). §1.2/§1.3
+sind erledigt und stehen nur noch als Beleg; §1.4 ist neue Vorgabe aus §0.4,
+die in die Prüflisten fließt.
 
 ### 1.1 Es gibt keine CI
 
@@ -56,21 +63,36 @@ Ohne diesen Runner kostet jedes Manifest 10 Handgriffe und wird deshalb
 irgendwann geschludert. Mit ihm ist es **ein** Befehl — das ist der ganze
 Unterschied zwischen „Beweisstandard" und „Beweisvorsatz".
 
-### 1.2 NAK-19 muss beantwortet sein
+### 1.2 ~~NAK-19~~ — erledigt, P3 ist nicht mehr blockiert
 
-Die Hörkompass-Kollision (Landkarte als Dauerbild vs. leeres Glas) definiert
-das **Exit-Gate von P3**. Ohne Antwort baue ich in P3 blind. Das ist eine
-Gesprächssession mit dir, keine Bausession — und sie muss **vor P3**
-stattfinden, nicht vor P0.
+Der Produktentscheid vom 20.08. (Entwurf §0.3) löst die Kollision auf: Der
+Hörkompass-Zielvertrag gilt der **eigenständigen Prisma-App**, das
+Master-Plugin bekommt eine **konventionelle Arbeits-UI**. Quellenliste,
+Heatmap und Detailansicht sind dort legitime Dauerarbeitsflächen; ihr Maßstab
+ist Lesbarkeit, nicht „leeres Glas". **P3 kann ohne weitere Entscheidung
+gebaut werden.**
 
-### 1.3 NAK-23a entscheide ich, nicht du
+### 1.3 ~~NAK-23a~~ — erledigt, aber die Festlegung bleibt gültig
 
-FeatureBatch-Form (N Frames einer Quelle vs. 1 Frame von N Quellen) ist eine
-Schema-Entscheidung. **Meine Festlegung: 1 Batch = N Frames EINER Quelle**,
+Der widersprüchliche Bündelungssatz ist in 0.4 entfernt. Die Sachentscheidung
+für `SONDE-005` steht damit weiterhin: **1 Batch = N Frames EINER Quelle**,
 Bündelung nur auf dem Broker→Main-Weg über einen Wrapper. Grund: der
 Sonde→Broker-Weg hat Cap 2 mit replace-oldest — dort kann nie gebündelt
-werden; ein Schema, das es erlaubt, hätte ein totes Feld. Wird in `SONDE-005`
-festgeschrieben.
+werden; ein Schema, das es erlaubt, hätte ein totes Feld.
+
+### 1.4 Neu aus Entwurf §0.4 — die Interims-UI ist ein Vertrag
+
+Das Arbeitsmodell „Technik voraus, Design parallel" macht die schlichte
+Bedien-UI **prüfbar**, nicht beliebig. In jeder UI-Fassung sichtbar sein
+müssen: **Frische/stale · Unsicherheit/Konfidenz · `arming`/`audible_ready` ·
+Capability-Degradation · Konfliktauflösung · welche Aktion gerade NICHT aktiv
+ist.** Das wandert unten in die T1-Liste — es ist der Punkt, an dem eine
+Interims-UI sonst still einen nicht existierenden Zustand vortäuscht.
+
+Betroffen sind **drei** Oberflächen, nicht eine: Main (volle Arbeitsfläche),
+der Editor der Active Probe (lokal bedienbares EQ-Plugin, ab P6) und der
+Editor der Passive Probe (minimale Status-/Identitätskachel, null
+Hostparameter — kommt in `SONDE-007b` mit).
 
 ---
 
@@ -90,7 +112,10 @@ Feste Liste, nie abgekürzt:
    wirklich? (Diese Session hat NAK-20 nur gefunden, weil ich die Zeile
    aufgemacht habe statt sie zu zitieren.)
 4. **Lügt der UI-Text?** Zeigt die Anzeige einen Zustand, den es nicht gibt?
-5. **Audiothread:** Allokation, Lock, I/O, Log — nachweislich keins?
+5. **Anzeige-Pflichten erfüllt?** (Entwurf §0.4, nur bei UI-Diff) Frische/stale ·
+   Konfidenz · `arming`/`audible_ready` · Capability-Degradation · Konflikt ·
+   „welche Aktion gerade NICHT aktiv ist".
+6. **Audiothread:** Allokation, Lock, I/O, Log — nachweislich keins?
 
 Kosten: Minuten. Findet Fehler, bevor sie ein Prüfer sieht.
 
@@ -224,7 +249,6 @@ Ab hier: **R0 · Contract/Internal** erreicht.
 
 | # | Ticket | Inhalt | Prüfung |
 |---|---|---|---|
-| — | — | **👤 NAK-19-Entscheidung** — Ruhezustand vs. Fokusansicht | — |
 | S18–19 | `SONDE-012` | Join, Führung, Frische, Messpunktwahrheit, Fehlerzustände | T1+T2 |
 | **G3** | — | **Gate:** `/rust-review` + Codex + 60-min-Soak. Falsifikation: Gate 7 | **T3** |
 
@@ -277,14 +301,14 @@ lohnt sich `/c-review` auf höchster Stufe wirklich.
 | Vorlauf + P0 | 5 | 1 | 2 |
 | P1 | 5 | 1 | — |
 | P2 → **R0** | 8 | 1 | — |
-| P3 → **R1** | 2 | 1 | 1 (NAK-19) |
+| P3 → **R1** | 2 | 1 | — |
 | P4 | 3 | 1 | — |
 | P5 → **R2** | 3 | 1 | — |
 | P6 | 3 | 1 | — |
 | P7 → **R3** | 3 | 1 | — |
 | P8 | 2 | 1 | — |
 | P9 → **R4** | 2 | 1 | — |
-| **Gesamt** | **36** | **10** | **3** |
+| **Gesamt** | **36** | **10** | **2** |
 
 **Bis R2 (das erste wirklich nützliche Produkt): 26 Bau-Sessions + 6 Gates.**
 **Bis R4 (voller Sondenkern): 36 + 10 = 46 Sessions.**

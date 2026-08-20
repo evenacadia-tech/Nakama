@@ -265,27 +265,31 @@ mehr — gewählt wird über die Zeile darunter.
 Vier gleich aussehende Reiter wären genau der Fehler, den Von Restorff
 beschreibt: fällt alles auf, fällt nichts auf.
 
-### Entschieden: beides
+### Entschieden: App-Umrandung + markierte Zeile
 
-> „es ist 1 und 2 eine kombination daraus" —
+> „es ist 1 und 2 eine kombination daraus" …
+> „ich wollte die markierte zeile + die app umrandung" —
 > `abnahmen/2026-08-20-bedienebenen-beides.md`
 
-**Zwei Fragen, zwei Orte:** der Streifen beantwortet *was ist der Stand?*
-(Reiter leuchtet, „1 change applied" mit Rückweg), das Blatt beantwortet
-*läuft gerade etwas?* (Rahmen, Karte tritt zurück — solange gehalten).
-Die dritte Antwort, „der Zustand klebt am Ort", ist ausgeschieden.
+**Achtung:** die erste Aussage habe ich falsch übersetzt (als Streifen +
+Blattrahmen) und auch so gebaut. Die Nachfrage hat es geklärt. Gemeint sind:
 
-Das Blatt zeigt jetzt drei Kacheln: die Kombination und die beiden reinen
-Formen daneben, damit prüfbar bleibt, ob die Mischung besser liest.
+| Frage | Ort | Zeichen |
+|---|---|---|
+| *Läuft gerade etwas?* | die **ganze App** | Umrandung, solange gehalten |
+| *Wo wirkt es?* | die **betroffene Zeile** der Karte | Zeile markiert |
 
-Zwei Entscheidungen beim Bauen, beide mechanisch:
+**Nichts wird gedämpft.** Die frühere Blatt-Variante dämpfte Streifen und
+Karte; mit einer Markierung *in* der Karte wäre das falsch — das Dämpfen
+arbeitet gegen die Markierung.
 
-1. **Der Streifen wird beim Halten nicht mitgedämpft** — sonst verdunkelt
-   das Blatt genau die Auskunft, die man in dem Moment braucht. Gedämpft
-   wird nur die Karte.
-2. **Das Blatt spricht ohne Worte.** Das Band „AUDITIONING — RELEASE TO
-   STOP" ist entfallen: gemessen verdeckte es 6 px des Assistenten-Kastens,
-   und es war das *fünfte* Zeichen für denselben Zustand.
+Der **Streifen bleibt** und führt weiter Buch: die Spezifikation verlangt
+„vier Bedienebenen, sichtbar getrennt" und „Zustände, die immer ablesbar sein
+müssen". Offen ist, ob sein `AUDITION`-Reiter beim Halten *zusätzlich*
+aufleuchten soll — im Moment tut er es.
+
+Das Blatt zeigt drei Kacheln: die Kombination und die beiden Einzelteile,
+damit prüfbar bleibt, ob wirklich beide gebraucht werden.
 
 ### Drei Befunde, die erst das 1:1-Bild gezeigt hat
 

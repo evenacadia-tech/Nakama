@@ -13,28 +13,47 @@ Dazu, zu einem Ausschnitt der Karte:
 
 > „die übergroße zeile wirkt nichti richtig"
 
+Und auf Nachfrage, weil ich die erste Aussage falsch übersetzt hatte:
+
+> „ich wollte die markierte zeile + die app umrandung"
+
+## ⚠ Meine erste Übersetzung war falsch
+
+Ich hatte „1 und 2" als *Streifen + Blattrahmen* gelesen und genau das
+gebaut. Gemeint waren die **markierte Zeile** (aus „der Zustand klebt am
+Ort") und die **Umrandung der App** (aus „das Blatt ist der Zustand").
+Korrigiert; die falsche Fassung steht nur noch in der Git-Geschichte.
+
 ## Was damit festliegt
 
-**Zwei Fragen, zwei Orte:**
+Das Zeichen für **Vorhören** besteht aus zwei Teilen, und beide beantworten
+verschiedene Fragen:
 
 | Frage | Ort | Zeichen |
 |---|---|---|
-| *Was ist der Stand?* | der **Streifen** | Ebenen-Reiter leuchtet · „1 change applied" mit Rückweg |
-| *Läuft gerade etwas?* | das **Blatt** | Rahmen, Karte tritt zurück — solange gehalten |
+| *Läuft gerade etwas?* | die **ganze App** | Umrandung, solange gehalten |
+| *Wo wirkt es?* | die **betroffene Zeile** in der Karte | Zeile markiert |
 
-Die dritte Antwort — „der Zustand klebt am Ort der Wirkung" — ist damit
-ausgeschieden.
+Die Karte wird dabei **nicht** gedämpft — die markierte Zeile muss lesbar
+bleiben, und ein Dämpfen würde gegen die Markierung arbeiten.
 
 ## Zwei Entscheidungen, die ich beim Bauen getroffen habe
 
 Beide sind mechanisch, nicht gestalterisch, und stehen hier, damit sie
 nachprüfbar sind:
 
-1. **Der Streifen wird beim Halten NICHT mitgedämpft.** In der reinen
-   Blatt-Variante dämpfte das Blatt auch den Streifen. In der Kombination
-   wäre das falsch: dann verdunkelt das Blatt genau die Auskunft, die man in
-   diesem Moment braucht. Gedämpft wird nur die Karte — der Zusammenhang
-   tritt zurück, die Sache bleibt.
+1. **Nichts wird gedämpft.** Die reine Blatt-Variante dämpfte Streifen und
+   Karte. Mit einer markierten Zeile *in* der Karte wäre das falsch: das
+   Dämpfen arbeitet gegen die Markierung, und der Streifen trägt die
+   Auskunft, die man in dem Moment braucht. Es bleibt bei Umrandung plus
+   Markierung.
+
+   **Offen und von mir nicht entschieden:** was der Streifen währenddessen
+   tut. Die Spezifikation verlangt „vier Bedienebenen, sichtbar getrennt" und
+   „Zustände, die immer ablesbar sein müssen" — der Streifen bleibt also
+   stehen und führt weiter Buch. Ob sein `AUDITION`-Reiter dabei zusätzlich
+   aufleuchten soll oder ob Umrandung und Markierung genügen, ist die eine
+   offene Frage dieser Runde.
 2. **Das Blatt spricht ohne Worte.** Das Band „AUDITIONING — RELEASE TO STOP"
    ist entfallen. Gemessen: es verdeckte 6 px des Assistenten-Kastens — eine
    Verdeckung, die keine Überlaufmessung sieht, weil nichts überläuft,

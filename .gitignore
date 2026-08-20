@@ -17,6 +17,8 @@ eq-copilot/kalibration/renders/
 
 # Golden-Fixture-WAVs (tools/eq-copilot/erzeuge_fixtures.py --nur-wav)
 eq-copilot/fixtures/*.wav
+# Impuls-Fixtures des Aux-Spikes (erzeuge_aux_spike_fixtures.py; Hashes im MANIFEST.md)
+eq-copilot/fixtures/aux-spike/*.wav
 
 # Python-Bytecode
 __pycache__/

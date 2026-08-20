@@ -210,7 +210,7 @@ Umfangswirkung).
 
 | # | Ticket | Inhalt | Prüfung |
 |---|---|---|---|
-| S1 | `SONDE-004a` | Wegwerf-Target mit zwei deklarierten Aux-Bussen + Impulsharness | T1 |
+| ~~S1~~ | `SONDE-004a` | ~~Wegwerf-Target mit zwei deklarierten Aux-Bussen + Impulsharness~~ — **erledigt 20.08.**, Selbsttest 41/41, Manifest `docs/beweise/SONDE-004a.md` | T1 ✅ |
 | — | — | **👤 User-Termin A (FL):** Aux-Layout, Kanalreihenfolge, Recall, PDC-Impulse | — |
 | S2 | `SONDE-001` + `002` | Identität einfrieren (CIDs stehen bereits, NAK-20) · `JUCE_VST3_CAN_REPLACE_VST2=0` ins Manifest · `EqCopIdentityTest` · Legacy-FL-Fixture | T1+T2 |
 | S3 | `SONDE-003` | JUCE-Bridge-Patch: Context-Anwesenheit, Parameterpunkte, Buslatenz, Quellhash-Gate | T1+T2 |

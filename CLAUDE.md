@@ -91,6 +91,12 @@ cargo test --manifest-path broker/Cargo.toml
   (Terminal 2) — **immer der eigene Probe-Pipename**, nie der
   Produktions-Broker (zwei Broker auf einem Namen stahlen sich still
   Clients; Produktion verweigert per FIRST_PIPE_INSTANCE)
+- **Aux-/PDC-Messgeraet (SONDE-004a, Wegwerfware):** Ziele `EqCopAuxSpike_VST3`
+  (Bundle) + `EqCopAuxSpikeTest` (Selbsttest, 41 Pruefungen). Plugin-Code `NkSp`,
+  bewusst **ausserhalb** der eingefrorenen Identitaet (`Eqcp`/`NkPr`/`NkAc`).
+  Klickliste fuer den FL-Termin: `eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md`;
+  Impulse per `tools/eq-copilot/erzeuge_aux_spike_fixtures.py` (Hashes im
+  Fixture-MANIFEST). Wird nach dem Capabilityreport (S4) entsorgt.
 - **Installation = User-Klick:** `eq-copilot\install\Install-EQ-Copilot.ps1` als Admin (UAC), Rollback-Datei liegt daneben. Nie automatisch installieren. Vorher FL beenden.
 
 ## Invarianten — tragend, jede Runde präsent
@@ -222,6 +228,7 @@ rendert auf CPU.
 | DSP-/Realtime-/Broker-Regeln, Produktplan | `FL-EQ-Copilot-Recherche.md` |
 | Aktuellster Plugin-Stand + Beweise | `eq-copilot/docs/M3A-BEFUND.md` (+ M0–M2, CS1) |
 | Manuelle FL-Prüfungen (liegen beim User) | `eq-copilot/docs/FL-TESTANLEITUNG.md` |
+| FL-Termin A — Aux/PDC/Recall messen (Sondenbau P0) | `eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md` |
 | Benchmark-Mechaniken (Median-Basislinie, Zonen, Konvergenz) | `eq-copilot/docs/BENCHMARK-STUDIE-RESO-SMARTEQ-PROQ.md` |
 | Offene Punkte (durabel, nie still löschen) | `docs/offene-punkte.md` |
 

@@ -50,44 +50,54 @@ Dieser strategische Lock ersetzt NICHT den unmittelbar freigegebenen
 Technikschritt unten. NAK-16 muss dem Zielbild dienen, darf es aber nicht
 durch einen neuen Effekt oder eine neue Metapher umdeuten.
 
-## ▶ DER EINE NÄCHSTE SCHRITT — S1 · `SONDE-004a`
+## ▶ DER EINE NÄCHSTE SCHRITT — 👤 User-Termin A in FL
 
-**S0 ist erledigt** (20.08.2026): Beweis-Runner, Manifest-Vorlage und
-Basislinie stehen und sind an dieser Maschine gefahren worden. Der Bau geht
-weiter bei S1.
+**S0 und S1 sind erledigt** (20.08.2026). Der Bau steht jetzt bewusst still:
+der nächste Schritt gehört dem User und lässt sich nicht simulieren.
 
-### S1 · `SONDE-004a` — Wegwerf-Target mit zwei Aux-Bussen + Impulsharness
+### Was zu tun ist
 
-Ticketziel im Wortlaut (Entwurf §65): *„FL-Aux-/PDC-/Recall-Spike und
-Capabilityreport — fertig, wenn jede Aux-Capability eindeutig
-supported/unsupported ist."* Er steht bewusst an Position 1 (Prüfbericht
-NAK-22): höchstes Ausfallrisiko, billigste Messung (eine `.flp`, zwei Impulse),
-größte Umfangswirkung. Fällt er, sterben zusammen Kernfunktion 17, das hörbare
-Delta in 5+12 und die exakte Attribution in 1.
+`eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md` — Klickliste, ca. 20 Minuten, in
+Lernsprache. Gemessen wird die Frage, an der der halbe Plan hängt: **Kann FL
+zwei getrennte Aux-Wege gleichzeitig, in der richtigen Reihenfolge und
+zeitlich exakt in ein Plugin schicken — und überlebt das einen Speicher- und
+Ladezyklus?**
 
-Zu bauen ist ein **Wegwerf-VST3** mit zwei deklarierten Aux-Bussen und einem
-Impulsharness — das Messgerät, mit dem der User in FL Aux-Layout,
-Kanalreihenfolge, Recall und PDC-Impulse feststellt. Kein Produktcode.
+Ergebnis sind zwei JSON-Dateien aus `%APPDATA%\evenacadia\nakama\spike\`.
+Jede der drei möglichen Antworten (**geht** · **geht mit festem Versatz** ·
+**geht nicht**) ist verwertbar; nur `unknown, später prüfen` darf P0 nicht
+passieren (Exit-Gate §54).
 
-Danach in Reihenfolge: **👤 User-Termin A in FL** → S2 (`SONDE-001`+`002`) →
-S3 (`SONDE-003`, JUCE-Bridge-Patch) → **👤 User-Termin B** → S4
-Capabilityreport → **Gate G0**.
+### Was S1 dafür gebaut hat
 
-### Was S0 hinterlassen hat — ab jetzt Pflicht in jedem Ticket
+- **`EqCop-Aux-Spike.vst3`** — Wegwerf-Messgerät, Ziele `EqCopAuxSpike_VST3`
+  und `EqCopAuxSpikeTest`. Deklariert Main-I/O plus zwei vorgabe-inaktive
+  Aux-Eingänge (`priority_sidechain`, `compare_pre`, Entwurf §48.2), misst je
+  Bus den Impulsversatz sampledgenau, reicht Audio bitgleich durch und
+  schreibt einen JSON-Bericht. Plugin-Code `NkSp` — bewusst **außerhalb** der
+  eingefrorenen Identität (`Eqcp`, `NkPr`, `NkAc`), damit S2 nichts Falsches
+  einfriert. Kein Produktcode, keine geteilte Quelle.
+- **Selbsttest 41/41** (`EqCopAuxSpikeTest`) — das Lineal ist geprüft, bevor
+  der User Zeit investiert. Er hat dabei einen echten Konstruktionsfehler
+  gefunden: die erste Fassung erkannte „erstes Sample über der Schwelle" als
+  Impuls und hätte auf einer laufenden Mischung eine glaubwürdige falsche Zahl
+  gemeldet. Jetzt prüft der Spike das Messprotokoll (Stille + ein Impuls) und
+  **verweigert** bei Dauersignal den Versatz mit Klartextgrund.
+- **Impuls-Fixtures** je Projektrate (44100/48000), deterministisch erzeugt;
+  Hashes und erwartetes Resultat in `eq-copilot/fixtures/aux-spike/MANIFEST.md`
+  (Entwurf §66.3 — Medien draußen, Manifest drinnen).
+- **Ticket-Manifest** `docs/beweise/SONDE-004a.md` mit Rohausgaben,
+  ausgefüllter T1-Liste und angehängtem Kanon-Lauf.
 
-- **`tools/beweise.ps1`** — ein Befehl fährt den ganzen Kanon und schreibt die
-  **rohe** Ausgabe ins Manifest (`NullTest` · `GoldenTest` · `MarkierungTest` ·
-  `cargo test`; die sieben geplanten Prüfbinaries ab P0/P1/P2/P6 stehen schon in
-  der Tabelle und laufen automatisch mit, sobald sie gebaut sind).
-  `-Bauen` baut vorher, `-Anhaengen` hängt an ein Ticket-Manifest an.
-  **Exitcodes:** 0 grün · 2 rot · 3 Voraussetzung fehlt · 4 Binaries älter als
-  die Quellen ⇒ *nicht beglaubigt*. Alle vier Zustände sind negativ geprüft.
-- **`docs/beweise/VORLAGE.md`** — Ticket-Manifest mit T1-Liste, T2-Feld,
-  Befundtabelle und (nur am Gate) T3-Falsifikationsblock. Kopieren, nicht neu
-  erfinden.
-- **`docs/beweise/S0-basislinie.md`** — die Regressions-Basislinie: 4/4 Kanon
-  grün auf `b7d37ce`, JUCE 8.0.9 gepinnt und auf Platte, FL 2026 26.1.4.5589,
-  Broker 36/36.
+### Danach
+
+**S2 `SONDE-001` + `002`** (Identität einfrieren, `EqCopIdentityTest`,
+Legacy-FL-Fixture) → **S3 `SONDE-003`** (JUCE-Bridge-Patch) → 👤 User-Termin B
+→ **S4** Capabilityreport aus beiden Terminen → **Gate G0**.
+
+S2 hängt **nicht** an Termin A und kann sofort beginnen, wenn der User den
+Termin verschieben will — nur `SONDE-018` (Entmaskierung, P8) und der
+Capabilityreport S4 warten wirklich auf das Ergebnis.
 
 ### Was beim Bauen gilt
 
@@ -106,9 +116,6 @@ Capabilityreport → **Gate G0**.
   (nur noch als Beleg; alle fünf Befunde sind in 0.4 eingearbeitet, NAK-19…23
   geschlossen mit `ab80522`).
 
-**Nicht Teil von S1:** Produktcode, neuer DSP, Umbau des Analysealgorithmus.
-Das Wegwerf-Target ist ein Messgerät und wird nach dem Capabilityreport nicht
-weitergepflegt.
 
 ---
 

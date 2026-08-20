@@ -361,19 +361,27 @@ foreach ($ort in $quellOrte) {
     }
 }
 
+# Hat -Bauen soeben erfolgreich gebaut, ist die Frage entschieden: das
+# Buildsystem hat die Abhaengigkeiten geprueft, und sein Urteil schlaegt den
+# Zeitstempelvergleich. Ohne -Bauen bleibt die mtime die ehrliche Heuristik.
+# (Sonst meldete jede fremde Datei im tests-Ordner die Binaries dauerhaft als
+#  veraltet, obwohl ein No-op-Bau die Zeitstempel gar nicht anfasst.)
+$bauBestaetigt = $Bauen -and (@($bauProtokoll | Where-Object { $_.Schritt -eq 'build' -and $_.ExitCode -eq 0 }).Count -gt 0)
+
 $baustand = @()
 $veraltet = $false
 foreach ($eintrag in ($kanon | Where-Object { $_.Art -eq 'plugin' })) {
     $exe = Pruefbinaer $eintrag.Name
     if (-not (Test-Path -LiteralPath $exe)) { continue }
     $datei = Get-Item -LiteralPath $exe
-    $istVeraltet = ($null -ne $neuesteQuelle -and $datei.LastWriteTime -lt $neuesteQuelle)
+    $istVeraltet = (-not $bauBestaetigt) `
+                   -and ($null -ne $neuesteQuelle -and $datei.LastWriteTime -lt $neuesteQuelle)
     if ($istVeraltet) { $veraltet = $true }
     $baustand += [pscustomobject]@{
         Name   = $eintrag.Name
         Gebaut = $datei.LastWriteTime.ToString('yyyy-MM-dd HH:mm:ss')
         Hash   = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.Substring(0, 16)
-        Stand  = $(if ($istVeraltet) { 'VERALTET' } else { 'frisch' })
+        Stand  = $(if ($istVeraltet) { 'VERALTET' } elseif ($bauBestaetigt) { 'frisch (Bau bestaetigt)' } else { 'frisch' })
     }
 }
 
@@ -543,6 +551,10 @@ else {
     foreach ($b in $baustand) { $z.Add("| ``$($b.Name)`` | $($b.Gebaut) | ``$($b.Hash)`` | $($b.Stand) |") }
     $z.Add('')
     $z.Add("Neueste Quelldatei (``plugin/src``, ``plugin/tests``, CMakeLists): **$(if ($neuesteQuelle) { $neuesteQuelle.ToString('yyyy-MM-dd HH:mm:ss') } else { 'nicht ermittelbar' })**. ``cargo test`` uebersetzt selbst und ist damit immer frisch.")
+    if ($bauBestaetigt) {
+        $z.Add('')
+        $z.Add('Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar vor diesem Lauf erfolgreich gebaut, das Buildsystem hat die Abhaengigkeiten also selbst geprueft.')
+    }
 }
 $z.Add('')
 if ($veraltet) {

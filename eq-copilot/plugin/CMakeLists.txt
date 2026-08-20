@@ -138,3 +138,49 @@ target_link_libraries(EqCopPaintBench PRIVATE juce::juce_audio_utils juce::juce_
 foreach(ziel EqCopilot EqCopPipeProbe EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench)
     target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endforeach()
+
+# ── SONDE-004a: Wegwerf-Messgeraet fuer Aux/PDC/Recall (User-Termin A) ──────
+# Eigener Plugin-Code NkSp — bewusst NICHT Teil der eingefrorenen Identitaet
+# (§31.2 reserviert Eqcp, NkPr, NkAc). Das Ziel wird nach dem Capabilityreport
+# (S4) nicht weitergepflegt und teilt keine Quelle mit dem Produkt.
+juce_add_plugin(EqCopAuxSpike
+    COMPANY_NAME "evenacadia"
+    PRODUCT_NAME "EqCop-Aux-Spike"
+    PLUGIN_MANUFACTURER_CODE Evna
+    PLUGIN_CODE NkSp
+    FORMATS VST3
+    VST3_CATEGORIES Fx Analyzer
+    IS_SYNTH FALSE
+    NEEDS_MIDI_INPUT FALSE
+    NEEDS_MIDI_OUTPUT FALSE
+    IS_MIDI_EFFECT FALSE
+    COPY_PLUGIN_AFTER_BUILD FALSE
+)
+target_sources(EqCopAuxSpike PRIVATE
+    spike/AuxSpikeProcessor.cpp
+    spike/AuxSpikeEditor.cpp
+    spike/AuxSpikeFactory.cpp
+)
+target_include_directories(EqCopAuxSpike PRIVATE spike)
+target_compile_definitions(EqCopAuxSpike PUBLIC
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+    JUCE_VST3_CAN_REPLACE_VST2=0
+    JUCE_DISPLAY_SPLASH_SCREEN=0
+)
+target_link_libraries(EqCopAuxSpike
+    PRIVATE juce::juce_audio_utils
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
+# ── Selbsttest: beweist das Lineal VOR dem FL-Termin ───────────────────────
+juce_add_console_app(EqCopAuxSpikeTest PRODUCT_NAME "eqcop-auxspiketest")
+target_sources(EqCopAuxSpikeTest PRIVATE
+    tests/AuxSpikeTestMain.cpp
+    spike/AuxSpikeProcessor.cpp
+    spike/AuxSpikeEditor.cpp
+)
+target_include_directories(EqCopAuxSpikeTest PRIVATE spike)
+target_compile_definitions(EqCopAuxSpikeTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopAuxSpikeTest PRIVATE juce::juce_audio_utils
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)

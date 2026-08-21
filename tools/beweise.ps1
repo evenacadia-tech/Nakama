@@ -256,6 +256,13 @@ $kanon = @(
     [pscustomobject]@{ Kuerzel='A9';  Name='pruefe_flatc_drift.py';  Art='python'; Argumente=@();            AbPhase='jetzt'; Behauptung='Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID.' }
     [pscustomobject]@{ Kuerzel='A10'; Name='erzeuge_fb_fixtures.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei.' }
 
+    # --- v2-Vertraege (Kontext-Inventur 21.08.) --------------------------------
+    #
+    # eq-snapshot.schema.json war seit dem 15.08. kein gueltiges JSON, und kein
+    # Bein hat es gemerkt: keines las die fuenf v2-Schemas maschinell. Ein
+    # Vertrag, den keine Maschine liest, ist keiner - A11 liest sie.
+    [pscustomobject]@{ Kuerzel='A11'; Name='pruefe_v2_schemas.py';   Art='python'; Argumente=@();            AbPhase='jetzt'; Behauptung='Die fuenf v2-Vertraege (ipc v2, measurement v1, report v1, snapshot v3, aggregat v1) sind gueltiges JSON und gueltige JSON-Schemas; ihre $id-Familie ist eingefroren.' }
+
     # --- geplant: laufen automatisch mit, sobald sie gebaut sind -------------
     [pscustomobject]@{ Kuerzel='B1'; Name='EqCopIdentityTest';       Art='plugin'; Argumente=@(); AbPhase='P0'; Behauptung='Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren.' }
     [pscustomobject]@{ Kuerzel='B2'; Name='EqCopStateMigrationTest'; Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='State-Schema 2 laedt reine Schema-1-Staende ohne Verlust.' }

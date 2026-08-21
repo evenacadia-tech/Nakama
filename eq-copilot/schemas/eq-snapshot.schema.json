@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "evenacadia.eq-copilot.snapshot.v3",
   "title": "EQ-Copilot lokaler Mess-Snapshot v3 (M1 + M3-Diagnose + M3a, Plan §11)",
-  "description": "Vertrag der Datei, die das Plugin per Snapshot-Knopf nach %LOCALAPPDATA%\\evenacadia\\EQ-Copilot\\snapshots\\ schreibt (Quelle: PluginProcessor::schreibeSnapshotDatei). Einzelinstanz, ohne Broker. NaN/±inf sind als null kodiert. Roh-Audio ist per Vertrag ausgeschlossen (Plan §0.2/§8.3). NEU in v2 (M3-Kern): `befunde` — die deterministischen Befundkarten der Graph-Diagnose. NEU in v3 (M3a, Benchmark-Studie): `perzentile` (P10/P50/P95 je Band aus dem Pegelhistogramm), `zonen_zeit` (Anteil aktiver 1-s-Ticks jenseits der Zonen-Schwelle) und `konvergenz` („Kurve steht"). Ältere Leser können die Felder ignorieren.",
+  "description": "Vertrag der Datei, die das Plugin per Snapshot-Knopf nach %LOCALAPPDATA%\\evenacadia\\EQ-Copilot\\snapshots\\ schreibt (Quelle: PluginProcessor::schreibeSnapshotDatei). Einzelinstanz, ohne Broker. NaN/±inf sind als null kodiert. Roh-Audio ist per Vertrag ausgeschlossen (Plan §0.2/§8.3). NEU in v2 (M3-Kern): `befunde` — die deterministischen Befundkarten der Graph-Diagnose. NEU in v3 (M3a, Benchmark-Studie): `perzentile` (P10/P50/P95 je Band aus dem Pegelhistogramm), `zonen_zeit` (Anteil aktiver 1-s-Ticks jenseits der Zonen-Schwelle) und `konvergenz` („Kurve steht“). Ältere Leser können die Felder ignorieren.",
   "type": "object",
   "required": ["snapshot_version", "metrics_version", "created_utc", "sensor", "zustand", "loudness", "ltas", "raw_audio"],
   "additionalProperties": false,
@@ -139,7 +139,7 @@
     },
     "konvergenz": {
       "type": "object",
-      "description": "M3a (v3): „Kurve steht" — Abweichung der Komposit-LTAS gegen den Stand von vor ~10 s Aktivzeit. Rein informativ; gueltig=false bis das erste Fenster voll ist.",
+      "description": "M3a (v3): „Kurve steht“ — Abweichung der Komposit-LTAS gegen den Stand von vor ~10 s Aktivzeit. Rein informativ; gueltig=false bis das erste Fenster voll ist.",
       "required": ["gueltig"],
       "additionalProperties": false,
       "properties": {

@@ -1,6 +1,25 @@
 # EQ-Copilot — Bauwurzel (Plan §10). JUCE 8, Version gepinnt; Zielformat VST3.
 cmake_minimum_required(VERSION 3.22)
-project(EqCopilotSuite VERSION 0.1.0 LANGUAGES C CXX)
+project(EqCopilotSuite VERSION 0.3.0 LANGUAGES C CXX)
+
+# ── Versions-Riegel (Kontext-Inventur 21.08.2026) ───────────────────────────
+# Das Bundle meldet dem Host PROJECT_VERSION (moduleinfo.json), der Heartbeat
+# meldet kPluginVersion aus plugin/src/EqCopilotIds.h. Vom 16. bis 21.08. sagten
+# beide etwas anderes (0.1.0 vs. 0.3.0) — FL zeigte 0.1.0, alle Docs 0.3.0.
+# Ab hier bricht der Configure, sobald die beiden Zahlen auseinanderlaufen.
+file(READ "${CMAKE_CURRENT_LIST_DIR}/plugin/src/EqCopilotIds.h" _eqcop_ids_quelle)
+string(REGEX MATCH "kPluginVersion[ \t]*=[ \t]*\"([0-9]+\\.[0-9]+\\.[0-9]+)\"" _eqcop_ids_treffer "${_eqcop_ids_quelle}")
+if(NOT _eqcop_ids_treffer)
+    message(FATAL_ERROR "Versions-Riegel: kPluginVersion in plugin/src/EqCopilotIds.h nicht gefunden.")
+endif()
+if(NOT CMAKE_MATCH_1 STREQUAL PROJECT_VERSION)
+    message(FATAL_ERROR
+        "Versions-Riegel: kPluginVersion = ${CMAKE_MATCH_1} (EqCopilotIds.h), "
+        "PROJECT_VERSION = ${PROJECT_VERSION} (CMakeLists.txt). Beide muessen eins sagen — "
+        "sonst meldet das Bundle dem Host eine andere Version als der Heartbeat dem Broker.")
+endif()
+unset(_eqcop_ids_quelle)
+unset(_eqcop_ids_treffer)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

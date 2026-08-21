@@ -33,3 +33,9 @@ eq-copilot/design/prisma/renders/stmap/probe-stmap.bin
 eq-copilot/design/prisma/renders/dreh-stmap/
 # Dreh-Test-Screenshots (Beweislaeufe, fluechtig)
 eq-copilot/design/prisma/renders/stmap/dreh-w*.png
+
+# Sitzungsgeruest des unlazy-Skills (GATES.md): der durable Beweis liegt in
+# docs/beweise/. Zweimal per `git add -A` eingecheckt, einmal nur lokal in
+# .git/info/exclude ausgeschlossen (greift auf dem Laptop nicht) - hier gilt es
+# fuer beide Rechner (Kontext-Inventur 21.08.2026).
+GATES.md

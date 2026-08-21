@@ -195,8 +195,8 @@ Urteil) · C++ `plugin/vertrag/NakamaVertrag.*` + `NakamaTelemetrie.*` via
 `broker/tests/contract_cross_language.rs` (beide: Urteil UND
 Verletzungsmenge). Alle gegen dieselben **handgeschriebenen** Manifeste:
 `fixtures/v3/MANIFEST.json` (153 = 36 gültig + 117 ungültig) und
-`fixtures/v3/flatbuffers/MANIFEST.json` (HEAD `c5f6833`: 40 = 8 + 32; eine
-parallele SONDE-005b-Session erweitert ihn gerade, uncommitted 47).
+`fixtures/v3/flatbuffers/MANIFEST.json` (seit `4f7182b`, T2-Runde 3: 47 = 9 + 38;
+davor 40 = 8 + 32).
 
 ### 3.5 Identität (SONDE-001)
 
@@ -233,8 +233,8 @@ Binaries `eqcop-broker.exe [--bindungen <pfad>]` (Standard
   Überlappung < 80 %, fremde `host_pid`, Aktivzeit-Differenz > 10 %) /
   `ausgerichtet`, `grund` nie leer. Aggregat atomisch nach
   `%LOCALAPPDATA%\evenacadia\EQ-Copilot\snapshots\aggregat-<ms>.json`.
-- Tests: **56** (`cargo test`) — 51 Unit (davon `vertrag.rs` 15) + 5
-  Integration in `tests/contract_cross_language.rs`; `telemetrie.rs` hat keine
+- Tests: **57** (`cargo test`, Stand `4f7182b`) — 51 Unit (davon `vertrag.rs` 15)
+  + 6 Integration in `tests/contract_cross_language.rs`; `telemetrie.rs` hat keine
   eigenen `#[test]`, sein Beweis ist der Integrationstest.
 - Betriebsstand 21.08.: kein Broker läuft, keine `evenacadia`-Pipe offen,
   Bindungsdatei nie angelegt, letzte Snapshots vom 16.08.;
@@ -252,7 +252,7 @@ Binaries `eqcop-broker.exe [--bindungen <pfad>]` (Standard
 unter `eq-copilot/build/plugin/<Ziel>_artefacts/Release/`.
 
 **Kanon, 15 Beine (`tools/beweise.ps1:206-282`):** A1 NullTest (10 ok) · A2
-GoldenTest (239) · A3 MarkierungTest (30) · A4 `cargo test` (56) · A5
+GoldenTest (239) · A3 MarkierungTest (30) · A4 `cargo test` (57) · A5
 `pruefe_v3_vertrag.py --abdeckung` · A6 `erzeuge_bandgitter.py --pruefen` · A7
 `erzeuge_quantisierung.py --pruefen` · A8 `erzeuge_v3_fixtures.py --pruefen` ·
 A9 `pruefe_flatc_drift.py` · A10 `erzeuge_fb_fixtures.py --pruefen` · A11
@@ -313,13 +313,13 @@ HEAD `c5f6833`, Arbeitskopie mit uncommitteten SONDE-005b-Änderungen.
   · AuxSpike 41 · Golden 239:** die sieben `.exe` unter
   `build/plugin/*_artefacts/Release/`, in dieser Sitzung gefahren, alle Exit 0.
   HostProbe 89: `tests/HostProbeTestMain.cpp:726-768`.
-- **Schema 53 · Broker 56:** SchemaTest-Lauf am Stand `ca008f5` ·
+- **Schema · Broker 57:** SchemaTest-Lauf am Stand `ca008f5` (53), seit `4f7182b` mehr Fixtures ·
   `grep -c '#[test]' broker/src/*.rs` (51) + HEAD
   `tests/contract_cross_language.rs` (5; Arbeitskopie 6).
 - **14 Ziele · 15 Beine + 5 geplant · Exitcodes · v2 grün:** `grep juce_add_
   plugin/CMakeLists.txt` · `tools/beweise.ps1:206-282`, `:43-48`, `:421-469` ·
   `py -3.13 tools/eq-copilot/pruefe_v2_schemas.py`.
-- **153 · 59 · 40 (47) · 17 Familien · 47 `$defs` · 8 reserviert · 3
+- **153 · 59 · 47 · 17 Familien · 47 `$defs` · 8 reserviert · 3
   Kodierungen · 221/64 · 8 Tabellen/47 Felder:** `json.load` über die
   Manifeste und `schemas/v3/**.json` · `grep "^table\|^enum"
   nakama_telemetry_v1.fbs` · `WERKZEUG.json`.

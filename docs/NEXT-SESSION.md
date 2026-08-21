@@ -61,9 +61,14 @@ Broker-Binaries, AuxSpikeTest nicht im Kanon).
 
 ## Parallele Sessions
 
-Am 21.08. hatte eine zweite Session (SONDE-005b, T2 Runde 3) uncommittete
-Änderungen an `eq-copilot/plugin/vertrag/`, `plugin/tests/SchemaTestMain.cpp`,
-`broker/src/telemetrie.rs`, `broker/tests/`, `schemas/v3/flatbuffers/`,
-`fixtures/v3/flatbuffers/`, fünf `tools/eq-copilot/*.py` und
-`docs/beweise/SONDE-005b.md`. Zeigt `git status` sie noch: das ist deren
-Arbeit — nicht anfassen, eigene Edits per Pathspec committen.
+Am 21.08. lief parallel die SONDE-005b-Session (T2 Runde 3, Commit
+`4f7182b` 21:57 — Fund: der FlatBuffers-Verifier prüft in C++ kein UTF-8,
+C++ stürzte ab, wo Rust sauber ablehnte; gefixt, Binärkorpus 47). Der
+geteilte Index hat dabei **elf gestagte Dateien dieser Inventur-Session in
+jenen Commit mitgenommen** (CLAUDE.md, NEXT-SESSION, plugin-wissen,
+Bauaufteilung, Entwurf-Errata (l)/(m), offene-punkte NAK-38/39, lib.rs- und
+Probe-Kommentare, eq-aggregat-Schema, tokens.json, depth-primer): Inhalt
+vollständig und richtig, Zuordnung nicht — keine Historie umschreiben.
+Lehre steht in `reference_werkzeug-landminen-windows` (Memory) Nr. 6:
+bei paralleler Session `git add <dateien>` + `git commit` ohne Pfade, und
+zwischen beidem keine Pause.

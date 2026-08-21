@@ -13,7 +13,7 @@ noch einmal eintritt:
 | | |
 |---|---|
 | `node werkzeug/pruefung/pruefen.mjs` | **Lebt** das Blatt? JS-Fehler, leer, kein Standband. Alle Blätter. |
-| `node werkzeug/pruefung/sondenprobe.mjs alles` | **Sagt** es die Wahrheit? Zwölf Proben über die Messbank und das Formfaktor-Blatt, darunter zwei Gegenproben und ein Durchlauf über alle sechzehn Grenzfälle der Ehrlichkeitsschalter. |
+| `node werkzeug/pruefung/sondenprobe.mjs alles` | **Sagt** es die Wahrheit? Fünfzehn Proben über die Messbank und das Formfaktor-Blatt, darunter vier Gegenproben und ein Durchlauf über alle sechzehn Grenzfälle der Ehrlichkeitsschalter × alle fünf Anordnungen. |
 
 Beide enden mit `exit 1` bei Befund und haben eine `--gegenprobe` bzw.
 eingebaute künstliche Fehlerfälle.

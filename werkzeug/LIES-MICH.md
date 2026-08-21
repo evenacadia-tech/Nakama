@@ -37,8 +37,9 @@ sie scheitern kann). Nach JEDEM Umbau laufen lassen — ein Syntaxfehler macht
 ein Blatt tonlos tot.
 
 **Inhaltsprüfung** — `pruefung/sondenprobe.mjs`: fragt nicht, ob ein Blatt
-lebt, sondern ob es die Wahrheit sagt. Zwölf Proben, darunter zwei Gegenproben
-und ein Durchlauf über alle sechzehn Grenzfälle der Ehrlichkeitsschalter.
+lebt, sondern ob es die Wahrheit sagt. Fünfzehn Proben, darunter vier
+Gegenproben und ein Durchlauf über alle sechzehn Grenzfälle der
+Ehrlichkeitsschalter × alle fünf Anordnungen.
 `node werkzeug/pruefung/sondenprobe.mjs alles`. Details zu beiden:
 `pruefung/LIES-MICH.md`.
 

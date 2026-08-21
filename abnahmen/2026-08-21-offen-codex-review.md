@@ -1,5 +1,12 @@
 # 2026-08-21 — Offen: zehn Codex-Befunde an der Messbank, NICHT verifiziert
 
+> **✓ ERLEDIGT am 2026-08-21.** Alle zehn wurden gegen die Quelldatei geprüft
+> (**10/10 bestätigt, keiner widerlegt**) und gefixt; dazu kamen fünf eigene
+> Funde. Ergebnis, Belege, Commits und was offen bleibt:
+> [2026-08-21-codex-review-abgearbeitet.md](2026-08-21-codex-review-abgearbeitet.md).
+> Dieses Blatt bleibt als Zwischenstand stehen — es zeigt, wie die Befunde
+> aussahen, bevor jemand die Dateien geöffnet hat.
+
 > **⚠ Berichtigt.** Hier stand zuerst „drei Befunde". Das war falsch — ich
 > hatte nur abgelesen, was auf dem Bildschirm sichtbar war, statt die
 > Codex-Sitzungsdatei zu öffnen. Es sind **zehn**: vier P1, fünf P2, einer

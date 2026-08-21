@@ -32,8 +32,15 @@ nicht stehen (PRUEFLISTE 2.4).
 ## Warum die Gegenprobe dazugehört
 
 PRUEFLISTE 7.1: **ein Gate, das nicht scheitern kann, beweist nichts.**
-`--gegenprobe` baut drei künstlich kaputte Blätter — Syntaxfehler, leeres
-Blatt, fehlendes Standband — und verlangt, dass alle drei gemeldet werden.
+`--gegenprobe` baut vier künstlich kaputte Blätter — Syntaxfehler, leeres
+Blatt, fehlendes Standband, **verdecktes** Standband — und verlangt, dass alle
+vier gemeldet werden.
+
+Der vierte kam am 2026-08-21 dazu, zusammen mit dem Sichtbarkeits-Riegel: bis
+dahin prüfte `pruefen.mjs` nur, ob das Standband **existiert**. In
+`formfaktor.html` lag es vollständig unter dem fixen Warnband und dem
+Messschirm — 920 Stichpunkte, **0 sichtbar** — und das Blatt galt als heil.
+Ein Riegel ohne eigenen Gegenprobe-Fall ist ein unbewiesener Riegel.
 
 Das war kein Ritual: beim ersten Lauf hat die Gegenprobe **einen echten Fehler
 in der Prüfung selbst** gefunden. Der dritte Fall wurde per Textmuster mit `\n`
@@ -63,7 +70,7 @@ node werkzeug/pruefung/sondenprobe.mjs alles
 node werkzeug/pruefung/sondenprobe.mjs zahlen
 ```
 
-Zwölf Proben über `sonde-messung.html` und `formfaktor.html`:
+Fünfzehn Proben über `sonde-messung.html` und `formfaktor.html`:
 
 | Probe | Frage |
 |---|---|
@@ -75,10 +82,13 @@ Zwölf Proben über `sonde-messung.html` und `formfaktor.html`:
 | `ratsche` | Drei Durchgänge, dieselben Zahlen? (Ohne `listenZuruecksetzen` wandern sie.) |
 | `deckel` | Ist keine Zeile flacher gedeckelt als ihr Inhalt? |
 | `beleg` | Nennt jeder Baustein Handgriff und Spezifikationsstelle — und ist kein Main-Baustein übriggeblieben? |
-| `grenzfall` | Ist der Grenzfall die **Vorgabe**, nicht der Sonderfall? |
+| `grenzfall` | **Zwei** Grenzfälle, die in entgegengesetzte Richtungen zeigen: ist der PLATZ-Grenzfall die Vorgabe (acht Slots, Dynamik an, Schutzbereich getroffen, Ehrlichkeitsschalter neutral)? Und greift der EHRLICHKEITS-Grenzfall wirklich (bei Bypass steht kein Bandparameter mehr da)? Bis 2026-08-21 war das Tor im Blatt ein hart geschriebenes `z(true, …)` |
 | `zustaende` | Alle **sechzehn** Kombinationen der Ehrlichkeitsschalter durchgeschaltet: ist bei Bypass und ohne Main wirklich jeder Griff tot, und zeigt jeder wirkungslose Wert „—“? Mit Gegenprobe nach unten — im Schönfall muss etwas leben, sonst prüft die Schleife ins Leere |
 | `formfaktor` | Zeigt das Active-Probe-Fenster den echten Editor-Inhalt? |
-| `kachel` | Steht die Passive-Kachel im Grenzfall, nicht im Schönfall? |
+| `export` | Trägt das exportierte JSON die **Messung** — Überlauf, Richtung, Kurven-Zeichenraum — oder nur Name und Maße? Verglichen gegen den lebenden DOM-Zustand, nicht gegen die Felder, aus denen der Export gebaut ist |
+| `annahmen` | Ist jede frei gesetzte Zahl (Q 24, −60 dB, 300/500/3000 ms, 15,4 px) im Blatt **sichtbar** als Testannahme benannt, und wird die eine Zahl aus der Spezifikation genannt? Mit Gegenprobe |
+| `maschine` | Ändert **jeder lebende Griff** etwas Sichtbares? Fährt offen→verworfen→offen→angewandt→offen, neutralisiert und nimmt zurück, klickt den Verlauf leer und hält Audition mit echtem `pointerdown`/`pointerup` |
+| `kachel` | Steht die Passive-Kachel im Grenzfall — und in **welcher Richtung** läuft sie über? Verlangt vertikal > 1 px und horizontal ≤ 1 px, weil zwei Kommentare im Code das Gegenteil behaupteten |
 
 **Die drei Fehler, die sie im ersten Lauf gefunden hat** — jeder in echtem
 Code, keiner beim Ansehen aufgefallen:

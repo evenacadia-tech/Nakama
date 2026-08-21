@@ -155,6 +155,24 @@ Offen blieb: das Urteil des Users über den Entwurf in Figma — und die elf
 Punkte oben. Kein Blatt in `prototyp/` für Suna; Phase 1b sagt Gen → Probeeq
 → Suna, und für Suna gilt der Stand erst mit dem Export.
 
+**Der nächste Schritt, User-Wort zum Schluss:**
+
+> „okay dann closen wir hier und nächste session kommt Nakawa Gen. Codex hat
+> das schonmal probiert, aber du kannst das besser deswegen machst du es von
+> vorne"
+
+Damit liegt fest: **Die nächste Session entwirft Nakama Gen (Main, 760×430)
+in Figma, in der Probeeq-Sprache — so wie Suna in Studie 03, und von vorne.**
+Der Gen-Export vom 2026-08-21 (`assets/figma/2026-08-21-gen.png`, cyan) ist
+die alte Sprache und bleibt Verlauf; er zeigt die **Anordnung** (Overview +
+Detail, Reiter, Advisor-Fünfteiler), nicht den Look. Ein früherer Versuch von
+Codex ist **kein Referenzmaterial** — nicht lesen, nicht übernehmen, nicht
+darauf aufbauen (Regel 7, Kein Kontext-Import; und das User-Wort „von vorne").
+Für Gen gelten beim Entwerfen zusätzlich die bindenden Abnahmen vom
+2026-08-20 (Größe 760×430 · Overview + Detail · Karte trägt jede Quelle ·
+Zustände nach dem Ausnahme-Prinzip · Vorhören markiert die Zeile) und die
+drei im Designvertrag benannten Abweichungen des alten Gen-Stands.
+
 ## Bezug
 
 - `abnahmen/2026-08-21-designvertrag.md` — Punkt „Für Nakama Suna liegt noch

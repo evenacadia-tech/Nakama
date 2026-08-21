@@ -12,6 +12,14 @@ Phase: `CLAUDE-UX-UI-ARBEITSKERN.md` (Stufen 1–7); Hintergründe:
 > Varianten-Befragung vorsahen, **entfallen** (sie bleiben unten stehen, als
 > Verlauf gekennzeichnet), und die Arbeit heißt jetzt **Übersetzen** —
 > Phase 1b. **HIER weiter: Phase 1b, Schritt Gen.**
+>
+> **Stand 2026-08-21, Sessionende (Suna-Runde):** Der Gen-Stand in der Truhe
+> ist die *alte* Sprache; die Familie spricht seit dem markierten Probeeq-Stand
+> anders. User-Wort: **die nächste Session entwirft Nakama Gen in Figma, in der
+> Probeeq-Sprache, von vorne** — wie Suna in Studie 03 (Figma-Node 6039:2,
+> Vorgehen in `abnahmen/2026-08-21-suna-auftrag-figma.md`). Ein früherer
+> Codex-Versuch ist kein Referenzmaterial. Erst danach beginnt das Übersetzen
+> in `prototyp/`, gegen den dann exportierten Stand.
 
 ## Phase 0 — Designvertrag ✓ (erledigt 2026-08-21)
 

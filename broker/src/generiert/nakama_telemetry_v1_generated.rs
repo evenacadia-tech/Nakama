@@ -378,6 +378,9 @@ mod bitflags_gueltigkeit {
       const play_state = 2;
       const record_state = 4;
       const cycle_bounds = 8;
+      const continuous_time = 16;
+      const input_presentation_latency = 32;
+      const output_presentation_latency = 64;
     }
   }
 }

@@ -83,14 +83,32 @@ enum Herleitung : ubyte {
 }
 
 // Gueltigkeitsbits des Transportstempels (§32.3). "Ein fehlendes Bit ist ein
-// Nein, kein Vielleicht" — deshalb Bitflags und kein Objekt aus vier Booleans:
-// ein Objekt koennte fehlen, ein Bitfeld ist immer da und dann eben 0.
-// Ein gesetztes Bit AUSSERHALB dieser vier wird von beiden Beinen abgelehnt.
+// Nein, kein Vielleicht" — deshalb Bitflags und kein Objekt aus sieben
+// Booleans: ein Objekt koennte fehlen, ein Bitfeld ist immer da und dann
+// eben 0.
+//
+// SIEBEN Bits, nicht vier. §32.3 verlangt woertlich: "Zusaetzlich werden
+// optionales continuous_time_samples, rohe Cycle-Grenzen in Quarter Notes
+// sowie rohe Input-/Output-Presentation-Latency MIT EIGENEN
+// GUELTIGKEITSBITS gespeichert." Der Grund steht ebenda: "Ein Latenzwert 0
+// kann ausserdem 'keine' oder 'nicht bekannt' bedeuten." Ohne eigenes Bit
+// ist genau diese Unterscheidung verloren, und zwar still - 0 ist ein
+// voellig plausibler Messwert. `cycle_bounds` IST das Bit fuer die rohen
+// PPQ-Grenzen.
+//
+// Der JSON-Vertrag traegt dieselben sieben (`$defs/validity`); die beiden
+// Darstellungen sind eine Aussage, nicht zwei.
+//
+// Ein gesetztes Bit AUSSERHALB dieser sieben wird von beiden Beinen
+// abgelehnt - FlatBuffers prueft das beim Verifizieren NICHT.
 enum Gueltigkeit : ubyte (bit_flags) {
-  project_time,     // 1
-  play_state,       // 2
-  record_state,     // 4
-  cycle_bounds,     // 8
+  project_time,                  //  1
+  play_state,                    //  2
+  record_state,                  //  4
+  cycle_bounds,                  //  8  (rohe PPQ-Grenzen)
+  continuous_time,               // 16
+  input_presentation_latency,    // 32
+  output_presentation_latency,   // 64
 }
 
 // ── Tabellen ────────────────────────────────────────────────────────────────

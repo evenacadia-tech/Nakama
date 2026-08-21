@@ -181,40 +181,38 @@ enum class Gueltigkeit : uint8_t {
   play_state = 2,
   record_state = 4,
   cycle_bounds = 8,
+  continuous_time = 16,
+  input_presentation_latency = 32,
+  output_presentation_latency = 64,
   NONE = 0,
-  ANY = 15
+  ANY = 127
 };
 FLATBUFFERS_DEFINE_BITMASK_OPERATORS(Gueltigkeit, uint8_t)
 
-inline const Gueltigkeit (&EnumValuesGueltigkeit())[4] {
+inline const Gueltigkeit (&EnumValuesGueltigkeit())[7] {
   static const Gueltigkeit values[] = {
     Gueltigkeit::project_time,
     Gueltigkeit::play_state,
     Gueltigkeit::record_state,
-    Gueltigkeit::cycle_bounds
+    Gueltigkeit::cycle_bounds,
+    Gueltigkeit::continuous_time,
+    Gueltigkeit::input_presentation_latency,
+    Gueltigkeit::output_presentation_latency
   };
   return values;
 }
 
-inline const char * const *EnumNamesGueltigkeit() {
-  static const char * const names[9] = {
-    "project_time",
-    "play_state",
-    "",
-    "record_state",
-    "",
-    "",
-    "",
-    "cycle_bounds",
-    nullptr
-  };
-  return names;
-}
-
 inline const char *EnumNameGueltigkeit(Gueltigkeit e) {
-  if (::flatbuffers::IsOutRange(e, Gueltigkeit::project_time, Gueltigkeit::cycle_bounds)) return "";
-  const size_t index = static_cast<size_t>(e) - static_cast<size_t>(Gueltigkeit::project_time);
-  return EnumNamesGueltigkeit()[index];
+  switch (e) {
+    case Gueltigkeit::project_time: return "project_time";
+    case Gueltigkeit::play_state: return "play_state";
+    case Gueltigkeit::record_state: return "record_state";
+    case Gueltigkeit::cycle_bounds: return "cycle_bounds";
+    case Gueltigkeit::continuous_time: return "continuous_time";
+    case Gueltigkeit::input_presentation_latency: return "input_presentation_latency";
+    case Gueltigkeit::output_presentation_latency: return "output_presentation_latency";
+    default: return "";
+  }
 }
 
 /// Effektive Steueradresse (§32.1). KEIN Feld hier ist additiv: eine unbekannte

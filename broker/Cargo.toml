@@ -9,6 +9,11 @@ name = "eqcop_broker"
 path = "src/lib.rs"
 
 [dependencies]
+# SONDE-005b: MUSS die Version aus eq-copilot/schemas/v3/flatbuffers/WERKZEUG.json
+# tragen. Der von flatc erzeugte Rust-Code ruft in diese Laufzeit; eine andere
+# Version ist entweder ein Uebersetzungsfehler oder - schlimmer - eine stille
+# Inkompatibilitaet. pruefe_flatc_drift.py haelt beide gegeneinander.
+flatbuffers = "25.12.19"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1", features = ["v4"] }

@@ -1,0 +1,248 @@
+#!/usr/bin/env python3
+"""Codegen-Drift-Riegel fuer den FlatBuffers-Vertrag (SONDE-005b).
+
+Entwurf §65 gibt `SONDE-005` das Gate:
+
+    "C++/Rust validieren identisch; **Codegen-Drift ist 0**"
+
+und §53 sagt, wie das gemeint ist:
+
+    "Eine gepinnte flatc-Version erzeugt C++ und Rust; die generierten
+     Dateien werden committed und ein Drift-Test verlangt bitgleichen
+     Neugenerierungsdiff."
+
+Dieses Skript ist dieser Test. Es prueft vier Dinge, und drei davon sind
+Voraussetzungen der vierten:
+
+  1. `flatc` ist DA und traegt die gepinnte Version (sonst waere "Drift 0"
+     eine Aussage ueber ein unbekanntes Werkzeug);
+  2. die Rust-Crate `flatbuffers` traegt DIESELBE Version (der erzeugte Code
+     ruft in die Laufzeit; eine andere Version ist entweder ein
+     Uebersetzungsfehler oder - schlimmer - stille Inkompatibilitaet);
+  3. der Feld-ID-Riegel ist gruen (Aufruf von `pruefe_fbs_feldids.py`);
+  4. die Neugenerierung ist BYTEGLEICH zum committeten Stand.
+
+Mit `--conform` kommt eine fuenfte Pruefung dazu: dass `flatc --conform`
+wirklich scharf ist. Ein Riegel, den niemand fallen gesehen hat, ist eine
+Behauptung - deshalb werden vier schemabrechende Mutationen erzeugt und
+gemessen, dass jede abgelehnt wird.
+
+Exitcodes: 0 gruen · 2 Drift oder Riegel rot · 3 Voraussetzung fehlt.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import pathlib
+import re
+import subprocess
+import sys
+import tempfile
+
+WURZEL = pathlib.Path(__file__).resolve().parents[2]
+WERKZEUG = WURZEL / "eq-copilot/schemas/v3/flatbuffers/WERKZEUG.json"
+BAU = WURZEL / "eq-copilot/build"
+CARGO = WURZEL / "broker/Cargo.toml"
+
+
+def sha256(pfad: pathlib.Path) -> str:
+    return hashlib.sha256(pfad.read_bytes()).hexdigest()
+
+
+def finde_flatc(steckbrief: dict) -> pathlib.Path | None:
+    """Der Bau schreibt den Pfad hin; wir raten ihn nicht.
+
+    Ein geratener Pfad, der ins Leere zeigt, saehe aus wie "kein flatc" - und
+    der Drift-Test wuerde uebersprungen. Genau die Pruefung, die nicht
+    fehlschlagen kann.
+    """
+    zeiger = BAU / "nakama-flatc-pfad-Release.txt"
+    if zeiger.exists():
+        kandidat = pathlib.Path(zeiger.read_text(encoding="utf-8").strip())
+        if kandidat.exists():
+            return kandidat
+        print(f"  ROT: Zeiger {zeiger} verweist auf {kandidat}, das es nicht gibt")
+        return None
+    return None
+
+
+def version_von(flatc: pathlib.Path) -> str | None:
+    lauf = subprocess.run([str(flatc), "--version"], capture_output=True, text=True)
+    if lauf.returncode != 0:
+        return None
+    treffer = re.search(r"(\d+\.\d+\.\d+)", lauf.stdout + lauf.stderr)
+    return treffer.group(1) if treffer else None
+
+
+def cargo_version() -> str | None:
+    if not CARGO.exists():
+        return None
+    for zeile in CARGO.read_text(encoding="utf-8").splitlines():
+        treffer = re.match(r'\s*flatbuffers\s*=\s*"([^"]+)"', zeile)
+        if treffer:
+            return treffer.group(1)
+    return None
+
+
+def erzeuge(flatc: pathlib.Path, aufruf: dict, schema: pathlib.Path,
+            ziel: pathlib.Path) -> subprocess.CompletedProcess:
+    ziel.mkdir(parents=True, exist_ok=True)
+    befehl = [str(flatc), *aufruf["argumente"], "-o", str(ziel), str(schema)]
+    return subprocess.run(befehl, capture_output=True, text=True)
+
+
+def pruefe_conform(flatc: pathlib.Path, schema: pathlib.Path) -> int:
+    """Fuehrt vor, dass `flatc --conform` wirklich ablehnt.
+
+    Die vier Mutationen sind genau die Regeln aus Entwurf §53: ein Feld
+    entfernen, seinen Typ aendern, eine id umhaengen, einen Enumwert
+    verschieben. Wer eine davon durchlaesst, hat kein Gate.
+    """
+    original = schema.read_text(encoding="utf-8")
+    mutationen = [
+        ("Feld entfernt",
+         lambda t: t.replace("  saturated:bool (id: 5);\n", "")),
+        ("Feldtyp geaendert",
+         lambda t: t.replace("sample_count:uint (id: 5);", "sample_count:ulong (id: 5);")),
+        ("Feld-ID umgehaengt",
+         lambda t: t.replace("metrics_version:uint (id: 2);", "metrics_version:uint (id: 9);")
+                    .replace("korrelation:float = null (id: 9);", "korrelation:float = null (id: 2);")),
+        ("Enumwert verschoben",
+         lambda t: t.replace("nakama_log64_v1 = 2,", "nakama_log64_v1 = 3,")),
+    ]
+
+    rot = 0
+    with tempfile.TemporaryDirectory() as tmp:
+        tmpp = pathlib.Path(tmp)
+        for name, mutiere in mutationen:
+            text = mutiere(original)
+            if text == original:
+                print(f"  ROT: Mutation '{name}' hat nichts geaendert - der Anker stimmt nicht mehr")
+                rot += 1
+                continue
+            kandidat = tmpp / "kandidat.fbs"
+            kandidat.write_text(text, encoding="utf-8", newline="")
+            lauf = subprocess.run(
+                [str(flatc), "--conform", str(schema), "--cpp", "-o", str(tmpp / "aus"),
+                 str(kandidat)],
+                capture_output=True, text=True)
+            meldung = (lauf.stdout + lauf.stderr).strip().splitlines()
+            grund = next((z.strip() for z in meldung if "conform" in z), "")
+            if lauf.returncode == 0:
+                print(f"  ROT: '{name}' wurde AKZEPTIERT - --conform ist nicht scharf")
+                rot += 1
+            else:
+                print(f"  ok:  '{name}' abgelehnt (Exit {lauf.returncode}) - {grund}")
+
+        # Und die Gegenprobe: der unveraenderte Stand MUSS durchgehen, sonst
+        # meldet der Riegel nur, dass flatc immer schimpft.
+        unveraendert = tmpp / "gleich.fbs"
+        unveraendert.write_text(original, encoding="utf-8", newline="")
+        lauf = subprocess.run(
+            [str(flatc), "--conform", str(schema), "--cpp", "-o", str(tmpp / "aus2"),
+             str(unveraendert)],
+            capture_output=True, text=True)
+        if lauf.returncode != 0:
+            print(f"  ROT: der UNVERAENDERTE Stand wird abgelehnt (Exit {lauf.returncode}) - "
+                  "der Riegel meldet nur, dass flatc immer schimpft")
+            rot += 1
+        else:
+            print("  ok:  unveraenderter Stand wird akzeptiert (Gegenprobe)")
+
+    return rot
+
+
+def main(argv: list[str]) -> int:
+    if not WERKZEUG.exists():
+        print(f"VORAUSSETZUNG FEHLT: {WERKZEUG} nicht gefunden")
+        return 3
+    steckbrief = json.loads(WERKZEUG.read_text(encoding="utf-8"))
+    schema = WURZEL / steckbrief["schema"]
+    if not schema.exists():
+        print(f"VORAUSSETZUNG FEHLT: {schema} nicht gefunden")
+        return 3
+
+    print(f"Gepinnt: flatbuffers {steckbrief['version']} @ {steckbrief['git_commit'][:12]}")
+
+    flatc = finde_flatc(steckbrief)
+    if flatc is None:
+        print("VORAUSSETZUNG FEHLT: flatc nicht gefunden.")
+        print("  Der Bau schreibt seinen Pfad nach eq-copilot/build/nakama-flatc-pfad-Release.txt.")
+        print("  Nachziehen mit: cmake --build eq-copilot/build --config Release --target flatc")
+        return 3
+
+    gemessen = version_von(flatc)
+    if gemessen is None:
+        print(f"VORAUSSETZUNG FEHLT: {flatc} laesst sich nicht nach seiner Version fragen")
+        return 3
+    if gemessen != steckbrief["version"]:
+        print(f"VORAUSSETZUNG FALSCH: flatc meldet {gemessen}, gepinnt ist "
+              f"{steckbrief['version']}. 'Drift ist 0' waere damit eine Aussage "
+              "ueber ein anderes Werkzeug.")
+        return 3
+    print(f"  flatc: {gemessen}  ({flatc})")
+
+    krate = cargo_version()
+    if krate != steckbrief["rust_crate"]:
+        print(f"  ROT: broker/Cargo.toml fuehrt flatbuffers = {krate!r}, gepinnt ist "
+              f"{steckbrief['rust_crate']!r}. Der erzeugte Rust-Code ruft in eine "
+              "Laufzeit, die er nicht kennt.")
+        return 2
+    print(f"  Rust-Crate: {krate}")
+
+    # Der Feld-ID-Riegel gehoert dazu: ein Schema ohne ids waere bitgleich
+    # reproduzierbar und trotzdem falsch.
+    ids = subprocess.run([sys.executable, str(WURZEL / "tools/eq-copilot/pruefe_fbs_feldids.py")],
+                         capture_output=True, text=True)
+    if ids.returncode != 0:
+        print("  ROT: der Feld-ID-Riegel ist rot:")
+        print("    " + ids.stdout.strip().replace("\n", "\n    "))
+        return 2
+    print("  Feld-IDs: 0 rot")
+
+    if "--conform" in argv:
+        print("\n--conform (Evolutionsriegel):")
+        rot = pruefe_conform(flatc, schema)
+        print(f"\nPruefungen: {'0 rot' if rot == 0 else f'{rot} rot'}")
+        return 0 if rot == 0 else 2
+
+    print("\nCodegen-Drift:")
+    drift: list[str] = []
+    with tempfile.TemporaryDirectory() as tmp:
+        for aufruf in steckbrief["codegen_aufrufe"]:
+            ziel = pathlib.Path(tmp) / aufruf["sprache"]
+            lauf = erzeuge(flatc, aufruf, schema, ziel)
+            if lauf.returncode != 0:
+                print(f"  ROT: flatc {aufruf['sprache']} scheiterte (Exit {lauf.returncode}): "
+                      f"{(lauf.stdout + lauf.stderr).strip()[:300]}")
+                return 2
+
+            frisch = ziel / aufruf["datei"]
+            committed = WURZEL / aufruf["ziel"] / aufruf["datei"]
+            if not committed.exists():
+                print(f"  ROT: {aufruf['ziel']}/{aufruf['datei']} ist nicht committed")
+                drift.append(aufruf["datei"])
+                continue
+
+            a, b = sha256(committed), sha256(frisch)
+            if a != b:
+                print(f"  ROT: DRIFT in {aufruf['ziel']}/{aufruf['datei']}")
+                print(f"       committed  sha256={a}")
+                print(f"       neu erzeugt sha256={b}")
+                drift.append(aufruf["datei"])
+            else:
+                zeilen = len(committed.read_text(encoding="utf-8").splitlines())
+                print(f"  ok:  {aufruf['ziel']}/{aufruf['datei']}  "
+                      f"{zeilen} Zeilen  sha256={a[:16]}...")
+
+    if drift:
+        print(f"\nDrift: {len(drift)} Datei(en) - die committete Fassung ist nicht die, "
+              "die das Schema heute erzeugt.")
+        return 2
+    print(f"\nDrift: 0 Dateien")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

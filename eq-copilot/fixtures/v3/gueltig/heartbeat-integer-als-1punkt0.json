@@ -10,12 +10,15 @@
   "sequence": 91.0,
   "state_revision": 12,
   "capabilities": {
-    "process_context": "supported",
+    "host_context_presence": "supported",
+    "project_time_samples": "supported",
     "sample_accurate_automation": "supported",
     "presentation_latency": "unsupported",
-    "discrete_aux_buses": "supported",
-    "offline_render_detection": "supported",
-    "double_precision": "unsupported",
+    "aux_compare_pre": "supported",
+    "aux_priority_sidechain": "unsupported",
+    "contribution_aux": "supported",
+    "float64_processing": "unsupported",
+    "binary_telemetry": "supported",
     "remote_control": "unsupported"
   },
   "zaehler": {

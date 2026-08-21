@@ -6,7 +6,7 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "anzahl_gueltig": 34,
-  "anzahl_ungueltig": 97,
+  "anzahl_ungueltig": 109,
   "fixtures": [
     {
       "datei": "gueltig/audible_intervention_begin.json",
@@ -315,7 +315,7 @@
       "verletzungen": [
         {
           "instanz": "/baender/werte",
-          "schema": "#/$defs/bandwerte/properties/werte/minItems",
+          "schema": "#/$defs/bandwerte_fein/properties/werte/minItems",
           "schluessel": "minItems"
         }
       ]
@@ -327,7 +327,7 @@
       "verletzungen": [
         {
           "instanz": "/baender",
-          "schema": "#/$defs/bandwerte/required/gueltig_bitmap",
+          "schema": "#/$defs/bandwerte_fein/required/gueltig_bitmap",
           "schluessel": "required"
         }
       ]
@@ -339,7 +339,7 @@
       "verletzungen": [
         {
           "instanz": "/baender",
-          "schema": "#/$defs/bandwerte/required/encoding",
+          "schema": "#/$defs/bandwerte_fein/required/encoding",
           "schluessel": "required"
         }
       ]
@@ -351,7 +351,7 @@
       "verletzungen": [
         {
           "instanz": "/baender/werte",
-          "schema": "#/$defs/bandwerte/properties/werte/maxItems",
+          "schema": "#/$defs/bandwerte_fein/properties/werte/maxItems",
           "schluessel": "maxItems"
         }
       ]
@@ -363,7 +363,7 @@
       "verletzungen": [
         {
           "instanz": "/baender/werte/1",
-          "schema": "#/$defs/bandwerte/properties/werte/items/type",
+          "schema": "#/$defs/bandwerte_fein/properties/werte/items/type",
           "schluessel": "type"
         }
       ]
@@ -375,8 +375,32 @@
       "verletzungen": [
         {
           "instanz": "/baender/saturated",
-          "schema": "#/$defs/bandwerte/properties/saturated/type",
+          "schema": "#/$defs/bandwerte_fein/properties/saturated/type",
           "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bandzahl-passt-nicht-zum-gitter.json",
+      "urteil": "ungueltig",
+      "warum": "221 Werte unter nakama_log64_v1: das grobe Gitter hat genau 64 Gruppen",
+      "verletzungen": [
+        {
+          "instanz": "/baender/werte",
+          "schema": "#/$defs/bandwerte_grob/properties/werte/maxItems",
+          "schluessel": "maxItems"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bitmap-laenge-passt-nicht.json",
+      "urteil": "ungueltig",
+      "warum": "ceil(221/8) = 28 Byte = 40 Base64-Zeichen; eine 12-Zeichen-Bitmap beschreibt 64 Baender und kann fuer 221 nicht stimmen",
+      "verletzungen": [
+        {
+          "instanz": "/baender/gueltig_bitmap",
+          "schema": "#/$defs/bandwerte_fein/properties/gueltig_bitmap/minLength",
+          "schluessel": "minLength"
         }
       ]
     },
@@ -417,12 +441,56 @@
       ]
     },
     {
+      "datei": "ungueltig/capability-alter-name.json",
+      "urteil": "ungueltig",
+      "warum": "`process_context` war ein selbst erfundener Name; §53.6 heisst die Capability `host_context_presence`. Ein Absender mit dem alten Namen faellt jetzt zweifach auf - fehlendes Pflichtfeld und unbekannte Eigenschaft",
+      "verletzungen": [
+        {
+          "instanz": "/capabilities",
+          "schema": "#/$defs/capabilities/required/host_context_presence",
+          "schluessel": "required"
+        },
+        {
+          "instanz": "/capabilities/process_context",
+          "schema": "#/$defs/capabilities/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/capability-aux-zusammengelegt.json",
+      "urteil": "ungueltig",
+      "warum": "§53.6 gibt den drei Aux-Capabilities DREI verschiedene Fallbacks ('kein lokales Audio-Delta' / 'keine dynamische Aktuation' / 'nur Assoziation statt exakter Attribution'). Ein zusammengelegtes Bit loescht genau die Unterscheidung, fuer die sie getrennt sind",
+      "verletzungen": [
+        {
+          "instanz": "/capabilities",
+          "schema": "#/$defs/capabilities/required/aux_compare_pre",
+          "schluessel": "required"
+        },
+        {
+          "instanz": "/capabilities",
+          "schema": "#/$defs/capabilities/required/aux_priority_sidechain",
+          "schluessel": "required"
+        },
+        {
+          "instanz": "/capabilities",
+          "schema": "#/$defs/capabilities/required/contribution_aux",
+          "schluessel": "required"
+        },
+        {
+          "instanz": "/capabilities/discrete_aux_buses",
+          "schema": "#/$defs/capabilities/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/capability-null.json",
       "urteil": "ungueltig",
       "warum": "null ist ebenfalls kein gueltiger Capabilitywert",
       "verletzungen": [
         {
-          "instanz": "/capabilities/double_precision",
+          "instanz": "/capabilities/float64_processing",
           "schema": "#/$defs/capability_wert/enum",
           "schluessel": "enum"
         }
@@ -434,7 +502,7 @@
       "warum": "Entwurf §54: kein `unknown, spaeter pruefen` darf P1 passieren",
       "verletzungen": [
         {
-          "instanz": "/capabilities/process_context",
+          "instanz": "/capabilities/host_context_presence",
           "schema": "#/$defs/capability_wert/enum",
           "schluessel": "enum"
         }
@@ -525,6 +593,30 @@
       ]
     },
     {
+      "datei": "ungueltig/error-ohne-betroffene-revision.json",
+      "urteil": "ungueltig",
+      "warum": "eine fehlende Revision ist nicht dasselbe wie `null` - null heisst 'keine betroffen', fehlend heisst 'vergessen'",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/error/required/betroffene_revision",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/error-ohne-rueckweg.json",
+      "urteil": "ungueltig",
+      "warum": "ein Fehler ohne Rueckweg laesst den Empfaenger raten (§33.3)",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/error/required/rueckweg",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/error-rueckweg-erfunden.json",
       "urteil": "ungueltig",
       "warum": "ein Fehler ohne benannten Rueckweg laesst den Client raten (§33.3)",
@@ -543,8 +635,20 @@
       "verletzungen": [
         {
           "instanz": "/umfang/evidence_ids",
-          "schema": "#/$defs/evidence_invalidate/properties/umfang/properties/evidence_ids/minItems",
+          "schema": "#/$defs/invalidate_ids/properties/evidence_ids/minItems",
           "schluessel": "minItems"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/evidence-ohne-verteilung.json",
+      "urteil": "ungueltig",
+      "warum": "P10/P50/P95 sind Inhalt des Snapshots (§33.2), keine Zugabe",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/evidence_snapshot/required/verteilung",
+          "schluessel": "required"
         }
       ]
     },
@@ -575,12 +679,12 @@
     {
       "datei": "ungueltig/gitter-erfunden.json",
       "urteil": "ungueltig",
-      "warum": "es gibt genau zwei Bandgitter",
+      "warum": "es gibt genau zwei Bandgitter - und weil `bandwerte` ueber `gitter_id` diskriminiert, ist ein drittes kein enum-Fehler, sondern ein Zweig, den es nicht gibt",
       "verletzungen": [
         {
           "instanz": "/baender/gitter_id",
-          "schema": "#/$defs/bandwerte/properties/gitter_id/enum",
-          "schluessel": "enum"
+          "schema": "#/$defs/bandwerte/oneOf",
+          "schluessel": "oneOf"
         }
       ]
     },
@@ -751,6 +855,18 @@
       ]
     },
     {
+      "datei": "ungueltig/invalidate-bereich-ohne-ende.json",
+      "urteil": "ungueltig",
+      "warum": "art=sample_range ohne Bereich war vorher gueltig - ein Etikett ohne Wirkung",
+      "verletzungen": [
+        {
+          "instanz": "/umfang",
+          "schema": "#/$defs/invalidate_bereich/required/sample_end",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/invalidate-grund-erfunden.json",
       "urteil": "ungueltig",
       "warum": "eine Ruecknahme ohne benannten Grund ist nicht auditierbar",
@@ -763,14 +879,38 @@
       ]
     },
     {
+      "datei": "ungueltig/invalidate-ids-ohne-ids.json",
+      "urteil": "ungueltig",
+      "warum": "art=evidence_ids ohne IDs invalidiert nichts",
+      "verletzungen": [
+        {
+          "instanz": "/umfang",
+          "schema": "#/$defs/invalidate_ids/required/evidence_ids",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/invalidate-sitzung-mit-ids.json",
+      "urteil": "ungueltig",
+      "warum": "die ganze Sitzung UND eine ID-Liste ist ein Widerspruch, kein Zusatz",
+      "verletzungen": [
+        {
+          "instanz": "/umfang/evidence_ids",
+          "schema": "#/$defs/invalidate_sitzung/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/invalidate-umfang-erfunden.json",
       "urteil": "ungueltig",
-      "warum": "drei Umfaenge: IDs, Bereich, ganze Sitzung",
+      "warum": "drei Umfaenge: IDs, Bereich, ganze Sitzung — seit der Umfang ueber `art` diskriminiert, ist ein vierter kein enum-Fehler, sondern ein fehlender Zweig",
       "verletzungen": [
         {
           "instanz": "/umfang/art",
-          "schema": "#/$defs/evidence_invalidate/properties/umfang/properties/art/enum",
-          "schluessel": "enum"
+          "schema": "#/$defs/invalidate_umfang/oneOf",
+          "schluessel": "oneOf"
         }
       ]
     },
@@ -869,7 +1009,7 @@
           "schluessel": "required"
         },
         {
-          "instanz": "/capabilities/process_context",
+          "instanz": "/capabilities/host_context_presence",
           "schema": "#/$defs/capability_wert/enum",
           "schluessel": "enum"
         },
@@ -1302,6 +1442,30 @@
           "instanz": "/undo_tiefe",
           "schema": "#/$defs/state_report/properties/undo_tiefe/maximum",
           "schluessel": "maximum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/validity-ohne-continuous-time.json",
+      "urteil": "ungueltig",
+      "warum": "§32.3 gibt continuous_time_samples ein EIGENES Gueltigkeitsbit",
+      "verletzungen": [
+        {
+          "instanz": "/transport/validity",
+          "schema": "#/$defs/validity/required/continuous_time",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/validity-ohne-latenzbit.json",
+      "urteil": "ungueltig",
+      "warum": "§32.3: 'Ein Latenzwert 0 kann keine oder nicht bekannt bedeuten' - ohne eigenes Bit ist genau das nicht unterscheidbar",
+      "verletzungen": [
+        {
+          "instanz": "/transport/validity",
+          "schema": "#/$defs/validity/required/output_presentation_latency",
+          "schluessel": "required"
         }
       ]
     },

@@ -81,25 +81,31 @@
     },
 
     "capabilities": {
-      "description": "Fest verdrahteter Faehigkeitssatz. NICHT additiv: eine unbekannte Capability ist eine unbekannte Sicherheitsaussage.",
+      "description": "Der Faehigkeitssatz aus Entwurf §53.6 — WOERTLICH und vollstaendig, alle zehn. Jede dieser Capabilities hat dort ihren eigenen Beweis UND ihren eigenen Fallback; wer zwei davon zu einem Feld zusammenzieht, loescht genau die Unterscheidung, fuer die §53.6 existiert (die drei Aux-Capabilities haben drei verschiedene Fallbacks: 'kein lokales Audio-Delta', 'keine dynamische Aktuation', 'nur Assoziation statt exakter Attribution'). NICHT additiv: eine unbekannte Capability ist eine unbekannte Sicherheitsaussage. Weil das Objekt strikt ist und alle zehn Pflicht sind, ist ein spaeterer Nachtrag KEINE Minor-Erweiterung, sondern ein Major-Schritt — deshalb steht die Liste jetzt vollstaendig und nicht 'soweit heute gemessen'.",
       "type": "object",
       "required": [
-        "process_context",
+        "host_context_presence",
+        "project_time_samples",
         "sample_accurate_automation",
         "presentation_latency",
-        "discrete_aux_buses",
-        "offline_render_detection",
-        "double_precision",
+        "aux_compare_pre",
+        "aux_priority_sidechain",
+        "contribution_aux",
+        "float64_processing",
+        "binary_telemetry",
         "remote_control"
       ],
       "additionalProperties": false,
       "properties": {
-        "process_context": { "$ref": "#/$defs/capability_wert" },
+        "host_context_presence": { "$ref": "#/$defs/capability_wert" },
+        "project_time_samples": { "$ref": "#/$defs/capability_wert" },
         "sample_accurate_automation": { "$ref": "#/$defs/capability_wert" },
         "presentation_latency": { "$ref": "#/$defs/capability_wert" },
-        "discrete_aux_buses": { "$ref": "#/$defs/capability_wert" },
-        "offline_render_detection": { "$ref": "#/$defs/capability_wert" },
-        "double_precision": { "$ref": "#/$defs/capability_wert" },
+        "aux_compare_pre": { "$ref": "#/$defs/capability_wert" },
+        "aux_priority_sidechain": { "$ref": "#/$defs/capability_wert" },
+        "contribution_aux": { "$ref": "#/$defs/capability_wert" },
+        "float64_processing": { "$ref": "#/$defs/capability_wert" },
+        "binary_telemetry": { "$ref": "#/$defs/capability_wert" },
         "remote_control": { "$ref": "#/$defs/capability_wert" }
       }
     },
@@ -116,15 +122,26 @@
     },
 
     "validity": {
-      "description": "Gueltigkeitsbits des Transportstempels (§32.3). Ein fehlendes Bit ist ein Nein, kein Vielleicht.",
+      "description": "Gueltigkeitsbits des Transportstempels (§32.3). Ein fehlendes Bit ist ein Nein, kein Vielleicht. §32.3 verlangt woertlich: 'Zusaetzlich werden optionales continuous_time_samples, rohe Cycle-Grenzen in Quarter Notes sowie rohe Input-/Output-Presentation-Latency MIT EIGENEN GUELTIGKEITSBITS gespeichert.' Der Grund steht ebenda: 'Ein Latenzwert 0 kann ausserdem keine oder nicht bekannt bedeuten.' Ohne eigenes Bit ist genau diese Unterscheidung verloren — und zwar still, weil 0 ein voellig plausibler Messwert ist. `cycle_bounds` IST das Bit fuer die rohen PPQ-Grenzen.",
       "type": "object",
-      "required": ["project_time", "play_state", "record_state", "cycle_bounds"],
+      "required": [
+        "project_time",
+        "play_state",
+        "record_state",
+        "cycle_bounds",
+        "continuous_time",
+        "input_presentation_latency",
+        "output_presentation_latency"
+      ],
       "additionalProperties": false,
       "properties": {
         "project_time": { "type": "boolean" },
         "play_state": { "type": "boolean" },
         "record_state": { "type": "boolean" },
-        "cycle_bounds": { "type": "boolean" }
+        "cycle_bounds": { "type": "boolean" },
+        "continuous_time": { "type": "boolean" },
+        "input_presentation_latency": { "type": "boolean" },
+        "output_presentation_latency": { "type": "boolean" }
       }
     },
 
@@ -237,20 +254,48 @@
     },
 
     "bandwerte": {
-      "description": "Ein Bandsatz mit seinem Gitter, seiner Kodierung, seiner Gueltigkeitsbitmap und seinem Saettigungsbit (§33.1). Die Bitmap ist Base64 ueber ceil(n/8) Bytes, LSB-first je Byte.",
+      "description": "Ein Bandsatz mit seinem Gitter, seiner Kodierung, seiner Gueltigkeitsbitmap und seinem Saettigungsbit (§33.1). DISKRIMINIERT UEBER `gitter_id`, weil die Bandzahl aus dem Gitter FOLGT und nicht frei ist: die beiden Gitter sind als Zahlen eingefroren (221 und 64), und eine Nachricht, die 221 Werte unter `nakama_log64_v1` traegt, ist keine 'grosszuegige' Nachricht, sondern eine falsche. Ein gemeinsames minItems/maxItems ueber beide Gitter haette genau das erlaubt. Die Bitmap ist Base64 ueber ceil(n/8) Bytes, LSB-first je Byte — daraus folgt ihre Laenge exakt, deshalb steht sie je Zweig fest statt als Spanne.",
+      "x-nakama-discriminator": "gitter_id",
+      "oneOf": [
+        { "$ref": "#/$defs/bandwerte_fein" },
+        { "$ref": "#/$defs/bandwerte_grob" }
+      ]
+    },
+
+    "bandwerte_fein": {
+      "description": "221 Baender (nakama_1_24_oct_30_18k_v1, Evidenz 1-4 Hz). Bitmap: ceil(221/8) = 28 Bytes = 40 Base64-Zeichen.",
       "type": "object",
       "required": ["gitter_id", "encoding", "werte", "gueltig_bitmap", "saturated"],
       "additionalProperties": false,
       "properties": {
-        "gitter_id": { "enum": ["nakama_1_24_oct_30_18k_v1", "nakama_log64_v1"] },
+        "gitter_id": { "const": "nakama_1_24_oct_30_18k_v1" },
         "encoding": { "$ref": "#/$defs/band_encoding" },
         "werte": {
           "type": "array",
-          "minItems": 1,
+          "minItems": 221,
           "maxItems": 221,
           "items": { "type": "number" }
         },
-        "gueltig_bitmap": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "gueltig_bitmap": { "type": "string", "minLength": 40, "maxLength": 40 },
+        "saturated": { "type": "boolean" }
+      }
+    },
+
+    "bandwerte_grob": {
+      "description": "64 Gruppen (nakama_log64_v1, Live 10 Hz). Bitmap: ceil(64/8) = 8 Bytes = 12 Base64-Zeichen.",
+      "type": "object",
+      "required": ["gitter_id", "encoding", "werte", "gueltig_bitmap", "saturated"],
+      "additionalProperties": false,
+      "properties": {
+        "gitter_id": { "const": "nakama_log64_v1" },
+        "encoding": { "$ref": "#/$defs/band_encoding" },
+        "werte": {
+          "type": "array",
+          "minItems": 64,
+          "maxItems": 64,
+          "items": { "type": "number" }
+        },
+        "gueltig_bitmap": { "type": "string", "minLength": 12, "maxLength": 12 },
         "saturated": { "type": "boolean" }
       }
     },
@@ -469,7 +514,7 @@
     },
 
     "evidence_snapshot": {
-      "description": "1-4 Hz: voller Bandsatz, Verteilungspunkte, Abdeckung, Konvergenz (§33.2). Traegt seinen Transportstempel und seine Konfidenz mit; ohne beides ist er kein Beleg.",
+      "description": "1-4 Hz: voller Bandsatz, Verteilungspunkte, Abdeckung, Konvergenz (§33.2). Traegt seinen Transportstempel und seine Konfidenz mit; ohne beides ist er kein Beleg. §33.2 zaehlt den Inhalt abschliessend auf — 'volle 221 Baender, P10/P50/P95, Abdeckung, Konvergenz, Ereignisse' —, deshalb ist `verteilung` PFLICHT und keine Zugabe. `ereignisse` fehlt hier bewusst: der DynamicsEvent-Strom entsteht in §39.1/P4; sein Feldname ist in reservierte-nachrichten-v1.json verbrannt, damit ihn kein anderes Ticket belegt.",
       "type": "object",
       "required": [
         "type",
@@ -477,6 +522,7 @@
         "adresse",
         "transport",
         "metrics_version",
+        "verteilung",
         "baender",
         "abdeckung",
         "konvergenz",
@@ -558,22 +604,53 @@
       "properties": {
         "type": { "const": "evidence_invalidate" },
         "grund": { "enum": ["intervention", "routing_unbekannt", "sequenzluecke", "epochwechsel", "state_revision"] },
-        "umfang": {
-          "type": "object",
-          "required": ["art"],
-          "additionalProperties": false,
-          "properties": {
-            "art": { "enum": ["evidence_ids", "sample_range", "ganze_sitzung"] },
-            "evidence_ids": {
-              "type": "array",
-              "minItems": 1,
-              "maxItems": 4096,
-              "items": { "$ref": "#/$defs/hex32" }
-            },
-            "sample_start": { "type": "integer", "minimum": 0 },
-            "sample_end": { "type": "integer", "minimum": 0 }
-          }
+        "umfang": { "$ref": "#/$defs/invalidate_umfang" }
+      }
+    },
+
+    "invalidate_umfang": {
+      "description": "§34.2 verlangt Ruecknahme 'per ID/Range'. Deshalb diskriminiert ueber `art`: mit einem gemeinsamen Objekt, das nur `art` verlangt, waere `art=sample_range` ohne Bereich gueltig gewesen und `art=ganze_sitzung` MIT Bereich ebenfalls — ein Etikett ohne Wirkung. Jeder Zweig traegt genau die Felder, die seine Art braucht, und keine anderen.",
+      "x-nakama-discriminator": "art",
+      "oneOf": [
+        { "$ref": "#/$defs/invalidate_ids" },
+        { "$ref": "#/$defs/invalidate_bereich" },
+        { "$ref": "#/$defs/invalidate_sitzung" }
+      ]
+    },
+
+    "invalidate_ids": {
+      "type": "object",
+      "required": ["art", "evidence_ids"],
+      "additionalProperties": false,
+      "properties": {
+        "art": { "const": "evidence_ids" },
+        "evidence_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4096,
+          "items": { "$ref": "#/$defs/hex32" }
         }
+      }
+    },
+
+    "invalidate_bereich": {
+      "$comment": "Dass `sample_start <= sample_end` gilt, kann dieses Schema nicht ausdruecken — JSON Schema hat keinen Feldvergleich. Die Regel steht in schemas/v3/README.md und gehoert dem Consumer (SONDE-011); sie wird hier ausdruecklich NICHT behauptet.",
+      "type": "object",
+      "required": ["art", "sample_start", "sample_end"],
+      "additionalProperties": false,
+      "properties": {
+        "art": { "const": "sample_range" },
+        "sample_start": { "type": "integer", "minimum": 0 },
+        "sample_end": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "invalidate_sitzung": {
+      "type": "object",
+      "required": ["art"],
+      "additionalProperties": false,
+      "properties": {
+        "art": { "const": "ganze_sitzung" }
       }
     },
 
@@ -657,14 +734,18 @@
     "error": {
       "description": "Maschinenlesbarer Code, betroffene Revision und Rueckweg (§33.3).",
       "type": "object",
-      "required": ["type", "code", "meldung"],
+      "required": ["type", "code", "meldung", "betroffene_revision", "rueckweg"],
       "additionalProperties": false,
       "properties": {
         "type": { "const": "error" },
         "code": { "$ref": "#/$defs/fehlercode" },
         "meldung": { "type": "string", "maxLength": 500 },
         "command_id": { "$ref": "#/$defs/hex32" },
-        "betroffene_revision": { "type": "integer", "minimum": 0 },
+        "betroffene_revision": {
+          "$comment": "PFLICHT, aber `null` erlaubt. §33.3 verlangt woertlich 'error mit maschinenlesbarem Code, betroffener Revision und Rueckweg' — ein Protokollfehler vor jeder Revision hat aber keine. Der Sender muss sich entscheiden und es HINSCHREIBEN; weglassen darf er es nicht, sonst ist 'keine Revision betroffen' von 'vergessen' nicht zu unterscheiden.",
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
         "rueckweg": { "enum": ["erneut_senden", "neu_verbinden", "neu_paaren", "aufgeben"] }
       }
     }

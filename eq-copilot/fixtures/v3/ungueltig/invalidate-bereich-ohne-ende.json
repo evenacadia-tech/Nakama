@@ -1,0 +1,8 @@
+{
+  "type": "evidence_invalidate",
+  "grund": "intervention",
+  "umfang": {
+    "art": "sample_range",
+    "sample_start": 44100
+  }
+}

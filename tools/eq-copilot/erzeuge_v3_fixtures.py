@@ -52,13 +52,19 @@ ADRESSE = {
     "runtime_nonce": "44444444444444444444444444444444",
 }
 
+# Die zehn Capabilities aus Entwurf §53.6, woertlich und vollstaendig.
+# Die Werte sind Platzhalter — welche `supported` heissen, entscheidet erst der
+# Capabilityreport aus S4. Die NAMEN sind Vertrag.
 CAPS = {
-    "process_context": "supported",
+    "host_context_presence": "supported",
+    "project_time_samples": "supported",
     "sample_accurate_automation": "supported",
     "presentation_latency": "unsupported",
-    "discrete_aux_buses": "supported",
-    "offline_render_detection": "supported",
-    "double_precision": "unsupported",
+    "aux_compare_pre": "supported",
+    "aux_priority_sidechain": "unsupported",
+    "contribution_aux": "supported",
+    "float64_processing": "unsupported",
+    "binary_telemetry": "supported",
     "remote_control": "unsupported",
 }
 
@@ -66,7 +72,15 @@ ZAEHLER = {"frames_dropped": 0, "parse_errors": 0, "queue_overflows": 0}
 
 FRISCHE = {"stale": False, "letzter_kontakt_ms": 120}
 
-VALIDITY = {"project_time": True, "play_state": True, "record_state": True, "cycle_bounds": False}
+VALIDITY = {
+    "project_time": True,
+    "play_state": True,
+    "record_state": True,
+    "cycle_bounds": False,
+    "continuous_time": False,
+    "input_presentation_latency": False,
+    "output_presentation_latency": False,
+}
 
 TRANSPORT = {
     "transport_epoch": 17,
@@ -85,7 +99,20 @@ KONFIDENZ = {"metrics_version": 1, "klasse": "mittel", "timing_alignment": 0.8}
 
 
 def bitmap(n: int) -> str:
-    return base64.b64encode(b"\xff" * ((n + 7) // 8)).decode("ascii")
+    """Alle n Baender gueltig, FUELLBITS DES LETZTEN BYTES AUF 0.
+
+    Bei 221 Baendern traegt das 28. Byte nur 5 echte Bits. Setzte man die
+    drei uebrigen mit, erzeugten zwei Sender fuer dieselbe Messung zwei
+    verschiedene Bitmaps — und ein Bytevergleich waere keine Aussage mehr.
+    Dieselbe Regel steht im FlatBuffers-Vertrag (SONDE-005b), wo der Leser
+    sie durchsetzen kann; hier ist sie Erzeugerdisziplin, weil ein
+    Base64-String im JSON-Schema nicht auf Fuellbits pruefbar ist.
+    """
+    bytes_ = bytearray(b"\xff" * ((n + 7) // 8))
+    rest = n % 8
+    if rest:
+        bytes_[-1] = (1 << rest) - 1
+    return base64.b64encode(bytes(bytes_)).decode("ascii")
 
 
 def baender(n: int, gitter: str, encoding: str = "q_db_0p1_i16") -> dict:
@@ -180,6 +207,11 @@ GRUND: dict[str, dict] = {
         "transport": TRANSPORT,
         "metrics_version": 1,
         "baender": baender(221, "nakama_1_24_oct_30_18k_v1"),
+        "verteilung": {
+            "p10": baender(221, "nakama_1_24_oct_30_18k_v1"),
+            "p50": baender(221, "nakama_1_24_oct_30_18k_v1"),
+            "p95": baender(221, "nakama_1_24_oct_30_18k_v1"),
+        },
         "abdeckung": 0.87,
         "konvergenz": 0.5,
         "beeinflusst": False,
@@ -295,8 +327,7 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     ev = copy.deepcopy(GRUND["evidence_snapshot"])
     ev["transport"]["time_basis"] = "local_monotonic"
     del ev["transport"]["project_sample_start"]
-    ev["transport"]["validity"] = {"project_time": False, "play_state": False,
-                                   "record_state": False, "cycle_bounds": False}
+    ev["transport"]["validity"] = {k: False for k in VALIDITY}
     faelle.append(("evidence-ohne-projektzeit", ev,
                    "ohne gueltige Projektzeit traegt local_monotonic nur lokale Analyse (§32.3)"))
 
@@ -338,6 +369,8 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     # Der grobe Bandsatz.
     ev = copy.deepcopy(GRUND["evidence_snapshot"])
     ev["baender"] = baender(64, "nakama_log64_v1", "q_db_0p01_i16")
+    ev["verteilung"] = {p: baender(64, "nakama_log64_v1", "q_db_0p01_i16")
+                        for p in ("p10", "p50", "p95")}
     faelle.append(("evidence-grobes-gitter", ev, "beide Gitter sind zulaessig"))
 
     # Beitragsklasse mit eigenem Aux-Bus.
@@ -442,11 +475,11 @@ UNGUELTIG: list[tuple] = [
      "ein fehlendes Bit ist ein Nein, kein Vielleicht — es darf nicht weggelassen werden"),
 
     ("baender-ohne-encoding", "evidence_snapshot", [loesche("baender", "encoding")],
-     [v("/baender", f"{S}/bandwerte/required/encoding", "required")],
+     [v("/baender", f"{S}/bandwerte_fein/required/encoding", "required")],
      "Empfaenger raten die Skalierung nie aus dem Nachrichtentyp (§33.1)"),
 
     ("baender-ohne-bitmap", "evidence_snapshot", [loesche("baender", "gueltig_bitmap")],
-     [v("/baender", f"{S}/bandwerte/required/gueltig_bitmap", "required")],
+     [v("/baender", f"{S}/bandwerte_fein/required/gueltig_bitmap", "required")],
      "ohne Bitmap ist nicht unterscheidbar, welcher Wert gemessen wurde"),
 
     ("steuerkopf-ohne-ttl", "preview_begin", [loesche("kopf", "ttl_ms")],
@@ -462,8 +495,8 @@ UNGUELTIG: list[tuple] = [
      "eine fehlende Capability ist keine stille Nein-Antwort"),
 
     # --- Capability-Riegel (§54) -----------------------------------------
-    ("capability-unknown", "heartbeat", [setze("capabilities", "process_context", "unknown")],
-     [v("/capabilities/process_context", f"{S}/capability_wert/enum", "enum")],
+    ("capability-unknown", "heartbeat", [setze("capabilities", "host_context_presence", "unknown")],
+     [v("/capabilities/host_context_presence", f"{S}/capability_wert/enum", "enum")],
      "Entwurf §54: kein `unknown, spaeter pruefen` darf P1 passieren"),
 
     ("capability-vielleicht", "heartbeat",
@@ -471,8 +504,8 @@ UNGUELTIG: list[tuple] = [
      [v("/capabilities/presentation_latency", f"{S}/capability_wert/enum", "enum")],
      "auch kein dritter Wert unter anderem Namen"),
 
-    ("capability-null", "heartbeat", [setze("capabilities", "double_precision", None)],
-     [v("/capabilities/double_precision", f"{S}/capability_wert/enum", "enum")],
+    ("capability-null", "heartbeat", [setze("capabilities", "float64_processing", None)],
+     [v("/capabilities/float64_processing", f"{S}/capability_wert/enum", "enum")],
      "null ist ebenfalls kein gueltiger Capabilitywert"),
 
     # --- strikt vs additiv ------------------------------------------------
@@ -550,8 +583,9 @@ UNGUELTIG: list[tuple] = [
      "die beiden Klassen duerfen nie vermischt werden (§32.2)"),
 
     ("gitter-erfunden", "evidence_snapshot", [setze("baender", "gitter_id", "nakama_log32_v1")],
-     [v("/baender/gitter_id", f"{S}/bandwerte/properties/gitter_id/enum", "enum")],
-     "es gibt genau zwei Bandgitter"),
+     [v("/baender/gitter_id", f"{S}/bandwerte/oneOf", "oneOf")],
+     "es gibt genau zwei Bandgitter - und weil `bandwerte` ueber `gitter_id` "
+     "diskriminiert, ist ein drittes kein enum-Fehler, sondern ein Zweig, den es nicht gibt"),
 
     ("encoding-erfunden", "evidence_snapshot", [setze("baender", "encoding", "q_db_1_i8")],
      [v("/baender/encoding", f"{S}/band_encoding/enum", "enum")],
@@ -651,21 +685,20 @@ UNGUELTIG: list[tuple] = [
 
     # --- Arrays -------------------------------------------------------------
     ("baender-leer", "evidence_snapshot", [setze("baender", "werte", [])],
-     [v("/baender/werte", f"{S}/bandwerte/properties/werte/minItems", "minItems")],
+     [v("/baender/werte", f"{S}/bandwerte_fein/properties/werte/minItems", "minItems")],
      "ein Bandsatz ohne Werte"),
 
     ("baender-zu-viele", "evidence_snapshot", [setze("baender", "werte", [0] * 222)],
-     [v("/baender/werte", f"{S}/bandwerte/properties/werte/maxItems", "maxItems")],
+     [v("/baender/werte", f"{S}/bandwerte_fein/properties/werte/maxItems", "maxItems")],
      "222 Werte passen in kein Gitter dieses Vertrags"),
 
     ("bandwert-als-string", "evidence_snapshot",
-     [setze("baender", "werte", [-123, "-124", -125])],
-     [v("/baender/werte/1", f"{S}/bandwerte/properties/werte/items/type", "type")],
+     [setze("baender", "werte", [-123] + ["-124"] + [-123] * 219)],
+     [v("/baender/werte/1", f"{S}/bandwerte_fein/properties/werte/items/type", "type")],
      "der Index steht im Instanzpfad"),
 
     ("evidence-ids-leer", "evidence_invalidate", [setze("umfang", "evidence_ids", [])],
-     [v("/umfang/evidence_ids",
-        f"{S}/evidence_invalidate/properties/umfang/properties/evidence_ids/minItems", "minItems")],
+     [v("/umfang/evidence_ids", f"{S}/invalidate_ids/properties/evidence_ids/minItems", "minItems")],
      "eine Ruecknahme ohne Ziel"),
 
     ("mitglied-unvollstaendig", "session_snapshot",
@@ -676,9 +709,9 @@ UNGUELTIG: list[tuple] = [
     # --- mehrere Verletzungen in einer Nachricht -----------------------------
     ("mehrfach-gebrochen", "heartbeat",
      [loesche("adresse"), setze("sequence", -1), setze("extra", 1),
-      setze("capabilities", "process_context", "unknown")],
+      setze("capabilities", "host_context_presence", "unknown")],
      [v("", f"{S}/heartbeat/required/adresse", "required"),
-      v("/capabilities/process_context", f"{S}/capability_wert/enum", "enum"),
+      v("/capabilities/host_context_presence", f"{S}/capability_wert/enum", "enum"),
       v("/extra", f"{S}/heartbeat/additionalProperties", "additionalProperties"),
       v("/sequence", f"{S}/heartbeat/properties/sequence/minimum", "minimum")],
      "beide Engines melden ALLE Verletzungen des gewaehlten Zweiges, kanonisch sortiert"),
@@ -764,9 +797,9 @@ UNGUELTIG: list[tuple] = [
      "eine Ruecknahme ohne benannten Grund ist nicht auditierbar"),
 
     ("invalidate-umfang-erfunden", "evidence_invalidate", [setze("umfang", "art", "alles_ausser")],
-     [v("/umfang/art",
-        f"{S}/evidence_invalidate/properties/umfang/properties/art/enum", "enum")],
-     "drei Umfaenge: IDs, Bereich, ganze Sitzung"),
+     [v("/umfang/art", f"{S}/invalidate_umfang/oneOf", "oneOf")],
+     "drei Umfaenge: IDs, Bereich, ganze Sitzung — seit der Umfang ueber `art` "
+     "diskriminiert, ist ein vierter kein enum-Fehler, sondern ein fehlender Zweig"),
 
     ("konfidenz-klasse-erfunden", "evidence_snapshot", [setze("konfidenz", "klasse", "gut")],
      [v("/konfidenz/klasse", f"{S}/konfidenz/properties/klasse/enum", "enum")],
@@ -778,7 +811,7 @@ UNGUELTIG: list[tuple] = [
 
     ("bandwerte-saturated-als-string", "evidence_snapshot",
      [setze("baender", "saturated", "false")],
-     [v("/baender/saturated", f"{S}/bandwerte/properties/saturated/type", "type")],
+     [v("/baender/saturated", f"{S}/bandwerte_fein/properties/saturated/type", "type")],
      "das Saettigungsbit ist ein bool"),
 
     ("pair-id-als-zahl", "session_snapshot", [setze("mitglieder", 0, "pair_id", 7)],
@@ -830,6 +863,100 @@ UNGUELTIG: list[tuple] = [
      "annehmen. Beide Seiten LEHNEN AB, aber an verschiedenen Stellen - C++ "
      "schon im Parser, Rust erst am Schema. Die Verletzungsmenge unten gilt "
      "deshalb nur fuer die Beine mit RFC-8259-Parser."),
+
+    # --- T2-Runde 1: die Loecher, die der Frischkontext-Pruefer gefunden hat --
+    #
+    # Jede dieser Zeilen belegt eine Regel, die der Vertrag VORHER nicht
+    # durchgesetzt hat. Ohne sie waere jede Schemaverschaerfung oben eine
+    # Behauptung: der Riegel ist erst bewiesen, wenn er an einer Eingabe faellt.
+
+    # T-2: die Bandzahl folgt aus dem Gitter. Vorher waren 221 Werte unter dem
+    # 64er-Gitter GUELTIG - die Gitter sind bitgenau eingefroren, die Nachricht
+    # die ihre Werte traegt war es nicht.
+    ("bandzahl-passt-nicht-zum-gitter", "evidence_snapshot",
+     [setze("baender", "gitter_id", "nakama_log64_v1"),
+      setze("baender", "gueltig_bitmap", bitmap(64))],
+     [v("/baender/werte", f"{S}/bandwerte_grob/properties/werte/maxItems", "maxItems")],
+     "221 Werte unter nakama_log64_v1: das grobe Gitter hat genau 64 Gruppen"),
+
+    ("bitmap-laenge-passt-nicht", "evidence_snapshot",
+     [setze("baender", "gueltig_bitmap", bitmap(64))],
+     [v("/baender/gueltig_bitmap", f"{S}/bandwerte_fein/properties/gueltig_bitmap/minLength",
+        "minLength")],
+     "ceil(221/8) = 28 Byte = 40 Base64-Zeichen; eine 12-Zeichen-Bitmap "
+     "beschreibt 64 Baender und kann fuer 221 nicht stimmen"),
+
+    # T-6: §33.2 zaehlt den Inhalt des Evidenzsnapshots abschliessend auf.
+    ("evidence-ohne-verteilung", "evidence_snapshot", [loesche("verteilung")],
+     [v("", f"{S}/evidence_snapshot/required/verteilung", "required")],
+     "P10/P50/P95 sind Inhalt des Snapshots (§33.2), keine Zugabe"),
+
+    # T-4: §33.3 verlangt Code, betroffene Revision UND Rueckweg.
+    ("error-ohne-betroffene-revision", "error", [loesche("betroffene_revision")],
+     [v("", f"{S}/error/required/betroffene_revision", "required")],
+     "eine fehlende Revision ist nicht dasselbe wie `null` - null heisst "
+     "'keine betroffen', fehlend heisst 'vergessen'"),
+
+    ("error-ohne-rueckweg", "error", [loesche("rueckweg")],
+     [v("", f"{S}/error/required/rueckweg", "required")],
+     "ein Fehler ohne Rueckweg laesst den Empfaenger raten (§33.3)"),
+
+    # T-5: die drei neuen Gueltigkeitsbits aus §32.3.
+    ("validity-ohne-continuous-time", "evidence_snapshot",
+     [loesche("transport", "validity", "continuous_time")],
+     [v("/transport/validity", f"{S}/validity/required/continuous_time", "required")],
+     "§32.3 gibt continuous_time_samples ein EIGENES Gueltigkeitsbit"),
+
+    ("validity-ohne-latenzbit", "evidence_snapshot",
+     [loesche("transport", "validity", "output_presentation_latency")],
+     [v("/transport/validity", f"{S}/validity/required/output_presentation_latency", "required")],
+     "§32.3: 'Ein Latenzwert 0 kann keine oder nicht bekannt bedeuten' - ohne "
+     "eigenes Bit ist genau das nicht unterscheidbar"),
+
+    # T-3: der Umfang der Invalidierung traegt jetzt, was seine Art braucht.
+    ("invalidate-bereich-ohne-ende", "evidence_invalidate",
+     [setze("umfang", {"art": "sample_range", "sample_start": 44100})],
+     [v("/umfang", f"{S}/invalidate_bereich/required/sample_end", "required")],
+     "art=sample_range ohne Bereich war vorher gueltig - ein Etikett ohne Wirkung"),
+
+    ("invalidate-sitzung-mit-ids", "evidence_invalidate",
+     [setze("umfang", {"art": "ganze_sitzung",
+                       "evidence_ids": ["99999999999999999999999999999999"]})],
+     [v("/umfang/evidence_ids", f"{S}/invalidate_sitzung/additionalProperties",
+        "additionalProperties")],
+     "die ganze Sitzung UND eine ID-Liste ist ein Widerspruch, kein Zusatz"),
+
+    ("invalidate-ids-ohne-ids", "evidence_invalidate",
+     [setze("umfang", {"art": "evidence_ids"})],
+     [v("/umfang", f"{S}/invalidate_ids/required/evidence_ids", "required")],
+     "art=evidence_ids ohne IDs invalidiert nichts"),
+
+    # T-1: der Capabilitysatz ist §53.6, woertlich. Der alte Name ist jetzt
+    # eine unbekannte Capability - genau die Ablehnung, die §33.1 verlangt.
+    ("capability-alter-name", "heartbeat",
+     [loesche("capabilities", "host_context_presence"),
+      setze("capabilities", "process_context", "supported")],
+     [v("/capabilities", f"{S}/capabilities/required/host_context_presence", "required"),
+      v("/capabilities/process_context", f"{S}/capabilities/additionalProperties",
+        "additionalProperties")],
+     "`process_context` war ein selbst erfundener Name; §53.6 heisst die "
+     "Capability `host_context_presence`. Ein Absender mit dem alten Namen "
+     "faellt jetzt zweifach auf - fehlendes Pflichtfeld und unbekannte Eigenschaft"),
+
+    ("capability-aux-zusammengelegt", "heartbeat",
+     [loesche("capabilities", "aux_compare_pre"),
+      loesche("capabilities", "aux_priority_sidechain"),
+      loesche("capabilities", "contribution_aux"),
+      setze("capabilities", "discrete_aux_buses", "supported")],
+     [v("/capabilities", f"{S}/capabilities/required/aux_compare_pre", "required"),
+      v("/capabilities", f"{S}/capabilities/required/aux_priority_sidechain", "required"),
+      v("/capabilities", f"{S}/capabilities/required/contribution_aux", "required"),
+      v("/capabilities/discrete_aux_buses", f"{S}/capabilities/additionalProperties",
+        "additionalProperties")],
+     "§53.6 gibt den drei Aux-Capabilities DREI verschiedene Fallbacks ('kein "
+     "lokales Audio-Delta' / 'keine dynamische Aktuation' / 'nur Assoziation "
+     "statt exakter Attribution'). Ein zusammengelegtes Bit loescht genau die "
+     "Unterscheidung, fuer die sie getrennt sind"),
 ]
 
 
@@ -926,7 +1053,38 @@ def baue() -> tuple[dict, dict[str, dict]]:
 
 
 def als_text(inhalt) -> bytes:
-    return (json.dumps(inhalt, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
+    """Pretty-JSON, aber reine ZAHLENARRAYS auf einer Zeile.
+
+    Warum: seit `verteilung` Pflicht ist (§33.2), traegt jeder
+    Evidenzsnapshot vier 221er-Bandarrays. Mit `indent=2` sind das rund
+    900 Zeilen `-123,` je Fixture und ueber den Korpus etwa 35 000 — ein
+    Diff, in dem eine echte Aenderung nicht mehr zu sehen ist. Die
+    Verdichtung aendert kein Byte an der geparsten Bedeutung; sie ist
+    Formatierung, und `--pruefen` misst sie deterministisch mit.
+
+    Mechanik: jedes reine Zahlenarray wird vor dem Dump durch einen
+    Platzhalterstring ersetzt, der ein NUL enthaelt, und danach wieder
+    eingesetzt. Ein NUL kann in keinem echten Fixturewert stehen, ohne
+    dass er als komplettes Literal ersetzt wuerde — der Austausch trifft
+    nur den exakten Platzhalter, nie ein Teilstueck.
+    """
+    platzhalter: dict[str, str] = {}
+
+    def ersetze(o):
+        if isinstance(o, list):
+            if o and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in o):
+                schluessel = chr(0) + f"ZAHLENARRAY{len(platzhalter)}" + chr(0)
+                platzhalter[schluessel] = json.dumps(o, ensure_ascii=False)
+                return schluessel
+            return [ersetze(x) for x in o]
+        if isinstance(o, dict):
+            return {k: ersetze(v) for k, v in o.items()}
+        return o
+
+    text = json.dumps(ersetze(inhalt), indent=2, ensure_ascii=False)
+    for schluessel, kompakt in platzhalter.items():
+        text = text.replace(json.dumps(schluessel, ensure_ascii=False), kompakt)
+    return (text + "\n").encode("utf-8")
 
 
 def main(argv: list[str]) -> int:

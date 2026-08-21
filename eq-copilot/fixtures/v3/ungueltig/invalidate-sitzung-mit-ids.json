@@ -1,0 +1,10 @@
+{
+  "type": "evidence_invalidate",
+  "grund": "intervention",
+  "umfang": {
+    "art": "ganze_sitzung",
+    "evidence_ids": [
+      "99999999999999999999999999999999"
+    ]
+  }
+}

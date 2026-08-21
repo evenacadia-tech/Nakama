@@ -1,0 +1,7 @@
+{
+  "type": "error",
+  "code": "revision_conflict",
+  "meldung": "base_revision 12 ist aelter als 13",
+  "command_id": "55555555555555555555555555555555",
+  "betroffene_revision": 13
+}

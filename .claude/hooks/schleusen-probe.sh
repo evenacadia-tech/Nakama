@@ -11,10 +11,18 @@ cd "$(dirname "$0")/../.." || exit 1
 HOOK=.claude/hooks/prototyp-schleuse.sh
 fehler=0 gesamt=0
 
+# Die "muss blocken"-Haelfte misst den GESCHLOSSENEN Zustand: sie zeigt der
+# Schleuse ein leeres Abnahmen-Verzeichnis (SCHLEUSE_ABNAHMEN), damit die
+# Probe auch dann etwas beweist, wenn der echte Vertrag laengst liegt
+# (seit 2026-08-21 liegt er; vorher meldete die Probe dann 13/24 falsch).
+LEER=$(mktemp -d)
+trap 'rm -rf "$LEER"' EXIT
+ABN="$LEER"                    # Standard: geschlossen; Abschnitt 3 schaltet um
+
 probe(){                       # probe <soll:block|durch> <name> <json>
   local soll="$1" name="$2" json="$3" code ist
   gesamt=$((gesamt+1))
-  printf '%s' "$json" | bash "$HOOK" >/dev/null 2>&1; code=$?
+  printf '%s' "$json" | SCHLEUSE_ABNAHMEN="$ABN" bash "$HOOK" >/dev/null 2>&1; code=$?
   ist=durch; [ "$code" -eq 2 ] && ist=block
   if [ "$ist" = "$soll" ]; then
     printf 'ok    %-5s  %s\n' "$soll" "$name"
@@ -63,6 +71,16 @@ TXT')"
 probe block "Bash: echte Umlenkung MIT Heredoc-Rumpf"       "$(j Bash  command   'cat > prototyp/main.html <<EOF
 hallo
 EOF')"
+
+echo
+echo "--- mit Vertrag (echtes abnahmen/): muss durchlassen ---"
+ABN=abnahmen
+if ls abnahmen/*designvertrag*.md >/dev/null 2>&1; then
+  probe durch "Write nach prototyp/ MIT Vertrag"      "$(j Write file_path 'prototyp/gen.html')"
+  probe durch "Bash: cat > prototyp/ MIT Vertrag"     "$(j Bash  command   'cat > prototyp/gen.html')"
+else
+  echo "(kein Designvertrag in abnahmen/ — Abschnitt uebersprungen)"
+fi
 
 echo
 if [ "$fehler" -eq 0 ]; then

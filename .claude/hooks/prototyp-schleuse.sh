@@ -75,15 +75,19 @@ esac
 [ "$betroffen" -eq 1 ] || exit 0
 
 # --- liegt ein abgenommener Designvertrag vor? -----------------------------
+# SCHLEUSE_ABNAHMEN: nur fuer die Gegenprobe (schleusen-probe.sh), die den
+# GESCHLOSSENEN Zustand gegen ein leeres Verzeichnis misst, ohne den echten
+# Vertrag anzufassen. Im Betrieb bleibt es abnahmen/.
+ABNAHMEN="${SCHLEUSE_ABNAHMEN:-abnahmen}"
 count=0
-for f in abnahmen/*designvertrag*.md; do
+for f in "$ABNAHMEN"/*designvertrag*.md; do
   [ -e "$f" ] || continue
   count=$((count + 1))
 done
 if [ "$count" -eq 0 ]; then
   echo "PROTOTYP-SCHLEUSE: Es liegt keine Designvertrag-Abnahme in abnahmen/." >&2
-  echo "Erst die Welt entscheiden (werkzeug/weltenwahl.html), dann den Vertrag als" >&2
-  echo "abnahmen/JJJJ-MM-TT-designvertrag.md festhalten (docs/arbeitsplan.md," >&2
+  echo "Der Designvertrag entsteht aus dem User-Wort (Interview/Figma-Stand) und wird als" >&2
+  echo "abnahmen/JJJJ-MM-TT-designvertrag.md festgehalten (docs/arbeitsplan.md," >&2
   echo "Phase 0) — dann darf in prototyp/ gebaut werden." >&2
   echo "Bis dahin gehoeren lebende Blaetter nach werkzeug/." >&2
   exit 2

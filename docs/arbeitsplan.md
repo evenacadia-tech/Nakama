@@ -20,6 +20,20 @@ Phase: `CLAUDE-UX-UI-ARBEITSKERN.md` (Stufen 1–7); Hintergründe:
 > Vorgehen in `abnahmen/2026-08-21-suna-auftrag-figma.md`). Ein früherer
 > Codex-Versuch ist kein Referenzmaterial. Erst danach beginnt das Übersetzen
 > in `prototyp/`, gegen den dann exportierten Stand.
+>
+> **Stand 2026-08-21, Gen-Runde — erledigt, nicht abgenommen:** Nakama Gen
+> liegt als Figma-Entwurf von Claude in der Datei **`Testdummy`** (Key
+> `ZbLODrj56o5OuoENwXbZe9` — eine andere Datei als `fable-dummy`; der User hat
+> dort den Probeeq-Knoten 5015:5061 markiert), Rahmen **`Lumia Material Lab /
+> Study 04 — Gen`** (Node 5025:1616, bei x 6000): Schönfall ADVISE · OBSERVE ·
+> JUDGE nach dem Anwenden · Vorhören gehalten · alles frisch · gemischt mit
+> langem Namen · 16 Quellen · alles getrennt · keine Quelle · zwei 4×-Zooms ·
+> Delta · 17 offene Punkte — alles in
+> `abnahmen/2026-08-21-gen-auftrag-figma.md`. Mechanisch geprüft (9 Körper
+> 760×430, 0 Schriftverstöße, 0 Überläufe). Gemessen: 16 Zeilen **mit Namen**
+> = 158 px (die unbelegte 308 ist erledigt). **HIER weiter:** der User sieht
+> die Studie, überarbeitet oder exportiert → `assets/figma/JJJJ-MM-TT-gen.png`;
+> dann Phase 1b, Schritt Gen, Punkt 1 gegen den Export.
 
 ## Phase 0 — Designvertrag ✓ (erledigt 2026-08-21)
 

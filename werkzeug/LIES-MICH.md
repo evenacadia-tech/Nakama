@@ -329,7 +329,7 @@ Der Streifen kostet dauerhaft **28 px**; für Karte und Arbeitsfläche bleiben
 | | braucht |
 |---|---|
 | Karte ohne Namen, 16 Quellen | 212 px (rund 10 px je Zeile) |
-| Karte **mit** Namen, 16 Quellen | 308 px — geht nicht (einzige Zahl dieser Tabelle ohne Beleg im Quelltext) |
+| Karte **mit** Namen, 16 Quellen | ~~308 px — geht nicht~~ (war die einzige Zahl dieser Tabelle ohne Beleg im Quelltext). **Gemessen 2026-08-21 in Figma** (`abnahmen/2026-08-21-gen-auftrag-figma.md`): 16 Zeilen mit Namen = **158 px** bei Zellen 8 / Fuge 2 / Schrift 8 — geht, zum Preis von 8-px-Namen |
 | Assistent, Fünf-Teile-Form | **172 px** |
 | Alle drei Befunde | 219 px |
 | A/B-Urteil 120 px · Detail einer Quelle | 69 px |

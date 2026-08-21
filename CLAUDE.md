@@ -24,7 +24,13 @@ vorgelegt — nicht still entschieden.
 Die drei Oberflächen:
 
 1. **Nakama Gen** — die Main-App: Quellen-Übersicht, Befunde, Advisor.
-   760×430. Figma-Stand vorhanden (`assets/figma/2026-08-21-gen.png`).
+   760×430. Figma-Stand vorhanden (`assets/figma/2026-08-21-gen.png`) — die
+   *alte* Sprache (cyan); er liefert die Anordnung. **Figma-Entwurf von
+   Claude, nicht abgenommen** (2026-08-21, Gen-Runde): in der Probeeq-Sprache,
+   Datei `Testdummy`, `Lumia Material Lab / Study 04 — Gen` (Node 5025:1616,
+   Schönfall-Körper 5026:1619) — neun Zustandsrahmen, 4×-Zoom, Delta; die 17
+   offenen Punkte stehen in `abnahmen/2026-08-21-gen-auftrag-figma.md`. Vorgabe
+   wird er erst mit dem Export des Users in die Truhe.
 2. **Nakama Probeeq** — die aktive Sonde: ein **vollwertiger, hochwertiger
    EQ**, der Anweisungen von Gen direkt umsetzt **und** ganz normal manuell
    bedienbar ist. Muss allein funktionieren, auch ohne Gen. 700×420.

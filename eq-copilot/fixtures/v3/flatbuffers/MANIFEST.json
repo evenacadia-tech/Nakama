@@ -7,7 +7,7 @@
   "byte_mutation_von": "Markiert einen Puffer, den flatc nicht erzeugen KANN (falsche Dateikennung, abgeschnitten, zerstoerter Wurzeloffset). Er entsteht als Byte-Mutation des genannten gueltigen Puffers.",
   "regeln": "Die geschlossene Liste der Regelnamen steht in eq-copilot/schemas/v3/flatbuffers/README.md. Ein Verstoss ist (pfad, regel); die Menge wird kanonisch nach (pfad, regel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "anzahl_gueltig": 9,
-  "anzahl_ungueltig": 38,
+  "anzahl_ungueltig": 41,
   "fixtures": [
     {
       "datei": "gueltig/alle-validity-bits.bin",
@@ -430,6 +430,42 @@
           "regel": "sid_laenge"
         }
       ]
+    },
+    {
+      "datei": "ungueltig/sid-surrogat.bin",
+      "urteil": "ungueltig",
+      "warum": "ED A0 80 ist U+D800, die Haelfte eines Surrogatpaars. In UTF-8 gibt es keine Surrogate - sie sind eine UTF-16-Eigenheit",
+      "verstoesse": [
+        {
+          "pfad": "",
+          "regel": "verifier"
+        }
+      ],
+      "byte_mutation_von": "gueltig/mit-schleife.bin"
+    },
+    {
+      "datei": "ungueltig/sid-ueber-10ffff.bin",
+      "urteil": "ungueltig",
+      "warum": "F5 80 80 80 waere U+140000 - jenseits des Unicode-Bereichs, den es gibt",
+      "verstoesse": [
+        {
+          "pfad": "",
+          "regel": "verifier"
+        }
+      ],
+      "byte_mutation_von": "gueltig/mit-schleife.bin"
+    },
+    {
+      "datei": "ungueltig/sid-ueberlang.bin",
+      "urteil": "ungueltig",
+      "warum": "C0 80 kodiert U+0000 in zwei Byte - eine Ueberlangkodierung. Sie ist der klassische Weg, einen Filter zu umgehen, der nur die kurze Form kennt",
+      "verstoesse": [
+        {
+          "pfad": "",
+          "regel": "verifier"
+        }
+      ],
+      "byte_mutation_von": "gueltig/mit-schleife.bin"
     },
     {
       "datei": "ungueltig/sid-ungueltiges-utf8.bin",

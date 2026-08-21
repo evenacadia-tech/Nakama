@@ -492,6 +492,25 @@ def rohe_mutationen() -> list[tuple[str, str, object, list[dict], str]]:
     def auf_laenge(n: int):
         return lambda roh: roh[:n]
 
+    def sid_bytes(*ersatz: int):
+        """Schreibt eine Bytefolge in die SID, ohne ihre Laenge zu aendern.
+
+        Damit lassen sich die klassischen UTF-8-Kanten pruefen, die `flatc` aus
+        JSON nicht erzeugen KANN: eine Ueberlangkodierung, ein Surrogat und ein
+        Codepunkt jenseits von U+10FFFF. Der handgeschriebene C++-Pruefer muss
+        dort dasselbe sagen wie Rusts `str::from_utf8`.
+        """
+        def mutiere(roh: bytes) -> bytes:
+            marke = b"S-1-5-21-"
+            i = roh.find(marke)
+            if i < 0:
+                raise SystemExit("SID-Marke nicht im Puffer gefunden")
+            d = bytearray(roh)
+            for k, byte in enumerate(ersatz):
+                d[i + len(marke) + k] = byte
+            return bytes(d)
+        return mutiere
+
     def wurzeloffset_kaputt(roh: bytes) -> bytes:
         # Die ersten vier Bytes sind der Offset auf die Wurzeltabelle. Ein Wert
         # weit hinter dem Puffer muss den Verifier ausloesen, nicht einen
@@ -534,6 +553,24 @@ def rohe_mutationen() -> list[tuple[str, str, object, list[dict], str]]:
         ("puffer-sieben", "live-64-band", auf_laenge(7), [v("", "dateikennung")],
          "sieben Byte - ein Byte zu wenig fuer die Kennung. Ab acht einigen sich "
          "beide Beine auf `verifier`"),
+
+        # --- die klassischen UTF-8-Kanten ----------------------------------
+        # Der C++-Pruefer ist handgeschrieben und muss `str::from_utf8` in
+        # JEDER dieser drei Ecken treffen, nicht nur beim nackten
+        # Fortsetzungsbyte. flatc kann sie aus JSON nicht erzeugen - eine
+        # Ueberlangkodierung ist per Definition das, was ein Serialisierer
+        # NICHT schreibt.
+        ("sid-ueberlang", "mit-schleife", sid_bytes(0xC0, 0x80),
+         [v("", "verifier")],
+         "C0 80 kodiert U+0000 in zwei Byte - eine Ueberlangkodierung. Sie ist der "
+         "klassische Weg, einen Filter zu umgehen, der nur die kurze Form kennt"),
+        ("sid-surrogat", "mit-schleife", sid_bytes(0xED, 0xA0, 0x80),
+         [v("", "verifier")],
+         "ED A0 80 ist U+D800, die Haelfte eines Surrogatpaars. In UTF-8 gibt es "
+         "keine Surrogate - sie sind eine UTF-16-Eigenheit"),
+        ("sid-ueber-10ffff", "mit-schleife", sid_bytes(0xF5, 0x80, 0x80, 0x80),
+         [v("", "verifier")],
+         "F5 80 80 80 waere U+140000 - jenseits des Unicode-Bereichs, den es gibt"),
     ]
 
 

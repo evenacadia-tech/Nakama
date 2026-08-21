@@ -88,6 +88,19 @@ Die Engine liest den Wert aus der Instanz, waehlt den einen passenden Zweig
 und steigt nur dort ab. Passt keiner — oder fehlt die Eigenschaft, oder ist
 sie kein String — ist das **eine** Verletzung mit Schluessel `oneOf`.
 
+Zwei Feinheiten, beide von der Cross-Language-Pruefung erzwungen:
+
+* **Ein Zweig darf selbst eine diskriminierte Union sein.** `hello` ist genau
+  das: es haelt keine eigenen `properties`, sondern zwei Varianten, die beide
+  `type: "hello"` festlegen und sich erst in `connection_kind` unterscheiden.
+  Die Suche nach dem `const` steigt deshalb durch geschachtelte `oneOf`
+  hindurch und nimmt den Wert nur an, wenn **alle** Untervarianten denselben
+  festlegen — sonst waere die Zuordnung mehrdeutig. Ohne diesen Abstieg faende
+  der aeussere Discriminator die Familie ueberhaupt nicht.
+* **Ist die Instanz gar kein Objekt**, zeigt die Verletzung auf die Instanz
+  selbst (`""` an der Wurzel) statt auf `/<disc>`. Ein `/type` an einem
+  blossen String waere ein Pfad, den es dort nicht gibt.
+
 Damit sind zwei Dinge erreicht: die Verletzungsmenge ist endlich und
 deterministisch, und ein **reservierter oder unbekannter Discriminator wird
 abgelehnt** statt gegen alle Zweige gehalten (Entwurf §33.1: „Discriminator,

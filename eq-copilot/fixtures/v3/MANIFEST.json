@@ -577,7 +577,7 @@
       "warum": "es gibt genau zwei Bandgitter",
       "verletzungen": [
         {
-          "instanz": "/baender",
+          "instanz": "/baender/gitter_id",
           "schema": "#/$defs/bandwerte/properties/gitter_id/enum",
           "schluessel": "enum"
         }
@@ -1355,7 +1355,7 @@
     {
       "datei": "ungueltig/wurzel-ist-array.json",
       "urteil": "ungueltig",
-      "warum": "auch die Wurzel muss ein Objekt mit Discriminator sein",
+      "warum": "auch die Wurzel muss ein Objekt mit Discriminator sein; ist sie kein Objekt, zeigt die Verletzung auf die Instanz selbst statt auf ein /type, das es dort nicht gibt",
       "verletzungen": [
         {
           "instanz": "",

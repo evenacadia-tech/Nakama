@@ -550,7 +550,7 @@ UNGUELTIG: list[tuple] = [
      "die beiden Klassen duerfen nie vermischt werden (§32.2)"),
 
     ("gitter-erfunden", "evidence_snapshot", [setze("baender", "gitter_id", "nakama_log32_v1")],
-     [v("/baender", f"{S}/bandwerte/properties/gitter_id/enum", "enum")],
+     [v("/baender/gitter_id", f"{S}/bandwerte/properties/gitter_id/enum", "enum")],
      "es gibt genau zwei Bandgitter"),
 
     ("encoding-erfunden", "evidence_snapshot", [setze("baender", "encoding", "q_db_1_i8")],
@@ -818,7 +818,9 @@ UNGUELTIG: list[tuple] = [
     # --- Wurzeltyp -----------------------------------------------------------
     ("wurzel-ist-array", "heartbeat", [("ersetze", [], [1, 2, 3])],
      [v("", "#/oneOf", "oneOf")],
-     "auch die Wurzel muss ein Objekt mit Discriminator sein"),
+     "auch die Wurzel muss ein Objekt mit Discriminator sein; ist sie kein "
+     "Objekt, zeigt die Verletzung auf die Instanz selbst statt auf ein /type, "
+     "das es dort nicht gibt"),
 
     ("wurzel-ist-string", "heartbeat", [("ersetze", [], "heartbeat")],
      [v("", "#/oneOf", "oneOf")],

@@ -11,6 +11,7 @@ pub mod aggregat;
 pub mod bindung;
 pub mod framing;
 pub mod protokoll;
+pub mod vertrag;
 #[cfg(windows)]
 mod server;
 

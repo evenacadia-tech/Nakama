@@ -164,3 +164,32 @@ Welt (Glas und Licht) und Fassung (dunkles Glas, ein Lichtleiter) bleiben
 **Arbeitsannahmen**. Ihr Prüfpunkt lautet „sobald das Layout steht". Main
 steht — aber zwei Oberflächen fehlen und Stufe 2 Schritt 2 ist nicht
 begonnen. **Claude darf sie weiterhin nicht als entschieden zitieren.**
+
+## Nachtrag 2026-08-21, 21:09 — Designvertrag und Figma
+
+**Was heute danach passiert ist:** Der User hat im **Kontext-Interview**
+(zwanzig Fragen, in der Technik-Session) die Wahrheit festgelegt; für dieses
+Repo steht sie mit Wortlaut in
+[2026-08-21-designvertrag](2026-08-21-designvertrag.md): drei Apps mit einer
+Identität — **Nakama Gen** (Main) · **Nakama Probeeq** (aktive Sonde, ein
+vollwertiger EQ, der Anweisungen von Gen umsetzt und manuell bedienbar ist) ·
+**Nakama Suna** (passive Sonde); **Figma ist die Quelle, das Repo übersetzt**;
+Produkt englisch („Englisch – mein Wort"); Glas und Licht **verworfen**
+(Vermerk oben in beiden Arbeitsannahmen — der Prüfpunkt aus dem letzten
+Abschnitt dieser Datei ist damit eingelöst); Startwerte hingenommen. Die
+beiden Figma-Stände liegen bytegleich in `assets/figma/` (Gerätekörper
+gemessen: genau 4 × 760×430 und 4 × 700×420). Die Schleuse vor `prototyp/`
+ist **offen** (gemessen). `CLAUDE.md`, `docs/arbeitsplan.md` (Phase 0 ✓,
+neue Phase 1b), `docs/oberflaechen-spezifikation.md`, `docs/sondenplan.md`,
+`werkzeug/LIES-MICH.md` und der Primer sind nachgezogen.
+
+**Als Nächstes:** Phase 1b, Schritt Gen — den Figma-Stand
+`assets/figma/2026-08-21-gen.png` Element für Element gegen Spezifikation
+und Abnahmen lesen (drei Listen: deckt sich · weicht ab · fehlt im Bild;
+Anfang in `Nakama Designausarbeitungen selfmade/LIES-MICH.md`), dann das
+Blatt 1:1 auf 760×430 in `prototyp/` bauen — vorher mit dem User: ein Blatt
+je Oberfläche oder Tabs. Offen und nur vom User zu klären: die drei
+Zeichen, in denen der Stand von den Abnahmen abweicht (STALE gestrichelt
+statt hohl · `1 STALE` ohne Namen · Marker in Ruhe auf der Fokusquelle);
+zwölf oder dreizehn Parameter je Band (NAK-33, Technik-Repo); ein
+Figma-Stand für Suna fehlt noch.

@@ -15,7 +15,7 @@
 //                                        | gegenprobe-ueberlauf
 //                                        | gegenprobe-verdeckung
 //                                        | formfaktor | kachel | export
-//                                        | annahmen
+//                                        | annahmen | maschine
 //
 // Exit 1 bei Befund. BRAUCHT: playwright-core + Chromium (wird gesucht,
 // nicht behauptet — dieselbe Suche wie in pruefen.mjs).
@@ -511,6 +511,146 @@ async function probeZustaende() {
   await ctx.close()
 }
 
+/* -------------------------------------------------------------- maschine --
+   Codex-Befund 6: Draft, Discard, Undo und Neutralise waren keine ehrliche
+   Zustandsmaschine. Ein echter Klick auf Discard liess die Vorschlagszeile
+   Wort fuer Wort stehen, Neutralise hatte gar keinen Handler, der Verlauf war
+   eine feste Liste, und Undo im Ruhezustand tat nichts (Nachtrag E3).
+
+   Die tragende Regel dieser Probe ist allgemein und nicht auf die vier Griffe
+   zugeschnitten: JEDER lebende Griff muss etwas Sichtbares aendern. Ein Griff,
+   der sich druecken laesst und nichts tut, ist eine Luege in der Oberflaeche
+   (PRUEFLISTE 1). Geprueft wird gegen den gerenderten Text, nicht gegen LAGE —
+   sonst bestaetigt sich der Zustand selbst. */
+async function probeMaschine() {
+  const { ctx, page, fehler } = await oeffne('sonde-messung.html')
+  const bild = () => page.evaluate(() => {
+    const wf = document.querySelector('.anordnung[data-id="A"] .wf')
+    const t = s => { const e = wf.querySelector(s)
+      return e ? e.innerText.replace(/\s+/g, ' ').trim() : null }
+    return {
+      draft: t('[data-baustein^="Draft vom Main"]'),
+      history: t('[data-baustein^="Undo-Verlauf"]'),
+      reiter: [...wf.querySelectorAll('.eb')].filter(e => e.classList.contains('an'))
+        .map(e => e.textContent.trim()),
+      gains: [...wf.querySelectorAll('.slotz .g')].map(e => e.textContent.trim()),
+      lebende: [...wf.querySelectorAll('[data-griff]')].map(g => g.dataset.griff),
+      ganzesBlatt: wf.innerText.replace(/\s+/g, ' ').trim()
+    }
+  })
+  const klick = w => page.evaluate(w => {
+    const wf = document.querySelector('.anordnung[data-id="A"] .wf')
+    const g = [...wf.querySelectorAll('[data-griff]')].find(e => e.dataset.griff === w)
+    if (!g) return false
+    g.click(); return true
+  }, w)
+  const chrome = z => page.evaluate(z => {
+    // Der Knopf steht in der Chrome-Gruppe "Vorschlag" im Fuss.
+    const alle = [...document.querySelectorAll('#fuss button')]
+      .filter(b => b.textContent.trim() === z)
+    if (!alle.length) return false
+    alle[0].click(); return true
+  }, z)
+  let schief = 0
+  const pruefe = (ok, t) => { if (!ok) { schief++; sag(false, t) } }
+  const nach = async (was, fn) => { await fn(); await page.waitForTimeout(350)
+                                    return { was, bild: await bild() } }
+
+  const start = await bild()
+  pruefe(start.reiter.length === 1,
+    `Start: ${start.reiter.length} aktive Reiter statt genau einem`)
+  pruefe(/from Main/.test(start.draft), `Start: Vorschlagszeile ist "${start.draft}"`)
+
+  // 1. Discard MUSS die Zeile aendern und alle drei Griffe toeten.
+  const nachDiscard = await nach('discard', () => klick('discard'))
+  pruefe(nachDiscard.bild.draft !== start.draft,
+    `Discard aendert die Vorschlagszeile nicht: "${nachDiscard.bild.draft}"`)
+  pruefe(/discarded/.test(nachDiscard.bild.draft || ''),
+    `Discard sagt nicht, dass verworfen wurde: "${nachDiscard.bild.draft}"`)
+  pruefe(!nachDiscard.bild.lebende.some(g => ['hold','apply','discard'].includes(g)),
+    `nach Discard leben noch Vorschlagsgriffe: ${nachDiscard.bild.lebende.join(', ')}`)
+
+  // 2. Gegenpfad: zurueck nach "offen" (Werkzeug-Chrome).
+  const zurueck = await nach('chrome:offen', () => chrome('offen'))
+  pruefe(zurueck.bild.draft === start.draft,
+    `Rueckweg fuehrt nicht in den Ausgangszustand: "${zurueck.bild.draft}"`)
+
+  // 3. Apply: Zeile aendert sich, Verlauf WAECHST, ein Reiter bleibt aktiv.
+  const nachApply = await nach('apply', () => klick('apply'))
+  pruefe(/applied/.test(nachApply.bild.draft || ''),
+    `Apply aendert die Zeile nicht: "${nachApply.bild.draft}"`)
+  pruefe(nachApply.bild.history !== zurueck.bild.history,
+    `Apply laesst den Verlauf unveraendert: "${nachApply.bild.history}"`)
+  pruefe(/6 confirmed steps/.test(nachApply.bild.history || ''),
+    `Verlauf zaehlt nach Apply nicht mit: "${nachApply.bild.history}"`)
+  pruefe(nachApply.bild.reiter.length === 1,
+    `nach Apply ${nachApply.bild.reiter.length} aktive Reiter — `
+    + 'ein Zustand ohne Reiter ist genau Codex-Befund 10')
+
+  // 4. Undo nimmt es zurueck — Zeile UND Verlauf.
+  const nachUndo = await nach('undo', () => klick('undo'))
+  pruefe(nachUndo.bild.draft === start.draft,
+    `Undo stellt die Vorschlagszeile nicht her: "${nachUndo.bild.draft}"`)
+  pruefe(nachUndo.bild.history === zurueck.bild.history,
+    `Undo stellt den Verlauf nicht her: "${nachUndo.bild.history}"`)
+
+  // 5. Neutralise: alle Gains auf 0 — und kein "−0.0 dB" (Codex-Befund 10).
+  const nachNeutral = await nach('neutralise', () => klick('neutralise'))
+  const gains = nachNeutral.bild.gains.filter(g => g !== '—')
+  pruefe(gains.length > 0, 'nach Neutralise gibt es keinen einzigen Gain-Wert')
+  pruefe(gains.every(g => g === '0.0 dB'),
+    `Neutralise stellt nicht alle Gains auf null: ${[...new Set(gains)].join(', ')}`)
+  pruefe(!nachNeutral.bild.ganzesBlatt.includes('−0.0'),
+    'im Blatt steht „−0.0" — Null hat kein Vorzeichen')
+  pruefe(!nachNeutral.bild.lebende.includes('neutralise'),
+    'Neutralise bleibt nach dem Neutralisieren lebendig, tut aber nichts mehr')
+
+  // 6. Gegenpfad zu Neutralise.
+  const nachUndo2 = await nach('undo', () => klick('undo'))
+  pruefe(nachUndo2.bild.gains.join() === start.gains.join(),
+    `Undo stellt die Gains nicht her: ${nachUndo2.bild.gains.join(' ')}`)
+
+  // 7. Verlauf leerklicken: dann MUSS Undo tot sein (Nachtrag E3).
+  for (let i = 0; i < 12; i++) {
+    const b = await bild()
+    if (!b.lebende.includes('undo')) break
+    await klick('undo'); await page.waitForTimeout(120)
+  }
+  const leer = await bild()
+  pruefe(!leer.lebende.includes('undo'),
+    'Undo lebt noch, obwohl der Verlauf leer ist — ein Knopf ohne Wirkung')
+  pruefe(/0 confirmed steps/.test(leer.history || ''),
+    `Verlauf meldet nicht null: "${leer.history}"`)
+
+  // 8. Echtes Halten mit pointerdown/pointerup — der einzige Griff, den ein
+  //    Klick nicht erreicht. Er ist die Mechanik, die die Spezifikation
+  //    woertlich verlangt: gehalten = hoerbar, losgelassen = weg.
+  await chrome('offen'); await page.waitForTimeout(300)
+  const vorHalten = await bild()
+  await page.evaluate(() => {
+    const g = document.querySelector('.anordnung[data-id="A"] [data-griff="hold"]')
+    g.dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, cancelable:true}))
+  })
+  await page.waitForTimeout(300)
+  const gehalten = await bild()
+  await page.evaluate(() => {
+    const g = document.querySelector('.anordnung[data-id="A"] [data-griff="hold"]')
+    g.dispatchEvent(new PointerEvent('pointerup', {bubbles:true}))
+  })
+  await page.waitForTimeout(300)
+  const losgelassen = await bild()
+  pruefe(gehalten.reiter.join() === 'Draft',
+    `gehalten: aktiver Reiter ist "${gehalten.reiter.join()}" statt "Draft"`)
+  pruefe(losgelassen.reiter.join() === vorHalten.reiter.join(),
+    `losgelassen: Reiter kehrt nicht zurueck (${losgelassen.reiter.join()})`)
+
+  if (fehler.length) { schief++; sag(false, 'maschine JS-Fehler: ' + fehler[0]) }
+  sag(schief === 0, 'maschine: offen→verworfen→offen→angewandt→offen, neutralisieren '
+    + 'und zuruecknehmen, Verlauf leergeklickt, Halten per pointerdown/-up — '
+    + `${schief} Abweichungen`)
+  await ctx.close()
+}
+
 /* --------------------------------------------------------------- annahmen --
    Codex-Befund 5: der "laengstmoegliche SLOT" berief sich im Kommentar auf die
    Spezifikation. Die nennt fuer die Bandparameter aber genau eine Zahl —
@@ -745,7 +885,7 @@ const PROBEN = {
   ratsche: probeRatsche, deckel: probeDeckel, beleg: probeBeleg,
   grenzfall: probeGrenzfall, zustaende: probeZustaende,
   formfaktor: probeFormfaktor, kachel: probeKachel, export: probeExport,
-  annahmen: probeAnnahmen
+  annahmen: probeAnnahmen, maschine: probeMaschine
 }
 const was = process.argv[2] || 'alles'
 const lauf = was === 'alles' ? Object.keys(PROBEN) : [was]

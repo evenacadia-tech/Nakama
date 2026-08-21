@@ -438,8 +438,27 @@ const UNDO = [
 const SCHUTZ = {vonHz:2000, bisHz:5000, name:'Vocal presence'};
 
 /* Laufender Zustand. LAGE wird von echtem Druecken gesetzt, nicht von
-   einem Schalter — sonst waere das Halten nur behauptet. */
-const LAGE = {haelt:false, angewandt:false};
+   einem Schalter — sonst waere das Halten nur behauptet.
+
+   Bis 2026-08-21 stand hier nur {haelt, angewandt} — ein einziges Flag fuer
+   vier Griffe. Folge (Codex-Befund 6): ein echter Klick auf Discard setzte
+   `angewandt = false`, was ohnehin schon galt, und die Vorschlagszeile blieb
+   Wort fuer Wort stehen. Neutralise hatte gar keinen Handler, der
+   Undo-Verlauf war eine feste Liste, und "Undo" im Ruhezustand tat nichts.
+
+   ACHTUNG, zwei Begriffe (sondenplan §6): `WELT.draft` sagt, ob die
+   Vorschlags-ZEILE ueberhaupt dauerhaft im Blatt steht — eine Platzfrage.
+   `LAGE.vorschlag` sagt, in welchem Zustand der Vorschlag ist. Deshalb
+   heissen sie verschieden. */
+const LAGE = {
+  haelt: false,
+  vorschlag: 'offen',        // offen · angewandt · verworfen
+  neutralisiert: false,
+  /* Jeder Eintrag weiss, was er rueckgaengig macht. Ein Verlauf, der nur
+     Text traegt, kann nichts zuruecknehmen — dann ist Undo ein Knopf, der
+     sich druecken laesst und nichts tut (PRUEFLISTE 1). */
+  verlauf: UNDO.map(t => ({text: t, wirkung: 'alt'}))
+};
 const WELT = {
   slots:8, dynamik:true, werte:'echt', bypass:false, verbunden:true,
   gekoppelt:true, schutzGetroffen:true, gewaehlt:3,
@@ -451,7 +470,12 @@ const WELT = {
 const hzText = f => f >= 1000
   ? String((f/1000).toFixed(2)).replace(/0$/,'').replace(/\.$/,'') + ' kHz'
   : Math.round(f) + ' Hz';
-const dbText = v => (v > 0 ? '+' : '−') + Math.abs(v).toFixed(1) + ' dB';
+/* Null hat kein Vorzeichen. `v > 0 ? '+' : '−'` schrieb fuer 0 und fuer -0
+   beide Male „−0.0 dB" — sichtbar spaetestens nach dem Neutralisieren, das
+   genau diesen Wert erzeugt (Codex-Befund 10). Die Kante liegt bei -0:
+   Object.is(-0, 0) ist false, aber -0 > 0 und -0 < 0 sind beide false, also
+   faellt es hier korrekt in den Null-Zweig. */
+const dbText = v => (v === 0 ? '' : v > 0 ? '+' : '−') + Math.abs(v).toFixed(1) + ' dB';
 const msText = v => v + ' ms';
 const qText  = v => 'Q ' + v.toFixed(2);
 /* Das Totzeichen steht an EINER Stelle. Es wird in beiden Darstellungsformen
@@ -564,7 +588,12 @@ const aktiveSlots = () => {
   const q = WELT.werte === 'laengste'
     ? SLOTS.map(s => ({...LAENGSTER, nr:s.nr}))
     : SLOTS;
-  return q.slice(0, WELT.slots).map(s => ({...s, dyn: WELT.dynamik && s.dyn}));
+  /* Neutralisieren stellt alle Gains auf 0 — das ist die Wirkung, die der
+     Knopf verspricht, und ohne sie waere er Zierde. Baender ohne Gain
+     (HP/TP) bleiben null und zeigen weiter "—". */
+  return q.slice(0, WELT.slots).map(s => ({...s,
+    dyn: WELT.dynamik && s.dyn,
+    gDb: LAGE.neutralisiert && s.gDb !== null ? 0 : s.gDb}));
 };
 
 /* ---------- Das Kurvenfeld ----------
@@ -649,7 +678,13 @@ function kurvenfeld(){
 
 /* ---------- Die Zeilen ---------- */
 function streifen(){
-  const e = LAGE.haelt ? 'audition' : LAGE.angewandt ? 'apply' : 'edit';
+  /* Es gibt genau zwei Reiter, also darf es genau zwei Zustaende geben.
+     Vorher konnte `e` den Wert 'apply' annehmen — ein dritter Zustand ohne
+     Reiter: nach einem Klick auf Apply war KEIN Reiter mehr aktiv (gemessen,
+     Codex-Befund 10). Angewandt ist auch kein Reiter-Zustand: es ist das
+     Ergebnis eines bewussten Klicks und steht in der Vorschlagszeile, wo es
+     hingehoert. Gehalten wird vorgehoert, sonst wird bearbeitet. */
+  const e = LAGE.haelt ? 'audition' : 'edit';
   const reiter = [['edit','Edit'],['audition','Draft']].map(([id,n]) =>
     `<span class="eb${id===e?' an':''}${id==='audition'&&LAGE.haelt?' haelt':''}">${n}</span>`).join('');
   /* Die Statuszeile des Editors braucht laut Spezifikation genau ZWEI
@@ -694,7 +729,16 @@ function draftZeile(){
       <i>Draft</i><span class="w tot">device bypassed — nothing would be audible</span>
       <span class="rechts"><span class="wfk aus">Audition (hold)</span>
       <span class="wfk aus">Apply</span><span class="wfk aus">Discard</span></span></div>`;
-  if(LAGE.angewandt)
+  /* Verworfen ist ein eigener Zustand, kein Rueckfall in "offen". Vorher
+     zeigte das Blatt nach einem echten Klick auf Discard weiterhin
+     "from Main · 2 bands" mit lebendigem Apply — der Griff behauptete eine
+     Wirkung, die er nicht hatte (Codex-Befund 6). */
+  if(LAGE.vorschlag === 'verworfen')
+    return `<div class="zeile" data-baustein="Draft vom Main (halten, anwenden, verwerfen)">
+      <i>Draft</i><span class="w tot">proposal discarded — none pending</span>
+      <span class="rechts"><span class="wfk aus">Audition (hold)</span>
+      <span class="wfk aus">Apply</span><span class="wfk aus">Discard</span></span></div>`;
+  if(LAGE.vorschlag === 'angewandt')
     return `<div class="zeile" data-baustein="Draft vom Main (halten, anwenden, verwerfen)">
       <i>Draft</i><span class="w">applied · <b>2 bands</b> changed</span>
       <span class="rechts">${griff('undo','Undo the change')}
@@ -705,21 +749,35 @@ function draftZeile(){
     ${griff('apply','Apply', true)}${griff('discard','Discard')}</span></div>`;
 }
 
+/* Der Verlauf ist nicht mehr die feste Liste UNDO, sondern LAGE.verlauf: er
+   waechst beim Anwenden und beim Neutralisieren und schrumpft beim Undo.
+   Vorher stand dort immer "5 confirmed steps" mit demselben obersten
+   Eintrag — auch direkt nach einem Apply. Und beide Griffe sind jetzt
+   verdrahtet: Undo ist tot, wenn nichts mehr zurueckzunehmen ist,
+   Neutralise ist tot, wenn schon neutralisiert wurde (Codex-Befund 6 und
+   der Nachtrag E3: ein Undo, das im Ruhezustand nichts tut, ist eine Luege
+   in der Oberflaeche). */
 function undoTeil(){
   if(WELT.undo === 'aus') return '';
+  const v = LAGE.verlauf;
+  const tot = WELT.bypass;
+  const undoLebt   = !tot && v.length > 0;
+  const neutrLebt  = !tot && !LAGE.neutralisiert;
+  const knoepfe =
+      (undoLebt  ? griff('undo','Undo')            : '<span class="wfk aus">Undo</span>')
+    + (neutrLebt ? griff('neutralise','Neutralise'): '<span class="wfk aus">Neutralise</span>');
+  const zaehler = v.length + ' confirmed step' + (v.length === 1 ? '' : 's');
   if(WELT.undo === 'zeile')
     return `<div class="zeile" data-baustein="Undo-Verlauf + Neutralisieren"><i>History</i>
-      <span class="w"><b>${UNDO[0]}</b></span>
-      <span class="w">${UNDO.length} confirmed steps</span>
-      <span class="rechts"><span class="wfk" data-griff="undo">Undo</span>
-      <span class="wfk">Neutralise</span></span></div>`;
-  return kasten('History', UNDO.length + ' confirmed steps',
-    liste('Undo-Verlauf', UNDO.length, UNDO.map((t,i) =>
-      i === 0 ? `<div class="uv"><b>${t}</b><i>latest</i></div>`
-              : `<div class="uv zu">${t}<i>step ${UNDO.length - i}</i></div>`).join(''))
+      <span class="w">${v.length ? `<b>${v[0].text}</b>` : `<span class="tot">${TOT}</span>`}</span>
+      <span class="w">${zaehler}</span>
+      <span class="rechts">${knoepfe}</span></div>`;
+  return kasten('History', zaehler,
+    liste('Undo-Verlauf', v.length, v.map((e,i) =>
+      i === 0 ? `<div class="uv"><b>${e.text}</b><i>latest</i></div>`
+              : `<div class="uv zu">${e.text}<i>step ${v.length - i}</i></div>`).join(''))
     + `<div class="zeile" style="border:0;background:transparent;padding:3px 0 0">
-        <span class="rechts"><span class="wfk" data-griff="undo">Undo</span>
-        <span class="wfk">Neutralise</span></span></div>`,
+        <span class="rechts">${knoepfe}</span></div>`,
     {baustein:'Undo-Verlauf + Neutralisieren', klasse:'undobox'});
 }
 
@@ -1328,8 +1386,25 @@ function verdrahten(wf){
       if(LAGE.haelt) g.classList.add('gedrueckt');
     } else {
       g.addEventListener('click', () => {
-        if(was === 'apply') LAGE.angewandt = true;
-        if(was === 'undo' || was === 'discard') LAGE.angewandt = false;
+        if(was === 'apply'){
+          LAGE.vorschlag = 'angewandt';
+          LAGE.verlauf.unshift({text:'Applied draft from Main · 2 bands',
+                                wirkung:'vorschlag'});
+        }
+        /* Verwerfen heisst verwerfen: der Vorschlag ist weg, nicht bloss
+           nicht angewandt. Zurueck fuehrt der Weg ueber das Werkzeug-Chrome
+           („Vorschlag: offen") — ein neuer Vorschlag kaeme vom Main, und den
+           gibt es in einem Spezimen nicht. Gegenpfad, nicht Einbahnstrasse. */
+        if(was === 'discard') LAGE.vorschlag = 'verworfen';
+        if(was === 'neutralise' && !LAGE.neutralisiert){
+          LAGE.neutralisiert = true;
+          LAGE.verlauf.unshift({text:'Neutralised', wirkung:'neutral'});
+        }
+        if(was === 'undo' && LAGE.verlauf.length){
+          const weg = LAGE.verlauf.shift();
+          if(weg.wirkung === 'vorschlag') LAGE.vorschlag = 'offen';
+          if(weg.wirkung === 'neutral')   LAGE.neutralisiert = false;
+        }
         if(was === 'bypass'){ WELT.bypass = !WELT.bypass; }
         LAGE.haelt = false; alleNeu();
       });
@@ -1624,6 +1699,20 @@ function fussZeichnen(){
           + `gemessene Klemme mit.`;
         return s;
       })()]),
+    /* Werkzeug-Chrome, kein Produktknopf: der Rueckweg aus „verworfen". Im
+       Produkt kaeme ein neuer Vorschlag vom Main, den es hier nicht gibt —
+       ohne diesen Weg waere Discard eine Einbahnstrasse und der Zustand nach
+       einem Klick nicht mehr messbar (Gegenpfade, Bauplan §11.5). Er setzt
+       auch den Verlauf zurueck, damit Undo wieder etwas zu tun hat. */
+    gruppe('Vorschlag', ['offen','angewandt','verworfen'].map(z =>
+      knopf(z, () => {
+        LAGE.vorschlag = z;
+        LAGE.neutralisiert = false;
+        LAGE.verlauf = UNDO.map(t => ({text:t, wirkung:'alt'}));
+        if(z === 'angewandt') LAGE.verlauf.unshift(
+          {text:'Applied draft from Main · 2 bands', wirkung:'vorschlag'});
+        zeichnen();
+      }, LAGE.vorschlag === z ? 'an' : ''))),
     gruppe('Ehrlichkeit', [
       knopf('Bypass ' + (WELT.bypass ? 'an' : 'aus'),
         () => { WELT.bypass = !WELT.bypass; zeichnen(); }, WELT.bypass ? 'an' : ''),

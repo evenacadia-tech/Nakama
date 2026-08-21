@@ -356,6 +356,23 @@ Undo einen Schritt entfernt, kauft bis zu 123 px zurück.
 4. Gerechnet ist der **schlimme Fall**: alle 8 Bänder aktiv, alle mit Dynamik,
    längste Werte. Der Schönfall kostet die Hälfte — und ist als Grundlage
    wertlos.
+5. **Die Bereichsgrenzen der Bandparameter sind frei gesetzt** (ergänzt
+   2026-08-21, Codex-Befund 5). `docs/oberflaechen-spezifikation.md` §2 nennt
+   für die Bandparameter genau eine Zahl: „Gain (manuell bis ±12 dB)". Die
+   „längsten Werte" **Q 24,00 · Schwelle −60 dB · Bereich −18 dB · Attack
+   300 ms · Hold 500 ms · Release 3000 ms** haben **keine Sachquelle** — sie
+   sind die längsten plausiblen Schreibweisen und nichts weiter. Sie stehen
+   sichtbar als Testannahme im Blatt und werden von `sondenprobe.mjs annahmen`
+   nachgehalten. **Für den Platzbedarf ist das folgenlos** (nachgemessen: mit
+   „längsten" und mit realistischen Werten sind alle fünf Anordnungen auf den
+   Pixel identisch — die Spalten sind breit genug). Es bleibt trotzdem eine
+   **offene Produktfrage:** welche Bereiche gelten wirklich? Sie gehört in die
+   Spezifikation, nicht in einen Codekommentar.
+6. **Dass eine Kurve so hoch sein muss wie eine Textzeile, um ablesbar zu
+   sein**, ist die Schwelle hinter jedem „nicht ablesbar" auf dem Blatt
+   (15,4 px = 11 px Schrift × 1,4 Zeilenhöhe). Die Herleitung stimmt, die
+   Gleichsetzung ist unbewiesen — eine Kurve ist kein Buchstabe. Zu beweisen
+   wäre sie nur durch einen Sehversuch am 1:1-Blatt.
 
 ---
 

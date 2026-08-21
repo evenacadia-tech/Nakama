@@ -69,29 +69,89 @@ fn muster_passt(muster: &str, wert: &str) -> Option<bool> {
 /// Groesste ganze Zahl, die binary64 noch exakt traegt: 2^53 - 1.
 pub const SICHERE_GANZZAHL: u64 = 9_007_199_254_740_991;
 
-/// Prueft den ROHTEXT eines v3-Dokuments, BEVOR ihn ein Parser sieht.
+/// Betragsgrenze der Gleitkommazahlen des Vertrags: |x| < 1e308.
+pub const DEZ_GRENZE: i64 = 308;
+
+fn ist_hexziffer(c: char) -> bool {
+    c.is_ascii_digit() || ('a'..='f').contains(&c) || ('A'..='F').contains(&c)
+}
+
+/// Entscheidet AUS DEM LITERAL, ob eine Zahl im Vertragsbereich liegt.
 ///
-/// Warum vor dem Parser und nicht als Schemaregel: T2-Runde 1 hat gemessen,
-/// dass JUCEs `parseNumber` `intValue * 10 + digit` in einem `int64` ohne
-/// Bereichspruefung akkumuliert. `18446744073709552016` kommt auf der
-/// C++-Seite als **400** an. Ein `maximum: 400` im Schema wuerde dort
-/// anstandslos passieren und auf der Rust-Seite fallen — der Wert ist beim
-/// Ankommen bereits verfaelscht. Der einzige Ort, an dem alle drei Beine
-/// dasselbe sehen koennen, ist der Text.
+/// T2-Runde 2, Blocker BL-1/BL-2: die erste Fassung fragte hier
+/// `lit.parse::<f64>()` und auf der C++-Seite `getDoubleValue()`. Genau das
+/// war der Fehler — `getDoubleValue()` ist derselbe Leser, gegen dessen
+/// Ueberlauf der Riegel schuetzen soll. `juce_CharacterFunctions.h`
+/// akkumuliert den Exponenten in einem `int` OHNE Schranke, und der
+/// `max_exponent10`-Riegel laeuft DANACH; `1e4294967296` kam dort als **1.0**
+/// an, waehrend Rust und Python `inf` lasen.
 ///
-/// Sechs Regeln, jede gegen eine GEMESSENE Abweichung zwischen den Beinen:
+/// Die Lehre, die ueber diesen Fall hinausgeht: **ein Riegel darf nie die
+/// Bibliothek befragen, gegen deren Verhalten er schuetzt.** Die Ganzzahlregel
+/// war von Anfang an aus dem Literal gerechnet und hat gehalten; die
+/// Endlichkeitsregel war delegiert und hat nicht gehalten.
+fn zahl_pruefen(ganz: &str, bruch: &str, exp_ziffern: &str, exp_negativ: bool,
+                lit: &str) -> Result<(), String> {
+    if bruch.is_empty() && exp_ziffern.is_empty() {
+        let zu_gross = ganz.len() > 16
+            || (ganz.len() == 16 && ganz.parse::<u64>().unwrap_or(u64::MAX) > SICHERE_GANZZAHL);
+        if zu_gross {
+            return Err(format!("Ganzzahl ausserhalb 2^53-1: {lit}"));
+        }
+        return Ok(());
+    }
+
+    // Der Exponent selbst: mehr als drei Ziffern liegen schon ausserhalb, und
+    // so wird er auch nie gross genug, um irgendwo ueberzulaufen.
+    let ohne_null = exp_ziffern.trim_start_matches('0');
+    if ohne_null.len() > 3 {
+        return Err(format!("Exponent ausserhalb +/-{DEZ_GRENZE}: {}", kurz(lit)));
+    }
+    let mut exp: i64 = if ohne_null.is_empty() { 0 } else { ohne_null.parse().unwrap_or(0) };
+    if exp_negativ {
+        exp = -exp;
+    }
+
+    let alle: String = format!("{ganz}{bruch}");
+    let signifikant = alle.trim_start_matches('0');
+    if signifikant.is_empty() {
+        return Ok(()); // der Wert ist exakt 0
+    }
+    let fuehrende = (alle.len() - signifikant.len()) as i64;
+    let dez = (ganz.len() as i64 - fuehrende - 1) + exp;
+    if dez >= DEZ_GRENZE || dez <= -DEZ_GRENZE {
+        return Err(format!("Zahl ausserhalb +/-1e{DEZ_GRENZE}: {}", kurz(lit)));
+    }
+    Ok(())
+}
+
+fn kurz(s: &str) -> String {
+    s.chars().take(40).collect()
+}
+
+/// Der Riegel auf BYTE-Ebene — so, wie ein Dokument wirklich ankommt.
 ///
-/// 1. Keine fuehrende Null (`091`) — JUCE liest 91, RFC 8259 verbietet es.
-/// 2. Ganzzahlen nur innerhalb ±(2^53−1) — darueber verfaelscht JUCE still.
-/// 3. Gleitkommaliterale muessen endlich sein (`1e400` ist es nicht).
-/// 4. Kein NUL-Escape in einer Zeichenkette — juce::String ist
-///    nullterminiert und bricht dort im Parser ab, waehrend serde_json und
-///    Python es annehmen.
-/// 5. Keine einsamen Surrogate — hier lehnen beide eigenen Engines ab und
-///    nur das Referenzbein nimmt an; die Regel zieht es nach.
-/// 6. Kein leerer Objektschluessel — JUCE lehnt ihn im Parser ab, in einem
-///    additiven Objekt (`zaehler`, `konfidenz`, `verteilung`) haette
-///    serde_json ihn dagegen akzeptiert.
+/// Zwei Regeln lassen sich nur hier ausdruecken (T2-Runde 2, BF-6/BF-7):
+///
+/// * **BOM.** RFC 8259 §8.1: `serde_json` und Pythons `json` lehnen ein BOM
+///   ab, JUCEs `loadFileAsString` streift es und parst weiter.
+/// * **Kaputtes UTF-8.** Gemessen liefen die drei Beine hier voellig
+///   auseinander: das Python-Bein warf eine ungefangene `UnicodeDecodeError`,
+///   dieses hier panickte beim Lesen, und JUCE ersetzte das Byte still.
+pub fn textriegel_bytes(roh: &[u8]) -> Result<(), String> {
+    if roh.starts_with(&[0xEF, 0xBB, 0xBF]) {
+        return Err("BOM am Dokumentanfang".into());
+    }
+    match std::str::from_utf8(roh) {
+        Ok(text) => textriegel(text),
+        Err(e) => Err(format!("kein gueltiges UTF-8 an Byte {}", e.valid_up_to())),
+    }
+}
+
+/// Prueft die Zeichen eines v3-Dokuments, BEVOR ein Parser sie sieht.
+///
+/// Acht Regeln, jede gegen eine GEMESSENE Abweichung zwischen den Beinen.
+/// Auslegung und Begruendung: `eq-copilot/schemas/v3/README.md`.
 ///
 /// Gezaehlt wird in CODEPUNKTEN, damit die Positionsangabe in allen drei
 /// Beinen dieselbe ist.
@@ -114,19 +174,26 @@ pub fn textriegel(text: &str) -> Result<(), String> {
                 let d = z[j];
                 if d == '\\' {
                     if j + 5 < n && z[j + 1] == 'u' {
+                        // GENAU vier ASCII-Hexziffern (T2-Runde 2, BF-2/BF-3):
+                        // `u32::from_str_radix` naehme ein Vorzeichen, Pythons
+                        // `int(roh,16)` zusaetzlich Leerzeichen, `0x`-Praefix,
+                        // Ziffern-Trenner und arabisch-indische Ziffern.
+                        // Drei Hex-Grammatiken waeren drei Urteile.
                         let roh: String = z[j + 2..j + 6].iter().collect();
-                        let Ok(cp) = u32::from_str_radix(&roh, 16) else {
-                            return Err(format!("unlesbares u-Escape {roh:?} an Position {j}"));
-                        };
+                        if roh.chars().count() != 4 || !roh.chars().all(ist_hexziffer) {
+                            return Err(format!(
+                                "kein 4-stelliges Hex-Escape an Position {j}"));
+                        }
+                        let cp = u32::from_str_radix(&roh, 16).unwrap_or(0);
                         if cp == 0 {
                             return Err(format!("NUL-Escape in Zeichenkette an Position {j}"));
                         }
-                        if (0xDC00..=0xDFFF).contains(&cp) && hoch.is_none() {
+                        let tief = (0xDC00..=0xDFFF).contains(&cp);
+                        if tief && hoch.is_none() {
                             return Err(format!(
-                                "einsames tiefes Surrogat U+{cp:04X} an Position {j}"
-                            ));
+                                "einsames tiefes Surrogat U+{cp:04X} an Position {j}"));
                         }
-                        if hoch.is_some() && !(0xDC00..=0xDFFF).contains(&cp) {
+                        if hoch.is_some() && !tief {
                             return Err(format!("hohes Surrogat ohne Paar an Position {j}"));
                         }
                         hoch = if (0xD800..=0xDBFF).contains(&cp) { Some(cp) } else { None };
@@ -148,9 +215,7 @@ pub fn textriegel(text: &str) -> Result<(), String> {
                 }
                 if (d as u32) < 0x20 {
                     return Err(format!(
-                        "rohes Steuerzeichen U+{:04X} an Position {j}",
-                        d as u32
-                    ));
+                        "rohes Steuerzeichen U+{:04X} an Position {j}", d as u32));
                 }
                 j += 1;
             }
@@ -183,42 +248,44 @@ pub fn textriegel(text: &str) -> Result<(), String> {
                 return Err(format!("Zahl ohne Ziffern an Position {i}"));
             }
             if ganz.len() > 1 && ganz.starts_with('0') {
-                let lit: String = z[i..j].iter().collect();
+                let lit: String = z[i..j].iter().take(20).collect();
                 return Err(format!("fuehrende Null in {lit:?} an Position {i}"));
             }
-            let mut bruch = false;
-            let mut exp = false;
+
+            let mut bruch = String::new();
             if j < n && z[j] == '.' {
-                bruch = true;
                 j += 1;
+                let a = j;
                 while j < n && z[j].is_ascii_digit() {
                     j += 1;
                 }
+                bruch = z[a..j].iter().collect();
+                if bruch.is_empty() {
+                    return Err(format!("Dezimalpunkt ohne Nachkommaziffern an Position {i}"));
+                }
             }
+
+            let mut exp_ziffern = String::new();
+            let mut exp_negativ = false;
             if j < n && (z[j] == 'e' || z[j] == 'E') {
-                exp = true;
                 j += 1;
                 if j < n && (z[j] == '+' || z[j] == '-') {
+                    exp_negativ = z[j] == '-';
                     j += 1;
                 }
+                let a = j;
                 while j < n && z[j].is_ascii_digit() {
                     j += 1;
                 }
+                exp_ziffern = z[a..j].iter().collect();
+                if exp_ziffern.is_empty() {
+                    // BF-1: getDoubleValue("1e") liefert 1.0.
+                    return Err(format!("Exponent ohne Ziffern an Position {i}"));
+                }
             }
+
             let lit: String = z[i..j].iter().collect();
-            if !bruch && !exp {
-                let zu_gross = ganz.len() > 16
-                    || (ganz.len() == 16 && ganz.parse::<u64>().unwrap_or(u64::MAX) > SICHERE_GANZZAHL);
-                if zu_gross {
-                    return Err(format!("Ganzzahl ausserhalb 2^53-1: {lit}"));
-                }
-            } else {
-                match lit.parse::<f64>() {
-                    Ok(d) if d.is_finite() => {}
-                    Ok(_) => return Err(format!("nicht endliche Zahl: {lit}")),
-                    Err(_) => return Err(format!("unlesbare Zahl {lit:?}")),
-                }
-            }
+            zahl_pruefen(&ganz, &bruch, &exp_ziffern, exp_negativ, &lit)?;
             i = j;
             continue;
         }
@@ -701,83 +768,6 @@ mod tests {
     // nur eine Ebene tiefer: etwas im Schema, das eine Engine anders liest als
     // die andere, ohne dass jemand es merkt. Die C++-Gegenstuecke stehen in
     // SchemaTestMain.cpp / fahreRiegelproben().
-
-    /// Der Textriegel, Kante fuer Kante. Dieselbe Tabelle steht in
-    /// `SchemaTestMain.cpp` und in `pruefe_v3_vertrag.py` — laufen die drei
-    /// auseinander, faellt genau hier eine von ihnen.
-    /// T2-Runde 1, Hypothese des Pruefers: ein OBJEKTWERTIGES `const` haette
-    /// die beiden Engines auseinanderlaufen lassen — die C++-Seite verglich
-    /// zwei Objekte immer als ungleich. Heute unerreichbar (alle const- und
-    /// enum-Werte im Schema sind Skalare), deshalb steht die Probe hier und
-    /// nicht im Korpus. Die Schluesselreihenfolge ist ABSICHTLICH vertauscht.
-    #[test]
-    fn objektwertiges_const_vergleicht_wie_die_cpp_seite() {
-        let s = Schema::laden(json!({
-            "x-nakama-discriminator": "type",
-            "oneOf": [{ "$ref": "#/$defs/a" }],
-            "$defs": { "a": {
-                "type": "object",
-                "required": ["type", "k"],
-                "additionalProperties": false,
-                "properties": {
-                    "type": { "const": "a" },
-                    "k": { "const": { "p": 1, "q": [2, 3] } }
-                }
-            }}
-        }))
-        .unwrap();
-        assert!(s.gueltig(&json!({"type": "a", "k": {"q": [2, 3], "p": 1}})));
-        assert!(!s.gueltig(&json!({"type": "a", "k": {"p": 1, "q": [2, 4]}})));
-        assert!(!s.gueltig(&json!({"type": "a", "k": {"p": 1}})));
-    }
-
-    #[test]
-    fn textriegel_deckt_jede_gemessene_kante() {
-        // (Text, wird_abgelehnt)
-        let faelle: &[(&str, bool)] = &[
-            (r#"{"w": 9007199254740991}"#, false),
-            (r#"{"w": 9007199254740992}"#, true),
-            (r#"{"w": -9007199254740991}"#, false),
-            (r#"{"w": -9007199254740992}"#, true),
-            (r#"{"w": 18446744073709552016}"#, true),
-            (r#"{"w": 10000000000000000000}"#, true),
-            (r#"{"w": 091}"#, true),
-            (r#"{"w": -091}"#, true),
-            (r#"{"w": 0}"#, false),
-            (r#"{"w": -0}"#, false),
-            (r#"{"w": 0.5}"#, false),
-            (r#"{"w": 1e400}"#, true),
-            (r#"{"w": -1e400}"#, true),
-            (r#"{"w": 1e-400}"#, false),
-            (r#"{"w": 1e300}"#, false),
-            (r#"{"w": 1.5e3}"#, false),
-            (r#"{"w": "091 nur Text"}"#, false),
-            (r#"{"w": "1e400"}"#, false),
-            (r#"{"w": "a\u0000b"}"#, true),
-            (r#"{"w": "😀"}"#, false),
-            (r#"{"w": "\ud83d"}"#, true),
-            (r#"{"w": "\ude00"}"#, true),
-            (r#"{"w": "\ud83dx"}"#, true),
-            (r#"{"": 1}"#, true),
-            (r#"{"a": {"": 2}}"#, true),
-            (r#"{"w": ""}"#, false),
-            (r#"{"w" : 1}"#, false),
-            (r#"{"w": "er sagte \"hallo\""}"#, false),
-            (r#"{"w": "backslash am Ende \\"}"#, false),
-            (r#"{"w": "ä"}"#, false),
-            (r#"{"w": 512, "x": [1,2,3]}"#, false),
-            (r#"{"w": "Doppelpunkt : im Text"}"#, false),
-            (r#"{"w": "roher Tab hier: 	"}"#, true),
-        ];
-        for (text, wird_abgelehnt) in faelle {
-            let r = textriegel(text);
-            assert_eq!(
-                r.is_err(),
-                *wird_abgelehnt,
-                "{text} -> {r:?} (erwartet abgelehnt={wird_abgelehnt})"
-            );
-        }
-    }
 
     #[test]
     fn haengende_referenz_bricht_das_laden() {

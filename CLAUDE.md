@@ -81,10 +81,22 @@ eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextT
 eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe [ziel.png]
 eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe
 cargo test --manifest-path broker/Cargo.toml
+py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung
+py -3.13 tools/eq-copilot/erzeuge_bandgitter.py --pruefen
+py -3.13 tools/eq-copilot/erzeuge_quantisierung.py --pruefen
+py -3.13 tools/eq-copilot/erzeuge_v3_fixtures.py --pruefen
+py -3.13 tools/eq-copilot/pruefe_flatc_drift.py
+py -3.13 tools/eq-copilot/erzeuge_fb_fixtures.py --pruefen
 ```
 
-**Kanon-Stand 21.08.2026: 8/8 grün** (`docs/beweise/SONDE-005a.md`) — Nulltest ·
-Golden · Markierung · Broker · Identitaet · Hostkontext · Host-Probe · Schema.
+**Kanon-Stand 21.08.2026: 14/14 grün** (`docs/beweise/SONDE-005b.md`) —
+Nulltest · Golden · Markierung · Broker · Identitaet · Hostkontext ·
+Host-Probe · Schema, dazu **sechs Python-Beine**: das v3-Referenzbein
+(`pruefe_v3_vertrag.py --abdeckung`), die drei Bytegleichheits-Riegel der
+Erzeuger und die beiden FlatBuffers-Beine (`pruefe_flatc_drift.py`,
+`erzeuge_fb_fixtures.py --pruefen`). Die sechs kamen aus T2-Befunden: sie
+liefen vorher NUR von Hand, und ausgerechnet die Bytegleichheit ist der
+Riegel gegen `core.autocrlf` auf dem Zweitrechner.
 Die restlichen geplanten Pruefbinaries stehen als „geplant" in der
 Runner-Tabelle und werden Pflicht, sobald ihr Ticket sie baut.
 
@@ -153,7 +165,7 @@ Runner-Tabelle und werden Pflicht, sobald ihr Ticket sie baut.
   der Vertrag, den DREI Beine lesen — `tools/eq-copilot/pruefe_v3_vertrag.py`
   (Referenz, `jsonschema` 4.26), `EqCopSchemaTest` (`plugin/vertrag/`) und
   `broker/tests/contract_cross_language.rs`. Alle messen gegen dasselbe
-  **handgeschriebene** `eq-copilot/fixtures/v3/MANIFEST.json` (131 Fixtures);
+  **handgeschriebene** `eq-copilot/fixtures/v3/MANIFEST.json` (153 Fixtures);
   stimmen C++ und Rust mit ihm überein, stimmen sie transitiv miteinander —
   ein aus einer Engine erzeugtes Manifest wäre zirkulär. Erzeuger:
   `erzeuge_bandgitter.py`, `erzeuge_quantisierung.py`, `erzeuge_v3_fixtures.py`
@@ -171,6 +183,35 @@ Runner-Tabelle und werden Pflicht, sobald ihr Ticket sie baut.
   Gemessene Abweichung, dokumentiert statt weggeräumt: JUCEs JSON-Leser folgt
   RFC 4627 und lehnt eine **skalare Wurzel** schon im Parser ab, `serde_json`
   und Python (RFC 8259) erst am Schema — Manifest-Feld `wurzel_skalar`.
+  🔑 **Der TEXTRIEGEL (T2, 21.08.) ist die Stufe VOR dem Parser** — acht
+  Regeln auf dem Rohtext, jede gegen eine gemessene Divergenz. Anlass: JUCEs
+  `parseNumber` akkumuliert ohne Bereichsprüfung, `18446744073709552016` kam
+  dort als **400** an. Die Fälle stehen als EINE gelesene Datei
+  (`fixtures/v3/TEXTRIEGEL-FAELLE.json`, 59 Fälle, hex-kodiert) — drei
+  handgepflegte Kopien waren auf 31/32/33 auseinandergelaufen.
+  🚨 **Die teuerste Lehre des Tickets: ein Riegel darf nie die Bibliothek
+  befragen, gegen deren Verhalten er schützt.** Regel 3 fragte anfangs
+  `getDoubleValue()` — also genau den überlaufenden Leser; `1e4294967296` kam
+  als 1.0 durch. Zahlen werden jetzt AUS DEM LITERAL geprüft.
+- **FlatBuffers-Vertrag (SONDE-005b, seit 21.08.):**
+  `eq-copilot/schemas/v3/flatbuffers/` — `nakama_telemetry_v1.fbs` (jedes Feld
+  mit explizitem `id`), `FELD-IDS.json` (eingefrorene Zuordnung, handgeschrieben)
+  und `WERKZEUG.json` (der `flatc`-Pin). Leser: `plugin/vertrag/NakamaTelemetrie.*`
+  und `broker/src/telemetrie.rs`, beide gegen ein handgeschriebenes
+  `fixtures/v3/flatbuffers/MANIFEST.json` (40 Binärfixtures).
+  🔑 **`flatc` ist auf einen COMMIT gepinnt, nicht auf einen Tag** — der
+  Upstream führt für 25.12.19 zwei Tags. Compiler, C++-Header und Rust-Crate
+  stammen aus demselben Commit; `pruefe_flatc_drift.py` hält alle drei
+  gegeneinander und verlangt bytegleiche Neugenerierung.
+  ⚠️ **FlatBuffers prüft beim Verifizieren KEINE Enumbereiche, KEINE
+  Bitflag-Masken und KEINE Beziehung zwischen zwei Feldern** — genau dort
+  liegen aber die Regeln aus §33.1 (höchstens ein Frame je Quelle, Encoding
+  passt zur Nutzlast, Bandzahl folgt aus dem Gitter, Bitmap ist ceil(n/8) Byte
+  mit Füllbits 0). Deshalb gibt es zwei handgeschriebene Leser.
+  ⚠️ **`flatc` erzwingt Feld-IDs nur INNERHALB einer Tabelle, die schon welche
+  benutzt** — eine neue Tabelle ganz ohne ids übersetzt anstandslos und fällt
+  still auf „Reihenfolge ist Identität" zurück. `pruefe_fbs_feldids.py`
+  schließt genau diese Lücke.
 - **Installation = User-Klick:** `eq-copilot\install\Install-EQ-Copilot.ps1` als Admin (UAC), Rollback-Datei liegt daneben. Nie automatisch installieren. Vorher FL beenden.
 
 ## Invarianten — tragend, jede Runde präsent

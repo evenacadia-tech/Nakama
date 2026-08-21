@@ -54,13 +54,17 @@ fn korpus_klassifiziert_wie_das_manifest() {
     for eintrag in manifest["fixtures"].as_array().unwrap() {
         let name = eintrag["datei"].as_str().unwrap();
         let pfad = fixtures.join(name);
-        let roh = std::fs::read_to_string(&pfad).unwrap_or_else(|e| panic!("{name}: {e}"));
+        // BYTES, nicht Text: T2-Runde 2 (BF-6) hat gemessen, dass ein Fixture
+        // mit kaputtem UTF-8 hier PANICKTE, waehrend das Python-Bein eine
+        // ungefangene Ausnahme warf und JUCE das Byte still ersetzte - drei
+        // Ausgaenge fuer dieselbe Datei. Der Riegel sieht die Bytes.
+        let roh_bytes = std::fs::read(&pfad).unwrap_or_else(|e| panic!("{name}: {e}"));
 
         // Der Textriegel laeuft VOR dem Parser, und zwar ueber JEDES Fixture.
         // Die mit `textriegel_lehnt_ab` markierten muessen an ihm fallen; alle
         // uebrigen muessen ihn passieren. Ohne die zweite Haelfte waere der
         // Riegel eine Behauptung, die nur an wenigen Dateien geprueft wird.
-        let riegel = eqcop_broker::vertrag::textriegel(&roh);
+        let riegel = eqcop_broker::vertrag::textriegel_bytes(&roh_bytes);
         let soll_abgelehnt = eintrag["textriegel_lehnt_ab"].as_bool().unwrap_or(false);
         if soll_abgelehnt {
             if riegel.is_ok() {
@@ -78,7 +82,7 @@ fn korpus_klassifiziert_wie_das_manifest() {
         // T2-Runde 1: hier stand ein `panic!`. Ein nicht lesbares Fixture brach
         // damit den GANZEN Lauf ab, statt eine benannte Abweichung zu werden —
         // das Gegenstueck zum `wurzel_skalar`-Zweig der C++-Seite fehlte.
-        let daten: Value = match serde_json::from_str(&roh) {
+        let daten: Value = match serde_json::from_slice(&roh_bytes) {
             Ok(v) => v,
             Err(e) => {
                 let skalar = eintrag["wurzel_skalar"].as_bool().unwrap_or(false);
@@ -126,6 +130,41 @@ fn korpus_klassifiziert_wie_das_manifest() {
     );
     assert!(geprueft >= 100, "Korpus zu klein: {geprueft}");
     println!("{geprueft} Fixtures gegen das Manifest geprueft");
+}
+
+/// Die GEMEINSAME Falltabelle des Textriegels.
+///
+/// T2-Runde 2, Befund BF-5: vorher trug jedes der drei Beine eine eigene
+/// Kopie — gezaehlt 31, 32 und 33 Faelle —, waehrend das Beweismanifest
+/// „dieselbe 31-Faelle-Tabelle" behauptete. Drei handgepflegte Kopien driften;
+/// eine gelesene Datei kann es nicht. Der Text steht hex-kodiert, weil die
+/// Tabelle NUL-Escapes, rohe Steuerzeichen, kaputtes UTF-8 und ein BOM
+/// enthaelt.
+#[test]
+fn textriegel_deckt_die_gemeinsame_falltabelle() {
+    let tabelle = lies(&wurzel().join("eq-copilot/fixtures/v3/TEXTRIEGEL-FAELLE.json"));
+    let faelle = tabelle["faelle"].as_array().unwrap();
+    let mut rot: Vec<String> = Vec::new();
+
+    for fall in faelle {
+        let hex = fall["text_hex"].as_str().unwrap();
+        let roh: Vec<u8> = (0..hex.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())
+            .collect();
+        let abgelehnt = eqcop_broker::vertrag::textriegel_bytes(&roh).is_err();
+        if abgelehnt != fall["wird_abgelehnt"].as_bool().unwrap() {
+            rot.push(format!(
+                "#{} {}",
+                fall["nr"].as_u64().unwrap(),
+                fall["zeigetext"].as_str().unwrap_or("")
+            ));
+        }
+    }
+
+    assert!(rot.is_empty(), "{} Faelle weichen ab: {}", rot.len(), rot.join(" | "));
+    assert!(faelle.len() >= 50, "Falltabelle zu klein: {}", faelle.len());
+    println!("{} Textriegel-Faelle gegen die gemeinsame Tabelle geprueft", faelle.len());
 }
 
 /// SONDE-005b: derselbe Vergleich fuer den BINAEREN Teil des Vertrags.

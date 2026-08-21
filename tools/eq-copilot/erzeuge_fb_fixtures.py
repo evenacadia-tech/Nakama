@@ -88,6 +88,7 @@ def baender(n: int, gitter: str, encoding: str = "q_db_0p1_i16") -> dict:
 
 
 TRANSPORT = {
+    "process_context_present": True,
     "transport_epoch": 17,
     "continuity_segment": 3,
     "sequence": 8241,
@@ -324,6 +325,15 @@ def ungueltige() -> list[tuple[str, dict, list[dict], str]]:
         "enum-unbekannt-zeitbasis", b,
         [v(f"{P}/transport/zeitbasis", "enum_unbekannt")],
         "ohne Zeitbasis ist kein Zeitstempel auslegbar (§32.3)"))
+
+    b = batch(eintrag())
+    del b["eintraege"][0]["frame"]["transport"]["process_context_present"]
+    faelle.append((
+        "transport-ohne-context-bit", b,
+        [v(f"{P}/transport/process_context_present", "context_bit_fehlt")],
+        "§32.3: ohne dieses Bit ist 'der Host hat GAR KEINEN ProcessContext angelegt' "
+        "nicht von 'Projektzeit ist ungueltig' zu unterscheiden. Es ist ein Optional "
+        "und kein bool mit Default - sonst waere sein Fehlen unsichtbar"))
 
     b = batch(eintrag())
     b["eintraege"][0]["frame"]["transport"]["gueltigkeit"] = 128

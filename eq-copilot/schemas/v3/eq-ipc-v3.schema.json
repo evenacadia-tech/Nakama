@@ -138,7 +138,10 @@
         "project_time": { "type": "boolean" },
         "play_state": { "type": "boolean" },
         "record_state": { "type": "boolean" },
-        "cycle_bounds": { "type": "boolean" },
+        "cycle_bounds": {
+          "$comment": "Gilt den ROHEN PPQ-Grenzen `cycle.start_ppq`/`cycle.end_ppq` (§32.3: 'rohe Cycle-Grenzen in Quarter Notes ... mit eigenen Gueltigkeitsbits'). NICHT zu verwechseln mit `cycle.bounds_valid`, das die ABGELEITETEN Samplegrenzen bewacht.",
+          "type": "boolean"
+        },
         "continuous_time": { "type": "boolean" },
         "input_presentation_latency": { "type": "boolean" },
         "output_presentation_latency": { "type": "boolean" }
@@ -164,7 +167,10 @@
       "additionalProperties": false,
       "properties": {
         "active": { "type": "boolean" },
-        "bounds_valid": { "type": "boolean" },
+        "bounds_valid": {
+          "$comment": "Gilt den ABGELEITETEN Samplegrenzen in `derived_sample_bounds`. Das Gegenstueck fuer die rohen PPQ-Werte ist `validity.cycle_bounds`; die beiden koennen auseinanderfallen, weil eine PPQ-Angabe vorliegen kann, ohne dass die Abbildung auf Samples durch FL-Goldens validiert ist.",
+          "type": "boolean"
+        },
         "start_ppq": { "type": "number" },
         "end_ppq": { "type": "number" },
         "derived_sample_bounds": { "$ref": "#/$defs/derived_sample_bounds" }
@@ -178,6 +184,7 @@
         "transport_epoch",
         "continuity_segment",
         "sequence",
+        "process_context_present",
         "time_basis",
         "sample_count",
         "sample_rate",
@@ -187,6 +194,10 @@
       ],
       "additionalProperties": false,
       "properties": {
+        "process_context_present": {
+          "$comment": "§32.3 woertlich: 'Die Wrapper-Bridge liefert deshalb process_context_present und unabhaengige Validity-Bits; ohne Bridge gilt Projektzeit als unbewiesen.' Ohne dieses Bit kann ein Empfaenger 'der Host hat GAR KEINEN ProcessContext angelegt' nicht von 'Projektzeit ist ungueltig' unterscheiden - und das sind zwei verschiedene Konfidenzaussagen. Es ist deshalb PFLICHT und kein Validity-Bit: es beschreibt nicht die Gueltigkeit EINES Feldes, sondern ob der Host ueberhaupt eine Zeitquelle bereitgestellt hat.",
+          "type": "boolean"
+        },
         "transport_epoch": { "type": "integer", "minimum": 0 },
         "continuity_segment": {
           "$comment": "Trennt lokale Analyseluecken (Queue-Drop, Oversize-Block) INNERHALB derselben echten Transportepoche — damit eine Luecke nicht faelschlich als Seek erscheint (§32.3).",

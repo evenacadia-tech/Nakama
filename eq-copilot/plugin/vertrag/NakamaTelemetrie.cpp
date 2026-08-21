@@ -88,6 +88,14 @@ void pruefeAdresse (const fb::Adresse& a, const juce::String& p, juce::Array<Ver
 void pruefeTransport (const fb::Transportstempel& t, const juce::String& p,
                       juce::Array<Verstoss>& out)
 {
+    // §32.3: "Die Wrapper-Bridge liefert deshalb process_context_present und
+    // unabhaengige Validity-Bits; ohne Bridge gilt Projektzeit als unbewiesen."
+    // Das Feld ist ein Optional und kein bool mit Default: sonst waere "der
+    // Sender hat es weggelassen" ununterscheidbar von "der Host hat keinen
+    // Context angelegt" - und das sind zwei verschiedene Konfidenzaussagen.
+    if (! t.process_context_present().has_value())
+        hinzu (out, p + "/process_context_present", "context_bit_fehlt");
+
     if (t.zeitbasis() == fb::Zeitbasis::unbekannt
         || ! imBereich (t.zeitbasis(), fb::EnumValuesZeitbasis(), 3))
         hinzu (out, p + "/zeitbasis", "enum_unbekannt");

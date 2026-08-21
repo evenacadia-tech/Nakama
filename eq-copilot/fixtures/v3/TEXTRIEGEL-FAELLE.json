@@ -1,0 +1,422 @@
+{
+  "$id": "evenacadia.nakama.textriegel.faelle.v1",
+  "titel": "Gemeinsame Falltabelle des Textriegels",
+  "zweck": "Der Textriegel ist in DREI Sprachen von Hand implementiert. Diese Datei ist die eine Tabelle, gegen die alle drei gefahren werden. Vorher trug jedes Bein eine eigene Kopie - gezaehlt 31, 32 und 33 Faelle -, waehrend das Beweismanifest 'dieselbe 31-Faelle-Tabelle' behauptete (T2-Runde 2, Befund BF-5). Drei handgepflegte Kopien driften; eine gelesene Datei kann es nicht.",
+  "warum_hex": "Die Tabelle enthaelt NUL-Escapes, rohe Steuerzeichen, kaputtes UTF-8 und ein BOM. Als Text waere sie von keinem JSON-Leser unveraendert transportierbar. `zeigetext` ist nur fuer Menschen.",
+  "anzahl": 59,
+  "faelle": [
+    {
+      "nr": 1,
+      "text_hex": "7b2277223a20393030373139393235343734303939317d",
+      "zeigetext": "{\"w\": 9007199254740991}",
+      "wird_abgelehnt": false,
+      "warum": "2^53-1 ist exakt darstellbar"
+    },
+    {
+      "nr": 2,
+      "text_hex": "7b2277223a20393030373139393235343734303939327d",
+      "zeigetext": "{\"w\": 9007199254740992}",
+      "wird_abgelehnt": true,
+      "warum": "eine mehr ist es nicht"
+    },
+    {
+      "nr": 3,
+      "text_hex": "7b2277223a202d393030373139393235343734303939317d",
+      "zeigetext": "{\"w\": -9007199254740991}",
+      "wird_abgelehnt": false,
+      "warum": "auch negativ exakt"
+    },
+    {
+      "nr": 4,
+      "text_hex": "7b2277223a202d393030373139393235343734303939327d",
+      "zeigetext": "{\"w\": -9007199254740992}",
+      "wird_abgelehnt": true,
+      "warum": "und eine mehr auch negativ nicht"
+    },
+    {
+      "nr": 5,
+      "text_hex": "7b2277223a2031383434363734343037333730393535323031367d",
+      "zeigetext": "{\"w\": 18446744073709552016}",
+      "wird_abgelehnt": true,
+      "warum": "GEMESSEN: JUCEs parseNumber liest hier 400 (int64-Ueberlauf ohne Riegel)"
+    },
+    {
+      "nr": 6,
+      "text_hex": "7b2277223a2031303030303030303030303030303030303030307d",
+      "zeigetext": "{\"w\": 10000000000000000000}",
+      "wird_abgelehnt": true,
+      "warum": "10^19"
+    },
+    {
+      "nr": 7,
+      "text_hex": "7b2277223a203039317d",
+      "zeigetext": "{\"w\": 091}",
+      "wird_abgelehnt": true,
+      "warum": "GEMESSEN: JUCE liest 91; RFC 8259 verbietet die fuehrende Null"
+    },
+    {
+      "nr": 8,
+      "text_hex": "7b2277223a202d3039317d",
+      "zeigetext": "{\"w\": -091}",
+      "wird_abgelehnt": true,
+      "warum": "dasselbe mit Vorzeichen"
+    },
+    {
+      "nr": 9,
+      "text_hex": "7b2277223a20307d",
+      "zeigetext": "{\"w\": 0}",
+      "wird_abgelehnt": false,
+      "warum": "die einzelne Null ist keine fuehrende Null"
+    },
+    {
+      "nr": 10,
+      "text_hex": "7b2277223a202d307d",
+      "zeigetext": "{\"w\": -0}",
+      "wird_abgelehnt": false,
+      "warum": "negative Null ebenso"
+    },
+    {
+      "nr": 11,
+      "text_hex": "7b2277223a20302e357d",
+      "zeigetext": "{\"w\": 0.5}",
+      "wird_abgelehnt": false,
+      "warum": "und als Vorkommastelle eines Bruchs"
+    },
+    {
+      "nr": 12,
+      "text_hex": "7b2277223a2031653430307d",
+      "zeigetext": "{\"w\": 1e400}",
+      "wird_abgelehnt": true,
+      "warum": "als binary64 unendlich"
+    },
+    {
+      "nr": 13,
+      "text_hex": "7b2277223a202d31653430307d",
+      "zeigetext": "{\"w\": -1e400}",
+      "wird_abgelehnt": true,
+      "warum": "auch negativ"
+    },
+    {
+      "nr": 14,
+      "text_hex": "7b2277223a2031652d3430307d",
+      "zeigetext": "{\"w\": 1e-400}",
+      "wird_abgelehnt": true,
+      "warum": "unterlaeuft zu 0. Der Riegel lehnt ab, damit alle drei Beine DASSELBE sagen statt drei stille Nullen zu erzeugen"
+    },
+    {
+      "nr": 15,
+      "text_hex": "7b2277223a2031653330377d",
+      "zeigetext": "{\"w\": 1e307}",
+      "wird_abgelehnt": false,
+      "warum": "gerade noch im Vertragsbereich"
+    },
+    {
+      "nr": 16,
+      "text_hex": "7b2277223a2031653330387d",
+      "zeigetext": "{\"w\": 1e308}",
+      "wird_abgelehnt": true,
+      "warum": "die Grenze selbst liegt ausserhalb"
+    },
+    {
+      "nr": 17,
+      "text_hex": "7b2277223a20312e3565337d",
+      "zeigetext": "{\"w\": 1.5e3}",
+      "wird_abgelehnt": false,
+      "warum": "gewoehnliche Exponentialform"
+    },
+    {
+      "nr": 18,
+      "text_hex": "7b2277223a20342e3865347d",
+      "zeigetext": "{\"w\": 4.8e4}",
+      "wird_abgelehnt": false,
+      "warum": "eine legitime Samplerate in Exponentialform"
+    },
+    {
+      "nr": 19,
+      "text_hex": "7b2277223a20302e303030303030303030303030303030303030317d",
+      "zeigetext": "{\"w\": 0.0000000000000000001}",
+      "wird_abgelehnt": false,
+      "warum": "klein, aber darstellbar"
+    },
+    {
+      "nr": 20,
+      "text_hex": "7b2277223a203165343239343936373239367d",
+      "zeigetext": "{\"w\": 1e4294967296}",
+      "wird_abgelehnt": true,
+      "warum": "BL-1 GEMESSEN: juce_CharacterFunctions akkumuliert den Exponenten in einem int OHNE Schranke; 4294967296 laeuft auf 0 ueber, der max_exponent10-Riegel sieht nur noch die 0, und JUCE liest 1.0 - waehrend Rust und Python inf lesen"
+    },
+    {
+      "nr": 21,
+      "text_hex": "7b2277223a2031652d343239343936373239367d",
+      "zeigetext": "{\"w\": 1e-4294967296}",
+      "wird_abgelehnt": true,
+      "warum": "dieselbe Klasse mit negativem Exponenten"
+    },
+    {
+      "nr": 22,
+      "text_hex": "7b2277223a20313030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030302e307d",
+      "zeigetext": "{\"w\": 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "wird_abgelehnt": true,
+      "warum": "BL-2 GEMESSEN: 1018 Vorkommastellen. writeExponentDigits schreibt IMMER genau drei Ziffern; bei extraExponent 1000 entsteht ':00', strtod bricht dort ab und JUCE liest 1e17. Der Zweig hat ausserdem keinen max_exponent10-Riegel"
+    },
+    {
+      "nr": 23,
+      "text_hex": "7b2277223a20313030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030302e307d",
+      "zeigetext": "{\"w\": 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "wird_abgelehnt": true,
+      "warum": "400 Stellen - dort waren sich alle drei schon einig"
+    },
+    {
+      "nr": 24,
+      "text_hex": "7b2277223a2031657d",
+      "zeigetext": "{\"w\": 1e}",
+      "wird_abgelehnt": true,
+      "warum": "BF-1 GEMESSEN: getDoubleValue(\"1e\") liefert 1.0"
+    },
+    {
+      "nr": 25,
+      "text_hex": "7b2277223a2031652b7d",
+      "zeigetext": "{\"w\": 1e+}",
+      "wird_abgelehnt": true,
+      "warum": "dasselbe mit Vorzeichen"
+    },
+    {
+      "nr": 26,
+      "text_hex": "7b2277223a2031452d7d",
+      "zeigetext": "{\"w\": 1E-}",
+      "wird_abgelehnt": true,
+      "warum": "und mit grossem E"
+    },
+    {
+      "nr": 27,
+      "text_hex": "7b2277223a20312e7d",
+      "zeigetext": "{\"w\": 1.}",
+      "wird_abgelehnt": true,
+      "warum": "Dezimalpunkt ohne Nachkommaziffern"
+    },
+    {
+      "nr": 28,
+      "text_hex": "7b2277223a20225c752b313233227d",
+      "zeigetext": "{\"w\": \"\\\\u+123\"}",
+      "wird_abgelehnt": true,
+      "warum": "BF-2 GEMESSEN: Pythons int(roh,16) nahm das Vorzeichen"
+    },
+    {
+      "nr": 29,
+      "text_hex": "7b2277223a20225c7520313220227d",
+      "zeigetext": "{\"w\": \"\\\\u 12 \"}",
+      "wird_abgelehnt": true,
+      "warum": "BF-3 GEMESSEN: und Leerzeichen"
+    },
+    {
+      "nr": 30,
+      "text_hex": "7b2277223a20225c7530783166227d",
+      "zeigetext": "{\"w\": \"\\\\u0x1f\"}",
+      "wird_abgelehnt": true,
+      "warum": "BF-3 GEMESSEN: und das 0x-Praefix"
+    },
+    {
+      "nr": 31,
+      "text_hex": "7b2277223a20225c75315f3233227d",
+      "zeigetext": "{\"w\": \"\\\\u1_23\"}",
+      "wird_abgelehnt": true,
+      "warum": "BF-3 GEMESSEN: und den Ziffern-Trenner"
+    },
+    {
+      "nr": 32,
+      "text_hex": "7b2277223a20225c75d9a0d9a0d9a0d9a0227d",
+      "zeigetext": "{\"w\": \"\\\\u٠٠٠٠\"}",
+      "wird_abgelehnt": true,
+      "warum": "BF-3 GEMESSEN: und arabisch-indische Ziffern"
+    },
+    {
+      "nr": 33,
+      "text_hex": "7b2277223a20225c7530306534227d",
+      "zeigetext": "{\"w\": \"\\\\u00e4\"}",
+      "wird_abgelehnt": false,
+      "warum": "ein echtes Escape bleibt gueltig"
+    },
+    {
+      "nr": 34,
+      "text_hex": "7b2277223a20225c7530304534227d",
+      "zeigetext": "{\"w\": \"\\\\u00E4\"}",
+      "wird_abgelehnt": false,
+      "warum": "Grossbuchstaben-Hex ebenso"
+    },
+    {
+      "nr": 35,
+      "text_hex": "7b2277223a20225c757564383364227d",
+      "zeigetext": "{\"w\": \"\\\\uud83d\"}",
+      "wird_abgelehnt": true,
+      "warum": "vier Hexziffern, nicht fuenf"
+    },
+    {
+      "nr": 36,
+      "text_hex": "7b2277223a2030d9a27d",
+      "zeigetext": "{\"w\": 0٢}",
+      "wird_abgelehnt": false,
+      "warum": "BF-4 GEMESSEN: Pythons str.isdigit() sah hier ZWEI Ziffern und meldete eine fuehrende Null, Rust und C++ nicht. Mit ASCII-Ziffernbegriff lesen alle drei nur die 0 - und der Parser lehnt das Dokument danach ohnehin ueberall ab"
+    },
+    {
+      "nr": 37,
+      "text_hex": "7b2277223a2030c2b27d",
+      "zeigetext": "{\"w\": 0²}",
+      "wird_abgelehnt": false,
+      "warum": "dasselbe mit einer Hochzahl"
+    },
+    {
+      "nr": 38,
+      "text_hex": "7b2277223a2022303931206e75722054657874227d",
+      "zeigetext": "{\"w\": \"091 nur Text\"}",
+      "wird_abgelehnt": false,
+      "warum": "in einer Zeichenkette gilt keine Zahlenregel"
+    },
+    {
+      "nr": 39,
+      "text_hex": "7b2277223a20223165343030227d",
+      "zeigetext": "{\"w\": \"1e400\"}",
+      "wird_abgelehnt": false,
+      "warum": "auch nicht fuer Exponentialform"
+    },
+    {
+      "nr": 40,
+      "text_hex": "7b2277223a2022615c753030303062227d",
+      "zeigetext": "{\"w\": \"a\\\\u0000b\"}",
+      "wird_abgelehnt": true,
+      "warum": "GEMESSEN: juce::String ist nullterminiert und bricht hier im Parser ab, waehrend serde_json und Python das Dokument annehmen"
+    },
+    {
+      "nr": 41,
+      "text_hex": "7b2277223a2022f09f9880227d",
+      "zeigetext": "{\"w\": \"😀\"}",
+      "wird_abgelehnt": false,
+      "warum": "ein rohes Astralzeichen ist unbedenklich"
+    },
+    {
+      "nr": 42,
+      "text_hex": "7b2277223a20225c7564383364227d",
+      "zeigetext": "{\"w\": \"\\\\ud83d\"}",
+      "wird_abgelehnt": true,
+      "warum": "einsames hohes Surrogat"
+    },
+    {
+      "nr": 43,
+      "text_hex": "7b2277223a20225c7564653030227d",
+      "zeigetext": "{\"w\": \"\\\\ude00\"}",
+      "wird_abgelehnt": true,
+      "warum": "einsames tiefes Surrogat"
+    },
+    {
+      "nr": 44,
+      "text_hex": "7b2277223a20225c756438336478227d",
+      "zeigetext": "{\"w\": \"\\\\ud83dx\"}",
+      "wird_abgelehnt": true,
+      "warum": "hohes Surrogat ohne Partner"
+    },
+    {
+      "nr": 45,
+      "text_hex": "7b2277223a20225c75643833645c7564653030227d",
+      "zeigetext": "{\"w\": \"\\\\ud83d\\\\ude00\"}",
+      "wird_abgelehnt": false,
+      "warum": "ein gueltiges Paar bleibt gueltig"
+    },
+    {
+      "nr": 46,
+      "text_hex": "7b2277223a20226572207361677465205c2268616c6c6f5c22227d",
+      "zeigetext": "{\"w\": \"er sagte \\\\\"hallo\\\\\"\"}",
+      "wird_abgelehnt": false,
+      "warum": "escapete Anfuehrungszeichen"
+    },
+    {
+      "nr": 47,
+      "text_hex": "7b2277223a20226261636b736c61736820616d20456e6465205c5c227d",
+      "zeigetext": "{\"w\": \"backslash am Ende \\\\\\\\\"}",
+      "wird_abgelehnt": false,
+      "warum": "escapeter Backslash"
+    },
+    {
+      "nr": 48,
+      "text_hex": "7b2277223a2022c3a4227d",
+      "zeigetext": "{\"w\": \"ä\"}",
+      "wird_abgelehnt": false,
+      "warum": "Umlaut als rohes Zeichen"
+    },
+    {
+      "nr": 49,
+      "text_hex": "7b2277223a2022446f7070656c70756e6b74203a20696d2054657874227d",
+      "zeigetext": "{\"w\": \"Doppelpunkt : im Text\"}",
+      "wird_abgelehnt": false,
+      "warum": "loest die Schluesselregel nicht aus"
+    },
+    {
+      "nr": 50,
+      "text_hex": "7b2277223a2022726f686572205461623a2009227d",
+      "zeigetext": "{\"w\": \"roher Tab: \\t\"}",
+      "wird_abgelehnt": true,
+      "warum": "rohes Steuerzeichen in einer Zeichenkette"
+    },
+    {
+      "nr": 51,
+      "text_hex": "7b22223a20317d",
+      "zeigetext": "{\"\": 1}",
+      "wird_abgelehnt": true,
+      "warum": "GEMESSEN: JUCE lehnt einen leeren Property-Namen im Parser ab; im ADDITIVEN zaehler haette serde_json ihn angenommen"
+    },
+    {
+      "nr": 52,
+      "text_hex": "7b2261223a207b22223a20327d7d",
+      "zeigetext": "{\"a\": {\"\": 2}}",
+      "wird_abgelehnt": true,
+      "warum": "auch verschachtelt"
+    },
+    {
+      "nr": 53,
+      "text_hex": "7b2277223a2022227d",
+      "zeigetext": "{\"w\": \"\"}",
+      "wird_abgelehnt": false,
+      "warum": "eine leere Zeichenkette als WERT ist in Ordnung"
+    },
+    {
+      "nr": 54,
+      "text_hex": "7b2261223a2022222c202262223a20317d",
+      "zeigetext": "{\"a\": \"\", \"b\": 1}",
+      "wird_abgelehnt": false,
+      "warum": "auch unmittelbar vor einem Komma"
+    },
+    {
+      "nr": 55,
+      "text_hex": "7b227722203a20317d",
+      "zeigetext": "{\"w\" : 1}",
+      "wird_abgelehnt": false,
+      "warum": "Leerzeichen vor dem Doppelpunkt sind unbedenklich"
+    },
+    {
+      "nr": 56,
+      "text_hex": "7b2277223a203531322c202278223a205b312c322c335d7d",
+      "zeigetext": "{\"w\": 512, \"x\": [1,2,3]}",
+      "wird_abgelehnt": false,
+      "warum": "eine gewoehnliche Nachricht"
+    },
+    {
+      "nr": 57,
+      "text_hex": "efbbbf7b2277223a20317d",
+      "zeigetext": "\\xef\\xbb\\xbf{\"w\": 1}",
+      "wird_abgelehnt": true,
+      "warum": "BF-7 GEMESSEN: RFC 8259 §8.1 - serde_json und Pythons json lehnen ein BOM ab, JUCEs loadFileAsString streift es und parst weiter. Der Riegel lehnt ab, damit alle drei dasselbe sehen"
+    },
+    {
+      "nr": 58,
+      "text_hex": "7b2277223a202261ff62227d",
+      "zeigetext": "{\"w\": \"a\\xffb\"}",
+      "wird_abgelehnt": true,
+      "warum": "BF-6 GEMESSEN: kaputtes UTF-8. Das Python-Bein warf eine ungefangene UnicodeDecodeError, das Rust-Bein panickte beim Lesen, und JUCE ersetzte das Byte still - drei verschiedene Ausgaenge fuer dieselbe Datei"
+    },
+    {
+      "nr": 59,
+      "text_hex": "7b2277223a20317d",
+      "zeigetext": "{\"w\": 1}",
+      "wird_abgelehnt": false,
+      "warum": "dieselbe Nachricht ohne BOM ist gueltig"
+    }
+  ]
+}

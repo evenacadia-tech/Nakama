@@ -527,7 +527,8 @@ struct Transportstempel FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_SCHLEIFE = 24,
     VT_INPUT_PRESENTATION_LATENCY = 26,
     VT_OUTPUT_PRESENTATION_LATENCY = 28,
-    VT_GUELTIGKEIT = 30
+    VT_GUELTIGKEIT = 30,
+    VT_PROCESS_CONTEXT_PRESENT = 32
   };
   uint64_t transport_epoch() const {
     return GetField<uint64_t>(VT_TRANSPORT_EPOCH, 0);
@@ -571,6 +572,18 @@ struct Transportstempel FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   evenacadia::nakama::v3::Gueltigkeit gueltigkeit() const {
     return static_cast<evenacadia::nakama::v3::Gueltigkeit>(GetField<uint8_t>(VT_GUELTIGKEIT, 0));
   }
+  /// §32.3 woertlich: "Die Wrapper-Bridge liefert deshalb
+  /// process_context_present und unabhaengige Validity-Bits; ohne Bridge gilt
+  /// Projektzeit als unbewiesen."
+  ///
+  /// OPTIONAL und nicht `bool` mit Default false: ein Default machte "der
+  /// Sender hat das Feld weggelassen" ununterscheidbar von "der Host hat
+  /// keinen Context angelegt". Der Leser verlangt es. Und es ist bewusst KEIN
+  /// Gueltigkeitsbit - es beschreibt nicht die Gueltigkeit EINES Feldes,
+  /// sondern ob der Host ueberhaupt eine Zeitquelle bereitgestellt hat.
+  ::flatbuffers::Optional<bool> process_context_present() const {
+    return GetOptional<uint8_t, bool>(VT_PROCESS_CONTEXT_PRESENT);
+  }
   template <bool B = false>
   bool Verify(::flatbuffers::VerifierTemplate<B> &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -589,6 +602,7 @@ struct Transportstempel FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyField<uint32_t>(verifier, VT_INPUT_PRESENTATION_LATENCY, 4) &&
            VerifyField<uint32_t>(verifier, VT_OUTPUT_PRESENTATION_LATENCY, 4) &&
            VerifyField<uint8_t>(verifier, VT_GUELTIGKEIT, 1) &&
+           VerifyField<uint8_t>(verifier, VT_PROCESS_CONTEXT_PRESENT, 1) &&
            verifier.EndTable();
   }
 };
@@ -639,6 +653,9 @@ struct TransportstempelBuilder {
   void add_gueltigkeit(evenacadia::nakama::v3::Gueltigkeit gueltigkeit) {
     fbb_.AddElement<uint8_t>(Transportstempel::VT_GUELTIGKEIT, static_cast<uint8_t>(gueltigkeit), 0);
   }
+  void add_process_context_present(bool process_context_present) {
+    fbb_.AddElement<uint8_t>(Transportstempel::VT_PROCESS_CONTEXT_PRESENT, static_cast<uint8_t>(process_context_present));
+  }
   explicit TransportstempelBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -665,7 +682,8 @@ inline ::flatbuffers::Offset<Transportstempel> CreateTransportstempel(
     ::flatbuffers::Offset<evenacadia::nakama::v3::Schleife> schleife = 0,
     ::flatbuffers::Optional<uint32_t> input_presentation_latency = ::flatbuffers::nullopt,
     ::flatbuffers::Optional<uint32_t> output_presentation_latency = ::flatbuffers::nullopt,
-    evenacadia::nakama::v3::Gueltigkeit gueltigkeit = static_cast<evenacadia::nakama::v3::Gueltigkeit>(0)) {
+    evenacadia::nakama::v3::Gueltigkeit gueltigkeit = static_cast<evenacadia::nakama::v3::Gueltigkeit>(0),
+    ::flatbuffers::Optional<bool> process_context_present = ::flatbuffers::nullopt) {
   TransportstempelBuilder builder_(_fbb);
   if(continuous_time_samples) { builder_.add_continuous_time_samples(*continuous_time_samples); }
   builder_.add_sample_rate(sample_rate);
@@ -677,6 +695,7 @@ inline ::flatbuffers::Offset<Transportstempel> CreateTransportstempel(
   if(input_presentation_latency) { builder_.add_input_presentation_latency(*input_presentation_latency); }
   builder_.add_schleife(schleife);
   builder_.add_sample_count(sample_count);
+  if(process_context_present) { builder_.add_process_context_present(*process_context_present); }
   builder_.add_gueltigkeit(gueltigkeit);
   builder_.add_recording(recording);
   builder_.add_playing(playing);

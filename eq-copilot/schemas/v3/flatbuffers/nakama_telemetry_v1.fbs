@@ -169,6 +169,16 @@ table Transportstempel {
   input_presentation_latency:uint = null (id: 11);
   output_presentation_latency:uint = null (id: 12);
   gueltigkeit:Gueltigkeit (id: 13);
+  /// §32.3 woertlich: "Die Wrapper-Bridge liefert deshalb
+  /// process_context_present und unabhaengige Validity-Bits; ohne Bridge gilt
+  /// Projektzeit als unbewiesen."
+  ///
+  /// OPTIONAL und nicht `bool` mit Default false: ein Default machte "der
+  /// Sender hat das Feld weggelassen" ununterscheidbar von "der Host hat
+  /// keinen Context angelegt". Der Leser verlangt es. Und es ist bewusst KEIN
+  /// Gueltigkeitsbit - es beschreibt nicht die Gueltigkeit EINES Feldes,
+  /// sondern ob der Host ueberhaupt eine Zeitquelle bereitgestellt hat.
+  process_context_present:bool = null (id: 14);
 }
 
 /// Ein Bandsatz mit seinem Gitter, seiner Kodierung, seiner Gueltigkeitsbitmap

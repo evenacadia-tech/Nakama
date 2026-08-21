@@ -43,6 +43,9 @@ struct Verletzung
 /** Groesste ganze Zahl, die binary64 noch exakt traegt: 2^53 - 1. */
 constexpr juce::int64 sichereGanzzahl = 9007199254740991LL;
 
+/** Betragsgrenze der Gleitkommazahlen des Vertrags: |x| < 1e308. */
+constexpr int dezGrenze = 308;
+
 /** Prueft den ROHTEXT eines v3-Dokuments, BEVOR ihn ein Parser sieht.
 
     Warum vor dem Parser und nicht als Schemaregel: T2-Runde 1 hat gemessen,
@@ -53,17 +56,32 @@ constexpr juce::int64 sichereGanzzahl = 9007199254740991LL;
     der Wert ist beim Ankommen bereits verfaelscht. Der einzige Ort, an dem
     alle drei Beine dasselbe sehen koennen, ist der Text.
 
-    Sechs Regeln, jede gegen eine GEMESSENE Abweichung zwischen den Beinen:
+    ACHT Regeln, jede gegen eine GEMESSENE Abweichung zwischen den Beinen:
 
       1. keine fuehrende Null (`091`) - JUCE liest 91, RFC 8259 verbietet es;
       2. Ganzzahlen nur innerhalb +/-(2^53-1);
-      3. Gleitkommaliterale muessen endlich sein (`1e400` ist es nicht);
-      4. kein NUL-Escape in einer Zeichenkette - juce::String ist
+      3. Zahlen betragsmaessig unter 1e308, und ein `e` braucht Ziffern -
+         beides AUS DEM LITERAL gerechnet, nie ueber getDoubleValue();
+      4. genau vier ASCII-Hexziffern in einem u-Escape;
+      5. kein NUL-Escape in einer Zeichenkette - juce::String ist
          nullterminiert und bricht dort ab, serde_json und Python nehmen an;
-      5. keine einsamen Surrogate - hier lehnen beide eigenen Engines ab und
+      6. keine einsamen Surrogate - hier lehnen beide eigenen Engines ab und
          nur das Referenzbein nimmt an;
-      6. kein leerer Objektschluessel - JUCE lehnt ihn ab, in einem additiven
-         Objekt haette serde_json ihn akzeptiert.
+      7. kein leerer Objektschluessel - JUCE lehnt ihn ab, in einem additiven
+         Objekt haette serde_json ihn akzeptiert;
+      8. auf Byteebene (textriegelBytes): kein BOM, gueltiges UTF-8.
+
+    ZU REGEL 3, teuer bezahlt in T2-Runde 2: die erste Fassung fragte hier
+    `lit.getDoubleValue()` - also GENAU den Leser, gegen dessen Ueberlauf der
+    Riegel schuetzen soll. `juce_CharacterFunctions.h` akkumuliert den
+    Exponenten in einem `int` ohne Schranke und prueft erst DANACH gegen
+    max_exponent10; `1e4294967296` kam hier als 1.0 an, waehrend Rust und
+    Python `inf` lasen. Ein Riegel darf nie die Bibliothek befragen, gegen
+    deren Verhalten er schuetzt.
+
+    Die Faelle stehen NICHT hier, sondern in
+    eq-copilot/fixtures/v3/TEXTRIEGEL-FAELLE.json - drei handgepflegte Kopien
+    waren in T2-Runde 2 auf 31, 32 und 33 Faelle auseinandergelaufen.
 
     Gezaehlt wird in CODEPUNKTEN, damit die Positionsangabe in allen drei
     Beinen dieselbe ist.
@@ -71,6 +89,20 @@ constexpr juce::int64 sichereGanzzahl = 9007199254740991LL;
     @returns true, wenn der Text sauber ist; sonst false mit gesetztem `fehler`.
 */
 bool textriegel (const juce::String& text, juce::String& fehler);
+
+/** Derselbe Riegel auf BYTE-Ebene - so, wie ein Dokument wirklich ankommt.
+
+    Zwei Regeln lassen sich nur hier ausdruecken (T2-Runde 2, BF-6/BF-7):
+
+      * BOM. RFC 8259 §8.1: serde_json und Pythons json lehnen ein BOM ab,
+        JUCEs loadFileAsString streift es und parst weiter.
+      * Kaputtes UTF-8. Gemessen liefen die drei Beine hier voellig
+        auseinander: das Python-Bein warf eine ungefangene Ausnahme, das
+        Rust-Bein panickte beim Lesen, und JUCE ersetzte das Byte STILL.
+
+    @returns true, wenn der Puffer sauber ist; sonst false mit gesetztem `fehler`.
+*/
+bool textriegelBytes (const void* daten, size_t laenge, juce::String& fehler);
 
 class Schema
 {

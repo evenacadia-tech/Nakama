@@ -86,22 +86,95 @@ def teilschemata(knoten, pfad: str):
 
 
 SICHERE_GANZZAHL = 9007199254740991      # 2**53 - 1
+DEZ_GRENZE = 308                         # |x| < 1e308
 BS = chr(92)                             # Backslash
+HEX = "0123456789abcdefABCDEF"
+FALLTABELLE = FIXTURES / "TEXTRIEGEL-FAELLE.json"
+
+
+def ist_ascii_ziffer(c: str) -> bool:
+    """NICHT `str.isdigit()`.
+
+    T2-Runde 2, Befund BF-4: `str.isdigit()` ist auch fuer arabisch-indische
+    Ziffern und Hochzahlen wahr, waehrend Rusts `is_ascii_digit` und C++
+    `c >= '0' && c <= '9'` es nicht sind. Bei `{"w": 0\u0662}` meldete dieses
+    Bein deshalb eine fuehrende Null und die anderen beiden nicht - drei
+    Ziffernbegriffe waeren drei Grammatiken.
+    """
+    return "0" <= c <= "9"
+
+
+def zahl_pruefen(ganz: str, bruch: str, exp_ziffern: str, exp_negativ: bool,
+                 lit: str) -> str | None:
+    """Entscheidet AUS DEM LITERAL, ob eine Zahl im Vertragsbereich liegt.
+
+    T2-Runde 2, Blocker BL-1/BL-2: die erste Fassung fragte hier `float(lit)`
+    bzw. auf der C++-Seite `getDoubleValue()`. Genau das war der Fehler -
+    `getDoubleValue()` ist derselbe Leser, gegen dessen Ueberlauf der Riegel
+    schuetzen soll. `juce_CharacterFunctions.h` akkumuliert den Exponenten in
+    einem `int` OHNE Schranke, und der `max_exponent10`-Riegel laeuft DANACH;
+    `1e4294967296` kam dort als **1.0** an, waehrend Rust und Python `inf`
+    lasen. Der zweite Zweig (`extraExponent`) hat gar keinen Riegel und
+    schreibt bei 1018 Vorkommastellen `':00'` statt eines Exponenten.
+
+    Die Lehre, die ueber diesen Fall hinausgeht: **ein Riegel darf nie die
+    Bibliothek befragen, gegen deren Verhalten er schuetzt.** Die Ganzzahlregel
+    war von Anfang an aus dem Literal gerechnet und hat gehalten; die
+    Endlichkeitsregel war delegiert und hat nicht gehalten.
+
+    Hier wird deshalb nur mit kleinen ganzen Zahlen gerechnet, ohne jede
+    Gleitkommaoperation.
+    """
+    if not bruch and not exp_ziffern:
+        if len(ganz) > 16 or (len(ganz) == 16 and int(ganz) > SICHERE_GANZZAHL):
+            return f"Ganzzahl ausserhalb 2^53-1: {lit}"
+        return None
+
+    # Der Exponent selbst: mehr als drei Ziffern liegen schon ausserhalb, und
+    # so wird er auch nie gross genug, um irgendwo ueberzulaufen.
+    ohne_null = exp_ziffern.lstrip("0")
+    if len(ohne_null) > 3:
+        return f"Exponent ausserhalb +/-{DEZ_GRENZE}: {lit[:40]}"
+    exp = int(ohne_null) if ohne_null else 0
+    if exp_negativ:
+        exp = -exp
+
+    alle = ganz + bruch
+    signifikant = alle.lstrip("0")
+    if not signifikant:
+        return None                       # der Wert ist exakt 0
+    fuehrende = len(alle) - len(signifikant)
+    dez = (len(ganz) - fuehrende - 1) + exp
+    if dez >= DEZ_GRENZE or dez <= -DEZ_GRENZE:
+        return f"Zahl ausserhalb +/-1e{DEZ_GRENZE}: {lit[:40]}"
+    return None
+
+
+def textriegel_bytes(roh: bytes) -> str | None:
+    """Der Riegel auf BYTE-Ebene — so, wie ein Dokument wirklich ankommt.
+
+    Zwei Regeln lassen sich nur hier ausdruecken (T2-Runde 2, BF-6/BF-7):
+
+    * **BOM.** RFC 8259 §8.1: `serde_json` und Pythons `json` lehnen ein BOM
+      ab, JUCEs `loadFileAsString` streift es und parst weiter.
+    * **Kaputtes UTF-8.** Gemessen liefen die drei Beine hier voellig
+      auseinander: dieses hier warf eine ungefangene `UnicodeDecodeError`, das
+      Rust-Bein panickte beim Lesen, und JUCE ersetzte das Byte still.
+    """
+    if roh.startswith(b"\xef\xbb\xbf"):
+        return "BOM am Dokumentanfang"
+    try:
+        text = roh.decode("utf-8")
+    except UnicodeDecodeError as e:
+        return f"kein gueltiges UTF-8 an Byte {e.start}"
+    return textriegel(text)
 
 
 def textriegel(text: str) -> str | None:
-    """Prueft den ROHTEXT eines v3-Dokuments, BEVOR ihn ein Parser sieht.
+    """Prueft die Zeichen eines v3-Dokuments, BEVOR ein Parser sie sieht.
 
-    Warum vor dem Parser und nicht als Schemaregel: T2-Runde 1 hat gemessen,
-    dass JUCEs `parseNumber` `intValue * 10 + digit` in einem `int64` ohne
-    Bereichspruefung akkumuliert. `18446744073709552016` kommt auf der
-    C++-Seite als 400 an — ein `maximum: 400` wuerde dort anstandslos
-    passieren und auf der Rust-Seite fallen. Der Wert ist beim Ankommen
-    bereits verfaelscht; der einzige Ort, an dem alle drei Beine dasselbe
-    sehen koennen, ist der Text.
-
-    Sechs Regeln, jede gegen eine GEMESSENE Abweichung. Wortgleiche
-    Gegenstuecke: `NakamaVertrag.cpp` und `broker/src/vertrag.rs`.
+    Acht Regeln, jede gegen eine GEMESSENE Abweichung zwischen den Beinen.
+    Auslegung und Begruendung: `eq-copilot/schemas/v3/README.md`.
 
     @returns None wenn sauber, sonst den Grund.
     """
@@ -118,10 +191,13 @@ def textriegel(text: str) -> str | None:
                 if d == BS:
                     if j + 5 < n and text[j + 1] == "u":
                         roh = text[j + 2:j + 6]
-                        try:
-                            cp = int(roh, 16)
-                        except ValueError:
-                            return f"unlesbares u-Escape {roh!r} an Position {j}"
+                        # GENAU vier ASCII-Hexziffern (BF-2/BF-3): `int(roh, 16)`
+                        # naehme "+123", " 12 ", "0x1f", "1_23" und
+                        # arabisch-indische Ziffern; Rusts `from_str_radix` naehme
+                        # das Vorzeichen; die C++-Handschleife nichts davon.
+                        if len(roh) != 4 or any(z not in HEX for z in roh):
+                            return f"kein 4-stelliges Hex-Escape an Position {j}"
+                        cp = int(roh, 16)
                         if cp == 0:
                             return f"NUL-Escape in Zeichenkette an Position {j}"
                         tief = 0xDC00 <= cp <= 0xDFFF
@@ -154,42 +230,46 @@ def textriegel(text: str) -> str | None:
             i = j + 1
             continue
 
-        if c == "-" or c.isdigit():
+        if c == "-" or ist_ascii_ziffer(c):
             j = i
             if text[j] == "-":
                 j += 1
             anfang = j
-            while j < n and text[j].isdigit():
+            while j < n and ist_ascii_ziffer(text[j]):
                 j += 1
             ganz = text[anfang:j]
             if not ganz:
                 return f"Zahl ohne Ziffern an Position {i}"
             if len(ganz) > 1 and ganz[0] == "0":
-                return f"fuehrende Null in {text[i:j]!r} an Position {i}"
-            bruch = exp = False
+                return f"fuehrende Null in {text[i:j][:20]!r} an Position {i}"
+
+            bruch = ""
             if j < n and text[j] == ".":
-                bruch = True
                 j += 1
-                while j < n and text[j].isdigit():
+                a = j
+                while j < n and ist_ascii_ziffer(text[j]):
                     j += 1
+                bruch = text[a:j]
+                if not bruch:
+                    return f"Dezimalpunkt ohne Nachkommaziffern an Position {i}"
+
+            exp_ziffern, exp_negativ = "", False
             if j < n and text[j] in "eE":
-                exp = True
                 j += 1
                 if j < n and text[j] in "+-":
+                    exp_negativ = text[j] == "-"
                     j += 1
-                while j < n and text[j].isdigit():
+                a = j
+                while j < n and ist_ascii_ziffer(text[j]):
                     j += 1
-            lit = text[i:j]
-            if not bruch and not exp:
-                if len(ganz) > 16 or (len(ganz) == 16 and int(ganz) > SICHERE_GANZZAHL):
-                    return f"Ganzzahl ausserhalb 2^53-1: {lit}"
-            else:
-                try:
-                    d = float(lit)
-                except ValueError:
-                    return f"unlesbare Zahl {lit!r}"
-                if not math.isfinite(d):
-                    return f"nicht endliche Zahl: {lit}"
+                exp_ziffern = text[a:j]
+                if not exp_ziffern:
+                    # BF-1: getDoubleValue("1e") liefert 1.0.
+                    return f"Exponent ohne Ziffern an Position {i}"
+
+            grund = zahl_pruefen(ganz, bruch, exp_ziffern, exp_negativ, text[i:j])
+            if grund:
+                return grund
             i = j
             continue
 
@@ -197,48 +277,28 @@ def textriegel(text: str) -> str | None:
     return None
 
 
-# Dieselbe Tabelle steht in SchemaTestMain.cpp und broker/src/vertrag.rs.
-# Laufen die drei auseinander, faellt genau hier eine von ihnen.
-TEXTRIEGEL_FAELLE: list[tuple[str, bool]] = [
-    ('{"w": 9007199254740991}', False),
-    ('{"w": 9007199254740992}', True),
-    ('{"w": -9007199254740991}', False),
-    ('{"w": -9007199254740992}', True),
-    ('{"w": 18446744073709552016}', True),
-    ('{"w": 10000000000000000000}', True),
-    ('{"w": 091}', True),
-    ('{"w": -091}', True),
-    ('{"w": 0}', False),
-    ('{"w": -0}', False),
-    ('{"w": 0.5}', False),
-    ('{"w": 1e400}', True),
-    ('{"w": -1e400}', True),
-    ('{"w": 1e-400}', False),
-    ('{"w": 1e300}', False),
-    ('{"w": 1.5e3}', False),
-    ('{"w": "091 nur Text"}', False),
-    ('{"w": "1e400"}', False),
-    ('{"w": "a' + BS + 'u0000b"}', True),
-    ('{"w": "\U0001F600"}', False),
-    ('{"w": "' + BS + 'ud83d"}', True),
-    ('{"w": "' + BS + 'ude00"}', True),
-    ('{"w": "' + BS + 'ud83dx"}', True),
-    ('{"": 1}', True),
-    ('{"a": {"": 2}}', True),
-    ('{"w": ""}', False),
-    ('{"w" : 1}', False),
-    ('{"w": "er sagte ' + BS + '"hallo' + BS + '""}', False),
-    ('{"w": "backslash am Ende ' + BS + BS + '"}', False),
-    ('{"w": 512, "x": [1,2,3]}', False),
-    ('{"w": "Doppelpunkt : im Text"}', False),
-    ('{"w": "roher Tab: \t"}', True),
-]
-
-
 def pruefe_textriegel(lauf: Lauf) -> None:
-    rot = [t for t, ab in TEXTRIEGEL_FAELLE if (textriegel(t) is not None) != ab]
-    lauf.wahr(f"Textriegel deckt jede gemessene Kante ({len(TEXTRIEGEL_FAELLE)} Faelle)",
+    """Faehrt die GEMEINSAME Falltabelle.
+
+    T2-Runde 2, BF-5: vorher trug jedes Bein eine eigene Kopie - gezaehlt 31,
+    32 und 33 Faelle -, waehrend das Beweismanifest 'dieselbe 31-Faelle-Tabelle'
+    behauptete. Drei handgepflegte Kopien driften; eine gelesene Datei kann es
+    nicht.
+    """
+    if not FALLTABELLE.exists():
+        lauf.wahr("Textriegel-Falltabelle vorhanden", False, str(FALLTABELLE))
+        return
+    tabelle = json.loads(FALLTABELLE.read_text(encoding="utf-8"))
+    rot: list[str] = []
+    for fall in tabelle["faelle"]:
+        roh = bytes.fromhex(fall["text_hex"])
+        abgelehnt = textriegel_bytes(roh) is not None
+        if abgelehnt != fall["wird_abgelehnt"]:
+            rot.append(f"#{fall['nr']} {fall['zeigetext'][:40]}")
+    lauf.wahr(f"Textriegel deckt jede gemessene Kante ({tabelle['anzahl']} Faelle)",
               not rot, "; ".join(rot))
+    lauf.wahr("Falltabelle hat Substanz (>= 50 Faelle)",
+              tabelle["anzahl"] >= 50, str(tabelle["anzahl"]))
 
 
 def werttyp_passt(name: str, wert) -> bool:
@@ -368,13 +428,13 @@ def pruefe_fixtures(lauf: Lauf, schema: dict, manifest: dict) -> None:
         if not pfad.exists():
             lauf.wahr(f"{eintrag['datei']} vorhanden", False)
             continue
-        roh = pfad.read_text(encoding="utf-8")
+        roh_bytes = pfad.read_bytes()
 
         # Der Textriegel laeuft VOR dem Parser, und zwar ueber JEDES Fixture.
         # Die markierten muessen an ihm fallen, alle uebrigen ihn passieren.
         # Ohne die zweite Haelfte waere der Riegel eine Behauptung, die nur an
         # wenigen Dateien geprueft wird.
-        grund = textriegel(roh)
+        grund = textriegel_bytes(roh_bytes)
         if eintrag.get("textriegel_lehnt_ab"):
             lauf.wahr(f"Textriegel lehnt ab: {eintrag['datei']}", grund is not None)
             continue
@@ -384,7 +444,7 @@ def pruefe_fixtures(lauf: Lauf, schema: dict, manifest: dict) -> None:
             continue
 
         try:
-            daten = json.loads(roh)
+            daten = json.loads(roh_bytes.decode("utf-8"))
         except json.JSONDecodeError as e:
             # Ein nicht lesbares Fixture ist eine benannte Abweichung, kein
             # Abbruch des Laufs - dasselbe Prinzip wie der wurzel_skalar-Zweig

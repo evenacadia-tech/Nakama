@@ -9,6 +9,7 @@
     "runtime_nonce": "44444444444444444444444444444444"
   },
   "transport": {
+    "process_context_present": true,
     "transport_epoch": 17,
     "continuity_segment": 3,
     "sequence": 8241,

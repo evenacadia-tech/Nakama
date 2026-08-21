@@ -7,7 +7,7 @@
   "byte_mutation_von": "Markiert einen Puffer, den flatc nicht erzeugen KANN (falsche Dateikennung, abgeschnitten, zerstoerter Wurzeloffset). Er entsteht als Byte-Mutation des genannten gueltigen Puffers.",
   "regeln": "Die geschlossene Liste der Regelnamen steht in eq-copilot/schemas/v3/flatbuffers/README.md. Ein Verstoss ist (pfad, regel); die Menge wird kanonisch nach (pfad, regel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "anzahl_gueltig": 8,
-  "anzahl_ungueltig": 31,
+  "anzahl_ungueltig": 32,
   "fixtures": [
     {
       "datei": "gueltig/alle-validity-bits.bin",
@@ -364,6 +364,17 @@
         {
           "pfad": "/eintraege/0/quelle/logon_sid",
           "regel": "sid_laenge"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/transport-ohne-context-bit.bin",
+      "urteil": "ungueltig",
+      "warum": "§32.3: ohne dieses Bit ist 'der Host hat GAR KEINEN ProcessContext angelegt' nicht von 'Projektzeit ist ungueltig' zu unterscheiden. Es ist ein Optional und kein bool mit Default - sonst waere sein Fehlen unsichtbar",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/process_context_present",
+          "regel": "context_bit_fehlt"
         }
       ]
     },

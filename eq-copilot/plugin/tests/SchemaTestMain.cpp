@@ -142,9 +142,15 @@ void fahreKorpus (const nakama::vertrag::Schema& schema)
         // Die mit `textriegel_lehnt_ab` markierten muessen an ihm fallen; alle
         // uebrigen muessen ihn passieren. Ohne die zweite Haelfte waere der
         // Riegel eine Behauptung, die nur an elf Dateien geprueft wird.
-        const auto rohtext = finde ("eq-copilot/fixtures/v3/" + name).loadFileAsString();
+        // BYTES, nicht Text: loadFileAsString streift ein BOM und ersetzt
+        // kaputtes UTF-8 still - genau die zwei Faelle, in denen die drei Beine
+        // vorher auseinanderliefen (T2-Runde 2, BF-6/BF-7).
+        juce::MemoryBlock rohbytes;
+        finde ("eq-copilot/fixtures/v3/" + name).loadFileAsData (rohbytes);
         juce::String riegelfehler;
-        const bool sauber = nakama::vertrag::textriegel (rohtext, riegelfehler);
+        const bool sauber = nakama::vertrag::textriegelBytes (rohbytes.getData(),
+                                                              rohbytes.getSize(),
+                                                              riegelfehler);
         if (static_cast<bool> (eintrag.getProperty ("textriegel_lehnt_ab", false)))
         {
             pruefe (! sauber, "Textriegel lehnt ab: " + name, riegelfehler);
@@ -483,63 +489,57 @@ void fahreQuantisierung()
 /** Ein gruener Test ist nichts wert, solange nicht gezeigt wurde, dass er
     ueberhaupt fallen kann. Diese Proben bringen jeden Riegel einmal zum
     Fallen - im Test selbst, damit es niemand von Hand nachstellen muss. */
-/*  Der Textriegel, Kante fuer Kante.
+/*  Der Textriegel gegen die GEMEINSAME Falltabelle.
 
-    Dieselbe Tabelle steht in broker/src/vertrag.rs und in
-    tools/eq-copilot/pruefe_v3_vertrag.py. Laufen die drei auseinander, faellt
-    genau hier eine von ihnen - und nicht erst, wenn ein Produktivframe eine
-    Zahl traegt, die auf zwei Seiten verschieden ankommt.
+    T2-Runde 2, Befund BF-5: vorher trug jedes der drei Beine eine EIGENE Kopie
+    dieser Tabelle - gezaehlt 31, 32 und 33 Faelle -, waehrend das
+    Beweismanifest "dieselbe 31-Faelle-Tabelle" behauptete. Drei handgepflegte
+    Kopien driften; genau das ist passiert. Die Tabelle steht deshalb jetzt in
+    eq-copilot/fixtures/v3/TEXTRIEGEL-FAELLE.json und wird von allen drei
+    Beinen GELESEN.
+
+    Der Text steht dort hex-kodiert: die Tabelle enthaelt NUL-Escapes, rohe
+    Steuerzeichen, kaputtes UTF-8 und ein BOM - Inhalte, an denen ein
+    JSON-Leser sich verschluckt. Deshalb geht der Riegel hier auch ueber die
+    BYTE-Fassung.
 */
 void fahreTextriegelproben()
 {
-    struct Fall { const char* text; bool wirdAbgelehnt; };
-    static const Fall faelle[] = {
-        { R"({"w": 9007199254740991})",        false },
-        { R"({"w": 9007199254740992})",        true  },
-        { R"({"w": -9007199254740991})",       false },
-        { R"({"w": -9007199254740992})",       true  },
-        { R"({"w": 18446744073709552016})",    true  },
-        { R"({"w": 10000000000000000000})",    true  },
-        { R"({"w": 091})",                     true  },
-        { R"({"w": -091})",                    true  },
-        { R"({"w": 0})",                       false },
-        { R"({"w": -0})",                      false },
-        { R"({"w": 0.5})",                     false },
-        { R"({"w": 1e400})",                   true  },
-        { R"({"w": -1e400})",                  true  },
-        { R"({"w": 1e-400})",                  false },
-        { R"({"w": 1e300})",                   false },
-        { R"({"w": 1.5e3})",                   false },
-        { R"({"w": "091 nur Text"})",          false },
-        { R"({"w": "1e400"})",                 false },
-        { R"({"w": "a\u0000b"})",              true  },
-        { R"({"w": "😀"})",          false },
-        { R"({"w": "\ud83d"})",                true  },
-        { R"({"w": "\ude00"})",                true  },
-        { R"({"w": "\ud83dx"})",               true  },
-        { R"({"": 1})",                        true  },
-        { R"({"a": {"": 2}})",                 true  },
-        { R"({"w": ""})",                      false },
-        { R"({"w" : 1})",                      false },
-        { R"({"w": "er sagte \"hallo\""})",    false },
-        { R"({"w": "backslash am Ende \\"})",  false },
-        { R"({"w": 512, "x": [1,2,3]})",       false },
-        { R"({"w": "Doppelpunkt : im Text"})", false },
-    };
+    bool ok = false;
+    const auto tabelle = lies ("eq-copilot/fixtures/v3/TEXTRIEGEL-FAELLE.json", ok);
+    if (! ok)
+        return;
+
+    auto* faelle = tabelle.getProperty ("faelle", {}).getArray();
+    if (faelle == nullptr)
+    {
+        pruefe (false, "Falltabelle traegt eine Fallliste");
+        return;
+    }
 
     int rot = 0;
-    for (const auto& f : faelle)
+    for (const auto& fall : *faelle)
     {
+        const auto hex = fall.getProperty ("text_hex", {}).toString();
+        juce::MemoryBlock roh;
+        roh.loadFromHexString (hex);
+
         juce::String fehler;
-        const bool sauber = nakama::vertrag::textriegel (juce::String::fromUTF8 (f.text), fehler);
-        if (sauber == f.wirdAbgelehnt)
+        const bool sauber = nakama::vertrag::textriegelBytes (roh.getData(), roh.getSize(), fehler);
+        const bool sollAbgelehnt = static_cast<bool> (fall.getProperty ("wird_abgelehnt", false));
+        if (sauber == sollAbgelehnt)
         {
             ++rot;
-            pruefe (false, juce::String ("Textriegel: ") + f.text, fehler);
+            std::cout << "[ROT]  Textriegel #" << (int) fall.getProperty ("nr", 0)
+                      << " " << fall.getProperty ("zeigetext", {}).toString().toRawUTF8()
+                      << " -> " << (sauber ? "angenommen" : fehler.toRawUTF8()) << std::endl;
         }
     }
-    pruefe (rot == 0, "Textriegel deckt jede gemessene Kante",
-            juce::String ((int) (sizeof (faelle) / sizeof (faelle[0]))) + " Faelle");
+
+    pruefe (rot == 0, "Textriegel deckt die gemeinsame Falltabelle",
+            juce::String (faelle->size()) + " Faelle");
+    pruefe (faelle->size() >= 50, "Falltabelle hat Substanz",
+            juce::String (faelle->size()) + " Faelle");
 }
 
 void fahreRiegelproben()

@@ -939,6 +939,7 @@ impl<'a> Transportstempel<'a> {
   pub const VT_INPUT_PRESENTATION_LATENCY: ::flatbuffers::VOffsetT = 26;
   pub const VT_OUTPUT_PRESENTATION_LATENCY: ::flatbuffers::VOffsetT = 28;
   pub const VT_GUELTIGKEIT: ::flatbuffers::VOffsetT = 30;
+  pub const VT_PROCESS_CONTEXT_PRESENT: ::flatbuffers::VOffsetT = 32;
 
   #[inline]
   pub unsafe fn init_from_table(table: ::flatbuffers::Table<'a>) -> Self {
@@ -960,6 +961,7 @@ impl<'a> Transportstempel<'a> {
     if let Some(x) = args.input_presentation_latency { builder.add_input_presentation_latency(x); }
     if let Some(x) = args.schleife { builder.add_schleife(x); }
     builder.add_sample_count(args.sample_count);
+    if let Some(x) = args.process_context_present { builder.add_process_context_present(x); }
     builder.add_gueltigkeit(args.gueltigkeit);
     builder.add_recording(args.recording);
     builder.add_playing(args.playing);
@@ -1066,6 +1068,22 @@ impl<'a> Transportstempel<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<Gueltigkeit>(Transportstempel::VT_GUELTIGKEIT, Some(Default::default())).unwrap()}
   }
+  /// §32.3 woertlich: "Die Wrapper-Bridge liefert deshalb
+  /// process_context_present und unabhaengige Validity-Bits; ohne Bridge gilt
+  /// Projektzeit als unbewiesen."
+  ///
+  /// OPTIONAL und nicht `bool` mit Default false: ein Default machte "der
+  /// Sender hat das Feld weggelassen" ununterscheidbar von "der Host hat
+  /// keinen Context angelegt". Der Leser verlangt es. Und es ist bewusst KEIN
+  /// Gueltigkeitsbit - es beschreibt nicht die Gueltigkeit EINES Feldes,
+  /// sondern ob der Host ueberhaupt eine Zeitquelle bereitgestellt hat.
+  #[inline]
+  pub fn process_context_present(&self) -> Option<bool> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<bool>(Transportstempel::VT_PROCESS_CONTEXT_PRESENT, None)}
+  }
 }
 
 impl ::flatbuffers::Verifiable for Transportstempel<'_> {
@@ -1088,6 +1106,7 @@ impl ::flatbuffers::Verifiable for Transportstempel<'_> {
      .visit_field::<u32>("input_presentation_latency", Self::VT_INPUT_PRESENTATION_LATENCY, false)?
      .visit_field::<u32>("output_presentation_latency", Self::VT_OUTPUT_PRESENTATION_LATENCY, false)?
      .visit_field::<Gueltigkeit>("gueltigkeit", Self::VT_GUELTIGKEIT, false)?
+     .visit_field::<bool>("process_context_present", Self::VT_PROCESS_CONTEXT_PRESENT, false)?
      .finish();
     Ok(())
   }
@@ -1107,6 +1126,7 @@ pub struct TransportstempelArgs<'a> {
     pub input_presentation_latency: Option<u32>,
     pub output_presentation_latency: Option<u32>,
     pub gueltigkeit: Gueltigkeit,
+    pub process_context_present: Option<bool>,
 }
 impl<'a> Default for TransportstempelArgs<'a> {
   #[inline]
@@ -1126,6 +1146,7 @@ impl<'a> Default for TransportstempelArgs<'a> {
       input_presentation_latency: None,
       output_presentation_latency: None,
       gueltigkeit: Default::default(),
+      process_context_present: None,
     }
   }
 }
@@ -1192,6 +1213,10 @@ impl<'a: 'b, 'b, A: ::flatbuffers::Allocator + 'a> TransportstempelBuilder<'a, '
     self.fbb_.push_slot::<Gueltigkeit>(Transportstempel::VT_GUELTIGKEIT, gueltigkeit, Default::default());
   }
   #[inline]
+  pub fn add_process_context_present(&mut self, process_context_present: bool) {
+    self.fbb_.push_slot_always::<bool>(Transportstempel::VT_PROCESS_CONTEXT_PRESENT, process_context_present);
+  }
+  #[inline]
   pub fn new(_fbb: &'b mut ::flatbuffers::FlatBufferBuilder<'a, A>) -> TransportstempelBuilder<'a, 'b, A> {
     let start = _fbb.start_table();
     TransportstempelBuilder {
@@ -1223,6 +1248,7 @@ impl ::core::fmt::Debug for Transportstempel<'_> {
       ds.field("input_presentation_latency", &self.input_presentation_latency());
       ds.field("output_presentation_latency", &self.output_presentation_latency());
       ds.field("gueltigkeit", &self.gueltigkeit());
+      ds.field("process_context_present", &self.process_context_present());
       ds.finish()
   }
 }

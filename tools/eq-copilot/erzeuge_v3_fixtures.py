@@ -83,6 +83,7 @@ VALIDITY = {
 }
 
 TRANSPORT = {
+    "process_context_present": True,
     "transport_epoch": 17,
     "continuity_segment": 3,
     "sequence": 8241,
@@ -145,6 +146,126 @@ STEUERKOPF = {
     "schema_minor": 0,
 }
 
+
+
+# ------------------------------------------------- Textriegel-Falltabelle
+
+# T2-Runde 2, Befund BF-5: die drei Beine trugen je eine EIGENE Kopie dieser
+# Tabelle - gezaehlt 31, 32 und 33 Faelle -, waehrend das Manifest "dieselbe
+# 31-Faelle-Tabelle" behauptete. Drei handgepflegte Kopien driften; genau das
+# ist passiert. Die Tabelle steht deshalb jetzt EINMAL hier und wird als
+# TEXTRIEGEL-FAELLE.json von allen drei Beinen GELESEN.
+#
+# Der Text steht HEX-KODIERT in der Datei. Das ist kein Selbstzweck: die
+# Tabelle enthaelt NUL-Escapes, rohe Steuerzeichen und ein BOM - Inhalte, an
+# denen ein JSON-Leser oder eine Zwischenschicht sich verschluckt. Hex ist
+# exakt und in allen drei Sprachen gleich zu dekodieren.
+
+BS = chr(92)
+E = BS + "u"
+
+TEXTRIEGEL_FAELLE: list[tuple[str, bool, str]] = [
+    # --- Ganzzahlbereich ---------------------------------------------------
+    ('{"w": 9007199254740991}', False, "2^53-1 ist exakt darstellbar"),
+    ('{"w": 9007199254740992}', True, "eine mehr ist es nicht"),
+    ('{"w": -9007199254740991}', False, "auch negativ exakt"),
+    ('{"w": -9007199254740992}', True, "und eine mehr auch negativ nicht"),
+    ('{"w": 18446744073709552016}', True,
+     "GEMESSEN: JUCEs parseNumber liest hier 400 (int64-Ueberlauf ohne Riegel)"),
+    ('{"w": 10000000000000000000}', True, "10^19"),
+    ('{"w": 091}', True, "GEMESSEN: JUCE liest 91; RFC 8259 verbietet die fuehrende Null"),
+    ('{"w": -091}', True, "dasselbe mit Vorzeichen"),
+    ('{"w": 0}', False, "die einzelne Null ist keine fuehrende Null"),
+    ('{"w": -0}', False, "negative Null ebenso"),
+    ('{"w": 0.5}', False, "und als Vorkommastelle eines Bruchs"),
+
+    # --- Gleitkommabereich (T2-Runde 2, BL-1/BL-2/BF-1) --------------------
+    ('{"w": 1e400}', True, "als binary64 unendlich"),
+    ('{"w": -1e400}', True, "auch negativ"),
+    ('{"w": 1e-400}', True,
+     "unterlaeuft zu 0. Der Riegel lehnt ab, damit alle drei Beine DASSELBE "
+     "sagen statt drei stille Nullen zu erzeugen"),
+    ('{"w": 1e307}', False, "gerade noch im Vertragsbereich"),
+    ('{"w": 1e308}', True, "die Grenze selbst liegt ausserhalb"),
+    ('{"w": 1.5e3}', False, "gewoehnliche Exponentialform"),
+    ('{"w": 4.8e4}', False, "eine legitime Samplerate in Exponentialform"),
+    ('{"w": 0.0000000000000000001}', False, "klein, aber darstellbar"),
+    ('{"w": 1e4294967296}', True,
+     "BL-1 GEMESSEN: juce_CharacterFunctions akkumuliert den Exponenten in einem "
+     "int OHNE Schranke; 4294967296 laeuft auf 0 ueber, der max_exponent10-Riegel "
+     "sieht nur noch die 0, und JUCE liest 1.0 - waehrend Rust und Python inf lesen"),
+    ('{"w": 1e-4294967296}', True, "dieselbe Klasse mit negativem Exponenten"),
+    ('{"w": ' + "1" + "0" * 1017 + '.0}', True,
+     "BL-2 GEMESSEN: 1018 Vorkommastellen. writeExponentDigits schreibt IMMER genau "
+     "drei Ziffern; bei extraExponent 1000 entsteht ':00', strtod bricht dort ab und "
+     "JUCE liest 1e17. Der Zweig hat ausserdem keinen max_exponent10-Riegel"),
+    ('{"w": ' + "1" + "0" * 399 + '.0}', True, "400 Stellen - dort waren sich alle drei schon einig"),
+    ('{"w": 1e}', True, "BF-1 GEMESSEN: getDoubleValue(\"1e\") liefert 1.0"),
+    ('{"w": 1e+}', True, "dasselbe mit Vorzeichen"),
+    ('{"w": 1E-}', True, "und mit grossem E"),
+    ('{"w": 1.}', True, "Dezimalpunkt ohne Nachkommaziffern"),
+
+    # --- Hex-Grammatik der \u-Escapes (BF-2/BF-3) --------------------------
+    ('{"w": "' + E + '+123"}', True, "BF-2 GEMESSEN: Pythons int(roh,16) nahm das Vorzeichen"),
+    ('{"w": "' + E + ' 12 "}', True, "BF-3 GEMESSEN: und Leerzeichen"),
+    ('{"w": "' + E + '0x1f"}', True, "BF-3 GEMESSEN: und das 0x-Praefix"),
+    ('{"w": "' + E + '1_23"}', True, "BF-3 GEMESSEN: und den Ziffern-Trenner"),
+    ('{"w": "' + E + chr(0x0660) * 4 + '"}', True,
+     "BF-3 GEMESSEN: und arabisch-indische Ziffern"),
+    ('{"w": "' + E + '00e4"}', False, "ein echtes Escape bleibt gueltig"),
+    ('{"w": "' + E + '00E4"}', False, "Grossbuchstaben-Hex ebenso"),
+    ('{"w": "' + E + 'ud83d"}', True, "vier Hexziffern, nicht fuenf"),
+
+    # --- Ziffernbegriff (BF-4) ---------------------------------------------
+    ('{"w": 0' + chr(0x0662) + '}', False,
+     "BF-4 GEMESSEN: Pythons str.isdigit() sah hier ZWEI Ziffern und meldete eine "
+     "fuehrende Null, Rust und C++ nicht. Mit ASCII-Ziffernbegriff lesen alle drei "
+     "nur die 0 - und der Parser lehnt das Dokument danach ohnehin ueberall ab"),
+    ('{"w": 0' + chr(0x00B2) + '}', False, "dasselbe mit einer Hochzahl"),
+
+    # --- Zeichenketten ------------------------------------------------------
+    ('{"w": "091 nur Text"}', False, "in einer Zeichenkette gilt keine Zahlenregel"),
+    ('{"w": "1e400"}', False, "auch nicht fuer Exponentialform"),
+    ('{"w": "a' + E + '0000b"}', True,
+     "GEMESSEN: juce::String ist nullterminiert und bricht hier im Parser ab, "
+     "waehrend serde_json und Python das Dokument annehmen"),
+    ('{"w": "\U0001F600"}', False, "ein rohes Astralzeichen ist unbedenklich"),
+    ('{"w": "' + E + 'd83d"}', True, "einsames hohes Surrogat"),
+    ('{"w": "' + E + 'de00"}', True, "einsames tiefes Surrogat"),
+    ('{"w": "' + E + 'd83dx"}', True, "hohes Surrogat ohne Partner"),
+    ('{"w": "' + E + 'd83d' + E + 'de00"}', False, "ein gueltiges Paar bleibt gueltig"),
+    ('{"w": "er sagte ' + BS + '"hallo' + BS + '""}', False, "escapete Anfuehrungszeichen"),
+    ('{"w": "backslash am Ende ' + BS + BS + '"}', False, "escapeter Backslash"),
+    ('{"w": "\u00e4"}', False, "Umlaut als rohes Zeichen"),
+    ('{"w": "Doppelpunkt : im Text"}', False, "loest die Schluesselregel nicht aus"),
+    ('{"w": "roher Tab: \t"}', True, "rohes Steuerzeichen in einer Zeichenkette"),
+
+    # --- Objektschluessel ---------------------------------------------------
+    ('{"": 1}', True,
+     "GEMESSEN: JUCE lehnt einen leeren Property-Namen im Parser ab; im ADDITIVEN "
+     "zaehler haette serde_json ihn angenommen"),
+    ('{"a": {"": 2}}', True, "auch verschachtelt"),
+    ('{"w": ""}', False, "eine leere Zeichenkette als WERT ist in Ordnung"),
+    ('{"a": "", "b": 1}', False, "auch unmittelbar vor einem Komma"),
+    ('{"w" : 1}', False, "Leerzeichen vor dem Doppelpunkt sind unbedenklich"),
+
+    # --- Dokumentrahmen (T2-Runde 2, BF-6/BF-7) -----------------------------
+    ('{"w": 512, "x": [1,2,3]}', False, "eine gewoehnliche Nachricht"),
+]
+
+# Faelle, die sich nur auf BYTE-Ebene ausdruecken lassen - sie stehen als
+# rohe Bytes und nicht als Text, weil es dafuer keinen gueltigen Text gibt.
+TEXTRIEGEL_BYTEFAELLE: list[tuple[bytes, bool, str]] = [
+    (b"\xef\xbb\xbf" + b'{"w": 1}', True,
+     "BF-7 GEMESSEN: RFC 8259 §8.1 - serde_json und Pythons json lehnen ein BOM ab, "
+     "JUCEs loadFileAsString streift es und parst weiter. Der Riegel lehnt ab, damit "
+     "alle drei dasselbe sehen"),
+    (b'{"w": "a\xffb"}', True,
+     "BF-6 GEMESSEN: kaputtes UTF-8. Das Python-Bein warf eine ungefangene "
+     "UnicodeDecodeError, das Rust-Bein panickte beim Lesen, und JUCE ersetzte das "
+     "Byte still - drei verschiedene Ausgaenge fuer dieselbe Datei"),
+    (b'{"w": 1}', False, "dieselbe Nachricht ohne BOM ist gueltig"),
+]
 
 # ------------------------------------------------------- gueltige Grundformen
 
@@ -938,6 +1059,13 @@ UNGUELTIG: list[tuple] = [
      "ein Fehler ohne Rueckweg laesst den Empfaenger raten (§33.3)"),
 
     # T-5: die drei neuen Gueltigkeitsbits aus §32.3.
+    ("transport-ohne-context-bit", "evidence_snapshot",
+     [loesche("transport", "process_context_present")],
+     [v("/transport", f"{S}/transportstempel/required/process_context_present", "required")],
+     "§32.3: ohne dieses Bit ist 'der Host hat GAR KEINEN ProcessContext angelegt' "
+     "nicht von 'Projektzeit ist ungueltig' zu unterscheiden - zwei verschiedene "
+     "Konfidenzaussagen"),
+
     ("validity-ohne-continuous-time", "evidence_snapshot",
      [loesche("transport", "validity", "continuous_time")],
      [v("/transport/validity", f"{S}/validity/required/continuous_time", "required")],
@@ -1085,6 +1213,51 @@ def rohtext_faelle() -> list[tuple[str, bytes, str]]:
     ]
 
 
+
+def textriegel_tabelle() -> dict:
+    """Die gemeinsame Falltabelle, wie sie alle drei Beine LESEN.
+
+    Der Text steht hex-kodiert: die Tabelle enthaelt NUL-Escapes, rohe
+    Steuerzeichen, kaputtes UTF-8 und ein BOM. Ein JSON-Leser oder eine
+    Zwischenschicht verschluckt sich daran; Hex ist exakt und in allen drei
+    Sprachen gleich zu dekodieren. `zeigetext` ist NUR fuer Menschen da und
+    wird von keinem Bein gelesen.
+    """
+    faelle = []
+    for nr, (text, ab, warum) in enumerate(TEXTRIEGEL_FAELLE, start=1):
+        roh = text.encode("utf-8")
+        faelle.append({
+            "nr": nr,
+            "text_hex": roh.hex(),
+            "zeigetext": repr(text)[1:-1][:120],
+            "wird_abgelehnt": ab,
+            "warum": warum,
+        })
+    for nr, (roh, ab, warum) in enumerate(TEXTRIEGEL_BYTEFAELLE,
+                                          start=len(TEXTRIEGEL_FAELLE) + 1):
+        faelle.append({
+            "nr": nr,
+            "text_hex": roh.hex(),
+            "zeigetext": repr(roh)[2:-1][:120],
+            "wird_abgelehnt": ab,
+            "warum": warum,
+        })
+    return {
+        "$id": "evenacadia.nakama.textriegel.faelle.v1",
+        "titel": "Gemeinsame Falltabelle des Textriegels",
+        "zweck": ("Der Textriegel ist in DREI Sprachen von Hand implementiert. Diese "
+                  "Datei ist die eine Tabelle, gegen die alle drei gefahren werden. "
+                  "Vorher trug jedes Bein eine eigene Kopie - gezaehlt 31, 32 und 33 "
+                  "Faelle -, waehrend das Beweismanifest 'dieselbe 31-Faelle-Tabelle' "
+                  "behauptete (T2-Runde 2, Befund BF-5). Drei handgepflegte Kopien "
+                  "driften; eine gelesene Datei kann es nicht."),
+        "warum_hex": ("Die Tabelle enthaelt NUL-Escapes, rohe Steuerzeichen, kaputtes "
+                      "UTF-8 und ein BOM. Als Text waere sie von keinem JSON-Leser "
+                      "unveraendert transportierbar. `zeigetext` ist nur fuer Menschen."),
+        "anzahl": len(faelle),
+        "faelle": faelle,
+    }
+
 def baue() -> tuple[dict, dict[str, dict], dict[str, bytes]]:
     dateien: dict[str, dict] = {}
     rohdateien: dict[str, bytes] = {}
@@ -1212,7 +1385,10 @@ def main(argv: list[str]) -> int:
 
     # (Pfad, Bytes) — die Rohtext-Fixtures gehen NICHT durch als_text(), sonst
     # wuerde der Serialisierer genau den Defekt wegformatieren, den sie tragen.
-    alle: list[tuple[pathlib.Path, bytes]] = [(ZIEL / "MANIFEST.json", als_text(manifest))]
+    alle: list[tuple[pathlib.Path, bytes]] = [
+        (ZIEL / "MANIFEST.json", als_text(manifest)),
+        (ZIEL / "TEXTRIEGEL-FAELLE.json", als_text(textriegel_tabelle())),
+    ]
     alle += [(ZIEL / p, als_text(d)) for p, d in sorted(dateien.items())]
     alle += [(ZIEL / p, b) for p, b in sorted(rohdateien.items())]
     alle.sort(key=lambda e: e[0].as_posix())

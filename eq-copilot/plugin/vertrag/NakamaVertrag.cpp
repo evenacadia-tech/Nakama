@@ -201,6 +201,115 @@ bool Verletzung::operator< (const Verletzung& a) const noexcept
 
 // ------------------------------------------------------------------ Textriegel
 
+namespace
+{
+
+bool istAsciiZiffer (juce::juce_wchar c) noexcept
+{
+    // NICHT juce::CharacterFunctions::isDigit - die ist auch fuer
+    // arabisch-indische Ziffern wahr. T2-Runde 2, Befund BF-4: Pythons
+    // str.isdigit() war es ebenfalls, und dieses Bein war es nicht. Drei
+    // Ziffernbegriffe waeren drei Grammatiken.
+    return c >= '0' && c <= '9';
+}
+
+bool istHexziffer (juce::juce_wchar c) noexcept
+{
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+}
+
+/*  Entscheidet AUS DEM LITERAL, ob eine Zahl im Vertragsbereich liegt.
+
+    T2-Runde 2, Blocker BL-1/BL-2: die erste Fassung fragte hier
+    `lit.getDoubleValue()`. Genau das war der Fehler - das ist DERSELBE Leser,
+    gegen dessen Ueberlauf der Riegel schuetzen soll.
+    `juce_CharacterFunctions.h` akkumuliert den Exponenten in einem `int` OHNE
+    Schranke (`exponent = (exponent * 10) + digit`), und der
+    `max_exponent10`-Riegel laeuft DANACH; `1e4294967296` kam hier als 1.0 an,
+    waehrend Rust und Python `inf` lasen. Der zweite Zweig (`extraExponent`)
+    hat gar keinen Riegel, und `writeExponentDigits` schreibt immer genau DREI
+    Ziffern - bei 1018 Vorkommastellen entsteht ':00' statt eines Exponenten,
+    strtod bricht dort ab, und JUCE liest 1e17.
+
+    Die Lehre, die ueber diesen Fall hinausgeht: EIN RIEGEL DARF NIE DIE
+    BIBLIOTHEK BEFRAGEN, GEGEN DEREN VERHALTEN ER SCHUETZT. Die Ganzzahlregel
+    war von Anfang an aus dem Literal gerechnet und hat gehalten; die
+    Endlichkeitsregel war delegiert und hat nicht gehalten.
+
+    Hier wird deshalb nur mit kleinen ganzen Zahlen gerechnet, ohne jede
+    Gleitkommaoperation.
+*/
+bool zahlPruefen (const juce::String& ganz, const juce::String& bruch,
+                  const juce::String& expZiffern, bool expNegativ,
+                  const juce::String& lit, juce::String& fehler)
+{
+    if (bruch.isEmpty() && expZiffern.isEmpty())
+    {
+        const bool zuGross = ganz.length() > 16
+            || (ganz.length() == 16 && ganz.getLargeIntValue() > sichereGanzzahl);
+        if (zuGross)
+        {
+            fehler = "Ganzzahl ausserhalb 2^53-1: " + lit;
+            return false;
+        }
+        return true;
+    }
+
+    // Der Exponent selbst: mehr als drei Ziffern liegen schon ausserhalb, und
+    // so wird er auch nie gross genug, um irgendwo ueberzulaufen.
+    auto ohneNull = expZiffern;
+    while (ohneNull.startsWithChar ('0'))
+        ohneNull = ohneNull.substring (1);
+    if (ohneNull.length() > 3)
+    {
+        fehler = "Exponent ausserhalb +/-" + juce::String (dezGrenze) + ": " + lit.substring (0, 40);
+        return false;
+    }
+    auto exp = static_cast<int> (ohneNull.getLargeIntValue());
+    if (expNegativ)
+        exp = -exp;
+
+    const auto alle = ganz + bruch;
+    int fuehrende = 0;
+    while (fuehrende < alle.length() && alle[fuehrende] == '0')
+        ++fuehrende;
+    if (fuehrende == alle.length())
+        return true;                      // der Wert ist exakt 0
+
+    const auto dez = (ganz.length() - fuehrende - 1) + exp;
+    if (dez >= dezGrenze || dez <= -dezGrenze)
+    {
+        fehler = "Zahl ausserhalb +/-1e" + juce::String (dezGrenze) + ": " + lit.substring (0, 40);
+        return false;
+    }
+    return true;
+}
+
+} // namespace
+
+bool textriegelBytes (const void* daten, size_t laenge, juce::String& fehler)
+{
+    const auto* bytes = static_cast<const unsigned char*> (daten);
+    if (daten == nullptr)
+    {
+        fehler = "kein Puffer";
+        return false;
+    }
+    if (laenge >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+    {
+        fehler = "BOM am Dokumentanfang";
+        return false;
+    }
+    if (! juce::CharPointer_UTF8::isValidString (static_cast<const char*> (daten),
+                                                 static_cast<int> (laenge)))
+    {
+        fehler = "kein gueltiges UTF-8";
+        return false;
+    }
+    return textriegel (juce::String::fromUTF8 (static_cast<const char*> (daten),
+                                               static_cast<int> (laenge)), fehler);
+}
+
 bool textriegel (const juce::String& text, juce::String& fehler)
 {
     // Codepunkte statt Bytes: die Positionsangabe soll in allen drei Beinen
@@ -240,20 +349,26 @@ bool textriegel (const juce::String& text, juce::String& fehler)
                 {
                     if (j + 5 < n && z[j + 1] == 'u')
                     {
-                        const auto roh = teil (j + 2, j + 6);
+                        // GENAU vier ASCII-Hexziffern (T2-Runde 2, BF-2/BF-3):
+                        // Pythons int(roh,16) naehme Vorzeichen, Leerzeichen,
+                        // 0x-Praefix, Ziffern-Trenner und arabisch-indische
+                        // Ziffern; Rusts from_str_radix das Vorzeichen. Drei
+                        // Hex-Grammatiken waeren drei Urteile.
                         juce::int64 cp = 0;
+                        bool sauber = true;
                         for (int k = 0; k < 4; ++k)
                         {
-                            const auto h = roh[k];
-                            const int wert = (h >= '0' && h <= '9') ? h - '0'
-                                           : (h >= 'a' && h <= 'f') ? h - 'a' + 10
-                                           : (h >= 'A' && h <= 'F') ? h - 'A' + 10 : -1;
-                            if (wert < 0)
-                            {
-                                fehler = "unlesbares u-Escape \"" + roh + "\" an Position " + juce::String ((int) j);
-                                return false;
-                            }
+                            const auto hz = z[j + 2 + static_cast<size_t> (k)];
+                            if (! istHexziffer (hz)) { sauber = false; break; }
+                            const int wert = (hz >= '0' && hz <= '9') ? hz - '0'
+                                           : (hz >= 'a' && hz <= 'f') ? hz - 'a' + 10
+                                                                      : hz - 'A' + 10;
                             cp = cp * 16 + wert;
+                        }
+                        if (! sauber)
+                        {
+                            fehler = "kein 4-stelliges Hex-Escape an Position " + juce::String ((int) j);
+                            return false;
                         }
                         if (cp == 0)
                         {
@@ -313,12 +428,12 @@ bool textriegel (const juce::String& text, juce::String& fehler)
             continue;
         }
 
-        if (c == '-' || (c >= '0' && c <= '9'))
+        if (c == '-' || istAsciiZiffer (c))
         {
             size_t j = i;
             if (z[j] == '-') ++j;
             const auto anfang = j;
-            while (j < n && z[j] >= '0' && z[j] <= '9') ++j;
+            while (j < n && istAsciiZiffer (z[j])) ++j;
             const auto ganz = teil (anfang, j);
             if (ganz.isEmpty())
             {
@@ -327,46 +442,47 @@ bool textriegel (const juce::String& text, juce::String& fehler)
             }
             if (ganz.length() > 1 && ganz[0] == '0')
             {
-                fehler = "fuehrende Null in \"" + teil (i, j) + "\" an Position " + juce::String ((int) i);
+                fehler = "fuehrende Null in \"" + teil (i, j).substring (0, 20)
+                       + "\" an Position " + juce::String ((int) i);
                 return false;
             }
 
-            bool bruch = false, exp = false;
+            juce::String bruch, expZiffern;
+            bool expNegativ = false;
+
             if (j < n && z[j] == '.')
             {
-                bruch = true; ++j;
-                while (j < n && z[j] >= '0' && z[j] <= '9') ++j;
+                ++j;
+                const auto a = j;
+                while (j < n && istAsciiZiffer (z[j])) ++j;
+                bruch = teil (a, j);
+                if (bruch.isEmpty())
+                {
+                    fehler = "Dezimalpunkt ohne Nachkommaziffern an Position " + juce::String ((int) i);
+                    return false;
+                }
             }
             if (j < n && (z[j] == 'e' || z[j] == 'E'))
             {
-                exp = true; ++j;
-                if (j < n && (z[j] == '+' || z[j] == '-')) ++j;
-                while (j < n && z[j] >= '0' && z[j] <= '9') ++j;
+                ++j;
+                if (j < n && (z[j] == '+' || z[j] == '-'))
+                {
+                    expNegativ = z[j] == '-';
+                    ++j;
+                }
+                const auto a = j;
+                while (j < n && istAsciiZiffer (z[j])) ++j;
+                expZiffern = teil (a, j);
+                if (expZiffern.isEmpty())
+                {
+                    // BF-1: getDoubleValue("1e") liefert 1.0.
+                    fehler = "Exponent ohne Ziffern an Position " + juce::String ((int) i);
+                    return false;
+                }
             }
 
-            const auto lit = teil (i, j);
-            if (! bruch && ! exp)
-            {
-                // 2^53-1 hat 16 Ziffern. Alles ab 17 ist ohne Rechnen zu gross;
-                // bei genau 16 wird verglichen - und 16 Ziffern passen sicher
-                // in int64, hier kann also nichts ueberlaufen.
-                const bool zuGross = ganz.length() > 16
-                    || (ganz.length() == 16 && ganz.getLargeIntValue() > sichereGanzzahl);
-                if (zuGross)
-                {
-                    fehler = "Ganzzahl ausserhalb 2^53-1: " + lit;
-                    return false;
-                }
-            }
-            else
-            {
-                const auto d = lit.getDoubleValue();
-                if (! std::isfinite (d))
-                {
-                    fehler = "nicht endliche Zahl: " + lit;
-                    return false;
-                }
-            }
+            if (! zahlPruefen (ganz, bruch, expZiffern, expNegativ, teil (i, j), fehler))
+                return false;
             i = j;
             continue;
         }

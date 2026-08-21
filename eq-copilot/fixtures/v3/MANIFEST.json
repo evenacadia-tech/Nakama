@@ -7,7 +7,7 @@
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
   "anzahl_gueltig": 36,
-  "anzahl_ungueltig": 116,
+  "anzahl_ungueltig": 117,
   "fixtures": [
     {
       "datei": "gueltig/audible_intervention_begin.json",
@@ -1416,6 +1416,18 @@
           "instanz": "/transport/time_basis",
           "schema": "#/$defs/transportstempel/properties/time_basis/enum",
           "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/transport-ohne-context-bit.json",
+      "urteil": "ungueltig",
+      "warum": "§32.3: ohne dieses Bit ist 'der Host hat GAR KEINEN ProcessContext angelegt' nicht von 'Projektzeit ist ungueltig' zu unterscheiden - zwei verschiedene Konfidenzaussagen",
+      "verletzungen": [
+        {
+          "instanz": "/transport",
+          "schema": "#/$defs/transportstempel/required/process_context_present",
+          "schluessel": "required"
         }
       ]
     },

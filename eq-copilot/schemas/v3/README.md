@@ -56,27 +56,75 @@ verfaelscht. Ein `maximum: 400` wuerde auf der C++-Seite anstandslos passieren
 und auf der Rust-Seite fallen. Der einzige Ort, an dem alle drei Beine
 dasselbe sehen koennen, ist der Text.
 
-Sechs Regeln, jede gegen eine **gemessene** Abweichung:
+**Acht Regeln**, jede gegen eine **gemessene** Abweichung:
 
 1. **Keine fuehrende Null** — RFC 8259 verbietet sie, JUCE nimmt sie an.
-2. **Ganzzahlen nur innerhalb ±(2^53−1)** — der exakt darstellbare Bereich
-   von binary64. Darueber verfaelscht JUCE still.
-3. **Gleitkommaliterale muessen endlich sein** — `1e400` ist es nicht.
-4. **Kein `\u0000`-Escape in einer Zeichenkette** — `juce::String` ist
+2. **Ganzzahlen nur innerhalb ±(2^53−1)** — der exakt darstellbare Bereich von
+   binary64. Darueber verfaelscht JUCE still.
+3. **Zahlen betragsmaessig unter 1e308, und ein `e` braucht Ziffern.**
+4. **Genau vier ASCII-Hexziffern** in einem `\u`-Escape. Vorher hatten die drei
+   Beine drei Hex-Grammatiken: Pythons `int(roh, 16)` nahm `+123`, `` 12 ``,
+   `0x1f`, `1_23` und arabisch-indische Ziffern, Rusts `from_str_radix` das
+   Vorzeichen, die C++-Handschleife nichts davon.
+5. **Kein NUL-Escape in einer Zeichenkette** — `juce::String` ist
    nullterminiert und bricht dort im Parser ab, waehrend `serde_json` und
    Python das Dokument annehmen.
-5. **Keine einsamen Surrogate** — hier lehnen *beide eigenen* Engines ab und
+6. **Keine einsamen Surrogate** — hier lehnen *beide eigenen* Engines ab und
    nur das Referenzbein nimmt an; die Regel zieht es nach.
-6. **Kein leerer Objektschluessel** — JUCE lehnt ihn im Parser ab; in einem
+7. **Kein leerer Objektschluessel** — JUCE lehnt ihn im Parser ab; in einem
    **additiven** Objekt (`zaehler`, `konfidenz`, `verteilung`) haette
    `serde_json` ihn dagegen angenommen, weil `additionalProperties: true` ihn
    nicht auffaengt.
+8. **Auf Byteebene: kein BOM, gueltiges UTF-8.** Bei einem BOM streift JUCE es
+   und parst weiter, waehrend die anderen beiden ablehnen; bei kaputtem UTF-8
+   liefen alle drei auseinander (ungefangene Ausnahme · Panik beim Lesen ·
+   stille Ersetzung).
 
-Dieselbe 31-Faelle-Tabelle steht in allen drei Beinen
-(`NakamaVertrag.cpp` · `broker/src/vertrag.rs` · `pruefe_v3_vertrag.py`).
-Der Riegel laeuft ueber **jedes** Fixture, nicht nur ueber die sieben, die an
-ihm fallen sollen — sonst waere seine zweite Haelfte („laesst alles andere
-durch") ungeprueft.
+Auch der **Ziffernbegriff** ist jetzt derselbe: `str.isdigit()` ist fuer
+arabisch-indische Ziffern und Hochzahlen wahr, `is_ascii_digit` und
+`c >= '0' && c <= '9'` nicht. Bei `{"w": 0٢}` meldete das Referenzbein deshalb
+eine fuehrende Null und die anderen beiden nicht.
+
+### Die teuerste Lehre dieses Vertrags
+
+Regel 3 war in der ersten Fassung **delegiert** — die drei Beine fragten
+`float(lit)`, `lit.parse::<f64>()` bzw. `getDoubleValue()`. Auf der C++-Seite
+ist das **genau der Leser, gegen dessen Ueberlauf der Riegel schuetzen soll**.
+`juce_CharacterFunctions.h` akkumuliert den Exponenten in einem `int` ohne
+Schranke und prueft erst **danach** gegen `max_exponent10`; ein zweiter Zweig
+(`extraExponent`) prueft gar nicht und schreibt immer genau drei
+Exponentziffern. Gemessen in T2-Runde 2:
+
+| Eingabe | C++ (JUCE) | Rust | Python |
+|---|---|---|---|
+| `1e4294967296` | liest **1.0** | inf | inf |
+| `1` + 1017 Nullen + `.0` | liest **1e17** | inf | inf |
+| `1e` | liest **1.0** | Parsefehler | Parsefehler |
+
+> **Ein Riegel darf nie die Bibliothek befragen, gegen deren Verhalten er
+> schuetzt.**
+
+Regel 2 war von Anfang an aus dem Literal gerechnet und hat gehalten. Regel 3
+rechnet den Dezimalexponenten jetzt genauso — aus Vorkommastellen, fuehrenden
+Nullen und explizitem Exponenten, mit lauter kleinen ganzen Zahlen und ohne
+jede Gleitkommaoperation.
+
+### Die Falltabelle ist eine Datei, keine drei Kopien
+
+Die Faelle stehen in **`../../fixtures/v3/TEXTRIEGEL-FAELLE.json`** und werden
+von allen drei Beinen **gelesen**. Vorher trug jedes Bein eine eigene Kopie —
+gezaehlt **31, 32 und 33** Faelle —, waehrend das Beweismanifest „dieselbe
+31-Faelle-Tabelle" behauptete (T2-Runde 2, Befund BF-5). Drei handgepflegte
+Kopien driften; eine gelesene Datei kann es nicht.
+
+Der Text steht dort **hex-kodiert**: die Tabelle enthaelt NUL-Escapes, rohe
+Steuerzeichen, kaputtes UTF-8 und ein BOM — Inhalte, an denen ein JSON-Leser
+oder eine Zwischenschicht sich verschluckt. `zeigetext` ist nur fuer Menschen
+da und wird von keinem Bein gelesen.
+
+Der Riegel laeuft ueber **jedes** Fixture, nicht nur ueber die, die an ihm
+fallen sollen — sonst waere seine zweite Haelfte („laesst alles andere durch")
+ungeprueft.
 
 Fixtures, die an dieser Stufe fallen, tragen im Manifest
 `textriegel_lehnt_ab: true` und **keine** Verletzungsmenge: sie erreichen das

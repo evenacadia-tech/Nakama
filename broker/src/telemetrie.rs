@@ -28,7 +28,7 @@ use std::collections::BTreeSet;
 ///
 /// `pfad` ist ein JSON-Pointer in den Batch (`""` ist der Batch selbst),
 /// `regel` einer der Namen aus der geschlossenen Liste in
-/// `eq-copilot/schemas/v3/flatbuffers/README-LESER.md`. Beide Beine bilden
+/// `eq-copilot/schemas/v3/flatbuffers/README.md`. Beide Beine bilden
 /// denselben Text; die Menge wird kanonisch sortiert, damit der Vergleich
 /// nicht von der Auswertungsreihenfolge abhaengt.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -192,6 +192,14 @@ fn pruefe_frame(f: &fb::Frame, p: &str, out: &mut Vec<Verstoss>) {
 }
 
 fn pruefe_transport(t: &fb::Transportstempel, p: &str, out: &mut Vec<Verstoss>) {
+    // §32.3: "Die Wrapper-Bridge liefert deshalb process_context_present und
+    // unabhaengige Validity-Bits; ohne Bridge gilt Projektzeit als unbewiesen."
+    // Das Feld ist ein Optional und kein bool mit Default: sonst waere "der
+    // Sender hat es weggelassen" ununterscheidbar von "der Host hat keinen
+    // Context angelegt" — und das sind zwei verschiedene Konfidenzaussagen.
+    if t.process_context_present().is_none() {
+        out.push(Verstoss::neu(&format!("{p}/process_context_present"), "context_bit_fehlt"));
+    }
     if t.zeitbasis() == fb::Zeitbasis::unbekannt {
         out.push(Verstoss::neu(&format!("{p}/zeitbasis"), "enum_unbekannt"));
     }

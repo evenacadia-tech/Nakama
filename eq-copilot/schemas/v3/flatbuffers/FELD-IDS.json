@@ -55,7 +55,8 @@
         "schleife": 10,
         "input_presentation_latency": 11,
         "output_presentation_latency": 12,
-        "gueltigkeit": 13
+        "gueltigkeit": 13,
+        "process_context_present": 14
       },
       "verbrannt": []
     },
@@ -102,6 +103,6 @@
 
   "erwartet_gesamt": {
     "tabellen": 8,
-    "felder": 46
+    "felder": 47
   }
 }

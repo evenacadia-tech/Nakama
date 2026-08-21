@@ -1,0 +1,69 @@
+{
+  "$id": "evenacadia.nakama.ipc.v3.reserviert",
+  "titel": "Reservierte v3-Nachrichtenfamilien",
+  "zweck": "Entwurf §33.3 zaehlt 25 Nachrichtenfamilien auf. SONDE-005a definiert die 17, deren Datenmodell im Entwurf entschieden ist. Die uebrigen 8 tragen Nutzlasten aus spaeteren Phasen (Proposal, DSP-DTO, Experiment) — sie jetzt zu erfinden waere ein Vorgriff, den eine spaetere Phase teuer zuruecknehmen muesste (Bauaufteilung §6.2 'Kein Vorgriff').",
+  "regel": "Ihre NAMEN sind trotzdem jetzt vergeben. Ein reservierter Discriminator wird vom v3-Parser ABGELEHNT (er steht nicht im oneOf des Schemas) und darf von keinem spaeteren Ticket fuer etwas anderes verwendet werden. Genau das ist der Vertragsanteil, der spaeter bricht, wenn man ihn heute offen laesst.",
+  "pruefung": "pruefe_v3_vertrag.py prueft, dass sich reservierte und definierte Namen nicht ueberschneiden und dass die Summe 25 ergibt.",
+  "gesamt_erwartet": 25,
+  "definiert": [
+    "hello",
+    "welcome",
+    "reject",
+    "heartbeat",
+    "heartbeat_ack",
+    "subscribe_session",
+    "session_snapshot",
+    "evidence_snapshot",
+    "audible_intervention_begin",
+    "audible_intervention_end",
+    "evidence_invalidate",
+    "preview_begin",
+    "preview_renew",
+    "preview_end",
+    "command_ack",
+    "state_report",
+    "error"
+  ],
+  "reserviert": [
+    {
+      "name": "telemetry_frame",
+      "eigentuemer": "SONDE-005b",
+      "grund": "P2-Featureframes sind FlatBuffers (`FeatureBatch` mit CRC32C), kein JSON — Entwurf §33.1. Der Name bleibt reserviert, damit ihn keine JSON-Familie belegt."
+    },
+    {
+      "name": "draft_offer",
+      "eigentuemer": "SONDE-014 (P5)",
+      "grund": "Traegt ein `Proposal` — kleinster Versuch mit Grenzen, Hoerziel und Stopbedingung. Das Objekt entsteht in P5."
+    },
+    {
+      "name": "apply_transaction",
+      "eigentuemer": "SONDE-016 (P7)",
+      "grund": "Traegt das validierte DSP-DTO und dessen `state_hash` (RFC 8785). DTO und Hash entstehen in SONDE-006/015."
+    },
+    {
+      "name": "revert_transaction",
+      "eigentuemer": "SONDE-016 (P7)",
+      "grund": "Gegenpfad zu apply_transaction — gehoert in denselben Aenderungssatz wie dieses (Bauaufteilung §6.3)."
+    },
+    {
+      "name": "experiment_begin",
+      "eigentuemer": "SONDE-013 (P4)",
+      "grund": "Baseline/Kandidat/Vergleichbarkeit entstehen mit dem manuellen Experimentkern."
+    },
+    {
+      "name": "experiment_abort",
+      "eigentuemer": "SONDE-013 (P4)",
+      "grund": "Gegenpfad zu experiment_begin."
+    },
+    {
+      "name": "experiment_result",
+      "eigentuemer": "SONDE-017 (P7)",
+      "grund": "Deltas und Urteil setzen den Active-Compare-Pfad voraus."
+    },
+    {
+      "name": "user_verdict",
+      "eigentuemer": "SONDE-014 (P5)",
+      "grund": "Userurteil bindet an Finding/Proposal-IDs, die es vor P5 nicht gibt."
+    }
+  ]
+}

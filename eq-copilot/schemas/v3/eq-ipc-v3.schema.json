@@ -1,0 +1,672 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "evenacadia.nakama.ipc.v3",
+  "title": "Nakama IPC-Vertrag v3 — JSON-Nachrichtenfamilien P0/P1",
+  "description": "Sonden-IPC v3 (Entwurf §33). Nur die JSON-Ebenen: P0 (Control) und P1 (Zustand/Evidenz). Die P2-Featureframes sind FlatBuffers und gehoeren SONDE-005b; der 16-Byte-Envelope und sein Parser gehoeren SONDE-010. Nachrichtenfamilien sind ueber die Eigenschaft `type` unterschieden; reservierte, noch nicht gebaute Familien stehen in reservierte-nachrichten-v1.json und werden hier ABGELEHNT, damit kein Ticket ihren Namen zweckentfremdet.",
+  "$comment": "Engine-Teilmenge und Erst-Fehler-Semantik: siehe README.md in diesem Verzeichnis. Die drei Pruefer (C++, Rust, jsonschema) lehnen ein Schema ab, das ein hier nicht dokumentiertes Schluesselwort verwendet.",
+
+  "x-nakama-discriminator": "type",
+  "oneOf": [
+    { "$ref": "#/$defs/hello" },
+    { "$ref": "#/$defs/welcome" },
+    { "$ref": "#/$defs/reject" },
+    { "$ref": "#/$defs/heartbeat" },
+    { "$ref": "#/$defs/heartbeat_ack" },
+    { "$ref": "#/$defs/subscribe_session" },
+    { "$ref": "#/$defs/session_snapshot" },
+    { "$ref": "#/$defs/evidence_snapshot" },
+    { "$ref": "#/$defs/audible_intervention_begin" },
+    { "$ref": "#/$defs/audible_intervention_end" },
+    { "$ref": "#/$defs/evidence_invalidate" },
+    { "$ref": "#/$defs/preview_begin" },
+    { "$ref": "#/$defs/preview_renew" },
+    { "$ref": "#/$defs/preview_end" },
+    { "$ref": "#/$defs/command_ack" },
+    { "$ref": "#/$defs/state_report" },
+    { "$ref": "#/$defs/error" }
+  ],
+
+  "$defs": {
+
+    "hex32": {
+      "description": "Undurchsichtiges 128-Bit-Token, 32 Kleinbuchstaben-Hexziffern.",
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 32,
+      "pattern": "^[0-9a-f]{32}$"
+    },
+
+    "sid": {
+      "description": "Windows-Logon-SID in S-R-I-S...-Form. Wird nie geparst, nur verglichen.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 184
+    },
+
+    "adresse": {
+      "description": "Effektive Steueradresse (§32.1). Keines dieser Felder ist additiv: eine unbekannte Eigenschaft hier waere eine unbekannte Zieladresse.",
+      "type": "object",
+      "required": ["logon_sid", "project_binding_id", "session_epoch", "instance_id", "runtime_nonce"],
+      "additionalProperties": false,
+      "properties": {
+        "logon_sid": { "$ref": "#/$defs/sid" },
+        "project_binding_id": { "$ref": "#/$defs/hex32" },
+        "session_epoch": {
+          "$comment": "Vom fuehrenden Main beim OEFFNEN einer Projektkopie neu gezogen, nicht aus der Projektdatei abgeleitet: zwei gleichzeitig geoeffnete Kopien derselben .flp muessen sich unterscheiden, ein Zaehler im Projektstate wuerde in beiden denselben Wert lesen.",
+          "$ref": "#/$defs/hex32"
+        },
+        "instance_id": { "$ref": "#/$defs/hex32" },
+        "runtime_nonce": { "$ref": "#/$defs/hex32" }
+      }
+    },
+
+    "plugin_kind": {
+      "description": "Ladbare Produktklasse (§32.2). `legacy` ist der heutige Eqcp-Bestand.",
+      "enum": ["main", "passive_probe", "active_probe", "legacy"]
+    },
+
+    "measurement_position": {
+      "description": "Ort der Messung (§32.2).",
+      "enum": ["insert", "pre", "post", "post_fader_contribution"]
+    },
+
+    "aussageklasse": {
+      "description": "Aussagekraft der Messposition (§32.2). `beobachtend` erlaubt Zusammenhangs- und Kettenhypothesen; `beitrag` erlaubt Beitragsaussagen und setzt einen eigenen diskreten Aux-Bus voraus. Die beiden Klassen duerfen in Text und Konfidenz NIE vermischt werden.",
+      "enum": ["beobachtend", "beitrag"]
+    },
+
+    "capability_wert": {
+      "description": "Entwurf §54 Exit-Gate: 'Kein `unknown, spaeter pruefen` darf P1 passieren.' Deshalb kennt dieser Vertrag genau zwei Werte. Ein Hostspike, der nichts beweisen konnte, endet in `unsupported` plus dem festen Fallback aus §51 — nicht in einem dritten Wert.",
+      "enum": ["supported", "unsupported"]
+    },
+
+    "capabilities": {
+      "description": "Fest verdrahteter Faehigkeitssatz. NICHT additiv: eine unbekannte Capability ist eine unbekannte Sicherheitsaussage.",
+      "type": "object",
+      "required": [
+        "process_context",
+        "sample_accurate_automation",
+        "presentation_latency",
+        "discrete_aux_buses",
+        "offline_render_detection",
+        "double_precision",
+        "remote_control"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "process_context": { "$ref": "#/$defs/capability_wert" },
+        "sample_accurate_automation": { "$ref": "#/$defs/capability_wert" },
+        "presentation_latency": { "$ref": "#/$defs/capability_wert" },
+        "discrete_aux_buses": { "$ref": "#/$defs/capability_wert" },
+        "offline_render_detection": { "$ref": "#/$defs/capability_wert" },
+        "double_precision": { "$ref": "#/$defs/capability_wert" },
+        "remote_control": { "$ref": "#/$defs/capability_wert" }
+      }
+    },
+
+    "audio_lage": {
+      "type": "object",
+      "required": ["samplerate", "block_size", "channels"],
+      "additionalProperties": false,
+      "properties": {
+        "samplerate": { "type": "number", "exclusiveMinimum": 0, "maximum": 768000 },
+        "block_size": { "type": "integer", "minimum": 1, "maximum": 65536 },
+        "channels": { "type": "integer", "minimum": 0, "maximum": 64 }
+      }
+    },
+
+    "validity": {
+      "description": "Gueltigkeitsbits des Transportstempels (§32.3). Ein fehlendes Bit ist ein Nein, kein Vielleicht.",
+      "type": "object",
+      "required": ["project_time", "play_state", "record_state", "cycle_bounds"],
+      "additionalProperties": false,
+      "properties": {
+        "project_time": { "type": "boolean" },
+        "play_state": { "type": "boolean" },
+        "record_state": { "type": "boolean" },
+        "cycle_bounds": { "type": "boolean" }
+      }
+    },
+
+    "derived_sample_bounds": {
+      "description": "Abgeleitete Samplegrenzen einer Schleife. NUR gueltig, wenn PPQ, Projektzeit und Tempo im Block eine durch FL-Goldens validierte Abbildung erlauben (§32.3) — deshalb traegt das Objekt seine Herleitung mit.",
+      "type": "object",
+      "required": ["start", "end", "derivation"],
+      "additionalProperties": false,
+      "properties": {
+        "start": { "type": "integer", "minimum": 0 },
+        "end": { "type": "integer", "minimum": 0 },
+        "derivation": { "enum": ["validated_block_mapping", "unproven"] }
+      }
+    },
+
+    "cycle": {
+      "description": "Schleifengrenzen. VST3 liefert sie als PPQ; Samplegrenzen sind ein ABGELEITETES Feld (§32.3).",
+      "type": "object",
+      "required": ["active", "bounds_valid"],
+      "additionalProperties": false,
+      "properties": {
+        "active": { "type": "boolean" },
+        "bounds_valid": { "type": "boolean" },
+        "start_ppq": { "type": "number" },
+        "end_ppq": { "type": "number" },
+        "derived_sample_bounds": { "$ref": "#/$defs/derived_sample_bounds" }
+      }
+    },
+
+    "transportstempel": {
+      "description": "Zeitbasis und explizite Gueltigkeit jedes zeitabhaengigen Frames (§32.3). Ohne gueltige Projektzeit traegt `local_monotonic` nur lokale Analyse und IPC-Frische — Cross-Probe-Alignment und starke Ursache sind dann gesperrt.",
+      "type": "object",
+      "required": [
+        "transport_epoch",
+        "continuity_segment",
+        "sequence",
+        "time_basis",
+        "sample_count",
+        "sample_rate",
+        "playing",
+        "recording",
+        "validity"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "transport_epoch": { "type": "integer", "minimum": 0 },
+        "continuity_segment": {
+          "$comment": "Trennt lokale Analyseluecken (Queue-Drop, Oversize-Block) INNERHALB derselben echten Transportepoche — damit eine Luecke nicht faelschlich als Seek erscheint (§32.3).",
+          "type": "integer",
+          "minimum": 0
+        },
+        "sequence": { "type": "integer", "minimum": 0 },
+        "time_basis": { "enum": ["project_samples", "local_monotonic"] },
+        "project_sample_start": { "type": "integer" },
+        "sample_count": { "type": "integer", "minimum": 0, "maximum": 1048576 },
+        "sample_rate": { "type": "number", "exclusiveMinimum": 0, "maximum": 768000 },
+        "playing": { "type": "boolean" },
+        "recording": { "type": "boolean" },
+        "continuous_time_samples": { "type": "integer" },
+        "cycle": { "$ref": "#/$defs/cycle" },
+        "input_presentation_latency": { "type": "integer", "minimum": 0 },
+        "output_presentation_latency": { "type": "integer", "minimum": 0 },
+        "validity": { "$ref": "#/$defs/validity" }
+      }
+    },
+
+    "zaehler": {
+      "description": "ADDITIV. Zaehler duerfen mit jeder Minor-Version wachsen; ein aelterer Leser ignoriert unbekannte, weil ein unbekannter Zaehler nichts verspricht. `maxProperties` begrenzt das Wachstum, damit 'erweiterbar' nicht 'beliebig' heisst (§33.1).",
+      "type": "object",
+      "required": ["frames_dropped", "parse_errors", "queue_overflows"],
+      "additionalProperties": true,
+      "maxProperties": 11,
+      "properties": {
+        "frames_dropped": { "type": "integer", "minimum": 0 },
+        "parse_errors": { "type": "integer", "minimum": 0 },
+        "queue_overflows": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "konfidenz": {
+      "description": "ADDITIV (§34.3: die bestehenden Komponenten 'werden erweitert um'). Die Gesamtklasse wird NICHT aus einem schoenen Mittelwert gerettet: ein harter Mangel bei Session, Passage, Coverage oder Alignment begrenzt sie — deshalb ist `klasse` ein eigenes Feld und kein gerundeter Score.",
+      "type": "object",
+      "required": ["metrics_version", "klasse"],
+      "additionalProperties": true,
+      "maxProperties": 10,
+      "properties": {
+        "metrics_version": { "type": "integer", "minimum": 1 },
+        "klasse": { "enum": ["stark", "mittel", "schwach", "unbrauchbar"] },
+        "timing_alignment": { "type": "number", "minimum": 0, "maximum": 1 },
+        "messpunkt_routing": { "type": "number", "minimum": 0, "maximum": 1 },
+        "alternativerklaerungen": { "type": "number", "minimum": 0, "maximum": 1 },
+        "bootstrap_stabilitaet": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+
+    "frische": {
+      "description": "Frische einer Verbindung oder Aussage. `stale` ist ein Zustand, kein Fehler — er muss in JEDER UI-Fassung sichtbar sein (§0.4).",
+      "type": "object",
+      "required": ["stale", "letzter_kontakt_ms"],
+      "additionalProperties": false,
+      "properties": {
+        "stale": { "type": "boolean" },
+        "letzter_kontakt_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "band_encoding": {
+      "description": "Empfaenger raten die Skalierung NIE aus dem Nachrichtentyp (§33.1) — sie steht in jedem Batch. Vertrag und Testvektoren: quantisierung-v1.json.",
+      "enum": ["q_db_0p1_i16", "q_db_0p01_i16", "float32"]
+    },
+
+    "bandwerte": {
+      "description": "Ein Bandsatz mit seinem Gitter, seiner Kodierung, seiner Gueltigkeitsbitmap und seinem Saettigungsbit (§33.1). Die Bitmap ist Base64 ueber ceil(n/8) Bytes, LSB-first je Byte.",
+      "type": "object",
+      "required": ["gitter_id", "encoding", "werte", "gueltig_bitmap", "saturated"],
+      "additionalProperties": false,
+      "properties": {
+        "gitter_id": { "enum": ["nakama_1_24_oct_30_18k_v1", "nakama_log64_v1"] },
+        "encoding": { "$ref": "#/$defs/band_encoding" },
+        "werte": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 221,
+          "items": { "type": "number" }
+        },
+        "gueltig_bitmap": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "saturated": { "type": "boolean" }
+      }
+    },
+
+    "probe_descriptor": {
+      "description": "Identitaet, Produktklasse, Messposition, Faehigkeiten und Frische einer Instanz (§34.1). NICHT additiv.",
+      "type": "object",
+      "required": [
+        "adresse",
+        "plugin_kind",
+        "measurement_position",
+        "aussageklasse",
+        "label",
+        "capabilities",
+        "frische"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "adresse": { "$ref": "#/$defs/adresse" },
+        "plugin_kind": { "$ref": "#/$defs/plugin_kind" },
+        "measurement_position": { "$ref": "#/$defs/measurement_position" },
+        "aussageklasse": { "$ref": "#/$defs/aussageklasse" },
+        "label": {
+          "$comment": "User-Label — untrusted data: wird gespeichert und angezeigt, nie interpretiert. Ein Hosthinweis (Trackname, Farbe) darf es nie still ueberschreiben (§32.2).",
+          "type": "string",
+          "maxLength": 120
+        },
+        "pair_id": { "type": ["string", "null"] },
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "frische": { "$ref": "#/$defs/frische" }
+      }
+    },
+
+    "steuerkopf": {
+      "description": "Kopf jeder STEUERNDEN Nachricht (§33.3). Die Probe leitet beim ERSTEN Empfang eine Deadline aus ihrer eigenen monotonen Uhr ab; Sender-Wandzeit darf nie einen Audio-Failsafe verlaengern. Wiederholung derselben command_id ist idempotent und startet die Deadline NICHT neu.",
+      "type": "object",
+      "required": ["command_id", "ziel", "base_revision", "ttl_ms", "schema_major", "schema_minor"],
+      "additionalProperties": false,
+      "properties": {
+        "command_id": { "$ref": "#/$defs/hex32" },
+        "ziel": { "$ref": "#/$defs/adresse" },
+        "base_revision": { "type": "integer", "minimum": 0 },
+        "ttl_ms": { "type": "integer", "minimum": 1, "maximum": 60000 },
+        "schema_major": { "type": "integer", "const": 3 },
+        "schema_minor": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "fehlercode": {
+      "description": "Maschinenlesbar (§33.3). Ein neuer Code ist eine Minor-Aenderung; ein unbekannter Code wird als generischer Fehler behandelt, nie als Erfolg.",
+      "enum": [
+        "protocol_mismatch",
+        "unknown_message",
+        "schema_violation",
+        "unauthorized",
+        "unknown_target",
+        "revision_conflict",
+        "capability_missing",
+        "record_state_unknown",
+        "recording_active",
+        "lease_expired",
+        "rate_limited",
+        "internal"
+      ]
+    },
+
+    "hello": {
+      "description": "Erste Nachricht jeder Verbindung, hoechstens 16 KiB, immer JSON (§33.1). Die beiden Varianten wiederholen ihren vollen Eigenschaftssatz, weil `additionalProperties:false` in JSON Schema NUR die properties des eigenen Teilschemas sieht — ein gemeinsamer Basisteil wuerde jede Eigenschaft daraus zur unbekannten machen.",
+      "x-nakama-discriminator": "connection_kind",
+      "oneOf": [
+        { "$ref": "#/$defs/hello_control" },
+        { "$ref": "#/$defs/hello_telemetry" }
+      ]
+    },
+
+    "hello_control": {
+      "description": "Control-Verbindung: traegt P0/P1. Sie wird zuerst geoeffnet und authentisiert; erst ihre welcome-Antwort liefert link_id und challenge fuer die Telemetrieverbindung.",
+      "type": "object",
+      "required": ["type", "connection_kind", "protocol", "plugin_version", "plugin_kind", "adresse", "audio"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "hello" },
+        "connection_kind": { "const": "control" },
+        "protocol": { "type": "integer", "const": 3 },
+        "plugin_version": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "plugin_kind": { "$ref": "#/$defs/plugin_kind" },
+        "adresse": { "$ref": "#/$defs/adresse" },
+        "host": { "$ref": "#/$defs/host_angabe" },
+        "audio": { "$ref": "#/$defs/audio_lage" }
+      }
+    },
+
+    "hello_telemetry": {
+      "description": "Telemetrieverbindung: traegt P2. Sie ist NUR gueltig, wenn sie link_id, dieselbe runtime_nonce und die Challenge aus dem welcome der Control-Verbindung zitiert; ein ungekoppelter Telemetry-Connect wird geschlossen (§33.1).",
+      "type": "object",
+      "required": ["type", "connection_kind", "protocol", "plugin_version", "adresse", "link_id", "challenge"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "hello" },
+        "connection_kind": { "const": "telemetry" },
+        "protocol": { "type": "integer", "const": 3 },
+        "plugin_version": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "adresse": { "$ref": "#/$defs/adresse" },
+        "link_id": { "$ref": "#/$defs/hex32" },
+        "challenge": { "$ref": "#/$defs/hex32" }
+      }
+    },
+
+    "host_angabe": {
+      "description": "Hosthinweise. `pid` bleibt ein starkes Signal, ist wegen Bridging aber KEIN alleiniger Sitzungsschluessel (§32.1).",
+      "type": "object",
+      "required": ["pid"],
+      "additionalProperties": false,
+      "properties": {
+        "pid": { "type": "integer", "minimum": 0 },
+        "name": { "type": "string", "maxLength": 120 },
+        "version": { "type": "string", "maxLength": 64 }
+      }
+    },
+
+    "welcome": {
+      "description": "Antwort des Brokers auf ein gueltiges Control-hello. Bereits v3-gerahmt; sie eroeffnet die Kopplung ueber link_id + challenge (§33.1).",
+      "type": "object",
+      "required": ["type", "protocol", "broker_version", "broker_epoch", "link_id", "challenge"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "welcome" },
+        "protocol": { "type": "integer", "const": 3 },
+        "broker_version": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "broker_epoch": {
+          "$comment": "Pro Brokerprozess neu. Ein Broker-Neustart aendert NUR diesen Wert — er darf weder Userintent noch Projektbindung noch laufende Experimentreferenzen trennen (§32.1).",
+          "$ref": "#/$defs/hex32"
+        },
+        "link_id": { "$ref": "#/$defs/hex32" },
+        "challenge": { "$ref": "#/$defs/hex32" }
+      }
+    },
+
+    "reject": {
+      "description": "Klarer Kompatibilitaetsfehler statt stillem Scheitern.",
+      "type": "object",
+      "required": ["type", "code", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "reject" },
+        "code": { "$ref": "#/$defs/fehlercode" },
+        "reason": { "type": "string", "maxLength": 500 }
+      }
+    },
+
+    "heartbeat": {
+      "description": "1 Hz: Identitaet, Capability, Revision, Drop-/Fehlerzaehler (§33.2). Ueberlast macht die Verbindung stale — nie das Audio.",
+      "type": "object",
+      "required": ["type", "adresse", "sequence", "state_revision", "capabilities", "zaehler"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "heartbeat" },
+        "adresse": { "$ref": "#/$defs/adresse" },
+        "sequence": { "type": "integer", "minimum": 0 },
+        "state_revision": { "type": "integer", "minimum": 0 },
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "zaehler": { "$ref": "#/$defs/zaehler" },
+        "intervention_state_unknown": {
+          "$comment": "Sticky (§34.2): gesetzt nach Ringueberlauf, Control-Disconnect oder Sequenzluecke. Solange es steht, bleibt starke Evidenz gesperrt.",
+          "type": "boolean"
+        }
+      }
+    },
+
+    "heartbeat_ack": {
+      "type": "object",
+      "required": ["type", "sequence", "duplicate_instance_id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "heartbeat_ack" },
+        "sequence": { "type": "integer", "minimum": 0 },
+        "duplicate_instance_id": {
+          "$comment": "Duplikate entstehen durch Kopieren einer Plugininstanz im Host. Sie werden SICHTBAR aufgeloest, nie heuristisch (§32.1).",
+          "type": "boolean"
+        }
+      }
+    },
+
+    "subscribe_session": {
+      "type": "object",
+      "required": ["type", "adresse", "session_epoch"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "subscribe_session" },
+        "adresse": { "$ref": "#/$defs/adresse" },
+        "session_epoch": { "$ref": "#/$defs/hex32" }
+      }
+    },
+
+    "session_snapshot": {
+      "description": "Der Sessiongraph, wie der Broker ihn sieht. Fluechtiger Brokerzustand — aus Plugin-Reports, Main-State und Store rekonstruierbar (§33.5).",
+      "type": "object",
+      "required": ["type", "session_epoch", "broker_epoch", "fuehrendes_main", "mitglieder"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "session_snapshot" },
+        "session_epoch": { "$ref": "#/$defs/hex32" },
+        "broker_epoch": { "$ref": "#/$defs/hex32" },
+        "fuehrendes_main": { "type": ["string", "null"] },
+        "beitritt_bestaetigung_noetig": {
+          "$comment": "Pflicht bei Bridge, zwei offenen Projekten oder duplizierten IDs (§32.1). Eine fremde Sonde wird NIE durch heuristische Aehnlichkeit steuerbar.",
+          "type": "boolean"
+        },
+        "mitglieder": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/probe_descriptor" }
+        }
+      }
+    },
+
+    "evidence_snapshot": {
+      "description": "1-4 Hz: voller Bandsatz, Verteilungspunkte, Abdeckung, Konvergenz (§33.2). Traegt seinen Transportstempel und seine Konfidenz mit; ohne beides ist er kein Beleg.",
+      "type": "object",
+      "required": [
+        "type",
+        "evidence_id",
+        "adresse",
+        "transport",
+        "metrics_version",
+        "baender",
+        "abdeckung",
+        "konvergenz",
+        "konfidenz"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "evidence_snapshot" },
+        "evidence_id": { "$ref": "#/$defs/hex32" },
+        "adresse": { "$ref": "#/$defs/adresse" },
+        "transport": { "$ref": "#/$defs/transportstempel" },
+        "metrics_version": { "type": "integer", "minimum": 1 },
+        "baender": { "$ref": "#/$defs/bandwerte" },
+        "verteilung": {
+          "description": "ADDITIV: weitere Perzentile duerfen dazukommen.",
+          "type": "object",
+          "required": ["p10", "p50", "p95"],
+          "additionalProperties": true,
+          "maxProperties": 11,
+          "properties": {
+            "p10": { "$ref": "#/$defs/bandwerte" },
+            "p50": { "$ref": "#/$defs/bandwerte" },
+            "p95": { "$ref": "#/$defs/bandwerte" }
+          }
+        },
+        "abdeckung": { "type": "number", "minimum": 0, "maximum": 1 },
+        "konvergenz": { "type": "number", "minimum": 0, "maximum": 1 },
+        "beeinflusst": {
+          "$comment": "Preview, Focus, Delta und Hoermarker markieren nachgelagerte Messungen als beeinflusst; sie werden nicht still in eine unbeeinflusste Baseline aufgenommen (§34.2).",
+          "type": "boolean"
+        },
+        "ausschlussgrund": { "type": ["string", "null"], "maxLength": 200 },
+        "konfidenz": { "$ref": "#/$defs/konfidenz" }
+      }
+    },
+
+    "audible_intervention_begin": {
+      "description": "SOFORTIGES P0-Ereignis (§34.2). Ein 1-Hz-Heartbeat-Boolean reicht nicht: ein kurzer Hoermarker kann vollstaendig zwischen zwei Heartbeats liegen, und gerade nachgelagerte Instanzen hoeren das veraenderte Signal.",
+      "type": "object",
+      "required": ["type", "intervention_id", "adresse", "event_sequence", "art"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "audible_intervention_begin" },
+        "intervention_id": { "$ref": "#/$defs/hex32" },
+        "adresse": { "$ref": "#/$defs/adresse" },
+        "event_sequence": {
+          "$comment": "Monoton je Instanz. Eine LUECKE hier setzt sticky intervention_state_unknown — ein verlorenes Begin ODER End darf nie eine scheinbar saubere Baseline erzeugen (§34.2).",
+          "type": "integer",
+          "minimum": 0
+        },
+        "art": { "enum": ["hoermarkierung", "preview", "focus_burst", "experiment"] },
+        "project_sample_start": { "type": ["integer", "null"] }
+      }
+    },
+
+    "audible_intervention_end": {
+      "type": "object",
+      "required": ["type", "intervention_id", "adresse", "event_sequence", "tail_samples"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "audible_intervention_end" },
+        "intervention_id": { "$ref": "#/$defs/hex32" },
+        "adresse": { "$ref": "#/$defs/adresse" },
+        "event_sequence": { "type": "integer", "minimum": 0 },
+        "project_sample_end": { "type": ["integer", "null"] },
+        "tail_samples": {
+          "$comment": "Konservativer Nachlauf (§34.2): der Bereich wird laenger quarantaenisiert als die Intervention selbst dauerte.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+
+    "evidence_invalidate": {
+      "description": "Ruecknahme bereits eingegangener Evidenz per ID oder Bereich (§34.2). Bei unbekanntem Routing quarantaenisiert der Broker die GANZE Sitzung.",
+      "type": "object",
+      "required": ["type", "grund", "umfang"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "evidence_invalidate" },
+        "grund": { "enum": ["intervention", "routing_unbekannt", "sequenzluecke", "epochwechsel", "state_revision"] },
+        "umfang": {
+          "type": "object",
+          "required": ["art"],
+          "additionalProperties": false,
+          "properties": {
+            "art": { "enum": ["evidence_ids", "sample_range", "ganze_sitzung"] },
+            "evidence_ids": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 4096,
+              "items": { "$ref": "#/$defs/hex32" }
+            },
+            "sample_start": { "type": "integer", "minimum": 0 },
+            "sample_end": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+
+    "preview_begin": {
+      "description": "Beginn einer gehaltenen Preview (§33.4). Die Probe KLEMMT lease_duration_ms auf ihren festen sicheren Bereich und misst ab lokalem QPC-Empfang — der Sender kann den Failsafe nicht verlaengern.",
+      "type": "object",
+      "required": ["type", "kopf", "lease_duration_ms", "renew_id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "preview_begin" },
+        "kopf": { "$ref": "#/$defs/steuerkopf" },
+        "lease_duration_ms": { "type": "integer", "minimum": 1, "maximum": 400 },
+        "renew_id": { "$ref": "#/$defs/hex32" }
+      }
+    },
+
+    "preview_renew": {
+      "description": "Nur eine NEUE gueltige Renew-ID verlaengert die Lease (§33.4).",
+      "type": "object",
+      "required": ["type", "kopf", "renew_id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "preview_renew" },
+        "kopf": { "$ref": "#/$defs/steuerkopf" },
+        "renew_id": { "$ref": "#/$defs/hex32" }
+      }
+    },
+
+    "preview_end": {
+      "description": "Laeuft die Lease ab, faehrt die Probe LOKAL mit kurzem Ramp in den gespeicherten Zustand zurueck — das Ende braucht keine Nachricht, um zu wirken.",
+      "type": "object",
+      "required": ["type", "kopf", "grund"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "preview_end" },
+        "kopf": { "$ref": "#/$defs/steuerkopf" },
+        "grund": { "enum": ["losgelassen", "timeout", "stop", "fehler", "record_gate"] }
+      }
+    },
+
+    "command_ack": {
+      "description": "Bestaetigung einer steuernden Nachricht. `state_hash` umfasst ausschliesslich das validierte DSP-DTO in RFC-8785-kanonischem JSON (§53.8); erzeugt und geprueft wird er in SONDE-006.",
+      "type": "object",
+      "required": ["type", "command_id", "ergebnis", "state_revision"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "command_ack" },
+        "command_id": { "$ref": "#/$defs/hex32" },
+        "ergebnis": { "enum": ["angewandt", "abgelehnt", "konflikt", "abgelaufen", "idempotent_wiederholt"] },
+        "state_revision": { "type": "integer", "minimum": 0 },
+        "state_hash": { "type": ["string", "null"], "minLength": 64, "maxLength": 64 },
+        "code": { "$ref": "#/$defs/fehlercode" }
+      }
+    },
+
+    "state_report": {
+      "description": "Die Probe meldet ZUERST ihren Zustand; Main gleicht ab. Der Broker ist NICHT berechtigt, beim Reconnect blind seinen Cache auf die Probe zu druecken (§33.5).",
+      "type": "object",
+      "required": ["type", "adresse", "dsp_schema_version", "state_revision", "record_state"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "state_report" },
+        "adresse": { "$ref": "#/$defs/adresse" },
+        "dsp_schema_version": { "type": "integer", "minimum": 1 },
+        "state_revision": { "type": "integer", "minimum": 0 },
+        "state_hash": { "type": ["string", "null"], "minLength": 64, "maxLength": 64 },
+        "record_state": {
+          "$comment": "Remote-Preview und Remote-Apply sind nur erlaubt, wenn valid=true UND recording=false; ein UNBEKANNTER Aufnahmezustand blockiert sichtbar (§33.4). Deshalb ist `valid` Pflicht und nicht weglassbar.",
+          "type": "object",
+          "required": ["valid", "recording"],
+          "additionalProperties": false,
+          "properties": {
+            "valid": { "type": "boolean" },
+            "recording": { "type": "boolean" }
+          }
+        },
+        "undo_tiefe": { "type": "integer", "minimum": 0, "maximum": 32 }
+      }
+    },
+
+    "error": {
+      "description": "Maschinenlesbarer Code, betroffene Revision und Rueckweg (§33.3).",
+      "type": "object",
+      "required": ["type", "code", "meldung"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "error" },
+        "code": { "$ref": "#/$defs/fehlercode" },
+        "meldung": { "type": "string", "maxLength": 500 },
+        "command_id": { "$ref": "#/$defs/hex32" },
+        "betroffene_revision": { "type": "integer", "minimum": 0 },
+        "rueckweg": { "enum": ["erneut_senden", "neu_verbinden", "neu_paaren", "aufgeben"] }
+      }
+    }
+  }
+}

@@ -1,0 +1,473 @@
+{
+  "$id": "evenacadia.nakama.quantisierung.v1",
+  "titel": "Kodierung der Bandwerte v1",
+  "zweck": "Entwurf §33.1: Empfaenger raten die Skalierung nie aus dem Nachrichtentyp. Diese Datei ist die eine Wahrheit fuer Skalierung, Rundung, Saettigung und den Umgang mit nichtendlichen Werten.",
+  "regeln": {
+    "reihenfolge": "Energie wird LINEAR integriert und erst danach in dB quantisiert (§33.1). Wer in dB mittelt, misst etwas anderes.",
+    "rundung": "Halbe Werte VON NULL WEG (std::round / f64::round). NICHT Pythons round(), das zur geraden Zahl rundet.",
+    "rundung_falle": "floor(abs(x)+0.5) ist NICHT dieselbe Regel: fuer x = 0.49999999999999994 liefert sie 1 statt 0. Ein Vektor deckt genau das ab.",
+    "nichtendlich": "NaN, +inf und -inf ergeben Wert 0 (bzw. +0.0f) mit gueltig=false. Sie werden nie saturiert und nie sanitisiert — die Gueltigkeitsbitmap ist die Wahrheit.",
+    "saettigung": "Ein saturierter Wert bleibt GUELTIG und setzt zusaetzlich das Saettigungsbit: er ist gemessen, nur nicht mehr aufloesbar.",
+    "bitmap": "Base64 ueber ceil(n/8) Bytes, LSB-first je Byte: Band i sitzt in Byte i/8, Bit i%8."
+  },
+  "kodierungen": {
+    "q_db_0p1_i16": {
+      "traeger": "i16",
+      "skalierung": 10,
+      "bereich_db": [
+        -3276.8,
+        3276.7
+      ],
+      "verwendung": "Live-Telemetrie 10 Hz (§33.2)",
+      "vektoren": [
+        {
+          "ein_hex64": "0000000000000000",
+          "ein_dezimal": "0.0",
+          "wert": 0,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "8000000000000000",
+          "ein_dezimal": "-0.0",
+          "wert": 0,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "3FB999999999999A",
+          "ein_dezimal": "0.1",
+          "wert": 1,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "BFB999999999999A",
+          "ein_dezimal": "-0.1",
+          "wert": -1,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "3FA999999999999A",
+          "ein_dezimal": "0.05",
+          "wert": 1,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "BFA999999999999A",
+          "ein_dezimal": "-0.05",
+          "wert": -1,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "3FC3333333333333",
+          "ein_dezimal": "0.15",
+          "wert": 2,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "3FD0000000000000",
+          "ein_dezimal": "0.25",
+          "wert": 3,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "BFD0000000000000",
+          "ein_dezimal": "-0.25",
+          "wert": -3,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "3FA9999999999999",
+          "ein_dezimal": "0.049999999999999996",
+          "wert": 0,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "BFA9999999999999",
+          "ein_dezimal": "-0.049999999999999996",
+          "wert": 0,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "C02899999999999A",
+          "ein_dezimal": "-12.3",
+          "wert": -123,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "C04E000000000000",
+          "ein_dezimal": "-60.0",
+          "wert": -600,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "C05E000000000000",
+          "ein_dezimal": "-120.0",
+          "wert": -1200,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "40A9996666666666",
+          "ein_dezimal": "3276.7",
+          "wert": 32767,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "C0A999999999999A",
+          "ein_dezimal": "-3276.8",
+          "wert": -32768,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "40A99B6666666666",
+          "ein_dezimal": "3277.7",
+          "wert": 32767,
+          "gueltig": true,
+          "saturiert": true
+        },
+        {
+          "ein_hex64": "C0A99B999999999A",
+          "ein_dezimal": "-3277.8",
+          "wert": -32768,
+          "gueltig": true,
+          "saturiert": true
+        },
+        {
+          "ein_hex64": "01A56E1FC2F8F359",
+          "ein_dezimal": "1e-300",
+          "wert": 0,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "81A56E1FC2F8F359",
+          "ein_dezimal": "-1e-300",
+          "wert": 0,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "7FF8000000000000",
+          "ein_dezimal": "nan",
+          "wert": 0,
+          "gueltig": false,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "7FF0000000000000",
+          "ein_dezimal": "inf",
+          "wert": 0,
+          "gueltig": false,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "FFF0000000000000",
+          "ein_dezimal": "-inf",
+          "wert": 0,
+          "gueltig": false,
+          "saturiert": false
+        }
+      ]
+    },
+    "q_db_0p01_i16": {
+      "traeger": "i16",
+      "skalierung": 100,
+      "bereich_db": [
+        -327.68,
+        327.67
+      ],
+      "verwendung": "fokussierte PRE/POST-Evidenz (§33.1)",
+      "vektoren": [
+        {
+          "ein_hex64": "0000000000000000",
+          "ein_dezimal": "0.0",
+          "wert": 0,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "8000000000000000",
+          "ein_dezimal": "-0.0",
+          "wert": 0,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "3F847AE147AE147B",
+          "ein_dezimal": "0.01",
+          "wert": 1,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "BF847AE147AE147B",
+          "ein_dezimal": "-0.01",
+          "wert": -1,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "3F747AE147AE147B",
+          "ein_dezimal": "0.005",
+          "wert": 1,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "BF747AE147AE147B",
+          "ein_dezimal": "-0.005",
+          "wert": -1,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "3F8EB851EB851EB8",
+          "ein_dezimal": "0.015",
+          "wert": 2,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "3F9999999999999A",
+          "ein_dezimal": "0.025",
+          "wert": 3,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "BF9999999999999A",
+          "ein_dezimal": "-0.025",
+          "wert": -3,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "3F747AE147AE147A",
+          "ein_dezimal": "0.004999999999999999",
+          "wert": 0,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "BF747AE147AE147A",
+          "ein_dezimal": "-0.004999999999999999",
+          "wert": 0,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "C02899999999999A",
+          "ein_dezimal": "-12.3",
+          "wert": -1230,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "C04E000000000000",
+          "ein_dezimal": "-60.0",
+          "wert": -6000,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "C05E000000000000",
+          "ein_dezimal": "-120.0",
+          "wert": -12000,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "40747AB851EB851F",
+          "ein_dezimal": "327.67",
+          "wert": 32767,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "C0747AE147AE147B",
+          "ein_dezimal": "-327.68",
+          "wert": -32768,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "40748AB851EB851F",
+          "ein_dezimal": "328.67",
+          "wert": 32767,
+          "gueltig": true,
+          "saturiert": true
+        },
+        {
+          "ein_hex64": "C0748AE147AE147B",
+          "ein_dezimal": "-328.68",
+          "wert": -32768,
+          "gueltig": true,
+          "saturiert": true
+        },
+        {
+          "ein_hex64": "01A56E1FC2F8F359",
+          "ein_dezimal": "1e-300",
+          "wert": 0,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "81A56E1FC2F8F359",
+          "ein_dezimal": "-1e-300",
+          "wert": 0,
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "7FF8000000000000",
+          "ein_dezimal": "nan",
+          "wert": 0,
+          "gueltig": false,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "7FF0000000000000",
+          "ein_dezimal": "inf",
+          "wert": 0,
+          "gueltig": false,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "FFF0000000000000",
+          "ein_dezimal": "-inf",
+          "wert": 0,
+          "gueltig": false,
+          "saturiert": false
+        }
+      ]
+    },
+    "float32": {
+      "traeger": "f32",
+      "skalierung": 1,
+      "bereich_db": null,
+      "verwendung": "komplexe Kreuzstatistik (§33.1)",
+      "rundung": "IEEE-754 round-to-nearest-even beim Verengen von binary64 auf binary32",
+      "vektoren": [
+        {
+          "ein_hex64": "0000000000000000",
+          "ein_dezimal": "0.0",
+          "wert_hex32": "00000000",
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "8000000000000000",
+          "ein_dezimal": "-0.0",
+          "wert_hex32": "80000000",
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "C02899999999999A",
+          "ein_dezimal": "-12.3",
+          "wert_hex32": "C144CCCD",
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "C04E000000000000",
+          "ein_dezimal": "-60.0",
+          "wert_hex32": "C2700000",
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "3FF0000000000000",
+          "ein_dezimal": "1.0",
+          "wert_hex32": "3F800000",
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "3FB999999999999A",
+          "ein_dezimal": "0.1",
+          "wert_hex32": "3DCCCCCD",
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "3FF0000010000000",
+          "ein_dezimal": "1.0000000596046448",
+          "wert_hex32": "3F800000",
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "47EFFFFFE0000000",
+          "ein_dezimal": "3.4028234663852886e+38",
+          "wert_hex32": "7F7FFFFF",
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "47F074F8C4D3CD7B",
+          "ein_dezimal": "3.5e+38",
+          "wert_hex32": "7F7FFFFF",
+          "gueltig": true,
+          "saturiert": true
+        },
+        {
+          "ein_hex64": "C7F074F8C4D3CD7B",
+          "ein_dezimal": "-3.5e+38",
+          "wert_hex32": "FF7FFFFF",
+          "gueltig": true,
+          "saturiert": true
+        },
+        {
+          "ein_hex64": "3696D601AD376AB9",
+          "ein_dezimal": "1e-45",
+          "wert_hex32": "00000001",
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "00000000000007E8",
+          "ein_dezimal": "1e-320",
+          "wert_hex32": "00000000",
+          "gueltig": true,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "7FF8000000000000",
+          "ein_dezimal": "nan",
+          "wert_hex32": "00000000",
+          "gueltig": false,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "7FF0000000000000",
+          "ein_dezimal": "inf",
+          "wert_hex32": "00000000",
+          "gueltig": false,
+          "saturiert": false
+        },
+        {
+          "ein_hex64": "FFF0000000000000",
+          "ein_dezimal": "-inf",
+          "wert_hex32": "00000000",
+          "gueltig": false,
+          "saturiert": false
+        }
+      ]
+    }
+  }
+}

@@ -23,9 +23,12 @@
 - **P0 gebaut:** Beweis-Runner (S0), Aux-/PDC-Messgerät (S1), Identität (S2),
   Hostbrücke + Hostkontext-Test (S3), Termin-B-Messgerät (S3b), v3-Vertrag JSON
   (S5) und FlatBuffers (S6). Manifeste in `docs/beweise/`.
-- **Offen an S5/S6:** Schließungsvorbehalt §65 (erst nach S4); T2 zu SONDE-005a
-  lief in zwei Runden NEEDS_WORK, Runde 3 lief am 21.08. in einer parallelen
-  Session — Stand im Manifest `docs/beweise/SONDE-005b.md` §6 nachsehen.
+- **Offen an S5/S6:** nur noch der Schließungsvorbehalt §65 (erst nach S4).
+  T2 lief in vier Runden; **Runde 4 ist am 21.08. geschlossen** — der
+  Selbstbezug (`uoffset` 0) ist nicht mehr an einem Fixture, sondern an der
+  **Klasse** belegt (6215 Byte-Mutanten, 143 → 0 Abweichungen), die stale Zahl
+  in P10 ist nachgemessen (207) und der tote Teilausdruck in `utf8Gueltig` ist
+  raus. Alles in `docs/beweise/SONDE-005b.md` §6.5 + P14/P15.
 - **S4 (Capabilityreport) und Gate G0 warten auf die FL-Termine A/B des Users**
   (`eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md`, `…-B-HOSTZEIT.md`; Spike-Ordner leer).
 - **Kanon:** 15 Beine in `tools/beweise.ps1`; letzter vollständiger Lauf siehe

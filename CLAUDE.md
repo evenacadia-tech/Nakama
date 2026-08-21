@@ -191,7 +191,13 @@ Pflicht, sobald ihr Ticket sie baut.
 - **FlatBuffers (SONDE-005b):** `.fbs` mit expliziten Feld-IDs, `flatc` auf
   COMMIT gepinnt, Codegen-Drift 0; zwei handgeschriebene Leser, weil FlatBuffers
   weder Enumbereiche noch Bitflags noch Feldbeziehungen verifiziert;
-  `pruefe_fbs_feldids.py` schließt die Lücke „neue Tabelle ohne ids".
+  `pruefe_fbs_feldids.py` schließt die Lücken „neue Tabelle ohne ids" und
+  (T2-Runde 4) „neues Offsetfeld ohne Riegelzeile".
+  🔑 Rusts Verifier kennt C++' Regel „May not point to itself" NICHT; der
+  `strukturriegel` in `broker/src/telemetrie.rs` zieht sie über alle 15
+  Offsetfelder nach — gemessen an 6215 Byte-Mutanten: 143 liefen auseinander,
+  danach 0. 🔑 Ein Riegel, der STRENGER ist als das Bein, das er spiegelt,
+  bricht denselben Vertrag wie einer, der schwächer ist.
 - **Hör-Markierung (0.3.0):** färbt auf Klick das Monitorsignal von Gen;
   Verriegelung im Code `(echtzeitOk ∨ test) ∧ (spielt ∨ ¬hatTransport) ∧
   ¬isNonRealtime ∧ (editorOffen ∨ test)`; Analyse-Abgriff davor; Render

@@ -185,7 +185,10 @@ Felder alle mit `id`, `root_type FeatureBatch`), `FELD-IDS.json`
 (handgeschrieben), `WERKZEUG.json` (`flatc` auf Commit `7e163021…`, 25.12.19,
 Rust-Crate gleich). `pruefe_flatc_drift.py` verlangt bytegleiche
 Neugenerierung des Codegens und dieselbe Version an Compiler, Header, Crate
-und ruft `pruefe_fbs_feldids.py`.
+und ruft `pruefe_fbs_feldids.py` — das seit T2-Runde 4 als Prüfung 7 auch
+hält, dass **jedes** Offsetfeld im `strukturriegel` des Rust-Beins steht
+(`broker/src/telemetrie.rs`; Rusts Verifier kennt C++' „May not point to
+itself" nicht).
 
 ### 3.4 Drei Leser, handgeschriebene Manifeste
 
@@ -195,8 +198,8 @@ Urteil) · C++ `plugin/vertrag/NakamaVertrag.*` + `NakamaTelemetrie.*` via
 `broker/tests/contract_cross_language.rs` (beide: Urteil UND
 Verletzungsmenge). Alle gegen dieselben **handgeschriebenen** Manifeste:
 `fixtures/v3/MANIFEST.json` (153 = 36 gültig + 117 ungültig) und
-`fixtures/v3/flatbuffers/MANIFEST.json` (seit `4f7182b`, T2-Runde 3: 47 = 9 + 38;
-davor 40 = 8 + 32).
+`fixtures/v3/flatbuffers/MANIFEST.json` (T2-Runde 4: **51 = 9 + 42**; Runde 3:
+47 = 9 + 38; davor 40 = 8 + 32 — die geltende Zahl steht im MANIFEST, nicht hier).
 
 ### 3.5 Identität (SONDE-001)
 

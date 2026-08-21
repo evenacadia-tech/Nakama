@@ -27,14 +27,20 @@ bevor gebaut wird.
 | | |
 |---|---|
 | Main, Wireframe-Ebene | **abgenommen**, Entwurf in `werkzeug/zustaende.html` |
-| Active-Probe-Editor 700×420 | **Klemme gemessen** (`werkzeug/sonde-messung.html`, 2026-08-21) — Aufgabenliste und Wireframe offen |
+| Active-Probe-Editor 700×420 (**Nakama Probeeq**) | **Klemme gemessen** (`werkzeug/sonde-messung.html`, 2026-08-21) — Aufgabenliste Entwurf; **der Wireframe entfällt:** die Anordnung zeigt der Figma-Stand `assets/figma/2026-08-21-probeeq.png` (Phase 1b, `docs/arbeitsplan.md`) |
 | Passive-Kachel 260×84 | **nicht begonnen** — danach |
-| Designvertrag (Phase 0) | **fehlt** — die Schleuse vor `prototyp/` ist zu |
+| Designvertrag (Phase 0) | **liegt vor** seit 2026-08-21 (`abnahmen/2026-08-21-designvertrag.md`) — die Schleuse vor `prototyp/` ist offen |
 
-Der fehlende Designvertrag hindert diese Runde **nicht**: gearbeitet wird in
-`werkzeug/`, nicht in `prototyp/`. Er wird gebraucht, bevor die erste
-Prototyp-Datei entsteht, und spätestens vor Phase 2 (Stilprobe) — dort fehlen
-sonst Erfolgskriterien, Antireferenzen und der Grad der kreativen Autorenschaft.
+> **⚠ Berichtigt 2026-08-21 (Designvertrag).** Hier stand: „Der fehlende
+> Designvertrag hindert diese Runde nicht … er wird gebraucht, bevor die
+> erste Prototyp-Datei entsteht, und spätestens vor Phase 2 (Stilprobe)."
+> Der Vertrag liegt seit dem 2026-08-21 vor, und er ändert den Auftrag
+> dieser Datei: **Figma ist die Quelle**, der Editor wird nicht mehr hier
+> entworfen, sondern aus dem Figma-Stand **übersetzt** (Phase 1b). Was von
+> diesem Plan weiter gilt: die Messbank (Abschnitt 4 — die Klemme gilt für
+> den Stand genauso), die Stolperfallen (Abschnitt 6) und die Aufgabenliste
+> (Abschnitt 3) als Prüfliste, welchen Handgriff jedes Element des Stands
+> bedient. Die Stilprobe (Phase 2) entfällt.
 
 ---
 
@@ -467,7 +473,8 @@ und Zeilennummern in `abnahmen/2026-08-21-codereview.md`:
   Gegenproben und ein Durchlauf über alle sechzehn Grenzfälle der
   Ehrlichkeitsschalter.
 
-**Offen, in dieser Reihenfolge:**
+**Offen, in dieser Reihenfolge** *(Stand vor dem Designvertrag — überholt,
+bleibt als Verlauf stehen)*:
 
 1. `/interview struktur` für den Active-Probe-Editor.
 2. Die Aufgabenliste aus Abschnitt 3 vorlegen — **mit** den zwei offenen
@@ -476,3 +483,11 @@ und Zeilennummern in `abnahmen/2026-08-21-codereview.md`:
    dastehen?* Ohne diese Antworten kein Wireframe
    (`docs/DESIGN-GESETZE.md`, verbindliche Folge 1).
 3. Erst dann Varianten bauen, unterschieden in der Disclosure-Mechanik.
+
+> **⚠ Überholt 2026-08-21 (Designvertrag).** Die drei Fragen hat der
+> Figma-Stand des Users beantwortet, nicht ein Interview: die Bänder geben
+> nach (Griffe auf der Kurve, eine Bandzeile), Draft-Kasten und Statuszeile
+> mit Global/Undo stehen dauerhaft da (`assets/figma/LIES-MICH.md`,
+> `Nakama Designausarbeitungen selfmade/LIES-MICH.md`). Der nächste
+> Handgriff für Probeeq steht in `docs/arbeitsplan.md`, Phase 1b — nach
+> Gen. Es werden keine Varianten mehr gebaut.

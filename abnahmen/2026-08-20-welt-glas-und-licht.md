@@ -1,3 +1,12 @@
+> ## ⚠ ZURÜCKGENOMMEN (Vermerk 2026-08-21)
+>
+> Der Prüfpunkt unten ist eingelöst — durch ein User-Wort, nicht durch das
+> Vorlegen auf 760×430: „Glas/Licht raus; Profil nur Studie" (Kontext-Interview
+> 2026-08-21, festgehalten in
+> [2026-08-21-designvertrag](2026-08-21-designvertrag.md)). Die Richtung kommt
+> seitdem aus Figma (`assets/figma/`). Diese Datei bleibt als Verlauf: sie
+> belegt, was am 2026-08-20 zur Wahl stand und warum es eine Arbeitsannahme war.
+
 # 2026-08-20 — Die Welt: Glas und Licht
 
 > ## ⚠ ARBEITSANNAHME, KEINE ABNAHME

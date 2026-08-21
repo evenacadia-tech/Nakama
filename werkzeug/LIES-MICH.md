@@ -6,24 +6,32 @@ Nichts davon ist ein Gestaltungsvorschlag. Layoutentscheidungen gehören nach
 
 ## Reihenfolge — nach den Stufen aus `assets/GUI-Tips.pdf`
 
-> **Hier stehen wir (Stand 2026-08-21):** Main ist auf Wireframe-Ebene
-> **vollständig abgenommen**; der aktuelle Entwurf liegt in `zustaende.html`.
-> Der **Active-Probe-Editor** (700×420) ist **gemessen, nicht entworfen**:
-> `sonde-messung.html` sagt, was der Inhalt kostet. Was fehlt, ist die
-> Aufgabenliste nach Häufigkeit — ohne sie kein Wireframe. Danach
-> **Passive-Kachel** (260×84). Fahrplan: `docs/arbeitsplan.md` · Auftrag und
-> Klemme: `docs/sondenplan.md` · Prüfbericht:
-> `abnahmen/2026-08-21-codereview.md`.
+> **Hier stehen wir (Stand 2026-08-21, nach dem Designvertrag):** Main
+> (**Nakama Gen**) ist auf Wireframe-Ebene **vollständig abgenommen**; der
+> letzte Entwurf liegt in `zustaende.html`. Seit dem Designvertrag
+> (`abnahmen/2026-08-21-designvertrag.md`) ist **Figma die Quelle**: die
+> Blätter hier bleiben Messinstrumente und Belege, **entworfen wird hier
+> nichts mehr** — übersetzt wird in `prototyp/` (Phase 1b,
+> `docs/arbeitsplan.md`). Der **Active-Probe-Editor** (**Nakama Probeeq**,
+> 700×420) ist **gemessen** (`sonde-messung.html` sagt, was der Inhalt
+> kostet); seine Anordnung zeigt der Figma-Stand
+> `assets/figma/2026-08-21-probeeq.png`. Danach **Passive-Kachel**
+> (**Nakama Suna**, 260×84) — noch kein Stand vorhanden. Auftrag und Klemme:
+> `docs/sondenplan.md` · Prüfbericht: `abnahmen/2026-08-21-codereview.md`.
 
-**Stufe 1 — The Feeling** *(erhoben — ⚠ Arbeitsannahme, nicht abgenommen)*
-1. `weltenwahl.html` — welche Welt? → **Glas und Licht**
-2. `glaswelt.html` — welche Verwirklichung? → **dunkles Glas, ein Lichtleiter**
+**Stufe 1 — The Feeling** *(erhoben — ⚠ VERWORFEN am 2026-08-21)*
+1. `weltenwahl.html` — welche Welt? → Glas und Licht *(verworfen)*
+2. `glaswelt.html` — welche Verwirklichung? → dunkles Glas, ein Lichtleiter
+   *(verworfen)*
 
 Beide wurden an einem Ausschnitt von 448×310 gewählt, ohne Layout und ohne
 echte Fenstergröße. Der User hat sie ausdrücklich **nicht** bestätigt: „es war
 zu dem zeitpunkt logisch. wir werden sehen wenn das layout steht ob es dann
-noch passt." **Prüfpunkt:** erneut vorlegen auf 760×430. Bis dahin darf
-niemand sie als abgenommen zitieren (`abnahmen/LIES-MICH.md`).
+noch passt." — und am 2026-08-21 **verworfen**: „Glas/Licht raus; Profil nur
+Studie" (`abnahmen/2026-08-21-designvertrag.md`). Der Prüfpunkt „erneut
+vorlegen auf 760×430" ist damit eingelöst: **nicht mehr vorlegen.** Die
+Richtung kommt aus Figma (`assets/figma/`). Die beiden Blätter bleiben als
+Beleg, was zur Wahl stand.
 
 **Phase 0.5 — Formfaktor** *(abgeschlossen — drei Größen abgenommen)*
 3. `formfaktor.html` — wie groß darf das Fenster sein, und welche Form hat es?

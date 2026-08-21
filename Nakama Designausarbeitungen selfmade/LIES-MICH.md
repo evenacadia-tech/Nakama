@@ -21,7 +21,7 @@ sehr wohl einer, denn genau darum geht es gerade.
 | `1. Entwurf.png` · `Matte Polycarbonate.png` | 2026-08-20 | **pixelgleich** (gemessen: max. Abweichung 5 Stufen, 0,00 % der Pixel über 8) — dasselbe Bild zweimal exportiert. Materialstudie mit einer Spektrumsanzeige, ohne Bedienteil. |
 | `Grundfläche Matte polycarbonat.png` | 2026-08-20 | das nackte Gehäuse ohne Inhalt |
 | `polycarbonate-micrograin-512-seamless.png` | 2026-08-20 | Kornkachel, nahtlos, für `mix-blend-mode: overlay` gebaut |
-| **Editor-Entwurf** *(unten beschrieben)* | 2026-08-21 | **liegt nicht als Datei vor** — kam über die Fernverbindung ins Gespräch. `Downloads\Frame 1.png` (01:33) ist ein älterer Stand **ohne** Bedienteil. Wer den neuen exportiert, legt ihn hier ab und trägt ihn hier ein. |
+| **Editor-Entwurf** *(unten beschrieben)* | 2026-08-21 | kam zuerst über die Fernverbindung ins Gespräch; **seit 20:04 liegt er als Figma-Export vor: `assets/figma/2026-08-21-probeeq.png`** (beschrieben in `assets/figma/LIES-MICH.md`). `Downloads\Frame 1.png` (01:33) ist ein älterer Stand **ohne** Bedienteil. |
 
 ---
 
@@ -81,10 +81,11 @@ lebenden Blatt — er sagt nur, wohin es gehen soll.
 
 ## Der Main-Entwurf vom 2026-08-21 — „erster ernstzunehmender Prototyp"
 
-Zeigt **Main**. Anders als beim Editor ist Main auf Wireframe-Ebene
-**vollständig abgenommen** — dieser Entwurf lässt sich also gegen bindende
-Urteile prüfen, nicht nur beschreiben. Auch hier: nur Anordnung und Zeichen,
-keine Optik. Liegt ebenfalls nicht als Datei vor.
+Zeigt **Main** (seit 2026-08-21: **Nakama Gen**). Anders als beim Editor ist
+Main auf Wireframe-Ebene **vollständig abgenommen** — dieser Entwurf lässt
+sich also gegen bindende Urteile prüfen, nicht nur beschreiben. Auch hier: nur
+Anordnung und Zeichen, keine Optik. **Liegt seit 20:05 als Figma-Export vor:
+`assets/figma/2026-08-21-gen.png`** (`assets/figma/LIES-MICH.md`).
 
 ### Was zu sehen ist
 

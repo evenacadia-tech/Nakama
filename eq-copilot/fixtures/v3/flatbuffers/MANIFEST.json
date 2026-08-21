@@ -7,7 +7,7 @@
   "byte_mutation_von": "Markiert einen Puffer, den flatc nicht erzeugen KANN (falsche Dateikennung, abgeschnitten, zerstoerter Wurzeloffset). Er entsteht als Byte-Mutation des genannten gueltigen Puffers.",
   "regeln": "Die geschlossene Liste der Regelnamen steht in eq-copilot/schemas/v3/flatbuffers/README.md. Ein Verstoss ist (pfad, regel); die Menge wird kanonisch nach (pfad, regel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "anzahl_gueltig": 9,
-  "anzahl_ungueltig": 41,
+  "anzahl_ungueltig": 42,
   "fixtures": [
     {
       "datei": "gueltig/alle-validity-bits.bin",
@@ -328,6 +328,18 @@
           "regel": "metrics_version"
         }
       ]
+    },
+    {
+      "datei": "ungueltig/offset-selbstbezug.bin",
+      "urteil": "ungueltig",
+      "warum": "EIN Byte: die `schleife`-Offsetzelle auf 0. Der C++-Verifier lehnt das ab ('May not point to itself'), der Rust-Verifier hatte diese Pruefung NICHT - er folgte dem Selbstbezug, las eine vtable der Laenge 0 und damit eine Tabelle ohne jedes Feld, deren lauter Defaults semantisch unauffaellig sind. Die Richtung ist die gefaehrliche - der Broker sitzt ZWISCHEN Sonde und Main und haette so einen Batch als gueltig durchgereicht. Gemessen wurde die KLASSE, nicht dieser eine Fall: jede 4-byte-ausgerichtete Zelle ab Offset 4 aller neun gueltigen Fixtures einzeln auf 0 (6215 Puffer, beide Beine, voll verglichene Verstossmenge) - 143 liefen auseinander, mit dem Strukturriegel in broker/src/telemetrie.rs sind es 0",
+      "verstoesse": [
+        {
+          "pfad": "",
+          "regel": "verifier"
+        }
+      ],
+      "byte_mutation_von": "gueltig/mit-schleife.bin"
     },
     {
       "datei": "ungueltig/puffer-leer.bin",

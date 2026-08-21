@@ -17,7 +17,7 @@ Den zweiten Satz kann `flatc` grundsaetzlich nicht pruefen: eine Datei kennt
 ihre eigene Vergangenheit nicht. Deshalb liegt die Vergangenheit als eigene,
 handgeschriebene Datei daneben (FELD-IDS.json).
 
-Fuenf Pruefungen:
+Sieben Pruefungen:
 
   1. Jedes Tabellenfeld traegt ein explizites `id:`.
   2. Je Tabelle: IDs lueckenlos ab 0, keine doppelt.
@@ -25,6 +25,10 @@ Fuenf Pruefungen:
   4. Keine unter `verbrannt` gefuehrte ID ist wieder in Gebrauch.
   5. Der Vertrag enthaelt keine `struct`-Typen — die koennen keine ids tragen
      und sind fuer immer unveraenderlich.
+  6. Kein `include`: eine eingebundene Datei braechte Tabellen mit, die dieser
+     Riegel nie sieht (T2-Runde 3, Befund 6).
+  7. JEDES Offsetfeld (string, Vektor, Tabelle) ist im Strukturriegel des
+     Rust-Beins genannt — siehe unten, `pruefe_strukturriegel`.
 
 Exitcodes: 0 alles gruen · 2 mindestens eine Pruefung rot · 3 Datei fehlt.
 """
@@ -39,6 +43,10 @@ from pathlib import Path
 WURZEL = Path(__file__).resolve().parents[2]
 FBS = WURZEL / "eq-copilot/schemas/v3/flatbuffers/nakama_telemetry_v1.fbs"
 IDS = WURZEL / "eq-copilot/schemas/v3/flatbuffers/FELD-IDS.json"
+# Pruefung 7 liest die Rust-Quelle als TEXT. Absicht: sie soll rot werden,
+# wenn jemand ein Offsetfeld ergaenzt und den Riegel vergisst — dafuer muss
+# sie die Riegelzeilen sehen, nicht das uebersetzte Verhalten.
+RIEGEL = WURZEL / "broker/src/telemetrie.rs"
 
 
 def blockkommentare_entfernen(text: str) -> str:
@@ -110,6 +118,8 @@ TABELLE_RE = re.compile(r"\btable\s+([A-Za-z_][A-Za-z0-9_]*)\s*\{", re.MULTILINE
 STRUCT_RE = re.compile(r"\bstruct\s+([A-Za-z_][A-Za-z0-9_]*)\s*\{", re.MULTILINE)
 FELD_RE = re.compile(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*:")
 ID_RE = re.compile(r"\bid\s*:\s*(\d+)\b")
+# name : TYP [= default] [(attribute)]  — der Typ ist alles bis `=` oder `(`.
+TYP_RE = re.compile(r"^\s*[A-Za-z_][A-Za-z0-9_]*\s*:\s*([^=(]+?)\s*(?:=|\(|$)")
 
 
 def block_lesen(text: str, offen: int) -> str:
@@ -125,12 +135,18 @@ def block_lesen(text: str, offen: int) -> str:
     raise ValueError("unbalancierte Klammer im Schema")
 
 
-def tabellen_lesen(text: str) -> dict[str, list[tuple[str, int | None]]]:
-    tabellen: dict[str, list[tuple[str, int | None]]] = {}
+def tabellen_lesen(text: str) -> dict[str, list[tuple[str, int | None, str, bool]]]:
+    """Je Tabelle die Felder als (name, id, typ, required).
+
+    `typ` und `required` braucht Pruefung 7; die anderen vier lesen weiter nur
+    name und id. EIN Parser fuer alle — ein zweiter waere die zweite Wahrheit
+    darueber, was in dieser Datei steht.
+    """
+    tabellen: dict[str, list[tuple[str, int | None, str, bool]]] = {}
     for treffer in TABELLE_RE.finditer(text):
         name = treffer.group(1)
         inhalt = block_lesen(text, treffer.end() - 1)
-        felder: list[tuple[str, int | None]] = []
+        felder: list[tuple[str, int | None, str, bool]] = []
         for roh in inhalt.split(";"):
             zeile = roh.strip()
             if not zeile:
@@ -139,9 +155,62 @@ def tabellen_lesen(text: str) -> dict[str, list[tuple[str, int | None]]]:
             if not m:
                 continue
             mid = ID_RE.search(zeile)
-            felder.append((m.group(1), int(mid.group(1)) if mid else None))
+            mtyp = TYP_RE.match(zeile)
+            typ = mtyp.group(1).strip() if mtyp else ""
+            felder.append((m.group(1), int(mid.group(1)) if mid else None, typ,
+                           bool(re.search(r"\brequired\b", zeile))))
         tabellen[name] = felder
     return tabellen
+
+
+def ist_offsetfeld(typ: str, tabellennamen: set[str]) -> bool:
+    """Traegt dieses Feld einen `uoffset` — also eine Zelle, die 0 sein kann?
+
+    Genau drei Sorten: Zeichenketten, Vektoren und Tabellen. Skalare und Enums
+    liegen INLINE in der Tabelle; ihre Zelle ist keine Adresse und ein 0-Byte
+    darin ist ein Wert, kein Selbstbezug. `struct` gibt es in diesem Vertrag
+    nicht (Pruefung 5).
+    """
+    return typ == "string" or typ.startswith("[") or typ in tabellennamen
+
+
+def pruefe_strukturriegel(tabellen, riegelquelle: str) -> list[str]:
+    """T2-Runde 4, BL-A: jedes Offsetfeld MUSS im Rust-Strukturriegel stehen.
+
+    Der Riegel spiegelt C++' `VerifyOffset`-Regel „May not point to itself",
+    die dem Rust-Verifier fehlt. Er ist handgeschrieben — ein spaeter
+    ergaenztes Offsetfeld liefe still an ihm vorbei, und die beiden Beine
+    klassifizierten wieder verschieden. Gemessen war das an 6215 mutierten
+    Puffern (143 auseinander vor dem Riegel, 0 danach); diese Pruefung haelt
+    das Ergebnis, ohne die Messung jedes Mal zu wiederholen.
+
+    Zusaetzlich der Sonderfall, der die Messung UEBERLEBT hat: bei einem
+    Vektor von Tabellen ist jedes ELEMENT ein eigener uoffset. Er braucht
+    keine eigene Riegelzeile, solange die Elementtabelle mindestens ein
+    `required`-Feld traegt — dann faellt eine feldlose Tabelle schon in BEIDEN
+    Verifiern. Faellt das `required` weg, faellt diese Begruendung mit, und
+    zwar still. Deshalb steht sie hier als Pruefung.
+    """
+    namen = set(tabellen)
+    fehler: list[str] = []
+    for tab, felder in sorted(tabellen.items()):
+        for feld, _id, typ, _req in felder:
+            if not ist_offsetfeld(typ, namen):
+                continue
+            marke = f"{tab}::VT_{feld.upper()}"
+            if marke not in riegelquelle:
+                fehler.append(
+                    f"Strukturriegel kennt {marke} nicht ({tab}.{feld}: {typ}) — "
+                    "ein Offsetfeld ohne Riegelzeile ist die Luecke aus T2-Runde 4.")
+            if typ.startswith("[") and typ[1:-1] in namen:
+                element = typ[1:-1]
+                if not any(r for _f, _i, _t, r in tabellen[element]):
+                    fehler.append(
+                        f"{tab}.{feld} ist ein Vektor von {element}, und {element} "
+                        "traegt kein `required`-Feld mehr — damit faellt die "
+                        "Begruendung, warum die Elementoffsets keinen eigenen "
+                        "Riegel brauchen.")
+    return fehler
 
 
 def main() -> int:
@@ -191,12 +260,12 @@ def main() -> int:
         felder_gesamt += len(felder)
 
         # 1. jedes Feld hat eine id
-        fehlend = [f for f, i in felder if i is None]
+        fehlend = [f for f, i, _t, _r in felder if i is None]
         ohne_id += len(fehlend)
         if fehlend:
             fehler.append(f"{name}: Felder ohne id: {', '.join(fehlend)}")
 
-        ids = [i for _, i in felder if i is not None]
+        ids = [i for _f, i, _t, _r in felder if i is not None]
 
         # 2. lueckenlos ab 0, keine Doppelung
         if len(set(ids)) != len(ids):
@@ -210,7 +279,7 @@ def main() -> int:
             fehler.append(f"{name}: Tabelle fehlt in FELD-IDS.json (neue Tabelle bitte eintragen)")
             continue
         soll = erwartet[name]["felder"]
-        ist = {f: i for f, i in felder}
+        ist = {f: i for f, i, _t, _r in felder}
         if ist != soll:
             nur_schema = {k: v for k, v in ist.items() if soll.get(k) != v}
             nur_frozen = {k: v for k, v in soll.items() if ist.get(k) != v}
@@ -232,6 +301,15 @@ def main() -> int:
         if name not in tabellen:
             fehler.append(f"{name}: in FELD-IDS.json gefuehrt, aber nicht mehr im Schema")
 
+    # 7. Offsetfeld-Abdeckung des Rust-Strukturriegels (T2-Runde 4, BL-A).
+    offsetfelder = sum(
+        1 for _t, fs in tabellen.items() for _f, _i, typ, _r in fs
+        if ist_offsetfeld(typ, set(tabellen)))
+    if RIEGEL.exists():
+        fehler.extend(pruefe_strukturriegel(tabellen, RIEGEL.read_text(encoding="utf-8")))
+    else:
+        fehler.append(f"Strukturriegel-Quelle fehlt: {RIEGEL}")
+
     # Die Gesamtzahlen sind eine billige Pruefsumme gegen einen Parser, der
     # still die Haelfte uebersieht.
     gesamt = frozen.get("erwartet_gesamt", {})
@@ -248,6 +326,7 @@ def main() -> int:
     print(f"Tabellen: {len(tabellen)}")
     print(f"Felder:   {felder_gesamt}")
     print(f"Felder ohne id: {ohne_id}")
+    print(f"Offsetfelder (string/Vektor/Tabelle) im Strukturriegel: {offsetfelder}")
     if not fehler:
         print("keine Luecke, keine Doppelung, keine Abweichung zur eingefrorenen Liste")
     for f in fehler:

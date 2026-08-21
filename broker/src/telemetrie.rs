@@ -73,6 +73,146 @@ fn ist_hex32(s: &str) -> bool {
     s.len() == 32 && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
 }
 
+// -------------------------------------------------------------- Strukturriegel
+
+/// C++' Regel „May not point to itself" — auf der Rust-Seite nachgezogen.
+///
+/// T2-Runde 4, Blocker BL-A: der FlatBuffers-Verifier ist in den beiden
+/// Sprachen NICHT gleich stark, und diesmal ist DIESE Seite die schwächere.
+/// Gemessen an den gepinnten 25.12.19, beide aus demselben Commit:
+///
+/// * C++ `verifier.h:265-269`, `VerifyOffset`:
+///   `// May not point to itself.` → `if (!Check(o != 0)) return 0;`
+/// * Rust `verifier.rs:515-522`, `ForwardsUOffset::run_verifier`:
+///   `let next_pos = offset.saturating_add(pos);` — **kein `o != 0`**.
+///
+/// Ein `uoffset` von 0 zeigt auf die eigene Zelle. Rust folgt dem, liest dort
+/// eine vtable der Länge 0 und damit eine Tabelle OHNE JEDES FELD — also lauter
+/// Defaults, die semantisch unauffällig sind.
+///
+/// Die Richtung ist die gefährliche: der Broker sitzt ZWISCHEN Sonde und Main.
+/// Er würde so einen Batch als vollständig gültig durchreichen, und das Plugin
+/// verwürfe ihn danach — die Validierung wäre keine eine Wahrheit mehr.
+///
+/// `VerifierOptions` kennt dafür keine Option; es gibt keinen
+/// Konfigurationsausweg. Der Riegel läuft deshalb hier, NACH dem Verifier
+/// (der die Grenzen schon gesichert hat) und über die von `flatc` ERZEUGTEN
+/// `VT_*`-Konstanten — keine abgeschriebene Zahl, die beim nächsten Feld
+/// veraltet. Dass die Liste unten VOLLSTÄNDIG ist, hält
+/// `tools/eq-copilot/pruefe_fbs_feldids.py` (Pruefung 7) gegen das `.fbs`:
+/// ein neues Offsetfeld ohne Riegelzeile wird dort rot, nicht erst hier.
+///
+/// ## Gemessen, nicht behauptet — die KLASSE, nicht ein Fall
+///
+/// Über alle neun gültigen Fixtures, jede 4-byte-ausgerichtete Zelle ab
+/// Offset 4 einzeln auf 0 gesetzt (Zellen je Fixture = Größe/4 − 1, zusammen
+/// 6215 Puffer). Beide Beine über denselben Korpus, verglichen wurde die
+/// VOLLSTÄNDIGE Verstoßmenge, nicht nur gültig/ungültig:
+///
+/// | Stand | Puffer, die auseinanderlaufen |
+/// |---|---:|
+/// | ohne diesen Riegel | **143** von 6215 |
+/// | mit diesem Riegel  | **0** von 6215 |
+///
+/// ## Was auf dem Weg WIEDER RAUSGEFLOGEN ist
+///
+/// Die erste Fassung trug zusätzlich eine Plausibilitätsprüfung der vtable
+/// (`num_bytes() >= 4`). Sie schloss dieselben 143 Lücken — und riss **61 neue
+/// auf**, in der Gegenrichtung: `alle-validity-bits`, Offset 332, ist der
+/// Tabellenkopf des `Transportstempel`, Offset 296 überschreibt seine
+/// `vtable_len`; beides macht die Tabelle feldlos. `Transportstempel`,
+/// `Schleife` und `AbgeleiteteGrenzen` tragen **kein** `required`-Feld — für
+/// C++ ist eine feldlose Tabelle dort strukturell in Ordnung: er liest lauter
+/// Defaults und meldet deren semantische Folgen (`zeitbasis|enum_unbekannt`,
+/// `sample_rate|sample_rate_bereich`,
+/// `process_context_present|context_bit_fehlt`). Rust meldete `verifier`.
+///
+/// 🔑 **Ein Riegel, der STRENGER ist als das Bein, das er spiegelt, bricht
+/// denselben Vertrag wie einer, der schwächer ist.** Verlangt ist dieselbe
+/// Verstoßmenge — nicht dasselbe Vorzeichen des Urteils.
+///
+/// ## Warum die Vektorelemente keinen eigenen Riegel brauchen
+///
+/// `eintraege:[QuellenEintrag]` ist ein Vektor von Offsets; ein Element auf 0
+/// wäre derselbe Selbstbezug. Er braucht hier trotzdem nichts: `QuellenEintrag`
+/// trägt zwei `required`-Felder, und eine feldlose Tabelle fällt deshalb schon
+/// in BEIDEN Verifiern. Das ist keine Herleitung, sondern Teil derselben
+/// Messung — unter den 6215 bleibt kein Fall übrig.
+fn offset_nicht_null(tab: &::flatbuffers::Table, slot: ::flatbuffers::VOffsetT) -> bool {
+    let vo = tab.vtable().get(slot);
+    if vo == 0 {
+        return true; // Feld nicht vorhanden — das ist kein Selbstbezug.
+    }
+    let pos = tab.loc() + vo as usize;
+    let buf = tab.buf();
+    if pos + 4 > buf.len() {
+        return false;
+    }
+    u32::from_le_bytes([buf[pos], buf[pos + 1], buf[pos + 2], buf[pos + 3]]) != 0
+}
+
+/// Alle 15 Offsetfelder des Vertrags, Tabelle für Tabelle.
+///
+/// Der gemeldete Verstoß ist absichtlich derselbe wie auf der C++-Seite
+/// (`""` / `verifier`): dort fällt der Puffer im Verifier, hier gleich danach.
+fn strukturriegel(batch: &fb::FeatureBatch) -> bool {
+    if !offset_nicht_null(&batch._tab, fb::FeatureBatch::VT_EINTRAEGE) {
+        return false;
+    }
+
+    for eintrag in batch.eintraege().iter() {
+        if !offset_nicht_null(&eintrag._tab, fb::QuellenEintrag::VT_QUELLE)
+            || !offset_nicht_null(&eintrag._tab, fb::QuellenEintrag::VT_FRAME)
+        {
+            return false;
+        }
+
+        let a = eintrag.quelle();
+        for slot in [
+            fb::Adresse::VT_LOGON_SID,
+            fb::Adresse::VT_PROJECT_BINDING_ID,
+            fb::Adresse::VT_SESSION_EPOCH,
+            fb::Adresse::VT_INSTANCE_ID,
+            fb::Adresse::VT_RUNTIME_NONCE,
+        ] {
+            if !offset_nicht_null(&a._tab, slot) {
+                return false;
+            }
+        }
+
+        let f = eintrag.frame();
+        if !offset_nicht_null(&f._tab, fb::Frame::VT_TRANSPORT)
+            || !offset_nicht_null(&f._tab, fb::Frame::VT_BAENDER)
+        {
+            return false;
+        }
+
+        // Reihenfolge ist hier tragend: erst die Zelle prüfen, dann ihr folgen.
+        let tr = f.transport();
+        if !offset_nicht_null(&tr._tab, fb::Transportstempel::VT_SCHLEIFE) {
+            return false;
+        }
+        if let Some(s) = tr.schleife() {
+            if !offset_nicht_null(&s._tab, fb::Schleife::VT_ABGELEITETE_GRENZEN) {
+                return false;
+            }
+            // `AbgeleiteteGrenzen` trägt selbst kein Offsetfeld — hier endet der Ast.
+        }
+
+        let b = f.baender();
+        for slot in [
+            fb::Bandwerte::VT_WERTE_I16,
+            fb::Bandwerte::VT_WERTE_F32,
+            fb::Bandwerte::VT_GUELTIG_BITMAP,
+        ] {
+            if !offset_nicht_null(&b._tab, slot) {
+                return false;
+            }
+        }
+    }
+    true
+}
+
 /// Prueft einen rohen FeatureBatch-Puffer.
 ///
 /// Gibt die kanonisch sortierte, doppelfreie Verstossmenge zurueck; leer
@@ -105,10 +245,16 @@ pub fn pruefe(puffer: &[u8]) -> Vec<Verstoss> {
         }
     };
 
+    // 3. Der Strukturriegel — die Haelfte des Verifiers, die DIESER Seite
+    //    fehlt (T2-Runde 4). Siehe `strukturriegel` fuer die Messung.
+    if !strukturriegel(&batch) {
+        out.push(Verstoss::neu("", "verifier"));
+        return kanonisch(out);
+    }
+
     // `eintraege` ist im .fbs `required`: der Verifier hat seine Anwesenheit
     // bereits garantiert, und flatc erzeugt deshalb einen Accessor OHNE
-    // Option. Das ist die eine Stelle, an der FlatBuffers wirklich hart ist —
-    // sie wird benutzt statt nachgebaut.
+    // Option.
     let eintraege = batch.eintraege();
 
     if eintraege.is_empty() {

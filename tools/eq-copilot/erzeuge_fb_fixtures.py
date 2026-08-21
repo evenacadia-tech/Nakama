@@ -130,6 +130,62 @@ def v(pfad: str, regel: str) -> dict:
     return {"pfad": pfad, "regel": regel}
 
 
+# ------------------------------------------- Minimaler FlatBuffers-Wegweiser
+
+# Nur so viel Formatwissen, wie noetig ist, um EINE Offsetzelle zu FINDEN.
+# T2-Runde 4 hat den Fall an einem festen Offset (348) reproduziert; ein fester
+# Offset waere beim naechsten Feld still danebengelaufen und das Fixture haette
+# etwas anderes geprueft, als sein Name sagt.
+
+def _u32(d: bytes, p: int) -> int:
+    return int.from_bytes(d[p:p + 4], "little")
+
+
+def _i32(d: bytes, p: int) -> int:
+    return int.from_bytes(d[p:p + 4], "little", signed=True)
+
+
+def _u16(d: bytes, p: int) -> int:
+    return int.from_bytes(d[p:p + 2], "little")
+
+
+def _tabelle(d: bytes, zeiger: int) -> int:
+    """Folgt einem uoffset an `zeiger` auf die Tabelle."""
+    return zeiger + _u32(d, zeiger)
+
+
+def _feldzelle(d: bytes, tabelle: int, slot: int) -> int | None:
+    """Position der Zelle fuer `slot` (VT_-Konstante), oder None wenn nicht gesetzt."""
+    vtable = tabelle - _i32(d, tabelle)
+    if slot >= _u16(d, vtable):
+        return None
+    voffset = _u16(d, vtable + slot)
+    return None if voffset == 0 else tabelle + voffset
+
+
+def zelle_schleife(d: bytes) -> int:
+    """Position der `schleife`-Offsetzelle im ersten Eintrag.
+
+    Wegstrecke: Wurzel -> FeatureBatch -> eintraege[0] -> frame -> transport,
+    dann Slot VT_SCHLEIFE. Die Slotnummern folgen aus den eingefrorenen
+    Feld-IDs (FELD-IDS.json): voffset = 4 + 2*id.
+    """
+    batch = _tabelle(d, 0)
+    z = _feldzelle(d, batch, 4)                 # FeatureBatch.eintraege, id 0
+    assert z is not None, "eintraege fehlt"
+    vektor = _tabelle(d, z)
+    eintrag = _tabelle(d, vektor + 4)           # erstes Element
+    z = _feldzelle(d, eintrag, 6)               # QuellenEintrag.frame, id 1
+    assert z is not None, "frame fehlt"
+    frame = _tabelle(d, z)
+    z = _feldzelle(d, frame, 4)                 # Frame.transport, id 0
+    assert z is not None, "transport fehlt"
+    transport = _tabelle(d, z)
+    z = _feldzelle(d, transport, 24)            # Transportstempel.schleife, id 10
+    assert z is not None, "schleife fehlt - Mutationsquelle muss eine haben"
+    return z
+
+
 # ------------------------------------------------------------------- gueltig
 
 def gueltige() -> list[tuple[str, dict, str]]:
@@ -492,6 +548,20 @@ def rohe_mutationen() -> list[tuple[str, str, object, list[dict], str]]:
     def auf_laenge(n: int):
         return lambda roh: roh[:n]
 
+    def schleife_selbstbezug(roh: bytes) -> bytes:
+        """Setzt die `schleife`-Offsetzelle auf 0 — ein Selbstbezug.
+
+        T2-Runde 4, BL-A: der C++-Verifier lehnt das ab ("May not point to
+        itself"), der Rust-Verifier folgte dem Offset und las eine vtable der
+        Laenge 0 — also eine Tabelle OHNE JEDES FELD, deren lauter Defaults
+        semantisch unauffaellig sind. Ein Byte, und die beiden Beine sagten
+        Gegenteiliges. Die Zelle wird STRUKTURELL gesucht, nicht gezaehlt.
+        """
+        zelle = zelle_schleife(roh)
+        d = bytearray(roh)
+        d[zelle:zelle + 4] = b"" + bytes(4)
+        return bytes(d)
+
     def sid_bytes(*ersatz: int):
         """Schreibt eine Bytefolge in die SID, ohne ihre Laenge zu aendern.
 
@@ -571,6 +641,20 @@ def rohe_mutationen() -> list[tuple[str, str, object, list[dict], str]]:
         ("sid-ueber-10ffff", "mit-schleife", sid_bytes(0xF5, 0x80, 0x80, 0x80),
          [v("", "verifier")],
          "F5 80 80 80 waere U+140000 - jenseits des Unicode-Bereichs, den es gibt"),
+
+        # --- T2-Runde 4: die Gegenrichtung derselben Klasse ----------------
+        ("offset-selbstbezug", "mit-schleife", schleife_selbstbezug,
+         [v("", "verifier")],
+         "EIN Byte: die `schleife`-Offsetzelle auf 0. Der C++-Verifier lehnt das ab "
+         "('May not point to itself'), der Rust-Verifier hatte diese Pruefung NICHT - "
+         "er folgte dem Selbstbezug, las eine vtable der Laenge 0 und damit eine "
+         "Tabelle ohne jedes Feld, deren lauter Defaults semantisch unauffaellig sind. "
+         "Die Richtung ist die gefaehrliche - der Broker sitzt ZWISCHEN Sonde und "
+         "Main und haette so einen Batch als gueltig durchgereicht. Gemessen wurde "
+         "die KLASSE, nicht dieser eine Fall: jede 4-byte-ausgerichtete Zelle ab "
+         "Offset 4 aller neun gueltigen Fixtures einzeln auf 0 (6215 Puffer, beide "
+         "Beine, voll verglichene Verstossmenge) - 143 liefen auseinander, mit dem "
+         "Strukturriegel in broker/src/telemetrie.rs sind es 0"),
     ]
 
 

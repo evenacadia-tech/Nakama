@@ -114,8 +114,10 @@ juce::Array<Anzeigezeile> HostProbeEditor::zeilen (const Messstand& s, bool brue
            s.automationPunkte == 0 ? juce::String ("noch keine Automation gesehen")
                                    : juce::String (s.kleinsterOffset) + " / " + juce::String (s.groesterOffset),
            s.automationPunkte == 0 ? kMatt : kText, false, true);
-    fuege ("Bloecke, denen die Bruecke die Zusicherung entzog",
-           juce::String (s.mehrpunktOhneZusicherung) + " von " + juce::String (s.bloeckeOhneZusicherung),
+    // Zwei verschiedene Zahlen brauchen zwei Beschriftungen. "X von Y" mit nur
+    // einer Ueberschrift laesst offen, wofuer X steht (T2-Runde 4).
+    fuege ("davon Mehrpunkt / alle ohne Zusicherung",
+           juce::String (s.mehrpunktOhneZusicherung) + " / " + juce::String (s.bloeckeOhneZusicherung),
            s.mehrpunktOhneZusicherung > 0 ? kOffen : kMatt, false, true);
 
     fuege ("Presentation-Latency je Bus", "", kText, true);

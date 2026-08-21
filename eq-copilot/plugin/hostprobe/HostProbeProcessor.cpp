@@ -522,7 +522,10 @@ juce::String HostProbeProcessor::berichtAlsJson() const
     wurzel->setProperty ("bruecke_liefert", brueckeLiefert());
 
     auto* z = new juce::DynamicObject();
-    z->setProperty ("bloecke",               (juce::int64) s.bloecke);
+    // s.bloecke NICHT ausgeben: es ist per Konstruktion identisch mit
+    // verarbeitete_bloecke (beide wachsen in zaehleBlock) und dient intern nur
+    // als Blocknummer im Ereignisprotokoll. Zwei Schluessel fuer dieselbe Zahl
+    // laden zu Fehlschluessen ein (T2-Runde 4).
     z->setProperty ("senke_aufrufe",         (juce::int64) s.senkeAufrufe);
     z->setProperty ("verarbeitete_bloecke",  (juce::int64) s.verarbeiteteBloecke);
     z->setProperty ("mit_kontext",           (juce::int64) s.bloeckeMitKontext);

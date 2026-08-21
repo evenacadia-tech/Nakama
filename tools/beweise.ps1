@@ -243,6 +243,8 @@ $kanon = @(
     # Phase ist hier berichtigt, damit die Zeile nicht laenger "geplant" heisst,
     # waehrend das Ziel schon Pflicht ist.
     [pscustomobject]@{ Kuerzel='B3'; Name='EqCopHostContextTest';    Art='plugin'; Argumente=@(); AbPhase='P0'; Behauptung='Hostkontext (Anwesenheit, Parameterpunkte, Buslatenz) wird gemessen, nicht geraten; Quellhash-Gate des JUCE-Patches gruen.' }
+    # S3b: das Termin-B-Messgeraet beweist sich selbst, BEVOR der User damit misst.
+    [pscustomobject]@{ Kuerzel='B3b'; Name='EqCopHostProbeTest';     Art='plugin'; Argumente=@(); AbPhase='P0'; Behauptung='Termin-B-Messgeraet: Passthrough bitgleich, Sprung-/Automations-/Latenzmessung inkl. Fehlalarm-Riegel, Bericht-Rueckweg, 0 Allokationen.' }
     [pscustomobject]@{ Kuerzel='B4'; Name='EqCopQueueStressTest';    Art='plugin'; Argumente=@(); AbPhase='P2'; Behauptung='StampedAudioQueue haelt Blockgroessen-Stress ohne Allokation/Lock aus.' }
     [pscustomobject]@{ Kuerzel='B5'; Name='EqCopAnalysisGoldenTest'; Art='plugin'; Argumente=@(); AbPhase='P2'; Behauptung='FeatureEngine v2 haelt Zeit-, Validity-, Event- und Bandvertraege.' }
     [pscustomobject]@{ Kuerzel='B6'; Name='EqCopDspGoldenTest';      Art='plugin'; Argumente=@(); AbPhase='P6'; Behauptung='Aktiver DSP-Kern liefert die eingefrorene Referenzantwort.' }
@@ -389,6 +391,7 @@ $quellOrte = @(
     (Join-Path $Wurzel 'eq-copilot\plugin\src'),
     (Join-Path $Wurzel 'eq-copilot\plugin\tests'),
     (Join-Path $Wurzel 'eq-copilot\plugin\hostbridge'),
+    (Join-Path $Wurzel 'eq-copilot\plugin\hostprobe'),
     (Join-Path $Wurzel 'eq-copilot\plugin\spike'),
     (Join-Path $Wurzel 'eq-copilot\plugin\probe'),
     (Join-Path $Wurzel 'eq-copilot\cmake'),
@@ -598,7 +601,7 @@ else {
     $z.Add('|---|---|---|---|')
     foreach ($b in $baustand) { $z.Add("| ``$($b.Name)`` | $($b.Gebaut) | ``$($b.Hash)`` | $($b.Stand) |") }
     $z.Add('')
-    $z.Add("Neueste Quelldatei (``plugin/src``, ``tests``, ``hostbridge``, ``spike``, ``probe``, ``cmake``, ``third_party/patches``, CMakeLists): **$(if ($neuesteQuelle) { $neuesteQuelle.ToString('yyyy-MM-dd HH:mm:ss') } else { 'nicht ermittelbar' })**. ``cargo test`` uebersetzt selbst und ist damit immer frisch.")
+    $z.Add("Neueste Quelldatei (``plugin/src``, ``tests``, ``hostbridge``, ``hostprobe``, ``spike``, ``probe``, ``cmake``, ``third_party/patches``, CMakeLists): **$(if ($neuesteQuelle) { $neuesteQuelle.ToString('yyyy-MM-dd HH:mm:ss') } else { 'nicht ermittelbar' })**. ``cargo test`` uebersetzt selbst und ist damit immer frisch.")
     if ($bauBestaetigt) {
         $z.Add('')
         $z.Add('Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar vor diesem Lauf erfolgreich gebaut, das Buildsystem hat die Abhaengigkeiten also selbst geprueft.')

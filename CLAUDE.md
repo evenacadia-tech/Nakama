@@ -81,10 +81,10 @@ eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextT
 cargo test --manifest-path broker/Cargo.toml
 ```
 
-**Kanon-Stand 21.08.2026: 6/6 grün** (`docs/beweise/SONDE-003.md`) — Nulltest ·
-Golden · Markierung · Broker · Identitaet · Hostkontext. Fuenf weitere
-Pruefbinaries stehen als „geplant" in der Runner-Tabelle und werden Pflicht,
-sobald ihr Ticket sie baut.
+**Kanon-Stand 21.08.2026: 7/7 grün** (`docs/beweise/SONDE-003b.md`) — Nulltest ·
+Golden · Markierung · Broker · Identitaet · Hostkontext · Host-Probe. Fuenf
+weitere Pruefbinaries stehen als „geplant" in der Runner-Tabelle und werden
+Pflicht, sobald ihr Ticket sie baut.
 
 - Golden-WAVs einmalig: `py -3.13 tools/eq-copilot/erzeuge_fixtures.py --nur-wav`
 - Editor-Sichtprüfung ohne FL: `EqCopShot.exe <ziel.png> [breite]` (echte 20-s-Messung, offscreen)
@@ -130,6 +130,17 @@ sobald ihr Ticket sie baut.
   `.gitattributes` haelt `*.patch` per `-text` bytegleich; ohne das haette git
   die CR beim Commit entfernt und einen Patch eingecheckt, der auf dem
   Zweitrechner nicht mehr anwendbar ist (hier waere es nie aufgefallen).
+- **Termin-B-Messgeraet (S3b, Wegwerfware):** Ziele `EqCopHostProbe_VST3`
+  (Bundle, Plugin-Code `NkHp`) + `EqCopHostProbeTest` (Selbsttest, 53 Pruefungen).
+  **Erstes Ziel, das die Hostbruecke BENUTZT** — sein Processor ist eine
+  `eqcop::hostbruecke::Senke`. Misst je Block: Context-Anwesenheit,
+  Gueltigkeitsbits (immer/manchmal/nie), Zeitspruenge (Seek · Loop · Smart
+  Disable, mit Fehlalarm-Riegel gegen fortlaufendes Spiel und Stop/Play),
+  Offline-Render, float/double, Presentation-Latency und **samplegenaue
+  Automation** (Punkte je Block + Offsets — die Frage, fuer die der Bridge-Patch
+  gebaut wurde). Bericht als JSON nach `%APPDATA%\evenacadia\nakama\spike\`.
+  Klickliste `eq-copilot/docs/FL-TERMIN-B-HOSTZEIT.md`. Messstand geht per
+  **Seqlock** zum Nachrichtenthread — der Audiothread wartet nie.
 - **Aux-/PDC-Messgeraet (SONDE-004a, Wegwerfware):** Ziele `EqCopAuxSpike_VST3`
   (Bundle) + `EqCopAuxSpikeTest` (Selbsttest, 41 Pruefungen). Plugin-Code `NkSp`,
   bewusst **ausserhalb** der eingefrorenen Identitaet (`Eqcp`/`NkPr`/`NkAc`).
@@ -268,6 +279,7 @@ rendert auf CPU.
 | Aktuellster Plugin-Stand + Beweise | `eq-copilot/docs/M3A-BEFUND.md` (+ M0–M2, CS1) |
 | Manuelle FL-Prüfungen (liegen beim User) | `eq-copilot/docs/FL-TESTANLEITUNG.md` |
 | FL-Termin A — Aux/PDC/Recall messen (Sondenbau P0) | `eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md` |
+| FL-Termin B — Hostzeit, Transport, Automation messen (P0) | `eq-copilot/docs/FL-TERMIN-B-HOSTZEIT.md` |
 | Benchmark-Mechaniken (Median-Basislinie, Zonen, Konvergenz) | `eq-copilot/docs/BENCHMARK-STUDIE-RESO-SMARTEQ-PROQ.md` |
 | Offene Punkte (durabel, nie still löschen) | `docs/offene-punkte.md` |
 

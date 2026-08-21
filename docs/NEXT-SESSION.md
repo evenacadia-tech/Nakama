@@ -64,7 +64,7 @@ braucht beide User-Termine.
 | Termin | Klickliste | Dauer | Was zurückkommt |
 |---|---|---|---|
 | **A** — Aux-Layout, Kanalreihenfolge, Recall, PDC-Impulse | `eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md` | ~20 min | zwei JSON aus `%APPDATA%\evenacadia\nakama\spike\` |
-| **B** — Live/Stop/Seek/Loop-Straddle/Render/Smart Disable | *noch zu schreiben* (S4-Vorlauf) | ~20 min | `.flp`-Legacy-Fixture aus §54 + Beobachtungsprotokoll |
+| **B** — Live/Stop/Seek/Loop-Straddle/Render/Smart Disable/Automation | `eq-copilot/docs/FL-TERMIN-B-HOSTZEIT.md` | ~25 min | eine JSON aus `%APPDATA%\evenacadia\nakama\spike\` + optional `nakama-altprojekt.flp` (§54 Punkt 2) |
 
 Termin B ist zugleich der **einzige** Weg, die Hostbrücke im echten Host zu
 sehen: ob FL einen `ProcessContext` anlegt, welche Validity-Flags gesetzt sind,
@@ -73,16 +73,20 @@ innerhalb eines Blocks verhält. Headless ist all das nicht beweisbar — und wi
 deshalb auch nirgends behauptet (`docs/beweise/SONDE-003.md` §0 sagt es
 ausdrücklich).
 
-⚠️ **Termin B hat noch kein Messgerät.** Eine Klickliste allein reicht nicht: der
-User kann nicht mit dem Auge ablesen, welche VST3-Flags in einem Block gesetzt
-waren. Nächste Bau-Session ist deshalb ein **zweites Wegwerf-Target nach dem
-Muster von `SONDE-004a`** — ein Plugin, dessen Processor
-`eqcop::hostbruecke::Senke` implementiert und je Block mitschreibt
-(`processContextPresent`, Validity-Bits, PPQ/Projektzeit-Sprünge,
-Cycle-Grenzen, Parameterpunkte, Buslatenz), am Ende als JSON nach
-`%APPDATA%\evenacadia\nakama\spike\`. Erst der Bridge-Patch macht dieses
-Messgerät überhaupt möglich; vorher hätte es nur JUCEs geschönte Sicht
-aufgeschrieben. Danach die Klickliste dazu, dann liegt Termin B beim User.
+✅ **Termin B hat sein Messgerät (S3b, gebaut 21.08.).** `EqCopHostProbe` ist das
+erste Ziel, das die Hostbrücke wirklich benutzt: sein Processor ist eine
+`Senke` und zeigt live an, was FL liefert — Context-Anwesenheit,
+Gültigkeitsbits als **immer / manchmal / nie**, Zeitsprünge für Seek, Loop und
+Smart Disable (mit Fehlalarm-Riegel gegen normales Spielen und gegen
+Stop/Play), Offline-Render, float/double, Presentation-Latency und vor allem
+**wie viele Automationspunkte je Block ankommen**. Selbsttest 53/53,
+`pluginval` Strenge 8 SUCCESS, Kanon 7/7.
+
+Damit liegen **beide Termine beim User** — mehr ist an P0 ohne seine Messwerte
+nicht zu bauen. Wenn du hier ohne neue Messdaten weitermachen willst: die
+nächste baubare Fläche ist **P1/S5** (`SONDE-005a`, v3-JSON-Schemas +
+Bandgitter + Fixtures) — die hängt nicht an den Terminen. `S4` und das Gate
+`G0` hängen daran.
 
 ### Danach: S4 → Gate G0
 

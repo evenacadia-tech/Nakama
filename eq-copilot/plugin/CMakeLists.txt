@@ -205,6 +205,54 @@ target_compile_definitions(EqCopIdentityTest PRIVATE
 target_link_libraries(EqCopIdentityTest PRIVATE juce::juce_audio_utils juce::juce_dsp
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 
+# ── S3b: Termin-B-Messgeraet (Wegwerfware wie SONDE-004a) ──────────────────
+# Erstes Ziel, das die Hostbruecke BENUTZT: sein Processor ist eine Senke.
+# Eigener Plugin-Code NkHp — bewusst ausserhalb der eingefrorenen Identitaet
+# (§31.2: Eqcp/NkPr/NkAc) und ausserhalb des Aux-Spikes (NkSp). Wird nach dem
+# Capabilityreport (S4) nicht weitergepflegt.
+juce_add_plugin(EqCopHostProbe
+    COMPANY_NAME "evenacadia"
+    PRODUCT_NAME "EqCop-Host-Probe"
+    PLUGIN_MANUFACTURER_CODE Evna
+    PLUGIN_CODE NkHp
+    FORMATS VST3
+    VST3_CATEGORIES Fx Analyzer
+    IS_SYNTH FALSE
+    NEEDS_MIDI_INPUT FALSE
+    NEEDS_MIDI_OUTPUT FALSE
+    IS_MIDI_EFFECT FALSE
+    COPY_PLUGIN_AFTER_BUILD FALSE
+)
+target_sources(EqCopHostProbe PRIVATE
+    hostprobe/HostProbeProcessor.cpp
+    hostprobe/HostProbeEditor.cpp
+    hostprobe/HostProbeFactory.cpp
+)
+target_include_directories(EqCopHostProbe PUBLIC hostprobe "${CMAKE_CURRENT_SOURCE_DIR}/hostbridge")
+target_compile_definitions(EqCopHostProbe PUBLIC
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+    JUCE_VST3_CAN_REPLACE_VST2=0
+    JUCE_DISPLAY_SPLASH_SCREEN=0
+    NAKAMA_HOST_BRIDGE=1
+)
+target_link_libraries(EqCopHostProbe
+    PRIVATE juce::juce_audio_utils
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
+# ── Selbsttest: beweist das Lineal VOR dem Termin ──────────────────────────
+juce_add_console_app(EqCopHostProbeTest PRODUCT_NAME "eqcop-hostprobetest")
+target_sources(EqCopHostProbeTest PRIVATE
+    tests/HostProbeTestMain.cpp
+    hostprobe/HostProbeProcessor.cpp
+    hostprobe/HostProbeEditor.cpp
+)
+target_include_directories(EqCopHostProbeTest PRIVATE hostprobe hostbridge)
+target_compile_definitions(EqCopHostProbeTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopHostProbeTest PRIVATE juce::juce_audio_utils
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
 # ── SONDE-003: Wrapper-Unitfixture der Hostbruecke ─────────────────────────
 # Zwei Haelften in einem Ziel: das Quellhash-Gate misst die GEPATCHTE
 # JUCE-Datei auf Platte, die Bruecken-Pruefungen fahren die Abbildung gegen den
@@ -232,6 +280,7 @@ target_link_libraries(EqCopHostContextTest PRIVATE juce::juce_core juce::juce_cr
 # Die Quellen sind UTF-8 (deutsche UI-Texte). Ohne /utf-8 rät MSVC die
 # Codepage — Literale wie „Klavier-Bus“ hingen dann an der Systemlocale.
 foreach(ziel EqCopilot EqCopPipeProbe EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
-             EqCopIdentityTest EqCopAuxSpike EqCopAuxSpikeTest EqCopHostContextTest)
+             EqCopIdentityTest EqCopAuxSpike EqCopAuxSpikeTest EqCopHostContextTest
+             EqCopHostProbe EqCopHostProbeTest)
     target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endforeach()

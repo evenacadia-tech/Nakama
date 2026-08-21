@@ -167,9 +167,14 @@ als Lücke, hier sind sie es wieder.
 Das Bild zeigt **fünf** Quellen. Die Spezifikation nennt **bis 16**, und die
 gesamte Kartenabnahme wurde bei 16 gemessen und entschieden. Zwei Folgen:
 
-- **Die Namen in der Karte passen hier, bei 16 nicht.** Gemessen: Karte ohne
-  Namen 212 px, **mit** Namen 308 px — mehr, als da ist. Deshalb war die
-  abgenommene Karte namenlos.
+- **Die Namen in der Karte passen hier, bei 16 nicht.** Die namenlose Karte
+  braucht bei 16 Quellen **210 px** (`abnahmen/2026-08-21-codereview.md`
+  Abschnitt 4 — die verbreitete Zahl 212 ist 2 px zu hoch, sie stammt aus
+  `offsetHeight`). Für die Karte **mit** Namen steht überall **308 px** — das
+  ist die **einzige Zahl jener Tabelle ohne Beleg im Quelltext**, also eine
+  Behauptung, keine Messung. Der Schluss („mit Namen geht bei 16 nicht")
+  hängt damit an einer ungeprüften Zahl. **Wer die Namen will, misst sie
+  zuerst nach** — das ist eine Messung von zehn Minuten, keine Grundsatzfrage.
 - **Genau darum ist das trotzdem interessant.** Die offene Frage des letzten
   Sessionendes lautete wörtlich: *„Wie kommt man von einer hohlen Zeile zur
   Quelle? Die Karte ist namenlos."* Dieser Entwurf **antwortet** darauf — er

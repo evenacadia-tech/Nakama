@@ -43,9 +43,9 @@ juce::Array<Anzeigezeile> HostProbeEditor::zeilen (const Messstand& s, bool brue
 {
     juce::Array<Anzeigezeile> z;
     auto fuege = [&z] (juce::String name, juce::String wert, juce::Colour farbe,
-                       bool kopf = false, bool ein = false)
+                       bool kopf = false, bool ein = false, bool hinweis = false)
     {
-        z.add (Anzeigezeile { std::move (name), std::move (wert), farbe, kopf, ein });
+        z.add (Anzeigezeile { std::move (name), std::move (wert), farbe, kopf, ein, hinweis });
     };
 
     // Der wichtigste Zustand zuerst.
@@ -119,14 +119,26 @@ juce::Array<Anzeigezeile> HostProbeEditor::zeilen (const Messstand& s, bool brue
            s.mehrpunktOhneZusicherung > 0 ? kOffen : kMatt, false, true);
 
     fuege ("Presentation-Latency je Bus", "", kText, true);
+    // Die Farbe haengt am EINTRAG, nicht an der Gesamtlage: sonst stuende
+    // "Eingang: nicht gemeldet" im selben Gruen wie ein echter Messwert und
+    // der schnelle Lesekanal saegte gegen den Text (T2-Runde 2).
+    auto richtungGemeldet = [] (const Messstand::LatenzEintrag* e)
+    {
+        for (int bus = 0; bus < eqcop::hostbruecke::kMaxBusse; ++bus)
+            if (e[bus].gemeldet) return true;
+        return false;
+    };
     fuege ("Eingang", latenzZeile (s.latenzEingang),
-           s.latenzJeGemeldet ? kJa : kOffen, false, true);
+           richtungGemeldet (s.latenzEingang) ? kJa : kOffen, false, true);
     fuege ("Ausgang", latenzZeile (s.latenzAusgang),
-           s.latenzJeGemeldet ? kJa : kOffen, false, true);
+           richtungGemeldet (s.latenzAusgang) ? kJa : kOffen, false, true);
     fuege ("Meldungen mit unbekanntem Bus verworfen", juce::String (s.verworfeneBusmeldungen),
            s.verworfeneBusmeldungen > 0 ? kOffen : kMatt, false, true);
+    fuege ("Spaetere Aenderung verworfen (Wert rastet ein)",
+           juce::String (s.latenzAenderungenVerworfen),
+           s.latenzAenderungenVerworfen > 0 ? kOffen : kMatt, false, true);
     if (! s.latenzJeGemeldet)
-        fuege ("", "bisher NIE gemeldet - das ist ein gueltiger Befund", kOffen, false, true);
+        fuege ("", "bisher NIE gemeldet - das ist ein gueltiger Befund", kOffen, false, true, true);
 
     return z;
 }

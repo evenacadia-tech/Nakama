@@ -30,6 +30,10 @@ struct Anzeigezeile
     juce::Colour  farbe;
     bool          istKopf { false };
     bool          eingerueckt { false };
+    /** Freitext-Hinweis ohne Beschriftung. Genau EINE solche Zeile ist erlaubt,
+        und der Selbsttest zaehlt sie - sonst waere "jede Wertzeile hat eine
+        Beschriftung" eine Regel mit stiller Hintertuer (T2-Runde 2). */
+    bool          istHinweis { false };
 };
 
 /** Layoutmasse an EINER Stelle - sonst rechnen paint(), resized() und der

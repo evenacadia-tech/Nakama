@@ -397,19 +397,33 @@ void HostProbeProcessor::nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbe
     for (juce::int32 bus = 0; bus < eqcop::hostbruecke::kMaxBusse; ++bus)
     {
         const auto& ein = k.presentationLatency.hole (true, bus);
-        if (ein.gemeldet && ! stand.latenzEingang[bus].gemeldet)
+        if (ein.gemeldet)
         {
-            stand.latenzEingang[bus] = { true, ein.samples };
-            stand.latenzJeGemeldet = true;
-            merke (Art::LatenzGemeldet, -1, -1, 0.0, (double) ein.samples, (int) bus);
+            if (! stand.latenzEingang[bus].gemeldet)
+            {
+                stand.latenzEingang[bus] = { true, ein.samples };
+                stand.latenzJeGemeldet = true;
+                merke (Art::LatenzGemeldet, -1, -1, 0.0, (double) ein.samples, (int) bus);
+            }
+            else if (stand.latenzEingang[bus].samples != ein.samples)
+            {
+                ++stand.latenzAenderungenVerworfen;
+            }
         }
 
         const auto& aus = k.presentationLatency.hole (false, bus);
-        if (aus.gemeldet && ! stand.latenzAusgang[bus].gemeldet)
+        if (aus.gemeldet)
         {
-            stand.latenzAusgang[bus] = { true, aus.samples };
-            stand.latenzJeGemeldet = true;
-            merke (Art::LatenzGemeldet, -1, -1, 0.0, (double) aus.samples, -(int) bus - 1);
+            if (! stand.latenzAusgang[bus].gemeldet)
+            {
+                stand.latenzAusgang[bus] = { true, aus.samples };
+                stand.latenzJeGemeldet = true;
+                merke (Art::LatenzGemeldet, -1, -1, 0.0, (double) aus.samples, -(int) bus - 1);
+            }
+            else if (stand.latenzAusgang[bus].samples != aus.samples)
+            {
+                ++stand.latenzAenderungenVerworfen;
+            }
         }
     }
 
@@ -543,6 +557,7 @@ juce::String HostProbeProcessor::berichtAlsJson() const
     auto* lat = new juce::DynamicObject();
     lat->setProperty ("je_gemeldet", s.latenzJeGemeldet);
     lat->setProperty ("verworfene_busmeldungen", (juce::int64) s.verworfeneBusmeldungen);
+    lat->setProperty ("verworfene_aenderungen", (juce::int64) s.latenzAenderungenVerworfen);
     // Nur TATSAECHLICH gemeldete Eintraege - kein erfundener "Bus -1 = 0".
     juce::Array<juce::var> latListe;
     for (int bus = 0; bus < eqcop::hostbruecke::kMaxBusse; ++bus)

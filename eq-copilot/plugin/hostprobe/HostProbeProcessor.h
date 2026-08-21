@@ -132,7 +132,12 @@ struct Messstand
     LatenzEintrag latenzEingang[eqcop::hostbruecke::kMaxBusse] {};
     LatenzEintrag latenzAusgang[eqcop::hostbruecke::kMaxBusse] {};
     bool        latenzJeGemeldet     { false };
-    juce::int64 verworfeneBusmeldungen { 0 };   ///< Busindex ausserhalb [0, kMaxBusse) - macht ein "NIE" erst belastbar
+    juce::int64 verworfeneBusmeldungen { 0 };
+    /** Ein einmal gemeldeter Wert RASTET EIN. Meldet der Host spaeter einen
+        anderen (etwa beim Wechsel in den Render), wird die Aenderung verworfen -
+        aber gezaehlt. "Zaehler statt stiller Korrekturen" gilt auch hier
+        (T2-Runde 2). */
+    juce::int64 latenzAenderungenVerworfen { 0 };   ///< Busindex ausserhalb [0, kMaxBusse) - macht ein "NIE" erst belastbar
 
     double      samplerate           { 0.0 };
     int         kleinsterBlock       { -1 };

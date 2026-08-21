@@ -182,11 +182,21 @@ einer Zahl groesser als 0.
 
 **Tu:** Nichts Zusaetzliches.
 
-**Sieh:** Zwei Zeilen haben sich waehrend der Messungen nebenbei beantwortet:
+**Sieh:** Zwei Stellen haben sich waehrend der Messungen nebenbei beantwortet:
 
 - *float / double* — welche Rechengenauigkeit FL benutzt.
-- *Presentation-Latency gemeldet?* — steht dort **„bisher NIE"**, ist das ein
-  vollstaendiges Ergebnis, keine fehlende Messung. Viele Hosts melden das nicht.
+- Der Block **„Presentation-Latency je Bus"** ganz unten. Dort stehen zwei
+  Zeilen, *Eingang* und *Ausgang*, und beide haben genau zwei moegliche
+  Ausgaenge:
+  - **„nicht gemeldet"** (gelb) — FL sagt zu dieser Richtung nichts. Das ist ein
+    vollstaendiges Ergebnis, keine fehlende Messung; viele Hosts melden es nicht.
+    Solange **beide** Richtungen so stehen, erscheint darunter zusaetzlich der
+    Satz „bisher NIE gemeldet - das ist ein gueltiger Befund".
+  - **„Bus 0 = <Zahl>"** (gruen) — FL meldet eine Verzoegerung. Dann brauche ich
+    die Zahl; sie steht ohnehin im Bericht.
+
+  Die beiden Richtungen sind unabhaengig: „Eingang nicht gemeldet · Ausgang
+  Bus 0 = 1024" ist ein voellig normales Ergebnis.
 
 ---
 

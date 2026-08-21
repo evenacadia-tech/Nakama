@@ -16,6 +16,8 @@
 #include <iostream>
 #include <limits>
 #include <new>
+#include <chrono>
+#include <thread>
 
 using namespace eqcop::hostprobe;
 using namespace eqcop::hostbruecke;
@@ -364,11 +366,24 @@ int main (int argc, char* argv[])
         pruefe (! s.latenzAusgang[1].gemeldet,
                 "ein nicht gemeldeter Bus dazwischen bleibt ungemeldet");
 
+        // Der Wert rastet ein. Meldet der Host spaeter einen anderen, wird die
+        // Aenderung verworfen - aber GEZAEHLT, nicht verschwiegen.
+        auto geaendert = mitKontext (1536, true, 512);
+        geaendert.kontext.presentationLatency.ausgang[0] = { 2048u, true };
+        p.nakamaBlockEmpfangen (geaendert);
+        s = p.messstand();
+        pruefe (s.latenzAusgang[0].samples == 1024,
+                "der zuerst gemeldete Latenzwert rastet ein");
+        pruefe (s.latenzAenderungenVerworfen == 1,
+                "die spaetere Aenderung wird gezaehlt statt still verworfen");
+
         const auto text = p.berichtAlsJson();
         const auto j = juce::JSON::parse (text);
         pruefe (j["presentation_latency"]["gemeldet"].isArray()
                     && j["presentation_latency"]["gemeldet"].size() == 3,
                 "der Bericht listet genau die drei gemeldeten Eintraege - keinen erfundenen");
+        pruefe ((int) j["presentation_latency"]["verworfene_aenderungen"] == 1,
+                "und der Aenderungszaehler steht im Bericht");
     }
 
     std::cout << "== G - Senke ohne processBlock (Flush/Hostriegel) ==" << std::endl;
@@ -548,6 +563,65 @@ int main (int argc, char* argv[])
                 "500 Bloecke mit Kontext, Transportwechseln und je 8 Automationspunkten: 0 Allokationen");
     }
 
+    std::cout << "== J2 - Nebenlaeufig lesen, waehrend der Audiothread schreibt ==" << std::endl;
+    {
+        // T1 fuehrt "Aufzeichnung pausieren <-> fortsetzen" als Gegenpfad. Bisher
+        // wurde er nur einfaedig gefahren - das belegt die Wiederholschleife in
+        // ereignisseLesen nicht (T2-Runde 2). Hier laeuft ein zweiter Thread als
+        // Audiothread, waehrend der Hauptthread liest.
+        HostProbeProcessor p;
+        p.setPlayConfigDetails (2, 2, 48000.0, 512);
+        p.prepareToPlay (48000.0, 512);
+
+        std::atomic<bool> laeuft { true };
+        std::atomic<juce::int64> geschrieben { 0 };
+        std::thread audio ([&]
+        {
+            juce::int64 i = 0;
+            while (laeuft.load (std::memory_order_relaxed))
+            {
+                // Transportwechsel je Block => je Block ein Ereignis.
+                p.nakamaBlockEmpfangen (mitKontext (i * 512, (i % 2) == 0, 512));
+                ++i;
+                geschrieben.store (i, std::memory_order_relaxed);
+            }
+        });
+
+        // ERST warten, bis der Schreiber wirklich laeuft. Ohne das war die
+        // Leseschleife fertig, bevor der Thread den ersten Block geschrieben
+        // hatte - der Test haette leere Daten geprueft und nichts gemessen.
+        for (int warte = 0; warte < 2000 && geschrieben.load (std::memory_order_relaxed) < 200; ++warte)
+            std::this_thread::sleep_for (std::chrono::milliseconds (1));
+
+        juce::HeapBlock<Ereignis> ziel (kMaxEreignisse);
+        int gelesen = 0;
+        bool plausibel = true;
+        for (int runde = 0; runde < 200; ++runde)
+        {
+            gelesen = p.ereignisseLesen (ziel.get(), kMaxEreignisse);
+            if (gelesen < 0 || gelesen > kMaxEreignisse) plausibel = false;
+            for (int i = 0; i < gelesen; ++i)
+                if (ziel[i].block < 0 || (int) ziel[i].art < 0 || (int) ziel[i].art >= kArtAnzahl)
+                    plausibel = false;
+            const auto stand = p.messstand();
+            if (stand.bloecke < 0 || stand.senkeAufrufe < 0) plausibel = false;
+        }
+
+        laeuft.store (false, std::memory_order_relaxed);
+        audio.join();
+
+        pruefe (geschrieben.load() > 0, "der zweite Thread hat waehrenddessen wirklich geschrieben ("
+                                            + juce::String (geschrieben.load()) + " Bloecke)");
+        pruefe (plausibel,
+                "200 nebenlaeufige Lesevorgaenge liefern durchweg plausible Eintraege und Zaehler");
+        pruefe (gelesen > 0, "der letzte Lesevorgang hat Eintraege geliefert");
+
+        // EHRLICHE GRENZE: das ist ein Rauchtest. Er faehrt den Pfad und faengt
+        // Absturz, Bereichsfehler und offensichtlichen Muell - er BEWEIST keine
+        // Tearing-Freiheit. Das steht so auch im Manifest.
+        pruefe (true, "(Grenze benannt: Rauchtest, kein Beweis der Tearing-Freiheit)");
+    }
+
     std::cout << "== K - Anzeige: passt der Inhalt ueberhaupt ins Fenster? ==" << std::endl;
     {
         // Die erste Fassung war 660x520 und schnitt 49 px ab - ausgerechnet die
@@ -580,13 +654,47 @@ int main (int argc, char* argv[])
                     + juce::String (HostProbeEditor::inhaltsUnterkante (leer))
                     + ", Knopfstreifen ab " + juce::String (knopfOben) + ")");
 
-        // Jede Zeile mit Messwert muss auch eine Beschriftung haben - sonst
-        // steht eine Zahl ohne Frage im Fenster.
-        bool alleBeschriftet = true;
-        for (const auto& z : leer)
-            if (z.wert.isNotEmpty() && z.name.isEmpty() && ! z.istKopf && z.wert.length() < 20)
-                alleBeschriftet = false;
-        pruefe (alleBeschriftet, "keine Wertzeile ohne Beschriftung");
+        // Jede Wertzeile braucht eine Beschriftung - sonst steht eine Zahl ohne
+        // Frage im Fenster. GENAU EINE Ausnahme ist erlaubt: die als Hinweis
+        // markierte Freitextzeile.
+        //
+        // Die erste Fassung dieser Pruefung hatte eine Laengenklausel
+        // (`wert.length() < 20`), die ausgerechnet die einzige unbeschriftete
+        // Zeile heraussortierte - damit verglich sie 0 Faelle und war immer
+        // gruen. Ein Pruefer, der nichts vergleicht, meldet stumm "bestanden"
+        // (T2-Runde 2). Deshalb wird hier die ABDECKUNG mitgezaehlt.
+        auto beschriftungsPruefung = [] (const juce::Array<Anzeigezeile>& zl,
+                                         int& gepruefteZeilen, int& hinweise)
+        {
+            gepruefteZeilen = 0;
+            hinweise = 0;
+            bool ok = true;
+            for (const auto& z : zl)
+            {
+                if (z.istKopf) continue;
+                if (z.istHinweis) { ++hinweise; continue; }
+                ++gepruefteZeilen;
+                if (z.wert.isNotEmpty() && z.name.isEmpty()) ok = false;
+            }
+            return ok;
+        };
+
+        int gezaehlt = 0, hinweise = 0;
+        const bool beschriftet = beschriftungsPruefung (leer, gezaehlt, hinweise);
+        pruefe (beschriftet && gezaehlt > 20,
+                juce::String ("keine Wertzeile ohne Beschriftung - und ")
+                    + juce::String (gezaehlt) + " Zeilen wurden dabei wirklich geprueft");
+        pruefe (hinweise <= 1,
+                juce::String ("hoechstens EINE unbeschriftete Hinweiszeile (gefunden: ")
+                    + juce::String (hinweise) + ")");
+
+        // Der Riegel muss fallen koennen: eine untergeschobene unbeschriftete
+        // Wertzeile MUSS die Pruefung rot machen.
+        auto manipuliert = leer;
+        manipuliert.add (Anzeigezeile { "", "42", juce::Colours::white, false, true, false });
+        int g2 = 0, h2 = 0;
+        pruefe (! beschriftungsPruefung (manipuliert, g2, h2),
+                "und der Riegel faellt: eine untergeschobene Wertzeile ohne Beschriftung wird erkannt");
 
         // Bildbeweis: PNG schreiben, wenn ein Pfad uebergeben wurde.
         if (argc > 1)

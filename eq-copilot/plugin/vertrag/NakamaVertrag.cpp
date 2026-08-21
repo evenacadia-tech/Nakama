@@ -128,6 +128,33 @@ bool gleich (const juce::var& a, const juce::var& b)
                 return false;
         return true;
     }
+    // OBJEKTE. Bis T2-Runde 1 fiel dieser Fall auf `return false` durch,
+    // waehrend die Rust-Seite zwei Objekte korrekt verglich - eine latente
+    // Divergenz. Heute unerreichbar, weil jeder `const`- und `enum`-Wert im
+    // Schema ein Skalar ist; sie zu schliessen kostet zehn Zeilen, sie stehen
+    // zu lassen kostet irgendwann einen Nachmittag.
+    //
+    // Der Vergleich laeuft ueber Schluesselzugriff und ist damit in beiden
+    // Sprachen reihenfolgeunabhaengig - juce::NamedValueSet und serde_json::Map
+    // ordnen verschieden, und eine positionsweise Pruefung waere genau der
+    // Unterschied, den niemand bemerkt.
+    if (auto* x = a.getDynamicObject())
+    {
+        auto* y = b.getDynamicObject();
+        if (y == nullptr)
+            return false;
+        const auto& xs = x->getProperties();
+        const auto& ys = y->getProperties();
+        if (xs.size() != ys.size())
+            return false;
+        for (int i = 0; i < xs.size(); ++i)
+        {
+            const auto name = xs.getName (i);
+            if (! ys.contains (name) || ! gleich (xs.getValueAt (i), ys[name]))
+                return false;
+        }
+        return true;
+    }
     return false;
 }
 

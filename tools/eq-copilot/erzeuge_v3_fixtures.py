@@ -373,6 +373,40 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
                         for p in ("p10", "p50", "p95")}
     faelle.append(("evidence-grobes-gitter", ev, "beide Gitter sind zulaessig"))
 
+    # T2-Runde 1: fuenf deklarierte Eigenschaften wurden von KEINEM Fixture
+    # beruehrt - ein Vertrag, dessen Felder nie in einer Nachricht stehen, ist
+    # an dieser Stelle ungeprueft, auch wenn jede Definition ein Negativfixture
+    # hat. Diese beiden schliessen die Luecke.
+
+    ev = copy.deepcopy(GRUND["evidence_snapshot"])
+    ev["transport"]["continuous_time_samples"] = 91238400
+    ev["transport"]["input_presentation_latency"] = 0
+    ev["transport"]["output_presentation_latency"] = 512
+    ev["transport"]["validity"] = dict(VALIDITY)
+    ev["transport"]["validity"]["continuous_time"] = True
+    ev["transport"]["validity"]["input_presentation_latency"] = True
+    ev["transport"]["validity"]["output_presentation_latency"] = True
+    ev["konfidenz"] = {
+        "metrics_version": 1,
+        "klasse": "stark",
+        "timing_alignment": 0.94,
+        "messpunkt_routing": 1,
+        "alternativerklaerungen": 0.2,
+        "bootstrap_stabilitaet": 0.81,
+    }
+    faelle.append(("evidence-volle-hostzeit", ev,
+                   "alle hostabhaengigen Zeitfelder MIT ihren eigenen Gueltigkeitsbits "
+                   "(§32.3) und die vollstaendige Konfidenz (§34.3). Die Latenz 0 ist "
+                   "hier ausdruecklich GEMESSEN und nicht 'unbekannt' - genau die "
+                   "Unterscheidung, fuer die das eigene Bit existiert"))
+
+    inv = copy.deepcopy(GRUND["evidence_invalidate"])
+    inv["grund"] = "sequenzluecke"
+    inv["umfang"] = {"art": "sample_range", "sample_start": 44100, "sample_end": 88200}
+    faelle.append(("invalidate-bereich", inv,
+                   "§34.2 verlangt Ruecknahme per ID ODER Bereich - der Bereichszweig "
+                   "kam im ganzen Korpus bisher in keinem gueltigen Fixture vor"))
+
     # Beitragsklasse mit eigenem Aux-Bus.
     ss = copy.deepcopy(GRUND["session_snapshot"])
     ss["mitglieder"][0]["measurement_position"] = "post_fader_contribution"

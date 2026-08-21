@@ -6,7 +6,7 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 34,
+  "anzahl_gueltig": 36,
   "anzahl_ungueltig": 116,
   "fixtures": [
     {
@@ -76,6 +76,12 @@
       "verletzungen": []
     },
     {
+      "datei": "gueltig/evidence-volle-hostzeit.json",
+      "urteil": "gueltig",
+      "warum": "alle hostabhaengigen Zeitfelder MIT ihren eigenen Gueltigkeitsbits (§32.3) und die vollstaendige Konfidenz (§34.3). Die Latenz 0 ist hier ausdruecklich GEMESSEN und nicht 'unbekannt' - genau die Unterscheidung, fuer die das eigene Bit existiert",
+      "verletzungen": []
+    },
+    {
       "datei": "gueltig/evidence_invalidate.json",
       "urteil": "gueltig",
       "warum": "Grundform der Familie",
@@ -139,6 +145,12 @@
       "datei": "gueltig/hello_telemetry.json",
       "urteil": "gueltig",
       "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/invalidate-bereich.json",
+      "urteil": "gueltig",
+      "warum": "§34.2 verlangt Ruecknahme per ID ODER Bereich - der Bereichszweig kam im ganzen Korpus bisher in keinem gueltigen Fixture vor",
       "verletzungen": []
     },
     {

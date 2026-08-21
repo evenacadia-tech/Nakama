@@ -705,6 +705,32 @@ mod tests {
     /// Der Textriegel, Kante fuer Kante. Dieselbe Tabelle steht in
     /// `SchemaTestMain.cpp` und in `pruefe_v3_vertrag.py` — laufen die drei
     /// auseinander, faellt genau hier eine von ihnen.
+    /// T2-Runde 1, Hypothese des Pruefers: ein OBJEKTWERTIGES `const` haette
+    /// die beiden Engines auseinanderlaufen lassen — die C++-Seite verglich
+    /// zwei Objekte immer als ungleich. Heute unerreichbar (alle const- und
+    /// enum-Werte im Schema sind Skalare), deshalb steht die Probe hier und
+    /// nicht im Korpus. Die Schluesselreihenfolge ist ABSICHTLICH vertauscht.
+    #[test]
+    fn objektwertiges_const_vergleicht_wie_die_cpp_seite() {
+        let s = Schema::laden(json!({
+            "x-nakama-discriminator": "type",
+            "oneOf": [{ "$ref": "#/$defs/a" }],
+            "$defs": { "a": {
+                "type": "object",
+                "required": ["type", "k"],
+                "additionalProperties": false,
+                "properties": {
+                    "type": { "const": "a" },
+                    "k": { "const": { "p": 1, "q": [2, 3] } }
+                }
+            }}
+        }))
+        .unwrap();
+        assert!(s.gueltig(&json!({"type": "a", "k": {"q": [2, 3], "p": 1}})));
+        assert!(!s.gueltig(&json!({"type": "a", "k": {"p": 1, "q": [2, 4]}})));
+        assert!(!s.gueltig(&json!({"type": "a", "k": {"p": 1}})));
+    }
+
     #[test]
     fn textriegel_deckt_jede_gemessene_kante() {
         // (Text, wird_abgelehnt)

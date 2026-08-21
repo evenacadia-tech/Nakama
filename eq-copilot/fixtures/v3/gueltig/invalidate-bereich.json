@@ -1,0 +1,9 @@
+{
+  "type": "evidence_invalidate",
+  "grund": "sequenzluecke",
+  "umfang": {
+    "art": "sample_range",
+    "sample_start": 44100,
+    "sample_end": 88200
+  }
+}

@@ -421,6 +421,47 @@ def pruefe_fixtures(lauf: Lauf, schema: dict, manifest: dict) -> None:
               all(not e["verletzungen"] for e in manifest["fixtures"]
                   if e.get("textriegel_lehnt_ab")))
 
+    # T2-Runde 1: acht deklarierte Eigenschaften kamen in KEINEM Fixture vor.
+    # Der Abdeckungsriegel unten sah das nicht - er zaehlt Definitionen mit
+    # Negativfixture, nicht Felder, die je in einer Nachricht standen. Ein Feld,
+    # das nie gesendet wird, ist an dieser Stelle ungeprueft.
+    deklariert: set[str] = set()
+
+    def sammle_deklariert(knoten) -> None:
+        if isinstance(knoten, dict):
+            deklariert.update((knoten.get("properties") or {}).keys())
+            for wert in knoten.values():
+                sammle_deklariert(wert)
+        elif isinstance(knoten, list):
+            for wert in knoten:
+                sammle_deklariert(wert)
+
+    sammle_deklariert(schema)
+
+    benutzt: set[str] = set()
+
+    def sammle_benutzt(knoten) -> None:
+        if isinstance(knoten, dict):
+            for name, wert in knoten.items():
+                benutzt.add(name)
+                sammle_benutzt(wert)
+        elif isinstance(knoten, list):
+            for wert in knoten:
+                sammle_benutzt(wert)
+
+    for eintrag in manifest["fixtures"]:
+        pfad = FIXTURES / eintrag["datei"]
+        if not pfad.exists() or eintrag.get("textriegel_lehnt_ab"):
+            continue
+        try:
+            sammle_benutzt(json.loads(pfad.read_text(encoding="utf-8")))
+        except json.JSONDecodeError:
+            continue
+
+    unberuehrt = sorted(deklariert - benutzt)
+    lauf.wahr(f"jede der {len(deklariert)} deklarierten Eigenschaften steht in "
+              "mindestens einem Fixture", not unberuehrt, ", ".join(unberuehrt))
+
 
 # ------------------------------------------------------------------ Abdeckung
 

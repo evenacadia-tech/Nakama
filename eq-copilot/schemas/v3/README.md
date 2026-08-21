@@ -238,6 +238,30 @@ gleich viel. T2-Runde 1 hat gemessen, dass `konfidenz` sich nicht daran hielt
 nachgezogen, und `pruefe_v3_vertrag.py` rechnet die Regel jetzt nach, statt
 sie nur hier zu behaupten.
 
+## Capabilities — und warum sie keine eigene Version tragen
+
+`capabilities` ist seit T2-Runde 1 der Satz aus Entwurf §53.6, **woertlich und
+vollstaendig**: alle zehn Namen, keiner umbenannt, keiner zusammengelegt.
+Vorher standen dort sieben — zwei still umbenannt, fuenf fehlend, zwei selbst
+erfunden. Der Schaden daran ist nicht die Zahl, sondern dass §53.6 jeder
+Capability einen **eigenen Beweis und einen eigenen Fallback** gibt: die drei
+Aux-Capabilities haben drei verschiedene („kein lokales Audio-Delta" / „keine
+dynamische Aktuation" / „nur Assoziation statt exakter Attribution"). Ein
+zusammengelegtes `discrete_aux_buses` haette genau die Unterscheidung
+geloescht, fuer die sie getrennt sind.
+
+Entwurf §33.3 verlangt in jeder steuernden Nachricht „Schema-/
+Capability-Version". Der `steuerkopf` traegt `schema_major`/`schema_minor` und
+**kein** eigenes Capabilityfeld — mit Absicht: der Capabilitysatz ist
+geschlossen (`additionalProperties: false`) und alle zehn sind Pflicht. Damit
+ist jede Aenderung an ihm ein Major-Schritt, und `schema_major` IST seine
+Version. Ein zweiter Zaehler daneben koennte nur auseinanderlaufen.
+
+Was daraus folgt, und was der Schliessungsvorbehalt weiter unten meint: kommt
+aus den FL-Terminen eine elfte Faehigkeit, ist das **keine** Minor-Erweiterung
+(NAK-27 haelt den ersten solchen Fall fest). Was S4 liefert, sind **Werte**;
+die Namen stehen jetzt.
+
 ## Was hier NICHT gebaut ist
 
 Damit niemand danach sucht:
@@ -260,8 +284,17 @@ aber erst nach deren Capabilityentscheidung **geschlossen** werden."
 Der Vertrag ist deshalb so gebaut, dass die Hostantwort seine **Form** nicht
 mehr aendern kann: `capability_wert` kennt `supported` und `unsupported` und
 sonst nichts (§54: „Kein `unknown, spaeter pruefen` darf P1 passieren"), und
-jedes hostabhaengige Feld haengt an einem eigenen Gueltigkeitsbit. Was S4
-liefert, sind **Werte**, keine Felder. Nachzuziehen bleibt nach S4 einzig:
-ob der Capability-Satz in `capabilities` vollstaendig ist — kommt aus den
-Terminen eine Faehigkeit dazu, die hier fehlt, ist das eine Minor-Erweiterung
-mit eigenem Fixture.
+jedes hostabhaengige Feld haengt an einem eigenen Gueltigkeitsbit — seit
+T2-Runde 1 auch `continuous_time_samples` und die beiden
+Presentation-Latencies, die vorher keins hatten. Was S4 liefert, sind
+**Werte**, keine Felder.
+
+**Berichtigt in T2-Runde 1:** hier stand, ein spaeter dazukommendes
+Capabilitybit waere „eine Minor-Erweiterung mit eigenem Fixture". Das ist
+**gemessen falsch** — `capabilities` ist strikt und alle zehn sind Pflicht,
+ein elftes Bit bricht also jeden bestehenden Consumer. Der Satz ist ersetzt
+durch den Abschnitt „Capabilities — und warum sie keine eigene Version
+tragen" weiter oben; der erste konkrete Fall steht als **NAK-27** im
+Offen-Set. Die Lehre daraus ist allgemeiner als dieser eine Satz: eine
+Vertragsdatei darf ueber ihre eigene Erweiterbarkeit nur behaupten, was ein
+Fixture belegt.

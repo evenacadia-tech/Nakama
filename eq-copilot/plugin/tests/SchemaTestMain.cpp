@@ -562,6 +562,40 @@ void fahreRiegelproben()
     pruefe (mehrere.size() == 3 && sortiert,
             "Verletzungen sind kanonisch sortiert und doppelfrei",
             juce::String (mehrere.size()));
+
+    // T2-Runde 1, Hypothese des Pruefers: ein OBJEKTWERTIGES `const` haette die
+    // beiden Engines auseinanderlaufen lassen - die C++-Seite verglich zwei
+    // Objekte immer als ungleich. Heute unerreichbar (alle const/enum-Werte im
+    // Schema sind Skalare), deshalb steht die Probe hier und nicht im Korpus.
+    // Die Schluesselreihenfolge ist ABSICHTLICH vertauscht: NamedValueSet und
+    // serde_json::Map ordnen verschieden.
+    Schema o; juce::String of;
+    const char* objektConst = R"({
+      "x-nakama-discriminator": "type",
+      "oneOf": [{ "$ref": "#/$defs/a" }],
+      "$defs": { "a": {
+        "type": "object",
+        "required": ["type", "k"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "a" },
+          "k": { "const": { "p": 1, "q": [2, 3] } }
+        }
+      }}
+    })";
+    if (Schema::laden (ausText (objektConst), o, of))
+    {
+        pruefe (o.gueltig (ausText (R"({"type":"a","k":{"q":[2,3],"p":1}})")),
+                "objektwertiges const vergleicht reihenfolgeunabhaengig");
+        pruefe (! o.gueltig (ausText (R"({"type":"a","k":{"p":1,"q":[2,4]}})")),
+                "objektwertiges const sieht einen Unterschied in der Tiefe");
+        pruefe (! o.gueltig (ausText (R"({"type":"a","k":{"p":1}})")),
+                "objektwertiges const sieht eine fehlende Eigenschaft");
+    }
+    else
+    {
+        pruefe (false, "Probeschema mit objektwertigem const laedt", of);
+    }
 }
 
 } // namespace

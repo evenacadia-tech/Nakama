@@ -5,13 +5,14 @@
 > eqcop-broker.exe), tools/. FL-Repo-SHAs in älteren Einträgen unten
 > gehören zur FL-Studio-Historie (bis `7964777`).
 
-> Stand: 2026-08-21. Diese Datei ist der Schnellstart;
+> Stand: 2026-08-21 (nach S3 + S3b). Diese Datei ist der Schnellstart;
 > Tiefe in `docs/design-stand.md` und `docs/geschmacksprofil.md`.
 > **🔨 BAUENTSCHEIDUNG ERTEILT (User, 20.08.): der Sondenkern wird gebaut.**
-> **S0 bis S3 sind gebaut** (Beweis-Runner + Basislinie · Aux-/PDC-Messgerät ·
-> Identität eingefroren — alles 20.08.; JUCE-Bridge-Patch 21.08.). Der Bau steht
-> jetzt an den **zwei FL-Terminen des Users** — Einstieg ist der Abschnitt
-> „DER EINE NÄCHSTE SCHRITT" unten. Kanon: **6/6 grün**.
+> **S0 bis S3 UND S3b sind gebaut** (Beweis-Runner + Basislinie · Aux-/PDC-Messgerät ·
+> Identität eingefroren — alles 20.08.; JUCE-Bridge-Patch + Termin-B-Messgerät
+> 21.08., beide mit T2-PASS). Der Bau steht jetzt an den **zwei FL-Terminen des
+> Users**. Einstieg: der Review-Abschnitt unten, dann „DER EINE NÄCHSTE SCHRITT".
+> Kanon: **7/7 grün**.
 > Sessionplan, Gates und Prüfstufen in `docs/bauaufteilung-sonden.md`.
 > Die Design-Spur läuft parallel weiter und blockiert nichts.
 > **Erledigt am 20.08.:** /freshen gelaufen (+ eigenes Playbook);
@@ -52,10 +53,93 @@ Dieser strategische Lock ersetzt NICHT den unmittelbar freigegebenen
 Technikschritt unten. NAK-16 muss dem Zielbild dienen, darf es aber nicht
 durch einen neuen Effekt oder eine neue Metapher umdeuten.
 
+## 🔎 FÜR EINEN CODE-REVIEW DIESER SESSION — hier anfangen
+
+Stand `16dd825` (= `origin/master`), Arbeitsbaum sauber, Kanon **7/7 grün**.
+In dieser Session sind **zwei Tickets** entstanden. Beides ist bereits durch den
+`evaluator`-Frischkontextprüfer gelaufen — `SONDE-003` in **3 Runden**, `S3b` in
+**4 Runden**, beide am Ende **PASS**. Wer jetzt reviewt, sollte wissen, was dort
+schon gejagt wurde, um nicht dieselben Wege doppelt zu gehen.
+
+### Was zu reviewen ist
+
+| Ticket | Diff | Beweismanifest |
+|---|---|---|
+| `SONDE-003` — JUCE-Bridge-Patch | `git diff 0ba87cc..e9c6fa0` | `docs/beweise/SONDE-003.md` |
+| `S3b` — Termin-B-Messgerät | `git diff e9c6fa0..HEAD` | `docs/beweise/SONDE-003b.md` |
+
+Die Manifeste tragen zu **jeder** Behauptung die rohe Ausgabe, dazu §6 mit allen
+Befunden und ihrem Ausgang. Der Gate-Text steht jeweils im Kopf **im Wortlaut**
+aus `docs/FL-Nakama-Sonden-Design-Entwurf.md` — nicht als meine Zusammenfassung.
+
+### Die riskantesten Flächen, in dieser Reihenfolge
+
+1. **`third_party/patches/juce-8.0.9-nakama-vst3-bridge.patch`** — ein Patch am
+   gevendorten JUCE. Neun Ankerstellen. Die Kernfrage für einen Reviewer:
+   **ändert er irgendwo Verhalten statt nur zu beobachten?** JUCEs eigener
+   Parameterweg steht unverändert daneben; das Gate `eq-copilot/cmake/NakamaBruecke.cmake`
+   bricht bei fremdem Quellstand ab.
+2. **`eq-copilot/plugin/hostbridge/NakamaHostBridge.h`** — läuft im Audiothread.
+   Vorallokiert, lock-frei, 0 Allokationen (gemessen). Zwei Verhältnisse sind
+   Vertrag und waren beide schon einmal falsch: der **Rückfallwert überlebt den
+   Ringüberlauf** (eigene `Letztwert`-Tabelle), und die **Zähler beschreiben, was
+   der Host geliefert hat** — nicht, was in unsere Struktur passte.
+3. **`eq-copilot/plugin/hostprobe/`** — Wegwerf-Messgerät, aber mit Seqlock
+   zwischen Audio- und Nachrichtenthread und einem Editor, dessen Höhe aus dem
+   Inhalt gerechnet wird.
+
+### Was T2 bereits gefunden hat (alles gefixt, Riegel fällt nachweislich)
+
+Nur damit klar ist, welche Fehlerklassen schon durchgekämmt sind:
+
+* §53.7 war nicht eingelöst — der Überlauf verwarf genau den Vertrags-Rückfallwert
+  (gemessen 0.511 statt 0.777, und zwar mit `true` gemeldet).
+* Eine Regression aus der eigenen Nacharbeit: NaN als Punkt 513 wurde stiller
+  Rückfallwert, während `unplausibleWerte` 0 meldete.
+* Der Editor schnitt 49 px ab — ausgerechnet die Automationszeilen; ich hatte
+  das Gerät nie gerendert.
+* Eine Prüfung, die durch eine Längenklausel **0 Fälle** verglich und deshalb
+  unbedingt grün war.
+* Ein Zähler, der Blöcke statt Änderungen zählte (eine Hostmeldung wäre als
+  sechsstellige Zahl erschienen).
+* Dazu: `.gitattributes` hätte den Patch beim Commit kaputtnormalisiert, und der
+  Baustand-Scan des Beweis-Runners sah fünf Quellorte nicht.
+
+### Was ausdrücklich NICHT bewiesen ist
+
+Kein Reviewer muss das erst herausfinden — es steht so in beiden Manifesten §0:
+
+* **Was FL tatsächlich antwortet.** Ob ein `ProcessContext` anliegt, welche
+  Validity-Bits gesetzt sind, ob Presentation-Latency überhaupt gemeldet wird,
+  ob samplegenaue Automation ankommt — headless nicht beweisbar. Das ist
+  **Termin B**.
+* **Seek gegen Smart Disable.** Ein Vorwärtssprung ist aus den Daten allein
+  nicht trennbar. Steht in Anzeige, Klickliste und JSON als Grenze.
+* **Tearing-Freiheit von `ereignisseLesen`.** Der nebenläufige Test ist ein
+  Rauchtest; der Wiederholpfad wird praktisch nie betreten. Auch das steht so im
+  Quelltext und im Manifest.
+* **Kein Processor des Produkts implementiert die `Senke`.** Das ist Schnittgrenze,
+  keine Lücke — `EqCopilotProcessor` bleibt in `SONDE-003` unangetastet, damit der
+  Patch am Produkt nachweislich folgenlos ist. Der Verbraucher kommt in
+  `SONDE-008/009` zusammen mit **NAK-24**.
+
+### Alles nachfahren
+
+```powershell
+pwsh -File tools/beweise.ps1 -Bauen -Ziel docs/beweise/review.md -Titel 'Review'
+eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe <ziel.png>
+```
+
+Der zweite Befehl rendert zusätzlich die beiden Bildbeweise neu — sie liegen in
+`eq-copilot/docs/bilder/` und sind gegen ein unabhängiges Rendering
+SHA-256-identisch geprüft worden.
+
+---
+
 ## ▶ DER EINE NÄCHSTE SCHRITT — 👤 **User-Termin B in FL**, dann S4
 
-**S0–S3 sind gebaut** (Beweis-Runner · Aux-/PDC-Messgerät · Identität eingefroren ·
-JUCE-Bridge-Patch). Der Bau steht damit an einer Stelle, an der er **nur noch
+**S0–S3 und S3b sind gebaut** (Beweis-Runner · Aux-/PDC-Messgerät · Identität
+eingefroren · JUCE-Bridge-Patch · Termin-B-Messgerät). Der Bau steht damit an einer Stelle, an der er **nur noch
 durch Messungen aus FL** weitergeht: P0 endet mit dem Capabilityreport, und der
 braucht beide User-Termine.
 

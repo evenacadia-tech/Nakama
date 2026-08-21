@@ -53,7 +53,7 @@ Audio-Ausnahme braucht denselben Verriegelungs- und Beweisstandard.
 ```powershell
 $cmake = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
 & $cmake -S eq-copilot -B eq-copilot/build -G "Visual Studio 17 2022" -A x64
-& $cmake --build eq-copilot/build --config Release --target EqCopilot_VST3 EqCopShot EqCopPaintBench EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopPipeProbe EqCopIdentityTest EqCopHostContextTest EqCopHostProbe_VST3 EqCopHostProbeTest
+& $cmake --build eq-copilot/build --config Release --target EqCopilot_VST3 EqCopShot EqCopPaintBench EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopPipeProbe EqCopIdentityTest EqCopHostContextTest EqCopHostProbe_VST3 EqCopHostProbeTest EqCopSchemaTest
 ```
 
 **Ein Befehl für den ganzen Kanon (seit 20.08., ersetzt die bewusst nicht
@@ -79,13 +79,14 @@ eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTes
 eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe
 eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe
 eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe [ziel.png]
+eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe
 cargo test --manifest-path broker/Cargo.toml
 ```
 
-**Kanon-Stand 21.08.2026: 7/7 grün** (`docs/beweise/SONDE-003b.md`) — Nulltest ·
-Golden · Markierung · Broker · Identitaet · Hostkontext · Host-Probe. Fuenf
-weitere Pruefbinaries stehen als „geplant" in der Runner-Tabelle und werden
-Pflicht, sobald ihr Ticket sie baut.
+**Kanon-Stand 21.08.2026: 8/8 grün** (`docs/beweise/SONDE-005a.md`) — Nulltest ·
+Golden · Markierung · Broker · Identitaet · Hostkontext · Host-Probe · Schema.
+Die restlichen geplanten Pruefbinaries stehen als „geplant" in der
+Runner-Tabelle und werden Pflicht, sobald ihr Ticket sie baut.
 
 - Golden-WAVs einmalig: `py -3.13 tools/eq-copilot/erzeuge_fixtures.py --nur-wav`
 - Editor-Sichtprüfung ohne FL: `EqCopShot.exe <ziel.png> [breite]` (echte 20-s-Messung, offscreen)
@@ -148,14 +149,39 @@ Pflicht, sobald ihr Ticket sie baut.
   Klickliste fuer den FL-Termin: `eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md`;
   Impulse per `tools/eq-copilot/erzeuge_aux_spike_fixtures.py` (Hashes im
   Fixture-MANIFEST). Wird nach dem Capabilityreport (S4) entsorgt.
+- **v3-Vertragsbaum (SONDE-005a, seit 21.08.):** `eq-copilot/schemas/v3/` ist
+  der Vertrag, den DREI Beine lesen — `tools/eq-copilot/pruefe_v3_vertrag.py`
+  (Referenz, `jsonschema` 4.26), `EqCopSchemaTest` (`plugin/vertrag/`) und
+  `broker/tests/contract_cross_language.rs`. Alle messen gegen dasselbe
+  **handgeschriebene** `eq-copilot/fixtures/v3/MANIFEST.json` (131 Fixtures);
+  stimmen C++ und Rust mit ihm überein, stimmen sie transitiv miteinander —
+  ein aus einer Engine erzeugtes Manifest wäre zirkulär. Erzeuger:
+  `erzeuge_bandgitter.py`, `erzeuge_quantisierung.py`, `erzeuge_v3_fixtures.py`
+  (alle mit `--pruefen` = bytegleich gegen Neuerzeugung).
+  🔑 **Die tragende Regel:** ein Schema mit einem nicht implementierten
+  Schlüsselwort **bricht den Ladevorgang**. JSON Schema ignoriert Unbekanntes
+  absichtlich — ein später ergänztes `multipleOf` würde sonst nur vom
+  Referenzbein durchgesetzt und auf zwei von drei Seiten still verschwinden.
+  ⚠️ **Bandgitter sind eingefrorene Zahlen, keine Rechenvorschrift** (`pow` ist
+  nicht bit-portabel), und ihre Wahrheit ist das **Hex-Bitmuster**, nicht die
+  Dezimalform. `nakama_log64_v1` ist eine exakte Partition der 221 feinen
+  Bänder, keine zweite Frequenzachse. ⚠️ **`.gitattributes` hält den Baum per
+  `-text` bytegleich** — mit `core.autocrlf` wäre `--pruefen` auf dem
+  Zweitrechner rot geworden, ohne dass sich ein Wert geändert hat.
+  Gemessene Abweichung, dokumentiert statt weggeräumt: JUCEs JSON-Leser folgt
+  RFC 4627 und lehnt eine **skalare Wurzel** schon im Parser ab, `serde_json`
+  und Python (RFC 8259) erst am Schema — Manifest-Feld `wurzel_skalar`.
 - **Installation = User-Klick:** `eq-copilot\install\Install-EQ-Copilot.ps1` als Admin (UAC), Rollback-Datei liegt daneben. Nie automatisch installieren. Vorher FL beenden.
 
 ## Invarianten — tragend, jede Runde präsent
 
-- **Schemas sind Verträge** (`eq-ipc` v2 · `eq-measurement` · `eq-report` ·
-  `eq-snapshot` v3 · `eq-aggregat`): neue Felder ⇒ ERST Versionierung; alte
-  Snapshots laden ohne die Felder; unbekannte Felder zerstören alte Consumer
-  nicht; Save + Load im selben Änderungssatz testen.
+- **Schemas sind Verträge** (v2: `eq-ipc` · `eq-measurement` · `eq-report` ·
+  `eq-snapshot` v3 · `eq-aggregat`; v3: `schemas/v3/`): neue Felder ⇒ ERST
+  Versionierung; alte Snapshots laden ohne die Felder; unbekannte Felder
+  zerstören alte Consumer nicht; Save + Load im selben Änderungssatz testen.
+  In v3 ist „additiv" **kein Freibrief**: `additionalProperties: true` gilt nur
+  zusammen mit `maxProperties`, und Discriminator, Zieladresse, Revision und
+  Capability sind nie additiv.
 - **Engine kennt keine Optik:** AnalyseEngine liefert kohärente MessSnapshots
   (~20 Hz Leichtpfad `auswertenLeicht()` + 250-ms-Schwerauswertung, EINE
   Quelle `fuelleBasis()`); der Editor hält NUR Anzeigezustand und malt nur
@@ -271,6 +297,7 @@ rendert auf CPU.
 | Bereich | Zuerst lesen |
 |---|---|
 | Wie das Plugin heute funktioniert (Architektur, Datenfluss, IPC) | `docs/plugin-wissen.md` |
+| v3-Verträge: Engine-Teilmenge, Bandgitter, Fixture-Korpus (SONDE-005a) | `eq-copilot/schemas/v3/README.md` |
 | Design-Prototyp, Verwürfe, Freeze-Stand | `docs/design-stand.md` |
 | Visueller Nordstern — Hörkompass-Zielvertrag (19.08.) | `docs/visuelles-zielbild-hoerkompass.md` |
 | Sonden-Produkt, Technik + Phasenplan (Fassung 0.4) | `docs/FL-Nakama-Sonden-Design-Entwurf.md` (+ `docs/pruefbericht-sondenentwurf-2026-08-20.md`) |

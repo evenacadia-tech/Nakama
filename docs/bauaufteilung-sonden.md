@@ -54,7 +54,7 @@ eq-copilot\build\...\EqCopGoldenTest.exe eq-copilot\fixtures
 eq-copilot\build\...\EqCopMarkierungTest.exe
 cargo test --manifest-path broker/Cargo.toml
 + ab P0: EqCopIdentityTest
-+ ab P1: EqCopStateMigrationTest
++ ab P1: EqCopStateMigrationTest, EqCopSchemaTest
 + ab P2: EqCopHostContextTest, EqCopQueueStressTest, EqCopAnalysisGoldenTest
 + ab P6: EqCopDspGoldenTest, EqCopTransactionTest
 ```
@@ -227,7 +227,7 @@ JUCE-Update neu bewiesen werden muss. Eigene Session, eigener Prüfer.
 
 | # | Ticket | Inhalt | Prüfung |
 |---|---|---|---|
-| S5 | `SONDE-005a` | v3-JSON-Schemas + Bandgitter + gültige/ungültige Fixtures | T1+T2 |
+| ~~S5~~ | `SONDE-005a` | ~~v3-JSON-Schemas + Bandgitter + gültige/ungültige Fixtures~~ — **gebaut 21.08.**: `schemas/v3/` (17 der 25 Nachrichtenfamilien aus §33.3 definiert, 8 namentlich **reserviert** mit Eigentümerticket), beide Bandgitter als eingefrorene Zahlenfixture (221 + 64, IEC 61260-1 mit Halbschritt — von vier denkbaren Konventionen trifft nur diese die 221 aus §33.2), Quantisierungsvertrag mit 61 Vektoren, **131 Fixtures** mit handgeschriebenem Manifest, und **drei** Prüfbeine (`jsonschema`-Referenz · `EqCopSchemaTest` · `contract_cross_language`). Kanon von 7/7 auf **8/8** gewachsen, `pluginval` Strenge 8 SUCCESS. Manifest `docs/beweise/SONDE-005a.md`. Der Korpus fand drei echte Fehler (geschachtelter Discriminator, Nicht-Objekt-Wurzel, eine falsche handgeschriebene Erwartung) und eine dokumentierte Abweichung zwischen den Beinen (RFC 4627 vs. 8259). **Schließungsvorbehalt §65:** gilt bis S4 als *vorbereitet*, nicht *geschlossen*. | T1 ✅ · **T2 offen** |
 | S6 | `SONDE-005b` | FlatBuffers (Feld-IDs!), gepinntes `flatc`, Codegen-Drift-Test | T1+T2 |
 | S7 | `SONDE-006` | State-Schema 2, Parameterbestand, reine Schema-1-Migration | T1+T2 |
 | S8 | `SONDE-007a` | **Gemeinsamer Kern ohne `JucePlugin_*`-Konstanten** (NAK-23b) | T1+T2 |

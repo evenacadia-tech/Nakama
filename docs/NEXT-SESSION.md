@@ -5,14 +5,15 @@
 > eqcop-broker.exe), tools/. FL-Repo-SHAs in älteren Einträgen unten
 > gehören zur FL-Studio-Historie (bis `7964777`).
 
-> Stand: 2026-08-21 (nach S3 + S3b). Diese Datei ist der Schnellstart;
+> Stand: 2026-08-21 (nach S3, S3b und S5). Diese Datei ist der Schnellstart;
 > Tiefe in `docs/design-stand.md` und `docs/geschmacksprofil.md`.
 > **🔨 BAUENTSCHEIDUNG ERTEILT (User, 20.08.): der Sondenkern wird gebaut.**
-> **S0 bis S3 UND S3b sind gebaut** (Beweis-Runner + Basislinie · Aux-/PDC-Messgerät ·
-> Identität eingefroren — alles 20.08.; JUCE-Bridge-Patch + Termin-B-Messgerät
-> 21.08., beide mit T2-PASS). Der Bau steht jetzt an den **zwei FL-Terminen des
-> Users**. Einstieg: der Review-Abschnitt unten, dann „DER EINE NÄCHSTE SCHRITT".
-> Kanon: **7/7 grün**.
+> **S0 bis S3, S3b UND S5 sind gebaut** (Beweis-Runner + Basislinie ·
+> Aux-/PDC-Messgerät · Identität eingefroren — alles 20.08.; JUCE-Bridge-Patch +
+> Termin-B-Messgerät 21.08., beide mit T2-PASS; v3-Vertragsbaum 21.08., **T2 noch
+> offen**). P0 steht an den **zwei FL-Terminen des Users**, P1 läuft daran vorbei
+> weiter. Einstieg: „DER EINE NÄCHSTE SCHRITT".
+> Kanon: **8/8 grün**.
 > Sessionplan, Gates und Prüfstufen in `docs/bauaufteilung-sonden.md`.
 > Die Design-Spur läuft parallel weiter und blockiert nichts.
 > **Erledigt am 20.08.:** /freshen gelaufen (+ eigenes Playbook);
@@ -55,23 +56,21 @@ durch einen neuen Effekt oder eine neue Metapher umdeuten.
 
 ## 🔎 FÜR EINEN CODE-REVIEW DIESER SESSION — hier anfangen
 
-Die ganze Session ist `0ba87cc..HEAD`: **zehn Bau- und Beweis-Commits**
-(fünf je Ticket) plus die Doku-Commits am Ende. Arbeitsbaum sauber,
-Kanon **7/7 grün**, alles gepusht.
-In dieser Session sind **zwei Tickets** entstanden. Beides ist bereits durch den
-`evaluator`-Frischkontextprüfer gelaufen — `SONDE-003` in **3 Runden**, `S3b` in
-**4 Runden**, beide am Ende **PASS**. Wer jetzt reviewt, sollte wissen, was dort
-schon gejagt wurde, um nicht dieselben Wege doppelt zu gehen.
+In dieser Runde sind **drei** Tickets entstanden. `SONDE-003` und `S3b` sind
+bereits durch den `evaluator`-Frischkontextprüfer gelaufen — in **3** bzw. **4
+Runden**, beide am Ende **PASS**. `SONDE-005a` ist **noch nicht** durch T2. Wer
+jetzt reviewt, sollte wissen, was dort schon gejagt wurde, um nicht dieselben
+Wege doppelt zu gehen.
 
 ### Was zu reviewen ist
 
-| Ticket | Diff | Beweismanifest |
-|---|---|---|
-| `SONDE-003` — JUCE-Bridge-Patch | `git diff 0ba87cc..e9c6fa0` (5 Commits) | `docs/beweise/SONDE-003.md` |
-| `S3b` — Termin-B-Messgerät | `git diff e9c6fa0..22d23d7` (5 Commits) | `docs/beweise/SONDE-003b.md` |
+| Ticket | Diff | Beweismanifest | T2 |
+|---|---|---|---|
+| `SONDE-003` — JUCE-Bridge-Patch | `git diff 0ba87cc..e9c6fa0` | `docs/beweise/SONDE-003.md` | ✅ PASS (3 Runden) |
+| `S3b` — Termin-B-Messgerät | `git diff e9c6fa0..22d23d7` | `docs/beweise/SONDE-003b.md` | ✅ PASS (4 Runden) |
+| `SONDE-005a` — v3-Vertragsbaum | `git diff 5299037..HEAD` | `docs/beweise/SONDE-005a.md` | **offen** |
 
-Alles nach `22d23d7` sind reine Doku-Commits — **kein Code**. Wer nur den Code
-reviewen will, kann bei `0ba87cc..22d23d7` bleiben.
+Zwischen `22d23d7` und `5299037` liegen reine Doku-Commits — **kein Code**.
 
 Die Manifeste tragen zu **jeder** Behauptung die rohe Ausgabe, dazu §6 mit allen
 Befunden und ihrem Ausgang. Der Gate-Text steht jeweils im Kopf **im Wortlaut**
@@ -92,6 +91,13 @@ aus `docs/FL-Nakama-Sonden-Design-Entwurf.md` — nicht als meine Zusammenfassun
 3. **`eq-copilot/plugin/hostprobe/`** — Wegwerf-Messgerät, aber mit Seqlock
    zwischen Audio- und Nachrichtenthread und einem Editor, dessen Höhe aus dem
    Inhalt gerechnet wird.
+4. **`eq-copilot/schemas/v3/` + die beiden Engines** (`plugin/vertrag/`,
+   `broker/src/vertrag.rs`) — zwei handgeschriebene JSON-Schema-Engines, die
+   IDENTISCH klassifizieren müssen. Die Kernfrage für einen Reviewer:
+   **gibt es eine Eingabe, bei der die beiden auseinanderlaufen und der Korpus
+   es nicht sieht?** Der Riegel dagegen ist, dass beide ein Schema mit einem
+   nicht implementierten Schlüsselwort ABLEHNEN statt es zu ignorieren; wer
+   den aushebelt, hebelt den ganzen Vertrag aus. Auslegung: `schemas/v3/README.md`.
 
 ### Was T2 bereits gefunden hat (alles gefixt, Riegel fällt nachweislich)
 
@@ -172,10 +178,41 @@ Stop/Play), Offline-Render, float/double, Presentation-Latency und vor allem
 `pluginval` Strenge 8 SUCCESS, Kanon 7/7.
 
 Damit liegen **beide Termine beim User** — mehr ist an P0 ohne seine Messwerte
-nicht zu bauen. Wenn du hier ohne neue Messdaten weitermachen willst: die
-nächste baubare Fläche ist **P1/S5** (`SONDE-005a`, v3-JSON-Schemas +
-Bandgitter + Fixtures) — die hängt nicht an den Terminen. `S4` und das Gate
-`G0` hängen daran.
+nicht zu bauen. `S4` und das Gate `G0` hängen daran.
+
+### ✅ S5 ist gebaut (21.08.) — der v3-Vertragsbaum steht
+
+Die Fläche, die nicht an den Terminen hängt, ist erledigt: **`SONDE-005a`**
+liegt in `eq-copilot/schemas/v3/` (Manifest `docs/beweise/SONDE-005a.md`).
+
+- **17 der 25 Nachrichtenfamilien** aus Entwurf §33.3 sind definiert; die
+  restlichen **8 sind namentlich reserviert** mit Eigentümerticket und werden
+  vom Parser abgelehnt — genau der Vertragsanteil, der bricht, wenn man ihn
+  offen lässt.
+- **Beide Bandgitter** liegen als eingefrorene Zahlen vor (221 + 64). Von den
+  vier denkbaren IEC-Konventionen trifft nur eine die 221 aus §33.2; die
+  Bandzahl war die Prüfsumme über eine Entscheidung, die der Entwurf nie
+  ausgeschrieben hat.
+- **131 Fixtures** mit **handgeschriebenem** Manifest und **drei** Prüfbeinen
+  (`jsonschema`-Referenz · `EqCopSchemaTest` · `contract_cross_language`). Der
+  Korpus hat drei echte Fehler gefunden, bevor irgendjemand v3 spricht.
+- Kanon **7/7 → 8/8**, `pluginval` Strenge 8 SUCCESS.
+
+**Offen an S5:** der **T2-Frischkontext-Prüfer** ist nicht gelaufen (in dieser
+Session waren Subagenten nicht freigegeben). Nach `bauaufteilung-sonden.md` §2
+ist T2 blockierend — S5 gilt als *gebaut und selbstgeprüft*, nicht als
+abgeschlossen. Der Prüfer braucht: Diff `3582ae4^..HEAD`, das Manifest, und
+den Gate-Text aus §65 im Wortlaut.
+
+### Die nächste baubare Fläche ohne FL-Termine
+
+**S6 (`SONDE-005b`)** — FlatBuffers-Schema mit expliziten Feld-IDs, gepinntes
+`flatc`, Codegen-Drift-Test. Das ist die zweite Hälfte desselben
+Entwurfstickets und schließt die Gate-Hälfte „Codegen-Drift ist 0". Der Name
+`telemetry_frame` ist dafür bereits reserviert. Danach **S7
+(`SONDE-006`)** — State-Schema 2 samt reiner Schema-1-Migration; dort wird
+auch die RFC-8785-Kanonisierung für `state_hash` erstmals gebraucht (in S5
+bewusst NICHT vorgebaut).
 
 ### Danach: S4 → Gate G0
 

@@ -502,5 +502,6 @@ Was dabei sichtbar wurde und vorher niemand nachsehen konnte: **301 ist ein
 Knopf-Kit ausdrücklich für Audio-VSTs** (ein grüner Akzent, immer als Wert,
 Grund `#191A1E`, Korn über allem) — die Vorlage der Welt „Dunkles Gerät" und
 die Quelle von `textur/korn.png`. **110** ist ein heller Thermostat-Ring mit
-einem warmen Verlauf als Wert. **297** ist ein *Social*-Kit ohne Vorschau und
-die schwächste Passung der drei. Belege und Bilder: `truhe/LIES-MICH.md`.
+einem warmen Verlauf als Wert. **297** ist ein *Social*-Kit und hat keine
+Vorschau (Vektor im alten Figma-Format) — ob es als Referenz oder als
+Antireferenz taugt, entscheidet der User. Belege: `truhe/LIES-MICH.md`.

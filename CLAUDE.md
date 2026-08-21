@@ -1,52 +1,115 @@
 # NAKAMA
 
-Transparentes Berater-VST3 für FL Studio (Windows 11, JUCE 8/C++20, CMake)
-mit **eigenständigem Rust-Broker** (Named Pipe, `broker/`). Produktname
-**Nakama**; Code, Bundle, Pipes und Schemas tragen aus Kompatibilität den
-Legacy-Namen **EQ-Copilot** (`EqCop*`) — das ist Absicht, kein
-Umbenennungs-Task.
+Plugin-Familie für FL Studio (Windows 11, JUCE 8/C++20, CMake) mit
+eigenständigem Rust-Broker (Named Pipe, `broker/`). Drei Apps, **eine**
+Design-Identität: **Nakama Gen** (Main), **Nakama Probeeq** (aktive Sonde,
+vollwertiger EQ), **Nakama Suna** (passive Sonde); Bundle-Name **Nakama
+Studio**. Code, Bundle, Pipes und Schemas tragen heute noch den Legacy-Namen
+**EQ-Copilot** (`EqCop*`, `Eqcp`) — Umbenennung ist ein eigenes
+Identitäts-Ticket (NAK-30), kein Nebenbei-Refactor.
 
-**Dieser Workspace ist seit 18.08.2026 EIGENSTÄNDIG** — Code, Broker,
-Design, Docs und Wissen leben in EINEM Repo. Git-Historie davor:
-FL-Studio-Repo (`C:\Users\phili\FL-Studio`, bis Commit `7964777`); der
-FL-CLAUDE.md-Auszug liegt wortgleich in
-`docs/fl-claudemd-auszug-2026-08-18.md`.
+**Dieses Repo ist seit 18.08.2026 eigenständig** (Historie davor:
+FL-Studio-Repo bis `7964777`). Remote `https://github.com/evenacadia-tech/Nakama`
+(privat; User arbeitet wechselnd an Desktop und Laptop): vor Arbeitsbeginn
+`git pull`, nach Commits pushen. Parallele Sessions sind möglich: eigene
+Edits sofort per **explizitem Pathspec** committen (nie `git add -A`, nie
+`--amend`), fremde uncommittete Dateien nie anfassen.
 
-| Was | Pfad (relativ zum Workspace-Root) |
+<!-- WAHRHEITSKERN:ANFANG — dieser Block wird von tools/hooks/nakama-primer.sh
+     bei jedem Sessionstart und nach jeder Compaction injiziert. Er ist die
+     EINZIGE Kopie; Hook und Memory dürfen ihn nicht nachbauen. -->
+## Wahrheitskern (Stand 21.08.2026, aus dem Kontext-Interview mit dem User)
+
+- **Produkt:** Nakama = Plugin-Familie. **Gen** (Main: Quellen-Übersicht,
+  Befunde, Advisor) · **Probeeq** (aktive Sonde) · **Suna** (passive Sonde).
+  Bundle „Nakama Studio". Alle drei Apps teilen EINE Design-Identität.
+- **Grundgesetz, differenziert:** Gen und Suna **beraten nur** — setzen keine
+  Parameter, schreiben keine Automation, Audio-Passthrough sampleidentisch
+  (0 Samples Latenz, kein Tail; einzige Ausnahme die verriegelte
+  Hör-Markierung von Gen). **Probeeq ist ein vollwertiger, hochwertiger EQ**:
+  er setzt Anweisungen von Gen direkt um UND ist ganz normal manuell
+  bedienbar. Audiothread überall: keine Sperren, Allokationen, Datei-/Pipe-/
+  Netz-Zugriffe, kein Logging; Überlast verwirft Analyseframes, nie Audio.
+- **Keine KI-/Claude-Erklärschicht** im Produkt (User 21.08.). Der Advisor ist
+  regelbasiert.
+- **Design-Quelle ist Figma (User).** Die Figma-Stände sind die Vorgabe;
+  `Projekte\Nakama-Design` übersetzt sie in lebende Blätter (Zustände,
+  Größen, Grenzfälle) — keine eigene Stilsuche, keine Varianten-Befragung.
+  Produkt-Sprache **Englisch**; Docs, Commits, Gespräch Deutsch.
+- **Material-Kit-Front** im heutigen Plugin = **Provisorium**, nie abgenommen;
+  keine Arbeit mehr daran.
+- **Prisma / Hörkompass / Glas-und-Licht** = **User-Idee, Studie, geparkt**
+  (`eq-copilot/design/prisma-studie/`). Kein Produktteil, kein Bauplan; ihr
+  Vokabular gehört nicht in die Plugin-UI. Das Geschmacksprofil dort bindet
+  nur die Studie.
+- **Produktzahlen** (16 sichtbare / 32 Vertrag Quellen, 8 Bänder, ±12 dB,
+  Remote ±3 dB, 1,5/3 dB): vom User **hingenommene Startwerte**, änderbar —
+  Regelfall einstellige Quellenzahl.
+- **Pläne:** `docs/FL-Nakama-Sonden-Design-Entwurf.md` (mit Errata-Block)
+  ist der technische Entwurf; `FL-EQ-Copilot-Recherche.md` ist **Archiv**.
+  Bauentscheidung erteilt 20.08. („okay dann fangen wir damit nächste
+  session an"). Nächste Fläche ohne FL-Termine: S7 (`SONDE-006`).
+- **Regel für Claude:** Ein Entscheid existiert nur mit **Datum + Zitat des
+  Users** (Register unten). Eigene Vorschläge heißen „Vorschlag", nie
+  „abgenommen"/„verbindlich". Keine zweite Kopie dieser Wahrheit in Hooks,
+  Memory oder anderen Docs — verweisen, nicht abschreiben.
+<!-- WAHRHEITSKERN:ENDE -->
+
+## Entscheide des Users (Register — nur mit Zitat; Vorschläge stehen hier nicht)
+
+| Datum | Entscheid | Wortlaut |
+|---|---|---|
+| 12.08. | Nakama berät nur; kein Referenztrack-Zwang; Graph ist das Herzstück | FL-Commits `77432e1` `882a964` `f13d2c9` |
+| 16.08. | Umbenennung zu Nakama; Hör-Markierung als eigene Idee | `37aba8b`, `51021d2` |
+| 16./17.08. | 3D-Papier-Shader, Tusche-Einzelmarken verworfen | „das sieht sehr schlecht aus" · „zerissenes Stroh", „Kochhut" |
+| 17.08. | Kreativer Prozess wird nie übersprungen (Kreativ-Schleuse) | Hook `tools/hooks/kreativ-schleuse.sh` |
+| 18.08. | Prisma-Objekt ✓, rohe Punktwolke als Dauerinhalt ✗ | „das prisma sieht top aus … wasserfall aus farbigen pixeln" |
+| 19.08. | Nacht-Freistellung verworfen | „tut mir leid aber das war keine gute arbeit … eingebacken" |
+| 20.08. | Bauentscheidung Sondenkern | „okay dann fangen wir damit nächste session an" |
+| 20.08. | Prisma = eigenständige Begleit-App, Master-Plugin konventionell | Interview 21.08.: „Meine Entscheidung, so gesagt" |
+| 20.08. | Design-Abnahmen (Größen 760×430 / 700×420 / 260×84, Overview+Detail, Vorhören nur markierte Zeile, Zustände nach Ausnahme-Prinzip) | `Nakama-Design/abnahmen/2026-08-20-*` |
+| 21.08. | Nakama = Familie; Prisma nur Studie, geparkt | Interview: „Familie; Prisma nur Studie" · Prisma-Herkunft: „Meine Idee" · Hörkompass: „Alles nur Studie" |
+| 21.08. | Probeeq ist ein EQ | „die active Probe fester Name : Nakama Probeeq ist ein vollwertiger hochwertiger EQ der mit Nakama kommuniziert. er kann von nakama direkt anweisungen umsetzen aber auch ganz normal manuell vom user benutzt werden" |
+| 21.08. | Namen | „Nakama Gen = Main app · aktive sonde = Nakama Probeeq · passive sonde = Nakama Suna · Bundle = Nakama Studio" |
+| 21.08. | KI-Erklärschicht raus | „Nein – raus aus dem Produkt" |
+| 21.08. | Produktzahlen | „Hingenommen, passen aber" |
+| 21.08. | Design-Quelle | „das finale design wird aktuell in figma gemacht . alle 3 apps werden ein design haben mit der selben identität. alle alten sind alt. Ein Design entwickelt sich und ist nicht einfach da." · Rolle des Design-Repos: „Figma ist Quelle; Repo setzt um" |
+| 21.08. | Material-Kit-Front | „Nie abgenommen – bleibt Provisorium" |
+| 21.08. | Eigene Entwürfe (`Nakama-Design/…selfmade`, Figma-Bilder) | „Richtung für Look & Stimmung" · „Das ist ein Designprototyp keine technikanleitung, design passt sich am ende der funktion an." |
+| 21.08. | Sprache | „Englisch – mein Wort" |
+| 21.08. | Glas/Licht-Annahme raus; Geschmacksprofil nur Studie | „Glas/Licht raus; Profil nur Studie" |
+| 21.08. | Recherche | „Archiv" |
+| 21.08. | FL-Termine A/B bald; bis dahin S7 | „Termine bald; bis dahin S7" |
+| 21.08. | Version 0.3.0 angleichen, noch nicht installieren | „Version 0.3.0 angleichen, noch nicht installieren" |
+| 21.08. | „Lernsprache" und „Kernfunktion vor Verwaltung" gelten nicht mehr | „Keines mehr" |
+| 21.08. | Aufräumen: alte Richtungen ins Archiv, Prisma-Studie parken, tote Memories löschen, Inspirationen + regenerierbare Renders raus | Interview Frage 20, alle vier gewählt |
+
+**Was NICHT mehr gilt** (und nirgends mehr als gültig auftauchen darf):
+Recherche als „kanonischer Plan" · Spectral Field / Bauplan 2.0 / Tiefenfeld /
+Kunstwerk / Feld-Alphabet als Hauptansicht („alle alten sind alt") ·
+Hörkompass als Zielvertrag der Plugin-UI · Geschmacksprofil für die Plugin-UI ·
+Material-Kit-Front als „abgenommen" · Claude-Klick im Grundgesetz · Tauri-Hub-App
+als Produktteil · „Lernsprache" / „Kernfunktion vor Verwaltung" als Regeln.
+
+## Wo was liegt
+
+| Was | Pfad |
 |---|---|
-| Plugin (JUCE 8 + CMake) | `eq-copilot/plugin/` |
-| Schemas — versionierte Verträge | `eq-copilot/schemas/` |
-| Design (Musterblätter, Prisma, Renders, Fonts) | `eq-copilot/design/` |
-| Projekt-Docs (Baupläne, M0–M3a-Befunde, Testanleitung) | `eq-copilot/docs/` |
-| **Broker (eigene Crate, eqcop-broker.exe)** | `broker/` |
-| Sensorübersicht (Svelte-Referenz, ohne Zuhause — NAK-12) | `broker/sensoruebersicht-referenz/` |
-| Fixture-Generator + Testsong-Werkzeuge | `tools/eq-copilot/` |
-| Kanonischer Produkt-/Umsetzungsplan | `FL-EQ-Copilot-Recherche.md` |
-| Wissens-Docs (design-stand, geschmacksprofil, plugin-wissen …) | `docs/` |
-
-**Commit-Routing:** EIN Repo — alles hierher, Deutsch, kleine benannte
-Commits. Parallele Codex-Sessions sind möglich (Vorentwurf-Blatt =
-Codex-Besitz): eigene Edits SOFORT committen, nie `--amend`, fremde
-Änderungen nie anfassen. **Remote seit 19.08.:**
-`https://github.com/evenacadia-tech/Nakama` (privat) — nach Commits
-pushen (User arbeitet wechselnd an Desktop und Laptop und zieht per
-Pull); vor Arbeitsbeginn `git pull`, damit der andere Rechner nicht
-überholt wird.
-
-## Grundgesetz (nicht verhandelbar)
-
-Nakama **berät nur**. Es setzt keine EQ-Parameter, schreibt keine Automation,
-verändert kein Audio (Passthrough sampleidentisch, 0 Samples gemeldete
-Latenz, kein Tail) und ruft Claude nur auf bewussten Klick. Der Audiothread
-enthält keine Sperren, keine Allokationen, keine Datei-/Pipe-/Netz-Zugriffe,
-kein Logging. Überlast verwirft Analyseframes, nie Audio.
-
-**Die eine dokumentierte Ausnahme (seit 0.3.0):** die **Hör-Markierung**
-färbt auf bewussten Klick das Monitorsignal (Solo/Puls je Befund), streng
-verriegelt: nur bei bewiesener Echtzeit ∧ Editor offen ∧ Transport ∧
-`!isNonRealtime()`. **Render/Export bleibt bitidentisch** (MarkierungTest
-beweist es); der Analyse-Abgriff sitzt VOR der Färbung. Jede weitere
-Audio-Ausnahme braucht denselben Verriegelungs- und Beweisstandard.
+| Plugin (JUCE 8 + CMake) | `eq-copilot/plugin/` (`src/` Produkt · `hostbridge/` · `hostprobe/` · `spike/` · `vertrag/` · `tests/`) |
+| Schemas v2 (Vertrag des heutigen Plugins) / v3 (Sondenfamilie) | `eq-copilot/schemas/` · `eq-copilot/schemas/v3/` |
+| Identität (eingefroren, SONDE-001) | `eq-copilot/identity/plugin-identities-v1.json` |
+| Broker (eigene Crate, `eqcop-broker.exe`) | `broker/` |
+| Beweis-Runner + Manifeste | `tools/beweise.ps1` · `docs/beweise/` |
+| Python-Erzeuger und -Prüfer | `tools/eq-copilot/` |
+| Technischer Entwurf der Sondenfamilie (Fassung 0.4 + Errata) | `docs/FL-Nakama-Sonden-Design-Entwurf.md` |
+| Bauaufteilung (Sessions, Gates, Prüfstufen) | `docs/bauaufteilung-sonden.md` |
+| Plugin-Architektur heute | `docs/plugin-wissen.md` |
+| Offene Punkte (durabel, nie still löschen) | `docs/offene-punkte.md` |
+| Einstieg nächste Session | `docs/NEXT-SESSION.md` |
+| **Archiv** (Recherche, Mockups, alte Baupläne, alte Design-Docs — nur Verlauf) | `docs/archiv/` · `eq-copilot/design/archive/` |
+| **Prisma-Studie** (geparkt, User-Idee) | `eq-copilot/design/prisma-studie/` (Statusblatt dort) |
+| Material-Kit-Kette (Provisorium, technisch lebendig: `tokens.json` → `LeitstandTokens.h`) | `eq-copilot/design/` Wurzel |
+| Design der drei Apps (Figma-Übersetzung, Abnahmen) | `C:\Users\phili\Projekte\Nakama-Design` |
 
 ## Bauen & Beweisen (vom Workspace-Root)
 
@@ -56,163 +119,85 @@ $cmake = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\Commo
 & $cmake --build eq-copilot/build --config Release --target EqCopilot_VST3 EqCopShot EqCopPaintBench EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopPipeProbe EqCopIdentityTest EqCopHostContextTest EqCopHostProbe_VST3 EqCopHostProbeTest EqCopSchemaTest
 ```
 
-**Ein Befehl für den ganzen Kanon (seit 20.08., ersetzt die bewusst nicht
-gebaute CI):**
+**Ein Befehl für den ganzen Kanon** (ersetzt die bewusst nicht gebaute CI):
 
 ```powershell
 pwsh -File tools/beweise.ps1 -Bauen -Ziel docs/beweise/SONDE-0NN.md -Anhaengen -Titel 'SONDE-0NN'
 ```
 
-Er fährt alles unten, schreibt die **rohe** Ausgabe ins Manifest und misst den
-**Baustand**: sind die Prüfbinaries älter als die Quellen, verweigert er mit
-Exitcode 4 die Beglaubigung, statt eine veraltete Messung als Beweis auszugeben
-(0 grün · 2 rot · 3 Voraussetzung fehlt · 4 nicht beglaubigt). Ticket-Vorlage
-`docs/beweise/VORLAGE.md`, Regressions-Basislinie `docs/beweise/S0-basislinie.md`.
+Er fährt alle Beine, schreibt die **rohe** Ausgabe ins Manifest und misst den
+Baustand: sind Prüfbinaries älter als ihre Quellen, verweigert er mit Exitcode 4
+die Beglaubigung (0 grün · 2 rot · 3 Voraussetzung fehlt · 4 nicht beglaubigt).
+Vorlage `docs/beweise/VORLAGE.md`, Basislinie `docs/beweise/S0-basislinie.md`.
 
-Beweis-Kanon einzeln (alles headless; Standard der Befund-Docs: **„ausgeführt und
-gesehen"**, nie „sollte funktionieren"):
-
-```powershell
-eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe
-eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures
-eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe
-eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe
-eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe
-eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe [ziel.png]
-eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe
-cargo test --manifest-path broker/Cargo.toml
-py -3.13 tools/eq-copilot/pruefe_v3_vertrag.py --abdeckung
-py -3.13 tools/eq-copilot/erzeuge_bandgitter.py --pruefen
-py -3.13 tools/eq-copilot/erzeuge_quantisierung.py --pruefen
-py -3.13 tools/eq-copilot/erzeuge_v3_fixtures.py --pruefen
-py -3.13 tools/eq-copilot/pruefe_flatc_drift.py
-py -3.13 tools/eq-copilot/erzeuge_fb_fixtures.py --pruefen
-```
-
-**Kanon-Stand 21.08.2026: 14/14 grün** (`docs/beweise/SONDE-005b.md`) —
-Nulltest · Golden · Markierung · Broker · Identitaet · Hostkontext ·
-Host-Probe · Schema, dazu **sechs Python-Beine**: das v3-Referenzbein
-(`pruefe_v3_vertrag.py --abdeckung`), die drei Bytegleichheits-Riegel der
-Erzeuger und die beiden FlatBuffers-Beine (`pruefe_flatc_drift.py`,
-`erzeuge_fb_fixtures.py --pruefen`). Die sechs kamen aus T2-Befunden: sie
-liefen vorher NUR von Hand, und ausgerechnet die Bytegleichheit ist der
-Riegel gegen `core.autocrlf` auf dem Zweitrechner.
-Die restlichen geplanten Pruefbinaries stehen als „geplant" in der
-Runner-Tabelle und werden Pflicht, sobald ihr Ticket sie baut.
+**Kanon (Stand 21.08.2026, 15 Beine):** NullTest · Golden (239/239) · Markierung
+(30/30) · `cargo test` (56) · sechs Python-Beine des v3-Vertrags · **A11
+`pruefe_v2_schemas.py`** (neu 21.08.: die fünf v2-Schemas waren sechs Tage lang
+ungelesen, eines war kein JSON) · Identität (63) · Hostkontext (91) · Host-Probe
+(85 ohne Argument; 89 nur mit PNG-Ziel) · Schema (53). Nicht im Kanon, aber
+vorhanden: `EqCopAuxSpikeTest` (41), Shot, PaintBench, PipeProbe,
+`pluginval --strictness-level 8`. Fünf Beine stehen als „geplant" und werden
+Pflicht, sobald ihr Ticket sie baut.
 
 - Golden-WAVs einmalig: `py -3.13 tools/eq-copilot/erzeuge_fixtures.py --nur-wav`
-- Editor-Sichtprüfung ohne FL: `EqCopShot.exe <ziel.png> [breite]` (echte 20-s-Messung, offscreen)
-- paint()-Kosten: `EqCopPaintBench` · Host-Härtung: `pluginval --strictness-level 8`
+  (Erzeuger der Referenz `tools/analyze-track.py` liegt noch im FL-Studio-Repo — NAK-31).
+- Editor-Sichtprüfung ohne FL: `EqCopShot.exe <ziel.png> [breite]`.
 - **Broker-Betrieb:** `broker\target\release\eqcop-broker.exe [--bindungen <pfad>]`
-  (eigenständiger Prozess; Standard-Bindungen
-  `%APPDATA%\evenacadia\nakama\eq-copilot-bindungen.json`; die Hub-App
-  startet ihn NICHT mehr — Umzug 18.08.)
-- Pipe Ende-zu-Ende: `broker\target\release\eqcop-broker-probe.exe 30`
-  (Terminal 1) + `EqCopPipeProbe.exe "\\.\pipe\evenacadia.eq-copilot.m2probe"`
-  (Terminal 2) — **immer der eigene Probe-Pipename**, nie der
-  Produktions-Broker (zwei Broker auf einem Namen stahlen sich still
-  Clients; Produktion verweigert per FIRST_PIPE_INSTANCE)
-- **Identitaet ist ab P0 ein Dateiformat:** `eq-copilot/identity/plugin-identities-v1.json`
-  friert Bundle, Plugin-Code, beide Class-IDs und `JUCE_VST3_CAN_REPLACE_VST2=0` ein;
-  `NkPr`/`NkAc` sind fuer die Sonden reserviert. `EqCopIdentityTest` misst das
-  GEBAUTE `moduleinfo.json` dagegen, prueft zusaetzlich den **CMake-Quelltext**
-  (greift auch ohne Bau), faellt bei veraltetem Artefakt, rechnet die
-  reservierten CIDs nach und haelt die Schema-1-State-Goldens der vier Rollen
-  (`eq-copilot/fixtures/identity/`). Goldens neu schreiben: `--schreibe-goldens`.
-- **Hostbruecke (SONDE-003, seit 21.08.):** der gevendorte JUCE-8.0.9-VST3-Wrapper
-  wird beim **Configure** um drei Beobachtungen erweitert, die die oeffentliche
-  `AudioProcessor`-API nicht traegt — Anwesenheit des `ProcessContext`, ALLE
-  Parameterpunkte mit Sample-Offset, `IAudioPresentationLatency` je Bus.
-  Patch `third_party/patches/juce-8.0.9-nakama-vst3-bridge.patch`, Gate
-  `eq-copilot/cmake/NakamaBruecke.cmake` (unberuehrt ⇒ patchen und **nachmessen** ·
-  gepatcht ⇒ No-Op · fremd ⇒ **Bauabbruch** mit gemessenem Hash; Hash ueber den
-  zeilenende-normalisierten Inhalt). Gegenseite: `plugin/hostbridge/NakamaHostBridge.h`
-  (JUCE-/SDK-frei, vorallokiert, 0 Allokationen im Blockpfad). Pruefer
-  `EqCopHostContextTest` (91 Pruefungen).
-  🔑 **Zwei teuer bezahlte Regeln aus dem T2-Verfahren dieses Tickets:** (1) ein
-  Puffer, der beim Ueberlauf hinten abschneidet, darf NIE die Quelle eines
-  Wertes sein, den ein Vertrag ueberleben laesst — der Rueckfallwert braucht
-  seine eigene Struktur (hier `Letztwert`-Tabelle). (2) Ein Zaehler muss
-  beschreiben, was der HOST geliefert hat, nicht was in unsere Struktur passte;
-  stand der Kapazitaets-Ausstieg vor den Pruefungen, meldete `unplausibleWerte`
-  0, waehrend ein NaN stiller Rueckfallwert wurde. ⚠️ **`_deps` nie von Hand editieren** —
-  wer den Wrapper anfasst, laesst das Gate beim naechsten Configure fallen.
-  🚨 **Bei jedem JUCE-Update ist der Patch NEU zu beweisen**: beide Hashes im
-  Gate nachziehen, `EqCopHostContextTest` fahren.
-  ⚠️ **Landmine: JUCE speichert den Wrapper im Objektspeicher mit CRLF**
-  (4165/4165 gemessen) — der Patch traegt deshalb CRLF in 149 seiner 163 Zeilen.
-  `.gitattributes` haelt `*.patch` per `-text` bytegleich; ohne das haette git
-  die CR beim Commit entfernt und einen Patch eingecheckt, der auf dem
-  Zweitrechner nicht mehr anwendbar ist (hier waere es nie aufgefallen).
-- **Termin-B-Messgeraet (S3b, Wegwerfware):** Ziele `EqCopHostProbe_VST3`
-  (Bundle, Plugin-Code `NkHp`) + `EqCopHostProbeTest` (Selbsttest, 89 Pruefungen, inkl. Layout-Riegel, Nebenlaeufigkeits-Rauchtest und zwei gerenderten Bildbeweisen).
-  **Erstes Ziel, das die Hostbruecke BENUTZT** — sein Processor ist eine
-  `eqcop::hostbruecke::Senke`. Misst je Block: Context-Anwesenheit,
-  Gueltigkeitsbits (immer/manchmal/nie), Zeitspruenge (Seek · Loop · Smart
-  Disable, mit Fehlalarm-Riegel gegen fortlaufendes Spiel und Stop/Play),
-  Offline-Render, float/double, Presentation-Latency und **samplegenaue
-  Automation** (Punkte je Block + Offsets — die Frage, fuer die der Bridge-Patch
-  gebaut wurde). Bericht als JSON nach `%APPDATA%\evenacadia\nakama\spike\`.
-  Klickliste `eq-copilot/docs/FL-TERMIN-B-HOSTZEIT.md`. Messstand geht per
-  **Seqlock** zum Nachrichtenthread — der Audiothread wartet nie.
-- **Aux-/PDC-Messgeraet (SONDE-004a, Wegwerfware):** Ziele `EqCopAuxSpike_VST3`
-  (Bundle) + `EqCopAuxSpikeTest` (Selbsttest, 41 Pruefungen). Plugin-Code `NkSp`,
-  bewusst **ausserhalb** der eingefrorenen Identitaet (`Eqcp`/`NkPr`/`NkAc`).
-  Klickliste fuer den FL-Termin: `eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md`;
-  Impulse per `tools/eq-copilot/erzeuge_aux_spike_fixtures.py` (Hashes im
-  Fixture-MANIFEST). Wird nach dem Capabilityreport (S4) entsorgt.
-- **v3-Vertragsbaum (SONDE-005a, seit 21.08.):** `eq-copilot/schemas/v3/` ist
-  der Vertrag, den DREI Beine lesen — `tools/eq-copilot/pruefe_v3_vertrag.py`
-  (Referenz, `jsonschema` 4.26), `EqCopSchemaTest` (`plugin/vertrag/`) und
-  `broker/tests/contract_cross_language.rs`. Alle messen gegen dasselbe
-  **handgeschriebene** `eq-copilot/fixtures/v3/MANIFEST.json` (153 Fixtures);
-  stimmen C++ und Rust mit ihm überein, stimmen sie transitiv miteinander —
-  ein aus einer Engine erzeugtes Manifest wäre zirkulär. Erzeuger:
-  `erzeuge_bandgitter.py`, `erzeuge_quantisierung.py`, `erzeuge_v3_fixtures.py`
-  (alle mit `--pruefen` = bytegleich gegen Neuerzeugung).
-  🔑 **Die tragende Regel:** ein Schema mit einem nicht implementierten
-  Schlüsselwort **bricht den Ladevorgang**. JSON Schema ignoriert Unbekanntes
-  absichtlich — ein später ergänztes `multipleOf` würde sonst nur vom
-  Referenzbein durchgesetzt und auf zwei von drei Seiten still verschwinden.
-  ⚠️ **Bandgitter sind eingefrorene Zahlen, keine Rechenvorschrift** (`pow` ist
-  nicht bit-portabel), und ihre Wahrheit ist das **Hex-Bitmuster**, nicht die
-  Dezimalform. `nakama_log64_v1` ist eine exakte Partition der 221 feinen
-  Bänder, keine zweite Frequenzachse. ⚠️ **`.gitattributes` hält den Baum per
-  `-text` bytegleich** — mit `core.autocrlf` wäre `--pruefen` auf dem
-  Zweitrechner rot geworden, ohne dass sich ein Wert geändert hat.
-  Gemessene Abweichung, dokumentiert statt weggeräumt: JUCEs JSON-Leser folgt
-  RFC 4627 und lehnt eine **skalare Wurzel** schon im Parser ab, `serde_json`
-  und Python (RFC 8259) erst am Schema — Manifest-Feld `wurzel_skalar`.
-  🔑 **Der TEXTRIEGEL (T2, 21.08.) ist die Stufe VOR dem Parser** — acht
-  Regeln auf dem Rohtext, jede gegen eine gemessene Divergenz. Anlass: JUCEs
-  `parseNumber` akkumuliert ohne Bereichsprüfung, `18446744073709552016` kam
-  dort als **400** an. Die Fälle stehen als EINE gelesene Datei
-  (`fixtures/v3/TEXTRIEGEL-FAELLE.json`, 59 Fälle, hex-kodiert) — drei
-  handgepflegte Kopien waren auf 31/32/33 auseinandergelaufen.
-  🚨 **Die teuerste Lehre des Tickets: ein Riegel darf nie die Bibliothek
-  befragen, gegen deren Verhalten er schützt.** Regel 3 fragte anfangs
-  `getDoubleValue()` — also genau den überlaufenden Leser; `1e4294967296` kam
-  als 1.0 durch. Zahlen werden jetzt AUS DEM LITERAL geprüft.
-- **FlatBuffers-Vertrag (SONDE-005b, seit 21.08.):**
-  `eq-copilot/schemas/v3/flatbuffers/` — `nakama_telemetry_v1.fbs` (jedes Feld
-  mit explizitem `id`), `FELD-IDS.json` (eingefrorene Zuordnung, handgeschrieben)
-  und `WERKZEUG.json` (der `flatc`-Pin). Leser: `plugin/vertrag/NakamaTelemetrie.*`
-  und `broker/src/telemetrie.rs`, beide gegen ein handgeschriebenes
-  `fixtures/v3/flatbuffers/MANIFEST.json` (40 Binärfixtures).
-  🔑 **`flatc` ist auf einen COMMIT gepinnt, nicht auf einen Tag** — der
-  Upstream führt für 25.12.19 zwei Tags. Compiler, C++-Header und Rust-Crate
-  stammen aus demselben Commit; `pruefe_flatc_drift.py` hält alle drei
-  gegeneinander und verlangt bytegleiche Neugenerierung.
-  ⚠️ **FlatBuffers prüft beim Verifizieren KEINE Enumbereiche, KEINE
-  Bitflag-Masken und KEINE Beziehung zwischen zwei Feldern** — genau dort
-  liegen aber die Regeln aus §33.1 (höchstens ein Frame je Quelle, Encoding
-  passt zur Nutzlast, Bandzahl folgt aus dem Gitter, Bitmap ist ceil(n/8) Byte
-  mit Füllbits 0). Deshalb gibt es zwei handgeschriebene Leser.
-  ⚠️ **`flatc` erzwingt Feld-IDs nur INNERHALB einer Tabelle, die schon welche
-  benutzt** — eine neue Tabelle ganz ohne ids übersetzt anstandslos und fällt
-  still auf „Reihenfolge ist Identität" zurück. `pruefe_fbs_feldids.py`
-  schließt genau diese Lücke.
-- **Installation = User-Klick:** `eq-copilot\install\Install-EQ-Copilot.ps1` als Admin (UAC), Rollback-Datei liegt daneben. Nie automatisch installieren. Vorher FL beenden.
+  (Standard `%APPDATA%\evenacadia\nakama\eq-copilot-bindungen.json`). Pipe
+  Ende-zu-Ende: `eqcop-broker-probe.exe 30` + `EqCopPipeProbe.exe
+  "\\.\pipe\evenacadia.eq-copilot.m2probe"` — **immer der Probe-Pipename**, nie
+  die Produktion (`…eq-copilot.v1`; zwei Broker auf einem Namen stehlen sich
+  still Clients; Produktion verweigert per FIRST_PIPE_INSTANCE).
+- **Version:** `project(… VERSION 0.3.0)` und `kPluginVersion` müssen eins sagen —
+  ein Configure-Riegel in `eq-copilot/CMakeLists.txt` bricht sonst ab.
+  **Installiert ist das Bundle vom 16.08.** (Hash `74D86BD5…`); das gebaute vom
+  21.08. (mit Hostbrücke) ist nicht installiert — Installation nur per
+  User-Klick (`eq-copilot\install\Install-EQ-Copilot.ps1` als Admin; der Ordner
+  ist gitignoriert und existiert nur auf dem Desktop — NAK-32).
+- **FL-Termine A/B** (Klicklisten `eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md`,
+  `…-B-HOSTZEIT.md`) sind **noch nicht gelaufen** (`%APPDATA%\evenacadia\nakama\spike\`
+  leer); S4 und Gate G0 warten darauf. Die Wegwerf-Messgeräte `EqCopAuxSpike`
+  (`NkSp`, 41 Prüfungen) und `EqCopHostProbe` (`NkHp`) sind gebaut.
+
+## Technik-Zement (was heute gilt, weil Code und Beweis es sagen)
+
+- **Identität (SONDE-001):** Bundle `EQ-Copilot`, Codes `Evna`/`Eqcp`, beide
+  Class-IDs, `JUCE_VST3_CAN_REPLACE_VST2=0` eingefroren; `NkPr`/`NkAc` für
+  Suna/Probeeq reserviert; `EqCopIdentityTest` misst das gebaute
+  `moduleinfo.json` UND den CMake-Quelltext; Goldens `eq-copilot/fixtures/identity/`.
+- **Hostbrücke (SONDE-003):** gevendorter JUCE-8.0.9-Wrapper per Patch
+  (`third_party/patches/juce-8.0.9-nakama-vst3-bridge.patch`, CRLF in 149/163
+  Zeilen, `.gitattributes` hält ihn per `-text` bytegleich) um drei
+  Beobachtungen erweitert; Gate `eq-copilot/cmake/NakamaBruecke.cmake`
+  (unberührt ⇒ patchen + nachmessen · gepatcht ⇒ No-Op · fremd ⇒ Bauabbruch).
+  Gegenseite `plugin/hostbridge/NakamaHostBridge.h` (JUCE-frei, 0 Allokationen).
+  Im Produkt kompiliert, aber **ungenutzt** — nur `HostProbeProcessor` ist eine
+  `Senke`; der Verbraucher kommt mit SONDE-008/009. ⚠️ `_deps` nie von Hand
+  editieren; bei jedem JUCE-Update Patch neu beweisen.
+  🔑 Zwei teuer bezahlte Regeln: (1) ein Puffer, der beim Überlauf hinten
+  abschneidet, darf nie die Quelle eines Wertes sein, den ein Vertrag überleben
+  lässt; (2) ein Zähler beschreibt, was der HOST geliefert hat, nicht was in
+  unsere Struktur passte.
+- **v3-Vertragsbaum (SONDE-005a):** `eq-copilot/schemas/v3/`, gelesen von drei
+  Beinen (`pruefe_v3_vertrag.py`, `EqCopSchemaTest`, `broker/tests/
+  contract_cross_language.rs`) gegen ein **handgeschriebenes** Manifest (153
+  Fixtures). 🔑 Ein Schema mit nicht implementiertem Schlüsselwort bricht den
+  Ladevorgang. ⚠️ Bandgitter sind eingefrorene Hex-Zahlen, keine Rechenvorschrift.
+  🔑 **Textriegel** = Stufe VOR dem Parser (8 Regeln, 59 Fälle in EINER Datei),
+  weil JUCEs Zahlenleser überläuft. 🚨 Ein Riegel darf nie die Bibliothek
+  befragen, gegen deren Verhalten er schützt.
+- **FlatBuffers (SONDE-005b):** `.fbs` mit expliziten Feld-IDs, `flatc` auf
+  COMMIT gepinnt, Codegen-Drift 0; zwei handgeschriebene Leser, weil FlatBuffers
+  weder Enumbereiche noch Bitflags noch Feldbeziehungen verifiziert;
+  `pruefe_fbs_feldids.py` schließt die Lücke „neue Tabelle ohne ids".
+- **Hör-Markierung (0.3.0):** färbt auf Klick das Monitorsignal von Gen;
+  Verriegelung im Code `(echtzeitOk ∨ test) ∧ (spielt ∨ ¬hatTransport) ∧
+  ¬isNonRealtime ∧ (editorOffen ∨ test)`; Analyse-Abgriff davor; Render
+  bitidentisch (MarkierungTest). Jede weitere Audio-Ausnahme von Gen/Suna
+  braucht denselben Beweisstandard.
+- **Editor heute:** Material-Kit-Front, festes Verhältnis 750:520, frei ziehbar
+  600×416…1950×1352 (`PluginEditor.cpp:176-183`) — Provisorium; die
+  abgenommenen Design-Größen (760×430 feste Stufen) gelten für die neue UI.
 
 ## Invarianten — tragend, jede Runde präsent
 
@@ -220,153 +205,85 @@ Runner-Tabelle und werden Pflicht, sobald ihr Ticket sie baut.
   `eq-snapshot` v3 · `eq-aggregat`; v3: `schemas/v3/`): neue Felder ⇒ ERST
   Versionierung; alte Snapshots laden ohne die Felder; unbekannte Felder
   zerstören alte Consumer nicht; Save + Load im selben Änderungssatz testen.
-  In v3 ist „additiv" **kein Freibrief**: `additionalProperties: true` gilt nur
-  zusammen mit `maxProperties`, und Discriminator, Zieladresse, Revision und
-  Capability sind nie additiv.
+  In v3: `additionalProperties: true` nur mit `maxProperties`; Discriminator,
+  Zieladresse, Revision, Capability nie additiv.
 - **Engine kennt keine Optik:** AnalyseEngine liefert kohärente MessSnapshots
-  (~20 Hz Leichtpfad `auswertenLeicht()` + 250-ms-Schwerauswertung, EINE
-  Quelle `fuelleBasis()`); der Editor hält NUR Anzeigezustand und malt nur
-  bei neuer Snapshot-Revision — im Leerlauf exakt nichts.
-- **Gegenpfade** (Bauplan §11.5): starten↔stoppen · öffnen↔schließen ·
-  speichern↔laden · aktivieren↔abklingen/archivieren · installieren↔Rollback
-  — immer beide Hälften im selben Änderungssatz.
-- **Zeit ist Aktivzeit:** Zonen-Ticks laufen je 1 s AKTIVER Musikzeit in
-  `verarbeite()` (deterministisch, GoldenTest-beweisbar) — in Pausen vergeht
-  keine Tick-Zeit.
-- **NaN-Ehrlichkeit:** NaN-Riegel mit Zähler, Nyquist-Kappe der LTAS; neue
-  Rechenwege müssen NaN-ehrlich sein (< 5 endliche Nachbarn ⇒ keine Basislinie).
+  (~20 Hz Leichtpfad + 250-ms-Schwerauswertung); der Editor hält NUR
+  Anzeigezustand und malt nur bei neuer Snapshot-Revision.
+- **Gegenpfade** (Entwurf §11.5): starten↔stoppen · öffnen↔schließen ·
+  speichern↔laden · aktivieren↔abklingen · installieren↔Rollback — beide
+  Hälften im selben Änderungssatz.
+- **Zeit ist Aktivzeit:** Zonen-Ticks je 1 s AKTIVER Musikzeit (deterministisch,
+  GoldenTest-beweisbar).
+- **NaN-Ehrlichkeit:** NaN-Riegel mit Zähler, Nyquist-Kappe; < 5 endliche
+  Nachbarn ⇒ keine Basislinie.
+- **Probe-Pipe ≠ Produktions-Pipe** · **`ltasReferenzDb` ≠ Sollkurve** (keine
+  globale Zielkurve; Befunde messen gegen ihre eigene Schulterlinie) ·
+  **paint()-FPS ≠ Datenkadenz** (erst PaintBench, dann optimieren) ·
+  **Musterblatt-/Demo-Daten ≠ Plugin-Daten** · **FL zeigt MIDI 60 als C5**.
 
-## Anti-Conflation (jede Zeile war ein echter Irrweg)
+## Design-Arbeitsmodell (seit 21.08.2026)
 
-- **Pixel-Beweis ≠ Schönheits-Beweis** — E0–E5 war 18/18 bewiesen und
-  hässlich; Optik nimmt der User am lebenden Blatt ab.
-- **VERWORFEN, nie neu vorschlagen:** 3D-Papier-Shader (E0–E5) ·
-  Tusche-Einzelmarken-Piktogramme · **rohe Energie-Punktwolke als
-  Dauerinhalt** (18.08.: „Wasserfall aus Pixeln" — ein Profi liest daran
-  nichts ab; Inhalt = wenige präzise BEFUND-Objekte). → `docs/design-stand.md`
-- **Musterblatt-Beispieldaten ≠ Plugin-Daten** — HTML-Demo-Werte wandern nie
-  in das Plugin (Bauplan §1.5). Die 30-s-Songschleife ist die einzige
-  sanktionierte Design-Datenquelle der Blätter.
-- **`ltasReferenzDb` ≠ Sollkurve** — reine 8192er-Messachse; es gibt KEINEN
-  globalen Zielkorridor; Befunde messen gegen ihre eigene Schulterlinie.
-- **paint()-FPS ≠ Datenkadenz** — M3a: 4-Hz-Snapshots sahen aus wie
-  Render-Lag; paint() war mit 2,4 ms unschuldig. Erst messen (PaintBench),
-  dann optimieren.
-- **`claude.html` ≠ `vorentwurf.html`** — Claudes Design-Blatt vs.
-  Codex-Besitz (Guard-Hook blockt Edits am Codex-Blatt).
-- **Probe-Pipe ≠ Produktions-Pipe** — Produktion ist
-  `\\.\pipe\evenacadia.eq-copilot.v1` (Name bleibt „v1", die
-  Protokollversion wird im Handshake verhandelt); Tests nutzen `…m2probe`.
-- **FL-Notennamen:** FL zeigt MIDI 60 als **C5** (Oktave = MIDI div 12) —
-  116 Hz = A#3. Nie die Standard-Oktavzählung annehmen.
-- **Spot-Watt in Blender sind KUGELnormiert** — enger Kegel maskiert statt
-  bündelt; Zwei-Flächen-Kaustik ist in Cycles unidirektional unsampelbar
-  (Details: `docs/design-stand.md`, Cycles-Grenzen).
+1. **Figma (User) ist die Quelle.** Aktuelle Stände liegen beim User
+   (Downloads/Figma) und werden nach `Nakama-Design/assets/figma/` übernommen,
+   sobald er sie gibt. Claude erfindet keine Richtung, keine Metapher, keine
+   Farbwelt — Gesetz aus vier teuren Proben (17.08.): Claudes freie
+   Bilderfindung ist Mode-Collapse; Vision kommt vom User.
+2. **Nakama-Design übersetzt** Figma in lebende Blätter und prüft Zustände,
+   Größen, Grenzfälle; Abnahmen dort sind bindend und tragen das User-Wort.
+   Von dort spiegelt nichts hierher, bis eine Abnahme es sagt.
+3. **Hier im Technik-Repo** gibt es keine Design-Arbeit mehr: `eq-copilot/
+   design/` hält die Material-Kit-Kette (Provisorium), das Archiv und die
+   geparkte Prisma-Studie. Der Hook `kreativ-schleuse.sh` blockt Edits darunter
+   ohne frischen Freigabe-Marker — das ist gewollt.
+4. **Geparkt, nie ungefragt reaktivieren:** Prisma-Studie (inkl. Hörkompass,
+   Unicorn-Lichtwelt, ST-Map-Refraktion, Schlieren), Tiefenfeld, Bauplan 2.0,
+   Kunstwerk-Studie, Feld-Alphabet, Proben P01–P04.
 
-## Design-Arbeitsmodell
+## Maschinen-Landminen
 
-**KREATIV-SCHLEUSE (User-Regel 17.08., nicht verhandelbar):** Der kreative
-Prozess wird NIE übersprungen. Eine Idee wird im Gespräch ausgearbeitet und
-konkretisiert, solange bis der User eine Vorstellung hat und sie freigibt —
-erst dann wird gebaut. Kunst ist wertlos ohne ihren Entstehungsprozess.
-Mechanisch erzwungen: `tools/hooks/kreativ-schleuse.sh` blockt Write/Edit
-unter `eq-copilot/design/`, solange `.claude/kreativ-freigabe.md` fehlt oder
-älter als 24 h ist; der Marker hält die freigegebene Vorstellung in den
-Worten des Users fest und wird NUR nach dessen ausdrücklicher Freigabe
-geschrieben.
-
-Design-Phase lebt im **Browser** (Sekunden-Schleife), nicht im Plugin.
-**Aktive Richtung: das PRISMA** (User-autorisiert 17.08.; Drehen = Selektion
-Tiefen/Mitten/Höhen, Klick = Bündeln; Film-Compositing mit Blender-Cycles
-auf CPU). **Visueller Nordstern (User-Freigabe 19.08.): der HÖRKOMPASS** —
-verbindlicher Zielvertrag `docs/visuelles-zielbild-hoerkompass.md`: der Mix
-bleibt unsichtbar, gesund = leeres Glas; nur ein belastbarer Befund bricht
-lokal das Licht; keine neue Grundmetapher, kein Dauer-Visualizer.
-**Produktarchitektur (User-Entscheid 20.08., überall klarzustellen): die
-Prisma-App ist eine EIGENSTÄNDIGE Begleit-App NEBEN Master-Plugin +
-Sonden** — das Master-Plugin (Nakama Main) bekommt eine konventionellere
-Arbeits-UI mit den Sonden; die Prisma-App ist Addition, nie Master-Hub;
-der Hörkompass-Zielvertrag gilt der Prisma-App, nicht der Plugin-UI.
-**Stand 19.08.:** Prisma-OBJEKT abgenommen („sieht top aus";
-klar > rauchig, Frost raus), drehbarer Prototyp steht
-(`eq-copilot/design/prisma/prisma-prototyp.html`); NAK-16
-ST-Map-Live-Refraktion: Probe BESTANDEN, 72er-Drehsequenz im Blatt
-(`stmap-probe.html`) — offen: Optik-Abnahme durch den User; rohe Punktwolke
-als Dauerinhalt VERWORFEN; **offen: Befund-Verkörperung** (1 Befund = 1
-präzises Objekt im Glas — Resonanz zuerst; WAS es ist, kommt vom User).
-Einstieg `docs/NEXT-SESSION.md` + `docs/design-stand.md`. Geparkt, nie
-ungefragt reaktivieren: Tiefenfeld, Bauplan 2.0, Kunstwerk-Studie. Kein
-Schritt zeigt erfundene Diagnosewerte — fehlt ein Produktionsfeld, bleibt
-die Darstellung verborgen.
-
-**DESIGN-VERFASSUNG (4 Proben, teuer bezahlt — Volltext mit wörtlichen
-User-Urteilen: `docs/geschmacksprofil.md`, vor jeder Design-Entscheidung
-lesen):**
-1. **Schärfe:** Detail aus Auflösung in echte Punkte/Struktur; Glow/Bloom/
-   Weichzeichner = „billig", Unity-Baukasten-Effekte verboten.
-2. **Handschrift:** lieber einfach mit persönlichem Stil und Liebe zum
-   Detail als komplex-generisch.
-3. **Sichtbarer Denkvorgang mit Distanz:** laut→hell ist Tautologie;
-   NOTWENDIG statt konstruiert („kein Grund, dass es da ist" = Todesurteil);
-   ENTDECKT statt entworfen (Phänomen/Emergenz schlägt Designer-Objekt).
-   **Verschärft 18.08.: LESBARKEIT ist der Produktmaßstab** — ein Profi
-   (20 Spuren) muss in 2 Sekunden ABLESEN können; Berater zeigen BEFUNDE,
-   keine Atmosphäre; leeres Glas = gesundes Band.
-4. **Meta:** Claudes freie Bilderfindung = Mode-Collapse („wie
-   algorithmisch komponierte Musik — objektiv ok, aber egal"). Vision und
-   Referenzen kommen vom User; Claude übersetzt treu, verdatet ehrlich,
-   verfeinert unter seinem Auge. Abgenommen: P01-Perkolations-ÄSTHETIK
-   (scharfe Punktwolke, Bandfarben Amber/Magenta/Eis) + das Prisma-Objekt.
-
-## Maschinen-Landmine
-
-⚠️ **PowerShell: `Start-Process -ArgumentList` quotiert NICHTS** — es klebt die
-Array-Elemente mit Leerzeichen zu einer Kommandozeile zusammen (anders als
-.NETs `ProcessStartInfo.ArgumentList`). Gemessen beim Bau des Beweis-Runners an
-`git log --format=%h %s`: Exit 128, weil `%s` ein eigenes Argument wurde. Jedes
-Argument mit Leerzeichen selbst escapen (`Argument-Quoten` in
-`tools/beweise.ps1`), sonst zerfaellt ein Pfad still.
-
-**Keine GPU-Batch-Render-Loops auf der Arc A770** — der Lüfter-Failsafe
-bleibt nach solchen Loops auf 100 % hängen (überlebt Warm-Reboots; Fix =
-`Win+Ctrl+Shift+B`, sonst echter Kaltstart). Playwright-/Beweis-Renders
-laufen in Software (SwiftShader) und bleiben Einzelläufe; Blender-Cycles
-rendert auf CPU.
+- ⚠️ **PowerShell `Start-Process -ArgumentList` quotiert NICHTS** — jedes
+  Argument mit Leerzeichen selbst escapen (`Argument-Quoten` in `tools/beweise.ps1`).
+- ⚠️ **Bash-Heredoc frisst Backslashes in Windows-Pfaden** (`\v` → 0x0B);
+  Pipes maskieren Exitcodes (`${PIPESTATUS[0]}`).
+- ⚠️ **`core.autocrlf` auf dem Zweitrechner**: `.gitattributes` hält Patch,
+  v3-Baum und Fixtures per `-text` bytegleich — wer neue bytegleich geprüfte
+  Dateien anlegt, trägt sie dort ein.
+- 🌀 **Keine GPU-Batch-Render-Loops auf der Arc A770** (Lüfter-Failsafe klemmt
+  auf 100 %; Fix `Win+Ctrl+Shift+B`, sonst Kaltstart). Renders nur Software/CPU.
 
 ## Read before working on
 
 | Bereich | Zuerst lesen |
 |---|---|
-| Wie das Plugin heute funktioniert (Architektur, Datenfluss, IPC) | `docs/plugin-wissen.md` |
-| v3-Verträge: Engine-Teilmenge, Textriegel, Bandgitter, Fixture-Korpus (SONDE-005a) | `eq-copilot/schemas/v3/README.md` |
-| FlatBuffers-Vertrag: Feld-IDs, flatc-Pin, Leserregeln (SONDE-005b) | `eq-copilot/schemas/v3/flatbuffers/README.md` |
-| Design-Prototyp, Verwürfe, Freeze-Stand | `docs/design-stand.md` |
-| Visueller Nordstern — Hörkompass-Zielvertrag (19.08.) | `docs/visuelles-zielbild-hoerkompass.md` |
-| Sonden-Produkt, Technik + Phasenplan (Fassung 0.4) | `docs/FL-Nakama-Sonden-Design-Entwurf.md` (+ `docs/pruefbericht-sondenentwurf-2026-08-20.md`) |
-| Geschmacksprofil (wörtliche User-Urteile) | `docs/geschmacksprofil.md` |
-| Neue Hauptansicht (Ziel, Grammatik, DoD) | `eq-copilot/docs/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md` |
-| DSP-/Realtime-/Broker-Regeln, Produktplan | `FL-EQ-Copilot-Recherche.md` |
-| Aktuellster Plugin-Stand + Beweise | `eq-copilot/docs/M3A-BEFUND.md` (+ M0–M2, CS1) |
-| Manuelle FL-Prüfungen (liegen beim User) | `eq-copilot/docs/FL-TESTANLEITUNG.md` |
-| FL-Termin A — Aux/PDC/Recall messen (Sondenbau P0) | `eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md` |
-| FL-Termin B — Hostzeit, Transport, Automation messen (P0) | `eq-copilot/docs/FL-TERMIN-B-HOSTZEIT.md` |
-| Benchmark-Mechaniken (Median-Basislinie, Zonen, Konvergenz) | `eq-copilot/docs/BENCHMARK-STUDIE-RESO-SMARTEQ-PROQ.md` |
-| Offene Punkte (durabel, nie still löschen) | `docs/offene-punkte.md` |
+| Einstieg, der eine nächste Schritt | `docs/NEXT-SESSION.md` |
+| Plugin heute (Architektur, Datenfluss, IPC, Tests) | `docs/plugin-wissen.md` |
+| Sondenfamilie: Technik + Phasen (Fassung 0.4 + Errata 21.08.) | `docs/FL-Nakama-Sonden-Design-Entwurf.md` · `docs/bauaufteilung-sonden.md` |
+| v3-Verträge, Textriegel, Bandgitter, Fixtures | `eq-copilot/schemas/v3/README.md` · `…/flatbuffers/README.md` |
+| Beweise je Ticket (rohe Ausgabe) | `docs/beweise/` |
+| FL-Termine A/B (liegen beim User) | `eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md` · `FL-TERMIN-B-HOSTZEIT.md` |
+| Benchmark-Mechaniken (Median-Basislinie, Zonen) | `eq-copilot/docs/BENCHMARK-STUDIE-RESO-SMARTEQ-PROQ.md` |
+| Offene Punkte | `docs/offene-punkte.md` |
+| Design der drei Apps | `Nakama-Design/CLAUDE.md` + `abnahmen/` |
+| Verlauf (nur zum Verstehen, nie als Vorgabe) | `docs/archiv/`, `eq-copilot/design/archive/`, `eq-copilot/design/prisma-studie/STATUS.md` |
 
 ## Arbeitsweise
 
-- Code ist die einzige Wahrheit — Datei öffnen vor jeder Doku-/Memory-Behauptung.
-- Fortschritts- und Fertig-Meldungen nur mit Beleg aus dieser Session
-  (Testlauf, Render, Diff); nicht Verifiziertes explizit als offen nennen.
-  Selbstaudit nach jedem Commit; größere Änderungssätze von einem frischen
-  Verifikations-Subagenten gegen Bauplan + Grundgesetz prüfen lassen.
-- Im Auftrag bleiben: keine Neben-Refactors, kein „Modernisieren" von
-  Legacy-Namen nebenbei. Problembeschreibung ⇒ Befund liefern, erst auf
-  Zuruf fixen.
-- Breite mechanische Suchen parallel an Explore-Agenten delegieren und
-  währenddessen weiterarbeiten; Design-Urteil bleibt im Hauptlauf.
+- **Code ist die einzige Wahrheit** — Datei öffnen, bevor auf Doku-, Memory-
+  oder Audit-Behauptungen gehandelt wird (~25 % der AI-Auditbefunde hier waren falsch).
+- **Entscheide nur mit Zitat.** Was der User entschieden hat, steht mit Datum
+  und Wortlaut im Register oben bzw. in `Nakama-Design/abnahmen/`. Alles
+  andere ist Vorschlag, Arbeitsannahme oder Studie und heißt so — auch in
+  Commit-Messages („Vorschlag:", nicht „Abnahme:").
+- **Eine Wahrheit, ein Ort.** Zahlen (Testzahlen, Versionen, Fixturezahlen)
+  stehen dort, wo sie gemessen werden (Manifeste, Code); Docs verweisen.
+  Keine statischen Kopien in Hooks oder Memory.
+- **Fortschritt nur mit Beleg aus dieser Session** (Testlauf, Render, Diff);
+  Status kommt nach dem Beweis, nie davor. Selbstaudit nach jedem Commit.
+- **Im Auftrag bleiben:** keine Neben-Refactors, keine Umbenennung der
+  `EqCop*`-Legacy-Namen nebenbei (NAK-30 ist der Ort dafür).
 - Out-of-scope-Funde → `docs/offene-punkte.md` (datierte Zeile mit ID).
-- Nach großen Schritten: `docs/design-stand.md` bzw. `docs/plugin-wissen.md`
-  nachziehen + Session-Memo ins Memory (`project_session_*.md`, Cap 6 —
-  eine Lehre pro Datei, mit dem Warum; Falsches löschen statt stapeln).
-- Alle Texte dieses Projekts (Docs, Commits, UI) auf Deutsch.
+- Nach großen Schritten `docs/plugin-wissen.md` nachziehen; Session-Memo ins
+  Memory nur für Wissen, das NICHT im Repo steht (eine Lehre pro Datei, mit
+  dem Warum; Falsches löschen statt stapeln).
+- Alle Texte dieses Projekts (Docs, Commits) auf Deutsch; Produkt-Texte Englisch.

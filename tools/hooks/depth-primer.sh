@@ -19,15 +19,16 @@ Bauen per searx (localhost:8888, WebFetch) prüfen. Sobald genug Information
 zum Handeln da ist: handeln — Feststehendes nicht erneut herleiten.
 
 ## Karte vor Vorschlag
-Vor Design-/UI-Vorschlägen: docs/design-stand.md + Bauplan lesen —
-besonders die VERWORFENEN Richtungen (einen verworfenen Weg neu
-vorzuschlagen kostet Vertrauen). Vor Engine-/Editor-Arbeit:
-docs/plugin-wissen.md + die betroffene Quelle.
+Vor Engine-/Broker-/Vertragsarbeit: docs/plugin-wissen.md, den Sonden-Entwurf
+(mit Errata-Block) und die betroffene Quelle lesen. Design: Figma-Stände des
+Users sind die Quelle, Nakama-Design übersetzt — hier im Technik-Repo gibt es
+keine Design-Arbeit; Archiv und Prisma-Studie sind Verlauf, nie Vorgabe.
+Einen verworfenen Weg neu vorzuschlagen kostet Vertrauen.
 
 ## Im Auftrag bleiben
 Nichts über den Auftrag hinaus refactoren oder „modernisieren" —
-Legacy-Namen (EqCop*), Material-Kit-Front und Schema-Felder bleiben, bis
-ihr Umbau DER Auftrag ist. Beschreibt der User ein Problem oder denkt
+Legacy-Namen (EqCop*), Material-Kit-Front (Provisorium) und Schema-Felder
+bleiben, bis ihr Umbau DER Auftrag ist (Umbenennung = NAK-30). Beschreibt der User ein Problem oder denkt
 laut, ist der Befund das Deliverable — erst fixen, wenn er es sagt.
 
 ## Gegenpfade (Bauplan §11.5)
@@ -38,9 +39,11 @@ im selben Änderungssatz; eine Einweg-Änderung ist unvollständig.
 ## Beweise vor „fertig"
 Jede Fortschritts- und Fertig-Meldung braucht einen Beleg aus DIESER
 Session (Testlauf, Render, Diff) — nicht Verifiziertes explizit als offen
-nennen. Betroffene Beweise laufen lassen: GoldenTest · NullTest ·
-MarkierungTest · pluginval 8 · Shot · PaintBench · PipeProbe · cargo test
-eq_copilot. Pixel-Beweise messen Änderung, nie Schönheit — Optik nimmt
+nennen. Ein Entscheid des Users existiert nur mit Datum + Zitat (Register in
+CLAUDE.md); eigene Vorschläge heißen „Vorschlag", nie „abgenommen". Betroffene Beweise laufen lassen: GoldenTest · NullTest ·
+MarkierungTest · Identität · Hostkontext · Schema · pluginval 8 · Shot ·
+PaintBench · PipeProbe · cargo test --manifest-path broker/Cargo.toml —
+oder alles auf einmal: pwsh -File tools/beweise.ps1. Pixel-Beweise messen Änderung, nie Schönheit — Optik nimmt
 allein der User am lebenden Blatt ab.
 
 ## Selbstaudit vor „fertig"
@@ -60,6 +63,6 @@ Auffrischen löschen; Schließen nur mit ID + Commit-SHA.
 ## Pausen
 Nur bei echt Irreversiblem (force-push, Löschen, externer Versand), echter
 Scope-Entscheidung oder Input, den nur der User geben kann (UAC-Klick,
-Design-Freeze, Optik-Abnahme). Sonst handeln und committen
+Figma-Stand, Abnahme im Design-Repo). Sonst handeln und committen
 (Commit-Autonomie; bei paralleler Codex-Session mit explizitem Pathspec).
 PRIMER

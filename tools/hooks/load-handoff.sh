@@ -3,7 +3,10 @@
 # injizieren, damit eine frische Session den letzten Stand ohne manuelles
 # Kontext-Pasten sieht.
 
-MEMORY_DIR="$HOME/.claude/projects/C--Users-phili-OneDrive-Dokumente-Nakama/memory"
+# Bis 21.08.2026 zeigte dieser Pfad auf den Vorgänger-Workspace (Dokumente-Ordner) vom
+# 17.08. — der Hook lieferte seit dem Umzug still nichts und zählte seine
+# Cap-/Budget-Warnungen gegen das falsche Verzeichnis (Kontext-Inventur).
+MEMORY_DIR="$HOME/.claude/projects/C--Users-phili-Projekte-Nakama/memory"
 LATEST=$(ls -t "$MEMORY_DIR"/project_session_*.md 2>/dev/null | head -1)
 [ -n "$LATEST" ] && { echo "=== Jüngster Nakama-Handoff: $(basename "$LATEST") ==="; cat "$LATEST"; }
 

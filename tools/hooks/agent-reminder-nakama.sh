@@ -15,15 +15,14 @@ case "$FILE" in
   *eq-copilot/plugin/src/*|*eq-copilot\\plugin\\src\\*)
     CONTEXT="[nakama-realtime] Edit in plugin/src: $(basename "$FILE") — es gelten
 Grundgesetz (processBlock: keine Sperre/Allokation/IO; Passthrough
-sampleidentisch; NaN-Riegel + Nyquist-Kappe; Editor: SafePointer, ein
+sampleidentisch bei Gen/Suna — Probeeq ist ein EQ; NaN-Riegel + Nyquist-Kappe; Editor: SafePointer, ein
 Snapshot-Zug pro Tick) und der Beweis-Kanon: die vom Edit betroffenen
 Beweise vor 'fertig' laufen lassen und das Ergebnis nennen."
     ;;
   *eq-copilot/schemas/*.schema.json|*eq-copilot\\schemas\\*.schema.json)
     CONTEXT="[nakama-schema] Schema-Edit: $(basename "$FILE") — Schemas sind
 versionierte Verträge: neue Felder ⇒ ERST Versionierung; alte Snapshots
-laden weiter; unbekannte Felder brechen keine Consumer (Plugin, Broker,
-Hub-App); Save + Load im selben Änderungssatz testen."
+laden weiter; unbekannte Felder brechen keine Consumer (Plugin, Broker); Save + Load im selben Änderungssatz testen."
     ;;
   *)
     exit 0

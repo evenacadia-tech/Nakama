@@ -76,9 +76,22 @@ lesen; jede Zeile dort hat einmal Arbeit gekostet.
 8. `stilbefragung.html` — zuletzt. Ihre Spezimen zeigen noch die verworfene
    Welt und müssen vorher umgestellt werden.
 
-Zweimal ist genau dieser Reihenfolgefehler passiert: einmal wurden Radien
+**Dreimal** ist genau dieser Reihenfolgefehler passiert: einmal wurden Radien
 innerhalb einer selbst gewählten Welt abgefragt, einmal Licht verhandelt, bevor
-die Anordnung stand. Beide Male hat der User es gemerkt, nicht Claude.
+die Anordnung stand — und am 2026-08-21 hat Claude Farbwerte und Kornstärke der
+Materialstudie des Users ausgemessen, während Phase 1 beim Editor noch bei
+Schritt 1 steht (Aufgabenliste, nicht abgenommen). Der User, wörtlich:
+
+> „ignoriere das aktuelle design, das wird alles überschrieben ganz am ende.
+> es geht um das layout und die technik am ende kommt das design. ist doch
+> vollkommen egal was für eine körnung es hat"
+
+**Alle drei Male hat der User es gemerkt, nicht Claude.** Der Auslöser ist
+jedes Mal derselbe: ein Material wird *sichtbar* — eine Truhe geht auf, ein
+Bild taucht auf — und Sichtbarkeit fühlt sich wie Zuständigkeit an. Ist sie
+nicht. Solange ein Blatt in Phase 1 steht, ist Material kein Gegenstand,
+**auch nicht als Messung**. Eine Messung ist keine Ausrede: sie kostet
+dieselbe Runde wie eine Meinung.
 
 ## weltenwahl.html
 

@@ -490,3 +490,17 @@ auf diese Welt umgestellt werden.
 `korn.png` — 512er-Kachel, aus `assets/301.zip` herauskopiert (Mittelwert
 exakt 128, also für `mix-blend-mode: overlay` gebaut), Kanten überblendet damit
 sie nahtlos kachelt. Die Truhe selbst wurde nicht verändert.
+
+## truhe/
+
+Die **aufgeschlossene Assettruhe**. `assets/` enthält nur Formate, die eine
+Sitzung nicht öffnen kann (`.sketch`, `.psd`, `.fig`) — Regel 1 („erst in die
+Truhe schauen") war damit unbefolgbar. `truhe/aufschliessen.py` leitet lesend
+Vorschauen ab; die Truhe selbst bleibt unangetastet (Prüfsummen gleich).
+
+Was dabei sichtbar wurde und vorher niemand nachsehen konnte: **301 ist ein
+Knopf-Kit ausdrücklich für Audio-VSTs** (ein grüner Akzent, immer als Wert,
+Grund `#191A1E`, Korn über allem) — die Vorlage der Welt „Dunkles Gerät" und
+die Quelle von `textur/korn.png`. **110** ist ein heller Thermostat-Ring mit
+einem warmen Verlauf als Wert. **297** ist ein *Social*-Kit ohne Vorschau und
+die schwächste Passung der drei. Belege und Bilder: `truhe/LIES-MICH.md`.

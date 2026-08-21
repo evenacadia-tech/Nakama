@@ -1,0 +1,671 @@
+{
+  "$id": "evenacadia.nakama.bandgitter.nakama_log64_v1",
+  "gitter_id": "nakama_log64_v1",
+  "art": "gruppierung",
+  "zweck": "Livegitter — 10-Hz-Telemetrie (Entwurf §33.2)",
+  "basis_gitter": "nakama_1_24_oct_30_18k_v1",
+  "herkunft": {
+    "regel": "Gruppe j deckt die feinen Baender [floor(j*221/64), floor((j+1)*221/64)). Ganzzahlig, damit die Partition exakt ist.",
+    "warum": "Das Livespektrum ist die lineare Energiesumme der Evidenzbaender, keine zweite Filterbank. Deshalb sind die groben Kanten BITGLEICHE Kopien feiner Kanten."
+  },
+  "band_anzahl": 64,
+  "zahlformat": "hex64 ist die Wahrheit: IEEE-754-binary64-Bitmuster, 16 Grossbuchstaben-Hexziffern. dezimal ist Dokumentation und wird von keinem Konsumenten gelesen.",
+  "gruppen": [
+    {
+      "index": 0,
+      "fein_von": 0,
+      "fein_bis_exkl": 3,
+      "anzahl": 3
+    },
+    {
+      "index": 1,
+      "fein_von": 3,
+      "fein_bis_exkl": 6,
+      "anzahl": 3
+    },
+    {
+      "index": 2,
+      "fein_von": 6,
+      "fein_bis_exkl": 10,
+      "anzahl": 4
+    },
+    {
+      "index": 3,
+      "fein_von": 10,
+      "fein_bis_exkl": 13,
+      "anzahl": 3
+    },
+    {
+      "index": 4,
+      "fein_von": 13,
+      "fein_bis_exkl": 17,
+      "anzahl": 4
+    },
+    {
+      "index": 5,
+      "fein_von": 17,
+      "fein_bis_exkl": 20,
+      "anzahl": 3
+    },
+    {
+      "index": 6,
+      "fein_von": 20,
+      "fein_bis_exkl": 24,
+      "anzahl": 4
+    },
+    {
+      "index": 7,
+      "fein_von": 24,
+      "fein_bis_exkl": 27,
+      "anzahl": 3
+    },
+    {
+      "index": 8,
+      "fein_von": 27,
+      "fein_bis_exkl": 31,
+      "anzahl": 4
+    },
+    {
+      "index": 9,
+      "fein_von": 31,
+      "fein_bis_exkl": 34,
+      "anzahl": 3
+    },
+    {
+      "index": 10,
+      "fein_von": 34,
+      "fein_bis_exkl": 37,
+      "anzahl": 3
+    },
+    {
+      "index": 11,
+      "fein_von": 37,
+      "fein_bis_exkl": 41,
+      "anzahl": 4
+    },
+    {
+      "index": 12,
+      "fein_von": 41,
+      "fein_bis_exkl": 44,
+      "anzahl": 3
+    },
+    {
+      "index": 13,
+      "fein_von": 44,
+      "fein_bis_exkl": 48,
+      "anzahl": 4
+    },
+    {
+      "index": 14,
+      "fein_von": 48,
+      "fein_bis_exkl": 51,
+      "anzahl": 3
+    },
+    {
+      "index": 15,
+      "fein_von": 51,
+      "fein_bis_exkl": 55,
+      "anzahl": 4
+    },
+    {
+      "index": 16,
+      "fein_von": 55,
+      "fein_bis_exkl": 58,
+      "anzahl": 3
+    },
+    {
+      "index": 17,
+      "fein_von": 58,
+      "fein_bis_exkl": 62,
+      "anzahl": 4
+    },
+    {
+      "index": 18,
+      "fein_von": 62,
+      "fein_bis_exkl": 65,
+      "anzahl": 3
+    },
+    {
+      "index": 19,
+      "fein_von": 65,
+      "fein_bis_exkl": 69,
+      "anzahl": 4
+    },
+    {
+      "index": 20,
+      "fein_von": 69,
+      "fein_bis_exkl": 72,
+      "anzahl": 3
+    },
+    {
+      "index": 21,
+      "fein_von": 72,
+      "fein_bis_exkl": 75,
+      "anzahl": 3
+    },
+    {
+      "index": 22,
+      "fein_von": 75,
+      "fein_bis_exkl": 79,
+      "anzahl": 4
+    },
+    {
+      "index": 23,
+      "fein_von": 79,
+      "fein_bis_exkl": 82,
+      "anzahl": 3
+    },
+    {
+      "index": 24,
+      "fein_von": 82,
+      "fein_bis_exkl": 86,
+      "anzahl": 4
+    },
+    {
+      "index": 25,
+      "fein_von": 86,
+      "fein_bis_exkl": 89,
+      "anzahl": 3
+    },
+    {
+      "index": 26,
+      "fein_von": 89,
+      "fein_bis_exkl": 93,
+      "anzahl": 4
+    },
+    {
+      "index": 27,
+      "fein_von": 93,
+      "fein_bis_exkl": 96,
+      "anzahl": 3
+    },
+    {
+      "index": 28,
+      "fein_von": 96,
+      "fein_bis_exkl": 100,
+      "anzahl": 4
+    },
+    {
+      "index": 29,
+      "fein_von": 100,
+      "fein_bis_exkl": 103,
+      "anzahl": 3
+    },
+    {
+      "index": 30,
+      "fein_von": 103,
+      "fein_bis_exkl": 107,
+      "anzahl": 4
+    },
+    {
+      "index": 31,
+      "fein_von": 107,
+      "fein_bis_exkl": 110,
+      "anzahl": 3
+    },
+    {
+      "index": 32,
+      "fein_von": 110,
+      "fein_bis_exkl": 113,
+      "anzahl": 3
+    },
+    {
+      "index": 33,
+      "fein_von": 113,
+      "fein_bis_exkl": 117,
+      "anzahl": 4
+    },
+    {
+      "index": 34,
+      "fein_von": 117,
+      "fein_bis_exkl": 120,
+      "anzahl": 3
+    },
+    {
+      "index": 35,
+      "fein_von": 120,
+      "fein_bis_exkl": 124,
+      "anzahl": 4
+    },
+    {
+      "index": 36,
+      "fein_von": 124,
+      "fein_bis_exkl": 127,
+      "anzahl": 3
+    },
+    {
+      "index": 37,
+      "fein_von": 127,
+      "fein_bis_exkl": 131,
+      "anzahl": 4
+    },
+    {
+      "index": 38,
+      "fein_von": 131,
+      "fein_bis_exkl": 134,
+      "anzahl": 3
+    },
+    {
+      "index": 39,
+      "fein_von": 134,
+      "fein_bis_exkl": 138,
+      "anzahl": 4
+    },
+    {
+      "index": 40,
+      "fein_von": 138,
+      "fein_bis_exkl": 141,
+      "anzahl": 3
+    },
+    {
+      "index": 41,
+      "fein_von": 141,
+      "fein_bis_exkl": 145,
+      "anzahl": 4
+    },
+    {
+      "index": 42,
+      "fein_von": 145,
+      "fein_bis_exkl": 148,
+      "anzahl": 3
+    },
+    {
+      "index": 43,
+      "fein_von": 148,
+      "fein_bis_exkl": 151,
+      "anzahl": 3
+    },
+    {
+      "index": 44,
+      "fein_von": 151,
+      "fein_bis_exkl": 155,
+      "anzahl": 4
+    },
+    {
+      "index": 45,
+      "fein_von": 155,
+      "fein_bis_exkl": 158,
+      "anzahl": 3
+    },
+    {
+      "index": 46,
+      "fein_von": 158,
+      "fein_bis_exkl": 162,
+      "anzahl": 4
+    },
+    {
+      "index": 47,
+      "fein_von": 162,
+      "fein_bis_exkl": 165,
+      "anzahl": 3
+    },
+    {
+      "index": 48,
+      "fein_von": 165,
+      "fein_bis_exkl": 169,
+      "anzahl": 4
+    },
+    {
+      "index": 49,
+      "fein_von": 169,
+      "fein_bis_exkl": 172,
+      "anzahl": 3
+    },
+    {
+      "index": 50,
+      "fein_von": 172,
+      "fein_bis_exkl": 176,
+      "anzahl": 4
+    },
+    {
+      "index": 51,
+      "fein_von": 176,
+      "fein_bis_exkl": 179,
+      "anzahl": 3
+    },
+    {
+      "index": 52,
+      "fein_von": 179,
+      "fein_bis_exkl": 183,
+      "anzahl": 4
+    },
+    {
+      "index": 53,
+      "fein_von": 183,
+      "fein_bis_exkl": 186,
+      "anzahl": 3
+    },
+    {
+      "index": 54,
+      "fein_von": 186,
+      "fein_bis_exkl": 189,
+      "anzahl": 3
+    },
+    {
+      "index": 55,
+      "fein_von": 189,
+      "fein_bis_exkl": 193,
+      "anzahl": 4
+    },
+    {
+      "index": 56,
+      "fein_von": 193,
+      "fein_bis_exkl": 196,
+      "anzahl": 3
+    },
+    {
+      "index": 57,
+      "fein_von": 196,
+      "fein_bis_exkl": 200,
+      "anzahl": 4
+    },
+    {
+      "index": 58,
+      "fein_von": 200,
+      "fein_bis_exkl": 203,
+      "anzahl": 3
+    },
+    {
+      "index": 59,
+      "fein_von": 203,
+      "fein_bis_exkl": 207,
+      "anzahl": 4
+    },
+    {
+      "index": 60,
+      "fein_von": 207,
+      "fein_bis_exkl": 210,
+      "anzahl": 3
+    },
+    {
+      "index": 61,
+      "fein_von": 210,
+      "fein_bis_exkl": 214,
+      "anzahl": 4
+    },
+    {
+      "index": 62,
+      "fein_von": 214,
+      "fein_bis_exkl": 217,
+      "anzahl": 3
+    },
+    {
+      "index": 63,
+      "fein_von": 217,
+      "fein_bis_exkl": 221,
+      "anzahl": 4
+    }
+  ],
+  "kanten_hz": {
+    "anzahl": 65,
+    "hex64": [
+      "403E5C416A5D1110",
+      "40408DDA3568608A",
+      "40420D69295E6F40",
+      "4044435BB436E52A",
+      "404618DAB0184066",
+      "4048CD9AAD5DFDA9",
+      "404B0C4AE07F2D8D",
+      "404E5C416A5D1110",
+      "40508DDA3568608B",
+      "405294D415F48CCB",
+      "4054435BB436E52A",
+      "405618DAB0184066",
+      "4058CD9AAD5DFDA7",
+      "405B0C4AE07F2D8B",
+      "405E5C416A5D1113",
+      "40608DDA3568608B",
+      "406294D415F48CCB",
+      "4064435BB436E52A",
+      "4066BE9CDBF68603",
+      "4068CD9AAD5DFDA7",
+      "406BD7309322E8A3",
+      "406E5C416A5D1113",
+      "40708DDA3568608B",
+      "407294D415F48CCB",
+      "4074435BB436E52A",
+      "4076BE9CDBF68604",
+      "4078CD9AAD5DFDA8",
+      "407BD7309322E8A2",
+      "407E5C416A5D1112",
+      "40810A07EB126192",
+      "408294D415F48CCB",
+      "4084DB5C02BB46D4",
+      "4086BE9CDBF68604",
+      "4088CD9AAD5DFDA8",
+      "408BD7309322E8A2",
+      "408E5C416A5D1112",
+      "40910A07EB126192",
+      "409294D415F48CCB",
+      "4094DB5C02BB46D4",
+      "4096BE9CDBF68603",
+      "409987A96C930E2B",
+      "409BD7309322E8A2",
+      "409F400000000000",
+      "40A10A07EB126192",
+      "40A294D415F48CCB",
+      "40A4DB5C02BB46D4",
+      "40A6BE9CDBF68604",
+      "40A987A96C930E2A",
+      "40ABD7309322E8A2",
+      "40AF400000000000",
+      "40B10A07EB126192",
+      "40B32036D40E59A7",
+      "40B4DB5C02BB46D3",
+      "40B7693A725C5AD3",
+      "40B987A96C930E2B",
+      "40BBD7309322E8A3",
+      "40BF400000000000",
+      "40C10A07EB126192",
+      "40C32036D40E59A7",
+      "40C4DB5C02BB46D3",
+      "40C7693A725C5AD3",
+      "40C987A96C930E2B",
+      "40CCA80847CDBEAC",
+      "40CF400000000000",
+      "40D189D9233127B8"
+    ],
+    "dezimal": [
+      "30.360373161050177",
+      "33.108221698727974",
+      "36.10477177725852",
+      "40.52623608284405",
+      "44.19417382415922",
+      "49.60628287400625",
+      "54.09603506288395",
+      "60.720746322100354",
+      "66.21644339745596",
+      "74.32544468767007",
+      "81.0524721656881",
+      "88.38834764831844",
+      "99.21256574801247",
+      "108.19207012576787",
+      "121.44149264420075",
+      "132.43288679491192",
+      "148.65088937534014",
+      "162.1049443313762",
+      "181.95664785527342",
+      "198.42513149602493",
+      "222.72467953508485",
+      "242.8829852884015",
+      "264.86577358982385",
+      "297.3017787506803",
+      "324.2098886627524",
+      "363.9132957105469",
+      "396.8502629920499",
+      "445.44935907016963",
+      "485.76597057680294",
+      "545.2538663326288",
+      "594.6035575013606",
+      "667.4199270850172",
+      "727.8265914210938",
+      "793.7005259840998",
+      "890.8987181403393",
+      "971.5319411536059",
+      "1090.5077326652577",
+      "1189.2071150027211",
+      "1334.8398541700344",
+      "1455.6531828421873",
+      "1633.9154532411",
+      "1781.7974362806785",
+      "2000.0",
+      "2181.0154653305153",
+      "2378.4142300054423",
+      "2669.679708340069",
+      "2911.306365684375",
+      "3267.8309064821997",
+      "3563.594872561357",
+      "4000.0",
+      "4362.030930661031",
+      "4896.21417321862",
+      "5339.359416680137",
+      "5993.228307506727",
+      "6535.6618129644",
+      "7127.189745122715",
+      "8000.0",
+      "8724.061861322061",
+      "9792.42834643724",
+      "10678.718833360273",
+      "11986.456615013454",
+      "13071.3236259288",
+      "14672.06469127474",
+      "16000.0",
+      "17959.39277294997"
+    ]
+  },
+  "mitten_hz": {
+    "anzahl": 64,
+    "hex64": [
+      "403FB45CD890503C",
+      "4041497A66D46157",
+      "40432036D40E59A7",
+      "40452905AE18A230",
+      "4047693A725C5AD3",
+      "4049E6B9A6E896B5",
+      "404CA80847CDBEAC",
+      "404FB45CD890503D",
+      "405189D9233127B8",
+      "4053676E6649C6EA",
+      "40552905AE18A230",
+      "4057693A725C5AD2",
+      "4059E6B9A6E896B3",
+      "405CA80847CDBEAC",
+      "405FB45CD890503F",
+      "406189D9233127B8",
+      "4063676E6649C6EA",
+      "406577D088F591A0",
+      "4067C066DDB6F0A7",
+      "406A472BDBC2B2B8",
+      "406D12BCC5CD480D",
+      "406FB45CD890503F",
+      "407189D9233127B8",
+      "4073676E6649C6EA",
+      "407577D088F591A0",
+      "4077C066DDB6F0A7",
+      "407A472BDBC2B2B8",
+      "407D12BCC5CD480C",
+      "408015357D85CDCE",
+      "4081CB278FDEA1EB",
+      "4083AFAF27B421DC",
+      "4085C7C0C82231F0",
+      "4087C066DDB6F0A7",
+      "408A472BDBC2B2B8",
+      "408D12BCC5CD480C",
+      "409015357D85CDCE",
+      "4091CB278FDEA1EB",
+      "4093AFAF27B421DC",
+      "4095C7C0C82231F0",
+      "409818D7E29DA117",
+      "409AA9053135046F",
+      "409D7EFE97A5B2D0",
+      "40A051185A6BAFD9",
+      "40A1CB278FDEA1EB",
+      "40A3AFAF27B421DC",
+      "40A5C7C0C82231F0",
+      "40A818D7E29DA117",
+      "40AAA9053135046F",
+      "40AD7EFE97A5B2D0",
+      "40B051185A6BAFD9",
+      "40B20D69295E6F41",
+      "40B3F8FCF3BE858F",
+      "40B618DAB0184066",
+      "40B8729239BEED3F",
+      "40BAA9053135046F",
+      "40BD7EFE97A5B2D0",
+      "40C051185A6BAFD9",
+      "40C20D69295E6F41",
+      "40C3F8FCF3BE858F",
+      "40C618DAB0184066",
+      "40C8729239BEED3F",
+      "40CB0C4AE07F2D8C",
+      "40CDECD384D4B574",
+      "40D08DDA3568608B"
+    ],
+    "dezimal": [
+      "31.704541716797607",
+      "34.57404790277604",
+      "38.25167322827047",
+      "42.320485841777895",
+      "46.822096152396306",
+      "51.802540649002744",
+      "57.31275270029195",
+      "63.40908343359522",
+      "70.15387801933582",
+      "77.61611325459276",
+      "84.64097168355579",
+      "93.6441923047926",
+      "103.60508129800546",
+      "114.6255054005839",
+      "126.81816686719047",
+      "140.30775603867164",
+      "155.23222650918552",
+      "171.74420593226114",
+      "190.01255689363936",
+      "210.22410381342866",
+      "232.58554353803666",
+      "253.63633373438094",
+      "280.6155120773433",
+      "310.46445301837105",
+      "343.4884118645223",
+      "380.0251137872787",
+      "420.4482076268573",
+      "465.17108707607326",
+      "514.651118321746",
+      "569.3943173783458",
+      "629.9605249474366",
+      "696.9691317244997",
+      "760.0502275745574",
+      "840.8964152537146",
+      "930.3421741521465",
+      "1029.302236643492",
+      "1138.7886347566916",
+      "1259.9210498948732",
+      "1393.9382634489994",
+      "1542.210825407941",
+      "1706.2550705226856",
+      "1887.748625363387",
+      "2088.5475648548277",
+      "2277.5772695133833",
+      "2519.8420997897465",
+      "2787.8765268979987",
+      "3084.421650815882",
+      "3412.5101410453713",
+      "3775.497250726774",
+      "4177.095129709655",
+      "4621.4107874890915",
+      "5112.988094241721",
+      "5656.85424949238",
+      "6258.571193631097",
+      "6825.0202820907425",
+      "7550.994501453548",
+      "8354.19025941931",
+      "9242.821574978183",
+      "10225.976188483442",
+      "11313.70849898476",
+      "12517.142387262194",
+      "13848.58497609829",
+      "15321.652491177178",
+      "16951.409509748726"
+    ]
+  }
+}

@@ -17,3 +17,13 @@
 # \r und der Patch schlaege fehl - auf genau einer der beiden Maschinen.
 # `-text` haelt ihn bytegleich, in beide Richtungen (SONDE-003, 21.08.2026).
 *.patch -text
+
+# Der v3-Vertragsbaum (Bandgitter, Schemas, Fixture-Korpus) wird von DREI
+# Sprachen gelesen und teilweise BYTEGLEICH verglichen: der Bandgitter-Erzeuger
+# prueft mit `--pruefen`, ob die Datei auf Platte Byte fuer Byte der
+# Neuerzeugung entspricht. Mit core.autocrlf=true bekaeme eine frische Klonung
+# CRLF, waehrend der Erzeuger LF schreibt - die Pruefung schluege auf dem
+# Zweitrechner fehl, ohne dass sich ein Wert geaendert haette. `-text` haelt
+# den Baum bytegleich, wie schon beim JUCE-Patch (SONDE-005a, 21.08.2026).
+eq-copilot/schemas/v3/**  -text
+eq-copilot/fixtures/v3/** -text

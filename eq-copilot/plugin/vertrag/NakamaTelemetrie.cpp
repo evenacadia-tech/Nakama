@@ -56,10 +56,18 @@ void hinzu (juce::Array<Verstoss>& out, const juce::String& pfad, const char* re
     out.add ({ pfad, juce::String (regel) });
 }
 
-template <typename Enum>
-bool imBereich (Enum wert, const Enum* werte, size_t anzahl)
+/*  Bereichspruefung mit AUS DEM ARRAY DEDUZIERTER Groesse.
+
+    Vorher stand hier ein `size_t anzahl`-Parameter, den jeder Aufruf
+    hartcodiert mitgab. Heute stimmten alle vier Zahlen - aber ein spaeter
+    ergaenzter Enumwert waere still nicht mehr geprueft worden, waehrend die
+    Rust-Seite ueber `ENUM_VALUES` mitwaechst. Genau die Sorte Divergenz, die
+    dieser Vertrag verhindern soll. `N` kommt jetzt vom Compiler.
+*/
+template <typename Enum, size_t N>
+bool imBereich (Enum wert, const Enum (&werte)[N])
 {
-    for (size_t i = 0; i < anzahl; ++i)
+    for (size_t i = 0; i < N; ++i)
         if (werte[i] == wert)
             return true;
     return false;
@@ -97,7 +105,7 @@ void pruefeTransport (const fb::Transportstempel& t, const juce::String& p,
         hinzu (out, p + "/process_context_present", "context_bit_fehlt");
 
     if (t.zeitbasis() == fb::Zeitbasis::unbekannt
-        || ! imBereich (t.zeitbasis(), fb::EnumValuesZeitbasis(), 3))
+        || ! imBereich (t.zeitbasis(), fb::EnumValuesZeitbasis()))
         hinzu (out, p + "/zeitbasis", "enum_unbekannt");
 
     if (t.sample_count() > 1048576u)
@@ -120,7 +128,7 @@ void pruefeTransport (const fb::Transportstempel& t, const juce::String& p,
         {
             const auto pg = p + "/schleife/abgeleitete_grenzen";
             if (g->herleitung() == fb::Herleitung::unbekannt
-                || ! imBereich (g->herleitung(), fb::EnumValuesHerleitung(), 3))
+                || ! imBereich (g->herleitung(), fb::EnumValuesHerleitung()))
                 hinzu (out, pg + "/herleitung", "enum_unbekannt");
             if (g->ende() < g->start())
                 hinzu (out, pg, "grenzen_verdreht");
@@ -134,9 +142,9 @@ void pruefeBaender (const fb::Bandwerte& b, const juce::String& p, juce::Array<V
     const auto encoding = b.encoding();
 
     const bool gitterOk = gitter != fb::Bandgitter::unbekannt
-                          && imBereich (gitter, fb::EnumValuesBandgitter(), 3);
+                          && imBereich (gitter, fb::EnumValuesBandgitter());
     const bool encodingOk = encoding != fb::BandEncoding::unbekannt
-                            && imBereich (encoding, fb::EnumValuesBandEncoding(), 4);
+                            && imBereich (encoding, fb::EnumValuesBandEncoding());
     if (! gitterOk)
         hinzu (out, p + "/gitter", "enum_unbekannt");
     if (! encodingOk)

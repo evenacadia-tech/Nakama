@@ -70,7 +70,8 @@ Damit kein Prüfer es erst herausfinden muss:
 | 9 | **C++** ebenso, gegen dasselbe Manifest | `EqCopSchemaTest` | ✅ 53/53, 40 Fixtures | [↓ P8](#p8) | 2026-08-21 |
 | 10 | Der Cross-Language-Vergleich ist **nicht zeremoniell**: ein Byte bringt beide Beine zum Fallen, mit demselben Pfad und derselben Regel | 1 Byte in `live-64-band.bin` | ✅ identischer Verstoß | [↓ P9](#p9) | 2026-08-21 |
 | 11 | Die Binärfixtures überleben einen `git`-Auscheckvorgang **bytegleich** (CRLF-Landmine) | `git archive` + SHA-256 | ✅ 41/41 | [↓ P10](#p10) | 2026-08-21 |
-| 12 | Der Kanon bleibt grün und **wächst auf 14/14**; das Produktionsbundle bleibt hostfähig | `beweise.ps1` · `pluginval -8` | ✅ GRUEN · SUCCESS | [↓ P11](#p11) · [↓ Kanon](#kanon) | 2026-08-21 |
+| 12 | Ein fehlendes oder falsches Werkzeug führt zu **Abbruch mit dem richtigen Exitcode** — 3 für „Voraussetzung fehlt", 2 für „Behauptung widerlegt" | drei Störfälle | ✅ 3 · 3 · 2 | [↓ P12](#p12) | 2026-08-21 |
+| 13 | Der Kanon bleibt grün und **wächst auf 14/14**; das Produktionsbundle bleibt hostfähig | `beweise.ps1` · `pluginval -8` | ✅ GRUEN · SUCCESS | [↓ P11](#p11) · Kanonlauf am Ende | 2026-08-21 |
 
 ---
 
@@ -259,6 +260,33 @@ SUCCESS
 ```
 
 Kein Produktionsquelltext im Audiopfad wurde angefasst; der Lauf belegt es.
+
+### P12 · Die Vorbedingungen greifen — mit dem richtigen Exitcode <a id="p12"></a>
+
+Ein Beweismanifest darf „das Werkzeug fehlt" nie mit „die Behauptung ist
+widerlegt" verwechseln. Drei Störfälle, gemessen:
+
+```text
+=== (a) Zeiger zeigt ins Leere ===
+  ROT: Zeiger ...nakama-flatc-pfad-Release.txt verweist auf
+       C:\gibt\es\nicht\flatc.exe, das es nicht gibt
+VORAUSSETZUNG FEHLT: flatc nicht gefunden.
+EXIT=3
+
+=== (b) Zeiger fehlt ganz ===
+VORAUSSETZUNG FEHLT: flatc nicht gefunden.
+  Nachziehen mit: cmake --build eq-copilot/build --config Release --target flatc
+EXIT=3
+
+=== (c) Cargo.toml traegt eine andere Version ===
+  ROT: broker/Cargo.toml fuehrt flatbuffers = '24.3.25', gepinnt ist '25.12.19'.
+       Der erzeugte Rust-Code ruft in eine Laufzeit, die er nicht kennt.
+EXIT=2
+```
+
+(a) und (b) sind **3** — ohne Werkzeug ist nichts gemessen. (c) ist **2**:
+das Werkzeug ist da, und was es misst, widerspricht dem Pin. Der Beweis-Runner
+trägt beide Zustände getrennt (`GRUEN` / `ROT` / `FEHLT`).
 
 ---
 

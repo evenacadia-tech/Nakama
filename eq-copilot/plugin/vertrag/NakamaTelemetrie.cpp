@@ -72,7 +72,18 @@ bool utf8Gueltig (const char* daten, size_t laenge, size_t* codepunkte = nullptr
         else if ((c & 0xF8) == 0xF0) { folge = 3; cp = c & 0x07u; }
         else return false;                        // 0x80..0xBF oder 0xF8..0xFF
 
-        if (i + folge >= laenge && folge > 0)
+        /*  Hier stand zusaetzlich `&& folge > 0`, und der war TOT: die Schleife
+            laeuft nur solange `i < laenge`, also ist `i + 0 >= laenge` nie
+            wahr - der Zusatz konnte nie ueber ein Urteil entscheiden.
+            Nachgemessen mit beiden Fassungen, aus DIESER Quelle geschnitten
+            statt abgetippt, erschoepfend ueber alle 4.311.810.305 Bytefolgen
+            der Laenge 0..4 (die laengste Folge dieses Lesers ist 4 Byte):
+            0 Abweichungen (T2-Runde 4, B-3).
+
+            Ein toter Teilausdruck ist eine Zusicherung, die nie geprueft wird.
+            Er kostet nichts - bis jemand ihn beim naechsten Umbau fuer die
+            tragende Haelfte haelt und die andere umbaut.  */
+        if (i + folge >= laenge)
             return false;                         // abgeschnittene Folge
 
         for (size_t k = 1; k <= folge; ++k)

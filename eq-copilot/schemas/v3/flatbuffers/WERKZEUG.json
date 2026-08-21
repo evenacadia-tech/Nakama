@@ -1,0 +1,39 @@
+{
+  "$id": "evenacadia.nakama.werkzeug.flatbuffers.v1",
+  "titel": "Gepinntes FlatBuffers-Werkzeug (SONDE-005b)",
+  "zweck": "Entwurf §53: 'Eine gepinnte flatc-Version erzeugt C++ und Rust; die generierten Dateien werden committed und ein Drift-Test verlangt bitgleichen Neugenerierungsdiff.' Diese Datei ist die EINE Wahrheit ueber diesen Pin. CMake, der Drift-Pruefer und der Cargo-Abgleich lesen sie — die Zahl steht nicht dreimal im Baum.",
+
+  "warum_commit_statt_tag": "Ein Tag ist ein verschiebbarer Ref. Der FlatBuffers-Upstream fuehrt fuer DIESELBE Version zwei Tags (v25.12.19 und v25.12.19-2026-02-06-03fffb2, gemessen 2026-08-21 ueber die GitHub-Tags-API) — der Beweis, dass eine Version nachtraeglich neu geschnitten wird. Ein Pin auf den Tagnamen waere ein Pin auf ein bewegliches Ziel, und 'Drift ist 0' waere dann keine Aussage.",
+
+  "warum_drei_versionen_gleich": "Der generierte Code enthaelt Aufrufe in die Laufzeit. Erzeugt flatc 25.12.19 Rust-Code und die Crate ist 24.x, uebersetzt es entweder nicht oder — schlimmer — es uebersetzt und die vtable-Annahmen weichen ab. Deshalb ist die Gleichheit von Compiler, C++-Headern und Rust-Crate eine Vertragsbedingung, keine Bequemlichkeit. Alle drei stammen aus DEMSELBEN Commit bzw. seiner veroeffentlichten Crate.",
+
+  "version": "25.12.19",
+  "git_repository": "https://github.com/google/flatbuffers.git",
+  "git_commit": "7e163021e59cca4f8e1e35a7c828b5c6b7915953",
+  "git_tag_zur_orientierung": "v25.12.19",
+  "rust_crate": "25.12.19",
+
+  "erwartete_headerversion": {
+    "major": 25,
+    "minor": 12,
+    "revision": 19,
+    "quelle": "include/flatbuffers/base.h — FLATBUFFERS_VERSION_MAJOR/MINOR/REVISION"
+  },
+
+  "codegen_aufrufe": [
+    {
+      "sprache": "cpp",
+      "argumente": ["--cpp", "--scoped-enums", "--cpp-std", "c++17"],
+      "ziel": "eq-copilot/plugin/vertrag/generiert",
+      "datei": "nakama_telemetry_v1_generated.h"
+    },
+    {
+      "sprache": "rust",
+      "argumente": ["--rust"],
+      "ziel": "broker/src/generiert",
+      "datei": "nakama_telemetry_v1_generated.rs"
+    }
+  ],
+
+  "schema": "eq-copilot/schemas/v3/flatbuffers/nakama_telemetry_v1.fbs"
+}

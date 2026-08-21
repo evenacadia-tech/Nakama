@@ -25,4 +25,11 @@ nakama_bruecke_anwenden(
     "${juce_SOURCE_DIR}"
     "${NAKAMA_WURZEL}/third_party/patches/juce-8.0.9-nakama-vst3-bridge.patch")
 
+# ── SONDE-005b: gepinntes FlatBuffers-Werkzeug ──────────────────────────────
+# Holt Header UND Compiler aus demselben Commit und bricht ab, wenn der geholte
+# Stand eine andere Version traegt. Details im Modul.
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/NakamaFlatBuffers.cmake)
+nakama_flatbuffers_bereitstellen(
+    "${CMAKE_CURRENT_LIST_DIR}/schemas/v3/flatbuffers/WERKZEUG.json")
+
 add_subdirectory(plugin)

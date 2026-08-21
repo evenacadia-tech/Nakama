@@ -1,0 +1,107 @@
+{
+  "$id": "evenacadia.nakama.flatbuffers.feldids.v1",
+  "titel": "Eingefrorene Feld-IDs des Telemetrievertrags (SONDE-005b)",
+
+  "zweck": "Entwurf §53: 'FlatBuffers-Felder erhalten explizite numerische id-Attribute. IDs werden nie wiederverwendet, auch nicht nach Entfernen eines Feldes.' Der zweite Satz ist im .fbs selbst nicht pruefbar — eine Datei kennt ihre eigene Vergangenheit nicht. Diese Liste ist die Vergangenheit.",
+
+  "wie_das_greift": "pruefe_fbs_feldids.py haelt das .fbs gegen diese Liste. Wer eine Zahl umhaengt, faellt rot, solange er nicht AUCH hier editiert — und dann steht die Umhaengung als eigene Zeile im Diff statt in einer Attributklammer zwischen 46 anderen. Wer ein Feld entfernt, traegt seine Zahl unter `verbrannt` ein; taucht sie danach wieder im Schema auf, faellt der Pruefer ebenfalls rot.",
+
+  "warum_von_hand": "Diese Datei aus dem .fbs zu erzeugen waere zirkulaer: sie soll gerade die Aussage tragen, die das .fbs NICHT machen kann. Ein Generator wuerde jede Umhaengung brav mitschreiben.",
+
+  "handgeschrieben": true,
+  "schema": "nakama_telemetry_v1.fbs",
+
+  "tabellen": {
+    "Adresse": {
+      "felder": {
+        "logon_sid": 0,
+        "project_binding_id": 1,
+        "session_epoch": 2,
+        "instance_id": 3,
+        "runtime_nonce": 4
+      },
+      "verbrannt": []
+    },
+    "AbgeleiteteGrenzen": {
+      "felder": {
+        "start": 0,
+        "ende": 1,
+        "herleitung": 2
+      },
+      "verbrannt": []
+    },
+    "Schleife": {
+      "felder": {
+        "active": 0,
+        "bounds_valid": 1,
+        "start_ppq": 2,
+        "end_ppq": 3,
+        "abgeleitete_grenzen": 4
+      },
+      "verbrannt": []
+    },
+    "Transportstempel": {
+      "felder": {
+        "transport_epoch": 0,
+        "continuity_segment": 1,
+        "sequence": 2,
+        "zeitbasis": 3,
+        "project_sample_start": 4,
+        "sample_count": 5,
+        "sample_rate": 6,
+        "playing": 7,
+        "recording": 8,
+        "continuous_time_samples": 9,
+        "schleife": 10,
+        "input_presentation_latency": 11,
+        "output_presentation_latency": 12,
+        "gueltigkeit": 13
+      },
+      "verbrannt": []
+    },
+    "Bandwerte": {
+      "felder": {
+        "gitter": 0,
+        "encoding": 1,
+        "werte_i16": 2,
+        "werte_f32": 3,
+        "gueltig_bitmap": 4,
+        "saturated": 5
+      },
+      "verbrannt": []
+    },
+    "Frame": {
+      "felder": {
+        "transport": 0,
+        "baender": 1,
+        "metrics_version": 2,
+        "aktivitaet": 3,
+        "lufs_s": 4,
+        "peak_db": 5,
+        "crest_db": 6,
+        "psr_db": 7,
+        "breite": 8,
+        "korrelation": 9
+      },
+      "verbrannt": []
+    },
+    "QuellenEintrag": {
+      "felder": {
+        "quelle": 0,
+        "frame": 1
+      },
+      "verbrannt": []
+    },
+    "FeatureBatch": {
+      "felder": {
+        "eintraege": 0
+      },
+      "verbrannt": []
+    }
+  },
+
+  "erwartet_gesamt": {
+    "tabellen": 8,
+    "felder": 46
+  }
+}

@@ -1,0 +1,225 @@
+// nakama_telemetry_v1.fbs — der binaere Teil des v3-Vertrags (SONDE-005b).
+//
+// Entwurf §33.1: "ein versioniertes FlatBuffers-`FeatureBatch` mit CRC32C fuer
+// die haeufigen P2-Featureframes". §33.2 gibt seinen Inhalt: 10 Hz, 64
+// perzeptive Baender, Aktivitaet, LUFS-S, Peak, Crest/PSR, Breite/Korrelation,
+// Zeitstempel.
+//
+// ─────────────────────────────────────────────────────────────────────────────
+// DIE REGEL, DIE DIESER DATEI IHREN WERT GIBT: JEDES FELD TRAEGT EIN `id`.
+//
+// FlatBuffers erlaubt Schemaevolution normalerweise nur durch ANHAENGEN am
+// Tabellenende — die Feldreihenfolge IST dann die Wire-Identitaet. Traegt jedes
+// Feld ein explizites `id`, ist die Reihenfolge im Text bedeutungslos und die
+// Zahl ist die Identitaet. Erst damit ist "ein Feld einsortieren" keine stille
+// Formataenderung mehr.
+//
+// flatc erzwingt davon nur die HAELFTE: benutzt eine Tabelle ids, muessen alle
+// ihre Felder welche haben und sie muessen bei 0 lueckenlos sein. Eine spaeter
+// ergaenzte Tabelle GANZ OHNE ids uebersetzt anstandslos. Genau diese Luecke
+// schliesst tools/eq-copilot/pruefe_fbs_feldids.py.
+//
+// EINE ID WIRD NIE WIEDERVERWENDET — auch nicht, nachdem ihr Feld entfernt
+// wurde (Entwurf §53). Ein entferntes Feld bekommt `(deprecated)`, seine Zahl
+// bleibt verbrannt. Wer eine Zahl recycelt, gibt alten Lesern neue Daten unter
+// altem Namen.
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// WAS HIER BEWUSST NICHT STEHT: `schema_major`/`schema_minor`. Der 16-Byte-
+// Envelope aus §33.1 traegt beide bereits (`u8 schema_major`, `u8 schema_minor`)
+// und gehoert SONDE-010. Sie hier zu wiederholen hiesse, zwei Wahrheiten ueber
+// dieselbe Zahl in denselben Frame zu legen — und irgendwann widersprechen die
+// sich. Die Formatidentitaet traegt `file_identifier`; die Feldevolution traegt
+// die id-Disziplin oben. Ein drittes Versionsfeld waere Zeremonie.
+
+namespace evenacadia.nakama.v3;
+
+// Vier Bytes an Offset 4 jedes Puffers. Ein Leser, der einen fremden Puffer
+// bekommt, sieht das VOR dem ersten Feldzugriff. Beide Beine pruefen ihn.
+file_identifier "NKT3";
+file_extension "nktb";
+
+// ── Aufzaehlungen ───────────────────────────────────────────────────────────
+//
+// Alle Werte sind explizit gesetzt, damit ein spaeter EINGEFUEGTER Name die
+// bestehenden nicht verschiebt.
+//
+// Jede traegt `unbekannt = 0` und beide Beine LEHNEN diesen Wert ab. Grund:
+// FlatBuffers liefert fuer ein fehlendes Skalarfeld den Default, und der ist 0.
+// Waere 0 eine gueltige Bedeutung, laese sich "der Sender hat das Feld
+// weggelassen" nicht mehr von "der Sender meinte genau das" unterscheiden.
+// Entwurf §33.1 verlangt fuer Discriminator und Capability ausdruecklich
+// Ablehnung bei unbekannter Bedeutung — `unbekannt = 0` macht das Weglassen zu
+// genau so einem Fall.
+//
+// ACHTUNG, gemessene Eigenschaft des Formats: FlatBuffers prueft Enumwerte beim
+// Verifizieren NICHT auf Bereich. Ein Byte 99 in einem `ubyte`-Enum kommt
+// unbeanstandet durch `Verify` und erst der Leser sieht es. Deshalb ist die
+// Bereichspruefung Teil des Lesers auf BEIDEN Seiten und hat eigene Fixtures.
+
+enum Bandgitter : ubyte {
+  unbekannt = 0,
+  nakama_1_24_oct_30_18k_v1 = 1,   // 221 Baender, Evidenz 1–4 Hz
+  nakama_log64_v1 = 2,             // 64 Gruppen, Live 10 Hz
+}
+
+enum BandEncoding : ubyte {
+  unbekannt = 0,
+  q_db_0p1_i16 = 1,                // Live-Telemetrie (§33.2)
+  q_db_0p01_i16 = 2,               // fokussierte PRE/POST-Evidenz (§33.1)
+  float32 = 3,                     // komplexe Kreuzstatistik (§33.1)
+}
+
+enum Zeitbasis : ubyte {
+  unbekannt = 0,
+  project_samples = 1,
+  local_monotonic = 2,
+}
+
+enum Herleitung : ubyte {
+  unbekannt = 0,
+  validated_block_mapping = 1,
+  unproven = 2,
+}
+
+// Gueltigkeitsbits des Transportstempels (§32.3). "Ein fehlendes Bit ist ein
+// Nein, kein Vielleicht" — deshalb Bitflags und kein Objekt aus vier Booleans:
+// ein Objekt koennte fehlen, ein Bitfeld ist immer da und dann eben 0.
+// Ein gesetztes Bit AUSSERHALB dieser vier wird von beiden Beinen abgelehnt.
+enum Gueltigkeit : ubyte (bit_flags) {
+  project_time,     // 1
+  play_state,       // 2
+  record_state,     // 4
+  cycle_bounds,     // 8
+}
+
+// ── Tabellen ────────────────────────────────────────────────────────────────
+
+/// Effektive Steueradresse (§32.1). KEIN Feld hier ist additiv: eine unbekannte
+/// Eigenschaft waere eine unbekannte Zieladresse. Alle fuenf sind `required` —
+/// das prueft schon der FlatBuffers-Verifier, nicht erst unser Leser.
+/// Die vier Hex-Token sind je 32 Kleinbuchstaben-Hexziffern (Def. `hex32` des
+/// JSON-Vertrags); die SID wird nie geparst, nur verglichen.
+table Adresse {
+  logon_sid:string (id: 0, required);
+  project_binding_id:string (id: 1, required);
+  session_epoch:string (id: 2, required);
+  instance_id:string (id: 3, required);
+  runtime_nonce:string (id: 4, required);
+}
+
+/// Abgeleitete Samplegrenzen einer Schleife. NUR gueltig, wenn PPQ, Projektzeit
+/// und Tempo im Block eine durch FL-Goldens validierte Abbildung erlauben
+/// (§32.3) — deshalb traegt das Objekt seine Herleitung mit, statt sie dem
+/// Empfaenger zu ueberlassen.
+table AbgeleiteteGrenzen {
+  start:long (id: 0);
+  ende:long (id: 1);
+  herleitung:Herleitung (id: 2);
+}
+
+/// Schleifengrenzen. VST3 liefert sie als PPQ; Samplegrenzen sind ABGELEITET.
+/// `active` und `bounds_valid` sind bool ohne Optionalitaet: ihr Default false
+/// ist die richtige Bedeutung eines fehlenden Feldes (§32.3).
+table Schleife {
+  active:bool (id: 0);
+  bounds_valid:bool (id: 1);
+  start_ppq:double = null (id: 2);
+  end_ppq:double = null (id: 3);
+  abgeleitete_grenzen:AbgeleiteteGrenzen (id: 4);
+}
+
+/// Zeitbasis und explizite Gueltigkeit jedes zeitabhaengigen Frames (§32.3).
+///
+/// Die drei `= null`-Felder sind echte FlatBuffers-Optionals: bei ihnen ist
+/// "nicht gemeldet" von "gemeldet als 0" unterscheidbar. Bei
+/// `project_sample_start` ist das keine Feinheit — 0 ist eine voellig normale
+/// Projektposition, und ein Default 0 haette den Frameanfang stillschweigend
+/// an den Songanfang gelegt.
+table Transportstempel {
+  transport_epoch:ulong (id: 0);
+  continuity_segment:ulong (id: 1);
+  sequence:ulong (id: 2);
+  zeitbasis:Zeitbasis (id: 3);
+  project_sample_start:long = null (id: 4);
+  sample_count:uint (id: 5);
+  sample_rate:double (id: 6);
+  playing:bool (id: 7);
+  recording:bool (id: 8);
+  continuous_time_samples:long = null (id: 9);
+  schleife:Schleife (id: 10);
+  input_presentation_latency:uint = null (id: 11);
+  output_presentation_latency:uint = null (id: 12);
+  gueltigkeit:Gueltigkeit (id: 13);
+}
+
+/// Ein Bandsatz mit seinem Gitter, seiner Kodierung, seiner Gueltigkeitsbitmap
+/// und seinem Saettigungsbit (§33.1). Gegenstueck zu `$defs/bandwerte` im
+/// JSON-Vertrag; Skalierung und Rundung stehen in quantisierung-v1.json.
+///
+/// Die Kodierung steht IM Batch und wird nie aus dem Nachrichtentyp geraten
+/// (§33.1 woertlich). Genau zwei Traeger existieren: `werte_i16` fuer beide
+/// q_db-Kodierungen, `werte_f32` fuer float32. Der Leser erzwingt, dass genau
+/// EINER gesetzt ist und dass er zur Kodierung passt — ein Puffer mit
+/// encoding=float32 und gesetztem `werte_i16` ist ungueltig, nicht "irgendwie
+/// interpretierbar".
+///
+/// `gueltig_bitmap` ist LSB-first ueber ceil(n/8) Bytes: Band i sitzt in Byte
+/// i/8, Bit i%8. Die Fuellbits des letzten Bytes MUESSEN 0 sein — sonst
+/// erzeugen zwei Sender fuer denselben Messwert zwei verschiedene Puffer, und
+/// ein Bytevergleich waere keine Aussage mehr.
+table Bandwerte {
+  gitter:Bandgitter (id: 0);
+  encoding:BandEncoding (id: 1);
+  werte_i16:[short] (id: 2);
+  werte_f32:[float] (id: 3);
+  gueltig_bitmap:[ubyte] (id: 4, required);
+  saturated:bool (id: 5);
+}
+
+/// Ein Messframe EINER Quelle (§33.2, Live-Telemetrie 10 Hz).
+///
+/// Alle Kennzahlen sind Optionals. Das ist die NaN-Ehrlichkeit dieses Projekts
+/// im Binaerformat: ein nicht messbarer Wert wird WEGGELASSEN, nicht als 0 oder
+/// als NaN gesendet. Ein NaN oder ±inf auf der Leitung ist deshalb ein
+/// Senderfehler und wird von beiden Beinen abgelehnt statt sanitisiert —
+/// quantisierung-v1.json legt fest, dass Nichtendliches beim ERZEUGEN in
+/// Wert 0 mit gueltig=false uebersetzt wird.
+table Frame {
+  transport:Transportstempel (id: 0, required);
+  baender:Bandwerte (id: 1, required);
+  metrics_version:uint (id: 2);
+  aktivitaet:float = null (id: 3);
+  lufs_s:float = null (id: 4);
+  peak_db:float = null (id: 5);
+  crest_db:float = null (id: 6);
+  psr_db:float = null (id: 7);
+  breite:float = null (id: 8);
+  korrelation:float = null (id: 9);
+}
+
+/// Ein Eintrag des Batches: genau eine Quelle mit genau ihrem aktuellen Frame.
+table QuellenEintrag {
+  quelle:Adresse (id: 0, required);
+  frame:Frame (id: 1, required);
+}
+
+/// Der Wurzeltyp (§33.1, Pruefbericht Befund D):
+///
+///   "Ein `FeatureBatch` ist eine Liste von `(source, frame)`-Eintraegen mit
+///    hoechstens EINEM aktuellen Frame je Quelle. Sonde→Broker ist der
+///    Sonderfall mit genau einem Eintrag (Queuecap 2, replace-oldest);
+///    nur Broker→Main buendelt die aktuellen Frames mehrerer Sonden."
+///
+/// Daraus folgt die Regel, die kein Schema ausdruecken kann und deshalb beide
+/// Leser tragen: ZWEI EINTRAEGE MIT DERSELBEN `instance_id` SIND UNGUELTIG.
+/// Genau deshalb braucht das Format keine zweite Wrapper-Ebene.
+///
+/// Die Tabelle haelt heute ein einziges Feld. Das ist Absicht und kein
+/// Platzhalter: als Tabelle (statt als blosser Vektor-Wurzeltyp) kann sie
+/// spaeter Felder bekommen, ohne dass ein alter Leser bricht.
+table FeatureBatch {
+  eintraege:[QuellenEintrag] (id: 0, required);
+}
+
+root_type FeatureBatch;

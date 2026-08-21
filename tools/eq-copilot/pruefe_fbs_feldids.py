@@ -47,6 +47,10 @@ IDS = WURZEL / "eq-copilot/schemas/v3/flatbuffers/FELD-IDS.json"
 # wenn jemand ein Offsetfeld ergaenzt und den Riegel vergisst — dafuer muss
 # sie die Riegelzeilen sehen, nicht das uebersetzte Verhalten.
 RIEGEL = WURZEL / "broker/src/telemetrie.rs"
+# Eine Zeile, die mit `}` in Spalte 0 beginnt, beendet in Rust eine Funktion
+# auf oberster Ebene. Als Konstante, weil ein Zeilenumbruch in einem
+# Heredoc-Literal auf diesem Rechner schon einmal verschwunden ist.
+RUMPFENDE = "\n}"
 
 
 def blockkommentare_entfernen(text: str) -> str:
@@ -174,6 +178,20 @@ def ist_offsetfeld(typ: str, tabellennamen: set[str]) -> bool:
     return typ == "string" or typ.startswith("[") or typ in tabellennamen
 
 
+def riegelrumpf(quelle: str) -> str | None:
+    """Nur der RUMPF von `fn strukturriegel` — nicht die ganze Datei.
+
+    Sonst genuegte eine Erwaehnung der Konstante in einem Kommentar, um diese
+    Pruefung gruen zu halten. Ein Riegel, der sich von Prosa beruhigen laesst,
+    ist keiner.
+    """
+    anfang = quelle.find("fn strukturriegel(")
+    if anfang < 0:
+        return None
+    ende = quelle.find(RUMPFENDE, anfang)
+    return quelle[anfang:ende] if ende > 0 else quelle[anfang:]
+
+
 def pruefe_strukturriegel(tabellen, riegelquelle: str) -> list[str]:
     """T2-Runde 4, BL-A: jedes Offsetfeld MUSS im Rust-Strukturriegel stehen.
 
@@ -191,6 +209,11 @@ def pruefe_strukturriegel(tabellen, riegelquelle: str) -> list[str]:
     Verifiern. Faellt das `required` weg, faellt diese Begruendung mit, und
     zwar still. Deshalb steht sie hier als Pruefung.
     """
+    rumpf = riegelrumpf(riegelquelle)
+    if rumpf is None:
+        return [f"`fn strukturriegel` steht nicht mehr in {RIEGEL} — ohne ihn kennt "
+                "das Rust-Bein C++' Regel 'May not point to itself' wieder nicht "
+                "(T2-Runde 4, BL-A)."]
     namen = set(tabellen)
     fehler: list[str] = []
     for tab, felder in sorted(tabellen.items()):
@@ -198,7 +221,7 @@ def pruefe_strukturriegel(tabellen, riegelquelle: str) -> list[str]:
             if not ist_offsetfeld(typ, namen):
                 continue
             marke = f"{tab}::VT_{feld.upper()}"
-            if marke not in riegelquelle:
+            if marke not in rumpf:
                 fehler.append(
                     f"Strukturriegel kennt {marke} nicht ({tab}.{feld}: {typ}) — "
                     "ein Offsetfeld ohne Riegelzeile ist die Luecke aus T2-Runde 4.")
@@ -214,14 +237,16 @@ def pruefe_strukturriegel(tabellen, riegelquelle: str) -> list[str]:
 
 
 def main() -> int:
-    # Zwei optionale Pfade, damit der Riegel an einer MUTIERTEN Kopie
+    # Drei optionale Pfade, damit der Riegel an einer MUTIERTEN Kopie
     # vorgefuehrt werden kann, ohne den Vertrag anzufassen. Ein Riegel, den
     # niemand fallen gesehen hat, ist eine Behauptung.
-    global FBS, IDS
+    global FBS, IDS, RIEGEL
     if len(sys.argv) >= 2:
         FBS = Path(sys.argv[1]).resolve()
     if len(sys.argv) >= 3:
         IDS = Path(sys.argv[2]).resolve()
+    if len(sys.argv) >= 4:
+        RIEGEL = Path(sys.argv[3]).resolve()
 
     for datei in (FBS, IDS):
         if not datei.exists():

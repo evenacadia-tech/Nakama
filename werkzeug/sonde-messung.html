@@ -281,10 +281,15 @@ body.vertragAn .vertrag{display:flex}
     das es nicht mehr gibt — deshalb dieses hier: <b>eine Zahl, die man nicht
     nachmessen kann, ist eine Behauptung.</b><br>
     <b>Zwei Grenzfälle, und sie zeigen in entgegengesetzte Richtungen:</b> der
-    <b>Platz</b>-Grenzfall (alle 8 Slots an, alle dynamisch, längste Werte) braucht
+    <b>Platz</b>-Grenzfall (alle 8 Slots an, alle dynamisch, Schutzbereich
+    getroffen) braucht
     das Maximum an Raum. Der <b>Ehrlichkeits</b>-Grenzfall (Bypass an, vom Main
     getrennt, Dynamik aus) macht die meisten Bedienelemente tot — und tote Werte
-    zeigen „—", was die Zeile <i>schmaler</i> macht. Beide sind unten schaltbar.
+    zeigen „—", was die Zeile <i>schmaler</i> macht. Beide sind unten schaltbar.<br>
+    <b>Die „längsten Werte" gehören nicht zur Bedingung</b> — nachgemessen am
+    2026-08-21 kosten sie auf den Pixel dasselbe wie realistische (A 1 · B 1 ·
+    C 71 · D 66 · E 185, in beiden Stellungen). Die Spalten sind breit genug;
+    was den Platz-Grenzfall ausmacht, sind Anzahl, Dynamik und Schutzbereich.
   </div>
   <div class="namen">
     <b>Namenstafel</b> — festgelegt vor der ersten Zeile Code
@@ -1267,7 +1272,8 @@ function waageZeilen(){
       'was diese Runde wirklich anzeigt', {stapel:{n:8, html:slotZeile(s,'voll')}}),
     R('SLOT-Zeile · 12 Parameter, längste Werte',
       ohneSchalter(() => slotZeile(lang,'voll')),
-      'Platz-Grenzfall: Notch · Q 24.00 · −12.0 dB · −60.0 dB · 3000 ms — Ehrlichkeitsschalter dafür kurz neutral',
+      'Platz-Grenzfall: Notch · Q 24.00 · −12.0 dB · −60.0 dB · 3000 ms — bis auf '
+      + 'Gain ±12 dB alles Testannahme (siehe Fuß) · Ehrlichkeitsschalter dafür kurz neutral',
       {stapel:{n:8, html: ohneSchalter(() => slotZeile(lang,'voll'))}, neutral:true}),
     R('SLOT-Zeile · 6 EQ-Werte', slotZeile(s,'eq'),
       'Dynamik einen Schritt entfernt — spart Breite, nicht Höhe',

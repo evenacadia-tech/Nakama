@@ -238,7 +238,10 @@ i/-text w/-text attr/-text   …/live-64-band.bin
 i/lf    w/lf    attr/-text   …/MANIFEST.json
 
 $ git archive HEAD eq-copilot/fixtures/v3/flatbuffers | tar -x -C <temp>
-40 bytegleich, 0 abweichend  (Arbeitskopie vs. git-Archiv)
+Binaerkorpus: 41 bytegleich, 0 abweichend
+
+$ git archive HEAD eq-copilot/fixtures/v3 | tar -x -C <temp>
+196 bytegleich, 0 abweichend  (ganzer v3-Korpus: JSON + Binaer + Falltabelle)
 ```
 
 `.gitattributes` deckt die Dateien doppelt ab (`*.bin binary` und

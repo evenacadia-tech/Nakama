@@ -338,7 +338,8 @@ rendert auf CPU.
 | Bereich | Zuerst lesen |
 |---|---|
 | Wie das Plugin heute funktioniert (Architektur, Datenfluss, IPC) | `docs/plugin-wissen.md` |
-| v3-Verträge: Engine-Teilmenge, Bandgitter, Fixture-Korpus (SONDE-005a) | `eq-copilot/schemas/v3/README.md` |
+| v3-Verträge: Engine-Teilmenge, Textriegel, Bandgitter, Fixture-Korpus (SONDE-005a) | `eq-copilot/schemas/v3/README.md` |
+| FlatBuffers-Vertrag: Feld-IDs, flatc-Pin, Leserregeln (SONDE-005b) | `eq-copilot/schemas/v3/flatbuffers/README.md` |
 | Design-Prototyp, Verwürfe, Freeze-Stand | `docs/design-stand.md` |
 | Visueller Nordstern — Hörkompass-Zielvertrag (19.08.) | `docs/visuelles-zielbild-hoerkompass.md` |
 | Sonden-Produkt, Technik + Phasenplan (Fassung 0.4) | `docs/FL-Nakama-Sonden-Design-Entwurf.md` (+ `docs/pruefbericht-sondenentwurf-2026-08-20.md`) |

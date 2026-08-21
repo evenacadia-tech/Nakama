@@ -13,7 +13,7 @@
 > Termin-B-Messgerät 21.08., beide mit T2-PASS; v3-Vertragsbaum 21.08., **T2 noch
 > offen**). P0 steht an den **zwei FL-Terminen des Users**, P1 läuft daran vorbei
 > weiter. Einstieg: „DER EINE NÄCHSTE SCHRITT".
-> Kanon: **8/8 grün**.
+> Kanon: **14/14 grün**.
 > Sessionplan, Gates und Prüfstufen in `docs/bauaufteilung-sonden.md`.
 > Die Design-Spur läuft parallel weiter und blockiert nichts.
 > **Erledigt am 20.08.:** /freshen gelaufen (+ eigenes Playbook);
@@ -180,39 +180,68 @@ Stop/Play), Offline-Render, float/double, Presentation-Latency und vor allem
 Damit liegen **beide Termine beim User** — mehr ist an P0 ohne seine Messwerte
 nicht zu bauen. `S4` und das Gate `G0` hängen daran.
 
-### ✅ S5 ist gebaut (21.08.) — der v3-Vertragsbaum steht
+### ✅ S5 UND S6 sind gebaut und T2-geprüft (21.08.) — der v3-Vertrag steht
 
-Die Fläche, die nicht an den Terminen hängt, ist erledigt: **`SONDE-005a`**
-liegt in `eq-copilot/schemas/v3/` (Manifest `docs/beweise/SONDE-005a.md`).
+Die Fläche, die nicht an den FL-Terminen hängt, ist fertig: **`SONDE-005a`**
+(JSON) und **`SONDE-005b`** (FlatBuffers) liegen in `eq-copilot/schemas/v3/`.
+Manifeste: `docs/beweise/SONDE-005a.md` und `docs/beweise/SONDE-005b.md`.
 
-- **17 der 25 Nachrichtenfamilien** aus Entwurf §33.3 sind definiert; die
-  restlichen **8 sind namentlich reserviert** mit Eigentümerticket und werden
-  vom Parser abgelehnt — genau der Vertragsanteil, der bricht, wenn man ihn
-  offen lässt.
-- **Beide Bandgitter** liegen als eingefrorene Zahlen vor (221 + 64). Von den
-  vier denkbaren IEC-Konventionen trifft nur eine die 221 aus §33.2; die
-  Bandzahl war die Prüfsumme über eine Entscheidung, die der Entwurf nie
-  ausgeschrieben hat.
-- **131 Fixtures** mit **handgeschriebenem** Manifest und **drei** Prüfbeinen
-  (`jsonschema`-Referenz · `EqCopSchemaTest` · `contract_cross_language`). Der
-  Korpus hat drei echte Fehler gefunden, bevor irgendjemand v3 spricht.
-- Kanon **7/7 → 8/8**, `pluginval` Strenge 8 SUCCESS.
+- **17 der 25 Nachrichtenfamilien** aus §33.3 sind definiert, die restlichen
+  **8 namentlich reserviert** mit Eigentümerticket und vom Parser abgelehnt.
+- **Beide Bandgitter** als eingefrorene Zahlen (221 + 64); von vier denkbaren
+  IEC-Konventionen trifft nur eine die 221 aus §33.2.
+- **`capabilities` ist der Satz aus §53.6, wörtlich und vollständig** — alle
+  zehn. Vorher standen dort sieben selbst gebaute Namen.
+- **153 JSON-Fixtures + 40 Binärfixtures**, beide mit **handgeschriebenem**
+  Manifest, gefahren von je drei bzw. zwei Prüfbeinen.
+- **Codegen-Drift ist 0**: `flatc` auf einen **Commit** gepinnt (nicht auf
+  einen Tag — der Upstream führt für 25.12.19 deren zwei), Compiler,
+  C++-Header und Rust-Crate aus derselben Quelle, Neugenerierung bytegleich.
+- Kanon **7/7 → 14/14**, `pluginval` Strenge 8 SUCCESS.
 
-**Offen an S5:** der **T2-Frischkontext-Prüfer** ist nicht gelaufen (in dieser
-Session waren Subagenten nicht freigegeben). Nach `bauaufteilung-sonden.md` §2
-ist T2 blockierend — S5 gilt als *gebaut und selbstgeprüft*, nicht als
-abgeschlossen. Der Prüfer braucht: Diff `5299037..HEAD` (alle SONDE-005a-Commits, beginnend bei `63d9c21`), das Manifest, und
-den Gate-Text aus §65 im Wortlaut.
+**T2 ist gelaufen — in zwei Runden, beide NEEDS_WORK, beide mit echten
+Blockern.** Was sie gefunden haben, steht vollständig in
+`docs/beweise/SONDE-005a.md` §6 (24 + 12 Befunde mit Quelle und Ausgang).
+Die zwei Sätze, die ein neuer Leser mitnehmen sollte:
+
+> **1. `C++/Rust validieren identisch` war zweimal falsch, und beide Male lag
+> es an JUCEs Zahlenleser.** `parseNumber` akkumuliert ohne Bereichsprüfung
+> (`18446744073709552016` kam als **400** an), und `readDoubleValue` läuft im
+> Exponenten über (`1e4294967296` kam als **1.0** an). Der Vertrag hat
+> deshalb jetzt eine Stufe VOR dem Parser — den **Textriegel**, acht Regeln
+> auf dem Rohtext.
+>
+> **2. Ein Riegel darf nie die Bibliothek befragen, gegen deren Verhalten er
+> schützt.** Die Ganzzahlregel war aus dem Literal gerechnet und hat
+> gehalten; die Endlichkeitsregel war an `getDoubleValue()` delegiert und hat
+> nicht gehalten. Beide rechnen jetzt aus dem Literal.
+
+Dazu eine strukturelle Lehre: die Falltabelle des Riegels lag als **drei
+handgepflegte Kopien** in den drei Beinen — gezählt 31, 32 und 33 Fälle,
+während das Manifest ihre Gleichheit behauptete. Sie ist jetzt **eine
+gelesene Datei** (`fixtures/v3/TEXTRIEGEL-FAELLE.json`, 59 Fälle).
+
+**Offen an S5/S6:** der **Schließungsvorbehalt aus §65** — das Ticket gilt
+erst nach der Capabilityentscheidung aus S4 als geschlossen. Die Form des
+Vertrags kann die Hostantwort nicht mehr ändern; was fehlt, sind **Werte**.
+Ausnahme mit Ticket: **NAK-27** (`offline_render_detection` ist keine
+§53.6-Capability — eine elfte wäre ein Major-Schritt, keine Minor-Erweiterung).
 
 ### Die nächste baubare Fläche ohne FL-Termine
 
-**S6 (`SONDE-005b`)** — FlatBuffers-Schema mit expliziten Feld-IDs, gepinntes
-`flatc`, Codegen-Drift-Test. Das ist die zweite Hälfte desselben
-Entwurfstickets und schließt die Gate-Hälfte „Codegen-Drift ist 0". Der Name
-`telemetry_frame` ist dafür bereits reserviert. Danach **S7
-(`SONDE-006`)** — State-Schema 2 samt reiner Schema-1-Migration; dort wird
-auch die RFC-8785-Kanonisierung für `state_hash` erstmals gebraucht (in S5
-bewusst NICHT vorgebaut).
+**S7 (`SONDE-006`)** — State-Schema 2, fester Parameterbestand, reine
+Schema-1-Migration. Dort wird auch die RFC-8785-Kanonisierung für
+`state_hash` erstmals gebraucht (in S5 bewusst NICHT vorgebaut), und dort
+gehört der Herkunftstag aus §33.4 hin.
+
+Danach **S8 (`SONDE-007a`)** — der gemeinsame Kern ohne `JucePlugin_*`-
+Konstanten (NAK-23b); laut `bauaufteilung-sonden.md` der Umbau, den der
+Entwurf unterschätzt.
+
+Drei offene Punkte aus den T2-Runden hängen an späteren Tickets und stehen
+mit ID im Offen-Set: **NAK-27** (Capabilitysatz), **NAK-28**
+(`subscribe_session` ohne Gegenpfad), **NAK-29** (bedingte Feldpflichten im
+Transportstempel → `SONDE-009`).
 
 ### Danach: S4 → Gate G0
 

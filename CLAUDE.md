@@ -68,7 +68,8 @@ wird am lebenden Blatt MIT dem User geklärt.
    Grenzfall, der das Bild sprengt). Nichts Grundsätzliches (Stilrichtung,
    Metapher, Farbwelt) ohne sein Wort festlegen oder wieder aufmachen —
    und nichts davon selbst vorschlagen. Fehlende oder unklare Vorstellung
-   wird per **`/interview <phase>`** erfragt.
+   wird per **`/interview <phase>`** erfragt — Pflicht zu Beginn jeder
+   Arbeitsplan-Phase, jederzeit zusätzlich einsetzbar.
 4. **Abnahmen sind bindend.** Jedes User-Urteil sofort als Datei in
    `abnahmen/` festhalten (Format dort). Festgelegtes wird nicht ohne
    neues User-Wort erneut zur Diskussion gestellt — genau das erzeugt

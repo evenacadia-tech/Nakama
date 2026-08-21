@@ -363,7 +363,7 @@ Anforderung. Nach `docs/bauaufteilung-sonden.md` §2 ist T2 **blockierend** —
 dieses Ticket gilt bis dahin als *gebaut und selbstgeprüft*, **nicht** als
 abgeschlossen.
 
-Was der Prüfer bekommen muss: der Diff `3582ae4^..HEAD`, dieses Manifest und
+Was der Prüfer bekommen muss: der Diff `5299037..HEAD` (alle SONDE-005a-Commits, beginnend bei `63d9c21`), dieses Manifest und
 der Gate-Text aus §65 im Wortlaut — nicht meine Zusammenfassung.
 
 ---

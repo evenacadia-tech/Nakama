@@ -201,7 +201,7 @@ liegt in `eq-copilot/schemas/v3/` (Manifest `docs/beweise/SONDE-005a.md`).
 **Offen an S5:** der **T2-Frischkontext-Prüfer** ist nicht gelaufen (in dieser
 Session waren Subagenten nicht freigegeben). Nach `bauaufteilung-sonden.md` §2
 ist T2 blockierend — S5 gilt als *gebaut und selbstgeprüft*, nicht als
-abgeschlossen. Der Prüfer braucht: Diff `3582ae4^..HEAD`, das Manifest, und
+abgeschlossen. Der Prüfer braucht: Diff `5299037..HEAD` (alle SONDE-005a-Commits, beginnend bei `63d9c21`), das Manifest, und
 den Gate-Text aus §65 im Wortlaut.
 
 ### Die nächste baubare Fläche ohne FL-Termine

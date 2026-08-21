@@ -61,6 +61,14 @@ Die Projektquellen — vollständig, nichts von außen dazuholen:
 Die Gestaltung kommt aus Figma. Offen ist, was Figma nicht zeigt — und das
 wird am lebenden Blatt MIT dem User geklärt.
 
+**Maßstab (User-Wort 2026-08-22): die Apps sehen in FL Studio exakt aus wie
+in Figma.** Zwischenbilder zählen nicht. Darum: **Statisches wird gebacken,
+Dynamisches gezeichnet** — Wortmarken (Shader), Schale/Glas/Kinn und
+Leuchtsäume als Figma-Exporte je Skalierungsstufe, Geist/Geist Mono
+eingebettet, der Prototyp mit denselben Assets wie das Plugin; Beweis ist der
+1:1-Pixelvergleich gegen den Export des Users
+(`abnahmen/2026-08-22-erfolgskriterium-exakt-wie-figma.md`).
+
 ## Harte Regeln (nicht verhandelbar)
 
 1. **Assettruhe zuerst.** `assets/` ist die erste Anlaufstelle vor JEDER

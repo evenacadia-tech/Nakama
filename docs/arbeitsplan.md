@@ -195,6 +195,14 @@ Komponentenliste mit Zuständen, Maße/Abstände, Assets (exportfertig),
 Timing-Angaben, Abnahmekriterien. Der Prototyp bleibt als lebende
 Referenz bestehen.
 
+> **Maßstab seit 2026-08-22** (`abnahmen/2026-08-22-erfolgskriterium-exakt-wie-figma.md`):
+> die Apps sehen in FL Studio **exakt** aus wie in Figma. Daraus folgt für
+> Phase 1b und 5: **Statisches wird gebacken, Dynamisches gezeichnet** —
+> Wortmarken (Shader), Schale/Glas/Kinn (Mischmodi, Korn) und Leuchtsäume
+> kommen als Figma-Exporte je Skalierungsstufe, Geist/Geist Mono werden
+> eingebettet, und der Prototyp benutzt dieselben Assets wie das Plugin.
+> Beweis ist der 1:1-Pixelvergleich gegen den Export des Users.
+
 ## Ständige Regeln
 
 - Jeder gezeigte Stand: Playwright-Screenshot als Beleg.

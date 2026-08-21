@@ -98,6 +98,10 @@
   stattdessen Bilder geliefert — die Figma-Stände tragen die Stimmung. Wer
   Worte dafür braucht (z. B. für eine Abnahme-Checkliste), fragt den User,
   statt sie aus dem Bild zu lesen.
+  > **Nachtrag 2026-08-22 — das Erfolgskriterium hat Worte:** „Hauptsache die
+  > Apps selbst in fl Studio sehen dann exakt aus wie in figma" —
+  > [2026-08-22-erfolgskriterium-exakt-wie-figma](2026-08-22-erfolgskriterium-exakt-wie-figma.md).
+  > Gefühlsattribute bleiben offen.
 - **Für Nakama Suna liegt noch kein Figma-Stand vor.** Bis er kommt, gibt
   es für Suna nur die abgenommene Größe 260×84 und den Pflichtinhalt der
   Spezifikation. Nichts davon wird ohne Stand entworfen.

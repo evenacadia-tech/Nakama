@@ -763,9 +763,17 @@ function kachel(e, i, gross){
   const V = vertrag(e);
   const zahl = n => { const l = V.listen[n];
     return l ? ` <b>${l.sichtbar}</b>/${l.gesamt}` : ''; };
+  /* Der Beleg landet in einem title-Attribut, und JEDER Belegtext enthaelt ein
+     gerades Anfuehrungszeichen (BELEG zitiert die Spezifikation mit „…"). Ohne
+     Maskierung reisst es das Attribut auf: gemessen am 2026-08-21 trugen 18 von
+     18 Chips sieben Muell-Attribute (`+`, `die`, `immer`, `ablesbar` …) und der
+     Beleg brach nach der Haelfte ab. Genau der Fall aus PRUEFLISTE 4: eine
+     Beschriftung, die weniger sagt, als sie behauptet. */
+  const att = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+                            .replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const chip = n => { const bg = belegFuer(n);
-    return `<span${bg ? ` title="Handgriff: ${AUFGABEN[bg[0]]}
-${bg[1]}"`
+    return `<span${bg ? ` title="${att(`Handgriff: ${AUFGABEN[bg[0]]}
+${bg[1]}`)}"`
                       : ' class="ohnebeleg" title="Kein Beleg — dieser Baustein '
                         + 'muesste vom Blatt verschwinden."'}>${n}${zahl(n)}</span>`; };
   v.innerHTML =

@@ -388,8 +388,9 @@ async function probeGrenzfall() {
       + 'Schutzbereich getroffen, Ehrlichkeitsschalter neutral)'
     : `grenzfall/platz NICHT Vorgabe: ${m.platz.fehlt.join(' · ')}`)
   sag(m.ehr.ok, m.ehr.ok
-    ? `grenzfall/ehrlichkeit = sauber (${m.ehr.zellen} Zellen bei Bypass + getrennt `
-      + '+ Dynamik aus, kein Wert steht mehr da)'
+    ? `grenzfall/ehrlichkeit = sauber (${m.ehr.zellen} Zellen in Stellung `
+      + '"Bypass + getrennt, Dynamik AN" tot, '
+      + `${m.ehr.eqLebtImSchoenfall} EQ-Zellen leben in der Gegenstellung)`
     : `grenzfall/ehrlichkeit: ${m.ehr.reste.length} von ${m.ehr.zellen} Zellen zeigen `
       + `weiter Werte — ${[...new Set(m.ehr.reste)].slice(0, 6).join(', ')}`)
   await ctx.close()

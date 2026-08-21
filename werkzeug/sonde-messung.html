@@ -415,6 +415,11 @@ const hzText = f => f >= 1000
 const dbText = v => (v > 0 ? '+' : '−') + Math.abs(v).toFixed(1) + ' dB';
 const msText = v => v + ' ms';
 const qText  = v => 'Q ' + v.toFixed(2);
+/* Das Totzeichen steht an EINER Stelle. Es wird in beiden Darstellungsformen
+   und in der Ehrlichkeitsmessung gebraucht; zwei Schreibweisen desselben
+   Strichs waeren genau die Sorte Doppelquelle, die dieses Blatt sonst
+   ueberall vermeidet. */
+const TOT = '—';
 
 /* Ein SLOT ist tot, wenn das Geraet ueberbrueckt ist oder er selbst aus ist.
    Seine fuenf Dynamikwerte sind zusaetzlich tot, wenn die Dynamik aus ist:
@@ -442,10 +447,16 @@ const liste = (name, gesamt, html) =>
 function slotZeile(s, form='voll'){
   const tot = slotTot(s), dtot = dynTot(s);
   const z = (k, txt, totJa) =>
-    `<span class="${k}${totJa ? ' tot' : ''}">${totJa ? '—' : txt}</span>`;
+    `<span class="${k}${totJa ? ' tot' : ''}">${totJa ? TOT : txt}</span>`;
   const gain = s.gDb === null
     ? `<span class="g tot">—</span>`                 // HP/LP haben keinen Gain
     : z('g', dbText(s.gDb), tot);
+  /* Der Punkt bleibt bewusst ● und wird nur ausgegraut. Er sagt "dieses Band
+     ist eingeschaltet" — das stimmt auch bei Bypass, denn ueberbrueckt ist das
+     GERAET, nicht das Band. Ihn auf ○ zu stellen waere die Luege in die andere
+     Richtung ("Bypass" gegen "an/aus" ist die Zwei-Begriffe-Falle aus
+     sondenplan §6). Er ist Identitaet wie die Nummer, kein Parameter — und
+     deshalb nimmt ihn die Ehrlichkeitsmessung ausdruecklich aus. */
   const kopf =
       `<span class="an${s.an && !WELT.bypass ? '' : ' aus'}">${s.an ? '●' : '○'}</span>`
     + `<span class="nr">${s.nr}</span>`
@@ -459,7 +470,12 @@ function slotZeile(s, form='voll'){
   return `<div class="slotz${s.nr === WELT.gewaehlt ? ' gewaehlt' : ''}${
     imSchutz(s) ? ' geschuetzt' : ''}">${kopf}`
     + z('ch', s.ch, tot)
-    + `<span class="dy${dtot ? ' tot' : ''}">${s.dyn ? 'dyn' : '—'}</span>`
+    /* Durch z() wie seine fuenf Abhaengigen. Vorher war dies die EINZIGE
+       handgerollte Zelle der Zeile: dtot setzte nur die Klasse, der Text blieb
+       "dyn" stehen. Bei Bypass las sich die Zeile dann als
+       "— — — — dyn — — — — —" — der Schalter behauptete Wirkung, waehrend
+       alles, was an ihm haengt, tot war. */
+    + z('dy', 'dyn', dtot)
     + z('thr', dbText(s.thr), dtot)
     + z('rng', dbText(s.rng), dtot)
     + z('atk', msText(s.atk), dtot)
@@ -471,17 +487,27 @@ function slotZeile(s, form='voll'){
 /* Ein SLOT als waagerechter Kontextstreifen — die Form, die die Hoehe NICHT
    durch Stapeln kauft. Ob acht davon nebeneinander in die Breite passen,
    ist genau die offene Frage; das Blatt misst es, statt sie zu beantworten. */
+/* Beide Streifenformen folgen derselben Regel wie die volle Zeile: IDENTITAET
+   ueberlebt (Punkt und Nummer), jeder PARAMETER stirbt. Vorher setzte `tot`
+   nur die Klasse `aus` — bei Bypass stand in Fall D weiter "24 Hz" und
+   "86 Hz · −3.5 dB", waehrend dieselben Werte in der vollen Zeile schon "—"
+   waren. Zwei Darstellungen desselben Slots widersprachen sich im selben Bild.
+   Der Typ ("HP") gehoert hier zu den Parametern, nicht zur Identitaet: in
+   slotZeile() stirbt er ebenfalls. */
 function slotStreifen(s){
   const tot = slotTot(s);
-  return `<div class="sb${tot ? ' aus' : ''}"><b>${s.an ? '●' : '○'} ${s.nr} ${s.typ}</b>`
-    + `<span>${hzText(s.fHz)}</span>`
-    + `<span>${s.gDb === null ? '—' : dbText(s.gDb)}</span></div>`;
+  const w = t => tot ? TOT : t;
+  return `<div class="sb${tot ? ' aus' : ''}"><b>${s.an ? '●' : '○'} ${s.nr} `
+    + `${w(s.typ)}</b>`
+    + `<span>${w(hzText(s.fHz))}</span>`
+    + `<span>${s.gDb === null ? TOT : w(dbText(s.gDb))}</span></div>`;
 }
 
 function slotStreifenEinzeilig(s){
   const tot = slotTot(s);
+  const w = t => tot ? TOT : t;
   return `<div class="sb1${tot ? ' aus' : ''}">${s.an ? '●' : '○'} ${s.nr} · `
-    + `${hzText(s.fHz)} · ${s.gDb === null ? '—' : dbText(s.gDb)}</div>`;
+    + `${w(hzText(s.fHz))} · ${s.gDb === null ? TOT : w(dbText(s.gDb))}</div>`;
 }
 
 /* Die beiden Grenzfaelle zeigen in entgegengesetzte Richtungen: der
@@ -1034,8 +1060,7 @@ function messePlatz(form, ueber={}){
    Warum Einheiten und nicht Ziffern das Kriterium sind: "● 1" enthaelt eine
    Ziffer und ist trotzdem tot-korrekt — die Slot-Nummer ist Identitaet, kein
    Wert. Hz/dB/ms dagegen stehen ausschliesslich an Werten. */
-const TOT = '—';
-const EINHEIT = /\b(Hz|kHz|dB|ms)\b/;
+const EINHEIT = /\b(Hz|kHz|dB|ms)\b/;   // TOT steht oben bei den Anzeigetexten
 const EQ_ZELLEN  = '.typ,.f,.q,.g,.ch';
 const DYN_ZELLEN = '.dy,.thr,.rng,.atk,.hld,.rel';
 
@@ -1498,8 +1523,8 @@ function pruefZeichnen(ergebnisse){
           : ehr.eqLebtImSchoenfall === 0
             ? 'im Schönfall lebt kein EQ-Wert — dieses Tor prüft ins Leere'
             : ehr.reste.length === 0
-              ? `${ehr.zellen} Zellen bei Bypass geprüft, kein Bandparameter steht `
-                + `mehr da (${ehr.eqLebtImSchoenfall} leben im Schönfall)`
+              ? `${ehr.zellen} Zellen in „Bypass + getrennt, Dynamik AN" sind tot, `
+                + `${ehr.eqLebtImSchoenfall} EQ-Zellen leben in der Gegenstellung`
               : `${ehr.reste.length} von ${ehr.zellen} Zellen zeigen weiter Werte: `
                 + `${[...new Set(ehr.reste)].slice(0, 4).join(', ')}`);
   // Fuer die Sonde von aussen lesbar machen — sie soll nicht HTML lesen muessen.

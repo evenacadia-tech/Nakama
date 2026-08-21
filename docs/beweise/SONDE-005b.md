@@ -45,7 +45,7 @@ Damit kein Prüfer es erst herausfinden muss:
 5. **Dass der Leser unter Last hält.** `pruefe()` wird heute ausschliesslich
    aus den beiden Testtreibern gerufen; Ratengrenzen, Backpressure und das
    Verhalten bei 32 Sonden × 10 Hz gehören zu `SONDE-010`. Was hier bewiesen
-   ist: er urteilt korrekt und stürzt an keinem der 47 Fixtures ab — nicht,
+   ist: er urteilt korrekt und stürzt an keinem der 50 Fixtures ab — nicht,
    dass er schnell genug ist.
 6. **Dass `--conform` gegen jede zukünftige Änderung schützt.** Es prüft
    Evolutionsregeln (Feld entfernt, Typ geändert, id umgehängt, Enumwert
@@ -76,15 +76,15 @@ Damit kein Prüfer es erst herausfinden muss:
 | 4 | **Codegen-Drift ist 0**: die Neugenerierung aus dem `.fbs` ist bytegleich zum committeten C++- und Rust-Code | `pruefe_flatc_drift.py` | ✅ 0 Dateien | [↓ P2](#p2) | 2026-08-21 |
 | 5 | Der Drift-Test **fällt nachweislich** bei einem einzigen geänderten Byte | 1 Byte in der `.h` | ✅ Exit 2 mit SHA-256-Paar | [↓ P6](#p6) | 2026-08-21 |
 | 6 | `flatc --conform` ist **scharf** — vier schemabrechende Mutationen abgelehnt, der unveränderte Stand akzeptiert | `pruefe_flatc_drift.py --conform` | ✅ 4 abgelehnt + Gegenprobe | [↓ P3](#p3) | 2026-08-21 |
-| 7 | Der Binärkorpus hat **47 Fixtures** mit handgeschriebenem Manifest und ist bytegleich zur Neuerzeugung | `erzeuge_fb_fixtures.py --pruefen` | ✅ 48 Dateien | [↓ P4](#p4) | 2026-08-21 |
+| 7 | Der Binärkorpus hat **50 Fixtures** mit handgeschriebenem Manifest und ist bytegleich zur Neuerzeugung | `erzeuge_fb_fixtures.py --pruefen` | ✅ 51 Dateien | [↓ P4](#p4) | 2026-08-21 |
 | 8 | **Rust** klassifiziert jeden Binärfixture wie das Manifest — Urteil UND Verstoßmenge | `cargo test` | ✅ 6 Tests | [↓ P7](#p7) | 2026-08-21 |
-| 9 | **C++** ebenso, gegen dasselbe Manifest | `EqCopSchemaTest` | ✅ 56/56, 47 Fixtures | [↓ P8](#p8) | 2026-08-21 |
+| 9 | **C++** ebenso, gegen dasselbe Manifest | `EqCopSchemaTest` | ✅ 56/56, 50 Fixtures | [↓ P8](#p8) | 2026-08-21 |
 | 10 | Der Cross-Language-Vergleich ist **nicht zeremoniell**: ein Byte bringt beide Beine zum Fallen, mit demselben Pfad und derselben Regel | 1 Byte in `live-64-band.bin` | ✅ identischer Verstoß | [↓ P9](#p9) | 2026-08-21 |
 | 11 | **Kaputtes UTF-8 in einer Zeichenkette wird abgelehnt statt zu korrumpieren** — 200 Durchgänge, stabiles Urteil, kein Absturz | `EqCopSchemaTest` | ✅ stabil | [↓ P8](#p8) · [↓ P13](#p13) | 2026-08-21 |
 | 12 | Beide Leser prüfen ihre einkompilierten Bandwertgrenzen **gegen die Vertragsdatei** | beide Beine | ✅ je 2 Proben | [↓ P7](#p7) · [↓ P8](#p8) | 2026-08-21 |
 | 13 | Die Binärfixtures überleben einen `git`-Auscheckvorgang **bytegleich** | `git archive` + SHA-256 | ✅ ganzer v3-Korpus | [↓ P10](#p10) | 2026-08-21 |
 | 14 | Ein fehlendes oder falsches Werkzeug führt zu **Abbruch mit dem richtigen Exitcode** — 3 für „Voraussetzung fehlt", 2 für „Behauptung widerlegt" | vier Störfälle | ✅ 3 · 3 · 2 · 2 | [↓ P12](#p12) | 2026-08-21 |
-| 15 | Der Kanon bleibt grün; das Produktionsbundle bleibt hostfähig | `beweise.ps1` · `pluginval -8` | ✅ GRUEN · SUCCESS | [↓ P11](#p11) · Kanonlauf am Ende | 2026-08-21 |
+| 15 | Der Kanon bleibt grün — im vereinten Stand mit der parallelen Kontext-Inventur **15/15**; das Produktionsbundle bleibt hostfähig | `beweise.ps1` · `pluginval -8` | ✅ GRUEN 15/15 · SUCCESS | [↓ P11](#p11) · Kanonlauf am Ende | 2026-08-21 |
 
 ---
 
@@ -149,8 +149,8 @@ nur, dass `flatc` immer schimpft.
 **Befehl:** `py -3.13 tools/eq-copilot/erzeuge_fb_fixtures.py --pruefen` · **Exitcode:** 0
 
 ```text
-9 gueltige, 38 ungueltige Fixtures
-  bytegleich: 48 Dateien, MANIFEST sha256=2a94f144327ee02f309e5d363ef96acd9f22f24950f2123dc460fc99398915df
+9 gueltige, 41 ungueltige Fixtures
+  bytegleich: 51 Dateien, MANIFEST sha256=aece719f767b1b5199dfe66395bcdc22ed5afeae5945d646a9e8d4ae1185480a
 ```
 
 ### P5 · Der Feld-ID-Riegel fällt <a id="p5"></a>
@@ -220,8 +220,8 @@ test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 **Befehl:** `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` · **Exitcode:** 0
 
 ```text
-[ok]   Binaerkorpus klassifiziert wie das Manifest (47 Fixtures)
-[ok]   Binaerkorpus hat Substanz  [47 Fixtures]
+[ok]   Binaerkorpus klassifiziert wie das Manifest (50 Fixtures)
+[ok]   Binaerkorpus hat Substanz  [50 Fixtures]
 [ok]   kaputtes UTF-8 in der SID: 200x dasselbe Urteil, kein Absturz  [BL-1 aus T2-Runde 3]
 [ok]   Bandwertgrenzen des Lesers stimmen mit quantisierung-v1.json
 [ok]   Traegergrenzen folgen aus den dB-Werten mal Skalierung
@@ -459,7 +459,7 @@ Alle Zahlen in diesem Lauf gemessen:
 
 | | vor Runde 3 | nach Runde 3 |
 |---|---:|---:|
-| Binärfixtures | 40 | **47** |
+| Binärfixtures | 40 | **50** |
 | C++-Prüfungen | 53 | **56** |
 | Rust-Integrationstests | 5 | **6** |
 | Referenzbein-Prüfungen | 176 | **177** |

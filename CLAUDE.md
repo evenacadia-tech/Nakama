@@ -113,7 +113,8 @@ wird am lebenden Blatt MIT dem User geklärt.
   nicht als Quelle einer Richtung.
 - **/diverge**: nur bei echten Gabelungen, die Figma offenlässt.
 - **/interview**: der Fragenkatalog dieses Projekts (Phasen:
-  designvertrag · struktur · richtung · komponente · zustaende ·
+  designvertrag · struktur · ~~richtung~~ (entfallen seit 2026-08-21: die
+  Richtung kommt aus Figma) · komponente · zustaende ·
   abnahme) — die Vorstellung des Users erfassen, wörtlich protokollieren.
 - Prototyp = statisches HTML/CSS/JS in `prototyp/`, ohne Build-Kette,
   per Doppelklick lauffähig. Struktur (ein Blatt pro Oberfläche oder

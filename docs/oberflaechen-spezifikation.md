@@ -38,7 +38,7 @@ den Mix, versteht Befunde und führt den nächsten Schritt.
 - **Quellenliste**: bis 16 sichtbare Quellen (Busse) mit Name, Rolle,
   Aktivität und Frische. Suche, Pinning und Fokusgruppen begrenzen die
   Last; ein Minimap-/Zoomprinzip schlägt „alles gleichzeitig".
-- **Vergleichende Heatmap**: welche Quelle wo im Frequenzraum Energie
+- **Vergleichende Heatmap (Entwurfs-Annahme §35.1; Abnahme 20.08. = Overview + Detail; der Figma-Stand 21.08. zeigt ein Quellen×Band-Gitter — Klärung in der Übersetzung, NAK-38 im Technik-Repo)**: welche Quelle wo im Frequenzraum Energie
   trägt; Dichtestufen Liste → Heatmap → Detail.
 - **Detailansicht** einer Quelle: Spektrum, Lautheit, Dynamik,
   Stereobreite, Verlauf.

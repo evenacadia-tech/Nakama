@@ -294,19 +294,19 @@ function anwenden(el, t){
 /* ---------- 2. Demo-Inhalt (realistisch, als Demo gekennzeichnet) ---------- */
 const QUELLEN = [
   {n:'Lead-Vocal', r:'führt',     e:[2,3,5,4,2], f:'ok'},
-  {n:'Chor',       r:'trägt',     e:[1,3,4,5,3], f:'ok'},
-  {n:'Klavier',    r:'trägt',     e:[3,5,4,3,2], f:'ok'},
+  {n:'Choir',      r:'carries',   e:[1,3,4,5,3], f:'ok'},
+  {n:'Piano',      r:'carries',   e:[3,5,4,3,2], f:'ok'},
   {n:'Drums',      r:'trägt',     e:[5,3,2,3,5], f:'ok'},
   {n:'Bass',       r:'trägt',     e:[5,5,2,1,1], f:'alt'},
   {n:'Gitarre',    r:'begleitet', e:[1,3,4,4,3], f:'ok'},
-  {n:'Streicher',  r:'begleitet', e:[2,3,4,4,4], f:'ok'},
+  {n:'Strings',    r:'supports',  e:[2,3,4,4,4], f:'ok'},
   {n:'Synth-Pad',  r:'verschm.',  e:[2,4,3,3,4], f:'weg'},
-  {n:'Blech',      r:'begleitet', e:[1,2,4,5,4], f:'ok'},
-  {n:'Perkussion', r:'begleitet', e:[2,2,3,4,5], f:'ok'},
+  {n:'Brass',      r:'supports',  e:[1,2,4,5,4], f:'ok'},
+  {n:'Percussion', r:'supports',  e:[2,2,3,4,5], f:'ok'},
   {n:'Kontrabass', r:'trägt',     e:[5,4,2,1,1], f:'ok'},
   {n:'Harfe',      r:'begleitet', e:[1,2,4,4,3], f:'ok'},
-  {n:'Orgel',      r:'geschützt', e:[4,4,3,3,2], f:'ok'},
-  {n:'Raum-Mikro', r:'verschm.',  e:[2,3,3,4,4], f:'alt'}
+  {n:'Organ',      r:'protected', e:[4,4,3,3,2], f:'ok'},
+  {n:'Room Mic',   r:'blended',   e:[2,3,3,4,4], f:'alt'}
 ];
 const BAENDER = [
   {f:90,   q:.8,  g:-3.2, an:true},
@@ -364,10 +364,10 @@ function spzKurve(t, opt={}){
   const sx = xVonF(2000), sw = xVonF(5000) - xVonF(2000);
   const schutz = `<rect class="schutz" x="${sx.toFixed(1)}" y="0"
         width="${sw.toFixed(1)}" height="${KH}"/>
-     <text class="achse" x="${(sx+4).toFixed(1)}" y="11">geschützt</text>`;
+     <text class="achse" x="${(sx+4).toFixed(1)}" y="11">protected</text>`;
   return `
-   <div class="kopf"><span class="akt">Active-Probe</span><span>Klavier</span>
-        <span style="margin-left:auto">8 Bänder</span></div>
+   <div class="kopf"><span class="akt">Active Probe</span><span>Piano</span>
+        <span style="margin-left:auto">${BAENDER.length} bands</span></div>
    <div class="kf${opt.entwurf?' anim':''}">
      <svg viewBox="0 0 ${KB} ${KH}">
        ${schutz}${g}
@@ -416,17 +416,17 @@ function spzPanel(t){
      </div>
      <div class="zeile" style="margin-top:calc(10px * var(--d))">
        <span class="pille an">Dyn</span>
-       <span class="mini">Schwelle <b class="wert" style="font-size:11px">−18</b></span>
-       <span class="mini">Bereich <b class="wert" style="font-size:11px">4.0</b></span>
+       <span class="mini">Threshold <b class="wert" style="font-size:11px">−18</b></span>
+       <span class="mini">Range <b class="wert" style="font-size:11px">4.0</b></span>
        <span class="mini">Attack <b class="wert" style="font-size:11px">12</b></span>
        <span class="mini" style="margin-left:auto">Release <b class="wert"
              style="font-size:11px">180</b></span>
      </div>
    </div>
    <div class="zeile">
-     <span class="mini">Verbunden</span>
+     <span class="mini">Connected</span>
      <span class="pille">Bypass</span>
-     <span class="mini" style="margin-left:auto">gekoppelt</span>
+     <span class="mini" style="margin-left:auto">coupled</span>
    </div>`;
 }
 
@@ -461,17 +461,17 @@ function spzBefund(t){
       <div class="ort">${ort}</div>
       <div class="obs">${obs}</div>
       <div class="bg">${bg}</div>
-      <div class="sich ${stufe}"><span class="sig ${stufe}"></span>Sicherheit: ${label}</div>
+      <div class="sich ${stufe}"><span class="sig ${stufe}"></span>Confidence: ${label}</div>
     </div>`;
   return `<div class="kopf"><span class="akt">Befunde</span>
       <span style="margin-left:auto">3 offen</span></div>
     ${karte('Bass · 180–260 Hz',
        'Trägt 3,4 dB mehr Energie als die Summe verträgt.',
-       'Alternativursache: linke Hand des Klaviers im selben Bereich.',
+       'Alternative cause: piano left hand in the same range.',
        'hoch','hoch')}
-    ${karte('Chor · 2,5–4 kHz',
+    ${karte('Choir · 2.5–4 kHz',
        'Verdeckt das Lead-Vocal in den lauten Takten.',
-       'Nächster Beweis: dieselbe Passage mit Chor −2 dB prüfen.',
+       'Next proof: re-check the same passage with choir −2 dB.',
        'mittel','mittel')}
     ${karte('Drums · Breite',
        'Messung unvollständig — 6 s Material, 20 s nötig.',

@@ -309,7 +309,7 @@ const WELTEN = [
     const fw = w - 182 - 32, fh = h - 80 - 32;
     return `
     <div class="ding">
-      <div class="marke2">Klavier</div>
+      <div class="marke2">Piano</div>
       <div class="scheibe">
         <svg viewBox="0 0 ${fw} ${fh}" width="100%" height="100%"
              preserveAspectRatio="none" style="position:absolute;inset:0">
@@ -409,7 +409,7 @@ const WELTEN = [
     <div class="quelle q1"></div>
     <div class="quelle q2"></div>
     <div class="scheibe4"></div>
-    <div class="marke4">Klavier</div>
+    <div class="marke4">Piano</div>
     <div style="position:absolute;left:40px;right:40px;top:62px;height:${fh}px">
       <svg viewBox="0 0 ${fw} ${fh}" width="100%" height="${fh}" preserveAspectRatio="none">
         <defs>
@@ -451,7 +451,7 @@ const WELTEN = [
     return `
     <div class="korn5"></div>
     <div class="blatt"></div>
-    <div class="marke5">Klavier</div>
+    <div class="marke5">Piano</div>
     <div class="feld5">
       <svg viewBox="0 0 ${fw} ${fh}" width="100%" height="100%" preserveAspectRatio="none"
            style="position:absolute;inset:0">
@@ -490,7 +490,7 @@ const WELTEN = [
   bau:(w,h)=>{
     const fw = w - 60, fh = h - 120;
     return `
-    <div class="marke6">Klavier</div>
+    <div class="marke6">Piano</div>
     <div class="werte6">
       <div class="gross6 zahl">410 Hz &nbsp; −2.5 dB</div>
       <div class="klein6 zahl">Q 1.4 · BELL</div>
@@ -513,7 +513,7 @@ const WELTEN = [
       </svg>
     </div>
     <div class="fuss6"><span>20</span><span>100</span><span>1k</span><span>10k</span>
-      <span style="margin-left:auto">FRISCH</span></div>`;
+      <span style="margin-left:auto">FRESH</span></div>`;
   }}
 ];
 
@@ -684,7 +684,8 @@ function ergebnis(){
   kn.append(
     knopf('Alles markieren — dann Strg+C', ()=>{ ta.focus(); ta.select();
       try{ document.execCommand('copy'); }catch(e){} }, true),
-    knopf('Doch nochmal ansehen', ()=>{ stufe = 1; sieger = null; zeichnen(); })
+    knopf('Doch nochmal ansehen', ()=>{ stufe = 1; sieger = null;
+      eng.length = 0; start = performance.now(); zeichnen(); })
   );
   erg.appendChild(kn);
   buehne.appendChild(erg);

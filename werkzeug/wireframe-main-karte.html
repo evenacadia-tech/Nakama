@@ -477,7 +477,7 @@ function rollenkarte(){
     <span class="anz" style="color:#6f6f6f">n</span></div>`;
   return kasten('Overview', 'by role',
     `<div class="hm">${kopf}${liste('Rollenkarte (Gruppen statt Quellen)',
-      ROLLEN.length, zeilen)}</div>`,
+      ROLLEN.filter(r => SOURCES.some(s => s[1] === r)).length, zeilen)}</div>`,
     {baustein:'Rollenkarte (Gruppen statt Quellen)'});
 }
 
@@ -508,7 +508,7 @@ const ENTWUERFE = [
       // Namen. Der Kasten sagt daneben, wieviele lesbar sind.
       + `<div class="karte">${heatmap(SOURCES.length, true,
           {titel:'Overview',
-           zusatz: `${ortText(z)} · ${Math.min(AUFFAELLIG.length, SOURCES.length)} named`,
+           zusatz: `${ortText(z)} · ${AUFFAELLIG.filter(i => i < SOURCES.length).length} named`,
            fokus: AUFFAELLIG, band: z === 'read' ? undefined : 2})}</div>`
       + `<div class="arbeit">${arbeit(z)}</div>`
   })},

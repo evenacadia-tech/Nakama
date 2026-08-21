@@ -29,26 +29,94 @@ bool Verstoss::operator< (const Verstoss& a) const noexcept
 namespace
 {
 
-// Grenzen der beiden i16-Kodierungen aus quantisierung-v1.json, als bereits
-// skalierte Traegerwerte. Dieselben Zahlen stehen in broker/src/telemetrie.rs.
-constexpr int16_t q0p1Min  = -1440;   // -144.0 dB * 10
-constexpr int16_t q0p1Max  =   240;   //   24.0 dB * 10
-constexpr int16_t q0p01Min = -14400;  // -144.00 dB * 100
-constexpr int16_t q0p01Max =   2400;  //   24.00 dB * 100
+/*  Strikter UTF-8-Pruefer ueber (Zeiger, LAENGE) - mit Codepunktzaehler.
 
-bool istHex32 (const char* s)
+    T2-Runde 3, Blocker: hier stand `juce::String::fromUTF8 (sid->c_str())`.
+    Das war gleich DREIFACH falsch:
+
+      1. `c_str()` ignoriert die Laenge. FlatBuffers-Strings tragen eine
+         explizite Laenge und duerfen ein NUL enthalten; `flatc` erzeugt
+         solche Puffer aus einem u0000-Escape anstandslos. Die Rust-Seite las
+         die volle Laenge, C++ brach am NUL ab - zwei Wahrheiten ueber
+         dieselbe Zeichenkette, in beide Richtungen falsch.
+      2. Die Bytes sind UNVALIDIERT. Rusts FlatBuffers-Verifier prueft
+         Stringinhalte auf gueltiges UTF-8, der C++-Verifier NICHT. Der
+         Vertrag war darauf gebaut, dass sich dieselbe Bibliothek in beiden
+         Sprachen gleich verhaelt - genau die Annahme, die er verbieten soll.
+      3. `fromUTF8` auf kaputten Bytes ist nicht nur ein falsches Urteil,
+         sondern SPEICHERKORRUPTION: fuer ein nacktes Fortsetzungsbyte 0x80
+         liefert `getAndAdvance()` Codepunkt 0, waehrend `isEmpty()` dasselbe
+         Byte als "nicht Ende" liest - Laengen- und Kopierdurchlauf laufen
+         verschieden weit. Gemessen: STATUS_HEAP_CORRUPTION (0xC0000374) und
+         STATUS_STACK_BUFFER_OVERRUN (0xC0000409), aus EINEM geaenderten Byte.
+         Dieser Leser laeuft ab SONDE-010 in einem VST3 im Hostprozess.
+
+    Die Semantik ist die von Rusts `str::from_utf8`: Ueberlangkodierungen,
+    Surrogate (ED A0..BF) und alles ueber U+10FFFF sind ungueltig; ein NUL ist
+    ein voellig normaler Codepunkt.
+*/
+bool utf8Gueltig (const char* daten, size_t laenge, size_t* codepunkte = nullptr)
 {
-    if (s == nullptr)
-        return false;
-    size_t n = 0;
-    for (const char* p = s; *p != '\0'; ++p, ++n)
+    const auto* b = reinterpret_cast<const unsigned char*> (daten);
+    size_t i = 0, n = 0;
+
+    while (i < laenge)
     {
-        const auto c = *p;
+        const auto c = b[i];
+        size_t folge = 0;
+        unsigned int cp = 0;
+
+        if (c < 0x80)                { folge = 0; cp = c; }
+        else if ((c & 0xE0) == 0xC0) { folge = 1; cp = c & 0x1Fu; }
+        else if ((c & 0xF0) == 0xE0) { folge = 2; cp = c & 0x0Fu; }
+        else if ((c & 0xF8) == 0xF0) { folge = 3; cp = c & 0x07u; }
+        else return false;                        // 0x80..0xBF oder 0xF8..0xFF
+
+        if (i + folge >= laenge && folge > 0)
+            return false;                         // abgeschnittene Folge
+
+        for (size_t k = 1; k <= folge; ++k)
+        {
+            const auto f = b[i + k];
+            if ((f & 0xC0) != 0x80)
+                return false;
+            cp = (cp << 6) | (f & 0x3Fu);
+        }
+
+        if (folge == 1 && cp < 0x80)      return false;   // ueberlang
+        if (folge == 2 && cp < 0x800)     return false;
+        if (folge == 3 && cp < 0x10000)   return false;
+        if (cp >= 0xD800 && cp <= 0xDFFF) return false;   // Surrogat
+        if (cp > 0x10FFFF)                return false;
+
+        i += folge + 1;
+        ++n;
+    }
+
+    if (codepunkte != nullptr)
+        *codepunkte = n;
+    return true;
+}
+
+/*  32 Kleinbuchstaben-Hexziffern ueber die ECHTE Laenge.
+
+    Die Rust-Seite prueft `s.len() == 32` (Bytes) plus `bytes().all(...)`.
+    Hier stand vorher eine `c_str()`-Schleife, die an einem eingebetteten NUL
+    abbrach - "32 Hexziffern, dann Muell" galt damit als gueltig.
+*/
+bool istHex32 (const flatbuffers::String* s)
+{
+    if (s == nullptr || s->size() != 32)
+        return false;
+    const auto* d = s->c_str();
+    for (size_t i = 0; i < 32; ++i)
+    {
+        const auto c = d[i];
         const bool ok = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
         if (! ok)
             return false;
     }
-    return n == 32;
+    return true;
 }
 
 void hinzu (juce::Array<Verstoss>& out, const juce::String& pfad, const char* regel)
@@ -77,8 +145,14 @@ void pruefeAdresse (const fb::Adresse& a, const juce::String& p, juce::Array<Ver
 {
     // Die SID wird nie geparst, nur verglichen (§32.1) - geprueft wird
     // deshalb nur, dass sie da ist und nicht ins Uferlose waechst.
+    // Laengenbasiert und ueber CODEPUNKTE gezaehlt - genau wie Rusts
+    // `sid.chars().count()`. Die UTF-8-Gueltigkeit ist zu diesem Zeitpunkt
+    // bereits geprueft (siehe `stringsGueltig` im Wurzelpfad), der Zaehler
+    // hier kann also nicht mehr fehlschlagen.
     const auto* sid = a.logon_sid();
-    const auto sidLaenge = sid != nullptr ? juce::String::fromUTF8 (sid->c_str()).length() : 0;
+    size_t sidLaenge = 0;
+    if (sid != nullptr)
+        utf8Gueltig (sid->c_str(), sid->size(), &sidLaenge);
     if (sid == nullptr || sidLaenge == 0 || sidLaenge > 184)
         hinzu (out, p + "/logon_sid", "sid_laenge");
 
@@ -89,7 +163,7 @@ void pruefeAdresse (const fb::Adresse& a, const juce::String& p, juce::Array<Ver
         { "runtime_nonce",      a.runtime_nonce() },
     };
     for (const auto& t : tokens)
-        if (t.wert == nullptr || ! istHex32 (t.wert->c_str()))
+        if (! istHex32 (t.wert))
             hinzu (out, p + "/" + t.name, "hex32");
 }
 
@@ -310,6 +384,36 @@ juce::Array<Verstoss> pruefe (const uint8_t* puffer, size_t laenge)
 
     const auto* batch = fb::GetFeatureBatch (puffer);
     const auto* eintraege = batch->eintraege();   // `required`
+
+    /*  Die zweite Haelfte des Verifiers, die der C++-Verifier NICHT hat.
+
+        Rusts FlatBuffers-Verifier prueft Stringinhalte auf gueltiges UTF-8
+        und lehnt den ganzen Puffer ab; die C++-Fassung prueft nur Grenzen und
+        NUL-Terminierung. Ohne diesen Nachschlag urteilten die beiden Beine
+        bei 78 von 591 Byte-Mutanten verschieden - und in neun Faellen stuerzte
+        die C++-Seite ab, statt zu urteilen.
+
+        Der Verstoss ist ABSICHTLICH derselbe wie auf der Rust-Seite
+        (`{"" , "verifier"}`): dort faellt der Puffer im Verifier, hier im
+        Nachschlag - dieselbe Aussage, derselbe Ort in der Verstossmenge.
+    */
+    for (flatbuffers::uoffset_t i = 0; i < eintraege->size(); ++i)
+    {
+        const auto* a = eintraege->Get (i)->quelle();
+        const flatbuffers::String* strings[] = {
+            a->logon_sid(), a->project_binding_id(), a->session_epoch(),
+            a->instance_id(), a->runtime_nonce()
+        };
+        for (const auto* s : strings)
+        {
+            if (s == nullptr || ! utf8Gueltig (s->c_str(), s->size()))
+            {
+                juce::Array<Verstoss> nur;
+                hinzu (nur, "", "verifier");
+                return kanonisch (nur);
+            }
+        }
+    }
 
     if (eintraege->size() == 0)
         hinzu (out, "/eintraege", "eintraege_leer");

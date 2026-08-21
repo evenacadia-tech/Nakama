@@ -41,6 +41,47 @@ FBS = WURZEL / "eq-copilot/schemas/v3/flatbuffers/nakama_telemetry_v1.fbs"
 IDS = WURZEL / "eq-copilot/schemas/v3/flatbuffers/FELD-IDS.json"
 
 
+def blockkommentare_entfernen(text: str) -> str:
+    """Entfernt `/* ... */`, ohne in Zeichenketten zu schneiden.
+
+    T2-Runde 3, Befund 5: der Riegel kannte sie nicht. Gemessen wurde
+    `/* table Geist { a:int; b:int; } */` - `flatc` akzeptiert das (Exit 0),
+    der Riegel meldete 9 Tabellen und 4x ROT. Der Irrtum ging in die SICHERE
+    Richtung (falsches Rot), widerlegte aber den Anspruch dieses Parsers,
+    Kommentare zu verstehen. Ein Riegel, der aus dem falschen Grund rot wird,
+    ist beim naechsten Mal aus dem falschen Grund gruen.
+    """
+    heraus: list[str] = []
+    i, n, in_string = 0, len(text), False
+    while i < n:
+        c = text[i]
+        if in_string:
+            if c == "\\":
+                heraus.append(text[i:i + 2])
+                i += 2
+                continue
+            if c == '"':
+                in_string = False
+            heraus.append(c)
+            i += 1
+            continue
+        if c == '"':
+            in_string = True
+            heraus.append(c)
+            i += 1
+            continue
+        if c == "/" and i + 1 < n and text[i + 1] == "*":
+            ende = text.find("*/", i + 2)
+            j = n if ende < 0 else ende + 2
+            # Zeilenumbrueche erhalten, damit Zeilennummern nicht verrutschen.
+            heraus.append("\n" * text.count("\n", i, j))
+            i = j
+            continue
+        heraus.append(c)
+        i += 1
+    return "".join(heraus)
+
+
 def kommentare_entfernen(text: str) -> str:
     """Entfernt `//`-Kommentare, ohne in Zeichenketten zu schneiden.
 
@@ -119,7 +160,7 @@ def main() -> int:
             return 3
 
     roh = FBS.read_text(encoding="utf-8")
-    text = kommentare_entfernen(roh)
+    text = kommentare_entfernen(blockkommentare_entfernen(roh))
     tabellen = tabellen_lesen(text)
     frozen = json.loads(IDS.read_text(encoding="utf-8"))
     erwartet = frozen["tabellen"]
@@ -127,6 +168,16 @@ def main() -> int:
     fehler: list[str] = []
     ohne_id = 0
     felder_gesamt = 0
+
+    # 6. `include` — T2-Runde 3, Befund 6: eine eingebundene Datei bringt
+    #    Tabellen mit, die dieser Riegel nie sieht. Heute folgenlos, weil
+    #    `flatc --cpp` fuer die eingebundene Datei keinen Code erzeugt - mit
+    #    `--gen-all` oder einem zweiten Codegen-Aufruf waere es ein echtes
+    #    Loch. Der Vertrag ist EINE Datei, und das steht jetzt hier.
+    if re.search(r"^\s*include\s", text, re.MULTILINE):
+        fehler.append(
+            "`include` im Vertrag: eine eingebundene Datei bringt Tabellen mit, die "
+            "dieser Riegel nicht sieht. Der Telemetrievertrag ist EINE Datei.")
 
     # 5. struct-Typen
     strukturen = [m.group(1) for m in STRUCT_RE.finditer(text)]

@@ -46,7 +46,7 @@
           "label": { "type": "string" },
           "pair_id": { "type": ["string", "null"] },
           "host_pid": { "type": "integer" },
-          "profil_id": { "type": ["string", "null"], "description": "gebundenes Projektprofil (stabile profile_id der Plugin-Hub-App), null = ungebunden" },
+          "profil_id": { "type": ["string", "null"], "description": "gebundenes Projektprofil (stabile profile_id; Herkunft: Profilbindung des Brokers, bis 18.08.2026 über die Plugin-Hub-App), null = ungebunden" },
           "verbunden": { "type": "boolean" },
           "stale": { "type": "boolean", "description": "verbunden, aber seit > 5 s kein Heartbeat — sichtbar, nie still entfernt" },
           "konflikt": { "type": "boolean" },

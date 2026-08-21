@@ -20,7 +20,7 @@
 
 ## Wo der Bau steht
 
-- **P0 gebaut:** Beweis-Runner (S0), Identität (S1), Aux-/PDC-Messgerät (S2),
+- **P0 gebaut:** Beweis-Runner (S0), Aux-/PDC-Messgerät (S1), Identität (S2),
   Hostbrücke + Hostkontext-Test (S3), Termin-B-Messgerät (S3b), v3-Vertrag JSON
   (S5) und FlatBuffers (S6). Manifeste in `docs/beweise/`.
 - **Offen an S5/S6:** Schließungsvorbehalt §65 (erst nach S4); T2 zu SONDE-005a

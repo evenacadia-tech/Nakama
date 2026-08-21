@@ -1,4 +1,4 @@
-//! EQ-Copilot-Broker — M2 (kanonischer Plan: FL-EQ-Copilot-Recherche.md §8.4, §9.2, §11).
+//! EQ-Copilot-Broker — M2 (Herkunft: Recherche §8.4, §9.2, §11, heute Archiv unter docs/archiv/; Produktwahrheit: CLAUDE.md).
 //!
 //! Eigener Scope neben den Katalog-/Bausteinmodellen (Plan §10.2): Named-Pipe-
 //! Server für die Sammler-VST3-Instanzen, Sensor-Register mit Last-Seen,
@@ -563,7 +563,7 @@ fn status_ohne_lauf(fehler: Vec<String>) -> BrokerStatus {
 
 /// Prozessgrenzen-Probe: fährt einen ECHTEN Server (eigene ACL, eigenes
 /// Register) auf einem FREI WÄHLBAREN Pipenamen — ohne den globalen OnceLock.
-/// So kollidiert die Ende-zu-Ende-Probe nie mit dem Broker einer laufenden
+/// So kollidiert die Ende-zu-Ende-Probe nie mit dem Broker einer laufenden (bis 18.08.: Hub-App-gestarteten)
 /// Hub-App (M2-Fund: zwei Broker auf einem Namen stehlen sich still Clients;
 /// die erste Instanz trägt deshalb jetzt FILE_FLAG_FIRST_PIPE_INSTANCE).
 /// Liefert am Ende den Status als JSON.

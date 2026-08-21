@@ -61,9 +61,9 @@ als Begleit-App, read-only-Spiegel oder Broker-Client ohne
 **Studie, kein Bauziel** — kein Ticket, kein Client, kein Vokabular in der
 Plugin-UI. Der Hörkompass-Zielvertrag bindet nichts im Produkt;
 `geschmacksprofil.md` (§0.3) bindet nur die Studie. Beide liegen geparkt unter
-`../eq-copilot/design/prisma-studie/docs/`. Der Maßstab der Plugin-UI ist
-nicht mehr „Lesbarkeit (`geschmacksprofil.md`)", sondern der Figma-Stand des
-Users (siehe (h)).
+`../eq-copilot/design/prisma-studie/docs/`. Gestaltungs-Vorgabe der Plugin-UI
+ist der Figma-Stand des Users (siehe (h)); die Lesbarkeitsregel des
+Design-Repos („in 2 Sekunden ablesbar", dessen Regel 6) bleibt dort bestehen.
 
 **(d) Probeeq ist ein EQ.** Entscheid 21.08.2026: „die active Probe fester Name :
 Nakama Probeeq ist ein vollwertiger hochwertiger EQ der mit Nakama
@@ -109,8 +109,10 @@ acht Band-Slots (§0.4, §44.2, §53.8) · ±12 dB manuell, ±3 dB Remote (§44.
 mit Beleg, wie §27 letzter Absatz und §49.3 Schluss es ohnehin verlangen.
 Befund: die Obergrenze 32 steht bereits im v3-Vertrag (§53.9;
 `beweise/SONDE-005b.md` §7) — dort ist eine Änderung Versionierung, kein
-Edit. (`CLAUDE.md` Wahrheitskern nennt als Regelfall eine einstellige
-Quellenzahl — dort ohne Wortlaut, daher hier kein Entscheid.)
+Edit. Entscheid 21.08. zum Regelfall: „ich habe schlicht 5 genommen weil 16
+bedeutet 16 geladene proben auf instrumenten … 16 plugins nur für eq kostet
+auch massig leistung" (`Nakama-Design/abnahmen/`) — Regelfall einstellig, 16 =
+Obergrenze.
 
 **(g) UI-Sprache.** Entscheid 21.08.2026: „Englisch – mein Wort". §5 „Vier
 Bedienebenen" (Beobachten · Beraten · Vorhören · Anwenden) und alle deutschen
@@ -145,8 +147,10 @@ Figma → Design-Repo → dieser Block. Gemessene Abweichungen zum Design-Stand
 - **Suna-Kachel:** §0.4 „Name, Verbindung, Frische; Bedienung läuft über
   Main"; das Design-Werkzeug (`werkzeug/formfaktor.html`, 21.08.) zeigt Name ·
   Rolle · Messposition · Frische · Warnung; die Kachel ist im Design-Repo
-  „nicht begonnen" (`docs/sondenplan.md`). Ob Name und Rolle an der Kachel
-  bedient werden: offen.
+  „nicht begonnen" (`docs/sondenplan.md` im Design-Repo). Ob Name und Rolle an
+  der Kachel bedient werden, welche Rollenliste (5 im Design, 7 in §9), wie
+  viele Messzustände (5 im Design, 2 hier) und Arbeitsschritte (3 / 5) gelten:
+  offen als **NAK-38** (UI-Rückfluss-Liste).
 - **Probeeq-Parameter:** der Editor-Entwurf des Users (21.08.,
   `Nakama-Design/Nakama Designausarbeitungen selfmade/LIES-MICH.md` und
   Interview-Protokoll) zeigt **12** sichtbare Parameter je Band (BAND · TYPE ·
@@ -190,6 +194,18 @@ Befund: beide Termine sind **noch nicht gelaufen** —
 (Capabilityreport) und Gate G0 warten; der Schließungsvorbehalt §65 für
 `SONDE-005` bleibt. Bis dahin baut die Technik S7 (`SONDE-006`, State-Schema 2),
 danach S8 (`SONDE-007a`).
+
+**(l) §0.4 „Vom User festgelegt" (Technik voraus, Design parallel).** Befund:
+dafür existiert kein Wortlaut des Users; was er festgelegt hat, ist die
+Architektur vom 20.08. („Meine Entscheidung, so gesagt") und die
+Bauentscheidung (a). Das Arbeitsmodell „Technik voraus" ist ein Vorschlag, den
+der Bau seit dem 20.08. faktisch lebt — es heißt ab jetzt so.
+
+**(m) „Zwölf von zwanzig gewählten Kernfunktionen" (§0.2, §22).** Befund: die
+Zwanziger-Liste und die Auswahl existieren in keiner Datei; der Satz ist nicht
+rekonstruierbar. Er gilt als Codex-Annahme der Fassung 0.1; der
+Kernfunktionen-Satz des Entwurfs ist damit ein Startwert wie die Zahlen in (f).
+Frage an den User offen als **NAK-39**.
 
 ---
 

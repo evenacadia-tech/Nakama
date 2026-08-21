@@ -31,7 +31,7 @@ Legacy-Namen (EqCop*), Material-Kit-Front (Provisorium) und Schema-Felder
 bleiben, bis ihr Umbau DER Auftrag ist (Umbenennung = NAK-30). Beschreibt der User ein Problem oder denkt
 laut, ist der Befund das Deliverable — erst fixen, wenn er es sagt.
 
-## Gegenpfade (Bauplan §11.5)
+## Gegenpfade (Invariante, Herkunft Bauplan 2.0 §11.5 — archiviert, gilt weiter)
 starten↔stoppen · öffnen↔schließen · speichern↔laden ·
 aktivieren↔abklingen/archivieren · installieren↔Rollback — beide Hälften
 im selben Änderungssatz; eine Einweg-Änderung ist unvollständig.
@@ -52,7 +52,7 @@ allein der User am lebenden Blatt ab.
   brauchen callPendingTimersSynchronously().
 - Schemas: neues Feld ⇒ erst Version; alte Snapshots laden weiter.
 Bei größeren Änderungssätzen einen FRISCHEN Verifikations-Subagenten gegen
-Bauplan + Grundgesetz prüfen lassen — frischer Kontext schlägt Selbstkritik.
+Sonden-Entwurf (Errata zuerst) + Wahrheitskern prüfen lassen — frischer Kontext schlägt Selbstkritik.
 Breite mechanische Suchen parallel an Explore-Agenten geben und
 währenddessen weiterarbeiten; das Design-Urteil bleibt im Hauptlauf.
 

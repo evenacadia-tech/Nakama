@@ -54,12 +54,20 @@ pub const MAX_EINTRAEGE: usize = 32;
 pub const BAENDER_FEIN: usize = 221;
 pub const BAENDER_GROB: usize = 64;
 
-/// Grenzen der beiden i16-Kodierungen aus `quantisierung-v1.json`,
-/// als bereits skalierte Traegerwerte.
-const Q_0P1_MIN: i16 = -1440; // -144.0 dB * 10
-const Q_0P1_MAX: i16 = 240; //   24.0 dB * 10
-const Q_0P01_MIN: i16 = -14400; // -144.00 dB * 100
-const Q_0P01_MAX: i16 = 2400; //   24.00 dB * 100
+/// Plausibilitaetsgrenzen der Bandwerte, als bereits skalierte Traegerwerte.
+///
+/// Quelle ist `schemas/v3/quantisierung-v1.json`, Feld `plausibler_bereich_db`
+/// — NICHT `bereich_db`, das ist der Traegerumfang (+/-32767). Der Unterschied
+/// war ein T2-Runde-3-Befund: README und Beweismanifest nannten `bereich_db`
+/// als Quelle, waehrend hier etwas ganz anderes durchgesetzt wurde.
+///
+/// `contract_cross_language` vergleicht diese vier Zahlen bei JEDEM Lauf mit
+/// der Vertragsdatei; die C++-Seite tut dasselbe. Damit ist die Quellenangabe
+/// nicht mehr eine Behauptung, sondern eine Pruefung.
+pub const Q_0P1_MIN: i16 = -1440; // -144.0 dB * 10
+pub const Q_0P1_MAX: i16 = 240; //   24.0 dB * 10
+pub const Q_0P01_MIN: i16 = -14400; // -144.00 dB * 100
+pub const Q_0P01_MAX: i16 = 2400; //   24.00 dB * 100
 
 fn ist_hex32(s: &str) -> bool {
     s.len() == 32 && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
@@ -74,7 +82,14 @@ pub fn pruefe(puffer: &[u8]) -> Vec<Verstoss> {
 
     // 1. Die Dateikennung steht an Offset 4 und ist das Erste, was ein Leser
     //    sehen kann. Ein fremder Puffer faellt hier, VOR jedem Feldzugriff.
-    if !fb::feature_batch_buffer_has_identifier(puffer) {
+    //
+    //    Der Laengenriegel davor ist kein Zierrat: T2-Runde 3 hat gemessen,
+    //    dass `feature_batch_buffer_has_identifier` bei 0..7 Bytes PANICKT
+    //    (`assertion failed: data.len() >= SIZE_UOFFSET + FILE_IDENTIFIER_LENGTH`),
+    //    waehrend die C++-Seite sauber `dateikennung` meldete. Ein Panic im
+    //    Broker beendet den Thread, der die Pipe bedient - auch das ist keine
+    //    Klassifikation.
+    if puffer.len() < 8 || !fb::feature_batch_buffer_has_identifier(puffer) {
         out.push(Verstoss::neu("", "dateikennung"));
         return kanonisch(out);
     }

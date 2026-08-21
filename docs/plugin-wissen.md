@@ -294,7 +294,7 @@ JSON-Korpus + MANIFEST · `erzeuge_fb_fixtures.py` Binärkorpus + MANIFEST (je
   liegt nur in `C:\Users\phili\FL-Studio\tools\` — NAK-31.
 - HostProbeTest 85 vs. 89 — NAK-34 · `EqCopAuxSpikeTest` ohne Kanon-Bein —
   NAK-37 · Broker-Binaries älter als Quellen — NAK-36 · kein Autostart —
-  NAK-13 · `hoermarkierung` ungelesen — NAK-10 · Sensorübersicht heimatlos —
+  NAK-13 · `hoermarkierung` ungelesen — NAK-10 · Sensorübersicht (`.svelte` ohne Zuhause; NAK-12 am 21.08. geschlossen: Hub-App kein Produktteil) —
   NAK-12 · Baustand-Riegel zu grob — NAK-25 · `pluginval` nur in `%TEMP%` —
   NAK-26 · `hatTransport` Tautologie — NAK-24.
 - Veraltete Kommentare: `plugin/CMakeLists.txt:3` („Vier Targets"),

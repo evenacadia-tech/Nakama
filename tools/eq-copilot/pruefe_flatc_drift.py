@@ -75,14 +75,37 @@ def version_von(flatc: pathlib.Path) -> str | None:
     return treffer.group(1) if treffer else None
 
 
-def cargo_version() -> str | None:
-    if not CARGO.exists():
-        return None
-    for zeile in CARGO.read_text(encoding="utf-8").splitlines():
-        treffer = re.match(r'\s*flatbuffers\s*=\s*"([^"]+)"', zeile)
-        if treffer:
-            return treffer.group(1)
-    return None
+def cargo_version() -> tuple[str | None, str | None]:
+    """(Anforderung aus Cargo.toml, AUFGELOESTE Version aus Cargo.lock).
+
+    T2-Runde 3, Befund 4: vorher wurde nur die Anforderung gelesen.
+    `flatbuffers = "25.12.19"` bedeutet in Cargo aber `^25.12.19`, also alles
+    unter 26.0.0 - nach einem `cargo update` haette der Riegel weiter gruen
+    gemeldet, waehrend der erzeugte Code in eine ANDERE Laufzeit ruft. Genau
+    das, was WERKZEUG.json als "schlimmer - stille Inkompatibilitaet"
+    beschreibt. Die Wahrheit steht in Cargo.lock.
+    """
+    anforderung = None
+    if CARGO.exists():
+        for zeile in CARGO.read_text(encoding="utf-8").splitlines():
+            treffer = re.match(r'\s*flatbuffers\s*=\s*"([^"]+)"', zeile)
+            if treffer:
+                anforderung = treffer.group(1)
+                break
+
+    aufgeloest = None
+    lock = CARGO.with_name("Cargo.lock")
+    if lock.exists():
+        zeilen = lock.read_text(encoding="utf-8").splitlines()
+        for i, zeile in enumerate(zeilen):
+            if zeile.strip() == 'name = "flatbuffers"':
+                for folge in zeilen[i + 1:i + 4]:
+                    m = re.match(r'\s*version\s*=\s*"([^"]+)"', folge)
+                    if m:
+                        aufgeloest = m.group(1)
+                        break
+                break
+    return anforderung, aufgeloest
 
 
 def erzeuge(flatc: pathlib.Path, aufruf: dict, schema: pathlib.Path,
@@ -119,6 +142,15 @@ def pruefe_conform(flatc: pathlib.Path, schema: pathlib.Path) -> int:
             text = mutiere(original)
             if text == original:
                 print(f"  ROT: Mutation '{name}' hat nichts geaendert - der Anker stimmt nicht mehr")
+                rot += 1
+                continue
+            # T2-Runde 3, Befund 7: `str.replace` ersetzt ALLE Vorkommen. Die
+            # Gegenprobe oben faengt nur "gar nichts geaendert", nicht "an zwei
+            # Stellen geaendert" - dann pruefte die Mutation etwas anderes, als
+            # ihr Name sagt. Der Laengenunterschied verraet es.
+            if abs(len(text) - len(original)) > 400:
+                print(f"  ROT: Mutation '{name}' hat zu viel veraendert "
+                      f"({abs(len(text) - len(original))} Zeichen) - traf der Anker mehrfach?")
                 rot += 1
                 continue
             kandidat = tmpp / "kandidat.fbs"
@@ -177,19 +209,31 @@ def main(argv: list[str]) -> int:
         print(f"VORAUSSETZUNG FEHLT: {flatc} laesst sich nicht nach seiner Version fragen")
         return 3
     if gemessen != steckbrief["version"]:
-        print(f"VORAUSSETZUNG FALSCH: flatc meldet {gemessen}, gepinnt ist "
-              f"{steckbrief['version']}. 'Drift ist 0' waere damit eine Aussage "
-              "ueber ein anderes Werkzeug.")
-        return 3
+        # T2-Runde 3, Befund 10: das war frueher Exit 3. Aber das Werkzeug ist
+        # DA - was es meldet, widerspricht dem Pin. Das ist eine widerlegte
+        # Behauptung (2), keine fehlende Voraussetzung (3). Der Unterschied
+        # traegt: 3 heisst "nicht gemessen", 2 heisst "gemessen und falsch".
+        print(f"  ROT: flatc meldet {gemessen}, gepinnt ist {steckbrief['version']}. "
+              "'Drift ist 0' waere damit eine Aussage ueber ein anderes Werkzeug - "
+              "entweder ist der Steckbrief manipuliert oder der Bau veraltet.")
+        return 2
     print(f"  flatc: {gemessen}  ({flatc})")
 
-    krate = cargo_version()
-    if krate != steckbrief["rust_crate"]:
-        print(f"  ROT: broker/Cargo.toml fuehrt flatbuffers = {krate!r}, gepinnt ist "
-              f"{steckbrief['rust_crate']!r}. Der erzeugte Rust-Code ruft in eine "
-              "Laufzeit, die er nicht kennt.")
+    anforderung, aufgeloest = cargo_version()
+    if anforderung != steckbrief["rust_crate"]:
+        print(f"  ROT: broker/Cargo.toml fordert flatbuffers = {anforderung!r}, gepinnt "
+              f"ist {steckbrief['rust_crate']!r}.")
         return 2
-    print(f"  Rust-Crate: {krate}")
+    if aufgeloest is None:
+        print("  ROT: broker/Cargo.lock fuehrt kein flatbuffers - die tatsaechlich "
+              "verwendete Version ist damit unbekannt.")
+        return 2
+    if aufgeloest != steckbrief["rust_crate"]:
+        print(f"  ROT: broker/Cargo.lock loest flatbuffers auf {aufgeloest!r} auf, "
+              f"gepinnt ist {steckbrief['rust_crate']!r}. Der erzeugte Rust-Code ruft "
+              "in eine Laufzeit, die er nicht kennt.")
+        return 2
+    print(f"  Rust-Crate: {aufgeloest} (Cargo.lock; Anforderung {anforderung})")
 
     # Der Feld-ID-Riegel gehoert dazu: ein Schema ohne ids waere bitgleich
     # reproduzierbar und trotzdem falsch.

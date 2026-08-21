@@ -187,6 +187,15 @@ def gueltige() -> list[tuple[str, dict, str]]:
                    "und nicht 'unbekannt' - genau die Unterscheidung, fuer die das "
                    "eigene Bit existiert"))
 
+    nul_sid = eintrag()
+    nul_sid["quelle"]["logon_sid"] = "\u0000"
+    faelle.append(("sid-ist-ein-nul", batch(nul_sid),
+                   "GUELTIG, und das ist kein Versehen: §32.1 sagt, die SID werde "
+                   "'nie geparst, nur verglichen' - der Vertrag bindet ausschliesslich "
+                   "ihre LAENGE. Ein NUL ist ein voellig normaler Codepunkt, und beide "
+                   "Beine zaehlen ihn gleich. Das Fixture steht hier, damit die "
+                   "Uebereinstimmung bewiesen ist statt angenommen"))
+
     faelle.append(("grenze-32-eintraege",
                    batch(*[eintrag(nr=n) for n in range(1, 33)]),
                    "genau 32 Sonden (§53.9) - die Grenze selbst ist noch gueltig"))
@@ -400,6 +409,31 @@ def ungueltige() -> list[tuple[str, dict, list[dict], str]]:
         "NaN wird abgelehnt, nicht sanitisiert: ein nicht messbarer Wert wird "
         "WEGGELASSEN (siehe gueltig/ohne-optionale-kennzahlen)"))
 
+    # --- T2-Runde 3: eingebettete NUL in laengenbehafteten Strings ----------
+    #
+    # FlatBuffers-Strings tragen eine EXPLIZITE Laenge und duerfen ein NUL
+    # enthalten; flatc erzeugt solche Puffer aus einem u0000-Escape anstandslos.
+    # Die C++-Seite las sie vorher ueber `c_str()` und brach am NUL ab - zwei
+    # Wahrheiten ueber dieselbe Zeichenkette, und die Urteile liefen in BEIDE
+    # Richtungen auseinander.
+
+    b = batch(eintrag())
+    b["eintraege"][0]["quelle"]["project_binding_id"] = "1" * 32 + "\u0000zz"
+    faelle.append((
+        "hex32-nul-dahinter", b,
+        [v("/eintraege/0/quelle/project_binding_id", "hex32")],
+        "32 Hexziffern, dann ein NUL und Muell. Ueber `c_str()` gelesen sah das "
+        "wie ein gueltiges hex32 aus; ueber die Laenge gelesen sind es 35 Zeichen"))
+
+    b = batch(eintrag())
+    b["eintraege"][0]["quelle"]["logon_sid"] = "a" * 184 + "\u0000" + "b" * 400
+    faelle.append((
+        "sid-nul-dahinter", b,
+        [v("/eintraege/0/quelle/logon_sid", "sid_laenge")],
+        "184 Zeichen, dann ein NUL und 400 weitere. Ueber `c_str()` gelesen war "
+        "die SID 184 lang und damit gerade noch zulaessig; ueber die Laenge "
+        "gelesen sind es 585"))
+
     # --- Schleife -----------------------------------------------------------
     b = batch(eintrag())
     b["eintraege"][0]["frame"]["transport"]["schleife"] = {
@@ -440,6 +474,24 @@ def rohe_mutationen() -> list[tuple[str, str, object, list[dict], str]]:
     def abgeschnitten(roh: bytes) -> bytes:
         return roh[: len(roh) // 2]
 
+    def sid_ungueltiges_utf8(roh: bytes) -> bytes:
+        """Ein nacktes Fortsetzungsbyte 0x80 in die SID.
+
+        Gesucht wird ueber den INHALT, nicht ueber einen festen Offset - ein
+        fester Offset waere beim naechsten Feld still danebengelaufen und das
+        Fixture haette etwas anderes geprueft, als es behauptet.
+        """
+        marke = b"S-1-5-21-"
+        i = roh.find(marke)
+        if i < 0:
+            raise SystemExit("SID-Marke nicht im Puffer gefunden")
+        d = bytearray(roh)
+        d[i + len(marke)] = 0x80
+        return bytes(d)
+
+    def auf_laenge(n: int):
+        return lambda roh: roh[:n]
+
     def wurzeloffset_kaputt(roh: bytes) -> bytes:
         # Die ersten vier Bytes sind der Offset auf die Wurzeltabelle. Ein Wert
         # weit hinter dem Puffer muss den Verifier ausloesen, nicht einen
@@ -461,6 +513,27 @@ def rohe_mutationen() -> list[tuple[str, str, object, list[dict], str]]:
          [v("", "verifier")],
          "ein Wurzeloffset weit hinter dem Puffer muss den Verifier ausloesen, nicht "
          "einen Absturz"),
+
+        # --- T2-Runde 3, der schwerste Fund der ganzen Sitzung --------------
+        ("sid-ungueltiges-utf8", "mit-schleife", sid_ungueltiges_utf8,
+         [v("", "verifier")],
+         "EIN Byte (0x80 in der SID). Vorher: die Rust-Seite lehnte ab, die C++-Seite "
+         "sagte 'gueltig' - und ab der zweiten Verarbeitung starb der Prozess mit "
+         "STATUS_HEAP_CORRUPTION. Ursache: Rusts FlatBuffers-Verifier prueft "
+         "Stringinhalte auf gueltiges UTF-8, der C++-Verifier NICHT, und "
+         "juce::String::fromUTF8 laeuft auf einem nackten Fortsetzungsbyte im "
+         "Laengen- und im Kopierdurchlauf verschieden weit. Der Vertrag war darauf "
+         "gebaut, dass sich DIESELBE Bibliothek in zwei Sprachen gleich verhaelt"),
+
+        ("puffer-leer",   "live-64-band", auf_laenge(0), [v("", "dateikennung")],
+         "0 Byte. Die Rust-Seite PANICKTE hier vorher im flatbuffers-Crate "
+         "(data.len() >= SIZE_UOFFSET + FILE_IDENTIFIER_LENGTH), waehrend C++ sauber "
+         "urteilte. Ein Panic im Broker beendet den Thread, der die Pipe bedient"),
+        ("puffer-vier",   "live-64-band", auf_laenge(4), [v("", "dateikennung")],
+         "vier Byte - gerade der Wurzeloffset, noch keine Dateikennung"),
+        ("puffer-sieben", "live-64-band", auf_laenge(7), [v("", "dateikennung")],
+         "sieben Byte - ein Byte zu wenig fuer die Kennung. Ab acht einigen sich "
+         "beide Beine auf `verifier`"),
     ]
 
 

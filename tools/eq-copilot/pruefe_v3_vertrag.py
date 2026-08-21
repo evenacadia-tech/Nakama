@@ -297,8 +297,14 @@ def pruefe_textriegel(lauf: Lauf) -> None:
             rot.append(f"#{fall['nr']} {fall['zeigetext'][:40]}")
     lauf.wahr(f"Textriegel deckt jede gemessene Kante ({tabelle['anzahl']} Faelle)",
               not rot, "; ".join(rot))
+    # T2-Runde 3, Befund 3: hier stand `tabelle["anzahl"]` - das METADATENFELD.
+    # Wer die Fallliste kuerzt und die Zahl stehen laesst, bliebe in genau
+    # diesem Bein gruen, waehrend C++ und Rust die echte Liste zaehlen.
     lauf.wahr("Falltabelle hat Substanz (>= 50 Faelle)",
-              tabelle["anzahl"] >= 50, str(tabelle["anzahl"]))
+              len(tabelle["faelle"]) >= 50, str(len(tabelle["faelle"])))
+    lauf.wahr("Falltabelle: `anzahl` stimmt mit der Liste ueberein",
+              tabelle["anzahl"] == len(tabelle["faelle"]),
+              f'{tabelle["anzahl"]} vs. {len(tabelle["faelle"])}')
 
 
 def werttyp_passt(name: str, wert) -> bool:

@@ -286,6 +286,30 @@ fn bandgitter_ist_lesbar_und_in_sich_stimmig() {
     assert_eq!(grobkanten[64].to_bits(), kanten[221].to_bits());
 }
 
+/// T2-Runde 3, Befund 8: die Bandwertgrenzen der beiden Leser standen nur im
+/// Quelltext, waehrend README und Beweismanifest `bereich_db` als ihre Quelle
+/// nannten — ein Feld, das etwas ganz anderes bedeutet (den Traegerumfang
+/// +/-32767). Der Vertrag traegt die Grenze jetzt als
+/// `plausibler_bereich_db`, und dieser Test macht aus der Quellenangabe eine
+/// Pruefung. Die C++-Seite tut dasselbe.
+#[test]
+fn bandwertgrenzen_stimmen_mit_dem_vertrag() {
+    use eqcop_broker::telemetrie::{Q_0P01_MAX, Q_0P01_MIN, Q_0P1_MAX, Q_0P1_MIN};
+
+    let q = lies(&wurzel().join("eq-copilot/schemas/v3/quantisierung-v1.json"));
+    let g = &q["plausibler_bereich_db"]["traegergrenzen"];
+    assert_eq!(g["q_db_0p1_i16"][0].as_i64().unwrap() as i16, Q_0P1_MIN);
+    assert_eq!(g["q_db_0p1_i16"][1].as_i64().unwrap() as i16, Q_0P1_MAX);
+    assert_eq!(g["q_db_0p01_i16"][0].as_i64().unwrap() as i16, Q_0P01_MIN);
+    assert_eq!(g["q_db_0p01_i16"][1].as_i64().unwrap() as i16, Q_0P01_MAX);
+
+    // Und die Traegergrenzen muessen wirklich aus den dB-Werten folgen.
+    let db = q["plausibler_bereich_db"]["wert"].as_array().unwrap();
+    let (lo, hi) = (db[0].as_f64().unwrap(), db[1].as_f64().unwrap());
+    assert_eq!((lo * 10.0) as i16, Q_0P1_MIN);
+    assert_eq!((hi * 100.0) as i16, Q_0P01_MAX);
+}
+
 #[test]
 fn quantisierung_stimmt_mit_den_testvektoren() {
     let w = wurzel();

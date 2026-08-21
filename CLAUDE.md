@@ -59,10 +59,10 @@ Edits sofort per **explizitem Pathspec** committen (nie `git add -A`, nie
 
 | Datum | Entscheid | Wortlaut |
 |---|---|---|
-| 12.08. | Nakama berät nur; kein Referenztrack-Zwang; Graph ist das Herzstück | FL-Commits `77432e1` `882a964` `f13d2c9` |
-| 16.08. | Umbenennung zu Nakama; Hör-Markierung als eigene Idee | `37aba8b`, `51021d2` |
+| 12.08. | Nakama berät nur (Rückweg vertagt); ein Referenztrack für jede Musik „ist Blödsinn"; Mess-Scope ist Pflicht | FL-Commits `77432e1` `882a964` `f13d2c9` — Paraphrasen im Commit-Body („USER-VORGABE"), Wortlaut nicht protokolliert |
+| 16.08. | Umbenennung zu Nakama; Hör-Markierung als eigene Idee | FL-Commits `37aba8b`, `51021d2` — Paraphrasen im Commit-Body, Wortlaut nicht protokolliert |
 | 16./17.08. | 3D-Papier-Shader, Tusche-Einzelmarken verworfen | „das sieht sehr schlecht aus" · „zerissenes Stroh", „Kochhut" |
-| 17.08. | Kreativer Prozess wird nie übersprungen (Kreativ-Schleuse) | Hook `tools/hooks/kreativ-schleuse.sh` |
+| 17.08. | Kreativer Prozess wird nie übersprungen (Kreativ-Schleuse) | „man arbeitet eine idee aus, konkretisiert sie, solange bis man eine vorstellung hat … Kunst ist wertlos ohne ihren Entstehungsprozess." (Hook `tools/hooks/kreativ-schleuse.sh`) |
 | 18.08. | Prisma-Objekt ✓, rohe Punktwolke als Dauerinhalt ✗ | „das prisma sieht top aus … wasserfall aus farbigen pixeln" |
 | 19.08. | Nacht-Freistellung verworfen | „tut mir leid aber das war keine gute arbeit … eingebacken" |
 | 20.08. | Bauentscheidung Sondenkern | „okay dann fangen wir damit nächste session an" |
@@ -72,7 +72,7 @@ Edits sofort per **explizitem Pathspec** committen (nie `git add -A`, nie
 | 21.08. | Probeeq ist ein EQ | „die active Probe fester Name : Nakama Probeeq ist ein vollwertiger hochwertiger EQ der mit Nakama kommuniziert. er kann von nakama direkt anweisungen umsetzen aber auch ganz normal manuell vom user benutzt werden" |
 | 21.08. | Namen | „Nakama Gen = Main app · aktive sonde = Nakama Probeeq · passive sonde = Nakama Suna · Bundle = Nakama Studio" |
 | 21.08. | KI-Erklärschicht raus | „Nein – raus aus dem Produkt" |
-| 21.08. | Produktzahlen | „Hingenommen, passen aber" |
+| 21.08. | Produktzahlen | „Hingenommen, passen aber" · Regelfall einstellige Quellenzahl: „ich habe schlicht 5 genommen weil 16 bedeutet 16 geladene proben auf instrumenten … 16 plugins nur für eq kostet auch massig leistung" (`Nakama-Design/abnahmen/2026-08-21-…`) |
 | 21.08. | Design-Quelle | „das finale design wird aktuell in figma gemacht . alle 3 apps werden ein design haben mit der selben identität. alle alten sind alt. Ein Design entwickelt sich und ist nicht einfach da." · Rolle des Design-Repos: „Figma ist Quelle; Repo setzt um" |
 | 21.08. | Material-Kit-Front | „Nie abgenommen – bleibt Provisorium" |
 | 21.08. | Eigene Entwürfe (`Nakama-Design/…selfmade`, Figma-Bilder) | „Richtung für Look & Stimmung" · „Das ist ein Designprototyp keine technikanleitung, design passt sich am ende der funktion an." |
@@ -130,12 +130,14 @@ Baustand: sind Prüfbinaries älter als ihre Quellen, verweigert er mit Exitcode
 die Beglaubigung (0 grün · 2 rot · 3 Voraussetzung fehlt · 4 nicht beglaubigt).
 Vorlage `docs/beweise/VORLAGE.md`, Basislinie `docs/beweise/S0-basislinie.md`.
 
-**Kanon (Stand 21.08.2026, 15 Beine):** NullTest · Golden (239/239) · Markierung
-(30/30) · `cargo test` (56) · sechs Python-Beine des v3-Vertrags · **A11
+**Kanon (15 Beine, Tabelle in `tools/beweise.ps1`):** NullTest · Golden ·
+Markierung · `cargo test` · sechs Python-Beine des v3-Vertrags · **A11
 `pruefe_v2_schemas.py`** (neu 21.08.: die fünf v2-Schemas waren sechs Tage lang
-ungelesen, eines war kein JSON) · Identität (63) · Hostkontext (91) · Host-Probe
-(85 ohne Argument; 89 nur mit PNG-Ziel) · Schema (53). Nicht im Kanon, aber
-vorhanden: `EqCopAuxSpikeTest` (41), Shot, PaintBench, PipeProbe,
+ungelesen, eines war kein JSON) · Identität · Hostkontext · Host-Probe (zählt
+89 nur mit PNG-Ziel, sonst 85 — NAK-34) · Schema. **Die Prüfzahlen stehen im
+jüngsten Manifest in `docs/beweise/`, nicht hier** (zuletzt
+`KONTEXT-INVENTUR-2026-08-21.md`: 15/15 grün). Nicht im Kanon, aber vorhanden:
+`EqCopAuxSpikeTest` (NAK-37), Shot, PaintBench, PipeProbe,
 `pluginval --strictness-level 8`. Fünf Beine stehen als „geplant" und werden
 Pflicht, sobald ihr Ticket sie baut.
 
@@ -196,8 +198,11 @@ Pflicht, sobald ihr Ticket sie baut.
   bitidentisch (MarkierungTest). Jede weitere Audio-Ausnahme von Gen/Suna
   braucht denselben Beweisstandard.
 - **Editor heute:** Material-Kit-Front, festes Verhältnis 750:520, frei ziehbar
-  600×416…1950×1352 (`PluginEditor.cpp:176-183`) — Provisorium; die
-  abgenommenen Design-Größen (760×430 feste Stufen) gelten für die neue UI.
+  600×416…1950×1352 (`PluginEditor.cpp:176-183`) — Provisorium; für die
+  neue UI gilt die abgenommene Größe 760×430 („so oder so die zweitkleinste
+  ist das vernünftigste", 20.08.); ob feste Stufen oder freie Skalierung,
+  ist Claude-Empfehlung, kein Entscheid (User: „oder eine freie
+  skalierungsform eben").
 
 ## Invarianten — tragend, jede Runde präsent
 
@@ -210,7 +215,7 @@ Pflicht, sobald ihr Ticket sie baut.
 - **Engine kennt keine Optik:** AnalyseEngine liefert kohärente MessSnapshots
   (~20 Hz Leichtpfad + 250-ms-Schwerauswertung); der Editor hält NUR
   Anzeigezustand und malt nur bei neuer Snapshot-Revision.
-- **Gegenpfade** (Entwurf §11.5): starten↔stoppen · öffnen↔schließen ·
+- **Gegenpfade** (Invariante aus dem archivierten Bauplan 2.0 §11.5, gilt weiter): starten↔stoppen · öffnen↔schließen ·
   speichern↔laden · aktivieren↔abklingen · installieren↔Rollback — beide
   Hälften im selben Änderungssatz.
 - **Zeit ist Aktivzeit:** Zonen-Ticks je 1 s AKTIVER Musikzeit (deterministisch,

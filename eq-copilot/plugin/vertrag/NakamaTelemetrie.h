@@ -57,6 +57,22 @@ inline constexpr size_t maxEintraege = 32;
 inline constexpr size_t baenderFein = 221;
 inline constexpr size_t baenderGrob = 64;
 
+/** Plausibilitaetsgrenzen der Bandwerte, als bereits skalierte Traegerwerte.
+
+    Quelle ist schemas/v3/quantisierung-v1.json, Feld `plausibler_bereich_db` -
+    NICHT `bereich_db`, das ist der Traegerumfang (+/-32767). Der Unterschied
+    war ein T2-Runde-3-Befund: README und Beweismanifest nannten `bereich_db`
+    als Quelle, waehrend hier etwas ganz anderes durchgesetzt wurde.
+
+    EqCopSchemaTest vergleicht diese vier Zahlen bei JEDEM Lauf mit der
+    Vertragsdatei; die Rust-Seite tut dasselbe. Damit ist die Quellenangabe
+    keine Behauptung mehr, sondern eine Pruefung.
+*/
+inline constexpr int16_t q0p1Min  = -1440;   // -144.0 dB * 10
+inline constexpr int16_t q0p1Max  =   240;   //   24.0 dB * 10
+inline constexpr int16_t q0p01Min = -14400;  // -144.00 dB * 100
+inline constexpr int16_t q0p01Max =   2400;  //   24.00 dB * 100
+
 /** Prueft einen rohen FeatureBatch-Puffer.
 
     @returns die kanonisch sortierte, doppelfreie Verstossmenge; leer heisst

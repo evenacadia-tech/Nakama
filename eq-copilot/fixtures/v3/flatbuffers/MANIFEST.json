@@ -6,8 +6,8 @@
   "erzeugung": "Die .bin-Dateien entstehen mit dem GEPINNTEN flatc aus einer JSON-Beschreibung (flatc -b). Ein eigener Encoder waere eine dritte Implementierung des Formats, die niemand prueft.",
   "byte_mutation_von": "Markiert einen Puffer, den flatc nicht erzeugen KANN (falsche Dateikennung, abgeschnitten, zerstoerter Wurzeloffset). Er entsteht als Byte-Mutation des genannten gueltigen Puffers.",
   "regeln": "Die geschlossene Liste der Regelnamen steht in eq-copilot/schemas/v3/flatbuffers/README.md. Ein Verstoss ist (pfad, regel); die Menge wird kanonisch nach (pfad, regel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
-  "anzahl_gueltig": 8,
-  "anzahl_ungueltig": 32,
+  "anzahl_gueltig": 9,
+  "anzahl_ungueltig": 38,
   "fixtures": [
     {
       "datei": "gueltig/alle-validity-bits.bin",
@@ -55,6 +55,12 @@
       "datei": "gueltig/ohne-optionale-kennzahlen.bin",
       "urteil": "gueltig",
       "warum": "ein nicht messbarer Wert wird WEGGELASSEN, nicht als 0 oder NaN gesendet - das ist die NaN-Ehrlichkeit im Binaerformat",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/sid-ist-ein-nul.bin",
+      "urteil": "gueltig",
+      "warum": "GUELTIG, und das ist kein Versehen: §32.1 sagt, die SID werde 'nie geparst, nur verglichen' - der Vertrag bindet ausschliesslich ihre LAENGE. Ein NUL ist ein voellig normaler Codepunkt, und beide Beine zaehlen ihn gleich. Das Fixture steht hier, damit die Uebereinstimmung bewiesen ist statt angenommen",
       "verstoesse": []
     },
     {
@@ -269,6 +275,17 @@
       ]
     },
     {
+      "datei": "ungueltig/hex32-nul-dahinter.bin",
+      "urteil": "ungueltig",
+      "warum": "32 Hexziffern, dann ein NUL und Muell. Ueber `c_str()` gelesen sah das wie ein gueltiges hex32 aus; ueber die Laenge gelesen sind es 35 Zeichen",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/quelle/project_binding_id",
+          "regel": "hex32"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/kein-traeger.bin",
       "urteil": "ungueltig",
       "warum": "und keiner gesetzt hiesse ein Bandsatz ohne Baender",
@@ -311,6 +328,42 @@
           "regel": "metrics_version"
         }
       ]
+    },
+    {
+      "datei": "ungueltig/puffer-leer.bin",
+      "urteil": "ungueltig",
+      "warum": "0 Byte. Die Rust-Seite PANICKTE hier vorher im flatbuffers-Crate (data.len() >= SIZE_UOFFSET + FILE_IDENTIFIER_LENGTH), waehrend C++ sauber urteilte. Ein Panic im Broker beendet den Thread, der die Pipe bedient",
+      "verstoesse": [
+        {
+          "pfad": "",
+          "regel": "dateikennung"
+        }
+      ],
+      "byte_mutation_von": "gueltig/live-64-band.bin"
+    },
+    {
+      "datei": "ungueltig/puffer-sieben.bin",
+      "urteil": "ungueltig",
+      "warum": "sieben Byte - ein Byte zu wenig fuer die Kennung. Ab acht einigen sich beide Beine auf `verifier`",
+      "verstoesse": [
+        {
+          "pfad": "",
+          "regel": "dateikennung"
+        }
+      ],
+      "byte_mutation_von": "gueltig/live-64-band.bin"
+    },
+    {
+      "datei": "ungueltig/puffer-vier.bin",
+      "urteil": "ungueltig",
+      "warum": "vier Byte - gerade der Wurzeloffset, noch keine Dateikennung",
+      "verstoesse": [
+        {
+          "pfad": "",
+          "regel": "dateikennung"
+        }
+      ],
+      "byte_mutation_von": "gueltig/live-64-band.bin"
     },
     {
       "datei": "ungueltig/quelle-doppelt.bin",
@@ -366,6 +419,29 @@
           "regel": "sid_laenge"
         }
       ]
+    },
+    {
+      "datei": "ungueltig/sid-nul-dahinter.bin",
+      "urteil": "ungueltig",
+      "warum": "184 Zeichen, dann ein NUL und 400 weitere. Ueber `c_str()` gelesen war die SID 184 lang und damit gerade noch zulaessig; ueber die Laenge gelesen sind es 585",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/quelle/logon_sid",
+          "regel": "sid_laenge"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/sid-ungueltiges-utf8.bin",
+      "urteil": "ungueltig",
+      "warum": "EIN Byte (0x80 in der SID). Vorher: die Rust-Seite lehnte ab, die C++-Seite sagte 'gueltig' - und ab der zweiten Verarbeitung starb der Prozess mit STATUS_HEAP_CORRUPTION. Ursache: Rusts FlatBuffers-Verifier prueft Stringinhalte auf gueltiges UTF-8, der C++-Verifier NICHT, und juce::String::fromUTF8 laeuft auf einem nackten Fortsetzungsbyte im Laengen- und im Kopierdurchlauf verschieden weit. Der Vertrag war darauf gebaut, dass sich DIESELBE Bibliothek in zwei Sprachen gleich verhaelt",
+      "verstoesse": [
+        {
+          "pfad": "",
+          "regel": "verifier"
+        }
+      ],
+      "byte_mutation_von": "gueltig/mit-schleife.bin"
     },
     {
       "datei": "ungueltig/transport-ohne-context-bit.bin",

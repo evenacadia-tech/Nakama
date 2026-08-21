@@ -311,6 +311,73 @@ void fahreFbKorpus()
     const int g = static_cast<int> (manifest.getProperty ("anzahl_gueltig", {}));
     const int u = static_cast<int> (manifest.getProperty ("anzahl_ungueltig", {}));
     pruefe (g + u == geprueft, "Binaer-Manifestzahlen passen zur Fixtureliste");
+
+    /*  T2-Runde 3, Blocker BL-1: der Puffer mit einem 0x80 in der SID hat den
+        Prozess ab der ZWEITEN Verarbeitung getoetet (STATUS_HEAP_CORRUPTION).
+        Ein Korpuslauf sieht jedes Fixture nur einmal und haette das nie
+        bemerkt - deshalb wird genau dieser Puffer hier wiederholt gefahren.
+
+        Der Riegel prueft zwei Dinge: dass der Prozess ueberlebt (er laeuft
+        einfach weiter) und dass das Urteil ueber 200 Durchgaenge STABIL ist.
+        Ein Speicherfehler, der nur manchmal zuschlaegt, waere sonst ein
+        gruener Test mit einem Zufallsgenerator darin.
+    */
+    const auto absturzfixture = finde (
+        "eq-copilot/fixtures/v3/flatbuffers/ungueltig/sid-ungueltiges-utf8.bin");
+    juce::MemoryBlock kaputt;
+    if (absturzfixture.existsAsFile() && absturzfixture.loadFileAsData (kaputt))
+    {
+        bool stabil = true;
+        for (int i = 0; i < 200 && stabil; ++i)
+        {
+            const auto v = nakama::telemetrie::pruefe (
+                static_cast<const uint8_t*> (kaputt.getData()), kaputt.getSize());
+            stabil = v.size() == 1 && v.getReference (0).regel == "verifier";
+        }
+        pruefe (stabil, "kaputtes UTF-8 in der SID: 200x dasselbe Urteil, kein Absturz",
+                "BL-1 aus T2-Runde 3");
+    }
+    else
+    {
+        pruefe (false, "Absturz-Regressionsfixture vorhanden");
+    }
+}
+
+/*  T2-Runde 3, Befund 8: die Bandwertgrenzen der beiden Leser standen nur im
+    Quelltext, waehrend README und Beweismanifest `bereich_db` als ihre Quelle
+    nannten - ein Feld, das etwas ganz anderes bedeutet (den Traegerumfang
+    +/-32767). Der Vertrag traegt die Grenze jetzt als `plausibler_bereich_db`,
+    und diese Probe macht aus der Quellenangabe eine PRUEFUNG. Die Rust-Seite
+    tut dasselbe.
+*/
+void fahreBandwertgrenzen()
+{
+    bool ok = false;
+    const auto q = lies ("eq-copilot/schemas/v3/quantisierung-v1.json", ok);
+    if (! ok)
+        return;
+
+    const auto plaus = q.getProperty ("plausibler_bereich_db", {});
+    const auto grenzen = plaus.getProperty ("traegergrenzen", {});
+    auto paar = [&grenzen] (const char* name, int index)
+    {
+        auto* a = grenzen.getProperty (name, {}).getArray();
+        return a != nullptr && a->size() == 2 ? static_cast<int> ((*a)[index]) : -1;
+    };
+
+    pruefe (paar ("q_db_0p1_i16", 0) == nakama::telemetrie::q0p1Min
+            && paar ("q_db_0p1_i16", 1) == nakama::telemetrie::q0p1Max
+            && paar ("q_db_0p01_i16", 0) == nakama::telemetrie::q0p01Min
+            && paar ("q_db_0p01_i16", 1) == nakama::telemetrie::q0p01Max,
+            "Bandwertgrenzen des Lesers stimmen mit quantisierung-v1.json");
+
+    // Und die Traegergrenzen muessen wirklich aus den dB-Werten folgen.
+    auto* db = plaus.getProperty ("wert", {}).getArray();
+    const double lo = db != nullptr && db->size() == 2 ? static_cast<double> ((*db)[0]) : 0.0;
+    const double hi = db != nullptr && db->size() == 2 ? static_cast<double> ((*db)[1]) : 0.0;
+    pruefe (static_cast<int> (lo * 10.0) == nakama::telemetrie::q0p1Min
+            && static_cast<int> (hi * 100.0) == nakama::telemetrie::q0p01Max,
+            "Traegergrenzen folgen aus den dB-Werten mal Skalierung");
 }
 
 // ------------------------------------------------------------------ Bandgitter
@@ -703,6 +770,7 @@ int main (int, char*[])
     fahreTextriegelproben();
     fahreRiegelproben();
     fahreFbKorpus();
+    fahreBandwertgrenzen();
 
     bool ok = false;
     const auto schemaVar = lies ("eq-copilot/schemas/v3/eq-ipc-v3.schema.json", ok);

@@ -205,6 +205,11 @@ def f32_vektoren() -> list[dict]:
     return vektoren
 
 
+# Plausibilitaetsgrenze der Bandwerte in dB (siehe "plausibilitaet" unten).
+PLAUSIBEL_MIN_DB = -144.0
+PLAUSIBEL_MAX_DB = 24.0
+
+
 def inhalt() -> dict:
     return {
         "$id": "evenacadia.nakama.quantisierung.v1",
@@ -216,7 +221,16 @@ def inhalt() -> dict:
             "rundung_falle": "floor(abs(x)+0.5) ist NICHT dieselbe Regel: fuer x = 0.49999999999999994 liefert sie 1 statt 0. Ein Vektor deckt genau das ab.",
             "nichtendlich": "NaN, +inf und -inf ergeben Wert 0 (bzw. +0.0f) mit gueltig=false. Sie werden nie saturiert und nie sanitisiert — die Gueltigkeitsbitmap ist die Wahrheit.",
             "saettigung": "Ein saturierter Wert bleibt GUELTIG und setzt zusaetzlich das Saettigungsbit: er ist gemessen, nur nicht mehr aufloesbar.",
-            "bitmap": "Base64 ueber ceil(n/8) Bytes, LSB-first je Byte: Band i sitzt in Byte i/8, Bit i%8."
+            "bitmap": "Base64 ueber ceil(n/8) Bytes, LSB-first je Byte: Band i sitzt in Byte i/8, Bit i%8.",
+            "plausibilitaet": "`bereich_db` ist der TRAEGERumfang — was ein i16 mit dieser Skalierung ueberhaupt darstellen kann —, NICHT der Bereich, in dem ein Bandwert liegen DARF. Letzteres ist `plausibler_bereich_db`. Die beiden Binaerleser aus SONDE-005b setzen ihn durch und vergleichen ihre einkompilierten Konstanten bei JEDEM Testlauf mit dieser Datei. Vorher standen die Zahlen nur im Quelltext, waehrend README und Beweismanifest `bereich_db` als ihre Quelle nannten (T2-Runde 3, Befund 8) — eine Quellenangabe, die auf etwas anderes zeigte als auf das, was durchgesetzt wurde."
+        },
+        "plausibler_bereich_db": {
+            "wert": [PLAUSIBEL_MIN_DB, PLAUSIBEL_MAX_DB],
+            "grund": "-144 dB ist die Untergrenze der NaN-Ehrlichkeit: darunter ist nichts mehr Signal, sondern Rechenrauschen. +24 dB liegt weit ueber jedem Bandpegel, den ein Mix erzeugt, und faengt trotzdem einen umgeklappten oder falsch skalierten Wert. Die Grenze gilt fuer BEIDE i16-Kodierungen in dB, nicht in Traegerwerten — die Traegergrenze folgt aus der Skalierung.",
+            "traegergrenzen": {
+                "q_db_0p1_i16": [int(PLAUSIBEL_MIN_DB * 10), int(PLAUSIBEL_MAX_DB * 10)],
+                "q_db_0p01_i16": [int(PLAUSIBEL_MIN_DB * 100), int(PLAUSIBEL_MAX_DB * 100)]
+            }
         },
         "kodierungen": {
             "q_db_0p1_i16": {

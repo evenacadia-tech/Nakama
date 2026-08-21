@@ -8,9 +8,12 @@ Nichts davon ist ein Gestaltungsvorschlag. Layoutentscheidungen gehören nach
 
 > **Hier stehen wir (Stand 2026-08-21):** Main ist auf Wireframe-Ebene
 > **vollständig abgenommen**; der aktuelle Entwurf liegt in `zustaende.html`.
-> Als Nächstes: **Active-Probe-Editor** (700×420), danach **Passive-Kachel**
-> (260×84). Fahrplan: `docs/arbeitsplan.md` · Auftrag und Klemme:
-> `docs/sondenplan.md` · Prüfbericht: `abnahmen/2026-08-21-codereview.md`.
+> Der **Active-Probe-Editor** (700×420) ist **gemessen, nicht entworfen**:
+> `sonde-messung.html` sagt, was der Inhalt kostet. Was fehlt, ist die
+> Aufgabenliste nach Häufigkeit — ohne sie kein Wireframe. Danach
+> **Passive-Kachel** (260×84). Fahrplan: `docs/arbeitsplan.md` · Auftrag und
+> Klemme: `docs/sondenplan.md` · Prüfbericht:
+> `abnahmen/2026-08-21-codereview.md`.
 
 **Stufe 1 — The Feeling** *(erhoben — ⚠ Arbeitsannahme, nicht abgenommen)*
 1. `weltenwahl.html` — welche Welt? → **Glas und Licht**
@@ -31,7 +34,12 @@ niemand sie als abgenommen zitieren (`abnahmen/LIES-MICH.md`).
 meldet JS-Fehler, leere Blätter und fehlende Standbänder.
 `node werkzeug/pruefung/pruefen.mjs` (alle) bzw. `--gegenprobe` (beweist, dass
 sie scheitern kann). Nach JEDEM Umbau laufen lassen — ein Syntaxfehler macht
-ein Blatt tonlos tot. Details: `pruefung/LIES-MICH.md`.
+ein Blatt tonlos tot.
+
+**Inhaltsprüfung** — `pruefung/sondenprobe.mjs`: fragt nicht, ob ein Blatt
+lebt, sondern ob es die Wahrheit sagt. Elf Proben, zwei davon Gegenproben.
+`node werkzeug/pruefung/sondenprobe.mjs alles`. Details zu beiden:
+`pruefung/LIES-MICH.md`.
 
 **Prüfliste** — `PRUEFLISTE.md`: was an jedem Blatt gemessen wird, bevor es
 gezeigt wird, mit dem echten Fehler hinter jeder Regel. Vor jedem neuen Blatt
@@ -46,9 +54,13 @@ lesen; jede Zeile dort hat einmal Arbeit gekostet.
     Zeile**, App-Umrandung verworfen *(entschieden, eingefroren)*
 4d. `zustaende.html` — wo lebt ein Zustand? → **nur die Ausnahme spricht**
     *(entschieden)* — **aktueller Main-Entwurf, hier weiterarbeiten**
-4e. *(offen)* **Active-Probe-Editor**, 700×420 — der nächste Schritt.
-    Auftrag, Aufgabenliste und vorgerechnete Klemme: `docs/sondenplan.md`.
-4f. *(offen)* **Passive-Kachel**, 260×84.
+4e. `sonde-messung.html` — was kostet der Inhalt des **Active-Probe-Editors**
+    auf 700×420? *(Messbank, kein Entwurf — entscheidet nichts)*
+4f. *(offen)* **Active-Probe-Editor**, 700×420 — der Wireframe. Erst nach
+    `/interview struktur` und der abgenommenen Aufgabenliste
+    (`docs/sondenplan.md` Abschnitt 3).
+4g. *(offen)* **Passive-Kachel**, 260×84. Gemessen ist schon etwas:
+    im Grenzfall läuft sie bei 260×84 um **23 px** über (`formfaktor.html`).
 5. *(offen)* Schritt 2: Early Visual Layer — Kontrast und Gruppierung, noch
    ohne fertigen Look.
 6. *(offen)* Schritt 3: UI Design Stage — Stil und Feinproportionen.
@@ -119,6 +131,64 @@ für dieselbe Aufgabe.
 
 Main ist zieh- und größenveränderbar, Active-Probe und drei Passive-Kacheln
 lassen sich dazuschalten — die reale Situation, nicht ein Fenster allein.
+
+## sonde-messung.html
+
+**Die Messbank des Active-Probe-Editors.** Sie entscheidet nichts und stellt
+nichts zur Wahl — sie beantwortet die eine Frage, die vor jedem Wireframe
+steht: *was kostet der Inhalt auf 700×420?*
+
+Warum es sie gibt: `docs/sondenplan.md` Abschnitt 4 rechnete die Klemme bereits
+vor — an einem Blatt, das **sitzungslokal war und weg ist**. Beim ersten Lauf
+dieser Messbank waren von **19 nachprüfbaren Angaben 10 falsch**. Eine Zahl, die
+man nicht nachmessen kann, ist eine Behauptung.
+
+### Was sie zeigt
+
+1. **Die Waage** — 18 Bausteine einzeln gewogen, je Höhe **und** Breite, dazu
+   die natürliche Breite ohne Spaltenausrichtung. Acht gestapelte Zeilen werden
+   wirklich gestapelt gemessen, nicht mit acht multipliziert (Fugen!).
+2. **Der Vorrat** — was nach allem Dauerhaften übrigbleibt. **Gemessen an
+   einem gebauten Blatt**, nicht ausgerechnet: bei Main hat genau das Rechnen
+   zwei 1-px-Rahmen verschluckt (370 statt 368).
+3. **Fünf Anordnungen**, real auf 700×420 gebaut und nachgemessen.
+4. **Wer gibt bei Platzmangel nach?** — die offene Produktfrage aus dem
+   Sondenplan, für alle drei Antworten vorgerechnet.
+5. **Die Prüfungen** — Überlauf · Verdeckung · Deckel · Beleg · Grenzfall,
+   jede einzeln, jede sichtbar bestanden oder gescheitert.
+
+### Die drei Befunde, die vorher niemand hatte
+
+- **Acht gestapelte Zeilen kosten dieselbe Höhe, egal was drinsteht** — 137,1 px
+  bei sechs wie bei zwölf Werten. Nur die Breite ändert sich (232 gegen 564).
+  Auch die **längsten** Werte kosten keine Breite mehr: die
+  Spalten-Mindestbreiten fassen sie.
+- **„1 Slot voll + 7 waagerechte Streifen" ist NICHT dasselbe wie acht Zeilen.**
+  Der Sondenplan führte beides als gleich (216 px); gemessen sind es 111 gegen
+  176, und das Kurvenfeld wächst von 127 auf 192 px.
+- **Global, Draft und Undo dauerhaft kosten 123 px** — der Vorrat fällt von 358
+  auf 235, und Anordnung A behält **3 px** Kurvenfeld. Dort passen nicht einmal
+  die Achsenbeschriftungen hinein.
+
+### Zwei Grenzfälle, und sie zeigen in entgegengesetzte Richtungen
+
+Der **Platz**-Grenzfall (8 Slots, alle dynamisch, längste Werte) braucht das
+Maximum an Raum. Der **Ehrlichkeits**-Grenzfall (Bypass an, vom Main getrennt,
+Dynamik aus) macht die meisten Bedienelemente tot — und tote Werte zeigen „—",
+was die Zeile *schmaler* macht. Wer nur einen prüft, misst am anderen vorbei.
+Beide sind unten schaltbar.
+
+### Die Verdeckungsprüfung wohnt hier
+
+`PRUEFLISTE.md` 2.3 verlangt sie seit dem 20.08.; sie existierte in keinem
+Blatt. Jetzt steht sie hier als `verdeckung()` und meldet **Randfarbe**
+(Outline/Schatten ragt über die Layoutbox auf fremden Text) und **Auflage**
+(absolut gesetztes Element liegt auf fremdem Text) **getrennt**. Wer absichtlich
+verdeckt, sagt es mit `data-deckt="absicht"`.
+
+Im ersten Lauf hat sie einen echten Fehler gefunden: `.anordnung .nr` traf
+sowohl die Nummernmarke der Kachel als auch die Slot-Nummer im Spezimen —
+acht Nummern lagen absolut gesetzt übereinander in einer Ecke.
 
 ## wireframe-main.html
 

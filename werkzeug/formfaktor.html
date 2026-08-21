@@ -94,6 +94,47 @@ body{background:#1a1a1a;color:#dcdcdc;
   text-overflow:ellipsis;flex:none}
 .hmz .z{display:flex;gap:2px;flex:1;height:100%}
 .hmz .z i{flex:1;display:block;height:100%}
+
+/* ---- Modell des Active-Probe-Editors ----------------------------------
+   Eigene .ap-Klassen, damit Mains Modi unberuehrt bleiben (deren .streifen
+   hat einen harten 24-px-Deckel, der fuer eine Bandzeile falsch waere).
+   Bis 2026-08-21 stand hier eine Kurve mit EINER Zeile — dieses Blatt hat
+   700x420 also ehrlich, aber am falschen Inhalt gemessen.
+   GENAU GESAGT: der INHALT ist derselbe wie in werkzeug/sonde-messung.html
+   (dieselben acht Slots, dieselben Werte), das Kastenwerk drumherum ist das
+   dieses Blattes (.box/.inh/h4 haben hier andere Polster). Die Pixelzahlen
+   weichen dadurch um wenige Punkte ab; massgeblich fuer Pixel ist die
+   Messbank, massgeblich hier ist: passt der Inhalt ins Fenster. */
+.ap-streifen{border:1px solid #4c4c4c;background:#2e2e2e;display:flex;
+  align-items:center;padding:0 9px;flex:none;min-width:0;overflow:hidden}
+.ap-eb{font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:6px 11px;
+  color:#9a9a9a;border-right:1px solid #414141}
+.ap-eb:first-child{padding-left:0}
+.ap-eb.an{background:#4a4a4a;color:#e8e8e8}
+.ap-zeile{display:flex;align-items:center;gap:9px;border:1px solid #4c4c4c;
+  background:#2e2e2e;padding:4px 9px;font-size:10.5px;color:#9a9a9a;flex:none;
+  min-width:0;overflow:hidden}
+.ap-zeile > i{font-style:normal;font-size:9px;letter-spacing:.14em;
+  text-transform:uppercase;color:#7d7d7d;flex:none}
+.ap-zeile .w{white-space:nowrap}
+.ap-zeile .w b{font-weight:400;color:#c9c9c9}
+.ap-zeile .rechts{margin-left:auto;display:flex;gap:5px;flex:none}
+.ap-slot{display:flex;align-items:center;gap:4px;min-height:max-content;
+  font-size:11px;color:#c9c9c9;white-space:nowrap}
+.ap-slot > span{flex:none;white-space:nowrap}
+.ap-slot .an{min-width:9px;text-align:center}
+.ap-slot .nr{min-width:9px;color:#8f8f8f;text-align:right}
+.ap-slot .typ{min-width:36px;color:#9a9a9a}
+.ap-slot .f{min-width:56px;text-align:right}
+.ap-slot .q{min-width:46px;text-align:right;color:#9a9a9a}
+.ap-slot .g{min-width:56px;text-align:right}
+.ap-slot .ch{min-width:26px;color:#8f8f8f;text-align:center}
+.ap-slot .dy{min-width:24px;color:#8f8f8f;text-align:center}
+.ap-slot .thr,.ap-slot .rng{min-width:58px;text-align:right;color:#9a9a9a}
+.ap-slot .atk,.ap-slot .hld,.ap-slot .rel{min-width:46px;text-align:right;color:#9a9a9a}
+.ap-liste{display:flex;flex-direction:column;gap:2px;flex:1;min-height:0;overflow:hidden}
+.ap-skala{display:flex;font-size:8px;color:#7d7d7d;flex:none}
+.ap-skala span{flex:1;text-align:center}
 .bf{border:1px solid #454545;background:#333;padding:4px 6px;display:flex;
   flex-direction:column;gap:1px}
 .bf b{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#9a9a9a;
@@ -139,7 +180,7 @@ body{background:#1a1a1a;color:#dcdcdc;
      ausserhalb des beurteilten Blattes. Ergaenzt 2026-08-21. -->
 <div style="background:#3f3f3f;color:#f2f2f2;padding:7px 26px;font:12px/1.5 'Segoe UI',system-ui,sans-serif;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
   <b style="letter-spacing:.12em;font-size:10.5px;text-transform:uppercase;flex:none">Größen abgenommen — Blatt bleibt als Messgerät in Gebrauch</b>
-  <span style="opacity:.92">Abgenommen 2026-08-20: Main <b>760×430</b> · Active-Probe <b>700×420</b> · Passive-Kachel <b>260×84</b> (abnahmen/2026-08-20-groessen-alle-drei.md). Die Überlaufmessung war in vier Punkten blind und ist seit <b>2026-08-21</b> repariert: rekursiv über alle Nachfahren, in <b>beide</b> Richtungen, auf <b>jedem</b> Fenster — auch Active-Probe und Kachel. Was noch <b>nicht</b> stimmt: der Active-Probe-Kasten ist kein Modell des Editors (eine Kurve, eine Zeile statt acht Band-Slots), die Messung ist also ehrlich, aber am falschen Inhalt. Erst füllen, dann messen — docs/sondenplan.md, Abschnitt 5.</span>
+  <span style="opacity:.92">Abgenommen 2026-08-20: Main <b>760×430</b> · Active-Probe <b>700×420</b> · Passive-Kachel <b>260×84</b> (abnahmen/2026-08-20-groessen-alle-drei.md). Die Überlaufmessung war in vier Punkten blind und ist seit <b>2026-08-21</b> repariert: rekursiv über alle Nachfahren, in <b>beide</b> Richtungen, auf <b>jedem</b> Fenster — auch Active-Probe und Kachel. Seit <b>2026-08-21</b> zeigt das Active-Probe-Fenster auch den <b>echten</b> Editor-Inhalt: 8 Slots × 12 Parameter, Kurve, Global, Draft, Undo, Statuszeile — dieselben Werte wie in <code>werkzeug/sonde-messung.html</code>. Die Passive-Kachel steht im <b>Grenzfall</b> (langer Name + Messposition + Hinweis), nicht im Schönfall. Was dieses Blatt <b>nicht</b> beantwortet: wie der Inhalt angeordnet gehört — das misst die Messbank.</span>
 </div>
 
 
@@ -381,23 +422,72 @@ const FORMEN = [
   {id:'saeule',  name:'Säule',   w:460, h:880},
   {id:'klein',   name:'Klein',   w:520, h:300}
 ];
+/* Das Modell des Active-Probe-Editors. Inhalt und Werte sind dieselben wie in
+   werkzeug/sonde-messung.html — 8 Slots x 12 Parameter im Platz-Grenzfall,
+   dazu Kurve, Global, Draft, Undo und Statuszeile. Vorher stand hier eine
+   Kurve und EINE Zeile; das Fenster wurde damit ehrlich gemessen, aber am
+   falschen Inhalt (docs/sondenplan.md, Abschnitt 5). */
+const AP_SLOTS = [
+  ['HP',   '24 Hz',    'Q 0.71', '-',       'St',  '-28.0 dB','+6.0 dB','12 ms','40 ms','180 ms'],
+  ['Bell', '86 Hz',    'Q 1.40', '-3.5 dB', 'M/S', '-24.0 dB','+4.5 dB','20 ms','60 ms','240 ms'],
+  ['Bell', '220 Hz',   'Q 1.20', '-2.0 dB', 'St',  '-22.5 dB','+3.0 dB','8 ms', '30 ms','120 ms'],
+  ['Notch','480 Hz',   'Q 6.40', '-9.0 dB', 'L/R', '-30.0 dB','+2.5 dB','4 ms', '20 ms','90 ms'],
+  ['Bell', '1.2 kHz',  'Q 0.90', '+1.0 dB', 'St',  '-18.0 dB','+2.0 dB','15 ms','50 ms','200 ms'],
+  ['Bell', '3.4 kHz',  'Q 1.60', '-2.5 dB', 'M/S', '-20.0 dB','+3.5 dB','10 ms','35 ms','150 ms'],
+  ['Shelf','7.5 kHz',  'Q 0.71', '+1.5 dB', 'St',  '-16.0 dB','+2.0 dB','25 ms','70 ms','260 ms'],
+  ['LP',   '18.5 kHz', 'Q 0.71', '-',       'St',  '-12.0 dB','+1.5 dB','30 ms','80 ms','300 ms']
+];
+const AP_SKALA = ['20','50','100','200','500','1k','2k','5k','10k','20k'];
+const apSlot = (s2, i) =>
+  `<div class="ap-slot"><span class="an">&#9679;</span><span class="nr">${i+1}</span>
+   <span class="typ">${s2[0]}</span><span class="f">${s2[1]}</span>
+   <span class="q">${s2[2]}</span><span class="g">${s2[3]}</span>
+   <span class="ch">${s2[4]}</span><span class="dy">dyn</span>
+   <span class="thr">${s2[5]}</span><span class="rng">${s2[6]}</span>
+   <span class="atk">${s2[7]}</span><span class="hld">${s2[8]}</span>
+   <span class="rel">${s2[9]}</span></div>`;
+function apBau(){
+  return `<div class="ap-streifen"><span class="ap-eb an">Edit</span>
+      <span class="ap-eb">Draft</span>
+      <span class="status"><span><span class="pkt"></span>Linked &#183; paired</span></span></div>
+    <div class="ap-zeile"><i>Global</i>
+      <span class="w">In <b>-2.0 dB</b></span><span class="w">Out <b>+1.5 dB</b></span>
+      <span class="w">Width <b>96 %</b></span><span class="w">Mono below <b>120 Hz</b></span>
+      <span class="rechts"><span class="wfk">Bypass off</span></span></div>
+    ${kasten('EQ curve','protected: Vocal presence &#183; 2 kHz-5 kHz',
+      `<div class="kurve"><svg viewBox="0 0 300 100" preserveAspectRatio="none">
+         <rect x="200" y="0" width="46" height="100" fill="#fff" opacity="0.055"/>
+         <path d="M0 96 C24 70 40 62 70 66 C110 71 130 40 165 44 C200 48 230 78 246 46
+                  C266 30 285 34 300 78" fill="none" stroke="#c9c9c9" stroke-width="1.6"/>
+         <path d="M0 50H300" stroke="#3f3f3f" stroke-dasharray="2 3"/></svg></div>
+       <div class="ap-skala">${AP_SKALA.map(f=>`<span>${f}</span>`).join('')}</div>`,
+      hoehe('flex'))}
+    ${kasten('Bands','8 slots &#183; all parameters',
+      `<div class="ap-liste">${AP_SLOTS.map(apSlot).join('')}</div>`, '')}
+    <div class="ap-zeile"><i>Draft</i>
+      <span class="w">from Main &#183; <b>2 bands</b> &#183; limited to &#177;3 dB</span>
+      <span class="rechts"><span class="wfk">Audition (hold)</span>
+      <span class="wfk stark">Apply</span><span class="wfk">Discard</span></span></div>
+    <div class="ap-zeile"><i>History</i>
+      <span class="w"><b>Band 3 &#183; 220 Hz &#183; -2.0 dB</b></span>
+      <span class="w">5 confirmed steps</span>
+      <span class="rechts"><span class="wfk">Undo</span>
+      <span class="wfk">Neutralise</span></span></div>`;
+}
 const ANDERE = {
-  aktiv:   {name:'Active-Probe-Editor', w:700, h:420,
-            /* Vorher "8 bands · dynamic" — gezeichnet werden BAND.length = 9
-               Frequenzmarken, keine Baender. Zwei Begriffe unter einem Namen,
-               PRUEFLISTE 4.1. Und ACHTUNG fuer die naechste Runde: dieser
-               Kasten ist KEIN Modell des Editors. Der hat laut Spezifikation
-               8 Band-Slots mit je 12 Parametern. Solange hier eine Kurve mit
-               einer Zeile steht, kann dieses Blatt 700x420 nicht beurteilen —
-               es misst dann etwas anderes ehrlich. Siehe docs/sondenplan.md. */
-            bau:(w,h)=>streifen(3) + heatmapBox(1, 70,'EQ curve',BAND.length+' freq marks · dynamic')
-              + detailBox(h-24-70-24) },
+  aktiv:   {name:'Active-Probe-Editor', w:700, h:420, bau:(w,h)=>apBau()},
+  /* Der Grenzfall der Kachel ist der LANGE Name plus die lange Messposition:
+     260x84 ist breit und flach, dort entscheidet die Breite. "Piano Bus /
+     Insert . POST" war der Schoenfall und hat nichts bewiesen. */
   passiv:  {name:'Passive-Probe-Kachel', w:260, h:84,
             bau:()=>`<div class="box" style="flex:1"><div class="inh">
-              <div class="qz"><span class="pkt"></span><span class="n">Piano Bus</span>
-                <span class="r">carries</span></div>
+              <div class="qz"><span class="pkt"></span>
+                <span class="n">Backing Vox &#8212; Bus 12</span>
+                <span class="r">supports</span></div>
               <div class="qz" style="color:#8f8f8f;font-size:10px">
-                <span class="n">Insert · POST</span><span class="r">fresh</span></div>
+                <span class="n">Insert &#183; POST</span><span class="r">stale 40 s</span></div>
+              <div class="qz" style="color:#8f8f8f;font-size:10px">
+                <span class="n">Duplicate instance on this bus</span></div>
               </div></div>` }
 };
 
@@ -526,6 +616,18 @@ function zeichnen(){
       a.bau(a.w, a.h), false);
     s.appendChild(f); zieh(f, w.aktiv, false);
     messeFenster(f, a.w, a.h, false);
+    /* Ein Fenster kann "passen" und trotzdem unbrauchbar sein: nach acht
+       Bandzeilen bleibt der EQ-Kurve fast nichts. Keine Ueberlaufmessung
+       sieht das — sie kennt nur abgeschnitten/nicht abgeschnitten. Deshalb
+       steht die verbleibende Kurvenhoehe im Titel, auch wenn nichts fehlt.
+       Wieviel genug ist, misst werkzeug/sonde-messung.html. */
+    const kv = f.querySelector('.kurve');
+    const em = f.querySelector('.titel em');
+    if(kv && em && +f.dataset.fehlt <= 1){
+      const px = kv.offsetHeight;
+      em.textContent = `${a.w}×${a.h} — passt, aber der Kurve bleiben `
+        + `${px} px (${(px/24).toFixed(1)} px je dB)`;
+    }
   }
   if(w.passivAn){
     const p = ANDERE.passiv;

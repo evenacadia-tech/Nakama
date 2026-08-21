@@ -10,7 +10,7 @@ Das war ein benannter Verlust. Hier steht er nicht noch einmal an.
 ## Aufruf
 
 ```
-node werkzeug/pruefung/pruefen.mjs               alle neun Blätter
+node werkzeug/pruefung/pruefen.mjs               alle zehn Blätter
 node werkzeug/pruefung/pruefen.mjs zustaende     nur eines
 node werkzeug/pruefung/pruefen.mjs --gegenprobe  beweist, dass sie scheitern kann
 ```
@@ -49,10 +49,44 @@ in einer System-Chrome-Installation. Findet sie nichts, sagt sie, wo sie gesucht
 hat. **Kein Browser-Download, keine Build-Kette** — das Projekt bleibt
 doppelklickbar.
 
-## Was sie NICHT prüft
+## Was sie NICHT prüft — und wer es tut
 
-Alles, was Inhalt ist: ehrliche Zähler, Überlauf im Grenzfall, der
-Dauerhaft-Vertrag, die Verdeckung durch Overlays. Diese Messungen gehören ins
-jeweilige Blatt, weil sie dort bei jeder Neuzeichnung mitlaufen müssen — nicht
-in ein Skript, das jemand vergessen kann. Die **Verdeckungsprüfung** aus
-PRUEFLISTE 2.3 existiert bis heute in keinem Blatt; siehe `docs/sondenplan.md`.
+`pruefen.mjs` fragt nur: **lebt** das Blatt? Alles, was Inhalt ist — ehrliche
+Zähler, Überlauf im Grenzfall, Verdeckung durch Overlays, der Beleg je
+Baustein — gehört ins jeweilige Blatt, weil es dort bei jeder Neuzeichnung
+mitlaufen muss und nicht in einem Skript, das jemand vergessen kann.
+
+**`sondenprobe.mjs` prüft, dass das Blatt diese Messungen wirklich macht.**
+
+```
+node werkzeug/pruefung/sondenprobe.mjs alles
+node werkzeug/pruefung/sondenprobe.mjs zahlen
+```
+
+Elf Proben über `sonde-messung.html` und `formfaktor.html`:
+
+| Probe | Frage |
+|---|---|
+| `zahlen` | Ist jede gezeigte Zahl gemessen? Drei Beweisschritte: gegengerechnet · ändert sie sich, wenn der Inhalt sich ändert · bleibt sie gleich, wenn der **Maßstab** sich ändert |
+| `waage` | Meldet jeder Baustein Höhe **und** Breite? |
+| `anordnungen` | Melden alle fünf Messfälle je fünf Zahlen? |
+| `gegenprobe-ueberlauf` | Wird ein künstlich eingebauter Überlauf gemeldet — und verschwindet die Warnung wieder? |
+| `gegenprobe-verdeckung` | Werden **beide** Sorten (Randfarbe · Auflage) künstlich erzeugt gemeldet? |
+| `ratsche` | Drei Durchgänge, dieselben Zahlen? (Ohne `listenZuruecksetzen` wandern sie.) |
+| `deckel` | Ist keine Zeile flacher gedeckelt als ihr Inhalt? |
+| `beleg` | Nennt jeder Baustein Handgriff und Spezifikationsstelle — und ist kein Main-Baustein übriggeblieben? |
+| `grenzfall` | Ist der Grenzfall die **Vorgabe**, nicht der Sonderfall? |
+| `formfaktor` | Zeigt das Active-Probe-Fenster den echten Editor-Inhalt? |
+| `kachel` | Steht die Passive-Kachel im Grenzfall, nicht im Schönfall? |
+
+**Die drei Fehler, die sie im ersten Lauf gefunden hat** — jeder in echtem
+Code, keiner beim Ansehen aufgefallen:
+
+1. `data-mess` bezeichnete zwei Dinge; die Sonde las „+12 dB" als Höhe.
+2. `getBoundingClientRect()` unter `transform:scale(.52)`: alle
+   Anordnungszahlen waren um 48 % zu klein. **Und die erste Fassung der Sonde
+   hatte denselben Fehler** — sie verglich zwei falsche Werte und meldete
+   „0 Abweichungen". Deshalb prüft sie jetzt eigens auf
+   Maßstabsunabhängigkeit.
+3. `.anordnung .nr` traf auch die Slot-Nummern im Spezimen: acht Nummern
+   absolut gesetzt übereinander in einer Ecke.

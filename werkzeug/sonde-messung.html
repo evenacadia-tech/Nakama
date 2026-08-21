@@ -1,0 +1,1504 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nakama — Active-Probe-Editor · die Messbank</title>
+<style>
+/* Werkzeug-Chrome (deutsch). Das Produkt darin ist englisch. */
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#737373;color:#1d1d1d;
+  font:14px/1.45 'Segoe UI',system-ui,sans-serif;min-height:100vh;
+  display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+header{padding:16px 26px 4px}
+.stufe{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#3a3a3a}
+h1{font-size:22px;font-weight:600;letter-spacing:-.01em;margin-top:4px}
+.unter{font-size:13px;color:#3d3d3d;max-width:1040px;margin-top:5px}
+main{flex:1;padding:14px 22px 4px;display:flex;flex-direction:column;gap:18px}
+footer{padding:12px 26px 20px;display:flex;gap:8px;align-items:center;
+  flex-wrap:wrap;border-top:1px solid #8a8a8a}
+button.k{font:inherit;font-size:12px;padding:6px 11px;border:1px solid #4a4a4a;
+  background:#818181;color:#141414;cursor:pointer;border-radius:2px}
+button.k:hover{background:#8d8d8d}
+button.k.an{background:#242424;color:#eee;border-color:#242424}
+button.k.dunkel{background:#242424;color:#eee;border-color:#242424}
+.gruppe{display:flex;gap:5px;align-items:center;padding:3px 7px 3px 0;
+  border-right:1px solid #8a8a8a;margin-right:3px}
+.gruppe > i{font-style:normal;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:#3f3f3f;margin-right:2px}
+#band{padding:6px 26px;font-size:12px;display:flex;gap:12px;align-items:center}
+#band.ok{background:#5c6b5c;color:#eaf2ea}
+#band.warn{background:#6b5c3c;color:#f4ead6}
+#band button{font:inherit;font-size:11.5px;padding:3px 10px;border:1px solid #4a4a4a;
+  background:#8a8a8a;color:#141414;cursor:pointer;border-radius:2px}
+
+h2.abschnitt{font-size:15px;font-weight:600;margin-bottom:2px}
+h2.abschnitt span{font-weight:400;font-size:12px;color:#3d3d3d;margin-left:8px}
+.erklaer{font-size:12px;color:#3d3d3d;max-width:1040px;margin-bottom:8px}
+
+/* --- Die Waage: was kostet ein Baustein? ------------------------------- */
+table.waage{border-collapse:collapse;font-size:12px;background:#8a8a8a;
+  border:1px solid #6a6a6a}
+table.waage th,table.waage td{border:1px solid #6f6f6f;padding:4px 9px;text-align:left}
+table.waage th{font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+  color:#2f2f2f;font-weight:600;background:#7f7f7f}
+table.waage td.z{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.waage td.eng{background:#7a5f4f;color:#fff}
+table.waage tr.summe td{background:#7d7d7d;font-weight:600}
+table.waage td em{font-style:normal;color:#3f3f3f;font-size:11px}
+
+/* --- Die Anordnungen -------------------------------------------------- */
+.anordnungen{display:grid;gap:20px;align-items:start;
+  grid-template-columns:repeat(auto-fill,minmax(370px,1fr))}
+.anordnung{display:flex;flex-direction:column;gap:5px;position:relative}
+/* .knr, NICHT .nr — und mit direktem Kindselektor. ".anordnung .nr" griff
+   auch auf .slotz .nr im Spezimen: alle acht Slot-Nummern lagen absolut
+   gesetzt uebereinander in der linken oberen Ecke der Kachel, und in den
+   Bandzeilen fehlte die Nummer. Dritter Fall von PRUEFLISTE 4.1 in diesem
+   Blatt; gefunden von der neuen Verdeckungspruefung, nicht vom Auge. */
+.anordnung > .knr{position:absolute;top:-9px;left:-9px;width:21px;height:21px;
+  border-radius:50%;background:#2a2a2a;color:#e8e8e8;font-size:11px;font-weight:700;
+  z-index:6;display:flex;align-items:center;justify-content:center}
+.mech{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#3f3f3f}
+.zahlen{font-size:11px;color:#242424;display:flex;flex-wrap:wrap;gap:3px 10px;
+  font-variant-numeric:tabular-nums}
+.zahlen b{font-weight:600}
+.zahlen .warn{color:#6b2f1f;font-weight:600}
+.these{font-size:11.5px;line-height:1.4;color:#2a2a2a;display:none}
+body.thesen .these{display:block}
+
+.rahmen{position:relative;--s:.52;overflow:hidden;
+  width:calc(700px * var(--s));height:calc(420px * var(--s))}
+.rahmen .wf{transform:scale(var(--s));transform-origin:0 0}
+.rahmen.gross{--s:1}
+@media (max-width:1500px){ .rahmen{--s:.46} }
+
+/* --- Prüfungen -------------------------------------------------------- */
+.pruef{display:flex;flex-direction:column;gap:3px;font-size:12px;
+  background:#8a8a8a;border:1px solid #6a6a6a;padding:9px 12px;max-width:1040px}
+.pruef div{display:flex;gap:9px;align-items:baseline}
+.pruef i{font-style:normal;width:16px;flex:none;font-weight:700}
+.pruef .ok i{color:#2c4a2c}
+.pruef .fehl i{color:#7a2f1f}
+.pruef .fehl{color:#4a1f14;font-weight:600}
+.pruef b{font-weight:600;width:190px;flex:none}
+.pruef span{color:#2f2f2f}
+
+/* --- Namenstafel ------------------------------------------------------ */
+.namen{display:none;background:#8a8a8a;border:1px solid #6a6a6a;padding:9px 12px;
+  font-size:12px;max-width:1040px}
+body.namenAn .namen{display:block}
+.namen dl{display:grid;grid-template-columns:120px 1fr;gap:2px 12px;margin-top:5px}
+.namen dt{font-weight:600;font-family:'Cascadia Mono','Consolas',monospace;font-size:11.5px}
+.namen dd{color:#2f2f2f}
+
+/* ============================================================
+   SPEZIMEN — Active-Probe-Editor, 700×420. Reine Graustufen.
+   Kein Farbton, kein Material, kein Licht: was im Graubild nicht
+   funktioniert, wird nicht mit Farbe gerettet (arbeitsplan.md).
+   Der Inhalt ist englisch, weil er das Produkt ist.
+   Typo-Grammatik 1:1 aus werkzeug/zustaende.html uebernommen —
+   eine eigene Grammatik wuerde alle Zahlen verschieben und den
+   Vergleich mit Main wertlos machen.
+   ============================================================ */
+.wf{width:700px;height:420px;background:#242424;color:#c9c9c9;overflow:hidden;
+  border:1px solid #5c5c5c;display:flex;flex-direction:column;gap:8px;padding:8px;
+  font:12px/1.4 'Segoe UI',system-ui,sans-serif}
+.wf > *{min-width:0;min-height:0}
+.wf > .streifen{flex:none}
+.wf > .zeile{flex:none}
+
+.box{border:1px solid #4c4c4c;background:#2e2e2e;display:flex;flex-direction:column;
+  overflow:hidden;min-width:0;min-height:0;flex:1}
+.box > h4{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#8f8f8f;
+  padding:5px 9px 4px;border-bottom:1px solid #414141;flex:none;
+  display:flex;gap:8px;align-items:baseline}
+.box > h4 em{font-style:normal;margin-left:auto;color:#6f6f6f;letter-spacing:.08em}
+.box > h4 .zaehler{font-style:normal;margin-left:8px;padding-left:8px;
+  border-left:1px solid #454545;color:#8f8f8f;letter-spacing:.06em}
+.box > h4 .zaehler:empty{display:none}
+.box > h4 .zaehler.knapp{color:#e4e4e4}
+.inh{padding:7px 9px;flex:1;overflow:hidden;display:flex;flex-direction:column;gap:5px}
+
+.streifen{border:1px solid #4c4c4c;background:#2e2e2e;display:flex;
+  align-items:center;padding:0 9px;min-width:0;overflow:hidden}
+.eb{font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:6px 11px;
+  color:#9a9a9a;border-right:1px solid #414141}
+.eb:first-child{padding-left:0}
+.eb.an{background:#4a4a4a;color:#e8e8e8}
+.eb.haelt{background:#e4e4e4;color:#1a1a1a}
+.status{margin-left:auto;font-size:10px;color:#8f8f8f;display:flex;gap:12px;
+  overflow:hidden;flex:none}
+.status span{white-space:nowrap}
+.pkt{display:inline-block;width:5px;height:5px;border-radius:50%;background:#9a9a9a;
+  margin-right:4px;vertical-align:1px}
+.pkt.aus{background:transparent;border:1px solid #6a6a6a}
+
+/* Ehrliche Liste — 1:1 aus zustaende.html. Zeigt nur, was ganz hineinpasst,
+   und schreibt darunter, wieviel das von wieviel ist. Acht Baender sind eine
+   Liste wie jede andere. */
+.liste{flex:1;min-height:0;display:flex;flex-direction:column;gap:inherit;
+  overflow:hidden}
+.bandliste .liste{gap:2px}
+.kappe{flex:none;font-size:8.5px;letter-spacing:.08em;color:#8f8f8f;
+  border-top:1px dashed #5a5a5a;padding-top:3px;margin-top:2px;
+  display:flex;gap:6px;align-items:center}
+.kappe::before{content:'';flex:none;width:9px;height:1px;background:#7d7d7d}
+
+/* --- Die Slot-Zeile. SLOT = einer der acht Band-Plaetze.
+   min-height:max-content, nie eine Pixelzahl: Mains Kartenzeilen sind 8 px
+   hoch, weil dort kein Buchstabe steht. Wer das als Bandzeile kopiert,
+   deckelt zwoelf Werte à 11 px auf 8 px (docs/sondenplan.md §6). */
+.slotz{display:flex;align-items:center;gap:4px;min-height:max-content;
+  font-size:11px;color:#c9c9c9;white-space:nowrap}
+/* min-width, NIE width. Eine feste Zellbreite macht die natuerliche Breite
+   der Zeile zu einer CSS-Konstanten statt zu einer Inhaltsmessung — die Waage
+   meldete fuer "realistisch" und "laengste Werte" dieselben 564 px. Und zu
+   langer Text laeuft dann stumm ueber die Zellgrenze: eine Verdeckung, die
+   kein Ueberlaufmass sieht. Mit min-width richten sich die Spalten weiterhin
+   aus, wachsen aber mit dem Inhalt. */
+.slotz > span{flex:none;white-space:nowrap}
+.slotz .an{min-width:9px;text-align:center;color:#c9c9c9}
+.slotz .an.aus{color:#5f5f5f}
+.slotz .nr{min-width:9px;color:#8f8f8f;text-align:right}
+.slotz .typ{min-width:36px;color:#9a9a9a}
+.slotz .f{min-width:56px;text-align:right}
+.slotz .q{min-width:46px;text-align:right;color:#9a9a9a}
+.slotz .g{min-width:56px;text-align:right}
+.slotz .ch{min-width:26px;color:#8f8f8f;text-align:center}
+.slotz .dy{min-width:24px;color:#8f8f8f;text-align:center}
+.slotz .thr,.slotz .rng{min-width:58px;text-align:right;color:#9a9a9a}
+.slotz .atk,.slotz .hld,.slotz .rel{min-width:46px;text-align:right;color:#9a9a9a}
+/* Was nichts bewirkt, ist abgeschaltet und zeigt "—". Ein Wert, der
+   sich verstellen laesst und nichts tut, ist eine Luege (PRUEFLISTE 1). */
+.slotz .tot{color:#5a5a5a}
+.slotz.nackt > span{min-width:0}
+.slotz.gewaehlt{background:#3a3a3a}
+.slotz.geschuetzt .g{color:#e4e4e4;text-decoration:underline dotted}
+
+/* Waagerechter Streifen: ein SLOT als Kontext, nicht als Zeile. */
+.streifenband{display:flex;gap:4px;flex:1;min-width:0}
+.sb{flex:1;min-width:0;border:1px solid #454545;background:#282828;
+  padding:3px 4px;font-size:10px;color:#9a9a9a;display:flex;flex-direction:column;
+  gap:1px;overflow:hidden}
+.sb b{font-weight:400;color:#c9c9c9;font-size:10px;white-space:nowrap}
+.sb span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb.aus{opacity:.45}
+/* Der einzeilige Streifen: die Form, die docs/sondenplan.md §4 fuer unmoeglich
+   haelt ("acht Streifen mit ,3 . 220 Hz . -3.5 dB' nebeneinander brauchen mehr,
+   als da ist"). Behauptung oder Messung — das Blatt entscheidet es. */
+.sb1{flex:1;min-width:0;border:1px solid #454545;background:#282828;
+  padding:3px 5px;font-size:10px;color:#c9c9c9;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.sb1.aus{opacity:.45}
+
+/* --- Kurvenfeld. Summenkurve + Einzelbaender, Schutzbereich eingezeichnet. */
+.kurve{flex:1;border:1px solid #454545;background:#282828;position:relative;
+  min-height:0;overflow:hidden}
+.kurve svg{position:absolute;inset:0;width:100%;height:100%}
+.skala{display:flex;font-size:8px;color:#7d7d7d;letter-spacing:.05em;flex:none}
+.skala span{flex:1;text-align:center}
+.kurve .marke{position:absolute;left:6px;top:3px;font-size:8.5px;color:#8f8f8f;
+  letter-spacing:.08em}
+.kurve .marke.unten{top:auto;bottom:3px}
+
+/* --- Zeilen unter/ueber dem Kurvenfeld -------------------------------- */
+.zeile{display:flex;align-items:center;gap:9px;border:1px solid #4c4c4c;
+  background:#2e2e2e;padding:4px 9px;font-size:10.5px;color:#9a9a9a;
+  min-width:0;overflow:hidden}
+.zeile > i{font-style:normal;font-size:9px;letter-spacing:.14em;
+  text-transform:uppercase;color:#7d7d7d;flex:none}
+.zeile .w{white-space:nowrap}
+.zeile .w b{font-weight:400;color:#c9c9c9}
+.zeile .w.tot{color:#5a5a5a}
+.zeile .rechts{margin-left:auto;display:flex;gap:5px;align-items:center;flex:none}
+
+.wfk{font-size:9.5px;letter-spacing:.06em;padding:4px 9px;border:1px solid #5a5a5a;
+  color:#c2c2c2;background:#3a3a3a;white-space:nowrap}
+.wfk.stark{background:#5a5a5a;color:#eee}
+.wfk.aus{opacity:.5}
+.wfk[data-griff]{cursor:pointer;user-select:none}
+.wfk[data-griff]:hover{background:#4a4a4a}
+.wfk.gedrueckt{background:#e4e4e4;color:#1a1a1a;border-color:#e4e4e4}
+.lage{font-size:9.5px;letter-spacing:.08em;color:#7d7d7d;white-space:nowrap}
+.lage.haelt{color:#1a1a1a;background:#e4e4e4;padding:2px 8px}
+
+/* Undo-Verlauf: einer offen, der Rest als benannte Zeile — das Muster aus
+   Mains Befundliste, uebertragen (docs/sondenplan.md §2). */
+.uv{border:1px solid #454545;background:#333;padding:3px 7px;font-size:10.5px;
+  display:flex;gap:8px;align-items:baseline}
+.uv.zu{background:#292929;color:#9a9a9a}
+.uv i{font-style:normal;margin-left:auto;font-size:9px;color:#7d7d7d}
+
+.leerHinweis{flex:1;display:flex;flex-direction:column;gap:4px;
+  align-items:center;justify-content:center;color:#8f8f8f;font-size:11px;
+  border:1px dashed #4a4a4a;text-align:center;padding:10px}
+.leerHinweis b{font-size:13px;color:#c9c9c9;font-weight:400}
+
+/* Ein Baustein ohne Beleg ist ein erfundener Baustein. */
+.vertrag{display:none;flex-direction:column;gap:3px;margin-top:2px}
+body.vertragAn .vertrag{display:flex}
+.vertrag > span{display:flex;flex-wrap:wrap;gap:4px;align-items:baseline}
+.vertrag i{font-style:normal;font-size:9px;letter-spacing:.12em;
+  text-transform:uppercase;width:118px;flex:none;color:#3f3f3f}
+.vertrag span span{font-size:10.5px;padding:2px 6px;border:1px solid #6a6a6a;
+  white-space:nowrap;background:#2a2a2a;color:#ececec;border-color:#2a2a2a}
+.vertrag span span.ohnebeleg{background:#7a2f1f;color:#fff;border-color:#7a2f1f}
+.vertrag b{font-weight:700}
+</style>
+</head>
+<body>
+<!-- Standband: was ist dieses Blatt? Werkzeug-Chrome, deutsch, liegt
+     ausserhalb des beurteilten Blattes (PRUEFLISTE 5.1). -->
+<div style="background:#4a4232;color:#f4ead6;padding:7px 26px;font:12px/1.5 'Segoe UI',system-ui,sans-serif;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+  <b style="letter-spacing:.12em;font-size:10.5px;text-transform:uppercase;flex:none">Messbank — Arbeitsstand, kein Urteil</b>
+  <span style="opacity:.94">Angelegt 2026-08-21. Dieses Blatt <b>entscheidet nichts</b> und stellt nichts zur Wahl — es misst, was der Inhalt des Active-Probe-Editors auf 700×420 kostet. Die Anordnungen A–E sind <b>Messfälle</b>, keine Varianten: die Aufgabenliste nach Häufigkeit ist <b>nicht abgenommen</b> (Entwurf in docs/sondenplan.md §3), und ohne sie gibt es laut docs/DESIGN-GESETZE.md kein Wireframe. Größe 700×420 ist abgenommen (abnahmen/2026-08-20-groessen-alle-drei.md).</span>
+</div>
+<!-- Demo-Kennzeichnung. CLAUDE.md harte Regel 6: realistisch UND sichtbar
+     als Demo gekennzeichnet — die Marke gehoert ins Werkzeug-Chrome, nicht
+     ins Spezimen, sonst waere sie Teil dessen, was beurteilt wird. -->
+<div style="padding:5px 26px;font:11.5px/1.5 'Segoe UI',system-ui,sans-serif;color:#3d3d3d;background:#828282;border-bottom:1px solid #6f6f6f">
+  <b>Demo-Daten</b> — die acht Bänder (24 Hz Hochpass · 86 Hz · 220 Hz · 480 Hz Notch · 1.2 kHz · 3.4 kHz · 7.5 kHz Shelf · 18.5 kHz Tiefpass) sind eine erfundene, aber plausible Master-Einstellung. Keine echte Messung, kein echter Mix.
+</div>
+
+<div id="band"></div>
+<header>
+  <div class="stufe">Stufe 2 · Active-Probe-Editor · vor dem Wireframe</div>
+  <h1>Was kostet der Inhalt des Editors auf 700×420?</h1>
+  <div class="unter">
+    <b>Erst messen, dann entwerfen.</b> Bei Main war das die entscheidende Runde:
+    erst die Klemme kennen, dann anordnen. Der Editor ist enger — <b>10 px weniger
+    Höhe und 60 px weniger Breite</b> als Main, für <b>101 einstellbare Werte</b>
+    (8 Slots × 12 Parameter + 5 globale) statt für sechzehn reine Anzeigezeilen.<br>
+    Alle Zahlen unten sind <b>hier im Browser gemessen</b>, keine steht im Quelltext.
+    <code>docs/sondenplan.md</code> §4 hat dieselben Zahlen an einem Blatt gemessen,
+    das es nicht mehr gibt — deshalb dieses hier: <b>eine Zahl, die man nicht
+    nachmessen kann, ist eine Behauptung.</b><br>
+    <b>Zwei Grenzfälle, und sie zeigen in entgegengesetzte Richtungen:</b> der
+    <b>Platz</b>-Grenzfall (alle 8 Slots an, alle dynamisch, längste Werte) braucht
+    das Maximum an Raum. Der <b>Ehrlichkeits</b>-Grenzfall (Bypass an, vom Main
+    getrennt, Dynamik aus) macht die meisten Bedienelemente tot — und tote Werte
+    zeigen „—", was die Zeile <i>schmaler</i> macht. Beide sind unten schaltbar.
+  </div>
+  <div class="namen">
+    <b>Namenstafel</b> — festgelegt vor der ersten Zeile Code
+    (<code>docs/sondenplan.md</code> §6: „Nie zwei Begriffe unter einem Namen").
+    <dl>
+      <dt>SLOT</dt><dd>einer der acht Band-Plätze des Editors (1–8). Hieß im
+        Sprachgebrauch bisher „Band" — und „Band" heißt in <code>zustaende.html</code>
+        die Frequenzspalte der Heatmap. Zwei Dinge, ein Wort: hier getrennt.</dd>
+      <dt>SKALA</dt><dd>die Frequenzmarken unter dem Kurvenfeld. Das ist der
+        <i>andere</i> alte Gebrauch von „BAND".</dd>
+      <dt>PARAM</dt><dd>die zwölf Werte eines SLOTs.</dd>
+      <dt>gainManuell</dt><dd>±12 dB — was der User von Hand einstellt.</dd>
+      <dt>gainDraft</dt><dd>±3 dB — was ein Vorschlag vom Main höchstens darf.
+        Zwei verschiedene Grenzen, nie derselbe Name.</dd>
+      <dt>bypass</dt><dd>das <i>ganze Gerät</i> ist überbrückt.</dd>
+      <dt>slotAn</dt><dd>ein <i>einzelner</i> SLOT ist aus. Nicht dasselbe.</dd>
+      <dt>schutz</dt><dd>ein vom User gesperrter Frequenzbereich.</dd>
+      <dt>LAGE</dt><dd>was gerade wirklich gehalten wird — gesetzt durch echtes
+        pointerdown/-up, nie durch einen Schalter.</dd>
+    </dl>
+  </div>
+</header>
+<main>
+  <section>
+    <h2 class="abschnitt">1 · Die Waage <span>was ein einzelner Baustein an natürlicher Größe kostet</span></h2>
+    <div class="erklaer">Gemessen auf der echten Innenbreite des Blattes
+      (<b id="innen">…</b>) in der Typo-Grammatik von <code>zustaende.html</code>.
+      <b>Höhe</b> ist die natürliche Höhe auf voller Breite, <b>Breite</b> die
+      natürliche Breite des Inhalts — beide Richtungen, weil eine Messung, die nur
+      die Höhe kennt, den abgeschnittenen Streifen nicht sieht (PRUEFLISTE 2.2).
+      Rot hinterlegt heißt: passt nicht in die verfügbare Breite.</div>
+    <table class="waage"><thead><tr>
+      <th>Baustein</th><th>Höhe</th><th>Breite</th><th>×8 gestapelt</th><th>Bemerkung</th>
+    </tr></thead><tbody id="waage"></tbody></table>
+  </section>
+
+  <section>
+    <h2 class="abschnitt">2 · Der Vorrat <span>was nach dem Dauerhaften übrigbleibt</span></h2>
+    <table class="waage"><tbody id="vorrat"></tbody></table>
+  </section>
+
+  <section>
+    <h2 class="abschnitt">3 · Die Anordnungen <span>real gebaut auf 700×420, jede nachgemessen</span></h2>
+    <div class="erklaer">Keine Auswahl — Messfälle. Sie unterscheiden sich nur
+      darin, <b>wieviele Zeilen gestapelt</b> werden, denn genau das kauft die Höhe:
+      eine Zeile ist so hoch, wie ihre Schrift verlangt, ob sechs oder zwölf Werte
+      darinstehen. <b>px je dB</b> ist die gemessene Kurvenhöhe geteilt durch 24 dB
+      (±12). <b>Draft</b> ist, wieviel ein ±3-dB-Vorschlag vom Main darin belegt.</div>
+    <div class="anordnungen" id="anordnungen"></div>
+  </section>
+
+  <section>
+    <h2 class="abschnitt">3b · Wer gibt bei Platzmangel nach? <span>die offene Produktfrage, für beide Antworten vorgerechnet</span></h2>
+    <div class="erklaer">Bei Main war klar, wer seine natürliche Höhe hält: die
+      Karte, weil sie das dauerhafte Ding ist. Beim Editor ist das <b>offen</b> —
+      die Kurve ist laut Spezifikation „zentrale Anzeige", die Bänder sind das,
+      was bedient wird. Dieses Blatt entscheidet nichts; es zeigt, was jede
+      Antwort kostet. <b>Rot hinterlegt</b> heißt: ein ±3-dB-Draft vom Main wäre
+      dort flacher als eine Textzeile (15,4 px) — also nicht mehr ablesbar.
+      Gilt für die aktuell geschalteten Dauerelemente unten.</div>
+    <table class="waage" id="nachgeben"></table>
+  </section>
+
+  <section>
+    <h2 class="abschnitt">4 · Die Prüfungen <span>jede kann scheitern — sonst beweist sie nichts</span></h2>
+    <div class="pruef" id="pruef"></div>
+  </section>
+</main>
+<footer id="fuss"></footer>
+
+<script>
+/* ================================================================
+   NAKAMA — MESSBANK ACTIVE-PROBE-EDITOR
+   Stufe 2, vor dem Wireframe. Dieses Blatt misst, es entwirft nicht.
+
+   Kopiert aus werkzeug/zustaende.html (die jeweils neueste Fassung,
+   nie aus den eingefrorenen Belegblaettern — docs/sondenplan.md §2):
+     listenEhrlich/einmalEhrlich, listenZuruecksetzen, ueberlauf,
+     kasten/liste, LAGE/griff/verdrahten/alleNeu, knopf.
+   NEU in diesem Blatt: verdeckung() — die Verdeckungspruefung aus
+     PRUEFLISTE 2.3 existierte bis heute in KEINEM Blatt.
+   Produkttexte englisch (CLAUDE.md, Arbeitsweise).
+   ================================================================ */
+
+/* ---------- Namen (siehe Namenstafel im Kopf) ---------- */
+
+/* Die acht SLOTs. Numerisch gefuehrt, die Anzeigetexte werden daraus
+   abgeleitet — eine Quelle der Wahrheit, sonst nennt die Kurve andere
+   Frequenzen als die Zeile daneben (derselbe Fehler steckte in Mains
+   markierter Zelle: band:2 hiess '120', der Befund sagte 180-260). */
+const SLOTS = [
+  {nr:1, an:true, typ:'HP',    fHz:24,    qN:0.71, gDb:null, ch:'St',  dyn:true, thr:-28.0, rng:6.0, atk:12, hld:40, rel:180},
+  {nr:2, an:true, typ:'Bell',  fHz:86,    qN:1.40, gDb:-3.5, ch:'M/S', dyn:true, thr:-24.0, rng:4.5, atk:20, hld:60, rel:240},
+  {nr:3, an:true, typ:'Bell',  fHz:220,   qN:1.20, gDb:-2.0, ch:'St',  dyn:true, thr:-22.5, rng:3.0, atk:8,  hld:30, rel:120},
+  {nr:4, an:true, typ:'Notch', fHz:480,   qN:6.40, gDb:-9.0, ch:'L/R', dyn:true, thr:-30.0, rng:2.5, atk:4,  hld:20, rel:90},
+  {nr:5, an:true, typ:'Bell',  fHz:1200,  qN:0.90, gDb:1.0,  ch:'St',  dyn:true, thr:-18.0, rng:2.0, atk:15, hld:50, rel:200},
+  {nr:6, an:true, typ:'Bell',  fHz:3400,  qN:1.60, gDb:-2.5, ch:'M/S', dyn:true, thr:-20.0, rng:3.5, atk:10, hld:35, rel:150},
+  {nr:7, an:true, typ:'Shelf', fHz:7500,  qN:0.71, gDb:1.5,  ch:'St',  dyn:true, thr:-16.0, rng:2.0, atk:25, hld:70, rel:260},
+  {nr:8, an:true, typ:'LP',    fHz:18500, qN:0.71, gDb:null, ch:'St',  dyn:true, thr:-12.0, rng:1.5, atk:30, hld:80, rel:300}
+];
+/* Der laengstmoegliche SLOT. Nicht geraten: jede Spalte auf ihr Maximum
+   nach der Spezifikation (Typ 'Notch' ist das laengste Wort, Gain bis
+   +-12 dB, Release bis 3 s). Der Platz-Grenzfall ist NICHT die plausible
+   Einstellung — ein Hochpass ohne Gain zeigt "—" und ist SCHMALER. */
+const LAENGSTER = {nr:8, an:true, typ:'Notch', fHz:18500, qN:24.00, gDb:-12.0,
+  ch:'M/S', dyn:true, thr:-60.0, rng:-18.0, atk:300, hld:500, rel:3000};
+
+const SKALA = ['20','50','100','200','500','1k','2k','5k','10k','20k'];
+const GLOBAL = [['In','-2.0 dB'],['Out','+1.5 dB'],['Width','96 %'],
+                ['Mono below','120 Hz']];
+const UNDO = [
+  'Band 3 · 220 Hz · −2.0 dB',
+  'Band 6 · Q 1.60',
+  'Applied draft from Main · 2 bands',
+  'Band 4 · Notch on',
+  'Neutralised'
+];
+const SCHUTZ = {vonHz:2000, bisHz:5000, name:'Vocal presence'};
+
+/* Laufender Zustand. LAGE wird von echtem Druecken gesetzt, nicht von
+   einem Schalter — sonst waere das Halten nur behauptet. */
+const LAGE = {haelt:false, angewandt:false};
+const WELT = {
+  slots:8, dynamik:true, werte:'echt', bypass:false, verbunden:true,
+  gekoppelt:true, schutzGetroffen:true, gewaehlt:3,
+  global:'zeile', draft:'reihe', undo:'zeile',
+  nachgeben:'kurve', kurveMin:140
+};
+
+/* ---------- Anzeigetexte, aus den Zahlen abgeleitet ---------- */
+const hzText = f => f >= 1000
+  ? String((f/1000).toFixed(2)).replace(/0$/,'').replace(/\.$/,'') + ' kHz'
+  : Math.round(f) + ' Hz';
+const dbText = v => (v > 0 ? '+' : '−') + Math.abs(v).toFixed(1) + ' dB';
+const msText = v => v + ' ms';
+const qText  = v => 'Q ' + v.toFixed(2);
+
+/* Ein SLOT ist tot, wenn das Geraet ueberbrueckt ist oder er selbst aus ist.
+   Seine fuenf Dynamikwerte sind zusaetzlich tot, wenn die Dynamik aus ist:
+   40 von 96 Werten (5 x 8) haengen an diesem einen Schalter. */
+const slotTot = s => WELT.bypass || !s.an;
+const dynTot  = s => slotTot(s) || !s.dyn;
+/* Ein Griff in einen Schutzbereich bewirkt nichts — das muss der Wert sagen,
+   nicht ein Hinweis irgendwo anders. */
+const imSchutz = s => WELT.schutzGetroffen
+  && s.fHz >= SCHUTZ.vonHz && s.fHz <= SCHUTZ.bisHz;
+
+/* ---------- Bausteine (Produkttext englisch) ---------- */
+const kasten = (t, z, i, opt={}) =>
+  `<div class="box${opt.klasse ? ' ' + opt.klasse : ''}"${
+    opt.baustein ? ` data-baustein="${opt.baustein}"` : ''}${
+    opt.stil ? ` style="${opt.stil}"` : ''}>${
+    t || z ? `<h4>${t}<em>${z||''}</em><i class="zaehler"></i></h4>` : ''}
+   <div class="inh">${i}</div></div>`;
+
+const liste = (name, gesamt, html) =>
+  `<div class="liste" data-liste="${name}" data-gesamt="${gesamt}">${html}</div>`;
+
+/* Die SLOT-Zeile in drei Formen. 'voll' = alle zwoelf Parameter,
+   'eq' = die sechs Werte der haeufigen Handgriffe, 'streifen' = Kontext. */
+function slotZeile(s, form='voll'){
+  const tot = slotTot(s), dtot = dynTot(s);
+  const z = (k, txt, totJa) =>
+    `<span class="${k}${totJa ? ' tot' : ''}">${totJa ? '—' : txt}</span>`;
+  const gain = s.gDb === null
+    ? `<span class="g tot">—</span>`                 // HP/LP haben keinen Gain
+    : z('g', dbText(s.gDb), tot);
+  const kopf =
+      `<span class="an${s.an && !WELT.bypass ? '' : ' aus'}">${s.an ? '●' : '○'}</span>`
+    + `<span class="nr">${s.nr}</span>`
+    + z('typ', s.typ, tot)
+    + z('f', hzText(s.fHz), tot)
+    + z('q', qText(s.qN), tot)
+    + gain;
+  if(form === 'eq')
+    return `<div class="slotz${s.nr === WELT.gewaehlt ? ' gewaehlt' : ''}${
+      imSchutz(s) ? ' geschuetzt' : ''}">${kopf}</div>`;
+  return `<div class="slotz${s.nr === WELT.gewaehlt ? ' gewaehlt' : ''}${
+    imSchutz(s) ? ' geschuetzt' : ''}">${kopf}`
+    + z('ch', s.ch, tot)
+    + `<span class="dy${dtot ? ' tot' : ''}">${s.dyn ? 'dyn' : '—'}</span>`
+    + z('thr', dbText(s.thr), dtot)
+    + z('rng', dbText(s.rng), dtot)
+    + z('atk', msText(s.atk), dtot)
+    + z('hld', msText(s.hld), dtot)
+    + z('rel', msText(s.rel), dtot)
+    + `</div>`;
+}
+
+/* Ein SLOT als waagerechter Kontextstreifen — die Form, die die Hoehe NICHT
+   durch Stapeln kauft. Ob acht davon nebeneinander in die Breite passen,
+   ist genau die offene Frage; das Blatt misst es, statt sie zu beantworten. */
+function slotStreifen(s){
+  const tot = slotTot(s);
+  return `<div class="sb${tot ? ' aus' : ''}"><b>${s.an ? '●' : '○'} ${s.nr} ${s.typ}</b>`
+    + `<span>${hzText(s.fHz)}</span>`
+    + `<span>${s.gDb === null ? '—' : dbText(s.gDb)}</span></div>`;
+}
+
+function slotStreifenEinzeilig(s){
+  const tot = slotTot(s);
+  return `<div class="sb1${tot ? ' aus' : ''}">${s.an ? '●' : '○'} ${s.nr} · `
+    + `${hzText(s.fHz)} · ${s.gDb === null ? '—' : dbText(s.gDb)}</div>`;
+}
+
+/* Die beiden Grenzfaelle zeigen in entgegengesetzte Richtungen: der
+   Ehrlichkeits-Grenzfall (Bypass, getrennt, Dynamik aus) ersetzt Werte durch
+   "—" und macht die Zeile SCHMALER. Wer den Platz-Grenzfall messen will, muss
+   die Ehrlichkeitsschalter also kurz neutral stellen — sonst misst er den
+   falschen Grenzfall und nennt ihn den schlimmen. */
+function ohneSchalter(fn){
+  const alt = {bypass:WELT.bypass, verbunden:WELT.verbunden, dynamik:WELT.dynamik};
+  WELT.bypass = false; WELT.verbunden = true; WELT.dynamik = true;
+  try { return fn(); } finally { Object.assign(WELT, alt); }
+}
+
+const aktiveSlots = () => {
+  const q = WELT.werte === 'laengste'
+    ? SLOTS.map(s => ({...LAENGSTER, nr:s.nr}))
+    : SLOTS;
+  return q.slice(0, WELT.slots).map(s => ({...s, dyn: WELT.dynamik && s.dyn}));
+};
+
+/* ---------- Das Kurvenfeld ----------
+   Die Summenkurve wird aus den SLOTs GERECHNET, nicht gezeichnet: eine
+   handgemalte Kurve koennte etwas anderes behaupten als die Zeilen darunter.
+   Naeherung, kein Filterentwurf — das ist ein Wireframe. */
+function antwortDb(fHz, slots){
+  let s = 0;
+  for(const sl of slots){
+    if(slotTot(sl)) continue;
+    const okt = Math.log2(fHz / sl.fHz);
+    if(sl.typ === 'HP'){ if(fHz < sl.fHz) s -= Math.min(24, -okt * 12); continue; }
+    if(sl.typ === 'LP'){ if(fHz > sl.fHz) s -= Math.min(24, okt * 12); continue; }
+    if(sl.gDb === null) continue;
+    const bw = 1 / Math.max(0.3, sl.qN);
+    s += sl.gDb * Math.exp(-(okt*okt) / (2*bw*bw));
+  }
+  return s;
+}
+function kurvenPfad(slots, skalierung=1){
+  const P = [];
+  for(let i = 0; i <= 120; i++){
+    const fHz = 20 * Math.pow(1000, i/120);            // 20 Hz .. 20 kHz
+    const db = antwortDb(fHz, slots) * skalierung;
+    const y = 50 - (db / 12) * 50;                      // viewBox-Hoehe 100 = +-12 dB
+    P.push((i === 0 ? 'M' : 'L') + (i/120*300).toFixed(1) + ' ' + y.toFixed(1));
+  }
+  return P.join(' ');
+}
+function einzelPfad(sl){
+  const P = [];
+  for(let i = 0; i <= 60; i++){
+    const fHz = 20 * Math.pow(1000, i/60);
+    const db = antwortDb(fHz, [sl]);
+    const y = 50 - (db / 12) * 50;
+    P.push((i === 0 ? 'M' : 'L') + (i/60*300).toFixed(1) + ' ' + y.toFixed(1));
+  }
+  return P.join(' ');
+}
+const xVon = fHz => Math.log(fHz/20) / Math.log(1000) * 300;
+
+function kurvenfeld(){
+  const slots = aktiveSlots();
+  const schutzX = xVon(SCHUTZ.vonHz), schutzB = xVon(SCHUTZ.bisHz) - xVon(SCHUTZ.vonHz);
+  /* Der Draft vom Main ist ein EIGENER, klar getrennter fluechtiger Zustand.
+     Er ist enger begrenzt (+-3 dB) — hier als gestauchte Kurve, damit der
+     Unterschied sichtbar ist und nicht nur behauptet wird. */
+  const draft = LAGE.haelt
+    ? `<path data-deckt="absicht" d="${kurvenPfad(slots, 0.25)}" fill="none"
+        stroke="#e4e4e4" stroke-width="1.6" stroke-dasharray="4 3"/>` : '';
+  /* data-feld, NICHT data-mess: data-mess gehoert der Zahlenanzeige im
+     Werkzeug-Chrome. Beides gleich zu nennen liess die Sonde die Marke
+     "+12 dB" im Kurvenfeld fuer die gemessene Hoehe halten — PRUEFLISTE 4.1,
+     nie zwei Begriffe unter einem Namen. Gefunden von der Sonde selbst. */
+  const inhalt =
+    `<div class="kurve" data-feld="kurve">
+       <svg viewBox="0 0 300 100" preserveAspectRatio="none" data-deckt="absicht">
+         <rect x="0" y="49.5" width="300" height="1" fill="#3f3f3f"/>
+         ${WELT.schutzGetroffen ? `<rect x="${schutzX.toFixed(1)}" y="0"
+            width="${schutzB.toFixed(1)}" height="100" fill="#ffffff" opacity="0.055"/>
+           <rect x="${schutzX.toFixed(1)}" y="0" width="${schutzB.toFixed(1)}"
+            height="100" fill="none" stroke="#6a6a6a" stroke-width="1"
+            stroke-dasharray="3 3"/>` : ''}
+         ${slots.filter(s => !slotTot(s)).map(s =>
+           `<path d="${einzelPfad(s)}" fill="none" stroke="#5f5f5f" stroke-width="0.8"/>`).join('')}
+         <path d="${kurvenPfad(slots)}" fill="none"
+               stroke="${WELT.bypass ? '#4a4a4a' : '#c9c9c9'}" stroke-width="1.6"
+               ${WELT.bypass ? 'stroke-dasharray="2 3"' : ''}/>
+         ${draft}
+       </svg>
+       <span class="marke">+12 dB</span>
+       <span class="marke unten">−12 dB</span>
+     </div>
+     <div class="skala">${SKALA.map(b => `<span>${b}</span>`).join('')}</div>`;
+  const zusatz = WELT.bypass ? 'bypassed — nothing is filtered'
+    : WELT.schutzGetroffen ? 'protected: ' + SCHUTZ.name + ' · '
+      + hzText(SCHUTZ.vonHz) + '–' + hzText(SCHUTZ.bisHz)
+    : 'sum + individual bands';
+  return kasten('EQ curve', zusatz, inhalt,
+    {baustein:'Kurvenfeld (Summe + Einzelbänder)', klasse:'kurvenbox'});
+}
+
+/* ---------- Die Zeilen ---------- */
+function streifen(){
+  const e = LAGE.haelt ? 'audition' : LAGE.angewandt ? 'apply' : 'edit';
+  const reiter = [['edit','Edit'],['audition','Draft']].map(([id,n]) =>
+    `<span class="eb${id===e?' an':''}${id==='audition'&&LAGE.haelt?' haelt':''}">${n}</span>`).join('');
+  /* Die Statuszeile des Editors braucht laut Spezifikation genau ZWEI
+     Angaben: verbunden/getrennt und gekoppelt ja/nein. Mains vierzig Zeilen
+     Frische-Buchhaltung sind hier fehl am Platz — uebertragbar ist die
+     REGEL "nur die Ausnahme spricht", nicht der Code. */
+  const teile = [];
+  if(!WELT.verbunden) teile.push('<span><span class="pkt aus"></span>Not linked — standalone</span>');
+  if(!WELT.gekoppelt) teile.push('<span><span class="pkt aus"></span>Unpaired</span>');
+  if(WELT.bypass) teile.push('<span><span class="pkt aus"></span>Bypassed</span>');
+  if(!teile.length) teile.push('<span><span class="pkt"></span>Linked · paired</span>');
+  const rechts = LAGE.haelt ? '<span class="lage haelt">release to stop</span>' : '';
+  return `<div class="streifen" data-baustein="Statuszeile (verbunden, gekoppelt)">${reiter}
+    ${rechts}<span class="status">${teile.join('')}</span></div>`;
+}
+
+function globalZeile(){
+  if(WELT.global === 'aus') return '';
+  const tot = WELT.bypass;
+  return `<div class="zeile" data-baustein="Global (Trim, Breite, Mono-Bass, Bypass)"><i>Global</i>`
+    + GLOBAL.map(([k,v]) =>
+        `<span class="w${tot ? ' tot' : ''}">${k} <b>${tot ? '—' : v}</b></span>`).join('')
+    + `<span class="rechts"><span class="wfk${WELT.bypass ? ' stark' : ''}"
+         data-griff="bypass">Bypass ${WELT.bypass ? 'on' : 'off'}</span></span></div>`;
+}
+
+function draftZeile(){
+  if(WELT.draft === 'aus') return '';
+  /* Ohne Main gibt es keinen Vorschlag. Ein Griff, der sich druecken laesst
+     und nichts tut, ist eine Luege in der Oberflaeche (PRUEFLISTE 1). */
+  if(!WELT.verbunden)
+    return `<div class="zeile" data-baustein="Draft vom Main (halten, anwenden, verwerfen)">
+      <i>Draft</i><span class="w tot">no proposal — not linked to Main</span>
+      <span class="rechts"><span class="wfk aus">Audition (hold)</span>
+      <span class="wfk aus">Apply</span><span class="wfk aus">Discard</span></span></div>`;
+  if(LAGE.angewandt)
+    return `<div class="zeile" data-baustein="Draft vom Main (halten, anwenden, verwerfen)">
+      <i>Draft</i><span class="w">applied · <b>2 bands</b> changed</span>
+      <span class="rechts">${griff('undo','Undo the change')}
+      <span class="wfk aus">Applied</span></span></div>`;
+  return `<div class="zeile" data-baustein="Draft vom Main (halten, anwenden, verwerfen)">
+    <i>Draft</i><span class="w">from Main · <b>2 bands</b> · limited to ±3 dB</span>
+    <span class="rechts">${griff('hold','Audition (hold)')}
+    ${griff('apply','Apply', true)}${griff('discard','Discard')}</span></div>`;
+}
+
+function undoTeil(){
+  if(WELT.undo === 'aus') return '';
+  if(WELT.undo === 'zeile')
+    return `<div class="zeile" data-baustein="Undo-Verlauf + Neutralisieren"><i>History</i>
+      <span class="w"><b>${UNDO[0]}</b></span>
+      <span class="w">${UNDO.length} confirmed steps</span>
+      <span class="rechts"><span class="wfk" data-griff="undo">Undo</span>
+      <span class="wfk">Neutralise</span></span></div>`;
+  return kasten('History', UNDO.length + ' confirmed steps',
+    liste('Undo-Verlauf', UNDO.length, UNDO.map((t,i) =>
+      i === 0 ? `<div class="uv"><b>${t}</b><i>latest</i></div>`
+              : `<div class="uv zu">${t}<i>step ${UNDO.length - i}</i></div>`).join(''))
+    + `<div class="zeile" style="border:0;background:transparent;padding:3px 0 0">
+        <span class="rechts"><span class="wfk" data-griff="undo">Undo</span>
+        <span class="wfk">Neutralise</span></span></div>`,
+    {baustein:'Undo-Verlauf + Neutralisieren', klasse:'undobox'});
+}
+
+function bandkasten(form){
+  const slots = aktiveSlots();
+  if(!slots.length) return kasten('Bands', 'no slot in use',
+    `<div class="leerHinweis"><b>All eight slots are free</b>
+      <span>Add a band to start shaping.</span></div>`,
+    {baustein:'Bandliste (alle Parameter)', klasse:'bandliste'});
+  if(form === 'streifen'){
+    const gew = slots.find(s => s.nr === WELT.gewaehlt) || slots[0];
+    const rest = slots.filter(s => s !== gew);
+    return kasten('Bands', 'slot ' + gew.nr + ' in detail · ' + rest.length + ' as context',
+      slotZeile(gew, 'voll')
+      + `<div class="streifenband">${rest.map(slotStreifen).join('')}</div>`,
+      {baustein:'Bandliste (ein Slot voll, sieben als Streifen)', klasse:'bandliste'});
+  }
+  if(form === 'zweispaltig'){
+    const links = slots.slice(0, Math.ceil(slots.length/2));
+    const rechts = slots.slice(Math.ceil(slots.length/2));
+    return kasten('Bands', slots.length + ' slots · EQ values',
+      `<div style="display:flex;gap:9px;flex:1;min-height:0">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+          ${liste('Bandliste links', links.length, links.map(s => slotZeile(s,'eq')).join(''))}</div>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+          ${liste('Bandliste rechts', rechts.length, rechts.map(s => slotZeile(s,'eq')).join(''))}</div>
+      </div>`,
+      {baustein:'Bandliste (zweispaltig, nur EQ-Werte)', klasse:'bandliste'});
+  }
+  const eq = form === 'eq';
+  return kasten('Bands',
+    slots.length + ' slots · ' + (eq ? 'EQ values' : 'all parameters'),
+    liste(eq ? 'Bandliste (nur EQ-Werte)' : 'Bandliste (alle Parameter)',
+      slots.length, slots.map(s => slotZeile(s, eq ? 'eq' : 'voll')).join('')),
+    {baustein: eq ? 'Bandliste (nur EQ-Werte)' : 'Bandliste (alle Parameter)',
+     klasse:'bandliste'});
+}
+
+/* Griffe, die wirklich halten. */
+const griff = (was, text, stark) =>
+  `<span class="wfk${stark?' stark':''}" data-griff="${was}">${text}</span>`;
+
+/* ---------- Die fuenf Messfaelle ----------
+   Sie unterscheiden sich NUR darin, wieviele Zeilen gestapelt werden.
+   Das ist keine Gestaltungsfrage, sondern die Variable der Messung. */
+const ANORDNUNGEN = [
+  {id:'A', mech:'A — acht Zeilen, zwölf Werte',
+   these:'Alle 96 Slot-Werte stehen dauerhaft da. Acht gestapelte Zeilen kaufen '
+       + 'die Höhe, egal was drinsteht — der Kurve bleibt, was übrig ist.',
+   form:'voll'},
+  {id:'B', mech:'B — acht Zeilen, sechs Werte',
+   these:'Die sechs Dynamikwerte je Slot sind einen Schritt entfernt. Spart '
+       + 'BREITE, nicht Höhe: es sind weiterhin acht gestapelte Zeilen.',
+   form:'eq'},
+  {id:'C', mech:'C — 4+4 nebeneinander',
+   these:'Vier Zeilen statt acht. Halbiert den Bandkasten und verdoppelt das '
+       + 'Kurvenfeld — der einzige Fall, der die Höhe wirklich angreift.',
+   form:'zweispaltig'},
+  {id:'D', mech:'D — ein Slot voll, sieben als Streifen',
+   these:'Focus+Context: der gegriffene Slot ausführlich, die sieben anderen '
+       + 'waagerecht nebeneinander. Zwei Zeilen statt acht — wenn die Breite reicht.',
+   form:'streifen'},
+  {id:'E', mech:'E — nur die Kurve, Werte auf Abruf',
+   these:'Die Gegenprobe nach unten: kein Bandkasten. Zeigt, wieviel Kurvenfeld '
+       + 'auf diesem Blatt überhaupt möglich wäre — die Obergrenze.',
+   form:'keine'}
+];
+
+function bau(form){
+  const teile = [streifen(), globalZeile(), kurvenfeld()];
+  if(form !== 'keine') teile.push(bandkasten(form));
+  teile.push(draftZeile(), undoTeil());
+  return teile.filter(Boolean).join('');
+}
+
+/* ================================================================
+   MESSUNG
+   ================================================================ */
+
+/* 1. Ehrliche Listen — 1:1 aus zustaende.html. Blendet aus, was nicht GANZ
+   hineinpasst, und schreibt in das Blatt, wieviel fehlt. Zweimal messen,
+   nicht einmal hoffen: auf dem ersten Frame nach grossem innerHTML stehen
+   die Schriftmasse noch nicht. */
+function listenEhrlich(wf){ einmalEhrlich(wf); return einmalEhrlich(wf); }
+function einmalEhrlich(wf){
+  const bericht = [];
+  wf.querySelectorAll('.liste').forEach(l => {
+    l.querySelectorAll(':scope > .kappe').forEach(k => k.remove());
+    const zeilen = [...l.children];
+    const gesamt = +l.dataset.gesamt || zeilen.length;
+    let n = zeilen.length;
+    const zeige = k => zeilen.forEach((z,i) => { z.style.display = i < k ? '' : 'none'; });
+    const passt = () => l.scrollHeight - l.clientHeight <= 1;
+    zeige(n);
+    while(n > 0 && !passt()) zeige(--n);
+    if(n < gesamt){
+      // Die Kappe kostet selbst Platz — und zwar erst, wenn sie beschriftet ist.
+      const kappe = document.createElement('div');
+      kappe.className = 'kappe';
+      const schreibe = () => { kappe.textContent = (gesamt - n) + ' more not shown'; };
+      schreibe();
+      l.appendChild(kappe);
+      while(n > 0 && !passt()){ zeige(--n); schreibe(); }
+    }
+    const zr = l.closest('.box')?.querySelector(':scope > h4 > .zaehler');
+    if(zr){ zr.textContent = n + '/' + gesamt;
+            zr.classList.toggle('knapp', n < gesamt); }
+    bericht.push({name: l.dataset.liste, sichtbar: n, gesamt});
+  });
+  return bericht;
+}
+/* Vor jeder Messung: alle Listen wieder voll machen. Sonst misst der zweite
+   Durchgang bereits Gekuerztes als "natuerliche Hoehe" — die Ratsche. */
+function listenZuruecksetzen(wf){
+  wf.querySelectorAll('.liste').forEach(l => {
+    l.querySelectorAll(':scope > .kappe').forEach(x => x.remove());
+    [...l.children].forEach(z => { z.style.display = ''; });
+  });
+}
+
+/* 2. Aufteilung. Bei Main war klar, wer seine natuerliche Hoehe haelt: die
+   Karte, weil sie das dauerhafte Ding ist. Beim Editor ist das die OFFENE
+   Frage — die Kurve ist laut Spezifikation "zentrale Anzeige", die Baender
+   sind das, was bedient wird. Das Blatt beantwortet sie nicht, es macht
+   beide Antworten messbar. */
+function aufteilen(wf){
+  const k = wf.querySelector('.kurvenbox');
+  const b = wf.querySelector('.bandliste');
+  if(!k) return null;
+  listenZuruecksetzen(wf);
+  k.style.flex = '0 0 auto';
+  if(b) b.style.flex = '0 0 auto';
+  const kn = k.offsetHeight, bn = b ? b.offsetHeight : 0;
+  const st = getComputedStyle(wf);
+  const luecke = parseFloat(st.rowGap) || 0;
+  const andere = [...wf.children].filter(c => c !== k && c !== b)
+    .reduce((s,c) => s + c.offsetHeight, 0);
+  const platz = wf.clientHeight - parseFloat(st.paddingTop)
+    - parseFloat(st.paddingBottom) - andere - luecke * (wf.children.length - 1);
+  const rest = platz - kn - bn;
+  if(!b){ k.style.flex = '1 1 auto'; return {kn, bn, platz, rest}; }
+  if(WELT.nachgeben === 'kurve'){
+    // Die Baender halten ihre natuerliche Hoehe, die Kurve nimmt den Rest.
+    b.style.flex = `0 0 ${Math.max(0, bn)}px`;
+    k.style.flex = '1 1 auto';
+  } else if(WELT.nachgeben === 'baender'){
+    // Die Kurve haelt eine erklaerte Mindesthoehe, die Baenderliste kuerzt
+    // sich ehrlich ("N more not shown").
+    k.style.flex = `0 0 ${Math.max(WELT.kurveMin, Math.min(kn, platz))}px`;
+    b.style.flex = '1 1 auto';
+  } else {
+    // Mains Regel, uebertragen: Ueberschuss teilen, Mangel nicht.
+    k.style.flex = `0 0 ${Math.max(WELT.kurveMin, kn + (rest > 0 ? rest/2 : 0))}px`;
+    b.style.flex = '1 1 auto';
+  }
+  return {kn, bn, platz, rest};
+}
+
+/* 3. Ueberlauf — rekursiv ueber ALLE Nachfahren, in BEIDE Richtungen.
+   Nur diese Fassung; die in wireframe-main*.html misst nur die Hoehe. */
+function ueberlauf(wf){
+  let fehlt = 0, wo = '', richtung = '';
+  const pruef = (x, name) => {
+    const h = x.scrollHeight - x.clientHeight, b = x.scrollWidth - x.clientWidth;
+    if(h > fehlt){ fehlt = h; wo = name; richtung = 'hoch'; }
+    if(b > fehlt){ fehlt = b; wo = name; richtung = 'breit'; }
+  };
+  wf.querySelectorAll('*').forEach(x =>
+    pruef(x, x.closest('[data-baustein]')?.dataset.baustein || x.className));
+  pruef(wf, 'das Blatt selbst');
+  return {fehlt, wo: wo + (richtung ? ' (' + richtung + ')' : '')};
+}
+
+/* 4. VERDECKUNG — neu. PRUEFLISTE 2.3 verlangt sie seit dem 20.08., sie
+   existierte in KEINEM Blatt: "Overlays fallen durch jede Ueberlaufmessung.
+   Sie brauchen eine eigene Pruefung." Nachweis, dass sie fehlte: die
+   markierte Zeile in zustaende.html deckte 1 px der Nachbarzeile ab
+   (outline-offset:1px auf 2 px Zeilenabstand) — Outlines aendern keine
+   Scroll-Masse, ueberlauf() kann das grundsaetzlich nicht sehen.
+
+   Zwei Sorten, und sie werden getrennt gemeldet:
+     RANDFARBE — outline/box-shadow reicht ueber die Layoutbox hinaus und
+                 landet auf einem fremden Text.
+     AUFLAGE   — ein absolut gesetztes Element liegt auf fremdem Text.
+   Wer absichtlich verdeckt, sagt es: data-deckt="absicht". Erklaerte
+   Absicht ist erlaubt, unerklaerte Verdeckung ist der Befund. */
+function verdeckung(wf){
+  const alle = [...wf.querySelectorAll('*')];
+  const ueberstand = el => {
+    const st = getComputedStyle(el);
+    let e = 0;
+    const ow = parseFloat(st.outlineWidth) || 0;
+    const oo = parseFloat(st.outlineOffset) || 0;
+    if(st.outlineStyle && st.outlineStyle !== 'none' && ow > 0) e = Math.max(e, ow + oo);
+    const sh = st.boxShadow;
+    if(sh && sh !== 'none' && sh.indexOf('inset') < 0){
+      const z = (sh.match(/-?\d+(?:\.\d+)?px/g) || []).map(parseFloat);
+      const [x=0, y=0, bl=0, sp=0] = z;
+      e = Math.max(e, Math.abs(x) + bl + sp, Math.abs(y) + bl + sp);
+    }
+    return e;
+  };
+  /* Ohne Clipping meldet diese Pruefung Gespenster. Gemessen am eigenen Blatt:
+     die Achsenbeschriftung "+12 dB" ragt bei einem 2 px hohen Kurvenfeld
+     geometrisch 10,9 px in die Bandliste — sichtbar ist davon nichts, weil
+     .kurve overflow:hidden hat. getBoundingClientRect() kennt kein Clipping.
+     Eine Verdeckung, die niemand sehen kann, ist keine.
+     Vereinfachung, offen genannt: absolut gesetzte Elemente werden erst ab
+     ihrem offsetParent beschnitten (das ist ihr naechster positionierter
+     Vorfahr); position:fixed wird gar nicht beschnitten. */
+  const beschnitten = el => {
+    let r = el.getBoundingClientRect();
+    if(r.width <= 0 || r.height <= 0) return null;
+    const pos = getComputedStyle(el).position;
+    if(pos === 'fixed') return r;
+    let p = pos === 'absolute' ? el.offsetParent : el.parentElement;
+    while(p && p !== document.body){
+      const st = getComputedStyle(p);
+      if(st.overflowX !== 'visible' || st.overflowY !== 'visible'){
+        const pr = p.getBoundingClientRect();
+        r = {left:Math.max(r.left, pr.left), right:Math.min(r.right, pr.right),
+             top:Math.max(r.top, pr.top), bottom:Math.min(r.bottom, pr.bottom)};
+        if(r.right - r.left <= 0.5 || r.bottom - r.top <= 0.5) return null;
+      }
+      p = getComputedStyle(p).position === 'absolute' ? p.offsetParent : p.parentElement;
+    }
+    return r;
+  };
+  const sichtbar = el => {
+    const st = getComputedStyle(el);
+    return st.display !== 'none' && st.visibility !== 'hidden'
+      && parseFloat(st.opacity) > 0.02;
+  };
+  // Ziel jeder Verdeckung ist beschrifteter Inhalt: verdeckt erkennt man
+  // daran, dass ein Text nicht mehr ganz dasteht.
+  const ziele = alle.filter(el => el.children.length === 0
+    && (el.textContent || '').trim().length > 0 && sichtbar(el))
+    .map(el => ({el, r: beschnitten(el)})).filter(z => z.r);
+  const absicht = el => !!el.closest('[data-deckt="absicht"]');
+  const tiefeVon = (a2, b2) => {
+    const x = Math.min(a2.right, b2.right) - Math.max(a2.left, b2.left);
+    const y = Math.min(a2.bottom, b2.bottom) - Math.max(a2.top, b2.top);
+    return (x > 0.5 && y > 0.5) ? Math.min(x, y) : 0;
+  };
+  /* Je Sorte einzeln, nie ein globaler Hoechstwert: PRUEFLISTE 7.2 — ein
+     globaler Treffer deckt eine stumme Sorte, weil die andere das Zeichen
+     liefert. Genau daran ist die erste Fassung dieser Pruefung gescheitert:
+     eine (falsche) Auflage von 10,9 px verbarg, dass die Randfarben-Sorte
+     ueberhaupt nichts meldete. */
+  const sorten = {Randfarbe:{tiefe:0, wo:''}, Auflage:{tiefe:0, wo:''}};
+  // In Layout-Pixeln melden, nicht in Bildschirmpixeln der verkleinerten Kachel.
+  const ms = massstabVon(wf) || 1;
+  const melde = (t, a2, b2, sorte) => {
+    t = t / ms;
+    if(t <= sorten[sorte].tiefe) return;
+    sorten[sorte].tiefe = Math.round(t * 10) / 10;
+    sorten[sorte].wo =
+      (a2.closest('[data-baustein]')?.dataset.baustein || a2.className || a2.tagName)
+      + ' → ' + ((b2.textContent || '').trim().slice(0, 22) || b2.tagName);
+  };
+  for(const a2 of alle){
+    if(!sichtbar(a2) || absicht(a2)) continue;
+    const rA = beschnitten(a2);
+    if(!rA) continue;
+    const st = getComputedStyle(a2);
+    const u = ueberstand(a2);
+    const auflage = (st.position === 'absolute' || st.position === 'fixed');
+    if(!u && !auflage) continue;
+    const gemalt = {left:rA.left - u, right:rA.right + u,
+                    top:rA.top - u, bottom:rA.bottom + u};
+    for(const {el:b2, r:rB} of ziele){
+      if(a2 === b2 || a2.contains(b2) || b2.contains(a2)) continue;
+      if(auflage){
+        const t = tiefeVon(rA, rB);
+        if(t) melde(t, a2, b2, 'Auflage');
+      }
+      if(u){
+        // Nur der Anteil, der ERST durch die Randfarbe entsteht — beruehrende
+        // Layoutboxen sind kein Befund, ueberstehende Farbe schon.
+        if(tiefeVon(rA, rB)) continue;
+        const t = tiefeVon(gemalt, rB);
+        if(t) melde(t, a2, b2, 'Randfarbe');
+      }
+    }
+  }
+  const schlimmste = sorten.Randfarbe.tiefe >= sorten.Auflage.tiefe ? 'Randfarbe' : 'Auflage';
+  return {tiefe: sorten[schlimmste].tiefe, wo: sorten[schlimmste].wo,
+          art: sorten[schlimmste].tiefe > 0 ? schlimmste : '',
+          randfarbe: sorten.Randfarbe, auflage: sorten.Auflage};
+}
+
+/* getBoundingClientRect() liefert die TRANSFORMIERTE Groesse. Die Kacheln
+   stehen unter transform:scale(--s) — jede Zahl daraus waere um den Massstab
+   zu klein (gemessen: 176 px Bandkasten wurden als 92 gemeldet). offsetHeight
+   ist die Layouthoehe und von transform unberuehrt; wo ein Rechteck gebraucht
+   wird (Verdeckung), wird durch den gelesenen Massstab geteilt. */
+const massstabVon = el => {
+  const r = el.getBoundingClientRect();
+  return el.offsetWidth ? r.width / el.offsetWidth : 1;
+};
+
+/* 5. Der Deckel: keine Zeile darf flacher gedeckelt sein als ihr Inhalt. */
+function deckel(wf){
+  let schlimmster = 0, wo = '';
+  wf.querySelectorAll('.slotz, .sb, .uv, .zeile').forEach(z => {
+    const d = z.scrollHeight - z.clientHeight;
+    if(d > schlimmster){ schlimmster = d; wo = z.className; }
+  });
+  return {fehlt: schlimmster, wo};
+}
+
+/* ---------- Die Waage: was kostet ein Baustein einzeln? ----------
+   Eigene Buehne in der Grammatik des Blattes. Gemessen wird auf der echten
+   Innenbreite (natuerliche Hoehe) UND auf max-content (natuerliche Breite) —
+   eine Messung, die nur die Hoehe kennt, sieht den abgeschnittenen Streifen
+   nicht (PRUEFLISTE 2.2). */
+const buehne = document.createElement('div');
+buehne.className = 'wf';
+buehne.style.cssText = 'position:fixed;left:-99999px;top:0;width:700px;'
+  + 'height:auto;overflow:visible;pointer-events:none;display:block';
+document.body.appendChild(buehne);
+
+/* Zweite Buehne: ein GANZES Blatt in echter Groesse, um den Vorrat zu messen
+   statt ihn zu rechnen. Eine gerechnete Restflaeche vergisst genau das, was
+   man nicht im Kopf hat — bei Main waren es die beiden 1-px-Rahmen (370 statt
+   368). Hier wird sie gelesen. */
+const messbuehne = document.createElement('div');
+messbuehne.style.cssText = 'position:fixed;left:-99999px;top:0;width:740px;'
+  + 'height:460px;pointer-events:none';
+document.body.appendChild(messbuehne);
+
+function messePlatz(form, ueber={}){
+  const alt = {};
+  for(const k in ueber){ alt[k] = WELT[k]; WELT[k] = ueber[k]; }
+  const wf = document.createElement('div');
+  wf.className = 'wf';
+  wf.innerHTML = bau(form);
+  messbuehne.replaceChildren(wf);
+  const r = aufteilen(wf);
+  listenEhrlich(wf);
+  const kv = wf.querySelector('.kurve'), kb = wf.querySelector('.bandliste');
+  const listen = [...wf.querySelectorAll('.liste')].map(l => ({
+    gesamt: +l.dataset.gesamt,
+    sichtbar: [...l.children].filter(c =>
+      !c.classList.contains('kappe') && c.style.display !== 'none').length
+  }));
+  const erg = {
+    platz: r ? Math.round(r.platz) : 0,
+    kinder: wf.children.length,
+    kurve: kv ? kv.offsetHeight : 0,
+    band:  kb ? kb.offsetHeight : 0,
+    sichtbar: listen.reduce((a,l) => a + l.sichtbar, 0),
+    gesamt:   listen.reduce((a,l) => a + l.gesamt, 0),
+    ueberlauf: ueberlauf(wf).fehlt
+  };
+  messbuehne.replaceChildren();
+  Object.assign(WELT, alt);
+  return erg;
+}
+
+function wiege(html){
+  buehne.style.width = '700px';
+  buehne.innerHTML = html;
+  const el = buehne.firstElementChild;
+  if(!el) return {h:0, b:0};
+  const h = el.getBoundingClientRect().height;
+  buehne.style.width = 'max-content';
+  const b = el.getBoundingClientRect().width;
+  buehne.style.width = '700px';
+  buehne.innerHTML = '';
+  return {h: Math.round(h*10)/10, b: Math.round(b*10)/10};
+}
+const innenBreite = () => {
+  const p = document.createElement('div');
+  p.className = 'wf';
+  p.style.cssText = 'position:fixed;left:-99999px;top:0';
+  document.body.appendChild(p);
+  const m = p.clientWidth - parseFloat(getComputedStyle(p).paddingLeft)
+          - parseFloat(getComputedStyle(p).paddingRight);
+  const h = p.clientHeight - parseFloat(getComputedStyle(p).paddingTop)
+          - parseFloat(getComputedStyle(p).paddingBottom);
+  p.remove();
+  return {b:m, h};
+};
+
+/* Ein echter Stapel, nicht Hoehe x 8: die Fugen zwischen den Zeilen gehoeren
+   dazu, und wer multipliziert, vergisst sie. (Diese Funktion war schon einmal
+   da und wurde nie aufgerufen — die Spalte wog acht Mal dieselbe eine Zeile.) */
+const stapelHtml = (n, html) =>
+  `<div class="bandliste"><div class="liste">${
+    Array.from({length:n}, () => html).join('')}</div></div>`;
+/* Dieselbe Zeile ohne Spalten-Mindestbreiten. Der Unterschied ist genau der
+   Preis der Ausrichtung — und er erklaert, warum "realistisch" und "laengste
+   Werte" dieselbe Breite melden: die Mindestbreiten fassen beide. */
+const nackt = html => html.split('class="slotz').join('class="slotz nackt');
+
+function waageZeilen(){
+  const s = aktiveSlots()[WELT.gewaehlt-1] || aktiveSlots()[0] || SLOTS[2];
+  const lang = {...LAENGSTER, dyn:true};
+  const acht = SLOTS.slice(0,8);
+  const R = (name, html, bem, opt={}) => ({name, html, bem, ...opt});
+  return [
+    R('SLOT-Zeile · 12 Parameter', slotZeile(s,'voll'),
+      'was diese Runde wirklich anzeigt', {stapel:{n:8, html:slotZeile(s,'voll')}}),
+    R('SLOT-Zeile · 12 Parameter, längste Werte',
+      ohneSchalter(() => slotZeile(lang,'voll')),
+      'Platz-Grenzfall: Notch · Q 24.00 · −12.0 dB · −60.0 dB · 3000 ms — Ehrlichkeitsschalter dafür kurz neutral',
+      {stapel:{n:8, html: ohneSchalter(() => slotZeile(lang,'voll'))}, neutral:true}),
+    R('SLOT-Zeile · 6 EQ-Werte', slotZeile(s,'eq'),
+      'Dynamik einen Schritt entfernt — spart Breite, nicht Höhe',
+      {stapel:{n:8, html:slotZeile(s,'eq')}}),
+    R('SLOT als 3-zeiliger Streifen', `<div class="streifenband">${slotStreifen(s)}</div>`,
+      'Kontextform, stapelt nicht'),
+    R('Acht 3-zeilige Streifen nebeneinander',
+      `<div class="streifenband">${acht.map(slotStreifen).join('')}</div>`,
+      'die Frage ist die BREITE, nicht die Höhe'),
+    R('SLOT als einzeiliger Streifen', `<div class="streifenband">${slotStreifenEinzeilig(s)}</div>`,
+      'die Form, die docs/sondenplan.md §4 für zu breit hält'),
+    R('Acht einzeilige Streifen nebeneinander',
+      `<div class="streifenband">${acht.map(slotStreifenEinzeilig).join('')}</div>`,
+      'Gegenprobe zur Behauptung „brauchen mehr, als da ist"'),
+    R('Bandkasten · 8 × 12 Parameter (mit Rahmen)', bandkastenFuer('voll', 8),
+      'was Anordnung A wirklich kostet'),
+    R('Bandkasten · 8 × 6 EQ-Werte (mit Rahmen)', bandkastenFuer('eq', 8),
+      'Anordnung B'),
+    R('Bandkasten · 4+4 nebeneinander (mit Rahmen)', bandkastenFuer('zweispaltig', 8),
+      'Anordnung C — vier Zeilen statt acht'),
+    R('Bandkasten · 1 voll + 7 Streifen (mit Rahmen)', bandkastenFuer('streifen', 8),
+      'Anordnung D — zwei Zeilen statt acht'),
+    R('Kastenrahmen leer (Kopf + Polster)', kasten('Bands','8 slots','',{}),
+      'was ein Kasten kostet, bevor Inhalt darin steht'),
+    R('Statuszeile (Streifen)', streifen(), 'dauerhaft'),
+    R('Global-Zeile', globalZeile() || '<div class="zeile"><i>Global</i></div>',
+      'Trim, Breite, Mono-Bass, Bypass'),
+    R('Draft-Zeile', draftZeile() || '<div class="zeile"><i>Draft</i></div>',
+      'halten · anwenden · verwerfen'),
+    R('Undo als eine Zeile', undoFuer('zeile'),
+      'letzter Schritt + Zähler + Undo/Neutralise — dieselbe Funktion, die das Blatt zeichnet'),
+    R('Undo als Liste (5 Schritte)', undoFuer('liste'),
+      'einer offen, der Rest als benannte Zeile'),
+    R('Frequenz-SKALA', `<div class="skala">${SKALA.map(b=>`<span>${b}</span>`).join('')}</div>`,
+      'unter dem Kurvenfeld')
+  ];
+}
+/* Der Undo-Teil in einer bestimmten Form. Vorher stand in der Waage eine
+   HANDGEBAUTE Undo-Zeile ohne Knoepfe (24,7 px), waehrend der Vorrat die echte
+   mass (33,3 px) — zwei Dinge unter fast gleichem Namen, PRUEFLISTE 4.1. */
+function undoFuer(form){
+  const alt = WELT.undo;
+  WELT.undo = form;
+  try { return undoTeil(); } finally { WELT.undo = alt; }
+}
+/* Ein Bandkasten mit fester Slot-Zahl — die Waage soll nicht davon abhaengen,
+   wieviele Slots gerade geschaltet sind. */
+function bandkastenFuer(form, n){
+  const alt = WELT.slots;
+  WELT.slots = n;
+  try { return bandkasten(form); } finally { WELT.slots = alt; }
+}
+
+/* ---------- Beleg: jeder Baustein nennt seinen Handgriff ----------
+   Geleert von Mains Bausteinen (docs/sondenplan.md §2: "Geruest ja, Inhalt
+   LEEREN") und aus Abschnitt 2 der Spezifikation neu gefuellt. Die Nummern
+   verweisen auf den ENTWURF der Aufgabenliste in docs/sondenplan.md §3 —
+   dieser Entwurf ist NICHT abgenommen, und das steht in jedem Beleg dran. */
+const AUFGABEN = ['—',
+  '1 Kurve lesen (oft, ohne Absicht)',
+  '2 ein Band greifen, Frequenz/Gain ziehen (oft, Kernakt)',
+  '3 Q verstellen (oft)',
+  '4 Band an/aus (oft)',
+  '5 Bypass (oft?)',
+  '6 Vorschlag vom Main vorhören (oft?)',
+  '7 anwenden oder verwerfen (oft)',
+  '8 Bandtyp wechseln (gelegentlich)',
+  '9 Kanalmodus (gelegentlich)',
+  '10 Dynamik einstellen (gelegentlich)',
+  '11 einen Schritt zurücknehmen (gelegentlich)',
+  '12 Ein-/Ausgangs-Trim (gelegentlich)',
+  '13 Stereobreite / Mono-Bass (selten)',
+  '14 Neutralisieren (selten)',
+  '15 Schutzbereich setzen (selten)',
+  '16 Verbindung und Kopplung prüfen (nebenbei)'];
+const BELEG = {
+  'Bandliste (alle Parameter)':
+    [2,'Spezifikation §2: „8 Band-Slots, je: an/aus, Typ …, Frequenz, Q, Gain (manuell bis ±12 dB), Kanalmodus …, dynamisch an/aus mit Schwelle, Bereich, Attack, Hold, Release"'],
+  'Bandliste (nur EQ-Werte)':
+    [2,'Spezifikation §2, dieselben Slots — die sechs Werte der häufigen Handgriffe; die Dynamik ist einen Schritt entfernt (DESIGN-GESETZE: nur soviel sichtbar wie der Handgriff braucht)'],
+  'Bandliste (zweispaltig, nur EQ-Werte)':
+    [2,'Spezifikation §2, dieselben Slots — nebeneinander statt untereinander, weil die Höhe von der Zahl der gestapelten Zeilen gekauft wird'],
+  'Bandliste (ein Slot voll, sieben als Streifen)':
+    [2,'Spezifikation §2 + DESIGN-GESETZE (Focus+Context): der gegriffene Slot ausführlich, die anderen als Kontext'],
+  'Kurvenfeld (Summe + Einzelbänder)':
+    [1,'Spezifikation §2: „EQ-Kurve als zentrale Anzeige (Summenkurve + Einzelbänder)"'],
+  'Global (Trim, Breite, Mono-Bass, Bypass)':
+    [12,'Spezifikation §2: „Global: Eingangs-/Ausgangs-Trim, Stereobreite, Mono-Bass, Bypass"'],
+  'Draft vom Main (halten, anwenden, verwerfen)':
+    [6,'Spezifikation §2: „Draft/Preview vom Main … gehalten = hörbar, losgelassen = weg. Anwenden und Verwerfen sind bewusste Klicks. Ferngesteuerte Vorschläge sind enger begrenzt (±3 dB)"'],
+  'Undo-Verlauf + Neutralisieren':
+    [11,'Spezifikation §2: „Undo-Verlauf der bestätigten Zustände + ‚Neutralisieren‘"'],
+  'Statuszeile (verbunden, gekoppelt)':
+    [16,'Spezifikation §2: „Statuszeile: verbunden/getrennt, gekoppelt (Pairing) ja/nein"']
+};
+
+/* ---------- Zeichnen ---------- */
+const $ = s => document.querySelector(s);
+const kacheln = [];
+function knopf(text, fn, klasse){
+  const b = document.createElement('button');
+  b.className = 'k' + (klasse ? ' ' + klasse : '');
+  b.textContent = text; b.onclick = fn; return b;
+}
+function verdrahten(wf){
+  wf.querySelectorAll('[data-griff]').forEach(g => {
+    const was = g.dataset.griff;
+    if(was === 'hold'){
+      const an = ev => { ev.preventDefault(); if(LAGE.haelt) return;
+        LAGE.haelt = true; alleNeu(); };
+      const aus = () => { if(!LAGE.haelt) return; LAGE.haelt = false; alleNeu(); };
+      g.addEventListener('pointerdown', an);
+      g.addEventListener('pointerup', aus);
+      g.addEventListener('pointerleave', aus);
+      g.addEventListener('pointercancel', aus);
+      if(LAGE.haelt) g.classList.add('gedrueckt');
+    } else {
+      g.addEventListener('click', () => {
+        if(was === 'apply') LAGE.angewandt = true;
+        if(was === 'undo' || was === 'discard') LAGE.angewandt = false;
+        if(was === 'bypass'){ WELT.bypass = !WELT.bypass; }
+        LAGE.haelt = false; alleNeu();
+      });
+    }
+  });
+}
+function alleNeu(){ zeichnen(); }
+
+function anordnungKachel(a, i){
+  const w = document.createElement('div');
+  w.className = 'anordnung';
+  w.dataset.id = a.id;
+  const rahmen = document.createElement('div');
+  rahmen.className = 'rahmen';
+  const wf = document.createElement('div');
+  wf.className = 'wf';
+  wf.innerHTML = bau(a.form);
+  rahmen.appendChild(wf);
+  const nr = document.createElement('span');
+  nr.className = 'knr'; nr.textContent = a.id;
+  const m = document.createElement('span');
+  m.className = 'mech'; m.textContent = a.mech;
+  const z = document.createElement('span');
+  z.className = 'zahlen';
+  const t = document.createElement('span');
+  t.className = 'these'; t.textContent = a.these;
+  t.style.width = '340px';
+  const v = document.createElement('span');
+  v.className = 'vertrag'; v.style.width = '340px';
+  w.append(rahmen, m, z, v, t, nr);
+  verdrahten(wf);
+
+  const messen = () => {
+    aufteilen(wf);
+    listenEhrlich(wf);
+    const kb = wf.querySelector('.bandliste');
+    const kv = wf.querySelector('.kurve');
+    const hK = kv ? kv.offsetHeight : 0;      // Layouthoehe, nicht Bildschirmhoehe
+    const hB = kb ? kb.offsetHeight : 0;
+    const pxDb = hK / 24;
+    const draftPx = pxDb * 6;                       // +-3 dB = 6 dB Spanne
+    const u = ueberlauf(wf);
+    const vd = verdeckung(wf);
+    const d = deckel(wf);
+    const listen = [...wf.querySelectorAll('.liste')].map(l => {
+      const sichtbar = [...l.children].filter(c =>
+        !c.classList.contains('kappe') && c.style.display !== 'none').length;
+      return {name:l.dataset.liste, sichtbar, gesamt:+l.dataset.gesamt};
+    });
+    const gekuerzt = listen.filter(l => l.sichtbar < l.gesamt);
+    z.innerHTML =
+        `<span>Bandkasten <b data-mess="bandkasten">${Math.round(hB)}</b> px</span>`
+      + `<span>Kurvenfeld <b data-mess="kurve">${Math.round(hK)}</b> px</span>`
+      + `<span class="${draftPx < 15.4 ? 'warn' : ''}">px je dB `
+      + `<b data-mess="pxdb">${pxDb.toFixed(1)}</b></span>`
+      + `<span class="${draftPx < 15.4 ? 'warn' : ''}">±3-dB-Draft `
+      + `<b data-mess="draft">${Math.round(draftPx)}</b> px`
+      + (draftPx < 15.4 ? ' — flacher als eine Textzeile, nicht ablesbar' : '') + `</span>`
+      + `<span class="${u.fehlt > 1 ? 'warn' : ''}">Überlauf `
+      + `<b data-mess="ueberlauf">${u.fehlt}</b> px${u.fehlt > 1 ? ' — ' + u.wo : ''}</span>`
+      + `<span class="${vd.tiefe > 0.5 ? 'warn' : ''}">Verdeckung `
+      + `<b data-mess="verdeckung">${vd.tiefe}</b> px${vd.tiefe > 0.5 ? ' — ' + vd.art + ': ' + vd.wo : ''}</span>`
+      + `<span class="${d.fehlt > 0.5 ? 'warn' : ''}">Deckel <b data-mess="deckel">${d.fehlt}</b> px</span>`
+      + (gekuerzt.length
+          ? `<span class="warn">gekürzt: ${gekuerzt.map(l => l.name + ' ' + l.sichtbar + '/' + l.gesamt).join(' · ')}</span>`
+          : `<span>nichts gekürzt</span>`);
+    // Beleg-Chips: welcher Baustein steht hier, und wofuer?
+    const namen = [...new Set([...wf.querySelectorAll('[data-baustein]')]
+      .map(x => x.dataset.baustein))];
+    const att = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+                              .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    v.innerHTML = '<span><i>Bausteine + Beleg</i>' + namen.map(n => {
+      const bg = BELEG[n];
+      return `<span${bg ? ` title="${att('Handgriff (ENTWURF, nicht abgenommen): '
+        + AUFGABEN[bg[0]] + '\n' + bg[1])}"`
+        : ' class="ohnebeleg" title="Kein Beleg — dieser Baustein muesste vom Blatt verschwinden."'
+        }>${n}</span>`; }).join('') + '</span>';
+    w.dataset.ueberlauf = u.fehlt;
+    w.dataset.verdeckung = vd.tiefe;
+    rahmen.style.outline = (u.fehlt > 1 || vd.tiefe > 0.5) ? '2px solid #7a2f1f' : '';
+    return {id:a.id, hK, hB, pxDb, draftPx, u, vd, d, listen};
+  };
+  w.messen = messen;
+  kacheln.push(w);
+  return w;
+}
+
+function waageZeichnen(){
+  const tb = $('#waage');
+  const {b:innen, h:innenH} = innenBreite();
+  $('#innen').textContent = Math.round(innen) + ' × ' + Math.round(innenH) + ' px';
+  tb.innerHTML = '';
+  waageZeilen().forEach(z => {
+    const {h, b} = wiege(z.html);
+    const st = z.stapel ? wiege(stapelHtml(z.stapel.n, z.stapel.html)) : null;
+    const nk = z.stapel ? wiege(nackt(z.html)).b : null;
+    const tr = document.createElement('tr');
+    const zuBreit = b > innen + 0.5;
+    tr.innerHTML = `<td>${z.name}</td>`
+      + `<td class="z" data-mess="h">${h}</td>`
+      + `<td class="z${zuBreit ? ' eng' : ''}" data-mess="b">${b}${
+          zuBreit ? ' — ' + Math.round(b-innen) + ' zu breit' : ''}</td>`
+      + `<td class="z" data-mess="stapel">${st ? st.h + ' <em>(' + z.stapel.n + ' gestapelt)</em>' : '—'}</td>`
+      + `<td><em>${z.bem}${nk !== null
+          ? ` · reiner Text ohne Spaltenausrichtung: <b>${nk}</b> px`
+          : ''}</em></td>`;
+    tr.dataset.name = z.name;
+    tb.appendChild(tr);
+  });
+}
+
+function vorratZeichnen(){
+  const {b:ib, h:ih} = innenBreite();
+  const st = wiege(streifen()).h;
+  const g  = WELT.global === 'aus' ? 0 : wiege(globalZeile()).h;
+  const dr = WELT.draft  === 'aus' ? 0 : wiege(draftZeile()).h;
+  const uv = WELT.undo   === 'aus' ? 0 : wiege(undoTeil()).h;
+  // GEMESSEN, nicht gerechnet: das Blatt wird gebaut und gefragt, wieviel
+  // nach allem Dauerhaften uebrigbleibt.
+  const jetzt = messePlatz('voll');
+  const ohne  = messePlatz('voll', {global:'aus', draft:'aus', undo:'aus'});
+  const zeile = (a2, b2, c) =>
+    `<tr><td>${a2}</td><td class="z">${b2}</td><td><em>${c||''}</em></td></tr>`;
+  $('#vorrat').innerHTML =
+      zeile('Blatt innen (nach 8 px Polster)',
+            Math.round(ib) + ' × ' + Math.round(ih) + ' px',
+            'gemessen an einem echten .wf von 700×420 — die beiden 1-px-Rahmen sind abgezogen')
+    + zeile('Statuszeile (dauerhaft)', Math.round(st) + ' px',
+            'Spezifikation §2: verbunden/getrennt, gekoppelt ja/nein')
+    + zeile('Global-Zeile', WELT.global === 'aus' ? 'aus' : Math.round(g) + ' px',
+            'schaltbar — die Spezifikation verlangt sie, nicht ihren Dauerplatz')
+    + zeile('Draft-Zeile', WELT.draft === 'aus' ? 'aus' : Math.round(dr) + ' px', '')
+    + zeile('Undo (' + WELT.undo + ')', WELT.undo === 'aus' ? 'aus' : Math.round(uv) + ' px', '')
+    + zeile('Fugen à 8 px', ((jetzt.kinder - 1) * 8) + ' px',
+            jetzt.kinder + ' Felder → ' + (jetzt.kinder - 1) + ' Fugen')
+    + `<tr class="summe"><td>bleibt für Kurve + Bänder <em>— wie geschaltet</em></td>`
+    + `<td class="z"><b data-mess="rest">${jetzt.platz}</b> px</td>`
+    + `<td><em>gemessen an einem gebauten Blatt, nicht ausgerechnet</em></td></tr>`
+    + `<tr class="summe"><td>bleibt für Kurve + Bänder <em>— ohne Global, Draft, Undo</em></td>`
+    + `<td class="z"><b data-mess="restOhne">${ohne.platz}</b> px</td>`
+    + `<td><em>docs/sondenplan.md §4 rechnete mit <b>358 px</b> und nahm dabei `
+    + `ausdrücklich an, dass Global, Draft und Undo NICHT auf dem Blatt stehen `
+    + `(Annahme 3).</em></td></tr>`;
+  return {ib, ih, st, g, dr, uv, jetzt, ohne};
+}
+
+/* Die offene Produktfrage aus docs/sondenplan.md §4, messbar gemacht:
+   "Bei Main war klar, wer seine natuerliche Hoehe haelt — die Karte, weil sie
+   das dauerhafte Ding ist. Beim Editor ist das offen: die Kurve ist laut
+   Spezifikation zentrale Anzeige, die Baender sind das, was bedient wird.
+   WER GIBT BEI PLATZMANGEL NACH?"
+   Das Blatt beantwortet sie nicht. Es rechnet beide Antworten vor. */
+function nachgebenZeichnen(){
+  const stellungen = [['kurve','Kurve gibt nach'],
+                      ['baender','Bänder geben nach'],
+                      ['teilen','Überschuss teilen']];
+  const zeilen = ANORDNUNGEN.map(a => {
+    const zellen = stellungen.map(([id]) => {
+      const m = messePlatz(a.form, {nachgeben:id});
+      const pxDb = m.kurve / 24;
+      const draft = pxDb * 6;
+      // Ein +-3-dB-Draft, der flacher ist als eine Textzeile (11 px x 1.4 =
+      // 15.4), kann nicht gelesen werden. Kein geratener Schwellwert: es ist
+      // die kleinste Hoehe, die dieses Blatt sonst irgendwo zeigt.
+      const lesbar = draft >= 15.4;
+      const gekuerzt = m.gesamt > 0 && m.sichtbar < m.gesamt;
+      return `<td class="z${lesbar ? '' : ' eng'}">${m.kurve} px`
+        + ` <em>${pxDb.toFixed(1)}/dB · Draft ${Math.round(draft)}</em>`
+        + (m.gesamt ? `<br><em${gekuerzt ? ' style="color:#4a1f14"' : ''}>`
+            + `${m.sichtbar}/${m.gesamt} Bänder</em>` : '')
+        + (m.ueberlauf > 1 ? `<br><em style="color:#4a1f14">${m.ueberlauf} px Überlauf</em>` : '')
+        + `</td>`;
+    }).join('');
+    return `<tr><td>${a.mech}</td>${zellen}</tr>`;
+  }).join('');
+  $('#nachgeben').innerHTML =
+      `<thead><tr><th>Anordnung</th>${stellungen.map(([,n]) =>
+        `<th>${n}</th>`).join('')}</tr></thead><tbody>${zeilen}</tbody>`;
+}
+
+function pruefZeichnen(ergebnisse){
+  const p = $('#pruef');
+  const z = (ok, name, text) =>
+    `<div class="${ok ? 'ok' : 'fehl'}"><i>${ok ? '✓' : '✗'}</i>`
+    + `<b>${name}</b><span>${text}</span></div>`;
+  const schlimmU = ergebnisse.reduce((a,b) => b.u.fehlt > a.u.fehlt ? b : a);
+  const schlimmV = ergebnisse.reduce((a,b) => b.vd.tiefe > a.vd.tiefe ? b : a);
+  const schlimmD = ergebnisse.reduce((a,b) => b.d.fehlt > a.d.fehlt ? b : a);
+  const ohneBeleg = document.querySelectorAll('.vertrag .ohnebeleg').length;
+  p.innerHTML =
+      z(schlimmU.u.fehlt <= 1, 'Überlauf (rekursiv, beide Richtungen)',
+        schlimmU.u.fehlt <= 1 ? 'nichts läuft über'
+          : `${schlimmU.u.fehlt} px in Fall ${schlimmU.id}: ${schlimmU.u.wo}`)
+    + z(schlimmV.vd.tiefe <= 0.5, 'Verdeckung (Randfarbe + Auflage)',
+        schlimmV.vd.tiefe <= 0.5 ? 'nichts liegt auf fremdem Text'
+          : `${schlimmV.vd.tiefe} px in Fall ${schlimmV.id} — ${schlimmV.vd.art}: ${schlimmV.vd.wo}`)
+    + z(schlimmD.d.fehlt <= 0.5, 'Deckel unter der Inhaltshöhe',
+        schlimmD.d.fehlt <= 0.5 ? 'jede Zeile ist so hoch wie ihr Inhalt'
+          : `${schlimmD.d.fehlt} px in Fall ${schlimmD.id}: ${schlimmD.wo}`)
+    + z(ohneBeleg === 0, 'Beleg je Baustein',
+        ohneBeleg === 0 ? 'jeder Baustein nennt Handgriff und Spezifikationsstelle'
+          : `${ohneBeleg} Bausteine ohne Beleg`)
+    + z(true, 'Grenzfall ist die Vorgabe',
+        `${WELT.slots} Slots · Dynamik ${WELT.dynamik ? 'an' : 'aus'} · Werte `
+        + `${WELT.werte === 'laengste' ? 'längste' : 'realistisch'} · Bypass `
+        + `${WELT.bypass ? 'an' : 'aus'} · Main ${WELT.verbunden ? 'verbunden' : 'getrennt'} · `
+        + `${WELT.gekoppelt ? 'gekoppelt' : 'ungekoppelt'} · Schutzbereich `
+        + `${WELT.schutzGetroffen ? 'getroffen' : 'frei'}`);
+  // Fuer die Sonde von aussen lesbar machen — sie soll nicht HTML lesen muessen.
+  window.MESSUNG = {
+    anordnungen: ergebnisse.map(e => ({id:e.id, kurve:Math.round(e.hK),
+      bandkasten:Math.round(e.hB), pxDb:+e.pxDb.toFixed(1),
+      draft:Math.round(e.draftPx), ueberlauf:e.u.fehlt, verdeckung:e.vd.tiefe,
+      deckel:e.d.fehlt, listen:e.listen})),
+    ohneBeleg,
+    welt: {...WELT}
+  };
+}
+
+function fussZeichnen(){
+  const f = $('#fuss');
+  f.innerHTML = '';
+  const gruppe = (titel, knoepfe) => {
+    const g = document.createElement('div');
+    g.className = 'gruppe';
+    const i = document.createElement('i'); i.textContent = titel;
+    g.appendChild(i); knoepfe.forEach(k => g.appendChild(k));
+    return g;
+  };
+  const um = (feld, wert) => () => { WELT[feld] = wert; zeichnen(); };
+  f.append(
+    gruppe('Slots', [8,5,1].map(n =>
+      knopf(n + '', um('slots', n), WELT.slots === n ? 'an' : ''))),
+    gruppe('Dynamik', [
+      knopf('alle', um('dynamik', true), WELT.dynamik ? 'an' : ''),
+      knopf('keine', um('dynamik', false), !WELT.dynamik ? 'an' : '')]),
+    gruppe('Werte', [
+      knopf('realistisch', um('werte','echt'), WELT.werte === 'echt' ? 'an' : ''),
+      knopf('längste', um('werte','laengste'), WELT.werte === 'laengste' ? 'an' : '')]),
+    gruppe('Ehrlichkeit', [
+      knopf('Bypass ' + (WELT.bypass ? 'an' : 'aus'),
+        () => { WELT.bypass = !WELT.bypass; zeichnen(); }, WELT.bypass ? 'an' : ''),
+      knopf('Main ' + (WELT.verbunden ? 'verbunden' : 'getrennt'),
+        () => { WELT.verbunden = !WELT.verbunden; zeichnen(); }, !WELT.verbunden ? 'an' : ''),
+      knopf(WELT.gekoppelt ? 'gekoppelt' : 'ungekoppelt',
+        () => { WELT.gekoppelt = !WELT.gekoppelt; zeichnen(); }, !WELT.gekoppelt ? 'an' : ''),
+      knopf('Schutzbereich ' + (WELT.schutzGetroffen ? 'getroffen' : 'frei'),
+        () => { WELT.schutzGetroffen = !WELT.schutzGetroffen; zeichnen(); },
+        WELT.schutzGetroffen ? 'an' : '')]),
+    gruppe('Dauerhaft', [
+      knopf('Global: ' + WELT.global,
+        () => { WELT.global = WELT.global === 'zeile' ? 'aus' : 'zeile'; zeichnen(); },
+        WELT.global !== 'aus' ? 'an' : ''),
+      knopf('Draft: ' + WELT.draft,
+        () => { WELT.draft = WELT.draft === 'reihe' ? 'aus' : 'reihe'; zeichnen(); },
+        WELT.draft !== 'aus' ? 'an' : ''),
+      knopf('Undo: ' + WELT.undo,
+        () => { WELT.undo = WELT.undo === 'zeile' ? 'liste'
+                          : WELT.undo === 'liste' ? 'aus' : 'zeile'; zeichnen(); },
+        WELT.undo !== 'aus' ? 'an' : '')]),
+    gruppe('Wer gibt nach', [
+      knopf('Kurve', um('nachgeben','kurve'), WELT.nachgeben === 'kurve' ? 'an' : ''),
+      knopf('Bänder', um('nachgeben','baender'), WELT.nachgeben === 'baender' ? 'an' : ''),
+      knopf('teilen', um('nachgeben','teilen'), WELT.nachgeben === 'teilen' ? 'an' : '')]),
+    gruppe('Kurve mind.', [100,140,180].map(n =>
+      knopf(n + ' px', um('kurveMin', n), WELT.kurveMin === n ? 'an' : ''))),
+    gruppe('Zeigen', [
+      knopf('Bausteine + Beleg', () => { document.body.classList.toggle('vertragAn'); },
+        document.body.classList.contains('vertragAn') ? 'an' : ''),
+      knopf('Thesen', () => { document.body.classList.toggle('thesen'); },
+        document.body.classList.contains('thesen') ? 'an' : ''),
+      knopf('Namenstafel', () => { document.body.classList.toggle('namenAn'); },
+        document.body.classList.contains('namenAn') ? 'an' : '')])
+  );
+}
+
+function zeichnen(){
+  kacheln.length = 0;
+  const ziel = $('#anordnungen');
+  ziel.innerHTML = '';
+  ANORDNUNGEN.forEach((a,i) => ziel.appendChild(anordnungKachel(a,i)));
+  waageZeichnen();
+  fussZeichnen();
+  const messe = () => {
+    const erg = kacheln.map(k => k.messen());
+    vorratZeichnen();
+    nachgebenZeichnen();
+    pruefZeichnen(erg);
+  };
+  requestAnimationFrame(() => { messe(); requestAnimationFrame(messe); });
+}
+
+/* Fuer die Gegenprobe von aussen: die Pruefungen muessen scheitern koennen.
+   Ein Gate, das nicht scheitern kann, beweist nichts (PRUEFLISTE 7.1). */
+window.PRUEFUNG = {ueberlauf, verdeckung, deckel, wiege, aufteilen,
+                   listenEhrlich, listenZuruecksetzen, messePlatz};
+window.WELT = WELT; window.LAGE = LAGE; window.zeichnen = zeichnen;
+
+function band(){
+  const b = $('#band');
+  const gross = document.querySelector('.rahmen.gross');
+  const massstab = gross
+    ? parseFloat(getComputedStyle(gross).getPropertyValue('--s')) || 1
+    : parseFloat(getComputedStyle(document.querySelector('.rahmen') || document.body)
+        .getPropertyValue('--s')) || 1;
+  const echt = massstab === 1 && devicePixelRatio === 1;
+  b.className = echt ? 'ok' : 'warn';
+  b.innerHTML = echt
+    ? '<b>1:1</b> — die Kacheln stehen in echter Größe, 700×420.'
+    : `<b>Verkleinert (${massstab.toFixed(2)}×).</b> Die <b>Zahlen stimmen trotzdem</b>:
+       gemessen wird das ungeskalierte Layout, <code>transform</code> ändert es nicht.
+       Nur das <i>Urteil</i> über Lesbarkeit braucht 1:1 — und darum geht es hier nicht.`;
+  const k = document.createElement('button');
+  k.textContent = echt ? 'Vollbild verlassen' : 'Vollbild (F11)';
+  k.onclick = () => echt ? document.exitFullscreen()
+                         : document.documentElement.requestFullscreen();
+  b.appendChild(k);
+}
+addEventListener('resize', () => { band(); zeichnen(); });
+band();
+zeichnen();
+/* Werden die Schriften nachtraeglich fertig, aendern sich alle Masse.
+   Dann wird neu gemessen — sonst stuenden die Zahlen fuer ein Blatt, das
+   es nicht mehr gibt. */
+if(document.fonts && document.fonts.ready)
+  document.fonts.ready.then(() => { band(); zeichnen(); });
+</script>
+</body>
+</html>

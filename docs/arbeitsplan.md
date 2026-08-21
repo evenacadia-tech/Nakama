@@ -65,8 +65,19 @@ und es wird keine geben (`abnahmen/2026-08-20-karte-alle-quellen.md`).
 Aktueller Entwurf: `werkzeug/zustaende.html`.
 
 Als Nächstes: **Active-Probe-Editor** (700×420), dann **Passive-Kachel**
-(260×84). Auftrag, Aufgabenliste-Entwurf, vorgerechnete Klemme und die
+(260×84). Auftrag, Aufgabenliste-Entwurf, gemessene Klemme und die
 Stolperfallen stehen in **`docs/sondenplan.md`** — vor der ersten Zeile lesen.
+
+**Stand 2026-08-21 beim Editor:** Schritt 2 der Reihenfolge („natürliche Höhen
+messen, bevor irgendetwas angeordnet wird") ist **erledigt** —
+`werkzeug/sonde-messung.html` misst jeden Baustein und fünf Anordnungen real
+gebaut. Von **19 nachprüfbaren Angaben** in `docs/sondenplan.md` Abschnitt 4
+waren **10 falsch**; sie stehen dort berichtigt, mit dem alten Wert daneben.
+**Offen bleibt Schritt 1**: die Aufgabenliste nach Häufigkeit ist ein Entwurf
+und **nicht abgenommen**. Ohne sie kein Wireframe (`docs/DESIGN-GESETZE.md`,
+verbindliche Folge 1). Die Messung hat dem Entwurf eine dritte Frage
+hinzugefügt: *wer gibt bei Platzmangel nach — Kurve oder Bänder — und dürfen
+Global, Draft und Undo dauerhaft dastehen?*
 
 **Was Main auf Wireframe-Ebene noch fehlt** (kein Hindernis für die Sonden,
 aber vor Phase 2 zu klären): Begründung, Alternativursachen und billigster

@@ -71,7 +71,6 @@ tools: Read, Grep, Glob, Bash, mcp__plugin_playwright_playwright__browser_naviga
   mcp__plugin_playwright_playwright__browser_click,
   mcp__plugin_playwright_playwright__browser_evaluate,
   mcp__plugin_playwright_playwright__browser_take_screenshot
-skills: pruefliste
 model: inherit
 effort: high
 ---
@@ -81,8 +80,10 @@ effort: high
 sechs Szenarien × drei Arbeitsschritte erzeugt DOM-Ausgabe, die im Hauptkontext
 nur Platz frisst — behalten will ich zehn Zeilen Befund.
 **Gegenprobe (Pflicht):** eine künstliche Lüge einbauen, er muss sie finden.
-**Feinheit:** `skills:` lädt eine Skill vollständig in den Agenten vor — die
-Prüfliste muss dann nicht in jeden Auftrag kopiert werden.
+**Sein Maßstab** ist `werkzeug/PRUEFLISTE.md` — die liest er selbst, er hat
+`Read`. (Das Feld `skills:` könnte sie ihm vorladen, aber das setzte voraus,
+dass die Prüfliste als Skill verpackt wird. Ein siebter Skill nur als
+Verpackung eines Dokuments lohnt nicht.)
 
 ### A2 · `zahlen-pruefer`
 

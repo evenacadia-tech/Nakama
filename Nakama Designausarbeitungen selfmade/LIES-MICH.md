@@ -76,3 +76,106 @@ Anordnung; die Optik bleibt hier absichtlich unerwähnt.
 kein Urteil über vorgelegte Varianten. Er ersetzt weder die Aufgabenliste nach
 Häufigkeit (die fehlt weiterhin und blockt das Wireframe) noch die Messung am
 lebenden Blatt — er sagt nur, wohin es gehen soll.
+
+---
+
+## Der Main-Entwurf vom 2026-08-21 — „erster ernstzunehmender Prototyp"
+
+Zeigt **Main**. Anders als beim Editor ist Main auf Wireframe-Ebene
+**vollständig abgenommen** — dieser Entwurf lässt sich also gegen bindende
+Urteile prüfen, nicht nur beschreiben. Auch hier: nur Anordnung und Zeichen,
+keine Optik. Liegt ebenfalls nicht als Datei vor.
+
+### Was zu sehen ist
+
+- **Streifen:** `NAKAMA / MAIN` · vier Reiter `OBSERVE · ADVISE · AUDITION ·
+  APPLY` (ADVISE aktiv, unterstrichen) · rechts `5 PROBES` · `1 STALE` ·
+  `● MEASURING 68%` · `WIDTH UNAVAILABLE`.
+- **`PROBE OVERVIEW`** mit Kopfzeile `FOCUS / BASS / 180-260 HZ` und rechts
+  `5 / 5 LINKED`. Frequenzspalten `20 · 60 · 120 · 250 · 500 · 1K · 2K · 4K · 8K`.
+- **Fünf Zeilen, mit Namen und Nummer:** `01 LEAD VOX LIVE` · `02 DRUMS LIVE` ·
+  `03 BASS FOCUS` · `04 PIANO LIVE` · `05 SYNTH PAD STALE`.
+  Die BASS-Zeile trägt links einen Marker; ihre Zellen bei 120 und 250 sind
+  umrandet — der Befundort.
+- **`ADVISOR`** mit `FINDING 1 OF 3` und rechts `5 / 5`, darunter die
+  Fünf-Teile-Form: `PRIORITY` · `LIKELY CAUSE` · `SMALLEST TEST` ·
+  `LISTEN FOR` · `THEN`.
+- **Knöpfe** `AUDITION / HOLD` · `APPLY` · `DISCARD`, rechts daneben
+  `● TEST READY / BASS −2.0 DB @ 220 HZ / Q 1.2`.
+
+### Was mit den Abnahmen übereinstimmt
+
+- **Overview + Detail** — dauerhafte Karte oben, wechselnde Arbeitsfläche
+  darunter. Genau die abgenommene Mechanik.
+- **Die Fünf-Teile-Form des Assistenten** stimmt auf den Punkt mit
+  `docs/oberflaechen-spezifikation.md`: Priorität → wahrscheinliche Ursache →
+  kleinster Versuch → worauf hören → danach dieselbe Passage erneut prüfen.
+- **Vier Bedienebenen, sichtbar getrennt**, der aktive leuchtet.
+- **Degradiert wird ehrlich gezeigt:** `WIDTH UNAVAILABLE` steht im Streifen,
+  nicht versteckt.
+- **Der gemessene Zähler hat seine eigene Form** (`5 / 5`, `5 / 5 LINKED`)
+  neben dem geschriebenen `FINDING 1 OF 3` — genau `PRUEFLISTE` 1.2, die aus
+  dem Fehler „finding 1 of 3 · 3 of 5" entstanden ist.
+- **Der kleinste Versuch ist ein vorbereiteter Zustand**, nicht nur Text:
+  `TEST READY / BASS −2.0 dB @ 220 Hz / Q 1.2`.
+
+### Drei Abweichungen von bindenden Urteilen
+
+**1. `05 SYNTH PAD` ist als *getrennt* gezeichnet und als *veraltet*
+beschriftet.** `abnahmen/2026-08-20-zustaende-nur-ausnahme.md` legt fest:
+
+| Zustand | Zeichen |
+|---|---|
+| frisch | gefüllte Zellen |
+| veraltet | **hohle** Zellen — Daten da, aber alt |
+| getrennt | **Strichlinie**, keine Zellen — keine Daten |
+
+Die Zeile trägt die **Strichlinie** und das Wort **`STALE`**. Zeichen und Wort
+sagen Verschiedenes. Nach der Abnahme müsste eine veraltete Zeile **hohl**
+sein. (Das ist die Klasse Fehler, für die `PRUEFLISTE` 4.4 existiert: keine
+Beschriftung darf behaupten, was das Bild widerlegt.)
+
+**2. `1 STALE` nennt den Namen nicht.** Dieselbe Abnahme, Punkt 2: *„Die
+Ausnahme spricht mit Namen … Regel: **Namen, solange es eine Aufzählung ist**
+— bis zwei je Sorte."* Bei **einer** veralteten Quelle ist der Name Pflicht:
+`1 stale (Synth Pad)`. Die Begründung steht in der Abnahme: eine
+Zustandsmarke ohne Namen sagt nur die Position, nicht die Quelle.
+
+**3. Der Zeilenmarker ist doppelt belegt.**
+`abnahmen/2026-08-20-vorhoeren-markierte-zeile.md` reserviert die **markierte
+Zeile** für **das Vorhören**: *„Die betroffene Quelle in der Karte wird
+markiert, **solange gehalten wird**; beim Loslassen ist die Markierung weg."*
+Im Entwurf markiert derselbe Balken in der **Ruhelage** die Fokusquelle
+(`03 BASS FOCUS`). Zwei Begriffe unter einem Zeichen — genau der Fehler aus
+`PRUEFLISTE` 4.1, der schon einmal passiert ist (`fokus` hieß gleichzeitig
+Disclosure-Behandlung und betroffene Quelle). Entweder braucht *Fokus* ein
+eigenes Zeichen, oder *Vorhören* eines.
+
+### Zwei Pflichtangaben der Spezifikation fehlen
+
+`docs/oberflaechen-spezifikation.md`, Abschnitt 1, verlangt je Befund: Ort ·
+Beobachtung · Begründung · **Sicherheit (hoch / mittel / noch unklar)** ·
+**mögliche Alternativursachen** · billigster nächster Beweisschritt.
+
+Vorhanden sind Ort (`BASS / 180-260 Hz`), Begründung (`LIKELY CAUSE`) und der
+billigste Beweisschritt (`SMALLEST TEST`). **Sicherheit und Alternativursachen
+haben keinen Ort** — beide stehen schon in `abnahmen/2026-08-21-codereview.md`
+als Lücke, hier sind sie es wieder.
+
+### Der Lastfall ist der Schönfall
+
+Das Bild zeigt **fünf** Quellen. Die Spezifikation nennt **bis 16**, und die
+gesamte Kartenabnahme wurde bei 16 gemessen und entschieden. Zwei Folgen:
+
+- **Die Namen in der Karte passen hier, bei 16 nicht.** Gemessen: Karte ohne
+  Namen 212 px, **mit** Namen 308 px — mehr, als da ist. Deshalb war die
+  abgenommene Karte namenlos.
+- **Genau darum ist das trotzdem interessant.** Die offene Frage des letzten
+  Sessionendes lautete wörtlich: *„Wie kommt man von einer hohlen Zeile zur
+  Quelle? Die Karte ist namenlos."* Dieser Entwurf **antwortet** darauf — er
+  beantwortet sie nur für den kleinen Mix. Was bei 16 Quellen passiert, ist
+  die eigentliche Frage.
+
+**Auch das ist keine Abnahme.** Die drei Abweichungen sind keine Kritik am
+Entwurf, sondern Stellen, an denen entweder das Bild oder das frühere Urteil
+nachzieht — und das entscheidet der User, nicht Claude.

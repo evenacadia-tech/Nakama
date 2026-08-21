@@ -30,7 +30,7 @@ Trigger: sofort `/freshen`, vor allem anderen.
 
 **Die weitere Always-on-Fläche** (jede Session vor dem ersten Tool-Call
 geladen): globales `~/.claude/CLAUDE.md` (~5 KB, User-Besitz — nie
-auto-editieren) + Repo-`CLAUDE.md` (~12,5 KB — von Claude gepflegt, Drift
+auto-editieren) + Repo-`CLAUDE.md` (~15 KB seit 21.08. — von Claude gepflegt, Drift
 wird hier GEFIXT, Wachstum wird gemeldet) + `MEMORY.md` (Hebel). Gesamt
 ~20 KB (Stand 20.08.2026) — jede Runde neu messen und im Report nennen.
 
@@ -49,13 +49,13 @@ Kandidat für Eviction. Nein → tragend, behalten.
 
 | Memory-Klasse | Kanonische Quelle |
 |---|---|
-| Design-Sessions (Richtungen, Verwürfe, Abnahmen) | `docs/design-stand.md` + `docs/geschmacksprofil.md` (wörtliche User-Urteile) |
-| Visuelles Zielbild / Nordstern | `docs/visuelles-zielbild-hoerkompass.md` |
+| Design-Sessions (Abnahmen, Figma-Stände) | `Projekte/Nakama-Design/abnahmen/` + `assets/figma/` (seit 21.08.; Prisma-Studie geparkt unter `eq-copilot/design/prisma-studie/`) |
+| Produktwahrheit, User-Entscheide (mit Zitat) | `CLAUDE.md` (Wahrheitskern + Register) |
 | Plugin-/Broker-Sessions (Architektur, Datenfluss, IPC) | `docs/plugin-wissen.md` + `eq-copilot/docs/M*-BEFUND.md` + git log |
 | Offene Punkte / NAK-IDs | `docs/offene-punkte.md` (durabel; schließen NUR mit ID + Commit-SHA, nie still löschen) |
 | Nächste Schritte | `docs/NEXT-SESSION.md` |
 | Session-Übergaben | `docs/handoffs/` (rotierend) |
-| Verworfene Wege (nie neu vorschlagen) | CLAUDE.md „Anti-Conflation" + `docs/design-stand.md` |
+| Verworfene Wege (nie neu vorschlagen) | CLAUDE.md „Was NICHT mehr gilt" + `eq-copilot/design/archive/LIES-MICH.md` + `docs/archiv/LIES-MICH.md` |
 
 ## Phasen
 
@@ -87,13 +87,13 @@ selben Lauf reparieren.
 | Broker-Binärnamen | `broker/Cargo.toml` (`name =`) + `ls broker/src/bin/` |
 | Pipe-Namen (v1 / m2probe) | `grep -rl 'evenacadia\.eq-copilot' broker/src eq-copilot/plugin/src` |
 | NAK-IDs in MEMORY.md/NEXT-SESSION | gegen `docs/offene-punkte.md` (offen vs. geschlossen) |
-| „Stand DD.MM."-Zeilen im CLAUDE.md (Design-Arbeitsmodell) | gegen `docs/design-stand.md`-Kopf + `docs/NEXT-SESSION.md` |
+| „Stand DD.MM."-Zeilen im CLAUDE.md | gegen `docs/NEXT-SESSION.md`; der Wahrheitskern trägt sein Datum selbst |
 | Remote-/Repo-Claims | `git remote -v` |
 | Schema-Versionen (eq-ipc v2, eq-snapshot v3 …) | `eq-copilot/schemas/` |
 
 Cross-Doc-Regel: Ein in einem Doc gefixter Wert ist in den anderen noch
 alt — den WERT repo-weit greppen (`git grep`), jede lebende Kopie
-abgleichen (NEXT-SESSION.md, design-stand.md, plugin-wissen.md,
+abgleichen (NEXT-SESSION.md, plugin-wissen.md, Nakama-Design/abnahmen,
 offene-punkte.md). Historische/datierte Zeilen (Handoffs, Befund-Docs mit
 Datum) sind als Zeitpunkt-Aussagen korrekt — nur als AKTUELL präsentierte
 Altwerte sind Drift.
@@ -116,7 +116,7 @@ endet netto kleiner. Dann:
 
 ### Phase D — Lücken-Erkennung
 
-`git log --oneline -20` gegen CLAUDE.md-/design-stand.md-Abdeckung. Für
+`git log --oneline -20` gegen CLAUDE.md-/NEXT-SESSION.md-Abdeckung. Für
 jeden Kandidaten erst `ls`/`grep`, ob das Genannte im Code existiert
 (Commit-Messages können Phantome nennen). Mechanische Lücke (Zahl, Pfad,
 Zeile) → fixen. Architektur-Prosa oder Design-Urteil → dem User
@@ -169,7 +169,7 @@ vorlegen (Surface ≠ Menü).
   nie anfassen; Repo-CLAUDE.md: mechanischen Drift fixen, strukturelles
   Wachstum melden.
 - **`feedback_*.md` nie auto-editieren** (Ausnahme: fehlende Why/How-Zeile
-  ergänzen). `docs/geschmacksprofil.md` (wörtliche User-Urteile) und
+  ergänzen). Das Entscheide-Register in CLAUDE.md (wörtliche User-Urteile) und
   `.claude/kreativ-freigabe.md` (Schleusen-Marker) sind ebenso tabu.
 - **Nie eine Memory-Datei löschen ohne ls-bestätigtes kanonisches
   Artefakt.** Index komprimieren, nicht die Dateien.

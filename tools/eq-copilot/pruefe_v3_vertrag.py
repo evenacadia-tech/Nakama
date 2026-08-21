@@ -84,6 +84,40 @@ def teilschemata(knoten, pfad: str):
                 yield from teilschemata(v, f"{pfad}/oneOf/{i}")
 
 
+def werttyp_passt(name: str, wert) -> bool:
+    """Welchen Werttyp verlangt ein Schluesselwort?
+
+    Bis T2-Runde 1 sah die Ladepruefung nur NAMEN. Gemessen: `"maxLength": 5.0`
+    wurde vom Rust-Bein still verworfen und vom C++-Bein durchgesetzt —
+    dieselbe Fehlerklasse wie ein unbekanntes Schluesselwort, nur eine Ebene
+    tiefer. Diese Tabelle muss mit `NakamaVertrag.cpp` und `vertrag.rs`
+    zeichengenau uebereinstimmen.
+    """
+    def ganzzahl(x) -> bool:
+        return isinstance(x, int) and not isinstance(x, bool) and x >= 0
+
+    if name == "type":
+        return isinstance(wert, str) or (
+            isinstance(wert, list) and bool(wert) and all(isinstance(e, str) for e in wert))
+    if name == "const":
+        return True
+    if name in ("enum", "oneOf"):
+        return isinstance(wert, list) and bool(wert)
+    if name == "required":
+        return isinstance(wert, list) and all(isinstance(e, str) for e in wert)
+    if name in ("properties", "$defs", "items"):
+        return isinstance(wert, dict)
+    if name == "additionalProperties":
+        return isinstance(wert, bool)
+    if name in ("maxProperties", "minLength", "maxLength", "minItems", "maxItems"):
+        return ganzzahl(wert)
+    if name in ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum"):
+        return isinstance(wert, (int, float)) and not isinstance(wert, bool)
+    if name in ("pattern", "$ref", "x-nakama-discriminator"):
+        return isinstance(wert, str)
+    return True
+
+
 def pruefe_schema(lauf: Lauf, schema: dict) -> None:
     pruefer = jsonschema.Draft202012Validator
     try:
@@ -94,24 +128,35 @@ def pruefe_schema(lauf: Lauf, schema: dict) -> None:
 
     fremde: list[str] = []
     muster: list[str] = []
+    falsche_typen: list[str] = []
+    haengend: list[str] = []
+    defs = schema.get("$defs", {})
     for pfad, teil in teilschemata(schema, "#"):
-        for name in teil:
-            if name in SCHLUESSELWOERTER or name in ANMERKUNGEN:
+        for name, wert in teil.items():
+            if name in ANMERKUNGEN:
                 continue
-            fremde.append(f"{pfad}/{name}")
+            if name not in SCHLUESSELWOERTER:
+                fremde.append(f"{pfad}/{name}")
+                continue
+            if not werttyp_passt(name, wert):
+                falsche_typen.append(f"{pfad}/{name}")
         if "pattern" in teil and teil["pattern"] not in MUSTER:
             muster.append(f"{pfad}: {teil['pattern']!r}")
         if "oneOf" in teil and "x-nakama-discriminator" not in teil:
             lauf.wahr(f"oneOf ohne Discriminator bei {pfad}", False)
-        if "additionalProperties" in teil and not isinstance(teil["additionalProperties"], bool):
-            lauf.wahr(f"additionalProperties bei {pfad} ist kein bool", False)
         if teil.get("additionalProperties") is True and "maxProperties" not in teil:
             lauf.wahr(f"additives Objekt {pfad} ohne maxProperties", False)
-        if "$ref" in teil and not teil["$ref"].startswith("#/$defs/"):
-            lauf.wahr(f"nicht-lokale Referenz bei {pfad}", False, teil["$ref"])
+        if "$ref" in teil and isinstance(teil["$ref"], str):
+            if not teil["$ref"].startswith("#/$defs/"):
+                lauf.wahr(f"nicht-lokale Referenz bei {pfad}", False, teil["$ref"])
+            elif teil["$ref"].removeprefix("#/$defs/") not in defs:
+                haengend.append(f"{pfad}: {teil['$ref']}")
 
     lauf.wahr("nur implementierte Schluesselwoerter", not fremde, ", ".join(fremde))
     lauf.wahr("nur Muster aus der Tabelle", not muster, ", ".join(muster))
+    lauf.wahr("jedes Schluesselwort traegt den richtigen Werttyp",
+              not falsche_typen, ", ".join(falsche_typen))
+    lauf.wahr("keine haengende Referenz", not haengend, ", ".join(haengend))
 
 
 def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
@@ -136,8 +181,19 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
 
 # ------------------------------------------------------------------ Fixturelauf
 
+MINDESTKORPUS = 100
+
+
 def pruefe_fixtures(lauf: Lauf, schema: dict, manifest: dict) -> None:
     pruefer = jsonschema.Draft202012Validator(schema)
+
+    # T2-Runde 1: C++ und Rust haben je einen `>= 100`-Riegel, dieses Bein
+    # hatte keinen. Mit geleerter Fixtureliste waere ein Lauf OHNE --abdeckung
+    # gruen durchgegangen — eine Pruefung, die nicht fehlschlagen kann.
+    lauf.wahr(f"Korpus hat Substanz (>= {MINDESTKORPUS} Fixtures)",
+              len(manifest["fixtures"]) >= MINDESTKORPUS,
+              f"{len(manifest['fixtures'])}")
+
     for eintrag in manifest["fixtures"]:
         pfad = FIXTURES / eintrag["datei"]
         if not pfad.exists():

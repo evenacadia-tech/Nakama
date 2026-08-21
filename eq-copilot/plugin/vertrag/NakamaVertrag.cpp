@@ -177,8 +177,85 @@ bool Verletzung::operator< (const Verletzung& a) const noexcept
 namespace
 {
 
-void pruefeTeilschema (const juce::var& knoten, const juce::String& pfad,
-                       juce::StringArray& fehler)
+/*  Welchen Werttyp verlangt ein Schluesselwort?
+
+    Die Ladepruefung sah bis T2-Runde 1 nur NAMEN. Gemessen: `"maxLength": 5.0`
+    wurde von Rust still verworfen (`as_u64()` auf einer Float-Zahl ist None)
+    und von C++ durchgesetzt - dieselbe Fehlerklasse wie ein unbekanntes
+    Schluesselwort, nur eine Ebene tiefer. Ein Werttyp, den die eine Engine
+    lesen kann und die andere nicht, laesst eine Einschraenkung auf einer Seite
+    verschwinden.
+*/
+enum class Werttyp { Beliebig, Text, Zahl, GanzzahlNichtNegativ, Objekt,
+                     ArrayNichtLeer, TextArray, Bool, TypAngabe };
+
+Werttyp erwarteterTyp (const juce::String& name)
+{
+    // `type` ist String ODER nicht-leeres Array von Strings. "beliebig" waere
+    // hier ein neues Divergenzloch: bei `"type": 5` laese diese Engine ueber
+    // toString() die Zeichenkette "5", die Rust-Engine bekaeme von as_str()
+    // ein None - zwei Engines, zwei Urteile.
+    if (name == "type")                       return Werttyp::TypAngabe;
+    // `const` ist bewusst beliebig: es vergleicht gegen einen Wert, und jeder
+    // JSON-Wert ist ein zulaessiges Vergleichsziel.
+    if (name == "const")                      return Werttyp::Beliebig;
+    if (name == "enum")                       return Werttyp::ArrayNichtLeer;
+    if (name == "required")                   return Werttyp::TextArray;
+    if (name == "properties" || name == "$defs" || name == "items") return Werttyp::Objekt;
+    if (name == "additionalProperties")       return Werttyp::Bool;
+    if (name == "maxProperties" || name == "minLength" || name == "maxLength"
+        || name == "minItems" || name == "maxItems")                return Werttyp::GanzzahlNichtNegativ;
+    if (name == "minimum" || name == "maximum"
+        || name == "exclusiveMinimum" || name == "exclusiveMaximum") return Werttyp::Zahl;
+    if (name == "pattern" || name == "$ref" || name == "x-nakama-discriminator") return Werttyp::Text;
+    if (name == "oneOf")                      return Werttyp::ArrayNichtLeer;
+    return Werttyp::Beliebig;
+}
+
+bool typPasst (Werttyp erwartet, const juce::var& wert)
+{
+    switch (erwartet)
+    {
+        case Werttyp::Beliebig:   return true;
+        case Werttyp::Text:       return wert.isString();
+        case Werttyp::Bool:       return wert.isBool();
+        case Werttyp::Objekt:     return wert.getDynamicObject() != nullptr;
+        case Werttyp::Zahl:       return wert.isInt() || wert.isInt64() || wert.isDouble();
+        case Werttyp::GanzzahlNichtNegativ:
+            // `5.0` ist hier bewusst KEINE Ganzzahl: JSON Schema erlaubt sie,
+            // aber die beiden Engines lesen sie verschieden. Wir verlangen die
+            // Form, ueber die sie sich nicht streiten koennen.
+            return (wert.isInt() || wert.isInt64()) && static_cast<juce::int64> (wert) >= 0;
+        case Werttyp::ArrayNichtLeer:
+            return wert.getArray() != nullptr && ! wert.getArray()->isEmpty();
+        case Werttyp::TypAngabe:
+            if (wert.isString())
+                return true;
+            if (auto* a = wert.getArray())
+            {
+                if (a->isEmpty())
+                    return false;
+                for (const auto& e : *a)
+                    if (! e.isString())
+                        return false;
+                return true;
+            }
+            return false;
+        case Werttyp::TextArray:
+            if (auto* a = wert.getArray())
+            {
+                for (const auto& e : *a)
+                    if (! e.isString())
+                        return false;
+                return true;
+            }
+            return false;
+    }
+    return true;
+}
+
+void pruefeTeilschema (const juce::var& wurzel, const juce::var& knoten,
+                       const juce::String& pfad, juce::StringArray& fehler)
 {
     auto* props = eigenschaften (knoten);
     if (props == nullptr)
@@ -188,7 +265,12 @@ void pruefeTeilschema (const juce::var& knoten, const juce::String& pfad,
     {
         const auto name = props->getName (i).toString();
         if (! istSchluesselwort (name) && ! istAnmerkung (name))
+        {
             fehler.add ("unbekanntes Schluesselwort " + pfad + "/" + name);
+            continue;
+        }
+        if (istSchluesselwort (name) && ! typPasst (erwarteterTyp (name), props->getValueAt (i)))
+            fehler.add ("falscher Werttyp fuer " + pfad + "/" + name);
     }
 
     if (hatEigenschaft (knoten, "pattern"))
@@ -200,32 +282,46 @@ void pruefeTeilschema (const juce::var& knoten, const juce::String& pfad,
         fehler.add ("oneOf ohne x-nakama-discriminator bei " + pfad);
 
     if (hatEigenschaft (knoten, "$ref"))
-        if (! hole (knoten, "$ref").toString().startsWith ("#/$defs/"))
-            fehler.add ("nicht-lokale Referenz bei " + pfad + ": "
-                        + hole (knoten, "$ref").toString());
+    {
+        const auto r = hole (knoten, "$ref").toString();
+        if (! r.startsWith ("#/$defs/"))
+        {
+            fehler.add ("nicht-lokale Referenz bei " + pfad + ": " + r);
+        }
+        else
+        {
+            // T2-Runde 1: bis hierher wurde nur das PRAEFIX geprueft. Ein
+            // haengender $ref liess `aufloesen()` auf den Originalknoten
+            // zurueckfallen - und damit blieb der ganze Teilbaum still
+            // UNGEPRUEFT. Das ist dieselbe Klasse wie ein uebergangenes
+            // Schluesselwort, nur schlimmer: es verschwindet nicht eine
+            // Einschraenkung, sondern jede des Zieles.
+            const auto name = r.substring (juce::String ("#/$defs/").length());
+            if (! hatEigenschaft (hole (wurzel, "$defs"), name))
+                fehler.add ("haengende Referenz bei " + pfad + ": " + r + " hat kein Ziel");
+        }
+    }
 
     if (hatEigenschaft (knoten, "additionalProperties"))
     {
         const auto a = hole (knoten, "additionalProperties");
-        if (! a.isBool())
-            fehler.add ("additionalProperties bei " + pfad + " ist kein bool");
-        else if (static_cast<bool> (a) && ! hatEigenschaft (knoten, "maxProperties"))
+        if (a.isBool() && static_cast<bool> (a) && ! hatEigenschaft (knoten, "maxProperties"))
             fehler.add ("additives Objekt " + pfad + " ohne maxProperties");
     }
 
     for (const auto* zweig : { "properties", "$defs" })
         if (auto* kinder = eigenschaften (hole (knoten, zweig)))
             for (int i = 0; i < kinder->size(); ++i)
-                pruefeTeilschema (kinder->getValueAt (i),
+                pruefeTeilschema (wurzel, kinder->getValueAt (i),
                                   pfad + "/" + zweig + "/" + kinder->getName (i).toString(),
                                   fehler);
 
     if (hatEigenschaft (knoten, "items"))
-        pruefeTeilschema (hole (knoten, "items"), pfad + "/items", fehler);
+        pruefeTeilschema (wurzel, hole (knoten, "items"), pfad + "/items", fehler);
 
     if (auto* zweige = hole (knoten, "oneOf").getArray())
         for (int i = 0; i < zweige->size(); ++i)
-            pruefeTeilschema ((*zweige)[i], pfad + "/oneOf/" + juce::String (i), fehler);
+            pruefeTeilschema (wurzel, (*zweige)[i], pfad + "/oneOf/" + juce::String (i), fehler);
 }
 
 } // namespace
@@ -233,7 +329,7 @@ void pruefeTeilschema (const juce::var& knoten, const juce::String& pfad,
 bool Schema::laden (const juce::var& wurzel, Schema& ziel, juce::String& fehler)
 {
     juce::StringArray f;
-    pruefeTeilschema (wurzel, "#", f);
+    pruefeTeilschema (wurzel, wurzel, "#", f);
     if (! f.isEmpty())
     {
         fehler = f.joinIntoString ("; ");

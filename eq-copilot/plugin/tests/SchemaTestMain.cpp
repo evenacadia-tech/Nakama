@@ -401,6 +401,31 @@ void fahreRiegelproben()
             && f.contains ("nicht-lokale"),
             "nicht-lokale Referenz bricht den Ladevorgang", f);
 
+    // --- T2-Runde 1 -------------------------------------------------------
+    // Beide Riegel schliessen dieselbe Klasse wie "unbekanntes Schluesselwort",
+    // nur eine Ebene tiefer: etwas im Schema, das eine Engine anders liest als
+    // die andere, ohne dass jemand es merkt.
+
+    pruefe (! Schema::laden (ausText (R"({"$ref":"#/$defs/gibtsnicht","$defs":{"a":{"type":"object"}}})"), s, f)
+            && f.contains ("haengende Referenz"),
+            "haengende Referenz bricht den Ladevorgang", f);
+
+    pruefe (! Schema::laden (ausText (R"({"type":"string","maxLength":5.0})"), s, f)
+            && f.contains ("Werttyp"),
+            "maxLength als Gleitkommazahl bricht den Ladevorgang", f);
+
+    pruefe (! Schema::laden (ausText (R"({"type":5})"), s, f)
+            && f.contains ("Werttyp"),
+            "type als Zahl bricht den Ladevorgang", f);
+
+    pruefe (! Schema::laden (ausText (R"({"type":"object","required":[5]})"), s, f)
+            && f.contains ("Werttyp"),
+            "required mit Nicht-String bricht den Ladevorgang", f);
+
+    pruefe (! Schema::laden (ausText (R"({"type":"object","x-nakama-discriminator":7,"oneOf":[{"type":"object"}]})"), s, f)
+            && f.contains ("Werttyp"),
+            "Discriminator als Zahl bricht den Ladevorgang", f);
+
     // Ein kleines, vollstaendiges Schema fuer die Verhaltensproben.
     const char* klein = R"({
       "x-nakama-discriminator": "type",

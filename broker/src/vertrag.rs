@@ -76,7 +76,7 @@ impl Schema {
     /// verschwaende eine spaeter ergaenzte Einschraenkung hier still.
     pub fn laden(wurzel: Value) -> Result<Schema, String> {
         let mut fehler = Vec::new();
-        pruefe_teilschema(&wurzel, "#", &mut fehler);
+        pruefe_teilschema(&wurzel, &wurzel, "#", &mut fehler);
         if fehler.is_empty() {
             Ok(Schema { wurzel })
         } else {
@@ -99,15 +99,59 @@ impl Schema {
 
 // ---------------------------------------------------------------- Ladepruefung
 
-fn pruefe_teilschema(knoten: &Value, pfad: &str, fehler: &mut Vec<String>) {
+/// Welchen Werttyp verlangt ein Schluesselwort?
+///
+/// Die Ladepruefung sah bis T2-Runde 1 nur NAMEN. Gemessen: `"maxLength": 5.0`
+/// wurde hier still verworfen (`as_u64()` auf einer Float-Zahl ist `None`) und
+/// von der C++-Engine durchgesetzt — dieselbe Fehlerklasse wie ein unbekanntes
+/// Schluesselwort, nur eine Ebene tiefer.
+fn werttyp_passt(name: &str, wert: &Value) -> bool {
+    match name {
+        // `type` ist String ODER nicht-leeres Array von Strings. "beliebig"
+        // waere hier ein neues Divergenzloch: bei `"type": 5` liest die
+        // C++-Engine ueber toString() die Zeichenkette "5", diese hier
+        // bekaeme von as_str() ein None — zwei Engines, zwei Urteile.
+        "type" => {
+            wert.is_string()
+                || wert
+                    .as_array()
+                    .is_some_and(|a| !a.is_empty() && a.iter().all(|e| e.is_string()))
+        }
+        // `const` ist bewusst beliebig: es vergleicht gegen einen Wert, und
+        // jeder JSON-Wert ist ein zulaessiges Vergleichsziel.
+        "const" => true,
+        "enum" | "oneOf" => wert.as_array().is_some_and(|a| !a.is_empty()),
+        "required" => wert
+            .as_array()
+            .is_some_and(|a| a.iter().all(|e| e.is_string())),
+        "properties" | "$defs" | "items" => wert.is_object(),
+        "additionalProperties" => wert.is_boolean(),
+        // `5.0` ist hier bewusst KEINE Ganzzahl: JSON Schema erlaubt sie, aber
+        // die beiden Engines lesen sie verschieden. Wir verlangen die Form,
+        // ueber die sie sich nicht streiten koennen.
+        "maxProperties" | "minLength" | "maxLength" | "minItems" | "maxItems" => {
+            wert.as_u64().is_some()
+        }
+        "minimum" | "maximum" | "exclusiveMinimum" | "exclusiveMaximum" => wert.is_number(),
+        "pattern" | "$ref" | "x-nakama-discriminator" => wert.is_string(),
+        _ => true,
+    }
+}
+
+fn pruefe_teilschema(wurzel: &Value, knoten: &Value, pfad: &str, fehler: &mut Vec<String>) {
     let Some(obj) = knoten.as_object() else { return };
 
     for (name, wert) in obj {
-        if SCHLUESSELWOERTER.contains(&name.as_str()) || ANMERKUNGEN.contains(&name.as_str()) {
+        if ANMERKUNGEN.contains(&name.as_str()) {
             continue;
         }
-        fehler.push(format!("unbekanntes Schluesselwort {pfad}/{name}"));
-        let _ = wert;
+        if !SCHLUESSELWOERTER.contains(&name.as_str()) {
+            fehler.push(format!("unbekanntes Schluesselwort {pfad}/{name}"));
+            continue;
+        }
+        if !werttyp_passt(name, wert) {
+            fehler.push(format!("falscher Werttyp fuer {pfad}/{name}"));
+        }
     }
 
     if let Some(m) = obj.get("pattern").and_then(|v| v.as_str()) {
@@ -121,12 +165,20 @@ fn pruefe_teilschema(knoten: &Value, pfad: &str, fehler: &mut Vec<String>) {
     if let Some(r) = obj.get("$ref").and_then(|v| v.as_str()) {
         if !r.starts_with("#/$defs/") {
             fehler.push(format!("nicht-lokale Referenz bei {pfad}: {r}"));
+        } else {
+            // T2-Runde 1: bis hierher wurde nur das PRAEFIX geprueft. Ein
+            // haengender $ref liess `aufloesen()` auf den Originalknoten
+            // zurueckfallen — und damit blieb der ganze Teilbaum still
+            // UNGEPRUEFT. Dieselbe Klasse wie ein uebergangenes
+            // Schluesselwort, nur schlimmer: es verschwindet nicht eine
+            // Einschraenkung, sondern jede des Zieles.
+            let name = &r["#/$defs/".len()..];
+            if wurzel.get("$defs").and_then(|d| d.get(name)).is_none() {
+                fehler.push(format!("haengende Referenz bei {pfad}: {r} hat kein Ziel"));
+            }
         }
     }
     if let Some(a) = obj.get("additionalProperties") {
-        if !a.is_boolean() {
-            fehler.push(format!("additionalProperties bei {pfad} ist kein bool"));
-        }
         if a.as_bool() == Some(true) && !obj.contains_key("maxProperties") {
             fehler.push(format!("additives Objekt {pfad} ohne maxProperties"));
         }
@@ -137,15 +189,15 @@ fn pruefe_teilschema(knoten: &Value, pfad: &str, fehler: &mut Vec<String>) {
             "properties" | "$defs" => {
                 if let Some(kinder) = wert.as_object() {
                     for (k, v) in kinder {
-                        pruefe_teilschema(v, &format!("{pfad}/{name}/{k}"), fehler);
+                        pruefe_teilschema(wurzel, v, &format!("{pfad}/{name}/{k}"), fehler);
                     }
                 }
             }
-            "items" => pruefe_teilschema(wert, &format!("{pfad}/items"), fehler),
+            "items" => pruefe_teilschema(wurzel, wert, &format!("{pfad}/items"), fehler),
             "oneOf" => {
                 if let Some(zweige) = wert.as_array() {
                     for (i, v) in zweige.iter().enumerate() {
-                        pruefe_teilschema(v, &format!("{pfad}/oneOf/{i}"), fehler);
+                        pruefe_teilschema(wurzel, v, &format!("{pfad}/oneOf/{i}"), fehler);
                     }
                 }
             }
@@ -478,6 +530,51 @@ mod tests {
     fn unbekanntes_schluesselwort_bricht_das_laden() {
         let f = Schema::laden(json!({ "type": "object", "multipleOf": 2 })).unwrap_err();
         assert!(f.contains("multipleOf"), "{f}");
+    }
+
+    // --- T2-Runde 1 -------------------------------------------------------
+    // Beide Riegel schliessen dieselbe Klasse wie "unbekanntes Schluesselwort",
+    // nur eine Ebene tiefer: etwas im Schema, das eine Engine anders liest als
+    // die andere, ohne dass jemand es merkt. Die C++-Gegenstuecke stehen in
+    // SchemaTestMain.cpp / fahreRiegelproben().
+
+    #[test]
+    fn haengende_referenz_bricht_das_laden() {
+        let f = Schema::laden(json!({
+            "$ref": "#/$defs/gibtsnicht",
+            "$defs": { "a": { "type": "object" } }
+        }))
+        .unwrap_err();
+        assert!(f.contains("haengende Referenz"), "{f}");
+    }
+
+    #[test]
+    fn maxlength_als_gleitkommazahl_bricht_das_laden() {
+        let f = Schema::laden(json!({ "type": "string", "maxLength": 5.0 })).unwrap_err();
+        assert!(f.contains("Werttyp"), "{f}");
+    }
+
+    #[test]
+    fn type_als_zahl_bricht_das_laden() {
+        let f = Schema::laden(json!({ "type": 5 })).unwrap_err();
+        assert!(f.contains("Werttyp"), "{f}");
+    }
+
+    #[test]
+    fn required_mit_nicht_string_bricht_das_laden() {
+        let f = Schema::laden(json!({ "type": "object", "required": [5] })).unwrap_err();
+        assert!(f.contains("Werttyp"), "{f}");
+    }
+
+    #[test]
+    fn discriminator_als_zahl_bricht_das_laden() {
+        let f = Schema::laden(json!({
+            "type": "object",
+            "x-nakama-discriminator": 7,
+            "oneOf": [{ "type": "object" }]
+        }))
+        .unwrap_err();
+        assert!(f.contains("Werttyp"), "{f}");
     }
 
     #[test]

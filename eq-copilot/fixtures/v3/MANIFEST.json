@@ -937,7 +937,7 @@
     {
       "datei": "ungueltig/konfidenz-ueber-maxproperties.json",
       "urteil": "ungueltig",
-      "warum": "dieselbe Grenze am zweiten additiven Objekt",
+      "warum": "dieselbe Grenze am zweiten additiven Objekt - konfidenz deklariert sechs Eigenschaften, also 6+8=14; drei stehen in der Grundform, zwoelf Zusaetze sind 15 und damit einer zu viel",
       "verletzungen": [
         {
           "instanz": "/konfidenz",

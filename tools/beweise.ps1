@@ -236,6 +236,18 @@ $kanon = @(
         AbPhase    = 'jetzt'
         Behauptung = 'Broker-Vertragstests gruen (Framing, Protokoll, Bindung, Aggregat, Server).'
     }
+    # --- Python-Beine des v3-Vertrags ---------------------------------------
+    #
+    # T2-Befund vom 21.08. (SONDE-005a, Runde 1): vier von zwoelf Behauptungen
+    # des Manifests liefen NUR von Hand - das Referenzbein und die drei
+    # Bytegleichheits-Riegel. Ausgerechnet die Bytegleichheit ist der Riegel,
+    # der gegen `core.autocrlf` auf dem Zweitrechner errichtet wurde; ein
+    # Riegel, den niemand faehrt, ist keiner.
+    [pscustomobject]@{ Kuerzel='A5'; Name='pruefe_v3_vertrag.py';   Art='python'; Argumente=@('--abdeckung'); AbPhase='jetzt'; Behauptung='Referenzbein (jsonschema, draft 2020-12): Schema haelt die Engine-Teilmenge ein, Textriegel deckt jede gemessene Kante, jedes Fixture wird wie im Manifest klassifiziert, jede Definition hat ein Negativfixture.' }
+    [pscustomobject]@{ Kuerzel='A6'; Name='erzeuge_bandgitter.py';  Art='python'; Argumente=@('--pruefen');   AbPhase='jetzt'; Behauptung='Beide Bandgitter sind bytegleich zur Neuerzeugung; 221 Baender, 64 Gruppen als exakte Partition.' }
+    [pscustomobject]@{ Kuerzel='A7'; Name='erzeuge_quantisierung.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='Quantisierungsvertrag bytegleich zur Neuerzeugung; Rundung, Saettigung und Nichtendliches als Testvektoren.' }
+    [pscustomobject]@{ Kuerzel='A8'; Name='erzeuge_v3_fixtures.py'; Art='python'; Argumente=@('--pruefen');   AbPhase='jetzt'; Behauptung='Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei.' }
+
     # --- geplant: laufen automatisch mit, sobald sie gebaut sind -------------
     [pscustomobject]@{ Kuerzel='B1'; Name='EqCopIdentityTest';       Art='plugin'; Argumente=@(); AbPhase='P0'; Behauptung='Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren.' }
     [pscustomobject]@{ Kuerzel='B2'; Name='EqCopStateMigrationTest'; Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='State-Schema 2 laedt reine Schema-1-Staende ohne Verlust.' }
@@ -474,6 +486,48 @@ foreach ($eintrag in $kanon) {
             continue
         }
         $lauf = Fuehre-Aus -Datei 'cargo' -Argumente $eintrag.Argumente
+    }
+    elseif ($eintrag.Art -eq 'python') {
+        $skript = Join-Path $Wurzel ('tools\eq-copilot\' + $eintrag.Name)
+        $argumente = @('-3.13', $skript) + $eintrag.Argumente
+        $zeile.Befehl = 'py -3.13 ' + (RelativZurWurzel $skript) + $(if ($eintrag.Argumente.Count -gt 0) { ' ' + ($eintrag.Argumente -join ' ') } else { '' })
+
+        if (-not (Get-Command py -ErrorAction SilentlyContinue)) {
+            $zeile.Symbol = '[FEHLT]'
+            $zeile.Status = 'py-Launcher nicht gefunden'
+            $fehlendeVoraussetzung++
+            $ergebnisse += $zeile
+            Write-Host ('[FEHLT] {0} - {1}' -f $zeile.Name, $zeile.Status) -ForegroundColor Yellow
+            continue
+        }
+        if (-not (Test-Path -LiteralPath $skript)) {
+            $zeile.Symbol = '[FEHLT]'
+            $zeile.Status = 'Skript nicht gefunden'
+            $fehlendeVoraussetzung++
+            $ergebnisse += $zeile
+            Write-Host ('[FEHLT] {0} - {1}' -f $zeile.Name, $zeile.Status) -ForegroundColor Yellow
+            continue
+        }
+
+        $lauf = Fuehre-Aus -Datei 'py' -Argumente $argumente
+
+        # Exit 3 heisst in diesen Skripten "Voraussetzung fehlt" (z. B. das
+        # Paket `jsonschema`), nicht "Behauptung widerlegt". Das ist ein
+        # Unterschied, den ein Beweismanifest nicht verwischen darf.
+        if ($lauf.ExitCode -eq 3) {
+            $zeile.Befehl   = $zeile.Befehl
+            $zeile.ExitCode = 3
+            $zeile.Sekunden = $lauf.Sekunden
+            $zeile.StdOut   = $lauf.StdOut
+            $zeile.StdErr   = $lauf.StdErr
+            $zeile.Gelaufen = $true
+            $zeile.Symbol   = '[FEHLT]'
+            $zeile.Status   = 'Voraussetzung fehlt (Exit 3)'
+            $fehlendeVoraussetzung++
+            $ergebnisse += $zeile
+            Write-Host ('[FEHLT] {0} - {1}' -f $zeile.Name, $zeile.Status) -ForegroundColor Yellow
+            continue
+        }
     }
     else {
         $exe = Pruefbinaer $eintrag.Name

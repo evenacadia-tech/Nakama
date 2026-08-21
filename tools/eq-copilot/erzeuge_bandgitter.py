@@ -239,12 +239,19 @@ def pruefe(fein: dict, grob: dict) -> Pruefer:
            FR * G ** ((2 * (fein["herkunft"]["x_max"] + 1) + 1) / (2 * B)) > OBEN_HZ)
 
     # Dezimalschreibweise darf nicht luegen.
-    p.wahr("dezimal liest exakt auf hex64 zurueck (Kanten)",
-           all(float(d) == aus_hex64(h)
-               for d, h in zip(fein["kanten_hz"]["dezimal"], fein["kanten_hz"]["hex64"])))
-    p.wahr("dezimal liest exakt auf hex64 zurueck (Mitten)",
-           all(float(d) == aus_hex64(h)
-               for d, h in zip(fein["mitten_hz"]["dezimal"], fein["mitten_hz"]["hex64"])))
+    #
+    # T2-Runde 1: hier stand ein blosses `zip(dezimal, hex64)`. `zip` kuerzt auf
+    # die kuerzere Liste, und fuer `dezimal` gab es keine Laengenpruefung — eine
+    # leere oder verkuerzte Dezimalspalte haette die Pruefung LEER-GRUEN gemacht.
+    # Die Laengen werden deshalb zuerst verglichen, und `strict=True` faengt den
+    # Fall auch dann, wenn jemand die Vergleichszeile spaeter umbaut.
+    for feld in ("kanten_hz", "mitten_hz"):
+        p.gleich(f"{feld}: dezimal und hex64 gleich lang",
+                 len(fein[feld]["dezimal"]), len(fein[feld]["hex64"]))
+        p.wahr(f"dezimal liest exakt auf hex64 zurueck ({feld})",
+               len(fein[feld]["dezimal"]) > 0
+               and all(float(d) == aus_hex64(h)
+                       for d, h in zip(fein[feld]["dezimal"], fein[feld]["hex64"], strict=True)))
 
     # --- grobes Gitter ---
     gruppen = grob["gruppen"]

@@ -4,6 +4,15 @@
   "zweck": "Entwurf §33.3 zaehlt 25 Nachrichtenfamilien auf. SONDE-005a definiert die 17, deren Datenmodell im Entwurf entschieden ist. Die uebrigen 8 tragen Nutzlasten aus spaeteren Phasen (Proposal, DSP-DTO, Experiment) — sie jetzt zu erfinden waere ein Vorgriff, den eine spaetere Phase teuer zuruecknehmen muesste (Bauaufteilung §6.2 'Kein Vorgriff').",
   "regel": "Ihre NAMEN sind trotzdem jetzt vergeben. Ein reservierter Discriminator wird vom v3-Parser ABGELEHNT (er steht nicht im oneOf des Schemas) und darf von keinem spaeteren Ticket fuer etwas anderes verwendet werden. Genau das ist der Vertragsanteil, der spaeter bricht, wenn man ihn heute offen laesst.",
   "pruefung": "pruefe_v3_vertrag.py prueft, dass sich reservierte und definierte Namen nicht ueberschneiden und dass die Summe 25 ergibt.",
+  "reservierte_felder": [
+    {
+      "name": "evidence_snapshot.ereignisse",
+      "eigentuemer": "SONDE-013 (P4)",
+      "grund": "Entwurf §33.2 zaehlt 'Ereignisse' als Inhalt des Evidenzsnapshots auf, aber der DynamicsEvent-Strom entsteht erst in §39.1 mit dem Dynamik- und Experimentkern. Ihn hier zu erfinden waere ein Vorgriff (Bauaufteilung §6.2). Der NAME ist trotzdem vergeben: `evidence_snapshot` ist strikt, ein Feld dieses Namens wird heute abgelehnt, und kein spaeteres Ticket darf ihn fuer etwas anderes verwenden."
+    }
+  ],
+  "hinweis_felder": "Dieselbe Regel wie fuer die Nachrichtennamen, eine Ebene tiefer: der Vertragsanteil, der spaeter bricht, wenn man ihn heute offen laesst, ist der NAME - nicht die Nutzlast.",
+
   "gesamt_erwartet": 25,
   "definiert": [
     "hello",

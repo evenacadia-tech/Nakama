@@ -539,9 +539,11 @@ UNGUELTIG: list[tuple] = [
      "additiv heisst begrenzt erweiterbar, nicht beliebig gross (§33.1)"),
 
     ("konfidenz-ueber-maxproperties", "evidence_snapshot",
-     [setze("konfidenz", f"zusatz_{i}", 0.5) for i in range(8)],
+     [setze("konfidenz", f"zusatz_{i}", 0.5) for i in range(12)],
      [v("/konfidenz", f"{S}/konfidenz/maxProperties", "maxProperties")],
-     "dieselbe Grenze am zweiten additiven Objekt"),
+     "dieselbe Grenze am zweiten additiven Objekt - konfidenz deklariert sechs "
+     "Eigenschaften, also 6+8=14; drei stehen in der Grundform, zwoelf Zusaetze "
+     "sind 15 und damit einer zu viel"),
 
     # --- Typen ------------------------------------------------------------
     ("sequence-als-string", "heartbeat", [setze("sequence", "91")],

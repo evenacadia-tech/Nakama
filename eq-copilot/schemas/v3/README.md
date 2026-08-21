@@ -32,6 +32,57 @@ Zweige, waehrend die beiden eigenen Engines ueber den Discriminator in genau
 Fehlerlisten sind nicht vergleichbar. Das steht hier, damit niemand spaeter
 versucht, sie doch gleichzuziehen.
 
+## Der Textriegel — die Stufe VOR dem Parser
+
+Seit T2-Runde 1 (21.08.) hat der Vertrag eine Stufe, die kein JSON-Schema
+ausdruecken kann: eine Pruefung des **Rohtexts**, bevor ihn ein Parser sieht.
+
+Der Anlass war gemessen, nicht befuerchtet. JUCEs `parseNumber`
+(`juce_JSON.cpp`) akkumuliert `intValue * 10 + digit` in einem `int64` **ohne
+Bereichspruefung** und nimmt fuehrende Nullen an. Konkret:
+
+| Eingabe | C++ (JUCE) | Rust (serde_json) | Python |
+|---|---|---|---|
+| `18446744073709552016` | liest **400** | 1.8446744e19 | exakt |
+| `091` | liest **91** | Parsefehler | Parsefehler |
+| `10000000000000000000` | ungueltig (Minimum) | gueltig | gueltig |
+
+Das ist kein Randfall der Fehlermeldung, sondern ein **umgeklappter Wert**:
+`sequence`, `state_revision`, `transport_epoch` und `base_revision` sind
+Monotonie- und Revisionsfelder.
+
+**Warum kein `maximum` je Feld:** der Wert ist beim Ankommen bereits
+verfaelscht. Ein `maximum: 400` wuerde auf der C++-Seite anstandslos passieren
+und auf der Rust-Seite fallen. Der einzige Ort, an dem alle drei Beine
+dasselbe sehen koennen, ist der Text.
+
+Sechs Regeln, jede gegen eine **gemessene** Abweichung:
+
+1. **Keine fuehrende Null** — RFC 8259 verbietet sie, JUCE nimmt sie an.
+2. **Ganzzahlen nur innerhalb ±(2^53−1)** — der exakt darstellbare Bereich
+   von binary64. Darueber verfaelscht JUCE still.
+3. **Gleitkommaliterale muessen endlich sein** — `1e400` ist es nicht.
+4. **Kein `\u0000`-Escape in einer Zeichenkette** — `juce::String` ist
+   nullterminiert und bricht dort im Parser ab, waehrend `serde_json` und
+   Python das Dokument annehmen.
+5. **Keine einsamen Surrogate** — hier lehnen *beide eigenen* Engines ab und
+   nur das Referenzbein nimmt an; die Regel zieht es nach.
+6. **Kein leerer Objektschluessel** — JUCE lehnt ihn im Parser ab; in einem
+   **additiven** Objekt (`zaehler`, `konfidenz`, `verteilung`) haette
+   `serde_json` ihn dagegen angenommen, weil `additionalProperties: true` ihn
+   nicht auffaengt.
+
+Dieselbe 31-Faelle-Tabelle steht in allen drei Beinen
+(`NakamaVertrag.cpp` · `broker/src/vertrag.rs` · `pruefe_v3_vertrag.py`).
+Der Riegel laeuft ueber **jedes** Fixture, nicht nur ueber die sieben, die an
+ihm fallen sollen — sonst waere seine zweite Haelfte („laesst alles andere
+durch") ungeprueft.
+
+Fixtures, die an dieser Stufe fallen, tragen im Manifest
+`textriegel_lehnt_ab: true` und **keine** Verletzungsmenge: sie erreichen das
+Schema nie, und eine erfundene Menge waere eine Luege ueber den Ort der
+Ablehnung.
+
 ## Die Engine-Teilmenge
 
 Beide eigenen Engines implementieren **genau** diese Schluesselwoerter:
@@ -57,6 +108,24 @@ wuerde das Referenzbein es durchsetzen und die beiden eigenen Engines wuerden
 es stillschweigend uebergehen — die Einschraenkung verschwaende auf zwei von
 drei Seiten, und nur ein Fixture, das zufaellig genau darauf zielt, haette es
 gefunden. So faellt es beim ersten Lauf auf.
+
+Seit T2-Runde 1 prueft der Ladelauf zwei Dinge mehr, beide aus demselben
+Grund und beide gegen einen gemessenen Fall:
+
+* **Der WERTTYP jedes Schluesselworts.** Bis dahin sah die Pruefung nur
+  Namen. Gemessen: `"maxLength": 5.0` wurde vom Rust-Bein still verworfen
+  (`as_u64()` auf einer Float-Zahl ist `None`) und vom C++-Bein durchgesetzt
+  (`static_cast<int>`) — dieselbe Fehlerklasse wie ein unbekanntes
+  Schluesselwort, nur eine Ebene tiefer. Laengen und Anzahlen muessen
+  **ganzzahlig und nicht negativ** sein, `type` ist String **oder**
+  nicht-leeres String-Array, `required` ein String-Array, `enum`/`oneOf`
+  nicht leer.
+* **Dass jedes `$ref` ein ZIEL hat.** Bis dahin wurde nur das Praefix
+  `#/$defs/` geprueft; `aufloesen()` fiel bei fehlendem Ziel auf den
+  Originalknoten zurueck, und damit blieb der ganze Teilbaum **still
+  ungeprueft**. Das ist dieselbe Klasse wie das `multipleOf`-Argument oben,
+  nur schlimmer: es verschwindet nicht *eine* Einschraenkung, sondern *jede*
+  des Zieles.
 
 ### `type`
 
@@ -162,8 +231,12 @@ Entwurf §33.1 verlangt beide Politiken und Contracttests dafuer.
   `verteilung`. Ohne `maxProperties` waere „erweiterbar" gleichbedeutend mit
   „beliebig gross" — ein unbegrenzter Eingang.
 
-`maxProperties` ist jeweils die Zahl der deklarierten Eigenschaften plus
-acht.
+`maxProperties` ist jeweils die Zahl der **deklarierten** Eigenschaften plus
+acht — also acht unbekannte Eigenschaften Luft, an jedem der drei Objekte
+gleich viel. T2-Runde 1 hat gemessen, dass `konfidenz` sich nicht daran hielt
+(6 deklariert, aber `maxProperties: 10` — das waren nur vier); das Schema ist
+nachgezogen, und `pruefe_v3_vertrag.py` rechnet die Regel jetzt nach, statt
+sie nur hier zu behaupten.
 
 ## Was hier NICHT gebaut ist
 
@@ -175,6 +248,9 @@ Damit niemand danach sucht:
 | FlatBuffers-`FeatureBatch`, `flatc`-Pinning, Codegen-Drift | `SONDE-005b` (S6) | Zweite Haelfte desselben Entwurfstickets, eigener Sessionschnitt. |
 | RFC-8785-Kanonisierung und `state_hash` | `SONDE-006` (S7) | Wird dort erstmals verbraucht. Die ES6-Zahlenserialisierung ist eine eigene Beweisflaeche und gehoert nicht als Anhaengsel hierher. |
 | Die 8 reservierten Nachrichtenfamilien | siehe `reservierte-nachrichten-v1.json` | Ihre Nutzlasten (Proposal, DSP-DTO, Experiment) sind erst ab P4 entschieden. |
+| `evidence_snapshot.ereignisse` | `SONDE-013` (P4, §39.1) | §33.2 zaehlt „Ereignisse" als Inhalt des Snapshots auf. Der `DynamicsEvent`-Strom entsteht aber erst mit dem Dynamik-/Experimentkern; ihn hier zu erfinden waere der Vorgriff, den Bauaufteilung §6.2 verbietet. Der **Feldname** ist in `reservierte-nachrichten-v1.json` verbrannt, damit ihn kein anderes Ticket belegt, und `additionalProperties: false` lehnt ihn heute ab. |
+| Die Domain-Objekte aus §34.1 | `SONDE-012` / `SONDE-014` | §65 nennt „v3-**Domain**-/JSON-/FlatBuffers-Schemas". Von den elf Kernobjekten aus §34.1 ist hier genau eines als Schema da (`probe_descriptor`), weil nur es ueber IPC laeuft. `Evidence`, `Passage`, `SourceIntent`, `Finding`, `AssistantStep` und `FeatureFrame` sind Store-/Domainobjekte; sie entstehen mit ihren Tickets. Der Sessionschnitt (`bauaufteilung-sonden.md` §3) gibt `SONDE-005a` ausdruecklich nur „v3-JSON-Schemas + Bandgitter + Fixtures". |
+| Der Herkunftstag `host\|local_ui\|remote_transaction\|state_restore` (§33.4) | `SONDE-006` (S7) | Er beschreibt, WOHER eine Parameteraenderung kam, und lebt im Plugin-State, nicht in einer IPC-Nachricht. |
 
 ## Schliessungsvorbehalt
 

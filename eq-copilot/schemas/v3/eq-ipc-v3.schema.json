@@ -226,7 +226,7 @@
       "type": "object",
       "required": ["metrics_version", "klasse"],
       "additionalProperties": true,
-      "maxProperties": 10,
+      "maxProperties": 14,
       "properties": {
         "metrics_version": { "type": "integer", "minimum": 1 },
         "klasse": { "enum": ["stark", "mittel", "schwach", "unbrauchbar"] },

@@ -301,8 +301,20 @@ def pruefe_schema(lauf: Lauf, schema: dict) -> None:
             muster.append(f"{pfad}: {teil['pattern']!r}")
         if "oneOf" in teil and "x-nakama-discriminator" not in teil:
             lauf.wahr(f"oneOf ohne Discriminator bei {pfad}", False)
-        if teil.get("additionalProperties") is True and "maxProperties" not in teil:
-            lauf.wahr(f"additives Objekt {pfad} ohne maxProperties", False)
+        if teil.get("additionalProperties") is True:
+            if "maxProperties" not in teil:
+                lauf.wahr(f"additives Objekt {pfad} ohne maxProperties", False)
+            else:
+                # T2-Runde 1: der README nannte die Regel "deklarierte
+                # Eigenschaften plus acht", das Schema hielt sie an einer von
+                # drei Stellen nicht ein (konfidenz: 6 deklariert, aber 10).
+                # Eine Regel, die nur im Fliesstext steht, wird irgendwann
+                # falsch - also steht sie jetzt hier und faellt, wenn jemand
+                # ein additives Objekt mit anderer Luft anlegt.
+                soll = len(teil.get("properties") or {}) + 8
+                lauf.wahr(f"maxProperties bei {pfad} ist deklarierte + 8",
+                          teil["maxProperties"] == soll,
+                          f"{teil['maxProperties']} statt {soll}")
         if "$ref" in teil and isinstance(teil["$ref"], str):
             if not teil["$ref"].startswith("#/$defs/"):
                 lauf.wahr(f"nicht-lokale Referenz bei {pfad}", False, teil["$ref"])

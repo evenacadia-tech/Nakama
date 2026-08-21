@@ -5,11 +5,18 @@ Der Fahrplan dieses Projekts. Eine Phase endet erst mit einer Abnahme in
 Phase: `CLAUDE-UX-UI-ARBEITSKERN.md` (Stufen 1–7); Hintergründe:
 `UX-UI-WISSENSBASIS-FUER-CLAUDE.md`.
 
-## Phase 0 — Designvertrag (HIER anfangen)
+> **Stand 2026-08-21, nach dem Designvertrag:** Der User gestaltet das finale
+> Design in **Figma**; seine Stände liegen in `assets/figma/` und sind die
+> Vorgabe („Figma ist Quelle; Repo setzt um"). Damit ändert sich der Plan:
+> Phase 0 ist erledigt, die Stufen, die eine eigene Stilsuche oder eine
+> Varianten-Befragung vorsahen, **entfallen** (sie bleiben unten stehen, als
+> Verlauf gekennzeichnet), und die Arbeit heißt jetzt **Übersetzen** —
+> Phase 1b. **HIER weiter: Phase 1b, Schritt Gen.**
 
-**Einstieg:** `/interview designvertrag` führen — noch nichts bauen.
-Danach die Assettruhe sichten und laut zusammenfassen, was dort liegt
-(oder dass sie noch leer ist und was hineingehört).
+## Phase 0 — Designvertrag ✓ (erledigt 2026-08-21)
+
+**Einstieg war:** `/interview designvertrag` führen — noch nichts bauen.
+Danach die Assettruhe sichten und laut zusammenfassen, was dort liegt.
 
 **Ergebnis:** `abnahmen/JJJJ-MM-TT-designvertrag.md` mit: wichtigster
 Nutzerjob, 1–3 Erfolgskriterien, 2–3 Gefühlsattributen (mit
@@ -18,19 +25,17 @@ Grenzen (Fenstergrößen, Skalierung), Grad der kreativen Autorenschaft.
 
 **Gate:** Ohne diese Abnahme blockt die Schleuse jeden Prototyp-Write.
 
-> **⚠ Stand 2026-08-21: diese Abnahme fehlt.** Es liegt keine
-> `abnahmen/*designvertrag*.md` vor; es gab nie ein `/interview designvertrag`.
-> Phase 0.5 und Phase 1 (Main) wurden **ohne sie** gearbeitet — zulässig, weil
-> beides in `werkzeug/` stattfand und nicht in `prototyp/`. Die Schleuse ist
-> damit weiterhin **zu** (geprüft: exit 2). Wer die erste Prototyp-Datei
-> anlegen will, holt Phase 0 vorher nach. Wer nur weiter Wireframes baut,
-> arbeitet in `werkzeug/` und ist nicht betroffen.
->
-> Was dabei bis heute fehlt und Phase 2 beurteilbar machen würde:
-> Erfolgskriterien, Gefühlsattribute, Antireferenzen, Grad der kreativen
-> Autorenschaft.
+> **✓ Erledigt 2026-08-21:** `abnahmen/2026-08-21-designvertrag.md`, aus dem
+> Kontext-Interview des Users (zwanzig Fragen, Wortlaut je Urteil). Die
+> Schleuse vor `prototyp/` ist damit **offen** (gemessen: Write und Bash
+> nach `prototyp/` exit 0, vorher exit 2). Von der Liste oben fehlen
+> **Erfolgskriterien und Gefühlsattribute in Worten** — das Interview hat
+> sie nicht gefragt, der User hat stattdessen Bilder geliefert. Sie stehen
+> im Vertrag als offen und werden beim User erfragt, wenn eine Abnahme sie
+> braucht; sie werden nicht aus dem Bild gelesen. Die Truhe ist gesichtet:
+> `assets/LIES-MICH.md`.
 
-## Phase 0.5 — Formfaktor und Größe (VOR jedem Wireframe)
+## Phase 0.5 — Formfaktor und Größe ✓ (erledigt 2026-08-20)
 
 Eine Anordnung ohne bekannte Fläche ist wertlos. Für alle drei Oberflächen
 zuerst festlegen: **Seitenverhältnis, Größe, und ob fest / in Stufen / frei
@@ -40,12 +45,15 @@ ziehbar.** Beurteilt wird ausschließlich bei **1:1** auf dem Zielbildschirm,
 Werkzeug: `werkzeug/formfaktor.html`. Es misst, ab welcher Größe Inhalt
 abgeschnitten wird, und zeigt den Preis in Prozent des Bildschirms.
 
-**Ergebnis:** drei abgenommene Formate. Tote Fläche gilt als Fehler.
-Hintergrund: `abnahmen/2026-08-20-korrektur-formfaktor-zuerst.md`.
+**Ergebnis:** drei abgenommene Formate — **Gen 760×430 · Probeeq 700×420 ·
+Suna 260×84** (`abnahmen/2026-08-20-groessen-alle-drei.md`). Tote Fläche
+gilt als Fehler. Hintergrund: `abnahmen/2026-08-20-korrektur-formfaktor-zuerst.md`.
+Die Figma-Stände vom 2026-08-21 sind auf genau diesen Maßen gezeichnet
+(vierfach exportiert, gemessen in `assets/figma/LIES-MICH.md`).
 
-## Phase 1 — Wireframes (Graustufen, keine Optik)
+## Phase 1 — Wireframes (Main ✓ · Editor und Kachel entfallen seit 2026-08-21)
 
-**Reihenfolge: Main zuerst** (dort steckt die eigentliche
+**Reihenfolge war: Main zuerst** (dort steckt die eigentliche
 Informationsarchitektur — der teuerste Fehler wird hier billig
 verhindert), dann Active-Editor, dann Passive-Kachel.
 
@@ -62,56 +70,97 @@ trägt jede Quelle · Aufteilung teilt den Überschuss · Vorhören markiert die
 betroffene Zeile · Zustände nach dem Ausnahme-Prinzip. Der Pflichtinhalt der
 Arbeitsfläche ist gelöst, aber **handwerklich** — dazu gibt es keine Abnahme
 und es wird keine geben (`abnahmen/2026-08-20-karte-alle-quellen.md`).
-Aktueller Entwurf: `werkzeug/zustaende.html`.
+Letzter Entwurf: `werkzeug/zustaende.html`. **Diese Abnahmen gelten weiter**
+— der Figma-Stand von Gen wird gegen sie gelesen (Phase 1b).
 
-Als Nächstes: **Active-Probe-Editor** (700×420), dann **Passive-Kachel**
-(260×84). Auftrag, Aufgabenliste-Entwurf, gemessene Klemme und die
-Stolperfallen stehen in **`docs/sondenplan.md`** — vor der ersten Zeile lesen.
+> **Entfallen seit 2026-08-21 — Editor und Kachel als eigener Entwurfsschritt.**
+> Der Figma-Stand von Probeeq zeigt die Anordnung (Bänder als Griffe auf der
+> Kurve, eine Bandzeile, Draft-Kasten, Statuszeile); sie wird nicht mehr hier
+> entworfen. Was aus dieser Phase bleibt und in Phase 1b gebraucht wird:
+> die **Messbank** `werkzeug/sonde-messung.html` (was der Inhalt auf 700×420
+> kostet — die Klemme gilt für den Stand genauso), der Auftrag und die
+> Stolperfallen in `docs/sondenplan.md`, und die **Aufgabenliste nach
+> Häufigkeit** als Prüfliste statt Vorbedingung: jedes Element des Stands
+> muss sagen, welchen Handgriff es bedient; ein Handgriff ohne Ort ist ein
+> offener Punkt für den User. Der Stand zu diesem Zeitpunkt: Schritt 2
+> (natürliche Höhen messen) war erledigt, **19 nachprüfbare Angaben, 10
+> davon falsch**, berichtigt in `docs/sondenplan.md`; Schritt 1
+> (Aufgabenliste) war Entwurf und nicht abgenommen — das bleibt so.
+>
+> **Was Main auf Wireframe-Ebene noch fehlt** (vollständige Liste mit
+> Belegstellen: `abnahmen/2026-08-21-codereview.md`): Begründung,
+> Alternativursachen und billigster nächster Beweisschritt am Befund; „keine
+> Änderung empfohlen" als Ergebnis; Suche/Pinning/Fokusgruppen; die
+> musikalischen Rollen; Name und Rolle einer Quelle in der Karte. Der
+> Gen-Stand zeigt davon Begründung (`LIKELY CAUSE`) und Beweisschritt
+> (`SMALLEST TEST`) und die Namen in der Karte; der Rest wandert als offene
+> Frage in Phase 1b.
 
-**Stand 2026-08-21 beim Editor:** Schritt 2 der Reihenfolge („natürliche Höhen
-messen, bevor irgendetwas angeordnet wird") ist **erledigt** —
-`werkzeug/sonde-messung.html` misst jeden Baustein und fünf Anordnungen real
-gebaut. Von **19 nachprüfbaren Angaben** in `docs/sondenplan.md` Abschnitt 4
-waren **10 falsch**; sie stehen dort berichtigt, mit dem alten Wert daneben.
-**Offen bleibt Schritt 1**: die Aufgabenliste nach Häufigkeit ist ein Entwurf
-und **nicht abgenommen**. Ohne sie kein Wireframe (`docs/DESIGN-GESETZE.md`,
-verbindliche Folge 1). Die Messung hat dem Entwurf eine dritte Frage
-hinzugefügt: *wer gibt bei Platzmangel nach — Kurve oder Bänder — und dürfen
-Global, Draft und Undo dauerhaft dastehen?*
+## Phase 1b — Figma-Stände übersetzen (HIER weiter, seit 2026-08-21)
 
-**Was Main auf Wireframe-Ebene noch fehlt** (kein Hindernis für die Sonden,
-aber vor Phase 2 zu klären): Begründung, Alternativursachen und billigster
-nächster Beweisschritt am Befund; „keine Änderung empfohlen" als Ergebnis;
-Suche/Pinning/Fokusgruppen; die musikalischen Rollen; Name und Rolle einer
-Quelle in der Karte. Vollständige Liste mit Belegstellen:
-`abnahmen/2026-08-21-codereview.md`.
+Je Stand ein lebendes Blatt in `prototyp/` (Schleuse offen), **1:1 auf der
+abgenommenen Größe**, aus dem Stand gebaut — nicht neu angeordnet, nicht
+„verbessert". Die erste Entscheidung davor, mit dem User: ein Blatt pro
+Oberfläche oder ein Blatt mit Tabs (`prototyp/LIES-MICH.md`).
 
-**Ergebnis:** drei abgenommene Wireframes. Was im Graubild nicht
-funktioniert, wird nicht mit Farbe gerettet.
+**Reihenfolge: Gen → Probeeq → Suna.** Gen zuerst, weil dort die Abnahmen
+vom 2026-08-20 liegen, gegen die der Stand gelesen werden muss; Suna zuletzt,
+weil noch kein Stand vorliegt.
 
-## Phase 2 — Visuelle Richtung (Stilprobe)
+**Je Stand, in dieser Folge:**
 
-**An EINER Oberfläche** (Active-Editor — die reichste vertraute
+1. **Lesen, nicht raten.** Den Stand Element für Element gegen
+   `docs/oberflaechen-spezifikation.md` und die Abnahmen halten. Drei Listen
+   entstehen: *deckt sich* · *weicht ab* (Stand sagt etwas anderes als eine
+   Abnahme — dem User vorlegen, nicht entscheiden) · *fehlt im Bild*
+   (Pflichtinhalt ohne Ort — offene Frage an den User). Für Gen ist der
+   Anfang gemacht: `Nakama Designausarbeitungen selfmade/LIES-MICH.md`.
+2. **Blatt bauen, 1:1.** Schrift, Abstände, Farben aus dem Stand (Export ist
+   4×, also durch vier). Demo-Daten realistisch und als Demo gekennzeichnet.
+   Playwright-Screenshot neben den Stand legen — erst wenn beides dasselbe
+   zeigt, ist der Schönfall übersetzt.
+3. **Zustände durchschaltbar.** Alle Zustände der Spezifikation als
+   Schalter im Bedien-Panel: Quelle frisch / veraltet / getrennt, Messung
+   läuft / unvollständig, degradiert, Draft da / weg, Vorhören gehalten,
+   angewandt, Bypass, Pairing, verbunden / getrennt. Jeder Zustand, den der
+   Stand nicht zeigt, wird aus seinen Zeichen abgeleitet und dem User als
+   Frage vorgelegt — eine je Runde.
+4. **Grenzfälle.** 16 Quellen (Belastungsprobe; Regelfall bleibt
+   einstellig), alles getrennt, acht aktive Bänder mit Dynamik, Bypass an,
+   vom Gen getrennt, Schutzbereich getroffen, langer Quellenname, 75 %-Stufe.
+   Was bei 16 bricht, trägt nicht — der Preis steht sichtbar auf dem Blatt.
+5. **Abnahme je Stand** in `abnahmen/`: was der User am Blatt beurteilt hat,
+   wörtlich. Ein neuer Figma-Stand danach ist neues User-Wort und beginnt bei 1.
+
+**Ergebnis:** drei übersetzte, je einzeln abgenommene Blätter — und eine
+Liste offener Fragen an Figma, statt eigener Antworten darauf.
+
+## Phase 2 — Visuelle Richtung (Stilprobe) — ENTFALLEN seit 2026-08-21
+
+> Die Richtung kommt aus Figma; es gibt keine Stilprobe und keine
+> Richtungs-Varianten mehr. Bleibt als Verlauf stehen.
+
+*War:* An EINER Oberfläche (Active-Editor — die reichste vertraute
 Konventionsfläche: EQ-Kurve, Regler, Werte) werden 2–3 Richtungs-
 Varianten NEBENEINANDER gebaut, jede mit benannter Hypothese („Variante A
-löst X besser, weil …"). Vorher `/interview richtung`.
+löst X besser, weil …"). Vorher `/interview richtung`. Ergebnis: eine
+abgenommene Richtung (+ was aus den Verlierern mitgenommen wird).
 
-**Ergebnis:** eine abgenommene Richtung (+ was aus den Verlierern
-mitgenommen wird).
-
-## Phase 3 — UI-System und Ausrollen
+## Phase 3 — UI-System und Ausrollen (Quelle ist jetzt Figma)
 
 Design-Tokens (Farb-/Typo-/Spacing-Rollen) und Kernkomponenten (Panel,
-Regler, Wertfeld, Kurvenfeld, Statuszeile, Befundkarte) aus der
-abgenommenen Richtung — dann auf alle drei Blätter anwenden.
-Editor-Panel in jedem Blatt: Tokens live verstellbar.
+Regler, Wertfeld, Kurvenfeld, Statuszeile, Befundkarte) — **aus den
+Figma-Ständen gelesen**, nicht aus einer hier abgenommenen Richtung — dann
+auf alle drei Blätter angewendet, damit die eine Identität auch im Code eine
+ist. Editor-Panel in jedem Blatt: Tokens live verstellbar.
 
-**Ergebnis:** drei gestaltete Blätter, je einzeln abgenommen.
+**Ergebnis:** drei gestaltete Blätter auf einem Tokensatz, je einzeln
+abgenommen.
 
 ## Phase 4 — Zustände und Bewegung
 
-Volle Zustandsmatrix je Blatt (Arbeitskern Schritt 3) sichtbar +
-durchschaltbar; Motion nur wo sie Zustand/Wirkung zeigt, Intensität
+Die Zustandsmatrix je Blatt entsteht bereits in Phase 1b, Schritt 3. Hier
+kommt dazu: Motion nur wo sie Zustand/Wirkung zeigt, Intensität
 proportional. Vorher `/interview zustaende`.
 
 **Ergebnis:** abgenommene Zustands- und Motion-Fassung.
@@ -130,3 +179,6 @@ Referenz bestehen.
 - `/interview` jederzeit zusätzlich, wenn eine User-Äußerung eine
   Richtungsänderung andeutet oder eine Vorstellung unklar ist — fragen
   ist billig, Fehlbau nicht.
+- Ein neuer Figma-Stand ersetzt den älteren: Datei datiert ablegen,
+  `assets/figma/LIES-MICH.md` nachziehen, Übersetzung bei Schritt 1 neu
+  beginnen. Das ist kein Rückschritt — „Ein Design entwickelt sich".

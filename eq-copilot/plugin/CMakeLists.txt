@@ -277,10 +277,27 @@ target_compile_definitions(EqCopHostContextTest PRIVATE
 target_link_libraries(EqCopHostContextTest PRIVATE juce::juce_core juce::juce_cryptography
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 
+# ── SONDE-005a: v3-Vertrag (Schemas, Bandgitter, Cross-Language-Fixtures) ──
+# Dritte Partei zwischen C++ und Rust: beide Engines messen gegen dasselbe
+# handgeschriebene eq-copilot/fixtures/v3/MANIFEST.json. Das Ziel linkt den
+# ECHTEN Quellpfad (plugin/vertrag/), keine Testkopie - ab SONDE-010 ist das
+# die Eingangspruefung des C++-IPC-Clients.
+juce_add_console_app(EqCopSchemaTest PRODUCT_NAME "eqcop-schematest")
+target_sources(EqCopSchemaTest PRIVATE
+    tests/SchemaTestMain.cpp
+    vertrag/NakamaVertrag.cpp
+)
+target_include_directories(EqCopSchemaTest PRIVATE vertrag)
+target_compile_definitions(EqCopSchemaTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopSchemaTest PRIVATE juce::juce_core
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
 # Die Quellen sind UTF-8 (deutsche UI-Texte). Ohne /utf-8 rät MSVC die
 # Codepage — Literale wie „Klavier-Bus“ hingen dann an der Systemlocale.
 foreach(ziel EqCopilot EqCopPipeProbe EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopAuxSpike EqCopAuxSpikeTest EqCopHostContextTest
+             EqCopSchemaTest
              EqCopHostProbe EqCopHostProbeTest)
     target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endforeach()

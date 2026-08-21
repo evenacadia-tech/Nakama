@@ -132,6 +132,24 @@ Die Menge wird kanonisch sortiert (`instanz`, dann `schema`, dann
 abhaengt. Beide Engines melden **alle** Verletzungen des gewaehlten Zweiges,
 nicht nur die erste.
 
+## Eine gemessene Abweichung zwischen den Beinen
+
+Der Korpus hat sie gefunden, und sie bleibt hier stehen, statt weggeraeumt zu
+werden:
+
+**Ein JSON-Dokument, dessen Wurzel weder Objekt noch Array ist** — etwa der
+blosse String `"heartbeat"` — wird von den drei Beinen an verschiedenen
+Stellen abgelehnt. `juce::JSON::parse` folgt RFC 4627 (2006) und verlangt `{`
+oder `[` am Anfang; `serde_json` und Pythons `json` folgen RFC 8259 (2014) und
+nehmen jeden Wert als vollstaendiges Dokument an. Das C++-Bein lehnt also
+schon im **Parser** ab, die anderen beiden erst am **Schema**.
+
+Fuer das Produkt ist das kein Riss: beide Wege sind eine Ablehnung, und ein
+v3-Payload ist per Rahmen immer ein Objekt mit Discriminator. Vergleichbar
+sind aber nur die Urteile, nicht die Verletzungsmengen. Das Manifest
+kennzeichnet solche Fixtures mit `wurzel_skalar: true`, und das C++-Bein
+prueft dort ausdruecklich, dass der Parser zurueckweist.
+
 ## Additiv oder strikt
 
 Entwurf §33.1 verlangt beide Politiken und Contracttests dafuer.

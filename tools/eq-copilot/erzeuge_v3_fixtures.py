@@ -824,7 +824,12 @@ UNGUELTIG: list[tuple] = [
 
     ("wurzel-ist-string", "heartbeat", [("ersetze", [], "heartbeat")],
      [v("", "#/oneOf", "oneOf")],
-     "ein blosser Typname ist keine Nachricht"),
+     "ein blosser Typname ist keine Nachricht. ACHTUNG Skalar-Wurzel: JUCEs "
+     "JSON-Leser folgt RFC 4627 und verlangt { oder [ am Anfang, waehrend "
+     "serde_json und Python RFC 8259 folgen und jeden Wert als Dokument "
+     "annehmen. Beide Seiten LEHNEN AB, aber an verschiedenen Stellen - C++ "
+     "schon im Parser, Rust erst am Schema. Die Verletzungsmenge unten gilt "
+     "deshalb nur fuer die Beine mit RFC-8259-Parser."),
 ]
 
 
@@ -884,8 +889,15 @@ def baue() -> tuple[dict, dict[str, dict]]:
         for m in mutationen:
             daten = wende_an(daten, m)
         dateien[pfad] = daten
-        eintraege.append({"datei": pfad, "urteil": "ungueltig", "warum": warum,
-                          "verletzungen": kanonisch(verletzungen)})
+        eintrag = {"datei": pfad, "urteil": "ungueltig", "warum": warum,
+                   "verletzungen": kanonisch(verletzungen)}
+        # Ein Dokument, dessen Wurzel KEIN Objekt und kein Array ist. Der
+        # C++-Leser (JUCE, RFC 4627) lehnt es schon im Parser ab, statt eine
+        # Verletzungsmenge zu bilden - die Zeile sagt das, statt es zu
+        # verschweigen oder das Fixture zu entfernen.
+        if not isinstance(daten, (dict, list)):
+            eintrag["wurzel_skalar"] = True
+        eintraege.append(eintrag)
 
     eintraege.sort(key=lambda e: e["datei"])
 
@@ -897,6 +909,12 @@ def baue() -> tuple[dict, dict[str, dict]]:
                   "Manifest; stimmen beide mit ihm ueberein, stimmen sie transitiv "
                   "miteinander ueberein. Die Erwartungen sind von Hand geschrieben, nicht "
                   "aus einer Engine erzeugt — sonst waere der Vergleich zirkulaer."),
+        "wurzel_skalar": ("Markiert ein Fixture, dessen Wurzel weder Objekt noch Array "
+                          "ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im "
+                          "PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es "
+                          "erst am Schema ab. Beide Wege sind eine Ablehnung, nur an "
+                          "verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer "
+                          "die Beine mit RFC-8259-Parser."),
         "sortierung": ("Verletzungen sind kanonisch nach (instanz, schema, schluessel) "
                        "sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge "
                        "abhaengt."),

@@ -3,6 +3,7 @@
   "titel": "Cross-Language-Fixture-Korpus v3",
   "schema": "../../schemas/v3/eq-ipc-v3.schema.json",
   "zweck": "Die dritte Partei zwischen C++ und Rust. Beide messen gegen DIESES Manifest; stimmen beide mit ihm ueberein, stimmen sie transitiv miteinander ueberein. Die Erwartungen sind von Hand geschrieben, nicht aus einer Engine erzeugt — sonst waere der Vergleich zirkulaer.",
+  "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "anzahl_gueltig": 34,
   "anzahl_ungueltig": 97,
@@ -1367,14 +1368,15 @@
     {
       "datei": "ungueltig/wurzel-ist-string.json",
       "urteil": "ungueltig",
-      "warum": "ein blosser Typname ist keine Nachricht",
+      "warum": "ein blosser Typname ist keine Nachricht. ACHTUNG Skalar-Wurzel: JUCEs JSON-Leser folgt RFC 4627 und verlangt { oder [ am Anfang, waehrend serde_json und Python RFC 8259 folgen und jeden Wert als Dokument annehmen. Beide Seiten LEHNEN AB, aber an verschiedenen Stellen - C++ schon im Parser, Rust erst am Schema. Die Verletzungsmenge unten gilt deshalb nur fuer die Beine mit RFC-8259-Parser.",
       "verletzungen": [
         {
           "instanz": "",
           "schema": "#/oneOf",
           "schluessel": "oneOf"
         }
-      ]
+      ],
+      "wurzel_skalar": true
     },
     {
       "datei": "ungueltig/zaehler-ohne-pflichtzaehler.json",

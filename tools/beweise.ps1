@@ -245,6 +245,9 @@ $kanon = @(
     [pscustomobject]@{ Kuerzel='B3'; Name='EqCopHostContextTest';    Art='plugin'; Argumente=@(); AbPhase='P0'; Behauptung='Hostkontext (Anwesenheit, Parameterpunkte, Buslatenz) wird gemessen, nicht geraten; Quellhash-Gate des JUCE-Patches gruen.' }
     # S3b: das Termin-B-Messgeraet beweist sich selbst, BEVOR der User damit misst.
     [pscustomobject]@{ Kuerzel='B3b'; Name='EqCopHostProbeTest';     Art='plugin'; Argumente=@(); AbPhase='P0'; Behauptung='Termin-B-Messgeraet: Passthrough bitgleich, Sprung-/Automations-/Latenzmessung inkl. Fehlalarm-Riegel, Bericht-Rueckweg, 0 Allokationen.' }
+    # SONDE-005a: der v3-Vertrag. Das C++-Bein misst gegen dasselbe
+    # handgeschriebene MANIFEST wie contract_cross_language auf der Rust-Seite.
+    [pscustomobject]@{ Kuerzel='B3c'; Name='EqCopSchemaTest';         Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='v3-Vertrag: C++ klassifiziert den Fixture-Korpus wie das Manifest (Urteil UND Verletzungsmenge), Bandgitter und Quantisierung bitgleich.' }
     [pscustomobject]@{ Kuerzel='B4'; Name='EqCopQueueStressTest';    Art='plugin'; Argumente=@(); AbPhase='P2'; Behauptung='StampedAudioQueue haelt Blockgroessen-Stress ohne Allokation/Lock aus.' }
     [pscustomobject]@{ Kuerzel='B5'; Name='EqCopAnalysisGoldenTest'; Art='plugin'; Argumente=@(); AbPhase='P2'; Behauptung='FeatureEngine v2 haelt Zeit-, Validity-, Event- und Bandvertraege.' }
     [pscustomobject]@{ Kuerzel='B6'; Name='EqCopDspGoldenTest';      Art='plugin'; Argumente=@(); AbPhase='P6'; Behauptung='Aktiver DSP-Kern liefert die eingefrorene Referenzantwort.' }
@@ -386,11 +389,13 @@ if ($Bauen -and $cmakeBefehl) { $kopf['cmake'] = (Einzeilig $cmakeBefehl @('--ve
 # Vollstaendig halten: JEDE Quelle, aus der eine Pruefbinaerdatei entsteht.
 # Fehlt ein Ort, beglaubigt der Runner eine veraltete Messung als frisch -
 # genau der T2-Befund vom 20.08., nur eine Ebene tiefer. hostbridge/, spike/,
-# probe/, cmake/ und der JUCE-Bridge-Patch kamen mit SONDE-003/004a dazu.
+# probe/, cmake/ und der JUCE-Bridge-Patch kamen mit SONDE-003/004a dazu,
+# vertrag/ mit SONDE-005a.
 $quellOrte = @(
     (Join-Path $Wurzel 'eq-copilot\plugin\src'),
     (Join-Path $Wurzel 'eq-copilot\plugin\tests'),
     (Join-Path $Wurzel 'eq-copilot\plugin\hostbridge'),
+    (Join-Path $Wurzel 'eq-copilot\plugin\vertrag'),
     (Join-Path $Wurzel 'eq-copilot\plugin\hostprobe'),
     (Join-Path $Wurzel 'eq-copilot\plugin\spike'),
     (Join-Path $Wurzel 'eq-copilot\plugin\probe'),
@@ -601,7 +606,7 @@ else {
     $z.Add('|---|---|---|---|')
     foreach ($b in $baustand) { $z.Add("| ``$($b.Name)`` | $($b.Gebaut) | ``$($b.Hash)`` | $($b.Stand) |") }
     $z.Add('')
-    $z.Add("Neueste Quelldatei (``plugin/src``, ``tests``, ``hostbridge``, ``hostprobe``, ``spike``, ``probe``, ``cmake``, ``third_party/patches``, CMakeLists): **$(if ($neuesteQuelle) { $neuesteQuelle.ToString('yyyy-MM-dd HH:mm:ss') } else { 'nicht ermittelbar' })**. ``cargo test`` uebersetzt selbst und ist damit immer frisch.")
+    $z.Add("Neueste Quelldatei (``plugin/src``, ``tests``, ``hostbridge``, ``vertrag``, ``hostprobe``, ``spike``, ``probe``, ``cmake``, ``third_party/patches``, CMakeLists): **$(if ($neuesteQuelle) { $neuesteQuelle.ToString('yyyy-MM-dd HH:mm:ss') } else { 'nicht ermittelbar' })**. ``cargo test`` uebersetzt selbst und ist damit immer frisch.")
     if ($bauBestaetigt) {
         $z.Add('')
         $z.Add('Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar vor diesem Lauf erfolgreich gebaut, das Buildsystem hat die Abhaengigkeiten also selbst geprueft.')

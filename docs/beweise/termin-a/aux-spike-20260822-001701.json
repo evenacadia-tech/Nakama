@@ -1,0 +1,58 @@
+{
+  "werkzeug": "EqCopAuxSpike",
+  "zweck": "SONDE-004a - FL-Aux-/PDC-/Recall-Spike, Messgeraet fuer User-Termin A",
+  "zeit": "2026-08-22T00:17:01.590+02:00",
+  "host": "FruityLoops",
+  "wrapper": "VST3",
+  "samplerate": 44100.0,
+  "blockgroesse": 2048,
+  "samples_verarbeitet": 4429824,
+  "busse": [
+    {
+      "index": 0,
+      "name": "Main",
+      "aktiv": true,
+      "kanaele": 2,
+      "spitze_gesamt": 2.69989013671875,
+      "signal_angekommen": true,
+      "laute_samples": 30,
+      "laut_anteil": 3.386139042995839e-6,
+      "protokoll_eingehalten": true,
+      "impuls_sample": 3010082,
+      "impuls_spitze": 2.69989013671875,
+      "versatz_zu_main_samples": null,
+      "versatz_zu_main_ms": null,
+      "versatz_grund": "Bezugspunkt"
+    },
+    {
+      "index": 1,
+      "name": "priority_sidechain",
+      "aktiv": true,
+      "kanaele": 2,
+      "spitze_gesamt": 0.89996337890625,
+      "signal_angekommen": true,
+      "laute_samples": 30,
+      "laut_anteil": 3.386139042995839e-6,
+      "protokoll_eingehalten": true,
+      "impuls_sample": 3010082,
+      "impuls_spitze": 0.89996337890625,
+      "versatz_zu_main_samples": 0,
+      "versatz_zu_main_ms": 0.0
+    },
+    {
+      "index": 2,
+      "name": "compare_pre",
+      "aktiv": true,
+      "kanaele": 2,
+      "spitze_gesamt": 0.89996337890625,
+      "signal_angekommen": true,
+      "laute_samples": 30,
+      "laut_anteil": 3.386139042995839e-6,
+      "protokoll_eingehalten": true,
+      "impuls_sample": 3010082,
+      "impuls_spitze": 0.89996337890625,
+      "versatz_zu_main_samples": 0,
+      "versatz_zu_main_ms": 0.0
+    }
+  ]
+}

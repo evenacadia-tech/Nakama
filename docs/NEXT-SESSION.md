@@ -40,6 +40,27 @@
 - **Kanon:** 15 Beine in `tools/beweise.ps1`; letzter vollständiger Lauf siehe
   jüngstes Manifest in `docs/beweise/`.
 
+## ▶ Morgen zuerst (22.08., vereinbart beim Sessionende)
+
+1. **Termin B über den FL-MCP fahren.** Der User legt `EqCop-Host-Probe` auf
+   einen freien Insert (Signal drauf, Fenster offen, oben muss „Hostbrücke
+   liefert: JA" stehen) und zeichnet einen Automationsclip auf einen
+   Parameter — mehr Handarbeit ist nicht nötig. Claude fährt per MCP: Live,
+   Seek mit/ohne Stop, Schleife, Smart-Disable-Pause, Speichern; Render bleibt
+   ein User-Klick. Vorher im Fork `C:/Users/phili/Projekte/fl-studio-mcp`
+   (Zweig `evenacadia-local`) ein `fl_save_project` ergänzen (`FPT_Save`,
+   in den Stubs vorhanden) — mit Test wie bei den Routing-Tools. Der MCP
+   `fl-studio` ist seit 21.08. für diesen Workspace registriert
+   (`claude mcp list` → Connected); seine Werkzeuge sind ab Sessionstart da.
+2. **Klicklisten A und B nachziehen:** VST3 wird nur in
+   `C:/Program Files/Common Files/VST3` gescannt (Suchpfade gelten nur für
+   VST2 — die Zeile „kein Admin nötig" war falsch); Nebenwege als
+   „Sidechain to this track", nicht als Mixroute; Arbeitsteilung User/MCP.
+3. **Angebot offen beim User:** `C:/Program Files/Common Files/VST3/eq-copilot/`
+   (845 MB alte Repo-Kopie vom 13.08. mit zwei alten `EQ-Copilot.vst3`, die FL
+   mitscannt) wegräumen — braucht einen Admin-Klick.
+4. Danach S4 (Capabilityreport aus Termin A + B) → Gate G0 → S7.
+
 ## ▶ Der eine nächste Schritt (Technik): S7 — `SONDE-006`
 
 State-Schema 2, fester Parameterbestand, reine Schema-1-Migration; dort wird

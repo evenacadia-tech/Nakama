@@ -70,16 +70,57 @@ async function pruefeBlatt(browser, datei) {
     // Zweimal messen, nicht einmal hoffen: auf dem ersten Frame nach grossem
     // innerHTML stehen die Schriftmasse noch nicht (PRUEFLISTE 2.4).
     await page.waitForTimeout(900)
-    mass = await page.evaluate(() => ({
-      knoten: document.body.querySelectorAll('*').length,
-      text: (document.body.innerText || '').trim().length,
+    mass = await page.evaluate(() => {
       // Ein Blatt, das seinen Stand verschweigt, ist ein Blatt, das eine
       // entschiedene Frage wieder aufmacht (PRUEFLISTE 5.1).
-      standband: !!document.querySelector('body > div[style*="padding:7px 26px"]'),
-    }))
+      //
+      // Bis 2026-08-21 stand hier nur `!!document.querySelector(...)` — die
+      // reine EXISTENZ. In formfaktor.html lag das Standband dadurch
+      // vollstaendig unter dem fixen Warnband und dem Messschirm: 920
+      // Stichpunkte, 0 sichtbar, und die Pruefung meldete "heil". Ein
+      // Element, das da ist und niemand sieht, sagt nichts.
+      /* Das Standband wird ueber #standband gefunden, sonst ueber sein
+         GERECHNETES Polster. Der alte Weg war ein Zeichenketten-Vergleich im
+         style-Attribut — und der zerbrach, sobald irgendein Skript eine
+         Eigenschaft am selben Element setzte: der Browser serialisiert das
+         Attribut dann neu und schreibt "padding: 7px 26px" mit Leerzeichen.
+         Gemessen am 2026-08-21 an formfaktor.html, unmittelbar nachdem dort
+         ein margin-top gesetzt wurde. Neue Blaetter tragen id="standband". */
+      const sb = document.querySelector('#standband')
+        || [...document.body.children].find(e =>
+             e.tagName === 'DIV' && getComputedStyle(e).padding === '7px 26px')
+      if (!sb) return { knoten: document.body.querySelectorAll('*').length,
+                        text: (document.body.innerText || '').trim().length,
+                        standband: false }
+      const r = sb.getBoundingClientRect()
+      let sichtbar = 0, geprueft = 0
+      const decker = {}
+      for (let y = r.top + 2; y < Math.min(r.bottom, innerHeight) - 2; y += 4)
+        for (let x = r.left + 8; x < Math.min(r.right, innerWidth) - 8; x += 40) {
+          geprueft++
+          const el = document.elementFromPoint(x, y)
+          if (el === sb || sb.contains(el)) sichtbar++
+          else { const k = el ? (el.id || (typeof el.className === 'string'
+                   ? el.className.split(' ')[0] : '') || el.tagName) : 'ausserhalb'
+                 decker[k] = (decker[k] || 0) + 1 }
+        }
+      return {
+        knoten: document.body.querySelectorAll('*').length,
+        text: (document.body.innerText || '').trim().length,
+        standband: true,
+        sbGeprueft: geprueft, sbSichtbar: sichtbar,
+        sbProzent: geprueft ? Math.round(sichtbar / geprueft * 100) : 0,
+        sbDecker: Object.entries(decker).sort((a, b) => b[1] - a[1])
+          .slice(0, 3).map(([k, n]) => `${k}×${n}`).join(', ')
+      }
+    })
     if (mass.knoten < 20) fehler.push(`leer: nur ${mass.knoten} Knoten im body`)
     if (mass.text < 40) fehler.push(`stumm: nur ${mass.text} Zeichen Text`)
     if (!mass.standband) fehler.push('kein Standband — das Blatt sagt nicht, was es ist')
+    else if (!mass.sbGeprueft) fehler.push('Standband hat keine Flaeche — nichts zu sehen')
+    else if (mass.sbProzent < 100)
+      fehler.push(`Standband nur zu ${mass.sbProzent} % sichtbar `
+        + `(${mass.sbSichtbar}/${mass.sbGeprueft} Stichpunkte), verdeckt von ${mass.sbDecker}`)
     mkdirSync(SHOTS, { recursive: true })
     await page.screenshot({ path: join(SHOTS, name.replace('.html', '.png')) })
   } catch (e) {
@@ -105,12 +146,21 @@ async function gegenprobe(browser) {
     const e = echt.indexOf('</div>', echt.indexOf('<div', a))
     return e < 0 ? null : echt.slice(0, a) + echt.slice(e + 6)
   })()
+  /* Der vierte Fall gehoert zum Sichtbarkeits-Riegel (2026-08-21): ein
+     Standband, das DA ist und trotzdem niemand sieht. Genau dieser Zustand
+     lief in formfaktor.html monatelang als "heil" durch, weil die Pruefung
+     nur die Existenz abfragte. Eine Gegenprobe, die den neuen Riegel nicht
+     abdeckt, laesst ihn unbewiesen. */
+  const verdeckt = echt.replace('</body>',
+    '<div style="position:fixed;inset:0;background:#000;z-index:9999"></div></body>')
   const faelle = {
     'syntax.html': echt.replace('<script>', '<script>\nconst x = ;\n'),   // tonlos tot
     'leer.html': '<!doctype html><html><body></body></html>',              // zeichnet nichts
     ...(ohneBand ? { 'ohneband.html': ohneBand } : {}),
+    ...(verdeckt !== echt ? { 'verdecktesband.html': verdeckt } : {}),
   }
   if (!ohneBand) console.log('WARNUNG: Standband-Fall nicht erzeugbar — Vorlage geaendert?')
+  if (verdeckt === echt) console.log('WARNUNG: Verdeckungsfall nicht erzeugbar — kein </body>?')
   let bestanden = 0
   for (const [n, inhalt] of Object.entries(faelle)) {
     writeFileSync(join(tmp, n), inhalt)
@@ -143,7 +193,8 @@ let kaputt = 0
 for (const d of dateien) {
   const r = await pruefeBlatt(browser, d)
   if (r.fehler.length) { kaputt++; console.log(`FAIL ${r.name}: ${r.fehler.join(' | ')}`) }
-  else console.log(`OK   ${r.name}  (${r.mass.knoten} Knoten, ${r.mass.text} Zeichen)`)
+  else console.log(`OK   ${r.name}  (${r.mass.knoten} Knoten, ${r.mass.text} Zeichen, `
+    + `Standband ${r.mass.sbSichtbar}/${r.mass.sbGeprueft} Stichpunkte sichtbar)`)
 }
 await browser.close()
 console.log(`\nERGEBNIS: ${dateien.length - kaputt}/${dateien.length} Blaetter heil`)

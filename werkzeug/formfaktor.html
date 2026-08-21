@@ -184,7 +184,7 @@ body{background:#1a1a1a;color:#dcdcdc;
 <body>
 <!-- Standband: was ist dieses Blatt? Werkzeug-Chrome, deutsch, liegt
      ausserhalb des beurteilten Blattes. Ergaenzt 2026-08-21. -->
-<div style="background:#3f3f3f;color:#f2f2f2;padding:7px 26px;font:12px/1.5 'Segoe UI',system-ui,sans-serif;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+<div id="standband" style="background:#3f3f3f;color:#f2f2f2;padding:7px 26px;font:12px/1.5 'Segoe UI',system-ui,sans-serif;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
   <b style="letter-spacing:.12em;font-size:10.5px;text-transform:uppercase;flex:none">Größen abgenommen — Blatt bleibt als Messgerät in Gebrauch</b>
   <span style="opacity:.92">Abgenommen 2026-08-20: Main <b>760×430</b> · Active-Probe <b>700×420</b> · Passive-Kachel <b>260×84</b> (abnahmen/2026-08-20-groessen-alle-drei.md). Die Überlaufmessung war in vier Punkten blind und ist seit <b>2026-08-21</b> repariert: rekursiv über alle Nachfahren, in <b>beide</b> Richtungen, auf <b>jedem</b> Fenster — auch Active-Probe und Kachel. Seit <b>2026-08-21</b> zeigt das Active-Probe-Fenster auch den <b>echten</b> Editor-Inhalt: 8 Slots × 12 Parameter, Kurve, Global, Draft, Undo, Statuszeile — dieselben Werte wie in <code>werkzeug/sonde-messung.html</code>. Die Passive-Kachel steht im <b>Grenzfall</b> (langer Name + Messposition + Hinweis), nicht im Schönfall. Was dieses Blatt <b>nicht</b> beantwortet: wie der Inhalt angeordnet gehört — das misst die Messbank.</span>
 </div>
@@ -766,7 +766,18 @@ function band(){
   kn.onclick = () => echt ? document.exitFullscreen()
                           : document.documentElement.requestFullscreen();
   b.appendChild(kn);
-  $('#schirm').style.top = b.offsetHeight + 'px';
+  /* Das Standband liegt im normalen Fluss ganz oben, #band ist fixed und
+     #schirm absolut mit inset:0. Bis 2026-08-21 reservierte diese Zeile nur
+     die Hoehe des Warnbands — das Standband lag darunter und war an
+     920 gemessenen Stichpunkten zu NULL Prozent sichtbar. Die Blattpruefung
+     sah es trotzdem, weil sie nur seine Existenz abfragte.
+     Jetzt wird es unter das fixe Warnband geschoben und der Bildschirm
+     beginnt unter BEIDEN. Das kostet den nachgestellten FL-Bildschirm rund
+     95 px Hoehe; die 1:1-Aussage bleibt unberuehrt, weil die Fenster in
+     festen Pixelmassen gezeichnet werden und nicht am Bildschirm haengen. */
+  const sb = $('#standband');
+  sb.style.marginTop = b.offsetHeight + 'px';
+  $('#schirm').style.top = (b.offsetHeight + sb.offsetHeight) + 'px';
 }
 
 /* Prueft jede Aufgabe in der aktuellen Fenstergroesse und misst, ob etwas

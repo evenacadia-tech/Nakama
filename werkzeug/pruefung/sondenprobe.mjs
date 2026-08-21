@@ -414,47 +414,87 @@ async function probeZustaende() {
         for (const slots of [8, 1])
           faelle.push({ bypass, verbunden, dynamik, slots })
 
-  let schief = 0
+  let schief = 0, geprueft = 0
   for (const f of faelle) {
-    const r = await page.evaluate(async w => {
+    const alle = await page.evaluate(async w => {
       Object.assign(window.WELT, w)
       window.zeichnen()
       await new Promise(a => requestAnimationFrame(() => requestAnimationFrame(a)))
-      const wf = document.querySelector('.anordnung[data-id="A"] .wf')
-      const draft = wf.querySelector('[data-baustein^="Draft vom Main"]')
-      const lebendeDraftGriffe = draft
-        ? [...draft.querySelectorAll('[data-griff]')].map(g => g.textContent.trim()) : []
-      const zellen = k => [...wf.querySelectorAll('.slotz .' + k)]
-        .map(c => c.textContent.trim())
-      const dynFelder = ['thr', 'rng', 'atk', 'hld', 'rel'].flatMap(zellen)
-      const eqFelder = ['typ', 'f', 'q'].flatMap(zellen)
-      return {
-        lebendeDraftGriffe,
-        dynLebendig: dynFelder.filter(t => t !== '—').length,
-        eqLebendig: eqFelder.filter(t => t !== '—').length,
-        zeilen: wf.querySelectorAll('.slotz').length
-      }
+      // Einheiten stehen ausschliesslich an WERTEN. Die Slot-Nummer im
+      // Streifenkopf ("● 1 HP") ist Identitaet und darf bleiben — deshalb ist
+      // das Kriterium Hz/kHz/dB/ms und nicht "enthaelt eine Ziffer".
+      const EINHEIT = /\b(Hz|kHz|dB|ms)\b/
+      return [...document.querySelectorAll('.anordnung')].map(an => {
+        const wf = an.querySelector('.wf')
+        const draft = wf.querySelector('[data-baustein^="Draft vom Main"]')
+        const roh = k => [...wf.querySelectorAll('.slotz .' + k)].map(c => c.textContent.trim())
+        const zellen = k => roh(k).filter(t => t !== '—')
+        // dy gehoert zu den DYNAMIK-Zellen: es ist der Schalter, an dem die
+        // fuenf anderen haengen. Steht er auf "dyn", waehrend seine fuenf
+        // Abhaengigen "—" zeigen, luegt die Zeile ueber sich selbst.
+        const dyn = ['dy', 'thr', 'rng', 'atk', 'hld', 'rel'].flatMap(zellen)
+        const eq  = ['typ', 'f', 'q', 'g', 'ch'].flatMap(zellen)
+        const streifen = [...wf.querySelectorAll('.sb, .sb1')]
+          .map(s => s.textContent.replace(/\s+/g, ' ').trim())
+          .filter(t => EINHEIT.test(t))
+        return {
+          id: an.dataset.id,
+          lebendeDraftGriffe: draft
+            ? [...draft.querySelectorAll('[data-griff]')].map(g => g.textContent.trim()) : [],
+          dyn, eq, streifen,
+          /* Wieviele Zellen es UEBERHAUPT gibt, tot oder lebendig. Ohne diese
+             Zahl verlangt die Gegenprobe nach unten Leben an Stellen, die es
+             formbedingt nicht gibt: B und C zeigen nur die sechs EQ-Werte und
+             haben gar keine Dynamikzelle. Gemessen, nicht angenommen. */
+          dynZellen: ['dy', 'thr', 'rng', 'atk', 'hld', 'rel'].flatMap(roh).length,
+          eqZellen:  ['typ', 'f', 'q', 'g', 'ch'].flatMap(roh).length,
+          // Eine Anordnung ohne Bandkasten (Fall E) zeigt bewusst keinen Slot.
+          hatBandliste: !!wf.querySelector('.bandliste'),
+          // Ein Slot wird in DREI Formen dargestellt — Zeile, dreizeiliger und
+          // einzeiliger Streifen. Nur ihre Summe sagt, ob acht Slots da sind.
+          darstellungen: wf.querySelectorAll('.slotz').length
+                       + wf.querySelectorAll('.sb').length
+                       + wf.querySelectorAll('.sb1').length
+        }
+      })
     }, f)
-    const wo = `bypass=${f.bypass} verbunden=${f.verbunden} dyn=${f.dynamik} slots=${f.slots}`
-    // 1. Ohne Main oder bei Bypass darf kein Draft-Griff mehr leben.
-    if ((f.bypass || !f.verbunden) && r.lebendeDraftGriffe.length) { schief++
-      sag(false, `${wo}: Draft-Griffe noch aktiv (${r.lebendeDraftGriffe.join(', ')})`) }
-    // 2. Bei Bypass ist JEDER Bandparameter tot.
-    if (f.bypass && (r.eqLebendig || r.dynLebendig)) { schief++
-      sag(false, `${wo}: ${r.eqLebendig} EQ- und ${r.dynLebendig} Dynamikwerte stehen noch da`) }
-    // 3. Ohne Dynamik sind die fuenf Dynamikwerte je Slot tot.
-    if (!f.dynamik && r.dynLebendig) { schief++
-      sag(false, `${wo}: ${r.dynLebendig} Dynamikwerte trotz abgeschalteter Dynamik`) }
-    // 4. Gegenprobe nach unten: im Schoenfall MUSS etwas leben, sonst prueft
-    //    diese Schleife nur, dass alles leer ist.
-    if (!f.bypass && f.dynamik && !r.dynLebendig) { schief++
-      sag(false, `${wo}: keine Dynamikwerte im Schoenfall — die Probe prueft ins Leere`) }
-    if (r.zeilen !== f.slots) { schief++
-      sag(false, `${wo}: ${r.zeilen} Bandzeilen statt ${f.slots}`) }
+    for (const r of alle) {
+      geprueft++
+      const wo = `${r.id} bypass=${f.bypass} verbunden=${f.verbunden} `
+               + `dyn=${f.dynamik} slots=${f.slots}`
+      const kurz = l => l.slice(0, 3).map(t => `"${t}"`).join(', ')
+      // 1. Ohne Main oder bei Bypass darf kein Draft-Griff mehr leben.
+      if ((f.bypass || !f.verbunden) && r.lebendeDraftGriffe.length) { schief++
+        sag(false, `${wo}: Draft-Griffe noch aktiv (${r.lebendeDraftGriffe.join(', ')})`) }
+      // 2. Bei Bypass ist JEDER Bandparameter tot — auch der dyn-Schalter und
+      //    auch die Werte in den Kontextstreifen. Genau hier war die alte
+      //    Fassung blind: sie las nur Fall A und darin nur .slotz.
+      if (f.bypass && (r.eq.length || r.dyn.length || r.streifen.length)) { schief++
+        sag(false, `${wo}: ${r.eq.length} EQ-, ${r.dyn.length} Dynamikwerte und `
+          + `${r.streifen.length} Streifen stehen noch da — `
+          + `${kurz([...r.eq, ...r.dyn, ...r.streifen])}`) }
+      // 3. Ohne Dynamik sind dyn-Schalter und die fuenf Dynamikwerte tot.
+      if (!f.dynamik && r.dyn.length) { schief++
+        sag(false, `${wo}: ${r.dyn.length} Dynamikwerte trotz abgeschalteter `
+          + `Dynamik — ${kurz(r.dyn)}`) }
+      // 4. Gegenprobe nach unten: im Schoenfall MUSS etwas leben, sonst prueft
+      //    diese Schleife nur, dass alles leer ist. Fall E hat bewusst keinen
+      //    Bandkasten und ist davon ausgenommen.
+      if (!f.bypass && f.dynamik && r.dynZellen > 0 && !r.dyn.length) { schief++
+        sag(false, `${wo}: keine der ${r.dynZellen} Dynamikzellen lebt im Schoenfall `
+          + '— die Probe prueft ins Leere') }
+      if (!f.bypass && r.eqZellen > 0 && !r.eq.length) { schief++
+        sag(false, `${wo}: keine der ${r.eqZellen} EQ-Zellen lebt im Schoenfall `
+          + '— die Probe prueft ins Leere') }
+      // 5. So viele Slot-Darstellungen wie Slots, egal in welcher Form.
+      const erwartet = r.hatBandliste ? f.slots : 0
+      if (r.darstellungen !== erwartet) { schief++
+        sag(false, `${wo}: ${r.darstellungen} Slot-Darstellungen statt ${erwartet}`) }
+    }
   }
   if (fehler.length) { schief++; sag(false, 'JS-Fehler: ' + fehler[0]) }
-  sag(schief === 0, `zustaende: ${faelle.length} Grenzfaelle durchgeschaltet — `
-    + `${schief} Abweichungen`)
+  sag(schief === 0, `zustaende: ${faelle.length} Grenzfaelle x ${geprueft / faelle.length} `
+    + `Anordnungen = ${geprueft} Prueflinge, alle Zellformen — ${schief} Abweichungen`)
   await ctx.close()
 }
 

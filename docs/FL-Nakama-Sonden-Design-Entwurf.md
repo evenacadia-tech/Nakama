@@ -3,7 +3,8 @@
 - **Stand:** 2026-08-20
 - **Status:** Technische Spezifikation mit ausführbarem Implementierungsphasenplan
 - **Gegenstand:** Funktions-, Interaktions-, System- und Technikdesign; bewusst ohne visuelle Gestaltung
-- **Bauentscheidung:** Noch nicht erteilt
+- **Bauentscheidung:** erteilt am 20.08.2026 (User: „okay dann fangen wir damit nächste session an"; Errata (a))
+- **Errata 21.08.2026:** der Block direkt unter dieser Liste hat Vorrang vor dem Rest des Dokuments
 - **Fassung 0.4 (20.08.2026):** Befunde des unabhängigen Prüfberichts
   ([`pruefbericht-sondenentwurf-2026-08-20.md`](pruefbericht-sondenentwurf-2026-08-20.md))
   eingearbeitet — Impersonation-Reihenfolge (§48.4/§66.2), CID-Ableitung
@@ -17,6 +18,178 @@
   **Produktentscheidung des Users vom 20.08.2026** in §0.3 — sie löst
   Prüfbericht-Befund A auf — und das **Arbeitsmodell Technik-voraus /
   Design-parallel** in §0.4.
+
+## Errata und Entscheide nach dem Kontext-Interview (21.08.2026)
+
+Dieser Block hat **Vorrang vor dem Rest des Dokuments**. Fassung 0.4 bleibt
+darunter unverändert stehen (kein Umschreiben — die Stellen sind hier benannt,
+nicht ausgetauscht); wo ein Absatz unten einem Punkt hier widerspricht, gilt
+dieser Block. Quelle der Entscheide ist das Register in
+[`CLAUDE.md`](../CLAUDE.md) (Datum + Wortlaut des Users) und das
+Kontext-Interview vom 21.08.2026. Kennzeichnung: **Entscheid** = User-Wort mit
+Datum · **Befund** = in der Session vom 21.08. gelesen oder gemessen ·
+**Vorschlag** = eigene Formulierung, nicht abgenommen.
+
+**(a) Bauentscheidung.** Entscheid 20.08.2026: „okay dann fangen wir damit
+nächste session an". Kopfzeile und §68 trugen bis zum 21.08. „noch nicht
+erteilt" — beide Stellen sind berichtigt (minimaler Edit, sonst unverändert).
+Befund: der Bau läuft seit S0 (20.08.); Manifeste in `beweise/`.
+
+**(b) Namen.** Entscheid 21.08.2026: „Nakama Gen = Main app · aktive sonde =
+Nakama Probeeq · passive sonde = Nakama Suna · Bundle = Nakama Studio"
+(Schreibweise „Probeeq" wie vom User getippt). Zuordnung zum Text:
+**Nakama Main → Nakama Gen** · **Passive Probe / „Nakama Probe" → Nakama Suna**
+· **Active Probe / „Nakama Active Probe" → Nakama Probeeq**. Die Namen
+„Nakama Main/Probe/Active Probe" (§3.1–3.3, §30, §31.1, §44.1, §53.5 u. a.)
+gelten als alte Arbeitstitel. Befund: Plugin-Codes `Eqcp`/`NkPr`/`NkAc` und
+die CIDs (§31.2, §53.5, `../eq-copilot/identity/plugin-identities-v1.json`)
+leiten sich aus Hersteller- und Plugin-Code ab, nicht aus Namen; die Bundle-
+und Produktnamen `EQ-Copilot.vst3`, „Nakama Probe.vst3", „Nakama Active
+Probe.vst3" (§53.5) sind durch den Entscheid überholt. Weil `bundle` und
+`produktname` im Identitätsmanifest eingefrorene Zeilen sind, ist die
+Umbenennung eine Identitätsänderung: **NAK-30**, kein Nebenbei-Refactor; bis
+dahin bleiben Code, Bundle, Pipes und Schemas bei `EqCop*`/`Eqcp`.
+
+**(c) §0.3 Produktarchitektur.** Entscheid 21.08.2026 zur Festlegung vom
+20.08.: „Meine Entscheidung, so gesagt" — die Trennung Master-Plugin
+konventionell / Prisma daneben gilt. **Aber** seit 21.08.: „Familie; Prisma nur
+Studie" · Prisma-Herkunft „Meine Idee" · Hörkompass „Alles nur Studie" ·
+„Glas/Licht raus; Profil nur Studie". Folge: alle Aussagen über die Prisma-App
+als Begleit-App, read-only-Spiegel oder Broker-Client ohne
+`control_capability` (§0.3 letzter Punkt, §0.4 Punkt 3 „zwei Design-Spuren",
+§3.5 zweiter Absatz, §30 Zeile „Prisma-App", §31.1 letzter Punkt, §35.1) sind
+**Studie, kein Bauziel** — kein Ticket, kein Client, kein Vokabular in der
+Plugin-UI. Der Hörkompass-Zielvertrag bindet nichts im Produkt;
+`geschmacksprofil.md` (§0.3) bindet nur die Studie. Beide liegen geparkt unter
+`../eq-copilot/design/prisma-studie/docs/`. Der Maßstab der Plugin-UI ist
+nicht mehr „Lesbarkeit (`geschmacksprofil.md`)", sondern der Figma-Stand des
+Users (siehe (h)).
+
+**(d) Probeeq ist ein EQ.** Entscheid 21.08.2026: „die active Probe fester Name :
+Nakama Probeeq ist ein vollwertiger hochwertiger EQ der mit Nakama
+kommuniziert. er kann von nakama direkt anweisungen umsetzen aber auch ganz
+normal manuell vom user benutzt werden". Folge: das Grundgesetz „berät nur"
+(§0.1 erster Absatz; `CLAUDE.md` Wahrheitskern) gilt für **Gen und Suna**;
+§0.1 „es gibt keine Parameterfernsteuerung und keinen eigenen hörbaren EQ"
+beschreibt den heutigen Code (EQ-Copilot 0.3.0), nicht das Ziel. Die
+§0.1-Forderung, der kanonische Produktplan müsse vorher erweitert werden, ist
+durch den Wahrheitskern in `CLAUDE.md` (21.08.) erledigt; Schemata,
+Audio-Sicherheitsregeln und Nulltest-Verträge bleiben Arbeit der Tickets
+(`SONDE-006`, `SONDE-015`–`017`; Gates §49.2 Nr. 1–5) — Befund, keine neue
+Regel. Die Recherche ist **Archiv** (Entscheid 21.08.: „Archiv") und liegt unter
+`archiv/`; wo der Text „kanonischer Produktplan" sagt (§0.1), ist heute
+`CLAUDE.md` gemeint. Befund: §30.1 definiert den **ersten** aktiven Kern (ohne
+lineare Phase, Sättigung, Limiting); ob „vollwertig, hochwertig" später mehr
+verlangt, ist nicht entschieden.
+
+**(e) KI-/Claude-Schicht.** Entscheid 21.08.2026: „Nein – raus aus dem
+Produkt". Der Advisor ist regelbasiert. Gestrichen sind alle Stellen, die einen
+Sprachadapter, ein Sprachmodell oder eine erklärende KI voraussetzen oder
+einhegen (per grep gefunden): §18 „Deterministik und KI" · §30 Zeile „KI" (die
+Zeile „Roh-Audio … nie an externe Modelle" bleibt als Verbot gültig) · §31.1
+„kennt … noch KI" · §34.2 „KI-Text" ·
+§42.1 Schlussabsatz · §42.4 „Sprachmodell-Ausfall" · §46.3 „KI-Grenze" (ganz) ·
+§46.4 dritter Punkt · §47.3 „Ein Sprachmodell darf …" · §47.7 „KI hat weder
+Policy- noch Toolautorität" · §48.4 „externe KI ist opt-in" · §49.2 Gate 2
+(ohne „KI") und **Gate 8 gegenstandslos** · §59 P5 letzter Punkt · §68 „oder
+KI". Der Satz „Ohne Modell bleibt der gesamte Workflow funktionsfähig" ist
+damit kein Fallback mehr, sondern der einzige Zustand. Befund, nicht erfasst:
+die lokalen Analysemodelle der Roadmap (§47.2 Strukturmodell, §47.5
+Ähnlichkeitssuche, §47.8 paarweises Präferenzmodell) sind keine
+Erklärschicht; Roadmap nach R4, nicht entschieden.
+
+**(f) Produktzahlen.** Entscheid 21.08.2026: „Hingenommen, passen aber". Status
+aller Zahlen unten: **„Startwert des Users, änderbar"**. Das ersetzt die drei
+Namen, die der Entwurf für dieselben Zahlen führt — „Verbindliche Entscheidung
+0.3" (§27), „Entscheidung 0.3" (§30), „Design-Startwerte" (§33.2),
+„verbindliches Startbudget" und „Hypothesen mit Abnahmetest" (§49.3).
+Betroffen: 1 Main + 16 sichtbare Sonden / Verträge bis 32 (§27, §30, §57) ·
+acht Band-Slots (§0.4, §44.2, §53.8) · ±12 dB manuell, ±3 dB Remote (§44.2) ·
+1,5 dB Standard, 3 dB Hard-Cap (§27, §42.3). Eine Änderung läuft versioniert
+mit Beleg, wie §27 letzter Absatz und §49.3 Schluss es ohnehin verlangen.
+Befund: die Obergrenze 32 steht bereits im v3-Vertrag (§53.9;
+`beweise/SONDE-005b.md` §7) — dort ist eine Änderung Versionierung, kein
+Edit. (`CLAUDE.md` Wahrheitskern nennt als Regelfall eine einstellige
+Quellenzahl — dort ohne Wortlaut, daher hier kein Entscheid.)
+
+**(g) UI-Sprache.** Entscheid 21.08.2026: „Englisch – mein Wort". §5 „Vier
+Bedienebenen" (Beobachten · Beraten · Vorhören · Anwenden) und alle deutschen
+UI-Beschriftungen dieses Entwurfs sind **Übersetzungsvorlagen, kein
+Produkttext**. Befund: der Figma-Stand Gen (21.08., laut Interview-Protokoll
+gesichtet) führt OBSERVE · ADVISE · AUDITION · APPLY; die Design-Abnahme vom 20.08.
+(`Nakama-Design/abnahmen/2026-08-20-vorhoeren-markierte-zeile.md`) führt den
+`AUDITION`-Reiter. Docs, Commits und Gespräch bleiben Deutsch.
+
+**(h) UI-Beschreibungen sind technische Annahmen.** Entscheid 21.08.2026: „das
+finale design wird aktuell in figma gemacht . alle 3 apps werden ein design
+haben mit der selben identität. alle alten sind alt. Ein Design entwickelt
+sich und ist nicht einfach da." · „Figma ist Quelle; Repo setzt um" · „Das ist
+ein Designprototyp keine technikanleitung, design passt sich am ende der
+funktion an." Folge: §0.4 Punkt 3 (drei Oberflächen samt Inhalt), §35.1 (drei
+Informationsdichten), §9 (Rollenliste) und die Kachel-Bedienung sind
+Annahmen des Entwurfs; die Oberfläche kommt aus Figma (User) über
+`Projekte\Nakama-Design`. §0.4 Punkt 2 gilt weiter, nur in dieser Richtung:
+Figma → Design-Repo → dieser Block. Gemessene Abweichungen zum Design-Stand
+20./21.08. (Befund, nichts davon hier entschieden):
+
+- **Main/Gen:** Abnahme 20.08. „Overview + Detail, eine Zeile je Quelle,
+  16 von 16" (`abnahmen/2026-08-20-karte-alle-quellen.md`,
+  `…-mechanik-main-overview-detail.md`); die drei Dichten aus §35.1
+  (Quellenliste · Heatmap · Detailansicht) haben dort keine Entsprechung als
+  drei Ansichten. Figma Gen (21.08., Interview-Protokoll): PROBE OVERVIEW als
+  Zeilen × neun Frequenzspalten plus ADVISOR (PRIORITY / LIKELY CAUSE /
+  SMALLEST TEST / LISTEN FOR / THEN).
+- **Rollen:** `Nakama-Design/docs/oberflaechen-spezifikation.md` führt
+  **fünf** (führt / trägt / begleitet / geschützt / bewusst verschmolzen), §9
+  **sieben** (zusätzlich Impuls, Raum). Welche Liste gilt: offen.
+- **Suna-Kachel:** §0.4 „Name, Verbindung, Frische; Bedienung läuft über
+  Main"; das Design-Werkzeug (`werkzeug/formfaktor.html`, 21.08.) zeigt Name ·
+  Rolle · Messposition · Frische · Warnung; die Kachel ist im Design-Repo
+  „nicht begonnen" (`docs/sondenplan.md`). Ob Name und Rolle an der Kachel
+  bedient werden: offen.
+- **Probeeq-Parameter:** der Editor-Entwurf des Users (21.08.,
+  `Nakama-Design/Nakama Designausarbeitungen selfmade/LIES-MICH.md` und
+  Interview-Protokoll) zeigt **12** sichtbare Parameter je Band (BAND · TYPE ·
+  FREQ · GAIN · Q · MODE | DYN · THRESH · RANGE · ATTACK · HOLD · RELEASE);
+  §53.8 definiert **13** je Slot — zusätzlich
+  `sidechain_source`; `enabled` erscheint im Figma-Stand als Griff-Zustand auf
+  der Kurve, nicht in der Zeile. **Offen: NAK-33**, hier nicht entschieden.
+- **Größen** (Entscheid 20.08., „so passt es 3 größen",
+  `abnahmen/2026-08-20-groessen-alle-drei.md`): Gen 760×430 · Probeeq 700×420
+  · Suna-Kachel 260×84. Stand bisher in keinem Technik-Dokument.
+
+**(i) §53.4, §65, §66.1 sind von der Realität überholt** (Befund, gelesen
+21.08.). Pfade real: `eq-copilot/identity/plugin-identities-v1.json` (nicht
+`plugin/identity/`) · `schemas/v3/eq-ipc-v3.schema.json` (nicht
+`eq-ipc-control`/`eq-domain`/`eq-experiment`) ·
+`schemas/v3/flatbuffers/nakama_telemetry_v1.fbs` (nicht `feature-batch.fbs`) ·
+`fixtures/v3/{gueltig,ungueltig}` (nicht `valid/invalid`) · generierter Code
+in `plugin/vertrag/generiert/` und `broker/src/generiert/` (nicht
+`generated/{cpp,rust}`) · Hostbrücke in `plugin/hostbridge/`;
+`broker/src/transport/` und `coordinator.rs` existieren nicht (Eigentümer
+`SONDE-010`/`011`). Die Verantwortungsgrenzen aus §53.4 Satz 1 bleiben; die
+Namen sind präzisiert, wie §53.4 es erlaubt. §65 `SONDE-001` „laufen im CI":
+es gibt **keine CI** — der Kanon ist `tools/beweise.ps1` mit **15 Beinen**
+(A1–A11, B1, B3, B3b, B3c; fünf geplant: B2, B4–B7). §66.1: von den sieben
+C++-Zielen sind zwei gebaut (`EqCopIdentityTest`, `EqCopHostContextTest`);
+zusätzlich gebaut und dort nicht genannt: `EqCopSchemaTest` (Kanon B3c),
+`EqCopHostProbeTest` (Kanon B3b, Wegwerfware `NkHp`), `EqCopAuxSpikeTest`
+(Wegwerfware `NkSp`, nicht im Kanon — NAK-37).
+
+**(j) Material-Kit-Front.** Entscheid 21.08.2026: „Nie abgenommen – bleibt
+Provisorium". Die heutige Front von EQ-Copilot 0.3.0 ist das Provisorium, an
+dem keine Arbeit mehr stattfindet; §0.4 „schlichte, ehrliche Bedien-UI" meint
+bis zur Figma-Übersetzung genau dieses Provisorium. Die Anzeige-Pflichten
+(§0.4 Punkt 1, §50.2) gelten für jede Fassung weiter. Vorschlag: die neuen
+Oberflächen (Suna-Kachel in `SONDE-007b`, Probeeq-Editor ab P6) nicht als
+zweites Provisorium bauen, sondern aus dem Figma-Stand über Nakama-Design.
+
+**(k) FL-Termine A/B.** Entscheid 21.08.2026: „Termine bald; bis dahin S7".
+Befund: beide Termine sind **noch nicht gelaufen** —
+`%APPDATA%\evenacadia\nakama\spike\` ist leer (gemessen 21.08.); S4
+(Capabilityreport) und Gate G0 warten; der Schließungsvorbehalt §65 für
+`SONDE-005` bleibt. Bis dahin baut die Technik S7 (`SONDE-006`, State-Schema 2),
+danach S8 (`SONDE-007a`).
 
 ---
 
@@ -72,8 +245,9 @@ Für den Ist-Stand gilt folgende Quellenhierarchie:
 
 - Quellcode und Tests sind die letzte Wahrheit; [`CLAUDE.md`](../CLAUDE.md) und
   [`plugin-wissen.md`](plugin-wissen.md) beschreiben den aktuellen Standalone-Broker;
-- [`FL-EQ-Copilot-Recherche.md`](../FL-EQ-Copilot-Recherche.md) und
-  [`NAKAMA-SPECTRAL-FIELD-BAUPLAN.md`](../eq-copilot/docs/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md)
+- [`FL-EQ-Copilot-Recherche.md`](archiv/FL-EQ-Copilot-Recherche.md) und
+  [`NAKAMA-SPECTRAL-FIELD-BAUPLAN.md`](archiv/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md)
+  (beide seit 21.08.2026 im Archiv, Errata (d))
   sind wertvolle historische Entwurfsquellen, enthalten aber noch Verweise auf die entfernte
   Tauri-Brokerarchitektur und sind dafür **keine** Codewahrheit;
 - [`BENCHMARK-STUDIE-RESO-SMARTEQ-PROQ.md`](../eq-copilot/docs/BENCHMARK-STUDIE-RESO-SMARTEQ-PROQ.md)
@@ -107,8 +281,9 @@ Der User hat am 20.08.2026 die Produktarchitektur ausdrücklich festgelegt:
   für die Sonden. Kein Teil des Sonden-Workflows setzt sie voraus; Main in
   FL bleibt die einzige vollständige tägliche Arbeitsfläche (§31.1).
 - Der **Hörkompass-Zielvertrag**
-  ([`visuelles-zielbild-hoerkompass.md`](visuelles-zielbild-hoerkompass.md)
-  — gesund = leeres Glas, Befund statt Musik, kein Dauer-Visualizer) **gilt
+  ([`visuelles-zielbild-hoerkompass.md`](../eq-copilot/design/prisma-studie/docs/visuelles-zielbild-hoerkompass.md)
+  — Studie, geparkt seit 21.08.2026, Errata (c); gesund = leeres Glas, Befund
+  statt Musik, kein Dauer-Visualizer) **gilt
   der Prisma-App**, nicht der Master-Plugin-UI. Damit ist der im
   Prüfbericht als Befund A beschriebene Konflikt zwischen Kernfunktion 1
   und dem Zielvertrag aufgelöst: Landkarte und Zielvertrag leben in zwei
@@ -3107,9 +3282,10 @@ einer bestimmten Patchnummer.
 - [`protokoll.rs`](../broker/src/protokoll.rs),
   [`lib.rs`](../broker/src/lib.rs) und
   [`server.rs`](../broker/src/server.rs) für das tatsächlich gebaute Brokerprotokoll.
-- [`FL-EQ-Copilot-Recherche.md`](../FL-EQ-Copilot-Recherche.md) und
-  [`NAKAMA-SPECTRAL-FIELD-BAUPLAN.md`](../eq-copilot/docs/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md)
-  nur als historische Entwurfsquellen; ihre Tauri-Brokerverweise sind überholt.
+- [`FL-EQ-Copilot-Recherche.md`](archiv/FL-EQ-Copilot-Recherche.md) und
+  [`NAKAMA-SPECTRAL-FIELD-BAUPLAN.md`](archiv/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md)
+  (Archiv seit 21.08.2026, Errata (d)) nur als historische Entwurfsquellen; ihre
+  Tauri-Brokerverweise sind überholt.
 
 ### 52.2 Plattformen, Formate und Persistenz
 
@@ -3899,7 +4075,8 @@ Implementierungswelle baut noch kein neues Produktverhalten; sie friert Kompatib
 entscheidet die Hostfähigkeiten, von denen ehrliche Zeit-, Automation-, Delta- und
 Sidechainaussagen abhängen.
 
-Die **Bauentscheidung bleibt organisatorisch noch nicht erteilt**. Wird sie erteilt, beginnt die
-Arbeit bei P0 und nicht bei UI, Active-DSP oder KI. Ein gescheiterter Hostspike stoppt nicht den
+Die **Bauentscheidung ist am 20.08.2026 erteilt** (User: „okay dann fangen wir damit nächste
+session an"; Errata (a)). Die Arbeit beginnt bei P0 und nicht bei UI oder Active-DSP (die
+KI-Schicht ist gestrichen, Errata (e)). Ein gescheiterter Hostspike stoppt nicht den
 passiven Kern, sondern aktiviert den bereits benannten Capabilityfallback. Dadurch bleibt die
 Lieferfolge sowohl technisch streng als auch schrittweise nutzbar.

@@ -1,17 +1,28 @@
 # Bauaufteilung Sondenkern — Sessions, Gates, adversariale Prüfung
 
-- **Stand:** 2026-08-20
-- **Gehört zu:** `docs/FL-Nakama-Sonden-Design-Entwurf.md` (Fassung 0.4, Codex)
-  und `docs/pruefbericht-sondenentwurf-2026-08-20.md`
+- **Stand:** 2026-08-21
+- **Gehört zu:** `docs/FL-Nakama-Sonden-Design-Entwurf.md` (Fassung 0.4 +
+  Errata-Block 21.08.2026 — der Block hat Vorrang) und
+  `docs/pruefbericht-sondenentwurf-2026-08-20.md`
 - **Was das hier ist:** wie *ich* den Plan bauen würde. Der Entwurf ordnet
   **Fähigkeitsgrenzen** (P0–P9), dieses Dokument ordnet **Arbeitscontainer**
-  (Sessions) und die Prüfung dazwischen. Der Entwurf bleibt unangetastet.
+  (Sessions) und die Prüfung dazwischen.
 - **Status:** **Bauentscheidung erteilt** (User, 20.08.2026: „okay dann fangen
   wir damit nächste session an"). Nächste Session startet bei **S0**.
 - **Nachgezogen 20.08. auf Entwurf 0.4:** Fassung 0.4 hat alle fünf Befunde des
   Prüfberichts eingearbeitet; NAK-19…23 sind geschlossen (`ab80522`). Phasen
   P0–P9 und die 19 Tickets sind unverändert — der Sessionplan unten trägt
   weiter. Zwei Vorlaufpunkte sind dadurch entfallen (§1.2/§1.3).
+- **Nachgezogen 21.08. nach dem Kontext-Interview:** Namen laut User (21.08.:
+  „Nakama Gen = Main app · aktive sonde = Nakama Probeeq · passive sonde =
+  Nakama Suna · Bundle = Nakama Studio") — **Main = Gen, Active Probe =
+  Probeeq, Passive Probe = Suna**; die alten Arbeitstitel stehen unten weiter,
+  wo sie Ticket- oder Entwurfsbezeichnungen sind. Berichtigt: §1.3
+  (Batch-Form war die Gegenposition zu Entwurf §33.1 und zum gebauten `.fbs`),
+  §1.2 (Hörkompass ist Studie), §3 S2/S5/S6 (T2-Stände aus den Manifesten,
+  kein Häkchen ohne PASS), §4 (S3b gezählt), §5 (Gate 8 gegenstandslos),
+  §6.4 (Eigentum des Entwurfs). Kanon: **15 Beine** (A11 `pruefe_v2_schemas.py`
+  neu am 21.08.).
 
 ---
 
@@ -73,6 +84,16 @@ Beglaubigung, wenn die Prüfbinaries älter sind als die Quellen; und die sieben
 neutrale Zeile „geplant (ab P?)" und laufen automatisch als Pflicht mit, sobald
 das jeweilige Ticket sie gebaut hat.
 
+**Stand 21.08.2026: 15 Beine laufen, 5 stehen als geplant.** Laufend: A1
+NullTest · A2 Golden · A3 Markierung · A4 `cargo test` · A5–A10 die sechs
+Python-Beine des v3-Vertrags (Referenzbein, drei Bytegleichheits-Riegel,
+`flatc`-Drift, FlatBuffers-Fixtures) · **A11 `pruefe_v2_schemas.py`** (neu
+21.08.: die fünf v2-Schemas waren bis dahin von keinem Bein gelesen) · B1
+Identität · B3 Hostkontext · B3b Host-Probe · B3c Schema. Geplant: B2
+StateMigration (P1), B4 QueueStress und B5 AnalysisGolden (P2), B6 DspGolden
+und B7 Transaction (P6). Nicht im Kanon, obwohl gebaut: `EqCopAuxSpikeTest`
+(41 Prüfungen, NAK-37).
+
 ### 1.2 ~~NAK-19~~ — erledigt, P3 ist nicht mehr blockiert
 
 Der Produktentscheid vom 20.08. (Entwurf §0.3) löst die Kollision auf: Der
@@ -82,13 +103,28 @@ Heatmap und Detailansicht sind dort legitime Dauerarbeitsflächen; ihr Maßstab
 ist Lesbarkeit, nicht „leeres Glas". **P3 kann ohne weitere Entscheidung
 gebaut werden.**
 
-### 1.3 ~~NAK-23a~~ — erledigt, aber die Festlegung bleibt gültig
+**Nachtrag 21.08.:** Der Hörkompass ist seit dem Kontext-Interview „Alles nur
+Studie" (User), die Prisma-App ist geparkt, kein Bauziel (Entwurf-Errata (c)).
+Die Kollision ist damit nicht nur aufgelöst, sondern gegenstandslos. Der
+Maßstab der Plugin-UI ist nicht mehr „Lesbarkeit" aus dem Geschmacksprofil,
+sondern der Figma-Stand des Users (Errata (h)); was P3 in Gen zeigt (Overview +
+Detail laut Design-Abnahme 20.08.), kommt von dort.
 
-Der widersprüchliche Bündelungssatz ist in 0.4 entfernt. Die Sachentscheidung
-für `SONDE-005` steht damit weiterhin: **1 Batch = N Frames EINER Quelle**,
-Bündelung nur auf dem Broker→Main-Weg über einen Wrapper. Grund: der
-Sonde→Broker-Weg hat Cap 2 mit replace-oldest — dort kann nie gebündelt
-werden; ein Schema, das es erlaubt, hätte ein totes Feld.
+### 1.3 ~~NAK-23a~~ — erledigt; Batch-Form berichtigt 21.08.
+
+Der widersprüchliche Bündelungssatz ist in 0.4 entfernt. **Bis zum 21.08.
+stand hier die Gegenposition** („1 Batch = N Frames EINER Quelle, Bündelung
+nur Broker→Main über einen Wrapper") als „Festlegung bleibt gültig" — das war
+falsch. Entwurf §33.1 (seit 0.4, Prüfbericht Befund D) und das gebaute
+`eq-copilot/schemas/v3/flatbuffers/nakama_telemetry_v1.fbs` sagen: **ein
+`FeatureBatch` ist eine Liste von `(source, frame)`-Einträgen mit höchstens
+EINEM aktuellen Frame je Quelle**; Sonde→Broker ist der Sonderfall mit genau
+einem Eintrag (Cap 2, replace-oldest, §53.9), nur Broker→Main bündelt die
+aktuellen Frames mehrerer Sonden in einem Write; **keine zweite
+Wrapper-Ebene**. Zwei Einträge mit derselben `instance_id` sind ungültig —
+Leserregel `quelle_doppelt` in beiden handgeschriebenen Lesern
+(`schemas/v3/flatbuffers/README.md`). Richtig an der alten Fassung war nur die
+Begründung, warum Sonde→Broker nie mehr als einen Frame trägt.
 
 ### 1.4 Neu aus Entwurf §0.4 — die Interims-UI ist ein Vertrag
 
@@ -99,10 +135,16 @@ Capability-Degradation · Konfliktauflösung · welche Aktion gerade NICHT aktiv
 ist.** Das wandert unten in die T1-Liste — es ist der Punkt, an dem eine
 Interims-UI sonst still einen nicht existierenden Zustand vortäuscht.
 
-Betroffen sind **drei** Oberflächen, nicht eine: Main (volle Arbeitsfläche),
-der Editor der Active Probe (lokal bedienbares EQ-Plugin, ab P6) und der
-Editor der Passive Probe (minimale Status-/Identitätskachel, null
-Hostparameter — kommt in `SONDE-007b` mit).
+Betroffen sind **drei** Oberflächen, nicht eine: Main (**Gen**, volle
+Arbeitsfläche), der Editor der Active Probe (**Probeeq**, vollwertiger EQ laut
+User 21.08., ab P6) und der Editor der Passive Probe (**Suna**-Kachel, null
+Hostparameter — kommt in `SONDE-007b` mit). Seit 21.08. gilt dazu: die
+Oberfläche kommt aus Figma (User) über `Projekte\Nakama-Design`; die Größen
+sind dort abgenommen (20.08.: Gen 760×430 · Probeeq 700×420 · Suna-Kachel
+260×84), die Suna-Kachel ist dort „nicht begonnen" (`docs/sondenplan.md`).
+Vorschlag (nicht abgenommen): `SONDE-007b` baut keine eigene
+Kachelgestaltung, sondern den Vertrag (Zustände, Pflichtinhalt) und nimmt die
+Gestaltung aus dem Figma-Stand — Entwurf-Errata (h)/(j).
 
 ---
 
@@ -212,7 +254,7 @@ Umfangswirkung).
 |---|---|---|---|
 | ~~S1~~ | `SONDE-004a` | ~~Wegwerf-Target mit zwei deklarierten Aux-Bussen + Impulsharness~~ — **erledigt 20.08.**, Selbsttest 41/41, Manifest `docs/beweise/SONDE-004a.md` | T1 ✅ |
 | — | — | **👤 User-Termin A (FL):** Aux-Layout, Kanalreihenfolge, Recall, PDC-Impulse | — |
-| ~~S2~~ | `SONDE-001` + `002` | ~~Identität einfrieren~~ — **gebaut 20.08.**: Manifest aus dem gebauten `moduleinfo.json`, `EqCopIdentityTest` (63 Prüfungen: reservierte CIDs nachgerechnet, VST2-Pfad negativ bewiesen, **Freeze auch an der CMake-Quelle**), Schema-1-Goldens für alle vier Rollen. Die `.flp`-Legacy-Fixture bleibt ausdrücklich offen (nur in FL erzeugbar → Termin B). | T1 ✅ · T2 Runde 1 = NEEDS_WORK, Runde 2 siehe `docs/beweise/SONDE-001-002.md` |
+| ~~S2~~ | `SONDE-001` + `002` | ~~Identität einfrieren~~ — **gebaut 20.08.**: Manifest aus dem gebauten `moduleinfo.json`, `EqCopIdentityTest` (63 Prüfungen: reservierte CIDs nachgerechnet, VST2-Pfad negativ bewiesen, **Freeze auch an der CMake-Quelle**), Schema-1-Goldens für alle vier Rollen. Die `.flp`-Legacy-Fixture bleibt ausdrücklich offen (nur in FL erzeugbar → Termin B). | T1 ✅ · T2 ✅ (Runde 1 und 2 NEEDS_WORK, **Runde 3 PASS** — `docs/beweise/SONDE-001-002.md` §5) |
 | ~~S3~~ | `SONDE-003` | ~~JUCE-Bridge-Patch: Context-Anwesenheit, Parameterpunkte, Buslatenz, Quellhash-Gate~~ — **gebaut 21.08.** (`1e91d54`): Patch mit neun Anker-genauen Stellen, Quellhash-Gate mit **allen drei Zweigen vorgeführt** (unberührt patcht + misst nach · gepatcht No-Op · fremd Bauabbruch), `EqCopHostContextTest` **91/91**, Kanon von 5/5 auf **6/6** gewachsen, `pluginval` Strenge 8 SUCCESS. Manifest `docs/beweise/SONDE-003.md`. **T2 brauchte drei Runden** — Runde 1 und 2 waren NEEDS_WORK und fanden je einen echten Vertragsbruch (der zweite eine Regression aus der ersten Nacharbeit); beide gefixt, beide Riegel nachweislich zum Fallen gebracht. | T1 ✅ · T2 ✅ |
 | ~~**S3b**~~ | — | ~~Nachtrag 21.08. — der Plan hat Termin B unterschätzt: eine Klickliste allein misst nichts.~~ — **gebaut 21.08.**: `EqCopHostProbe` (`NkHp`, Wegwerfware) ist das erste Ziel, das die Hostbrücke BENUTZT. Misst Context-Anwesenheit, Gültigkeitsbits (immer/manchmal/nie), Zeitsprünge für Seek·Loop·Smart Disable **mit Fehlalarm-Riegel**, Offline-Render, float/double, Presentation-Latency und samplegenaue Automation → JSON. Selbsttest **89/89**, `pluginval` Strenge 8 SUCCESS, Kanon von 6/6 auf **7/7**. Klickliste `eq-copilot/docs/FL-TERMIN-B-HOSTZEIT.md` (inkl. Legacy-`.flp`-Fixture aus §54 Punkt 2). Manifest `docs/beweise/SONDE-003b.md`. **T2 brauchte vier Runden** — Runde 1 fand einen Blocker (der Editor schnitt genau die Automationszeilen ab; ich hatte das Gerät nie gerendert), Runde 2 eine Prüfung, die nicht fehlschlagen konnte, Runde 3 einen Zähler, der Blöcke statt Änderungen zählte. Alle gefixt, jeder Riegel nachweislich zum Fallen gebracht. | T1 ✅ · T2 ✅ |
 | — | — | **👤 User-Termin B (FL):** Live/Stop/Seek/Loop-Straddle/Render/Smart Disable | — |
@@ -227,8 +269,8 @@ JUCE-Update neu bewiesen werden muss. Eigene Session, eigener Prüfer.
 
 | # | Ticket | Inhalt | Prüfung |
 |---|---|---|---|
-| ~~S5~~ | `SONDE-005a` | ~~v3-JSON-Schemas + Bandgitter + gültige/ungültige Fixtures~~ — **gebaut 21.08.**: `schemas/v3/` (17 der 25 Nachrichtenfamilien aus §33.3 definiert, 8 namentlich **reserviert** mit Eigentümerticket), beide Bandgitter als eingefrorene Zahlenfixture (221 + 64, IEC 61260-1 mit Halbschritt — von vier denkbaren Konventionen trifft nur diese die 221 aus §33.2), Quantisierungsvertrag mit 61 Vektoren, **131 Fixtures** mit handgeschriebenem Manifest, und **drei** Prüfbeine (`jsonschema`-Referenz · `EqCopSchemaTest` · `contract_cross_language`). Kanon von 7/7 auf **8/8** gewachsen, `pluginval` Strenge 8 SUCCESS. Manifest `docs/beweise/SONDE-005a.md`. Der Korpus fand drei echte Fehler (geschachtelter Discriminator, Nicht-Objekt-Wurzel, eine falsche handgeschriebene Erwartung) und eine dokumentierte Abweichung zwischen den Beinen (RFC 4627 vs. 8259). **Schließungsvorbehalt §65:** gilt bis S4 als *vorbereitet*, nicht *geschlossen*. | T1 ✅ · **T2 ✅** (zwei Runden, beide NEEDS_WORK: Runde 1 fand sechs Vertragsbrueche gegen den Plantext und einen gemessenen Cross-Language-Bruch am Zahlenbereich; Runde 2 fand, dass der daraufhin gebaute Riegel auf der C++-Seite denselben ueberlaufenden Leser befragte, gegen den er schuetzt. Alle 36 Befunde mit Quelle und Ausgang in `docs/beweise/SONDE-005a.md` §6) |
-| ~~S6~~ | `SONDE-005b` | ~~FlatBuffers (Feld-IDs!), gepinntes `flatc`, Codegen-Drift-Test~~ — **gebaut 21.08.**: `.fbs` mit explizitem `id` an jedem der 47 Felder, `flatc` auf einen **Commit** gepinnt (der Upstream fuehrt fuer 25.12.19 zwei Tags), Compiler/C++-Header/Rust-Crate aus derselben Quelle, **Drift 0** und beide Riegel beim Fallen vorgefuehrt. Zwei handgeschriebene Binaerleser gegen 40 Fixtures mit handgeschriebenem Manifest; ein Byte bringt beide mit demselben Pfad und derselben Regel zum Fallen. Kanon 12/12 -> **14/14**. Manifest `docs/beweise/SONDE-005b.md`. | T1 ✅ · T2 (Runde 3 zusammen mit der 005a-Nacharbeit) |
+| ~~S5~~ | `SONDE-005a` | ~~v3-JSON-Schemas + Bandgitter + gültige/ungültige Fixtures~~ — **gebaut 21.08.**: `schemas/v3/` (17 der 25 Nachrichtenfamilien aus §33.3 definiert, 8 namentlich **reserviert** mit Eigentümerticket), beide Bandgitter als eingefrorene Zahlenfixture (221 + 64, IEC 61260-1 mit Halbschritt — von vier denkbaren Konventionen trifft nur diese die 221 aus §33.2), Quantisierungsvertrag mit 61 Vektoren, **131 Fixtures** mit handgeschriebenem Manifest, und **drei** Prüfbeine (`jsonschema`-Referenz · `EqCopSchemaTest` · `contract_cross_language`). Kanon von 7/7 auf **8/8** gewachsen, `pluginval` Strenge 8 SUCCESS. Manifest `docs/beweise/SONDE-005a.md`. Der Korpus fand drei echte Fehler (geschachtelter Discriminator, Nicht-Objekt-Wurzel, eine falsche handgeschriebene Erwartung) und eine dokumentierte Abweichung zwischen den Beinen (RFC 4627 vs. 8259). **Schließungsvorbehalt §65:** gilt bis S4 als *vorbereitet*, nicht *geschlossen*. | T1 ✅ · **T2 offen** — kein PASS im Manifest. Runde 1 NEEDS_WORK (sechs Vertragsbrueche gegen den Plantext, ein gemessener Cross-Language-Bruch am Zahlenbereich), Runde 2 NEEDS_WORK (der daraufhin gebaute Riegel befragte auf der C++-Seite denselben ueberlaufenden Leser, gegen den er schuetzt), Runde 3 am 21.08. zusammen mit S6 NEEDS_WORK (`docs/beweise/SONDE-005b.md` §6). Alle Befunde nachgearbeitet (`SONDE-005a.md` §6, `SONDE-005b.md` §6.3); ein abschliessendes Pruefer-Urteil steht aus. Bis 21.08. stand hier „T2 ✅" — gegen VORLAGE-Regel „Haekchen erst NACH dem Lauf". |
+| ~~S6~~ | `SONDE-005b` | ~~FlatBuffers (Feld-IDs!), gepinntes `flatc`, Codegen-Drift-Test~~ — **gebaut 21.08.**: `.fbs` mit explizitem `id` an jedem der 47 Felder, `flatc` auf einen **Commit** gepinnt (der Upstream fuehrt fuer 25.12.19 zwei Tags), Compiler/C++-Header/Rust-Crate aus derselben Quelle, **Drift 0** und beide Riegel beim Fallen vorgefuehrt. Zwei handgeschriebene Binaerleser gegen 40 Fixtures mit handgeschriebenem Manifest; ein Byte bringt beide mit demselben Pfad und derselben Regel zum Fallen. Kanon 12/12 -> **14/14** (seit A11: 15). Manifest `docs/beweise/SONDE-005b.md`. | T1 ✅ · **T2 offen** — Runde 3 gelaufen 21.08., Urteil NEEDS_WORK (`SONDE-005b.md` §6.1): ein Byte-Mutations-Fuzz fand, dass der C++-Leser ungueltiges UTF-8 als gueltig nahm und der Prozess daran starb (Heap-Korruption), dazu NUL-Laengen, Puffer unter 8 Byte (Rust-Panic) und zehn weitere Befunde an Manifest, Riegeln und Pins; alle bestaetigten gefixt (§6.3), Binaerfixtures 40 → 47. Kein PASS eingetragen. |
 | S7 | `SONDE-006` | State-Schema 2, Parameterbestand, reine Schema-1-Migration | T1+T2 |
 | S8 | `SONDE-007a` | **Gemeinsamer Kern ohne `JucePlugin_*`-Konstanten** (NAK-23b) | T1+T2 |
 | S9 | `SONDE-007b` | Drei Ziele, Lifecycle-Klassifikation, Installer-Manifest | T1+T2 |
@@ -309,7 +351,7 @@ lohnt sich `/c-review` auf höchster Stufe wirklich.
 
 | Abschnitt | Bau-Sessions | Gates | User-Termine |
 |---|---:|---:|---:|
-| Vorlauf + P0 | 5 | 1 | 2 |
+| Vorlauf + P0 | 6 (S0–S4 + Nachtrag S3b) | 1 | 2 |
 | P1 | 5 | 1 | — |
 | P2 → **R0** | 8 | 1 | — |
 | P3 → **R1** | 2 | 1 | — |
@@ -319,15 +361,18 @@ lohnt sich `/c-review` auf höchster Stufe wirklich.
 | P7 → **R3** | 3 | 1 | — |
 | P8 | 2 | 1 | — |
 | P9 → **R4** | 2 | 1 | — |
-| **Gesamt** | **36** | **10** | **2** |
+| **Gesamt** | **37** | **10** | **2** |
 
-**Bis R2 (das erste wirklich nützliche Produkt): 26 Bau-Sessions + 6 Gates.**
-**Bis R4 (voller Sondenkern): 36 + 10 = 46 Sessions.**
+**Bis R2 (das erste wirklich nützliche Produkt): 27 Bau-Sessions + 6 Gates.**
+**Bis R4 (voller Sondenkern): 37 + 10 = 47 Sessions.**
 
 Das ist eine **Hypothese mit Nachmessung**, keine Schätzung, die ich
-verteidige. **Rekalibrierungspunkt nach G1:** Wenn P0+P1 statt 10 Sessions 15
+verteidige. **Rekalibrierungspunkt nach G1:** Wenn P0+P1 statt 11 Sessions 16
 gekostet haben, wird der Rest mit Faktor 1,5 fortgeschrieben und dieses
-Dokument korrigiert — nicht die Realität passend geredet.
+Dokument korrigiert — nicht die Realität passend geredet. (Bis 21.08. zählte
+die Tabelle 36 ohne den Nachtrag S3b; die erste Nachmessung ist damit schon
+da: P0 hat eine Session mehr gebraucht als geplant, weil eine Klickliste
+allein nichts misst.)
 
 ---
 
@@ -345,7 +390,13 @@ Aus Entwurf §49.2. Jeder T3-Prüfer bekommt die für seine Phase markierten als
 | 5 | Telemetrie steuert samplegenauen Gain / erzeugt hörbares Delta | G0, G2, G4, G8 |
 | 6 | Nicht vergleichbares Experiment bekommt ein starkes Siegerurteil | G4, G5 |
 | 7 | Standard-Insertprobe wird als exakter Summenbeitrag bezeichnet | G1, G3, G5 |
-| 8 | KI-Ausgabe ändert Zahlen, Ziel oder Aktion außerhalb des Proposals | G5, G7 |
+| 8 | ~~KI-Ausgabe ändert Zahlen, Ziel oder Aktion außerhalb des Proposals~~ — **gegenstandslos seit 21.08.** | ~~G5, G7~~ |
+
+**Nachtrag 21.08.:** Die KI-/Claude-Schicht ist aus dem Produkt (User: „Nein –
+raus aus dem Produkt"; Entwurf-Errata (e)). Gate 8 entfällt, Gate 2 gilt ohne
+den Teil „KI". G5 und G7 behalten ihre übrigen Gates (6, 7 bzw. 3, 4); der
+Bruchauftrag „falsche starke Ursachenbehauptung provozieren" an G5 bleibt —
+er zielte auf die deterministische Policy, nicht auf ein Modell.
 
 ---
 
@@ -358,8 +409,18 @@ Aus Entwurf §49.2. Jeder T3-Prüfer bekommt die für seine Phase markierten als
    ersetzt.
 3. **Beide Hälften im selben Änderungssatz.** Wer `save` baut, baut `load`.
    Wer `bind` baut, baut `unbind`. Ohne Ausnahme.
-4. **Fremde Dateien nicht anfassen.** Der Sondenentwurf gehört Codex;
-   Korrekturen daran gehen über NAK-Zeilen, nicht über Edits.
+4. **Fremde Dateien nicht anfassen.** Gemeint sind uncommittete Dateien
+   einer parallelen Session (`git status` zeigt sie) — nie editieren, eigene
+   Edits per Pathspec committen. **Berichtigt 21.08.:** bis dahin stand hier
+   „Der Sondenentwurf gehört Codex; Korrekturen daran gehen über NAK-Zeilen,
+   nicht über Edits." Das stimmte schon am 20.08. nicht mehr — Fassung 0.4
+   sind 217 geänderte Zeilen (184+/33−) in vier Commits derselben Claude-Session
+   (`ab80522`…`d5dacde`), Fassungen 0.1–0.3 stammen von Codex. Heute gilt:
+   **Der Entwurf gehört dem Repo.** Er trägt einen Errata-Block (21.08.), der
+   Vorrang hat; neue Entscheide kommen dorthin — nur mit Datum und Wortlaut
+   des Users — und Befunde als NAK-Zeile. Der Text unter dem Block wird nicht
+   umgeschrieben, damit die Prüfer-Regel „Gate-Text aus dem Entwurf, nicht
+   meine Zusammenfassung" (T2) einen stabilen Bezug behält.
 5. **Doku im selben Commit.** Wird eine Zähl- oder Bestandsaussage in
    `CLAUDE.md` / `plugin-wissen.md` unwahr, zieht sie mit.
 6. **Ein T3-Befund verschwindet nie still** — gefixt, oder NAK-Zeile, oder

@@ -1,0 +1,533 @@
+<!doctype html>
+<!-- PRISMA-STUDIE — User-Idee, geparkt (User 21.08.2026: „Familie; Prisma nur Studie“ · „Alles nur Studie“ · Herkunft: „Meine Idee“). Kein Produktteil, kein Bauplan, kein Vokabular für die Plugin-UI. Statusblatt: ../STATUS.md.  -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>NAKAMA · Prisma-Prototyp</title>
+<!--
+  Prisma-Prototyp: drehbares Prisma aus der vorgerenderten Cycles-CPU-
+  Drehsequenz (renders/dreh/fNNN.webp, 120° = Symmetrieperiode der drei
+  Flächen). Ziehen = Drehen (Trägheit), Loslassen = Einrasten auf eine
+  Fläche. Tasten 1/2/3 springen zu Tiefen/Mitten/Höhen, Pfeile drehen.
+  ?winkel=NN friert deterministisch ein · ?bilder=N (Framezahl) ·
+  ?ruhe=NN (Ruhelagen-Versatz in Sequenzgrad).
+  BEWUSST OHNE Daten-/Effektebene: die entsteht erst nach Ausarbeitung
+  mit dem User — kein Schritt zeigt erfundene Diagnosewerte.
+-->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: #06080c; color: #e8edf6;
+    font: 12px/1.5 "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+  header { position: fixed; top: 0; left: 0; right: 0; padding: 14px 20px;
+    display: flex; align-items: baseline; gap: 14px; z-index: 3;
+    letter-spacing: 2px; }
+  header .marke { color: #6d7789; font-size: 10px; }
+  header h1 { font-size: 13px; font-weight: 600; letter-spacing: 3px; }
+  #buehne { position: absolute; inset: 0; display: flex;
+    align-items: center; justify-content: center; cursor: grab;
+    touch-action: none; user-select: none; }
+  #buehne.zieht { cursor: grabbing; }
+  /* nie über Nativgröße skalieren — Hochskalieren las sich als
+     "Auflösung dreht runter"; die JS-Seite setzt zusätzlich max-width
+     auf die natürliche Framebreite. */
+  #bild { max-width: 96vw; max-height: 80vh; background: #000; }
+  #laden { position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 10px; z-index: 2;
+    background: #06080c; transition: opacity .4s; }
+  #laden.fertig { opacity: 0; pointer-events: none; }
+  #laden .balken { width: 220px; height: 2px; background: #1a2230; }
+  #laden .balken i { display: block; height: 100%; width: 0;
+    background: #7d96c0; }
+  #stand { position: fixed; bottom: 0; left: 0; right: 0; padding: 16px 20px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    z-index: 3; pointer-events: none; }
+  #baender { display: flex; gap: 26px; }
+  .band { letter-spacing: 3px; font-size: 11px; color: #3a4356;
+    transition: color .25s; }
+  .band.aktiv[data-band="0"] { color: #e8a34c; }   /* Tiefen — Amber  */
+  .band.aktiv[data-band="1"] { color: #d465b0; }   /* Mitten — Magenta */
+  .band.aktiv[data-band="2"] { color: #9fd3e8; }   /* Höhen — Eis     */
+  #hinweis { color: #6d7789; font-size: 10px; letter-spacing: 1.5px; }
+</style>
+</head>
+<body>
+<header><span class="marke">NAKAMA</span><h1>PRISMA-PROTOTYP</h1></header>
+
+<div id="buehne">
+  <canvas id="bild" width="800" height="500"></canvas>
+</div>
+
+<div id="laden">
+  <div>Drehsequenz lädt …</div>
+  <div class="balken"><i id="fortschritt"></i></div>
+</div>
+
+<div id="stand">
+  <div id="baender">
+    <span class="band" data-band="0">TIEFEN</span>
+    <span class="band" data-band="1">MITTEN</span>
+    <span class="band" data-band="2">HÖHEN</span>
+  </div>
+  <div id="hinweis">ZIEHEN = DREHEN · LOSLASSEN RASTET EIN · 1/2/3 WÄHLT DAS BAND · LEERTASTE HÄLT DIE MUSIK AN · SICHT-PROBE: P01-PERKOLATION IM GLASVOLUMEN (SONGSCHLEIFE)</div>
+  <div id="zaehler" style="color:#4a5468;font-size:10px;letter-spacing:1.5px;"></div>
+</div>
+
+<script>
+"use strict";
+const PARAMS = new URLSearchParams(location.search);
+const BILDER = parseInt(PARAMS.get("bilder") ?? "72", 10);
+// Ruhelage in Sequenzgrad: Frame 0 ist die Zwei-Flächen-Heldenpose
+// (Blender-Rotation 28°); flächenfrontal wäre Sequenzgrad 67 — die
+// Ruhelage sitzt leicht davor, damit die Kante Tiefe gibt.
+// 58.333333 = exakt Frame 35 — Beauty-Frame, Glas-Ebene und
+// Punkt-Projektion (gerendert bei Prisma-Rotation 28+58.333°) decken sich.
+const RUHE = parseFloat(PARAMS.get("ruhe") ?? "58.333333");
+const SCHRITT = 120 / BILDER;
+
+const leinwand = document.getElementById("bild");
+const stift = leinwand.getContext("2d");
+const buehne = document.getElementById("buehne");
+const ladeanzeige = document.getElementById("laden");
+const fortschritt = document.getElementById("fortschritt");
+const bandKnoten = [...document.querySelectorAll(".band")];
+
+// ---------------------------------------------------------------- Laden
+const rahmen = [];
+const glasEbene = new Image();                    // Sandwich-Deckel (Alpha = Maske)
+let geladen = 0;
+const LADE_GESAMT = BILDER + 1;
+function geladenEins() {
+  geladen++;
+  fortschritt.style.width = (geladen / LADE_GESAMT * 100) + "%";
+  if (geladen === LADE_GESAMT) start();
+}
+glasEbene.src = "renders/glas-ebene.png";
+glasEbene.onload = geladenEins;
+glasEbene.onerror = () => {
+  ladeanzeige.firstElementChild.textContent =
+    "glas-ebene.png fehlt — mit --nur-glas rendern.";
+};
+for (let i = 0; i < BILDER; i++) {
+  const b = new Image();
+  b.src = `renders/dreh/f${String(i).padStart(3, "0")}.webp`;
+  b.onload = geladenEins;
+  b.onerror = () => {
+    ladeanzeige.firstElementChild.textContent =
+      `Frame f${String(i).padStart(3, "0")}.webp fehlt — Drehsequenz erst rendern (--dreh ${BILDER}).`;
+  };
+  rahmen.push(b);
+}
+
+/* ── Songschleife + Energie (P01, identisch portiert — nicht neu erfunden) ── */
+const F_MIN = 20, F_MAX = 18000;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function smoothstep(e0, e1, v) {
+  const t = clamp((v - e0) / Math.max(1e-9, e1 - e0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+const gaussian = (t, c, w) => Math.exp(-0.5 * ((t - c) / w) ** 2);
+const tForFrequency = f => Math.log10(f / F_MIN) / Math.log10(F_MAX / F_MIN);
+const rausch = k => { const s = Math.sin(k * 12.9898 + 78.233) * 43758.5453; return s - Math.floor(s); };
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const SONG = { laenge: 30, bpm: 96 };
+function songLage(time) {
+  const lt = ((time % SONG.laenge) + SONG.laenge) % SONG.laenge;
+  const beat = Math.max(0, time) * SONG.bpm / 60;
+  const zaehlzeit = beat - Math.floor(beat);
+  const strophe = smoothstep(4.5, 7, lt) * (1 - smoothstep(13, 15.5, lt));
+  const chorus = smoothstep(13, 15.5, lt) * (1 - smoothstep(23, 25.5, lt));
+  const ausklang = smoothstep(23, 25.5, lt);
+  const intro = 1 - smoothstep(4.5, 7, lt);
+  const dichte = 0.25 * intro + 0.62 * strophe + 1.0 * chorus + 0.38 * ausklang;
+  const puls = reducedMotion ? 0.2 : 1;
+  const kick = Math.exp(-8 * zaehlzeit) * (0.35 + 0.65 * dichte) * puls;
+  const snare = (Math.floor(beat) % 2 === 1 ? Math.exp(-10 * zaehlzeit) : 0) * dichte * puls;
+  const achtel = beat * 2 - Math.floor(beat * 2);
+  const hat = Math.exp(-13 * achtel) * (0.15 + 0.85 * dichte) * puls;
+  const NOTEN = [41.2, 41.2, 49.0, 55.0, 41.2, 36.7, 49.0, 61.7];
+  const note = NOTEN[((Math.floor(beat) % 8) + 8) % 8];
+  const bassHalt = (0.55 + 0.45 * Math.exp(-2.5 * zaehlzeit)) * (0.35 + 0.65 * dichte);
+  return { lt, beat, zaehlzeit, dichte, chorus, kick, snare, hat, note, bassHalt };
+}
+function musikDb(t, lage) {
+  return lage.kick * 4.2 * gaussian(t, tForFrequency(52), 0.045)
+    + lage.bassHalt * (3.0 * gaussian(t, tForFrequency(lage.note), 0.05)
+                     + 1.2 * gaussian(t, tForFrequency(lage.note * 2), 0.045))
+    + lage.snare * (3.2 * gaussian(t, tForFrequency(190), 0.07)
+                  + 3.6 * gaussian(t, tForFrequency(4200), 0.20))
+    + lage.hat * 3.0 * smoothstep(0.70, 0.94, t)
+    + lage.chorus * 2.0 * gaussian(t, tForFrequency(760), 0.26)
+        * (0.75 + 0.25 * Math.sin((lage.lt + Math.floor(lage.beat / 48) * 30) * 2.3))
+    + (lage.dichte - 0.9) * 1.8
+    - 1.5 * lage.kick * lage.dichte * (1 - gaussian(t, tForFrequency(52), 0.06));
+}
+function baselineDb(t) {
+  const high = Math.max(0, (t - 0.82) / 0.18);
+  return -16.2 - 2.8 * t - 7.8 * t * t - 8.8 * Math.pow(high, 1.5)
+    + 1.7 * gaussian(t, 0.13, 0.11);
+}
+const energie01 = (t, lage) => clamp((baselineDb(t) + musikDb(t, lage) + 40) / 30, 0, 1);
+
+/* ── Kamera (bewiesen: pruefe-projektion.html — deckungsgleich mit Blender) ── */
+const KAM = (() => {
+  const W = 768, H = 1024, LENS = 65, SENSOR = 36;
+  const POS = [-1.65, -3.53, 0.95], ZIEL = [0, 0, 0.8];
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const kreuzP = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const norm = a => { const l = Math.hypot(...a); return [a[0] / l, a[1] / l, a[2] / l]; };
+  const f = norm(sub(ZIEL, POS));
+  const camZ = [-f[0], -f[1], -f[2]];
+  const camY = norm(sub([0, 0, 1], f.map(v => v * f[2])));
+  const camX = kreuzP(camY, camZ);
+  const F_PIX = LENS / SENSOR * Math.max(W, H);
+  return { W, H, POS, camX, camY, camZ, F_PIX, dot, sub };
+})();
+
+// Weltkoordinate -> Bildpixel (768x1024) + Perspektivmaß 1/(-zc)
+function projiziere(wx, wy, wz) {
+  const d = [wx - KAM.POS[0], wy - KAM.POS[1], wz - KAM.POS[2]];
+  const xc = KAM.dot(d, KAM.camX), yc = KAM.dot(d, KAM.camY), zc = KAM.dot(d, KAM.camZ);
+  const inv = 1 / (-zc);
+  return [KAM.W / 2 + KAM.F_PIX * xc * inv, KAM.H / 2 - KAM.F_PIX * yc * inv, inv];
+}
+
+/* ── Teilchen im Dreiecksvolumen (P01-DNA: emittieren, fallen, altern) ── */
+const MAX_T = reducedMotion ? 1800 : 5500;
+const tlx = new Float32Array(MAX_T), tly = new Float32Array(MAX_T), tlz = new Float32Array(MAX_T);
+const tvx = new Float32Array(MAX_T), tvy = new Float32Array(MAX_T), tvz = new Float32Array(MAX_T);
+const tAge = new Float32Array(MAX_T), tLife = new Float32Array(MAX_T);
+const tEng = new Float32Array(MAX_T), tGold = new Float32Array(MAX_T), tBand = new Float32Array(MAX_T);
+let lebendig = 0;
+let saat = 1;
+
+// Dreiecksquerschnitt (lokal, R=0.5, Ecken bei 90/210/330 Grad), Rand 0.05
+const ECKEN = [90, 210, 330].map(g => [0.5 * Math.cos(g * Math.PI / 180), 0.5 * Math.sin(g * Math.PI / 180)]);
+const SEITEN = ECKEN.map((a, i) => {
+  const b = ECKEN[(i + 1) % 3];
+  const nx = -(b[1] - a[1]), ny = b[0] - a[0];       // Innen-Normale (CCW)
+  const l = Math.hypot(nx, ny);
+  return { nx: nx / l, ny: ny / l, d: (nx * a[0] + ny * a[1]) / l };
+});
+function imDreieck(x, y, rand) {
+  for (const s of SEITEN) if (s.nx * x + s.ny * y - s.d < rand) return false;
+  return true;
+}
+// Frequenzachse = Richtung der kamerazugewandten Fläche (lokal 60 Grad)
+const ACHSE = [Math.cos(Math.PI / 3), Math.sin(Math.PI / 3)];
+const H_GLAS = 1.6;
+
+const EMITTER_N = 36;
+const emitAkku = new Float32Array(EMITTER_N);
+
+function spawnTeilchen(i, lage, bandIdx) {
+  if (lebendig >= MAX_T) return;
+  const n = lebendig++;
+  const j = rausch(saat++);
+  const sub01 = (i + j) / EMITTER_N;                // Lage im Band 0..1
+  const t01 = (bandIdx + sub01) / 3;                // globale Frequenzlage (färbt)
+  const a = (0.5 - sub01) * 0.72;                 // tiefe Frequenzen links
+  let x = ACHSE[0] * a + (rausch(saat++) - 0.5) * 0.3;
+  let y = ACHSE[1] * a + (rausch(saat++) - 0.5) * 0.3;
+  for (let v = 0; v < 6 && !imDreieck(x, y, 0.06); v++) { x *= 0.8; y *= 0.8; }
+  tlx[n] = x; tly[n] = y;
+  tlz[n] = H_GLAS * (0.86 + 0.1 * rausch(saat++));
+  tvx[n] = (rausch(saat++) - 0.5) * 0.02;
+  tvy[n] = (rausch(saat++) - 0.5) * 0.02;
+  tvz[n] = -(0.02 + 0.05 * rausch(saat++));
+  tAge[n] = 0;
+  tLife[n] = 8.2 + 1.6 * rausch(saat++);
+  tEng[n] = energie01(t01, lage);
+  tBand[n] = t01;
+  tGold[n] = (lage.snare + lage.hat) * smoothstep(0.35, 0.75, t01) > 0.55
+    && rausch(saat++) < 0.3 ? 1 : 0;
+}
+
+function teilchenSchritt(dt, zeit, bandIdx) {
+  const lage = songLage(zeit);
+  const rate = (reducedMotion ? 0.5 : 2.0) * (MAX_T / 5500);
+  for (let i = 0; i < EMITTER_N; i++) {
+    const t01 = (bandIdx + (i + 0.5) / EMITTER_N) / 3;
+    const e = energie01(t01, lage);
+    emitAkku[i] += Math.pow(e, 3.2) * (0.65 + 1.2 * t01) * rate * dt * 30;
+    while (emitAkku[i] >= 1) { emitAkku[i] -= 1; spawnTeilchen(i, lage, bandIdx); }
+  }
+  const g = 0.28, kickSchub = lage.kick * 0.25;
+  for (let n = 0; n < lebendig; n++) {
+    tvz[n] -= (g + kickSchub * Math.max(0, 1 - tAge[n])) * dt;
+    if (tvz[n] < -0.55) tvz[n] = -0.55;
+    tvx[n] += Math.sin(tlz[n] * 9 + tly[n] * 6 + zeit * 0.8) * 0.10 * (0.25 + 0.75 * tBand[n]) * dt;
+    tvy[n] += Math.cos(tlz[n] * 7 - tlx[n] * 5 + zeit * 0.7) * 0.10 * (0.25 + 0.75 * tBand[n]) * dt;
+    tvx[n] *= 0.985; tvy[n] *= 0.985;
+    tlx[n] += tvx[n] * dt; tly[n] += tvy[n] * dt; tlz[n] += tvz[n] * dt;
+    if (!imDreieck(tlx[n], tly[n], 0.045)) {        // im Glas bleiben
+      tlx[n] -= tvx[n] * dt; tly[n] -= tvy[n] * dt;
+      tvx[n] *= -0.4; tvy[n] *= -0.4;
+    }
+    tAge[n] += dt;
+    if (tlz[n] < 0.05 || tAge[n] >= tLife[n]) {
+      lebendig--;
+      tlx[n] = tlx[lebendig]; tly[n] = tly[lebendig]; tlz[n] = tlz[lebendig];
+      tvx[n] = tvx[lebendig]; tvy[n] = tvy[lebendig]; tvz[n] = tvz[lebendig];
+      tAge[n] = tAge[lebendig]; tLife[n] = tLife[lebendig];
+      tEng[n] = tEng[lebendig]; tGold[n] = tGold[lebendig]; tBand[n] = tBand[lebendig];
+      n--;
+    }
+  }
+}
+
+// P01-Farben: Bass-Amber -> Mitten-Magenta -> Höhen-Eis; Altern kühlt zur Glut
+function bandFarbe(b, alter01, gold) {
+  const mixC = (c1, c2, k) => [c1[0] + (c2[0] - c1[0]) * k, c1[1] + (c2[1] - c1[1]) * k, c1[2] + (c2[2] - c1[2]) * k];
+  const bass = [255, 140, 46], mitte = [245, 51, 158], hoehe = [97, 219, 255];
+  let c = b < 0.5 ? mixC(bass, mitte, b * 2) : mixC(mitte, hoehe, (b - 0.5) * 2);
+  c = mixC(c, [107, 20, 31], smoothstep(0.3, 1.0, alter01));
+  if (gold) c = mixC(c, [255, 204, 97], 1 - alter01 * 0.7);
+  return c;
+}
+
+// Sprite-Cache: Bandfarbe (24 Stufen) x Alter (6 Stufen) x gold (2) —
+// einmal vorgefärbt; pro Teilchen bleibt genau EIN drawImage.
+const SPRITE_B = 24, SPRITE_A = 6;
+const spriteCache = [];
+{
+  for (let g = 0; g < 2; g++) {
+    for (let bi = 0; bi < SPRITE_B; bi++) {
+      for (let ai = 0; ai < SPRITE_A; ai++) {
+        const cv2 = document.createElement("canvas");
+        cv2.width = cv2.height = 16;
+        const sc = cv2.getContext("2d");
+        const c = bandFarbe(bi / (SPRITE_B - 1), ai / (SPRITE_A - 1), g);
+        const grad = sc.createRadialGradient(8, 8, 0, 8, 8, 8);
+        grad.addColorStop(0, `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},1)`);
+        grad.addColorStop(0.55, `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},0.5)`);
+        grad.addColorStop(1, `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},0)`);
+        sc.fillStyle = grad;
+        sc.fillRect(0, 0, 16, 16);
+        spriteCache[(g * SPRITE_B + bi) * SPRITE_A + ai] = cv2;
+      }
+    }
+  }
+}
+
+const punktEbene = document.createElement("canvas");
+punktEbene.width = 768; punktEbene.height = 1024;
+const punktC = punktEbene.getContext("2d");
+
+// Silhouetten-Maske aus der Glas-Ebene: klares Glas hat niedriges Alpha —
+// 40x uebereinander gezeichnet konvergiert es gegen 1 (Readback ist bei
+// file://-Bildern tabu, Compositing nicht).
+const maskeEbene = document.createElement("canvas");
+maskeEbene.width = 768; maskeEbene.height = 1024;
+function baueMaske() {
+  const mc = maskeEbene.getContext("2d");
+  for (let i = 0; i < 40; i++) mc.drawImage(glasEbene, 0, 0);
+}
+
+function malePunkte(winkelSeq) {
+  punktC.clearRect(0, 0, 768, 1024);
+  punktC.globalCompositeOperation = "lighter";
+  const rot = (28 + winkelSeq) * Math.PI / 180;    // Sequenz: Frame = 28° + seq
+  const cosR = Math.cos(rot), sinR = Math.sin(rot);
+  // Tiefensortierung unnötig — additive Mischung ist ordnungsunabhängig
+  for (let n = 0; n < lebendig; n++) {
+    const wx = tlx[n] * cosR - tly[n] * sinR;
+    const wy = tlx[n] * sinR + tly[n] * cosR;
+    const [u, v, inv] = projiziere(wx, wy, tlz[n]);
+    const alter01 = Math.min(1, tAge[n] / 8);
+    const r = KAM.F_PIX * (0.0022 + 0.0028 * tEng[n] + 0.0016 * tGold[n]) * inv;
+    if (r < 0.4) continue;
+    const ein = smoothstep(0, 0.06, tAge[n]);
+    const aus = 1 - smoothstep(0.78, 1, alter01);
+    punktC.globalAlpha = (0.28 + 0.45 * tEng[n]) * ein * aus;
+    const bi = Math.min(SPRITE_B - 1, Math.round(tBand[n] * (SPRITE_B - 1)));
+    const ai = Math.min(SPRITE_A - 1, Math.round(alter01 * (SPRITE_A - 1)));
+    const gi = tGold[n] > 0.5 ? 1 : 0;
+    punktC.drawImage(spriteCache[(gi * SPRITE_B + bi) * SPRITE_A + ai], u - r, v - r, r * 2, r * 2);
+  }
+  punktC.globalAlpha = 1;
+  punktC.globalCompositeOperation = "destination-in";   // Maske: nur im Glas
+  punktC.drawImage(maskeEbene, 0, 0);
+  punktC.globalCompositeOperation = "source-over";
+}
+
+// ---------------------------------------------------------------- Zustand
+// winkel: kontinuierliche Prismendrehung in Grad (0..360, drei Bänder à 120°).
+const winkelRoh = parseFloat(PARAMS.get("winkel") ?? String(RUHE));
+let winkel = Number.isFinite(winkelRoh) ? winkelRoh : RUHE;   // NaN-Riegel
+let tempo = 0;                    // Grad pro Frame (Trägheit)
+let zieht = false;
+let eingefroren = PARAMS.has("winkel");   // ?winkel= friert ein (Renders)
+let letzteX = 0;
+let zielRuhe = null;              // gesetzt von Tasten 1/2/3: exakte Zielfläche
+
+// Songschleifen-Uhr (Leertaste hält an); ?zeit= friert deterministisch ein
+const zeitRoh = parseFloat(PARAMS.get("zeit") ?? "NaN");
+const ZEIT_FREEZE = Number.isFinite(zeitRoh) ? Math.min(zeitRoh, 60) : null;
+let songZeit = 0;
+let laeuft = ZEIT_FREEZE === null;
+let letzteT = performance.now();
+
+function ruhelagen() { return [RUHE, RUHE + 120, RUHE + 240]; }
+
+function naechsteRuhe(w) {
+  let beste = RUHE, abstand = 1e9;
+  for (const r of ruhelagen()) {
+    for (const k of [-360, 0, 360]) {
+      const d = Math.abs(w - (r + k));
+      if (d < abstand) { abstand = d; beste = r + k; }
+    }
+  }
+  return beste;
+}
+
+function band(w) {
+  // Sektor um die jeweilige Ruhelage: Ruhe+k·120 gehört zu Band k.
+  return Math.round(((w - RUHE) % 360 + 360) % 360 / 120) % 3;
+}
+
+function zeichne() {
+  // Überblendung zwischen Nachbarframes: wirkt beim Drehen wie
+  // Bewegungsunschärfe, steht im Stillstand scharf auf EINEM Frame.
+  const pos = (((winkel % 120) + 120) % 120) / SCHRITT;
+  const i0 = Math.floor(pos) % BILDER;
+  const i1 = (i0 + 1) % BILDER;
+  const f = pos - Math.floor(pos);
+  const a = rahmen[i0];
+  if (a && a.complete && a.naturalWidth) {
+    if (leinwand.width !== a.naturalWidth) {
+      leinwand.width = a.naturalWidth;
+      leinwand.height = a.naturalHeight;
+      leinwand.style.maxWidth = a.naturalWidth + "px";   // nie hochskalieren
+    }
+    stift.globalAlpha = 1;
+    stift.drawImage(a, 0, 0, leinwand.width, leinwand.height);
+    const b = rahmen[i1];
+    if (f > 0.001 && b && b.complete && b.naturalWidth) {
+      stift.globalAlpha = f;
+      stift.drawImage(b, 0, 0, leinwand.width, leinwand.height);
+      stift.globalAlpha = 1;
+    }
+  }
+  // Punkt-Ebene + Glas-Deckel: nur nahe der Rastpose (dort decken sich
+  // Beauty-Frame, Maske und Projektion) — weiches Ein-/Ausblenden.
+  const seq = (((winkel % 120) + 120) % 120);
+  const ruheDist = Math.abs(((seq - RUHE + 60) % 120 + 120) % 120 - 60);
+  const sicht = 1 - smoothstep(1.5, 7, ruheDist);
+  if (sicht > 0.01 && glasEbene.complete && glasEbene.naturalWidth) {
+    malePunkte(seq);
+    stift.globalCompositeOperation = "lighter";
+    stift.globalAlpha = sicht;
+    stift.drawImage(punktEbene, 0, 0, leinwand.width, leinwand.height);
+    // Glas-Deckel ADDITIV: refraktives Glas hat in Cycles Alpha ~1 —
+    // source-over würde die Punkte zudecken. Additiv tragen nur seine
+    // Reflexe und Kanten auf (dunkle Flächen addieren nichts).
+    stift.globalAlpha = sicht * 0.85;
+    stift.drawImage(glasEbene, 0, 0, leinwand.width, leinwand.height);
+    stift.globalCompositeOperation = "source-over";
+    stift.globalAlpha = 1;
+  }
+  const aktiv = band(winkel);
+  bandKnoten.forEach(k => k.classList.toggle("aktiv", parseInt(k.dataset.band, 10) === aktiv));
+}
+
+// ---------------------------------------------------------------- Physik
+function tick() {
+  const jetztT = performance.now();
+  const dtS = Math.min(0.033, Math.max(0.001, (jetztT - letzteT) / 1000));
+  letzteT = jetztT;
+  if (laeuft && ZEIT_FREEZE === null) {
+    songZeit += dtS;
+    teilchenSchritt(dtS, songZeit, band(winkel));
+  }
+  const sZ = Math.floor(songZeit);
+  document.getElementById("zaehler").textContent =
+    String(Math.floor(sZ / 60)).padStart(2, "0") + ":" + String(sZ % 60).padStart(2, "0")
+    + " · " + lebendig + " TEILCHEN";
+  if (!zieht && !eingefroren) {
+    if (zielRuhe === null && Math.abs(tempo) > 0.05) {
+      winkel += tempo;
+      tempo *= 0.94;              // Reibung
+    } else {
+      const ziel = zielRuhe ?? naechsteRuhe(winkel);
+      const d = ziel - winkel;
+      if (Math.abs(d) > 0.02) {
+        winkel += d * 0.12;       // weiches Einrasten
+      } else {
+        winkel = ((ziel % 360) + 360) % 360;
+        zielRuhe = null;
+      }
+      tempo = 0;
+    }
+  }
+  winkel = ((winkel % 360) + 360) % 360;
+  zeichne();
+  requestAnimationFrame(tick);
+}
+
+function start() {
+  baueMaske();
+  if (ZEIT_FREEZE !== null) {
+    // Deterministisch einschwingen: fester Schritt von 0 bis zum Standpunkt
+    const dt = 1 / 60;
+    for (let s = 0; s * dt < ZEIT_FREEZE; s++) teilchenSchritt(dt, s * dt, band(winkel));
+    songZeit = ZEIT_FREEZE;
+  }
+  ladeanzeige.classList.add("fertig");
+  letzteT = performance.now();
+  zeichne();
+  requestAnimationFrame(tick);
+}
+
+// ---------------------------------------------------------------- Eingabe
+buehne.addEventListener("pointerdown", ev => {
+  zieht = true;
+  eingefroren = false;
+  zielRuhe = null;
+  letzteX = ev.clientX;
+  tempo = 0;
+  buehne.classList.add("zieht");
+  buehne.setPointerCapture(ev.pointerId);
+});
+buehne.addEventListener("pointermove", ev => {
+  if (!zieht) return;
+  const dx = ev.clientX - letzteX;
+  letzteX = ev.clientX;
+  winkel += dx * 0.4;             // Empfindlichkeit: 0.4°/px
+  tempo = dx * 0.4;
+});
+buehne.addEventListener("pointerup", ev => {
+  zieht = false;
+  buehne.classList.remove("zieht");
+  buehne.releasePointerCapture(ev.pointerId);
+});
+buehne.addEventListener("wheel", ev => {
+  ev.preventDefault();
+  eingefroren = false;
+  tempo += Math.sign(ev.deltaY) * 1.6;
+}, { passive: false });
+
+addEventListener("keydown", ev => {
+  if (ev.key === " ") {
+    ev.preventDefault();
+    laeuft = !laeuft;
+  }
+  if (ev.key === "ArrowLeft" || ev.key === "ArrowRight") {
+    eingefroren = false;
+    tempo += (ev.key === "ArrowLeft" ? -1 : 1) * 1.6;
+  }
+  if (ev.key === "1" || ev.key === "2" || ev.key === "3") {
+    eingefroren = false;
+    tempo = 0;
+    // exakte Zielfläche auf kürzestem Weg — die Physik fährt sie an,
+    // ohne auf einer Zwischenfläche einzurasten
+    const ziel = RUHE + (parseInt(ev.key, 10) - 1) * 120;
+    let d = ((ziel - winkel) % 360 + 360) % 360;
+    if (d > 180) d -= 360;
+    zielRuhe = winkel + d;
+  }
+});
+</script>
+</body>
+</html>

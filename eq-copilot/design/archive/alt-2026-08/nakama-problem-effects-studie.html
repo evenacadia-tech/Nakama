@@ -1,0 +1,545 @@
+<!doctype html>
+<!-- ARCHIV — ALTE DESIGN-RICHTUNG. Tusche-Einzelmarken: VERWORFEN 17.08. (User: „zerissenes Stroh“, „Kochhut“). User 21.08.2026: „alle alten sind alt“. Keine Vorgabe, nur Verlauf. Aktive Design-Quelle: Figma (User) → Projekte/Nakama-Design. Einzelheiten: LIES-MICH.md in diesem Ordner. -->
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="data:," />
+<title>Nakama / Problemreaktionen</title>
+<style>
+@font-face {
+  font-family: "Manrope Variable";
+  src: url("./fonts/Manrope-Variable.ttf") format("truetype");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
+  --sumi: #0b0d0d;
+  --field: #101615;
+  --field-raised: #18201e;
+  --surface: #202724;
+  --edge: #3a433e;
+  --grid: #2a332f;
+  --grid-soft: #1a211f;
+  --washi: #eee9dc;
+  --washi-soft: #b8b5aa;
+  --stone: #858b85;
+  --indigo: #315e6b;
+  --indigo-light: #527987;
+  --gold: #c99a45;
+  --moss: #71836b;
+  --vermilion: #c6533c;
+  --shadow: rgba(0, 0, 0, 0.5);
+  --ease-material: cubic-bezier(0.37, 0, 0.23, 1);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+  background: var(--sumi);
+}
+
+body {
+  color: var(--washi);
+  font-family: "Manrope Variable", "Segoe UI", sans-serif;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font: inherit; }
+
+.study {
+  width: min(1680px, 100%);
+  margin-inline: auto;
+  padding: clamp(20px, 2.4vw, 38px);
+}
+
+.study-head {
+  display: flex;
+  align-items: center;
+  min-height: 72px;
+  margin-block-end: 22px;
+}
+
+.study-brand {
+  width: 34px;
+  height: 60px;
+  margin-inline-end: 22px;
+  filter: drop-shadow(0 5px 8px var(--shadow));
+}
+
+.study-brand svg { display: block; width: 100%; height: 100%; }
+.brand-ink { fill: var(--washi); }
+.brand-gold { fill: var(--gold); }
+
+.study-title {
+  margin: 0;
+  font-size: clamp(20px, 1.6vw, 27px);
+  font-weight: 610;
+  letter-spacing: -0.025em;
+}
+
+.study-note {
+  margin: 4px 0 0;
+  color: var(--stone);
+  font-size: 12px;
+  font-weight: 520;
+}
+
+.motion-toggle {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-inline-start: auto;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--edge) 82%, transparent);
+  border-radius: 50%;
+  color: var(--washi-soft);
+  background: var(--field-raised);
+  box-shadow: 0 7px 16px var(--shadow), inset 0 1px 0 color-mix(in srgb, var(--washi) 6%, transparent);
+  cursor: pointer;
+  transition: color 140ms ease-out, border-color 140ms ease-out, transform 120ms ease-out;
+}
+
+.motion-toggle:hover { color: var(--washi); border-color: var(--gold); }
+.motion-toggle:active { transform: scale(0.97); }
+.motion-toggle:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.motion-toggle svg { width: 18px; height: 18px; }
+.motion-toggle .play-mark { display: none; }
+.paused .motion-toggle .pause-mark { display: none; }
+.paused .motion-toggle .play-mark { display: block; }
+
+.scene + .scene { margin-block-start: clamp(24px, 3vw, 42px); }
+
+.scene-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin: 0 0 11px 2px;
+}
+
+.scene-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 630;
+}
+
+.scene-meta {
+  color: var(--stone);
+  font-size: 10px;
+  font-weight: 560;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.variants {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(10px, 1.2vw, 18px);
+}
+
+.variant {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--edge) 76%, transparent);
+  border-radius: 15px;
+  background: var(--field);
+  box-shadow: 0 13px 28px color-mix(in srgb, var(--shadow) 72%, transparent), inset 0 1px 0 color-mix(in srgb, var(--washi) 4%, transparent);
+}
+
+.variant::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--washi) 2.5%, transparent);
+}
+
+.variant-label {
+  position: absolute;
+  z-index: 4;
+  top: 15px;
+  left: 17px;
+  color: var(--washi-soft);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.variant-label::before {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 1px;
+  margin-inline-end: 8px;
+  vertical-align: 0.3em;
+  background: var(--gold);
+}
+
+.variant svg {
+  display: block;
+  width: 100%;
+  aspect-ratio: 520 / 300;
+}
+
+.grid-major { stroke: var(--grid); stroke-width: 1; }
+.grid-minor { stroke: var(--grid-soft); stroke-width: 1; }
+.axis-label {
+  fill: var(--stone);
+  font: 520 8px "Manrope Variable", sans-serif;
+}
+.surface-fill { fill: url(#surface-fill); }
+.surface-fiber { fill: url(#washi-fiber); opacity: 0.55; }
+.surface-edge-under { fill: none; stroke: var(--sumi); stroke-width: 5; opacity: 0.66; }
+.surface-edge { fill: none; stroke: var(--washi); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.live-thread { fill: none; stroke: var(--washi-soft); stroke-width: 0.8; opacity: 0.35; }
+.gold-line { fill: none; stroke: var(--gold); stroke-linecap: round; stroke-linejoin: round; }
+.red-line { fill: none; stroke: var(--vermilion); stroke-linecap: round; stroke-linejoin: round; }
+.indigo-line { fill: none; stroke: var(--indigo-light); stroke-linecap: round; stroke-linejoin: round; }
+.brush-ink { fill: var(--washi); }
+.brush-gold { fill: var(--gold); }
+.brush-red { fill: var(--vermilion); }
+.brush-indigo { fill: var(--indigo); }
+
+.enso-breathe {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: enso-breathe 3.6s var(--ease-material) infinite;
+}
+
+.enso-flow {
+  stroke-dasharray: 10 7;
+  animation: line-flow 4.8s linear infinite;
+}
+
+.stamp {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: stamp-pressure 4.2s var(--ease-material) infinite;
+}
+
+.material-tension {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: material-tension 3.2s var(--ease-material) infinite;
+}
+
+.seam-live {
+  stroke-dasharray: 9 6;
+  animation: seam-live 2.7s linear infinite;
+}
+
+.flow-a,
+.flow-b {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.flow-a { animation: weave-a 5.4s var(--ease-material) infinite; }
+.flow-b { animation: weave-b 5.4s var(--ease-material) infinite; }
+
+.knot-breathe {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: knot-breathe 3.8s var(--ease-material) infinite;
+}
+
+.paused * { animation-play-state: paused !important; }
+
+@keyframes enso-breathe {
+  0%, 100% { transform: scale(0.985) rotate(-0.4deg); opacity: 0.82; }
+  50% { transform: scale(1.025) rotate(0.5deg); opacity: 1; }
+}
+
+@keyframes line-flow { to { stroke-dashoffset: -34; } }
+
+@keyframes stamp-pressure {
+  0%, 100% { transform: translateY(1px) rotate(-1deg) scale(0.985); opacity: 0.82; }
+  38%, 68% { transform: translateY(0) rotate(0.35deg) scale(1.015); opacity: 1; }
+}
+
+@keyframes material-tension {
+  0%, 100% { transform: scaleY(0.965) translateY(2px); opacity: 0.82; }
+  48% { transform: scaleY(1.045) translateY(-2px); opacity: 1; }
+}
+
+@keyframes seam-live { to { stroke-dashoffset: -30; } }
+
+@keyframes weave-a {
+  0%, 100% { transform: translate(-4px, 1px); opacity: 0.42; }
+  50% { transform: translate(5px, -1px); opacity: 0.68; }
+}
+
+@keyframes weave-b {
+  0%, 100% { transform: translate(5px, -1px); opacity: 0.46; }
+  50% { transform: translate(-5px, 1px); opacity: 0.7; }
+}
+
+@keyframes knot-breathe {
+  0%, 100% { transform: scaleX(0.98) scaleY(1.015); opacity: 0.72; }
+  50% { transform: scaleX(1.025) scaleY(0.985); opacity: 1; }
+}
+
+@media (max-width: 980px) {
+  .variants { grid-template-columns: 1fr; }
+  .variant svg { aspect-ratio: 520 / 260; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <defs>
+    <linearGradient id="surface-fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#617777" stop-opacity="0.72" />
+      <stop offset="0.38" stop-color="#405553" stop-opacity="0.54" />
+      <stop offset="1" stop-color="#17201e" stop-opacity="0.16" />
+    </linearGradient>
+    <pattern id="washi-fiber" width="13" height="13" patternUnits="userSpaceOnUse">
+      <path d="M-2 11 11-2M3 15 16 2" fill="none" stroke="#eee9dc" stroke-opacity="0.035" stroke-width="0.8" />
+      <path d="M0 3C4 1 8 5 13 2M0 10C5 8 8 12 13 9" fill="none" stroke="#0b0d0d" stroke-opacity="0.16" stroke-width="0.65" />
+    </pattern>
+    <pattern id="indigo-weave-a" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(28)">
+      <path d="M0 2H12M0 8H12" stroke="#527987" stroke-opacity="0.62" stroke-width="1" />
+    </pattern>
+    <pattern id="indigo-weave-b" width="11" height="11" patternUnits="userSpaceOnUse" patternTransform="rotate(-31)">
+      <path d="M0 3H11M0 9H11" stroke="#c99a45" stroke-opacity="0.34" stroke-width="0.9" />
+    </pattern>
+    <!-- Inline mirror of assets/nakama-symbols.svg. -->
+      <symbol id="nakama-logo-base" viewBox="0 0 510 890">
+        <path fill-rule="evenodd" d="M184.5,17.0 L196.0,23.5 L198.0,22.5 L202.0,24.5 L227.0,41.5 L246.5,62.0 L251.5,73.0 L251.5,83.0 L205.5,147.0 L168.5,193.0 L186.0,205.5 L195.5,215.0 L202.5,228.0 L202.5,234.0 L199.5,240.0 L196.5,292.0 L190.5,341.0 L185.5,362.0 L184.5,347.0 L182.5,365.0 L175.5,384.0 L173.5,384.0 L172.0,379.5 L167.5,380.0 L165.5,374.0 L160.5,371.0 L156.5,360.0 L161.5,284.0 L161.5,227.0 L159.5,204.0 L157.5,205.0 L117.0,245.5 L84.0,273.5 L59.0,292.5 L57.5,292.0 L82.0,267.5 L52.0,294.5 L22.0,317.5 L20.5,317.0 L49.5,288.0 L93.5,233.0 L123.5,190.0 L156.5,135.0 L182.5,81.0 L191.5,53.0 L190.5,34.0 Z M288.5,23.0 L333.0,44.5 L352.0,57.5 L366.5,73.0 L369.5,81.0 L369.5,87.0 L363.5,97.0 L362.5,103.0 L360.0,148.5 L426.0,131.5 L436.0,131.5 L449.0,134.5 L466.0,141.5 L477.5,151.0 L481.5,160.0 L481.5,167.0 L478.5,173.0 L472.0,177.5 L438.0,212.5 L418.5,227.0 L434.0,230.5 L445.5,240.0 L444.5,247.0 L437.0,254.5 L424.0,258.5 L387.0,260.5 L354.5,265.0 L354.5,287.0 L348.5,360.0 L338.5,420.0 L338.5,382.0 L336.5,411.0 L331.0,442.5 L330.5,412.0 L328.5,439.0 L323.5,468.0 L323.5,401.0 L321.0,410.5 L319.5,401.0 L316.5,272.0 L286.0,277.5 L278.0,276.5 L273.0,283.5 L268.0,285.5 L261.0,282.5 L255.5,277.0 L247.5,261.0 L248.5,259.0 L222.5,175.0 L212.5,155.0 L213.0,153.5 L226.0,161.5 L230.0,161.5 L255.0,175.5 L314.5,159.0 L310.5,97.0 L305.5,65.0 L298.5,42.0 Z M410.0,167.5 L358.5,177.0 L355.5,230.0 L355.5,234.0 L358.0,233.5 L378.0,230.5 L385.5,225.0 L395.5,210.0 L411.5,178.0 L413.5,169.0 Z M314.0,186.5 L282.0,196.5 L269.5,198.0 L278.5,244.0 L279.5,250.0 L283.0,250.5 L316.5,243.0 L315.5,188.0 Z M406.5,442.0 L415.0,442.5 L441.0,456.5 L454.5,467.0 L459.5,477.0 L458.5,485.0 L452.5,494.0 L450.5,508.0 L447.5,563.0 L447.5,602.0 L450.5,687.0 L460.5,799.0 L461.5,827.0 L457.5,844.0 L448.0,855.5 L434.0,860.5 L422.0,854.5 L328.0,757.5 L322.0,757.5 L315.0,753.5 L307.0,743.5 L272.0,745.5 L252.0,749.5 L243.0,749.5 L237.0,755.5 L228.0,754.5 L223.5,749.0 L218.5,737.0 L220.5,719.0 L220.5,656.0 L216.5,634.0 L212.5,625.0 L237.0,639.5 L240.0,639.5 L299.0,620.5 L306.0,615.5 L313.0,614.5 L332.0,623.5 L343.5,632.0 L348.5,640.0 L348.5,646.0 L342.5,657.0 L340.5,740.0 L337.5,750.0 L333.5,755.0 L330.5,757.0 L331.0,758.5 L350.0,772.5 L370.0,790.5 L352.0,771.5 L384.0,788.5 L401.0,794.5 L407.0,795.5 L411.5,790.0 L412.5,769.0 L404.5,632.0 L401.5,483.0 L399.0,478.5 L396.0,478.5 L337.5,495.0 L338.0,520.5 L377.0,511.5 L394.0,517.5 L397.5,523.0 L392.5,527.0 L392.0,529.5 L382.0,534.5 L347.0,541.5 L338.0,541.5 L336.5,544.0 L336.5,568.0 L376.0,560.5 L393.0,566.5 L397.5,570.0 L396.5,573.0 L392.0,578.5 L383.0,583.5 L332.0,592.5 L328.0,597.5 L325.0,597.5 L321.0,600.5 L310.5,593.0 L303.5,578.0 L304.5,530.0 L302.5,496.0 L298.5,474.0 L292.5,460.0 L313.0,469.5 L326.0,478.5 L388.0,452.5 L403.0,442.5 Z M229.5,456.0 L240.0,456.5 L256.0,465.5 L268.5,476.0 L273.5,486.0 L271.5,493.0 L265.5,501.0 L263.5,511.0 L253.5,592.0 L248.5,601.0 L243.0,606.5 L240.0,608.5 L237.0,606.5 L232.0,607.5 L174.5,568.0 L169.5,688.0 L165.5,732.0 L159.5,772.0 L155.5,777.0 L153.5,788.0 L148.5,798.0 L145.5,798.0 L144.0,792.5 L142.0,795.5 L140.5,795.0 L137.5,784.0 L136.0,782.5 L134.0,784.5 L131.5,780.0 L129.5,771.0 L133.5,742.0 L139.5,670.0 L140.5,583.0 L135.5,506.0 L132.5,489.0 L126.5,471.0 L136.0,478.5 L138.0,477.5 L153.0,486.5 L168.5,501.0 L175.5,514.0 L175.5,529.0 L179.0,529.5 L210.0,519.5 L217.0,519.5 L225.0,522.5 L225.5,491.0 L224.0,489.5 L219.0,490.5 L184.0,501.5 L174.0,497.5 L162.5,489.0 L203.0,471.5 L221.0,462.5 L224.0,458.5 Z M224.0,539.5 L188.0,549.5 L185.0,549.5 L175.0,543.5 L174.5,559.0 L178.5,561.0 L204.0,568.5 L222.0,569.5 L224.5,562.0 L225.5,540.0 Z M299.0,643.5 L262.0,653.5 L250.0,654.5 L249.5,680.0 L263.0,678.5 L292.0,671.5 L301.0,674.5 L307.0,679.5 L306.5,645.0 L305.0,643.5 Z M306.0,689.5 L300.0,692.5 L279.0,695.5 L260.0,700.5 L250.0,699.5 L248.5,727.0 L251.0,726.5 L291.0,719.5 L308.0,722.5 L308.5,692.0 Z" />
+      </symbol>
+      <symbol id="nakama-logo-accent" viewBox="0 0 510 890">
+        <path fill-rule="evenodd" d="M196.5,263.0 L197.5,263.0 L196.5,292.0 L190.5,341.0 L185.5,362.0 L184.5,362.0 L185.5,357.0 L185.5,347.0 L184.5,347.0 L182.5,365.0 L178.5,378.0 L175.5,384.0 L174.0,384.5 L173.5,381.0 L172.0,379.5 L169.0,380.5 L165.5,374.0 L160.5,371.0 L159.5,364.0 L156.5,360.0 L156.5,344.0 L159.5,325.0 L160.5,295.0 L166.0,292.5 L177.0,283.5 Z" />
+      </symbol>
+
+      <symbol id="issue-resonance" viewBox="-12 -12 24 24">
+        <path d="M-11 7.4C-7.4 6.7-6.4 2.3-5.5-2.7C-4.6-8.0-2.8-11.0-0.5-11.2C2.4-11.4 2.7-4.4 4.5 0.3C6.0 4.4 8.6 6.8 11 7.5C8.2 9.4 5.0 8.5 2.9 5.7C1.2 3.4 0.4 0.5-0.5-3.2C-1.4 0.4-2.4 4.3-5.3 6.9C-7.0 8.5-9.4 9.2-11 7.4Z" />
+        <path d="M-1.2-9.8C-0.4-10.8 0.3-10.9 0.9-10.2L0.1-3.6Z" opacity=".5" />
+      </symbol>
+
+      <symbol id="issue-balance" viewBox="-12 -12 24 24">
+        <path d="M-11.6 7.7C-9.4-1.5-4.6-8.5 1.0-9.4C6.5-10.3 10.0-2.6 11.6 7.4L7.4 8.7C6.2 2.6 3.9-1.7 0.8-1.8C-2.9-1.9-6.1 2.3-7.6 8.8Z" />
+        <path d="M-7.5 9.2C-2.4 7.9 3.2 8.0 7.7 9.1C3.3 10.8-2.8 10.9-7.5 9.2Z" opacity=".58" />
+      </symbol>
+
+      <symbol id="issue-transient" viewBox="-12 -12 24 24">
+        <path d="M2.4-11.8C1.4-7.6 0.5-4.8 1.5-2.4L7.8-5.8C6.0-1.2 3.7 1.8 0.8 4.0C-1.8 6.1-3.0 8.7-4.2 11.8C-5.6 7.5-5.0 3.9-2.5 1.0L-8.7 4.5C-7.2 0.0-4.8-3.3-1.3-5.9C0.4-7.3 1.4-9.4 2.4-11.8Z" />
+        <path d="M3.7-8.6L5.5-10.5L4.8-6.7Z" opacity=".5" />
+      </symbol>
+
+      <symbol id="issue-masking" viewBox="0 0 520 390">
+        <path fill-rule="evenodd" d="M191.5,43.0 L204.0,43.5 L208.0,45.5 L192.0,45.5 L177.0,49.5 L193.5,49.0 L169.0,56.5 L176.5,56.0 L156.0,69.5 L139.5,87.0 L156.0,77.5 L172.0,72.5 L204.0,72.5 L205.0,74.5 L185.0,76.5 L184.0,78.5 L191.0,78.5 L182.0,80.5 L167.0,88.5 L148.5,105.0 L165.0,99.5 L189.0,99.5 L202.5,102.0 L179.0,105.5 L177.5,107.0 L179.0,109.5 L186.0,110.5 L190.0,113.5 L181.0,111.5 L169.0,112.5 L152.5,122.0 L169.0,126.5 L185.0,135.5 L235.0,179.5 L253.0,192.5 L267.0,199.5 L287.0,204.5 L311.0,201.5 L335.0,188.5 L379.0,154.5 L396.0,146.5 L418.0,141.5 L439.0,142.5 L462.0,149.5 L476.0,156.5 L488.0,164.5 L490.0,168.5 L491.0,166.5 L492.0,169.5 L502.0,175.5 L505.5,179.0 L504.0,179.5 L483.0,170.5 L480.5,171.0 L487.0,175.5 L465.0,170.5 L441.0,170.5 L428.0,173.5 L402.0,186.5 L372.5,217.0 L339.5,266.0 L319.0,287.5 L306.0,296.5 L292.0,302.5 L286.5,303.0 L298.0,295.5 L281.0,303.5 L265.0,305.5 L287.0,297.5 L285.5,296.0 L298.5,287.0 L297.5,285.0 L311.5,271.0 L319.5,259.0 L295.0,275.5 L271.0,278.5 L268.0,288.5 L267.5,279.0 L257.5,277.0 L267.5,276.0 L264.5,236.0 L273.5,238.0 L274.0,251.5 L292.0,243.5 L294.5,241.0 L294.5,236.0 L273.0,232.5 L254.0,223.5 L235.0,211.5 L199.0,183.5 L170.0,166.5 L141.0,158.5 L116.0,159.5 L98.0,164.5 L54.0,184.5 L35.0,188.5 L43.0,181.5 L34.0,186.5 L22.0,189.5 L39.0,177.5 L58.5,157.0 L98.5,99.0 L127.0,68.5 L145.0,55.5 L160.0,48.5 L179.0,43.5 Z M209.5,103.0 L213.5,136.0 L213.5,152.0 L212.0,151.5 L206.5,146.0 Z M238.5,113.0 L243.5,158.0 L243.5,177.0 L241.5,177.0 L235.5,171.0 Z M298.5,124.0 L304.5,188.0 L304.5,197.0 L301.0,198.5 L294.5,198.0 Z M268.5,130.0 L273.5,172.0 L273.5,195.0 L271.0,194.5 L264.5,191.0 Z M327.5,130.0 L329.5,134.0 L332.5,170.0 L332.5,182.0 L327.5,186.0 L324.5,188.0 Z M469.0,166.5 L468.5,167.0 L469.0,167.5 L469.5,167.0 Z M473.0,167.5 L472.5,168.0 L473.0,168.5 L473.5,168.0 Z M179.5,192.0 L182.5,195.0 L181.0,228.5 L177.5,206.0 Z M205.5,198.0 L214.5,204.0 L210.5,260.0 L210.5,264.0 L208.5,263.0 Z M234.5,220.0 L237.0,219.5 L244.5,225.0 L240.5,280.0 L240.0,284.5 L238.5,278.0 Z M307.0,247.5 L303.0,252.5 L295.0,255.5 L273.0,256.5 L270.5,274.0 L273.0,275.5 L278.0,273.5 L291.0,265.5 L307.5,249.0 Z M285.0,270.5 L284.5,271.0 L285.0,271.5 L285.5,271.0 Z M307.0,288.5 L306.5,289.0 L307.0,289.5 L307.5,289.0 Z" />
+      </symbol>
+  </defs>
+</svg>
+
+<main class="study">
+  <header class="study-head">
+    <div class="study-brand" role="img" aria-label="Nakama">
+      <svg viewBox="0 0 510 890" aria-hidden="true">
+        <use class="brand-ink" href="#nakama-logo-base" />
+        <use class="brand-gold" href="#nakama-logo-accent" />
+      </svg>
+    </div>
+    <div>
+      <h1 class="study-title">Problemreaktionen</h1>
+      <p class="study-note">Unverbindliche Bewegungsstudie im Sumi-Washi-System</p>
+    </div>
+    <button class="motion-toggle" id="motionToggle" type="button" aria-label="Bewegung pausieren" aria-pressed="false">
+      <svg class="pause-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6v12M16 6v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+      <svg class="play-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 9 6-9 6z" fill="currentColor" /></svg>
+    </button>
+  </header>
+
+  <section class="scene" id="resonanceScene" aria-labelledby="resonanceTitle">
+    <div class="scene-head">
+      <h2 class="scene-title" id="resonanceTitle">Akute Resonanz</h2>
+      <span class="scene-meta">schmal / dauerhaft / kritisch</span>
+    </div>
+    <div class="variants">
+      <article class="variant">
+        <span class="variant-label">Ensō</span>
+        <svg viewBox="0 0 520 300" role="img" aria-label="Resonanz als gebrochener Pinselkreis">
+          <g class="grid-minor"><path d="M28 58V258M84 58V258M140 58V258M196 58V258M252 58V258M308 58V258M364 58V258M420 58V258M476 58V258" /></g>
+          <g class="grid-major"><path d="M28 98H496M28 148H496M28 198H496M28 248H496" /></g>
+          <path class="surface-fill" d="M28 180C82 171 118 174 166 181C202 186 222 172 242 112C248 91 257 81 266 111C279 153 288 177 326 184C382 194 433 184 496 197L496 258H28Z" />
+          <path class="surface-fiber" d="M28 180C82 171 118 174 166 181C202 186 222 172 242 112C248 91 257 81 266 111C279 153 288 177 326 184C382 194 433 184 496 197L496 258H28Z" />
+          <path class="surface-edge-under" d="M28 180C82 171 118 174 166 181C202 186 222 172 242 112C248 91 257 81 266 111C279 153 288 177 326 184C382 194 433 184 496 197" />
+          <path class="surface-edge" d="M28 180C82 171 118 174 166 181C202 186 222 172 242 112C248 91 257 81 266 111C279 153 288 177 326 184C382 194 433 184 496 197" />
+          <path class="live-thread" d="M28 176C80 164 122 181 168 175C208 170 229 163 245 104C251 87 260 88 268 113C281 158 296 169 328 180C378 190 433 178 496 191" />
+          <g transform="translate(254 94)">
+            <g class="enso-breathe">
+              <path d="M-29 29C-50 18-58-9-45-31C-32-53-3-61 21-51C44-41 55-17 50 6" fill="none" stroke="var(--washi)" stroke-width="5.2" stroke-linecap="round" opacity=".94" />
+              <path d="M49 7C45 27 29 43 9 49" fill="none" stroke="var(--gold)" stroke-width="6.1" stroke-linecap="round" />
+              <path d="M-31 32C-14 48 2 52 18 48" fill="none" stroke="var(--washi)" stroke-width="2.1" stroke-linecap="round" opacity=".38" />
+              <path class="gold-line enso-flow" d="M-8 54C-4 63 1 69 7 73" stroke-width="1.2" opacity=".7" />
+              <use href="#issue-resonance" x="-13" y="-13" width="26" height="26" class="brush-ink" />
+            </g>
+          </g>
+          <circle cx="254" cy="96" r="2.2" fill="var(--vermilion)" />
+          <text class="axis-label" x="28" y="278">80</text><text class="axis-label" x="238" y="278">120</text><text class="axis-label" x="476" y="278">250 HZ</text>
+        </svg>
+      </article>
+
+      <article class="variant">
+        <span class="variant-label">Siegel</span>
+        <svg viewBox="0 0 520 300" role="img" aria-label="Resonanz als unregelmäßiges Zinnobersiegel">
+          <g class="grid-minor"><path d="M28 58V258M84 58V258M140 58V258M196 58V258M252 58V258M308 58V258M364 58V258M420 58V258M476 58V258" /></g>
+          <g class="grid-major"><path d="M28 98H496M28 148H496M28 198H496M28 248H496" /></g>
+          <path class="surface-fill" d="M28 180C82 171 118 174 166 181C202 186 222 172 242 112C248 91 257 81 266 111C279 153 288 177 326 184C382 194 433 184 496 197L496 258H28Z" />
+          <path class="surface-fiber" d="M28 180C82 171 118 174 166 181C202 186 222 172 242 112C248 91 257 81 266 111C279 153 288 177 326 184C382 194 433 184 496 197L496 258H28Z" />
+          <path class="surface-edge-under" d="M28 180C82 171 118 174 166 181C202 186 222 172 242 112C248 91 257 81 266 111C279 153 288 177 326 184C382 194 433 184 496 197" />
+          <path class="surface-edge" d="M28 180C82 171 118 174 166 181C202 186 222 172 242 112C248 91 257 81 266 111C279 153 288 177 326 184C382 194 433 184 496 197" />
+          <path class="live-thread" d="M28 176C80 164 122 181 168 175C208 170 229 163 245 104C251 87 260 88 268 113C281 158 296 169 328 180C378 190 433 178 496 191" />
+          <g transform="translate(229 62) rotate(-3 31 31)">
+            <g class="stamp">
+              <path d="M4 5L17 2L29 4L42 2L58 7L61 20L59 34L62 47L56 60L42 58L29 61L15 58L3 61L5 46L2 34L4 20Z" fill="var(--vermilion)" />
+              <use href="#issue-resonance" x="17" y="17" width="30" height="30" fill="var(--field)" />
+              <path d="M8 13 18 9 14 15ZM48 9l8 4-7 3ZM9 49l7-3-2 8ZM47 51l8-2-4 7Z" fill="var(--field)" opacity=".64" />
+              <path d="M22 5h9M38 58h10" stroke="var(--washi)" stroke-opacity=".32" stroke-width="1.2" />
+            </g>
+          </g>
+          <path class="red-line" d="M254 123C253 112 253 102 254 92" stroke-width="1.4" opacity=".78" />
+          <text class="axis-label" x="28" y="278">80</text><text class="axis-label" x="238" y="278">120</text><text class="axis-label" x="476" y="278">250 HZ</text>
+        </svg>
+      </article>
+
+      <article class="variant">
+        <span class="variant-label">Material</span>
+        <svg viewBox="0 0 520 300" role="img" aria-label="Resonanz als Spannung und Naht im Spektralmaterial">
+          <g class="grid-minor"><path d="M28 58V258M84 58V258M140 58V258M196 58V258M252 58V258M308 58V258M364 58V258M420 58V258M476 58V258" /></g>
+          <g class="grid-major"><path d="M28 98H496M28 148H496M28 198H496M28 248H496" /></g>
+          <path class="surface-fill" d="M28 180C82 171 118 174 166 181C202 186 222 172 242 112C248 91 257 81 266 111C279 153 288 177 326 184C382 194 433 184 496 197L496 258H28Z" />
+          <path class="surface-fiber" d="M28 180C82 171 118 174 166 181C202 186 222 172 242 112C248 91 257 81 266 111C279 153 288 177 326 184C382 194 433 184 496 197L496 258H28Z" />
+          <g class="material-tension">
+            <path d="M184 184C219 170 231 126 244 88C250 69 257 65 264 89C275 128 287 171 326 186C293 176 276 163 264 137C256 119 251 118 242 138C230 164 215 179 184 184Z" fill="var(--indigo)" opacity=".27" />
+            <path class="indigo-line" d="M202 180C226 163 234 125 246 91C251 77 256 75 262 92C273 128 282 165 307 181" stroke-width="1.2" opacity=".72" />
+            <path class="gold-line" d="M218 177C235 153 240 116 248 88C252 76 256 75 260 89C268 118 274 153 291 177" stroke-width="1" opacity=".65" />
+            <path class="red-line seam-live" d="M253 143C252 122 252 99 254 78" stroke-width="2" opacity=".9" />
+            <path d="M237 252C239 208 244 166 250 126M269 252C267 210 264 167 259 126" fill="none" stroke="var(--washi)" stroke-opacity=".1" stroke-width="1" />
+          </g>
+          <path class="surface-edge-under" d="M28 180C82 171 118 174 166 181C202 186 222 172 242 112C248 91 257 81 266 111C279 153 288 177 326 184C382 194 433 184 496 197" />
+          <path class="surface-edge" d="M28 180C82 171 118 174 166 181C202 186 222 172 242 112C248 91 257 81 266 111C279 153 288 177 326 184C382 194 433 184 496 197" />
+          <path class="live-thread" d="M28 176C80 164 122 181 168 175C208 170 229 163 245 104C251 87 260 88 268 113C281 158 296 169 328 180C378 190 433 178 496 191" />
+          <text class="axis-label" x="28" y="278">80</text><text class="axis-label" x="238" y="278">120</text><text class="axis-label" x="476" y="278">250 HZ</text>
+        </svg>
+      </article>
+    </div>
+  </section>
+
+  <section class="scene" id="maskingScene" aria-labelledby="maskingTitle">
+    <div class="scene-head">
+      <h2 class="scene-title" id="maskingTitle">Maskierungskollision</h2>
+      <span class="scene-meta">Piano / Chor / zeitweise</span>
+    </div>
+    <div class="variants">
+      <article class="variant">
+        <span class="variant-label">Ensō</span>
+        <svg viewBox="0 0 520 300" role="img" aria-label="Maskierung als gebrochener Pinselkreis mit zwei Strömungen">
+          <g class="grid-minor"><path d="M28 58V258M84 58V258M140 58V258M196 58V258M252 58V258M308 58V258M364 58V258M420 58V258M476 58V258" /></g>
+          <g class="grid-major"><path d="M28 98H496M28 148H496M28 198H496M28 248H496" /></g>
+          <path class="surface-fill" d="M28 173C84 165 126 176 175 169C210 164 238 173 270 158C300 144 328 151 355 171C388 195 436 183 496 191L496 258H28Z" />
+          <path class="surface-fiber" d="M28 173C84 165 126 176 175 169C210 164 238 173 270 158C300 144 328 151 355 171C388 195 436 183 496 191L496 258H28Z" />
+          <path class="surface-edge-under" d="M28 173C84 165 126 176 175 169C210 164 238 173 270 158C300 144 328 151 355 171C388 195 436 183 496 191" />
+          <path class="surface-edge" d="M28 173C84 165 126 176 175 169C210 164 238 173 270 158C300 144 328 151 355 171C388 195 436 183 496 191" />
+          <g transform="translate(294 139)">
+            <g class="enso-breathe">
+              <path d="M-58 22C-69-14-48-51-12-61C23-71 57-50 67-17" fill="none" stroke="var(--washi)" stroke-width="4.6" stroke-linecap="round" opacity=".9" />
+              <path d="M67-15C73 10 62 35 42 49" fill="none" stroke="var(--gold)" stroke-width="5.7" stroke-linecap="round" />
+              <path d="M35 54C11 68-20 63-40 46" fill="none" stroke="var(--washi)" stroke-width="2.2" stroke-linecap="round" opacity=".42" />
+              <use href="#issue-masking" x="-37" y="-27" width="74" height="55" class="brush-ink" />
+            </g>
+          </g>
+          <path class="indigo-line enso-flow" d="M176 157C222 121 254 179 295 150C333 124 357 177 405 149" stroke-width="1.3" opacity=".66" />
+          <text class="axis-label" x="28" y="278">500</text><text class="axis-label" x="246" y="278">1.3K</text><text class="axis-label" x="466" y="278">3K HZ</text>
+        </svg>
+      </article>
+
+      <article class="variant">
+        <span class="variant-label">Siegel</span>
+        <svg viewBox="0 0 520 300" role="img" aria-label="Maskierung als unregelmäßiges Indigosiegel">
+          <g class="grid-minor"><path d="M28 58V258M84 58V258M140 58V258M196 58V258M252 58V258M308 58V258M364 58V258M420 58V258M476 58V258" /></g>
+          <g class="grid-major"><path d="M28 98H496M28 148H496M28 198H496M28 248H496" /></g>
+          <path class="surface-fill" d="M28 173C84 165 126 176 175 169C210 164 238 173 270 158C300 144 328 151 355 171C388 195 436 183 496 191L496 258H28Z" />
+          <path class="surface-fiber" d="M28 173C84 165 126 176 175 169C210 164 238 173 270 158C300 144 328 151 355 171C388 195 436 183 496 191L496 258H28Z" />
+          <path class="surface-edge-under" d="M28 173C84 165 126 176 175 169C210 164 238 173 270 158C300 144 328 151 355 171C388 195 436 183 496 191" />
+          <path class="surface-edge" d="M28 173C84 165 126 176 175 169C210 164 238 173 270 158C300 144 328 151 355 171C388 195 436 183 496 191" />
+          <g transform="translate(250 104) rotate(2 47 33)">
+            <g class="stamp">
+              <path d="M3 9L16 4L31 6L45 3L61 6L78 4L92 10L89 23L93 36L89 53L75 57L61 54L45 58L29 55L15 58L4 51L7 38L3 24Z" fill="var(--indigo)" stroke="var(--gold)" stroke-opacity=".64" stroke-width="1.3" />
+              <use href="#issue-masking" x="14" y="12" width="68" height="42" fill="var(--washi)" />
+              <path d="M12 12 22 8 17 14ZM79 10l8 4-9 3ZM9 45l9-3-3 9ZM74 49l11-2-5 7Z" fill="var(--field)" opacity=".72" />
+            </g>
+          </g>
+          <path class="gold-line" d="M239 161C263 150 279 150 298 160" stroke-width="1.2" opacity=".74" />
+          <text class="axis-label" x="28" y="278">500</text><text class="axis-label" x="246" y="278">1.3K</text><text class="axis-label" x="466" y="278">3K HZ</text>
+        </svg>
+      </article>
+
+      <article class="variant">
+        <span class="variant-label">Material</span>
+        <svg viewBox="0 0 520 300" role="img" aria-label="Maskierung als miteinander verknotete Materialströmung">
+          <defs>
+            <clipPath id="mask-material-clip">
+              <path d="M170 203C194 128 251 110 310 125C371 140 389 190 355 221C321 252 214 250 170 203Z" />
+            </clipPath>
+          </defs>
+          <g class="grid-minor"><path d="M28 58V258M84 58V258M140 58V258M196 58V258M252 58V258M308 58V258M364 58V258M420 58V258M476 58V258" /></g>
+          <g class="grid-major"><path d="M28 98H496M28 148H496M28 198H496M28 248H496" /></g>
+          <path class="surface-fill" d="M28 173C84 165 126 176 175 169C210 164 238 173 270 158C300 144 328 151 355 171C388 195 436 183 496 191L496 258H28Z" />
+          <path class="surface-fiber" d="M28 173C84 165 126 176 175 169C210 164 238 173 270 158C300 144 328 151 355 171C388 195 436 183 496 191L496 258H28Z" />
+          <g clip-path="url(#mask-material-clip)" class="knot-breathe">
+            <rect x="152" y="104" width="238" height="154" fill="var(--indigo)" opacity=".14" />
+            <g class="flow-a" stroke="var(--indigo-light)" stroke-width="1.15" fill="none" opacity=".62">
+              <path d="M133 219C198 115 284 114 418 201" /><path d="M136 230C203 125 288 124 416 211" /><path d="M142 241C211 137 294 135 410 221" /><path d="M146 207C209 107 277 104 416 188" /><path d="M152 195C218 98 286 97 420 176" />
+            </g>
+            <g class="flow-b" stroke="var(--gold)" stroke-width="0.95" fill="none" opacity=".52">
+              <path d="M143 151C213 235 300 249 409 164" /><path d="M139 163C211 246 302 258 415 176" /><path d="M149 139C219 221 299 234 402 152" /><path d="M136 176C205 258 298 269 417 190" /><path d="M158 128C228 207 299 220 395 142" />
+            </g>
+          </g>
+          <path d="M174 199C218 132 250 129 291 166C321 193 351 197 385 161C354 211 319 222 280 190C244 161 215 159 174 199Z" fill="var(--washi)" opacity=".08" />
+          <path class="indigo-line" d="M163 198C211 125 252 127 292 164C324 194 351 194 394 153" stroke-width="2" opacity=".82" />
+          <path class="gold-line" d="M160 154C213 218 255 218 293 181C326 148 353 150 399 196" stroke-width="1.55" opacity=".78" />
+          <g class="knot-breathe">
+            <path d="M270 169C282 158 296 159 307 171C296 181 281 181 270 169Z" fill="var(--field)" stroke="var(--washi)" stroke-opacity=".6" stroke-width="1" />
+            <path d="M276 169C286 165 295 165 302 171C293 175 284 175 276 169Z" fill="var(--gold)" opacity=".56" />
+          </g>
+          <path class="surface-edge-under" d="M28 173C84 165 126 176 175 169C210 164 238 173 270 158C300 144 328 151 355 171C388 195 436 183 496 191" />
+          <path class="surface-edge" d="M28 173C84 165 126 176 175 169C210 164 238 173 270 158C300 144 328 151 355 171C388 195 436 183 496 191" />
+          <text class="axis-label" x="28" y="278">500</text><text class="axis-label" x="246" y="278">1.3K</text><text class="axis-label" x="466" y="278">3K HZ</text>
+        </svg>
+      </article>
+    </div>
+  </section>
+</main>
+
+<script>
+const motionButton = document.querySelector("#motionToggle");
+
+motionButton.addEventListener("click", () => {
+  const paused = document.body.classList.toggle("paused");
+  motionButton.setAttribute("aria-pressed", String(paused));
+  motionButton.setAttribute("aria-label", paused ? "Bewegung fortsetzen" : "Bewegung pausieren");
+});
+</script>
+</body>
+</html>

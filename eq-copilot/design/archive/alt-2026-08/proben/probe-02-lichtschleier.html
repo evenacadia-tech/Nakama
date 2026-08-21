@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<!-- ARCHIV — ALTE DESIGN-RICHTUNG. Probe P02 Lichtschleier 17.08.: VERWORFEN (User). User 21.08.2026: „alle alten sind alt“. Keine Vorgabe, nur Verlauf. Aktive Design-Quelle: Figma (User) → Projekte/Nakama-Design. Einzelheiten: ../LIES-MICH.md -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROBE 02 · Lichtschleier</title>
+<style>
+@font-face {
+  font-family: "Manrope";
+  src: url("../fonts/Manrope-Variable.ttf") format("truetype");
+  font-weight: 200 800;
+  font-display: swap;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; background: #04060b; }
+body { font-family: "Manrope", system-ui, sans-serif; color: #cfd6e4; user-select: none; }
+canvas { position: absolute; inset: 0; display: block; }
+header {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+  display: flex; align-items: baseline; gap: 14px; padding: 16px 20px;
+  pointer-events: none;
+}
+.probe { font-size: 11px; letter-spacing: 4px; color: #6d7789; }
+.name { font-size: 15px; letter-spacing: 2.5px; color: #e8edf6; }
+footer {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+  display: flex; justify-content: space-between; gap: 16px; padding: 12px 20px;
+  font-size: 9.5px; letter-spacing: 1.6px; color: #5d6678; pointer-events: none;
+}
+#zeit { font-variant-numeric: tabular-nums; white-space: nowrap; }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<header>
+  <span class="probe">PROBE 02</span>
+  <span class="name">LICHTSCHLEIER</span>
+</header>
+<footer>
+  <span>TECHNIK: GLSL-FRAGMENT-SHADER · LICHT ALS KONTINUIERLICHE MATERIE · SCHLEIERLÄNGE = BANDENERGIE · FARBE = FREQUENZBEREICH (BASS AMBER → MITTEN MAGENTA → HÖHEN EIS) · KICK = WOGE DURCH DEN VORHANG · LEERTASTE HÄLT AN</span>
+  <span id="zeit">00:00</span>
+</footer>
+
+<script>
+"use strict";
+/* ── PROBE 02 · LICHTSCHLEIER ───────────────────────────────────────────
+   Gegenpol zu Probe 01: kein Teilchen, sondern Licht als kontinuierliche,
+   fließende Materie — ein Vorhang aus Schleiern, dessen lokale Länge die
+   Bandenergie ist. Bandfarben-Palette aus Probe 01 übernommen (bestätigt),
+   damit der Vergleich nur die SUBSTANZ misst: Körnung gegen Fluss.
+   Reiner Fragment-Shader = reine Funktion der Uniforms — ?zeit= friert
+   ohne Einschwingen deterministisch ein.                                 */
+
+const F_MIN = 20, F_MAX = 18000;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function smoothstep(e0, e1, v) {
+  const t = clamp((v - e0) / Math.max(1e-9, e1 - e0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+const gaussian = (t, c, w) => Math.exp(-0.5 * ((t - c) / w) ** 2);
+const tForFrequency = f => Math.log10(f / F_MIN) / Math.log10(F_MAX / F_MIN);
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ── Songschleife (identisch zu den Musterblättern — portiert, nicht neu) ── */
+const SONG = { laenge: 30, bpm: 96 };
+function songLage(time) {
+  const lt = ((time % SONG.laenge) + SONG.laenge) % SONG.laenge;
+  const beat = Math.max(0, time) * SONG.bpm / 60;
+  const zaehlzeit = beat - Math.floor(beat);
+  const strophe = smoothstep(4.5, 7, lt) * (1 - smoothstep(13, 15.5, lt));
+  const chorus = smoothstep(13, 15.5, lt) * (1 - smoothstep(23, 25.5, lt));
+  const ausklang = smoothstep(23, 25.5, lt);
+  const intro = 1 - smoothstep(4.5, 7, lt);
+  const dichte = 0.25 * intro + 0.62 * strophe + 1.0 * chorus + 0.38 * ausklang;
+  const puls = reducedMotion ? 0.2 : 1;
+  const kick = Math.exp(-8 * zaehlzeit) * (0.35 + 0.65 * dichte) * puls;
+  const snare = (Math.floor(beat) % 2 === 1 ? Math.exp(-10 * zaehlzeit) : 0) * dichte * puls;
+  const achtel = beat * 2 - Math.floor(beat * 2);
+  const hat = Math.exp(-13 * achtel) * (0.15 + 0.85 * dichte) * puls;
+  const NOTEN = [41.2, 41.2, 49.0, 55.0, 41.2, 36.7, 49.0, 61.7];
+  const note = NOTEN[((Math.floor(beat) % 8) + 8) % 8];
+  const bassHalt = (0.55 + 0.45 * Math.exp(-2.5 * zaehlzeit)) * (0.35 + 0.65 * dichte);
+  return { lt, beat, zaehlzeit, dichte, chorus, kick, snare, hat, note, bassHalt };
+}
+function musikDb(t, lage) {
+  return lage.kick * 4.2 * gaussian(t, tForFrequency(52), 0.045)
+    + lage.bassHalt * (3.0 * gaussian(t, tForFrequency(lage.note), 0.05)
+                     + 1.2 * gaussian(t, tForFrequency(lage.note * 2), 0.045))
+    + lage.snare * (3.2 * gaussian(t, tForFrequency(190), 0.07)
+                  + 3.6 * gaussian(t, tForFrequency(4200), 0.20))
+    + lage.hat * 3.0 * smoothstep(0.70, 0.94, t)
+    + lage.chorus * 2.0 * gaussian(t, tForFrequency(760), 0.26)
+        * (0.75 + 0.25 * Math.sin((lage.lt + Math.floor(lage.beat / 48) * 30) * 2.3))
+    + (lage.dichte - 0.9) * 1.8
+    - 1.5 * lage.kick * lage.dichte * (1 - gaussian(t, tForFrequency(52), 0.06));
+}
+function baselineDb(t) {
+  const high = Math.max(0, (t - 0.82) / 0.18);
+  return -16.2 - 2.8 * t - 7.8 * t * t - 8.8 * Math.pow(high, 1.5)
+    + 1.7 * gaussian(t, 0.13, 0.11);
+}
+const energie01 = (t, lage) => clamp((baselineDb(t) + musikDb(t, lage) + 40) / 30, 0, 1);
+
+/* ── Blattzustand ──────────────────────────────────────────────────────── */
+const PARAMS = new URLSearchParams(location.search);
+const ZEIT_FREEZE = (() => {
+  const roh = PARAMS.get("zeit");
+  const w = roh === null ? NaN : parseFloat(roh);
+  return isFinite(w) ? w : null;
+})();
+
+const cv = document.getElementById("gl");
+const gl = cv.getContext("webgl", { antialias: false, alpha: false })
+        || cv.getContext("webgl2", { antialias: false, alpha: false });
+if (!gl) document.querySelector(".name").textContent = "LICHTSCHLEIER — WEBGL NICHT VERFÜGBAR";
+
+const VS = `
+attribute vec2 aPos;
+void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`;
+
+const FS = `
+precision highp float;
+uniform vec2 uAufloesung;
+uniform float uZeit, uZaehlzeit, uKick, uDichte, uSnare;
+uniform sampler2D uSpektrum;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float vnoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash(i), b = hash(i + vec2(1.0, 0.0));
+  float c = hash(i + vec2(0.0, 1.0)), d = hash(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+float fbm(vec2 p) {
+  float s = 0.0, amp = 0.5;
+  for (int k = 0; k < 4; k++) { s += amp * vnoise(p); p *= 2.03; amp *= 0.5; }
+  return s;
+}
+// Bestätigte Palette aus Probe 01: Bass Amber -> Mitten Magenta -> Höhen Eis
+vec3 bandFarbe(float b) {
+  vec3 bass  = vec3(1.00, 0.55, 0.18);
+  vec3 mitte = vec3(0.96, 0.20, 0.62);
+  vec3 hoehe = vec3(0.38, 0.86, 1.00);
+  return b < 0.5 ? mix(bass, mitte, b * 2.0) : mix(mitte, hoehe, (b - 0.5) * 2.0);
+}
+void main() {
+  vec2 uv = gl_FragCoord.xy / uAufloesung;     // y = 0 unten
+  float oben = 1.0 - uv.y;                     // 0 an der Decke, 1 unten
+
+  // Faltenwurf: der Vorhang fließt — die Abfrageposition wogt mit der Zeit
+  float falt = fbm(vec2(uv.x * 3.0 + uZeit * 0.05, uv.y * 1.4 - uZeit * 0.09)) - 0.5;
+  float xw = clamp(uv.x + falt * 0.12, 0.0, 1.0);
+  float e = texture2D(uSpektrum, vec2(xw, 0.5)).r;
+
+  // Schleierkörper: hängt von oben, Länge = Bandenergie, läuft weich aus
+  float laenge = 0.14 + 0.78 * e * e;
+  float koerper = smoothstep(laenge * 1.2, laenge * 0.1, oben);
+
+  // Aurora-Strähnen: feine vertikale Dichteschwankung, die langsam zieht
+  float straehnen = 0.55 + 0.45 * vnoise(vec2(xw * 110.0, uZeit * 0.30));
+
+  // Kick-Woge: eine helle Front wandert je Zählzeit durch den Vorhang
+  float woge = exp(-16.0 * abs(oben - uZaehlzeit * 0.85)) * uKick;
+
+  // Snare-Schimmer: kurzes Aufhellen der ganzen Mittenpartie
+  float schimmer = uSnare * 0.35 * gaussian_like(xw);
+
+  float hell = koerper * straehnen * (0.22 + 0.75 * e) + (woge + schimmer) * e;
+  hell *= 0.6 + 0.45 * uDichte;
+
+  vec3 farbe = bandFarbe(xw) * hell;
+  farbe += vec3(1.0, 0.95, 0.85) * pow(max(hell, 0.0), 4.0) * 0.22;  // weißglühender Kern, dosiert
+  farbe = farbe / (1.0 + farbe * 0.85);                              // Reinhard: sättigen statt ausbrennen
+  farbe += (hash(gl_FragCoord.xy + fract(uZeit) * 61.0) - 0.5) * 0.016; // Korn gegen Banding
+
+  gl_FragColor = vec4(max(farbe, 0.0), 1.0);
+}`;
+
+/* gaussian_like wird vor dem Kompilieren eingesetzt (GLSL hat kein
+   Funktions-Hoisting; kleine Mittenglocke um x=0.45) */
+const FS_FERTIG = FS.replace(
+  "float schimmer = uSnare * 0.35 * gaussian_like(xw);",
+  "float schimmer = uSnare * 0.35 * exp(-pow((xw - 0.45) / 0.22, 2.0));"
+);
+
+function shader(typ, quelle) {
+  const s = gl.createShader(typ);
+  gl.shaderSource(s, quelle); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+    throw new Error("Shader: " + gl.getShaderInfoLog(s));
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, shader(gl.VERTEX_SHADER, VS));
+gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FS_FERTIG));
+gl.linkProgram(prog);
+if (!gl.getProgramParameter(prog, gl.LINK_STATUS))
+  throw new Error("Programm: " + gl.getProgramInfoLog(prog));
+gl.useProgram(prog);
+
+const quad = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+const aPos = gl.getAttribLocation(prog, "aPos");
+gl.enableVertexAttribArray(aPos);
+gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+const U = {};
+for (const n of ["uAufloesung", "uZeit", "uZaehlzeit", "uKick", "uDichte", "uSnare", "uSpektrum"])
+  U[n] = gl.getUniformLocation(prog, n);
+
+/* Spektrum als 96×1-Textur, linear gefiltert = weicher Vorhangverlauf */
+const BAENDER = 96;
+const spekDaten = new Uint8Array(BAENDER);
+const spekTex = gl.createTexture();
+gl.activeTexture(gl.TEXTURE0);
+gl.bindTexture(gl.TEXTURE_2D, spekTex);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, BAENDER, 1, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, spekDaten);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+gl.uniform1i(U.uSpektrum, 0);
+
+let W = 0, H = 0, DPR = 1;
+function layout() {
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  cv.style.width = W + "px"; cv.style.height = H + "px";
+}
+window.addEventListener("resize", () => { layout(); if (ZEIT_FREEZE !== null) male(ZEIT_FREEZE); });
+layout();
+
+function male(zeit) {
+  const lage = songLage(zeit);
+  for (let i = 0; i < BAENDER; i++)
+    spekDaten[i] = Math.round(energie01((i + 0.5) / BAENDER, lage) * 255);
+  gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, BAENDER, 1, gl.LUMINANCE, gl.UNSIGNED_BYTE, spekDaten);
+  gl.viewport(0, 0, cv.width, cv.height);
+  gl.uniform2f(U.uAufloesung, cv.width, cv.height);
+  gl.uniform1f(U.uZeit, reducedMotion ? zeit * 0.3 : zeit);
+  gl.uniform1f(U.uZaehlzeit, lage.zaehlzeit);
+  gl.uniform1f(U.uKick, lage.kick);
+  gl.uniform1f(U.uDichte, lage.dichte);
+  gl.uniform1f(U.uSnare, lage.snare);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+const zeitEl = document.getElementById("zeit");
+let laeuft = true, zeit = 0, letzter = performance.now();
+
+document.addEventListener("keydown", ev => {
+  if (ev.key === " ") { ev.preventDefault(); laeuft = !laeuft; letzter = performance.now(); }
+});
+
+if (ZEIT_FREEZE !== null) {
+  male(ZEIT_FREEZE);
+  zeitEl.textContent = "STAND " + String(Math.floor(ZEIT_FREEZE)).padStart(2, "0") + " s";
+} else {
+  function frame(now) {
+    const dt = Math.min(0.033, Math.max(0.001, (now - letzter) / 1000));
+    letzter = now;
+    if (laeuft) zeit += dt;
+    male(zeit);
+    const s = Math.floor(zeit);
+    zeitEl.textContent =
+      String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>

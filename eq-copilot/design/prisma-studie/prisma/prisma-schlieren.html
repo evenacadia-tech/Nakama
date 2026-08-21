@@ -1,0 +1,765 @@
+<!doctype html>
+<!-- PRISMA-STUDIE — User-Idee, geparkt (User 21.08.2026: „Familie; Prisma nur Studie“ · „Alles nur Studie“ · Herkunft: „Meine Idee“). Kein Produktteil, kein Bauplan, kein Vokabular für die Plugin-UI. Statusblatt: ../STATUS.md.  -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>NAKAMA · Prisma mit Schlieren-Feld</title>
+<!--
+  DAS FELD IM GLAS (18.08.2026)
+  =============================
+  Film-Sandwich: vorgerenderter Cycles-Drehframe → WebGL-Prueffeld,
+  perspektivisch korrekt auf eine Ebene IM Glasvolumen gelegt → Glas-Pass
+  additiv obendrauf. Das Feld liegt damit im Koerper, nicht darauf.
+
+  SHADER: identisch zu `schlieren-probe-field.frag` (der Fassung, die in
+  Unicorn Studio laeuft) mit EINER bewussten Abweichung — `persp` steht auf
+  1.0. Dort simuliert der Shader die Perspektive selbst, weil er auf einem
+  flachen Rechteck sitzt; hier wird die Ebene wirklich in 3D projiziert, und
+  beide zusammen waeren Perspektive doppelt.
+
+  Ablesegrammatik unveraendert: betroffene Linien = fVon..fBis · Versatz in
+  Kamm-Einheiten = Staerke · senkrechte Ausdehnung = Persistenz-Anteil ·
+  Ueberschuss buendelt, Fehlbetrag spreizt. Ruhe = gesundes Band.
+
+  Daten: die etablierte 30-s-Songschleife, gemessen gegen die EIGENE
+  Schulterlinie (eine Oktave). PRUEFTON deklariert und in der Statuszeile
+  benannt — die Schleife ist ein sauberer Mix. Seit 18.08. faehrt der
+  Prueftton per Vorgabe (entsteht bei 6 s, verschwindet ab 23 s): GEMESSEN
+  war mit stehendem Ton Stillstand die korrekte Anzeige (ort in Folgeframes
+  identisch, nur Subpixel-Schimmer aus dem Kick-Atmen). Bewegung braucht
+  einen Befund, der wandert. Der Fahrweg gilt im AKTIVEN Band (19.08.,
+  User: „hoehen bewegt sich nicht" — der feste Hub lag nur in Band 0):
+  Band 0 55->150 Hz, Band 1 ~530->1450 Hz, Band 2 ~5,2->14 kHz.
+  ?fahrt=0 stellt ihn still.
+
+  EBENE 0 (User 19.08.: "mach das als hintergrund"): die Unicorn-Szene
+  "Winter Nexus (Remix) 3" (DAGhm8NIQHdX9GhNYmP9) liegt live und
+  vollflaechig HINTER der Buehne — das ist die Ebene 0 des
+  Film-Compositing-Modells. Braucht Internet (CDN); offline bleibt der
+  dunkle Grund stehen, das Blatt funktioniert unveraendert.
+  ?hintergrund=0 schaltet ab (fuer deterministische Messlaeufe),
+  ?hintergrund=<ID> laedt eine andere Szene.
+
+  FREIGESTELLT (NAK-15, User 19.08.: "in der App ohne starren Hintergrund"):
+  Vorgabe-Frames sind renders/dreh-frei/ (RGBA, Studio raus — Ebene 0
+  scheint DURCH das Bild); renders/dreh-boden/ liefert die Kontakt-Ebene
+  (Bodenpfuetzen, Alpha aus Helligkeit) UNTER dem Prisma. ?frames=dreh
+  laedt den alten eingebackenen Satz zum Vergleich; ?boden=0 startet ohne
+  Kontakt-Ebene; Taste B schaltet sie live.
+
+  ZIEHEN dreht · 1/2/3 waehlt das Band · LEERTASTE haelt die Musik an ·
+  P schaltet den Prueftton · F seine Fahrt · +/- ueberhoeht zur Beurteilung ·
+  ?winkel= ?zeit= frieren ein · ?kamm= ?tiefe= ?koernung= ?fahrt=0 ?hintergrund=0
+-->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: #06080c; color: #e8edf6;
+    font: 12px/1.5 "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+  header { position: fixed; top: 0; left: 0; right: 0; padding: 14px 20px;
+    display: flex; align-items: baseline; gap: 14px; z-index: 3; letter-spacing: 2px; }
+  header .marke { color: #6d7789; font-size: 10px; }
+  header h1 { font-size: 13px; font-weight: 600; letter-spacing: 3px; }
+  #ebene0 { position: absolute; inset: 0; pointer-events: none; }
+  #ebene0 > div, #ebene0 canvas { width: 100%; height: 100%; }
+  #buehne { position: absolute; inset: 0; display: flex; align-items: center;
+    justify-content: center; cursor: grab; touch-action: none; user-select: none; }
+  #buehne.zieht { cursor: grabbing; }
+  /* transparent: die freigestellten Frames lassen Ebene 0 DURCH das Bild */
+  #bild { max-width: 96vw; max-height: 80vh; background: transparent; }
+  #laden { position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 10px; z-index: 2;
+    background: #06080c; transition: opacity .4s; }
+  #laden.fertig { opacity: 0; pointer-events: none; }
+  #laden .balken { width: 220px; height: 2px; background: #1a2230; }
+  #laden .balken i { display: block; height: 100%; width: 0; background: #7d96c0; }
+  #stand { position: fixed; bottom: 0; left: 0; right: 0; padding: 14px 20px;
+    display: flex; flex-direction: column; align-items: center; gap: 7px;
+    z-index: 3; pointer-events: none; }
+  #baender { display: flex; gap: 26px; }
+  .band { letter-spacing: 3px; font-size: 11px; color: #3a4356; transition: color .25s; }
+  .band.aktiv[data-band="0"] { color: #e8a34c; }
+  .band.aktiv[data-band="1"] { color: #d465b0; }
+  .band.aktiv[data-band="2"] { color: #9fd3e8; }
+  #ablesung { font-size: 11px; letter-spacing: 2px; color: #b9c4d6;
+    font-variant-numeric: tabular-nums; min-height: 17px; }
+  #ablesung .ruhig { color: #46506a; letter-spacing: 3px; }
+  #hinweis { color: #6d7789; font-size: 10px; letter-spacing: 1.5px; text-align: center; }
+  #zaehler { color: #3d4658; font-size: 10px; letter-spacing: 1.5px; }
+</style>
+</head>
+<body>
+<div id="ebene0"></div>
+<header><span class="marke">NAKAMA</span><h1>PRISMA · SCHLIEREN-FELD IM GLAS</h1></header>
+<div id="buehne"><canvas id="bild" width="800" height="500"></canvas></div>
+<div id="laden"><div>Drehsequenz lädt …</div><div class="balken"><i id="fortschritt"></i></div></div>
+<div id="stand">
+  <div id="baender">
+    <span class="band" data-band="0">TIEFEN</span>
+    <span class="band" data-band="1">MITTEN</span>
+    <span class="band" data-band="2">HÖHEN</span>
+  </div>
+  <div id="ablesung"></div>
+  <div id="hinweis">ZIEHEN DREHT · 1/2/3 WÄHLT DAS BAND · LEERTASTE HÄLT DIE MUSIK AN · P SCHALTET DEN PRÜFTON · F SEINE FAHRT · B DEN BODEN · +/− ÜBERHÖHT</div>
+  <div id="zaehler"></div>
+</div>
+
+<script>
+"use strict";
+const PARAMS = new URLSearchParams(location.search);
+const BILDER = parseInt(PARAMS.get("bilder") ?? "72", 10);
+const RUHE = parseFloat(PARAMS.get("ruhe") ?? "58.333333");
+const SCHRITT = 120 / BILDER;
+
+/* ── Ebene 0: Unicorn-Hintergrund (live, vom User autorisiert 19.08.) ────
+   Offline-sicher: scheitert CDN oder Szene, bleibt der dunkle Grund und
+   das Blatt laeuft unveraendert weiter. addScene() ist die dokumentierte
+   programmatische SDK-API (im UMD v2.2.10 verifiziert). */
+const HINTERGRUND = PARAMS.get("hintergrund") ?? "DAGhm8NIQHdX9GhNYmP9";
+if (HINTERGRUND !== "0") {
+  const sdk = document.createElement("script");
+  sdk.src = "https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.10/dist/unicornStudio.umd.js";
+  sdk.onload = () => {
+    UnicornStudio.addScene({ elementId: "ebene0", projectId: HINTERGRUND, lazyLoad: false })
+      .catch(() => {});                     // Szene weg/offline: Grund bleibt
+  };
+  sdk.onerror = () => {};                   // offline: Grund bleibt
+  document.head.appendChild(sdk);
+}
+
+const leinwand = document.getElementById("bild");
+const stift = leinwand.getContext("2d");
+const buehne = document.getElementById("buehne");
+const ladeanzeige = document.getElementById("laden");
+const fortschritt = document.getElementById("fortschritt");
+const bandKnoten = [...document.querySelectorAll(".band")];
+const ablesungKnoten = document.getElementById("ablesung");
+
+/* ── Laden ───────────────────────────────────────────────────────────────── */
+// Seit NAK-15 sind die freigestellten Frames (renders/dreh-frei/, RGBA) die
+// Vorgabe — Ebene 0 scheint DURCH das Bild. ?frames=dreh laedt den alten
+// eingebackenen Studio-Satz zum Vergleich. Die Boden-Ebene (Kontakt-Licht,
+// renders/dreh-boden/, Alpha aus Helligkeit) liegt UNTER dem Prisma und
+// faellt sanft aus, wenn ihr Satz fehlt.
+const FRAMES_ORDNER = PARAMS.get("frames") ?? "dreh-frei";
+const FREIGESTELLT = FRAMES_ORDNER !== "dreh";
+let bodenAn = FREIGESTELLT && (PARAMS.get("boden") ?? "1") !== "0";
+let bodenVerfuegbar = false;
+const rahmen = [], bodenRahmen = [];
+const glasEbene = new Image();
+let geladen = 0;
+// Boden-Frames laden IMMER mit (Taste B schaltet nur die Anzeige — ein
+// Regler, der je nach Start-URL still tot waere, ist die Unicorn-Falle).
+const BODEN_LADEN = FREIGESTELLT;
+const LADE_GESAMT = BILDER + 1 + (BODEN_LADEN ? BILDER : 0);
+function geladenEins() {
+  geladen++;
+  fortschritt.style.width = (geladen / LADE_GESAMT * 100) + "%";
+  if (geladen === LADE_GESAMT) start();
+}
+glasEbene.src = "renders/glas-ebene.png";
+glasEbene.onload = geladenEins;
+glasEbene.onerror = () => {
+  ladeanzeige.firstElementChild.textContent = "glas-ebene.png fehlt.";
+};
+for (let i = 0; i < BILDER; i++) {
+  const b = new Image();
+  b.src = `renders/${FRAMES_ORDNER}/f${String(i).padStart(3, "0")}.webp`;
+  b.onload = geladenEins;
+  b.onerror = () => {
+    ladeanzeige.firstElementChild.textContent =
+      `Frame ${FRAMES_ORDNER}/f${String(i).padStart(3, "0")}.webp fehlt.`;
+  };
+  rahmen.push(b);
+}
+if (BODEN_LADEN) {
+  let bodenTreffer = 0;
+  for (let i = 0; i < BILDER; i++) {
+    const b = new Image();
+    b.src = `renders/dreh-boden/f${String(i).padStart(3, "0")}.webp`;
+    b.onload = () => { bodenTreffer++; bodenVerfuegbar = bodenTreffer === BILDER; geladenEins(); };
+    b.onerror = geladenEins;             // Boden ist optional — nie blockieren
+    bodenRahmen.push(b);
+  }
+}
+
+/* ── Songschleife (identisch portiert) ───────────────────────────────────── */
+const F_MIN = 20, F_MAX = 18000;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function smoothstep(e0, e1, v) {
+  const t = clamp((v - e0) / Math.max(1e-9, e1 - e0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+const gaussian = (t, c, w) => Math.exp(-0.5 * ((t - c) / w) ** 2);
+const tForFrequency = f => Math.log10(f / F_MIN) / Math.log10(F_MAX / F_MIN);
+const frequencyForT = t => F_MIN * Math.pow(F_MAX / F_MIN, t);
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const SONG = { laenge: 30, bpm: 96 };
+function songLage(time) {
+  const lt = ((time % SONG.laenge) + SONG.laenge) % SONG.laenge;
+  const beat = Math.max(0, time) * SONG.bpm / 60;
+  const zaehlzeit = beat - Math.floor(beat);
+  const strophe = smoothstep(4.5, 7, lt) * (1 - smoothstep(13, 15.5, lt));
+  const chorus = smoothstep(13, 15.5, lt) * (1 - smoothstep(23, 25.5, lt));
+  const ausklang = smoothstep(23, 25.5, lt);
+  const intro = 1 - smoothstep(4.5, 7, lt);
+  const dichte = 0.25 * intro + 0.62 * strophe + 1.0 * chorus + 0.38 * ausklang;
+  const puls = reducedMotion ? 0.2 : 1;
+  const kick = Math.exp(-8 * zaehlzeit) * (0.35 + 0.65 * dichte) * puls;
+  const snare = (Math.floor(beat) % 2 === 1 ? Math.exp(-10 * zaehlzeit) : 0) * dichte * puls;
+  const achtel = beat * 2 - Math.floor(beat * 2);
+  const hat = Math.exp(-13 * achtel) * (0.15 + 0.85 * dichte) * puls;
+  const NOTEN = [41.2, 41.2, 49.0, 55.0, 41.2, 36.7, 49.0, 61.7];
+  const note = NOTEN[((Math.floor(beat) % 8) + 8) % 8];
+  const bassHalt = (0.55 + 0.45 * Math.exp(-2.5 * zaehlzeit)) * (0.35 + 0.65 * dichte);
+  return { lt, beat, zaehlzeit, dichte, chorus, kick, snare, hat, note, bassHalt };
+}
+function musikDb(t, lage) {
+  return lage.kick * 4.2 * gaussian(t, tForFrequency(52), 0.045)
+    + lage.bassHalt * (3.0 * gaussian(t, tForFrequency(lage.note), 0.05)
+                     + 1.2 * gaussian(t, tForFrequency(lage.note * 2), 0.045))
+    + lage.snare * (3.2 * gaussian(t, tForFrequency(190), 0.07)
+                  + 3.6 * gaussian(t, tForFrequency(4200), 0.20))
+    + lage.hat * 3.0 * smoothstep(0.70, 0.94, t)
+    + lage.chorus * 2.0 * gaussian(t, tForFrequency(760), 0.26)
+        * (0.75 + 0.25 * Math.sin((lage.lt + Math.floor(lage.beat / 48) * 30) * 2.3))
+    + (lage.dichte - 0.9) * 1.8
+    - 1.5 * lage.kick * lage.dichte * (1 - gaussian(t, tForFrequency(52), 0.06));
+}
+function baselineDb(t) {
+  const high = Math.max(0, (t - 0.82) / 0.18);
+  return -16.2 - 2.8 * t - 7.8 * t * t - 8.8 * Math.pow(high, 1.5)
+    + 1.7 * gaussian(t, 0.13, 0.11);
+}
+
+/* ── Kamera (bewiesen: pruefe-projektion.html) ───────────────────────────── */
+const KAM = (() => {
+  const W = 768, H = 1024, LENS = 65, SENSOR = 36;
+  const POS = [-1.65, -3.53, 0.95], ZIEL = [0, 0, 0.8];
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const kreuzP = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+  const norm = a => { const l = Math.hypot(...a); return [a[0]/l, a[1]/l, a[2]/l]; };
+  const f = norm(sub(ZIEL, POS));
+  const camZ = [-f[0], -f[1], -f[2]];
+  const camY = norm(sub([0, 0, 1], f.map(v => v * f[2])));
+  const camX = kreuzP(camY, camZ);
+  const F_PIX = LENS / SENSOR * Math.max(W, H);
+  return { W, H, POS, camX, camY, camZ, F_PIX, dot, sub };
+})();
+// gibt [pixelX, pixelY, 1/(-zc)] — der dritte Wert ist das Perspektivmass
+function projiziere(wx, wy, wz) {
+  const d = [wx - KAM.POS[0], wy - KAM.POS[1], wz - KAM.POS[2]];
+  const xc = KAM.dot(d, KAM.camX), yc = KAM.dot(d, KAM.camY), zc = KAM.dot(d, KAM.camZ);
+  const inv = 1 / (-zc);
+  return [KAM.W / 2 + KAM.F_PIX * xc * inv, KAM.H / 2 - KAM.F_PIX * yc * inv, inv];
+}
+
+/* ── Geometrie der Feldebene IM Volumen ──────────────────────────────────── */
+const ACHSE = [Math.cos(Math.PI / 3), Math.sin(Math.PI / 3)];
+const N_FLAECHE = [-Math.cos(Math.PI / 6), Math.sin(Math.PI / 6)];
+const H_GLAS = 1.6;
+const TIEFE_EBENE = parseFloat(PARAMS.get("tiefe") ?? "0");
+const A_HALB = 0.26;
+const Z0 = 0.08 * H_GLAS, Z1 = 0.95 * H_GLAS;
+
+/* ── Messachse: Spektrum → eigene Schulter → Abweichung ──────────────────── */
+const M = 97, SCHULTER_HALB = 30;          // ±30 Bins ≈ eine Oktave
+const SCHWELLE_DB = parseFloat(PARAMS.get("schwelle") ?? "2.0");
+const TAU_PERS = 5.0;
+const spektrum = new Float64Array(M), schulter = new Float64Array(M);
+const abweichung = new Float64Array(M), persistenz = new Float64Array(M);
+let pruefton = {
+  an: (PARAMS.get("pruefton") ?? "1") !== "0",
+  // Wer ?ptonHz= explizit setzt, will einen STEHENDEN Ton — sonst wäre der
+  // dokumentierte Regler still wirkungslos (die Unicorn-Falle, nur hier).
+  fahrt: (PARAMS.get("fahrt") ?? (PARAMS.has("ptonHz") ? "0" : "1")) !== "0",
+  // NaN-Riegel: "?ptonHz=" (leer) würde als NaN durch den ganzen Messpfad
+  // laufen und am Schwellenvergleich vorbeirutschen (NaN < x ist false).
+  fHz: (v => Number.isFinite(v) ? v : 116)(parseFloat(PARAMS.get("ptonHz") ?? "116")),
+  db: (v => Number.isFinite(v) ? v : 6)(parseFloat(PARAMS.get("ptonDb") ?? "6")),
+  breite: (v => Number.isFinite(v) ? v : 0.016)(parseFloat(PARAMS.get("ptonBreite") ?? "0.016")),
+  liveHz: 116, liveEnv: 1,        // was die Statuszeile diese Runde benennt
+};
+// Prüfton-Fahrt: der eingespeiste Ton STEHT nicht mehr — er entsteht, wandert
+// eine gute Oktave nach oben und verschwindet, synchron zur Schleife. Der
+// Fahrweg ist in FELD-Koordinaten definiert und gilt damit im AKTIVEN Band
+// (User-Urteil 18.08.: „höhen bewegt sich nicht" — der alte feste Hub
+// 55→150 Hz lag komplett in Band 0, Mitten/Höhen bekamen ihn nie): Band 0
+// fährt 55→150 Hz, Band 1 ~530→1450 Hz, Band 2 ~5,2→14 kHz. Alles läuft
+// durch denselben Messpfad — die Anzeige bleibt eine Ablesung.
+const FAHRT_UV_VON = tForFrequency(55) * 3;    // Feldweg, in Band 0 geeicht
+const FAHRT_UV_BIS = tForFrequency(150) * 3;
+function prueftonLage(lt, bandIdx) {
+  const env = smoothstep(6, 9, lt) * (1 - smoothstep(23, 26, lt));
+  const u = smoothstep(9, 23, lt);
+  const uv = FAHRT_UV_VON + (FAHRT_UV_BIS - FAHRT_UV_VON) * u;
+  return { fHz: frequencyForT((bandIdx + uv) / 3), env };
+}
+function messe(zeit, bandIdx) {
+  const lage = songLage(zeit);
+  let ptonT = tForFrequency(pruefton.fHz), ptonEnv = 1;
+  if (pruefton.fahrt) {
+    const fahrt = prueftonLage(lage.lt, bandIdx);
+    ptonT = tForFrequency(fahrt.fHz); ptonEnv = fahrt.env;
+    pruefton.liveHz = fahrt.fHz; pruefton.liveEnv = fahrt.env;
+  } else {
+    pruefton.liveHz = pruefton.fHz; pruefton.liveEnv = 1;
+  }
+  for (let i = 0; i < M; i++) {
+    const t01 = (bandIdx + i / (M - 1)) / 3;
+    spektrum[i] = baselineDb(t01) + musikDb(t01, lage);
+    if (pruefton.an)
+      spektrum[i] += pruefton.db * ptonEnv * gaussian(t01, ptonT, pruefton.breite)
+                   * (0.55 + 0.45 * lage.dichte);
+  }
+  for (let i = 0; i < M; i++) {
+    let s = 0, n = 0;
+    for (let k = -SCHULTER_HALB; k <= SCHULTER_HALB; k++) { s += spektrum[clamp(i+k,0,M-1)]; n++; }
+    schulter[i] = s / n;
+  }
+  for (let i = 0; i < M; i++) abweichung[i] = spektrum[i] - schulter[i];
+}
+function persistenzSchritt(dt) {
+  const k = 1 - Math.exp(-dt / TAU_PERS);
+  for (let i = 0; i < M; i++)
+    persistenz[i] += ((abweichung[i] >= SCHWELLE_DB ? 1 : 0) - persistenz[i]) * k;
+}
+let befund = null;
+function befundSuchen(bandIdx) {
+  let iMax = 0;
+  for (let i = 1; i < M; i++) if (abweichung[i] > abweichung[iMax]) iMax = i;
+  const spitze = abweichung[iMax];
+  if (spitze < SCHWELLE_DB) { befund = null; return; }
+  // Sub-Bin-Spitze (Parabel durch die drei Bins um das Maximum). Ohne sie ist
+  // ort auf 1/96-Stufen gerastert — jede echte Wanderung SPRINGT dann in
+  // ~2-px-Treppen statt zu gleiten (gemessen 18.08.: ort in zwei Folgeframes
+  // identisch trotz wachsender Staerke).
+  let p = 0;
+  if (iMax > 0 && iMax < M - 1) {
+    const ym = abweichung[iMax-1], y0 = abweichung[iMax], yp = abweichung[iMax+1];
+    const nenner = ym - 2*y0 + yp;
+    if (Math.abs(nenner) > 1e-9) p = clamp(0.5 * (ym - yp) / nenner, -0.5, 0.5);
+  }
+  const spitzeI = iMax > 0 && iMax < M - 1
+    ? spitze - 0.25 * (abweichung[iMax-1] - abweichung[iMax+1]) * p
+    : spitze;
+  // Halbwertskanten linear zwischen den Bins geschnitten — sonst rastert
+  // auch die Breite und fVon/fBis springen binweise.
+  const halb = spitzeI * 0.5;
+  let von = iMax, bis = iMax;
+  while (von > 0 && abweichung[von-1] >= halb) von--;
+  while (bis < M-1 && abweichung[bis+1] >= halb) bis++;
+  let vonF = von, bisF = bis;
+  if (von > 0) {
+    const d = abweichung[von] - abweichung[von-1];
+    if (d > 1e-9) vonF = von - 1 + (halb - abweichung[von-1]) / d;
+  }
+  if (bis < M-1) {
+    const d = abweichung[bis] - abweichung[bis+1];
+    if (d > 1e-9) bisF = bis + (abweichung[bis] - halb) / d;
+  }
+  // Persistenz am interpolierten Ort zwischen den Bins gemittelt.
+  const iN = clamp(iMax + Math.sign(p), 0, M - 1);
+  const tiefeI = persistenz[iMax] * (1 - Math.abs(p)) + persistenz[iN] * Math.abs(p);
+  befund = {
+    ort: (iMax + p) / (M - 1),
+    staerke: clamp(spitzeI / 6, 0, 1),
+    breite: clamp((bisF - vonF) / (M - 1) * 2.5, 0.05, 1),
+    tiefe: clamp(tiefeI, 0, 1),
+    fVon: frequencyForT((bandIdx + vonF/(M-1))/3),
+    fBis: frequencyForT((bandIdx + bisF/(M-1))/3),
+    fMax: frequencyForT((bandIdx + (iMax + p)/(M-1))/3),
+    db: spitzeI,
+  };
+}
+
+/* ── WebGL: derselbe Shader wie in Unicorn ───────────────────────────────── */
+const glLeinwand = document.createElement("canvas");
+glLeinwand.width = 768; glLeinwand.height = 1024;
+const gl = glLeinwand.getContext("webgl2", { alpha: true, premultipliedAlpha: false,
+                                             antialias: true });
+
+const VERT = `#version 300 es
+in vec2 aPos;      // Bildschirmposition in NDC
+in vec2 aUv;
+in float aQ;       // Perspektivgewicht: sorgt fuer korrekte UV-Interpolation
+out vec2 vTextureCoord;
+void main() {
+  vTextureCoord = aUv;
+  gl_Position = vec4(aPos * aQ, 0.0, aQ);
+}`;
+
+// Quelle: schlieren-probe-field.frag — EINE Abweichung: persp = 1.0, weil die
+// Ebene hier wirklich in 3D projiziert wird (sonst Perspektive doppelt).
+const FRAG = `#version 300 es
+precision highp float;
+precision highp int;
+in vec2 vTextureCoord;
+out vec4 fragColor;
+uniform float uOrt, uStaerke, uBreite, uTiefe, uVorzeichen, uLinien, uKoernung;
+uniform vec3 uLineColor;
+
+uvec2 pcg2d(uvec2 v) {
+  v = v * 1664525u + 1013904223u;
+  v.x += v.y * v.y * 1664525u + 1013904223u;
+  v.y += v.x * v.x * 1664525u + 1013904223u;
+  v ^= v >> 16;
+  v.x += v.y * v.y * 1664525u + 1013904223u;
+  v.y += v.x * v.x * 1664525u + 1013904223u;
+  return v;
+}
+float randFibo(vec2 p) {
+  uvec2 v = floatBitsToUint(p);
+  v = pcg2d(v);
+  uint r = v.x ^ v.y;
+  return float(r) / float(0xffffffffu);
+}
+
+void main() {
+  vec2 uv = vTextureCoord;
+  vec2 pUv = uv;                       // persp = 1.0, s. Kommentar oben
+
+  float w    = mix(0.03, 0.30, uBreite);
+  float d    = (pUv.x - uOrt) / w;
+  float bump = exp(-0.5 * d * d);
+  float disp = -uStaerke * d * bump * w * 0.76;
+  if (uVorzeichen < 0.5) disp = -disp;
+
+  float h    = 0.5 * uTiefe;
+  float prof = smoothstep(0.46 - h, 0.54 - h, pUv.y)
+             * (1.0 - smoothstep(0.46 + h, 0.54 + h, pUv.y));
+  float x = pUv.x + disp * prof;
+
+  float numLines = floor(mix(8.0, 48.0, uLinien) + 0.5);
+  float spacing  = 1.0 / numLines;
+  float lineIdx  = floor(x / spacing + 0.5);
+  float distX    = abs(fract(x / spacing + 0.5) - 0.5) * spacing;
+
+  float numPoints = 150.0;
+  float ptSpacing = 1.0 / numPoints;
+  float phase     = randFibo(vec2(lineIdx * 3.71 + 5.3, 91.7));
+  float yy        = uv.y + phase * ptSpacing;
+  float ptIdx     = floor(yy / ptSpacing);
+  float distY     = abs(yy - (ptIdx + 0.5) * ptSpacing);
+
+  // Punktgroesse: screen-relativ MIT DECKEL. Rein screen-relativ (nur fwidth)
+  // kippt bei kleiner Darstellung in eine Vollflaeche; rein absolut in UV wird
+  // der Punkt auf einer kleinen Flaeche kleiner als ein Pixel und verschwindet
+  // (beides gemessen). min() nimmt das Beste aus beidem: rund 1,6 Pixel gross,
+  // aber nie mehr als ein Drittel des Kamm- bzw. Punktabstands.
+  float fwX = max(fwidth(x), 1e-7);
+  float fwY = max(fwidth(uv.y), 1e-7);
+  float halbBreite = min(1.6 * fwX, 0.30 * spacing);
+  float punktHalb  = min(1.6 * fwY, 0.32 * ptSpacing);
+  float r     = length(vec2(distX / halbBreite, distY / punktHalb));
+  float aa    = max(fwidth(r), 1e-3);
+  float punkt = 1.0 - smoothstep(1.0 - aa, 1.0 + aa, r);
+
+  float rnd   = randFibo(vec2(lineIdx * 17.13 + 31.7, ptIdx * 43.19 + 71.3));
+  float koern = clamp(uKoernung, 0.0, 1.0);
+  float pb = mix(1.0, pow(rnd, 1.8), koern);
+  if (rnd < koern * 0.45) pb = 0.0;
+
+  float depthAlpha = mix(1.0, 0.75, uv.y);
+  float finalAlpha = clamp(punkt * pb * depthAlpha, 0.0, 1.0);
+  fragColor = vec4(uLineColor, finalAlpha);
+}`;
+
+function baueProgramm() {
+  const komp = (typ, quelle) => {
+    const s = gl.createShader(typ);
+    gl.shaderSource(s, quelle); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+      throw new Error(gl.getShaderInfoLog(s));
+    return s;
+  };
+  const p = gl.createProgram();
+  gl.attachShader(p, komp(gl.VERTEX_SHADER, VERT));
+  gl.attachShader(p, komp(gl.FRAGMENT_SHADER, FRAG));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS))
+    throw new Error(gl.getProgramInfoLog(p));
+  return p;
+}
+const prog = baueProgramm();
+const loc = {};
+for (const n of ["uOrt","uStaerke","uBreite","uTiefe","uVorzeichen","uLinien",
+                 "uKoernung","uLineColor"])
+  loc[n] = gl.getUniformLocation(prog, n);
+const aPos = gl.getAttribLocation(prog, "aPos");
+const aUv  = gl.getAttribLocation(prog, "aUv");
+const aQ   = gl.getAttribLocation(prog, "aQ");
+const puffer = gl.createBuffer();
+const daten = new Float32Array(6 * 5);            // 2 Dreiecke à 5 Floats
+
+const BANDFARBEN = [[0.910,0.639,0.298], [0.831,0.396,0.690], [0.624,0.827,0.910]];
+const KAMM01 = clamp((parseFloat(PARAMS.get("kamm") ?? "24") - 8) / 40, 0, 1);
+const KOERNUNG = clamp(parseFloat(PARAMS.get("koernung") ?? "0.3"), 0, 1);
+let ueberhoehung = parseFloat(PARAMS.get("ueberhoehung") ?? "1");
+
+// Vier Eckpunkte der Feldebene, in Kamerakoordinaten projiziert.
+// uv.x = 0 liegt bei +a (tiefe Frequenzen links, Prototyp-Konvention).
+function eckenNdc(winkelSeq) {
+  const rot = (28 + winkelSeq) * Math.PI / 180;
+  const cosR = Math.cos(rot), sinR = Math.sin(rot);
+  const punkt = (a, z) => {
+    const lx = N_FLAECHE[0] * TIEFE_EBENE + ACHSE[0] * a;
+    const ly = N_FLAECHE[1] * TIEFE_EBENE + ACHSE[1] * a;
+    const wx = lx * cosR - ly * sinR;
+    const wy = lx * sinR + ly * cosR;
+    const [u, v, inv] = projiziere(wx, wy, z);
+    return [u / KAM.W * 2 - 1, 1 - v / KAM.H * 2, 1 / inv];   // NDC + q
+  };
+  return {
+    ol: punkt(+A_HALB, Z1), or: punkt(-A_HALB, Z1),
+    ul: punkt(+A_HALB, Z0), ur: punkt(-A_HALB, Z0),
+  };
+}
+
+function maleFeld(winkelSeq, bandIdx) {
+  const e = eckenNdc(winkelSeq);
+  const ecke = (p, u, v) => [p[0], p[1], u, v, p[2]];
+  const q = [
+    ...ecke(e.ol,0,0), ...ecke(e.or,1,0), ...ecke(e.ul,0,1),
+    ...ecke(e.or,1,0), ...ecke(e.ur,1,1), ...ecke(e.ul,0,1),
+  ];
+  daten.set(q);
+
+  gl.viewport(0, 0, 768, 1024);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.useProgram(prog);
+  gl.bindBuffer(gl.ARRAY_BUFFER, puffer);
+  gl.bufferData(gl.ARRAY_BUFFER, daten, gl.DYNAMIC_DRAW);
+  const stride = 5 * 4;
+  gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, stride, 0);
+  gl.enableVertexAttribArray(aUv);  gl.vertexAttribPointer(aUv,  2, gl.FLOAT, false, stride, 8);
+  gl.enableVertexAttribArray(aQ);   gl.vertexAttribPointer(aQ,   1, gl.FLOAT, false, stride, 16);
+
+  const b = befund;
+  gl.uniform1f(loc.uOrt,        b ? b.ort : 0.5);
+  gl.uniform1f(loc.uStaerke,    b ? clamp(b.staerke * ueberhoehung, 0, 1) : 0);
+  gl.uniform1f(loc.uBreite,     b ? b.breite : 0.3);
+  gl.uniform1f(loc.uTiefe,      b ? b.tiefe : 1);
+  gl.uniform1f(loc.uVorzeichen, 1);
+  gl.uniform1f(loc.uLinien,     KAMM01);
+  gl.uniform1f(loc.uKoernung,   KOERNUNG);
+  gl.uniform3fv(loc.uLineColor, BANDFARBEN[bandIdx]);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+}
+
+/* ── Glasmaske (Alpha der Glas-Ebene, 40x aufsummiert) ───────────────────── */
+const feldEbene = document.createElement("canvas");
+feldEbene.width = 768; feldEbene.height = 1024;
+const feldC = feldEbene.getContext("2d");
+const maskeEbene = document.createElement("canvas");
+maskeEbene.width = 768; maskeEbene.height = 1024;
+function baueMaske() {
+  const mc = maskeEbene.getContext("2d");
+  for (let i = 0; i < 40; i++) mc.drawImage(glasEbene, 0, 0);
+}
+
+/* ── Zustand ─────────────────────────────────────────────────────────────── */
+const winkelRoh = parseFloat(PARAMS.get("winkel") ?? String(RUHE));
+let winkel = Number.isFinite(winkelRoh) ? winkelRoh : RUHE;
+let letztesBand = band(winkel);   // start() wärmt die Persistenz fürs Startband
+let tempo = 0, zieht = false, letzteX = 0, zielRuhe = null;
+let eingefroren = PARAMS.has("winkel");
+const zeitRoh = parseFloat(PARAMS.get("zeit") ?? "");
+const ZEIT_FREEZE = Number.isFinite(zeitRoh) ? Math.min(zeitRoh, 60) : null;
+let songZeit = 0;
+let laeuft = ZEIT_FREEZE === null;
+let letzteT = performance.now();
+
+function ruhelagen() { return [RUHE, RUHE + 120, RUHE + 240]; }
+function naechsteRuhe(w) {
+  let beste = RUHE, abstand = 1e9;
+  for (const r of ruhelagen()) for (const k of [-360, 0, 360]) {
+    const d = Math.abs(w - (r + k));
+    if (d < abstand) { abstand = d; beste = r + k; }
+  }
+  return beste;
+}
+function band(w) { return Math.round(((w - RUHE) % 360 + 360) % 360 / 120) % 3; }
+
+function zeichne() {
+  const pos = (((winkel % 120) + 120) % 120) / SCHRITT;
+  const i0 = Math.floor(pos) % BILDER, i1 = (i0 + 1) % BILDER;
+  const f = pos - Math.floor(pos);
+  const a = rahmen[i0];
+  if (a && a.complete && a.naturalWidth) {
+    if (leinwand.width !== a.naturalWidth) {
+      leinwand.width = a.naturalWidth;
+      leinwand.height = a.naturalHeight;
+      leinwand.style.maxWidth = a.naturalWidth + "px";
+    }
+    // Alpha-Frames: ohne clearRect stapeln sich Silhouetten zu Geistern.
+    stift.clearRect(0, 0, leinwand.width, leinwand.height);
+    // Kontakt-Ebene (Boden-Pfuetzen) UNTER dem Prisma — Taste B / ?boden=0.
+    if (bodenAn && bodenVerfuegbar) {
+      const ba = bodenRahmen[i0], bb = bodenRahmen[i1];
+      if (ba && ba.complete && ba.naturalWidth) {
+        stift.globalAlpha = 1;
+        stift.drawImage(ba, 0, 0, leinwand.width, leinwand.height);
+        if (f > 0.001 && bb && bb.complete && bb.naturalWidth) {
+          stift.globalAlpha = f;
+          stift.drawImage(bb, 0, 0, leinwand.width, leinwand.height);
+        }
+      }
+    }
+    stift.globalAlpha = 1;
+    stift.drawImage(a, 0, 0, leinwand.width, leinwand.height);
+    const b2 = rahmen[i1];
+    if (f > 0.001 && b2 && b2.complete && b2.naturalWidth) {
+      stift.globalAlpha = f;
+      stift.drawImage(b2, 0, 0, leinwand.width, leinwand.height);
+      stift.globalAlpha = 1;
+    }
+  }
+  const seq = (((winkel % 120) + 120) % 120);
+  const ruheDist = Math.abs(((seq - RUHE + 60) % 120 + 120) % 120 - 60);
+  const sicht = 1 - smoothstep(1.5, 7, ruheDist);
+  const aktiv = band(winkel);
+  if (sicht > 0.01 && glasEbene.complete && glasEbene.naturalWidth) {
+    maleFeld(seq, aktiv);
+    feldC.clearRect(0, 0, 768, 1024);
+    feldC.drawImage(glLeinwand, 0, 0);
+    feldC.globalCompositeOperation = "destination-in";   // nur im Glas
+    feldC.drawImage(maskeEbene, 0, 0);
+    feldC.globalCompositeOperation = "source-over";
+    stift.globalCompositeOperation = "lighter";
+    stift.globalAlpha = sicht;
+    stift.drawImage(feldEbene, 0, 0, leinwand.width, leinwand.height);
+    // Glas-Deckel additiv: refraktives Glas hat in Cycles Alpha ~1
+    stift.globalAlpha = sicht * 0.85;
+    stift.drawImage(glasEbene, 0, 0, leinwand.width, leinwand.height);
+    stift.globalCompositeOperation = "source-over";
+    stift.globalAlpha = 1;
+  }
+  bandKnoten.forEach(k => k.classList.toggle("aktiv", parseInt(k.dataset.band,10) === aktiv));
+}
+
+// Eine Hz-Schreibweise für Ablesung UND Statuszeile — sonst schreibt die
+// eine "9,3 kHz" und die andere "9260 Hz" für denselben Ton.
+const hzText = v => v >= 1000 ? (v/1000).toFixed(1).replace(".", ",") + " kHz"
+                              : Math.round(v) + " Hz";
+function zeigeAblesung() {
+  if (!befund) {
+    ablesungKnoten.innerHTML = '<span class="ruhig">RUHIGES FELD · KEIN BEFUND</span>';
+    return;
+  }
+  const hz = hzText;
+  ablesungKnoten.textContent =
+    `BEFUND · ${hz(befund.fMax)} · ${hz(befund.fVon)}–${hz(befund.fBis)}`
+    + ` · +${befund.db.toFixed(1).replace(".", ",")} dB über eigener Schulter`
+    + ` · Persistenz ${Math.round(befund.tiefe * 100)} %`;
+}
+
+function tick() {
+  const jetztT = performance.now();
+  const dtS = Math.min(0.033, Math.max(0.001, (jetztT - letzteT) / 1000));
+  letzteT = jetztT;
+  const aktiv = band(winkel);
+  if (aktiv !== letztesBand) {
+    // Persistenz gehört zum GEMESSENEN Band: ohne Neuaufbau leuchtete der
+    // Verlauf des alten Bandes ~5 s als falsche Tiefe im neuen Band nach.
+    // 15 s Vergangenheit deterministisch nachrechnen (TAU 5 s ⇒ >95 %).
+    persistenz.fill(0);
+    const dt = 1 / 60;
+    for (let s = 900; s > 0; s--) { messe(songZeit - s * dt, aktiv); persistenzSchritt(dt); }
+    letztesBand = aktiv;
+  }
+  if (laeuft && ZEIT_FREEZE === null) { songZeit += dtS; messe(songZeit, aktiv); persistenzSchritt(dtS); }
+  else messe(songZeit, aktiv);
+  befundSuchen(aktiv);
+  zeigeAblesung();
+
+  const sZ = Math.floor(songZeit);
+  document.getElementById("zaehler").textContent =
+    String(Math.floor(sZ/60)).padStart(2,"0") + ":" + String(sZ%60).padStart(2,"0")
+    + " · ÜBERHÖHUNG ×" + ueberhoehung.toFixed(1).replace(".", ",")
+    + (!pruefton.an ? " · OHNE PRÜFTON (SAUBERER MIX)"
+      : pruefton.fahrt
+        ? (pruefton.liveEnv >= 0.1
+            // effektive dB (db*env) — beim Ein-/Ausblenden nie mehr behaupten
+            // als eingespeist ist
+            ? " · PRÜFTON WANDERT · +" + (pruefton.db * pruefton.liveEnv).toFixed(0)
+              + " dB @ " + hzText(pruefton.liveHz) + " EINGESPEIST"
+            : " · PRÜFTON WANDERT · GERADE STILL (SAUBERER MIX)")
+        : " · PRÜFTON +" + pruefton.db.toFixed(0) + " dB @ "
+          + hzText(pruefton.fHz) + " EINGESPEIST");
+
+  if (!zieht && !eingefroren) {
+    if (zielRuhe === null && Math.abs(tempo) > 0.05) { winkel += tempo; tempo *= 0.94; }
+    else {
+      const ziel = zielRuhe ?? naechsteRuhe(winkel);
+      const d = ziel - winkel;
+      if (Math.abs(d) > 0.02) winkel += d * 0.12;
+      else { winkel = ((ziel % 360) + 360) % 360; zielRuhe = null; }
+      tempo = 0;
+    }
+  }
+  winkel = ((winkel % 360) + 360) % 360;
+  zeichne();
+  requestAnimationFrame(tick);
+}
+
+function start() {
+  baueMaske();
+  const aktiv = band(winkel);
+  const dt = 1/60;
+  const bis = ZEIT_FREEZE !== null ? ZEIT_FREEZE : 1.0;
+  for (let s = 0; s * dt < bis; s++) { messe(s*dt, aktiv); persistenzSchritt(dt); }
+  if (ZEIT_FREEZE !== null) songZeit = ZEIT_FREEZE;
+  messe(songZeit, aktiv); befundSuchen(aktiv);
+  ladeanzeige.classList.add("fertig");
+  letzteT = performance.now();
+  zeichne();
+  requestAnimationFrame(tick);
+}
+
+/* ── Eingabe ─────────────────────────────────────────────────────────────── */
+buehne.addEventListener("pointerdown", ev => {
+  zieht = true; eingefroren = false; zielRuhe = null;
+  letzteX = ev.clientX; tempo = 0;
+  buehne.classList.add("zieht"); buehne.setPointerCapture(ev.pointerId);
+});
+buehne.addEventListener("pointermove", ev => {
+  if (!zieht) return;
+  const dx = ev.clientX - letzteX; letzteX = ev.clientX;
+  winkel += dx * 0.4; tempo = dx * 0.4;
+});
+buehne.addEventListener("pointerup", ev => {
+  zieht = false; buehne.classList.remove("zieht"); buehne.releasePointerCapture(ev.pointerId);
+});
+buehne.addEventListener("wheel", ev => {
+  ev.preventDefault(); eingefroren = false; tempo += Math.sign(ev.deltaY) * 1.6;
+}, { passive: false });
+addEventListener("keydown", ev => {
+  if (ev.key === " ") { ev.preventDefault(); laeuft = !laeuft; }
+  if (ev.key === "ArrowLeft" || ev.key === "ArrowRight") {
+    eingefroren = false; tempo += (ev.key === "ArrowLeft" ? -1 : 1) * 1.6;
+  }
+  if (ev.key === "1" || ev.key === "2" || ev.key === "3") {
+    eingefroren = false; tempo = 0;
+    const ziel = RUHE + (parseInt(ev.key,10) - 1) * 120;
+    let d = ((ziel - winkel) % 360 + 360) % 360;
+    if (d > 180) d -= 360;
+    zielRuhe = winkel + d;
+  }
+  if (ev.key === "p" || ev.key === "P") {
+    pruefton.an = !pruefton.an;
+    const dt = 1/60, b = band(winkel);
+    for (let s = 0; s < 240; s++) { messe(songZeit + s*dt, b); persistenzSchritt(dt); }
+  }
+  if (ev.key === "f" || ev.key === "F") pruefton.fahrt = !pruefton.fahrt;
+  if (ev.key === "b" || ev.key === "B") bodenAn = !bodenAn;
+  if (ev.key === "+") ueberhoehung = Math.min(6, ueberhoehung + 0.5);
+  if (ev.key === "-") ueberhoehung = Math.max(0.5, ueberhoehung - 0.5);
+});
+</script>
+</body>
+</html>

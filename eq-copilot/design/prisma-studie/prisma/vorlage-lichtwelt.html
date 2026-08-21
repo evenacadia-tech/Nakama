@@ -1,0 +1,145 @@
+<!doctype html>
+<!-- PRISMA-STUDIE — User-Idee, geparkt (User 21.08.2026: „Familie; Prisma nur Studie“ · „Alles nur Studie“ · Herkunft: „Meine Idee“). Kein Produktteil, kein Bauplan, kein Vokabular für die Plugin-UI. Statusblatt: ../STATUS.md.  -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>NAKAMA · Vorlage Lichtwelt</title>
+<!--
+  VORLAGE fuer die Lichtwelt-Gestaltung in Unicorn (NAK-16-Folge) —
+  bewusst fuer NICHT-Techniker beschriftet: Klartext-Zonen statt
+  Koordinaten. Die Prisma-Silhouette ist der echte Glanz-Pass der
+  Rastpose, pixelgenau an ihrer Blatt-Position (1920x1280-Buehne,
+  Glasfenster 768x1024 zentriert — die Technik-Zahlen stehen in
+  renders/stmap/probe-stmap-meta.json und docs/spielregeln-skizze.html).
+  Screenshot dieses Blatts = Referenzbild fuers Unicorn-Artboard.
+-->
+<style>
+  * { margin: 0; padding: 0; }
+  body { background: #05070b; overflow: hidden; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="blatt" width="1920" height="1280"></canvas>
+<script src="renders/stmap/stmap-daten.js"></script>
+<script>
+"use strict";
+const c = document.getElementById("blatt").getContext("2d");
+const BW = 1920, BH = 1280;
+const GX = 576, GY = 128, GW = 768, GH = 1024;      // Glasfenster (intern)
+// Prisma-Silhouette in Blatt-Koordinaten (gemessen am Glanz-Pass):
+const PX0 = GX + 150, PX1 = GX + 586;
+const PY0 = GY + 100, PY1 = GY + 920;
+const PCX = (PX0 + PX1) / 2, PCY = (PY0 + PY1) / 2;
+const GRIFF = 327;                                   // Median-Greifweite
+
+c.fillStyle = "#05070b";
+c.fillRect(0, 0, BW, BH);
+
+const glanz = new Image();
+glanz.onload = () => {
+  // Geisterkoerper: Silhouette deutlich sichtbar machen
+  const tmp = document.createElement("canvas");
+  tmp.width = GW; tmp.height = GH;
+  const t = tmp.getContext("2d");
+  t.drawImage(glanz, 0, 0);
+  t.globalCompositeOperation = "source-in";
+  t.fillStyle = "rgba(150, 180, 220, 0.20)";
+  t.fillRect(0, 0, GW, GH);
+  c.drawImage(tmp, GX, GY);
+  c.drawImage(glanz, GX, GY);
+  zeichne();
+};
+glanz.src = STMAP_DATEN.glanzDataUrl;
+
+function text(t, x, y, farbe = "#b8c4d8", groesse = 17, fett = false) {
+  c.fillStyle = farbe;
+  c.font = (fett ? "600 " : "") + groesse + 'px "Segoe UI", system-ui, sans-serif';
+  c.fillText(t, x, y);
+}
+
+function pfeil(x1, y1, x2, y2, farbe) {
+  c.strokeStyle = farbe;
+  c.fillStyle = farbe;
+  c.lineWidth = 2;
+  c.beginPath();
+  c.moveTo(x1, y1);
+  c.lineTo(x2, y2);
+  c.stroke();
+  const w = Math.atan2(y2 - y1, x2 - x1);
+  c.beginPath();
+  c.moveTo(x2, y2);
+  c.lineTo(x2 - 12 * Math.cos(w - 0.42), y2 - 12 * Math.sin(w - 0.42));
+  c.lineTo(x2 - 12 * Math.cos(w + 0.42), y2 - 12 * Math.sin(w + 0.42));
+  c.closePath();
+  c.fill();
+}
+
+function zeichne() {
+  // ── Greif-Zonen links + rechts des Prismas (amber schimmernd)
+  c.fillStyle = "rgba(232, 163, 76, 0.07)";
+  c.fillRect(PX0 - GRIFF, PY0, GRIFF, PY1 - PY0);
+  c.fillRect(PX1, PY0, GRIFF, PY1 - PY0);
+  c.strokeStyle = "rgba(232, 163, 76, 0.35)";
+  c.setLineDash([3, 7]);
+  c.lineWidth = 1.5;
+  c.strokeRect(PX0 - GRIFF + 0.5, PY0 + 0.5, GRIFF, PY1 - PY0);
+  c.strokeRect(PX1 + 0.5, PY0 + 0.5, GRIFF, PY1 - PY0);
+  c.setLineDash([]);
+
+  // ── Prisma-Umriss (dezent, damit man ihn sicher findet)
+  c.strokeStyle = "rgba(200, 220, 245, 0.35)";
+  c.lineWidth = 2;
+  c.strokeRect(PX0 + 0.5, PY0 + 0.5, PX1 - PX0, PY1 - PY0);
+
+  // ── Ziel-Kreuz in der Prisma-Mitte
+  c.strokeStyle = "#e8a34c";
+  c.lineWidth = 2;
+  c.beginPath();
+  c.moveTo(PCX - 24, PCY); c.lineTo(PCX + 24, PCY);
+  c.moveTo(PCX, PCY - 24); c.lineTo(PCX, PCY + 24);
+  c.stroke();
+
+  // ── Ecken-Marken: die Welt lebt bis in alle Ecken
+  c.strokeStyle = "rgba(140, 160, 190, 0.5)";
+  c.lineWidth = 2;
+  const E = 46, R = 26;
+  for (const [ex, ey, sx, sy] of [[R, R, 1, 1], [BW - R, R, -1, 1], [R, BH - R, 1, -1], [BW - R, BH - R, -1, -1]]) {
+    c.beginPath();
+    c.moveTo(ex + sx * E, ey); c.lineTo(ex, ey); c.lineTo(ex, ey + sy * E);
+    c.stroke();
+  }
+
+  // ── Beschriftungen (Klartext)
+  text("NAKAMA · VORLAGE FÜR DEINE LICHTWELT", 60, 66, "#8a95a8", 16, true);
+
+  // Das Prisma
+  text("DAS IST DAS PRISMA", PX0 + 14, PY0 - 44, "#cfe0f5", 20, true);
+  text("Es steht später als echtes Glas VOR deiner Welt — bitte NICHT mitmalen.", PX0 + 14, PY0 - 18, "#8a95a8", 16);
+
+  // Ziel-Kreuz
+  pfeil(PCX + 150, PCY - 90, PCX + 34, PCY - 12, "#e8a34c");
+  text("Hierhin will dein Licht:", PCX + 162, PCY - 108, "#e8a34c", 17, true);
+  text("die Mitte des Prismas", PCX + 162, PCY - 86, "#e8a34c", 16);
+
+  // Greif-Zonen erklaeren (links ausfuehrlich, rechts kurz)
+  pfeil(320, 420, PX0 - GRIFF / 2, 470, "#e8a34c");
+  text("DIE WICHTIGSTE ZONE (amber, links + rechts):", 60, 360, "#e8a34c", 19, true);
+  text("Das Glas zeigt in seinem Inneren NICHT, was direkt hinter ihm liegt,", 60, 390, "#b8c4d8", 16);
+  text("sondern was HIER passiert — daneben. Lass dein Licht durch diese", 60, 412, "#b8c4d8", 16);
+  text("Zonen wandern, dann lebt das Glas.", 60, 434, "#b8c4d8", 16);
+  text("gilt genauso", PX1 + GRIFF + 30, 470, "#e8a34c", 16, true);
+  text("auf dieser Seite", PX1 + GRIFF + 30, 492, "#e8a34c", 16);
+
+  // Ecken
+  text("Bis in alle Ecken weitermalen —", BW - 420, 84, "#8a95a8", 16, true);
+  text("der Rand ist nie egal.", BW - 420, 106, "#8a95a8", 16);
+
+  // Fusszeile: Anleitung + Stilregeln
+  text("SO BENUTZT DU DIESES BILD:  In Unicorn ein Artboard 1920 × 1280 anlegen, dieses Bild als Referenz unterlegen und deine Welt darum herum bauen.", 60, BH - 92, "#b8c4d8", 17, true);
+  text("Stil-Regeln:  dunkler Grund  ·  feine scharfe Strukturen statt Nebel und Glow  ·  langsame, ruhige Bewegung  ·  überall lebendig, nicht nur in der Mitte", 60, BH - 60, "#8a95a8", 16);
+  text("Fertig?  Projekt-ID an Claude — er hängt deine Welt hinter das echte Glas, und du beurteilst sie DURCH das Prisma.", 60, BH - 28, "#6d7789", 15);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<!-- ARCHIV — ALTE DESIGN-RICHTUNG. Probe P01 Perkolation 17.08.: Ästhetik vom User abgenommen, als Dauerinhalt 18.08. verworfen („wasserfall aus farbigen pixeln“). User 21.08.2026: „alle alten sind alt“. Keine Vorgabe, nur Verlauf. Aktive Design-Quelle: Figma (User) → Projekte/Nakama-Design. Einzelheiten: ../LIES-MICH.md -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROBE 01 · Perkolation</title>
+<style>
+@font-face {
+  font-family: "Manrope";
+  src: url("../fonts/Manrope-Variable.ttf") format("truetype");
+  font-weight: 200 800;
+  font-display: swap;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; background: #04060b; }
+body { font-family: "Manrope", system-ui, sans-serif; color: #cfd6e4; user-select: none; }
+canvas { position: absolute; inset: 0; display: block; }
+#gl { z-index: 1; }
+#deck { z-index: 2; pointer-events: none; }
+header {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+  display: flex; align-items: baseline; gap: 14px; padding: 16px 20px;
+  pointer-events: none;
+}
+.probe { font-size: 11px; letter-spacing: 4px; color: #6d7789; }
+.name { font-size: 15px; letter-spacing: 2.5px; color: #e8edf6; }
+footer {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+  display: flex; justify-content: space-between; gap: 16px; padding: 12px 20px;
+  font-size: 9.5px; letter-spacing: 1.6px; color: #5d6678; pointer-events: none;
+}
+#zeit { font-variant-numeric: tabular-nums; white-space: nowrap; }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<canvas id="deck"></canvas>
+<header>
+  <span class="probe">PROBE 01</span>
+  <span class="name">PERKOLATION</span>
+</header>
+<footer>
+  <span>TECHNIK: WEBGL-PUNKTWOLKE · MUSIK EMITTIERT MATERIE · FARBE = FREQUENZBEREICH (BASS AMBER → MITTEN MAGENTA → HÖHEN EIS) · ALTERN = ABKÜHLEN ZUR GLUT · GOLD = ENERGIESPITZE · LEERTASTE HÄLT AN</span>
+  <span id="zeit">00:00</span>
+</footer>
+
+<script>
+"use strict";
+/* ── PROBE 01 · PERKOLATION ─────────────────────────────────────────────
+   Stil-/Technik-Probe zur Geschmacks-Kalibrierung (Kreativ-Freigabe
+   17.08.). Referenz: Wasser-Perkolations-Simulation — Materie fällt aus
+   Emittern, altert, lagert sich ab. Hier: die 30-s-Songschleife ist der
+   Emitter. Keine Diagnose-Ebene — reine Stilprobe auf echten Sim-Daten.
+   Deterministisch: ?zeit=SEK friert reproduzierbar ein (fester Schritt,
+   Zähler-Rauschen statt Math.random).                                    */
+
+const F_MIN = 20, F_MAX = 18000;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+function smoothstep(e0, e1, v) {
+  const t = clamp((v - e0) / Math.max(1e-9, e1 - e0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+const gaussian = (t, c, w) => Math.exp(-0.5 * ((t - c) / w) ** 2);
+const tForFrequency = f => Math.log10(f / F_MIN) / Math.log10(F_MAX / F_MIN);
+const rausch = k => { const s = Math.sin(k * 12.9898 + 78.233) * 43758.5453; return s - Math.floor(s); };
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ── Songschleife (identisch zu den Musterblättern — portiert, nicht neu) ── */
+const SONG = { laenge: 30, bpm: 96 };
+function songLage(time) {
+  const lt = ((time % SONG.laenge) + SONG.laenge) % SONG.laenge;
+  const beat = Math.max(0, time) * SONG.bpm / 60;
+  const zaehlzeit = beat - Math.floor(beat);
+  const strophe = smoothstep(4.5, 7, lt) * (1 - smoothstep(13, 15.5, lt));
+  const chorus = smoothstep(13, 15.5, lt) * (1 - smoothstep(23, 25.5, lt));
+  const ausklang = smoothstep(23, 25.5, lt);
+  const intro = 1 - smoothstep(4.5, 7, lt);
+  const dichte = 0.25 * intro + 0.62 * strophe + 1.0 * chorus + 0.38 * ausklang;
+  const puls = reducedMotion ? 0.2 : 1;
+  const kick = Math.exp(-8 * zaehlzeit) * (0.35 + 0.65 * dichte) * puls;
+  const snare = (Math.floor(beat) % 2 === 1 ? Math.exp(-10 * zaehlzeit) : 0) * dichte * puls;
+  const achtel = beat * 2 - Math.floor(beat * 2);
+  const hat = Math.exp(-13 * achtel) * (0.15 + 0.85 * dichte) * puls;
+  const NOTEN = [41.2, 41.2, 49.0, 55.0, 41.2, 36.7, 49.0, 61.7];
+  const note = NOTEN[((Math.floor(beat) % 8) + 8) % 8];
+  const bassHalt = (0.55 + 0.45 * Math.exp(-2.5 * zaehlzeit)) * (0.35 + 0.65 * dichte);
+  return { lt, beat, zaehlzeit, dichte, chorus, kick, snare, hat, note, bassHalt };
+}
+function musikDb(t, lage) {
+  return lage.kick * 4.2 * gaussian(t, tForFrequency(52), 0.045)
+    + lage.bassHalt * (3.0 * gaussian(t, tForFrequency(lage.note), 0.05)
+                     + 1.2 * gaussian(t, tForFrequency(lage.note * 2), 0.045))
+    + lage.snare * (3.2 * gaussian(t, tForFrequency(190), 0.07)
+                  + 3.6 * gaussian(t, tForFrequency(4200), 0.20))
+    + lage.hat * 3.0 * smoothstep(0.70, 0.94, t)
+    + lage.chorus * 2.0 * gaussian(t, tForFrequency(760), 0.26)
+        * (0.75 + 0.25 * Math.sin((lage.lt + Math.floor(lage.beat / 48) * 30) * 2.3))
+    + (lage.dichte - 0.9) * 1.8
+    - 1.5 * lage.kick * lage.dichte * (1 - gaussian(t, tForFrequency(52), 0.06));
+}
+function baselineDb(t) {
+  const high = Math.max(0, (t - 0.82) / 0.18);
+  return -16.2 - 2.8 * t - 7.8 * t * t - 8.8 * Math.pow(high, 1.5)
+    + 1.7 * gaussian(t, 0.13, 0.11);
+}
+const energie01 = (t, lage) => clamp((baselineDb(t) + musikDb(t, lage) + 40) / 30, 0, 1);
+
+/* ── Blattzustand ──────────────────────────────────────────────────────── */
+const PARAMS = new URLSearchParams(location.search);
+const ZEIT_FREEZE = (() => {
+  const roh = PARAMS.get("zeit");
+  const w = roh === null ? NaN : parseFloat(roh);
+  return isFinite(w) ? Math.min(w, 60) : null;
+})();
+
+let W = 0, H = 0, DPR = 1;
+const glCv = document.getElementById("gl");
+const deck = document.getElementById("deck");
+const d2 = deck.getContext("2d");
+
+/* ── Teilchen-Speicher ─────────────────────────────────────────────────── */
+const MAX = reducedMotion ? 15000 : 60000;
+const px = new Float32Array(MAX), py = new Float32Array(MAX);
+const vx = new Float32Array(MAX), vy = new Float32Array(MAX);
+const age = new Float32Array(MAX), life = new Float32Array(MAX);
+const eng = new Float32Array(MAX), gold = new Float32Array(MAX);
+const band = new Float32Array(MAX);      // Frequenzlage der Geburt (färbt)
+let alive = 0;
+let saatZaehler = 1;                     // Zähler-Rauschen: deterministisch
+
+const EMITTER = 96;                      // Emitter-Bänder über log-f
+const emitAkku = new Float32Array(EMITTER);
+
+function emitterX(i, j01) { return ((i + j01) / EMITTER) * W; }
+function emitterY(x01) { return H * (0.16 - 0.05 * Math.sin(x01 * Math.PI)); }
+
+function spawn(i, lage) {
+  if (alive >= MAX) return;
+  const n = alive++;
+  const j = rausch(saatZaehler++);
+  const t01 = (i + j) / EMITTER;
+  px[n] = emitterX(i, j);
+  py[n] = emitterY(t01) + (rausch(saatZaehler++) - 0.5) * H * 0.02;
+  vx[n] = (rausch(saatZaehler++) - 0.5) * W * 0.004;
+  vy[n] = H * (0.01 + 0.03 * rausch(saatZaehler++));
+  age[n] = 0;
+  life[n] = 8.2 + 1.6 * rausch(saatZaehler++);   // passt zur 8-s-Farb-Uhr
+  const e = energie01(t01, lage);
+  eng[n] = e;
+  band[n] = t01;
+  // Energiespitzen (Snare/Hat-Momente) gebären goldene Funken
+  gold[n] = (lage.snare + lage.hat) * smoothstep(0.35, 0.75, t01) > 0.55
+    && rausch(saatZaehler++) < 0.3 ? 1 : 0;
+}
+
+function schritt(dt, zeit) {
+  const lage = songLage(zeit);
+  // Emission: Rate ∝ Bandenergie² — wo Klang ist, entsteht Materie
+  const rate = (reducedMotion ? 0.55 : 2.2) * (MAX / 60000);
+  for (let i = 0; i < EMITTER; i++) {
+    const t01 = (i + 0.5) / EMITTER;
+    const e = energie01(t01, lage);
+    // Höhen-Ausgleich: sonst bleibt die Eis-Farbwelt rechts unsichtbar
+    emitAkku[i] += Math.pow(e, 3.2) * (0.65 + 1.2 * t01) * rate * dt * 85;
+    while (emitAkku[i] >= 1) { emitAkku[i] -= 1; spawn(i, lage); }
+  }
+  // Physik: Schwerkraft, Turbulenz (Höhen flattern mehr), Kick-Puls.
+  // Kein Sediment (User 17.08.: „Betonklotz") — Teilchen verlöschen unten.
+  const g = H * 0.055;
+  const kickSchub = lage.kick * H * 0.05;
+  for (let n = 0; n < alive; n++) {
+    const t01 = px[n] / W;
+    vy[n] += (g + kickSchub * Math.max(0, 1 - age[n])) * dt;
+    if (vy[n] > H * 0.115) vy[n] = H * 0.115;
+    vx[n] += Math.sin(py[n] * 0.013 + px[n] * 0.007 + zeit * 0.8)
+      * H * 0.05 * (0.25 + 0.75 * t01) * dt;
+    vx[n] *= 0.985;
+    px[n] += vx[n] * dt;
+    py[n] += vy[n] * dt;
+    age[n] += dt;
+    if (py[n] > H * 0.97 || age[n] >= life[n] || px[n] < -8 || px[n] > W + 8) {
+      // Kompaktieren: letztes lebendes Teilchen rückt nach
+      alive--;
+      px[n] = px[alive]; py[n] = py[alive];
+      vx[n] = vx[alive]; vy[n] = vy[alive];
+      age[n] = age[alive]; life[n] = life[alive];
+      eng[n] = eng[alive]; gold[n] = gold[alive];
+      band[n] = band[alive];
+      n--;
+    }
+  }
+}
+
+/* ── WebGL: eine Punktwolke, additiv gemischt ─────────────────────────── */
+const gl = glCv.getContext("webgl2", { antialias: false, alpha: true, premultipliedAlpha: false })
+        || glCv.getContext("webgl", { antialias: false, alpha: true, premultipliedAlpha: false });
+if (!gl) document.querySelector(".name").textContent = "PERKOLATION — WEBGL NICHT VERFÜGBAR";
+
+const VS = `
+attribute vec2 aPos;
+attribute vec4 aInfo;      // age01, energie, gold, groesse
+attribute float aBand;     // Frequenzlage 0..1 (färbt die Geburt)
+uniform vec2 uAufloesung;
+varying float vAge, vEng, vGold, vBand;
+void main() {
+  vec2 clip = (aPos / uAufloesung) * 2.0 - 1.0;
+  gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
+  gl_PointSize = aInfo.w;
+  vAge = aInfo.x; vEng = aInfo.y; vGold = aInfo.z; vBand = aBand;
+}`;
+const FS = `
+precision mediump float;
+uniform highp vec2 uAufloesung;
+varying float vAge, vEng, vGold, vBand;
+// Frequenz färbt: Bass warmes Amber -> Mitten heißes Magenta -> Höhen Eis-Cyan
+vec3 bandFarbe(float b) {
+  vec3 bass  = vec3(1.00, 0.55, 0.18);
+  vec3 mitte = vec3(0.96, 0.20, 0.62);
+  vec3 hoehe = vec3(0.38, 0.86, 1.00);
+  return b < 0.5 ? mix(bass, mitte, b * 2.0) : mix(mitte, hoehe, (b - 0.5) * 2.0);
+}
+void main() {
+  vec2 d = gl_PointCoord - vec2(0.5);
+  float r = length(d) * 2.0;
+  if (r > 1.0) discard;
+  float kern = smoothstep(1.0, 0.0, r);
+  vec3 farbe = bandFarbe(vBand);
+  // Altern: die Farbe kühlt zur dunklen Glut ab
+  farbe = mix(farbe, vec3(0.42, 0.08, 0.12), smoothstep(0.3, 1.0, vAge));
+  farbe = mix(farbe, vec3(1.0, 0.80, 0.38), vGold * (1.0 - vAge * 0.7));
+  float ein = smoothstep(0.0, 0.06, vAge);
+  float aus = 1.0 - smoothstep(0.78, 1.0, vAge);
+  // unten verlöschen die Teilchen im Dunkel (kein Boden, kein Block)
+  float boden = smoothstep(0.03, 0.14, gl_FragCoord.y / uAufloesung.y);
+  float a = kern * (0.22 + 0.38 * vEng) * ein * aus * boden;
+  gl_FragColor = vec4(farbe * a, a);   // vormultipliziert; Mischung = ONE, ONE
+}`;
+function shader(typ, quelle) {
+  const s = gl.createShader(typ);
+  gl.shaderSource(s, quelle); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+    throw new Error("Shader: " + gl.getShaderInfoLog(s));
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, shader(gl.VERTEX_SHADER, VS));
+gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(prog);
+if (!gl.getProgramParameter(prog, gl.LINK_STATUS))
+  throw new Error("Programm: " + gl.getProgramInfoLog(prog));
+gl.useProgram(prog);
+const uAufloesung = gl.getUniformLocation(prog, "uAufloesung");
+const aPos = gl.getAttribLocation(prog, "aPos");
+const aInfo = gl.getAttribLocation(prog, "aInfo");
+const aBand = gl.getAttribLocation(prog, "aBand");
+const posBuf = gl.createBuffer(), infoBuf = gl.createBuffer(), bandBuf = gl.createBuffer();
+const posArr = new Float32Array(MAX * 2), infoArr = new Float32Array(MAX * 4);
+const bandArr = new Float32Array(MAX);
+gl.enableVertexAttribArray(aPos);
+gl.enableVertexAttribArray(aInfo);
+gl.enableVertexAttribArray(aBand);
+gl.blendFunc(gl.ONE, gl.ONE);
+gl.enable(gl.BLEND);
+gl.disable(gl.DEPTH_TEST);
+
+function maleGl() {
+  for (let n = 0; n < alive; n++) {
+    posArr[n * 2] = px[n] * DPR;
+    posArr[n * 2 + 1] = py[n] * DPR;
+    infoArr[n * 4] = Math.min(1, age[n] / 8);   // feste Alterungs-Uhr: 8 s bis tiefrot
+    infoArr[n * 4 + 1] = eng[n];
+    infoArr[n * 4 + 2] = gold[n];
+    infoArr[n * 4 + 3] = (2.2 + 3.2 * eng[n] + 1.6 * gold[n]) * DPR;
+    bandArr[n] = band[n];
+  }
+  gl.viewport(0, 0, glCv.width, glCv.height);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.uniform2f(uAufloesung, glCv.width, glCv.height);
+  gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, posArr.subarray(0, alive * 2), gl.DYNAMIC_DRAW);
+  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, infoBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, infoArr.subarray(0, alive * 4), gl.DYNAMIC_DRAW);
+  gl.vertexAttribPointer(aInfo, 4, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, bandBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, bandArr.subarray(0, alive), gl.DYNAMIC_DRAW);
+  gl.vertexAttribPointer(aBand, 1, gl.FLOAT, false, 0, 0);
+  gl.drawArrays(gl.POINTS, 0, alive);
+}
+
+/* ── Deck (2D): Emitterlinie + Vignette (kein Boden — User: „Betonklotz") ── */
+function bandFarbeCss(b, a) {
+  const mixRgb = (c1, c2, k) => c1.map((v, i) => Math.round(lerp(v, c2[i], k)));
+  const bass = [255, 140, 46], mitte = [245, 51, 158], hoehe = [97, 219, 255];
+  const c = b < 0.5 ? mixRgb(bass, mitte, b * 2) : mixRgb(mitte, hoehe, (b - 0.5) * 2);
+  return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${a})`;
+}
+function maleDeck(zeit) {
+  const lage = songLage(zeit);
+  d2.clearRect(0, 0, W, H);
+
+  // Emitterlinie: dünner Lichtsaum in Bandfarbe, Intensität = Spektrum
+  for (let i = 0; i < EMITTER; i++) {
+    const t01 = (i + 0.5) / EMITTER;
+    const e = energie01(t01, lage);
+    if (e < 0.05) continue;
+    const x = emitterX(i, 0.5), y = emitterY(t01);
+    d2.fillStyle = bandFarbeCss(t01, 0.05 + 0.32 * e * e);
+    d2.fillRect(x - W / EMITTER / 2, y - 1, W / EMITTER + 1, 2);
+  }
+
+  // Vignette gibt dem Raum Tiefe
+  const v = d2.createRadialGradient(W / 2, H * 0.45, H * 0.25, W / 2, H * 0.45, H * 0.95);
+  v.addColorStop(0, "rgba(0,0,0,0)");
+  v.addColorStop(1, "rgba(2,3,6,0.55)");
+  d2.fillStyle = v;
+  d2.fillRect(0, 0, W, H);
+}
+
+/* ── Layout & Schleife ─────────────────────────────────────────────────── */
+function layout() {
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = window.innerWidth; H = window.innerHeight;
+  for (const cv of [glCv, deck]) {
+    cv.width = Math.round(W * (cv === glCv ? DPR : 1));
+    cv.height = Math.round(H * (cv === glCv ? DPR : 1));
+    cv.style.width = W + "px"; cv.style.height = H + "px";
+  }
+}
+window.addEventListener("resize", () => { layout(); });
+layout();
+
+const zeitEl = document.getElementById("zeit");
+let laeuft = true, zeit = 0, letzter = performance.now();
+
+document.addEventListener("keydown", ev => {
+  if (ev.key === " ") {
+    ev.preventDefault();
+    laeuft = !laeuft;
+    letzter = performance.now();
+  }
+});
+
+if (ZEIT_FREEZE !== null) {
+  // Deterministisch einschwingen: fester Schritt von 0 bis zum Standpunkt
+  const dt = 1 / 60;
+  for (let s = 0; s * dt < ZEIT_FREEZE; s++) schritt(dt, s * dt);
+  maleGl();
+  maleDeck(ZEIT_FREEZE);
+  zeitEl.textContent = "STAND " + String(Math.floor(ZEIT_FREEZE)).padStart(2, "0") + " s";
+} else {
+  function frame(now) {
+    const dt = Math.min(0.033, Math.max(0.001, (now - letzter) / 1000));
+    letzter = now;
+    if (laeuft) {
+      zeit += dt;
+      schritt(dt, zeit);
+    }
+    maleGl();
+    maleDeck(zeit);
+    const s = Math.floor(zeit);
+    zeitEl.textContent =
+      String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0")
+      + " · " + alive + " TEILCHEN";
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>

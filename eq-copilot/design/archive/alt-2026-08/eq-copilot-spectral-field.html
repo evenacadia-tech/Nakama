@@ -1,0 +1,843 @@
+<!doctype html>
+<!-- ARCHIV — ALTE DESIGN-RICHTUNG. HUD-Fassung 15.08. (enthält einen „ZIELKORRIDOR“, den die Invarianten verbieten): alt. User 21.08.2026: „alle alten sind alt“. Keine Vorgabe, nur Verlauf. Aktive Design-Quelle: Figma (User) → Projekte/Nakama-Design. Einzelheiten: LIES-MICH.md in diesem Ordner. -->
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="data:," />
+  <title>Nakama · Spectral Field</title>
+  <style>
+    @font-face {
+      font-family: "Futura PT";
+      src: url("../../plugin-hub-app/src/lib/fonts/FuturaPT-Book.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --stage: #070909;
+      --stage-soft: #0d1010;
+      --ink: #eef1ee;
+      --ink-soft: #aab2ad;
+      --ink-muted: #727b76;
+      --grid-major: rgba(225, 233, 228, 0.105);
+      --grid-minor: rgba(225, 233, 228, 0.042);
+      --cyan: #82b1bd;
+      --ember: #ff9b5f;
+      --green: #78dc8a;
+      --fault: #e26757;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #030505;
+    }
+
+    body {
+      color: var(--ink);
+      font-family: "Futura PT", "Segoe UI", sans-serif;
+      font-synthesis: none;
+      font-variant-numeric: tabular-nums;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+    }
+
+    #viewport {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: #030505;
+    }
+
+    #stage {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      transform-origin: 50% 50%;
+      background:
+        radial-gradient(1150px 760px at 47% 43%, rgba(39, 47, 44, 0.20), transparent 70%),
+        linear-gradient(180deg, #0d1010 0%, #080a0a 58%, #060808 100%);
+      box-shadow: inset 0 0 0 1px rgba(236, 242, 238, 0.06);
+    }
+
+    #graph {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .top-hud {
+      position: absolute;
+      z-index: 10;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 86px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 18px 30px 16px 32px;
+      background: linear-gradient(180deg, rgba(7, 9, 9, 0.94), rgba(7, 9, 9, 0.58) 72%, transparent);
+      pointer-events: none;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 44px;
+      height: 34px;
+      flex: 0 0 auto;
+    }
+
+    .brand-copy { line-height: 1; }
+
+    .brand-name {
+      color: var(--ink);
+      font-size: 15px;
+      letter-spacing: 0.075em;
+    }
+
+    .brand-sub {
+      margin-top: 7px;
+      color: var(--ink-muted);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+    }
+
+    .context {
+      margin-left: 28px;
+      padding-left: 27px;
+      border-left: 1px solid rgba(232, 239, 234, 0.10);
+      color: var(--ink-soft);
+      font-size: 13px;
+      letter-spacing: 0.035em;
+      white-space: nowrap;
+    }
+
+    .connection {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 17px;
+      color: #9fa8a2;
+      font-size: 11px;
+      letter-spacing: 0.07em;
+    }
+
+    .connection-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 11px rgba(120, 220, 138, 0.48);
+    }
+
+    .measure-state {
+      justify-self: center;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #c8ceca;
+      font-size: 12px;
+      letter-spacing: 0.095em;
+      white-space: nowrap;
+    }
+
+    .measure-state strong {
+      color: var(--green);
+      font-weight: 400;
+    }
+
+    .measure-state .sep { color: #47504b; }
+
+    .actions {
+      justify-self: end;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: auto;
+    }
+
+    .icon-button {
+      appearance: none;
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      padding: 0;
+      border: 1px solid rgba(229, 236, 231, 0.15);
+      border-radius: 50%;
+      color: #dce2de;
+      background: rgba(31, 36, 34, 0.72);
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.045);
+      cursor: pointer;
+      transition: border-color 120ms ease, background 120ms ease, color 120ms ease, transform 120ms ease;
+    }
+
+    .icon-button:hover,
+    .icon-button:focus-visible {
+      outline: none;
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.36);
+      background: rgba(46, 52, 49, 0.88);
+    }
+
+    .icon-button:active { transform: translateY(1px); }
+
+    .icon-button.play {
+      width: 50px;
+      height: 50px;
+      border-color: rgba(255, 155, 95, 0.33);
+      color: var(--ember);
+    }
+
+    #stage.measuring .icon-button.play {
+      color: #171a18;
+      background: var(--ember);
+      border-color: var(--ember);
+      box-shadow: 0 0 0 5px rgba(255, 155, 95, 0.08), 0 10px 28px rgba(0, 0, 0, 0.32);
+    }
+
+    .event-rail {
+      position: absolute;
+      z-index: 9;
+      top: 94px;
+      left: 76px;
+      width: 1768px;
+      height: 66px;
+      pointer-events: none;
+    }
+
+    .event-chip {
+      position: absolute;
+      top: 4px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 14px 0 12px;
+      border: 1px solid rgba(255, 155, 95, 0.28);
+      border-radius: 19px;
+      color: #d8ddd9;
+      background: rgba(16, 19, 18, 0.88);
+      box-shadow: 0 11px 30px rgba(0, 0, 0, 0.27);
+      cursor: pointer;
+      pointer-events: auto;
+      transition: opacity 130ms ease, border-color 130ms ease, background 130ms ease, transform 130ms ease;
+      white-space: nowrap;
+    }
+
+    .event-chip:hover,
+    .event-chip:focus-visible,
+    .event-chip.selected {
+      outline: none;
+      transform: translateY(-1px);
+      color: #fff;
+      border-color: rgba(255, 155, 95, 0.72);
+      background: rgba(34, 27, 22, 0.95);
+    }
+
+    .event-chip .shape {
+      width: 9px;
+      height: 9px;
+      border: 1px solid var(--ember);
+      border-radius: 50%;
+      flex: 0 0 auto;
+    }
+
+    .event-chip.persistent .shape {
+      background: var(--ember);
+      box-shadow: 0 0 12px rgba(255, 155, 95, 0.42);
+    }
+
+    .event-chip.zone .shape {
+      width: 12px;
+      height: 7px;
+      border-radius: 2px;
+      background: rgba(255, 155, 95, 0.15);
+    }
+
+    .event-chip .primary {
+      color: #f1f3f1;
+      font-size: 12px;
+      letter-spacing: 0.035em;
+    }
+
+    .event-chip .secondary {
+      color: #9ca49f;
+      font-size: 11px;
+      letter-spacing: 0.025em;
+    }
+
+    #event-resonance { left: 308px; }
+    #event-mid { left: 830px; }
+    #event-presence { left: 1292px; }
+
+    .bottom-hud {
+      position: absolute;
+      z-index: 8;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 72px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      padding: 14px 32px 22px 76px;
+      background: linear-gradient(0deg, rgba(5, 7, 7, 0.96), rgba(5, 7, 7, 0.52) 72%, transparent);
+      pointer-events: none;
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      color: #858e88;
+      font-size: 10px;
+      letter-spacing: 0.075em;
+      white-space: nowrap;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-line {
+      width: 30px;
+      height: 0;
+      border-top: 2px solid #e8ece9;
+    }
+
+    .legend-line.live { border-color: rgba(170, 179, 173, 0.45); border-top-width: 1px; }
+    .legend-line.snap { border-color: var(--cyan); border-top-style: dashed; border-top-width: 1px; }
+    .legend-field {
+      width: 30px;
+      height: 8px;
+      border-radius: 5px;
+      background: rgba(238, 241, 238, 0.09);
+    }
+
+    .metrics {
+      display: flex;
+      align-items: flex-end;
+      gap: 30px;
+      text-align: right;
+    }
+
+    .metric-label {
+      margin-bottom: 5px;
+      color: #68716c;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+    }
+
+    .metric-value {
+      color: #d5dbd7;
+      font-size: 15px;
+      letter-spacing: 0.025em;
+    }
+
+    .draft-note {
+      position: absolute;
+      z-index: 8;
+      left: 31px;
+      bottom: 12px;
+      color: #3f4743;
+      font-size: 8px;
+      letter-spacing: 0.13em;
+      pointer-events: none;
+    }
+
+    .event-popover {
+      position: absolute;
+      z-index: 30;
+      top: 244px;
+      left: 582px;
+      width: 430px;
+      padding: 20px 22px 18px;
+      border: 1px solid rgba(232, 239, 234, 0.14);
+      border-radius: 15px;
+      opacity: 0;
+      transform: translateY(-8px) scale(0.985);
+      pointer-events: none;
+      background:
+        linear-gradient(145deg, rgba(35, 40, 38, 0.98), rgba(16, 19, 18, 0.985));
+      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.50), inset 0 1px rgba(255, 255, 255, 0.04);
+      transition: opacity 150ms ease, transform 150ms ease;
+    }
+
+    .event-popover.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .popover-kicker {
+      display: flex;
+      justify-content: space-between;
+      color: var(--ember);
+      font-size: 10px;
+      letter-spacing: 0.11em;
+    }
+
+    .popover-main {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-top: 13px;
+    }
+
+    .popover-frequency {
+      color: #f3f5f3;
+      font-size: 32px;
+      letter-spacing: -0.015em;
+    }
+
+    .popover-note {
+      color: #afb7b2;
+      font-size: 18px;
+    }
+
+    .popover-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      margin: 18px 0;
+      overflow: hidden;
+      border: 1px solid rgba(230, 237, 232, 0.08);
+      border-radius: 8px;
+      background: rgba(230, 237, 232, 0.08);
+    }
+
+    .popover-stat {
+      padding: 11px 12px 10px;
+      background: rgba(9, 11, 10, 0.72);
+    }
+
+    .popover-stat span {
+      display: block;
+      color: #6f7873;
+      font-size: 8px;
+      letter-spacing: 0.11em;
+    }
+
+    .popover-stat strong {
+      display: block;
+      margin-top: 6px;
+      color: #dce1de;
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    .popover-advice {
+      color: #c8cfcb;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .popover-advice em {
+      color: #f0b084;
+      font-style: normal;
+    }
+
+    .popover-truth {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(232, 239, 234, 0.08);
+      color: #737c77;
+      font-size: 9px;
+      letter-spacing: 0.08em;
+    }
+
+    .snapshot-toast {
+      position: absolute;
+      z-index: 22;
+      top: 94px;
+      right: 30px;
+      padding: 9px 14px;
+      border: 1px solid rgba(130, 177, 189, 0.28);
+      border-radius: 8px;
+      color: #b7d0d6;
+      background: rgba(14, 23, 24, 0.92);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      opacity: 0;
+      transform: translateY(-7px);
+      transition: opacity 140ms ease, transform 140ms ease;
+      pointer-events: none;
+    }
+
+    .snapshot-toast.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+  <div id="viewport">
+    <main id="stage" aria-label="Nakama Spectral Field Designentwurf">
+      <svg id="graph" viewBox="0 0 1920 1080" aria-label="Spektralanalyse mit Zielkorridor und markierten Befunden">
+        <defs>
+          <linearGradient id="targetFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#82b1bd" stop-opacity="0.15" />
+            <stop offset="1" stop-color="#82b1bd" stop-opacity="0.045" />
+          </linearGradient>
+          <linearGradient id="dynamicFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#eef1ee" stop-opacity="0.11" />
+            <stop offset="0.5" stop-color="#eef1ee" stop-opacity="0.045" />
+            <stop offset="1" stop-color="#eef1ee" stop-opacity="0.085" />
+          </linearGradient>
+          <linearGradient id="eventColumn" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ff9b5f" stop-opacity="0.16" />
+            <stop offset="0.72" stop-color="#ff9b5f" stop-opacity="0.035" />
+            <stop offset="1" stop-color="#ff9b5f" stop-opacity="0" />
+          </linearGradient>
+          <linearGradient id="zoneColumn" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ff9b5f" stop-opacity="0.075" />
+            <stop offset="1" stop-color="#ff9b5f" stop-opacity="0.012" />
+          </linearGradient>
+          <filter id="curveGlow" x="-10%" y="-20%" width="120%" height="140%">
+            <feGaussianBlur stdDeviation="3.2" result="blur" />
+            <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0.94  0 1 0 0 0.96  0 0 1 0 0.95  0 0 0 0.18 0" />
+          </filter>
+          <filter id="eventGlow" x="-150%" y="-150%" width="400%" height="400%">
+            <feGaussianBlur stdDeviation="5" result="blur" />
+          </filter>
+          <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="8" stroke="#dce5df" stroke-opacity="0.065" stroke-width="2" />
+          </pattern>
+          <clipPath id="plotClip"><rect x="76" y="166" width="1768" height="786" rx="2" /></clipPath>
+        </defs>
+
+        <g id="zones" clip-path="url(#plotClip)"></g>
+        <g id="grid"></g>
+
+        <g clip-path="url(#plotClip)">
+          <rect id="leftCoverage" x="76" y="166" width="126" height="786" fill="url(#hatch)" />
+          <rect id="rightCoverage" x="1780" y="166" width="64" height="786" fill="url(#hatch)" />
+          <path id="targetArea" fill="url(#targetFill)" />
+          <path id="targetCenter" fill="none" stroke="#82b1bd" stroke-opacity="0.36" stroke-width="1.4" />
+          <path id="dynamicArea" fill="url(#dynamicFill)" />
+          <path id="snapshotCurve" fill="none" stroke="#82b1bd" stroke-opacity="0.72" stroke-width="1.45" stroke-dasharray="8 7" />
+          <path id="liveCurve" fill="none" stroke="#aab3ad" stroke-opacity="0.31" stroke-width="1" />
+          <path id="mainGlow" fill="none" stroke="#eef1ee" stroke-opacity="0.2" stroke-width="5.5" filter="url(#curveGlow)" />
+          <path id="mainCurve" fill="none" stroke="#eef1ee" stroke-width="2.45" stroke-linecap="round" stroke-linejoin="round" />
+          <g id="eventOverlays"></g>
+        </g>
+
+        <g id="axisLabels"></g>
+      </svg>
+
+      <header class="top-hud">
+        <div class="brand">
+          <svg class="brand-mark" viewBox="0 0 44 34" aria-hidden="true">
+            <path d="M3 25.5 C9 25.5 10.6 8.8 17.8 8.8 C25.1 8.8 25.4 24.2 32.2 24.2" fill="none" stroke="#eef1ee" stroke-width="3.5" stroke-linecap="round" />
+            <circle cx="37.2" cy="24.2" r="3.5" fill="#ff9b5f" />
+          </svg>
+          <div class="brand-copy">
+            <div class="brand-name">NAKAMA</div>
+            <div class="brand-sub">SPECTRAL ADVISOR</div>
+          </div>
+          <div class="context">MASTER · „EVEN“ · TAKT 65–81</div>
+          <div class="connection"><span class="connection-dot"></span>PASSTHROUGH · 0 ms</div>
+        </div>
+
+        <div class="measure-state" id="measureState">
+          <strong>KURVE STEHT</strong><span class="sep">·</span><span>00:26</span><span class="sep">·</span><span>ABDECKUNG 92 %</span>
+        </div>
+
+        <div class="actions">
+          <button class="icon-button play" id="playButton" aria-label="Messung starten">
+            <svg id="playIcon" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+              <path d="M5 3.4 L14 9 L5 14.6 Z" fill="currentColor" />
+            </svg>
+          </button>
+          <button class="icon-button" id="snapshotButton" aria-label="Schnappschuss speichern">
+            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M6.4 5.2 7.7 3.5h4.6l1.3 1.7h2.2c1.05 0 1.7.7 1.7 1.7v7.6c0 1.05-.65 1.7-1.7 1.7H4.2c-1.05 0-1.7-.65-1.7-1.7V6.9c0-1 .65-1.7 1.7-1.7h2.2Z" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round" />
+              <circle cx="10" cy="10.7" r="3.05" fill="none" stroke="currentColor" stroke-width="1.35" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="event-rail" aria-label="Erkannte Befunde">
+        <button class="event-chip persistent" id="event-resonance" data-event="resonance">
+          <span class="shape"></span>
+          <span class="primary">118 Hz · A#3</span>
+          <span class="secondary">+8,2 dB · 73 %</span>
+        </button>
+        <button class="event-chip zone" id="event-mid" data-event="mid">
+          <span class="shape"></span>
+          <span class="primary">MITTENLOCH</span>
+          <span class="secondary">520 Hz–1,8 kHz · −4,6 dB</span>
+        </button>
+        <button class="event-chip" id="event-presence" data-event="presence">
+          <span class="shape"></span>
+          <span class="primary">3,4 kHz · F7</span>
+          <span class="secondary">+5,1 dB · 22 %</span>
+        </button>
+      </div>
+
+      <aside class="event-popover" id="eventPopover" aria-label="Folgeanweisung zur Resonanz">
+        <div class="popover-kicker"><span>RESONANZ · DAUERHAFT</span><span>SICHERHEIT HOCH</span></div>
+        <div class="popover-main"><span class="popover-frequency">118 Hz</span><span class="popover-note">A#3</span></div>
+        <div class="popover-grid">
+          <div class="popover-stat"><span>ÜBERSTAND</span><strong>+8,2 dB</strong></div>
+          <div class="popover-stat"><span>MUSIKZEIT</span><strong>73 %</strong></div>
+          <div class="popover-stat"><span>STARTBEREICH</span><strong>Q 6–8</strong></div>
+        </div>
+        <div class="popover-advice">Prüfe einen schmalen Bell-Cut von <em>−3 bis −5 dB</em>. Höre dabei, ob der tiefe Klavierakkord klarer wird, ohne sein Gewicht zu verlieren.</div>
+        <div class="popover-truth">NUR VORSCHLAG · NAKAMA VERÄNDERT KEIN AUDIO</div>
+      </aside>
+
+      <div class="snapshot-toast" id="snapshotToast">SCHNAPPSCHUSS 01 GESPEICHERT</div>
+
+      <footer class="bottom-hud">
+        <div class="legend">
+          <span class="legend-item"><span class="legend-line"></span>STABILE LTAS</span>
+          <span class="legend-item"><span class="legend-line live"></span>LIVE</span>
+          <span class="legend-item"><span class="legend-field"></span>P10–P95</span>
+          <span class="legend-item"><span class="legend-line snap"></span>SCHNAPPSCHUSS</span>
+          <span class="legend-item" style="color:#6d898f">ZIELKORRIDOR</span>
+        </div>
+        <div class="metrics">
+          <div><div class="metric-label">LUFS-S</div><div class="metric-value">−18,3</div></div>
+          <div><div class="metric-label">TRUE PEAK</div><div class="metric-value">−12,9 dBTP</div></div>
+          <div><div class="metric-label">CREST</div><div class="metric-value">5,9 dB</div></div>
+        </div>
+      </footer>
+      <div class="draft-note">DESIGNENTWURF · BEISPIELDATEN</div>
+    </main>
+  </div>
+
+  <script>
+    const W = 1920;
+    const H = 1080;
+    const plot = { x: 76, y: 166, w: 1768, h: 786 };
+    const ns = "http://www.w3.org/2000/svg";
+
+    function fitStage() {
+      const scale = Math.min(innerWidth / W, innerHeight / H);
+      document.getElementById("stage").style.transform = `scale(${scale})`;
+    }
+    addEventListener("resize", fitStage);
+    fitStage();
+
+    const gauss = (t, c, s) => Math.exp(-0.5 * ((t - c) / s) ** 2);
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const xAt = t => plot.x + t * plot.w;
+    const tForFreq = f => Math.log10(f / 20) / 3;
+    const xForFreq = f => xAt(tForFreq(f));
+
+    function mainY(t) {
+      const high = Math.max(0, (t - 0.84) / 0.16);
+      return 410 + 50 * t + 115 * t * t
+        - 62 * gauss(t, 0.145, 0.10)
+        - 126 * gauss(t, 0.255, 0.014)
+        + 58 * gauss(t, 0.555, 0.15)
+        - 24 * gauss(t, 0.735, 0.075)
+        + 98 * Math.pow(high, 1.55)
+        + 4.2 * Math.sin(t * 31) + 2.8 * Math.sin(t * 83 + 0.7);
+    }
+
+    function targetY(t) {
+      const high = Math.max(0, (t - 0.82) / 0.18);
+      return 397 + 74 * t + 98 * t * t
+        - 35 * gauss(t, 0.16, 0.13)
+        + 19 * gauss(t, 0.55, 0.22)
+        + 91 * Math.pow(high, 1.4);
+    }
+
+    function path(fn, samples = 420) {
+      let d = "";
+      for (let i = 0; i <= samples; i++) {
+        const t = i / samples;
+        const x = xAt(t);
+        const y = clamp(fn(t), plot.y + 5, plot.y + plot.h - 5);
+        d += `${i ? "L" : "M"}${x.toFixed(2)},${y.toFixed(2)}`;
+      }
+      return d;
+    }
+
+    function area(topFn, bottomFn, samples = 420) {
+      let d = "";
+      for (let i = 0; i <= samples; i++) {
+        const t = i / samples;
+        d += `${i ? "L" : "M"}${xAt(t).toFixed(2)},${topFn(t).toFixed(2)}`;
+      }
+      for (let i = samples; i >= 0; i--) {
+        const t = i / samples;
+        d += `L${xAt(t).toFixed(2)},${bottomFn(t).toFixed(2)}`;
+      }
+      return d + "Z";
+    }
+
+    document.getElementById("targetArea").setAttribute("d", area(
+      t => targetY(t) - (31 + 8 * gauss(t, 0.55, 0.23)),
+      t => targetY(t) + (31 + 8 * gauss(t, 0.55, 0.23))
+    ));
+    document.getElementById("targetCenter").setAttribute("d", path(targetY));
+    document.getElementById("dynamicArea").setAttribute("d", area(
+      t => mainY(t) - (14 + 18 * gauss(t, 0.255, 0.04) + 11 * gauss(t, 0.76, 0.15)),
+      t => mainY(t) + (18 + 24 * gauss(t, 0.255, 0.04) + 15 * gauss(t, 0.76, 0.15))
+    ));
+    document.getElementById("mainCurve").setAttribute("d", path(mainY));
+    document.getElementById("mainGlow").setAttribute("d", path(mainY));
+    document.getElementById("liveCurve").setAttribute("d", path(t =>
+      mainY(t) + 10 * Math.sin(t * 177 + 0.4) + 5 * Math.sin(t * 367) + 2.5 * Math.sin(t * 797 + 1.1)
+    ));
+    document.getElementById("snapshotCurve").setAttribute("d", path(t =>
+      mainY(t) + 13 * gauss(t, 0.255, 0.035) - 19 * gauss(t, 0.55, 0.20) + 13 * gauss(t, 0.75, 0.12)
+    ));
+
+    const grid = document.getElementById("grid");
+    const labels = document.getElementById("axisLabels");
+    const zones = document.getElementById("zones");
+
+    const zoneDefs = [
+      [20, 60, "SUB"], [60, 200, "BASS / KÖRPER"], [200, 500, "TIEFMITTEN"],
+      [500, 2000, "MITTEN"], [2000, 5000, "PRÄSENZ"], [5000, 20000, "AIR"]
+    ];
+    zoneDefs.forEach(([a, b, name], i) => {
+      const x1 = xForFreq(a), x2 = xForFreq(b);
+      const rect = document.createElementNS(ns, "rect");
+      rect.setAttribute("x", x1); rect.setAttribute("y", plot.y);
+      rect.setAttribute("width", x2 - x1); rect.setAttribute("height", plot.h);
+      rect.setAttribute("fill", i % 2 ? "rgba(255,255,255,0.008)" : "rgba(255,255,255,0.015)");
+      zones.appendChild(rect);
+
+      const txt = document.createElementNS(ns, "text");
+      txt.setAttribute("x", (x1 + x2) / 2); txt.setAttribute("y", 925);
+      txt.setAttribute("text-anchor", "middle"); txt.setAttribute("fill", "#626b66");
+      txt.setAttribute("font-family", "Futura PT, Segoe UI, sans-serif"); txt.setAttribute("font-size", "10");
+      txt.setAttribute("letter-spacing", "1.4"); txt.textContent = name;
+      labels.appendChild(txt);
+    });
+
+    const majorFreqs = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+    const minorFreqs = [30, 40, 60, 70, 80, 90, 150, 300, 400, 600, 700, 800, 900, 1500, 3000, 4000, 6000, 7000, 8000, 9000, 15000];
+    minorFreqs.forEach(f => {
+      const line = document.createElementNS(ns, "line");
+      const x = xForFreq(f);
+      line.setAttribute("x1", x); line.setAttribute("x2", x); line.setAttribute("y1", plot.y); line.setAttribute("y2", plot.y + plot.h);
+      line.setAttribute("stroke", "rgba(225,233,228,0.035)"); line.setAttribute("stroke-width", "1");
+      grid.appendChild(line);
+    });
+    majorFreqs.forEach(f => {
+      const x = xForFreq(f);
+      const line = document.createElementNS(ns, "line");
+      line.setAttribute("x1", x); line.setAttribute("x2", x); line.setAttribute("y1", plot.y); line.setAttribute("y2", plot.y + plot.h);
+      line.setAttribute("stroke", "rgba(225,233,228,0.095)"); line.setAttribute("stroke-width", "1");
+      grid.appendChild(line);
+      const txt = document.createElementNS(ns, "text");
+      txt.setAttribute("x", x); txt.setAttribute("y", 949); txt.setAttribute("text-anchor", "middle");
+      txt.setAttribute("fill", "#818a85"); txt.setAttribute("font-family", "Futura PT, Segoe UI, sans-serif");
+      txt.setAttribute("font-size", "11"); txt.textContent = f >= 1000 ? `${f / 1000}k` : String(f);
+      labels.appendChild(txt);
+    });
+
+    const yTicks = [230, 328, 426, 524, 622, 720, 818, 916];
+    const yText = ["−6", "−12", "−18", "−24", "−30", "−36", "−42", "−48"];
+    yTicks.forEach((y, i) => {
+      const line = document.createElementNS(ns, "line");
+      line.setAttribute("x1", plot.x); line.setAttribute("x2", plot.x + plot.w); line.setAttribute("y1", y); line.setAttribute("y2", y);
+      line.setAttribute("stroke", i === 3 ? "rgba(225,233,228,0.12)" : "rgba(225,233,228,0.065)");
+      line.setAttribute("stroke-width", "1"); grid.appendChild(line);
+      const txt = document.createElementNS(ns, "text");
+      txt.setAttribute("x", 56); txt.setAttribute("y", y + 4); txt.setAttribute("text-anchor", "end");
+      txt.setAttribute("fill", "#747d78"); txt.setAttribute("font-family", "Futura PT, Segoe UI, sans-serif");
+      txt.setAttribute("font-size", "10"); txt.textContent = yText[i]; labels.appendChild(txt);
+    });
+
+    const axisTitle = document.createElementNS(ns, "text");
+    axisTitle.setAttribute("x", 76); axisTitle.setAttribute("y", 184); axisTitle.setAttribute("fill", "#7b8580");
+    axisTitle.setAttribute("font-family", "Futura PT, Segoe UI, sans-serif"); axisTitle.setAttribute("font-size", "9");
+    axisTitle.setAttribute("letter-spacing", "1.2"); axisTitle.textContent = "RELATIVES LTAS · NATÜRLICHER TILT · GEMEINSAME LAUTHEIT";
+    labels.appendChild(axisTitle);
+
+    const eventGroup = document.getElementById("eventOverlays");
+    function svgEl(name, attrs) {
+      const el = document.createElementNS(ns, name);
+      Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+      eventGroup.appendChild(el);
+      return el;
+    }
+
+    const rx = xForFreq(118), rt = tForFreq(118), ry = mainY(rt);
+    svgEl("rect", { x: rx - 34, y: plot.y, width: 68, height: plot.h, fill: "url(#eventColumn)" });
+    svgEl("line", { x1: rx, y1: 136, x2: rx, y2: ry - 18, stroke: "#ff9b5f", "stroke-opacity": 0.36, "stroke-width": 1 });
+    svgEl("line", { x1: rx - 31, y1: ry + 15, x2: rx + 31, y2: ry + 15, stroke: "#ff9b5f", "stroke-opacity": 0.78, "stroke-width": 1.3 });
+    svgEl("line", { x1: rx - 31, y1: ry + 10, x2: rx - 31, y2: ry + 20, stroke: "#ff9b5f", "stroke-opacity": 0.78, "stroke-width": 1.3 });
+    svgEl("line", { x1: rx + 31, y1: ry + 10, x2: rx + 31, y2: ry + 20, stroke: "#ff9b5f", "stroke-opacity": 0.78, "stroke-width": 1.3 });
+    svgEl("circle", { cx: rx, cy: ry, r: 13, fill: "#ff9b5f", "fill-opacity": 0.18, filter: "url(#eventGlow)" });
+    svgEl("circle", { id: "resonanceMarker", cx: rx, cy: ry, r: 6.2, fill: "#ff9b5f", stroke: "#121514", "stroke-width": 2 });
+
+    const midX1 = xForFreq(520), midX2 = xForFreq(1800), midCenter = (midX1 + midX2) / 2;
+    svgEl("rect", { x: midX1, y: plot.y, width: midX2 - midX1, height: plot.h, fill: "url(#zoneColumn)" });
+    svgEl("path", { d: `M${midX1},205 V194 H${midX2} V205`, fill: "none", stroke: "#ff9b5f", "stroke-opacity": 0.38, "stroke-width": 1 });
+    svgEl("line", { x1: midCenter, y1: 136, x2: midCenter, y2: mainY(tForFreq(950)) - 20, stroke: "#ff9b5f", "stroke-opacity": 0.22, "stroke-width": 1, "stroke-dasharray": "4 5" });
+
+    const px = xForFreq(3400), py = mainY(tForFreq(3400));
+    svgEl("line", { x1: px, y1: 136, x2: px, y2: py - 16, stroke: "#ff9b5f", "stroke-opacity": 0.28, "stroke-width": 1, "stroke-dasharray": "4 5" });
+    svgEl("circle", { cx: px, cy: py, r: 6.4, fill: "#0a0c0b", stroke: "#ff9b5f", "stroke-width": 1.7 });
+
+    const eventButtons = [...document.querySelectorAll(".event-chip")];
+    const popover = document.getElementById("eventPopover");
+    function selectEvent(name) {
+      const target = eventButtons.find(b => b.dataset.event === name);
+      const already = target?.classList.contains("selected");
+      eventButtons.forEach(b => b.classList.remove("selected"));
+      if (name === "resonance" && !already) {
+        target.classList.add("selected");
+        popover.classList.add("visible");
+        document.getElementById("resonanceMarker").setAttribute("stroke", "#fff4ec");
+        document.getElementById("resonanceMarker").setAttribute("stroke-width", "3.1");
+      } else {
+        popover.classList.remove("visible");
+        document.getElementById("resonanceMarker").setAttribute("stroke", "#121514");
+        document.getElementById("resonanceMarker").setAttribute("stroke-width", "2");
+      }
+    }
+    eventButtons.forEach(b => b.addEventListener("click", () => selectEvent(b.dataset.event)));
+
+    const stage = document.getElementById("stage");
+    const playButton = document.getElementById("playButton");
+    const measureState = document.getElementById("measureState");
+    let measuring = false;
+    playButton.addEventListener("click", () => {
+      measuring = !measuring;
+      stage.classList.toggle("measuring", measuring);
+      playButton.setAttribute("aria-label", measuring ? "Messung beenden" : "Messung starten");
+      playButton.innerHTML = measuring
+        ? '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1.2" fill="currentColor"/></svg>'
+        : '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M5 3.4 L14 9 L5 14.6 Z" fill="currentColor"/></svg>';
+      measureState.innerHTML = measuring
+        ? '<strong style="color:#ff9b5f">MISST</strong><span class="sep">·</span><span>00:14</span><span class="sep">·</span><span>ABDECKUNG 68 %</span>'
+        : '<strong>KURVE STEHT</strong><span class="sep">·</span><span>00:26</span><span class="sep">·</span><span>ABDECKUNG 92 %</span>';
+    });
+
+    const toast = document.getElementById("snapshotToast");
+    let toastTimer;
+    document.getElementById("snapshotButton").addEventListener("click", () => {
+      toast.classList.add("visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("visible"), 1800);
+    });
+  </script>
+</body>
+</html>

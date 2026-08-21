@@ -1,0 +1,1693 @@
+<!doctype html>
+<!-- ARCHIV — ALTE DESIGN-RICHTUNG. Spectral Field Vorentwurf (Codex-Besitz): alt seit 21.08. User 21.08.2026: „alle alten sind alt“. Keine Vorgabe, nur Verlauf. Aktive Design-Quelle: Figma (User) → Projekte/Nakama-Design. Einzelheiten: LIES-MICH.md in diesem Ordner. -->
+<html lang="de" data-theme="graphite">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="data:," />
+<title>Nakama · Material Spectral Field</title>
+<style>
+@font-face {
+  font-family: "Manrope Variable";
+  src: url("./fonts/Manrope-Variable.ttf") format("truetype");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Nakama Phase";
+  src:
+    url("./fonts/NakamaPhase-Regular.woff2") format("woff2"),
+    url("./fonts/NakamaPhase-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
+  --bg: #080a0b;
+  --field: #0e1213;
+  --field-raised: #171d1e;
+  --surface: #202728;
+  --edge: #374043;
+  --grid-major: #2b3335;
+  --grid-minor: #192022;
+  --text: #f1efe8;
+  --text-soft: #b3bbb6;
+  --text-muted: #85908a;
+  --curve: #f3f0e7;
+  --curve-live: #89969a;
+  --fill-top: #596568;
+  --fill-bottom: #171c1d;
+  --brand-gold: #d4a15d;
+  --accent: #d4a15d;
+  --compare: #8fafba;
+  --success: #78bc88;
+  --fault: #d16c5f;
+  --issue-resonance: var(--accent);
+  --issue-balance: var(--accent);
+  --issue-transient: var(--accent);
+  --issue-masking: var(--accent);
+  --mask-zone: var(--compare);
+  --shadow: rgba(0, 0, 0, 0.58);
+  --panel-shadow: rgba(0, 0, 0, 0.72);
+}
+
+html[data-theme="rose"] {
+  --bg: #09080b;
+  --field: #110e12;
+  --field-raised: #1c171d;
+  --surface: #282129;
+  --edge: #493d47;
+  --grid-major: #342b34;
+  --grid-minor: #211b22;
+  --text: #f4eff2;
+  --text-soft: #c2b4bd;
+  --text-muted: #958791;
+  --curve: #f5f0f3;
+  --curve-live: #9b8996;
+  --fill-top: #765c70;
+  --fill-bottom: #1d171e;
+  --accent: #ee93c3;
+  --compare: #b8a1d3;
+  --success: #83c99f;
+  --fault: #ed796f;
+  --shadow: rgba(3, 0, 4, 0.62);
+  --panel-shadow: rgba(3, 0, 4, 0.78);
+}
+
+html[data-theme="signal"] {
+  --bg: #080a0b;
+  --field: #0f1314;
+  --field-raised: #181e20;
+  --surface: #22292b;
+  --edge: #405054;
+  --grid-major: #2c393c;
+  --grid-minor: #1a2426;
+  --text: #eceeea;
+  --text-soft: #b1bdbc;
+  --text-muted: #829092;
+  --curve: #f0f0eb;
+  --curve-live: #789296;
+  --fill-top: #506a6d;
+  --fill-bottom: #162022;
+  --accent: #1fd3df;
+  --compare: #ee8b38;
+  --success: #72dc84;
+  --fault: #df6c5c;
+  --shadow: rgba(0, 2, 3, 0.62);
+  --panel-shadow: rgba(0, 2, 3, 0.78);
+}
+
+html[data-theme="violet"] {
+  --bg: #08090d;
+  --field: #0d1018;
+  --field-raised: #171b27;
+  --surface: #212635;
+  --edge: #3e465c;
+  --grid-major: #2b3142;
+  --grid-minor: #191e2a;
+  --text: #f0eff4;
+  --text-soft: #b7b6c6;
+  --text-muted: #898a9d;
+  --curve: #f1eff6;
+  --curve-live: #8e8fa7;
+  --fill-top: #61657c;
+  --fill-bottom: #171a25;
+  --accent: #b89cf1;
+  --compare: #70c4b3;
+  --success: #7bc790;
+  --fault: #df7169;
+  --shadow: rgba(0, 0, 5, 0.64);
+  --panel-shadow: rgba(0, 0, 6, 0.8);
+}
+
+html[data-theme="sumi"] {
+  color-scheme: dark;
+  --bg: #0d0d0b;
+  --field: #131512;
+  --field-raised: #1c201b;
+  --surface: #272a24;
+  --edge: #4c5046;
+  --grid-major: #34372f;
+  --grid-minor: #20231e;
+  --text: #eee9dc;
+  --text-soft: #b8b5aa;
+  --text-muted: #858b85;
+  --curve: #f0eadc;
+  --curve-live: #6f8d98;
+  --fill-top: #525c54;
+  --fill-bottom: #171a16;
+  --accent: #527987;
+  --compare: #c99a45;
+  --success: #71836b;
+  --fault: #c6533c;
+  --issue-resonance: #c6533c;
+  --issue-balance: #71836b;
+  --issue-transient: #c99a45;
+  --issue-masking: #527987;
+  --mask-zone: var(--issue-masking);
+  --shadow: rgba(0, 0, 0, 0.58);
+  --panel-shadow: rgba(0, 0, 0, 0.74);
+}
+
+html[data-theme="paper"] {
+  color-scheme: light;
+  --bg: #d5d3cc;
+  --field: #e7e4dc;
+  --field-raised: #f1eee7;
+  --surface: #d7d6d0;
+  --edge: #9e9f9b;
+  --grid-major: #bbbcb6;
+  --grid-minor: #d3d1ca;
+  --text: #242929;
+  --text-soft: #4d5653;
+  --text-muted: #5d6561;
+  --curve: #191e1f;
+  --curve-live: #65716f;
+  --fill-top: #8b9894;
+  --fill-bottom: #ced1cb;
+  --accent: #a6613e;
+  --compare: #376f7d;
+  --success: #4c7e58;
+  --fault: #a94f45;
+  --shadow: rgba(48, 45, 38, 0.22);
+  --panel-shadow: rgba(48, 45, 38, 0.34);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+body {
+  color: var(--text);
+  font-family: "Manrope Variable", "Segoe UI", sans-serif;
+  font-synthesis: none;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+button { font: inherit; }
+
+#stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(80% 72% at 46% 38%, color-mix(in srgb, var(--field-raised) 62%, transparent), transparent 72%),
+    linear-gradient(180deg, var(--field) 0%, color-mix(in srgb, var(--field) 93%, var(--bg)) 66%, var(--bg) 100%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--edge) 42%, transparent);
+}
+
+#field {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.brand {
+  position: absolute;
+  z-index: 12;
+  top: clamp(18px, 3.1vh, 30px);
+  left: clamp(26px, 3.4vw, 58px);
+  display: block;
+  width: clamp(36px, 3.25vw, 50px);
+  aspect-ratio: 510 / 890;
+  color: var(--text);
+  filter: drop-shadow(0 5px 8px color-mix(in srgb, var(--shadow) 72%, transparent));
+}
+
+.brand svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.brand-ink { fill: currentColor; }
+.brand-accent { fill: var(--brand-gold); }
+
+.tools {
+  position: absolute;
+  z-index: 20;
+  top: clamp(14px, 2.7vh, 26px);
+  right: clamp(18px, 2.7vw, 42px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tool-button,
+.panel-close {
+  appearance: none;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(38px, 3vw, 46px);
+  height: clamp(38px, 3vw, 46px);
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--edge) 72%, transparent);
+  border-radius: 50%;
+  color: var(--text-soft);
+  background:
+    linear-gradient(145deg,
+      color-mix(in srgb, var(--surface) 84%, var(--text) 3%),
+      color-mix(in srgb, var(--field-raised) 92%, var(--bg)));
+  box-shadow:
+    0 8px 18px var(--shadow),
+    inset 0 1px 0 color-mix(in srgb, var(--text) 7%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--bg) 70%, transparent);
+  cursor: pointer;
+  transition: transform 150ms cubic-bezier(.2,.8,.2,1), border-color 150ms ease, color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.tool-button svg,
+.panel-close svg {
+  width: 19px;
+  height: 19px;
+  overflow: visible;
+  fill: currentColor;
+}
+
+.tool-button::after,
+.panel-close::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  width: 8px;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.3;
+  transform: rotate(42deg);
+  transform-origin: center;
+  transition: opacity 150ms ease, transform 180ms cubic-bezier(.2,.8,.2,1);
+}
+
+.tool-button:hover::after,
+.tool-button:focus-visible::after,
+.tool-button.active::after,
+.tool-button.running::after,
+.panel-close:hover::after,
+.panel-close:focus-visible::after {
+  opacity: 0.82;
+  transform: rotate(42deg) translateX(1px);
+}
+
+.tool-button:hover,
+.tool-button:focus-visible,
+.panel-close:hover,
+.panel-close:focus-visible {
+  outline: none;
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--text) 42%, var(--edge));
+  transform: translateY(-1px);
+}
+
+.tool-button:focus-visible,
+.panel-close:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--field),
+    0 0 0 4px color-mix(in srgb, var(--accent) 76%, var(--text)),
+    0 8px 18px var(--shadow);
+}
+
+.tool-button:active,
+.panel-close:active { transform: translateY(1px) scale(0.98); }
+
+.tool-button.active {
+  color: var(--bg);
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--accent) 11%, transparent),
+    0 8px 20px var(--shadow),
+    inset 0 1px 0 color-mix(in srgb, white 28%, transparent);
+}
+
+.tool-button.report.has-reports {
+  color: color-mix(in srgb, var(--accent) 76%, var(--text-soft));
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--edge));
+  box-shadow:
+    0 0 16px color-mix(in srgb, var(--accent) 23%, transparent),
+    0 8px 18px var(--shadow),
+    inset 0 1px 0 color-mix(in srgb, var(--text) 7%, transparent);
+}
+
+.tool-button.play {
+  width: clamp(44px, 3.35vw, 52px);
+  height: clamp(44px, 3.35vw, 52px);
+  margin-left: 3px;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--edge));
+}
+
+.tool-button.play.running {
+  color: var(--bg);
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.floating-panel {
+  position: absolute;
+  z-index: 40;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-8px) scale(0.985);
+  transform-origin: top right;
+  border: 1px solid color-mix(in srgb, var(--edge) 82%, transparent);
+  background:
+    linear-gradient(145deg,
+      color-mix(in srgb, var(--field-raised) 96%, var(--text) 2%),
+      color-mix(in srgb, var(--field) 97%, var(--bg)));
+  box-shadow:
+    0 24px 60px var(--panel-shadow),
+    inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent);
+  transition: opacity 150ms ease, transform 170ms cubic-bezier(.2,.8,.2,1), visibility 0s linear 170ms;
+}
+
+.floating-panel.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  transition-delay: 0s;
+}
+
+.theme-panel {
+  top: clamp(64px, 8.8vh, 86px);
+  right: clamp(18px, 2.7vw, 42px);
+  width: min(330px, calc(100vw - 28px));
+  padding: 14px;
+  border-radius: 16px;
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.theme-choice {
+  appearance: none;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--edge) 68%, transparent);
+  border-radius: 11px 4px 11px 4px;
+  color: var(--text-soft);
+  background: color-mix(in srgb, var(--surface) 52%, transparent);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+}
+
+.theme-choice:hover,
+.theme-choice:focus-visible,
+.theme-choice.selected {
+  outline: none;
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 66%, var(--edge));
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+}
+
+.theme-choice span:last-child {
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.theme-swatch {
+  position: relative;
+  display: block;
+  width: 38px;
+  height: 28px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--swatch-bg);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.14);
+}
+
+.theme-swatch::before,
+.theme-swatch::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+}
+
+.theme-swatch::before {
+  left: 5px;
+  right: 5px;
+  top: 9px;
+  height: 2px;
+  background: var(--swatch-curve);
+  transform: rotate(-7deg);
+}
+
+.theme-swatch::after {
+  right: 5px;
+  bottom: 5px;
+  width: 8px;
+  height: 8px;
+  background: var(--swatch-accent);
+}
+
+.theme-choice[data-theme="sumi"] .theme-swatch::after {
+  width: 5px;
+  height: 5px;
+  background: #527987;
+  box-shadow:
+    -7px 0 0 #c99a45,
+    -14px 0 0 #71836b,
+    -21px 0 0 #c6533c;
+}
+
+.report-panel {
+  top: 18px;
+  right: 18px;
+  bottom: 18px;
+  width: clamp(360px, 29vw, 460px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  border-radius: 20px;
+  transform: translateX(20px) scale(0.992);
+  transform-origin: center right;
+}
+
+.report-panel.open { transform: translateX(0) scale(1); }
+
+.report-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 24px 18px;
+  border-bottom: 1px solid color-mix(in srgb, var(--edge) 54%, transparent);
+}
+
+.report-title {
+  margin: 0;
+  color: var(--text);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0.145em;
+}
+
+.report-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.13em;
+}
+
+.report-meta .state-glyph {
+  width: 14px;
+  height: 14px;
+  color: var(--success);
+  fill: currentColor;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--success) 32%, transparent));
+}
+
+.panel-close {
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.report-list {
+  overflow-y: auto;
+  padding: 12px 12px 24px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--edge) 76%, transparent) transparent;
+}
+
+.report-card {
+  position: relative;
+  margin-bottom: 8px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--edge) 56%, transparent);
+  border-radius: 14px 5px 14px 5px;
+  background: color-mix(in srgb, var(--surface) 46%, transparent);
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.report-card::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: 18px;
+  width: 17px;
+  height: 2px;
+  background: color-mix(in srgb, var(--text-muted) 48%, transparent);
+  transition: width 170ms cubic-bezier(.2,.8,.2,1), background 150ms ease;
+}
+
+.report-card.open {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--edge));
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+}
+
+.report-card.open::after {
+  width: 29px;
+  background: var(--issue-color, var(--accent));
+}
+
+.report-card-head {
+  appearance: none;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.report-card-head:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.report-glyph {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+}
+
+.report-glyph svg { position: absolute; inset: 0; width: 36px; height: 36px; }
+.report-glyph .gauge-track { stroke: color-mix(in srgb, var(--text) 82%, transparent); }
+.report-glyph .gauge-value { stroke: var(--issue-color, var(--accent)); }
+.report-glyph .marker-symbol { fill: var(--text); }
+.report-glyph .gauge-track { stroke-dasharray: 68 4 19 9; }
+
+html[data-theme="sumi"] .report-glyph .marker-symbol {
+  fill: color-mix(in srgb, var(--issue-color) 44%, var(--text));
+}
+
+.report-name {
+  display: block;
+  color: var(--text);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.report-kind {
+  display: block;
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.13em;
+}
+
+.report-freq {
+  color: var(--text-soft);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.075em;
+  white-space: nowrap;
+}
+
+.disclosure-glyph {
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  fill: currentColor;
+  transition: transform 180ms cubic-bezier(.2,.8,.2,1), color 150ms ease;
+}
+
+.report-card.open .disclosure-glyph {
+  color: var(--issue-color, var(--accent));
+  transform: rotate(180deg);
+}
+
+.report-detail {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 180ms cubic-bezier(.2,.8,.2,1);
+}
+
+.report-card.open .report-detail { grid-template-rows: 1fr; }
+.report-detail-inner { overflow: hidden; }
+
+.report-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0 14px 14px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--edge) 48%, transparent);
+  border-radius: 10px 3px 10px 3px;
+  background: color-mix(in srgb, var(--edge) 48%, transparent);
+}
+
+.report-stat {
+  min-height: 58px;
+  padding: 10px 11px;
+  background: color-mix(in srgb, var(--field) 88%, transparent);
+}
+
+.report-stat span {
+  display: block;
+  color: var(--text-muted);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+}
+
+.report-stat strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 590;
+}
+
+.report-action {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin: 0 14px 15px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  color: var(--text-soft);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  font-size: 12px;
+  font-weight: 560;
+  line-height: 1.35;
+}
+
+.report-action svg { width: 18px; height: 18px; color: var(--accent); }
+
+.report-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 48px;
+  padding: 10px 24px;
+  border-top: 1px solid color-mix(in srgb, var(--edge) 48%, transparent);
+  color: var(--text-muted);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.13em;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 100;
+  max-width: 260px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--edge) 72%, transparent);
+  border-radius: 8px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--field-raised) 96%, var(--bg));
+  box-shadow: 0 12px 28px var(--panel-shadow);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 100ms ease, transform 100ms ease;
+}
+
+.tooltip.visible { opacity: 1; transform: translateY(0); }
+
+.issue-marker {
+  --issue-color: var(--accent);
+  cursor: pointer;
+  outline: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: opacity 120ms ease;
+}
+
+.issue-marker .marker-bed {
+  fill: color-mix(in srgb, var(--field-raised) 91%, transparent);
+  stroke: none;
+}
+
+.issue-marker .marker-track {
+  fill: none;
+  stroke: color-mix(in srgb, var(--text) 82%, transparent);
+  stroke-width: 2.35;
+  stroke-dasharray: 68 4 19 9;
+}
+
+.issue-marker .marker-value {
+  fill: none;
+  stroke: var(--issue-color);
+  stroke-width: 3.15;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+.issue-marker .marker-symbol {
+  fill: var(--text);
+  stroke: none;
+  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--bg) 56%, transparent));
+}
+
+.issue-marker.selected .marker-bed,
+.issue-marker:focus-visible .marker-bed {
+  stroke: color-mix(in srgb, var(--issue-color) 58%, transparent);
+  stroke-width: 1;
+}
+
+.issue-marker.critical .marker-bed {
+  fill: color-mix(in srgb, var(--issue-color) 14%, var(--field-raised));
+}
+
+.issue-zone {
+  --issue-color: var(--accent);
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.issue-marker[data-type="resonance"],
+.issue-zone[data-type="resonance"],
+.report-card[data-type="resonance"] { --issue-color: var(--issue-resonance); }
+
+.issue-marker[data-type="balance"],
+.issue-zone[data-type="balance"],
+.report-card[data-type="balance"] { --issue-color: var(--issue-balance); }
+
+.issue-marker[data-type="transient"],
+.issue-zone[data-type="transient"],
+.report-card[data-type="transient"] { --issue-color: var(--issue-transient); }
+
+.issue-marker[data-type="masking"],
+.issue-zone[data-type="masking"],
+.report-card[data-type="masking"] { --issue-color: var(--issue-masking); }
+
+html[data-theme="sumi"] .issue-marker .marker-track {
+  stroke: color-mix(in srgb, var(--issue-color) 42%, var(--text));
+}
+
+html[data-theme="sumi"] .issue-marker .marker-symbol {
+  fill: color-mix(in srgb, var(--issue-color) 46%, var(--text));
+}
+
+.axis-text {
+  fill: var(--text-muted);
+  font-family: "Nakama Phase", "Manrope Variable", sans-serif;
+  font-size: 11.5px;
+  font-weight: 400;
+  letter-spacing: 0.085em;
+}
+
+.axis-unit {
+  fill: var(--text-muted);
+  font-size: 9.5px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+}
+
+.nakama-tool-glyph,
+.report-action svg,
+.report-action use {
+  fill: currentColor;
+}
+
+@media (max-width: 900px) {
+  .brand { top: 18px; left: 28px; width: 32px; }
+  .tools { top: 14px; right: 16px; gap: 6px; }
+  .tool-button { width: 44px; height: 44px; }
+  .tool-button.play { width: 48px; height: 48px; }
+  .tool-button.snapshot { display: none; }
+  .theme-panel { top: 64px; right: 14px; }
+  .report-panel {
+    top: auto;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+    height: min(72vh, 560px);
+    border-radius: 18px;
+    transform: translateY(20px) scale(.992);
+  }
+  .report-panel.open { transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 620px) {
+  .brand { top: 16px; left: 20px; width: 29px; }
+  .tool-button.palette { display: none; }
+  .report-head { padding: 18px 18px 14px; }
+  .report-list { padding: 9px 9px 18px; }
+  .report-foot { padding: 9px 18px; }
+  .theme-grid { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+</style>
+</head>
+<body>
+<main id="stage" aria-label="Nakama Spektralanalyse">
+  <svg id="field" role="img" aria-label="Echtzeit-Spektrum von 20 Hertz bis 20 Kilohertz">
+    <defs>
+      <!-- NAKAMA_SYMBOLS_START · generated from assets/nakama-symbols.svg -->
+      <symbol id="nakama-logo-base" viewBox="0 0 510 890">
+        <path fill-rule="evenodd" d="M184.5,17.0 L196.0,23.5 L198.0,22.5 L202.0,24.5 L227.0,41.5 L246.5,62.0 L251.5,73.0 L251.5,83.0 L205.5,147.0 L168.5,193.0 L186.0,205.5 L195.5,215.0 L202.5,228.0 L202.5,234.0 L199.5,240.0 L196.5,292.0 L190.5,341.0 L185.5,362.0 L184.5,347.0 L182.5,365.0 L175.5,384.0 L173.5,384.0 L172.0,379.5 L167.5,380.0 L165.5,374.0 L160.5,371.0 L156.5,360.0 L161.5,284.0 L161.5,227.0 L159.5,204.0 L157.5,205.0 L117.0,245.5 L84.0,273.5 L59.0,292.5 L57.5,292.0 L82.0,267.5 L52.0,294.5 L22.0,317.5 L20.5,317.0 L49.5,288.0 L93.5,233.0 L123.5,190.0 L156.5,135.0 L182.5,81.0 L191.5,53.0 L190.5,34.0 Z M288.5,23.0 L333.0,44.5 L352.0,57.5 L366.5,73.0 L369.5,81.0 L369.5,87.0 L363.5,97.0 L362.5,103.0 L360.0,148.5 L426.0,131.5 L436.0,131.5 L449.0,134.5 L466.0,141.5 L477.5,151.0 L481.5,160.0 L481.5,167.0 L478.5,173.0 L472.0,177.5 L438.0,212.5 L418.5,227.0 L434.0,230.5 L445.5,240.0 L444.5,247.0 L437.0,254.5 L424.0,258.5 L387.0,260.5 L354.5,265.0 L354.5,287.0 L348.5,360.0 L338.5,420.0 L338.5,382.0 L336.5,411.0 L331.0,442.5 L330.5,412.0 L328.5,439.0 L323.5,468.0 L323.5,401.0 L321.0,410.5 L319.5,401.0 L316.5,272.0 L286.0,277.5 L278.0,276.5 L273.0,283.5 L268.0,285.5 L261.0,282.5 L255.5,277.0 L247.5,261.0 L248.5,259.0 L222.5,175.0 L212.5,155.0 L213.0,153.5 L226.0,161.5 L230.0,161.5 L255.0,175.5 L314.5,159.0 L310.5,97.0 L305.5,65.0 L298.5,42.0 Z M410.0,167.5 L358.5,177.0 L355.5,230.0 L355.5,234.0 L358.0,233.5 L378.0,230.5 L385.5,225.0 L395.5,210.0 L411.5,178.0 L413.5,169.0 Z M314.0,186.5 L282.0,196.5 L269.5,198.0 L278.5,244.0 L279.5,250.0 L283.0,250.5 L316.5,243.0 L315.5,188.0 Z M406.5,442.0 L415.0,442.5 L441.0,456.5 L454.5,467.0 L459.5,477.0 L458.5,485.0 L452.5,494.0 L450.5,508.0 L447.5,563.0 L447.5,602.0 L450.5,687.0 L460.5,799.0 L461.5,827.0 L457.5,844.0 L448.0,855.5 L434.0,860.5 L422.0,854.5 L328.0,757.5 L322.0,757.5 L315.0,753.5 L307.0,743.5 L272.0,745.5 L252.0,749.5 L243.0,749.5 L237.0,755.5 L228.0,754.5 L223.5,749.0 L218.5,737.0 L220.5,719.0 L220.5,656.0 L216.5,634.0 L212.5,625.0 L237.0,639.5 L240.0,639.5 L299.0,620.5 L306.0,615.5 L313.0,614.5 L332.0,623.5 L343.5,632.0 L348.5,640.0 L348.5,646.0 L342.5,657.0 L340.5,740.0 L337.5,750.0 L333.5,755.0 L330.5,757.0 L331.0,758.5 L350.0,772.5 L370.0,790.5 L352.0,771.5 L384.0,788.5 L401.0,794.5 L407.0,795.5 L411.5,790.0 L412.5,769.0 L404.5,632.0 L401.5,483.0 L399.0,478.5 L396.0,478.5 L337.5,495.0 L338.0,520.5 L377.0,511.5 L394.0,517.5 L397.5,523.0 L392.5,527.0 L392.0,529.5 L382.0,534.5 L347.0,541.5 L338.0,541.5 L336.5,544.0 L336.5,568.0 L376.0,560.5 L393.0,566.5 L397.5,570.0 L396.5,573.0 L392.0,578.5 L383.0,583.5 L332.0,592.5 L328.0,597.5 L325.0,597.5 L321.0,600.5 L310.5,593.0 L303.5,578.0 L304.5,530.0 L302.5,496.0 L298.5,474.0 L292.5,460.0 L313.0,469.5 L326.0,478.5 L388.0,452.5 L403.0,442.5 Z M229.5,456.0 L240.0,456.5 L256.0,465.5 L268.5,476.0 L273.5,486.0 L271.5,493.0 L265.5,501.0 L263.5,511.0 L253.5,592.0 L248.5,601.0 L243.0,606.5 L240.0,608.5 L237.0,606.5 L232.0,607.5 L174.5,568.0 L169.5,688.0 L165.5,732.0 L159.5,772.0 L155.5,777.0 L153.5,788.0 L148.5,798.0 L145.5,798.0 L144.0,792.5 L142.0,795.5 L140.5,795.0 L137.5,784.0 L136.0,782.5 L134.0,784.5 L131.5,780.0 L129.5,771.0 L133.5,742.0 L139.5,670.0 L140.5,583.0 L135.5,506.0 L132.5,489.0 L126.5,471.0 L136.0,478.5 L138.0,477.5 L153.0,486.5 L168.5,501.0 L175.5,514.0 L175.5,529.0 L179.0,529.5 L210.0,519.5 L217.0,519.5 L225.0,522.5 L225.5,491.0 L224.0,489.5 L219.0,490.5 L184.0,501.5 L174.0,497.5 L162.5,489.0 L203.0,471.5 L221.0,462.5 L224.0,458.5 Z M224.0,539.5 L188.0,549.5 L185.0,549.5 L175.0,543.5 L174.5,559.0 L178.5,561.0 L204.0,568.5 L222.0,569.5 L224.5,562.0 L225.5,540.0 Z M299.0,643.5 L262.0,653.5 L250.0,654.5 L249.5,680.0 L263.0,678.5 L292.0,671.5 L301.0,674.5 L307.0,679.5 L306.5,645.0 L305.0,643.5 Z M306.0,689.5 L300.0,692.5 L279.0,695.5 L260.0,700.5 L250.0,699.5 L248.5,727.0 L251.0,726.5 L291.0,719.5 L308.0,722.5 L308.5,692.0 Z" />
+      </symbol>
+      <symbol id="nakama-logo-accent" viewBox="0 0 510 890">
+        <path fill-rule="evenodd" d="M196.5,263.0 L197.5,263.0 L196.5,292.0 L190.5,341.0 L185.5,362.0 L184.5,362.0 L185.5,357.0 L185.5,347.0 L184.5,347.0 L182.5,365.0 L178.5,378.0 L175.5,384.0 L174.0,384.5 L173.5,381.0 L172.0,379.5 L169.0,380.5 L165.5,374.0 L160.5,371.0 L159.5,364.0 L156.5,360.0 L156.5,344.0 L159.5,325.0 L160.5,295.0 L166.0,292.5 L177.0,283.5 Z" />
+      </symbol>
+
+      <!--
+        NAKAMA FIELD ALPHABET · v2
+        One grammar across diagnoses and tools: tapered load strokes, one deliberate
+        breath-cut, and a small anchor lozenge. Shapes carry meaning without color.
+      -->
+
+      <!-- Diagnosis family / FIELD -->
+      <symbol id="issue-resonance" viewBox="-12 -12 24 24">
+        <path d="M-11 7.3C-7.8 6.6-6.6 2.4-5.5-2.9C-4.5-8.1-2.7-11-.3-11.2C2.3-11.4 2.7-4.5 4.4.2C5.9 4.2 8.4 6.7 11 7.5L7.7 9.3C5.5 8.3 3.7 6.3 2.5 3.2L.2-3.8C-.9-.1-2.1 4.1-5.2 7.1C-6.9 8.7-9.3 9.2-11 7.3Z"/>
+        <path d="M-.6-11.1 1.2-10.8.5-7.6-1.2-7.9Z" opacity=".48"/>
+      </symbol>
+
+      <symbol id="issue-build-up" viewBox="-12 -12 24 24">
+        <path d="M-11.5 7.8C-9.1-1.5-4.7-8.2.9-9.3 6.1-10.3 9.8-2.9 11.5 7.2L7.4 8.8C6.1 2.8 3.8-1.4.8-1.6-2.8-1.8-6 2.4-7.6 8.9Z"/>
+        <path d="M-8.1 9.2C-4.4 8.2-1 8.1 2.2 8.5L1.2 10.4C-2.4 10.2-5.6 10-8.1 9.2ZM4.4 8.9C5.8 9.1 7.1 9.4 8.3 9.8 7.1 10.3 5.7 10.6 4.1 10.6Z" opacity=".58"/>
+      </symbol>
+
+      <symbol id="issue-hollow" viewBox="-12 -12 24 24">
+        <path d="M-11.4-4.5C-8.7-6.4-5.4-5.5-3.2-1.8L-.2 4.4-2.4 9.8-6.2 3.2C-7.8.4-9.5-.1-11.4.9ZM11.4-4.5C8.7-6.4 5.4-5.5 3.2-1.8L.2 4.4 2.4 9.8 6.2 3.2C7.8.4 9.5-.1 11.4.9Z"/>
+        <path d="m0 7.3 1.3 1.6L0 10.6-1.3 8.9Z" opacity=".52"/>
+      </symbol>
+
+      <symbol id="issue-masking" viewBox="-12 -12 24 24">
+        <path d="M-11.4-5.7C-8.1-8.5-4.8-7.9-1.5-3.9L2.1.6C4.6 3.8 7 4.6 10.9 2.7L11.5 5C7.1 8.2 3.1 7.4-.3 3.1l-3.6-4.5C-6.1-4.2-8.2-4.8-11-3.2Z"/>
+        <path d="M-11.4 5.8C-8.2 8.4-4.9 7.8-1.7 4L2-.5C4.3-3.4 6.6-4.4 9.5-3.2L11.4-5.7C7.1-8.3 3.1-7.4-.3-3.2l-3.5 4.4C-6 4-8.1 4.7-11 3.1Z" opacity=".72"/>
+        <path d="m.1-1.6 1.5 1.5L.1 1.5-1.4-.1Z" opacity=".42"/>
+      </symbol>
+
+      <symbol id="issue-sharpness" viewBox="-12 -12 24 24">
+        <path d="M2.3-11.7C1.3-7.5.5-4.7 1.4-2.4l6.3-3.4C5.9-1.1 3.6 1.8.8 4-1.7 6-3 8.7-4.2 11.8-5.6 7.4-5 3.9-2.5 1L-8.7 4.5C-7.2 0-4.8-3.3-1.3-5.9.4-7.3 1.4-9.4 2.3-11.7Z"/>
+        <path d="m5-10.5 1.8-1.2-.7 3.7-1.7.8Z" opacity=".54"/>
+      </symbol>
+
+      <symbol id="issue-gloss" viewBox="-12 -12 24 24">
+        <path d="M-.8-11.6C.3-7.1.8-4.3 3.1-2.7L8.6-.8 3.2 1.1C.7 2-.1 5.5-.8 11.6-1.9 6.3-2.6 2.9-5.1 1.6L-10.2 0l5.1-1.8C-2.7-2.8-1.8-6.4-.8-11.6Z"/>
+        <path d="m8.6-6.5 1.5 1.4-1.5 1.5-1.4-1.5Z" opacity=".48"/>
+      </symbol>
+
+      <symbol id="issue-drift" viewBox="-12 -12 24 24">
+        <path d="M-11 3.2C-8.2-2.4-4.6-5.4-.7-4.6 2.4-4 4.1-.8 6.6-.4 8.2-.1 9.6-.7 11-2.1L9.8 2C7.8 3.3 5.5 3.1 3.6 1.7 1.4.1.1-1.2-1.9-.4-4.5.7-6.3 5.1-8.6 7.4Z"/>
+        <path d="m-10.2 8.2 1.5-1.1 1.4 1.4-1.5 1.1Zm4.6.6 1.1-.8 1 1-1.1.8Z" opacity=".56"/>
+      </symbol>
+
+      <symbol id="issue-space" viewBox="-12 -12 24 24">
+        <path d="M-1.8-8.8C-6.9-8.2-10.1-4.7-10.7.1c-.5 4.3 1.4 7.7 5.3 10.3L-7.2 6C-9.5 1.6-7.8-2.5-3.6-4.1ZM1.8-8.8C6.9-8.2 10.1-4.7 10.7.1c.5 4.3-1.4 7.7-5.3 10.3L7.2 6C9.5 1.6 7.8-2.5 3.6-4.1Z"/>
+        <path d="m0-1.5 1.5 1.5L0 1.5-1.5 0Z" opacity=".5"/>
+      </symbol>
+
+      <symbol id="issue-contrast" viewBox="-12 -12 24 24">
+        <path d="M-10.8-8.7H8.7L11-5.6H-8.5ZM-10.8-1.6H5.1l2.3 3.1H-8.5ZM-10.8 5.6H1.5l2.3 3.1H-8.5Z"/>
+        <path d="m9.4 4.8 1.6 1.6-1.6 1.7-1.6-1.7Z" opacity=".52"/>
+      </symbol>
+
+      <!-- Tool family / ACTION -->
+      <symbol id="tool-guidance" viewBox="0 0 24 24">
+        <path d="M3.1 12.4C5.4 6.6 8.2 4 12.1 4c3.7 0 6.7 2.6 8.8 7.6l-2.2 1.2C16.8 9 14.7 7.2 12 7.2c-2.8 0-5 1.9-6.8 6.1Z"/>
+        <path d="m12 9.2 2.7 2.7-2.7 2.8-2.7-2.8Zm-7.8 6.1 2.1-.8c1.7 1.8 3.5 2.7 5.7 2.7 2 0 3.8-.7 5.3-2l2.4.6C17.8 18.6 15.1 20 12 20c-3.4 0-6-1.6-7.8-4.7Z" opacity=".72"/>
+      </symbol>
+
+      <symbol id="tool-palette" viewBox="0 0 24 24">
+        <path d="M11.5 2.5c2.7 2.8 3.5 5.3 2.3 7.4-1.1 1.9-3.4 2.4-6.7 1.4.1-3.7 1.5-6.6 4.4-8.8ZM21 11.1c-1 3.8-2.7 5.8-5.2 5.9-2.2.1-3.9-1.6-5.1-4.7 3.2-1.9 6.6-2.3 10.3-1.2ZM7.9 21c-3.7-1.1-5.7-2.9-5.8-5.3-.1-2.2 1.6-3.9 4.8-5 1.8 3.2 2.2 6.6 1 10.3Z"/>
+        <path d="m10.8 10.3 1.8 1.8-1.8 1.9L9 12.1Z" opacity=".48"/>
+      </symbol>
+
+      <symbol id="tool-archive" viewBox="0 0 24 24">
+        <path d="M4 5.2h12.3l3.1 2.6H6.7Zm0 5.4h15.9l-2.5 2.6H4Zm0 5.5h12.3l3.1 2.7H6.7Z"/>
+        <path d="m19.2 3 1.5 1.5-1.5 1.6-1.5-1.6Z" opacity=".52"/>
+      </symbol>
+
+      <symbol id="tool-capture" viewBox="0 0 24 24">
+        <path d="M3.2 3.2h7L8.1 5.9H5.9v3.4l-2.7 2.1Zm17.6 0v7l-2.7-2.1V5.9h-3.4l-2.1-2.7ZM3.2 20.8v-7l2.7 2.1v2.2h3.4l2.1 2.7Zm17.6 0h-7l2.1-2.7h2.2v-3.4l2.7-2.1Z"/>
+        <path d="M7.5 12.6c1.2-2.8 2.7-4.1 4.5-4 1.8.1 2.3 3.3 4.5 3.8l-1 2.3c-2.6-.5-2.9-2.8-4.2-2.8-1.1 0-1.8 1-2.6 2.5Z" opacity=".72"/>
+      </symbol>
+
+      <symbol id="tool-run" viewBox="0 0 24 24">
+        <path d="M6.1 3.6 18.7 11l-4.1 2.2-5.4-3.4v7.3l-3.1 3.3Z"/>
+        <path d="m16.9 15.2 2-1.1v2.3l-2 1.1Z" opacity=".5"/>
+      </symbol>
+
+      <symbol id="tool-stop" viewBox="0 0 24 24">
+        <path d="M5 4h7.2l-2.6 3H8v9.1h3.3l2.5 3H5Zm9.2 0H19v15.1h-4.8l2.5-3h-.7V7h.7Z"/>
+        <path d="m12 10.2 1.8 1.8-1.8 1.8-1.8-1.8Z" opacity=".46"/>
+      </symbol>
+
+      <symbol id="tool-close" viewBox="0 0 24 24">
+        <path d="m4.1 6 2-2 6 6-2 2Zm9.8 9.8 2-2 4 4.1-2 2ZM17.9 4l2 2-6 6-2-2ZM10.1 13.8l2 2-6 6.1-2-2Z"/>
+      </symbol>
+
+      <symbol id="tool-disclosure" viewBox="0 0 24 24">
+        <path d="m4.2 7.7 2.3-2.1 5.7 5.2-2.3 2.1Zm9.9 5.2-2.3-2.1 5.7-5.2 2.3 2.1-5.7 5.2Z"/>
+        <path d="m12 14.5 1.5 1.5-1.5 1.5-1.5-1.5Z" opacity=".48"/>
+      </symbol>
+
+      <symbol id="tool-action" viewBox="0 0 24 24">
+        <path d="M3.2 17.7h4.1l4.2-4.2 2.2 2.2-5.1 5.2H3.2Zm8.9-7 5.1-5.1h-3.1l2.5-2.5h5.7v5.7l-2.5 2.5V8.2l-5.1 5.1Z"/>
+        <path d="m9.8 12.5 1.7-1.7 1.6 1.6-1.7 1.7Z" opacity=".48"/>
+      </symbol>
+
+      <symbol id="state-live" viewBox="0 0 24 24">
+        <path d="M12 3.3c4.8 0 8.7 3.9 8.7 8.7S16.8 20.7 12 20.7 3.3 16.8 3.3 12 7.2 3.3 12 3.3Zm0 3.2A5.5 5.5 0 1 0 12 17.5 5.5 5.5 0 0 0 12 6.5Z" opacity=".36"/>
+        <path d="m12 8.8 3.2 3.2-3.2 3.2L8.8 12Z"/>
+      </symbol>
+      <!-- NAKAMA_SYMBOLS_END -->
+
+      <linearGradient id="materialFill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="var(--fill-top)" stop-opacity="0.68" />
+        <stop offset="0.18" stop-color="var(--fill-top)" stop-opacity="0.42" />
+        <stop offset="0.72" stop-color="var(--fill-bottom)" stop-opacity="0.74" />
+        <stop offset="1" stop-color="var(--fill-bottom)" stop-opacity="0.14" />
+      </linearGradient>
+      <linearGradient id="materialLight" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="var(--curve)" stop-opacity="0.16" />
+        <stop offset="0.2" stop-color="var(--curve)" stop-opacity="0.04" />
+        <stop offset="1" stop-color="var(--curve)" stop-opacity="0" />
+      </linearGradient>
+      <pattern id="clothPattern" width="7" height="7" patternUnits="userSpaceOnUse">
+        <path d="M0 7 7 0M-3 3 3-3M4 10 10 4" stroke="var(--curve)" stroke-opacity="0.027" stroke-width="0.7" />
+        <path d="M0 0 7 7" stroke="var(--bg)" stroke-opacity="0.09" stroke-width="0.7" />
+      </pattern>
+      <pattern id="maskPattern" width="8" height="8" patternUnits="userSpaceOnUse">
+        <path d="M0 4 Q2 0 4 4 T8 4" fill="none" stroke="var(--mask-zone, var(--compare))" stroke-opacity="0.5" stroke-width="1" />
+      </pattern>
+      <filter id="softShadow" x="-20%" y="-30%" width="140%" height="170%">
+        <feGaussianBlur stdDeviation="5" />
+      </filter>
+      <filter id="markerShadow" x="-100%" y="-100%" width="300%" height="300%">
+        <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="var(--shadow)" flood-opacity="0.78" />
+      </filter>
+      <clipPath id="plotClip"><rect id="plotClipRect" /></clipPath>
+    </defs>
+
+    <g id="gridLayer"></g>
+    <g id="plotLayer" clip-path="url(#plotClip)">
+      <path id="surfaceShadow" fill="none" stroke="var(--bg)" stroke-opacity="0.72" stroke-width="12" filter="url(#softShadow)" />
+      <path id="surfaceFill" fill="url(#materialFill)" />
+      <path id="surfaceLight" fill="url(#materialLight)" />
+      <path id="surfaceTexture" fill="url(#clothPattern)" opacity="0.82" />
+      <path id="snapshotCurve" fill="none" stroke="var(--compare)" stroke-width="1.4" stroke-dasharray="7 7" stroke-opacity="0" />
+      <path id="liveThread" fill="none" stroke="var(--curve-live)" stroke-width="1" stroke-opacity="0.42" />
+      <path id="surfaceEdgeUnder" fill="none" stroke="var(--bg)" stroke-width="5" stroke-opacity="0.58" />
+      <path id="surfaceEdge" fill="none" stroke="var(--curve)" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round" />
+      <g id="issueZones"></g>
+    </g>
+    <g id="markerLayer"></g>
+    <g id="axisLayer"></g>
+  </svg>
+
+  <div class="brand" role="img" aria-label="Nakama">
+    <svg viewBox="0 0 510 890" aria-hidden="true">
+      <use class="brand-ink" href="#nakama-logo-base" />
+      <use class="brand-accent" href="#nakama-logo-accent" />
+    </svg>
+  </div>
+
+  <nav class="tools" aria-label="Werkzeuge">
+    <button class="tool-button help" id="helpButton" type="button" aria-label="Hinweise ein- oder ausblenden" aria-pressed="false" data-tip="Hinweise">
+      <svg class="nakama-tool-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#tool-guidance" /></svg>
+    </button>
+    <button class="tool-button palette" id="paletteButton" type="button" aria-label="Farbpaket wählen" aria-expanded="false" data-tip="Farbpakete">
+      <svg class="nakama-tool-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#tool-palette" /></svg>
+    </button>
+    <button class="tool-button report has-reports" id="reportButton" type="button" aria-label="Befundarchiv öffnen" aria-expanded="false" data-tip="Befundarchiv">
+      <svg class="nakama-tool-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#tool-archive" /></svg>
+    </button>
+    <button class="tool-button snapshot" id="snapshotButton" type="button" aria-label="Schnappschuss speichern" data-tip="Schnappschuss">
+      <svg class="nakama-tool-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#tool-capture" /></svg>
+    </button>
+    <button class="tool-button play running" id="playButton" type="button" aria-label="Messung beenden" data-tip="Messung starten oder beenden">
+      <svg class="nakama-tool-glyph" id="playIcon" viewBox="0 0 24 24" aria-hidden="true"><use href="#tool-stop" /></svg>
+    </button>
+  </nav>
+
+  <aside class="floating-panel theme-panel" id="themePanel" aria-label="Farbpakete">
+    <div class="theme-grid" id="themeGrid"></div>
+  </aside>
+
+  <aside class="floating-panel report-panel" id="reportPanel" aria-label="Befundarchiv" aria-hidden="true">
+    <header class="report-head">
+      <div>
+        <h2 class="report-title">BEFUNDARCHIV</h2>
+        <div class="report-meta"><svg class="state-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#state-live" /></svg><span>LIVE · GESPEICHERT</span></div>
+      </div>
+      <button class="panel-close" id="reportClose" type="button" aria-label="Befundarchiv schließen">
+        <svg class="nakama-tool-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#tool-close" /></svg>
+      </button>
+    </header>
+    <div class="report-list" id="reportList"></div>
+    <footer class="report-foot"><span>SESSION 04</span><span id="reportTime">00:26</span></footer>
+  </aside>
+
+  <div class="tooltip" id="tooltip" role="tooltip"></div>
+</main>
+
+<script>
+"use strict";
+
+const NS = "http://www.w3.org/2000/svg";
+const F_MIN = 20;
+const F_MAX = 20000;
+const X_TICKS = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+const Y_TICKS = [-6, -12, -18, -24, -30, -36, -42, -48];
+const SAMPLE_COUNT = 220;
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const THEMES = [
+  { id: "graphite", label: "Graphit", bg: "#0e1213", curve: "#f3f0e7", accent: "#d4a15d" },
+  { id: "rose", label: "Rosé", bg: "#110e12", curve: "#f5f0f3", accent: "#ee93c3" },
+  { id: "signal", label: "Signal", bg: "#0f1314", curve: "#f0f0eb", accent: "#1fd3df" },
+  { id: "violet", label: "Violett", bg: "#0d1018", curve: "#f1eff6", accent: "#b89cf1" },
+  { id: "paper", label: "Papier", bg: "#e7e4dc", curve: "#191e1f", accent: "#a6613e" },
+  { id: "sumi", label: "Sumi-Washi", bg: "#131512", curve: "#f0eadc", accent: "#527987" }
+];
+
+const ISSUES = [
+  {
+    id: "reso-low", type: "resonance", glyph: "resonance", name: "Resonanz", kind: "DAUERHAFT · AKUT",
+    freq: 118, width: 0.015, severity: 0.86, phase: 0.4, persistence: 0.78,
+    stats: [["ÜBERSTAND", "+8,2 dB"], ["MUSIKZEIT", "78 %"], ["BREITE", "1/6 Okt."], ["SICHERHEIT", "92 %"]],
+    action: "Bell · −3…−5 dB · Q 6–8"
+  },
+  {
+    id: "boom", type: "balance", glyph: "build-up", name: "Aufbau", kind: "BREIT · PRÜFEN",
+    freq: 164, width: 0.075, severity: 0.49, phase: 2.1, persistence: 0.57,
+    stats: [["BEREICH", "105–230 Hz"], ["MITTEL", "+3,1 dB"], ["MUSIKZEIT", "54 %"], ["SICHERHEIT", "81 %"]],
+    action: "Low shelf · −1…−2 dB"
+  },
+  {
+    id: "mid-hole", type: "balance", glyph: "hollow", direction: -1, name: "Mittenloch", kind: "BREIT · CHARAKTER",
+    freq: 920, width: 0.16, severity: 0.58, phase: 1.2, persistence: 0.72,
+    stats: [["BEREICH", "520 Hz–1,8 kHz"], ["MITTEL", "−4,6 dB"], ["MUSIKZEIT", "71 %"], ["SICHERHEIT", "84 %"]],
+    action: "Arrangement · Presence prüfen"
+  },
+  {
+    id: "masking", type: "masking", glyph: "masking", name: "Maskierung", kind: "PAAR · AKTIV",
+    freq: 1320, width: 0.125, severity: 0.67, phase: 3.4, persistence: 0.64,
+    stats: [["PAAR", "PIANO ↔ CHOIR"], ["BEREICH", "780 Hz–2,1 kHz"], ["KOLLISION", "67 %"], ["SICHERHEIT", "88 %"]],
+    action: "Pegel · Panorama · Arrangement"
+  },
+  {
+    id: "harsh", type: "transient", glyph: "sharpness", name: "Schärfe", kind: "KURZZEITIG · AKUT",
+    freq: 3450, width: 0.026, severity: 0.82, phase: 0.1, persistence: 0.28,
+    stats: [["SPITZE", "+6,3 dB"], ["EREIGNISSE", "14"], ["DAUER", "120–380 ms"], ["SICHERHEIT", "87 %"]],
+    action: "Dynamisch · 3,2–3,8 kHz"
+  },
+  {
+    id: "presence", type: "resonance", glyph: "resonance", name: "Resonanz", kind: "ZEITWEISE · PRÜFEN",
+    freq: 3920, width: 0.022, severity: 0.52, phase: 2.8, persistence: 0.35,
+    stats: [["SPITZE", "+4,1 dB"], ["MUSIKZEIT", "31 %"], ["BREITE", "1/5 Okt."], ["SICHERHEIT", "74 %"]],
+    action: "Hörprüfung · kein statischer Cut"
+  },
+  {
+    id: "air-polish", type: "resonance", glyph: "gloss", name: "Glanzspitze", kind: "ZEITWEISE · POLITUR",
+    freq: 8100, width: 0.018, severity: 0.24, phase: 4.7, persistence: 0.18,
+    stats: [["SPITZE", "+2,2 dB"], ["MUSIKZEIT", "14 %"], ["BREITE", "1/4 Okt."], ["SICHERHEIT", "63 %"]],
+    action: "Optional · nur bei Härte"
+  }
+];
+
+const view = {
+  width: 0,
+  height: 0,
+  plot: { x: 0, y: 0, w: 0, h: 0, bottom: 0 },
+  running: true,
+  help: false,
+  reportOpen: false,
+  themeOpen: false,
+  selected: null,
+  snapshot: null,
+  startedAt: performance.now(),
+  lastTargetAt: 0,
+  lastFrameAt: performance.now(),
+  time: 0
+};
+
+const state = {
+  y: new Float64Array(SAMPLE_COUNT + 1),
+  v: new Float64Array(SAMPLE_COUNT + 1),
+  a: new Float64Array(SAMPLE_COUNT + 1),
+  targetY: new Float64Array(SAMPLE_COUNT + 1),
+  instantY: new Float64Array(SAMPLE_COUNT + 1)
+};
+
+const el = {
+  stage: document.getElementById("stage"),
+  field: document.getElementById("field"),
+  grid: document.getElementById("gridLayer"),
+  axes: document.getElementById("axisLayer"),
+  clipRect: document.getElementById("plotClipRect"),
+  fill: document.getElementById("surfaceFill"),
+  light: document.getElementById("surfaceLight"),
+  texture: document.getElementById("surfaceTexture"),
+  edge: document.getElementById("surfaceEdge"),
+  edgeUnder: document.getElementById("surfaceEdgeUnder"),
+  shadow: document.getElementById("surfaceShadow"),
+  live: document.getElementById("liveThread"),
+  snapshot: document.getElementById("snapshotCurve"),
+  zones: document.getElementById("issueZones"),
+  markers: document.getElementById("markerLayer"),
+  play: document.getElementById("playButton"),
+  playIcon: document.getElementById("playIcon"),
+  snapshotButton: document.getElementById("snapshotButton"),
+  reportButton: document.getElementById("reportButton"),
+  reportPanel: document.getElementById("reportPanel"),
+  reportClose: document.getElementById("reportClose"),
+  reportList: document.getElementById("reportList"),
+  reportTime: document.getElementById("reportTime"),
+  helpButton: document.getElementById("helpButton"),
+  paletteButton: document.getElementById("paletteButton"),
+  themePanel: document.getElementById("themePanel"),
+  themeGrid: document.getElementById("themeGrid"),
+  tooltip: document.getElementById("tooltip")
+};
+
+function svg(name, attrs = {}, parent) {
+  const node = document.createElementNS(NS, name);
+  for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+  if (parent) parent.appendChild(node);
+  return node;
+}
+
+function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+function gaussian(t, center, width) { return Math.exp(-0.5 * ((t - center) / width) ** 2); }
+function tForFrequency(frequency) { return Math.log10(frequency / F_MIN) / Math.log10(F_MAX / F_MIN); }
+function xForFrequency(frequency) { return view.plot.x + tForFrequency(frequency) * view.plot.w; }
+function yForDb(db) { return view.plot.y + ((-6 - db) / 42) * view.plot.h; }
+function formatFrequency(frequency) { return frequency >= 1000 ? `${frequency / 1000}k` : String(frequency); }
+
+function issueActivity(issue, time) {
+  if (issue.type === "transient") {
+    const pulse = Math.max(0, Math.sin(time * 1.54 + issue.phase));
+    return clamp(0.12 + Math.pow(pulse, 10) * issue.severity, 0, 1);
+  }
+  if (issue.type === "masking") {
+    return clamp(issue.severity + 0.16 * Math.sin(time * 0.72 + issue.phase), 0.18, 1);
+  }
+  const drift = 0.045 * Math.sin(time * (0.56 + issue.persistence * 0.22) + issue.phase);
+  return clamp(issue.severity + drift, 0.08, 1);
+}
+
+function baselineDb(t, time) {
+  const high = Math.max(0, (t - 0.82) / 0.18);
+  return -16.2
+    - 2.8 * t
+    - 7.8 * t * t
+    - 8.8 * Math.pow(high, 1.5)
+    + 1.7 * gaussian(t, 0.13, 0.11)
+    + 0.62 * Math.sin(t * 17 + time * 0.18)
+    + 0.34 * Math.sin(t * 43 - time * 0.11);
+}
+
+function sampleTarget(time) {
+  for (let i = 0; i <= SAMPLE_COUNT; i++) {
+    const t = i / SAMPLE_COUNT;
+    let db = baselineDb(t, time);
+    for (const issue of ISSUES) {
+      const activity = issueActivity(issue, time);
+      const center = tForFrequency(issue.freq);
+      const direction = issue.direction ?? 1;
+      let amount = 0;
+      if (issue.type === "resonance") amount = 7.5 * activity * gaussian(t, center, issue.width);
+      else if (issue.type === "balance") amount = 4.8 * activity * direction * gaussian(t, center, issue.width);
+      else if (issue.type === "transient") amount = 7.8 * activity * gaussian(t, center, issue.width);
+      else if (issue.type === "masking") {
+        const envelope = gaussian(t, center, issue.width);
+        amount = 2.5 * activity * envelope + 0.85 * activity * envelope * Math.sin((t - center) * 180);
+      }
+      db += amount;
+    }
+    const micro = 0.22 * Math.sin(t * 91 + time * 0.7) + 0.12 * Math.sin(t * 163 - time * 0.42);
+    const y = yForDb(db + micro);
+    state.targetY[i] = y;
+    state.instantY[i] = yForDb(db + micro * 2.3 + 0.35 * Math.sin(t * 257 + time * 1.2));
+  }
+}
+
+function initializeSurface() {
+  sampleTarget(view.time);
+  for (let i = 0; i <= SAMPLE_COUNT; i++) {
+    state.y[i] = state.targetY[i];
+    state.v[i] = 0;
+  }
+}
+
+function updateMaterial(dt) {
+  const step = Math.min(dt, 1 / 30);
+  const stiffness = reducedMotion ? 92 : 68;
+  const damping = reducedMotion ? 18 : 12.5;
+  const tension = reducedMotion ? 12 : 25;
+
+  for (let i = 0; i <= SAMPLE_COUNT; i++) {
+    const left = state.y[Math.max(0, i - 1)];
+    const right = state.y[Math.min(SAMPLE_COUNT, i + 1)];
+    const laplace = left + right - 2 * state.y[i];
+    state.a[i] = (state.targetY[i] - state.y[i]) * stiffness + laplace * tension - state.v[i] * damping;
+  }
+
+  for (let i = 0; i <= SAMPLE_COUNT; i++) {
+    state.v[i] += state.a[i] * step;
+    state.y[i] += state.v[i] * step;
+  }
+}
+
+function linePath(values) {
+  let path = "";
+  for (let i = 0; i <= SAMPLE_COUNT; i++) {
+    const x = view.plot.x + (i / SAMPLE_COUNT) * view.plot.w;
+    path += `${i ? "L" : "M"}${x.toFixed(2)},${values[i].toFixed(2)}`;
+  }
+  return path;
+}
+
+function areaPath(values) {
+  return `${linePath(values)}L${(view.plot.x + view.plot.w).toFixed(2)},${view.plot.bottom.toFixed(2)}L${view.plot.x.toFixed(2)},${view.plot.bottom.toFixed(2)}Z`;
+}
+
+function renderSurface() {
+  const line = linePath(state.y);
+  const area = areaPath(state.y);
+  el.fill.setAttribute("d", area);
+  el.light.setAttribute("d", area);
+  el.texture.setAttribute("d", area);
+  el.edge.setAttribute("d", line);
+  el.edgeUnder.setAttribute("d", line);
+  el.shadow.setAttribute("d", line);
+  el.live.setAttribute("d", linePath(state.instantY));
+
+  if (view.snapshot) {
+    el.snapshot.setAttribute("d", linePath(view.snapshot));
+    el.snapshot.setAttribute("stroke-opacity", "0.72");
+  } else {
+    el.snapshot.setAttribute("stroke-opacity", "0");
+  }
+}
+
+function renderGrid() {
+  el.grid.textContent = "";
+  el.axes.textContent = "";
+  const { x, y, w, h, bottom } = view.plot;
+
+  const minorFrequencies = [30, 40, 60, 70, 80, 90, 150, 300, 400, 600, 700, 800, 900, 1500, 3000, 4000, 6000, 7000, 8000, 9000, 15000];
+  for (const frequency of minorFrequencies) {
+    const px = xForFrequency(frequency);
+    svg("line", { x1: px, x2: px, y1: y, y2: bottom, stroke: "var(--grid-minor)", "stroke-width": 1 }, el.grid);
+  }
+
+  for (const frequency of X_TICKS) {
+    const px = xForFrequency(frequency);
+    svg("line", { x1: px, x2: px, y1: y, y2: bottom, stroke: "var(--grid-major)", "stroke-width": 1 }, el.grid);
+    const label = svg("text", { x: px, y: bottom + 24, "text-anchor": "middle", class: "axis-text" }, el.axes);
+    label.textContent = formatFrequency(frequency);
+  }
+
+  for (const db of Y_TICKS) {
+    const py = yForDb(db);
+    svg("line", { x1: x, x2: x + w, y1: py, y2: py, stroke: db === -24 ? "var(--grid-major)" : "var(--grid-minor)", "stroke-width": 1 }, el.grid);
+    const label = svg("text", { x: x - 12, y: py + 4, "text-anchor": "end", class: "axis-text" }, el.axes);
+    label.textContent = String(db).replace("-", "−");
+  }
+
+  const hz = svg("text", { x: x + w, y: bottom + 42, "text-anchor": "end", class: "axis-unit" }, el.axes);
+  hz.textContent = "HZ";
+  const dbUnit = svg("text", { x: x - 12, y: y - 13, "text-anchor": "end", class: "axis-unit" }, el.axes);
+  dbUnit.textContent = "DB";
+}
+
+function markerSymbol(issue) {
+  const glyph = typeof issue === "string" ? issue : (issue.glyph || issue.type);
+  return `<use class="marker-symbol" href="#issue-${glyph}" x="-10.5" y="-10.5" width="21" height="21" />`;
+}
+
+function createMarkers() {
+  el.markers.textContent = "";
+  for (const issue of ISSUES) {
+    const group = svg("g", {
+      class: "issue-marker",
+      tabindex: 0,
+      role: "button",
+      "aria-label": `${issue.name}, ${issue.freq} Hertz`,
+      "data-issue": issue.id,
+      "data-type": issue.type,
+      "data-tip": issue.name
+    }, el.markers);
+    group.innerHTML = `
+      <g filter="url(#markerShadow)">
+        <circle class="marker-bed" cx="0" cy="0" r="18" />
+        <circle class="marker-track" cx="0" cy="0" r="15" />
+        <circle class="marker-value" cx="0" cy="0" r="15" pathLength="100" stroke-dasharray="0 100" />
+        ${markerSymbol(issue)}
+      </g>`;
+    group.addEventListener("click", () => selectIssue(issue.id));
+    group.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); selectIssue(issue.id); }
+    });
+  }
+}
+
+function renderIssueZonesAndMarkers() {
+  el.zones.textContent = "";
+  const markerNodes = [...el.markers.querySelectorAll(".issue-marker")];
+
+  ISSUES.forEach((issue, index) => {
+    const activity = issueActivity(issue, view.time);
+    const centerT = tForFrequency(issue.freq);
+    const sampleIndex = Math.round(centerT * SAMPLE_COUNT);
+    const x = xForFrequency(issue.freq);
+    const y = state.y[sampleIndex];
+    const widthPx = Math.max(24, issue.width * view.plot.w * 3.6);
+    const selected = view.selected === issue.id;
+
+    if (issue.type === "masking") {
+      svg("rect", {
+        class: "issue-zone",
+        x: x - widthPx,
+        y: view.plot.y,
+        width: widthPx * 2,
+        height: view.plot.h,
+        fill: "url(#maskPattern)",
+        "data-type": issue.type,
+        opacity: 0.18 + activity * 0.28
+      }, el.zones);
+    } else if (issue.type === "balance") {
+      const zoneTop = issue.direction === -1 ? y - 8 : y;
+      const zoneHeight = issue.direction === -1 ? 42 + activity * 34 : view.plot.bottom - y;
+      svg("ellipse", {
+        class: "issue-zone",
+        cx: x,
+        cy: zoneTop + zoneHeight * 0.26,
+        rx: widthPx,
+        ry: Math.max(20, zoneHeight * 0.28),
+        fill: "var(--issue-color)",
+        "data-type": issue.type,
+        opacity: selected ? 0.13 : 0.055 + activity * 0.055
+      }, el.zones);
+    } else {
+      svg("path", {
+        class: "issue-zone",
+        d: `M${x - widthPx},${y + 18} Q${x},${y - 18 - activity * 16} ${x + widthPx},${y + 18}`,
+        fill: "none",
+        stroke: "var(--issue-color)",
+        "data-type": issue.type,
+        "stroke-width": selected ? 2.2 : 1.2,
+        opacity: 0.22 + activity * 0.42
+      }, el.zones);
+    }
+
+    const node = markerNodes[index];
+    const verticalLift = 31 + (index % 2) * 8;
+    node.setAttribute("transform", `translate(${x.toFixed(2)} ${(y - verticalLift).toFixed(2)})`);
+    node.style.opacity = String(clamp(0.42 + activity * 0.7, 0.4, 1));
+    node.classList.toggle("selected", selected);
+    node.classList.toggle("critical", activity >= 0.72);
+    const ring = node.querySelector(".marker-value");
+    ring.setAttribute("stroke-dasharray", `${Math.round(activity * 100)} ${Math.round(100 - activity * 100)}`);
+    const scale = issue.type === "transient" ? 0.94 + activity * 0.12 : 1;
+    node.style.scale = String(scale);
+  });
+}
+
+function selectIssue(id) {
+  view.selected = view.selected === id ? null : id;
+  renderIssueZonesAndMarkers();
+}
+
+function gaugeMarkup(issue) {
+  const severity = Math.round(issue.severity * 100);
+  return `<svg viewBox="0 0 36 36" aria-hidden="true">
+    <circle class="gauge-track" cx="18" cy="18" r="15" fill="none" stroke-width="2.4" />
+    <circle class="gauge-value" cx="18" cy="18" r="15" fill="none" stroke-width="2.8" stroke-linecap="round" pathLength="100" stroke-dasharray="${severity} ${100 - severity}" transform="rotate(-90 18 18)" />
+    <g transform="translate(18 18) scale(.74)">${markerSymbol(issue)}</g>
+  </svg>`;
+}
+
+function renderReports() {
+  el.reportList.textContent = "";
+  ISSUES.slice().sort((a, b) => b.severity - a.severity).forEach((issue, index) => {
+    const article = document.createElement("article");
+    article.className = "report-card" + (index === 0 ? " open" : "");
+    article.dataset.report = issue.id;
+    article.dataset.type = issue.type;
+    article.innerHTML = `
+      <button class="report-card-head" type="button" aria-expanded="${index === 0}">
+        <span class="report-glyph">${gaugeMarkup(issue)}</span>
+        <span><span class="report-name">${issue.name}</span><span class="report-kind">${issue.kind}</span></span>
+        <span class="report-freq">${issue.freq >= 1000 ? (issue.freq / 1000).toLocaleString("de-DE", { maximumFractionDigits: 2 }) + " kHz" : issue.freq + " Hz"}</span>
+        <svg class="disclosure-glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="#tool-disclosure" /></svg>
+      </button>
+      <div class="report-detail"><div class="report-detail-inner">
+        <div class="report-stats">${issue.stats.map(([key, value]) => `<div class="report-stat"><span>${key}</span><strong>${value}</strong></div>`).join("")}</div>
+        <div class="report-action">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#tool-action" /></svg>
+          <span>${issue.action}</span>
+        </div>
+      </div></div>`;
+    const head = article.querySelector(".report-card-head");
+    head.addEventListener("click", () => {
+      const open = !article.classList.contains("open");
+      article.classList.toggle("open", open);
+      head.setAttribute("aria-expanded", String(open));
+    });
+    el.reportList.appendChild(article);
+  });
+}
+
+function renderThemes() {
+  const selected = document.documentElement.dataset.theme;
+  el.themeGrid.textContent = "";
+  for (const theme of THEMES) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "theme-choice" + (theme.id === selected ? " selected" : "");
+    button.dataset.theme = theme.id;
+    button.innerHTML = `<span class="theme-swatch" style="--swatch-bg:${theme.bg};--swatch-curve:${theme.curve};--swatch-accent:${theme.accent}"></span><span>${theme.label}</span>`;
+    button.addEventListener("click", () => applyTheme(theme.id));
+    el.themeGrid.appendChild(button);
+  }
+}
+
+function applyTheme(id) {
+  document.documentElement.dataset.theme = id;
+  try { localStorage.setItem("nakama-theme", id); } catch { /* Datei-Vorschau ohne Storage bleibt nutzbar. */ }
+  renderThemes();
+}
+
+function setPanel(panel, open) {
+  if (panel === "report") {
+    view.reportOpen = open;
+    el.reportPanel.classList.toggle("open", open);
+    el.reportPanel.setAttribute("aria-hidden", String(!open));
+    el.reportButton.setAttribute("aria-expanded", String(open));
+    if (open) {
+      setPanel("theme", false);
+      setTimeout(() => el.reportClose.focus(), 180);
+    }
+  } else {
+    view.themeOpen = open;
+    el.themePanel.classList.toggle("open", open);
+    el.paletteButton.classList.toggle("active", open);
+    el.paletteButton.setAttribute("aria-expanded", String(open));
+    if (open) setPanel("report", false);
+  }
+}
+
+function toggleRunning() {
+  view.running = !view.running;
+  el.play.classList.toggle("running", view.running);
+  el.play.setAttribute("aria-label", view.running ? "Messung beenden" : "Neue Messung starten");
+  el.playIcon.innerHTML = view.running
+    ? '<use href="#tool-stop"></use>'
+    : '<use href="#tool-run"></use>';
+  if (view.running) {
+    view.time = 0;
+    view.startedAt = performance.now();
+    view.lastTargetAt = 0;
+    initializeSurface();
+    renderSurface();
+    renderIssueZonesAndMarkers();
+    el.reportTime.textContent = "00:00";
+  }
+}
+
+function captureSnapshot() {
+  view.snapshot = Float64Array.from(state.y);
+  el.snapshotButton.classList.add("active");
+  setTimeout(() => el.snapshotButton.classList.remove("active"), 360);
+}
+
+function layout() {
+  const rect = el.stage.getBoundingClientRect();
+  view.width = Math.max(1, rect.width);
+  view.height = Math.max(1, rect.height);
+  el.field.setAttribute("viewBox", `0 0 ${view.width} ${view.height}`);
+
+  const left = clamp(view.width * 0.045, 42, 78);
+  const right = clamp(view.width * 0.035, 30, 62);
+  const top = clamp(view.height * 0.145, 78, 136);
+  const bottomGap = clamp(view.height * 0.095, 54, 88);
+  view.plot = {
+    x: left,
+    y: top,
+    w: Math.max(120, view.width - left - right),
+    h: Math.max(120, view.height - top - bottomGap),
+    bottom: view.height - bottomGap
+  };
+
+  el.clipRect.setAttribute("x", view.plot.x);
+  el.clipRect.setAttribute("y", view.plot.y);
+  el.clipRect.setAttribute("width", view.plot.w);
+  el.clipRect.setAttribute("height", view.plot.h);
+  renderGrid();
+  sampleTarget(view.time);
+  initializeSurface();
+  renderSurface();
+  renderIssueZonesAndMarkers();
+}
+
+function showTooltip(target) {
+  if (!view.help) return;
+  const text = target.dataset.tip;
+  if (!text) return;
+  el.tooltip.textContent = text;
+  el.tooltip.classList.add("visible");
+  const rect = target.getBoundingClientRect();
+  const tipRect = el.tooltip.getBoundingClientRect();
+  const left = clamp(rect.left + rect.width / 2 - tipRect.width / 2, 10, innerWidth - tipRect.width - 10);
+  const top = rect.bottom + 9 + tipRect.height < innerHeight ? rect.bottom + 9 : rect.top - tipRect.height - 9;
+  el.tooltip.style.left = `${left}px`;
+  el.tooltip.style.top = `${top}px`;
+}
+
+function hideTooltip() { el.tooltip.classList.remove("visible"); }
+
+function bindTooltips() {
+  document.addEventListener("pointerover", event => {
+    const target = event.target.closest("[data-tip]");
+    if (target) showTooltip(target);
+  });
+  document.addEventListener("pointerout", event => {
+    if (event.target.closest("[data-tip]")) hideTooltip();
+  });
+  document.addEventListener("focusin", event => {
+    const target = event.target.closest("[data-tip]");
+    if (target) showTooltip(target);
+  });
+  document.addEventListener("focusout", hideTooltip);
+}
+
+function animate(now) {
+  const dt = Math.min(0.05, Math.max(0.001, (now - view.lastFrameAt) / 1000));
+  view.lastFrameAt = now;
+
+  if (view.running) {
+    view.time = (now - view.startedAt) / 1000;
+    if (now - view.lastTargetAt >= (reducedMotion ? 100 : 50)) {
+      sampleTarget(view.time);
+      view.lastTargetAt = now;
+    }
+    updateMaterial(dt);
+    renderSurface();
+    renderIssueZonesAndMarkers();
+    const seconds = Math.floor(view.time);
+    el.reportTime.textContent = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+  }
+  requestAnimationFrame(animate);
+}
+
+el.play.addEventListener("click", toggleRunning);
+el.snapshotButton.addEventListener("click", captureSnapshot);
+el.reportButton.addEventListener("click", () => setPanel("report", !view.reportOpen));
+el.reportClose.addEventListener("click", () => { setPanel("report", false); el.reportButton.focus(); });
+el.paletteButton.addEventListener("click", () => setPanel("theme", !view.themeOpen));
+el.helpButton.addEventListener("click", () => {
+  view.help = !view.help;
+  el.helpButton.classList.toggle("active", view.help);
+  el.helpButton.setAttribute("aria-pressed", String(view.help));
+  if (!view.help) hideTooltip();
+});
+
+document.addEventListener("pointerdown", event => {
+  if (view.themeOpen && !el.themePanel.contains(event.target) && !el.paletteButton.contains(event.target)) setPanel("theme", false);
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    if (view.themeOpen) setPanel("theme", false);
+    else if (view.reportOpen) { setPanel("report", false); el.reportButton.focus(); }
+    else if (view.selected) { view.selected = null; renderIssueZonesAndMarkers(); }
+  }
+  if (event.code === "Space" && event.target === document.body) { event.preventDefault(); toggleRunning(); }
+  if (event.key.toLowerCase() === "r") setPanel("report", !view.reportOpen);
+  if (event.key.toLowerCase() === "h") el.helpButton.click();
+});
+
+let savedTheme = null;
+try { savedTheme = localStorage.getItem("nakama-theme"); } catch { /* kein persistenter Origin */ }
+if (THEMES.some(theme => theme.id === savedTheme)) document.documentElement.dataset.theme = savedTheme;
+
+createMarkers();
+renderThemes();
+renderReports();
+bindTooltips();
+new ResizeObserver(layout).observe(el.stage);
+layout();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

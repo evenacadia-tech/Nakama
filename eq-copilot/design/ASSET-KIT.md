@@ -1,3 +1,5 @@
+> **PROVISORIUM (User 21.08.2026: „Nie abgenommen – bleibt Provisorium“).** Diese Material-Kit-Front ersetzte am 15.08. ohne Protokoll die vom User entschiedene dunkle NAKAMA-Gerätefront (`archive/nakama-geraetefront/`). Sie bleibt kompiliert, bis die neue UI aus Figma (über `Projekte/Nakama-Design`) gebaut ist; keine Arbeit mehr daran. Technisch lebendig ist nur die Kette `tokens.json` → `gen-tokens.mjs` → `plugin/src/LeitstandTokens.h`.
+
 # EQ-Copilot Material Kit
 
 > **Ist-Dokument / abzulösende Front.** Dieses Kit beschreibt weiterhin

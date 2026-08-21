@@ -27,12 +27,13 @@ __pycache__/
 .playwright-mcp/
 
 # ST-Map-Zwischenprodukte (NAK-16; in Sekunden regenerierbar: --nur-stmap + konvertiere-stmap.py)
-eq-copilot/design/prisma/renders/stmap/*.exr
-eq-copilot/design/prisma/renders/stmap/probe-stmap.bin
+# (Umzug 21.08.2026: die Studie liegt unter design/prisma-studie/)
+eq-copilot/design/prisma-studie/prisma/renders/stmap/*.exr
+eq-copilot/design/prisma-studie/prisma/renders/stmap/probe-stmap.bin
 # 72er-Sequenz-EXRs (247 MB; regenerierbar in ~5 min: --nur-stmap --dreh 72)
-eq-copilot/design/prisma/renders/dreh-stmap/
+eq-copilot/design/prisma-studie/prisma/renders/dreh-stmap/
 # Dreh-Test-Screenshots (Beweislaeufe, fluechtig)
-eq-copilot/design/prisma/renders/stmap/dreh-w*.png
+eq-copilot/design/prisma-studie/prisma/renders/stmap/dreh-w*.png
 
 # Sitzungsgeruest des unlazy-Skills (GATES.md): der durable Beweis liegt in
 # docs/beweise/. Zweimal per `git add -A` eingecheckt, einmal nur lokal in

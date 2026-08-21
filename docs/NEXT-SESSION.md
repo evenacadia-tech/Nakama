@@ -55,7 +55,9 @@ durch einen neuen Effekt oder eine neue Metapher umdeuten.
 
 ## 🔎 FÜR EINEN CODE-REVIEW DIESER SESSION — hier anfangen
 
-Stand `16dd825` (= `origin/master`), Arbeitsbaum sauber, Kanon **7/7 grün**.
+Die ganze Session ist `0ba87cc..HEAD`: **zehn Bau- und Beweis-Commits**
+(fünf je Ticket) plus die Doku-Commits am Ende. Arbeitsbaum sauber,
+Kanon **7/7 grün**, alles gepusht.
 In dieser Session sind **zwei Tickets** entstanden. Beides ist bereits durch den
 `evaluator`-Frischkontextprüfer gelaufen — `SONDE-003` in **3 Runden**, `S3b` in
 **4 Runden**, beide am Ende **PASS**. Wer jetzt reviewt, sollte wissen, was dort
@@ -65,8 +67,11 @@ schon gejagt wurde, um nicht dieselben Wege doppelt zu gehen.
 
 | Ticket | Diff | Beweismanifest |
 |---|---|---|
-| `SONDE-003` — JUCE-Bridge-Patch | `git diff 0ba87cc..e9c6fa0` | `docs/beweise/SONDE-003.md` |
-| `S3b` — Termin-B-Messgerät | `git diff e9c6fa0..HEAD` | `docs/beweise/SONDE-003b.md` |
+| `SONDE-003` — JUCE-Bridge-Patch | `git diff 0ba87cc..e9c6fa0` (5 Commits) | `docs/beweise/SONDE-003.md` |
+| `S3b` — Termin-B-Messgerät | `git diff e9c6fa0..22d23d7` (5 Commits) | `docs/beweise/SONDE-003b.md` |
+
+Danach folgen nur noch zwei reine Doku-Commits (`16dd825`, dieser hier) — kein
+Code.
 
 Die Manifeste tragen zu **jeder** Behauptung die rohe Ausgabe, dazu §6 mit allen
 Befunden und ihrem Ausgang. Der Gate-Text steht jeweils im Kopf **im Wortlaut**

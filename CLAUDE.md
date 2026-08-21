@@ -30,11 +30,10 @@ Die drei Oberflächen:
    bedienbar ist. Muss allein funktionieren, auch ohne Gen. 700×420.
    Figma-Stand vorhanden (`assets/figma/2026-08-21-probeeq.png`).
 3. **Nakama Suna** — die passive Sonde: eine kleine Status-/Identitätskachel.
-   260×84. Noch kein Figma-Stand in der Truhe; seit 2026-08-21 liegt in der
-   Figma-Datei ein **Entwurf von Claude** in der Probeeq-Sprache (Studie 03,
-   Node 6039:2) — **nicht abgenommen**, offene Punkte in
-   `abnahmen/2026-08-21-suna-auftrag-figma.md`. Vorgabe wird er erst mit dem
-   Export des Users nach `assets/figma/`.
+   260×84. Figma-Stand vorhanden (`assets/figma/2026-08-21-suna.png`) —
+   entworfen von Claude in der Probeeq-Sprache (Studie 03, Node 6039:2), vom
+   User exportiert und damit User-Wort; die elf offenen Punkte der Übersetzung
+   stehen in `abnahmen/2026-08-21-suna-auftrag-figma.md`.
 
 Die Projektquellen — vollständig, nichts von außen dazuholen:
 

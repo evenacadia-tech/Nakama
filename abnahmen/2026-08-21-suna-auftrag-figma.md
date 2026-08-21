@@ -145,14 +145,19 @@ in Figma herstellbar. Die Reihenfolge ist die Reihenfolge der Tragweite.
 10. **„Bestätigen" des Namens.** Die Spezifikation sagt „bestätigen/ändern";
     ein unbestätigter Zustand hat keine Darstellung bekommen — er ist nirgends
     beschrieben, und erfunden wird nichts.
-11. **Kein Figma-Stand in der Truhe.** Der Entwurf ist ein Vorschlag in der
-    Figma-Datei. Erst der Export des Users (`assets/figma/JJJJ-MM-TT-suna.png`)
-    macht ihn zur Vorgabe; `assets/` wurde nicht angefasst.
+11. ~~**Kein Figma-Stand in der Truhe.**~~ **Erledigt am selben Abend:** der
+    User hat die Kachel aus Figma exportiert (`Suna.png`, 22:18) und sie liegt
+    bytegleich als `assets/figma/2026-08-21-suna.png` in der Truhe (SHA-256
+    `d6d288d6…`, gemessen 1040×336 = 4 × 260×84). Damit ist der Entwurf
+    **User-Wort** (CLAUDE.md Regel 4) und die Vorgabe für die Übersetzung. Die
+    Punkte 1–10 bleiben als Fragen der Übersetzung offen — ein Export ist ein
+    Ja zum Bild, kein Ja zu jeder Lesart dahinter.
 
 ## Sessionende 2026-08-21 (Suna-Runde)
 
-Offen blieb: das Urteil des Users über den Entwurf in Figma — und die elf
-Punkte oben. Kein Blatt in `prototyp/` für Suna; Phase 1b sagt Gen → Probeeq
+Offen blieb: ~~das Urteil des Users über den Entwurf in Figma~~ (der Export
+kam um 22:18 und liegt in der Truhe — siehe Punkt 11) — und die zehn Punkte
+oben. Kein Blatt in `prototyp/` für Suna; Phase 1b sagt Gen → Probeeq
 → Suna, und für Suna gilt der Stand erst mit dem Export.
 
 **Der nächste Schritt, User-Wort zum Schluss:**

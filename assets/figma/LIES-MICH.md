@@ -1,9 +1,10 @@
 # Figma-Stände — die Vorgabe
 
-**Herkunft:** Figma, gestaltet vom **User**. Exportiert am 2026-08-21
-(20:04 / 20:05) in seinen Downloads-Ordner, von dort **bytegleich** hierher
-kopiert (SHA-256 unten). Die Dateien werden nicht bearbeitet, nicht
-verkleinert, nicht umbenannt.
+**Herkunft:** Figma, gestaltet vom **User** (Gen, Probeeq) bzw. von Claude auf
+seinen Auftrag in seiner Figma-Datei (Suna, siehe unten). Exportiert vom User
+am 2026-08-21 (20:04 / 20:05 / 22:18) in seinen Downloads-Ordner, von dort
+**bytegleich** hierher kopiert (SHA-256 unten). Die Dateien werden nicht
+bearbeitet, nicht verkleinert, nicht umbenannt.
 
 **Status: aktueller Stand — Vorgabe für die Übersetzung.** Ein Design
 entwickelt sich, neuere Stände ersetzen diese. Wörtlich, Interview
@@ -42,11 +43,20 @@ still entschieden** (Beispiel: `abnahmen/2026-08-21-designvertrag.md`,
 |---|---|---|---|---|---|
 | `2026-08-21-gen.png` | 2026-08-21 20:05 | 3296×1976 RGBA | `6d3f7378fe0087de` | 3040×1720 px **= 4 × 760×430** (gemessen über `alpha == 255`; der Rest ist Schatten) | **Nakama Gen** (Main) |
 | `2026-08-21-probeeq.png` | 2026-08-21 20:04 | 3600×2080 RGBA | `c8c10a5e43bfe680` | 2800×1680 px **= 4 × 700×420** (gemessen über die Helligkeitskante; der Rest ist Hintergrund) | **Nakama Probeeq** (aktive Sonde) |
+| `2026-08-21-suna.png` | 2026-08-21 22:18 | 3244×2080 RGBA | `d6d288d603750e0d` | 1040 px breit **= 4 × 260** (gemessen über die Helligkeitskante der Schale bei x 1280–2319); Höhe 336 = 4 × 84, gemessen: Glas 992 px = 4 × 248 breit. Der Rest ist der Host-Grund 811×520 (#121315, Ecken transparent) | **Nakama Suna** (passive Sonde) |
 
-Beide Geräteflächen entsprechen **genau** den am 2026-08-20 abgenommenen
+Alle drei Geräteflächen entsprechen **genau** den am 2026-08-20 abgenommenen
 Fenstergrößen (`abnahmen/2026-08-20-groessen-alle-drei.md`), vierfach
-exportiert. Für **Nakama Suna** (passive Sonde, 260×84) liegt noch kein Stand
-vor.
+exportiert.
+
+**Herkunft des Suna-Stands, anders als bei Gen und Probeeq:** die Kachel hat
+**Claude** am 2026-08-21 in der Figma-Datei des Users entworfen — auf dessen
+Auftrag, in der Sprache des markierten Probeeq-Stands
+(`abnahmen/2026-08-21-suna-auftrag-figma.md`, Studie 03, Figma-Node 6039:2).
+Der User hat sie am selben Abend aus Figma exportiert und hier abgelegt. Mit
+dem Export ist sie User-Wort (CLAUDE.md, Regel 4: „Ein neuer Figma-Stand ist
+neues User-Wort") — der Stand gilt, die Urheberschaft bleibt vermerkt. Die
+Export-Datei hieß `Suna.png` im Downloads-Ordner (22:18), kopiert 22:20.
 
 ## `2026-08-21-gen.png` — Nakama Gen
 
@@ -107,3 +117,27 @@ Leuchtsaum; Beschriftungen in Monospace-Versalien. Alle Texte englisch.
 Anmerkung, keine Wertung: zwölf Parameter je Band sind sichtbar; ob eine
 Sidechain-Quelle als dreizehnter dazukommt, ist im Technik-Repo offen
 (`docs/oberflaechen-spezifikation.md`, Abschnitt 2).
+
+
+## `2026-08-21-suna.png` — Nakama Suna
+
+Dieselbe Materialsprache wie Probeeq: dunkle Graphit-Schale mit abgerundeten
+Ecken und weichem Schatten auf dem Host-Grund, darin eine dunklere,
+eingelassene Glasfläche; unter dem Glas ein schmaler Körperstreifen (Kinn).
+Beschriftungen in Geist-Versalien, Werte in Geist Mono. Alle Texte englisch.
+Gezeigt ist **eine** Kachel im Schönfall; der Export enthält keine Zustände.
+
+- **Glas, Kopfzeile:** `PASSIVE PROBE` links oben, klein und grau.
+- **Glas, Parameterzeile** in Label-über-Wert-Form, drei Spalten:
+  `BUS` / `PIANO` (hell) · `ROLE` / `CARRIES` (grau) · `POSITION` / `POST`
+  (grau). Rechts oben im Glas ist nichts — der Hinweisplatz ist leer.
+- **Kinn:** links ein kleiner Punkt mit kühlem Leuchtsaum und `CONNECTED`;
+  mittig die Wortmarke `NAKAMA` (klein, Buchstaben rot→blau verlaufend) über
+  `SUNA` (groß, dünn, mit Verlauf); rechts `MEASURING`.
+- **Maße im Bild:** Schale 1040 px breit (gemessen; = 260) und 336 px hoch
+  (= 84), Glas 992 px breit (gemessen; = 248) mit 24 px Rand (= 6); Kinn
+  rechnerisch 112 px (= 28).
+
+Anmerkung, keine Wertung: der Export zeigt den Host-Grund 811 Einheiten breit
+statt 900 wie bei Probeeq; die Kachel sitzt bei x = 320, also nicht mittig im
+exportierten Grund. Für die Übersetzung ist nur die Kachel maßgeblich.

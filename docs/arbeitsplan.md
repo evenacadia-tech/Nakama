@@ -113,8 +113,8 @@ Oberfläche oder ein Blatt mit Tabs (`prototyp/LIES-MICH.md`).
 
 **Reihenfolge: Gen → Probeeq → Suna.** Gen zuerst, weil dort die Abnahmen
 vom 2026-08-20 liegen, gegen die der Stand gelesen werden muss; Suna zuletzt,
-weil noch kein Stand in der Truhe vorliegt (seit 2026-08-21 ein Figma-Entwurf
-von Claude, nicht abgenommen — `abnahmen/2026-08-21-suna-auftrag-figma.md`).
+weil der Stand erst am Abend des 2026-08-21 kam (`assets/figma/2026-08-21-suna.png`,
+von Claude entworfen, vom User exportiert — `abnahmen/2026-08-21-suna-auftrag-figma.md`).
 
 **Je Stand, in dieser Folge:**
 

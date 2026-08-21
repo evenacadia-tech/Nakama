@@ -12,13 +12,16 @@
 
 | | |
 |---|---|
-| Lebende Blätter | **9** in `werkzeug/`, vollständig gelesen (7.048 Zeilen zu Beginn) |
+| Lebende Blätter | **9** in `werkzeug/`, vollständig gelesen (**7.575** Zeilen zu Beginn, 7.776 jetzt) |
 | Dokumente | **26** — CLAUDE.md, 5 docs, 2 werkzeug-Texte, 15 abnahmen, 3 LIES-MICH, der interview-Skill |
 | Infrastruktur | 2 Hooks, `settings.json`, `.gitignore`, Git-Historie |
 | Helfer | **8 parallele Prüfagenten**, je mit eigenem Auftrag und eigener Messung |
-| Geändert | **20 Dateien**, 987 Zeilen dazu, 229 weg |
+| Geändert | **25 Dateien**, 1.472 Zeilen dazu, 230 weg |
 
-**Jeder Agentenbefund wurde vor der Übernahme am Quelltext nachgeprüft.** Das
+**Jeder Agentenbefund wurde vor der Übernahme am Quelltext nachgeprüft** —
+und die Zahlen dieses Berichts wurden am Ende noch einmal nachgemessen statt
+aus dem Gedächtnis geschrieben. Zwei davon waren falsch (7.048 statt 7.575
+Zeilen; 20 statt 25 geänderte Dateien) und stehen oben berichtigt. Das
 war nicht Zeremonie: zwei Befunde zitierten Textstellen mit Auszeichnungen, die
 im Original nicht stehen — die Reparaturskripte haben deshalb abgebrochen statt
 zu raten. Ein Verdacht von mir selbst („der Dauerhaft-Vertrag driftet nach
@@ -40,10 +43,17 @@ künstlichen Fehler gegengeprüft.
 | **Belegprobe** — liest die `title`-Attribute der Vertrags-Chips | 90 Chips, 0 kaputt | vorher: 90 von 90 kaputt |
 | **Ehrlichkeitsprobe** — fährt die Grenzfälle an | 8/8 | jede Zeile war vorher eine gemessene Lüge |
 
-Die Skripte lagen sitzungslokal (`playwright-core` gegen die vorhandene
-Chromium-Installation, `file://`, Messung im Seitenkontext). Wiederholbar sind
-sie aus dieser Beschreibung; die **Schleusenprobe** ist als einzige dauerhaft
-im Projekt, weil sie ohne Browser läuft.
+**Zwei davon liegen jetzt dauerhaft im Projekt**, damit sich der benannte
+Verlust aus `PRUEFLISTE.md` nicht wiederholt („die Skripte waren sitzungslokal
+und sind weg“):
+
+- `werkzeug/pruefung/pruefen.mjs` — Blattprüfung samt `--gegenprobe`. Sie sucht
+  `playwright-core` und Chromium, statt Pfade zu behaupten.
+- `.claude/hooks/schleusen-probe.sh` — läuft ohne Browser.
+
+Fingerabdruck, Belegprobe und Ehrlichkeitsprobe blieben sitzungslokal: sie
+messen den Inhalt eines bestimmten Blattes und gehören beim nächsten Umbau
+neu geschrieben — aus dieser Beschreibung heraus in wenigen Minuten.
 
 ---
 

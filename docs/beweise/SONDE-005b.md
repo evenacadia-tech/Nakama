@@ -608,7 +608,13 @@ Alle Zahlen in diesem Lauf gemessen:
 | Referenzbein-Prüfungen | 176 | **177** |
 | Riegel im Drift-Prüfer | 4 | **5** (Cargo.lock kam dazu) |
 
-### 6.5 Runde 4 — gelaufen 21.08., Urteil **NEEDS_WORK**; hier geschlossen
+### 6.5 Runde 4 — gelaufen 21.08., Urteil **NEEDS_WORK**; Befunde geschlossen
+
+> **Was hier steht und was nicht.** Geschlossen sind die drei **Befunde**, je
+> mit Messung und Rohausgabe. Das **Urteil** der Runde bleibt NEEDS_WORK: ein
+> T2-Urteil vergibt ein Prüfer mit frischem Kontext, nicht der, der die
+> Nacharbeit geschrieben hat. Eine Runde 5 gegen `git diff 4cf05b9..HEAD` ist
+> der nächste Schritt dieses Verfahrens — sie ist nicht gelaufen.
 
 Runde 4 hat die Zielscheibe noch einmal verschoben: nicht mehr der INHALT der
 Puffer, sondern ihre **Struktur**. Der Prüfer hat systematisch Offsetzellen auf

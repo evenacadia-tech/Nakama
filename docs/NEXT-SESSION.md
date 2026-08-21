@@ -29,6 +29,9 @@
   **Klasse** belegt (6215 Byte-Mutanten, 143 → 0 Abweichungen), die stale Zahl
   in P10 ist nachgemessen (207) und der tote Teilausdruck in `utf8Gueltig` ist
   raus. Alles in `docs/beweise/SONDE-005b.md` §6.5 + P14/P15.
+  **Offen bleibt das Urteil selbst:** eine T2-Runde 5 mit frischem Kontext gegen
+  `git diff 4cf05b9..HEAD` ist nicht gelaufen — Befunde schliesst, wer nacharbeitet,
+  urteilen darf nur ein Pruefer, der den Umbau nicht geschrieben hat.
 - **S4 (Capabilityreport) und Gate G0 warten auf die FL-Termine A/B des Users**
   (`eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md`, `…-B-HOSTZEIT.md`; Spike-Ordner leer).
 - **Kanon:** 15 Beine in `tools/beweise.ps1`; letzter vollständiger Lauf siehe

@@ -605,6 +605,11 @@ async function probeExport() {
   await ctx.close()
 }
 
+/* Die Kachelprobe pruefte bis 2026-08-21 nur, ob "Backing Vox" und "POST" im
+   Text vorkommen — also ob der Grenzfall GEMEINT war, nicht was er ergibt.
+   Der Code behauptete daneben, bei 260x84 entscheide die Breite. Gemessen ist
+   der Ueberlauf rein vertikal. Eine Probe, die den Text prueft und die Zahl
+   danebenstehen laesst, haelt so einen Widerspruch nicht auf. */
 async function probeKachel() {
   const { ctx, page } = await oeffne('formfaktor.html')
   const r = await page.evaluate(() => {
@@ -613,13 +618,43 @@ async function probeKachel() {
     if (kn) kn.click()
     return new Promise(aufl => setTimeout(() => {
       const f = document.querySelector('#passiv0')
-      aufl(f ? { da: true, text: f.innerText.replace(/\s+/g, ' ').trim(),
-                 fehlt: +f.dataset.fehlt } : { da: false })
+      if (!f) return aufl({ da: false })
+      // Unabhaengiger Weg: selbst nachrechnen statt dataset lesen.
+      const leib = f.querySelector('.leib')
+      let hoch = 0, breit = 0, woH = ''
+      const pruef = x => {
+        const h = x.scrollHeight - x.clientHeight, b = x.scrollWidth - x.clientWidth
+        if (h > hoch) { hoch = h; woH = x.className || x.tagName }
+        if (b > breit) breit = b
+      }
+      pruef(leib); leib.querySelectorAll('*').forEach(pruef)
+      aufl({ da: true, text: f.innerText.replace(/\s+/g, ' ').trim(),
+             fehlt: +f.dataset.fehlt, hoch, breit, woH,
+             gemeldetHoch: +f.dataset.hoch, gemeldetBreit: +f.dataset.breit,
+             richtung: f.dataset.richtung })
     }, 500))
   })
-  const grenz = r.da && /Backing Vox/.test(r.text) && /POST/.test(r.text)
-  sag(grenz, grenz ? `kachel=grenzfall ("${r.text}", Ueberlauf ${r.fehlt} px)`
-                   : `kachel NICHT im Grenzfall: ${JSON.stringify(r)}`)
+  let schief = 0
+  const pruefe = (ok, t) => { if (!ok) { schief++; sag(false, t) } }
+  pruefe(r.da, 'kachel: #passiv0 fehlt')
+  if (r.da) {
+    pruefe(/Backing Vox/.test(r.text) && /POST/.test(r.text),
+      `kachel NICHT im Grenzfall: "${r.text}"`)
+    pruefe(r.gemeldetHoch === r.hoch && r.gemeldetBreit === r.breit,
+      `kachel: Blatt meldet ${r.gemeldetHoch}/${r.gemeldetBreit} px (hoch/breit), `
+      + `unabhaengig gemessen ${r.hoch}/${r.breit}`)
+    // Der eigentliche Befund: die Richtung. Ein Ueberlauf ohne Richtung sagt
+    // nicht, ob eine Zeile weniger oder ein kuerzerer Name hilft.
+    pruefe(r.hoch > 1, `kachel: kein vertikaler Ueberlauf mehr (${r.hoch} px) — `
+      + 'entweder ist der Grenzfall entschaerft oder die Messung ist blind')
+    pruefe(r.breit <= 1, `kachel: ${r.breit} px Ueberlauf in der BREITE — `
+      + 'das waere neu, der Engpass war bisher rein vertikal')
+    pruefe(r.richtung === 'hoch',
+      `kachel: Richtung "${r.richtung}" statt "hoch"`)
+  }
+  sag(schief === 0, `kachel=grenzfall, Ueberlauf ${r.hoch} px hoch / ${r.breit} px `
+    + `breit (${r.woH}) — der Engpass ist die HOEHE, nicht die Breite; `
+    + `${schief} Abweichungen`)
   await ctx.close()
 }
 

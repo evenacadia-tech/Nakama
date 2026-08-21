@@ -482,9 +482,14 @@ function apBau(){
 }
 const ANDERE = {
   aktiv:   {name:'Active-Probe-Editor', w:700, h:420, bau:(w,h)=>apBau()},
-  /* Der Grenzfall der Kachel ist der LANGE Name plus die lange Messposition:
-     260x84 ist breit und flach, dort entscheidet die Breite. "Piano Bus /
-     Insert . POST" war der Schoenfall und hat nichts bewiesen. */
+  /* Der Grenzfall der Kachel ist der LANGE Name plus die lange Messposition;
+     "Piano Bus / Insert . POST" war der Schoenfall und hat nichts bewiesen.
+     KORRIGIERT 2026-08-21 (Codex-Befund 9): hier stand, bei 260x84 entscheide
+     die BREITE. Gemessen entscheidet ausschliesslich die HOEHE — 23 px fehlen
+     nach unten, 0 px zur Seite. Die Kachel ist breit und flach, und genau
+     deshalb war die Vermutung plausibel; drei gestapelte Informationszeilen
+     passen trotzdem nicht in 84 px. Die Vermutung stand im Code, die Messung
+     nirgends — jetzt haelt sie die Probe 'kachel' fest. */
   passiv:  {name:'Passive-Probe-Kachel', w:260, h:84,
             bau:()=>`<div class="box" style="flex:1"><div class="inh">
               <div class="qz"><span class="pkt"></span>
@@ -658,8 +663,11 @@ function zeichnen(){
       const f = fenster('passiv'+i, 'Passive', w.passiv.x, w.passiv.y + i*(p.h+8),
         p.w, p.h, p.bau(), false);
       s.appendChild(f);
-      // 260x84 ist das schaerfste der drei Masse und die Kachel ist BREIT und
-      // flach — dort entscheidet die Breite, und genau die wurde nie gemessen.
+      // 260x84 ist das schaerfste der drei Masse. Gemessen laeuft die Kachel
+      // NUR nach unten ueber (23 px hoch, 0 px breit) — die Vermutung "bei
+      // einer breiten flachen Kachel entscheidet die Breite" ist widerlegt.
+      // messeFenster fuehrt beide Richtungen getrennt und schreibt sie in
+      // dataset.hoch / dataset.breit, damit das nachpruefbar bleibt.
       messeFenster(f, p.w, p.h, false);
     });
   }

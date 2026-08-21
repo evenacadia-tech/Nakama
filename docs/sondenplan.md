@@ -381,7 +381,7 @@ die Passive-Kachel bei 260×84 **3 px**.
 | | gemessen 2026-08-21 |
 |---|---|
 | Active-Probe 700×420 | **0 px Überlauf** — aber der Kurve bleiben **5 px** (0,2 px je dB) |
-| Passive-Kachel 260×84 | **23 px Überlauf** (vorher 3 px am Schönfall) |
+| Passive-Kachel 260×84 | **23 px Überlauf, rein vertikal** (0 px in der Breite; vorher 3 px am Schönfall) |
 
 Die alte Zahl „Active-Probe läuft 24 px über" galt für den alten Mock (eine
 Kurve, eine Zeile) und ist damit gegenstandslos. Die neue Zahl ist die

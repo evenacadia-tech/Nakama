@@ -64,6 +64,8 @@ const char* HostProbeProcessor::artName (Art a) noexcept
         case Art::SchleifeAus:           return "schleife_aus";
         case Art::ZeitsprungVor:         return "zeitsprung_vor";
         case Art::ZeitsprungZurueck:     return "zeitsprung_zurueck";
+        case Art::ZeitsprungUeberStop:   return "zeitsprung_ueber_stop";
+        case Art::ProjektzeitNegativ:    return "projektzeit_negativ";
         case Art::OfflineAn:             return "offline_an";
         case Art::OfflineAus:            return "offline_aus";
         case Art::GenauigkeitFloat:      return "genauigkeit_float";
@@ -145,17 +147,18 @@ void HostProbeProcessor::zaehleBlock (bool doppeltePraezision, int samples, bool
         ++stand.bloeckeFloat;
     }
 
-    if (offline)
+    // Der Wechsel wird am UEBERGANG gemeldet, nicht am ersten Block einer Art.
+    // Vorher feuerte OfflineAus nur, wenn noch NIE ein Echtzeitblock lief - im
+    // Ablauf "live, dann Export, dann weiter" also nie (T2-Befund 21.08.).
+    if (offline != warOffline || stand.bloecke == 1)
     {
-        if (stand.bloeckeOffline == 0) merke (Art::OfflineAn, -1, -1, 0.0, 0.0, samples);
-        ++stand.bloeckeOffline;
+        if (offline)                       merke (Art::OfflineAn,  -1, -1, 0.0, 0.0, samples);
+        else if (stand.bloeckeOffline > 0) merke (Art::OfflineAus, -1, -1, 0.0, 0.0, samples);
+        warOffline = offline;
     }
-    else
-    {
-        if (stand.bloeckeEchtzeit == 0 && stand.bloeckeOffline > 0)
-            merke (Art::OfflineAus, -1, -1, 0.0, 0.0, samples);
-        ++stand.bloeckeEchtzeit;
-    }
+
+    if (offline) ++stand.bloeckeOffline;
+    else         ++stand.bloeckeEchtzeit;
 
     if (samples > 0)
     {
@@ -197,6 +200,9 @@ void HostProbeProcessor::nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbe
         letzteBlockGroesse = 0;
         zeitBasisNeu = true;
         spielteVorher = false;
+        aufnahmeVorher = false;     // fehlte - sonst bleibt ein aufnahme_an aus
+        warOffline = false;
+        zeitBeimStop = -1;
     }
 
     // Senke gerufen, ohne dass seit dem letzten Mal ein processBlock lief:
@@ -242,6 +248,24 @@ void HostProbeProcessor::nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbe
             merke (spielt ? Art::TransportAn : Art::TransportAus,
                    k.projectTimeSamples.oder (-1), stand.letzteProjektZeit,
                    k.ppqPosition.oder (0.0), 0.0, -1);
+
+            if (! spielt)
+            {
+                zeitBeimStop = k.projectTimeSamples.oder (-1);
+            }
+            else if (zeitBeimStop >= 0 && k.projectTimeSamples.gueltig
+                     && k.projectTimeSamples.wert != zeitBeimStop)
+            {
+                // Ein Positionswechsel ueber Stop/Play hinweg ist KEIN Sprung im
+                // laufenden Betrieb - aber er darf auch nicht spurlos
+                // verschwinden, sonst ist eine 0 bei den Spruengen mehrdeutig
+                // (T2-Befund 21.08.).
+                ++stand.spruengeUeberStop;
+                merke (Art::ZeitsprungUeberStop, k.projectTimeSamples.wert, zeitBeimStop,
+                       k.ppqPosition.oder (0.0),
+                       (double) (k.projectTimeSamples.wert - zeitBeimStop), -1);
+            }
+
             stand.spieltGerade = spielt;
             zeitBasisNeu = true;     // nach einem Transportwechsel ist jeder Zeitwert legitim
         }
@@ -268,7 +292,16 @@ void HostProbeProcessor::nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbe
         {
             const auto jetztZeit = k.projectTimeSamples.wert;
 
-            if (! zeitBasisNeu && spielt && spielteVorher && stand.letzteProjektZeit >= 0)
+            if (jetztZeit < 0)
+            {
+                if (stand.projektzeitNegativ == 0)
+                    merke (Art::ProjektzeitNegativ, jetztZeit, stand.letzteProjektZeit,
+                           k.ppqPosition.oder (0.0), 0.0, -1);
+                ++stand.projektzeitNegativ;
+            }
+
+            if (! zeitBasisNeu && spielt && spielteVorher
+                && stand.letzteProjektZeit >= 0 && jetztZeit >= 0)
             {
                 const auto erwartet   = stand.letzteProjektZeit + letzteBlockGroesse;
                 const auto abweichung = jetztZeit - erwartet;
@@ -326,11 +359,22 @@ void HostProbeProcessor::nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbe
 
         if (b.anzahl > 1)
         {
-            if (stand.bloeckeMitMehrpunkt == 0)
-                merke (Art::AutomationMehrpunkt, k.projectTimeSamples.oder (-1), -1,
-                       k.ppqPosition.oder (0.0), (double) b.anzahl,
-                       (int) b.ereignisse[b.anzahl - 1].sampleOffset);
-            ++stand.bloeckeMitMehrpunkt;
+            // Mehrere Punkte allein belegen NICHT Samplegenauigkeit: die Bruecke
+            // zieht ihre Zusicherung ab, sobald ein Offset oder Wert unplausibel
+            // war oder der Ring uebergelaufen ist. Wer das ignoriert, behauptet
+            // gegen den eigenen Vertrag (T2-Befund 21.08.).
+            if (b.sampleAccurateAutomation)
+            {
+                if (stand.bloeckeMitMehrpunkt == 0)
+                    merke (Art::AutomationMehrpunkt, k.projectTimeSamples.oder (-1), -1,
+                           k.ppqPosition.oder (0.0), (double) b.anzahl,
+                           (int) b.ereignisse[b.anzahl - 1].sampleOffset);
+                ++stand.bloeckeMitMehrpunkt;
+            }
+            else
+            {
+                ++stand.mehrpunktOhneZusicherung;
+            }
         }
     }
 
@@ -342,30 +386,30 @@ void HostProbeProcessor::nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbe
         stand.automationUnplausibel += (juce::int64) unplausibel;
     }
     stand.automationUeberlaeufe += (juce::int64) b.ueberlaeufe;
+    stand.verworfeneLetztwerte  += (juce::int64) b.verworfeneLetztwerte;
+    stand.verworfeneBusmeldungen = (juce::int64) b.verworfeneBusse;   // kumulativ in der Bruecke
+    if (! b.sampleAccurateAutomation) ++stand.bloeckeOhneZusicherung;
 
     // --- Presentation-Latency --------------------------------------------
-    if (! stand.latenzJeGemeldet)
+    // JEDER gemeldete Bus in BEIDEN Richtungen. Ein break beim ersten Fund
+    // haette einen Host, der Eingang 0 = 0 und Ausgang 0 = 1024 meldet, auf die
+    // 0 zusammenschrumpfen lassen (T2-Befund 21.08.).
+    for (juce::int32 bus = 0; bus < eqcop::hostbruecke::kMaxBusse; ++bus)
     {
-        for (juce::int32 bus = 0; bus < eqcop::hostbruecke::kMaxBusse; ++bus)
+        const auto& ein = k.presentationLatency.hole (true, bus);
+        if (ein.gemeldet && ! stand.latenzEingang[bus].gemeldet)
         {
-            const auto& ein = k.presentationLatency.hole (true, bus);
-            if (ein.gemeldet)
-            {
-                stand.latenzJeGemeldet = true;
-                stand.latenzEingangBus = (int) bus;
-                stand.latenzEingangWert = ein.samples;
-                merke (Art::LatenzGemeldet, -1, -1, 0.0, (double) ein.samples, (int) bus);
-                break;
-            }
-            const auto& aus = k.presentationLatency.hole (false, bus);
-            if (aus.gemeldet)
-            {
-                stand.latenzJeGemeldet = true;
-                stand.latenzAusgangBus = (int) bus;
-                stand.latenzAusgangWert = aus.samples;
-                merke (Art::LatenzGemeldet, -1, -1, 0.0, (double) aus.samples, -(int) bus - 1);
-                break;
-            }
+            stand.latenzEingang[bus] = { true, ein.samples };
+            stand.latenzJeGemeldet = true;
+            merke (Art::LatenzGemeldet, -1, -1, 0.0, (double) ein.samples, (int) bus);
+        }
+
+        const auto& aus = k.presentationLatency.hole (false, bus);
+        if (aus.gemeldet && ! stand.latenzAusgang[bus].gemeldet)
+        {
+            stand.latenzAusgang[bus] = { true, aus.samples };
+            stand.latenzJeGemeldet = true;
+            merke (Art::LatenzGemeldet, -1, -1, 0.0, (double) aus.samples, -(int) bus - 1);
         }
     }
 
@@ -395,13 +439,24 @@ int HostProbeProcessor::ereignisseLesen (Ereignis* ziel, int platz) const noexce
 {
     aufzeichnung.store (false, std::memory_order_release);
 
-    const int geschrieben = schreibIndex.load (std::memory_order_acquire);
-    const int vorhanden   = juce::jmin (geschrieben, kMaxEreignisse);
-    const int anzahl      = juce::jmin (vorhanden, platz);
-    const int start       = geschrieben > kMaxEreignisse ? geschrieben % kMaxEreignisse : 0;
+    // Das Pausenbit allein genuegt NICHT: der Audiothread kann zwischen seiner
+    // Pruefung und dem Schreiben stehen. Deshalb wird der Schreibindex vor UND
+    // nach dem Kopieren gelesen; hat er sich bewegt, war ein Eintrag im Fluss
+    // und der Durchgang wird wiederholt (T2-Befund 21.08.).
+    int anzahl = 0;
+    for (int versuch = 0; versuch < 8; ++versuch)
+    {
+        const int vorher = schreibIndex.load (std::memory_order_acquire);
+        const int vorhanden = juce::jmin (vorher, kMaxEreignisse);
+        anzahl = juce::jmin (vorhanden, platz);
+        const int start = vorher > kMaxEreignisse ? vorher % kMaxEreignisse : 0;
 
-    for (int i = 0; i < anzahl; ++i)
-        ziel[i] = protokoll[(start + i) % kMaxEreignisse];
+        for (int i = 0; i < anzahl; ++i)
+            ziel[i] = protokoll[(start + i) % kMaxEreignisse];
+
+        if (schreibIndex.load (std::memory_order_acquire) == vorher)
+            break;
+    }
 
     aufzeichnung.store (true, std::memory_order_release);
     return anzahl;
@@ -456,6 +511,12 @@ juce::String HostProbeProcessor::berichtAlsJson() const
     auto* zeit = new juce::DynamicObject();
     zeit->setProperty ("spruenge_vorwaerts",   (juce::int64) s.zeitspruengeVor);
     zeit->setProperty ("spruenge_rueckwaerts", (juce::int64) s.zeitspruengeZurueck);
+    zeit->setProperty ("spruenge_ueber_stop",  (juce::int64) s.spruengeUeberStop);
+    zeit->setProperty ("projektzeit_negativ",  (juce::int64) s.projektzeitNegativ);
+    // Ehrlich benannt: ein Vorwaertssprung kann ein Seek ODER eine
+    // Smart-Disable-Luecke sein. Auseinander haelt sie erst das Protokoll des
+    // Termins zusammen mit der Blockreihenfolge im Ereignislog.
+    zeit->setProperty ("hinweis_vorwaertssprung", "Seek vorwaerts ODER Smart-Disable-Luecke - aus den Daten allein nicht unterscheidbar");
     zeit->setProperty ("groesster_sprung_vor",   (juce::int64) s.groessterSprungVor);
     zeit->setProperty ("groesster_sprung_zurueck", (juce::int64) s.groessterSprungZur);
     zeit->setProperty ("letzte_projektzeit",   (juce::int64) s.letzteProjektZeit);
@@ -471,16 +532,33 @@ juce::String HostProbeProcessor::berichtAlsJson() const
     au->setProperty ("groesster_offset",      s.groesterOffset);
     au->setProperty ("ueberlaeufe",           (juce::int64) s.automationUeberlaeufe);
     au->setProperty ("unplausibel",           (juce::int64) s.automationUnplausibel);
-    // DIE Frage, fuer die der Bridge-Patch gebaut wurde.
+    au->setProperty ("verworfene_letztwerte", (juce::int64) s.verworfeneLetztwerte);
+    au->setProperty ("bloecke_ohne_zusicherung", (juce::int64) s.bloeckeOhneZusicherung);
+    au->setProperty ("mehrpunkt_ohne_zusicherung", (juce::int64) s.mehrpunktOhneZusicherung);
+    // DIE Frage, fuer die der Bridge-Patch gebaut wurde - und sie wird NUR aus
+    // Bloecken gebildet, in denen die Bruecke ihre Zusicherung auch gegeben hat.
     au->setProperty ("samplegenau_belegt",    s.bloeckeMitMehrpunkt > 0);
     wurzel->setProperty ("automation", juce::var (au));
 
     auto* lat = new juce::DynamicObject();
-    lat->setProperty ("je_gemeldet",   s.latenzJeGemeldet);
-    lat->setProperty ("eingang_bus",   s.latenzEingangBus);
-    lat->setProperty ("eingang_wert",  (juce::int64) s.latenzEingangWert);
-    lat->setProperty ("ausgang_bus",   s.latenzAusgangBus);
-    lat->setProperty ("ausgang_wert",  (juce::int64) s.latenzAusgangWert);
+    lat->setProperty ("je_gemeldet", s.latenzJeGemeldet);
+    lat->setProperty ("verworfene_busmeldungen", (juce::int64) s.verworfeneBusmeldungen);
+    // Nur TATSAECHLICH gemeldete Eintraege - kein erfundener "Bus -1 = 0".
+    juce::Array<juce::var> latListe;
+    for (int bus = 0; bus < eqcop::hostbruecke::kMaxBusse; ++bus)
+    {
+        for (int richtung = 0; richtung < 2; ++richtung)
+        {
+            const auto& e = richtung == 0 ? s.latenzEingang[bus] : s.latenzAusgang[bus];
+            if (! e.gemeldet) continue;
+            auto* o = new juce::DynamicObject();
+            o->setProperty ("richtung", richtung == 0 ? "eingang" : "ausgang");
+            o->setProperty ("bus", bus);
+            o->setProperty ("samples", (juce::int64) e.samples);
+            latListe.add (juce::var (o));
+        }
+    }
+    lat->setProperty ("gemeldet", latListe);
     wurzel->setProperty ("presentation_latency", juce::var (lat));
 
     auto* arten = new juce::DynamicObject();

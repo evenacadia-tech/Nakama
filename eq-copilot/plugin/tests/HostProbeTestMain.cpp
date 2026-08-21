@@ -9,6 +9,7 @@
 // Exit 0 nur bei "HOSTPROBE OK".
 
 #include "HostProbeProcessor.h"
+#include "HostProbeEditor.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -107,7 +108,7 @@ void hostBlock (HostProbeProcessor& p, const Blockbefund& b,
 } // namespace
 
 //==============================================================================
-int main()
+int main (int argc, char* argv[])
 {
     juce::ScopedJuceInitialiser_GUI juceInit;
 
@@ -229,7 +230,11 @@ int main()
         s = p.messstand();
         pruefe (s.zeitspruengeVor == vorher.zeitspruengeVor
                 && s.zeitspruengeZurueck == vorher.zeitspruengeZurueck,
-                "nach Stop/Play wird der Positionswechsel NICHT als Sprung gemeldet");
+                "nach Stop/Play wird der Positionswechsel NICHT als laufender Sprung gemeldet");
+        pruefe (s.spruengeUeberStop == 1,
+                "er verschwindet aber auch nicht: eigener Zaehler 'ueber Stop/Play' (T2-Befund 21.08.)");
+        pruefe (s.artZaehler[(int) Art::ZeitsprungUeberStop] == 1,
+                "und ein eigenes Ereignis, damit eine 0 bei den Spruengen nicht mehrdeutig ist");
         pruefe (s.artZaehler[(int) Art::TransportAus] >= 1 && s.artZaehler[(int) Art::TransportAn] >= 1,
                 "Stop und Play sind als Transportereignisse vermerkt");
 
@@ -291,15 +296,38 @@ int main()
         pruefe (s.artZaehler[(int) Art::AutomationMehrpunkt] == 1,
                 "der erste Mehrpunkt-Block ist als Ereignis vermerkt");
 
+        // Mehrere Punkte OHNE Zusicherung der Bruecke duerfen NICHT als
+        // samplegenau durchgehen - sonst behauptet der Bericht gegen den
+        // eigenen Vertrag (T2-Befund 21.08.).
+        const auto vorMehrpunkt = p.messstand().bloeckeMitMehrpunkt;
+        auto ohneZusicherung = mitKontext (768, true, 512);
+        ohneZusicherung.ereignisse = drei; ohneZusicherung.anzahl = 3;
+        ohneZusicherung.sampleAccurateAutomation = false;
+        ohneZusicherung.unplausibleOffsets = 1;
+        hostBlock (p, ohneZusicherung, puffer, midi);
+        s = p.messstand();
+        pruefe (s.bloeckeMitMehrpunkt == vorMehrpunkt,
+                "Mehrpunkt-Block OHNE Zusicherung zaehlt NICHT als samplegenau");
+        pruefe (s.mehrpunktOhneZusicherung == 1,
+                "er wird stattdessen getrennt gezaehlt - kein Befund verschwindet");
+
         // Unplausible Punkte werden durchgereicht, nicht verschluckt.
         auto bu = mitKontext (1024, true, 512);
         bu.ereignisse = drei; bu.anzahl = 3;
         bu.unplausibleWerte = 2;
         bu.ueberlaeufe = 7;
+        // So und nicht anders liefert die Bruecke das: sind diese Zaehler
+        // ungleich null, ist die Zusicherung weg (NakamaHostBridge.h). Ein
+        // Fixture, das den Vertrag verletzt, prueft nichts Echtes.
+        bu.sampleAccurateAutomation = false;
         hostBlock (p, bu, puffer, midi);
         s = p.messstand();
-        pruefe (s.automationUnplausibel == 2 && s.automationUeberlaeufe == 7,
-                "Unplausibilitaeten und Ueberlaeufe der Bruecke werden uebernommen, nicht geglaettet");
+        // 1 unplausibler Offset aus dem Block davor + 2 unplausible Werte hier.
+        // Die Zaehler summieren ueber den Lauf, sie ueberschreiben sich nicht.
+        pruefe (s.automationUnplausibel == 3 && s.automationUeberlaeufe == 7,
+                "Unplausibilitaeten und Ueberlaeufe der Bruecke werden AUFSUMMIERT uebernommen, nicht geglaettet");
+        pruefe (s.bloeckeOhneZusicherung == 2,
+                "beide Bloecke ohne Zusicherung sind gezaehlt (der mit Offset- und der mit Wertfehler)");
     }
 
     std::cout << "== F - Presentation-Latency: nie gemeldet ist etwas anderes als 0 ==" << std::endl;
@@ -308,16 +336,39 @@ int main()
         auto ohne = mitKontext (0, true, 512);
         p.nakamaBlockEmpfangen (ohne);
         auto s = p.messstand();
-        pruefe (! s.latenzJeGemeldet && s.latenzEingangBus == -1,
-                "ohne Hostmeldung: 'nie gemeldet', und der Bus bleibt -1 statt 0");
+        pruefe (! s.latenzJeGemeldet && ! s.latenzEingang[0].gemeldet && ! s.latenzAusgang[0].gemeldet,
+                "ohne Hostmeldung: 'nie gemeldet' - und KEIN Eintrag wird erfunden");
 
         auto mit = mitKontext (512, true, 512);
         mit.kontext.presentationLatency.eingang[0].gemeldet = true;
         mit.kontext.presentationLatency.eingang[0].samples  = 0;
         p.nakamaBlockEmpfangen (mit);
         s = p.messstand();
-        pruefe (s.latenzJeGemeldet && s.latenzEingangBus == 0 && s.latenzEingangWert == 0,
+        pruefe (s.latenzJeGemeldet && s.latenzEingang[0].gemeldet && s.latenzEingang[0].samples == 0,
                 "Host meldet 0: als GEMELDET gefuehrt, Wert 0 - die Trennung bleibt erhalten");
+        pruefe (! s.latenzAusgang[0].gemeldet,
+                "die Gegenrichtung bleibt ungemeldet - es wird kein Wert erfunden");
+
+        // Der gemischte Fall: BEIDE Richtungen. Ein break beim ersten Fund
+        // haette 1024 verschluckt und 'Ausgang Bus -1 = 0' gedruckt.
+        auto beide = mitKontext (1024, true, 512);
+        beide.kontext.presentationLatency.eingang[0] = { 0u, true };
+        beide.kontext.presentationLatency.ausgang[0] = { 1024u, true };
+        beide.kontext.presentationLatency.ausgang[2] = { 96u, true };
+        p.nakamaBlockEmpfangen (beide);
+        s = p.messstand();
+        pruefe (s.latenzAusgang[0].gemeldet && s.latenzAusgang[0].samples == 1024,
+                "Ausgang Bus 0 = 1024 wird NEBEN dem Eingang gefuehrt, nicht verschluckt");
+        pruefe (s.latenzAusgang[2].gemeldet && s.latenzAusgang[2].samples == 96,
+                "auch ein dritter Bus kommt an");
+        pruefe (! s.latenzAusgang[1].gemeldet,
+                "ein nicht gemeldeter Bus dazwischen bleibt ungemeldet");
+
+        const auto text = p.berichtAlsJson();
+        const auto j = juce::JSON::parse (text);
+        pruefe (j["presentation_latency"]["gemeldet"].isArray()
+                    && j["presentation_latency"]["gemeldet"].size() == 3,
+                "der Bericht listet genau die drei gemeldeten Eintraege - keinen erfundenen");
     }
 
     std::cout << "== G - Senke ohne processBlock (Flush/Hostriegel) ==" << std::endl;
@@ -397,6 +448,22 @@ int main()
         pruefe (s.bloeckeMitKontext == 1 && s.zeitspruengeVor == 0 && s.zeitspruengeZurueck == 0,
                 "Zuruecksetzen leert die Messung - und erzeugt dabei keinen Scheinsprung");
 
+        // Reset waehrend laufender Aufnahme: danach muss ein aufnahme_an
+        // kommen, sonst haengt spaeter ein aufnahme_aus ohne Gegenstueck.
+        HostProbeProcessor a;
+        a.setPlayConfigDetails (2, 2, 48000.0, 512);
+        a.prepareToPlay (48000.0, 512);
+        auto mitAufnahme = mitKontext (0, true, 512);
+        mitAufnahme.kontext.recording.setze (true);
+        hostBlock (a, mitAufnahme, puffer, midi);
+        a.messungZuruecksetzen();
+        auto nochAufnahme = mitKontext (512, true, 512);
+        nochAufnahme.kontext.recording.setze (true);
+        hostBlock (a, nochAufnahme, puffer, midi);
+        const auto sa = a.messstand();
+        pruefe (sa.artZaehler[(int) Art::AufnahmeAn] == 1,
+                "nach dem Zuruecksetzen wird die laufende Aufnahme wieder als aufnahme_an gemeldet");
+
         // Mehr Ereignisse als der Ring fasst: die Zaehler je Art muessen den
         // Ueberlauf ueberleben, sonst verschwindet ein Befund still.
         HostProbeProcessor q;
@@ -421,6 +488,43 @@ int main()
                 "die herausgegebenen Ereignisse stehen in Blockreihenfolge (juengste zuletzt)");
     }
 
+    std::cout << "== I2 - Offline-Uebergang und negative Projektzeit ==" << std::endl;
+    {
+        HostProbeProcessor p;
+        p.setPlayConfigDetails (2, 2, 48000.0, 512);
+        p.prepareToPlay (48000.0, 512);
+        juce::AudioBuffer<float> puffer (2, 512);
+        juce::MidiBuffer midi;
+
+        // live -> Export -> live. Vorher feuerte OfflineAus NIE, weil es an
+        // "noch kein Echtzeitblock" haengt (T2-Befund 21.08.).
+        for (int i = 0; i < 3; ++i) hostBlock (p, mitKontext (i * 512, true, 512), puffer, midi);
+        p.setNonRealtime (true);
+        for (int i = 0; i < 3; ++i) hostBlock (p, mitKontext ((3 + i) * 512, true, 512), puffer, midi);
+        p.setNonRealtime (false);
+        hostBlock (p, mitKontext (6 * 512, true, 512), puffer, midi);
+
+        const auto s = p.messstand();
+        pruefe (s.bloeckeOffline == 3 && s.bloeckeEchtzeit == 4, "Offline- und Echtzeitbloecke getrennt gezaehlt");
+        pruefe (s.artZaehler[(int) Art::OfflineAn] >= 1, "der Wechsel IN den Render ist vermerkt");
+        pruefe (s.artZaehler[(int) Art::OfflineAus] == 1,
+                "der Wechsel ZURUECK in Echtzeit ist ebenfalls vermerkt - nicht nur der erste Block ueberhaupt");
+
+        // Negative Projektzeit (FL-Vorzaehler): eigener Fall, nicht stilles
+        // Ueberspringen.
+        HostProbeProcessor n;
+        n.setPlayConfigDetails (2, 2, 48000.0, 512);
+        n.prepareToPlay (48000.0, 512);
+        for (int i = 0; i < 3; ++i)
+            hostBlock (n, mitKontext (-2048 + i * 512, true, 512), puffer, midi);
+        const auto sn = n.messstand();
+        pruefe (sn.projektzeitNegativ == 3, "negative Projektzeit wird GEZAEHLT, nicht still uebersprungen");
+        pruefe (sn.artZaehler[(int) Art::ProjektzeitNegativ] == 1,
+                "der erste negative Wert ist als Ereignis vermerkt");
+        pruefe (sn.zeitspruengeVor == 0 && sn.zeitspruengeZurueck == 0,
+                "im negativen Bereich wird kein Scheinsprung erfunden");
+    }
+
     std::cout << "== J - Audiothread: keine Allokation ==" << std::endl;
     {
         HostProbeProcessor p;
@@ -442,6 +546,90 @@ int main()
         zaehleAllokationen = false;
         pruefe (allokationen == 0,
                 "500 Bloecke mit Kontext, Transportwechseln und je 8 Automationspunkten: 0 Allokationen");
+    }
+
+    std::cout << "== K - Anzeige: passt der Inhalt ueberhaupt ins Fenster? ==" << std::endl;
+    {
+        // Die erste Fassung war 660x520 und schnitt 49 px ab - ausgerechnet die
+        // Automationszeilen, und die Knoepfe lagen zusaetzlich darauf. Ein
+        // Messgeraet, dessen Messwerte man nicht sieht, misst nicht.
+        HostProbeProcessor p;
+        p.setPlayConfigDetails (2, 2, 48000.0, 512);
+        p.prepareToPlay (48000.0, 512);
+
+        std::unique_ptr<juce::AudioProcessorEditor> editor (p.createEditor());
+        pruefe (editor != nullptr, "der Editor laesst sich erzeugen");
+
+        const auto leer = HostProbeEditor::zeilen (Messstand {}, false);
+        const auto voll = HostProbeEditor::zeilen (p.messstand(), p.brueckeLiefert());
+
+        const int noetigLeer = HostProbeEditor::benoetigteHoehe (leer);
+        const int noetigVoll = HostProbeEditor::benoetigteHoehe (voll);
+        const int hoehe = editor->getHeight();
+
+        pruefe (hoehe >= noetigLeer,
+                juce::String ("Fensterhoehe ") + juce::String (hoehe) + " deckt den Leerzustand ("
+                    + juce::String (noetigLeer) + " noetig)");
+        pruefe (hoehe >= noetigVoll,
+                juce::String ("Fensterhoehe deckt auch den Messzustand (")
+                    + juce::String (noetigVoll) + " noetig)");
+
+        const int knopfOben = hoehe - masse::knopfStreifen;
+        pruefe (HostProbeEditor::inhaltsUnterkante (leer) <= knopfOben,
+                juce::String ("keine Textzeile liegt unter den Knoepfen (Text bis ")
+                    + juce::String (HostProbeEditor::inhaltsUnterkante (leer))
+                    + ", Knopfstreifen ab " + juce::String (knopfOben) + ")");
+
+        // Jede Zeile mit Messwert muss auch eine Beschriftung haben - sonst
+        // steht eine Zahl ohne Frage im Fenster.
+        bool alleBeschriftet = true;
+        for (const auto& z : leer)
+            if (z.wert.isNotEmpty() && z.name.isEmpty() && ! z.istKopf && z.wert.length() < 20)
+                alleBeschriftet = false;
+        pruefe (alleBeschriftet, "keine Wertzeile ohne Beschriftung");
+
+        // Bildbeweis: PNG schreiben, wenn ein Pfad uebergeben wurde.
+        if (argc > 1)
+        {
+            const juce::File ziel { juce::String (argv[1]) };
+            editor->setBounds (0, 0, editor->getWidth(), editor->getHeight());
+            const auto bild = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
+            ziel.deleteFile();
+            juce::FileOutputStream strom (ziel);
+            juce::PNGImageFormat png;
+            const bool ok = strom.openedOk() && png.writeImageToStream (bild, strom);
+            pruefe (ok, "Bildbeweis Leerzustand geschrieben: " + ziel.getFullPathName());
+            pruefe (bild.getWidth() == editor->getWidth() && bild.getHeight() == editor->getHeight(),
+                    "das Bild hat die volle Fenstergroesse");
+
+            // Zweites Bild MIT Messwerten - die Klickliste verspricht dem User
+            // genau diese Zeilen, also muss auch dieser Zustand belegt sein.
+            juce::AudioBuffer<float> puffer (2, 512);
+            juce::MidiBuffer midi;
+            ParameterEvent punkte[4] { { 1, 0, 0.10f }, { 1, 96, 0.40f },
+                                       { 1, 300, 0.70f }, { 1, 500, 0.95f } };
+            for (int i = 0; i < 40; ++i)
+            {
+                auto b = mitKontext (i * 512, i > 2, 512, i > 20, true);
+                if (i == 10) { b.ereignisse = punkte; b.anzahl = 4; }
+                if (i == 25) b.kontext.presentationLatency.ausgang[0] = { 1024u, true };
+                hostBlock (p, b, puffer, midi);
+            }
+            hostBlock (p, mitKontext (100000, true, 512), puffer, midi);   // Seek
+
+            const auto zielMess = ziel.getSiblingFile (
+                ziel.getFileNameWithoutExtension().replace ("leerzustand", "messzustand") + ".png");
+            editor->repaint();
+            const auto bild2 = editor->createComponentSnapshot (editor->getLocalBounds(), true, 1.0f);
+            zielMess.deleteFile();
+            juce::FileOutputStream strom2 (zielMess);
+            const bool ok2 = strom2.openedOk() && png.writeImageToStream (bild2, strom2);
+            pruefe (ok2, "Bildbeweis Messzustand geschrieben: " + zielMess.getFullPathName());
+
+            const auto mitWerten = HostProbeEditor::zeilen (p.messstand(), p.brueckeLiefert());
+            pruefe (editor->getHeight() >= HostProbeEditor::benoetigteHoehe (mitWerten),
+                    "auch der volle Messzustand passt ins Fenster");
+        }
     }
 
     std::cout << std::endl;

@@ -15,7 +15,7 @@ Deshalb habe ich ein zweites Wegwerf-Plugin gebaut, das genau das anzeigt. Es
 **veraendert deinen Klang nicht** — es reicht das Signal unveraendert durch und
 zaehlt nur mit.
 
-Am Ende beantwortet es sechs Fragen. **Jede Antwort ist ein gutes Ergebnis,
+Am Ende beantwortet es sieben Fragen. **Jede Antwort ist ein gutes Ergebnis,
 auch ein Nein.** Nur „weiss nicht" waere schlecht, denn danach wuerde ich
 Funktionen bauen, die FL nicht traegt.
 
@@ -24,6 +24,7 @@ Funktionen bauen, die FL nicht traegt.
 | Schickt FL ueberhaupt eine Projektzeit mit? | Ohne sie kann Nakama einen Befund keiner Stelle im Song zuordnen. |
 | Merkt das Plugin, wenn du **springst**? | Sonst rechnet es nach einem Sprung mit einer Zeitachse, die es nicht mehr gibt. |
 | Was passiert an der **Schleifen-Grenze**? | Der Sprung zurueck darf nicht wie ein neuer Song aussehen. |
+| Was macht **Smart Disable**? | Wenn FL das Plugin bei Stille pausiert, entsteht eine Luecke in der Zeitachse. Nakama muss sie von einem Sprung unterscheiden koennen — und wenn es das nicht kann, muss ich das WISSEN. |
 | Kommt **Automation samplegenau** an? | Dafuer habe ich den JUCE-Patch gebaut. Wenn ja, kann Nakama Reglerwege exakt lesen; wenn nein, nur grob — und sagt das dann auch. |
 | Was ist beim **Export/Render** anders? | Ein Befund aus dem Render muss von einem Live-Befund unterscheidbar sein. |
 | Meldet FL eine **Verzoegerung je Bus**? | Wenn nicht, darf Nakama zwei Messpunkte nicht rechnerisch aneinander ausrichten. |
@@ -69,7 +70,7 @@ durch diesen Kanal laeuft.
 
 ---
 
-## 2. Die sechs Messungen (etwa 15 Minuten)
+## 2. Die Messungen (etwa 18 Minuten)
 
 Zwischen den Messungen musst du **nichts** zuruecksetzen — das Plugin merkt sich
 alles nebeneinander. Nur wenn du komplett neu anfangen willst, drueckst du
@@ -85,16 +86,31 @@ alles nebeneinander. Nur wenn du komplett neu anfangen willst, drueckst du
 ausfuellt" steht bei den Zeilen entweder **immer**, **manchmal** oder **nie** —
 das ist schon die halbe Antwort auf Frage 1.
 
-### Schritt 4 — Stop und Springen
+### Schritt 4 — Springen, waehrend es LAEUFT
 
-**Tu:** Stoppen. Dann im Playlist-Lineal **weiter hinten** hinklicken und wieder
-abspielen. Das Ganze zweimal, einmal davon nach **vorne** springen.
+**Tu:** Abspielen lassen und **ohne zu stoppen** ins Playlist-Lineal klicken —
+einmal weiter hinten, einmal weiter vorn. Zwei bis drei Spruenge reichen.
 
 **Warum:** Ein Sprung ist fuer das Plugin ein Bruch in der Zeitachse. Es muss
 ihn erkennen, ohne bei normalem Abspielen staendig Fehlalarm zu geben.
 
-**Sieh:** *Zeitspruenge vorwaerts* und *rueckwaerts* zaehlen hoch — aber nur
-beim Springen, nicht beim normalen Spielen.
+⚠️ **Wichtig ist das „ohne zu stoppen".** Ein Positionswechsel ueber ein
+Stop/Play hinweg ist etwas anderes — dort ist jede neue Position legitim, und
+das Plugin zaehlt ihn deshalb in einer eigenen Zeile. Wuerdest du nur so
+springen, blieben die beiden Sprung-Zeilen auf 0, und ich koennte „FL meldet
+keine Spruenge" nicht von „wir haben es nicht ausgeloest" unterscheiden.
+
+**Sieh:** *Zeitspruenge vorwaerts* und *rueckwaerts* zaehlen hoch.
+
+### Schritt 4b — Und einmal MIT Stop, zum Vergleich
+
+**Tu:** Stoppen, im Lineal woanders hinklicken, wieder abspielen.
+
+**Warum:** Das ist der Gegenfall. Er darf die Sprung-Zeilen NICHT hochzaehlen —
+sonst wuerde Nakama spaeter jeden Neustart fuer einen Zeitbruch halten.
+
+**Sieh:** *Positionswechsel ueber Stop/Play* zaehlt um eins hoch, die beiden
+Sprung-Zeilen bleiben unveraendert.
 
 ### Schritt 5 — Schleife
 
@@ -127,6 +143,29 @@ mehrere — und nur wenn mehrere ankommen, kann Nakama Reglerwege exakt lesen.
 > Bleibt es dabei, ist das ein **gueltiges Ergebnis** — dann sagt Nakama spaeter
 > ehrlich „nur grob" statt „samplegenau" zu behaupten.
 
+### Schritt 6b — Smart Disable
+
+**Tu:** In FLs Wrapper-Menue des Messgeraets (das kleine Dreieck oben links im
+Plugin-Fenster) **Smart disable** einschalten. Dann etwa 10 Sekunden **Stille**
+laufen lassen (Abspielen, aber die Spur still — z. B. Pattern leer) und danach
+wieder Ton.
+
+Wenn du *Smart disable* nicht findest: ueberspring den Schritt und sag mir das.
+Das ist selbst eine Antwort.
+
+**Warum:** Bei Stille darf FL das Plugin pausieren. Danach geht es an einer
+spaeteren Stelle weiter — fuer das Plugin sieht das aus wie ein Sprung nach
+vorn. Ich muss wissen, ob das in FL wirklich passiert.
+
+**Sieh:** *Zeitspruenge vorwaerts* zaehlt hoch, obwohl du nirgends hingeklickt
+hast.
+
+> Ehrlich dazu: **aus den Daten allein kann ich einen Smart-Disable-Sprung nicht
+> von einem Seek unterscheiden** — beide sehen gleich aus. Auseinander halte ich
+> sie nur, weil du sie in verschiedenen Schritten ausloest und das Plugin die
+> Reihenfolge protokolliert. Deshalb ist es wichtig, dass Schritt 4 und dieser
+> Schritt nicht durcheinandergehen.
+
 ### Schritt 7 — Export (Render)
 
 **Tu:** *File → Export → WAV*. Kurzen Bereich exportieren, egal wohin.
@@ -136,8 +175,8 @@ schliessen.
 **Warum:** Beim Export laeuft FL schneller als Echtzeit. Ich muss wissen, ob das
 Plugin das ueberhaupt mitgeteilt bekommt.
 
-**Sieh:** *Offline-Bloecke (Render)* steht nicht mehr auf „noch nicht gesehen",
-sondern auf einer Zahl.
+**Sieh:** *Offline-Bloecke (Render)* steht nicht mehr auf **0**, sondern auf
+einer Zahl groesser als 0.
 
 ### Schritt 8 — Der Rest ergibt sich von selbst
 
@@ -187,7 +226,11 @@ Schick mir:
 
 1. diese **eine JSON-Datei**,
 2. die **`nakama-altprojekt.flp`** aus Teil 3 (falls du ihn gemacht hast),
-3. einen Satz dazu, ob dir etwas komisch vorkam.
+3. einen Satz dazu, ob dir etwas komisch vorkam,
+4. und — falls du Schritte ausgelassen oder in anderer Reihenfolge gemacht hast
+   — welche. Das Ereignisprotokoll im Bericht ist zeitlich geordnet; mit deiner
+   Reihenfolge kann ich Seek und Smart Disable auseinanderhalten, ohne sie
+   raten zu muessen.
 
 Mehr nicht. Alles Weitere lese ich aus der Datei.
 

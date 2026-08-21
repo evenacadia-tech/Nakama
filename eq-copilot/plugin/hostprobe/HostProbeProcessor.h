@@ -48,6 +48,8 @@ enum class Art
     SchleifeAus,
     ZeitsprungVor,       ///< Projektzeit springt vorwaerts (Seek vorwaerts ODER Smart-Disable-Luecke)
     ZeitsprungZurueck,   ///< Projektzeit springt rueckwaerts (Seek zurueck ODER Loop-Wechsel)
+    ZeitsprungUeberStop, ///< Position hat sich ueber ein Stop/Play hinweg geaendert
+    ProjektzeitNegativ,  ///< FL meldet eine Projektzeit < 0 (Vorzaehler) - eigener Fall, nicht stilles Ueberspringen
     OfflineAn,
     OfflineAus,
     GenauigkeitFloat,
@@ -104,6 +106,8 @@ struct Messstand
 
     juce::int64 zeitspruengeVor      { 0 };
     juce::int64 zeitspruengeZurueck  { 0 };
+    juce::int64 spruengeUeberStop    { 0 };   ///< Positionswechsel ueber Stop/Play - getrennt, sonst ist 0 mehrdeutig
+    juce::int64 projektzeitNegativ   { 0 };
     juce::int64 groessterSprungVor   { 0 };
     juce::int64 groessterSprungZur   { 0 };
 
@@ -114,12 +118,21 @@ struct Messstand
     int         groesterOffset       { -1 };
     juce::int64 automationUeberlaeufe { 0 };
     juce::int64 automationUnplausibel { 0 };
+    juce::int64 verworfeneLetztwerte  { 0 };
+    /** Bloecke mit >1 Punkt, bei denen die Bruecke ihre Zusicherung ABGEZOGEN
+        hat. Ohne diese Trennung waere "samplegenau belegt" eine Behauptung
+        gegen den eigenen Vertrag (T2-Befund 21.08.). */
+    juce::int64 mehrpunktOhneZusicherung { 0 };
+    juce::int64 bloeckeOhneZusicherung    { 0 };
 
+    /** ALLE gemeldeten Buseintraege, nicht nur der erste. Ein Host, der
+        Eingang 0 = 0 UND Ausgang 0 = 1024 meldet, darf nicht auf den ersten
+        Fund zusammenschrumpfen (T2-Befund 21.08.). */
+    struct LatenzEintrag { bool gemeldet { false }; juce::uint32 samples { 0 }; };
+    LatenzEintrag latenzEingang[eqcop::hostbruecke::kMaxBusse] {};
+    LatenzEintrag latenzAusgang[eqcop::hostbruecke::kMaxBusse] {};
     bool        latenzJeGemeldet     { false };
-    int         latenzEingangBus     { -1 };
-    juce::uint32 latenzEingangWert   { 0 };
-    int         latenzAusgangBus     { -1 };
-    juce::uint32 latenzAusgangWert   { 0 };
+    juce::int64 verworfeneBusmeldungen { 0 };   ///< Busindex ausserhalb [0, kMaxBusse) - macht ein "NIE" erst belastbar
 
     double      samplerate           { 0.0 };
     int         kleinsterBlock       { -1 };
@@ -221,6 +234,10 @@ private:
     bool        senkeSeitLetztemBlock { false };
     bool        spielteVorher         { false };
     bool        aufnahmeVorher        { false };
+    bool        warOffline            { false };
+    /** Position beim letzten Stop - damit ein Positionswechsel ueber Stop/Play
+        hinweg zaehlbar wird, statt still zu verschwinden. */
+    juce::int64 zeitBeimStop          { -1 };
     /** Nach Transportwechsel, Kontextverlust und Reset ist JEDER Zeitwert
         legitim — sonst meldete der erste Block nach Play einen Riesensprung. */
     bool        zeitBasisNeu          { true };

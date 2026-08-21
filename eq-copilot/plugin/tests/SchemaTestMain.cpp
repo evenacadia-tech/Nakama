@@ -137,6 +137,28 @@ void fahreKorpus (const nakama::vertrag::Schema& schema)
             continue;
         }
 
+        // Der Textriegel laeuft VOR dem Parser, und zwar ueber JEDES Fixture.
+        // Die mit `textriegel_lehnt_ab` markierten muessen an ihm fallen; alle
+        // uebrigen muessen ihn passieren. Ohne die zweite Haelfte waere der
+        // Riegel eine Behauptung, die nur an elf Dateien geprueft wird.
+        const auto rohtext = finde ("eq-copilot/fixtures/v3/" + name).loadFileAsString();
+        juce::String riegelfehler;
+        const bool sauber = nakama::vertrag::textriegel (rohtext, riegelfehler);
+        if (static_cast<bool> (eintrag.getProperty ("textriegel_lehnt_ab", false)))
+        {
+            pruefe (! sauber, "Textriegel lehnt ab: " + name, riegelfehler);
+            ++geprueft;
+            continue;
+        }
+        if (! sauber)
+        {
+            std::cout << "[ROT]  " << name.toRawUTF8()
+                      << ": Textriegel lehnt ein Fixture ab, das er passieren lassen muss: "
+                      << riegelfehler.toRawUTF8() << std::endl;
+            ++abweichungen;
+            continue;
+        }
+
         bool gelesen = false;
         const auto daten = lies ("eq-copilot/fixtures/v3/" + name, gelesen);
         if (! gelesen)
@@ -368,6 +390,65 @@ void fahreQuantisierung()
 /** Ein gruener Test ist nichts wert, solange nicht gezeigt wurde, dass er
     ueberhaupt fallen kann. Diese Proben bringen jeden Riegel einmal zum
     Fallen - im Test selbst, damit es niemand von Hand nachstellen muss. */
+/*  Der Textriegel, Kante fuer Kante.
+
+    Dieselbe Tabelle steht in broker/src/vertrag.rs und in
+    tools/eq-copilot/pruefe_v3_vertrag.py. Laufen die drei auseinander, faellt
+    genau hier eine von ihnen - und nicht erst, wenn ein Produktivframe eine
+    Zahl traegt, die auf zwei Seiten verschieden ankommt.
+*/
+void fahreTextriegelproben()
+{
+    struct Fall { const char* text; bool wirdAbgelehnt; };
+    static const Fall faelle[] = {
+        { R"({"w": 9007199254740991})",        false },
+        { R"({"w": 9007199254740992})",        true  },
+        { R"({"w": -9007199254740991})",       false },
+        { R"({"w": -9007199254740992})",       true  },
+        { R"({"w": 18446744073709552016})",    true  },
+        { R"({"w": 10000000000000000000})",    true  },
+        { R"({"w": 091})",                     true  },
+        { R"({"w": -091})",                    true  },
+        { R"({"w": 0})",                       false },
+        { R"({"w": -0})",                      false },
+        { R"({"w": 0.5})",                     false },
+        { R"({"w": 1e400})",                   true  },
+        { R"({"w": -1e400})",                  true  },
+        { R"({"w": 1e-400})",                  false },
+        { R"({"w": 1e300})",                   false },
+        { R"({"w": 1.5e3})",                   false },
+        { R"({"w": "091 nur Text"})",          false },
+        { R"({"w": "1e400"})",                 false },
+        { R"({"w": "a\u0000b"})",              true  },
+        { R"({"w": "😀"})",          false },
+        { R"({"w": "\ud83d"})",                true  },
+        { R"({"w": "\ude00"})",                true  },
+        { R"({"w": "\ud83dx"})",               true  },
+        { R"({"": 1})",                        true  },
+        { R"({"a": {"": 2}})",                 true  },
+        { R"({"w": ""})",                      false },
+        { R"({"w" : 1})",                      false },
+        { R"({"w": "er sagte \"hallo\""})",    false },
+        { R"({"w": "backslash am Ende \\"})",  false },
+        { R"({"w": 512, "x": [1,2,3]})",       false },
+        { R"({"w": "Doppelpunkt : im Text"})", false },
+    };
+
+    int rot = 0;
+    for (const auto& f : faelle)
+    {
+        juce::String fehler;
+        const bool sauber = nakama::vertrag::textriegel (juce::String::fromUTF8 (f.text), fehler);
+        if (sauber == f.wirdAbgelehnt)
+        {
+            ++rot;
+            pruefe (false, juce::String ("Textriegel: ") + f.text, fehler);
+        }
+    }
+    pruefe (rot == 0, "Textriegel deckt jede gemessene Kante",
+            juce::String ((int) (sizeof (faelle) / sizeof (faelle[0]))) + " Faelle");
+}
+
 void fahreRiegelproben()
 {
     using nakama::vertrag::Schema;
@@ -492,6 +573,7 @@ int main (int, char*[])
     std::cout << "EqCopSchemaTest - v3-Vertrag (SONDE-005a)" << std::endl;
     std::cout << "-----------------------------------------" << std::endl;
 
+    fahreTextriegelproben();
     fahreRiegelproben();
 
     bool ok = false;

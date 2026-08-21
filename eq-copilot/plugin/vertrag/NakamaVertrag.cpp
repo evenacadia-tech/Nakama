@@ -172,6 +172,185 @@ bool Verletzung::operator< (const Verletzung& a) const noexcept
     return ak < bk;
 }
 
+// ------------------------------------------------------------------ Textriegel
+
+bool textriegel (const juce::String& text, juce::String& fehler)
+{
+    // Codepunkte statt Bytes: die Positionsangabe soll in allen drei Beinen
+    // dieselbe sein, und juce::juce_wchar ist UTF-32. Der Namensraum muss
+    // ausgeschrieben werden: der Typ lebt in `juce`, diese Funktion in
+    // `nakama::vertrag`.
+    std::vector<juce::juce_wchar> z;
+    z.reserve (static_cast<size_t> (text.length()));
+    for (auto p = text.getCharPointer(); ! p.isEmpty(); ++p)
+        z.push_back (*p);
+
+    const auto n = z.size();
+    const auto teil = [&z] (size_t von, size_t bis)
+    {
+        juce::String s;
+        for (auto k = von; k < bis && k < z.size(); ++k)
+            s += juce::String::charToString (z[k]);
+        return s;
+    };
+
+    size_t i = 0;
+    while (i < n)
+    {
+        const auto c = z[i];
+
+        if (c == '"')
+        {
+            size_t j = i + 1;
+            juce::int64 hoch = -1;     // -1 = kein offenes hohes Surrogat
+            size_t ende = 0;
+            for (;;)
+            {
+                if (j >= n) { fehler = "unbeendete Zeichenkette"; return false; }
+                const auto d = z[j];
+
+                if (d == '\\')
+                {
+                    if (j + 5 < n && z[j + 1] == 'u')
+                    {
+                        const auto roh = teil (j + 2, j + 6);
+                        juce::int64 cp = 0;
+                        for (int k = 0; k < 4; ++k)
+                        {
+                            const auto h = roh[k];
+                            const int wert = (h >= '0' && h <= '9') ? h - '0'
+                                           : (h >= 'a' && h <= 'f') ? h - 'a' + 10
+                                           : (h >= 'A' && h <= 'F') ? h - 'A' + 10 : -1;
+                            if (wert < 0)
+                            {
+                                fehler = "unlesbares u-Escape \"" + roh + "\" an Position " + juce::String ((int) j);
+                                return false;
+                            }
+                            cp = cp * 16 + wert;
+                        }
+                        if (cp == 0)
+                        {
+                            fehler = "NUL-Escape in Zeichenkette an Position " + juce::String ((int) j);
+                            return false;
+                        }
+                        const bool tief = cp >= 0xDC00 && cp <= 0xDFFF;
+                        if (tief && hoch < 0)
+                        {
+                            fehler = "einsames tiefes Surrogat an Position " + juce::String ((int) j);
+                            return false;
+                        }
+                        if (hoch >= 0 && ! tief)
+                        {
+                            fehler = "hohes Surrogat ohne Paar an Position " + juce::String ((int) j);
+                            return false;
+                        }
+                        hoch = (cp >= 0xD800 && cp <= 0xDBFF) ? cp : -1;
+                        j += 6;
+                        continue;
+                    }
+                    if (hoch >= 0)
+                    {
+                        fehler = "hohes Surrogat ohne Paar an Position " + juce::String ((int) j);
+                        return false;
+                    }
+                    j += 2;
+                    continue;
+                }
+
+                if (hoch >= 0)
+                {
+                    fehler = "hohes Surrogat ohne Paar an Position " + juce::String ((int) j);
+                    return false;
+                }
+                if (d == '"') { ende = j; break; }
+                if (d < 0x20)
+                {
+                    fehler = "rohes Steuerzeichen an Position " + juce::String ((int) j);
+                    return false;
+                }
+                ++j;
+            }
+
+            if (hoch >= 0) { fehler = "hohes Surrogat ohne Paar am Zeichenkettenende"; return false; }
+
+            const bool leer = (ende == i + 1);
+            size_t k = ende + 1;
+            while (k < n && (z[k] == ' ' || z[k] == '\t' || z[k] == '\r' || z[k] == '\n'))
+                ++k;
+            if (leer && k < n && z[k] == ':')
+            {
+                fehler = "leerer Objektschluessel an Position " + juce::String ((int) i);
+                return false;
+            }
+            i = ende + 1;
+            continue;
+        }
+
+        if (c == '-' || (c >= '0' && c <= '9'))
+        {
+            size_t j = i;
+            if (z[j] == '-') ++j;
+            const auto anfang = j;
+            while (j < n && z[j] >= '0' && z[j] <= '9') ++j;
+            const auto ganz = teil (anfang, j);
+            if (ganz.isEmpty())
+            {
+                fehler = "Zahl ohne Ziffern an Position " + juce::String ((int) i);
+                return false;
+            }
+            if (ganz.length() > 1 && ganz[0] == '0')
+            {
+                fehler = "fuehrende Null in \"" + teil (i, j) + "\" an Position " + juce::String ((int) i);
+                return false;
+            }
+
+            bool bruch = false, exp = false;
+            if (j < n && z[j] == '.')
+            {
+                bruch = true; ++j;
+                while (j < n && z[j] >= '0' && z[j] <= '9') ++j;
+            }
+            if (j < n && (z[j] == 'e' || z[j] == 'E'))
+            {
+                exp = true; ++j;
+                if (j < n && (z[j] == '+' || z[j] == '-')) ++j;
+                while (j < n && z[j] >= '0' && z[j] <= '9') ++j;
+            }
+
+            const auto lit = teil (i, j);
+            if (! bruch && ! exp)
+            {
+                // 2^53-1 hat 16 Ziffern. Alles ab 17 ist ohne Rechnen zu gross;
+                // bei genau 16 wird verglichen - und 16 Ziffern passen sicher
+                // in int64, hier kann also nichts ueberlaufen.
+                const bool zuGross = ganz.length() > 16
+                    || (ganz.length() == 16 && ganz.getLargeIntValue() > sichereGanzzahl);
+                if (zuGross)
+                {
+                    fehler = "Ganzzahl ausserhalb 2^53-1: " + lit;
+                    return false;
+                }
+            }
+            else
+            {
+                const auto d = lit.getDoubleValue();
+                if (! std::isfinite (d))
+                {
+                    fehler = "nicht endliche Zahl: " + lit;
+                    return false;
+                }
+            }
+            i = j;
+            continue;
+        }
+
+        ++i;
+    }
+
+    fehler.clear();
+    return true;
+}
+
 // ------------------------------------------------------------------ Ladelauf
 
 namespace

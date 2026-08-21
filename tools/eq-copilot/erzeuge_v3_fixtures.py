@@ -990,8 +990,68 @@ def kanonisch(verletzungen: list[dict]) -> list[dict]:
 
 # ------------------------------------------------------------------ Hauptlauf
 
-def baue() -> tuple[dict, dict[str, dict]]:
+BS = chr(92)   # Backslash — als Literal frisst ihn jede Zwischenschicht
+
+
+def rohtext_faelle() -> list[tuple[str, bytes, str]]:
+    """Fixtures, die der TEXTRIEGEL abweisen muss — vor jedem Parser.
+
+    Diese sieben lassen sich nicht ueber `json.dumps` erzeugen: eine fuehrende
+    Null oder ein einsames Surrogat ist keine Ausgabe, die ein Serialisierer
+    je schreiben wuerde. Sie entstehen deshalb aus einer gueltigen Grundform
+    durch eine TEXTUELLE Ersetzung — so bleibt drumherum eine echte Nachricht
+    stehen und der Defekt ist genau einer.
+
+    Jeder Fall steht fuer eine in T2-Runde 1 GEMESSENE Abweichung zwischen den
+    Beinen, nicht fuer eine ausgedachte.
+    """
+    def aus(grundform: str, alt: str, neu: str) -> bytes:
+        text = als_text(GRUND[grundform]).decode("utf-8")
+        if alt not in text:
+            raise SystemExit(f"Rohtext-Fixture: {alt!r} steht nicht in {grundform}")
+        return text.replace(alt, neu, 1).encode("utf-8")
+
+    return [
+        ("zahl-ueber-2hoch53",
+         aus("heartbeat", '"sequence": 91', '"sequence": 9007199254740992'),
+         "2^53 ist die erste ganze Zahl, die binary64 nicht mehr exakt traegt"),
+
+        ("zahl-jenseits-u64",
+         aus("heartbeat", '"sequence": 91', '"sequence": 18446744073709552016'),
+         "GEMESSEN: JUCEs parseNumber akkumuliert in int64 ohne Bereichspruefung "
+         "und liest hier 400. Rust und Python lesen 1.8446744e19 bzw. den exakten "
+         "Wert - dieselbe Datei, drei verschiedene Zahlen"),
+
+        ("zahl-fuehrende-null",
+         aus("heartbeat", '"sequence": 91', '"sequence": 091'),
+         "GEMESSEN: JUCE liest 91, serde_json und Python lehnen im Parser ab. "
+         "RFC 8259 verbietet die fuehrende Null"),
+
+        ("zahl-nicht-endlich",
+         aus("evidence_snapshot", '"sample_rate": 48000', '"sample_rate": 1e400'),
+         "1e400 ist als binary64 unendlich; ein Vertrag traegt keine Unendlichkeit"),
+
+        ("nul-escape-im-label",
+         aus("session_snapshot", '"label": "Klavier-Bus"', '"label": "a' + BS + 'u0000b"'),
+         "GEMESSEN: juce::String ist nullterminiert, JUCE bricht hier im Parser ab, "
+         "waehrend serde_json und Python das Dokument annehmen"),
+
+        ("einsames-surrogat-im-label",
+         aus("session_snapshot", '"label": "Klavier-Bus"', '"label": "' + BS + 'ud83d"'),
+         "GEMESSEN: beide eigenen Engines lehnen ab, das Referenzbein nimmt an - "
+         "die umgekehrte Richtung derselben Klasse"),
+
+        ("leerer-objektschluessel",
+         aus("heartbeat", '"zaehler": {', '"zaehler": {' + chr(10) + '      "": 7,'),
+         "GEMESSEN: JUCE lehnt einen leeren Property-Namen im Parser ab. Im "
+         "ADDITIVEN zaehler haette serde_json ihn dagegen angenommen - genau dort, "
+         "wo additionalProperties:true ihn nicht auffaengt"),
+    ]
+
+
+def baue() -> tuple[dict, dict[str, dict], dict[str, bytes]]:
     dateien: dict[str, dict] = {}
+    rohdateien: dict[str, bytes] = {}
     eintraege: list[dict] = []
 
     for name, daten in GRUND.items():
@@ -1026,6 +1086,22 @@ def baue() -> tuple[dict, dict[str, dict]]:
             eintrag["wurzel_skalar"] = True
         eintraege.append(eintrag)
 
+    for name, rohtext, warum in rohtext_faelle():
+        pfad = f"ungueltig/{name}.json"
+        if pfad in dateien or pfad in rohdateien:
+            raise SystemExit(f"doppelter Fixturename: {pfad}")
+        rohdateien[pfad] = rohtext
+        eintraege.append({
+            "datei": pfad,
+            "urteil": "ungueltig",
+            "warum": warum,
+            "verletzungen": [],
+            # Kein Schemapfad, weil das Dokument den Parser nie erreicht. Eine
+            # erfundene Verletzungsmenge waere hier eine Luege ueber den Ort,
+            # an dem die Ablehnung stattfindet.
+            "textriegel_lehnt_ab": True,
+        })
+
     eintraege.sort(key=lambda e: e["datei"])
 
     manifest = {
@@ -1045,11 +1121,16 @@ def baue() -> tuple[dict, dict[str, dict]]:
         "sortierung": ("Verletzungen sind kanonisch nach (instanz, schema, schluessel) "
                        "sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge "
                        "abhaengt."),
+        "textriegel_lehnt_ab": ("Markiert ein Fixture, das der TEXTRIEGEL abweist, "
+                                "BEVOR ein Parser es sieht. Diese Fixtures tragen keine "
+                                "Verletzungsmenge, weil sie das Schema nie erreichen — "
+                                "eine erfundene waere eine Luege ueber den Ort der "
+                                "Ablehnung. Regeln und Begruendung: schemas/v3/README.md."),
         "anzahl_gueltig": sum(1 for e in eintraege if e["urteil"] == "gueltig"),
         "anzahl_ungueltig": sum(1 for e in eintraege if e["urteil"] == "ungueltig"),
         "fixtures": eintraege,
     }
-    return manifest, dateien
+    return manifest, dateien, rohdateien
 
 
 def als_text(inhalt) -> bytes:
@@ -1089,12 +1170,16 @@ def als_text(inhalt) -> bytes:
 
 def main(argv: list[str]) -> int:
     nur_pruefen = "--pruefen" in argv
-    manifest, dateien = baue()
+    manifest, dateien, rohdateien = baue()
 
     print(f"{manifest['anzahl_gueltig']} gueltige, {manifest['anzahl_ungueltig']} ungueltige Fixtures")
 
-    alle = [(ZIEL / "MANIFEST.json", manifest)]
-    alle += [(ZIEL / p, d) for p, d in sorted(dateien.items())]
+    # (Pfad, Bytes) — die Rohtext-Fixtures gehen NICHT durch als_text(), sonst
+    # wuerde der Serialisierer genau den Defekt wegformatieren, den sie tragen.
+    alle: list[tuple[pathlib.Path, bytes]] = [(ZIEL / "MANIFEST.json", als_text(manifest))]
+    alle += [(ZIEL / p, als_text(d)) for p, d in sorted(dateien.items())]
+    alle += [(ZIEL / p, b) for p, b in sorted(rohdateien.items())]
+    alle.sort(key=lambda e: e[0].as_posix())
 
     if nur_pruefen:
         vorhanden = {p.relative_to(ZIEL).as_posix()
@@ -1109,7 +1194,7 @@ def main(argv: list[str]) -> int:
             if not pfad.exists():
                 print(f"  ROT: {pfad.relative_to(WURZEL)} fehlt")
                 return 3
-            if pfad.read_bytes() != als_text(inhalt):
+            if pfad.read_bytes() != inhalt:
                 print(f"  ROT: {pfad.relative_to(WURZEL)} weicht ab")
                 return 2
         h = hashlib.sha256(als_text(manifest)).hexdigest()
@@ -1118,7 +1203,7 @@ def main(argv: list[str]) -> int:
 
     for pfad, inhalt in alle:
         pfad.parent.mkdir(parents=True, exist_ok=True)
-        pfad.write_bytes(als_text(inhalt))
+        pfad.write_bytes(inhalt)
     print(f"  geschrieben: {len(alle)} Dateien nach {ZIEL.relative_to(WURZEL)}")
     return 0
 

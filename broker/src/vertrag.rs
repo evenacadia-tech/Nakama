@@ -64,6 +64,170 @@ fn muster_passt(muster: &str, wert: &str) -> Option<bool> {
     }
 }
 
+// ------------------------------------------------------------------ Textriegel
+
+/// Groesste ganze Zahl, die binary64 noch exakt traegt: 2^53 - 1.
+pub const SICHERE_GANZZAHL: u64 = 9_007_199_254_740_991;
+
+/// Prueft den ROHTEXT eines v3-Dokuments, BEVOR ihn ein Parser sieht.
+///
+/// Warum vor dem Parser und nicht als Schemaregel: T2-Runde 1 hat gemessen,
+/// dass JUCEs `parseNumber` `intValue * 10 + digit` in einem `int64` ohne
+/// Bereichspruefung akkumuliert. `18446744073709552016` kommt auf der
+/// C++-Seite als **400** an. Ein `maximum: 400` im Schema wuerde dort
+/// anstandslos passieren und auf der Rust-Seite fallen — der Wert ist beim
+/// Ankommen bereits verfaelscht. Der einzige Ort, an dem alle drei Beine
+/// dasselbe sehen koennen, ist der Text.
+///
+/// Sechs Regeln, jede gegen eine GEMESSENE Abweichung zwischen den Beinen:
+///
+/// 1. Keine fuehrende Null (`091`) — JUCE liest 91, RFC 8259 verbietet es.
+/// 2. Ganzzahlen nur innerhalb ±(2^53−1) — darueber verfaelscht JUCE still.
+/// 3. Gleitkommaliterale muessen endlich sein (`1e400` ist es nicht).
+/// 4. Kein NUL-Escape in einer Zeichenkette — juce::String ist
+///    nullterminiert und bricht dort im Parser ab, waehrend serde_json und
+///    Python es annehmen.
+/// 5. Keine einsamen Surrogate — hier lehnen beide eigenen Engines ab und
+///    nur das Referenzbein nimmt an; die Regel zieht es nach.
+/// 6. Kein leerer Objektschluessel — JUCE lehnt ihn im Parser ab, in einem
+///    additiven Objekt (`zaehler`, `konfidenz`, `verteilung`) haette
+///    serde_json ihn dagegen akzeptiert.
+///
+/// Gezaehlt wird in CODEPUNKTEN, damit die Positionsangabe in allen drei
+/// Beinen dieselbe ist.
+pub fn textriegel(text: &str) -> Result<(), String> {
+    let z: Vec<char> = text.chars().collect();
+    let n = z.len();
+    let mut i = 0usize;
+
+    while i < n {
+        let c = z[i];
+
+        if c == '"' {
+            let mut j = i + 1;
+            let mut hoch: Option<u32> = None;
+            let ende;
+            loop {
+                if j >= n {
+                    return Err("unbeendete Zeichenkette".into());
+                }
+                let d = z[j];
+                if d == '\\' {
+                    if j + 5 < n && z[j + 1] == 'u' {
+                        let roh: String = z[j + 2..j + 6].iter().collect();
+                        let Ok(cp) = u32::from_str_radix(&roh, 16) else {
+                            return Err(format!("unlesbares u-Escape {roh:?} an Position {j}"));
+                        };
+                        if cp == 0 {
+                            return Err(format!("NUL-Escape in Zeichenkette an Position {j}"));
+                        }
+                        if (0xDC00..=0xDFFF).contains(&cp) && hoch.is_none() {
+                            return Err(format!(
+                                "einsames tiefes Surrogat U+{cp:04X} an Position {j}"
+                            ));
+                        }
+                        if hoch.is_some() && !(0xDC00..=0xDFFF).contains(&cp) {
+                            return Err(format!("hohes Surrogat ohne Paar an Position {j}"));
+                        }
+                        hoch = if (0xD800..=0xDBFF).contains(&cp) { Some(cp) } else { None };
+                        j += 6;
+                        continue;
+                    }
+                    if hoch.is_some() {
+                        return Err(format!("hohes Surrogat ohne Paar an Position {j}"));
+                    }
+                    j += 2;
+                    continue;
+                }
+                if hoch.is_some() {
+                    return Err(format!("hohes Surrogat ohne Paar an Position {j}"));
+                }
+                if d == '"' {
+                    ende = j;
+                    break;
+                }
+                if (d as u32) < 0x20 {
+                    return Err(format!(
+                        "rohes Steuerzeichen U+{:04X} an Position {j}",
+                        d as u32
+                    ));
+                }
+                j += 1;
+            }
+            if hoch.is_some() {
+                return Err("hohes Surrogat ohne Paar am Zeichenkettenende".into());
+            }
+            let leer = ende == i + 1;
+            let mut k = ende + 1;
+            while k < n && matches!(z[k], ' ' | '\t' | '\r' | '\n') {
+                k += 1;
+            }
+            if leer && k < n && z[k] == ':' {
+                return Err(format!("leerer Objektschluessel an Position {i}"));
+            }
+            i = ende + 1;
+            continue;
+        }
+
+        if c == '-' || c.is_ascii_digit() {
+            let mut j = i;
+            if z[j] == '-' {
+                j += 1;
+            }
+            let anfang = j;
+            while j < n && z[j].is_ascii_digit() {
+                j += 1;
+            }
+            let ganz: String = z[anfang..j].iter().collect();
+            if ganz.is_empty() {
+                return Err(format!("Zahl ohne Ziffern an Position {i}"));
+            }
+            if ganz.len() > 1 && ganz.starts_with('0') {
+                let lit: String = z[i..j].iter().collect();
+                return Err(format!("fuehrende Null in {lit:?} an Position {i}"));
+            }
+            let mut bruch = false;
+            let mut exp = false;
+            if j < n && z[j] == '.' {
+                bruch = true;
+                j += 1;
+                while j < n && z[j].is_ascii_digit() {
+                    j += 1;
+                }
+            }
+            if j < n && (z[j] == 'e' || z[j] == 'E') {
+                exp = true;
+                j += 1;
+                if j < n && (z[j] == '+' || z[j] == '-') {
+                    j += 1;
+                }
+                while j < n && z[j].is_ascii_digit() {
+                    j += 1;
+                }
+            }
+            let lit: String = z[i..j].iter().collect();
+            if !bruch && !exp {
+                let zu_gross = ganz.len() > 16
+                    || (ganz.len() == 16 && ganz.parse::<u64>().unwrap_or(u64::MAX) > SICHERE_GANZZAHL);
+                if zu_gross {
+                    return Err(format!("Ganzzahl ausserhalb 2^53-1: {lit}"));
+                }
+            } else {
+                match lit.parse::<f64>() {
+                    Ok(d) if d.is_finite() => {}
+                    Ok(_) => return Err(format!("nicht endliche Zahl: {lit}")),
+                    Err(_) => return Err(format!("unlesbare Zahl {lit:?}")),
+                }
+            }
+            i = j;
+            continue;
+        }
+
+        i += 1;
+    }
+    Ok(())
+}
+
 #[derive(Debug)]
 pub struct Schema {
     wurzel: Value,
@@ -537,6 +701,57 @@ mod tests {
     // nur eine Ebene tiefer: etwas im Schema, das eine Engine anders liest als
     // die andere, ohne dass jemand es merkt. Die C++-Gegenstuecke stehen in
     // SchemaTestMain.cpp / fahreRiegelproben().
+
+    /// Der Textriegel, Kante fuer Kante. Dieselbe Tabelle steht in
+    /// `SchemaTestMain.cpp` und in `pruefe_v3_vertrag.py` — laufen die drei
+    /// auseinander, faellt genau hier eine von ihnen.
+    #[test]
+    fn textriegel_deckt_jede_gemessene_kante() {
+        // (Text, wird_abgelehnt)
+        let faelle: &[(&str, bool)] = &[
+            (r#"{"w": 9007199254740991}"#, false),
+            (r#"{"w": 9007199254740992}"#, true),
+            (r#"{"w": -9007199254740991}"#, false),
+            (r#"{"w": -9007199254740992}"#, true),
+            (r#"{"w": 18446744073709552016}"#, true),
+            (r#"{"w": 10000000000000000000}"#, true),
+            (r#"{"w": 091}"#, true),
+            (r#"{"w": -091}"#, true),
+            (r#"{"w": 0}"#, false),
+            (r#"{"w": -0}"#, false),
+            (r#"{"w": 0.5}"#, false),
+            (r#"{"w": 1e400}"#, true),
+            (r#"{"w": -1e400}"#, true),
+            (r#"{"w": 1e-400}"#, false),
+            (r#"{"w": 1e300}"#, false),
+            (r#"{"w": 1.5e3}"#, false),
+            (r#"{"w": "091 nur Text"}"#, false),
+            (r#"{"w": "1e400"}"#, false),
+            (r#"{"w": "a\u0000b"}"#, true),
+            (r#"{"w": "😀"}"#, false),
+            (r#"{"w": "\ud83d"}"#, true),
+            (r#"{"w": "\ude00"}"#, true),
+            (r#"{"w": "\ud83dx"}"#, true),
+            (r#"{"": 1}"#, true),
+            (r#"{"a": {"": 2}}"#, true),
+            (r#"{"w": ""}"#, false),
+            (r#"{"w" : 1}"#, false),
+            (r#"{"w": "er sagte \"hallo\""}"#, false),
+            (r#"{"w": "backslash am Ende \\"}"#, false),
+            (r#"{"w": "ä"}"#, false),
+            (r#"{"w": 512, "x": [1,2,3]}"#, false),
+            (r#"{"w": "Doppelpunkt : im Text"}"#, false),
+            (r#"{"w": "roher Tab hier: 	"}"#, true),
+        ];
+        for (text, wird_abgelehnt) in faelle {
+            let r = textriegel(text);
+            assert_eq!(
+                r.is_err(),
+                *wird_abgelehnt,
+                "{text} -> {r:?} (erwartet abgelehnt={wird_abgelehnt})"
+            );
+        }
+    }
 
     #[test]
     fn haengende_referenz_bricht_das_laden() {

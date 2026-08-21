@@ -25,6 +25,7 @@ Aufruf:
 from __future__ import annotations
 
 import json
+import math
 import pathlib
 import sys
 
@@ -82,6 +83,162 @@ def teilschemata(knoten, pfad: str):
         elif name == "oneOf":
             for i, v in enumerate(wert):
                 yield from teilschemata(v, f"{pfad}/oneOf/{i}")
+
+
+SICHERE_GANZZAHL = 9007199254740991      # 2**53 - 1
+BS = chr(92)                             # Backslash
+
+
+def textriegel(text: str) -> str | None:
+    """Prueft den ROHTEXT eines v3-Dokuments, BEVOR ihn ein Parser sieht.
+
+    Warum vor dem Parser und nicht als Schemaregel: T2-Runde 1 hat gemessen,
+    dass JUCEs `parseNumber` `intValue * 10 + digit` in einem `int64` ohne
+    Bereichspruefung akkumuliert. `18446744073709552016` kommt auf der
+    C++-Seite als 400 an — ein `maximum: 400` wuerde dort anstandslos
+    passieren und auf der Rust-Seite fallen. Der Wert ist beim Ankommen
+    bereits verfaelscht; der einzige Ort, an dem alle drei Beine dasselbe
+    sehen koennen, ist der Text.
+
+    Sechs Regeln, jede gegen eine GEMESSENE Abweichung. Wortgleiche
+    Gegenstuecke: `NakamaVertrag.cpp` und `broker/src/vertrag.rs`.
+
+    @returns None wenn sauber, sonst den Grund.
+    """
+    i, n = 0, len(text)
+    while i < n:
+        c = text[i]
+
+        if c == '"':
+            j, hoch = i + 1, None
+            while True:
+                if j >= n:
+                    return "unbeendete Zeichenkette"
+                d = text[j]
+                if d == BS:
+                    if j + 5 < n and text[j + 1] == "u":
+                        roh = text[j + 2:j + 6]
+                        try:
+                            cp = int(roh, 16)
+                        except ValueError:
+                            return f"unlesbares u-Escape {roh!r} an Position {j}"
+                        if cp == 0:
+                            return f"NUL-Escape in Zeichenkette an Position {j}"
+                        tief = 0xDC00 <= cp <= 0xDFFF
+                        if tief and hoch is None:
+                            return f"einsames tiefes Surrogat U+{cp:04X} an Position {j}"
+                        if hoch is not None and not tief:
+                            return f"hohes Surrogat ohne Paar an Position {j}"
+                        hoch = cp if 0xD800 <= cp <= 0xDBFF else None
+                        j += 6
+                        continue
+                    if hoch is not None:
+                        return f"hohes Surrogat ohne Paar an Position {j}"
+                    j += 2
+                    continue
+                if hoch is not None:
+                    return f"hohes Surrogat ohne Paar an Position {j}"
+                if d == '"':
+                    break
+                if ord(d) < 0x20:
+                    return f"rohes Steuerzeichen U+{ord(d):04X} an Position {j}"
+                j += 1
+            if hoch is not None:
+                return "hohes Surrogat ohne Paar am Zeichenkettenende"
+            leer = j == i + 1
+            k = j + 1
+            while k < n and text[k] in " \t\r\n":
+                k += 1
+            if leer and k < n and text[k] == ":":
+                return f"leerer Objektschluessel an Position {i}"
+            i = j + 1
+            continue
+
+        if c == "-" or c.isdigit():
+            j = i
+            if text[j] == "-":
+                j += 1
+            anfang = j
+            while j < n and text[j].isdigit():
+                j += 1
+            ganz = text[anfang:j]
+            if not ganz:
+                return f"Zahl ohne Ziffern an Position {i}"
+            if len(ganz) > 1 and ganz[0] == "0":
+                return f"fuehrende Null in {text[i:j]!r} an Position {i}"
+            bruch = exp = False
+            if j < n and text[j] == ".":
+                bruch = True
+                j += 1
+                while j < n and text[j].isdigit():
+                    j += 1
+            if j < n and text[j] in "eE":
+                exp = True
+                j += 1
+                if j < n and text[j] in "+-":
+                    j += 1
+                while j < n and text[j].isdigit():
+                    j += 1
+            lit = text[i:j]
+            if not bruch and not exp:
+                if len(ganz) > 16 or (len(ganz) == 16 and int(ganz) > SICHERE_GANZZAHL):
+                    return f"Ganzzahl ausserhalb 2^53-1: {lit}"
+            else:
+                try:
+                    d = float(lit)
+                except ValueError:
+                    return f"unlesbare Zahl {lit!r}"
+                if not math.isfinite(d):
+                    return f"nicht endliche Zahl: {lit}"
+            i = j
+            continue
+
+        i += 1
+    return None
+
+
+# Dieselbe Tabelle steht in SchemaTestMain.cpp und broker/src/vertrag.rs.
+# Laufen die drei auseinander, faellt genau hier eine von ihnen.
+TEXTRIEGEL_FAELLE: list[tuple[str, bool]] = [
+    ('{"w": 9007199254740991}', False),
+    ('{"w": 9007199254740992}', True),
+    ('{"w": -9007199254740991}', False),
+    ('{"w": -9007199254740992}', True),
+    ('{"w": 18446744073709552016}', True),
+    ('{"w": 10000000000000000000}', True),
+    ('{"w": 091}', True),
+    ('{"w": -091}', True),
+    ('{"w": 0}', False),
+    ('{"w": -0}', False),
+    ('{"w": 0.5}', False),
+    ('{"w": 1e400}', True),
+    ('{"w": -1e400}', True),
+    ('{"w": 1e-400}', False),
+    ('{"w": 1e300}', False),
+    ('{"w": 1.5e3}', False),
+    ('{"w": "091 nur Text"}', False),
+    ('{"w": "1e400"}', False),
+    ('{"w": "a' + BS + 'u0000b"}', True),
+    ('{"w": "\U0001F600"}', False),
+    ('{"w": "' + BS + 'ud83d"}', True),
+    ('{"w": "' + BS + 'ude00"}', True),
+    ('{"w": "' + BS + 'ud83dx"}', True),
+    ('{"": 1}', True),
+    ('{"a": {"": 2}}', True),
+    ('{"w": ""}', False),
+    ('{"w" : 1}', False),
+    ('{"w": "er sagte ' + BS + '"hallo' + BS + '""}', False),
+    ('{"w": "backslash am Ende ' + BS + BS + '"}', False),
+    ('{"w": 512, "x": [1,2,3]}', False),
+    ('{"w": "Doppelpunkt : im Text"}', False),
+    ('{"w": "roher Tab: \t"}', True),
+]
+
+
+def pruefe_textriegel(lauf: Lauf) -> None:
+    rot = [t for t, ab in TEXTRIEGEL_FAELLE if (textriegel(t) is not None) != ab]
+    lauf.wahr(f"Textriegel deckt jede gemessene Kante ({len(TEXTRIEGEL_FAELLE)} Faelle)",
+              not rot, "; ".join(rot))
 
 
 def werttyp_passt(name: str, wert) -> bool:
@@ -199,7 +356,29 @@ def pruefe_fixtures(lauf: Lauf, schema: dict, manifest: dict) -> None:
         if not pfad.exists():
             lauf.wahr(f"{eintrag['datei']} vorhanden", False)
             continue
-        daten = json.loads(pfad.read_text(encoding="utf-8"))
+        roh = pfad.read_text(encoding="utf-8")
+
+        # Der Textriegel laeuft VOR dem Parser, und zwar ueber JEDES Fixture.
+        # Die markierten muessen an ihm fallen, alle uebrigen ihn passieren.
+        # Ohne die zweite Haelfte waere der Riegel eine Behauptung, die nur an
+        # wenigen Dateien geprueft wird.
+        grund = textriegel(roh)
+        if eintrag.get("textriegel_lehnt_ab"):
+            lauf.wahr(f"Textriegel lehnt ab: {eintrag['datei']}", grund is not None)
+            continue
+        if grund is not None:
+            lauf.fehler.append(
+                f"{eintrag['datei']}: Textriegel lehnt ab, soll passieren lassen: {grund}")
+            continue
+
+        try:
+            daten = json.loads(roh)
+        except json.JSONDecodeError as e:
+            # Ein nicht lesbares Fixture ist eine benannte Abweichung, kein
+            # Abbruch des Laufs - dasselbe Prinzip wie der wurzel_skalar-Zweig
+            # der C++-Seite.
+            lauf.fehler.append(f"{eintrag['datei']}: nicht lesbar: {e}")
+            continue
         gueltig = pruefer.is_valid(daten)
         soll = eintrag["urteil"] == "gueltig"
         if gueltig == soll:
@@ -220,8 +399,15 @@ def pruefe_fixtures(lauf: Lauf, schema: dict, manifest: dict) -> None:
               all(e.get("warum") for e in manifest["fixtures"]))
     lauf.wahr("gueltige Fixtures tragen keine Verletzungen",
               all(not e["verletzungen"] for e in manifest["fixtures"] if e["urteil"] == "gueltig"))
+    # Ausgenommen sind die Textriegel-Fixtures: sie erreichen das Schema nie,
+    # also gibt es dort nichts zu verletzen. Eine erfundene Verletzungsmenge
+    # waere eine Luege ueber den ORT der Ablehnung.
     lauf.wahr("ungueltige Fixtures tragen mindestens eine Verletzung",
-              all(e["verletzungen"] for e in manifest["fixtures"] if e["urteil"] == "ungueltig"))
+              all(e["verletzungen"] for e in manifest["fixtures"]
+                  if e["urteil"] == "ungueltig" and not e.get("textriegel_lehnt_ab")))
+    lauf.wahr("Textriegel-Fixtures tragen KEINE Verletzungsmenge",
+              all(not e["verletzungen"] for e in manifest["fixtures"]
+                  if e.get("textriegel_lehnt_ab")))
 
 
 # ------------------------------------------------------------------ Abdeckung
@@ -297,6 +483,7 @@ def main(argv: list[str]) -> int:
     manifest = json.loads((FIXTURES / "MANIFEST.json").read_text(encoding="utf-8"))
 
     lauf = Lauf()
+    pruefe_textriegel(lauf)
     pruefe_schema(lauf, schema)
     pruefe_namen(lauf, schema, reserviert)
     pruefe_fixtures(lauf, schema, manifest)

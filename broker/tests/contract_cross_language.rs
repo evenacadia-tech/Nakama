@@ -53,7 +53,44 @@ fn korpus_klassifiziert_wie_das_manifest() {
 
     for eintrag in manifest["fixtures"].as_array().unwrap() {
         let name = eintrag["datei"].as_str().unwrap();
-        let daten = lies(&fixtures.join(name));
+        let pfad = fixtures.join(name);
+        let roh = std::fs::read_to_string(&pfad).unwrap_or_else(|e| panic!("{name}: {e}"));
+
+        // Der Textriegel laeuft VOR dem Parser, und zwar ueber JEDES Fixture.
+        // Die mit `textriegel_lehnt_ab` markierten muessen an ihm fallen; alle
+        // uebrigen muessen ihn passieren. Ohne die zweite Haelfte waere der
+        // Riegel eine Behauptung, die nur an wenigen Dateien geprueft wird.
+        let riegel = eqcop_broker::vertrag::textriegel(&roh);
+        let soll_abgelehnt = eintrag["textriegel_lehnt_ab"].as_bool().unwrap_or(false);
+        if soll_abgelehnt {
+            if riegel.is_ok() {
+                abweichungen.push(format!("{name}: Textriegel laesst es durch, soll ablehnen"));
+            }
+            geprueft += 1;
+            continue;
+        }
+        if let Err(e) = riegel {
+            abweichungen.push(format!("{name}: Textriegel lehnt ab, soll passieren lassen: {e}"));
+            geprueft += 1;
+            continue;
+        }
+
+        // T2-Runde 1: hier stand ein `panic!`. Ein nicht lesbares Fixture brach
+        // damit den GANZEN Lauf ab, statt eine benannte Abweichung zu werden —
+        // das Gegenstueck zum `wurzel_skalar`-Zweig der C++-Seite fehlte.
+        let daten: Value = match serde_json::from_str(&roh) {
+            Ok(v) => v,
+            Err(e) => {
+                let skalar = eintrag["wurzel_skalar"].as_bool().unwrap_or(false);
+                abweichungen.push(if skalar {
+                    format!("{name}: als Skalar-Wurzel markiert, aber serde_json liest es nicht: {e}")
+                } else {
+                    format!("{name}: nicht lesbar: {e}")
+                });
+                geprueft += 1;
+                continue;
+            }
+        };
         let ist = s.pruefe(&daten);
         let soll_gueltig = eintrag["urteil"].as_str().unwrap() == "gueltig";
 

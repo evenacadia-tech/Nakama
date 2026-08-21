@@ -5,8 +5,9 @@
   "zweck": "Die dritte Partei zwischen C++ und Rust. Beide messen gegen DIESES Manifest; stimmen beide mit ihm ueberein, stimmen sie transitiv miteinander ueberein. Die Erwartungen sind von Hand geschrieben, nicht aus einer Engine erzeugt — sonst waere der Vergleich zirkulaer.",
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
+  "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
   "anzahl_gueltig": 34,
-  "anzahl_ungueltig": 109,
+  "anzahl_ungueltig": 116,
   "fixtures": [
     {
       "datei": "gueltig/audible_intervention_begin.json",
@@ -581,6 +582,13 @@
       ]
     },
     {
+      "datei": "ungueltig/einsames-surrogat-im-label.json",
+      "urteil": "ungueltig",
+      "warum": "GEMESSEN: beide eigenen Engines lehnen ab, das Referenzbein nimmt an - die umgekehrte Richtung derselben Klasse",
+      "verletzungen": [],
+      "textriegel_lehnt_ab": true
+    },
+    {
       "datei": "ungueltig/encoding-erfunden.json",
       "urteil": "ungueltig",
       "warum": "die Kodierungen stehen in quantisierung-v1.json",
@@ -987,6 +995,13 @@
       ]
     },
     {
+      "datei": "ungueltig/leerer-objektschluessel.json",
+      "urteil": "ungueltig",
+      "warum": "GEMESSEN: JUCE lehnt einen leeren Property-Namen im Parser ab. Im ADDITIVEN zaehler haette serde_json ihn dagegen angenommen - genau dort, wo additionalProperties:true ihn nicht auffaengt",
+      "verletzungen": [],
+      "textriegel_lehnt_ab": true
+    },
+    {
       "datei": "ungueltig/logon-sid-leer.json",
       "urteil": "ungueltig",
       "warum": "eine leere SID ist keine SID",
@@ -1072,6 +1087,13 @@
           "schluessel": "maxItems"
         }
       ]
+    },
+    {
+      "datei": "ungueltig/nul-escape-im-label.json",
+      "urteil": "ungueltig",
+      "warum": "GEMESSEN: juce::String ist nullterminiert, JUCE bricht hier im Parser ab, waehrend serde_json und Python das Dokument annehmen",
+      "verletzungen": [],
+      "textriegel_lehnt_ab": true
     },
     {
       "datei": "ungueltig/pair-id-als-zahl.json",
@@ -1565,6 +1587,34 @@
           "schluessel": "maxProperties"
         }
       ]
+    },
+    {
+      "datei": "ungueltig/zahl-fuehrende-null.json",
+      "urteil": "ungueltig",
+      "warum": "GEMESSEN: JUCE liest 91, serde_json und Python lehnen im Parser ab. RFC 8259 verbietet die fuehrende Null",
+      "verletzungen": [],
+      "textriegel_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/zahl-jenseits-u64.json",
+      "urteil": "ungueltig",
+      "warum": "GEMESSEN: JUCEs parseNumber akkumuliert in int64 ohne Bereichspruefung und liest hier 400. Rust und Python lesen 1.8446744e19 bzw. den exakten Wert - dieselbe Datei, drei verschiedene Zahlen",
+      "verletzungen": [],
+      "textriegel_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/zahl-nicht-endlich.json",
+      "urteil": "ungueltig",
+      "warum": "1e400 ist als binary64 unendlich; ein Vertrag traegt keine Unendlichkeit",
+      "verletzungen": [],
+      "textriegel_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/zahl-ueber-2hoch53.json",
+      "urteil": "ungueltig",
+      "warum": "2^53 ist die erste ganze Zahl, die binary64 nicht mehr exakt traegt",
+      "verletzungen": [],
+      "textriegel_lehnt_ab": true
     }
   ]
 }

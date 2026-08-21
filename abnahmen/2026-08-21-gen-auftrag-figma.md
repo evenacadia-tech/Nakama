@@ -82,7 +82,7 @@ Familie Studie 03 ist — auch wenn sie in der anderen Datei liegt.
 
 **Der Körper, in Zahlen (1:1):** Unibody 760×430, Außenradius 20 · Glas
 (`Glass / Measurement Plane`) 740×380 bei (10,10), Innenradius 10 · Kinn 40 px
-(wie Probeeq) · Glas 85,0 % der Fläche (Probeeq 85,6 %). Schale (#1B1D1F +
+(wie Probeeq) · Glas 86,0 % der Fläche (740×380 / 760×430; Probeeq 85,6 %). Schale (#1B1D1F +
 Verlauf), Breitlicht, Korn (Truhe 301, gekachelt 0,15, Soft Light 8 %),
 Innenkanten, Glasfüllung (#0C0E10 + Verlauf), Kantenglanz, Spiegelung (Screen),
 Vignette (Multiply), Schwebeschatten 0/18 r40 −8: **aus dem Probeeq-Knoten

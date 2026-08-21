@@ -28,7 +28,7 @@ Die drei Oberflächen:
    *alte* Sprache (cyan); er liefert die Anordnung. **Figma-Entwurf von
    Claude, nicht abgenommen** (2026-08-21, Gen-Runde): in der Probeeq-Sprache,
    Datei `Testdummy`, `Lumia Material Lab / Study 04 — Gen` (Node 5025:1616,
-   Schönfall-Körper 5026:1619) — neun Zustandsrahmen, 4×-Zoom, Delta; die 17
+   Schönfall-Körper 5026:1619) — Schönfall + acht Zustandsrahmen, zwei 4×-Zooms, Delta; die 17
    offenen Punkte stehen in `abnahmen/2026-08-21-gen-auftrag-figma.md`. Vorgabe
    wird er erst mit dem Export des Users in die Truhe.
 2. **Nakama Probeeq** — die aktive Sonde: ein **vollwertiger, hochwertiger

@@ -32,8 +32,11 @@
   **Offen bleibt das Urteil selbst:** eine T2-Runde 5 mit frischem Kontext gegen
   `git diff 4cf05b9..HEAD` ist nicht gelaufen — Befunde schliesst, wer nacharbeitet,
   urteilen darf nur ein Pruefer, der den Umbau nicht geschrieben hat.
-- **S4 (Capabilityreport) und Gate G0 warten auf die FL-Termine A/B des Users**
-  (`eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md`, `…-B-HOSTZEIT.md`; Spike-Ordner leer).
+- **Termin A ist gemessen (22.08. 00:17 + 00:27): geht, recall-stabil** — zwei
+  getrennte Nebenwege samplegenau (Versatz 0), Beweis `docs/beweise/termin-a/`.
+  **S4 (Capabilityreport) und Gate G0 warten noch auf Termin B** (Hostzeit/
+  Automation, `eq-copilot/docs/FL-TERMIN-B-HOSTZEIT.md`). Beide Messgeräte sind
+  in `C:/Program Files/Common Files/VST3/` installiert (FL scannt VST3 nur dort).
 - **Kanon:** 15 Beine in `tools/beweise.ps1`; letzter vollständiger Lauf siehe
   jüngstes Manifest in `docs/beweise/`.
 
@@ -53,7 +56,7 @@ Code ohne Manifest heißt *offen*. Beweislauf:
 
 | Was | Wo |
 |---|---|
-| FL-Termin A (Aux/PDC/Recall, ~20 min) und B (Hostzeit/Automation, ~25 min) | Klicklisten in `eq-copilot/docs/`; Ergebnis-JSON landet in `%APPDATA%\evenacadia\nakama\spike\` |
+| FL-Termin B (Hostzeit/Automation) — Termin A ist erledigt | Arbeitsteilung neu: Plugins und Automationsclip legt der User einmal an; Abspielen, Springen, Schleife, Speichern fährt Claude über den FL-MCP (`fl-studio`, seit 21.08. für diesen Workspace registriert; ein `fl_save_project` via `FPT_Save` fehlt noch im Fork) |
 | Figma-Stände der drei Apps (Gen, Probeeq, Suna) | nach `Nakama-Design/assets/figma/` geben; das Design-Repo übersetzt sie |
 | Installation des 21.08.-Bundles (mit Hostbrücke, Version 0.3.0) | erst mit dem nächsten bewiesenen Stand, per UAC-Klick |
 

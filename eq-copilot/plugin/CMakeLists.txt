@@ -286,11 +286,16 @@ juce_add_console_app(EqCopSchemaTest PRODUCT_NAME "eqcop-schematest")
 target_sources(EqCopSchemaTest PRIVATE
     tests/SchemaTestMain.cpp
     vertrag/NakamaVertrag.cpp
+    vertrag/NakamaTelemetrie.cpp
 )
 target_include_directories(EqCopSchemaTest PRIVATE vertrag)
 target_compile_definitions(EqCopSchemaTest PRIVATE
     JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
-target_link_libraries(EqCopSchemaTest PRIVATE juce::juce_core
+# SONDE-005b: die FlatBuffers-Laufzeit stammt aus DEMSELBEN gepinnten Commit
+# wie der flatc, der den Code erzeugt hat. Der erzeugte Header traegt dazu von
+# sich aus ein static_assert auf die Version - ein dritter, unabhaengiger
+# Riegel derselben Aussage.
+target_link_libraries(EqCopSchemaTest PRIVATE juce::juce_core flatbuffers
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 
 # Die Quellen sind UTF-8 (deutsche UI-Texte). Ohne /utf-8 rät MSVC die

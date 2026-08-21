@@ -15,6 +15,7 @@
 */
 
 #include "../vertrag/NakamaVertrag.h"
+#include "../vertrag/NakamaTelemetrie.h"
 
 #include <cmath>
 #include <cstdint>
@@ -212,6 +213,98 @@ void fahreKorpus (const nakama::vertrag::Schema& schema)
     const int gueltig   = static_cast<int> (manifest.getProperty ("anzahl_gueltig", {}));
     const int ungueltig = static_cast<int> (manifest.getProperty ("anzahl_ungueltig", {}));
     pruefe (gueltig + ungueltig == geprueft, "Manifestzahlen passen zur Fixtureliste");
+}
+
+// ------------------------------------------------------- Binaerkorpus (S005b)
+
+/*  SONDE-005b: derselbe Vergleich fuer den BINAEREN Teil des Vertrags.
+
+    Die Rust-Gegenseite steht in broker/tests/contract_cross_language.rs. Beide
+    messen gegen fixtures/v3/flatbuffers/MANIFEST.json - Urteil UND
+    vollstaendige Verstossmenge -, und das Manifest ist von Hand geschrieben,
+    also nicht die Ausgabe eines der beiden Leser.
+*/
+void fahreFbKorpus()
+{
+    bool ok = false;
+    const auto manifest = lies ("eq-copilot/fixtures/v3/flatbuffers/MANIFEST.json", ok);
+    if (! ok)
+        return;
+
+    auto* liste = manifest.getProperty ("fixtures", {}).getArray();
+    if (liste == nullptr)
+    {
+        pruefe (false, "Binaer-MANIFEST traegt eine Fixtureliste");
+        return;
+    }
+
+    int geprueft = 0, abweichungen = 0;
+    for (const auto& eintrag : *liste)
+    {
+        const auto name = eintrag.getProperty ("datei", {}).toString();
+        const auto datei = finde ("eq-copilot/fixtures/v3/flatbuffers/" + name);
+        juce::MemoryBlock roh;
+        if (! datei.existsAsFile() || ! datei.loadFileAsData (roh))
+        {
+            std::cout << "[ROT]  Binaerfixture fehlt: " << name.toRawUTF8() << std::endl;
+            ++abweichungen;
+            continue;
+        }
+
+        const auto ist = nakama::telemetrie::pruefe (
+            static_cast<const uint8_t*> (roh.getData()), roh.getSize());
+        const bool sollGueltig = eintrag.getProperty ("urteil", {}).toString() == "gueltig";
+
+        if (ist.isEmpty() != sollGueltig)
+        {
+            std::cout << "[ROT]  " << name.toRawUTF8() << ": Urteil "
+                      << (sollGueltig ? "gueltig" : "ungueltig") << " erwartet, Leser sagt "
+                      << (ist.isEmpty() ? "gueltig" : "ungueltig");
+            if (! ist.isEmpty())
+                std::cout << " {" << ist.getReference (0).pfad.toRawUTF8() << " | "
+                          << ist.getReference (0).regel.toRawUTF8() << "}";
+            std::cout << std::endl;
+            ++abweichungen;
+        }
+        else
+        {
+            auto* sollListe = eintrag.getProperty ("verstoesse", {}).getArray();
+            juce::Array<nakama::telemetrie::Verstoss> soll;
+            if (sollListe != nullptr)
+                for (const auto& s : *sollListe)
+                    soll.add ({ s.getProperty ("pfad", {}).toString(),
+                                s.getProperty ("regel", {}).toString() });
+
+            bool gleich = soll.size() == ist.size();
+            for (int i = 0; gleich && i < soll.size(); ++i)
+                gleich = soll.getReference (i) == ist.getReference (i);
+
+            if (! gleich)
+            {
+                std::cout << "[ROT]  " << name.toRawUTF8() << ": Verstossmenge weicht ab"
+                          << std::endl;
+                for (const auto& s : soll)
+                    std::cout << "         soll {" << s.pfad.toRawUTF8() << " | "
+                              << s.regel.toRawUTF8() << "}" << std::endl;
+                for (const auto& s : ist)
+                    std::cout << "         ist  {" << s.pfad.toRawUTF8() << " | "
+                              << s.regel.toRawUTF8() << "}" << std::endl;
+                ++abweichungen;
+            }
+        }
+        ++geprueft;
+    }
+
+    pruefe (abweichungen == 0,
+            "Binaerkorpus klassifiziert wie das Manifest (" + juce::String (geprueft)
+                + " Fixtures)",
+            abweichungen == 0 ? juce::String() : juce::String (abweichungen) + " Abweichungen");
+    // Substanzriegel: mit geleerter Liste ginge der Test sonst gruen durch.
+    pruefe (geprueft >= 30, "Binaerkorpus hat Substanz", juce::String (geprueft) + " Fixtures");
+
+    const int g = static_cast<int> (manifest.getProperty ("anzahl_gueltig", {}));
+    const int u = static_cast<int> (manifest.getProperty ("anzahl_ungueltig", {}));
+    pruefe (g + u == geprueft, "Binaer-Manifestzahlen passen zur Fixtureliste");
 }
 
 // ------------------------------------------------------------------ Bandgitter
@@ -609,6 +702,7 @@ int main (int, char*[])
 
     fahreTextriegelproben();
     fahreRiegelproben();
+    fahreFbKorpus();
 
     bool ok = false;
     const auto schemaVar = lies ("eq-copilot/schemas/v3/eq-ipc-v3.schema.json", ok);

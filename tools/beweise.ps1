@@ -248,6 +248,14 @@ $kanon = @(
     [pscustomobject]@{ Kuerzel='A7'; Name='erzeuge_quantisierung.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='Quantisierungsvertrag bytegleich zur Neuerzeugung; Rundung, Saettigung und Nichtendliches als Testvektoren.' }
     [pscustomobject]@{ Kuerzel='A8'; Name='erzeuge_v3_fixtures.py'; Art='python'; Argumente=@('--pruefen');   AbPhase='jetzt'; Behauptung='Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei.' }
 
+    # --- SONDE-005b: die zweite Gate-Haelfte aus §65 --------------------------
+    #
+    # "Codegen-Drift ist 0" ist nur dann eine Aussage, wenn sie GEFAHREN wird.
+    # A9 prueft zusaetzlich, dass flatc, C++-Header und Rust-Crate dieselbe
+    # Version tragen - der erzeugte Code ruft in diese Laufzeit.
+    [pscustomobject]@{ Kuerzel='A9';  Name='pruefe_flatc_drift.py';  Art='python'; Argumente=@();            AbPhase='jetzt'; Behauptung='Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID.' }
+    [pscustomobject]@{ Kuerzel='A10'; Name='erzeuge_fb_fixtures.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei.' }
+
     # --- geplant: laufen automatisch mit, sobald sie gebaut sind -------------
     [pscustomobject]@{ Kuerzel='B1'; Name='EqCopIdentityTest';       Art='plugin'; Argumente=@(); AbPhase='P0'; Behauptung='Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren.' }
     [pscustomobject]@{ Kuerzel='B2'; Name='EqCopStateMigrationTest'; Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='State-Schema 2 laedt reine Schema-1-Staende ohne Verlust.' }

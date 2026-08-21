@@ -1218,8 +1218,20 @@ def main(argv: list[str]) -> int:
     alle.sort(key=lambda e: e[0].as_posix())
 
     if nur_pruefen:
-        vorhanden = {p.relative_to(ZIEL).as_posix()
-                     for p in ZIEL.rglob("*.json")} if ZIEL.exists() else set()
+        # Nur das EIGENE Revier: gueltig/, ungueltig/ und das eigene MANIFEST.
+        # Ein rglob ueber ZIEL wuerde auch fixtures/v3/flatbuffers/ einsammeln -
+        # das gehoert erzeuge_fb_fixtures.py, und ein Generator, der die
+        # Ausgabe eines anderen als "verwaist" meldet, ist ein Fehlalarm mit
+        # rotem Kanon.
+        vorhanden = set()
+        if ZIEL.exists():
+            for unter in ("gueltig", "ungueltig"):
+                ordner = ZIEL / unter
+                if ordner.is_dir():
+                    vorhanden |= {q.relative_to(ZIEL).as_posix()
+                                  for q in ordner.rglob("*") if q.is_file()}
+            if (ZIEL / "MANIFEST.json").exists():
+                vorhanden.add("MANIFEST.json")
         erwartet = {p.relative_to(ZIEL).as_posix() for p, _ in alle}
         verwaist = sorted(vorhanden - erwartet)
         if verwaist:

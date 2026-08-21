@@ -1,0 +1,325 @@
+//! Rust-Bein des FlatBuffers-Telemetrievertrags (SONDE-005b).
+//!
+//! Gegenstueck zu `eq-copilot/plugin/vertrag/NakamaTelemetrie.*`. Beide lesen
+//! denselben Binaerkorpus und muessen ihn IDENTISCH klassifizieren — Urteil
+//! und vollstaendige Verstossmenge —, gemessen gegen dasselbe
+//! handgeschriebene `eq-copilot/fixtures/v3/flatbuffers/MANIFEST.json`.
+//!
+//! ## Warum ein Leser noetig ist, obwohl es ein Schema gibt
+//!
+//! FlatBuffers prueft beim Verifizieren die STRUKTUR: Offsets zeigen in den
+//! Puffer, `required`-Felder sind da, Vektorlaengen passen zum Puffer. Es
+//! prueft NICHT:
+//!
+//! * ob ein Enumwert im deklarierten Bereich liegt (ein `ubyte` 99 kommt
+//!   unbeanstandet durch `Verify` und erst der Leser sieht es),
+//! * ob ein Bitflagfeld nur bekannte Bits traegt,
+//! * irgendeine Beziehung zwischen zwei Feldern.
+//!
+//! Genau dort liegen aber die Regeln aus Entwurf §33.1: hoechstens ein Frame
+//! je Quelle, Encoding passt zur Nutzlast, Bandzahl folgt aus dem Gitter,
+//! Bitmap ist `ceil(n/8)` Bytes. Ein Vertrag, der sie nur in seinen
+//! Kommentaren traegt, ist keiner.
+
+use crate::generiert::nakama_telemetry_v1_generated::evenacadia::nakama::v_3 as fb;
+use std::collections::BTreeSet;
+
+/// Ein einzelner Vertragsverstoss.
+///
+/// `pfad` ist ein JSON-Pointer in den Batch (`""` ist der Batch selbst),
+/// `regel` einer der Namen aus der geschlossenen Liste in
+/// `eq-copilot/schemas/v3/flatbuffers/README-LESER.md`. Beide Beine bilden
+/// denselben Text; die Menge wird kanonisch sortiert, damit der Vergleich
+/// nicht von der Auswertungsreihenfolge abhaengt.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Verstoss {
+    pub pfad: String,
+    pub regel: String,
+}
+
+impl Verstoss {
+    fn neu(pfad: &str, regel: &str) -> Self {
+        Verstoss { pfad: pfad.to_string(), regel: regel.to_string() }
+    }
+}
+
+/// Obergrenze der Eintraege je Batch.
+///
+/// Entwurf §53.9 nennt „bis zu 32 Sonden"; §33.1 sagt, dass Broker→Main
+/// „typisch vier bis fuenf" buendelt. 32 ist damit die Systemgrenze, nicht
+/// die Erwartung — ein Batch darueber ist ein Fehler, kein Ausreisser.
+pub const MAX_EINTRAEGE: usize = 32;
+
+/// Bandzahlen der beiden eingefrorenen Gitter (`schemas/v3/bandgitter/`).
+pub const BAENDER_FEIN: usize = 221;
+pub const BAENDER_GROB: usize = 64;
+
+/// Grenzen der beiden i16-Kodierungen aus `quantisierung-v1.json`,
+/// als bereits skalierte Traegerwerte.
+const Q_0P1_MIN: i16 = -1440; // -144.0 dB * 10
+const Q_0P1_MAX: i16 = 240; //   24.0 dB * 10
+const Q_0P01_MIN: i16 = -14400; // -144.00 dB * 100
+const Q_0P01_MAX: i16 = 2400; //   24.00 dB * 100
+
+fn ist_hex32(s: &str) -> bool {
+    s.len() == 32 && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+}
+
+/// Prueft einen rohen FeatureBatch-Puffer.
+///
+/// Gibt die kanonisch sortierte, doppelfreie Verstossmenge zurueck; leer
+/// heisst gueltig.
+pub fn pruefe(puffer: &[u8]) -> Vec<Verstoss> {
+    let mut out: Vec<Verstoss> = Vec::new();
+
+    // 1. Die Dateikennung steht an Offset 4 und ist das Erste, was ein Leser
+    //    sehen kann. Ein fremder Puffer faellt hier, VOR jedem Feldzugriff.
+    if !fb::feature_batch_buffer_has_identifier(puffer) {
+        out.push(Verstoss::neu("", "dateikennung"));
+        return kanonisch(out);
+    }
+
+    // 2. Der Verifier. Ohne ihn ist jeder Feldzugriff auf einen manipulierten
+    //    Puffer undefiniert - das ist der eine Punkt, an dem FlatBuffers
+    //    wirklich hart ist, und er wird benutzt.
+    let batch = match fb::root_as_feature_batch(puffer) {
+        Ok(b) => b,
+        Err(_) => {
+            out.push(Verstoss::neu("", "verifier"));
+            return kanonisch(out);
+        }
+    };
+
+    // `eintraege` ist im .fbs `required`: der Verifier hat seine Anwesenheit
+    // bereits garantiert, und flatc erzeugt deshalb einen Accessor OHNE
+    // Option. Das ist die eine Stelle, an der FlatBuffers wirklich hart ist —
+    // sie wird benutzt statt nachgebaut.
+    let eintraege = batch.eintraege();
+
+    if eintraege.is_empty() {
+        out.push(Verstoss::neu("/eintraege", "eintraege_leer"));
+    }
+    if eintraege.len() > MAX_EINTRAEGE {
+        out.push(Verstoss::neu("/eintraege", "eintraege_zu_viele"));
+    }
+
+    // 4. §33.1: "Ein Batch traegt nie mehrere Frames derselben Quelle."
+    //    Das kann kein Schema ausdruecken, und es ist genau der Grund, warum
+    //    das Format keine zweite Wrapper-Ebene braucht.
+    let mut gesehen: BTreeSet<String> = BTreeSet::new();
+
+    for (i, eintrag) in eintraege.iter().enumerate() {
+        let p = format!("/eintraege/{i}");
+
+        // Beide `required` — siehe oben.
+        let a = eintrag.quelle();
+        pruefe_adresse(&a, &format!("{p}/quelle"), &mut out);
+        if !gesehen.insert(a.instance_id().to_string()) {
+            out.push(Verstoss::neu(&format!("{p}/quelle/instance_id"), "quelle_doppelt"));
+        }
+
+        pruefe_frame(&eintrag.frame(), &format!("{p}/frame"), &mut out);
+    }
+
+    kanonisch(out)
+}
+
+pub fn gueltig(puffer: &[u8]) -> bool {
+    pruefe(puffer).is_empty()
+}
+
+fn kanonisch(v: Vec<Verstoss>) -> Vec<Verstoss> {
+    let menge: BTreeSet<Verstoss> = v.into_iter().collect();
+    menge.into_iter().collect()
+}
+
+fn pruefe_adresse(a: &fb::Adresse, p: &str, out: &mut Vec<Verstoss>) {
+    // Die SID wird nie geparst, nur verglichen (§32.1) - geprueft wird
+    // deshalb nur, dass sie ueberhaupt da ist und nicht ins Uferlose waechst.
+    let sid = a.logon_sid();
+    if sid.is_empty() || sid.chars().count() > 184 {
+        out.push(Verstoss::neu(&format!("{p}/logon_sid"), "sid_laenge"));
+    }
+    for (name, wert) in [
+        ("project_binding_id", a.project_binding_id()),
+        ("session_epoch", a.session_epoch()),
+        ("instance_id", a.instance_id()),
+        ("runtime_nonce", a.runtime_nonce()),
+    ] {
+        if !ist_hex32(wert) {
+            out.push(Verstoss::neu(&format!("{p}/{name}"), "hex32"));
+        }
+    }
+}
+
+fn pruefe_frame(f: &fb::Frame, p: &str, out: &mut Vec<Verstoss>) {
+    if f.metrics_version() < 1 {
+        out.push(Verstoss::neu(&format!("{p}/metrics_version"), "metrics_version"));
+    }
+
+    pruefe_transport(&f.transport(), &format!("{p}/transport"), out);
+    pruefe_baender(&f.baender(), &format!("{p}/baender"), out);
+
+    // Optionale Kennzahlen: ein nicht messbarer Wert wird WEGGELASSEN, nicht
+    // als NaN gesendet (quantisierung-v1.json: Nichtendliches wird beim
+    // Erzeugen zu Wert 0 mit gueltig=false). Ein NaN auf der Leitung ist
+    // deshalb ein Senderfehler und wird abgelehnt, nicht sanitisiert.
+    for (name, wert) in [
+        ("aktivitaet", f.aktivitaet()),
+        ("lufs_s", f.lufs_s()),
+        ("peak_db", f.peak_db()),
+        ("crest_db", f.crest_db()),
+        ("psr_db", f.psr_db()),
+        ("breite", f.breite()),
+        ("korrelation", f.korrelation()),
+    ] {
+        if let Some(x) = wert {
+            if !x.is_finite() {
+                out.push(Verstoss::neu(&format!("{p}/{name}"), "nicht_endlich"));
+            }
+        }
+    }
+    if let Some(k) = f.korrelation() {
+        if k.is_finite() && !(-1.0..=1.0).contains(&k) {
+            out.push(Verstoss::neu(&format!("{p}/korrelation"), "korrelation_bereich"));
+        }
+    }
+    if let Some(b) = f.breite() {
+        if b.is_finite() && b < 0.0 {
+            out.push(Verstoss::neu(&format!("{p}/breite"), "breite_negativ"));
+        }
+    }
+}
+
+fn pruefe_transport(t: &fb::Transportstempel, p: &str, out: &mut Vec<Verstoss>) {
+    if t.zeitbasis() == fb::Zeitbasis::unbekannt {
+        out.push(Verstoss::neu(&format!("{p}/zeitbasis"), "enum_unbekannt"));
+    }
+    if fb::Zeitbasis::ENUM_VALUES.iter().all(|v| *v != t.zeitbasis()) {
+        out.push(Verstoss::neu(&format!("{p}/zeitbasis"), "enum_unbekannt"));
+    }
+    if t.sample_count() > 1_048_576 {
+        out.push(Verstoss::neu(&format!("{p}/sample_count"), "sample_count_bereich"));
+    }
+    let sr = t.sample_rate();
+    if !sr.is_finite() || sr <= 0.0 || sr > 768_000.0 {
+        out.push(Verstoss::neu(&format!("{p}/sample_rate"), "sample_rate_bereich"));
+    }
+
+    // Ein gesetztes Bit ausserhalb der sieben bekannten. FlatBuffers prueft
+    // das nicht; `ANY` ist die von flatc erzeugte Maske aller deklarierten.
+    if t.gueltigkeit().bits() & !fb::Gueltigkeit::all().bits() != 0 {
+        out.push(Verstoss::neu(&format!("{p}/gueltigkeit"), "validity_unbekanntes_bit"));
+    }
+
+    if let Some(s) = t.schleife() {
+        if let Some(g) = s.abgeleitete_grenzen() {
+            let pg = format!("{p}/schleife/abgeleitete_grenzen");
+            if g.herleitung() == fb::Herleitung::unbekannt
+                || fb::Herleitung::ENUM_VALUES.iter().all(|v| *v != g.herleitung())
+            {
+                out.push(Verstoss::neu(&format!("{pg}/herleitung"), "enum_unbekannt"));
+            }
+            if g.ende() < g.start() {
+                out.push(Verstoss::neu(&pg, "grenzen_verdreht"));
+            }
+        }
+    }
+}
+
+fn pruefe_baender(b: &fb::Bandwerte, p: &str, out: &mut Vec<Verstoss>) {
+    let gitter = b.gitter();
+    let encoding = b.encoding();
+
+    let gitter_ok = gitter != fb::Bandgitter::unbekannt
+        && fb::Bandgitter::ENUM_VALUES.iter().any(|v| *v == gitter);
+    let encoding_ok = encoding != fb::BandEncoding::unbekannt
+        && fb::BandEncoding::ENUM_VALUES.iter().any(|v| *v == encoding);
+    if !gitter_ok {
+        out.push(Verstoss::neu(&format!("{p}/gitter"), "enum_unbekannt"));
+    }
+    if !encoding_ok {
+        out.push(Verstoss::neu(&format!("{p}/encoding"), "enum_unbekannt"));
+    }
+
+    let i16er = b.werte_i16();
+    let f32er = b.werte_f32();
+
+    // Genau EIN Traeger. Beide gesetzt hiesse zwei Wahrheiten ueber dieselbe
+    // Messung; keiner gesetzt hiesse ein Bandsatz ohne Baender.
+    match (i16er.is_some(), f32er.is_some()) {
+        (true, true) => out.push(Verstoss::neu(p, "zwei_traeger")),
+        (false, false) => out.push(Verstoss::neu(p, "kein_traeger")),
+        _ => {}
+    }
+
+    // Und der EINE muss zur Kodierung passen. §33.1: "Empfaenger raten die
+    // Skalierung nie aus dem Nachrichtentyp" - sie steht im Batch, und wenn
+    // sie nicht zur Nutzlast passt, ist der Batch falsch, nicht auslegbar.
+    if encoding_ok {
+        let erwartet_i16 = matches!(
+            encoding,
+            fb::BandEncoding::q_db_0p1_i16 | fb::BandEncoding::q_db_0p01_i16
+        );
+        if erwartet_i16 && i16er.is_none() && f32er.is_some() {
+            out.push(Verstoss::neu(p, "encoding_passt_nicht"));
+        }
+        if !erwartet_i16 && f32er.is_none() && i16er.is_some() {
+            out.push(Verstoss::neu(p, "encoding_passt_nicht"));
+        }
+    }
+
+    let anzahl = i16er.map(|v| v.len()).or_else(|| f32er.map(|v| v.len()));
+    let Some(anzahl) = anzahl else { return };
+
+    // Die Bandzahl FOLGT aus dem Gitter - die beiden Gitter sind als Zahlen
+    // eingefroren (schemas/v3/bandgitter/), und ein Bandsatz, der sich nicht
+    // an sie haelt, misst etwas anderes als er behauptet.
+    if gitter_ok {
+        let soll = match gitter {
+            fb::Bandgitter::nakama_1_24_oct_30_18k_v1 => BAENDER_FEIN,
+            _ => BAENDER_GROB,
+        };
+        if anzahl != soll {
+            out.push(Verstoss::neu(p, "bandzahl"));
+        }
+    }
+
+    // Bitmap: ceil(n/8) Bytes, LSB-first. Die Fuellbits des letzten Bytes
+    // MUESSEN 0 sein - sonst erzeugen zwei Sender fuer dieselbe Messung zwei
+    // verschiedene Puffer, und ein Bytevergleich waere keine Aussage mehr.
+    // `gueltig_bitmap` ist `required` — Anwesenheit garantiert der Verifier.
+    let bm = b.gueltig_bitmap();
+    let soll = anzahl.div_ceil(8);
+    if bm.len() != soll {
+        out.push(Verstoss::neu(&format!("{p}/gueltig_bitmap"), "bitmap_laenge"));
+    } else if anzahl % 8 != 0 && !bm.is_empty() {
+        let genutzt = (1u8 << (anzahl % 8)) - 1;
+        if bm.get(bm.len() - 1) & !genutzt != 0 {
+            out.push(Verstoss::neu(&format!("{p}/gueltig_bitmap"), "bitmap_fuellbits"));
+        }
+    }
+
+    if let Some(v) = i16er {
+        if encoding_ok {
+            let (min, max) = match encoding {
+                fb::BandEncoding::q_db_0p01_i16 => (Q_0P01_MIN, Q_0P01_MAX),
+                _ => (Q_0P1_MIN, Q_0P1_MAX),
+            };
+            for (i, w) in v.iter().enumerate() {
+                if w < min || w > max {
+                    out.push(Verstoss::neu(&format!("{p}/werte_i16/{i}"), "bandwert_bereich"));
+                    break; // ein benannter Fall reicht; die Menge bleibt endlich
+                }
+            }
+        }
+    }
+    if let Some(v) = f32er {
+        for (i, w) in v.iter().enumerate() {
+            if !w.is_finite() {
+                out.push(Verstoss::neu(&format!("{p}/werte_f32/{i}"), "nicht_endlich"));
+                break;
+            }
+        }
+    }
+}

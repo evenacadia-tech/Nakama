@@ -10,7 +10,9 @@
 pub mod aggregat;
 pub mod bindung;
 pub mod framing;
+pub mod generiert;
 pub mod protokoll;
+pub mod telemetrie;
 pub mod vertrag;
 #[cfg(windows)]
 mod server;

@@ -128,6 +128,74 @@ fn korpus_klassifiziert_wie_das_manifest() {
     println!("{geprueft} Fixtures gegen das Manifest geprueft");
 }
 
+/// SONDE-005b: derselbe Vergleich fuer den BINAEREN Teil des Vertrags.
+///
+/// Die C++-Gegenseite steht in `SchemaTestMain.cpp`. Beide messen gegen
+/// `fixtures/v3/flatbuffers/MANIFEST.json` — Urteil UND vollstaendige
+/// Verstossmenge —, und das Manifest ist von Hand geschrieben, also nicht die
+/// Ausgabe eines der beiden Leser.
+#[test]
+fn fb_korpus_klassifiziert_wie_das_manifest() {
+    use eqcop_broker::telemetrie::{pruefe, Verstoss};
+
+    let w = wurzel();
+    let fixtures = w.join("eq-copilot/fixtures/v3/flatbuffers");
+    let manifest = lies(&fixtures.join("MANIFEST.json"));
+
+    let mut geprueft = 0usize;
+    let mut abweichungen: Vec<String> = Vec::new();
+
+    for eintrag in manifest["fixtures"].as_array().unwrap() {
+        let name = eintrag["datei"].as_str().unwrap();
+        let roh = std::fs::read(fixtures.join(name)).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let ist = pruefe(&roh);
+        let soll_gueltig = eintrag["urteil"].as_str().unwrap() == "gueltig";
+
+        if ist.is_empty() != soll_gueltig {
+            abweichungen.push(format!(
+                "{name}: Urteil {} erwartet, Leser sagt {} ({:?})",
+                if soll_gueltig { "gueltig" } else { "ungueltig" },
+                if ist.is_empty() { "gueltig" } else { "ungueltig" },
+                ist
+            ));
+            geprueft += 1;
+            continue;
+        }
+
+        let soll: Vec<Verstoss> = eintrag["verstoesse"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| Verstoss {
+                pfad: v["pfad"].as_str().unwrap().to_string(),
+                regel: v["regel"].as_str().unwrap().to_string(),
+            })
+            .collect();
+        if ist != soll {
+            abweichungen.push(format!(
+                "{name}: Verstossmenge weicht ab\n  soll {soll:#?}\n  ist  {ist:#?}"
+            ));
+        }
+        geprueft += 1;
+    }
+
+    assert!(
+        abweichungen.is_empty(),
+        "{} von {geprueft} Fixtures weichen ab:\n{}",
+        abweichungen.len(),
+        abweichungen.join("\n")
+    );
+    assert_eq!(
+        geprueft,
+        manifest["anzahl_gueltig"].as_u64().unwrap() as usize
+            + manifest["anzahl_ungueltig"].as_u64().unwrap() as usize,
+        "Manifestzahlen passen nicht zur Fixtureliste"
+    );
+    // Substanzriegel: mit geleerter Liste ginge der Test sonst gruen durch.
+    assert!(geprueft >= 30, "Binaerkorpus zu klein: {geprueft}");
+    println!("{geprueft} Binaerfixtures gegen das Manifest geprueft");
+}
+
 #[test]
 fn bandgitter_ist_lesbar_und_in_sich_stimmig() {
     let w = wurzel();

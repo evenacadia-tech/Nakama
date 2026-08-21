@@ -1,0 +1,405 @@
+{
+  "$id": "evenacadia.nakama.fixtures.v3.flatbuffers",
+  "titel": "Binaerer Cross-Language-Fixture-Korpus (SONDE-005b)",
+  "schema": "../../../schemas/v3/flatbuffers/nakama_telemetry_v1.fbs",
+  "zweck": "Die dritte Partei zwischen C++ und Rust fuer den BINAEREN Teil des v3-Vertrags. Beide Leser messen gegen DIESES Manifest; stimmen beide mit ihm ueberein, stimmen sie transitiv miteinander ueberein. Die Erwartungen sind von Hand geschrieben, nicht aus einem Leser erzeugt — sonst waere der Vergleich zirkulaer.",
+  "erzeugung": "Die .bin-Dateien entstehen mit dem GEPINNTEN flatc aus einer JSON-Beschreibung (flatc -b). Ein eigener Encoder waere eine dritte Implementierung des Formats, die niemand prueft.",
+  "byte_mutation_von": "Markiert einen Puffer, den flatc nicht erzeugen KANN (falsche Dateikennung, abgeschnitten, zerstoerter Wurzeloffset). Er entsteht als Byte-Mutation des genannten gueltigen Puffers.",
+  "regeln": "Die geschlossene Liste der Regelnamen steht in eq-copilot/schemas/v3/flatbuffers/README.md. Ein Verstoss ist (pfad, regel); die Menge wird kanonisch nach (pfad, regel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
+  "anzahl_gueltig": 8,
+  "anzahl_ungueltig": 31,
+  "fixtures": [
+    {
+      "datei": "gueltig/alle-validity-bits.bin",
+      "urteil": "gueltig",
+      "warum": "alle sieben Bits gesetzt (§32.3). Die Latenz 0 ist hier GEMESSEN und nicht 'unbekannt' - genau die Unterscheidung, fuer die das eigene Bit existiert",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/broker-buendel-5.bin",
+      "urteil": "gueltig",
+      "warum": "nur Broker->Main buendelt - typisch vier bis fuenf Sonden (§33.1); fuenf VERSCHIEDENE Quellen sind erlaubt, fuenf gleiche nicht",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/evidenz-221-band.bin",
+      "urteil": "gueltig",
+      "warum": "fokussierte PRE/POST-Evidenz auf dem feinen Gitter (§33.1)",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/float32-kreuzstatistik.bin",
+      "urteil": "gueltig",
+      "warum": "komplexe Kreuzstatistik darf float32 tragen (§33.1)",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/grenze-32-eintraege.bin",
+      "urteil": "gueltig",
+      "warum": "genau 32 Sonden (§53.9) - die Grenze selbst ist noch gueltig",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/live-64-band.bin",
+      "urteil": "gueltig",
+      "warum": "der Regelfall: Sonde->Broker, genau EIN Eintrag (§33.1: Queuecap 2, replace-oldest - dort kann nie gebuendelt werden)",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/mit-schleife.bin",
+      "urteil": "gueltig",
+      "warum": "Samplegrenzen sind ein ABGELEITETES Feld und tragen ihre Herleitung mit (§32.3)",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/ohne-optionale-kennzahlen.bin",
+      "urteil": "gueltig",
+      "warum": "ein nicht messbarer Wert wird WEGGELASSEN, nicht als 0 oder NaN gesendet - das ist die NaN-Ehrlichkeit im Binaerformat",
+      "verstoesse": []
+    },
+    {
+      "datei": "ungueltig/abgeschnitten.bin",
+      "urteil": "ungueltig",
+      "warum": "die halbe Nachricht. Der Verifier ist der eine Punkt, an dem FlatBuffers wirklich hart ist - ohne ihn waere jeder Feldzugriff undefiniert",
+      "verstoesse": [
+        {
+          "pfad": "",
+          "regel": "verifier"
+        }
+      ],
+      "byte_mutation_von": "gueltig/live-64-band.bin"
+    },
+    {
+      "datei": "ungueltig/bandwert-ausser-bereich.bin",
+      "urteil": "ungueltig",
+      "warum": "q_db_0p1_i16 traegt -144.0 .. +24.0 dB, also -1440 .. 240 (quantisierung-v1.json)",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/baender/werte_i16/63",
+          "regel": "bandwert_bereich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bandwert-nicht-endlich.bin",
+      "urteil": "ungueltig",
+      "warum": "quantisierung-v1.json: Nichtendliches wird beim ERZEUGEN zu Wert 0 mit gueltig=false. Auf der Leitung ist es ein Senderfehler",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/baender/werte_f32/7",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bandzahl-passt-nicht-zum-gitter.bin",
+      "urteil": "ungueltig",
+      "warum": "221 Werte unter dem 64er-Gitter. Die Gitter sind als Zahlen EINGEFROREN; ein Bandsatz, der sich nicht an sie haelt, misst etwas anderes als er behauptet. NUR ein Verstoss: die Bitmap wird gegen die TATSAECHLICHE Werteanzahl geprueft (221 -> 28 Byte, und 28 sind es), nicht gegen die vom Gitter geforderte - sonst waere sie eine zweite Klage ueber dieselbe Ursache",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/baender",
+          "regel": "bandzahl"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bitmap-fuellbits.bin",
+      "urteil": "ungueltig",
+      "warum": "221 Baender belegen im 28. Byte nur fuenf Bits. Werden die drei uebrigen mitgesetzt, erzeugen zwei Sender fuer DIESELBE Messung zwei verschiedene Puffer - und ein Bytevergleich waere keine Aussage mehr",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/baender/gueltig_bitmap",
+          "regel": "bitmap_fuellbits"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bitmap-zu-kurz.bin",
+      "urteil": "ungueltig",
+      "warum": "ceil(64/8) = 8 Byte; sieben beschreiben nur 56 Baender",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/baender/gueltig_bitmap",
+          "regel": "bitmap_laenge"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bitmap-zu-lang.bin",
+      "urteil": "ungueltig",
+      "warum": "und ein Byte zu viel ist genauso falsch wie eines zu wenig",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/baender/gueltig_bitmap",
+          "regel": "bitmap_laenge"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/breite-negativ.bin",
+      "urteil": "ungueltig",
+      "warum": "eine negative Breite gibt es nicht",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/breite",
+          "regel": "breite_negativ"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/dateikennung-falsch.bin",
+      "urteil": "ungueltig",
+      "warum": "vier Bytes an Offset 4. Das Erste, was ein Leser sehen kann - ein fremder Puffer faellt hier, VOR jedem Feldzugriff",
+      "verstoesse": [
+        {
+          "pfad": "",
+          "regel": "dateikennung"
+        }
+      ],
+      "byte_mutation_von": "gueltig/live-64-band.bin"
+    },
+    {
+      "datei": "ungueltig/eintraege-33.bin",
+      "urteil": "ungueltig",
+      "warum": "eine ueber der Systemgrenze aus §53.9 - 32 ist die Grenze, nicht die Erwartung",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege",
+          "regel": "eintraege_zu_viele"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/eintraege-leer.bin",
+      "urteil": "ungueltig",
+      "warum": "ein Batch ohne Eintraege traegt nichts und ist kein Batch",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege",
+          "regel": "eintraege_leer"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/encoding-passt-nicht-zu-f32.bin",
+      "urteil": "ungueltig",
+      "warum": "dieselbe Regel in der anderen Richtung",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/baender",
+          "regel": "encoding_passt_nicht"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/encoding-passt-nicht-zu-i16.bin",
+      "urteil": "ungueltig",
+      "warum": "§33.1 woertlich: 'Empfaenger raten die Skalierung nie aus dem Nachrichtentyp'. Sie steht im Batch - und wenn sie nicht zur Nutzlast passt, ist der Batch falsch, nicht auslegbar",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/baender",
+          "regel": "encoding_passt_nicht"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/enum-unbekannt-encoding.bin",
+      "urteil": "ungueltig",
+      "warum": "dieselbe Regel an der Kodierung",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/baender/encoding",
+          "regel": "enum_unbekannt"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/enum-unbekannt-gitter.bin",
+      "urteil": "ungueltig",
+      "warum": "`unbekannt = 0` ist der Default eines fehlenden Skalarfelds. Waere 0 eine gueltige Bedeutung, liesse sich 'weggelassen' nicht von 'genau das gemeint' unterscheiden. Ohne Gitter faellt auch die Bandzahlpruefung weg - deshalb steht sie hier NICHT in der Erwartung",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/baender/gitter",
+          "regel": "enum_unbekannt"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/enum-unbekannt-zeitbasis.bin",
+      "urteil": "ungueltig",
+      "warum": "ohne Zeitbasis ist kein Zeitstempel auslegbar (§32.3)",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/zeitbasis",
+          "regel": "enum_unbekannt"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/grenzen-verdreht.bin",
+      "urteil": "ungueltig",
+      "warum": "ein Bereich, dessen Ende vor seinem Anfang liegt",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/schleife/abgeleitete_grenzen",
+          "regel": "grenzen_verdreht"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/herleitung-unbekannt.bin",
+      "urteil": "ungueltig",
+      "warum": "abgeleitete Grenzen OHNE Herleitung sind eine Behauptung ohne Beleg (§32.3)",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/schleife/abgeleitete_grenzen/herleitung",
+          "regel": "enum_unbekannt"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/hex32-grossbuchstabe.bin",
+      "urteil": "ungueltig",
+      "warum": "hex32 ist KLEINbuchstaben-hex - sonst waeren zwei Schreibweisen desselben Tokens zwei verschiedene Adressen",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/quelle/instance_id",
+          "regel": "hex32"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/kein-traeger.bin",
+      "urteil": "ungueltig",
+      "warum": "und keiner gesetzt hiesse ein Bandsatz ohne Baender",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/baender",
+          "regel": "kein_traeger"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/kennzahl-nan.bin",
+      "urteil": "ungueltig",
+      "warum": "NaN wird abgelehnt, nicht sanitisiert: ein nicht messbarer Wert wird WEGGELASSEN (siehe gueltig/ohne-optionale-kennzahlen)",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/lufs_s",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/korrelation-ueber-1.bin",
+      "urteil": "ungueltig",
+      "warum": "Korrelation liegt in [-1, 1]",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/korrelation",
+          "regel": "korrelation_bereich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/metrics-version-null.bin",
+      "urteil": "ungueltig",
+      "warum": "eine Kennzahl ohne Version laesst sich spaeter nicht vergleichen",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/metrics_version",
+          "regel": "metrics_version"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/quelle-doppelt.bin",
+      "urteil": "ungueltig",
+      "warum": "DIE Regel, die kein Schema ausdruecken kann und die dem Format die zweite Wrapper-Ebene erspart (§33.1, Pruefbericht Befund D)",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/1/quelle/instance_id",
+          "regel": "quelle_doppelt"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/sample-count-zu-gross.bin",
+      "urteil": "ungueltig",
+      "warum": "dieselbe Obergrenze wie im JSON-Vertrag (transportstempel)",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/sample_count",
+          "regel": "sample_count_bereich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/sample-rate-null.bin",
+      "urteil": "ungueltig",
+      "warum": "eine Samplerate 0 ist keine Messlage",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/sample_rate",
+          "regel": "sample_rate_bereich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/sample-rate-zu-hoch.bin",
+      "urteil": "ungueltig",
+      "warum": "dieselbe Obergrenze wie im JSON-Vertrag (audio_lage)",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/sample_rate",
+          "regel": "sample_rate_bereich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/sid-leer.bin",
+      "urteil": "ungueltig",
+      "warum": "die SID wird nie geparst, aber ohne sie gibt es keine Nutzergrenze",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/quelle/logon_sid",
+          "regel": "sid_laenge"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/validity-unbekanntes-bit.bin",
+      "urteil": "ungueltig",
+      "warum": "Bit 7 ist keins der sieben aus §32.3. FlatBuffers prueft Bitflags beim Verifizieren NICHT - das muss der Leser tun",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/gueltigkeit",
+          "regel": "validity_unbekanntes_bit"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/wurzeloffset-kaputt.bin",
+      "urteil": "ungueltig",
+      "warum": "ein Wurzeloffset weit hinter dem Puffer muss den Verifier ausloesen, nicht einen Absturz",
+      "verstoesse": [
+        {
+          "pfad": "",
+          "regel": "verifier"
+        }
+      ],
+      "byte_mutation_von": "gueltig/live-64-band.bin"
+    },
+    {
+      "datei": "ungueltig/zwei-traeger.bin",
+      "urteil": "ungueltig",
+      "warum": "beide Traeger gesetzt hiesse zwei Wahrheiten ueber dieselbe Messung",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/baender",
+          "regel": "zwei_traeger"
+        }
+      ]
+    }
+  ]
+}

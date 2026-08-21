@@ -203,6 +203,11 @@ void HostProbeProcessor::nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbe
         aufnahmeVorher = false;     // fehlte - sonst bleibt ein aufnahme_an aus
         warOffline = false;
         zeitBeimStop = -1;
+        for (int bus = 0; bus < eqcop::hostbruecke::kMaxBusse; ++bus)
+        {
+            gesehenEingang[bus] = {};
+            gesehenAusgang[bus] = {};
+        }
     }
 
     // Senke gerufen, ohne dass seit dem letzten Mal ein processBlock lief:
@@ -399,13 +404,21 @@ void HostProbeProcessor::nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbe
         const auto& ein = k.presentationLatency.hole (true, bus);
         if (ein.gemeldet)
         {
+            // Ein UEBERGANG ist es nur, wenn der Host einen ANDEREN Wert meldet
+            // als beim letzten Mal. Die Tabelle der Bruecke liegt in jedem Block
+            // an; ein Vergleich nur gegen den eingerasteten Wert haette jeden
+            // Block gezaehlt (T2-Runde 3).
+            const bool neuerHostwert = ! gesehenEingang[bus].gemeldet
+                                    || gesehenEingang[bus].samples != ein.samples;
+            gesehenEingang[bus] = { true, ein.samples };
+
             if (! stand.latenzEingang[bus].gemeldet)
             {
                 stand.latenzEingang[bus] = { true, ein.samples };
                 stand.latenzJeGemeldet = true;
                 merke (Art::LatenzGemeldet, -1, -1, 0.0, (double) ein.samples, (int) bus);
             }
-            else if (stand.latenzEingang[bus].samples != ein.samples)
+            else if (neuerHostwert && stand.latenzEingang[bus].samples != ein.samples)
             {
                 ++stand.latenzAenderungenVerworfen;
             }
@@ -414,13 +427,17 @@ void HostProbeProcessor::nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbe
         const auto& aus = k.presentationLatency.hole (false, bus);
         if (aus.gemeldet)
         {
+            const bool neuerHostwert = ! gesehenAusgang[bus].gemeldet
+                                    || gesehenAusgang[bus].samples != aus.samples;
+            gesehenAusgang[bus] = { true, aus.samples };
+
             if (! stand.latenzAusgang[bus].gemeldet)
             {
                 stand.latenzAusgang[bus] = { true, aus.samples };
                 stand.latenzJeGemeldet = true;
                 merke (Art::LatenzGemeldet, -1, -1, 0.0, (double) aus.samples, -(int) bus - 1);
             }
-            else if (stand.latenzAusgang[bus].samples != aus.samples)
+            else if (neuerHostwert && stand.latenzAusgang[bus].samples != aus.samples)
             {
                 ++stand.latenzAenderungenVerworfen;
             }
@@ -557,7 +574,8 @@ juce::String HostProbeProcessor::berichtAlsJson() const
     auto* lat = new juce::DynamicObject();
     lat->setProperty ("je_gemeldet", s.latenzJeGemeldet);
     lat->setProperty ("verworfene_busmeldungen", (juce::int64) s.verworfeneBusmeldungen);
-    lat->setProperty ("verworfene_aenderungen", (juce::int64) s.latenzAenderungenVerworfen);
+    // Einheit ausdruecklich im Schluessel, damit ein Leser sie nicht raten muss.
+    lat->setProperty ("verworfene_wertwechsel", (juce::int64) s.latenzAenderungenVerworfen);
     // Nur TATSAECHLICH gemeldete Eintraege - kein erfundener "Bus -1 = 0".
     juce::Array<juce::var> latListe;
     for (int bus = 0; bus < eqcop::hostbruecke::kMaxBusse; ++bus)

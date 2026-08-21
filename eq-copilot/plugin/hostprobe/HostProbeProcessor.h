@@ -135,9 +135,16 @@ struct Messstand
     juce::int64 verworfeneBusmeldungen { 0 };
     /** Ein einmal gemeldeter Wert RASTET EIN. Meldet der Host spaeter einen
         anderen (etwa beim Wechsel in den Render), wird die Aenderung verworfen -
-        aber gezaehlt. "Zaehler statt stiller Korrekturen" gilt auch hier
-        (T2-Runde 2). */
-    juce::int64 latenzAenderungenVerworfen { 0 };   ///< Busindex ausserhalb [0, kMaxBusse) - macht ein "NIE" erst belastbar
+        aber gezaehlt (T2-Runde 2).
+
+        EINHEIT: gezaehlt werden **Uebergaenge**, nicht Bloecke. Die Latenztabelle
+        der Bruecke ist Setup-Zustand und liegt in JEDEM Block an - ein Vergleich
+        gegen den eingerasteten Wert allein haette deshalb ~94 Inkremente je
+        Sekunde ergeben und eine einzige Hostmeldung als sechsstellige Zahl
+        ausgewiesen (T2-Runde 3). Deshalb merkt sich der Processor zusaetzlich
+        den ZULETZT GESEHENEN Hostwert je Bus und zaehlt nur, wenn der sich
+        aendert. */
+    juce::int64 latenzAenderungenVerworfen { 0 };
 
     double      samplerate           { 0.0 };
     int         kleinsterBlock       { -1 };
@@ -240,6 +247,11 @@ private:
     bool        spielteVorher         { false };
     bool        aufnahmeVorher        { false };
     bool        warOffline            { false };
+    /** Zuletzt vom Host GESEHENER Latenzwert je Bus - nur Audiothread, nicht
+        Teil des Messstands. Trennt "neue Meldung" von "dieselbe Meldung liegt
+        weiter an" (T2-Runde 3). */
+    Messstand::LatenzEintrag gesehenEingang[eqcop::hostbruecke::kMaxBusse] {};
+    Messstand::LatenzEintrag gesehenAusgang[eqcop::hostbruecke::kMaxBusse] {};
     /** Position beim letzten Stop - damit ein Positionswechsel ueber Stop/Play
         hinweg zaehlbar wird, statt still zu verschwinden. */
     juce::int64 zeitBeimStop          { -1 };

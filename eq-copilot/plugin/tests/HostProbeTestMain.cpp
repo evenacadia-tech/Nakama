@@ -377,13 +377,35 @@ int main (int argc, char* argv[])
         pruefe (s.latenzAenderungenVerworfen == 1,
                 "die spaetere Aenderung wird gezaehlt statt still verworfen");
 
+        // ENTSCHEIDEND: derselbe geaenderte Wert in weiteren Bloecken ist KEINE
+        // neue Aenderung. Die Latenztabelle der Bruecke liegt in jedem Block an -
+        // ohne diese Pruefung zaehlte der Zaehler Bloecke statt Uebergaenge und
+        // wiese eine einzige Hostmeldung als sechsstellige Zahl aus (T2-Runde 3).
+        for (int i = 0; i < 50; ++i)
+        {
+            auto nochmal = mitKontext (2048 + i * 512, true, 512);
+            nochmal.kontext.presentationLatency.ausgang[0] = { 2048u, true };
+            p.nakamaBlockEmpfangen (nochmal);
+        }
+        s = p.messstand();
+        pruefe (s.latenzAenderungenVerworfen == 1,
+                "50 weitere Bloecke mit DEMSELBEN geaenderten Wert zaehlen NICHT weiter (Uebergaenge, nicht Bloecke)");
+
+        // Ein DRITTER Wert ist wieder ein Uebergang.
+        auto dritter = mitKontext (30000, true, 512);
+        dritter.kontext.presentationLatency.ausgang[0] = { 4096u, true };
+        p.nakamaBlockEmpfangen (dritter);
+        s = p.messstand();
+        pruefe (s.latenzAenderungenVerworfen == 2,
+                "ein dritter, wieder anderer Wert zaehlt als zweiter Uebergang");
+
         const auto text = p.berichtAlsJson();
         const auto j = juce::JSON::parse (text);
         pruefe (j["presentation_latency"]["gemeldet"].isArray()
                     && j["presentation_latency"]["gemeldet"].size() == 3,
                 "der Bericht listet genau die drei gemeldeten Eintraege - keinen erfundenen");
-        pruefe ((int) j["presentation_latency"]["verworfene_aenderungen"] == 1,
-                "und der Aenderungszaehler steht im Bericht");
+        pruefe ((int) j["presentation_latency"]["verworfene_wertwechsel"] == 2,
+                "und der Wertwechsel-Zaehler steht im Bericht - mit der Einheit im Schluesselnamen");
     }
 
     std::cout << "== G - Senke ohne processBlock (Flush/Hostriegel) ==" << std::endl;
@@ -616,10 +638,15 @@ int main (int argc, char* argv[])
                 "200 nebenlaeufige Lesevorgaenge liefern durchweg plausible Eintraege und Zaehler");
         pruefe (gelesen > 0, "der letzte Lesevorgang hat Eintraege geliefert");
 
-        // EHRLICHE GRENZE: das ist ein Rauchtest. Er faehrt den Pfad und faengt
-        // Absturz, Bereichsfehler und offensichtlichen Muell - er BEWEIST keine
-        // Tearing-Freiheit. Das steht so auch im Manifest.
-        pruefe (true, "(Grenze benannt: Rauchtest, kein Beweis der Tearing-Freiheit)");
+        // EHRLICHE GRENZE, und sie ist KEINE Pruefung: der Leser gewinnt hier
+        // praktisch immer, weil `merke()` bei pausierter Aufzeichnung aussteigt,
+        // OHNE den Schreibindex zu bewegen. Der Wiederholpfad wird also selten
+        // bis nie betreten. Das hier faengt Absturz, Bereichsfehler und
+        // offensichtlichen Muell - es beweist KEINE Tearing-Freiheit.
+        // Ein `pruefe (true, ...)` waere eine Pruefung, die nicht fehlschlagen
+        // kann, und wuerde die Gesamtzahl schoenen (T2-Runde 3).
+        std::cout << "  hinweis   Grenze: Rauchtest, kein Beweis der Tearing-Freiheit"
+                  << " (der Wiederholpfad wird selten bis nie betreten)" << std::endl;
     }
 
     std::cout << "== K - Anzeige: passt der Inhalt ueberhaupt ins Fenster? ==" << std::endl;

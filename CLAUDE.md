@@ -131,7 +131,7 @@ Pflicht, sobald ihr Ticket sie baut.
   die CR beim Commit entfernt und einen Patch eingecheckt, der auf dem
   Zweitrechner nicht mehr anwendbar ist (hier waere es nie aufgefallen).
 - **Termin-B-Messgeraet (S3b, Wegwerfware):** Ziele `EqCopHostProbe_VST3`
-  (Bundle, Plugin-Code `NkHp`) + `EqCopHostProbeTest` (Selbsttest, 88 Pruefungen, inkl. Layout-Riegel, Nebenlaeufigkeits-Rauchtest und zwei gerenderten Bildbeweisen).
+  (Bundle, Plugin-Code `NkHp`) + `EqCopHostProbeTest` (Selbsttest, 89 Pruefungen, inkl. Layout-Riegel, Nebenlaeufigkeits-Rauchtest und zwei gerenderten Bildbeweisen).
   **Erstes Ziel, das die Hostbruecke BENUTZT** — sein Processor ist eine
   `eqcop::hostbruecke::Senke`. Misst je Block: Context-Anwesenheit,
   Gueltigkeitsbits (immer/manchmal/nie), Zeitspruenge (Seek · Loop · Smart

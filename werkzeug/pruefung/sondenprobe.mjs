@@ -114,28 +114,95 @@ async function probeZahlen() {
     sag(false, `Bandkasten-Zahl aendert sich nicht bei 1 statt 8 Slots: ${unveraendert.join(', ')}`) }
   // Dritter Beweisschritt: der Massstab der Kachel darf die Zahlen NICHT
   // veraendern. Wer getBoundingClientRect nimmt, faellt genau hier durch.
+  //
+  // Bis 2026-08-21 war dieser Schritt WIRKUNGSLOS: --s wurde INLINE auf die
+  // vorhandenen .rahmen gesetzt und unmittelbar danach zeichnen() gerufen —
+  // das ersetzt genau diese Knoten (ziel.innerHTML = ''), der Massstab stand
+  // sofort wieder auf .52 und beide Messungen lagen im selben Massstab.
+  // Gemessen: .52 → 1 → .52. Jetzt haengt der Massstab an einer STILREGEL,
+  // die den Neubau ueberlebt, und wird nachgelesen statt geglaubt.
+  const massstab = () => page.evaluate(() =>
+    parseFloat(getComputedStyle(document.querySelector('.rahmen'))
+      .getPropertyValue('--s')) || 1)
   await page.evaluate(() => { window.WELT.slots = 8; window.zeichnen() })
   await page.waitForTimeout(400)
   const beiKlein = await lies()
+  const sKlein = await massstab()
   await page.evaluate(() => {
-    document.querySelectorAll('.rahmen').forEach(r => r.style.setProperty('--s', '1'))
+    const st = document.createElement('style')
+    st.id = 'probe-massstab'
+    st.textContent = '.rahmen{--s:1 !important}'
+    document.head.appendChild(st)
     window.zeichnen()
   })
   await page.waitForTimeout(400)
   const beiGross = await lies()
-  const wandert = beiKlein.filter(v => {
-    const g = beiGross.find(x => x.id === v.id)
-    return Math.abs(v.gezeigtKurve - g.gezeigtKurve) > 1
-        || Math.abs(v.gezeigtBand - g.gezeigtBand) > 1
-  })
+  const sGross = await massstab()
+  // Hat der Massstab sich WIRKLICH geaendert? Ohne diese Frage vergleicht der
+  // Schritt zweimal denselben Zustand und meldet zufrieden 0 Abweichungen —
+  // genau der Fehler, gegen den die ganze Sonde gebaut wurde.
+  if (!(sKlein < 0.99 && sGross > 0.99)) { schief++
+    sag(false, `Massstab hat sich nicht geaendert (${sKlein} → ${sGross}) — `
+      + 'dieser Schritt prueft ins Leere') }
+  const abweichung = (a, b) => Math.abs(a.gezeigtKurve - b.gezeigtKurve) > 1
+                            || Math.abs(a.gezeigtBand - b.gezeigtBand) > 1
+  const wandert = beiKlein.filter(v => abweichung(v, beiGross.find(x => x.id === v.id)))
   wandert.forEach(v => { schief++
     const g = beiGross.find(x => x.id === v.id)
     sag(false, `${v.id}: Zahl haengt am Massstab — verkleinert Kurve ${v.gezeigtKurve}/Band `
       + `${v.gezeigtBand}, 1:1 Kurve ${g.gezeigtKurve}/Band ${g.gezeigtBand}`) })
+
+  // Gegenprobe zum dritten Schritt: KANN er scheitern? Die Layoutmasse werden
+  // kuenstlich massstabsabhaengig gemacht — genau die Regression, gegen die er
+  // gebaut ist (jemand tauscht offsetHeight gegen getBoundingClientRect) — und
+  // er muss sie melden. Danach wird geheilt und nachgesehen, dass die Zahlen
+  // zurueckkommen; eine Gegenprobe, die den Patienten behaelt, ist keine.
+  const gegen = await page.evaluate(async () => {
+    // offsetHeight sitzt auf HTMLElement.prototype, clientHeight auf
+    // Element.prototype — den Besitzer suchen, nicht raten.
+    const besitzer = n => [HTMLElement.prototype, Element.prototype]
+      .find(p => Object.getOwnPropertyDescriptor(p, n))
+    const merk = ['offsetHeight', 'clientHeight'].map(n => {
+      const p = besitzer(n)
+      return [p, n, Object.getOwnPropertyDescriptor(p, n)]
+    })
+    for (const [p, n] of merk)
+      Object.defineProperty(p, n, {
+        configurable: true, get() { return this.getBoundingClientRect().height } })
+    document.getElementById('probe-massstab').remove()      // zurueck auf klein
+    window.zeichnen()
+    await new Promise(a => setTimeout(a, 400))
+    const lesen = () => [...document.querySelectorAll('.anordnung')].map(a => {
+      const e = a.querySelector('[data-mess="kurve"]')
+      return { id: a.dataset.id, k: e ? parseFloat(e.textContent) : null } })
+    const klein = lesen()
+    const st = document.createElement('style')
+    st.id = 'probe-massstab2'
+    st.textContent = '.rahmen{--s:1 !important}'
+    document.head.appendChild(st)
+    window.zeichnen()
+    await new Promise(a => setTimeout(a, 400))
+    const gross = lesen()
+    for (const [p, n, d] of merk) Object.defineProperty(p, n, d)
+    st.remove()
+    window.zeichnen()
+    await new Promise(a => setTimeout(a, 400))
+    return { klein, gross, geheilt: lesen() }
+  })
+  const erkannt = gegen.klein.some((v, i) => Math.abs(v.k - gegen.gross[i].k) > 1)
+  if (!erkannt) { schief++
+    sag(false, 'BLIND: kuenstlich massstabsabhaengige Masse wurden NICHT gemeldet') }
+  const geheilt = gegen.geheilt.every((v, i) =>
+    Math.abs(v.k - beiKlein.find(x => x.id === v.id).gezeigtKurve) <= 1)
+  if (!geheilt) { schief++
+    sag(false, `Gegenprobe heilt nicht: ${JSON.stringify(gegen.geheilt)}`) }
+
   if (fehler.length) { schief++; sag(false, 'JS-Fehler: ' + fehler[0]) }
   sag(schief === 0, `zahlen: ${vorher.length} Anordnungen gegengerechnet, `
-    + `${mitBand.length} auf Aenderung geprueft, ${beiKlein.length} auf `
-    + `Massstabsunabhaengigkeit geprueft — ${schief} Abweichungen`)
+    + `${mitBand.length} auf Aenderung geprueft, ${beiKlein.length} bei echtem `
+    + `Massstabswechsel ${sKlein}→${sGross} geprueft, Gegenprobe `
+    + `${erkannt ? 'erkannt' : 'BLIND'} und ${geheilt ? 'geheilt' : 'NICHT geheilt'} `
+    + `— ${schief} Abweichungen`)
   await ctx.close()
 }
 

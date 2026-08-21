@@ -1,3 +1,18 @@
+> ## ⚠ TEILWEISE ZURÜCKGENOMMEN (Vermerk 2026-08-21)
+>
+> Die **App-Umrandung ist verworfen** — gebaut, danebengestellt, gehalten
+> und abgelehnt:
+> [vorhoeren-markierte-zeile](2026-08-20-vorhoeren-markierte-zeile.md),
+> `"sieger": "zeile"`. Aus dieser Runde gilt weiter: der Streifen führt Buch,
+> die betroffene Zeile in der Karte wird markiert, nichts wird gedämpft, und
+> der `AUDITION`-Reiter leuchtet beim Halten mit.
+>
+> Diese Datei nennt sich unten **„Richtungsabnahme“**. Diese Sorte kennt
+> `abnahmen/LIES-MICH.md` nicht — es gibt **Abnahme** und **Arbeitsannahme**.
+> Der Sache nach war es eine Arbeitsannahme (die Kombination war zum Zeitpunkt
+> des Urteils noch nicht gebaut); ihr Prüfpunkt ist inzwischen eingelöst,
+> und das Ergebnis steht in der verlinkten Datei.
+
 # 2026-08-20 — Bedienebenen: der Streifen führt Buch, das Blatt zeigt das Vorhören
 
 **Richtungsabnahme.** Beurteilt wurden drei bedienbare Blätter auf 760×430,

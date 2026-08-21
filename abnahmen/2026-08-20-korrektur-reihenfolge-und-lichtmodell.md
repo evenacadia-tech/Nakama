@@ -24,7 +24,7 @@ Der Arbeitsplan dieses Projekts sagt dasselbe: **Phase 1 = Wireframes in
 Graustufen, Main zuerst** — „dort steckt die eigentliche
 Informationsarchitektur; der teuerste Fehler wird hier billig verhindert".
 
-Nach der abgenommenen Welt (Stufe 1, „THE FEELING") bin ich direkt zu
+Nach der als Arbeitsannahme gewählten Welt (Stufe 1, „THE FEELING") bin ich direkt zu
 Material und Licht gesprungen — das ist Stufe 5 und 6. Zwischen beiden fehlt
 die ganze Stufe 2.
 

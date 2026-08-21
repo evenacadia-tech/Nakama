@@ -5,8 +5,16 @@ Diese Datei ist der einzige Wissenstransfer. Was hier nicht steht, ist weg.
 ## Wo wir stehen
 
 **Phase 1 für Main abgeschlossen.** Das Wireframe von Main ist auf allen
-Ebenen abgenommen — sieben Urteile, alle am 1:1-Blatt auf 760×430 gefällt,
-alle in `abnahmen/`.
+Ebenen abgenommen — **fünf** Urteile am 1:1-Blatt auf 760×430 (Mechanik ·
+Karte + Aufteilung · Vorhören · Zustände — dazu die Bedienebenen-Runde),
+plus die Größenabnahme am nachgestellten FL-Bildschirm. Alle in `abnahmen/`.
+
+> **⚠ Berichtigt 2026-08-21:** hier stand „sieben Urteile, alle am 1:1-Blatt
+> auf 760×430 gefällt“. Zwei Zeilen der Tabelle darunter sind das nicht: die
+> Größen wurden am Bild mit allen drei Oberflächen auf dem nachgestellten
+> FL-Bildschirm beurteilt (760×430 war das Ergebnis, nicht die Bühne), und
+> Welt/Fassung sind ausdrücklich **keine** Urteile dieser Ebene, sondern
+> Arbeitsannahmen von einem 448×310-Ausschnitt.
 
 | Was | Entscheidung | Datei |
 |---|---|---|
@@ -45,7 +53,16 @@ in der Karte** + gedrückter Griff + leuchtender `AUDITION`-Reiter. Loslassen
 „1 change applied" im Streifen + Rückweg.
 
 Gemessene Eckwerte bei 16 Quellen: Streifen 28 px, für Karte + Arbeit bleiben
-370. Karte 212, Arbeit 156. Assistent 154 (bei 156 verfügbaren — knapp).
+**368**. Karte 212, Arbeit 156. Assistent 154 (bei 156 verfügbaren — knapp).
+
+> **⚠ Berichtigt 2026-08-21:** hier stand **370**. Nachgerechnet und am Blatt
+> nachgemessen sind es **368** — 428 (clientHeight) − 16 (Polster) − 28
+> (Streifen) − 16 (zwei Lücken). Der 1-px-Rahmen oben und unten war nicht
+> abgezogen. Derselbe Fehler steht in
+> `abnahmen/2026-08-20-karte-alle-quellen.md`. Die übrigen Zahlen stimmen auf
+> das Pixel. Zusatz: 212/156 gelten für den Schritt „Befund verstehen“ — in
+> Schritt 1 sind es 216/152, in Schritt 3 232/137, weil der Überschuss dort
+> anders anfällt.
 
 ## Der nächste Schritt, konkret
 
@@ -61,13 +78,24 @@ Gemessene Eckwerte bei 16 Quellen: Streifen 28 px, für Karte + Arbeit bleiben
 
 Die Klemme ist dort absehbar schärfer als bei Main: 700×420 ist **kleiner**
 als Main, und der Inhalt ist reicher — EQ-Kurve als zentrale Anzeige, **acht
-Bänder mit je zehn Parametern** (an/aus, Typ, Frequenz, Q, Gain, Kanalmodus,
-dynamisch mit Schwelle/Bereich/Attack/Hold/Release), Global-Trims, Bypass,
+Bänder mit je zwölf Parametern** (an/aus, Typ, Frequenz, Q, Gain, Kanalmodus,
+dynamisch an/aus, Schwelle, Bereich, Attack, Hold, Release), Global-Trims, Bypass,
 Draft/Preview vom Main (ferngesteuert enger begrenzt: ±3 dB statt ±12),
 Undo-Verlauf, Schutzbereiche, Statuszeile mit Pairing.
 
-Acht Bänder × zehn Parameter sind achtzig Werte. Die erste Messung muss
-lauten: **was kostet eine Bandzeile, und wieviele passen neben die Kurve?**
+Acht Bänder × zwölf Parameter sind **96** Werte, dazu fünf globale
+(In-Trim, Out-Trim, Stereobreite, Mono-Bass, Bypass) — zusammen **101**
+einstellbare Werte auf 700×420. Die erste Messung muss lauten:
+**was kostet eine Bandzeile, und wieviele passen neben die Kurve?**
+
+> **⚠ Berichtigt 2026-08-21:** hier stand „zehn Parameter … achtzig Werte“,
+> während die Klammer eine Zeile darüber zwölf aufzählte. Nachgezählt an
+> `docs/oberflaechen-spezifikation.md`, Abschnitt 2: an/aus (1) · Typ (2) ·
+> Frequenz (3) · Q (4) · Gain (5) · Kanalmodus (6) · dynamisch an/aus (7) ·
+> Schwelle (8) · Bereich (9) · Attack (10) · Hold (11) · Release (12).
+> Der Inhalt ist also **20 % größer** als angesetzt — auf einer Fläche, die
+> 10 px weniger Höhe und 60 px weniger Breite hat als die bereits knappe von
+> Main. Die vorgerechnete Klemme steht in `docs/sondenplan.md`.
 
 ## Werkzeuge: was aktuell ist und was Beleg ist
 

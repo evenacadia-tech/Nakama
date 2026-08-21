@@ -6,22 +6,49 @@ Nichts davon ist ein Gestaltungsvorschlag. Layoutentscheidungen gehören nach
 
 ## Reihenfolge — nach den Stufen aus `assets/GUI-Tips.pdf`
 
-**Stufe 1 — The Feeling** *(abgeschlossen)*
+> **Hier stehen wir (Stand 2026-08-21):** Main ist auf Wireframe-Ebene
+> **vollständig abgenommen**; der aktuelle Entwurf liegt in `zustaende.html`.
+> Als Nächstes: **Active-Probe-Editor** (700×420), danach **Passive-Kachel**
+> (260×84). Fahrplan: `docs/arbeitsplan.md` · Auftrag und Klemme:
+> `docs/sondenplan.md` · Prüfbericht: `abnahmen/2026-08-21-codereview.md`.
+
+**Stufe 1 — The Feeling** *(erhoben — ⚠ Arbeitsannahme, nicht abgenommen)*
 1. `weltenwahl.html` — welche Welt? → **Glas und Licht**
 2. `glaswelt.html` — welche Verwirklichung? → **dunkles Glas, ein Lichtleiter**
 
-**Phase 0.5 — Formfaktor** *(hier stehen wir)*
+Beide wurden an einem Ausschnitt von 448×310 gewählt, ohne Layout und ohne
+echte Fenstergröße. Der User hat sie ausdrücklich **nicht** bestätigt: „es war
+zu dem zeitpunkt logisch. wir werden sehen wenn das layout steht ob es dann
+noch passt." **Prüfpunkt:** erneut vorlegen auf 760×430. Bis dahin darf
+niemand sie als abgenommen zitieren (`abnahmen/LIES-MICH.md`).
+
+**Phase 0.5 — Formfaktor** *(abgeschlossen — drei Größen abgenommen)*
 3. `formfaktor.html` — wie groß darf das Fenster sein, und welche Form hat es?
    Läuft bei **1:1**, nichts wird skaliert, und es misst, ab wann Inhalt
    abgeschnitten wird. Muss vor jedem Wireframe entschieden sein.
+
+**Blattprüfung** — `pruefung/pruefen.mjs`: lädt jedes Blatt headless und
+meldet JS-Fehler, leere Blätter und fehlende Standbänder.
+`node werkzeug/pruefung/pruefen.mjs` (alle) bzw. `--gegenprobe` (beweist, dass
+sie scheitern kann). Nach JEDEM Umbau laufen lassen — ein Syntaxfehler macht
+ein Blatt tonlos tot. Details: `pruefung/LIES-MICH.md`.
 
 **Prüfliste** — `PRUEFLISTE.md`: was an jedem Blatt gemessen wird, bevor es
 gezeigt wird, mit dem echten Fehler hinter jeder Regel. Vor jedem neuen Blatt
 lesen; jede Zeile dort hat einmal Arbeit gekostet.
 
-**Stufe 2 — UX Layout**
-4. `wireframe-main.html` — Schritt 1: Wo liegt was? Graustufen, keine Optik.
-   **Main zuerst**, danach Active-Probe-Editor, dann Passive-Kachel.
+**Stufe 2 — UX Layout** *(Main abgeschlossen, zwei Oberflächen offen)*
+4a. `wireframe-main.html` — welche Disclosure-Mechanik? → **Overview + Detail**
+    *(entschieden, eingefroren)*
+4b. `wireframe-main-karte.html` — was trägt die dauerhafte Karte? → **jede
+    Quelle, Überschuss wird geteilt** *(entschieden, eingefroren)*
+4c. `bedienebenen.html` — woran sieht man das Vorhören? → **an der markierten
+    Zeile**, App-Umrandung verworfen *(entschieden, eingefroren)*
+4d. `zustaende.html` — wo lebt ein Zustand? → **nur die Ausnahme spricht**
+    *(entschieden)* — **aktueller Main-Entwurf, hier weiterarbeiten**
+4e. *(offen)* **Active-Probe-Editor**, 700×420 — der nächste Schritt.
+    Auftrag, Aufgabenliste und vorgerechnete Klemme: `docs/sondenplan.md`.
+4f. *(offen)* **Passive-Kachel**, 260×84.
 5. *(offen)* Schritt 2: Early Visual Layer — Kontrast und Gruppierung, noch
    ohne fertigen Look.
 6. *(offen)* Schritt 3: UI Design Stage — Stil und Feinproportionen.
@@ -55,7 +82,8 @@ Ablauf: sechs → zwei in die engere Wahl → Zweikampf groß → Ergebnis als J
 
 ## glaswelt.html
 
-Fünf Verwirklichungen der abgenommenen Welt, gleiche Information an gleicher
+Fünf Verwirklichungen der als **Arbeitsannahme** gewählten Welt (nicht
+abgenommen — Prüfpunkt: 760×430), gleiche Information an gleicher
 Stelle: Milchglas vor kaltem Licht · die Messung ist die Lichtquelle ·
 geschichtete Scheiben · dunkles Glas mit einem Lichtleiter · Glas mit Griff
 (nimmt Korn und Leuchtring aus dem unterlegenen „dunklen Gerät" mit).
@@ -78,6 +106,16 @@ Werkzeug misst auf jeder Ebene — Fensterleib und jeder einzelne Kasten — ob
 Inhalt abgeschnitten wird, und schreibt den Fehlbetrag in den Fenstertitel.
 Gemessenes Ergebnis: 980×560 gegen ~520×340, also **rund dreifache Fläche**
 für dieselbe Aufgabe.
+
+> **⚠ Nachgemessen am 2026-08-21.** Die beiden Zahlen sind **Voreinstellungen
+> aus der Kandidatenliste**, keine Suchergebnisse — und bei beiden wird Inhalt
+> abgeschnitten: bei 980×560 fehlen gemessen 40 px. Die *ehrlichen* Minima
+> liegen bei rund **900×666** gegen **410×348**, also eher **vierfache**
+> Fläche. Die Aussage („Progressive Disclosure ist die Bedingung, nicht die
+> Kür") trägt damit stärker, nicht schwächer. Grund für den alten Wert: die
+> Überlaufmessung des Blattes war blind — sie sah nur `.inh`, nur die Höhe
+> und nur `#main`. Das ist am 2026-08-21 behoben; das Blatt meldet die
+> Fehlbeträge jetzt selbst.
 
 Main ist zieh- und größenveränderbar, Active-Probe und drei Passive-Kacheln
 lassen sich dazuschalten — die reale Situation, nicht ein Fenster allein.
@@ -198,7 +236,7 @@ Der Streifen kostet dauerhaft **28 px**; für Karte und Arbeitsfläche bleiben
 | | braucht |
 |---|---|
 | Karte ohne Namen, 16 Quellen | 212 px (rund 10 px je Zeile) |
-| Karte **mit** Namen, 16 Quellen | 308 px — geht nicht |
+| Karte **mit** Namen, 16 Quellen | 308 px — geht nicht (einzige Zahl dieser Tabelle ohne Beleg im Quelltext) |
 | Assistent, Fünf-Teile-Form | **172 px** |
 | Alle drei Befunde | 219 px |
 | A/B-Urteil 120 px · Detail einer Quelle | 69 px |
@@ -241,8 +279,12 @@ mit sichtbarem Preis. Drei Eingriffe haben ihn beseitigt:
   Teil fehlt.
 - Der gemessene Zähler hat eine **eigene Form** (`3/5`), weil im selben Kopf
   oft ein geschriebenes „finding 1 of 3" steht.
-- Eine Prüfung schlägt an, wenn **Listenname und Bausteinname auseinander
-  laufen** — daran hat der Vertrag zweimal stumm keine Zahl gemeldet.
+- Wo **Listenname und Bausteinname auseinander laufen**, meldet der Vertrag
+  stumm keine Zahl — daran ist er zweimal gescheitert. **⚠ Berichtigt
+  2026-08-21:** hier stand, eine Prüfung schlage in diesem Fall an. Das ist
+  falsch, eine solche Prüfung existiert in keinem Blatt (`zahl()` liefert
+  einfach eine leere Zeichenkette). Der Fall wird bis heute nur durch
+  Aufpassen vermieden. Wer den Editor baut, sollte die Prüfung bauen.
 - **Zahlwörter werden hergeleitet, nicht geschrieben** (`wieViele()`): beim
   Streichen einer Variante stand sonst „in allen vier gleich" unter drei
   Kacheln.
@@ -418,8 +460,9 @@ ohne Umschalten, damit sich das Auge zwischendurch nicht anpasst.
 
 ## stilbefragung.html
 
-18 Runden Zwangswahl auf echtem Nakama-Inhalt, pro Runde genau ein Token
-verschieden. Erst sinnvoll, wenn die Welt steht — dann müssen ihre Spezimen
+19 Runden auf echtem Nakama-Inhalt — 16 Zwangswahlen (pro Runde genau ein
+Token verschieden) und 3 Reglerrunden zum Nachjustieren. (Stand vor dem
+2026-08-21 stand hier „18 Runden"; gezählt sind es 19.) Erst sinnvoll, wenn die Welt steht — dann müssen ihre Spezimen
 auf diese Welt umgestellt werden.
 
 ## Prinzipien, die im Code stehen und nicht verhandelbar sind

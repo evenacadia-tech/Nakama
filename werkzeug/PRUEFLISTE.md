@@ -50,7 +50,23 @@ die Regeln nicht.
 | **Keine Beschriftung darf behaupten, was die Messung widerlegt.** | Eine These sagte „verschwindet aber nie", gemessen blieben 7 von 16. |
 | **Skript-Syntax prüfen.** Ein Syntaxfehler macht das Blatt beim Doppelklick **tonlos tot**. | Ein falsches Anführungszeichen in einer Belegtabelle. |
 
-## 5. Die Prüfung selbst
+## 5. Was ein Blatt über sich selbst sagen muss
+
+| Regel | Der Fehler dahinter |
+|---|---|
+| **Ein Blatt sagt, was es ist** — entschieden / eingefroren / Arbeitsannahme / stillgelegt. Sichtbar beim ersten Blick, außerhalb des beurteilten Inhalts, mit Datum und Verweis auf die Abnahme. | Neun Blätter verschwiegen ihren Stand. Drei öffneten beim Doppelklick eine Frage, die längst entschieden war; eines nannte im Kopf die **verworfene** Variante „Deine Wahl“; eines sah aus wie ein gültiges Werkzeug, war aber stillgelegt. Genau die „Ausbessern-Zeremonie“, die `CLAUDE.md` Regel 4 verhindern soll. |
+| **Eine Arbeitsannahme wird nie als abgenommen zitiert** — auch nicht beiläufig, auch nicht in einem Kommentar. | Vier Dokumentstellen nannten Welt und Fassung „abgenommen“, eine davon in `abnahmen/` selbst. Das ist der Fehler, aus dem die Unterscheidung überhaupt entstanden ist — ein zweites Mal. |
+| **Demo-Daten tragen ihre Marke im Werkzeug-Chrome**, nicht im Spezimen. | `grep -i demo` fand im aktuellen Main-Entwurf null Treffer, obwohl `CLAUDE.md` Regel 6 die Kennzeichnung verlangt. |
+
+## 6. Löschen und Umbauen
+
+| Regel | Der Fehler dahinter |
+|---|---|
+| **Eine Löschung wird mit einem Fingerabdruck abgesichert**, nicht mit Zuversicht: Verhalten über die volle Zustandsmatrix vorher festhalten (je Kachel Text, Zähler, Überlauf, Vertrag), löschen, neu festhalten, vergleichen. Null Abweichungen oder die Löschung war zu groß. | Eine Dead-Code-Löschung hat einmal neu eingebaute Funktionen mitgerissen. Beim nächsten Mal wurden 114 Zeilen entfernt und über 54 Zustände gegengeprüft: 0 Abweichungen. |
+| **Toter Code, der eine Lüge enthält, ist schlimmer als toter Code.** Wer ein Blatt als Vorlage kopiert, greift die naheliegende Fassung — nicht die richtige. | `ebenen()` war seit Runden tot und trug eine **zweite** Statuszeile mit hart geschriebenem „Measuring 68 %“, während `statusText()` daneben wirklich misst. |
+| **Nach jeder mechanischen Ersetzung: Blatt einmal zeichnen lassen.** Ein Zeilenumbruch in einer einfach zitierten Zeichenkette ist ein Syntaxfehler; das Blatt ist danach beim Doppelklick tonlos tot. | Genau das ist am 2026-08-21 passiert — vier Blätter auf einmal, gefunden nach zwanzig Sekunden nur, weil eine Blattprüfung lief. |
+
+## 7. Die Prüfung selbst
 
 | Regel | Der Fehler dahinter |
 |---|---|

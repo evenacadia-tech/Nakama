@@ -87,7 +87,11 @@ Alles Gestalterische ist offen und wird MIT dem User entwickelt.
 - Prototyp = statisches HTML/CSS/JS in `prototyp/`, ohne Build-Kette,
   per Doppelklick lauffähig. Struktur (ein Blatt pro Oberfläche oder
   Tabs) ist die erste Entscheidung — mit dem User. Eine mechanische
-  Schleuse blockt `prototyp/`-Writes, solange `abnahmen/` leer ist.
+  Schleuse blockt `prototyp/`-Writes, solange keine Datei mit
+  **`designvertrag`** im Namen in `abnahmen/` liegt (Arbeitsplan Phase 0).
+  Andere Abnahmen öffnen das Tor nicht — auch fünfzehn nicht. Sie greift
+  für `Write`/`Edit` **und für `Bash`**; Gegenprobe:
+  `bash .claude/hooks/schleusen-probe.sh`.
 
 ## Arbeitsweise
 

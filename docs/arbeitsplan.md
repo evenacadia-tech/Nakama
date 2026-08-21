@@ -18,6 +18,18 @@ Grenzen (Fenstergrößen, Skalierung), Grad der kreativen Autorenschaft.
 
 **Gate:** Ohne diese Abnahme blockt die Schleuse jeden Prototyp-Write.
 
+> **⚠ Stand 2026-08-21: diese Abnahme fehlt.** Es liegt keine
+> `abnahmen/*designvertrag*.md` vor; es gab nie ein `/interview designvertrag`.
+> Phase 0.5 und Phase 1 (Main) wurden **ohne sie** gearbeitet — zulässig, weil
+> beides in `werkzeug/` stattfand und nicht in `prototyp/`. Die Schleuse ist
+> damit weiterhin **zu** (geprüft: exit 2). Wer die erste Prototyp-Datei
+> anlegen will, holt Phase 0 vorher nach. Wer nur weiter Wireframes baut,
+> arbeitet in `werkzeug/` und ist nicht betroffen.
+>
+> Was dabei bis heute fehlt und Phase 2 beurteilbar machen würde:
+> Erfolgskriterien, Gefühlsattribute, Antireferenzen, Grad der kreativen
+> Autorenschaft.
+
 ## Phase 0.5 — Formfaktor und Größe (VOR jedem Wireframe)
 
 Eine Anordnung ohne bekannte Fläche ist wertlos. Für alle drei Oberflächen
@@ -45,11 +57,23 @@ unterscheiden sich in der **Disclosure-Mechanik**, nicht in der
 Kastenanordnung. Vorher `/interview struktur` für die betroffene Oberfläche.
 
 **Stand:** Main ist auf Wireframe-Ebene **vollständig abgenommen**
-(2026-08-20): Disclosure-Mechanik Overview + Detail · Karte trägt jede Quelle ·
-Aufteilung teilt den Überschuss · Pflichtinhalt der Arbeitsfläche · Vorhören
-markiert die betroffene Zeile · Zustände nach dem Ausnahme-Prinzip.
+(2026-08-20): Größe 760×430 · Disclosure-Mechanik Overview + Detail · Karte
+trägt jede Quelle · Aufteilung teilt den Überschuss · Vorhören markiert die
+betroffene Zeile · Zustände nach dem Ausnahme-Prinzip. Der Pflichtinhalt der
+Arbeitsfläche ist gelöst, aber **handwerklich** — dazu gibt es keine Abnahme
+und es wird keine geben (`abnahmen/2026-08-20-karte-alle-quellen.md`).
+Aktueller Entwurf: `werkzeug/zustaende.html`.
+
 Als Nächstes: **Active-Probe-Editor** (700×420), dann **Passive-Kachel**
-(260×84).
+(260×84). Auftrag, Aufgabenliste-Entwurf, vorgerechnete Klemme und die
+Stolperfallen stehen in **`docs/sondenplan.md`** — vor der ersten Zeile lesen.
+
+**Was Main auf Wireframe-Ebene noch fehlt** (kein Hindernis für die Sonden,
+aber vor Phase 2 zu klären): Begründung, Alternativursachen und billigster
+nächster Beweisschritt am Befund; „keine Änderung empfohlen" als Ergebnis;
+Suche/Pinning/Fokusgruppen; die musikalischen Rollen; Name und Rolle einer
+Quelle in der Karte. Vollständige Liste mit Belegstellen:
+`abnahmen/2026-08-21-codereview.md`.
 
 **Ergebnis:** drei abgenommene Wireframes. Was im Graubild nicht
 funktioniert, wird nicht mit Farbe gerettet.

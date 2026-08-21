@@ -14,7 +14,7 @@
 //                                        | zustaende
 //                                        | gegenprobe-ueberlauf
 //                                        | gegenprobe-verdeckung
-//                                        | formfaktor | kachel
+//                                        | formfaktor | kachel | export
 //
 // Exit 1 bei Befund. BRAUCHT: playwright-core + Chromium (wird gesucht,
 // nicht behauptet — dieselbe Suche wie in pruefen.mjs).
@@ -538,6 +538,73 @@ async function probeFormfaktor() {
   await ctx.close()
 }
 
+/* ----------------------------------------------------------------- export --
+   Der Ergebnisexport ist das EINZIGE, was dieses Blatt ueberlebt. Bis
+   2026-08-21 schrieb er fuer Active und Passive nur Name, Breite, Hoehe —
+   also genau die drei Zahlen, die schon vorher im Quelltext standen, und
+   keinen einzigen Messwert. Ein gespeichertes Ergebnis las sich positiv,
+   waehrend die Kachel 23 px nach unten ueberlief.
+   Diese Probe vergleicht das exportierte JSON gegen den LEBENDEN Zustand —
+   nicht gegen sich selbst. */
+async function probeExport() {
+  const { ctx, page, fehler } = await oeffne('formfaktor.html')
+  const r = await page.evaluate(async () => {
+    const an = t => { const b = [...document.querySelectorAll('button')]
+      .find(b => new RegExp(t).test(b.textContent)); if (b) b.click() }
+    an('Active-Probe'); an('Passive-Kachel')
+    await new Promise(a => setTimeout(a, 700))
+    document.querySelector('#fertig').click()
+    await new Promise(a => setTimeout(a, 200))
+    // Unabhaengiger Weg zur Wahrheit: direkt am DOM nachrechnen, nicht die
+    // dataset-Felder lesen, aus denen der Export selbst gebaut wurde.
+    const live = id => {
+      const f = document.getElementById(id); if (!f) return null
+      const leib = f.querySelector('.leib')
+      let hoch = 0, breit = 0
+      const pruef = x => { hoch = Math.max(hoch, x.scrollHeight - x.clientHeight)
+                           breit = Math.max(breit, x.scrollWidth - x.clientWidth) }
+      pruef(leib); leib.querySelectorAll('*').forEach(pruef)
+      const kv = f.querySelector('.kurve')
+      return { hoch, breit, kurve: kv ? kv.clientHeight : null }
+    }
+    return { json: JSON.parse(document.querySelector('#ausgabe').value),
+             aktiv: live('aktiv'), passiv: live('passiv0') }
+  })
+  let schief = 0
+  const j = r.json
+  const pruefe = (ok, text) => { if (!ok) { schief++; sag(false, text) } }
+  pruefe(j.version >= 2, `Exportversion ${j.version} — Messwerte kamen erst mit 2`)
+  for (const [name, e, l] of [['activeProbe', j.activeProbe, r.aktiv],
+                              ['passiveKachel', j.passiveKachel, r.passiv]]) {
+    if (!e) { pruefe(false, `${name} fehlt im Export`); continue }
+    pruefe(e.ueberlauf && typeof e.ueberlauf.px === 'number',
+      `${name}: kein Ueberlauf im Export`)
+    pruefe(e.ueberlauf.hoch === l.hoch && e.ueberlauf.breit === l.breit,
+      `${name}: Export sagt ${e.ueberlauf.hoch}/${e.ueberlauf.breit} px `
+      + `(hoch/breit), lebendig gemessen ${l.hoch}/${l.breit}`)
+    // Die Richtung ist der Befund, nicht die Zahl: "23 px" ohne "hoch" ist
+    // nicht verwertbar (Codex-Befund 9).
+    const erwartet = l.hoch > 1 && l.breit > 1 ? 'hoch und breit'
+                   : l.hoch > 1 ? 'hoch' : l.breit > 1 ? 'breit' : 'keine'
+    pruefe(e.ueberlauf.richtung === erwartet,
+      `${name}: Richtung "${e.ueberlauf.richtung}" statt "${erwartet}"`)
+    pruefe(e.kurvenraumPx === l.kurve,
+      `${name}: Kurvenraum ${e.kurvenraumPx} im Export, ${l.kurve} lebendig`)
+  }
+  // Gegenprobe nach unten: der Export MUSS mindestens einen echten Befund
+  // tragen, sonst prueft diese Probe leere Felder.
+  const befundGetragen = j.passiveKachel && j.passiveKachel.ueberlauf.px > 1
+  pruefe(befundGetragen, 'der Export traegt keinen einzigen Ueberlauf — '
+    + 'diese Probe prueft ins Leere')
+  if (fehler.length) { schief++; sag(false, 'export JS-Fehler: ' + fehler[0]) }
+  sag(schief === 0, `export: v${j.version}, Active `
+    + `${j.activeProbe?.ueberlauf.px} px / Kurve ${j.activeProbe?.kurvenraumPx} px `
+    + `(${j.activeProbe?.urteil}), Kachel ${j.passiveKachel?.ueberlauf.px} px `
+    + `${j.passiveKachel?.ueberlauf.richtung} (${j.passiveKachel?.urteil}) `
+    + `— ${schief} Abweichungen`)
+  await ctx.close()
+}
+
 async function probeKachel() {
   const { ctx, page } = await oeffne('formfaktor.html')
   const r = await page.evaluate(() => {
@@ -563,7 +630,7 @@ const PROBEN = {
   'gegenprobe-verdeckung': probeGegenVerdeckung,
   ratsche: probeRatsche, deckel: probeDeckel, beleg: probeBeleg,
   grenzfall: probeGrenzfall, zustaende: probeZustaende,
-  formfaktor: probeFormfaktor, kachel: probeKachel
+  formfaktor: probeFormfaktor, kachel: probeKachel, export: probeExport
 }
 const was = process.argv[2] || 'alles'
 const lauf = was === 'alles' ? Object.keys(PROBEN) : [was]

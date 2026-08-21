@@ -60,10 +60,16 @@ body{background:#1a1a1a;color:#dcdcdc;
    verschiedene Aussagen brauchen zwei verschiedene Zeichen. */
 .fenster.schnitt{border-color:#8a5a4a}
 .fenster.schnitt .titel em{color:#c98a72}
-.fenster.schnitt .leib{border-bottom:2px solid #8a5a4a}
+/* box-shadow inset, NICHT border-bottom (2026-08-21). Der Rahmen nahm dem
+   Inhalt zwei Pixel weg — und zwar erst, NACHDEM gemessen war. Das Fenster
+   meldete 23 px Ueberlauf, hatte danach aber 25, weil die Warnung selbst zwei
+   Pixel gekostet hatte. Ein Messgeraet, das sein Messobjekt verschiebt, gibt
+   eine Zahl aus, die nie gegolten hat; Codex' Spanne "rund 23-25 px" war
+   genau dieser Widerspruch. Der Schatten sieht gleich aus und kostet nichts. */
+.fenster.schnitt .leib{box-shadow:inset 0 -2px 0 #8a5a4a}
 .fenster.eng .titel em{color:#c98a72}
 /* Sichtbare Schnittkante: ein zu kleines Fenster darf nicht so tun, als passe alles. */
-.fenster.eng .leib{border-bottom:2px solid #8a5a4a}
+.fenster.eng .leib{box-shadow:inset 0 -2px 0 #8a5a4a}
 .fenster.eng::after{content:'below minimum size';position:absolute;right:0;bottom:0;
   background:#8a5a4a;color:#1a1a1a;font-size:9px;letter-spacing:.1em;
   text-transform:uppercase;padding:2px 6px;pointer-events:none}
@@ -553,11 +559,15 @@ function fenster(id, titel, x, y, bw, bh, inhalt, mitGriff){
 function messeFenster(f, bw, bh, unterMindestmass){
   const leib = f.querySelector('.leib');
   if(!leib) return 0;
-  let fehlt = 0, richtung = '';
+  /* Beide Richtungen werden GETRENNT gefuehrt, nicht nur ihr Maximum. Ein
+     Fenster kann in beiden Richtungen ueberlaufen, und dann verschweigt ein
+     einzelner Maximalwert die zweite Haelfte. Ausserdem braucht der Export
+     die Richtung: "23 px" ohne "hoch" ist keine verwertbare Messung. */
+  let hoch = 0, breit = 0;
   const pruef = x => {
     const h = x.scrollHeight - x.clientHeight, b = x.scrollWidth - x.clientWidth;
-    if(h > fehlt){ fehlt = h; richtung = 'hoch'; }
-    if(b > fehlt){ fehlt = b; richtung = 'breit'; }
+    if(h > hoch)  hoch  = h;
+    if(b > breit) breit = b;
   };
   pruef(leib);
   leib.querySelectorAll('*').forEach(pruef);
@@ -580,7 +590,13 @@ function messeFenster(f, bw, bh, unterMindestmass){
     kopf.textContent = ganz + ' of ' + gesamt;
     kopf.style.color = ganz < gesamt ? '#c98a72' : '';
   });
+  const fehlt = Math.max(hoch, breit);
+  const richtung = hoch > 1 && breit > 1 ? 'hoch und breit'
+                 : hoch > 1 ? 'hoch' : breit > 1 ? 'breit' : 'keine';
   f.dataset.fehlt = fehlt;
+  f.dataset.hoch = hoch;
+  f.dataset.breit = breit;
+  f.dataset.richtung = richtung;
   f.classList.toggle('schnitt', fehlt > 1);
   f.classList.toggle('eng', !!unterMindestmass);
   const em = f.querySelector('.titel em');
@@ -623,11 +639,15 @@ function zeichnen(){
        Wieviel genug ist, misst werkzeug/sonde-messung.html. */
     const kv = f.querySelector('.kurve');
     const em = f.querySelector('.titel em');
+    /* clientHeight: .kurve hat 1 px Rahmen oben und unten, dort wird nichts
+       gezeichnet. offsetHeight meldete 7 px, zeichnen kann die Kurve auf 5.
+       Dieselbe Korrektur steht in werkzeug/sonde-messung.html.
+       Gemessen wird IMMER, auch bei Ueberlauf — sonst fehlt dem Export die
+       Zahl genau in dem Fall, in dem sie am meisten sagt. Nur der TITEL
+       schweigt bei Ueberlauf, weil dort schon die Ueberlaufzahl steht. */
+    if(kv) f.dataset.kurve = kv.clientHeight;
     if(kv && em && +f.dataset.fehlt <= 1){
-      /* clientHeight: .kurve hat 1 px Rahmen oben und unten, dort wird nichts
-         gezeichnet. offsetHeight meldete 7 px, zeichnen kann die Kurve auf 5.
-         Dieselbe Korrektur steht in werkzeug/sonde-messung.html. */
-      const px = kv.clientHeight;
+      const px = +f.dataset.kurve;
       em.textContent = `${a.w}×${a.h} — passt, aber der Kurve bleiben `
         + `${px} px (${(px/24).toFixed(1)} px je dB)`;
     }
@@ -806,18 +826,52 @@ $('#klapp').onclick = () => {
   const p = $('#panel'); p.classList.toggle('klein');
   $('#klapp').textContent = p.classList.contains('klein') ? 'Panel groß' : 'Panel klein';
 };
+/* Der Ergebnisexport. Bis 2026-08-21 (Codex-Befund 1) schrieb er fuer
+   Active und Passive nur `ANDERE.aktiv` bzw. `ANDERE.passiv` — also Name,
+   Breite, Hoehe, die drei Zahlen, die schon vorher im Quelltext standen. Der
+   ganze gemessene Teil fiel weg: 23 px Ueberlauf nach UNTEN bei der Kachel,
+   5 px Zeichenraum fuer die Kurve der Active-Probe. Ein gespeichertes
+   Ergebnis las sich dadurch positiv, obwohl beide Oberflaechen unbrauchbar
+   sind — der Export verlor genau die Befunde, fuer die dieses Blatt existiert.
+   Version deshalb auf 2: wer eine Datei mit version:1 findet, weiss, dass die
+   Messwerte darin fehlen und nicht etwa null waren. */
+const gemessen = (id, name, bw, bh) => {
+  const f = document.getElementById(id);
+  if(!f) return null;
+  const kurve = f.dataset.kurve === undefined ? null : +f.dataset.kurve;
+  return {
+    name, breite:bw, hoehe:bh,
+    ueberlauf:{px:+f.dataset.fehlt, hoch:+f.dataset.hoch, breit:+f.dataset.breit,
+               richtung:f.dataset.richtung},
+    // Ein Fenster kann "passen" und trotzdem unbrauchbar sein: die Zahl, die
+    // das zeigt, ist der ZEICHENRAUM der Kurve, nicht der Ueberlauf.
+    kurvenraumPx: kurve,
+    pxJeDb: kurve === null ? null : +(kurve/24).toFixed(2),
+    urteil: +f.dataset.fehlt > 1 ? 'laeuft ueber'
+          : kurve !== null && kurve < 24 ? 'passt, aber die Kurve ist unlesbar'
+          : 'passt'
+  };
+};
 $('#fertig').onclick = () => {
   const t = $('#ausgabe');
   t.style.display = 'block';
   const SW = screen.width, SH = screen.height;
+  const mf = document.getElementById('main');
   t.value = JSON.stringify({
-    werkzeug:'nakama-formfaktor', version:1, zeitpunkt:new Date().toISOString(),
+    werkzeug:'nakama-formfaktor', version:2, zeitpunkt:new Date().toISOString(),
     bildschirm:{breite:SW, hoehe:SH, skalierung:devicePixelRatio},
+    einsZuEins: window.innerWidth === screen.width
+             && Math.abs(window.innerHeight - screen.height) < 4
+             && window.devicePixelRatio === 1,
     inhaltsmenge:w.modus, main:{breite:w.main.w, hoehe:w.main.h,
       verhaeltnis:+(w.main.w/w.main.h).toFixed(2),
-      anteilSchirmProzent:+((w.main.w*w.main.h)/(SW*SH)*100).toFixed(1)},
-    activeProbe: w.aktivAn ? ANDERE.aktiv : null,
-    passiveKachel: w.passivAn ? ANDERE.passiv : null
+      anteilSchirmProzent:+((w.main.w*w.main.h)/(SW*SH)*100).toFixed(1),
+      ueberlauf: mf ? {px:+mf.dataset.fehlt, hoch:+mf.dataset.hoch,
+                       breit:+mf.dataset.breit, richtung:mf.dataset.richtung} : null},
+    activeProbe:  w.aktivAn  ? gemessen('aktiv',   ANDERE.aktiv.name,
+                                        ANDERE.aktiv.w,  ANDERE.aktiv.h)  : null,
+    passiveKachel:w.passivAn ? gemessen('passiv0', ANDERE.passiv.name,
+                                        ANDERE.passiv.w, ANDERE.passiv.h) : null
   }, null, 1);
   t.focus(); t.select();
   try{ document.execCommand('copy'); }catch(e){}

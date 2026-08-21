@@ -1,0 +1,10 @@
+{
+  "type": "evidence_invalidate",
+  "grund": "intervention",
+  "umfang": {
+    "art": "alles_ausser",
+    "evidence_ids": [
+      "99999999999999999999999999999999"
+    ]
+  }
+}

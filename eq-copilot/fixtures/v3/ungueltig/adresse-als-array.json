@@ -1,0 +1,24 @@
+{
+  "type": "heartbeat",
+  "adresse": [
+    1,
+    2
+  ],
+  "sequence": 91,
+  "state_revision": 12,
+  "capabilities": {
+    "process_context": "supported",
+    "sample_accurate_automation": "supported",
+    "presentation_latency": "unsupported",
+    "discrete_aux_buses": "supported",
+    "offline_render_detection": "supported",
+    "double_precision": "unsupported",
+    "remote_control": "unsupported"
+  },
+  "zaehler": {
+    "frames_dropped": 0,
+    "parse_errors": 0,
+    "queue_overflows": 0
+  },
+  "intervention_state_unknown": false
+}

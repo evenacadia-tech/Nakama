@@ -1,0 +1,5 @@
+{
+  "type": "reject",
+  "code": "protocol_mismatch",
+  "reason": "protocol 2 auf v3-Pipe"
+}

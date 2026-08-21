@@ -1,0 +1,7 @@
+{
+  "type": "evidence_invalidate",
+  "grund": "routing_unbekannt",
+  "umfang": {
+    "art": "ganze_sitzung"
+  }
+}

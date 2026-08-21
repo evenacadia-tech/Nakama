@@ -1,0 +1,15 @@
+{
+  "type": "heartbeat",
+  "sequence": 91,
+  "state_revision": 12,
+  "capabilities": {
+    "process_context": "supported",
+    "sample_accurate_automation": "supported",
+    "presentation_latency": "unsupported",
+    "discrete_aux_buses": "supported",
+    "offline_render_detection": "supported",
+    "double_precision": "unsupported",
+    "remote_control": "unsupported"
+  },
+  "intervention_state_unknown": false
+}

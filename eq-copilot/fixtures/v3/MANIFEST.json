@@ -1,0 +1,1404 @@
+{
+  "$id": "evenacadia.nakama.fixtures.v3",
+  "titel": "Cross-Language-Fixture-Korpus v3",
+  "schema": "../../schemas/v3/eq-ipc-v3.schema.json",
+  "zweck": "Die dritte Partei zwischen C++ und Rust. Beide messen gegen DIESES Manifest; stimmen beide mit ihm ueberein, stimmen sie transitiv miteinander ueberein. Die Erwartungen sind von Hand geschrieben, nicht aus einer Engine erzeugt — sonst waere der Vergleich zirkulaer.",
+  "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
+  "anzahl_gueltig": 34,
+  "anzahl_ungueltig": 97,
+  "fixtures": [
+    {
+      "datei": "gueltig/audible_intervention_begin.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/audible_intervention_end.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/command_ack.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/error.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/evidence-abdeckung-raender.json",
+      "urteil": "gueltig",
+      "warum": "0 und 1 sind einschliesslich",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/evidence-cycle-nur-ppq.json",
+      "urteil": "gueltig",
+      "warum": "nur PPQ-Bounds: gueltig, aber der moegliche Straddle bleibt ungeprueft",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/evidence-cycle-validiert.json",
+      "urteil": "gueltig",
+      "warum": "Samplegrenzen sind ein abgeleitetes Feld und tragen ihre Herleitung (§32.3)",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/evidence-grobes-gitter.json",
+      "urteil": "gueltig",
+      "warum": "beide Gitter sind zulaessig",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/evidence-konfidenz-additiv.json",
+      "urteil": "gueltig",
+      "warum": "konfidenz waechst laut §34.3 ausdruecklich weiter",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/evidence-ohne-projektzeit.json",
+      "urteil": "gueltig",
+      "warum": "ohne gueltige Projektzeit traegt local_monotonic nur lokale Analyse (§32.3)",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/evidence-verteilung-additiv.json",
+      "urteil": "gueltig",
+      "warum": "ein weiteres Perzentil ist eine additive Erweiterung",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/evidence_invalidate.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/evidence_snapshot.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/heartbeat-integer-als-1punkt0.json",
+      "urteil": "gueltig",
+      "warum": "draft 2020-12: jede Zahl ohne Nachkommateil ist ein integer",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/heartbeat-ohne-optionales-feld.json",
+      "urteil": "gueltig",
+      "warum": "intervention_state_unknown ist optional",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/heartbeat-zaehler-additiv.json",
+      "urteil": "gueltig",
+      "warum": "zaehler ist additiv: ein unbekannter Zaehler wird ignoriert, nicht abgelehnt",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/heartbeat-zaehler-grenze-genau.json",
+      "urteil": "gueltig",
+      "warum": "genau maxProperties (11) — die Grenze selbst ist noch gueltig",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/heartbeat.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/heartbeat_ack.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/hello-control-ohne-host.json",
+      "urteil": "gueltig",
+      "warum": "host ist ein Hinweis, kein Pflichtfeld (§32.2)",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/hello_control.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/hello_telemetry.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/invalidate-ganze-sitzung.json",
+      "urteil": "gueltig",
+      "warum": "bei unbekanntem Routing quarantaenisiert der Broker die ganze Sitzung (§34.2)",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/preview-lease-untergrenze.json",
+      "urteil": "gueltig",
+      "warum": "minimum 1 ist einschliesslich",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/preview_begin.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/preview_end.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/preview_renew.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/reject.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/session-beitragsklasse.json",
+      "urteil": "gueltig",
+      "warum": "post_fader_contribution ist die einzige Position mit Beitragsaussage (§32.2)",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/session-leer.json",
+      "urteil": "gueltig",
+      "warum": "minItems 0: eine Sitzung ohne Mitglieder ist gueltig",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/session_snapshot.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/state_report.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/subscribe_session.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/welcome.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "ungueltig/abdeckung-negativ.json",
+      "urteil": "ungueltig",
+      "warum": "Konvergenz ebenso",
+      "verletzungen": [
+        {
+          "instanz": "/konvergenz",
+          "schema": "#/$defs/evidence_snapshot/properties/konvergenz/minimum",
+          "schluessel": "minimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/abdeckung-ueber-1.json",
+      "urteil": "ungueltig",
+      "warum": "Abdeckung ist ein Anteil",
+      "verletzungen": [
+        {
+          "instanz": "/abdeckung",
+          "schema": "#/$defs/evidence_snapshot/properties/abdeckung/maximum",
+          "schluessel": "maximum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/adresse-als-array.json",
+      "urteil": "ungueltig",
+      "warum": "faellt der Typ, wird NICHT abgestiegen — genau eine Verletzung, keine Lawine",
+      "verletzungen": [
+        {
+          "instanz": "/adresse",
+          "schema": "#/$defs/adresse/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/adresse-ohne-nonce.json",
+      "urteil": "ungueltig",
+      "warum": "runtime_nonce trennt alte und neue Verbindung derselben Instanz (§32.1)",
+      "verletzungen": [
+        {
+          "instanz": "/adresse",
+          "schema": "#/$defs/adresse/required/runtime_nonce",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/adresse-unbekannte-eigenschaft.json",
+      "urteil": "ungueltig",
+      "warum": "eine unbekannte Eigenschaft an der Adresse waere eine unbekannte Zieladresse (§33.1)",
+      "verletzungen": [
+        {
+          "instanz": "/adresse/host_pid",
+          "schema": "#/$defs/adresse/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/audio-zu-viele-kanaele.json",
+      "urteil": "ungueltig",
+      "warum": "64 Kanaele sind die Obergrenze dieses Vertrags",
+      "verletzungen": [
+        {
+          "instanz": "/audio/channels",
+          "schema": "#/$defs/audio_lage/properties/channels/maximum",
+          "schluessel": "maximum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/aussageklasse-fehlt.json",
+      "urteil": "ungueltig",
+      "warum": "ohne Aussageklasse waere eine Insert-Messung als Summenbeitrag lesbar (hartes Gate 7)",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0",
+          "schema": "#/$defs/probe_descriptor/required/aussageklasse",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/aussageklasse-vermischt.json",
+      "urteil": "ungueltig",
+      "warum": "die beiden Klassen duerfen nie vermischt werden (§32.2)",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/aussageklasse",
+          "schema": "#/$defs/aussageklasse/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/baender-leer.json",
+      "urteil": "ungueltig",
+      "warum": "ein Bandsatz ohne Werte",
+      "verletzungen": [
+        {
+          "instanz": "/baender/werte",
+          "schema": "#/$defs/bandwerte/properties/werte/minItems",
+          "schluessel": "minItems"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/baender-ohne-bitmap.json",
+      "urteil": "ungueltig",
+      "warum": "ohne Bitmap ist nicht unterscheidbar, welcher Wert gemessen wurde",
+      "verletzungen": [
+        {
+          "instanz": "/baender",
+          "schema": "#/$defs/bandwerte/required/gueltig_bitmap",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/baender-ohne-encoding.json",
+      "urteil": "ungueltig",
+      "warum": "Empfaenger raten die Skalierung nie aus dem Nachrichtentyp (§33.1)",
+      "verletzungen": [
+        {
+          "instanz": "/baender",
+          "schema": "#/$defs/bandwerte/required/encoding",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/baender-zu-viele.json",
+      "urteil": "ungueltig",
+      "warum": "222 Werte passen in kein Gitter dieses Vertrags",
+      "verletzungen": [
+        {
+          "instanz": "/baender/werte",
+          "schema": "#/$defs/bandwerte/properties/werte/maxItems",
+          "schluessel": "maxItems"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bandwert-als-string.json",
+      "urteil": "ungueltig",
+      "warum": "der Index steht im Instanzpfad",
+      "verletzungen": [
+        {
+          "instanz": "/baender/werte/1",
+          "schema": "#/$defs/bandwerte/properties/werte/items/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bandwerte-saturated-als-string.json",
+      "urteil": "ungueltig",
+      "warum": "das Saettigungsbit ist ein bool",
+      "verletzungen": [
+        {
+          "instanz": "/baender/saturated",
+          "schema": "#/$defs/bandwerte/properties/saturated/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/blockgroesse-null.json",
+      "urteil": "ungueltig",
+      "warum": "ein Block ohne Samples",
+      "verletzungen": [
+        {
+          "instanz": "/audio/block_size",
+          "schema": "#/$defs/audio_lage/properties/block_size/minimum",
+          "schluessel": "minimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/capabilities-unbekannte-eigenschaft.json",
+      "urteil": "ungueltig",
+      "warum": "eine unbekannte Capability ist eine unbekannte Sicherheitsaussage",
+      "verletzungen": [
+        {
+          "instanz": "/capabilities/midi_clock",
+          "schema": "#/$defs/capabilities/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/capabilities-unvollstaendig.json",
+      "urteil": "ungueltig",
+      "warum": "eine fehlende Capability ist keine stille Nein-Antwort",
+      "verletzungen": [
+        {
+          "instanz": "/capabilities",
+          "schema": "#/$defs/capabilities/required/remote_control",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/capability-null.json",
+      "urteil": "ungueltig",
+      "warum": "null ist ebenfalls kein gueltiger Capabilitywert",
+      "verletzungen": [
+        {
+          "instanz": "/capabilities/double_precision",
+          "schema": "#/$defs/capability_wert/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/capability-unknown.json",
+      "urteil": "ungueltig",
+      "warum": "Entwurf §54: kein `unknown, spaeter pruefen` darf P1 passieren",
+      "verletzungen": [
+        {
+          "instanz": "/capabilities/process_context",
+          "schema": "#/$defs/capability_wert/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/capability-vielleicht.json",
+      "urteil": "ungueltig",
+      "warum": "auch kein dritter Wert unter anderem Namen",
+      "verletzungen": [
+        {
+          "instanz": "/capabilities/presentation_latency",
+          "schema": "#/$defs/capability_wert/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/command-ack-ergebnis-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "es gibt kein halbes Apply — genau das ist der Transaktionsvertrag",
+      "verletzungen": [
+        {
+          "instanz": "/ergebnis",
+          "schema": "#/$defs/command_ack/properties/ergebnis/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/continuity-segment-negativ.json",
+      "urteil": "ungueltig",
+      "warum": "das Segment zaehlt aufwaerts, nie zurueck",
+      "verletzungen": [
+        {
+          "instanz": "/transport/continuity_segment",
+          "schema": "#/$defs/transportstempel/properties/continuity_segment/minimum",
+          "schluessel": "minimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/cycle-ohne-active.json",
+      "urteil": "ungueltig",
+      "warum": "ohne active ist unklar, ob ueberhaupt eine Schleife laeuft",
+      "verletzungen": [
+        {
+          "instanz": "/transport/cycle",
+          "schema": "#/$defs/cycle/required/active",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/derivation-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "abgeleitete Samplegrenzen sind validiert oder unbewiesen — nichts dazwischen",
+      "verletzungen": [
+        {
+          "instanz": "/transport/cycle/derived_sample_bounds/derivation",
+          "schema": "#/$defs/derived_sample_bounds/properties/derivation/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/derived-bounds-ohne-ende.json",
+      "urteil": "ungueltig",
+      "warum": "eine halbe Schleifengrenze ist keine Grenze",
+      "verletzungen": [
+        {
+          "instanz": "/transport/cycle/derived_sample_bounds",
+          "schema": "#/$defs/derived_sample_bounds/required/end",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/encoding-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "die Kodierungen stehen in quantisierung-v1.json",
+      "verletzungen": [
+        {
+          "instanz": "/baender/encoding",
+          "schema": "#/$defs/band_encoding/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/error-rueckweg-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "ein Fehler ohne benannten Rueckweg laesst den Client raten (§33.3)",
+      "verletzungen": [
+        {
+          "instanz": "/rueckweg",
+          "schema": "#/$defs/error/properties/rueckweg/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/evidence-ids-leer.json",
+      "urteil": "ungueltig",
+      "warum": "eine Ruecknahme ohne Ziel",
+      "verletzungen": [
+        {
+          "instanz": "/umfang/evidence_ids",
+          "schema": "#/$defs/evidence_invalidate/properties/umfang/properties/evidence_ids/minItems",
+          "schluessel": "minItems"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/fehlercode-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "der Code ist maschinenlesbar; ein unbekannter faellt auf",
+      "verletzungen": [
+        {
+          "instanz": "/code",
+          "schema": "#/$defs/fehlercode/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/frische-ohne-stale.json",
+      "urteil": "ungueltig",
+      "warum": "stale ist ein Zustand, der in JEDER UI-Fassung sichtbar sein muss (§0.4)",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/frische",
+          "schema": "#/$defs/frische/required/stale",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/gitter-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "es gibt genau zwei Bandgitter",
+      "verletzungen": [
+        {
+          "instanz": "/baender",
+          "schema": "#/$defs/bandwerte/properties/gitter_id/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/heartbeat-ack-ohne-duplikatflag.json",
+      "urteil": "ungueltig",
+      "warum": "Duplikate werden sichtbar aufgeloest — das Flag darf nicht fehlen (§32.1)",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/heartbeat_ack/required/duplicate_instance_id",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/heartbeat-ohne-adresse.json",
+      "urteil": "ungueltig",
+      "warum": "ohne Adresse ist die Nachricht nicht zuzuordnen",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/heartbeat/required/adresse",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/heartbeat-ohne-mehrere.json",
+      "urteil": "ungueltig",
+      "warum": "je fehlendem Pflichtfeld GENAU eine Verletzung",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/heartbeat/required/adresse",
+          "schluessel": "required"
+        },
+        {
+          "instanz": "",
+          "schema": "#/$defs/heartbeat/required/zaehler",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/hello-fremdes-connection-kind.json",
+      "urteil": "ungueltig",
+      "warum": "nur control und telemetry existieren",
+      "verletzungen": [
+        {
+          "instanz": "/connection_kind",
+          "schema": "#/$defs/hello/oneOf",
+          "schluessel": "oneOf"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/hello-ohne-connection-kind.json",
+      "urteil": "ungueltig",
+      "warum": "der zweite Discriminator sitzt eine Ebene tiefer",
+      "verletzungen": [
+        {
+          "instanz": "/connection_kind",
+          "schema": "#/$defs/hello/oneOf",
+          "schluessel": "oneOf"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/hello-telemetry-ohne-challenge.json",
+      "urteil": "ungueltig",
+      "warum": "ohne Challenge ist die Kopplung nicht bewiesen",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/hello_telemetry/required/challenge",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/hello-telemetry-ohne-link.json",
+      "urteil": "ungueltig",
+      "warum": "ein ungekoppelter Telemetry-Connect wird geschlossen (§33.1)",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/hello_telemetry/required/link_id",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/hello-telemetry-protokoll-2.json",
+      "urteil": "ungueltig",
+      "warum": "beide Verbindungen tragen dieselbe Version",
+      "verletzungen": [
+        {
+          "instanz": "/protocol",
+          "schema": "#/$defs/hello_telemetry/properties/protocol/const",
+          "schluessel": "const"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/host-ohne-pid.json",
+      "urteil": "ungueltig",
+      "warum": "pid ist ein starkes Signal; wer host sendet, sendet sie",
+      "verletzungen": [
+        {
+          "instanz": "/host",
+          "schema": "#/$defs/host_angabe/required/pid",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/instance-id-grossbuchstaben.json",
+      "urteil": "ungueltig",
+      "warum": "Kleinbuchstaben, damit ein Vergleich nie normalisieren muss",
+      "verletzungen": [
+        {
+          "instanz": "/adresse/instance_id",
+          "schema": "#/$defs/hex32/pattern",
+          "schluessel": "pattern"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/instance-id-nicht-hex.json",
+      "urteil": "ungueltig",
+      "warum": "z ist keine Hexziffer",
+      "verletzungen": [
+        {
+          "instanz": "/adresse/instance_id",
+          "schema": "#/$defs/hex32/pattern",
+          "schluessel": "pattern"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/instance-id-zu-kurz.json",
+      "urteil": "ungueltig",
+      "warum": "Laenge und Muster sind zwei Regeln und melden zwei Verletzungen",
+      "verletzungen": [
+        {
+          "instanz": "/adresse/instance_id",
+          "schema": "#/$defs/hex32/minLength",
+          "schluessel": "minLength"
+        },
+        {
+          "instanz": "/adresse/instance_id",
+          "schema": "#/$defs/hex32/pattern",
+          "schluessel": "pattern"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/intervention-art-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "jede hoerbare Intervention gehoert einer benannten Art an (§34.2)",
+      "verletzungen": [
+        {
+          "instanz": "/art",
+          "schema": "#/$defs/audible_intervention_begin/properties/art/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/invalidate-grund-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "eine Ruecknahme ohne benannten Grund ist nicht auditierbar",
+      "verletzungen": [
+        {
+          "instanz": "/grund",
+          "schema": "#/$defs/evidence_invalidate/properties/grund/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/invalidate-umfang-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "drei Umfaenge: IDs, Bereich, ganze Sitzung",
+      "verletzungen": [
+        {
+          "instanz": "/umfang/art",
+          "schema": "#/$defs/evidence_invalidate/properties/umfang/properties/art/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/konfidenz-klasse-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "die Gesamtklasse ist ein Wort aus vier, kein gerundeter Score (§34.3)",
+      "verletzungen": [
+        {
+          "instanz": "/konfidenz/klasse",
+          "schema": "#/$defs/konfidenz/properties/klasse/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/konfidenz-ueber-maxproperties.json",
+      "urteil": "ungueltig",
+      "warum": "dieselbe Grenze am zweiten additiven Objekt",
+      "verletzungen": [
+        {
+          "instanz": "/konfidenz",
+          "schema": "#/$defs/konfidenz/maxProperties",
+          "schluessel": "maxProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/label-als-null.json",
+      "urteil": "ungueltig",
+      "warum": "null ist ein eigener Typ, nicht `fehlt`",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/label",
+          "schema": "#/$defs/probe_descriptor/properties/label/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/label-zu-lang.json",
+      "urteil": "ungueltig",
+      "warum": "das Label ist untrusted data und begrenzt",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/label",
+          "schema": "#/$defs/probe_descriptor/properties/label/maxLength",
+          "schluessel": "maxLength"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/lease-null.json",
+      "urteil": "ungueltig",
+      "warum": "eine Lease ueber 0 ms waere ein sofort abgelaufener Failsafe",
+      "verletzungen": [
+        {
+          "instanz": "/lease_duration_ms",
+          "schema": "#/$defs/preview_begin/properties/lease_duration_ms/minimum",
+          "schluessel": "minimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/lease-ueber-400.json",
+      "urteil": "ungueltig",
+      "warum": "die Probe klemmt auf hoechstens 400 ms (§33.4) — der Vertrag laesst mehr gar nicht zu",
+      "verletzungen": [
+        {
+          "instanz": "/lease_duration_ms",
+          "schema": "#/$defs/preview_begin/properties/lease_duration_ms/maximum",
+          "schluessel": "maximum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/logon-sid-leer.json",
+      "urteil": "ungueltig",
+      "warum": "eine leere SID ist keine SID",
+      "verletzungen": [
+        {
+          "instanz": "/adresse/logon_sid",
+          "schema": "#/$defs/sid/minLength",
+          "schluessel": "minLength"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/mehrfach-gebrochen.json",
+      "urteil": "ungueltig",
+      "warum": "beide Engines melden ALLE Verletzungen des gewaehlten Zweiges, kanonisch sortiert",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/heartbeat/required/adresse",
+          "schluessel": "required"
+        },
+        {
+          "instanz": "/capabilities/process_context",
+          "schema": "#/$defs/capability_wert/enum",
+          "schluessel": "enum"
+        },
+        {
+          "instanz": "/extra",
+          "schema": "#/$defs/heartbeat/additionalProperties",
+          "schluessel": "additionalProperties"
+        },
+        {
+          "instanz": "/sequence",
+          "schema": "#/$defs/heartbeat/properties/sequence/minimum",
+          "schluessel": "minimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/messposition-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "vier Positionen, keine fuenfte (§32.2)",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/measurement_position",
+          "schema": "#/$defs/measurement_position/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/mitglied-unvollstaendig.json",
+      "urteil": "ungueltig",
+      "warum": "Pflichtfelder gelten auch im Arrayelement",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0",
+          "schema": "#/$defs/probe_descriptor/required/capabilities",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/mitglieder-als-objekt.json",
+      "urteil": "ungueltig",
+      "warum": "auch am Array gilt: Typfehler beendet den Abstieg",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder",
+          "schema": "#/$defs/session_snapshot/properties/mitglieder/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/mitglieder-zu-viele.json",
+      "urteil": "ungueltig",
+      "warum": "32 Sonden sind die Auslegung; 64 die harte Grenze",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder",
+          "schema": "#/$defs/session_snapshot/properties/mitglieder/maxItems",
+          "schluessel": "maxItems"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/pair-id-als-zahl.json",
+      "urteil": "ungueltig",
+      "warum": "pair_id ist String oder null",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/pair_id",
+          "schema": "#/$defs/probe_descriptor/properties/pair_id/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/playing-als-zahl.json",
+      "urteil": "ungueltig",
+      "warum": "1 ist in JSON kein true",
+      "verletzungen": [
+        {
+          "instanz": "/transport/playing",
+          "schema": "#/$defs/transportstempel/properties/playing/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/plugin-kind-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "`hub` ist die v2-Rolle; v3 kennt main|passive_probe|active_probe|legacy (§32.2)",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/plugin_kind",
+          "schema": "#/$defs/plugin_kind/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/preview-end-grund-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "die fuenf Gruende decken den Zustandsautomaten aus §33.4 ab",
+      "verletzungen": [
+        {
+          "instanz": "/grund",
+          "schema": "#/$defs/preview_end/properties/grund/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/preview-renew-ohne-id.json",
+      "urteil": "ungueltig",
+      "warum": "nur eine NEUE gueltige Renew-ID verlaengert die Lease (§33.4)",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/preview_renew/required/renew_id",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/protokoll-2-auf-v3.json",
+      "urteil": "ungueltig",
+      "warum": "protocol=2 bleibt vollstaendig im v2-Parser (§33.1)",
+      "verletzungen": [
+        {
+          "instanz": "/protocol",
+          "schema": "#/$defs/hello_control/properties/protocol/const",
+          "schluessel": "const"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/record-state-ohne-valid.json",
+      "urteil": "ungueltig",
+      "warum": "valid=true ist Vorbedingung fuer Remote-Apply",
+      "verletzungen": [
+        {
+          "instanz": "/record_state",
+          "schema": "#/$defs/state_report/properties/record_state/required/valid",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/reject-ohne-grund.json",
+      "urteil": "ungueltig",
+      "warum": "klarer Kompatibilitaetsfehler statt stillem Scheitern heisst: mit Text",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/reject/required/reason",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/reservierter-typ-apply.json",
+      "urteil": "ungueltig",
+      "warum": "reservierter Name aus reservierte-nachrichten-v1.json — Eigentuemer SONDE-016",
+      "verletzungen": [
+        {
+          "instanz": "/type",
+          "schema": "#/oneOf",
+          "schluessel": "oneOf"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/reservierter-typ-telemetry.json",
+      "urteil": "ungueltig",
+      "warum": "telemetry_frame ist FlatBuffers (SONDE-005b), nie eine JSON-Familie",
+      "verletzungen": [
+        {
+          "instanz": "/type",
+          "schema": "#/oneOf",
+          "schluessel": "oneOf"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/samplerate-negativ.json",
+      "urteil": "ungueltig",
+      "warum": "negative Samplerate",
+      "verletzungen": [
+        {
+          "instanz": "/transport/sample_rate",
+          "schema": "#/$defs/transportstempel/properties/sample_rate/exclusiveMinimum",
+          "schluessel": "exclusiveMinimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/samplerate-null.json",
+      "urteil": "ungueltig",
+      "warum": "sample_rate 0 ist genau der Wert, aus dem der genullte VST3-Context ein NaN macht (§32.3)",
+      "verletzungen": [
+        {
+          "instanz": "/audio/samplerate",
+          "schema": "#/$defs/audio_lage/properties/samplerate/exclusiveMinimum",
+          "schluessel": "exclusiveMinimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/schema-major-4.json",
+      "urteil": "ungueltig",
+      "warum": "unbekannte Major-Version wird abgelehnt, nie ignoriert (§33.1)",
+      "verletzungen": [
+        {
+          "instanz": "/kopf/schema_major",
+          "schema": "#/$defs/steuerkopf/properties/schema_major/const",
+          "schluessel": "const"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/sequence-als-string.json",
+      "urteil": "ungueltig",
+      "warum": "eine Zahl als String ist keine Zahl",
+      "verletzungen": [
+        {
+          "instanz": "/sequence",
+          "schema": "#/$defs/heartbeat/properties/sequence/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/sequence-mit-nachkomma.json",
+      "urteil": "ungueltig",
+      "warum": "integer verlangt einen leeren Nachkommateil",
+      "verletzungen": [
+        {
+          "instanz": "/sequence",
+          "schema": "#/$defs/heartbeat/properties/sequence/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/sequence-negativ.json",
+      "urteil": "ungueltig",
+      "warum": "monotone Sequenzen beginnen bei 0",
+      "verletzungen": [
+        {
+          "instanz": "/sequence",
+          "schema": "#/$defs/heartbeat/properties/sequence/minimum",
+          "schluessel": "minimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/sid-zu-lang.json",
+      "urteil": "ungueltig",
+      "warum": "die SID hat eine Formatobergrenze",
+      "verletzungen": [
+        {
+          "instanz": "/adresse/logon_sid",
+          "schema": "#/$defs/sid/maxLength",
+          "schluessel": "maxLength"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/state-hash-zu-kurz.json",
+      "urteil": "ungueltig",
+      "warum": "SHA-256 hex hat 64 Zeichen",
+      "verletzungen": [
+        {
+          "instanz": "/state_hash",
+          "schema": "#/$defs/state_report/properties/state_hash/minLength",
+          "schluessel": "minLength"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/state-report-ohne-record-state.json",
+      "urteil": "ungueltig",
+      "warum": "unbekannter Aufnahmezustand blockiert sichtbar (§33.4) — er darf nicht fehlen",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/state_report/required/record_state",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/steuerkopf-ohne-base-revision.json",
+      "urteil": "ungueltig",
+      "warum": "ohne base_revision kann die Probe keinen Konflikt erkennen (§33.3)",
+      "verletzungen": [
+        {
+          "instanz": "/kopf",
+          "schema": "#/$defs/steuerkopf/required/base_revision",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/steuerkopf-ohne-ttl.json",
+      "urteil": "ungueltig",
+      "warum": "eine steuernde Nachricht ohne Verfall ist ein offener Failsafe",
+      "verletzungen": [
+        {
+          "instanz": "/kopf",
+          "schema": "#/$defs/steuerkopf/required/ttl_ms",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/steuerkopf-unbekannte-eigenschaft.json",
+      "urteil": "ungueltig",
+      "warum": "der Steuerkopf ist sicherheitsrelevant und nicht additiv",
+      "verletzungen": [
+        {
+          "instanz": "/kopf/prioritaet",
+          "schema": "#/$defs/steuerkopf/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/strikt-unbekannte-eigenschaft.json",
+      "urteil": "ungueltig",
+      "warum": "Nachrichtenrahmen sind strikt",
+      "verletzungen": [
+        {
+          "instanz": "/extra_feld",
+          "schema": "#/$defs/heartbeat/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/subscribe-ohne-adresse.json",
+      "urteil": "ungueltig",
+      "warum": "ein Abonnement ohne Absender",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/subscribe_session/required/adresse",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/tail-negativ.json",
+      "urteil": "ungueltig",
+      "warum": "ein negativer Nachlauf wuerde die Quarantaene verkuerzen",
+      "verletzungen": [
+        {
+          "instanz": "/tail_samples",
+          "schema": "#/$defs/audible_intervention_end/properties/tail_samples/minimum",
+          "schluessel": "minimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/time-basis-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "Wandzeit misst nur IPC-Latenz und darf musikalische Frames nie ausrichten (§32.3)",
+      "verletzungen": [
+        {
+          "instanz": "/transport/time_basis",
+          "schema": "#/$defs/transportstempel/properties/time_basis/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/transport-ohne-validity.json",
+      "urteil": "ungueltig",
+      "warum": "ein Frame ohne Gueltigkeitsbits behauptet Zeit, die er nicht hat",
+      "verletzungen": [
+        {
+          "instanz": "/transport",
+          "schema": "#/$defs/transportstempel/required/validity",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/typ-fehlt.json",
+      "urteil": "ungueltig",
+      "warum": "ohne Discriminator gibt es keinen Zweig",
+      "verletzungen": [
+        {
+          "instanz": "/type",
+          "schema": "#/oneOf",
+          "schluessel": "oneOf"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/typ-ist-zahl.json",
+      "urteil": "ungueltig",
+      "warum": "ein nicht-String-Discriminator waehlt keinen Zweig",
+      "verletzungen": [
+        {
+          "instanz": "/type",
+          "schema": "#/oneOf",
+          "schluessel": "oneOf"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/unbekannter-typ.json",
+      "urteil": "ungueltig",
+      "warum": "unbekannter Discriminator wird abgelehnt, nicht gegen alle Zweige gehalten",
+      "verletzungen": [
+        {
+          "instanz": "/type",
+          "schema": "#/oneOf",
+          "schluessel": "oneOf"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/undo-tiefe-ueber-32.json",
+      "urteil": "ungueltig",
+      "warum": "der Undo-Ring ist auf 32 atomische Zustaende begrenzt (§33.5)",
+      "verletzungen": [
+        {
+          "instanz": "/undo_tiefe",
+          "schema": "#/$defs/state_report/properties/undo_tiefe/maximum",
+          "schluessel": "maximum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/validity-ohne-record-state.json",
+      "urteil": "ungueltig",
+      "warum": "ein fehlendes Bit ist ein Nein, kein Vielleicht — es darf nicht weggelassen werden",
+      "verletzungen": [
+        {
+          "instanz": "/transport/validity",
+          "schema": "#/$defs/validity/required/record_state",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/validity-unbekanntes-bit.json",
+      "urteil": "ungueltig",
+      "warum": "ein neues Gueltigkeitsbit ist eine Major-Frage, keine additive",
+      "verletzungen": [
+        {
+          "instanz": "/transport/validity/tempo",
+          "schema": "#/$defs/validity/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/welcome-ohne-broker-epoch.json",
+      "urteil": "ungueltig",
+      "warum": "ohne broker_epoch ist eine Cache-/Replay-Grenze nicht erkennbar (§32.1)",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/welcome/required/broker_epoch",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/welcome-protokoll-2.json",
+      "urteil": "ungueltig",
+      "warum": "auch die Antwort traegt die Version fest",
+      "verletzungen": [
+        {
+          "instanz": "/protocol",
+          "schema": "#/$defs/welcome/properties/protocol/const",
+          "schluessel": "const"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/wurzel-ist-array.json",
+      "urteil": "ungueltig",
+      "warum": "auch die Wurzel muss ein Objekt mit Discriminator sein",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/oneOf",
+          "schluessel": "oneOf"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/wurzel-ist-string.json",
+      "urteil": "ungueltig",
+      "warum": "ein blosser Typname ist keine Nachricht",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/oneOf",
+          "schluessel": "oneOf"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/zaehler-ohne-pflichtzaehler.json",
+      "urteil": "ungueltig",
+      "warum": "additiv heisst NICHT, dass die Pflichtzaehler entfallen duerfen",
+      "verletzungen": [
+        {
+          "instanz": "/zaehler",
+          "schema": "#/$defs/zaehler/required/frames_dropped",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/zaehler-ueber-maxproperties.json",
+      "urteil": "ungueltig",
+      "warum": "additiv heisst begrenzt erweiterbar, nicht beliebig gross (§33.1)",
+      "verletzungen": [
+        {
+          "instanz": "/zaehler",
+          "schema": "#/$defs/zaehler/maxProperties",
+          "schluessel": "maxProperties"
+        }
+      ]
+    }
+  ]
+}

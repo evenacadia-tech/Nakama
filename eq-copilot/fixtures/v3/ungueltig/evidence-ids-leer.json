@@ -1,0 +1,8 @@
+{
+  "type": "evidence_invalidate",
+  "grund": "intervention",
+  "umfang": {
+    "art": "evidence_ids",
+    "evidence_ids": []
+  }
+}

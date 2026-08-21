@@ -1,0 +1,8 @@
+{
+  "type": "session_snapshot",
+  "session_epoch": "22222222222222222222222222222222",
+  "broker_epoch": "88888888888888888888888888888888",
+  "fuehrendes_main": null,
+  "beitritt_bestaetigung_noetig": false,
+  "mitglieder": []
+}

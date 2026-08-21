@@ -1,0 +1,7 @@
+{
+  "type": "command_ack",
+  "command_id": "55555555555555555555555555555555",
+  "ergebnis": "teilweise",
+  "state_revision": 13,
+  "state_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+}

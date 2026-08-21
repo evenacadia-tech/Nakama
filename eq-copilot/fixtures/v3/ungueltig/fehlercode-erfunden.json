@@ -1,0 +1,8 @@
+{
+  "type": "error",
+  "code": "irgendwas_ging_schief",
+  "meldung": "base_revision 12 ist aelter als 13",
+  "command_id": "55555555555555555555555555555555",
+  "betroffene_revision": 13,
+  "rueckweg": "erneut_senden"
+}

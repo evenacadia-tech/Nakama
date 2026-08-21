@@ -119,7 +119,11 @@ keine Optik. Liegt ebenfalls nicht als Datei vor.
 - **Der kleinste Versuch ist ein vorbereiteter Zustand**, nicht nur Text:
   `TEST READY / BASS −2.0 dB @ 220 Hz / Q 1.2`.
 
-### Drei Abweichungen von bindenden Urteilen
+### Drei Zeichen, die beim Übersetzen noch zu klären sind
+
+Kein Mängelbericht — der Entwurf ist ein Designprototyp. Aber jedes dieser drei
+Zeichen sagt heute etwas anderes als das, was am 2026-08-20 entschieden wurde.
+Wer das Blatt baut, muss wissen, welche Bedeutung gilt.
 
 **1. `05 SYNTH PAD` ist als *getrennt* gezeichnet und als *veraltet*
 beschriftet.** `abnahmen/2026-08-20-zustaende-nur-ausnahme.md` legt fest:
@@ -162,10 +166,35 @@ billigste Beweisschritt (`SMALLEST TEST`). **Sicherheit und Alternativursachen
 haben keinen Ort** — beide stehen schon in `abnahmen/2026-08-21-codereview.md`
 als Lücke, hier sind sie es wieder.
 
-### Der Lastfall ist der Schönfall
+### Fünf Quellen sind kein Schönfall, sondern eine Produktaussage
 
-Das Bild zeigt **fünf** Quellen. Die Spezifikation nennt **bis 16**, und die
-gesamte Kartenabnahme wurde bei 16 gemessen und entschieden. Zwei Folgen:
+> **⚠ Berichtigt 2026-08-21.** Hier stand „Der Lastfall ist der Schönfall".
+> Das war falsch gelesen. Der User, wörtlich:
+>
+> > „ich habe schlicht 5 genommen weil 16 bedeutet 16 geladene proben auf
+> > instrumenten. das ist sehr viel, die wenigstens werden 16 benutzen. man
+> > nutzt das dann eher auf instrumentbusse . 16 plugins nur für eq kostet
+> > auch massig leistung"
+>
+> Und zur Einordnung des ganzen Bildes:
+>
+> > „Das ist ein Designprototyp keine technikanleitung, design passt sich am
+> > ende der funktion an."
+
+**Das ändert eine Rechengrundlage, keine Entscheidung.** Sechzehn Quellen sind
+die **obere Grenze der Spezifikation**, nicht der Normalfall: jede Quelle ist
+eine geladene Sonde, und sechzehn davon nur für EQ kosten Rechenleistung. Der
+Regelfall sind **Instrumentbusse**, also eher eine einstellige Zahl.
+
+Für die Karte hieß das bisher stillschweigend das Gegenteil — alles wurde bei
+16 gemessen und entschieden. Beides ist richtig, aber für Verschiedenes:
+
+| | wofür 16 gilt | wofür 5 gilt |
+|---|---|---|
+| **Belastungsprobe** — bricht das Blatt? | **ja, weiter bei 16.** Was bei 8 trägt und bei 16 bricht, trägt nicht. | nein |
+| **Der Anblick, den der Nutzer meistens hat** | nein | **ja.** Und dafür ist bisher nichts entworfen worden. |
+
+Zwei Folgen:
 
 - **Die Namen in der Karte passen hier, bei 16 nicht.** Die namenlose Karte
   braucht bei 16 Quellen **210 px** (`abnahmen/2026-08-21-codereview.md`
@@ -175,12 +204,16 @@ gesamte Kartenabnahme wurde bei 16 gemessen und entschieden. Zwei Folgen:
   Behauptung, keine Messung. Der Schluss („mit Namen geht bei 16 nicht")
   hängt damit an einer ungeprüften Zahl. **Wer die Namen will, misst sie
   zuerst nach** — das ist eine Messung von zehn Minuten, keine Grundsatzfrage.
-- **Genau darum ist das trotzdem interessant.** Die offene Frage des letzten
-  Sessionendes lautete wörtlich: *„Wie kommt man von einer hohlen Zeile zur
-  Quelle? Die Karte ist namenlos."* Dieser Entwurf **antwortet** darauf — er
-  beantwortet sie nur für den kleinen Mix. Was bei 16 Quellen passiert, ist
-  die eigentliche Frage.
+- **Der Entwurf beantwortet eine offene Frage.** Das letzte Sessionende
+  notierte wörtlich: *„Wie kommt man von einer hohlen Zeile zur Quelle? Die
+  Karte ist namenlos."* Hier steht die Antwort im Bild: **die Zeile trägt den
+  Namen.** Sie funktioniert im Regelfall; ob sie an der Obergrenze noch
+  funktioniert, ist eine Messung, keine Meinung.
 
-**Auch das ist keine Abnahme.** Die drei Abweichungen sind keine Kritik am
-Entwurf, sondern Stellen, an denen entweder das Bild oder das frühere Urteil
-nachzieht — und das entscheidet der User, nicht Claude.
+**Auch das ist keine Abnahme.** Und die drei Stellen oben sind keine
+Prüfungsmängel — der Entwurf ist ein **Designprototyp, keine Technikanleitung**,
+und das Design richtet sich am Ende nach der Funktion. Sie stehen hier, weil
+sie beim Übersetzen ins lebende Blatt sonst untergehen: zwei Zeichen, die noch
+etwas Verschiedenes sagen als das, was einmal entschieden wurde, und zwei
+Pflichtangaben, die noch keinen Ort haben. Was davon nachzieht — das Bild oder
+das frühere Urteil — entscheidet der User.

@@ -133,3 +133,41 @@ Zustände fehlen.
 
 - [mechanik-main-overview-detail](2026-08-20-mechanik-main-overview-detail.md)
 - `werkzeug/LIES-MICH.md`, Abschnitt `wireframe-main-karte.html`
+
+---
+
+## Nachtrag 2026-08-21 — 16 ist die Obergrenze, nicht der Regelfall
+
+**Das Urteil oben bleibt unangetastet.** Dieser Nachtrag ändert keine
+Entscheidung, er ordnet nur die Zahl ein, an der alles gemessen wurde.
+
+Der User zum Main-Entwurf desselben Tages, wörtlich:
+
+> „ich habe schlicht 5 genommen weil 16 bedeutet 16 geladene proben auf
+> instrumenten. das ist sehr viel, die wenigstens werden 16 benutzen. man
+> nutzt das dann eher auf instrumentbusse . 16 plugins nur für eq kostet auch
+> massig leistung"
+
+Jede Quelle ist eine geladene Sonde. Sechzehn davon nur für EQ kosten
+Rechenleistung; der Regelfall sind **Instrumentbusse**, also eine einstellige
+Zahl. Damit gilt beides, aber für Verschiedenes:
+
+| | 16 Quellen | ~5 Quellen |
+|---|---|---|
+| **Belastungsprobe** — bricht das Blatt? | **ja, weiter hier.** Was bei 8 trägt und bei 16 bricht, trägt nicht. | nein |
+| **Der Anblick, den der Nutzer meistens hat** | nein | **ja** — und dafür ist bisher nichts entworfen worden. |
+
+**Was daraus folgt, ohne die Wahl anzutasten:** die Karte trägt weiterhin
+*jede* Quelle und *jede* bekommt dieselbe Zeile. Offen ist, ob im Regelfall
+mehr in eine Zeile passt als im Grenzfall — **Namen zum Beispiel**. Der
+Entwurf des Users setzt sie hin und beantwortet damit die offene Frage des
+Sessionendes („Wie kommt man von einer hohlen Zeile zur Quelle?").
+
+Die Zahl, die bisher dagegen sprach, ist **unbelegt**: „Karte mit Namen, 16
+Quellen = 308 px" trägt in `werkzeug/LIES-MICH.md` den Vermerk *„einzige Zahl
+dieser Tabelle ohne Beleg im Quelltext"*. Die namenlose Karte braucht
+gemessen **210 px** (`2026-08-21-codereview.md`; die verbreitete 212 stammt
+aus `offsetHeight`). **Vor jeder Diskussion über Namen gehört die 308
+nachgemessen** — an der Messbank, in beiden Lastfällen.
+
+Beschreibung des Entwurfs: `Nakama Designausarbeitungen selfmade/LIES-MICH.md`.

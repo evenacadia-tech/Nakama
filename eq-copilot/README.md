@@ -1,77 +1,59 @@
-# Nakama — transparentes Sammler-VST3 + Tauri-Broker
+# eq-copilot — Plugin-Bauwurzel (Nakama)
 
-Kanonischer Plan: `../FL-EQ-Copilot-Recherche.md` (Dateiname historisch — es ist der
-Produkt- und Umsetzungsplan). Verbindlicher Plan der freigegebenen neuen
-VST3-Hauptansicht: `docs/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md`. Visuelle Referenz:
-`design/nakama-spectral-field-vorentwurf.html` plus die geprüften Bilder unter
-`design/vorentwurf-renders/`.
+Hier liegen Plugin (JUCE 8 + CMake), Verträge (v2 + v3), Identität, Fixtures,
+Install-Skript (gitignoriert, nur auf dem Desktop) und die Material-Kit-Kette.
+Produkt, Namen, Grundgesetz und Beweis-Kanon stehen in **einer** Quelle:
+`../CLAUDE.md` (Wahrheitskern + Register der User-Entscheide). Dieses README
+wiederholt sie nicht.
 
-**Ist/Ziel ehrlich getrennt:** Der aktuelle Quellcode und das gestagte Bundle
-tragen intern und teilweise sichtbar noch den Legacy-Namen `EQ-Copilot` und
-verwenden die helle Material-Gerätefront. Das freigegebene, noch zu bauende Ziel
-heißt **Nakama** und ist ein frei skalierbares, bildschirmfüllendes Spectral
-Field mit textfreien Werkzeugkreisen, überlagerbaren Problemsymbolen,
-manuellem Befundarchiv und fünf umschaltbaren Farbpaketen. Interne `EqCop*`-,
-Schema- und Pipe-Namen dürfen für Kompatibilität bestehen bleiben.
+**Legacy-Name:** Bundle, Codes und Pipes heißen noch `EQ-Copilot` / `EqCop*`;
+die Umbenennung zu „Nakama Studio" ist NAK-30 (Identitäts-Ticket), kein
+Nebenbei-Refactor. Die kompilierte Material-Kit-Front ist ein **Provisorium**
+(User 21.08.: „Nie abgenommen – bleibt Provisorium"); die neue UI aller drei
+Apps kommt aus Figma über `Projekte/Nakama-Design`.
 
-**Grundgesetz:** Nakama berät nur. Es setzt keine Parameter, schreibt keine
-Automation, verändert kein Audio (Passthrough sampleidentisch, 0 Latenz) und ruft
-Claude nur auf bewussten Klick. Der Audiothread enthält keine Sperren, Allokationen,
-Datei-/Netz-Zugriffe (Plan §12). Einzige dokumentierte Ausnahme seit 0.3.0: die
-**Hör-Markierung** färbt auf bewussten Klick das Monitorsignal (verriegelt auf
-bewiesene Echtzeit ∧ offenen Editor ∧ Transport ∧ `!isNonRealtime()`);
-Render/Export bleibt bitidentisch (`EqCopMarkierungTest`).
-
-## Layout (Plan §10.4)
+## Layout
 
 ```
 eq-copilot/
-  plugin/        JUCE 8 + CMake · transparentes VST3 (+ Pipe-Probe, Nulltest)
-  schemas/       eq-ipc (v2) / eq-measurement / eq-report / eq-snapshot /
-                 eq-aggregat — versionierte Verträge
-  design/        tokens.json (maschinenlesbare Leitstand-Tokens) + Generator
-  fixtures/      Golden-Audio und Host-Testfälle (ab M1)
-  docs/          Lizenznotiz, M0/M1/M2-Befund, FL-Testanleitung
-plugin-hub-app/src-tauri/src/eq_copilot/   Broker (Pipe-Server, Register,
-                 Paare, Profilbindung, Aggregat)
-plugin-hub-app/src/lib/eq-copilot/         Sensorübersicht (App-UI, M2)
+  CMakeLists.txt   Bauwurzel; JUCE 8.0.9 gepinnt; Versions-Riegel (CMake == kPluginVersion)
+  cmake/           NakamaBruecke.cmake (Quellhash-Gate des JUCE-Patches), FlatBuffers-Pin
+  plugin/
+    src/           Produkt: AnalyseEngine · Diagnose · PluginProcessor/-Editor · PipeClient · HoerMarkierung · AssetKit
+    hostbridge/    Gegenseite des Bridge-Patches (JUCE-frei, 0 Allokationen)
+    hostprobe/     Wegwerf-Messgerät Termin B (NkHp)
+    spike/         Wegwerf-Messgerät Termin A, Aux/PDC (NkSp)
+    vertrag/       v3-Vertragsengine C++ (JSON + FlatBuffers)
+    tests/         Prüfbinaries (Null, Golden, Markierung, Identität, Hostkontext, HostProbe, Schema, AuxSpike, Shot, PaintBench, PipeProbe)
+  schemas/         v2-Verträge des heutigen Plugins · v3/ Sondenfamilie (Bandgitter, Textriegel, FlatBuffers)
+  identity/        plugin-identities-v1.json — eingefrorene Bundle-Identität
+  fixtures/        Golden-Referenz, Identity-Goldens, v3-Korpus (JSON + Binär), Aux-Spike-Impulse
+  design/          tokens.json → gen-tokens.mjs → plugin/src/LeitstandTokens.h (Provisorium) · archive/ · prisma-studie/
+  docs/            Befunde M0–M3a, CS1, Benchmark-Studie, FL-Testanleitung, FL-Termine A/B, Hör-Markierungs-Konzept
+  install/         (gitignoriert) Install-Skript + Rollback-Bundles
 ```
 
-## Bauen (Windows, VS 2022 Build Tools)
+## Bauen und Prüfen
+
+Der vollständige Bau- und Kanonbefehl steht in `../CLAUDE.md` („Bauen &
+Beweisen"): `pwsh -File tools/beweise.ps1 -Bauen …` fährt alle 15 Beine und
+schreibt die rohe Ausgabe ins Manifest. Einzelbefehle ebenfalls dort.
+
+Artefakt: `build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3`.
+Installation nur per User-Klick (`install/Install-EQ-Copilot.ps1` als Admin);
+installiert ist zurzeit das Bundle vom 16.08.
+
+Pipe Ende-zu-Ende (immer der eigene Probe-Pipename, nie die Produktion):
 
 ```powershell
-$cmake = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
-& $cmake -S eq-copilot -B eq-copilot/build -G "Visual Studio 17 2022" -A x64
-& $cmake --build eq-copilot/build --config Release --target EqCopilot_VST3 EqCopPipeProbe EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
-```
-
-Artefakt: `eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3`
-→ nach `C:\Program Files\Common Files\VST3\` kopieren (FL-Standard-Scanpfad).
-
-## Prüfen (headless)
-
-```powershell
-py -3.13 tools/eq-copilot/erzeuge_fixtures.py --nur-wav   # einmalig: Golden-WAVs
-eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe
-eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures
-eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe
-cargo test --manifest-path plugin-hub-app/src-tauri/Cargo.toml eq_copilot
-```
-
-Ende-zu-Ende (v2 + Konflikt-Roundtrip) — die Probe läuft auf einem EIGENEN
-Pipenamen, damit sie nie mit dem Broker einer laufenden Hub-App kollidiert
-(zwei Broker auf einem Namen stahlen sich still Clients; der
-Produktions-Broker verweigert das inzwischen per FIRST_PIPE_INSTANCE):
-
-```powershell
-# Terminal 1 (Rust-Broker, 30 s):
-plugin-hub-app\src-tauri\target\debug\eqcop-broker-probe.exe 30
+# Terminal 1 (Broker-Probe, 30 s):
+..\broker\target\release\eqcop-broker-probe.exe 30
 # Terminal 2 (C++-Client-Probe gegen den Probe-Namen):
-eq-copilot\build\plugin\EqCopPipeProbe_artefacts\Release\EqCopPipeProbe.exe "\\.\pipe\evenacadia.eq-copilot.m2probe"
+build\plugin\EqCopPipeProbe_artefacts\Release\EqCopPipeProbe.exe "\\.\pipe\evenacadia.eq-copilot.m2probe"
 # Erwartet: PROBE OK v2 · KONFLIKT OK · KONFLIKT-ENDE OK (Exit 0)
 ```
 
-## Meilensteine
+## Meilensteine (Verlauf der EQ-Copilot-Linie bis 0.3.0 — Beweisgeschichte, keine Roadmap)
 
 M0: Beweis-Spike — Passthrough-VST3, Named-Pipe-Handshake, Schemas, Tokens,
 Nulltest + Probe (`docs/M0-BEFUND.md`).
@@ -90,7 +72,7 @@ Diagnose (Plan §11).
 (Alignment/RAII/SAFETY) · Spektrum+Aktivität+Crest auf Kanalenergie
 (Antiphase-Fix) · NaN-Riegel mit Zähler · Nyquist-Kappe der LTAS · Fixtures
 v2 (L==R) + 6 adversariale GoldenTest-Fälle — **GOLDEN OK 178/178**
-(`docs/CS1-BEFUND.md`; Auftrag: `docs/EQ-COPILOT-TECHNIK-UX-UEBERGABE.md`).
+(`docs/CS1-BEFUND.md`; Auftrag: `../docs/archiv/EQ-COPILOT-TECHNIK-UX-UEBERGABE.md`, Archiv).
 **EQ-Copilot Material Kit (2026-08-15):** vollständige eigenständige
 Vektorfront aus `plugin/src/EqCopilotAssetKit.h` (Tokens-Gruppe `copilot`, Vertrag:
 `design/ASSET-KIT.md`). Warme Metallfläche + schwarzes Analyseglas + sparsamer

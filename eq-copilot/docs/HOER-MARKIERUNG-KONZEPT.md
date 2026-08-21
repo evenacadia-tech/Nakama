@@ -1,3 +1,5 @@
+> **Stand-Hinweis 21.08.2026: Konzept vom 16.08. (User-Idee), gebaut in 0.3.0 und per `EqCopMarkierungTest` bewiesen; die heutige Verriegelung steht in `CLAUDE.md` (Technik-Zement). Abschnitte mit Hub-App/Tauri (§6, §9, §11) und der Verweis auf ein Bauplan-§7.6 sind überholt. Die Hör-Markierung gilt für Nakama Gen; Probeeq ist ein EQ und braucht sie nicht.**
+
 # Hör-Markierung („Einfärben") — Konzept v2 (nach Technik-Begehung)
 
 **Datum:** v1 2026-08-16 · **v2 gleicher Tag nach Technik-Begehung** (User-Auftrag:

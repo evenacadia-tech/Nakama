@@ -1,7 +1,7 @@
 # Änderungssatz 1 — Sicherheit und Messkorrektheit (Befund)
 
 **Datum:** 2026-08-14 · **Commits:** `41e9424` (P0 Rust) + `dca9a40` (Engine m3)
-**Auftrag:** `EQ-COPILOT-TECHNIK-UX-UEBERGABE.md` §15 „Änderungssatz 1" (Pakete A, B, C §8.2, D)
+**Auftrag:** `docs/archiv/EQ-COPILOT-TECHNIK-UX-UEBERGABE.md` (Archiv) §15 „Änderungssatz 1" (Pakete A, B, C §8.2, D)
 **Metrics-Version:** `m1-2026-08-13` → **`m3-2026-08-14`** (Messsemantik geändert — nie still)
 
 ---

@@ -5,7 +5,7 @@
 > **Ist-Dokument / abzulösende Front.** Dieses Kit beschreibt weiterhin
 > korrekt die momentan kompilierte JUCE-Gerätefront. Es ist jedoch nicht mehr
 > das freigegebene Zielbild. Der verbindliche Umbau auf **Nakama · Spectral
-> Field** steht in `../docs/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md`: Graph über die
+> Field** steht in `../../docs/archiv/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md` (Archiv, alt seit 21.08.): Graph über die
 > gesamte Editorfläche, textfreie Werkzeugkreise, überlagerbare Problemsymbole,
 > manuelles Befundarchiv und umschaltbare Farbpakete. Bis dieser Umbau
 > tatsächlich gebaut und verifiziert ist, bleibt dieses Dokument als ehrliche

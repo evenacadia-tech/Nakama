@@ -2,7 +2,7 @@
 
 > **UI-Vorrang 2026-08-16:** Die DSP-Mechaniken und Messbegründungen dieser
 > Studie bleiben gültig. Sichtbare Layer, Controls und Interaktionen werden
-> dagegen abschließend durch `NAKAMA-SPECTRAL-FIELD-BAUPLAN.md` festgelegt.
+> dagegen kommt aus dem Figma-Design des Users (seit 21.08.; der frühere Bauplan liegt in `docs/archiv/NAKAMA-SPECTRAL-FIELD-BAUPLAN.md`).
 > Insbesondere ersetzt der bewusste Schnappschuss einen zusätzlichen
 > Freeze-/Max-Hold-Knopf. Das Hauptfenster arbeitet mit textfreien
 > Werkzeugkreisen, überlagerbaren Problemsymbolen und einem ausschließlich
@@ -12,7 +12,7 @@ Stand 2026-08-15. Auftrag: die Analyse-/Feedback-Mechanik der drei
 Industrie-Benchmarks dekonstruieren und daraus einen technischen Blueprint
 ableiten. **Einordnung:** Das Zielprodukt („beratender EQ-Analyzer, der beim
 Hören mitmisst und konkrete Hinweise gibt, ohne selbst einzugreifen") **ist der
-gebaute EQ-Copilot** (kanonischer Plan `FL-EQ-Copilot-Recherche.md`, Kern-Stand
+gebaute EQ-Copilot** (Recherche im Archiv `docs/archiv/FL-EQ-Copilot-Recherche.md`, Kern-Stand
 `M3-KERN-BEFUND.md`). Diese Studie ist deshalb kein Neuentwurf, sondern die
 Vermessung der Benchmarks gegen unseren Kern — mit dem Ergebnis als
 **M3a/M3b/M3c-Roadmap** auf der bestehenden Architektur (VST3-Sammler +

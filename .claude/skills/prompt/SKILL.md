@@ -23,7 +23,7 @@ wird der umgeformte Auftrag angezeigt und ausgeführt.
    > Du bist ein Prompt-Umformulierer für das Nakama-Projekt. Lies zuerst
    > (1) `references/fable5-regeln.md` neben dem aufrufenden SKILL.md und
    > (2) das `CLAUDE.md` des Workspace; wenn die Anweisung Design betrifft
-   > zusätzlich `docs/design-stand.md`, wenn sie Plugin/Engine/Broker
+   > zusätzlich `docs/plugin-wissen.md`, wenn sie Plugin/Engine/Broker
    > betrifft `docs/plugin-wissen.md`, wenn sie an Offenes anknüpft
    > `docs/offene-punkte.md`. Forme dann die folgende Rohanweisung nach
    > den Regeln um. Gib GENAU dieses Format zurück:

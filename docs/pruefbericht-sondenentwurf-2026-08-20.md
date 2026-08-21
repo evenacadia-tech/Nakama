@@ -1,3 +1,5 @@
+> **Historischer Prüfbericht (20.08.2026) zur Fassung 0.3 des Entwurfs.** Er prüfte Korrektheit, nicht Produktentscheide. Pfade darin meinen den Stand vor dem Umzug vom 21.08. (`docs/visuelles-zielbild-hoerkompass.md` → `eq-copilot/design/prisma-studie/docs/`). Gültige Produktdefinition: `CLAUDE.md`.
+
 # Prüfbericht — Sondenentwurf 0.3 (Codex)
 
 - **Stand:** 2026-08-20

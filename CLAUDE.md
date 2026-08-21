@@ -46,7 +46,7 @@ Edits sofort per **explizitem Pathspec** committen (nie `git add -A`, nie
   Remote ±3 dB, 1,5/3 dB): vom User **hingenommene Startwerte**, änderbar —
   Regelfall einstellige Quellenzahl.
 - **Pläne:** `docs/FL-Nakama-Sonden-Design-Entwurf.md` (mit Errata-Block)
-  ist der technische Entwurf; `FL-EQ-Copilot-Recherche.md` ist **Archiv**.
+  ist der technische Entwurf; die Recherche liegt als **Archiv** in `docs/archiv/`.
   Bauentscheidung erteilt 20.08. („okay dann fangen wir damit nächste
   session an"). Nächste Fläche ohne FL-Termine: S7 (`SONDE-006`).
 - **Regel für Claude:** Ein Entscheid existiert nur mit **Datum + Zitat des

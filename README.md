@@ -1,22 +1,26 @@
-# Nakama — Session-Workspace
+# Nakama
 
-Dieses Folder ist der **Session-Anker** für Claude-Arbeit am Nakama-Projekt
-(transparentes Berater-VST3 für FL Studio, Legacy-Name EQ-Copilot).
+Plugin-Familie für FL Studio, die beim Mischen berät: **Nakama Gen** (Main),
+**Nakama Probeeq** (aktive Sonde, vollwertiger EQ), **Nakama Suna** (passive
+Sonde); Bundle **Nakama Studio**. Technik: JUCE 8 / C++20 / CMake +
+eigenständiger Rust-Broker (Named Pipe). Code, Bundle und Pipes tragen heute
+noch den Legacy-Namen EQ-Copilot (`EqCop*`).
 
-Hier liegen Kontext, Wissen und Handoffs — **nicht der Code**. Der Code lebt in
-`C:\Users\phili\FL-Studio\eq-copilot\` (+ Broker in `plugin-hub-app`); dieses
-Workspace hat per `.claude/settings.json` Zugriff darauf.
+Dieses Repo hält **Code, Verträge, Beweise und technisches Wissen**. Das Design
+der drei Apps entsteht in Figma (User) und wird in `Projekte\Nakama-Design`
+in lebende Blätter übersetzt.
 
-| Datei | Zweck |
+| Wohin | Wofür |
 |---|---|
-| `CLAUDE.md` | Tragende Invarianten, Pfade, Bau- und Beweiskommandos |
-| `docs/plugin-wissen.md` | Wie das VST3-Plugin heute funktioniert |
-| `docs/design-stand.md` | An welchem Design-Prototypen wir gerade arbeiten |
-| `docs/offene-punkte.md` | Durables Offen-Set (nie stillschweigend löschen) |
-| `docs/handoffs/` | Automatische Session-Handoffs (Cap 5) |
-| `tools/hooks/` | SessionStart-Primer, Depth-Primer, Handoff-Hooks, Guards |
-| `.claude/skills/prompt/` | `/prompt [nur] <anweisung>` — Opus formt die Rohanweisung Fable-5-optimal um, zeigt sie, führt sie aus |
+| `CLAUDE.md` | Wahrheitskern, Register der User-Entscheide (mit Zitat), Bauen & Beweisen, Invarianten |
+| `docs/NEXT-SESSION.md` | Einstieg: Stand und der eine nächste Schritt |
+| `docs/plugin-wissen.md` | Wie das Plugin heute funktioniert |
+| `docs/FL-Nakama-Sonden-Design-Entwurf.md` | Technischer Entwurf der Sondenfamilie (Fassung 0.4 + Errata) |
+| `docs/bauaufteilung-sonden.md` | Sessions, Gates, Prüfstufen |
+| `docs/beweise/` | Beweismanifeste je Ticket (rohe Ausgabe) |
+| `docs/offene-punkte.md` | Offen-Set (nie still löschen) |
+| `docs/archiv/` · `eq-copilot/design/archive/` · `eq-copilot/design/prisma-studie/` | Verlauf: alte Pläne, alte Design-Richtungen, geparkte Prisma-Studie — nie Vorgabe |
+| `tools/beweise.ps1` | Ein Befehl für den ganzen Beweis-Kanon |
+| `tools/hooks/` | SessionStart-Primer (liest den Wahrheitskern aus CLAUDE.md), Handoffs, Guards |
 
-Sessions in diesem Folder starten mit injizierter Systemkarte + Live-Git-Stand
-des FL-Studio-Repos. Code-Commits gehen ins FL-Studio-Repo, Wissens-Commits
-hierher.
+Bauen und Beweisen: siehe `CLAUDE.md`, Abschnitt „Bauen & Beweisen".

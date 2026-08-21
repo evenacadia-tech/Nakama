@@ -161,6 +161,44 @@ node werkzeug/pruefung/sondenprobe.mjs
 
 ---
 
+## Selbstaudit nach dem letzten Commit
+
+Am **gerenderten Blatt** durchgesehen, nicht am Diff — und das hat sich
+gelohnt: zwei Texte behaupteten noch, was nicht mehr gemessen wird.
+
+- Der Kopftext nannte „längste Werte" als Teil des Platz-Grenzfalls, während
+  das neue Tor sie bewusst **nicht** einfordert. Korrigiert, mit der Messung
+  dazu.
+- Die Waage-Bemerkung zitierte Q 24.00 · −60,0 dB · 3000 ms ohne Kennzeichnung
+  — genau der Weg, auf dem aus einer Annahme „nach der Spezifikation" wird.
+
+Beides steht in `542b162`. Diese beiden Zeilen hatte eine **parallele
+Claude-Sitzung** aus dem noch nicht committeten Arbeitsstand aufgesammelt und
+als „verwaiste Änderung" gelandet, während hier noch gemessen wurde. Inhaltlich
+byte-gleich mit dem, was hier geschrieben wurde, mit eigener Blattprüfung davor
+— nichts verloren, nur die Zuordnung stimmt nicht. Festgehalten, damit
+niemand den Commit später für eine fremde Änderung hält.
+
+**Zwei Dinge geprüft und absichtlich NICHT geändert:**
+
+- Die Waage schützt nur die Zeile „längste Werte" mit `ohneSchalter`; alle
+  anderen zeigen den aktuellen Zustand. Das ist gewollt („was diese Runde
+  wirklich anzeigt"). Der Streifen-Fix macht die Streifen jetzt **konsistent**
+  dazu, nicht inkonsistent.
+- `formfaktor.html` rendert dieselben Slot-Zeilen von Hand, inklusive `dyn`.
+  Dort gibt es aber gar keinen Bypass-Zustand — „Bypass off" ist eine feste
+  Beschriftung. Kein Zwilling zu Befund 3.
+
+**Kosten gemessen statt geschätzt:** `zeichnen()` 107,3 → 119,2 ms Median
+(+11 %) durch die zwei zusätzlichen Ehrlichkeits-Stellungen auf der versteckten
+Bühne. Für eine klickgetriebene Messbank vertretbar; für eine Oberfläche, die
+pro Frame zeichnet, wäre es das nicht.
+
+**Sichtprüfung des Fußes gerendert:** Hinweisfeld 420 × 79 px, lesbar,
+`fussUeberlauf` 0.
+
+---
+
 ## Was offen bleibt — und warum es niemand nebenbei entscheidet
 
 1. **Die Bereichsgrenzen der Bandparameter.** Die Spezifikation nennt genau

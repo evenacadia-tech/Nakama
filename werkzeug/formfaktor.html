@@ -55,10 +55,16 @@ body{background:#1a1a1a;color:#dcdcdc;
 /* Was nicht mehr hineinpasst, wird abgeschnitten und rot markiert — nicht
    heimlich zusammengedrueckt. Ein zu kleines Fenster muss weh tun. */
 .fenster.eng{border-color:#8a5a4a}
+/* Vorher trug jedes Fenster unter dem hinterlegten Mindestmass das Band
+   "content cut off" — auch wenn gemessen nichts abgeschnitten war. Zwei
+   verschiedene Aussagen brauchen zwei verschiedene Zeichen. */
+.fenster.schnitt{border-color:#8a5a4a}
+.fenster.schnitt .titel em{color:#c98a72}
+.fenster.schnitt .leib{border-bottom:2px solid #8a5a4a}
 .fenster.eng .titel em{color:#c98a72}
 /* Sichtbare Schnittkante: ein zu kleines Fenster darf nicht so tun, als passe alles. */
 .fenster.eng .leib{border-bottom:2px solid #8a5a4a}
-.fenster.eng::after{content:'content cut off';position:absolute;right:0;bottom:0;
+.fenster.eng::after{content:'below minimum size';position:absolute;right:0;bottom:0;
   background:#8a5a4a;color:#1a1a1a;font-size:9px;letter-spacing:.1em;
   text-transform:uppercase;padding:2px 6px;pointer-events:none}
 
@@ -212,15 +218,11 @@ const ADVISOR = [
 /* Diese Mindestmasse sind Ingenieurentscheidung, keine Messung: sie folgen
    aus Lesbarkeit bei 100 % Skalierung (Versalien >= 9 px, Werte >= 11 px)
    plus Zeilenhoehe. Sie gehoeren geprueft, sobald echte Schrift steht. */
-const MINDEST = {
-  streifen: {w:420, h:24},
-  quellen:  {w:210, h:70},
-  heatmap:  {w:300, h:60},
-  detail:   {w:260, h:130},
-  befunde:  {w:240, h:60},
-  advisor:  {w:340, h:126},
-  vergleich:{w:280, h:56}
-};
+/* Hier stand die Tabelle MINDEST mit sieben Bausteinmassen. Sie wurde nirgends
+   gelesen — der Kommentar darueber gab sie als tragende Entscheidung aus.
+   Entfernt 2026-08-21. Die wirksamen Mindestmasse stehen je Modus in MODI
+   (mindestW/mindestH) und sind, wie die Nachmessung zeigt, zu klein angesetzt:
+   "Rollen setzen" braucht gemessen 442 px Hoehe, hinterlegt sind 300. */
 
 /* ---------- Bausteine ---------- */
 const hoehe = h => h === 'flex' ? 'flex:1 1 0;min-height:0'
@@ -235,17 +237,17 @@ const streifen = (aktiv) => `<div class="streifen">
     <span><span class="pkt alt"></span>3</span>
     <span><span class="pkt weg"></span>1</span>
     <span>Measuring 68 %</span></span></div>`;
-const quellenBox = (n,h) => kasten('Sources', n+' of 16',
-  `<div style="flex:1;overflow:hidden">${SOURCES.slice(0,n).map(([nm,r,f])=>
+const quellenBox = (n,h) => kasten('Sources', '',
+  `<div class="ehrlich" data-gesamt="16" style="flex:1;overflow:hidden">${SOURCES.slice(0,n).map(([nm,r,f])=>
     `<div class="qz"><span class="pkt ${f==='ok'?'':f}"></span>
      <span class="n">${nm}</span><span class="r">${r}</span></div>`).join('')}</div>`,
   hoehe(h));
 const heatmapBox = (n,h,titel='Comparative heatmap',zusatz='list → heatmap → detail') =>
   kasten(titel, zusatz,
-  `<div class="hmz" style="height:9px"><span class="n"></span>
+  `<div class="hmz" style="min-height:max-content"><span class="n"></span>
      <span class="z" style="font-size:8px;color:#7d7d7d;gap:2px">
        ${BAND.map(b=>`<i style="background:none;text-align:center">${b}</i>`).join('')}</span></div>
-   <div style="flex:1;display:flex;flex-direction:column;gap:2px;overflow:hidden">
+   <div class="ehrlich" data-gesamt="16" style="flex:1;display:flex;flex-direction:column;gap:2px;overflow:hidden">
    ${SOURCES.slice(0,n).map(([nm,,,e])=>
     `<div class="hmz" style="flex:1"><span class="n">${nm}</span>
      <span class="z">${e.map(v=>`<i style="background:hsl(0 0% ${14+v*11}%)"></i>`)
@@ -381,7 +383,14 @@ const FORMEN = [
 ];
 const ANDERE = {
   aktiv:   {name:'Active-Probe-Editor', w:700, h:420,
-            bau:(w,h)=>streifen(3) + heatmapBox(1, 70,'EQ curve','8 bands · dynamic')
+            /* Vorher "8 bands · dynamic" — gezeichnet werden BAND.length = 9
+               Frequenzmarken, keine Baender. Zwei Begriffe unter einem Namen,
+               PRUEFLISTE 4.1. Und ACHTUNG fuer die naechste Runde: dieser
+               Kasten ist KEIN Modell des Editors. Der hat laut Spezifikation
+               8 Band-Slots mit je 12 Parametern. Solange hier eine Kurve mit
+               einer Zeile steht, kann dieses Blatt 700x420 nicht beurteilen —
+               es misst dann etwas anderes ehrlich. Siehe docs/sondenplan.md. */
+            bau:(w,h)=>streifen(3) + heatmapBox(1, 70,'EQ curve',BAND.length+' freq marks · dynamic')
               + detailBox(h-24-70-24) },
   passiv:  {name:'Passive-Probe-Kachel', w:260, h:84,
             bau:()=>`<div class="box" style="flex:1"><div class="inh">
@@ -437,6 +446,60 @@ function fenster(id, titel, x, y, bw, bh, inhalt, mitGriff){
   return f;
 }
 
+/* Ein Fenster ehrlich messen. Drei Fehler der ersten Fassung, jeder gemessen:
+   1. Sie sah nur `.leib` und `.inh`. Ein verschachteltes overflow:hidden —
+      z. B. das anonyme <div style="flex:1;overflow:hidden"> in quellenBox —
+      schluckte die Ueberlaenge, bevor ein `.inh` sie sah: gemeldet 0 px,
+      tatsaechlich 118. PRUEFLISTE 2.1 verlangt rekursiv ueber ALLE Nachfahren.
+   2. Sie mass nur die Hoehe. Der Streifen schnitt bei 300 px Fensterbreite
+      108 px rechts ab, und nichts meldete sich. PRUEFLISTE 2.2.
+   3. Sie lief nur auf `#main`. Active-Probe und Passive-Kacheln hatten kein
+      dataset.fehlt, keine eng-Klasse, keinen Titelzusatz — und die
+      Active-Probe laeuft bei 700x420 gemessen 24 px ueber. Genau die beiden
+      Oberflaechen, die als Naechstes vermessen werden sollen.
+   Ausserdem getrennt: "zu klein" (unter dem hinterlegten Mindestmass) ist
+   etwas anderes als "abgeschnitten" (gemessen). Vorher trug ein Fenster das
+   Band "content cut off", wo nichts abgeschnitten war. */
+function messeFenster(f, bw, bh, unterMindestmass){
+  const leib = f.querySelector('.leib');
+  if(!leib) return 0;
+  let fehlt = 0, richtung = '';
+  const pruef = x => {
+    const h = x.scrollHeight - x.clientHeight, b = x.scrollWidth - x.clientWidth;
+    if(h > fehlt){ fehlt = h; richtung = 'hoch'; }
+    if(b > fehlt){ fehlt = b; richtung = 'breit'; }
+  };
+  pruef(leib);
+  leib.querySelectorAll('*').forEach(pruef);
+  /* Kopfzahlen aus der Messung, nie aus dem Quelltext: gezaehlt wird, was
+     GANZ im sichtbaren Rechteck liegt. Vorher stand "16 of 16" im Kopf,
+     waehrend eine Zeile unter der Kante lag. */
+  leib.querySelectorAll('.ehrlich').forEach(l => {
+    const r = l.getBoundingClientRect();
+    const ganz = [...l.children].filter(z => {
+      const q = z.getBoundingClientRect();
+      return q.height > 0 && q.bottom <= r.bottom + 0.5 && q.top >= r.top - 0.5;
+    }).length;
+    const h4 = l.closest('.box')?.querySelector(':scope > h4');
+    if(!h4) return;
+    // kasten() rendert das <em> nur bei nicht-leerem Zusatz — hier wird es
+    // gebraucht, also notfalls angelegt.
+    let kopf = h4.querySelector(':scope > em');
+    if(!kopf){ kopf = document.createElement('em'); h4.appendChild(kopf); }
+    const gesamt = +l.dataset.gesamt || l.children.length;
+    kopf.textContent = ganz + ' of ' + gesamt;
+    kopf.style.color = ganz < gesamt ? '#c98a72' : '';
+  });
+  f.dataset.fehlt = fehlt;
+  f.classList.toggle('schnitt', fehlt > 1);
+  f.classList.toggle('eng', !!unterMindestmass);
+  const em = f.querySelector('.titel em');
+  if(em) em.textContent = fehlt > 1
+    ? `${bw}×${bh} — ${fehlt} px fehlen (${richtung})`
+    : unterMindestmass ? `${bw}×${bh} — unter dem Mindestmaß` : `${bw}×${bh}`;
+  return fehlt;
+}
+
 function zeichnen(){
   bildschirm();
   const s = $('#schirm');
@@ -455,23 +518,14 @@ function zeichnen(){
   // Erst nach dem Einhaengen messbar: laeuft der Inhalt wirklich ueber?
   // Nicht nur der Leib: die Kaesten schrumpfen mit, also wird ihr INHALT
   // abgeschnitten, nicht der Fensterrahmen. Gemessen wird auf jeder Ebene.
-  const leib = haupt.querySelector('.leib');
-  let fehlt = Math.max(0, leib.scrollHeight - leib.clientHeight);
-  haupt.querySelectorAll('.inh').forEach(i=>{
-    fehlt = Math.max(fehlt, Math.max(0, i.scrollHeight - i.clientHeight));
-  });
-  if(fehlt > 1 || eng){
-    haupt.classList.add('eng');
-    haupt.querySelector('.titel em').textContent =
-      `${w.main.w}×${w.main.h} — ${fehlt > 1 ? fehlt + ' px fehlen' : 'zu klein'}`;
-  }
-  haupt.dataset.fehlt = fehlt;
+  messeFenster(haupt, w.main.w, w.main.h, eng);
 
   if(w.aktivAn){
     const a = ANDERE.aktiv;
     const f = fenster('aktiv', 'Nakama — Active Probe', w.aktiv.x, w.aktiv.y, a.w, a.h,
       a.bau(a.w, a.h), false);
     s.appendChild(f); zieh(f, w.aktiv, false);
+    messeFenster(f, a.w, a.h, false);
   }
   if(w.passivAn){
     const p = ANDERE.passiv;
@@ -479,6 +533,9 @@ function zeichnen(){
       const f = fenster('passiv'+i, 'Passive', w.passiv.x, w.passiv.y + i*(p.h+8),
         p.w, p.h, p.bau(), false);
       s.appendChild(f);
+      // 260x84 ist das schaerfste der drei Masse und die Kachel ist BREIT und
+      // flach — dort entscheidet die Breite, und genau die wurde nie gemessen.
+      messeFenster(f, p.w, p.h, false);
     });
   }
   panel();

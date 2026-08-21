@@ -70,8 +70,8 @@ schon gejagt wurde, um nicht dieselben Wege doppelt zu gehen.
 | `SONDE-003` — JUCE-Bridge-Patch | `git diff 0ba87cc..e9c6fa0` (5 Commits) | `docs/beweise/SONDE-003.md` |
 | `S3b` — Termin-B-Messgerät | `git diff e9c6fa0..22d23d7` (5 Commits) | `docs/beweise/SONDE-003b.md` |
 
-Danach folgen nur noch zwei reine Doku-Commits (`16dd825`, dieser hier) — kein
-Code.
+Alles nach `22d23d7` sind reine Doku-Commits — **kein Code**. Wer nur den Code
+reviewen will, kann bei `0ba87cc..22d23d7` bleiben.
 
 Die Manifeste tragen zu **jeder** Behauptung die rohe Ausgabe, dazu §6 mit allen
 Befunden und ihrem Ausgang. Der Gate-Text steht jeweils im Kopf **im Wortlaut**

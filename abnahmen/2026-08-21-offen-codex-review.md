@@ -77,6 +77,8 @@ Maßstab sichtbar wäre.
   Kurve oder Bänder?**
 - Die Aufgabenliste nach Häufigkeit ist weiter **Entwurf**
   (`docs/sondenplan.md` §3). Ohne sie kein Wireframe.
-- **Nakama-Design hat kein Git-Remote.** 40+ Commits nur auf
-  SCHUBBINATOR200; der User hat die Sicherung am 21.08. bewusst offen
-  gelassen.
+- ~~Nakama-Design hat kein Git-Remote.~~ **Erledigt 21.08. durch den
+  User:** privates Remote `github.com/evenacadia-tech/Nakama-Design`,
+  `master` == `origin/master`. Ab jetzt gilt hier dieselbe Regel wie im
+  Nachbarprojekt: **nach Commits pushen, vor Arbeitsbeginn pullen** — der
+  User arbeitet wechselnd an Desktop und Laptop.

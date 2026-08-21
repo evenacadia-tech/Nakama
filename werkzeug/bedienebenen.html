@@ -262,6 +262,13 @@ body.vertragAn .vertrag{display:flex}
 </style>
 </head>
 <body>
+<!-- Standband: was ist dieses Blatt? Werkzeug-Chrome, deutsch, liegt
+     ausserhalb des beurteilten Blattes. Ergaenzt 2026-08-21. -->
+<div style="background:#3f3f3f;color:#f2f2f2;padding:7px 26px;font:12px/1.5 'Segoe UI',system-ui,sans-serif;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+  <b style="letter-spacing:.12em;font-size:10.5px;text-transform:uppercase;flex:none">Eingefroren — Beleg, nicht nachziehen</b>
+  <span style="opacity:.92">Entschieden am 2026-08-20: <b>nur die markierte Zeile</b>; die App-Umrandung ist gesehen und <b>verworfen</b> (abnahmen/2026-08-20-vorhoeren-markierte-zeile.md). Der Kopftext unten nennt sie noch „Deine Wahl" — das war der Stand VOR dem Urteil und bleibt so stehen, weil das Blatt belegt, was zur Wahl stand.</span>
+</div>
+
 <div id="band"></div>
 <header>
   <div class="stufe" id="stufe">Stufe 2 · Main · Overview + Detail — die Karte</div>
@@ -842,6 +849,10 @@ const ablehnungen = [], zeiten = {};
 let start = performance.now();
 const $ = s => document.querySelector(s);
 const buehne = $('#buehne'), fuss = $('#fuss');
+/* s2() und ergebnis() ueberschreiben #unter. Ohne diese Sicherung kam die
+   Erklaerung des Blattes nach einem Besuch im Zweikampf nie zurueck — und
+   textContent hatte die Auszeichnung schon gefressen. */
+const UNTER_ORIGINAL = $('#unter').innerHTML;
 
 function kachel(e, i, gross){
   // Kein <button> mehr: das Blatt darin muss selbst bedienbar sein, und ein
@@ -907,6 +918,14 @@ ${bg[1]}`)}"`
       m.textContent = e.mech + ' — ' + fehlt + ' px fehlen in: ' + wo;
       m.style.color = '#7a2f1f';
       rahmen.style.outline = '2px solid #7a2f1f';
+    } else {
+      // Ohne Rueckweg log die Warnung: einmal gesetzt, ueberlebte sie jede
+      // spaetere heile Messung — und neuZeichnen() misst dieselben Elemente
+      // erneut. Eine Warnung, die nicht verschwinden kann, ist keine Messung
+      // mehr, sondern eine Behauptung.
+      m.textContent = e.mech;
+      m.style.color = '';
+      rahmen.style.outline = '';
     }
   };
   requestAnimationFrame(()=>{ messen(); requestAnimationFrame(messen); });
@@ -1011,6 +1030,7 @@ function waehlZeile(e, text, fn){
 function s1(){
   $('#stufe').textContent = 'Stufe 2 · Main · die vier Bedienebenen';
   $('#frage').textContent = 'Braucht es beide Zeichen — oder reicht eines?';
+  $('#unter').innerHTML = UNTER_ORIGINAL;
   ENTWUERFE.forEach((e,i)=>{
     const k = kachel(e, i, false);
     if(eng.includes(e.id)) k.classList.add('eng');
@@ -1053,7 +1073,7 @@ function s2(){
       zeiten.s2 = Math.round(performance.now()-start); stufe = 3; zeichnen(); }));
     buehne.appendChild(k);
   });
-  fuss.append(knopf('← Zurück zu allen ' + wieViele(), ()=>{ stufe = 1; zeichnen(); }),
+  fuss.append(knopf('← Zurück zu allen ' + wieViele(), ()=>{ stufe = 1; start = performance.now(); zeichnen(); }),
     ...zustandsKnoepfe(), vertragKnopf(), quellenRegler(),
     knopf(document.body.classList.contains('thesen') ? 'Thesen aus' : 'Thesen ein',
       ()=>{ document.body.classList.toggle('thesen'); zeichnen(); }),
@@ -1109,7 +1129,7 @@ function ergebnis(){
   kn2.style.cssText = 'display:flex;gap:10px;margin-top:10px';
   kn2.append(knopf('Alles markieren — dann Strg+C', ()=>{ ta.focus(); ta.select();
       try{ document.execCommand('copy'); }catch(err){} }, 'dunkel'),
-    knopf('Doch nochmal ansehen', ()=>{ stufe = 1; sieger = null; zeichnen(); }));
+    knopf('Doch nochmal ansehen', ()=>{ stufe = 1; sieger = null; start = performance.now(); zeichnen(); }));
   wrap.appendChild(kn2);
   buehne.appendChild(wrap);
 }

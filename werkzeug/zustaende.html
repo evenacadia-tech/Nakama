@@ -121,15 +121,6 @@ body.vertragAn .vertrag{display:flex}
 .pkt.alt{background:#6a6a6a}
 .pkt.weg{background:transparent;border:1px solid #6a6a6a}
 
-/* Schrittleiste — sichtbarer Weg, sichtbarer Rueckweg. */
-.schritte{border:1px solid #4c4c4c;background:#2e2e2e;display:flex;align-items:center;
-  padding:0 9px;overflow:hidden}
-.sch{font-size:10px;letter-spacing:.09em;padding:6px 12px;color:#7d7d7d;
-  border-right:1px solid #414141;white-space:nowrap}
-.sch.an{color:#e8e8e8;background:#4a4a4a}
-.sch.war{color:#a8a8a8}
-.zurueck{margin-left:auto;font-size:10px;color:#9a9a9a;border:1px solid #5a5a5a;
-  padding:3px 9px;white-space:nowrap}
 
 /* Ehrliche Liste. Zeigt nur, was ganz hineinpasst, und sagt darunter, wieviel
    das von wieviel ist. Vorher log das Blatt: "11 of 16" stand im Kopf, fuenf
@@ -143,13 +134,6 @@ body.vertragAn .vertrag{display:flex}
   display:flex;gap:6px;align-items:center}
 .kappe::before{content:'';flex:none;width:9px;height:1px;background:#7d7d7d}
 
-.qz{display:flex;align-items:center;gap:7px;font-size:11px;padding:2px 0;
-  border-bottom:1px solid #333}
-.qz .n{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.qz .r{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:#7d7d7d;
-  min-width:56px}
-.suche{border:1px solid #454545;background:#282828;color:#8f8f8f;font-size:10px;
-  padding:4px 7px;flex:none}
 
 .hm{display:flex;flex-direction:column;gap:2px;flex:1;min-height:0}
 .hmk{display:flex;gap:2px;font-size:8px;color:#7d7d7d;letter-spacing:.06em}
@@ -203,15 +187,13 @@ body.vertragAn .vertrag{display:flex}
 .wfk[data-griff]:hover{background:#4a4a4a}
 .wfk.gedrueckt{background:#e4e4e4;color:#1a1a1a;border-color:#e4e4e4}
 
-/* Die App-Umrandung: das globale, fluechtige Zeichen. Nichts wird
-   gedaempft — die markierte Zeile liegt in der Karte und muss lesbar
-   bleiben; ein Daempfen arbeitete gegen sie. */
-.wf.appRahmen{outline:3px solid #e4e4e4;outline-offset:-3px}
-.wf.appBleibt{box-shadow:inset 5px 0 0 #9a9a9a}
 .rahmen .wf{position:relative}
 
 /* Variante 3: die betroffene Zeile traegt den Zustand. */
-.hmz.w-haelt{outline:2px solid #e4e4e4;outline-offset:1px}
+/* outline-offset:1px reichte 3 px ueber die Zeilenbox, der Zeilenabstand ist
+   2 px — die Markierung deckte je 1 px der Nachbarzeile ab. Outlines aendern
+   keine Scroll-Masse, ueberlauf() kann das nicht sehen. */
+.hmz.w-haelt{outline:2px solid #e4e4e4;outline-offset:0}
 .hmz.w-bleibt{box-shadow:-4px 0 0 #9a9a9a}
 .hmz .anz{width:18px;flex:none;text-align:right;font-size:9px;color:#8f8f8f;
   align-self:center}
@@ -245,11 +227,6 @@ body.vertragAn .vertrag{display:flex}
 .wfk{font-size:9.5px;letter-spacing:.06em;padding:4px 9px;border:1px solid #5a5a5a;
   color:#c2c2c2;background:#3a3a3a;white-space:nowrap}
 .wfk.stark{background:#5a5a5a;color:#eee}
-/* Geschlossener Beleg: benannt und sichtbar, nur nicht geoeffnet. */
-.abruf{font-size:10px;color:#9a9a9a;border:1px solid #4a4a4a;background:#292929;
-  padding:5px 8px;display:flex;align-items:center;gap:7px}
-.abruf::before{content:'+';font-size:12px;color:#7d7d7d;width:9px}
-.abruf em{font-style:normal;margin-left:auto;color:#6f6f6f;font-size:9px}
 
 .kurve{flex:1;border:1px solid #454545;background:#282828;position:relative;
   min-height:0}
@@ -262,19 +239,24 @@ body.vertragAn .vertrag{display:flex}
 .vg b{font-size:9px;letter-spacing:.12em;text-transform:uppercase;font-weight:400;
   color:#8f8f8f}
 
-.zoomleiste{display:flex;align-items:center;border:1px solid #4c4c4c;
-  background:#2e2e2e;padding:0 9px;overflow:hidden}
-.zs{font-size:10px;letter-spacing:.09em;padding:6px 12px;color:#7d7d7d;
-  border-right:1px solid #414141;white-space:nowrap}
-.zs.an{color:#e8e8e8;background:#4a4a4a}
-.ausschnitt{margin-left:auto;font-size:9.5px;color:#8f8f8f;display:flex;
-  align-items:center;gap:6px;white-space:nowrap}
-.minimap{width:96px;height:12px;border:1px solid #5a5a5a;position:relative;
-  background:#282828;flex:none;display:block}
-.minimap i{position:absolute;top:0;bottom:0;background:#6a6a6a;display:block}
 </style>
 </head>
 <body>
+<!-- Standband: was ist dieses Blatt? Werkzeug-Chrome, deutsch, liegt
+     ausserhalb des beurteilten Blattes. Ergaenzt 2026-08-21. -->
+<div style="background:#3c5140;color:#f2f2f2;padding:7px 26px;font:12px/1.5 'Segoe UI',system-ui,sans-serif;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+  <b style="letter-spacing:.12em;font-size:10.5px;text-transform:uppercase;flex:none">Aktueller Main-Entwurf — hier weiterarbeiten</b>
+  <span style="opacity:.92">Die Frage dieses Blattes ist <b>entschieden</b>: „nur die Ausnahme spricht" (abnahmen/2026-08-20-zustaende-nur-ausnahme.md). Die drei Kacheln stehen als <b>Beleg</b> nebeneinander, nicht mehr zur Wahl. Wer hier weiterbaut, baut auf Variante&nbsp;3.</span>
+</div>
+<!-- Demo-Kennzeichnung. CLAUDE.md, harte Regel 6: "Demo-Daten sind erlaubt,
+     aber realistisch UND sichtbar als Demo gekennzeichnet." werkzeug/LIES-MICH.md,
+     Prinzip 6: die Marke gehoert zum Werkzeug, nicht ins Spezimen — sonst waere
+     sie Teil dessen, was beurteilt wird. Ergaenzt 2026-08-21; vorher fand
+     `grep -i demo` in diesem Blatt null Treffer. -->
+<div style="padding:5px 26px;font:11.5px/1.5 'Segoe UI',system-ui,sans-serif;color:#3d3d3d;background:#828282;border-bottom:1px solid #6f6f6f">
+  <b>Demo-Daten</b> — Lead Vocal · Choir · Piano · Drums · Bass · … sind erfunden, aber realistisch gewählt (das Beispiel der Spezifikation). Kein echter Mix, keine echte Messung.
+</div>
+
 <div id="band"></div>
 <header>
   <div class="stufe" id="stufe">Stufe 2 · Main · Overview + Detail — die Karte</div>
@@ -380,33 +362,14 @@ const kasten = (t, z, i, opt={}) =>
 const liste = (name, gesamt, html) =>
   `<div class="liste" data-liste="${name}" data-gesamt="${gesamt}">${html}</div>`;
 
-function ebenen(aktiv){
-  const eb = ['Observe','Advise','Audition','Apply']
-    .map((e,i)=>`<span class="eb${i===aktiv?' an':''}">${e}</span>`).join('');
-  return `<div class="streifen" data-baustein="Bedienebenen + Status">${eb}
-    <span class="status">${
-      [['','ok','fresh'],['alt','alt','stale'],['weg','weg','offline']]
-        .map(([k,f,w])=>{ const n = SOURCES.filter(q=>q[2]===f).length;
-          return n ? `<span><span class="pkt ${k}"></span>${n} ${w}</span>` : ''; })
-        .join('')}
-      <span>Measuring 68 %</span><span>Width: unavailable</span></span></div>`;
-}
-function schritte(z){
-  const i = ZUSTAENDE.findIndex(x=>x[0]===z);
-  const namen = ['1 · Read the mix','2 · Understand a finding','3 · Judge the change'];
-  return `<div class="schritte" data-baustein="Wegweiser (Weg und Rückweg)">
-    ${namen.map((n,k)=>`<span class="sch${k===i?' an':k<i?' war':''}">${n}</span>`).join('')}
-    ${i>0?'<span class="zurueck">← Back</span>':''}</div>`;
-}
-function quellen(n, suche=true, titel='Sources'){
-  return kasten(titel, '',
-    (suche?'<div class="suche">Search · Pin · Focus group</div>':'')
-    + liste('Quellenliste mit Namen', SOURCES.length,
-        SOURCES.slice(0,n).map(([nm,r,f])=>
-        `<div class="qz"><span class="pkt ${f==='ok'?'':f}"></span>
-         <span class="n">${nm}</span><span class="r">${r}</span></div>`).join('')),
-    {baustein:'Quellenliste mit Namen'});
-}
+/* Hier standen ebenen(), schritte() und quellen(). Alle drei waren tot —
+   dieses Blatt zeichnet den Streifen mit streifenBuch() und hat weder
+   Wegweiser noch benannte Quellenliste. ebenen() trug dabei eine ZWEITE
+   Statuszeile mit hart geschriebenem "Measuring 68 %" und
+   "Width: unavailable", waehrend statusText()/messText() daneben messen.
+   Entfernt am 2026-08-21: fuer den Active-Probe-Editor wird aus diesem
+   Blatt kopiert, und die tote Fassung waere die naheliegende gewesen.
+   Die lebenden Fassungen stehen weiter unten. */
 const hmName = namen => namen ? 'Heatmap (mit Namen)' : 'Übersichtskarte (ohne Namen)';
 function heatmap(n, namen=true, opt={}){
   const kopf = `<div class="hmk">${namen?'<span style="width:76px;flex:none"></span>':''}
@@ -448,8 +411,14 @@ function heatmap(n, namen=true, opt={}){
     `<div class="hm">${kopf}${liste(hmName(namen), SOURCES.length, zeilen)}</div>`,
     {baustein: hmName(namen)});
 }
-function detail(titel='Detail · Piano', zusatz='spectrum · loudness · dynamics · width · history', ab=false){
-  return kasten(titel, zusatz,
+/* detail() und vergleich() haben die Zustandsregel nicht mitbekommen, die
+   befunde() und knopfreihe() schon tragen. Gemessen bei "alles getrennt":
+   volle Werte, keine Marke, aktive Keep/Discard — zwei Kaesten neben einer
+   Befundliste, die es richtig macht. Und "Width 62 %" stand im selben Bild
+   wie "Width: unavailable" im Streifen: zwei Aussagen ueber dieselbe Groesse. */
+function detail(titel='Detail · Piano', zusatz='spectrum · loudness · dynamics · width · history', ab=false, lage='ok'){
+  const wort = befundWort(lage);
+  return kasten(titel, wort ? wort : zusatz,
     `<div class="kurve"><svg viewBox="0 0 300 100" preserveAspectRatio="none">
        ${ab?`<path d="M0 74 C40 72 60 80 90 78 C130 75 150 44 190 40 C230 36 260 48 300 46"
              fill="none" stroke="#6a6a6a" stroke-width="1.5" stroke-dasharray="3 3"/>`:''}
@@ -458,7 +427,8 @@ function detail(titel='Detail · Piano', zusatz='spectrum · loudness · dynamic
        <path d="M0 50H300" stroke="#3f3f3f" stroke-width="1" stroke-dasharray="2 3"/>
      </svg></div>
      <div class="detailz"><span>−8.4 LUFS</span><span>DR 9</span>
-       <span>Width 62 %</span><span>History 40 s</span></div>`,
+       <span>${WELT.degradiert ? 'Width: n/a' : 'Width 62 %'}</span>
+       <span>History 40 s</span></div>`,
     {baustein:'Detail einer Quelle'});
 }
 /* Ein Befund gehoert zu einer Quelle. Ist die Quelle getrennt oder veraltet,
@@ -483,35 +453,52 @@ function befunde(n, offen=0, titel='Findings'){
           : `<span class="pkt ${lage === 'fort' ? 'weg' : lage}"></span>`;
         return i === offen
         ? `<div class="bf an"><b>${marke}${o}</b><span>${t}</span>
-           <i>${warn || s}</i></div>`
-        : `<div class="bf zu"><b>${marke}${o}</b><i>${warn || s}</i></div>`; })
+           <i>${warn ? s + ' · ' + warn : s}</i></div>`
+        : `<div class="bf zu"><b>${marke}${o}</b><i>${warn ? s + ' · ' + warn : s}</i></div>`; })
       .join('')),
     {baustein:'Befundliste'});
 }
 function advisor(zusatz='one step', gross=false){
+  /* Der Assistent trug den Zustand seiner Quelle nicht. Bei "alles getrennt"
+     stand die vollstaendige Fuenf-Teile-Empfehlung da ("Bass -2 dB at 220 Hz"),
+     waehrend der Streifen "Measurement stalled - no source reachable" meldete.
+     Die Knoepfe waren korrekt gesperrt, der Text nicht — und der Text ist die
+     Empfehlung. befundWort() gab es bereits, advisor() hat es nur nie
+     benutzt. */
+  const lageWort = befundWort(befundLage(FINDINGS[0][0]));
   // Die fuenf Teile sind eine ehrliche Liste, kein fester Block. Grund: die
   // Spezifikation schreibt die Fuenf-Teile-Form vor. Wenn eine Kartenart dem
   // Assistenten die Hoehe nimmt, muss das Blatt zeigen, WELCHER Teil fehlt —
   // nicht heimlich abschneiden und nicht bloss rot aufleuchten.
-  return kasten('Advisor', zusatz,
+  return kasten('Advisor', lageWort ? zusatz + ' · ' + lageWort : zusatz,
     `<div class="as${gross?' gross':''}">${liste('Assistent (genau ein Schritt)', ADVISOR.length,
       ADVISOR.map(([b,t])=>
         `<div class="ast"><b>${b}</b><span>${t}</span></div>`).join(''))}
       ${knopfreihe()}</div>`,
     {baustein:'Assistent (genau ein Schritt)'});
 }
-function vergleich(){
+function vergleich(lage='ok'){
+  const wort = befundWort(lage);
+  // Ein Urteil ueber eine Aenderung, die gerade nicht hoerbar ist, waere
+  // dasselbe wie ein Knopf, der nichts tut.
+  if(wort) return kasten('Before / After', wort,
+    `<div class="vg"><div><b>A — Baseline</b><span>−8.4 LUFS</span></div>
+       <div><b>B — Change</b><span>−8.4 LUFS · Bass −2 dB @ 220</span></div></div>
+     <div class="knopfreihe"><span class="wfk aus">Keep</span>
+       <span class="wfk aus">Discard</span><span class="wfk aus">Unsure</span>
+       <span class="lage" style="margin-left:0">${wort} — reconnect to judge</span></div>`,
+    {baustein:'A/B-Urteil'});
   return kasten('Before / After', 'level-matched',
     `<div class="vg"><div><b>A — Baseline</b><span>−8.4 LUFS</span></div>
        <div><b>B — Change</b><span>−8.4 LUFS · Bass −2 dB @ 220</span></div></div>
      <div class="knopfreihe">${griff('keep','Keep', true)}
-       ${griff('undo','Discard')}<span class="wfk">Unsure</span></div>`,
+       ${griff('undo','Discard')}${griff('unsure','Unsure')}</div>`,
     {baustein:'A/B-Urteil'});
 }
-const abruf = (text, was) =>
-  `<div class="abruf" data-baustein="Tür: ${text}">${text}<em>${was}</em></div>`;
-const minimap = (von, bis) =>
-  `<span class="minimap"><i style="left:${von}%;width:${bis-von}%"></i></span>`;
+/* abruf() (benannte Tuer) und minimap() (Ausschnittsanzeige) standen hier
+   und wurden nie aufgerufen — sie gehoeren zu den Mechaniken "nur auf
+   Abruf" und "semantischer Zoom", die dieses Blatt nicht zeigt. Belegt
+   in werkzeug/wireframe-main.html. */
 
 /* ---------- Die Kartenarten ----------
    Die Mechanik steht (Overview + Detail, abgenommen 2026-08-20). Offen ist,
@@ -528,30 +515,13 @@ const minimap = (von, bis) =>
 const ZAHLWORT = ['keiner','einer','zwei','drei','vier','fünf','sechs'];
 const wieViele = () => ZAHLWORT[ENTWUERFE.length] ?? ENTWUERFE.length;
 
-const ROLLEN = ['leads','carries','supports','protected','blended'];
-const AUFFAELLIG = [1,3,4];   // Choir, Drums, Bass — die drei mit Befund
-
-/* Karte nach Rollen: nicht weniger Quellen, sondern groebere Einheiten.
-   DESIGN-GESETZE 3: Gruppierung senkt die Last, ohne Information zu
-   entfernen. Spezifikation: musikalische Rollen und Fokusgruppen. */
-function rollenkarte(){
-  const zeilen = ROLLEN.map(r => {
-    const q = SOURCES.filter(s => s[1] === r);
-    if(!q.length) return '';
-    const e = BAND.map((_,b) => q.reduce((a,s) => a + s[3][b], 0) / q.length);
-    return `<div class="hmz benannt"><span class="n">${r}</span>
-      <span class="z">${e.map(v =>
-        `<i style="background:hsl(0 0% ${(14+v*11).toFixed(0)}%)"></i>`).join('')}</span>
-      <span class="anz">${q.length}</span></div>`;
-  }).join('');
-  const kopf = `<div class="hmk"><span style="width:76px;flex:none"></span>
-    ${BAND.map(b => `<span>${b}</span>`).join('')}
-    <span class="anz" style="color:#6f6f6f">n</span></div>`;
-  return kasten('Overview', 'by role',
-    `<div class="hm">${kopf}${liste('Rollenkarte (Gruppen statt Quellen)',
-      ROLLEN.length, zeilen)}</div>`,
-    {baustein:'Rollenkarte (Gruppen statt Quellen)'});
-}
+/* ROLLEN, AUFFAELLIG und rollenkarte() standen hier. Die Rollenkarte war
+   eine der Kartenarten aus wireframe-main-karte.html und ist mit der
+   Abnahme "die Karte traegt jede Quelle" erledigt; dieses Blatt ruft sie
+   nicht auf. ACHTUNG fuer die Weiterarbeit: damit hat Main derzeit KEINEN
+   Ort fuer die musikalischen Rollen, die die Spezifikation verlangt
+   (fuehrt/traegt/begleitet/geschuetzt/verschmolzen). Das ist eine offene
+   Aufgabe, kein geloestes Problem — siehe docs/sondenplan.md. */
 
 /* ---------- Die drei Antworten auf "was hoere ich gerade?" ----------
    Der Main-Entwurf steht (Overview + Detail, Karte traegt jede Quelle,
@@ -739,7 +709,10 @@ const wirkungJetzt = () => LAGE.haelt ? 'haelt' : LAGE.angewandt ? 'bleibt' : nu
 /* Die Karte bekommt in allen drei dasselbe — ausser dem Zustandsstil. */
 const kartenOpt = (z, zustand) => z === 'read'
   ? {zustand}
-  : {zustand, wirkung: wirkungJetzt(), betroffen:[4], band:2};
+  /* band:3 ist BAND[3] = '250'. Vorher stand hier band:2 = '120' — die
+     markierte Zelle nannte damit eine andere Frequenz als der Befund
+     daneben ("Bass · 180-260 Hz"). 180-260 liegt im 250er-Feld. */
+  : {zustand, wirkung: wirkungJetzt(), betroffen:[4], band:3};
 
 
 /* Die Arbeitsflaeche ist in allen Varianten gleich — sonst vergliche man zwei
@@ -748,6 +721,14 @@ const ebene = z => z === 'read' ? 0 : z === 'finding' ? 1 : 3;
 const ortText = z => z === 'read' ? 'nothing selected'
                    : z === 'finding' ? 'Bass · 180–260 Hz' : 'Bass · comparing A/B';
 function arbeit(z){
+  /* "Measurement not started" im Streifen und "Confidence: high" im Befund
+     daneben sind dieselbe Luege wie "Measuring 68 %" bei sechzehn getrennten
+     Quellen — nur eine Ebene frueher. Der Kontaktfall war geprueft, der
+     Nicht-gestartet-Fall nicht. */
+  if(SOURCES.length && WELT.messung <= 0) return kasten('Findings', 'nothing measured yet',
+    `<div class="leerHinweis"><b>Nothing measured yet</b>
+     <span>Findings appear once a measurement has run.</span></div>`,
+    {baustein:'Befundliste'});
   // Ohne Quellen gibt es nichts zu befunden und nichts zu raten. Das
   // ehrlich zu sagen ist der Leerzustand; leere Kaesten waeren ein Ausfall.
   if(!SOURCES.length) return kasten('Findings', 'nothing to show',
@@ -755,8 +736,9 @@ function arbeit(z){
      <span>Findings appear once at least one source has been measured.</span></div>`,
     {baustein:'Befundliste'});
   if(z === 'read')    return befunde(FINDINGS.length);
-  if(z === 'finding') return advisor('finding 1 of 3');
-  return vergleich() + detail('Detail · Bass', 'A vs B', true);
+  if(z === 'finding') return advisor('finding 1 of ' + FINDINGS.length);
+  const lage = befundLage(FINDINGS[0][0]);
+  return vergleich(lage) + detail('Detail · Bass', 'A vs B', true, lage);
 }
 
 
@@ -957,16 +939,20 @@ function vertrag(e){
 
 /* ---------- Ablauf ---------- */
 const ALLE_QUELLEN = SOURCES.slice();
-function setzeQuellen(n){
-  SOURCES.length = 0;
-  SOURCES.push(...ALLE_QUELLEN.slice(0, n));
-  vertragCache.clear();
-}
+/* setzeQuellen(n) stand hier und wurde nie aufgerufen. Sie stammt aus der
+   Vorrunde (Regler "Quellen im Mix"); die Zahl der Quellen kommt hier aus
+   dem Szenario. Gefaehrlich beim Wiederbeleben: sie schiebt die
+   Original-Eintraege aus ALLE_QUELLEN zurueck und setzt damit das
+   eingestellte Szenario STUMM zurueck. */
 let stufe = 1, eng = [], sieger = null, zustand = 'finding';
 const ablehnungen = [], zeiten = {};
 let start = performance.now();
 const $ = s => document.querySelector(s);
 const buehne = $('#buehne'), fuss = $('#fuss');
+/* s2() und ergebnis() ueberschreiben #unter. Ohne diese Sicherung kam die
+   Erklaerung des Blattes nach einem Besuch im Zweikampf nie zurueck — und
+   textContent hatte die Auszeichnung schon gefressen. */
+const UNTER_ORIGINAL = $('#unter').innerHTML;
 
 function kachel(e, i, gross){
   // Kein <button> mehr: das Blatt darin muss selbst bedienbar sein, und ein
@@ -1032,14 +1018,20 @@ ${bg[1]}`)}"`
       m.textContent = e.mech + ' — ' + fehlt + ' px fehlen in: ' + wo;
       m.style.color = '#7a2f1f';
       rahmen.style.outline = '2px solid #7a2f1f';
+    } else {
+      // Ohne Rueckweg log die Warnung: einmal gesetzt, ueberlebte sie jede
+      // spaetere heile Messung — und neuZeichnen() misst dieselben Elemente
+      // erneut. Eine Warnung, die nicht verschwinden kann, ist keine Messung
+      // mehr, sondern eine Behauptung.
+      m.textContent = e.mech;
+      m.style.color = '';
+      rahmen.style.outline = '';
     }
   };
   requestAnimationFrame(()=>{ messen(); requestAnimationFrame(messen); });
-  lageAnlegen(wf, e);
   b.neuZeichnen = () => {
     const {html} = e.bau(zustand);
     wf.innerHTML = html;
-    lageAnlegen(wf, e);
     verdrahten(wf, b);
     messen(); requestAnimationFrame(messen);
   };
@@ -1052,14 +1044,12 @@ ${bg[1]}`)}"`
    Griff waehrend des Haltens verlaesst (pointercancel/leave faengt das). */
 const kacheln = [];
 function alleNeu(){ kacheln.forEach(k => k.neuZeichnen && k.neuZeichnen()); }
-function lageAnlegen(wf, e){
-  // Die Umrandung ist das FLUECHTIGE Zeichen — sie gehoert zum Halten, nicht
-  // zum Angewandten. Angewandtes lebt an der Quelle (markierte Zeile) und im
-  // Streifen ("1 change applied"), weil es bleibt und einen Ort hat.
-  const rahmig = e.id === 'beides' || e.id === 'rahmen';
-  wf.classList.toggle('appRahmen', rahmig && LAGE.haelt);
-  wf.classList.toggle('appBleibt', e.id === 'rahmen' && LAGE.angewandt);
-}
+/* lageAnlegen() stand hier und konnte nichts bewirken: sie prueft auf die
+   Entwuerfe 'beides' und 'rahmen' aus bedienebenen.html, dieses Blatt kennt
+   nur 'sammel', 'jede' und 'ausnahme'. Gemessen ueber 6 Szenarien x 3
+   Schritte x 3 Bedienlagen: die Klassen appRahmen/appBleibt tauchen nie
+   im DOM auf. Die App-Umrandung ist ausserdem ausdruecklich verworfen
+   (abnahmen/2026-08-20-vorhoeren-markierte-zeile.md). */
 function verdrahten(wf, b){
   wf.querySelectorAll('[data-griff]').forEach(g => {
     const was = g.dataset.griff;
@@ -1076,6 +1066,10 @@ function verdrahten(wf, b){
       g.addEventListener('click', () => {
         if(was === 'apply' || was === 'keep'){ LAGE.angewandt = true; }
         if(was === 'undo' || was === 'discard'){ LAGE.angewandt = false; }
+        // "noch unklar" ist laut Spezifikation ein vollwertiges Urteil, kein
+        // Verwerfen: es laesst den Zustand, wie er ist, und beendet nur das
+        // Vorhoeren. Vorher war der Knopf gar nicht verdrahtet.
+        if(was === 'unsure'){ /* Zustand bleibt, wie er ist */ }
         LAGE.haelt = false; alleNeu();
       });
     }
@@ -1128,13 +1122,21 @@ function waehlZeile(e, text, fn){
   z.appendChild(knopf(text, fn, eng.includes(e.id) ? 'an' : ''));
   const h = document.createElement('span');
   h.style.cssText = 'font-size:11px;color:#3d3d3d';
-  h.textContent = 'Halte „Audition (hold)" im Blatt gedrückt.';
+  /* Der Hinweis stand in allen drei Arbeitsschritten gleich da, den Griff
+     gibt es aber nur im Schritt "Befund verstehen" und nur bei erreichbarer
+     Quelle. */
+  h.textContent = zustand !== 'finding'
+    ? 'Zum Vorhören in Schritt 2 „Befund verstehen" wechseln.'
+    : befundLage(FINDINGS[0][0]) === 'ok'
+      ? 'Halte „Audition (hold)" im Blatt gedrückt.'
+      : 'Auf einer getrennten Quelle lässt sich nichts vorhören — das zeigt das Blatt.';
   z.appendChild(h);
   return z;
 }
 function s1(){
   $('#stufe').textContent = 'Stufe 2 · Main · die Zustände';
   $('#frage').textContent = 'Wo lebt ein Zustand — beim Ding, oder in einer Sammelzeile?';
+  $('#unter').innerHTML = UNTER_ORIGINAL;
   ENTWUERFE.forEach((e,i)=>{
     const k = kachel(e, i, false);
     if(eng.includes(e.id)) k.classList.add('eng');
@@ -1178,7 +1180,7 @@ function s2(){
       zeiten.s2 = Math.round(performance.now()-start); stufe = 3; zeichnen(); }));
     buehne.appendChild(k);
   });
-  fuss.append(knopf('← Zurück zu allen ' + wieViele(), ()=>{ stufe = 1; zeichnen(); }),
+  fuss.append(knopf('← Zurück zu allen ' + wieViele(), ()=>{ stufe = 1; start = performance.now(); zeichnen(); }),
     ...zustandsKnoepfe(), vertragKnopf(), ...szenarioKnoepfe(), ...weltKnoepfe(),
     knopf(document.body.classList.contains('thesen') ? 'Thesen aus' : 'Thesen ein',
       ()=>{ document.body.classList.toggle('thesen'); zeichnen(); }),
@@ -1234,13 +1236,21 @@ function ergebnis(){
   kn2.style.cssText = 'display:flex;gap:10px;margin-top:10px';
   kn2.append(knopf('Alles markieren — dann Strg+C', ()=>{ ta.focus(); ta.select();
       try{ document.execCommand('copy'); }catch(err){} }, 'dunkel'),
-    knopf('Doch nochmal ansehen', ()=>{ stufe = 1; sieger = null; zeichnen(); }));
+    knopf('Doch nochmal ansehen', ()=>{ stufe = 1; sieger = null; start = performance.now(); zeichnen(); }));
   wrap.appendChild(kn2);
   buehne.appendChild(wrap);
 }
 function band(){
   const b = document.getElementById('band');
-  const echt = window.innerWidth === screen.width && devicePixelRatio === 1;
+  /* Der Massstab kommt aus den Media-Queries (--s: 1 / .92 / .82), nicht aus
+     der Fensterbreite. Gemessen bei Viewport 1400: Band sagte "1:1", die
+     Kachel war 699 px breit. Jetzt wird der wirkliche Massstab gelesen. */
+  const s = getComputedStyle(document.documentElement);
+  const gross = document.querySelector('.rahmen.gross');
+  const massstab = gross ? parseFloat(getComputedStyle(gross).getPropertyValue('--s')) || 1
+                         : (window.innerWidth > 1600 ? 1 : window.innerWidth > 1300 ? .92 : .82);
+  const echt = window.innerWidth === screen.width && devicePixelRatio === 1
+               && massstab === 1;
   b.className = echt ? 'ok' : 'warn';
   b.innerHTML = echt
     ? '<b>1:1</b> — die Zweikampfansicht zeigt Main in echter Größe, 760×430.'
@@ -1254,6 +1264,12 @@ function band(){
 }
 addEventListener('resize', band);
 band();
+/* Das Szenario muss einmal wirklich gesetzt werden. Vorher leuchtete
+   "gemischt (13/2/1)" beim Laden als aktiv, waehrend in SOURCES noch die
+   Startwerte standen — Bass/Synth Pad/Room Mic statt Room Mic/Backing Vox/
+   Shaker. Der Streifen nannte also andere Namen als das Szenario verspricht,
+   und ein Klick auf den bereits leuchtenden Knopf aenderte das Blatt. */
+szenarioSetzen(WELT.szenario);
 zeichnen();
 /* Wenn die Schriften nachtraeglich fertig werden, aendern sich alle Masse.
    Dann wird neu gemessen — sonst stuenden die Zahlen unter den Kacheln

@@ -120,8 +120,8 @@ wird am lebenden Blatt MIT dem User geklärt.
   die Schleuse ist offen — gemessen: Write und Bash nach `prototyp/`
   exit 0. Sie greift weiter für `Write`/`Edit` **und für `Bash`**, falls
   die Datei je verschwindet; Gegenprobe: `bash .claude/hooks/schleusen-probe.sh`
-  (geschrieben für die geschlossene Schleuse — bei offener Schleuse melden
-  ihre 13 Block-Proben erwartungsgemäß „durch").
+  (misst den geschlossenen Zustand gegen ein leeres Temp-Verzeichnis und den
+  offenen gegen das echte `abnahmen/` — 26/26, ausgeführt 21.08.).
 
 ## Arbeitsweise
 

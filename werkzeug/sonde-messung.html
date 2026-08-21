@@ -1021,6 +1021,79 @@ function messePlatz(form, ueber={}){
   }
 }
 
+/* 6. Der EHRLICHKEITS-Grenzfall — gemessen, nicht behauptet.
+   Geraet ueberbrueckt, kein Main, Dynamik aus: dann darf KEIN Bandparameter
+   mehr dastehen, in keiner der vier Darstellungsformen. Identitaet ueberlebt
+   (Punkt und Nummer), alles Wirkende stirbt und zeigt "—".
+
+   Diese Messung ist der Grund, warum an ihrer Stelle bis 2026-08-21 ein hart
+   geschriebenes `z(true, …)` stand: das Tor gab es, die Messung dahinter nicht.
+   Sie laeuft auf der versteckten Buehne, damit das sichtbare Blatt in der
+   Stellung bleibt, die der User geschaltet hat.
+
+   Warum Einheiten und nicht Ziffern das Kriterium sind: "● 1" enthaelt eine
+   Ziffer und ist trotzdem tot-korrekt — die Slot-Nummer ist Identitaet, kein
+   Wert. Hz/dB/ms dagegen stehen ausschliesslich an Werten. */
+const TOT = '—';
+const EINHEIT = /\b(Hz|kHz|dB|ms)\b/;
+const EQ_ZELLEN  = '.typ,.f,.q,.g,.ch';
+const DYN_ZELLEN = '.dy,.thr,.rng,.atk,.hld,.rel';
+
+/* Eine Stellung der Ehrlichkeitsschalter auf der versteckten Buehne bauen und
+   auszaehlen, wieviele Zellen darin leben. `dy` gehoert zu den DYNAMIK-Zellen:
+   es ist der Schalter, an dem die fuenf anderen haengen — steht er auf "dyn",
+   waehrend seine fuenf Abhaengigen "—" zeigen, luegt die Zeile ueber sich selbst. */
+function baueStellung(schalter){
+  const alt = {bypass:WELT.bypass, verbunden:WELT.verbunden, dynamik:WELT.dynamik};
+  Object.assign(WELT, schalter);
+  try {
+    const wf = document.createElement('div');
+    wf.className = 'wf';
+    /* Alle vier Formen auf einmal — und der einzeilige Streifen ausdruecklich
+       dazu, obwohl ihn heute keine Anordnung benutzt. Ein Zwilling, der nur
+       in der Waage vorkommt, faellt sonst bei jedem Fix durchs Raster. */
+    wf.innerHTML = ['voll','eq','zweispaltig','streifen'].map(bau).join('')
+      + `<div class="streifenband">${SLOTS.map(slotStreifenEinzeilig).join('')}</div>`;
+    messbuehne.replaceChildren(wf);
+    const lebend = wahl => [...wf.querySelectorAll('.slotz')]
+      .flatMap(z => [...z.querySelectorAll(wahl)])
+      .filter(c => c.textContent.trim() !== TOT)
+      .map(c => `${c.className.split(' ')[0]}="${c.textContent.trim()}"`);
+    const streifen = [...wf.querySelectorAll('.sb, .sb1')]
+      .map(s => ({k: s.className.split(' ')[0],
+                  t: s.textContent.replace(/\s+/g, ' ').trim()}))
+      .filter(s => EINHEIT.test(s.t))
+      .map(s => `${s.k}="${s.t}"`);
+    return {
+      eq: lebend(EQ_ZELLEN), dyn: lebend(DYN_ZELLEN), streifen,
+      zellen: wf.querySelectorAll('.slotz').length * 11
+            + wf.querySelectorAll('.sb, .sb1').length
+    };
+  } finally {
+    messbuehne.replaceChildren();
+    Object.assign(WELT, alt);
+  }
+}
+
+/* 6. Der EHRLICHKEITS-Grenzfall — gemessen, nicht behauptet.
+   Zwei Stellungen, weil eine allein sich selbst maskiert: bei ausgeschalteter
+   Dynamik zeigt `dy` ohnehin "—", der Bypass-Rest bliebe unsichtbar. Deshalb
+   traegt Stellung A die Dynamik AN und verlangt trotzdem, dass alles tot ist —
+   das Geraet ist aus der Kette, da wirkt kein einziger Parameter mehr.
+   Stellung B ist die Gegenprobe nach unten: dort MUESSEN die EQ-Werte leben,
+   sonst prueft dieses Tor nur, dass ein leeres Blatt leer ist. */
+function messeEhrlichkeit(){
+  const a = baueStellung({bypass:true,  verbunden:false, dynamik:true});
+  const b = baueStellung({bypass:false, verbunden:true,  dynamik:false});
+  const reste = [...a.eq, ...a.dyn, ...a.streifen, ...b.dyn];
+  return {
+    reste,
+    zellen: a.zellen,
+    eqLebtImSchoenfall: b.eq.length,     // muss > 0 sein
+    ok: a.zellen > 0 && reste.length === 0 && b.eq.length > 0
+  };
+}
+
 function wiege(html){
   // finally, damit die Buehne nie auf max-content stehenbleibt: die naechste
   // Hoehenmessung waere dann auf einer Buehne beliebiger Breite gemacht.
@@ -1382,6 +1455,24 @@ function pruefZeichnen(ergebnisse){
   const schlimmV = ergebnisse.reduce((a,b) => b.vd.tiefe > a.vd.tiefe ? b : a);
   const schlimmD = ergebnisse.reduce((a,b) => b.d.fehlt > a.d.fehlt ? b : a);
   const ohneBeleg = document.querySelectorAll('.vertrag .ohnebeleg').length;
+  /* Zwei Grenzfaelle, die in ENTGEGENGESETZTE Richtungen zeigen — deshalb zwei
+     Tore statt eines. Der PLATZ-Grenzfall braucht acht Baender, alle dynamisch
+     und einen getroffenen Schutzbereich, und er braucht die Ehrlichkeits-
+     schalter NEUTRAL: Bypass ersetzt Werte durch "—" und macht die Zeile
+     SCHMALER (siehe ohneSchalter()). Wer beides in einem Tor prueft, misst den
+     falschen Grenzfall und nennt ihn den schlimmen.
+     WELT.werte steht bewusst NICHT in der Bedingung: 'laengste' und 'echt'
+     liefern nachgemessen dieselben Platzzahlen (sondenplan §4) — ein Tor, das
+     auf einen Unterschied besteht, den es nicht gibt, waere Zeremonie. */
+  const platzFehlt = [
+    WELT.slots === 8            ? '' : `nur ${WELT.slots} Slots`,
+    WELT.dynamik                ? '' : 'Dynamik aus',
+    WELT.schutzGetroffen        ? '' : 'kein Schutzbereich getroffen',
+    !WELT.bypass                ? '' : 'Bypass an (macht die Zeile schmaler)',
+    WELT.verbunden              ? '' : 'Main getrennt (macht die Zeile schmaler)',
+    WELT.gekoppelt              ? '' : 'ungekoppelt'
+  ].filter(Boolean);
+  const ehr = messeEhrlichkeit();
   p.innerHTML =
       z(schlimmU.u.fehlt <= 1, 'Überlauf (rekursiv, beide Richtungen)',
         schlimmU.u.fehlt <= 1 ? 'nichts läuft über'
@@ -1395,12 +1486,22 @@ function pruefZeichnen(ergebnisse){
     + z(ohneBeleg === 0, 'Beleg je Baustein',
         ohneBeleg === 0 ? 'jeder Baustein nennt Handgriff und Spezifikationsstelle'
           : `${ohneBeleg} Bausteine ohne Beleg`)
-    + z(true, 'Grenzfall ist die Vorgabe',
-        `${WELT.slots} Slots · Dynamik ${WELT.dynamik ? 'an' : 'aus'} · Werte `
-        + `${WELT.werte === 'laengste' ? 'längste' : 'realistisch'} · Bypass `
-        + `${WELT.bypass ? 'an' : 'aus'} · Main ${WELT.verbunden ? 'verbunden' : 'getrennt'} · `
-        + `${WELT.gekoppelt ? 'gekoppelt' : 'ungekoppelt'} · Schutzbereich `
-        + `${WELT.schutzGetroffen ? 'getroffen' : 'frei'}`);
+    + z(platzFehlt.length === 0, 'Platz-Grenzfall ist die Vorgabe',
+        platzFehlt.length === 0
+          ? `${WELT.slots} Slots · Dynamik an · Schutzbereich getroffen · `
+            + `Ehrlichkeitsschalter neutral · Werte `
+            + `${WELT.werte === 'laengste' ? 'längste' : 'realistisch'} (gleiche Maße)`
+          : `gemessen wird ein milderer Fall: ${platzFehlt.join(' · ')}`)
+    + z(ehr.ok, 'Ehrlichkeits-Grenzfall greift',
+        ehr.zellen === 0
+          ? 'die Messbühne hat keine Zellen gebaut — dieses Tor prüft ins Leere'
+          : ehr.eqLebtImSchoenfall === 0
+            ? 'im Schönfall lebt kein EQ-Wert — dieses Tor prüft ins Leere'
+            : ehr.reste.length === 0
+              ? `${ehr.zellen} Zellen bei Bypass geprüft, kein Bandparameter steht `
+                + `mehr da (${ehr.eqLebtImSchoenfall} leben im Schönfall)`
+              : `${ehr.reste.length} von ${ehr.zellen} Zellen zeigen weiter Werte: `
+                + `${[...new Set(ehr.reste)].slice(0, 4).join(', ')}`);
   // Fuer die Sonde von aussen lesbar machen — sie soll nicht HTML lesen muessen.
   window.MESSUNG = {
     anordnungen: ergebnisse.map(e => ({id:e.id, kurve:Math.round(e.hK),
@@ -1408,7 +1509,12 @@ function pruefZeichnen(ergebnisse){
       draft:Math.round(e.draftPx), ueberlauf:e.u.fehlt, verdeckung:e.vd.tiefe,
       deckel:e.d.fehlt, listen:e.listen})),
     ohneBeleg,
-    welt: {...WELT}
+    welt: {...WELT},
+    /* Die zwei Grenzfall-Tore von aussen lesbar — sonst muesste die Sonde
+       das gerenderte HTML lesen und wuerde bei jeder Textaenderung falsch. */
+    platzGrenzfall: {ok: platzFehlt.length === 0, fehlt: platzFehlt},
+    ehrlichkeit: {ok: ehr.ok, zellen: ehr.zellen, reste: ehr.reste,
+                  eqLebtImSchoenfall: ehr.eqLebtImSchoenfall}
   };
 }
 

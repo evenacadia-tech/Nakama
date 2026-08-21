@@ -304,13 +304,27 @@ async function probeBeleg() {
 }
 
 /* -------------------------------------------------------------- grenzfall --
-   Der Grenzfall ist die VORGABE, nicht der Sonderfall (docs/sondenplan.md §6). */
+   Der Grenzfall ist die VORGABE, nicht der Sonderfall (docs/sondenplan.md §6).
+   ZWEI Grenzfaelle, die in entgegengesetzte Richtungen zeigen — deshalb zwei
+   Urteile. Bis 2026-08-21 stand hier ein Vergleich gegen drei Literale, die
+   zwanzig Zeilen ueber ihrer Quelle standen; im Blatt selbst war das Tor ein
+   hart geschriebenes `z(true, …)`. Beides konnte nicht scheitern. */
 async function probeGrenzfall() {
   const { ctx, page } = await oeffne('sonde-messung.html')
-  const w = await page.evaluate(() => window.MESSUNG.welt)
-  const ok = w.slots === 8 && w.dynamik === true && w.schutzGetroffen === true
-  sag(ok, ok ? `grenzfall=vorgabe (${w.slots} Slots, Dynamik an, Schutzbereich getroffen)`
-            : `grenzfall NICHT Vorgabe: ${JSON.stringify(w)}`)
+  const m = await page.evaluate(() => ({
+    welt: window.MESSUNG.welt,
+    platz: window.MESSUNG.platzGrenzfall,
+    ehr: window.MESSUNG.ehrlichkeit
+  }))
+  sag(m.platz.ok, m.platz.ok
+    ? `grenzfall/platz = Vorgabe (${m.welt.slots} Slots, Dynamik an, `
+      + 'Schutzbereich getroffen, Ehrlichkeitsschalter neutral)'
+    : `grenzfall/platz NICHT Vorgabe: ${m.platz.fehlt.join(' · ')}`)
+  sag(m.ehr.ok, m.ehr.ok
+    ? `grenzfall/ehrlichkeit = sauber (${m.ehr.zellen} Zellen bei Bypass + getrennt `
+      + '+ Dynamik aus, kein Wert steht mehr da)'
+    : `grenzfall/ehrlichkeit: ${m.ehr.reste.length} von ${m.ehr.zellen} Zellen zeigen `
+      + `weiter Werte — ${[...new Set(m.ehr.reste)].slice(0, 6).join(', ')}`)
   await ctx.close()
 }
 

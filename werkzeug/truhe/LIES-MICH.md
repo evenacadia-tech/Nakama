@@ -29,10 +29,10 @@ Audio-Plugins gemacht**. Das ist der stärkste Beleg in der ganzen Truhe.
 
 | Datei | was |
 |---|---|
-| `301-vorschau.png` 2340×1560 | Verkaufsbild: neun Knöpfe auf mattem Anthrazit, feines Korn |
-| `301-thumbnail.png` 385×400 | **13 Knopf-Varianten im Raster**, jeder mit `OUTPUT` beschriftet |
+| `301-vorschau.png` 2340×1560 | Verkaufsbild, Titel wörtlich „NEUMORPHIC DARK KOBS · **13 VOLUME BUTTONS**": Knöpfe auf mattem Anthrazit, feines Korn |
+| `301-thumbnail.png` 385×400 | Kontaktbogen der Kit-Kacheln, jede mit `OUTPUT` beschriftet |
 | `301-bild-c20d72f0.png` 1600×1200 | **die Kornstruktur selbst** — Quelle von `werkzeug/textur/korn.png` |
-| `301-bild-649cfbec.png` 400×300 | zweite, gröbere Kornkachel |
+| `301-bild-649cfbec.png` 400×300 | zweite Kornkachel, viel glatter |
 | `301-readme.txt` | Beschreibung, Schrift, Autor |
 
 **Gesehen, nicht angenommen:**
@@ -44,6 +44,13 @@ Audio-Plugins gemacht**. Das ist der stärkste Beleg in der ganzen Truhe.
 - Tiefe kommt aus **weichem Doppelschatten** (hell oben links, dunkel unten
   rechts) — Neumorphismus, nicht Glas.
 - Korn liegt über **allem**, auch über den Knöpfen.
+- **Nachgemessen:** `301-bild-c20d72f0.png` hat Graumittelwert **128,00** bei
+  Streuung 19,1 — `werkzeug/textur/korn.png` hat 127,95 bei 18,3. Damit ist
+  belegt, was `werkzeug/LIES-MICH.md` bisher nur behauptete: **das ist die
+  Quelle.** Die zweite Kachel (`649cfbec`, Streuung 6,2) ist es nicht.
+- Keine Stückzahl aus dem Bild geraten: Der Kontaktbogen ließ sich nicht
+  sauber in Kacheln zerlegen (Alphaerkennung fand 3×3 und schnitt die letzte
+  Reihe ab). Die **13** oben ist deshalb zitiert, nicht gezählt.
 
 ## 110.zip — heller Rundregler, Thermostat
 

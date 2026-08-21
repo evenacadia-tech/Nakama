@@ -15,6 +15,7 @@
 //                                        | gegenprobe-ueberlauf
 //                                        | gegenprobe-verdeckung
 //                                        | formfaktor | kachel | export
+//                                        | annahmen
 //
 // Exit 1 bei Befund. BRAUCHT: playwright-core + Chromium (wird gesucht,
 // nicht behauptet — dieselbe Suche wie in pruefen.mjs).
@@ -510,6 +511,84 @@ async function probeZustaende() {
   await ctx.close()
 }
 
+/* --------------------------------------------------------------- annahmen --
+   Codex-Befund 5: der "laengstmoegliche SLOT" berief sich im Kommentar auf die
+   Spezifikation. Die nennt fuer die Bandparameter aber genau eine Zahl —
+   "Gain (manuell bis ±12 dB)". Q 24, −60 dB, 300/500/3000 ms und die
+   Lesbarkeitsschwelle 15,4 px sind frei gesetzt.
+   Diese Probe haelt fest, dass jede frei gesetzte Zahl im Blatt SICHTBAR als
+   Annahme benannt ist. Wer eine neue erfindet, muss sie benennen — sonst
+   faellt hier auf, was sonst still einzieht. */
+async function probeAnnahmen() {
+  const { ctx, page } = await oeffne('sonde-messung.html')
+  const r = await page.evaluate(async () => {
+    const s = document.querySelector('.annahme')
+    if (!s) return { da: false }
+    /* Sichtbar heisst gesehen, nicht vorhanden: derselbe Fehler wie beim
+       Standband (Codex-Befund 8). ABER: elementFromPoint ist FENSTERrelativ.
+       Der Fuss dieses Blattes steht bei y≈2460 im Dokument, also unter dem
+       Falz — ohne Scrollen traf der Test eine beliebige Bandzeile und meldete
+       "nicht zu sehen". Beim ersten Lauf gemessen. Erst hinsehen, dann
+       urteilen; "unter dem Falz" ist kein Verdeckungsbefund. */
+    s.scrollIntoView({ block: 'center' })
+    await new Promise(a => requestAnimationFrame(() => requestAnimationFrame(a)))
+    const rc = s.getBoundingClientRect()
+    const mitte = document.elementFromPoint(rc.left + rc.width / 2,
+                                            rc.top + rc.height / 2)
+    return {
+      da: true, text: s.textContent.replace(/\s+/g, ' ').trim(),
+      erwartet: (s.dataset.annahmen || '').split(',').filter(Boolean),
+      flaeche: rc.width > 40 && rc.height > 8,
+      sichtbar: !!mitte && (mitte === s || s.contains(mitte)),
+      // Die Zahlen, die tatsaechlich im Blatt gesetzt sind
+      werte: window.LAENGSTER ? Object.keys(window.LAENGSTER) : []
+    }
+  })
+  let schief = 0
+  const pruefe = (ok, t) => { if (!ok) { schief++; sag(false, t) } }
+  pruefe(r.da, 'annahmen: kein sichtbarer Testannahme-Hinweis im Blatt')
+  if (r.da) {
+    pruefe(r.flaeche && r.sichtbar,
+      `annahmen: Hinweis steht im DOM, ist aber nicht zu sehen `
+      + `(Flaeche ${r.flaeche}, sichtbar ${r.sichtbar})`)
+    // Jede angemeldete Annahme muss auch im Text stehen.
+    const worte = { qN: 'Q 24', thr: '−60 dB', rng: '−18 dB', atk: '300 ms',
+                    hld: '500 ms', rel: '3000 ms', lesbar: '15.4 px' }
+    for (const k of r.erwartet)
+      pruefe(worte[k] && r.text.includes(worte[k]),
+        `annahmen: "${k}" ist angemeldet, steht aber nicht im sichtbaren Text`)
+    pruefe(r.text.includes('±12 dB'),
+      'annahmen: der Hinweis nennt nicht, welche Zahl AUS der Spezifikation kommt')
+    pruefe(r.erwartet.length >= 7,
+      `annahmen: nur ${r.erwartet.length} angemeldet, erwartet sind die sechs `
+      + 'Parametergrenzen plus die Lesbarkeitsschwelle')
+  }
+  /* Gegenprobe: kann dieser Riegel scheitern? Der Hinweis wird kurz versteckt
+     — mit visibility, nicht display, damit er seine Flaeche behaelt und
+     wirklich die SICHTBARKEIT geprueft wird und nicht das Vorhandensein. */
+  const gegen = await page.evaluate(async () => {
+    const s = document.querySelector('.annahme')
+    s.style.visibility = 'hidden'
+    s.scrollIntoView({ block: 'center' })
+    await new Promise(a => requestAnimationFrame(() => requestAnimationFrame(a)))
+    const rc = s.getBoundingClientRect()
+    const m = document.elementFromPoint(rc.left + rc.width / 2, rc.top + rc.height / 2)
+    const erkannt = !(m === s || s.contains(m))
+    s.style.visibility = ''
+    await new Promise(a => requestAnimationFrame(() => requestAnimationFrame(a)))
+    const rc2 = s.getBoundingClientRect()
+    const m2 = document.elementFromPoint(rc2.left + rc2.width / 2, rc2.top + rc2.height / 2)
+    return { erkannt, geheilt: m2 === s || s.contains(m2) }
+  })
+  pruefe(gegen.erkannt, 'BLIND: ein versteckter Annahme-Hinweis wird nicht gemeldet')
+  pruefe(gegen.geheilt, 'Gegenprobe heilt nicht: der Hinweis bleibt unsichtbar')
+  sag(schief === 0, `annahmen: ${r.erwartet?.length} frei gesetzte Zahlen sichtbar `
+    + `benannt, Sachquelle genannt, Gegenprobe `
+    + `${gegen.erkannt ? 'erkannt' : 'BLIND'} und `
+    + `${gegen.geheilt ? 'geheilt' : 'NICHT geheilt'} — ${schief} Abweichungen`)
+  await ctx.close()
+}
+
 /* ------------------------------------------------------------- formfaktor --*/
 async function probeFormfaktor() {
   const { ctx, page, fehler } = await oeffne('formfaktor.html')
@@ -665,7 +744,8 @@ const PROBEN = {
   'gegenprobe-verdeckung': probeGegenVerdeckung,
   ratsche: probeRatsche, deckel: probeDeckel, beleg: probeBeleg,
   grenzfall: probeGrenzfall, zustaende: probeZustaende,
-  formfaktor: probeFormfaktor, kachel: probeKachel, export: probeExport
+  formfaktor: probeFormfaktor, kachel: probeKachel, export: probeExport,
+  annahmen: probeAnnahmen
 }
 const was = process.argv[2] || 'alles'
 const lauf = was === 'alles' ? Object.keys(PROBEN) : [was]

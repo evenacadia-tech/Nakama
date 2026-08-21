@@ -26,6 +26,12 @@ button.k.dunkel{background:#242424;color:#eee;border-color:#242424}
   border-right:1px solid #8a8a8a;margin-right:3px}
 .gruppe > i{font-style:normal;font-size:10px;letter-spacing:.1em;
   text-transform:uppercase;color:#3f3f3f;margin-right:2px}
+/* Testannahme-Hinweis: sichtbar, aber nicht laut. Er sagt, welche Zahlen
+   dieses Blatt frei gesetzt hat — wer sie zitiert, soll das mitlesen. */
+.annahme{max-width:420px;font-size:10.5px;line-height:1.35;color:#4a3a22;
+  background:#f0e2c4;border:1px solid #c9b183;padding:3px 7px}
+.annahme b{font-weight:600}
+.annahme i{font-style:normal;font-weight:600}
 #band{padding:6px 26px;font-size:12px;display:flex;gap:12px;align-items:center}
 #band.ok{background:#5c6b5c;color:#eaf2ea}
 #band.warn{background:#6b5c3c;color:#f4ead6}
@@ -379,12 +385,45 @@ const SLOTS = [
   {nr:7, an:true, typ:'Shelf', fHz:7500,  qN:0.71, gDb:1.5,  ch:'St',  dyn:true, thr:-16.0, rng:2.0, atk:25, hld:70, rel:260},
   {nr:8, an:true, typ:'LP',    fHz:18500, qN:0.71, gDb:null, ch:'St',  dyn:true, thr:-12.0, rng:1.5, atk:30, hld:80, rel:300}
 ];
-/* Der laengstmoegliche SLOT. Nicht geraten: jede Spalte auf ihr Maximum
-   nach der Spezifikation (Typ 'Notch' ist das laengste Wort, Gain bis
-   +-12 dB, Release bis 3 s). Der Platz-Grenzfall ist NICHT die plausible
-   Einstellung — ein Hochpass ohne Gain zeigt "—" und ist SCHMALER. */
+/* Der laengstmoegliche SLOT. Der Platz-Grenzfall ist NICHT die plausible
+   Einstellung — ein Hochpass ohne Gain zeigt "—" und ist SCHMALER.
+
+   BERICHTIGT 2026-08-21 (Codex-Befund 5). Hier stand: "Nicht geraten: jede
+   Spalte auf ihr Maximum nach der Spezifikation." Das war zur Haelfte falsch.
+   docs/oberflaechen-spezifikation.md §2 nennt fuer die Bandparameter GENAU
+   EINE Zahl: "Gain (manuell bis ±12 dB)". Bereichsgrenzen fuer Q, Schwelle,
+   Bereich, Attack, Hold und Release stehen dort nirgends — auch die im alten
+   Kommentar als Beispiel genannte "Release bis 3 s" nicht.
+
+   Deshalb getrennt gefuehrt: was aus der Sachquelle kommt, und was eine
+   TESTANNAHME ist. Die Annahmen sind fuer eine Platzmessung brauchbar (sie
+   sind die laengsten plausiblen Schreibweisen), aber sie sind keine
+   Produktentscheidung. Wer sie aendert, aendert die Klemme. Die Tabelle wird
+   im Blatt sichtbar angezeigt und von der Probe 'annahmen' nachgehalten —
+   eine neue erfundene Grenze faellt dort auf, statt still einzuziehen. */
 const LAENGSTER = {nr:8, an:true, typ:'Notch', fHz:18500, qN:24.00, gDb:-12.0,
   ch:'M/S', dyn:true, thr:-60.0, rng:-18.0, atk:300, hld:500, rel:3000};
+const LAENGSTER_QUELLE = {
+  gDb: ['Spezifikation', '±12 dB', '§2: „Gain (manuell bis ±12 dB)"'],
+  typ: ['Spezifikation', 'Notch', '§2 nennt Bell · Shelf · Notch · HP/TP'],
+  ch:  ['Spezifikation', 'M/S',   '§2 nennt Stereo · L-R · M-S']
+};
+/* Sechs Zahlen ohne Sachquelle. Sie stehen hier, damit sie sichtbar sind. */
+const LAENGSTER_ANNAHMEN = {
+  qN:  'Q 24,00',   thr: 'Schwelle −60 dB', rng: 'Bereich −18 dB',
+  atk: 'Attack 300 ms', hld: 'Hold 500 ms', rel: 'Release 3000 ms'
+};
+
+/* Die Lesbarkeitsschwelle fuer den +-3-dB-Draft. HERGELEITET, nicht geraten:
+   11 px Schriftgroesse x 1,4 Zeilenhoehe = 15,4 px, die kleinste Hoehe, die
+   dieses Blatt sonst irgendwo zeigt.
+   Was daran trotzdem ANNAHME bleibt (Codex-Befund 5): dass eine Kurve
+   mindestens so hoch sein muss wie eine Textzeile, um ablesbar zu sein. Das
+   ist plausibel und unbewiesen — eine Kurve ist kein Buchstabe. Bewiesen
+   waere es erst durch einen Sehversuch am 1:1-Blatt. Die Zahl steht deshalb
+   an EINER Stelle und traegt ihren Status im Blatt sichtbar mit. */
+const LESBAR_PX = 15.4;
+const LESBAR_HERLEITUNG = '11 px Schrift × 1,4 Zeilenhöhe';
 
 const SKALA = ['20','50','100','200','500','1k','2k','5k','10k','20k'];
 const GLOBAL = [['In','-2.0 dB'],['Out','+1.5 dB'],['Width','96 %'],
@@ -1351,11 +1390,11 @@ function anordnungKachel(a, i){
     z.innerHTML =
         `<span>Bandkasten <b data-mess="bandkasten">${Math.round(hB)}</b> px</span>`
       + `<span>Kurvenfeld <b data-mess="kurve">${Math.round(hK)}</b> px</span>`
-      + `<span class="${draftPx < 15.4 ? 'warn' : ''}">px je dB `
+      + `<span class="${draftPx < LESBAR_PX ? 'warn' : ''}">px je dB `
       + `<b data-mess="pxdb">${pxDb.toFixed(1)}</b></span>`
-      + `<span class="${draftPx < 15.4 ? 'warn' : ''}">±3-dB-Draft `
+      + `<span class="${draftPx < LESBAR_PX ? 'warn' : ''}">±3-dB-Draft `
       + `<b data-mess="draft">${Math.round(draftPx)}</b> px`
-      + (draftPx < 15.4 ? ' — flacher als eine Textzeile, nicht ablesbar' : '') + `</span>`
+      + (draftPx < LESBAR_PX ? ' — flacher als eine Textzeile (Annahme), nicht ablesbar' : '') + `</span>`
       + `<span class="${u.fehlt > 1 ? 'warn' : ''}">Überlauf `
       + `<b data-mess="ueberlauf">${u.fehlt}</b> px${u.fehlt > 1 ? ' — ' + u.wo : ''}</span>`
       + `<span class="${vd.tiefe > 0.5 ? 'warn' : ''}">Verdeckung `
@@ -1459,10 +1498,9 @@ function nachgebenZeichnen(){
       const m = messePlatz(a.form, {nachgeben:id});
       const pxDb = m.kurve / 24;
       const draft = pxDb * 6;
-      // Ein +-3-dB-Draft, der flacher ist als eine Textzeile (11 px x 1.4 =
-      // 15.4), kann nicht gelesen werden. Kein geratener Schwellwert: es ist
-      // die kleinste Hoehe, die dieses Blatt sonst irgendwo zeigt.
-      const lesbar = draft >= 15.4;
+      // Schwelle und ihr Status stehen bei LESBAR_PX. Hergeleitet, aber die
+      // Gleichsetzung "Kurve so hoch wie eine Textzeile" bleibt Annahme.
+      const lesbar = draft >= LESBAR_PX;
       const gekuerzt = m.gesamt > 0 && m.sichtbar < m.gesamt;
       return `<td class="z${lesbar ? '' : ' eng'}">${m.kurve} px`
         + ` <em>${pxDb.toFixed(1)}/dB · Draft ${Math.round(draft)}</em>`
@@ -1569,7 +1607,23 @@ function fussZeichnen(){
       knopf('keine', um('dynamik', false), !WELT.dynamik ? 'an' : '')]),
     gruppe('Werte', [
       knopf('realistisch', um('werte','echt'), WELT.werte === 'echt' ? 'an' : ''),
-      knopf('längste', um('werte','laengste'), WELT.werte === 'laengste' ? 'an' : '')]),
+      knopf('längste', um('werte','laengste'), WELT.werte === 'laengste' ? 'an' : ''),
+      /* Sichtbar, nicht nur im Quelltext: welche der „längsten" Werte aus der
+         Spezifikation kommen und welche Testannahmen sind. Eine Annahme, die
+         nur im Kommentar steht, liest niemand, bevor er sie zitiert. */
+      (() => {
+        const s = document.createElement('span');
+        s.className = 'annahme';
+        s.dataset.annahmen = [...Object.keys(LAENGSTER_ANNAHMEN), 'lesbar'].join(',');
+        s.innerHTML = `<b>Testannahmen</b> — die Spezifikation nennt für die `
+          + `Bandparameter nur <i>Gain ±12 dB</i>. Ohne Sachquelle und frei `
+          + `gesetzt: ` + Object.values(LAENGSTER_ANNAHMEN).join(' · ')
+          + `. Ebenso die Lesbarkeitsschwelle <i>${LESBAR_PX} px</i> `
+          + `(${LESBAR_HERLEITUNG}) — hergeleitet, aber dass eine Kurve so hoch `
+          + `sein muss wie eine Textzeile, ist unbewiesen. Alle bestimmen die `
+          + `gemessene Klemme mit.`;
+        return s;
+      })()]),
     gruppe('Ehrlichkeit', [
       knopf('Bypass ' + (WELT.bypass ? 'an' : 'aus'),
         () => { WELT.bypass = !WELT.bypass; zeichnen(); }, WELT.bypass ? 'an' : ''),

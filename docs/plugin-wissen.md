@@ -1,230 +1,329 @@
-# Plugin-Wissen — wie Nakama/EQ-Copilot heute funktioniert
+# Plugin-Wissen — wie Plugin, Broker und Verträge heute funktionieren
 
-> **Stand: 2026-08-17** (Plugin 0.3.0 installiert · metrics/diagnose
-> `m4.1-2026-08-15` · Snapshot v3 · Protokoll v2). Quelle der Wahrheit ist
-> der Code unter `eq-copilot/` und `broker/` in DIESEM Workspace
-> (`C:\Users\phili\Projekte\Nakama`, seit dem Umzug 18.08.2026) — bei
-> Widerspruch gewinnt die Datei. Anker sind `Datei:Zeile` zum Stand dieses
-> Dokuments.
+> **Stand: 21.08.2026** · Version **0.3.0** (`project(… VERSION 0.3.0)` ==
+> `kPluginVersion`, Configure-Riegel `eq-copilot/CMakeLists.txt:3-22`) ·
+> metrics/diagnose `m4.1-2026-08-15` · Snapshot-Datei v3 · IPC-Protokoll v2.
+> **Installiert in FL ist das Bundle vom 16.08.** (moduleinfo „0.1.0", Hash
+> `74D86BD5…`). Das Bundle im Build-Ordner (21.08. 21:11, mit Hostbrücke) ist
+> nicht installiert und meldet **0.3.0** (Kanon-Lauf 21:10 nach dem Versionsriegel:
+> 15/15 grün, `docs/beweise/KONTEXT-INVENTUR-2026-08-21.md`).
+>
+> Hier steht die **Architektur des heutigen Codes**: Plugin, Broker, Verträge,
+> Beweise. Produkt und Entscheide → `CLAUDE.md`; Sondenfamilie im Entwurf →
+> `docs/FL-Nakama-Sonden-Design-Entwurf.md`, `docs/bauaufteilung-sonden.md`.
+>
+> Namen: **Nakama Gen** (Main), **Probeeq** (aktive Sonde, vollwertiger EQ),
+> **Suna** (passive Sonde), Bundle künftig „Nakama Studio". Im Code heißt
+> heute alles `EqCop*` / „EQ-Copilot" / `Eqcp` — Legacy, Umbenennung ist
+> NAK-30, kein Nebenbei-Refactor. Das gebaute Plugin ist der Vorläufer von
+> Gen; seine Material-Kit-Front ist ein Provisorium.
 
-## Zehn-Sekunden-Form
+Vier Threads im Plugin: **Audiothread** (`processBlock`) · **Worker** (besitzt
+die AnalyseEngine) · **Pipe-Thread** (besitzt den PipeClient) · Message-Thread
+(Editor).
 
-| Schicht | Ort | Sprache |
-|---|---|---|
-| VST3-Plugin | `eq-copilot/plugin/src/` | JUCE 8.0.9 / C++20 |
-| Verträge | `eq-copilot/schemas/` | JSON Schema 2020-12 |
-| Broker (eigenständig seit 18.08., `eqcop-broker.exe`) | `broker/` | Rust + windows-sys |
-| Sensorübersicht (heimatlos, NAK-12 — Referenzkopie) | `broker/sensoruebersicht-referenz/` | Svelte 5 |
-| Fixtures | `tools/eq-copilot/erzeuge_fixtures.py` | Python 3.13 + numpy |
+## 1 · Produkt-Plugin `plugin/src/`
 
-Drei Threads im Plugin: **Audiothread** (processBlock) · **Worker** (besitzt
-die AnalyseEngine) · **Pipe-Thread** (besitzt den PipeClient) — plus der
-JUCE-Message-Thread für den Editor.
-
-## 1 · Audiopfad
+### 1.1 Audiopfad
 
 `processBlock` (`PluginProcessor.cpp:86-204`), Reihenfolge ist Vertrag:
-ScopedNoDenormals → RMS-+NaN-Scan (liest nur, zählt `nanSeen`, verändert
-nie) → Projektzeit-Fenster (akkumuliert nur bei `getIsPlaying()`,
-Sprungtoleranz 64 Samples, Sprünge werden gezählt) → **Analyse-Abgriff in
-den FIFO** → erst DANACH die Hör-Markierung als einziger Buffer-Schreiber.
+`ScopedNoDenormals` → RMS-/NaN-Scan → Hostzeit und Projektzeit-Fenster (nur
+bei Play; Sprünge > 64 Samples gezählt) → **Analyse-Abgriff in den FIFO** →
+`lebenszeichen()` → Hör-Markierung als einziger Schreiber des Puffers.
 
-- Thread-Übergabe: `juce::AbstractFifo` (lock-frei, SPSC) über einen einmal
-  allozierten HeapBlock, 65 536 Frames interleaved L/R
-  (`PluginProcessor.h:139-141`). **Überlast: Frames werden verworfen und
-  gezählt (`framesDropped`), Audio nie blockiert.**
-- Passthrough-Garantie: 0 Samples Latenz, kein Tail, Busse nur mono/stereo
-  mit in==out (kein stiller Downmix). NullTest beweist Bitgleichheit.
-- **Echtzeit-Beweis („Lebenszeichen", `PluginProcessor.cpp:211-272`):**
-  Audio-Zeit/Wand-Zeit-Verhältnis; zwei saubere Fenster ⇒ `echtzeitOk`;
-  Verhältnis > 1,5 (Offline-Render/Freewheel) löscht den Beweis sofort.
+- FIFO `juce::AbstractFifo`, 65 536 Frames interleaved L/R, einmal alloziert;
+  Überlast ⇒ `framesDropped`, nie warten. 0 Samples Latenz, kein Tail, Busse
+  nur mono/stereo mit Eingang == Ausgang. Nach außen nur Atomics; keine
+  Sperre, Allokation, Datei, Pipe, Logging.
+- Lebenszeichen (`:211-272`): Audiozeit/Wandzeit je Fenster; Verhältnis
+  0,5…1,2 zweimal ⇒ `echtzeitOk`; > 1,5 (Freilauf/Offline) löscht den Beweis
+  und meldet `freilaufKill`; Transportkante oder Lücke > 250 ms setzt zurück.
+  `hatTransport` ist im VST3-Pfad immer wahr (NAK-24).
 
-### Die eine Ausnahme: Hör-Markierung (0.3.0)
+### 1.2 Hör-Markierung — die eine Audio-Ausnahme
 
-`HoerMarkierung.h` (header-only; Konzept: `docs/HOER-MARKIERUNG-KONZEPT.md`).
-Färbt auf bewussten Klick das **Monitorsignal**, damit man HÖRT, wo der
-Befund sitzt — **Solo** (nur das Problemband: Resonanz = 2 kaskadierte
-Bandpässe; Zone = Butterworth-HP/LP-Paar) oder **Puls** (Band schwillt im
-250/375-ms-Raster). Verriegelung: nur bei bewiesener Echtzeit ∧ Editor
-offen ∧ Transport ∧ `!isNonRealtime()` — **Render bleibt bitidentisch**
-(MarkierungTest beweist es, inkl. Freewheel-Schnitt). Message-Thread baut
-den kompletten Auftrag (POD, alles vorberechnet), Audiothread liest über
-einen 4-Slot-Ring; Totmann-Timer 10 min; `Markierung aus`-Knopf immer
-sichtbar. Der Analyse-Abgriff sitzt VOR der Färbung (T4: LTAS mit/ohne
-Marker gleich).
+`HoerMarkierung.h` (header-only; Konzept `eq-copilot/docs/HOER-MARKIERUNG-
+KONZEPT.md`). Modi `aus / solo / puls`: **Solo** = nur das Problemband,
+**Puls** = 250-ms-Kosinusflanken mit 375 ms Ruhe bei exakt 0 dB; alles
+vorberechnet, der Audiothread kopiert höchstens einen POD-Auftrag aus 4
+Ring-Slots.
 
-## 2 · AnalyseEngine — die drei Uhren
+**Verriegelung, gemessen (`PluginProcessor.cpp:197-202`):**
+`erlaubt = (echtzeitOk ∨ testEchtzeit) ∧ (spielt ∨ ¬hatTransport) ∧
+¬isNonRealtime() ∧ (editorOffen ∨ testEchtzeit)` — `testEchtzeit` setzt nur
+`testForciereEchtzeit()`, ohne Aufrufer im Produkt. Der Editor beendet bei
+Fensterschluss, Samplerate-Wechsel, Freilauf und Totmann 10 min
+(`PluginEditor.cpp:186-216`). Analyse-Abgriff VOR der Färbung; Render bleibt
+bitidentisch (MarkierungTest T3/T4/T10).
 
-`PluginProcessor.cpp:274-326`:
+### 1.3 AnalyseEngine — die Uhren
 
-| Takt | Was läuft |
-|---|---|
-| ~20 Hz (50-ms-Wait) | FIFO leeren → `verarbeite()`; 4 von 5 Ticks `auswertenLeicht()` |
-| ~4 Hz (jeder 5. Tick) | `auswerten()` schwer: Gating, LTAS-Komposit, Abdeckung, Resonanzen, Perzentile, Konvergenz |
-| je 1 s AKTIVER Zeit | `zonenTick()` in `verarbeite()` — in Pausen vergeht keine Tick-Zeit |
-| 1 Hz | Heartbeat mit `messKompakt()` (Pipe-Thread) |
-| 30 Hz | Editor-Timer-POLL (nicht die Malrate) |
+Worker (`PluginProcessor.cpp:274-326`): alle 50 ms FIFO leeren →
+`verarbeite()`; jeder 5. Tick (~250 ms) `auswerten()` schwer, nur wenn neue
+Samples kamen; sonst `auswertenLeicht()` (~20 Hz). Beide publizieren über
+`fuelleBasis()` (EINE Quelle) mit monotoner `revision`; ohne neue Samples
+publiziert niemand. `zonenTick()` je 1 s AKTIVER Zeit in `verarbeite()`.
 
-- **`auswertenLeicht()`** publiziert nur über `fuelleBasis()`: Live-Kurve
-  (3-s-EMA), Kurz-LUFS, True Peak, Crest, Zustand, Revision. `fuelleBasis()`
-  ist die EINE Quelle — Leicht- und Schwerpfad können nicht divergieren.
-  Ohne neue Samples publiziert niemand (Leerlauf-Riegel beidseitig).
-- **FFT:** 4 Welch-Stufen (Hann periodic, 50 % Hop): Bass 16384 (<200 Hz) ·
-  **Referenz 8192 (ganze Achse — die Kreuzvalidierungs-Achse)** · Mitten
-  4096 · Höhen 2048; Blend in log-f über die Nähte. PSD =
-  **Kanalenergie-Mittel** (L²+R²)/2, nicht Mid-Mix (Antiphase-Fix).
-- **LTAS-Raster:** 1/24-Oktave, 221 Bänder bis <18 kHz; Nyquist-Kappe:
-  darüber bleibt die Kurve NaN, nie fortgeschriebene Randwerte.
-- **LUFS** BS.1770 (K-Weighting RBJ +4 dB Shelf/1500 Hz + HP 38 Hz;
-  100-ms-Zellen; Integriert = 400-ms-Blöcke, Gates −70 abs/−10 rel;
-  Short = 3 s). `lufsGueltig=false` ⇒ JSON `null`, nie 0.
-- **True Peak:** 8× Polyphase, Kaiser β=5, 161 Taps, ungegatet.
-- **Abdeckung:** 1-dB-Pegelhistogramm je Band über aktive Segmente;
-  1/3-Okt-Gruppen ⇒ `belastbar` (≥0,60) / `eingeschraenkt` / `nichtMessbar`.
-- **Resonanz-Kandidaten:** Prominenz gegen **Median ±6 Bänder (~1/2 Okt)**
-  (nie Mittel — der Peak zog es hoch); Exzess ≥6 dB, max 6 Kandidaten;
-  Persistenz aus `excessSegmente` derselben Basislinie (≥0,50 dauerhaft,
-  ≥0,15 zeitweise); Abdeckungs-Gate = Sinus-Landmine-Filter.
-- **Perzentile P10/P50/P95** je Band aus dem vorhandenen Histogramm;
-  P95−P50 steuert die Charakter-Zeile („steht ruhig" ↔ „kommt in Wellen").
-- **Zonen-Zeitverlauf:** je Tick Live-EMA gegen die Schulterlinie der Zone
-  (Geometrie EINMAL in `ZonenRegeln.h`, geteilt mit der Diagnose);
-  m4.1-Fix: Mindestpegel −80 dB je Region, sonst zählte Quasi-Stille.
-- **Konvergenz „KURVE STEHT":** alle ~10 s Aktivzeit Komposit gegen den
-  Stand von vor einem Fenster; UI zeigt es bei mean <0,35 dB. Rein
-  informativ — fließt bewusst NICHT in die Konfidenz.
-- **NaN-Riegel:** Engine ersetzt nicht-endliche Samples VOR jeder Arithmetik
-  durch Stille und zählt `nanErsetzt`; Audiothread zählt nur.
-- **Snapshot-Übergabe:** `MessSnapshot` doppelt gepuffert unter `snapMutex`
-  (Worker↔Editor, nie Audiothread); `revision` = monotoner Zähler über
-  beide Pfade, übersteht `zuruecksetzen()` absichtlich.
+- Welch: Bass 16384 (< 200 Hz) · Referenz 8192 (Kreuzvalidierungs-Achse) ·
+  Mitten 4096 · Höhen 2048; Hann, Hop n/2; PSD = Kanalenergie-Mittel
+  (L²+R²)/2. LTAS 1/24 Oktave, 221 Bänder 30 Hz…< 18 kHz,
+  Nyquist-Kappe min(18 kHz, 0,95·Nyquist), darüber NaN.
+- Schwellen versioniert in `AnalyseEngine.cpp:18-27`. NaN-Riegel:
+  nicht-endliche Samples werden VOR jeder Rechnung ersetzt und als
+  `nanErsetzt` gezählt. `snapshot()` ist der einzige threadsichere Einstieg.
 
-## 3 · Editor (Material-Kit-Front, wird durch Spectral Field ersetzt)
+### 1.4 Diagnose und Snapshot-Datei
 
-`PluginEditor.cpp` + `EqCopilotAssetKit.h` (`skin::`) + `LeitstandTokens.h`
-(generiert aus `design/tokens.json`; die Front nutzt die `copilot_*`-Gruppe —
-die `nakama_*`-Tokens sind Altbestand einer früheren dunklen Front,
-aktuell unreferenziert).
+`Diagnose.cpp` — pur, zustandslos, auf der Snapshot-KOPIE; dieselbe Funktion
+speist Hinweis-Knopf (1×/s), Snapshot-Datei und GoldenTest. Fünf Befundklassen
+(`Diagnose.h:39-46`; Snapshot-Namen `PluginProcessor.cpp:609-613`):
+`resonanz` (die zwei stärksten Kandidaten) · `mitten_loch` (500–2000 Hz
+≥ 3 dB UNTER der Schulterlinie) · `mulm` (120–300 Hz ≥ 4 dB darüber) ·
+`haerte` (2,5–5 kHz ≥ 4 dB darüber) · `hoehen_hype` (8–14 kHz > 1 dB über
+2–6 kHz). Geometrie EINMAL in `ZonenRegeln.h:30-35`, geteilt mit der Engine;
+eigenkurven-relativ, kein Zielkorridor.
 
-- Raster 750×520 Einheiten, Standard 1200×832, Resize 600×416…1950×1352
-  mit **fester Ratio** (fällt im Spectral-Field-Umbau).
-- Auf der Bühne: gecachte Gerätefront · Marken-Header · zwei Meter-Schienen
-  (LUFS-S links, True Peak rechts) · Analyseglas 604×252 · Mikroleiste
-  (LTAS/Ansicht/Glättung/„KURVE STEHT") · log-f- + dB-Raster ·
-  Abdeckungs-Zonenstreifen · Hör-Markierungs-Tönung (pulsphasensynchron) ·
-  drei Kurven (live/Vergleich/Haupt) · Resonanz-Dreiecke ·
-  7 Statuszellen · Werkzeugtasten (Glättung, Ansicht natürlich↔begradigt,
-  Festhalten, Vergleich, Messpunkt, „n Auffälligkeiten", Neu messen,
-  „Kennung doppelt!" nur bei Konflikt, „Markierung aus" nur bei Latch).
-- **Repaint-Disziplin (der M3a-FPS-Fix):** 30-Hz-Timer ist Poll, kein
-  Maltakt. EIN Snapshot-Zug pro Tick in die Anzeige-Kopie; `repaint()` nur
-  bei neuer Revision / UI-Änderung / Pipe-Wechsel / Meldungsfenster;
-  `paint()` liest nur die Timer-Kopie. **Im Leerlauf malt der Editor exakt
-  nichts.** paint() selbst kostete avg 2,42 ms @1200×832 — war nie der
-  Engpass; der wahrgenommene Ruckel war die 4-Hz-Datenkadenz.
-- Diagnose-Karten: `BefundListe` im CallOutBox (Titel · Gemessen · Wirkung ·
-  Tu · Warum · Hören · Sicherheit + [Solo]/[Puls]; Loch kann nicht pulsen);
-  Diagnose rechnet 1×/s auf der Anzeige-Kopie. `Component::SafePointer`
-  überall, wo FL den Editor mit offenem Popup schließen darf.
-- **`EqCopShot.exe <ziel.png> [breite]`:** echter Processor + echte
-  20-s-Messung offscreen → PNG. Headless-Lehre: JUCE-8-Editor-Timer in
-  Konsolen-Tests brauchen `juce::Timer::callPendingTimersSynchronously()`.
+`schreibeSnapshotDatei()` (`PluginProcessor.cpp:452-660`): `snapshot_version
+3`, alle Messfelder, Befunde, `raw_audio: null`; NaN/±inf ⇒ `null`; Ablage
+`%LOCALAPPDATA%\evenacadia\EQ-Copilot\snapshots\`. Kein Befundarchiv im
+Plugin. Plugin-State: ValueTree `EqCopilotState`, `schema 1`, `sensor_id /
+role / label / pair_id` (Goldens `fixtures/identity/`).
 
-## 4 · IPC / Broker (Protokoll v2)
+### 1.5 PipeClient
 
-- **Pipe:** `\\.\pipe\evenacadia.eq-copilot.v1` — der Name bleibt „v1",
-  die Protokollversion wird im Handshake verhandelt (`EqCopilotIds.h:18`,
-  `mod.rs:23-26`). Framing: u32-LE-Länge + UTF-8-JSON, max 262 144 Bytes.
-- **Handshake:** Client sendet immer zuerst `hello` (protocol_version,
-  plugin_version, host_pid, sensor{id, nonce, role, label, pair_id},
-  audio{sr, block, ch}) → Broker `welcome` (akzeptierte Version 1|2) oder
-  `reject`. v1-welcome ⇒ nie blockierend lesen (alter Broker antwortet
-  nichts).
-- **Heartbeat 1 Hz** trägt stats + in v2 den **Messstand** (`messKompakt()`):
-  Zustand, aktiv/gesamt s, LUFS I/S, True Peak, Crest, Centroid, low_frac,
-  width, corr — **`null` heißt „nicht messbar", nie 0** — plus
-  `ltas_komposit_db` (221 Werte, auf 0,1 dB gerundet; volle Auflösung nur
-  in der lokalen Snapshot-Datei), Projektfenster, `hoermarkierung`-Flag.
-- **`heartbeat_ack` mit Konflikt-Flag:** zweite lebende Verbindung mit
-  gleicher `sensor_id` (FL-Duplikation) ⇒ Editor zeigt „Kennung doppelt!";
-  der USER löst per neuer Kennung (frische UUID + Reconnect). Der Client
-  MUSS den Ack lesen, sonst kippt die Verbindung nach Heartbeat 1.
-- **Register:** nur die JÜNGSTE hello-Nonce darf Stats schreiben
-  (kein Flackern zweier Instanzen); `stale` nach 5 s ohne Heartbeat;
-  Getrennte bleiben mit Zeitstempel sichtbar, nie still entfernt.
-- **PRE/POST-Paare mit ehrlicher Herabstufung:** harte Ausschlüsse ⇒
-  `unklar`; Loop/Seek-Sprünge, Überlappung <80 %, fremde host_pid,
-  Aktivzeit-Differenz >10 % ⇒ `wahrscheinlich`; nur sauber ⇒
-  `ausgerichtet`. `grund` ist nie leer.
-- **Aggregat:** Broker friert den letzten gemeldeten Stand ein (misst
-  selbst nichts); gemeinsames Fenster = Schnittmenge; atomisch nach
+`PipeClient.cpp`, eigener Thread: `hello` (protocol_version 2, Version,
+host_pid, sensor{id, nonce, role, label, pair_id}, audio) → `reject` ⇒ Fehler;
+angenommen wird **nur** ein `welcome` mit `protocol_version == 2` (`:219`; ein
+v1-Broker gilt als „unerwartete Antwort", der v1-Leseschutz in `:252` ist
+unerreichbar) → Heartbeat 1 Hz mit Stats + `messKompakt()` (Messstand inkl.
+`hoermarkierung`) → `heartbeat_ack` (`konflikt` ⇒ „Kennung doppelt!",
+Auflösung: neue UUID + Reconnect) → `bye`. Backoff 500 ms, verdoppelt bis
+8000 ms (`EqCopilotIds.h:18-25`). Framing u32-LE + UTF-8-JSON, max. 262 144
+Byte.
+
+### 1.6 Editor — Material-Kit-Front (Provisorium)
+
+`PluginEditor.cpp` + `EqCopilotAssetKit.h` (`skin::`, Tokens aus
+`design/tokens.json`). Größe (`:176-183`): `setResizable(true, true)`,
+Limits 600×416…1950×1352, festes Verhältnis 750:520, Start 1200×832, Timer
+30 Hz. Der Timer ist Poll, kein Maltakt (`:195-267`): EIN Snapshot-Zug pro
+Tick; `repaint()` nur bei neuer `revision`, UI-Änderung, Pipe-Statuswechsel
+oder Meldungsfenster — im Leerlauf malt er nichts. paint() kostet 2,47 ms @
+1200×832 — nie der Engpass.
+
+## 2 · Hostbrücke und Wegwerf-Messgeräte
+
+### 2.1 Hostbrücke (SONDE-003)
+
+Der gevendorte JUCE-8.0.9-Wrapper (`build/_deps/juce-src/…/
+juce_audio_plugin_client_VST3.cpp`) wird beim Configure gepatcht
+(`third_party/patches/juce-8.0.9-nakama-vst3-bridge.patch`, 163 Zeilen, 149
+mit CR, `.gitattributes: *.patch -text`). Gate
+`eq-copilot/cmake/NakamaBruecke.cmake:19-22,53-72` hasht den
+CRLF→LF-normalisierten Inhalt: gepatcht `6e5d4660…` ⇒ No-Op, unberührt
+`1374eb40…` ⇒ `git apply` + nachmessen, fremd ⇒ `FATAL_ERROR`.
+
+Gegenseite `plugin/hostbridge/NakamaHostBridge.h`: `Bruecke` sammelt je Block
+einen `Blockbefund` für eine `Senke`. `NAKAMA_HOST_BRIDGE=1` steht PUBLIC an
+`EqCopilot` und `EqCopHostProbe` (`plugin/CMakeLists.txt:45,237`) — **im
+Produkt kompiliert, aber unbenutzt**: `src/` hat keinen Treffer auf
+`hostbruecke`; einzige `Senke` ist `HostProbeProcessor`
+(`hostprobe/HostProbeProcessor.h:166`); Verbraucher SONDE-008/009.
+`EqCopHostContextTest` (91) misst Gate und Abbildung gegen den echten
+`Steinberg::Vst::ProcessContext`.
+
+### 2.2 `hostprobe/` — Termin B, `NkHp`
+
+`EqCopHostProbe` (`EqCop-Host-Probe.vst3`) misst je Block Context-Anwesenheit,
+Gültigkeitsbits, Zeitsprünge, Offline-Render, Buslatenz und samplegenaue
+Automation. Bericht `host-probe-<zeit>.json` nach
+`%APPDATA%\evenacadia\nakama\spike\` (`HostProbeProcessor.cpp:502-507`).
+Selbsttest `EqCopHostProbeTest`: **85** Prüfungen ohne Argument, **89** nur mit
+PNG-Pfad, dessen Name „leerzustand" enthält — der zweite Bildbeweis leitet
+seinen Pfad per `replace("leerzustand","messzustand")` ab
+(`tests/HostProbeTestMain.cpp:726-768`); anderer Name ⇒ 1 rot (NAK-34).
+
+### 2.3 `spike/` — Termin A, `NkSp`
+
+`EqCopAuxSpike` (`EqCop-Aux-Spike.vst3`): Aux-Busse `priority_sidechain` und
+`compare_pre`, misst Ankunft, Reihenfolge, PDC-Versatz, Recall
+(Impuls-WAVs `fixtures/aux-spike/`). Bericht `aux-spike-<zeit>.json` in
+denselben Ordner (`AuxSpikeProcessor.cpp:290-295`). Selbsttest
+`EqCopAuxSpikeTest` (41), nicht im Kanon (NAK-37).
+
+**Status beider Termine: nicht gelaufen** — der Spike-Ordner existiert und ist
+leer, die Wegwerf-Bundles liegen nur im Build-Ordner. Klicklisten
+`eq-copilot/docs/FL-TERMIN-{A-AUX-PDC,B-HOSTZEIT}.md`.
+
+## 3 · Verträge
+
+### 3.1 v2 — Vertrag des heutigen Plugins
+
+Fünf Schemas in `eq-copilot/schemas/`, `$id`-Familie eingefroren:
+`evenacadia.eq-copilot.ipc.v2` (Pipe), `.snapshot.v3` (Datei), `.aggregat.v1`
+(Broker-Produkt), `.measurement.v1` und `.report.v1` (geplante M0-Verträge
+ohne Code). Kein Binary lädt sie — deshalb Kanon-Bein A11
+`pruefe_v2_schemas.py` (JSON, Metaschema 2020-12, `$id`-Menge);
+`eq-snapshot.schema.json` war 15.–21.08. kein gültiges JSON (`ad6c233`).
+
+### 3.2 v3-Baum — Sondenfamilie (SONDE-005a)
+
+`eq-copilot/schemas/v3/`: `eq-ipc-v3.schema.json` (`$id
+evenacadia.nakama.ipc.v3`, 17 Nachrichtenfamilien als `oneOf` mit
+Discriminator, 47 `$defs`) · `reservierte-nachrichten-v1.json` (8 reservierte
+Namen) · `quantisierung-v1.json` (3 Kodierungen, 61 Testvektoren) ·
+`bandgitter/nakama_1_24_oct_30_18k_v1.json` (221 Bänder, hex64-Bitmuster) ·
+`nakama_log64_v1.json` (64 Gruppen, exakte Partition der 221). **Textriegel**
+= acht Regeln auf dem Rohtext VOR dem Parser (Liste in `schemas/v3/README.md`),
+Fälle in EINER Datei `fixtures/v3/TEXTRIEGEL-FAELLE.json` (59, hex-kodiert).
+
+### 3.3 FlatBuffers (SONDE-005b)
+
+`schemas/v3/flatbuffers/nakama_telemetry_v1.fbs` (Namespace
+`evenacadia.nakama.v3`, `file_identifier "NKT3"`, 5 Enums, 8 Tabellen, 47
+Felder alle mit `id`, `root_type FeatureBatch`), `FELD-IDS.json`
+(handgeschrieben), `WERKZEUG.json` (`flatc` auf Commit `7e163021…`, 25.12.19,
+Rust-Crate gleich). `pruefe_flatc_drift.py` verlangt bytegleiche
+Neugenerierung des Codegens und dieselbe Version an Compiler, Header, Crate
+und ruft `pruefe_fbs_feldids.py`.
+
+### 3.4 Drei Leser, handgeschriebene Manifeste
+
+Referenz `tools/eq-copilot/pruefe_v3_vertrag.py` (`jsonschema` 4.26; nur das
+Urteil) · C++ `plugin/vertrag/NakamaVertrag.*` + `NakamaTelemetrie.*` via
+`EqCopSchemaTest` · Rust `broker/src/vertrag.rs` + `telemetrie.rs` via
+`broker/tests/contract_cross_language.rs` (beide: Urteil UND
+Verletzungsmenge). Alle gegen dieselben **handgeschriebenen** Manifeste:
+`fixtures/v3/MANIFEST.json` (153 = 36 gültig + 117 ungültig) und
+`fixtures/v3/flatbuffers/MANIFEST.json` (HEAD `c5f6833`: 40 = 8 + 32; eine
+parallele SONDE-005b-Session erweitert ihn gerade, uncommitted 47).
+
+### 3.5 Identität (SONDE-001)
+
+`identity/plugin-identities-v1.json`: Hersteller `evenacadia` / `Evna`; `main`
+= `Eqcp`, Bundle `EQ-Copilot.vst3`, Component-CID
+`ABCDEF019182FAEB45766E6145716370`, Controller-CID `ABCDEF011234ABCD…`,
+`state_schema 1`; reserviert `NkPr` (Suna) und `NkAc` (Probeeq) mit CIDs.
+`JUCE_VST3_CAN_REPLACE_VST2=0` ist Teil der Identität
+(`plugin/CMakeLists.txt:43`). `NkSp` ausdrücklich nicht hier vergeben, `NkHp`
+kommt nicht vor. `EqCopIdentityTest` (63) misst das gebaute `moduleinfo.json`,
+prüft den CMake-Quelltext, rechnet die reservierten CIDs nach, hält die
+State-Goldens.
+
+## 4 · Broker `broker/`
+
+Crate `eqcop-broker` 0.1.0 (lib `eqcop_broker`). Module: `aggregat` ·
+`bindung` · `framing` (`MAX_FRAME_BYTES 262144`) · `generiert` (flatc-Code) ·
+`protokoll` (`PROTOKOLL_VERSION 2`, `MIN_PROTOKOLL 1`) · `telemetrie`
+(FlatBuffers-Leser) · `vertrag` (JSON-Schema-Engine) · `server` (privat).
+Binaries `eqcop-broker.exe [--bindungen <pfad>]` (Standard
+`%APPDATA%\evenacadia\nakama\eq-copilot-bindungen.json`) und
+`eqcop-broker-probe.exe [sekunden] [pipe-name]` (Default `…m2probe`).
+
+- Pipes: Produktion `\\.\pipe\evenacadia.eq-copilot.v1` (`lib.rs:29` ==
+  `EqCopilotIds.h:18`), Probe `…m2probe`. Erste Instanz mit
+  `FILE_FLAG_FIRST_PIPE_INSTANCE` (`server.rs:242`): fremder Besitzer ⇒ Start
+  verweigert. SDDL nur aktueller User, `PIPE_REJECT_REMOTE_CLIENTS`.
+- Handshake (`protokoll.rs:163-182`): Versionen 1..=2 angenommen, `welcome`
+  spiegelt die angenommene Version, sonst `reject`. Register: Stats/Messstand
+  schreibt nur die Besitzer-Nonce; `stale` nach 5 s; Getrennte bleiben
+  sichtbar; zweite lebende Verbindung derselben `sensor_id` ⇒
+  `heartbeat_ack{konflikt: true}`.
+- PRE/POST-Paare (`lib.rs:312-445`): `unklar` / `wahrscheinlich` (Sprünge,
+  Überlappung < 80 %, fremde `host_pid`, Aktivzeit-Differenz > 10 %) /
+  `ausgerichtet`, `grund` nie leer. Aggregat atomisch nach
   `%LOCALAPPDATA%\evenacadia\EQ-Copilot\snapshots\aggregat-<ms>.json`.
-- **Härtung:** erste Pipe-Instanz mit `FILE_FLAG_FIRST_PIPE_INSTANCE` —
-  fremder Besitzer ⇒ Broker verweigert Start (zwei Broker auf einem Namen
-  stahlen sich still Clients). SDDL nur aktueller User, keine Remote-
-  Clients. Ungültige Pakete werden gezählt und verworfen, nie gekürzt.
-- **Probe:** `eqcop-broker-probe.exe [sekunden] [pipe-name]`, Default
-  `…m2probe` — nie der Produktionsname.
-- **Betrieb seit 18.08.2026:** eigenständiger Prozess
-  `broker\target\release\eqcop-broker.exe [--bindungen <pfad>]`
-  (Standard: `%APPDATA%\evenacadia\nakama\eq-copilot-bindungen.json`).
-  Die Hub-App startet und kennt ihn nicht mehr; ihre früheren Kommandos
-  (`eq_copilot_status/profil_binden/aggregat_schreiben`) sind entfernt —
-  `broker_status()`/`profil_binden()`/`aggregat_schreiben()` sind
-  Bibliotheksfunktionen der Crate ohne UI (NAK-12); kein Autostart (NAK-13).
+- Tests: **56** (`cargo test`) — 51 Unit (davon `vertrag.rs` 15) + 5
+  Integration in `tests/contract_cross_language.rs`; `telemetrie.rs` hat keine
+  eigenen `#[test]`, sein Beweis ist der Integrationstest.
+- Betriebsstand 21.08.: kein Broker läuft, keine `evenacadia`-Pipe offen,
+  Bindungsdatei nie angelegt, letzte Snapshots vom 16.08.;
+  `target/release/*.exe` (18.08. 11:43) älter als `lib.rs`/`vertrag.rs`/
+  `telemetrie.rs` (21.08.) — NAK-36; kein Autostart (NAK-13); das
+  `hoermarkierung`-Flag wird nicht gelesen (NAK-10).
 
-## 5 · Snapshots & Diagnose
+## 5 · Bauen und Beweisen
 
-- **eq-snapshot v3** (`schreibeSnapshotDatei()`,
-  `PluginProcessor.cpp:452-660`): Versionen, Sensor, Zustand,
-  `nan_ersetzt_samples`, Loudness, Spektral, Stereo, LTAS (Zentren +
-  Komposit + 8192er-Referenz), Abdeckung, **v3: Perzentile + Zonen-Zeit +
-  Konvergenz**, Resonanzen, **Befunde** (v2), `raw_audio: null` per
-  Vertrag. NaN/±inf ⇒ JSON `null`. Ablage
-  `%LOCALAPPDATA%\evenacadia\EQ-Copilot\snapshots\snapshot-….json`.
-- **Heute gibt es KEIN Befundarchiv im Plugin** — `Festhalten` schreibt die
-  v3-Datei UND friert die Vergleichskurve ein; das Archiv ist reines
-  Bauplan-Ziel (§8) für die Spectral-Field-Front.
-- **Diagnose** (`Diagnose.cpp`, pur/zustandslos auf der Snapshot-KOPIE;
-  dieselbe Funktion speist Hinweis-Knopf, Snapshot-Datei und GoldenTest):
-  5 Klassen — Resonanz (2 stärkste Kandidaten) · Mitten-Loch (500–2000
-  ≥3 dB UNTER der Schulterlinie; erste Idee: Balance vor EQ) · Mulm
-  (120–300 ≥4 dB drüber) · Härte (2,5k–5k ≥4 dB drüber; dynamisch zuerst)
-  · Höhen-Hype (8k–14k > 2k–6k +1 dB). Alles **eigenkurven-relativ**
-  (Schulterlinien) — kein kalibrierter Zielkorridor. Zwei-Kriterien-Test
-  gegen Einzelpeak-Verzerrung; Konfidenz aus 4 Komponenten, die
-  limitierende wird BENANNT; Zonen-Persistenz seit M3a aus dem echten
-  Zeitverlauf (Zonen können ehrlich „hoch"; zitiere M3A-BEFUND, nicht
-  M3-KERN-BEFUND — letzterer ist überholt). Notennamen in FL-Zählung
-  (116 Hz = A#3). m4.1: welliger Pegel (>10 dB) überstimmt Persistenz bei
-  der Werkzeugwahl.
+**14 CMake-Ziele** (`plugin/CMakeLists.txt`): `EqCopilot` (VST3-Produkt) ·
+`EqCopAuxSpike`, `EqCopHostProbe` (VST3, Wegwerf) · Konsolen `EqCopPipeProbe`,
+`EqCopNullTest`, `EqCopGoldenTest`, `EqCopMarkierungTest`, `EqCopShot`,
+`EqCopPaintBench`, `EqCopAuxSpikeTest`, `EqCopIdentityTest`,
+`EqCopHostProbeTest`, `EqCopHostContextTest`, `EqCopSchemaTest`. Binaries
+unter `eq-copilot/build/plugin/<Ziel>_artefacts/Release/`.
 
-## 6 · Beweise (was jedes Werkzeug beweist)
+**Kanon, 15 Beine (`tools/beweise.ps1:206-282`):** A1 NullTest (10 ok) · A2
+GoldenTest (239) · A3 MarkierungTest (30) · A4 `cargo test` (56) · A5
+`pruefe_v3_vertrag.py --abdeckung` · A6 `erzeuge_bandgitter.py --pruefen` · A7
+`erzeuge_quantisierung.py --pruefen` · A8 `erzeuge_v3_fixtures.py --pruefen` ·
+A9 `pruefe_flatc_drift.py` · A10 `erzeuge_fb_fixtures.py --pruefen` · A11
+`pruefe_v2_schemas.py` · B1 IdentityTest (63) · B3 HostContextTest (91) · B3b
+HostProbeTest (85, ohne Argument) · B3c SchemaTest (53 am Stand `ca008f5`).
+Geplant, nicht gebaut: B2 `EqCopStateMigrationTest`, B4
+`EqCopQueueStressTest`, B5 `EqCopAnalysisGoldenTest`, B6 `EqCopDspGoldenTest`,
+B7 `EqCopTransactionTest`.
 
-| Werkzeug | Beweis | Letzter Stand |
-|---|---|---|
-| `EqCopGoldenTest <fixtures>` | Kreuzvalidierung gegen eingefrorene Offline-Referenz + Diagnose-Struktur + 8 adversariale Fälle (Antiphase, nur-L/R, NaN-Recovery, Nyquist-32k, Leichtpfad, Konvergenz). SHA-Riegel auf den WAVs; Pink ⇒ 0 Karten, 1-kHz-Sinus ⇒ genau 1 | **GOLDEN OK 239/239** |
-| `EqCopNullTest` | Bitgleicher Passthrough, 0 Latenz/Tail, NaN gezählt-nicht-gefiltert, Bus-Layouts, State-Roundtrip | **NULLTEST OK** |
-| `EqCopMarkierungTest` | Hör-Markierung T2–T10: klickfrei, Rest bitidentisch, Puls-Rest ≤−120 dBFS, Freewheel/Render bleibt bitidentisch, Analyse-Abgriff vor Färbung | **30/30** |
-| `EqCopShot` | Sichtprüfung ohne FL (echte Messung) | SHOT OK |
-| `EqCopPaintBench [breite] [frames]` | isolierte paint()-Kosten | 2,42 ms @1200×832 |
-| `EqCopPipeProbe "<pipe>"` | v2-Handshake + Konflikt-Roundtrip | PROBE OK v2 |
-| `pluginval --strictness-level 8` | VST3-Lebenszyklus, Editor, Fuzz | SUCCESS |
-| `cargo test … eq_copilot` | Register/Protokoll/Paare/Aggregat | grün |
+Runner `pwsh -File tools/beweise.ps1 [-Bauen] -Ziel docs/beweise/<Ticket>.md
+[-Anhaengen] -Titel '…'`. Exitcodes (`:43-48`): 0 grün · 2 ein Bein rot · 3
+Voraussetzung fehlt · 4 Läufe grün, aber Binaries älter als Quellen.
+Baustand-Scan (`:421-469`): EIN globaler „neueste
+Quelle"-Zeitstempel über alle Quellorte gegen jedes Prüfbinary — ohne
+`-Bauen` zu grob (NAK-25), mit `-Bauen` zählt das Urteil des Buildsystems.
 
-Fixtures: `py -3.13 tools/eq-copilot/erzeuge_fixtures.py` — deterministisch
-(feste Seeds/Phasen, 20 s · 48 kHz · L==R, weil die Offline-Referenz den
-Mid-Mix misst und nur bei L==R beide Mathematiken identisch sind); WAVs
-nicht committet, nur `golden-referenz.json` (SHAs). Stereo-Korrektheit
-beweisen die adversarialen Fälle im GoldenTest.
+**Nicht im Kanon:** `EqCopAuxSpikeTest` (41, NAK-37) · `EqCopShot <ziel.png>
+[breite]` (echte Messung offscreen) · `EqCopPaintBench [breite] [frames]`
+· `EqCopPipeProbe [pipe] [s]` (braucht einen laufenden Broker, immer
+`…m2probe`) · `pluginval --strictness-level 8` (nur in `%TEMP%`, NAK-26).
 
-## 7 · Bekannte Klarstellungen (Code vs. Doku)
+**Python-Werkzeuge (13, `tools/eq-copilot/`):** `erzeuge_fixtures.py`
+Golden-WAVs + `golden-referenz.json` · `erzeuge_aux_spike_fixtures.py`
+Impuls-WAV je Projektrate · `erzeuge_bandgitter.py` beide Gitter ·
+`erzeuge_quantisierung.py` Quantisierungsvertrag · `erzeuge_v3_fixtures.py`
+JSON-Korpus + MANIFEST · `erzeuge_fb_fixtures.py` Binärkorpus + MANIFEST (je
+`--pruefen` = bytegleich) · `pruefe_v3_vertrag.py` Referenzbein ·
+`pruefe_v2_schemas.py` v2-Riegel · `pruefe_flatc_drift.py` Codegen-Drift ·
+`pruefe_fbs_feldids.py` Feld-ID-Disziplin ·
+`erzeuge_testsong.py` acht Kalibrier-MIDIs · `smf.py` SMF-Schreiber ·
+`verify_testsong.py` Verifikator mit fremdem Parser (mido).
 
-- `eq-measurement.schema.json` + `eq-report.schema.json` (je v1) sind
-  **geplante** M0-Verträge — von keinem Code referenziert. Live sind
-  `eq-ipc` v2, `eq-snapshot` v3, `eq-aggregat` v1.
-- Das `hoermarkierung`-Flag wird vom Plugin gesendet, aber der Rust-Broker
-  liest es noch nicht (serde verwirft es still) — bewusst offen, siehe
-  `docs/offene-punkte.md` NAK-10.
-- Die `nakama_*`-Farbtokens in `LeitstandTokens.h` sind Altbestand; die
-  Material-Kit-Front nutzt `copilot_*`.
+## 6 · Bekannte Lücken und Landminen
+
+- Installiert (16.08.) ≠ gebaut (21.08.); Install-Skript auf den 16.08.-Hash
+  festgenagelt, `eq-copilot/install/` gitignoriert und nur auf dem Desktop —
+  NAK-32.
+- `tools/analyze-track.py` (Erzeuger der Golden-Referenz, `GoldenTestMain.cpp:3`)
+  liegt nur in `C:\Users\phili\FL-Studio\tools\` — NAK-31.
+- HostProbeTest 85 vs. 89 — NAK-34 · `EqCopAuxSpikeTest` ohne Kanon-Bein —
+  NAK-37 · Broker-Binaries älter als Quellen — NAK-36 · kein Autostart —
+  NAK-13 · `hoermarkierung` ungelesen — NAK-10 · Sensorübersicht heimatlos —
+  NAK-12 · Baustand-Riegel zu grob — NAK-25 · `pluginval` nur in `%TEMP%` —
+  NAK-26 · `hatTransport` Tautologie — NAK-24.
+- Veraltete Kommentare: `plugin/CMakeLists.txt:3` („Vier Targets"),
+  `tests/ShotTestMain.cpp:7` und `probe/PipeProbeMain.cpp:1` (Hub-App bzw.
+  „Tauri-Broker" — gibt es nicht mehr). `PipeClient.cpp:252` (v1-Zweig) ist
+  unerreichbar, weil `:219` nur ein v2-`welcome` annimmt.
+
+## Gemessen am 21.08.2026
+
+HEAD `c5f6833`, Arbeitskopie mit uncommitteten SONDE-005b-Änderungen.
+
+- **0.3.0, Riegel, Bundles 0.1.0:** `grep kPluginVersion plugin/src/EqCopilotIds.h`
+  · `eq-copilot/CMakeLists.txt:3-22` · `build/CMakeCache.txt` · `grep Version
+  …/Resources/moduleinfo.json`.
+- **NullTest 10 · Markierung 30 · Identity 63 · Hostkontext 91 · HostProbe 85
+  · AuxSpike 41 · Golden 239:** die sieben `.exe` unter
+  `build/plugin/*_artefacts/Release/`, in dieser Sitzung gefahren, alle Exit 0.
+  HostProbe 89: `tests/HostProbeTestMain.cpp:726-768`.
+- **Schema 53 · Broker 56:** SchemaTest-Lauf am Stand `ca008f5` ·
+  `grep -c '#[test]' broker/src/*.rs` (51) + HEAD
+  `tests/contract_cross_language.rs` (5; Arbeitskopie 6).
+- **14 Ziele · 15 Beine + 5 geplant · Exitcodes · v2 grün:** `grep juce_add_
+  plugin/CMakeLists.txt` · `tools/beweise.ps1:206-282`, `:43-48`, `:421-469` ·
+  `py -3.13 tools/eq-copilot/pruefe_v2_schemas.py`.
+- **153 · 59 · 40 (47) · 17 Familien · 47 `$defs` · 8 reserviert · 3
+  Kodierungen · 221/64 · 8 Tabellen/47 Felder:** `json.load` über die
+  Manifeste und `schemas/v3/**.json` · `grep "^table\|^enum"
+  nakama_telemetry_v1.fbs` · `WERKZEUG.json`.
+- **Brücke ohne Senke:** `grep -rn "hostbruecke\|Senke" eq-copilot/plugin/src/` → 0.
+- **Kein Broker · leerer Spike-Ordner · keine Bindungsdatei · Binaries 18.08.:**
+  `tasklist` (nur drei `FL64.exe`) · `%APPDATA%\evenacadia\nakama\` ·
+  `ls broker/target/release/*.exe`. **paint() 2,47 ms:** `EqCopPaintBench`.

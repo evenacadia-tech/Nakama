@@ -297,15 +297,24 @@ sind sie es, und der Preis ist hoch. Alle drei dauerhaft auf dem Blatt:
 | | ohne Global/Draft/Undo | mit allen dreien |
 |---|---|---|
 | bleibt für Kurve + Bänder | **358 px** | **235 px** |
-| A · Kurvenfeld | 127 px | **3 px** |
-| A · ±3-dB-Draft | 32 px | **1 px** |
-| C · Kurvenfeld | 197 px | 73 px |
-| D · Kurvenfeld | 192 px | 68 px |
+| A · Kurvenfeld | 127 px | **1 px** |
+| A · ±3-dB-Draft | 32 px | **0 px** |
+| C · Kurvenfeld | 197 px | 71 px |
+| D · Kurvenfeld | 192 px | 66 px |
 
-Bei **3 px Kurvenfeld** passen nicht einmal die Achsenbeschriftungen
+> **Korrigiert am 2026-08-21 (Codex-Befund 7).** Alle Kurvenzahlen dieses
+> Abschnitts lagen um **2 px zu hoch**: gemessen wurde `offsetHeight`, und
+> darin stecken die beiden Rahmenpixel von `.kurve`, auf denen nichts
+> gezeichnet wird. Jetzt kommt die Zahl aus `clientHeight` — A 3→**1**,
+> C 73→**71**, D 68→**66**, E 187→**185**, Formfaktor Active 7→**5**. Der
+> Bandkasten behält bewusst `offsetHeight`: seine Zahl ist ein Platzbedarf im
+> Layout, und dort zählt der Rahmen mit. Das Urteil „unbrauchbar" wird durch
+> die Korrektur nicht weicher, sondern härter.
+
+Bei **1 px Kurvenfeld** passen nicht einmal die Achsenbeschriftungen
 `+12 dB / −12 dB` hinein — das Blatt meldet dort 14 px Überlauf. Dasselbe zeigt
 `werkzeug/formfaktor.html` jetzt 1:1 über dem nachgestellten FL-Bildschirm:
-**„700×420 — passt, aber der Kurve bleiben 7 px (0.3 px je dB)"**. Ein Fenster
+**„700×420 — passt, aber der Kurve bleiben 5 px (0.2 px je dB)"**. Ein Fenster
 kann „passen" und trotzdem unbrauchbar sein; eine Überlaufmessung sieht das
 grundsätzlich nicht, sie kennt nur abgeschnitten/nicht abgeschnitten.
 
@@ -319,9 +328,9 @@ Dauerzeilen, Kurven-Mindesthöhe 140 px):
 
 | | Kurve gibt nach | Bänder geben nach |
 |---|---|---|
-| **A** — 8 × 12 | 3 px Kurve · **8/8 Bänder** · 14 px Überlauf | 85 px Kurve · **2/8 Bänder** |
-| **C** — 4+4 | 73 px Kurve · 8/8 Bänder | 85 px Kurve · **4/8 Bänder** |
-| **D** — 1+7 Streifen | 68 px Kurve · alle sichtbar | 85 px Kurve · **16 px Überlauf** |
+| **A** — 8 × 12 | 1 px Kurve · **8/8 Bänder** · 14 px Überlauf | 83 px Kurve · **2/8 Bänder** |
+| **C** — 4+4 | 71 px Kurve · 8/8 Bänder | 83 px Kurve · **4/8 Bänder** |
+| **D** — 1+7 Streifen | 66 px Kurve · alle sichtbar | 83 px Kurve · **16 px Überlauf** |
 
 **Das ist die Entscheidung, in Zahlen:** entweder alle acht Bänder und eine
 Kurve, die keine ist — oder eine ablesbare Kurve und zwei bis vier Bänder.
@@ -342,7 +351,7 @@ Undo einen Schritt entfernt, kauft bis zu 123 px zurück.
 3. **Kein Global-Bereich, keine Draft-Knopfreihe, kein Undo-Verlauf im Blatt.**
    ✓ **Jetzt gemessen** statt angenommen: alle drei dauerhaft kosten
    **123 px** — der Vorrat fällt von 358 auf 235, und Anordnung A behält
-   3 px Kurvenfeld. Siehe „Der Preis der drei dauerhaften Zeilen" oben.
+   1 px Kurvenfeld. Siehe „Der Preis der drei dauerhaften Zeilen" oben.
    Am Blatt umschaltbar.
 4. Gerechnet ist der **schlimme Fall**: alle 8 Bänder aktiv, alle mit Dynamik,
    längste Werte. Der Schönfall kostet die Hälfte — und ist als Grundlage
@@ -371,7 +380,7 @@ die Passive-Kachel bei 260×84 **3 px**.
 
 | | gemessen 2026-08-21 |
 |---|---|
-| Active-Probe 700×420 | **0 px Überlauf** — aber der Kurve bleiben **7 px** (0,3 px je dB) |
+| Active-Probe 700×420 | **0 px Überlauf** — aber der Kurve bleiben **5 px** (0,2 px je dB) |
 | Passive-Kachel 260×84 | **23 px Überlauf** (vorher 3 px am Schönfall) |
 
 Die alte Zahl „Active-Probe läuft 24 px über" galt für den alten Mock (eine

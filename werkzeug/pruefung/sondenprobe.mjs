@@ -84,13 +84,24 @@ async function probeZahlen() {
     [...document.querySelectorAll('.anordnung')].map(a => {
       const zahl = k => { const e = a.querySelector(`[data-mess="${k}"]`)
         return e ? parseFloat(e.textContent) : null }
-      // offsetHeight, NICHT getBoundingClientRect: die Kacheln stehen unter
-      // transform:scale(). Die erste Fassung dieser Sonde verglich zwei Werte
-      // mit demselben Fehler und meldete zufrieden "0 Abweichungen".
-      const rect = s => { const e = a.querySelector(s); return e ? e.offsetHeight : 0 }
+      /* Der unabhaengige Weg zur Zahl. Er darf NICHT derselbe sein wie im
+         Blatt, sonst vergleicht die Probe eine Rechnung mit sich selbst —
+         genau der Fehler, an dem die erste Fassung dieser Sonde scheiterte.
+         Das Blatt nimmt clientHeight bzw. offsetHeight; hier wird das
+         Rechteck genommen und durch den am Element selbst gelesenen Massstab
+         geteilt (die Kacheln stehen unter transform:scale()).
+         Fuer die KURVE wird zusaetzlich der Rahmen abgezogen: dort zaehlt der
+         Zeichenraum. Fuer den BANDKASTEN nicht: dort zaehlt der Platzbedarf. */
+      const skal = e => e.offsetWidth ? e.getBoundingClientRect().width / e.offsetWidth : 1
+      const aussen = s => { const e = a.querySelector(s)
+        return e ? e.getBoundingClientRect().height / skal(e) : 0 }
+      const innen = s => { const e = a.querySelector(s); if (!e) return 0
+        const st = getComputedStyle(e)
+        return e.getBoundingClientRect().height / skal(e)
+             - parseFloat(st.borderTopWidth) - parseFloat(st.borderBottomWidth) }
       return { id: a.dataset.id,
-               gezeigtKurve: zahl('kurve'), echtKurve: rect('.kurve'),
-               gezeigtBand: zahl('bandkasten'), echtBand: rect('.bandliste') }
+               gezeigtKurve: zahl('kurve'), echtKurve: innen('.kurve'),
+               gezeigtBand: zahl('bandkasten'), echtBand: aussen('.bandliste') }
     }))
   const vorher = await lies()
   let schief = 0

@@ -181,7 +181,7 @@ man nicht nachmessen kann, ist eine Behauptung.
   Der Sondenplan führte beides als gleich (216 px); gemessen sind es 111 gegen
   176, und das Kurvenfeld wächst von 127 auf 192 px.
 - **Global, Draft und Undo dauerhaft kosten 123 px** — der Vorrat fällt von 358
-  auf 235, und Anordnung A behält **3 px** Kurvenfeld. Dort passen nicht einmal
+  auf 235, und Anordnung A behält **1 px** Kurvenfeld. Dort passen nicht einmal
   die Achsenbeschriftungen hinein.
 
 ### Zwei Grenzfälle, und sie zeigen in entgegengesetzte Richtungen

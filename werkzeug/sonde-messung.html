@@ -1035,8 +1035,8 @@ function messePlatz(form, ueber={}){
     return {
       platz: r ? Math.round(r.platz) : 0,
       kinder: wf.children.length,
-      kurve: kv ? kv.offsetHeight : 0,
-      band:  kb ? kb.offsetHeight : 0,
+      kurve: kv ? kv.clientHeight : 0,   // Zeichenraum, ohne die 2 px Rahmen
+      band:  kb ? kb.offsetHeight : 0,   // Platzbedarf, MIT Rahmen
       sichtbar: listen.reduce((a,l) => a + l.sichtbar, 0),
       gesamt:   listen.reduce((a,l) => a + l.gesamt, 0),
       ueberlauf: ueberlauf(wf).fehlt
@@ -1328,7 +1328,14 @@ function anordnungKachel(a, i){
     listenEhrlich(wf);
     const kb = wf.querySelector('.bandliste');
     const kv = wf.querySelector('.kurve');
-    const hK = kv ? kv.offsetHeight : 0;      // Layouthoehe, nicht Bildschirmhoehe
+    /* clientHeight, nicht offsetHeight: .kurve hat 1 px Rahmen oben und unten,
+       und dort wird nichts gezeichnet. Die Zahl beantwortet "wieviel ZEICHEN-
+       raum hat die Kurve", also muss der Rahmen raus — bei 3 px gemeldeter
+       Hoehe blieb sonst 1 px Innenraum uebrig und px/dB war um den Faktor 3
+       zu gut. Beide sind von transform:scale() unberuehrt (siehe massstabVon).
+       Der Bandkasten bleibt bewusst offsetHeight: seine Zahl ist ein
+       PLATZbedarf im Layout, und dort zaehlt der Rahmen mit. */
+    const hK = kv ? kv.clientHeight : 0;
     const hB = kb ? kb.offsetHeight : 0;
     const pxDb = hK / 24;
     const draftPx = pxDb * 6;                       // +-3 dB = 6 dB Spanne

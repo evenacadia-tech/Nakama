@@ -624,7 +624,10 @@ function zeichnen(){
     const kv = f.querySelector('.kurve');
     const em = f.querySelector('.titel em');
     if(kv && em && +f.dataset.fehlt <= 1){
-      const px = kv.offsetHeight;
+      /* clientHeight: .kurve hat 1 px Rahmen oben und unten, dort wird nichts
+         gezeichnet. offsetHeight meldete 7 px, zeichnen kann die Kurve auf 5.
+         Dieselbe Korrektur steht in werkzeug/sonde-messung.html. */
+      const px = kv.clientHeight;
       em.textContent = `${a.w}×${a.h} — passt, aber der Kurve bleiben `
         + `${px} px (${(px/24).toFixed(1)} px je dB)`;
     }

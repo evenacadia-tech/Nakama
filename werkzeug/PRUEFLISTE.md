@@ -13,7 +13,7 @@ noch einmal eintritt:
 | | |
 |---|---|
 | `node werkzeug/pruefung/pruefen.mjs` | **Lebt** das Blatt? JS-Fehler, leer, kein Standband. Alle Blätter. |
-| `node werkzeug/pruefung/sondenprobe.mjs alles` | **Sagt** es die Wahrheit? Elf Proben über die Messbank und das Formfaktor-Blatt, zwei davon Gegenproben. |
+| `node werkzeug/pruefung/sondenprobe.mjs alles` | **Sagt** es die Wahrheit? Zwölf Proben über die Messbank und das Formfaktor-Blatt, darunter zwei Gegenproben und ein Durchlauf über alle sechzehn Grenzfälle der Ehrlichkeitsschalter. |
 
 Beide enden mit `exit 1` bei Befund und haben eine `--gegenprobe` bzw.
 eingebaute künstliche Fehlerfälle.
@@ -28,7 +28,8 @@ eingebaute künstliche Fehlerfälle.
 | **Der gemessene Zähler braucht eine eigene Form** (`3/5`), wenn im selben Kopf ein geschriebener Text mit Zahl steht. | „finding 1 of 3 · 3 of 5" — zwei gleich aussehende Zähler, zwei Bedeutungen. |
 | **Was der Streifen zählt, muss die Karte zeigen.** Eine Quelle der Wahrheit, kein zweiter Zähler. | — |
 | **„Ehrlich zeigen" gilt für alles, was aus dem Zustand FOLGT**, nicht nur für die Zustandsanzeige. | Bei 16 getrennten Quellen standen drei Befunde da, als wäre gerade gemessen worden; der Assistent bot Vorhören an; der Streifen meldete „Measuring 68 %". |
-| **Ein Knopf, der sich drücken lässt und nichts tut, ist eine Lüge.** | Vorhören auf einer getrennten Quelle. |
+| **Ein Knopf, der sich drücken lässt und nichts tut, ist eine Lüge.** | Vorhören auf einer getrennten Quelle. Zweiter Fall am 2026-08-21: die Draft-Griffe des Editors blieben bei **Bypass** aktiv — das Gerät ist aus der Kette, vorhörbar wäre nichts. |
+| **Jede Ursache für „wirkungslos" einzeln durchschalten.** Es sind meist mehrere, und die Prüfung deckt nur die, an die jemand gedacht hat. | Der Editor kennt drei: vom Main getrennt · Bypass · Dynamik aus. Die erste war geprüft, die zweite nicht, die dritte wieder ja. `sondenprobe.mjs zustaende` schaltet jetzt alle sechzehn Kombinationen durch. |
 | **Ein leeres Feld ohne Erklärung ist ein Ausfall, kein Zustand.** | — |
 
 ## 2. Messung von Überlauf und Verdeckung

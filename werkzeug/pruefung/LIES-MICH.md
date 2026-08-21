@@ -63,7 +63,7 @@ node werkzeug/pruefung/sondenprobe.mjs alles
 node werkzeug/pruefung/sondenprobe.mjs zahlen
 ```
 
-Elf Proben über `sonde-messung.html` und `formfaktor.html`:
+Zwölf Proben über `sonde-messung.html` und `formfaktor.html`:
 
 | Probe | Frage |
 |---|---|
@@ -76,6 +76,7 @@ Elf Proben über `sonde-messung.html` und `formfaktor.html`:
 | `deckel` | Ist keine Zeile flacher gedeckelt als ihr Inhalt? |
 | `beleg` | Nennt jeder Baustein Handgriff und Spezifikationsstelle — und ist kein Main-Baustein übriggeblieben? |
 | `grenzfall` | Ist der Grenzfall die **Vorgabe**, nicht der Sonderfall? |
+| `zustaende` | Alle **sechzehn** Kombinationen der Ehrlichkeitsschalter durchgeschaltet: ist bei Bypass und ohne Main wirklich jeder Griff tot, und zeigt jeder wirkungslose Wert „—“? Mit Gegenprobe nach unten — im Schönfall muss etwas leben, sonst prüft die Schleife ins Leere |
 | `formfaktor` | Zeigt das Active-Probe-Fenster den echten Editor-Inhalt? |
 | `kachel` | Steht die Passive-Kachel im Grenzfall, nicht im Schönfall? |
 

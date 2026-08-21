@@ -11,6 +11,7 @@
 //   node werkzeug/pruefung/sondenprobe.mjs zahlen
 //   node werkzeug/pruefung/sondenprobe.mjs waage | anordnungen | ratsche
 //                                        | deckel | beleg | grenzfall
+//                                        | zustaende
 //                                        | gegenprobe-ueberlauf
 //                                        | gegenprobe-verdeckung
 //                                        | formfaktor | kachel
@@ -313,6 +314,69 @@ async function probeGrenzfall() {
   await ctx.close()
 }
 
+/* --------------------------------------------------------------- zustaende --
+   Im Grenzfall pruefen, nicht im Schoenfall (PRUEFLISTE 7.4). Alle sechzehn
+   Kombinationen der Ehrlichkeitsschalter werden durchgeschaltet, und in jeder
+   gilt: was nichts bewirkt, ist abgeschaltet und zeigt "—". Ein Knopf, der
+   sich druecken laesst und nichts tut, ist eine Luege (PRUEFLISTE 1).
+
+   Diese Probe ist nachtraeglich entstanden: beim Durchschalten von Hand fiel
+   auf, dass die Draft-Griffe bei BYPASS aktiv blieben — vorhoerbar waere dort
+   nichts, das Geraet ist aus der Kette. Von Hand gefunden heisst: beim
+   naechsten Mal nicht gefunden. Deshalb hier. */
+async function probeZustaende() {
+  const { ctx, page, fehler } = await oeffne('sonde-messung.html')
+  const faelle = []
+  for (const bypass of [false, true])
+    for (const verbunden of [true, false])
+      for (const dynamik of [true, false])
+        for (const slots of [8, 1])
+          faelle.push({ bypass, verbunden, dynamik, slots })
+
+  let schief = 0
+  for (const f of faelle) {
+    const r = await page.evaluate(async w => {
+      Object.assign(window.WELT, w)
+      window.zeichnen()
+      await new Promise(a => requestAnimationFrame(() => requestAnimationFrame(a)))
+      const wf = document.querySelector('.anordnung[data-id="A"] .wf')
+      const draft = wf.querySelector('[data-baustein^="Draft vom Main"]')
+      const lebendeDraftGriffe = draft
+        ? [...draft.querySelectorAll('[data-griff]')].map(g => g.textContent.trim()) : []
+      const zellen = k => [...wf.querySelectorAll('.slotz .' + k)]
+        .map(c => c.textContent.trim())
+      const dynFelder = ['thr', 'rng', 'atk', 'hld', 'rel'].flatMap(zellen)
+      const eqFelder = ['typ', 'f', 'q'].flatMap(zellen)
+      return {
+        lebendeDraftGriffe,
+        dynLebendig: dynFelder.filter(t => t !== '—').length,
+        eqLebendig: eqFelder.filter(t => t !== '—').length,
+        zeilen: wf.querySelectorAll('.slotz').length
+      }
+    }, f)
+    const wo = `bypass=${f.bypass} verbunden=${f.verbunden} dyn=${f.dynamik} slots=${f.slots}`
+    // 1. Ohne Main oder bei Bypass darf kein Draft-Griff mehr leben.
+    if ((f.bypass || !f.verbunden) && r.lebendeDraftGriffe.length) { schief++
+      sag(false, `${wo}: Draft-Griffe noch aktiv (${r.lebendeDraftGriffe.join(', ')})`) }
+    // 2. Bei Bypass ist JEDER Bandparameter tot.
+    if (f.bypass && (r.eqLebendig || r.dynLebendig)) { schief++
+      sag(false, `${wo}: ${r.eqLebendig} EQ- und ${r.dynLebendig} Dynamikwerte stehen noch da`) }
+    // 3. Ohne Dynamik sind die fuenf Dynamikwerte je Slot tot.
+    if (!f.dynamik && r.dynLebendig) { schief++
+      sag(false, `${wo}: ${r.dynLebendig} Dynamikwerte trotz abgeschalteter Dynamik`) }
+    // 4. Gegenprobe nach unten: im Schoenfall MUSS etwas leben, sonst prueft
+    //    diese Schleife nur, dass alles leer ist.
+    if (!f.bypass && f.dynamik && !r.dynLebendig) { schief++
+      sag(false, `${wo}: keine Dynamikwerte im Schoenfall — die Probe prueft ins Leere`) }
+    if (r.zeilen !== f.slots) { schief++
+      sag(false, `${wo}: ${r.zeilen} Bandzeilen statt ${f.slots}`) }
+  }
+  if (fehler.length) { schief++; sag(false, 'JS-Fehler: ' + fehler[0]) }
+  sag(schief === 0, `zustaende: ${faelle.length} Grenzfaelle durchgeschaltet — `
+    + `${schief} Abweichungen`)
+  await ctx.close()
+}
+
 /* ------------------------------------------------------------- formfaktor --*/
 async function probeFormfaktor() {
   const { ctx, page, fehler } = await oeffne('formfaktor.html')
@@ -365,7 +429,8 @@ const PROBEN = {
   'gegenprobe-ueberlauf': probeGegenUeberlauf,
   'gegenprobe-verdeckung': probeGegenVerdeckung,
   ratsche: probeRatsche, deckel: probeDeckel, beleg: probeBeleg,
-  grenzfall: probeGrenzfall, formfaktor: probeFormfaktor, kachel: probeKachel
+  grenzfall: probeGrenzfall, zustaende: probeZustaende,
+  formfaktor: probeFormfaktor, kachel: probeKachel
 }
 const was = process.argv[2] || 'alles'
 const lauf = was === 'alles' ? Object.keys(PROBEN) : [was]

@@ -620,6 +620,15 @@ function draftZeile(){
       <i>Draft</i><span class="w tot">no proposal — not linked to Main</span>
       <span class="rechts"><span class="wfk aus">Audition (hold)</span>
       <span class="wfk aus">Apply</span><span class="wfk aus">Discard</span></span></div>`;
+  /* Dasselbe bei Bypass: das Geraet ist aus der Kette. Ein Vorschlag, den man
+     vorhoert, waere unhoerbar — und "gehalten = hoerbar" ist genau das, was
+     die Spezifikation an dieser Stelle verspricht. Selbst gefunden beim
+     Durchschalten der Ehrlichkeitsschalter. */
+  if(WELT.bypass)
+    return `<div class="zeile" data-baustein="Draft vom Main (halten, anwenden, verwerfen)">
+      <i>Draft</i><span class="w tot">device bypassed — nothing would be audible</span>
+      <span class="rechts"><span class="wfk aus">Audition (hold)</span>
+      <span class="wfk aus">Apply</span><span class="wfk aus">Discard</span></span></div>`;
   if(LAGE.angewandt)
     return `<div class="zeile" data-baustein="Draft vom Main (halten, anwenden, verwerfen)">
       <i>Draft</i><span class="w">applied · <b>2 bands</b> changed</span>
@@ -950,7 +959,7 @@ const massstabVon = el => {
 /* 5. Der Deckel: keine Zeile darf flacher gedeckelt sein als ihr Inhalt. */
 function deckel(wf){
   let schlimmster = 0, wo = '';
-  wf.querySelectorAll('.slotz, .sb, .uv, .zeile').forEach(z => {
+  wf.querySelectorAll('.slotz, .sb, .sb1, .uv, .zeile').forEach(z => {
     const d = z.scrollHeight - z.clientHeight;
     if(d > schlimmster){ schlimmster = d; wo = z.className; }
   });
@@ -980,43 +989,54 @@ document.body.appendChild(messbuehne);
 function messePlatz(form, ueber={}){
   const alt = {};
   for(const k in ueber){ alt[k] = WELT[k]; WELT[k] = ueber[k]; }
-  const wf = document.createElement('div');
-  wf.className = 'wf';
-  wf.innerHTML = bau(form);
-  messbuehne.replaceChildren(wf);
-  const r = aufteilen(wf);
-  listenEhrlich(wf);
-  const kv = wf.querySelector('.kurve'), kb = wf.querySelector('.bandliste');
-  const listen = [...wf.querySelectorAll('.liste')].map(l => ({
-    gesamt: +l.dataset.gesamt,
-    sichtbar: [...l.children].filter(c =>
-      !c.classList.contains('kappe') && c.style.display !== 'none').length
-  }));
-  const erg = {
-    platz: r ? Math.round(r.platz) : 0,
-    kinder: wf.children.length,
-    kurve: kv ? kv.offsetHeight : 0,
-    band:  kb ? kb.offsetHeight : 0,
-    sichtbar: listen.reduce((a,l) => a + l.sichtbar, 0),
-    gesamt:   listen.reduce((a,l) => a + l.gesamt, 0),
-    ueberlauf: ueberlauf(wf).fehlt
-  };
-  messbuehne.replaceChildren();
-  Object.assign(WELT, alt);
-  return erg;
+  /* try/finally, nicht "am Ende zuruecksetzen": diese Funktion laeuft je
+     Neuzeichnung ueber dreissig Mal mit Ueberschreibungen. Wirft eine davon,
+     bliebe WELT verstellt und JEDE folgende Messung — auch die auf dem
+     sichtbaren Blatt — maesse eine Welt, die der User nie geschaltet hat. */
+  try {
+    const wf = document.createElement('div');
+    wf.className = 'wf';
+    wf.innerHTML = bau(form);
+    messbuehne.replaceChildren(wf);
+    const r = aufteilen(wf);
+    listenEhrlich(wf);
+    const kv = wf.querySelector('.kurve'), kb = wf.querySelector('.bandliste');
+    const listen = [...wf.querySelectorAll('.liste')].map(l => ({
+      gesamt: +l.dataset.gesamt,
+      sichtbar: [...l.children].filter(c =>
+        !c.classList.contains('kappe') && c.style.display !== 'none').length
+    }));
+    return {
+      platz: r ? Math.round(r.platz) : 0,
+      kinder: wf.children.length,
+      kurve: kv ? kv.offsetHeight : 0,
+      band:  kb ? kb.offsetHeight : 0,
+      sichtbar: listen.reduce((a,l) => a + l.sichtbar, 0),
+      gesamt:   listen.reduce((a,l) => a + l.gesamt, 0),
+      ueberlauf: ueberlauf(wf).fehlt
+    };
+  } finally {
+    messbuehne.replaceChildren();
+    Object.assign(WELT, alt);
+  }
 }
 
 function wiege(html){
-  buehne.style.width = '700px';
-  buehne.innerHTML = html;
-  const el = buehne.firstElementChild;
-  if(!el) return {h:0, b:0};
-  const h = el.getBoundingClientRect().height;
-  buehne.style.width = 'max-content';
-  const b = el.getBoundingClientRect().width;
-  buehne.style.width = '700px';
-  buehne.innerHTML = '';
-  return {h: Math.round(h*10)/10, b: Math.round(b*10)/10};
+  // finally, damit die Buehne nie auf max-content stehenbleibt: die naechste
+  // Hoehenmessung waere dann auf einer Buehne beliebiger Breite gemacht.
+  try {
+    buehne.style.width = '700px';
+    buehne.innerHTML = html;
+    const el = buehne.firstElementChild;
+    if(!el) return {h:0, b:0};
+    const h = el.getBoundingClientRect().height;
+    buehne.style.width = 'max-content';
+    const b = el.getBoundingClientRect().width;
+    return {h: Math.round(h*10)/10, b: Math.round(b*10)/10};
+  } finally {
+    buehne.style.width = '700px';
+    buehne.innerHTML = '';
+  }
 }
 const innenBreite = () => {
   const p = document.createElement('div');

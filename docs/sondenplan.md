@@ -437,7 +437,9 @@ und Zeilennummern in `abnahmen/2026-08-21-codereview.md`:
   Passive-Kachel steht im Grenzfall (Abschnitt 5).
 - ✓ Die **Verdeckungsprüfung** aus `PRUEFLISTE.md` 2.3 existiert — sie hat im
   ersten Lauf einen echten Fehler gefunden (siehe Abschnitt 6).
-- ✓ `werkzeug/pruefung/sondenprobe.mjs` — elf Proben, zwei davon Gegenproben.
+- ✓ `werkzeug/pruefung/sondenprobe.mjs` — zwölf Proben, darunter zwei
+  Gegenproben und ein Durchlauf über alle sechzehn Grenzfälle der
+  Ehrlichkeitsschalter.
 
 **Offen, in dieser Reihenfolge:**
 

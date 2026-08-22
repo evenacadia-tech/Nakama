@@ -25,11 +25,35 @@
 > 🔑 Lehre fuer S9: **eine Static-Lib erbt die PUBLIC-Schalter ihrer
 > Verbraucher nicht** — wer in S9 eine zweite Lib anlegt, haengt ihr die
 > Empfehlungsschalter selbst an; K2c faellt sonst zur Configure-Zeit.
-> **Naechste Bau-Flaeche: S9 (`SONDE-007b`)** — drei Ziele,
-> Lifecycle-Klassifikation, Installer-Manifest. Offen aus S8 und dort faellig:
-> **NAK-52** (Identitaet als CMake-Literal statt aus
-> `plugin-identities-v1.json`) und die Frage, ob K2b/K2c gegen alle drei
-> Verbraucher oder die drei untereinander messen.
+> **S9 (`SONDE-007b`): Abschnitte 1+2 von 3 gebaut** (23.08., Commits
+> `8e32baf` + `fdece75`, Manifest `docs/beweise/SONDE-007b.md`).
+> **Es gibt jetzt drei Bundles:** `EQ-Copilot.vst3` (`Eqcp`),
+> **`Nakama Suna.vst3`** (`NkPr`) und **`Nakama Probeeq.vst3`** (`NkAc`).
+> Die Identitaet kommt aus `identity/plugin-identities-v1.json` — kein Literal
+> mehr im Bauskript (**NAK-52 geschlossen**). Die beiden neuen entstehen aus
+> EINER Quelle `plugin/sonde/` ueber duenne Target-Schichten; ihre CIDs sind
+> erstmals an Artefakten gemessen, kein Bundle traegt eine fremde Ziel-CID.
+> Auch entschieden und gebaut: K2b/K2c messen gegen **jeden** Kern-Verbraucher
+> (12), nicht gegen eine Stichprobe. Kanon 19 → **21** (A15/A16), `pluginval` 8
+> an beiden neuen SUCCESS.
+>
+> ⚠️ **Beide neuen Bundles sind heute Passthrough** — keine Hostparameter,
+> `hasEditor() == false`. Probeeqs EQ-DSP gehoert zu P6, die Oberflaechen
+> kommen aus Figma. Wenn P6 die DSP bringt, **muss** das Kanon-Bein A16
+> umgeschrieben werden.
+> 🔑 Zwei Fehler fand der Gegenpfad speichern↔laden, nicht das Nachdenken:
+> `active_probe` verlangt laut Kind-Matrix §2.1 genau ein `Parameters`-Kind,
+> und `Zustand::parameters` war `{}` — also **Nullen statt `standardSatz()`**,
+> und 0 Hz liegt ausserhalb von `band.0.freq_hz`.
+>
+> **Naechster Schritt: S9 Abschnitt 3** — Lifecycle-Klassifikation (§53.5:
+> `unclassified` beim Laden, `legacy` bei Schema-1-`sensor|pre|post`, `main`
+> bei `hub` oder bestaetigtem Schema-2-Main-State, „ein Scannerlauf
+> klassifiziert nicht") und das Installer-Manifest. Betrifft **nur** das
+> Main-Bundle; die beiden neuen haben eine feste Produktklasse und die steht.
+> Danach T1+T2 fuer S9. ⚠️ Vor einem Installer-Schritt muessen **NAK-41**
+> (Schema-2-Projekt verliert im 16.08.-Build still seine Identitaet) und
+> **NAK-32** (Installer-Ordner nur auf dem Desktop) entschieden sein.
 >
 > **Aber vorher zwei Dinge, die Vorrang haben:**
 >

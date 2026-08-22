@@ -41,7 +41,7 @@ Die drei Oberflächen:
 
 1. **Nakama Gen** — die Main-App: Quellen-Übersicht, Befunde, Advisor.
    760×430. Stand: `assets/figma/2026-08-22-gen.png` (Depot `6:13`, Studie 04
-   in der Probeeq-Sprache). Die 18 Lesarten dazu beantwortet der User im
+   in der Probeeq-Sprache). Die 17 Lesarten dazu beantwortet der User im
    Nakama-Hub (`abnahmen/2026-08-21-gen-auftrag-figma.md`). Der Stand vom
    21.08. (cyan) ist Verlauf.
 2. **Nakama Probeeq** — die aktive Sonde: ein **vollwertiger, hochwertiger

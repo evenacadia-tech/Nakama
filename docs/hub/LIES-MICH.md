@@ -45,7 +45,7 @@ nicht mehr gebaut, gelesen oder veröffentlicht.
 - Die Seite rendert **ihren** Fragenkatalog (`friendly-copy.ts`), nicht die
   `punkte`-Texte aus `hub.json`. Ein neuer Unterpunkt oder eine neue Karte mit
   Fragen braucht dort einen Eintrag und einen neuen Deploy — `hub.json` allein
-  zeigt ihn nicht. Heute fehlt dort `U2.16` (17 von 18 Gen-Lesarten).
+  zeigt ihn nicht.
 - Neue Bilder ebenso: nach `docs/hub/bilder/` UND `briefing-hub/public/images/`.
 - `hub.json` muss `stand`, `bei_dir`, `plan`, `design` tragen, sonst lehnt
   `/api/state` ab; `hub_sync.py pruefen` prüft strenger.

@@ -4,16 +4,16 @@
   "hub_url": "https://nakama-briefing.philipld.chatgpt.site",
   "naechster_schritt": {
     "technik": "Gate G0 — erste adversariale Prüfrunde über P0 (C++-Review + Codex, eigene Session). Danach S8: gemeinsamer Plugin-Kern ohne Bundle-Konstanten (SONDE-007a).",
-    "design": "Phase 1b, Schritt Gen — kann beginnen: der Gen-Stand (Studie 04, dunkel) liegt als Export aus dem Depot in der Truhe. Parallel beantwortest du die 18 Lesarten (U2); was du drehst, holt Claude als neuen Stand.",
-    "dich": "Die 18 Gen-Lesarten in Karte U2 beantworten (00 = Gesamturteil). Exporte aus Figma sind nicht mehr deine Arbeit — Claude holt sie aus dem Depot."
+    "design": "Phase 1b, Schritt Gen — kann beginnen: der Gen-Stand (Studie 04, dunkel) liegt als Export aus dem Depot in der Truhe. Parallel beantwortest du die 17 Lesarten (U2); was du drehst, holt Claude als neuen Stand.",
+    "dich": "Die 17 Gen-Lesarten in Karte U2 beantworten (00 = Gesamturteil). Exporte aus Figma sind nicht mehr deine Arbeit — Claude holt sie aus dem Depot."
   },
   "bei_dir": [
     {
       "id": "U2",
       "dringlichkeit": "jetzt",
       "art": "Entscheid",
-      "titel": "Gen-Entwurf (Studie 04): die 18 Lesarten beantworten",
-      "was": "Die Studie 04 liegt in deinem Depot (Rahmen „Lumia Material Lab / Study 04 — Gen“) und ist damit der aktuelle Gen-Stand — dunkel. Offen sind die Lesarten darin: 00 das Gesamturteil (trifft Gen die Sprache?), 01–17 je eine Entscheidung mit Entwurf und Alternative. Unten je Punkt wählen, Text dazu, unten „Antworten speichern“.",
+      "titel": "Gen-Entwurf (Studie 04): die 17 Lesarten beantworten",
+      "was": "Die Studie 04 liegt in deinem Depot (Rahmen „Lumia Material Lab / Study 04 — Gen“) und ist damit der aktuelle Gen-Stand — dunkel. Offen sind die Lesarten darin: 00 das Gesamturteil (trifft Gen die Sprache?), 01–17 (ohne 16, seit dem Depot-Entscheid 22.08. gegenstandslos) je eine Entscheidung mit Entwurf und Alternative. Unten je Punkt wählen, Text dazu, unten „Antworten speichern“.",
       "warum": "Die Übersetzung (Phase 1b) beginnt mit Gen gegen diesen Stand. Jede Lesart, die du nicht bestätigst, wird beim Übersetzen erneut vorgelegt. Was du in Figma änderst, holt Claude als neuen Stand aus dem Depot — exportieren musst du nicht mehr.",
       "wo": "design/abnahmen/2026-08-21-gen-auftrag-figma.md (Abschnitt „Was ausdrücklich offen bleibt“)",
       "seit": "21.08.",
@@ -135,13 +135,6 @@
           "gewicht": "Tragweite 15",
           "entwurf": "Der Gen-Klon trägt sie nicht — der markierte Probeeq-Knoten trug sie beim zweiten Lesen auch nicht mehr.",
           "alternative": "Sie gehört zum Design — dann kommt sie auf beide Schalen und wird mitgebacken."
-        },
-        {
-          "id": "U2.16",
-          "titel": "Zwei Figma-Dateien: Testdummy und fable-dummy",
-          "gewicht": "Tragweite 16",
-          "entwurf": "Gen liegt als Studie 04 in Testdummy; Suna als Studie 03 in fable-dummy. Bleibt so.",
-          "alternative": "Zusammenführen — in welche Datei?"
         },
         {
           "id": "U2.17",
@@ -741,7 +734,7 @@
         "groesse": "760 × 430",
         "stand_text": "Stand vom 22.08. aus dem Depot (Rahmen 6:13, Studie 04): Nakama Gen in der Probeeq-Sprache — Graphit-Schale, Glas, Kinn mit Wortmarke; Ebenenzeile, Karte mit Rollenwörtern und Wein-Zellen, Advisor mit „OTHER CAUSE“ und „CERTAINTY HIGH“. Dunkel. Der cyanfarbene Stand vom 21.08. ist Verlauf.",
         "status": "Vorgabe steht",
-        "offen": "18 Lesarten (U2) · helle Fassung geplant",
+        "offen": "17 Lesarten (U2) · helle Fassung geplant",
         "wo": "design/assets/figma/LIES-MICH.md · design/abnahmen/2026-08-22-figma-depot.md"
       },
       {

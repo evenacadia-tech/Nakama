@@ -38,12 +38,17 @@
 | **K1** Präprozessor | Baubeschreibung | 46 Makros namentlich, in jeder Kern-Übersetzungseinheit | Makros, die nicht auf der Liste stehen (der Präprozessor kann kein Präfix prüfen) |
 | **K2** CMake-Konfigurierzeit | Baubeschreibung | **jedes** `JucePlugin_` per Regex über die ganze Linkhülle | Werte, die erst über einen Generatorausdruck entstehen |
 | **K3** Artefakt | die gebaute `.lib` | jeden eingefrorenen Identitätswert als Bytes — auch als Stringliteral, das nie ein Makro war | nichts von dem, was oben steht (er läuft nach dem Bau) |
-| **K2b** CMake-Konfigurierzeit | Baubeschreibung | ob Kern und Verbraucher die JUCE-**Kopfdateien** mit derselben Konfiguration übersetzen | Identität (dafür sind die drei oben da) |
+| **K2b** CMake-Konfigurierzeit | Baubeschreibung | ob Kern und Verbraucher dieselben `JUCE_`-**Defines** über den JUCE-Kopfdateien haben | Übersetzungs**schalter** (dafür kam K2c) · Identität (dafür die drei oben) |
+| **K2c** CMake-Konfigurierzeit | Baubeschreibung | ob jedes `juce_recommended_*`-Ziel der Referenz auch am Kern hängt — die **Quelle** der Schalter, nicht einzelne Flags | `lto_flags` (ausgenommen: `/GL` ohne `-LTCG` im Verbraucher) · alles, was kein Empfehlungsziel ist |
 
-K2b ist im Selbstaudit nach dem ersten Commit dazugekommen (§2 B8) und
-beantwortet eine andere Frage als K1–K3: nicht „trägt der Kern eine fremde
-Identität?", sondern „bedeutet derselbe JUCE-Header im Kern dasselbe wie im
-Verbraucher?".
+K2b ist im Selbstaudit nach dem ersten Commit dazugekommen (§2 B8), **K2c** aus
+dem T2-Lauf am 23.08. (§5 T2-1/T2-3, Nacharbeit §6) — bis dahin sagte die
+K2b-Zeile hier „mit derselben Konfiguration" und griff damit weiter, als der
+Riegel misst. Beide beantworten eine andere Frage als K1–K3: nicht „trägt der
+Kern eine fremde Identität?", sondern „bedeutet derselbe JUCE-Header im Kern
+dasselbe wie im Verbraucher, und wird er gleich scharf übersetzt?". Die
+Rohausgaben in §2 stammen von vor K2c: dort steht die Linkhülle noch mit
+**7** statt 9 Zielen.
 
 ---
 
@@ -452,7 +457,7 @@ Bein, das etwas anderes misst, muss seine Frische selbst belegen.
 | Läuft jede Behauptung als Befehl, nicht von Hand? | ja — A14 ist Kanon-Bein; K1/K2 laufen bei **jedem** Bau bzw. Configure mit | §4 A14 |
 | Ist jeder Riegel beim Fallen gesehen worden? | ja, alle **fünf**, je mit der Ursache, gegen die er gerichtet ist | B2, B3, B4, B8, B9 |
 | Kann A14 auf einem veralteten Artefakt grün melden? | nein mehr — der Runner-Riegel deckt nur `.exe`, das Bein bewacht seine Lib jetzt selbst | B9 |
-| Übersetzt der Kern die JUCE-Kopfdateien wie seine Verbraucher? | jetzt ja — im Selbstaudit wich eine Konfigurationsschraube ab; geschlossen, nicht notiert | B8 |
+| Übersetzt der Kern die JUCE-Kopfdateien wie seine Verbraucher? | jetzt ja — im Selbstaudit wich eine Konfigurationsschraube ab; geschlossen, nicht notiert · ⚠️ **T2-3 hat diese Zeile eingeschränkt:** sie galt nur für **Defines**. Die Übersetzungsschalter wichen ab (`/W1` statt `/W4`); erst K2c macht den Satz wahr — §5/§6 | B8 · §6 |
 | Kann ein Riegel falsch grün melden? | K3 konnte es — gefunden und berichtigt; die Gegenprobe ist jetzt Teil des Beins | B5 |
 | Beruht die Bauform auf Messung oder auf Annahme? | Messung, drei Experimente | B7 |
 | Ist die eingefrorene Identität berührt? | nein | §4 B1 `EqCopIdentityTest` |

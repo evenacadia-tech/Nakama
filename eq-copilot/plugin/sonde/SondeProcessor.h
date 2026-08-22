@@ -1,0 +1,134 @@
+#pragma once
+
+/*  S9 / SONDE-007b - die geteilte Schale der beiden neuen Sonden.
+
+    ZWEI BUNDLES, EINE QUELLE, GETRENNTE IDENTITAET:
+
+      Nakama Suna    (NkPr) - passive Sonde. Beraet nur.
+      Nakama Probeeq (NkAc) - aktive Sonde. Laut User ein vollwertiger EQ
+                              ("die active Probe fester Name : Nakama Probeeq
+                              ist ein vollwertiger hochwertiger EQ", 21.08.);
+                              seine DSP kommt in P6. HEUTE ist dieses Bundle
+                              die Huelle mit eingefrorener Identitaet, nicht
+                              der EQ - und es tut deshalb dasselbe wie Suna:
+                              nichts am Audio.
+
+    WARUM DAS HIER LIEGT UND NICHT IM KERN (Entwurf §53.4, S8-Riegel K1):
+    Eine AudioProcessor-Ableitung braucht juce_audio_processors; der
+    gemeinsame Kern uebersetzt gegen juce_core/events/data_structures/
+    cryptography und darf KEINE JucePlugin_*-Konstante sehen. Diese Datei
+    sieht sie sehr wohl - sie IST Target-Schicht. Sie wird darum wie
+    plugin/src/ je Ziel uebersetzt (zwei Uebersetzungen), nicht in NakamaKern
+    gelinkt. Der Umzug hinter die §53.4-Verzeichnisgrenzen bleibt
+    inkrementell.
+
+    GRUNDGESETZ (CLAUDE.md, Wahrheitskern): Gen und Suna beraten nur -
+    Passthrough sampleidentisch, 0 Samples Latenz, kein Tail. `processBlock`
+    haelt keine Sperre, allokiert nicht, protokolliert nicht und fasst keine
+    Datei an. Hier ist das leicht einzuhalten, weil er nichts tut; wer je
+    etwas hinzufuegt, faellt unter denselben Beweisstandard wie die
+    Hoer-Markierung von Gen.
+
+    KEINE HOSTPARAMETER: Beide Bundles melden dem Host heute keinen einzigen
+    Parameter. Fuer Suna ist das dauerhaft so (Bauaufteilung: "Suna-Kachel,
+    null Hostparameter"). Fuer Probeeq gilt es, bis seine DSP da ist -
+    Parameter, die nichts tun, waeren eine Oberflaeche, die luegt.
+
+    KEINE ERFUNDENE OBERFLAECHE: `hasEditor()` meldet false. Die Gestaltung
+    kommt aus dem Figma-Stand des Users ueber design/ (CLAUDE.md: "Claude
+    erfindet keine Richtung"), und die Suna-Kachel ist dort nicht begonnen.
+    Eine selbstgebaute Zwischen-UI waere genau die Stilsuche, die das
+    Arbeitsmodell ausschliesst.
+*/
+
+#include <juce_audio_processors/juce_audio_processors.h>
+
+#include "NakamaState.h"
+
+// Genau EINE Produktklasse je Ziel - gesetzt von der duennen Target-Schicht
+// in plugin/CMakeLists.txt. Der Riegel ist kein Zierrat: ohne ihn uebersetzte
+// eine vergessene Zeile stillschweigend das falsche Bundle.
+#if defined (NAKAMA_SONDE_PASSIV) && defined (NAKAMA_SONDE_AKTIV)
+ #error "S9/SONDE-007b: NAKAMA_SONDE_PASSIV und NAKAMA_SONDE_AKTIV sind beide gesetzt - ein Ziel hat genau EINE Produktklasse."
+#endif
+#if ! defined (NAKAMA_SONDE_PASSIV) && ! defined (NAKAMA_SONDE_AKTIV)
+ #error "S9/SONDE-007b: Weder NAKAMA_SONDE_PASSIV noch NAKAMA_SONDE_AKTIV gesetzt. Die Produktklasse kommt aus der duennen Target-Schicht (plugin/CMakeLists.txt), nicht aus dem geteilten Code."
+#endif
+
+namespace nakama::sonde
+{
+
+/** Die Produktklasse dieses Bundles - fest, nicht aus dem State geraten.
+
+    §53.5 unterscheidet zwei Dinge, die leicht verwechselt werden:
+    die PRODUKTKLASSE (fest am Bundle, hier) und die KLASSIFIKATION
+    (`unclassified` -> `legacy`/`main`, erst nach vollstaendigem
+    State-Restore). Die zweite ist noch nicht gebaut; sie betrifft ohnehin
+    nur das Main-Bundle.
+*/
+constexpr nakama::state::Klasse kProduktklasse =
+   #if defined (NAKAMA_SONDE_PASSIV)
+    nakama::state::Klasse::passive_probe;
+   #else
+    nakama::state::Klasse::active_probe;
+   #endif
+
+/** Welche Klassen dieses Bundle laden darf (Vertrag §2.3, SONDE-006). */
+inline nakama::state::Bundle bundleVertrag()
+{
+   #if defined (NAKAMA_SONDE_PASSIV)
+    return nakama::state::Bundle::nkpr();
+   #else
+    return nakama::state::Bundle::nkac();
+   #endif
+}
+
+class SondeProcessor final : public juce::AudioProcessor
+{
+public:
+    SondeProcessor();
+    ~SondeProcessor() override = default;
+
+    void prepareToPlay (double samplerate, int maxBlock) override;
+    void releaseResources() override {}
+    bool isBusesLayoutSupported (const BusesLayout& layout) const override;
+    void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+
+    juce::AudioProcessorEditor* createEditor() override { return nullptr; }
+    bool hasEditor() const override                     { return false; }
+
+    // Der Produktname kommt aus JucePlugin_Name - also aus der Target-Schicht,
+    // die ihn ihrerseits aus plugin-identities-v1.json hat. Keine zweite
+    // Wahrheit. Die Konsolen-Beweise (EqCopSondeNullTest) bauen dieselbe
+    // Quelle OHNE Plugin-Wrapper, dort gibt es die Konstante nicht; sie messen
+    // Audio, nie den Namen.
+   #if defined (JucePlugin_Name)
+    const juce::String getName() const override         { return JucePlugin_Name; }
+   #else
+    const juce::String getName() const override         { return "nakama-sonde-testschale"; }
+   #endif
+    bool acceptsMidi() const override                   { return false; }
+    bool producesMidi() const override                  { return false; }
+    bool isMidiEffect() const override                  { return false; }
+    double getTailLengthSeconds() const override        { return 0.0; }
+
+    int getNumPrograms() override                       { return 1; }
+    int getCurrentProgram() override                    { return 0; }
+    void setCurrentProgram (int) override               {}
+    const juce::String getProgramName (int) override    { return {}; }
+    void changeProgramName (int, const juce::String&) override {}
+
+    void getStateInformation (juce::MemoryBlock& ziel) override;
+    void setStateInformation (const void* daten, int groesse) override;
+
+    /** Fuer Tests: der gehaltene Zustand. Kein Hostweg. */
+    const nakama::state::Zustand& zustandLesen() const noexcept { return zustand; }
+
+private:
+    nakama::state::Zustand zustand;
+    juce::CriticalSection zustandSchloss;   ///< nur Nachrichten-/Hostthread, nie processBlock
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SondeProcessor)
+};
+
+} // namespace nakama::sonde

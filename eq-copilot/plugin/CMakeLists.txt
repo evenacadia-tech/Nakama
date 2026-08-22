@@ -124,13 +124,12 @@ target_link_libraries(NakamaKern PRIVATE
 # Zweck und kein Fehler.
 target_compile_definitions(NakamaKern PRIVATE NAKAMA_KERN_UEBERSETZUNG=1)
 
-# K2 laeuft, sobald alle Kanten stehen — also nach den target_link_libraries.
+# K2 laeuft, sobald alle Kanten des KERNS stehen — also nach den
+# target_link_libraries oben.
 nakama_kern_riegel_pruefen(NakamaKern)
-nakama_kern_konfig_pruefen(NakamaKern EqCopilot)
-# K2c steht NICHT hier: es liest die Linkhuelle der REFERENZ, und die
-# Empfehlungsschalter haengt EqCopilot erst weiter unten an sich. Hier gerufen
-# saehe der Riegel eine leere Menge und waere still gruen — der Aufruf steht
-# darum nach target_link_libraries(EqCopilot …).
+# K2b und K2c stehen NICHT hier: sie lesen die Eigenschaften der VERBRAUCHER,
+# und die entstehen erst weiter unten. Hier gerufen saehen sie eine leere
+# Menge und waeren still gruen. Der Aufruf steht am Dateiende.
 
 # Verbraucherseite. Der Kern ist gegen JUCE-KOEPFE uebersetzt; die
 # Implementierung (juce_core.cpp, SHA-256 aus juce_cryptography, ...) muss vom
@@ -143,6 +142,12 @@ function(nakama_kern_anbinden ziel)
         juce::juce_events
         juce::juce_data_structures
         juce::juce_cryptography)
+    # Jeder Verbraucher traegt sich ein. K2b und K2c messen am Ende dieser
+    # Datei gegen JEDEN davon - offene Frage aus SONDE-007a B8 ("ob der Kern
+    # gegen alle drei geprueft wird oder die drei untereinander gleich
+    # konfiguriert sein muessen"). Gegen jeden ist strikt staerker und
+    # braucht keine Annahme darueber, ob die drei sich einig sind.
+    set_property(GLOBAL APPEND PROPERTY NAKAMA_KERN_VERBRAUCHER "${ziel}")
 endfunction()
 nakama_kern_anbinden(EqCopilot)
 
@@ -156,9 +161,81 @@ target_link_libraries(EqCopilot
         juce::juce_recommended_warning_flags
 )
 
-# K2c: erst jetzt traegt die Referenz ihre Empfehlungsschalter, also erst jetzt
-# ist die Frage "hat der Kern dieselben?" ueberhaupt stellbar.
-nakama_kern_schalter_pruefen(NakamaKern EqCopilot)
+# ── S9/SONDE-007b: die beiden neuen Sonden-Bundles ─────────────────────────
+# Zwei duenne Target-Schichten ueber EINER geteilten Quelle (plugin/sonde/).
+# Identisch ist alles ausser drei Dingen, und genau die machen die Ziele aus:
+#   1. die Identitaet - aus dem Manifest, nicht aus dieser Datei
+#   2. die Produktklasse - als Define, weil der geteilte Code sie nicht wissen
+#      darf (er wuerde sonst fuer beide Bundles dasselbe behaupten)
+#   3. die VST3-Kategorie - Suna analysiert, Probeeq ist ein EQ (User 21.08.)
+#
+# Beide sind heute audio-neutral: Suna dauerhaft (sie beraet nur), Probeeq
+# bis seine DSP in P6 kommt. Ein Bundle, das schon Parameter meldete, ohne
+# dass sie etwas taeten, waere eine Oberflaeche, die luegt.
+function(nakama_sonde_ziel ziel identitaet klassendefine)
+    nakama_identitaet_lesen(${identitaet} SONDE)
+
+    juce_add_plugin(${ziel}
+        COMPANY_NAME "${SONDE_HERSTELLER}"
+        PRODUCT_NAME "${SONDE_PRODUKTNAME}"
+        PLUGIN_MANUFACTURER_CODE ${SONDE_HERSTELLERCODE}
+        PLUGIN_CODE ${SONDE_PLUGINCODE}
+        FORMATS VST3
+        VST3_CATEGORIES ${SONDE_KATEGORIEN}
+        IS_SYNTH FALSE
+        NEEDS_MIDI_INPUT FALSE
+        NEEDS_MIDI_OUTPUT FALSE
+        IS_MIDI_EFFECT FALSE
+        COPY_PLUGIN_AFTER_BUILD FALSE
+    )
+
+    target_sources(${ziel} PRIVATE sonde/SondeProcessor.cpp sonde/SondeFactory.cpp)
+    target_include_directories(${ziel} PRIVATE sonde)
+
+    # JUCE_VST3_CAN_REPLACE_VST2=0 gehoert zur eingefrorenen Identitaet, nicht
+    # zu den Bauoptionen: mit 1 leitete JUCE die Class-ID aus einer ANDEREN
+    # Quelle ab (vst2PluginId statt jucePluginId) - dieselben Codes ergaeben
+    # eine andere ID. Siehe identity/plugin-identities-v1.json, "ableitung".
+    target_compile_definitions(${ziel} PUBLIC
+        JUCE_WEB_BROWSER=0
+        JUCE_USE_CURL=0
+        JUCE_VST3_CAN_REPLACE_VST2=0
+        JUCE_DISPLAY_SPLASH_SCREEN=0
+        ${klassendefine}=1
+    )
+
+    target_link_libraries(${ziel}
+        PRIVATE juce::juce_audio_utils
+        PUBLIC  juce::juce_recommended_config_flags
+                juce::juce_recommended_lto_flags
+                juce::juce_recommended_warning_flags)
+
+    nakama_kern_anbinden(${ziel})
+endfunction()
+
+nakama_sonde_ziel(NakamaSuna    passive-probe NAKAMA_SONDE_PASSIV)
+nakama_sonde_ziel(NakamaProbeeq active-probe  NAKAMA_SONDE_AKTIV)
+
+# Passthrough-Beweis je Produktklasse. Das Grundgesetz sagt "sampleidentisch,
+# 0 Samples Latenz, kein Tail" — fuer das Main-Bundle misst das seit M0 der
+# EqCopNullTest; zwei neue Bundles tragen jetzt ebenfalls Audio, und eine
+# Zusage ohne Messung ist hier keine Zusage. ZWEI Ziele, weil die
+# Produktklasse ein Uebersetzungsschalter ist: ein Lauf kann nicht beide
+# messen.
+function(nakama_sonde_nulltest ziel klassendefine)
+    juce_add_console_app(${ziel} PRODUCT_NAME "${ziel}")
+    target_sources(${ziel} PRIVATE tests/SondeNullTestMain.cpp sonde/SondeProcessor.cpp)
+    target_include_directories(${ziel} PRIVATE sonde)
+    target_compile_definitions(${ziel} PRIVATE
+        JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0
+        ${klassendefine}=1)
+    target_link_libraries(${ziel} PRIVATE juce::juce_audio_utils
+        PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+    nakama_kern_anbinden(${ziel})
+endfunction()
+
+nakama_sonde_nulltest(EqCopSunaNullTest    NAKAMA_SONDE_PASSIV)
+nakama_sonde_nulltest(EqCopProbeeqNullTest NAKAMA_SONDE_AKTIV)
 
 # ── Konsolen-Probe: Ende-zu-Ende-Handshake ohne FL ──────────────────────────
 juce_add_console_app(EqCopPipeProbe PRODUCT_NAME "eqcop-pipe-probe")
@@ -435,6 +512,27 @@ foreach(ziel NakamaKern
              EqCopilot EqCopPipeProbe EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopAuxSpike EqCopAuxSpikeTest EqCopHostContextTest
              EqCopSchemaTest EqCopStateMigrationTest
-             EqCopHostProbe EqCopHostProbeTest)
+             EqCopHostProbe EqCopHostProbeTest
+             NakamaSuna NakamaProbeeq EqCopSunaNullTest EqCopProbeeqNullTest)
     target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endforeach()
+
+# ── K2b/K2c am Dateiende: jetzt stehen alle Verbraucher ────────────────────
+# Erst hier ist die Frage stellbar. SONDE-007a liess offen, ob der Kern gegen
+# EINE Referenz oder gegen alle geprueft wird (B8, "Fuer S9 offen"); mit drei
+# Bundles ist die Antwort: gegen jeden einzelnen. Waeren zwei Verbraucher
+# untereinander uneins, faende eine Stichprobe das nicht.
+get_property(NAKAMA_KERN_VERBRAUCHER GLOBAL PROPERTY NAKAMA_KERN_VERBRAUCHER)
+list(LENGTH NAKAMA_KERN_VERBRAUCHER NAKAMA_KERN_VERBRAUCHER_ANZAHL)
+if(NAKAMA_KERN_VERBRAUCHER_ANZAHL EQUAL 0)
+    message(FATAL_ERROR
+        "S8/SONDE-007a: kein einziger Verbraucher von NakamaKern eingetragen. Entweder wurde\n"
+        "nakama_kern_anbinden() nie gerufen, oder jemand hat den Kern an der Funktion vorbei\n"
+        "angebunden — dann messen K2b und K2c ins Leere und melden still gruen.")
+endif()
+foreach(verbraucher IN LISTS NAKAMA_KERN_VERBRAUCHER)
+    nakama_kern_konfig_pruefen(NakamaKern ${verbraucher})
+    nakama_kern_schalter_pruefen(NakamaKern ${verbraucher})
+endforeach()
+message(STATUS
+    "Nakama-Kern: K2b/K2c gegen alle ${NAKAMA_KERN_VERBRAUCHER_ANZAHL} Verbraucher gemessen.")

@@ -77,7 +77,19 @@ struct Zustand
     juce::ValueTree baum;
     Common common;
     bool hatParameters = false;
-    parameter::Satz parameters {};
+
+    /*  Der NEUTRALE Satz, nicht Nullen. `Satz` ist ein std::array; ein
+        `{}` haette jeden Parameter auf 0 gesetzt - und 0 Hz liegt fuer
+        `band.0.freq_hz` ausserhalb seines Bereichs. Wer `hatParameters`
+        setzt, ohne die Werte zu fuellen, schriebe damit einen Stand, den
+        der eigene Leser als read-only zurueckgibt.
+        Gefunden am 23.08. beim Bau von Nakama Probeeq (S9): dessen Klasse
+        verlangt laut Kind-Matrix §2.1 genau ein Parameters-Kind, und der
+        Passthrough-Beweis fiel beim Gegenpfad speichern<->laden. Kein
+        gespeicherter Stand aendert sich dadurch: `lade()` fuellt die Werte
+        ohnehin aus dem Baum, und fuer `main`/`legacy` bleibt
+        `hatParameters` falsch. */
+    parameter::Satz parameters = parameter::standardSatz();
     Herkunft herkunft = Herkunft::frisch;
 
     // read-only (§5 des Vertrags): gesetzt, wenn der State nicht interpretiert

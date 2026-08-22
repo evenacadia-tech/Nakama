@@ -295,7 +295,17 @@ Binaries `eqcop-broker.exe [--bindungen <pfad>]` (Standard
 
 ## 5 · Bauen und Beweisen
 
-**15 Programm-Ziele + 1 Bibliothek** (`plugin/CMakeLists.txt`): `EqCopilot` (VST3-Produkt) ·
+**19 Programm-Ziele + 1 Bibliothek** (`plugin/CMakeLists.txt`). Seit S9
+(SONDE-007b, 23.08.) sind es **drei Produkt-Bundles**: `EqCopilot` (`Eqcp`),
+**`NakamaSuna`** (`NkPr`, Bundle „Nakama Suna.vst3") und **`NakamaProbeeq`**
+(`NkAc`, „Nakama Probeeq.vst3"). Die beiden neuen entstehen aus einer
+geteilten Quelle `plugin/sonde/` über die CMake-Funktion `nakama_sonde_ziel()`;
+ihre Identität kommt wie die des Mains aus `identity/plugin-identities-v1.json`
+(`cmake/NakamaIdentitaet.cmake`, kein Literal im Bauskript). Ihre
+Produktklasse ist ein **Define** aus der dünnen Schicht — der geteilte Code
+darf sie nicht wissen, er behauptete sonst für beide dasselbe. Beweise:
+`EqCopSunaNullTest` / `EqCopProbeeqNullTest` (Kanon A15/A16, Passthrough +
+Gegenpfad). Weiter: `EqCopilot` (VST3-Produkt) ·
 `EqCopAuxSpike`, `EqCopHostProbe` (VST3, Wegwerf) · Konsolen `EqCopPipeProbe`,
 `EqCopNullTest`, `EqCopGoldenTest`, `EqCopMarkierungTest`, `EqCopShot`
 (seit 22.08. mit `--state <datei.bin>`), `EqCopPaintBench`, `EqCopAuxSpikeTest`,
@@ -315,16 +325,17 @@ als eigene Lib erbt er die PUBLIC-Schalter seiner Verbraucher nicht mehr und
 Binaries unter `eq-copilot/build/plugin/<Ziel>_artefacts/Release/`, die Lib
 unter `eq-copilot/build/plugin/Release/NakamaKern.lib`.
 
-**Kanon, 19 Beine (`tools/beweise.ps1`, Tabelle `$kanon`):** A1 NullTest · A2
+**Kanon, 21 Beine (`tools/beweise.ps1`, Tabelle `$kanon`):** A1 NullTest · A2
 GoldenTest · A3 MarkierungTest · A4 `cargo test` (inkl. JCS-Bein) · A5
 `pruefe_v3_vertrag.py --abdeckung` · A6 `erzeuge_bandgitter.py --pruefen` · A7
 `erzeuge_quantisierung.py --pruefen` · A8 `erzeuge_v3_fixtures.py --pruefen` ·
 A9 `pruefe_flatc_drift.py` · A10 `erzeuge_fb_fixtures.py --pruefen` · A11
 `pruefe_v2_schemas.py` · **A12 `erzeuge_state_fixtures.py --pruefen`** · **A13
-`pruefe_host_capabilities.py`** · **A14 `pruefe_kern_identitaetsfrei.py`** · B1
+`pruefe_host_capabilities.py`** · **A14 `pruefe_kern_identitaetsfrei.py`** ·
+**A15 `EqCopSunaNullTest`** · **A16 `EqCopProbeeqNullTest`** · B1
 IdentityTest · **B2 StateMigrationTest** · B3 HostContextTest · B3b
 HostProbeTest (ohne Argument) · B3c SchemaTest. Die Prüfzahlen stehen im
-jüngsten Manifest (`docs/beweise/SONDE-007a.md`: 19/19). Geplant, nicht gebaut:
+jüngsten Manifest (`docs/beweise/SONDE-007b.md`: 21/21). Geplant, nicht gebaut:
 B4 `EqCopQueueStressTest`, B5 `EqCopAnalysisGoldenTest`, B6
 `EqCopDspGoldenTest`, B7 `EqCopTransactionTest`.
 

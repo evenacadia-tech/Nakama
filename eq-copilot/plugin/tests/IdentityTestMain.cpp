@@ -302,43 +302,83 @@ int main (int argc, char* argv[])
                 "CMake-Quelle: das Define steht auch sonst nirgends auf 1");
     }
 
-    // -- Das gebaute Bundle gegen das Manifest ----------------------------
-    const auto moduleinfo = finde ("eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/"
-                                   "EQ-Copilot.vst3/Contents/Resources/moduleinfo.json");
-    pruefe (moduleinfo.existsAsFile(), "moduleinfo.json des gebauten Bundles gefunden",
-            moduleinfo.getFullPathName());
+    // -- Die gebauten Bundles gegen das Manifest --------------------------
+    // S9/SONDE-007b (23.08.2026): bis dahin mass dieser Block EIN Bundle.
+    // §53.5 verlangt fuer die beiden neuen: "P1 verifiziert das erste
+    // Moduleinfo/Scanfixture" - die reservierten CIDs waren bis heute nur
+    // GERECHNET (§31.2), nie an einem Artefakt gesehen. Ab jetzt misst der
+    // Test alle drei.
+    //
+    // Der CMake-Zielname steht hier von Hand. Er ist die einzige Angabe, die
+    // NICHT aus dem Manifest kommen kann (dort steht der Bundlename, nicht
+    // der Zielname) - und absichtlich handgeschrieben: ein viertes Ziel im
+    // Manifest ohne Zeile hier bringt den Test zum Sprechen, statt still
+    // ungemessen zu bleiben.
+    struct GebautesZiel { const char* id; const char* cmakeZiel; };
+    const GebautesZiel gebaute[] = {
+        { "main",          "EqCopilot"     },
+        { "passive-probe", "NakamaSuna"    },
+        { "active-probe",  "NakamaProbeeq" },
+    };
 
-    if (moduleinfo.existsAsFile() && cmakeDatei.existsAsFile())
-    {
-        // Frischeriegel: ein moduleinfo, das aelter ist als die Bauvorschrift,
-        // beweist nichts ueber den heutigen Stand.
-        const auto artefaktZeit = moduleinfo.getLastModificationTime();
-        const auto quellZeit    = cmakeDatei.getLastModificationTime();
-        pruefe (artefaktZeit >= quellZeit,
-                "moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt",
-                artefaktZeit.toString (true, true) + " vs " + quellZeit.toString (true, true));
-    }
+    pruefe ((int) (sizeof (gebaute) / sizeof (gebaute[0])) == ziele.size(),
+            "jedes Ziel im Manifest hat hier eine Zeile",
+            juce::String ((int) (sizeof (gebaute) / sizeof (gebaute[0])))
+                + " vs " + juce::String (ziele.size()));
 
-    if (moduleinfo.existsAsFile())
+    for (const auto& g : gebaute)
     {
+        juce::var eintrag;
+        for (int i = 0; i < ziele.size(); ++i)
+            if (ziele[i]["id"].toString() == g.id)
+                eintrag = ziele[i];
+
+        const juce::String kennung (g.id);
+        if (! eintrag.isObject())
+        {
+            pruefe (false, "Manifest kennt Ziel '" + kennung + "'");
+            continue;
+        }
+
+        const auto bundle = eintrag["bundle"].toString();
+        const auto moduleinfo = finde (juce::String ("eq-copilot/build/plugin/") + g.cmakeZiel
+                                       + "_artefacts/Release/VST3/" + bundle
+                                       + "/Contents/Resources/moduleinfo.json");
+        pruefe (moduleinfo.existsAsFile(), kennung + ": moduleinfo.json des gebauten Bundles gefunden",
+                moduleinfo.getFullPathName());
+
+        if (moduleinfo.existsAsFile() && cmakeDatei.existsAsFile())
+        {
+            // Frischeriegel: ein moduleinfo, das aelter ist als die Bauvorschrift,
+            // beweist nichts ueber den heutigen Stand.
+            const auto artefaktZeit = moduleinfo.getLastModificationTime();
+            const auto quellZeit    = cmakeDatei.getLastModificationTime();
+            pruefe (artefaktZeit >= quellZeit,
+                    kennung + ": moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt",
+                    artefaktZeit.toString (true, true) + " vs " + quellZeit.toString (true, true));
+        }
+
+        if (! moduleinfo.existsAsFile())
+            continue;
+
         const auto roh = moduleinfo.loadFileAsString();
         const auto gelesen = juce::JSON::parse (ohneNachlaufkommas (roh));
-        pruefe (gelesen.isObject(), "moduleinfo.json ist nach dem Kommaputz parsebar");
+        pruefe (gelesen.isObject(), kennung + ": moduleinfo.json ist nach dem Kommaputz parsebar");
 
-        const auto componentCid  = mainZiel["component_cid"].toString();
-        const auto controllerCid = mainZiel["controller_cid"].toString();
-        const auto produktname   = mainZiel["produktname"].toString();
+        const auto componentCid  = eintrag["component_cid"].toString();
+        const auto controllerCid = eintrag["controller_cid"].toString();
+        const auto produktname   = eintrag["produktname"].toString();
 
         pruefe (gelesen["Name"].toString() == produktname,
-                "moduleinfo: Produktname wie im Manifest", gelesen["Name"].toString());
+                kennung + ": Produktname wie im Manifest", gelesen["Name"].toString());
         pruefe (gelesen["Factory Info"]["Vendor"].toString()
                     == manifest["hersteller"]["name"].toString(),
-                "moduleinfo: Vendor wie im Manifest",
+                kennung + ": Vendor wie im Manifest",
                 gelesen["Factory Info"]["Vendor"].toString());
 
         const auto klassen = gelesen["Classes"];
         pruefe (klassen.isArray() && klassen.size() == 2,
-                "moduleinfo: genau zwei Klassen (Component + Controller)",
+                kennung + ": genau zwei Klassen (Component + Controller)",
                 juce::String (klassen.isArray() ? klassen.size() : -1));
 
         // Die CID wird an IHRE Klasse gebunden - ein Textfund irgendwo in der
@@ -352,11 +392,11 @@ int main (int argc, char* argv[])
         }
 
         pruefe (cidAudio == componentCid,
-                "moduleinfo: die Audio-Module-Klasse traegt die Component-CID", cidAudio);
+                kennung + ": die Audio-Module-Klasse traegt die Component-CID", cidAudio);
         pruefe (cidController == controllerCid,
-                "moduleinfo: die Controller-Klasse traegt die Controller-CID", cidController);
+                kennung + ": die Controller-Klasse traegt die Controller-CID", cidController);
 
-        const auto kategorien = mainZiel["kategorien"];
+        const auto kategorien = eintrag["kategorien"];
         bool alleKategorien = kategorien.isArray() && kategorien.size() > 0;
         for (int i = 0; i < kategorien.size(); ++i)
         {
@@ -368,21 +408,28 @@ int main (int argc, char* argv[])
             if (! gefunden)
                 alleKategorien = false;
         }
-        pruefe (alleKategorien, "moduleinfo: Unterkategorien wie im Manifest");
+        pruefe (alleKategorien, kennung + ": Unterkategorien wie im Manifest");
 
-        // Gegenprobe: KEINE der reservierten Sonden-CIDs darf im heutigen
-        // Bundle auftauchen - alle vier, nicht nur eine.
+        // Gegenprobe und zugleich der Kern von §53.4: KEINE FREMDE CID darf in
+        // diesem Bundle stehen. Genau das waere passiert, wenn der gemeinsame
+        // Kern die Identitaetskonstanten EINES Ziels traegt und sie an alle
+        // drei weiterreicht - S8s Riegel misst die Baubeschreibung und die
+        // Lib, DIESE Zeile misst das ausgelieferte Artefakt.
         bool fremdeGefunden = false;
+        juce::String fremde;
         for (int i = 0; i < ziele.size(); ++i)
         {
-            if (ziele[i]["id"].toString() == "main")
+            if (ziele[i]["id"].toString() == kennung)
                 continue;
-            if (roh.contains (ziele[i]["component_cid"].toString())
-                || roh.contains (ziele[i]["controller_cid"].toString()))
-                fremdeGefunden = true;
+            for (const auto* feld : { "component_cid", "controller_cid" })
+                if (roh.contains (ziele[i][feld].toString()))
+                {
+                    fremdeGefunden = true;
+                    fremde << ziele[i]["id"].toString() << "." << feld << " ";
+                }
         }
         pruefe (! fremdeGefunden,
-                "moduleinfo: keine der vier reservierten Sonden-CIDs im heutigen Bundle");
+                kennung + ": keine fremde Ziel-CID im Bundle", fremde.trim());
     }
 
     // -- Ableitung nachrechnen statt glauben ------------------------------

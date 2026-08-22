@@ -45,27 +45,31 @@
     },
     {
       "id": "passive-probe",
-      "status": "reserviert",
-      "rolle": "Passive Probe (SONDE-007b) — noch nicht gebaut",
+      "status": "eingefroren",
+      "eingefroren_am": "2026-08-23",
+      "rolle": "Nakama Suna — passive Sonde (SONDE-007b / S9). Beraet nur: Passthrough sampleidentisch, keine Hostparameter.",
       "plugin_code": "NkPr",
-      "bundle": null,
-      "produktname": null,
-      "kategorien": null,
+      "bundle": "Nakama Suna.vst3",
+      "produktname": "Nakama Suna",
+      "kategorien": ["Fx", "Analyzer"],
       "component_cid": "ABCDEF019182FAEB45766E614E6B5072",
       "controller_cid": "ABCDEF011234ABCD45766E614E6B5072",
-      "state_schema": null
+      "state_schema": 2,
+      "namensherkunft": "User-Entscheid 21.08.2026, Wortlaut: „passive sonde = Nakama Suna\". Bis dahin trug §53.5 den Arbeitstitel „Nakama Probe.vst3\"; Entwurf-Errata (b) erklaert ihn fuer ueberholt. `bundle` und `produktname` waren fuer dieses Ziel nie eingefroren (null) - das Eintragen ist Erstvergabe, keine Identitaetsaenderung. NAK-30 betrifft nur die Umbenennung des BESTEHENDEN Bundles EQ-Copilot."
     },
     {
       "id": "active-probe",
-      "status": "reserviert",
-      "rolle": "Active Probe (SONDE-007b) — noch nicht gebaut",
+      "status": "eingefroren",
+      "eingefroren_am": "2026-08-23",
+      "rolle": "Nakama Probeeq — aktive Sonde (SONDE-007b / S9). Laut User ein vollwertiger EQ; die DSP kommt in P6, heute ist es die Huelle mit eingefrorener Identitaet.",
       "plugin_code": "NkAc",
-      "bundle": null,
-      "produktname": null,
-      "kategorien": null,
+      "bundle": "Nakama Probeeq.vst3",
+      "produktname": "Nakama Probeeq",
+      "kategorien": ["Fx", "EQ"],
       "component_cid": "ABCDEF019182FAEB45766E614E6B4163",
       "controller_cid": "ABCDEF011234ABCD45766E614E6B4163",
-      "state_schema": null
+      "state_schema": 2,
+      "namensherkunft": "User-Entscheid 21.08.2026, Wortlaut: „aktive sonde = Nakama Probeeq\" (Schreibweise wie getippt). Bis dahin trug §53.5 den Arbeitstitel „Nakama Active Probe.vst3\"; Entwurf-Errata (b) erklaert ihn fuer ueberholt. Kategorie EQ statt Analyzer, weil der User 21.08. sagte: „ist ein vollwertiger hochwertiger EQ\". `bundle` und `produktname` waren nie eingefroren - Erstvergabe, keine Identitaetsaenderung."
     }
   ],
 

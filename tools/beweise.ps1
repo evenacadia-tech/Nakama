@@ -285,6 +285,14 @@ $kanon = @(
     # die Werte im gebauten Bundle FINDEN, sonst ist sein Schweigen wertlos.
     [pscustomobject]@{ Kuerzel='A14'; Name='pruefe_kern_identitaetsfrei.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Der gemeinsame Kern traegt keine Bundle-Identitaet: NakamaKern.lib enthaelt keinen eingefrorenen Identitaetswert (Namen, Viercodes, CIDs roh und COM-vertauscht) und genau seine vier eigenen Objekte, kein JUCE-Modulobjekt; die Gegenprobe findet dieselben Werte im gebauten EQ-Copilot-Bundle.' }
 
+    # S9/SONDE-007b: das Grundgesetz gilt fuer JEDES Bundle, das Audio traegt.
+    # Zwei Beine, weil die Produktklasse ein Uebersetzungsschalter ist - ein
+    # Lauf kann nicht beide messen. Probeeq ist heute ebenfalls Passthrough;
+    # kommt seine DSP in P6, MUSS A16 umgeschrieben werden. Faellt es dann,
+    # ist das die richtige Reaktion.
+    [pscustomobject]@{ Kuerzel='A15'; Name='EqCopSunaNullTest';    Art='plugin'; Argumente=@(); AbPhase='jetzt'; Behauptung='Nakama Suna (NkPr): Passthrough bitgleich ueber drei Samplerates und fuenf Blockgroessen, 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur passive_probe zu; speichern-laden-speichern bytegleich.' }
+    [pscustomobject]@{ Kuerzel='A16'; Name='EqCopProbeeqNullTest'; Art='plugin'; Argumente=@(); AbPhase='jetzt'; Behauptung='Nakama Probeeq (NkAc): heute ebenfalls Passthrough bitgleich (die EQ-DSP kommt in P6), 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur active_probe zu; speichern-laden-speichern bytegleich.' }
+
     # --- geplant: laufen automatisch mit, sobald sie gebaut sind -------------
     [pscustomobject]@{ Kuerzel='B1'; Name='EqCopIdentityTest';       Art='plugin'; Argumente=@(); AbPhase='P0'; Behauptung='Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren.' }
     # B2 wurde in P1 gebaut (SONDE-006): Schema 2, Parameterbestand, Migration, state_hash.
@@ -317,6 +325,19 @@ $gemesseneZiele = @(
         Ziel   = 'NakamaKern'
         Marker = 'add_library(NakamaKern STATIC'
         Wegen  = 'A14 misst die gebaute NakamaKern.lib (S8/SONDE-007a)'
+    }
+    # S9/SONDE-007b: die beiden neuen Bundles. Ihr Marker ist der Aufruf der
+    # gemeinsamen Zielfunktion - beide Ziele entstehen aus EINER Vorschrift,
+    # also ist der Aufruf die Zeile, die sich aendert, wenn sich etwas aendert.
+    [pscustomobject]@{
+        Ziel   = 'NakamaSuna_VST3'
+        Marker = 'nakama_sonde_ziel(NakamaSuna'
+        Wegen  = 'EqCopIdentityTest misst dessen moduleinfo.json gegen die reservierte NkPr-CID'
+    }
+    [pscustomobject]@{
+        Ziel   = 'NakamaProbeeq_VST3'
+        Marker = 'nakama_sonde_ziel(NakamaProbeeq'
+        Wegen  = 'EqCopIdentityTest misst dessen moduleinfo.json gegen die reservierte NkAc-CID'
     }
 )
 

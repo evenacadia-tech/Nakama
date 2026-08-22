@@ -191,16 +191,17 @@ Baustand: sind Prüfbinaries älter als ihre Quellen, verweigert er mit Exitcode
 die Beglaubigung (0 grün · 2 rot · 3 Voraussetzung fehlt · 4 nicht beglaubigt).
 Vorlage `docs/beweise/VORLAGE.md`, Basislinie `docs/beweise/S0-basislinie.md`.
 
-**Kanon (19 Beine, Tabelle in `tools/beweise.ps1`):** NullTest · Golden ·
+**Kanon (21 Beine, Tabelle in `tools/beweise.ps1`):** NullTest · Golden ·
 Markierung · `cargo test` (seit 22.08. mit dem JCS-Bein) · sechs Python-Beine
 des v3-Vertrags · A11 `pruefe_v2_schemas.py` · **A12
 `erzeuge_state_fixtures.py --pruefen`** (SONDE-006) · **A13
 `pruefe_host_capabilities.py`** (SONDE-004) · **A14
-`pruefe_kern_identitaetsfrei.py`** (SONDE-007a) · Identität · **B2
+`pruefe_kern_identitaetsfrei.py`** (SONDE-007a) · **A15/A16
+`EqCopSunaNullTest` / `EqCopProbeeqNullTest`** (SONDE-007b) · Identität · **B2
 `EqCopStateMigrationTest`** (SONDE-006) · Hostkontext · Host-Probe (zählt
 89 nur mit PNG-Ziel, sonst 85 — NAK-34) · Schema. **Die Prüfzahlen stehen im
 jüngsten Manifest in `docs/beweise/`, nicht hier** (zuletzt
-`SONDE-007a.md`: 19/19 grün). Nicht im Kanon, aber vorhanden:
+`SONDE-007b.md`: 21/21 grün). Nicht im Kanon, aber vorhanden:
 `EqCopAuxSpikeTest` (NAK-37), Shot (`--state` lädt einen Host-State vor dem
 Render), PaintBench, PipeProbe, `pluginval --strictness-level 8`. Vier Beine
 stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
@@ -316,6 +317,30 @@ stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
   23.08.), K2c hält das jetzt fest. Manifest `docs/beweise/SONDE-007a.md`;
   **T2 gefahren 23.08.: NEEDS_WORK, fünf Befunde geschlossen (§5/§6), kein
   PASS auf den neuen Stand**.
+- **Drei gebaute Bundles (SONDE-007b / S9, 23.08., Abschnitte 1+2 von 3):**
+  Die Identität kommt aus `identity/plugin-identities-v1.json` — das Bauskript
+  trägt **kein** Identitätsliteral mehr (NAK-52 geschlossen, `8e32baf`);
+  Werkzeug `cmake/NakamaIdentitaet.cmake`, es **erfindet nichts**: ein Feld auf
+  `null` bricht den Configure ab. 🔑 Die Class-IDs liest es absichtlich NICHT —
+  die rechnet JUCE aus Hersteller- und Plugin-Code, und genau das misst
+  `EqCopIdentityTest` am gebauten `moduleinfo.json` gegen dieselbe Datei nach:
+  zwei Wege zur selben Zahl, sonst wäre der Test eine Tautologie. Neu gebaut:
+  **`Nakama Suna.vst3`** (`NkPr`) und **`Nakama Probeeq.vst3`** (`NkAc`) aus
+  EINER geteilten Quelle `plugin/sonde/` über zwei dünne Target-Schichten;
+  unterschieden nur durch Identität, Produktklasse (Define — der geteilte Code
+  darf sie nicht wissen) und VST3-Kategorie. Die in S2 nur *gerechneten* CIDs
+  sind damit erstmals an Artefakten gemessen (§53.5 „P1 verifiziert das erste
+  Moduleinfo"), und **kein Bundle trägt eine fremde Ziel-CID** — die
+  Artefakt-Seite von §53.4. K2b/K2c messen seit S9 gegen **jeden** Verbraucher
+  des Kerns (12), nicht gegen eine Stichprobe. ⚠️ Beide neuen sind heute
+  **Passthrough ohne Hostparameter und ohne Editor**: Probeeqs EQ-DSP gehört zu
+  P6, die Oberflächen kommen aus Figma. 🔑 Der Gegenpfad speichern↔laden fand
+  zwei echte Fehler, die sonst ins Bundle gegangen wären — `active_probe`
+  verlangt laut Kind-Matrix §2.1 genau ein `Parameters`-Kind, und
+  `Zustand::parameters` war als `{}` deklariert, also **Nullen statt
+  `standardSatz()`** (0 Hz liegt außerhalb von `band.0.freq_hz`). Manifest
+  `docs/beweise/SONDE-007b.md`; **Abschnitt 3 offen** (Lifecycle-Klassifikation,
+  Installer-Manifest), **T1/T2 beide offen**.
 - **Hör-Markierung (0.3.0):** färbt auf Klick das Monitorsignal von Gen;
   Verriegelung im Code `(echtzeitOk ∨ test) ∧ (spielt ∨ ¬hatTransport) ∧
   ¬isNonRealtime ∧ (editorOffen ∨ test)`; Analyse-Abgriff davor; Render

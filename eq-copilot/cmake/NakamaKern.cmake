@@ -186,3 +186,66 @@ function(nakama_kern_juce_fassade name)
     list(LENGTH _alle _anzahl)
     message(STATUS "Nakama-Kern: JUCE-Kopffassade '${name}' aus ${_anzahl} Modulzielen abgeleitet.")
 endfunction()
+
+# ── K2b: die JUCE-Projektkonfiguration darf nicht auseinanderlaufen ─────────
+# Der Kern uebersetzt DIESELBEN JUCE-Kopfdateien wie seine Verbraucher, aber
+# mit seiner eigenen Definemenge. Solange eine JUCE_*-Konfigurationsschraube
+# hier anders steht als dort, koennte derselbe Header zwei verschiedene Dinge
+# bedeuten - genau die Voraussetzung einer ODR-Verletzung.
+#
+# Gemessen am 22.08.2026: heute weicht genau eine ab (JUCE_USE_CURL; der Kern
+# saehe den Vorgabewert 1 aus juce_core.h:152 statt der 0 des Projekts), und
+# sie ist folgenlos - eine Grep ueber alle Kopfdateien von juce_core,
+# juce_events, juce_data_structures und juce_cryptography findet den Namen NUR
+# im Konfigblock von juce_core.h selbst, kein Header verzweigt darauf, und der
+# Kern uebersetzt ohnehin keine juce_core-Quelle. Folgenlos heute heisst nicht
+# folgenlos morgen: dieser Riegel haelt die beiden Mengen zusammen.
+#
+# Nicht verglichen wird, was legitim verschieden ist:
+#   JUCE_MODULE_AVAILABLE_*  - der Kern nutzt weniger Module, das ist sein Sinn
+#   JUCE_SHARED_CODE / JUCE_STANDALONE_APPLICATION / JUCE_VST3_CAN_REPLACE_VST2
+#                            - Sache der Plugin-Huelle; K1 verbietet die
+#                              ersten beiden im Kern ausdruecklich
+function(nakama_kern_konfig_pruefen kern referenz)
+    get_target_property(_ref "${referenz}" COMPILE_DEFINITIONS)
+    get_target_property(_kern_defs "${kern}" COMPILE_DEFINITIONS)
+    get_target_property(_fassade "${kern}" LINK_LIBRARIES)
+
+    set(_haben "${_kern_defs}")
+    foreach(_f IN LISTS _fassade)
+        if(TARGET "${_f}")
+            get_target_property(_fd "${_f}" INTERFACE_COMPILE_DEFINITIONS)
+            if(_fd)
+                list(APPEND _haben ${_fd})
+            endif()
+        endif()
+    endforeach()
+
+    set(_fehlt "")
+    foreach(_d IN LISTS _ref)
+        if(NOT "${_d}" MATCHES "^JUCE_")
+            continue()
+        endif()
+        if("${_d}" MATCHES "^JUCE_MODULE_AVAILABLE_"
+           OR "${_d}" MATCHES "^JUCE_SHARED_CODE"
+           OR "${_d}" MATCHES "^JUCE_STANDALONE_APPLICATION"
+           OR "${_d}" MATCHES "^JUCE_VST3_CAN_REPLACE_VST2")
+            continue()
+        endif()
+        if(NOT "${_d}" IN_LIST _haben)
+            list(APPEND _fehlt "${_d}")
+        endif()
+    endforeach()
+
+    if(_fehlt)
+        string(REPLACE ";" "\n    " _liste "${_fehlt}")
+        message(FATAL_ERROR
+            "S8/SONDE-007a K2b: Der Kern '${kern}' uebersetzt die JUCE-Kopfdateien mit einer\n"
+            "anderen Konfiguration als '${referenz}'. Fehlend am Kern:\n"
+            "    ${_liste}\n"
+            "Derselbe Header kann dort dann etwas anderes bedeuten als hier. Trag die\n"
+            "Schraube an der Kopf-Fassade nach (plugin/CMakeLists.txt, NakamaKernJuce).")
+    endif()
+
+    message(STATUS "Nakama-Kern: K2b gruen — JUCE-Konfiguration von '${kern}' deckt '${referenz}'.")
+endfunction()

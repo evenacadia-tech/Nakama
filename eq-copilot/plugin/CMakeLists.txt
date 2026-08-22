@@ -84,6 +84,16 @@ nakama_kern_juce_fassade(NakamaKernJuce
     juce::juce_data_structures
     juce::juce_cryptography)
 
+# Die JUCE-Konfigurationsschrauben des Projekts. Sie stehen hier, weil der Kern
+# dieselben Kopfdateien uebersetzt wie die Ziele: waere JUCE_USE_CURL hier
+# ungesetzt, saehe der Kern den Vorgabewert 1 aus juce_core.h und das Plugin
+# die 0 — derselbe Header, zwei Bedeutungen. Dass die drei hier vollstaendig
+# sind, misst K2b unten gegen das Plugin-Ziel.
+target_compile_definitions(NakamaKernJuce INTERFACE
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+    JUCE_DISPLAY_SPLASH_SCREEN=0)
+
 add_library(NakamaKern STATIC ${NAKAMA_KERN_QUELLEN})
 target_include_directories(NakamaKern PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/state" "${CMAKE_CURRENT_SOURCE_DIR}/vertrag")
@@ -95,6 +105,7 @@ target_compile_definitions(NakamaKern PRIVATE NAKAMA_KERN_UEBERSETZUNG=1)
 
 # K2 laeuft, sobald alle Kanten stehen — also nach den target_link_libraries.
 nakama_kern_riegel_pruefen(NakamaKern)
+nakama_kern_konfig_pruefen(NakamaKern EqCopilot)
 
 # Verbraucherseite. Der Kern ist gegen JUCE-KOEPFE uebersetzt; die
 # Implementierung (juce_core.cpp, SHA-256 aus juce_cryptography, ...) muss vom

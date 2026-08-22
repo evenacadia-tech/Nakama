@@ -434,16 +434,21 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
     if (ergebnis == nakama::state::LadeErgebnis::ignoriert)
         return;   // fremder Baumtyp / Muell: Zustand bleibt (wie seit 0.1)
 
-    {
-        std::lock_guard<std::mutex> l (bindungMutex);
-        zustand = geladen;
-    }
-
     if (ergebnis == nakama::state::LadeErgebnis::nurLesen)
     {
         // Keine vertrauenswuerdige Identitaet ⇒ keine Anmeldung beim Broker.
+        // ERST stoppen, DANN tauschen: ein gerade laufender (Re-)Connect liest
+        // den Zustand im hello-Lambda - nach dem Tausch waere das ein hello
+        // mit leerer instance_id (T2-Befund SONDE-006).
         pipe.stop();
+        std::lock_guard<std::mutex> l (bindungMutex);
+        zustand = geladen;
         return;
+    }
+
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        zustand = geladen;
     }
     pipe.start();       // No-Op, wenn sie laeuft; hebt einen frueheren read-only-Stopp auf
     pipe.reconnect();   // frisches hello mit der geladenen Bindung

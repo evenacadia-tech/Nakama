@@ -11,7 +11,7 @@
 | Gate-Text (Quelle) | `docs/FL-Nakama-Sonden-Design-Entwurf.md` §65 — **wörtlich:** „State-Schema 2, fester Parameterbestand und reine Schema-1-Migration — fertig, wenn: Roundtrip, unbekanntes Major, Duplicate und Host-Dirty grün". §66.1: „`EqCopStateMigrationTest` — Schema 1→2, Roundtrip, Unknown-Major, Host-Dirty". §53.8 (Form, Parameterbestand, `state_hash` RFC 8785), §32.2 (Rollenmigration), §33.5 (Zustandswahrheit), §53.5 (Klassifikation), §67 „State-Änderung: alter Fixtureload → neuer Roundtrip → unbekannte Zukunft → Host-Dirty/Recall" |
 | Commits | siehe `git log --oneline` ab `ad9ad59` (Bündel dieser Session, 22.08.2026) |
 | Datum | 2026-08-22 |
-| Prüfstufen | T1 ☑ (§4) · T2 ☐ (§5, wird nach dem Lauf eingetragen) · T3 ☐ (erst am Gate G1) |
+| Prüfstufen | T1 ☑ (§4) · T2 ☑ **PASS** (§5, Lauf 22.08. 03:05–03:27) · T3 ☐ (erst am Gate G1) |
 
 **Was gebaut wurde (Karte, keine Behauptung — Behauptungen stehen in §1):**
 
@@ -161,7 +161,7 @@ Fixtures: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state
   ok      Duplikat: gleiche instance_id (der State IST der Messpunkt)  [11111111-2222-3333-4444-555555555555]
   ok      Duplikat: verschiedene runtime_nonce
   ok      neueSensorId loest auf
-  ok      neue instance_id: 32 Hex, verschieden von beiden  [532460094ccd4f909e142633c84f8656]
+  ok      neue instance_id: 32 Hex, verschieden von beiden  [67a032b8df3a45c9b8b2e1847f088603]
   ok      Label und Rolle bleiben bei der Aufloesung
   ok      Aufloesung meldet genau einmal Host-Dirty  [1]
   ok      neue instance_id wird gespeichert und geladen
@@ -180,7 +180,7 @@ Fixtures: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state
   ok      == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
   ok      nie restauriert: Herkunft frisch
   ok      frisch: legacy+insert = v2 'sensor', leeres Label
-  ok      frisch: instance_id ist hex32  [efd0b3eca5414efa88557098bc114ccc]
+  ok      frisch: instance_id ist hex32  [d028c71cf4ee4f69b2ac7c63cb22138e]
   ok      frisch speichert NakamaState schema 2, legacy
   ok      Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
   ok      Recall: Save nach Recall ist bytegleich zum Golden
@@ -210,7 +210,7 @@ STATE-MIGRATION-TEST OK - 130 Pruefungen ok, 0 Fehler
   ok      CMake-Quelle: der VST2-Ersatzpfad ist nicht eingeschaltet
   ok      CMake-Quelle: das Define steht auch sonst nirgends auf 1
   ok      moduleinfo.json des gebauten Bundles gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\Resources\moduleinfo.json]
-  ok      moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [22 Aug 2026 2:51:04am vs 22 Aug 2026 2:36:57am]
+  ok      moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [22 Aug 2026 2:59:13am vs 22 Aug 2026 2:36:57am]
   ok      moduleinfo.json ist nach dem Kommaputz parsebar
   ok      moduleinfo: Produktname wie im Manifest  [EQ-Copilot]
   ok      moduleinfo: Vendor wie im Manifest  [evenacadia]
@@ -338,7 +338,7 @@ _(Der angehängte Abschnitt erscheint am Dateiende.)_
 | # | Punkt | Befund |
 |---|---|---|
 | 1 | Numerische Ränder: NaN, ±inf, 0, negativ, Überlauf, Wrap | `zahlAlsEs6`: NaN/±Inf ⇒ false (gemessen), ±0 ⇒ „0" (gemessen an `8000000000000000`), Subnormale `5e-324` (gemessen), `1.7976931348623157e+308` (gemessen). Leser: `1e999` ⇒ Fehler statt inf (gemessen), `from_chars`-Unterlauf ⇒ Fehler. DTO: NaN/Inf/Bereich/Enumindex aus dem typisierten Satz fallen vor dem Hash (gemessen). `validiere`: `z.zahl < min || > max` mit NaN ⇒ vorher abgefangen. `fremdesMajor` liest nur `isInt()`-Werte, sonst 0. Tiefe des Lesers auf 64 begrenzt. |
-| 2 | Gegenpfad vorhanden? | Save↔Load: `speichere`↔`lade` im selben Satz, Roundtrip gemessen. Migration↔Identität: Migration der Migration gemessen. read-only↔Aufhebung: gültiger Stand hebt read-only auf (gemessen, inkl. `pipe.start()`). Bind↔Unbind: `setzeBindung` kann jedes Feld leeren; Paar entfernen ⇒ Eigenschaft fehlt (gemessen „kein pair_id"). Start↔Stop der Pipe: `stop()` bei read-only, `start()`+`reconnect()` bei gültigem Stand. Goldens schreiben↔prüfen: `--schreibe-goldens` ↔ Messlauf. |
+| 2 | Gegenpfad vorhanden? | Save↔Load: `speichere`↔`lade` im selben Satz, Roundtrip gemessen. Migration↔Identität: Migration der Migration gemessen. read-only↔Aufhebung: gültiger Stand hebt read-only auf (gemessen an `stateNurLesen()` und Label; `pipe.start()` wird dabei ausgeführt, ist aber nicht gemessen — T2-8). Bind↔Unbind: `setzeBindung` kann jedes Feld leeren; Paar entfernen ⇒ Eigenschaft fehlt (gemessen „kein pair_id"). Start↔Stop der Pipe: `stop()` bei read-only, `start()`+`reconnect()` bei gültigem Stand. Goldens schreiben↔prüfen: `--schreibe-goldens` ↔ Messlauf. |
 | 3 | Behauptungs-Integrität | Jede Datei/Funktion in diesem Manifest geöffnet: `plugin/state/NakamaKanon.{h,cpp}`, `NakamaParameter.{h,cpp}`, `NakamaState.{h,cpp}`, `tests/StateMigrationTestMain.cpp`, `tests/ShotTestMain.cpp`, `src/PluginProcessor.{h,cpp}` (`meldeHostDirty`, `setzeBindung`, `neueSensorId`, `get/setStateInformation`), `src/PluginEditor.{h,cpp}` (`stateNurLesenAnzeige`), `broker/tests/contract_cross_language.rs` (`jcs_fixtures_stimmen_mit_manifest`), `tools/eq-copilot/erzeuge_state_fixtures.py`, `tools/beweise.ps1` (A12, B2). JUCE-Fakten an der gevendorten Quelle: `updateHostDisplay` → VST3-Wrapper `setDirty` (`juce_audio_plugin_client_VST3.cpp:1552,1613-1616`), `readDoubleValue` 18-Stellen-Puffer + `_strtod_l` und Subnormal-Flush (`juce_CharacterFunctions.h:223-417`), `parseNumber` (`juce_JSON.cpp:248-288`). RFC-Text: `rfc8785.txt` Anhang B wörtlich; ECMA-262 6.1.6.1.20 wörtlich. |
 | 4 | Lügt der UI-Text? | Read-only wird gezeigt, Messpunkt-Knopf gesperrt, Panel öffnet nicht. „APP AUS / LOKAL" wird in read-only durch „STATE READ-ONLY" ersetzt — die Pipe ist dann tatsächlich gestoppt. Der Kopf zeigt keine erfundene Rolle. Die Meldung sagt „nothing is written over it" — gemessen: `getStateInformation` liefert die Originalbytes. Neuer Text Englisch (Entscheid 21.08. „Englisch – mein Wort"); das übrige Provisorium bleibt Deutsch (Provisorium, keine Arbeit daran). |
 | 5 | Anzeige-Pflichten (UI-Diff ja) | Capability-Degradation: read-only sichtbar (Kopf + Zelle + Meldung). „Welche Aktion gerade NICHT aktiv ist": Messpunkt-Knopf `setEnabled(false)` + Meldung. Frische/Konfidenz/`arming`/Konflikt: unverändert gegenüber dem Provisorium (nicht Gegenstand dieses Tickets). |
@@ -352,10 +352,11 @@ _(Der angehängte Abschnitt erscheint am Dateiende.)_
 
 | Feld | Wert |
 |---|---|
-| Agent | `evaluator` (eigener Kontext, sieht meine Zusammenfassung **nie**) |
-| Vorgelegt | 1. `git diff ad9ad59..HEAD` · 2. dieses Manifest · 3. Gate-Text §65 Zeile `SONDE-006`, §53.8, §32.2, §33.5, §53.5, §67 im Wortlaut |
-| Urteil | ☐ PASS ☐ NEEDS_WORK — wird nach dem Lauf eingetragen |
-| Datum | |
+| Agent | Frischkontext-Subagent (general-purpose, eigener Kontext, sah keine Zusammenfassung — nur Diff, Manifest, Gate-Text) |
+| Vorgelegt | 1. `git diff ad9ad59..00abace` (70 Dateien) · 2. dieses Manifest (Stand `00abace`) · 3. Gate-Text wörtlich: §65 Zeile `SONDE-006`, §53.8, §32.2, §33.5, §53.5, §55, §66.1, §67, Errata (d)/(h) |
+| Bruchaufträge | A Migration unrein/nicht bytegleich/Bindung erfunden · B Teil-Interpretation/Originalbytes · C Host-Dirty fehlt oder falsch · D Duplicate nicht auflösbar · E Tabelle ≠ Vertrag/§53.8 · F `state_hash` ≠ RFC 8785 / Beine ≠ Manifest · G Manifest ≠ Rohausgabe · H Audiothread · I UI lügt · J Gegenpfade |
+| Urteil | ☑ **PASS** ☐ NEEDS_WORK — A: ein Pfad (leere `sensor_id` ⇒ neue Uuid, nicht blockierend, im Vertrag benannt); B/C/D/E/F/G/H/J: kein Pfad gefunden; I: vier nicht-blockierende Pfade (Befunde 2–5 unten). Der Prüfer hat B1/B3/B4, pluginval und den read-only-Render selbst neu gefahren, die RFC-Tabelle gegen rfc-editor.org und die Goldens mit eigenem ValueTree-Decoder geprüft. |
+| Datum | 2026-08-22 |
 
 ---
 
@@ -371,23 +372,32 @@ _(Der angehängte Abschnitt erscheint am Dateiende.)_
 | NAK-33 (12 sichtbare Parameter im Figma vs. 13 in §53.8) „muss vor SONDE-006 geklärt sein" | T1 (Offen-Set) | ☑ ja | **nicht entschieden, mechanisch entschärft:** der State trägt alle 13 IDs (Obermenge; ein ungenutzter Parameter bleibt auf Default `none`, ein später nachgeschobener hätte eine neue Layout-Version erzwungen). Ob `sidechain_source` sichtbar, Untermenü oder unsichtbar ist, bleibt UI-Frage beim User — NAK-33 bleibt offen mit diesem Nachtrag. |
 | Schema-1-`sensor_id` ist kein hex32 (Goldens: UUID mit Bindestrichen), v3 `adresse.instance_id` verlangt hex32 | T1 (Vertragsvergleich) | ☑ ja (`eq-ipc-v3.schema.json` `$defs/hex32`, Goldens) | **NAK-40** (neu): State bleibt bytegleich (§32.2); die Abbildung auf die v3-Adresse ist SONDE-010 |
 | Rust hasht `state_hash` heute nur im Test (dev-dependencies) | T1 | ☑ ja (`broker/Cargo.toml`) | dokumentiert in `Cargo.toml`; wandert mit SONDE-016 in `[dependencies]` |
+| T2-1: leere `sensor_id` im Altstand ⇒ neue `juce::Uuid` — einziger nicht-deterministischer Migrationszweig | T2 | ☑ ja (`NakamaState.cpp` migriereSchema1) | **protokolliert, kein Fix:** kein Schema-1-Schreiber seit 0.1 erzeugt eine leere ID; Verhalten identisch zum 0.1-Leser; Vertrag §3 benennt es |
+| T2-2: Klickpfad `zeigeMesspunkt` sagte noch „(newer schema)" | T2 | ☑ ja (`PluginEditor.cpp`) | **gefixt:** Meldung trägt `holeStateGrund()` |
+| T2-3: gesperrter Knopf sah aktiv aus — `setOpacity` wird vom Skin überschrieben (vorbestehend, auch VERGLEICH LEER) | T2 | ☑ ja (`PluginEditor.cpp` drawButtonText, `EqCopilotAssetKit.h` taste/tasteText) | **gefixt:** Schleier (schwarz α 0,42) nach dem Text über den ganzen Knopf; Render erneut gesichtet |
+| T2-4: Konflikt-Panel ignorierte den Rückgabewert von `neueSensorId()` (read-only ⇒ Meldung hätte gelogen) | T2 | ☑ ja (`PluginEditor.cpp` zeigeKonflikt) | **gefixt:** Meldung je nach Rückgabe |
+| T2-5: „Festhalten" schreibt in read-only eine Snapshot-Datei mit `sensor_id ""`, `role "sensor"` | T2 | ☑ ja (`PluginProcessor.cpp` schreibeSnapshotDatei) | **protokolliert, kein Fix:** Export, nicht Host-State; `eq-snapshot.schema.json` (v2, eingefroren) lässt es zu; die Messung selbst ist auch read-only gültig |
+| T2-6: Zustandstausch VOR `pipe.stop()` — ein laufender Reconnect konnte einmal ein hello mit leerer `instance_id` senden | T2 | ☑ ja (`PluginProcessor.cpp` setStateInformation) | **gefixt:** read-only-Zweig stoppt erst, tauscht dann |
+| T2-7: Vertrag §2 überzog („Eigenschaften in der Reihenfolge oben" gilt nicht für fremde Eingabereihenfolge; `label` wird beim Speichern ergänzt) | T2 | ☑ ja (`NakamaState.cpp` synchronisiert, `juce_NamedValueSet.cpp`) | **gefixt (Doku):** Satz präzisiert — bytegleich für Stände dieses Schreibers |
+| T2-8: Manifest §4 „inkl. `pipe.start()` gemessen" und Runner-Text „Duplicate sichtbar" überzogen | T2 | ☑ ja (`StateMigrationTestMain.cpp` G9/G10) | **gefixt (Wortlaut):** §4 sagt jetzt „ausgeführt, nicht gemessen"; Runner B2 „erkennbar und auflösbar" |
+| T2-9: Rust klassifiziert die 15 ungültigen DTOs nicht (§55 P1-Exit verlangt es) | T2 | ☑ ja (`contract_cross_language.rs`) | **NAK-42** (Eigentümer SONDE-016, spätestens vor G1) |
 
 ---
 
 ## Kanon-Lauf - SONDE-006
 
-**Lauf:** 2026-08-22 02:58 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 17/17 Kanon-Laeufe bestanden | 4 geplante Pruefung(en) noch nicht gebaut | **Exitcode:** 0
+**Lauf:** 2026-08-22 08:50 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 17/17 Kanon-Laeufe bestanden | 4 geplante Pruefung(en) noch nicht gebaut | **Exitcode:** 0
 
 ### Kopf - woran gemessen wurde
 
 | Feld | Wert |
 |---|---|
-| Zeitpunkt | 2026-08-22 02:58:36 +02:00 |
+| Zeitpunkt | 2026-08-22 08:50:18 +02:00 |
 | Rechner | SCHUBBINATOR200 \| Windows 10.0.26200.0 |
 | Zweig | master |
-| Commit | fa21404 SONDE-006 Manifest + Kanon 17/17 + Doku (NAK-40/41, NAK-33-Nachtrag) |
-| Commit (voll) | fa214045611904b8d129377625d89e17a2c369c9 |
-| Arbeitsbaum | 17 unbestaetigte Datei(en) - dieser Lauf beweist NICHT allein den Commit |
+| Commit | 00abace SONDE-006 Selbstaudit: ehrliche read-only-Meldung, englische Gruende, Textriegel im Python-Validator |
+| Commit (voll) | 00abace5e3b47aef2e130f7089493a4d681637f9 |
+| Arbeitsbaum | 16 unbestaetigte Datei(en) - dieser Lauf beweist NICHT allein den Commit |
 | JUCE gepinnt | 8.0.9 |
 | JUCE auf Platte | 8.0.9-dirty |
 | FL Studio | FL Studio 2025 25.2.5.5319 \| FL Studio 2026 26.1.4.5589 |
@@ -399,23 +409,22 @@ _(Der angehängte Abschnitt erscheint am Dateiende.)_
 <details><summary>Unbestaetigte Dateien im Arbeitsbaum</summary>
 
 ```text
-M docs/beweise/SONDE-006.md
+M docs/NEXT-SESSION.md
+ M docs/bauaufteilung-sonden.md
+ M docs/beweise/SONDE-006.md
  D docs/handoffs/auto-handoff-2026-08-18-2242-7c7cee38.md
  D docs/handoffs/auto-handoff-2026-08-19-1032-9338b4bb.md
  D docs/handoffs/auto-handoff-2026-08-20-0228-844fc0d0.md
  D docs/handoffs/auto-handoff-2026-08-20-1147-1816d5bd.md
- M eq-copilot/fixtures/state/MANIFEST.json
+ M docs/offene-punkte.md
  M eq-copilot/plugin/src/PluginEditor.cpp
- M eq-copilot/plugin/src/PluginEditor.h
- M eq-copilot/plugin/state/NakamaParameter.cpp
- M eq-copilot/plugin/state/NakamaState.cpp
- M tools/eq-copilot/erzeuge_state_fixtures.py
+ M eq-copilot/plugin/src/PluginProcessor.cpp
+ M eq-copilot/schemas/state/nakama-state-v2.md
+ M tools/beweise.ps1
 ?? docs/handoffs/auto-handoff-2026-08-21-2327-4ca90ff5.md
 ?? docs/handoffs/auto-handoff-2026-08-21-2333-60c295b3.md
 ?? docs/handoffs/auto-handoff-2026-08-22-0158-70b2680d.md
 ?? docs/handoffs/auto-handoff-2026-08-22-0200-9bb3d1c8.md
-?? eq-copilot/fixtures/state/dto/ungueltig/bereich-ganzzahl-2e53.json
-?? eq-copilot/fixtures/state/dto/ungueltig/nichtendlich-unterlauf.json
 ```
 
 </details>
@@ -424,16 +433,16 @@ M docs/beweise/SONDE-006.md
 
 | Binaerdatei | gebaut am | SHA-256 (16) | Stand |
 |---|---|---|---|
-| `EqCopNullTest` | 2026-08-22 02:58:41 | `F9352A3E25CEB3CE` | frisch (Bau bestaetigt) |
+| `EqCopNullTest` | 2026-08-22 08:50:23 | `00E348AFF2B249F3` | frisch (Bau bestaetigt) |
 | `EqCopGoldenTest` | 2026-08-18 11:46:43 | `E01E176529ECCF6A` | frisch (Bau bestaetigt) |
-| `EqCopMarkierungTest` | 2026-08-22 02:58:46 | `6300F31E9BC4EF8F` | frisch (Bau bestaetigt) |
-| `EqCopIdentityTest` | 2026-08-22 02:57:51 | `EFBDC06B19C7E2D2` | frisch (Bau bestaetigt) |
-| `EqCopStateMigrationTest` | 2026-08-22 02:57:42 | `1814857ECB4E79E6` | frisch (Bau bestaetigt) |
+| `EqCopMarkierungTest` | 2026-08-22 08:50:28 | `7377359932873BDE` | frisch (Bau bestaetigt) |
+| `EqCopIdentityTest` | 2026-08-22 08:49:55 | `763BBBE1CB0457CD` | frisch (Bau bestaetigt) |
+| `EqCopStateMigrationTest` | 2026-08-22 08:49:51 | `909D1C9D83AF0A9C` | frisch (Bau bestaetigt) |
 | `EqCopHostContextTest` | 2026-08-21 01:39:19 | `6A65DC17B0D96C5A` | frisch (Bau bestaetigt) |
 | `EqCopHostProbeTest` | 2026-08-21 02:58:34 | `E41677CE401ACFE7` | frisch (Bau bestaetigt) |
 | `EqCopSchemaTest` | 2026-08-21 23:46:42 | `F68284E36B529CEB` | frisch (Bau bestaetigt) |
 
-Neueste Quelldatei (`plugin/src`, `tests`, `hostbridge`, `vertrag`, `hostprobe`, `spike`, `probe`, `cmake`, `third_party/patches`, CMakeLists): **2026-08-22 02:57:21**. `cargo test` uebersetzt selbst und ist damit immer frisch.
+Neueste Quelldatei (`plugin/src`, `tests`, `hostbridge`, `vertrag`, `hostprobe`, `spike`, `probe`, `cmake`, `third_party/patches`, CMakeLists): **2026-08-22 08:48:44**. `cargo test` uebersetzt selbst und ist damit immer frisch.
 
 Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar vor diesem Lauf erfolgreich gebaut, das Buildsystem hat die Abhaengigkeiten also selbst geprueft.
 
@@ -441,23 +450,23 @@ Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar v
 
 | # | Behauptung | Befehl | Ergebnis | Dauer | Rohausgabe |
 |---|---|---|---|---|---|
-| A1 | Passthrough ist bitgleich; 0 Samples Latenz, 0 Tail; NaN/Inf werden gezaehlt, aber nicht veraendert. | `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | [OK] Exit 0 | 0,10 s | [↓ A1](#a1) |
+| A1 | Passthrough ist bitgleich; 0 Samples Latenz, 0 Tail; NaN/Inf werden gezaehlt, aber nicht veraendert. | `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | [OK] Exit 0 | 0,20 s | [↓ A1](#a1) |
 | A2 | AnalyseEngine deckt sich mit der eingefrorenen Offline-Referenz (Fixture-SHA-256 als Determinismus-Riegel). | `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | [OK] Exit 0 | 9,32 s | [↓ A2](#a2) |
-| A3 | Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung. | `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | [OK] Exit 0 | 19,77 s | [↓ A3](#a3) |
-| A4 | Broker-Vertragstests gruen (Framing, Protokoll, Bindung, Aggregat, Server). | `cargo test --manifest-path broker/Cargo.toml --color never` | [OK] Exit 0 | 0,49 s | [↓ A4](#a4) |
-| A5 | Referenzbein (jsonschema, draft 2020-12): Schema haelt die Engine-Teilmenge ein, Textriegel deckt jede gemessene Kante, jedes Fixture wird wie im Manifest klassifiziert, jede Definition hat ein Negativfixture. | `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | [OK] Exit 0 | 0,61 s | [↓ A5](#a5) |
-| A6 | Beide Bandgitter sind bytegleich zur Neuerzeugung; 221 Baender, 64 Gruppen als exakte Partition. | `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | [OK] Exit 0 | 0,11 s | [↓ A6](#a6) |
-| A7 | Quantisierungsvertrag bytegleich zur Neuerzeugung; Rundung, Saettigung und Nichtendliches als Testvektoren. | `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | [OK] Exit 0 | 0,10 s | [↓ A7](#a7) |
-| A8 | Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_v3_fixtures.py --pruefen` | [OK] Exit 0 | 0,15 s | [↓ A8](#a8) |
-| A9 | Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID. | `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | [OK] Exit 0 | 0,22 s | [↓ A9](#a9) |
-| A10 | Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | [OK] Exit 0 | 0,62 s | [↓ A10](#a10) |
-| A11 | Die fuenf v2-Vertraege (ipc v2, measurement v1, report v1, snapshot v3, aggregat v1) sind gueltiges JSON und gueltige JSON-Schemas; ihre $id-Familie ist eingefroren. | `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | [OK] Exit 0 | 0,21 s | [↓ A11](#a11) |
-| A12 | Parameterbestand (109 IDs, §53.8) haelt den Vertrag; RFC-8785-Zahlenvektoren tragen den RFC-Text und werden von rfc8785 bestaetigt; State-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung. | `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | [OK] Exit 0 | 0,22 s | [↓ A12](#a12) |
-| B1 | Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren. | `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | [OK] Exit 0 | 0,07 s | [↓ B1](#b1) |
-| B2 | State-Schema 2: Roundtrip bytegleich, Schema-1-Migration rein und golden, unbekanntes Major read-only mit Originalbytes, Duplicate sichtbar, Host-Dirty; Parametertabelle deckungsgleich mit dem Vertrag; RFC-8785-state_hash bytegleich zu Python und Rust. | `eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe` | [OK] Exit 0 | 0,08 s | [↓ B2](#b2) |
-| B3 | Hostkontext (Anwesenheit, Parameterpunkte, Buslatenz) wird gemessen, nicht geraten; Quellhash-Gate des JUCE-Patches gruen. | `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | [OK] Exit 0 | 0,04 s | [↓ B3](#b3) |
-| B3b | Termin-B-Messgeraet: Passthrough bitgleich, Sprung-/Automations-/Latenzmessung inkl. Fehlalarm-Riegel, Bericht-Rueckweg, 0 Allokationen. | `eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe` | [OK] Exit 0 | 0,07 s | [↓ B3b](#b3b) |
-| B3c | v3-Vertrag: C++ klassifiziert den Fixture-Korpus wie das Manifest (Urteil UND Verletzungsmenge), Bandgitter und Quantisierung bitgleich. | `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | [OK] Exit 0 | 0,13 s | [↓ B3c](#b3c) |
+| A3 | Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung. | `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | [OK] Exit 0 | 20,42 s | [↓ A3](#a3) |
+| A4 | Broker-Vertragstests gruen (Framing, Protokoll, Bindung, Aggregat, Server). | `cargo test --manifest-path broker/Cargo.toml --color never` | [OK] Exit 0 | 4,01 s | [↓ A4](#a4) |
+| A5 | Referenzbein (jsonschema, draft 2020-12): Schema haelt die Engine-Teilmenge ein, Textriegel deckt jede gemessene Kante, jedes Fixture wird wie im Manifest klassifiziert, jede Definition hat ein Negativfixture. | `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | [OK] Exit 0 | 1,74 s | [↓ A5](#a5) |
+| A6 | Beide Bandgitter sind bytegleich zur Neuerzeugung; 221 Baender, 64 Gruppen als exakte Partition. | `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | [OK] Exit 0 | 0,16 s | [↓ A6](#a6) |
+| A7 | Quantisierungsvertrag bytegleich zur Neuerzeugung; Rundung, Saettigung und Nichtendliches als Testvektoren. | `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | [OK] Exit 0 | 0,14 s | [↓ A7](#a7) |
+| A8 | Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_v3_fixtures.py --pruefen` | [OK] Exit 0 | 0,21 s | [↓ A8](#a8) |
+| A9 | Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID. | `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | [OK] Exit 0 | 0,57 s | [↓ A9](#a9) |
+| A10 | Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | [OK] Exit 0 | 1,02 s | [↓ A10](#a10) |
+| A11 | Die fuenf v2-Vertraege (ipc v2, measurement v1, report v1, snapshot v3, aggregat v1) sind gueltiges JSON und gueltige JSON-Schemas; ihre $id-Familie ist eingefroren. | `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | [OK] Exit 0 | 0,27 s | [↓ A11](#a11) |
+| A12 | Parameterbestand (109 IDs, §53.8) haelt den Vertrag; RFC-8785-Zahlenvektoren tragen den RFC-Text und werden von rfc8785 bestaetigt; State-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung. | `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | [OK] Exit 0 | 0,28 s | [↓ A12](#a12) |
+| B1 | Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren. | `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | [OK] Exit 0 | 0,15 s | [↓ B1](#b1) |
+| B2 | State-Schema 2: Roundtrip bytegleich, Schema-1-Migration rein und golden, unbekanntes Major read-only mit Originalbytes, Duplicate erkennbar (gleiche instance_id, verschiedene runtime_nonce) und aufloesbar, Host-Dirty; Parametertabelle deckungsgleich mit dem Vertrag; RFC-8785-state_hash bytegleich zu Python und Rust. | `eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe` | [OK] Exit 0 | 0,18 s | [↓ B2](#b2) |
+| B3 | Hostkontext (Anwesenheit, Parameterpunkte, Buslatenz) wird gemessen, nicht geraten; Quellhash-Gate des JUCE-Patches gruen. | `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | [OK] Exit 0 | 0,14 s | [↓ B3](#b3) |
+| B3b | Termin-B-Messgeraet: Passthrough bitgleich, Sprung-/Automations-/Latenzmessung inkl. Fehlalarm-Riegel, Bericht-Rueckweg, 0 Allokationen. | `eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe` | [OK] Exit 0 | 0,18 s | [↓ B3b](#b3b) |
+| B3c | v3-Vertrag: C++ klassifiziert den Fixture-Korpus wie das Manifest (Urteil UND Verletzungsmenge), Bandgitter und Quantisierung bitgleich. | `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | [OK] Exit 0 | 0,20 s | [↓ B3c](#b3c) |
 | B4 | StampedAudioQueue haelt Blockgroessen-Stress ohne Allokation/Lock aus. | `eq-copilot\build\plugin\EqCopQueueStressTest_artefacts\Release\EqCopQueueStressTest.exe` | [GEPLANT] geplant (ab P2) | - | - |
 | B5 | FeatureEngine v2 haelt Zeit-, Validity-, Event- und Bandvertraege. | `eq-copilot\build\plugin\EqCopAnalysisGoldenTest_artefacts\Release\EqCopAnalysisGoldenTest.exe` | [GEPLANT] geplant (ab P2) | - | - |
 | B6 | Aktiver DSP-Kern liefert die eingefrorene Referenzantwort. | `eq-copilot\build\plugin\EqCopDspGoldenTest_artefacts\Release\EqCopDspGoldenTest.exe` | [GEPLANT] geplant (ab P6) | - | - |
@@ -468,7 +477,7 @@ Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar v
 <a id="a1"></a>
 #### A1 | EqCopNullTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | **Exitcode:** 0 | **Dauer:** 0,10 s
+**Befehl:** `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | **Exitcode:** 0 | **Dauer:** 0,20 s
 
 stdout:
 
@@ -526,7 +535,7 @@ _(leer)_
 <a id="a3"></a>
 #### A3 | EqCopMarkierungTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | **Exitcode:** 0 | **Dauer:** 19,77 s
+**Befehl:** `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | **Exitcode:** 0 | **Dauer:** 20,42 s
 
 stdout:
 
@@ -571,7 +580,7 @@ _(leer)_
 <a id="a4"></a>
 #### A4 | broker
 
-**Befehl:** `cargo test --manifest-path broker/Cargo.toml --color never` | **Exitcode:** 0 | **Dauer:** 0,49 s
+**Befehl:** `cargo test --manifest-path broker/Cargo.toml --color never` | **Exitcode:** 0 | **Dauer:** 4,01 s
 
 stdout:
 
@@ -579,16 +588,16 @@ stdout:
 
 running 51 tests
 test framing::tests::abbruch_mitten_im_frame ... ok
-test framing::tests::laengengrenze_beidseitig ... ok
-test framing::tests::hin_und_zurueck ... ok
-test framing::tests::kein_utf8_wird_verworfen ... ok
-test aggregat::tests::profilfilter_laesst_fremde_sensoren_nie_still_hinein ... ok
 test protokoll::tests::feindliches_ltas_array_faellt_am_guard ... ok
-test aggregat::tests::filter_trennt_prozesse_und_v1_bekommt_warnung ... ok
+test aggregat::tests::profilfilter_laesst_fremde_sensoren_nie_still_hinein ... ok
+test framing::tests::hin_und_zurueck ... ok
+test framing::tests::laengengrenze_beidseitig ... ok
+test framing::tests::kein_utf8_wird_verworfen ... ok
 test aggregat::tests::schnittfenster_und_paare_im_dokument ... ok
 test protokoll::tests::heartbeat_v1_ohne_measurement_parst_weiter ... ok
-test aggregat::tests::schreiben_erzeugt_datei_im_snapshot_ordner ... ok
+test aggregat::tests::filter_trennt_prozesse_und_v1_bekommt_warnung ... ok
 test bindung::tests::runde_laden_schreiben_laden ... ok
+test aggregat::tests::schreiben_erzeugt_datei_im_snapshot_ordner ... ok
 test bindung::tests::beschaedigte_datei_ist_sichtbarer_fehler ... ok
 test protokoll::tests::heartbeat_v2_mit_messstand_und_fenster ... ok
 test protokoll::tests::unbekannter_typ_ist_parsefehler_kein_absturz ... ok
@@ -607,8 +616,8 @@ test register_tests::sechzehn_sensoren_werden_korrekt_benannt ... ok
 test register_tests::stale_wird_sichtbar_aber_nie_entfernt ... ok
 test register_tests::zwei_fl_prozesse_bleiben_getrennte_sessions ... ok
 test server::tests::falsche_protokollversion_bekommt_reject ... ok
-test server::tests::user_sid_ist_wohlgeformt ... ok
 test server::tests::feindliches_ltas_array_wird_gezaehlt_verworfen ... ok
+test server::tests::user_sid_ist_wohlgeformt ... ok
 test server::tests::zweiter_broker_auf_demselben_namen_scheitert_sichtbar ... ok
 test server::tests::v2_heartbeat_bekommt_ack_und_messstand_landet_im_register ... ok
 test vertrag::tests::additiv_ohne_maxproperties_bricht_das_laden ... ok
@@ -630,7 +639,7 @@ test server::tests::feindliches_laengenpraefix_beendet_nur_diese_verbindung ... 
 test server::tests::handshake_heartbeat_und_geordneter_abschied ... ok
 test server::tests::doppelte_sensor_id_wird_als_konflikt_sichtbar ... ok
 
-test result: ok. 51 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+test result: ok. 51 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s
 
 
 running 0 tests
@@ -644,15 +653,15 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
 
 running 7 tests
-test bandwertgrenzen_stimmen_mit_dem_vertrag ... ok
 test quantisierung_stimmt_mit_den_testvektoren ... ok
+test bandwertgrenzen_stimmen_mit_dem_vertrag ... ok
+test jcs_fixtures_stimmen_mit_manifest ... ok
 test textriegel_deckt_die_gemeinsame_falltabelle ... ok
 test bandgitter_ist_lesbar_und_in_sich_stimmig ... ok
 test fb_korpus_klassifiziert_wie_das_manifest ... ok
-test jcs_fixtures_stimmen_mit_manifest ... ok
 test korpus_klassifiziert_wie_das_manifest ... ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.81s
 
 
 running 0 tests
@@ -663,7 +672,7 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 stderr:
 
 ```text
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.82s
      Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-3bd50970b42ce1c0.exe)
      Running unittests src\main.rs (broker\target\debug\deps\eqcop_broker-2cd7b6c7665d865b.exe)
      Running unittests src\bin\eqcop-broker-probe.rs (broker\target\debug\deps\eqcop_broker_probe-00ee01d68ca97620.exe)
@@ -674,7 +683,7 @@ stderr:
 <a id="a5"></a>
 #### A5 | pruefe_v3_vertrag.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | **Exitcode:** 0 | **Dauer:** 0,61 s
+**Befehl:** `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | **Exitcode:** 0 | **Dauer:** 1,74 s
 
 stdout:
 
@@ -717,7 +726,7 @@ C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:610: Deprec
 <a id="a6"></a>
 #### A6 | erzeuge_bandgitter.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,11 s
+**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,16 s
 
 stdout:
 
@@ -739,7 +748,7 @@ _(leer)_
 <a id="a7"></a>
 #### A7 | erzeuge_quantisierung.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,10 s
+**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,14 s
 
 stdout:
 
@@ -756,7 +765,7 @@ _(leer)_
 <a id="a8"></a>
 #### A8 | erzeuge_v3_fixtures.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_v3_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,15 s
+**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_v3_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,21 s
 
 stdout:
 
@@ -772,7 +781,7 @@ _(leer)_
 <a id="a9"></a>
 #### A9 | pruefe_flatc_drift.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | **Exitcode:** 0 | **Dauer:** 0,22 s
+**Befehl:** `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | **Exitcode:** 0 | **Dauer:** 0,57 s
 
 stdout:
 
@@ -796,7 +805,7 @@ _(leer)_
 <a id="a10"></a>
 #### A10 | erzeuge_fb_fixtures.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,62 s
+**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 1,02 s
 
 stdout:
 
@@ -812,7 +821,7 @@ _(leer)_
 <a id="a11"></a>
 #### A11 | pruefe_v2_schemas.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | **Exitcode:** 0 | **Dauer:** 0,21 s
+**Befehl:** `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | **Exitcode:** 0 | **Dauer:** 0,27 s
 
 stdout:
 
@@ -834,7 +843,7 @@ _(leer)_
 <a id="a12"></a>
 #### A12 | erzeuge_state_fixtures.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,22 s
+**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,28 s
 
 stdout:
 
@@ -853,7 +862,7 @@ _(leer)_
 <a id="b1"></a>
 #### B1 | EqCopIdentityTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | **Exitcode:** 0 | **Dauer:** 0,07 s
+**Befehl:** `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | **Exitcode:** 0 | **Dauer:** 0,15 s
 
 stdout:
 
@@ -873,7 +882,7 @@ stdout:
   ok      CMake-Quelle: der VST2-Ersatzpfad ist nicht eingeschaltet
   ok      CMake-Quelle: das Define steht auch sonst nirgends auf 1
   ok      moduleinfo.json des gebauten Bundles gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\Resources\moduleinfo.json]
-  ok      moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [22 Aug 2026 2:59:13am vs 22 Aug 2026 2:36:57am]
+  ok      moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [22 Aug 2026 8:50:56am vs 22 Aug 2026 2:36:57am]
   ok      moduleinfo.json ist nach dem Kommaputz parsebar
   ok      moduleinfo: Produktname wie im Manifest  [EQ-Copilot]
   ok      moduleinfo: Vendor wie im Manifest  [evenacadia]
@@ -936,7 +945,7 @@ _(leer)_
 <a id="b2"></a>
 #### B2 | EqCopStateMigrationTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe` | **Exitcode:** 0 | **Dauer:** 0,08 s
+**Befehl:** `eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe` | **Exitcode:** 0 | **Dauer:** 0,18 s
 
 stdout:
 
@@ -1050,7 +1059,7 @@ Fixtures: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state
   ok      Duplikat: gleiche instance_id (der State IST der Messpunkt)  [11111111-2222-3333-4444-555555555555]
   ok      Duplikat: verschiedene runtime_nonce
   ok      neueSensorId loest auf
-  ok      neue instance_id: 32 Hex, verschieden von beiden  [f4a670df07b240f6a30df23fac2cc129]
+  ok      neue instance_id: 32 Hex, verschieden von beiden  [6c6d7a623dbd4f0387e538192b10859f]
   ok      Label und Rolle bleiben bei der Aufloesung
   ok      Aufloesung meldet genau einmal Host-Dirty  [1]
   ok      neue instance_id wird gespeichert und geladen
@@ -1069,7 +1078,7 @@ Fixtures: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state
   ok      == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
   ok      nie restauriert: Herkunft frisch
   ok      frisch: legacy+insert = v2 'sensor', leeres Label
-  ok      frisch: instance_id ist hex32  [3de4766bc5fc422098ef24712f133336]
+  ok      frisch: instance_id ist hex32  [45d6273fef5d4b08a125c0de63a3f5a3]
   ok      frisch speichert NakamaState schema 2, legacy
   ok      Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
   ok      Recall: Save nach Recall ist bytegleich zum Golden
@@ -1085,7 +1094,7 @@ _(leer)_
 <a id="b3"></a>
 #### B3 | EqCopHostContextTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | **Exitcode:** 0 | **Dauer:** 0,04 s
+**Befehl:** `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | **Exitcode:** 0 | **Dauer:** 0,14 s
 
 stdout:
 
@@ -1197,7 +1206,7 @@ _(leer)_
 <a id="b3b"></a>
 #### B3b | EqCopHostProbeTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe` | **Exitcode:** 0 | **Dauer:** 0,07 s
+**Befehl:** `eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe` | **Exitcode:** 0 | **Dauer:** 0,18 s
 
 stdout:
 
@@ -1270,7 +1279,7 @@ stdout:
   ok      die Blockzahl im Bericht deckt sich mit der Messung
   ok      das Ereignisprotokoll liegt im Bericht
   ok      die Gueltigkeitsmaske steht im Bericht
-  ok      Bericht wurde als Datei geschrieben: C:\Users\phili\AppData\Roaming\evenacadia\nakama\spike\host-probe-20260822-025946.json
+  ok      Bericht wurde als Datei geschrieben: C:\Users\phili\AppData\Roaming\evenacadia\nakama\spike\host-probe-20260822-085136.json
   ok      die geschriebene Datei laesst sich wieder einlesen und traegt dieselbe Messung
 == I - Zuruecksetzen und Ringueberlauf ==
   ok      Zuruecksetzen leert die Messung - und erzeugt dabei keinen Scheinsprung
@@ -1289,7 +1298,7 @@ stdout:
 == J - Audiothread: keine Allokation ==
   ok      500 Bloecke mit Kontext, Transportwechseln und je 8 Automationspunkten: 0 Allokationen
 == J2 - Nebenlaeufig lesen, waehrend der Audiothread schreibt ==
-  ok      der zweite Thread hat waehrenddessen wirklich geschrieben (28780 Bloecke)
+  ok      der zweite Thread hat waehrenddessen wirklich geschrieben (33158 Bloecke)
   ok      200 nebenlaeufige Lesevorgaenge liefern durchweg plausible Eintraege und Zaehler
   ok      der letzte Lesevorgang hat Eintraege geliefert
   hinweis   Grenze: Rauchtest, kein Beweis der Tearing-Freiheit (der Wiederholpfad wird selten bis nie betreten)
@@ -1312,7 +1321,7 @@ _(leer)_
 <a id="b3c"></a>
 #### B3c | EqCopSchemaTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | **Exitcode:** 0 | **Dauer:** 0,13 s
+**Befehl:** `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | **Exitcode:** 0 | **Dauer:** 0,20 s
 
 stdout:
 
@@ -1385,7 +1394,7 @@ _(leer)_
 
 ### Bau vor dem Lauf (`-Bauen`)
 
-**build** | Exit 0 | 37,45 s
+**build** | Exit 0 | 37,60 s
 
 <details><summary>Rohe Ausgabe</summary>
 
@@ -1396,8 +1405,6 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
   EqCopNullTest_rc_lib.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopNullTest_rc_lib.dir\Release\EqCopNullTest_rc_lib.lib
   PluginEditor.cpp
   PluginProcessor.cpp
-  NakamaParameter.cpp
-  NakamaState.cpp
   EqCopNullTest.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe
 MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
@@ -1410,8 +1417,6 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
   EqCopMarkierungTest_rc_lib.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopMarkierungTest_rc_lib.dir\Release\EqCopMarkierungTest_rc_lib.lib
   PluginEditor.cpp
   PluginProcessor.cpp
-  NakamaParameter.cpp
-  NakamaState.cpp
   EqCopMarkierungTest.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe
 MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
@@ -1445,8 +1450,6 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
   EqCopilot_rc_lib.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot_rc_lib.dir\Release\EqCopilot_rc_lib.lib
   PluginEditor.cpp
   PluginProcessor.cpp
-  NakamaParameter.cpp
-  NakamaState.cpp
   EqCopilot.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot_artefacts\Release\EQ-Copilot_SharedCode.lib
   EqCopilot_vst3_helper.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\Release\EqCopilot_vst3_helper.exe
      Bibliothek "C:/Users/phili/Projekte/Nakama/eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.lib" und Objekt "C:/Users/phili/Projekte/Nakama/eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.exp" werden erstellt.

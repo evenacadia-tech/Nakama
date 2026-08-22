@@ -69,8 +69,8 @@
 State-Schema 2 (`eq-copilot/schemas/state/nakama-state-v2.md`), fester
 Parameterbestand (109 IDs, `nakama-parameter-v1.json`), reine Schema-1-Migration
 mit Goldens, read-only bei fremdem Major, Host-Dirty, `state_hash` nach RFC 8785
-in drei Sprachen bytegleich. Kanon 17 Beine (B2 + A12 neu). **T2 steht aus**,
-solange Manifest §5 kein Urteil trägt — dann ist das Ticket offen, nicht fertig.
+in drei Sprachen bytegleich. Kanon 17 Beine (B2 + A12 neu). **T2: PASS** (Frischkontext-
+Prüfer, 22.08.; neun nicht-blockierende Befunde nachgearbeitet, Manifest §5/§6).
 
 **Nächster Schritt S8 (`SONDE-007a`):** gemeinsamer Kern ohne `JucePlugin_*`-
 Konstanten (NAK-23b). `plugin/state/` ist dafür schon JUCE-core-rein gebaut
@@ -98,7 +98,8 @@ Code ohne Manifest heißt *offen*. Beweislauf:
 
 `docs/offene-punkte.md` — neu seit 22.08.: NAK-40 (`instance_id` bytegleich vs.
 hex32 der v3-Adresse, SONDE-010), NAK-41 (Schema-2-Stand im alten Build = stiller
-Identitätsverlust; vor der Installation wissen). NAK-33 trägt den Nachtrag „State
+Identitätsverlust; vor der Installation wissen), NAK-42 (Rust klassifiziert die
+ungültigen DTOs noch nicht — vor G1). NAK-33 trägt den Nachtrag „State
 trägt 13, UI-Frage offen". Neu seit 21.08.: NAK-30 (Umbenennung zu Nakama
 Studio / Gen / Probeeq / Suna = Identitätsticket), NAK-31 (`analyze-track.py`
 liegt im FL-Repo), NAK-32 (`install/` unversioniert), NAK-33 (12 oder 13

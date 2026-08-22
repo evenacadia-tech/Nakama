@@ -49,6 +49,14 @@ void CopilotLookAndFeel::drawButtonText (juce::Graphics& g, juce::TextButton& b,
         g.setOpacity (0.52f);
     skin::tasteText (g, b, gedrueckt, faktor);
     g.restoreState();
+    // setOpacity greift nicht: der Skin setzt eigene Farben (EqCopilotAssetKit
+    // taste/tasteText). Ein gesperrter Knopf sah deshalb aktiv aus (T2-Befund
+    // SONDE-006). Der Schleier liegt NACH dem Text ueber dem ganzen Knopf.
+    if (! b.isEnabled())
+    {
+        g.setColour (juce::Colours::black.withAlpha (0.42f));
+        g.fillRoundedRectangle (b.getLocalBounds().toFloat(), 4.0f * faktor);
+    }
 }
 
 void CopilotLookAndFeel::drawComboBox (juce::Graphics& g, int breite, int hoehe,
@@ -525,8 +533,9 @@ void EqCopilotEditor::zeigeKonflikt()
         s,
         [this]
         {
-            processor.neueSensorId();
-            statusMeldung = u8 ("Neue Kennung vergeben — dieser Messpunkt meldet sich frisch an.");
+            statusMeldung = processor.neueSensorId()
+                ? u8 ("Neue Kennung vergeben — dieser Messpunkt meldet sich frisch an.")
+                : juce::String ("State read-only: " + processor.holeStateGrund() + ". No new identity assigned.");
             statusMeldungBisMs = juce::Time::getMillisecondCounter() + 6000;
         });
 
@@ -551,7 +560,7 @@ void EqCopilotEditor::zeigeMesspunkt()
 {
     if (processor.stateNurLesen())
     {
-        statusMeldung = "State is read-only (newer schema) - role and name cannot be changed in this version.";
+        statusMeldung = "State read-only: " + processor.holeStateGrund() + ". Role and name cannot be changed.";
         statusMeldungBisMs = juce::Time::getMillisecondCounter() + 6000;
         uiDirty = true;
         return;

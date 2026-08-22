@@ -29,7 +29,7 @@ NakamaState                               schema = 2  (int)
 └── Pairing                               NAME RESERVIERT — Inhalt definiert SONDE-016 (Ziel-IDs, DPAPI-Blobs; nie Klartext, nie im Hash)
 ```
 
-Reihenfolge beim Schreiben ist fest (Common, MainProject, Parameters, Dsp, Pairing — nur die vorhandenen); Eigenschaften in der Reihenfolge oben. Das macht `speichere(lade(x)) == x` für jeden gültigen Stand **bytegleich** und die Schema-1-Migration **deterministisch** (Golden-fähig).
+Reihenfolge beim Schreiben: für Stände, die **dieser Schreiber** erzeugt (frisch, migriert), Kinder Common, MainProject, Parameters und Eigenschaften in der Reihenfolge oben. Ein **geladener** Stand behält seine eigene Reihenfolge (der Schreiber editiert eine Kopie des gehaltenen Baums in place — unbekannte Eigenschaften eingeschlossen); fehlt einem geladenen Common das `label`, bekommt es beim Speichern eines. Damit ist `speichere(lade(x)) == x` **bytegleich** für jeden Stand, den dieser Schreiber selbst geschrieben hat (Goldens, Roundtrip-Test), und die Schema-1-Migration ist **deterministisch** (Golden-fähig).
 
 ### 2.1 Kind-Matrix (§53.8: „Unzulässige Ziel-/Kindkombinationen werden nicht teilweise interpretiert")
 

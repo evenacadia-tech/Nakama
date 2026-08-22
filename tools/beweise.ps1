@@ -271,6 +271,14 @@ $kanon = @(
     # B2 (C++) und das Rust-Bein in A4 messen gegen dasselbe MANIFEST.
     [pscustomobject]@{ Kuerzel='A12'; Name='erzeuge_state_fixtures.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='Parameterbestand (109 IDs, §53.8) haelt den Vertrag; RFC-8785-Zahlenvektoren tragen den RFC-Text und werden von rfc8785 bestaetigt; State-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung.' }
 
+    # --- SONDE-004 (S4): Capabilityreport aus FL-Termin A + B --------------------
+    #
+    # §53.6: ein Capabilitybit wird nur nach seinem Golden gesetzt. A13 bindet
+    # jedes der zehn Bits in identity/host-capabilities-fl-v1.json an das
+    # Rohfeld der Messung (docs/beweise/termin-a/, termin-b/) und an die
+    # Vertragsform aus schemas/v3 ($defs/capabilities).
+    [pscustomobject]@{ Kuerzel='A13'; Name='pruefe_host_capabilities.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Capabilityreport FL: die zehn Bits aus §53.6 entsprechen der v3-Vertragsform und stehen so, wie die Rohdaten der Termine A und B sie tragen; jedes supported hat einen Termin, jedes unsupported seinen festen Fallback.' }
+
     # --- geplant: laufen automatisch mit, sobald sie gebaut sind -------------
     [pscustomobject]@{ Kuerzel='B1'; Name='EqCopIdentityTest';       Art='plugin'; Argumente=@(); AbPhase='P0'; Behauptung='Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren.' }
     # B2 wurde in P1 gebaut (SONDE-006): Schema 2, Parameterbestand, Migration, state_hash.

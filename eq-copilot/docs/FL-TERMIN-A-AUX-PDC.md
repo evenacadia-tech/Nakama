@@ -1,5 +1,14 @@
 # FL-Termin A — koennen zwei getrennte Aux-Wege in FL sauber ankommen?
 
+> **Stand 22.08.2026: gemessen, Ergebnis „geht"** — Rohdaten und Aufbau in
+> `docs/beweise/termin-a/`, Capabilityreport `docs/beweise/SONDE-004.md`.
+> Zwei Berichtigungen an dieser Liste, gelernt beim Messen: (1) FL scannt VST3
+> **nur** unter `C:\Program Files\Common Files\VST3\` — ein Suchpfad gilt
+> nur fuer VST2; das Messgeraet muss dorthin (Admin-Klick), die Zeile „kein
+> Admin noetig" war falsch. (2) Nebenwege als **„Sidechain to this track"**
+> legen, nicht als Mixroute — sonst wird der Ton in der Zielspur mitgemischt
+> (Spitze 2,70 statt 0,90). Der Text unten ist unveraendert.
+
 **Dauer:** ca. 20 Minuten. **Du brauchst:** FL Studio, sonst nichts.
 
 ## Worum es geht

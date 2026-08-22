@@ -190,9 +190,16 @@ seinen Pfad per `replace("leerzustand","messzustand")` ab
 denselben Ordner (`AuxSpikeProcessor.cpp:290-295`). Selbsttest
 `EqCopAuxSpikeTest` (41), nicht im Kanon (NAK-37).
 
-**Status beider Termine: nicht gelaufen** — der Spike-Ordner existiert und ist
-leer, die Wegwerf-Bundles liegen nur im Build-Ordner. Klicklisten
-`eq-copilot/docs/FL-TERMIN-{A-AUX-PDC,B-HOSTZEIT}.md`.
+**Status beider Termine: gemessen am 22.08.** — Termin A 00:17/00:27 (zwei
+Nebenwege samplegenau, recall-stabil), Termin B 12:45–13:27 (User legte
+Aufbau, Claude fuhr Transport über den FL-MCP). Rohdaten `docs/beweise/termin-a/`,
+`termin-b/`; Auswertung S4 `docs/beweise/SONDE-004.md`; maschinenlesbar
+`eq-copilot/identity/host-capabilities-fl-v1.json` (Kanon A13). Kernbefunde:
+Kontext in 100 % der Blöcke, alle Zeitfelder immer gültig, Seeks/Loops/Render
+gemeldet, **Automation nie >1 Punkt je Block bei Offset 0 — FL zerteilt Puffer
+bis 1 Sample**, nur float, Latenz 3 924/4 410 gemeldet, Smart disable bei
+offenem Fenster ohne Lücke. Klicklisten `eq-copilot/docs/FL-TERMIN-{A-AUX-PDC,B-HOSTZEIT}.md`
+tragen einen Stand-Hinweis mit Berichtigungen.
 
 ## 3 · Verträge
 
@@ -296,15 +303,16 @@ State-Bibliothek hängt über `nakama_state_anbinden(<ziel>)` an jedem Ziel, das
 den Prozessor kompiliert. Binaries unter
 `eq-copilot/build/plugin/<Ziel>_artefacts/Release/`.
 
-**Kanon, 17 Beine (`tools/beweise.ps1`, Tabelle `$kanon`):** A1 NullTest · A2
+**Kanon, 18 Beine (`tools/beweise.ps1`, Tabelle `$kanon`):** A1 NullTest · A2
 GoldenTest · A3 MarkierungTest · A4 `cargo test` (inkl. JCS-Bein) · A5
 `pruefe_v3_vertrag.py --abdeckung` · A6 `erzeuge_bandgitter.py --pruefen` · A7
 `erzeuge_quantisierung.py --pruefen` · A8 `erzeuge_v3_fixtures.py --pruefen` ·
 A9 `pruefe_flatc_drift.py` · A10 `erzeuge_fb_fixtures.py --pruefen` · A11
-`pruefe_v2_schemas.py` · **A12 `erzeuge_state_fixtures.py --pruefen`** · B1
+`pruefe_v2_schemas.py` · **A12 `erzeuge_state_fixtures.py --pruefen`** · **A13
+`pruefe_host_capabilities.py`** · B1
 IdentityTest · **B2 StateMigrationTest** · B3 HostContextTest · B3b
 HostProbeTest (ohne Argument) · B3c SchemaTest. Die Prüfzahlen stehen im
-jüngsten Manifest (`docs/beweise/SONDE-006.md`: 17/17). Geplant, nicht gebaut:
+jüngsten Manifest (`docs/beweise/SONDE-004.md`: 18/18). Geplant, nicht gebaut:
 B4 `EqCopQueueStressTest`, B5 `EqCopAnalysisGoldenTest`, B6
 `EqCopDspGoldenTest`, B7 `EqCopTransactionTest`.
 
@@ -320,7 +328,8 @@ Quelle"-Zeitstempel über alle Quellorte gegen jedes Prüfbinary — ohne
 · `EqCopPipeProbe [pipe] [s]` (braucht einen laufenden Broker, immer
 `…m2probe`) · `pluginval --strictness-level 8` (nur in `%TEMP%`, NAK-26).
 
-**Python-Werkzeuge (14, `tools/eq-copilot/`):** `erzeuge_state_fixtures.py`
+**Python-Werkzeuge (15, `tools/eq-copilot/`):** `pruefe_host_capabilities.py`
+Capabilityreport gegen Rohdaten + v3-Vertragsform · `erzeuge_state_fixtures.py`
 State-Korpus + MANIFEST (RFC-8785-Vektoren mit `rfc8785` als Referenz, DTOs,
 Parametervertrag; `--pruefen` = bytegleich) · `erzeuge_fixtures.py`
 Golden-WAVs + `golden-referenz.json` · `erzeuge_aux_spike_fixtures.py`

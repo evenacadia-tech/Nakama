@@ -135,6 +135,16 @@ gemeinsames briefing und übersichtshub". Drei Pflichten je Session, Details in
    Stop-Hook (`tools/hooks/hub-stop.sh`) blockt einmal je Session, wenn Commits
    ohne Hub-Update enden.
 
+**Zeigen, nicht beschreiben** (User 22.08.: „ich muss sehen können um was es
+geht und selbst bilder hochladen können"): jede „bei dir"-Karte, bei der es um
+etwas Sichtbares geht (ein Figma-Stand, ein Ausschnitt, ein Fenster in FL),
+trägt das Bild direkt in der Karte (`bilder` in `hub.json`, Dateien in
+`docs/hub/bilder/`, committet) — der User öffnet keine Ordner und sucht keine
+Bilder. Seine Uploads (Bilder + Notiz, Reviews) holt `hub_eingang.py` nach
+`docs/hub/eingang/` bzw. `docs/reviews/`; je Upload steht in `hub.json`
+(`uploads`), was damit passiert ist (`status`, `ergebnis`) — ein Figma-Export
+mit Notiz „in die Truhe" ist sein Wort dafür.
+
 ## Bauen & Beweisen (vom Workspace-Root)
 
 ```powershell
@@ -154,14 +164,15 @@ Baustand: sind Prüfbinaries älter als ihre Quellen, verweigert er mit Exitcode
 die Beglaubigung (0 grün · 2 rot · 3 Voraussetzung fehlt · 4 nicht beglaubigt).
 Vorlage `docs/beweise/VORLAGE.md`, Basislinie `docs/beweise/S0-basislinie.md`.
 
-**Kanon (17 Beine, Tabelle in `tools/beweise.ps1`):** NullTest · Golden ·
+**Kanon (18 Beine, Tabelle in `tools/beweise.ps1`):** NullTest · Golden ·
 Markierung · `cargo test` (seit 22.08. mit dem JCS-Bein) · sechs Python-Beine
 des v3-Vertrags · A11 `pruefe_v2_schemas.py` · **A12
-`erzeuge_state_fixtures.py --pruefen`** (SONDE-006) · Identität · **B2
+`erzeuge_state_fixtures.py --pruefen`** (SONDE-006) · **A13
+`pruefe_host_capabilities.py`** (SONDE-004) · Identität · **B2
 `EqCopStateMigrationTest`** (SONDE-006) · Hostkontext · Host-Probe (zählt
 89 nur mit PNG-Ziel, sonst 85 — NAK-34) · Schema. **Die Prüfzahlen stehen im
 jüngsten Manifest in `docs/beweise/`, nicht hier** (zuletzt
-`SONDE-006.md`: 17/17 grün). Nicht im Kanon, aber vorhanden:
+`SONDE-004.md`: 18/18 grün). Nicht im Kanon, aber vorhanden:
 `EqCopAuxSpikeTest` (NAK-37), Shot (`--state` lädt einen Host-State vor dem
 Render), PaintBench, PipeProbe, `pluginval --strictness-level 8`. Vier Beine
 stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
@@ -181,10 +192,17 @@ stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
   21.08. (mit Hostbrücke) ist nicht installiert — Installation nur per
   User-Klick (`eq-copilot\install\Install-EQ-Copilot.ps1` als Admin; der Ordner
   ist gitignoriert und existiert nur auf dem Desktop — NAK-32).
-- **FL-Termine A/B** (Klicklisten `eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md`,
-  `…-B-HOSTZEIT.md`) sind **noch nicht gelaufen** (`%APPDATA%\evenacadia\nakama\spike\`
-  leer); S4 und Gate G0 warten darauf. Die Wegwerf-Messgeräte `EqCopAuxSpike`
-  (`NkSp`, 41 Prüfungen) und `EqCopHostProbe` (`NkHp`) sind gebaut.
+- **FL-Termine A/B sind gemessen (22.08.)** — Rohdaten `docs/beweise/termin-a/`,
+  `termin-b/`; **Capabilityreport S4** `eq-copilot/identity/host-capabilities-fl-v1.json`
+  (zehn §53.6-Bits mit Rohfeld, Kanon-Bein A13 misst sie gegen die Rohdaten):
+  `host_context_presence`, `project_time_samples`, `presentation_latency`,
+  `aux_compare_pre`, `aux_priority_sidechain` **supported** ·
+  `sample_accurate_automation` **unsupported** (FL legt nie >1 Punkt je Block
+  in die Queue, zerteilt stattdessen Puffer bis 1 Sample) · `float64_processing`,
+  `contribution_aux` (ungemessen), `binary_telemetry`, `remote_control`
+  **unsupported**. Gate G0 (T3, eigene Session) steht noch aus. Die
+  Wegwerf-Messgeräte `EqCopAuxSpike` (`NkSp`) und `EqCopHostProbe` (`NkHp`)
+  liegen installiert unter `C:\Program Files\Common Files\VST3\`.
 
 ## Technik-Zement (was heute gilt, weil Code und Beweis es sagen)
 
@@ -316,7 +334,7 @@ stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
 | Sondenfamilie: Technik + Phasen (Fassung 0.4 + Errata 21.08.) | `docs/FL-Nakama-Sonden-Design-Entwurf.md` · `docs/bauaufteilung-sonden.md` |
 | v3-Verträge, Textriegel, Bandgitter, Fixtures | `eq-copilot/schemas/v3/README.md` · `…/flatbuffers/README.md` |
 | Beweise je Ticket (rohe Ausgabe) | `docs/beweise/` |
-| FL-Termine A/B (liegen beim User) | `eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md` · `FL-TERMIN-B-HOSTZEIT.md` |
+| FL-Termine A/B (gemessen 22.08.) + Capabilityreport | `docs/beweise/termin-a/` · `docs/beweise/termin-b/` · `docs/beweise/SONDE-004.md` · `eq-copilot/identity/host-capabilities-fl-v1.json` |
 | Benchmark-Mechaniken (Median-Basislinie, Zonen) | `eq-copilot/docs/BENCHMARK-STUDIE-RESO-SMARTEQ-PROQ.md` |
 | Offene Punkte | `docs/offene-punkte.md` |
 | Design der drei Apps | `Nakama-Design/CLAUDE.md` + `abnahmen/` |

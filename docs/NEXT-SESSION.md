@@ -41,33 +41,33 @@
   urteilen darf nur ein Pruefer, der den Umbau nicht geschrieben hat.
 - **Termin A ist gemessen (22.08. 00:17 + 00:27): geht, recall-stabil** — zwei
   getrennte Nebenwege samplegenau (Versatz 0), Beweis `docs/beweise/termin-a/`.
-  **S4 (Capabilityreport) und Gate G0 warten noch auf Termin B** (Hostzeit/
-  Automation, `eq-copilot/docs/FL-TERMIN-B-HOSTZEIT.md`). Beide Messgeräte sind
+  **Termin B ist gemessen (22.08. 12:45–13:27) und S4 gebaut** — Capabilityreport
+  `docs/beweise/SONDE-004.md`, Bits in `eq-copilot/identity/host-capabilities-fl-v1.json`
+  (Kanon A13). **Nur Gate G0 (T3) steht in P0 noch aus.** Beide Messgeräte sind
   in `C:/Program Files/Common Files/VST3/` installiert (FL scannt VST3 nur dort).
-- **Kanon:** 17 Beine in `tools/beweise.ps1` (seit 22.08.: B2 `EqCopStateMigrationTest`,
-  A12 `erzeuge_state_fixtures.py --pruefen`); letzter vollständiger Lauf siehe
-  jüngstes Manifest in `docs/beweise/` (`SONDE-006.md`).
+- **Kanon:** 18 Beine in `tools/beweise.ps1` (seit 22.08.: B2 `EqCopStateMigrationTest`,
+  A12 `erzeuge_state_fixtures.py --pruefen`, A13 `pruefe_host_capabilities.py`);
+  letzter vollständiger Lauf siehe jüngstes Manifest in `docs/beweise/` (`SONDE-004.md`).
 
-## ▶ Morgen zuerst (22.08., vereinbart beim Sessionende)
+## ▶ Erledigt am 22.08. (Termin B + S4)
 
-1. **Termin B über den FL-MCP fahren.** Der User legt `EqCop-Host-Probe` auf
-   einen freien Insert (Signal drauf, Fenster offen, oben muss „Hostbrücke
-   liefert: JA" stehen) und zeichnet einen Automationsclip auf einen
-   Parameter — mehr Handarbeit ist nicht nötig. Claude fährt per MCP: Live,
-   Seek mit/ohne Stop, Schleife, Smart-Disable-Pause, Speichern; Render bleibt
-   ein User-Klick. Vorher im Fork `C:/Users/phili/Projekte/fl-studio-mcp`
-   (Zweig `evenacadia-local`) ein `fl_save_project` ergänzen (`FPT_Save`,
-   in den Stubs vorhanden) — mit Test wie bei den Routing-Tools. Der MCP
-   `fl-studio` ist seit 21.08. für diesen Workspace registriert
-   (`claude mcp list` → Connected); seine Werkzeuge sind ab Sessionstart da.
-2. **Klicklisten A und B nachziehen:** VST3 wird nur in
-   `C:/Program Files/Common Files/VST3` gescannt (Suchpfade gelten nur für
-   VST2 — die Zeile „kein Admin nötig" war falsch); Nebenwege als
-   „Sidechain to this track", nicht als Mixroute; Arbeitsteilung User/MCP.
-3. **Angebot offen beim User:** `C:/Program Files/Common Files/VST3/eq-copilot/`
+1. ~~Termin B über den FL-MCP fahren~~ — **gemessen 12:45–13:27**: der User legte
+   `EqCop-Host-Probe` auf den Piano-Kanal, zeichnete den Automationsclip,
+   schaltete Smart disable ein, exportierte und sicherte den Bericht; Claude
+   fuhr Live, Seeks (ohne/mit Stop), Pattern-Schleife, Stummschaltung über den
+   MCP (`fl_set_song_position` nur im Modus 1 = ms). `fl_save_project` fehlt
+   dem Fork weiterhin — Speichern blieb Strg+S beim User.
+2. ~~Klicklisten A und B nachziehen~~ — beide tragen einen Stand-Hinweis mit den
+   Berichtigungen (VST3 nur unter `Common Files\VST3`; Nebenwege als
+   „Sidechain to this track"; Song ≥ 16 Takte; Arbeitsteilung).
+3. **Angebot weiter offen beim User:** `C:/Program Files/Common Files/VST3/eq-copilot/`
    (845 MB alte Repo-Kopie vom 13.08. mit zwei alten `EQ-Copilot.vst3`, die FL
    mitscannt) wegräumen — braucht einen Admin-Klick.
-4. Danach S4 (Capabilityreport aus Termin A + B) → Gate G0; die Technik ist inzwischen bei S8 (S7 gebaut 22.08.).
+4. ~~S4~~ — **gebaut**: `docs/beweise/SONDE-004.md`,
+   `eq-copilot/identity/host-capabilities-fl-v1.json`, Kanon A13. **Offen: Gate
+   G0** (T3, eigene Session: `/c-review` auf den Bridge-Patch + Codex,
+   Bruchaufträge Gate 1 und Gate 5) — danach fällt der Schließungsvorbehalt §65
+   für `SONDE-005`.
 
 ## ▶ Der eine nächste Schritt (Technik): S8 — `SONDE-007a`
 
@@ -78,7 +78,11 @@ mit Goldens, read-only bei fremdem Major, Host-Dirty, `state_hash` nach RFC 8785
 in drei Sprachen bytegleich. Kanon 17 Beine (B2 + A12 neu). **T2: PASS** (Frischkontext-
 Prüfer, 22.08.; neun nicht-blockierende Befunde nachgearbeitet, Manifest §5/§6).
 
-**Nächster Schritt S8 (`SONDE-007a`):** gemeinsamer Kern ohne `JucePlugin_*`-
+**Vorher Gate G0** (T3, eigene Session; Bauaufteilung §3/§5): `/c-review` auf den
+Bridge-Patch + Codex, Bruchaufträge Gate 1 (neutrale Instanz verändert Audio)
+und Gate 5 (Telemetrie steuert Gain) — P0 schließt erst damit.
+
+**Dann S8 (`SONDE-007a`):** gemeinsamer Kern ohne `JucePlugin_*`-
 Konstanten (NAK-23b). `plugin/state/` ist dafür schon JUCE-core-rein gebaut
 (`Bundle::eqcp/nkpr/nkac` als Klassenmenge je Bundle). Vorher lesen:
 `docs/FL-Nakama-Sonden-Design-Entwurf.md` (Errata-Block zuerst, §53.4),
@@ -96,7 +100,7 @@ Code ohne Manifest heißt *offen*. Beweislauf:
 
 | Was | Wo |
 |---|---|
-| FL-Termin B (Hostzeit/Automation) — Termin A ist erledigt | Arbeitsteilung neu: Plugins und Automationsclip legt der User einmal an; Abspielen, Springen, Schleife, Speichern fährt Claude über den FL-MCP (`fl-studio`, seit 21.08. für diesen Workspace registriert; ein `fl_save_project` via `FPT_Save` fehlt noch im Fork) |
+| ~~FL-Termin B~~ — beide Termine erledigt 22.08. | Optional offen: Teil 3 der Klickliste B (`nakama-altprojekt.flp` = Legacy-Fixture für SONDE-002) und das Wegräumen von `Common Files\VST3\eq-copilot\` (Admin-Klick) |
 | Figma-Stände der drei Apps (Gen, Probeeq, Suna) | nach `Nakama-Design/assets/figma/` geben; das Design-Repo übersetzt sie |
 | Installation des 21.08.-Bundles (mit Hostbrücke, Version 0.3.0) | erst mit dem nächsten bewiesenen Stand, per UAC-Klick |
 
@@ -105,7 +109,8 @@ Code ohne Manifest heißt *offen*. Beweislauf:
 `docs/offene-punkte.md` — neu seit 22.08.: NAK-40 (`instance_id` bytegleich vs.
 hex32 der v3-Adresse, SONDE-010), NAK-41 (Schema-2-Stand im alten Build = stiller
 Identitätsverlust; vor der Installation wissen), NAK-42 (Rust klassifiziert die
-ungültigen DTOs noch nicht — vor G1). NAK-33 trägt den Nachtrag „State
+ungültigen DTOs noch nicht — vor G1), NAK-43 (`presentation_latency`: ein
+verworfener Wertwechsel ohne Protokoll — vor SONDE-009). NAK-33 trägt den Nachtrag „State
 trägt 13, UI-Frage offen". Neu seit 21.08.: NAK-30 (Umbenennung zu Nakama
 Studio / Gen / Probeeq / Suna = Identitätsticket), NAK-31 (`analyze-track.py`
 liegt im FL-Repo), NAK-32 (`install/` unversioniert), NAK-33 (12 oder 13

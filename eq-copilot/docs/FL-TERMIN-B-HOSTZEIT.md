@@ -1,5 +1,22 @@
 # FL-Termin B — was sagt FL dem Plugin ueber Zeit, Transport und Automation?
 
+> **Stand 22.08.2026: gemessen** — Berichte, Aktionsprotokoll und Lesart in
+> `docs/beweise/termin-b/`, Capabilityreport `docs/beweise/SONDE-004.md`.
+> **Arbeitsteilung, wie sie wirklich lief:** der User legte Plugin, Piano und
+> Automationsclip an, schaltete Smart disable ein, exportierte und klickte
+> „Bericht sichern"; Abspielen, Springen, Schleife und Stummschalten fuhr
+> Claude ueber den FL-MCP (`fl-studio`: `fl_play`, `fl_stop`,
+> `fl_set_song_position` **nur im Modus 1 = Millisekunden** — Modus 2
+> „Sekunden" landet nahe Songanfang —, `fl_set_loop_mode`, `fl_mute_channel`).
+> Berichtigungen: (1) Schritt 1 — FL scannt VST3 nur unter
+> `C:\Program Files\Common Files\VST3\`, Suchpfade gelten nur fuer VST2;
+> das Messgeraet liegt seit 21.08. dort. (2) Der Song muss **mindestens 16
+> Takte** lang sein (Clips nach rechts ziehen) — bei 2 Takten loopt FL im
+> Sekundentakt, und Live (Schritt 3) ist von Schleife (Schritt 5) nicht mehr
+> zu trennen. (3) Ein Vorwaertssprung braucht eine Zielposition hinter der
+> aktuellen — die erste Sprungrunde war versehentlich rein rueckwaerts und
+> wurde nachgemessen. Der Text unten ist unveraendert.
+
 **Dauer:** ca. 25 Minuten. **Du brauchst:** FL Studio, sonst nichts.
 
 ## Worum es geht

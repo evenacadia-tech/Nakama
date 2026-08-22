@@ -1,0 +1,114 @@
+{
+  "schema": "nakama.host-capabilities/v1",
+  "ticket": "SONDE-004 (S4, Capabilityreport aus FL-Termin A + B)",
+  "gemessen_am": "2026-08-22",
+  "host": {
+    "name": "FruityLoops",
+    "wrapper": "VST3",
+    "samplerate_hz": 44100.0,
+    "quelle": "host-probe-20260822-132644.json `host`/`wrapper`/`bloecke.samplerate`; aux-spike-*.json `host`/`wrapper`/`samplerate`"
+  },
+
+  "was_das_ist": "Entwurf §53.6: 'Capabilities sind maschinenlesbare Tatsachen aus Build UND laufendem Host. Ein Capabilitybit wird nur nach seinem Golden gesetzt.' Diese Datei traegt die zehn Bits des Vertrags fuer FL Studio, jedes mit dem Rohfeld, aus dem es gelesen wurde. §54 Exit-Gate: 'Kein unknown, spaeter pruefen darf P1 passieren' - deshalb gibt es nur supported|unsupported; was kein Geraet gemessen hat, ist unsupported mit seinem festen Fallback.",
+  "regel": "Ein Bit aendert sich nur mit einer neuen Messung (Datei in docs/beweise/termin-*/), nie mit einer Versionsnummer (§53.6 letzter Satz). Die `capabilities` hier sind genau das Objekt aus schemas/v3/eq-ipc-v3.schema.json $defs/capabilities - pruefe_host_capabilities.py validiert es dagegen.",
+
+  "capabilities": {
+    "host_context_presence": "supported",
+    "project_time_samples": "supported",
+    "sample_accurate_automation": "unsupported",
+    "presentation_latency": "supported",
+    "aux_compare_pre": "supported",
+    "aux_priority_sidechain": "supported",
+    "contribution_aux": "unsupported",
+    "float64_processing": "unsupported",
+    "binary_telemetry": "unsupported",
+    "remote_control": "unsupported"
+  },
+
+  "belege": {
+    "host_context_presence": {
+      "beweis_nach_53_6": "Wrapperfixture unterscheidet fehlenden/vorhandenen Context",
+      "termin": "B",
+      "rohfeld": "bloecke.mit_kontext = 259298, bloecke.ohne_kontext = 0, bruecke_liefert = true; ereignisse_je_art.kontext_weg = 0",
+      "datei": "docs/beweise/termin-b/host-probe-20260822-132644.json",
+      "zusatz": "Wrapperfixture: EqCopHostContextTest 91/91 (docs/beweise/SONDE-003.md)"
+    },
+    "project_time_samples": {
+      "beweis_nach_53_6": "FL Live/Seek/Loop/Render-Golden",
+      "termin": "B",
+      "rohfeld": "gueltig_immer.project_time_samples = true (ebenso continous_time_samples, tempo, ppq_position, bar_position, cycle_bounds, sample_rate); projektzeit.spruenge_vorwaerts = 2, spruenge_rueckwaerts = 51, spruenge_ueber_stop = 5, projektzeit_negativ = 0; bloecke.offline = 2587 mit offline_an/offline_aus je 1",
+      "datei": "docs/beweise/termin-b/host-probe-20260822-132644.json",
+      "zusatz": "Seeks ohne Stop werden in beide Richtungen als Sprung gemeldet (+49901, +65960, -38559, -298131, -18996, -533347); Loop-Wraps tragen exakt die Songlaenge (-539634/-539635); Play nach Stop mit Positionswechsel ist eine eigene Zeile (5)"
+    },
+    "sample_accurate_automation": {
+      "beweis_nach_53_6": "alle Queuepunkte und Offsets in Realtime/Render identisch",
+      "termin": "B",
+      "rohfeld": "automation.punkte_gesamt = 83303, max_punkte_pro_block = 1, bloecke_mit_mehrpunkt = 0, kleinster_offset = 0, groesster_offset = 0, samplegenau_belegt = false; bloecke.blockgroesse_min = 1, blockgroesse_max = 4096",
+      "datei": "docs/beweise/termin-b/host-probe-20260822-132644.json",
+      "fallback_nach_53_6": "Blockrampe; Topologieautomation aus",
+      "zusatz": "FL liefert nie mehr als einen Punkt je Block und nie einen Offset ungleich 0 - es zerteilt stattdessen die Puffer an den Automationspunkten bis auf 1 Sample (gemessen ~180-190 Samples je Block bei 140 bpm, 44100 Hz). Der Fallback 'Blockrampe' trifft damit FLs eigenes Verfahren; der DSP (SONDE-015) muss Bloecke von 1 Sample Laenge verkraften."
+    },
+    "presentation_latency": {
+      "beweis_nach_53_6": "Bus-spezifisches Impulsgolden",
+      "termin": "A + B",
+      "rohfeld": "B: presentation_latency.je_gemeldet = true, gemeldet = [eingang Bus 0 = 3924, ausgang Bus 0 = 4410], verworfene_wertwechsel = 1. A: busse[1].versatz_zu_main_samples = 0 und busse[2].versatz_zu_main_samples = 0 in beiden Laeufen (001701, 002722)",
+      "datei": "docs/beweise/termin-b/host-probe-20260822-132644.json; docs/beweise/termin-a/aux-spike-20260822-001701.json, -002722.json",
+      "zusatz": "FL meldet die Praesentationslatenz je Richtung (Eingang 3924, Ausgang 4410 Samples = 100 ms); der Impulsbeweis zeigt Aux-Wege ohne Versatz zum Hauptweg. Offen (NAK-43): EIN spaeterer Wertwechsel wurde von der Probe verworfen und nicht protokolliert - welcher Wert, ist unbekannt."
+    },
+    "aux_compare_pre": {
+      "beweis_nach_53_6": "getrenntes, recallstabiles FL-Auxlayout",
+      "termin": "A",
+      "rohfeld": "busse[2] (compare_pre): aktiv = true, kanaele = 2, protokoll_eingehalten = true, versatz_zu_main_samples = 0, versatz_zu_main_ms = 0.0 - in 001701 (vor Speichern) UND 002722 (nach Schliessen + Neuladen)",
+      "datei": "docs/beweise/termin-a/aux-spike-20260822-001701.json, -002722.json",
+      "zusatz": "Aufbau als 'Sidechain to this track' (docs/beweise/termin-a/LIES-MICH.md)"
+    },
+    "aux_priority_sidechain": {
+      "beweis_nach_53_6": "PDC-synchroner echter Sidechain",
+      "termin": "A",
+      "rohfeld": "busse[1] (priority_sidechain): aktiv = true, kanaele = 2, protokoll_eingehalten = true, versatz_zu_main_samples = 0, versatz_zu_main_ms = 0.0 - in beiden Laeufen",
+      "datei": "docs/beweise/termin-a/aux-spike-20260822-001701.json, -002722.json"
+    },
+    "contribution_aux": {
+      "beweis_nach_53_6": "diskrete, post-fader, nicht doppelte Beitraege",
+      "termin": "keiner",
+      "rohfeld": "nicht gemessen - kein Geraet misst die Main-Aux-Busse des Receivers (Entwurf-Errata (k), NAK-04-Nachtrag, termin-a/LIES-MICH.md)",
+      "fallback_nach_53_6": "nur Assoziation statt exakter Attribution",
+      "zusatz": "§54: 'Kein unknown, spaeter pruefen darf P1 passieren' - deshalb unsupported, bis ein Geraet es misst (SONDE-018 setzt es voraus: 'nur wenn G0/User-Termin A gruen war')."
+    },
+    "float64_processing": {
+      "beweis_nach_53_6": "echter Double-Callback plus DSP-/Nullgoldens",
+      "termin": "B",
+      "rohfeld": "bloecke.float = 259298, bloecke.double = 0; ereignisse_je_art.genauigkeit_double = 0",
+      "datei": "docs/beweise/termin-b/host-probe-20260822-132644.json",
+      "fallback_nach_53_6": "Host erhaelt nur deklarierte Floatfaehigkeit"
+    },
+    "binary_telemetry": {
+      "beweis_nach_53_6": "v3-CRC/Fuzz/Lasttest",
+      "termin": "keiner (kein Hostbit)",
+      "rohfeld": "Beweis entsteht mit SONDE-010 (Transport-Fuzz, Backpressure); bis dahin unsupported",
+      "fallback_nach_53_6": "reduzierte JSON-Kadenz, kein P0-Verlust"
+    },
+    "remote_control": {
+      "beweis_nach_53_6": "Pairing, HMAC, Revision, Lease und Revert bestanden",
+      "termin": "keiner (kein Hostbit)",
+      "rohfeld": "Beweis entsteht mit SONDE-016/017; bis dahin unsupported",
+      "fallback_nach_53_6": "Active nur lokal bedienbar"
+    }
+  },
+
+  "gemessene_hosttatsachen": {
+    "blockgroesse_min_samples": 1,
+    "blockgroesse_max_samples": 4096,
+    "automation_bloecke_je_loop_12_23_s": "2833-3003 (=> ~180-190 Samples je Block waehrend dichter Automation)",
+    "smart_disable": "keine Luecke in 12 s und 30 s stummer Wiedergabe bei eingeschaltetem Smart disable und OFFENEM Plugin-Fenster (block_ohne_verarbeitung = 0, kein zusaetzlicher zeitsprung_vor); ob FL bei geschlossenem Fenster pausiert, ist nicht gemessen",
+    "render": "offline_an/offline_aus je 1, 2587 Offline-Bloecke, Projektzeit im Render kontinuierlich, Transport-Ereignisse wie live",
+    "play_nach_pause": "setzte einmal 69 Samples VOR der Pauseposition wieder ein (Ereignis 13: 84922 -> 84853)",
+    "kontext_im_stand": "Kontext und Projektzeit 0 bereits im ersten Block, ohne Transport"
+  },
+
+  "offen": [
+    "NAK-43: presentation_latency - ein verworfener Wertwechsel ohne Protokoll (Probe haelt den ersten Wert); vor SONDE-009 die Probe um die Werthistorie erweitern oder den Fall in FL reproduzieren.",
+    "contribution_aux bleibt ungemessen, bis ein Geraet die Main-Aux-Busse misst.",
+    "Legacy-.flp-Fixture (SONDE-002, Klickliste B Teil 3) ist nicht angelegt."
+  ]
+}

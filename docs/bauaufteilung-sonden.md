@@ -25,7 +25,10 @@
   neu am 21.08.).
 - **Nachgezogen 22.08.:** S7 (`SONDE-006`) gebaut, Kanon **17 Beine** (B2
   `EqCopStateMigrationTest`, A12 `erzeuge_state_fixtures.py --pruefen`);
-  Manifest `docs/beweise/SONDE-006.md`. Nächste Fläche ohne FL-Termine: S8.
+  Manifest `docs/beweise/SONDE-006.md`. Danach am selben Tag **Termin B
+  gemessen und S4 gebaut** (Capabilityreport, Kanon **18 Beine** mit A13);
+  P0 ist damit bis auf **Gate G0** (T3, eigene Session) vollständig. Nächste
+  Flächen: G0, dann S8.
 
 ---
 
@@ -262,8 +265,8 @@ Umfangswirkung).
 | ~~S2~~ | `SONDE-001` + `002` | ~~Identität einfrieren~~ — **gebaut 20.08.**: Manifest aus dem gebauten `moduleinfo.json`, `EqCopIdentityTest` (63 Prüfungen: reservierte CIDs nachgerechnet, VST2-Pfad negativ bewiesen, **Freeze auch an der CMake-Quelle**), Schema-1-Goldens für alle vier Rollen. Die `.flp`-Legacy-Fixture bleibt ausdrücklich offen (nur in FL erzeugbar → Termin B). | T1 ✅ · T2 ✅ (Runde 1 und 2 NEEDS_WORK, **Runde 3 PASS** — `docs/beweise/SONDE-001-002.md` §5) |
 | ~~S3~~ | `SONDE-003` | ~~JUCE-Bridge-Patch: Context-Anwesenheit, Parameterpunkte, Buslatenz, Quellhash-Gate~~ — **gebaut 21.08.** (`1e91d54`): Patch mit neun Anker-genauen Stellen, Quellhash-Gate mit **allen drei Zweigen vorgeführt** (unberührt patcht + misst nach · gepatcht No-Op · fremd Bauabbruch), `EqCopHostContextTest` **91/91**, Kanon von 5/5 auf **6/6** gewachsen, `pluginval` Strenge 8 SUCCESS. Manifest `docs/beweise/SONDE-003.md`. **T2 brauchte drei Runden** — Runde 1 und 2 waren NEEDS_WORK und fanden je einen echten Vertragsbruch (der zweite eine Regression aus der ersten Nacharbeit); beide gefixt, beide Riegel nachweislich zum Fallen gebracht. | T1 ✅ · T2 ✅ |
 | ~~**S3b**~~ | — | ~~Nachtrag 21.08. — der Plan hat Termin B unterschätzt: eine Klickliste allein misst nichts.~~ — **gebaut 21.08.**: `EqCopHostProbe` (`NkHp`, Wegwerfware) ist das erste Ziel, das die Hostbrücke BENUTZT. Misst Context-Anwesenheit, Gültigkeitsbits (immer/manchmal/nie), Zeitsprünge für Seek·Loop·Smart Disable **mit Fehlalarm-Riegel**, Offline-Render, float/double, Presentation-Latency und samplegenaue Automation → JSON. Selbsttest **85/85** (89 nur mit PNG-Ziel, NAK-34), `pluginval` Strenge 8 SUCCESS, Kanon von 6/6 auf **7/7**. Klickliste `eq-copilot/docs/FL-TERMIN-B-HOSTZEIT.md` (inkl. Legacy-`.flp`-Fixture aus §54 Punkt 2). Manifest `docs/beweise/SONDE-003b.md`. **T2 brauchte vier Runden** — Runde 1 fand einen Blocker (der Editor schnitt genau die Automationszeilen ab; ich hatte das Gerät nie gerendert), Runde 2 eine Prüfung, die nicht fehlschlagen konnte, Runde 3 einen Zähler, der Blöcke statt Änderungen zählte. Alle gefixt, jeder Riegel nachweislich zum Fallen gebracht. | T1 ✅ · T2 ✅ |
-| — | — | **👤 User-Termin B (FL):** Live/Stop/Seek/Loop-Straddle/Render/Smart Disable | — |
-| S4 | — | Auswertung beider Termine → Capabilityreport mit Rohmessdaten | T1+T2 |
+| — | — | ~~**👤 User-Termin B (FL):** Live/Stop/Seek/Loop-Straddle/Render/Smart Disable~~ — **gemessen 22.08.** (User: Aufbau, Smart disable, Export, Bericht; Claude: Transport über FL-MCP). `docs/beweise/termin-b/` | — |
+| ~~S4~~ | — | ~~Auswertung beider Termine → Capabilityreport mit Rohmessdaten~~ — **gebaut 22.08.**: `eq-copilot/identity/host-capabilities-fl-v1.json` (zehn §53.6-Bits in der v3-Vertragsform, jedes mit Rohfeld), Kanon-Bein **A13** `pruefe_host_capabilities.py` (36 Prüfungen gegen die Rohdateien beider Termine). 5 supported, 5 unsupported — `sample_accurate_automation` unsupported, weil FL nie >1 Punkt je Block liefert (Puffer-Zerteilung bis 1 Sample), `contribution_aux` ungemessen ⇒ unsupported (§54). Manifest `docs/beweise/SONDE-004.md`. | T1 ✅ · T2 siehe Manifest §5 |
 | **G0** | — | **Gate:** `/c-review` (Bridge-Patch) + Codex. Falsifikation: Gate 1, Gate 5 | **T3** |
 
 `SONDE-003` ist das riskanteste kleine Ticket des ganzen Plans — ein

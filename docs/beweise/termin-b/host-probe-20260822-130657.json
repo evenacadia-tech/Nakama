@@ -1,0 +1,783 @@
+{
+  "schema": "nakama-hostprobe-1",
+  "erzeugt": "2026-08-22T13:06:57.321+02:00",
+  "host": "FruityLoops",
+  "wrapper": "VST3",
+  "bruecke_liefert": true,
+  "bloecke": {
+    "senke_aufrufe": 223425,
+    "verarbeitete_bloecke": 223425,
+    "mit_kontext": 223425,
+    "ohne_kontext": 0,
+    "offline": 2587,
+    "echtzeit": 220838,
+    "float": 223425,
+    "double": 0,
+    "samplerate": 44100.0,
+    "blockgroesse_min": 1,
+    "blockgroesse_max": 4096
+  },
+  "gueltig_mindestens_einmal": {
+    "project_time_samples": true,
+    "continous_time_samples": true,
+    "tempo": true,
+    "ppq_position": true,
+    "bar_position": true,
+    "cycle_bounds": true,
+    "sample_rate": true
+  },
+  "gueltig_immer": {
+    "project_time_samples": true,
+    "continous_time_samples": true,
+    "tempo": true,
+    "ppq_position": true,
+    "bar_position": true,
+    "cycle_bounds": true,
+    "sample_rate": true
+  },
+  "projektzeit": {
+    "spruenge_vorwaerts": 0,
+    "spruenge_rueckwaerts": 40,
+    "spruenge_ueber_stop": 3,
+    "projektzeit_negativ": 0,
+    "hinweis_vorwaertssprung": "Seek vorwaerts ODER Smart-Disable-Luecke - aus den Daten allein nicht unterscheidbar",
+    "groesster_sprung_vor": 0,
+    "groesster_sprung_zurueck": 539635,
+    "letzte_projektzeit": 1181,
+    "letztes_ppq": 0.0625,
+    "letztes_tempo": 140.0
+  },
+  "automation": {
+    "punkte_gesamt": 56542,
+    "max_punkte_pro_block": 1,
+    "bloecke_mit_mehrpunkt": 0,
+    "kleinster_offset": 0,
+    "groesster_offset": 0,
+    "ueberlaeufe": 0,
+    "unplausibel": 0,
+    "verworfene_letztwerte": 0,
+    "bloecke_ohne_zusicherung": 0,
+    "mehrpunkt_ohne_zusicherung": 0,
+    "samplegenau_belegt": false
+  },
+  "presentation_latency": {
+    "je_gemeldet": true,
+    "verworfene_busmeldungen": 0,
+    "verworfene_wertwechsel": 1,
+    "gemeldet": [
+      {
+        "richtung": "eingang",
+        "bus": 0,
+        "samples": 3924
+      },
+      {
+        "richtung": "ausgang",
+        "bus": 0,
+        "samples": 4410
+      }
+    ]
+  },
+  "ereignisse_je_art": {
+    "erster_block": 1,
+    "kontext_da": 1,
+    "kontext_weg": 0,
+    "transport_an": 6,
+    "transport_aus": 6,
+    "aufnahme_an": 0,
+    "aufnahme_aus": 0,
+    "schleife_an": 6,
+    "schleife_aus": 6,
+    "zeitsprung_vor": 0,
+    "zeitsprung_zurueck": 40,
+    "zeitsprung_ueber_stop": 3,
+    "projektzeit_negativ": 0,
+    "offline_an": 1,
+    "offline_aus": 1,
+    "genauigkeit_float": 1,
+    "genauigkeit_double": 0,
+    "latenz_gemeldet": 2,
+    "automation_punkt": 1,
+    "automation_mehrpunkt": 0,
+    "automation_unplausibel": 0,
+    "block_ohne_verarbeitung": 0
+  },
+  "ereignisse_gesamt": 75,
+  "ereignisse_gespeichert": 75,
+  "ereignisse": [
+    {
+      "art": "erster_block",
+      "block": 0,
+      "projektzeit": -1,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 0.0,
+      "ganzzahl": 182
+    },
+    {
+      "art": "kontext_da",
+      "block": 0,
+      "projektzeit": 0,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 0.0,
+      "ganzzahl": -1
+    },
+    {
+      "art": "latenz_gemeldet",
+      "block": 0,
+      "projektzeit": -1,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 3924.0,
+      "ganzzahl": 0
+    },
+    {
+      "art": "latenz_gemeldet",
+      "block": 0,
+      "projektzeit": -1,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 4410.0,
+      "ganzzahl": -1
+    },
+    {
+      "art": "genauigkeit_float",
+      "block": 1,
+      "projektzeit": -1,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 0.0,
+      "ganzzahl": 182
+    },
+    {
+      "art": "automation_punkt",
+      "block": 90685,
+      "projektzeit": 0,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 1.0,
+      "ganzzahl": 0
+    },
+    {
+      "art": "transport_an",
+      "block": 91505,
+      "projektzeit": 0,
+      "vorherige": 0,
+      "ppq": 0.0,
+      "zusatz": 0.0,
+      "ganzzahl": -1
+    },
+    {
+      "art": "schleife_an",
+      "block": 91505,
+      "projektzeit": 0,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 9.510416666666666,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 92505,
+      "projektzeit": 0,
+      "vorherige": 179550,
+      "ppq": 6.613756613756614e-6,
+      "zusatz": -179747.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 93506,
+      "projektzeit": 0,
+      "vorherige": 179550,
+      "ppq": 0.000013227513228,
+      "zusatz": -179747.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "transport_aus",
+      "block": 93979,
+      "projektzeit": 84922,
+      "vorherige": 84853,
+      "ppq": 4.489589947089947,
+      "zusatz": 0.0,
+      "ganzzahl": -1
+    },
+    {
+      "art": "schleife_aus",
+      "block": 93979,
+      "projektzeit": 84922,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 9.510416666666666,
+      "ganzzahl": 1
+    },
+    {
+      "art": "transport_an",
+      "block": 105979,
+      "projektzeit": 84853,
+      "vorherige": 84922,
+      "ppq": 4.489589947089947,
+      "zusatz": 0.0,
+      "ganzzahl": -1
+    },
+    {
+      "art": "zeitsprung_ueber_stop",
+      "block": 105979,
+      "projektzeit": 84853,
+      "vorherige": 84922,
+      "ppq": 4.489589947089947,
+      "zusatz": -69.0,
+      "ganzzahl": -1
+    },
+    {
+      "art": "schleife_an",
+      "block": 105979,
+      "projektzeit": 84853,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 9.510416666666666,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 106507,
+      "projektzeit": 0,
+      "vorherige": 179550,
+      "ppq": 0.000019841269841,
+      "zusatz": -179747.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 107508,
+      "projektzeit": 0,
+      "vorherige": 179550,
+      "ppq": 0.0,
+      "zusatz": -179746.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 108508,
+      "projektzeit": 0,
+      "vorherige": 179550,
+      "ppq": 0.0,
+      "zusatz": -179747.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 109508,
+      "projektzeit": 0,
+      "vorherige": 179550,
+      "ppq": 0.0,
+      "zusatz": -179747.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 110509,
+      "projektzeit": 0,
+      "vorherige": 179550,
+      "ppq": 0.0,
+      "zusatz": -179747.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 111509,
+      "projektzeit": 0,
+      "vorherige": 179550,
+      "ppq": 0.0,
+      "zusatz": -179747.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 112509,
+      "projektzeit": 0,
+      "vorherige": 179550,
+      "ppq": 6.613756613756614e-6,
+      "zusatz": -179747.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 113510,
+      "projektzeit": 0,
+      "vorherige": 179550,
+      "ppq": 0.000013227513228,
+      "zusatz": -179747.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 114510,
+      "projektzeit": 0,
+      "vorherige": 179550,
+      "ppq": 0.000019841269841,
+      "zusatz": -179747.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 115511,
+      "projektzeit": 1,
+      "vorherige": 179550,
+      "ppq": 0.000026455026455,
+      "zusatz": -179746.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 116511,
+      "projektzeit": 0,
+      "vorherige": 179737,
+      "ppq": 0.0,
+      "zusatz": -179747.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 117510,
+      "projektzeit": 0,
+      "vorherige": 179550,
+      "ppq": 0.0,
+      "zusatz": -179747.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 118511,
+      "projektzeit": 0,
+      "vorherige": 179550,
+      "ppq": 0.0,
+      "zusatz": -179747.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 119510,
+      "projektzeit": 0,
+      "vorherige": 179550,
+      "ppq": 0.0,
+      "zusatz": -179747.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "transport_aus",
+      "block": 119871,
+      "projektzeit": 0,
+      "vorherige": 64772,
+      "ppq": 0.0,
+      "zusatz": 0.0,
+      "ganzzahl": -1
+    },
+    {
+      "art": "schleife_aus",
+      "block": 119871,
+      "projektzeit": 0,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 9.510416666666666,
+      "ganzzahl": 1
+    },
+    {
+      "art": "transport_an",
+      "block": 138927,
+      "projektzeit": 0,
+      "vorherige": 0,
+      "ppq": 0.0,
+      "zusatz": 0.0,
+      "ganzzahl": -1
+    },
+    {
+      "art": "schleife_an",
+      "block": 138927,
+      "projektzeit": 0,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 28.552083333333332,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 141930,
+      "projektzeit": 0,
+      "vorherige": 539438,
+      "ppq": 0.0,
+      "zusatz": -539634.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 144933,
+      "projektzeit": 0,
+      "vorherige": 539438,
+      "ppq": 0.000013227513228,
+      "zusatz": -539635.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 147936,
+      "projektzeit": 0,
+      "vorherige": 539437,
+      "ppq": 0.0,
+      "zusatz": -539634.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 150938,
+      "projektzeit": 1,
+      "vorherige": 539438,
+      "ppq": 0.000026455026455,
+      "zusatz": -539634.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 153942,
+      "projektzeit": 0,
+      "vorherige": 539438,
+      "ppq": 6.613756613756614e-6,
+      "zusatz": -539635.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 155612,
+      "projektzeit": 1969,
+      "vorherige": 300037,
+      "ppq": 0.104166666666667,
+      "zusatz": -298131.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 158604,
+      "projektzeit": 0,
+      "vorherige": 539438,
+      "ppq": 0.000019841269841,
+      "zusatz": -539635.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 158712,
+      "projektzeit": 394,
+      "vorherige": 19293,
+      "ppq": 0.020833333333333,
+      "zusatz": -18996.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 161687,
+      "projektzeit": 1575,
+      "vorherige": 534910,
+      "ppq": 0.083333333333333,
+      "zusatz": -533347.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 164681,
+      "projektzeit": 0,
+      "vorherige": 539437,
+      "ppq": 0.0,
+      "zusatz": -539634.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "transport_aus",
+      "block": 165574,
+      "projektzeit": 1575,
+      "vorherige": 160257,
+      "ppq": 0.083333333333333,
+      "zusatz": 0.0,
+      "ganzzahl": -1
+    },
+    {
+      "art": "schleife_aus",
+      "block": 165574,
+      "projektzeit": 1575,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 28.552083333333332,
+      "ganzzahl": 1
+    },
+    {
+      "art": "transport_an",
+      "block": 170464,
+      "projektzeit": 984,
+      "vorherige": 984,
+      "ppq": 0.052083333333333,
+      "zusatz": 0.0,
+      "ganzzahl": -1
+    },
+    {
+      "art": "zeitsprung_ueber_stop",
+      "block": 170464,
+      "projektzeit": 984,
+      "vorherige": 1575,
+      "ppq": 0.052083333333333,
+      "zusatz": -591.0,
+      "ganzzahl": -1
+    },
+    {
+      "art": "schleife_an",
+      "block": 170464,
+      "projektzeit": 984,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 28.552083333333332,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 173462,
+      "projektzeit": 0,
+      "vorherige": 539608,
+      "ppq": 0.0,
+      "zusatz": -539634.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 176465,
+      "projektzeit": 0,
+      "vorherige": 539438,
+      "ppq": 0.0,
+      "zusatz": -539634.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 176904,
+      "projektzeit": 0,
+      "vorherige": 78750,
+      "ppq": 0.0,
+      "zusatz": -78836.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 177868,
+      "projektzeit": 0,
+      "vorherige": 173053,
+      "ppq": 0.0,
+      "zusatz": -173250.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 178833,
+      "projektzeit": 0,
+      "vorherige": 173053,
+      "ppq": 0.0,
+      "zusatz": -173250.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 179796,
+      "projektzeit": 0,
+      "vorherige": 173053,
+      "ppq": 0.0,
+      "zusatz": -173250.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 180761,
+      "projektzeit": 0,
+      "vorherige": 173053,
+      "ppq": 0.0,
+      "zusatz": -173250.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 181725,
+      "projektzeit": 0,
+      "vorherige": 173053,
+      "ppq": 0.0,
+      "zusatz": -173250.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 182689,
+      "projektzeit": 0,
+      "vorherige": 173053,
+      "ppq": 0.0,
+      "zusatz": -173250.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 183654,
+      "projektzeit": 0,
+      "vorherige": 173053,
+      "ppq": 0.0,
+      "zusatz": -173250.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 184617,
+      "projektzeit": 0,
+      "vorherige": 173053,
+      "ppq": 0.0,
+      "zusatz": -173250.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "transport_aus",
+      "block": 185030,
+      "projektzeit": 0,
+      "vorherige": 74222,
+      "ppq": 0.0,
+      "zusatz": 0.0,
+      "ganzzahl": -1
+    },
+    {
+      "art": "schleife_aus",
+      "block": 185030,
+      "projektzeit": 0,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 9.166666666666666,
+      "ganzzahl": 1
+    },
+    {
+      "art": "transport_an",
+      "block": 205738,
+      "projektzeit": 0,
+      "vorherige": 0,
+      "ppq": 0.0,
+      "zusatz": 0.0,
+      "ganzzahl": -1
+    },
+    {
+      "art": "schleife_an",
+      "block": 205738,
+      "projektzeit": 0,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 28.552083333333332,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 208741,
+      "projektzeit": 0,
+      "vorherige": 539438,
+      "ppq": 0.0,
+      "zusatz": -539634.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 211744,
+      "projektzeit": 0,
+      "vorherige": 539438,
+      "ppq": 0.000013227513228,
+      "zusatz": -539635.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "zeitsprung_zurueck",
+      "block": 214747,
+      "projektzeit": 0,
+      "vorherige": 539437,
+      "ppq": 0.0,
+      "zusatz": -539634.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "transport_aus",
+      "block": 215369,
+      "projektzeit": 0,
+      "vorherige": 111628,
+      "ppq": 0.0,
+      "zusatz": 0.0,
+      "ganzzahl": -1
+    },
+    {
+      "art": "schleife_aus",
+      "block": 215369,
+      "projektzeit": 0,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 28.552083333333332,
+      "ganzzahl": 1
+    },
+    {
+      "art": "transport_an",
+      "block": 219727,
+      "projektzeit": 1181,
+      "vorherige": 1181,
+      "ppq": 0.0625,
+      "zusatz": 0.0,
+      "ganzzahl": -1
+    },
+    {
+      "art": "zeitsprung_ueber_stop",
+      "block": 219727,
+      "projektzeit": 1181,
+      "vorherige": 0,
+      "ppq": 0.0625,
+      "zusatz": 1181.0,
+      "ganzzahl": -1
+    },
+    {
+      "art": "schleife_an",
+      "block": 219727,
+      "projektzeit": 1181,
+      "vorherige": -1,
+      "ppq": 0.0625,
+      "zusatz": 27.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "offline_an",
+      "block": 219728,
+      "projektzeit": -1,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 0.0,
+      "ganzzahl": 197
+    },
+    {
+      "art": "transport_aus",
+      "block": 222313,
+      "projektzeit": 510300,
+      "vorherige": 510103,
+      "ppq": 0.0625,
+      "zusatz": 0.0,
+      "ganzzahl": -1
+    },
+    {
+      "art": "schleife_aus",
+      "block": 222313,
+      "projektzeit": 510300,
+      "vorherige": -1,
+      "ppq": 0.0625,
+      "zusatz": 27.0,
+      "ganzzahl": 1
+    },
+    {
+      "art": "offline_aus",
+      "block": 222315,
+      "projektzeit": -1,
+      "vorherige": -1,
+      "ppq": 0.0,
+      "zusatz": 0.0,
+      "ganzzahl": 197
+    }
+  ]
+}

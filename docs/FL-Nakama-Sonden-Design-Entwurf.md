@@ -193,7 +193,15 @@ Befund: beide Termine sind **noch nicht gelaufen** —
 `%APPDATA%\evenacadia\nakama\spike\` ist leer (gemessen 21.08.); S4
 (Capabilityreport) und Gate G0 warten; der Schließungsvorbehalt §65 für
 `SONDE-005` bleibt. Bis dahin baut die Technik S7 (`SONDE-006`, State-Schema 2),
-danach S8 (`SONDE-007a`).
+danach S8 (`SONDE-007a`). **Nachtrag 22.08.2026 (Befund):** beide Termine sind
+gemessen (`docs/beweise/termin-a/`, `termin-b/`), S4 ist gebaut
+(`docs/beweise/SONDE-004.md`, `eq-copilot/identity/host-capabilities-fl-v1.json`).
+Die §53.6-Bits für FL: `sample_accurate_automation` ist **unsupported** — FL
+legt nie mehr als einen Punkt je Block in die Queue und zerteilt stattdessen die
+Puffer bis auf 1 Sample (§53.7/§53.8 „Blockrampe" ist damit FLs eigenes
+Verfahren); `float64_processing` unsupported; `contribution_aux` ungemessen ⇒
+unsupported (§54). Der Schließungsvorbehalt für `SONDE-005` kann fallen, sobald
+G0 gelaufen ist.
 
 **(l) §0.4 „Vom User festgelegt" (Technik voraus, Design parallel).** Befund:
 dafür existiert kein Wortlaut des Users; was er festgelegt hat, ist die

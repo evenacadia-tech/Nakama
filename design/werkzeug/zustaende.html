@@ -1,0 +1,1281 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nakama — Main · Die Zustände</title>
+<style>
+/* Werkzeug-Chrome (deutsch). Das Produkt darin ist englisch. */
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#737373;color:#1d1d1d;
+  font:14px/1.45 'Segoe UI',system-ui,sans-serif;min-height:100vh;
+  display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+header{padding:16px 26px 4px}
+.stufe{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#3a3a3a}
+h1{font-size:22px;font-weight:600;letter-spacing:-.01em;margin-top:4px}
+.unter{font-size:13px;color:#3d3d3d;max-width:960px;margin-top:5px}
+main{flex:1;display:flex;align-items:flex-start;justify-content:center;
+  padding:18px 22px;gap:20px;flex-wrap:wrap;align-content:flex-start}
+footer{padding:12px 26px 20px;display:flex;gap:10px;align-items:center;
+  flex-wrap:wrap;border-top:1px solid #8a8a8a}
+button.k{font:inherit;font-size:12.5px;padding:8px 13px;border:1px solid #4a4a4a;
+  background:#818181;color:#141414;cursor:pointer;border-radius:2px}
+button.k:hover{background:#8d8d8d}
+button.k:disabled{opacity:.38;cursor:default}
+button.k.dunkel{background:#242424;color:#eee;border-color:#242424}
+button.k.an{background:#242424;color:#eee;border-color:#242424}
+textarea.ablehn{width:100%;max-width:880px;height:66px;font:inherit;font-size:13px;
+  padding:9px;background:#8a8a8a;border:1px solid #4a4a4a;color:#141414;resize:vertical}
+.hinw{margin-left:auto;font-size:11.5px;color:#3d3d3d}
+#band{padding:6px 26px;font-size:12px;display:flex;gap:12px;align-items:center}
+#band.ok{background:#5c6b5c;color:#eaf2ea}
+#band.warn{background:#6b5c3c;color:#f4ead6}
+#band button{font:inherit;font-size:11.5px;padding:3px 10px;border:1px solid #4a4a4a;
+  background:#8a8a8a;color:#141414;cursor:pointer;border-radius:2px}
+.aufgaben{display:none;margin:8px 0 0;padding:10px 14px;background:#8a8a8a;
+  border:1px solid #6a6a6a;max-width:960px;font-size:12.5px}
+body.aufgabenAn .aufgaben{display:block}
+.aufgaben ol{margin:6px 0 0 18px}
+.aufgaben li{margin:2px 0}
+.aufgaben em{font-style:normal;color:#3f3f3f}
+.wahl{position:relative;padding:0;border:0;background:transparent;
+  display:flex;flex-direction:column;gap:5px;text-align:left}
+.wahl .nr{position:absolute;top:-10px;left:-10px;width:22px;height:22px;border-radius:50%;
+  background:#2a2a2a;color:#e8e8e8;font-size:11px;font-weight:700;z-index:6;
+  display:flex;align-items:center;justify-content:center}
+.wahl::after{content:'';position:absolute;inset:-7px;border:2px solid transparent;
+  transition:border-color .12s;pointer-events:none}
+.wahl:hover::after{border-color:#2a2a2a}
+.wahl.eng::after{border-color:#111;border-width:3px}
+.mech{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#3f3f3f}
+.these{font-size:11.5px;line-height:1.4;color:#242424;display:none}
+body.thesen .these{display:block}
+
+/* Der Dauerhaft-Vertrag der Mechanik. Werkzeug-Chrome, deutsch — er sagt
+   ueber das Blatt etwas aus, er ist nicht Teil des Blattes.
+   Gemessen: dauerhaft = steht in ALLEN drei Arbeitsschritten da. */
+.vertrag{display:none;flex-direction:column;gap:3px;margin-top:2px}
+body.vertragAn .vertrag{display:flex}
+.vertrag > span{display:flex;flex-wrap:wrap;gap:4px;align-items:baseline}
+.vertrag i{font-style:normal;font-size:9px;letter-spacing:.12em;
+  text-transform:uppercase;width:112px;flex:none;color:#3f3f3f}
+.vertrag span span{font-size:10.5px;padding:2px 6px;border:1px solid #6a6a6a;
+  white-space:nowrap}
+.dauer span{background:#2a2a2a;color:#ececec;border-color:#2a2a2a}
+.dauer b{font-weight:700}
+.abrufz span{background:transparent;color:#2f2f2f;border-style:dashed}
+/* Ein Baustein ohne Beleg ist ein erfundener Baustein. */
+.vertrag span span.ohnebeleg{background:#7a2f1f;color:#fff;border-color:#7a2f1f}
+
+/* ============================================================
+   WIREFRAME — reine Graustufen. Kein Farbton, kein Material,
+   kein Licht. Der Inhalt ist englisch, weil er das Produkt ist.
+   ============================================================ */
+.rahmen{position:relative;--s:.58;overflow:hidden;
+  width:calc(760px * var(--s));height:calc(430px * var(--s))}
+.rahmen .wf{transform:scale(var(--s));transform-origin:0 0}
+.rahmen.gross{--s:1}   /* Zweikampf: 1:1, sonst ist das Urteil wertlos */
+@media (max-width:1600px){ .rahmen{--s:.52} .rahmen.gross{--s:.92} }
+@media (max-width:1300px){ .rahmen{--s:.46} .rahmen.gross{--s:.82} }
+
+/* Flex-Spalte statt Gitter — und das ist keine Technikfrage, sondern die
+   vom User eingezeichnete Regel: flex-basis:auto verteilt den Ueberschuss
+   ZUSAETZLICH zur natuerlichen Groesse. "1fr 1fr" wuerde die Gesamthoehe
+   halbieren; gemessen an der gelben Linie (250 px) waere das 229 — falsch.
+   Die Karte darf wachsen, aber nicht schrumpfen: sie ist das dauerhafte
+   Ding und muss ihr Versprechen halten. Der Druck landet unten, wo das
+   Blatt ehrlich sagt, was fehlt. */
+.wf{width:760px;height:430px;background:#242424;color:#c9c9c9;overflow:hidden;
+  border:1px solid #5c5c5c;display:flex;flex-direction:column;gap:8px;padding:8px;
+  font:12px/1.4 'Segoe UI',system-ui,sans-serif}
+.wf > *{min-width:0;min-height:0}
+.wf > .streifen{flex:none}
+.wf > .karte{display:flex;flex:1 0 auto}
+.wf > .arbeit{display:flex;gap:8px;flex:1 1 auto}
+/* flex:1 ist Pflicht, nicht Kosmetik: ohne das sind die Kaesten inhaltsbreit
+   statt blattbreit, und ein 760er Blatt wird auf 240 px beurteilt. Tote
+   Flaeche gilt in docs/arbeitsplan.md ausdruecklich als Fehler. */
+.box{border:1px solid #4c4c4c;background:#2e2e2e;display:flex;flex-direction:column;
+  overflow:hidden;min-width:0;min-height:0;flex:1}
+.box > h4{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#8f8f8f;
+  padding:5px 9px 4px;border-bottom:1px solid #414141;flex:none;
+  display:flex;gap:8px;align-items:baseline}
+.box > h4 em{font-style:normal;margin-left:auto;color:#6f6f6f;letter-spacing:.08em}
+.box > h4 .zaehler{font-style:normal;margin-left:8px;padding-left:8px;
+  border-left:1px solid #454545;color:#8f8f8f;letter-spacing:.06em}
+.box > h4 .zaehler:empty{display:none}
+.box > h4 .zaehler.knapp{color:#e4e4e4}
+.inh{padding:7px 9px;flex:1;overflow:hidden;display:flex;flex-direction:column;gap:5px}
+
+.streifen{border:1px solid #4c4c4c;background:#2e2e2e;display:flex;
+  align-items:center;padding:0 9px;min-width:0;overflow:hidden}
+.eb{font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:6px 11px;
+  color:#9a9a9a;border-right:1px solid #414141}
+.eb:first-child{padding-left:0}
+.eb.an{background:#4a4a4a;color:#e8e8e8}
+.status{margin-left:auto;font-size:10px;color:#8f8f8f;display:flex;gap:12px;
+  overflow:hidden;flex:none}
+.status span{white-space:nowrap}
+.pkt{display:inline-block;width:5px;height:5px;border-radius:50%;background:#9a9a9a;
+  margin-right:4px;vertical-align:1px}
+.pkt.alt{background:#6a6a6a}
+.pkt.weg{background:transparent;border:1px solid #6a6a6a}
+
+
+/* Ehrliche Liste. Zeigt nur, was ganz hineinpasst, und sagt darunter, wieviel
+   das von wieviel ist. Vorher log das Blatt: "11 of 16" stand im Kopf, fuenf
+   Zeilen waren zu sehen, elf im DOM — der Rest lag unsichtbar unter der Kante. */
+.liste{flex:1;min-height:0;display:flex;flex-direction:column;gap:inherit;
+  overflow:hidden}
+.hm .liste{gap:2px}
+.as .liste{gap:2px}
+.kappe{flex:none;font-size:8.5px;letter-spacing:.08em;color:#8f8f8f;
+  border-top:1px dashed #5a5a5a;padding-top:3px;margin-top:2px;
+  display:flex;gap:6px;align-items:center}
+.kappe::before{content:'';flex:none;width:9px;height:1px;background:#7d7d7d}
+
+
+.hm{display:flex;flex-direction:column;gap:2px;flex:1;min-height:0}
+.hmk{display:flex;gap:2px;font-size:8px;color:#7d7d7d;letter-spacing:.06em}
+.hmk span{flex:1;text-align:center}
+.hmz{display:flex;align-items:stretch;gap:5px;flex:1;min-height:8px}
+/* Eine Zeile, die einen Namen traegt, darf nie flacher sein als der Name.
+   Kein geratener Wert: max-content ist genau die Inhaltshoehe. Vorher stand
+   hier 8 px, der Name misst mehr — der Deckel lag unter dem Inhalt. */
+.hmz.benannt{min-height:max-content}
+.hmz .n{width:76px;font-size:10px;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;flex:none;align-self:center}
+.hmz .z{display:flex;gap:2px;flex:1}
+.hmz .z i{flex:1;display:block;height:100%;min-height:7px}
+/* Kontextzeilen bleiben sichtbar, aber flach — das ist Focus+Context.
+   Auch die Zellen muessen mitschrumpfen: eine 5-px-Zeile mit 7-px-Zellen
+   ist wieder ein Deckel unter dem Inhalt. */
+.hmz.ctx{flex:none;height:5px;min-height:0;opacity:.5}
+.hmz.ctx .n{font-size:0}
+.hmz.ctx .z i{min-height:0}
+.hmz.fokus{flex:4}
+.hmz.fokus .n{font-size:11px;color:#e4e4e4}
+.markiert{outline:1px solid #a8a8a8;outline-offset:1px}
+
+/* ---- Zustaende in der Karte, rein in Graustufen ----
+   gefuellt = frisch - hohl = veraltet (Daten da, aber alt) -
+   leer mit Strichlinie = getrennt (keine Daten, und das ehrlich).
+   Keine Zeile aendert dabei ihre Hoehe: der Zustand darf das Bild nicht
+   verzerren, sonst liest man Energie, wo Alter gemeint ist. */
+.hmz.zust-alt .z i{background:transparent !important;
+  box-shadow:inset 0 0 0 1px #5a5a5a}
+.hmz.zust-weg .z i{background:transparent !important;
+  border-top:1px dashed #4a4a4a}
+.hmz .marke{flex:none;align-self:center;margin-right:2px}
+/* Leerzustand: ein leeres Feld ohne Erklaerung waere ein Ausfall,
+   kein Zustand. */
+.leerHinweis{flex:1;display:flex;flex-direction:column;gap:4px;
+  align-items:center;justify-content:center;color:#8f8f8f;font-size:11px;
+  border:1px dashed #4a4a4a;text-align:center;padding:10px}
+.leerHinweis b{font-size:13px;color:#c9c9c9;font-weight:400}
+
+/* ---- Die drei Orte, an denen der Zustand leben kann ----
+   Alles in Graustufen: Helligkeit, Rahmen, Schraffur, Groesse. Kein Farbton.
+   Fluechtig sieht anders aus als bleibend — das ist der ganze Punkt. */
+.eb.haelt{background:#e4e4e4;color:#1a1a1a}
+.lage{font-size:9.5px;letter-spacing:.08em;margin-left:14px;color:#7d7d7d;
+  white-space:nowrap}
+.lage.haelt{color:#1a1a1a;background:#e4e4e4;padding:2px 8px}
+.lage.bleibt{color:#e4e4e4;border-left:3px solid #9a9a9a;padding:2px 8px}
+.wfk.aus{opacity:.5}
+.wfk[data-griff]{cursor:pointer;user-select:none}
+.wfk[data-griff]:hover{background:#4a4a4a}
+.wfk.gedrueckt{background:#e4e4e4;color:#1a1a1a;border-color:#e4e4e4}
+
+.rahmen .wf{position:relative}
+
+/* Variante 3: die betroffene Zeile traegt den Zustand. */
+/* outline-offset:1px reichte 3 px ueber die Zeilenbox, der Zeilenabstand ist
+   2 px — die Markierung deckte je 1 px der Nachbarzeile ab. Outlines aendern
+   keine Scroll-Masse, ueberlauf() kann das nicht sehen. */
+.hmz.w-haelt{outline:2px solid #e4e4e4;outline-offset:0}
+.hmz.w-bleibt{box-shadow:-4px 0 0 #9a9a9a}
+.hmz .anz{width:18px;flex:none;text-align:right;font-size:9px;color:#8f8f8f;
+  align-self:center}
+.hmk .anz{width:18px;flex:none;text-align:right}
+
+.bf{border:1px solid #454545;background:#333;padding:5px 7px;display:flex;
+  flex-direction:column;gap:2px}
+.bf b{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;
+  font-weight:400}
+.bf span{font-size:10.5px;color:#c9c9c9}
+.bf i{font-style:normal;font-size:9px;color:#7d7d7d}
+.bf.an{background:#3d3d3d;border-color:#6a6a6a}
+/* Geschlossener Befund: Ort und Sicherheit bleiben lesbar, die Begruendung
+   ist einen Griff entfernt. Eine Zeile, kein Kaestchen im Kaestchen. */
+.bf.zu{flex-direction:row;align-items:baseline;gap:8px;background:#292929;
+  padding:3px 7px}
+.bf.zu i{margin-left:auto}
+
+/* Die fuenf Teile sind Pflicht (Spezifikation), die Abstaende sind es nicht.
+   Bei 16 Quellen laesst die Karte der Arbeitsflaeche 156 px; der Assistent
+   brauchte 172. Die 16 px kommen aus den Abstaenden, nicht aus dem Inhalt
+   und nicht aus der Schriftgroesse — gemessen, nicht bis zum Passen gedreht. */
+.as{display:flex;flex-direction:column;gap:3px;flex:1;min-height:0}
+.ast{display:flex;gap:8px;align-items:baseline}
+.ast b{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:#7d7d7d;
+  width:96px;flex:none;font-weight:400}
+.ast span{font-size:11px;color:#c9c9c9;flex:1}
+.as.gross .ast b{width:116px;font-size:9.5px}
+.as.gross .ast span{font-size:14px}
+.knopfreihe{display:flex;gap:5px;margin-top:auto;padding-top:4px;flex-wrap:wrap}
+.wfk{font-size:9.5px;letter-spacing:.06em;padding:4px 9px;border:1px solid #5a5a5a;
+  color:#c2c2c2;background:#3a3a3a;white-space:nowrap}
+.wfk.stark{background:#5a5a5a;color:#eee}
+
+.kurve{flex:1;border:1px solid #454545;background:#282828;position:relative;
+  min-height:0}
+.kurve svg{position:absolute;inset:0;width:100%;height:100%}
+.detailz{display:flex;gap:5px;font-size:9px;color:#8f8f8f}
+.detailz span{flex:1;border:1px solid #454545;background:#282828;padding:3px 5px}
+.vg{display:flex;gap:6px;flex:1;min-height:0}
+.vg > div{flex:1;border:1px solid #454545;background:#282828;padding:6px 7px;
+  font-size:10px;color:#9a9a9a;display:flex;flex-direction:column;gap:4px}
+.vg b{font-size:9px;letter-spacing:.12em;text-transform:uppercase;font-weight:400;
+  color:#8f8f8f}
+
+</style>
+</head>
+<body>
+<!-- Standband: was ist dieses Blatt? Werkzeug-Chrome, deutsch, liegt
+     ausserhalb des beurteilten Blattes. Ergaenzt 2026-08-21. -->
+<div style="background:#3c5140;color:#f2f2f2;padding:7px 26px;font:12px/1.5 'Segoe UI',system-ui,sans-serif;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+  <b style="letter-spacing:.12em;font-size:10.5px;text-transform:uppercase;flex:none">Aktueller Main-Entwurf — hier weiterarbeiten</b>
+  <span style="opacity:.92">Die Frage dieses Blattes ist <b>entschieden</b>: „nur die Ausnahme spricht" (abnahmen/2026-08-20-zustaende-nur-ausnahme.md). Die drei Kacheln stehen als <b>Beleg</b> nebeneinander, nicht mehr zur Wahl. Wer hier weiterbaut, baut auf Variante&nbsp;3.</span>
+</div>
+<!-- Demo-Kennzeichnung. CLAUDE.md, harte Regel 6: "Demo-Daten sind erlaubt,
+     aber realistisch UND sichtbar als Demo gekennzeichnet." werkzeug/LIES-MICH.md,
+     Prinzip 6: die Marke gehoert zum Werkzeug, nicht ins Spezimen — sonst waere
+     sie Teil dessen, was beurteilt wird. Ergaenzt 2026-08-21; vorher fand
+     `grep -i demo` in diesem Blatt null Treffer. -->
+<div style="padding:5px 26px;font:11.5px/1.5 'Segoe UI',system-ui,sans-serif;color:#3d3d3d;background:#828282;border-bottom:1px solid #6f6f6f">
+  <b>Demo-Daten</b> — Lead Vocal · Choir · Piano · Drums · Bass · … sind erfunden, aber realistisch gewählt (das Beispiel der Spezifikation). Kein echter Mix, keine echte Messung.
+</div>
+
+<div id="band"></div>
+<header>
+  <div class="stufe" id="stufe">Stufe 2 · Main · Overview + Detail — die Karte</div>
+  <h1 id="frage">Was trägt die Karte, die immer da ist?</h1>
+  <div class="unter" id="unter">Der Main-Entwurf steht bis hierher: <b>Overview +
+    Detail</b>, die Karte trägt jede Quelle, Vorhören markiert die betroffene Zeile.
+    Offen ist der letzte Punkt der Spezifikation:<br>
+    <b>„Zustände, die immer ablesbar sein müssen: Quelle frisch / veraltet / getrennt;
+    Messung läuft / unvollständig; eine Funktion ist auf diesem System nicht verfügbar
+    (degradiert) — ehrlich zeigen, nie kaschieren."</b><br>
+    Bisher stehen sie <i>nur als Text im Streifen</i>. Die Karte trägt sechzehn Zeilen,
+    die alle gleich aussehen — obwohl drei davon veraltet oder getrennt sind. Das Blatt
+    weiß also mehr, als es sagt.<br>
+    <b>Drei Sorten Zustand, und sie werden hier auseinandergehalten:</b> je Quelle
+    (frisch/veraltet/getrennt) · global (Messung) · die App selbst (degradierte
+    Funktion). Nur die erste ist die Variable — die anderen beiden bleiben in allen
+    drei Kacheln gleich.<br>
+    <b>Unten steht die Zustandsmatrix zum Durchschalten</b>, inklusive der unschönen
+    Fälle: alles getrennt, keine Quelle, Messung nicht gestartet. Ein Blatt, das nur
+    im Schönfall geprüft wurde, ist nicht geprüft. Graustufen.</div>
+  <div class="aufgaben" id="aufgaben">
+    <b>Die Aufgabenliste nach Häufigkeit</b> — laut <code>docs/DESIGN-GESETZE.md</code>
+    die Voraussetzung für jedes Wireframe. Geteilt wird nach Häufigkeit der Aufgabe,
+    nicht nach Können des Nutzers.
+    <ol>
+      <li><b>Den Mix lesen</b> — bei jedem Sessionstart. <em>sehr häufig</em></li>
+      <li><b>Einen Befund verstehen</b> — Ort, Grund, Sicherheit.
+        <em>der Kernakt, vielfach je Session</em></li>
+      <li><b>Den kleinsten Versuch machen</b> — vorhören, anwenden.
+        <em>folgt jedem Befund</em></li>
+      <li><b>Urteilen</b> — A/B, behalten oder verwerfen. <em>folgt jedem Versuch</em></li>
+      <li><b>Eine bestimmte Quelle finden</b> — Suche, Pinnen. <em>gelegentlich</em></li>
+      <li><b>Rollen und Fokusgruppen setzen</b> — <em>selten, meist einmal je Projekt</em></li>
+      <li><b>Status ablesen</b> — Frische, laufende Messung, degradierte Funktion.
+        <em>ständig nebenbei, nie das Ziel</em></li>
+    </ol>
+  </div>
+</header>
+<main id="buehne"></main>
+<footer id="fuss"></footer>
+
+<script>
+/* ================================================================
+   NAKAMA — WIREFRAME MAIN
+   Stufe 2 / Schritt 1. Varianten unterscheiden sich in der
+   Disclosure-Mechanik (docs/DESIGN-GESETZE.md, Regel 3):
+   Schritt-fuer-Schritt · Focus+Context · Overview+Detail ·
+   nur-auf-Abruf · semantischer Zoom.
+   Produkttexte englisch (CLAUDE.md, Arbeitsweise).
+   ================================================================ */
+
+const SOURCES = [
+  ['Lead Vocal','leads','ok',[1,2,3,5,4,4,3,2,1]],
+  ['Choir','carries','ok',[1,1,3,4,4,5,4,3,2]],
+  ['Piano','carries','ok',[1,3,5,4,3,3,2,2,1]],
+  ['Drums','carries','ok',[4,5,3,2,2,3,4,5,3]],
+  ['Bass','carries','alt',[5,5,4,2,1,1,1,0,0]],
+  ['Guitar','supports','ok',[0,1,3,4,4,4,3,2,1]],
+  ['Strings','supports','ok',[1,2,3,4,4,4,4,3,2]],
+  ['Synth Pad','blended','weg',[1,2,3,3,3,3,4,4,3]],
+  ['Brass','supports','ok',[0,1,2,4,5,4,4,3,2]],
+  ['Percussion','supports','ok',[1,2,2,3,3,4,5,5,4]],
+  ['Double Bass','carries','ok',[5,4,3,2,1,1,0,0,0]],
+  ['Harp','supports','ok',[0,1,2,4,4,3,3,2,1]],
+  ['Organ','protected','ok',[3,4,4,3,3,2,2,1,1]],
+  ['Room Mic','blended','alt',[1,2,3,3,4,4,4,4,3]],
+  ['Backing Vox','supports','ok',[0,1,2,4,4,4,3,2,1]],
+  ['Shaker','supports','ok',[0,0,1,1,2,3,4,5,5]]
+];
+const BAND = ['20','60','120','250','500','1k','2k','4k','8k'];
+const FINDINGS = [
+  ['Bass · 180–260 Hz','Carries 3.4 dB more than the sum can take.','Confidence: high'],
+  ['Choir · 2.5–4 kHz','Masks the lead vocal in the loud bars.','Confidence: medium'],
+  ['Drums · Width','Measurement incomplete — 6 s of 20 s.','Unclear']
+];
+const ADVISOR = [
+  ['Priority','Bass against piano, 180–260 Hz'],
+  ['Likely cause','Bass carries 3.4 dB too much there'],
+  ['Smallest test','Bass −2 dB at 220 Hz, Q 1.2'],
+  ['Listen for','piano left hand, bars 33–41'],
+  ['Then','re-check the same passage']
+];
+const ZUSTAENDE = [
+  ['read','1 · Mix lesen'],
+  ['finding','2 · Befund verstehen'],
+  ['verdict','3 · Urteilen']
+];
+
+/* ---------- Bausteine (Produkttext englisch) ---------- */
+/* opt.baustein = der Name, unter dem dieses Stueck im Dauerhaft-Vertrag
+   zaehlt. Der Vertrag wird gemessen — welche Bausteine ueberleben ALLE drei
+   Arbeitsschritte —, nicht behauptet. */
+const kasten = (t, z, i, opt={}) =>
+  `<div class="box"${opt.baustein ? ` data-baustein="${opt.baustein}"` : ''}>${
+    t || z ? `<h4>${t}<em>${z||''}</em><i class="zaehler"></i></h4>` : ''}
+   <div class="inh">${i}</div></div>`;
+
+/* Ehrliche Liste: rendert alle Zeilen, blendet nach der Messung aus, was
+   nicht ganz hineinpasst, und schreibt die WAHRE Zahl darunter.
+   Gemessen am 2026-08-20: Overview+Detail behauptete im Kopf "11 of 16",
+   sichtbar waren 5. Ein Blatt, das mehr behauptet als es zeigt, macht jeden
+   Mechanikvergleich wertlos — es vergleicht dann Wunsch mit Wunsch. */
+const liste = (name, gesamt, html) =>
+  `<div class="liste" data-liste="${name}" data-gesamt="${gesamt}">${html}</div>`;
+
+/* Hier standen ebenen(), schritte() und quellen(). Alle drei waren tot —
+   dieses Blatt zeichnet den Streifen mit streifenBuch() und hat weder
+   Wegweiser noch benannte Quellenliste. ebenen() trug dabei eine ZWEITE
+   Statuszeile mit hart geschriebenem "Measuring 68 %" und
+   "Width: unavailable", waehrend statusText()/messText() daneben messen.
+   Entfernt am 2026-08-21: fuer den Active-Probe-Editor wird aus diesem
+   Blatt kopiert, und die tote Fassung waere die naheliegende gewesen.
+   Die lebenden Fassungen stehen weiter unten. */
+const hmName = namen => namen ? 'Heatmap (mit Namen)' : 'Übersichtskarte (ohne Namen)';
+function heatmap(n, namen=true, opt={}){
+  const kopf = `<div class="hmk">${namen?'<span style="width:76px;flex:none"></span>':''}
+      ${BAND.map(b=>`<span>${b}</span>`).join('')}</div>`;
+  const stil = opt.zustand || 'keine';
+  const zeilen = SOURCES.slice(0,n).map(([nm,,f,e],i)=>{
+    // ZWEI verschiedene Dinge, die nie ein Wort haetten sein duerfen:
+    //   opt.fokus     = Focus+Context-Behandlung (eine Zeile wird gross,
+    //                   der Rest flach) — eine Disclosure-Mechanik.
+    //   opt.betroffen = welche Quelle die Aenderung angeht — ein Zustand.
+    // Solange beides "fokus" hiess, wurde in der Ruhelage eine Zeile
+    // vierfach hoch und der Rest zu 5-px-Streifen. Das war ein Fehler,
+    // kein Entwurf.
+    let kl = opt.fokus ? (opt.fokus.includes(i) ? ' fokus' : ' ctx') : '';
+    if(opt.wirkung && opt.betroffen && opt.betroffen.includes(i))
+      kl += ' w-' + opt.wirkung;
+    // Getrennt heisst: es gibt keine Daten. Das gilt in JEDER Variante —
+    // eine getrennte Quelle mit vollen Zellen zu malen waere die Luege,
+    // die "ehrlich zeigen, nie kaschieren" ausdruecklich verbietet.
+    if(f === 'weg') kl += ' zust-weg';
+    // Veraltet heisst: die Daten sind da, aber alt. Nur die Variante
+    // "nur die Ausnahme spricht" zeichnet das auch in der Karte.
+    if(stil === 'ausnahme' && f === 'alt') kl += ' zust-alt';
+    const marke = stil === 'alle'
+      ? `<span class="marke pkt ${f === 'ok' ? '' : f}"></span>` : '';
+    return `<div class="hmz${namen?' benannt':''}${kl}">${namen?`<span class="n">${nm}</span>`:''}
+     ${marke}<span class="z">${e.map((v,b)=>{
+       const eng = opt.betroffen || opt.fokus;
+       const m = (opt.band !== undefined && b === opt.band
+                  && (!eng || eng.includes(i))) ? ' class="markiert"' : '';
+       return `<i${m} style="background:hsl(0 0% ${(14+v*11)}%)"></i>`;}).join('')}</span></div>`;
+  }).join('');
+  if(!n) return kasten(opt.titel || 'Comparative heatmap', 'nothing to show',
+    `<div class="leerHinweis"><b>No source connected</b>
+     <span>Nakama measures nothing until a probe reports in.</span>
+     <span class="wfk" style="margin-top:6px">Show me how to add one</span></div>`,
+    {baustein: hmName(namen)});
+  return kasten(opt.titel || 'Comparative heatmap', opt.zusatz || 'list → heatmap → detail',
+    `<div class="hm">${kopf}${liste(hmName(namen), SOURCES.length, zeilen)}</div>`,
+    {baustein: hmName(namen)});
+}
+/* detail() und vergleich() haben die Zustandsregel nicht mitbekommen, die
+   befunde() und knopfreihe() schon tragen. Gemessen bei "alles getrennt":
+   volle Werte, keine Marke, aktive Keep/Discard — zwei Kaesten neben einer
+   Befundliste, die es richtig macht. Und "Width 62 %" stand im selben Bild
+   wie "Width: unavailable" im Streifen: zwei Aussagen ueber dieselbe Groesse. */
+function detail(titel='Detail · Piano', zusatz='spectrum · loudness · dynamics · width · history', ab=false, lage='ok'){
+  const wort = befundWort(lage);
+  return kasten(titel, wort ? wort : zusatz,
+    `<div class="kurve"><svg viewBox="0 0 300 100" preserveAspectRatio="none">
+       ${ab?`<path d="M0 74 C40 72 60 80 90 78 C130 75 150 44 190 40 C230 36 260 48 300 46"
+             fill="none" stroke="#6a6a6a" stroke-width="1.5" stroke-dasharray="3 3"/>`:''}
+       <path d="M0 70 C40 68 60 76 90 74 C130 71 150 40 190 36 C230 32 260 44 300 42"
+             fill="none" stroke="#b0b0b0" stroke-width="1.5"/>
+       <path d="M0 50H300" stroke="#3f3f3f" stroke-width="1" stroke-dasharray="2 3"/>
+     </svg></div>
+     <div class="detailz"><span>−8.4 LUFS</span><span>DR 9</span>
+       <span>${WELT.degradiert ? 'Width: n/a' : 'Width 62 %'}</span>
+       <span>History 40 s</span></div>`,
+    {baustein:'Detail einer Quelle'});
+}
+/* Ein Befund gehoert zu einer Quelle. Ist die Quelle getrennt oder veraltet,
+   darf der Befund nicht aussehen, als waere er gerade gemessen worden —
+   "ehrlich zeigen, nie kaschieren" gilt auch fuer Schluesse aus alten Daten. */
+const quelleVon = ort => SOURCES.find(q =>
+  q[0].toLowerCase() === ort.split(' · ')[0].trim().toLowerCase());
+const befundLage = ort => { const q = quelleVon(ort);
+  return !q ? 'fort' : q[2] === 'weg' ? 'weg' : q[2] === 'alt' ? 'alt' : 'ok'; };
+const befundWort = l => l === 'weg' ? 'source offline — from last measurement'
+  : l === 'alt' ? 'source stale — may be out of date'
+  : l === 'fort' ? 'source gone' : null;
+
+function befunde(n, offen=0, titel='Findings'){
+  // Einer offen, der Rest als benannte Zeile — nicht als Sparmassnahme,
+  // sondern weil die Spezifikation "genau EINEN Schritt zur Zeit" verlangt.
+  // Alle drei bleiben sichtbar; nur die Tiefe ist einen Klick entfernt.
+  return kasten(titel, '',
+    liste('Befundliste', FINDINGS.length, FINDINGS.slice(0,n).map(([o,t,s],i)=>
+      { const lage = befundLage(o), warn = befundWort(lage);
+        const marke = lage === 'ok' ? ''
+          : `<span class="pkt ${lage === 'fort' ? 'weg' : lage}"></span>`;
+        return i === offen
+        ? `<div class="bf an"><b>${marke}${o}</b><span>${t}</span>
+           <i>${warn ? s + ' · ' + warn : s}</i></div>`
+        : `<div class="bf zu"><b>${marke}${o}</b><i>${warn ? s + ' · ' + warn : s}</i></div>`; })
+      .join('')),
+    {baustein:'Befundliste'});
+}
+function advisor(zusatz='one step', gross=false){
+  /* Der Assistent trug den Zustand seiner Quelle nicht. Bei "alles getrennt"
+     stand die vollstaendige Fuenf-Teile-Empfehlung da ("Bass -2 dB at 220 Hz"),
+     waehrend der Streifen "Measurement stalled - no source reachable" meldete.
+     Die Knoepfe waren korrekt gesperrt, der Text nicht — und der Text ist die
+     Empfehlung. befundWort() gab es bereits, advisor() hat es nur nie
+     benutzt. */
+  const lageWort = befundWort(befundLage(FINDINGS[0][0]));
+  // Die fuenf Teile sind eine ehrliche Liste, kein fester Block. Grund: die
+  // Spezifikation schreibt die Fuenf-Teile-Form vor. Wenn eine Kartenart dem
+  // Assistenten die Hoehe nimmt, muss das Blatt zeigen, WELCHER Teil fehlt —
+  // nicht heimlich abschneiden und nicht bloss rot aufleuchten.
+  return kasten('Advisor', lageWort ? zusatz + ' · ' + lageWort : zusatz,
+    `<div class="as${gross?' gross':''}">${liste('Assistent (genau ein Schritt)', ADVISOR.length,
+      ADVISOR.map(([b,t])=>
+        `<div class="ast"><b>${b}</b><span>${t}</span></div>`).join(''))}
+      ${knopfreihe()}</div>`,
+    {baustein:'Assistent (genau ein Schritt)'});
+}
+function vergleich(lage='ok'){
+  const wort = befundWort(lage);
+  // Ein Urteil ueber eine Aenderung, die gerade nicht hoerbar ist, waere
+  // dasselbe wie ein Knopf, der nichts tut.
+  if(wort) return kasten('Before / After', wort,
+    `<div class="vg"><div><b>A — Baseline</b><span>−8.4 LUFS</span></div>
+       <div><b>B — Change</b><span>−8.4 LUFS · Bass −2 dB @ 220</span></div></div>
+     <div class="knopfreihe"><span class="wfk aus">Keep</span>
+       <span class="wfk aus">Discard</span><span class="wfk aus">Unsure</span>
+       <span class="lage" style="margin-left:0">${wort} — reconnect to judge</span></div>`,
+    {baustein:'A/B-Urteil'});
+  return kasten('Before / After', 'level-matched',
+    `<div class="vg"><div><b>A — Baseline</b><span>−8.4 LUFS</span></div>
+       <div><b>B — Change</b><span>−8.4 LUFS · Bass −2 dB @ 220</span></div></div>
+     <div class="knopfreihe">${griff('keep','Keep', true)}
+       ${griff('undo','Discard')}${griff('unsure','Unsure')}</div>`,
+    {baustein:'A/B-Urteil'});
+}
+/* abruf() (benannte Tuer) und minimap() (Ausschnittsanzeige) standen hier
+   und wurden nie aufgerufen — sie gehoeren zu den Mechaniken "nur auf
+   Abruf" und "semantischer Zoom", die dieses Blatt nicht zeigt. Belegt
+   in werkzeug/wireframe-main.html. */
+
+/* ---------- Die Kartenarten ----------
+   Die Mechanik steht (Overview + Detail, abgenommen 2026-08-20). Offen ist,
+   WIE die dauerhafte Karte 16 Quellen auf wenig Hoehe bringt — und was sie
+   der Arbeitsflaeche dafuer wegnimmt. Gemessen auf 760x430:
+     Streifen dauerhaft 28 px -> fuer Karte + Arbeit bleiben 370 px.
+     Karte ohne Namen: 4 Quellen 92 px ... 16 Quellen 212 px (rund 10 px/Zeile).
+     Arbeitsflaeche braucht: Assistent 172 px, alle drei Befunde 219 px,
+     A/B-Urteil 120 px, Detail 69 px.
+   Daraus die Klemme: alle 16 dauerhaft (212) laesst 158 px — der Assistent
+   passt nicht. Der Assistent voll (172) laesst 198 px — das sind 14 Quellen.
+   ------------------------------------------------------------------ */
+
+const ZAHLWORT = ['keiner','einer','zwei','drei','vier','fünf','sechs'];
+const wieViele = () => ZAHLWORT[ENTWUERFE.length] ?? ENTWUERFE.length;
+
+/* ROLLEN, AUFFAELLIG und rollenkarte() standen hier. Die Rollenkarte war
+   eine der Kartenarten aus wireframe-main-karte.html und ist mit der
+   Abnahme "die Karte traegt jede Quelle" erledigt; dieses Blatt ruft sie
+   nicht auf. ACHTUNG fuer die Weiterarbeit: damit hat Main derzeit KEINEN
+   Ort fuer die musikalischen Rollen, die die Spezifikation verlangt
+   (fuehrt/traegt/begleitet/geschuetzt/verschmolzen). Das ist eine offene
+   Aufgabe, kein geloestes Problem — siehe docs/sondenplan.md. */
+
+/* ---------- Die drei Antworten auf "was hoere ich gerade?" ----------
+   Der Main-Entwurf steht (Overview + Detail, Karte traegt jede Quelle,
+   Ueberschuss wird geteilt). Offen ist die Sicherheitsfrage der
+   Spezifikation: "Vier Bedienebenen, sichtbar getrennt (nie vermischen)".
+   Die vier sind NICHT vier Geschwister:
+     Beobachten / Beraten = Aufenthalte, man ist dort.
+     Vorhoeren            = fluechtige Tat, nur solange gehalten.
+     Anwenden             = bewusste Tat, bleibt, umkehrbar.
+   Von Restorff: ein Akzent, nicht fuenf. Vier gleich aussehende Reiter
+   waeren genau der Fehler.
+   -------------------------------------------------------------------- */
+
+const EBENEN = [
+  ['observe','Observe','nur messen'],
+  ['advise','Advise','erklären'],
+  ['audition','Audition','flüchtig hörbar, nur solange gehalten'],
+  ['apply','Apply','bewusst bestätigt, rückgängig machbar']
+];
+/* Laufender Zustand des Blattes. Wird von echtem Druecken/Loslassen
+   gesetzt, nicht von einem Schalter — sonst waere das Halten nur behauptet. */
+const LAGE = { haelt:false, angewandt:false };
+
+/* ---------- Die Zustandsmatrix ----------
+   Die Spezifikation nennt DREI Sorten Zustand, und sie werden hier bewusst
+   auseinandergehalten:
+     1. je Quelle   — frisch / veraltet / getrennt
+     2. global      — Messung laeuft / unvollstaendig
+     3. der App     — eine Funktion ist auf diesem System nicht verfuegbar
+   Nur Sorte 1 ist die Variable dieser Runde. Sorte 2 und 3 bleiben in allen
+   drei Varianten gleich, sonst vergleicht man zwei Dinge gleichzeitig. */
+const SZENARIEN = [
+  ['normal',    'gemischt (13/2/1)',   {ok:13, alt:2,  weg:1}],
+  ['heil',      'alles frisch',        {ok:16, alt:0,  weg:0}],
+  ['alt',       'viel veraltet',       {ok:6,  alt:8,  weg:2}],
+  ['weg',       'alles getrennt',      {ok:0,  alt:0,  weg:16}],
+  ['wenig',     'nur 5 Quellen',       {ok:3,  alt:1,  weg:1}],
+  ['leer',      'keine Quelle',        {ok:0,  alt:0,  weg:0}]
+];
+const WELT = { szenario:'normal', messung:68, degradiert:true };
+
+/* Setzt die Frische der Quellen nach Szenario. Die Karte liest sie aus
+   SOURCES — deshalb kann der Streifen gar nicht etwas anderes zaehlen als
+   die Karte zeigt. Genau das ist der Punkt: eine Quelle der Wahrheit. */
+function szenarioSetzen(id){
+  WELT.szenario = id;
+  const z = SZENARIEN.find(x => x[0] === id)[2];
+  const n = z.ok + z.alt + z.weg;
+  SOURCES.length = 0;
+  SOURCES.push(...ALLE_QUELLEN.slice(0, n).map((q, i) =>
+    [q[0], q[1], i < z.ok ? 'ok' : i < z.ok + z.alt ? 'alt' : 'weg', q[3]]));
+  vertragCache.clear();
+}
+const ebeneJetzt = z => LAGE.haelt ? 'audition'
+  : LAGE.angewandt ? 'apply'
+  : z === 'read' ? 'observe' : 'advise';
+
+/* Griffe, die wirklich halten. data-griff wird nach dem Zeichnen verdrahtet. */
+const griff = (was, text, stark) =>
+  `<span class="wfk${stark?' stark':''}" data-griff="${was}">${text}</span>`;
+
+function knopfreihe(){
+  // Auf einer getrennten Quelle laesst sich nichts vorhoeren und nichts
+  // anwenden. Ein Knopf, der sich druecken laesst und nichts tut, ist eine
+  // Luege in der Oberflaeche.
+  const lage = befundLage(FINDINGS[0][0]);
+  if(lage === 'weg' || lage === 'fort')
+    return `<div class="knopfreihe"><span class="wfk aus">Audition (hold)</span>
+      <span class="wfk aus">Apply</span>
+      <span class="lage" style="margin-left:0">source offline — reconnect to act</span></div>`;
+  if(LAGE.angewandt)
+    return `<div class="knopfreihe">${griff('undo','Undo the change')}
+      <span class="wfk aus">Applied · A/B in step 3</span></div>`;
+  return `<div class="knopfreihe">${griff('hold','Audition (hold)')}
+    ${griff('apply','Apply', true)}${griff('discard','Discard')}</div>`;
+}
+
+/* --- Variante 1: der Streifen fuehrt Buch --------------------------- */
+function streifenBuch(z, nurAbweichung){
+  const e = ebeneJetzt(z);
+  const marken = EBENEN.map(([id,n]) =>
+    `<span class="eb${id===e?' an':''}${id==='audition'&&LAGE.haelt?' haelt':''}"
+     >${n}</span>`).join('');
+  /* Der Chip sagt nur, was der Reiter NICHT sagen kann — sonst dreifach
+     dasselbe (Reiter leuchtet, Chip spricht, Griff ist gedrueckt), und
+     Von Restorff sagt: ein Akzent, nicht fuenf.
+     Gemessen: Reiter 254 px + Statuszeile 328 px von 742 verfuegbaren
+     lassen dem Chip 160. "Auditioning — release to stop" brauchte 164,
+     "Nothing is changing your mix" 180. Beides passte nicht — und ein
+     Streifen, der rechts abschneidet, ist genau die Luege, die dieses
+     Blatt nicht erzaehlen darf. */
+  const rechts = LAGE.haelt
+    ? '<span class="lage haelt">release to stop</span>'
+    : LAGE.angewandt
+      ? '<span class="lage bleibt">1 change applied</span>'
+      : '';
+  return `<div class="streifen" data-baustein="Bedienebenen + Status">${marken}
+    ${rechts}${statusText(nurAbweichung)}</div>`;
+}
+
+
+
+function statusText(nurAbweichung){
+  /* Der genannte Preis der Ausnahme-Mechanik: Abwesenheit ist mehrdeutig —
+     nichts zu sehen kann "alles gut" heissen oder "die Anzeige ist
+     ausgefallen". Antwort: eine EINZIGE positive Aussage, und zwar genau
+     dann, wenn sonst nichts zu melden waere. Sie kostet nichts im
+     Ernstfall, weil sie dort verschwindet.
+     Zweitens: die Ausnahme spricht mit NAMEN, solange es wenige sind. Eine
+     hohle Zeile in einer namenlosen Karte sagt sonst nur die Position. */
+  const nenn = f => SOURCES.filter(q => q[2] === f).map(q => q[0]);
+  /* Namen nur, solange es eine Aufzaehlung IST. Acht Namen sind keine
+     Aufzaehlung mehr, sondern eine Zahl — und sie sprengen den Streifen:
+     gemessen 42 px Ueberlauf bei "viel veraltet". Die Grenze ist also
+     inhaltlich UND gemessen, nicht gedreht, bis es passt. */
+  const kurz = liste => liste.length <= 2 ? liste.join(', ') : null;
+  const abweichend = nenn('alt').length + nenn('weg').length;
+  if(nurAbweichung && SOURCES.length && !abweichend)
+    return `<span class="status"><span><span class="pkt"></span>All
+      ${SOURCES.length} fresh</span><span>${messText()}</span>${degText()}</span>`;
+  const zahlen = [['','ok','fresh'],['alt','alt','stale'],['weg','weg','offline']]
+    .filter(([,f]) => !(nurAbweichung && f === 'ok'))
+    .map(([k,f,w]) => { const n = SOURCES.filter(q => q[2] === f).length;
+      if(!n) return '';
+      const liste = nurAbweichung && f !== 'ok' ? kurz(nenn(f)) : null;
+      const namen = liste ? ` (${liste})` : '';
+      return `<span><span class="pkt ${k}"></span>${n} ${w}${namen}</span>`; })
+    .join('');
+  // Ohne Quelle kann nichts "vollstaendig gemessen" sein. Der Prozentwert
+  // gehoert zu den Quellen; gibt es keine, gibt es auch keinen Fortschritt.
+  const leer = !SOURCES.length ? '<span>No source connected</span>' : '';
+  return `<span class="status">${leer}${zahlen}<span>${messText()}</span>${degText()}</span>`;
+}
+// Messen setzt Kontakt voraus. Ohne Quelle gibt es nichts zu messen; ist
+// keine einzige erreichbar, steht die Messung — ein weiterlaufender
+// Prozentwert waere dieselbe Luege eine Ebene feiner.
+function messText(){
+  const erreichbar = SOURCES.filter(q => q[2] !== 'weg').length;
+  return !SOURCES.length ? 'Nothing to measure'
+       : !erreichbar ? 'Measurement stalled — no source reachable'
+       : WELT.messung >= 100 ? 'Measurement complete'
+       : WELT.messung <= 0 ? 'Measurement not started'
+       : `Measuring ${WELT.messung} %`;
+}
+// Der degradierte Zustand ist Pflicht: "ehrlich zeigen, nie kaschieren".
+const degText = () => WELT.degradiert ? '<span>Width: unavailable</span>' : '';
+
+/* Die Arbeitsflaeche ist in allen drei gleich — verschieden ist nur, wo der
+   Zustand sichtbar wird. */
+function karteHtml(z, opt = {}){
+  return `<div class="karte">${heatmap(SOURCES.length, false,
+    {titel:'Overview', zusatz: ortText(z), ...opt})}</div>`;
+}
+
+const ENTWUERFE = [
+{ id:'sammel', mech:'Nur die Sammelzeile spricht', name:'So ist es heute',
+  these:'Der Streifen zählt: 13 frisch, 2 veraltet, 1 getrennt. In der Karte sieht man '
+      + 'nur, dass eine getrennte Quelle keine Daten hat — mehr kann sie nicht zeigen, '
+      + 'sie hat keine. Veraltete Quellen sehen aus wie frische. Preis: das Blatt weiß '
+      + 'mehr, als es sagt. WELCHE Quelle veraltet ist, steht nirgends.',
+  bau:(z) => ({ gitter:'',
+    html: streifenBuch(z) + karteHtml(z, kartenOpt(z, 'keine'))
+      + `<div class="arbeit">${arbeit(z)}</div>` })},
+
+{ id:'jede', mech:'Jede Zeile trägt ihren Zustand', name:'Sechzehn Marken, immer',
+  these:'Jede Zeile bekommt links eine Zustandsmarke — auch die frischen. Man kann '
+      + 'jederzeit nachsehen, ohne irgendwo hineinzugehen. Preis: sechzehn Marken für '
+      + 'eine Sache, die meistens „in Ordnung" heißt. Wenn alles markiert ist, hebt '
+      + 'sich nichts ab, und die Marken kosten Breite in jeder Zeile, dauerhaft.',
+  bau:(z) => ({ gitter:'',
+    html: streifenBuch(z) + karteHtml(z, kartenOpt(z, 'alle'))
+      + `<div class="arbeit">${arbeit(z)}</div>` })},
+
+{ id:'ausnahme', mech:'Nur die Ausnahme spricht', name:'Ruhe ist die Abwesenheit von Zeichen',
+  these:'Frische Zeilen sehen normal aus. Veraltete werden hohl gezeichnet — die Daten '
+      + 'sind da, aber nicht mehr frisch —, getrennte bleiben leer. Der Streifen nennt '
+      + 'nur die Abweichung, kein „13 fresh". Preis: „alles in Ordnung" wird durch '
+      + 'Abwesenheit gezeigt. Man muss darauf vertrauen, dass nichts zu sehen auch '
+      + 'wirklich nichts heißt — und nicht, dass die Anzeige ausgefallen ist.',
+  bau:(z) => ({ gitter:'',
+    html: streifenBuch(z, true) + karteHtml(z, kartenOpt(z, 'ausnahme'))
+      + `<div class="arbeit">${arbeit(z)}</div>` })}
+];
+const wirkungJetzt = () => LAGE.haelt ? 'haelt' : LAGE.angewandt ? 'bleibt' : null;
+/* Die Karte bekommt in allen drei dasselbe — ausser dem Zustandsstil. */
+const kartenOpt = (z, zustand) => z === 'read'
+  ? {zustand}
+  /* band:3 ist BAND[3] = '250'. Vorher stand hier band:2 = '120' — die
+     markierte Zelle nannte damit eine andere Frequenz als der Befund
+     daneben ("Bass · 180-260 Hz"). 180-260 liegt im 250er-Feld. */
+  : {zustand, wirkung: wirkungJetzt(), betroffen:[4], band:3};
+
+
+/* Die Arbeitsflaeche ist in allen Varianten gleich — sonst vergliche man zwei
+   Dinge gleichzeitig. Sie ist Claudes Entwurf, kein Urteil des Users. */
+const ebene = z => z === 'read' ? 0 : z === 'finding' ? 1 : 3;
+const ortText = z => z === 'read' ? 'nothing selected'
+                   : z === 'finding' ? 'Bass · 180–260 Hz' : 'Bass · comparing A/B';
+function arbeit(z){
+  /* "Measurement not started" im Streifen und "Confidence: high" im Befund
+     daneben sind dieselbe Luege wie "Measuring 68 %" bei sechzehn getrennten
+     Quellen — nur eine Ebene frueher. Der Kontaktfall war geprueft, der
+     Nicht-gestartet-Fall nicht. */
+  if(SOURCES.length && WELT.messung <= 0) return kasten('Findings', 'nothing measured yet',
+    `<div class="leerHinweis"><b>Nothing measured yet</b>
+     <span>Findings appear once a measurement has run.</span></div>`,
+    {baustein:'Befundliste'});
+  // Ohne Quellen gibt es nichts zu befunden und nichts zu raten. Das
+  // ehrlich zu sagen ist der Leerzustand; leere Kaesten waeren ein Ausfall.
+  if(!SOURCES.length) return kasten('Findings', 'nothing to show',
+    `<div class="leerHinweis"><b>Nothing found yet</b>
+     <span>Findings appear once at least one source has been measured.</span></div>`,
+    {baustein:'Befundliste'});
+  if(z === 'read')    return befunde(FINDINGS.length);
+  if(z === 'finding') return advisor('finding 1 of ' + FINDINGS.length);
+  const lage = befundLage(FINDINGS[0][0]);
+  return vergleich(lage) + detail('Detail · Bass', 'A vs B', true, lage);
+}
+
+
+/* Jedes Element muss beantworten, welchen Handgriff es bedient, und woher
+   es kommt — docs/DESIGN-GESETZE.md, verbindliche Folge 2. Wer die Frage
+   nicht beantworten kann, entfernt das Element von dieser Ebene. Steht hier
+   im Code und nicht in einem Dokument daneben, damit es nicht auseinander
+   laeuft: fehlt ein Eintrag, faerbt das Werkzeug den Baustein rot. */
+const BELEG = {
+  'Bedienebenen + Status':
+    [7,'Spezifikation: „Vier Bedienebenen, sichtbar getrennt" + „Zustände, die immer ablesbar sein müssen"'],
+  'Wegweiser (Weg und Rückweg)':
+    [0,'DESIGN-GESETZE 6.3: „Moduswechsel ohne Rückweg" ist ein Fehler'],
+  'Quellenliste mit Namen':
+    [5,'Spezifikation: „Quellenliste: bis 16 sichtbare Quellen … Suche, Pinning, Fokusgruppen"'],
+  'Heatmap (mit Namen)':
+    [1,'Spezifikation: „Vergleichende Heatmap: welche Quelle wo im Frequenzraum Energie trägt"'],
+  'Übersichtskarte (ohne Namen)':
+    [1,'Spezifikation: „ein Minimap-/Zoomprinzip schlägt ‚alles gleichzeitig‘"'],
+  'Dichtestufe 1 (Liste aller Quellen)':
+    [1,'Spezifikation: „Dichtestufen Liste → Heatmap → Detail"'],
+  'Zoomleiste (Stufe + Ausschnitt)':
+    [0,'DESIGN-GESETZE 6.4: beim Zoom muss ablesbar bleiben, welcher Ausschnitt gezeigt wird'],
+  'Befundliste':
+    [2,'Spezifikation: „Befunde: Ort, Beobachtung, Begründung, Sicherheit"'],
+  'Einstiegszeile (Zahl der Befunde + erster Schritt)':
+    [1,'Aufgabenliste 1: den Mix lesen — bei jedem Sessionstart'],
+  'Assistent (genau ein Schritt)':
+    [3,'Spezifikation: „Assistent: führt genau EINEN Schritt zur Zeit in fester Form"'],
+  'Ein Satz: was jetzt zu tun ist':
+    [3,'Spezifikation: „Assistent: führt genau EINEN Schritt zur Zeit"'],
+  'Detail einer Quelle':
+    [2,'Spezifikation: „Detailansicht einer Quelle: Spektrum, Lautheit, Dynamik, Stereobreite, Verlauf"'],
+  'A/B-Urteil':
+    [4,'Spezifikation: „Vorher/Nachher-Vergleich, level-gematcht: behalten / verwerfen / noch unklar"'],
+  'Rollenkarte (Gruppen statt Quellen)':
+    [6,'Spezifikation: „Musikalische Prioritäten: führt / trägt / begleitet / geschützt / verschmolzen" + DESIGN-GESETZE 3: Gruppierung senkt die Last, ohne Information zu entfernen']
+};
+const AUFGABEN = ['—','Mix lesen (sehr häufig)','Befund verstehen (Kernakt)',
+  'kleinsten Versuch machen','urteilen','Quelle finden (gelegentlich)',
+  'Rollen setzen (selten)','Status ablesen (ständig nebenbei)'];
+/* Tueren sind kein eigener Inhalt, sondern der benannte Zugang zur zweiten
+   Ebene — DESIGN-GESETZE 6.1: „Was niemand findet, existiert nicht." */
+const belegFuer = n => n.startsWith('Tür: ')
+  ? [0,'DESIGN-GESETZE 6.1: jede zweite Ebene braucht einen sichtbaren, benannten Zugang']
+  : BELEG[n];
+
+/* ================================================================
+   MESSUNG — drei Dinge, die vorher behauptet statt gemessen wurden.
+   ================================================================ */
+
+/* 1. Ehrliche Listen. Blendet aus, was nicht GANZ hineinpasst, und schreibt
+   in das Blatt, wieviel fehlt. Liefert zurueck, was wirklich zu sehen ist.
+   Vorher stand "11 of 16" im Kopf und fuenf Zeilen im Kasten. */
+/* Zweimal messen, nicht einmal hoffen: auf dem ersten Frame nach einem
+   grossen innerHTML stehen die Schriftmasse noch nicht, die Kappe misst
+   dann zu flach und die Schleife haelt eine Zeile zu frueh an (gemessen:
+   14 px Rest). Die Funktion ist absichtlich idempotent — ein zweiter Lauf
+   auf einem heilen Blatt aendert nichts. */
+function listenEhrlich(wf){
+  einmalEhrlich(wf);
+  return einmalEhrlich(wf);
+}
+function einmalEhrlich(wf){
+  const bericht = [];
+  wf.querySelectorAll('.liste').forEach(l => {
+    l.querySelectorAll(':scope > .kappe').forEach(k => k.remove());
+    const zeilen = [...l.children];
+    const gesamt = +l.dataset.gesamt || zeilen.length;
+    let n = zeilen.length;
+    const zeige = k => zeilen.forEach((z,i) => { z.style.display = i < k ? '' : 'none'; });
+    const passt = () => l.scrollHeight - l.clientHeight <= 1;
+    zeige(n);
+    while(n > 0 && !passt()) zeige(--n);
+    if(n < gesamt){
+      // Die Kappe kostet selbst Platz — und zwar erst, wenn sie beschriftet
+      // ist. Wer sie leer misst und danach beschriftet, misst eine Kappe, die
+      // es so nie gibt: genau daran sind hier 30 px durchgerutscht.
+      const kappe = document.createElement('div');
+      kappe.className = 'kappe';
+      const schreibe = () => { kappe.textContent = (gesamt - n) + ' more not shown'; };
+      schreibe();
+      l.appendChild(kappe);
+      while(n > 0 && !passt()){ zeige(--n); schreibe(); }
+    }
+    // Die Zahl im Kopf kommt aus dieser Messung, nie aus dem Quelltext.
+    // Eigene Form "3/5", nicht "3 of 5": im Kopf steht daneben oft ein
+    // geschriebenes "finding 1 of 3", und zwei gleich aussehende Zaehler mit
+    // verschiedener Bedeutung im selben Kasten sind schlimmer als keiner.
+    const zr = l.closest('.box')?.querySelector(':scope > h4 > .zaehler');
+    if(zr){ zr.textContent = n + '/' + gesamt;
+            zr.classList.toggle('knapp', n < gesamt); }
+    bericht.push({name: l.dataset.liste, sichtbar: n, gesamt});
+  });
+  return bericht;
+}
+
+/* 1b. Aufteilung: Ueberschuss teilen, Mangel NICHT.
+   Der User hat "teilen" fuer den Fall eingezeichnet, dass etwas uebrig ist.
+   Ist zu wenig da, darf die Karte nicht auch noch wachsen — sonst frisst sie
+   genau die Pixel, die dem Assistenten fehlen. Gemessen vor dieser Regel:
+   Karte 230 px, obwohl sie fuer ihre 16 Zeilen nur 212 braucht, waehrend die
+   Arbeitsflaeche auf 138 stand und zwei Assistenten-Teile verlor.
+   Reine CSS-Flexbox kann das nicht: die Listen kuerzen sich NACH dem Layout,
+   dadurch schrumpft die Basis der Arbeitsflaeche und die Karte waechst
+   nach — eine Ratsche. Deshalb wird hier einmal gemessen und festgesetzt. */
+/* Vor jeder Aufteilung: alle Listen wieder voll machen. Sonst misst der
+   zweite Durchgang die bereits gekuerzten Inhalte als "natuerliche Hoehe",
+   die Karte waechst nach, die Arbeitsflaeche kuerzt weiter — dieselbe
+   Ratsche, nur eine Ebene hoeher. */
+function listenZuruecksetzen(wf){
+  wf.querySelectorAll('.liste').forEach(l => {
+    l.querySelectorAll(':scope > .kappe').forEach(x => x.remove());
+    [...l.children].forEach(z => { z.style.display = ''; });
+  });
+}
+function aufteilen(wf){
+  const k = wf.querySelector('.karte'), a = wf.querySelector('.arbeit');
+  if(!k || !a) return;
+  listenZuruecksetzen(wf);
+  k.style.flex = '0 0 auto'; a.style.flex = '0 0 auto';
+  const kn = k.offsetHeight, an = a.offsetHeight;          // natuerliche Hoehen
+  const st = getComputedStyle(wf);
+  const luecke = parseFloat(st.rowGap) || 0;
+  const andere = [...wf.children].filter(c => c !== k && c !== a)
+    .reduce((s, c) => s + c.offsetHeight, 0);
+  const platz = wf.clientHeight - parseFloat(st.paddingTop)
+    - parseFloat(st.paddingBottom) - andere - luecke * (wf.children.length - 1);
+  const rest = platz - kn - an;
+  k.style.flex = `0 0 ${Math.max(0, kn + (rest > 0 ? rest / 2 : 0))}px`;
+  a.style.flex = '1 1 auto';
+  return {kn, an, platz, rest};
+}
+
+/* 2. Ueberlauf, der KEINE Liste ist: feste Textbloecke, die schlicht nicht
+   passen. Alle Nachfahren, nicht vier ausgewaehlte Klassen — ein
+   verschachteltes overflow:hidden schluckt die Ueberlaenge, bevor der
+   Elternkasten sie sieht (gemessen: 36 gemeldet, 111 tatsaechlich). */
+function ueberlauf(wf){
+  // Beide Richtungen. Die erste Fassung mass nur die Hoehe — dadurch schnitt
+  // der Streifen rechts ab ("Width: unav...") und nichts meldete sich.
+  let fehlt = 0, wo = '', richtung = '';
+  const pruef = (x, name) => {
+    const h = x.scrollHeight - x.clientHeight, b = x.scrollWidth - x.clientWidth;
+    if(h > fehlt){ fehlt = h; wo = name; richtung = 'hoch'; }
+    if(b > fehlt){ fehlt = b; wo = name; richtung = 'breit'; }
+  };
+  wf.querySelectorAll('*').forEach(x =>
+    pruef(x, x.closest('[data-baustein]')?.dataset.baustein || x.className));
+  pruef(wf, 'das Blatt selbst');
+  return {fehlt, wo: wo + (richtung ? ' (' + richtung + ')' : '')};
+}
+
+/* 3. Der Dauerhaft-Vertrag. Gemessen, nicht behauptet: ein Baustein ist
+   dauerhaft, wenn er in ALLEN drei Arbeitsschritten auf dem Blatt steht.
+   Genau das ist die Frage dieser Runde — was bleibt stehen, egal woran
+   du gerade arbeitest. */
+const messbuehne = document.createElement('div');
+messbuehne.style.cssText = 'position:fixed;left:-99999px;top:0;'
+  + 'width:800px;height:500px;pointer-events:none';
+document.body.appendChild(messbuehne);
+const vertragCache = new Map();
+
+function vertrag(e){
+  const schluessel = e.id + ':' + SOURCES.length;
+  if(vertragCache.has(schluessel)) return vertragCache.get(schluessel);
+  const proSchritt = ZUSTAENDE.map(([z]) => {
+    const wf = document.createElement('div');
+    wf.className = 'wf';
+    const {gitter, html} = e.bau(z);
+    wf.style.cssText = gitter;
+    wf.innerHTML = html;
+    messbuehne.replaceChildren(wf);
+    aufteilen(wf);
+    const listen = listenEhrlich(wf);
+    return {
+      namen: new Set([...wf.querySelectorAll('[data-baustein]')]
+                     .map(x => x.dataset.baustein)),
+      listen, ...ueberlauf(wf)
+    };
+  });
+  messbuehne.replaceChildren();
+  const alle = [...new Set(proSchritt.flatMap(s => [...s.namen]))];
+  const dauerhaft = alle.filter(n => proSchritt.every(s => s.namen.has(n)));
+  const aufAbruf  = alle.filter(n => !dauerhaft.includes(n));
+  // Bei Listen zaehlt das MINIMUM ueber die drei Schritte: was dauerhaft
+  // sichtbar ist, ist das, was im schlechtesten Schritt noch dasteht.
+  const listen = {};
+  for(const s of proSchritt) for(const l of s.listen)
+    listen[l.name] = {gesamt: l.gesamt,
+      sichtbar: Math.min(listen[l.name]?.sichtbar ?? Infinity, l.sichtbar)};
+  const schlimmster = proSchritt.reduce((a,b) => b.fehlt > a.fehlt ? b : a);
+  const r = {dauerhaft, aufAbruf, listen,
+             fehlt: schlimmster.fehlt, wo: schlimmster.wo};
+  vertragCache.set(schluessel, r);
+  return r;
+}
+
+/* ---------- Ablauf ---------- */
+const ALLE_QUELLEN = SOURCES.slice();
+/* setzeQuellen(n) stand hier und wurde nie aufgerufen. Sie stammt aus der
+   Vorrunde (Regler "Quellen im Mix"); die Zahl der Quellen kommt hier aus
+   dem Szenario. Gefaehrlich beim Wiederbeleben: sie schiebt die
+   Original-Eintraege aus ALLE_QUELLEN zurueck und setzt damit das
+   eingestellte Szenario STUMM zurueck. */
+let stufe = 1, eng = [], sieger = null, zustand = 'finding';
+const ablehnungen = [], zeiten = {};
+let start = performance.now();
+const $ = s => document.querySelector(s);
+const buehne = $('#buehne'), fuss = $('#fuss');
+/* s2() und ergebnis() ueberschreiben #unter. Ohne diese Sicherung kam die
+   Erklaerung des Blattes nach einem Besuch im Zweikampf nie zurueck — und
+   textContent hatte die Auszeichnung schon gefressen. */
+const UNTER_ORIGINAL = $('#unter').innerHTML;
+
+function kachel(e, i, gross){
+  // Kein <button> mehr: das Blatt darin muss selbst bedienbar sein, und ein
+  // Knopf im Knopf ist ungueltiges HTML. Gewaehlt wird ueber die Zeile
+  // darunter. Grund: eine Zustandsfrage laesst sich am Standbild nicht
+  // beurteilen (DESIGN-GESETZE, verbindliche Folge 4).
+  const b = document.createElement('div');
+  b.className = 'wahl';
+  const rahmen = document.createElement('div');
+  rahmen.className = 'rahmen' + (gross ? ' gross' : '');
+  const wf = document.createElement('div');
+  wf.className = 'wf';
+  const {gitter, html} = e.bau(zustand);
+  wf.style.cssText = gitter;
+  wf.innerHTML = html;
+  rahmen.appendChild(wf);
+  b.dataset.mech = e.id;
+  const nr = document.createElement('span');
+  nr.className = 'nr'; nr.textContent = i + 1;
+  const m = document.createElement('span');
+  m.className = 'mech'; m.textContent = e.mech;
+  const t = document.createElement('span');
+  t.className = 'these';
+  t.style.width = (gross ? 760 : 440) + 'px';
+  t.textContent = e.these;
+  const v = document.createElement('span');
+  v.className = 'vertrag';
+  v.style.width = (gross ? 760 : 440) + 'px';
+  const V = vertrag(e);
+  const zahl = n => { const l = V.listen[n];
+    return l ? ` <b>${l.sichtbar}</b>/${l.gesamt}` : ''; };
+  /* Der Beleg landet in einem title-Attribut, und JEDER Belegtext enthaelt ein
+     gerades Anfuehrungszeichen (BELEG zitiert die Spezifikation mit „…"). Ohne
+     Maskierung reisst es das Attribut auf: gemessen am 2026-08-21 trugen 18 von
+     18 Chips sieben Muell-Attribute (`+`, `die`, `immer`, `ablesbar` …) und der
+     Beleg brach nach der Haelfte ab. Genau der Fall aus PRUEFLISTE 4: eine
+     Beschriftung, die weniger sagt, als sie behauptet. */
+  const att = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+                            .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const chip = n => { const bg = belegFuer(n);
+    return `<span${bg ? ` title="${att(`Handgriff: ${AUFGABEN[bg[0]]}
+${bg[1]}`)}"`
+                      : ' class="ohnebeleg" title="Kein Beleg — dieser Baustein '
+                        + 'muesste vom Blatt verschwinden."'}>${n}${zahl(n)}</span>`; };
+  v.innerHTML =
+    `<span class="dauer"><i>dauerhaft</i>${V.dauerhaft.length
+      ? V.dauerhaft.map(chip).join('')
+      : '<span>nichts ausser dem Fenster</span>'}</span>`
+  + `<span class="abrufz"><i>einen Schritt entfernt</i>${
+      V.aufAbruf.map(chip).join('') || '<span>—</span>'}</span>`;
+  b.append(rahmen, m, v, t, nr);
+  b.dataset.dauerhaft = V.dauerhaft.length;
+  verdrahten(wf, b);
+  // Auf der echten Groesse zaehlt nur eins: passt es oder wird geschnitten.
+  // Listen werden vorher ehrlich gemacht, danach bleibt nur der Ueberlauf,
+  // den kein Weglassen von Zeilen heilt — feste Bloecke, die nicht passen.
+  const messen = ()=>{
+    aufteilen(wf);        // erst die Hoehen festsetzen, dann kuerzen —
+    listenEhrlich(wf);    // umgekehrt misst die Aufteilung bereits Gekuerztes
+    const {fehlt, wo} = ueberlauf(wf);
+    b.dataset.fehlt = fehlt;
+    if(fehlt > 1){
+      m.textContent = e.mech + ' — ' + fehlt + ' px fehlen in: ' + wo;
+      m.style.color = '#7a2f1f';
+      rahmen.style.outline = '2px solid #7a2f1f';
+    } else {
+      // Ohne Rueckweg log die Warnung: einmal gesetzt, ueberlebte sie jede
+      // spaetere heile Messung — und neuZeichnen() misst dieselben Elemente
+      // erneut. Eine Warnung, die nicht verschwinden kann, ist keine Messung
+      // mehr, sondern eine Behauptung.
+      m.textContent = e.mech;
+      m.style.color = '';
+      rahmen.style.outline = '';
+    }
+  };
+  requestAnimationFrame(()=>{ messen(); requestAnimationFrame(messen); });
+  b.neuZeichnen = () => {
+    const {html} = e.bau(zustand);
+    wf.innerHTML = html;
+    verdrahten(wf, b);
+    messen(); requestAnimationFrame(messen);
+  };
+  kacheln.push(b);
+  return b;
+}
+
+/* Halten heisst halten. pointerdown/-up statt click, damit "nur solange
+   gehalten" nicht behauptet, sondern getan wird — auch wenn der Zeiger den
+   Griff waehrend des Haltens verlaesst (pointercancel/leave faengt das). */
+const kacheln = [];
+function alleNeu(){ kacheln.forEach(k => k.neuZeichnen && k.neuZeichnen()); }
+/* lageAnlegen() stand hier und konnte nichts bewirken: sie prueft auf die
+   Entwuerfe 'beides' und 'rahmen' aus bedienebenen.html, dieses Blatt kennt
+   nur 'sammel', 'jede' und 'ausnahme'. Gemessen ueber 6 Szenarien x 3
+   Schritte x 3 Bedienlagen: die Klassen appRahmen/appBleibt tauchen nie
+   im DOM auf. Die App-Umrandung ist ausserdem ausdruecklich verworfen
+   (abnahmen/2026-08-20-vorhoeren-markierte-zeile.md). */
+function verdrahten(wf, b){
+  wf.querySelectorAll('[data-griff]').forEach(g => {
+    const was = g.dataset.griff;
+    if(was === 'hold'){
+      const an = ev => { ev.preventDefault(); if(LAGE.haelt) return;
+        LAGE.haelt = true; alleNeu(); };
+      const aus = () => { if(!LAGE.haelt) return; LAGE.haelt = false; alleNeu(); };
+      g.addEventListener('pointerdown', an);
+      g.addEventListener('pointerup', aus);
+      g.addEventListener('pointerleave', aus);
+      g.addEventListener('pointercancel', aus);
+      if(LAGE.haelt) g.classList.add('gedrueckt');
+    } else {
+      g.addEventListener('click', () => {
+        if(was === 'apply' || was === 'keep'){ LAGE.angewandt = true; }
+        if(was === 'undo' || was === 'discard'){ LAGE.angewandt = false; }
+        // "noch unklar" ist laut Spezifikation ein vollwertiges Urteil, kein
+        // Verwerfen: es laesst den Zustand, wie er ist, und beendet nur das
+        // Vorhoeren. Vorher war der Knopf gar nicht verdrahtet.
+        if(was === 'unsure'){ /* Zustand bleibt, wie er ist */ }
+        LAGE.haelt = false; alleNeu();
+      });
+    }
+  });
+}
+function knopf(text, fn, klasse){
+  const b = document.createElement('button');
+  b.className = 'k' + (klasse ? ' ' + klasse : '');
+  b.textContent = text; b.onclick = fn; return b;
+}
+/* Die Zustandsmatrix zum Durchschalten — Arbeitsplan Phase 1 verlangt ein
+   lebendes Blatt mit Zustands-Schaltern, nicht ein Standbild des Schoenfalls. */
+function szenarioKnoepfe(){
+  return SZENARIEN.map(([id, n]) =>
+    knopf(n, () => { szenarioSetzen(id); zeichnen(); },
+      WELT.szenario === id ? 'an' : ''));
+}
+function weltKnoepfe(){
+  return [
+    knopf('Messung ' + WELT.messung + ' %', () => {
+      WELT.messung = WELT.messung >= 100 ? 0 : WELT.messung === 0 ? 68 : 100;
+      vertragCache.clear(); zeichnen(); }),
+    knopf(WELT.degradiert ? 'Degradiert: an' : 'Degradiert: aus', () => {
+      WELT.degradiert = !WELT.degradiert; vertragCache.clear(); zeichnen(); },
+      WELT.degradiert ? 'an' : '')
+  ];
+}
+function zustandsKnoepfe(){
+  return ZUSTAENDE.map(([id,n]) =>
+    knopf(n, ()=>{ zustand = id; zeichnen(); }, zustand === id ? 'an' : ''));
+}
+/* Zeigt unter jeder Kachel, was dort DAUERHAFT steht und was einen Schritt
+   entfernt ist — gemessen ueber alle drei Arbeitsschritte. */
+function vertragKnopf(){
+  const an = document.body.classList.contains('vertragAn');
+  return knopf(an ? 'Dauerhaft-Vertrag aus' : 'Was bleibt dauerhaft stehen?',
+    ()=>{ document.body.classList.toggle('vertragAn'); zeichnen(); },
+    an ? 'an' : '');
+}
+function zeichnen(){
+  kacheln.length = 0;   // sonst zeichnet alleNeu() abgehaengte Kacheln nach
+  buehne.innerHTML = ''; fuss.innerHTML = ''; buehne.style.display = 'flex';
+  if(stufe === 1) s1(); else if(stufe === 2) s2(); else ergebnis();
+}
+/* Gewaehlt wird ueber eine Zeile UNTER dem Blatt, nicht durch Klick ins
+   Blatt: im Blatt wird jetzt wirklich bedient. */
+function waehlZeile(e, text, fn){
+  const z = document.createElement('div');
+  z.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:2px';
+  z.appendChild(knopf(text, fn, eng.includes(e.id) ? 'an' : ''));
+  const h = document.createElement('span');
+  h.style.cssText = 'font-size:11px;color:#3d3d3d';
+  /* Der Hinweis stand in allen drei Arbeitsschritten gleich da, den Griff
+     gibt es aber nur im Schritt "Befund verstehen" und nur bei erreichbarer
+     Quelle. */
+  h.textContent = zustand !== 'finding'
+    ? 'Zum Vorhören in Schritt 2 „Befund verstehen" wechseln.'
+    : befundLage(FINDINGS[0][0]) === 'ok'
+      ? 'Halte „Audition (hold)" im Blatt gedrückt.'
+      : 'Auf einer getrennten Quelle lässt sich nichts vorhören — das zeigt das Blatt.';
+  z.appendChild(h);
+  return z;
+}
+function s1(){
+  $('#stufe').textContent = 'Stufe 2 · Main · die Zustände';
+  $('#frage').textContent = 'Wo lebt ein Zustand — beim Ding, oder in einer Sammelzeile?';
+  $('#unter').innerHTML = UNTER_ORIGINAL;
+  ENTWUERFE.forEach((e,i)=>{
+    const k = kachel(e, i, false);
+    if(eng.includes(e.id)) k.classList.add('eng');
+    k.appendChild(waehlZeile(e,
+      eng.includes(e.id) ? '✓ gewählt' : 'Diese vergleichen',
+      ()=>{
+        const p = eng.indexOf(e.id);
+        if(p >= 0) eng.splice(p,1);
+        else if(eng.length < 2) eng.push(e.id);
+        else { eng.shift(); eng.push(e.id); }
+        zeichnen();
+      }));
+    buehne.appendChild(k);
+  });
+  const w = knopf(eng.length === 2 ? 'Diese zwei groß vergleichen' : 'Zwei auswählen',
+    ()=>{ zeiten.s1 = Math.round(performance.now()-start);
+          start = performance.now(); stufe = 2; zeichnen(); }, 'dunkel');
+  w.disabled = eng.length !== 2;
+  fuss.append(w, ...zustandsKnoepfe(), vertragKnopf(),
+    ...szenarioKnoepfe(), ...weltKnoepfe(),
+    knopf('Aufgabenliste', ()=>{ document.body.classList.toggle('aufgabenAn'); }),
+    knopf(document.body.classList.contains('thesen') ? 'Thesen aus' : 'Thesen ein',
+      ()=>{ document.body.classList.toggle('thesen'); zeichnen(); }),
+    knopf('Keine davon — weil …', ablehnen));
+  const h = document.createElement('span');
+  h.className = 'hinw';
+  h.textContent = eng.length + ' von 2 gewählt · Blatt und Arbeitsfläche in allen '
+    + wieViele() + ' gleich — verschieden ist nur, WO der Zustand sichtbar wird';
+  fuss.appendChild(h);
+}
+function s2(){
+  $('#stufe').textContent = 'Stufe 2 · Main · Zustände — Zweikampf';
+  $('#frage').textContent = 'Und welche von diesen beiden?';
+  $('#unter').textContent = 'Halte in beiden „Audition (hold)" gedrückt und lass wieder '
+    + 'los. Dann einmal „Apply" und „Undo". Entscheidend ist nicht das Standbild, '
+    + 'sondern der Moment des Wechsels: merkst du sofort, dass etwas läuft — und merkst '
+    + 'du ebenso sofort, dass es vorbei ist?';
+  eng.map(id => ENTWUERFE.find(e=>e.id===id)).forEach((e,i)=>{
+    const k = kachel(e, i, true);
+    k.appendChild(waehlZeile(e, 'Diese nehmen', ()=>{ sieger = e.id;
+      zeiten.s2 = Math.round(performance.now()-start); stufe = 3; zeichnen(); }));
+    buehne.appendChild(k);
+  });
+  fuss.append(knopf('← Zurück zu allen ' + wieViele(), ()=>{ stufe = 1; start = performance.now(); zeichnen(); }),
+    ...zustandsKnoepfe(), vertragKnopf(), ...szenarioKnoepfe(), ...weltKnoepfe(),
+    knopf(document.body.classList.contains('thesen') ? 'Thesen aus' : 'Thesen ein',
+      ()=>{ document.body.classList.toggle('thesen'); zeichnen(); }),
+    knopf('Keine von beiden — weil …', ablehnen));
+}
+function ablehnen(){
+  if(fuss.querySelector('textarea')) return;
+  const box = document.createElement('div');
+  box.style.cssText = 'width:100%;display:flex;flex-direction:column;gap:8px';
+  box.innerHTML = '<textarea class="ablehn" placeholder="Welcher Handgriff wäre hier '
+    + 'umständlich? Was verlierst du beim Wechsel? Was willst du sehen und siehst es '
+    + 'nicht?"></textarea>';
+  box.appendChild(knopf('Notieren', ()=>{
+    const t = box.querySelector('textarea').value.trim();
+    if(t) ablehnungen.push({stufe, zustand, text:t});
+    box.remove();
+  }, 'dunkel'));
+  fuss.appendChild(box);
+  box.querySelector('textarea').focus();
+}
+function ergebnis(){
+  const e = ENTWUERFE.find(x => x.id === sieger);
+  $('#stufe').textContent = 'Ergebnis · Main · die Karte';
+  $('#frage').textContent = e.mech + ' — ' + e.name;
+  $('#unter').textContent = e.these;
+  buehne.innerHTML = ''; buehne.style.display = 'block'; fuss.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'max-width:1200px;margin:0 auto;padding:0 26px 34px;width:100%';
+  const k = kachel(e, 0, true);
+  wrap.appendChild(k);
+  const kn = document.createElement('div');
+  kn.style.cssText = 'display:flex;gap:8px;margin:12px 0';
+  zustandsKnoepfe().forEach(b => kn.appendChild(b));
+  wrap.appendChild(kn);
+  const h = document.createElement('h2');
+  h.style.cssText = 'font-size:16px;margin:14px 0 6px';
+  h.textContent = 'Ergebnis an Claude geben';
+  const ta = document.createElement('textarea');
+  ta.style.cssText = 'width:100%;height:150px;font:11.5px/1.5 "Cascadia Mono",'
+    + '"Consolas",monospace;background:#2a2a2a;color:#d8dde3;border:0;padding:12px;'
+    + 'resize:vertical';
+  ta.spellcheck = false;
+  ta.value = JSON.stringify({
+    werkzeug:'nakama-zustaende', version:1,
+    zeitpunkt:new Date().toISOString(),
+    stufe:'2 / Main / die Zustände', oberflaeche:'Main',
+    engereWahl:eng, sieger:sieger, mechanik:e.mech, name:e.name, these:e.these,
+    ablehnungen:ablehnungen,
+    sekunden:{schritt1:(zeiten.s1/1000).toFixed(1), schritt2:(zeiten.s2/1000).toFixed(1)}
+  }, null, 1);
+  wrap.append(h, ta);
+  const kn2 = document.createElement('div');
+  kn2.style.cssText = 'display:flex;gap:10px;margin-top:10px';
+  kn2.append(knopf('Alles markieren — dann Strg+C', ()=>{ ta.focus(); ta.select();
+      try{ document.execCommand('copy'); }catch(err){} }, 'dunkel'),
+    knopf('Doch nochmal ansehen', ()=>{ stufe = 1; sieger = null; start = performance.now(); zeichnen(); }));
+  wrap.appendChild(kn2);
+  buehne.appendChild(wrap);
+}
+function band(){
+  const b = document.getElementById('band');
+  /* Der Massstab kommt aus den Media-Queries (--s: 1 / .92 / .82), nicht aus
+     der Fensterbreite. Gemessen bei Viewport 1400: Band sagte "1:1", die
+     Kachel war 699 px breit. Jetzt wird der wirkliche Massstab gelesen. */
+  const s = getComputedStyle(document.documentElement);
+  const gross = document.querySelector('.rahmen.gross');
+  const massstab = gross ? parseFloat(getComputedStyle(gross).getPropertyValue('--s')) || 1
+                         : (window.innerWidth > 1600 ? 1 : window.innerWidth > 1300 ? .92 : .82);
+  const echt = window.innerWidth === screen.width && devicePixelRatio === 1
+               && massstab === 1;
+  b.className = echt ? 'ok' : 'warn';
+  b.innerHTML = echt
+    ? '<b>1:1</b> — die Zweikampfansicht zeigt Main in echter Größe, 760×430.'
+    : `<b>Noch nicht 1:1.</b> Nur im Vollbild ist die Zweikampfansicht echte
+       760×430 — im Raster sind alle Kacheln ohnehin verkleinert.`;
+  const k = document.createElement('button');
+  k.textContent = echt ? 'Vollbild verlassen' : 'Vollbild (F11)';
+  k.onclick = () => echt ? document.exitFullscreen()
+                         : document.documentElement.requestFullscreen();
+  b.appendChild(k);
+}
+addEventListener('resize', band);
+band();
+/* Das Szenario muss einmal wirklich gesetzt werden. Vorher leuchtete
+   "gemischt (13/2/1)" beim Laden als aktiv, waehrend in SOURCES noch die
+   Startwerte standen — Bass/Synth Pad/Room Mic statt Room Mic/Backing Vox/
+   Shaker. Der Streifen nannte also andere Namen als das Szenario verspricht,
+   und ein Klick auf den bereits leuchtenden Knopf aenderte das Blatt. */
+szenarioSetzen(WELT.szenario);
+zeichnen();
+/* Wenn die Schriften nachtraeglich fertig werden, aendern sich alle Masse.
+   Dann wird neu gemessen — sonst stuenden die Zahlen unter den Kacheln
+   fuer ein Blatt, das es nicht mehr gibt. */
+if(document.fonts && document.fonts.ready)
+  document.fonts.ready.then(()=>{ vertragCache.clear(); zeichnen(); });
+</script>
+</body>
+</html>

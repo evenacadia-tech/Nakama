@@ -1,0 +1,1040 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nakama — Stilbefragung</title>
+<style>
+/* ============================================================
+   WERKZEUG-CHROME — bewusst neutral (Mittelgrau ~L*50).
+   Ein dunkles Chrome liesse dunkle Spezimen gewinnen, ein helles
+   die hellen. Der Rahmen darf die Antwort nicht mitentscheiden.
+   ============================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:#737373; color:#1d1d1d;
+  font:14px/1.45 'Segoe UI',system-ui,sans-serif;
+  display:flex; flex-direction:column; min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+header{padding:18px 24px 10px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.fortschritt{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#3a3a3a}
+.balken{flex:1;min-width:120px;height:2px;background:#8a8a8a;position:relative;top:-2px}
+.balken i{display:block;height:100%;background:#242424;transition:width .3s}
+.frage{padding:0 24px 4px;font-size:21px;font-weight:600;letter-spacing:-.01em;max-width:1180px}
+.hinweis{padding:2px 24px 0;font-size:12.5px;color:#3d3d3d;max-width:820px}
+/* Oben ausgerichtet, nicht zentriert: bei ungleich hohen Karten (Dichte-Runde)
+   waere Zentrieren unfair — die Listen muessen auf derselben Hoehe beginnen. */
+main{flex:1;display:flex;align-items:flex-start;justify-content:center;
+     padding:34px 24px;gap:26px;flex-wrap:wrap}
+footer{padding:12px 24px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+       border-top:1px solid #8a8a8a}
+
+/* --- Wahlkarte --- */
+.karte{position:relative;cursor:pointer;background:transparent;border:0;padding:0;
+       transition:transform .12s ease, filter .12s ease}
+.karte:hover{transform:translateY(-3px)}
+.karte:focus-visible{outline:2px solid #111;outline-offset:8px}
+.karte .nr{position:absolute;top:-11px;left:-11px;width:22px;height:22px;border-radius:50%;
+       background:#2a2a2a;color:#e8e8e8;font-size:11px;font-weight:700;
+       display:flex;align-items:center;justify-content:center;z-index:3}
+.karte.gewaehlt{filter:brightness(1.06)}
+.karte::after{content:'';position:absolute;inset:-6px;border:2px solid transparent;
+       border-radius:2px;transition:border-color .12s;pointer-events:none}
+.karte:hover::after{border-color:#242424}
+
+/* --- Knöpfe --- */
+button.k{font:inherit;font-size:12.5px;padding:7px 13px;border:1px solid #4a4a4a;
+       background:#818181;color:#141414;cursor:pointer;border-radius:2px}
+button.k:hover{background:#8d8d8d}
+button.k:disabled{opacity:.4;cursor:default}
+button.k.dunkel{background:#2a2a2a;color:#eee;border-color:#2a2a2a}
+button.k.dunkel:hover{background:#3a3a3a}
+.tasten{margin-left:auto;font-size:11.5px;color:#3d3d3d}
+kbd{background:#8d8d8d;border:1px solid #5a5a5a;border-bottom-width:2px;border-radius:3px;
+    padding:1px 5px;font:inherit;font-size:11px}
+textarea.ablehn{width:100%;max-width:820px;height:64px;font:inherit;font-size:13px;padding:8px;
+    background:#8a8a8a;border:1px solid #4a4a4a;color:#141414;resize:vertical}
+
+/* --- Reglerwand --- */
+.regler{display:grid;grid-template-columns:118px 1fr 54px;gap:8px 12px;align-items:center;
+        max-width:420px;font-size:12px}
+.regler label{color:#2a2a2a}
+.regler output{font:12px 'Cascadia Mono','Consolas',monospace;text-align:right;color:#1a1a1a}
+input[type=range]{width:100%;accent-color:#242424}
+
+/* --- Ergebnis --- */
+.ergebnis{max-width:1180px;margin:0 auto;padding:0 24px 30px;width:100%}
+.ergebnis h2{font-size:17px;margin:22px 0 8px}
+.ergebnis p{font-size:13px;max-width:760px;color:#242424}
+#ausgabe{width:100%;height:230px;font:11.5px/1.5 'Cascadia Mono','Consolas',monospace;
+       background:#2a2a2a;color:#d8dde3;border:0;padding:12px;margin-top:10px;resize:vertical}
+.komposit{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;margin-top:8px}
+
+/* ============================================================
+   SPEZIMEN — alles rendert aus EINEM Tokensatz.
+   Jede Variante ist nur ein Patch darauf.
+   ============================================================ */
+.spz{
+  --r:3px; --d:1; --lt:.35;
+  position:relative;
+  /* Die Wahlkarte ist ein <button>; dessen text-align:center wuerde sonst in
+     jedes Spezimen durchschlagen und eine Ausrichtung zur Schau stellen,
+     die nie entschieden wurde. */
+  text-align:left;
+  background:var(--g); color:var(--tx); font-family:var(--sf);
+  border:1px solid #5c5c5c; overflow:hidden; user-select:none;
+  width:424px; padding:calc(15px * var(--d));
+  display:flex; flex-direction:column; gap:calc(10px * var(--d));
+}
+.spz.breit{width:540px}
+/* Die Demo-Kennzeichnung gehoert zum WERKZEUG, nicht zum Spezimen — sonst
+   waere sie Teil dessen, was beurteilt wird. */
+.spzWrap{display:flex;flex-direction:column;gap:5px}
+.demoZ{font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:#3f3f3f;text-align:right}
+
+/* Fläche/Panel je Material.
+   Die Verlaufsenden kommen als fertige Farben aus JS (--fTop/--fBot), weil
+   "oben heller" in einer fast weissen Welt nichts mehr hergibt — dort traegt
+   die abdunkelnde Unterkante das Material. CSS kann das nicht verzweigen. */
+.flae{background:linear-gradient(180deg,var(--fTop) 0%,var(--f) 55%,var(--fBot) 100%);
+      border:1px solid var(--li);border-radius:var(--r);
+      padding:calc(10px * var(--d));position:relative}
+.spz.m-flach .flae{background:var(--f);box-shadow:none}
+.spz.m-tiefe .flae{
+  box-shadow:inset 0 1px 0 rgba(255,255,255,calc(var(--lt) * .14)),
+             0 1px 2px rgba(0,0,0,calc(var(--lt) * .5));
+}
+.spz.m-hardware .flae{
+  box-shadow:inset 0 1px 0 rgba(255,255,255,calc(var(--lt) * .34)),
+             inset 0 -1px 0 rgba(0,0,0,calc(var(--lt) * .45)),
+             0 2px 5px rgba(0,0,0,calc(var(--lt) * .62));
+}
+
+.zeile{display:flex;align-items:center;gap:calc(9px * var(--d))}
+.kopf{display:flex;align-items:baseline;gap:8px;
+      font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--tl)}
+.kopf .akt{color:var(--ak)}
+.wert{font-family:var(--sz);font-variant-numeric:tabular-nums;font-size:15px;color:var(--tx);
+      letter-spacing:-.01em}
+.einh{font-family:var(--sz);font-size:10px;color:var(--tl);margin-left:2px}
+.mini{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--tl)}
+/* min-width:0, damit die Wertfelder bei hoher Dichte oder schmalem Fenster
+   schrumpfen statt aus der Karte zu laufen (die Karte clippt). */
+.feld{border:1px solid var(--li);border-radius:var(--r);padding:calc(4px * var(--d)) 8px;
+      min-width:0;background:color-mix(in srgb,var(--f) 100%,#000 8%)}
+.spz.m-flach .feld{background:transparent}
+.pille{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;
+      border-radius:var(--r);border:1px solid var(--ak);color:var(--ak);background:transparent}
+.pille.an{background:var(--ak);color:var(--g);border-color:var(--ak)}
+
+/* Quellenliste */
+.q{display:flex;align-items:center;gap:8px;padding:calc(3.5px * var(--d)) calc(5px * var(--d));
+   border-radius:var(--r)}
+.q + .q{border-top:1px solid color-mix(in srgb,var(--li) 100%,transparent 45%)}
+.q .nam{flex:1;font-size:calc(12px * min(1.12,var(--d)));white-space:nowrap;overflow:hidden;
+        text-overflow:ellipsis}
+.q .rol{font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--tl);
+        min-width:56px}
+.q .frisch{width:5px;height:5px;border-radius:50%;background:var(--ak);flex:none}
+.q .frisch.alt{background:var(--wa)}
+.q .frisch.weg{background:transparent;border:1px solid var(--tl)}
+.q.sel{background:color-mix(in srgb,var(--ak) 16%,transparent)}
+.q.sel .nam{color:var(--tx)}
+.hm{display:flex;gap:1px;flex:none}
+.hm i{width:9px;height:11px;border-radius:1px;display:block}
+
+/* Befundkarte */
+.bef{display:flex;flex-direction:column;gap:calc(5px * var(--d))}
+.bef .ort{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ak)}
+.bef .obs{font-size:calc(12.5px * min(1.1,var(--d)));color:var(--tx);line-height:1.4}
+.bef .bg{font-size:11px;color:var(--tl);line-height:1.4}
+.bef .sich{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.08em;
+      text-transform:uppercase}
+.sig{width:9px;height:9px;flex:none;border-radius:50%}
+.sig.hoch{background:var(--ak)}
+.sig.mittel{background:var(--wa)}
+.sig.unklar{background:transparent;border:1px solid var(--tl)}
+.spz.sg-farbe .sig{border-radius:50%}
+.spz.sg-farbform .sig.mittel{border-radius:1px;transform:rotate(45deg)}
+.spz.sg-farbform .sig.unklar{border-radius:50%;border-style:dashed}
+.spz.sg-textgewicht .sig{display:none}
+.spz.sg-textgewicht .sich.hoch{font-weight:700;color:var(--tx)}
+.spz.sg-textgewicht .sich.mittel{font-weight:600;color:var(--tx)}
+.spz.sg-textgewicht .sich.unklar{font-weight:400;color:var(--tl);font-style:italic}
+
+/* Kurvenfeld */
+.kf{position:relative;background:var(--kf);
+    border:1px solid var(--li);border-radius:var(--r)}
+.kf svg{display:block;width:100%;height:auto}
+.gitter{stroke:var(--li);stroke-width:1;fill:none}
+.nullinie{stroke:var(--li);stroke-width:1;stroke-dasharray:2 3;fill:none}
+.summe{stroke:var(--ak);stroke-width:1.6;fill:none;stroke-linejoin:round}
+.fuell{fill:color-mix(in srgb,var(--ak) 22%,transparent);stroke:none}
+.bandform{fill:color-mix(in srgb,var(--ak) 8%,transparent);
+  stroke:color-mix(in srgb,var(--ak) 42%,transparent);stroke-width:1}
+.griff{fill:var(--g);stroke:var(--ak);stroke-width:1.4}
+.griff.aus{stroke:var(--tl)}
+/* Der fluechtige Vorschlag zeichnet in Textfarbe, nicht in Warnfarbe: sonst
+   haengt die Lesbarkeit der Bewegungsrunde am zuvor gewaehlten Akzentton. */
+.entwurf{stroke:var(--tx);stroke-width:1.4;stroke-dasharray:3 3;fill:none;
+    opacity:0;transition:opacity var(--mo,140ms) var(--me,linear),
+                        transform var(--mo,140ms) var(--me,linear);
+    transform:translateY(6px);transform-origin:center}
+.anim.an .entwurf{opacity:1;transform:translateY(0)}
+.schutz{fill:color-mix(in srgb,var(--tl) 7%,transparent);stroke:none}
+.achse{font-family:var(--sz);font-size:7.5px;fill:var(--tl)}
+
+/* Meter */
+.mtr{display:flex;gap:calc(6px * var(--d));align-items:flex-end;height:112px}
+.mtr .kanal{width:19px;height:100%;background:color-mix(in srgb,var(--g) 100%,#000 20%);
+    border:1px solid var(--li);border-radius:var(--r);position:relative;overflow:hidden}
+.mtr .fuellung{position:absolute;left:0;right:0;bottom:0;background:var(--ak);height:0%}
+.mtr .peak{position:absolute;left:0;right:0;height:1.5px;background:var(--tx);bottom:0%}
+.mtr .skala{font-family:var(--sz);font-size:8px;color:var(--tl);display:flex;
+    flex-direction:column;justify-content:space-between;height:100%;padding:1px 0}
+
+.knopf{width:54px;height:54px;flex:none;position:relative}
+
+/* Drei Karten muessen NEBENEINANDER bleiben — umgebrochen waeren sie nicht
+   mehr vergleichbar. Also lieber kleiner werden als umbrechen. */
+@media (max-width:1400px){ .spz{width:378px} .spz.breit{width:498px} }
+@media (max-width:1220px){ .spz{width:330px} .spz.breit{width:440px}
+                           main{gap:18px;padding:26px 16px} }
+@media (max-width:1060px){ .spz{width:286px} .spz.breit{width:392px} }
+</style>
+</head>
+<body>
+<!-- Standband: was ist dieses Blatt? Werkzeug-Chrome, deutsch, liegt
+     ausserhalb des beurteilten Blattes. Ergaenzt 2026-08-21. -->
+<div style="background:#7a2f1f;color:#f2f2f2;padding:7px 26px;font:12px/1.5 'Segoe UI',system-ui,sans-serif;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+  <b style="letter-spacing:.12em;font-size:10.5px;text-transform:uppercase;flex:none">Noch nicht benutzen — die Spezimen zeigen die verworfene Welt</b>
+  <span style="opacity:.92">Die 19 Runden laufen auf flachen Graustufenwelten und dem Material „hardware" — der Sprache des im Zweikampf <b>unterlegenen</b> „dunklen Geräts". Eine Glaswelt ist in keiner Runde erreichbar. Wer das Blatt jetzt durchspielt, überschreibt die Arbeitsannahme, ohne sie je gesehen zu haben. Erst die Spezimen umstellen.</span>
+</div>
+
+
+<header>
+  <span class="fortschritt" id="fortschritt">Runde 1</span>
+  <span class="balken"><i id="balken" style="width:0%"></i></span>
+</header>
+<div class="frage" id="frage"></div>
+<div class="hinweis" id="hinweis"></div>
+<main id="buehne"></main>
+<footer id="fuss"></footer>
+
+<script>
+/* ================================================================
+   NAKAMA — STILBEFRAGUNG
+   Visuelle Kalibrierung statt verbaler Interviewfragen.
+   Pro Runde aendert sich genau EINE Gestaltungsvariable, gezeigt an
+   echtem Nakama-Inhalt (Demo-Daten, sichtbar markiert).
+   Ergebnis ist kein Stimmungsbild, sondern ein Tokensatz.
+   ================================================================ */
+
+/* ---------- 1. Tokens ---------- */
+const SCHRIFTEN = {
+  sys   : "'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif",
+  din   : "'Bahnschrift','DIN Next','Segoe UI',sans-serif",
+  warm  : "'Lato','Corbel','Candara',sans-serif",
+  rund  : "'Rubik','Century Gothic','Segoe UI',sans-serif",
+  gothic: "'Franklin Gothic Medium','Arial Narrow',sans-serif",
+  mono  : "'Cascadia Mono','Consolas',monospace"
+};
+
+// Startpunkt bewusst unentschieden: mitteldunkel, fast farblos, flach-neutral.
+const BASIS = {
+  grund:'#17191c', flaeche:'#20242a', flaecheHoch:'#282d34', linie:'#363c44',
+  text:'#d7dae0', textLeise:'#8b929c',
+  akzH:210, akzS:6, akzL:64,
+  warn:'#c9b174', fehler:'#c68278',
+  radius:3, dichte:1, licht:.35,
+  material:'tiefe',        // flach | tiefe | hardware
+  schrift:'sys', schriftZahl:'mono',
+  kurve:'linie',           // linie | flaeche | baender
+  farbmodus:'akzent',      // akzent | palette | codiert
+  signal:'farbform',       // farbe | farbform | textgewicht
+  motionMs:140, motionEase:'cubic-bezier(.2,.7,.3,1)',
+  meter:'gedaempft'        // hart | gedaempft | traege
+};
+
+const akz = t => `hsl(${t.akzH} ${t.akzS}% ${t.akzL}%)`;
+
+function anwenden(el, t){
+  const s = el.style;
+  s.setProperty('--g',  t.grund);
+  s.setProperty('--f',  t.flaeche);
+  s.setProperty('--fh', t.flaecheHoch);
+  s.setProperty('--li', t.linie);
+  s.setProperty('--tx', t.text);
+  s.setProperty('--tl', t.textLeise);
+  s.setProperty('--ak', akz(t));
+  s.setProperty('--wa', t.warn);
+  s.setProperty('--fe', t.fehler);
+  s.setProperty('--r',  t.radius + 'px');
+  s.setProperty('--d',  t.dichte);
+  s.setProperty('--lt', t.licht);
+  s.setProperty('--sf', SCHRIFTEN[t.schrift]);
+  s.setProperty('--sz', SCHRIFTEN[t.schriftZahl]);
+  s.setProperty('--mo', t.motionMs + 'ms');
+  s.setProperty('--me', t.motionEase);
+  // Das Kurvenfeld muss in beiden Welten funktionieren: in einer dunklen
+  // Welt tiefer als der Grund, in einer hellen heller. color-mix kann nicht
+  // verzweigen, also wird der Wert hier gerechnet.
+  s.setProperty('--kf', istHell(t.grund)
+      ? mische(t.grund, '#ffffff', 72) : mische(t.grund, '#000000', 34));
+  const woelbung = t.material === 'hardware' ? 16 : t.material === 'tiefe' ? 6 : 0;
+  s.setProperty('--fTop', mische(t.flaeche, '#ffffff', woelbung * t.licht));
+  s.setProperty('--fBot', mische(t.flaeche, '#000000', woelbung * t.licht * .9));
+  el.className = el.className.replace(/\b(m|sg|km|fm)-\S+/g,'').trim()
+    + ` m-${t.material} sg-${t.signal} km-${t.kurve} fm-${t.farbmodus}`;
+}
+
+/* ---------- 2. Demo-Inhalt (realistisch, als Demo gekennzeichnet) ---------- */
+const QUELLEN = [
+  {n:'Lead-Vocal', r:'führt',     e:[2,3,5,4,2], f:'ok'},
+  {n:'Choir',      r:'carries',   e:[1,3,4,5,3], f:'ok'},
+  {n:'Piano',      r:'carries',   e:[3,5,4,3,2], f:'ok'},
+  {n:'Drums',      r:'trägt',     e:[5,3,2,3,5], f:'ok'},
+  {n:'Bass',       r:'trägt',     e:[5,5,2,1,1], f:'alt'},
+  {n:'Gitarre',    r:'begleitet', e:[1,3,4,4,3], f:'ok'},
+  {n:'Strings',    r:'supports',  e:[2,3,4,4,4], f:'ok'},
+  {n:'Synth-Pad',  r:'verschm.',  e:[2,4,3,3,4], f:'weg'},
+  {n:'Brass',      r:'supports',  e:[1,2,4,5,4], f:'ok'},
+  {n:'Percussion', r:'supports',  e:[2,2,3,4,5], f:'ok'},
+  {n:'Kontrabass', r:'trägt',     e:[5,4,2,1,1], f:'ok'},
+  {n:'Harfe',      r:'begleitet', e:[1,2,4,4,3], f:'ok'},
+  {n:'Organ',      r:'protected', e:[4,4,3,3,2], f:'ok'},
+  {n:'Room Mic',   r:'blended',   e:[2,3,3,4,4], f:'alt'}
+];
+const BAENDER = [
+  {f:90,   q:.8,  g:-3.2, an:true},
+  {f:410,  q:1.4, g:-2.5, an:true},
+  {f:3200, q:1.1, g: 2.0, an:true},
+  {f:8400, q:.7,  g: 1.2, an:false}
+];
+const ENTWURF = [
+  {f:90,   q:.8,  g:-3.2},
+  {f:410,  q:1.4, g:-0.9},
+  {f:3200, q:1.1, g: 2.0},
+  {f:230,  q:1.6, g:-2.4}
+];
+
+/* ---------- 3. Spezimen-Renderer ---------- */
+const KB = 392, KH = 162, KMAX = 8;   // Kurvenfeld: Maße und dB-Skala
+
+// Formnaeherung eines Glockenfilters im Log-Frequenzraum.
+// Bewusst Naeherung: das hier ist eine Materialprobe, keine Messung.
+function kurvePfad(baender, w=KB, h=KH, max=KMAX){
+  let d='';
+  for(let x=0;x<=w;x+=2){
+    const f = 20*Math.pow(1000, x/w);
+    let db=0;
+    for(const b of baender){
+      if(b.an===false) continue;
+      const oct = Math.log2(f/b.f), bw = 1/Math.max(.35,b.q);
+      db += b.g*Math.exp(-(oct*oct)/(2*bw*bw));
+    }
+    const y = h/2 - (db/max)*(h/2-9);
+    d += (x?'L':'M') + x + ' ' + y.toFixed(1);
+  }
+  return d;
+}
+const xVonF = f => KB*Math.log(f/20)/Math.log(1000);
+
+function spzKurve(t, opt={}){
+  const g = [100,1000,10000].map(f =>
+      `<path class="gitter" d="M${xVonF(f).toFixed(1)} 0V${KH}"/>` +
+      `<text class="achse" x="${(xVonF(f)+3).toFixed(1)}" y="${KH-4}">${f>=1000?(f/1000)+'k':f}</text>`
+  ).join('');
+  const summe = kurvePfad(BAENDER);
+  const baenderFormen = t.kurve==='baender'
+    ? BAENDER.filter(b=>b.an).map(b=>
+        `<path class="bandform" d="${kurvePfad([b])}L${KB} ${KH/2}L0 ${KH/2}Z"/>`).join('')
+    : '';
+  const fuellung = t.kurve==='flaeche'
+    ? `<path class="fuell" d="${summe}L${KB} ${KH/2}L0 ${KH/2}Z"/>` : '';
+  const griffe = BAENDER.map(b=>{
+    const x = xVonF(b.f), y = KH/2 - (b.g/KMAX)*(KH/2-9);
+    return `<circle class="griff${b.an?'':' aus'}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4"/>`;
+  }).join('');
+  const entwurf = opt.entwurf
+    ? `<path class="entwurf" d="${kurvePfad(ENTWURF)}"/>` : '';
+  const sx = xVonF(2000), sw = xVonF(5000) - xVonF(2000);
+  const schutz = `<rect class="schutz" x="${sx.toFixed(1)}" y="0"
+        width="${sw.toFixed(1)}" height="${KH}"/>
+     <text class="achse" x="${(sx+4).toFixed(1)}" y="11">protected</text>`;
+  return `
+   <div class="kopf"><span class="akt">Active Probe</span><span>Piano</span>
+        <span style="margin-left:auto">${BAENDER.length} bands</span></div>
+   <div class="kf${opt.entwurf?' anim':''}">
+     <svg viewBox="0 0 ${KB} ${KH}">
+       ${schutz}${g}
+       <path class="nullinie" d="M0 ${KH/2}H${KB}"/>
+       ${baenderFormen}${fuellung}
+       <path class="summe" d="${summe}"/>
+       ${entwurf}${griffe}
+     </svg>
+   </div>
+   <div class="zeile">
+     <span class="mini">Band 2</span>
+     <span class="wert">410<span class="einh">Hz</span></span>
+     <span class="wert">1.4<span class="einh">Q</span></span>
+     <span class="wert">−2.5<span class="einh">dB</span></span>
+     <span class="pille an" style="margin-left:auto">Bell</span>
+   </div>`;
+}
+
+function spzPanel(t){
+  const lt = t.licht;
+  const knopf = `
+   <svg class="knopf" viewBox="0 0 44 44">
+     <defs>
+       <radialGradient id="kg${t._id}" cx="38%" cy="26%" r="78%">
+         <stop offset="0"  stop-color="rgba(255,255,255,${(t.material==='hardware'?.34:t.material==='tiefe'?.16:0)*(lt+.4)})"/>
+         <stop offset="1"  stop-color="rgba(0,0,0,${(t.material==='hardware'?.42:t.material==='tiefe'?.2:0)*(lt+.4)})"/>
+       </radialGradient>
+     </defs>
+     <circle cx="22" cy="22" r="17" fill="var(--fh)" stroke="var(--li)"/>
+     <circle cx="22" cy="22" r="17" fill="url(#kg${t._id})"/>
+     ${t.material==='hardware'
+       ? `<path d="M9 16A17 17 0 0 1 32 9" stroke="rgba(255,255,255,${.4*lt+.12})"
+                fill="none" stroke-width="1.4" stroke-linecap="round"/>` : ''}
+     <path d="M22 22 L29 12" stroke="var(--ak)" stroke-width="2" stroke-linecap="round"/>
+     <circle cx="22" cy="22" r="20.5" fill="none" stroke="var(--li)" stroke-dasharray="1 4"/>
+   </svg>`;
+  const feld = (l,w,e)=>`<span class="feld" style="flex:1"><span class="mini">${l}</span><br>
+        <span class="wert">${w}<span class="einh">${e}</span></span></span>`;
+  return `
+   <div class="kopf"><span class="akt">Band 2</span><span>Bell</span>
+        <span style="margin-left:auto">M/S · Mid</span></div>
+   <div class="flae">
+     <div class="zeile">
+       ${knopf}
+       ${feld('Freq','410','Hz')}${feld('Q','1.4','')}${feld('Gain','−2.5','dB')}
+     </div>
+     <div class="zeile" style="margin-top:calc(10px * var(--d))">
+       <span class="pille an">Dyn</span>
+       <span class="mini">Threshold <b class="wert" style="font-size:11px">−18</b></span>
+       <span class="mini">Range <b class="wert" style="font-size:11px">4.0</b></span>
+       <span class="mini">Attack <b class="wert" style="font-size:11px">12</b></span>
+       <span class="mini" style="margin-left:auto">Release <b class="wert"
+             style="font-size:11px">180</b></span>
+     </div>
+   </div>
+   <div class="zeile">
+     <span class="mini">Connected</span>
+     <span class="pille">Bypass</span>
+     <span class="mini" style="margin-left:auto">coupled</span>
+   </div>`;
+}
+
+function spzListe(t, opt={}){
+  const n = opt.anzahl || 8;
+  const sel = opt.sel === undefined ? 2 : opt.sel;
+  const HUE = [12,42,78,140,186,210,262,300,330,20,60,100,160,240];
+  const reihen = QUELLEN.slice(0,n).map((q,i)=>{
+    const hm = q.e.map((v,j)=>{
+      let c;
+      if(t.farbmodus==='codiert') c = `hsl(${HUE[i%HUE.length]} 52% ${18+v*9}%)`;
+      else if(t.farbmodus==='palette')
+        c = v>=5 ? `color-mix(in srgb,var(--wa) 82%,transparent)`
+                 : `color-mix(in srgb,var(--ak) ${12+v*15}%,transparent)`;
+      else c = `color-mix(in srgb,var(--tl) ${8+v*17}%,transparent)`;
+      return `<i style="background:${c}"></i>`;
+    }).join('');
+    return `<div class="q${i===sel?' sel':''}">
+       <span class="frisch ${q.f==='ok'?'':q.f}"></span>
+       <span class="nam">${q.n}</span>
+       <span class="rol">${q.r}</span>
+       <span class="hm">${hm}</span></div>`;
+  }).join('');
+  return `<div class="kopf"><span class="akt">Quellen</span>
+      <span style="margin-left:auto">${n} sichtbar</span></div>
+    <div class="flae" style="padding:calc(6px * var(--d))">${reihen}</div>`;
+}
+
+function spzBefund(t){
+  const karte = (ort,obs,bg,stufe,label)=>`
+    <div class="flae bef">
+      <div class="ort">${ort}</div>
+      <div class="obs">${obs}</div>
+      <div class="bg">${bg}</div>
+      <div class="sich ${stufe}"><span class="sig ${stufe}"></span>Confidence: ${label}</div>
+    </div>`;
+  return `<div class="kopf"><span class="akt">Befunde</span>
+      <span style="margin-left:auto">3 offen</span></div>
+    ${karte('Bass · 180–260 Hz',
+       'Trägt 3,4 dB mehr Energie als die Summe verträgt.',
+       'Alternative cause: piano left hand in the same range.',
+       'hoch','hoch')}
+    ${karte('Choir · 2.5–4 kHz',
+       'Verdeckt das Lead-Vocal in den lauten Takten.',
+       'Next proof: re-check the same passage with choir −2 dB.',
+       'mittel','mittel')}
+    ${karte('Drums · Breite',
+       'Messung unvollständig — 6 s Material, 20 s nötig.',
+       'Mehr Daten nötig. Keine Änderung empfohlen.',
+       'unklar','noch unklar')}`;
+}
+
+function spzMeter(t){
+  return `<div class="kopf"><span class="akt">Summe</span>
+       <span style="margin-left:auto">Beobachten</span></div>
+    <div class="flae">
+      <div class="mtr" data-meter="${t.meter}">
+        <div class="skala"><span>0</span><span>−12</span><span>−30</span></div>
+        <div class="kanal"><div class="fuellung"></div><div class="peak"></div></div>
+        <div class="kanal"><div class="fuellung"></div><div class="peak"></div></div>
+        <div style="margin-left:12px;display:flex;flex-direction:column;gap:4px">
+          <span class="wert"><span class="lufs">−8.4</span><span class="einh">LUFS</span></span>
+          <span class="mini">Kurzzeit</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+const SPEZIMEN = {
+  kurve:  spzKurve,
+  panel:  spzPanel,
+  liste:  spzListe,
+  befund: spzBefund,
+  meter:  spzMeter
+};
+
+let idZaehler = 0;
+function baueSpezimen(art, t, opt={}){
+  const el = document.createElement('div');
+  el.className = 'spz' + (opt.breit ? ' breit' : '');
+  const tk = Object.assign({}, t, {_id: ++idZaehler});
+  el.innerHTML = SPEZIMEN[art](tk, opt);
+  anwenden(el, tk);
+  const wrap = document.createElement('div');
+  wrap.className = 'spzWrap';
+  const dz = document.createElement('span');
+  dz.className = 'demoZ'; dz.textContent = 'Demo-Daten';
+  wrap.append(el, dz);
+  return wrap;
+}
+
+/* ---------- 4. Runden ---------- */
+// art: 'wahl' (2 oder 3 nebeneinander) | 'regler' (Feinjustierung)
+// Jede Variante ist NUR ein Patch — nie ein Label. Namen wuerden die
+// Antwort vorwegnehmen ("technisch" gewinnt, weil es technisch heisst).
+const RUNDEN = [
+{ id:'welt', gruppe:'Grundwelt', art:'wahl', spz:'kurve',
+  frage:'Auf welchem Grund soll Nakama stehen?',
+  hinweis:'Nur die Helligkeit der Welt unterscheidet sich — alles andere ist gleich.',
+  // Der Akzent wandert in der Helligkeit mit, damit alle drei Welten gleich
+  // gut lesbar sind — sonst verliert die helle Variante aus einem Grund, der
+  // nichts mit der Frage zu tun hat.
+  varianten:[
+    {p:{grund:'#0b0c0e',flaeche:'#141619',flaecheHoch:'#1b1e22',linie:'#2a2e34',
+        text:'#dfe2e7',textLeise:'#828892',akzL:66}},
+    {p:{grund:'#2e3339',flaeche:'#3a4047',flaecheHoch:'#454c55',linie:'#565e69',
+        text:'#e6e9ee',textLeise:'#a3aab4',akzL:72}},
+    {p:{grund:'#e9eaec',flaeche:'#f6f7f8',flaecheHoch:'#ffffff',linie:'#c9ccd1',
+        text:'#1a1d21',textLeise:'#6b7178',akzL:38}}
+  ]},
+
+{ id:'kontrast', gruppe:'Kontrast', art:'wahl', spz:'panel',
+  frage:'Wie deutlich soll sich eine Fläche vom Grund abheben?',
+  hinweis:'Zwei Stufen derselben Welt.',
+  varianten:[
+    {p:{}, dyn:t=>kontrastStufe(t,1)},
+    {p:{}, dyn:t=>kontrastStufe(t,2)}
+  ]},
+
+{ id:'material', gruppe:'Material', art:'wahl', spz:'panel',
+  frage:'Woraus ist die Oberfläche gemacht?',
+  hinweis:'Gleiche Farben, gleiche Maße — nur Licht und Kante ändern sich.',
+  varianten:[
+    {p:{material:'flach',    licht:0}},
+    {p:{material:'tiefe',    licht:.4}},
+    {p:{material:'hardware', licht:.85}}
+  ]},
+
+{ id:'kante', gruppe:'Kante', art:'wahl', spz:'panel',
+  frage:'Wie enden die Kanten?',
+  hinweis:'Nur der Radius.',
+  varianten:[ {p:{radius:0}}, {p:{radius:3}}, {p:{radius:8}} ]},
+
+{ id:'licht', gruppe:'Lichtfarbe', art:'wahl', spz:'panel',
+  frage:'Kühles oder warmes Licht?',
+  hinweis:'Derselbe Aufbau, nur die Temperatur der Grautöne.',
+  varianten:[
+    {p:{}, dyn:t=>temperieren(t,-1)},
+    {p:{}, dyn:t=>temperieren(t, 1)}
+  ]},
+
+{ id:'fein1', gruppe:'Feinjustierung', art:'regler', spz:'panel',
+  frage:'Jetzt du: schieb Kante, Licht und Dichte dahin, wo sie sitzen sollen.',
+  hinweis:'Meine drei Vorgaben waren eine Auswahl, keine Grenze. Hier kannst du sie verlassen.',
+  // Kein Dichteregler hier: die Dichterunde kommt spaeter und wuerde den
+  // eingestellten Wert stillschweigend ueberschreiben. Ihr Regler sitzt dort.
+  regler:[
+    {t:'radius', l:'Kantenradius', min:0, max:14, step:1, e:'px'},
+    {t:'licht',  l:'Lichtstärke',  min:0, max:1,  step:.05, e:''}
+  ]},
+
+{ id:'farbmenge', gruppe:'Farbmenge', art:'wahl', spz:'liste',
+  frage:'Wieviel Farbe verträgt die Arbeitsfläche?',
+  hinweis:'Dieselbe Quellenliste mit Energie-Heatmap — einmal fast farblos, einmal mit '
+        + 'wenigen Bedeutungsfarben, einmal jede Quelle eigenfarbig.',
+  varianten:[ {p:{farbmodus:'akzent'}}, {p:{farbmodus:'palette'}}, {p:{farbmodus:'codiert'}} ]},
+
+{ id:'akzentton', gruppe:'Akzentfarbe', art:'wahl', spz:'kurve',
+  frage:'Welche Farbe trägt das Aktive?',
+  hinweis:'Gleiche Helligkeit, vergleichbare Kraft — nur der Ton wechselt.',
+  varianten:[   // Helligkeit bleibt bewusst, wie die gewaehlte Welt sie braucht
+    {p:{akzH: 38, akzS:58}},
+    {p:{akzH:188, akzS:44}},
+    {p:{akzH:145, akzS:38}}
+  ]},
+
+{ id:'fein2', gruppe:'Feinjustierung', art:'regler', spz:'kurve',
+  frage:'Ton und Kraft der Akzentfarbe — genau da hin, wo du sie haben willst.',
+  hinweis:'Sättigung 0 heißt: gar keine Farbe. Das ist eine gültige Antwort.',
+  regler:[
+    {t:'akzH', l:'Farbton',    min:0, max:360, step:1, e:'°'},
+    {t:'akzS', l:'Sättigung',  min:0, max:90,  step:1, e:'%'},
+    {t:'akzL', l:'Helligkeit', min:35,max:80,  step:1, e:'%'}
+  ]},
+
+{ id:'typo', gruppe:'Schrift', art:'wahl', spz:'befund',
+  frage:'Welche Stimme spricht hier?',
+  hinweis:'Derselbe Befundtext in drei Schriften.',
+  varianten:[
+    {p:{schrift:'din'}}, {p:{schrift:'sys'}}, {p:{schrift:'warm'}}
+  ]},
+
+{ id:'zahlen', gruppe:'Zahlen', art:'wahl', spz:'panel',
+  frage:'Wie sollen Messwerte aussehen?',
+  hinweis:'Links feste Zeichenbreite (Ziffern stehen untereinander still), '
+        + 'rechts dieselbe Schrift wie der Text.',
+  varianten:[ {p:{schriftZahl:'mono'}}, {p:{}, dyn:t=>({schriftZahl:t.schrift})} ]},
+
+{ id:'dichte', gruppe:'Dichte', art:'wahl', spz:'liste', spzOpt:{anzahl:14, sel:-1},
+  frage:'In welcher Liste findest du „Kontrabass" schneller?',
+  hinweis:'Keine Geschmacksfrage — eine Aufgabe. Antworte nach dem, was schneller ging.',
+  varianten:[ {p:{dichte:.78}}, {p:{dichte:1}}, {p:{dichte:1.3}} ]},
+
+{ id:'fein3', gruppe:'Feinjustierung', art:'regler', spz:'liste', spzOpt:{anzahl:12},
+  frage:'Und jetzt genau dahin, wo du sie haben willst.',
+  hinweis:'Diesmal bleibt der Wert stehen — danach fasst ihn keine Runde mehr an.',
+  regler:[ {t:'dichte', l:'Dichte', min:.7, max:1.45, step:.05, e:'×'} ]},
+
+{ id:'kurvenstil', gruppe:'Kurvenfeld', art:'wahl', spz:'kurve',
+  frage:'In welchem siehst du schneller, WO der Eingriff sitzt?',
+  hinweis:'Wieder eine Aufgabe, keine Geschmacksfrage.',
+  varianten:[ {p:{kurve:'linie'}}, {p:{kurve:'flaeche'}}, {p:{kurve:'baender'}} ]},
+
+{ id:'signal', gruppe:'Sicherheitsstufe', art:'wahl', spz:'befund',
+  frage:'Wie soll „hoch / mittel / noch unklar" ablesbar sein?',
+  hinweis:'Einmal nur über Farbe, einmal Farbe plus Form, einmal ohne Farbe über '
+        + 'Schriftgewicht.',
+  varianten:[ {p:{signal:'farbe'}}, {p:{signal:'farbform'}}, {p:{signal:'textgewicht'}} ]},
+
+{ id:'bewegung', gruppe:'Bewegung', art:'wahl', spz:'kurve', spzOpt:{entwurf:true},
+  frage:'Ein Vorschlag vom Main erscheint und verschwindet wieder. Welcher Charakter?',
+  hinweis:'Alle drei laufen synchron. Gestrichelt = der flüchtige Vorschlag.',
+  varianten:[
+    {p:{motionMs:0,   motionEase:'linear'}},
+    {p:{motionMs:130, motionEase:'cubic-bezier(.2,.75,.3,1)'}},
+    {p:{motionMs:320, motionEase:'cubic-bezier(.34,1.42,.64,1)'}}
+  ]},
+
+{ id:'meter', gruppe:'Meterlauf', art:'wahl', spz:'meter',
+  frage:'Wie soll ein Pegel laufen?',
+  hinweis:'Gleiches Signal, drei Trägheiten. Schnell heißt nervös, träge heißt ruhig '
+        + 'aber später.',
+  varianten:[ {p:{meter:'hart'}}, {p:{meter:'gedaempft'}}, {p:{meter:'traege'}} ]},
+
+// --- Wiederholungen zur Konsistenzpruefung (Reihenfolge gedreht) ---
+{ id:'wdh-material', wdhVon:'material', gruppe:'Gegenprobe', art:'wahl', spz:'befund',
+  frage:'Welches würdest du einem Freund zeigen, wenn du sagst „so arbeite ich"?',
+  hinweis:'Andere Frage, andere Fläche — dieselbe Entscheidung wie vorhin.',
+  varianten:[
+    {p:{material:'hardware', licht:.85}},
+    {p:{material:'tiefe',    licht:.4}},
+    {p:{material:'flach',    licht:0}}
+  ], wdhKarte:[2,1,0]},
+
+{ id:'wdh-farbmenge', wdhVon:'farbmenge', gruppe:'Gegenprobe', art:'wahl', spz:'liste',
+  spzOpt:{anzahl:11},
+  frage:'Und nach 4 Stunden Arbeit — welche willst du dann noch vor dir haben?',
+  hinweis:'Dieselbe Entscheidung wie vorhin, umgedreht.',
+  varianten:[ {p:{farbmodus:'codiert'}}, {p:{farbmodus:'palette'}}, {p:{farbmodus:'akzent'}} ],
+  wdhKarte:[2,1,0]}
+];
+
+/* ---------- Farbhelfer ---------- */
+function hex(c){ const m=c.replace('#','');
+  return [0,2,4].map(i=>parseInt(m.substr(i,2),16)); }
+function zuHex(r,g,b){ return '#'+[r,g,b].map(v=>
+  Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join(''); }
+function mische(a,b,pz){ const A=hex(a),B=hex(b),k=pz/100;
+  return zuHex(A[0]+(B[0]-A[0])*k, A[1]+(B[1]-A[1])*k, A[2]+(B[2]-A[2])*k); }
+function istHell(c){ const [r,g,b]=hex(c); return (.2126*r + .7152*g + .0722*b) > 140; }
+// Kontraststufe muss die Welt kennen: in einer hellen Welt liegt die Fläche
+// heller als der Grund und die Linie dunkler — in einer dunklen umgekehrt.
+function kontrastStufe(t, stufe){
+  const hell = istHell(t.grund);
+  const fz = hell ? [42,100] : [4,14];
+  const lz = hell ? [13,28]  : [12,30];
+  return {
+    flaeche:     mische(t.grund, '#ffffff', fz[stufe-1]),
+    flaecheHoch: mische(t.grund, '#ffffff', fz[stufe-1] + (hell ? 0 : 6)),
+    linie:       mische(t.grund, hell ? '#000000' : '#ffffff', lz[stufe-1])
+  };
+}
+function hslVon(c){
+  const [r,g,b] = hex(c).map(v=>v/255);
+  const mx = Math.max(r,g,b), mn = Math.min(r,g,b), d = mx - mn, l = (mx+mn)/2;
+  let h = 0, s = 0;
+  if(d){
+    s = l > .5 ? d/(2-mx-mn) : d/(mx+mn);
+    h = 60 * (mx===r ? (g-b)/d + (g<b?6:0) : mx===g ? (b-r)/d + 2 : (r-g)/d + 4);
+  }
+  return [h, s*100, l*100];
+}
+function hexVonHsl(h,s,l){
+  h = ((h%360)+360)%360; s/=100; l/=100;
+  const c = (1-Math.abs(2*l-1))*s, x = c*(1-Math.abs((h/60)%2-1)), m = l-c/2;
+  const [r,g,b] = h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]
+                : h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x];
+  return zuHex((r+m)*255, (g+m)*255, (b+m)*255);
+}
+// Grautöne kippen. Ueber HSL, nicht ueber Kanal-Offsets: die Basisgraus sind
+// bereits blaustichig, ein additiver Offset landet dort im Gruenen statt im
+// Warmen. So bleibt die Helligkeit exakt erhalten und nur der Ton wechselt —
+// sonst waere die Runde eine Helligkeitsfrage im Kostuem einer Farbfrage.
+function temperieren(t, richtung){
+  const ziel = richtung > 0 ? 32 : 214;
+  const k = c => { const [,s,l] = hslVon(c);
+                   return hexVonHsl(ziel, Math.min(16, s + 7), l); };
+  return {grund:k(t.grund), flaeche:k(t.flaeche), flaecheHoch:k(t.flaecheHoch),
+          linie:k(t.linie), text:k(t.text), textLeise:k(t.textLeise)};
+}
+
+/* ---------- 5. Ablauf ---------- */
+let i = 0;
+let tokens = Object.assign({}, BASIS);
+const verlauf = [];          // {runde, wahl, patch, ms, tokenVorher}
+const ablehnungen = [];
+let rundeStart = 0;
+let ablehnungOffen = false;
+
+const $ = s => document.querySelector(s);
+const buehne = $('#buehne'), fuss = $('#fuss');
+
+function zeichnen(){
+  ablehnungOffen = false;
+  if(i >= RUNDEN.length){ finale(); return; }
+  const r = RUNDEN[i];
+  $('#fortschritt').textContent = `Runde ${i+1} / ${RUNDEN.length} · ${r.gruppe}`;
+  $('#balken').style.width = (i/RUNDEN.length*100) + '%';
+  $('#frage').textContent = r.frage;
+  $('#hinweis').textContent = r.hinweis || '';
+  buehne.innerHTML = ''; fuss.innerHTML = '';
+  rundeStart = performance.now();
+
+  if(r.art === 'regler'){ zeichneRegler(r); return; }
+
+  r.varianten.forEach((v, n)=>{
+    const patch = v.dyn ? Object.assign({}, v.p, v.dyn(tokens)) : v.p;
+    const t = Object.assign({}, tokens, patch);
+    const karte = document.createElement('button');
+    karte.className = 'karte'; karte.type = 'button';
+    karte.appendChild(baueSpezimen(r.spz, t,
+        Object.assign({breit: r.varianten.length === 2}, r.spzOpt || {})));
+    const nr = document.createElement('span');
+    nr.className = 'nr'; nr.textContent = n+1;
+    karte.appendChild(nr);
+    karte.onclick = ()=> waehlen(n, patch);
+    buehne.appendChild(karte);
+  });
+
+  knopfLeiste([
+    {t:'Alle falsch — und zwar weil …', f:ablehnen},
+    {t:'Unentschieden', f:()=>waehlen(null,{})}
+  ]);
+  starteTicker();
+}
+
+function knopfLeiste(liste){
+  fuss.innerHTML = '';
+  const zurueck = mkKnopf('← Zurück', zurueckGehen);
+  zurueck.disabled = verlauf.length === 0;
+  fuss.appendChild(zurueck);
+  liste.forEach(k => fuss.appendChild(mkKnopf(k.t, k.f, k.dunkel)));
+  const t = document.createElement('span');
+  t.className = 'tasten';
+  const r = RUNDEN[i];
+  t.innerHTML = (r && r.art === 'regler')
+    ? '<kbd>Enter</kbd> weiter · <kbd>←</kbd> zurück'
+    : (r ? r.varianten.map((_,n)=>`<kbd>${n+1}</kbd>`).join(' ')
+           + ' wählen · <kbd>0</kbd> unentschieden · <kbd>←</kbd> zurück' : '');
+  fuss.appendChild(t);
+}
+function mkKnopf(text, fn, dunkel){
+  const b = document.createElement('button');
+  b.className = 'k' + (dunkel ? ' dunkel' : '');
+  b.textContent = text; b.onclick = fn; return b;
+}
+
+function waehlen(n, patch){
+  const r = RUNDEN[i];
+  // Wer den Ablehnungstext tippt und dann doch eine Karte anklickt, soll
+  // seinen Text nicht verlieren.
+  const offen = fuss.querySelector('textarea.ablehn');
+  if(offen && offen.value.trim() && !ablehnungen.some(a=>a.id===r.id))
+    ablehnungen.push({id:r.id, frage:r.frage, text:offen.value.trim()});
+  verlauf.push({
+    id: r.id, gruppe: r.gruppe, frage: r.frage,
+    wahl: n, karte: n===null ? null : (r.wdhKarte ? r.wdhKarte[n] : n),
+    patch: patch, ms: Math.round(performance.now() - rundeStart),
+    vorher: Object.assign({}, tokens)
+  });
+  if(n !== null && !r.wdhVon) tokens = Object.assign({}, tokens, patch);
+  i++; zeichnen();
+}
+
+function ablehnen(){
+  if(ablehnungOffen) return;
+  ablehnungOffen = true;
+  const box = document.createElement('div');
+  box.style.cssText = 'width:100%;display:flex;flex-direction:column;gap:8px';
+  box.innerHTML = '<textarea class="ablehn" placeholder="Was genau stört dich an allen '
+    + 'dreien? Je konkreter, desto brauchbarer — „zu spielzeugartig", „die Zahlen '
+    + 'verschwinden", „sieht aus wie ein Consumer-Gadget"."></textarea>';
+  const ok = mkKnopf('Notieren und weiter', ()=>{
+    ablehnungen.push({id: RUNDEN[i].id, frage: RUNDEN[i].frage,
+                      text: box.querySelector('textarea').value.trim()});
+    waehlen(null, {});
+  }, true);
+  box.appendChild(ok);
+  fuss.appendChild(box);
+  box.querySelector('textarea').focus();
+}
+
+function zurueckGehen(){
+  const letzt = verlauf.pop();
+  if(!letzt) return;
+  tokens = letzt.vorher;
+  i = RUNDEN.findIndex(r => r.id === letzt.id);
+  zeichnen();
+}
+
+/* --- Reglerrunde --- */
+function zeichneRegler(r){
+  const halter = document.createElement('div');
+  halter.style.cssText = 'display:flex;gap:30px;align-items:center;flex-wrap:wrap';
+  // Rahmen fester Groesse, damit der Austausch der Vorschau nicht springt.
+  const rahmen = document.createElement('div');
+  rahmen.appendChild(baueSpezimen(r.spz, tokens, r.spzOpt || {}));
+  const neuZeichnen = ()=>{
+    rahmen.replaceChildren(baueSpezimen(r.spz, tokens, r.spzOpt || {}));
+  };
+  const wand = document.createElement('div');
+  wand.className = 'regler';
+  r.regler.forEach(s=>{
+    const id = 'r_' + s.t;
+    const l = document.createElement('label'); l.textContent = s.l; l.htmlFor = id;
+    const inp = document.createElement('input');
+    inp.type='range'; inp.id=id; inp.min=s.min; inp.max=s.max; inp.step=s.step;
+    inp.value = tokens[s.t];
+    const out = document.createElement('output');
+    const zeige = ()=> out.textContent =
+        (Math.round(inp.value*100)/100) + (s.e || '');
+    zeige();
+    inp.oninput = ()=>{ tokens[s.t] = parseFloat(inp.value); zeige(); neuZeichnen(); };
+    wand.append(l, inp, out);
+  });
+  halter.append(rahmen, wand);
+  buehne.appendChild(halter);
+  knopfLeiste([{t:'Sitzt — weiter', f:()=>{
+      verlauf.push({id:r.id, gruppe:r.gruppe, frage:r.frage, wahl:'regler',
+        patch:Object.fromEntries(r.regler.map(s=>[s.t, tokens[s.t]])),
+        ms:Math.round(performance.now()-rundeStart), vorher:Object.assign({},tokens)});
+      i++; zeichnen();
+    }, dunkel:true}]);
+}
+
+/* --- Tastatur --- */
+addEventListener('keydown', e=>{
+  if(ablehnungOffen && e.target.tagName === 'TEXTAREA') return;
+  if(i >= RUNDEN.length) return;
+  const r = RUNDEN[i];
+  if(r.art === 'regler'){
+    if(e.key === 'Enter'){ fuss.querySelectorAll('button.k')[1]?.click(); }
+    if(e.key === 'ArrowLeft') zurueckGehen();
+    return;
+  }
+  const n = parseInt(e.key, 10);
+  if(n >= 1 && n <= r.varianten.length){
+    buehne.querySelectorAll('.karte')[n-1].click();
+  } else if(e.key === '0'){ waehlen(null, {});
+  } else if(e.key === 'ArrowLeft'){ zurueckGehen(); }
+});
+
+/* --- Animationsticker: alle Karten laufen SYNCHRON, sonst ist der
+       Vergleich wertlos. --- */
+let tickerAn = false;
+function starteTicker(){
+  // Frisch gezeichnete Karten sollen nicht bis zum naechsten Takt warten.
+  setTimeout(()=>document.querySelectorAll('.anim').forEach(el=>el.classList.add('an')), 80);
+  if(tickerAn) return; tickerAn = true;
+  setInterval(()=>{
+    document.querySelectorAll('.anim').forEach(el => el.classList.toggle('an'));
+  }, 1200);
+  requestAnimationFrame(meterSchleife);
+}
+// Deterministisches "Musiksignal": 120 bpm, Anschlag + langsame Welle.
+function signal(t){
+  const beat = (t*2) % 1;
+  return Math.min(1, .22 + .62*Math.exp(-beat*5.5) + .12*Math.sin(t*1.7));
+}
+const meterStand = new WeakMap();
+function meterSchleife(ts){
+  const t = ts/1000, s = signal(t);
+  document.querySelectorAll('[data-meter]').forEach(m=>{
+    const art = m.dataset.meter;
+    let st = meterStand.get(m) || {v:0, p:0, pt:0};
+    const auf = art==='hart' ? 1 : art==='gedaempft' ? .35 : .12;
+    const ab  = art==='hart' ? 1 : art==='gedaempft' ? .07 : .022;
+    st.v += (s - st.v) * (s > st.v ? auf : ab);
+    if(st.v > st.p){ st.p = st.v; st.pt = t; }
+    else if(t - st.pt > 1.1) st.p = Math.max(st.v, st.p - .012);
+    meterStand.set(m, st);
+    m.querySelectorAll('.fuellung').forEach((f,k)=>{
+      f.style.height = (st.v*100 * (k ? .93 : 1)).toFixed(1) + '%';
+    });
+    m.querySelectorAll('.peak').forEach(p=>{
+      p.style.bottom = (st.p*100).toFixed(1) + '%';
+      p.style.opacity = art === 'hart' ? 0 : 1;
+    });
+    // Die Zahl laeuft mit derselben Traegheit wie der Balken — wie ruhig ein
+    // Messwert steht, gehoert zur selben Entscheidung.
+    const l = m.querySelector('.lufs');
+    if(l) l.textContent = (-30 + st.v*30).toFixed(1).replace('-','−');
+  });
+  requestAnimationFrame(meterSchleife);
+}
+
+/* ---------- 6. Finale ---------- */
+function finale(){
+  $('#fortschritt').textContent = 'Fertig';
+  $('#balken').style.width = '100%';
+  $('#frage').textContent = 'Die Summe deiner Entscheidungen';
+  $('#hinweis').textContent = 'Lokal richtige Einzelentscheidungen können als Ganzes '
+    + 'falsch sein. Deshalb hier alles zusammen — und die Regler bleiben offen.';
+  buehne.innerHTML = ''; fuss.innerHTML = ''; fuss.style.display = 'none';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'ergebnis';
+
+  const komposit = document.createElement('div');
+  komposit.className = 'komposit';
+  const neuZeichnen = ()=>{
+    komposit.innerHTML = '';
+    ['kurve','panel','liste','befund'].forEach(a=>
+      komposit.appendChild(baueSpezimen(a, tokens, a==='liste'?{anzahl:9}:{})));
+  };
+  neuZeichnen();
+
+  const wand = document.createElement('div');
+  wand.className = 'regler';
+  [['akzH','Farbton',0,360,1,'°'],['akzS','Sättigung',0,90,1,'%'],
+   ['akzL','Akz.-Helligkeit',30,85,1,'%'],['radius','Kantenradius',0,14,1,'px'],
+   ['licht','Lichtstärke',0,1,.05,''],['dichte','Dichte',.75,1.4,.05,'×']
+  ].forEach(([tk,l,mn,mx,st,e])=>{
+    const lab=document.createElement('label'); lab.textContent=l;
+    const inp=document.createElement('input');
+    inp.type='range'; inp.min=mn; inp.max=mx; inp.step=st; inp.value=tokens[tk];
+    const out=document.createElement('output');
+    const z=()=>out.textContent=(Math.round(inp.value*100)/100)+e; z();
+    inp.oninput=()=>{ tokens[tk]=parseFloat(inp.value); z(); neuZeichnen(); ausgeben(); };
+    wand.append(lab,inp,out);
+  });
+
+  const konsistenz = RUNDEN.filter(r=>r.wdhVon).map(r=>{
+    const a = verlauf.find(v=>v.id===r.wdhVon);
+    const b = verlauf.find(v=>v.id===r.id);
+    if(!a || !b || a.wahl===null || b.wahl===null)
+      return {thema:r.wdhVon, urteil:'nicht prüfbar'};
+    return {thema:r.wdhVon, urteil: a.wahl===b.karte ? 'stabil' : 'abweichend',
+            erst:a.wahl, gegenprobe:b.karte};
+  });
+
+  wrap.innerHTML = '<h2>Zusammen gesehen</h2>';
+  wrap.appendChild(komposit);
+  const h3 = document.createElement('h2'); h3.textContent = 'Nachjustieren';
+  wrap.append(h3, wand);
+
+  const hk = document.createElement('h2'); hk.textContent = 'Gegenprobe';
+  const pk = document.createElement('p');
+  pk.textContent = konsistenz.map(k=>`${k.thema}: ${k.urteil}`).join(' · ')
+    + '  —  „abweichend" ist kein Fehler, es heißt nur: da entscheidet der Rahmen mit, '
+    + 'nicht nur das Material. Für den Tokensatz oben gilt die erste Antwort; '
+    + 'die Abweichung geht als offener Punkt in die Abnahme.';
+  wrap.append(hk, pk);
+
+  const he = document.createElement('h2'); he.textContent = 'Ergebnis an Claude geben';
+  const pe = document.createElement('p');
+  pe.textContent = 'Kopieren und in den Chat einfügen. (Der Zwischenablage-Knopf '
+    + 'funktioniert bei lokalen Dateien nicht immer — dann einfach im Feld Strg+A, Strg+C.)';
+  const ta = document.createElement('textarea'); ta.id = 'ausgabe'; ta.spellcheck = false;
+  wrap.append(he, pe, ta);
+
+  const kn = document.createElement('div');
+  kn.style.cssText = 'display:flex;gap:10px;margin-top:10px';
+  // Ehrliche Beschriftung: der Knopf VERSUCHT zu kopieren (execCommand;
+  // navigator.clipboard gibt es auf file:// nicht). Markiert ist danach in
+  // jedem Fall — Strg+C funktioniert immer.
+  kn.appendChild(mkKnopf('Alles markieren — dann Strg+C', ()=>{
+     ta.focus(); ta.select();
+     try{ document.execCommand('copy'); }catch(e){}
+  }, true));
+  kn.appendChild(mkKnopf('Als Datei speichern', ()=>{
+     try{
+       const b = new Blob([ta.value], {type:'application/json'});
+       const url = URL.createObjectURL(b);
+       const a = document.createElement('a');
+       a.href = url; a.download = 'nakama-stilprofil.json'; a.click();
+       setTimeout(()=>URL.revokeObjectURL(url), 4000);
+     }catch(e){}
+     // Ein geblockter Download wirft nicht immer — deshalb keine Erfolgsmeldung,
+     // sondern ein Hinweis, der in beiden Faellen stimmt.
+     pe.textContent = 'Wenn im Download-Ordner keine nakama-stilprofil.json '
+       + 'liegt, hat der Browser das Speichern aus einer lokalen Datei geblockt — '
+       + 'dann den Weg über Markieren und Strg+C nehmen.';
+  }));
+  kn.appendChild(mkKnopf('Nochmal von vorn', ()=>location.reload()));
+  wrap.appendChild(kn);
+
+  buehne.style.display = 'block';
+  buehne.appendChild(wrap);
+
+  function ausgeben(){
+    ta.value = JSON.stringify({
+      werkzeug:'nakama-stilbefragung', version:1,
+      zeitpunkt: new Date().toISOString(),
+      tokens: tokens,
+      akzentAlsFarbe: akz(tokens),
+      entscheidungen: verlauf.map(v=>({
+        id:v.id, gruppe:v.gruppe, wahl:v.wahl, karte:v.karte,
+        patch:v.patch, sekunden: (v.ms/1000).toFixed(1)
+      })),
+      ablehnungen: ablehnungen,
+      gegenprobe: konsistenz
+    }, null, 1);
+  }
+  ausgeben();
+}
+
+zeichnen();
+</script>
+</body>
+</html>

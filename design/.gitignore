@@ -1,0 +1,7 @@
+# Playwright-Mitschriften des Werkzeugs — Sitzungsmuell, kein Projektwissen
+.playwright-cli/
+.playwright-mcp/
+
+# Belege der Blattpruefung: Beweis fuer den Moment, kein Projektwissen.
+werkzeug/pruefung/bilder/
+werkzeug/pruefung/.gegenprobe/

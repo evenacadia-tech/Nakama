@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nakama — Wireframe Main</title>
+<style>
+/* Werkzeug-Chrome (deutsch). Das Produkt darin ist englisch. */
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#737373;color:#1d1d1d;
+  font:14px/1.45 'Segoe UI',system-ui,sans-serif;min-height:100vh;
+  display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+header{padding:16px 26px 4px}
+.stufe{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#3a3a3a}
+h1{font-size:22px;font-weight:600;letter-spacing:-.01em;margin-top:4px}
+.unter{font-size:13px;color:#3d3d3d;max-width:960px;margin-top:5px}
+main{flex:1;display:flex;align-items:flex-start;justify-content:center;
+  padding:18px 22px;gap:20px;flex-wrap:wrap;align-content:flex-start}
+footer{padding:12px 26px 20px;display:flex;gap:10px;align-items:center;
+  flex-wrap:wrap;border-top:1px solid #8a8a8a}
+button.k{font:inherit;font-size:12.5px;padding:8px 13px;border:1px solid #4a4a4a;
+  background:#818181;color:#141414;cursor:pointer;border-radius:2px}
+button.k:hover{background:#8d8d8d}
+button.k:disabled{opacity:.38;cursor:default}
+button.k.dunkel{background:#242424;color:#eee;border-color:#242424}
+button.k.an{background:#242424;color:#eee;border-color:#242424}
+textarea.ablehn{width:100%;max-width:880px;height:66px;font:inherit;font-size:13px;
+  padding:9px;background:#8a8a8a;border:1px solid #4a4a4a;color:#141414;resize:vertical}
+.hinw{margin-left:auto;font-size:11.5px;color:#3d3d3d}
+#band{padding:6px 26px;font-size:12px;display:flex;gap:12px;align-items:center}
+#band.ok{background:#5c6b5c;color:#eaf2ea}
+#band.warn{background:#6b5c3c;color:#f4ead6}
+#band button{font:inherit;font-size:11.5px;padding:3px 10px;border:1px solid #4a4a4a;
+  background:#8a8a8a;color:#141414;cursor:pointer;border-radius:2px}
+.aufgaben{display:none;margin:8px 0 0;padding:10px 14px;background:#8a8a8a;
+  border:1px solid #6a6a6a;max-width:960px;font-size:12.5px}
+body.aufgabenAn .aufgaben{display:block}
+.aufgaben ol{margin:6px 0 0 18px}
+.aufgaben li{margin:2px 0}
+.aufgaben em{font-style:normal;color:#3f3f3f}
+.wahl{position:relative;padding:0;border:0;background:transparent;cursor:pointer;
+  display:flex;flex-direction:column;gap:5px;text-align:left}
+.wahl .nr{position:absolute;top:-10px;left:-10px;width:22px;height:22px;border-radius:50%;
+  background:#2a2a2a;color:#e8e8e8;font-size:11px;font-weight:700;z-index:6;
+  display:flex;align-items:center;justify-content:center}
+.wahl::after{content:'';position:absolute;inset:-7px;border:2px solid transparent;
+  transition:border-color .12s;pointer-events:none}
+.wahl:hover::after{border-color:#2a2a2a}
+.wahl.eng::after{border-color:#111;border-width:3px}
+.mech{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#3f3f3f}
+.these{font-size:11.5px;line-height:1.4;color:#242424;display:none}
+body.thesen .these{display:block}
+
+/* Der Dauerhaft-Vertrag der Mechanik. Werkzeug-Chrome, deutsch — er sagt
+   ueber das Blatt etwas aus, er ist nicht Teil des Blattes.
+   Gemessen: dauerhaft = steht in ALLEN drei Arbeitsschritten da. */
+.vertrag{display:none;flex-direction:column;gap:3px;margin-top:2px}
+body.vertragAn .vertrag{display:flex}
+.vertrag > span{display:flex;flex-wrap:wrap;gap:4px;align-items:baseline}
+.vertrag i{font-style:normal;font-size:9px;letter-spacing:.12em;
+  text-transform:uppercase;width:112px;flex:none;color:#3f3f3f}
+.vertrag span span{font-size:10.5px;padding:2px 6px;border:1px solid #6a6a6a;
+  white-space:nowrap}
+.dauer span{background:#2a2a2a;color:#ececec;border-color:#2a2a2a}
+.dauer b{font-weight:700}
+.abrufz span{background:transparent;color:#2f2f2f;border-style:dashed}
+/* Ein Baustein ohne Beleg ist ein erfundener Baustein. */
+.vertrag span span.ohnebeleg{background:#7a2f1f;color:#fff;border-color:#7a2f1f}
+.regler{display:flex;align-items:center;gap:8px;font-size:12px;color:#2a2a2a;
+  border:1px solid #4a4a4a;background:#818181;padding:5px 11px;border-radius:2px}
+.regler input{width:118px}
+.regler b{min-width:16px;text-align:right}
+
+/* ============================================================
+   WIREFRAME — reine Graustufen. Kein Farbton, kein Material,
+   kein Licht. Der Inhalt ist englisch, weil er das Produkt ist.
+   ============================================================ */
+.rahmen{position:relative;--s:.58;overflow:hidden;
+  width:calc(760px * var(--s));height:calc(430px * var(--s))}
+.rahmen .wf{transform:scale(var(--s));transform-origin:0 0}
+.rahmen.gross{--s:1}   /* Zweikampf: 1:1, sonst ist das Urteil wertlos */
+@media (max-width:1600px){ .rahmen{--s:.52} .rahmen.gross{--s:.92} }
+@media (max-width:1300px){ .rahmen{--s:.46} .rahmen.gross{--s:.82} }
+
+.wf{width:760px;height:430px;background:#242424;color:#c9c9c9;overflow:hidden;
+  border:1px solid #5c5c5c;display:grid;gap:8px;padding:8px;
+  font:12px/1.4 'Segoe UI',system-ui,sans-serif}
+.wf > *{min-width:0;min-height:0}
+/* flex:1 ist Pflicht, nicht Kosmetik: ohne das sind die Kaesten inhaltsbreit
+   statt blattbreit, und ein 760er Blatt wird auf 240 px beurteilt. Tote
+   Flaeche gilt in docs/arbeitsplan.md ausdruecklich als Fehler. */
+.box{border:1px solid #4c4c4c;background:#2e2e2e;display:flex;flex-direction:column;
+  overflow:hidden;min-width:0;min-height:0;flex:1}
+.box > h4{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#8f8f8f;
+  padding:6px 9px 5px;border-bottom:1px solid #414141;flex:none;
+  display:flex;gap:8px;align-items:baseline}
+.box > h4 em{font-style:normal;margin-left:auto;color:#6f6f6f;letter-spacing:.08em}
+.inh{padding:7px 9px;flex:1;overflow:hidden;display:flex;flex-direction:column;gap:5px}
+
+.streifen{border:1px solid #4c4c4c;background:#2e2e2e;display:flex;
+  align-items:center;padding:0 9px;min-width:0;overflow:hidden}
+.eb{font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:6px 11px;
+  color:#9a9a9a;border-right:1px solid #414141}
+.eb:first-child{padding-left:0}
+.eb.an{background:#4a4a4a;color:#e8e8e8}
+.status{margin-left:auto;font-size:10px;color:#8f8f8f;display:flex;gap:12px;
+  overflow:hidden;flex:none}
+.status span{white-space:nowrap}
+.pkt{display:inline-block;width:5px;height:5px;border-radius:50%;background:#9a9a9a;
+  margin-right:4px;vertical-align:1px}
+.pkt.alt{background:#6a6a6a}
+.pkt.weg{background:transparent;border:1px solid #6a6a6a}
+
+/* Schrittleiste — sichtbarer Weg, sichtbarer Rueckweg. */
+.schritte{border:1px solid #4c4c4c;background:#2e2e2e;display:flex;align-items:center;
+  padding:0 9px;overflow:hidden}
+.sch{font-size:10px;letter-spacing:.09em;padding:6px 12px;color:#7d7d7d;
+  border-right:1px solid #414141;white-space:nowrap}
+.sch.an{color:#e8e8e8;background:#4a4a4a}
+.sch.war{color:#a8a8a8}
+.zurueck{margin-left:auto;font-size:10px;color:#9a9a9a;border:1px solid #5a5a5a;
+  padding:3px 9px;white-space:nowrap}
+
+/* Ehrliche Liste. Zeigt nur, was ganz hineinpasst, und sagt darunter, wieviel
+   das von wieviel ist. Vorher log das Blatt: "11 of 16" stand im Kopf, fuenf
+   Zeilen waren zu sehen, elf im DOM — der Rest lag unsichtbar unter der Kante. */
+.liste{flex:1;min-height:0;display:flex;flex-direction:column;gap:inherit;
+  overflow:hidden}
+.hm .liste{gap:2px}
+.kappe{flex:none;font-size:8.5px;letter-spacing:.08em;color:#8f8f8f;
+  border-top:1px dashed #5a5a5a;padding-top:3px;margin-top:2px;
+  display:flex;gap:6px;align-items:center}
+.kappe::before{content:'';flex:none;width:9px;height:1px;background:#7d7d7d}
+
+.qz{display:flex;align-items:center;gap:7px;font-size:11px;padding:2px 0;
+  border-bottom:1px solid #333}
+.qz .n{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qz .r{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:#7d7d7d;
+  min-width:56px}
+.suche{border:1px solid #454545;background:#282828;color:#8f8f8f;font-size:10px;
+  padding:4px 7px;flex:none}
+
+.hm{display:flex;flex-direction:column;gap:2px;flex:1;min-height:0}
+.hmk{display:flex;gap:2px;font-size:8px;color:#7d7d7d;letter-spacing:.06em}
+.hmk span{flex:1;text-align:center}
+.hmz{display:flex;align-items:stretch;gap:5px;flex:1;min-height:8px}
+/* Eine Zeile, die einen Namen traegt, darf nie flacher sein als der Name.
+   Kein geratener Wert: max-content ist genau die Inhaltshoehe. Vorher stand
+   hier 8 px, der Name misst mehr — der Deckel lag unter dem Inhalt. */
+.hmz.benannt{min-height:max-content}
+.hmz .n{width:76px;font-size:10px;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;flex:none;align-self:center}
+.hmz .z{display:flex;gap:2px;flex:1}
+.hmz .z i{flex:1;display:block;height:100%;min-height:7px}
+/* Kontextzeilen bleiben sichtbar, aber flach — das ist Focus+Context.
+   Auch die Zellen muessen mitschrumpfen: eine 5-px-Zeile mit 7-px-Zellen
+   ist wieder ein Deckel unter dem Inhalt. */
+.hmz.ctx{flex:none;height:5px;min-height:0;opacity:.5}
+.hmz.ctx .n{font-size:0}
+.hmz.ctx .z i{min-height:0}
+.hmz.fokus{flex:4}
+.hmz.fokus .n{font-size:11px;color:#e4e4e4}
+.markiert{outline:1px solid #a8a8a8;outline-offset:1px}
+
+.bf{border:1px solid #454545;background:#333;padding:5px 7px;display:flex;
+  flex-direction:column;gap:2px}
+.bf b{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;
+  font-weight:400}
+.bf span{font-size:10.5px;color:#c9c9c9}
+.bf i{font-style:normal;font-size:9px;color:#7d7d7d}
+.bf.an{background:#3d3d3d;border-color:#6a6a6a}
+
+.as{display:flex;flex-direction:column;gap:5px;flex:1;min-height:0}
+.ast{display:flex;gap:8px;align-items:baseline}
+.ast b{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:#7d7d7d;
+  width:96px;flex:none;font-weight:400}
+.ast span{font-size:11px;color:#c9c9c9;flex:1}
+.as.gross .ast b{width:116px;font-size:9.5px}
+.as.gross .ast span{font-size:14px}
+.knopfreihe{display:flex;gap:5px;margin-top:auto;padding-top:6px;flex-wrap:wrap}
+.wfk{font-size:9.5px;letter-spacing:.06em;padding:4px 9px;border:1px solid #5a5a5a;
+  color:#c2c2c2;background:#3a3a3a;white-space:nowrap}
+.wfk.stark{background:#5a5a5a;color:#eee}
+/* Geschlossener Beleg: benannt und sichtbar, nur nicht geoeffnet. */
+.abruf{font-size:10px;color:#9a9a9a;border:1px solid #4a4a4a;background:#292929;
+  padding:5px 8px;display:flex;align-items:center;gap:7px}
+.abruf::before{content:'+';font-size:12px;color:#7d7d7d;width:9px}
+.abruf em{font-style:normal;margin-left:auto;color:#6f6f6f;font-size:9px}
+
+.kurve{flex:1;border:1px solid #454545;background:#282828;position:relative;
+  min-height:0}
+.kurve svg{position:absolute;inset:0;width:100%;height:100%}
+.detailz{display:flex;gap:5px;font-size:9px;color:#8f8f8f}
+.detailz span{flex:1;border:1px solid #454545;background:#282828;padding:3px 5px}
+.vg{display:flex;gap:6px;flex:1;min-height:0}
+.vg > div{flex:1;border:1px solid #454545;background:#282828;padding:6px 7px;
+  font-size:10px;color:#9a9a9a;display:flex;flex-direction:column;gap:4px}
+.vg b{font-size:9px;letter-spacing:.12em;text-transform:uppercase;font-weight:400;
+  color:#8f8f8f}
+
+.zoomleiste{display:flex;align-items:center;border:1px solid #4c4c4c;
+  background:#2e2e2e;padding:0 9px;overflow:hidden}
+.zs{font-size:10px;letter-spacing:.09em;padding:6px 12px;color:#7d7d7d;
+  border-right:1px solid #414141;white-space:nowrap}
+.zs.an{color:#e8e8e8;background:#4a4a4a}
+.ausschnitt{margin-left:auto;font-size:9.5px;color:#8f8f8f;display:flex;
+  align-items:center;gap:6px;white-space:nowrap}
+.minimap{width:96px;height:12px;border:1px solid #5a5a5a;position:relative;
+  background:#282828;flex:none;display:block}
+.minimap i{position:absolute;top:0;bottom:0;background:#6a6a6a;display:block}
+</style>
+</head>
+<body>
+<!-- Standband: was ist dieses Blatt? Werkzeug-Chrome, deutsch, liegt
+     ausserhalb des beurteilten Blattes. Ergaenzt 2026-08-21. -->
+<div style="background:#3f3f3f;color:#f2f2f2;padding:7px 26px;font:12px/1.5 'Segoe UI',system-ui,sans-serif;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+  <b style="letter-spacing:.12em;font-size:10.5px;text-transform:uppercase;flex:none">Eingefroren — Beleg, nicht nachziehen</b>
+  <span style="opacity:.92">Entschieden am 2026-08-20: <b>Overview + Detail</b> (abnahmen/2026-08-20-mechanik-main-overview-detail.md). Achtung beim Kopieren: die Überlaufmessung dieses Blattes misst <b>nur die Höhe</b> und die Aufteilung läuft über CSS-Grid — beides ist in zustaende.html neuer. Von dort kopieren.</span>
+</div>
+
+<div id="band"></div>
+<header>
+  <div class="stufe" id="stufe">Stufe 2 · Schritt 1 von 3 — Wireframe UX · Main</div>
+  <h1 id="frage">Was ist wann sichtbar?</h1>
+  <div class="unter" id="unter"><b>Auf der abgenommenen Größe 760×430</b>, in echten
+    Pixeln. Fünf <b>Disclosure-Mechaniken</b>, nicht fünf Kastenanordnungen — sie
+    unterscheiden sich darin, <i>wann</i> sie was zeigen und wie man an den Rest kommt.
+    Graustufen, keine Optik. Alle Kacheln stehen im selben Arbeitsschritt; unten
+    kannst du den Schritt wechseln.<br>
+    <b>Neu und wichtig:</b> die Blätter schneiden nicht mehr heimlich ab. Jede Liste
+    zeigt nur, was wirklich hineinpasst, und sagt im Blatt selbst, wieviel fehlt
+    („5 more not shown“). Vorher stand in einer Kachel <i>„11 of 16“</i> und zu sehen
+    waren fünf. <b>„Was bleibt dauerhaft stehen?“</b> zeigt unter jeder Kachel den
+    gemessenen Vertrag: was in <i>allen drei</i> Arbeitsschritten dasteht — und wieviel
+    vom Mix davon übrig bleibt.</div>
+  <div class="aufgaben" id="aufgaben">
+    <b>Die Aufgabenliste nach Häufigkeit</b> — laut <code>docs/DESIGN-GESETZE.md</code>
+    die Voraussetzung für jedes Wireframe. Geteilt wird nach Häufigkeit der Aufgabe,
+    nicht nach Können des Nutzers.
+    <ol>
+      <li><b>Den Mix lesen</b> — bei jedem Sessionstart. <em>sehr häufig</em></li>
+      <li><b>Einen Befund verstehen</b> — Ort, Grund, Sicherheit.
+        <em>der Kernakt, vielfach je Session</em></li>
+      <li><b>Den kleinsten Versuch machen</b> — vorhören, anwenden.
+        <em>folgt jedem Befund</em></li>
+      <li><b>Urteilen</b> — A/B, behalten oder verwerfen. <em>folgt jedem Versuch</em></li>
+      <li><b>Eine bestimmte Quelle finden</b> — Suche, Pinnen. <em>gelegentlich</em></li>
+      <li><b>Rollen und Fokusgruppen setzen</b> — <em>selten, meist einmal je Projekt</em></li>
+      <li><b>Status ablesen</b> — Frische, laufende Messung, degradierte Funktion.
+        <em>ständig nebenbei, nie das Ziel</em></li>
+    </ol>
+  </div>
+</header>
+<main id="buehne"></main>
+<footer id="fuss"></footer>
+
+<script>
+/* ================================================================
+   NAKAMA — WIREFRAME MAIN
+   Stufe 2 / Schritt 1. Varianten unterscheiden sich in der
+   Disclosure-Mechanik (docs/DESIGN-GESETZE.md, Regel 3):
+   Schritt-fuer-Schritt · Focus+Context · Overview+Detail ·
+   nur-auf-Abruf · semantischer Zoom.
+   Produkttexte englisch (CLAUDE.md, Arbeitsweise).
+   ================================================================ */
+
+const SOURCES = [
+  ['Lead Vocal','leads','ok',[1,2,3,5,4,4,3,2,1]],
+  ['Choir','carries','ok',[1,1,3,4,4,5,4,3,2]],
+  ['Piano','carries','ok',[1,3,5,4,3,3,2,2,1]],
+  ['Drums','carries','ok',[4,5,3,2,2,3,4,5,3]],
+  ['Bass','carries','alt',[5,5,4,2,1,1,1,0,0]],
+  ['Guitar','supports','ok',[0,1,3,4,4,4,3,2,1]],
+  ['Strings','supports','ok',[1,2,3,4,4,4,4,3,2]],
+  ['Synth Pad','blended','weg',[1,2,3,3,3,3,4,4,3]],
+  ['Brass','supports','ok',[0,1,2,4,5,4,4,3,2]],
+  ['Percussion','supports','ok',[1,2,2,3,3,4,5,5,4]],
+  ['Double Bass','carries','ok',[5,4,3,2,1,1,0,0,0]],
+  ['Harp','supports','ok',[0,1,2,4,4,3,3,2,1]],
+  ['Organ','protected','ok',[3,4,4,3,3,2,2,1,1]],
+  ['Room Mic','blended','alt',[1,2,3,3,4,4,4,4,3]],
+  ['Backing Vox','supports','ok',[0,1,2,4,4,4,3,2,1]],
+  ['Shaker','supports','ok',[0,0,1,1,2,3,4,5,5]]
+];
+const BAND = ['20','60','120','250','500','1k','2k','4k','8k'];
+const FINDINGS = [
+  ['Bass · 180–260 Hz','Carries 3.4 dB more than the sum can take.','Confidence: high'],
+  ['Choir · 2.5–4 kHz','Masks the lead vocal in the loud bars.','Confidence: medium'],
+  ['Drums · Width','Measurement incomplete — 6 s of 20 s.','Unclear']
+];
+const ADVISOR = [
+  ['Priority','Bass against piano, 180–260 Hz'],
+  ['Likely cause','Bass carries 3.4 dB too much there'],
+  ['Smallest test','Bass −2 dB at 220 Hz, Q 1.2'],
+  ['Listen for','piano left hand, bars 33–41'],
+  ['Then','re-check the same passage']
+];
+const ZUSTAENDE = [
+  ['read','1 · Mix lesen'],
+  ['finding','2 · Befund verstehen'],
+  ['verdict','3 · Urteilen']
+];
+
+/* ---------- Bausteine (Produkttext englisch) ---------- */
+/* opt.baustein = der Name, unter dem dieses Stueck im Dauerhaft-Vertrag
+   zaehlt. Der Vertrag wird gemessen — welche Bausteine ueberleben ALLE drei
+   Arbeitsschritte —, nicht behauptet. */
+const kasten = (t, z, i, opt={}) =>
+  `<div class="box"${opt.baustein ? ` data-baustein="${opt.baustein}"` : ''}>${
+    t || z ? `<h4>${t}<em data-fest="${z||''}">${z||''}</em></h4>` : ''}
+   <div class="inh">${i}</div></div>`;
+
+/* Ehrliche Liste: rendert alle Zeilen, blendet nach der Messung aus, was
+   nicht ganz hineinpasst, und schreibt die WAHRE Zahl darunter.
+   Gemessen am 2026-08-20: Overview+Detail behauptete im Kopf "11 of 16",
+   sichtbar waren 5. Ein Blatt, das mehr behauptet als es zeigt, macht jeden
+   Mechanikvergleich wertlos — es vergleicht dann Wunsch mit Wunsch. */
+const liste = (name, gesamt, html) =>
+  `<div class="liste" data-liste="${name}" data-gesamt="${gesamt}">${html}</div>`;
+
+function ebenen(aktiv){
+  const eb = ['Observe','Advise','Audition','Apply']
+    .map((e,i)=>`<span class="eb${i===aktiv?' an':''}">${e}</span>`).join('');
+  return `<div class="streifen" data-baustein="Bedienebenen + Status">${eb}
+    <span class="status">${
+      [['','ok','fresh'],['alt','alt','stale'],['weg','weg','offline']]
+        .map(([k,f,w])=>{ const n = SOURCES.filter(q=>q[2]===f).length;
+          return n ? `<span><span class="pkt ${k}"></span>${n} ${w}</span>` : ''; })
+        .join('')}
+      <span>Measuring 68 %</span><span>Width: unavailable</span></span></div>`;
+}
+function schritte(z){
+  const i = ZUSTAENDE.findIndex(x=>x[0]===z);
+  const namen = ['1 · Read the mix','2 · Understand a finding','3 · Judge the change'];
+  return `<div class="schritte" data-baustein="Wegweiser (Weg und Rückweg)">
+    ${namen.map((n,k)=>`<span class="sch${k===i?' an':k<i?' war':''}">${n}</span>`).join('')}
+    ${i>0?'<span class="zurueck">← Back</span>':''}</div>`;
+}
+function quellen(n, suche=true, titel='Sources'){
+  return kasten(titel, '',
+    (suche?'<div class="suche">Search · Pin · Focus group</div>':'')
+    + liste('Quellenliste mit Namen', SOURCES.length,
+        SOURCES.slice(0,n).map(([nm,r,f])=>
+        `<div class="qz"><span class="pkt ${f==='ok'?'':f}"></span>
+         <span class="n">${nm}</span><span class="r">${r}</span></div>`).join('')),
+    {baustein:'Quellenliste mit Namen'});
+}
+const hmName = namen => namen ? 'Heatmap (mit Namen)' : 'Übersichtskarte (ohne Namen)';
+function heatmap(n, namen=true, opt={}){
+  const kopf = `<div class="hmk">${namen?'<span style="width:76px;flex:none"></span>':''}
+      ${BAND.map(b=>`<span>${b}</span>`).join('')}</div>`;
+  const zeilen = SOURCES.slice(0,n).map(([nm,,,e],i)=>{
+    const kl = opt.fokus ? (opt.fokus.includes(i) ? ' fokus' : ' ctx') : '';
+    return `<div class="hmz${namen?' benannt':''}${kl}">${namen?`<span class="n">${nm}</span>`:''}
+     <span class="z">${e.map((v,b)=>{
+       const m = (opt.band !== undefined && b === opt.band
+                  && (!opt.fokus || opt.fokus.includes(i))) ? ' class="markiert"' : '';
+       return `<i${m} style="background:hsl(0 0% ${(14+v*11)}%)"></i>`;}).join('')}</span></div>`;
+  }).join('');
+  return kasten(opt.titel || 'Comparative heatmap', opt.zusatz || 'list → heatmap → detail',
+    `<div class="hm">${kopf}${liste(hmName(namen), SOURCES.length, zeilen)}</div>`,
+    {baustein: hmName(namen)});
+}
+function detail(titel='Detail · Piano', zusatz='spectrum · loudness · dynamics · width · history', ab=false){
+  return kasten(titel, zusatz,
+    `<div class="kurve"><svg viewBox="0 0 300 100" preserveAspectRatio="none">
+       ${ab?`<path d="M0 74 C40 72 60 80 90 78 C130 75 150 44 190 40 C230 36 260 48 300 46"
+             fill="none" stroke="#6a6a6a" stroke-width="1.5" stroke-dasharray="3 3"/>`:''}
+       <path d="M0 70 C40 68 60 76 90 74 C130 71 150 40 190 36 C230 32 260 44 300 42"
+             fill="none" stroke="#b0b0b0" stroke-width="1.5"/>
+       <path d="M0 50H300" stroke="#3f3f3f" stroke-width="1" stroke-dasharray="2 3"/>
+     </svg></div>
+     <div class="detailz"><span>−8.4 LUFS</span><span>DR 9</span>
+       <span>Width 62 %</span><span>History 40 s</span></div>`,
+    {baustein:'Detail einer Quelle'});
+}
+function befunde(n, offen=0, titel='Findings'){
+  return kasten(titel, '',
+    liste('Befundliste', FINDINGS.length, FINDINGS.slice(0,n).map(([o,t,s],i)=>
+      `<div class="bf${i===offen?' an':''}"><b>${o}</b><span>${t}</span><i>${s}</i></div>`)
+      .join('')),
+    {baustein:'Befundliste'});
+}
+function advisor(zusatz='one step', gross=false){
+  return kasten('Advisor', zusatz,
+    `<div class="as${gross?' gross':''}">${ADVISOR.map(([b,t])=>
+      `<div class="ast"><b>${b}</b><span>${t}</span></div>`).join('')}
+      <div class="knopfreihe"><span class="wfk">Audition (hold)</span>
+        <span class="wfk stark">Apply</span><span class="wfk">Discard</span></div></div>`,
+    {baustein:'Assistent (genau ein Schritt)'});
+}
+function vergleich(){
+  return kasten('Before / After', 'level-matched',
+    `<div class="vg"><div><b>A — Baseline</b><span>−8.4 LUFS</span></div>
+       <div><b>B — Change</b><span>−8.4 LUFS · Bass −2 dB @ 220</span></div></div>
+     <div class="knopfreihe"><span class="wfk stark">Keep</span>
+       <span class="wfk">Discard</span><span class="wfk">Unsure</span></div>`,
+    {baustein:'A/B-Urteil'});
+}
+const abruf = (text, was) =>
+  `<div class="abruf" data-baustein="Tür: ${text}">${text}<em>${was}</em></div>`;
+const minimap = (von, bis) =>
+  `<span class="minimap"><i style="left:${von}%;width:${bis-von}%"></i></span>`;
+
+/* ---------- Die fuenf Mechaniken ---------- */
+const ENTWUERFE = [
+{ id:'schritt', mech:'Schritt für Schritt', name:'Ein Ding zur Zeit',
+  these:'Der Bildschirm zeigt genau den Schritt, in dem du bist — sonst nichts. Der Weg '
+      + 'steht oben, der Rückweg auch. Preis: nie zwei Dinge nebeneinander, also kein '
+      + 'spontanes Quervergleichen.',
+  bau:(z)=>{
+    if(z==='read') return {gitter:'grid-template-rows:30px 30px minmax(0,1fr) auto',
+      html: ebenen(0) + schritte(z)
+        + `<div style="display:flex">${heatmap(16,true,{zusatz:'the whole mix'})}</div>`
+        + `<div style="display:flex">${kasten('','',
+            `<div style="display:flex;align-items:center;gap:12px">
+              <span style="font-size:13px;color:#dcdcdc">3 findings · 1 needs more data</span>
+              <span class="wfk stark" style="margin-left:auto">Start with the first</span>
+              <span class="wfk">Sources &amp; roles</span></div>`,
+            {baustein:'Einstiegszeile (Zahl der Befunde + erster Schritt)'})}</div>`};
+    if(z==='finding') return {gitter:'grid-template-rows:30px 30px minmax(0,1fr) auto',
+      html: ebenen(1) + schritte(z)
+        + `<div style="display:flex">${heatmap(5,true,{fokus:[2,4],band:2,
+            titel:'Where', zusatz:'Bass · 180–260 Hz'})}</div>`
+        + `<div style="display:flex">${advisor('finding 1 of 3', true)}</div>`};
+    return {gitter:'grid-template-rows:30px 30px 1fr',
+      html: ebenen(3) + schritte(z)
+        + `<div style="display:flex;gap:8px">
+             ${detail('Detail · Bass','A vs B', true)}${vergleich()}</div>`};
+  }},
+
+{ id:'fokus', mech:'Focus + Context', name:'Das Umliegende bleibt, aber flach',
+  these:'Eine einzige Fläche. Was gerade zählt, wächst; alles andere schrumpft zu '
+      + 'Streifen. Preis: der Kontext ist da, aber nicht mehr lesbar — man sieht nur '
+      + 'noch, DASS dort etwas ist. Und was auch als Streifen nicht mehr hineinpasst, '
+      + 'verschwindet doch: wieviel vom Mix übrig bleibt, steht unter der Kachel.',
+  bau:(z)=>{
+    if(z==='read') return {gitter:'grid-template-rows:30px minmax(0,1fr) auto',
+      html: ebenen(0)
+        + `<div style="display:flex">${heatmap(16,true,
+            {zusatz:'equal weight'})}</div>`
+        + `<div style="display:flex">${befunde(2)}</div>`};
+    if(z==='finding') return {gitter:'grid-template-rows:30px minmax(0,1fr) auto',
+      html: ebenen(1)
+        + `<div style="display:flex">${heatmap(16,true,
+            {fokus:[2,4],band:2,zusatz:'2 in focus, rest flattened'})}</div>`
+        + `<div style="display:flex">${advisor('finding 1 of 3')}</div>`};
+    return {gitter:'grid-template-rows:30px minmax(0,1fr) auto',
+      html: ebenen(3)
+        + `<div style="display:flex">${heatmap(16,true,
+            {fokus:[4],band:2,zusatz:'A vs B in place'})}</div>`
+        + `<div style="display:flex">${vergleich()}</div>`};
+  }},
+
+{ id:'uebersicht', mech:'Overview + Detail',
+  name:'Kleine Karte bleibt, Arbeitsfläche wechselt',
+  these:'Oben eine dauerhafte kleine Karte des Mixes ohne Namen, die zeigt, wo du '
+      + 'gerade bist; darunter eine Arbeitsfläche, die mit der Aufgabe wechselt. Preis: '
+      + 'die Karte kostet dauerhaft Platz, muss im Kopf mit der Arbeitsfläche verbunden '
+      + 'werden — und trägt selbst nicht den ganzen Mix.',
+  bau:(z)=>{
+    const karte = `<div style="display:flex">${heatmap(16,false,{
+      titel:'Overview',
+      zusatz: z==='read' ? 'nothing selected'
+            : z==='finding' ? 'Bass · 180–260 Hz' : 'Bass · comparing A/B',
+      band: z==='read' ? undefined : 2})}</div>`;
+    if(z==='read') return {gitter:'grid-template-rows:30px minmax(0,1fr) minmax(0,1fr)',
+      html: ebenen(0) + karte
+        + `<div style="display:flex;gap:8px">${befunde(3)}${quellen(11)}</div>`};
+    if(z==='finding') return {gitter:'grid-template-rows:30px minmax(0,1fr) minmax(0,1fr)',
+      html: ebenen(1) + karte
+        + `<div style="display:flex;gap:8px">${advisor('finding 1 of 3')}${detail()}</div>`};
+    return {gitter:'grid-template-rows:30px minmax(0,1fr) minmax(0,1fr)',
+      html: ebenen(3) + karte
+        + `<div style="display:flex;gap:8px">${vergleich()}
+             ${detail('Detail · Bass','A vs B',true)}</div>`};
+  }},
+
+{ id:'abruf', mech:'Nur auf Abruf', name:'Der Rat, und alles andere als Beleg',
+  these:'Fast leer: ein Satz, was zu tun ist, darunter benannte Belege, die geschlossen '
+      + 'sind bis du sie öffnest. Preis: wer selbst stöbern will, muss erst etwas '
+      + 'aufmachen — und Vertrauen haben, dass nichts unterschlagen wird.',
+  bau:(z)=>{
+    if(z==='read') return {gitter:'grid-template-rows:30px 1fr',
+      html: ebenen(0) + `<div style="display:flex">${kasten('Nakama','mix read',
+        `<div style="display:flex;flex-direction:column;gap:9px;padding:26px 10px">
+          <span style="font-size:18px;color:#dcdcdc">3 findings. One needs more data.</span>
+          <span style="font-size:11px;color:#8f8f8f">Bass · Choir · Drums</span>
+          <div class="knopfreihe" style="margin-top:16px">
+            <span class="wfk stark">Start with Bass</span>
+            <span class="wfk">Show all findings</span>
+            <span class="wfk">Show the mix</span>
+            <span class="wfk">Sources &amp; roles</span></div></div>`,
+        {baustein:'Ein Satz: was jetzt zu tun ist'})}</div>`};
+    if(z==='finding') return {gitter:'grid-template-rows:30px 1fr',
+      html: ebenen(1) + `<div style="display:flex">${kasten('Advisor','finding 1 of 3',
+        `<div class="as gross">${ADVISOR.map(([b,t])=>
+           `<div class="ast"><b>${b}</b><span>${t}</span></div>`).join('')}
+         <div style="display:flex;flex-direction:column;gap:4px;margin-top:12px">
+           ${abruf('Where exactly','heatmap · 1 row')}
+           ${abruf('Why this cause','2 alternatives ruled out')}
+           ${abruf('Bass in detail','spectrum · dynamics · width')}
+           ${abruf('The other 2 findings','Choir · Drums')}</div>
+         <div class="knopfreihe"><span class="wfk">Audition (hold)</span>
+           <span class="wfk stark">Apply</span><span class="wfk">Discard</span></div>
+        </div>`,
+        {baustein:'Assistent (genau ein Schritt)'})}</div>`};
+    return {gitter:'grid-template-rows:30px 1fr',
+      html: ebenen(3) + `<div style="display:flex">${kasten('Judge','level-matched',
+        `<div style="display:flex;flex-direction:column;gap:9px;padding:20px 10px">
+          <span style="font-size:17px;color:#dcdcdc">Bass −2 dB at 220 Hz is applied.</span>
+          <span style="font-size:11px;color:#8f8f8f">Listen to bars 33–41, then decide.</span>
+          <div class="knopfreihe" style="margin-top:8px">
+            <span class="wfk stark">Keep</span><span class="wfk">Discard</span>
+            <span class="wfk">Unsure</span></div>
+          <div style="display:flex;flex-direction:column;gap:4px;margin-top:14px">
+            ${abruf('A / B side by side','level-matched')}
+            ${abruf('What changed','spectrum difference')}</div></div>`,
+        {baustein:'A/B-Urteil'})}</div>`};
+  }},
+
+{ id:'zoom', mech:'Semantischer Zoom', name:'Dieselbe Fläche, drei Dichtestufen',
+  these:'Keine Panele, die auf- und zugehen: es gibt EIN Objekt, und beim Hineingehen '
+      + 'wird dasselbe genauer — Liste, dann Heatmap, dann eine Quelle in Tiefe. Genau '
+      + 'das, was die Spezifikation „Liste → Heatmap → Detail" nennt. Preis: nie zwei '
+      + 'Stufen gleichzeitig, die Orientierung trägt allein die Leiste.',
+  bau:(z)=>{
+    const stufe = z==='read' ? 0 : z==='finding' ? 1 : 2;
+    const ausschnitt = stufe===0 ? [0,100] : stufe===1 ? [12,32] : [25,31];
+    const leiste = `<div class="zoomleiste" data-baustein="Zoomleiste (Stufe + Ausschnitt)">
+      ${['1 · List','2 · Heatmap','3 · Source']
+        .map((n,i)=>`<span class="zs${i===stufe?' an':''}">${n}</span>`).join('')}
+      <span class="ausschnitt">showing ${minimap(ausschnitt[0],ausschnitt[1])}
+        ${stufe===0?'the whole mix':stufe===1?'Piano … Bass':'Bass'}</span></div>`;
+    if(z==='read') return {gitter:'grid-template-rows:30px 30px 1fr',
+      html: ebenen(0) + leiste + `<div style="display:flex">${kasten('The mix', '',
+        liste('Dichtestufe 1 (Liste aller Quellen)', SOURCES.length,
+          SOURCES.map(([nm,r,f,e])=>{
+            const s = e.reduce((a,b)=>a+b,0)/e.length;
+            return `<div class="qz" style="flex:1;border:0;min-height:max-content">
+              <span class="pkt ${f==='ok'?'':f}"></span>
+              <span class="n" style="flex:none;width:96px">${nm}</span>
+              <span class="r">${r}</span>
+              <span style="flex:1;height:8px;display:block;
+                    background:hsl(0 0% ${(12+s*13).toFixed(0)}%)"></span></div>`}).join('')),
+        {baustein:'Dichtestufe 1 (Liste aller Quellen)'})}</div>`};
+    if(z==='finding') return {gitter:'grid-template-rows:30px 30px minmax(0,1fr) auto',
+      html: ebenen(1) + leiste
+        + `<div style="display:flex">${heatmap(5,true,{band:2,
+            titel:'Piano … Bass', zusatz:'180–260 Hz marked'})}</div>`
+        + `<div style="display:flex">${advisor('finding 1 of 3')}</div>`};
+    return {gitter:'grid-template-rows:30px 30px minmax(0,1fr) auto',
+      html: ebenen(3) + leiste
+        + `<div style="display:flex">${detail('Bass','A vs B',true)}</div>`
+        + `<div style="display:flex">${vergleich()}</div>`};
+  }}
+];
+
+/* Jedes Element muss beantworten, welchen Handgriff es bedient, und woher
+   es kommt — docs/DESIGN-GESETZE.md, verbindliche Folge 2. Wer die Frage
+   nicht beantworten kann, entfernt das Element von dieser Ebene. Steht hier
+   im Code und nicht in einem Dokument daneben, damit es nicht auseinander
+   laeuft: fehlt ein Eintrag, faerbt das Werkzeug den Baustein rot. */
+const BELEG = {
+  'Bedienebenen + Status':
+    [7,'Spezifikation: „Vier Bedienebenen, sichtbar getrennt" + „Zustände, die immer ablesbar sein müssen"'],
+  'Wegweiser (Weg und Rückweg)':
+    [0,'DESIGN-GESETZE 6.3: „Moduswechsel ohne Rückweg" ist ein Fehler'],
+  'Quellenliste mit Namen':
+    [5,'Spezifikation: „Quellenliste: bis 16 sichtbare Quellen … Suche, Pinning, Fokusgruppen"'],
+  'Heatmap (mit Namen)':
+    [1,'Spezifikation: „Vergleichende Heatmap: welche Quelle wo im Frequenzraum Energie trägt"'],
+  'Übersichtskarte (ohne Namen)':
+    [1,'Spezifikation: „ein Minimap-/Zoomprinzip schlägt ‚alles gleichzeitig‘"'],
+  'Dichtestufe 1 (Liste aller Quellen)':
+    [1,'Spezifikation: „Dichtestufen Liste → Heatmap → Detail"'],
+  'Zoomleiste (Stufe + Ausschnitt)':
+    [0,'DESIGN-GESETZE 6.4: beim Zoom muss ablesbar bleiben, welcher Ausschnitt gezeigt wird'],
+  'Befundliste':
+    [2,'Spezifikation: „Befunde: Ort, Beobachtung, Begründung, Sicherheit"'],
+  'Einstiegszeile (Zahl der Befunde + erster Schritt)':
+    [1,'Aufgabenliste 1: den Mix lesen — bei jedem Sessionstart'],
+  'Assistent (genau ein Schritt)':
+    [3,'Spezifikation: „Assistent: führt genau EINEN Schritt zur Zeit in fester Form"'],
+  'Ein Satz: was jetzt zu tun ist':
+    [3,'Spezifikation: „Assistent: führt genau EINEN Schritt zur Zeit"'],
+  'Detail einer Quelle':
+    [2,'Spezifikation: „Detailansicht einer Quelle: Spektrum, Lautheit, Dynamik, Stereobreite, Verlauf"'],
+  'A/B-Urteil':
+    [4,'Spezifikation: „Vorher/Nachher-Vergleich, level-gematcht: behalten / verwerfen / noch unklar"']
+};
+const AUFGABEN = ['—','Mix lesen (sehr häufig)','Befund verstehen (Kernakt)',
+  'kleinsten Versuch machen','urteilen','Quelle finden (gelegentlich)',
+  'Rollen setzen (selten)','Status ablesen (ständig nebenbei)'];
+/* Tueren sind kein eigener Inhalt, sondern der benannte Zugang zur zweiten
+   Ebene — DESIGN-GESETZE 6.1: „Was niemand findet, existiert nicht." */
+const belegFuer = n => n.startsWith('Tür: ')
+  ? [0,'DESIGN-GESETZE 6.1: jede zweite Ebene braucht einen sichtbaren, benannten Zugang']
+  : BELEG[n];
+
+/* ================================================================
+   MESSUNG — drei Dinge, die vorher behauptet statt gemessen wurden.
+   ================================================================ */
+
+/* 1. Ehrliche Listen. Blendet aus, was nicht GANZ hineinpasst, und schreibt
+   in das Blatt, wieviel fehlt. Liefert zurueck, was wirklich zu sehen ist.
+   Vorher stand "11 of 16" im Kopf und fuenf Zeilen im Kasten. */
+/* Zweimal messen, nicht einmal hoffen: auf dem ersten Frame nach einem
+   grossen innerHTML stehen die Schriftmasse noch nicht, die Kappe misst
+   dann zu flach und die Schleife haelt eine Zeile zu frueh an (gemessen:
+   14 px Rest). Die Funktion ist absichtlich idempotent — ein zweiter Lauf
+   auf einem heilen Blatt aendert nichts. */
+function listenEhrlich(wf){
+  einmalEhrlich(wf);
+  return einmalEhrlich(wf);
+}
+function einmalEhrlich(wf){
+  const bericht = [];
+  wf.querySelectorAll('.liste').forEach(l => {
+    l.querySelectorAll(':scope > .kappe').forEach(k => k.remove());
+    const zeilen = [...l.children];
+    const gesamt = +l.dataset.gesamt || zeilen.length;
+    let n = zeilen.length;
+    const zeige = k => zeilen.forEach((z,i) => { z.style.display = i < k ? '' : 'none'; });
+    const passt = () => l.scrollHeight - l.clientHeight <= 1;
+    zeige(n);
+    while(n > 0 && !passt()) zeige(--n);
+    if(n < gesamt){
+      // Die Kappe kostet selbst Platz — und zwar erst, wenn sie beschriftet
+      // ist. Wer sie leer misst und danach beschriftet, misst eine Kappe, die
+      // es so nie gibt: genau daran sind hier 30 px durchgerutscht.
+      const kappe = document.createElement('div');
+      kappe.className = 'kappe';
+      const schreibe = () => { kappe.textContent = (gesamt - n) + ' more not shown'; };
+      schreibe();
+      l.appendChild(kappe);
+      while(n > 0 && !passt()){ zeige(--n); schreibe(); }
+    }
+    // Die Zahl im Kopf kommt aus dieser Messung. Sonst steht oben "all 16"
+    // und unten "9 more not shown" — im selben Kasten, im selben Moment.
+    const em = l.closest('.box')?.querySelector(':scope > h4 > em');
+    if(em) em.textContent = (em.dataset.fest ? em.dataset.fest + ' · ' : '')
+      + n + ' of ' + gesamt;
+    bericht.push({name: l.dataset.liste, sichtbar: n, gesamt});
+  });
+  return bericht;
+}
+
+/* 2. Ueberlauf, der KEINE Liste ist: feste Textbloecke, die schlicht nicht
+   passen. Alle Nachfahren, nicht vier ausgewaehlte Klassen — ein
+   verschachteltes overflow:hidden schluckt die Ueberlaenge, bevor der
+   Elternkasten sie sieht (gemessen: 36 gemeldet, 111 tatsaechlich). */
+function ueberlauf(wf){
+  let fehlt = 0, wo = '';
+  wf.querySelectorAll('*').forEach(x => {
+    const d = x.scrollHeight - x.clientHeight;
+    if(d > fehlt){ fehlt = d;
+      wo = x.closest('[data-baustein]')?.dataset.baustein || x.className; }
+  });
+  const d = wf.scrollHeight - wf.clientHeight;
+  if(d > fehlt){ fehlt = d; wo = 'das Blatt selbst'; }
+  return {fehlt, wo};
+}
+
+/* 3. Der Dauerhaft-Vertrag. Gemessen, nicht behauptet: ein Baustein ist
+   dauerhaft, wenn er in ALLEN drei Arbeitsschritten auf dem Blatt steht.
+   Genau das ist die Frage dieser Runde — was bleibt stehen, egal woran
+   du gerade arbeitest. */
+const messbuehne = document.createElement('div');
+messbuehne.style.cssText = 'position:fixed;left:-99999px;top:0;'
+  + 'width:800px;height:500px;pointer-events:none';
+document.body.appendChild(messbuehne);
+const vertragCache = new Map();
+
+function vertrag(e){
+  const schluessel = e.id + ':' + SOURCES.length;
+  if(vertragCache.has(schluessel)) return vertragCache.get(schluessel);
+  const proSchritt = ZUSTAENDE.map(([z]) => {
+    const wf = document.createElement('div');
+    wf.className = 'wf';
+    const {gitter, html} = e.bau(z);
+    wf.style.cssText = gitter;
+    wf.innerHTML = html;
+    messbuehne.replaceChildren(wf);
+    const listen = listenEhrlich(wf);
+    return {
+      namen: new Set([...wf.querySelectorAll('[data-baustein]')]
+                     .map(x => x.dataset.baustein)),
+      listen, ...ueberlauf(wf)
+    };
+  });
+  messbuehne.replaceChildren();
+  const alle = [...new Set(proSchritt.flatMap(s => [...s.namen]))];
+  const dauerhaft = alle.filter(n => proSchritt.every(s => s.namen.has(n)));
+  const aufAbruf  = alle.filter(n => !dauerhaft.includes(n));
+  // Bei Listen zaehlt das MINIMUM ueber die drei Schritte: was dauerhaft
+  // sichtbar ist, ist das, was im schlechtesten Schritt noch dasteht.
+  const listen = {};
+  for(const s of proSchritt) for(const l of s.listen)
+    listen[l.name] = {gesamt: l.gesamt,
+      sichtbar: Math.min(listen[l.name]?.sichtbar ?? Infinity, l.sichtbar)};
+  const schlimmster = proSchritt.reduce((a,b) => b.fehlt > a.fehlt ? b : a);
+  const r = {dauerhaft, aufAbruf, listen,
+             fehlt: schlimmster.fehlt, wo: schlimmster.wo};
+  vertragCache.set(schluessel, r);
+  return r;
+}
+
+/* ---------- Ablauf ---------- */
+const ALLE_QUELLEN = SOURCES.slice();
+function setzeQuellen(n){
+  SOURCES.length = 0;
+  SOURCES.push(...ALLE_QUELLEN.slice(0, n));
+  vertragCache.clear();
+}
+let stufe = 1, eng = [], sieger = null, zustand = 'finding';
+const ablehnungen = [], zeiten = {};
+let start = performance.now();
+const $ = s => document.querySelector(s);
+const buehne = $('#buehne'), fuss = $('#fuss');
+/* s2() und ergebnis() ueberschreiben #unter. Ohne diese Sicherung kam die
+   Erklaerung des Blattes nach einem Besuch im Zweikampf nie zurueck — und
+   textContent hatte die Auszeichnung schon gefressen. */
+const UNTER_ORIGINAL = $('#unter').innerHTML;
+
+function kachel(e, i, gross){
+  const b = document.createElement('button');
+  b.className = 'wahl'; b.type = 'button';
+  const rahmen = document.createElement('div');
+  rahmen.className = 'rahmen' + (gross ? ' gross' : '');
+  const wf = document.createElement('div');
+  wf.className = 'wf';
+  const {gitter, html} = e.bau(zustand);
+  wf.style.cssText = gitter;
+  wf.innerHTML = html;
+  rahmen.appendChild(wf);
+  b.dataset.mech = e.id;
+  const nr = document.createElement('span');
+  nr.className = 'nr'; nr.textContent = i + 1;
+  const m = document.createElement('span');
+  m.className = 'mech'; m.textContent = e.mech;
+  const t = document.createElement('span');
+  t.className = 'these';
+  t.style.width = (gross ? 760 : 440) + 'px';
+  t.textContent = e.these;
+  const v = document.createElement('span');
+  v.className = 'vertrag';
+  v.style.width = (gross ? 760 : 440) + 'px';
+  const V = vertrag(e);
+  const zahl = n => { const l = V.listen[n];
+    return l ? ` <b>${l.sichtbar}</b>/${l.gesamt}` : ''; };
+  /* Der Beleg landet in einem title-Attribut, und JEDER Belegtext enthaelt ein
+     gerades Anfuehrungszeichen (BELEG zitiert die Spezifikation mit „…"). Ohne
+     Maskierung reisst es das Attribut auf: gemessen am 2026-08-21 trugen 18 von
+     18 Chips sieben Muell-Attribute (`+`, `die`, `immer`, `ablesbar` …) und der
+     Beleg brach nach der Haelfte ab. Genau der Fall aus PRUEFLISTE 4: eine
+     Beschriftung, die weniger sagt, als sie behauptet. */
+  const att = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+                            .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const chip = n => { const bg = belegFuer(n);
+    return `<span${bg ? ` title="${att(`Handgriff: ${AUFGABEN[bg[0]]}
+${bg[1]}`)}"`
+                      : ' class="ohnebeleg" title="Kein Beleg — dieser Baustein '
+                        + 'muesste vom Blatt verschwinden."'}>${n}${zahl(n)}</span>`; };
+  v.innerHTML =
+    `<span class="dauer"><i>dauerhaft</i>${V.dauerhaft.length
+      ? V.dauerhaft.map(chip).join('')
+      : '<span>nichts ausser dem Fenster</span>'}</span>`
+  + `<span class="abrufz"><i>einen Schritt entfernt</i>${
+      V.aufAbruf.map(chip).join('') || '<span>—</span>'}</span>`;
+  b.append(rahmen, m, v, t, nr);
+  b.dataset.dauerhaft = V.dauerhaft.length;
+  // Auf der echten Groesse zaehlt nur eins: passt es oder wird geschnitten.
+  // Listen werden vorher ehrlich gemacht, danach bleibt nur der Ueberlauf,
+  // den kein Weglassen von Zeilen heilt — feste Bloecke, die nicht passen.
+  const messen = ()=>{
+    listenEhrlich(wf);
+    const {fehlt, wo} = ueberlauf(wf);
+    b.dataset.fehlt = fehlt;
+    if(fehlt > 1){
+      m.textContent = e.mech + ' — ' + fehlt + ' px fehlen in: ' + wo;
+      m.style.color = '#7a2f1f';
+      rahmen.style.outline = '2px solid #7a2f1f';
+    } else {
+      // Ohne Rueckweg log die Warnung: einmal gesetzt, ueberlebte sie jede
+      // spaetere heile Messung — und neuZeichnen() misst dieselben Elemente
+      // erneut. Eine Warnung, die nicht verschwinden kann, ist keine Messung
+      // mehr, sondern eine Behauptung.
+      m.textContent = e.mech;
+      m.style.color = '';
+      rahmen.style.outline = '';
+    }
+  };
+  requestAnimationFrame(()=>{ messen(); requestAnimationFrame(messen); });
+  return b;
+}
+function knopf(text, fn, klasse){
+  const b = document.createElement('button');
+  b.className = 'k' + (klasse ? ' ' + klasse : '');
+  b.textContent = text; b.onclick = fn; return b;
+}
+function zustandsKnoepfe(){
+  return ZUSTAENDE.map(([id,n]) =>
+    knopf(n, ()=>{ zustand = id; zeichnen(); }, zustand === id ? 'an' : ''));
+}
+/* Zeigt unter jeder Kachel, was dort DAUERHAFT steht und was einen Schritt
+   entfernt ist — gemessen ueber alle drei Arbeitsschritte. */
+function vertragKnopf(){
+  const an = document.body.classList.contains('vertragAn');
+  return knopf(an ? 'Dauerhaft-Vertrag aus' : 'Was bleibt dauerhaft stehen?',
+    ()=>{ document.body.classList.toggle('vertragAn'); zeichnen(); },
+    an ? 'an' : '');
+}
+/* Wieviele Quellen hat der Mix? Keine Entwurfsentscheidung, sondern die
+   Belastungsprobe: die Spezifikation nennt bis 16. Was bei 8 traegt und bei
+   16 bricht, traegt nicht. Aendert sich erst beim Loslassen, weil jede
+   Neuzeichnung fuenf Mechaniken mal drei Schritte nachmisst. */
+function quellenRegler(){
+  const w = document.createElement('label');
+  w.className = 'regler';
+  w.append('Quellen im Mix');
+  const r = document.createElement('input');
+  r.type = 'range'; r.min = '4'; r.max = String(ALLE_QUELLEN.length); r.step = '1';
+  r.value = String(SOURCES.length);
+  const z = document.createElement('b');
+  z.textContent = String(SOURCES.length);
+  r.oninput = ()=>{ z.textContent = r.value; };
+  r.onchange = ()=>{ setzeQuellen(+r.value); zeichnen(); };
+  w.append(r, z);
+  return w;
+}
+function zeichnen(){
+  buehne.innerHTML = ''; fuss.innerHTML = ''; buehne.style.display = 'flex';
+  if(stufe === 1) s1(); else if(stufe === 2) s2(); else ergebnis();
+}
+function s1(){
+  $('#stufe').textContent = 'Stufe 2 · Schritt 1 von 3 — Wireframe UX · Main';
+  $('#frage').textContent = 'Was ist wann sichtbar?';
+  $('#unter').innerHTML = UNTER_ORIGINAL;
+  ENTWUERFE.forEach((e,i)=>{
+    const k = kachel(e, i, false);
+    if(eng.includes(e.id)) k.classList.add('eng');
+    k.onclick = ()=>{
+      const p = eng.indexOf(e.id);
+      if(p >= 0) eng.splice(p,1);
+      else if(eng.length < 2) eng.push(e.id);
+      else { eng.shift(); eng.push(e.id); }
+      zeichnen();
+    };
+    buehne.appendChild(k);
+  });
+  const w = knopf(eng.length === 2 ? 'Diese zwei groß vergleichen' : 'Zwei auswählen',
+    ()=>{ zeiten.s1 = Math.round(performance.now()-start);
+          start = performance.now(); stufe = 2; zeichnen(); }, 'dunkel');
+  w.disabled = eng.length !== 2;
+  fuss.append(w, ...zustandsKnoepfe(), vertragKnopf(), quellenRegler(),
+    knopf('Aufgabenliste', ()=>{ document.body.classList.toggle('aufgabenAn'); }),
+    knopf(document.body.classList.contains('thesen') ? 'Thesen aus' : 'Thesen ein',
+      ()=>{ document.body.classList.toggle('thesen'); zeichnen(); }),
+    knopf('Keine davon — weil …', ablehnen));
+  const h = document.createElement('span');
+  h.className = 'hinw';
+  h.textContent = eng.length + ' von 2 gewählt · alle Kacheln zeigen denselben Schritt';
+  fuss.appendChild(h);
+}
+function s2(){
+  $('#stufe').textContent = 'Stufe 2 · Schritt 1 von 3 — Zweikampf';
+  $('#frage').textContent = 'Und welche von diesen beiden?';
+  $('#unter').textContent = 'Schalt beide durch die drei Schritte. Eine '
+    + 'Disclosure-Gestaltung lässt sich am Standbild nicht beurteilen — entscheidend '
+    + 'ist, was beim Wechsel passiert: was bleibt stehen, was verschwindet, und findest '
+    + 'du zurück.';
+  eng.map(id => ENTWUERFE.find(e=>e.id===id)).forEach((e,i)=>{
+    const k = kachel(e, i, true);
+    k.onclick = ()=>{ sieger = e.id;
+      zeiten.s2 = Math.round(performance.now()-start); stufe = 3; zeichnen(); };
+    buehne.appendChild(k);
+  });
+  fuss.append(knopf('← Zurück zu allen fünf', ()=>{ stufe = 1; start = performance.now(); zeichnen(); }),
+    ...zustandsKnoepfe(), vertragKnopf(), quellenRegler(),
+    knopf(document.body.classList.contains('thesen') ? 'Thesen aus' : 'Thesen ein',
+      ()=>{ document.body.classList.toggle('thesen'); zeichnen(); }),
+    knopf('Keine von beiden — weil …', ablehnen));
+}
+function ablehnen(){
+  if(fuss.querySelector('textarea')) return;
+  const box = document.createElement('div');
+  box.style.cssText = 'width:100%;display:flex;flex-direction:column;gap:8px';
+  box.innerHTML = '<textarea class="ablehn" placeholder="Welcher Handgriff wäre hier '
+    + 'umständlich? Was verlierst du beim Wechsel? Was willst du sehen und siehst es '
+    + 'nicht?"></textarea>';
+  box.appendChild(knopf('Notieren', ()=>{
+    const t = box.querySelector('textarea').value.trim();
+    if(t) ablehnungen.push({stufe, zustand, text:t});
+    box.remove();
+  }, 'dunkel'));
+  fuss.appendChild(box);
+  box.querySelector('textarea').focus();
+}
+function ergebnis(){
+  const e = ENTWUERFE.find(x => x.id === sieger);
+  $('#stufe').textContent = 'Ergebnis · Wireframe Main';
+  $('#frage').textContent = e.mech + ' — ' + e.name;
+  $('#unter').textContent = e.these;
+  buehne.innerHTML = ''; buehne.style.display = 'block'; fuss.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'max-width:1200px;margin:0 auto;padding:0 26px 34px;width:100%';
+  const k = kachel(e, 0, true); k.style.cursor = 'default'; k.onclick = null;
+  wrap.appendChild(k);
+  const kn = document.createElement('div');
+  kn.style.cssText = 'display:flex;gap:8px;margin:12px 0';
+  zustandsKnoepfe().forEach(b => kn.appendChild(b));
+  wrap.appendChild(kn);
+  const h = document.createElement('h2');
+  h.style.cssText = 'font-size:16px;margin:14px 0 6px';
+  h.textContent = 'Ergebnis an Claude geben';
+  const ta = document.createElement('textarea');
+  ta.style.cssText = 'width:100%;height:150px;font:11.5px/1.5 "Cascadia Mono",'
+    + '"Consolas",monospace;background:#2a2a2a;color:#d8dde3;border:0;padding:12px;'
+    + 'resize:vertical';
+  ta.spellcheck = false;
+  ta.value = JSON.stringify({
+    werkzeug:'nakama-wireframe-main', version:2, zeitpunkt:new Date().toISOString(),
+    stufe:'2 / Schritt 1 — Wireframe UX', oberflaeche:'Main',
+    engereWahl:eng, sieger:sieger, mechanik:e.mech, name:e.name, these:e.these,
+    ablehnungen:ablehnungen,
+    sekunden:{schritt1:(zeiten.s1/1000).toFixed(1), schritt2:(zeiten.s2/1000).toFixed(1)}
+  }, null, 1);
+  wrap.append(h, ta);
+  const kn2 = document.createElement('div');
+  kn2.style.cssText = 'display:flex;gap:10px;margin-top:10px';
+  kn2.append(knopf('Alles markieren — dann Strg+C', ()=>{ ta.focus(); ta.select();
+      try{ document.execCommand('copy'); }catch(err){} }, 'dunkel'),
+    knopf('Doch nochmal ansehen', ()=>{ stufe = 1; sieger = null; start = performance.now(); zeichnen(); }));
+  wrap.appendChild(kn2);
+  buehne.appendChild(wrap);
+}
+function band(){
+  const b = document.getElementById('band');
+  const echt = window.innerWidth === screen.width && devicePixelRatio === 1;
+  b.className = echt ? 'ok' : 'warn';
+  b.innerHTML = echt
+    ? '<b>1:1</b> — die Zweikampfansicht zeigt Main in echter Größe, 760×430.'
+    : `<b>Noch nicht 1:1.</b> Nur im Vollbild ist die Zweikampfansicht echte
+       760×430 — im Raster sind alle Kacheln ohnehin verkleinert.`;
+  const k = document.createElement('button');
+  k.textContent = echt ? 'Vollbild verlassen' : 'Vollbild (F11)';
+  k.onclick = () => echt ? document.exitFullscreen()
+                         : document.documentElement.requestFullscreen();
+  b.appendChild(k);
+}
+addEventListener('resize', band);
+band();
+zeichnen();
+/* Wenn die Schriften nachtraeglich fertig werden, aendern sich alle Masse.
+   Dann wird neu gemessen — sonst stuenden die Zahlen unter den Kacheln
+   fuer ein Blatt, das es nicht mehr gibt. */
+if(document.fonts && document.fonts.ready)
+  document.fonts.ready.then(()=>{ vertragCache.clear(); zeichnen(); });
+</script>
+</body>
+</html>

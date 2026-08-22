@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nakama — Weltenwahl</title>
+<style>
+/* ============================================================
+   WERKZEUG-CHROME — neutrales Mittelgrau, damit der Rahmen die
+   Antwort nicht mitentscheidet.
+   ============================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#737373;color:#1d1d1d;
+  font:14px/1.45 'Segoe UI',system-ui,sans-serif;min-height:100vh;
+  display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+header{padding:18px 26px 6px}
+.stufe{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#3a3a3a}
+h1{font-size:22px;font-weight:600;letter-spacing:-.01em;margin-top:4px}
+.unter{font-size:13px;color:#3d3d3d;max-width:900px;margin-top:5px}
+main{flex:1;display:flex;align-items:flex-start;justify-content:center;
+  padding:26px;gap:24px;flex-wrap:wrap;align-content:flex-start}
+footer{padding:14px 26px 22px;display:flex;gap:12px;align-items:center;
+  flex-wrap:wrap;border-top:1px solid #8a8a8a}
+button.k{font:inherit;font-size:12.5px;padding:8px 14px;border:1px solid #4a4a4a;
+  background:#818181;color:#141414;cursor:pointer;border-radius:2px}
+button.k:hover{background:#8d8d8d}
+button.k:disabled{opacity:.38;cursor:default}
+button.k.dunkel{background:#242424;color:#eee;border-color:#242424}
+button.k.dunkel:hover{background:#3a3a3a}
+textarea.ablehn{width:100%;max-width:860px;height:66px;font:inherit;font-size:13px;
+  padding:9px;background:#8a8a8a;border:1px solid #4a4a4a;color:#141414;resize:vertical}
+.hinw{margin-left:auto;font-size:11.5px;color:#3d3d3d}
+
+/* --- Wahlkachel --- */
+.wahl{position:relative;padding:0;border:0;background:transparent;cursor:pointer;
+  display:flex;flex-direction:column;gap:6px;text-align:left}
+.wahl .nr{position:absolute;top:-10px;left:-10px;width:22px;height:22px;border-radius:50%;
+  background:#2a2a2a;color:#e8e8e8;font-size:11px;font-weight:700;z-index:5;
+  display:flex;align-items:center;justify-content:center}
+.wahl::after{content:'';position:absolute;inset:-7px;border:2px solid transparent;
+  transition:border-color .12s;pointer-events:none}
+.wahl:hover::after{border-color:#2a2a2a}
+.wahl.eng::after{border-color:#111;border-width:3px}
+.wahl.eng .nr{background:#111;width:26px;height:26px;top:-12px;left:-12px}
+.marke{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#3f3f3f;
+  text-align:right}
+
+/* ============================================================
+   DIE WELTEN
+   Jede Welt ist eine eigene Formsprache, nicht ein Anstrich:
+   Material, Licht, Gehaeusefrage und Textmenge gehoeren zusammen.
+   ============================================================ */
+/* Die Welt wird IMMER in derselben Groesse gebaut und fuer die Grossansicht nur
+   skaliert. Ein neu umbrochenes Layout waere ein anderes Bild — dann verglichest
+   du in Stufe 2 etwas anderes als das, was du in Stufe 1 ausgewaehlt hast. */
+.w{position:relative;width:434px;height:312px;overflow:hidden;
+   border:1px solid #5c5c5c;isolation:isolate}
+.rahmen{position:relative;--s:1;overflow:hidden;
+  width:calc(434px * var(--s));height:calc(312px * var(--s))}
+.rahmen .w{transform:scale(var(--s));transform-origin:0 0}
+.rahmen.gross{--s:1.4}
+/* Kornstaerke ist pro Welt verschieden: eine Welt, deren Aussage "kein Material"
+   ist, darf keine Struktur bekommen — sonst widerlegt die Kachel ihre eigene These. */
+.korn{position:absolute;inset:0;background-image:url('textur/korn.png');
+  background-size:256px 256px;mix-blend-mode:overlay;pointer-events:none;z-index:4}
+.w svg{display:block;overflow:visible}
+.zahl{font-variant-numeric:tabular-nums}
+
+/* ---------- 1 · Dunkles Geraet (Neumorph, weiches Licht, LED) ---------- */
+.w1{background:#1c1f23;font-family:'Bahnschrift','DIN Next','Segoe UI',sans-serif}
+.w1 .platte{position:absolute;inset:20px;border-radius:14px;background:#1c1f23;
+  box-shadow:-9px -9px 18px rgba(255,255,255,.035), 11px 11px 24px rgba(0,0,0,.62)}
+.w1 .fenster{position:absolute;left:40px;right:40px;top:52px;height:126px;border-radius:9px;
+  background:#15181b;
+  box-shadow:inset 5px 5px 11px rgba(0,0,0,.72), inset -3px -3px 8px rgba(255,255,255,.035)}
+.w1 .marke1{position:absolute;left:42px;top:33px;font-size:9px;letter-spacing:.24em;
+  color:#79808a}
+.w1 .knopf{position:absolute;left:44px;bottom:34px;width:78px;height:78px}
+.w1 .werte{position:absolute;right:44px;bottom:40px;text-align:right;color:#cbd2da}
+.w1 .gross1{font-size:31px;line-height:1;letter-spacing:-.01em}
+.w1 .klein1{font-size:11px;color:#79808a;letter-spacing:.14em;margin-top:7px}
+.w1 .led{position:absolute;right:44px;top:33px;width:7px;height:7px;border-radius:50%;
+  background:#9fe031;box-shadow:0 0 9px #9fe031cc}
+
+/* ---------- 2 · Helles Objekt (ein Ding auf hellem Grund, Bogen + Zahl) ---------- */
+.w2{background:radial-gradient(120% 110% at 34% 22%,#fbfcfd 0%,#e6e9ee 62%,#dcdfe5 100%);
+    font-family:'Lato','Corbel','Segoe UI',sans-serif}
+.w2 .ding{position:absolute;left:32px;top:40px;right:150px;bottom:40px;border-radius:22px;
+  background:linear-gradient(168deg,#454b54 0%,#2b3037 58%,#1e2228 100%);
+  box-shadow:0 22px 40px -14px rgba(40,46,58,.55), 0 3px 8px rgba(40,46,58,.28),
+             inset 0 1px 0 rgba(255,255,255,.14)}
+/* Oben ein Streifen frei fuer die Beschriftung — sonst deckt die Scheibe sie zu. */
+.w2 .scheibe{position:absolute;inset:16px;top:34px;border-radius:12px;background:#191d22;
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.6)}
+/* liegt IM Objekt, nicht in der Kachel — daher Koordinaten relativ zu .ding */
+.w2 .marke2{position:absolute;left:18px;top:12px;font-size:9px;letter-spacing:.2em;
+  color:#8b929c;text-transform:uppercase;z-index:3}
+.w2 .dial{position:absolute;right:26px;top:50%;transform:translateY(-50%);
+  width:112px;height:112px}
+.w2 .mitte{position:absolute;right:26px;top:50%;transform:translateY(-50%);
+  width:112px;height:112px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;color:#2b3037;pointer-events:none}
+.w2 .mitte b{font-size:27px;font-weight:300;letter-spacing:-.02em;line-height:1}
+.w2 .mitte i{font-style:normal;font-size:9px;letter-spacing:.16em;color:#8b929c;margin-top:3px}
+
+/* ---------- 3 · Metall (hartes Licht, gefraest, graviert) ---------- */
+/* Gebuerstet heisst gerichtet: feine waagerechte Riefen plus EIN breiter
+   Glanzstreifen quer. Ungerichtetes Rauschen ergibt Putz, kein Metall. */
+.w3{background:
+   linear-gradient(104deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.06) 20%,
+                          rgba(0,0,0,.13) 55%,rgba(255,255,255,.10) 78%,
+                          rgba(255,255,255,.42) 100%),
+   repeating-linear-gradient(0deg,rgba(255,255,255,.13) 0 1px,
+                                  rgba(0,0,0,.07) 1px 2px,transparent 2px 3px),
+   linear-gradient(180deg,#adb0b4 0%,#93969a 46%,#7f8286 100%);
+  font-family:'Bahnschrift','Arial Narrow',sans-serif}
+.w3 .fenster3{position:absolute;left:26px;right:26px;top:52px;height:120px;
+  background:linear-gradient(180deg,#191510 0%,#221c13 100%);
+  border:1px solid #5f6266;border-radius:2px;
+  box-shadow:inset 0 3px 9px rgba(0,0,0,.85), 0 1px 0 rgba(255,255,255,.5)}
+.w3 .grav{position:absolute;font-size:9px;letter-spacing:.2em;color:#4e5155;
+  text-shadow:0 1px 0 rgba(255,255,255,.55)}
+.w3 .knopf3{position:absolute;left:30px;bottom:26px;width:74px;height:74px}
+.w3 .werte3{position:absolute;right:30px;bottom:30px;text-align:right;color:#2e3135;
+  text-shadow:0 1px 0 rgba(255,255,255,.55);line-height:1}
+.w3 .gross3{font-size:27px;line-height:1;padding-bottom:13px}
+.w3 .klein3{font-size:10px;letter-spacing:.18em;color:#45484c}
+.w3 .schraube{position:absolute;width:9px;height:9px;border-radius:50%;
+  background:radial-gradient(circle at 34% 30%,#c2c5c8,#6c6f73);
+  box-shadow:inset 0 -1px 1px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.45)}
+
+/* ---------- 4 · Glas und Licht (dunkel, durchscheinend, Licht dahinter) ---------- */
+.w4{background:#07090d;font-family:'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif}
+/* Licht HINTER Milchglas, nicht Leuchtreklame: die Quellen bleiben schwach und
+   weit gestreut, die Scheibe traegt die Aussage ueber ihre Kante. */
+.w4 .quelle{position:absolute;border-radius:50%;filter:blur(62px);opacity:.30}
+.w4 .q1{width:260px;height:260px;left:-70px;top:-90px;background:#2f6bd8}
+.w4 .q2{width:230px;height:230px;right:-80px;bottom:-100px;background:#7a45c8}
+.w4 .scheibe4{position:absolute;inset:22px;border-radius:16px;
+  background:linear-gradient(152deg,rgba(255,255,255,.13),rgba(255,255,255,.035));
+  backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);
+  border:1px solid rgba(255,255,255,.22);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.34), inset 0 -1px 0 rgba(255,255,255,.10),
+             0 18px 44px -18px rgba(0,0,0,.95)}
+.w4 .marke4{position:absolute;left:40px;top:36px;font-size:9px;letter-spacing:.22em;
+  color:rgba(255,255,255,.5);text-transform:uppercase}
+.w4 .werte4{position:absolute;right:40px;bottom:38px;text-align:right;color:#eaf1ff}
+.w4 .gross4{font-size:30px;font-weight:300;line-height:1;letter-spacing:-.01em}
+.w4 .klein4{font-size:10px;letter-spacing:.16em;color:rgba(255,255,255,.45);margin-top:6px}
+.w4 .ring4{position:absolute;left:40px;bottom:32px;width:76px;height:76px}
+
+/* ---------- 5 · Papier und Tinte (matt, gedruckt, kein Glanz) ---------- */
+.w5{background:#efe9dd;font-family:'Lato','Corbel','Candara',sans-serif}
+.w5 .korn5{position:absolute;inset:0;background-image:url('textur/korn.png');
+  background-size:200px 200px;mix-blend-mode:multiply;opacity:.42;z-index:1}
+.w5 .blatt{position:absolute;inset:22px;background:#f7f3ea;
+  box-shadow:0 1px 2px rgba(60,50,35,.18), 0 8px 18px -12px rgba(60,50,35,.3);z-index:2}
+.w5 .feld5{position:absolute;left:44px;right:44px;top:64px;height:118px;
+  border:1px solid #ccc3b2;z-index:3}
+.w5 .marke5{position:absolute;left:44px;top:40px;font-size:10px;letter-spacing:.2em;
+  color:#8a7f6c;text-transform:uppercase;z-index:3}
+.w5 .werte5{position:absolute;right:44px;bottom:40px;text-align:right;color:#2f2b24;z-index:3}
+.w5 .gross5{font-size:28px;line-height:1}
+.w5 .klein5{font-size:10px;letter-spacing:.16em;color:#8a7f6c;margin-top:6px}
+.w5 .dial5{position:absolute;left:46px;bottom:34px;width:72px;height:72px;z-index:3}
+
+/* ---------- 6 · Kein Gehaeuse (nur Daten, kein Material) ---------- */
+.w6{background:#101216;font-family:'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif}
+.w6 .marke6{position:absolute;left:30px;top:28px;font-size:9px;letter-spacing:.2em;
+  color:#5d656f;text-transform:uppercase}
+.w6 .werte6{position:absolute;right:30px;top:26px;text-align:right;color:#dfe4ea}
+.w6 .gross6{font-size:22px;line-height:1;font-weight:400}
+.w6 .klein6{font-size:10px;letter-spacing:.14em;color:#5d656f;margin-top:5px}
+.w6 .fuss6{position:absolute;left:30px;right:30px;bottom:26px;display:flex;
+  gap:26px;font-size:10px;letter-spacing:.14em;color:#5d656f}
+
+/* --- Ergebnisseite --- */
+.erg{max-width:1180px;margin:0 auto;padding:0 26px 34px;width:100%}
+.erg h2{font-size:16px;margin:22px 0 8px}
+.erg p{font-size:13px;color:#242424;max-width:780px}
+.erg dl{display:grid;grid-template-columns:150px 1fr;gap:6px 16px;font-size:13px;
+  max-width:780px;margin-top:10px}
+.erg dt{color:#3a3a3a}
+#ausgabe{width:100%;height:190px;font:11.5px/1.5 'Cascadia Mono','Consolas',monospace;
+  background:#2a2a2a;color:#d8dde3;border:0;padding:12px;margin-top:10px;resize:vertical}
+/* Kleinere Fenster verkleinern die Kachel, ohne sie umzubrechen — sonst
+   waere es auf jedem Bildschirm ein anderes Bild. */
+@media (max-width:1400px){ .rahmen{--s:.90} .rahmen.gross{--s:1.28} }
+@media (max-width:1240px){ .rahmen{--s:.80} .rahmen.gross{--s:1.14}
+                           main{gap:18px;padding:20px} }
+</style>
+</head>
+<body>
+<!-- Standband: was ist dieses Blatt? Werkzeug-Chrome, deutsch, liegt
+     ausserhalb des beurteilten Blattes. Ergaenzt 2026-08-21. -->
+<div style="background:#6b5c3c;color:#f2f2f2;padding:7px 26px;font:12px/1.5 'Segoe UI',system-ui,sans-serif;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+  <b style="letter-spacing:.12em;font-size:10.5px;text-transform:uppercase;flex:none">Abgeschlossen — aber nur als Arbeitsannahme</b>
+  <span style="opacity:.92">Ergebnis 2026-08-20: <b>„Glas und Licht"</b>. Der User hat das ausdrücklich <b>nicht</b> als Entscheidung bestätigt: „es war zu dem zeitpunkt logisch. wir werden sehen wenn das layout steht ob es dann noch passt." Gewählt an einem Ausschnitt von 448×310, ohne Layout. <b>Prüfpunkt:</b> erneut vorlegen auf 760×430 (abnahmen/2026-08-20-welt-glas-und-licht.md).</span>
+</div>
+
+<header>
+  <div class="stufe" id="stufe">Stufe 1 von 3 · Welt</div>
+  <h1 id="frage"></h1>
+  <div class="unter" id="unter"></div>
+</header>
+<main id="buehne"></main>
+<footer id="fuss"></footer>
+
+<script>
+/* ================================================================
+   NAKAMA — WELTENWAHL
+   Erst die Welt, dann die Details. Sechs Formsprachen, gleiche
+   Information: Quelle, Frequenzkurve, ein Wert, ein Zustand.
+   Was sich unterscheidet, ist alles andere — Material, Licht,
+   Gehaeusefrage, Textmenge, Steuerungsform.
+   Die Achsen stammen aus dem Leitfaden in der Truhe (Entity Type,
+   Material, Licht, Temperatur) — nicht aus meinem Geschmack.
+   ================================================================ */
+
+/* ---------- Kurvengeometrie (Demo, Formnaeherung) ---------- */
+function kurvenPfad(w, h, max, baender, schliessen){
+  let d = '';
+  for(let x = 0; x <= w; x += 2){
+    const f = 20 * Math.pow(1000, x/w);
+    let db = 0;
+    for(const b of baender){
+      const oct = Math.log2(f/b.f), bw = 1/Math.max(.35, b.q);
+      db += b.g * Math.exp(-(oct*oct)/(2*bw*bw));
+    }
+    d += (x ? 'L' : 'M') + x + ' ' + (h/2 - (db/max)*(h/2 - 8)).toFixed(1);
+  }
+  return schliessen ? d + `L${w} ${h/2}L0 ${h/2}Z` : d;
+}
+const BAENDER = [{f:90,q:.8,g:-3.2},{f:410,q:1.4,g:-2.5},{f:3200,q:1.1,g:2.4}];
+const xF = (f,w) => w * Math.log(f/20) / Math.log(1000);
+
+// Ein Bogen um einen Mittelpunkt — fuer Ringanzeigen und Skalen.
+function bogen(cx, cy, r, a1, a2){
+  const p = a => [cx + r*Math.cos(a*Math.PI/180), cy + r*Math.sin(a*Math.PI/180)];
+  const [x1,y1] = p(a1), [x2,y2] = p(a2);
+  return `M${x1.toFixed(2)} ${y1.toFixed(2)}A${r} ${r} 0 ${Math.abs(a2-a1)>180?1:0} 1 `
+       + `${x2.toFixed(2)} ${y2.toFixed(2)}`;
+}
+// Punktreihe auf einem Bogen — die LED-Kranz-Sprache aus der Truhe.
+function punkte(cx, cy, r, a1, a2, n, an, farbe, aus){
+  let s = '';
+  for(let i = 0; i < n; i++){
+    const a = (a1 + (a2-a1)*i/(n-1)) * Math.PI/180;
+    const x = cx + r*Math.cos(a), y = cy + r*Math.sin(a);
+    s += `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="1.5" fill="${i<an?farbe:aus}"/>`;
+  }
+  return s;
+}
+
+/* ---------- Die sechs Welten ---------- */
+// Jede Funktion bekommt die Kachelmasse und liefert das Innere.
+const WELTEN = [
+{ id:'geraet', korn:0.55, klasse:'w1',
+  name:'Dunkles Gerät',
+  kurz:'Weiches Licht auf mattem Kunststoff, Bedienteile treten aus der Fläche heraus, '
+     + 'ein Leuchtring trägt den Zustand.',
+  achsen:{entity:'Tangible object', material:'Kunststoff, matt, Korn',
+          licht:'Soft light von links oben', temperatur:'neutral bis kühl',
+          text:'sehr wenig, Zustand über Licht'},
+  bau:(w,h)=>{
+    const fw = w - 80, fh = h*0.40;
+    return `
+    <div class="platte"></div>
+    <div class="marke1">KLAVIER</div>
+    <div class="led"></div>
+    <div class="fenster">
+      <svg viewBox="0 0 ${fw} ${fh}" width="${fw}" height="${fh}">
+        <path d="M0 ${fh/2}H${fw}" stroke="#2b3036" stroke-width="1" stroke-dasharray="2 4"/>
+        <path d="${kurvenPfad(fw,fh,8,BAENDER,true)}" fill="#9fe0311c"/>
+        <path d="${kurvenPfad(fw,fh,8,BAENDER,false)}" fill="none" stroke="#9fe031"
+              stroke-width="1.6"/>
+        ${BAENDER.map(b=>`<circle cx="${xF(b.f,fw).toFixed(1)}"
+            cy="${(fh/2-(b.g/8)*(fh/2-8)).toFixed(1)}" r="2.6" fill="#15181b"
+            stroke="#9fe031" stroke-width="1.3"/>`).join('')}
+      </svg>
+    </div>
+    <svg class="knopf" viewBox="0 0 78 78">
+      <defs><radialGradient id="g1a" cx="36%" cy="30%" r="76%">
+        <stop offset="0" stop-color="#2b3036"/><stop offset="1" stop-color="#16191d"/>
+      </radialGradient></defs>
+      ${punkte(39,39,35,140,400,26,17,'#9fe031','#262b31')}
+      <circle cx="39" cy="39" r="27" fill="url(#g1a)"/>
+      <circle cx="39" cy="39" r="27" fill="none" stroke="#0f1114" stroke-width="1.5"/>
+      <circle cx="39" cy="39" r="26" fill="none" stroke="#3a4149" stroke-width="1"
+              stroke-dasharray="40 200" transform="rotate(-140 39 39)"/>
+      <path d="M39 39 L39 18" stroke="#aab3bd" stroke-width="2" stroke-linecap="round"
+            transform="rotate(46 39 39)"/>
+    </svg>
+    <div class="werte">
+      <div class="gross1 zahl">410<span style="font-size:13px;color:#79808a"> Hz</span></div>
+      <div class="klein1 zahl">−2.5 dB</div>
+    </div>`;
+  }},
+
+{ id:'objekt', korn:0.18, klasse:'w2',
+  name:'Helles Objekt',
+  kurz:'Ein einziges schweres Ding auf hellem Grund. Der Zustand ist ein Bogen und '
+     + 'eine Zahl — fast keine Beschriftung.',
+  achsen:{entity:'Tangible object, ein einzelnes',
+          material:'lackiertes Gehäuse auf hellem Grund',
+          licht:'Soft light, das Objekt leuchtet in den Raum',
+          temperatur:'warm', text:'nahezu keiner — Bogen und Zahl'},
+  bau:(w,h)=>{
+    const fw = w - 182 - 32, fh = h - 80 - 32;
+    return `
+    <div class="ding">
+      <div class="marke2">Piano</div>
+      <div class="scheibe">
+        <svg viewBox="0 0 ${fw} ${fh}" width="100%" height="100%"
+             preserveAspectRatio="none" style="position:absolute;inset:0">
+          <path d="${kurvenPfad(fw,fh,8,BAENDER,true)}" fill="#ff8a3d22"/>
+          <path d="${kurvenPfad(fw,fh,8,BAENDER,false)}" fill="none" stroke="#ff8a3d"
+                stroke-width="1.6"/>
+        </svg>
+      </div>
+    </div>
+    <svg class="dial" viewBox="0 0 112 112">
+      <defs>
+        <linearGradient id="g2r" x1="0" y1="0" x2="0.6" y2="1">
+          <stop offset="0" stop-color="#4c525b"/><stop offset="1" stop-color="#23272d"/>
+        </linearGradient>
+        <linearGradient id="g2b" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0" stop-color="#ff5a1f"/><stop offset="1" stop-color="#ffb02e"/>
+        </linearGradient>
+        <filter id="g2s" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="7" result="b"/>
+          <feFlood flood-color="#ff8a3d" flood-opacity=".55"/>
+          <feComposite in2="b" operator="in"/>
+          <feComposite in="SourceGraphic"/>
+        </filter>
+      </defs>
+      <circle cx="56" cy="56" r="52" fill="#ff8a3d" opacity=".18" filter="url(#g2s)"/>
+      <circle cx="56" cy="56" r="50" fill="url(#g2r)"/>
+      <circle cx="56" cy="56" r="36" fill="#eef0f3"/>
+      <circle cx="56" cy="56" r="29" fill="#fbfcfd"/>
+      <path d="${bogen(56,56,43,132,408)}" stroke="#1b1e23" stroke-width="3"
+            fill="none" stroke-linecap="round" opacity=".55"/>
+      <path d="${bogen(56,56,43,132,286)}" stroke="url(#g2b)" stroke-width="3.4"
+            fill="none" stroke-linecap="round"/>
+    </svg>
+    <div class="mitte"><b class="zahl">410</b><i>Hz</i></div>`;
+  }},
+
+{ id:'metall', korn:0.22, klasse:'w3',
+  name:'Metall',
+  kurz:'Gefräste Aluminiumplatte, hartes Licht von schräg oben, Beschriftung ist '
+     + 'graviert. Das Messfenster ist ein versenktes Glasfenster.',
+  achsen:{entity:'Material', material:'gebürstetes Aluminium, Schrauben',
+          licht:'Hard light, klare Kante und Glanzstreifen', temperatur:'kühl-metallisch',
+          text:'graviert, knapp, in Versalien'},
+  bau:(w,h)=>{
+    const fw = w - 54, fh = h*0.385;
+    return `
+    <div class="grav" style="left:28px;top:30px">KLAVIER</div>
+    <div class="grav" style="right:28px;top:30px">ACTIVE PROBE</div>
+    <div class="schraube" style="left:12px;top:12px"></div>
+    <div class="schraube" style="right:12px;top:12px"></div>
+    <div class="schraube" style="left:12px;bottom:12px"></div>
+    <div class="schraube" style="right:12px;bottom:12px"></div>
+    <div class="fenster3">
+      <svg viewBox="0 0 ${fw} ${fh}" width="${fw}" height="${fh}">
+        <path d="M0 ${fh/2}H${fw}" stroke="#4a3f2a" stroke-width="1"/>
+        <path d="${kurvenPfad(fw,fh,8,BAENDER,false)}" fill="none" stroke="#f0a830"
+              stroke-width="1.7"/>
+        <path d="${kurvenPfad(fw,fh,8,BAENDER,false)}" fill="none" stroke="#f0a830"
+              stroke-width="4" opacity=".22"/>
+      </svg>
+    </div>
+    <svg class="knopf3" viewBox="0 0 74 74">
+      <defs>
+        <linearGradient id="g3k" x1="0" y1="0" x2="0.7" y2="1">
+          <stop offset="0" stop-color="#e2e4e6"/><stop offset=".45" stop-color="#9a9da1"/>
+          <stop offset="1" stop-color="#6b6e72"/>
+        </linearGradient>
+      </defs>
+      ${Array.from({length:44},(_,i)=>{
+        const a = i/44*360*Math.PI/180;
+        return `<line x1="${(37+30*Math.cos(a)).toFixed(2)}" y1="${(37+30*Math.sin(a)).toFixed(2)}"
+                      x2="${(37+34*Math.cos(a)).toFixed(2)}" y2="${(37+34*Math.sin(a)).toFixed(2)}"
+                      stroke="#5f6266" stroke-width="1.1"/>`}).join('')}
+      <circle cx="37" cy="37" r="30" fill="url(#g3k)"/>
+      <circle cx="37" cy="37" r="30" fill="none" stroke="#5a5d61" stroke-width="1"/>
+      <circle cx="37" cy="37" r="21" fill="none" stroke="#83868a" stroke-width="1"/>
+      <path d="M37 37 L37 12" stroke="#26292c" stroke-width="2.6" stroke-linecap="round"
+            transform="rotate(48 37 37)"/>
+      <circle cx="37" cy="37" r="4" fill="#4d5054"/>
+    </svg>
+    <div class="werte3">
+      <div class="gross3 zahl">410</div>
+      <div class="klein3 zahl">Hz · −2.5 dB</div>
+    </div>`;
+  }},
+
+{ id:'glas', korn:0.10, klasse:'w4',
+  name:'Glas und Licht',
+  kurz:'Dunkler Raum, farbiges Licht dahinter, davor eine durchscheinende Scheibe. '
+     + 'Die Messung leuchtet durch das Glas.',
+  achsen:{entity:'Place', material:'Glas, Milchglas, Licht',
+          licht:'Colourful light von hinten', temperatur:'kühl',
+          text:'wenig, leicht, weit gesperrt'},
+  bau:(w,h)=>{
+    const fw = w - 120, fh = h*0.36;
+    return `
+    <div class="quelle q1"></div>
+    <div class="quelle q2"></div>
+    <div class="scheibe4"></div>
+    <div class="marke4">Piano</div>
+    <div style="position:absolute;left:40px;right:40px;top:62px;height:${fh}px">
+      <svg viewBox="0 0 ${fw} ${fh}" width="100%" height="${fh}" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="g4f" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#5ce1ff" stop-opacity=".38"/>
+            <stop offset="1" stop-color="#5ce1ff" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="${kurvenPfad(fw,fh,8,BAENDER,true)}" fill="url(#g4f)"/>
+        <path d="${kurvenPfad(fw,fh,8,BAENDER,false)}" fill="none" stroke="#8df0ff"
+              stroke-width="1.5"/>
+      </svg>
+    </div>
+    <svg class="ring4" viewBox="0 0 76 76">
+      <circle cx="38" cy="38" r="30" fill="rgba(255,255,255,.06)"
+              stroke="rgba(255,255,255,.24)" stroke-width="1"/>
+      <path d="${bogen(38,38,30,140,390)}" stroke="rgba(255,255,255,.12)"
+            stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <path d="${bogen(38,38,30,140,272)}" stroke="#8df0ff" stroke-width="3.5"
+            fill="none" stroke-linecap="round"/>
+      <circle cx="38" cy="38" r="15" fill="rgba(255,255,255,.10)"
+              stroke="rgba(255,255,255,.2)" stroke-width="1"/>
+    </svg>
+    <div class="werte4">
+      <div class="gross4 zahl">410 <span style="font-size:13px;opacity:.55">Hz</span></div>
+      <div class="klein4 zahl">−2.5 dB</div>
+    </div>`;
+  }},
+
+{ id:'papier', korn:0, klasse:'w5',
+  name:'Papier und Tinte',
+  kurz:'Matt, gedruckt, ohne jeden Glanz. Die Messung ist eine gezeichnete Kurve auf '
+     + 'einem Bogen, die Skala ein Aufdruck.',
+  achsen:{entity:'Material', material:'Papier, Druckfarbe',
+          licht:'diffus, kein Glanz, nur ein feiner Schlagschatten',
+          temperatur:'warm', text:'gedruckt, ruhig, klein'},
+  bau:(w,h)=>{
+    const fw = w - 90, fh = h*0.375;
+    return `
+    <div class="korn5"></div>
+    <div class="blatt"></div>
+    <div class="marke5">Piano</div>
+    <div class="feld5">
+      <svg viewBox="0 0 ${fw} ${fh}" width="100%" height="100%" preserveAspectRatio="none"
+           style="position:absolute;inset:0">
+        <path d="M0 ${fh/2}H${fw}" stroke="#ccc3b2" stroke-width="1"/>
+        ${[100,1000,10000].map(f=>`<path d="M${xF(f,fw).toFixed(1)} 0V${fh}"
+              stroke="#e2dbcc" stroke-width="1"/>`).join('')}
+        <path d="${kurvenPfad(fw,fh,8,BAENDER,true)}" fill="#2f5d8a14"/>
+        <path d="${kurvenPfad(fw,fh,8,BAENDER,false)}" fill="none" stroke="#2f5d8a"
+              stroke-width="1.5"/>
+      </svg>
+    </div>
+    <svg class="dial5" viewBox="0 0 72 72">
+      ${Array.from({length:11},(_,i)=>{
+        const a = (140 + i*26)*Math.PI/180;
+        return `<line x1="${(36+26*Math.cos(a)).toFixed(2)}" y1="${(36+26*Math.sin(a)).toFixed(2)}"
+                      x2="${(36+31*Math.cos(a)).toFixed(2)}" y2="${(36+31*Math.sin(a)).toFixed(2)}"
+                      stroke="#8a7f6c" stroke-width="${i%5?1:1.8}"/>`}).join('')}
+      <circle cx="36" cy="36" r="22" fill="#f7f3ea" stroke="#ccc3b2" stroke-width="1"/>
+      <path d="M36 36 L36 16" stroke="#b23a2e" stroke-width="2" stroke-linecap="round"
+            transform="rotate(52 36 36)"/>
+      <circle cx="36" cy="36" r="3" fill="#2f2b24"/>
+    </svg>
+    <div class="werte5">
+      <div class="gross5 zahl">410 <span style="font-size:12px;color:#8a7f6c">Hz</span></div>
+      <div class="klein5 zahl">−2.5 dB</div>
+    </div>`;
+  }},
+
+{ id:'ohne', korn:0, klasse:'w6',
+  name:'Kein Gehäuse',
+  kurz:'Kein Material, keine Platten, keine Knöpfe. Nur die Messung selbst — gegriffen '
+     + 'wird direkt an der Kurve.',
+  achsen:{entity:'Abstract idea', material:'keins — die Daten sind die Oberfläche',
+          licht:'keins, alles flächig', temperatur:'neutral',
+          text:'nur Werte und Einheiten'},
+  bau:(w,h)=>{
+    const fw = w - 60, fh = h - 120;
+    return `
+    <div class="marke6">Piano</div>
+    <div class="werte6">
+      <div class="gross6 zahl">410 Hz &nbsp; −2.5 dB</div>
+      <div class="klein6 zahl">Q 1.4 · BELL</div>
+    </div>
+    <div style="position:absolute;left:30px;right:30px;top:64px;height:${fh}px">
+      <svg viewBox="0 0 ${fw} ${fh}" width="100%" height="100%" preserveAspectRatio="none">
+        ${[100,1000,10000].map(f=>`<path d="M${xF(f,fw).toFixed(1)} 0V${fh}"
+              stroke="#1c1f25" stroke-width="1"/>`).join('')}
+        <path d="M0 ${fh/2}H${fw}" stroke="#232830" stroke-width="1"/>
+        <path d="${kurvenPfad(fw,fh,8,BAENDER,false)}" fill="none" stroke="#dfe4ea"
+              stroke-width="1.4"/>
+        ${BAENDER.map((b,i)=>{
+          const x = xF(b.f,fw), y = fh/2 - (b.g/8)*(fh/2-8);
+          return `<line x1="${x.toFixed(1)}" y1="0" x2="${x.toFixed(1)}" y2="${fh}"
+                    stroke="${i===1?'#4aa3ff':'#2b313a'}" stroke-width="1"
+                    ${i===1?'':'stroke-dasharray="2 4"'}/>
+                  <rect x="${(x-3.5).toFixed(1)}" y="${(y-3.5).toFixed(1)}" width="7" height="7"
+                    fill="${i===1?'#4aa3ff':'#101216'}" stroke="${i===1?'#4aa3ff':'#7d8794'}"
+                    stroke-width="1.2"/>`}).join('')}
+      </svg>
+    </div>
+    <div class="fuss6"><span>20</span><span>100</span><span>1k</span><span>10k</span>
+      <span style="margin-left:auto">FRESH</span></div>`;
+  }}
+];
+
+/* ---------- Ablauf ---------- */
+let stufe = 1;
+let eng = [];                 // in die engere Wahl
+let sieger = null;
+const ablehnungen = [];
+const zeiten = {};
+let start = performance.now();
+
+const $ = s => document.querySelector(s);
+const buehne = $('#buehne'), fuss = $('#fuss');
+
+function kachel(welt, i, gross){
+  const b = document.createElement('button');
+  b.className = 'wahl'; b.type = 'button';
+  const rahmen = document.createElement('div');
+  rahmen.className = 'rahmen' + (gross ? ' gross' : '');
+  const w = document.createElement('div');
+  w.className = 'w ' + welt.klasse;
+  // Basismasse aus dem Layout lesen, nicht raten — die Grossansicht skaliert
+  // dieselbe Kachel, baut sie also nicht neu.
+  const probe = document.createElement('div');
+  probe.className = 'w';
+  probe.style.visibility = 'hidden'; document.body.appendChild(probe);
+  const bw = probe.offsetWidth, bh = probe.offsetHeight;
+  probe.remove();
+  w.innerHTML = welt.bau(bw, bh)
+    + (welt.korn ? `<div class="korn" style="opacity:${welt.korn}"></div>` : '');
+  rahmen.appendChild(w);
+  const nr = document.createElement('span');
+  nr.className = 'nr'; nr.textContent = i + 1;
+  const m = document.createElement('span');
+  m.className = 'marke'; m.textContent = 'Demo-Daten';
+  b.append(rahmen, m, nr);
+  return b;
+}
+
+function zeichnen(){
+  buehne.innerHTML = ''; fuss.innerHTML = '';
+  buehne.style.display = 'flex';
+  if(stufe === 1) stufe1();
+  else if(stufe === 2) stufe2();
+  else ergebnis();
+}
+
+function stufe1(){
+  $('#stufe').textContent = 'Stufe 1 von 3 · Welt';
+  $('#frage').textContent = 'In welcher Welt soll Nakama leben?';
+  $('#unter').textContent = 'Sechs Formsprachen, dieselbe Information: Quelle, '
+    + 'Frequenzkurve, ein Wert, ein Zustand. Alles andere ist verschieden — Material, '
+    + 'Licht, ob es überhaupt ein Gehäuse gibt, wie viel Text. Wähl die zwei, die dir am '
+    + 'nächsten kommen. Keine muss richtig sein.';
+  WELTEN.forEach((welt, i)=>{
+    const k = kachel(welt, i, false);
+    if(eng.includes(welt.id)) k.classList.add('eng');
+    k.onclick = ()=>{
+      const p = eng.indexOf(welt.id);
+      if(p >= 0) eng.splice(p,1);
+      else if(eng.length < 2) eng.push(welt.id);
+      else { eng.shift(); eng.push(welt.id); }
+      zeichnen();
+    };
+    buehne.appendChild(k);
+  });
+  const weiter = knopf(eng.length === 2 ? 'Diese zwei groß vergleichen'
+                                        : 'Zwei auswählen', ()=>{
+      zeiten.stufe1 = Math.round(performance.now() - start);
+      start = performance.now(); stufe = 2; zeichnen();
+    }, true);
+  weiter.disabled = eng.length !== 2;
+  fuss.append(weiter, knopf('Keine davon — und zwar weil …', ablehnen));
+  hinweis(eng.length + ' von 2 gewählt · Anklicken wählt aus und wieder ab');
+}
+
+function stufe2(){
+  $('#stufe').textContent = 'Stufe 2 von 3 · Zweikampf';
+  $('#frage').textContent = 'Und welche von diesen beiden?';
+  $('#unter').textContent = 'Groß und nebeneinander. Nimm die, vor der du vier Stunden '
+    + 'am Stück sitzen willst — nicht die, die im ersten Moment mehr Eindruck macht.';
+  eng.map(id => WELTEN.find(w=>w.id===id)).forEach((welt,i)=>{
+    const k = kachel(welt, i, true);
+    k.onclick = ()=>{
+      sieger = welt.id;
+      zeiten.stufe2 = Math.round(performance.now() - start);
+      stufe = 3; zeichnen();
+    };
+    buehne.appendChild(k);
+  });
+  fuss.append(knopf('← Zurück zu allen sechs', ()=>{ stufe = 1; zeichnen(); }),
+              knopf('Keine von beiden — weil …', ablehnen));
+}
+
+function knopf(text, fn, dunkel){
+  const b = document.createElement('button');
+  b.className = 'k' + (dunkel ? ' dunkel' : '');
+  b.textContent = text; b.onclick = fn; return b;
+}
+function hinweis(text){
+  const s = document.createElement('span');
+  s.className = 'hinw'; s.textContent = text; fuss.appendChild(s);
+}
+function ablehnen(){
+  if(fuss.querySelector('textarea')) return;
+  const box = document.createElement('div');
+  box.style.cssText = 'width:100%;display:flex;flex-direction:column;gap:8px';
+  box.innerHTML = '<textarea class="ablehn" placeholder="Was fehlt, was stört? '
+    + 'Ein Material, ein Ort, ein Gerät, ein Gefühl, das hier nicht vorkommt — '
+    + 'je konkreter, desto brauchbarer."></textarea>';
+  box.appendChild(knopf('Notieren', ()=>{
+    const t = box.querySelector('textarea').value.trim();
+    if(t) ablehnungen.push({stufe, text:t});
+    box.remove();
+  }, true));
+  fuss.appendChild(box);
+  box.querySelector('textarea').focus();
+}
+
+function ergebnis(){
+  const w = WELTEN.find(x => x.id === sieger);
+  $('#stufe').textContent = 'Stufe 3 von 3 · Ergebnis';
+  $('#frage').textContent = w.name;
+  $('#unter').textContent = w.kurz;
+  buehne.innerHTML = ''; buehne.style.display = 'block'; fuss.innerHTML = '';
+
+  const erg = document.createElement('div');
+  erg.className = 'erg';
+  const reihe = document.createElement('div');
+  reihe.style.cssText = 'display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start';
+  const k = kachel(w, 0, true); k.style.cursor = 'default'; k.onclick = null;
+  reihe.appendChild(k);
+
+  const dl = document.createElement('dl');
+  Object.entries({
+    'Entity Type': w.achsen.entity, 'Material': w.achsen.material,
+    'Licht': w.achsen.licht, 'Temperatur': w.achsen.temperatur, 'Textmenge': w.achsen.text
+  }).forEach(([a,b])=>{
+    const dt = document.createElement('dt'); dt.textContent = a;
+    const dd = document.createElement('dd'); dd.textContent = b;
+    dl.append(dt, dd);
+  });
+  const sp = document.createElement('div');
+  sp.style.cssText = 'flex:1;min-width:320px';
+  const h = document.createElement('h2'); h.textContent = 'Was damit festliegt';
+  const p = document.createElement('p');
+  p.textContent = 'Das sind die Achsen aus dem Leitfaden in deiner Truhe. Sie legen die '
+    + 'Welt fest — nicht Maße, nicht Anordnung, nicht Farbwerte. Die kommen erst danach, '
+    + 'und zwar innerhalb dieser Welt.';
+  sp.append(h, p, dl);
+  reihe.appendChild(sp);
+  erg.appendChild(reihe);
+
+  const h2 = document.createElement('h2'); h2.textContent = 'Ergebnis an Claude geben';
+  const p2 = document.createElement('p');
+  p2.textContent = 'Markieren, kopieren, in den Chat einfügen.';
+  const ta = document.createElement('textarea'); ta.id = 'ausgabe'; ta.spellcheck = false;
+  ta.value = JSON.stringify({
+    werkzeug:'nakama-weltenwahl', version:1, zeitpunkt:new Date().toISOString(),
+    engereWahl: eng, sieger: sieger, siegerName: w.name, achsen: w.achsen,
+    ablehnungen: ablehnungen,
+    sekunden: {stufe1:(zeiten.stufe1/1000).toFixed(1), stufe2:(zeiten.stufe2/1000).toFixed(1)}
+  }, null, 1);
+  erg.append(h2, p2, ta);
+
+  const kn = document.createElement('div');
+  kn.style.cssText = 'display:flex;gap:10px;margin-top:10px';
+  kn.append(
+    knopf('Alles markieren — dann Strg+C', ()=>{ ta.focus(); ta.select();
+      try{ document.execCommand('copy'); }catch(e){} }, true),
+    knopf('Doch nochmal ansehen', ()=>{ stufe = 1; sieger = null;
+      eng.length = 0; start = performance.now(); zeichnen(); })
+  );
+  erg.appendChild(kn);
+  buehne.appendChild(erg);
+}
+
+zeichnen();
+</script>
+</body>
+</html>

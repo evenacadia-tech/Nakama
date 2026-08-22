@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nakama — Formfaktor und Größe</title>
+<style>
+/* ============================================================
+   Dieses Werkzeug zeigt ECHTE PIXEL. Es wird nichts skaliert.
+   Nur so ist eine Groessenentscheidung ueberhaupt beurteilbar.
+   ============================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:#1a1a1a;color:#dcdcdc;
+  font:13px/1.4 'Segoe UI',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+
+/* --- Warnband: sagt ehrlich, ob gerade 1:1 gilt --- */
+#band{position:fixed;left:0;right:0;top:0;z-index:100;padding:7px 14px;
+  font-size:12.5px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+#band.ok{background:#2b3a2b;color:#cfe0cf}
+#band.warn{background:#4a3a22;color:#f0e0c0}
+#band b{font-weight:600}
+#band button{font:inherit;font-size:12px;padding:4px 11px;border:1px solid #6a6a6a;
+  background:#3a3a3a;color:#e8e8e8;cursor:pointer;border-radius:2px}
+#band button:hover{background:#4a4a4a}
+
+/* --- Der nachgestellte Bildschirm (FL Studio, schematisch) --- */
+#schirm{position:absolute;inset:0;background:#232427;overflow:hidden}
+.fl{position:absolute;border:1px solid #34363a;background:#2a2c30}
+.fl > .t{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#5e6167;
+  padding:4px 8px;border-bottom:1px solid #34363a;white-space:nowrap}
+.spur{height:13px;margin:3px 6px;background:#31343a;position:relative}
+.spur i{position:absolute;top:2px;bottom:2px;background:#3f434a;display:block}
+.kanal{height:11px;margin:3px 6px;background:#31343a}
+.mixstreifen{display:flex;gap:4px;padding:6px}
+.mixstreifen span{flex:1;background:#31343a;position:relative}
+.mixstreifen span i{position:absolute;left:2px;right:2px;bottom:2px;background:#43474e;
+  display:block}
+
+/* --- Die Nakama-Fenster --- */
+.fenster{position:absolute;background:#242424;border:1px solid #5c5c5c;
+  box-shadow:0 10px 30px -8px rgba(0,0,0,.8);display:flex;flex-direction:column;
+  overflow:hidden;color:#c9c9c9;font:12px/1.4 'Segoe UI',system-ui,sans-serif}
+.titel{height:22px;flex:none;background:#2e2e2e;border-bottom:1px solid #414141;
+  display:flex;align-items:center;padding:0 8px;gap:8px;cursor:move;user-select:none}
+.titel b{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#9a9a9a;
+  font-weight:400}
+.titel em{font-style:normal;margin-left:auto;font-size:10px;color:#6f6f6f;
+  font-family:'Cascadia Mono','Consolas',monospace}
+.leib{flex:1;display:flex;flex-direction:column;gap:6px;padding:6px;overflow:hidden;
+  align-content:flex-start}
+.griff{position:absolute;right:0;bottom:0;z-index:3;width:14px;height:14px;cursor:nwse-resize;
+  background:linear-gradient(135deg,transparent 46%,#6a6a6a 46%,#6a6a6a 54%,transparent 54%,
+             transparent 70%,#6a6a6a 70%,#6a6a6a 78%,transparent 78%)}
+/* Was nicht mehr hineinpasst, wird abgeschnitten und rot markiert — nicht
+   heimlich zusammengedrueckt. Ein zu kleines Fenster muss weh tun. */
+.fenster.eng{border-color:#8a5a4a}
+/* Vorher trug jedes Fenster unter dem hinterlegten Mindestmass das Band
+   "content cut off" — auch wenn gemessen nichts abgeschnitten war. Zwei
+   verschiedene Aussagen brauchen zwei verschiedene Zeichen. */
+.fenster.schnitt{border-color:#8a5a4a}
+.fenster.schnitt .titel em{color:#c98a72}
+/* box-shadow inset, NICHT border-bottom (2026-08-21). Der Rahmen nahm dem
+   Inhalt zwei Pixel weg — und zwar erst, NACHDEM gemessen war. Das Fenster
+   meldete 23 px Ueberlauf, hatte danach aber 25, weil die Warnung selbst zwei
+   Pixel gekostet hatte. Ein Messgeraet, das sein Messobjekt verschiebt, gibt
+   eine Zahl aus, die nie gegolten hat; Codex' Spanne "rund 23-25 px" war
+   genau dieser Widerspruch. Der Schatten sieht gleich aus und kostet nichts. */
+.fenster.schnitt .leib{box-shadow:inset 0 -2px 0 #8a5a4a}
+.fenster.eng .titel em{color:#c98a72}
+/* Sichtbare Schnittkante: ein zu kleines Fenster darf nicht so tun, als passe alles. */
+.fenster.eng .leib{box-shadow:inset 0 -2px 0 #8a5a4a}
+.fenster.eng::after{content:'below minimum size';position:absolute;right:0;bottom:0;
+  background:#8a5a4a;color:#1a1a1a;font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;padding:2px 6px;pointer-events:none}
+
+.box{border:1px solid #4c4c4c;background:#2e2e2e;display:flex;flex-direction:column;
+  overflow:hidden;flex:none}
+.box > h4{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#8f8f8f;
+  padding:5px 8px 4px;border-bottom:1px solid #414141;flex:none;display:flex;gap:8px}
+.box > h4 em{font-style:normal;margin-left:auto;color:#6f6f6f;letter-spacing:.06em}
+.inh{padding:6px 8px;flex:1;overflow:hidden;display:flex;flex-direction:column;gap:4px}
+.streifen{height:24px;flex:none;border:1px solid #4c4c4c;background:#2e2e2e;
+  display:flex;align-items:center;padding:0 8px;overflow:hidden}
+.eb{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;padding:4px 9px;
+  color:#9a9a9a;border-right:1px solid #414141}
+.eb:first-child{padding-left:0}
+.eb.an{background:#4a4a4a;color:#e8e8e8}
+.status{margin-left:auto;font-size:9.5px;color:#8f8f8f;display:flex;gap:10px;flex:none}
+.status span{white-space:nowrap}
+.pkt{display:inline-block;width:5px;height:5px;border-radius:50%;background:#9a9a9a;
+  margin-right:4px;vertical-align:1px}
+.pkt.alt{background:#6a6a6a}
+.pkt.weg{background:transparent;border:1px solid #6a6a6a}
+.qz{display:flex;align-items:center;gap:6px;font-size:11px;padding:1px 0}
+.qz .n{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qz .r{font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:#7d7d7d}
+.hmz{display:flex;align-items:center;gap:5px;height:12px}
+.hmz .n{width:74px;font-size:10px;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;flex:none}
+.hmz .z{display:flex;gap:2px;flex:1;height:100%}
+.hmz .z i{flex:1;display:block;height:100%}
+
+/* ---- Modell des Active-Probe-Editors ----------------------------------
+   Eigene .ap-Klassen, damit Mains Modi unberuehrt bleiben (deren .streifen
+   hat einen harten 24-px-Deckel, der fuer eine Bandzeile falsch waere).
+   Bis 2026-08-21 stand hier eine Kurve mit EINER Zeile — dieses Blatt hat
+   700x420 also ehrlich, aber am falschen Inhalt gemessen.
+   GENAU GESAGT: der INHALT ist derselbe wie in werkzeug/sonde-messung.html
+   (dieselben acht Slots, dieselben Werte), das Kastenwerk drumherum ist das
+   dieses Blattes (.box/.inh/h4 haben hier andere Polster). Die Pixelzahlen
+   weichen dadurch um wenige Punkte ab; massgeblich fuer Pixel ist die
+   Messbank, massgeblich hier ist: passt der Inhalt ins Fenster. */
+.ap-streifen{border:1px solid #4c4c4c;background:#2e2e2e;display:flex;
+  align-items:center;padding:0 9px;flex:none;min-width:0;overflow:hidden}
+.ap-eb{font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:6px 11px;
+  color:#9a9a9a;border-right:1px solid #414141}
+.ap-eb:first-child{padding-left:0}
+.ap-eb.an{background:#4a4a4a;color:#e8e8e8}
+.ap-zeile{display:flex;align-items:center;gap:9px;border:1px solid #4c4c4c;
+  background:#2e2e2e;padding:4px 9px;font-size:10.5px;color:#9a9a9a;flex:none;
+  min-width:0;overflow:hidden}
+.ap-zeile > i{font-style:normal;font-size:9px;letter-spacing:.14em;
+  text-transform:uppercase;color:#7d7d7d;flex:none}
+.ap-zeile .w{white-space:nowrap}
+.ap-zeile .w b{font-weight:400;color:#c9c9c9}
+.ap-zeile .rechts{margin-left:auto;display:flex;gap:5px;flex:none}
+.ap-slot{display:flex;align-items:center;gap:4px;min-height:max-content;
+  font-size:11px;color:#c9c9c9;white-space:nowrap}
+.ap-slot > span{flex:none;white-space:nowrap}
+.ap-slot .an{min-width:9px;text-align:center}
+.ap-slot .nr{min-width:9px;color:#8f8f8f;text-align:right}
+.ap-slot .typ{min-width:36px;color:#9a9a9a}
+.ap-slot .f{min-width:56px;text-align:right}
+.ap-slot .q{min-width:46px;text-align:right;color:#9a9a9a}
+.ap-slot .g{min-width:56px;text-align:right}
+.ap-slot .ch{min-width:26px;color:#8f8f8f;text-align:center}
+.ap-slot .dy{min-width:24px;color:#8f8f8f;text-align:center}
+.ap-slot .thr,.ap-slot .rng{min-width:58px;text-align:right;color:#9a9a9a}
+.ap-slot .atk,.ap-slot .hld,.ap-slot .rel{min-width:46px;text-align:right;color:#9a9a9a}
+.ap-liste{display:flex;flex-direction:column;gap:2px;flex:1;min-height:0;overflow:hidden}
+.ap-skala{display:flex;font-size:8px;color:#7d7d7d;flex:none}
+.ap-skala span{flex:1;text-align:center}
+.bf{border:1px solid #454545;background:#333;padding:4px 6px;display:flex;
+  flex-direction:column;gap:1px}
+.bf b{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#9a9a9a;
+  font-weight:400}
+.bf span{font-size:10.5px}
+.ast{display:flex;gap:8px;align-items:baseline}
+.ast b{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:#7d7d7d;
+  width:92px;flex:none;font-weight:400}
+.ast span{font-size:11px;flex:1}
+.knopfreihe{display:flex;gap:5px;margin-top:4px}
+.wfk{font-size:9.5px;padding:3px 8px;border:1px solid #5a5a5a;color:#c2c2c2;
+  background:#3a3a3a;white-space:nowrap}
+.wfk.stark{background:#5a5a5a;color:#eee}
+.kurve{flex:1;border:1px solid #454545;background:#282828;position:relative;min-height:0}
+.kurve svg{position:absolute;inset:0;width:100%;height:100%}
+.vg{display:flex;gap:5px}
+.vg > div{flex:1;border:1px solid #454545;background:#282828;padding:4px 6px;
+  font-size:9.5px;color:#9a9a9a}
+.zurueckzeile{font-size:10px;color:#8f8f8f;display:flex;gap:10px;align-items:center}
+
+/* --- Bedienpanel --- */
+#panel{position:fixed;right:14px;bottom:14px;z-index:90;width:330px;
+  background:#2e2e2e;border:1px solid #555;padding:12px 14px;
+  display:flex;flex-direction:column;gap:11px;
+  box-shadow:0 14px 34px -10px rgba(0,0,0,.85)}
+#panel h3{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9a9a9a;
+  font-weight:400}
+#panel .reihe{display:flex;gap:5px;flex-wrap:wrap}
+#panel button{font:inherit;font-size:11.5px;padding:5px 9px;border:1px solid #565656;
+  background:#3a3a3a;color:#d8d8d8;cursor:pointer;border-radius:2px}
+#panel button:hover{background:#474747}
+#panel button.an{background:#c8c8c8;color:#1a1a1a;border-color:#c8c8c8}
+#panel .zahlen{font:11px/1.7 'Cascadia Mono','Consolas',monospace;color:#b8b8b8;
+  background:#242424;border:1px solid #454545;padding:7px 9px;white-space:pre-line}
+#panel .mini{font-size:11px;color:#8f8f8f;line-height:1.45}
+#panel textarea{width:100%;height:88px;font:10.5px/1.45 'Cascadia Mono','Consolas',monospace;
+  background:#242424;color:#c8c8c8;border:1px solid #454545;padding:7px;resize:vertical}
+#panel.klein .verbergbar{display:none}
+</style>
+</head>
+<body>
+<!-- Standband: was ist dieses Blatt? Werkzeug-Chrome, deutsch, liegt
+     ausserhalb des beurteilten Blattes. Ergaenzt 2026-08-21. -->
+<div id="standband" style="background:#3f3f3f;color:#f2f2f2;padding:7px 26px;font:12px/1.5 'Segoe UI',system-ui,sans-serif;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+  <b style="letter-spacing:.12em;font-size:10.5px;text-transform:uppercase;flex:none">Größen abgenommen — Blatt bleibt als Messgerät in Gebrauch</b>
+  <span style="opacity:.92">Abgenommen 2026-08-20: Main <b>760×430</b> · Active-Probe <b>700×420</b> · Passive-Kachel <b>260×84</b> (abnahmen/2026-08-20-groessen-alle-drei.md). Die Überlaufmessung war in vier Punkten blind und ist seit <b>2026-08-21</b> repariert: rekursiv über alle Nachfahren, in <b>beide</b> Richtungen, auf <b>jedem</b> Fenster — auch Active-Probe und Kachel. Seit <b>2026-08-21</b> zeigt das Active-Probe-Fenster auch den <b>echten</b> Editor-Inhalt: 8 Slots × 12 Parameter, Kurve, Global, Draft, Undo, Statuszeile — dieselben Werte wie in <code>werkzeug/sonde-messung.html</code>. Die Passive-Kachel steht im <b>Grenzfall</b> (langer Name + Messposition + Hinweis), nicht im Schönfall. Was dieses Blatt <b>nicht</b> beantwortet: wie der Inhalt angeordnet gehört — das misst die Messbank.</span>
+</div>
+
+
+<div id="band" class="warn"></div>
+<div id="schirm"></div>
+
+<div id="panel">
+  <div>
+    <h3>Inhaltsmenge</h3>
+    <div class="reihe" id="modus"></div>
+    <div class="mini" id="modusText" style="margin-top:6px"></div>
+  </div>
+  <div class="verbergbar">
+    <h3>Formfaktor — Main</h3>
+    <div class="reihe" id="formen"></div>
+  </div>
+  <div class="verbergbar">
+    <h3>Skalierung — was „frei skalierbar" heißt</h3>
+    <div class="reihe" id="faktor"></div>
+  </div>
+  <div class="verbergbar">
+    <h3>Auch offen</h3>
+    <div class="reihe" id="andere"></div>
+  </div>
+  <div>
+    <h3>Was das kostet</h3>
+    <div class="zahlen" id="zahlen"></div>
+  </div>
+  <div class="reihe">
+    <button id="pruefen">Alle 7 Aufgaben prüfen</button>
+  </div>
+  <div class="zahlen" id="tabelle" style="display:none"></div>
+  <div class="reihe">
+    <button id="fertig">Ergebnis zeigen</button>
+    <button id="klapp">Panel klein</button>
+  </div>
+  <textarea id="ausgabe" style="display:none" spellcheck="false"></textarea>
+</div>
+
+<script>
+/* ================================================================
+   NAKAMA — FORMFAKTOR UND GROESSE
+   Vor allem anderen: wie gross darf das Fenster sein, und welche
+   Form hat es? Ein Plugin nimmt dem Arrangement Flaeche weg —
+   deshalb wird hier NICHTS skaliert und alles in echten Pixeln
+   auf einem nachgestellten FL-Studio-Bildschirm gezeigt.
+   ================================================================ */
+
+const SOURCES = [
+  ['Lead Vocal','leads','ok',[1,2,3,5,4,4,3,2,1]],
+  ['Choir','carries','ok',[1,1,3,4,4,5,4,3,2]],
+  ['Piano','carries','ok',[1,3,5,4,3,3,2,2,1]],
+  ['Drums','carries','ok',[4,5,3,2,2,3,4,5,3]],
+  ['Bass','carries','alt',[5,5,4,2,1,1,1,0,0]],
+  ['Guitar','supports','ok',[0,1,3,4,4,4,3,2,1]],
+  ['Strings','supports','ok',[1,2,3,4,4,4,4,3,2]],
+  ['Synth Pad','blended','weg',[1,2,3,3,3,3,4,4,3]],
+  ['Brass','supports','ok',[0,1,2,4,5,4,4,3,2]],
+  ['Percussion','supports','ok',[1,2,2,3,3,4,5,5,4]],
+  ['Double Bass','carries','ok',[5,4,3,2,1,1,0,0,0]],
+  ['Harp','supports','ok',[0,1,2,4,4,3,3,2,1]],
+  ['Organ','protected','ok',[3,4,4,3,3,2,2,1,1]],
+  ['Room Mic','blended','alt',[1,2,3,3,4,4,4,4,3]],
+  ['Backing Vox','supports','ok',[0,1,2,4,4,4,3,2,1]],
+  ['Shaker','supports','ok',[0,0,1,1,2,3,4,5,5]]
+];
+const BAND = ['20','60','120','250','500','1k','2k','4k','8k'];
+const ADVISOR = [
+  ['Priority','Bass against piano, 180–260 Hz'],
+  ['Likely cause','Bass carries 3.4 dB too much there'],
+  ['Smallest test','Bass −2 dB at 220 Hz, Q 1.2'],
+  ['Listen for','piano left hand, bars 33–41'],
+  ['Then','re-check the same passage']
+];
+
+/* Diese Mindestmasse sind Ingenieurentscheidung, keine Messung: sie folgen
+   aus Lesbarkeit bei 100 % Skalierung (Versalien >= 9 px, Werte >= 11 px)
+   plus Zeilenhoehe. Sie gehoeren geprueft, sobald echte Schrift steht. */
+/* Hier stand die Tabelle MINDEST mit sieben Bausteinmassen. Sie wurde nirgends
+   gelesen — der Kommentar darueber gab sie als tragende Entscheidung aus.
+   Entfernt 2026-08-21. Die wirksamen Mindestmasse stehen je Modus in MODI
+   (mindestW/mindestH) und sind, wie die Nachmessung zeigt, zu klein angesetzt:
+   "Rollen setzen" braucht gemessen 442 px Hoehe, hinterlegt sind 300. */
+
+/* ---------- Bausteine ---------- */
+const hoehe = h => h === 'flex' ? 'flex:1 1 0;min-height:0'
+                 : (h && h > 0) ? `height:${h}px` : '';
+const kasten = (t,z,i,st='') =>
+  `<div class="box" style="${st}"><h4>${t}${z?`<em>${z}</em>`:''}</h4>
+   <div class="inh">${i}</div></div>`;
+const streifen = (aktiv) => `<div class="streifen">
+  ${['Observe','Advise','Audition','Apply']
+    .map((e,i)=>`<span class="eb${i===aktiv?' an':''}">${e}</span>`).join('')}
+  <span class="status"><span><span class="pkt"></span>12</span>
+    <span><span class="pkt alt"></span>3</span>
+    <span><span class="pkt weg"></span>1</span>
+    <span>Measuring 68 %</span></span></div>`;
+const quellenBox = (n,h) => kasten('Sources', '',
+  `<div class="ehrlich" data-gesamt="16" style="flex:1;overflow:hidden">${SOURCES.slice(0,n).map(([nm,r,f])=>
+    `<div class="qz"><span class="pkt ${f==='ok'?'':f}"></span>
+     <span class="n">${nm}</span><span class="r">${r}</span></div>`).join('')}</div>`,
+  hoehe(h));
+const heatmapBox = (n,h,titel='Comparative heatmap',zusatz='list → heatmap → detail') =>
+  kasten(titel, zusatz,
+  `<div class="hmz" style="min-height:max-content"><span class="n"></span>
+     <span class="z" style="font-size:8px;color:#7d7d7d;gap:2px">
+       ${BAND.map(b=>`<i style="background:none;text-align:center">${b}</i>`).join('')}</span></div>
+   <div class="ehrlich" data-gesamt="16" style="flex:1;display:flex;flex-direction:column;gap:2px;overflow:hidden">
+   ${SOURCES.slice(0,n).map(([nm,,,e])=>
+    `<div class="hmz" style="flex:1"><span class="n">${nm}</span>
+     <span class="z">${e.map(v=>`<i style="background:hsl(0 0% ${14+v*11}%)"></i>`)
+       .join('')}</span></div>`).join('')}</div>`, hoehe(h));
+const detailBox = (h) => kasten('Detail · Bass','spectrum · dynamics · width',
+  `<div class="kurve"><svg viewBox="0 0 300 100" preserveAspectRatio="none">
+     <path d="M0 70 C40 68 60 76 90 74 C130 71 150 40 190 36 C230 32 260 44 300 42"
+           fill="none" stroke="#b0b0b0" stroke-width="1.5"/>
+     <path d="M0 50H300" stroke="#3f3f3f" stroke-dasharray="2 3"/></svg></div>`,
+  hoehe(h));
+const befundeBox = (h) => kasten('Findings','3 open',
+  [['Bass · 180–260 Hz','Carries 3.4 dB more than the sum can take.'],
+   ['Choir · 2.5–4 kHz','Masks the lead vocal in the loud bars.'],
+   ['Drums · Width','Measurement incomplete — 6 s of 20 s.']]
+   .map(([o,t],i)=>`<div class="bf"${i?'':' style="border-color:#6a6a6a"'}>
+     <b>${o}</b><span>${t}</span></div>`).join(''), hoehe(h));
+const advisorBox = (h) => kasten('Advisor','finding 1 of 3',
+  ADVISOR.map(([b,t])=>`<div class="ast"><b>${b}</b><span>${t}</span></div>`).join('')
+  + `<div class="knopfreihe"><span class="wfk">Audition (hold)</span>
+     <span class="wfk stark">Apply</span><span class="wfk">Discard</span></div>`,
+  hoehe(h));
+const sucheZeile = () => `<div class="box" style="flex:none">
+  <div class="inh" style="padding:4px 8px;flex-direction:row;align-items:center;gap:10px">
+    <span style="font-size:11px;color:#8f8f8f">Search…</span>
+    <span class="wfk">Pin</span><span class="wfk">Focus group</span></div></div>`;
+const rollenBox = (h) => kasten('Musical roles','set once per project',
+  `<div style="display:flex;gap:4px;flex-wrap:wrap">
+    ${['leads','carries','supports','protected','blended']
+      .map(r=>`<span class="wfk">${r}</span>`).join('')}</div>`, hoehe(h));
+const vergleichBox = (h) => kasten('Before / After','level-matched',
+  `<div class="vg"><div>A — Baseline</div><div>B — Bass −2 dB @ 220</div></div>`,
+  hoehe(h));
+
+/* ---------- Inhaltsmengen ---------- */
+// "alles" = die alte Denkweise. "handgriff" = das Gesetz aus
+// docs/DESIGN-GESETZE.md, angewandt auf Aufgabe 2 (einen Befund verstehen).
+/* Die Aufgaben aus der Haeufigkeitsliste (docs/DESIGN-GESETZE.md).
+   Jede bekommt genau den Inhalt, den SIE braucht — nicht mehr.
+   "alles" bleibt als Vergleichsmass fuer die alte Denkweise stehen. */
+const MODI = {
+  lesen: {
+    name:'1 · Mix lesen', haeufig:'sehr häufig',
+    text:'Der ganze Mix auf einen Blick: 16 Quellen über 9 Bändern, dazu wieviele '
+       + 'Befunde offen sind.',
+    mindestW: 420, mindestH: 300,
+    bau:(w,h)=>{
+      return streifen(0) + heatmapBox(16, 'flex')
+        + `<div class="box" style="flex:none"><div class="inh"
+             style="padding:4px 8px;flex-direction:row;align-items:center;gap:10px">
+             <span style="font-size:10.5px">3 findings</span>
+             <span style="font-size:10px;color:#8f8f8f">Bass · Choir · Drums</span>
+             <span class="wfk" style="margin-left:auto">Open first</span>
+           </div></div>`; }},
+  handgriff: {
+    name:'2 · Befund verstehen', haeufig:'der Kernakt',
+    text:'Sichtbar ist der Ort (zwei Zeilen), der Rat, der Rückweg und der Status. '
+       + 'Alles andere ist einen Schritt entfernt.',
+    mindestW: 420, mindestH: 250,
+    bau:(w,h)=>{ const rest = h - 34 - 24 - 16 - 18;
+      const ort = Math.min(96, Math.round(rest * .38));
+      return streifen(1)
+        + `<div class="zurueckzeile"><span>← Back to the mix</span>
+             <span style="margin-left:auto">Finding 1 of 3</span></div>`
+        + heatmapBox(2, ort, 'Where', 'Bass · 180–260 Hz')
+        + advisorBox('flex'); }},
+  versuch: {
+    name:'3 · Versuch machen', haeufig:'folgt jedem Befund',
+    text:'Vorhören und anwenden — dazu die betroffene Quelle im Detail, damit man '
+       + 'sieht, was man hört.',
+    mindestW: 420, mindestH: 300,
+    bau:(w,h)=>{ const rest = h - 34 - 24 - 16 - 18;
+      const adv = 0;                     // 0 = natuerliche Hoehe, kein Deckel
+      return streifen(2)
+        + `<div class="zurueckzeile"><span>← Back to the finding</span>
+             <span style="margin-left:auto">Audition held</span></div>`
+        + advisorBox(adv) + detailBox('flex'); }},
+  urteil: {
+    name:'4 · Urteilen', haeufig:'folgt jedem Versuch',
+    text:'A gegen B, level-gematcht, und die Entscheidung behalten / verwerfen / '
+       + 'noch unklar.',
+    mindestW: 420, mindestH: 280,
+    bau:(w,h)=>{ const rest = h - 34 - 24 - 16 - 18;
+      const det = Math.round(rest * .58);
+      return streifen(3)
+        + `<div class="zurueckzeile"><span>← Back to the finding</span>
+             <span style="margin-left:auto">Bass −2 dB @ 220 applied</span></div>`
+        + detailBox('flex') + vergleichBox(0); }},
+  finden: {
+    name:'5 · Quelle finden', haeufig:'gelegentlich',
+    text:'Suchen, pinnen, Fokusgruppe — die ganze Liste, aber nur wenn man sie '
+       + 'wirklich braucht.',
+    mindestW: 380, mindestH: 300,
+    bau:(w,h)=>{
+      return streifen(0) + sucheZeile() + quellenBox(16, 'flex'); }},
+  rollen: {
+    name:'6 · Rollen setzen', haeufig:'selten',
+    text:'Musikalische Prioritäten je Quelle. Meist einmal pro Projekt.',
+    mindestW: 380, mindestH: 300,
+    bau:(w,h)=>{
+      return streifen(0) + quellenBox(16, 'flex') + rollenBox(0); }},
+  alles: {
+    name:'✕ Alles gleichzeitig', haeufig:'Vergleichsmaß',
+    text:'Die alte Denkweise: alles auf einer Ebene. Steht hier nur, um den Preis '
+       + 'sichtbar zu machen.',
+    mindestW: 900, mindestH: 520,
+    bau:(w,h)=>{
+      const kopf = 24, g = 6;
+      const rest = h - 34 - kopf - g;
+      const linke = Math.round((w - 12 - g*2) * .30);
+      const mitte = Math.round((w - 12 - g*2) * .40);
+      const rechte = (w - 12 - g*2) - linke - mitte;
+      const oben = Math.round(rest * .52), unten = rest - oben - g;
+      return streifen(1) + `<div style="display:flex;gap:${g}px;flex:1;min-height:0">
+        <div style="width:${linke}px;display:flex;flex-direction:column;gap:${g}px">
+          ${quellenBox(Math.max(3,Math.floor(oben/17)), oben)}
+          ${befundeBox(unten)}</div>
+        <div style="width:${mitte}px;display:flex;flex-direction:column;gap:${g}px">
+          ${heatmapBox(Math.max(3,Math.floor(oben/15)), oben)}
+          ${detailBox(unten)}</div>
+        <div style="width:${rechte}px;display:flex;flex-direction:column;gap:${g}px">
+          ${advisorBox(oben)}${vergleichBox(unten)}</div></div>`;
+    }}
+};
+
+/* ---------- Formfaktoren ---------- */
+const FORMEN = [
+  {id:'kompakt', name:'Kompakt', w:760, h:430},
+  {id:'mittel',  name:'Mittel',  w:980, h:560},
+  {id:'gross',   name:'Groß',    w:1240,h:700},
+  {id:'band',    name:'Breitband', w:1600, h:300},
+  {id:'saeule',  name:'Säule',   w:460, h:880},
+  {id:'klein',   name:'Klein',   w:520, h:300}
+];
+/* Das Modell des Active-Probe-Editors. Inhalt und Werte sind dieselben wie in
+   werkzeug/sonde-messung.html — 8 Slots x 12 Parameter im Platz-Grenzfall,
+   dazu Kurve, Global, Draft, Undo und Statuszeile. Vorher stand hier eine
+   Kurve und EINE Zeile; das Fenster wurde damit ehrlich gemessen, aber am
+   falschen Inhalt (docs/sondenplan.md, Abschnitt 5). */
+const AP_SLOTS = [
+  ['HP',   '24 Hz',    'Q 0.71', '-',       'St',  '-28.0 dB','+6.0 dB','12 ms','40 ms','180 ms'],
+  ['Bell', '86 Hz',    'Q 1.40', '-3.5 dB', 'M/S', '-24.0 dB','+4.5 dB','20 ms','60 ms','240 ms'],
+  ['Bell', '220 Hz',   'Q 1.20', '-2.0 dB', 'St',  '-22.5 dB','+3.0 dB','8 ms', '30 ms','120 ms'],
+  ['Notch','480 Hz',   'Q 6.40', '-9.0 dB', 'L/R', '-30.0 dB','+2.5 dB','4 ms', '20 ms','90 ms'],
+  ['Bell', '1.2 kHz',  'Q 0.90', '+1.0 dB', 'St',  '-18.0 dB','+2.0 dB','15 ms','50 ms','200 ms'],
+  ['Bell', '3.4 kHz',  'Q 1.60', '-2.5 dB', 'M/S', '-20.0 dB','+3.5 dB','10 ms','35 ms','150 ms'],
+  ['Shelf','7.5 kHz',  'Q 0.71', '+1.5 dB', 'St',  '-16.0 dB','+2.0 dB','25 ms','70 ms','260 ms'],
+  ['LP',   '18.5 kHz', 'Q 0.71', '-',       'St',  '-12.0 dB','+1.5 dB','30 ms','80 ms','300 ms']
+];
+const AP_SKALA = ['20','50','100','200','500','1k','2k','5k','10k','20k'];
+const apSlot = (s2, i) =>
+  `<div class="ap-slot"><span class="an">&#9679;</span><span class="nr">${i+1}</span>
+   <span class="typ">${s2[0]}</span><span class="f">${s2[1]}</span>
+   <span class="q">${s2[2]}</span><span class="g">${s2[3]}</span>
+   <span class="ch">${s2[4]}</span><span class="dy">dyn</span>
+   <span class="thr">${s2[5]}</span><span class="rng">${s2[6]}</span>
+   <span class="atk">${s2[7]}</span><span class="hld">${s2[8]}</span>
+   <span class="rel">${s2[9]}</span></div>`;
+function apBau(){
+  return `<div class="ap-streifen"><span class="ap-eb an">Edit</span>
+      <span class="ap-eb">Draft</span>
+      <span class="status"><span><span class="pkt"></span>Linked &#183; paired</span></span></div>
+    <div class="ap-zeile"><i>Global</i>
+      <span class="w">In <b>-2.0 dB</b></span><span class="w">Out <b>+1.5 dB</b></span>
+      <span class="w">Width <b>96 %</b></span><span class="w">Mono below <b>120 Hz</b></span>
+      <span class="rechts"><span class="wfk">Bypass off</span></span></div>
+    ${kasten('EQ curve','protected: Vocal presence &#183; 2 kHz-5 kHz',
+      `<div class="kurve"><svg viewBox="0 0 300 100" preserveAspectRatio="none">
+         <rect x="200" y="0" width="46" height="100" fill="#fff" opacity="0.055"/>
+         <path d="M0 96 C24 70 40 62 70 66 C110 71 130 40 165 44 C200 48 230 78 246 46
+                  C266 30 285 34 300 78" fill="none" stroke="#c9c9c9" stroke-width="1.6"/>
+         <path d="M0 50H300" stroke="#3f3f3f" stroke-dasharray="2 3"/></svg></div>
+       <div class="ap-skala">${AP_SKALA.map(f=>`<span>${f}</span>`).join('')}</div>`,
+      hoehe('flex'))}
+    ${kasten('Bands','8 slots &#183; all parameters',
+      `<div class="ap-liste">${AP_SLOTS.map(apSlot).join('')}</div>`, '')}
+    <div class="ap-zeile"><i>Draft</i>
+      <span class="w">from Main &#183; <b>2 bands</b> &#183; limited to &#177;3 dB</span>
+      <span class="rechts"><span class="wfk">Audition (hold)</span>
+      <span class="wfk stark">Apply</span><span class="wfk">Discard</span></span></div>
+    <div class="ap-zeile"><i>History</i>
+      <span class="w"><b>Band 3 &#183; 220 Hz &#183; -2.0 dB</b></span>
+      <span class="w">5 confirmed steps</span>
+      <span class="rechts"><span class="wfk">Undo</span>
+      <span class="wfk">Neutralise</span></span></div>`;
+}
+const ANDERE = {
+  aktiv:   {name:'Active-Probe-Editor', w:700, h:420, bau:(w,h)=>apBau()},
+  /* Der Grenzfall der Kachel ist der LANGE Name plus die lange Messposition;
+     "Piano Bus / Insert . POST" war der Schoenfall und hat nichts bewiesen.
+     KORRIGIERT 2026-08-21 (Codex-Befund 9): hier stand, bei 260x84 entscheide
+     die BREITE. Gemessen entscheidet ausschliesslich die HOEHE — 23 px fehlen
+     nach unten, 0 px zur Seite. Die Kachel ist breit und flach, und genau
+     deshalb war die Vermutung plausibel; drei gestapelte Informationszeilen
+     passen trotzdem nicht in 84 px. Die Vermutung stand im Code, die Messung
+     nirgends — jetzt haelt sie die Probe 'kachel' fest. */
+  passiv:  {name:'Passive-Probe-Kachel', w:260, h:84,
+            bau:()=>`<div class="box" style="flex:1"><div class="inh">
+              <div class="qz"><span class="pkt"></span>
+                <span class="n">Backing Vox &#8212; Bus 12</span>
+                <span class="r">supports</span></div>
+              <div class="qz" style="color:#8f8f8f;font-size:10px">
+                <span class="n">Insert &#183; POST</span><span class="r">stale 40 s</span></div>
+              <div class="qz" style="color:#8f8f8f;font-size:10px">
+                <span class="n">Duplicate instance on this bus</span></div>
+              </div></div>` }
+};
+
+/* ---------- Zustand ---------- */
+const w = { modus:'lesen', form:'kompakt', faktor:1,
+            main:{x:520, y:300, w:760, h:430},
+            aktivAn:false, passivAn:false,
+            aktiv:{x:120, y:520}, passiv:{x:1560, y:640} };
+
+const $ = s => document.querySelector(s);
+
+/* ---------- Nachgestellter FL-Studio-Bildschirm ---------- */
+function bildschirm(){
+  const s = $('#schirm');
+  const H = s.clientHeight, W = s.clientWidth;
+  const spuren = Math.max(4, Math.floor((H*0.46 - 26) / 19));
+  s.innerHTML = `
+    <div class="fl" style="left:0;top:0;right:0;height:34px">
+      <div class="t">FL Studio — Transport · Tempo · Snap</div></div>
+    <div class="fl" style="left:0;top:34px;width:${Math.round(W*0.14)}px;bottom:0">
+      <div class="t">Browser</div>
+      ${Array.from({length:Math.floor((H-70)/17)},()=>'<div class="kanal"></div>').join('')}</div>
+    <div class="fl" style="left:${Math.round(W*0.14)}px;top:34px;right:0;height:${Math.round(H*0.46)}px">
+      <div class="t">Playlist</div>
+      ${Array.from({length:spuren},(_,i)=>`<div class="spur">
+        <i style="left:${(i*7)%60}%;width:${18+((i*13)%34)}%"></i></div>`).join('')}</div>
+    <div class="fl" style="left:${Math.round(W*0.14)}px;top:${34+Math.round(H*0.46)}px;
+         width:${Math.round(W*0.30)}px;bottom:0">
+      <div class="t">Channel rack</div>
+      ${Array.from({length:Math.floor((H*0.5-40)/15)},()=>'<div class="kanal"></div>').join('')}</div>
+    <div class="fl" style="left:${Math.round(W*0.44)}px;top:${34+Math.round(H*0.46)}px;
+         right:0;bottom:0">
+      <div class="t">Mixer</div>
+      <div class="mixstreifen" style="height:calc(100% - 24px)">
+        ${Array.from({length:18},(_,i)=>`<span><i style="height:${20+((i*17)%64)}%"></i></span>`)
+          .join('')}</div></div>`;
+}
+
+/* ---------- Nakama-Fenster ---------- */
+function fenster(id, titel, x, y, bw, bh, inhalt, mitGriff){
+  const f = document.createElement('div');
+  f.className = 'fenster'; f.id = id;
+  f.style.cssText = `left:${x}px;top:${y}px;width:${bw}px;height:${bh}px`;
+  f.innerHTML = `<div class="titel"><b>${titel}</b><em>${bw}×${bh}</em></div>
+    <div class="leib">${inhalt}</div>${mitGriff?'<div class="griff"></div>':''}`;
+  return f;
+}
+
+/* Ein Fenster ehrlich messen. Drei Fehler der ersten Fassung, jeder gemessen:
+   1. Sie sah nur `.leib` und `.inh`. Ein verschachteltes overflow:hidden —
+      z. B. das anonyme <div style="flex:1;overflow:hidden"> in quellenBox —
+      schluckte die Ueberlaenge, bevor ein `.inh` sie sah: gemeldet 0 px,
+      tatsaechlich 118. PRUEFLISTE 2.1 verlangt rekursiv ueber ALLE Nachfahren.
+   2. Sie mass nur die Hoehe. Der Streifen schnitt bei 300 px Fensterbreite
+      108 px rechts ab, und nichts meldete sich. PRUEFLISTE 2.2.
+   3. Sie lief nur auf `#main`. Active-Probe und Passive-Kacheln hatten kein
+      dataset.fehlt, keine eng-Klasse, keinen Titelzusatz — und die
+      Active-Probe laeuft bei 700x420 gemessen 24 px ueber. Genau die beiden
+      Oberflaechen, die als Naechstes vermessen werden sollen.
+   Ausserdem getrennt: "zu klein" (unter dem hinterlegten Mindestmass) ist
+   etwas anderes als "abgeschnitten" (gemessen). Vorher trug ein Fenster das
+   Band "content cut off", wo nichts abgeschnitten war. */
+function messeFenster(f, bw, bh, unterMindestmass){
+  const leib = f.querySelector('.leib');
+  if(!leib) return 0;
+  /* Beide Richtungen werden GETRENNT gefuehrt, nicht nur ihr Maximum. Ein
+     Fenster kann in beiden Richtungen ueberlaufen, und dann verschweigt ein
+     einzelner Maximalwert die zweite Haelfte. Ausserdem braucht der Export
+     die Richtung: "23 px" ohne "hoch" ist keine verwertbare Messung. */
+  let hoch = 0, breit = 0;
+  const pruef = x => {
+    const h = x.scrollHeight - x.clientHeight, b = x.scrollWidth - x.clientWidth;
+    if(h > hoch)  hoch  = h;
+    if(b > breit) breit = b;
+  };
+  pruef(leib);
+  leib.querySelectorAll('*').forEach(pruef);
+  /* Kopfzahlen aus der Messung, nie aus dem Quelltext: gezaehlt wird, was
+     GANZ im sichtbaren Rechteck liegt. Vorher stand "16 of 16" im Kopf,
+     waehrend eine Zeile unter der Kante lag. */
+  leib.querySelectorAll('.ehrlich').forEach(l => {
+    const r = l.getBoundingClientRect();
+    const ganz = [...l.children].filter(z => {
+      const q = z.getBoundingClientRect();
+      return q.height > 0 && q.bottom <= r.bottom + 0.5 && q.top >= r.top - 0.5;
+    }).length;
+    const h4 = l.closest('.box')?.querySelector(':scope > h4');
+    if(!h4) return;
+    // kasten() rendert das <em> nur bei nicht-leerem Zusatz — hier wird es
+    // gebraucht, also notfalls angelegt.
+    let kopf = h4.querySelector(':scope > em');
+    if(!kopf){ kopf = document.createElement('em'); h4.appendChild(kopf); }
+    const gesamt = +l.dataset.gesamt || l.children.length;
+    kopf.textContent = ganz + ' of ' + gesamt;
+    kopf.style.color = ganz < gesamt ? '#c98a72' : '';
+  });
+  const fehlt = Math.max(hoch, breit);
+  const richtung = hoch > 1 && breit > 1 ? 'hoch und breit'
+                 : hoch > 1 ? 'hoch' : breit > 1 ? 'breit' : 'keine';
+  f.dataset.fehlt = fehlt;
+  f.dataset.hoch = hoch;
+  f.dataset.breit = breit;
+  f.dataset.richtung = richtung;
+  f.classList.toggle('schnitt', fehlt > 1);
+  f.classList.toggle('eng', !!unterMindestmass);
+  const em = f.querySelector('.titel em');
+  if(em) em.textContent = fehlt > 1
+    ? `${bw}×${bh} — ${fehlt} px fehlen (${richtung})`
+    : unterMindestmass ? `${bw}×${bh} — unter dem Mindestmaß` : `${bw}×${bh}`;
+  return fehlt;
+}
+
+function zeichnen(){
+  bildschirm();
+  const s = $('#schirm');
+  const m = MODI[w.modus];
+  const eng = w.main.w < m.mindestW || w.main.h < m.mindestH;
+
+  const haupt = fenster('main','Nakama — Main', w.main.x, w.main.y, w.main.w, w.main.h,
+    m.bau(w.main.w, w.main.h), true);
+  // Skalierung aendert das LAYOUT nicht — die Ueberlaufmessung bleibt gueltig.
+  if(w.faktor !== 1){
+    haupt.style.transform = `scale(${w.faktor})`;
+    haupt.style.transformOrigin = '0 0';
+  }
+  s.appendChild(haupt);
+  zieh(haupt, w.main, true);
+  // Erst nach dem Einhaengen messbar: laeuft der Inhalt wirklich ueber?
+  // Nicht nur der Leib: die Kaesten schrumpfen mit, also wird ihr INHALT
+  // abgeschnitten, nicht der Fensterrahmen. Gemessen wird auf jeder Ebene.
+  messeFenster(haupt, w.main.w, w.main.h, eng);
+
+  if(w.aktivAn){
+    const a = ANDERE.aktiv;
+    const f = fenster('aktiv', 'Nakama — Active Probe', w.aktiv.x, w.aktiv.y, a.w, a.h,
+      a.bau(a.w, a.h), false);
+    s.appendChild(f); zieh(f, w.aktiv, false);
+    messeFenster(f, a.w, a.h, false);
+    /* Ein Fenster kann "passen" und trotzdem unbrauchbar sein: nach acht
+       Bandzeilen bleibt der EQ-Kurve fast nichts. Keine Ueberlaufmessung
+       sieht das — sie kennt nur abgeschnitten/nicht abgeschnitten. Deshalb
+       steht die verbleibende Kurvenhoehe im Titel, auch wenn nichts fehlt.
+       Wieviel genug ist, misst werkzeug/sonde-messung.html. */
+    const kv = f.querySelector('.kurve');
+    const em = f.querySelector('.titel em');
+    /* clientHeight: .kurve hat 1 px Rahmen oben und unten, dort wird nichts
+       gezeichnet. offsetHeight meldete 7 px, zeichnen kann die Kurve auf 5.
+       Dieselbe Korrektur steht in werkzeug/sonde-messung.html.
+       Gemessen wird IMMER, auch bei Ueberlauf — sonst fehlt dem Export die
+       Zahl genau in dem Fall, in dem sie am meisten sagt. Nur der TITEL
+       schweigt bei Ueberlauf, weil dort schon die Ueberlaufzahl steht. */
+    if(kv) f.dataset.kurve = kv.clientHeight;
+    if(kv && em && +f.dataset.fehlt <= 1){
+      const px = +f.dataset.kurve;
+      em.textContent = `${a.w}×${a.h} — passt, aber der Kurve bleiben `
+        + `${px} px (${(px/24).toFixed(1)} px je dB)`;
+    }
+  }
+  if(w.passivAn){
+    const p = ANDERE.passiv;
+    [0,1,2].forEach(i=>{
+      const f = fenster('passiv'+i, 'Passive', w.passiv.x, w.passiv.y + i*(p.h+8),
+        p.w, p.h, p.bau(), false);
+      s.appendChild(f);
+      // 260x84 ist das schaerfste der drei Masse. Gemessen laeuft die Kachel
+      // NUR nach unten ueber (23 px hoch, 0 px breit) — die Vermutung "bei
+      // einer breiten flachen Kachel entscheidet die Breite" ist widerlegt.
+      // messeFenster fuehrt beide Richtungen getrennt und schreibt sie in
+      // dataset.hoch / dataset.breit, damit das nachpruefbar bleibt.
+      messeFenster(f, p.w, p.h, false);
+    });
+  }
+  panel();
+  zahlen(eng);
+}
+
+/* Ziehen und Groessenaendern — direkt, ohne Bibliothek. */
+function zieh(el, ziel, resize){
+  const titel = el.querySelector('.titel');
+  titel.onpointerdown = e => {
+    const sx = e.clientX - ziel.x, sy = e.clientY - ziel.y;
+    const mv = ev => { ziel.x = Math.round(ev.clientX - sx);
+                       ziel.y = Math.round(ev.clientY - sy);
+                       el.style.left = ziel.x + 'px'; el.style.top = ziel.y + 'px'; };
+    const up = () => { removeEventListener('pointermove', mv);
+                       removeEventListener('pointerup', up); zahlen(); };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up);
+  };
+  if(!resize) return;
+  const griff = el.querySelector('.griff');
+  griff.onpointerdown = e => {
+    e.stopPropagation();
+    const sw = ziel.w - e.clientX, sh = ziel.h - e.clientY;
+    const mv = ev => {
+      ziel.w = Math.max(300, Math.round(ev.clientX + sw));
+      ziel.h = Math.max(180, Math.round(ev.clientY + sh));
+      w.form = 'frei'; zeichnen();
+    };
+    const up = () => { removeEventListener('pointermove', mv);
+                       removeEventListener('pointerup', up); };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up);
+  };
+}
+
+/* ---------- Panel ---------- */
+function knopf(text, an, fn){
+  const b = document.createElement('button');
+  b.textContent = text; if(an) b.className = 'an'; b.onclick = fn; return b;
+}
+function panel(){
+  const md = $('#modus'); md.innerHTML = '';
+  Object.entries(MODI).forEach(([id,m])=>
+    md.appendChild(knopf(m.name, w.modus===id, ()=>{ w.modus=id; zeichnen(); })));
+  $('#modusText').textContent = MODI[w.modus].text
+    + ` Mindestmaß dieser Menge: ${MODI[w.modus].mindestW}×${MODI[w.modus].mindestH}.`;
+  const fm = $('#formen'); fm.innerHTML = '';
+  FORMEN.forEach(f => fm.appendChild(knopf(`${f.name} ${f.w}×${f.h}`, w.form===f.id, ()=>{
+    w.form = f.id; w.main.w = f.w; w.main.h = f.h;
+    const s = $('#schirm');
+    w.main.x = Math.max(0, Math.min(w.main.x, s.clientWidth - f.w));
+    w.main.y = Math.max(0, Math.min(w.main.y, s.clientHeight - f.h));
+    zeichnen();
+  })));
+  const fa = $('#faktor'); fa.innerHTML = '';
+  [0.75, 1, 1.25, 1.5, 2].forEach(f => fa.appendChild(
+    knopf(Math.round(f*100)+' %', w.faktor===f, ()=>{ w.faktor=f; zeichnen(); })));
+  const an = $('#andere'); an.innerHTML = '';
+  an.appendChild(knopf('Active-Probe 700×420', w.aktivAn,
+    ()=>{ w.aktivAn = !w.aktivAn; zeichnen(); }));
+  an.appendChild(knopf('3× Passive-Kachel 260×84', w.passivAn,
+    ()=>{ w.passivAn = !w.passivAn; zeichnen(); }));
+}
+function zahlen(eng){
+  const fehltPx = +(document.getElementById('main')?.dataset.fehlt || 0);
+  const s = $('#schirm');
+  const SW = screen.width, SH = screen.height;
+  const eb = Math.round(w.main.w * w.faktor), eh = Math.round(w.main.h * w.faktor);
+  const flaeche = eb * eh;
+  const anteil = flaeche / (SW * SH) * 100;
+  let zusatz = 0;
+  if(w.aktivAn) zusatz += ANDERE.aktiv.w * ANDERE.aktiv.h;
+  if(w.passivAn) zusatz += 3 * ANDERE.passiv.w * ANDERE.passiv.h;
+  const gesamt = (flaeche + zusatz) / (SW * SH) * 100;
+  const m = MODI[w.modus];
+  const zuEng = w.main.w < m.mindestW || w.main.h < m.mindestH;
+  $('#zahlen').textContent =
+      `Main        ${w.main.w}×${w.main.h}`
+    + (w.faktor !== 1 ? `  →  ${eb}×${eh} bei ${Math.round(w.faktor*100)} %\n` : `\n`)
+    + `vom Schirm  ${anteil.toFixed(1)} %  (${SW}×${SH})\n`
+    + `mit allem   ${gesamt.toFixed(1)} %\n`
+    + `Verhältnis  ${(w.main.w/w.main.h).toFixed(2)} : 1\n`
+    + (fehltPx > 1
+        ? `ZU KLEIN für „${m.name}" — ${fehltPx} px Inhalt abgeschnitten`
+        : zuEng ? `unter dem Mindestmaß für „${m.name}"`
+                : `passt für „${m.name}"`);
+}
+
+/* ---------- 1:1-Pruefung, ehrlich ---------- */
+function band(){
+  const b = $('#band');
+  const echt = window.innerWidth === screen.width
+            && Math.abs(window.innerHeight - screen.height) < 4
+            && window.devicePixelRatio === 1;
+  b.className = echt ? 'ok' : 'warn';
+  b.innerHTML = echt
+    ? `<b>1:1</b> — die Fenster hier sind exakt so groß wie später in FL Studio.
+       Bildschirm ${screen.width}×${screen.height}, Skalierung 100 %.`
+    : `<b>Noch nicht 1:1.</b> Fenster ${window.innerWidth}×${window.innerHeight},
+       Bildschirm ${screen.width}×${screen.height}, Zoom ${Math.round(devicePixelRatio*100)} %.
+       Erst im Vollbild stimmen die Größen — sonst ist die Entscheidung wertlos.`;
+  const kn = document.createElement('button');
+  kn.textContent = echt ? 'Vollbild verlassen' : 'Vollbild (F11)';
+  kn.onclick = () => echt ? document.exitFullscreen()
+                          : document.documentElement.requestFullscreen();
+  b.appendChild(kn);
+  /* Das Standband liegt im normalen Fluss ganz oben, #band ist fixed und
+     #schirm absolut mit inset:0. Bis 2026-08-21 reservierte diese Zeile nur
+     die Hoehe des Warnbands — das Standband lag darunter und war an
+     920 gemessenen Stichpunkten zu NULL Prozent sichtbar. Die Blattpruefung
+     sah es trotzdem, weil sie nur seine Existenz abfragte.
+     Jetzt wird es unter das fixe Warnband geschoben und der Bildschirm
+     beginnt unter BEIDEN. Das kostet den nachgestellten FL-Bildschirm rund
+     95 px Hoehe; die 1:1-Aussage bleibt unberuehrt, weil die Fenster in
+     festen Pixelmassen gezeichnet werden und nicht am Bildschirm haengen. */
+  const sb = $('#standband');
+  sb.style.marginTop = b.offsetHeight + 'px';
+  $('#schirm').style.top = (b.offsetHeight + sb.offsetHeight) + 'px';
+}
+
+/* Prueft jede Aufgabe in der aktuellen Fenstergroesse und misst, ob etwas
+   abgeschnitten wird. Behauptet nichts — rendert und misst. */
+function alleAufgabenPruefen(){
+  const merk = w.modus, zeilen = [];
+  for(const [id, m] of Object.entries(MODI)){
+    w.modus = id; zeichnen();
+    const f = document.getElementById('main');
+    zeilen.push({id, name:m.name, haeufig:m.haeufig,
+                 fehlt:+f.dataset.fehlt, zuSchmal: w.main.w < m.mindestW});
+  }
+  w.modus = merk; zeichnen();
+  const t = $('#tabelle');
+  t.style.display = 'block';
+  t.textContent = `bei ${w.main.w}×${w.main.h}\n`
+    + zeilen.map(z => {
+        const urteil = z.fehlt > 1 ? `${z.fehlt} px fehlen`
+                     : z.zuSchmal ? 'zu schmal' : 'passt';
+        return (z.name + '                      ').slice(0,24) + urteil;
+      }).join('\n');
+  return zeilen;
+}
+/* Sucht fuer eine Aufgabe die kleinste Groesse ohne Abschnitt. Linear und
+   stumpf, aber gemessen — und damit widerspruchsfaehig. */
+function kleinstesMass(modusId){
+  const merkM = w.modus, merkW = w.main.w, merkH = w.main.h;
+  w.modus = modusId;
+  const fehlt = () => { zeichnen();
+    return +document.getElementById('main').dataset.fehlt; };
+  let h = 200;
+  w.main.w = 1400;                      // erst die Hoehe, breit genug
+  while(h < 900 && (w.main.h = h, fehlt() > 1)) h += 2;
+  const minH = h;
+  let b = 300;
+  w.main.h = minH + 20;
+  while(b < 1400 && (w.main.w = b, fehlt() > 1)) b += 10;
+  const minW = b;
+  w.modus = merkM; w.main.w = merkW; w.main.h = merkH; zeichnen();
+  return {modus:modusId, minW, minH};
+}
+function alleMindestmasse(){
+  const r = Object.keys(MODI).map(kleinstesMass);
+  const t = $('#tabelle'); t.style.display = 'block';
+  t.textContent = 'kleinste Groesse je Aufgabe' + '\n'
+    + r.map(x => (MODI[x.modus].name + '                      ').slice(0,24)
+                 + x.minW + '×' + x.minH).join('\n');
+  return r;
+}
+window.kleinstesMass = kleinstesMass;
+window.alleMindestmasse = alleMindestmasse;
+$('#pruefen').onclick = alleAufgabenPruefen;
+$('#pruefen').oncontextmenu = e => { e.preventDefault(); alleMindestmasse(); };
+window.alleAufgabenPruefen = alleAufgabenPruefen;
+
+$('#klapp').onclick = () => {
+  const p = $('#panel'); p.classList.toggle('klein');
+  $('#klapp').textContent = p.classList.contains('klein') ? 'Panel groß' : 'Panel klein';
+};
+/* Der Ergebnisexport. Bis 2026-08-21 (Codex-Befund 1) schrieb er fuer
+   Active und Passive nur `ANDERE.aktiv` bzw. `ANDERE.passiv` — also Name,
+   Breite, Hoehe, die drei Zahlen, die schon vorher im Quelltext standen. Der
+   ganze gemessene Teil fiel weg: 23 px Ueberlauf nach UNTEN bei der Kachel,
+   5 px Zeichenraum fuer die Kurve der Active-Probe. Ein gespeichertes
+   Ergebnis las sich dadurch positiv, obwohl beide Oberflaechen unbrauchbar
+   sind — der Export verlor genau die Befunde, fuer die dieses Blatt existiert.
+   Version deshalb auf 2: wer eine Datei mit version:1 findet, weiss, dass die
+   Messwerte darin fehlen und nicht etwa null waren. */
+const gemessen = (id, name, bw, bh) => {
+  const f = document.getElementById(id);
+  if(!f) return null;
+  const kurve = f.dataset.kurve === undefined ? null : +f.dataset.kurve;
+  return {
+    name, breite:bw, hoehe:bh,
+    ueberlauf:{px:+f.dataset.fehlt, hoch:+f.dataset.hoch, breit:+f.dataset.breit,
+               richtung:f.dataset.richtung},
+    // Ein Fenster kann "passen" und trotzdem unbrauchbar sein: die Zahl, die
+    // das zeigt, ist der ZEICHENRAUM der Kurve, nicht der Ueberlauf.
+    kurvenraumPx: kurve,
+    pxJeDb: kurve === null ? null : +(kurve/24).toFixed(2),
+    urteil: +f.dataset.fehlt > 1 ? 'laeuft ueber'
+          : kurve !== null && kurve < 24 ? 'passt, aber die Kurve ist unlesbar'
+          : 'passt'
+  };
+};
+$('#fertig').onclick = () => {
+  const t = $('#ausgabe');
+  t.style.display = 'block';
+  const SW = screen.width, SH = screen.height;
+  const mf = document.getElementById('main');
+  t.value = JSON.stringify({
+    werkzeug:'nakama-formfaktor', version:2, zeitpunkt:new Date().toISOString(),
+    bildschirm:{breite:SW, hoehe:SH, skalierung:devicePixelRatio},
+    einsZuEins: window.innerWidth === screen.width
+             && Math.abs(window.innerHeight - screen.height) < 4
+             && window.devicePixelRatio === 1,
+    inhaltsmenge:w.modus, main:{breite:w.main.w, hoehe:w.main.h,
+      verhaeltnis:+(w.main.w/w.main.h).toFixed(2),
+      anteilSchirmProzent:+((w.main.w*w.main.h)/(SW*SH)*100).toFixed(1),
+      ueberlauf: mf ? {px:+mf.dataset.fehlt, hoch:+mf.dataset.hoch,
+                       breit:+mf.dataset.breit, richtung:mf.dataset.richtung} : null},
+    activeProbe:  w.aktivAn  ? gemessen('aktiv',   ANDERE.aktiv.name,
+                                        ANDERE.aktiv.w,  ANDERE.aktiv.h)  : null,
+    passiveKachel:w.passivAn ? gemessen('passiv0', ANDERE.passiv.name,
+                                        ANDERE.passiv.w, ANDERE.passiv.h) : null
+  }, null, 1);
+  t.focus(); t.select();
+  try{ document.execCommand('copy'); }catch(e){}
+};
+addEventListener('resize', ()=>{ band(); zeichnen(); });
+band(); zeichnen();
+</script>
+</body>
+</html>

@@ -155,12 +155,51 @@
 
 ## ▶ So startet der Projektleiter eine Bau-Session
 
-Neue Session in diesem Workspace aufmachen, diese zwei Zeilen einfügen, fertig:
+Neue Session in diesem Workspace aufmachen, diese zwei Zeilen einfügen, fertig.
+**Stand 23.08. ist das die T2-Prüfung von S8**, nicht der nächste Bau:
+
+```
+Pruefe S8 (SONDE-007a) als T2 mit frischem Kontext gegen git diff dafa5a5..HEAD.
+Urteil PASS/NEEDS_WORK in docs/beweise/SONDE-007a.md, Abschnitt 5.
+```
+
+Das ist keine Wahl, sondern die Sessionregel (`docs/bauaufteilung-sonden.md`
+§0: „1 Session = 1 Ticket + sein Beweismanifest + **sein Frischkontext-Prüfer**").
+S8 hat Manifest und T1, aber kein Prüferurteil — es ist damit **offen**. Ein
+T2-Prüfer darf den Umbau nicht selbst geschrieben haben; den frischen Kontext
+liefert genau das Aufmachen einer neuen Session, und diese Gelegenheit ist
+verbraucht, sobald dieselbe Session anfängt zu bauen. Der Rückstand wächst
+sonst weiter: S5, S6 und S8 tragen alle „T2 offen".
+
+Danach S9, mit denselben zwei Zeilen in der Bauform:
 
 ```
 Baue S9 (SONDE-007b) nach docs/bauaufteilung-sonden.md.
 Manifest nach docs/beweise/SONDE-007b.md, T1 + T2.
 ```
+
+Die drei Stellen, an denen ein Prüfer bei S8 zuerst graben sollte (aus dem
+Selbstaudit, ehrlich benannt statt versteckt):
+1. **Die Kopf-Fassade** leitet Includes und Defines per Generatorausdruck ab.
+   K2 kann Generatorausdrücke zur Konfigurierzeit **nicht** auswerten — steht
+   so im Modulkopf. Ist die Lücke wirklich nur durch K3 gedeckt?
+2. **K2b vergleicht gegen genau ein Ziel** (`EqCopilot`). Ob sein
+   Ausschlusssatz trägt, ist nachgemessen (22.08., Manifest B8): von
+   `JUCE_SHARED_CODE`, `JUCE_STANDALONE_APPLICATION` und
+   `JUCE_VST3_CAN_REPLACE_VST2` kommt **keines** in irgendeinem Header der vier
+   Kernmodule vor; `JUCE_MODULE_AVAILABLE_` trifft zweimal, beide in
+   `juce_core/native/juce_BasicNativeHeaders.h` auf `juce_opengl` gegated —
+   ein Modul, das weder der Kern noch `EqCopilot` hat, beide sehen es also
+   gleich undefiniert. Offen bleibt die Frage für **drei** Ziele: welches ist
+   dann die Referenz?
+3. **A14s Nadelliste** kommt aus `plugin-identities-v1.json`. Abgeleitete
+   Identitätsträger wie `JucePlugin_AAXIdentifier` / `_CFBundleIdentifier`
+   (`com.evenacadia.EqCopilot`) stehen dort nicht — geprüft und für gedeckt
+   befunden: der Firmenname ist Teilstring jeder abgeleiteten ID, und A14
+   sucht Teilstrings. Gegengemessen 22.08.: `com.evenacadia` steht ohnehin
+   **auch im gebauten Bundle nicht**, weil beide Makros macOS-/AAX-Wege sind,
+   die der Windows-VST3-Bau nie übersetzt. Ein Prüfer sollte trotzdem fragen,
+   ob es einen Identitätsträger gibt, der *nicht* den Firmennamen enthält.
 
 Mehr braucht es nicht: die SessionStart-Hooks legen Wahrheitskern, Hub-Stand,
 Design-Stand und Git-Stand von selbst vor. **Nur das Ticket muss genannt

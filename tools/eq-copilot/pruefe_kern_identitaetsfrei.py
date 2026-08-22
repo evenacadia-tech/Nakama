@@ -43,6 +43,7 @@ import sys
 
 WURZEL = pathlib.Path(__file__).resolve().parents[2]
 IDENTITAET = WURZEL / "eq-copilot" / "identity" / "plugin-identities-v1.json"
+KERNQUELLEN = WURZEL / "eq-copilot" / "plugin"
 
 # Die vier Uebersetzungseinheiten des Kerns (plugin/CMakeLists.txt,
 # NAKAMA_KERN_QUELLEN). Die Liste steht hier absichtlich handgeschrieben: ein
@@ -203,6 +204,24 @@ def main() -> int:
     print(f"Kern      : {kern.relative_to(WURZEL)}  ({len(kern_bytes)} Byte)")
     print(f"Gegenprobe: {kontrolle.relative_to(WURZEL)}  ({len(kontroll_bytes)} Byte)")
     print(f"Nadeln    : {len(nadeln)} aus {IDENTITAET.relative_to(WURZEL)}")
+
+    # ── 0. Misst dieses Bein ueberhaupt den aktuellen Stand? ────────────────
+    # Der Baustand-Riegel des Runners (tools/beweise.ps1) laeuft nur ueber die
+    # .exe-Beine ('Art -eq plugin'). NakamaKern.lib ist eine neue ART von
+    # gemessenem Artefakt und faellt durch dieses Raster: ohne -Bauen koennte
+    # dieses Bein eine veraltete Lib messen und gruen melden, waehrend die
+    # Quelle laengst etwas anderes sagt. Also bewacht das Bein seine eigene
+    # Frische - dieselbe mtime-Heuristik, die der Runner fuer die Binaries
+    # fuehrt, nur hier und fuer die Lib.
+    print("\n[0] Frische - misst dieses Bein den aktuellen Quellstand?")
+    lib_zeit = kern.stat().st_mtime
+    juenger = [
+        q for q in sorted(KERNQUELLEN.glob("state/*")) + sorted(KERNQUELLEN.glob("vertrag/NakamaVertrag.*"))
+        if q.is_file() and q.stat().st_mtime > lib_zeit
+    ]
+    pruefe(not juenger,
+           "NakamaKern.lib ist nicht aelter als die Kernquellen",
+           ", ".join(q.name for q in juenger) if juenger else "")
 
     # ── 1. Die Gegenprobe zuerst: taugt der Scanner ueberhaupt? ──────────────
     # Nur Werte, die im gebauten Main-Bundle stehen MUESSEN. Die reservierten

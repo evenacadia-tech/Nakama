@@ -3,10 +3,13 @@
 // Worker misst wie im Betrieb) und rendert den Material-Editor offscreen als
 // PNG — Kurve, Marker, Messleisten und Statuszellen sind dann echt belegt.
 //
-// Aufruf:  EqCopShot <ziel.png> [breitePx]
-// Läuft die Hub-App, verbindet sich der echte PipeClient (LED grün; der
+// Aufruf:  EqCopShot <ziel.png> [breitePx] [--state <datei.bin>]
+// Läuft der Broker, verbindet sich der echte PipeClient (LED grün; der
 // Sensor erscheint kurz in der Übersicht und meldet sich sauber ab) — ohne
-// App zeigt die LED ehrlich „App aus" (rot). Beides ist Betriebsrealität.
+// Broker zeigt die LED ehrlich „App aus" (rot). Beides ist Betriebsrealität.
+// --state laedt vor dem Render einen Host-State (z. B. den read-only-Fall
+// fixtures/state/schema2/fremdes-major-3.bin, SONDE-006) — der Sichtbeweis,
+// dass der Editor einen Zustand zeigt, den es gibt.
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
@@ -19,11 +22,28 @@ int main (int argc, char* argv[])
     const juce::File ziel = juce::File::getCurrentWorkingDirectory()
         .getChildFile (argc > 1 ? juce::String (juce::CharPointer_UTF8 (argv[1]))
                                 : juce::String ("eqcop-shot.png"));
-    const int breite = argc > 2 ? juce::jlimit (600, 1950, juce::String (argv[2]).getIntValue())
-                                : 1200;
+    const int breite = argc > 2 && juce::String (argv[2]) != "--state"
+                           ? juce::jlimit (600, 1950, juce::String (argv[2]).getIntValue())
+                           : 1200;
+    juce::File stateDatei;
+    for (int i = 1; i + 1 < argc; ++i)
+        if (juce::String (argv[i]) == "--state")
+            stateDatei = juce::File::getCurrentWorkingDirectory().getChildFile (juce::String (juce::CharPointer_UTF8 (argv[i + 1])));
 
     eqcop::EqCopilotProcessor proz;
     proz.prepareToPlay (48000.0, 512);
+    if (stateDatei != juce::File())
+    {
+        juce::MemoryBlock state;
+        if (! stateDatei.loadFileAsData (state))
+        {
+            std::printf ("SHOT FEHLGESCHLAGEN — State %s nicht lesbar\n", stateDatei.getFullPathName().toRawUTF8());
+            return 1;
+        }
+        proz.setStateInformation (state.getData(), (int) state.getSize());
+        std::printf ("State geladen: %s (read-only: %s, Herkunft %d)\n", stateDatei.getFileName().toRawUTF8(),
+                     proz.stateNurLesen() ? "ja" : "nein", (int) proz.holeStateHerkunft());
+    }
 
     // 20 s Material: Rauschbett −24 dBFS + 116-Hz-Ton — liefert messbereit,
     // eine lebende Kurve und den Resonanz-Marker aus der echten Engine.

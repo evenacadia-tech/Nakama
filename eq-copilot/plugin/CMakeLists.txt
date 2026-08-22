@@ -47,6 +47,26 @@ target_compile_definitions(EqCopilot PUBLIC
 
 target_include_directories(EqCopilot PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/hostbridge")
 
+# ── SONDE-006: State-Schema 2 + Parameterbestand + RFC-8785-state_hash ──────
+# plugin/state/ ist JUCE-core-Code ohne JucePlugin_*-Konstante (S8-tauglich);
+# der DTO-Leser nutzt den v3-Textriegel aus plugin/vertrag/. Jedes Ziel, das
+# den Prozessor kompiliert, bekommt dieselben Quellen - eine Funktion statt
+# sechs Kopien, damit keine Liste still auseinanderlaeuft.
+set(NAKAMA_STATE_QUELLEN
+    state/NakamaKanon.cpp
+    state/NakamaParameter.cpp
+    state/NakamaState.cpp
+    vertrag/NakamaVertrag.cpp
+)
+function(nakama_state_anbinden ziel)
+    target_sources(${ziel} PRIVATE ${NAKAMA_STATE_QUELLEN})
+    target_include_directories(${ziel} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/state" "${CMAKE_CURRENT_SOURCE_DIR}/vertrag")
+    # SHA-256 fuer den state_hash.
+    target_link_libraries(${ziel} PRIVATE juce::juce_cryptography)
+endfunction()
+nakama_state_anbinden(EqCopilot)
+
 target_link_libraries(EqCopilot
     PRIVATE
         juce::juce_audio_utils
@@ -82,6 +102,7 @@ target_include_directories(EqCopNullTest PRIVATE src)
 target_compile_definitions(EqCopNullTest PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
 target_link_libraries(EqCopNullTest PRIVATE juce::juce_audio_utils juce::juce_dsp
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_state_anbinden(EqCopNullTest)
 
 # ── Golden-Test: M1-Kreuzvalidierung + M3-Diagnose (Engine pur, ohne Pipe) ──
 juce_add_console_app(EqCopGoldenTest PRODUCT_NAME "eqcop-goldentest")
@@ -110,6 +131,7 @@ target_include_directories(EqCopMarkierungTest PRIVATE src)
 target_compile_definitions(EqCopMarkierungTest PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
 target_link_libraries(EqCopMarkierungTest PRIVATE juce::juce_audio_utils juce::juce_dsp
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_state_anbinden(EqCopMarkierungTest)
 
 # ── Shot-Test: rendert den Editor offscreen als PNG (Sichtprüfung ohne FL) ──
 juce_add_console_app(EqCopShot PRODUCT_NAME "eqcop-shot")
@@ -125,6 +147,7 @@ target_include_directories(EqCopShot PRIVATE src)
 target_compile_definitions(EqCopShot PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
 target_link_libraries(EqCopShot PRIVATE juce::juce_audio_utils juce::juce_dsp
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_state_anbinden(EqCopShot)
 
 # ── Paint-Benchmark: reine paint()-Kosten offscreen (FPS-Beweis) ───────────
 juce_add_console_app(EqCopPaintBench PRODUCT_NAME "eqcop-paintbench")
@@ -140,6 +163,7 @@ target_include_directories(EqCopPaintBench PRIVATE src)
 target_compile_definitions(EqCopPaintBench PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
 target_link_libraries(EqCopPaintBench PRIVATE juce::juce_audio_utils juce::juce_dsp
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_state_anbinden(EqCopPaintBench)
 
 # ── SONDE-004a: Wegwerf-Messgeraet fuer Aux/PDC/Recall (User-Termin A) ──────
 # Eigener Plugin-Code NkSp — bewusst NICHT Teil der eingefrorenen Identitaet
@@ -204,6 +228,27 @@ target_compile_definitions(EqCopIdentityTest PRIVATE
     JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
 target_link_libraries(EqCopIdentityTest PRIVATE juce::juce_audio_utils juce::juce_dsp
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_state_anbinden(EqCopIdentityTest)
+
+# ── SONDE-006: State-Schema 2, Parameterbestand, Migration (Kanon B2) ──────
+# Misst gegen die handgeschriebenen Vertraege (schemas/state/) und den
+# Fixture-Korpus (fixtures/state/) - dieselben Dateien lesen Rust und Python.
+# Linkt den ECHTEN Produktcode (plugin/state/ + PluginProcessor), keine Testkopie.
+juce_add_console_app(EqCopStateMigrationTest PRODUCT_NAME "eqcop-statemigrationtest")
+target_sources(EqCopStateMigrationTest PRIVATE
+    tests/StateMigrationTestMain.cpp
+    src/PluginProcessor.cpp
+    src/PluginEditor.cpp
+    src/PipeClient.cpp
+    src/AnalyseEngine.cpp
+    src/Diagnose.cpp
+)
+target_include_directories(EqCopStateMigrationTest PRIVATE src)
+target_compile_definitions(EqCopStateMigrationTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopStateMigrationTest PRIVATE juce::juce_audio_utils juce::juce_dsp
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_state_anbinden(EqCopStateMigrationTest)
 
 # ── S3b: Termin-B-Messgeraet (Wegwerfware wie SONDE-004a) ──────────────────
 # Erstes Ziel, das die Hostbruecke BENUTZT: sein Processor ist eine Senke.
@@ -302,7 +347,7 @@ target_link_libraries(EqCopSchemaTest PRIVATE juce::juce_core flatbuffers
 # Codepage — Literale wie „Klavier-Bus“ hingen dann an der Systemlocale.
 foreach(ziel EqCopilot EqCopPipeProbe EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopAuxSpike EqCopAuxSpikeTest EqCopHostContextTest
-             EqCopSchemaTest
+             EqCopSchemaTest EqCopStateMigrationTest
              EqCopHostProbe EqCopHostProbeTest)
     target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endforeach()

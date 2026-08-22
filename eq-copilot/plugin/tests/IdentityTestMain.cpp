@@ -421,13 +421,16 @@ int main (int argc, char* argv[])
             pruefe (p.holePaarId() == rolle.paar,
                     juce::String ("Rolle '") + rolle.name + "': Paar-ID uebernommen", p.holePaarId());
 
-            juce::MemoryBlock heraus;
-            p.getStateInformation (heraus);
-
+            // Die Schema-1-Goldens sind seit SONDE-006 EINGEFRORENE LADE-Fixtures:
+            // das Plugin speichert Schema 2 (NakamaState). Der Save-Beweis
+            // (Migration bytegleich zum Schema-2-Golden) liegt im
+            // EqCopStateMigrationTest; hier bleibt der Riegel, dass die
+            // eingefrorene Saat weiter bytegleich auf Platte liegt und dass
+            // sie in eine frische Instanz laedt.
             auto golden = goldenOrdner.getChildFile (juce::String ("state-schema1-") + rolle.name + ".bin");
             if (schreibeGoldens)
             {
-                golden.replaceWithData (heraus.getData(), heraus.getSize());
+                golden.replaceWithData (saat.getData(), saat.getSize());
                 std::cout << "  geschrieben: " << golden.getFullPathName().toRawUTF8() << std::endl;
                 continue;
             }
@@ -439,10 +442,16 @@ int main (int argc, char* argv[])
             if (! gelesen)
                 continue;
 
-            pruefe (erwartet.getSize() == heraus.getSize()
-                        && std::memcmp (erwartet.getData(), heraus.getData(), heraus.getSize()) == 0,
-                    juce::String ("Schema-1-State '") + rolle.name + "' ist bytegleich zum Golden",
-                    juce::String ((int) heraus.getSize()) + " Bytes");
+            pruefe (erwartet.getSize() == saat.getSize()
+                        && std::memcmp (erwartet.getData(), saat.getData(), saat.getSize()) == 0,
+                    juce::String ("Schema-1-Saat '") + rolle.name + "' ist bytegleich zum eingefrorenen Golden",
+                    juce::String ((int) saat.getSize()) + " Bytes");
+
+            juce::MemoryBlock heraus;
+            p.getStateInformation (heraus);
+            const auto neu = juce::ValueTree::readFromData (heraus.getData(), heraus.getSize());
+            pruefe (neu.hasType ("NakamaState") && (int) neu.getProperty ("schema") == 2,
+                    juce::String ("Rolle '") + rolle.name + "' speichert Schema 2 (Migration, SONDE-006)");
 
             // Gegenpfad: das Golden wieder einlesen muss dieselben Felder ergeben.
             EqCopilotProcessor zweite;

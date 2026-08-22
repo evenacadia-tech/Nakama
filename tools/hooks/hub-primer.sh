@@ -27,8 +27,10 @@ z = [r for p in h["plan"] for r in p["zeilen"]]
 # Dieselbe Fertig-Liste wie tools/hub/plan_blatt.py (FERTIG) — sonst meldet der
 # Primer eine andere Zahl als das Planblatt, das der User in Nimbalyst liest.
 FERTIG = {"erledigt", "fertig", "gebaut", "abgeschlossen"}
-erl = sum(1 for r in z if (r["status"] or "").strip().lower() in FERTIG)
-nxt = [r for r in z if r["status"] == "naechster"]
+def st(r):  # fehlender Status darf den Primer nie werfen — er laeuft bei SessionStart
+    return (r.get("status") or "").strip().lower()
+erl = sum(1 for r in z if st(r) in FERTIG)
+nxt = [r for r in z if st(r) in {"naechster", "nächster"}]
 print(f"Stand: {h['stand']} — {h.get('stand_notiz','')}")
 print(f"Plan: {erl}/{len(z)} Zeilen erledigt · naechster Schritt: {nxt[0]['id'] + ' ' + nxt[0]['text'][:70] if nxt else '?'}")
 print(f"Bei dir (jetzt): {len(jetzt)} — " + " · ".join(b['id'] + ' ' + b['titel'] for b in jetzt))

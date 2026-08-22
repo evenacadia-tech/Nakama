@@ -1,42 +1,54 @@
 # Nakama Briefing
 
 Private Seite: <https://nakama-briefing.philipld.chatgpt.site>
+(User 22.08.2026: „das ist der neue und einzige hub , alle anderen artefakte
+sind hiermit nichtmehr zu beachten").
 
 Sie ist das gemeinsame, knappe Briefing für Phil, Claude und Codex. Das alte
-Claude-Artefakt ist außer Betrieb. Es wird nicht mehr gebaut, gelesen oder
-veröffentlicht.
+Claude-Artefakt ist stillgelegt (zeigt nur noch die neue Adresse) und wird
+nicht mehr gebaut, gelesen oder veröffentlicht.
 
-## Der einfache Ablauf
+## Der Ablauf je Session
 
-1. Zu Beginn die Seite oder `/api/hub` lesen.
-2. Neue Antworten und neue Punkte zuerst aufgreifen.
-3. Bei einem echten Statuswechsel `docs/hub/hub.json` aktualisieren und den
-   vollständigen Stand über `/api/state` auf die Seite schreiben.
+1. `py -3.13 tools/hub/hub_sync.py holen` — liest `/api/hub`: Antworten von
+   Phil landen in `docs/hub/hub.json` unter `antworten` (Status `neu`), neue
+   Punkte von der Seite unter `eingang` (`typ: punkt`, idempotent je ID).
+2. Einarbeiten: jede Antwort ist User-Wort (Datum + Wortlaut ins Register
+   bzw. in `design/abnahmen/`, dann Status `eingearbeitet` + `ergebnis`);
+   Punkte aus dem Eingang in Karten oder Plan überführen.
+3. Bei einem echten Statuswechsel `hub.json` fortschreiben und
+   `py -3.13 tools/hub/hub_sync.py senden` — prüft die Regeln, POSTet den
+   Vollstand als `Claude` an `/api/state`, liest per GET gegen und verweigert,
+   wenn die Seite Antworten trägt, die `hub.json` noch nicht kennt. Danach
+   `hub.json` per Pathspec committen.
 
-Mehr Ablauf braucht der Hub nicht.
+`hub_sync.py pruefen` prüft nur. Die Adresse steht in `hub.json` (`hub_url`);
+`NAKAMA_HUB_URL` überschreibt sie (z. B. für `vinext dev` der Seite).
 
 ## Was wo liegt
 
 | Inhalt | Ort |
 |---|---|
 | Sichtbare Briefing-Seite | `/` |
-| Vollständiger Stand für Claude und Codex | `/api/hub` |
+| Vollständiger Stand für Claude und Codex | `GET /api/hub` → `hub`, `answers`, `items`, `stateUpdatedBy` |
 | Verbindliche Quelldatei für den Projektstand | `docs/hub/hub.json` |
-| Antworten von Phil | `answers` in `/api/hub` |
-| Neu angelegte Entscheidungen, Updates und Blocker | `items` in `/api/hub` |
-| Quellcode der neuen Seite | `briefing-hub/` |
-| Start- und Stop-Erinnerung | `tools/hooks/hub-primer.sh`, `tools/hooks/hub-stop.sh` |
+| Stand auf die Seite schreiben | `POST /api/state` `{ "author": "Claude", "hub": <hub.json> }` (≤ 500 KB, kein Login nötig — gemessen 22.08.) |
+| Antworten von Phil | `answers` in `/api/hub` (`questionId` = Karten-/Punkt-ID wie `U2.3`, bei Seiten-Punkten `item.<id>`) |
+| Neu angelegte Entscheidungen, Updates und Blocker | `items` in `/api/hub`; anlegen über die Seite oder `POST /api/items` |
+| Bilder der Karten (Quelle) | `docs/hub/bilder/` — die Seite hält Kopien unter `briefing-hub/public/images/` |
+| Fragenkatalog der Seite (Alltagssprache, je Punkt Vorschlag/Alternative) | `briefing-hub/data/friendly-copy.ts` |
+| Quellcode der Seite (OpenAI Sites: vinext + Cloudflare D1) | `briefing-hub/` |
+| Start- und Stop-Erinnerung | `tools/hooks/hub-primer.sh`, `tools/hooks/hub-stop.sh` (Probe: `tools/hub/test_stop_hook.sh`) |
 
-## Schreiben auf die Seite
+## Grenzen der Seite (vor dem Nachziehen wissen)
 
-- Phil antwortet direkt auf der Seite.
-- Phil, Claude und Codex legen über „Neuen Punkt anlegen" kurze Entscheidungen,
-  Updates oder Blocker an.
-- Claude und Codex lesen den Gesamtstand über `GET /api/hub`.
-- Ein aktualisiertes `docs/hub/hub.json` wird als vollständiges Dokument mit
-  `{ "hub": <Dokument>, "author": "Claude" }` beziehungsweise `Codex` an
-  `POST /api/state` gesendet. Dafür den angemeldeten Browser auf derselben
-  Seite verwenden.
+- Die Seite rendert **ihren** Fragenkatalog (`friendly-copy.ts`), nicht die
+  `punkte`-Texte aus `hub.json`. Ein neuer Unterpunkt oder eine neue Karte mit
+  Fragen braucht dort einen Eintrag und einen neuen Deploy — `hub.json` allein
+  zeigt ihn nicht. Heute fehlt dort `U2.16` (17 von 18 Gen-Lesarten).
+- Neue Bilder ebenso: nach `docs/hub/bilder/` UND `briefing-hub/public/images/`.
+- `hub.json` muss `stand`, `bei_dir`, `plan`, `design` tragen, sonst lehnt
+  `/api/state` ab; `hub_sync.py pruefen` prüft strenger.
 
 ## Inhaltsregeln
 
@@ -50,7 +62,3 @@ Mehr Ablauf braucht der Hub nicht.
 - Keine Frage im Chat wiederholen, die auf der Seite beantwortbar ist.
 - Keine Unterseiten, Freigabeketten oder Pflegefelder hinzufügen, solange ein
   kurzer Punkt ausreicht.
-
-Die Dateien unter `tools/hub/`, die noch `hub.html` oder das alte Artefakt
-erzeugen, bleiben nur als Verlauf im Repository. Sie gehören nicht mehr zum
-laufenden Briefing-Ablauf.

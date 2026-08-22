@@ -48,5 +48,6 @@ if [ -n "$LETZTER" ]; then
     echo "Drift: keine — Hub ist auf dem Stand von HEAD."
   fi
 fi
-echo "Schritte: (1) /api/hub lesen; (2) neue Antworten und Punkte einarbeiten;"
-echo "          (3) hub.json fortschreiben und den Vollstand ueber /api/state synchronisieren. Kein Artefakt mehr bauen."
+echo "Schritte: (1) py -3.13 tools/hub/hub_sync.py holen  -> Antworten/Punkte der Seite nach hub.json;"
+echo "          (2) einarbeiten (User-Wort mit Datum + Wortlaut ins Register/Abnahmen);"
+echo "          (3) hub.json fortschreiben -> py -3.13 tools/hub/hub_sync.py senden -> hub.json committen. Kein Artefakt mehr."

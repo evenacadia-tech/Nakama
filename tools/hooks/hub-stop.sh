@@ -41,7 +41,7 @@ HUB_TOUCHED=0
 
 GRUND=""
 if [ "${COMMITS:-0}" -gt 0 ] && [ "$HUB_TOUCHED" -eq 0 ]; then
-  GRUND="Nakama-Hub nicht nachgezogen: $COMMITS Commit(s) diese Session, docs/hub/hub.json unveraendert. Pflicht (CLAUDE.md, Abschnitt Hub): den Stand auf https://nakama-briefing.philipld.chatgpt.site/api/hub lesen, hub.json bei echten Statusaenderungen fortschreiben und den Vollstand ueber /api/state synchronisieren. Das alte Claude-Artefakt nicht mehr bauen. Ist wirklich nichts zu aendern, bleibt hub.json unveraendert."
+  GRUND="Nakama-Hub nicht nachgezogen: $COMMITS Commit(s) diese Session, docs/hub/hub.json unveraendert. Pflicht (CLAUDE.md, Abschnitt Hub): py -3.13 tools/hub/hub_sync.py holen (Antworten/Punkte der Seite), hub.json bei echten Statusaenderungen fortschreiben, py -3.13 tools/hub/hub_sync.py senden (Vollstand an /api/state), hub.json committen. Das alte Claude-Artefakt ist stillgelegt. Ist wirklich nichts zu aendern, bleibt hub.json unveraendert."
 fi
 
 [ -z "$GRUND" ] && exit 0

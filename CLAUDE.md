@@ -91,6 +91,7 @@ im anschluss wird dann nurnoch im nakama repo gearbeitet". Einstieg dort:
 | 21.08. | Aufräumen: alte Richtungen ins Archiv, Prisma-Studie parken, tote Memories löschen, Inspirationen + regenerierbare Renders raus | Interview Frage 20, alle vier gewählt |
 | 22.08. | Figma-Depot: die Datei `Nakama-Design` ist die einzige verbindliche Quelle; je App hell + dunkel geplant, verbindlich heute nur dunkel | „das ist das neue verbindliche und einzige Depot indem sich die aktuellsten Designs befinden. ich habe für jedes design vor eine helle und dunke variante zu erstellen. stand jetzt aber erstmal nur dunkel“ · `design/abnahmen/2026-08-22-figma-depot.md` |
 | 22.08. | Design-Repo und Technik-Repo zusammengeführt: `Nakama-Design` wird `design/` im Nakama-Repo, danach nur noch hier gearbeitet | „ich möchte dass du die nakama design und nakama arbeitsbereiche zusammenführst. ich habe am anfang versucht das zu trennen aber es funktioniert nicht … einfach infos die im nakama design exisitieren die nicht im nakama folder präsent sind reinholen, so dass nichts verloren ist. im anschluss wird dann nurnoch im nakama repo gearbeitet" · Commits `6fd08a1` (Merge) + Folgecommits |
+| 22.08. | Der Hub ist die Seite `https://nakama-briefing.philipld.chatgpt.site` (Maschinenansicht `/api/hub`); das Claude-Artefakt und alle anderen Artefakte gelten nicht mehr | „das ist der neue und einzige hub , alle anderen artefakte sind hiermit nichtmehr zu beachten" · Commits `f55c2fe`, `8974a74` (Codex-Vorarbeit) |
 
 **Was NICHT mehr gilt** (und nirgends mehr als gültig auftauchen darf):
 Recherche als „kanonischer Plan" · Spectral Field / Bauplan 2.0 / Tiefenfeld /
@@ -122,27 +123,47 @@ als Produktteil · „Lernsprache" / „Kernfunktion vor Verwaltung" als Regeln.
 
 ## Hub — gemeinsames Briefing (Pflicht seit 22.08.2026)
 
-Der User arbeitet auf genau einer privaten Seite:
-<https://nakama-briefing.philipld.chatgpt.site>. Das frühere Claude-Artefakt
-ist abgelöst und wird nicht mehr gebaut oder veröffentlicht. Die vollständige
-Maschinenansicht für Claude und Codex liegt unter `/api/hub`; der knappe
-Arbeitsablauf steht in `docs/hub/LIES-MICH.md`.
+Der User (Projektleiter, kein Coder) liest **eine** Seite:
+<https://nakama-briefing.philipld.chatgpt.site> (User 22.08.: „das ist der neue
+und einzige hub , alle anderen artefakte sind hiermit nichtmehr zu beachten").
+Sie zeigt Plan erledigt/offen, was bei ihm liegt (Entscheide · Handgriffe ·
+Wissen vor dem Klick) und den Figma-Stand der drei Apps mit Bild; er
+antwortet dort je Frage und legt Punkte an. User-Wort zur Pflicht (22.08.):
+„die pflicht für jeden claude dieses dokument zu aktualisieren und bei session
+beginn anzusehen … wie ein gemeinsames briefing und übersichtshub". Quelle des
+Projektstands ist `docs/hub/hub.json` (Adresse dort: `hub_url`); die Seite
+liefert ihn unter `/api/hub` zusammen mit den Antworten (`answers`) und neuen
+Punkten (`items`), Quellcode der Seite in `briefing-hub/`. Das frühere
+Claude-Artefakt ist stillgelegt — nie mehr bauen, lesen oder veröffentlichen.
+Drei Pflichten je Session, Details in `docs/hub/LIES-MICH.md`:
 
-Drei Pflichten je Session:
+1. **Lesen** — der SessionStart-Hook (`tools/hooks/hub-primer.sh`) liest Kopf
+   und Drift vor; `py -3.13 tools/hub/hub_sync.py holen` holt Antworten und
+   neue Punkte von der Seite nach `hub.json` (Status `neu` bzw. `eingang`).
+2. **Einarbeiten** — jede Antwort ist User-Wort: mit Datum + Wortlaut ins
+   Register bzw. in die Design-Abnahmen, danach Status `eingearbeitet` +
+   `ergebnis`. Punkte aus dem Eingang in Karten oder Plan überführen. Reviews
+   Befund für Befund gegen die Quelldatei (T3-Regel, Bauaufteilung §2).
+   **Antworten kommen von der Seite, nicht per Zuruf** (User 22.08.: „baue
+   eine antwortfunktion für mich ein, dass ich zu jedem punkt stellung nehmen
+   kann, dann musst du nur noch die seite anschauen um infos zu bekommen") —
+   nie eine Frage im Chat stellen, die auf der Seite beantwortbar ist.
+3. **Nachziehen** — `hub.json` fortschreiben (Klartext, kein Entscheid ohne
+   Register-Zitat, „erledigt" nur mit Manifest) → `py -3.13
+   tools/hub/hub_sync.py senden` (prüft, POSTet den Vollstand als Claude an
+   `/api/state`, liest gegen) → `hub.json` per Pathspec committen. Der
+   Stop-Hook (`tools/hooks/hub-stop.sh`) erinnert einmal je Session, wenn
+   Commits ohne Hub-Update enden.
 
-1. **Lesen** — zu Beginn `/api/hub` öffnen. Neue Antworten und neue Punkte
-   zuerst aufgreifen; der SessionStart-Hook zeigt zusätzlich Stand und Drift.
-2. **Einarbeiten** — User-Antworten sind User-Wort. Mit Datum und Wortlaut ins
-   Register beziehungsweise in die Design-Abnahmen übernehmen. Keine Frage im
-   Chat wiederholen, die auf der Seite beantwortbar ist.
-3. **Nachziehen** — bei einem echten Statuswechsel `docs/hub/hub.json`
-   fortschreiben und den vollständigen Stand über `/api/state` auf die Seite
-   synchronisieren. Neue Entscheidungen, Updates oder Blocker über die Seite
-   oder `/api/items` hinzufügen. Der Stop-Hook erinnert einmal, wenn Commits
-   ohne Hub-Update enden.
-
-Die Seite bleibt bewusst knapp: klare Alltagssprache, sichtbare Belege direkt
-am Punkt, keine technischen Romane und keine zusätzliche Projektverwaltung.
+**Zeigen, nicht beschreiben** (User 22.08.: „ich muss sehen können um was es
+geht und selbst bilder hochladen können"): jede „bei dir"-Karte, bei der es um
+etwas Sichtbares geht, trägt das Bild (`bilder` in `hub.json`, Dateien in
+`docs/hub/bilder/`, committet). Die Seite hält ihre Kopien unter
+`briefing-hub/public/images/` und ihren Fragenkatalog in
+`briefing-hub/data/friendly-copy.ts` — ein neues Bild oder eine neue Frage
+braucht dort eine Ergänzung und einen neuen Deploy der Seite; `hub.json`
+allein reicht dafür nicht. Die Seite bleibt knapp: Alltagssprache, Belege
+direkt am Punkt, keine zusätzliche Projektverwaltung.
 
 ## Bauen & Beweisen (vom Workspace-Root)
 

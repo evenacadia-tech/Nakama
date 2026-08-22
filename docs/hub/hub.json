@@ -725,7 +725,7 @@
   ],
   "design": {
     "massstab": "Dein Wort vom 22.08.: „Hauptsache die Apps selbst in FL Studio sehen dann exakt aus wie in Figma.“ Darum: Statisches wird aus Figma gebacken, nur Dynamisches (Texte, Zellen, Kurven, Zustände) wird gezeichnet. Seit dem 22.08. ist die Figma-Datei „Nakama-Design“ die einzige verbindliche Quelle — je App ist eine helle und eine dunkle Fassung geplant, verbindlich ist heute die dunkle. Die Stände unten holt Claude als 4×-Export aus dem Depot in die Truhe.",
-    "phase": "Phase 1b — Figma-Stände übersetzen, Reihenfolge Gen → Probeeq → Suna. Gen kann beginnen (Stand vom 22.08.); die 18 Lesarten beantwortest du parallel in Karte U2.",
+    "phase": "Phase 1b — Figma-Stände übersetzen, Reihenfolge Gen → Probeeq → Suna. Gen kann beginnen (Stand vom 22.08.); die 17 Lesarten beantwortest du parallel in Karte U2.",
     "apps": [
       {
         "key": "gen",

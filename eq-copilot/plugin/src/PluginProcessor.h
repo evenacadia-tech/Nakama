@@ -19,6 +19,7 @@
 #include "PipeClient.h"
 #include "AnalyseEngine.h"
 #include "HoerMarkierung.h"
+#include "NakamaState.h"
 
 namespace eqcop
 {
@@ -52,15 +53,30 @@ public:
     void getStateInformation (juce::MemoryBlock&) override;
     void setStateInformation (const void*, int) override;
 
-    // ── Sensorbindung (UI-Thread) ──
-    juce::String holeSensorId() const;
-    juce::String holeRolle() const;
+    // ── Sensorbindung (UI-Thread) — State-Schema 2 (SONDE-006) ──
+    // Der Zustand ist `nakama::state::Zustand` (Common: instance_id, Klasse,
+    // Messposition, Label, Paar). Die v2-Rolle (hub|sensor|pre|post) ist bis
+    // SONDE-010 die Bruecke zum heutigen Broker-hello.
+    juce::String holeSensorId() const;          // = Common.instance_id
+    juce::String holeRolle() const;             // v2-Rolle aus Klasse + Messposition
     juce::String holeLabel() const;
     juce::String holePaarId() const;
-    void setzeBindung (const juce::String& rolle, const juce::String& label, const juce::String& paarId);
+    juce::String holeRuntimeNonce() const        { return instanceNonce; }
+    // Setzt die Bindung; true = echte Aenderung (dann Host-Dirty + Reconnect).
+    // false: keine Aenderung, unbekannte Rolle oder read-only.
+    bool setzeBindung (const juce::String& rolle, const juce::String& label, const juce::String& paarId);
     // M2, Plan §8.4: sichtbare Antwort auf einen Kennungs-Konflikt — DIESE
-    // Instanz bekommt eine frische Sensor-ID und meldet sich neu an.
-    void neueSensorId();
+    // Instanz bekommt eine frische Sensor-ID und meldet sich neu an (Host-Dirty).
+    // false = read-only.
+    bool neueSensorId();
+    // read-only (Vertrag nakama-state-v2.md §5): ein State, den dieser Build
+    // nicht interpretieren darf. Originalbytes reisen unveraendert zurueck,
+    // keine Pipe-Anmeldung, der Editor zeigt es.
+    bool                    stateNurLesen() const;
+    nakama::state::Herkunft holeStateHerkunft() const;
+    juce::String            holeStateGrund() const;
+    int                     holeStateFremdesMajor() const;
+    nakama::state::Zustand  holeZustandKopie() const;
     // true, solange der Broker per heartbeat_ack einen Kennungs-Konflikt meldet.
     bool konfliktGemeldet() const                          { return pipe.snapshot().konflikt; }
 
@@ -107,10 +123,16 @@ private:
     void lebenszeichen (int samples, bool spielt);
 
     // Bindung — vom UI-Thread geschrieben, vom Pipe-Thread beim Hello gelesen.
+    // Seit SONDE-006 ein State-Schema-2-Zustand (NakamaState); das Bundle
+    // Eqcp darf die Klassen main und legacy laden.
     mutable std::mutex bindungMutex;
-    juce::String sensorId, rolle { "sensor" }, label, paarId;
-    // Flüchtige Verbindungs-ID pro Prozessor-Lebenszeit (v2, Plan §8.2) —
-    // nach dem Konstruktor unveränderlich, daher ohne Mutex lesbar.
+    nakama::state::Zustand zustand;
+    // Meldet dem Host eine gespeicherte Aenderung (withNonParameterStateChanged)
+    // — der VST3-Wrapper setzt daraus IComponentHandler2::setDirty.
+    void meldeHostDirty();
+    // Flüchtige Verbindungs-ID pro Prozessor-Lebenszeit (v2, Plan §8.2;
+    // Entwurf §32.1 `runtime_nonce`) — nach dem Konstruktor unveränderlich,
+    // daher ohne Mutex lesbar. Nie Teil des States.
     juce::String instanceNonce;
 
     // Audiothread → Rest der Welt: nur Atomics.

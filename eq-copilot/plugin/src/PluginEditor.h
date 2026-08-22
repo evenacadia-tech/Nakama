@@ -135,6 +135,10 @@ private:
     std::array<double, kLtasBaender> vergleichRohDb {};
     juce::String statusMeldung;
     juce::uint32 statusMeldungBisMs = 0;    // Meldung verdrängt Kennzahlen nur kurz
+    // read-only-State (SONDE-006, Vertrag nakama-state-v2.md §5): vom Timer
+    // gepollt; Anzeige-Pflicht „Capability-Degradation" (Entwurf §0.4).
+    bool stateNurLesenAnzeige = false;
+    int  stateFremdesMajorAnzeige = 0;
     double yObenDb = -20.0;                 // stabiler Y-Bereich: wächst nur
     bool   yInitialisiert = false;
 

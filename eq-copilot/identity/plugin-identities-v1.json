@@ -40,7 +40,8 @@
       "kategorien": ["Fx", "Analyzer"],
       "component_cid": "ABCDEF019182FAEB45766E6145716370",
       "controller_cid": "ABCDEF011234ABCD45766E6145716370",
-      "state_schema": 1
+      "state_schema": 2,
+      "state_schema_hinweis": "SONDE-006 (22.08.2026): speichert NakamaState schema=2, liest Schema 1 (EqCopilotState) per reiner Migration weiter - eq-copilot/schemas/state/nakama-state-v2.md. Die Schema-1-Goldens in fixtures/identity/ bleiben eingefrorene LADE-Fixtures."
     },
     {
       "id": "passive-probe",

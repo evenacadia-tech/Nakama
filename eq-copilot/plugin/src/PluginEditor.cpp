@@ -237,6 +237,16 @@ void EqCopilotEditor::timerCallback()
         letzterPipeStatus = (int) pipeFrisch.status;
         pipeAnzeige = pipeFrisch;
     }
+    // read-only-State: die Anzeige darf keinen Zustand vortäuschen, den es
+    // nicht gibt — Rolle/Name sind dann nicht bedienbar, die Pipe ist aus.
+    const bool nurLesenFrisch = processor.stateNurLesen();
+    if (nurLesenFrisch != stateNurLesenAnzeige)
+    {
+        stateNurLesenAnzeige = nurLesenFrisch;
+        stateFremdesMajorAnzeige = processor.holeStateFremdesMajor();
+        messpunktKnopf.setEnabled (! nurLesenFrisch);
+        uiDirty = true;
+    }
 
     // M3-Diagnose: 1×/s auf der Anzeige-Kopie — der Hinweis-Knopf trägt das
     // Ergebnis der Kernfunktion, nicht mehr nur die Resonanzliste.
@@ -539,6 +549,13 @@ void EqCopilotEditor::comboBoxChanged (juce::ComboBox* c)
 // laden → Musik spielen → Befund; alles andere ist Beiwerk). ───────────────
 void EqCopilotEditor::zeigeMesspunkt()
 {
+    if (processor.stateNurLesen())
+    {
+        statusMeldung = "State is read-only (newer schema) - role and name cannot be changed in this version.";
+        statusMeldungBisMs = juce::Time::getMillisecondCounter() + 6000;
+        uiDirty = true;
+        return;
+    }
     const float s = ui();
 
     struct MesspunktPanel : juce::Component, juce::ComboBox::Listener, juce::TextEditor::Listener
@@ -625,8 +642,7 @@ void EqCopilotEditor::zeigeMesspunkt()
             const auto paarId = paar ? paarFeld.getText().substring (0, 60) : juce::String();
             if (rolle == proz.holeRolle() && label == proz.holeLabel() && paarId == proz.holePaarId())
                 return;
-            proz.setzeBindung (rolle, label, paarId);
-            if (geaendert)
+            if (proz.setzeBindung (rolle, label, paarId) && geaendert)
                 geaendert();   // Kopfzeile (Rolle/Name) sofort nachziehen
         }
         void comboBoxChanged (juce::ComboBox*) override { paarSichtbarkeit(); uebernehmen(); }
@@ -870,13 +886,19 @@ void EqCopilotEditor::paint (juce::Graphics& g)
 
     // ── Dynamisches Markenmodul im Kopf: echte Rolle + echter Name ──
     const auto rolleCode = processor.holeRolle();
-    const juce::String rolle = rolleCode == "hub"  ? "SAMMELPUNKT"
-                               : rolleCode == "pre"  ? "VOR EQ"
-                               : rolleCode == "post" ? "NACH EQ"
-                                                      : "SPUR";
+    juce::String rolle = rolleCode == "hub"  ? "SAMMELPUNKT"
+                         : rolleCode == "pre"  ? "VOR EQ"
+                         : rolleCode == "post" ? "NACH EQ"
+                                               : "SPUR";
     auto messpunktName = processor.holeLabel().trim();
     if (messpunktName.isEmpty())
         messpunktName = "UNBENANNTER MESSPUNKT";
+    if (stateNurLesenAnzeige)
+    {
+        // Keine Rolle, kein Name: der State gehoert einer neueren Version.
+        rolle = "READ-ONLY";
+        messpunktName = "STATE SCHEMA " + juce::String (stateFremdesMajorAnzeige);
+    }
     skin::kopfAnzeigeText (g, skin::kopfAnzeige (gs), rolle, messpunktName, gs);
 
     // Zwei reine ANZEIGEN statt vorgetäuschter Regler: links momentane
@@ -1097,6 +1119,11 @@ void EqCopilotEditor::paint (juce::Graphics& g)
             wort = "APP AUS / LOKAL";
             punktFarbe = farbe (leitstand::copilot_led_red); break;
     }
+    if (stateNurLesenAnzeige)
+    {
+        wort = "STATE READ-ONLY";
+        punktFarbe = farbe (leitstand::copilot_led_red);
+    }
 
     auto fmt = [] (double v, bool gueltig, int stellen = 1)
     {
@@ -1143,8 +1170,16 @@ void EqCopilotEditor::paint (juce::Graphics& g)
 
     // Meldung (Festhalten-Pfad, Reset) nur im Zeitfenster — danach gehört die
     // Fläche wieder den Messzellen. Die Meldung überlagert nur die Mitte.
-    if (! statusMeldung.isEmpty()
-        && juce::Time::getMillisecondCounter() < statusMeldungBisMs)
+    // Ausnahme: ein read-only-State bleibt DAUERHAFT sichtbar (Anzeige-Pflicht).
+    juce::String meldungText = statusMeldung;
+    bool meldungZeigen = ! statusMeldung.isEmpty() && juce::Time::getMillisecondCounter() < statusMeldungBisMs;
+    if (stateNurLesenAnzeige && ! meldungZeigen)
+    {
+        meldungText = "State from a newer Nakama version (schema " + juce::String (stateFremdesMajorAnzeige)
+                      + "). Read-only: audio passes through, nothing is written over it. Update the plugin.";
+        meldungZeigen = true;
+    }
+    if (meldungZeigen)
     {
         auto box = juce::Rectangle<float> (178.0f * gs, (skin::kStatusY + 8.0f) * gs,
                                            (konfliktKnopf.isVisible() ? 382.0f : 532.0f) * gs,
@@ -1155,8 +1190,8 @@ void EqCopilotEditor::paint (juce::Graphics& g)
         g.drawRoundedRectangle (box.reduced (0.6f * gs), 4.0f * gs, 0.8f * gs);
         g.setColour (farbe (leitstand::copilot_text_light));
         g.setFont (uiFont (10.0f * s));
-        g.drawFittedText (statusMeldung, box.reduced (8.0f * gs).toNearestInt(),
-                          juce::Justification::centred, 1, 0.75f);
+        g.drawFittedText (meldungText, box.reduced (8.0f * gs).toNearestInt(),
+                          juce::Justification::centred, 2, 0.75f);
     }
 }
 

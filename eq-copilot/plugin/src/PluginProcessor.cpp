@@ -17,7 +17,10 @@ EqCopilotProcessor::EqCopilotProcessor()
                 HelloInfo h;
                 {
                     std::lock_guard<std::mutex> l (bindungMutex);
-                    h.sensorId = sensorId; h.role = rolle; h.label = label; h.pairId = paarId;
+                    h.sensorId = zustand.common.instanceId;
+                    h.role     = nakama::state::v2Rolle (zustand.common);
+                    h.label    = zustand.common.label;
+                    h.pairId   = zustand.common.pairId;
                 }
                 h.instanceNonce = instanceNonce;
                 h.samplerate = samplerateAtomic.load();
@@ -28,7 +31,9 @@ EqCopilotProcessor::EqCopilotProcessor()
             [this] { return statsSnapshot(); },
             [this] { return messKompakt(); })
 {
-    sensorId = juce::Uuid().toString();
+    // Frische Instanz (nie restauriert): legacy + insert, v2-Rolle "sensor".
+    // Ein Scannerlauf klassifiziert nichts (§53.5) - er sieht genau diesen Stand.
+    zustand = nakama::state::frisch (juce::Uuid().toString());
     instanceNonce = juce::Uuid().toString();
     fifoPuffer.calloc ((size_t) kFifoKapazitaet * 2);
 
@@ -389,61 +394,120 @@ MessKompakt EqCopilotProcessor::messKompakt() const
 
 // Sichtbare Antwort auf einen Kennungs-Konflikt (Plan §8.4): DIESE Instanz
 // bekommt eine frische persistente ID und meldet sich neu an. Der Host
-// speichert sie mit dem nächsten Projekt-Save (getStateInformation).
-void EqCopilotProcessor::neueSensorId()
+// speichert sie mit dem nächsten Projekt-Save (getStateInformation) — dafür
+// MUSS er die Änderung kennen: Host-Dirty (Vertrag nakama-state-v2.md §6).
+bool EqCopilotProcessor::neueSensorId()
 {
     {
         std::lock_guard<std::mutex> l (bindungMutex);
-        sensorId = juce::Uuid().toString();
+        if (zustand.nurLesen)
+            return false;
+        zustand.common.instanceId = juce::Uuid().toString();
     }
+    meldeHostDirty();
     pipe.reconnect();
+    return true;
 }
 
-// ── State: Bindung + Rolle — keine großen Historien (Plan §8.3) ────────────
+void EqCopilotProcessor::meldeHostDirty()
+{
+    updateHostDisplay (juce::AudioProcessorListener::ChangeDetails().withNonParameterStateChanged (true));
+}
+
+// ── State: Schema 2 `NakamaState` (SONDE-006) ─────────────────────────────
+// Vertrag: eq-copilot/schemas/state/nakama-state-v2.md. Schema 1 wird rein
+// und deterministisch migriert; ein Stand, den dieser Build nicht
+// interpretieren darf, wird read-only gehalten und bytegleich zurueckgegeben.
 void EqCopilotProcessor::getStateInformation (juce::MemoryBlock& ziel)
 {
-    juce::ValueTree v ("EqCopilotState");
-    {
-        std::lock_guard<std::mutex> l (bindungMutex);
-        v.setProperty ("schema", 1, nullptr);
-        v.setProperty ("sensor_id", sensorId, nullptr);
-        v.setProperty ("role", rolle, nullptr);
-        v.setProperty ("label", label, nullptr);
-        v.setProperty ("pair_id", paarId, nullptr);
-    }
-    juce::MemoryOutputStream strom (ziel, false);
-    v.writeToStream (strom);
+    std::lock_guard<std::mutex> l (bindungMutex);
+    nakama::state::speichere (zustand, ziel);
 }
 
 void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
 {
-    const auto v = juce::ValueTree::readFromData (daten, (size_t) groesse);
-    if (! v.isValid() || ! v.hasType ("EqCopilotState"))
+    if (daten == nullptr || groesse <= 0)
         return;
+
+    nakama::state::Zustand geladen;
+    const auto ergebnis = nakama::state::lade (daten, (size_t) groesse, nakama::state::Bundle::eqcp(), geladen);
+    if (ergebnis == nakama::state::LadeErgebnis::ignoriert)
+        return;   // fremder Baumtyp / Muell: Zustand bleibt (wie seit 0.1)
+
     {
         std::lock_guard<std::mutex> l (bindungMutex);
-        sensorId = v.getProperty ("sensor_id", sensorId).toString();
-        rolle    = v.getProperty ("role", "sensor").toString();
-        label    = v.getProperty ("label", "").toString();
-        paarId   = v.getProperty ("pair_id", "").toString();
-        if (sensorId.isEmpty())
-            sensorId = juce::Uuid().toString();
+        zustand = geladen;
     }
+
+    if (ergebnis == nakama::state::LadeErgebnis::nurLesen)
+    {
+        // Keine vertrauenswuerdige Identitaet ⇒ keine Anmeldung beim Broker.
+        pipe.stop();
+        return;
+    }
+    pipe.start();       // No-Op, wenn sie laeuft; hebt einen frueheren read-only-Stopp auf
     pipe.reconnect();   // frisches hello mit der geladenen Bindung
+    // Kein Host-Dirty: Laden und Migration sind keine Aenderung des Users.
 }
 
-juce::String EqCopilotProcessor::holeSensorId() const { std::lock_guard<std::mutex> l (bindungMutex); return sensorId; }
-juce::String EqCopilotProcessor::holeRolle() const    { std::lock_guard<std::mutex> l (bindungMutex); return rolle; }
-juce::String EqCopilotProcessor::holeLabel() const    { std::lock_guard<std::mutex> l (bindungMutex); return label; }
-juce::String EqCopilotProcessor::holePaarId() const   { std::lock_guard<std::mutex> l (bindungMutex); return paarId; }
+juce::String EqCopilotProcessor::holeSensorId() const { std::lock_guard<std::mutex> l (bindungMutex); return zustand.common.instanceId; }
+juce::String EqCopilotProcessor::holeRolle() const    { std::lock_guard<std::mutex> l (bindungMutex); return nakama::state::v2Rolle (zustand.common); }
+juce::String EqCopilotProcessor::holeLabel() const    { std::lock_guard<std::mutex> l (bindungMutex); return zustand.common.label; }
+juce::String EqCopilotProcessor::holePaarId() const   { std::lock_guard<std::mutex> l (bindungMutex); return zustand.common.pairId; }
 
-void EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String& lbl, const juce::String& p)
+bool EqCopilotProcessor::stateNurLesen() const
 {
+    std::lock_guard<std::mutex> l (bindungMutex);
+    return zustand.nurLesen;
+}
+
+nakama::state::Herkunft EqCopilotProcessor::holeStateHerkunft() const
+{
+    std::lock_guard<std::mutex> l (bindungMutex);
+    return zustand.herkunft;
+}
+
+juce::String EqCopilotProcessor::holeStateGrund() const
+{
+    std::lock_guard<std::mutex> l (bindungMutex);
+    return zustand.grund;
+}
+
+int EqCopilotProcessor::holeStateFremdesMajor() const
+{
+    std::lock_guard<std::mutex> l (bindungMutex);
+    return zustand.fremdesMajor;
+}
+
+nakama::state::Zustand EqCopilotProcessor::holeZustandKopie() const
+{
+    std::lock_guard<std::mutex> l (bindungMutex);
+    return zustand;
+}
+
+bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String& lbl, const juce::String& p)
+{
+    nakama::state::Klasse klasse;
+    nakama::state::Messposition position;
+    if (! nakama::state::ausV2Rolle (r, klasse, position))
+        return false;
+
     {
         std::lock_guard<std::mutex> l (bindungMutex);
-        rolle = r; label = lbl; paarId = p;
+        if (zustand.nurLesen)
+            return false;
+        auto neu = zustand.common;
+        neu.klasse = klasse;
+        neu.position = position;
+        neu.label = lbl;
+        neu.pairId = p;
+        if (neu == zustand.common)
+            return false;   // keine Aenderung: kein Dirty, kein Reconnect-Geflacker
+        zustand.common = neu;
     }
+    meldeHostDirty();
     pipe.reconnect();
+    return true;
 }
 
 // ── Lokaler Mess-Snapshot als Datei (M1 §11: "lokale Snapshot-Erfassung") ──
@@ -473,10 +537,11 @@ bool EqCopilotProcessor::schreibeSnapshotDatei (juce::String& pfadOderFehler)
     {
         auto* sensor = new juce::DynamicObject();
         std::lock_guard<std::mutex> l (bindungMutex);
-        sensor->setProperty ("sensor_id", sensorId);
-        sensor->setProperty ("role", rolle);
-        sensor->setProperty ("label", label);
-        sensor->setProperty ("pair_id", paarId.isEmpty() ? juce::var() : juce::var (paarId));
+        const auto& c = zustand.common;
+        sensor->setProperty ("sensor_id", c.instanceId);
+        sensor->setProperty ("role", nakama::state::v2Rolle (c));
+        sensor->setProperty ("label", c.label);
+        sensor->setProperty ("pair_id", c.pairId.isEmpty() ? juce::var() : juce::var (c.pairId));
         sensor->setProperty ("samplerate", m.samplerate);
         sensor->setProperty ("channels", kanaeleAtomic.load());
         wurzel->setProperty ("sensor", juce::var (sensor));
@@ -642,7 +707,7 @@ bool EqCopilotProcessor::schreibeSnapshotDatei (juce::String& pfadOderFehler)
     juce::String labelTeil;
     {
         std::lock_guard<std::mutex> l (bindungMutex);
-        for (const auto z : label)
+        for (const auto z : zustand.common.label)
             if (juce::CharacterFunctions::isLetterOrDigit (z) || z == '-')
                 labelTeil += z;
     }

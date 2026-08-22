@@ -51,7 +51,7 @@ Verbraucher?".
 
 | # | Behauptung | Befehl | Ergebnis | Rohausgabe | Datum |
 |---|---|---|---|---|---|
-| 1 | **Der gemeinsame Kern ist eine echte Static-Lib**: `NakamaKern.lib` entsteht aus genau vier Übersetzungseinheiten; dieselben vier Quellen wurden vorher je Ziel neu übersetzt (acht Verbraucher) | `cmake --build … --target NakamaKern` | ☑ | [↓ B1](#s8b1) | 2026-08-22 |
+| 1 | **Der gemeinsame Kern ist eine echte Static-Lib**: `NakamaKern.lib` entsteht aus genau vier Übersetzungseinheiten. Vorher übersetzten **sieben** Ziele alle vier Quellen selbst (`nakama_state_anbinden`) und ein achtes (`EqCopSchemaTest`) eine davon — 29 Übersetzungen derselben vier Dateien, jetzt 4 | `cmake --build … --target NakamaKern` | ☑ | [↓ B1](#s8b1) | 2026-08-22 |
 | 2 | **K1 fällt**: eine `JucePlugin_*`-Konstante im Kern bricht die Übersetzung — in **jeder** der vier Einheiten, mit benannter Ursache. K2 blieb dabei grün (der Define wurde bewusst nach dessen Lauf gesetzt), die Probe war also isoliert | Probe `target_compile_definitions(NakamaKern PRIVATE JucePlugin_PluginCode=…)` nach dem K2-Aufruf | ☑ **gefallen** | [↓ B2](#s8b2) | 2026-08-22 |
 | 3 | **K2 fällt** bei der *realistischen* Regression — einer Linkkante vom Kern zu einem `juce_add_plugin`-Ziel — und benennt Ziel, Eigenschaft und jedes einzelne geerbte Makro | Probe `target_link_libraries(NakamaKern PRIVATE EqCopilot)` vor dem K2-Aufruf | ☑ **gefallen** | [↓ B3](#s8b3) | 2026-08-22 |
 | 4 | **K3 fällt bei genau der Lücke, die K1 und K2 strukturell nicht sehen**: ein Stringliteral `"EQ-Copilot"` im Kern. Bau grün, K2 grün — K3 rot | Probe `const char* = "EQ-Copilot";` in `NakamaState.cpp` | ☑ **gefallen** | [↓ B4](#s8b4) | 2026-08-22 |

@@ -295,7 +295,7 @@ Binaries `eqcop-broker.exe [--bindungen <pfad>]` (Standard
 
 ## 5 · Bauen und Beweisen
 
-**15 CMake-Ziele** (`plugin/CMakeLists.txt`): `EqCopilot` (VST3-Produkt) ·
+**15 Programm-Ziele + 1 Bibliothek** (`plugin/CMakeLists.txt`): `EqCopilot` (VST3-Produkt) ·
 `EqCopAuxSpike`, `EqCopHostProbe` (VST3, Wegwerf) · Konsolen `EqCopPipeProbe`,
 `EqCopNullTest`, `EqCopGoldenTest`, `EqCopMarkierungTest`, `EqCopShot`
 (seit 22.08. mit `--state <datei.bin>`), `EqCopPaintBench`, `EqCopAuxSpikeTest`,
@@ -304,8 +304,9 @@ Binaries `eqcop-broker.exe [--bindungen <pfad>]` (Standard
 Static-Lib **`NakamaKern`** (SONDE-007a). Sie trägt die vier geteilten Quellen
 (`state/NakamaKanon`, `state/NakamaParameter`, `state/NakamaState`,
 `vertrag/NakamaVertrag`), wird **einmal** übersetzt und über
-`nakama_kern_anbinden(<ziel>)` an die acht Verbraucher gehängt (vorher
-`nakama_state_anbinden()`, das dieselben Quellen je Ziel neu übersetzte).
+`nakama_kern_anbinden(<ziel>)` an acht Verbraucher gehängt. Vorher übersetzten
+sieben Ziele alle vier Quellen selbst (`nakama_state_anbinden()`) und
+`EqCopSchemaTest` eine davon — 29 Übersetzungen derselben vier Dateien, jetzt 4.
 Binaries unter `eq-copilot/build/plugin/<Ziel>_artefacts/Release/`, die Lib
 unter `eq-copilot/build/plugin/Release/NakamaKern.lib`.
 

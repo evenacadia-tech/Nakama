@@ -10,10 +10,26 @@
 > **S8 (`SONDE-007a`) ist gebaut** (22.08. spaet, Manifest
 > `docs/beweise/SONDE-007a.md`, Commits `5d0e9fd` + `06913aa`): `NakamaKern`
 > ist eine echte Static-Lib, einmal uebersetzt statt je Ziel, ohne eine einzige
-> `JucePlugin_*`-Konstante. Vier Riegel, jeder beim Fallen vorgefuehrt; Kanon
-> 18 → **19** Beine (A14). **T2 ist offen** — kein Frischkontext-Prueferurteil.
+> `JucePlugin_*`-Konstante. Kanon 18 → **19** Beine (A14).
+>
+> **T2 ist gefahren** (23.08., Commit `26b94c5`, Manifest §5/§6): Urteil
+> **NEEDS_WORK**. Die zentrale Behauptung hielt unter eigener Messung (0 von 74
+> `JucePlugin_`-Defines im Kern, Fassade traegt, alle acht nachgezaehlten
+> Zahlen stimmten), aber fuenf Befunde — allen voran eine **echte Regression
+> des Aenderungssatzes**: als eigene Lib erbt der Kern die PUBLIC-Schalter
+> seiner Verbraucher nicht mehr und uebersetzte als einziger Code im Baum unter
+> `/W1` statt `/W4`. Alle fuenf am selben Tag geschlossen, fuenfter Riegel
+> **K2c** gebaut und beim Fallen vorgefuehrt, Kanon danach 19/19, `pluginval` 8
+> erneut SUCCESS. **Kein PASS auf den nachgebesserten Stand** — S8 steht damit
+> wie S5 und S6 auf „gebaut", nicht „abgenommen".
+> 🔑 Lehre fuer S9: **eine Static-Lib erbt die PUBLIC-Schalter ihrer
+> Verbraucher nicht** — wer in S9 eine zweite Lib anlegt, haengt ihr die
+> Empfehlungsschalter selbst an; K2c faellt sonst zur Configure-Zeit.
 > **Naechste Bau-Flaeche: S9 (`SONDE-007b`)** — drei Ziele,
-> Lifecycle-Klassifikation, Installer-Manifest.
+> Lifecycle-Klassifikation, Installer-Manifest. Offen aus S8 und dort faellig:
+> **NAK-52** (Identitaet als CMake-Literal statt aus
+> `plugin-identities-v1.json`) und die Frage, ob K2b/K2c gegen alle drei
+> Verbraucher oder die drei untereinander messen.
 >
 > **Aber vorher zwei Dinge, die Vorrang haben:**
 >

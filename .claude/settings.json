@@ -82,6 +82,10 @@
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/git-riegel.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/fremdmodell-riegel.sh\""
           }
         ]
       },

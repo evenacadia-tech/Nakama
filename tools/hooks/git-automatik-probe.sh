@@ -89,6 +89,36 @@ probe durch "Notausgang am Befehlsanfang" 'NAKAMA_GIT_RIEGEL_AUS=1 git push --fo
 probe durch "Notausgang hinter &&"        'git status && NAKAMA_GIT_RIEGEL_AUS=1 git reset --hard'
 
 echo
+echo "=== FREMDMODELL-RIEGEL (Gemini/agy bleibt lesend) ==="
+# Liegt in dieser Probe, weil sie der eine Lauf fuer alle Riegel ist: ein
+# zweiter Probenlaeufer waere ein zweiter Ort, an dem jemand vergisst ihn zu
+# starten. User-Regel 22.08.2026: "ausschlisslich für audits und read only".
+fprobe(){                      # fprobe <soll:block|durch> <name> <befehl>
+  local soll="$1" name="$2" befehl="$3" code ist json
+  gesamt=$((gesamt+1))
+  json=$(printf '{"tool_name":"Bash","tool_input":{"command":"%s"}}' "$befehl")
+  printf '%s' "$json" | bash tools/hooks/fremdmodell-riegel.sh >/dev/null 2>&1; code=$?
+  ist=durch; [ "$code" -eq 2 ] && ist=block
+  if [ "$ist" = "$soll" ]; then
+    printf 'ok    %-5s  %s\n' "$soll" "$name"
+  else
+    printf 'FEHL  soll=%-5s ist=%-5s  %s\n' "$soll" "$ist" "$name"; fehler=$((fehler+1))
+  fi
+}
+echo "--- muss blocken (macht agy zum Schreiber) ---"
+fprobe block "skip-permissions"          'agy -p "pruefe das" --dangerously-skip-permissions'
+fprobe block "skip-permissions absolut"  'C:/Users/phili/AppData/Local/agy/bin/agy.exe -p x --dangerously-skip-permissions'
+fprobe block "mode accept-edits"         'agy -p "aendere das" --mode accept-edits'
+fprobe block "mode=accept-edits"         'agy -p x --mode=accept-edits'
+fprobe block "hinter &&"                 'git status && agy -p x --dangerously-skip-permissions'
+echo "--- muss durchlassen (Pruefen ist erlaubt) ---"
+fprobe durch "normaler Pruefauftrag"     'agy -p "finde Luecken in diesem Code" --model gemini-3.1-pro-high'
+fprobe durch "Prompt aus Datei"          'agy -p "$(cat /tmp/pruefung.txt)" --model gemini-3.1-pro-high --output-format text'
+fprobe durch "mode plan"                 'agy -p x --mode plan'
+fprobe durch "Text erwaehnt den Schalter" 'echo "niemals agy --dangerously-skip-permissions benutzen"'
+fprobe durch "anderes Werkzeug"          'codex exec --dangerously-skip-permissions'
+
+echo
 echo "=== AUTO-PUSH: Torwaechter (ohne Netzzugriff pruefbar) ==="
 gesamt=$((gesamt+1))
 AUS=$(printf '{"session_id":"probe","tool_name":"Bash"}' | bash tools/hooks/auto-push.sh 2>&1)

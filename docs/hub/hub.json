@@ -1,7 +1,7 @@
 {
   "stand": "2026-08-22",
-  "stand_notiz": "nach S7, FL-Termin A und B, S4 mit T2 PASS (22.08.); Figma-Depot „Nakama-Design“ ist seit 22.08. die einzige Design-Quelle (dunkel verbindlich); Design-Repo Nakama-Design ist seit 22.08. als design/ Teil des Nakama-Repos (dein Wort: „im anschluss wird dann nurnoch im nakama repo gearbeitet“)",
-  "artefakt_url": "https://claude.ai/code/artifact/81bdcb02-796e-4dc0-a6df-347d2d7225fe",
+  "stand_notiz": "nach S7, FL-Termin A und B, S4 mit T2 PASS (22.08.); Figma-Depot „Nakama-Design“ ist seit 22.08. die einzige Design-Quelle (dunkel verbindlich); Design-Repo Nakama-Design ist seit 22.08. als design/ Teil des Nakama-Repos (dein Wort: „im anschluss wird dann nurnoch im nakama repo gearbeitet“); seit 22.08. ist die Seite nakama-briefing.philipld.chatgpt.site der einzige Hub (dein Wort: „das ist der neue und einzige hub, alle anderen artefakte sind hiermit nichtmehr zu beachten“) — das Claude-Artefakt ist stillgelegt",
+  "hub_url": "https://nakama-briefing.philipld.chatgpt.site",
   "naechster_schritt": {
     "technik": "Gate G0 — erste adversariale Prüfrunde über P0 (C++-Review + Codex, eigene Session). Danach S8: gemeinsamer Plugin-Kern ohne Bundle-Konstanten (SONDE-007a).",
     "design": "Phase 1b, Schritt Gen — kann beginnen: der Gen-Stand (Studie 04, dunkel) liegt als Export aus dem Depot in der Truhe. Parallel beantwortest du die 18 Lesarten (U2); was du drehst, holt Claude als neuen Stand.",

@@ -6,10 +6,13 @@
 > es wiederholt die Wahrheit nicht. Wenn hier und in CLAUDE.md etwas
 > Verschiedenes steht, gilt CLAUDE.md; dann dieses Blatt berichtigen.
 
-> **Seit 22.08. gibt es den Nakama-Hub** (`docs/hub/`, Artefakt-Adresse in
-> `hub.json`): das Briefing für den User und jede Session — Plan erledigt/offen,
-> was bei ihm liegt, Figma-Stand der drei Apps, Codex-Review-Upload. Pflicht:
-> lesen · Eingang prüfen · nachziehen (CLAUDE.md, Abschnitt „Hub"). Dieses
+> **Seit 22.08. gibt es den Nakama-Hub**: die Seite
+> <https://nakama-briefing.philipld.chatgpt.site> (Quelle `docs/hub/hub.json`,
+> Werkzeug `tools/hub/hub_sync.py holen|senden`; Quellcode `briefing-hub/`) —
+> das Briefing für den User und jede Session: Plan erledigt/offen, was bei ihm
+> liegt, Figma-Stand der drei Apps, seine Antworten je Punkt. Pflicht: holen ·
+> einarbeiten · senden (CLAUDE.md, Abschnitt „Hub"). Das Claude-Artefakt ist
+> stillgelegt (User 22.08.: „alle anderen artefakte sind hiermit nichtmehr zu beachten"). Dieses
 > Blatt bleibt der technische Einstieg; der Hub ist die Sicht des Projektleiters.
 
 ## Was heute passiert ist

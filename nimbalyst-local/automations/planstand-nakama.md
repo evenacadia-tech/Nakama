@@ -2,7 +2,7 @@
 automationStatus:
   id: planstand-nakama
   title: Planstand Nakama auffrischen
-  enabled: false
+  enabled: true
   schedule:
     type: daily
     time: "09:00"
@@ -11,8 +11,8 @@ automationStatus:
     location: nimbalyst-local/automations/planstand-nakama/
     fileNameTemplate: "{{date}}-output.md"
   runCount: 0
+  nextRun: "2026-08-23T07:00:00.000Z"
 ---
-
 # Planstand Nakama auffrischen
 
 Frische das Planblatt `docs/PLAN-STAND.md` im Nakama-Repo auf.

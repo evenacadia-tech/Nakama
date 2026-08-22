@@ -1,0 +1,278 @@
+{
+  "$id": "evenacadia.nakama.fixtures.state.jcs-zahlen.v1",
+  "zweck": "IEEE-754-Bitmuster -> RFC-8785-Zahlentext. Die RFC-Zeilen tragen den Text, den RFC 8785 Anhang B druckt; die Handzeilen sind nach ECMA-262 Number::toString hergeleitet. rfc8785 (Python) hat jede bestaetigt.",
+  "regel": "Ein Leser baut den double aus hex64, kanonisiert ihn und vergleicht den Text byteweise. `abgelehnt` = der Kanonisierer muss mit Fehler enden (NaN/Infinity sind in JSON nicht darstellbar).",
+  "anzahl": 54,
+  "vektoren": [
+    {
+      "hex64": "0000000000000000",
+      "erwartet": "0",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "8000000000000000",
+      "erwartet": "0",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "0000000000000001",
+      "erwartet": "5e-324",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "8000000000000001",
+      "erwartet": "-5e-324",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "7fefffffffffffff",
+      "erwartet": "1.7976931348623157e+308",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "ffefffffffffffff",
+      "erwartet": "-1.7976931348623157e+308",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "4340000000000000",
+      "erwartet": "9007199254740992",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "c340000000000000",
+      "erwartet": "-9007199254740992",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "4430000000000000",
+      "erwartet": "295147905179352830000",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "7fffffffffffffff",
+      "abgelehnt": true,
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "7ff0000000000000",
+      "abgelehnt": true,
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "44b52d02c7e14af5",
+      "erwartet": "9.999999999999997e+22",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "44b52d02c7e14af6",
+      "erwartet": "1e+23",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "44b52d02c7e14af7",
+      "erwartet": "1.0000000000000001e+23",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "444b1ae4d6e2ef4e",
+      "erwartet": "999999999999999700000",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "444b1ae4d6e2ef4f",
+      "erwartet": "999999999999999900000",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "444b1ae4d6e2ef50",
+      "erwartet": "1e+21",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "3eb0c6f7a0b5ed8c",
+      "erwartet": "9.999999999999997e-7",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "3eb0c6f7a0b5ed8d",
+      "erwartet": "0.000001",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "41b3de4355555553",
+      "erwartet": "333333333.3333332",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "41b3de4355555554",
+      "erwartet": "333333333.33333325",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "41b3de4355555555",
+      "erwartet": "333333333.3333333",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "41b3de4355555556",
+      "erwartet": "333333333.3333334",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "41b3de4355555557",
+      "erwartet": "333333333.33333343",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "becbf647612f3696",
+      "erwartet": "-0.0000033333333333333333",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "43143ff3c1cb0959",
+      "erwartet": "1424953923781206.2",
+      "quelle": "rfc8785-anhang-b"
+    },
+    {
+      "hex64": "3ff0000000000000",
+      "erwartet": "1",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "bff0000000000000",
+      "erwartet": "-1",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "4059000000000000",
+      "erwartet": "100",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "4415af1d78b58c40",
+      "erwartet": "100000000000000000000",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "444b1ae4d6e2ef50",
+      "erwartet": "1e+21",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "4454542ba12a337c",
+      "erwartet": "1.5e+21",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "3eb0c6f7a0b5ed8d",
+      "erwartet": "0.000001",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "3e7ad7f29abcaf48",
+      "erwartet": "1e-7",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "3e8421f5f40d8376",
+      "erwartet": "1.5e-7",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "3fb999999999999a",
+      "erwartet": "0.1",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "3fd3333333333334",
+      "erwartet": "0.30000000000000004",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "3f647ae147ae147b",
+      "erwartet": "0.0025",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "bff8000000000000",
+      "erwartet": "-1.5",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "40fe240c9fbe76c9",
+      "erwartet": "123456.789",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "54b249ad2594c37d",
+      "erwartet": "1e+100",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "ab2bff2ee48e0530",
+      "erwartet": "-1e-100",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "4012000000000000",
+      "erwartet": "4.5",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "430c6bf526340000",
+      "erwartet": "1000000000000000",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "43118b54f22aeb00",
+      "erwartet": "1234567890123456",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "3fe0000000000000",
+      "erwartet": "0.5",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "3eff75104d551d69",
+      "erwartet": "0.00003",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "3ee9e3abe16fc70d",
+      "erwartet": "0.000012345",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "3ee4f8b588e368f1",
+      "erwartet": "0.00001",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "3eb421f5f40d8376",
+      "erwartet": "0.0000012",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "3eafe07017c01026",
+      "erwartet": "9.5e-7",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "40d3880000000000",
+      "erwartet": "20000",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "3fe6a09e667f3bcd",
+      "erwartet": "0.7071067811865476",
+      "quelle": "hand-ecma262"
+    },
+    {
+      "hex64": "40b387e666666666",
+      "erwartet": "4999.9",
+      "quelle": "hand-ecma262"
+    }
+  ]
+}

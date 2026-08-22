@@ -1,0 +1,69 @@
+{
+  "$id": "evenacadia.nakama.parameter.v1",
+  "titel": "Fester Parameterbestand der aktiven Sonde (Nakama Probeeq) — Layout v1",
+  "ticket": "SONDE-006",
+  "stand": "2026-08-22",
+  "quelle": "docs/FL-Nakama-Sonden-Design-Entwurf.md §53.8 (IDs, Kinder, sidechain_source, topologische Parameter) und §44.2 (Bereiche: 20 Hz…20 kHz, ±12 dB, Q 0,15–24). Bereiche und Defaults sind Startwerte (Errata (f): 'Startwert des Users, aenderbar'); eine Aenderung laeuft versioniert.",
+  "regeln": [
+    "IDs werden nie umbenannt oder wiederverwendet (§53.8). Ein neuer Parameter bekommt eine neue ID und ein neues Layout-Praefix (v2.*), nie einen freien Platz.",
+    "Der heutige Eqcp-Eintrag (Gen/Legacy) und die passive Sonde (Suna) tragen NULL Hostparameter; dieser Bestand gilt nur fuer plugin_kind = active_probe (§53.8).",
+    "Alle Werte sind typisierte physikalische Werte (Hz, dB, ms, Verhaeltnis), nie VST-normalisierte Zahlen (§53.8 'Remotevertraege').",
+    "wechsel = rampe: kontinuierlich, genau eine definierte Rampe (SONDE-015). wechsel = blockrand: nur am validierten Blockrand mit vorbereitetem Crossfade (§53.8, §44.2).",
+    "topologisch = true markiert die vier Parameter aus §53.8, die im ersten Active-Release NICHT samplegenau automatisiert werden (type, channel_mode, dynamic_enabled, sidechain_source).",
+    "Zur Laufzeit deckelt der DSP-Validator freq_hz zusaetzlich auf 0,45·fs (§44.2); der Vertrag hier nennt den statischen Bereich.",
+    "Remote-Proposals bleiben auf ±3 dB und Q 0,4–2 begrenzt (§44.2) — das ist ein Vertrag des Remote-Pfads (SONDE-016), keine Eigenschaft der Parameter hier.",
+    "Freie Slots bleiben neutral: die Defaults unten ergeben zusammen einen Hard-Bypass-aequivalenten Zustand (enabled=false, gain 0, dynamic aus)."
+  ],
+
+  "dsp_schema_version": 1,
+  "slot_anzahl": 8,
+  "anzahl_parameter": 109,
+
+  "global": [
+    { "id": "v1.global.bypass",        "typ": "bool",  "default": false, "wechsel": "blockrand", "topologisch": false, "bedeutung": "Hard-Bypass vor M/S-Matrix und Filterbank (§44.2): schreibt bei In-place keine Samples." },
+    { "id": "v1.global.input_trim_db", "typ": "float", "einheit": "dB", "min": -24.0, "max": 24.0, "default": 0.0, "wechsel": "rampe", "topologisch": false, "bedeutung": "Eingangs-Trim vor der Filterbank." },
+    { "id": "v1.global.output_trim_db","typ": "float", "einheit": "dB", "min": -24.0, "max": 24.0, "default": 0.0, "wechsel": "rampe", "topologisch": false, "bedeutung": "Ausgangs-Trim nach der Filterbank." },
+    { "id": "v1.global.width",         "typ": "float", "einheit": "verhaeltnis", "min": 0.0, "max": 2.0, "default": 1.0, "wechsel": "rampe", "topologisch": false, "bedeutung": "Stereobreite der M/S-Matrix: 0 = mono, 1 = unveraendert, 2 = doppelte Seite." },
+    { "id": "v1.global.mono_bass_hz",  "typ": "float", "einheit": "Hz", "min": 0.0, "max": 500.0, "default": 0.0, "wechsel": "rampe", "topologisch": false, "bedeutung": "Unterhalb dieser Frequenz wird die Seite entfernt; 0 = aus." }
+  ],
+
+  "band_vorlage": [
+    { "name": "enabled",          "typ": "bool",  "default": false, "wechsel": "blockrand", "topologisch": false, "bedeutung": "Band aktiv. Im Figma-Stand ein Griff-Zustand auf der Kurve (Errata (h), NAK-33)." },
+    { "name": "type",             "typ": "enum",  "werte": ["bell", "low_shelf", "high_shelf", "notch", "low_cut", "high_cut"], "default": "bell", "wechsel": "blockrand", "topologisch": true, "bedeutung": "Filtertyp des ersten aktiven Kerns (§30.1, §44.2): minimumphasig, keine lineare Phase." },
+    { "name": "freq_hz",          "typ": "float", "einheit": "Hz", "min": 20.0, "max": 20000.0, "default": 1000.0, "wechsel": "rampe", "topologisch": false, "bedeutung": "Mittenfrequenz bzw. Eckfrequenz; zur Laufzeit zusaetzlich auf 0,45·fs gedeckelt (§44.2)." },
+    { "name": "q",                "typ": "float", "einheit": "q", "min": 0.15, "max": 24.0, "default": 1.0, "wechsel": "rampe", "topologisch": false, "bedeutung": "Guete (§44.2: 0,15–24)." },
+    { "name": "gain_db",          "typ": "float", "einheit": "dB", "min": -12.0, "max": 12.0, "default": 0.0, "wechsel": "rampe", "topologisch": false, "bedeutung": "Statischer Gain; ±12 dB manuell (§44.2), Remote ±3 dB (SONDE-016)." },
+    { "name": "channel_mode",     "typ": "enum",  "werte": ["stereo", "left", "right", "mid", "side"], "default": "stereo", "wechsel": "blockrand", "topologisch": true, "bedeutung": "Kanalzuordnung des Bands (§30.1: Stereo, L/R, M/S)." },
+    { "name": "dynamic_enabled",  "typ": "bool",  "default": false, "wechsel": "blockrand", "topologisch": true, "bedeutung": "Band reagiert auf eine Huellkurve (§30.1 'dynamische EQ-Baender')." },
+    { "name": "dynamic_range_db", "typ": "float", "einheit": "dB", "min": -12.0, "max": 12.0, "default": 0.0, "wechsel": "rampe", "topologisch": false, "bedeutung": "Maximale dynamische Gainbewegung; Vorzeichen = Richtung; 0 = keine Bewegung." },
+    { "name": "threshold_db",     "typ": "float", "einheit": "dBFS", "min": -60.0, "max": 0.0, "default": -20.0, "wechsel": "rampe", "topologisch": false, "bedeutung": "Schwelle der Huellkurve." },
+    { "name": "attack_ms",        "typ": "float", "einheit": "ms", "min": 0.1, "max": 500.0, "default": 10.0, "wechsel": "rampe", "topologisch": false, "bedeutung": "Attack der Huellkurve (§44.2: explizites Attack/Hold/Release-Smoothing)." },
+    { "name": "hold_ms",          "typ": "float", "einheit": "ms", "min": 0.0, "max": 500.0, "default": 0.0, "wechsel": "rampe", "topologisch": false, "bedeutung": "Haltezeit der Huellkurve." },
+    { "name": "release_ms",       "typ": "float", "einheit": "ms", "min": 5.0, "max": 5000.0, "default": 100.0, "wechsel": "rampe", "topologisch": false, "bedeutung": "Release der Huellkurve." },
+    { "name": "sidechain_source", "typ": "enum",  "werte": ["none", "internal", "priority_sidechain"], "default": "none", "wechsel": "blockrand", "topologisch": true, "bedeutung": "Nur interne Huellkurve oder der EINE Prioritaets-Sidechain-Aux (§53.8, §45.3); kein zweiter externer Bus." }
+  ],
+
+  "id_muster": "v1.band.<slot>.<name>  mit slot = 0..7",
+
+  "ids": [
+    "v1.global.bypass",
+    "v1.global.input_trim_db",
+    "v1.global.output_trim_db",
+    "v1.global.width",
+    "v1.global.mono_bass_hz",
+    "v1.band.0.enabled", "v1.band.0.type", "v1.band.0.freq_hz", "v1.band.0.q", "v1.band.0.gain_db", "v1.band.0.channel_mode", "v1.band.0.dynamic_enabled", "v1.band.0.dynamic_range_db", "v1.band.0.threshold_db", "v1.band.0.attack_ms", "v1.band.0.hold_ms", "v1.band.0.release_ms", "v1.band.0.sidechain_source",
+    "v1.band.1.enabled", "v1.band.1.type", "v1.band.1.freq_hz", "v1.band.1.q", "v1.band.1.gain_db", "v1.band.1.channel_mode", "v1.band.1.dynamic_enabled", "v1.band.1.dynamic_range_db", "v1.band.1.threshold_db", "v1.band.1.attack_ms", "v1.band.1.hold_ms", "v1.band.1.release_ms", "v1.band.1.sidechain_source",
+    "v1.band.2.enabled", "v1.band.2.type", "v1.band.2.freq_hz", "v1.band.2.q", "v1.band.2.gain_db", "v1.band.2.channel_mode", "v1.band.2.dynamic_enabled", "v1.band.2.dynamic_range_db", "v1.band.2.threshold_db", "v1.band.2.attack_ms", "v1.band.2.hold_ms", "v1.band.2.release_ms", "v1.band.2.sidechain_source",
+    "v1.band.3.enabled", "v1.band.3.type", "v1.band.3.freq_hz", "v1.band.3.q", "v1.band.3.gain_db", "v1.band.3.channel_mode", "v1.band.3.dynamic_enabled", "v1.band.3.dynamic_range_db", "v1.band.3.threshold_db", "v1.band.3.attack_ms", "v1.band.3.hold_ms", "v1.band.3.release_ms", "v1.band.3.sidechain_source",
+    "v1.band.4.enabled", "v1.band.4.type", "v1.band.4.freq_hz", "v1.band.4.q", "v1.band.4.gain_db", "v1.band.4.channel_mode", "v1.band.4.dynamic_enabled", "v1.band.4.dynamic_range_db", "v1.band.4.threshold_db", "v1.band.4.attack_ms", "v1.band.4.hold_ms", "v1.band.4.release_ms", "v1.band.4.sidechain_source",
+    "v1.band.5.enabled", "v1.band.5.type", "v1.band.5.freq_hz", "v1.band.5.q", "v1.band.5.gain_db", "v1.band.5.channel_mode", "v1.band.5.dynamic_enabled", "v1.band.5.dynamic_range_db", "v1.band.5.threshold_db", "v1.band.5.attack_ms", "v1.band.5.hold_ms", "v1.band.5.release_ms", "v1.band.5.sidechain_source",
+    "v1.band.6.enabled", "v1.band.6.type", "v1.band.6.freq_hz", "v1.band.6.q", "v1.band.6.gain_db", "v1.band.6.channel_mode", "v1.band.6.dynamic_enabled", "v1.band.6.dynamic_range_db", "v1.band.6.threshold_db", "v1.band.6.attack_ms", "v1.band.6.hold_ms", "v1.band.6.release_ms", "v1.band.6.sidechain_source",
+    "v1.band.7.enabled", "v1.band.7.type", "v1.band.7.freq_hz", "v1.band.7.q", "v1.band.7.gain_db", "v1.band.7.channel_mode", "v1.band.7.dynamic_enabled", "v1.band.7.dynamic_range_db", "v1.band.7.threshold_db", "v1.band.7.attack_ms", "v1.band.7.hold_ms", "v1.band.7.release_ms", "v1.band.7.sidechain_source"
+  ],
+
+  "dsp_dto": {
+    "form": "{\"dsp_schema_version\": 1, \"parameters\": { <id>: <physikalischer Wert> ... }} — alle 109 IDs Pflicht, keine weiteren Schluessel, Werte typgerecht (bool / endliche Zahl im Bereich / Enumwort).",
+    "state_hash": "SHA-256 (Hex, 64 Kleinbuchstaben) ueber das RFC-8785-kanonische UTF-8 des validierten DTO (§53.8). Ohne UI-, Undo-, Transientfelder; state_revision ist NICHT Teil des Hashes.",
+    "ablehnung_vor_dem_hash": ["nichtendliche Zahl", "doppelter Schluessel (Textstufe)", "unbekannter Schluessel", "fehlender Schluessel", "Wert ausserhalb des Bereichs", "unbekanntes Enumwort", "falscher Typ", "dsp_schema_version != 1"]
+  }
+}

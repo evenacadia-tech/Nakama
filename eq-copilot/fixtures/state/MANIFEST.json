@@ -1,0 +1,226 @@
+{
+  "$id": "evenacadia.nakama.fixtures.state.v1",
+  "titel": "State-Fixture-Korpus (SONDE-006): JCS, DSP-DTO, Schema-2-Goldens",
+  "zweck": "Die dritte Partei zwischen C++ (NakamaKanon/NakamaParameter/NakamaState), Rust (serde_json_canonicalizer in contract_cross_language.rs) und Python (rfc8785). Die JCS-Erwartungen sind von Hand geschrieben bzw. aus dem RFC-Text uebernommen; rfc8785 hat sie bestaetigt. Die DTO-Kanonform liefert rfc8785 - die JCS-Korrektheit ist an dieser Stelle bereits durch die Handvektoren belegt.",
+  "vertrag": "../../schemas/state/nakama-parameter-v1.json",
+  "state_hash": "SHA-256-Hex des RFC-8785-kanonischen UTF-8 des validierten DTO (nakama-state-v2.md §4).",
+  "gruende": [
+    "kein_json",
+    "doppelter_schluessel",
+    "struktur",
+    "dsp_schema_version",
+    "unbekannter_schluessel",
+    "fehlender_schluessel",
+    "typ",
+    "nichtendlich",
+    "bereich",
+    "enum"
+  ],
+  "jcs_zahlen": {
+    "datei": "jcs/zahlen.json",
+    "anzahl": 54,
+    "abgelehnt": 2
+  },
+  "jcs_dokumente": [
+    {
+      "datei": "jcs/dokumente/rfc-beispiel.json",
+      "kanon": "{\"literals\":[null,true,false],\"numbers\":[333333333.3333333,1e+30,4.5,0.002,1e-27],\"string\":\"€$\\u000f\\nA'B\\\"\\\\\\\\\\\"/\"}",
+      "kanon_sha256": "2d5e01a318d0f0879ab568c4be289c8b1f64ef8921a53c6277d5e069978baacb",
+      "kanon_bytes": 118
+    },
+    {
+      "datei": "jcs/dokumente/leeres-objekt.json",
+      "kanon": "{}",
+      "kanon_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "kanon_bytes": 2
+    },
+    {
+      "datei": "jcs/dokumente/leeres-array.json",
+      "kanon": "[]",
+      "kanon_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "kanon_bytes": 2
+    },
+    {
+      "datei": "jcs/dokumente/verschachtelt.json",
+      "kanon": "{\"a\":[],\"b\":{\"a\":[{\"x\":1,\"y\":2}],\"z\":1}}",
+      "kanon_sha256": "4b5cbcfdea2b4f7809321c6b077a36c0b2629292c61c1e2463b870b08727ac8c",
+      "kanon_bytes": 40
+    },
+    {
+      "datei": "jcs/dokumente/steuerzeichen.json",
+      "kanon": "{\"s\":\"\\u0001\\b\\t\\n\\f\\r\\u001f\\\"\\\\//é\"}",
+      "kanon_sha256": "603d7dabd81959a73910a70caa12655007b247e2de46081911ca9f8128838ff0",
+      "kanon_bytes": 40
+    },
+    {
+      "datei": "jcs/dokumente/sortierung-utf16.json",
+      "kanon": "{\"\":8,\"A\":6,\"B\":4,\"a\":3,\"aa\":5,\"ab\":2,\"é\":7,\"𝄞\":0,\"Ａ\":1}",
+      "kanon_sha256": "7a979f351006514313cff78db136419a20bcdc369ef4b8f3549347d8b647350e",
+      "kanon_bytes": 62
+    },
+    {
+      "datei": "jcs/dokumente/zahlen-im-kontext.json",
+      "kanon": "{\"n\":[1,0,1e+21,1e-7,0.000001,123456789012345680000,0.1,100,1,5e-324,1.7976931348623157e+308,-1.5,0.0025,0,0,10,100000000000000000000]}",
+      "kanon_sha256": "792c5b4edb755c6ce1191b03e290d1b3c12d8c369cc592e3795037a606887ff7",
+      "kanon_bytes": 135
+    },
+    {
+      "datei": "jcs/dokumente/unicode-roh.json",
+      "kanon": "{\"ä\":\"ö€𝄞\"}",
+      "kanon_sha256": "c1cdfcd0b4d79b33d3e4a14f71126bb2b8f04611eebf68ae076353326cd43282",
+      "kanon_bytes": 18
+    },
+    {
+      "datei": "jcs/dokumente/literale.json",
+      "kanon": "[true,false,null,\"true\",1,\"1\"]",
+      "kanon_sha256": "d7f45a328f15bdfa13ee0fd5e20ab9f8dbc4a0e7387231e836c3ac8e468155d2",
+      "kanon_bytes": 30
+    },
+    {
+      "datei": "jcs/dokumente/whitespace.json",
+      "kanon": "{\"k\":[1,{\"a\":1,\"b\":2}]}",
+      "kanon_sha256": "e3d92c6653757f36f145cd4a5f77f62846f6b8a3af2bccb3b946948cd2fdf1ed",
+      "kanon_bytes": 23
+    },
+    {
+      "datei": "jcs/dokumente/tiefe-struktur.json",
+      "kanon": "[[{\"a\":1,\"b\":[{\"c\":true,\"d\":null}]}]]",
+      "kanon_sha256": "8a7761b8ad2e31c0ae892b56aebde57736ab5f14ab66f6c41b35557cab397c26",
+      "kanon_bytes": 37
+    },
+    {
+      "datei": "jcs/dokumente/escape-eingabeformen.json",
+      "kanon": "{\"k\":\"A/é𝄞\"}",
+      "kanon_sha256": "011626df253047fbc8b35bb9b713a633b943960b3354afc6c5a805b2f383cbec",
+      "kanon_bytes": 16
+    },
+    {
+      "datei": "jcs/dokumente/array-von-objekten.json",
+      "kanon": "[{\"y\":0,\"z\":0},{\"a\":[],\"b\":{\"q\":[3,2,1]}}]",
+      "kanon_sha256": "c585c173636288ba656079a664d9b1a4cad26fe05420cc111f29db08c7d9aead",
+      "kanon_bytes": 42
+    }
+  ],
+  "dto_gueltig": [
+    {
+      "datei": "dto/gueltig/default.json",
+      "kanon_sha256": "0701d0f24ee7e438464aa7d15604cfc5a034a85ad9a7fac9ca85c2caf9cbc1bb",
+      "kanon_bytes": 2976,
+      "state_hash": "0701d0f24ee7e438464aa7d15604cfc5a034a85ad9a7fac9ca85c2caf9cbc1bb"
+    },
+    {
+      "datei": "dto/gueltig/minima.json",
+      "kanon_sha256": "93923c82f9c6179096b5da041edf4a344c620e732b8c2141b1abc1d9feb1bb42",
+      "kanon_bytes": 3012,
+      "state_hash": "93923c82f9c6179096b5da041edf4a344c620e732b8c2141b1abc1d9feb1bb42"
+    },
+    {
+      "datei": "dto/gueltig/maxima.json",
+      "kanon_sha256": "ca0f9551b7dfbe6da7b142fe1f9f659ece6c7d19359e906b71366e646aa55dac",
+      "kanon_bytes": 3139,
+      "state_hash": "ca0f9551b7dfbe6da7b142fe1f9f659ece6c7d19359e906b71366e646aa55dac"
+    },
+    {
+      "datei": "dto/gueltig/gemischt.json",
+      "kanon_sha256": "f4b137a118606ef99ee5d0ae8dab347140615cd305f9f762511a920b2de167ff",
+      "kanon_bytes": 3044,
+      "state_hash": "f4b137a118606ef99ee5d0ae8dab347140615cd305f9f762511a920b2de167ff"
+    },
+    {
+      "datei": "dto/gueltig/minus-null.json",
+      "kanon_sha256": "0701d0f24ee7e438464aa7d15604cfc5a034a85ad9a7fac9ca85c2caf9cbc1bb",
+      "kanon_bytes": 2976,
+      "state_hash": "0701d0f24ee7e438464aa7d15604cfc5a034a85ad9a7fac9ca85c2caf9cbc1bb"
+    },
+    {
+      "datei": "dto/gueltig/ganzzahl-schreibweise.json",
+      "kanon_sha256": "0701d0f24ee7e438464aa7d15604cfc5a034a85ad9a7fac9ca85c2caf9cbc1bb",
+      "kanon_bytes": 2976,
+      "state_hash": "0701d0f24ee7e438464aa7d15604cfc5a034a85ad9a7fac9ca85c2caf9cbc1bb"
+    }
+  ],
+  "dto_ungueltig": [
+    {
+      "datei": "dto/ungueltig/nichtendlich-exponent.json",
+      "grund": "nichtendlich"
+    },
+    {
+      "datei": "dto/ungueltig/enum-unbekannt.json",
+      "grund": "enum"
+    },
+    {
+      "datei": "dto/ungueltig/bereich-gain.json",
+      "grund": "bereich"
+    },
+    {
+      "datei": "dto/ungueltig/bereich-q-unten.json",
+      "grund": "bereich"
+    },
+    {
+      "datei": "dto/ungueltig/unbekannter-schluessel.json",
+      "grund": "unbekannter_schluessel"
+    },
+    {
+      "datei": "dto/ungueltig/fehlender-schluessel.json",
+      "grund": "fehlender_schluessel"
+    },
+    {
+      "datei": "dto/ungueltig/dsp-schema-version-2.json",
+      "grund": "dsp_schema_version"
+    },
+    {
+      "datei": "dto/ungueltig/typ-bool-als-zahl.json",
+      "grund": "typ"
+    },
+    {
+      "datei": "dto/ungueltig/typ-zahl-als-string.json",
+      "grund": "typ"
+    },
+    {
+      "datei": "dto/ungueltig/typ-enum-als-bool.json",
+      "grund": "typ"
+    },
+    {
+      "datei": "dto/ungueltig/doppelter-schluessel.json",
+      "grund": "doppelter_schluessel"
+    },
+    {
+      "datei": "dto/ungueltig/struktur-extra-wurzel.json",
+      "grund": "struktur"
+    },
+    {
+      "datei": "dto/ungueltig/struktur-array.json",
+      "grund": "struktur"
+    }
+  ],
+  "schema2_goldens": [
+    {
+      "datei": "schema2/aus-schema1-sensor.bin",
+      "sha256": "7c2356391842aef108d18e77e414de4a6f49f4fc8ab6d51f5541408bd2367a59",
+      "bytes": 178
+    },
+    {
+      "datei": "schema2/aus-schema1-hub.bin",
+      "sha256": "22c8047fe00b90e4a8b2f06040ba235a231463582f6f4482d6340b350d4c703c",
+      "bytes": 205
+    },
+    {
+      "datei": "schema2/aus-schema1-pre.bin",
+      "sha256": "0a93d242d3debef6c1baeebf05c351952d83d50e3ae0aa3d11f08cab72c2ab8b",
+      "bytes": 195
+    },
+    {
+      "datei": "schema2/aus-schema1-post.bin",
+      "sha256": "3106a5225eca23c99c6b7ca84989bfcd32574ca87eb878724b861d0ac3dfd681",
+      "bytes": 197
+    },
+    {
+      "datei": "schema2/fremdes-major-3.bin",
+      "sha256": "4cd4a87f5a88e58b18618f10d2f1982b657a12d8e9276317d7662945d51bbe33",
+      "bytes": 186
+    }
+  ],
+  "referenz": {
+    "python": "rfc8785 0.1.4"
+  }
+}

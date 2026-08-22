@@ -27,3 +27,10 @@
 # den Baum bytegleich, wie schon beim JUCE-Patch (SONDE-005a, 21.08.2026).
 eq-copilot/schemas/v3/**  -text
 eq-copilot/fixtures/v3/** -text
+
+# SONDE-006: Der State-Vertrag (Parameterbestand, Schema-2-Blatt) und sein
+# Fixture-Korpus werden von drei Sprachen gelesen und bytegleich geprueft
+# (erzeuge_state_fixtures.py --pruefen, EqCopStateMigrationTest,
+# contract_cross_language.rs). Dieselbe Regel wie fuer den v3-Baum.
+eq-copilot/schemas/state/**  -text
+eq-copilot/fixtures/state/** -text

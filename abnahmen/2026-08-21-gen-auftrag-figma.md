@@ -252,6 +252,19 @@ Punkte oben; der Gen-Export in die Truhe; die Skalierungsstufen; der
 Schalen-Shader. **Nächster Schritt unverändert:** Export des Users →
 `assets/figma/JJJJ-MM-TT-gen.png` → Phase 1b, Schritt Gen, Punkt 1.
 
+**Stellungnahme-Seite (22.08., auf Wunsch des Users: „baue eine
+antwortfunktion für mich ein, dass ich zu jedem punkt stellung nehmen kann"):**
+https://claude.ai/code/artifact/c278468f-539c-4b44-b386-bc02dff07b73 — je
+Punkt (00 Gesamturteil + 01–17 oben) Entwurf / Alternative / Anders / Später
+und ein Textfeld; „Speichern" veröffentlicht die Seite als neue Version ihrer
+selbst. **Die nächste Session liest die Antworten von dort, nicht aus dem
+Gespräch:** `Artifact action: read` mit dieser URL → im HTML der Block
+`<script type="application/json" id="stellungnahme">` → `answers[id] =
+{choice: A|B|X|S, note}`, `savedAt`, `version`. Jede Antwort wird danach als
+Abnahme in `abnahmen/` festgehalten (wörtlich, mit Datum) — die Seite ist
+der Briefkasten, nicht das Archiv. Galerie der Bilder:
+https://claude.ai/code/artifact/88626080-61ab-4240-88ac-b32bc51d5749
+
 ## Bezug
 
 - `abnahmen/2026-08-21-suna-auftrag-figma.md` — das Vorgehen, das hier

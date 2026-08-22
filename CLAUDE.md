@@ -32,7 +32,8 @@ Edits sofort per **explizitem Pathspec** committen (nie `git add -A`, nie
   Netz-Zugriffe, kein Logging; Überlast verwirft Analyseframes, nie Audio.
 - **Keine KI-/Claude-Erklärschicht** im Produkt (User 21.08.). Der Advisor ist
   regelbasiert.
-- **Design-Quelle ist Figma (User).** Die Figma-Stände sind die Vorgabe;
+- **Design-Quelle ist Figma (User)** — seit 22.08. **eine** Datei, `Nakama-Design`
+  (Key `NPCQYSkoZEd4Av0NlKxBOd`), dunkel verbindlich, hell geplant. Die Figma-Stände sind die Vorgabe;
   `Projekte\Nakama-Design` übersetzt sie in lebende Blätter (Zustände,
   Größen, Grenzfälle) — keine eigene Stilsuche, keine Varianten-Befragung.
   Produkt-Sprache **Englisch**; Docs, Commits, Gespräch Deutsch.
@@ -83,6 +84,7 @@ Edits sofort per **explizitem Pathspec** committen (nie `git add -A`, nie
 | 21.08. | Version 0.3.0 angleichen, noch nicht installieren | „Version 0.3.0 angleichen, noch nicht installieren" |
 | 21.08. | „Lernsprache" und „Kernfunktion vor Verwaltung" gelten nicht mehr | „Keines mehr" |
 | 21.08. | Aufräumen: alte Richtungen ins Archiv, Prisma-Studie parken, tote Memories löschen, Inspirationen + regenerierbare Renders raus | Interview Frage 20, alle vier gewählt |
+| 22.08. | Figma-Depot: die Datei `Nakama-Design` ist die einzige verbindliche Quelle; je App hell + dunkel geplant, verbindlich heute nur dunkel | „das ist das neue verbindliche und einzige Depot indem sich die aktuellsten Designs befinden. ich habe für jedes design vor eine helle und dunke variante zu erstellen. stand jetzt aber erstmal nur dunkel“ · `Nakama-Design/abnahmen/2026-08-22-figma-depot.md` |
 
 **Was NICHT mehr gilt** (und nirgends mehr als gültig auftauchen darf):
 Recherche als „kanonischer Plan" · Spectral Field / Bauplan 2.0 / Tiefenfeld /
@@ -205,11 +207,13 @@ stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
 - **FL-Termine A/B sind gemessen (22.08.)** — Rohdaten `docs/beweise/termin-a/`,
   `termin-b/`; **Capabilityreport S4** `eq-copilot/identity/host-capabilities-fl-v1.json`
   (zehn §53.6-Bits mit Rohfeld, Kanon-Bein A13 misst sie gegen die Rohdaten):
-  `host_context_presence`, `project_time_samples`, `aux_compare_pre`
-  **supported** · `sample_accurate_automation` **unsupported** (FL legt nie >1
-  Punkt je Block in die Queue, zerteilt stattdessen Puffer bis 1 Sample) ·
+  `host_context_presence`, `project_time_samples` **supported** ·
+  `sample_accurate_automation` **unsupported** (FL legt nie >1 Punkt je Block
+  in die Queue, zerteilt stattdessen Puffer bis 1 Sample) ·
   `presentation_latency` (gemeldet 3 924/4 410, aber kein Impulsgolden),
-  `aux_priority_sidechain` (PDC nie ausgeübt — NAK-44), `float64_processing`,
+  `aux_priority_sidechain` und `aux_compare_pre` (getrennt + recall-stabil,
+  aber PDC nie ausgeübt, Kanalreihenfolge nicht unterscheidbar — NAK-44,
+  Termin A2), `float64_processing`,
   `contribution_aux` (ungemessen), `binary_telemetry`, `remote_control`
   **unsupported**. Host FL Studio 2026 26.1.4.5589, JUCE 8.0.9. Gate G0 (T3,
   eigene Session) steht noch aus. Die

@@ -50,6 +50,8 @@ p{margin:0}
 section{padding-top:40px}
 .abschnitt-kopf{display:grid;gap:6px;margin-bottom:18px}
 .abschnitt-kopf p{color:var(--text2);max-width:68ch}
+.abschnitt-kopf p.quelle{color:var(--text);background:var(--akzent-hell);border-radius:8px;padding:8px 12px;max-width:none}
+.abschnitt-kopf p.quelle b{font-weight:500;color:var(--akzent)}
 .gruppe{margin-top:22px}
 .gruppe-titel{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
 .gruppe-titel .zahl{color:var(--text3);font-size:13px}
@@ -339,7 +341,10 @@ function rPlan(s){
 
 function rDesign(s){
   var d=s.design||{apps:[]};
-  var html='<section id="design"><div class="abschnitt-kopf"><div class="eyebrow">Nakama Design</div><h2>Die drei Apps — aktueller Figma-Stand</h2><p>'+esc(d.massstab)+'</p><p>'+esc(d.phase)+'</p></div>';
+  var q=d.quelle;
+  var html='<section id="design"><div class="abschnitt-kopf"><div class="eyebrow">Nakama Design</div><h2>Die drei Apps — aktueller Figma-Stand</h2>'+
+    (q?'<p class="quelle"><b>Quelle:</b> <a href="'+esc(q.url)+'" target="_blank" rel="noopener">'+esc(q.titel)+'</a> — dein Wort vom '+esc(q.datum)+': '+esc(q.wort)+'</p>':'')+
+    '<p>'+esc(d.massstab)+'</p><p>'+esc(d.phase)+'</p></div>';
   d.apps.forEach(function(a){
     var b=BILDER[a.key];
     var chip = a.status==='wartet auf dich' ? 'warte' : a.status==='Vorgabe steht' ? 'gut' : '';

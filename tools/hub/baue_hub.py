@@ -151,7 +151,7 @@ def auf_inhalt_zuschneiden(im, rand: int = 96):
     grund = Counter(rand_pixel).most_common(1)[0][0]
     rgb = im.convert("RGB")
     diff = ImageChops.difference(rgb, Image.new("RGB", im.size, grund[:3])).convert("L")
-    diff = diff.point(lambda v: 255 if v > 6 else 0)
+    diff = diff.point(lambda v: 255 if v > 16 else 0)  # 16: Depot-Exporte tragen einen weichen Schatten über dem ganzen Grund (≤ 10)
     alpha = im.getchannel("A").point(lambda v: 255 if v > 0 else 0)
     box = ImageChops.multiply(diff, alpha).getbbox()  # durchsichtig zählt als Grund
     if not box:

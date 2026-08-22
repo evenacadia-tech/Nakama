@@ -65,6 +65,11 @@ projekt werden".
 - **Bilder** kommen beim Build aus der Design-Truhe
   (`Nakama-Design/assets/figma/`, neuester Stand je App, auf Inhalt
   zugeschnitten, halbiert auf 2×) — das Technik-Repo hält keine Kopie.
+  Die Truhe füllt Claude seit 22.08. aus dem Figma-Depot `Nakama-Design`
+  (User-Wort im Register; Figma-MCP `download_assets`, PNG, 4×, Host/Ground-
+  Rahmen `6:13` Gen · `6:1906` Probeeq · `6:2629` Suna; Ablage + SHA in
+  `Nakama-Design/assets/figma/LIES-MICH.md`). Neuer Stand im Depot ⇒ neue
+  datierte Datei in der Truhe ⇒ der Hub zeigt ihn beim nächsten Bau.
   Auf dem Zweitrechner muss das Design-Repo neben diesem liegen
   (oder `NAKAMA_DESIGN` zeigt darauf).
 

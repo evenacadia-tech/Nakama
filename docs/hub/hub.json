@@ -1,30 +1,26 @@
 {
   "stand": "2026-08-22",
-  "stand_notiz": "nach S7 (State-Schema 2), FL-Termin A und B und S4 (Capabilityreport, 22.08.); P0 fehlt nur noch das Gate G0",
+  "stand_notiz": "nach S7, FL-Termin A und B, S4 (22.08.); Figma-Depot „Nakama-Design“ ist seit 22.08. die einzige Design-Quelle (dunkel verbindlich)",
   "artefakt_url": "https://claude.ai/code/artifact/81bdcb02-796e-4dc0-a6df-347d2d7225fe",
   "naechster_schritt": {
     "technik": "Gate G0 — erste adversariale Prüfrunde über P0 (C++-Review + Codex, eigene Session). Danach S8: gemeinsamer Plugin-Kern ohne Bundle-Konstanten (SONDE-007a).",
-    "design": "Phase 1b, Schritt Gen — beginnt, sobald du den Gen-Entwurf (Studie 04) aus Figma exportierst. Bis dahin ruht die Übersetzung.",
-    "dich": "Gen-Entwurf ansehen und exportieren (U2) und das Wort zur Wortmarke (U3) — beide FL-Termine sind gemessen."
+    "design": "Phase 1b, Schritt Gen — kann beginnen: der Gen-Stand (Studie 04, dunkel) liegt als Export aus dem Depot in der Truhe. Parallel beantwortest du die 18 Lesarten (U2); was du drehst, holt Claude als neuen Stand.",
+    "dich": "Die 18 Gen-Lesarten in Karte U2 beantworten (00 = Gesamturteil). Exporte aus Figma sind nicht mehr deine Arbeit — Claude holt sie aus dem Depot."
   },
   "bei_dir": [
     {
       "id": "U2",
       "dringlichkeit": "jetzt",
       "art": "Entscheid",
-      "titel": "Gen-Entwurf (Studie 04) ansehen: überarbeiten oder exportieren",
-      "was": "In deiner Figma-Datei „Testdummy“ liegt der Rahmen „Lumia Material Lab / Study 04 — Gen“: Nakama Gen in der Probeeq-Sprache, mit Schönfall, acht Zuständen, zwei Zooms und 17 offenen Punkten, zu denen je eine Lesart gewählt wurde — unten kannst du zu jedem Punkt Stellung nehmen, 00 ist das Gesamturteil. Du änderst, was dir nicht passt, und exportierst — die Datei kommt als neuer Stand in die Design-Truhe.",
-      "warum": "Erst dein Export macht den Entwurf zur Vorgabe; bis dahin gilt der Gen-Stand vom 21.08. in der alten (cyanen) Sprache. Die Übersetzung der drei Apps beginnt mit Gen und wartet darauf.",
+      "titel": "Gen-Entwurf (Studie 04): die 18 Lesarten beantworten",
+      "was": "Die Studie 04 liegt in deinem Depot (Rahmen „Lumia Material Lab / Study 04 — Gen“) und ist damit der aktuelle Gen-Stand — dunkel. Offen sind die Lesarten darin: 00 das Gesamturteil (trifft Gen die Sprache?), 01–17 je eine Entscheidung mit Entwurf und Alternative. Unten je Punkt wählen, Text dazu, unten „Antworten speichern“.",
+      "warum": "Die Übersetzung (Phase 1b) beginnt mit Gen gegen diesen Stand. Jede Lesart, die du nicht bestätigst, wird beim Übersetzen erneut vorgelegt. Was du in Figma änderst, holt Claude als neuen Stand aus dem Depot — exportieren musst du nicht mehr.",
       "wo": "Nakama-Design/abnahmen/2026-08-21-gen-auftrag-figma.md (Abschnitt „Was ausdrücklich offen bleibt“)",
       "seit": "21.08.",
       "bilder": [
         {
-          "datei": "u2-gen-studie04-schoenfall.png",
-          "text": "Der Schönfall aus Studie 04 (Nakama Gen in der Probeeq-Sprache), so wie er in deiner Figma-Datei liegt."
-        },
-        {
           "datei": "u2-gen-studie04-uebersicht.png",
-          "text": "Die ganze Studie: Schönfall, acht Zustände (Mix lesen, Urteilen, Vorhören, alles frisch, gemischt, 16 Quellen, alles getrennt, keine Quelle), zwei Zooms, Delta, die 17 Punkte."
+          "text": "Die ganze Studie 04: Schönfall, acht Zustände (Mix lesen, Urteilen, Vorhören, alles frisch, gemischt, 16 Quellen, alles getrennt, keine Quelle), zwei Zooms, Delta, die 17 Punkte. Der Schönfall selbst steht unten bei „Nakama Design“."
         }
       ],
       "punkte": [
@@ -151,36 +147,16 @@
           "id": "U2.17",
           "titel": "Export in die Truhe und Skalierungsstufen",
           "gewicht": "Tragweite 17",
-          "entwurf": "Du exportierst den Gen-Körper (5026:1619) als PNG 4× → assets/figma/JJJJ-MM-TT-gen.png; Stufen 100 / 125 / 150 / 200 % (Empfehlung, keine Abnahme).",
-          "alternative": "Andere Stufen (z. B. mit 75 %), oder der Export wartet, bis die Punkte oben entschieden sind."
+          "entwurf": "Erledigt durch dein Depot-Wort vom 22.08.: Claude holt den Stand und die gebackenen Teile je Skalierungsstufe per Figma-MCP aus dem Depot. Hier nur noch: welche Stufen sollen es sein?",
+          "alternative": "Andere Stufen als 100 / 125 / 150 / 200 % — sag welche.",
+          "wahlen": [
+            "100 / 125 / 150 / 200 %",
+            "Andere Stufen (siehe Text)",
+            "Anders (siehe Text)",
+            "Später"
+          ]
         }
       ]
-    },
-    {
-      "id": "U3",
-      "dringlichkeit": "jetzt",
-      "art": "Entscheid",
-      "titel": "Wortmarken-Export in die Design-Truhe übernehmen?",
-      "was": "Dein Export „Wordmarkgen.png“ (22.08., 01:48) liegt noch im Sessionordner, nicht in Nakama-Design/assets/figma/ — die Truhe wird nie ungefragt verändert. Ein Wort von dir („ja, rein“) genügt.",
-      "warum": "Dein Maßstab vom 22.08.: die Apps sehen in FL Studio exakt aus wie in Figma. Darum wird alles Statische (Wortmarken, Schale, Glas, Leuchtsäume) aus Figma exportiert und eingebettet statt nachgebaut. Ohne die Exporte in der Truhe gibt es keinen Pixelvergleich.",
-      "wo": "Nakama-Design/abnahmen/2026-08-22-erfolgskriterium-exakt-wie-figma.md",
-      "seit": "22.08.",
-      "bilder": [
-        {
-          "datei": "u3-wortmarke-gen-export.png",
-          "text": "Dein Export „Wordmarkgen.png“ vom 22.08. — genau diese Datei soll in die Truhe."
-        }
-      ]
-    },
-    {
-      "id": "U4",
-      "dringlichkeit": "wenn du dazu kommst",
-      "art": "Tätigkeit",
-      "titel": "Export-Sätze je Skalierungsstufe aus Figma",
-      "was": "Für jede angebotene Stufe (Empfehlung: 100 / 125 / 150 / 200 %) ein eigener Export der gebackenen Teile — Wortmarken, Schale mit Glas und Kinn, Leuchtsäume — je App. Nicht hochgerechnet, sondern je Stufe aus Figma.",
-      "warum": "Prototyp und Plugin benutzen dieselben Assets; so wird die Kette Figma → Asset → Darstellung beweisbar. Wird gebraucht, sobald die Übersetzung (Phase 1b) eine App baut — zuerst Gen.",
-      "wo": "Nakama-Design/abnahmen/2026-08-22-erfolgskriterium-exakt-wie-figma.md, Punkt 5",
-      "seit": "22.08."
     },
     {
       "id": "U5",
@@ -735,27 +711,27 @@
     }
   ],
   "design": {
-    "massstab": "Dein Wort vom 22.08.: „Hauptsache die Apps selbst in FL Studio sehen dann exakt aus wie in Figma.“ Darum: Statisches wird aus Figma gebacken, nur Dynamisches (Texte, Zellen, Kurven, Zustände) wird gezeichnet.",
-    "phase": "Phase 1b — Figma-Stände übersetzen. Reihenfolge Gen → Probeeq → Suna. Noch kein Blatt in prototyp/ begonnen; die Übersetzung startet mit deinem Gen-Export (U2).",
+    "massstab": "Dein Wort vom 22.08.: „Hauptsache die Apps selbst in FL Studio sehen dann exakt aus wie in Figma.“ Darum: Statisches wird aus Figma gebacken, nur Dynamisches (Texte, Zellen, Kurven, Zustände) wird gezeichnet. Seit dem 22.08. ist die Figma-Datei „Nakama-Design“ die einzige verbindliche Quelle — je App ist eine helle und eine dunkle Fassung geplant, verbindlich ist heute die dunkle. Die Stände unten holt Claude als 4×-Export aus dem Depot in die Truhe.",
+    "phase": "Phase 1b — Figma-Stände übersetzen, Reihenfolge Gen → Probeeq → Suna. Gen kann beginnen (Stand vom 22.08.); die 18 Lesarten beantwortest du parallel in Karte U2.",
     "apps": [
       {
         "key": "gen",
         "name": "Nakama Gen",
         "rolle": "Main-App: Quellen-Übersicht, Befunde, Advisor. Berät nur.",
         "groesse": "760 × 430",
-        "stand_text": "Vorgabe in der Truhe: dein Export vom 21.08. — noch in der alten (cyanen) Sprache; er liefert die Anordnung. Der neue Entwurf (Studie 04, Probeeq-Sprache, von Claude in deiner Figma-Datei) ist nicht exportiert und damit noch keine Vorgabe.",
-        "status": "wartet auf dich",
-        "offen": "17 offene Punkte (16 Lesarten + der Export selbst)",
-        "wo": "Nakama-Design/abnahmen/2026-08-21-gen-auftrag-figma.md"
+        "stand_text": "Stand vom 22.08. aus dem Depot (Rahmen 6:13, Studie 04): Nakama Gen in der Probeeq-Sprache — Graphit-Schale, Glas, Kinn mit Wortmarke; Ebenenzeile, Karte mit Rollenwörtern und Wein-Zellen, Advisor mit „OTHER CAUSE“ und „CERTAINTY HIGH“. Dunkel. Der cyanfarbene Stand vom 21.08. ist Verlauf.",
+        "status": "Vorgabe steht",
+        "offen": "18 Lesarten (U2) · helle Fassung geplant",
+        "wo": "Nakama-Design/assets/figma/LIES-MICH.md · abnahmen/2026-08-22-figma-depot.md"
       },
       {
         "key": "probeeq",
         "name": "Nakama Probeeq",
         "rolle": "Aktive Sonde: vollwertiger EQ, setzt Anweisungen von Gen um und ist manuell bedienbar.",
         "groesse": "700 × 420",
-        "stand_text": "Vorgabe in der Truhe: dein Export vom 21.08. — der Stand, der die Sprache der Familie setzt (Graphit-Schale, Glas, Kinn, Geist-Schrift). Acht Bandgriffe auf der Kurve, eine Parameterzeile mit zwölf Werten, Draft-Kasten, Schutzbereich.",
+        "stand_text": "Stand vom 22.08. aus dem Depot (Rahmen 6:1906, Studie 01) — gleiche Anordnung wie dein Export vom 21.08.: acht Bandgriffe auf der Kurve, eine Parameterzeile mit zwölf Werten, Draft-Kasten, Schutzbereich. Dunkel; im Depot liegen schon zwei Probeeq-Rahmen mit heller Schale bzw. hellem Host (in Arbeit, keine Vorgabe).",
         "status": "Vorgabe steht",
-        "offen": "eine Frage: Sidechain-Quelle sichtbar, Untermenü oder unsichtbar (U5)",
+        "offen": "Sidechain-Quelle sichtbar, Untermenü oder unsichtbar (U5) · helle Fassung geplant",
         "wo": "Nakama-Design/assets/figma/LIES-MICH.md"
       },
       {
@@ -763,12 +739,18 @@
         "name": "Nakama Suna",
         "rolle": "Passive Sonde: kleine Status- und Identitätskachel. Berät nur, keine Parameter.",
         "groesse": "260 × 84",
-        "stand_text": "Vorgabe in der Truhe: Entwurf von Claude in der Probeeq-Sprache (Studie 03), von dir am 21.08. exportiert — mit dem Export dein Wort. Bus · Rolle · Position im Glas, Verbindungspunkt, Wortmarke und Messstatus im Kinn.",
+        "stand_text": "Stand vom 22.08. aus dem Depot (Rahmen 6:2629): die Kachel in der Probeeq-Sprache — Bus · Rolle · Position im Glas, Verbindungspunkt, Wortmarke und Messstatus im Kinn. Dunkel; ein heller Suna-Rahmen liegt im Depot in Arbeit.",
         "status": "Vorgabe steht",
-        "offen": "10 Lesarten zu bestätigen (U6)",
+        "offen": "10 Lesarten zu bestätigen (U6) · helle Fassung geplant",
         "wo": "Nakama-Design/abnahmen/2026-08-21-suna-auftrag-figma.md"
       }
-    ]
+    ],
+    "quelle": {
+      "titel": "Figma-Depot „Nakama-Design“",
+      "url": "https://www.figma.com/design/NPCQYSkoZEd4Av0NlKxBOd/Nakama-Design?node-id=0-1",
+      "wort": "„das ist das neue verbindliche und einzige Depot indem sich die aktuellsten Designs befinden. ich habe für jedes design vor eine helle und dunke variante zu erstellen. stand jetzt aber erstmal nur dunkel“",
+      "datum": "22.08."
+    }
   },
   "reviews": [
     {

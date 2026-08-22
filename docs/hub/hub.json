@@ -1,6 +1,6 @@
 {
   "stand": "2026-08-22",
-  "stand_notiz": "nach S7, FL-Termin A und B, S4 (22.08.); Figma-Depot „Nakama-Design“ ist seit 22.08. die einzige Design-Quelle (dunkel verbindlich)",
+  "stand_notiz": "nach S7, FL-Termin A und B, S4 mit T2 PASS (22.08.); Figma-Depot „Nakama-Design“ ist seit 22.08. die einzige Design-Quelle (dunkel verbindlich)",
   "artefakt_url": "https://claude.ai/code/artifact/81bdcb02-796e-4dc0-a6df-347d2d7225fe",
   "naechster_schritt": {
     "technik": "Gate G0 — erste adversariale Prüfrunde über P0 (C++-Review + Codex, eigene Session). Danach S8: gemeinsamer Plugin-Kern ohne Bundle-Konstanten (SONDE-007a).",
@@ -378,6 +378,16 @@
       "warum": "Gehört zu den Tickets S10–S13 (Messkern). Nicht vorher nötig.",
       "wo": "docs/offene-punkte.md, NAK-35 und NAK-24",
       "seit": "21.08."
+    },
+    {
+      "id": "U11",
+      "dringlichkeit": "wenn du dazu kommst",
+      "art": "Handgriff in FL (5–10 min)",
+      "titel": "Termin A2: Nebenwege einmal MIT Verzögerung messen",
+      "was": "Dasselbe wie Termin A (drei Spuren mit Impuls, Messgerät EqCop-Aux-Spike auf Spur 1, Spuren 2 und 3 als „Sidechain to this track“) — nur mit einem Plugin, das Verzögerung meldet, auf Spur 2 (z. B. Fruity Limiter mit Lookahead oder ein Linear-Phase-EQ), dazu je Spur ein anderer Impulszeitpunkt und einmal nur links/nur rechts. Danach „Bericht sichern“. Dazu optional: das alte Projekt mit dem installierten EQ-Copilot einmal als nakama-altprojekt.flp speichern.",
+      "warum": "Termin A hat gezeigt, dass zwei Nebenwege sauber und samplegenau ankommen — aber in deinem Testprojekt hatte kein Plugin Verzögerung, FLs Latenzausgleich hatte nichts zu tun. Deshalb stehen beide Nebenweg-Fähigkeiten und die Latenzangabe vorerst auf „nicht bestätigt“. Mit A2 werden sie bewiesen — und damit das Entmaskieren (Kernfunktion 17) und der hörbare Vorher/Nachher-Vergleich freigegeben. Eilt nicht: erst ab Phase P6/P8 nötig.",
+      "wo": "docs/offene-punkte.md NAK-44 (und NAK-43); Schritt steht oben in eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md",
+      "seit": "22.08."
     }
   ],
   "plan": [
@@ -452,9 +462,9 @@
         {
           "id": "S4",
           "ticket": "",
-          "status": "gebaut",
+          "status": "erledigt",
           "datum": "22.08.",
-          "text": "Capabilityreport: zehn Fähigkeitsbits für FL an Rohdaten aus Termin A und B gebunden (fünf unterstützt, fünf nicht — mit festem Ersatzweg). Neues Prüfbein A13 (36 Prüfungen); Kanon 18/18 grün. Gebaut — der frische Prüfer (T2) steht noch aus.",
+          "text": "Capabilityreport: die zehn Fähigkeitsbits für FL an die Rohdaten aus Termin A und B gebunden — zwei bestätigt (Hostkontext, Projektzeit), acht nicht: zwei gemessen „kann FL nicht“ (feine Automation, double), drei „noch nicht bewiesen“ (Latenzangabe, beide Nebenwege — Termin A2), eines ungemessen, zwei warten auf ihre Tickets. Prüfbein A13 (61 Prüfungen) misst den Report selbst gegen die Rohdaten; Kanon 18/18 grün. Frischer Prüfer: Runde 1 NEEDS_WORK (zwei Bits zu optimistisch), nachgearbeitet, Runde 2 PASS.",
           "beleg": "docs/beweise/SONDE-004.md"
         },
         {

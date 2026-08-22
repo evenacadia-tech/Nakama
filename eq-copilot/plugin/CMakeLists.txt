@@ -98,6 +98,17 @@ add_library(NakamaKern STATIC ${NAKAMA_KERN_QUELLEN})
 target_include_directories(NakamaKern PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/state" "${CMAKE_CURRENT_SOURCE_DIR}/vertrag")
 target_link_libraries(NakamaKern PRIVATE NakamaKernJuce)
+# T2-Befund 23.08.: Diese beiden hingen bis dahin NICHT am Kern. Vor S8 lagen
+# die vier Quellen per target_sources() IN den Verbraucherzielen und erbten
+# deren PUBLIC-Empfehlungsschalter — allen voran /W4. Die Kopf-Fassade leitet
+# nur aus den MODUL-Zielen ab, und die Empfehlungsziele sind keine Module: der
+# geteilte Boden aller drei Apps uebersetzte damit als einziger Code im Baum
+# unter der cl-Vorgabe /W1. Nachgezogen; K2c unten haelt es fest.
+# Kein juce_recommended_lto_flags: dessen /GL-Objekte gingen in Konsolenziele,
+# die kein -LTCG linken.
+target_link_libraries(NakamaKern PRIVATE
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
 # Schaltet K1 scharf (plugin/state/NakamaKernRiegel.h). Nur PRIVATE: dieselben
 # Kopfdateien liest auch die Target-Schicht, und DORT sind die Konstanten der
 # Zweck und kein Fehler.
@@ -106,6 +117,10 @@ target_compile_definitions(NakamaKern PRIVATE NAKAMA_KERN_UEBERSETZUNG=1)
 # K2 laeuft, sobald alle Kanten stehen — also nach den target_link_libraries.
 nakama_kern_riegel_pruefen(NakamaKern)
 nakama_kern_konfig_pruefen(NakamaKern EqCopilot)
+# K2c steht NICHT hier: es liest die Linkhuelle der REFERENZ, und die
+# Empfehlungsschalter haengt EqCopilot erst weiter unten an sich. Hier gerufen
+# saehe der Riegel eine leere Menge und waere still gruen — der Aufruf steht
+# darum nach target_link_libraries(EqCopilot …).
 
 # Verbraucherseite. Der Kern ist gegen JUCE-KOEPFE uebersetzt; die
 # Implementierung (juce_core.cpp, SHA-256 aus juce_cryptography, ...) muss vom
@@ -130,6 +145,10 @@ target_link_libraries(EqCopilot
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags
 )
+
+# K2c: erst jetzt traegt die Referenz ihre Empfehlungsschalter, also erst jetzt
+# ist die Frage "hat der Kern dieselben?" ueberhaupt stellbar.
+nakama_kern_schalter_pruefen(NakamaKern EqCopilot)
 
 # ── Konsolen-Probe: Ende-zu-Ende-Handshake ohne FL ──────────────────────────
 juce_add_console_app(EqCopPipeProbe PRODUCT_NAME "eqcop-pipe-probe")

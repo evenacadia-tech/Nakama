@@ -301,16 +301,21 @@ stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
   die sie linkt, trägt eine zweite Kopie. Die Kopf-Fassade
   `nakama_kern_juce_fassade()` leitet Includes und Defines aus den
   Modulzielen ab und lässt deren Quellen liegen (gemessen: `$<COMPILE_ONLY:>`
-  streift `INTERFACE_SOURCES` **nicht** ab). ⚠️ **Vier Riegel, verschiedene
+  streift `INTERFACE_SOURCES` **nicht** ab). ⚠️ **Fünf Riegel, verschiedene
   Fragen, keiner ersetzt einen anderen:** K1 `state/NakamaKernRiegel.h`
   (46 Makros namentlich, im Übersetzer) · K2 Linkhülle per Regex, Configure ·
-  K2b Kern und Verbraucher übersetzen JUCE gleich konfiguriert · K3 Kanon-Bein
-  A14 misst das **Artefakt** (nur K3 sähe ein Stringliteral, das nie ein Makro
-  war). 🔑 Ein Riegel, der etwas NICHT findet, sagt nichts, bis gezeigt ist,
-  dass er überhaupt etwas finden kann — A14 trägt seine Gegenprobe im Bein,
-  und die hat seine erste Fassung widerlegt (CIDs liegen als 16 rohe Bytes in
-  COM-vertauschter Ordnung, nicht als Hextext). Manifest
-  `docs/beweise/SONDE-007a.md`; **T2 offen**.
+  K2b gleiche JUCE-**Defines** wie der Verbraucher · K2c gleiche
+  **Empfehlungsschalter** (`juce_recommended_*`; ohne `lto_flags`) · K3
+  Kanon-Bein A14 misst das **Artefakt** (nur K3 sähe ein Stringliteral, das nie
+  ein Makro war). 🔑 Ein Riegel, der etwas NICHT findet, sagt nichts, bis
+  gezeigt ist, dass er überhaupt etwas finden kann — A14 trägt seine Gegenprobe
+  im Bein, und die hat seine erste Fassung widerlegt (CIDs liegen als 16 rohe
+  Bytes in COM-vertauschter Ordnung, nicht als Hextext). 🔑 **Eine Static-Lib
+  erbt die PUBLIC-Schalter ihrer Verbraucher nicht mehr** — der Kern übersetzte
+  nach dem Umbau als einziger Code im Baum unter `/W1` statt `/W4` (T2-Befund
+  23.08.), K2c hält das jetzt fest. Manifest `docs/beweise/SONDE-007a.md`;
+  **T2 gefahren 23.08.: NEEDS_WORK, fünf Befunde geschlossen (§5/§6), kein
+  PASS auf den neuen Stand**.
 - **Hör-Markierung (0.3.0):** färbt auf Klick das Monitorsignal von Gen;
   Verriegelung im Code `(echtzeitOk ∨ test) ∧ (spielt ∨ ¬hatTransport) ∧
   ¬isNonRealtime ∧ (editorOffen ∨ test)`; Analyse-Abgriff davor; Render

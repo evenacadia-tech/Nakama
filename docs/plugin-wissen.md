@@ -307,6 +307,11 @@ Static-Lib **`NakamaKern`** (SONDE-007a). Sie trägt die vier geteilten Quellen
 `nakama_kern_anbinden(<ziel>)` an acht Verbraucher gehängt. Vorher übersetzten
 sieben Ziele alle vier Quellen selbst (`nakama_state_anbinden()`) und
 `EqCopSchemaTest` eine davon — 29 Übersetzungen derselben vier Dateien, jetzt 4.
+Ihre Übersetzungsschalter hängen seit dem T2-Lauf (23.08.) ausdrücklich am Kern
+(`juce_recommended_config_flags` + `_warning_flags`, **kein** `_lto_flags`):
+als eigene Lib erbt er die PUBLIC-Schalter seiner Verbraucher nicht mehr und
+übersetzte bis dahin als einziger Code im Baum unter `/W1`. Riegel **K2c**
+(`cmake/NakamaKern.cmake`) hält es fest.
 Binaries unter `eq-copilot/build/plugin/<Ziel>_artefacts/Release/`, die Lib
 unter `eq-copilot/build/plugin/Release/NakamaKern.lib`.
 

@@ -45,6 +45,17 @@ WURZEL = pathlib.Path(__file__).resolve().parents[2]
 IDENTITAET = WURZEL / "eq-copilot" / "identity" / "plugin-identities-v1.json"
 KERNQUELLEN = WURZEL / "eq-copilot" / "plugin"
 
+# T2-Befund 23.08.: Die Uebersetzung des Kerns haengt nicht nur an seinen vier
+# Quellen, sondern auch an der Baubeschreibung - die Definemenge der
+# Kopf-Fassade steht dort. Genau dieser Fall ist im Manifest belegt (B8: "die
+# Uebersetzung des Kerns hat sich dadurch geaendert, also waere der fruehere
+# Lauf kein Beleg mehr gewesen"), und die erste Fassung der Frischepruefung sah
+# ihn nicht: Fassade geaendert, keine .cpp beruehrt, Bein gruen auf alter Lib.
+BAUBESCHREIBUNG = [
+    WURZEL / "eq-copilot" / "plugin" / "CMakeLists.txt",
+    WURZEL / "eq-copilot" / "cmake" / "NakamaKern.cmake",
+]
+
 # Die vier Uebersetzungseinheiten des Kerns (plugin/CMakeLists.txt,
 # NAKAMA_KERN_QUELLEN). Die Liste steht hier absichtlich handgeschrieben: ein
 # neues Kernobjekt soll dieses Bein zum Sprechen bringen, nicht still
@@ -171,12 +182,34 @@ def archivmitglieder(inhalt: bytes) -> list[str] | None:
     return namen
 
 
+def waehle_release(treffer: list[pathlib.Path], was: str) -> pathlib.Path | None:
+    """Waehlt aus mehreren Baukonfigurationen die Release-Fassung.
+
+    T2-Befund 23.08.: Bis dahin stand hier `sorted(...)[0]`. Ein
+    Mehrkonfigurations-Generator (Visual Studio) legt Debug und Release
+    nebeneinander, und "Debug" sortiert VOR "Release" - dieses Bein haette
+    dann die Debug-Lib gemessen, waehrend der Runner Release baut und
+    beglaubigt, und die Frischepruefung haette die falsche Datei bewacht.
+    Ein Bein, das ein Artefakt misst, darf sich das Artefakt nicht per Zufall
+    der Sortierreihenfolge aussuchen.
+    """
+    if not treffer:
+        return None
+    release = [t for t in treffer if "Release" in t.parts]
+    if release:
+        return release[0]
+    if len(treffer) > 1:
+        print(f"VORAUSSETZUNG: {was} mehrdeutig, keine Release-Fassung dabei:", file=sys.stderr)
+        for t in treffer:
+            print(f"  {t}", file=sys.stderr)
+        return None
+    return treffer[0]
+
+
 def finde_bundle_binary(bau: pathlib.Path) -> pathlib.Path | None:
-    treffer = sorted(bau.glob("plugin/EqCopilot_artefacts/**/EQ-Copilot.vst3/**/*.vst3"))
-    for t in treffer:
-        if t.is_file():
-            return t
-    return None
+    treffer = [t for t in sorted(bau.glob("plugin/EqCopilot_artefacts/**/EQ-Copilot.vst3/**/*.vst3"))
+               if t.is_file()]
+    return waehle_release(treffer, "EQ-Copilot-Bundle")
 
 
 def main() -> int:
@@ -189,7 +222,9 @@ def main() -> int:
         print(f"VORAUSSETZUNG: NakamaKern.lib nicht gefunden unter {bau}\\plugin.", file=sys.stderr)
         print("  Erst bauen: cmake --build <bau> --config Release --target NakamaKern", file=sys.stderr)
         return 3
-    kern = kern_kandidaten[0]
+    kern = waehle_release(kern_kandidaten, "NakamaKern.lib")
+    if kern is None:
+        return 3
 
     kontrolle = finde_bundle_binary(bau)
     if kontrolle is None:
@@ -215,12 +250,12 @@ def main() -> int:
     # fuehrt, nur hier und fuer die Lib.
     print("\n[0] Frische - misst dieses Bein den aktuellen Quellstand?")
     lib_zeit = kern.stat().st_mtime
-    juenger = [
-        q for q in sorted(KERNQUELLEN.glob("state/*")) + sorted(KERNQUELLEN.glob("vertrag/NakamaVertrag.*"))
-        if q.is_file() and q.stat().st_mtime > lib_zeit
-    ]
+    bewacht = (sorted(KERNQUELLEN.glob("state/*"))
+               + sorted(KERNQUELLEN.glob("vertrag/NakamaVertrag.*"))
+               + BAUBESCHREIBUNG)
+    juenger = [q for q in bewacht if q.is_file() and q.stat().st_mtime > lib_zeit]
     pruefe(not juenger,
-           "NakamaKern.lib ist nicht aelter als die Kernquellen",
+           "NakamaKern.lib ist nicht aelter als Kernquellen und Baubeschreibung",
            ", ".join(q.name for q in juenger) if juenger else "")
 
     # ── 1. Die Gegenprobe zuerst: taugt der Scanner ueberhaupt? ──────────────

@@ -201,11 +201,20 @@ endfunction()
 # Kern uebersetzt ohnehin keine juce_core-Quelle. Folgenlos heute heisst nicht
 # folgenlos morgen: dieser Riegel haelt die beiden Mengen zusammen.
 #
+# K2b vergleicht DEFINES. Uebersetzungsschalter liegen ausserhalb seiner
+# Reichweite - dafuer steht K2c darunter (T2-Befund 23.08.).
+#
 # Nicht verglichen wird, was legitim verschieden ist:
 #   JUCE_MODULE_AVAILABLE_*  - der Kern nutzt weniger Module, das ist sein Sinn
 #   JUCE_SHARED_CODE / JUCE_STANDALONE_APPLICATION / JUCE_VST3_CAN_REPLACE_VST2
-#                            - Sache der Plugin-Huelle; K1 verbietet die
-#                              ersten beiden im Kern ausdruecklich
+#                            - Sache der Plugin-Huelle. K1 nennt davon nur
+#                              JUCE_SHARED_CODE namentlich; die anderen beiden
+#                              haelt K2 auf, denn ihre WERTE tragen den Praefix
+#                              (JUCE_STANDALONE_APPLICATION=JucePlugin_Build_Standalone,
+#                              nachzulesen in der Rohausgabe B3 des Manifests).
+#                              Bis 23.08. stand hier "K1 verbietet die ersten
+#                              beiden" - das war falsch; der Ausschluss haelt,
+#                              aber ein anderer Riegel traegt ihn.
 function(nakama_kern_konfig_pruefen kern referenz)
     get_target_property(_ref "${referenz}" COMPILE_DEFINITIONS)
     get_target_property(_kern_defs "${kern}" COMPILE_DEFINITIONS)
@@ -248,4 +257,63 @@ function(nakama_kern_konfig_pruefen kern referenz)
     endif()
 
     message(STATUS "Nakama-Kern: K2b gruen — JUCE-Konfiguration von '${kern}' deckt '${referenz}'.")
+endfunction()
+
+# ── K2c: dieselben JUCE-Empfehlungsschalter wie der Verbraucher ─────────────
+# T2-Befund 23.08. K2b vergleicht COMPILE_DEFINITIONS und ist damit blind fuer
+# Uebersetzungsschalter. Genau dort riss der Umbau ein Loch: die Helferziele
+# juce_recommended_*_flags haengen PUBLIC an den Verbraucherzielen, aber die
+# Kopf-Fassade leitet nur aus MODUL-Zielen ab. Bis 23.08. uebersetzte der Kern
+# deshalb als einziger Code im Baum unter /W1 statt /W4 - gemessen an den
+# erzeugten .vcxproj: 0 Zeilen <WarningLevel> gegen 4x <WarningLevel>Level4 bei
+# jedem Verbraucher.
+#
+# Der Riegel fragt nicht nach einzelnen Schaltern (die sind versionsabhaengig
+# und stecken in Generatorausdruecken), sondern nach ihrer QUELLE: welches
+# juce_recommended_*-Ziel die Referenz traegt, muss auch der Kern tragen.
+#
+# EINE Ausnahme, und sie ist begruendet, nicht bequem:
+#   juce_recommended_lto_flags - setzt /GL und verlangt -LTCG am Endlink. Nur
+#     EqCopilot linkt es; die Konsolenziele (NullTest, SchemaTest, ...) linken
+#     den Kern OHNE -LTCG. /GL-Objekte im Kern wuerden dort auf einen Linker
+#     ohne LTCG treffen. Der Kern muss dieses Ziel also NICHT tragen.
+function(nakama_kern_schalter_pruefen kern referenz)
+    _nakama_kern_huelle("${kern}" _kern_huelle)
+    _nakama_kern_huelle("${referenz}" _ref_huelle)
+
+    set(_ausgenommen juce_recommended_lto_flags)
+
+    set(_fehlt "")
+    set(_gedeckt "")
+    foreach(_t IN LISTS _ref_huelle)
+        if(NOT "${_t}" MATCHES "^juce_recommended_")
+            continue()
+        endif()
+        if("${_t}" IN_LIST _ausgenommen)
+            continue()
+        endif()
+        if("${_t}" IN_LIST _kern_huelle)
+            list(APPEND _gedeckt "${_t}")
+        else()
+            list(APPEND _fehlt "${_t}")
+        endif()
+    endforeach()
+
+    if(_fehlt)
+        string(REPLACE ";" "\n    " _liste "${_fehlt}")
+        message(FATAL_ERROR
+            "S8/SONDE-007a K2c: Der Kern '${kern}' uebersetzt ohne Empfehlungsschalter, die\n"
+            "'${referenz}' traegt. Fehlend am Kern:\n"
+            "    ${_liste}\n"
+            "Vor S8 lagen die Kernquellen IN den Verbrauchern und erbten diese Schalter (PUBLIC).\n"
+            "Als eigene Lib erbt der Kern sie nicht mehr: die Kopf-Fassade leitet nur aus\n"
+            "MODUL-Zielen ab, und die Empfehlungsziele sind keine Module. Trag sie am Kern nach\n"
+            "(plugin/CMakeLists.txt, target_link_libraries(NakamaKern PRIVATE …)).")
+    endif()
+
+    list(LENGTH _gedeckt _anzahl)
+    string(REPLACE ";" ", " _namen "${_gedeckt}")
+    message(STATUS
+        "Nakama-Kern: K2c gruen — ${_anzahl} Empfehlungsschalter von '${referenz}' auch am Kern "
+        "(${_namen}); ausgenommen: juce_recommended_lto_flags (/GL ohne -LTCG im Verbraucher).")
 endfunction()

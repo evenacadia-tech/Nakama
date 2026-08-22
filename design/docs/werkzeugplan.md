@@ -4,6 +4,11 @@
 entschieden.** `.claude/skills/` enthält weiterhin nur `interview`,
 `.claude/agents/` existiert nicht, `settings.json` ist unverändert.
 
+> **Seit 22.08.2026 im Nakama-Repo:** `.claude/` meint die Repo-Wurzel (dort liegt
+> neben `interview` auch der Skill `prompt`), die Hooks dieses Ordners liegen in
+> `tools/hooks/` (`design-primer.sh`, `prototyp-schleuse.sh`, `schleusen-probe.sh`)
+> und sind in der Wurzel-`settings.json` verdrahtet.
+
 Diese Datei entscheidet nichts. Sie legt hin, **welche Fehler dieses Projekt
 nachweislich wiederholt** und welches Werkzeug jeden davon trifft. Jeder
 Vorschlag nennt seinen Anlass mit Belegstelle aus diesem Repo — was keinen

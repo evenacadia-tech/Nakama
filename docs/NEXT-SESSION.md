@@ -1,6 +1,6 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
-> Stand: **21.08.2026, nach der Kontext-Inventur und dem Interview mit dem User.**
+> Stand: **22.08.2026, nach S7 (`SONDE-006`).** Davor: 21.08., Kontext-Inventur und Interview mit dem User.
 > Die Wahrheit steht in `CLAUDE.md` (Wahrheitskern + Register der User-Entscheide
 > mit Zitat). Dieses Blatt sagt nur, wo wir stehen und was als Nächstes kommt —
 > es wiederholt die Wahrheit nicht. Wenn hier und in CLAUDE.md etwas
@@ -22,7 +22,8 @@
 
 - **P0 gebaut:** Beweis-Runner (S0), Aux-/PDC-Messgerät (S1), Identität (S2),
   Hostbrücke + Hostkontext-Test (S3), Termin-B-Messgerät (S3b), v3-Vertrag JSON
-  (S5) und FlatBuffers (S6). Manifeste in `docs/beweise/`.
+  (S5) und FlatBuffers (S6). **P1 begonnen:** State-Schema 2 (S7, 22.08.).
+  Manifeste in `docs/beweise/`.
 - **Offen an S5/S6:** nur noch der Schließungsvorbehalt §65 (erst nach S4).
   T2 lief in vier Runden; **Runde 4 ist am 21.08. geschlossen** — der
   Selbstbezug (`uoffset` 0) ist nicht mehr an einem Fixture, sondern an der
@@ -37,8 +38,9 @@
   **S4 (Capabilityreport) und Gate G0 warten noch auf Termin B** (Hostzeit/
   Automation, `eq-copilot/docs/FL-TERMIN-B-HOSTZEIT.md`). Beide Messgeräte sind
   in `C:/Program Files/Common Files/VST3/` installiert (FL scannt VST3 nur dort).
-- **Kanon:** 15 Beine in `tools/beweise.ps1`; letzter vollständiger Lauf siehe
-  jüngstes Manifest in `docs/beweise/`.
+- **Kanon:** 17 Beine in `tools/beweise.ps1` (seit 22.08.: B2 `EqCopStateMigrationTest`,
+  A12 `erzeuge_state_fixtures.py --pruefen`); letzter vollständiger Lauf siehe
+  jüngstes Manifest in `docs/beweise/` (`SONDE-006.md`).
 
 ## ▶ Morgen zuerst (22.08., vereinbart beim Sessionende)
 
@@ -59,15 +61,26 @@
 3. **Angebot offen beim User:** `C:/Program Files/Common Files/VST3/eq-copilot/`
    (845 MB alte Repo-Kopie vom 13.08. mit zwei alten `EQ-Copilot.vst3`, die FL
    mitscannt) wegräumen — braucht einen Admin-Klick.
-4. Danach S4 (Capabilityreport aus Termin A + B) → Gate G0 → S7.
+4. Danach S4 (Capabilityreport aus Termin A + B) → Gate G0; die Technik ist inzwischen bei S8 (S7 gebaut 22.08.).
 
-## ▶ Der eine nächste Schritt (Technik): S7 — `SONDE-006`
+## ▶ Der eine nächste Schritt (Technik): S8 — `SONDE-007a`
 
-State-Schema 2, fester Parameterbestand, reine Schema-1-Migration; dort wird
-die RFC-8785-Kanonisierung für `state_hash` erstmals gebraucht. User 21.08.:
-„Termine bald; bis dahin S7". Danach S8 (`SONDE-007a`, gemeinsamer Kern ohne
-`JucePlugin_*`-Konstanten). Vorher lesen: `docs/FL-Nakama-Sonden-Design-Entwurf.md`
-(Errata-Block zuerst) und `docs/bauaufteilung-sonden.md`.
+**S7 / `SONDE-006` ist gebaut (22.08., Manifest `docs/beweise/SONDE-006.md`):**
+State-Schema 2 (`eq-copilot/schemas/state/nakama-state-v2.md`), fester
+Parameterbestand (109 IDs, `nakama-parameter-v1.json`), reine Schema-1-Migration
+mit Goldens, read-only bei fremdem Major, Host-Dirty, `state_hash` nach RFC 8785
+in drei Sprachen bytegleich. Kanon 17 Beine (B2 + A12 neu). **T2 steht aus**,
+solange Manifest §5 kein Urteil trägt — dann ist das Ticket offen, nicht fertig.
+
+**Nächster Schritt S8 (`SONDE-007a`):** gemeinsamer Kern ohne `JucePlugin_*`-
+Konstanten (NAK-23b). `plugin/state/` ist dafür schon JUCE-core-rein gebaut
+(`Bundle::eqcp/nkpr/nkac` als Klassenmenge je Bundle). Vorher lesen:
+`docs/FL-Nakama-Sonden-Design-Entwurf.md` (Errata-Block zuerst, §53.4),
+`docs/bauaufteilung-sonden.md` S8-Zeile. User 21.08.: „Termine bald; bis dahin S7".
+
+**Vor der Installation des neuen Bundles:** NAK-41 — ein Projekt, das der neue
+Build speichert (Schema 2), verliert im 16.08.-Build seine Messpunkt-Identität.
+Installation bleibt User-Klick (NAK-32).
 
 Beim Bauen gilt: 1 Session = 1 Ticket + Beweismanifest + Frischkontext-Prüfer;
 Code ohne Manifest heißt *offen*. Beweislauf:
@@ -83,7 +96,10 @@ Code ohne Manifest heißt *offen*. Beweislauf:
 
 ## Offen-Set
 
-`docs/offene-punkte.md` — neu seit 21.08.: NAK-30 (Umbenennung zu Nakama
+`docs/offene-punkte.md` — neu seit 22.08.: NAK-40 (`instance_id` bytegleich vs.
+hex32 der v3-Adresse, SONDE-010), NAK-41 (Schema-2-Stand im alten Build = stiller
+Identitätsverlust; vor der Installation wissen). NAK-33 trägt den Nachtrag „State
+trägt 13, UI-Frage offen". Neu seit 21.08.: NAK-30 (Umbenennung zu Nakama
 Studio / Gen / Probeeq / Suna = Identitätsticket), NAK-31 (`analyze-track.py`
 liegt im FL-Repo), NAK-32 (`install/` unversioniert), NAK-33 (12 oder 13
 Parameter je Band), NAK-34–37 (HostProbe-Zählung, Hör-Markierungs-Verriegelung,

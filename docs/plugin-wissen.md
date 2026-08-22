@@ -1,8 +1,9 @@
 # Plugin-Wissen — wie Plugin, Broker und Verträge heute funktionieren
 
-> **Stand: 21.08.2026** · Version **0.3.0** (`project(… VERSION 0.3.0)` ==
+> **Stand: 22.08.2026** · Version **0.3.0** (`project(… VERSION 0.3.0)` ==
 > `kPluginVersion`, Configure-Riegel `eq-copilot/CMakeLists.txt:3-22`) ·
-> metrics/diagnose `m4.1-2026-08-15` · Snapshot-Datei v3 · IPC-Protokoll v2.
+> metrics/diagnose `m4.1-2026-08-15` · Snapshot-Datei v3 · IPC-Protokoll v2 ·
+> **Host-State Schema 2** (`NakamaState`, seit SONDE-006 am 22.08.; liest Schema 1).
 > **Installiert in FL ist das Bundle vom 16.08.** (moduleinfo „0.1.0", Hash
 > `74D86BD5…`). Das Bundle im Build-Ordner (21.08. 21:11, mit Hostbrücke) ist
 > nicht installiert und meldet **0.3.0** (Kanon-Lauf 21:10 nach dem Versionsriegel:
@@ -26,7 +27,7 @@ die AnalyseEngine) · **Pipe-Thread** (besitzt den PipeClient) · Message-Thread
 
 ### 1.1 Audiopfad
 
-`processBlock` (`PluginProcessor.cpp:86-204`), Reihenfolge ist Vertrag:
+`processBlock` (`PluginProcessor.cpp:91-209`), Reihenfolge ist Vertrag:
 `ScopedNoDenormals` → RMS-/NaN-Scan → Hostzeit und Projektzeit-Fenster (nur
 bei Play; Sprünge > 64 Samples gezählt) → **Analyse-Abgriff in den FIFO** →
 `lebenszeichen()` → Hör-Markierung als einziger Schreiber des Puffers.
@@ -35,7 +36,7 @@ bei Play; Sprünge > 64 Samples gezählt) → **Analyse-Abgriff in den FIFO** �
   Überlast ⇒ `framesDropped`, nie warten. 0 Samples Latenz, kein Tail, Busse
   nur mono/stereo mit Eingang == Ausgang. Nach außen nur Atomics; keine
   Sperre, Allokation, Datei, Pipe, Logging.
-- Lebenszeichen (`:211-272`): Audiozeit/Wandzeit je Fenster; Verhältnis
+- Lebenszeichen (`:216-277`): Audiozeit/Wandzeit je Fenster; Verhältnis
   0,5…1,2 zweimal ⇒ `echtzeitOk`; > 1,5 (Freilauf/Offline) löscht den Beweis
   und meldet `freilaufKill`; Transportkante oder Lücke > 250 ms setzt zurück.
   `hatTransport` ist im VST3-Pfad immer wahr (NAK-24).
@@ -48,17 +49,17 @@ KONZEPT.md`). Modi `aus / solo / puls`: **Solo** = nur das Problemband,
 vorberechnet, der Audiothread kopiert höchstens einen POD-Auftrag aus 4
 Ring-Slots.
 
-**Verriegelung, gemessen (`PluginProcessor.cpp:197-202`):**
+**Verriegelung, gemessen (`PluginProcessor.cpp:202-207`):**
 `erlaubt = (echtzeitOk ∨ testEchtzeit) ∧ (spielt ∨ ¬hatTransport) ∧
 ¬isNonRealtime() ∧ (editorOffen ∨ testEchtzeit)` — `testEchtzeit` setzt nur
 `testForciereEchtzeit()`, ohne Aufrufer im Produkt. Der Editor beendet bei
 Fensterschluss, Samplerate-Wechsel, Freilauf und Totmann 10 min
-(`PluginEditor.cpp:186-216`). Analyse-Abgriff VOR der Färbung; Render bleibt
+(`PluginEditor.cpp:186-219`). Analyse-Abgriff VOR der Färbung; Render bleibt
 bitidentisch (MarkierungTest T3/T4/T10).
 
 ### 1.3 AnalyseEngine — die Uhren
 
-Worker (`PluginProcessor.cpp:274-326`): alle 50 ms FIFO leeren →
+Worker (`PluginProcessor.cpp:279-331`): alle 50 ms FIFO leeren →
 `verarbeite()`; jeder 5. Tick (~250 ms) `auswerten()` schwer, nur wenn neue
 Samples kamen; sonst `auswertenLeicht()` (~20 Hz). Beide publizieren über
 `fuelleBasis()` (EINE Quelle) mit monotoner `revision`; ohne neue Samples
@@ -76,18 +77,56 @@ publiziert niemand. `zonenTick()` je 1 s AKTIVER Zeit in `verarbeite()`.
 
 `Diagnose.cpp` — pur, zustandslos, auf der Snapshot-KOPIE; dieselbe Funktion
 speist Hinweis-Knopf (1×/s), Snapshot-Datei und GoldenTest. Fünf Befundklassen
-(`Diagnose.h:39-46`; Snapshot-Namen `PluginProcessor.cpp:609-613`):
+(`Diagnose.h:39-46`; Snapshot-Namen `PluginProcessor.cpp:674-678`):
 `resonanz` (die zwei stärksten Kandidaten) · `mitten_loch` (500–2000 Hz
 ≥ 3 dB UNTER der Schulterlinie) · `mulm` (120–300 Hz ≥ 4 dB darüber) ·
 `haerte` (2,5–5 kHz ≥ 4 dB darüber) · `hoehen_hype` (8–14 kHz > 1 dB über
 2–6 kHz). Geometrie EINMAL in `ZonenRegeln.h:30-35`, geteilt mit der Engine;
 eigenkurven-relativ, kein Zielkorridor.
 
-`schreibeSnapshotDatei()` (`PluginProcessor.cpp:452-660`): `snapshot_version
+`schreibeSnapshotDatei()` (`PluginProcessor.cpp:516-724`): `snapshot_version
 3`, alle Messfelder, Befunde, `raw_audio: null`; NaN/±inf ⇒ `null`; Ablage
 `%LOCALAPPDATA%\evenacadia\EQ-Copilot\snapshots\`. Kein Befundarchiv im
-Plugin. Plugin-State: ValueTree `EqCopilotState`, `schema 1`, `sensor_id /
-role / label / pair_id` (Goldens `fixtures/identity/`).
+Plugin.
+
+### 1.4b Host-State — Schema 2 (SONDE-006, 22.08.)
+
+Vertrag `eq-copilot/schemas/state/nakama-state-v2.md`; Code `plugin/state/`
+(JUCE-core, keine `JucePlugin_*`-Konstante, nicht für den Audiothread).
+`PluginProcessor` hält `nakama::state::Zustand` unter `bindungMutex`
+(`PluginProcessor.h`, Abschnitt „Bindung"):
+
+- **Form:** ValueTree `NakamaState{schema=2}` mit `Common{schema=1}`
+  (`instance_id`, `plugin_kind`, `measurement_position`, `label`, optional
+  `pair_id`, `project_binding_id`), `MainProject{schema=1}` nur für `main`,
+  `Parameters{schema=1}` nur für `active_probe` (109 Werte); `Dsp`/`Pairing`
+  sind reservierte Namen (SONDE-015/016). Kind-Matrix und Bundle-Klassenmenge
+  (`Bundle::eqcp()` = {main, legacy}) werden beim Laden erzwungen.
+- **Laden** (`setStateInformation`): `EqCopilotState{schema=1}` wird **rein
+  migriert** (`hub→main+insert`, `sensor|pre|post→legacy+…`, `sensor_id`
+  bytegleich, nichts erfunden; Goldens `fixtures/state/schema2/`); Schema 2
+  wird gelesen, unbekannte Eigenschaften bleiben im Baum und reisen beim
+  Speichern zurück. Unbekanntes Major / verletzte Matrix ⇒ **read-only**:
+  Originalbytes werden bytegleich zurückgegeben, `setzeBindung`/`neueSensorId`
+  verweigern, die Pipe wird gestoppt, der Editor zeigt es (Kopf „READ-ONLY",
+  Zelle „STATE READ-ONLY", Dauermeldung). Fremder Baumtyp/Müll ⇒ ignoriert.
+- **Host-Dirty:** jede persistente Änderung (`setzeBindung` mit echter
+  Änderung, `neueSensorId`) ruft `updateHostDisplay (ChangeDetails()
+  .withNonParameterStateChanged (true))` — der VST3-Wrapper macht daraus
+  `setDirty (true)`. Laden/Migration melden nicht. (Vor dem 22.08. gab es im
+  Plugin keinen einzigen `updateHostDisplay`-Aufruf.)
+- **v2-Brücke:** das `hello` trägt weiter `role` = `v2Rolle (common)`; die
+  v3-Adresse (`hex32`) kommt mit SONDE-010 (NAK-40).
+- **Parameterbestand** (`schemas/state/nakama-parameter-v1.json`, C++-Tabelle
+  `NakamaParameter.cpp`, deckungsgleich gemessen): 5 global + 8×13 = 109 IDs
+  `v1.global.*` / `v1.band.<slot>.*`; heute trägt **kein** Bundle Hostparameter
+  (§53.8: der `Eqcp`-Eintrag ändert seine Parameterliste nicht).
+- **`state_hash`:** SHA-256-Hex des RFC-8785-Kanons des DTO
+  `{"dsp_schema_version":1,"parameters":{…}}`. `NakamaKanon` hat dafür einen
+  **eigenen JSON-Leser** (`std::from_chars`) — JUCEs Zahlenleser flusht
+  Subnormale und verweigert `""` als Schlüssel (gemessen am Korpus). Drei Beine
+  messen gegen `fixtures/state/MANIFEST.json`: C++ (B2), Python `rfc8785`
+  (A12), Rust `serde_json_canonicalizer` (`contract_cross_language.rs`).
 
 ### 1.5 PipeClient
 
@@ -247,23 +286,27 @@ Binaries `eqcop-broker.exe [--bindungen <pfad>]` (Standard
 
 ## 5 · Bauen und Beweisen
 
-**14 CMake-Ziele** (`plugin/CMakeLists.txt`): `EqCopilot` (VST3-Produkt) ·
+**15 CMake-Ziele** (`plugin/CMakeLists.txt`): `EqCopilot` (VST3-Produkt) ·
 `EqCopAuxSpike`, `EqCopHostProbe` (VST3, Wegwerf) · Konsolen `EqCopPipeProbe`,
-`EqCopNullTest`, `EqCopGoldenTest`, `EqCopMarkierungTest`, `EqCopShot`,
-`EqCopPaintBench`, `EqCopAuxSpikeTest`, `EqCopIdentityTest`,
-`EqCopHostProbeTest`, `EqCopHostContextTest`, `EqCopSchemaTest`. Binaries
-unter `eq-copilot/build/plugin/<Ziel>_artefacts/Release/`.
+`EqCopNullTest`, `EqCopGoldenTest`, `EqCopMarkierungTest`, `EqCopShot`
+(seit 22.08. mit `--state <datei.bin>`), `EqCopPaintBench`, `EqCopAuxSpikeTest`,
+`EqCopIdentityTest`, `EqCopHostProbeTest`, `EqCopHostContextTest`,
+`EqCopSchemaTest`, **`EqCopStateMigrationTest`** (SONDE-006). Die
+State-Bibliothek hängt über `nakama_state_anbinden(<ziel>)` an jedem Ziel, das
+den Prozessor kompiliert. Binaries unter
+`eq-copilot/build/plugin/<Ziel>_artefacts/Release/`.
 
-**Kanon, 15 Beine (`tools/beweise.ps1:206-282`):** A1 NullTest (10 ok) · A2
-GoldenTest (239) · A3 MarkierungTest (30) · A4 `cargo test` (57) · A5
+**Kanon, 17 Beine (`tools/beweise.ps1`, Tabelle `$kanon`):** A1 NullTest · A2
+GoldenTest · A3 MarkierungTest · A4 `cargo test` (inkl. JCS-Bein) · A5
 `pruefe_v3_vertrag.py --abdeckung` · A6 `erzeuge_bandgitter.py --pruefen` · A7
 `erzeuge_quantisierung.py --pruefen` · A8 `erzeuge_v3_fixtures.py --pruefen` ·
 A9 `pruefe_flatc_drift.py` · A10 `erzeuge_fb_fixtures.py --pruefen` · A11
-`pruefe_v2_schemas.py` · B1 IdentityTest (63) · B3 HostContextTest (91) · B3b
-HostProbeTest (85, ohne Argument) · B3c SchemaTest (53 am Stand `ca008f5`).
-Geplant, nicht gebaut: B2 `EqCopStateMigrationTest`, B4
-`EqCopQueueStressTest`, B5 `EqCopAnalysisGoldenTest`, B6 `EqCopDspGoldenTest`,
-B7 `EqCopTransactionTest`.
+`pruefe_v2_schemas.py` · **A12 `erzeuge_state_fixtures.py --pruefen`** · B1
+IdentityTest · **B2 StateMigrationTest** · B3 HostContextTest · B3b
+HostProbeTest (ohne Argument) · B3c SchemaTest. Die Prüfzahlen stehen im
+jüngsten Manifest (`docs/beweise/SONDE-006.md`: 17/17). Geplant, nicht gebaut:
+B4 `EqCopQueueStressTest`, B5 `EqCopAnalysisGoldenTest`, B6
+`EqCopDspGoldenTest`, B7 `EqCopTransactionTest`.
 
 Runner `pwsh -File tools/beweise.ps1 [-Bauen] -Ziel docs/beweise/<Ticket>.md
 [-Anhaengen] -Titel '…'`. Exitcodes (`:43-48`): 0 grün · 2 ein Bein rot · 3
@@ -277,7 +320,9 @@ Quelle"-Zeitstempel über alle Quellorte gegen jedes Prüfbinary — ohne
 · `EqCopPipeProbe [pipe] [s]` (braucht einen laufenden Broker, immer
 `…m2probe`) · `pluginval --strictness-level 8` (nur in `%TEMP%`, NAK-26).
 
-**Python-Werkzeuge (13, `tools/eq-copilot/`):** `erzeuge_fixtures.py`
+**Python-Werkzeuge (14, `tools/eq-copilot/`):** `erzeuge_state_fixtures.py`
+State-Korpus + MANIFEST (RFC-8785-Vektoren mit `rfc8785` als Referenz, DTOs,
+Parametervertrag; `--pruefen` = bytegleich) · `erzeuge_fixtures.py`
 Golden-WAVs + `golden-referenz.json` · `erzeuge_aux_spike_fixtures.py`
 Impuls-WAV je Projektrate · `erzeuge_bandgitter.py` beide Gitter ·
 `erzeuge_quantisierung.py` Quantisierungsvertrag · `erzeuge_v3_fixtures.py`

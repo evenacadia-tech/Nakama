@@ -23,6 +23,9 @@
   kein Häkchen ohne PASS), §4 (S3b gezählt), §5 (Gate 8 gegenstandslos),
   §6.4 (Eigentum des Entwurfs). Kanon: **15 Beine** (A11 `pruefe_v2_schemas.py`
   neu am 21.08.).
+- **Nachgezogen 22.08.:** S7 (`SONDE-006`) gebaut, Kanon **17 Beine** (B2
+  `EqCopStateMigrationTest`, A12 `erzeuge_state_fixtures.py --pruefen`);
+  Manifest `docs/beweise/SONDE-006.md`. Nächste Fläche ohne FL-Termine: S8.
 
 ---
 
@@ -89,9 +92,9 @@ NullTest · A2 Golden · A3 Markierung · A4 `cargo test` · A5–A10 die sechs
 Python-Beine des v3-Vertrags (Referenzbein, drei Bytegleichheits-Riegel,
 `flatc`-Drift, FlatBuffers-Fixtures) · **A11 `pruefe_v2_schemas.py`** (neu
 21.08.: die fünf v2-Schemas waren bis dahin von keinem Bein gelesen) · B1
-Identität · B3 Hostkontext · B3b Host-Probe · B3c Schema. Geplant: B2
-StateMigration (P1), B4 QueueStress und B5 AnalysisGolden (P2), B6 DspGolden
-und B7 Transaction (P6). Nicht im Kanon, obwohl gebaut: `EqCopAuxSpikeTest`
+Identität · B3 Hostkontext · B3b Host-Probe · B3c Schema. Geplant: B4 QueueStress und B5 AnalysisGolden (P2), B6 DspGolden
+und B7 Transaction (P6). **Seit 22.08. (SONDE-006) laufen 17 Beine:** B2
+StateMigration und A12 `erzeuge_state_fixtures.py --pruefen` sind Pflicht. Nicht im Kanon, obwohl gebaut: `EqCopAuxSpikeTest`
 (41 Prüfungen, NAK-37).
 
 ### 1.2 ~~NAK-19~~ — erledigt, P3 ist nicht mehr blockiert
@@ -273,7 +276,7 @@ JUCE-Update neu bewiesen werden muss. Eigene Session, eigener Prüfer.
 |---|---|---|---|
 | ~~S5~~ | `SONDE-005a` | ~~v3-JSON-Schemas + Bandgitter + gültige/ungültige Fixtures~~ — **gebaut 21.08.**: `schemas/v3/` (17 der 25 Nachrichtenfamilien aus §33.3 definiert, 8 namentlich **reserviert** mit Eigentümerticket), beide Bandgitter als eingefrorene Zahlenfixture (221 + 64, IEC 61260-1 mit Halbschritt — von vier denkbaren Konventionen trifft nur diese die 221 aus §33.2), Quantisierungsvertrag mit 61 Vektoren, **153 Fixtures (Stand nach T2-Runde 2; Baustand-Zeile trug 131)** mit handgeschriebenem Manifest, und **drei** Prüfbeine (`jsonschema`-Referenz · `EqCopSchemaTest` · `contract_cross_language`). Kanon von 7/7 auf **8/8** gewachsen, `pluginval` Strenge 8 SUCCESS. Manifest `docs/beweise/SONDE-005a.md`. Der Korpus fand drei echte Fehler (geschachtelter Discriminator, Nicht-Objekt-Wurzel, eine falsche handgeschriebene Erwartung) und eine dokumentierte Abweichung zwischen den Beinen (RFC 4627 vs. 8259). **Schließungsvorbehalt §65:** gilt bis S4 als *vorbereitet*, nicht *geschlossen*. | T1 ✅ · **T2 offen** — kein PASS im Manifest. Runde 1 NEEDS_WORK (sechs Vertragsbrueche gegen den Plantext, ein gemessener Cross-Language-Bruch am Zahlenbereich), Runde 2 NEEDS_WORK (der daraufhin gebaute Riegel befragte auf der C++-Seite denselben ueberlaufenden Leser, gegen den er schuetzt), Runde 3 am 21.08. zusammen mit S6 NEEDS_WORK (`docs/beweise/SONDE-005b.md` §6). Alle Befunde nachgearbeitet (`SONDE-005a.md` §6, `SONDE-005b.md` §6.3); ein abschliessendes Pruefer-Urteil steht aus. Bis 21.08. stand hier „T2 ✅" — gegen VORLAGE-Regel „Haekchen erst NACH dem Lauf". |
 | ~~S6~~ | `SONDE-005b` | ~~FlatBuffers (Feld-IDs!), gepinntes `flatc`, Codegen-Drift-Test~~ — **gebaut 21.08.**: `.fbs` mit explizitem `id` an jedem der 47 Felder, `flatc` auf einen **Commit** gepinnt (der Upstream fuehrt fuer 25.12.19 zwei Tags), Compiler/C++-Header/Rust-Crate aus derselben Quelle, **Drift 0** und beide Riegel beim Fallen vorgefuehrt. Zwei handgeschriebene Binaerleser gegen 40 Fixtures mit handgeschriebenem Manifest; ein Byte bringt beide mit demselben Pfad und derselben Regel zum Fallen. Kanon 12/12 -> **14/14** (seit A11: 15). Manifest `docs/beweise/SONDE-005b.md`. | T1 ✅ · **T2 offen** — Runde 3 gelaufen 21.08., Urteil NEEDS_WORK (`SONDE-005b.md` §6.1): ein Byte-Mutations-Fuzz fand, dass der C++-Leser ungueltiges UTF-8 als gueltig nahm und der Prozess daran starb (Heap-Korruption), dazu NUL-Laengen, Puffer unter 8 Byte (Rust-Panic) und zehn weitere Befunde an Manifest, Riegeln und Pins; alle bestaetigten gefixt (§6.3), Binaerfixtures 40 → 47. Kein PASS eingetragen. |
-| S7 | `SONDE-006` | State-Schema 2, Parameterbestand, reine Schema-1-Migration | T1+T2 |
+| ~~S7~~ | `SONDE-006` | ~~State-Schema 2, Parameterbestand, reine Schema-1-Migration~~ — **gebaut 22.08.**: `NakamaState` schema 2 (Common/MainProject/Parameters; Dsp/Pairing reserviert) mit Kind-Matrix, reine Schema-1-Migration mit **4 bytegleichen Goldens**, unbekanntes Major ⇒ read-only mit Originalbytes (17 Fälle gemessen), Host-Dirty über `withNonParameterStateChanged` (vorher fehlte jeder `updateHostDisplay`-Aufruf im Plugin), Duplicate sichtbar. Parameterbestand **109 IDs** handgeschrieben (`schemas/state/nakama-parameter-v1.json`), C++-Tabelle deckungsgleich gemessen. `state_hash` = SHA-256 über RFC-8785-Kanon mit **eigenem JSON-Leser** (JUCE flusht Subnormale, verweigert `""`); drei Beine (C++ 130 Prüfungen, Python `rfc8785`, Rust `serde_json_canonicalizer`) bytegleich gegen einen Korpus, dessen Zahlenvektoren den **vom RFC gedruckten** Text tragen. Kanon 15 → **17** (B2 + A12). Manifest `docs/beweise/SONDE-006.md`. | T1 ✅ · T2 siehe Manifest §5 |
 | S8 | `SONDE-007a` | **Gemeinsamer Kern ohne `JucePlugin_*`-Konstanten** (NAK-23b) | T1+T2 |
 | S9 | `SONDE-007b` | Drei Ziele, Lifecycle-Klassifikation, Installer-Manifest | T1+T2 |
 | **G1** | — | **Gate:** `/c-review` + `/rust-review` + Codex. Falsifikation: Gate 1, Gate 7 | **T3** |

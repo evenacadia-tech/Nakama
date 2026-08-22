@@ -97,6 +97,7 @@ als Produktteil · „Lernsprache" / „Kernfunktion vor Verwaltung" als Regeln.
 |---|---|
 | Plugin (JUCE 8 + CMake) | `eq-copilot/plugin/` (`src/` Produkt · `hostbridge/` · `hostprobe/` · `spike/` · `vertrag/` · `tests/`) |
 | Schemas v2 (Vertrag des heutigen Plugins) / v3 (Sondenfamilie) | `eq-copilot/schemas/` · `eq-copilot/schemas/v3/` |
+| State-Schema 2 + Parameterbestand (SONDE-006) | `eq-copilot/schemas/state/` (Vertrag) · `eq-copilot/plugin/state/` (Code) · `eq-copilot/fixtures/state/` (Korpus, drei Beine) |
 | Identität (eingefroren, SONDE-001) | `eq-copilot/identity/plugin-identities-v1.json` |
 | Broker (eigene Crate, `eqcop-broker.exe`) | `broker/` |
 | Beweis-Runner + Manifeste | `tools/beweise.ps1` · `docs/beweise/` |
@@ -116,7 +117,7 @@ als Produktteil · „Lernsprache" / „Kernfunktion vor Verwaltung" als Regeln.
 ```powershell
 $cmake = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
 & $cmake -S eq-copilot -B eq-copilot/build -G "Visual Studio 17 2022" -A x64
-& $cmake --build eq-copilot/build --config Release --target EqCopilot_VST3 EqCopShot EqCopPaintBench EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopPipeProbe EqCopIdentityTest EqCopHostContextTest EqCopHostProbe_VST3 EqCopHostProbeTest EqCopSchemaTest
+& $cmake --build eq-copilot/build --config Release --target EqCopilot_VST3 EqCopShot EqCopPaintBench EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopPipeProbe EqCopIdentityTest EqCopHostContextTest EqCopHostProbe_VST3 EqCopHostProbeTest EqCopSchemaTest EqCopStateMigrationTest
 ```
 
 **Ein Befehl für den ganzen Kanon** (ersetzt die bewusst nicht gebaute CI):
@@ -130,16 +131,17 @@ Baustand: sind Prüfbinaries älter als ihre Quellen, verweigert er mit Exitcode
 die Beglaubigung (0 grün · 2 rot · 3 Voraussetzung fehlt · 4 nicht beglaubigt).
 Vorlage `docs/beweise/VORLAGE.md`, Basislinie `docs/beweise/S0-basislinie.md`.
 
-**Kanon (15 Beine, Tabelle in `tools/beweise.ps1`):** NullTest · Golden ·
-Markierung · `cargo test` · sechs Python-Beine des v3-Vertrags · **A11
-`pruefe_v2_schemas.py`** (neu 21.08.: die fünf v2-Schemas waren sechs Tage lang
-ungelesen, eines war kein JSON) · Identität · Hostkontext · Host-Probe (zählt
+**Kanon (17 Beine, Tabelle in `tools/beweise.ps1`):** NullTest · Golden ·
+Markierung · `cargo test` (seit 22.08. mit dem JCS-Bein) · sechs Python-Beine
+des v3-Vertrags · A11 `pruefe_v2_schemas.py` · **A12
+`erzeuge_state_fixtures.py --pruefen`** (SONDE-006) · Identität · **B2
+`EqCopStateMigrationTest`** (SONDE-006) · Hostkontext · Host-Probe (zählt
 89 nur mit PNG-Ziel, sonst 85 — NAK-34) · Schema. **Die Prüfzahlen stehen im
 jüngsten Manifest in `docs/beweise/`, nicht hier** (zuletzt
-`KONTEXT-INVENTUR-2026-08-21.md`: 15/15 grün). Nicht im Kanon, aber vorhanden:
-`EqCopAuxSpikeTest` (NAK-37), Shot, PaintBench, PipeProbe,
-`pluginval --strictness-level 8`. Fünf Beine stehen als „geplant" und werden
-Pflicht, sobald ihr Ticket sie baut.
+`SONDE-006.md`: 17/17 grün). Nicht im Kanon, aber vorhanden:
+`EqCopAuxSpikeTest` (NAK-37), Shot (`--state` lädt einen Host-State vor dem
+Render), PaintBench, PipeProbe, `pluginval --strictness-level 8`. Vier Beine
+stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
 
 - Golden-WAVs einmalig: `py -3.13 tools/eq-copilot/erzeuge_fixtures.py --nur-wav`
   (Erzeuger der Referenz `tools/analyze-track.py` liegt noch im FL-Studio-Repo — NAK-31).
@@ -166,7 +168,9 @@ Pflicht, sobald ihr Ticket sie baut.
 - **Identität (SONDE-001):** Bundle `EQ-Copilot`, Codes `Evna`/`Eqcp`, beide
   Class-IDs, `JUCE_VST3_CAN_REPLACE_VST2=0` eingefroren; `NkPr`/`NkAc` für
   Suna/Probeeq reserviert; `EqCopIdentityTest` misst das gebaute
-  `moduleinfo.json` UND den CMake-Quelltext; Goldens `eq-copilot/fixtures/identity/`.
+  `moduleinfo.json` UND den CMake-Quelltext; Schema-1-Goldens
+  `eq-copilot/fixtures/identity/` sind seit 22.08. eingefrorene **Lade**-Fixtures
+  (das Plugin speichert Schema 2).
 - **Hostbrücke (SONDE-003):** gevendorter JUCE-8.0.9-Wrapper per Patch
   (`third_party/patches/juce-8.0.9-nakama-vst3-bridge.patch`, CRLF in 149/163
   Zeilen, `.gitattributes` hält ihn per `-text` bytegleich) um drei
@@ -198,6 +202,22 @@ Pflicht, sobald ihr Ticket sie baut.
   Offsetfelder nach — gemessen an 6215 Byte-Mutanten: 143 liefen auseinander,
   danach 0. 🔑 Ein Riegel, der STRENGER ist als das Bein, das er spiegelt,
   bricht denselben Vertrag wie einer, der schwächer ist.
+- **State-Schema 2 (SONDE-006, 22.08.):** Vertrag
+  `eq-copilot/schemas/state/nakama-state-v2.md`; das Plugin speichert
+  `NakamaState{schema=2}` und migriert `EqCopilotState{schema=1}` **rein**
+  (Goldens bytegleich). Unbekanntes Major / verletzte Kind-Matrix ⇒ read-only
+  mit Originalbytes, keine Pipe, sichtbar im Editor. Jede persistente Änderung
+  meldet Host-Dirty (`withNonParameterStateChanged`) — vorher kam
+  `updateHostDisplay` im Plugin nicht vor. Parameterbestand 109 IDs
+  handgeschrieben (`nakama-parameter-v1.json`), C++-Tabelle deckungsgleich
+  gemessen; heute trägt kein Bundle Hostparameter. `state_hash` = SHA-256 über
+  RFC-8785-Kanon mit **eigenem JSON-Leser** — 🔑 JUCEs Zahlenleser flusht
+  Subnormale und verweigert `""` als Schlüssel; ein Hash, den drei Sprachen
+  bilden, darf die Bibliothek nicht befragen, gegen die er schützt. Drei Beine
+  (C++, Python `rfc8785`, Rust `serde_json_canonicalizer`) bytegleich gegen
+  einen Korpus, dessen RFC-Zeilen den **vom RFC gedruckten** Text tragen.
+  ⚠️ NAK-41: ein Schema-2-Projekt verliert im 16.08.-Build still seine
+  Identität — vor der Installation wissen.
 - **Hör-Markierung (0.3.0):** färbt auf Klick das Monitorsignal von Gen;
   Verriegelung im Code `(echtzeitOk ∨ test) ∧ (spielt ∨ ¬hatTransport) ∧
   ¬isNonRealtime ∧ (editorOffen ∨ test)`; Analyse-Abgriff davor; Render

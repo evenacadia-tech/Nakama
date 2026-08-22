@@ -24,7 +24,10 @@ h = json.load(open(sys.argv[1], encoding="utf-8"))
 bd = h.get("bei_dir", [])
 jetzt = [b for b in bd if b.get("dringlichkeit") == "jetzt"]
 z = [r for p in h["plan"] for r in p["zeilen"]]
-erl = sum(1 for r in z if r["status"] == "erledigt")
+# Dieselbe Fertig-Liste wie tools/hub/plan_blatt.py (FERTIG) — sonst meldet der
+# Primer eine andere Zahl als das Planblatt, das der User in Nimbalyst liest.
+FERTIG = {"erledigt", "fertig", "gebaut", "abgeschlossen"}
+erl = sum(1 for r in z if (r["status"] or "").strip().lower() in FERTIG)
 nxt = [r for r in z if r["status"] == "naechster"]
 print(f"Stand: {h['stand']} — {h.get('stand_notiz','')}")
 print(f"Plan: {erl}/{len(z)} Zeilen erledigt · naechster Schritt: {nxt[0]['id'] + ' ' + nxt[0]['text'][:70] if nxt else '?'}")

@@ -23,20 +23,23 @@ vorgelegt — nicht still entschieden.
 
 Die drei Oberflächen:
 
+**Die Quelle ist seit 2026-08-22 EINE Figma-Datei: `Nakama-Design`**
+(https://www.figma.com/design/NPCQYSkoZEd4Av0NlKxBOd/Nakama-Design?node-id=0-1, Key `NPCQYSkoZEd4Av0NlKxBOd`). User-Wort: „das ist das neue verbindliche und einzige Depot indem sich die aktuellsten Designs befinden. ich habe für jedes design vor eine helle und dunke variante zu erstellen. stand jetzt aber erstmal nur dunkel“
+(`abnahmen/2026-08-22-figma-depot.md`). Verbindlich ist je App die **dunkle**
+Fassung; helle Varianten liegen dort in Arbeit und sind noch keine Vorgabe.
+Claude holt die Stände per Figma-MCP in die Truhe (`assets/figma/LIES-MICH.md`).
+
 1. **Nakama Gen** — die Main-App: Quellen-Übersicht, Befunde, Advisor.
-   760×430. Figma-Stand vorhanden (`assets/figma/2026-08-21-gen.png`) — die
-   *alte* Sprache (cyan); er liefert die Anordnung. **Figma-Entwurf von
-   Claude, nicht abgenommen** (2026-08-21, Gen-Runde): in der Probeeq-Sprache,
-   Datei `Testdummy`, `Lumia Material Lab / Study 04 — Gen` (Node 5025:1616,
-   Schönfall-Körper 5026:1619) — Schönfall + acht Zustandsrahmen, zwei 4×-Zooms, Delta; die 17
-   offenen Punkte stehen in `abnahmen/2026-08-21-gen-auftrag-figma.md`. Vorgabe
-   wird er erst mit dem Export des Users in die Truhe.
+   760×430. Stand: `assets/figma/2026-08-22-gen.png` (Depot `6:13`, Studie 04
+   in der Probeeq-Sprache). Die 18 Lesarten dazu beantwortet der User im
+   Nakama-Hub (`abnahmen/2026-08-21-gen-auftrag-figma.md`). Der Stand vom
+   21.08. (cyan) ist Verlauf.
 2. **Nakama Probeeq** — die aktive Sonde: ein **vollwertiger, hochwertiger
    EQ**, der Anweisungen von Gen direkt umsetzt **und** ganz normal manuell
    bedienbar ist. Muss allein funktionieren, auch ohne Gen. 700×420.
-   Figma-Stand vorhanden (`assets/figma/2026-08-21-probeeq.png`).
+   Stand: `assets/figma/2026-08-22-probeeq.png` (Depot `6:1906`).
 3. **Nakama Suna** — die passive Sonde: eine kleine Status-/Identitätskachel.
-   260×84. Figma-Stand vorhanden (`assets/figma/2026-08-21-suna.png`) —
+   260×84. Stand: `assets/figma/2026-08-22-suna.png` (Depot `6:2629`) —
    entworfen von Claude in der Probeeq-Sprache (Studie 03, Node 6039:2), vom
    User exportiert und damit User-Wort; die elf offenen Punkte der Übersetzung
    stehen in `abnahmen/2026-08-21-suna-auftrag-figma.md`.

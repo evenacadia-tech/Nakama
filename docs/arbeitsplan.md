@@ -31,9 +31,15 @@ Phase: `CLAUDE-UX-UI-ARBEITSKERN.md` (Stufen 1–7); Hintergründe:
 > Delta · 17 offene Punkte — alles in
 > `abnahmen/2026-08-21-gen-auftrag-figma.md`. Mechanisch geprüft (9 Körper
 > 760×430, 0 Schriftverstöße, 0 Überläufe). Gemessen: 16 Zeilen **mit Namen**
-> = 158 px (die unbelegte 308 ist erledigt). **HIER weiter:** der User sieht
-> die Studie, überarbeitet oder exportiert → `assets/figma/JJJJ-MM-TT-gen.png`;
-> dann Phase 1b, Schritt Gen, Punkt 1 gegen den Export.
+> = 158 px (die unbelegte 308 ist erledigt).
+>
+> **Stand 2026-08-22 — Depot:** der User hat die Figma-Datei `Nakama-Design`
+> zum einzigen verbindlichen Depot erklärt (`abnahmen/2026-08-22-figma-depot.md`);
+> die Studie 04 liegt dort, der Stand ist per MCP in der Truhe
+> (`assets/figma/2026-08-22-gen.png`). Verbindlich: dunkel; hell später.
+> **HIER weiter:** Phase 1b, Schritt Gen, Punkt 1 gegen diesen Stand — parallel
+> beantwortet der User die 18 Lesarten im Nakama-Hub (Karte U2); was er dort
+> dreht, holt Claude als neuen Stand aus dem Depot.
 
 ## Phase 0 — Designvertrag ✓ (erledigt 2026-08-21)
 

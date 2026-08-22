@@ -58,7 +58,42 @@ dem Export ist sie User-Wort (CLAUDE.md, Regel 4: „Ein neuer Figma-Stand ist
 neues User-Wort") — der Stand gilt, die Urheberschaft bleibt vermerkt. Die
 Export-Datei hieß `Suna.png` im Downloads-Ordner (22:18), kopiert 22:20.
 
-## `2026-08-21-gen.png` — Nakama Gen
+
+## Seit 2026-08-22: die Stände kommen aus dem Depot
+
+User-Wort 2026-08-22 zur Figma-Datei **Nakama-Design** (Key `NPCQYSkoZEd4Av0NlKxBOd`,
+https://www.figma.com/design/NPCQYSkoZEd4Av0NlKxBOd/Nakama-Design?node-id=0-1):
+
+> „das ist das neue verbindliche und einzige Depot indem sich die aktuellsten Designs befinden. ich habe für jedes design vor eine helle und dunke variante zu erstellen. stand jetzt aber erstmal nur dunkel“
+
+Daraus folgt: **diese eine Datei ist die Quelle**; die älteren Dateien
+(`Testdummy`, `fable-dummy`) sind Verlauf. Verbindlich ist je App die **dunkle**
+Fassung; helle Varianten entstehen dort als eigene Host/Ground-Rahmen und sind
+noch nicht Vorgabe. Claude holt die Stände per Figma-MCP (`download_assets`,
+PNG, 4× — dieselbe Form wie die Exporte des Users vom 21.08.) in die Truhe;
+der User muss nicht mehr von Hand exportieren. Ein neuer Stand im Depot wird
+mit Datum hier abgelegt, der alte bleibt liegen (Regel oben).
+
+| Datei | Herkunft | Pixel | SHA-256 (Anfang) | Figma-Node | zeigt |
+|---|---|---|---|---|---|
+| `2026-08-22-gen.png` | Depot, Figma-MCP `download_assets` 4×, 2026-08-22 14:20 | 3600×2080 RGBA | `a021a7534a8ca558` | Node `6:13` (Host / Ground) → `6:14` | Nakama Gen / 760x430 / Unibody — Schönfall der Studie 04 (Rahmen 6:3) |
+| `2026-08-22-probeeq.png` | Depot, Figma-MCP `download_assets` 4×, 2026-08-22 14:20 | 3600×2080 RGBA | `951eca468aed6e5b` | Node `6:1906` (Host / Ground) → `6:1907` | Active Probe Editor / 700x420 / Unibody — Studie 01 (Rahmen 6:1832) |
+| `2026-08-22-suna.png` | Depot, Figma-MCP `download_assets` 4×, 2026-08-22 14:20 | 3244×2080 RGBA | `ecbf9e31d480af84` | Node `6:2629` (Host / Ground) → `6:2630` | Passive Probe Tile / 260x84 / Unibody — dunkler Host/Ground-Rahmen (811×520) |
+
+Was zu sehen ist (alle drei in der Probeeq-Sprache, dunkel): **Gen** ist jetzt
+die Studie 04 — Graphit-Schale, Glas, Kinn mit Wortmarke `NAKAMA / GEN`,
+Ebenenzeile `OBSERVE · ADVISE ● · AUDITION · APPLY`, Karte mit Rollenwörtern
+und Wein-Zellen, Advisor mit `OTHER CAUSE` und `CERTAINTY HIGH`, Kinn mit
+`5 LINKED · MEASURING 68 %`, `SOURCES`, `UNDO · 0`. **Probeeq** und **Suna**
+entsprechen den Ständen vom 21.08. (gleiche Anordnung, im Depot neu gerendert —
+nicht bytegleich zu den Exporten des Users, Maße identisch). Die 18 Gen-Punkte
+(Lesarten) beantwortet der User im Nakama-Hub (Karte U2).
+
+Im Depot außerdem, **nicht Vorgabe**: `6:2424` (dunkler Host, Probeeq mit
+heller Schale), `6:2658` (heller Host, Probeeq), `6:2863` (heller Host, Suna) —
+die hellen Varianten in Arbeit.
+
+## `2026-08-21-gen.png` — Nakama Gen (Verlauf, alte Sprache)
 
 Dunkle Fläche in einem abgerundeten Gehäuserahmen mit weichem Schatten;
 Akzentfarbe Cyan; Beschriftungen in Monospace-Versalien, der Fließtext des

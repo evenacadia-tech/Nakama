@@ -252,17 +252,20 @@ Punkte oben; der Gen-Export in die Truhe; die Skalierungsstufen; der
 Schalen-Shader. **Nächster Schritt unverändert:** Export des Users →
 `assets/figma/JJJJ-MM-TT-gen.png` → Phase 1b, Schritt Gen, Punkt 1.
 
-**Stellungnahme-Seite (22.08., auf Wunsch des Users: „baue eine
-antwortfunktion für mich ein, dass ich zu jedem punkt stellung nehmen kann"):**
-https://claude.ai/code/artifact/c278468f-539c-4b44-b386-bc02dff07b73 — je
-Punkt (00 Gesamturteil + 01–17 oben) Entwurf / Alternative / Anders / Später
-und ein Textfeld; „Speichern" veröffentlicht die Seite als neue Version ihrer
-selbst. **Die nächste Session liest die Antworten von dort, nicht aus dem
-Gespräch:** `Artifact action: read` mit dieser URL → im HTML der Block
-`<script type="application/json" id="stellungnahme">` → `answers[id] =
-{choice: A|B|X|S, note}`, `savedAt`, `version`. Jede Antwort wird danach als
-Abnahme in `abnahmen/` festgehalten (wörtlich, mit Datum) — die Seite ist
-der Briefkasten, nicht das Archiv. Galerie der Bilder:
+**Stellungnahme (22.08., auf Wunsch des Users: „baue eine antwortfunktion
+für mich ein, dass ich zu jedem punkt stellung nehmen kann"):** die Antworten
+gibt der User **im Nakama-Hub** (https://claude.ai/code/artifact/81bdcb02-796e-4dc0-a6df-347d2d7225fe), Karte U2
+„Gen-Entwurf (Studie 04)": 00 Gesamturteil + 01–17 je Entwurf lassen /
+Alternative / Anders (Text) / Später und ein Textfeld; „Antworten speichern"
+veröffentlicht die Seite als neue Version ihrer selbst. Eine erste, getrennte
+Stellungnahme-Seite (22.08., `c278468f…`) ist **in den Hub aufgegangen** —
+der User wollte eine Seite, nicht zwei; sie zeigt nur noch den Verweis.
+**Die nächste Session liest die Antworten vom Hub, nicht aus dem Gespräch:**
+im Technik-Repo `py -3.13 tools/hub/hub_eingang.py <gelesene Hub-Seite>` trägt
+sie nach `Nakama/docs/hub/hub.json` (`antworten["U2.<n>"] = {wahl, text,
+datum, status}`); jede Antwort wird danach als Abnahme in `abnahmen/`
+festgehalten (wörtlich, mit Datum) — der Hub ist der Briefkasten, nicht das
+Archiv. Galerie der Bilder (Verlauf):
 https://claude.ai/code/artifact/88626080-61ab-4240-88ac-b32bc51d5749
 
 ## Bezug

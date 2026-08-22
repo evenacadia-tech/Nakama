@@ -122,46 +122,27 @@ als Produktteil · „Lernsprache" / „Kernfunktion vor Verwaltung" als Regeln.
 
 ## Hub — gemeinsames Briefing (Pflicht seit 22.08.2026)
 
-Der User (Projektleiter, kein Coder) liest **eine** Seite: den Nakama-Hub
-(Artefakt auf claude.ai; Adresse `artefakt_url` in `docs/hub/hub.json`). Sie
-zeigt Plan erledigt/offen, was bei ihm liegt (Entscheide · Handgriffe · Wissen
-vor dem Klick), den Figma-Stand der drei Apps mit Bild und nimmt Codex-Reviews
-als `.md` entgegen. User-Wort 22.08.: „die pflicht für jeden claude dieses
-dokument zu aktualisieren und bei session beginn anzusehen … wie ein
-gemeinsames briefing und übersichtshub". Drei Pflichten je Session, Details in
-`docs/hub/LIES-MICH.md`:
+Der User arbeitet auf genau einer privaten Seite:
+<https://nakama-briefing.philipld.chatgpt.site>. Das frühere Claude-Artefakt
+ist abgelöst und wird nicht mehr gebaut oder veröffentlicht. Die vollständige
+Maschinenansicht für Claude und Codex liegt unter `/api/hub`; der knappe
+Arbeitsablauf steht in `docs/hub/LIES-MICH.md`.
 
-1. **Lesen** — der SessionStart-Hook (`tools/hooks/hub-primer.sh`) liest Kopf
-   und Drift vor; bei Drift `hub.json` vor der Arbeit nachziehen.
-2. **Eingang prüfen** — `Artifact(action='read', url=…)` → `py -3.13
-   tools/hub/hub_eingang.py <Datei>` → jede Review Befund für Befund gegen die
-   Quelldatei (T3-Regel, Bauaufteilung §2), Status in `hub.json`.
-3. **Nachziehen** — `hub.json` fortschreiben (Klartext, kein Entscheid ohne
-   Register-Zitat, „erledigt" nur mit Manifest) → `py -3.13
-   tools/hub/baue_hub.py` → `Artifact(file_path=docs/hub/hub.html, url=…,
-   capabilities={'artifact': {}})` → `hub.json` per Pathspec committen. Der
-   Stop-Hook (`tools/hooks/hub-stop.sh`) blockt einmal je Session, wenn Commits
+Drei Pflichten je Session:
+
+1. **Lesen** — zu Beginn `/api/hub` öffnen. Neue Antworten und neue Punkte
+   zuerst aufgreifen; der SessionStart-Hook zeigt zusätzlich Stand und Drift.
+2. **Einarbeiten** — User-Antworten sind User-Wort. Mit Datum und Wortlaut ins
+   Register beziehungsweise in die Design-Abnahmen übernehmen. Keine Frage im
+   Chat wiederholen, die auf der Seite beantwortbar ist.
+3. **Nachziehen** — bei einem echten Statuswechsel `docs/hub/hub.json`
+   fortschreiben und den vollständigen Stand über `/api/state` auf die Seite
+   synchronisieren. Neue Entscheidungen, Updates oder Blocker über die Seite
+   oder `/api/items` hinzufügen. Der Stop-Hook erinnert einmal, wenn Commits
    ohne Hub-Update enden.
 
-**Antworten kommen von der Seite, nicht per Zuruf** (User 22.08.: „baue
-eine antwortfunktion für mich ein, dass ich zu jedem punkt stellung nehmen
-kann, dann musst du nur noch die seite anschauen um infos zu bekommen"): jede
-„bei dir"-Karte und jeder Unterpunkt (Gen 18, Suna 10, Figma↔Entwurf 5) hat
-Wahl + Textfeld; „Antworten speichern" veröffentlicht die Seite neu.
-`hub_eingang.py` holt sie nach `hub.json` (`antworten`, Status `neu`). Eine
-Antwort ist User-Wort: mit Datum + Wortlaut ins Register bzw. in die
-Design-Abnahmen, danach Status `eingearbeitet` + `ergebnis` (steht dann auf
-der Karte). Nie eine Antwort im Chat erfragen, die auf der Seite beantwortbar ist.
-
-**Zeigen, nicht beschreiben** (User 22.08.: „ich muss sehen können um was es
-geht und selbst bilder hochladen können"): jede „bei dir"-Karte, bei der es um
-etwas Sichtbares geht (ein Figma-Stand, ein Ausschnitt, ein Fenster in FL),
-trägt das Bild direkt in der Karte (`bilder` in `hub.json`, Dateien in
-`docs/hub/bilder/`, committet) — der User öffnet keine Ordner und sucht keine
-Bilder. Seine Uploads (Bilder + Notiz, Reviews) holt `hub_eingang.py` nach
-`docs/hub/eingang/` bzw. `docs/reviews/`; je Upload steht in `hub.json`
-(`uploads`), was damit passiert ist (`status`, `ergebnis`) — ein Figma-Export
-mit Notiz „in die Truhe" ist sein Wort dafür.
+Die Seite bleibt bewusst knapp: klare Alltagssprache, sichtbare Belege direkt
+am Punkt, keine technischen Romane und keine zusätzliche Projektverwaltung.
 
 ## Bauen & Beweisen (vom Workspace-Root)
 

@@ -25,13 +25,9 @@ lauf() { # $1 Fallname · $2 Start-Epoch · $3 Start-SHA · $4 stop_hook_active 
   fi
 }
 
-# hub.html fuer Fall (c) sicher juenger als hub.json machen (Test-Kopie, nicht das Original anfassen)
-# -> wir pruefen Fall (c) ueber den Start-Epoch: hub.json zaehlt als "angefasst", hub.html ist vom Build neuer oder gleich.
-touch "$NAK/docs/hub/hub.html" 2>/dev/null
-
 lauf "a) Commits, Hub unangefasst -> block"            $((NOW+1000)) "$PREV" false block
 lauf "b) keine Commits -> still"                        $((NOW+1000)) "$HEAD" false still
-lauf "c) Commits, Hub angefasst und gebaut -> still"    $((HUB_TS-10)) "$PREV" false still
+lauf "c) Commits, Hub angefasst -> still"                $((HUB_TS-10)) "$PREV" false still
 lauf "d) wie a), aber stop_hook_active -> still"        $((NOW+1000)) "$PREV" true  still
 # e) wie a) zweimal: der zweite Lauf derselben Session muss still sein (Marker)
 N=$((N+1)); SID="probe-$N"; printf '%s\n%s\n%s\nx\n' $((NOW+1000)) "$PREV" "$NAK" > "$TMP/$SID.start"

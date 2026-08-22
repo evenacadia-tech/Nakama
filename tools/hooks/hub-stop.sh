@@ -3,11 +3,8 @@
 # Nakama-Hub (docs/hub/hub.json) angefasst zu haben — hoechstens EINMAL je
 # Session (Marker), damit daraus nie eine Endlosschleife wird.
 #
-# Blockt (JSON decision=block), wenn
-#   (a) seit Sessionstart Commits entstanden sind UND hub.json seit Sessionstart
-#       nicht veraendert wurde, ODER
-#   (b) hub.json seit Sessionstart veraendert wurde, aber die gebaute Seite
-#       (docs/hub/hub.html) fehlt oder aelter ist — geaendert, nicht gebaut.
+# Blockt (JSON decision=block), wenn seit Sessionstart Commits entstanden sind
+# und hub.json seit Sessionstart nicht veraendert wurde.
 # Still in allen anderen Faellen, bei stop_hook_active=true und ohne Marker.
 # Sessionstart-Marker schreibt tools/hooks/session-start-marker.sh
 # (Zeile 1 Epoch, Zeile 2 HEAD). Env-Ueberschreibungen nur fuer den Test.
@@ -23,7 +20,6 @@ SESSIONS_DIR="${NAKAMA_SESSIONS_DIR:-$HOME/.claude/sessions}"
 MARKER="$SESSIONS_DIR/${SESSION_ID}.start"
 NAG="$SESSIONS_DIR/${SESSION_ID}.hub-nag"
 HUB_JSON="$NAK/docs/hub/hub.json"
-HUB_HTML="$NAK/docs/hub/hub.html"
 
 [ -f "$MARKER" ] || exit 0
 [ -f "$NAG" ] && exit 0
@@ -45,12 +41,7 @@ HUB_TOUCHED=0
 
 GRUND=""
 if [ "${COMMITS:-0}" -gt 0 ] && [ "$HUB_TOUCHED" -eq 0 ]; then
-  GRUND="Nakama-Hub nicht nachgezogen: $COMMITS Commit(s) diese Session, docs/hub/hub.json unveraendert. Pflicht (CLAUDE.md, Abschnitt Hub): hub.json fortschreiben (Plan-Status, 'bei dir', naechster Schritt, Stand), dann py -3.13 tools/hub/baue_hub.py, dann Artifact(file_path=docs/hub/hub.html, url=<artefakt_url aus hub.json>) veroeffentlichen, dann hub.json committen. Ist wirklich nichts zu aendern: hub.json mit aktuellem 'stand' anfassen und das im Commit sagen."
-elif [ "$HUB_TOUCHED" -eq 1 ]; then
-  HTML_TS=$(stat -c %Y "$HUB_HTML" 2>/dev/null || echo 0)
-  if [ "$HTML_TS" -lt "$HUB_TS" ]; then
-    GRUND="Nakama-Hub geaendert, aber nicht gebaut/veroeffentlicht: docs/hub/hub.json ist juenger als docs/hub/hub.html. Jetzt py -3.13 tools/hub/baue_hub.py, dann Artifact(file_path=docs/hub/hub.html, url=<artefakt_url aus hub.json>), dann committen."
-  fi
+  GRUND="Nakama-Hub nicht nachgezogen: $COMMITS Commit(s) diese Session, docs/hub/hub.json unveraendert. Pflicht (CLAUDE.md, Abschnitt Hub): den Stand auf https://nakama-briefing.philipld.chatgpt.site/api/hub lesen, hub.json bei echten Statusaenderungen fortschreiben und den Vollstand ueber /api/state synchronisieren. Das alte Claude-Artefakt nicht mehr bauen. Ist wirklich nichts zu aendern, bleibt hub.json unveraendert."
 fi
 
 [ -z "$GRUND" ] && exit 0

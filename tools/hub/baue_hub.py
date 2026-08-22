@@ -6,8 +6,8 @@
 
 Die Seite ist ein Artefakt auf claude.ai. Veröffentlichen kann nur Claude
 (Artifact-Werkzeug, mit `url` aus hub.json — dieselbe Adresse bleibt).
-Bilder kommen aus der Design-Truhe (Nakama-Design/assets/figma/, neuester
-Stand je App, halbiert auf 2×) — das Repo hält keine Kopie davon.
+Bilder kommen aus der Design-Truhe (design/assets/figma/, neuester Stand je
+App, halbiert auf 2×; seit 22.08. im Repo, vorher eigenes Repo Nakama-Design).
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ REPO = HIER.parent.parent
 HUB_JSON = REPO / "docs" / "hub" / "hub.json"
 HUB_HTML = REPO / "docs" / "hub" / "hub.html"
 VORLAGE = HIER / "seite.html"
-DESIGN = Path(os.environ.get("NAKAMA_DESIGN", REPO.parent / "Nakama-Design"))
+DESIGN = Path(os.environ.get("NAKAMA_DESIGN", REPO / "design"))
 TRUHE = DESIGN / "assets" / "figma"
 APPS = ("gen", "probeeq", "suna")
 BILDER = REPO / "docs" / "hub" / "bilder"      # Zeigebilder zu den Karten (committet)
@@ -112,7 +112,7 @@ def pruefe(s: dict) -> list[str]:
             if r.get("status") == "erledigt" and not r.get("datum"):
                 fehler.append(f"plan {r.get('id')}: erledigt ohne Datum")
             beleg = r.get("beleg") or ""
-            if beleg and not beleg.startswith("Nakama-Design/") and not (REPO / beleg).exists():
+            if beleg and not (REPO / beleg).exists():
                 fehler.append(f"plan {r.get('id')}: Beleg fehlt auf der Platte: {beleg}")
     if naechste != 1:
         fehler.append(f"genau eine Plan-Zeile muss 'naechster' sein (gefunden {naechste})")

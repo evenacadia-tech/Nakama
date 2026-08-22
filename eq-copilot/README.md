@@ -10,7 +10,7 @@ wiederholt sie nicht.
 die Umbenennung zu „Nakama Studio" ist NAK-30 (Identitäts-Ticket), kein
 Nebenbei-Refactor. Die kompilierte Material-Kit-Front ist ein **Provisorium**
 (User 21.08.: „Nie abgenommen – bleibt Provisorium"); die neue UI aller drei
-Apps kommt aus Figma über `Projekte/Nakama-Design`.
+Apps kommt aus Figma über `design/` (Repo-Wurzel).
 
 ## Layout
 

@@ -49,7 +49,7 @@ Kandidat für Eviction. Nein → tragend, behalten.
 
 | Memory-Klasse | Kanonische Quelle |
 |---|---|
-| Design-Sessions (Abnahmen, Figma-Stände) | `Projekte/Nakama-Design/abnahmen/` + `assets/figma/` (seit 21.08.; Prisma-Studie geparkt unter `eq-copilot/design/prisma-studie/`) |
+| Design-Sessions (Abnahmen, Figma-Stände) | `design/abnahmen/` + `design/assets/figma/` (seit 21.08.; Prisma-Studie geparkt unter `eq-copilot/design/prisma-studie/`) |
 | Produktwahrheit, User-Entscheide (mit Zitat) | `CLAUDE.md` (Wahrheitskern + Register) |
 | Plugin-/Broker-Sessions (Architektur, Datenfluss, IPC) | `docs/plugin-wissen.md` + `eq-copilot/docs/M*-BEFUND.md` + git log |
 | Offene Punkte / NAK-IDs | `docs/offene-punkte.md` (durabel; schließen NUR mit ID + Commit-SHA, nie still löschen) |
@@ -93,7 +93,7 @@ selben Lauf reparieren.
 
 Cross-Doc-Regel: Ein in einem Doc gefixter Wert ist in den anderen noch
 alt — den WERT repo-weit greppen (`git grep`), jede lebende Kopie
-abgleichen (NEXT-SESSION.md, plugin-wissen.md, Nakama-Design/abnahmen,
+abgleichen (NEXT-SESSION.md, plugin-wissen.md, design/abnahmen,
 offene-punkte.md). Historische/datierte Zeilen (Handoffs, Befund-Docs mit
 Datum) sind als Zeitpunkt-Aussagen korrekt — nur als AKTUELL präsentierte
 Altwerte sind Drift.

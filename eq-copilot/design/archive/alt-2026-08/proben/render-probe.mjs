@@ -1,4 +1,4 @@
-// ARCHIV — ALTE DESIGN-RICHTUNG. Render-Werkzeug der Proben: alt. User 21.08.2026: „alle alten sind alt“. Keine Vorgabe, nur Verlauf. Aktive Design-Quelle: Figma (User) → Projekte/Nakama-Design. Einzelheiten: ../LIES-MICH.md
+// ARCHIV — ALTE DESIGN-RICHTUNG. Render-Werkzeug der Proben: alt. User 21.08.2026: „alle alten sind alt“. Keine Vorgabe, nur Verlauf. Aktive Design-Quelle: Figma (User) → design/ (Nakama-Repo, bis 22.08. Repo Nakama-Design). Einzelheiten: ../LIES-MICH.md
 // Render-Werkzeug für die Stil-Proben-Serie (Geschmacks-Kalibrierung).
 //
 //   node render-probe.mjs <probe.html> <name> [query] [breite] [hoehe]

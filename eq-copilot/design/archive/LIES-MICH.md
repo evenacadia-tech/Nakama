@@ -4,7 +4,7 @@
 design wird aktuell in figma gemacht. alle 3 apps werden ein design haben mit der
 selben identität. **alle alten sind alt.** Ein Design entwickelt sich und ist
 nicht einfach da." Die aktive Design-Quelle ist Figma (User); übersetzt wird in
-`Projekte\Nakama-Design`. Alles hier ist Verlauf: lesbar, um Irrwege nicht zu
+`design/` (seit 22.08. im Repo, vorher eigenes Repo Projekte/Nakama-Design). Alles hier ist Verlauf: lesbar, um Irrwege nicht zu
 wiederholen — nicht, um daraus etwas abzuleiten.
 
 Jede Datei trägt im Kopf ihren Status. Was kein Kopf tragen kann (Bilder,

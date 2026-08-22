@@ -14,6 +14,11 @@ FL-Studio-Repo bis `7964777`). Remote `https://github.com/evenacadia-tech/Nakama
 `git pull`, nach Commits pushen. Parallele Sessions sind möglich: eigene
 Edits sofort per **explizitem Pathspec** committen (nie `git add -A`, nie
 `--amend`), fremde uncommittete Dateien nie anfassen.
+**Seit 22.08.2026 liegt auch das Design hier** (`design/`, vorher eigenes
+Repo `Projekte\Nakama-Design`, Historie per Subtree-Merge erhalten) — User:
+„ich habe am anfang versucht das zu trennen aber es funktioniert nicht …
+im anschluss wird dann nurnoch im nakama repo gearbeitet". Einstieg dort:
+`design/LIES-MICH.md`.
 
 <!-- WAHRHEITSKERN:ANFANG — dieser Block wird von tools/hooks/nakama-primer.sh
      bei jedem Sessionstart und nach jeder Compaction injiziert. Er ist die
@@ -34,7 +39,7 @@ Edits sofort per **explizitem Pathspec** committen (nie `git add -A`, nie
   regelbasiert.
 - **Design-Quelle ist Figma (User)** — seit 22.08. **eine** Datei, `Nakama-Design`
   (Key `NPCQYSkoZEd4Av0NlKxBOd`), dunkel verbindlich, hell geplant. Die Figma-Stände sind die Vorgabe;
-  `Projekte\Nakama-Design` übersetzt sie in lebende Blätter (Zustände,
+  `design/` übersetzt sie in lebende Blätter (Zustände,
   Größen, Grenzfälle) — keine eigene Stilsuche, keine Varianten-Befragung.
   Produkt-Sprache **Englisch**; Docs, Commits, Gespräch Deutsch.
 - **Material-Kit-Front** im heutigen Plugin = **Provisorium**, nie abgenommen;
@@ -68,15 +73,15 @@ Edits sofort per **explizitem Pathspec** committen (nie `git add -A`, nie
 | 19.08. | Nacht-Freistellung verworfen | „tut mir leid aber das war keine gute arbeit … eingebacken" |
 | 20.08. | Bauentscheidung Sondenkern | „okay dann fangen wir damit nächste session an" |
 | 20.08. | Prisma = eigenständige Begleit-App, Master-Plugin konventionell | Interview 21.08.: „Meine Entscheidung, so gesagt" |
-| 20.08. | Design-Abnahmen (Größen 760×430 / 700×420 / 260×84, Overview+Detail, Vorhören nur markierte Zeile, Zustände nach Ausnahme-Prinzip) | `Nakama-Design/abnahmen/2026-08-20-*` |
+| 20.08. | Design-Abnahmen (Größen 760×430 / 700×420 / 260×84, Overview+Detail, Vorhören nur markierte Zeile, Zustände nach Ausnahme-Prinzip) | `design/abnahmen/2026-08-20-*` |
 | 21.08. | Nakama = Familie; Prisma nur Studie, geparkt | Interview: „Familie; Prisma nur Studie" · Prisma-Herkunft: „Meine Idee" · Hörkompass: „Alles nur Studie" |
 | 21.08. | Probeeq ist ein EQ | „die active Probe fester Name : Nakama Probeeq ist ein vollwertiger hochwertiger EQ der mit Nakama kommuniziert. er kann von nakama direkt anweisungen umsetzen aber auch ganz normal manuell vom user benutzt werden" |
 | 21.08. | Namen | „Nakama Gen = Main app · aktive sonde = Nakama Probeeq · passive sonde = Nakama Suna · Bundle = Nakama Studio" |
 | 21.08. | KI-Erklärschicht raus | „Nein – raus aus dem Produkt" |
-| 21.08. | Produktzahlen | „Hingenommen, passen aber" · Regelfall einstellige Quellenzahl: „ich habe schlicht 5 genommen weil 16 bedeutet 16 geladene proben auf instrumenten … 16 plugins nur für eq kostet auch massig leistung" (`Nakama-Design/abnahmen/2026-08-21-…`) |
+| 21.08. | Produktzahlen | „Hingenommen, passen aber" · Regelfall einstellige Quellenzahl: „ich habe schlicht 5 genommen weil 16 bedeutet 16 geladene proben auf instrumenten … 16 plugins nur für eq kostet auch massig leistung" (`design/abnahmen/2026-08-21-…`) |
 | 21.08. | Design-Quelle | „das finale design wird aktuell in figma gemacht . alle 3 apps werden ein design haben mit der selben identität. alle alten sind alt. Ein Design entwickelt sich und ist nicht einfach da." · Rolle des Design-Repos: „Figma ist Quelle; Repo setzt um" |
 | 21.08. | Material-Kit-Front | „Nie abgenommen – bleibt Provisorium" |
-| 21.08. | Eigene Entwürfe (`Nakama-Design/…selfmade`, Figma-Bilder) | „Richtung für Look & Stimmung" · „Das ist ein Designprototyp keine technikanleitung, design passt sich am ende der funktion an." |
+| 21.08. | Eigene Entwürfe (`design/…selfmade`, Figma-Bilder) | „Richtung für Look & Stimmung" · „Das ist ein Designprototyp keine technikanleitung, design passt sich am ende der funktion an." |
 | 21.08. | Sprache | „Englisch – mein Wort" |
 | 21.08. | Glas/Licht-Annahme raus; Geschmacksprofil nur Studie | „Glas/Licht raus; Profil nur Studie" |
 | 21.08. | Recherche | „Archiv" |
@@ -84,7 +89,8 @@ Edits sofort per **explizitem Pathspec** committen (nie `git add -A`, nie
 | 21.08. | Version 0.3.0 angleichen, noch nicht installieren | „Version 0.3.0 angleichen, noch nicht installieren" |
 | 21.08. | „Lernsprache" und „Kernfunktion vor Verwaltung" gelten nicht mehr | „Keines mehr" |
 | 21.08. | Aufräumen: alte Richtungen ins Archiv, Prisma-Studie parken, tote Memories löschen, Inspirationen + regenerierbare Renders raus | Interview Frage 20, alle vier gewählt |
-| 22.08. | Figma-Depot: die Datei `Nakama-Design` ist die einzige verbindliche Quelle; je App hell + dunkel geplant, verbindlich heute nur dunkel | „das ist das neue verbindliche und einzige Depot indem sich die aktuellsten Designs befinden. ich habe für jedes design vor eine helle und dunke variante zu erstellen. stand jetzt aber erstmal nur dunkel“ · `Nakama-Design/abnahmen/2026-08-22-figma-depot.md` |
+| 22.08. | Figma-Depot: die Datei `Nakama-Design` ist die einzige verbindliche Quelle; je App hell + dunkel geplant, verbindlich heute nur dunkel | „das ist das neue verbindliche und einzige Depot indem sich die aktuellsten Designs befinden. ich habe für jedes design vor eine helle und dunke variante zu erstellen. stand jetzt aber erstmal nur dunkel“ · `design/abnahmen/2026-08-22-figma-depot.md` |
+| 22.08. | Design-Repo und Technik-Repo zusammengeführt: `Nakama-Design` wird `design/` im Nakama-Repo, danach nur noch hier gearbeitet | „ich möchte dass du die nakama design und nakama arbeitsbereiche zusammenführst. ich habe am anfang versucht das zu trennen aber es funktioniert nicht … einfach infos die im nakama design exisitieren die nicht im nakama folder präsent sind reinholen, so dass nichts verloren ist. im anschluss wird dann nurnoch im nakama repo gearbeitet" · Commits `6fd08a1` (Merge) + Folgecommits |
 
 **Was NICHT mehr gilt** (und nirgends mehr als gültig auftauchen darf):
 Recherche als „kanonischer Plan" · Spectral Field / Bauplan 2.0 / Tiefenfeld /
@@ -112,7 +118,7 @@ als Produktteil · „Lernsprache" / „Kernfunktion vor Verwaltung" als Regeln.
 | **Archiv** (Recherche, Mockups, alte Baupläne, alte Design-Docs — nur Verlauf) | `docs/archiv/` · `eq-copilot/design/archive/` |
 | **Prisma-Studie** (geparkt, User-Idee) | `eq-copilot/design/prisma-studie/` (Statusblatt dort) |
 | Material-Kit-Kette (Provisorium, technisch lebendig: `tokens.json` → `LeitstandTokens.h`) | `eq-copilot/design/` Wurzel |
-| Design der drei Apps (Figma-Übersetzung, Abnahmen) | `C:\Users\phili\Projekte\Nakama-Design` |
+| Design der drei Apps (Figma-Übersetzung, Abnahmen, Truhe, Werkzeug) | `design/` — Einstieg `design/LIES-MICH.md` · `design/abnahmen/` · `design/assets/figma/` · `design/werkzeug/` · `design/docs/` |
 
 ## Hub — gemeinsames Briefing (Pflicht seit 22.08.2026)
 
@@ -310,20 +316,22 @@ stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
   **paint()-FPS ≠ Datenkadenz** (erst PaintBench, dann optimieren) ·
   **Musterblatt-/Demo-Daten ≠ Plugin-Daten** · **FL zeigt MIDI 60 als C5**.
 
-## Design-Arbeitsmodell (seit 21.08.2026)
+## Design-Arbeitsmodell (seit 21.08.2026; `design/` im Repo seit 22.08.)
 
 1. **Figma (User) ist die Quelle.** Aktuelle Stände liegen beim User
-   (Downloads/Figma) und werden nach `Nakama-Design/assets/figma/` übernommen,
-   sobald er sie gibt. Claude erfindet keine Richtung, keine Metapher, keine
+   (Figma-Depot `Nakama-Design`) und werden per Figma-MCP nach
+   `design/assets/figma/` geholt. Claude erfindet keine Richtung, keine Metapher, keine
    Farbwelt — Gesetz aus vier teuren Proben (17.08.): Claudes freie
    Bilderfindung ist Mode-Collapse; Vision kommt vom User.
-2. **Nakama-Design übersetzt** Figma in lebende Blätter und prüft Zustände,
-   Größen, Grenzfälle; Abnahmen dort sind bindend und tragen das User-Wort.
-   Von dort spiegelt nichts hierher, bis eine Abnahme es sagt.
-3. **Hier im Technik-Repo** gibt es keine Design-Arbeit mehr: `eq-copilot/
-   design/` hält die Material-Kit-Kette (Provisorium), das Archiv und die
-   geparkte Prisma-Studie. Der Hook `kreativ-schleuse.sh` blockt Edits darunter
-   ohne frischen Freigabe-Marker — das ist gewollt.
+2. **`design/` übersetzt** Figma in lebende Blätter und prüft Zustände,
+   Größen, Grenzfälle (Regeln: `design/LIES-MICH.md`); Abnahmen in
+   `design/abnahmen/` sind bindend und tragen das User-Wort. Von dort
+   spiegelt nichts ins Plugin (`eq-copilot/`), bis eine Abnahme es sagt.
+3. **Unter `eq-copilot/design/`** gibt es keine Design-Arbeit mehr: es hält
+   die Material-Kit-Kette (Provisorium), das Archiv und die geparkte
+   Prisma-Studie. Der Hook `kreativ-schleuse.sh` blockt Edits darunter ohne
+   frischen Freigabe-Marker — das ist gewollt. `design/` ist davon frei;
+   dort gilt die Prototyp-Schleuse (`tools/hooks/prototyp-schleuse.sh`).
 4. **Geparkt, nie ungefragt reaktivieren:** Prisma-Studie (inkl. Hörkompass,
    Unicorn-Lichtwelt, ST-Map-Refraktion, Schlieren), Tiefenfeld, Bauplan 2.0,
    Kunstwerk-Studie, Feld-Alphabet, Proben P01–P04.
@@ -353,7 +361,7 @@ stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
 | FL-Termine A/B (gemessen 22.08.) + Capabilityreport | `docs/beweise/termin-a/` · `docs/beweise/termin-b/` · `docs/beweise/SONDE-004.md` · `eq-copilot/identity/host-capabilities-fl-v1.json` |
 | Benchmark-Mechaniken (Median-Basislinie, Zonen) | `eq-copilot/docs/BENCHMARK-STUDIE-RESO-SMARTEQ-PROQ.md` |
 | Offene Punkte | `docs/offene-punkte.md` |
-| Design der drei Apps | `Nakama-Design/CLAUDE.md` + `abnahmen/` |
+| Design der drei Apps | `design/LIES-MICH.md` + `design/abnahmen/` |
 | Verlauf (nur zum Verstehen, nie als Vorgabe) | `docs/archiv/`, `eq-copilot/design/archive/`, `eq-copilot/design/prisma-studie/STATUS.md` |
 
 ## Arbeitsweise
@@ -361,7 +369,7 @@ stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
 - **Code ist die einzige Wahrheit** — Datei öffnen, bevor auf Doku-, Memory-
   oder Audit-Behauptungen gehandelt wird (~25 % der AI-Auditbefunde hier waren falsch).
 - **Entscheide nur mit Zitat.** Was der User entschieden hat, steht mit Datum
-  und Wortlaut im Register oben bzw. in `Nakama-Design/abnahmen/`. Alles
+  und Wortlaut im Register oben bzw. in `design/abnahmen/`. Alles
   andere ist Vorschlag, Arbeitsannahme oder Studie und heißt so — auch in
   Commit-Messages („Vorschlag:", nicht „Abnahme:").
 - **Eine Wahrheit, ein Ort.** Zahlen (Testzahlen, Versionen, Fixturezahlen)

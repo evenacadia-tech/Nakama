@@ -1,4 +1,4 @@
-// ARCHIV — ALTE DESIGN-RICHTUNG. Symbol-Sync ins Codex-Blatt (Feld-Alphabet): alt. User 21.08.2026: „alle alten sind alt“. Keine Vorgabe, nur Verlauf. Aktive Design-Quelle: Figma (User) → Projekte/Nakama-Design. Einzelheiten: LIES-MICH.md in diesem Ordner.
+// ARCHIV — ALTE DESIGN-RICHTUNG. Symbol-Sync ins Codex-Blatt (Feld-Alphabet): alt. User 21.08.2026: „alle alten sind alt“. Keine Vorgabe, nur Verlauf. Aktive Design-Quelle: Figma (User) → design/ (Nakama-Repo, bis 22.08. Repo Nakama-Design). Einzelheiten: LIES-MICH.md in diesem Ordner.
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";

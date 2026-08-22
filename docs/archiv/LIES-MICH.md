@@ -14,7 +14,7 @@ seinen Status. Die gültige Produktdefinition steht in `CLAUDE.md`
 | `NAKAMA-SPECTRAL-FIELD-BAUPLAN.md` | Bauplan 2.0 „Spectral Field" für die Hauptansicht | „Verbindlich" war Claude-Text ohne User-Zitat; User 21.08.: „alle alten sind alt" |
 | `NAKAMA-PAPIER-3D-EFFEKTE-PLAN.md` | Papier-3D-Effekte E0–E5 | verworfen 16.08. („das sieht sehr schlecht aus") |
 | `EQ-COPILOT-TECHNIK-UX-UEBERGABE.md` | Technik-/UX-Übergabe 14.08. | Hub-App, Tauri, FL-Pfade |
-| `ux-ui/` | UX-Arbeitskern + Wissensbasis | Quell-Archiv; die lebende Fassung liegt in `Projekte\Nakama-Design\docs` |
+| `ux-ui/` | UX-Arbeitskern + Wissensbasis | Quell-Archiv; die lebende Fassung liegt in `design/docs/` |
 | `claude-spike/bare-lauf-2026-08-13.json` | Protokoll des gescheiterten `claude --bare`-Spikes | KI-Erklärschicht vom User 21.08. aus dem Produkt gestrichen |
 
 Nicht hier, sondern in `eq-copilot/design/prisma-studie/docs/`: `design-stand.md`,

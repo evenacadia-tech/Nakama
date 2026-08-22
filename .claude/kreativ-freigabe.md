@@ -1,20 +1,17 @@
-# Kreativ-Freigabe — 2026-08-21 (Aufräumen, keine Gestaltung)
+# Kreativ-Freigabe — 2026-08-22 (Zusammenführung, keine Gestaltung)
 
-**Vom User freigegeben (Wortlaut, Kontext-Interview 21.08.2026, Frage 20 —
-alle vier Optionen gewählt):** „Alte Design-Richtungen ins Archiv" ·
-„Prisma-Studie zusammenziehen + parken" · „Tote Memories löschen" ·
-„Inspirationen + regenerierbare Renders raus".
+**Vom User freigegeben (Wortlaut, 22.08.2026):** „ich möchte dass du die
+nakama design und nakama arbeitsbereiche zusammenführst. ich habe am anfang
+versucht das zu trennen aber es funktioniert nicht. du musst das nicht
+kompliziert machen. einfach infos die im nakama design exisitieren die nicht
+im nakama folder präsent sind reinholen, so dass nichts verloren ist. im
+anschluss wird dann nurnoch im nakama repo gearbeitet"
 
-**Dazu die Richtungsentscheide desselben Interviews (Wortlaut):**
-„das finale design wird aktuell in figma gemacht . alle 3 apps werden ein
-design haben mit der selben identität. alle alten sind alt." · „Familie;
-Prisma nur Studie" · Prisma-Herkunft: „Meine Idee" · Hörkompass: „Alles
-nur Studie" · Material-Kit-Front: „Nie abgenommen – bleibt Provisorium" ·
-Inspirationen: „Weiß nicht mehr – raus".
-
-**Freigegebener Scope (eng):** unter `eq-copilot/design/` ausschließlich
-Verschieben, Beschriften (Statuskopf, LIES-MICH, STATUS.md) und die
-freigegebenen Löschungen. KEINE gestalterische Arbeit — die Design-Quelle ist
-Figma (User), übersetzt wird in `Projekte\Nakama-Design`.
+**Freigegebener Scope (eng):** unter `eq-copilot/design/` ausschließlich das
+Umbiegen von Pfadverweisen, die auf das frühere Repo `Projekte/Nakama-Design`
+zeigen (Statusköpfe der Archiv-Blätter, LIES-MICH, ASSET-KIT, Prisma-Statusblatt)
+auf den neuen Ort `design/` im Nakama-Repo. KEINE gestalterische Arbeit — die
+Design-Quelle ist Figma (User), übersetzt wird in `design/`
+(`design/LIES-MICH.md`).
 
 Gültig 24 h ab Dateidatum (Hook `tools/hooks/kreativ-schleuse.sh`).

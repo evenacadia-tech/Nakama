@@ -44,7 +44,7 @@ Begleit-App.
 
 **Die konventionelle Plugin-UI-Spur (3 Oberflächen: Main,
 Active-Probe-Editor, Passive-Kachel) lebt seit 20.08. im EIGENEN Projekt
-`C:\Users\phili\Projekte\Nakama-Design`** — bewusst kontextrein (keine
+`design/` im Nakama-Repo** (bis 22.08. eigenes Repo Projekte/Nakama-Design) — bewusst kontextrein (keine
 Nakama-Historie, keine verworfenen Richtungen im Kontext; dortige Regel:
 kein Import aus diesem Repo), mit Assettruhe (`assets/`, erste Quelle)
 und bindendem Abnahmen-Protokoll. Ergebnisse fließen erst nach

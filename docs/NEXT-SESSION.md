@@ -106,7 +106,7 @@ Code ohne Manifest heißt *offen*. Beweislauf:
 | Was | Wo |
 |---|---|
 | ~~FL-Termin B~~ — beide Termine erledigt 22.08. | Optional offen: Teil 3 der Klickliste B (`nakama-altprojekt.flp` = Legacy-Fixture für SONDE-002) und das Wegräumen von `Common Files\VST3\eq-copilot\` (Admin-Klick) |
-| Figma-Stände der drei Apps (Gen, Probeeq, Suna) | nach `Nakama-Design/assets/figma/` geben; das Design-Repo übersetzt sie |
+| Figma-Stände der drei Apps (Gen, Probeeq, Suna) | per Figma-MCP nach `design/assets/figma/` holen; `design/` übersetzt sie |
 | Installation des 21.08.-Bundles (mit Hostbrücke, Version 0.3.0) | erst mit dem nächsten bewiesenen Stand, per UAC-Klick |
 
 ## Offen-Set

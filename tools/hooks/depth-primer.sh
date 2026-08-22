@@ -21,7 +21,7 @@ zum Handeln da ist: handeln — Feststehendes nicht erneut herleiten.
 ## Karte vor Vorschlag
 Vor Engine-/Broker-/Vertragsarbeit: docs/plugin-wissen.md, den Sonden-Entwurf
 (mit Errata-Block) und die betroffene Quelle lesen. Design: Figma-Stände des
-Users sind die Quelle, Nakama-Design übersetzt — hier im Technik-Repo gibt es
+Users sind die Quelle, design/ übersetzt — unter eq-copilot/design/ gibt es
 keine Design-Arbeit; Archiv und Prisma-Studie sind Verlauf, nie Vorgabe.
 Einen verworfenen Weg neu vorzuschlagen kostet Vertrauen.
 

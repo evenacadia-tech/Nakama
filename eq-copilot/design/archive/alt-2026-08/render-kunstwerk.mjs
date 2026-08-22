@@ -1,4 +1,4 @@
-// ARCHIV — ALTE DESIGN-RICHTUNG. Render-Werkzeug der Kunstwerk-Studie: alt. User 21.08.2026: „alle alten sind alt“. Keine Vorgabe, nur Verlauf. Aktive Design-Quelle: Figma (User) → Projekte/Nakama-Design. Einzelheiten: LIES-MICH.md in diesem Ordner.
+// ARCHIV — ALTE DESIGN-RICHTUNG. Render-Werkzeug der Kunstwerk-Studie: alt. User 21.08.2026: „alle alten sind alt“. Keine Vorgabe, nur Verlauf. Aktive Design-Quelle: Figma (User) → design/ (Nakama-Repo, bis 22.08. Repo Nakama-Design). Einzelheiten: LIES-MICH.md in diesem Ordner.
 // Render-Werkzeug für die Kunstwerk-Studie (reine 2D-Zeichnung, kein WebGL).
 //
 //   node render-kunstwerk.mjs                     → Standardsatz nach vorentwurf-renders/

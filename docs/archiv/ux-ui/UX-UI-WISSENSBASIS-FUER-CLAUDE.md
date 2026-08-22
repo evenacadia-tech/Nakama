@@ -1,4 +1,4 @@
-> **ARCHIV (21.08.2026). Quell-Archiv; die lebende Fassung liegt in Projekte/Nakama-Design/docs. Keine Vorgabe mehr. Gültige Produktdefinition: CLAUDE.md (Wahrheitskern + Entscheide-Register); technischer Entwurf: docs/FL-Nakama-Sonden-Design-Entwurf.md.**
+> **ARCHIV (21.08.2026). Quell-Archiv; die lebende Fassung liegt in design/docs/ (seit 22.08. im Repo). Keine Vorgabe mehr. Gültige Produktdefinition: CLAUDE.md (Wahrheitskern + Entscheide-Register); technischer Entwurf: docs/FL-Nakama-Sonden-Design-Entwurf.md.**
 
 ---
 title: "UX/UI-Wissensbasis fuer Claude - Audio- und Musiksoftware"
@@ -14,7 +14,7 @@ companion: "./CLAUDE-UX-UI-ARBEITSKERN.md"
 # UX/UI-Wissensbasis fuer Claude
 
 > **Fuehrende Arbeitskopie seit 20.08.2026:**
-> `C:\Users\phili\Projekte\Nakama-Design\docs\` — die UX-Arbeit laeuft im
+> `design/docs/` (bis 22.08.2026 eigenes Repo Projekte/Nakama-Design) — die UX-Arbeit laeuft im
 > eigenstaendigen Design-Projekt; diese Fassung hier ist das Quell-Archiv.
 
 Diese Datei ist eine dauerhafte, quellenkritische Wissensbasis fuer UX/UI-Arbeit an Audio- und Musiksoftware. Sie verdichtet sechs Webquellen und zwei Voger-Design-PDFs zu einem handlungsfaehigen Modell fuer Claude. Sie ist kein Stilrezept: Produktziel, reale Nutzerarbeit, technische Wahrheit und projektspezifische Regeln haben immer Vorrang.

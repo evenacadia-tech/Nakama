@@ -349,7 +349,7 @@ function rDesign(s){
     var b=BILDER[a.key];
     var chip = a.status==='wartet auf dich' ? 'warte' : a.status==='Vorgabe steht' ? 'gut' : '';
     html+='<article class="app"><div class="bild">'+
-      (b && b.src ? '<img src="'+b.src+'" alt="'+esc(a.name)+' — Figma-Export '+esc(b.datum||'')+'" width="'+(b.w||'')+'" height="'+(b.h||'')+'">' : '<div class="leer">Kein Figma-Export in der Truhe (Nakama-Design/assets/figma/).</div>')+
+      (b && b.src ? '<img src="'+b.src+'" alt="'+esc(a.name)+' — Figma-Export '+esc(b.datum||'')+'" width="'+(b.w||'')+'" height="'+(b.h||'')+'">' : '<div class="leer">Kein Figma-Export in der Truhe (design/assets/figma/).</div>')+
       '</div><div class="body">'+
       '<div class="titel"><h3>'+esc(a.name)+'</h3><span class="mass mono">'+esc(a.groesse)+'</span><span class="chip '+chip+'">'+esc(a.status)+'</span>'+(b&&b.datei?'<span class="mass mono">'+esc(b.datei)+'</span>':'')+'</div>'+
       '<p class="rolle">'+esc(a.rolle)+'</p>'+
@@ -403,7 +403,7 @@ function rFuss(s){
     '<li>Quelle ist <span class="mono">docs/hub/hub.json</span> im Nakama-Repo; die Seite wird daraus gebaut und neu veröffentlicht — nie von Hand editiert.</li>'+
     '<li>Ein Entscheid von dir steht erst hier, wenn er mit Datum und Wortlaut im Register (CLAUDE.md) ist.</li>'+
     '<li>Zahlen kommen aus Manifesten (<span class="mono">docs/beweise/</span>), nie aus dem Gedächtnis.</li>'+
-  '</ol><div class="pfade mono"><span>Plan: docs/bauaufteilung-sonden.md · Offen-Set: docs/offene-punkte.md · Design: Nakama-Design/abnahmen/</span></div></footer>';
+  '</ol><div class="pfade mono"><span>Plan: docs/bauaufteilung-sonden.md · Offen-Set: docs/offene-punkte.md · Design: design/abnahmen/</span></div></footer>';
 }
 
 function render(){

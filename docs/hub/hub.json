@@ -15,7 +15,7 @@
       "titel": "Gen-Entwurf (Studie 04): die 18 Lesarten beantworten",
       "was": "Die Studie 04 liegt in deinem Depot (Rahmen „Lumia Material Lab / Study 04 — Gen“) und ist damit der aktuelle Gen-Stand — dunkel. Offen sind die Lesarten darin: 00 das Gesamturteil (trifft Gen die Sprache?), 01–17 je eine Entscheidung mit Entwurf und Alternative. Unten je Punkt wählen, Text dazu, unten „Antworten speichern“.",
       "warum": "Die Übersetzung (Phase 1b) beginnt mit Gen gegen diesen Stand. Jede Lesart, die du nicht bestätigst, wird beim Übersetzen erneut vorgelegt. Was du in Figma änderst, holt Claude als neuen Stand aus dem Depot — exportieren musst du nicht mehr.",
-      "wo": "Nakama-Design/abnahmen/2026-08-21-gen-auftrag-figma.md (Abschnitt „Was ausdrücklich offen bleibt“)",
+      "wo": "design/abnahmen/2026-08-21-gen-auftrag-figma.md (Abschnitt „Was ausdrücklich offen bleibt“)",
       "seit": "21.08.",
       "bilder": [
         {
@@ -181,7 +181,7 @@
       "titel": "Suna: zehn Lesarten bestätigen oder drehen",
       "was": "Die Suna-Kachel hast du am 21.08. exportiert — sie gilt. Beim Entwurf wurden zehn Fragen je mit einer Lesart beantwortet (u. a. Apertur-Logik, Rollenwörter LEADS · CARRIES · SUPPORTS …, Messstatus-Wörter, Hinweis-Wortlaut, halbierter Schwebeschatten). Jede ist mit einem Handgriff in Figma umkehrbar.",
       "warum": "Suna wird als letzte der drei Apps übersetzt (Reihenfolge Gen → Probeeq → Suna). Kein Blocker heute — aber jede Lesart, die du nicht bestätigst, wird beim Übersetzen erneut vorgelegt.",
-      "wo": "Nakama-Design/abnahmen/2026-08-21-suna-auftrag-figma.md (Abschnitt „Was ausdrücklich offen bleibt“)",
+      "wo": "design/abnahmen/2026-08-21-suna-auftrag-figma.md (Abschnitt „Was ausdrücklich offen bleibt“)",
       "seit": "21.08.",
       "bilder": [
         {
@@ -732,7 +732,7 @@
         "stand_text": "Stand vom 22.08. aus dem Depot (Rahmen 6:13, Studie 04): Nakama Gen in der Probeeq-Sprache — Graphit-Schale, Glas, Kinn mit Wortmarke; Ebenenzeile, Karte mit Rollenwörtern und Wein-Zellen, Advisor mit „OTHER CAUSE“ und „CERTAINTY HIGH“. Dunkel. Der cyanfarbene Stand vom 21.08. ist Verlauf.",
         "status": "Vorgabe steht",
         "offen": "18 Lesarten (U2) · helle Fassung geplant",
-        "wo": "Nakama-Design/assets/figma/LIES-MICH.md · abnahmen/2026-08-22-figma-depot.md"
+        "wo": "design/assets/figma/LIES-MICH.md · design/abnahmen/2026-08-22-figma-depot.md"
       },
       {
         "key": "probeeq",
@@ -742,7 +742,7 @@
         "stand_text": "Stand vom 22.08. aus dem Depot (Rahmen 6:1906, Studie 01) — gleiche Anordnung wie dein Export vom 21.08.: acht Bandgriffe auf der Kurve, eine Parameterzeile mit zwölf Werten, Draft-Kasten, Schutzbereich. Dunkel; im Depot liegen schon zwei Probeeq-Rahmen mit heller Schale bzw. hellem Host (in Arbeit, keine Vorgabe).",
         "status": "Vorgabe steht",
         "offen": "Sidechain-Quelle sichtbar, Untermenü oder unsichtbar (U5) · helle Fassung geplant",
-        "wo": "Nakama-Design/assets/figma/LIES-MICH.md"
+        "wo": "design/assets/figma/LIES-MICH.md"
       },
       {
         "key": "suna",
@@ -752,7 +752,7 @@
         "stand_text": "Stand vom 22.08. aus dem Depot (Rahmen 6:2629): die Kachel in der Probeeq-Sprache — Bus · Rolle · Position im Glas, Verbindungspunkt, Wortmarke und Messstatus im Kinn. Dunkel; ein heller Suna-Rahmen liegt im Depot in Arbeit.",
         "status": "Vorgabe steht",
         "offen": "10 Lesarten zu bestätigen (U6) · helle Fassung geplant",
-        "wo": "Nakama-Design/abnahmen/2026-08-21-suna-auftrag-figma.md"
+        "wo": "design/abnahmen/2026-08-21-suna-auftrag-figma.md"
       }
     ],
     "quelle": {
@@ -766,10 +766,10 @@
     {
       "datum": "2026-08-21",
       "quelle": "Codex",
-      "ziel": "Nakama-Design — Messbank (Stand 86f04c1)",
+      "ziel": "Design-Messbank (damals Repo Nakama-Design, Stand 86f04c1; heute design/werkzeug/)",
       "status": "eingearbeitet",
       "kurz": "10 Befunde (4 P1, 5 P2, 1 P3), alle gegen die Quelldatei geprüft: 10 bestätigt, 0 widerlegt, alle gefixt; dazu 5 eigene Funde.",
-      "datei": "Nakama-Design/abnahmen/2026-08-21-codex-review-abgearbeitet.md"
+      "datei": "design/abnahmen/2026-08-21-codex-review-abgearbeitet.md"
     }
   ],
   "uploads": [],

@@ -1,4 +1,4 @@
-> **ARCHIV (21.08.2026). Quell-Archiv; die lebende Fassung liegt in Projekte/Nakama-Design/docs. Keine Vorgabe mehr. Gültige Produktdefinition: CLAUDE.md (Wahrheitskern + Entscheide-Register); technischer Entwurf: docs/FL-Nakama-Sonden-Design-Entwurf.md.**
+> **ARCHIV (21.08.2026). Quell-Archiv; die lebende Fassung liegt in design/docs/ (seit 22.08. im Repo). Keine Vorgabe mehr. Gültige Produktdefinition: CLAUDE.md (Wahrheitskern + Entscheide-Register); technischer Entwurf: docs/FL-Nakama-Sonden-Design-Entwurf.md.**
 
 ---
 title: "Claude UX/UI-Arbeitskern - Nakama"
@@ -12,7 +12,7 @@ durable_reference: "./UX-UI-WISSENSBASIS-FUER-CLAUDE.md"
 # Claude UX/UI-Arbeitskern
 
 > **Fuehrende Arbeitskopie seit 20.08.2026:**
-> `C:\Users\phili\Projekte\Nakama-Design\docs\` — dort mit auf das
+> `design/docs/` (bis 22.08.2026 eigenes Repo Projekte/Nakama-Design) — dort mit auf das
 > Design-Projekt angepassten Overrides (§3); diese Fassung hier ist das
 > Quell-Archiv.
 

@@ -7,7 +7,7 @@ eigenständiger Rust-Broker (Named Pipe). Code, Bundle und Pipes tragen heute
 noch den Legacy-Namen EQ-Copilot (`EqCop*`).
 
 Dieses Repo hält **Code, Verträge, Beweise und technisches Wissen**. Das Design
-der drei Apps entsteht in Figma (User) und wird in `Projekte\Nakama-Design`
+der drei Apps entsteht in Figma (User) und wird in `design/`
 in lebende Blätter übersetzt.
 
 | Wohin | Wofür |

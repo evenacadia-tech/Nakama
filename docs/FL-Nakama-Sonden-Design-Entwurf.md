@@ -111,7 +111,7 @@ Befund: die Obergrenze 32 steht bereits im v3-Vertrag (§53.9;
 `beweise/SONDE-005b.md` §7) — dort ist eine Änderung Versionierung, kein
 Edit. Entscheid 21.08. zum Regelfall: „ich habe schlicht 5 genommen weil 16
 bedeutet 16 geladene proben auf instrumenten … 16 plugins nur für eq kostet
-auch massig leistung" (`Nakama-Design/abnahmen/`) — Regelfall einstellig, 16 =
+auch massig leistung" (`design/abnahmen/`) — Regelfall einstellig, 16 =
 Obergrenze.
 
 **(g) UI-Sprache.** Entscheid 21.08.2026: „Englisch – mein Wort". §5 „Vier
@@ -119,7 +119,7 @@ Bedienebenen" (Beobachten · Beraten · Vorhören · Anwenden) und alle deutsche
 UI-Beschriftungen dieses Entwurfs sind **Übersetzungsvorlagen, kein
 Produkttext**. Befund: der Figma-Stand Gen (21.08., laut Interview-Protokoll
 gesichtet) führt OBSERVE · ADVISE · AUDITION · APPLY; die Design-Abnahme vom 20.08.
-(`Nakama-Design/abnahmen/2026-08-20-vorhoeren-markierte-zeile.md`) führt den
+(`design/abnahmen/2026-08-20-vorhoeren-markierte-zeile.md`) führt den
 `AUDITION`-Reiter. Docs, Commits und Gespräch bleiben Deutsch.
 
 **(h) UI-Beschreibungen sind technische Annahmen.** Entscheid 21.08.2026: „das
@@ -130,7 +130,7 @@ ein Designprototyp keine technikanleitung, design passt sich am ende der
 funktion an." Folge: §0.4 Punkt 3 (drei Oberflächen samt Inhalt), §35.1 (drei
 Informationsdichten), §9 (Rollenliste) und die Kachel-Bedienung sind
 Annahmen des Entwurfs; die Oberfläche kommt aus Figma (User) über
-`Projekte\Nakama-Design`. §0.4 Punkt 2 gilt weiter, nur in dieser Richtung:
+`design/` (bis 22.08. eigenes Repo Nakama-Design). §0.4 Punkt 2 gilt weiter, nur in dieser Richtung:
 Figma → Design-Repo → dieser Block. Gemessene Abweichungen zum Design-Stand
 20./21.08. (Befund, nichts davon hier entschieden):
 
@@ -141,7 +141,7 @@ Figma → Design-Repo → dieser Block. Gemessene Abweichungen zum Design-Stand
   drei Ansichten. Figma Gen (21.08., Interview-Protokoll): PROBE OVERVIEW als
   Zeilen × neun Frequenzspalten plus ADVISOR (PRIORITY / LIKELY CAUSE /
   SMALLEST TEST / LISTEN FOR / THEN).
-- **Rollen:** `Nakama-Design/docs/oberflaechen-spezifikation.md` führt
+- **Rollen:** `design/docs/oberflaechen-spezifikation.md` führt
   **fünf** (führt / trägt / begleitet / geschützt / bewusst verschmolzen), §9
   **sieben** (zusätzlich Impuls, Raum). Welche Liste gilt: offen.
 - **Suna-Kachel:** §0.4 „Name, Verbindung, Frische; Bedienung läuft über
@@ -152,7 +152,7 @@ Figma → Design-Repo → dieser Block. Gemessene Abweichungen zum Design-Stand
   viele Messzustände (5 im Design, 2 hier) und Arbeitsschritte (3 / 5) gelten:
   offen als **NAK-38** (UI-Rückfluss-Liste).
 - **Probeeq-Parameter:** der Editor-Entwurf des Users (21.08.,
-  `Nakama-Design/Nakama Designausarbeitungen selfmade/LIES-MICH.md` und
+  `design/Nakama Designausarbeitungen selfmade/LIES-MICH.md` und
   Interview-Protokoll) zeigt **12** sichtbare Parameter je Band (BAND · TYPE ·
   FREQ · GAIN · Q · MODE | DYN · THRESH · RANGE · ATTACK · HOLD · RELEASE);
   §53.8 definiert **13** je Slot — zusätzlich
@@ -186,7 +186,7 @@ dem keine Arbeit mehr stattfindet; §0.4 „schlichte, ehrliche Bedien-UI" meint
 bis zur Figma-Übersetzung genau dieses Provisorium. Die Anzeige-Pflichten
 (§0.4 Punkt 1, §50.2) gelten für jede Fassung weiter. Vorschlag: die neuen
 Oberflächen (Suna-Kachel in `SONDE-007b`, Probeeq-Editor ab P6) nicht als
-zweites Provisorium bauen, sondern aus dem Figma-Stand über Nakama-Design.
+zweites Provisorium bauen, sondern aus dem Figma-Stand über `design/`.
 
 **(k) FL-Termine A/B.** Entscheid 21.08.2026: „Termine bald; bis dahin S7".
 Befund: beide Termine sind **noch nicht gelaufen** —
@@ -351,7 +351,7 @@ bleiben dabei:
    Frische; null Hostparameter nach §53.8, Bedienung läuft über Main).
    Beide Spuren laufen durch den Kreativ-Prozess des Users. Die
    konventionelle Plugin-UI-Spur arbeitet im eigenen, bewusst
-   kontextreinen Projekt `Projekte\Nakama-Design` (Assettruhe +
+   Ordner `design/` (bis 22.08. eigenes, kontextreines Repo) (Assettruhe +
    bindendes Abnahmen-Protokoll); Ergebnisse fließen nach User-Abnahme
    als Design-Update ein.
 4. **Architektur hält den Tausch billig:** UI ist die oberste,

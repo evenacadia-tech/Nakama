@@ -147,7 +147,7 @@ Betroffen sind **drei** Oberflächen, nicht eine: Main (**Gen**, volle
 Arbeitsfläche), der Editor der Active Probe (**Probeeq**, vollwertiger EQ laut
 User 21.08., ab P6) und der Editor der Passive Probe (**Suna**-Kachel, null
 Hostparameter — kommt in `SONDE-007b` mit). Seit 21.08. gilt dazu: die
-Oberfläche kommt aus Figma (User) über `Projekte\Nakama-Design`; die Größen
+Oberfläche kommt aus Figma (User) über `design/`; die Größen
 sind dort abgenommen (20.08.: Gen 760×430 · Probeeq 700×420 · Suna-Kachel
 260×84), die Suna-Kachel ist dort „nicht begonnen" (`docs/sondenplan.md` im Design-Repo).
 Vorschlag (nicht abgenommen): `SONDE-007b` baut keine eigene

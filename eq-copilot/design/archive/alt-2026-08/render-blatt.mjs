@@ -1,4 +1,4 @@
-// ARCHIV — ALTE DESIGN-RICHTUNG. Render-Werkzeug der Spectral-Field-Blätter: alt. User 21.08.2026: „alle alten sind alt“. Keine Vorgabe, nur Verlauf. Aktive Design-Quelle: Figma (User) → Projekte/Nakama-Design. Einzelheiten: LIES-MICH.md in diesem Ordner.
+// ARCHIV — ALTE DESIGN-RICHTUNG. Render-Werkzeug der Spectral-Field-Blätter: alt. User 21.08.2026: „alle alten sind alt“. Keine Vorgabe, nur Verlauf. Aktive Design-Quelle: Figma (User) → design/ (Nakama-Repo, bis 22.08. Repo Nakama-Design). Einzelheiten: LIES-MICH.md in diesem Ordner.
 // Render-Werkzeug fürs Tusche-Musterblatt (reine 2D-Zeichnung, kein WebGL).
 //
 //   node render-blatt.mjs                       → Standardsatz nach vorentwurf-renders/

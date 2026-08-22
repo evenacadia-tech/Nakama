@@ -53,7 +53,7 @@ projekt werden".
   `u<N>-<was>.png`. Hohe Bilder (Höhe > 2× Breite) zeigt die Seite aufklappbar.
 - **Antworten** (`antworten`): `hub_eingang.py` setzt neue/geänderte auf
   `neu`. Einarbeiten heißt: Wortlaut mit Datum ins Register (CLAUDE.md) oder
-  in `Nakama-Design/abnahmen/`, dann `status: eingearbeitet` + `ergebnis`
+  in `design/abnahmen/`, dann `status: eingearbeitet` + `ergebnis`
   (ein Satz: was daraus wurde). Ist eine Karte erledigt und fliegt raus, ihre
   Antworten nach `docs/hub/antworten-archiv.md` übertragen (der Build
   verweigert verwaiste IDs). Antworten nie im Chat erfragen, die auf der
@@ -63,12 +63,12 @@ projekt werden".
   was passiert ist. Die Datei in `docs/hub/eingang/` bleibt liegen — sie ist
   der bytegleiche Beleg (SHA-256 für die Truhe daraus bilden).
 - **Bilder** kommen beim Build aus der Design-Truhe
-  (`Nakama-Design/assets/figma/`, neuester Stand je App, auf Inhalt
+  (`design/assets/figma/`, neuester Stand je App, auf Inhalt
   zugeschnitten, halbiert auf 2×) — das Technik-Repo hält keine Kopie.
   Die Truhe füllt Claude seit 22.08. aus dem Figma-Depot `Nakama-Design`
   (User-Wort im Register; Figma-MCP `download_assets`, PNG, 4×, Host/Ground-
   Rahmen `6:13` Gen · `6:1906` Probeeq · `6:2629` Suna; Ablage + SHA in
-  `Nakama-Design/assets/figma/LIES-MICH.md`). Neuer Stand im Depot ⇒ neue
+  `design/assets/figma/LIES-MICH.md`). Neuer Stand im Depot ⇒ neue
   datierte Datei in der Truhe ⇒ der Hub zeigt ihn beim nächsten Bau.
   Auf dem Zweitrechner muss das Design-Repo neben diesem liegen
   (oder `NAKAMA_DESIGN` zeigt darauf).

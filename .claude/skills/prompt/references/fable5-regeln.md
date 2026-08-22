@@ -73,7 +73,7 @@ Roh: „mach den nebel schöner"
 
 Umgeformt:
 > Verfeinere die Befund-Nebel-Darstellung im Claude-Musterblatt
-> (`Nakama-Design/werkzeug/…` — Beispiel; das alte Spectral-Field-Blatt liegt im Archiv). Ich arbeite auf
+> (`design/werkzeug/…` — Beispiel; das alte Spectral-Field-Blatt liegt im Archiv). Ich arbeite auf
 > den Design-Freeze des Tiefenfelds zu; der Nebel muss WO + Schwere eines
 > Befunds tragen (Dicke = Schwere) und darf die Nebel→Licht-Evidenzachse
 > nicht brechen. [Annahme: „schöner" = weicheres Wogen + weniger harte

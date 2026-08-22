@@ -30,11 +30,17 @@
 . "$(dirname "${BASH_SOURCE[0]}")/lib/schreibziel.sh"
 
 input=$(cat)
-cmd=$(befehl_klartext "$input")
+cmd=$(befehl_ohne_zitate "$input")
 [ -n "$cmd" ] || exit 0
 
+# Der Notausgang muss GESETZT sein, nicht ERWAEHNT: am Anfang des Befehls oder
+# eines Befehlsstuecks. Vorher genuegte die Zeichenkette irgendwo — auch in
+# einem Kommentar (`git reset --hard # NAKAMA_GIT_RIEGEL_AUS=1`) hob sie den
+# ganzen Riegel auf (Gegenprobe Gemini 3.1 Pro, 22.08.2026).
+if printf '%s' "$cmd" | grep -Eq '(^|[;&|][[:space:]]*)NAKAMA_GIT_RIEGEL_AUS=1[[:space:]]'; then
+  exit 0
+fi
 case "$cmd" in
-  *NAKAMA_GIT_RIEGEL_AUS=1*) exit 0 ;;
   *git*) ;;
   *) exit 0 ;;
 esac
@@ -49,8 +55,14 @@ pruef=$(printf '%s' "$cmd" \
   | sed 's/&&/\n/g; s/||/\n/g; s/[;|]/\n/g' \
   | sed 's/[[:space:]]-\(m\|F\)[[:space:]].*$//; s/[[:space:]]--\(message\|file\)[[:space:]].*$//')
 
+# Zwei Erweiterungen aus der Gegenprobe (Gemini 3.1 Pro, 22.08.2026), beide
+# gemessen: (1) ein Pfad vor dem Programmnamen (`/usr/bin/git`, `./git`) liess
+# das Muster scheitern; (2) ein Vorschalter MIT Argument (`git -C /pfad add -A`,
+# `git --git-dir .git push -f`) riss die Kette auf, weil nur argumentlose Flags
+# vorgesehen waren — und `git -C` ist die Form, in der die Hooks dieses Repos
+# selbst git aufrufen.
 V='(^|[[:space:](){}])'             # Befehlsanfang im Stueck
-G="${V}git([[:space:]]+-[^[:space:]]+)*[[:space:]]+"   # git mit optionalen -c/-C-Vorschaltern
+G="${V}([^[:space:]]*/)?git([[:space:]]+-[^[:space:]]+([[:space:]]+[^-][^[:space:]]*)?)*[[:space:]]+"
 
 trifft() { printf '%s' "$pruef" | grep -Eq "$1"; }
 riegel() {
@@ -77,8 +89,13 @@ fi
 if trifft "${G}push([[:space:]]+[^[:space:]]+)*[[:space:]]+(--force|--force-with-lease|-f)([[:space:]]|=|$)"; then
   riegel "force-push ueberschreibt den Stand im Remote, den der zweite Rechner schon geholt haben kann. Das ist eine Entscheidung des Users, keine Automatik."
 fi
-if trifft "${G}push([[:space:]]+[^[:space:]]+)*[[:space:]]+(--delete|:[A-Za-z])" || trifft "${G}push[^|;&]*[[:space:]]\+[A-Za-z_][A-Za-z0-9_/.-]*:"; then
-  riegel "Dieser Push loescht oder ueberschreibt eine Remote-Referenz. Entscheidung des Users."
+# Refspec-Formen: `+ref` erzwingt den Push auch ohne --force, `:ref` loescht.
+# Vorher verlangte das Muster hinter dem Doppelpunkt einen BUCHSTABEN, womit
+# `git push origin :123-bugfix` durchlief, und das Plus wurde nur mit
+# nachfolgendem Doppelpunkt erkannt (Gegenprobe Gemini 3.1 Pro, 22.08.2026).
+if trifft "${G}push([[:space:]]+[^[:space:]]+)*[[:space:]]+(--delete|:[A-Za-z0-9_])" \
+   || trifft "${G}push[^;&|]*[[:space:]]\+[A-Za-z0-9_][^[:space:]]*"; then
+  riegel "Dieser Push loescht oder erzwingt eine Remote-Referenz (:ref loescht, +ref ueberschreibt ohne --force). Entscheidung des Users."
 fi
 if trifft "${G}reset[[:space:]]+([^[:space:]]+[[:space:]]+)*--hard"; then
   riegel "git reset --hard verwirft uncommittete Arbeit — auch die einer parallelen Session. Sichern (git stash / Kopie) oder gezielt 'git restore -- <pfad>'."
@@ -89,8 +106,11 @@ fi
 if trifft "${G}(checkout|restore)[[:space:]]+(--[^[:space:]]+[[:space:]]+)*(--[[:space:]]+)?\.([[:space:]]|$)"; then
   riegel "Massen-Verwurf des Arbeitsbaums. Gezielt je Pfad zuruecknehmen: 'git restore -- <pfad>'."
 fi
-if trifft "${G}branch[[:space:]]+([^[:space:]]+[[:space:]]+)*-D"; then
-  riegel "git branch -D loescht einen Branch samt nicht gemergter Commits. Entscheidung des Users."
+# -D und "-d zusammen mit -f" sind dasselbe: erzwungenes Loeschen, auch nicht
+# gemergter Commits (Gegenprobe Gemini 3.1 Pro, 22.08.2026).
+if trifft "${G}branch[[:space:]]+([^[:space:]]+[[:space:]]+)*-[a-zA-Z]*D" \
+   || printf '%s' "$pruef" | awk '/(^|[ (){}])([^ ]*\/)?git( +-[^ ]+( +[^-][^ ]*)?)* +branch/ && / -[a-zA-Z]*d( |$)/ && / -[a-zA-Z]*f( |$)/ { g = 1 } END { exit !g }'; then
+  riegel "Erzwungenes Loeschen eines Branches samt nicht gemergter Commits. Entscheidung des Users."
 fi
 
 exit 0

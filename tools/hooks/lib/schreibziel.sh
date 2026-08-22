@@ -32,18 +32,50 @@
 #   zu Leerzeichen. Wer einen Befehl bewertet, bewertet IHN — nicht den Text, den
 #   er transportiert: beide Fehlblockaden vom 21.08.2026 waren Heredocs, die
 #   einen Schreibbefehl bloss zitierten (Commit-Nachricht, sed-Muster).
-befehl_klartext() {
-  local roh cmd
+befehl_klartext_roh() {
+  local roh
   roh=$(printf '%s' "$1" | sed -n 's/.*"command"[[:space:]]*:[[:space:]]*"//p' | head -1)
-  cmd=$(printf '%s' "$roh" | sed 's/\\n/\n/g' | awk '
+  printf '%s' "$roh" | sed 's/\\n/\n/g' | awk '
     ende != "" { if ($0 == ende) ende = ""; next }
     { print
       if (match($0, /<<-?[[:space:]]*["'"'"']?[A-Za-z_][A-Za-z0-9_]*/)) {
         s = substr($0, RSTART, RLENGTH)
         sub(/^<<-?[[:space:]]*["'"'"']?/, "", s)
         ende = s
-      } }')
+      } }'
+}
+
+befehl_klartext() {
+  local cmd
+  cmd=$(befehl_klartext_roh "$1")
   cmd="${cmd//\\\\//}"; cmd="${cmd//\\//}"; cmd="${cmd//\"/ }"; cmd="${cmd//\'/ }"
+  printf '%s' "$cmd"
+}
+
+# befehl_ohne_zitate <json-vom-stdin>
+#   Wie befehl_klartext, entfernt aber zusaetzlich JEDE Zeichenkette in
+#   Anfuehrungszeichen. Fuer Werkzeuge, die BEFEHLE bewerten (git-riegel.sh):
+#   was in Anfuehrungszeichen steht, ist ein Argument — Text, den ein Programm
+#   liest, nie ein Befehl, den die Shell ausfuehrt.
+#   Gemessen am 22.08.2026 (Gegenprobe durch Gemini 3.1 Pro): ohne diesen Schritt
+#   blockte der Riegel `echo "Bitte niemals git push --force nutzen"`,
+#   `grep "git add -A" README.md` und jede Commit-Nachricht mit Semikolon.
+#   NICHT fuer die Schleusen: die suchen PFADE, und ein Pfad darf in
+#   Anfuehrungszeichen stehen (`cat > "prototyp/a.html"`).
+befehl_ohne_zitate() {
+  local cmd
+  cmd=$(befehl_klartext_roh "$1")
+  # Erst die Zitate weg, DANN normalisieren — sonst sind die Anfuehrungszeichen
+  # schon Leerzeichen und die Grenze der Zeichenkette nicht mehr auffindbar.
+  cmd=$(printf '%s' "$cmd" | sed 's/"[^"]*"/ /g' | sed "s/'[^']*'/ /g")
+  cmd="${cmd//\\\\//}"; cmd="${cmd//\\//}"
+  # Uebrig gebliebene EINZELNE Anfuehrungszeichen zu Leerzeichen. Klingt nach
+  # Kosmetik, ist es nicht: die Rohextraktion schneidet den Wert nicht am Ende
+  # ab, der Befehl traegt also immer noch den JSON-Schwanz ("} ...). Ohne diesen
+  # Schritt endet `git add -A` als `git add -A"}}` — und jedes Muster, das nach
+  # dem Flag ein Leerzeichen oder Zeilenende verlangt, greift nicht mehr.
+  # Gemessen 22.08.2026: der Riegel liess danach seine eigenen Kernfaelle durch.
+  cmd="${cmd//\"/ }"; cmd="${cmd//\'/ }"
   printf '%s' "$cmd"
 }
 

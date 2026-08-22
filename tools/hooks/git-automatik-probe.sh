@@ -66,6 +66,29 @@ probe durch "Notausgang gesetzt"          'NAKAMA_GIT_RIEGEL_AUS=1 git push --fo
 probe durch "gar kein git"                'py -3.13 tools/hub/hub_sync.py holen'
 
 echo
+echo "=== Gegenprobe von Gemini 3.1 Pro (22.08.2026, agy -p) ==="
+# Zweite Stimme, adversarial: der Riegel-Quelltext ging als Text hinein, die
+# Faelle kamen zurueck. Jeder wurde hier gemessen, keiner geglaubt — einer der
+# neun Befunde war falsch (Push auf eine URL blockte nie).
+echo "--- muss blocken (von Gemini gefundene Luecken) ---"
+probe block "git mit absolutem Pfad"      '/usr/bin/git push --force'
+probe block "git -C mit Argument"         'git -C /pfad/zum/repo add -A'
+probe block "git --git-dir mit Argument"  'git --git-dir .git push -f'
+probe block "force per Refspec +branch"   'git push origin +master'
+probe block "Loeschung numerischer Branch" 'git push origin :123-bugfix'
+probe block "branch -d -f statt -D"       'git branch -d -f alt'
+probe block "Notausgang nur im Kommentar" 'git reset --hard # NAKAMA_GIT_RIEGEL_AUS=1'
+
+echo "--- muss durchlassen (von Gemini gefundene Fehlblockaden) ---"
+probe durch "Semikolon in der Nachricht"  'git commit -m "fix bug ; git reset --hard war die Ursache"'
+probe durch "echo nennt force-push"       'echo "Bitte niemals git push --force nutzen"'
+probe durch "grep sucht nach add -A"      'grep "git add -A" README.md'
+probe durch "Push auf direkte URL"        'git push https://github.com/evenacadia-tech/Nakama.git master'
+# Der Notausgang muss weiter funktionieren, wenn er ECHT gesetzt ist.
+probe durch "Notausgang am Befehlsanfang" 'NAKAMA_GIT_RIEGEL_AUS=1 git push --force'
+probe durch "Notausgang hinter &&"        'git status && NAKAMA_GIT_RIEGEL_AUS=1 git reset --hard'
+
+echo
 echo "=== AUTO-PUSH: Torwaechter (ohne Netzzugriff pruefbar) ==="
 gesamt=$((gesamt+1))
 AUS=$(printf '{"session_id":"probe","tool_name":"Bash"}' | bash tools/hooks/auto-push.sh 2>&1)

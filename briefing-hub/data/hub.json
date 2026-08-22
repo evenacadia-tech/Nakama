@@ -1,0 +1,788 @@
+{
+  "stand": "2026-08-22",
+  "stand_notiz": "nach S7, FL-Termin A und B, S4 mit T2 PASS (22.08.); Figma-Depot „Nakama-Design“ ist seit 22.08. die einzige Design-Quelle (dunkel verbindlich); Design-Repo Nakama-Design ist seit 22.08. als design/ Teil des Nakama-Repos (dein Wort: „im anschluss wird dann nurnoch im nakama repo gearbeitet“)",
+  "artefakt_url": "https://claude.ai/code/artifact/81bdcb02-796e-4dc0-a6df-347d2d7225fe",
+  "naechster_schritt": {
+    "technik": "Gate G0 — erste adversariale Prüfrunde über P0 (C++-Review + Codex, eigene Session). Danach S8: gemeinsamer Plugin-Kern ohne Bundle-Konstanten (SONDE-007a).",
+    "design": "Phase 1b, Schritt Gen — kann beginnen: der Gen-Stand (Studie 04, dunkel) liegt als Export aus dem Depot in der Truhe. Parallel beantwortest du die 18 Lesarten (U2); was du drehst, holt Claude als neuen Stand.",
+    "dich": "Die 18 Gen-Lesarten in Karte U2 beantworten (00 = Gesamturteil). Exporte aus Figma sind nicht mehr deine Arbeit — Claude holt sie aus dem Depot."
+  },
+  "bei_dir": [
+    {
+      "id": "U2",
+      "dringlichkeit": "jetzt",
+      "art": "Entscheid",
+      "titel": "Gen-Entwurf (Studie 04): die 18 Lesarten beantworten",
+      "was": "Die Studie 04 liegt in deinem Depot (Rahmen „Lumia Material Lab / Study 04 — Gen“) und ist damit der aktuelle Gen-Stand — dunkel. Offen sind die Lesarten darin: 00 das Gesamturteil (trifft Gen die Sprache?), 01–17 je eine Entscheidung mit Entwurf und Alternative. Unten je Punkt wählen, Text dazu, unten „Antworten speichern“.",
+      "warum": "Die Übersetzung (Phase 1b) beginnt mit Gen gegen diesen Stand. Jede Lesart, die du nicht bestätigst, wird beim Übersetzen erneut vorgelegt. Was du in Figma änderst, holt Claude als neuen Stand aus dem Depot — exportieren musst du nicht mehr.",
+      "wo": "design/abnahmen/2026-08-21-gen-auftrag-figma.md (Abschnitt „Was ausdrücklich offen bleibt“)",
+      "seit": "21.08.",
+      "bilder": [
+        {
+          "datei": "u2-gen-studie04-uebersicht.png",
+          "text": "Die ganze Studie 04: Schönfall, acht Zustände (Mix lesen, Urteilen, Vorhören, alles frisch, gemischt, 16 Quellen, alles getrennt, keine Quelle), zwei Zooms, Delta, die 17 Punkte. Der Schönfall selbst steht unten bei „Nakama Design“."
+        }
+      ],
+      "punkte": [
+        {
+          "id": "U2.0",
+          "titel": "Gesamturteil: trifft Gen die Sprache von Probeeq und Suna?",
+          "gewicht": "Entscheidungstor",
+          "entwurf": "Studie 04 so weiterverfolgen — Übersetzung in das lebende Blatt beginnt gegen deinen Export.",
+          "alternative": "Grundsätzlich anders — sag in Worten, was nicht stimmt (Material, Anordnung, Dichte, Farbwelt)."
+        },
+        {
+          "id": "U2.1",
+          "titel": "Zellen-Grammatik gegen Apertur-Grammatik",
+          "gewicht": "Tragweite 1",
+          "entwurf": "Die Karte folgt der Abnahme vom 20.08.: hohl = veraltet, Strichlinie = getrennt. Die Apertur spricht wie Probeeq und Suna: hohl = kein Kontakt. Beides nebeneinander.",
+          "alternative": "Ein Zeichen für die ganze Familie — dann braucht entweder „veraltet“ in der Karte ein neues Zeichen, oder die Apertur ändert ihre Bedeutung."
+        },
+        {
+          "id": "U2.2",
+          "titel": "Die vier Ebenen als Reiter oben links im Glas",
+          "gewicht": "Tragweite 2",
+          "entwurf": "OBSERVE · ADVISE ● · AUDITION · APPLY sitzen oben links im Glas, wo Probeeq seine Identitätszeile hat. Gen hat keine Identitätszeile; die Wortmarke im Kinn ist die Identität.",
+          "alternative": "Die Ebenen als Tasten im Kinn rechts (neben SOURCES und UNDO) — das Glas beginnt dann wie bei Probeeq mit einer Identitätszeile."
+        },
+        {
+          "id": "U2.3",
+          "titel": "Zeilenmarker nur beim Vorhören, Befundort als Ring",
+          "gewicht": "Tragweite 3",
+          "entwurf": "Der Befundort ist der Ring mit Cyan-Saum um die betroffenen Zellen (Probeeqs gewählter Griff). Die markierte Zeile gibt es nur, solange das Vorhören gehalten wird (Abnahme 20.08.).",
+          "alternative": "Wie im alten Gen-Stand: der Marker liegt in Ruhe auf der Fokusquelle — dann braucht das Vorhören ein anderes Zeichen."
+        },
+        {
+          "id": "U2.4",
+          "titel": "„1 STALE · SYNTH PAD“ — die Ausnahme nennt den Namen",
+          "gewicht": "Tragweite 4",
+          "entwurf": "Der Kartenkopf nennt Zahl und Namen (bis zwei je Sorte, Abnahme 20.08.), obwohl die Zeile den Namen inzwischen trägt.",
+          "alternative": "Nur die Zahl („1 STALE“) — oder ganz weg, weil die hohle Zeile mit Namen genügt."
+        },
+        {
+          "id": "U2.5",
+          "titel": "Wortlaut der Aktionen",
+          "gewicht": "Tragweite 5",
+          "entwurf": "HOLD TO AUDITION · APPLY · REJECT — Wort für Wort aus Probeeqs Draft-Kasten; ein Wortschatz für die Familie.",
+          "alternative": "AUDITION / HOLD · APPLY · DISCARD wie im alten Gen-Stand."
+        },
+        {
+          "id": "U2.6",
+          "titel": "Sicherheit und Alternativursache — wo sie stehen",
+          "gewicht": "Tragweite 6",
+          "entwurf": "CERTAINTY HIGH im Befundkopf rechts; OTHER CAUSE als sechste, gedimmte Zeile nach der festen Fünferform.",
+          "alternative": "Anderer Ort (z. B. vor dem kleinsten Versuch) — oder eine der beiden Angaben einen Schritt entfernt, nicht auf der Fläche."
+        },
+        {
+          "id": "U2.7",
+          "titel": "SOURCES-Taste im Kinn als Tür",
+          "gewicht": "Tragweite 7",
+          "entwurf": "Eine Taste SOURCES (Probeeqs GLOBAL-Grammatik) führt zu Quellenliste, Rollen, Suche, Pinning, Fokusgruppen. Die Tür ist gezeichnet, der Raum dahinter nicht.",
+          "alternative": "Anders benennen (ROLES, SETUP …), oder einzelne Dinge davon auf die Fläche holen."
+        },
+        {
+          "id": "U2.8",
+          "titel": "UNDO · n im Kinn",
+          "gewicht": "Tragweite 8",
+          "entwurf": "Ein Einsatz UNDO · n = „n changes applied“ und Rückweg in einem; bei 0 gedimmt. Kein Verlauf dahinter.",
+          "alternative": "Ein Verlauf der angewandten Änderungen (wie Probeeqs Undo) — oder der Zähler an anderer Stelle."
+        },
+        {
+          "id": "U2.9",
+          "titel": "Rollenwörter je Zeile statt LIVE",
+          "gewicht": "Tragweite 9",
+          "entwurf": "LEADS · CARRIES · SUPPORTS · PROTECTED · MERGED als Wort neben dem Namen (Sunas Vokabular). LIVE entfällt — frisch schweigt. Ohne Rolle stünde dort „—“.",
+          "alternative": "LIVE behalten, oder keine Rolle in der Zeile (Rolle nur hinter der SOURCES-Tür)."
+        },
+        {
+          "id": "U2.10",
+          "titel": "Wein-Rampe für die Energie der Zellen",
+          "gewicht": "Tragweite 10",
+          "entwurf": "Energie als Ein-Farb-Rampe der Probeeq-Kurvenfüllung (#7E3D3E, 0–55 % Deckkraft über dem Glas), dunkel → hell.",
+          "alternative": "Kräftiger, dezenter, andere Farbe, oder mehr Stufen — sag, was dein Auge bei 1:1 braucht."
+        },
+        {
+          "id": "U2.11",
+          "titel": "Drei Sorten Zustand, drei Orte",
+          "gewicht": "Tragweite 11",
+          "entwurf": "Degradierter Hinweis oben rechts im Glas (Warnglyphe, Suna-Ort) · Messung im Kinn links · Ausnahmen je Quelle im Kartenkopf rechts.",
+          "alternative": "Alles in einer Kopfzeile wie im alten Gen-Stand."
+        },
+        {
+          "id": "U2.12",
+          "titel": "FOCUS-Zeile im Kartenkopf und Schreibweise der Spalten",
+          "gewicht": "Tragweite 12",
+          "entwurf": "Keine FOCUS / BASS / 180–260 HZ-Zeile — der Ort steht als Ring in der Karte und in der PRIORITY-Zeile. Spalten 1k 2k 4k 8k wie bei Probeeq.",
+          "alternative": "FOCUS-Zeile behalten und/oder 1K 2K 4K 8K wie im alten Stand."
+        },
+        {
+          "id": "U2.13",
+          "titel": "Befund-Navigation und Detailansicht",
+          "gewicht": "Tragweite 13",
+          "entwurf": "Befund 2 von 3 öffnet man über OBSERVE; das Detail einer Quelle (Spektrum, Lautheit, Dynamik, Breite, Verlauf) lebt im Schritt Urteilen.",
+          "alternative": "‹ › im Assistenten, und/oder eine eigene Detailansicht je Quelle außerhalb des Urteils."
+        },
+        {
+          "id": "U2.14",
+          "titel": "16 Quellen: Namen bei 8 px, Raster 10 px",
+          "gewicht": "Tragweite 14",
+          "entwurf": "Bei 16 Quellen bleiben die Namen in der Zeile (Schrift 8, Zellen 8, Fuge 2) — trägt, ist aber die Obergrenze. Gemessen: 158 px.",
+          "alternative": "Bei 16 namenlos (wie in der Abnahme vom 20.08.), Namen nur im Regelfall."
+        },
+        {
+          "id": "U2.15",
+          "titel": "Shader-Füllung der Schale (Lichtstreifen)",
+          "gewicht": "Tragweite 15",
+          "entwurf": "Der Gen-Klon trägt sie nicht — der markierte Probeeq-Knoten trug sie beim zweiten Lesen auch nicht mehr.",
+          "alternative": "Sie gehört zum Design — dann kommt sie auf beide Schalen und wird mitgebacken."
+        },
+        {
+          "id": "U2.16",
+          "titel": "Zwei Figma-Dateien: Testdummy und fable-dummy",
+          "gewicht": "Tragweite 16",
+          "entwurf": "Gen liegt als Studie 04 in Testdummy; Suna als Studie 03 in fable-dummy. Bleibt so.",
+          "alternative": "Zusammenführen — in welche Datei?"
+        },
+        {
+          "id": "U2.17",
+          "titel": "Export in die Truhe und Skalierungsstufen",
+          "gewicht": "Tragweite 17",
+          "entwurf": "Erledigt durch dein Depot-Wort vom 22.08.: Claude holt den Stand und die gebackenen Teile je Skalierungsstufe per Figma-MCP aus dem Depot. Hier nur noch: welche Stufen sollen es sein?",
+          "alternative": "Andere Stufen als 100 / 125 / 150 / 200 % — sag welche.",
+          "wahlen": [
+            "100 / 125 / 150 / 200 %",
+            "Andere Stufen (siehe Text)",
+            "Anders (siehe Text)",
+            "Später"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "U5",
+      "dringlichkeit": "wenn du dazu kommst",
+      "art": "Entscheid",
+      "titel": "Probeeq: die Sidechain-Quelle je Band — sichtbar, Untermenü oder unsichtbar?",
+      "was": "Dein Probeeq-Stand zeigt zwölf Parameter je Band. Der technische Entwurf kennt einen dreizehnten (die Sidechain-Quelle für den Dynamikteil). Drei Lesarten: als sichtbarer Parameter in der Bandzeile, als Untermenü unter DYN, oder im ersten Release unsichtbar.",
+      "warum": "Der gespeicherte Zustand trägt seit 22.08. alle dreizehn (unsichtbar kostet nichts, nachträglich einfügen hätte einen Versionssprung erzwungen). Offen ist nur noch, was die Oberfläche zeigt — das entscheidet dein Figma-Stand.",
+      "wo": "docs/offene-punkte.md, NAK-33",
+      "seit": "21.08.",
+      "bilder": [
+        {
+          "datei": "u5-probeeq-bandzeile.png",
+          "text": "Die Bandzeile aus deinem Probeeq-Stand: zwölf Werte (BAND … MODE | DYN … RELEASE). Die Frage ist, ob und wo ein dreizehnter (die Sidechain-Quelle für DYN) erscheint."
+        }
+      ]
+    },
+    {
+      "id": "U6",
+      "dringlichkeit": "wenn du dazu kommst",
+      "art": "Entscheid",
+      "titel": "Suna: zehn Lesarten bestätigen oder drehen",
+      "was": "Die Suna-Kachel hast du am 21.08. exportiert — sie gilt. Beim Entwurf wurden zehn Fragen je mit einer Lesart beantwortet (u. a. Apertur-Logik, Rollenwörter LEADS · CARRIES · SUPPORTS …, Messstatus-Wörter, Hinweis-Wortlaut, halbierter Schwebeschatten). Jede ist mit einem Handgriff in Figma umkehrbar.",
+      "warum": "Suna wird als letzte der drei Apps übersetzt (Reihenfolge Gen → Probeeq → Suna). Kein Blocker heute — aber jede Lesart, die du nicht bestätigst, wird beim Übersetzen erneut vorgelegt.",
+      "wo": "design/abnahmen/2026-08-21-suna-auftrag-figma.md (Abschnitt „Was ausdrücklich offen bleibt“)",
+      "seit": "21.08.",
+      "bilder": [
+        {
+          "datei": "u6-suna-kachel.png",
+          "text": "Die Suna-Kachel, wie du sie exportiert hast. Die zehn Lesarten betreffen Details dieser Kachel: Verbindungspunkt links, Rollenwort (CARRIES), Position (POST), Messstatus rechts, Kopfzeile, Schatten."
+        }
+      ],
+      "punkte": [
+        {
+          "id": "U6.1",
+          "titel": "Apertur-Logik wie Probeeq",
+          "gewicht": "Tragweite 1",
+          "entwurf": "Verbindungspunkt: gefüllt + Leuchtsaum = verbunden und liefert · gefüllt ohne Saum = verbunden, Messung veraltet · hohl = kein Kontakt. Gens Karte sagt dagegen: hohl = veraltet, Strichlinie = getrennt — der Widerspruch bleibt, Suna vergrößert ihn nicht.",
+          "alternative": "Ein Zeichen für die ganze Familie — dann muss entweder Gens Karte oder die Apertur ihre Bedeutung ändern."
+        },
+        {
+          "id": "U6.2",
+          "titel": "Messposition: PRE · INSERT · POST",
+          "gewicht": "Tragweite 2",
+          "entwurf": "Dreistellung, wo in der Kette die Sonde sitzt: vor der Kette, als Einsatz mittendrin, am Ende.",
+          "alternative": "„Insert“ als FL-Mixerspur (z. B. „Insert 4“) plus PRE/POST — bräuchte einen Spurnamen in der Kachel."
+        },
+        {
+          "id": "U6.3",
+          "titel": "Rollenwörter",
+          "gewicht": "Tragweite 3",
+          "entwurf": "LEADS · CARRIES · SUPPORTS · PROTECTED · MERGED (führt / trägt / begleitet / geschützt / bewusst verschmolzen).",
+          "alternative": "Andere Wörter — du sagst welche."
+        },
+        {
+          "id": "U6.4",
+          "titel": "Messstatus-Wörter",
+          "gewicht": "Tragweite 4",
+          "entwurf": "MEASURING (frisch) · STALE · 40 s (veraltet, mit Alter als Zahl hinter dem Wort).",
+          "alternative": "Alters-Abstufung in Worten (seit 10 s / seit 10 min) oder ganz ohne Alter."
+        },
+        {
+          "id": "U6.5",
+          "titel": "Hinweis-Wortlaut",
+          "gewicht": "Tragweite 5",
+          "entwurf": "NOT DELIVERING TO GEN (kein Kontakt) · DUPLICATE INSTANCE (doppelte Instanz) — passt neben die Kopfzeile (140 px).",
+          "alternative": "Anderer Wortlaut — kürzer geht kaum ohne Sinnverlust, länger passt nicht."
+        },
+        {
+          "id": "U6.6",
+          "titel": "Kopfzeile PASSIVE PROBE",
+          "gewicht": "Tragweite 6",
+          "entwurf": "Bleibt, wie Probeeqs „ACTIVE PROBE · PIANO BUS“; sie trägt rechts den Hinweis.",
+          "alternative": "Weg (bei zwölf gestapelten Kacheln zwölfmal dasselbe) — dann braucht der Hinweis einen anderen Ort."
+        },
+        {
+          "id": "U6.7",
+          "titel": "Feste Spalten",
+          "gewicht": "Tragweite 7",
+          "entwurf": "BUS 84 · ROLE 56 · POSITION 43 fest, damit Rolle und Position über viele Kacheln untereinander stehen; Preis: Lücke hinter kurzen Namen.",
+          "alternative": "Spalten hängen am Inhalt wie bei Probeeq — dann stehen sie je Kachel woanders."
+        },
+        {
+          "id": "U6.8",
+          "titel": "Schwebeschatten halbiert",
+          "gewicht": "Tragweite 8",
+          "entwurf": "Einzige Abweichung an der Schale; Probeeqs Schatten wäre so groß wie die Kachel selbst.",
+          "alternative": "Schatten in Probeeq-Originalgröße."
+        },
+        {
+          "id": "U6.9",
+          "titel": "Wortmarke mit Shader",
+          "gewicht": "Tragweite 9",
+          "entwurf": "Aus dem neuesten Probeeq-Rahmen (mit Shader-Verlauf), weil der Truhen-Export die Shader-Fassung zeigt.",
+          "alternative": "Die flache Wortmarke aus dem markierten Knoten."
+        },
+        {
+          "id": "U6.10",
+          "titel": "„Bestätigen“ des Namens",
+          "gewicht": "Tragweite 10",
+          "entwurf": "Ein unbestätigter Zustand hat keine Darstellung bekommen — er ist nirgends beschrieben, und erfunden wird nichts.",
+          "alternative": "Einen Zustand „Name unbestätigt“ zeigen — dann sag, wie er aussehen soll."
+        }
+      ]
+    },
+    {
+      "id": "U7",
+      "dringlichkeit": "wenn du dazu kommst",
+      "art": "Tätigkeit",
+      "titel": "Admin-Klick: alte Plugin-Kopie aus dem VST3-Ordner entfernen",
+      "was": "Unter C:/Program Files/Common Files/VST3/eq-copilot/ liegt eine 845 MB große alte Repo-Kopie vom 13.08. mit zwei alten „EQ-Copilot.vst3“, die FL bei jedem Scan mitnimmt. Wegräumen braucht einen Admin-Klick von dir; Claude bereitet den Befehl vor.",
+      "warum": "Doppelte Plugins im Scan verwirren FL und jede künftige Messung. Angebot seit dem Termin-A-Abend offen.",
+      "wo": "docs/NEXT-SESSION.md, „Morgen zuerst“ Punkt 3",
+      "seit": "22.08."
+    },
+    {
+      "id": "U8",
+      "dringlichkeit": "wissen",
+      "art": "Wissen vor dem Klick",
+      "titel": "Installation des neuen Plugin-Stands (0.3.0) — vertagt, dein Wort 21.08.",
+      "was": "Installiert ist noch das Bundle vom 16.08. Der neue Stand (Hostbrücke, State-Schema 2) ist gebaut, aber nicht installiert („Version 0.3.0 angleichen, noch nicht installieren“). Installation bleibt dein Admin-Klick.",
+      "warum": "Vorher wissen: ein FL-Projekt, das du mit dem neuen Stand speicherst, verliert im alten Bundle still seine Messpunkt-Identität (kein Absturz, aber ein Rückweg zum 16.08.-Stand mit so einem Projekt ist verlustig). Das ist kein Fehler, den Code beheben kann — nur Wissen vor dem Klick.",
+      "wo": "docs/offene-punkte.md, NAK-41 und NAK-32",
+      "seit": "22.08."
+    },
+    {
+      "id": "U9",
+      "dringlichkeit": "später",
+      "art": "Entscheid (wenn das Ticket dran ist)",
+      "titel": "Fünf Stellen, an denen Figma und technischer Entwurf verschieden sprechen",
+      "was": "Rollen: 5 (Design) gegen 7 (Entwurf) · Suna-Kachel: Name/Rolle bedienbar (Design) gegen „null Parameter, Bedienung über Gen“ (Entwurf) · Messzustände 5 gegen 2 · Arbeitsschritte 3 gegen 5 · Gen-Übersicht: Quellen×Band-Gitter (Figma) gegen Overview+Detail ohne Heatmap (Abnahme 20.08.). Je Punkt ein Wort von dir — dein Figma-Stand zählt als neues User-Wort.",
+      "warum": "Fällig vor dem Gate der passiven Landkarte (P3, nach S18/19) — nicht heute. Steht hier, damit es nicht überrascht.",
+      "wo": "docs/offene-punkte.md, NAK-38",
+      "seit": "21.08.",
+      "bilder": [
+        {
+          "datei": "u9-gen-gitter.png",
+          "text": "Das Quellen×Band-Gitter aus deinem Gen-Stand (21.08.). Die Abnahme vom 20.08. sagte „Overview + Detail ohne Heatmap“ — ob dieses Gitter die Heatmap ist oder etwas anderes, ist einer der fünf Punkte."
+        },
+        {
+          "datei": "u6-suna-kachel.png",
+          "text": "Suna-Kachel: das Design zeigt Bus, Rolle und Position bedienbar — der technische Entwurf sagt „keine Parameter, Bedienung über Gen“. Zweiter der fünf Punkte."
+        }
+      ],
+      "punkte": [
+        {
+          "id": "U9.1",
+          "titel": "Rollen: 5 oder 7",
+          "gewicht": "Stelle 1",
+          "entwurf": "Figma (Design): fünf Rollen — LEADS · CARRIES · SUPPORTS · PROTECTED · MERGED.",
+          "alternative": "Technischer Entwurf (§9): sieben Rollen.",
+          "wahlen": [
+            "Figma gilt",
+            "Entwurf gilt",
+            "Anders (siehe Text)",
+            "Später"
+          ]
+        },
+        {
+          "id": "U9.2",
+          "titel": "Suna-Kachel: bedienbar oder nicht",
+          "gewicht": "Stelle 2",
+          "entwurf": "Figma: Bus, Rolle und Position stehen in der Kachel und sind dort bedienbar.",
+          "alternative": "Technischer Entwurf (§0.4): Suna hat keine Parameter; bedient wird über Gen.",
+          "wahlen": [
+            "Figma gilt",
+            "Entwurf gilt",
+            "Anders (siehe Text)",
+            "Später"
+          ]
+        },
+        {
+          "id": "U9.3",
+          "titel": "Messzustände: 5 oder 2",
+          "gewicht": "Stelle 3",
+          "entwurf": "Figma: fünf Messzustände.",
+          "alternative": "Technischer Entwurf: zwei.",
+          "wahlen": [
+            "Figma gilt",
+            "Entwurf gilt",
+            "Anders (siehe Text)",
+            "Später"
+          ]
+        },
+        {
+          "id": "U9.4",
+          "titel": "Arbeitsschritte: 3 oder 5",
+          "gewicht": "Stelle 4",
+          "entwurf": "Figma: drei Arbeitsschritte (Mix lesen · Urteilen · …).",
+          "alternative": "Technischer Entwurf: fünf.",
+          "wahlen": [
+            "Figma gilt",
+            "Entwurf gilt",
+            "Anders (siehe Text)",
+            "Später"
+          ]
+        },
+        {
+          "id": "U9.5",
+          "titel": "Gen-Übersicht: Gitter oder Overview+Detail",
+          "gewicht": "Stelle 5",
+          "entwurf": "Figma (21.08.): Quellen×Band-Gitter als Übersicht.",
+          "alternative": "Abnahme 20.08.: Overview + Detail ohne Heatmap — ist das Gitter die Heatmap oder etwas anderes?",
+          "wahlen": [
+            "Figma gilt",
+            "Entwurf gilt",
+            "Anders (siehe Text)",
+            "Später"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "U10",
+      "dringlichkeit": "später",
+      "art": "Entscheid (wenn das Ticket dran ist)",
+      "titel": "Hör-Markierung ohne Transport-Information: erlaubt lassen?",
+      "was": "Heute erlaubt der Code die Hör-Markierung auch, wenn FL keine Transport-Information liefert („fail-open“). Der Entwurf verlangt für die Zielfassung ein gültiges „spielt“. Entscheid zusammen mit einem Hörtest in FL, sobald Gen seine neue Oberfläche hat.",
+      "warum": "Gehört zu den Tickets S10–S13 (Messkern). Nicht vorher nötig.",
+      "wo": "docs/offene-punkte.md, NAK-35 und NAK-24",
+      "seit": "21.08."
+    },
+    {
+      "id": "U11",
+      "dringlichkeit": "wenn du dazu kommst",
+      "art": "Handgriff in FL (5–10 min)",
+      "titel": "Termin A2: Nebenwege einmal MIT Verzögerung messen",
+      "was": "Dasselbe wie Termin A (drei Spuren mit Impuls, Messgerät EqCop-Aux-Spike auf Spur 1, Spuren 2 und 3 als „Sidechain to this track“) — nur mit einem Plugin, das Verzögerung meldet, auf Spur 2 (z. B. Fruity Limiter mit Lookahead oder ein Linear-Phase-EQ), dazu je Spur ein anderer Impulszeitpunkt und einmal nur links/nur rechts. Danach „Bericht sichern“. Dazu optional: das alte Projekt mit dem installierten EQ-Copilot einmal als nakama-altprojekt.flp speichern.",
+      "warum": "Termin A hat gezeigt, dass zwei Nebenwege sauber und samplegenau ankommen — aber in deinem Testprojekt hatte kein Plugin Verzögerung, FLs Latenzausgleich hatte nichts zu tun. Deshalb stehen beide Nebenweg-Fähigkeiten und die Latenzangabe vorerst auf „nicht bestätigt“. Mit A2 werden sie bewiesen — und damit das Entmaskieren (Kernfunktion 17) und der hörbare Vorher/Nachher-Vergleich freigegeben. Eilt nicht: erst ab Phase P6/P8 nötig.",
+      "wo": "docs/offene-punkte.md NAK-44 (und NAK-43); Schritt steht oben in eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md",
+      "seit": "22.08."
+    },
+    {
+      "id": "U12",
+      "dringlichkeit": "wenn du dazu kommst",
+      "art": "Handgriff (2 min)",
+      "titel": "Design-Repo zusammengeführt — alter Ordner und altes GitHub-Repo können weg",
+      "was": "Alles aus Projekte/Nakama-Design liegt jetzt im Nakama-Repo unter design/ (mit der ganzen Commit-Historie, 87 Commits). Der alte Ordner C:/Users/phili/Projekte/Nakama-Design und das GitHub-Repo evenacadia-tech/Nakama-Design sind damit überholt; die Stub-CLAUDE.md dort sagt das jedem Claude, der sie noch öffnet. Löschen (Ordner) bzw. Archivieren/Löschen (GitHub) ist dein Klick — Claude löscht nichts ungefragt. Auf dem Laptop: einmal git pull im Nakama-Repo, der alte Ordner dort kann ebenfalls weg.",
+      "warum": "Dein Wort 22.08.: „ich habe am anfang versucht das zu trennen aber es funktioniert nicht … im anschluss wird dann nurnoch im nakama repo gearbeitet“. Solange der alte Ordner existiert, könnte eine Session versehentlich dort arbeiten — der Stub fängt das ab, Löschen macht es endgültig.",
+      "wo": "design/LIES-MICH.md (Einstieg) · CLAUDE.md, Register 22.08.",
+      "seit": "22.08."
+    }
+  ],
+  "plan": [
+    {
+      "phase": "Vorlauf",
+      "titel": "Beweisen statt behaupten",
+      "ziel": "Ein Befehl fährt alle Prüfungen und schreibt die rohe Ausgabe in ein Manifest — das ersetzt eine CI.",
+      "zeilen": [
+        {
+          "id": "S0",
+          "ticket": "",
+          "status": "erledigt",
+          "datum": "20.08.",
+          "text": "Beweis-Runner, Manifest-Vorlage, Basislinie. Heute 18 Prüfbeine.",
+          "beleg": "docs/beweise/S0-basislinie.md"
+        }
+      ]
+    },
+    {
+      "phase": "P0",
+      "titel": "Bestand einfrieren, Hostgrenzen beweisen",
+      "ziel": "Nichts bauen, was FL Studio am Ende nicht hergibt: erst messen, was der Host kann, und die Plugin-Kennungen festschreiben, damit alte Projekte immer laden.",
+      "zeilen": [
+        {
+          "id": "S1",
+          "ticket": "SONDE-004a",
+          "status": "erledigt",
+          "datum": "20.08.",
+          "text": "Wegwerf-Messgerät für Termin A: zwei Nebenwege (Aux) und Latenzausgleich messbar machen.",
+          "beleg": "docs/beweise/SONDE-004a.md"
+        },
+        {
+          "id": "Termin A",
+          "ticket": "FL, du",
+          "status": "erledigt",
+          "datum": "22.08.",
+          "text": "Nebenwege und Latenzausgleich in FL gemessen: geht, samplegenau, überlebt Speichern/Laden.",
+          "beleg": "docs/beweise/termin-a/"
+        },
+        {
+          "id": "S2",
+          "ticket": "SONDE-001/002",
+          "status": "erledigt",
+          "datum": "20.08.",
+          "text": "Identität eingefroren: Kennungen aller drei Plugins festgeschrieben und mit 63 Prüfungen bewacht, damit FL alte Projekte weiter erkennt.",
+          "beleg": "docs/beweise/SONDE-001-002.md"
+        },
+        {
+          "id": "S3",
+          "ticket": "SONDE-003",
+          "status": "erledigt",
+          "datum": "21.08.",
+          "text": "Hostbrücke: ein Patch am Plugin-Rahmenwerk macht sichtbar, was FL liefert (Transport, Latenz, Automationspunkte). 91 Prüfungen.",
+          "beleg": "docs/beweise/SONDE-003.md"
+        },
+        {
+          "id": "S3b",
+          "ticket": "Nachtrag",
+          "status": "erledigt",
+          "datum": "21.08.",
+          "text": "Messgerät für Termin B (Host-Probe): zeichnet Zeitsprünge, Render, Automation als JSON auf. 85 Prüfungen.",
+          "beleg": "docs/beweise/SONDE-003b.md"
+        },
+        {
+          "id": "Termin B",
+          "ticket": "FL, du + Claude",
+          "status": "erledigt",
+          "datum": "22.08.",
+          "text": "Hostzeit und Automation in FL gemessen (12:45–13:27): Kontext in allen 259 298 Blöcken, Sprünge/Schleifen/Render/Automation sauber getrennt gemeldet; FL liefert nur float. Du hast aufgebaut, Claude ist über den FL-MCP gefahren.",
+          "beleg": "docs/beweise/termin-b/"
+        },
+        {
+          "id": "S4",
+          "ticket": "",
+          "status": "erledigt",
+          "datum": "22.08.",
+          "text": "Capabilityreport: die zehn Fähigkeitsbits für FL an die Rohdaten aus Termin A und B gebunden — zwei bestätigt (Hostkontext, Projektzeit), acht nicht: zwei gemessen „kann FL nicht“ (feine Automation, double), drei „noch nicht bewiesen“ (Latenzangabe, beide Nebenwege — Termin A2), eines ungemessen, zwei warten auf ihre Tickets. Prüfbein A13 (61 Prüfungen) misst den Report selbst gegen die Rohdaten; Kanon 18/18 grün. Frischer Prüfer: Runde 1 NEEDS_WORK (zwei Bits zu optimistisch), nachgearbeitet, Runde 2 PASS.",
+          "beleg": "docs/beweise/SONDE-004.md"
+        },
+        {
+          "id": "G0",
+          "ticket": "Gate",
+          "status": "naechster",
+          "datum": "",
+          "text": "Erste adversariale Prüfrunde (C++-Review + Codex) über P0 — eigene Session. Alles, was sie braucht, liegt vor.",
+          "beleg": ""
+        }
+      ]
+    },
+    {
+      "phase": "P1",
+      "titel": "Verträge, gespeicherter Zustand, neutrale Hüllen",
+      "ziel": "Alles, was zwischen den drei Apps und dem Broker hin- und hergeht, ist als Vertrag festgeschrieben und in drei Sprachen gleich geprüft — bevor der Messkern darauf baut.",
+      "zeilen": [
+        {
+          "id": "S5",
+          "ticket": "SONDE-005a",
+          "status": "gebaut",
+          "datum": "21.08.",
+          "text": "Nachrichtenverträge (JSON) mit Bandgitter und 153 Prüffällen; in Python, C++ und Rust gleich gelesen. Gebaut und nachgearbeitet — das abschließende Prüfurteil eines frischen Prüfers steht noch aus.",
+          "beleg": "docs/beweise/SONDE-005a.md"
+        },
+        {
+          "id": "S6",
+          "ticket": "SONDE-005b",
+          "status": "gebaut",
+          "datum": "21.08.",
+          "text": "Binärformat für Messdaten (FlatBuffers) mit festen Feldnummern und zwei handgeschriebenen Lesern; 6215 Byte-Mutanten bestanden. Prüfurteil wie S5 noch offen.",
+          "beleg": "docs/beweise/SONDE-005b.md"
+        },
+        {
+          "id": "S7",
+          "ticket": "SONDE-006",
+          "status": "erledigt",
+          "datum": "22.08.",
+          "text": "Gespeicherter Zustand Schema 2: alte Projekte wandern verlustfrei, fremde Versionen werden nur-lesend geöffnet, FL sieht jede Änderung als „ungespeichert“. 109 Parameter-Kennungen festgeschrieben.",
+          "beleg": "docs/beweise/SONDE-006.md"
+        },
+        {
+          "id": "S8",
+          "ticket": "SONDE-007a",
+          "status": "offen",
+          "datum": "",
+          "text": "Gemeinsamer Kern für alle drei Plugins, der keine Bundle-Konstanten sieht — sonst bekämen zwei Plugins die Identität des dritten.",
+          "beleg": ""
+        },
+        {
+          "id": "S9",
+          "ticket": "SONDE-007b",
+          "status": "offen",
+          "datum": "",
+          "text": "Drei eigene Plugin-Ziele (Gen, Probeeq, Suna), Rollen-Erkennung, Installer-Manifest.",
+          "beleg": ""
+        },
+        {
+          "id": "G1",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "Prüfrunde über P1 (C++- und Rust-Review + Codex).",
+          "beleg": ""
+        }
+      ]
+    },
+    {
+      "phase": "P2",
+      "titel": "Messkern, Nachrichtenweg, Speicher",
+      "ziel": "Die größte Phase: Audio wird zeitgestempelt gemessen, über den Broker verteilt und gespeichert — ohne je den Audiothread zu blockieren. Danach: Release R0 (Vertrag steht, intern).",
+      "zeilen": [
+        {
+          "id": "S10–11",
+          "ticket": "SONDE-008",
+          "status": "offen",
+          "datum": "",
+          "text": "Zeitgestempelte Audio-Warteschlange, Quarantäne für kaputte Blöcke, Lautheitsmessung mit festem Speicher. Gefährlichster Eingriff der Phase (Audiothread).",
+          "beleg": ""
+        },
+        {
+          "id": "S12–13",
+          "ticket": "SONDE-009",
+          "status": "offen",
+          "datum": "",
+          "text": "Messkern v2: Zeit-, Gültigkeits-, Ereignis- und Bandverträge.",
+          "beleg": ""
+        },
+        {
+          "id": "S14–15",
+          "ticket": "SONDE-010",
+          "status": "offen",
+          "datum": "",
+          "text": "Nachrichten-Clients in den Plugins und der Parser im Broker.",
+          "beleg": ""
+        },
+        {
+          "id": "S16–17",
+          "ticket": "SONDE-011",
+          "status": "offen",
+          "datum": "",
+          "text": "Koordinator im Broker, Datenbank-Migration, Ausgangspuffer.",
+          "beleg": ""
+        },
+        {
+          "id": "G2",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "Volles Programm: C++-, Rust- und Sicherheits-Review + Codex.",
+          "beleg": ""
+        }
+      ]
+    },
+    {
+      "phase": "P3",
+      "titel": "Passive Landkarte",
+      "ziel": "Gen zeigt alle Quellen mit Frische und Messpunkt — ehrlich, auch wenn etwas fehlt. Danach: Release R1.",
+      "zeilen": [
+        {
+          "id": "S18–19",
+          "ticket": "SONDE-012",
+          "status": "offen",
+          "datum": "",
+          "text": "Quellen verbinden und führen, Frische anzeigen, Messpunkt-Wahrheit, Fehlerzustände.",
+          "beleg": ""
+        },
+        {
+          "id": "G3",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "Rust-Review + Codex + 60-Minuten-Dauerlauf. Vorher fällig: deine fünf Entscheide aus U9.",
+          "beleg": ""
+        }
+      ]
+    },
+    {
+      "phase": "P4–P5",
+      "titel": "Vergleichsevidenz und Ursachen",
+      "ziel": "Der Advisor: aus Messungen werden belegte Befunde, mögliche Ursachen und der kleinste Test — regelbasiert, ohne KI-Schicht. Danach: Release R2, die erste Fassung, die wirklich nützt (passiv, 9 von 12 Kernfunktionen).",
+      "zeilen": [
+        {
+          "id": "S20–22",
+          "ticket": "SONDE-013",
+          "status": "offen",
+          "datum": "",
+          "text": "Dynamik, Stereo, vor/nach der Kette, Passagen — und der manuelle Experimentkern.",
+          "beleg": ""
+        },
+        {
+          "id": "G4",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "C++-Review (DSP) + Codex.",
+          "beleg": ""
+        },
+        {
+          "id": "S23–25",
+          "ticket": "SONDE-014",
+          "status": "offen",
+          "datum": "",
+          "text": "Absicht, Ursachenhypothese, Vorschlag, Assistentenschritt — mit Prüfkorpus.",
+          "beleg": ""
+        },
+        {
+          "id": "G5",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "Codex + Gegenbeispiele: der Prüfer soll eine falsche starke Ursachenbehauptung provozieren.",
+          "beleg": ""
+        }
+      ]
+    },
+    {
+      "phase": "P6–P7",
+      "titel": "Aktiver Kern: Probeeq",
+      "ziel": "Probeeq wird der vollwertige EQ, der Anweisungen von Gen umsetzt und manuell bedienbar ist — mit Kopplung, Sicherheit und Rückweg. Danach: Release R3.",
+      "zeilen": [
+        {
+          "id": "S26–28",
+          "ticket": "SONDE-015",
+          "status": "offen",
+          "datum": "",
+          "text": "Lokaler EQ-Kern, vier vorbereitete Bänke, Zustand und Automation, A/B.",
+          "beleg": ""
+        },
+        {
+          "id": "G6",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "Härtestes Gate des Plans: C++-Review auf höchster Stufe, Nebenläufigkeits-Prüfung, Worst-Case-CPU.",
+          "beleg": ""
+        },
+        {
+          "id": "S29–31",
+          "ticket": "SONDE-016/017",
+          "status": "offen",
+          "datum": "",
+          "text": "Kopplung Gen↔Probeeq mit Sicherheit, Lease, Anwenden/Zurücknehmen, aktiver Vergleich.",
+          "beleg": ""
+        },
+        {
+          "id": "G7",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "Sicherheits- und Rust-Review + Codex + 10 000 Befehle Stress.",
+          "beleg": ""
+        }
+      ]
+    },
+    {
+      "phase": "P8–P9",
+      "titel": "Entmaskierung und Härtung",
+      "ziel": "Sidechain-Entmaskierung (nur wenn Termin A und Gate G0 grün sind — Termin A ist grün, G0 steht aus) und alles für die Auslieferung: Verteilung, Migration, Dauerlauf, Privatsphäre, Rollback. Danach: Release R4, der volle Sondenkern.",
+      "zeilen": [
+        {
+          "id": "S32–33",
+          "ticket": "SONDE-018",
+          "status": "offen",
+          "datum": "",
+          "text": "Sidechain-Entmaskierung.",
+          "beleg": ""
+        },
+        {
+          "id": "G8",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "C++-Review + Codex + Hör-/Stem-Korpus.",
+          "beleg": ""
+        },
+        {
+          "id": "S34–35",
+          "ticket": "SONDE-019",
+          "status": "offen",
+          "datum": "",
+          "text": "Verteilung, Migration, Dauerlauf, Privatsphäre, Rollback.",
+          "beleg": ""
+        },
+        {
+          "id": "G9",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "Alle acht harten Gates + pluginval Stufe 8 + 30 Minuten mit 32 Sonden.",
+          "beleg": ""
+        }
+      ]
+    }
+  ],
+  "design": {
+    "massstab": "Dein Wort vom 22.08.: „Hauptsache die Apps selbst in FL Studio sehen dann exakt aus wie in Figma.“ Darum: Statisches wird aus Figma gebacken, nur Dynamisches (Texte, Zellen, Kurven, Zustände) wird gezeichnet. Seit dem 22.08. ist die Figma-Datei „Nakama-Design“ die einzige verbindliche Quelle — je App ist eine helle und eine dunkle Fassung geplant, verbindlich ist heute die dunkle. Die Stände unten holt Claude als 4×-Export aus dem Depot in die Truhe.",
+    "phase": "Phase 1b — Figma-Stände übersetzen, Reihenfolge Gen → Probeeq → Suna. Gen kann beginnen (Stand vom 22.08.); die 18 Lesarten beantwortest du parallel in Karte U2.",
+    "apps": [
+      {
+        "key": "gen",
+        "name": "Nakama Gen",
+        "rolle": "Main-App: Quellen-Übersicht, Befunde, Advisor. Berät nur.",
+        "groesse": "760 × 430",
+        "stand_text": "Stand vom 22.08. aus dem Depot (Rahmen 6:13, Studie 04): Nakama Gen in der Probeeq-Sprache — Graphit-Schale, Glas, Kinn mit Wortmarke; Ebenenzeile, Karte mit Rollenwörtern und Wein-Zellen, Advisor mit „OTHER CAUSE“ und „CERTAINTY HIGH“. Dunkel. Der cyanfarbene Stand vom 21.08. ist Verlauf.",
+        "status": "Vorgabe steht",
+        "offen": "18 Lesarten (U2) · helle Fassung geplant",
+        "wo": "design/assets/figma/LIES-MICH.md · design/abnahmen/2026-08-22-figma-depot.md"
+      },
+      {
+        "key": "probeeq",
+        "name": "Nakama Probeeq",
+        "rolle": "Aktive Sonde: vollwertiger EQ, setzt Anweisungen von Gen um und ist manuell bedienbar.",
+        "groesse": "700 × 420",
+        "stand_text": "Stand vom 22.08. aus dem Depot (Rahmen 6:1906, Studie 01) — gleiche Anordnung wie dein Export vom 21.08.: acht Bandgriffe auf der Kurve, eine Parameterzeile mit zwölf Werten, Draft-Kasten, Schutzbereich. Dunkel; im Depot liegen schon zwei Probeeq-Rahmen mit heller Schale bzw. hellem Host (in Arbeit, keine Vorgabe).",
+        "status": "Vorgabe steht",
+        "offen": "Sidechain-Quelle sichtbar, Untermenü oder unsichtbar (U5) · helle Fassung geplant",
+        "wo": "design/assets/figma/LIES-MICH.md"
+      },
+      {
+        "key": "suna",
+        "name": "Nakama Suna",
+        "rolle": "Passive Sonde: kleine Status- und Identitätskachel. Berät nur, keine Parameter.",
+        "groesse": "260 × 84",
+        "stand_text": "Stand vom 22.08. aus dem Depot (Rahmen 6:2629): die Kachel in der Probeeq-Sprache — Bus · Rolle · Position im Glas, Verbindungspunkt, Wortmarke und Messstatus im Kinn. Dunkel; ein heller Suna-Rahmen liegt im Depot in Arbeit.",
+        "status": "Vorgabe steht",
+        "offen": "10 Lesarten zu bestätigen (U6) · helle Fassung geplant",
+        "wo": "design/abnahmen/2026-08-21-suna-auftrag-figma.md"
+      }
+    ],
+    "quelle": {
+      "titel": "Figma-Depot „Nakama-Design“",
+      "url": "https://www.figma.com/design/NPCQYSkoZEd4Av0NlKxBOd/Nakama-Design?node-id=0-1",
+      "wort": "„das ist das neue verbindliche und einzige Depot indem sich die aktuellsten Designs befinden. ich habe für jedes design vor eine helle und dunke variante zu erstellen. stand jetzt aber erstmal nur dunkel“",
+      "datum": "22.08."
+    }
+  },
+  "reviews": [
+    {
+      "datum": "2026-08-21",
+      "quelle": "Codex",
+      "ziel": "Design-Messbank (damals Repo Nakama-Design, Stand 86f04c1; heute design/werkzeug/)",
+      "status": "eingearbeitet",
+      "kurz": "10 Befunde (4 P1, 5 P2, 1 P3), alle gegen die Quelldatei geprüft: 10 bestätigt, 0 widerlegt, alle gefixt; dazu 5 eigene Funde.",
+      "datei": "design/abnahmen/2026-08-21-codex-review-abgearbeitet.md"
+    }
+  ],
+  "uploads": [],
+  "antworten": {},
+  "eingang": []
+}

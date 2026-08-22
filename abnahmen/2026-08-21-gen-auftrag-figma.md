@@ -239,6 +239,19 @@ der User sieht die Studie 04 in Figma (bei x 6000, rechts von Studie 01),
 überarbeitet oder exportiert; dann Phase 1b, Schritt Gen, Punkt 1 („Lesen,
 nicht raten") gegen den exportierten Stand.
 
+**Nachtrag 2026-08-22, Schluss der Session („Closen wir hier"):** Der User hat
+die Bilder gesehen (Galerie, neun 1:1-Renderings) und die flache Wortmarke
+bemängelt; gemessen ist der Shader auf allen Gen-Wortmarken identisch mit dem
+Probeeq-Knoten — nur die erreichbaren Renderer führen ihn nicht aus. Sein
+eigener Export (`Wordmarkgen.png`, 22.08. 01:48, 190×68 = 4× der Tinte) zeigt
+das echte Rendering und liegt im Sessionordner, **nicht** in der Truhe (Regel
+1). Daraus kam das Erfolgskriterium in Worten:
+`2026-08-22-erfolgskriterium-exakt-wie-figma.md` („Statisches wird gebacken,
+Dynamisches gezeichnet"). **Offen blieb:** das Urteil über Studie 04 und die 17
+Punkte oben; der Gen-Export in die Truhe; die Skalierungsstufen; der
+Schalen-Shader. **Nächster Schritt unverändert:** Export des Users →
+`assets/figma/JJJJ-MM-TT-gen.png` → Phase 1b, Schritt Gen, Punkt 1.
+
 ## Bezug
 
 - `abnahmen/2026-08-21-suna-auftrag-figma.md` — das Vorgehen, das hier

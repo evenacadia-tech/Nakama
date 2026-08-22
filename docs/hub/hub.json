@@ -1,29 +1,13 @@
 {
   "stand": "2026-08-22",
-  "stand_notiz": "nach S7 (State-Schema 2) und FL-Termin A; Technik steht vor S8",
+  "stand_notiz": "nach S7 (State-Schema 2), FL-Termin A und B und S4 (Capabilityreport, 22.08.); P0 fehlt nur noch das Gate G0",
   "artefakt_url": "https://claude.ai/code/artifact/81bdcb02-796e-4dc0-a6df-347d2d7225fe",
   "naechster_schritt": {
-    "technik": "S8 — gemeinsamer Plugin-Kern, der keine Bundle-Konstanten sieht (SONDE-007a). Vorarbeit liegt: der State-Code ist schon bundle-neutral gebaut.",
+    "technik": "Gate G0 — erste adversariale Prüfrunde über P0 (C++-Review + Codex, eigene Session). Danach S8: gemeinsamer Plugin-Kern ohne Bundle-Konstanten (SONDE-007a).",
     "design": "Phase 1b, Schritt Gen — beginnt, sobald du den Gen-Entwurf (Studie 04) aus Figma exportierst. Bis dahin ruht die Übersetzung.",
-    "dich": "FL-Termin B (siehe „Bei dir“). Er hält S4 und das erste Gate G0 auf."
+    "dich": "Gen-Entwurf ansehen und exportieren (U2) und das Wort zur Wortmarke (U3) — beide FL-Termine sind gemessen."
   },
   "bei_dir": [
-    {
-      "id": "U1",
-      "dringlichkeit": "jetzt",
-      "art": "Tätigkeit",
-      "titel": "FL-Termin B: Hostzeit und Automation messen",
-      "was": "In FL Studio das Messgerät „EqCop-Host-Probe“ auf einen freien Insert legen (Signal drauf, Fenster offen — oben muss „Hostbrücke liefert: JA“ stehen) und einen Automationsclip auf einen Parameter aufnehmen. Alles Weitere (Abspielen, Springen, Schleife, Smart-Disable-Pause, Speichern) fährt Claude über den FL-MCP; nur der Render bleibt dein Klick.",
-      "warum": "Termin A ist gemessen (22.08., geht, recall-stabil). Termin B fehlt — ohne ihn kein Capabilityreport (S4) und kein erstes Gate (G0). Beide Messgeräte sind bereits installiert.",
-      "wo": "Klickliste: eq-copilot/docs/FL-TERMIN-B-HOSTZEIT.md",
-      "seit": "21.08.",
-      "bilder": [
-        {
-          "datei": "u1-hostprobe-messzustand.png",
-          "text": "So sieht das Messgerät „EqCop-Host-Probe“ in FL aus, wenn es misst — oben die Zeile „Hostbrücke liefert: JA“. Du legst es auf einen Insert; den Rest fährt Claude."
-        }
-      ]
-    },
     {
       "id": "U2",
       "dringlichkeit": "jetzt",
@@ -164,7 +148,7 @@
           "ticket": "",
           "status": "erledigt",
           "datum": "20.08.",
-          "text": "Beweis-Runner, Manifest-Vorlage, Basislinie. Heute 17 Prüfbeine.",
+          "text": "Beweis-Runner, Manifest-Vorlage, Basislinie. Heute 18 Prüfbeine.",
           "beleg": "docs/beweise/S0-basislinie.md"
         }
       ]
@@ -217,25 +201,25 @@
         {
           "id": "Termin B",
           "ticket": "FL, du + Claude",
-          "status": "bei dir",
-          "datum": "",
-          "text": "Hostzeit und Automation in FL messen — siehe „Bei dir“, U1.",
-          "beleg": "eq-copilot/docs/FL-TERMIN-B-HOSTZEIT.md"
+          "status": "erledigt",
+          "datum": "22.08.",
+          "text": "Hostzeit und Automation in FL gemessen (12:45–13:27): Kontext in allen 259 298 Blöcken, Sprünge/Schleifen/Render/Automation sauber getrennt gemeldet; FL liefert nur float. Du hast aufgebaut, Claude ist über den FL-MCP gefahren.",
+          "beleg": "docs/beweise/termin-b/"
         },
         {
           "id": "S4",
           "ticket": "",
-          "status": "wartet",
-          "datum": "",
-          "text": "Capabilityreport: aus Termin A und B wird festgeschrieben, was FL kann und was nicht. Wartet auf Termin B.",
-          "beleg": ""
+          "status": "gebaut",
+          "datum": "22.08.",
+          "text": "Capabilityreport: zehn Fähigkeitsbits für FL an Rohdaten aus Termin A und B gebunden (fünf unterstützt, fünf nicht — mit festem Ersatzweg). Neues Prüfbein A13 (36 Prüfungen); Kanon 18/18 grün. Gebaut — der frische Prüfer (T2) steht noch aus.",
+          "beleg": "docs/beweise/SONDE-004.md"
         },
         {
           "id": "G0",
           "ticket": "Gate",
-          "status": "wartet",
+          "status": "naechster",
           "datum": "",
-          "text": "Erste adversariale Prüfrunde (C++-Review + Codex) über P0. Wartet auf S4.",
+          "text": "Erste adversariale Prüfrunde (C++-Review + Codex) über P0 — eigene Session. Alles, was sie braucht, liegt vor.",
           "beleg": ""
         }
       ]
@@ -272,7 +256,7 @@
         {
           "id": "S8",
           "ticket": "SONDE-007a",
-          "status": "naechster",
+          "status": "offen",
           "datum": "",
           "text": "Gemeinsamer Kern für alle drei Plugins, der keine Bundle-Konstanten sieht — sonst bekämen zwei Plugins die Identität des dritten.",
           "beleg": ""

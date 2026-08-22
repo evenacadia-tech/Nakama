@@ -10,11 +10,23 @@
 >
 > **Aber vorher zwei Dinge, die Vorrang haben:**
 >
-> 1. **35 unbearbeitete Antworten des Users liegen auf der Briefing-Seite.**
->    `hub_sync.py senden` meldet „Antworten: 35 (35 neu)". Jede Antwort ist
->    User-Wort und gehoert mit Datum + Wortlaut ins Register (CLAUDE.md) bzw.
->    in `design/abnahmen/`, danach Status `eingearbeitet` + `ergebnis`. Das ist
->    die tragende Funktion des Hubs und sie laeuft gerade voll.
+> 1. ~~35 unbearbeitete Antworten~~ — **eingearbeitet am 22.08. spaet**
+>    (`hub_sync.py` meldet jetzt „Antworten: 35 (0 neu)"). Jede traegt Wortlaut
+>    und Ergebnis in `design/abnahmen/2026-08-22-hub-antworten-35.md`; fuenf
+>    Entscheide stehen im Register in `CLAUDE.md` (Rangfolge Implementplan vor
+>    Figma · Wortmarken aus dem Figma-Export · Hoer-Markierung nur mit Signal ·
+>    Quellen×Band-Gitter als Gen-Uebersicht · Entscheidungstor Gen offen).
+>    **Was daraus offen ist: zwoelf Folgefragen** (Abnahme, Abschnitt 6) —
+>    ueberall dort, wo der User den Entwurf verworfen hat, der Alternativtext
+>    aber zwei Formen anbot, und dort, wo eine Frage schlecht gestellt war
+>    (`U6.8`, `U9.3`, `U9.4`: „macht kein sinn die frage", „verstehe frage
+>    nicht"). **Nichts davon wurde geraten.**
+>    ⚠️ Sie sind **nicht auf der Seite**: `briefing-app.tsx` zieht die
+>    Kartentexte aus `briefing-hub/data/friendly-copy.ts` und filtert mit
+>    `.filter((item) => item.title)` jede Karte still weg, die dort fehlt —
+>    `hub.json` allein reicht nicht, es braucht Katalog-Eintrag **und** Deploy.
+>    Vorher aber Punkt 2 klaeren: wandert der Hub ins Nimbalyst-GUI, waere die
+>    Arbeit an `friendly-copy.ts` umsonst.
 > 2. **NAK-50: Der User will den Hub im Nimbalyst-GUI statt auf der Seite**
 >    („EIGENTLICH ist die seite unnötig noise, es wäre mir lieber alles hier im
 >    nimbalyst GUI zu haben", 22.08. abends). Noch **kein** Register-Entscheid —

@@ -1,5 +1,41 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ⚠ Zuerst lesen — Stand 22.08.2026 abends
+>
+> **P0 ist geschlossen.** Gate G0 ist gefahren, Urteil **PASS**
+> (`docs/beweise/G0.md`): beide Bruchauftraege (Gate 1, Gate 5) gescheitert,
+> die P0-Kernflaeche traegt keinen Befund. Damit faellt der
+> Schliessungsvorbehalt §65 fuer `SONDE-005`. **Naechste Bau-Flaeche: S8
+> (`SONDE-007a`)** — gemeinsamer Kern ohne `JucePlugin_*`-Konstanten.
+>
+> **Aber vorher zwei Dinge, die Vorrang haben:**
+>
+> 1. **35 unbearbeitete Antworten des Users liegen auf der Briefing-Seite.**
+>    `hub_sync.py senden` meldet „Antworten: 35 (35 neu)". Jede Antwort ist
+>    User-Wort und gehoert mit Datum + Wortlaut ins Register (CLAUDE.md) bzw.
+>    in `design/abnahmen/`, danach Status `eingearbeitet` + `ergebnis`. Das ist
+>    die tragende Funktion des Hubs und sie laeuft gerade voll.
+> 2. **NAK-50: Der User will den Hub im Nimbalyst-GUI statt auf der Seite**
+>    („EIGENTLICH ist die seite unnötig noise, es wäre mir lieber alles hier im
+>    nimbalyst GUI zu haben", 22.08. abends). Noch **kein** Register-Entscheid —
+>    Wortlaut ist Praeferenz, nicht Abschaltbefehl, und beruehrt den Entscheid
+>    desselben Tages. Vor dem Umbau klaeren; die asynchrone Antwortfunktion
+>    (Punkt 1) darf dabei nicht verlorengehen. Details in
+>    `docs/offene-punkte.md`.
+>
+> **Neu seit 22.08.:** `docs/PLAN-STAND.md` zeigt den Planstand direkt in
+> Nimbalyst (erzeugt aus `hub.json` mit `tools/hub/plan_blatt.py`, Diagramm
+> rendert live). Stand jetzt: **12 von 34 Schritten**. Eine Nimbalyst-Automation
+> (`nimbalyst-local/automations/planstand-nakama.md`, taeglich 09:00) frischt es
+> auf — **noch nicht aktiviert**, der User schaltet sie selbst ein.
+>
+> **Unverbuchte Fremd-Aenderungen im Baum** (der User 22.08.: „alle anderen
+> sitzungen sind lange schon fertig und ruhen" — sie sind also verwaist, nicht
+> in Arbeit): vier Dateien unter `briefing-hub/` und zwei **Loeschungen** unter
+> `eq-copilot/design/` (`ASSET-KIT.md`, `eq-copilot-material-preview.png`).
+> Nicht blind committen — erst pruefen, ob die Loeschungen gewollt waren.
+
+
 > Stand: **22.08.2026, nach S7 (`SONDE-006`).** Davor: 21.08., Kontext-Inventur und Interview mit dem User.
 > Die Wahrheit steht in `CLAUDE.md` (Wahrheitskern + Register der User-Entscheide
 > mit Zitat). Dieses Blatt sagt nur, wo wir stehen und was als Nächstes kommt —

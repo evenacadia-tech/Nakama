@@ -26,7 +26,7 @@ ZIEL = WURZEL / "docs" / "PLAN-STAND.md"
 # offen — lieber zu wenig gruen melden als Fortschritt behaupten, den es
 # nicht gibt (Projektregel: Fortschritt nur mit Beleg).
 FERTIG = {"erledigt", "fertig", "gebaut", "abgeschlossen"}
-LAEUFT = {"laeuft", "läuft", "in arbeit", "begonnen", "offen_teilweise"}
+LAEUFT = {"laeuft", "läuft", "in arbeit", "begonnen", "offen_teilweise", "naechster", "nächster"}
 
 
 def klasse(status: str) -> str:

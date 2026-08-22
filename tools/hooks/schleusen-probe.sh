@@ -6,9 +6,12 @@
 #
 # Die Faelle unten sind keine Erfindung: jeder ist bei der Reparatur am
 # 2026-08-21 einmal falsch ausgegangen.
-#   Aufruf:  bash .claude/hooks/schleusen-probe.sh
+#   Aufruf (vom Repo-Root):  bash tools/hooks/schleusen-probe.sh
+# Seit 22.08.2026 im Nakama-Repo: Hook und Probe liegen in tools/hooks/, der
+# Vertrag in design/abnahmen/. Die Faelle nennen weiter "prototyp/" relativ —
+# das Muster der Schleuse (*/prototyp/*) greift fuer design/prototyp/ genauso.
 cd "$(dirname "$0")/../.." || exit 1
-HOOK=.claude/hooks/prototyp-schleuse.sh
+HOOK=tools/hooks/prototyp-schleuse.sh
 fehler=0 gesamt=0
 
 # Die "muss blocken"-Haelfte misst den GESCHLOSSENEN Zustand: sie zeigt der
@@ -49,7 +52,7 @@ probe block "Bash: mkdir in prototyp/"                "$(j Bash  command   'mkdi
 echo
 echo "--- muss durchlassen ---"
 probe durch "Write nach werkzeug/"                    "$(j Write file_path 'C:\\\\Users\\\\x\\\\werkzeug\\\\a.html')"
-probe durch "Schleuse gegen sich selbst"              "$(j Edit  file_path '.claude/hooks/prototyp-schleuse.sh')"
+probe durch "Schleuse gegen sich selbst"              "$(j Edit  file_path 'tools/hooks/prototyp-schleuse.sh')"
 probe durch "Bash: cat prototyp/ (lesen)"             "$(j Bash  command   'cat prototyp/LIES-MICH.md')"
 probe durch "Bash: ls prototyp/"                      "$(j Bash  command   'ls -la prototyp/')"
 probe durch "Bash: grep in prototyp/"                 "$(j Bash  command   'grep -rn foo prototyp/')"
@@ -58,7 +61,7 @@ probe durch "Bash: schreiben daneben"                 "$(j Bash  command   'cat 
 # Der Fall, an dem die erste Bash-Fassung gescheitert ist: geschrieben wird nach
 # .claude/, das Wort prototyp/ steht nur im Suchmuster.
 probe durch "Bash: sed -i an Datei DANEBEN, Muster nennt prototyp/" \
-      "$(j Bash  command   'sed -i s/prototyp-alt/prototyp-neu/ .claude/hooks/schleusen-probe.sh')"
+      "$(j Bash  command   'sed -i s/prototyp-alt/prototyp-neu/ tools/hooks/schleusen-probe.sh')"
 probe durch "Bash: cp WEG von prototyp/"              "$(j Bash  command   'cp prototyp/a.html sicherung/a.html')"
 # Beide Fehlblockaden dieser Sitzung waren Heredocs: Text, der einen
 # Schreibbefehl bloss ZITIERT. Text ist kein Befehl.
@@ -73,13 +76,13 @@ hallo
 EOF')"
 
 echo
-echo "--- mit Vertrag (echtes abnahmen/): muss durchlassen ---"
-ABN=abnahmen
-if ls abnahmen/*designvertrag*.md >/dev/null 2>&1; then
+echo "--- mit Vertrag (echtes design/abnahmen/): muss durchlassen ---"
+ABN=design/abnahmen
+if ls design/abnahmen/*designvertrag*.md >/dev/null 2>&1; then
   probe durch "Write nach prototyp/ MIT Vertrag"      "$(j Write file_path 'prototyp/gen.html')"
   probe durch "Bash: cat > prototyp/ MIT Vertrag"     "$(j Bash  command   'cat > prototyp/gen.html')"
 else
-  echo "(kein Designvertrag in abnahmen/ — Abschnitt uebersprungen)"
+  echo "(kein Designvertrag in design/abnahmen/ — Abschnitt uebersprungen)"
 fi
 
 echo

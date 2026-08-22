@@ -28,7 +28,9 @@
 #    Nachricht, die `cat > prototyp/main.html` bloss ZITIERTE. Text ist kein
 #    Befehl.
 #
-# Gegenprobe (beide Richtungen): .claude/hooks/schleusen-probe.sh
+# Seit 22.08.2026 im Nakama-Repo: der Ordner heisst design/prototyp/, die
+# Abnahmen liegen in design/abnahmen/ (Muster */prototyp/* greift weiter).
+# Gegenprobe (beide Richtungen): bash tools/hooks/schleusen-probe.sh
 input=$(cat)
 
 # --- betrifft der Aufruf den Ordner prototyp/ ueberhaupt? -------------------
@@ -78,18 +80,18 @@ esac
 # SCHLEUSE_ABNAHMEN: nur fuer die Gegenprobe (schleusen-probe.sh), die den
 # GESCHLOSSENEN Zustand gegen ein leeres Verzeichnis misst, ohne den echten
 # Vertrag anzufassen. Im Betrieb bleibt es abnahmen/.
-ABNAHMEN="${SCHLEUSE_ABNAHMEN:-abnahmen}"
+ABNAHMEN="${SCHLEUSE_ABNAHMEN:-${CLAUDE_PROJECT_DIR:-.}/design/abnahmen}"
 count=0
 for f in "$ABNAHMEN"/*designvertrag*.md; do
   [ -e "$f" ] || continue
   count=$((count + 1))
 done
 if [ "$count" -eq 0 ]; then
-  echo "PROTOTYP-SCHLEUSE: Es liegt keine Designvertrag-Abnahme in abnahmen/." >&2
+  echo "PROTOTYP-SCHLEUSE: Es liegt keine Designvertrag-Abnahme in design/abnahmen/." >&2
   echo "Der Designvertrag entsteht aus dem User-Wort (Interview/Figma-Stand) und wird als" >&2
-  echo "abnahmen/JJJJ-MM-TT-designvertrag.md festgehalten (docs/arbeitsplan.md," >&2
-  echo "Phase 0) — dann darf in prototyp/ gebaut werden." >&2
-  echo "Bis dahin gehoeren lebende Blaetter nach werkzeug/." >&2
+  echo "design/abnahmen/JJJJ-MM-TT-designvertrag.md festgehalten (design/docs/arbeitsplan.md," >&2
+  echo "Phase 0) — dann darf in design/prototyp/ gebaut werden." >&2
+  echo "Bis dahin gehoeren lebende Blaetter nach design/werkzeug/." >&2
   exit 2
 fi
 exit 0

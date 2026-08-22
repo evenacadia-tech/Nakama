@@ -67,6 +67,11 @@
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/hub-primer.sh\"",
             "statusMessage": "Nakama-Hub vorlesen (Plan, bei dir, Eingang)..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/design-primer.sh\"",
+            "statusMessage": "Design-Stand messen (Figma-Truhe, Schleuse)..."
           }
         ]
       }
@@ -82,6 +87,15 @@
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/kreativ-schleuse.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/prototyp-schleuse.sh\""
           }
         ]
       }

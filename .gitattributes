@@ -34,3 +34,10 @@ eq-copilot/fixtures/v3/** -text
 # contract_cross_language.rs). Dieselbe Regel wie fuer den v3-Baum.
 eq-copilot/schemas/state/**  -text
 eq-copilot/fixtures/state/** -text
+
+# Die Hooks (tools/hooks/*.sh, seit 22.08.2026 auch die aus dem frueheren
+# Design-Repo) sind Bash. Mit core.autocrlf=true bekaeme der Zweitrechner sie
+# beim Checkout mit CRLF - und Bash laese ein CR (0x0D) am Ende jeder Zeile:
+# eine Schleuse wuerde nicht blocken, sondern still scheitern. Deshalb LF
+# erzwungen (Regel uebernommen aus Nakama-Design/.gitattributes).
+*.sh text eol=lf

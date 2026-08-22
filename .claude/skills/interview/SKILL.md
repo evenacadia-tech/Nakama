@@ -1,6 +1,6 @@
 ---
 name: interview
-description: Strukturiertes User-Interview, um die Design-Vorstellung des Users zu erfassen, aufzufrischen oder abzusichern. Jederzeit einsetzbar; Pflicht zu Beginn jeder Arbeitsplan-Phase. Aufruf mit Phase (designvertrag | struktur | richtung | komponente | zustaende | abnahme) oder ohne — dann die Phase aus dem Arbeitsstand wählen. Antworten werden wörtlich in abnahmen/ protokolliert.
+description: Strukturiertes User-Interview, um die Design-Vorstellung des Users zu erfassen, aufzufrischen oder abzusichern. Jederzeit einsetzbar; Pflicht zu Beginn jeder Arbeitsplan-Phase. Aufruf mit Phase (designvertrag | struktur | richtung | komponente | zustaende | abnahme) oder ohne — dann die Phase aus dem Arbeitsstand wählen. Antworten werden wörtlich in design/abnahmen/ protokolliert.
 ---
 
 # /interview — die Vorstellung des Users erfassen
@@ -18,12 +18,12 @@ deine zu bestätigen. Sein Wort ist die Vision; du übersetzt.
 3. **„Weiß ich nicht" ist eine gültige Antwort.** Dann: die risikoärmste
    Annahme benennen, sichtbar festhalten, weitergehen — nicht bohren.
 4. **Wörtlich protokollieren:** Ergebnis als
-   `abnahmen/JJJJ-MM-TT-interview-<phase>.md` mit Zitaten, Festlegungen
+   `design/abnahmen/JJJJ-MM-TT-interview-<phase>.md` mit Zitaten, Festlegungen
    und offenen Punkten. Zitate nie glätten.
 5. **Widerspruchs-Check:** Vor jeder Runde die vorhandenen Abnahmen
    überfliegen. Widerspricht eine neue Antwort einer alten Festlegung:
    beide zeigen und fragen, welche gilt.
-6. **Truhen-Abgleich:** Wo passend, konkret auf Elemente aus `assets/`
+6. **Truhen-Abgleich:** Wo passend, konkret auf Elemente aus `design/assets/`
    zeigen („passt das hier zu dem, was du meinst?") statt abstrakt zu
    fragen.
 7. Antworten nicht bewerten, nicht verkaufen, nicht vorwegnehmen.

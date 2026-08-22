@@ -45,3 +45,11 @@ GATES.md
 docs/hub/hub.html
 docs/hub/hub-test.html
 docs/hub/hub-published.html
+
+# design/ (seit 22.08.2026 im Repo, vorher eigenes Repo Nakama-Design):
+# Playwright-Mitschriften des Werkzeugs und Belege der Blattpruefung sind
+# Beweis fuer den Moment, kein Projektwissen (regenerierbar per
+# design/werkzeug/pruefung/pruefen.mjs).
+.playwright-cli/
+design/werkzeug/pruefung/bilder/
+design/werkzeug/pruefung/.gegenprobe/

@@ -1,4 +1,0 @@
-# Die Hooks sind Bash. Mit core.autocrlf=true bekaeme der Zweitrechner sie beim
-# Checkout mit CRLF - und Bash liest dann ein CR (0x0D) am Ende jeder Zeile: die
-# Schleuse wuerde nicht blocken, sondern still scheitern. Deshalb LF erzwungen.
-*.sh text eol=lf

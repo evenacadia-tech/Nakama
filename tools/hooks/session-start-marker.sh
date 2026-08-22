@@ -1,6 +1,9 @@
 #!/bin/bash
-# SessionStart hook: Marker mit Zeitstempel + git-HEADs schreiben, damit
-# session-end-handoff.sh beim Beenden ein Delta-Handoff erzeugen kann.
+# SessionStart hook: Marker mit Zeitstempel + git-HEAD schreiben. Verbraucher
+# ist seit 22.08.2026 nur noch hub-stop.sh — er misst daran, ob diese Session
+# Commits erzeugt hat, ohne den Hub nachzuziehen. (Bis dahin las auch
+# session-end-handoff.sh den Marker; dieser Hook ist entfallen, weil sein
+# Erzeugnis niemand las — Commit ef1efee.)
 #
 # Liest session_id aus dem JSON-stdin. Marker ${session_id}.start unter
 # ~/.claude/sessions/ trägt vier Zeilen:

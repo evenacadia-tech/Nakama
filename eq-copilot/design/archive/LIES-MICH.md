@@ -16,7 +16,7 @@ Fonts, JSON), steht hier.
 |---|---|---|---|
 | `eq-copilot-spectral-field.html` + 2 PNG | HUD-Fassung des Spectral Field (hell, „ZIELKORRIDOR") | alt; der Zielkorridor widerspricht der Invariante „keine globale Zielkurve" | Claude 15.08. |
 | `nakama-spectral-field-claude.html` | Spectral Field / Tiefenfeld-Musterblatt (Relief, Licht, Nebel, Songschleife, 7 Demo-Befunde) | geparkt 17.08. (User), alt seit 21.08. | Claude 16./17.08. |
-| `nakama-spectral-field-vorentwurf.html` | Spectral Field, Codex-Vorentwurf (Codex-Besitz; Hook `guard-codex-besitz.sh` blockt Edits weiterhin) | alt | Codex 16.08. |
+| `nakama-spectral-field-vorentwurf.html` | Spectral Field, Codex-Vorentwurf (Codex-Besitz; Edits blockt seit 22.08. die `kreativ-schleuse.sh` mit dem ganzen Ordner — der Extra-Wächter `guard-codex-besitz.sh` ist entfallen, Commit `ef1efee`) | alt | Codex 16.08. |
 | `nakama-kunstwerk-claude.html`, `render-kunstwerk.mjs` | Kunstwerk-Studie (Garten / Gewebe / Wesen) | geparkt 17.08., alt | Claude 17.08. |
 | `nakama-problem-effects-studie.html` | Tusche-Einzelmarken (Borsten, Siegel) | **verworfen 17.08.** — User: „zerissenes Stroh", „Kochhut" | Claude 16.08. |
 | `concepts/nakama-field-alphabet-v2.html`, `concepts/nakama-symbolalphabet-v1.png`, `assets/nakama-symbols.svg`, `sync-nakama-symbols.mjs` | Feld-Alphabet / 仲間-Bildmarke / Nakama-Phase-Schrift (Basisbild OpenAI-generiert) | hing am geparkten Bauplan 2.0; alt | Claude/Codex 16./17.08. |

@@ -65,11 +65,27 @@ def pruefe(s: dict) -> list[str]:
         if b.get("id") in ids:
             fehler.append(f"bei_dir: doppelte ID {b.get('id')}")
         ids.add(b.get("id"))
+        for pk in b.get("punkte", []):
+            for k in ("id", "titel", "entwurf", "alternative"):
+                if not pk.get(k):
+                    fehler.append(f"bei_dir {b.get('id')}: Punkt {pk.get('id','?')} ohne {k}")
+            if not str(pk.get("id", "")).startswith(str(b.get("id")) + "."):
+                fehler.append(f"bei_dir {b.get('id')}: Punkt-ID {pk.get('id')} muss mit '{b.get('id')}.' beginnen")
+            if pk.get("id") in ids:
+                fehler.append(f"bei_dir: doppelte ID {pk.get('id')}")
+            ids.add(pk.get("id"))
         for bi in b.get("bilder", []):
             if not bi.get("datei") or not bi.get("text"):
                 fehler.append(f"bei_dir {b.get('id')}: Bild braucht datei und text")
             elif not (BILDER / bi["datei"]).exists():
                 fehler.append(f"bei_dir {b.get('id')}: Bild fehlt: docs/hub/bilder/{bi['datei']}")
+    for k, a in (s.get("antworten") or {}).items():
+        if k not in ids:
+            fehler.append(f"antworten: '{k}' gehört zu keiner Karte/keinem Punkt mehr — beim Einarbeiten nach docs/hub/antworten-archiv.md verschieben")
+        if a.get("status") not in ("neu", "gelesen", "eingearbeitet"):
+            fehler.append(f"antworten {k}: Status '{a.get('status')}' unbekannt")
+        if a.get("status") == "eingearbeitet" and not a.get("ergebnis"):
+            fehler.append(f"antworten {k}: eingearbeitet ohne ergebnis")
     for u in s.get("uploads", []):
         for k in ("datum", "name", "datei", "status"):
             if not u.get(k):
@@ -108,7 +124,10 @@ def pruefe(s: dict) -> list[str]:
             if not r.get(k):
                 fehler.append(f"review {r.get('datum','?')}: {k} leer")
     nb = sum(len(b.get("bilder", [])) for b in s["bei_dir"])
-    print(f"Plan-Zeilen: {zeilen}  Gates: {gates}  Bei-dir: {len(s['bei_dir'])} (mit {nb} Bildern)  Reviews: {len(s['reviews'])}  Uploads: {len(s.get('uploads', []))}  Eingang: {len(s['eingang'])}")
+    npk = sum(len(b.get("punkte", [])) for b in s["bei_dir"])
+    ant = s.get("antworten") or {}
+    nneu = sum(1 for a in ant.values() if a.get("status") == "neu")
+    print(f"Plan-Zeilen: {zeilen}  Gates: {gates}  Bei-dir: {len(s['bei_dir'])} (mit {nb} Bildern, {npk} Unterpunkten)  Antworten: {len(ant)} ({nneu} neu)  Reviews: {len(s['reviews'])}  Uploads: {len(s.get('uploads', []))}  Eingang: {len(s['eingang'])}")
     return fehler
 
 
@@ -233,6 +252,7 @@ def baue(s: dict) -> None:
     s["commit"] = git_kurz()
     s["gebaut_am"] = dt.datetime.now().strftime("%d.%m.%Y %H:%M")
     s["eingang"] = list(s.get("eingang") or [])
+    s["antworten"] = dict(s.get("antworten") or {})
     vorlage = VORLAGE.read_text(encoding="utf-8")
     html = vorlage.replace("{{STATE_JSON}}", json_in_script(s)).replace("{{BILDER_JSON}}", json_in_script(bilder))
     HUB_HTML.write_text(html, encoding="utf-8", newline="\n")

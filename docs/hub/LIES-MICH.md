@@ -16,9 +16,10 @@ projekt werden".
 | Gebaute Seite (gitignoriert, regenerierbar) | `docs/hub/hub.html` |
 | Uploads aus der gelesenen Seite ins Repo holen | `py -3.13 tools/hub/hub_eingang.py <gelesene.html>` → Reviews nach `docs/reviews/`, Bilder bytegleich nach `docs/hub/eingang/` (+ `uploads` in `hub.json` mit Notiz) |
 | Zeigebilder der Karten (Ausschnitte, Screenshots; committet) | `docs/hub/bilder/`, je Karte `bilder: [{datei, text}]` |
+| Antworten des Users (Wahl + Text je Karte/Unterpunkt) | `antworten` in `hub.json` — `{id: {wahl, text, datum, status: neu·gelesen·eingearbeitet, ergebnis}}`; Unterpunkte je Karte in `punkte: [{id, titel, gewicht, entwurf, alternative, wahlen?}]` |
 | Artefakt-Adresse | `artefakt_url` in `hub.json` (eine Adresse, bleibt beim Redeploy) |
 | Hooks | `tools/hooks/hub-primer.sh` (SessionStart: vorlesen + Drift) · `tools/hooks/hub-stop.sh` (Stop: Commits ohne Hub-Update ⇒ einmal blocken) |
-| Proben | `tools/hub/test_stop_hook.sh` (5 Fälle) · `tools/hub/test/upload_probe.js` + `upload_probe_2.js` (Review + Bild + Notiz mit gestubbtem `window.claude`, via Playwright-MCP `browser_run_code_unsafe`; dazwischen `hub_eingang.py docs/hub/hub-published.html`) |
+| Proben | `tools/hub/test/antwort_probe.js` (drei Antworten, Entwurf überlebt Neuladen, Speichern → Volldokument) · `tools/hub/test_stop_hook.sh` (5 Fälle) · `tools/hub/test/upload_probe.js` + `upload_probe_2.js` (Review + Bild + Notiz mit gestubbtem `window.claude`, via Playwright-MCP `browser_run_code_unsafe`; dazwischen `hub_eingang.py docs/hub/hub-published.html`) |
 
 ## Pflicht jeder Session (steht auch in CLAUDE.md, Abschnitt „Hub")
 
@@ -50,6 +51,13 @@ projekt werden".
   liegt das Bild in der Karte (`bilder`). Ausschnitte aus der Truhe schneidet
   man mit `auf_inhalt_zuschneiden` aus `baue_hub.py` + PIL; Dateiname
   `u<N>-<was>.png`. Hohe Bilder (Höhe > 2× Breite) zeigt die Seite aufklappbar.
+- **Antworten** (`antworten`): `hub_eingang.py` setzt neue/geänderte auf
+  `neu`. Einarbeiten heißt: Wortlaut mit Datum ins Register (CLAUDE.md) oder
+  in `Nakama-Design/abnahmen/`, dann `status: eingearbeitet` + `ergebnis`
+  (ein Satz: was daraus wurde). Ist eine Karte erledigt und fliegt raus, ihre
+  Antworten nach `docs/hub/antworten-archiv.md` übertragen (der Build
+  verweigert verwaiste IDs). Antworten nie im Chat erfragen, die auf der
+  Seite beantwortbar sind.
 - **Uploads des Users** (`uploads`): Status fortschreiben (`eingegangen – noch
   nicht bearbeitet` → z. B. `in die Truhe übernommen`) und in `ergebnis` sagen,
   was passiert ist. Die Datei in `docs/hub/eingang/` bleibt liegen — sie ist

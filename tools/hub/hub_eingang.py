@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Holt hochgeladene Dateien (Reviews UND Bilder) aus einer gelesenen Hub-Seite ins Repo.
+"""Holt Antworten und hochgeladene Dateien (Reviews, Bilder) aus einer gelesenen Hub-Seite ins Repo.
 
     py -3.13 tools/hub/hub_eingang.py <gelesene-hub-seite.html>
 
@@ -34,14 +34,27 @@ REVIEWS = REPO / "docs" / "reviews"
 EINGANG = REPO / "docs" / "hub" / "eingang"
 
 
-def eingang_aus(html: str) -> list[dict]:
+def state_aus(html: str) -> dict:
     m = re.search(r'<script type="application/json" id="hub-state">(.*?)</script>', html, re.S)
     if not m:
         raise SystemExit("Kein #hub-state in der Datei — ist das die gelesene Hub-Seite?")
-    roh = m.group(1)
     # Die Seite maskiert '</' als '<\/' — für JSON ist das ein gültiger Escape.
-    state = json.loads(roh)
-    return list(state.get("eingang") or [])
+    return json.loads(m.group(1))
+
+
+def antworten_holen(seite: dict, hub: dict) -> int:
+    """Antworten des Users von der Seite nach hub.json — neu oder geändert ⇒ Status 'neu'."""
+    alt = hub.setdefault("antworten", {})
+    neu = 0
+    for k, a in (seite.get("antworten") or {}).items():
+        vorher = alt.get(k)
+        gleich = vorher and vorher.get("wahl") == a.get("wahl") and vorher.get("text") == a.get("text") and vorher.get("datum") == a.get("datum")
+        if gleich:
+            continue
+        alt[k] = {"wahl": a.get("wahl") or "", "text": a.get("text") or "", "datum": a.get("datum") or "", "status": "neu", "ergebnis": ""}
+        neu += 1
+        print(f"  Antwort {k}: [{a.get('wahl') or '—'}] {(a.get('text') or '').strip()[:160]!r}  ({a.get('datum')})")
+    return neu
 
 
 def sicherer_name(name: str, endung_weg: bool = True) -> str:
@@ -69,13 +82,20 @@ def main(argv: list[str]) -> int:
         return 2
     quelle = Path(argv[1])
     html = quelle.read_text(encoding="utf-8", errors="replace")
-    eintraege = eingang_aus(html)
+    seite = state_aus(html)
+    eintraege = list(seite.get("eingang") or [])
+    hub = json.loads(HUB_JSON.read_text(encoding="utf-8"))
+    n_ant = antworten_holen(seite, hub)
+    if n_ant:
+        print(f"{n_ant} Antwort(en) neu/geändert → hub.json (Status 'neu'). Jede Antwort ist User-Wort: mit Datum + Wortlaut ins Register/die Abnahmen, dann Status 'eingearbeitet' + ergebnis.")
     if not eintraege:
-        print("Eingang leer — nichts zu holen.")
+        if n_ant:
+            HUB_JSON.write_text(json.dumps(hub, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
+        else:
+            print("Eingang leer, keine neuen Antworten — nichts zu holen.")
         return 0
     REVIEWS.mkdir(parents=True, exist_ok=True)
     EINGANG.mkdir(parents=True, exist_ok=True)
-    hub = json.loads(HUB_JSON.read_text(encoding="utf-8"))
     bekannt = {r.get("datei") for r in hub.get("reviews", [])} | {u.get("datei") for u in hub.get("uploads", [])}
     neu = 0
     for e in eintraege:

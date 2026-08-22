@@ -13,7 +13,7 @@
       "dringlichkeit": "jetzt",
       "art": "Entscheid",
       "titel": "Gen-Entwurf (Studie 04) ansehen: überarbeiten oder exportieren",
-      "was": "In deiner Figma-Datei „Testdummy“ liegt der Rahmen „Lumia Material Lab / Study 04 — Gen“: Nakama Gen in der Probeeq-Sprache, mit Schönfall, acht Zuständen, zwei Zooms und 17 offenen Punkten, zu denen je eine Lesart gewählt wurde. Du änderst, was dir nicht passt, und exportierst — die Datei kommt als neuer Stand in die Design-Truhe.",
+      "was": "In deiner Figma-Datei „Testdummy“ liegt der Rahmen „Lumia Material Lab / Study 04 — Gen“: Nakama Gen in der Probeeq-Sprache, mit Schönfall, acht Zuständen, zwei Zooms und 17 offenen Punkten, zu denen je eine Lesart gewählt wurde — unten kannst du zu jedem Punkt Stellung nehmen, 00 ist das Gesamturteil. Du änderst, was dir nicht passt, und exportierst — die Datei kommt als neuer Stand in die Design-Truhe.",
       "warum": "Erst dein Export macht den Entwurf zur Vorgabe; bis dahin gilt der Gen-Stand vom 21.08. in der alten (cyanen) Sprache. Die Übersetzung der drei Apps beginnt mit Gen und wartet darauf.",
       "wo": "Nakama-Design/abnahmen/2026-08-21-gen-auftrag-figma.md (Abschnitt „Was ausdrücklich offen bleibt“)",
       "seit": "21.08.",
@@ -25,6 +25,134 @@
         {
           "datei": "u2-gen-studie04-uebersicht.png",
           "text": "Die ganze Studie: Schönfall, acht Zustände (Mix lesen, Urteilen, Vorhören, alles frisch, gemischt, 16 Quellen, alles getrennt, keine Quelle), zwei Zooms, Delta, die 17 Punkte."
+        }
+      ],
+      "punkte": [
+        {
+          "id": "U2.0",
+          "titel": "Gesamturteil: trifft Gen die Sprache von Probeeq und Suna?",
+          "gewicht": "Entscheidungstor",
+          "entwurf": "Studie 04 so weiterverfolgen — Übersetzung in das lebende Blatt beginnt gegen deinen Export.",
+          "alternative": "Grundsätzlich anders — sag in Worten, was nicht stimmt (Material, Anordnung, Dichte, Farbwelt)."
+        },
+        {
+          "id": "U2.1",
+          "titel": "Zellen-Grammatik gegen Apertur-Grammatik",
+          "gewicht": "Tragweite 1",
+          "entwurf": "Die Karte folgt der Abnahme vom 20.08.: hohl = veraltet, Strichlinie = getrennt. Die Apertur spricht wie Probeeq und Suna: hohl = kein Kontakt. Beides nebeneinander.",
+          "alternative": "Ein Zeichen für die ganze Familie — dann braucht entweder „veraltet“ in der Karte ein neues Zeichen, oder die Apertur ändert ihre Bedeutung."
+        },
+        {
+          "id": "U2.2",
+          "titel": "Die vier Ebenen als Reiter oben links im Glas",
+          "gewicht": "Tragweite 2",
+          "entwurf": "OBSERVE · ADVISE ● · AUDITION · APPLY sitzen oben links im Glas, wo Probeeq seine Identitätszeile hat. Gen hat keine Identitätszeile; die Wortmarke im Kinn ist die Identität.",
+          "alternative": "Die Ebenen als Tasten im Kinn rechts (neben SOURCES und UNDO) — das Glas beginnt dann wie bei Probeeq mit einer Identitätszeile."
+        },
+        {
+          "id": "U2.3",
+          "titel": "Zeilenmarker nur beim Vorhören, Befundort als Ring",
+          "gewicht": "Tragweite 3",
+          "entwurf": "Der Befundort ist der Ring mit Cyan-Saum um die betroffenen Zellen (Probeeqs gewählter Griff). Die markierte Zeile gibt es nur, solange das Vorhören gehalten wird (Abnahme 20.08.).",
+          "alternative": "Wie im alten Gen-Stand: der Marker liegt in Ruhe auf der Fokusquelle — dann braucht das Vorhören ein anderes Zeichen."
+        },
+        {
+          "id": "U2.4",
+          "titel": "„1 STALE · SYNTH PAD“ — die Ausnahme nennt den Namen",
+          "gewicht": "Tragweite 4",
+          "entwurf": "Der Kartenkopf nennt Zahl und Namen (bis zwei je Sorte, Abnahme 20.08.), obwohl die Zeile den Namen inzwischen trägt.",
+          "alternative": "Nur die Zahl („1 STALE“) — oder ganz weg, weil die hohle Zeile mit Namen genügt."
+        },
+        {
+          "id": "U2.5",
+          "titel": "Wortlaut der Aktionen",
+          "gewicht": "Tragweite 5",
+          "entwurf": "HOLD TO AUDITION · APPLY · REJECT — Wort für Wort aus Probeeqs Draft-Kasten; ein Wortschatz für die Familie.",
+          "alternative": "AUDITION / HOLD · APPLY · DISCARD wie im alten Gen-Stand."
+        },
+        {
+          "id": "U2.6",
+          "titel": "Sicherheit und Alternativursache — wo sie stehen",
+          "gewicht": "Tragweite 6",
+          "entwurf": "CERTAINTY HIGH im Befundkopf rechts; OTHER CAUSE als sechste, gedimmte Zeile nach der festen Fünferform.",
+          "alternative": "Anderer Ort (z. B. vor dem kleinsten Versuch) — oder eine der beiden Angaben einen Schritt entfernt, nicht auf der Fläche."
+        },
+        {
+          "id": "U2.7",
+          "titel": "SOURCES-Taste im Kinn als Tür",
+          "gewicht": "Tragweite 7",
+          "entwurf": "Eine Taste SOURCES (Probeeqs GLOBAL-Grammatik) führt zu Quellenliste, Rollen, Suche, Pinning, Fokusgruppen. Die Tür ist gezeichnet, der Raum dahinter nicht.",
+          "alternative": "Anders benennen (ROLES, SETUP …), oder einzelne Dinge davon auf die Fläche holen."
+        },
+        {
+          "id": "U2.8",
+          "titel": "UNDO · n im Kinn",
+          "gewicht": "Tragweite 8",
+          "entwurf": "Ein Einsatz UNDO · n = „n changes applied“ und Rückweg in einem; bei 0 gedimmt. Kein Verlauf dahinter.",
+          "alternative": "Ein Verlauf der angewandten Änderungen (wie Probeeqs Undo) — oder der Zähler an anderer Stelle."
+        },
+        {
+          "id": "U2.9",
+          "titel": "Rollenwörter je Zeile statt LIVE",
+          "gewicht": "Tragweite 9",
+          "entwurf": "LEADS · CARRIES · SUPPORTS · PROTECTED · MERGED als Wort neben dem Namen (Sunas Vokabular). LIVE entfällt — frisch schweigt. Ohne Rolle stünde dort „—“.",
+          "alternative": "LIVE behalten, oder keine Rolle in der Zeile (Rolle nur hinter der SOURCES-Tür)."
+        },
+        {
+          "id": "U2.10",
+          "titel": "Wein-Rampe für die Energie der Zellen",
+          "gewicht": "Tragweite 10",
+          "entwurf": "Energie als Ein-Farb-Rampe der Probeeq-Kurvenfüllung (#7E3D3E, 0–55 % Deckkraft über dem Glas), dunkel → hell.",
+          "alternative": "Kräftiger, dezenter, andere Farbe, oder mehr Stufen — sag, was dein Auge bei 1:1 braucht."
+        },
+        {
+          "id": "U2.11",
+          "titel": "Drei Sorten Zustand, drei Orte",
+          "gewicht": "Tragweite 11",
+          "entwurf": "Degradierter Hinweis oben rechts im Glas (Warnglyphe, Suna-Ort) · Messung im Kinn links · Ausnahmen je Quelle im Kartenkopf rechts.",
+          "alternative": "Alles in einer Kopfzeile wie im alten Gen-Stand."
+        },
+        {
+          "id": "U2.12",
+          "titel": "FOCUS-Zeile im Kartenkopf und Schreibweise der Spalten",
+          "gewicht": "Tragweite 12",
+          "entwurf": "Keine FOCUS / BASS / 180–260 HZ-Zeile — der Ort steht als Ring in der Karte und in der PRIORITY-Zeile. Spalten 1k 2k 4k 8k wie bei Probeeq.",
+          "alternative": "FOCUS-Zeile behalten und/oder 1K 2K 4K 8K wie im alten Stand."
+        },
+        {
+          "id": "U2.13",
+          "titel": "Befund-Navigation und Detailansicht",
+          "gewicht": "Tragweite 13",
+          "entwurf": "Befund 2 von 3 öffnet man über OBSERVE; das Detail einer Quelle (Spektrum, Lautheit, Dynamik, Breite, Verlauf) lebt im Schritt Urteilen.",
+          "alternative": "‹ › im Assistenten, und/oder eine eigene Detailansicht je Quelle außerhalb des Urteils."
+        },
+        {
+          "id": "U2.14",
+          "titel": "16 Quellen: Namen bei 8 px, Raster 10 px",
+          "gewicht": "Tragweite 14",
+          "entwurf": "Bei 16 Quellen bleiben die Namen in der Zeile (Schrift 8, Zellen 8, Fuge 2) — trägt, ist aber die Obergrenze. Gemessen: 158 px.",
+          "alternative": "Bei 16 namenlos (wie in der Abnahme vom 20.08.), Namen nur im Regelfall."
+        },
+        {
+          "id": "U2.15",
+          "titel": "Shader-Füllung der Schale (Lichtstreifen)",
+          "gewicht": "Tragweite 15",
+          "entwurf": "Der Gen-Klon trägt sie nicht — der markierte Probeeq-Knoten trug sie beim zweiten Lesen auch nicht mehr.",
+          "alternative": "Sie gehört zum Design — dann kommt sie auf beide Schalen und wird mitgebacken."
+        },
+        {
+          "id": "U2.16",
+          "titel": "Zwei Figma-Dateien: Testdummy und fable-dummy",
+          "gewicht": "Tragweite 16",
+          "entwurf": "Gen liegt als Studie 04 in Testdummy; Suna als Studie 03 in fable-dummy. Bleibt so.",
+          "alternative": "Zusammenführen — in welche Datei?"
+        },
+        {
+          "id": "U2.17",
+          "titel": "Export in die Truhe und Skalierungsstufen",
+          "gewicht": "Tragweite 17",
+          "entwurf": "Du exportierst den Gen-Körper (5026:1619) als PNG 4× → assets/figma/JJJJ-MM-TT-gen.png; Stufen 100 / 125 / 150 / 200 % (Empfehlung, keine Abnahme).",
+          "alternative": "Andere Stufen (z. B. mit 75 %), oder der Export wartet, bis die Punkte oben entschieden sind."
         }
       ]
     },
@@ -84,6 +212,78 @@
           "datei": "u6-suna-kachel.png",
           "text": "Die Suna-Kachel, wie du sie exportiert hast. Die zehn Lesarten betreffen Details dieser Kachel: Verbindungspunkt links, Rollenwort (CARRIES), Position (POST), Messstatus rechts, Kopfzeile, Schatten."
         }
+      ],
+      "punkte": [
+        {
+          "id": "U6.1",
+          "titel": "Apertur-Logik wie Probeeq",
+          "gewicht": "Tragweite 1",
+          "entwurf": "Verbindungspunkt: gefüllt + Leuchtsaum = verbunden und liefert · gefüllt ohne Saum = verbunden, Messung veraltet · hohl = kein Kontakt. Gens Karte sagt dagegen: hohl = veraltet, Strichlinie = getrennt — der Widerspruch bleibt, Suna vergrößert ihn nicht.",
+          "alternative": "Ein Zeichen für die ganze Familie — dann muss entweder Gens Karte oder die Apertur ihre Bedeutung ändern."
+        },
+        {
+          "id": "U6.2",
+          "titel": "Messposition: PRE · INSERT · POST",
+          "gewicht": "Tragweite 2",
+          "entwurf": "Dreistellung, wo in der Kette die Sonde sitzt: vor der Kette, als Einsatz mittendrin, am Ende.",
+          "alternative": "„Insert“ als FL-Mixerspur (z. B. „Insert 4“) plus PRE/POST — bräuchte einen Spurnamen in der Kachel."
+        },
+        {
+          "id": "U6.3",
+          "titel": "Rollenwörter",
+          "gewicht": "Tragweite 3",
+          "entwurf": "LEADS · CARRIES · SUPPORTS · PROTECTED · MERGED (führt / trägt / begleitet / geschützt / bewusst verschmolzen).",
+          "alternative": "Andere Wörter — du sagst welche."
+        },
+        {
+          "id": "U6.4",
+          "titel": "Messstatus-Wörter",
+          "gewicht": "Tragweite 4",
+          "entwurf": "MEASURING (frisch) · STALE · 40 s (veraltet, mit Alter als Zahl hinter dem Wort).",
+          "alternative": "Alters-Abstufung in Worten (seit 10 s / seit 10 min) oder ganz ohne Alter."
+        },
+        {
+          "id": "U6.5",
+          "titel": "Hinweis-Wortlaut",
+          "gewicht": "Tragweite 5",
+          "entwurf": "NOT DELIVERING TO GEN (kein Kontakt) · DUPLICATE INSTANCE (doppelte Instanz) — passt neben die Kopfzeile (140 px).",
+          "alternative": "Anderer Wortlaut — kürzer geht kaum ohne Sinnverlust, länger passt nicht."
+        },
+        {
+          "id": "U6.6",
+          "titel": "Kopfzeile PASSIVE PROBE",
+          "gewicht": "Tragweite 6",
+          "entwurf": "Bleibt, wie Probeeqs „ACTIVE PROBE · PIANO BUS“; sie trägt rechts den Hinweis.",
+          "alternative": "Weg (bei zwölf gestapelten Kacheln zwölfmal dasselbe) — dann braucht der Hinweis einen anderen Ort."
+        },
+        {
+          "id": "U6.7",
+          "titel": "Feste Spalten",
+          "gewicht": "Tragweite 7",
+          "entwurf": "BUS 84 · ROLE 56 · POSITION 43 fest, damit Rolle und Position über viele Kacheln untereinander stehen; Preis: Lücke hinter kurzen Namen.",
+          "alternative": "Spalten hängen am Inhalt wie bei Probeeq — dann stehen sie je Kachel woanders."
+        },
+        {
+          "id": "U6.8",
+          "titel": "Schwebeschatten halbiert",
+          "gewicht": "Tragweite 8",
+          "entwurf": "Einzige Abweichung an der Schale; Probeeqs Schatten wäre so groß wie die Kachel selbst.",
+          "alternative": "Schatten in Probeeq-Originalgröße."
+        },
+        {
+          "id": "U6.9",
+          "titel": "Wortmarke mit Shader",
+          "gewicht": "Tragweite 9",
+          "entwurf": "Aus dem neuesten Probeeq-Rahmen (mit Shader-Verlauf), weil der Truhen-Export die Shader-Fassung zeigt.",
+          "alternative": "Die flache Wortmarke aus dem markierten Knoten."
+        },
+        {
+          "id": "U6.10",
+          "titel": "„Bestätigen“ des Namens",
+          "gewicht": "Tragweite 10",
+          "entwurf": "Ein unbestätigter Zustand hat keine Darstellung bekommen — er ist nirgends beschrieben, und erfunden wird nichts.",
+          "alternative": "Einen Zustand „Name unbestätigt“ zeigen — dann sag, wie er aussehen soll."
+        }
       ]
     },
     {
@@ -123,6 +323,73 @@
         {
           "datei": "u6-suna-kachel.png",
           "text": "Suna-Kachel: das Design zeigt Bus, Rolle und Position bedienbar — der technische Entwurf sagt „keine Parameter, Bedienung über Gen“. Zweiter der fünf Punkte."
+        }
+      ],
+      "punkte": [
+        {
+          "id": "U9.1",
+          "titel": "Rollen: 5 oder 7",
+          "gewicht": "Stelle 1",
+          "entwurf": "Figma (Design): fünf Rollen — LEADS · CARRIES · SUPPORTS · PROTECTED · MERGED.",
+          "alternative": "Technischer Entwurf (§9): sieben Rollen.",
+          "wahlen": [
+            "Figma gilt",
+            "Entwurf gilt",
+            "Anders (siehe Text)",
+            "Später"
+          ]
+        },
+        {
+          "id": "U9.2",
+          "titel": "Suna-Kachel: bedienbar oder nicht",
+          "gewicht": "Stelle 2",
+          "entwurf": "Figma: Bus, Rolle und Position stehen in der Kachel und sind dort bedienbar.",
+          "alternative": "Technischer Entwurf (§0.4): Suna hat keine Parameter; bedient wird über Gen.",
+          "wahlen": [
+            "Figma gilt",
+            "Entwurf gilt",
+            "Anders (siehe Text)",
+            "Später"
+          ]
+        },
+        {
+          "id": "U9.3",
+          "titel": "Messzustände: 5 oder 2",
+          "gewicht": "Stelle 3",
+          "entwurf": "Figma: fünf Messzustände.",
+          "alternative": "Technischer Entwurf: zwei.",
+          "wahlen": [
+            "Figma gilt",
+            "Entwurf gilt",
+            "Anders (siehe Text)",
+            "Später"
+          ]
+        },
+        {
+          "id": "U9.4",
+          "titel": "Arbeitsschritte: 3 oder 5",
+          "gewicht": "Stelle 4",
+          "entwurf": "Figma: drei Arbeitsschritte (Mix lesen · Urteilen · …).",
+          "alternative": "Technischer Entwurf: fünf.",
+          "wahlen": [
+            "Figma gilt",
+            "Entwurf gilt",
+            "Anders (siehe Text)",
+            "Später"
+          ]
+        },
+        {
+          "id": "U9.5",
+          "titel": "Gen-Übersicht: Gitter oder Overview+Detail",
+          "gewicht": "Stelle 5",
+          "entwurf": "Figma (21.08.): Quellen×Band-Gitter als Übersicht.",
+          "alternative": "Abnahme 20.08.: Overview + Detail ohne Heatmap — ist das Gitter die Heatmap oder etwas anderes?",
+          "wahlen": [
+            "Figma gilt",
+            "Entwurf gilt",
+            "Anders (siehe Text)",
+            "Später"
+          ]
         }
       ]
     },
@@ -514,5 +781,6 @@
     }
   ],
   "uploads": [],
+  "antworten": {},
   "eingang": []
 }

@@ -135,6 +135,16 @@ gemeinsames briefing und übersichtshub". Drei Pflichten je Session, Details in
    Stop-Hook (`tools/hooks/hub-stop.sh`) blockt einmal je Session, wenn Commits
    ohne Hub-Update enden.
 
+**Antworten kommen von der Seite, nicht per Zuruf** (User 22.08.: „baue
+eine antwortfunktion für mich ein, dass ich zu jedem punkt stellung nehmen
+kann, dann musst du nur noch die seite anschauen um infos zu bekommen"): jede
+„bei dir"-Karte und jeder Unterpunkt (Gen 18, Suna 10, Figma↔Entwurf 5) hat
+Wahl + Textfeld; „Antworten speichern" veröffentlicht die Seite neu.
+`hub_eingang.py` holt sie nach `hub.json` (`antworten`, Status `neu`). Eine
+Antwort ist User-Wort: mit Datum + Wortlaut ins Register bzw. in die
+Design-Abnahmen, danach Status `eingearbeitet` + `ergebnis` (steht dann auf
+der Karte). Nie eine Antwort im Chat erfragen, die auf der Seite beantwortbar ist.
+
 **Zeigen, nicht beschreiben** (User 22.08.: „ich muss sehen können um was es
 geht und selbst bilder hochladen können"): jede „bei dir"-Karte, bei der es um
 etwas Sichtbares geht (ein Figma-Stand, ein Ausschnitt, ein Fenster in FL),

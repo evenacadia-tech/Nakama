@@ -77,6 +77,38 @@ section{padding-top:40px}
 .figuren details img{display:block;width:100%;height:auto}
 .figuren figure.klein img{padding:16px;min-height:80px}
 .figuren figcaption{padding:8px 12px;font-size:13px;color:var(--text2);background:var(--flaeche2);border-top:1px solid var(--linie)}
+.antwort{margin-top:4px;border-top:1px dashed var(--linie);padding-top:10px;display:grid;gap:8px}
+.antwort .lbl{font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.antwort .lbl .stand{text-transform:none;letter-spacing:0;font-size:12px}
+.antwort .lbl .stand.neu{color:var(--warte)}
+.antwort .lbl .stand.offen{color:var(--akzent)}
+.wahlen{display:flex;flex-wrap:wrap;gap:6px}
+.wahl{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border:1px solid var(--linie2);border-radius:999px;cursor:pointer;font-size:13px;color:var(--text2);background:var(--flaeche);user-select:none}
+.wahl:has(input:checked){color:var(--text);border-color:var(--akzent);background:var(--akzent-hell)}
+.wahl:has(input:focus-visible){outline:2px solid var(--akzent);outline-offset:2px}
+.wahl input{appearance:none;width:9px;height:9px;border-radius:50%;border:1px solid var(--text3);margin:0}
+.wahl input:checked{background:var(--akzent);border-color:var(--akzent)}
+.antwort textarea{width:100%;min-height:54px;font:inherit;font-size:14px;line-height:1.45;padding:8px 10px;border:1px solid var(--linie2);border-radius:8px;background:var(--flaeche);color:var(--text);resize:vertical}
+.antwort .ergebnis{font-size:13.5px;color:var(--text);background:var(--gut-hell);border-radius:6px;padding:6px 10px}
+.antwort .ergebnis b{font-weight:500;color:var(--gut)}
+.punkte{display:grid;gap:8px;margin-top:4px}
+.punkt{border:1px solid var(--linie);border-radius:8px;padding:10px 12px;display:grid;gap:6px;background:var(--flaeche2)}
+.punkt .pk{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.punkt .pnum{font-family:"Geist Mono",ui-monospace,monospace;font-size:12px;color:var(--akzent)}
+.punkt .pk h4{margin:0;font-size:14.5px;font-weight:600}
+.punkt .pgew{margin-left:auto;font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;color:var(--text3)}
+.ab{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:13.5px;color:var(--text2)}
+.ab b{display:block;font-family:"Geist Mono",ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:2px;font-weight:500}
+@media (max-width:600px){.ab{grid-template-columns:1fr}}
+.punkt .antwort{border-top:1px dashed var(--linie2)}
+.leiste{position:sticky;bottom:0;z-index:5;margin-top:24px;background:var(--flaeche);border:1px solid var(--linie2);border-radius:10px;padding:10px 14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 -4px 18px rgba(0,0,0,.12)}
+.leiste.da{display:flex}
+.leiste .zaehl{font-size:14px;color:var(--text)}
+.leiste .meld{font-size:13px;color:var(--text2);flex:1 1 auto}
+.leiste .meld.fehler{color:var(--akzent)}
+.leiste button{font:inherit;font-size:14px;font-weight:500;padding:8px 16px;border-radius:8px;border:1px solid var(--akzent);background:var(--akzent);color:#fff;cursor:pointer}
+.leiste button[disabled]{opacity:.6;cursor:default}
+.leiste button.leer{background:transparent;color:var(--text2);border-color:var(--linie2)}
 .notiz{margin-top:10px;display:grid;gap:4px}
 .notiz label{font-size:12.5px;color:var(--text3)}
 .notiz input{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--linie2);border-radius:8px;background:var(--flaeche);color:var(--text)}
@@ -187,7 +219,7 @@ function rKopf(s){
     '<div class="kacheln">'+
       '<div class="kachel"><div class="eyebrow">Plan</div><div class="wert">'+z.erledigt+'<small>von '+z.gesamt+' Zeilen erledigt</small></div><div class="sub">'+(z.gebaut?z.gebaut+' gebaut, Prüfurteil offen · ':'')+(z.gesamt-z.erledigt-z.gebaut)+' offen</div></div>'+
       '<div class="kachel"><div class="eyebrow">Bei dir</div><div class="wert">'+jetzt+'<small>jetzt</small></div><div class="sub">'+bald+' wenn du dazu kommst · '+spaeter+' später oder nur wissen</div></div>'+
-      '<div class="kachel"><div class="eyebrow">Codex-Reviews</div><div class="wert">'+(s.eingang||[]).length+'<small>im Eingang</small></div><div class="sub">'+(s.reviews||[]).length+' eingearbeitet · Upload unten</div></div>'+
+      '<div class="kachel"><div class="eyebrow">Von dir</div><div class="wert">'+neueAntworten(s)+'<small>Antworten neu</small></div><div class="sub">'+(s.eingang||[]).length+' im Upload-Eingang · '+(s.reviews||[]).length+' Reviews eingearbeitet</div></div>'+
     '</div>'+
   '</header>';
 }
@@ -212,6 +244,8 @@ function rBeiDir(s){
         rFiguren(b.bilder)+
         '<p class="warum"><b>Warum:</b> '+esc(b.warum)+'</p>'+
         '<div class="wo mono"><span>'+esc(b.wo)+'</span>'+(b.seit?'<span>seit '+esc(b.seit)+'</span>':'')+'</div>'+
+        rPunkte(b)+
+        rAntwort(b.id, b.wahlen||WAHLEN_KARTE, b.punkte&&b.punkte.length?'Deine Antwort zur ganzen Karte (die Punkte oben einzeln)':'Deine Antwort')+
       '</article>';
     });
     html+='</div></div>';
@@ -232,6 +266,46 @@ function rFiguren(liste){
     }
   });
   return h+'</div>';
+}
+
+var WAHLEN_KARTE=['Ja','Nein','Anders (siehe Text)','Später'];
+var WAHLEN_PUNKT=['Entwurf lassen','Alternative','Anders (siehe Text)','Später'];
+var STATUS_ANTWORT={neu:'wartet auf Claude',gelesen:'gelesen',eingearbeitet:'eingearbeitet'};
+var ANTWORTEN=STATE.antworten||{};
+var ENTWURF={};
+try{ ENTWURF=JSON.parse(localStorage.getItem('hub-antwort-entwurf')||'{}')||{}; }catch(e){ ENTWURF={}; }
+function neueAntworten(s){var a=s.antworten||{},n=0;Object.keys(a).forEach(function(k){if(a[k]&&a[k].status==='neu')n++;});return n;}
+function entwurfAnders(id){
+  var e=ENTWURF[id]; if(!e) return false;
+  var g=ANTWORTEN[id]||{};
+  return (e.wahl||'')!==(g.wahl||'') || (e.text||'')!==(g.text||'');
+}
+function rAntwort(id, wahlen, titel){
+  var g=ANTWORTEN[id]||null, e=ENTWURF[id]||null;
+  var wahl=(e&&e.wahl!==undefined)?e.wahl:(g?g.wahl:''), text=(e&&e.text!==undefined)?e.text:(g?g.text:'');
+  var stand='';
+  if(entwurfAnders(id)) stand='<span class="stand offen">ungespeichert — unten „Antworten speichern“</span>';
+  else if(g) stand='<span class="stand '+(g.status==='neu'?'neu':'')+'">gespeichert '+esc(g.datum||'')+' · '+esc(STATUS_ANTWORT[g.status]||g.status||'')+'</span>';
+  var h='<div class="antwort" data-id="'+esc(id)+'"><div class="lbl"><span>'+esc(titel||'Deine Antwort')+'</span>'+stand+'</div><div class="wahlen">';
+  wahlen.forEach(function(w){ h+='<label class="wahl"><input type="radio" name="w-'+esc(id)+'" value="'+esc(w)+'"'+(wahl===w?' checked':'')+'>'+esc(w)+'</label>'; });
+  h+='</div><textarea placeholder="In deinen Worten — das wird so zitiert.">'+esc(text)+'</textarea>';
+  if(g&&g.ergebnis) h+='<div class="ergebnis"><b>Claude:</b> '+esc(g.ergebnis)+'</div>';
+  return h+'</div>';
+}
+function rPunkte(b){
+  if(!b.punkte||!b.punkte.length) return '';
+  var h='<div class="punkte">';
+  b.punkte.forEach(function(p){
+    var num=String(p.id).split('.').pop(); if(num.length<2) num='0'+num;
+    h+='<div class="punkt"><div class="pk"><span class="pnum">'+esc(num)+'</span><h4>'+esc(p.titel)+'</h4>'+(p.gewicht?'<span class="pgew">'+esc(p.gewicht)+'</span>':'')+'</div>'+
+      '<div class="ab"><div><b>'+esc(p.links||'Entwurf (so gezeichnet)')+'</b>'+esc(p.entwurf)+'</div><div><b>'+esc(p.rechts||'Alternative')+'</b>'+esc(p.alternative)+'</div></div>'+
+      rAntwort(p.id, p.wahlen||WAHLEN_PUNKT, 'Deine Antwort')+
+    '</div>';
+  });
+  return h+'</div>';
+}
+function rLeiste(){
+  return '<div class="leiste" id="leiste"><span class="zaehl" id="leiste-zaehl"></span><span class="meld" id="leiste-meld"></span><button type="button" class="leer" id="leiste-verwerfen">Änderungen verwerfen</button><button type="button" id="leiste-speichern">Antworten speichern</button></div>';
 }
 
 function rNaechster(s){
@@ -328,8 +402,9 @@ function rFuss(s){
 }
 
 function render(){
-  document.getElementById('app').innerHTML = '<div class="seite">'+rKopf(STATE)+rBeiDir(STATE)+rNaechster(STATE)+rPlan(STATE)+rDesign(STATE)+rReviews(STATE)+rFuss(STATE)+'</div>';
+  document.getElementById('app').innerHTML = '<div class="seite">'+rKopf(STATE)+rBeiDir(STATE)+rNaechster(STATE)+rPlan(STATE)+rDesign(STATE)+rReviews(STATE)+rFuss(STATE)+rLeiste()+'</div>';
   upload();
+  antworten();
 }
 
 /* Vollständige Seitenquelle aus den autorisierten Bausteinen (nie aus dem Live-DOM). */
@@ -397,6 +472,70 @@ function upload(){
   ['dragenter','dragover'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add('aktiv');});});
   ['dragleave','drop'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove('aktiv');});});
   drop.addEventListener('drop',function(e){ if(e.dataTransfer&&e.dataTransfer.files) speichere(e.dataTransfer.files); });
+}
+
+function antworten(){
+  var leiste=document.getElementById('leiste'), zaehl=document.getElementById('leiste-zaehl'), meld=document.getElementById('leiste-meld'),
+      btn=document.getElementById('leiste-speichern'), verwerfen=document.getElementById('leiste-verwerfen');
+  function offene(){ return Object.keys(ENTWURF).filter(entwurfAnders); }
+  function merk(){ try{ localStorage.setItem('hub-antwort-entwurf', JSON.stringify(ENTWURF)); }catch(e){} }
+  function zeige(){
+    var n=offene().length;
+    leiste.classList.toggle('da', n>0);
+    zaehl.textContent = n+' '+(n===1?'Antwort':'Antworten')+' ungespeichert';
+    document.querySelectorAll('.antwort').forEach(function(el){
+      var id=el.getAttribute('data-id'), lbl=el.querySelector('.lbl'), alt=lbl.querySelector('.stand');
+      var g=ANTWORTEN[id], s;
+      if(entwurfAnders(id)) s='<span class="stand offen">ungespeichert — unten „Antworten speichern“</span>';
+      else if(g) s='<span class="stand '+(g.status==='neu'?'neu':'')+'">gespeichert '+esc(g.datum||'')+' · '+esc(STATUS_ANTWORT[g.status]||g.status||'')+'</span>';
+      else s='';
+      if(alt) alt.remove();
+      if(s) lbl.insertAdjacentHTML('beforeend', s);
+    });
+  }
+  if(!antworten.gebunden){ antworten.gebunden=true;
+  document.addEventListener('change', function(ev){
+    var a=ev.target.closest&&ev.target.closest('.antwort'); if(!a) return;
+    var id=a.getAttribute('data-id'); ENTWURF[id]=ENTWURF[id]||{};
+    if(ev.target.type==='radio') ENTWURF[id].wahl=ev.target.value;
+    if(ev.target.tagName==='TEXTAREA') ENTWURF[id].text=ev.target.value;
+    if(ENTWURF[id].wahl===undefined) ENTWURF[id].wahl=(ANTWORTEN[id]||{}).wahl||'';
+    if(ENTWURF[id].text===undefined) ENTWURF[id].text=(ANTWORTEN[id]||{}).text||'';
+    merk(); zeige();
+  });
+  document.addEventListener('input', function(ev){
+    if(!(ev.target.tagName==='TEXTAREA')) return;
+    var a=ev.target.closest('.antwort'); if(!a) return;
+    var id=a.getAttribute('data-id'); ENTWURF[id]=ENTWURF[id]||{};
+    ENTWURF[id].text=ev.target.value;
+    if(ENTWURF[id].wahl===undefined) ENTWURF[id].wahl=(ANTWORTEN[id]||{}).wahl||'';
+    merk(); zeige();
+  });
+  }
+  verwerfen.addEventListener('click', function(){ ENTWURF={}; merk(); render(); });
+  var kann = !!(window.claude && typeof window.claude.use==='function');
+  btn.addEventListener('click', function(){
+    var ids=offene(); if(!ids.length) return;
+    if(!kann){ meld.textContent='Speichern geht nur in der claude.ai-Ansicht.'; meld.className='meld fehler'; return; }
+    btn.disabled=true; meld.textContent='Wird gespeichert …'; meld.className='meld';
+    window.claude.use('artifact').then(function(art){
+      if(!art) throw {code:'not_granted'};
+      var s=JSON.parse(JSON.stringify(STATE)); s.antworten=s.antworten||{};
+      var j=new Date(),p2=function(n){return (n<10?'0':'')+n;}; var stamp=j.getFullYear()+'-'+p2(j.getMonth()+1)+'-'+p2(j.getDate())+' '+p2(j.getHours())+':'+p2(j.getMinutes());
+      ids.forEach(function(id){ var e=ENTWURF[id]; s.antworten[id]={wahl:e.wahl||'',text:e.text||'',datum:stamp,status:'neu'}; });
+      return art.publish(quelle(s));
+    }).then(function(){
+      ENTWURF={}; merk();
+      meld.textContent='Gespeichert — die Seite lädt neu. Claude liest deine Antworten beim nächsten Sessionstart.';
+    }).catch(function(e){
+      btn.disabled=false; var c=(e&&e.code)||''; meld.className='meld fehler';
+      if(c==='not_writer'||c==='not_granted') meld.textContent='Diese Ansicht ist schreibgeschützt — nur der Eigentümer kann speichern.';
+      else if(c==='conflict') meld.textContent='Eine neuere Version der Seite ist da; sie lädt neu. Deine Eingaben bleiben im Browser — danach noch einmal speichern.';
+      else if(c==='rate_limited') meld.textContent='Zu schnell hintereinander — kurz warten, dann noch einmal.';
+      else meld.textContent='Speichern fehlgeschlagen ('+(c||(e&&e.message)||'unbekannt')+'). Deine Eingaben bleiben im Browser.';
+    });
+  });
+  zeige();
 }
 
 render();

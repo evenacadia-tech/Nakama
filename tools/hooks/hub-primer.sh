@@ -33,7 +33,8 @@ erl = sum(1 for r in z if st(r) in FERTIG)
 nxt = [r for r in z if st(r) in {"naechster", "nächster"}]
 print(f"Stand: {h['stand']} — {h.get('stand_notiz','')}")
 print(f"Plan: {erl}/{len(z)} Zeilen erledigt · naechster Schritt: {nxt[0]['id'] + ' ' + nxt[0]['text'][:70] if nxt else '?'}")
-print(f"Bei dir (jetzt): {len(jetzt)} — " + " · ".join(b['id'] + ' ' + b['titel'] for b in jetzt))
+liste = " · ".join(b.get('id','?') + ' ' + b.get('titel','') for b in jetzt)
+print(f"Bei dir (jetzt): {len(jetzt)}" + (f" — {liste}" if liste else " — nichts offen"))
 EOF
 )
 

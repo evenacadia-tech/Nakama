@@ -322,24 +322,24 @@ bool leseAusBaum (const juce::ValueTree& parameters, Satz& aus, juce::String& gr
     {
         const auto& b = t[(size_t) i];
         const juce::Identifier id (b.id);
-        if (! parameters.hasProperty (id)) { grund = "Parameters: " + b.id + " fehlt"; return false; }
+        if (! parameters.hasProperty (id)) { grund = "Parameters: " + b.id + " is missing"; return false; }
         const auto w = parameters.getProperty (id);
         auto& z = s[(size_t) i];
         switch (b.typ)
         {
             case Typ::boolean:
-                if (! w.isBool()) { grund = "Parameters: " + b.id + " ist kein bool"; return false; }
+                if (! w.isBool()) { grund = "Parameters: " + b.id + " is not a bool"; return false; }
                 z.b = (bool) w;
                 break;
             case Typ::gleitkomma:
-                if (! w.isDouble()) { grund = "Parameters: " + b.id + " ist kein double"; return false; }
+                if (! w.isDouble()) { grund = "Parameters: " + b.id + " is not a double"; return false; }
                 z.zahl = (double) w;
                 break;
             case Typ::aufzaehlung:
             {
-                if (! w.isString()) { grund = "Parameters: " + b.id + " ist kein Enumwort"; return false; }
+                if (! w.isString()) { grund = "Parameters: " + b.id + " is not an enum word"; return false; }
                 const int idx = b.werte.indexOf (w.toString());
-                if (idx < 0) { grund = "Parameters: " + b.id + " unbekanntes Enumwort " + w.toString(); return false; }
+                if (idx < 0) { grund = "Parameters: " + b.id + " unknown enum word " + w.toString(); return false; }
                 z.enumIndex = idx;
                 break;
             }

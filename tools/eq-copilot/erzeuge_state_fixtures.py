@@ -48,6 +48,12 @@ except ImportError:  # pragma: no cover
     print("FEHLT: py -3.13 -m pip install rfc8785", file=sys.stderr)
     sys.exit(3)
 
+# Der v3-Textriegel (acht Regeln, schemas/v3/README.md) ist die erste Stufe
+# des DTO-Lesers in ALLEN Beinen - auch hier, sonst liest Python `1e-400` als
+# 0.0 und sagt "gueltig", wo C++ und Rust "nichtendlich" sagen.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from pruefe_v3_vertrag import textriegel_bytes  # noqa: E402
+
 WURZEL = pathlib.Path(__file__).resolve().parents[2]
 VERTRAG = WURZEL / "eq-copilot" / "schemas" / "state" / "nakama-parameter-v1.json"
 FIXTURES = WURZEL / "eq-copilot" / "fixtures" / "state"
@@ -232,6 +238,15 @@ def validiere_dto_python(v: dict, text: str) -> str | None:
     (Textstufe) -> Struktur -> dsp_schema_version -> unbekannt -> fehlend ->
     Typ -> nichtendlich -> Bereich/Enum.
     """
+    # Stufe 0: v3-Textriegel auf den Bytes - dieselbe Abbildung wie NakamaParameter.cpp.
+    riegel = textriegel_bytes(text.encode("utf-8"))
+    if riegel is not None:
+        if riegel.startswith("Exponent ausserhalb") or riegel.startswith("Zahl ausserhalb"):
+            return "nichtendlich"
+        if riegel.startswith("Ganzzahl ausserhalb"):
+            return "bereich"
+        return "kein_json"
+
     # Textstufe: doppelte Schluessel im selben Objekt.
     doppelt = False
 
@@ -488,6 +503,12 @@ def dto_ungueltige(v: dict) -> list[tuple[str, str, str]]:
     def f1(d): d["parameters"]["v1.band.0.freq_hz"] = 1e999
     # 1e999 -> Python liest inf (parse_constant greift nicht, es ist ein Zahlenliteral)
     faelle.append(("nichtendlich-exponent", text_mit(f1).replace("Infinity", "1e999"), "nichtendlich"))
+
+    # Unterlauf: Python/serde_json laesen 1e-400 als 0.0 - der Textriegel
+    # (Regel 3, |Exponent| < 308) faengt es in allen drei Beinen VOR dem Parser.
+    faelle.append(("nichtendlich-unterlauf", text_mit(f1).replace("Infinity", "1e-400"), "nichtendlich"))
+    # Ganzzahl jenseits 2^53-1 (Textriegel Regel 2): liegt ausserhalb jedes Bereichs.
+    faelle.append(("bereich-ganzzahl-2e53", text_mit(f1).replace("Infinity", "9007199254740993"), "bereich"))
 
     def f2(d): d["parameters"]["v1.band.3.sidechain_source"] = "external"
     faelle.append(("enum-unbekannt", text_mit(f2), "enum"))

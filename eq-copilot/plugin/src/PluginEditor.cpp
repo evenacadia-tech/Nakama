@@ -243,7 +243,7 @@ void EqCopilotEditor::timerCallback()
     if (nurLesenFrisch != stateNurLesenAnzeige)
     {
         stateNurLesenAnzeige = nurLesenFrisch;
-        stateFremdesMajorAnzeige = processor.holeStateFremdesMajor();
+        stateGrundAnzeige = processor.holeStateGrund();
         messpunktKnopf.setEnabled (! nurLesenFrisch);
         uiDirty = true;
     }
@@ -895,9 +895,9 @@ void EqCopilotEditor::paint (juce::Graphics& g)
         messpunktName = "UNBENANNTER MESSPUNKT";
     if (stateNurLesenAnzeige)
     {
-        // Keine Rolle, kein Name: der State gehoert einer neueren Version.
+        // Keine Rolle, kein Name: der State ist fuer diese Version nicht lesbar.
         rolle = "READ-ONLY";
-        messpunktName = "STATE SCHEMA " + juce::String (stateFremdesMajorAnzeige);
+        messpunktName = "STATE NOT READABLE";
     }
     skin::kopfAnzeigeText (g, skin::kopfAnzeige (gs), rolle, messpunktName, gs);
 
@@ -1175,8 +1175,12 @@ void EqCopilotEditor::paint (juce::Graphics& g)
     bool meldungZeigen = ! statusMeldung.isEmpty() && juce::Time::getMillisecondCounter() < statusMeldungBisMs;
     if (stateNurLesenAnzeige && ! meldungZeigen)
     {
-        meldungText = "State from a newer Nakama version (schema " + juce::String (stateFremdesMajorAnzeige)
-                      + "). Read-only: audio passes through, nothing is written over it. Update the plugin.";
+        // Der Grund kommt aus der State-Bibliothek (englisch): "NakamaState
+        // schema 3 is unknown to this version (it reads schema 2)" oder eine
+        // verletzte Kind-Matrix - nie die Behauptung "neuere Version", wenn es
+        // keine ist.
+        meldungText = "State read-only: " + stateGrundAnzeige
+                      + ". Audio passes through, nothing is written over it.";
         meldungZeigen = true;
     }
     if (meldungZeigen)

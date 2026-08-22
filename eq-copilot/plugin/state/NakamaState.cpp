@@ -197,10 +197,10 @@ juce::ValueTree synchronisiert (const Zustand& z)
 /** Liest einen NakamaState-Baum vollstaendig oder gar nicht. */
 bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, juce::String& grund)
 {
-    if (! v.hasType (kRoot)) { grund = "kein NakamaState"; return false; }
+    if (! v.hasType (kRoot)) { grund = "not a NakamaState"; return false; }
     if (! schemaIst (v, kRootSchema))
     {
-        grund = "NakamaState schema " + v.getProperty (kSchema).toString() + " ist diesem Build unbekannt (liest 2)";
+        grund = "NakamaState schema " + v.getProperty (kSchema).toString() + " is unknown to this version (it reads schema 2)";
         return false;
     }
 
@@ -213,72 +213,72 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
         else if (kind.hasType (kParameters))  ++nParam;
         else if (kind.hasType (kDsp))         ++nDsp;
         else if (kind.hasType (kPairing))     ++nPairing;
-        else { grund = "unbekanntes Kind " + kind.getType().toString(); return false; }
+        else { grund = "unknown child " + kind.getType().toString(); return false; }
     }
-    if (nCommon != 1)  { grund = "Common fehlt oder ist doppelt"; return false; }
-    if (nMain > 1 || nParam > 1 || nDsp > 1 || nPairing > 1) { grund = "doppeltes Kind"; return false; }
-    if (nDsp > 0)      { grund = "Kind Dsp ist in diesem Build nicht lesbar (SONDE-015)"; return false; }
-    if (nPairing > 0)  { grund = "Kind Pairing ist in diesem Build nicht lesbar (SONDE-016)"; return false; }
+    if (nCommon != 1)  { grund = "Common is missing or duplicated"; return false; }
+    if (nMain > 1 || nParam > 1 || nDsp > 1 || nPairing > 1) { grund = "duplicated child"; return false; }
+    if (nDsp > 0)      { grund = "child Dsp is not readable by this version (SONDE-015)"; return false; }
+    if (nPairing > 0)  { grund = "child Pairing is not readable by this version (SONDE-016)"; return false; }
 
     const auto common = v.getChildWithName (kCommon);
     if (! schemaIst (common, kCommonSchema))
     {
-        grund = "Common schema " + common.getProperty (kSchema).toString() + " ist diesem Build unbekannt (liest 1)";
+        grund = "Common schema " + common.getProperty (kSchema).toString() + " is unknown to this version (it reads schema 1)";
         return false;
     }
 
     Common c;
     const auto id = common.getProperty (kInstanceId);
-    if (! id.isString() || id.toString().isEmpty()) { grund = "Common.instance_id fehlt"; return false; }
+    if (! id.isString() || id.toString().isEmpty()) { grund = "Common.instance_id is missing"; return false; }
     c.instanceId = id.toString();
 
     const auto kindWort = common.getProperty (kKind);
     if (! kindWort.isString() || ! klasseAusWort (kindWort.toString(), c.klasse))
     {
-        grund = "Common.plugin_kind unbekannt: " + kindWort.toString(); return false;
+        grund = "Common.plugin_kind unknown: " + kindWort.toString(); return false;
     }
     const auto posWort = common.getProperty (kPosition);
     if (! posWort.isString() || ! positionAusWort (posWort.toString(), c.position))
     {
-        grund = "Common.measurement_position unbekannt: " + posWort.toString(); return false;
+        grund = "Common.measurement_position unknown: " + posWort.toString(); return false;
     }
     if (! bundle.erlaubt (c.klasse))
     {
-        grund = juce::String ("Klasse ") + wort (c.klasse) + " gehoert nicht zu diesem Bundle"; return false;
+        grund = juce::String ("plugin_kind ") + wort (c.klasse) + " does not belong to this bundle"; return false;
     }
     if (! positionErlaubt (c.klasse, c.position))
     {
-        grund = juce::String ("Messposition ") + wort (c.position) + " ist fuer " + wort (c.klasse) + " unzulaessig"; return false;
+        grund = juce::String ("measurement_position ") + wort (c.position) + " is not allowed for " + wort (c.klasse); return false;
     }
 
     const auto label = common.getProperty (kLabel);
-    if (common.hasProperty (kLabel) && ! label.isString()) { grund = "Common.label ist kein Text"; return false; }
+    if (common.hasProperty (kLabel) && ! label.isString()) { grund = "Common.label is not a string"; return false; }
     c.label = label.toString();
     const auto pair = common.getProperty (kPairId);
-    if (common.hasProperty (kPairId) && ! pair.isString()) { grund = "Common.pair_id ist kein Text"; return false; }
+    if (common.hasProperty (kPairId) && ! pair.isString()) { grund = "Common.pair_id is not a string"; return false; }
     c.pairId = pair.toString();
     const auto binding = common.getProperty (kBinding);
-    if (common.hasProperty (kBinding) && ! binding.isString()) { grund = "Common.project_binding_id ist kein Text"; return false; }
+    if (common.hasProperty (kBinding) && ! binding.isString()) { grund = "Common.project_binding_id is not a string"; return false; }
     c.projectBindingId = binding.toString();
 
     // Kind-Matrix (§2.1 des Vertrags).
     const bool istMain = c.klasse == Klasse::main;
     const bool istAktiv = c.klasse == Klasse::active_probe;
-    if (istMain && nMain != 1)   { grund = "main braucht genau ein MainProject"; return false; }
-    if (! istMain && nMain > 0)  { grund = juce::String ("MainProject ist fuer ") + wort (c.klasse) + " unzulaessig"; return false; }
-    if (istAktiv && nParam != 1) { grund = "active_probe braucht genau ein Parameters"; return false; }
-    if (! istAktiv && nParam > 0){ grund = juce::String ("Parameters ist fuer ") + wort (c.klasse) + " unzulaessig"; return false; }
+    if (istMain && nMain != 1)   { grund = "main requires exactly one MainProject"; return false; }
+    if (! istMain && nMain > 0)  { grund = juce::String ("MainProject is not allowed for ") + wort (c.klasse); return false; }
+    if (istAktiv && nParam != 1) { grund = "active_probe requires exactly one Parameters"; return false; }
+    if (! istAktiv && nParam > 0){ grund = juce::String ("Parameters is not allowed for ") + wort (c.klasse); return false; }
 
     if (istMain && ! schemaIst (v.getChildWithName (kMainProject), kMainSchema))
     {
-        grund = "MainProject schema ist diesem Build unbekannt (liest 1)"; return false;
+        grund = "MainProject schema is unknown to this version (it reads schema 1)"; return false;
     }
 
     parameter::Satz satz {};
     if (istAktiv)
     {
         const auto p = v.getChildWithName (kParameters);
-        if (! schemaIst (p, kParamSchema)) { grund = "Parameters schema ist diesem Build unbekannt (liest 1)"; return false; }
+        if (! schemaIst (p, kParamSchema)) { grund = "Parameters schema is unknown to this version (it reads schema 1)"; return false; }
         if (! parameter::leseAusBaum (p, satz, grund)) return false;
     }
 
@@ -310,10 +310,10 @@ Zustand frisch (const juce::String& instanceId)
 
 bool migriereSchema1 (const juce::ValueTree& alt, juce::ValueTree& neu, juce::String& grund)
 {
-    if (! alt.hasType (kAltRoot)) { grund = "kein EqCopilotState"; return false; }
+    if (! alt.hasType (kAltRoot)) { grund = "not an EqCopilotState"; return false; }
     if (! schemaIst (alt, 1))
     {
-        grund = "EqCopilotState schema " + alt.getProperty (kSchema).toString() + " ist kein Schema 1";
+        grund = "EqCopilotState schema " + alt.getProperty (kSchema).toString() + " is not schema 1";
         return false;
     }
 
@@ -324,7 +324,7 @@ bool migriereSchema1 (const juce::ValueTree& alt, juce::ValueTree& neu, juce::St
     Common c;
     if (! ausV2Rolle (rolle, c.klasse, c.position))
     {
-        grund = "Schema-1-Rolle unbekannt: " + rolle;
+        grund = "schema-1 role unknown: " + rolle;
         return false;
     }
 
@@ -374,7 +374,7 @@ LadeErgebnis lade (const void* daten, size_t laenge, const Bundle& bundle, Zusta
             return nurLesen (grund, v);
         Zustand z;
         if (! leseSchema2 (neu, bundle, z, grund))
-            return nurLesen ("Migration ergab keinen lesbaren Stand: " + grund, v);
+            return nurLesen ("migration did not yield a readable state: " + grund, v);
         z.herkunft = Herkunft::schema1Migriert;
         aus = z;
         return LadeErgebnis::migriert;

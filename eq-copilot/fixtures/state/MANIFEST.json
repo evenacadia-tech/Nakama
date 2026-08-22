@@ -145,6 +145,14 @@
       "grund": "nichtendlich"
     },
     {
+      "datei": "dto/ungueltig/nichtendlich-unterlauf.json",
+      "grund": "nichtendlich"
+    },
+    {
+      "datei": "dto/ungueltig/bereich-ganzzahl-2e53.json",
+      "grund": "bereich"
+    },
+    {
       "datei": "dto/ungueltig/enum-unbekannt.json",
       "grund": "enum"
     },

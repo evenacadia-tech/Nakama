@@ -138,7 +138,7 @@ private:
     // read-only-State (SONDE-006, Vertrag nakama-state-v2.md §5): vom Timer
     // gepollt; Anzeige-Pflicht „Capability-Degradation" (Entwurf §0.4).
     bool stateNurLesenAnzeige = false;
-    int  stateFremdesMajorAnzeige = 0;
+    juce::String stateGrundAnzeige;
     double yObenDb = -20.0;                 // stabiler Y-Bereich: wächst nur
     bool   yInitialisiert = false;
 

@@ -31,5 +31,10 @@ if [ -n "$DIRTY" ]; then
   echo "-- Uncommitted (evtl. parallele Session — eigene Edits sofort per Pathspec committen, nie --amend, fremde Dateien nie anfassen):"
   echo "$DIRTY" | head -10 | sed 's/^/  /'
   N=$(echo "$DIRTY" | wc -l | tr -d ' ')
-  [ "$N" -gt 10 ] && echo "  … ($N gesamt)"
+  if [ "$N" -gt 10 ]; then echo "  … ($N gesamt)"; fi
 fi
+
+# Exitcode explizit: der letzte Befehl oben darf nie den Hook-Status bestimmen
+# (bis 22.08.2026 lieferte „[ N -gt 10 ] && …" bei 1–10 Dateien Exit 1 — der
+# Harness verwarf dann die ganze Ausgabe als „hook error, no stderr").
+exit 0

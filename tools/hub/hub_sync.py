@@ -59,6 +59,8 @@ def hub_url(hub: dict) -> str:
 
 def http(url: str, daten: dict | None = None) -> dict:
     body = None
+    # Eigener User-Agent ist Pflicht: Cloudflare vor der Seite antwortet auf
+    # "Python-urllib/3.x" mit 403 (gemessen 22.08.2026).
     kopf = {"Accept": "application/json", "User-Agent": "nakama-hub-sync/1 (Claude)"}
     if daten is not None:
         body = json.dumps(daten, ensure_ascii=False).encode("utf-8")

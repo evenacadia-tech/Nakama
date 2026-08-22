@@ -18,6 +18,7 @@ py_() { py -3.13 - "$@" 2>/dev/null || python3 - "$@" 2>/dev/null; }
 # Kopfzahlen aus hub.json (ohne jq — Python ist auf beiden Rechnern da)
 KOPF=$(py_ "$HUB" <<'EOF'
 import json, sys
+sys.stdout.reconfigure(encoding='utf-8', errors='replace')  # Konsole ist cp1252
 h = json.load(open(sys.argv[1], encoding="utf-8"))
 url = h.get("artefakt_url") or "(noch nicht veroeffentlicht)"
 bd = h.get("bei_dir", [])

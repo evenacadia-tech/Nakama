@@ -62,8 +62,8 @@
       "id": "U6",
       "dringlichkeit": "wenn du dazu kommst",
       "art": "Entscheid",
-      "titel": "Suna: elf Lesarten bestätigen oder drehen",
-      "was": "Die Suna-Kachel hast du am 21.08. exportiert — sie gilt. Beim Entwurf wurden elf Fragen je mit einer Lesart beantwortet (u. a. Apertur-Logik, Rollenwörter LEADS · CARRIES · SUPPORTS …, Messstatus-Wörter, Hinweis-Wortlaut, halbierter Schwebeschatten). Jede ist mit einem Handgriff in Figma umkehrbar.",
+      "titel": "Suna: zehn Lesarten bestätigen oder drehen",
+      "was": "Die Suna-Kachel hast du am 21.08. exportiert — sie gilt. Beim Entwurf wurden zehn Fragen je mit einer Lesart beantwortet (u. a. Apertur-Logik, Rollenwörter LEADS · CARRIES · SUPPORTS …, Messstatus-Wörter, Hinweis-Wortlaut, halbierter Schwebeschatten). Jede ist mit einem Handgriff in Figma umkehrbar.",
       "warum": "Suna wird als letzte der drei Apps übersetzt (Reihenfolge Gen → Probeeq → Suna). Kein Blocker heute — aber jede Lesart, die du nicht bestätigst, wird beim Übersetzen erneut vorgelegt.",
       "wo": "Nakama-Design/abnahmen/2026-08-21-suna-auftrag-figma.md (Abschnitt „Was ausdrücklich offen bleibt“)",
       "seit": "21.08."
@@ -402,7 +402,7 @@
     {
       "phase": "P8–P9",
       "titel": "Entmaskierung und Härtung",
-      "ziel": "Sidechain-Entmaskierung (Termin A war grün — darf gebaut werden) und alles für die Auslieferung: Verteilung, Migration, Dauerlauf, Privatsphäre, Rollback. Danach: Release R4, der volle Sondenkern.",
+      "ziel": "Sidechain-Entmaskierung (nur wenn Termin A und Gate G0 grün sind — Termin A ist grün, G0 steht aus) und alles für die Auslieferung: Verteilung, Migration, Dauerlauf, Privatsphäre, Rollback. Danach: Release R4, der volle Sondenkern.",
       "zeilen": [
         {
           "id": "S32–33",
@@ -450,7 +450,7 @@
         "groesse": "760 × 430",
         "stand_text": "Vorgabe in der Truhe: dein Export vom 21.08. — noch in der alten (cyanen) Sprache; er liefert die Anordnung. Der neue Entwurf (Studie 04, Probeeq-Sprache, von Claude in deiner Figma-Datei) ist nicht exportiert und damit noch keine Vorgabe.",
         "status": "wartet auf dich",
-        "offen": "17 offene Punkte, je mit gewählter Lesart",
+        "offen": "17 offene Punkte (16 Lesarten + der Export selbst)",
         "wo": "Nakama-Design/abnahmen/2026-08-21-gen-auftrag-figma.md"
       },
       {
@@ -470,7 +470,7 @@
         "groesse": "260 × 84",
         "stand_text": "Vorgabe in der Truhe: Entwurf von Claude in der Probeeq-Sprache (Studie 03), von dir am 21.08. exportiert — mit dem Export dein Wort. Bus · Rolle · Position im Glas, Verbindungspunkt, Wortmarke und Messstatus im Kinn.",
         "status": "Vorgabe steht",
-        "offen": "11 Lesarten zu bestätigen (U6)",
+        "offen": "10 Lesarten zu bestätigen (U6)",
         "wo": "Nakama-Design/abnahmen/2026-08-21-suna-auftrag-figma.md"
       }
     ]

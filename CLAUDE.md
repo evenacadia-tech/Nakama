@@ -40,7 +40,7 @@ Claude holt die Stände per Figma-MCP in die Truhe (`assets/figma/LIES-MICH.md`)
    Stand: `assets/figma/2026-08-22-probeeq.png` (Depot `6:1906`).
 3. **Nakama Suna** — die passive Sonde: eine kleine Status-/Identitätskachel.
    260×84. Stand: `assets/figma/2026-08-22-suna.png` (Depot `6:2629`) —
-   entworfen von Claude in der Probeeq-Sprache (Studie 03, Node 6039:2), vom
+   entworfen von Claude in der Probeeq-Sprache (Studie 03; im Depot Rahmen 6:2111), vom
    User exportiert und damit User-Wort; die elf offenen Punkte der Übersetzung
    stehen in `abnahmen/2026-08-21-suna-auftrag-figma.md`.
 

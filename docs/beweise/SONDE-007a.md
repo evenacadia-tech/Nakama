@@ -1807,7 +1807,7 @@ unten unter „Kanon-Lauf - SONDE-007a T2-Nacharbeit".
 | **T2-2** Ausschlusssatz nennt K1 statt K2 | ☑ ja (`NakamaKernRiegel.h:43-89` — `JUCE_STANDALONE_APPLICATION` steht auf keiner Zeile; `SONDE-007a.md` B3 zeigt sie unter den K2-Funden) | **gefixt (Text):** der Kommentar in `cmake/NakamaKern.cmake` nennt jetzt den Riegel, der den Ausschluss wirklich trägt, und sagt warum (der **Wert** trägt den Präfix) |
 | **T2-3** „dieselbe Konfiguration" weiter behauptet als gemessen | ☑ ja (`nakama_kern_konfig_pruefen()` liest ausschließlich `COMPILE_DEFINITIONS`) | **gefixt, nicht abgeschwächt:** neuer Riegel **K2c** `nakama_kern_schalter_pruefen()`. Er vergleicht nicht einzelne Schalter (versionsabhängig, in Generatorausdrücken versteckt), sondern deren **Quelle**: jedes `juce_recommended_*`-Ziel in der Hülle der Referenz muss auch in der Hülle des Kerns liegen. Damit ist die Aussage gemessen statt behauptet |
 | **T2-4** A14 nimmt `sorted(...)[0]` | ☑ ja (`pruefe_kern_identitaetsfrei.py:187`, `:175`) | **gefixt:** `waehle_release()` bevorzugt die Release-Fassung für Lib **und** Gegenprobe-Bundle und bricht mit Exit 3 ab, wenn mehrere Kandidaten ohne Release-Fassung dastehen — statt still den alphabetisch ersten zu nehmen |
-| **T2-5** Frische-Riegel sieht die Baubeschreibung nicht | ☑ ja (`pruefe_kern_identitaetsfrei.py:218-221`) | **gefixt:** `plugin/CMakeLists.txt` und `cmake/NakamaKern.cmake` stehen jetzt im bewachten Satz |
+| **T2-5** Frische-Riegel sieht die Baubeschreibung nicht | ☑ ja (`pruefe_kern_identitaetsfrei.py:218-221`) | **gefixt im dritten Anlauf** — die ersten beiden waren falsch, siehe unten |
 
 ### K2c beim Fallen (Probe: `warning_flags` am Kern entfernt)
 
@@ -1828,11 +1828,58 @@ Menge gesehen und wäre **still grün** gewesen. Der Aufruf steht deshalb nach
 `target_link_libraries(EqCopilot …)`, mit einer Zeile an der alten Stelle, die
 das sagt.
 
-### Der erweiterte Frische-Riegel beim Fallen (Baubeschreibung berührt, Lib alt)
+### T2-5: drei Anläufe, zwei davon gemessen falsch
+
+Der Befund war richtig, die ersten beiden Reparaturen nicht. Beide fielen im
+Alltag desselben Tages auf, nicht im Nachdenken — deshalb stehen sie hier.
+
+**Anlauf 1 — mtime auf die handgeschriebenen Dateien** (`plugin/CMakeLists.txt`,
+`cmake/NakamaKern.cmake`). Fiel korrekt, als die Baubeschreibung sich änderte:
 
 ```text
 [0] Frische - misst dieses Bein den aktuellen Quellstand?
   FEHLER  NakamaKern.lib ist nicht aelter als Kernquellen und Baubeschreibung  [CMakeLists.txt, NakamaKern.cmake]
+```
+
+Und fiel dann **falsch**: die erste S9-Änderung berührte den Identitätsblock von
+`EqCopilot` — den Kern geht das nichts an — und färbte A14 im Kanon rot
+(`ROT - 1 von 19`). Schlimmer: es blieb rot, weil ein Bau die Lib nicht neu
+linkte.
+
+**Anlauf 2 — mtime auf die erzeugte `NakamaKern.vcxproj`.** Die Idee war besser
+begründet (gemessen: ein zweites Configure ohne Edit lässt ihren Zeitstempel
+stehen, CMake schreibt sie nur bei Inhaltsänderung neu). Trotzdem falsch, und
+das zeigte erst die Messung: **MSBuild entscheidet über `.tlog`-Dateien, nicht
+über den Zeitstempel der Projektdatei.** Ein Bau nach der Änderung linkte die
+Lib nicht neu, der Riegel hing genauso.
+
+🔑 **Lehre:** Eine mtime-Wache taugt nur an einer Datei, die der Bau auch
+**verbraucht**. Keiner der beiden Stellvertreter war das — beide bleiben für
+immer neuer als das Artefakt, bis dieses aus einem anderen Grund entsteht.
+
+**Anlauf 3 — die Kommandozeile, mit der die Lib wirklich entstand.** MSBuild
+schreibt sie vollständig nach
+`NakamaKern.dir/Release/NakamaKern.tlog/CL.command.1.tlog` (UTF-16LE), mit jedem
+`/D`. Dagegen hält das Bein die Definemenge, die die heutige Projektdatei
+vorschreibt. Kein Stellvertreter mehr, und selbstheilend, weil ein Bau die
+`.tlog` neu schreibt.
+
+Gefallen (Probe: ein Define an der Kopf-Fassade ergänzt, **nicht** gebaut):
+
+```text
+[0] Frische - misst dieses Bein den aktuellen Quellstand?
+  ok      NakamaKern.lib ist nicht aelter als die Kernquellen
+  FEHLER  die Lib wurde mit der heutigen Definemenge gebaut (16 aus der Projektdatei)
+          [nicht in der gebauten Kommandozeile: NAKAMA_RIEGELPROBE_FASSADE=1]
+```
+
+Grün nach dem Zurücknehmen, und **kein** Fehlalarm mehr bei der S9-Änderung am
+Identitätsblock:
+
+```text
+[0] Frische - misst dieses Bein den aktuellen Quellstand?
+  ok      NakamaKern.lib ist nicht aelter als die Kernquellen
+  ok      die Lib wurde mit der heutigen Definemenge gebaut (15 aus der Projektdatei)
 ```
 
 ### Grün danach

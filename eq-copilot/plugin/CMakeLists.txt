@@ -21,13 +21,23 @@
 # hinter die §53.4-Grenzen ist ausdruecklich inkrementell und gehoert nicht in
 # dieses Ticket.
 
+# ── S9/SONDE-007b: Identitaet aus dem Manifest, nicht aus dieser Datei ──────
+# NAK-52 geschlossen. Bis 23.08. standen COMPANY_NAME, PLUGIN_CODE und
+# PRODUCT_NAME hier als Literale — eine zweite Wahrheit neben
+# identity/plugin-identities-v1.json, die EqCopIdentityTest gegeneinander
+# messen musste. Mit drei Zielen waeren daraus zwoelf Literale geworden.
+# Jetzt liest das Bauskript das Manifest; der Test misst weiterhin das GEBAUTE
+# moduleinfo.json gegen dieselbe Datei — zwei Wege zur selben Zahl, sonst
+# waere er eine Tautologie.
+nakama_identitaet_lesen(main NAKAMA_MAIN)
+
 juce_add_plugin(EqCopilot
-    COMPANY_NAME "evenacadia"
-    PRODUCT_NAME "EQ-Copilot"
-    PLUGIN_MANUFACTURER_CODE Evna
-    PLUGIN_CODE Eqcp
+    COMPANY_NAME "${NAKAMA_MAIN_HERSTELLER}"
+    PRODUCT_NAME "${NAKAMA_MAIN_PRODUKTNAME}"
+    PLUGIN_MANUFACTURER_CODE ${NAKAMA_MAIN_HERSTELLERCODE}
+    PLUGIN_CODE ${NAKAMA_MAIN_PLUGINCODE}
     FORMATS VST3
-    VST3_CATEGORIES Fx Analyzer
+    VST3_CATEGORIES ${NAKAMA_MAIN_KATEGORIEN}
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE

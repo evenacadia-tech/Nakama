@@ -56,4 +56,9 @@ nakama_flatbuffers_bereitstellen(
 # wird der Kern in plugin/CMakeLists.txt. Details im Modulkopf.
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/NakamaKern.cmake)
 
+# ── S9/SONDE-007b: die Identitaet kommt aus identity/plugin-identities-v1.json
+# (NAK-52). Stellt nur nakama_identitaet_lesen() bereit; benutzt wird sie an
+# den drei Zielblocken in plugin/CMakeLists.txt.
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/NakamaIdentitaet.cmake)
+
 add_subdirectory(plugin)

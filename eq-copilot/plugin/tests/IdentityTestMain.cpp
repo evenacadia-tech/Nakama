@@ -236,6 +236,16 @@ int main (int argc, char* argv[])
     // nicht, wenn niemand baut. Deshalb wird zuerst der Quelltext gemessen:
     // wer PLUGIN_CODE aendert oder JUCE_VST3_CAN_REPLACE_VST2 auf 1 stellt,
     // faellt hier auf - auch ohne Bau.
+    //
+    // S9/SONDE-007b (23.08.2026, NAK-52): Bis dahin fror dieser Block den
+    // LITERALEN Text ein ("PLUGIN_CODE Eqcp"). Das war richtig, solange das
+    // Bauskript die Identitaet selbst trug - und wurde falsch, als sie ins
+    // Manifest zog: der Test haette dann eine Kopie gegen ihr Original
+    // gemessen und beim Abweichen nicht sagen koennen, welche Seite luegt.
+    // Jetzt misst er das Gegenteil: dass im Zielblock KEINE zweite Wahrheit
+    // mehr steht und die Werte aus dem Manifest kommen. Der eigentliche
+    // Identitaetsbeweis bleibt das gebaute moduleinfo.json weiter unten -
+    // zwei Wege zur selben Zahl.
     const auto cmakeDatei = finde ("eq-copilot/plugin/CMakeLists.txt");
     pruefe (cmakeDatei.existsAsFile(), "plugin/CMakeLists.txt gefunden");
 
@@ -254,13 +264,34 @@ int main (int argc, char* argv[])
         pruefe (zielBlock.isNotEmpty(), "CMake: Zielblock juce_add_plugin(EqCopilot) gefunden");
         pruefe (defBlock.isNotEmpty(), "CMake: Defineblock von EqCopilot gefunden");
 
-        pruefe (zielBlock.contains ("PLUGIN_CODE " + mainZiel["plugin_code"].toString()),
-                "CMake-Quelle: PLUGIN_CODE unveraendert",
+        // (1) Das Bauskript liest das Manifest ueberhaupt.
+        pruefe (cmakeText.contains ("nakama_identitaet_lesen(main NAKAMA_MAIN)"),
+                "CMake-Quelle: das Bauskript liest 'main' aus dem Identitaetsmanifest");
+
+        // (2) Die vier Identitaetszeilen kommen von dort - nicht aus dieser Datei.
+        pruefe (zielBlock.contains ("PLUGIN_CODE ${NAKAMA_MAIN_PLUGINCODE}"),
+                "CMake-Quelle: PLUGIN_CODE kommt aus dem Manifest");
+        pruefe (zielBlock.contains ("PLUGIN_MANUFACTURER_CODE ${NAKAMA_MAIN_HERSTELLERCODE}"),
+                "CMake-Quelle: PLUGIN_MANUFACTURER_CODE kommt aus dem Manifest");
+        pruefe (zielBlock.contains ("PRODUCT_NAME \"${NAKAMA_MAIN_PRODUKTNAME}\""),
+                "CMake-Quelle: PRODUCT_NAME kommt aus dem Manifest");
+        pruefe (zielBlock.contains ("COMPANY_NAME \"${NAKAMA_MAIN_HERSTELLER}\""),
+                "CMake-Quelle: COMPANY_NAME kommt aus dem Manifest");
+
+        // (3) Und es steht keine zweite Wahrheit daneben. Ohne diese Zeilen
+        //     koennte jemand die Manifestzeile stehen lassen und darunter ein
+        //     Literal setzen - CMake naehme das letzte, der Test saehe nichts.
+        //     Gesucht wird im ZIELBLOCK, nicht in der Datei: NkSp und NkHp
+        //     (Wegwerf-Messgeraete) tragen ihre Codes zu Recht literal, sie
+        //     stehen ausdruecklich NICHT im Manifest.
+        pruefe (! zielBlock.contains (mainZiel["plugin_code"].toString()),
+                "CMake-Quelle: der Viercode steht nicht literal im Zielblock",
                 mainZiel["plugin_code"].toString());
-        pruefe (zielBlock.contains ("PLUGIN_MANUFACTURER_CODE " + herstellerCode),
-                "CMake-Quelle: PLUGIN_MANUFACTURER_CODE unveraendert", herstellerCode);
-        pruefe (zielBlock.contains ("PRODUCT_NAME \"" + mainZiel["produktname"].toString() + "\""),
-                "CMake-Quelle: PRODUCT_NAME unveraendert");
+        pruefe (! zielBlock.contains (herstellerCode),
+                "CMake-Quelle: der Herstellercode steht nicht literal im Zielblock",
+                herstellerCode);
+        pruefe (! zielBlock.contains ("\"" + mainZiel["produktname"].toString() + "\""),
+                "CMake-Quelle: der Produktname steht nicht literal im Zielblock");
         pruefe (defBlock.contains ("JUCE_VST3_CAN_REPLACE_VST2=0"),
                 "CMake-Quelle: JUCE_VST3_CAN_REPLACE_VST2=0 steht im Zielblock");
         pruefe (! defBlock.contains ("JUCE_VST3_CAN_REPLACE_VST2=1"),

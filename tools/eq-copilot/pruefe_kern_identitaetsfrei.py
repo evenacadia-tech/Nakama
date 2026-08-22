@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 import sys
 
 WURZEL = pathlib.Path(__file__).resolve().parents[2]
@@ -51,10 +52,56 @@ KERNQUELLEN = WURZEL / "eq-copilot" / "plugin"
 # Uebersetzung des Kerns hat sich dadurch geaendert, also waere der fruehere
 # Lauf kein Beleg mehr gewesen"), und die erste Fassung der Frischepruefung sah
 # ihn nicht: Fassade geaendert, keine .cpp beruehrt, Bein gruen auf alter Lib.
-BAUBESCHREIBUNG = [
-    WURZEL / "eq-copilot" / "plugin" / "CMakeLists.txt",
-    WURZEL / "eq-copilot" / "cmake" / "NakamaKern.cmake",
-]
+#
+# ⚠️ ZWEI Anlaeufe, beide am 23.08., beide gemessen - der erste war falsch:
+#
+#   Anlauf 1 bewachte per mtime die handgeschriebenen Dateien
+#   plugin/CMakeLists.txt und cmake/NakamaKern.cmake. Eine Aenderung am
+#   Identitaetsblock von EqCopilot, die den Kern nicht beruehrt, faerbte
+#   dieses Bein rot - und es BLIEB rot.
+#   Anlauf 2 wollte stattdessen die erzeugte NakamaKern.vcxproj bewachen.
+#   Auch falsch, und diesmal aus einem Grund, den nur die Messung zeigt:
+#   MSBuild entscheidet ueber .tlog-Dateien, nicht ueber den Zeitstempel der
+#   Projektdatei. Ein Bau nach der Aenderung linkte die Lib NICHT neu - der
+#   Riegel blieb genauso haengen.
+#
+# 🔑 Eine mtime-Wache taugt nur an einer Datei, die der Bau auch VERBRAUCHT.
+#    Keine der beiden ist das. Statt einen dritten Stellvertreter zu suchen,
+#    fragt dieses Bein jetzt die einzige Stelle, die die Wahrheit kennt:
+#    MSBuild schreibt in CL.command.1.tlog die vollstaendige Kommandozeile,
+#    mit der jede Kernquelle zuletzt uebersetzt WURDE. Dagegen laesst sich die
+#    Definemenge halten, die die Projektdatei heute vorschreibt. Weicht sie
+#    ab, wurde die Lib mit anderen Schaltern gebaut - genau die Frage aus B8.
+#    Und es heilt sich selbst, weil ein Bau die .tlog neu schreibt.
+
+
+def _defines_aus_vcxproj(datei: pathlib.Path, konfig: str = "Release|x64") -> set[str]:
+    text = datei.read_text(encoding="utf-8", errors="replace")
+    muster = (r"<ItemDefinitionGroup Condition=\"'\$\(Configuration\)\|\$\(Platform\)'=='"
+              + re.escape(konfig) + r"'\">(.*?)</ItemDefinitionGroup>")
+    for gruppe in re.finditer(muster, text, re.S):
+        treffer = re.search(r"<PreprocessorDefinitions>(.*?)</PreprocessorDefinitions>",
+                            gruppe.group(1), re.S)
+        if treffer:
+            return {_normiere(d) for d in treffer.group(1).split(";")
+                    if d and not d.startswith("%")}
+    return set()
+
+
+def _defines_aus_tlog(datei: pathlib.Path) -> set[str]:
+    # MSBuild schreibt die .tlog als UTF-16LE mit BOM.
+    text = datei.read_bytes().decode("utf-16-le", errors="replace").lstrip("﻿")
+    zeilen = [z for z in text.splitlines() if z.strip() and not z.startswith("^")]
+    gefunden: set[str] = set()
+    for z in zeilen:
+        for d in re.findall(r'/D\s+("(?:[^"\\]|\\.)*"|\S+)', z):
+            gefunden.add(_normiere(d))
+    return gefunden
+
+
+def _normiere(define: str) -> str:
+    """`"CMAKE_INTDIR=\\"Release\\""` und `CMAKE_INTDIR="Release"` sind dasselbe."""
+    return define.replace("\\", "").replace('"', "").strip()
 
 # Die vier Uebersetzungseinheiten des Kerns (plugin/CMakeLists.txt,
 # NAKAMA_KERN_QUELLEN). Die Liste steht hier absichtlich handgeschrieben: ein
@@ -251,12 +298,27 @@ def main() -> int:
     print("\n[0] Frische - misst dieses Bein den aktuellen Quellstand?")
     lib_zeit = kern.stat().st_mtime
     bewacht = (sorted(KERNQUELLEN.glob("state/*"))
-               + sorted(KERNQUELLEN.glob("vertrag/NakamaVertrag.*"))
-               + BAUBESCHREIBUNG)
+               + sorted(KERNQUELLEN.glob("vertrag/NakamaVertrag.*")))
     juenger = [q for q in bewacht if q.is_file() and q.stat().st_mtime > lib_zeit]
     pruefe(not juenger,
-           "NakamaKern.lib ist nicht aelter als Kernquellen und Baubeschreibung",
+           "NakamaKern.lib ist nicht aelter als die Kernquellen",
            ", ".join(q.name for q in juenger) if juenger else "")
+
+    # Zweite Haelfte: mit WELCHEN Schaltern wurde sie gebaut? Siehe Kopf.
+    projekt = sorted(bau.glob("**/NakamaKern.vcxproj"))
+    tlog = sorted(bau.glob("**/NakamaKern.tlog/CL.command.1.tlog"))
+    if projekt and tlog:
+        soll = _defines_aus_vcxproj(projekt[0])
+        ist = _defines_aus_tlog(tlog[0])
+        fehlend = sorted(soll - ist)
+        pruefe(bool(soll) and not fehlend,
+               f"die Lib wurde mit der heutigen Definemenge gebaut ({len(soll)} aus der Projektdatei)",
+               ("nicht in der gebauten Kommandozeile: " + ", ".join(fehlend)) if fehlend
+               else ("Projektdatei nennt keine Defines" if not soll else ""))
+    else:
+        pruefe(False,
+               "Bau-Protokoll des Kerns gefunden (CL.command.1.tlog + NakamaKern.vcxproj)",
+               "ohne sie ist nicht feststellbar, mit welchen Schaltern die Lib entstand")
 
     # ── 1. Die Gegenprobe zuerst: taugt der Scanner ueberhaupt? ──────────────
     # Nur Werte, die im gebauten Main-Bundle stehen MUESSEN. Die reservierten

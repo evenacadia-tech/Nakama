@@ -479,7 +479,8 @@ function antworten(){
       btn=document.getElementById('leiste-speichern'), verwerfen=document.getElementById('leiste-verwerfen');
   function offene(){ return Object.keys(ENTWURF).filter(entwurfAnders); }
   function merk(){ try{ localStorage.setItem('hub-antwort-entwurf', JSON.stringify(ENTWURF)); }catch(e){} }
-  function zeige(){
+  function zeige(){ /* Elemente frisch holen — nach einem Re-Render (Verwerfen) wären die alten losgelöst */
+    var leiste=document.getElementById('leiste'), zaehl=document.getElementById('leiste-zaehl');
     var n=offene().length;
     leiste.classList.toggle('da', n>0);
     zaehl.textContent = n+' '+(n===1?'Antwort':'Antworten')+' ungespeichert';

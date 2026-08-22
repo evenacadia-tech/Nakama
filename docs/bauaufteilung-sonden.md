@@ -26,7 +26,8 @@
 - **Nachgezogen 22.08.:** S7 (`SONDE-006`) gebaut, Kanon **17 Beine** (B2
   `EqCopStateMigrationTest`, A12 `erzeuge_state_fixtures.py --pruefen`);
   Manifest `docs/beweise/SONDE-006.md`. Danach am selben Tag **Termin B
-  gemessen und S4 gebaut** (Capabilityreport, Kanon **18 Beine** mit A13);
+  gemessen und S4 gebaut** (Capabilityreport, Kanon **18 Beine** mit A13; seit
+  S8 **19** mit A14);
   P0 ist damit bis auf **Gate G0** (T3, eigene Session) vollständig. Nächste
   Flächen: G0, dann S8.
 
@@ -280,7 +281,7 @@ JUCE-Update neu bewiesen werden muss. Eigene Session, eigener Prüfer.
 | ~~S5~~ | `SONDE-005a` | ~~v3-JSON-Schemas + Bandgitter + gültige/ungültige Fixtures~~ — **gebaut 21.08.**: `schemas/v3/` (17 der 25 Nachrichtenfamilien aus §33.3 definiert, 8 namentlich **reserviert** mit Eigentümerticket), beide Bandgitter als eingefrorene Zahlenfixture (221 + 64, IEC 61260-1 mit Halbschritt — von vier denkbaren Konventionen trifft nur diese die 221 aus §33.2), Quantisierungsvertrag mit 61 Vektoren, **153 Fixtures (Stand nach T2-Runde 2; Baustand-Zeile trug 131)** mit handgeschriebenem Manifest, und **drei** Prüfbeine (`jsonschema`-Referenz · `EqCopSchemaTest` · `contract_cross_language`). Kanon von 7/7 auf **8/8** gewachsen, `pluginval` Strenge 8 SUCCESS. Manifest `docs/beweise/SONDE-005a.md`. Der Korpus fand drei echte Fehler (geschachtelter Discriminator, Nicht-Objekt-Wurzel, eine falsche handgeschriebene Erwartung) und eine dokumentierte Abweichung zwischen den Beinen (RFC 4627 vs. 8259). **Schließungsvorbehalt §65:** gilt bis S4 als *vorbereitet*, nicht *geschlossen*. | T1 ✅ · **T2 offen** — kein PASS im Manifest. Runde 1 NEEDS_WORK (sechs Vertragsbrueche gegen den Plantext, ein gemessener Cross-Language-Bruch am Zahlenbereich), Runde 2 NEEDS_WORK (der daraufhin gebaute Riegel befragte auf der C++-Seite denselben ueberlaufenden Leser, gegen den er schuetzt), Runde 3 am 21.08. zusammen mit S6 NEEDS_WORK (`docs/beweise/SONDE-005b.md` §6). Alle Befunde nachgearbeitet (`SONDE-005a.md` §6, `SONDE-005b.md` §6.3); ein abschliessendes Pruefer-Urteil steht aus. Bis 21.08. stand hier „T2 ✅" — gegen VORLAGE-Regel „Haekchen erst NACH dem Lauf". |
 | ~~S6~~ | `SONDE-005b` | ~~FlatBuffers (Feld-IDs!), gepinntes `flatc`, Codegen-Drift-Test~~ — **gebaut 21.08.**: `.fbs` mit explizitem `id` an jedem der 47 Felder, `flatc` auf einen **Commit** gepinnt (der Upstream fuehrt fuer 25.12.19 zwei Tags), Compiler/C++-Header/Rust-Crate aus derselben Quelle, **Drift 0** und beide Riegel beim Fallen vorgefuehrt. Zwei handgeschriebene Binaerleser gegen 40 Fixtures mit handgeschriebenem Manifest; ein Byte bringt beide mit demselben Pfad und derselben Regel zum Fallen. Kanon 12/12 -> **14/14** (seit A11: 15). Manifest `docs/beweise/SONDE-005b.md`. | T1 ✅ · **T2 offen** — Runde 3 gelaufen 21.08., Urteil NEEDS_WORK (`SONDE-005b.md` §6.1): ein Byte-Mutations-Fuzz fand, dass der C++-Leser ungueltiges UTF-8 als gueltig nahm und der Prozess daran starb (Heap-Korruption), dazu NUL-Laengen, Puffer unter 8 Byte (Rust-Panic) und zehn weitere Befunde an Manifest, Riegeln und Pins; alle bestaetigten gefixt (§6.3), Binaerfixtures 40 → 47. Kein PASS eingetragen. |
 | ~~S7~~ | `SONDE-006` | ~~State-Schema 2, Parameterbestand, reine Schema-1-Migration~~ — **gebaut 22.08.**: `NakamaState` schema 2 (Common/MainProject/Parameters; Dsp/Pairing reserviert) mit Kind-Matrix, reine Schema-1-Migration mit **4 bytegleichen Goldens**, unbekanntes Major ⇒ read-only mit Originalbytes (17 Fälle gemessen), Host-Dirty über `withNonParameterStateChanged` (vorher fehlte jeder `updateHostDisplay`-Aufruf im Plugin), Duplicate sichtbar. Parameterbestand **109 IDs** handgeschrieben (`schemas/state/nakama-parameter-v1.json`), C++-Tabelle deckungsgleich gemessen. `state_hash` = SHA-256 über RFC-8785-Kanon mit **eigenem JSON-Leser** (JUCE flusht Subnormale, verweigert `""`); drei Beine (C++ 130 Prüfungen, Python `rfc8785`, Rust `serde_json_canonicalizer`) bytegleich gegen einen Korpus, dessen Zahlenvektoren den **vom RFC gedruckten** Text tragen. Kanon 15 → **17** (B2 + A12). Manifest `docs/beweise/SONDE-006.md`. | T1 ✅ · T2 ✅ (**PASS** 22.08., neun nicht-blockierende Befunde nachgearbeitet, Manifest §5/§6) |
-| S8 | `SONDE-007a` | **Gemeinsamer Kern ohne `JucePlugin_*`-Konstanten** (NAK-23b) | T1+T2 |
+| ~~S8~~ | `SONDE-007a` | ~~**Gemeinsamer Kern ohne `JucePlugin_*`-Konstanten**~~ (NAK-23b) — **gebaut 22.08.**: `NakamaKern` als echte Static-Lib mit den vier geteilten Quellen, einmal übersetzt statt je Ziel (acht Verbraucher). Die Bauform ist **gemessen, nicht angenommen** — drei Wegwerf-Experimente: `$<COMPILE_ONLY:>` streift `INTERFACE_SOURCES` nicht ab; zwei Kopien derselben JUCE-Modulquelle linken zwar sauber, halten aber nur bei deckungsgleicher Übersetzung; die **Kopf-Fassade** (Includes+Defines aus dem Modulziel abgeleitet, Quellen nicht geerbt) übersetzt die Modulquelle genau einmal. Vier Riegel mit Arbeitsteilung, **jeder beim Fallen vorgeführt**: K1 Präprozessor (46 Makros) · K2 Linkhülle per Regex · K2b gleiche JUCE-Konfiguration wie der Verbraucher (aus dem Selbstaudit) · K3 = Kanon-Bein **A14**, misst das **Artefakt**. A14 trägt seine eigene Gegenprobe — und die hat die erste Fassung des Beins widerlegt (CIDs liegen als 16 rohe Bytes in COM-vertauschter Ordnung, nicht als Hextext). Kanon 18 → **19**. Identität, Passthrough, Golden, Markierung unverändert; `pluginval` Strenge 8 SUCCESS. Manifest `docs/beweise/SONDE-007a.md`. | T1 ✅ · **T2 offen** — kein Prüferurteil im Manifest |
 | S9 | `SONDE-007b` | Drei Ziele, Lifecycle-Klassifikation, Installer-Manifest | T1+T2 |
 | **G1** | — | **Gate:** `/c-review` + `/rust-review` + Codex. Falsifikation: Gate 1, Gate 7 | **T3** |
 
@@ -289,6 +290,17 @@ eine geteilte Static-Lib steht wörtlich im CMake-Kopf. Wenn der geteilte Kern
 auch nur **eine** `JucePlugin_*`-Konstante sieht, bekommen zwei Bundles die
 Identität des dritten — und genau das Identitäts-Golden aus S2 fällt.
 Deshalb getrennt von S9.
+
+**Nachtrag 22.08. (gebaut):** Die Warnung stimmte, aber der eigentliche
+Widerstand lag woanders — nicht bei den Identitätskonstanten (die hält schon
+K1 auf), sondern bei JUCEs Modulsystem: Module sind INTERFACE-Bibliotheken,
+deren `.cpp` in jedes konsumierende Ziel hineinkompiliert wird. Eine
+Static-Lib, die sie linkt, trägt eine zweite Kopie von `juce_core.obj`. Die
+gebaute Antwort ist eine Kopf-Fassade, die aus den Modulzielen **ableitet**,
+statt sie zu linken. Was S9 daraus mitnimmt: der Kern übersetzt gegen
+JUCE-Köpfe, die Implementierung kommt vom verbrauchenden Ziel — die drei
+Bundles müssen dieselben Module linken, sonst fehlt dem Kern zur Linkzeit
+ein Symbol.
 
 ### P2 · Messkern, IPC v3, Store — die größte Phase
 

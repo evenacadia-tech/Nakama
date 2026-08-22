@@ -191,15 +191,16 @@ Baustand: sind Prüfbinaries älter als ihre Quellen, verweigert er mit Exitcode
 die Beglaubigung (0 grün · 2 rot · 3 Voraussetzung fehlt · 4 nicht beglaubigt).
 Vorlage `docs/beweise/VORLAGE.md`, Basislinie `docs/beweise/S0-basislinie.md`.
 
-**Kanon (18 Beine, Tabelle in `tools/beweise.ps1`):** NullTest · Golden ·
+**Kanon (19 Beine, Tabelle in `tools/beweise.ps1`):** NullTest · Golden ·
 Markierung · `cargo test` (seit 22.08. mit dem JCS-Bein) · sechs Python-Beine
 des v3-Vertrags · A11 `pruefe_v2_schemas.py` · **A12
 `erzeuge_state_fixtures.py --pruefen`** (SONDE-006) · **A13
-`pruefe_host_capabilities.py`** (SONDE-004) · Identität · **B2
+`pruefe_host_capabilities.py`** (SONDE-004) · **A14
+`pruefe_kern_identitaetsfrei.py`** (SONDE-007a) · Identität · **B2
 `EqCopStateMigrationTest`** (SONDE-006) · Hostkontext · Host-Probe (zählt
 89 nur mit PNG-Ziel, sonst 85 — NAK-34) · Schema. **Die Prüfzahlen stehen im
 jüngsten Manifest in `docs/beweise/`, nicht hier** (zuletzt
-`SONDE-004.md`: 18/18 grün). Nicht im Kanon, aber vorhanden:
+`SONDE-007a.md`: 19/19 grün). Nicht im Kanon, aber vorhanden:
 `EqCopAuxSpikeTest` (NAK-37), Shot (`--state` lädt einen Host-State vor dem
 Render), PaintBench, PipeProbe, `pluginval --strictness-level 8`. Vier Beine
 stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
@@ -290,6 +291,26 @@ stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
   einen Korpus, dessen RFC-Zeilen den **vom RFC gedruckten** Text tragen.
   ⚠️ NAK-41: ein Schema-2-Projekt verliert im 16.08.-Build still seine
   Identität — vor der Installation wissen.
+- **Gemeinsamer Kern (SONDE-007a / S8, 22.08.):** `NakamaKern` ist eine echte
+  Static-Lib (`add_library(… STATIC)`, `plugin/CMakeLists.txt`) mit den vier
+  geteilten Quellen (`state/*.cpp` + `vertrag/NakamaVertrag.cpp`), einmal
+  übersetzt statt je Ziel; angebunden über `nakama_kern_anbinden()`.
+  Werkzeug in `cmake/NakamaKern.cmake`. 🔑 **Der Kern übersetzt gegen
+  JUCE-KÖPFE, nicht gegen JUCE-Module** — JUCE-Module sind INTERFACE-Libs,
+  deren `.cpp` in JEDES konsumierende Ziel hineinkompiliert wird; eine Lib,
+  die sie linkt, trägt eine zweite Kopie. Die Kopf-Fassade
+  `nakama_kern_juce_fassade()` leitet Includes und Defines aus den
+  Modulzielen ab und lässt deren Quellen liegen (gemessen: `$<COMPILE_ONLY:>`
+  streift `INTERFACE_SOURCES` **nicht** ab). ⚠️ **Vier Riegel, verschiedene
+  Fragen, keiner ersetzt einen anderen:** K1 `state/NakamaKernRiegel.h`
+  (46 Makros namentlich, im Übersetzer) · K2 Linkhülle per Regex, Configure ·
+  K2b Kern und Verbraucher übersetzen JUCE gleich konfiguriert · K3 Kanon-Bein
+  A14 misst das **Artefakt** (nur K3 sähe ein Stringliteral, das nie ein Makro
+  war). 🔑 Ein Riegel, der etwas NICHT findet, sagt nichts, bis gezeigt ist,
+  dass er überhaupt etwas finden kann — A14 trägt seine Gegenprobe im Bein,
+  und die hat seine erste Fassung widerlegt (CIDs liegen als 16 rohe Bytes in
+  COM-vertauschter Ordnung, nicht als Hextext). Manifest
+  `docs/beweise/SONDE-007a.md`; **T2 offen**.
 - **Hör-Markierung (0.3.0):** färbt auf Klick das Monitorsignal von Gen;
   Verriegelung im Code `(echtzeitOk ∨ test) ∧ (spielt ∨ ¬hatTransport) ∧
   ¬isNonRealtime ∧ (editorOffen ∨ test)`; Analyse-Abgriff davor; Render

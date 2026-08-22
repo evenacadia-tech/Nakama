@@ -5,8 +5,15 @@
 > **P0 ist geschlossen.** Gate G0 ist gefahren, Urteil **PASS**
 > (`docs/beweise/G0.md`): beide Bruchauftraege (Gate 1, Gate 5) gescheitert,
 > die P0-Kernflaeche traegt keinen Befund. Damit faellt der
-> Schliessungsvorbehalt §65 fuer `SONDE-005`. **Naechste Bau-Flaeche: S8
-> (`SONDE-007a`)** — gemeinsamer Kern ohne `JucePlugin_*`-Konstanten.
+> Schliessungsvorbehalt §65 fuer `SONDE-005`.
+>
+> **S8 (`SONDE-007a`) ist gebaut** (22.08. spaet, Manifest
+> `docs/beweise/SONDE-007a.md`, Commits `5d0e9fd` + `06913aa`): `NakamaKern`
+> ist eine echte Static-Lib, einmal uebersetzt statt je Ziel, ohne eine einzige
+> `JucePlugin_*`-Konstante. Vier Riegel, jeder beim Fallen vorgefuehrt; Kanon
+> 18 → **19** Beine (A14). **T2 ist offen** — kein Frischkontext-Prueferurteil.
+> **Naechste Bau-Flaeche: S9 (`SONDE-007b`)** — drei Ziele,
+> Lifecycle-Klassifikation, Installer-Manifest.
 >
 > **Aber vorher zwei Dinge, die Vorrang haben:**
 >
@@ -116,9 +123,10 @@
   `docs/beweise/SONDE-004.md`, Bits in `eq-copilot/identity/host-capabilities-fl-v1.json`
   (Kanon A13). **Nur Gate G0 (T3) steht in P0 noch aus.** Beide Messgeräte sind
   in `C:/Program Files/Common Files/VST3/` installiert (FL scannt VST3 nur dort).
-- **Kanon:** 18 Beine in `tools/beweise.ps1` (seit 22.08.: B2 `EqCopStateMigrationTest`,
-  A12 `erzeuge_state_fixtures.py --pruefen`, A13 `pruefe_host_capabilities.py`);
-  letzter vollständiger Lauf siehe jüngstes Manifest in `docs/beweise/` (`SONDE-004.md`).
+- **Kanon:** 19 Beine in `tools/beweise.ps1` (seit 22.08.: B2 `EqCopStateMigrationTest`,
+  A12 `erzeuge_state_fixtures.py --pruefen`, A13 `pruefe_host_capabilities.py`,
+  A14 `pruefe_kern_identitaetsfrei.py`);
+  letzter vollständiger Lauf siehe jüngstes Manifest in `docs/beweise/` (`SONDE-007a.md`: 19/19).
 
 ## ▶ Erledigt am 22.08. (Termin B + S4)
 
@@ -150,8 +158,8 @@
 Neue Session in diesem Workspace aufmachen, diese zwei Zeilen einfügen, fertig:
 
 ```
-Baue S8 (SONDE-007a) nach docs/bauaufteilung-sonden.md.
-Manifest nach docs/beweise/SONDE-007a.md, T1 + T2.
+Baue S9 (SONDE-007b) nach docs/bauaufteilung-sonden.md.
+Manifest nach docs/beweise/SONDE-007b.md, T1 + T2.
 ```
 
 Mehr braucht es nicht: die SessionStart-Hooks legen Wahrheitskern, Hub-Stand,
@@ -165,24 +173,39 @@ werden** — „go" ohne Ticketgrenze widerspricht der Sessionregel in
 Für das jeweils nächste Ticket dieselben zwei Zeilen mit der nächsten Nummer
 aus der Tabelle in `docs/bauaufteilung-sonden.md`.
 
-## ▶ Der eine nächste Schritt (Technik): S8 — `SONDE-007a`
+## ▶ Der eine nächste Schritt (Technik): S9 — `SONDE-007b`
 
-**S7 / `SONDE-006` ist gebaut (22.08., Manifest `docs/beweise/SONDE-006.md`):**
-State-Schema 2 (`eq-copilot/schemas/state/nakama-state-v2.md`), fester
-Parameterbestand (109 IDs, `nakama-parameter-v1.json`), reine Schema-1-Migration
-mit Goldens, read-only bei fremdem Major, Host-Dirty, `state_hash` nach RFC 8785
-in drei Sprachen bytegleich. Kanon 17 Beine (B2 + A12 neu). **T2: PASS** (Frischkontext-
-Prüfer, 22.08.; neun nicht-blockierende Befunde nachgearbeitet, Manifest §5/§6).
+**S8 / `SONDE-007a` ist gebaut (22.08., Manifest `docs/beweise/SONDE-007a.md`):**
+`NakamaKern` ist eine echte Static-Lib mit den vier geteilten Quellen
+(`state/*.cpp` + `vertrag/NakamaVertrag.cpp`), **einmal** übersetzt statt je
+Ziel; angebunden über `nakama_kern_anbinden()`. Vier Riegel, jeder beim Fallen
+vorgeführt (K1 Präprozessor · K2 Linkhülle · K2b gleiche JUCE-Konfiguration ·
+K3 = Kanon-Bein **A14**, misst das Artefakt). Kanon 18 → **19**.
+**T2 ist offen** — kein Frischkontext-Prüferurteil im Manifest.
 
-**Vorher Gate G0** (T3, eigene Session; Bauaufteilung §3/§5): `/c-review` auf den
-Bridge-Patch + Codex, Bruchaufträge Gate 1 (neutrale Instanz verändert Audio)
-und Gate 5 (Telemetrie steuert Gain) — P0 schließt erst damit.
+**Drei Dinge, die S9 aus S8 mitnehmen muss** (sonst wird es teuer):
 
-**Dann S8 (`SONDE-007a`):** gemeinsamer Kern ohne `JucePlugin_*`-
-Konstanten (NAK-23b). `plugin/state/` ist dafür schon JUCE-core-rein gebaut
-(`Bundle::eqcp/nkpr/nkac` als Klassenmenge je Bundle). Vorher lesen:
-`docs/FL-Nakama-Sonden-Design-Entwurf.md` (Errata-Block zuerst, §53.4),
-`docs/bauaufteilung-sonden.md` S8-Zeile. User 21.08.: „Termine bald; bis dahin S7".
+1. **Der Kern übersetzt gegen JUCE-KÖPFE, nicht gegen JUCE-Module.** Die
+   Implementierung kommt vom verbrauchenden Ziel. Die drei Bundles müssen
+   daher `juce_core`, `juce_events`, `juce_data_structures` und
+   `juce_cryptography` selbst linken — genau das tut `nakama_kern_anbinden()`;
+   ein Ziel, das den Kern ohne diese Funktion anbindet, verliert zur Linkzeit
+   Symbole. Grund und Messung: Kopf von `eq-copilot/cmake/NakamaKern.cmake`.
+2. **K2b vergleicht heute gegen `EqCopilot`.** Kommen Probeeq und Suna dazu,
+   muss entschieden werden, ob der Kern gegen *alle drei* geprüft wird oder
+   die drei untereinander gleich konfiguriert sein müssen — die Funktion
+   `nakama_kern_konfig_pruefen(kern referenz)` nimmt eine Referenz.
+3. **NAK-52:** §53.4 verlangt Identität ausschließlich aus
+   `plugin-identities-v1.json`. S8 hat nur die Kern-Hälfte gebaut; die
+   Target-Schichten lesen die Werte weiterhin nicht, sondern tragen sie als
+   CMake-Literale. Das ist **S9s Auftrag** — inklusive Umbau von
+   `EqCopIdentityTest`, das die CMake-Quelle heute in genau dieser Textform
+   einfriert (`tests/IdentityTestMain.cpp:257-263`).
+
+Vorher lesen: `docs/FL-Nakama-Sonden-Design-Entwurf.md` (Errata-Block zuerst,
+§53.4 und §53.5), `docs/bauaufteilung-sonden.md` S9-Zeile,
+`docs/beweise/SONDE-007a.md` §1 („Was dieses Ticket ausdrücklich NICHT
+behauptet").
 
 **Vor der Installation des neuen Bundles:** NAK-41 — ein Projekt, das der neue
 Build speichert (Schema 2), verliert im 16.08.-Build seine Messpunkt-Identität.

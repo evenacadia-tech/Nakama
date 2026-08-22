@@ -4,9 +4,9 @@
 > dieses Blatt entsteht daraus mit `py -3.13 tools/hub/plan_blatt.py`.
 > Aenderungen hier gehen beim naechsten Lauf verloren.
 
-**Stand:** 2026-08-22 · **12 von 34 Schritten fertig**
+**Stand:** 2026-08-22 · **13 von 34 Schritten fertig**
 
-`██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░` 35 %
+`███████████████░░░░░░░░░░░░░░░░░░░░░░░░░` 38 %
 
 **Bei dir liegen:** 9 Punkt(e) — Details auf der Briefing-Seite (https://nakama-briefing.philipld.chatgpt.site)
 
@@ -16,7 +16,7 @@
 |---|---|---:|---:|
 | **Vorlauf** — Beweisen statt behaupten | `████████████████████████` | 1 | 0 |
 | **P0** — Bestand einfrieren, Hostgrenzen beweisen | `████████████████████████` | 8 | 0 |
-| **P1** — Verträge, gespeicherter Zustand, neutrale Hüllen | `████████████░░░░░░░░░░░░` | 3 | 3 |
+| **P1** — Verträge, gespeicherter Zustand, neutrale Hüllen | `████████████████░░░░░░░░` | 4 | 2 |
 | **P2** — Messkern, Nachrichtenweg, Speicher | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 5 |
 | **P3** — Passive Landkarte | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 2 |
 | **P4–P5** — Vergleichsevidenz und Ursachen | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 4 |
@@ -30,7 +30,7 @@ flowchart LR
   P0["Vorlauf<br/>1/1"]:::fertig
   P1["P0<br/>8/8"]:::fertig
   P0 --> P1
-  P2["P1<br/>3/6"]:::laeuft
+  P2["P1<br/>4/6"]:::laeuft
   P1 --> P2
   P3["P2<br/>0/5"]:::offen
   P2 --> P3
@@ -68,15 +68,15 @@ flowchart LR
 - ■ **S4** — Capabilityreport: die zehn Fähigkeitsbits für FL an die Rohdaten aus Termin A und B gebunden — zwei bestätigt (Hostkontext, Projektzeit), acht nicht: zwei gemessen „kann FL nicht“ (feine Automation, double), drei „noch nicht bewiesen“ (Latenzangabe, beide Nebenwege — Termin A2), eines ungemessen, zwei warten auf ihre Tickets. Prüfbein A13 (61 Prüfungen) misst den Report selbst gegen die Rohdaten; Kanon 18/18 grün. Frischer Prüfer: Runde 1 NEEDS_WORK (zwei Bits zu optimistisch), nachgearbeitet, Runde 2 PASS. (fertig · 22.08.)
 - ■ **G0** `Gate` — Erste adversariale Pruefrunde (C++-Review + Codex) ueber P0 — gefahren 22.08., Urteil PASS: beide Bruchauftraege (Gate 1, Gate 5) gescheitert, die P0-Kernflaeche traegt keinen Befund. Manifest docs/beweise/G0.md. Damit ist P0 vollstaendig. (fertig · 22.08.)
 
-### P1 — Verträge, gespeicherter Zustand, neutrale Hüllen  (3/6)
+### P1 — Verträge, gespeicherter Zustand, neutrale Hüllen  (4/6)
 
 *Alles, was zwischen den drei Apps und dem Broker hin- und hergeht, ist als Vertrag festgeschrieben und in drei Sprachen gleich geprüft — bevor der Messkern darauf baut.*
 
 - ■ **S5** `SONDE-005a` — Nachrichtenverträge (JSON) mit Bandgitter und 153 Prüffällen; in Python, C++ und Rust gleich gelesen. Gebaut und nachgearbeitet — das abschließende Prüfurteil eines frischen Prüfers steht noch aus. (fertig · 21.08.)
 - ■ **S6** `SONDE-005b` — Binärformat für Messdaten (FlatBuffers) mit festen Feldnummern und zwei handgeschriebenen Lesern; 6215 Byte-Mutanten bestanden. Prüfurteil wie S5 noch offen. (fertig · 21.08.)
 - ■ **S7** `SONDE-006` — Gespeicherter Zustand Schema 2: alte Projekte wandern verlustfrei, fremde Versionen werden nur-lesend geöffnet, FL sieht jede Änderung als „ungespeichert“. 109 Parameter-Kennungen festgeschrieben. (fertig · 22.08.)
-- ▨ **S8** `SONDE-007a` — Gemeinsamer Kern für alle drei Plugins, der keine Bundle-Konstanten sieht — sonst bekämen zwei Plugins die Identität des dritten. (läuft)
-- □ **S9** `SONDE-007b` — Drei eigene Plugin-Ziele (Gen, Probeeq, Suna), Rollen-Erkennung, Installer-Manifest. (offen)
+- ■ **S8** `SONDE-007a` — Gemeinsamer Kern fuer alle drei Plugins, der keine Bundle-Konstanten sieht — sonst bekaemen zwei Plugins die Identitaet des dritten. Gebaut: der geteilte Code wird jetzt EINMAL uebersetzt statt einmal je Programm, und vier unabhaengige Sperren passen auf, dass keine Kennung hineinrutscht. Jede Sperre wurde absichtlich ausgeloest, um zu zeigen, dass sie wirklich zufasst. Eine davon hat dabei einen Fehler in sich selbst gefunden. Das abschliessende Urteil eines frischen Pruefers steht noch aus. (fertig · 22.08.)
+- ▨ **S9** `SONDE-007b` — Drei eigene Plugin-Ziele (Gen, Probeeq, Suna), Rollen-Erkennung, Installer-Manifest. (läuft)
 - □ **G1** `Gate` — Prüfrunde über P1 (C++- und Rust-Review + Codex). (offen)
 
 ### P2 — Messkern, Nachrichtenweg, Speicher  (0/5)

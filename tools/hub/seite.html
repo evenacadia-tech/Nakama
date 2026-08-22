@@ -66,6 +66,23 @@ section{padding-top:40px}
 .karte .warum{color:var(--text2)}
 .karte .warum b{color:var(--text);font-weight:500}
 .karte .wo{font-size:12.5px;color:var(--text3);display:flex;flex-wrap:wrap;gap:4px 14px}
+.figuren{display:grid;gap:10px;margin-top:4px}
+.figuren figure{margin:0;background:#121315;border:1px solid var(--linie);border-radius:8px;overflow:hidden}
+.figuren figure img{display:block;width:auto;max-width:100%;height:auto;margin:0 auto}
+.figuren details{background:#121315;border:1px solid var(--linie);border-radius:8px;overflow:hidden}
+.figuren details summary{cursor:pointer;padding:10px 12px;font-size:13.5px;color:var(--text2);background:var(--flaeche2);list-style:none;display:flex;gap:8px;align-items:center}
+.figuren details summary::before{content:'▸';color:var(--text3)}
+.figuren details[open] summary::before{content:'▾'}
+.figuren details summary:focus-visible{outline:2px solid var(--akzent);outline-offset:-2px}
+.figuren details img{display:block;width:100%;height:auto}
+.figuren figure.klein img{padding:16px;min-height:80px}
+.figuren figcaption{padding:8px 12px;font-size:13px;color:var(--text2);background:var(--flaeche2);border-top:1px solid var(--linie)}
+.notiz{margin-top:10px;display:grid;gap:4px}
+.notiz label{font-size:12.5px;color:var(--text3)}
+.notiz input{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--linie2);border-radius:8px;background:var(--flaeche);color:var(--text)}
+.eintrag .vorschau{margin-top:6px;background:#121315;border:1px solid var(--linie);border-radius:6px;overflow:hidden}
+.eintrag .vorschau img{display:block;max-width:100%;max-height:360px;height:auto;margin:0 auto}
+.eintrag .notizt{color:var(--text);font-size:14px}
 .schritte{display:grid;gap:8px;background:var(--flaeche);border:1px solid var(--linie);border-radius:10px;padding:14px 18px;box-shadow:var(--schatten)}
 .schritt{display:grid;grid-template-columns:88px 1fr;gap:12px;align-items:baseline}
 .schritt .rolle{font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
@@ -192,6 +209,7 @@ function rBeiDir(s){
       html+='<article class="karte '+(g.k==='jetzt'?'jetzt':g.k==='wissen'?'wissen':'')+'">'+
         '<div class="karte-kopf"><span class="chip '+(g.k==='jetzt'?'warte':'')+'">'+esc(b.art)+'</span><h3>'+esc(b.titel)+'</h3></div>'+
         '<p class="was">'+esc(b.was)+'</p>'+
+        rFiguren(b.bilder)+
         '<p class="warum"><b>Warum:</b> '+esc(b.warum)+'</p>'+
         '<div class="wo mono"><span>'+esc(b.wo)+'</span>'+(b.seit?'<span>seit '+esc(b.seit)+'</span>':'')+'</div>'+
       '</article>';
@@ -199,6 +217,21 @@ function rBeiDir(s){
     html+='</div></div>';
   });
   return html+'</section>';
+}
+
+function rFiguren(liste){
+  if(!liste||!liste.length) return '';
+  var h='<div class="figuren">';
+  liste.forEach(function(bi){
+    var b=BILDER['karte:'+bi.datei];
+    if(!b||!b.src) return;
+    if(b.h>2*b.w){ /* hohe Bilder (ganze Studie) zum Aufklappen, sonst wären sie winzig */
+      h+='<details><summary>'+esc(bi.text)+' — aufklappen</summary><img src="'+b.src+'" width="'+b.w+'" height="'+b.h+'" alt="'+esc(bi.text)+'" loading="lazy"></details>';
+    } else {
+      h+='<figure class="'+(b.w<400?'klein':'')+'"><img src="'+b.src+'" width="'+b.w+'" height="'+b.h+'" alt="'+esc(bi.text)+'"><figcaption>'+esc(bi.text)+'</figcaption></figure>';
+    }
+  });
+  return h+'</div>';
 }
 
 function rNaechster(s){
@@ -249,21 +282,38 @@ function rDesign(s){
 }
 
 function rReviews(s){
-  var html='<section id="reviews"><div class="abschnitt-kopf"><div class="eyebrow">Codex-Reviews</div><h2>Review hochladen</h2><p>Hast du mit Codex eine Code-Review gemacht, lege die <span class="mono">.md</span> hier ab. Die Seite speichert sie in sich selbst; Claude liest sie beim nächsten Sessionstart aus, prüft jeden Befund gegen die Quelldatei (rund ein Viertel der bisherigen Auditbefunde war falsch) und trägt das Ergebnis unten ein.</p></div>';
-  html+='<label class="drop" id="drop"><input type="file" id="datei" accept=".md,.markdown,.txt" multiple><span class="gross">Review-Datei hier ablegen oder klicken</span><span class="klein">.md oder .txt · mehrere auf einmal möglich</span></label><div class="status" id="status" aria-live="polite"></div>';
+  var html='<section id="reviews"><div class="abschnitt-kopf"><div class="eyebrow">Codex-Reviews</div><h2>Hochladen: Reviews und Bilder</h2><p>Codex-Reviews als <span class="mono">.md</span>, Bilder als PNG/JPG/WebP — neue Figma-Exporte, Screenshots aus FL, Skizzen. Die Seite speichert alles in sich selbst; Claude liest es beim nächsten Sessionstart aus. Reviews werden Befund für Befund gegen die Quelldatei geprüft; Bilder landen unter „Von dir hochgeladen“, und Claude trägt ein, was damit passiert ist.</p></div>';
+  html+='<div class="notiz"><label for="notiz">Wozu ist das? (kommt mit der Datei zu Claude)</label><input type="text" id="notiz" maxlength="400" placeholder="z. B. neuer Figma-Stand Gen, bitte in die Truhe — oder: so sieht der Fehler in FL aus"></div>';
+  html+='<label class="drop" id="drop"><input type="file" id="datei" accept=".md,.markdown,.txt,image/png,image/jpeg,image/webp,image/gif" multiple><span class="gross">Datei hier ablegen oder klicken</span><span class="klein">.md / .txt oder Bild (PNG, JPG, WebP) · bis 8 MB je Datei · mehrere auf einmal möglich</span></label><div class="status" id="status" aria-live="polite"></div>';
   var e=s.eingang||[];
   if(e.length){
     html+='<div class="gruppe"><div class="gruppe-titel"><h3>Im Eingang</h3><span class="zahl">'+e.length+' · wartet auf Claude</span></div><div class="liste">';
     e.forEach(function(x){
-      html+='<div class="eintrag"><div class="kopfz"><span class="chip warte">eingegangen</span><span class="mono">'+esc(x.name)+'</span><span class="datum mono">'+esc(x.datum)+' · '+esc(x.groesse)+' Zeichen</span></div><pre>'+esc(x.text.slice(0,600))+(x.text.length>600?'\n…':'')+'</pre></div>';
+      html+='<div class="eintrag"><div class="kopfz"><span class="chip warte">eingegangen</span><span class="mono">'+esc(x.name)+'</span><span class="datum mono">'+esc(x.datum)+' · '+(x.typ==='bild'?Math.round(x.groesse/1024)+' KB':esc(x.groesse)+' Zeichen')+'</span></div>'+
+        (x.notiz?'<p class="notizt">'+esc(x.notiz)+'</p>':'')+
+        (x.typ==='bild'?'<div class="vorschau"><img src="'+x.src+'" alt="'+esc(x.name)+'"></div>':'<pre>'+esc(x.text.slice(0,600))+(x.text.length>600?'\n…':'')+'</pre>')+
+      '</div>';
+    });
+    html+='</div></div>';
+  }
+  var u=s.uploads||[];
+  if(u.length){
+    html+='<div class="gruppe"><div class="gruppe-titel"><h3>Von dir hochgeladen</h3><span class="zahl">'+u.length+'</span></div><div class="liste">';
+    u.forEach(function(x){
+      var b=BILDER['upload:'+x.datei];
+      html+='<div class="eintrag"><div class="kopfz"><span class="chip '+(/eingegangen/.test(x.status)?'warte':'gut')+'">'+esc(x.status)+'</span><span class="mono">'+esc(x.name)+'</span><span class="datum mono">'+esc(datumDe(x.datum))+'</span></div>'+
+        (x.notiz?'<p class="notizt">'+esc(x.notiz)+'</p>':'')+
+        (x.ergebnis?'<p class="kurz">'+esc(x.ergebnis)+'</p>':'')+
+        (b&&b.src?'<div class="vorschau"><img src="'+b.src+'" alt="'+esc(x.name)+'"></div>':'')+
+        '<div class="wo mono">'+esc(x.datei)+'</div></div>';
     });
     html+='</div></div>';
   }
   var r=s.reviews||[];
-  html+='<div class="gruppe"><div class="gruppe-titel"><h3>Eingearbeitet</h3><span class="zahl">'+r.length+'</span></div><div class="liste">';
+  html+='<div class="gruppe"><div class="gruppe-titel"><h3>Reviews eingearbeitet</h3><span class="zahl">'+r.length+'</span></div><div class="liste">';
   if(!r.length) html+='<div class="hinweis">Noch keine Review eingearbeitet.</div>';
   r.forEach(function(x){
-    html+='<div class="eintrag"><div class="kopfz"><span class="chip gut">'+esc(x.status)+'</span><span>'+esc(x.quelle)+' → '+esc(x.ziel)+'</span><span class="datum mono">'+esc(datumDe(x.datum))+'</span></div><p class="kurz">'+esc(x.kurz)+'</p><div class="wo mono">'+esc(x.datei)+'</div></div>';
+    html+='<div class="eintrag"><div class="kopfz"><span class="chip '+(/eingegangen|offen|in Arbeit/.test(x.status)?'warte':'gut')+'">'+esc(x.status)+'</span><span>'+esc(x.quelle)+' → '+esc(x.ziel)+'</span><span class="datum mono">'+esc(datumDe(x.datum))+'</span></div><p class="kurz">'+esc(x.kurz)+'</p><div class="wo mono">'+esc(x.datei)+'</div></div>';
   });
   return html+'</div></div></section>';
 }
@@ -303,9 +353,17 @@ function upload(){
   var kann = !!(window.claude && typeof window.claude.use==='function');
   if(!kann){ drop.classList.add('aus'); input.disabled=true; sag('Upload nur in der claude.ai-Ansicht möglich (hier fehlt die Speicher-Funktion).'); return; }
   var artP = window.claude.use('artifact');
+  var MAX=8*1024*1024;
+  function istBild(f){return /^image\/(png|jpeg|webp|gif)$/.test(f.type)||/\.(png|jpe?g|webp|gif)$/i.test(f.name);}
   function liesAlle(files){
     return Promise.all(Array.prototype.map.call(files,function(f){
-      return new Promise(function(ok,nein){var r=new FileReader();r.onload=function(){ok({name:f.name,text:String(r.result)});};r.onerror=function(){nein(new Error('Datei nicht lesbar: '+f.name));};r.readAsText(f);});
+      if(f.size>MAX) return Promise.reject({code:'zu_gross',message:f.name});
+      return new Promise(function(ok,nein){
+        var r=new FileReader();
+        r.onerror=function(){nein(new Error('Datei nicht lesbar: '+f.name));};
+        if(istBild(f)){ r.onload=function(){ok({name:f.name,typ:'bild',src:String(r.result),groesse:f.size});}; r.readAsDataURL(f); }
+        else { r.onload=function(){ok({name:f.name,typ:'text',text:String(r.result),groesse:String(r.result).length});}; r.readAsText(f); }
+      });
     }));
   }
   function speichere(files){
@@ -318,13 +376,15 @@ function upload(){
     }).then(function(list){
       var s=JSON.parse(JSON.stringify(STATE)); s.eingang=s.eingang||[];
       var j=new Date(),p2=function(n){return (n<10?'0':'')+n;}; var stamp=j.getFullYear()+'-'+p2(j.getMonth()+1)+'-'+p2(j.getDate())+' '+p2(j.getHours())+':'+p2(j.getMinutes());
-      list.forEach(function(x){ s.eingang.push({name:x.name,datum:stamp,groesse:x.text.length,text:x.text}); });
+      var notiz=(document.getElementById('notiz').value||'').trim();
+      list.forEach(function(x){ x.datum=stamp; if(notiz) x.notiz=notiz; s.eingang.push(x); });
       return art.publish(quelle(s));
     }).then(function(){
       sag('Gespeichert — die Seite lädt neu. Claude liest den Eingang beim nächsten Sessionstart.');
     }).catch(function(e){
       var c=(e&&e.code)||'';
-      if(c==='not_writer'||c==='not_granted') sag('Diese Ansicht ist schreibgeschützt — nur der Eigentümer kann hochladen.',true);
+      if(c==='zu_gross') sag('„'+(e.message||'')+'“ ist größer als 8 MB — bitte verkleinern oder im Chat anhängen.',true);
+      else if(c==='not_writer'||c==='not_granted') sag('Diese Ansicht ist schreibgeschützt — nur der Eigentümer kann hochladen.',true);
       else if(c==='conflict') sag('Eine neuere Version der Seite ist da; sie lädt neu. Danach bitte noch einmal ablegen.',true);
       else if(c==='too_large') sag('Zu groß — die Seite darf 16 MB nicht überschreiten. Datei kürzen.',true);
       else if(c==='rate_limited') sag('Zu schnell hintereinander — kurz warten, dann noch einmal.',true);

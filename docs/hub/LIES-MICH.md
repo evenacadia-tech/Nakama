@@ -14,10 +14,11 @@ projekt werden".
 | Vorlage der Seite (CSS + JS, rendert aus dem JSON) | `tools/hub/seite.html` |
 | Build (prüft JSON, bettet Bilder ein, schreibt `hub.html`) | `py -3.13 tools/hub/baue_hub.py` (`--pruefen` = nur prüfen) |
 | Gebaute Seite (gitignoriert, regenerierbar) | `docs/hub/hub.html` |
-| Uploads aus der gelesenen Seite ins Repo holen | `py -3.13 tools/hub/hub_eingang.py <gelesene.html>` → `docs/reviews/` |
+| Uploads aus der gelesenen Seite ins Repo holen | `py -3.13 tools/hub/hub_eingang.py <gelesene.html>` → Reviews nach `docs/reviews/`, Bilder bytegleich nach `docs/hub/eingang/` (+ `uploads` in `hub.json` mit Notiz) |
+| Zeigebilder der Karten (Ausschnitte, Screenshots; committet) | `docs/hub/bilder/`, je Karte `bilder: [{datei, text}]` |
 | Artefakt-Adresse | `artefakt_url` in `hub.json` (eine Adresse, bleibt beim Redeploy) |
 | Hooks | `tools/hooks/hub-primer.sh` (SessionStart: vorlesen + Drift) · `tools/hooks/hub-stop.sh` (Stop: Commits ohne Hub-Update ⇒ einmal blocken) |
-| Proben | `tools/hub/test_stop_hook.sh` (5 Fälle) · `tools/hub/test/upload_probe.js` (Upload mit gestubbtem `window.claude`, via Playwright-MCP `browser_run_code_unsafe`) |
+| Proben | `tools/hub/test_stop_hook.sh` (5 Fälle) · `tools/hub/test/upload_probe.js` + `upload_probe_2.js` (Review + Bild + Notiz mit gestubbtem `window.claude`, via Playwright-MCP `browser_run_code_unsafe`; dazwischen `hub_eingang.py docs/hub/hub-published.html`) |
 
 ## Pflicht jeder Session (steht auch in CLAUDE.md, Abschnitt „Hub")
 
@@ -45,6 +46,14 @@ projekt werden".
 - **Genau eine Plan-Zeile ist „naechster"** (der Build prüft es).
 - **„Bei dir"** trägt je Punkt: was, warum, wo (Belegstelle), seit; vier
   Dringlichkeiten: `jetzt` · `wenn du dazu kommst` · `wissen` · `später`.
+- **Zeigen, nicht beschreiben** (User 22.08.): geht es um etwas Sichtbares,
+  liegt das Bild in der Karte (`bilder`). Ausschnitte aus der Truhe schneidet
+  man mit `auf_inhalt_zuschneiden` aus `baue_hub.py` + PIL; Dateiname
+  `u<N>-<was>.png`. Hohe Bilder (Höhe > 2× Breite) zeigt die Seite aufklappbar.
+- **Uploads des Users** (`uploads`): Status fortschreiben (`eingegangen – noch
+  nicht bearbeitet` → z. B. `in die Truhe übernommen`) und in `ergebnis` sagen,
+  was passiert ist. Die Datei in `docs/hub/eingang/` bleibt liegen — sie ist
+  der bytegleiche Beleg (SHA-256 für die Truhe daraus bilden).
 - **Bilder** kommen beim Build aus der Design-Truhe
   (`Nakama-Design/assets/figma/`, neuester Stand je App, auf Inhalt
   zugeschnitten, halbiert auf 2×) — das Technik-Repo hält keine Kopie.
@@ -52,6 +61,9 @@ projekt werden".
   (oder `NAKAMA_DESIGN` zeigt darauf).
 
 ## Wie der Upload funktioniert (und warum so)
+
+Die Seite nimmt `.md`/`.txt` (als Text) und PNG/JPG/WebP/GIF (als
+Data-URL, Originalbytes, bis 8 MB je Datei) plus eine Notiz entgegen.
 
 Die Artefakt-Fähigkeit „Dateien ablegen" gibt es für diesen Account nicht;
 verfügbar ist `artifact` (die Seite darf sich selbst als neue Version

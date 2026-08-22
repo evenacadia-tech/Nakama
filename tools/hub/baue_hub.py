@@ -30,6 +30,9 @@ VORLAGE = HIER / "seite.html"
 DESIGN = Path(os.environ.get("NAKAMA_DESIGN", REPO.parent / "Nakama-Design"))
 TRUHE = DESIGN / "assets" / "figma"
 APPS = ("gen", "probeeq", "suna")
+BILDER = REPO / "docs" / "hub" / "bilder"      # Zeigebilder zu den Karten (committet)
+EINGANG = REPO / "docs" / "hub" / "eingang"    # vom User über den Hub hochgeladene Bilder
+MAX_ZEIGEBREITE = 1600
 STATUS_ERLAUBT = {"erledigt", "gebaut", "naechster", "bei dir", "wartet", "offen"}
 DRINGLICHKEIT_ERLAUBT = {"jetzt", "wenn du dazu kommst", "wissen", "später"}
 MAX_BYTES = 16_000_000
@@ -62,6 +65,17 @@ def pruefe(s: dict) -> list[str]:
         if b.get("id") in ids:
             fehler.append(f"bei_dir: doppelte ID {b.get('id')}")
         ids.add(b.get("id"))
+        for bi in b.get("bilder", []):
+            if not bi.get("datei") or not bi.get("text"):
+                fehler.append(f"bei_dir {b.get('id')}: Bild braucht datei und text")
+            elif not (BILDER / bi["datei"]).exists():
+                fehler.append(f"bei_dir {b.get('id')}: Bild fehlt: docs/hub/bilder/{bi['datei']}")
+    for u in s.get("uploads", []):
+        for k in ("datum", "name", "datei", "status"):
+            if not u.get(k):
+                fehler.append(f"upload {u.get('name','?')}: {k} leer")
+        if u.get("datei") and not (REPO / u["datei"]).exists():
+            fehler.append(f"upload {u.get('name')}: Datei fehlt: {u['datei']}")
     zeilen = 0
     gates = 0
     naechste = 0
@@ -93,7 +107,8 @@ def pruefe(s: dict) -> list[str]:
         for k in ("datum", "quelle", "ziel", "status", "kurz", "datei"):
             if not r.get(k):
                 fehler.append(f"review {r.get('datum','?')}: {k} leer")
-    print(f"Plan-Zeilen: {zeilen}  Gates: {gates}  Bei-dir: {len(s['bei_dir'])}  Reviews: {len(s['reviews'])}  Eingang: {len(s['eingang'])}")
+    nb = sum(len(b.get("bilder", [])) for b in s["bei_dir"])
+    print(f"Plan-Zeilen: {zeilen}  Gates: {gates}  Bei-dir: {len(s['bei_dir'])} (mit {nb} Bildern)  Reviews: {len(s['reviews'])}  Uploads: {len(s.get('uploads', []))}  Eingang: {len(s['eingang'])}")
     return fehler
 
 
@@ -155,6 +170,30 @@ def bild_einbetten(pfad: Path) -> dict:
     }
 
 
+def zeigebild(pfad: Path) -> dict:
+    """Karten-/Upload-Bild: auf Zeigebreite verkleinert, kleine Bilder verlustfrei."""
+    from PIL import Image
+
+    with Image.open(pfad) as im:
+        im = im.convert("RGBA")
+        if im.width > MAX_ZEIGEBREITE:
+            im = im.resize((MAX_ZEIGEBREITE, round(im.height * MAX_ZEIGEBREITE / im.width)), Image.LANCZOS)
+        buf = io.BytesIO()
+        try:
+            if im.width < 400:
+                im.save(buf, format="WEBP", lossless=True)
+            else:
+                im.save(buf, format="WEBP", quality=85, method=6)
+            mime = "image/webp"
+        except Exception:
+            buf = io.BytesIO()
+            im.save(buf, format="PNG", optimize=True)
+            mime = "image/png"
+        w, h = im.size
+    daten = buf.getvalue()
+    return {"src": f"data:{mime};base64," + base64.b64encode(daten).decode("ascii"), "w": w, "h": h, "bytes": len(daten)}
+
+
 def git_kurz() -> str:
     try:
         return subprocess.run(["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"],
@@ -178,6 +217,18 @@ def baue(s: dict) -> None:
         b = bild_einbetten(p)
         bilder[app] = b
         print(f"  {app:8s} {p.name}  {b['w']}×{b['h']}  {b['bytes']/1024:.0f} KB")
+    gesamt = 0
+    for b in s["bei_dir"]:
+        for bi in b.get("bilder", []):
+            z = zeigebild(BILDER / bi["datei"])
+            gesamt += z["bytes"]
+            bilder[f"karte:{bi['datei']}"] = z
+    for u in s.get("uploads", []):
+        if (REPO / u["datei"]).suffix.lower() in (".png", ".jpg", ".jpeg", ".webp", ".gif"):
+            z = zeigebild(REPO / u["datei"])
+            gesamt += z["bytes"]
+            bilder[f"upload:{u['datei']}"] = z
+    print(f"  Karten-/Upload-Bilder: {gesamt/1024:.0f} KB")
     s = dict(s)
     s["commit"] = git_kurz()
     s["gebaut_am"] = dt.datetime.now().strftime("%d.%m.%Y %H:%M")

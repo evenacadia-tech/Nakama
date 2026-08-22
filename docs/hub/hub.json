@@ -16,7 +16,13 @@
       "was": "In FL Studio das Messgerät „EqCop-Host-Probe“ auf einen freien Insert legen (Signal drauf, Fenster offen — oben muss „Hostbrücke liefert: JA“ stehen) und einen Automationsclip auf einen Parameter aufnehmen. Alles Weitere (Abspielen, Springen, Schleife, Smart-Disable-Pause, Speichern) fährt Claude über den FL-MCP; nur der Render bleibt dein Klick.",
       "warum": "Termin A ist gemessen (22.08., geht, recall-stabil). Termin B fehlt — ohne ihn kein Capabilityreport (S4) und kein erstes Gate (G0). Beide Messgeräte sind bereits installiert.",
       "wo": "Klickliste: eq-copilot/docs/FL-TERMIN-B-HOSTZEIT.md",
-      "seit": "21.08."
+      "seit": "21.08.",
+      "bilder": [
+        {
+          "datei": "u1-hostprobe-messzustand.png",
+          "text": "So sieht das Messgerät „EqCop-Host-Probe“ in FL aus, wenn es misst — oben die Zeile „Hostbrücke liefert: JA“. Du legst es auf einen Insert; den Rest fährt Claude."
+        }
+      ]
     },
     {
       "id": "U2",
@@ -26,7 +32,17 @@
       "was": "In deiner Figma-Datei „Testdummy“ liegt der Rahmen „Lumia Material Lab / Study 04 — Gen“: Nakama Gen in der Probeeq-Sprache, mit Schönfall, acht Zuständen, zwei Zooms und 17 offenen Punkten, zu denen je eine Lesart gewählt wurde. Du änderst, was dir nicht passt, und exportierst — die Datei kommt als neuer Stand in die Design-Truhe.",
       "warum": "Erst dein Export macht den Entwurf zur Vorgabe; bis dahin gilt der Gen-Stand vom 21.08. in der alten (cyanen) Sprache. Die Übersetzung der drei Apps beginnt mit Gen und wartet darauf.",
       "wo": "Nakama-Design/abnahmen/2026-08-21-gen-auftrag-figma.md (Abschnitt „Was ausdrücklich offen bleibt“)",
-      "seit": "21.08."
+      "seit": "21.08.",
+      "bilder": [
+        {
+          "datei": "u2-gen-studie04-schoenfall.png",
+          "text": "Der Schönfall aus Studie 04 (Nakama Gen in der Probeeq-Sprache), so wie er in deiner Figma-Datei liegt."
+        },
+        {
+          "datei": "u2-gen-studie04-uebersicht.png",
+          "text": "Die ganze Studie: Schönfall, acht Zustände (Mix lesen, Urteilen, Vorhören, alles frisch, gemischt, 16 Quellen, alles getrennt, keine Quelle), zwei Zooms, Delta, die 17 Punkte."
+        }
+      ]
     },
     {
       "id": "U3",
@@ -36,7 +52,13 @@
       "was": "Dein Export „Wordmarkgen.png“ (22.08., 01:48) liegt noch im Sessionordner, nicht in Nakama-Design/assets/figma/ — die Truhe wird nie ungefragt verändert. Ein Wort von dir („ja, rein“) genügt.",
       "warum": "Dein Maßstab vom 22.08.: die Apps sehen in FL Studio exakt aus wie in Figma. Darum wird alles Statische (Wortmarken, Schale, Glas, Leuchtsäume) aus Figma exportiert und eingebettet statt nachgebaut. Ohne die Exporte in der Truhe gibt es keinen Pixelvergleich.",
       "wo": "Nakama-Design/abnahmen/2026-08-22-erfolgskriterium-exakt-wie-figma.md",
-      "seit": "22.08."
+      "seit": "22.08.",
+      "bilder": [
+        {
+          "datei": "u3-wortmarke-gen-export.png",
+          "text": "Dein Export „Wordmarkgen.png“ vom 22.08. — genau diese Datei soll in die Truhe."
+        }
+      ]
     },
     {
       "id": "U4",
@@ -56,7 +78,13 @@
       "was": "Dein Probeeq-Stand zeigt zwölf Parameter je Band. Der technische Entwurf kennt einen dreizehnten (die Sidechain-Quelle für den Dynamikteil). Drei Lesarten: als sichtbarer Parameter in der Bandzeile, als Untermenü unter DYN, oder im ersten Release unsichtbar.",
       "warum": "Der gespeicherte Zustand trägt seit 22.08. alle dreizehn (unsichtbar kostet nichts, nachträglich einfügen hätte einen Versionssprung erzwungen). Offen ist nur noch, was die Oberfläche zeigt — das entscheidet dein Figma-Stand.",
       "wo": "docs/offene-punkte.md, NAK-33",
-      "seit": "21.08."
+      "seit": "21.08.",
+      "bilder": [
+        {
+          "datei": "u5-probeeq-bandzeile.png",
+          "text": "Die Bandzeile aus deinem Probeeq-Stand: zwölf Werte (BAND … MODE | DYN … RELEASE). Die Frage ist, ob und wo ein dreizehnter (die Sidechain-Quelle für DYN) erscheint."
+        }
+      ]
     },
     {
       "id": "U6",
@@ -66,7 +94,13 @@
       "was": "Die Suna-Kachel hast du am 21.08. exportiert — sie gilt. Beim Entwurf wurden zehn Fragen je mit einer Lesart beantwortet (u. a. Apertur-Logik, Rollenwörter LEADS · CARRIES · SUPPORTS …, Messstatus-Wörter, Hinweis-Wortlaut, halbierter Schwebeschatten). Jede ist mit einem Handgriff in Figma umkehrbar.",
       "warum": "Suna wird als letzte der drei Apps übersetzt (Reihenfolge Gen → Probeeq → Suna). Kein Blocker heute — aber jede Lesart, die du nicht bestätigst, wird beim Übersetzen erneut vorgelegt.",
       "wo": "Nakama-Design/abnahmen/2026-08-21-suna-auftrag-figma.md (Abschnitt „Was ausdrücklich offen bleibt“)",
-      "seit": "21.08."
+      "seit": "21.08.",
+      "bilder": [
+        {
+          "datei": "u6-suna-kachel.png",
+          "text": "Die Suna-Kachel, wie du sie exportiert hast. Die zehn Lesarten betreffen Details dieser Kachel: Verbindungspunkt links, Rollenwort (CARRIES), Position (POST), Messstatus rechts, Kopfzeile, Schatten."
+        }
+      ]
     },
     {
       "id": "U7",
@@ -96,7 +130,17 @@
       "was": "Rollen: 5 (Design) gegen 7 (Entwurf) · Suna-Kachel: Name/Rolle bedienbar (Design) gegen „null Parameter, Bedienung über Gen“ (Entwurf) · Messzustände 5 gegen 2 · Arbeitsschritte 3 gegen 5 · Gen-Übersicht: Quellen×Band-Gitter (Figma) gegen Overview+Detail ohne Heatmap (Abnahme 20.08.). Je Punkt ein Wort von dir — dein Figma-Stand zählt als neues User-Wort.",
       "warum": "Fällig vor dem Gate der passiven Landkarte (P3, nach S18/19) — nicht heute. Steht hier, damit es nicht überrascht.",
       "wo": "docs/offene-punkte.md, NAK-38",
-      "seit": "21.08."
+      "seit": "21.08.",
+      "bilder": [
+        {
+          "datei": "u9-gen-gitter.png",
+          "text": "Das Quellen×Band-Gitter aus deinem Gen-Stand (21.08.). Die Abnahme vom 20.08. sagte „Overview + Detail ohne Heatmap“ — ob dieses Gitter die Heatmap ist oder etwas anderes, ist einer der fünf Punkte."
+        },
+        {
+          "datei": "u6-suna-kachel.png",
+          "text": "Suna-Kachel: das Design zeigt Bus, Rolle und Position bedienbar — der technische Entwurf sagt „keine Parameter, Bedienung über Gen“. Zweiter der fünf Punkte."
+        }
+      ]
     },
     {
       "id": "U10",
@@ -485,5 +529,6 @@
       "datei": "Nakama-Design/abnahmen/2026-08-21-codex-review-abgearbeitet.md"
     }
   ],
+  "uploads": [],
   "eingang": []
 }

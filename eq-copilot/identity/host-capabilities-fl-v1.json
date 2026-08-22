@@ -6,7 +6,7 @@
     "name": "FruityLoops",
     "wrapper": "VST3",
     "samplerate_hz": 44100.0,
-    "fl_version_termin_b": "FL Studio 2026 26.1.4.5589 (laufender FL64.exe-Prozess, Get-Process waehrend der Messung 22.08. 13:xx)",
+    "fl_version_termin_b": "FL Studio 2026 26.1.4.5589 (Get-Process FL64 am 22.08. ~13:37, nach dem zweiten Bericht; Rohausgabe in docs/beweise/SONDE-004.md B7)",
     "fl_version_termin_a": "nicht protokolliert - auf dem Rechner sind 25.2.5.5319 und 26.1.4.5589 installiert (NAK-44)",
     "juce_version": "8.0.9 (eq-copilot/CMakeLists.txt GIT_TAG; gepatchter Wrapper, SONDE-003)",
     "messgeraete": "EqCopHostProbe 0.1.0 (moduleinfo.json des installierten Bundles), EqCopAuxSpike (SONDE-004a)",
@@ -19,7 +19,7 @@
     "project_time_samples": "supported",
     "sample_accurate_automation": "unsupported",
     "presentation_latency": "unsupported",
-    "aux_compare_pre": "supported",
+    "aux_compare_pre": "unsupported",
     "aux_priority_sidechain": "unsupported",
     "contribution_aux": "unsupported",
     "float64_processing": "unsupported",
@@ -59,10 +59,11 @@
     },
     "aux_compare_pre": {
       "beweis_nach_53_6": "getrenntes, recallstabiles FL-Auxlayout",
-      "termin": "A",
+      "termin": "A (ohne PDC-Last, Kanalreihenfolge nicht unterscheidbar)",
       "rohfeld": "busse[2] (compare_pre): aktiv = true, kanaele = 2, protokoll_eingehalten = true, versatz_zu_main_samples = 0, versatz_zu_main_ms = 0.0 - in 001701 (vor Speichern) UND 002722 (nach Schliessen + Neuladen)",
       "datei": "docs/beweise/termin-a/aux-spike-20260822-001701.json, -002722.json",
-      "zusatz": "Aufbau als 'Sidechain to this track' (docs/beweise/termin-a/LIES-MICH.md). Recall-Aussage genau: Layout (zwei benannte Busse aktiv, je ein Impuls 0,90 ohne Summierung) und Versatz 0 ueberleben Speichern/Schliessen/Neuladen; zwischen den Laeufen wurde das Routing von Mixroute auf Sidechain-only umgebaut (Main-Spitze 2,70 -> 0,90). Bus-Identitaet (welche Quelle auf welchem Aux) und L/R-Reihenfolge sind mit den Daten NICHT unterscheidbar - dieselbe Impulsdatei (L = R) lag auf allen drei Spuren (NAK-44)."
+      "zusatz": "Gemessen (Sidechain-to-this-track, docs/beweise/termin-a/LIES-MICH.md): zwei benannte Busse aktiv, je ein Impuls 0,90 ohne Summierung, Versatz 0, nach Speichern/Schliessen/Neuladen intakt. NICHT gemessen: §32.2 bindet die Capability an 'Topologie, Kanalreihenfolge UND PDC' - dieselbe Impulsdatei (L = R) lag auf allen drei Spuren (Bus-Identitaet und L/R-Reihenfolge nicht unterscheidbar), kein Plugin meldete Latenz (PDC nie ausgeuebt), zwischen den Laeufen wurde das Routing umgebaut. T2-Runde 2 (SONDE-004): derselbe Massstab wie bei aux_priority_sidechain - unsupported, bis Termin A2 (NAK-44) Kanalreihenfolge und PDC belegt.",
+      "fallback_nach_53_6": "nur Zustands-A/B, kein lokales Audio-Delta"
     },
     "aux_priority_sidechain": {
       "beweis_nach_53_6": "PDC-synchroner echter Sidechain",
@@ -107,17 +108,17 @@
     "song_loop_vor_export": "539634-539635 Samples (12,24 s, 7,14 Takte; schleife_an zusatz 28.6 Beats), ~3003 Bloecke je Wrap => ~180 Samples je Block waehrend dichter Automation",
     "song_loop_nach_export": "509119 Samples (11,54 s; Bereich 1181..510300, schleife_an zusatz 27.0), ~2833 Bloecke je Wrap",
     "pattern_loop": "173250 Samples (9,2 Beats), 963-965 Bloecke je Wrap",
-    "smart_disable": "keine Luecke in zwei stummen Wiedergabefenstern (22 s ab 13:02:45, 39 s ab 13:11:35; Smart disable im Wrapper an, Plugin-Fenster OFFEN): in beiden Fenstern kein zeitsprung_vor, Wrap-Kadenz regelmaessig (2833/2833/2832/2834 bzw. 3003). `block_ohne_verarbeitung` zaehlt nur Bruecken-Asymmetrie und belegt das NICHT (T2-Befund). Ob FL bei geschlossenem Fenster pausiert, ist nicht gemessen",
+    "smart_disable": "keine Luecke in zwei stummen Wiedergabefenstern (Smart disable im Wrapper an, Plugin-Fenster OFFEN): Fenster Ereignisse 61..66 = 3 Wraps + 111628 Samples = 1730530 Samples = 39,2 s Wiedergabe (Piano laut Uhr ab 13:02:45 stumm, ab 13:03:07 wieder laut - die Stummschaltung ist KEIN Ereignis, ihre Dauer nur aus der Uhr ableitbar), Fenster 88..96 = 5 Wraps + 6103 = 2551698 Samples = 57,9 s (stumm ab 13:11:35, laut ab 13:12:14). In beiden Fenstern kein zeitsprung_vor, Wrap-Kadenz regelmaessig (3003/3003 bzw. 2833/2833/2832/2834). `block_ohne_verarbeitung` zaehlt nur Bruecken-Asymmetrie und belegt das NICHT. Ob FL bei geschlossenem Fenster pausiert, ist nicht gemessen",
     "render": "offline_an/offline_aus je 1, 2587 Offline-Bloecke, Projektzeit im Render kontinuierlich, Transport-Ereignisse wie live",
     "play_nach_pause": "setzte einmal 69 Samples VOR der Pauseposition wieder ein (Ereignis 13: 84922 -> 84853)",
     "kontext_im_stand": "Kontext und Projektzeit 0 bereits im ersten Block, ohne Transport",
-    "seeks": "waehrend der Wiedergabe in beide Richtungen als zeitsprung gemeldet: Ereignisse 38/40/41 (Ticks 10/2/8 -> 1969/394/1575 Samples, rueckwaerts), 79/82 (+49901/+65960 vorwaerts), 84 (-38559 rueckwaerts)"
+    "seeks": "waehrend der Wiedergabe in beide Richtungen als zeitsprung gemeldet: Ereignisse 38/40/41 (mode=2 = Ticks 10/2/8 -> 1969/394/1575 Samples, rueckwaerts), 79 (+49901 vorwaerts, 9000 s mod Songlaenge), 82 (+65960 vorwaerts, 2000 s mod), 84 (-38559 rueckwaerts, 10000 s mod); Ereignis 50 (-78836) ist der Wechsel Song->Pattern-Modus, kein Seek und kein Wrap"
   },
   "offen": [
     "NAK-43: presentation_latency - ein verworfener Wertwechsel ohne Protokoll; die Probe um eine Werthistorie erweitern und ein Impulsgolden je Bus fahren - erst dann kann das Bit supported werden.",
-    "NAK-44: Termin A2 - Sidechain-Weg mit latenzmeldendem Plugin auf der Quellspur (PDC-Golden fuer aux_priority_sidechain), je Spur ein anderer Impulszeitpunkt und L-only/R-only (Bus-Identitaet, Kanalreihenfolge), FL-Version protokollieren.",
+    "NAK-44: Termin A2 - Sidechain- UND Compare-Weg mit latenzmeldendem Plugin auf der Quellspur (PDC-Golden fuer aux_priority_sidechain und aux_compare_pre), je Spur ein anderer Impulszeitpunkt und L-only/R-only (Bus-Identitaet, Kanalreihenfolge), FL-Version protokollieren.",
     "contribution_aux bleibt ungemessen, bis ein Geraet die Main-Aux-Busse misst (Termin A hat 'diskret' und 'nicht doppelt' teilweise gezeigt - Spitze 2,70 Mixroute vs. 0,90 Sidechain-only -, 'post-fader' nicht).",
     "Legacy-.flp-Fixture (SONDE-002, Klickliste B Teil 3) ist nicht angelegt."
   ],
-  "zusammenfassung": "3 supported (host_context_presence, project_time_samples, aux_compare_pre), 7 unsupported - davon 2 nach T2-Runde 1 herabgestuft (presentation_latency, aux_priority_sidechain: Golden nicht erbracht), 2 ungemessen (contribution_aux, ... siehe belege) und 3 ohne Hostbit bis zu ihren Tickets."
+  "zusammenfassung": "2 supported (host_context_presence, project_time_samples). 8 unsupported: 2 gemessen-unsupported (sample_accurate_automation, float64_processing), 3 herabgestuft, weil das §53.6-/§32.2-Golden nicht erbracht ist (presentation_latency ohne Impulsgolden; aux_priority_sidechain und aux_compare_pre ohne PDC-Last und ohne unterscheidbare Kanalreihenfolge - Termin A2, NAK-44), 1 ungemessen (contribution_aux), 2 ohne Hostbit bis zu ihren Tickets (binary_telemetry, remote_control)."
 }

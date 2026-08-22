@@ -43,9 +43,10 @@ Host `FruityLoops`, Wrapper VST3, 44100 Hz, Blockgröße 2048,
   Insert 1); im zweiten Lauf 0,90 = nur Eigensignal (Sidechain-Routen). Für die
   Messung ohne Belang, für den späteren Aufbau die Regel: Nebenwege als
   „Sidechain to this track", nicht als Mixroute.
-- Capability-Folge für S4 (`docs/beweise/SONDE-004.md`): `aux_compare_pre`
-  **supported** (getrennt, recall-stabil); `aux_priority_sidechain` **unsupported**,
-  bis ein Lauf mit latenzmeldendem Plugin „PDC-synchron" belegt (NAK-44). Nicht
+- Capability-Folge für S4 (`docs/beweise/SONDE-004.md`): `aux_compare_pre` und
+  `aux_priority_sidechain` **unsupported** — getrennt und recall-stabil gemessen,
+  aber §32.2 bindet beide an Kanalreihenfolge UND PDC, und beides war in Termin A
+  nicht ausgeübt (T2-Runde 2); Termin A2 (NAK-44) hebt sie. Nicht
   gemessen bleibt `contribution_aux` (Main-Aux-Busse) — kein Gerät misst es
   (Entwurf-Errata (k), NAK-04-Nachtrag).
 

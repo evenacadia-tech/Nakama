@@ -66,13 +66,13 @@
    (845 MB alte Repo-Kopie vom 13.08. mit zwei alten `EQ-Copilot.vst3`, die FL
    mitscannt) wegräumen — braucht einen Admin-Klick.
 4. ~~S4~~ — **gebaut**: `docs/beweise/SONDE-004.md`,
-   `eq-copilot/identity/host-capabilities-fl-v1.json` (**3 supported, 7
-   unsupported** — T2-Runde 1 hat `presentation_latency` und
-   `aux_priority_sidechain` herabgestuft: Golden nicht erbracht), Kanon A13.
+   `eq-copilot/identity/host-capabilities-fl-v1.json` (**2 supported, 8
+   unsupported** — T2 hat `presentation_latency`, `aux_priority_sidechain` und
+   `aux_compare_pre` herabgestuft: Golden nicht erbracht; Runde 2 PASS), Kanon A13.
    **Offen: Gate G0** (T3, eigene Session: `/c-review` auf den Bridge-Patch +
    Codex, Bruchaufträge Gate 1 und Gate 5) — danach fällt der
    Schließungsvorbehalt §65 für `SONDE-005`. **Termin A2** (NAK-44: PDC-Last,
-   Bus-Identität, L/R) hebt zwei Bits, wenn der User ihn fährt.
+   Bus-Identität, L/R) hebt beide Aux-Bits, wenn der User ihn fährt.
 
 ## ▶ Der eine nächste Schritt (Technik): S8 — `SONDE-007a`
 

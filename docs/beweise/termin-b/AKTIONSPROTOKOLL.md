@@ -20,13 +20,13 @@ Die Uhrzeiten unten sind die Wahrheit; die Klammerangaben dazu sind die berichti
 | 12:59:04 | Seek `mode=2`, Wert 2 = 2 Ticks (394 Samples), Rücksprung −18 996 (Ereignis 40) | 4 (rückwärts) |
 | 12:59:16 | Seek `mode=2`, Wert 8 = 8 Ticks (1 575 Samples), Rücksprung −533 347 (Ereignis 41) | 4 (rückwärts) |
 | 12:59:41 | Stop | 4b |
-| ≈12:59:55 | Position → 5 s (im Stop) | 4b |
+| ≈12:59:55 | Position `mode=2` Wert 5 = **5 Ticks** (984 Samples, im Stop) | 4b |
 | 13:00:01 | Play | 4b (Positionswechsel über Stop/Play) |
 | 13:00:18 | Umschalten Pattern-Modus (läuft weiter) | 5 Schleife (Pattern-Wrap 173 250 Samples = 9,2 Beats ≈ 2,3 Takte, 8 Wraps: Ereignisse 51–58) |
 | 13:00:42 | Ende Schleifenfenster | 5 |
 | ≈13:00:50 | Stop; zurück in Song-Modus | — |
 | (User) | Smart disable im Wrapper-Menü eingeschaltet („hab es an gemacht") | 6b |
-| 13:02:45 | Piano-Channel STUMM (fl_mute_channel), Position 0, Play | 6b Stille (bis 13:03:07 = 22 s; Ereignisse 61–66, 3 Wraps à 3 003 Blöcke, kein Vorwärtssprung) |
+| 13:02:45 | Piano-Channel STUMM (fl_mute_channel), Position 0, Play | 6b Stille (Uhr: stumm bis 13:03:07; Ereignisse 61–66 = 3 Wraps + 111 628 Samples = 39,2 s Wiedergabe insgesamt — die Uhrzeiten der drei späteren Play-Zeilen liegen ~10 s neben den Ereignissen; die Stummschaltung ist kein Ereignis, ihre Dauer nur aus der Uhr ableitbar; kein Vorwärtssprung) |
 | 13:03:07 | Piano wieder laut | 6b Ton (8 s) |
 | 13:03:15 | Stop | — |
 | (User) | Export → WAV, Fenster wieder öffnen, „Bericht sichern" | 7 + Abschnitt 4 |
@@ -36,23 +36,23 @@ Die Uhrzeiten unten sind die Wahrheit; die Klammerangaben dazu sind die berichti
 `fl_set_song_position(mode=1)` ist laut FL-API **Sekunden** (`SONGLENGTH_S = 1`), nicht
 Millisekunden, wie die MCP-Beschreibung behauptet; die Werte 9000/2000/10000 wurden
 modulo der Songlänge 509 119 Samples (11,545 s) eingeordnet — deshalb landeten sie
-„zufällig" brauchbar: 296 494 / 122 456 / 103 163 Samples (Ereignisse 79, 84, 82).
+„zufällig" brauchbar: 296 494 / 122 456 / 103 163 Samples (Ereignisse 79, 82, 84).
 
 | Zeit | Aktion | Ereignis |
 |---|---|---|
 | 13:10:22 | Play ab 0 | Abschnitt 75–86 |
 | 13:10:27 | Seek `mode=1` 9000 → 296 494 Samples, ohne Stop | 79 `zeitsprung_vor` +49 901 |
-| 13:10:42 | Seek `mode=1` 2000 → 122 456 Samples, ohne Stop | 84 `zeitsprung_zurueck` −38 559 (nach Wrap 83) |
-| 13:10:57 | Seek `mode=1` 10000 → 103 163 Samples, ohne Stop | 82 `zeitsprung_vor` +65 960 |
+| 13:10:42 | Seek `mode=1` 2000 → 122 456 Samples, ohne Stop | 82 `zeitsprung_vor` +65 960 (nach Wrap 81) |
+| 13:10:57 | Seek `mode=1` 10000 → 103 163 Samples, ohne Stop | 84 `zeitsprung_zurueck` −38 559 (nach Wrap 83) |
 | 13:11:12 | Stop | 86 |
-| 13:11:35 | Piano STUMM, Position 0, Play (Smart disable an) | Abschnitt 88–96: 5 Wraps à 2 833 Blöcke, kein Vorwärtssprung |
-| 13:12:14 | Piano wieder laut (Stille damit 39 s) | — |
+| 13:11:35 | Piano STUMM, Position 0, Play (Smart disable an) | Abschnitt 88–96: 5 Wraps + 6 103 Samples = 57,9 s Wiedergabe (Uhr sagt 47 s — siehe oben), kein Vorwärtssprung |
+| 13:12:14 | Piano wieder laut (Stille laut Uhr 39 s) | — |
 | 13:12:22 | Stop | 96 |
 | 13:26:44 | User: „Bericht sichern" (zweiter Bericht) | — |
 
 Lesart für die Auswertung: meine Seeks sind die Sprünge 38/40/41 (rückwärts, Ticks) und
-79/82 (vorwärts), 84 (rückwärts); alle übrigen `zeitsprung_zurueck` sind Loop-Wraps mit
-exakt Song- bzw. Pattern-Länge; `zeitsprung_ueber_stop` 5 = Ereignisse 13/46/69/76/89
+79/82 (vorwärts), 84 (rückwärts); Ereignis 50 (−78 836) ist der Wechsel Song→Pattern-Modus
+(13:00:18); alle übrigen `zeitsprung_zurueck` sind Loop-Wraps mit exakt Song- bzw. Pattern-Länge; `zeitsprung_ueber_stop` 5 = Ereignisse 13/46/69/76/89
 (jeder Play nach Stop/Pause mit Positionswechsel); Smart-Disable-Fenster 61–66 und 88–96
 ohne Vorwärtssprung und mit regelmäßiger Wrap-Kadenz ⇒ keine Lücke (bei offenem Fenster).
 

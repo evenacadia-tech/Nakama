@@ -225,14 +225,47 @@ def main() -> int:
     erwartete_bits = {
         "host_context_presence": "supported", "project_time_samples": "supported",
         "sample_accurate_automation": "unsupported", "presentation_latency": "unsupported",
-        "aux_compare_pre": "supported", "aux_priority_sidechain": "unsupported",
+        "aux_compare_pre": "unsupported", "aux_priority_sidechain": "unsupported",
         "contribution_aux": "unsupported", "float64_processing": "unsupported",
         "binary_telemetry": "unsupported", "remote_control": "unsupported",
     }
-    pruefe(caps == erwartete_bits, "die zehn Bits stehen so, wie die Rohdaten es tragen (3 supported, 7 unsupported)")
+    pruefe(caps == erwartete_bits, "die zehn Bits stehen so, wie die Rohdaten es tragen (2 supported, 8 unsupported)")
     pruefe(report["belege"]["presentation_latency"].get("fallback_nach_53_6") == "keine subtraktive Cross-Probe-Ausrichtung"
-           and report["belege"]["aux_priority_sidechain"].get("fallback_nach_53_6") == "keine dynamische Aktuation",
+           and report["belege"]["aux_priority_sidechain"].get("fallback_nach_53_6") == "keine dynamische Aktuation"
+           and report["belege"]["aux_compare_pre"].get("fallback_nach_53_6") == "nur Zustands-A/B, kein lokales Audio-Delta",
            "herabgestufte Bits tragen die Fallbacks aus §53.6")
+
+    # 2c. gemessene_hosttatsachen und die Latenzzahlen des Belegtexts gegen die
+    #     Rohdaten (T2-Runde 2, Befund 7: Freitextzahlen waren ungeprueft).
+    ht = report["gemessene_hosttatsachen"]
+    pruefe(ht["blockgroesse_min_samples"] == b["bloecke"]["blockgroesse_min"]
+           and ht["blockgroesse_max_samples"] == b["bloecke"]["blockgroesse_max"]
+           and float(ht["tempo_bpm"]) == b["projektzeit"]["letztes_tempo"],
+           "gemessene_hosttatsachen: Blockgroessen und Tempo stimmen mit den Rohfeldern")
+    lat = report["belege"]["presentation_latency"]["rohfeld"]
+    pruefe(f"eingang Bus 0 = {gemeldet[('eingang', 0)]}" in lat and f"ausgang Bus 0 = {gemeldet[('ausgang', 0)]}" in lat,
+           "Belegtext presentation_latency nennt genau die gemeldeten Latenzwerte")
+    zahlen_text = ht["seeks"]
+    for idx, feld in ((38, "projektzeit"), (40, "projektzeit"), (41, "projektzeit"), (79, "zusatz"), (82, "zusatz"), (84, "zusatz"), (50, "zusatz")):
+        wert = ev[idx][feld]
+        pruefe(str(int(abs(wert))) in zahlen_text and ev[idx]["art"].startswith("zeitsprung"),
+               f"gemessene_hosttatsachen.seeks nennt Ereignis {idx} ({ev[idx]['art']} {int(wert)})")
+    # Wraps landen bei Projektzeit 0/1 - meine Seeks (38/40/41) nicht.
+    wraps_song = sorted({int(abs(x["zusatz"])) for x in ev[31:44] if x["art"] == "zeitsprung_zurueck" and x["projektzeit"] <= 1})
+    pruefe(wraps_song == [539634, 539635] and "539634-539635" in ht["song_loop_vor_export"],
+           f"Song-Loop vor Export = {wraps_song} Samples wie im Report")
+    wraps_pattern = {int(abs(x["zusatz"])) for x in ev[51:59] if x["art"] == "zeitsprung_zurueck"}
+    pruefe(wraps_pattern == {173250} and "173250" in ht["pattern_loop"], "Pattern-Loop = 173250 Samples wie im Report")
+    wraps_nach = {int(abs(x["zusatz"])) for x in ev[88:97] if x["art"] == "zeitsprung_zurueck"}
+    pruefe(wraps_nach <= {509118, 509119} and "509119" in ht["song_loop_nach_export"], f"Song-Loop nach Export = {sorted(wraps_nach)} Samples wie im Report (509119)")
+    erster = json.loads((BEWEISE / "termin-b" / "host-probe-20260822-130657.json").read_text(encoding="utf-8"))
+    pruefe(erster["ereignisse"] == ev[:len(erster["ereignisse"])] and len(erster["ereignisse"]) == 75,
+           "der erste Bericht (75 Ereignisse) ist das Praefix des zweiten")
+    zaehler = {}
+    for x in ev:
+        zaehler[x["art"]] = zaehler.get(x["art"], 0) + 1
+    pruefe(all(b["ereignisse_je_art"].get(k, 0) == v for k, v in zaehler.items()),
+           "ereignisse_je_art stimmt mit der Ereignisliste ueberein")
 
     print()
     if fehler:

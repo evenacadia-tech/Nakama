@@ -196,12 +196,12 @@ Befund: beide Termine sind **noch nicht gelaufen** —
 danach S8 (`SONDE-007a`). **Nachtrag 22.08.2026 (Befund):** beide Termine sind
 gemessen (`docs/beweise/termin-a/`, `termin-b/`), S4 ist gebaut
 (`docs/beweise/SONDE-004.md`, `eq-copilot/identity/host-capabilities-fl-v1.json`).
-Die §53.6-Bits für FL (3 supported, 7 unsupported): `sample_accurate_automation`
+Die §53.6-Bits für FL (2 supported, 8 unsupported): `sample_accurate_automation`
 ist **unsupported** — FL legt nie mehr als einen Punkt je Block in die Queue und
 zerteilt stattdessen die Puffer bis auf 1 Sample (§53.7/§53.8 „Blockrampe" ist
 damit FLs eigenes Verfahren); `presentation_latency` gemeldet, aber ohne
-Impulsgolden ⇒ unsupported; `aux_priority_sidechain` ohne PDC-Last gemessen ⇒
-unsupported bis Termin A2 (NAK-44); `float64_processing` unsupported;
+Impulsgolden ⇒ unsupported; `aux_priority_sidechain` und `aux_compare_pre` ohne PDC-Last und ohne
+unterscheidbare Kanalreihenfolge gemessen ⇒ unsupported bis Termin A2 (NAK-44); `float64_processing` unsupported;
 `contribution_aux` ungemessen ⇒ unsupported (§54). Host FL Studio 2026
 26.1.4.5589, JUCE 8.0.9. Der Schließungsvorbehalt für `SONDE-005` kann fallen, sobald
 G0 gelaufen ist.

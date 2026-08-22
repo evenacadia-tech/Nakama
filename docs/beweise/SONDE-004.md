@@ -12,17 +12,19 @@
 | Gate-Text (Quelle) | `docs/FL-Nakama-Sonden-Design-Entwurf.md` §65 — **wörtlich:** „FL-Aux-/PDC-/Recall-Spike und Capabilityreport — fertig, wenn: jede Aux-Capability eindeutig supported/unsupported". §53.6 Capabilityvertrag (zehn Bits, „Ein Capabilitybit wird nur nach seinem Golden gesetzt"), §54 Exit-Gate („Kein `unknown, später prüfen` darf P1 passieren"), §32.2 (Aux-Topologie), §33.4/§41.3 (Recording/Render-Regeln) |
 | Commits | siehe `git log --oneline` ab `ad16234` (22.08.2026) |
 | Datum | 2026-08-22 |
-| Prüfstufen | T1 ☑ (§4) · T2 Runde 1 **NEEDS_WORK** (nachgearbeitet, §5/§6) · Runde 2 ☐ · T3 ☐ (G0 ist die eigene Session danach) |
+| Prüfstufen | T1 ☑ (§4) · T2 Runde 1 **NEEDS_WORK** (nachgearbeitet) · **Runde 2 PASS** (zehn nicht-blockierende Befunde geschlossen, §5/§6) · T3 ☐ (G0 ist die eigene Session danach) |
 
 **Was S4 liefert:** `eq-copilot/identity/host-capabilities-fl-v1.json` — die zehn
 §53.6-Bits für FL Studio 2026 26.1.4.5589 (JUCE 8.0.9), jedes mit Rohfeld und
-Datei, in der Vertragsform `$defs/capabilities` des v3-Schemas — **3 supported,
-7 unsupported** — und das Prüfbein `tools/eq-copilot/pruefe_host_capabilities.py`
-(Kanon **A13**, 48 Prüfungen), das die Vertragsform, jede „feld = wert"-Angabe des
-Reports gegen die Rohdateien, die Smart-Disable-Fenster und die Versionsangaben
-misst. Dazu `docs/beweise/termin-b/` (zwei Berichte, Aktionsprotokoll mit
-Uhrzeiten, LIES-MICH). Nach T2-Runde 1 herabgestuft: `presentation_latency`
-(gemeldet, aber kein Impulsgolden) und `aux_priority_sidechain` (PDC nie ausgeübt).
+Datei, in der Vertragsform `$defs/capabilities` des v3-Schemas — **2 supported,
+8 unsupported** — und das Prüfbein `tools/eq-copilot/pruefe_host_capabilities.py`
+(Kanon **A13**, 61 Prüfungen), das die Vertragsform, jede „feld = wert"-Angabe des
+Reports, die `gemessene_hosttatsachen` (Blockgrößen, Tempo, Loop-Längen, Seeks),
+die Smart-Disable-Fenster, das Präfix-Verhältnis der beiden Berichte und die
+Versionsangaben gegen die Rohdateien misst. Dazu `docs/beweise/termin-b/` (zwei Berichte, Aktionsprotokoll mit
+Uhrzeiten, LIES-MICH). Nach T2 herabgestuft: `presentation_latency` (gemeldet,
+aber kein Impulsgolden), `aux_priority_sidechain` und — Runde 2, derselbe Maßstab —
+`aux_compare_pre` (PDC nie ausgeübt, Kanalreihenfolge nicht unterscheidbar, §32.2).
 
 ---
 
@@ -30,16 +32,16 @@ Uhrzeiten, LIES-MICH). Nach T2-Runde 1 herabgestuft: `presentation_latency`
 
 | # | Behauptung (Gate-Text) | Befehl | Ergebnis | Rohausgabe | Datum |
 |---|---|---|---|---|---|
-| 1 | **Jede Aux-Capability eindeutig:** `aux_compare_pre` **supported** (aktiv, 2 Kanäle, Protokoll eingehalten, Versatz zum Hauptweg **0 Samples** vor UND nach Speichern/Schließen/Neuladen — Layout und Versatz; Bus-Identität/L/R nicht unterscheidbar, NAK-44), `aux_priority_sidechain` **unsupported** (Weg getrennt und samplegenau gemessen, aber **PDC nie ausgeübt** — kein Plugin im Aufbau meldete Latenz; §53.6 verlangt „PDC-synchron"; Fallback „keine dynamische Aktuation"), `contribution_aux` **unsupported** (kein Gerät misst die Main-Aux-Busse; §54 verbietet `unknown`; Fallback „nur Assoziation statt exakter Attribution") | `py -3.13 tools/eq-copilot/pruefe_host_capabilities.py` | ☑ | [↓ B1](#b1), [↓ B2](#b2) | 2026-08-22 |
+| 1 | **Jede Aux-Capability eindeutig:** `aux_compare_pre` **unsupported** (gemessen: aktiv, 2 Kanäle, Protokoll eingehalten, Versatz **0 Samples** vor UND nach Speichern/Schließen/Neuladen — aber §32.2 bindet die Fähigkeit an „Topologie, Kanalreihenfolge und PDC", und Kanalreihenfolge (dieselbe Impulsdatei L = R auf allen Spuren) wie PDC (kein latenzmeldendes Plugin) sind ungemessen; Fallback „nur Zustands-A/B, kein lokales Audio-Delta"; NAK-44), `aux_priority_sidechain` **unsupported** (Weg getrennt und samplegenau gemessen, aber **PDC nie ausgeübt** — kein Plugin im Aufbau meldete Latenz; §53.6 verlangt „PDC-synchron"; Fallback „keine dynamische Aktuation"), `contribution_aux` **unsupported** (kein Gerät misst die Main-Aux-Busse; §54 verbietet `unknown`; Fallback „nur Assoziation statt exakter Attribution") | `py -3.13 tools/eq-copilot/pruefe_host_capabilities.py` | ☑ | [↓ B1](#b1), [↓ B2](#b2) | 2026-08-22 |
 | 2 | `host_context_presence` **supported**: Hostbrücke liefert, Kontext in 259 298 von 259 298 Blöcken, `kontext_weg` 0 | dito | ☑ | [↓ B1](#b1), [↓ B3](#b3) | 2026-08-22 |
 | 3 | `project_time_samples` **supported**: alle sieben Kontextfelder immer gültig; Seeks ohne Stop in beide Richtungen gemeldet (2 vor, 51 zurück inkl. Loop-Wraps mit exakter Songlänge), Play-nach-Stop als eigene Zeile (5), Render als 2 587 Offline-Blöcke mit `offline_an/aus`, 0 negative Projektzeiten | dito | ☑ | [↓ B3](#b3), [↓ B4](#b4) | 2026-08-22 |
 | 4 | `sample_accurate_automation` **unsupported** (§53.6-Sinn): 83 303 Punkte, nie mehr als einer je Block, Offset immer 0, `samplegenau_belegt: false`; FL zerteilt stattdessen die Puffer (Blockgröße 1…4 096). Fallback „Blockrampe; Topologieautomation aus" | dito | ☑ | [↓ B3](#b3) | 2026-08-22 |
 | 5 | `presentation_latency` **unsupported**: FL **meldet** Eingang Bus 0 = 3 924 (89 ms), Ausgang Bus 0 = 4 410 Samples (100 ms) — aber kein Impulsgolden verbindet die Werte mit einem gemessenen Versatz (der Aux-Spike liest keine Presentation-Latency), und ein späterer Wertwechsel wurde ohne Protokoll verworfen (NAK-43). §53.6 „Bus-spezifisches Impulsgolden" nicht erbracht; Fallback „keine subtraktive Cross-Probe-Ausrichtung" | dito | ☑ | [↓ B2](#b2), [↓ B3](#b3) | 2026-08-22 |
 | 6 | `float64_processing` **unsupported**: 259 298 float-Blöcke, 0 double | dito | ☑ | [↓ B3](#b3) | 2026-08-22 |
 | 7 | `binary_telemetry`, `remote_control` **unsupported** bis zu ihren Beweisen (SONDE-010 bzw. 016/017) — kein Hostbit, fester Fallback eingetragen | dito | ☑ | [↓ B1](#b1) | 2026-08-22 |
-| 8 | Die zehn Bits entsprechen **exakt** der Vertragsform `$defs/capabilities` (v3, strikt, `supported|unsupported`); jede „feld = wert"-Angabe der Belegtexte wird gegen die Rohdateien aufgelöst (47 Angaben) | dito (jsonschema + Auflösung) | ☑ | [↓ B1](#b1) | 2026-08-22 |
-| 8b | Host- und JUCE-Version dokumentiert (§54 Lieferumfang 6): FL Studio 2026 26.1.4.5589 (laufender Prozess bei Termin B), JUCE 8.0.9; Termin-A-Version nicht protokolliert (NAK-44) | `Get-Process FL64` 22.08. 13:3x; `eq-copilot/CMakeLists.txt` GIT_TAG | ☑ | [↓ B1](#b1) | 2026-08-22 |
-| 9 | Smart Disable: in 22 s und 39 s stummer Wiedergabe **keine Lücke** — in den Fenstern (Ereignisse 61–66, 88–96) kein `zeitsprung_vor`, Wrap-Kadenz regelmäßig (3 003 / 2 833 Blöcke); gemessen bei OFFENEM Plugin-Fenster. (`block_ohne_verarbeitung` ist KEIN Beleg — es zählt Brücken-Asymmetrie) | A13 Ereignisfenster | ☑ (Befund, kein Capabilitybit) | [↓ B1](#b1), [↓ B4](#b4) | 2026-08-22 |
+| 8 | Die zehn Bits entsprechen **exakt** der Vertragsform `$defs/capabilities` (v3, strikt, `supported|unsupported`); jede „feld = wert"-Angabe der Belegtexte wird gegen die Rohdateien aufgelöst (47 Angaben), dazu `gemessene_hosttatsachen` (Blockgrößen, Tempo, Loop-Längen 539 634/635 · 173 250 · 509 119, Seeks 38/40/41/79/82/84, Ereignis 50), Präfix-Verhältnis der Berichte, `ereignisse_je_art` gegen die Liste | dito (jsonschema + Auflösung) | ☑ | [↓ B1](#b1) | 2026-08-22 |
+| 8b | Host- und JUCE-Version dokumentiert (§54 Lieferumfang 6): FL Studio 2026 26.1.4.5589 (laufender Prozess, gemessen ~13:37 nach dem zweiten Bericht), JUCE 8.0.9; Termin-A-Version nicht protokolliert (NAK-44) | `Get-Process FL64`; `eq-copilot/CMakeLists.txt` GIT_TAG | ☑ | [↓ B7](#b7) | 2026-08-22 |
+| 9 | Smart Disable: **keine Lücke** in zwei stummen Wiedergabefenstern — Ereignisse 61–66 = 39,2 s und 88–96 = 57,9 s Wiedergabe (davon laut Uhr ≥ 22 s bzw. ≥ 39 s stumm; die Stummschaltung selbst ist kein Ereignis), kein `zeitsprung_vor`, Wrap-Kadenz regelmäßig (3 003 / 2 833 Blöcke); gemessen bei OFFENEM Plugin-Fenster. (`block_ohne_verarbeitung` ist KEIN Beleg — es zählt Brücken-Asymmetrie) | A13 Ereignisfenster | ☑ (Befund, kein Capabilitybit) | [↓ B1](#b1), [↓ B4](#b4) | 2026-08-22 |
 | 10 | Kanon-Lauf mit A13 als Pflichtbein | `pwsh -File tools/beweise.ps1 -Bauen -Ziel docs/beweise/SONDE-004.md -Anhaengen -Titel 'SONDE-004'` | siehe §3 | [↓ §3](#3-kanon-lauf) | 2026-08-22 |
 
 ---
@@ -88,8 +90,7 @@ Uhrzeiten, LIES-MICH). Nach T2-Runde 1 herabgestuft: `presentation_latency`
   ok      presentation_latency=unsupported traegt den festen Fallback aus §53.6
   ok      presentation_latency: Rohdatei existiert (docs/beweise/termin-b/host-probe-20260822-132644.json)
   ok      presentation_latency: Rohdatei existiert (docs/beweise/termin-a/aux-spike-20260822-001701.json)
-  ok      aux_compare_pre=supported traegt einen Termin (A)
-  ok      aux_compare_pre=supported behauptet kein 'Golden nicht erbracht'
+  ok      aux_compare_pre=unsupported traegt den festen Fallback aus §53.6
   ok      aux_compare_pre: Rohdatei existiert (docs/beweise/termin-a/aux-spike-20260822-001701.json)
   ok      aux_priority_sidechain=unsupported traegt den festen Fallback aus §53.6
   ok      aux_priority_sidechain: Rohdatei existiert (docs/beweise/termin-a/aux-spike-20260822-001701.json)
@@ -98,10 +99,24 @@ Uhrzeiten, LIES-MICH). Nach T2-Runde 1 herabgestuft: `presentation_latency`
   ok      float64_processing: Rohdatei existiert (docs/beweise/termin-b/host-probe-20260822-132644.json)
   ok      binary_telemetry=unsupported traegt den festen Fallback aus §53.6
   ok      remote_control=unsupported traegt den festen Fallback aus §53.6
-  ok      die zehn Bits stehen so, wie die Rohdaten es tragen (3 supported, 7 unsupported)
+  ok      die zehn Bits stehen so, wie die Rohdaten es tragen (2 supported, 8 unsupported)
   ok      herabgestufte Bits tragen die Fallbacks aus §53.6
+  ok      gemessene_hosttatsachen: Blockgroessen und Tempo stimmen mit den Rohfeldern
+  ok      Belegtext presentation_latency nennt genau die gemeldeten Latenzwerte
+  ok      gemessene_hosttatsachen.seeks nennt Ereignis 38 (zeitsprung_zurueck 1969)
+  ok      gemessene_hosttatsachen.seeks nennt Ereignis 40 (zeitsprung_zurueck 394)
+  ok      gemessene_hosttatsachen.seeks nennt Ereignis 41 (zeitsprung_zurueck 1575)
+  ok      gemessene_hosttatsachen.seeks nennt Ereignis 79 (zeitsprung_vor 49901)
+  ok      gemessene_hosttatsachen.seeks nennt Ereignis 82 (zeitsprung_vor 65960)
+  ok      gemessene_hosttatsachen.seeks nennt Ereignis 84 (zeitsprung_zurueck -38559)
+  ok      gemessene_hosttatsachen.seeks nennt Ereignis 50 (zeitsprung_zurueck -78836)
+  ok      Song-Loop vor Export = [539634, 539635] Samples wie im Report
+  ok      Pattern-Loop = 173250 Samples wie im Report
+  ok      Song-Loop nach Export = [509118, 509119] Samples wie im Report (509119)
+  ok      der erste Bericht (75 Ereignisse) ist das Praefix des zweiten
+  ok      ereignisse_je_art stimmt mit der Ereignisliste ueberein
 
-HOST-CAPABILITIES OK - 48 Pruefungen ok, 0 Fehler
+HOST-CAPABILITIES OK - 61 Pruefungen ok, 0 Fehler
 ```
 
 <a id="b2"></a>
@@ -354,13 +369,13 @@ Die Uhrzeiten unten sind die Wahrheit; die Klammerangaben dazu sind die berichti
 | 12:59:04 | Seek `mode=2`, Wert 2 = 2 Ticks (394 Samples), Rücksprung −18 996 (Ereignis 40) | 4 (rückwärts) |
 | 12:59:16 | Seek `mode=2`, Wert 8 = 8 Ticks (1 575 Samples), Rücksprung −533 347 (Ereignis 41) | 4 (rückwärts) |
 | 12:59:41 | Stop | 4b |
-| ≈12:59:55 | Position → 5 s (im Stop) | 4b |
+| ≈12:59:55 | Position `mode=2` Wert 5 = **5 Ticks** (984 Samples, im Stop) | 4b |
 | 13:00:01 | Play | 4b (Positionswechsel über Stop/Play) |
 | 13:00:18 | Umschalten Pattern-Modus (läuft weiter) | 5 Schleife (Pattern-Wrap 173 250 Samples = 9,2 Beats ≈ 2,3 Takte, 8 Wraps: Ereignisse 51–58) |
 | 13:00:42 | Ende Schleifenfenster | 5 |
 | ≈13:00:50 | Stop; zurück in Song-Modus | — |
 | (User) | Smart disable im Wrapper-Menü eingeschaltet („hab es an gemacht") | 6b |
-| 13:02:45 | Piano-Channel STUMM (fl_mute_channel), Position 0, Play | 6b Stille (bis 13:03:07 = 22 s; Ereignisse 61–66, 3 Wraps à 3 003 Blöcke, kein Vorwärtssprung) |
+| 13:02:45 | Piano-Channel STUMM (fl_mute_channel), Position 0, Play | 6b Stille (Uhr: stumm bis 13:03:07; Ereignisse 61–66 = 3 Wraps + 111 628 Samples = 39,2 s Wiedergabe insgesamt — die Uhrzeiten der drei späteren Play-Zeilen liegen ~10 s neben den Ereignissen; die Stummschaltung ist kein Ereignis, ihre Dauer nur aus der Uhr ableitbar; kein Vorwärtssprung) |
 | 13:03:07 | Piano wieder laut | 6b Ton (8 s) |
 | 13:03:15 | Stop | — |
 | (User) | Export → WAV, Fenster wieder öffnen, „Bericht sichern" | 7 + Abschnitt 4 |
@@ -370,23 +385,23 @@ Die Uhrzeiten unten sind die Wahrheit; die Klammerangaben dazu sind die berichti
 `fl_set_song_position(mode=1)` ist laut FL-API **Sekunden** (`SONGLENGTH_S = 1`), nicht
 Millisekunden, wie die MCP-Beschreibung behauptet; die Werte 9000/2000/10000 wurden
 modulo der Songlänge 509 119 Samples (11,545 s) eingeordnet — deshalb landeten sie
-„zufällig" brauchbar: 296 494 / 122 456 / 103 163 Samples (Ereignisse 79, 84, 82).
+„zufällig" brauchbar: 296 494 / 122 456 / 103 163 Samples (Ereignisse 79, 82, 84).
 
 | Zeit | Aktion | Ereignis |
 |---|---|---|
 | 13:10:22 | Play ab 0 | Abschnitt 75–86 |
 | 13:10:27 | Seek `mode=1` 9000 → 296 494 Samples, ohne Stop | 79 `zeitsprung_vor` +49 901 |
-| 13:10:42 | Seek `mode=1` 2000 → 122 456 Samples, ohne Stop | 84 `zeitsprung_zurueck` −38 559 (nach Wrap 83) |
-| 13:10:57 | Seek `mode=1` 10000 → 103 163 Samples, ohne Stop | 82 `zeitsprung_vor` +65 960 |
+| 13:10:42 | Seek `mode=1` 2000 → 122 456 Samples, ohne Stop | 82 `zeitsprung_vor` +65 960 (nach Wrap 81) |
+| 13:10:57 | Seek `mode=1` 10000 → 103 163 Samples, ohne Stop | 84 `zeitsprung_zurueck` −38 559 (nach Wrap 83) |
 | 13:11:12 | Stop | 86 |
-| 13:11:35 | Piano STUMM, Position 0, Play (Smart disable an) | Abschnitt 88–96: 5 Wraps à 2 833 Blöcke, kein Vorwärtssprung |
-| 13:12:14 | Piano wieder laut (Stille damit 39 s) | — |
+| 13:11:35 | Piano STUMM, Position 0, Play (Smart disable an) | Abschnitt 88–96: 5 Wraps + 6 103 Samples = 57,9 s Wiedergabe (Uhr sagt 47 s — siehe oben), kein Vorwärtssprung |
+| 13:12:14 | Piano wieder laut (Stille laut Uhr 39 s) | — |
 | 13:12:22 | Stop | 96 |
 | 13:26:44 | User: „Bericht sichern" (zweiter Bericht) | — |
 
 Lesart für die Auswertung: meine Seeks sind die Sprünge 38/40/41 (rückwärts, Ticks) und
-79/82 (vorwärts), 84 (rückwärts); alle übrigen `zeitsprung_zurueck` sind Loop-Wraps mit
-exakt Song- bzw. Pattern-Länge; `zeitsprung_ueber_stop` 5 = Ereignisse 13/46/69/76/89
+79/82 (vorwärts), 84 (rückwärts); Ereignis 50 (−78 836) ist der Wechsel Song→Pattern-Modus
+(13:00:18); alle übrigen `zeitsprung_zurueck` sind Loop-Wraps mit exakt Song- bzw. Pattern-Länge; `zeitsprung_ueber_stop` 5 = Ereignisse 13/46/69/76/89
 (jeder Play nach Stop/Pause mit Positionswechsel); Smart-Disable-Fenster 61–66 und 88–96
 ohne Vorwärtssprung und mit regelmäßiger Wrap-Kadenz ⇒ keine Lücke (bei offenem Fenster).
 
@@ -397,6 +412,21 @@ reicht `mode` durch; FL-Konstanten `SONGLENGTH_MS = 0`, `SONGLENGTH_S = 1`,
 ```
 
 Die Nachmessung 13:10–13:12 steht im Protokoll (eigene Tabelle) samt der an der MCP-Quelle verifizierten Modus-Lesart (0 = ms, 1 = s, 2 = Ticks).
+
+<a id="b7"></a>
+### B7 · Host-Version (Behauptung 8b)
+
+**Befehl:** `Get-Process FL64 | Select-Object Id, Path, @{n='Version';e={$_.MainModule.FileVersionInfo.FileVersion}}` · **Datum:** 2026-08-22 ~13:37 (nach dem zweiten Bericht 13:26:44; FL lief seit der Messung durch)
+
+```text
+Id      : 19884
+Path    : C:/Program Files/Image-Line/FL Studio 2026/FL64.exe
+Version : 26.1.4.5589
+Produkt : 26.1.4.5589
+(zwei weitere FL64.exe-Prozesse mit identischem Pfad und identischer Version: 23516, 36940)
+```
+
+JUCE: `eq-copilot/CMakeLists.txt` `GIT_TAG 8.0.9`. Installierte Messgeräte: `moduleinfo.json` „Version": "0.1.0" (EqCop-Host-Probe). Der T2-Prüfer (Runde 2) hat unabhängig gemessen: PID 54904, StartTime 22.08. 12:46:36, 26.1.4.5589, kein FL-2025-Prozess.
 
 ---
 
@@ -432,8 +462,8 @@ _(Der angehängte Abschnitt erscheint am Dateiende.)_
 | Agent | Frischkontext-Subagent (sieht nur Report-JSON, dieses Manifest, Rohdaten, Prüfbein, Gate-Text §65/§53.6/§54/§32.2) |
 | Bruchaufträge | A Bit ohne Rohdeckung · B Zahl/Behauptung ≠ Rohdatei · C Bit ohne sein §53.6-Golden · D Aux-Bit nicht eindeutig · E Bein misst nur Konstanten · F Lesart deckt Ereignisse nicht |
 | **Runde 1** | **NEEDS_WORK** (22.08. 13:45–14:03). Blockierend: (1) `presentation_latency: supported` ohne Impulsgolden — Meldung + verworfener Wertwechsel sind ein `unknown` unter falschem Etikett (§54); (2) `aux_priority_sidechain: supported`, obwohl in Termin A kein Plugin Latenz meldete — „PDC-synchron" nie ausgeübt (§32.2, §54 Lieferumfang 4); (3) FL-/JUCE-Version fehlten (§54 Lieferumfang 6). Nicht-blockierend: MCP-Modi falsch gelesen (2 = Ticks, 1 = s — tick- und modulo-genau bewiesen), `block_ohne_verarbeitung` kein Smart-Disable-Beleg, Bein maß Konstanten statt Report, Loop-Länge 539 438 statt 539 634, Protokoll-Dauern/Takte aus MCP-Anzeigen geschätzt, Termin-A-Läufe nicht derselbe Projektstand, Bus-Identität/L/R unmessbar, `contribution_sidechain` kein §53.6-Name, „= 100 ms" nur für 4 410. Widerlegt hat er: B4/B3 ≠ Rohdatei, Seek-Zuordnung, Loop-Wraps, Smart-Disable-Schluss, die übrigen Bits. **Alle Befunde nachgearbeitet (§6).** |
-| **Runde 2** | ☐ PASS ☐ NEEDS_WORK — wird nach dem Lauf eingetragen |
-| Datum | Runde 1: 2026-08-22 |
+| **Runde 2** | **PASS** (22.08. 14:05–14:26). Bruchaufträge A/D/F: kein Pfad; C: Bein maß `rohfeld` und Fenster, aber nicht `gemessene_hosttatsachen`/`zusatz`-Zahlen (nachgearbeitet: 61 Prüfungen); E: Modus-Lesart bestätigt (tick- und modulo-genau, Fork-Beschreibung falsch). Zehn nicht-blockierende Befunde: Protokolltabelle vertauschte Ereignisse 82/84 · „5 s" war 5 Ticks · NAK-43-Satz veraltet · `zusammenfassung` mit Platzhalter und falscher Einteilung · Uhr-Dauern ≠ Ereignisse (~10 s) · Ereignis 50 = Moduswechsel, kein Wrap · Bein-Abdeckung · `aux_compare_pre` mit demselben §32.2-Maßstab herabstufen · Get-Process-Rohausgabe fehlte · „Live 20 s" war das Soll. **Alle geschlossen (§6 R2-1…R2-10).** |
+| Datum | Runde 1 und 2: 2026-08-22 |
 
 ---
 
@@ -452,7 +482,17 @@ _(Der angehängte Abschnitt erscheint am Dateiende.)_
 | T2-8: Protokoll-Dauern/Takte aus MCP-Anzeigen geschätzt (≈20 s/≈4 Takte/12 s/30 s) | T2 | ☑ Ereignisse + eigene Uhrzeiten (22 s/39 s) | **gefixt:** Protokoll trägt die berichtigten Werte aus den Ereignissen; Uhrzeiten unverändert |
 | T2-9: Termin-A-Läufe nicht derselbe Projektstand; Bus-Identität/L/R unmessbar (dieselbe Impulsdatei, L = R) | T2 | ☑ termin-a/LIES-MICH, `erzeuge_aux_spike_fixtures.py` | **gefixt (Text)** + **NAK-44** (Termin A2: Impulszeitpunkte je Spur, L-only/R-only) |
 | T2-10: `contribution_sidechain` kein §53.6-Name; „= 100 ms" nur für 4 410 | T2 | ☑ | **gefixt** |
-| Smart disable erzeugt bei offenem Fenster keine Lücke (22 s, 39 s) | Termin B | ☑ Ereignisfenster 61–66, 88–96 | Befund im Report; geschlossenes Fenster nicht gemessen |
+| R2-1: Protokolltabelle ordnete 2 000 s/10 000 s den Ereignissen 84/82 vertauscht zu | T2 R2 | ☑ `ereignisse[82]` +65 960 / `[84]` −38 559 | **gefixt** (Protokoll, Report `seeks`) |
+| R2-2: „Position → 5 s" war `mode=2` = 5 Ticks (984 Samples) | T2 R2 | ☑ Ereignis 45/46 | **gefixt** |
+| R2-3: NAK-43 sagte noch „gilt supported" | T2 R2 | ☑ | **gefixt** |
+| R2-4: Report-`zusammenfassung` mit Platzhalter „..." und falscher Einteilung | T2 R2 | ☑ | **gefixt** (2/8 mit Einteilung) |
+| R2-5: Uhr-Dauern der späteren Play-Zeilen ≈10 s neben den Ereignissen; „22 s/39 s" nur Uhr | T2 R2 | ☑ Fenster 61–66 = 39,2 s, 88–96 = 57,9 s Wiedergabe | **gefixt (Text):** Ereigniswerte stehen daneben, Stummdauer als Uhr-Zahl gekennzeichnet |
+| R2-6: Ereignis 50 (−78 836) ist der Moduswechsel Song→Pattern, kein Wrap | T2 R2 | ☑ | **gefixt** (Protokoll, Report, A13 prüft 50) |
+| R2-7: Bein prüfte `gemessene_hosttatsachen`/Latenzzahlen/ersten Bericht/`ereignisse_je_art` nicht | T2 R2 | ☑ Scratch-Mutationen 48/48 | **gefixt:** 61 Prüfungen (Blockgrößen, Tempo, Loop-Längen, Seeks, Präfix, Zähler, Latenztext) |
+| R2-8: `aux_compare_pre` mit demselben §32.2-Maßstab wie der Sidechain (Kanalreihenfolge, PDC) | T2 R2 | ☑ §32.2 Z. 1573–1576 | **gefixt:** unsupported, Fallback „nur Zustands-A/B, kein lokales Audio-Delta"; NAK-44 erweitert |
+| R2-9: Get-Process-Rohausgabe fehlte im Manifest, „13:xx" | T2 R2 | ☑ | **gefixt:** B7 |
+| R2-10: LIES-MICH „Live 20 s" war das Klicklisten-Soll (gemessen 68 s) | T2 R2 | ☑ Ereignisse 31–37 | **gefixt** |
+| Smart disable erzeugt bei offenem Fenster keine Lücke (39,2 s / 57,9 s Fenster) | Termin B | ☑ Ereignisfenster 61–66, 88–96 | Befund im Report; geschlossenes Fenster nicht gemessen |
 | Play nach Pause setzte 69 Samples vor der Pauseposition ein | Termin B | ☑ Ereignis 13 | Befund im Report; für SONDE-009 (Kontinuitätsregeln) relevant |
 | `contribution_aux` ungemessen | Termin A (LIES-MICH) | ☑ | `unsupported` + Fallback; offen im Report |
 | Legacy-`.flp`-Fixture (SONDE-002) nicht angelegt | Klickliste B Teil 3 | ☑ | bleibt offen (beim User) |
@@ -461,18 +501,18 @@ _(Der angehängte Abschnitt erscheint am Dateiende.)_
 
 ## Kanon-Lauf - SONDE-004
 
-**Lauf:** 2026-08-22 14:00 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 18/18 Kanon-Laeufe bestanden | 4 geplante Pruefung(en) noch nicht gebaut | **Exitcode:** 0
+**Lauf:** 2026-08-22 14:26 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 18/18 Kanon-Laeufe bestanden | 4 geplante Pruefung(en) noch nicht gebaut | **Exitcode:** 0
 
 ### Kopf - woran gemessen wurde
 
 | Feld | Wert |
 |---|---|
-| Zeitpunkt | 2026-08-22 14:00:22 +02:00 |
+| Zeitpunkt | 2026-08-22 14:26:41 +02:00 |
 | Rechner | SCHUBBINATOR200 \| Windows 10.0.26200.0 |
 | Zweig | master |
-| Commit | 17a55ae Hub nachgezogen auf 557e6c6: Termin B erledigt, S4 gebaut (T2 offen), G0 nächster Schritt, U1 raus |
-| Commit (voll) | 17a55ae572bc2810b702130387ae093289376fae |
-| Arbeitsbaum | 24 unbestaetigte Datei(en) - dieser Lauf beweist NICHT allein den Commit |
+| Commit | be1f832 Hub-Selbstaudit: Speicherleiste holt ihre Elemente frisch — nach „Verwerfen“ (Re-Render) zeigte sie neue Änderungen nicht mehr |
+| Commit (voll) | be1f8329cbe750273077d591c7f761328e6b3e19 |
+| Arbeitsbaum | 28 unbestaetigte Datei(en) - dieser Lauf beweist NICHT allein den Commit |
 | JUCE gepinnt | 8.0.9 |
 | JUCE auf Platte | 8.0.9-dirty |
 | FL Studio | FL Studio 2025 25.2.5.5319 \| FL Studio 2026 26.1.4.5589 |
@@ -497,12 +537,16 @@ M CLAUDE.md
  D docs/handoffs/auto-handoff-2026-08-20-0228-844fc0d0.md
  D docs/handoffs/auto-handoff-2026-08-20-1147-1816d5bd.md
  D docs/handoffs/auto-handoff-2026-08-21-1609-fb24b546.md
+D  docs/hub/bilder/u2-gen-studie04-schoenfall.png
+D  docs/hub/bilder/u3-wortmarke-gen-export.png
+ M docs/hub/hub.json
  M docs/offene-punkte.md
  M docs/plugin-wissen.md
- M eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md
- M eq-copilot/docs/FL-TERMIN-B-HOSTZEIT.md
  M eq-copilot/identity/host-capabilities-fl-v1.json
  M tools/eq-copilot/pruefe_host_capabilities.py
+ M tools/hooks/nakama-primer.sh
+ M tools/hub/baue_hub.py
+ M tools/hub/seite.html
 ?? docs/handoffs/auto-handoff-2026-08-21-2327-4ca90ff5.md
 ?? docs/handoffs/auto-handoff-2026-08-21-2333-60c295b3.md
 ?? docs/handoffs/auto-handoff-2026-08-22-0158-70b2680d.md
@@ -533,24 +577,24 @@ Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar v
 
 | # | Behauptung | Befehl | Ergebnis | Dauer | Rohausgabe |
 |---|---|---|---|---|---|
-| A1 | Passthrough ist bitgleich; 0 Samples Latenz, 0 Tail; NaN/Inf werden gezaehlt, aber nicht veraendert. | `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | [OK] Exit 0 | 0,06 s | [↓ A1](#a1) |
-| A2 | AnalyseEngine deckt sich mit der eingefrorenen Offline-Referenz (Fixture-SHA-256 als Determinismus-Riegel). | `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | [OK] Exit 0 | 9,26 s | [↓ A2](#a2) |
-| A3 | Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung. | `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | [OK] Exit 0 | 6,09 s | [↓ A3](#a3) |
-| A4 | Broker-Vertragstests gruen (Framing, Protokoll, Bindung, Aggregat, Server). | `cargo test --manifest-path broker/Cargo.toml --color never` | [OK] Exit 0 | 0,54 s | [↓ A4](#a4) |
-| A5 | Referenzbein (jsonschema, draft 2020-12): Schema haelt die Engine-Teilmenge ein, Textriegel deckt jede gemessene Kante, jedes Fixture wird wie im Manifest klassifiziert, jede Definition hat ein Negativfixture. | `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | [OK] Exit 0 | 0,67 s | [↓ A5](#a5) |
-| A6 | Beide Bandgitter sind bytegleich zur Neuerzeugung; 221 Baender, 64 Gruppen als exakte Partition. | `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | [OK] Exit 0 | 0,11 s | [↓ A6](#a6) |
-| A7 | Quantisierungsvertrag bytegleich zur Neuerzeugung; Rundung, Saettigung und Nichtendliches als Testvektoren. | `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | [OK] Exit 0 | 0,11 s | [↓ A7](#a7) |
+| A1 | Passthrough ist bitgleich; 0 Samples Latenz, 0 Tail; NaN/Inf werden gezaehlt, aber nicht veraendert. | `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | [OK] Exit 0 | 0,07 s | [↓ A1](#a1) |
+| A2 | AnalyseEngine deckt sich mit der eingefrorenen Offline-Referenz (Fixture-SHA-256 als Determinismus-Riegel). | `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | [OK] Exit 0 | 9,53 s | [↓ A2](#a2) |
+| A3 | Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung. | `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | [OK] Exit 0 | 6,18 s | [↓ A3](#a3) |
+| A4 | Broker-Vertragstests gruen (Framing, Protokoll, Bindung, Aggregat, Server). | `cargo test --manifest-path broker/Cargo.toml --color never` | [OK] Exit 0 | 0,52 s | [↓ A4](#a4) |
+| A5 | Referenzbein (jsonschema, draft 2020-12): Schema haelt die Engine-Teilmenge ein, Textriegel deckt jede gemessene Kante, jedes Fixture wird wie im Manifest klassifiziert, jede Definition hat ein Negativfixture. | `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | [OK] Exit 0 | 0,66 s | [↓ A5](#a5) |
+| A6 | Beide Bandgitter sind bytegleich zur Neuerzeugung; 221 Baender, 64 Gruppen als exakte Partition. | `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | [OK] Exit 0 | 0,14 s | [↓ A6](#a6) |
+| A7 | Quantisierungsvertrag bytegleich zur Neuerzeugung; Rundung, Saettigung und Nichtendliches als Testvektoren. | `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | [OK] Exit 0 | 0,14 s | [↓ A7](#a7) |
 | A8 | Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_v3_fixtures.py --pruefen` | [OK] Exit 0 | 0,15 s | [↓ A8](#a8) |
-| A9 | Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID. | `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | [OK] Exit 0 | 0,23 s | [↓ A9](#a9) |
-| A10 | Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | [OK] Exit 0 | 0,98 s | [↓ A10](#a10) |
-| A11 | Die fuenf v2-Vertraege (ipc v2, measurement v1, report v1, snapshot v3, aggregat v1) sind gueltiges JSON und gueltige JSON-Schemas; ihre $id-Familie ist eingefroren. | `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | [OK] Exit 0 | 0,23 s | [↓ A11](#a11) |
-| A12 | Parameterbestand (109 IDs, §53.8) haelt den Vertrag; RFC-8785-Zahlenvektoren tragen den RFC-Text und werden von rfc8785 bestaetigt; State-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung. | `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | [OK] Exit 0 | 0,25 s | [↓ A12](#a12) |
-| A13 | Capabilityreport FL: die zehn Bits aus §53.6 entsprechen der v3-Vertragsform und stehen so, wie die Rohdaten der Termine A und B sie tragen; jedes supported hat einen Termin, jedes unsupported seinen festen Fallback. | `py -3.13 tools\eq-copilot\pruefe_host_capabilities.py` | [OK] Exit 0 | 0,18 s | [↓ A13](#a13) |
-| B1 | Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren. | `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | [OK] Exit 0 | 0,06 s | [↓ B1](#b1) |
+| A9 | Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID. | `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | [OK] Exit 0 | 0,24 s | [↓ A9](#a9) |
+| A10 | Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | [OK] Exit 0 | 0,86 s | [↓ A10](#a10) |
+| A11 | Die fuenf v2-Vertraege (ipc v2, measurement v1, report v1, snapshot v3, aggregat v1) sind gueltiges JSON und gueltige JSON-Schemas; ihre $id-Familie ist eingefroren. | `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | [OK] Exit 0 | 0,26 s | [↓ A11](#a11) |
+| A12 | Parameterbestand (109 IDs, §53.8) haelt den Vertrag; RFC-8785-Zahlenvektoren tragen den RFC-Text und werden von rfc8785 bestaetigt; State-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung. | `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | [OK] Exit 0 | 0,22 s | [↓ A12](#a12) |
+| A13 | Capabilityreport FL: die zehn Bits aus §53.6 entsprechen der v3-Vertragsform und stehen so, wie die Rohdaten der Termine A und B sie tragen; jedes supported hat einen Termin, jedes unsupported seinen festen Fallback. | `py -3.13 tools\eq-copilot\pruefe_host_capabilities.py` | [OK] Exit 0 | 0,19 s | [↓ A13](#a13) |
+| B1 | Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren. | `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | [OK] Exit 0 | 0,07 s | [↓ B1](#b1) |
 | B2 | State-Schema 2: Roundtrip bytegleich, Schema-1-Migration rein und golden, unbekanntes Major read-only mit Originalbytes, Duplicate erkennbar (gleiche instance_id, verschiedene runtime_nonce) und aufloesbar, Host-Dirty; Parametertabelle deckungsgleich mit dem Vertrag; RFC-8785-state_hash bytegleich zu Python und Rust. | `eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe` | [OK] Exit 0 | 0,09 s | [↓ B2](#b2) |
-| B3 | Hostkontext (Anwesenheit, Parameterpunkte, Buslatenz) wird gemessen, nicht geraten; Quellhash-Gate des JUCE-Patches gruen. | `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | [OK] Exit 0 | 0,05 s | [↓ B3](#b3) |
+| B3 | Hostkontext (Anwesenheit, Parameterpunkte, Buslatenz) wird gemessen, nicht geraten; Quellhash-Gate des JUCE-Patches gruen. | `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | [OK] Exit 0 | 0,07 s | [↓ B3](#b3) |
 | B3b | Termin-B-Messgeraet: Passthrough bitgleich, Sprung-/Automations-/Latenzmessung inkl. Fehlalarm-Riegel, Bericht-Rueckweg, 0 Allokationen. | `eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe` | [OK] Exit 0 | 0,08 s | [↓ B3b](#b3b) |
-| B3c | v3-Vertrag: C++ klassifiziert den Fixture-Korpus wie das Manifest (Urteil UND Verletzungsmenge), Bandgitter und Quantisierung bitgleich. | `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | [OK] Exit 0 | 0,14 s | [↓ B3c](#b3c) |
+| B3c | v3-Vertrag: C++ klassifiziert den Fixture-Korpus wie das Manifest (Urteil UND Verletzungsmenge), Bandgitter und Quantisierung bitgleich. | `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | [OK] Exit 0 | 0,16 s | [↓ B3c](#b3c) |
 | B4 | StampedAudioQueue haelt Blockgroessen-Stress ohne Allokation/Lock aus. | `eq-copilot\build\plugin\EqCopQueueStressTest_artefacts\Release\EqCopQueueStressTest.exe` | [GEPLANT] geplant (ab P2) | - | - |
 | B5 | FeatureEngine v2 haelt Zeit-, Validity-, Event- und Bandvertraege. | `eq-copilot\build\plugin\EqCopAnalysisGoldenTest_artefacts\Release\EqCopAnalysisGoldenTest.exe` | [GEPLANT] geplant (ab P2) | - | - |
 | B6 | Aktiver DSP-Kern liefert die eingefrorene Referenzantwort. | `eq-copilot\build\plugin\EqCopDspGoldenTest_artefacts\Release\EqCopDspGoldenTest.exe` | [GEPLANT] geplant (ab P6) | - | - |
@@ -561,7 +605,7 @@ Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar v
 <a id="a1"></a>
 #### A1 | EqCopNullTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | **Exitcode:** 0 | **Dauer:** 0,06 s
+**Befehl:** `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | **Exitcode:** 0 | **Dauer:** 0,07 s
 
 stdout:
 
@@ -586,7 +630,7 @@ _(leer)_
 <a id="a2"></a>
 #### A2 | EqCopGoldenTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | **Exitcode:** 0 | **Dauer:** 9,26 s
+**Befehl:** `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | **Exitcode:** 0 | **Dauer:** 9,53 s
 
 stdout:
 
@@ -619,7 +663,7 @@ _(leer)_
 <a id="a3"></a>
 #### A3 | EqCopMarkierungTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | **Exitcode:** 0 | **Dauer:** 6,09 s
+**Befehl:** `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | **Exitcode:** 0 | **Dauer:** 6,18 s
 
 stdout:
 
@@ -664,26 +708,26 @@ _(leer)_
 <a id="a4"></a>
 #### A4 | broker
 
-**Befehl:** `cargo test --manifest-path broker/Cargo.toml --color never` | **Exitcode:** 0 | **Dauer:** 0,54 s
+**Befehl:** `cargo test --manifest-path broker/Cargo.toml --color never` | **Exitcode:** 0 | **Dauer:** 0,52 s
 
 stdout:
 
 ```text
 
 running 51 tests
-test protokoll::tests::feindliches_ltas_array_faellt_am_guard ... ok
 test framing::tests::abbruch_mitten_im_frame ... ok
+test protokoll::tests::feindliches_ltas_array_faellt_am_guard ... ok
 test framing::tests::hin_und_zurueck ... ok
+test framing::tests::kein_utf8_wird_verworfen ... ok
 test aggregat::tests::profilfilter_laesst_fremde_sensoren_nie_still_hinein ... ok
 test framing::tests::laengengrenze_beidseitig ... ok
-test framing::tests::kein_utf8_wird_verworfen ... ok
-test protokoll::tests::heartbeat_v1_ohne_measurement_parst_weiter ... ok
 test aggregat::tests::filter_trennt_prozesse_und_v1_bekommt_warnung ... ok
+test protokoll::tests::heartbeat_v1_ohne_measurement_parst_weiter ... ok
 test aggregat::tests::schnittfenster_und_paare_im_dokument ... ok
-test protokoll::tests::heartbeat_v2_mit_messstand_und_fenster ... ok
-test aggregat::tests::schreiben_erzeugt_datei_im_snapshot_ordner ... ok
 test bindung::tests::runde_laden_schreiben_laden ... ok
 test bindung::tests::beschaedigte_datei_ist_sichtbarer_fehler ... ok
+test protokoll::tests::heartbeat_v2_mit_messstand_und_fenster ... ok
+test aggregat::tests::schreiben_erzeugt_datei_im_snapshot_ordner ... ok
 test protokoll::tests::unbekannter_typ_ist_parsefehler_kein_absturz ... ok
 test protokoll::tests::v1_hello_bleibt_angenommen_und_welcome_spiegelt_v1 ... ok
 test protokoll::tests::v2_hello_mit_nonce_wird_angenommen ... ok
@@ -719,11 +763,11 @@ test vertrag::tests::unbekannter_discriminator_wird_abgelehnt ... ok
 test vertrag::tests::unbekanntes_schluesselwort_bricht_das_laden ... ok
 test vertrag::tests::verletzungen_sind_kanonisch_sortiert_und_doppelfrei ... ok
 test vertrag::tests::zahlengleichheit_ist_numerisch ... ok
-test server::tests::feindliches_laengenpraefix_beendet_nur_diese_verbindung ... ok
 test server::tests::handshake_heartbeat_und_geordneter_abschied ... ok
+test server::tests::feindliches_laengenpraefix_beendet_nur_diese_verbindung ... ok
 test server::tests::doppelte_sensor_id_wird_als_konflikt_sichtbar ... ok
 
-test result: ok. 51 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+test result: ok. 51 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
 
 
 running 0 tests
@@ -767,7 +811,7 @@ stderr:
 <a id="a5"></a>
 #### A5 | pruefe_v3_vertrag.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | **Exitcode:** 0 | **Dauer:** 0,67 s
+**Befehl:** `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | **Exitcode:** 0 | **Dauer:** 0,66 s
 
 stdout:
 
@@ -810,7 +854,7 @@ C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:610: Deprec
 <a id="a6"></a>
 #### A6 | erzeuge_bandgitter.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,11 s
+**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,14 s
 
 stdout:
 
@@ -832,7 +876,7 @@ _(leer)_
 <a id="a7"></a>
 #### A7 | erzeuge_quantisierung.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,11 s
+**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,14 s
 
 stdout:
 
@@ -865,7 +909,7 @@ _(leer)_
 <a id="a9"></a>
 #### A9 | pruefe_flatc_drift.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | **Exitcode:** 0 | **Dauer:** 0,23 s
+**Befehl:** `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | **Exitcode:** 0 | **Dauer:** 0,24 s
 
 stdout:
 
@@ -889,7 +933,7 @@ _(leer)_
 <a id="a10"></a>
 #### A10 | erzeuge_fb_fixtures.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,98 s
+**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,86 s
 
 stdout:
 
@@ -905,7 +949,7 @@ _(leer)_
 <a id="a11"></a>
 #### A11 | pruefe_v2_schemas.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | **Exitcode:** 0 | **Dauer:** 0,23 s
+**Befehl:** `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | **Exitcode:** 0 | **Dauer:** 0,26 s
 
 stdout:
 
@@ -927,7 +971,7 @@ _(leer)_
 <a id="a12"></a>
 #### A12 | erzeuge_state_fixtures.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,25 s
+**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,22 s
 
 stdout:
 
@@ -946,7 +990,7 @@ _(leer)_
 <a id="a13"></a>
 #### A13 | pruefe_host_capabilities.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\pruefe_host_capabilities.py` | **Exitcode:** 0 | **Dauer:** 0,18 s
+**Befehl:** `py -3.13 tools\eq-copilot\pruefe_host_capabilities.py` | **Exitcode:** 0 | **Dauer:** 0,19 s
 
 stdout:
 
@@ -987,8 +1031,7 @@ stdout:
   ok      presentation_latency=unsupported traegt den festen Fallback aus §53.6
   ok      presentation_latency: Rohdatei existiert (docs/beweise/termin-b/host-probe-20260822-132644.json)
   ok      presentation_latency: Rohdatei existiert (docs/beweise/termin-a/aux-spike-20260822-001701.json)
-  ok      aux_compare_pre=supported traegt einen Termin (A)
-  ok      aux_compare_pre=supported behauptet kein 'Golden nicht erbracht'
+  ok      aux_compare_pre=unsupported traegt den festen Fallback aus §53.6
   ok      aux_compare_pre: Rohdatei existiert (docs/beweise/termin-a/aux-spike-20260822-001701.json)
   ok      aux_priority_sidechain=unsupported traegt den festen Fallback aus §53.6
   ok      aux_priority_sidechain: Rohdatei existiert (docs/beweise/termin-a/aux-spike-20260822-001701.json)
@@ -997,10 +1040,24 @@ stdout:
   ok      float64_processing: Rohdatei existiert (docs/beweise/termin-b/host-probe-20260822-132644.json)
   ok      binary_telemetry=unsupported traegt den festen Fallback aus §53.6
   ok      remote_control=unsupported traegt den festen Fallback aus §53.6
-  ok      die zehn Bits stehen so, wie die Rohdaten es tragen (3 supported, 7 unsupported)
+  ok      die zehn Bits stehen so, wie die Rohdaten es tragen (2 supported, 8 unsupported)
   ok      herabgestufte Bits tragen die Fallbacks aus §53.6
+  ok      gemessene_hosttatsachen: Blockgroessen und Tempo stimmen mit den Rohfeldern
+  ok      Belegtext presentation_latency nennt genau die gemeldeten Latenzwerte
+  ok      gemessene_hosttatsachen.seeks nennt Ereignis 38 (zeitsprung_zurueck 1969)
+  ok      gemessene_hosttatsachen.seeks nennt Ereignis 40 (zeitsprung_zurueck 394)
+  ok      gemessene_hosttatsachen.seeks nennt Ereignis 41 (zeitsprung_zurueck 1575)
+  ok      gemessene_hosttatsachen.seeks nennt Ereignis 79 (zeitsprung_vor 49901)
+  ok      gemessene_hosttatsachen.seeks nennt Ereignis 82 (zeitsprung_vor 65960)
+  ok      gemessene_hosttatsachen.seeks nennt Ereignis 84 (zeitsprung_zurueck -38559)
+  ok      gemessene_hosttatsachen.seeks nennt Ereignis 50 (zeitsprung_zurueck -78836)
+  ok      Song-Loop vor Export = [539634, 539635] Samples wie im Report
+  ok      Pattern-Loop = 173250 Samples wie im Report
+  ok      Song-Loop nach Export = [509118, 509119] Samples wie im Report (509119)
+  ok      der erste Bericht (75 Ereignisse) ist das Praefix des zweiten
+  ok      ereignisse_je_art stimmt mit der Ereignisliste ueberein
 
-HOST-CAPABILITIES OK - 48 Pruefungen ok, 0 Fehler
+HOST-CAPABILITIES OK - 61 Pruefungen ok, 0 Fehler
 ```
 
 stderr:
@@ -1010,7 +1067,7 @@ _(leer)_
 <a id="b1"></a>
 #### B1 | EqCopIdentityTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | **Exitcode:** 0 | **Dauer:** 0,06 s
+**Befehl:** `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | **Exitcode:** 0 | **Dauer:** 0,07 s
 
 stdout:
 
@@ -1030,7 +1087,7 @@ stdout:
   ok      CMake-Quelle: der VST2-Ersatzpfad ist nicht eingeschaltet
   ok      CMake-Quelle: das Define steht auch sonst nirgends auf 1
   ok      moduleinfo.json des gebauten Bundles gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\Resources\moduleinfo.json]
-  ok      moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [22 Aug 2026 2:00:29pm vs 22 Aug 2026 2:36:57am]
+  ok      moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [22 Aug 2026 2:26:48pm vs 22 Aug 2026 2:36:57am]
   ok      moduleinfo.json ist nach dem Kommaputz parsebar
   ok      moduleinfo: Produktname wie im Manifest  [EQ-Copilot]
   ok      moduleinfo: Vendor wie im Manifest  [evenacadia]
@@ -1207,7 +1264,7 @@ Fixtures: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state
   ok      Duplikat: gleiche instance_id (der State IST der Messpunkt)  [11111111-2222-3333-4444-555555555555]
   ok      Duplikat: verschiedene runtime_nonce
   ok      neueSensorId loest auf
-  ok      neue instance_id: 32 Hex, verschieden von beiden  [ca9831676dc84894a6ea8d24ec73f0b8]
+  ok      neue instance_id: 32 Hex, verschieden von beiden  [ad505e5802cf4464ac2bb8cebd2dcdf7]
   ok      Label und Rolle bleiben bei der Aufloesung
   ok      Aufloesung meldet genau einmal Host-Dirty  [1]
   ok      neue instance_id wird gespeichert und geladen
@@ -1226,7 +1283,7 @@ Fixtures: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state
   ok      == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
   ok      nie restauriert: Herkunft frisch
   ok      frisch: legacy+insert = v2 'sensor', leeres Label
-  ok      frisch: instance_id ist hex32  [fbca445f7db44bc593034f007128b8e9]
+  ok      frisch: instance_id ist hex32  [ba6418bfea0546939281d7cb8445ad82]
   ok      frisch speichert NakamaState schema 2, legacy
   ok      Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
   ok      Recall: Save nach Recall ist bytegleich zum Golden
@@ -1242,7 +1299,7 @@ _(leer)_
 <a id="b3"></a>
 #### B3 | EqCopHostContextTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | **Exitcode:** 0 | **Dauer:** 0,05 s
+**Befehl:** `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | **Exitcode:** 0 | **Dauer:** 0,07 s
 
 stdout:
 
@@ -1427,7 +1484,7 @@ stdout:
   ok      die Blockzahl im Bericht deckt sich mit der Messung
   ok      das Ereignisprotokoll liegt im Bericht
   ok      die Gueltigkeitsmaske steht im Bericht
-  ok      Bericht wurde als Datei geschrieben: C:\Users\phili\AppData\Roaming\evenacadia\nakama\spike\host-probe-20260822-140048.json
+  ok      Bericht wurde als Datei geschrieben: C:\Users\phili\AppData\Roaming\evenacadia\nakama\spike\host-probe-20260822-142708.json
   ok      die geschriebene Datei laesst sich wieder einlesen und traegt dieselbe Messung
 == I - Zuruecksetzen und Ringueberlauf ==
   ok      Zuruecksetzen leert die Messung - und erzeugt dabei keinen Scheinsprung
@@ -1446,7 +1503,7 @@ stdout:
 == J - Audiothread: keine Allokation ==
   ok      500 Bloecke mit Kontext, Transportwechseln und je 8 Automationspunkten: 0 Allokationen
 == J2 - Nebenlaeufig lesen, waehrend der Audiothread schreibt ==
-  ok      der zweite Thread hat waehrenddessen wirklich geschrieben (48157 Bloecke)
+  ok      der zweite Thread hat waehrenddessen wirklich geschrieben (30840 Bloecke)
   ok      200 nebenlaeufige Lesevorgaenge liefern durchweg plausible Eintraege und Zaehler
   ok      der letzte Lesevorgang hat Eintraege geliefert
   hinweis   Grenze: Rauchtest, kein Beweis der Tearing-Freiheit (der Wiederholpfad wird selten bis nie betreten)
@@ -1469,7 +1526,7 @@ _(leer)_
 <a id="b3c"></a>
 #### B3c | EqCopSchemaTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | **Exitcode:** 0 | **Dauer:** 0,14 s
+**Befehl:** `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | **Exitcode:** 0 | **Dauer:** 0,16 s
 
 stdout:
 
@@ -1542,7 +1599,7 @@ _(leer)_
 
 ### Bau vor dem Lauf (`-Bauen`)
 
-**build** | Exit 0 | 6,12 s
+**build** | Exit 0 | 6,19 s
 
 <details><summary>Rohe Ausgabe</summary>
 

@@ -23,6 +23,26 @@
 >    (Punkt 1) darf dabei nicht verlorengehen. Details in
 >    `docs/offene-punkte.md`.
 >
+> ## 👤 Was beim User liegt (nur er kann es)
+>
+> **Der OpenWiki-Schluessel.** Die taegliche Auffrischung
+> (`.github/workflows/openwiki-update.yml`, 08:00 UTC) ist seit `ba6d6c8`
+> scharf, bricht aber still ab: `OPENAI_API_KEY` ist als Repo-Geheimnis nicht
+> gesetzt (gemessen 22.08.: `gh secret list` leer, kein Lauf). Ein Befehl im
+> Projektordner, fragt den Wert interaktiv ab:
+> `gh secret set OPENAI_API_KEY`. Details NAK-51.
+>
+> **Die Planblatt-Automation einschalten** (optional):
+> `nimbalyst-local/automations/planstand-nakama.md`, taeglich 09:00 — angelegt,
+> aber nicht aktiviert; das macht der User selbst ueber die Kopfleiste.
+>
+> **Klarstellungen vom 22.08. abends, damit sie niemand wieder falsch liest:**
+> der Fremdmodell-Riegel bindet **nur Gemini** („gpt IST WAS anderes. das galt
+> nur für gemini. gpt vertraue ich."); **OpenWiki ist das Kontextsystem, auf
+> dem der Workspace aufbaut** („das workspace hier baut auf openwiki als
+> kontextsystem auf") — nicht gegen `docs/` abwaegen, nicht als Zusatzquelle
+> behandeln, nicht abschalten vorschlagen.
+>
 > **Neu seit 22.08.:** `docs/PLAN-STAND.md` zeigt den Planstand direkt in
 > Nimbalyst (erzeugt aus `hub.json` mit `tools/hub/plan_blatt.py`, Diagramm
 > rendert live). Stand jetzt: **12 von 34 Schritten**. Eine Nimbalyst-Automation

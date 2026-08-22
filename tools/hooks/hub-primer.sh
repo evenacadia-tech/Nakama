@@ -37,13 +37,18 @@ echo "Seite: $SITE"
 echo "Maschinenansicht: $SITE/api/hub"
 echo "$KOPF"
 
-# Drift: Commits seit dem letzten Commit, der hub.json angefasst hat
+# Drift: Commits seit dem letzten Commit, der hub.json angefasst hat.
+# --first-parent, weil Subtree-Merges (briefing-hub/ am 22.08.2026, design/ am
+# selben Tag) FREMDE Historie in den Baum holen: ohne die Kappung zaehlte die
+# Drift 5 Commits, von denen 2 aus dem importierten Repo stammten und ueber den
+# Nakama-Stand nichts aussagen. Eine Driftzahl, die man nicht ernst nehmen kann,
+# wird nicht gelesen.
 LETZTER=$(git -C "$NAK" log -1 --format=%h -- docs/hub/hub.json 2>/dev/null)
 if [ -n "$LETZTER" ]; then
-  N=$(git -C "$NAK" rev-list --count "$LETZTER..HEAD" 2>/dev/null || echo 0)
+  N=$(git -C "$NAK" rev-list --count --first-parent "$LETZTER..HEAD" 2>/dev/null || echo 0)
   if [ "${N:-0}" -gt 0 ]; then
     echo "DRIFT: $N Commit(s) seit dem letzten Hub-Stand ($LETZTER) — hub.json vor der Arbeit nachziehen, wenn sich Plan oder 'bei dir' dadurch geaendert haben:"
-    git -C "$NAK" log --oneline "$LETZTER..HEAD" 2>/dev/null | head -8 | sed 's/^/  /'
+    git -C "$NAK" log --oneline --first-parent "$LETZTER..HEAD" 2>/dev/null | head -8 | sed 's/^/  /'
   else
     echo "Drift: keine — Hub ist auf dem Stand von HEAD."
   fi

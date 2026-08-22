@@ -5,6 +5,17 @@
 # ist — generisches Kommunikations-/Pausen-Coaching liefert der Harness
 # selbst. Feuert auch nach Compaction (Fade-Resilienz).
 
+# searx wird GEMESSEN, nicht behauptet: die Regel "erst belegen, dann bauen"
+# stand hier mit einer festen Adresse, die auf dem Laptop und nach jedem
+# Neustart des Dienstes fehlen kann (gemessen 22.08.2026: HTTP 000). Ein
+# Primer, der einen toten Dienst als Pflichtweg nennt, erzieht zum Ignorieren.
+if curl -s -o /dev/null --connect-timeout 1 --max-time 2 \
+     "http://localhost:8888/search?q=x&format=json" 2>/dev/null; then
+  SEARX="erreichbar — erster Weg für Library-/API-Fakten"
+else
+  SEARX="NICHT erreichbar (gerade gemessen) — dann WebSearch/Herstellerdoku, aber belegen bleibt Pflicht"
+fi
+
 cat <<'PRIMER'
 === Depth-Primer (Baseline-Disposition) ===
 
@@ -15,8 +26,11 @@ Engine entwickeln sich schneller als jede Zusammenfassung.
 
 ## Verifizieren statt annehmen — dann handeln
 Library-/API-Fakten (JUCE 8, CMake, three.js, Playwright, VST3) vor dem
-Bauen per searx (localhost:8888, WebFetch) prüfen. Sobald genug Information
-zum Handeln da ist: handeln — Feststehendes nicht erneut herleiten.
+Bauen belegen. Sobald genug Information zum Handeln da ist: handeln —
+Feststehendes nicht erneut herleiten.
+PRIMER
+echo "searx (localhost:8888): $SEARX"
+cat <<'PRIMER'
 
 ## Karte vor Vorschlag
 Vor Engine-/Broker-/Vertragsarbeit: docs/plugin-wissen.md, den Sonden-Entwurf
@@ -51,10 +65,13 @@ allein der User am lebenden Blatt ab.
 - JUCE: Component::SafePointer in Async-/Popover-Callbacks; Headless-Timer
   brauchen callPendingTimersSynchronously().
 - Schemas: neues Feld ⇒ erst Version; alte Snapshots laden weiter.
-Bei größeren Änderungssätzen einen FRISCHEN Verifikations-Subagenten gegen
-Sonden-Entwurf (Errata zuerst) + Wahrheitskern prüfen lassen — frischer Kontext schlägt Selbstkritik.
-Breite mechanische Suchen parallel an Explore-Agenten geben und
-währenddessen weiterarbeiten; das Design-Urteil bleibt im Hauptlauf.
+Bei größeren Änderungssätzen gegen Sonden-Entwurf (Errata zuerst) +
+Wahrheitskern nachprüfen — an der Quelldatei, nicht am Gedächtnis. Wo die
+Umgebung Subagenten ohne Rückfrage erlaubt, ist ein FRISCHER
+Verifikations-Subagent das schärfere Werkzeug (frischer Kontext schlägt
+Selbstkritik) und breite mechanische Suchen laufen parallel; verlangt sie
+dafür erst das Wort des Users, gilt das und die Prüfung läuft im Hauptlauf.
+Das Design-Urteil bleibt in jedem Fall im Hauptlauf.
 
 ## Funde außerhalb des Auftrags
 → docs/offene-punkte.md, datierte Zeile mit ID. Offene Einträge nie beim

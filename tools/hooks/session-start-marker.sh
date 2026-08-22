@@ -19,7 +19,15 @@ SESSIONS_DIR="$HOME/.claude/sessions"
 mkdir -p "$SESSIONS_DIR" 2>/dev/null || exit 0
 
 # Selbstbegrenzung: Marker abgestürzter Sessions sammeln sich sonst ewig.
-find "$SESSIONS_DIR" -name '*.start' -type f -mtime +7 -delete 2>/dev/null
+# NUR die eigenen Endungen, nie pauschal: dieses Verzeichnis gehört dem
+# Harness mit (<pid>.json und <pid>.<hash>.key sind seine Sessionregister) —
+# ein `find … -delete` ohne Namensfilter würde die laufende Session treffen.
+# .hub-nag und die mahnung-*-Reste abgeschaffter Hooks räumte bis 22.08.2026
+# niemand ab (gemessen: 31 tote mahnung-Marker); seit dem Wegfall des
+# SessionEnd-Handoffs putzt auch nichts mehr die .start-Marker am Sessionende.
+for muster in '*.start' '*.hub-nag' '*.mahnung-*'; do
+  find "$SESSIONS_DIR" -name "$muster" -type f -mtime +7 -delete 2>/dev/null
+done
 
 MARKER="$SESSIONS_DIR/${SESSION_ID}.start"
 TS=$(date +%s)

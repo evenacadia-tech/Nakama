@@ -1,24 +1,32 @@
-#!/bin/bash
-# PreToolUse Edit|Write: KREATIV-SCHLEUSE (User-Regel 17.08.2026).
+#!/usr/bin/env bash
+# PreToolUse: KREATIV-SCHLEUSE (User-Regel 17.08.2026).
 # Der kreative Prozess wird nie übersprungen: Design-Artefakte unter
 # eq-copilot/design/ dürfen erst entstehen/geändert werden, wenn die Idee
 # MIT dem User ausgearbeitet, konkretisiert und freigegeben wurde.
 # Freigabe-Marker: .claude/kreativ-freigabe.md (im Nakama-Workspace) —
 # enthält die freigegebene Vorstellung in den Worten des Users + Datum;
 # gilt 24 Stunden. Exit 2 blockt den Tool-Call, stderr geht an Claude.
+#
+# Seit 22.08.2026 prüft die Schleuse auch BASH-Schreibbefehle über den
+# gemeinsamen Kern tools/hooks/lib/schreibziel.sh. Vorher las sie nur
+# "file_path" — gemessen am 22.08.: `cat > eq-copilot/design/neu.html`
+# lief mit exit 0 durch. In einer Umgebung, die Dateiänderungen über Bash
+# ausdrücklich bevorzugt, war die Schleuse damit faktisch aus.
+# Seit demselben Tag deckt sie auch das Archiv mit ab
+# (eq-copilot/design/archive/…): der frühere Extra-Wächter
+# guard-codex-besitz.sh für nakama-spectral-field-vorentwurf.html ist damit
+# überflüssig geworden und entfallen.
+#
+# Gegenprobe (beide Richtungen, beide Schleusen): bash tools/hooks/schleusen-probe.sh
 
-INPUT=$(cat 2>/dev/null || printf '')
-FILE=$(printf '%s' "$INPUT" | grep -o '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' | head -n1 | sed 's/.*"\([^"]*\)"$/\1/')
-# JSON-escapte Backslashes normalisieren: alles auf einfache Slashes.
-FILE=$(printf '%s' "$FILE" | tr '\\' '/' | sed 's#//*#/#g')
+. "$(dirname "${BASH_SOURCE[0]}")/lib/schreibziel.sh"
 
-# Nur Design-Artefakte betreffen die Schleuse.
-case "$FILE" in
-  *eq-copilot/design/*) ;;
-  *) exit 0 ;;
-esac
+input=$(cat)
+schreibziel_trifft "$input" "eq-copilot/design/" || exit 0
 
-MARKER="${CLAUDE_PROJECT_DIR:-.}/.claude/kreativ-freigabe.md"
+# KREATIV_MARKER: nur für die Gegenprobe, die den GESCHLOSSENEN Zustand gegen
+# einen nicht existierenden Marker misst, ohne die echte Freigabe anzufassen.
+MARKER="${KREATIV_MARKER:-${CLAUDE_PROJECT_DIR:-.}/.claude/kreativ-freigabe.md}"
 if [ -f "$MARKER" ]; then
   jetzt=$(date +%s)
   alter=$(stat -c %Y "$MARKER" 2>/dev/null || echo 0)

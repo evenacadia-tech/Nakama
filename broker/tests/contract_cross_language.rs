@@ -380,3 +380,92 @@ fn quantisiere_f32(db: f64) -> (u32, bool, bool) {
     }
     (eng.to_bits(), true, false)
 }
+
+// ── SONDE-006: RFC-8785-Kanon (state_hash) ───────────────────────────────────
+//
+// Dritte Partei ist eq-copilot/fixtures/state/MANIFEST.json: die Zahlen-
+// vektoren tragen den Text, den RFC 8785 Anhang B DRUCKT, die Dokumente eine
+// von Hand nach ECMA-262 hergeleitete Erwartung, die rfc8785 (Python)
+// bestaetigt hat. Stimmt `serde_json_canonicalizer` damit ueberein, stimmen
+// C++ (NakamaKanon) und Rust transitiv ueberein - und der Broker kann ab
+// SONDE-016 einen `state_hash` mit denselben Bytes nachrechnen.
+
+#[test]
+fn jcs_fixtures_stimmen_mit_manifest() {
+    let w = wurzel();
+    let fixtures = w.join("eq-copilot/fixtures/state");
+    let manifest = lies(&fixtures.join("MANIFEST.json"));
+    let zahlen = lies(&fixtures.join("jcs/zahlen.json"));
+
+    // Zahlenvektoren: IEEE-754-Hex -> f64 -> Kanon.
+    let mut ok = 0usize;
+    let mut abgelehnt = 0usize;
+    let mut abweichungen: Vec<String> = Vec::new();
+    for e in zahlen["vektoren"].as_array().unwrap() {
+        let hex = e["hex64"].as_str().unwrap();
+        let x = f64::from_bits(u64::from_str_radix(hex, 16).unwrap());
+        if e["abgelehnt"].as_bool().unwrap_or(false) {
+            // serde_json kann NaN/Infinity nicht einmal als Value tragen:
+            // `Number::from_f64` liefert None. Das IST die Ablehnung.
+            if serde_json::Number::from_f64(x).is_none() {
+                abgelehnt += 1;
+            } else {
+                abweichungen.push(format!("{hex}: haette abgelehnt werden muessen"));
+            }
+            continue;
+        }
+        let ist = serde_json_canonicalizer::to_string(&Value::from(x)).unwrap();
+        let soll = e["erwartet"].as_str().unwrap();
+        if ist == soll {
+            ok += 1;
+        } else {
+            abweichungen.push(format!("{hex}: ist {ist} soll {soll}"));
+        }
+    }
+    assert_eq!(
+        ok + abgelehnt,
+        manifest["jcs_zahlen"]["anzahl"].as_u64().unwrap() as usize,
+        "Zahlenvektoren: {abweichungen:?}"
+    );
+    assert_eq!(abgelehnt, 2, "NaN und Infinity");
+    assert!(abweichungen.is_empty(), "{abweichungen:#?}");
+
+    // Dokumente: Eingabetext -> serde_json -> Kanon, bytegleich zum Manifest.
+    let mut dok_ok = 0usize;
+    for e in manifest["jcs_dokumente"].as_array().unwrap() {
+        let pfad = fixtures.join(e["datei"].as_str().unwrap());
+        let roh = std::fs::read_to_string(&pfad).unwrap();
+        let wert: Value = serde_json::from_str(&roh).unwrap_or_else(|f| panic!("{}: {f}", pfad.display()));
+        let ist = serde_json_canonicalizer::to_vec(&wert).unwrap();
+        let soll = e["kanon"].as_str().unwrap().as_bytes();
+        assert_eq!(
+            ist,
+            soll,
+            "{}: ist {:?} soll {:?}",
+            pfad.display(),
+            String::from_utf8_lossy(&ist),
+            e["kanon"]
+        );
+        assert_eq!(ist.len() as u64, e["kanon_bytes"].as_u64().unwrap(), "{}", pfad.display());
+        dok_ok += 1;
+    }
+    assert_eq!(dok_ok, manifest["jcs_dokumente"].as_array().unwrap().len());
+
+    // Gueltige DTOs: Kanon -> SHA-256 == state_hash im Manifest. Das ist der
+    // Hash, den der Broker ab SONDE-016 fuer apply_transaction nachrechnet.
+    use sha2::{Digest, Sha256};
+    let mut dto_ok = 0usize;
+    for e in manifest["dto_gueltig"].as_array().unwrap() {
+        let pfad = fixtures.join(e["datei"].as_str().unwrap());
+        let roh = std::fs::read_to_string(&pfad).unwrap();
+        let wert: Value = serde_json::from_str(&roh).unwrap();
+        let ist = serde_json_canonicalizer::to_vec(&wert).unwrap();
+        assert_eq!(ist.len() as u64, e["kanon_bytes"].as_u64().unwrap(), "{}", pfad.display());
+        let hash = Sha256::digest(&ist);
+        let hex: String = hash.iter().map(|b| format!("{b:02x}")).collect();
+        assert_eq!(hex, e["state_hash"].as_str().unwrap(), "state_hash {}", pfad.display());
+        dto_ok += 1;
+    }
+    assert_eq!(dto_ok, manifest["dto_gueltig"].as_array().unwrap().len());
+    println!("JCS: {ok} Zahlenvektoren, {abgelehnt} abgelehnt, {dok_ok} Dokumente, {dto_ok} DTOs bytegleich");
+}

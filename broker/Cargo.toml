@@ -17,6 +17,7 @@ flatbuffers = "25.12.19"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1", features = ["v4"] }
+
 windows-sys = { version = "0.60", features = [
     "Win32_Foundation",
     "Win32_System_Pipes",
@@ -26,3 +27,13 @@ windows-sys = { version = "0.60", features = [
     "Win32_System_IO",
     "Win32_System_Threading",
 ] }
+
+[dev-dependencies]
+# SONDE-006: Rust-Bein des RFC-8785-Kanons (state_hash). Heute nur im
+# Integrationstest gegen eq-copilot/fixtures/state/ - der Broker hasht in
+# Produktion erst ab SONDE-016 (apply_transaction); dann wandert die Crate in
+# [dependencies]. Bis dahin bleibt sie dev-only, damit die Binaries ehrlich
+# sagen, was sie koennen.
+serde_json_canonicalizer = "0.3"
+# SHA-256 fuer den Vergleich des state_hash mit dem Manifest (RustCrypto).
+sha2 = "0.10"

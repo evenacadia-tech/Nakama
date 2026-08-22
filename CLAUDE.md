@@ -94,6 +94,11 @@ im anschluss wird dann nurnoch im nakama repo gearbeitet". Einstieg dort:
 | 22.08. | Committen und Pushen laufen ohne Rückfrage; Rückfragen nur noch bei Unumkehrbarem (Riegel `tools/hooks/git-riegel.sh`, Auto-Push `tools/hooks/auto-push.sh`) | „wie funktioniert das commiten und pushen hier, ich möchte dass das so automatisch wie möglich ist" · Commit `39bb30a` |
 | 22.08. | Gemini (Antigravity-CLI `agy`) nur lesend: Audits und Gegenproben, nie schreibend — auch nicht eigenständig (Riegel `tools/hooks/fremdmodell-riegel.sh`) | „gemini ist nicht sehr zuverlässig , ich möchte dass er ausschlisslich für audits und read only benutzt wird. falls du ihn mal eigenständig nutzen solltest" |
 | 22.08. | Der Hub ist die Seite `https://nakama-briefing.philipld.chatgpt.site` (Maschinenansicht `/api/hub`); das Claude-Artefakt und alle anderen Artefakte gelten nicht mehr | „das ist der neue und einzige hub , alle anderen artefakte sind hiermit nichtmehr zu beachten" · Commits `f55c2fe`, `8974a74` (Codex-Vorarbeit) |
+| 22.08. | 35 Antworten im Hub: Gen (18), Suna (10), Figma-gegen-Entwurf (5), `U5`, `U10`. Entscheidungstor Gen offen — Studie 04 wird weiterverfolgt, die Übersetzung beginnt gegen den Figma-Export | Wahl „Vorschlag übernehmen" auf `U2.0`; alle 35 mit Wortlaut in `design/abnahmen/2026-08-22-hub-antworten-35.md` |
+| 22.08. | Bei **technischen** Fragen entscheidet der Implementplan (`docs/FL-Nakama-Sonden-Design-Entwurf.md`), nicht der Figma-Stand; für das Aussehen bleibt Figma die Quelle | „figma ist keine technikreferenz, der implementplan ist es" (Hub `U9.1`) |
+| 22.08. | Wortmarken aller drei Apps: es gilt der Figma-Export, Claude wählt keine Fassung aus | „alle wortmarken haben den stil wie ich ihn aus figma exportiert habe" (Hub `U6.9`) |
+| 22.08. | Hör-Markierung nur noch mit gültigem „spielt"; das heutige fail-open ohne Transport-Information fällt (NAK-35/NAK-24, Tickets S10–S13) | Wahl „Nein, nur mit Signal" (Hub `U10`) |
+| 22.08. | Gen-Übersicht: das Quellen×Band-Gitter aus Figma gilt; die Abnahme vom 20.08. ist an der Stelle überholt, die es ausschloss | Wahl „Figma gilt" (Hub `U9.5`) |
 
 **Was NICHT mehr gilt** (und nirgends mehr als gültig auftauchen darf):
 Recherche als „kanonischer Plan" · Spectral Field / Bauplan 2.0 / Tiefenfeld /
@@ -290,6 +295,10 @@ stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
   ¬isNonRealtime ∧ (editorOffen ∨ test)`; Analyse-Abgriff davor; Render
   bitidentisch (MarkierungTest). Jede weitere Audio-Ausnahme von Gen/Suna
   braucht denselben Beweisstandard.
+  ⚠️ **Das `∨ ¬hatTransport` ist abgewählt** (User 22.08., Hub `U10`: „Nein,
+  nur mit Signal") — verlangt ist ein gültiges „spielt". Der Code trägt das
+  fail-open **noch**; umzusetzen mit S10–S13 (NAK-35/NAK-24). Bis dahin
+  beschreibt die Formel oben den Ist-Stand, nicht den Soll-Stand.
 - **Editor heute:** Material-Kit-Front, festes Verhältnis 750:520, frei ziehbar
   600×416…1950×1352 (`PluginEditor.cpp:176-183`) — Provisorium; für die
   neue UI gilt die abgenommene Größe 760×430 („so oder so die zweitkleinste

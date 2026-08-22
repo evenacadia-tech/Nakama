@@ -156,8 +156,9 @@ Manifest nach docs/beweise/SONDE-007a.md, T1 + T2.
 
 Mehr braucht es nicht: die SessionStart-Hooks legen Wahrheitskern, Hub-Stand,
 Design-Stand und Git-Stand von selbst vor. **Nur das Ticket muss genannt
-werden** — „go" ohne Ticketgrenze widerspricht der Sessionregel (§ oben,
-`bauaufteilung-sonden.md` Zeile 45) und endet in Code ohne Manifest.
+werden** — „go" ohne Ticketgrenze widerspricht der Sessionregel in
+`docs/bauaufteilung-sonden.md` („1 Session = 1 Ticket + sein Beweismanifest
++ sein Frischkontext-Prüfer") und endet in Code ohne Manifest.
 
 **Prüfstein für den User:** liegt am Ende ein neues Manifest in
 `docs/beweise/`? Wenn nein, ist die Session **offen**, egal was sie meldet.

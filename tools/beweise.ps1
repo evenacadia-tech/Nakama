@@ -278,6 +278,12 @@ $kanon = @(
     # Rohfeld der Messung (docs/beweise/termin-a/, termin-b/) und an die
     # Vertragsform aus schemas/v3 ($defs/capabilities).
     [pscustomobject]@{ Kuerzel='A13'; Name='pruefe_host_capabilities.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Capabilityreport FL: die zehn Bits aus §53.6 entsprechen der v3-Vertragsform und stehen so, wie die Rohdaten der Termine A und B sie tragen; jedes supported hat einen Termin, jedes unsupported seinen festen Fallback.' }
+    # S8/SONDE-007a: K1 (Praeprozessor) und K2 (CMake) reden ueber die
+    # BAUBESCHREIBUNG und laufen beim Bauen mit. A14 ist der einzige Riegel, der
+    # das ARTEFAKT misst - und der einzige, der ein Stringliteral faende, das
+    # kein Makro ist. Er traegt seine eigene Gegenprobe: derselbe Scanner muss
+    # die Werte im gebauten Bundle FINDEN, sonst ist sein Schweigen wertlos.
+    [pscustomobject]@{ Kuerzel='A14'; Name='pruefe_kern_identitaetsfrei.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Der gemeinsame Kern traegt keine Bundle-Identitaet: NakamaKern.lib enthaelt keinen eingefrorenen Identitaetswert (Namen, Viercodes, CIDs roh und COM-vertauscht) und genau seine vier eigenen Objekte, kein JUCE-Modulobjekt; die Gegenprobe findet dieselben Werte im gebauten EQ-Copilot-Bundle.' }
 
     # --- geplant: laufen automatisch mit, sobald sie gebaut sind -------------
     [pscustomobject]@{ Kuerzel='B1'; Name='EqCopIdentityTest';       Art='plugin'; Argumente=@(); AbPhase='P0'; Behauptung='Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren.' }
@@ -305,7 +311,12 @@ $gemesseneZiele = @(
     [pscustomobject]@{
         Ziel   = 'EqCopilot_VST3'
         Marker = 'juce_add_plugin(EqCopilot'
-        Wegen  = 'EqCopIdentityTest misst dessen moduleinfo.json'
+        Wegen  = 'EqCopIdentityTest misst dessen moduleinfo.json; A14 nutzt das Binary als Gegenprobe'
+    }
+    [pscustomobject]@{
+        Ziel   = 'NakamaKern'
+        Marker = 'add_library(NakamaKern STATIC'
+        Wegen  = 'A14 misst die gebaute NakamaKern.lib (S8/SONDE-007a)'
     }
 )
 

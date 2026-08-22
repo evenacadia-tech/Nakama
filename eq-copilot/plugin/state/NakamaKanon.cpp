@@ -1,3 +1,4 @@
+#include "NakamaKernRiegel.h"   // S8/SONDE-007a: K1 — keine JucePlugin_*-Konstante im Kern
 #include "NakamaKanon.h"
 
 #include <juce_cryptography/juce_cryptography.h>

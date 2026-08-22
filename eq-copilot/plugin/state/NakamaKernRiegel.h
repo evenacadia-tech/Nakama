@@ -1,0 +1,98 @@
+#pragma once
+
+/*  S8 / SONDE-007a - Kompilier-Riegel des gemeinsamen Kerns.
+
+    WOGEGEN DAS SCHUETZT (Entwurf §53.4, Static-Lib-Randbedingung):
+
+      "Der gemeinsame Kern sieht KEINE JucePlugin_*-Konstanten; Identitaet
+       kommt ausschliesslich aus plugin-identities-v1.json ueber die duennen
+       Target-Schichten. Andernfalls erhalten zwei der drei Bundles die
+       Identitaetskonstanten des dritten - genau die Werte, die §44.1
+       einfriert."
+
+    Das ist kein theoretisches Risiko, sondern eine Eigenschaft von JUCEs
+    CMake: `juce_add_plugin` haengt die Identitaet als PUBLIC-Defines an das
+    Shared-Code-Ziel (gemessen 22.08.2026 in
+    _deps/juce-src/extras/Build/CMake/JUCEUtils.cmake:1543 -
+    `target_compile_definitions(${target} PUBLIC JucePlugin_ManufacturerCode=...
+    JucePlugin_PluginCode=... JucePlugin_Name=...)`). PUBLIC heisst: wer dieses
+    Ziel linkt, erbt die Identitaet EINES Bundles. Ein Kern, der so uebersetzt
+    wuerde, traegt "Eqcp" fuer alle drei Apps in seinem Objektcode - und der
+    Identitaets-Golden aus S2 faellt, sobald Probeeq oder Suna gebaut werden.
+
+    DREI RIEGEL, ARBEITSTEILUNG (Manifest docs/beweise/SONDE-007a.md):
+
+      K1 - dieser hier. Namentlich, im Uebersetzer, VOR dem Linken. Schnell und
+           mit klarer Fehlermeldung, aber nur fuer die Makros, die unten
+           stehen: der Praeprozessor kann nicht auf ein Praefix pruefen.
+      K2 - der Konfigurier-Riegel in cmake/NakamaKern.cmake. Laeuft die
+           Linkhuelle des Kerns ab und faellt auf JEDES `JucePlugin_`
+           per Regex - er schliesst genau die Luecke, die K1 offenlaesst.
+      K3 - tools/eq-copilot/pruefe_kern_identitaetsfrei.py misst das GEBAUTE
+           NakamaKern.lib gegen die eingefrorenen Identitaetswerte. Erst das
+           ist eine Aussage ueber das Artefakt statt ueber die Baubeschreibung.
+
+    Der Riegel gilt nur beim Uebersetzen der Kern-Uebersetzungseinheiten
+    (NAKAMA_KERN_UEBERSETZUNG, gesetzt von cmake/NakamaKern.cmake). Dieselben
+    Kopfdateien werden von den Plugin-Zielen mitgelesen, und DORT sind die
+    Konstanten voellig in Ordnung - sie sind ja der Zweck der Target-Schicht.
+*/
+
+#if defined (NAKAMA_KERN_UEBERSETZUNG)
+
+ #if defined (JucePlugin_Name)                       \
+  || defined (JucePlugin_Desc)                       \
+  || defined (JucePlugin_Manufacturer)               \
+  || defined (JucePlugin_ManufacturerWebsite)        \
+  || defined (JucePlugin_ManufacturerEmail)          \
+  || defined (JucePlugin_ManufacturerCode)           \
+  || defined (JucePlugin_PluginCode)                 \
+  || defined (JucePlugin_IsSynth)                    \
+  || defined (JucePlugin_IsMidiEffect)               \
+  || defined (JucePlugin_WantsMidiInput)             \
+  || defined (JucePlugin_ProducesMidiOutput)         \
+  || defined (JucePlugin_EditorRequiresKeyboardFocus)\
+  || defined (JucePlugin_Version)                    \
+  || defined (JucePlugin_VersionString)              \
+  || defined (JucePlugin_VersionCode)                \
+  || defined (JucePlugin_VSTUniqueID)                \
+  || defined (JucePlugin_VSTCategory)                \
+  || defined (JucePlugin_VSTNumMidiInputs)           \
+  || defined (JucePlugin_VSTNumMidiOutputs)          \
+  || defined (JucePlugin_Vst3Category)               \
+  || defined (JucePlugin_AUMainType)                 \
+  || defined (JucePlugin_AUSubType)                  \
+  || defined (JucePlugin_AUExportPrefix)             \
+  || defined (JucePlugin_AUExportPrefixQuoted)       \
+  || defined (JucePlugin_AUManufacturerCode)         \
+  || defined (JucePlugin_CFBundleIdentifier)         \
+  || defined (JucePlugin_AAXIdentifier)              \
+  || defined (JucePlugin_AAXManufacturerCode)        \
+  || defined (JucePlugin_AAXProductId)               \
+  || defined (JucePlugin_AAXCategory)                \
+  || defined (JucePlugin_AAXDisableBypass)           \
+  || defined (JucePlugin_AAXDisableMultiMono)        \
+  || defined (JucePlugin_Enable_ARA)                 \
+  || defined (JucePlugin_ARAFactoryID)               \
+  || defined (JucePlugin_ARADocumentArchiveID)       \
+  || defined (JucePlugin_ARACompatibleArchiveIDs)    \
+  || defined (JucePlugin_ARAContentTypes)            \
+  || defined (JucePlugin_ARATransformationFlags)     \
+  || defined (JucePlugin_Build_VST)                  \
+  || defined (JucePlugin_Build_VST3)                 \
+  || defined (JucePlugin_Build_AU)                   \
+  || defined (JucePlugin_Build_AUv3)                 \
+  || defined (JucePlugin_Build_AAX)                  \
+  || defined (JucePlugin_Build_Standalone)           \
+  || defined (JucePlugin_Build_Unity)                \
+  || defined (JucePlugin_Build_LV2)                  \
+  || defined (JUCE_SHARED_CODE)
+  #error "S8/SONDE-007a: Der gemeinsame Kern sieht eine JucePlugin_*-Konstante. \
+Damit traegt sein Objektcode die Identitaet EINES Bundles, und alle drei Apps \
+(Gen, Probeeq, Suna) erben sie - der Identitaets-Golden aus S2 faellt. Ursache \
+ist fast immer eine Linkkante von NakamaKern zu einem juce_add_plugin-Ziel: \
+dessen JucePlugin_*-Defines sind PUBLIC (JUCEUtils.cmake:1543). Identitaet \
+gehoert in die duenne Target-Schicht, nicht in den Kern (Entwurf §53.4)."
+ #endif
+
+#endif // NAKAMA_KERN_UEBERSETZUNG

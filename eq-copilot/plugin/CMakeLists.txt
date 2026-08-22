@@ -5,8 +5,21 @@
 #  - EqCopPipeProbe       — Konsole: spielt einen Sensor gegen den laufenden Broker
 #  - EqCopNullTest        — Konsole: Bitgleichheits-/NaN-/Latenz-Beweis ohne Host
 #  - EqCopGoldenTest      — Konsole: M1-Kreuzvalidierung gegen fixtures/golden-referenz.json
-# Probe und Tests kompilieren die geteilten Quellen erneut, statt eine
-# static-lib mit fremden JUCE-Moduldefinitionen zu teilen — bewusst simpel.
+#
+# GETEILTE QUELLEN, Stand S8 (SONDE-007a, 22.08.2026): Bis hierher stand an
+# dieser Stelle "Probe und Tests kompilieren die geteilten Quellen erneut,
+# statt eine static-lib mit fremden JUCE-Moduldefinitionen zu teilen — bewusst
+# simpel." Das war richtig fuer EIN Bundle. Fuer Gen, Probeeq und Suna ist es
+# falsch: dieselbe Quelle waere dann bis zu dreimal je Ziel uebersetzt, und
+# jede dieser Uebersetzungen koennte eine fremde Identitaet einatmen.
+#
+# Ab jetzt gilt der Kern NakamaKern (cmake/NakamaKern.cmake): eine Static-Lib,
+# einmal uebersetzt, ohne JucePlugin_*-Konstante — die "fremden JUCE-
+# Moduldefinitionen" aus dem alten Satz sind der Grund, WARUM er sie nicht
+# sehen darf, nicht ein Grund gegen die Lib (Entwurf §53.4).
+# Der uebrige Produktcode (src/) bleibt vorerst je Ziel uebersetzt; sein Umzug
+# hinter die §53.4-Grenzen ist ausdruecklich inkrementell und gehoert nicht in
+# dieses Ticket.
 
 juce_add_plugin(EqCopilot
     COMPANY_NAME "evenacadia"
@@ -47,25 +60,55 @@ target_compile_definitions(EqCopilot PUBLIC
 
 target_include_directories(EqCopilot PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/hostbridge")
 
-# ── SONDE-006: State-Schema 2 + Parameterbestand + RFC-8785-state_hash ──────
-# plugin/state/ ist JUCE-core-Code ohne JucePlugin_*-Konstante (S8-tauglich);
-# der DTO-Leser nutzt den v3-Textriegel aus plugin/vertrag/. Jedes Ziel, das
-# den Prozessor kompiliert, bekommt dieselben Quellen - eine Funktion statt
-# sechs Kopien, damit keine Liste still auseinanderlaeuft.
-set(NAKAMA_STATE_QUELLEN
+# ── S8/SONDE-007a: der gemeinsame Kern als eigene Static-Lib ────────────────
+# Inhalt: State-Schema 2 + Parameterbestand + RFC-8785-Kanon (SONDE-006) und
+# der v3-Textriegel (SONDE-005a). Beides ist JUCE-core-Code ohne eine einzige
+# JucePlugin_*-Konstante — genau die Menge, die Gen, Probeeq und Suna teilen
+# duerfen. Bis 22.08. wurde sie je Ziel neu uebersetzt (sieben Kopien);
+# ab hier einmal.
+#
+# Die drei Riegel dazu stehen in cmake/NakamaKern.cmake (K1/K2) und in
+# tools/eq-copilot/pruefe_kern_identitaetsfrei.py (K3).
+set(NAKAMA_KERN_QUELLEN
     state/NakamaKanon.cpp
     state/NakamaParameter.cpp
     state/NakamaState.cpp
     vertrag/NakamaVertrag.cpp
 )
-function(nakama_state_anbinden ziel)
-    target_sources(${ziel} PRIVATE ${NAKAMA_STATE_QUELLEN})
-    target_include_directories(${ziel} PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/state" "${CMAKE_CURRENT_SOURCE_DIR}/vertrag")
-    # SHA-256 fuer den state_hash.
-    target_link_libraries(${ziel} PRIVATE juce::juce_cryptography)
+
+# Kopf-Fassade: JUCE-Koepfe ohne die JUCE-Modulquellen. Warum das noetig ist
+# und was daran gemessen wurde, steht im Kopf von cmake/NakamaKern.cmake.
+nakama_kern_juce_fassade(NakamaKernJuce
+    juce::juce_core
+    juce::juce_events
+    juce::juce_data_structures
+    juce::juce_cryptography)
+
+add_library(NakamaKern STATIC ${NAKAMA_KERN_QUELLEN})
+target_include_directories(NakamaKern PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/state" "${CMAKE_CURRENT_SOURCE_DIR}/vertrag")
+target_link_libraries(NakamaKern PRIVATE NakamaKernJuce)
+# Schaltet K1 scharf (plugin/state/NakamaKernRiegel.h). Nur PRIVATE: dieselben
+# Kopfdateien liest auch die Target-Schicht, und DORT sind die Konstanten der
+# Zweck und kein Fehler.
+target_compile_definitions(NakamaKern PRIVATE NAKAMA_KERN_UEBERSETZUNG=1)
+
+# K2 laeuft, sobald alle Kanten stehen — also nach den target_link_libraries.
+nakama_kern_riegel_pruefen(NakamaKern)
+
+# Verbraucherseite. Der Kern ist gegen JUCE-KOEPFE uebersetzt; die
+# Implementierung (juce_core.cpp, SHA-256 aus juce_cryptography, ...) muss vom
+# verbrauchenden Ziel kommen. Deshalb stehen die Module hier und nicht am Kern:
+# so gibt es sie im ganzen Baum genau einmal je Ziel statt zweimal.
+function(nakama_kern_anbinden ziel)
+    target_link_libraries(${ziel} PRIVATE
+        NakamaKern
+        juce::juce_core
+        juce::juce_events
+        juce::juce_data_structures
+        juce::juce_cryptography)
 endfunction()
-nakama_state_anbinden(EqCopilot)
+nakama_kern_anbinden(EqCopilot)
 
 target_link_libraries(EqCopilot
     PRIVATE
@@ -102,7 +145,7 @@ target_include_directories(EqCopNullTest PRIVATE src)
 target_compile_definitions(EqCopNullTest PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
 target_link_libraries(EqCopNullTest PRIVATE juce::juce_audio_utils juce::juce_dsp
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
-nakama_state_anbinden(EqCopNullTest)
+nakama_kern_anbinden(EqCopNullTest)
 
 # ── Golden-Test: M1-Kreuzvalidierung + M3-Diagnose (Engine pur, ohne Pipe) ──
 juce_add_console_app(EqCopGoldenTest PRODUCT_NAME "eqcop-goldentest")
@@ -131,7 +174,7 @@ target_include_directories(EqCopMarkierungTest PRIVATE src)
 target_compile_definitions(EqCopMarkierungTest PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
 target_link_libraries(EqCopMarkierungTest PRIVATE juce::juce_audio_utils juce::juce_dsp
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
-nakama_state_anbinden(EqCopMarkierungTest)
+nakama_kern_anbinden(EqCopMarkierungTest)
 
 # ── Shot-Test: rendert den Editor offscreen als PNG (Sichtprüfung ohne FL) ──
 juce_add_console_app(EqCopShot PRODUCT_NAME "eqcop-shot")
@@ -147,7 +190,7 @@ target_include_directories(EqCopShot PRIVATE src)
 target_compile_definitions(EqCopShot PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
 target_link_libraries(EqCopShot PRIVATE juce::juce_audio_utils juce::juce_dsp
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
-nakama_state_anbinden(EqCopShot)
+nakama_kern_anbinden(EqCopShot)
 
 # ── Paint-Benchmark: reine paint()-Kosten offscreen (FPS-Beweis) ───────────
 juce_add_console_app(EqCopPaintBench PRODUCT_NAME "eqcop-paintbench")
@@ -163,7 +206,7 @@ target_include_directories(EqCopPaintBench PRIVATE src)
 target_compile_definitions(EqCopPaintBench PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
 target_link_libraries(EqCopPaintBench PRIVATE juce::juce_audio_utils juce::juce_dsp
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
-nakama_state_anbinden(EqCopPaintBench)
+nakama_kern_anbinden(EqCopPaintBench)
 
 # ── SONDE-004a: Wegwerf-Messgeraet fuer Aux/PDC/Recall (User-Termin A) ──────
 # Eigener Plugin-Code NkSp — bewusst NICHT Teil der eingefrorenen Identitaet
@@ -228,7 +271,7 @@ target_compile_definitions(EqCopIdentityTest PRIVATE
     JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
 target_link_libraries(EqCopIdentityTest PRIVATE juce::juce_audio_utils juce::juce_dsp
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
-nakama_state_anbinden(EqCopIdentityTest)
+nakama_kern_anbinden(EqCopIdentityTest)
 
 # ── SONDE-006: State-Schema 2, Parameterbestand, Migration (Kanon B2) ──────
 # Misst gegen die handgeschriebenen Vertraege (schemas/state/) und den
@@ -248,7 +291,7 @@ target_compile_definitions(EqCopStateMigrationTest PRIVATE
     JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
 target_link_libraries(EqCopStateMigrationTest PRIVATE juce::juce_audio_utils juce::juce_dsp
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
-nakama_state_anbinden(EqCopStateMigrationTest)
+nakama_kern_anbinden(EqCopStateMigrationTest)
 
 # ── S3b: Termin-B-Messgeraet (Wegwerfware wie SONDE-004a) ──────────────────
 # Erstes Ziel, das die Hostbruecke BENUTZT: sein Processor ist eine Senke.
@@ -328,9 +371,11 @@ target_link_libraries(EqCopHostContextTest PRIVATE juce::juce_core juce::juce_cr
 # ECHTEN Quellpfad (plugin/vertrag/), keine Testkopie - ab SONDE-010 ist das
 # die Eingangspruefung des C++-IPC-Clients.
 juce_add_console_app(EqCopSchemaTest PRODUCT_NAME "eqcop-schematest")
+# NakamaVertrag.cpp kommt seit S8 aus NakamaKern (eine Uebersetzung statt zwei);
+# NakamaTelemetrie.cpp bleibt hier, weil es die FlatBuffers-Laufzeit braucht und
+# heute nur dieses Ziel es liest — sein Umzug in den Kern gehoert zu SONDE-010.
 target_sources(EqCopSchemaTest PRIVATE
     tests/SchemaTestMain.cpp
-    vertrag/NakamaVertrag.cpp
     vertrag/NakamaTelemetrie.cpp
 )
 target_include_directories(EqCopSchemaTest PRIVATE vertrag)
@@ -342,10 +387,12 @@ target_compile_definitions(EqCopSchemaTest PRIVATE
 # Riegel derselben Aussage.
 target_link_libraries(EqCopSchemaTest PRIVATE juce::juce_core flatbuffers
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopSchemaTest)
 
 # Die Quellen sind UTF-8 (deutsche UI-Texte). Ohne /utf-8 rät MSVC die
 # Codepage — Literale wie „Klavier-Bus“ hingen dann an der Systemlocale.
-foreach(ziel EqCopilot EqCopPipeProbe EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
+foreach(ziel NakamaKern
+             EqCopilot EqCopPipeProbe EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopAuxSpike EqCopAuxSpikeTest EqCopHostContextTest
              EqCopSchemaTest EqCopStateMigrationTest
              EqCopHostProbe EqCopHostProbeTest)

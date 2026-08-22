@@ -51,4 +51,9 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/NakamaFlatBuffers.cmake)
 nakama_flatbuffers_bereitstellen(
     "${CMAKE_CURRENT_LIST_DIR}/schemas/v3/flatbuffers/WERKZEUG.json")
 
+# ── S8/SONDE-007a: Werkzeug fuer den gemeinsamen Kern ───────────────────────
+# Stellt nur Funktionen bereit (Kopf-Fassade, Linkhuellen-Riegel K2); gebaut
+# wird der Kern in plugin/CMakeLists.txt. Details im Modulkopf.
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/NakamaKern.cmake)
+
 add_subdirectory(plugin)

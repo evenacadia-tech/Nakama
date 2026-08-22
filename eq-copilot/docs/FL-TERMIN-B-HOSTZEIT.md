@@ -6,16 +6,19 @@
 > Automationsclip an, schaltete Smart disable ein, exportierte und klickte
 > „Bericht sichern"; Abspielen, Springen, Schleife und Stummschalten fuhr
 > Claude ueber den FL-MCP (`fl-studio`: `fl_play`, `fl_stop`,
-> `fl_set_song_position` **nur im Modus 1 = Millisekunden** — Modus 2
-> „Sekunden" landet nahe Songanfang —, `fl_set_loop_mode`, `fl_mute_channel`).
+> `fl_set_song_position` — **Achtung, die Werkzeugbeschreibung der Modi ist
+> falsch**: laut FL-API ist Modus 0 = Millisekunden, 1 = Sekunden, 2 = absolute
+> Ticks (96 je Beat); „mode=2, 10" springt auf Tick 10, nicht auf 10 s —,
+> `fl_set_loop_mode`, `fl_mute_channel`).
 > Berichtigungen: (1) Schritt 1 — FL scannt VST3 nur unter
 > `C:\Program Files\Common Files\VST3\`, Suchpfade gelten nur fuer VST2;
 > das Messgeraet liegt seit 21.08. dort. (2) Der Song muss **mindestens 16
 > Takte** lang sein (Clips nach rechts ziehen) — bei 2 Takten loopt FL im
 > Sekundentakt, und Live (Schritt 3) ist von Schleife (Schritt 5) nicht mehr
 > zu trennen. (3) Ein Vorwaertssprung braucht eine Zielposition hinter der
-> aktuellen — die erste Sprungrunde war versehentlich rein rueckwaerts und
-> wurde nachgemessen. Der Text unten ist unveraendert.
+> aktuellen — die erste Sprungrunde landete wegen des Tick-Modus rein rueckwaerts
+> und wurde nachgemessen. (4) FL-Version beim Messen notieren (22.08.: FL Studio
+> 2026 26.1.4.5589). Der Text unten ist unveraendert.
 
 **Dauer:** ca. 25 Minuten. **Du brauchst:** FL Studio, sonst nichts.
 

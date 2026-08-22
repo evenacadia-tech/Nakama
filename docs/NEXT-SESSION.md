@@ -55,8 +55,10 @@
    `EqCop-Host-Probe` auf den Piano-Kanal, zeichnete den Automationsclip,
    schaltete Smart disable ein, exportierte und sicherte den Bericht; Claude
    fuhr Live, Seeks (ohne/mit Stop), Pattern-Schleife, Stummschaltung über den
-   MCP (`fl_set_song_position` nur im Modus 1 = ms). `fl_save_project` fehlt
-   dem Fork weiterhin — Speichern blieb Strg+S beim User.
+   MCP. **Lehre:** `fl_set_song_position` — Modus 0 = ms, 1 = s, 2 = absolute
+   Ticks (die Werkzeugbeschreibung sagt 1 = ms, 2 = s — falsch; im Fork
+   `fl-studio-mcp` berichtigen). `fl_save_project` fehlt dem Fork weiterhin —
+   Speichern blieb Strg+S beim User.
 2. ~~Klicklisten A und B nachziehen~~ — beide tragen einen Stand-Hinweis mit den
    Berichtigungen (VST3 nur unter `Common Files\VST3`; Nebenwege als
    „Sidechain to this track"; Song ≥ 16 Takte; Arbeitsteilung).
@@ -64,10 +66,13 @@
    (845 MB alte Repo-Kopie vom 13.08. mit zwei alten `EQ-Copilot.vst3`, die FL
    mitscannt) wegräumen — braucht einen Admin-Klick.
 4. ~~S4~~ — **gebaut**: `docs/beweise/SONDE-004.md`,
-   `eq-copilot/identity/host-capabilities-fl-v1.json`, Kanon A13. **Offen: Gate
-   G0** (T3, eigene Session: `/c-review` auf den Bridge-Patch + Codex,
-   Bruchaufträge Gate 1 und Gate 5) — danach fällt der Schließungsvorbehalt §65
-   für `SONDE-005`.
+   `eq-copilot/identity/host-capabilities-fl-v1.json` (**3 supported, 7
+   unsupported** — T2-Runde 1 hat `presentation_latency` und
+   `aux_priority_sidechain` herabgestuft: Golden nicht erbracht), Kanon A13.
+   **Offen: Gate G0** (T3, eigene Session: `/c-review` auf den Bridge-Patch +
+   Codex, Bruchaufträge Gate 1 und Gate 5) — danach fällt der
+   Schließungsvorbehalt §65 für `SONDE-005`. **Termin A2** (NAK-44: PDC-Last,
+   Bus-Identität, L/R) hebt zwei Bits, wenn der User ihn fährt.
 
 ## ▶ Der eine nächste Schritt (Technik): S8 — `SONDE-007a`
 
@@ -110,7 +115,8 @@ Code ohne Manifest heißt *offen*. Beweislauf:
 hex32 der v3-Adresse, SONDE-010), NAK-41 (Schema-2-Stand im alten Build = stiller
 Identitätsverlust; vor der Installation wissen), NAK-42 (Rust klassifiziert die
 ungültigen DTOs noch nicht — vor G1), NAK-43 (`presentation_latency`: ein
-verworfener Wertwechsel ohne Protokoll — vor SONDE-009). NAK-33 trägt den Nachtrag „State
+verworfener Wertwechsel ohne Protokoll — vor SONDE-009), NAK-44 (Termin A2:
+PDC-Golden für `aux_priority_sidechain`, Bus-Identität/L/R, FL-Version). NAK-33 trägt den Nachtrag „State
 trägt 13, UI-Frage offen". Neu seit 21.08.: NAK-30 (Umbenennung zu Nakama
 Studio / Gen / Probeeq / Suna = Identitätsticket), NAK-31 (`analyze-track.py`
 liegt im FL-Repo), NAK-32 (`install/` unversioniert), NAK-33 (12 oder 13

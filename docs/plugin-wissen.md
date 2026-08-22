@@ -197,8 +197,10 @@ Aufbau, Claude fuhr Transport über den FL-MCP). Rohdaten `docs/beweise/termin-a
 `eq-copilot/identity/host-capabilities-fl-v1.json` (Kanon A13). Kernbefunde:
 Kontext in 100 % der Blöcke, alle Zeitfelder immer gültig, Seeks/Loops/Render
 gemeldet, **Automation nie >1 Punkt je Block bei Offset 0 — FL zerteilt Puffer
-bis 1 Sample**, nur float, Latenz 3 924/4 410 gemeldet, Smart disable bei
-offenem Fenster ohne Lücke. Klicklisten `eq-copilot/docs/FL-TERMIN-{A-AUX-PDC,B-HOSTZEIT}.md`
+bis 1 Sample**, nur float, Latenz 3 924/4 410 gemeldet (ohne Impulsgolden ⇒ Bit
+unsupported), Smart disable bei offenem Fenster ohne Lücke; PDC in Termin A nie
+ausgeübt ⇒ `aux_priority_sidechain` unsupported bis Termin A2 (NAK-44). Stand:
+**3 supported, 7 unsupported**; Host FL Studio 2026 26.1.4.5589. Klicklisten `eq-copilot/docs/FL-TERMIN-{A-AUX-PDC,B-HOSTZEIT}.md`
 tragen einen Stand-Hinweis mit Berichtigungen.
 
 ## 3 · Verträge

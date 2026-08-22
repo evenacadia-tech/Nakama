@@ -30,13 +30,23 @@ Host `FruityLoops`, Wrapper VST3, 44100 Hz, Blockgröße 2048,
 
 - **Zwei getrennte Nebenwege kommen gleichzeitig, getrennt und samplegenau an**
   (Versatz 0 gegenüber dem Hauptweg, in beiden Läufen).
-- **Recall:** Zuordnung und Versatz überleben Speichern, Schließen, Neuladen.
+- **Recall:** Buslayout (zwei benannte Busse aktiv, je ein Impuls) und Versatz 0
+  überleben Speichern, Schließen, Neuladen — mit zwei Grenzen (T2 zu SONDE-004):
+  zwischen den Läufen wurde das Routing von Mixroute auf Sidechain-only umgebaut
+  (die Läufe sind nicht derselbe Projektstand), und Bus-Identität (welche Quelle
+  auf welchem Aux) sowie L/R-Reihenfolge sind nicht unterscheidbar, weil dieselbe
+  Impulsdatei (L = R) auf allen drei Spuren lag. **PDC wurde nicht ausgeübt** —
+  kein Plugin im Aufbau meldete Latenz; der Fall aus Entwurf §32.2
+  („Fehlreihenfolgen bei latenzbehafteten Instanzen") ist ungemessen (NAK-44).
+  FL-Version nicht protokolliert (installiert: 25.2.5.5319 und 26.1.4.5589).
 - Spitze 2,70 im ersten Lauf = dreifach gemischter Impuls (normale Routen in
   Insert 1); im zweiten Lauf 0,90 = nur Eigensignal (Sidechain-Routen). Für die
   Messung ohne Belang, für den späteren Aufbau die Regel: Nebenwege als
   „Sidechain to this track", nicht als Mixroute.
-- Capability-Folge für S4: `contribution_sidechain` und `compare_pre` tragen
-  in FL ohne festen Versatz. Nicht gemessen bleibt `contribution_aux`
-  (Main-Aux-Busse) — kein Gerät misst es (Entwurf-Errata (k), NAK-04-Nachtrag).
+- Capability-Folge für S4 (`docs/beweise/SONDE-004.md`): `aux_compare_pre`
+  **supported** (getrennt, recall-stabil); `aux_priority_sidechain` **unsupported**,
+  bis ein Lauf mit latenzmeldendem Plugin „PDC-synchron" belegt (NAK-44). Nicht
+  gemessen bleibt `contribution_aux` (Main-Aux-Busse) — kein Gerät misst es
+  (Entwurf-Errata (k), NAK-04-Nachtrag).
 
 Rohdaten: die zwei JSON-Dateien in diesem Ordner (unverändert kopiert).

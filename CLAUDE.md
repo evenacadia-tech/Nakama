@@ -195,12 +195,14 @@ stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
 - **FL-Termine A/B sind gemessen (22.08.)** — Rohdaten `docs/beweise/termin-a/`,
   `termin-b/`; **Capabilityreport S4** `eq-copilot/identity/host-capabilities-fl-v1.json`
   (zehn §53.6-Bits mit Rohfeld, Kanon-Bein A13 misst sie gegen die Rohdaten):
-  `host_context_presence`, `project_time_samples`, `presentation_latency`,
-  `aux_compare_pre`, `aux_priority_sidechain` **supported** ·
-  `sample_accurate_automation` **unsupported** (FL legt nie >1 Punkt je Block
-  in die Queue, zerteilt stattdessen Puffer bis 1 Sample) · `float64_processing`,
+  `host_context_presence`, `project_time_samples`, `aux_compare_pre`
+  **supported** · `sample_accurate_automation` **unsupported** (FL legt nie >1
+  Punkt je Block in die Queue, zerteilt stattdessen Puffer bis 1 Sample) ·
+  `presentation_latency` (gemeldet 3 924/4 410, aber kein Impulsgolden),
+  `aux_priority_sidechain` (PDC nie ausgeübt — NAK-44), `float64_processing`,
   `contribution_aux` (ungemessen), `binary_telemetry`, `remote_control`
-  **unsupported**. Gate G0 (T3, eigene Session) steht noch aus. Die
+  **unsupported**. Host FL Studio 2026 26.1.4.5589, JUCE 8.0.9. Gate G0 (T3,
+  eigene Session) steht noch aus. Die
   Wegwerf-Messgeräte `EqCopAuxSpike` (`NkSp`) und `EqCopHostProbe` (`NkHp`)
   liegen installiert unter `C:\Program Files\Common Files\VST3\`.
 

@@ -7,11 +7,15 @@ Liest eq-copilot/identity/host-capabilities-fl-v1.json und prueft:
      $defs/capabilities (alle zehn Bits, nur supported|unsupported, nichts
      Zusaetzliches) - per jsonschema, wie das Referenzbein des v3-Vertrags.
   2. Jedes Bit, das auf eine Messung verweist, zeigt auf eine existierende
-     Rohdatei in docs/beweise/termin-*/, und die im Beleg genannten Zahlen
-     stehen WIRKLICH so in der Rohdatei - der Report darf nichts behaupten,
-     was die Messung nicht traegt.
-  3. Ein `supported` braucht einen Termin; `unsupported` ohne Termin braucht
-     den festen Fallback aus §53.6.
+     Rohdatei in docs/beweise/termin-*/, und JEDE "feld = wert"-Angabe in den
+     Belegtexten des Reports wird gegen die Rohdatei aufgeloest - der Report
+     darf nichts behaupten, was die Messung nicht traegt (T2-Befund 6: die
+     erste Fassung mass nur Skriptkonstanten, nicht den Report).
+  3. Ein `supported` braucht einen Termin; `unsupported` braucht den festen
+     Fallback aus §53.6.
+  4. Die Smart-Disable-Aussage wird an den Ereignissen gemessen (kein
+     zeitsprung_vor in den stummen Fenstern, regelmaessige Wrap-Kadenz) -
+     `block_ohne_verarbeitung` zaehlt nur Bruecken-Asymmetrie (T2-Befund 5).
 
 Aufruf:
     py -3.13 tools/eq-copilot/pruefe_host_capabilities.py
@@ -95,8 +99,40 @@ def main() -> int:
     pruefe(pl["verworfene_wertwechsel"] == 1, "presentation_latency: genau ein verworfener Wertwechsel (NAK-43)")
     pruefe(b["bloecke"]["float"] == 259298 and b["bloecke"]["double"] == 0,
            "float64_processing: nur float, nie double")
-    pruefe(b["ereignisse_je_art"]["block_ohne_verarbeitung"] == 0,
-           "Smart Disable: kein ausgelassener Block in 12 s + 30 s Stille")
+    pruefe(b["host"] == "FruityLoops" and b["wrapper"] == "VST3"
+           and a1["host"] == "FruityLoops" and a2["host"] == "FruityLoops"
+           and b["bloecke"]["samplerate"] == a1["samplerate"] == a2["samplerate"] == report["host"]["samplerate_hz"],
+           "Rohdateien tragen host=FruityLoops, wrapper=VST3, Samplerate wie im Report")
+    pruefe(b["ereignisse_je_art"]["kontext_weg"] == 0 and b["presentation_latency"]["verworfene_busmeldungen"] == 0
+           and b["automation"]["ueberlaeufe"] == 0 and b["automation"]["unplausibel"] == 0,
+           "keine Kontextverluste, verworfenen Busmeldungen, Ueberlaeufe oder unplausiblen Punkte")
+    pruefe("fl_version_termin_b" in report["host"] and "juce_version" in report["host"]
+           and "26.1.4.5589" in report["host"]["fl_version_termin_b"] and "8.0.9" in report["host"]["juce_version"],
+           "Report nennt FL- und JUCE-Version (§54 Lieferumfang 6)")
+    # Smart Disable: die beiden stummen Fenster sind die Transportabschnitte
+    # NACH dem Export-Abschnitt (Ereignis 68..74) - das erste (13:02:45) liegt
+    # davor: Ereignisse 61..67; das zweite (13:11:35) ist der letzte Abschnitt.
+    ev = b["ereignisse"]
+    pruefe(b["ereignisse_gesamt"] == b["ereignisse_gespeichert"] == len(ev),
+           f"Ereignisprotokoll vollstaendig ({len(ev)} Ereignisse, kein Ringueberlauf)")
+    abschnitte = []
+    start = None
+    for i, e in enumerate(ev):
+        if e["art"] == "transport_an":
+            start = i
+        elif e["art"] == "transport_aus" and start is not None:
+            abschnitte.append((start, i))
+            start = None
+    pruefe(len(abschnitte) == 8, f"8 Transportabschnitte (an..aus) gefunden: {len(abschnitte)}")
+    stumm = [abschnitte[4], abschnitte[7]]   # 13:02:45 (stumm + Ton, Ereignisse 61..66) und 13:11:35 (88..96)
+    for (a, z) in stumm:
+        arten = [x["art"] for x in ev[a:z + 1]]
+        wraps = [x["block"] for x in ev[a:z + 1] if x["art"] == "zeitsprung_zurueck"]
+        kadenz = [wraps[i + 1] - wraps[i] for i in range(len(wraps) - 1)]
+        pruefe("zeitsprung_vor" not in arten and len(wraps) >= 3 and max(kadenz) - min(kadenz) <= 4,
+               f"Smart Disable: stummes Fenster Ereignisse {a}..{z} ohne zeitsprung_vor, Wrap-Kadenz {kadenz} regelmaessig")
+    vor = [i for i, x in enumerate(ev) if x["art"] == "zeitsprung_vor"]
+    pruefe(vor == [79, 82], f"genau zwei Vorwaertsspruenge, beide in der Nachmessung (Ereignisse {vor})")
 
     for lauf, name in ((a1, "001701"), (a2, "002722")):
         busse = {x["name"]: x for x in lauf["busse"]}
@@ -106,12 +142,70 @@ def main() -> int:
                    and x["versatz_zu_main_samples"] == 0 and x["versatz_zu_main_ms"] == 0.0,
                    f"Termin A {name}: {bus} aktiv, 2 Kanaele, Versatz 0")
 
+    # 2b. Jede "feld = wert"-Angabe der Belegtexte gegen die Rohdateien.
+    #     Belegtexte duerfen Kurzformen tragen ("projektzeit.spruenge_vorwaerts = 2,
+    #     spruenge_rueckwaerts = 51" / "busse[1] (...): aktiv = true"); der
+    #     zuletzt genannte Pfadkopf gilt weiter. Segmente mit "A:" messen gegen
+    #     BEIDE Termin-A-Laeufe, alles andere gegen Termin B.
+    import re
+
+    def loese(obj, pfad):
+        for teil in pfad.split("."):
+            m = re.fullmatch(r"(\w+)\[(\d+)\]", teil)
+            obj = obj[m.group(1)][int(m.group(2))] if m else obj[teil]
+        return obj
+
+    def gleich(ist, soll: str) -> bool:
+        if isinstance(ist, bool):
+            return soll.lower() == str(ist).lower()
+        if isinstance(ist, (int, float)):
+            try:
+                return float(ist) == float(soll)
+            except ValueError:
+                return False
+        return str(ist) == soll
+
+    token = re.compile(r"(?P<kopf>busse\[\d+\])(?=\s*\()|(?P<pfad>[A-Za-z_]+(?:\.[A-Za-z_]+|\[\d+\])*)\s*=\s*(?P<wert>true|false|[-\d.]+)")
+    angaben = 0
+    for bit, beleg in report["belege"].items():
+        text = beleg.get("rohfeld", "")
+        for segment in re.split(r"(?=\bA:\s)|(?=\bB:\s)", text):
+            segment = segment.strip()
+            if not segment or segment.startswith("nicht gemessen") or segment.startswith("Beweis entsteht"):
+                continue
+            quellen = [("A1", a1), ("A2", a2)] if segment.startswith("A:") or "busse[" in segment else [("B", b)]
+            praefix = ""
+            for m in token.finditer(segment):
+                if m.group("kopf"):
+                    praefix = m.group("kopf")
+                    continue
+                pfad, soll = m.group("pfad"), m.group("wert")
+                for name, quelle in quellen:
+                    ist = None
+                    for kandidat in ([pfad] + ([praefix + "." + pfad] if praefix else [])):
+                        try:
+                            ist = loese(quelle, kandidat)
+                            if "." in kandidat and kandidat == pfad:
+                                praefix = kandidat.rsplit(".", 1)[0]
+                            break
+                        except (KeyError, IndexError, TypeError):
+                            continue
+                    if ist is None:
+                        pruefe(False, f"{bit}: Rohfeld {pfad} (Praefix '{praefix}') existiert nicht in {name}")
+                        continue
+                    angaben += 1
+                    if not gleich(ist, soll):
+                        pruefe(False, f"{bit}: Rohfeld {pfad} in {name} = {ist!r}, Report sagt {soll}")
+    pruefe(angaben >= 30, f"{angaben} 'feld = wert'-Angaben der Belegtexte gegen die Rohdateien aufgeloest, alle stimmen")
+
     # 3. Bits gegen die Belege.
     for bit, wert in caps.items():
         beleg = report["belege"][bit]
         if wert == "supported":
             pruefe(beleg.get("termin") in ("A", "B", "A + B"),
                    f"{bit}=supported traegt einen Termin ({beleg.get('termin')})")
+            pruefe("Golden" not in beleg.get("zusatz", "") or "nicht erbracht" not in beleg.get("zusatz", ""),
+                   f"{bit}=supported behauptet kein 'Golden nicht erbracht'")
         else:
             pruefe("fallback_nach_53_6" in beleg,
                    f"{bit}=unsupported traegt den festen Fallback aus §53.6")
@@ -124,14 +218,21 @@ def main() -> int:
                 continue
             pruefe((WURZEL / datei).exists(), f"{bit}: Rohdatei existiert ({datei})")
 
+    # Die Bits, die die Rohdaten TRAGEN (§53.6 Golden erbracht) - alles andere
+    # ist unsupported. presentation_latency und aux_priority_sidechain wurden
+    # in T2-Runde 1 herabgestuft: Meldung ohne Impulsgolden bzw. Sidechain ohne
+    # PDC-Last sind kein Golden.
     erwartete_bits = {
         "host_context_presence": "supported", "project_time_samples": "supported",
-        "sample_accurate_automation": "unsupported", "presentation_latency": "supported",
-        "aux_compare_pre": "supported", "aux_priority_sidechain": "supported",
+        "sample_accurate_automation": "unsupported", "presentation_latency": "unsupported",
+        "aux_compare_pre": "supported", "aux_priority_sidechain": "unsupported",
         "contribution_aux": "unsupported", "float64_processing": "unsupported",
         "binary_telemetry": "unsupported", "remote_control": "unsupported",
     }
-    pruefe(caps == erwartete_bits, "die zehn Bits stehen so, wie die Rohdaten es tragen")
+    pruefe(caps == erwartete_bits, "die zehn Bits stehen so, wie die Rohdaten es tragen (3 supported, 7 unsupported)")
+    pruefe(report["belege"]["presentation_latency"].get("fallback_nach_53_6") == "keine subtraktive Cross-Probe-Ausrichtung"
+           and report["belege"]["aux_priority_sidechain"].get("fallback_nach_53_6") == "keine dynamische Aktuation",
+           "herabgestufte Bits tragen die Fallbacks aus §53.6")
 
     print()
     if fehler:

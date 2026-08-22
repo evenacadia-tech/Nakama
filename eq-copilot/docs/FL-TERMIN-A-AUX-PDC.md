@@ -7,7 +7,12 @@
 > nur fuer VST2; das Messgeraet muss dorthin (Admin-Klick), die Zeile „kein
 > Admin noetig" war falsch. (2) Nebenwege als **„Sidechain to this track"**
 > legen, nicht als Mixroute — sonst wird der Ton in der Zielspur mitgemischt
-> (Spitze 2,70 statt 0,90). Der Text unten ist unveraendert.
+> (Spitze 2,70 statt 0,90). **Offen fuer einen Termin A2 (NAK-44):** PDC war
+> nie im Spiel — auf der Sidechain-Quellspur (Insert 2) ein Plugin einfuegen, das
+> Latenz MELDET (z. B. Fruity Limiter mit Lookahead oder ein Linear-Phase-EQ),
+> dann die Impulse erneut messen; dazu je Spur einen anderen Impulszeitpunkt und
+> einmal L-only/R-only, damit Bus-Identitaet und Kanalreihenfolge unterscheidbar
+> werden; FL-Version notieren. Der Text unten ist unveraendert.
 
 **Dauer:** ca. 20 Minuten. **Du brauchst:** FL Studio, sonst nichts.
 

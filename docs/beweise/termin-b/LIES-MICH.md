@@ -13,7 +13,7 @@ fuhr Claude über den FL-MCP (`fl-studio`) — Uhrzeiten in `AKTIONSPROTOKOLL.md
   Fenster offen, „Hostbrücke liefert: JA".
 - Automationsclip auf „Testwert (nur Messung)", dichte Zickzack-Kurve
   (Screenshot des Users 22.08. ~12:45).
-- Song ≈ 7 Takte bei 140 bpm (Loop-Länge 539 438 Samples = 12,23 s), 44 100 Hz.
+- Song 7,14 Takte bei 140 bpm (Loop-Länge 539 634 Samples = 12,24 s; nach dem Export 509 119 Samples = 11,54 s), 44 100 Hz, **FL Studio 2026 26.1.4.5589**, JUCE 8.0.9, Probe-Bundle 0.1.0.
 
 ## Ergebnis (zweiter Bericht `host-probe-20260822-132644.json`, enthält den ersten)
 
@@ -25,20 +25,23 @@ fuhr Claude über den FL-MCP (`fl-studio`) — Uhrzeiten in `AKTIONSPROTOKOLL.md
 | Springen mit Stop | **eigene Zeile**: `zeitsprung_ueber_stop` 5 (jeder Play nach Stop mit Positionswechsel), Sprung-Zeilen dabei unverändert |
 | Schleife | Loop-Wraps als Rücksprünge mit **exakt** der Songlänge (−539 634/635) bzw. Pattern-Länge; `cycle_bounds` immer gültig (`schleife_an` 8×, Ende 28,6 / 27,0 / 9,5 Beats) |
 | Automation (wichtigste Messung) | **83 303 Punkte, nie mehr als EIN Punkt je Block, alle bei Offset 0**, `samplegenau_belegt: false`. Blockgrößen **1 … 4 096** Samples: FL zerteilt die Puffer an den Automationspunkten (≈ 180–190 Samples je Block bei 140 bpm ≈ 1 Tick), statt Punkte mit Offsets in die VST3-Queue zu legen |
-| Smart Disable | **keine Lücke** — 12 s und 30 s stumme Wiedergabe (Channel gemutet, Smart disable im Wrapper an): `zeitsprung_vor` nur durch meine Seeks, `block_ohne_verarbeitung` 0. Bedingung: Plugin-Fenster war offen |
+| Smart Disable | **keine Lücke** — 22 s und 39 s stumme Wiedergabe (Channel gemutet, Smart disable im Wrapper an): in beiden Fenstern (Ereignisse 61–66, 88–96) kein `zeitsprung_vor`, Wrap-Kadenz regelmäßig (3 003 / 2 833 Blöcke). `block_ohne_verarbeitung` zählt nur Brücken-Asymmetrie und ist KEIN Beleg. Bedingung: Plugin-Fenster war offen |
 | Export (Render) | `offline_an`/`offline_aus` je 1, **2 587 Offline-Blöcke**, Projektzeit läuft im Render kontinuierlich (Stop bei 510 300) |
 | float / double | **nur float** (259 298 / 0) |
-| Presentation-Latency je Bus | **gemeldet**: Eingang Bus 0 = **3 924**, Ausgang Bus 0 = **4 410** Samples (= 100 ms); `verworfene_wertwechsel` 1 — ein späterer anderer Wert wurde von der Probe verworfen, welcher, steht nicht im Bericht (Befund für den Report) |
+| Presentation-Latency je Bus | **gemeldet**: Eingang Bus 0 = **3 924** (89 ms), Ausgang Bus 0 = **4 410** Samples (100 ms); `verworfene_wertwechsel` 1 — ein späterer anderer Wert wurde verworfen, welcher, steht nicht im Bericht (NAK-43). Gemeldet ≠ Golden: kein Impuls verbindet die Werte mit einem gemessenen Versatz ⇒ Bit `unsupported` |
 
 Nebenbefunde: Play nach Pause setzte 69 Samples **vor** der Pauseposition wieder
-ein (Ereignis 13: 84 922 → 84 853); der FL-MCP setzt Positionen nur im Modus 1
-(Millisekunden) brauchbar — Modus 2 („Sekunden") landet nahe am Songanfang,
-daher war die erste Sprungrunde rein rückwärts.
+ein (Ereignis 13: 84 922 → 84 853); `fl_set_song_position`: Modus 2 ist **absolute
+Ticks** (meine Werte 10/2/8 landeten exakt auf 1 969/394/1 575 Samples = 10/2/8 Ticks
+à 196,875 Samples), Modus 1 ist **Sekunden** (9000/2000/10000 modulo Songlänge) — die
+MCP-Beschreibung (1 = ms, 2 = s) ist falsch; daher war die erste Sprungrunde rein
+rückwärts und die Nachmessung nur per Modulo-Zufall brauchbar.
 
 Capability-Folge (S4, `docs/beweise/SONDE-004.md`): `host_context_presence`
 und `project_time_samples` supported · `sample_accurate_automation`
 **unsupported** (Fallback Blockrampe — passt zu FLs Puffer-Zerteilung) ·
-`presentation_latency` gemeldet · `float64_processing` unsupported.
+`presentation_latency` **unsupported** (gemeldet, aber ohne Impulsgolden je Bus) ·
+`float64_processing` unsupported.
 
 Rohdaten: die zwei JSON-Dateien in diesem Ordner (unverändert kopiert); der
 zweite Bericht ist der vollständige (die Probe sammelt seit dem Laden).

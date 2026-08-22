@@ -6,25 +6,26 @@
     "name": "FruityLoops",
     "wrapper": "VST3",
     "samplerate_hz": 44100.0,
+    "fl_version_termin_b": "FL Studio 2026 26.1.4.5589 (laufender FL64.exe-Prozess, Get-Process waehrend der Messung 22.08. 13:xx)",
+    "fl_version_termin_a": "nicht protokolliert - auf dem Rechner sind 25.2.5.5319 und 26.1.4.5589 installiert (NAK-44)",
+    "juce_version": "8.0.9 (eq-copilot/CMakeLists.txt GIT_TAG; gepatchter Wrapper, SONDE-003)",
+    "messgeraete": "EqCopHostProbe 0.1.0 (moduleinfo.json des installierten Bundles), EqCopAuxSpike (SONDE-004a)",
     "quelle": "host-probe-20260822-132644.json `host`/`wrapper`/`bloecke.samplerate`; aux-spike-*.json `host`/`wrapper`/`samplerate`"
   },
-
   "was_das_ist": "Entwurf §53.6: 'Capabilities sind maschinenlesbare Tatsachen aus Build UND laufendem Host. Ein Capabilitybit wird nur nach seinem Golden gesetzt.' Diese Datei traegt die zehn Bits des Vertrags fuer FL Studio, jedes mit dem Rohfeld, aus dem es gelesen wurde. §54 Exit-Gate: 'Kein unknown, spaeter pruefen darf P1 passieren' - deshalb gibt es nur supported|unsupported; was kein Geraet gemessen hat, ist unsupported mit seinem festen Fallback.",
   "regel": "Ein Bit aendert sich nur mit einer neuen Messung (Datei in docs/beweise/termin-*/), nie mit einer Versionsnummer (§53.6 letzter Satz). Die `capabilities` hier sind genau das Objekt aus schemas/v3/eq-ipc-v3.schema.json $defs/capabilities - pruefe_host_capabilities.py validiert es dagegen.",
-
   "capabilities": {
     "host_context_presence": "supported",
     "project_time_samples": "supported",
     "sample_accurate_automation": "unsupported",
-    "presentation_latency": "supported",
+    "presentation_latency": "unsupported",
     "aux_compare_pre": "supported",
-    "aux_priority_sidechain": "supported",
+    "aux_priority_sidechain": "unsupported",
     "contribution_aux": "unsupported",
     "float64_processing": "unsupported",
     "binary_telemetry": "unsupported",
     "remote_control": "unsupported"
   },
-
   "belege": {
     "host_context_presence": {
       "beweis_nach_53_6": "Wrapperfixture unterscheidet fehlenden/vorhandenen Context",
@@ -50,23 +51,26 @@
     },
     "presentation_latency": {
       "beweis_nach_53_6": "Bus-spezifisches Impulsgolden",
-      "termin": "A + B",
+      "termin": "B (Meldung), A (Impuls ohne Bezug)",
       "rohfeld": "B: presentation_latency.je_gemeldet = true, gemeldet = [eingang Bus 0 = 3924, ausgang Bus 0 = 4410], verworfene_wertwechsel = 1. A: busse[1].versatz_zu_main_samples = 0 und busse[2].versatz_zu_main_samples = 0 in beiden Laeufen (001701, 002722)",
       "datei": "docs/beweise/termin-b/host-probe-20260822-132644.json; docs/beweise/termin-a/aux-spike-20260822-001701.json, -002722.json",
-      "zusatz": "FL meldet die Praesentationslatenz je Richtung (Eingang 3924, Ausgang 4410 Samples = 100 ms); der Impulsbeweis zeigt Aux-Wege ohne Versatz zum Hauptweg. Offen (NAK-43): EIN spaeterer Wertwechsel wurde von der Probe verworfen und nicht protokolliert - welcher Wert, ist unbekannt."
+      "fallback_nach_53_6": "keine subtraktive Cross-Probe-Ausrichtung",
+      "zusatz": "FL MELDET eine Praesentationslatenz je Richtung (Eingang 3924 = 89 ms, Ausgang 4410 = 100 ms) - aber kein Impulsgolden verbindet diese Werte mit einem gemessenen Versatz, der Aux-Spike liest keine Presentation-Latency, und ein spaeterer Wertwechsel wurde ohne Protokoll verworfen (NAK-43). Das Golden aus §53.6 ist damit nicht erbracht; §54 verbietet ein 'gemeldet, spaeter pruefen' unter dem Etikett supported (T2-Befund SONDE-004). Unsupported, bis ein Impulsgolden je Bus den gemeldeten Wert bestaetigt."
     },
     "aux_compare_pre": {
       "beweis_nach_53_6": "getrenntes, recallstabiles FL-Auxlayout",
       "termin": "A",
       "rohfeld": "busse[2] (compare_pre): aktiv = true, kanaele = 2, protokoll_eingehalten = true, versatz_zu_main_samples = 0, versatz_zu_main_ms = 0.0 - in 001701 (vor Speichern) UND 002722 (nach Schliessen + Neuladen)",
       "datei": "docs/beweise/termin-a/aux-spike-20260822-001701.json, -002722.json",
-      "zusatz": "Aufbau als 'Sidechain to this track' (docs/beweise/termin-a/LIES-MICH.md)"
+      "zusatz": "Aufbau als 'Sidechain to this track' (docs/beweise/termin-a/LIES-MICH.md). Recall-Aussage genau: Layout (zwei benannte Busse aktiv, je ein Impuls 0,90 ohne Summierung) und Versatz 0 ueberleben Speichern/Schliessen/Neuladen; zwischen den Laeufen wurde das Routing von Mixroute auf Sidechain-only umgebaut (Main-Spitze 2,70 -> 0,90). Bus-Identitaet (welche Quelle auf welchem Aux) und L/R-Reihenfolge sind mit den Daten NICHT unterscheidbar - dieselbe Impulsdatei (L = R) lag auf allen drei Spuren (NAK-44)."
     },
     "aux_priority_sidechain": {
       "beweis_nach_53_6": "PDC-synchroner echter Sidechain",
-      "termin": "A",
+      "termin": "A (ohne PDC-Last)",
       "rohfeld": "busse[1] (priority_sidechain): aktiv = true, kanaele = 2, protokoll_eingehalten = true, versatz_zu_main_samples = 0, versatz_zu_main_ms = 0.0 - in beiden Laeufen",
-      "datei": "docs/beweise/termin-a/aux-spike-20260822-001701.json, -002722.json"
+      "datei": "docs/beweise/termin-a/aux-spike-20260822-001701.json, -002722.json",
+      "fallback_nach_53_6": "keine dynamische Aktuation",
+      "zusatz": "Gemessen ist ein getrennter, echter Sidechain-Weg mit Versatz 0 zum Hauptweg, recall-stabil. NICHT gemessen ist 'PDC-synchron': in Termin A hatte kein Plugin auf irgendeinem Weg Latenz (AuxSpikeProcessor meldet 0, keine latenzbehafteten Plugins im Aufbau) - FLs PDC hatte nichts zu kompensieren, genau der Fall aus §32.2 ('moegliche Fehlreihenfolgen bei latenzbehafteten Instanzen') blieb unbelegt. Unsupported, bis Termin A2 (NAK-44) den Sidechain-Weg mit einem latenzmeldenden Plugin auf der Quellspur misst."
     },
     "contribution_aux": {
       "beweis_nach_53_6": "diskrete, post-fader, nicht doppelte Beitraege",
@@ -95,20 +99,25 @@
       "fallback_nach_53_6": "Active nur lokal bedienbar"
     }
   },
-
   "gemessene_hosttatsachen": {
     "blockgroesse_min_samples": 1,
     "blockgroesse_max_samples": 4096,
-    "automation_bloecke_je_loop_12_23_s": "2833-3003 (=> ~180-190 Samples je Block waehrend dichter Automation)",
-    "smart_disable": "keine Luecke in 12 s und 30 s stummer Wiedergabe bei eingeschaltetem Smart disable und OFFENEM Plugin-Fenster (block_ohne_verarbeitung = 0, kein zusaetzlicher zeitsprung_vor); ob FL bei geschlossenem Fenster pausiert, ist nicht gemessen",
+    "tempo_bpm": 140.0,
+    "samples_je_tick": "196.875 (44100 * 60 / 140 / 96)",
+    "song_loop_vor_export": "539634-539635 Samples (12,24 s, 7,14 Takte; schleife_an zusatz 28.6 Beats), ~3003 Bloecke je Wrap => ~180 Samples je Block waehrend dichter Automation",
+    "song_loop_nach_export": "509119 Samples (11,54 s; Bereich 1181..510300, schleife_an zusatz 27.0), ~2833 Bloecke je Wrap",
+    "pattern_loop": "173250 Samples (9,2 Beats), 963-965 Bloecke je Wrap",
+    "smart_disable": "keine Luecke in zwei stummen Wiedergabefenstern (22 s ab 13:02:45, 39 s ab 13:11:35; Smart disable im Wrapper an, Plugin-Fenster OFFEN): in beiden Fenstern kein zeitsprung_vor, Wrap-Kadenz regelmaessig (2833/2833/2832/2834 bzw. 3003). `block_ohne_verarbeitung` zaehlt nur Bruecken-Asymmetrie und belegt das NICHT (T2-Befund). Ob FL bei geschlossenem Fenster pausiert, ist nicht gemessen",
     "render": "offline_an/offline_aus je 1, 2587 Offline-Bloecke, Projektzeit im Render kontinuierlich, Transport-Ereignisse wie live",
     "play_nach_pause": "setzte einmal 69 Samples VOR der Pauseposition wieder ein (Ereignis 13: 84922 -> 84853)",
-    "kontext_im_stand": "Kontext und Projektzeit 0 bereits im ersten Block, ohne Transport"
+    "kontext_im_stand": "Kontext und Projektzeit 0 bereits im ersten Block, ohne Transport",
+    "seeks": "waehrend der Wiedergabe in beide Richtungen als zeitsprung gemeldet: Ereignisse 38/40/41 (Ticks 10/2/8 -> 1969/394/1575 Samples, rueckwaerts), 79/82 (+49901/+65960 vorwaerts), 84 (-38559 rueckwaerts)"
   },
-
   "offen": [
-    "NAK-43: presentation_latency - ein verworfener Wertwechsel ohne Protokoll (Probe haelt den ersten Wert); vor SONDE-009 die Probe um die Werthistorie erweitern oder den Fall in FL reproduzieren.",
-    "contribution_aux bleibt ungemessen, bis ein Geraet die Main-Aux-Busse misst.",
+    "NAK-43: presentation_latency - ein verworfener Wertwechsel ohne Protokoll; die Probe um eine Werthistorie erweitern und ein Impulsgolden je Bus fahren - erst dann kann das Bit supported werden.",
+    "NAK-44: Termin A2 - Sidechain-Weg mit latenzmeldendem Plugin auf der Quellspur (PDC-Golden fuer aux_priority_sidechain), je Spur ein anderer Impulszeitpunkt und L-only/R-only (Bus-Identitaet, Kanalreihenfolge), FL-Version protokollieren.",
+    "contribution_aux bleibt ungemessen, bis ein Geraet die Main-Aux-Busse misst (Termin A hat 'diskret' und 'nicht doppelt' teilweise gezeigt - Spitze 2,70 Mixroute vs. 0,90 Sidechain-only -, 'post-fader' nicht).",
     "Legacy-.flp-Fixture (SONDE-002, Klickliste B Teil 3) ist nicht angelegt."
-  ]
+  ],
+  "zusammenfassung": "3 supported (host_context_presence, project_time_samples, aux_compare_pre), 7 unsupported - davon 2 nach T2-Runde 1 herabgestuft (presentation_latency, aux_priority_sidechain: Golden nicht erbracht), 2 ungemessen (contribution_aux, ... siehe belege) und 3 ohne Hostbit bis zu ihren Tickets."
 }

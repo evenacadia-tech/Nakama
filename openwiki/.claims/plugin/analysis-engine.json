@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:9ae6b0987fc8c75d75035e5eaf2daa3217117633a5d33ac65eccc72a2bdccb28",
+  "claims": [
+    {
+      "id": "claim_4289167482d8408aacd4c3c589e2559a",
+      "statement": "AnalyseEngine is a UI-independent single-writer subsystem owned by the processor worker; only copied snapshot acquisition is thread-safe.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/src/AnalyseEngine.h#L162-L189",
+          "version": "repo-lines-v1:sha256:9abeb3c957b6e7fa0e75e15e12aae9a92c036bd95a167a961a2e655af5226ef9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcyNTIyNDNkODY5NWVjY2ZhMDYyZWIxZTUxZTk5NzQzMmZhNDhmNzY2M2JhM2I1MWE4ODU0M2E4YmNlZDM1Y2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViY2U1OWNjYThiZmRiZmZkNWJmOWM1YmE0MGVjZWQwMDY5Zjg3YjkyYjJmYzE1Y2Y1OTJlMDc2YjRlMzUzODkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY2ZWZkZmIzMjE0ZDlmOTgxMjRkMzVmZmY3NmY1MjdlYmU1YTA0YmFkNWIyMjkxODMyZmMwMjRmMDY0NTViMTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk2YmYxNzFjMzFiNDQ0ODEyYjc0MjkzNmU3MmIwYTlhZGYzNzNiNDFhZDM3ZDQ3NjQwMDNmMTRhYzZiNGU0MzkifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L279-L330",
+          "version": "repo-lines-v1:sha256:ad3153af87a420db18e89a0b5f1017b2d688368a9ca18045e33ebd843eb45b1b:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwMjE3ZTUwYTVhM2QyNTYzYzA1OTg1MGZjN2I2MDBlZGRjMmY0OWYyN2IwZjQ0MDdmNDI0ZjI3Y2NjNDZiM2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQyZjI0YmZhZmEzNDM3MjczYjU3ODMzN2MzZGUzNWIyODY5NjNhZWVjN2QwNDk2YWFlNjQ1YmM4NDE5MjE4ZTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRmYzYxNGIzMDEwMzEyZmQwMDE5Njc2MzFlMWYyYjY0Mjk1ZjZiZTkwYzQ5YjdmMDg1MzQ2MjhhOGJmNzBjN2MifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_326151b0c6aa43bf89ac3e2dec9ccaf8",
+      "statement": "MessSnapshot is the versioned immutable publication surface for readiness, timing, loudness, spectral, stereo, resonance, zone, convergence, revision, and non-finite metrics.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/src/AnalyseEngine.h#L44-L64",
+          "version": "repo-lines-v1:sha256:4854ea7041973292213ddde2ffcc857b1cdbab6eed46329e136e8a58be4b931d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAzOGM0YzFlMzI3ZDFhOTJiMDI5ZmVmZTIyMzBmYjJhNTQyOWZjMzJjZWQ5Y2JiYmJhNjQ1ZDk4MDg5YjM2OTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAzYTNiNDQ1YjMyMmZjZGJhNThhZWM2NWEyYjEzNTA1MWE5ZjU4OGQ1YjMwM2Q5ZWM3YTcxMzNlZDNlOWY1MDAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4MjBjMTdiMjBhMWM5ZjhmY2I1NTQwYTQ1N2M1NTVmZjE3OTE3MjMwNDc0ZDAwNDgwMzVjZGMxYTE4YmZlMDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5MDJiZGMzZjFhYzMyODEyODY2ZDQ0OTNjYjgwNzcxODFmMjMxNDQ4YWIxMTYwYTk5ZmVmZTE5ZGIzY2E0Y2IifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/src/AnalyseEngine.h#L86-L160",
+          "version": "repo-lines-v1:sha256:38968e9f868c994d1bab05186ce9436bc2c4cbe17066eb36a7bcb64c5c40bf78:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3NmQ0MmE2Yjc3YmUyMDRhNmI3YmU3Mjg2ZTg0ZmYwNWIyYmE4YzdiZjhlNDE5NjJlY2U2YzBkYjdkMjM4M2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhMWQxYTYzMzkwMjI5Yzc5ODM0N2U4M2EwNDA1NDQxYzk0MDAwMzUyODRhZDE2OGMxYmY2Y2RmMWQ3MGEzNzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUxMWVhZDc5Y2E1ZDBhZmQ2ZWFhNDdlYTVmNDc3M2UwYzU2OTQxNDhlN2RiYTNiODc0ZDI2YTIyYjEwYThlZmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcwYzM2NGRhYjUwZWFiNGJlYmNkZDYzZjk3ZDNkNzkyOTU2YWI1ZDNkYTI4M2QwYTFjZDE0NGFlNTMxOWM3MTcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_932cd4883e25450b96ee609d6d24b2cf",
+      "statement": "Preparation builds four Welch resolutions and limits reportable LTAS bands to centers at or below min(18 kHz, 0.95 times Nyquist); a sample-rate change resets accumulated analysis.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/src/AnalyseEngine.cpp#L169-L212",
+          "version": "repo-lines-v1:sha256:170f27fc8ebbdecc1154f276ef7e97cd6f057cfcb9feb197f630c4baaf225f80:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFlN2JlNWZiNzJjYzU3ZWNhYTU3ZmIwODFiNTA1ZTc0YTViY2U3MTNlMDFhMDIxODJkNWNiYWQ3MGVhMDcxMTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxMjA3ZTY4MWMzZDFiNWZhODk1MDIwYTk3MDU3YzkyZWMxZWNmZTdhZjRjNDQwMmUzMzcwMWNhMzI0YjcyNTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlmMGY0OTBlZTRiZWE0NjI5ZTRkNzY5MmJjNzgzODczNjExZDgyZTc3NWFjZjZlMjNhMTBmNTMzNTczMzcyNWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRlMTYyZjRlMWI5NjFiNDg3ZGNjZGM3ZGJhMjgxYWViYjAxM2JlZjY3N2RlZTk5Njg1NmQyYjgwODc4MDM2ZmUifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/src/AnalyseEngine.cpp#L288-L350",
+          "version": "repo-lines-v1:sha256:f4643049328256e7c4dc043ec5d44c3ed37c7060e54f194281a0dad6957bb4dd:eyJzZWxlY3RlZExpbmVDb3VudCI6NjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3YjQ2NTJlODBlZWI0MDRlYWJiYmUwMWRhODQxNDUxYzQzYjQ4YzczZTlhZmRkODZiZWMzZmU1ODZkNzU0MjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU0NTIyNDlmMWViZGRmYjNiN2EyOTU3ZDFjYzQzNTgyZDcxNDljMGM4ZDQ5MjZjNjJlZDg0NjI1ZDU2YTA2MGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ4MzU3ODI3MjY0M2VjMDIzYzMyOGJiNWQ5YjAyYzNlNThiY2JkZWIxNmQyMTI2M2ViMGFkOWM2MGIyY2VhMmQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_dd496a0cc2b640ae8aeab3357e1d6448",
+      "statement": "Ingestion zeroes and counts non-finite analysis samples, accumulates loudness and stereo energy, and advances zone persistence only in one-second intervals of active audio.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/src/AnalyseEngine.cpp#L353-L415",
+          "version": "repo-lines-v1:sha256:47e535b35563f3aee3cd970ba9afb6c3eae47ed799a14ba4fc53ba0b21244efc:eyJzZWxlY3RlZExpbmVDb3VudCI6NjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0MmJmNWRjN2U5YThhNDI3MzMxNjkyYTM1NjY4ZjM4OWExYWQ3YjBlZjBiZTg3Y2ZiMzUzZWZmNDRhMzY0ODIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1MjJjNDJjZDE5YzZkMDNkODA4YzQ1MjcyMDU1MjgyNWI3ZWExYzViNDkxYjIxODUxMWNhYzc0MTVjZjlkOWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ2YTM4YzViOGI3MWFjYTYyMzYyNmU3MWMzM2JkZWI3YWUwMjhiYWUyNzE2NGJhMmZjOGViYTI4MGRmZmY0MTcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_eb786e43176c4c93bd8dc1a2f6571c68",
+      "statement": "LTAS gap interpolation occurs in linear power before conversion to decibels, while bands above the Nyquist cap remain invalid instead of receiving propagated edge values.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/src/AnalyseEngine.cpp#L610-L690",
+          "version": "repo-lines-v1:sha256:2e6cb39288643394782fd5af61bebc60e7141291fd1fbe7eb48949267a3f78ab:eyJzZWxlY3RlZExpbmVDb3VudCI6ODEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIxOGFhOTQ4MDcyMzc0Y2E3MjczYjBiYzViNzM3MWU0MWUzYThhYjA3MWZmZWUyZjBmNjY4Mzk3N2IzYTg5YTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyMjZjMGIwYzA2ZDFiOGUwNWE4ZDNhMjRhZDlmMDAwNjMyYzdhZmMwOGI5N2E0M2U4NTVlY2RhMzQ3MjMxNDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA4ZDYzYTdjNmI0Mzc1ZjgxMjQzNTA4NDA1M2MzZDhlMWVmMTdhYTUwMDExYWFkODlhZGRjNzE1ZDJiNWVkODgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6c114f22614d44fe95a5bec2f98c727b",
+      "statement": "Measurement is not ready until 15 seconds of active audio; light publication occurs only after new samples, while heavy evaluation publishes a new coherent snapshot revision.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/src/AnalyseEngine.cpp#L751-L810",
+          "version": "repo-lines-v1:sha256:b39ab575556c6c69b68db8cc25e6261632d2bb8942bd38d43509e64fdc739a8b:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUwNzZiMjk0YTVkYzkwMjk5NTEwNDc4OTRlNDRiMTRkNmEyNjRhODQ2ZTQ0Mjg2NzBkMjg3YzU0OGE2YzJlMTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNmZWFjMmExOGNlZWRlNTdlMTgxN2ZhNGU0MGE4YTIwODgzZTRjOGUzMTYzNmVjMDU4YzhjNGNlMWNmODVjNWUifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/src/AnalyseEngine.cpp#L1060-L1138",
+          "version": "repo-lines-v1:sha256:698f5faad377eb053b4438055e18c05646cf3e4a98c9d36b68df2b86d3501681:eyJzZWxlY3RlZExpbmVDb3VudCI6NzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUwZjA2ZmNhYWNlNjY2ODk5MTdmMmFjMjU1ZGE0YzAwYmE3YzQ3N2ZjYjhiMjFiYTMwNTlhZWQ4N2QxMDFhZDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1OWY4OWMzNDY3ZWY5ZjNhZDA0YWQxYzc5NzYwMGE2MmNiOTViYWIzMTI0ZmMwNDIyZTk3NWE2NmM4NTQzOWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRiNDkxOWY0YjUwNjcwZjdhNWMzNWFmZjQ5N2M4MWY1OGFjZmM5NDk1YmEzNDllNTk0M2U2NDk1ODc4MTc3ZGIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_2051f7a4bb3c4c06a9c1e46826c809a2",
+      "statement": "Resonance candidates require ready valid LTAS, local excess, bounded width, persistence, and reliable coverage, and the engine publishes at most six candidates.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/src/AnalyseEngine.cpp#L977-L1057",
+          "version": "repo-lines-v1:sha256:f43c8eb54d0aa52f472303ecd4ae7f07908941156a27a84c7737e175a3d8a4ea:eyJzZWxlY3RlZExpbmVDb3VudCI6ODEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzMmQwNzQ1ZmMxYmYxMWE2ZDY1Y2U0MDczYTc3ZDE5ZGQ5M2E3MDIyYWJkZjBiNGQyMzg4MzgxN2Q3YTI3YTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRjZWNhOGYzZjY0NzZlNWM4ZDc3OGE1OTE1ODg3MzZkNTRkYzg5YTVlZGM0YzFhNTQ5MGMzNjY2NGQ5ZjQxOTgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_1d9d53ed1d874bf98c57e18748d1b8cd",
+      "statement": "Diagnosis returns no findings before measurement readiness, limits resonance cards to the two strongest, applies stable priority, and marks at most three non-low-confidence findings as top-ranked.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/src/Diagnose.cpp#L346-L370",
+          "version": "repo-lines-v1:sha256:91c99f557420618e0aeb40319b63fc0ce2eb6b12c2afc3a157788e395117edc3:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3ZmM1YTZhNjVhZGE5NGQzZTkwMjI0ODdjMmY4MDdjODU2MGExNzdhODg2NjQ3ZWQyNmE5NGQ0MjhhM2Y2NTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI3MmI1NDhiZDEzODllZDAyOGE3ZGRlNmEyZGJlNGQ5OWMyMjBkNGY2NDI5Zjc4NjI4NWEwNjBlOWVkMDI4ZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg4YjZkOWQzMjEyMjI4MmViMDQyODA4NTY1MWQ4YzJlOThkMGJkNmRmZDY3OWUzNDZmNTlhMmQ3YzQwYjc1NzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI5ODM1YzUwZmVkZmMwOWMyOGU3NmIwM2JiMTAzOWMwYTE2Y2U1YmI4Y2UyMzQ5ZjU3ZDQxYWI3NTVhMjMxY2IifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/src/Diagnose.cpp#L485-L507",
+          "version": "repo-lines-v1:sha256:67ecc7202cd1c5a3eafce475bd4bd5706a2ad4469b97507dfa1eabad126c1b1d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0YWRiODY3ODY5OWU4NjFhYTA4MWYzYjFjMDczMDUzOTU5OTk5ZGU3NGFjNDViZDQxYzU0YzJlNTY2NWVjYmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlhMTRmYmY3OWUyMTg5NWQwNWUzMzk5M2VmZTYyNDI4OTIyNjIyMDk5YWM2Zjk2ZjhhMDM5Yzg0MWY0MmJiMDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk0NzRjMGJlYzZiMjUyZGJhYjZjMWY4YmIwMzYwNTY5YzlkMTM5YTgwODZlMDlmYTgwMTYzNGMwNmNmMmY1OGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRkZmQ4ZGMwMjZmMDBhZTdmNmJkMmY3NWJiNmI4OWE4MTgzN2Q5ZGM4YWViMmViMmYwZWIxZGM0MWVjNmFjZjAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f5cfacd1006641a9a979883b03360059",
+      "statement": "Golden tests exercise deterministic signal anchors, false positives, Nyquist invalidation, non-finite replacement counts, zone behavior, revision publication, and idle non-publication, but do not prove every signal or sample rate.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/tests/GoldenTestMain.cpp#L460-L520",
+          "version": "repo-lines-v1:sha256:07186feeaf797efb777fffcc955d82f9f3af4247943bca1728ebde27157b2e4c:eyJzZWxlY3RlZExpbmVDb3VudCI6NjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwNzMxN2JhOTcwMzZjMzc0NzQ1MmExOWY5NjAwYTMzOWZlN2ViOWU2OGZiMTM0OGU4ZDE2YmQyZjdkYjFlOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjNjQ3OWNjMjMwNDQwZmQ0MWU4MjI0MjE4Njc5Njk4NTU5ZDI4OTNiZDY3YjQzODBhZmFiODExYjM4YTU1YWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ0NmNhOGQwMTIwZWQ2MTI2NjU2MTMxODcyYzA5Njc2MjQ2YWM4OGQyZTZhNDUwZDc4MmQxYmM1ODhmYWE1M2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJhY2I4ZmU3MDZjOGYwOGM4N2E0YTIyOTIzNjMzNzRlYzdhMzVkZWViYWIyZGNhYjczMjBhZDJiZDQxNzkyYjkifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/tests/GoldenTestMain.cpp#L722-L827",
+          "version": "repo-lines-v1:sha256:fdb5208187d82e705e3041ba81c22d42125c599c67924a0f6705308acdb87a1d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlZDViNWUxODhiYTEzYTNhOTNlMWFhMTg4ZThjMWU1MTdlMGMyMTg0ODNjNTI2YjBhZTAzM2Q5YTliY2I5ZDRjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0NjEwYTRjYTMxM2ZmODIwMTA4NjM3NWM0MjRkYjJjNGU4ZTRiOTlhOGRmNWZjMmIyMDQ3OTljODQ5NTliYjVmIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlNDUzYjZhNjZkODFhNjU3ZTFhNWIwY2ZmZjkxYmQ1OWFkMDNhMjgyY2FiNDFhNmY5NTc5NzAyZTYzNDMxYWI3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhNjMwZWJlNjg3NWMyODgyOTdlNzhhZGJlODAwN2U3ZGQwNmNmNjAzNjM3MjdlMDNiMjJhYzc4N2IzY2M4ZjZiIn0"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.3.3",
+    "at": "2026-08-22T15:50:39.855Z"
+  }
+}

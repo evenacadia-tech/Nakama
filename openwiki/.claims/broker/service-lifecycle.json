@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:ccf8322ff349bcfbd5a3a2d7ade8d61b66e1a607e119b0a16b6bb0ff0e469f86",
+  "claims": [
+    {
+      "id": "claim_e654fde9675a45a69d863e7484de4545",
+      "statement": "The standalone eqcop-broker binary accepts only optional --bindungen path selection, defaults that path below APPDATA when available, and hands the selected path to the broker library.",
+      "evidence": [
+        {
+          "resource": "repo://broker/Cargo.toml#L1-L9",
+          "version": "repo-lines-v1:sha256:825309219cf355831870c3f18d28ca708b1672624d37220bc62efe39f35b5884:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGEzY2Q1YTgxYjNmOWE2MjFhYTQ5M2Q5MGM0NWY0MmFiNTcxZDRlNDJiOGFlNWFmZjM1MWNiMGEwMmQwNmQ4MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjIxODdlZGY1MDA4ZDI4ZGExNDNkODAyMjMyOWI0OTVmN2EwNDQzYWYwOGE1YTc3MzE2MjQ2NTMzMGM4YmJkMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZThmNmZjZTIyNWFlYjcxZjA5ZTIyN2I3ZjdiYjJlMGZjMDA0NGE1YTlhMDU1YzRkZmQzNWIzMzVkZTUwZTcwZCJ9"
+        },
+        {
+          "resource": "repo://broker/src/main.rs#L1-L25",
+          "version": "repo-lines-v1:sha256:833625205e83ed1eaa89c0d291cf45bab89d11339ff12fbf956a4ce0de8fd70e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA0Zjk2YzNlOTE1MWJkZDMwZDEwMjViZGIyYjQ3ZWI0YjFmYmYxYTVmMGNlYTA2NjY0ZDI4ZjM5NTNkNDI4NzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwMGEwZWI4MDI3ZTJkNmYyZTRkMGFkODAyMzI1NDdlNDYyNDM0NDcwMDY3NmJiMjU3MTYzOWEzMzM3ZDJlNjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk4OGQ1M2UyNGJhN2Q3MzlmZDUyNDNjODJiOWQ5NDQ3ZGIxYWVmODNhNzUzMjUxZGM1ZjIzOTJmYmRiYThkM2QifQ"
+        },
+        {
+          "resource": "repo://broker/src/main.rs#L42-L57",
+          "version": "repo-lines-v1:sha256:387ff30ee19b5839b22e0997d6190ce0aa9c618fda2a59d3eaa2f0f051aa9157:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwOWUxOTdiZmFkOTA1YWVlNTk5MGI3ZTY0YzIyYTFhNjg5YjVkZTgyMjY1NTY4NWJjMjMxZTBhMDNmZGVhZTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBhZWE2OTg0MzdjNWFjZmQ3NjMzMjA0ZWY0NzM0NDE1NjIxMzdlNzllMzNhOGVjMzJjMGI1M2NkNzI4YjVjODAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJmM2UzN2Y2NzljZDY2NzAyYjcxZjNmOThkN2IyYjYyZTAwMGEzM2FkYjQ4OTE1NDdjNjZhOTJkNDEyNGIxNzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNhYzAzMjg5YWEwMTg1NmI4YTQ4ODUxMWFiZmY3OGJiOTA4NTQ2NzliMGRjMjI4NDBmNDA4OTBhODY2NTI0MzYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_cb19f5ab19e348e59f258f959980517b",
+      "statement": "Missing --bindungen values or unknown CLI arguments exit with code 2; failure to create the selected parent directory is only a warning and does not prevent startup handoff.",
+      "evidence": [
+        {
+          "resource": "repo://broker/src/main.rs#L23-L49",
+          "version": "repo-lines-v1:sha256:ceeeee48f00c7dcd1385428d8852792bfc565db65659ada032ffcf1849bfbfd9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwYjllZWU5MWJjMGIxYTc3YjVmMjI0ZmQ2OTQ1ZjNkZWMyMzRlNTU5NmI5NDc1YzkwYzVhZWM5ZTZhZTIwYjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5MzBjYmI2NzcyOGVhNzFiODZmODZhZjJjYzc2ZWY5Y2MwNGExZmViMGFjZTA4Y2Q3YThjYmMxNWQxMDRjODUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNjNjNGQxYWY4Y2Q4OWJiMGJkZDc2NTdmZmNiZjY4MDZhNjEwZDc5ZDZjOGQ0YzMwN2MyNDFkZjM5MDA1MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlmNDgwOWFmM2ZjZWI3ODc4YjkxOTRkOGU3Y2FjNTZmMWRlZmVhNDIyZDkwNGViN2YyNGZkYmUxZWUyM2ZhNWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_617d123cb10840cea355293c5bf5d3d2",
+      "statement": "Successful startup prints the pipe and persistence mode and keeps the process alive, while library startup failure exits with code 1.",
+      "evidence": [
+        {
+          "resource": "repo://broker/src/main.rs#L49-L67",
+          "version": "repo-lines-v1:sha256:20e606398b9334071237fbd6455a2520542ad3d74a66317725d4ebdc83b4e568:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5MzBjYmI2NzcyOGVhNzFiODZmODZhZjJjYzc2ZWY5Y2MwNGExZmViMGFjZTA4Y2Q3YThjYmMxNWQxMDRjODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJmM2UzN2Y2NzljZDY2NzAyYjcxZjNmOThkN2IyYjYyZTAwMGEzM2FkYjQ4OTE1NDdjNjZhOTJkNDEyNGIxNzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e83affe739624dfd9434154a0c2659f4",
+      "statement": "Broker startup is process-global and cached in a OnceLock, so the first success or failure is reused instead of retrying with a different path; non-Windows builds return an explicit unsupported error.",
+      "evidence": [
+        {
+          "resource": "repo://broker/src/lib.rs#L476-L520",
+          "version": "repo-lines-v1:sha256:bfea86deff9a2e3642d5adb23c44c14febd1dda62f6d793348fa335c6a6289fa:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5NGUzY2Q0NWU5ZmJmYTMwNTM3NWZkMzUzZWExZDkyYjA0YWVkNTk5NmJhNjZhZDQyN2QzNGUzYWNlY2JiMTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkYjhkMWRjMTdlMWZhYTllOTkyNjYzNWVkNTcwY2IyNTNkMDZiOTNlYjU5Y2EzYjYyYWM2Mjg2ZmMwZGJkNjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM1YjU3NTk4N2QxMDIwM2IzYmI5ZGY3ZTI4NWU1OWM0ZDVlNjNhZjBmMDIzNDVlMmEwYTU4OTU3ZTQ0MzRlNDgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a41f178112994c29bb38175e75a76705",
+      "statement": "The server creates a current-user-only Windows named pipe, rejects remote clients, and makes a second broker on the production pipe fail visibly.",
+      "evidence": [
+        {
+          "resource": "repo://broker/src/server.rs#L91-L181",
+          "version": "repo-lines-v1:sha256:8874d7e9f436ed67bb98c55d83a551b65c8869bddf788a9b131b670664535be8:eyJzZWxlY3RlZExpbmVDb3VudCI6OTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmNzUwMmM2OGE1MWI3YzA3YmFhMWJmZDMwYjIwZWIwNjIxMjc2OTE4OGEzNGQyYWJiODkxYjQ4NWY4NTg3NzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNkNGFhNmE3Y2QyZWVmY2EyYTAwMjk1NDk1ZTM1Yzc4YjkwNTE3NWVhMDk0ODllNjdjNzA2N2NmNDE0ZmNlZTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI0MGFkZDIwYzEwZTY3NjQyYTkyOGI1M2Y5NDhjOGNhN2M3Yjk4OWE1MDIzN2I5ZWI2MjI4NzhlMGExZGRmZjMifQ"
+        },
+        {
+          "resource": "repo://broker/src/server.rs#L209-L249",
+          "version": "repo-lines-v1:sha256:7bc7b3b5ebc6babccc2c29e584a246bab5ac5ef9e503b20af95a9e80f8f7b974:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3MjJmNmY2NzliYmFiY2RhNmViMjhiYzBjOGQxYWU4M2I4YmRiNTUxMzc3ZjhjZDhlZDBmODJkYTc3N2JlZWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5MDlhNTNhNjE4ZDAyOGUxZDMwMDBjMGE3YWJjZWVjYmU1ZmIzN2Y0ZTUxMWVmZTQ2NjQzZmFkNmU2Njg3MmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk1NjcxNjExYTZkZTc5OWUwYmQ4YzBlNzcwMDM0MzU5OTczOTQ4YTIzODJiM2U3MWNhYzE2NDE3MDcyOTUzNDAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_aeda88bfd1844663b09f72f87d13f97a",
+      "statement": "Each accepted connection must begin with hello, then processes heartbeats, repeated hello rebinding, bye, parse failures, and framing failures without terminating the broker process; connection close updates the register and disconnects the pipe.",
+      "evidence": [
+        {
+          "resource": "repo://broker/src/server.rs#L341-L475",
+          "version": "repo-lines-v1:sha256:7648fea77eeb625e1fdf8cd9218b99b895097463cb5ec3ed33b132075f91961e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTM1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJkZTE2NTBlYzM1NGQ3ODlkNzJkNWMwN2VjNmQwYjkwOGQzZjQzZmE4Mjk5ZDVhMjZiYjFhNTcwNzE2MWU3ODc5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJjMTU3ZmMwM2YzMDE0YmUwZDZhMDRkODY5NGVjYWZiNzQ5N2FhNGFmNDVkNDcyNjdhZWVhMDExZTBmZjQxYmM3IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMWJkNWFlMjg2MWVmMjdlNjViNmY5ZmI1ZTRhZmZkZjQ3NTdkOWFjNDJiM2VhNTc3ODJjNGU0MDQ5YTAxZmFjIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIxOWU3NjM1NWNmMTE5OTQ4MGMzZjk5ODM2YjE0ODZjODQxZDg5MWZhYWQ5MDRjNjA4ZTA5MzAyMmQzNzU3YWVlIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_6a85a98021aa470ca641d8d47e75bb21",
+      "statement": "Repository tests cover framing, handshake and server isolation, but no focused test proves CLI parsing, exit codes, default path selection, long-running process behavior, or OnceLock retry semantics.",
+      "evidence": [
+        {
+          "resource": "repo://broker/src/framing.rs#L79-L117",
+          "version": "repo-lines-v1:sha256:1856c829eb76e226db96cc37816927cce9350e2b1170613261656d9e2d20f8ec:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyYjVlZGY1OTQ5Y2ZlYTY3ODIyY2Y2OTExMzIzNjNkNjhkNmYxZTE2OWY1ZTBkNGY3YzE0ZTVmYTFlNmQ0ZTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZmYWE1NGQ4ODIwNTAzZGEwNDgwM2VlNWEyYjNlODhlMTM3NjAzZTRiZmE4YzNmN2Y1NTU0NzA3MjJkYTU1MDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        },
+        {
+          "resource": "repo://broker/src/server.rs#L588-L653",
+          "version": "repo-lines-v1:sha256:c37fc53f9c8f69598534c94bcc694873f5828e41161a41243a554aad2d6c2d8d:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyYjVlZGY1OTQ5Y2ZlYTY3ODIyY2Y2OTExMzIzNjNkNjhkNmYxZTE2OWY1ZTBkNGY3YzE0ZTVmYTFlNmQ0ZTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU2NWZjMDhhMDdkOTVmOGI0ZmUxYTkwMmZkYWQ1NTQ3Y2QzYjA4YjMxMzA0YmIzN2VkODU4OTM4ZmVlMjQ5MjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkyMjZjODRiZThmZjU1ZGQwYTdiODhiODAwNzVkODNjNTkxNDc5YTdhYzljMWVjNmI5NDRhMWMxOTgyOGM4OGUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_61f486eebb574f3bab0949e4e42a4db1",
+      "statement": "Binding-load and server-start failures remain visible in broker status while the owning application continues running.",
+      "evidence": [
+        {
+          "resource": "repo://broker/src/lib.rs#L476-L510",
+          "version": "repo-lines-v1:sha256:5217abdfd0ffef3cb4bcbf6337f5e9e2c3d1b7ef134c8fa32b1ab5752aba19e2:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5NGUzY2Q0NWU5ZmJmYTMwNTM3NWZkMzUzZWExZDkyYjA0YWVkNTk5NmJhNjZhZDQyN2QzNGUzYWNlY2JiMTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNkMmJiODRiM2ZlMzBiZGU0MjcxYjQzYjZiMjBmOTc1YTdhMWVmMGMwYzY2MTViMjNmMzIzNTQ1NTBiZGZlMGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkYjhkMWRjMTdlMWZhYTllOTkyNjYzNWVkNTcwY2IyNTNkMDZiOTNlYjU5Y2EzYjYyYWM2Mjg2ZmMwZGJkNjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY0NzEwYTAzNmY0OGUwMzFkODkwYTkyZDk3YmIxNWQzMzUwOTk2ODEwZTc5NWVhMDEzYjIxNTU5M2YzMjcyYTkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_42a1d5ba2e584da8af9e647147afbced",
+      "statement": "Plugin analysis continues independently while PipeClient is disconnected because audio analysis and pipe transport run on separate worker paths.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L12-L42",
+          "version": "repo-lines-v1:sha256:ac4354cdf21859152d93c3c243693122275af437640cd201ad9f351b9880d1e0:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkYmNhOGIyMWRmNWFiOWMxY2EyMDQ1Y2JhZWM1NzExMDgxN2RiOTIwMTdjYWE0OTMyYTNjMzA2MTEwZjY2ZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0MDkzM2ZmZTQxNjJjM2I1MTk3ZDg0NDY3ZTY4MTcyZDgxNmFhOTA1ZmRjNDU1OWY0YjQ4NWZiZjVlNGI1NGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4MjBjMTdiMjBhMWM5ZjhmY2I1NTQwYTQ1N2M1NTVmZjE3OTE3MjMwNDc0ZDAwNDgwMzVjZGMxYTE4YmZlMDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwNDFkNWUxYWQzNmJmZmI1YmFhZjgwM2UwNWNlNWRlNDVhNTcwMzcyOTNjZjRhOTVmODE3YzAxZGMxNzk3NmYifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L94-L174",
+          "version": "repo-lines-v1:sha256:fba7008f201a2e6a6ce06f0b4d277e7029fe87c2ae8a2a4368a99977f84b8159:eyJzZWxlY3RlZExpbmVDb3VudCI6ODEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE4YzE5NWEzYjc1ZTdhYmJjNDg0NDYwMjg2MjVhMDFkOGRlZjc1ZmZhODEwMGQ4ZDVlYWNhNTk4OTU4M2E3ZmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxMWJlNjM2NTRjOTdlMTdlMGI4NWNlYzg1ZTJkYmRlNzJmNGIzYzUwNDA5ZTU3NWVlYzI3NDlmNDVhZTc3NmUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_cf2cfc868f9f4f068d84b3baf1d7edad",
+      "statement": "PipeClient reconnects with bounded exponential backoff and publishes connection-state notifications between attempts.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/src/PipeClient.cpp#L110-L178",
+          "version": "repo-lines-v1:sha256:9da5f25da05eb7fe0a4a4376e238f00d18085d32e68e653c8c4a2ae7d40c6579:eyJzZWxlY3RlZExpbmVDb3VudCI6NjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkYjQ2NTE3ZjUxNTVjYTc1ZDFmZjA2M2UyODk3Mzk2NjBiODBlMDE4NjhmMTVmZjMzYWVjMjFkNjQwYWU4MzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4YjE2YWY0ODBiNjljZGJmNTlhYTg1OTE1NjkxZmE1NjU4NDg2MDc0ZGQ4NWYyOGJhNjhhNzA2ZTBlN2NiZWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNTM2YTNjZTJjN2Q2NWZlNmM2ODJhNWRhYmMyMjlhY2I1NTk3ZGNkYTY5MTM4MTUxYWM0ODJkZDBmMTU3YmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyZGQ1YjNkY2Y1YmYzMDJjNGU4MWNjYmMyNmUzYWFkYWE0M2I1MzUwZmZhZTI3MzAxNGVlMTliOTM3MGIwMWIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7ed59be4053840e4a59499bc101c9f82",
+      "statement": "PipeClient shutdown cancels synchronous pipe I/O, joins its worker thread, and sends bye on a live session as best effort.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/src/PipeClient.cpp#L110-L178",
+          "version": "repo-lines-v1:sha256:9da5f25da05eb7fe0a4a4376e238f00d18085d32e68e653c8c4a2ae7d40c6579:eyJzZWxlY3RlZExpbmVDb3VudCI6NjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkYjQ2NTE3ZjUxNTVjYTc1ZDFmZjA2M2UyODk3Mzk2NjBiODBlMDE4NjhmMTVmZjMzYWVjMjFkNjQwYWU4MzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4YjE2YWY0ODBiNjljZGJmNTlhYTg1OTE1NjkxZmE1NjU4NDg2MDc0ZGQ4NWYyOGJhNjhhNzA2ZTBlN2NiZWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNTM2YTNjZTJjN2Q2NWZlNmM2ODJhNWRhYmMyMjlhY2I1NTk3ZGNkYTY5MTM4MTUxYWM0ODJkZDBmMTU3YmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyZGQ1YjNkY2Y1YmYzMDJjNGU4MWNjYmMyNmUzYWFkYWE0M2I1MzUwZmZhZTI3MzAxNGVlMTliOTM3MGIwMWIifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/src/PipeClient.cpp#L270-L287",
+          "version": "repo-lines-v1:sha256:9d2fa46fcc8c92506fb6bee75a52a8e45a1648150b7599a2a5621b22565abf6a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5ZTlmN2EyN2FmMGYwZWI4NTVjYWU2M2JlODFkNDQ3NzllNmIxN2JhM2Q4Y2E0NDFmOGZlMDhlYTVhMDU4NjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU2YTg4ZTNiNGM5NGFhNmZhNWJjZWI4OWYxZWI1YjYxMzRiNjY0MmNhOTI4ZDVlYjgxODIyNzhhNDIwZWM5NDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdlYjQ1ZDNiNzY4OWMxMzA4MDUxZjM2OTNmMzdjNTNhOTRhNzc3ZDUxNTkwM2E1ODFiOTQ4NGE3NDQ0MDkwNjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMjlhYjQxYTQxYjlkOGRhYTY5NzdhODQ5MzNiZDcwNmE3ZjViODk1ODFjZTU5NjQxNTY4MTIwZmQyNzJlN2UifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.3.3",
+    "at": "2026-08-22T15:50:39.855Z"
+  }
+}

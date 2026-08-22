@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:9e4cacaa674ac67bf5f46d067baef5513a2d389b15c4a7070e4678df6fa1ce9e",
+  "claims": [
+    {
+      "id": "claim_f11a403300344d0ebd8f415690820173",
+      "statement": "Nakama is an FL Studio mixing-advice plugin family comprising Gen, Probeeq, and Suna under the Nakama Studio bundle.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L1-L5",
+          "version": "repo-lines-v1:sha256:5d32f32b5e46b64cc97e2085e9834bb1c4b7315ce63bd34d019c45a8a0947e62:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjYyOWJhNmQyZTRkZTVhNmQ0MWQ5NzdhMmYwOTkyYzk4MzgwZGRkOGQ2ODdkOTNjYjRjN2IyNTlkZDk5NDllZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNWQyYzI2NTk5NDM4YjMyYmVlZWEwNTg1YzNlZTJkZDc2NzRmYjZmNWJhNDk4NzU0ZTBmMjIzMDRmNTQ5NzdhYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmQwMTBmY2ZkMmUxZDQzMDNhZjUxNTNlZGRlOGQyYzcxYTMyZDg0Y2JjMDIwNTJlZWRlZTRiYjdjOGMyNDFlMCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_5eb2ab3b4e1f42bdb5bab6825ba2346f",
+      "statement": "Current code, bundle, and pipe identifiers retain the legacy EQ-Copilot and EqCop naming.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L1-L5",
+          "version": "repo-lines-v1:sha256:5d32f32b5e46b64cc97e2085e9834bb1c4b7315ce63bd34d019c45a8a0947e62:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjYyOWJhNmQyZTRkZTVhNmQ0MWQ5NzdhMmYwOTkyYzk4MzgwZGRkOGQ2ODdkOTNjYjRjN2IyNTlkZDk5NDllZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNWQyYzI2NTk5NDM4YjMyYmVlZWEwNTg1YzNlZTJkZDc2NzRmYjZmNWJhNDk4NzU0ZTBmMjIzMDRmNTQ5NzdhYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmQwMTBmY2ZkMmUxZDQzMDNhZjUxNTNlZGRlOGQyYzcxYTMyZDg0Y2JjMDIwNTJlZWRlZTRiYjdjOGMyNDFlMCJ9"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/src/EqCopilotIds.h#L1-L21",
+          "version": "repo-lines-v1:sha256:3aa840ab435ab4004dd281ac280d29e236940417ad5379061c77f9a153f16276:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzNjkwMjdlYzlhZjQzZWE4MDcxODE0OGNhMDlhZDk2MjMwMTNlMTYyZGEyZDAzZmIzM2ZmZTRhYjJjZmZmYzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ1ZDQ2YjI0ZjAxNzBjYTkyMzViZTRhOTQ1OWI5ZjBlMTNhZjhkZDM1NTU3ZjVmMjY3MjhmMGUyNjdhYjcxZjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU1MGQyZGFlZWE5Mjk0YjNmY2IzYmY3MzVhNGZkZjAyN2Q0MDUzODMyYzAzMzE4NWNmYjQ2Zjk5NzhkZWRjMTcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b88d7d19e08c431588f492e3a67275a5",
+      "statement": "The current native product build creates one EqCopilot VST3 analyzer and links its processor, editor, pipe client, analysis engine, and diagnosis implementation.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/CMakeLists.txt#L1-L48",
+          "version": "repo-lines-v1:sha256:88bd3afc66a2a4ef6b452e3b4356d140d78772c7303431706f93475a56d29161:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4YjY0ODk3YjI5MmFkN2NkN2JiNGE0YjNkZGYzNzgxY2FjZDM5NWI0ODk0ZDZhMWUwMmY2YzIzMDgzNmI5ZDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE3N2Y0NDhkNWNkMTJiMjZlZDhkYzE0ZGM5OWQ1MDRmNjQxMmExMzQ2OGRmMDA0NjA3OTc3N2VmNGEyN2UyYmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJmMjZiYzA0YWVmNTJjMTg2MzEwNDA0NGI5N2ZiNjQ1YTYyMTU4MzI0N2ZjMzE4YzA3ZWY1MjFiNDU1YWE1OWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7e481ff4921d4eceaee110eeabc83c1a",
+      "statement": "The Rust broker is a standalone Windows named-pipe service with separate library and executable surfaces.",
+      "evidence": [
+        {
+          "resource": "repo://broker/Cargo.toml#L1-L29",
+          "version": "repo-lines-v1:sha256:51f438d20899d8e6e8a86381b5586862e0e44194bdadf41b1f98290622f386cf:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhhM2NkNWE4MWIzZjlhNjIxYWE0OTNkOTBjNDVmNDJhYjU3MWQ0ZTQyYjhhZTVhZmYzNTFjYjBhMDJkMDZkODIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNhNTk4NGI2ZGRjYmJlYmM1ZWY2ZGViZTc4MTU3OWE0ODQwN2ZjNmM1NjNjNTc3ZjZjOThlYzdhNGQ2M2JhNWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYwYjJhMDA2M2FlMGM1NDQ2YTQ2OTAxM2NmZjQxNDNiODdhYjEzNThjNDU5ODc0Mzk1Njc5MTVhYWU0MmQ5ZDMifQ"
+        },
+        {
+          "resource": "repo://broker/src/main.rs#L1-L35",
+          "version": "repo-lines-v1:sha256:f626747bd6a79723f06fb8f1a1cfd958494f9ac4fdbce8990045ca31dc1a040a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA0Zjk2YzNlOTE1MWJkZDMwZDEwMjViZGIyYjQ3ZWI0YjFmYmYxYTVmMGNlYTA2NjY0ZDI4ZjM5NTNkNDI4NzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNiMTk4OGM5ZjQxYzgwMjdkZGU5YjcxM2MzOGZkMzA5OTMzM2NkZGUzZWMxNzU1MjU4YWIzNzQzYjk3YWY3ZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllNzVjN2M5N2NiOTA1ZjA5ZTgzNGRlYzIyYjRhNjFmNmQzNzIwNTI5NzI1YjAwYmM3NzRkNzNjMjljNTNmZjIifQ"
+        },
+        {
+          "resource": "repo://broker/src/server.rs#L1-L20",
+          "version": "repo-lines-v1:sha256:7ad39476be6cd2c93dd1d356c44bb2c19d7d3f66305f09a48b773c2dbf1348f1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwYjhkNWY1MjEyYjFiMTQ2OGExMTNmMjRhZGJlNTU3OTA5OTllMmU3MTA5OWI4NGJhZmY4Yzc2NTY4OTJkODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNiMmZjODViNDA5NjUwYzQxNTc5OTE0MzZhNmYwYzgyMDUyZjZiZTQ0YmRlYzE2ZmQzOTE4MDgxMGMxNDVkNzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBkMTVmNzUxYzYyZTg1OGNhNjliZGQ3Y2YyMTQ3YjkyNjNhMjc4MmJkNjQzMGZmNDVlODZlMzIyODhmYTJmYjgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_da6b33455c6b4dce92e9de8d2c93c4bf",
+      "statement": "The plugin observes and analyzes host audio, publishes compact measurements through PipeClient, and the broker admits validated heartbeats into its live register.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L12-L42",
+          "version": "repo-lines-v1:sha256:ac4354cdf21859152d93c3c243693122275af437640cd201ad9f351b9880d1e0:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkYmNhOGIyMWRmNWFiOWMxY2EyMDQ1Y2JhZWM1NzExMDgxN2RiOTIwMTdjYWE0OTMyYTNjMzA2MTEwZjY2ZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0MDkzM2ZmZTQxNjJjM2I1MTk3ZDg0NDY3ZTY4MTcyZDgxNmFhOTA1ZmRjNDU1OWY0YjQ4NWZiZjVlNGI1NGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4MjBjMTdiMjBhMWM5ZjhmY2I1NTQwYTQ1N2M1NTVmZjE3OTE3MjMwNDc0ZDAwNDgwMzVjZGMxYTE4YmZlMDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwNDFkNWUxYWQzNmJmZmI1YmFhZjgwM2UwNWNlNWRlNDVhNTcwMzcyOTNjZjRhOTVmODE3YzAxZGMxNzk3NmYifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L112-L180",
+          "version": "repo-lines-v1:sha256:f5593de2f1f4cc15b4524a5783f296349d4d5ddfe8adfda5b78bf88f3885b5c6:eyJzZWxlY3RlZExpbmVDb3VudCI6NjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlYWU2MDRhNDcwM2M2MmJiYjhjZTQwMzgxY2IzZTQ5NTVmNmYwY2U2MTE2MjA3M2RhNWY4NjllNTczMzliNjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5NTUzZjk3ZjAxYzk4NTExOTI4MzkwNGFlOWEyMTMzYzI2ZTRiMTljZDhhZWMyYzQwMDlmNzkyMWU4YmQ5NjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5YzQ4NDZhZDhmYTc3NGVmYjlhZmMzM2FhZWFkNTI4MGZhOGU1MWE1NTZhOThiOTIzMGY5NmNmMTg3MTMyNDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE2OGMzMDM4OWU3NTNiYjEyNjM4ZTdmYjViODcyNjRiYjU3OWQ3YmUxMzUxZDY1MDczMmNlMmYxMTY3NGM3ODAifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/src/PipeClient.cpp#L226-L287",
+          "version": "repo-lines-v1:sha256:2a134740e0319714b3ccf61ff72ab324dcf0933d9bb310414648ba4324d2e918:eyJzZWxlY3RlZExpbmVDb3VudCI6NjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNhOWVkYWYwYzIyYWNkZGQxOWQ2YTE1ZDBiZDMxZTE4ZGQ4OGVkOTc5YTVjNjNiYmI0NTRmNWJjNmIwYTk0ZTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU2YTg4ZTNiNGM5NGFhNmZhNWJjZWI4OWYxZWI1YjYxMzRiNjY0MmNhOTI4ZDVlYjgxODIyNzhhNDIwZWM5NDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlmMjNmMmZmZWY3NDk3ZjA5MTNlMjBhZWFjYTMxZTBiYTcyOTIyZDRiMzE3ODYwM2I4ZGQ5NzdhMTA0YWI0ZjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMjlhYjQxYTQxYjlkOGRhYTY5NzdhODQ5MzNiZDcwNmE3ZjViODk1ODFjZTU5NjQxNTY4MTIwZmQyNzJlN2UifQ"
+        },
+        {
+          "resource": "repo://broker/src/server.rs#L341-L431",
+          "version": "repo-lines-v1:sha256:0f8d02f1e82992fb3d9995473d9c46e6f436611a31b470b7e5cf69ed1ec57c2f:eyJzZWxlY3RlZExpbmVDb3VudCI6OTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlMTY1MGVjMzU0ZDc4OWQ3MmQ1YzA3ZWM2ZDBiOTA4ZDNmNDNmYTgyOTlkNWEyNmJiMWE1NzA3MTYxZTc4NzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkYjMzOWMxN2Q0Y2M1NGU3MGM0ZmNmZWNiNjExYmI5ZTdkMzYzZjI1YjE4ZTA5MjNhMWQzMDZjYzk1OTI0ZTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjExYmQ1YWUyODYxZWYyN2U2NWI2ZjlmYjVlNGFmZmRmNDc1N2Q5YWM0MmIzZWE1Nzc4MmM0ZTQwNDlhMDFmYWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRlOTdmZjA5MDk3ZWZlMzM3NzYxM2NiNzMwNDM3MjNlMmZmMjk3ZTViMDQ0M2Q3OWNkMWE2YjAzNjg5YWZlM2MifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9e02cd3ce98b4055b0988d479e496892",
+      "statement": "Production IPC uses JSON protocol v2, while the v3 JSON family and FlatBuffers telemetry remain contract-only with no production caller.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/schemas/eq-ipc.schema.json#L2-L15",
+          "version": "repo-lines-v1:sha256:2fb6848eda68dddb054a9d8ccdb7b066c1910abe529f3755b2110a0d684f6443:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQzMWQzZmI3ZTE4MDE1MzE1MGQ5ZTM2YzcxNDc3ZTk3YzIyMjk5MmZjNTI2NjFiMTgyNDlhMjE0YzA4ZGNhNjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2NGQ4YzA3MzQyOTg5MzEwMTU3NmQ4OGQ5OTEyN2U4OWQ2ODkxZDNiMTdlODlkZjAyZWM5YWU3MDcwNWQ4YmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoxLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2ZmIwOGZkYTFhY2I5NTdiNjExNmJkMzc4MTFhMWZlNDFhMDE2MTFjMDYzMWVkYmY3ODZkNjg4OWEyN2E1NWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVjZTE1YmM0YmMyNjMzM2IyYjczYWFhNmQ4MmQ0ZmY4YTRjY2ViYTlkMjNlNzBiYmU0Nzg0MjBlNmNmOGNmY2YifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/schemas/v3/README.md#L1-L33",
+          "version": "repo-lines-v1:sha256:73c0a75e4fb76c93ab6430bbfa0c17a24f766c2502d4da27df4bbc8e158d0d3c:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODg5ZWE0YmMzMzhiZDRiNWNiNTUxNTZjZjE5NmNjMzIyZDZlYzhhYzkwYThjMzQ1OTBjYzg5MGRlYmNkYmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmMTEwZjIzMGJlNTExMTAzMTliZTA3MTI5M2I0MTNhOTU3NDYzYmNkZDZkMmQyMGU3MzIxZWQyNTUyZWFjMDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRiMTdmZTZlODllNzVhNWJmN2VhMTU4MzAxZmJlOWM5OWI4MDlhOGM0NDEwOTJkOTllYTNjNDQzMjcxNTExNmMifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/schemas/v3/flatbuffers/README.md#L168-L176",
+          "version": "repo-lines-v1:sha256:ed6a1799191a1a44e08ef254c3b25ce75579acbe31248708be96e517e6cd0964:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTIzNDFmNWVlNmQ2ZGI3MDNhNjAyZjllNDNmMTAwMDRkOGZhZjExMzgyMjQxMzY0YWM0NjE5NTFjZTAzNDMzOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDRjNWUwYjE2OTgwMmZlNzJmM2I4Y2JjZWNhYzBlY2FjNDBiMDM0NmQ4ZGQ3M2YzYTNmYTA0ODgzYjE4Y2ZjMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDAxZjJlYzE3NTkzYzEwNTRlYjQ2MzY3ZDg0NTNlZjI0YTE3M2NlOTZiNzExN2Q5MWY5YTY4ZDQ0ZmVmOGIwMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_063535e0abe84c14951b0a85b1b3e021",
+      "statement": "The deployed briefing application is a separate vinext/React service with Cloudflare D1 persistence.",
+      "evidence": [
+        {
+          "resource": "repo://briefing-hub/package.json#L1-L40",
+          "version": "repo-lines-v1:sha256:4d90f839184608ee92fce9f0b4dee2c50176e567c0f573512d73a4ea19815659:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2ZmIwOGZkYTFhY2I5NTdiNjExNmJkMzc4MTFhMWZlNDFhMDE2MTFjMDYzMWVkYmY3ODZkNjg4OWEyN2E1NWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM4OGQ2MWVlZGU0Zjg0MjYzMzkxZDZkZWU0OTY5NzY4MzQ1NWM0Njc5ZTE5MTk5Mjk0N2U2YmU3MDIzY2I1ZDkifQ"
+        },
+        {
+          "resource": "repo://briefing-hub/.openai/hosting.json#L1-L4",
+          "version": "repo-lines-v1:sha256:d783c7fbfb117e49b7725ff86f64706645df1da42c42b3191a3cf591b05a31cf:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTZmYjA4ZmRhMWFjYjk1N2I2MTE2YmQzNzgxMWExZmU0MWEwMTYxMWMwNjMxZWRiZjc4NmQ2ODg5YTI3YTU1YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjY5YjU5NjdkYTA3Yzc1ZWI4YTViNTUyYWNkNDhhODA0MmJmZDIxNjc0OTE3YzQ0MTQ5YmNhMGYyODMyZWEwZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSJ9"
+        },
+        {
+          "resource": "repo://briefing-hub/db/index.ts#L3-L54",
+          "version": "repo-lines-v1:sha256:6632543b5b2fec940b66fcba3a3fd224dc30d438e9d52d8e92882712fdddede5:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2OTE1YzIyZDA3M2ExY2JmZTVkZDg4YWU3ZjE1NzlhMDA4YThhZGExYzhkN2YwMTRjNThkNmEwZGYyMWEzMmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0OTM2OWFlMmMzZDIzMDQxNDY2ZmMyMDg3NmE1NzA0MjM3YWI0OTI0YTM4YzgwOGZiMTkzMjUwNDIyNTJhOGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYyNTBmMWEwM2Q1ZTQ3MTJkZGFlYTFmMTM0MGM3NDE5N2U2Y2Y0MTNkYmJlYzIwMmJlNzkyMWEzNGNmMWI1OWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_339479e590284f468a248db768440a57",
+      "statement": "Repository hub state is synchronized with the deployed briefing service through an explicit pull, validate, and send CLI workflow.",
+      "evidence": [
+        {
+          "resource": "repo://tools/hub/hub_sync.py#L1-L20",
+          "version": "repo-lines-v1:sha256:f3bc279e2aea3b31727ac118e3e978167d880ad9c67368cad59e06cce8f36745:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2ODJjYmRiNGM4YjA3NTE4YmY0ODZjNTg5OTBmYzM5MTc4M2FhMjBhOTE2YmZiMjdhZDIxMWViMWQ1YzM2NDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzMDNlY2RkNGE0ZDEwZjE5YzczZmQ0MmZkMTI0MzdmZDMzNTRhODI2ODE2MDVkYTUyNTVhOTdhMzkwNjhkYmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRjYzhmYTg3N2Q4MDM0MDA1Yzc1NmQxYWU1ZWEzZmY2MTBjNmU4ZTliYzkyMjY1MDY5MThjM2QwMmQyYTZjMmMifQ"
+        },
+        {
+          "resource": "repo://tools/hub/hub_sync.py#L223-L283",
+          "version": "repo-lines-v1:sha256:56f6444240b267b93b72a9c72a854a11a11551bba436ac9804616ec2849e66c4:eyJzZWxlY3RlZExpbmVDb3VudCI6NjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViOTA0ZjE5ZDBjMWM5YzNjNjYxM2ExNjg3MTQzYmU5YjczMzc5YzViYTA1OTM0YzgzNWQzOTM4ZWM0MDM3NDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNDFmODVmMzA0ZDA4OGEzMGFiYTg4MTgzYjhiNTI4ZjNjYTM2MTRhM2Q0NDE4NGM5YjU5ZTliNjEwMTc4NTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMwMDViZDc3NjdmMjg0MjkyMjBkOGJiYzkzMGNkMTI2OWY0MmM0MGEzNTJmNjMyMDJkMDdkYjBiZDdjZmY5ZGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNkNDEzNDBjYzIzOWExNTljZTliNjAyMmU5ZjYzMjI4MzJlMmVhZDc2Y2FlOWU0NzU0ZDIxMGViOGZiNmQ1ZTgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_10a3f0f17aa448749625815c6e665258",
+      "statement": "The design domain translates user-owned Figma states into living browser sheets and does not own plugin implementation.",
+      "evidence": [
+        {
+          "resource": "repo://design/LIES-MICH.md#L11-L27",
+          "version": "repo-lines-v1:sha256:9d063808380b1df94df6719de4e44632c22ef207cbf9a7a139de416f0d20661c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1NGQ1MDQzMjA4YWY0NWE4ZTQwZTAzZmI3ZGU2OTI2MTZhNjJhNmJhY2YyZTQwMzQ2OWNiNzFlNTI0NTJlNTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5MDM0OWZhODViZGI5MjYyNGYxNWY5OTJmMmQ4Njk4YjI0NDBlODViOTBlNzI3ZTU1NGU5MWQ2Y2Y5NjZmMDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRjMmU0YzQ1N2MzYjljMzgzYmEyOWRlMWM2NTY4N2FiNjExNDRiZjBjNDdjYjYxNGQ3NGI1MjBlN2M2NjRhYmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY4YWM1OWMyNGY3ZjM2MzhmODVjNmI2NmMwODM4OGNlNGNhMWI0MDY1YTA3ZDcwOTZiMzRmMjc2MjQ0ZDc4N2YifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_99c8ab0e79d945928f7ffb6a2e8689fb",
+      "statement": "The repository's canonical product proof is the local freshness-aware evidence runner, while the generated OpenWiki workflow maintains documentation.",
+      "evidence": [
+        {
+          "resource": "repo://tools/beweise.ps1#L1-L48",
+          "version": "repo-lines-v1:sha256:192ace583c4b54dcb6d6f636849116cb8406c1313d136e4afc3315be4c31e094:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5N2M4M2Q2OWEwZWM0NGViZDBjNDA3MzQyZjJhYjgwZDQwZTBiMmE1MjhmMjY3OTU2MjlhY2E5YmI3Yjg2NmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxMzcxNDVjNGI2NDQwOWM4NGVjNDQ3OTA4YjQyYjZjYjE5NzgxYzE4NWEyODQ4ODBkNzM1YjhkM2FhZmQ5NmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBiMDcyZWE5ZTJhM2YzNjY3NDEwNjc2M2Y3NmI5MjMyM2ZkZGI3YjlmZTk1MWI1ODkwYjEyNTgzMGNlMjU5MTAifQ"
+        },
+        {
+          "resource": "repo://.github/workflows/openwiki-update.yml",
+          "version": "repo-file-v1:sha256:16a80864d57b5b7381813d7cd7f4afad61885afe58be57902a8113406f9b5a93"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.3.3",
+    "at": "2026-08-22T15:50:39.855Z"
+  }
+}

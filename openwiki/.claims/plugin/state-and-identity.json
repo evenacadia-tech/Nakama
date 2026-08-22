@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:662ed34b2cf8ff819f7b16d2d950a1ab312ab39957b93ef42e031e2bd709405d",
+  "claims": [
+    {
+      "id": "claim_5e548a92c3344dddb2cb9cb3e6883723",
+      "statement": "NakamaState owns host-state parsing, migration, typed access, and byte production as an all-or-read-only layer that is not used from the audio thread.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/state/NakamaState.h#L3-L20",
+          "version": "repo-lines-v1:sha256:da181ab27bc8c689d6206c0f355bb2182bc670851b48f6a7513e24e10779606f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNhZWJkNTUzYzc5NGU1YTk5OWY2OWZhYTU4ZTkyOTZhNGIxMDk1MjUzZjVmNGE0NTY1MjYyMDViM2I1OTY5NGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1NWMzNGZmN2U3NTNlNzMyMDljMzAwZDE4NWU2M2E4ZjYyNGMxZDViY2Y4ZDM2ODU3YTQ4YjY1MzA4MjIxMjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2ZTkyMzBlY2ZkNWFkNTBiZTA1NzBlZDIxZTE2MTM5MDE3MGNlZDYxYjBiZDUzY2QxNDBiM2FmZTI4Njg0MDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzNDljMmQ1NDlkNDdlNjZiODM4MDg5OWY2ZGI5OGI3ZGMwZjE4NWQ4MzllZTAxYjdmNWExZjVhYjllZGVhYzAifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/state/NakamaState.h#L49-L110",
+          "version": "repo-lines-v1:sha256:1b6ec19f47fd42ebbb771a8aa3029dae69488289b99d59a90d737d0f4dd044e0:eyJzZWxlY3RlZExpbmVDb3VudCI6NjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZThiYzhhYmU5NTJhYmRiOWRjZTQ2NzUzNGEyMzk4NWE5ZmVjNDkzZmIzMzgxZTc1NjA5YzNmMmY3ZTEzN2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllZTdmOTc5Mzg5ZjkzMGEyODNlMzQxYzlhNzg1Y2Y1NGU1NTY1NzkzZDc2OGUwYjYwNWZmOTdiZmE4NzEyZTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY4ZTZlOThlOTdlOGY5YTg4OTUyMmQ5MTRiYWZlY2FiN2NkZmZjY2MxZjU4ZTg5M2I5NWE5NWE5NDA5NDc2OWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM0MDdmYmYwZGMyMzgzMDRkMTk1OWFkZmZjN2IwYTBjMTVkZTJlZDRhZWQzNGU5ODA4MzE3YjQxZWI5ZTJhZWYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d7e9ccdb1b884d9e8c6123d2dac5fd55",
+      "statement": "Readable schema-2 state requires one Common child, bundle-compatible plugin kind and measurement position, and the exact kind-specific child matrix; unknown children and currently unreadable Dsp or Pairing children force rejection.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/state/NakamaState.cpp#L198-L293",
+          "version": "repo-lines-v1:sha256:146270dd9f9f75351072acc6b95f21ad0194945a3a65eafaaaa23bf1f81c1ccf:eyJzZWxlY3RlZExpbmVDb3VudCI6OTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxNGZiYThiOGM1Yzc0ODNmZWZlMTBjNDVkYmRjNDhiNDJhNWU0ZDQwM2VkMjA2ZDk5ODI2ZWNiNWZmMmJiZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmYWM0ZTQzNjMwYWJmNjhjM2E0YTc1NzNmZDRjNDMwMDhiYTc5OGRkNzZjMzc1OWVlZWY1M2U2Y2ZmOGQyZTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYzM2FlNTE4NjQ2YTE1NTNkNWUyMDBiZjliZDRhNTBlMzMyMDM5MjcwYTNhMzg2MGYxODg4YzhjMDg2OTZmMDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMwZmZkNTMwNzIyYTRlMWY0MzZmYjcxY2U5MGFmOWZkNDBkNzk1MTVkMWE4OTk1MTk3NWZjZmQ4NmIxNTNhNDMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_1925fcd559d3407ca647c2502897cba3",
+      "statement": "Malformed or foreign ValueTrees leave current state unchanged, while recognized but unsupported state becomes read-only with its original bytes preserved exactly.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/state/NakamaState.cpp#L350-L408",
+          "version": "repo-lines-v1:sha256:c53d852fb45c8abee0528b85bb076956ca0ec6267ca5414bb7f435c6d9176c65:eyJzZWxlY3RlZExpbmVDb3VudCI6NTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0YTUwNGQ1OGRkYmMyOTE3MDMyYjdjNjUzZTE3NGIzYmJlN2NiZWRkZmY1N2EyOTNiNmFhZTM1MTU3OGUyZTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjExYmQwODA0NDhlMzU4NGE5ODM2OWQ2YzE5M2JlYjUxM2VkNThkMWM4MTZkYmE4OWNkZmViMmQ5NmFjYmRmYzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkyNzlmYTdjNDc3MmQyYjAzZDI1ZTZiM2VkOWM4YTljMTEzYjUxMDg1M2ExZjg5NjQzZThmYmIwZDM5MzM2YzQifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L427-L446",
+          "version": "repo-lines-v1:sha256:107287256109930eb52bb3854a9421aa8b582513a45fa63ec1f5ac311011583d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhZTdiYjcxYzUzYTgyNDVjMDQ0MDg4OGViZjY1MTNjY2JjNDBiNjk5Y2M0YTMzNDgzZGIzMWJmNTRlZmQ3MGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAyYjQwNWJhMWE0ZGQyMmNiZDc3OTBjMDczNzJlNDI3YThhMzk0OTJiZmU3NDIyMGQ4MWFiYTIxOWQ3MTZmNGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBiMmE3YTgzMGI1MTAyNTQ4NzUyNDM0MDNkYWMzYjMyOWJmMTI3NDlkNzIwMDViMmYwNTgxNmE3ODgwZjA0MzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQyNDViNzQ2OTljY2RjYWQ4NGU3ZGNiZDYxZmU4ZDg4ZGUxZTUzOWZmYTI0NDJjMmUxMzMwMWYzOTkzZDliODIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3cf23fb370df40b5ad801b0c431762bc",
+      "statement": "Writable serialization updates known fields in a copy of the held tree so additive unknown properties survive; read-only serialization returns the original byte sequence.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/state/NakamaState.cpp#L124-L194",
+          "version": "repo-lines-v1:sha256:843de714d0de49b38fcc2d840d6cb4152ca5285ad95ba2dd9c762ae5c0056fa0:eyJzZWxlY3RlZExpbmVDb3VudCI6NzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5OTM4YzFlZGVhY2JmYjQ4NTFkN2E3ZDYzMmU2ZmQ2OWExZjA5ZWZlMTgzNmQ2ZTE2Yjc5YTAyNDkyYWMyM2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NDA0MzEzYWY3MDRmOTVhNWY2OTk2YWFlYjJiNTg4MDlmM2UzZjFkYjU4NzMzOGQzMjZlMjA5YWZkOTA5YTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI2NjUzODU5NTVhNzgwNzk0MGViM2M1NzU1MzRjMjdiNTU2ZTE1ZmQ3OGIyMmU2ZDk0YWI4ZDE2NTY1NjRhYzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzM2FlNTE4NjQ2YTE1NTNkNWUyMDBiZjliZDRhNTBlMzMyMDM5MjcwYTNhMzg2MGYxODg4YzhjMDg2OTZmMDgifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/state/NakamaState.cpp#L397-L408",
+          "version": "repo-lines-v1:sha256:89e8c774ffde4c4444f774b4d2b04a131d429f2df6cc096b88d7bcb193722e0f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkZjIzOTVmMWNjNjM5MmE5MTViZmZmZTk1YjU0MThjY2E1Y2U3NTI0ZGE4N2IzNDU5NTQ3Y2NiYzZhYjY1MTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNmMGRiY2ExMjUyOTFiOTk1MmIzNjMxMjY5YWNlZTQ0ZGRmZjM4OTU2NWZiODdlNDZlM2YyMzU4NDgxMTIxMjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkyNzlmYTdjNDc3MmQyYjAzZDI1ZTZiM2VkOWM4YTljMTEzYjUxMDg1M2ExZjg5NjQzZThmYmIwZDM5MzM2YzQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3fe88aa543e84df9bf439341c07f0712",
+      "statement": "Loading stops pipe registration for read-only state and reconnects after a readable load or migration, without marking the host document dirty.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L427-L455",
+          "version": "repo-lines-v1:sha256:3643d75943f47bc1ff99df4033bdd40ba99eb4ca4080f500d3e07d19848e5f14:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhZTdiYjcxYzUzYTgyNDVjMDQ0MDg4OGViZjY1MTNjY2JjNDBiNjk5Y2M0YTMzNDgzZGIzMWJmNTRlZmQ3MGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkZDBmNzNlMWFhYzdkMTYxM2IyYjBiNDM5MTM3Mzc4NzBmZmUwYWM4NjJhZTE5YTI4OTQ1ZTE2YjkyZWZhNjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBiMmE3YTgzMGI1MTAyNTQ4NzUyNDM0MDNkYWMzYjMyOWJmMTI3NDlkNzIwMDViMmYwNTgxNmE3ODgwZjA0MzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM3MGY4ZDc0ZmVhZGM3MDA2YmNlZTgzZTgzYTI1YTQ4NzlmMDIxZjdkYzU4MWI3ZGM3MGY1M2NiYzc3NzY3NWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d595e4aee28c4b59918e68deb9157b44",
+      "statement": "Binding changes and duplicate-ID repair reject read-only state, ignore no-op changes, mark real persistent changes as non-parameter host-dirty, and reconnect with the new identity.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L395-L415",
+          "version": "repo-lines-v1:sha256:aa802a49d55b0cda04d6901a0c5d2a4ff3f9c746ab1a53dda6ae57d2ce83db05:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxZTczODhiNmFmMTAwMzhlMmQ2OTIzYmMzYjA1OTg2MGMyMDA0YmFkZWM4ZTRhMmVhZTg4NzI5ZTRhMzg3NjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0MjAzOTE1Zjc0M2IyOTU2NzEyMDEyN2ZmMjM5MzA5YjU0NDdlYTQ1MmQ5OWY3YzYyZDBhZDVjNWIwMGRjNWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRlNzZjODNhNTczZTY1MTYzY2MyZTNlZTRkYWZlZmI3Y2M0OGNjNmMwNGNiYjM3ZjY4MTIxZDFhYzA5ODViMTIifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L493-L515",
+          "version": "repo-lines-v1:sha256:e775a2d96ddc174aad0a4534df51a9dd93d3707d481a4f04ba39d8e6eae35787:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5ZTI4MjIyZjk4OGQwYmIxMGQ5ZmU0NTVkMjY2MmE3NzlhMDNmMmFhZDY1NzAzNzg4NmEwNmYwMjY1MjJjZjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmYWM0ZTQzNjMwYWJmNjhjM2E0YTc1NzNmZDRjNDMwMDhiYTc5OGRkNzZjMzc1OWVlZWY1M2U2Y2ZmOGQyZTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJjYmNjMWI2NzYyNDNhNzZiMDkxZmRkNmRiYTAxNDM1ZjdhNGEwYzdiYTcyZTlmZDU1YmQ4NjcwYzBkMTcxZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJmMWNlZmNkZjFjNDUwMDZlNzMyYzczYjExMTJkMDJmMmYzMDQ5NjUzYzg4N2I4YTBjYWU0N2FiMjQyYzZkZWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_95f5cc91def44af3bab9c6f319c63c34",
+      "statement": "Schema-1 migration maps legacy roles into schema-2 kind and position values, does not invent a project binding, and generates a UUID only for a broken empty legacy sensor ID.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/state/NakamaState.cpp#L311-L347",
+          "version": "repo-lines-v1:sha256:88cba451be4f553946137ca97a5696b340ae0bb46827b7e1c331bd545c896a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc0YmFhZTQ5NDYyNjQ5YTUxOWMwNTkzYzQxMWRhMzJiMDEwZWQzYWU0OTZjYmU0MWRjYzQ0ZWE4ZTk2ZWUzN2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmYWM0ZTQzNjMwYWJmNjhjM2E0YTc1NzNmZDRjNDMwMDhiYTc5OGRkNzZjMzc1OWVlZWY1M2U2Y2ZmOGQyZTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMyZDhhMDM3OTgxODE0YWU5OWQ0OGE0ODQyNjk3ODg0Mzg4NTQ2Yjc5ZTIzYzNlMjFmZTZjMDYzMGM1NDQwZmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZlMmI3OThlMTI5NDljNWIyM2JhM2E0M2ExMDJmNjhjN2ZlNDAxNjE4MDlhNDY2M2FiZTk2NDY5ZTE3MzY2YzkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d364cae105404692872b895be891dec9",
+      "statement": "Canonical DSP DTO hashing validates all parameters, serializes canonical UTF-8, and computes lowercase SHA-256; the strict reader rejects malformed structure, duplicate keys, unknown or missing parameters, invalid types, and invalid values.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/state/NakamaParameter.cpp#L108-L183",
+          "version": "repo-lines-v1:sha256:9832bb58b9c7313d8006d300b96e85e009f523c73721122a2cc53fa527c80a4b:eyJzZWxlY3RlZExpbmVDb3VudCI6NzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3OTU0ZDJjMDE4NzZmMTg3YTczYTkxNmFmNDI2MzQ2MDUwMTVmNzc5NjQ0MjMwMmZlZmEyYTBlMTg4ZGQ5MjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVjMTM5NWVjMzQ5YWQ3NzNkZmRmNDEwNjlhMjYxMTQ2YzdlNTZkNjExN2ZlYzNiMzkyZTcyMzBlMmMyYjkwM2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI3YTEwYjgxNzA2MDdmZjY4NTQ1Y2MzYjNlNWE1MWI0ZTk1ZTlhNDdlN2EzNzJkOTkyNTY0ZDA4ZmIwMmY5NjYifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/state/NakamaParameter.cpp#L185-L355",
+          "version": "repo-lines-v1:sha256:166f896d888f0185c77139c5c0649039319d6fd3a2820d5928a22517fc6f40c4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJjNGNhNWRjOGNmMzlhNjQzZmQ2ZmFlZWMwMWYyNWM3YWZlZWUzOGExOTJlMGY2ODEzODZhMjU4MjVlMzA4MTQxIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkZmFjNGU0MzYzMGFiZjY4YzNhNGE3NTczZmQ0YzQzMDA4YmE3OThkZDc2YzM3NTllZWVmNTNlNmNmZjhkMmU1IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMWJkMDgwNDQ4ZTM1ODRhOTgzNjlkNmMxOTNiZWI1MTNlZDU4ZDFjODE2ZGJhODljZGZlYjJkOTZhY2JkZmM3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIxY2E0ZGI1ZGVkN2YwMGFiNWY4ZDAxNDE1YWZmZDVmMzU5MjUwMjllODhmMDExNzc2OTM2N2QwODJmNzE5NjY2In0"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/state/NakamaKanon.cpp#L231-L245",
+          "version": "repo-lines-v1:sha256:014aba563782f215fd70589027ed455f856d68d50e029cb797faafb8ada193f0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImExZDk1MTkwZmVkNzAxNGM2NDY5NzQ3ZDkxOWUzNzAzOGQ4YjkxZGI2YTVmMmFhZmVhZDQwMTM4YWZiZTVkY2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNhNTc3Y2JjNmE4ZDY3MzE2ZmVmOWEwZDdmNTVkMzMxNzliOGY2ODg5ZDQxYWRlNzk5YmFjOGFjNzg0NjllZDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNjOGQ5ZWFjMDRlYjIzNDFkMDNkYmNjNzkxODczMTViMGRkOGE3YzgwNTRlNTZiNzhlNDI4ODg5ZjU5MTA4ZmYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f956d15d5e3e46a9b750c22030fad65c",
+      "statement": "The 109-entry parameter contract describes a future active probe, while the currently built Eqcp plugin exposes no host parameters.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/state/NakamaParameter.h#L3-L17",
+          "version": "repo-lines-v1:sha256:6f35bb4c830ad8a913a25786aa0cd5bade0684d5414c26a16ed33804a4f94d63:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEwNDA2ZjU4YzE1ZDY3NDk3ZjNkMjU4MjMzZGU1NzgxMDE5NjhlZmRiMjJkYTA5M2Q5MDA2MTU1ODQzMjFjMjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYmYyZjJmZDNkOTIwYTVkYmJjZjBkZmJhYjY3MjlmYzUzZjc1YmZlNzRlYjM5ZWVmNWNmMzEwNzM4ZTUzMTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2ZTkyMzBlY2ZkNWFkNTBiZTA1NzBlZDIxZTE2MTM5MDE3MGNlZDYxYjBiZDUzY2QxNDBiM2FmZTI4Njg0MDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzNDljMmQ1NDlkNDdlNjZiODM4MDg5OWY2ZGI5OGI3ZGMwZjE4NWQ4MzllZTAxYjdmNWExZjVhYjllZGVhYzAifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/state/NakamaParameter.cpp#L37-L70",
+          "version": "repo-lines-v1:sha256:a27a1b5a0fdab38ffe1987a945be4053590f543947fbf5036d256e962a50bf51:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExYTEyYWQ0MDdmM2E4YzJlMjdlMDQ4NjU1NWMxNjZlMWRjNjQ0YTk1YmRmNjE5YWQ0YWMxZDQzYzUwNzQzYjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwMWNhMDQwY2FlOTNjZjhjMDM5NmNlMGY2MTI2M2Y0MmNlMTdmMmI4ZjA5MDUxOWY1MTZlMWU0MDI2YjRmYzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImExN2U3NjQ1MTM4Njg2OTdhMTk1NDQzMmQ5ZGVkMDhiMGQyZjIyZjBkNWU4ZjAyYTM1MGY1NmU5NWY3YmJkNWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMwZmZkNTMwNzIyYTRlMWY0MzZmYjcxY2U5MGFmOWZkNDBkNzk1MTVkMWE4OTk1MTk3NWZjZmQ4NmIxNTNhNDMifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.h#L1-L15",
+          "version": "repo-lines-v1:sha256:d089f047e68e255a3bc3cb22bf38edef64934c7427ae6a054f69562c7f58fae8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNjN2Y0MWM2YmRjOWQ2YjgzYzY4ZmRiODY0NjFiNmJjOWNjYTc1MDM4MzU2MzI3NTUwNTcyZmQ5OWUyNDc2MWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmNzYyYmY2YzJkMmFhMjU4OWNjMTg5ZTk1MTc4MzQ2MjU3Y2YwZjI0Y2RkMjkyMDVhOTQ3OGIyZTlhN2ZkZDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE0YjU1NjI2ZmY4MjRiMDliZDdjZWY1M2I2MWMyMzJjOGI0NzIzNWUzMzQ4ZjcyMjhiYjFjMzdhNjQyZTBmNTMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_1d2d993a5c6f4487bb59958326cd26f8",
+      "statement": "The built Eqcp identity is fixed by the JUCE target and identity manifest, while passive and active probe identities are reserved but not built.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/CMakeLists.txt#L11-L24",
+          "version": "repo-lines-v1:sha256:14d53d1ae6277b8f5757d370c943f889b4584b2233efb2170fd0bbeb6c6942d9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0NTIwOTZjYWJkMTgxOTM3NzIxYTk4Yzk5MzYxMDgwOTk1MzEyYjJkZWNmYTdkZTE1MDEwNjBmZjNiNzhhZTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhZmJhMDUyN2MzOTUzYzRiNmUwZTViNTczOWJhODM2MTJmODA1M2JjZGM5NDY2NzMwMTkzY2QxZDU5MGI0MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3ZDY3OTUyNDJiMDNkODlhZjA4MGUzMzMyNmI1YTUzNGI4NjU1MDA0ODRhNWJjNmE4YjM3NGE1ODNjNDE4ZjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk0MzZhMTMxMjdiNWM0NzViZTkzMzg2MDJkMWQ2OGVjYTY3NjI0ZjdmZjcwNmNjMWFhZjllY2Y0MDI5MDM0NzAifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/identity/plugin-identities-v1.json#L21-L69",
+          "version": "repo-lines-v1:sha256:6a3aeba77f58484d3845da8512128704680d473fa92958cafd1b375b06106055:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1Y2Y1NjYyMTJkOTFiODVlZWU5ZjdjNDE5MTNjNGMyMjdjZWE1OGIwNzk2OGFkMDFiZjI0NmI1MTkzMWIxNzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1NGUxNjg5YzE5NzZiOTMzOWMxNmE3Yjg5MzBiMTc2Yzg0NWJiNWQ2ZmU0MmY2ZjAwYjRkNTY1ZjBjYTAzOGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU1YjM2ZDk3MjlmMzQ2ZDI4ZDg4ZDVhZDc1NzA5ZTgzZjNkNGRlN2ZkZjIxYzg4ZjU4ODk4YzU2MDYyODRmMTYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_981b8ca762c24d24b50448850d599130",
+      "statement": "State and identity tests cover schema/table correspondence, migration, byte preservation, read-only behavior, duplicate IDs, dirty/no-op rules, built metadata, reserved IDs, and cross-language canonical hashes.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/tests/StateMigrationTestMain.cpp#L536-L742",
+          "version": "repo-lines-v1:sha256:1e44872cdd56f6d7a08dc8f24820707ff13f67e3b5055838b21011000e67eafe:eyJzZWxlY3RlZExpbmVDb3VudCI6MjA3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJkYTRlY2VhYWY0YWRjNDkyNWRmYmI2ZTRiMjMwMDY0MGZjMmExMzE0M2NkYjZiMWNkYTIyYTVlMGZiYWViMTExIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIyN2YzMWQ5ZDVkNGRiZDMzYjQyYWIxN2IxYWVlM2QwODNjNTg5NDg0YjI0YWRkNDI0NTY5MTZmODBiOTQyNjA5IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMmZjZmRlOGRmYjBjOWQxZGI5NGZiZjZkNDk1ODIyYTYwZTBmYTVlMTVhNmE0OGFmZTc3NDllZWVhMjg4MWE1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5MTQ1MTNmNTVlZjkxZDMzOTgwNmU2YWVmMzQxYWY0ZTFiYTYwZDljMDAxZmI1NTNjZDA1OWYyNDIyM2E5OGZmIn0"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/tests/IdentityTestMain.cpp#L291-L482",
+          "version": "repo-lines-v1:sha256:cc3ad01c9e2795710fd8969a66e09db124df3ee7d97f015e0dc0960ccfd1a375:eyJzZWxlY3RlZExpbmVDb3VudCI6MTkyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5M2UzNTU1MzA1M2Q2MjJlY2NjZjhlZjI0Nzg1MjVmNzM3YjM1ZjM2NDM2ZDE0MDUxMGZjODA1Yjc2NTk4ODk3IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4OTJjMDU4Y2RjYTVkMGRhMWQ1MTk5YjY1MjE0ODZmM2QzMTI2ODMzNTE1MmZkYTQ3NzYzZThiNmI2Y2Y3MWFjIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI5MGU0NDc5NzMyNTVlNDdhYzgxZGRlMDZlODMwZDk5NTA5MGE5MjZlMzM3YmUyYTc5YmUwM2RlMDNiOGNlOWZkIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzYzI4M2FmYmNkOGFkZTMwNDAwNWU0ODM4YTZjYWM1ZDE1NjhiZTFhZTY5ZTAzZTZjMzBkNzEzZTFhY2M4NTQzIn0"
+        },
+        {
+          "resource": "repo://broker/tests/contract_cross_language.rs#L384-L470",
+          "version": "repo-lines-v1:sha256:31903fa2bdd1acd1281caa43bf5ce6ece5219de8eda1672e92813210c1f196fe:eyJzZWxlY3RlZExpbmVDb3VudCI6ODcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhiZmJmMmQ0YWYxYjQyYjJjMjQzY2MzNDI0MzQzNWVjNWRiMmY4NjE3NTdmMWU0YTM0YWE4ZTk1NmQxZWY4N2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkMzg0MWI3NzEyN2M0ZDYyYzlhMTU2ZWYxZDhlN2NmMDQ3MTc0MzI2ZWFmZmU4NjQxMzgwYmNlMzczNjc0NzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhMmZiNzU0YmI1ZjFjYzY0OTZiMzYzMjJhMDMzODY3NmE3YTY5ODdmZjE3Mzg0NjA2NTk3ODdiNDQ4YmRlNmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0b99df5b12f24d7b97e914bfa8b07663",
+      "statement": "Read-only state rejects both binding changes and persistent sensor-ID replacement without reconnecting or notifying the host that state changed.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L395-L455",
+          "version": "repo-lines-v1:sha256:19db90eee0def3a24fcbe90fcf8379fea9c183e4e4a49ba4c501612343caf5df:eyJzZWxlY3RlZExpbmVDb3VudCI6NjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxZTczODhiNmFmMTAwMzhlMmQ2OTIzYmMzYjA1OTg2MGMyMDA0YmFkZWM4ZTRhMmVhZTg4NzI5ZTRhMzg3NjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkZDBmNzNlMWFhYzdkMTYxM2IyYjBiNDM5MTM3Mzc4NzBmZmUwYWM4NjJhZTE5YTI4OTQ1ZTE2YjkyZWZhNjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0MjAzOTE1Zjc0M2IyOTU2NzEyMDEyN2ZmMjM5MzA5YjU0NDdlYTQ1MmQ5OWY3YzYyZDBhZDVjNWIwMGRjNWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM3MGY4ZDc0ZmVhZGM3MDA2YmNlZTgzZTgzYTI1YTQ4NzlmMDIxZjdkYzU4MWI3ZGM3MGY1M2NiYzc3NzY3NWUifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L456-L515",
+          "version": "repo-lines-v1:sha256:1fbf662b90db1e2d564dad1313f32557aa36068d216d840220509f85681b5376:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmYWM0ZTQzNjMwYWJmNjhjM2E0YTc1NzNmZDRjNDMwMDhiYTc5OGRkNzZjMzc1OWVlZWY1M2U2Y2ZmOGQyZTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhhYmIzMzkyYTY4MWY4MmQ5OGUwNDVjOWJmYmMzMTllODVkMzkxZWI4NWNkZjNmNmMyNDczN2Y2ZTgyNzkxOTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJmMWNlZmNkZjFjNDUwMDZlNzMyYzczYjExMTJkMDJmMmYzMDQ5NjUzYzg4N2I4YTBjYWU0N2FiMjQyYzZkZWUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.3.3",
+    "at": "2026-08-22T15:50:39.855Z"
+  }
+}

@@ -386,3 +386,11 @@ stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
   Memory nur für Wissen, das NICHT im Repo steht (eine Lehre pro Datei, mit
   dem Warum; Falsches löschen statt stapeln).
 - Alle Texte dieses Projekts (Docs, Commits) auf Deutsch; Produkt-Texte Englisch.
+
+<!-- OPENWIKI:START -->
+
+## OpenWiki
+
+See [AGENTS.md](AGENTS.md) for OpenWiki agent instructions.
+
+<!-- OPENWIKI:END -->

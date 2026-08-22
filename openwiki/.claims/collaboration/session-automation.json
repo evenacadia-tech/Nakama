@@ -1,0 +1,196 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:13754ff99d9fc3f24ccc6e28df012aeb9da57223d82ee5bc7686e4dfae612c03",
+  "claims": [
+    {
+      "id": "claim_a62b47ff16fe4b70bff5ad614c4af185",
+      "statement": "Claude Code settings dispatch SessionStart, PreToolUse, PostToolUse, and Stop hooks, but no SessionEnd hook.",
+      "evidence": [
+        {
+          "resource": "repo://.claude/settings.json#L42-L137",
+          "version": "repo-lines-v1:sha256:ff75e36d5bee1ed3eded6ec4d09de1148e9cda0215cdb9fd50c7f8f37dd1657a:eyJzZWxlY3RlZExpbmVDb3VudCI6OTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhMmI4NWIxOTc1M2Y2MGRkODliZmY3NWUwN2Q3MjU1NGJhN2E2Mzg0YjVlZWExZjhiN2U3YjQxZTU4MWY0MzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjZmQ1MjdlNWMwMWE0MDBhNDgwNzAzY2QzMzAzNGMzNmRjNzUzYWM2NDM0MTkzYzI3NzRjOTFlZGZiNTc1YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0aa5cf5079da4a9d9c160b73ca0f5864",
+      "statement": "Startup, resume, or clear creates a session marker, while every SessionStart injects product, depth, local Hub, and design primers.",
+      "evidence": [
+        {
+          "resource": "repo://.claude/settings.json#L43-L77",
+          "version": "repo-lines-v1:sha256:1cb64c6f4cca1bf967c66ebf984732f0115752e763d532ee75db8278d424d546:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliYTkzOGUwODlhZTRhN2YzYzAyMmE3NzFmMGY4OGE5MDM4ZjU4NWViY2ZhYWQ4ZGUzNjU1YjdlYTU3ZTc1N2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2M2Q1MzVjZTM4MDYzZDZiNGM1MWQ4YzM4NmE3ZjliM2U1ODBhMTRhMTBjMDdiMTk4ZGZhZjE5YzkzYTNiZmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIyMDUyNzcxYTc3ZDM1YTZlMTZmODdlY2YyNDAwN2FiMzc1NGUxMWRiN2MzYWY4NGQ5NTg1YzQxYWRiNmYxZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU4YjZmYTkxODg5YTNhM2FjM2YwOGJlYTAyMDExY2FmYjYxODdkN2Y4YTFlZDg2YmE1ZjQ4ZDBmYjY3MzUyOTcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_48608a8a39e740ea837f7343bde9808a",
+      "statement": "The start marker records epoch, short HEAD, working directory, and a retired field under the user's Claude session directory, pruning entries older than seven days.",
+      "evidence": [
+        {
+          "resource": "repo://tools/hooks/session-start-marker.sh#L14-L36",
+          "version": "repo-lines-v1:sha256:6bcec4e38f45c062dc824162bd6a10699cdd8c756dd8be45d0d2e5b8df3553bb:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImExMTY3Yzk3NTViY2RjZTM1YmNkYjYwNmVjODJkY2NlNGIxZjcxMzQwMDJjOTZkODMyMWQzODc0M2Q3ODU4YzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ3OGI0ZWY3YmJhYjVhZDQ5ZjVhZGRhYTAxMTNkMjI3Y2IyOTJmYzZhOGI1YmQyYjFjZTYyNWZlNDdmYjkxZWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBmZWYwNGNkMTFkMjAxYjk3N2RjZDMyN2JhOWVhNjQwMjRjMjExYzRlZDg0YjIwNjE4MmQ0OGM4NzUyZTNmN2UifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d789b7b9c32445bfb59c624806f890b9",
+      "statement": "The Nakama primer extracts product truth from root CLAUDE.md and adds recent commits plus a bounded dirty-path summary.",
+      "evidence": [
+        {
+          "resource": "repo://tools/hooks/nakama-primer.sh#L1-L40",
+          "version": "repo-lines-v1:sha256:49282683e42290ca9c1faf0e2d4dafb3a410cba8cc99296d3d0b598a30f0fb1d:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4NzVmOTI4NTQ2YWVlNzg1NWNiMWRiOWFmYzhhYjNmMWE4YTM0ZDQzZGU1YmJkNjJmNzA3NmQ3YmE5ZjM5MTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4ZDNiOWU4ODBhNzc5NzU0OTNkYzdlMzU5MTQ0YzAyOTVhNGY2OTRjZmUwYWY0ZjkyOGMyMjMwN2JjNWMzMjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f86688c0f06c43059f676ed122dfb626",
+      "statement": "The Hub primer reads only local docs/hub/hub.json and Git drift and never contacts the deployed briefing API.",
+      "evidence": [
+        {
+          "resource": "repo://tools/hooks/hub-primer.sh#L12-L53",
+          "version": "repo-lines-v1:sha256:b0597f1d157495a734b8826825def7085b06b4e843298abf62a26155ed1056dc:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNTcyNTdkYmZkYTM3MTVhM2ZkZTc2OTVmZTdmMWU5ZGI2YWRiZmI0NzBmOTFhYTc5M2Y4OTBlZjIyZDkzYTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyYjdiMjAxNWJjYTdhMzNmYmUyY2MxMzI0ZmQ3ZWQ3NjI4MTg4MjAyNTYyNTc0OWY4NjY0N2Q5NDlhNGQ2MzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ3MGVhNmRhMTFjZWNhNzJlY2Y4ZDYwZTc1MjU1NTcwNGFjNGYyOTBjN2JjZWRiY2VlMDM2YWUxMTJiYzZhYzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgxODVlOTFhMjMzYjcxZTMxOGZmN2QwYjY2NTQ2NjQzMWZiZWRmZDc2OTliZjE5M2MyYzVjMDE5ZWVlNTAzZmMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_05f04f986b9542339158d00dce1ef81c",
+      "statement": "The design primer reports local design-document, acceptance, snapshot, and design-contract state without duplicating design policy.",
+      "evidence": [
+        {
+          "resource": "repo://tools/hooks/design-primer.sh#L1-L32",
+          "version": "repo-lines-v1:sha256:51de2cd30b587c8f78ed8dfe32f74cf6fd1a68d752fabf28b5ce9c834445e947:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4MGNlMGFkYTExZGNmZTA4YzI2Zjc4ZWRjMGVjNGZiNTRlMTE1NTc4NWUzMzEyNjVkODkxOWQyN2Y5ZmVlYmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI4ZDNiOWU4ODBhNzc5NzU0OTNkYzdlMzU5MTQ0YzAyOTVhNGY2OTRjZmUwYWY0ZjkyOGMyMjMwN2JjNWMzMjAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a12e1fc53919462e94f545dbe70e4130",
+      "statement": "Configured PreToolUse applies a Git safety gate plus the prototype design-contract and legacy creative-release gates.",
+      "evidence": [
+        {
+          "resource": "repo://.claude/settings.json#L78-L101",
+          "version": "repo-lines-v1:sha256:248ff77cc709958611af1c474839c12379ca003240ecf36b895a0465d9d4906b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4MThlOTAyMDc0NDJkOGM5N2U0NTdiNTBiMjVjYzVkZDRjODA5MzY0N2UzYzg5ZTRiZTAxODg1ODQxNzYwZDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2M2Q1MzVjZTM4MDYzZDZiNGM1MWQ4YzM4NmE3ZjliM2U1ODBhMTRhMTBjMDdiMTk4ZGZhZjE5YzkzYTNiZmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI0N2ZlZTRhY2NhMzA5MDIxNzMwMTE1YzhhZmQwZDk4ZDBjNDEyOWQwNjc5Mzk4Zjk3ODVmYTNkN2MyZmM4NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEzNTVlMTc4YjczMDVlZTkxOGQ5MDhiMWZlOWYzZmU0ZDFkNDZmNjdhY2JkNzYzOGMyOTA3Y2UwZTg5NTUzNjIifQ"
+        },
+        {
+          "resource": "repo://tools/hooks/git-riegel.sh",
+          "version": "repo-file-v1:sha256:275cfca016793ca1495312cec3b4c4507e94fd045c7804870b60439276d797ff"
+        },
+        {
+          "resource": "repo://tools/hooks/kreativ-schleuse.sh#L1-L41",
+          "version": "repo-lines-v1:sha256:0e10cce621e7f5f201f9ccdb3dfb47ca71ce52ef36c30d19aa6aa9982b0828ce:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzNjJmYjYzMmIxNTdmMjgzYjkxMzU4MDRhNTE3ZGE2NDkxZDkzOWQ4NjM1NDM1OTExYTkxZjM4OWM5ZTRhZmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://tools/hooks/prototyp-schleuse.sh#L1-L39",
+          "version": "repo-lines-v1:sha256:e59b751f47efa460702121e53038eb5b06765a16648e4f185bed80f5591f433b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4ZDNiOWU4ODBhNzc5NzU0OTNkYzdlMzU5MTQ0YzAyOTVhNGY2OTRjZmUwYWY0ZjkyOGMyMjMwN2JjNWMzMjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_1020974bd2da433682d775170671765e",
+      "statement": "Configured PostToolUse dispatches advisory source reminders and an automatic push check after shell commands.",
+      "evidence": [
+        {
+          "resource": "repo://.claude/settings.json#L102-L121",
+          "version": "repo-lines-v1:sha256:dc8bc95c19cd9ba692346f393749bff83ff34ba82288fa76b0b441156e9213a2:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmMTY2MmU0YjY2MWZlZGVjMGExOGIxNWFmZDM2MzA4OGYyY2Y5NzAxNjlhMjk4MzM0NDVhZjUxZTM5MTcwMDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2M2Q1MzVjZTM4MDYzZDZiNGM1MWQ4YzM4NmE3ZjliM2U1ODBhMTRhMTBjMDdiMTk4ZGZhZjE5YzkzYTNiZmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI0N2ZlZTRhY2NhMzA5MDIxNzMwMTE1YzhhZmQwZDk4ZDBjNDEyOWQwNjc5Mzk4Zjk3ODVmYTNkN2MyZmM4NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjNDM4Y2QxYWNlYjdmMWFkNTc3ZmIwNjcxNDQ4N2ZkZDM3MzdlYmE0MmI3NzEyODQ4NmIxMDdlZjFmYWExNmQifQ"
+        },
+        {
+          "resource": "repo://tools/hooks/agent-reminder-nakama.sh#L1-L51",
+          "version": "repo-lines-v1:sha256:c9ed3bb837a02019de080b53c4b74dd4568a9e9b9049c3e0a8301352b5a64636:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4NzVmOTI4NTQ2YWVlNzg1NWNiMWRiOWFmYzhhYjNmMWE4YTM0ZDQzZGU1YmJkNjJmNzA3NmQ3YmE5ZjM5MTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3NjE2NDEyNTY2MDA4YzExNGNkMTgyODMwNmQzNzEzM2FiODZkYjRiNmY0MDhhMGI4YzExZTZhYjc5MDQ2ZWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI3ZDI0YTlhNTk2ZTI4YWI2NzFmYzE1MzJjOTNkY2M5ZWM3ZjhjZmE1MmJhZWJjMDkzNWNlZmU5ZTlmMWM1OTkifQ"
+        },
+        {
+          "resource": "repo://tools/hooks/auto-push.sh",
+          "version": "repo-file-v1:sha256:415872b57ee9bba0bbff8e758964ba014327446cd68d27a06af9357a117972b2"
+        }
+      ]
+    },
+    {
+      "id": "claim_5668e005fd654c2da85eef3e68decc1a",
+      "statement": "Configured Stop handling dispatches one-time Hub-state and uncommitted-work reminders without performing Hub synchronization or choosing files to commit.",
+      "evidence": [
+        {
+          "resource": "repo://.claude/settings.json#L122-L137",
+          "version": "repo-lines-v1:sha256:1c97a4bba00225883cce718b8267d19f81686a909b2cc530c2c15f18939b119e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViMjQ3ZmI4Yjg3YWM0OWM2ODllMDRmODRmOTExMWU2N2Y2ZWUwZjg0NTY5MDc0NzY2OTdjYzNhYTNkM2NhNzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI0N2ZlZTRhY2NhMzA5MDIxNzMwMTE1YzhhZmQwZDk4ZDBjNDEyOWQwNjc5Mzk4Zjk3ODVmYTNkN2MyZmM4NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://tools/hooks/hub-stop.sh#L12-L51",
+          "version": "repo-lines-v1:sha256:72bb6b43ed17576dab117157d483d25b72a814751b4bdf3ed0e0e7f93de9d3ca:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4Mjg4Zjc5NjEwYTNhYjRhODRlNmZmODA1OWE4MzUzYWI5Mjk2YzJiY2JmNjk1MWQ0MjkzNjZmOWY2YWIwNzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzNTEwMTFhMjc1Mzk3NGQxNmUxYTg5OTNkNWRlNjM1ZDJiZTc2ZWJhYzY2ZWYxMjRmZDA1ZGExNjU2YzIwY2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI2ZGYzYzk3MWM0ZmY2NTZjZDYxYTBjOWU2NGMzZGQzNWZhZjNkYzk1NDgwYWY2ZDQyNTE3ZTUxZDYxMzIxZmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI4ZDNiOWU4ODBhNzc5NzU0OTNkYzdlMzU5MTQ0YzAyOTVhNGY2OTRjZmUwYWY0ZjkyOGMyMjMwN2JjNWMzMjAifQ"
+        },
+        {
+          "resource": "repo://tools/hooks/commit-stop.sh",
+          "version": "repo-file-v1:sha256:e846712814b0ed724ad55e6c0b50f806813d1fa22eca465d44f6092223177094"
+        }
+      ]
+    },
+    {
+      "id": "claim_7b08137b84374c388c2b87cf9325d6ab",
+      "statement": "Focused probes cover five stop-hook conditions and both blocked and allowed prototype-gate operations.",
+      "evidence": [
+        {
+          "resource": "repo://tools/hub/test_stop_hook.sh#L16-L40",
+          "version": "repo-lines-v1:sha256:1cd7291e4ef846f17df5f8ab0954fa78eab6acdcf42a535d81579a09edb23568:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0Y2NhODI0ZDE0Zjk2ZDE3MTU3MTVmZTEwY2JjZTZmYjMzYjhlY2ZjNWNhMWYyMDUyZDU3YzRmZjgyZjE0NDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2NWUxZDM0M2ZiM2M4NzE3OTcxOGI4NTBmZGMwMWU0MjMyYWNjYWUyNDEwZmI5YzRhNzA5MDFlNzQ4YjQxYjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJkNDkyNDFhM2QwOTQ5NTM1NjNjZmUwOWFjOWU5NjE1ZWMwYzk2ZjVhMjU5YmFlMzhmODM0NWY0ZWM4YjZkZDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://tools/hooks/schleusen-probe.sh#L17-L86",
+          "version": "repo-lines-v1:sha256:9c55d56ea6b24e8eb0d405c2b7728779322a0d4e186b2829e6f3de4bfe46f8b7:eyJzZWxlY3RlZExpbmVDb3VudCI6NzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRjZDA3NTVlOTA5NWRjNTQyNWVhNDg1MzE2YWNlMDFjNTJmOTVmNzQwYWUzMTcxNDRmNWRmZWY5MjA4YzU5Y2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkMjVlNDQ0YmYyYTNlODFlMDIyNzI4ZjJhY2RiZGNhMmFmY2Q4NDdiNjNlMmQxMTc0ZWY3M2ZmZWU5MDRmYmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJiNTk4ZTdiNGNkMWZkMzhkYTMxMmQ4YjU4YTAxZjYwY2NkNmYxODZlZTQ1OGNjZTdiMDVkOThlMjRlYWI1ZDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY4ZmFjNjRmNmJmMDdhZGUzODczY2U2YjA3M2UxOGU4NzFhNDcxOTlhYTYyNTgzZmRmNDk2NDk5ZWU1ZGE5M2MifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7c24a6695cd34860844c8a2483197281",
+      "statement": "The prototype gate requires an accepted design-contract file, and the legacy creative gate requires a release marker younger than 24 hours.",
+      "evidence": [
+        {
+          "resource": "repo://tools/hooks/prototyp-schleuse.sh#L20-L39",
+          "version": "repo-lines-v1:sha256:b168387e5cd7897d3245d4a04bcd03f9eaf6b43886881c85560a0fee50de5237:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4ZDNiOWU4ODBhNzc5NzU0OTNkYzdlMzU5MTQ0YzAyOTVhNGY2OTRjZmUwYWY0ZjkyOGMyMjMwN2JjNWMzMjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1ZDgwMWIyNGQxZDA2ZTA5NzE0MDZlZTQzMDAyYzMwNTgxYmMzMGI4MGYzOGRkNGYzMTgyZTcyOWM1YTJjMTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://tools/hooks/kreativ-schleuse.sh#L22-L41",
+          "version": "repo-lines-v1:sha256:390954cb6eec0c2165abddb0a87a504a1e64723894b952e41c4b1c6ac9349c75:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1ZGZmZDI0M2MxODFiNjk0ZDc1ZGNkMjdlZWIzYWY1YzM4NWExOTVhZDhmZTk1MzRkN2RhMjdlMzYyMDM3ZTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzNjJmYjYzMmIxNTdmMjgzYjkxMzU4MDRhNTE3ZGE2NDkxZDkzOWQ4NjM1NDM1OTExYTkxZjM4OWM5ZTRhZmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY2NDIwZjhiMmUyODJjMjFkZjBjZDdhYWM4YmU3YjU4MTI1MDg4OTMwZmY2NjgyNzY1OTc0ZDQ0YzliYjM1YTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_879499f9bbd342fa82df892bbcd87f09",
+      "statement": "The Git safety gate blocks broad staging, amend, destructive cleanup, history rewrite, and force-reference operations unless the explicit emergency bypass is present.",
+      "evidence": [
+        {
+          "resource": "repo://tools/hooks/git-riegel.sh",
+          "version": "repo-file-v1:sha256:275cfca016793ca1495312cec3b4c4507e94fd045c7804870b60439276d797ff"
+        }
+      ]
+    },
+    {
+      "id": "claim_c1716a27a1a3439e96831bb1c42c13a3",
+      "statement": "The automatic-push hook pushes only when the current branch is ahead of its upstream, skips merge, rebase, and detached states, and suppresses repeated failure attempts for the same HEAD.",
+      "evidence": [
+        {
+          "resource": "repo://tools/hooks/auto-push.sh",
+          "version": "repo-file-v1:sha256:415872b57ee9bba0bbff8e758964ba014327446cd68d27a06af9357a117972b2"
+        }
+      ]
+    },
+    {
+      "id": "claim_d56c8b68407744faaa49332ea762f987",
+      "statement": "The commit Stop hook reports files modified after the session marker once per session and requires the agent to distinguish its own files from parallel-session work.",
+      "evidence": [
+        {
+          "resource": "repo://tools/hooks/commit-stop.sh",
+          "version": "repo-file-v1:sha256:e846712814b0ed724ad55e6c0b50f806813d1fa22eca465d44f6092223177094"
+        }
+      ]
+    },
+    {
+      "id": "claim_d10b521af134474a9a5b5f515d3ec5b9",
+      "statement": "The Git automation probe tests blocked and allowed safety-gate commands and the local no-op or active decision of automatic push.",
+      "evidence": [
+        {
+          "resource": "repo://tools/hooks/git-automatik-probe.sh",
+          "version": "repo-file-v1:sha256:2a259da47a5f329e0c4a80e439a2752a2bf7b8ee83090b5ac1b79d1e6cc9cdf6"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.3.3",
+    "at": "2026-08-22T17:37:04.217Z"
+  }
+}

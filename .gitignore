@@ -49,3 +49,6 @@ GATES.md
 .playwright-cli/
 design/werkzeug/pruefung/bilder/
 design/werkzeug/pruefung/.gegenprobe/
+
+# Prüflaufergebnisse (/c-review, T3-Gates) — regenerierbar, nie committen
+.c-review-results/

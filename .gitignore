@@ -40,3 +40,8 @@ eq-copilot/design/prisma-studie/prisma/renders/stmap/dreh-w*.png
 # .git/info/exclude ausgeschlossen (greift auf dem Laptop nicht) - hier gilt es
 # fuer beide Rechner (Kontext-Inventur 21.08.2026).
 GATES.md
+
+# Nakama-Hub: gebaute Seite (aus hub.json + Design-Truhe regenerierbar)
+docs/hub/hub.html
+docs/hub/hub-test.html
+docs/hub/hub-published.html

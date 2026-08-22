@@ -6,6 +6,12 @@
 > es wiederholt die Wahrheit nicht. Wenn hier und in CLAUDE.md etwas
 > Verschiedenes steht, gilt CLAUDE.md; dann dieses Blatt berichtigen.
 
+> **Seit 22.08. gibt es den Nakama-Hub** (`docs/hub/`, Artefakt-Adresse in
+> `hub.json`): das Briefing für den User und jede Session — Plan erledigt/offen,
+> was bei ihm liegt, Figma-Stand der drei Apps, Codex-Review-Upload. Pflicht:
+> lesen · Eingang prüfen · nachziehen (CLAUDE.md, Abschnitt „Hub"). Dieses
+> Blatt bleibt der technische Einstieg; der Hub ist die Sicht des Projektleiters.
+
 ## Was heute passiert ist
 
 - Neun Prüfer haben beide Repos, drei Memory-Verzeichnisse, Hooks, Docs,

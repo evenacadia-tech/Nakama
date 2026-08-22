@@ -112,6 +112,29 @@ als Produktteil · „Lernsprache" / „Kernfunktion vor Verwaltung" als Regeln.
 | Material-Kit-Kette (Provisorium, technisch lebendig: `tokens.json` → `LeitstandTokens.h`) | `eq-copilot/design/` Wurzel |
 | Design der drei Apps (Figma-Übersetzung, Abnahmen) | `C:\Users\phili\Projekte\Nakama-Design` |
 
+## Hub — gemeinsames Briefing (Pflicht seit 22.08.2026)
+
+Der User (Projektleiter, kein Coder) liest **eine** Seite: den Nakama-Hub
+(Artefakt auf claude.ai; Adresse `artefakt_url` in `docs/hub/hub.json`). Sie
+zeigt Plan erledigt/offen, was bei ihm liegt (Entscheide · Handgriffe · Wissen
+vor dem Klick), den Figma-Stand der drei Apps mit Bild und nimmt Codex-Reviews
+als `.md` entgegen. User-Wort 22.08.: „die pflicht für jeden claude dieses
+dokument zu aktualisieren und bei session beginn anzusehen … wie ein
+gemeinsames briefing und übersichtshub". Drei Pflichten je Session, Details in
+`docs/hub/LIES-MICH.md`:
+
+1. **Lesen** — der SessionStart-Hook (`tools/hooks/hub-primer.sh`) liest Kopf
+   und Drift vor; bei Drift `hub.json` vor der Arbeit nachziehen.
+2. **Eingang prüfen** — `Artifact(action='read', url=…)` → `py -3.13
+   tools/hub/hub_eingang.py <Datei>` → jede Review Befund für Befund gegen die
+   Quelldatei (T3-Regel, Bauaufteilung §2), Status in `hub.json`.
+3. **Nachziehen** — `hub.json` fortschreiben (Klartext, kein Entscheid ohne
+   Register-Zitat, „erledigt" nur mit Manifest) → `py -3.13
+   tools/hub/baue_hub.py` → `Artifact(file_path=docs/hub/hub.html, url=…,
+   capabilities={'artifact': {}})` → `hub.json` per Pathspec committen. Der
+   Stop-Hook (`tools/hooks/hub-stop.sh`) blockt einmal je Session, wenn Commits
+   ohne Hub-Update enden.
+
 ## Bauen & Beweisen (vom Workspace-Root)
 
 ```powershell
@@ -287,6 +310,7 @@ stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
 
 | Bereich | Zuerst lesen |
 |---|---|
+| Gemeinsames Briefing (Plan · bei dir · Design · Reviews) | `docs/hub/hub.json` (Quelle) · `docs/hub/LIES-MICH.md` |
 | Einstieg, der eine nächste Schritt | `docs/NEXT-SESSION.md` |
 | Plugin heute (Architektur, Datenfluss, IPC, Tests) | `docs/plugin-wissen.md` |
 | Sondenfamilie: Technik + Phasen (Fassung 0.4 + Errata 21.08.) | `docs/FL-Nakama-Sonden-Design-Entwurf.md` · `docs/bauaufteilung-sonden.md` |

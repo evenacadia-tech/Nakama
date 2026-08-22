@@ -1,0 +1,344 @@
+<title>Nakama Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style id="hub-style">
+:root{
+  --grund:#F2F3F4;--flaeche:#FFFFFF;--flaeche2:#E9EBED;--linie:#D5D9DD;--linie2:#C3C8CD;
+  --text:#1B1D1F;--text2:#4B5158;--text3:#7A8188;
+  --akzent:#7E3D3E;--akzent-hell:#F1E4E4;
+  --gut:#2F6B4F;--gut-hell:#E1EEE7;--warte:#9A6315;--warte-hell:#F6EBD6;--offen:#8A9098;
+  --schatten:0 1px 2px rgba(27,29,31,.06),0 4px 14px rgba(27,29,31,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --grund:#131416;--flaeche:#1B1D1F;--flaeche2:#222528;--linie:#2C3034;--linie2:#3A3F45;
+    --text:#E7E9EA;--text2:#B8BDC2;--text3:#858B90;
+    --akzent:#C9797B;--akzent-hell:#2C1F20;
+    --gut:#6FB08E;--gut-hell:#1C2A23;--warte:#D9A05B;--warte-hell:#2C2419;--offen:#6B7177;
+    --schatten:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --grund:#131416;--flaeche:#1B1D1F;--flaeche2:#222528;--linie:#2C3034;--linie2:#3A3F45;
+  --text:#E7E9EA;--text2:#B8BDC2;--text3:#858B90;
+  --akzent:#C9797B;--akzent-hell:#2C1F20;
+  --gut:#6FB08E;--gut-hell:#1C2A23;--warte:#D9A05B;--warte-hell:#2C2419;--offen:#6B7177;
+  --schatten:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--grund);color:var(--text);font-family:"Geist",system-ui,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.mono{font-family:"Geist Mono",ui-monospace,Consolas,"Courier New",monospace;font-variant-numeric:tabular-nums}
+a{color:var(--akzent)}
+a:focus-visible,button:focus-visible,label:focus-within,input:focus-visible{outline:2px solid var(--akzent);outline-offset:2px}
+.seite{max-width:920px;margin:0 auto;padding:40px 24px 72px}
+@media (max-width:600px){.seite{padding:24px 14px 56px}}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:600;letter-spacing:-.01em}
+h1{font-size:30px;line-height:1.15}
+h2{font-size:20px;line-height:1.25}
+h3{font-size:15.5px;line-height:1.3}
+p{margin:0}
+.eyebrow{font-family:"Geist Mono",ui-monospace,Consolas,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
+.kopf{display:grid;gap:14px;padding-bottom:28px;border-bottom:1px solid var(--linie)}
+.kopf .lede{color:var(--text2);max-width:64ch;font-size:16px}
+.kacheln{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:8px}
+.kachel{background:var(--flaeche);border:1px solid var(--linie);border-radius:10px;padding:14px 16px;display:grid;gap:4px;box-shadow:var(--schatten)}
+.kachel .wert{font-size:24px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.kachel .wert small{font-size:13px;font-weight:500;color:var(--text3);margin-left:4px}
+.kachel .sub{font-size:13px;color:var(--text2)}
+section{padding-top:40px}
+.abschnitt-kopf{display:grid;gap:6px;margin-bottom:18px}
+.abschnitt-kopf p{color:var(--text2);max-width:68ch}
+.gruppe{margin-top:22px}
+.gruppe-titel{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.gruppe-titel .zahl{color:var(--text3);font-size:13px}
+.karten{display:grid;gap:10px}
+.karte{background:var(--flaeche);border:1px solid var(--linie);border-left:4px solid var(--offen);border-radius:10px;padding:14px 18px 14px 16px;display:grid;gap:8px;box-shadow:var(--schatten)}
+.karte.jetzt{border-left-color:var(--warte)}
+.karte.wissen{border-left-color:var(--akzent)}
+.karte-kopf{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.chip{display:inline-block;font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.04em;padding:2px 8px;border-radius:999px;border:1px solid var(--linie2);color:var(--text2);background:var(--flaeche2);white-space:nowrap}
+.chip.warte{color:var(--warte);background:var(--warte-hell);border-color:transparent}
+.chip.gut{color:var(--gut);background:var(--gut-hell);border-color:transparent}
+.chip.akzent{color:var(--akzent);background:var(--akzent-hell);border-color:transparent}
+.karte .was{color:var(--text)}
+.karte .warum{color:var(--text2)}
+.karte .warum b{color:var(--text);font-weight:500}
+.karte .wo{font-size:12.5px;color:var(--text3);display:flex;flex-wrap:wrap;gap:4px 14px}
+.schritte{display:grid;gap:8px;background:var(--flaeche);border:1px solid var(--linie);border-radius:10px;padding:14px 18px;box-shadow:var(--schatten)}
+.schritt{display:grid;grid-template-columns:88px 1fr;gap:12px;align-items:baseline}
+.schritt .rolle{font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
+@media (max-width:520px){.schritt{grid-template-columns:1fr;gap:2px}}
+.phase{margin-top:26px;background:var(--flaeche);border:1px solid var(--linie);border-radius:10px;overflow:hidden;box-shadow:var(--schatten)}
+.phase-kopf{padding:14px 18px;display:grid;gap:4px;border-bottom:1px solid var(--linie);background:var(--flaeche2)}
+.phase-kopf .code{color:var(--text3);font-size:12px}
+.phase-kopf .ziel{color:var(--text2);font-size:14px;max-width:72ch}
+.zeile{display:grid;grid-template-columns:26px 82px 1fr auto;gap:12px;align-items:start;padding:11px 18px;border-top:1px solid var(--linie)}
+.zeile:first-of-type{border-top:0}
+@media (max-width:600px){.zeile{grid-template-columns:26px 1fr;gap:6px 10px}.zeile .id{grid-column:2}.zeile .text{grid-column:2}.zeile .meta{grid-column:2}}
+.zeile .mark{font-size:15px;line-height:1.5;text-align:center}
+.zeile .id{font-family:"Geist Mono",ui-monospace,monospace;font-size:12.5px;color:var(--text2);padding-top:2px}
+.zeile .text{color:var(--text);font-size:14.5px}
+.zeile .text .ticket{color:var(--text3);font-family:"Geist Mono",ui-monospace,monospace;font-size:11.5px;margin-left:6px}
+.zeile .meta{font-family:"Geist Mono",ui-monospace,monospace;font-size:11.5px;color:var(--text3);text-align:right;white-space:nowrap;padding-top:3px;display:grid;gap:2px}
+.zeile.erledigt .mark{color:var(--gut)}
+.zeile.gebaut .mark{color:var(--gut)}
+.zeile.naechster .mark{color:var(--akzent)}
+.zeile.naechster .text{font-weight:500}
+.zeile.beidir .mark{color:var(--warte)}
+.zeile.beidir .text{font-weight:500}
+.zeile.offen .mark,.zeile.wartet .mark{color:var(--offen)}
+.zeile.offen .text,.zeile.wartet .text{color:var(--text2)}
+.legende{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:14px;font-size:12.5px;color:var(--text2)}
+.legende span b{font-weight:500;margin-right:4px}
+.app{margin-top:20px;background:var(--flaeche);border:1px solid var(--linie);border-radius:10px;overflow:hidden;box-shadow:var(--schatten)}
+.app .bild{background:#121315;display:flex;justify-content:center;line-height:0;border-bottom:1px solid var(--linie)}
+.app .bild img{width:auto;max-width:100%;height:auto;display:block}
+.app .bild .leer{color:#858B90;padding:40px 18px;line-height:1.5;font-size:14px;text-align:center}
+.app .body{padding:14px 18px;display:grid;gap:8px}
+.app .titel{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.app .titel .mass{color:var(--text3);font-size:12.5px}
+.app .rolle{color:var(--text2);font-size:14px}
+.app .stand{color:var(--text)}
+.app .wo{font-size:12.5px;color:var(--text3);display:flex;flex-wrap:wrap;gap:4px 14px}
+.hinweis{background:var(--flaeche2);border:1px solid var(--linie);border-radius:10px;padding:12px 16px;color:var(--text2);font-size:14px}
+.drop{margin-top:6px;border:1.5px dashed var(--linie2);border-radius:10px;padding:22px 18px;display:grid;gap:6px;justify-items:center;text-align:center;cursor:pointer;background:var(--flaeche);transition:border-color .15s,background .15s}
+.drop:hover,.drop.aktiv{border-color:var(--akzent);background:var(--akzent-hell)}
+.drop.aus{cursor:default;opacity:.7}
+.drop input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.drop .gross{font-weight:500}
+.drop .klein{font-size:13px;color:var(--text3)}
+.status{margin-top:8px;font-size:13.5px;color:var(--text2);min-height:1.4em}
+.status.fehler{color:var(--akzent)}
+.liste{display:grid;gap:8px;margin-top:14px}
+.eintrag{background:var(--flaeche);border:1px solid var(--linie);border-radius:10px;padding:12px 16px;display:grid;gap:4px;box-shadow:var(--schatten)}
+.eintrag .kopfz{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.eintrag .kopfz .datum{color:var(--text3);font-size:12.5px}
+.eintrag .kurz{color:var(--text2);font-size:14px}
+.eintrag .wo{font-size:12.5px;color:var(--text3)}
+.eintrag pre{margin:6px 0 0;max-height:160px;overflow:auto;background:var(--flaeche2);border:1px solid var(--linie);border-radius:6px;padding:10px 12px;font-size:12px;line-height:1.45;white-space:pre-wrap;word-break:break-word;color:var(--text2)}
+footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--linie);display:grid;gap:10px;color:var(--text2);font-size:13.5px}
+footer ol{margin:0;padding-left:20px;display:grid;gap:4px}
+footer .pfade{color:var(--text3);font-size:12.5px;display:grid;gap:2px}
+@media (prefers-reduced-motion:reduce){.drop{transition:none}}
+</style>
+<div id="app"></div>
+<script type="application/json" id="hub-state">{{STATE_JSON}}</script>
+<script type="application/json" id="hub-bilder">{{BILDER_JSON}}</script>
+<script id="hub-app">
+(function(){
+'use strict';
+var STATE = JSON.parse(document.getElementById('hub-state').textContent);
+var BILDER = JSON.parse(document.getElementById('hub-bilder').textContent);
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function jsonInScript(o){return JSON.stringify(o).replace(/<\//g,'<\\/');}
+
+var STATUS = {
+  erledigt:  {mark:'✓', wort:'erledigt'},
+  gebaut:    {mark:'◐', wort:'gebaut, Prüfurteil offen'},
+  naechster: {mark:'▶', wort:'nächster Schritt'},
+  'bei dir': {mark:'●', wort:'wartet auf dich', cls:'beidir'},
+  wartet:    {mark:'◌', wort:'wartet auf etwas anderes'},
+  offen:     {mark:'○', wort:'offen'}
+};
+function st(s){return STATUS[s]||STATUS.offen;}
+function stCls(s){return (STATUS[s]&&STATUS[s].cls)||s.replace(/\s/g,'');}
+
+function zaehle(plan){
+  var z={gesamt:0,erledigt:0,gebaut:0,beidir:0};
+  plan.forEach(function(p){p.zeilen.forEach(function(r){
+    z.gesamt++; if(r.status==='erledigt')z.erledigt++; if(r.status==='gebaut')z.gebaut++; if(r.status==='bei dir')z.beidir++;
+  });});
+  return z;
+}
+function datumDe(iso){ if(!iso) return ''; var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(iso); return m? m[3]+'.'+m[2]+'.'+m[1] : iso; }
+
+function rKopf(s){
+  var z=zaehle(s.plan);
+  var bd=s.bei_dir||[], jetzt=bd.filter(function(b){return b.dringlichkeit==='jetzt';}).length,
+      bald=bd.filter(function(b){return b.dringlichkeit==='wenn du dazu kommst';}).length,
+      spaeter=bd.length-jetzt-bald;
+  var meta=[ 'Stand '+datumDe(s.stand) ];
+  if(s.commit) meta.push('Commit '+s.commit);
+  if(s.gebaut_am) meta.push('Seite gebaut '+s.gebaut_am);
+  return '<header class="kopf">'+
+    '<div class="eyebrow">Nakama · Briefing · '+esc(meta.join(' · '))+'</div>'+
+    '<h1>Wo Nakama steht</h1>'+
+    '<p class="lede">'+esc(s.stand_notiz)+'</p>'+
+    '<div class="kacheln">'+
+      '<div class="kachel"><div class="eyebrow">Plan</div><div class="wert">'+z.erledigt+'<small>von '+z.gesamt+' Zeilen erledigt</small></div><div class="sub">'+(z.gebaut?z.gebaut+' gebaut, Prüfurteil offen · ':'')+(z.gesamt-z.erledigt-z.gebaut)+' offen</div></div>'+
+      '<div class="kachel"><div class="eyebrow">Bei dir</div><div class="wert">'+jetzt+'<small>jetzt</small></div><div class="sub">'+bald+' wenn du dazu kommst · '+spaeter+' später oder nur wissen</div></div>'+
+      '<div class="kachel"><div class="eyebrow">Codex-Reviews</div><div class="wert">'+(s.eingang||[]).length+'<small>im Eingang</small></div><div class="sub">'+(s.reviews||[]).length+' eingearbeitet · Upload unten</div></div>'+
+    '</div>'+
+  '</header>';
+}
+
+var GRUPPEN=[
+  {k:'jetzt', t:'Jetzt', sub:'hält etwas auf oder ist der nächste Schritt'},
+  {k:'wenn du dazu kommst', t:'Wenn du dazu kommst', sub:'blockiert heute nichts, wird aber gebraucht'},
+  {k:'wissen', t:'Nur wissen', sub:'kein Handgriff nötig — aber vor dem nächsten Klick im Kopf haben'},
+  {k:'später', t:'Später, wenn das Ticket dran ist', sub:'steht hier, damit es nicht überrascht'}
+];
+function rBeiDir(s){
+  var bd=s.bei_dir||[];
+  var html='<section id="bei-dir"><div class="abschnitt-kopf"><div class="eyebrow">Bei dir</div><h2>Entscheide und Handgriffe, die nur du machen kannst</h2><p>Jede Karte sagt, was zu tun ist, warum es zählt und wo die Belegstelle liegt. Dein Wort im Chat genügt — Claude trägt es mit Datum und Wortlaut ein.</p></div>';
+  GRUPPEN.forEach(function(g){
+    var rows=bd.filter(function(b){return b.dringlichkeit===g.k;});
+    if(!rows.length) return;
+    html+='<div class="gruppe"><div class="gruppe-titel"><h3>'+esc(g.t)+'</h3><span class="zahl">'+rows.length+' · '+esc(g.sub)+'</span></div><div class="karten">';
+    rows.forEach(function(b){
+      html+='<article class="karte '+(g.k==='jetzt'?'jetzt':g.k==='wissen'?'wissen':'')+'">'+
+        '<div class="karte-kopf"><span class="chip '+(g.k==='jetzt'?'warte':'')+'">'+esc(b.art)+'</span><h3>'+esc(b.titel)+'</h3></div>'+
+        '<p class="was">'+esc(b.was)+'</p>'+
+        '<p class="warum"><b>Warum:</b> '+esc(b.warum)+'</p>'+
+        '<div class="wo mono"><span>'+esc(b.wo)+'</span>'+(b.seit?'<span>seit '+esc(b.seit)+'</span>':'')+'</div>'+
+      '</article>';
+    });
+    html+='</div></div>';
+  });
+  return html+'</section>';
+}
+
+function rNaechster(s){
+  var n=s.naechster_schritt||{};
+  return '<section id="naechster"><div class="abschnitt-kopf"><div class="eyebrow">Nächster Schritt</div><h2>Was als Nächstes passiert</h2></div><div class="schritte">'+
+    '<div class="schritt"><span class="rolle">Technik</span><p>'+esc(n.technik)+'</p></div>'+
+    '<div class="schritt"><span class="rolle">Design</span><p>'+esc(n.design)+'</p></div>'+
+    '<div class="schritt"><span class="rolle">Du</span><p>'+esc(n.dich)+'</p></div>'+
+  '</div></section>';
+}
+
+function rPlan(s){
+  var html='<section id="plan"><div class="abschnitt-kopf"><div class="eyebrow">Der Plan</div><h2>Sondenkern — Phasen, Sessions, Gates</h2><p>Eine Zeile ist eine Bau-Session (oder ein Termin bei dir). Erledigt heißt: gebaut, Beweismanifest geschrieben, von einem frischen Prüfer bestanden. Ein Gate ist eine adversariale Prüfrunde am Ende einer Phase.</p></div>';
+  s.plan.forEach(function(p){
+    html+='<div class="phase"><div class="phase-kopf"><div class="code mono">'+esc(p.phase)+'</div><h3>'+esc(p.titel)+'</h3><p class="ziel">'+esc(p.ziel)+'</p></div>';
+    p.zeilen.forEach(function(r){
+      var S=st(r.status);
+      html+='<div class="zeile '+stCls(r.status)+'" title="'+esc(S.wort)+'">'+
+        '<span class="mark" aria-label="'+esc(S.wort)+'">'+S.mark+'</span>'+
+        '<span class="id">'+esc(r.id)+'</span>'+
+        '<span class="text">'+esc(r.text)+(r.ticket?'<span class="ticket">'+esc(r.ticket)+'</span>':'')+'</span>'+
+        '<span class="meta">'+(r.datum?'<span>'+esc(r.datum)+'</span>':'<span>'+esc(S.wort)+'</span>')+(r.beleg?'<span>'+esc(r.beleg)+'</span>':'')+'</span>'+
+      '</div>';
+    });
+    html+='</div>';
+  });
+  html+='<div class="legende">';
+  ['erledigt','gebaut','naechster','bei dir','wartet','offen'].forEach(function(k){html+='<span><b>'+st(k).mark+'</b>'+esc(st(k).wort)+'</span>';});
+  return html+'</div></section>';
+}
+
+function rDesign(s){
+  var d=s.design||{apps:[]};
+  var html='<section id="design"><div class="abschnitt-kopf"><div class="eyebrow">Nakama Design</div><h2>Die drei Apps — aktueller Figma-Stand</h2><p>'+esc(d.massstab)+'</p><p>'+esc(d.phase)+'</p></div>';
+  d.apps.forEach(function(a){
+    var b=BILDER[a.key];
+    var chip = a.status==='wartet auf dich' ? 'warte' : a.status==='Vorgabe steht' ? 'gut' : '';
+    html+='<article class="app"><div class="bild">'+
+      (b && b.src ? '<img src="'+b.src+'" alt="'+esc(a.name)+' — Figma-Export '+esc(b.datum||'')+'" width="'+(b.w||'')+'" height="'+(b.h||'')+'">' : '<div class="leer">Kein Figma-Export in der Truhe (Nakama-Design/assets/figma/).</div>')+
+      '</div><div class="body">'+
+      '<div class="titel"><h3>'+esc(a.name)+'</h3><span class="mass mono">'+esc(a.groesse)+'</span><span class="chip '+chip+'">'+esc(a.status)+'</span>'+(b&&b.datei?'<span class="mass mono">'+esc(b.datei)+'</span>':'')+'</div>'+
+      '<p class="rolle">'+esc(a.rolle)+'</p>'+
+      '<p class="stand">'+esc(a.stand_text)+'</p>'+
+      '<div class="wo mono"><span>Offen: '+esc(a.offen)+'</span><span>'+esc(a.wo)+'</span></div>'+
+    '</div></article>';
+  });
+  return html+'</section>';
+}
+
+function rReviews(s){
+  var html='<section id="reviews"><div class="abschnitt-kopf"><div class="eyebrow">Codex-Reviews</div><h2>Review hochladen</h2><p>Hast du mit Codex eine Code-Review gemacht, lege die <span class="mono">.md</span> hier ab. Die Seite speichert sie in sich selbst; Claude liest sie beim nächsten Sessionstart aus, prüft jeden Befund gegen die Quelldatei (rund ein Viertel der bisherigen Auditbefunde war falsch) und trägt das Ergebnis unten ein.</p></div>';
+  html+='<label class="drop" id="drop"><input type="file" id="datei" accept=".md,.markdown,.txt" multiple><span class="gross">Review-Datei hier ablegen oder klicken</span><span class="klein">.md oder .txt · mehrere auf einmal möglich</span></label><div class="status" id="status" aria-live="polite"></div>';
+  var e=s.eingang||[];
+  if(e.length){
+    html+='<div class="gruppe"><div class="gruppe-titel"><h3>Im Eingang</h3><span class="zahl">'+e.length+' · wartet auf Claude</span></div><div class="liste">';
+    e.forEach(function(x){
+      html+='<div class="eintrag"><div class="kopfz"><span class="chip warte">eingegangen</span><span class="mono">'+esc(x.name)+'</span><span class="datum mono">'+esc(x.datum)+' · '+esc(x.groesse)+' Zeichen</span></div><pre>'+esc(x.text.slice(0,600))+(x.text.length>600?'\n…':'')+'</pre></div>';
+    });
+    html+='</div></div>';
+  }
+  var r=s.reviews||[];
+  html+='<div class="gruppe"><div class="gruppe-titel"><h3>Eingearbeitet</h3><span class="zahl">'+r.length+'</span></div><div class="liste">';
+  if(!r.length) html+='<div class="hinweis">Noch keine Review eingearbeitet.</div>';
+  r.forEach(function(x){
+    html+='<div class="eintrag"><div class="kopfz"><span class="chip gut">'+esc(x.status)+'</span><span>'+esc(x.quelle)+' → '+esc(x.ziel)+'</span><span class="datum mono">'+esc(datumDe(x.datum))+'</span></div><p class="kurz">'+esc(x.kurz)+'</p><div class="wo mono">'+esc(x.datei)+'</div></div>';
+  });
+  return html+'</div></div></section>';
+}
+
+function rFuss(s){
+  return '<footer><div class="eyebrow">So bleibt diese Seite wahr</div><ol>'+
+    '<li>Jede Claude-Session liest diese Seite beim Start und prüft den Eingang.</li>'+
+    '<li>Quelle ist <span class="mono">docs/hub/hub.json</span> im Nakama-Repo; die Seite wird daraus gebaut und neu veröffentlicht — nie von Hand editiert.</li>'+
+    '<li>Ein Entscheid von dir steht erst hier, wenn er mit Datum und Wortlaut im Register (CLAUDE.md) ist.</li>'+
+    '<li>Zahlen kommen aus Manifesten (<span class="mono">docs/beweise/</span>), nie aus dem Gedächtnis.</li>'+
+  '</ol><div class="pfade mono"><span>Plan: docs/bauaufteilung-sonden.md · Offen-Set: docs/offene-punkte.md · Design: Nakama-Design/abnahmen/</span></div></footer>';
+}
+
+function render(){
+  document.getElementById('app').innerHTML = '<div class="seite">'+rKopf(STATE)+rBeiDir(STATE)+rNaechster(STATE)+rPlan(STATE)+rDesign(STATE)+rReviews(STATE)+rFuss(STATE)+'</div>';
+  upload();
+}
+
+/* Vollständige Seitenquelle aus den autorisierten Bausteinen (nie aus dem Live-DOM). */
+function quelle(state){
+  var style=document.getElementById('hub-style').textContent;
+  var app=document.getElementById('hub-app').textContent;
+  var bilder=document.getElementById('hub-bilder').textContent;
+  return '<!doctype html>\n<html lang="de">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<title>Nakama Hub</title>\n'+
+    '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'+
+    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">\n'+
+    '<style id="hub-style">'+style+'</style>\n</head>\n<body>\n<div id="app"></div>\n'+
+    '<script type="application/json" id="hub-state">'+jsonInScript(state)+'<\/script>\n'+
+    '<script type="application/json" id="hub-bilder">'+bilder+'<\/script>\n'+
+    '<script id="hub-app">'+app+'<\/script>\n</body>\n</html>\n';
+}
+window.__hubQuelle = quelle; /* für den Upload-Test */
+
+function upload(){
+  var drop=document.getElementById('drop'), input=document.getElementById('datei'), status=document.getElementById('status');
+  function sag(t,fehler){status.textContent=t;status.className='status'+(fehler?' fehler':'');}
+  var kann = !!(window.claude && typeof window.claude.use==='function');
+  if(!kann){ drop.classList.add('aus'); input.disabled=true; sag('Upload nur in der claude.ai-Ansicht möglich (hier fehlt die Speicher-Funktion).'); return; }
+  var artP = window.claude.use('artifact');
+  function liesAlle(files){
+    return Promise.all(Array.prototype.map.call(files,function(f){
+      return new Promise(function(ok,nein){var r=new FileReader();r.onload=function(){ok({name:f.name,text:String(r.result)});};r.onerror=function(){nein(new Error('Datei nicht lesbar: '+f.name));};r.readAsText(f);});
+    }));
+  }
+  function speichere(files){
+    if(!files||!files.length) return;
+    sag('Wird gespeichert …');
+    var art;
+    artP.then(function(a){
+      art=a; if(!art) throw {code:'not_granted'};
+      return liesAlle(files);
+    }).then(function(list){
+      var s=JSON.parse(JSON.stringify(STATE)); s.eingang=s.eingang||[];
+      var j=new Date(),p2=function(n){return (n<10?'0':'')+n;}; var stamp=j.getFullYear()+'-'+p2(j.getMonth()+1)+'-'+p2(j.getDate())+' '+p2(j.getHours())+':'+p2(j.getMinutes());
+      list.forEach(function(x){ s.eingang.push({name:x.name,datum:stamp,groesse:x.text.length,text:x.text}); });
+      return art.publish(quelle(s));
+    }).then(function(){
+      sag('Gespeichert — die Seite lädt neu. Claude liest den Eingang beim nächsten Sessionstart.');
+    }).catch(function(e){
+      var c=(e&&e.code)||'';
+      if(c==='not_writer'||c==='not_granted') sag('Diese Ansicht ist schreibgeschützt — nur der Eigentümer kann hochladen.',true);
+      else if(c==='conflict') sag('Eine neuere Version der Seite ist da; sie lädt neu. Danach bitte noch einmal ablegen.',true);
+      else if(c==='too_large') sag('Zu groß — die Seite darf 16 MB nicht überschreiten. Datei kürzen.',true);
+      else if(c==='rate_limited') sag('Zu schnell hintereinander — kurz warten, dann noch einmal.',true);
+      else if(c==='not_declared'||c==='capability_disabled'||c==='capability_removed') sag('Die Speicher-Funktion ist für diese Seite nicht aktiv. Claude muss sie beim nächsten Veröffentlichen wieder einschalten.',true);
+      else sag('Speichern fehlgeschlagen ('+(c||(e&&e.message)||'unbekannt')+'). Noch einmal versuchen; bleibt es, die Datei im Chat anhängen.',true);
+      input.value='';
+    });
+  }
+  input.addEventListener('change',function(){speichere(input.files);});
+  ['dragenter','dragover'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add('aktiv');});});
+  ['dragleave','drop'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove('aktiv');});});
+  drop.addEventListener('drop',function(e){ if(e.dataTransfer&&e.dataTransfer.files) speichere(e.dataTransfer.files); });
+}
+
+render();
+})();
+</script>

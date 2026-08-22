@@ -1,0 +1,489 @@
+{
+  "stand": "2026-08-22",
+  "stand_notiz": "nach S7 (State-Schema 2) und FL-Termin A; Technik steht vor S8",
+  "artefakt_url": "https://claude.ai/code/artifact/81bdcb02-796e-4dc0-a6df-347d2d7225fe",
+  "naechster_schritt": {
+    "technik": "S8 — gemeinsamer Plugin-Kern, der keine Bundle-Konstanten sieht (SONDE-007a). Vorarbeit liegt: der State-Code ist schon bundle-neutral gebaut.",
+    "design": "Phase 1b, Schritt Gen — beginnt, sobald du den Gen-Entwurf (Studie 04) aus Figma exportierst. Bis dahin ruht die Übersetzung.",
+    "dich": "FL-Termin B (siehe „Bei dir“). Er hält S4 und das erste Gate G0 auf."
+  },
+  "bei_dir": [
+    {
+      "id": "U1",
+      "dringlichkeit": "jetzt",
+      "art": "Tätigkeit",
+      "titel": "FL-Termin B: Hostzeit und Automation messen",
+      "was": "In FL Studio das Messgerät „EqCop-Host-Probe“ auf einen freien Insert legen (Signal drauf, Fenster offen — oben muss „Hostbrücke liefert: JA“ stehen) und einen Automationsclip auf einen Parameter aufnehmen. Alles Weitere (Abspielen, Springen, Schleife, Smart-Disable-Pause, Speichern) fährt Claude über den FL-MCP; nur der Render bleibt dein Klick.",
+      "warum": "Termin A ist gemessen (22.08., geht, recall-stabil). Termin B fehlt — ohne ihn kein Capabilityreport (S4) und kein erstes Gate (G0). Beide Messgeräte sind bereits installiert.",
+      "wo": "Klickliste: eq-copilot/docs/FL-TERMIN-B-HOSTZEIT.md",
+      "seit": "21.08."
+    },
+    {
+      "id": "U2",
+      "dringlichkeit": "jetzt",
+      "art": "Entscheid",
+      "titel": "Gen-Entwurf (Studie 04) ansehen: überarbeiten oder exportieren",
+      "was": "In deiner Figma-Datei „Testdummy“ liegt der Rahmen „Lumia Material Lab / Study 04 — Gen“: Nakama Gen in der Probeeq-Sprache, mit Schönfall, acht Zuständen, zwei Zooms und 17 offenen Punkten, zu denen je eine Lesart gewählt wurde. Du änderst, was dir nicht passt, und exportierst — die Datei kommt als neuer Stand in die Design-Truhe.",
+      "warum": "Erst dein Export macht den Entwurf zur Vorgabe; bis dahin gilt der Gen-Stand vom 21.08. in der alten (cyanen) Sprache. Die Übersetzung der drei Apps beginnt mit Gen und wartet darauf.",
+      "wo": "Nakama-Design/abnahmen/2026-08-21-gen-auftrag-figma.md (Abschnitt „Was ausdrücklich offen bleibt“)",
+      "seit": "21.08."
+    },
+    {
+      "id": "U3",
+      "dringlichkeit": "jetzt",
+      "art": "Entscheid",
+      "titel": "Wortmarken-Export in die Design-Truhe übernehmen?",
+      "was": "Dein Export „Wordmarkgen.png“ (22.08., 01:48) liegt noch im Sessionordner, nicht in Nakama-Design/assets/figma/ — die Truhe wird nie ungefragt verändert. Ein Wort von dir („ja, rein“) genügt.",
+      "warum": "Dein Maßstab vom 22.08.: die Apps sehen in FL Studio exakt aus wie in Figma. Darum wird alles Statische (Wortmarken, Schale, Glas, Leuchtsäume) aus Figma exportiert und eingebettet statt nachgebaut. Ohne die Exporte in der Truhe gibt es keinen Pixelvergleich.",
+      "wo": "Nakama-Design/abnahmen/2026-08-22-erfolgskriterium-exakt-wie-figma.md",
+      "seit": "22.08."
+    },
+    {
+      "id": "U4",
+      "dringlichkeit": "wenn du dazu kommst",
+      "art": "Tätigkeit",
+      "titel": "Export-Sätze je Skalierungsstufe aus Figma",
+      "was": "Für jede angebotene Stufe (Empfehlung: 100 / 125 / 150 / 200 %) ein eigener Export der gebackenen Teile — Wortmarken, Schale mit Glas und Kinn, Leuchtsäume — je App. Nicht hochgerechnet, sondern je Stufe aus Figma.",
+      "warum": "Prototyp und Plugin benutzen dieselben Assets; so wird die Kette Figma → Asset → Darstellung beweisbar. Wird gebraucht, sobald die Übersetzung (Phase 1b) eine App baut — zuerst Gen.",
+      "wo": "Nakama-Design/abnahmen/2026-08-22-erfolgskriterium-exakt-wie-figma.md, Punkt 5",
+      "seit": "22.08."
+    },
+    {
+      "id": "U5",
+      "dringlichkeit": "wenn du dazu kommst",
+      "art": "Entscheid",
+      "titel": "Probeeq: die Sidechain-Quelle je Band — sichtbar, Untermenü oder unsichtbar?",
+      "was": "Dein Probeeq-Stand zeigt zwölf Parameter je Band. Der technische Entwurf kennt einen dreizehnten (die Sidechain-Quelle für den Dynamikteil). Drei Lesarten: als sichtbarer Parameter in der Bandzeile, als Untermenü unter DYN, oder im ersten Release unsichtbar.",
+      "warum": "Der gespeicherte Zustand trägt seit 22.08. alle dreizehn (unsichtbar kostet nichts, nachträglich einfügen hätte einen Versionssprung erzwungen). Offen ist nur noch, was die Oberfläche zeigt — das entscheidet dein Figma-Stand.",
+      "wo": "docs/offene-punkte.md, NAK-33",
+      "seit": "21.08."
+    },
+    {
+      "id": "U6",
+      "dringlichkeit": "wenn du dazu kommst",
+      "art": "Entscheid",
+      "titel": "Suna: elf Lesarten bestätigen oder drehen",
+      "was": "Die Suna-Kachel hast du am 21.08. exportiert — sie gilt. Beim Entwurf wurden elf Fragen je mit einer Lesart beantwortet (u. a. Apertur-Logik, Rollenwörter LEADS · CARRIES · SUPPORTS …, Messstatus-Wörter, Hinweis-Wortlaut, halbierter Schwebeschatten). Jede ist mit einem Handgriff in Figma umkehrbar.",
+      "warum": "Suna wird als letzte der drei Apps übersetzt (Reihenfolge Gen → Probeeq → Suna). Kein Blocker heute — aber jede Lesart, die du nicht bestätigst, wird beim Übersetzen erneut vorgelegt.",
+      "wo": "Nakama-Design/abnahmen/2026-08-21-suna-auftrag-figma.md (Abschnitt „Was ausdrücklich offen bleibt“)",
+      "seit": "21.08."
+    },
+    {
+      "id": "U7",
+      "dringlichkeit": "wenn du dazu kommst",
+      "art": "Tätigkeit",
+      "titel": "Admin-Klick: alte Plugin-Kopie aus dem VST3-Ordner entfernen",
+      "was": "Unter C:/Program Files/Common Files/VST3/eq-copilot/ liegt eine 845 MB große alte Repo-Kopie vom 13.08. mit zwei alten „EQ-Copilot.vst3“, die FL bei jedem Scan mitnimmt. Wegräumen braucht einen Admin-Klick von dir; Claude bereitet den Befehl vor.",
+      "warum": "Doppelte Plugins im Scan verwirren FL und jede künftige Messung. Angebot seit dem Termin-A-Abend offen.",
+      "wo": "docs/NEXT-SESSION.md, „Morgen zuerst“ Punkt 3",
+      "seit": "22.08."
+    },
+    {
+      "id": "U8",
+      "dringlichkeit": "wissen",
+      "art": "Wissen vor dem Klick",
+      "titel": "Installation des neuen Plugin-Stands (0.3.0) — vertagt, dein Wort 21.08.",
+      "was": "Installiert ist noch das Bundle vom 16.08. Der neue Stand (Hostbrücke, State-Schema 2) ist gebaut, aber nicht installiert („Version 0.3.0 angleichen, noch nicht installieren“). Installation bleibt dein Admin-Klick.",
+      "warum": "Vorher wissen: ein FL-Projekt, das du mit dem neuen Stand speicherst, verliert im alten Bundle still seine Messpunkt-Identität (kein Absturz, aber ein Rückweg zum 16.08.-Stand mit so einem Projekt ist verlustig). Das ist kein Fehler, den Code beheben kann — nur Wissen vor dem Klick.",
+      "wo": "docs/offene-punkte.md, NAK-41 und NAK-32",
+      "seit": "22.08."
+    },
+    {
+      "id": "U9",
+      "dringlichkeit": "später",
+      "art": "Entscheid (wenn das Ticket dran ist)",
+      "titel": "Fünf Stellen, an denen Figma und technischer Entwurf verschieden sprechen",
+      "was": "Rollen: 5 (Design) gegen 7 (Entwurf) · Suna-Kachel: Name/Rolle bedienbar (Design) gegen „null Parameter, Bedienung über Gen“ (Entwurf) · Messzustände 5 gegen 2 · Arbeitsschritte 3 gegen 5 · Gen-Übersicht: Quellen×Band-Gitter (Figma) gegen Overview+Detail ohne Heatmap (Abnahme 20.08.). Je Punkt ein Wort von dir — dein Figma-Stand zählt als neues User-Wort.",
+      "warum": "Fällig vor dem Gate der passiven Landkarte (P3, nach S18/19) — nicht heute. Steht hier, damit es nicht überrascht.",
+      "wo": "docs/offene-punkte.md, NAK-38",
+      "seit": "21.08."
+    },
+    {
+      "id": "U10",
+      "dringlichkeit": "später",
+      "art": "Entscheid (wenn das Ticket dran ist)",
+      "titel": "Hör-Markierung ohne Transport-Information: erlaubt lassen?",
+      "was": "Heute erlaubt der Code die Hör-Markierung auch, wenn FL keine Transport-Information liefert („fail-open“). Der Entwurf verlangt für die Zielfassung ein gültiges „spielt“. Entscheid zusammen mit einem Hörtest in FL, sobald Gen seine neue Oberfläche hat.",
+      "warum": "Gehört zu den Tickets S10–S13 (Messkern). Nicht vorher nötig.",
+      "wo": "docs/offene-punkte.md, NAK-35 und NAK-24",
+      "seit": "21.08."
+    }
+  ],
+  "plan": [
+    {
+      "phase": "Vorlauf",
+      "titel": "Beweisen statt behaupten",
+      "ziel": "Ein Befehl fährt alle Prüfungen und schreibt die rohe Ausgabe in ein Manifest — das ersetzt eine CI.",
+      "zeilen": [
+        {
+          "id": "S0",
+          "ticket": "",
+          "status": "erledigt",
+          "datum": "20.08.",
+          "text": "Beweis-Runner, Manifest-Vorlage, Basislinie. Heute 17 Prüfbeine.",
+          "beleg": "docs/beweise/S0-basislinie.md"
+        }
+      ]
+    },
+    {
+      "phase": "P0",
+      "titel": "Bestand einfrieren, Hostgrenzen beweisen",
+      "ziel": "Nichts bauen, was FL Studio am Ende nicht hergibt: erst messen, was der Host kann, und die Plugin-Kennungen festschreiben, damit alte Projekte immer laden.",
+      "zeilen": [
+        {
+          "id": "S1",
+          "ticket": "SONDE-004a",
+          "status": "erledigt",
+          "datum": "20.08.",
+          "text": "Wegwerf-Messgerät für Termin A: zwei Nebenwege (Aux) und Latenzausgleich messbar machen.",
+          "beleg": "docs/beweise/SONDE-004a.md"
+        },
+        {
+          "id": "Termin A",
+          "ticket": "FL, du",
+          "status": "erledigt",
+          "datum": "22.08.",
+          "text": "Nebenwege und Latenzausgleich in FL gemessen: geht, samplegenau, überlebt Speichern/Laden.",
+          "beleg": "docs/beweise/termin-a/"
+        },
+        {
+          "id": "S2",
+          "ticket": "SONDE-001/002",
+          "status": "erledigt",
+          "datum": "20.08.",
+          "text": "Identität eingefroren: Kennungen aller drei Plugins festgeschrieben und mit 63 Prüfungen bewacht, damit FL alte Projekte weiter erkennt.",
+          "beleg": "docs/beweise/SONDE-001-002.md"
+        },
+        {
+          "id": "S3",
+          "ticket": "SONDE-003",
+          "status": "erledigt",
+          "datum": "21.08.",
+          "text": "Hostbrücke: ein Patch am Plugin-Rahmenwerk macht sichtbar, was FL liefert (Transport, Latenz, Automationspunkte). 91 Prüfungen.",
+          "beleg": "docs/beweise/SONDE-003.md"
+        },
+        {
+          "id": "S3b",
+          "ticket": "Nachtrag",
+          "status": "erledigt",
+          "datum": "21.08.",
+          "text": "Messgerät für Termin B (Host-Probe): zeichnet Zeitsprünge, Render, Automation als JSON auf. 85 Prüfungen.",
+          "beleg": "docs/beweise/SONDE-003b.md"
+        },
+        {
+          "id": "Termin B",
+          "ticket": "FL, du + Claude",
+          "status": "bei dir",
+          "datum": "",
+          "text": "Hostzeit und Automation in FL messen — siehe „Bei dir“, U1.",
+          "beleg": "eq-copilot/docs/FL-TERMIN-B-HOSTZEIT.md"
+        },
+        {
+          "id": "S4",
+          "ticket": "",
+          "status": "wartet",
+          "datum": "",
+          "text": "Capabilityreport: aus Termin A und B wird festgeschrieben, was FL kann und was nicht. Wartet auf Termin B.",
+          "beleg": ""
+        },
+        {
+          "id": "G0",
+          "ticket": "Gate",
+          "status": "wartet",
+          "datum": "",
+          "text": "Erste adversariale Prüfrunde (C++-Review + Codex) über P0. Wartet auf S4.",
+          "beleg": ""
+        }
+      ]
+    },
+    {
+      "phase": "P1",
+      "titel": "Verträge, gespeicherter Zustand, neutrale Hüllen",
+      "ziel": "Alles, was zwischen den drei Apps und dem Broker hin- und hergeht, ist als Vertrag festgeschrieben und in drei Sprachen gleich geprüft — bevor der Messkern darauf baut.",
+      "zeilen": [
+        {
+          "id": "S5",
+          "ticket": "SONDE-005a",
+          "status": "gebaut",
+          "datum": "21.08.",
+          "text": "Nachrichtenverträge (JSON) mit Bandgitter und 153 Prüffällen; in Python, C++ und Rust gleich gelesen. Gebaut und nachgearbeitet — das abschließende Prüfurteil eines frischen Prüfers steht noch aus.",
+          "beleg": "docs/beweise/SONDE-005a.md"
+        },
+        {
+          "id": "S6",
+          "ticket": "SONDE-005b",
+          "status": "gebaut",
+          "datum": "21.08.",
+          "text": "Binärformat für Messdaten (FlatBuffers) mit festen Feldnummern und zwei handgeschriebenen Lesern; 6215 Byte-Mutanten bestanden. Prüfurteil wie S5 noch offen.",
+          "beleg": "docs/beweise/SONDE-005b.md"
+        },
+        {
+          "id": "S7",
+          "ticket": "SONDE-006",
+          "status": "erledigt",
+          "datum": "22.08.",
+          "text": "Gespeicherter Zustand Schema 2: alte Projekte wandern verlustfrei, fremde Versionen werden nur-lesend geöffnet, FL sieht jede Änderung als „ungespeichert“. 109 Parameter-Kennungen festgeschrieben.",
+          "beleg": "docs/beweise/SONDE-006.md"
+        },
+        {
+          "id": "S8",
+          "ticket": "SONDE-007a",
+          "status": "naechster",
+          "datum": "",
+          "text": "Gemeinsamer Kern für alle drei Plugins, der keine Bundle-Konstanten sieht — sonst bekämen zwei Plugins die Identität des dritten.",
+          "beleg": ""
+        },
+        {
+          "id": "S9",
+          "ticket": "SONDE-007b",
+          "status": "offen",
+          "datum": "",
+          "text": "Drei eigene Plugin-Ziele (Gen, Probeeq, Suna), Rollen-Erkennung, Installer-Manifest.",
+          "beleg": ""
+        },
+        {
+          "id": "G1",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "Prüfrunde über P1 (C++- und Rust-Review + Codex).",
+          "beleg": ""
+        }
+      ]
+    },
+    {
+      "phase": "P2",
+      "titel": "Messkern, Nachrichtenweg, Speicher",
+      "ziel": "Die größte Phase: Audio wird zeitgestempelt gemessen, über den Broker verteilt und gespeichert — ohne je den Audiothread zu blockieren. Danach: Release R0 (Vertrag steht, intern).",
+      "zeilen": [
+        {
+          "id": "S10–11",
+          "ticket": "SONDE-008",
+          "status": "offen",
+          "datum": "",
+          "text": "Zeitgestempelte Audio-Warteschlange, Quarantäne für kaputte Blöcke, Lautheitsmessung mit festem Speicher. Gefährlichster Eingriff der Phase (Audiothread).",
+          "beleg": ""
+        },
+        {
+          "id": "S12–13",
+          "ticket": "SONDE-009",
+          "status": "offen",
+          "datum": "",
+          "text": "Messkern v2: Zeit-, Gültigkeits-, Ereignis- und Bandverträge.",
+          "beleg": ""
+        },
+        {
+          "id": "S14–15",
+          "ticket": "SONDE-010",
+          "status": "offen",
+          "datum": "",
+          "text": "Nachrichten-Clients in den Plugins und der Parser im Broker.",
+          "beleg": ""
+        },
+        {
+          "id": "S16–17",
+          "ticket": "SONDE-011",
+          "status": "offen",
+          "datum": "",
+          "text": "Koordinator im Broker, Datenbank-Migration, Ausgangspuffer.",
+          "beleg": ""
+        },
+        {
+          "id": "G2",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "Volles Programm: C++-, Rust- und Sicherheits-Review + Codex.",
+          "beleg": ""
+        }
+      ]
+    },
+    {
+      "phase": "P3",
+      "titel": "Passive Landkarte",
+      "ziel": "Gen zeigt alle Quellen mit Frische und Messpunkt — ehrlich, auch wenn etwas fehlt. Danach: Release R1.",
+      "zeilen": [
+        {
+          "id": "S18–19",
+          "ticket": "SONDE-012",
+          "status": "offen",
+          "datum": "",
+          "text": "Quellen verbinden und führen, Frische anzeigen, Messpunkt-Wahrheit, Fehlerzustände.",
+          "beleg": ""
+        },
+        {
+          "id": "G3",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "Rust-Review + Codex + 60-Minuten-Dauerlauf. Vorher fällig: deine fünf Entscheide aus U9.",
+          "beleg": ""
+        }
+      ]
+    },
+    {
+      "phase": "P4–P5",
+      "titel": "Vergleichsevidenz und Ursachen",
+      "ziel": "Der Advisor: aus Messungen werden belegte Befunde, mögliche Ursachen und der kleinste Test — regelbasiert, ohne KI-Schicht. Danach: Release R2, die erste Fassung, die wirklich nützt (passiv, 9 von 12 Kernfunktionen).",
+      "zeilen": [
+        {
+          "id": "S20–22",
+          "ticket": "SONDE-013",
+          "status": "offen",
+          "datum": "",
+          "text": "Dynamik, Stereo, vor/nach der Kette, Passagen — und der manuelle Experimentkern.",
+          "beleg": ""
+        },
+        {
+          "id": "G4",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "C++-Review (DSP) + Codex.",
+          "beleg": ""
+        },
+        {
+          "id": "S23–25",
+          "ticket": "SONDE-014",
+          "status": "offen",
+          "datum": "",
+          "text": "Absicht, Ursachenhypothese, Vorschlag, Assistentenschritt — mit Prüfkorpus.",
+          "beleg": ""
+        },
+        {
+          "id": "G5",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "Codex + Gegenbeispiele: der Prüfer soll eine falsche starke Ursachenbehauptung provozieren.",
+          "beleg": ""
+        }
+      ]
+    },
+    {
+      "phase": "P6–P7",
+      "titel": "Aktiver Kern: Probeeq",
+      "ziel": "Probeeq wird der vollwertige EQ, der Anweisungen von Gen umsetzt und manuell bedienbar ist — mit Kopplung, Sicherheit und Rückweg. Danach: Release R3.",
+      "zeilen": [
+        {
+          "id": "S26–28",
+          "ticket": "SONDE-015",
+          "status": "offen",
+          "datum": "",
+          "text": "Lokaler EQ-Kern, vier vorbereitete Bänke, Zustand und Automation, A/B.",
+          "beleg": ""
+        },
+        {
+          "id": "G6",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "Härtestes Gate des Plans: C++-Review auf höchster Stufe, Nebenläufigkeits-Prüfung, Worst-Case-CPU.",
+          "beleg": ""
+        },
+        {
+          "id": "S29–31",
+          "ticket": "SONDE-016/017",
+          "status": "offen",
+          "datum": "",
+          "text": "Kopplung Gen↔Probeeq mit Sicherheit, Lease, Anwenden/Zurücknehmen, aktiver Vergleich.",
+          "beleg": ""
+        },
+        {
+          "id": "G7",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "Sicherheits- und Rust-Review + Codex + 10 000 Befehle Stress.",
+          "beleg": ""
+        }
+      ]
+    },
+    {
+      "phase": "P8–P9",
+      "titel": "Entmaskierung und Härtung",
+      "ziel": "Sidechain-Entmaskierung (Termin A war grün — darf gebaut werden) und alles für die Auslieferung: Verteilung, Migration, Dauerlauf, Privatsphäre, Rollback. Danach: Release R4, der volle Sondenkern.",
+      "zeilen": [
+        {
+          "id": "S32–33",
+          "ticket": "SONDE-018",
+          "status": "offen",
+          "datum": "",
+          "text": "Sidechain-Entmaskierung.",
+          "beleg": ""
+        },
+        {
+          "id": "G8",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "C++-Review + Codex + Hör-/Stem-Korpus.",
+          "beleg": ""
+        },
+        {
+          "id": "S34–35",
+          "ticket": "SONDE-019",
+          "status": "offen",
+          "datum": "",
+          "text": "Verteilung, Migration, Dauerlauf, Privatsphäre, Rollback.",
+          "beleg": ""
+        },
+        {
+          "id": "G9",
+          "ticket": "Gate",
+          "status": "offen",
+          "datum": "",
+          "text": "Alle acht harten Gates + pluginval Stufe 8 + 30 Minuten mit 32 Sonden.",
+          "beleg": ""
+        }
+      ]
+    }
+  ],
+  "design": {
+    "massstab": "Dein Wort vom 22.08.: „Hauptsache die Apps selbst in FL Studio sehen dann exakt aus wie in Figma.“ Darum: Statisches wird aus Figma gebacken, nur Dynamisches (Texte, Zellen, Kurven, Zustände) wird gezeichnet.",
+    "phase": "Phase 1b — Figma-Stände übersetzen. Reihenfolge Gen → Probeeq → Suna. Noch kein Blatt in prototyp/ begonnen; die Übersetzung startet mit deinem Gen-Export (U2).",
+    "apps": [
+      {
+        "key": "gen",
+        "name": "Nakama Gen",
+        "rolle": "Main-App: Quellen-Übersicht, Befunde, Advisor. Berät nur.",
+        "groesse": "760 × 430",
+        "stand_text": "Vorgabe in der Truhe: dein Export vom 21.08. — noch in der alten (cyanen) Sprache; er liefert die Anordnung. Der neue Entwurf (Studie 04, Probeeq-Sprache, von Claude in deiner Figma-Datei) ist nicht exportiert und damit noch keine Vorgabe.",
+        "status": "wartet auf dich",
+        "offen": "17 offene Punkte, je mit gewählter Lesart",
+        "wo": "Nakama-Design/abnahmen/2026-08-21-gen-auftrag-figma.md"
+      },
+      {
+        "key": "probeeq",
+        "name": "Nakama Probeeq",
+        "rolle": "Aktive Sonde: vollwertiger EQ, setzt Anweisungen von Gen um und ist manuell bedienbar.",
+        "groesse": "700 × 420",
+        "stand_text": "Vorgabe in der Truhe: dein Export vom 21.08. — der Stand, der die Sprache der Familie setzt (Graphit-Schale, Glas, Kinn, Geist-Schrift). Acht Bandgriffe auf der Kurve, eine Parameterzeile mit zwölf Werten, Draft-Kasten, Schutzbereich.",
+        "status": "Vorgabe steht",
+        "offen": "eine Frage: Sidechain-Quelle sichtbar, Untermenü oder unsichtbar (U5)",
+        "wo": "Nakama-Design/assets/figma/LIES-MICH.md"
+      },
+      {
+        "key": "suna",
+        "name": "Nakama Suna",
+        "rolle": "Passive Sonde: kleine Status- und Identitätskachel. Berät nur, keine Parameter.",
+        "groesse": "260 × 84",
+        "stand_text": "Vorgabe in der Truhe: Entwurf von Claude in der Probeeq-Sprache (Studie 03), von dir am 21.08. exportiert — mit dem Export dein Wort. Bus · Rolle · Position im Glas, Verbindungspunkt, Wortmarke und Messstatus im Kinn.",
+        "status": "Vorgabe steht",
+        "offen": "11 Lesarten zu bestätigen (U6)",
+        "wo": "Nakama-Design/abnahmen/2026-08-21-suna-auftrag-figma.md"
+      }
+    ]
+  },
+  "reviews": [
+    {
+      "datum": "2026-08-21",
+      "quelle": "Codex",
+      "ziel": "Nakama-Design — Messbank (Stand 86f04c1)",
+      "status": "eingearbeitet",
+      "kurz": "10 Befunde (4 P1, 5 P2, 1 P3), alle gegen die Quelldatei geprüft: 10 bestätigt, 0 widerlegt, alle gefixt; dazu 5 eigene Funde.",
+      "datei": "Nakama-Design/abnahmen/2026-08-21-codex-review-abgearbeitet.md"
+    }
+  ],
+  "eingang": []
+}

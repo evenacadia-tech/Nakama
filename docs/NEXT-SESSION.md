@@ -145,6 +145,25 @@
    Schließungsvorbehalt §65 für `SONDE-005`. **Termin A2** (NAK-44: PDC-Last,
    Bus-Identität, L/R) hebt beide Aux-Bits, wenn der User ihn fährt.
 
+## ▶ So startet der Projektleiter eine Bau-Session
+
+Neue Session in diesem Workspace aufmachen, diese zwei Zeilen einfügen, fertig:
+
+```
+Baue S8 (SONDE-007a) nach docs/bauaufteilung-sonden.md.
+Manifest nach docs/beweise/SONDE-007a.md, T1 + T2.
+```
+
+Mehr braucht es nicht: die SessionStart-Hooks legen Wahrheitskern, Hub-Stand,
+Design-Stand und Git-Stand von selbst vor. **Nur das Ticket muss genannt
+werden** — „go" ohne Ticketgrenze widerspricht der Sessionregel (§ oben,
+`bauaufteilung-sonden.md` Zeile 45) und endet in Code ohne Manifest.
+
+**Prüfstein für den User:** liegt am Ende ein neues Manifest in
+`docs/beweise/`? Wenn nein, ist die Session **offen**, egal was sie meldet.
+Für das jeweils nächste Ticket dieselben zwei Zeilen mit der nächsten Nummer
+aus der Tabelle in `docs/bauaufteilung-sonden.md`.
+
 ## ▶ Der eine nächste Schritt (Technik): S8 — `SONDE-007a`
 
 **S7 / `SONDE-006` ist gebaut (22.08., Manifest `docs/beweise/SONDE-006.md`):**

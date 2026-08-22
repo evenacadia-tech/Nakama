@@ -26,13 +26,34 @@
 #
 # Gegenprobe beider Richtungen, beide Schleusen: bash tools/hooks/schleusen-probe.sh
 
+# befehl_klartext <json-vom-stdin>
+#   Gibt den Bash-/PowerShell-Befehl als Klartext aus: JSON-Zeilenumbrueche echt,
+#   HEREDOC-RUEMPFE entfernt, Backslashes zu Schraegstrichen, Anfuehrungszeichen
+#   zu Leerzeichen. Wer einen Befehl bewertet, bewertet IHN — nicht den Text, den
+#   er transportiert: beide Fehlblockaden vom 21.08.2026 waren Heredocs, die
+#   einen Schreibbefehl bloss zitierten (Commit-Nachricht, sed-Muster).
+befehl_klartext() {
+  local roh cmd
+  roh=$(printf '%s' "$1" | sed -n 's/.*"command"[[:space:]]*:[[:space:]]*"//p' | head -1)
+  cmd=$(printf '%s' "$roh" | sed 's/\\n/\n/g' | awk '
+    ende != "" { if ($0 == ende) ende = ""; next }
+    { print
+      if (match($0, /<<-?[[:space:]]*["'"'"']?[A-Za-z_][A-Za-z0-9_]*/)) {
+        s = substr($0, RSTART, RLENGTH)
+        sub(/^<<-?[[:space:]]*["'"'"']?/, "", s)
+        ende = s
+      } }')
+  cmd="${cmd//\\\\//}"; cmd="${cmd//\\//}"; cmd="${cmd//\"/ }"; cmd="${cmd//\'/ }"
+  printf '%s' "$cmd"
+}
+
 # schreibziel_trifft <json-vom-stdin> <ordner-mit-schraegstrich>
 #   Rueckgabe 0 = der Aufruf schreibt in den Ordner, 1 = er tut es nicht.
 #   <ordner> ist ein Pfadstueck mit abschliessendem Schraegstrich,
 #   z. B. "prototyp/" oder "eq-copilot/design/".
 schreibziel_trifft() {
   local input="$1" ordner="$2"
-  local fp roh cmd T A E V muster
+  local fp cmd T A E V muster
 
   # a) Werkzeuge mit file_path (Write, Edit, MultiEdit, NotebookEdit …)
   fp=$(printf '%s' "$input" \
@@ -51,17 +72,7 @@ schreibziel_trifft() {
   esac
 
   # b) Bash: nur SCHREIBEN blockt, und nur wenn das ZIEL im Ordner liegt.
-  roh=$(printf '%s' "$input" | sed -n 's/.*"command"[[:space:]]*:[[:space:]]*"//p' | head -1)
-  # JSON-Zeilenumbrueche echt machen, dann jeden Heredoc-Rumpf wegwerfen.
-  cmd=$(printf '%s' "$roh" | sed 's/\\n/\n/g' | awk '
-    ende != "" { if ($0 == ende) ende = ""; next }
-    { print
-      if (match($0, /<<-?[[:space:]]*["'"'"']?[A-Za-z_][A-Za-z0-9_]*/)) {
-        s = substr($0, RSTART, RLENGTH)
-        sub(/^<<-?[[:space:]]*["'"'"']?/, "", s)
-        ende = s
-      } }')
-  cmd="${cmd//\\\\//}"; cmd="${cmd//\\//}"; cmd="${cmd//\"/ }"; cmd="${cmd//\'/ }"
+  cmd=$(befehl_klartext "$input")
 
   case "$cmd" in
     *"$ordner"*) ;;

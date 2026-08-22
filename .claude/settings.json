@@ -17,6 +17,12 @@
       "Bash(npx playwright:*)",
       "Bash(cargo test:*)",
       "Bash(cargo build:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git fetch:*)",
+      "Bash(git rm:*)",
+      "PowerShell(git push:*)",
+      "PowerShell(git pull:*)",
       "PowerShell(git status:*)",
       "PowerShell(git log:*)",
       "PowerShell(git diff:*)",
@@ -27,11 +33,9 @@
       "PowerShell(cargo test:*)"
     ],
     "ask": [
-      "Bash(git push:*)",
       "Bash(git reset --hard:*)",
       "Bash(git clean:*)",
       "Bash(rm -rf:*)",
-      "PowerShell(git push:*)",
       "PowerShell(Remove-Item:*)"
     ]
   },
@@ -73,6 +77,15 @@
     ],
     "PreToolUse": [
       {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/git-riegel.sh\""
+          }
+        ]
+      },
+      {
         "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash",
         "hooks": [
           {
@@ -95,6 +108,15 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/agent-reminder-nakama.sh\""
           }
         ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/auto-push.sh\""
+          }
+        ]
       }
     ],
     "Stop": [
@@ -103,6 +125,10 @@
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/hub-stop.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/commit-stop.sh\""
           }
         ]
       }

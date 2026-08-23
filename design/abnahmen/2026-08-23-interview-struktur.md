@@ -172,6 +172,11 @@ Sonde.)
 **Folge (im Register 23.08.):** Das ±3-dB-Remote-Limit entfällt — Anzeige
 UND Grenze; damit ist auch die offene Frage **U14** beantwortet.
 
+### Nachfrage — Undo-Reichweite (per Auswahl)
+
+Wahl: **„Je Sonde ihr eigenes Undo"** — das kleine Undo nimmt immer nur
+auf der gerade gewählten Spur zurück.
+
 ---
 
 ## Festgelegt (User-Wort, 23.08.2026)
@@ -230,6 +235,8 @@ UND Grenze; damit ist auch die offene Frage **U14** beantwortet.
     Klick/Hold-Elemente. **Die Limit-Angabe UND das Limit selbst
     entfallen** — „das kann im eq dann ja angepasst werden von selbst"
     (beantwortet U14; Register 23.08.).
+21. **Undo wirkt je Sonde** (Wahl „Je Sonde ihr eigenes Undo"): das
+    kleine Symbol nimmt nur auf der gerade gewählten Spur zurück.
 
 ## Angenommen (unbestätigt — Claude-Lesart, risikoarm)
 
@@ -263,10 +270,9 @@ UND Grenze; damit ist auch die offene Frage **U14** beantwortet.
 
 ## Offen (nächste Runden / Kennungen)
 
-- **Undo-Reichweite:** gilt das kleine Undo je Sonde, oder EINE Kette
-  über alles (Master + alle Sonden)? In Runde 4 nicht beantwortet.
-- Die U2.8-Folgefrage (Undo-Form auf Gen **Seite 1**) bleibt davon
-  unberührt offen.
+- Die U2.8-Folgefrage (Undo-Form auf Gen **Seite 1**) bleibt offen —
+  die Seite-2-Fragen (Form: kleines Symbol · Reichweite: je Sonde) sind
+  entschieden.
 - Rückfallflächen-Zuschnitt final erst, wenn der User sieht, was Gen je
   Sonde zeigt (sein Vorbehalt: „ich habe nicht im kopf was GEN anzeigt
   bezüglich des alten Suna konzeptes"). Leitfrage dafür: „was könnte den

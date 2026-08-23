@@ -217,7 +217,9 @@
     PRE/INSERT/POST — Annahme).
 41. **Undo ist ein kleines Symbol auf dem Display** — kein großer
     Button; ein Klick = letzter Schritt zurück (Annahme: kein Menü).
-    Seine **Reichweite** (je Sonde oder EINE Kette über alles) ist offen.
+    **Reichweite: je Sonde** (Entscheid) — es nimmt nur auf der gerade
+    gewählten Spur zurück; jede Instanz führt ihren eigenen
+    Revisions-Ring, eine App-weite Kette gibt es nicht.
 42. **Der Mix-Knob sitzt unten rechts und ist zweistufig** (Entscheid):
     er gilt der ganzen App, ein Klick schaltet auf „nur die gewählte
     Spur" um — jede Sonde hat ihren eigenen Dry/Wet. Technische Lesart
@@ -236,7 +238,6 @@
 | Was | Wo |
 |---|---|
 | Sidechain-Quelle je Band sichtbar/Untermenü/unsichtbar | **U5** / NAK-33 |
-| Undo-Reichweite: je Sonde oder EINE Kette über alles | Interview `struktur`, offen (Regel 41) |
 | Größe Seite 2 · Figma-Flächen · Rückfallfläche der Sonde | **NAK-65** |
 | Undo-Form auf Gen **Seite 1** (Verlauf oder Zähler) | U2.8-Folgefrage |
 | Mix/Dry-Wet: versionierte Parameter-Erweiterung, zweistufig global↔Spur (beschlossen, ungebaut) | NAK-64 Punkt 4 · Regeln 32/42 |

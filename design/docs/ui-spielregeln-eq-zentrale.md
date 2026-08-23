@@ -38,9 +38,12 @@
    **globale Regler je Spur:** Hard-Bypass · Input-Trim ±24 dB ·
    Output-Trim ±24 dB · Width 0–2 · Mono-Bass 0–500 Hz
    (`nakama-parameter-v1.json`, 109 Hostparameter, IDs eingefroren).
-6. **Bereiche manuell:** 20 Hz–20 kHz (Laufzeit-Deckel 0,45·Samplerate),
-   ±12 dB Gain, Q 0,15–24 (§44.2). **Advisor-Vorschläge:** ±3 dB, Q 0,4–2
-   (§44.2) — ob das Cap künftig NUR den Advisor bindet, ist Frage **U14**.
+6. **Bereiche — für Hand UND Advisor-Drafts dieselben:** 20 Hz–20 kHz
+   (Laufzeit-Deckel 0,45·Samplerate), ±12 dB Gain, Q 0,15–24 (§44.2).
+   **Das alte Remote-Limit (±3 dB, Q 0,4–2) ist entfallen** (Entscheid
+   23.08., U14 beantwortet; Regel 44): ein Draft ist im EQ frei
+   nachjustierbar, eine Sonderbegrenzung des Vorschlagswegs gibt es
+   nicht mehr.
 7. **Der erste Kern ist minimalphasig, 0 Samples Latenz** — kein
    Linear-Phase-Schalter, kein Lookahead im ersten Design (§44.2).
    Dynamik-Reduktion: Standard 1,5 dB, Hard-Cap 3 dB (Startwerte).
@@ -203,14 +206,38 @@
     vorbei (Regel 17) — die Zone zeigt die Verletzung, verhindern kann
     sie sie dort nicht. Persistenz/Vertragsort: NAK-64 Punkt 5.
 
+**Runde 4 (die letzten Buttons):**
+
+40. **EQ-Mode und Bypass sind zwei Dinge** (Entscheid „ja korrekt so"):
+    der EQ-Punkt grün/rot ist der Grundschalter „diese Sonde darf
+    klingen" (Lebenslauf-/Mode-Zustand, kein Hostparameter), Bypass ist
+    der schnelle Hörvergleich (`v1.global.bypass`, automatisierbar).
+    Rückfallfläche präzisiert: CONNECTED/DISCONNECTED · Bypass · bei EQ
+    on die veränderten Werte + der Mode der Probe (Lesart: Messposition
+    PRE/INSERT/POST — Annahme).
+41. **Undo ist ein kleines Symbol auf dem Display** — kein großer
+    Button; ein Klick = letzter Schritt zurück (Annahme: kein Menü).
+    Seine **Reichweite** (je Sonde oder EINE Kette über alles) ist offen.
+42. **Der Mix-Knob sitzt unten rechts und ist zweistufig** (Entscheid):
+    er gilt der ganzen App, ein Klick schaltet auf „nur die gewählte
+    Spur" um — jede Sonde hat ihren eigenen Dry/Wet. Technische Lesart
+    (Annahme, Umsetzung NAK-64 Punkt 4): zwei Schichten, global × je
+    Spur; der wirksame Mix einer Sonde ist das Produkt beider.
+43. **Die GLOBAL-Sektion ist einklappbar** (Entscheid): eingeklappt als
+    Standard, ein kleiner Pfeil klappt sie aus. Inhalt unverändert die
+    vier Werte aus Regel 5.
+44. **Draft-Kasten-Wortlaut** (Entscheid): oben **„DRAFT"**, darunter
+    die Klick/Hold-Elemente. **Limit-Angabe und Limit entfallen** („das
+    kann im eq dann ja angepasst werden von selbst") — siehe Regel 6;
+    U14 damit beantwortet, Register 23.08.
+
 ## 10. Offen (Kennungen)
 
 | Was | Wo |
 |---|---|
-| ±3-dB-Cap: bindet es künftig nur den Advisor? | `docs/plan/fragen.json` **U14** |
 | Sidechain-Quelle je Band sichtbar/Untermenü/unsichtbar | **U5** / NAK-33 |
+| Undo-Reichweite: je Sonde oder EINE Kette über alles | Interview `struktur`, offen (Regel 41) |
 | Größe Seite 2 · Figma-Flächen · Rückfallfläche der Sonde | **NAK-65** |
-| Undo-Form (Verlauf oder Zähler) | U2.8-Folgefrage |
-| Button-für-Button, Rest: BYPASS ↔ EQ-Mode-Punkt · Undo-Form · GLOBAL-Tür inkl. Mix-Platz · Wortlaut „DRAFT FROM MAIN" | Interview `struktur`, Runde 4 |
-| Mix/Dry-Wet je Sonde: versionierte Parameter-Erweiterung (beschlossen, ungebaut) | NAK-64 Punkt 4 · Regel 32 |
+| Undo-Form auf Gen **Seite 1** (Verlauf oder Zähler) | U2.8-Folgefrage |
+| Mix/Dry-Wet: versionierte Parameter-Erweiterung, zweistufig global↔Spur (beschlossen, ungebaut) | NAK-64 Punkt 4 · Regeln 32/42 |
 | Umschnitt Bauaufteilung/P6–P7 auf den neuen Schnitt | **NAK-64** |

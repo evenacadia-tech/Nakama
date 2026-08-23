@@ -59,8 +59,9 @@ im anschluss wird dann nurnoch im nakama repo gearbeitet". Einstieg dort:
   Vokabular gehört nicht in die Plugin-UI. Das Geschmacksprofil dort bindet
   nur die Studie.
 - **Produktzahlen** (16 sichtbare / 32 Vertrag Quellen, 8 Bänder, ±12 dB,
-  Remote ±3 dB, 1,5/3 dB): vom User **hingenommene Startwerte**, änderbar —
-  Regelfall einstellige Quellenzahl.
+  1,5/3 dB): vom User **hingenommene Startwerte**, änderbar —
+  Regelfall einstellige Quellenzahl. **Das Remote-±3-dB-Limit ist 23.08.
+  entfallen** (Register; Drafts sind im EQ frei nachjustierbar).
 - **Pläne:** `docs/FL-Nakama-Sonden-Design-Entwurf.md` (mit Errata-Block)
   ist der technische Entwurf; die Recherche liegt als **Archiv** in `docs/archiv/`.
   Bauentscheidung erteilt 20.08. („okay dann fangen wir damit nächste
@@ -116,6 +117,7 @@ im anschluss wird dann nurnoch im nakama repo gearbeitet". Einstieg dort:
 | 23.08. | **Gen wird EQ-Zentrale; Suna und Probeeq verschmelzen zu EINER Sonde; Gen erhält vollwertigen Master-EQ.** Der EQ rechnet auf den Bussen, bedient wird auf Gens Seite 2 (voller Wortlaut `design/abnahmen/2026-08-23-gen-eq-zentrale.md`; Umschnitt NAK-64, Figma NAK-65) | „STATT mehrere eq auf den instrumenten liegen zu haben, könnte man das EQ UI des Probeeq auf eine neue 2. seite auf den Gen legen … Also im Prinzip liegt der EQ auf den Bussen wird aber eingestellt auf dem Gen" · „Gen wird ein vollwertiges HUB oder Studio … es ist ein vollwertiger eq für den master wie andere eq auf dem markt … das ziel ist maximale kontrolle ohne überkomplexe workflow" · Wahl „Merge: eine Sonde" · „ja festhalten" |
 | 23.08. | Name der verschmolzenen Sonde: **Nakama Probeeq** (Suna entfällt als App-Name) | Wahl „Nakama Probeeq" (ebd.) |
 | 23.08. | Design-Vorgaben EQ-Seite: Sonden-Durchschalter direkt AUF Seite 2, nie über Seite 1; zwei EQ-Spuren in EINEM Graph, farblich unterscheidbar | „auf der 2. seite dem EQ gibt eine UI an dem man die sonden durchklicken kann, nicht durch die 1. seite. das wäre wieder nicht intuitiv. in der musikproduktion ist workflow alles. 1 klick oder 3 klicks dazwischen liegen welten. zudem bei 2 EQ spuren liegen sie nicht nebeneinander, sondern sind in EINEM Graph visuell unterscheidbar durch zum beispiel farben." |
+| 23.08. | **Das ±3-dB-Remote-Limit entfällt** (Anzeige UND Grenze; beantwortet U14) — Advisor-Drafts nutzen die manuellen Bereiche und sind im EQ frei nachjustierbar; Draft-Kasten-Wort: „DRAFT" | „ja draft reicht, aber die limitangabe oder das limit selbst ist sinnlos geworden. das kann im eq dann ja angepasst werden von selbst" (Interview `struktur` R4, `design/abnahmen/2026-08-23-interview-struktur.md`) |
 
 **Was NICHT mehr gilt** (und nirgends mehr als gültig auftauchen darf):
 Recherche als „kanonischer Plan" · Spectral Field / Bauplan 2.0 / Tiefenfeld /

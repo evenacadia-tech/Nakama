@@ -134,6 +134,44 @@ Guardrail „geschützte Bereiche" im Advisor-Urteil.
 - Anlegen: Wahl **„Ich + Gen darf vorschlagen"** — Gen darf aus einem
   Befund eine Zone vorschlagen, angelegt wird sie erst durch User-Klick.
 
+## Runde 4 — die letzten Buttons (Fragen 13–16)
+
+### Frage 13 — BYPASS ↔ EQ-Mode-Punkt (Lesart: zwei Dinge)
+
+> „ja korrekt so. also : EQ mit rotem oder Eq mit grünem punkt. Connected
+> oder disconnected, bypass und bei eq on die werte + den mode der probe."
+
+### Frage 14 — Undo-Form und -Reichweite
+
+> „undo so groß rechts unten ist übertrieben. da gehört eher ein mix knob
+> hin. einen für die gesamte app. undo kann auch ein kleines symbol auf
+> dem display werden"
+
+### Nachtrag zum Mix-Knob (nächste Nachricht)
+
+> „BEZÜGLICH DEM mixer knob der ist für die ganze app. jeder sonde
+> braucht die funktion für sich den dry wet zu stellen. das heißt der
+> knob bekommt klick funktion um von global auf nur für das gewählte band
+> umzuschalten."
+
+(„Band" hier wieder im Sinn von Runde 3 = Spur/EQ-Kurve der gewählten
+Sonde.)
+
+### Frage 15 — die GLOBAL-Werte (nach Erklärung von Trim/Width/Mono-Bass)
+
+> „das muss einklappbar sein. es ist eingeklappt ein kleiner pfeil klappt
+> es aus = platz"
+
+### Frage 16 — Draft-Wortlaut (nach Erklärung, was die Beschriftung tut)
+
+> „es steht klick/hold darunter. darüber kommt das korrekte englische
+> wort dafür. also ja draft reicht, aber die limitangabe oder das limit
+> selbst ist sinnlos geworden. das kann im eq dann ja angepasst werden
+> von selbst"
+
+**Folge (im Register 23.08.):** Das ±3-dB-Remote-Limit entfällt — Anzeige
+UND Grenze; damit ist auch die offene Frage **U14** beantwortet.
+
 ---
 
 ## Festgelegt (User-Wort, 23.08.2026)
@@ -177,6 +215,21 @@ Guardrail „geschützte Bereiche" im Advisor-Urteil.
 15. **PROTECTED = harte Sperre für alle:** auch eigene Bänder nicht in
     die Zone, bis sie gelöst wird. Anlegen durch den User; Gen darf aus
     einem Befund eine Zone vorschlagen, angelegt erst per User-Klick.
+16. **EQ-Mode und Bypass sind zwei Dinge** („ja korrekt so"): EQ-Punkt
+    grün/rot als Grundschalter, Bypass als Hörvergleich. Rückfallfläche
+    präzisiert: Connected/Disconnected · Bypass · bei EQ on die Werte +
+    der Mode der Probe.
+17. **Undo wird ein kleines Symbol auf dem Display** — der große Platz
+    unten rechts ist „übertrieben"; dort sitzt stattdessen der Mix-Knob.
+18. **Der Mix-Knob ist zweistufig:** er gilt der ganzen App UND jede
+    Sonde braucht ihren eigenen Dry/Wet — ein Klick auf den Knob schaltet
+    zwischen global und der gewählten Spur um.
+19. **Die GLOBAL-Sektion ist einklappbar:** eingeklappt als Standard, ein
+    kleiner Pfeil klappt sie aus („= platz").
+20. **Draft-Kasten:** oben das Wort **„DRAFT"**, darunter die
+    Klick/Hold-Elemente. **Die Limit-Angabe UND das Limit selbst
+    entfallen** — „das kann im eq dann ja angepasst werden von selbst"
+    (beantwortet U14; Register 23.08.).
 
 ## Angenommen (unbestätigt — Claude-Lesart, risikoarm)
 
@@ -198,13 +251,22 @@ Guardrail „geschützte Bereiche" im Advisor-Urteil.
   (Gen-Maus, Advisor, Fernweg) — FLs Host-Automation schreibt an der
   Sonden-Instanz vorbei und „gewinnt sichtbar" (Entwurf); die Zone zeigt
   eine solche Verletzung, verhindern kann sie sie dort nicht.
+- „den mode der probe" auf der Rückfallfläche = die Messposition
+  (PRE / INSERT / POST).
+- Der globale Mix wirkt als zweite Schicht über dem Sonden-Mix
+  (global × je Spur); die genaue Mechanik ist Technik (NAK-64 Punkt 4).
+- Mit dem Limit fällt auch die alte Q-Sonderbegrenzung der
+  Remote-Proposals (0,4–2): Drafts nutzen die manuellen Bereiche
+  (Technik-Folge derselben Begründung).
+- GLOBAL-Inhalt bleibt bei den vier Werten (nichts ergänzt); Undo-Klick =
+  letzter Schritt zurück, ohne Menü.
 
 ## Offen (nächste Runden / Kennungen)
 
-- **Runde 4 (Rest der Buttons):** Verhältnis BYPASS ↔ EQ-Mode-Punkt
-  grün/rot (ein Zustand oder zwei?) · Undo-Form (U2.8-Folge, gilt jetzt
-  für beide Flächen) · Inhalt der GLOBAL-Tür inkl. Platz des Mix ·
-  Wortlaut „DRAFT FROM MAIN" nach dem Merge.
+- **Undo-Reichweite:** gilt das kleine Undo je Sonde, oder EINE Kette
+  über alles (Master + alle Sonden)? In Runde 4 nicht beantwortet.
+- Die U2.8-Folgefrage (Undo-Form auf Gen **Seite 1**) bleibt davon
+  unberührt offen.
 - Rückfallflächen-Zuschnitt final erst, wenn der User sieht, was Gen je
   Sonde zeigt (sein Vorbehalt: „ich habe nicht im kopf was GEN anzeigt
   bezüglich des alten Suna konzeptes"). Leitfrage dafür: „was könnte den

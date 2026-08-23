@@ -427,21 +427,16 @@
    "seit": "2026-08-23",
    "bilder": [],
    "status": "offen"
-  },
-  {
-   "id": "U14",
-   "dringlichkeit": "wenn du dazu kommst",
-   "art": "Entscheid",
-   "titel": "EQ-Zentrale: was begrenzt das ±3-dB-Cap künftig?",
-   "was": "Dein Entscheid vom 23.08.: jeder EQ wird auf Gens Seite 2 bedient. Bisher galt '±12 dB manuell (am Plugin selbst), ±3 dB Remote (von Gen aus)' — mit der Zentrale läuft aber auch deine eigene Hand über den Fernsteuerweg, die alte Deutung passt nicht mehr. Vorschlag: das ±3-dB-Cap bindet künftig nur Advisor-Vorschläge (was der Berater anregen darf); deine eigenen Regler-Züge in Gen sind der manuelle Weg mit vollen ±12 dB.",
-   "warum": "Die Grenze stammt aus der Zeit, als Fernsteuerung ein Nebenpfad war. Ohne Neudeutung würde die Zentrale deine Hand auf ±3 dB einsperren — das wäre kein vollwertiger EQ. Braucht dein Wort, bevor SONDE-015/016 die Grenzen in Code gießen (NAK-64 Punkt 2).",
-   "wo": "docs/offene-punkte.md NAK-64 · Entwurf-Erratum (n) · design/abnahmen/2026-08-23-gen-eq-zentrale.md",
-   "seit": "2026-08-23",
-   "bilder": [],
-   "status": "offen"
   }
  ],
  "beantwortet": {
+  "U14": {
+   "wahl": "Limit entfällt ganz",
+   "text": "ja draft reicht, aber die limitangabe oder das limit selbst ist sinnlos geworden. das kann im eq dann ja angepasst werden von selbst",
+   "datum": "2026-08-23",
+   "status": "eingearbeitet",
+   "ergebnis": "Das ±3-dB-Remote-Limit entfaellt (Anzeige UND Grenze): Advisor-Drafts nutzen die manuellen Bereiche (±12 dB, Q 0,15-24) und sind im EQ frei nachjustierbar. Register 23.08.; Spielregeln Regeln 6/44; Erratum (n); NAK-64 Punkt 2 erledigt. [design/abnahmen/2026-08-23-interview-struktur.md]"
+  },
   "U2.16": {
    "wahl": "Gemeinsames Nakama-Design-Depot",
    "text": "Dein Wort vom 22.08.2026: Nakama-Design ist das gemeinsame verbindliche Depot.",

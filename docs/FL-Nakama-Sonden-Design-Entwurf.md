@@ -236,9 +236,13 @@ andere eq auf dem markt" · Merge-Wahl „eine Sonde" · Name **Nakama Probeeq**
 - **Der Fernsteuerweg (Kernfunktion 16, §44, P7) wird vom Nebenpfad zum
   Hauptbedienweg.** Die Sicherheitsmechanik (Pairing, HMAC, Revision, Lease,
   Revert) gilt unverändert. Die Deutung „±12 dB manuell, ±3 dB Remote"
-  (§44.2) ist damit überholt; Vorschlag zur Neudeutung (nicht entschieden,
-  NAK-64): das ±3-dB-Cap bindet Advisor-Vorschläge, User-Edits über Gen
-  sind der manuelle Weg (±12 dB).
+  (§44.2) ist damit überholt; **Entscheid 23.08. (Interview R4, U14): das
+  ±3-dB-Limit entfällt ganz** — „ja draft reicht, aber die limitangabe
+  oder das limit selbst ist sinnlos geworden. das kann im eq dann ja
+  angepasst werden von selbst". Advisor-Drafts nutzen die manuellen
+  Bereiche (±12 dB, Q 0,15–24) und sind im EQ frei nachjustierbar; die
+  Remote-Sonderbegrenzung (±3 dB, Q 0,4–2, §44.2) wird im Umschnitt
+  gestrichen (NAK-64 Punkt 2).
 - **Parameter- und Zustands-Hoheit bleibt in der Sonde** (Host-Automation
   ist instanzgebunden; §53.8-State unverändert); Gen ist Fernbedienung und
   Ansicht. Der eigene Revisions-/Undo-Ring (§44) wird wichtiger, weil der

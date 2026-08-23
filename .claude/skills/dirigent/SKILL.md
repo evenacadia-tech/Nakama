@@ -160,9 +160,23 @@ Eintrag nach `docs/dirigent/protokoll.md` (§5).
 Dann **eine kurze WhatsApp an den User** — Entscheid 24.08.2026: *„du schickst
 nur nachrichten an mich selbst … das ist der offizielle weg mich zu erreichen
 ab jetzt. schreib immer wenn eine session fertig ist ein ganz kurzen bericht"*
-(Register in `CLAUDE.md`). Werkzeug: MCP `whatsapp`, `send_message`. Die
-Zieladresse steht **nicht im Repo**, sondern im Memory
-`feedback_whatsapp-berichtskanal`.
+(Register in `CLAUDE.md`). Die Zieladresse steht **nicht im Repo**, sondern im
+Memory `feedback_whatsapp-berichtskanal`.
+
+🔑 **Nimm den kurzlebigen Sender, nicht das MCP-Werkzeug:**
+
+```bash
+node C:/Users/phili/.claude/mcp-servers/whatsapp-mcp-ts/nachricht.mjs "<jid>" "<text>"
+```
+
+Grund, am 24.08. gemessen: Claude Code startet den WhatsApp-MCP **je Session**
+als eigenen Prozess, WhatsApp erlaubt pro verknüpftem Gerät aber nur **einen**
+Socket. Jeder Spawn verdrängt die ältere Instanz (`connectionReplaced`) — und
+der Dirigent ist immer die älteste. `send_message` aus dem Dirigenten schlägt
+darum **strukturell** fehl, nicht zufällig. Dieselbe Klasse wie „zwei Broker auf
+einem Pipenamen stehlen sich still Clients" (`CLAUDE.md`, Maschinen-Landminen):
+eine von Natur aus einzelne Ressource, betrieben von einem Werkzeug, das pro
+Session eine Instanz startet. Der Sender belegt sie nur für Sekunden.
 
 - **Auslöser:** jede fertige Session — nicht jeder Commit, nicht jeder
   Zwischenstand.

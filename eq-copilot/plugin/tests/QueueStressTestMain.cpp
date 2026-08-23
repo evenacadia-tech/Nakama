@@ -896,6 +896,31 @@ int main()
         pruefe (b == 1, "und bei laufendem Transport ist der Seek weiterhin ein Bruch",
                 std::to_string (b));
 
+        // Der Fall, an dem die ERSTE Fassung der Regel gescheitert waere
+        // (Selbstaudit derselben Session): ein Host, der „gestoppt" meldet und
+        // die Projektzeit trotzdem LUECKENLOS fortschreibt. „Bei Stopp ist jede
+        // Bewegung ein Bruch" haette hier jeden Block verworfen und die Analyse
+        // dort ganz sterben lassen. Eine lueckenlose Fortsetzung ist eine
+        // Fortsetzung - der Befund war ein Sprung, kein Fortschritt.
+        {
+            StampedAudioQueue<MiniStrom> q; q.vorbereiten();
+            Blockquarantaene<MiniStrom> quar; quar.vorbereiten();
+            std::vector<float> l (64, 0.1f);
+            StampedAudioQueue<MiniStrom>::TapQuelle t { l.data(), l.data() };
+            for (int i = 0; i < 6; ++i)
+            {
+                q.veroeffentliche (&t, 1, 2, 64, stempelBei (7000 + (std::int64_t) i * 64,
+                                                             /*spielt*/ false));
+                while (const auto* bl = q.spitze()) { quar.schiebe (q, *bl); q.freigeben(); }
+            }
+            pruefe (quar.kontinuitaetsbrueche() == 0,
+                    "bei Stopp ist eine LUECKENLOS fortschreitende Zeit kein Bruch",
+                    std::to_string (quar.kontinuitaetsbrueche()));
+            pruefe (quar.versiegelteBloecke() == 5,
+                    "und alle bis auf den juengsten sind versiegelt",
+                    std::to_string (quar.versiegelteBloecke()));
+        }
+
         // Der dritte Fall, den die Regel bewusst NICHT anfasst: ohne gueltiges
         // „spielt" koennte eine wandernde Zeit ganz normale Wiedergabe sein.
         // Waere sie dort ein Bruch, stuerbe jede Analyse ohne Transportbeweis.

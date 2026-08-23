@@ -622,27 +622,31 @@ public:
         const bool beideStehen  = transportBekannt && (neu.flags & kFlagSpielt) == 0;
         const bool beideZeit    = (neu.flags & kFlagZeitGueltig) != 0;
 
-        // T2-4 (23.08.2026): ein Seek bei GESTOPPTEM Transport ist eine Grenze.
-        // Der Entwurf §32.3 fuehrt "ein Sprung" als Epochengrenze, ohne ihn an
-        // laufende Wiedergabe zu binden - und der Fall ist alltaeglich: der User
-        // zieht den Playhead, waehrend er am Instrument vorhoert.
+        // Die Hostzeit muss anschliessen, sobald beide Bloecke sie haben UND der
+        // Transport BEKANNT ist - laufend oder stehend. Ist er unbekannt, bleibt
+        // die Zeit unbewertet: dort koennte eine wandernde Zeit ganz normale
+        // Wiedergabe sein, und dieselbe Regel waere ein Bruch je Block.
         //
-        // 🔑 Das ist die KEHRSEITE der Regel unten, nicht ihr Widerspruch. Eine
-        // Zeit, die bei Stopp STEHT, sagt nichts (deshalb ist sie kein Bruch).
-        // Eine Zeit, die bei Stopp SPRINGT, sagt sehr wohl etwas - und beides
-        // ist an den vorhandenen Bits unterscheidbar. Bis 23.08. fiel der Sprung
-        // durch, weil die Zeitpruefung nur mit `spielt` lief (gemessen: Sprung
-        // um 10 s => 0 Brueche).
+        // T2-4 (23.08.2026): bis dahin lief diese Pruefung nur mit `spielt`. Ein
+        // Seek bei gestopptem Transport war damit keine Grenze (gemessen: Sprung
+        // um 10 s => 0 Brueche) - obwohl §32.3 "einen Sprung" ausdruecklich als
+        // Epochengrenze fuehrt und der Fall alltaeglich ist: der User zieht den
+        // Playhead, waehrend er am Instrument vorhoert.
         //
-        // ⚠️ Nur bei BEKANNT gestopptem Transport. Ist `spielt` unbekannt
-        // (kein Playhead, kein Kontext), koennte eine wandernde Zeit ganz
-        // normale Wiedergabe sein; dort waere dieselbe Regel ein Bruch je
-        // Block und wuerde jede Analyse toeten.
-        if (beideStehen && beideZeit
-            && neu.projectSampleStart != gehalten.projectSampleStart)
-            return false;
-
-        if (beideSpielen && beideZeit
+        // 🔑 Das ist die KEHRSEITE der Teilpuffer-Regel unten, nicht ihr
+        // Widerspruch. Eine Zeit, die STEHT, sagt nichts - sie faellt durch das
+        // `!=` und wird gar nicht geprueft. Eine Zeit, die sich BEWEGT, sagt
+        // etwas, und dann muss sie es lueckenlos tun: bei Stopp genauso wie bei
+        // Wiedergabe. Alles andere ist ein Sprung.
+        //
+        // ⚠️ WARUM NICHT "bei Stopp ist JEDE Bewegung ein Bruch", obwohl das
+        // naeher am Wortlaut laege - das war die erste Fassung dieser Zeilen und
+        // ist im Selbstaudit derselben Session gefallen: ein Host, der
+        // "gestoppt" meldet und die Projektzeit trotzdem lueckenlos
+        // fortschreibt, verloere damit JEDEN Block, die Analyse stuerbe dort
+        // ganz. Eine lueckenlose Fortsetzung ist eine Fortsetzung, egal was das
+        // Transportbit dazu sagt; der Befund war ein SPRUNG, kein Fortschritt.
+        if (beideZeit && (beideSpielen || beideStehen)
             && neu.projectSampleStart != gehalten.projectSampleStart)   // s. u.
         {
             // Numerischer Rand: ein Host, der `projectTimeSamples` nahe

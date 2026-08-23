@@ -229,26 +229,33 @@
   {
    "phase": "P6–P7",
    "titel": "Aktiver Kern: EQ in Sonde und Gen",
-   "ziel": "Der EQ entsteht: er rechnet in der Sonde (und als Master-EQ in Gen), bedient wird alles zentral auf Gens zweiter Seite — mit Kopplung, Sicherheit und Rückweg (Entscheid 23.08.; Umschnitt der Schritt-Texte: NAK-64). Danach: Release R3.",
+   "ziel": "Der EQ entsteht: er rechnet in der Sonde (und als Master-EQ in Gen), bedient wird alles zentral auf Gens zweiter Seite — mit Kopplung, Sicherheit und Rückweg (Entscheid 23.08., Umschnitt gefahren; Spielregeln der UI: design/docs/ui-spielregeln-eq-zentrale.md). Danach: Release R3.",
    "schritte": [
     {
      "id": "S26–28",
      "ticket": "SONDE-015",
-     "text": "Lokaler EQ-Kern, vier vorbereitete Bänke, Zustand und Automation, A/B.",
+     "text": "Lokaler EQ-Kern in der Sonde: vier vorbereitete Bänke, Zustand und Automation, A/B — dazu die versionierte Zustands-Erweiterung aus dem 23.08.-Entscheid: Mix je Sonde und die Schutz-Zonen bekommen ihren Platz im gespeicherten Zustand (Layout v2, neue Kennungen, nie umgewidmet).",
+     "beleg": "",
+     "stufe": "T2"
+    },
+    {
+     "id": "S28b",
+     "ticket": "SONDE-015b",
+     "text": "Derselbe EQ-Kern auf dem Master: Gen bekommt seinen eigenen EQ-Pfad — ausgeschaltet beweisbar bitidentisch, das NullTest-Bein wächst mit. Im selben Zug wird das Suna-Ziel stillgelegt (Suna ist in Probeeq aufgegangen) und sein Prüfbein verabschiedet sich deklariert aus dem Kanon, nicht still.",
      "beleg": "",
      "stufe": "T2"
     },
     {
      "id": "G6",
      "ticket": "Gate",
-     "text": "Härtestes Gate des Plans: C++-Review auf höchster Stufe, Nebenläufigkeits-Prüfung, Worst-Case-CPU.",
+     "text": "Härtestes Gate des Plans: C++-Review auf höchster Stufe, Nebenläufigkeits-Prüfung, Worst-Case-CPU — deckt seit dem Umschnitt auch Gens Master-Pfad.",
      "beleg": "",
      "stufe": "T3"
     },
     {
      "id": "S29–31",
      "ticket": "SONDE-016/017",
-     "text": "Kopplung Gen↔Probeeq mit Sicherheit, Lease, Anwenden/Zurücknehmen, aktiver Vergleich.",
+     "text": "Kopplung Gen↔Sonde als Hauptbedienweg: Pairing, Verschlüsselung, Lease, Anwenden/Zurücknehmen, aktiver Vergleich — dazu die Drei-Stufen-Geste (Halten = hören · 1. Klick = 10-Sekunden-Probe · 2. Klick = fest), volle Bereiche ohne Remote-Limit (Entscheid 23.08.), die harte Schutz-Zonen-Sperre und der zweistufige Mix (ganze App ↔ gewählte Spur).",
      "beleg": "",
      "stufe": "T2"
     },
@@ -258,6 +265,13 @@
      "text": "Sicherheits- und Rust-Review + Codex + 10 000 Befehle Stress.",
      "beleg": "",
      "stufe": "T3"
+    },
+    {
+     "id": "S31b",
+     "ticket": "SONDE-020",
+     "text": "EQ-Zentrale-UI: Gen Seite 2 gegen deinen Figma-Stand gebaut (Prüfmaßstab: design/docs/ui-spielregeln-eq-zentrale.md), dazu die Minimal-Rückfallfläche der Sonde. Startet erst, wenn dein Figma-Stand vorliegt (NAK-65).",
+     "beleg": "",
+     "stufe": "T2"
     }
    ]
   },

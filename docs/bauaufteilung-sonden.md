@@ -30,6 +30,16 @@
   S8 **19** mit A14);
   P0 ist damit bis auf **Gate G0** (T3, eigene Session) vollständig. Nächste
   Flächen: G0, dann S8.
+- **Nachgezogen 23.08. (Umschnitt, NAK-64):** Entscheid **„Gen wird
+  EQ-Zentrale"** (Register 23.08.; Entwurf-Erratum (n); Wortlaut
+  `../design/abnahmen/2026-08-23-gen-eq-zentrale.md` und
+  `…interview-struktur.md`): **zwei** Apps statt drei — Suna ist in Probeeq
+  aufgegangen, die EQ-Bedienung aller Sonden liegt zentral auf Gens
+  Seite 2, Gen erhält einen vollwertigen Master-EQ, das ±3-dB-Remote-Limit
+  ist entfallen (U14). Umgeschnitten: §1 (Oberflächen) und §3 P6–P7 —
+  **S28b und S31b sind neu**, Summe 37 → **39** Sessions;
+  `docs/plan/plan.json` trägt denselben Schnitt. Spielregeln der UI:
+  `../design/docs/ui-spielregeln-eq-zentrale.md` (44 Regeln).
 
 ---
 
@@ -144,16 +154,20 @@ Capability-Degradation · Konfliktauflösung · welche Aktion gerade NICHT aktiv
 ist.** Das wandert unten in die T1-Liste — es ist der Punkt, an dem eine
 Interims-UI sonst still einen nicht existierenden Zustand vortäuscht.
 
-Betroffen sind **drei** Oberflächen, nicht eine: Main (**Gen**, volle
-Arbeitsfläche), der Editor der Active Probe (**Probeeq**, vollwertiger EQ laut
-User 21.08., ab P6) und der Editor der Passive Probe (**Suna**-Kachel, null
-Hostparameter — kommt in `SONDE-007b` mit). Seit 21.08. gilt dazu: die
-Oberfläche kommt aus Figma (User) über `design/`; die Größen
-sind dort abgenommen (20.08.: Gen 760×430 · Probeeq 700×420 · Suna-Kachel
-260×84), die Suna-Kachel ist dort „nicht begonnen" (`docs/sondenplan.md` im Design-Repo).
-Vorschlag (nicht abgenommen): `SONDE-007b` baut keine eigene
-Kachelgestaltung, sondern den Vertrag (Zustände, Pflichtinhalt) und nimmt die
-Gestaltung aus dem Figma-Stand — Entwurf-Errata (h)/(j).
+Betroffen sind **seit 23.08. zwei** Oberflächen (Umschnitt, Kopfzeile):
+**Gen** (Seite 1 Übersicht/Befunde/Advisor + **Seite 2 EQ-Zentrale**, die
+alle Sonden UND den Master-EQ bedient) und die **Minimal-Rückfallfläche der
+einen Sonde** (**Probeeq** — Suna ist in Probeeq aufgegangen; die alte
+Suna-Kachel-Arbeit und ihre offenen U6-Punkte gelten für die Rückfallfläche
+weiter, soweit sie eine behält). Die Oberfläche kommt aus Figma (User) über
+`design/`; abgenommen ist 760×430 für die Übersicht (20.08.), die Größe von
+Seite 2 ist **offen** (NAK-65); der Probeeq-Stand 700×420 ist **Working
+Design** der EQ-Fläche (User 23.08.), als eigenständige Voll-UI Verlauf.
+Prüfmaßstab jeder UI-Fassung zusätzlich:
+`../design/docs/ui-spielregeln-eq-zentrale.md`. Vorschlag (nicht
+abgenommen): `SONDE-007b` baut keine eigene Kachelgestaltung, sondern den
+Vertrag (Zustände, Pflichtinhalt) und nimmt die Gestaltung aus dem
+Figma-Stand — Entwurf-Errata (h)/(j).
 
 ---
 
@@ -342,14 +356,21 @@ Ergebnis, nicht ein Treffer.
 **R2 · Passive Beta** — 9 von 12 Kernfunktionen, Audio vollständig passiv.
 **Das ist der Punkt, an dem das Produkt zum ersten Mal wirklich nützt.**
 
-### P6–P7 · Aktiver Kern → R3
+### P6–P7 · Aktiver Kern: EQ in Sonde und Gen → R3
+
+**Umschnitt 23.08.** (Kopfzeile; NAK-64): Der EQ rechnet in der Sonde und
+als Master-EQ in Gen, bedient wird zentral auf Gens Seite 2. Der Fernweg
+(`SONDE-016/017`) ist damit der **Hauptbedienweg**, nicht mehr der
+Nebenpfad; die EQ-Bedien-UI entsteht **einmal** (S31b) statt je App.
 
 | # | Ticket | Inhalt | Prüfung |
 |---|---|---|---|
-| S26–28 | `SONDE-015` | Lokaler Active-DSP, Bankpool, State/Automation, A/B | T1+T2 |
-| **G6** | — | **Gate:** `/c-review` **max effort** + Codex + ThreadSanitizer-Äquivalent + Worst-Case-CPU. Falsifikation: Gate 1, 2, 3 | **T3** |
-| S29–31 | `SONDE-016` + `017` | Pairing/HMAC (**mit NAK-21-Reihenfolge!**), Lease, Apply/Revert, Active-Compare | T1+T2 |
+| S26–28 | `SONDE-015` | Lokaler Active-DSP, Bankpool, State/Automation, A/B — **plus Layout v2** (neue IDs, nie umgewidmet): `mix` je Instanz und die Schutz-Zonen im gespeicherten Zustand (Entscheide 23.08., Interview R2/R3) | T1+T2 |
+| S28b | `SONDE-015b` | **Gen-Master-EQ:** derselbe Kern auf dem Master (aus = beweisbar bitidentisch, das NullTest-Bein wächst mit) + **Stilllegung des Suna-Ziels** — A15 verabschiedet sich im selben Änderungssatz deklariert aus dem Kanon (`tools/beweise.ps1`-Tabelle), nicht still | T1+T2 |
+| **G6** | — | **Gate:** `/c-review` **max effort** + Codex + ThreadSanitizer-Äquivalent + Worst-Case-CPU — deckt seit dem Umschnitt auch Gens Master-Pfad. Falsifikation: Gate 1, 2, 3 | **T3** |
+| S29–31 | `SONDE-016` + `017` | Pairing/HMAC (**mit NAK-21-Reihenfolge!**), Lease, Apply/Revert, Active-Compare — als Hauptbedienweg: **Drei-Stufen-Geste** (Preview per Halten · Apply mit 10-s-Lease-Startwert · Confirm), volle manuelle Bereiche **ohne ±3-Cap** (U14), Schutz-Zonen als Ablehnungsgrund + harte Sperre der Bedienwege, **zweistufiger Mix** (ganze App ↔ gewählte Spur) | T1+T2 |
 | **G7** | — | **Gate:** `/security-review` + `/rust-review` + Codex + 10 000 Befehlsstress. Falsifikation: Gate 3, 4, 8 | **T3** |
+| S31b | `SONDE-020` | **EQ-Zentrale-UI:** Gen Seite 2 gegen den Figma-Stand des Users (NAK-65), Prüfmaßstab `ui-spielregeln-eq-zentrale.md`; dazu die Minimal-Rückfallfläche der Sonde. **Startet erst, wenn der Figma-Stand vorliegt** | T1+T2 |
 
 G6 ist der härteste Gate des Plans. Vier vorallokierte Bänke mit lockfreiem
 Ownership-Protokoll, Reclaim-ACK über SPSC-Ring, atomarer Blockrandtausch —
@@ -377,14 +398,15 @@ lohnt sich `/c-review` auf höchster Stufe wirklich.
 | P3 → **R1** | 2 | 1 | — |
 | P4 | 3 | 1 | — |
 | P5 → **R2** | 3 | 1 | — |
-| P6 | 3 | 1 | — |
-| P7 → **R3** | 3 | 1 | — |
+| P6 | 4 | 1 | — |
+| P7 → **R3** | 4 | 1 | — |
 | P8 | 2 | 1 | — |
 | P9 → **R4** | 2 | 1 | — |
-| **Gesamt** | **37** | **10** | **2** |
+| **Gesamt** | **39** | **10** | **2** |
 
 **Bis R2 (das erste wirklich nützliche Produkt): 27 Bau-Sessions + 6 Gates.**
-**Bis R4 (voller Sondenkern): 37 + 10 = 47 Sessions.**
+**Bis R4 (voller Sondenkern): 39 + 10 = 49 Sessions** (23.08.: +2 durch den
+EQ-Zentrale-Umschnitt — S28b Gen-Master-EQ, S31b EQ-Zentrale-UI).
 
 Das ist eine **Hypothese mit Nachmessung**, keine Schätzung, die ich
 verteidige. **Rekalibrierungspunkt nach G1:** Wenn P0+P1 statt 11 Sessions 16

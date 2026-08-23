@@ -66,9 +66,14 @@
 > `legacy`-Instanz faerbt nicht mehr. §53.5 nennt `legacy` „immer passiv" —
 > gewollt, aber es ist der einzige Punkt, an dem dieser Aenderungssatz das
 > Verhalten des Produkts aendert.
-> ⚠️ **`pluginval` lief NICHT** am Main-Bundle: das Binary ist auf dieser
-> Maschine nicht auffindbar und nirgends im Repo gepinnt (**NAK-53**). Gerade
-> dort beruehrt der Aenderungssatz den Audiopfad — T1 muss es nachholen.
+> ✅ **`pluginval` 8 SUCCESS auch am Main-Bundle** (`SONDE-007b.md` B13) —
+> gerade dort beruehrt der Aenderungssatz den Audiopfad.
+> ⚠️ **Selbstaudit-Korrektur, damit sie niemand wiederholt:** dieses Blatt und
+> das Manifest trugen kurzzeitig „pluginval nicht auffindbar" samt einem neuen
+> Punkt NAK-53. Falsch — das Binary liegt unter `%TEMP%\pluginval.exe`, und
+> **NAK-26 sagt das seit dem 21.08. woertlich**. Der Fehler war nicht die
+> Suche, sondern einen bestehenden offenen Punkt nicht zu lesen, bevor ein
+> neuer angelegt wird. NAK-53 ist zurueckgenommen, NAK-26 hat den Nachtrag.
 >
 > **Naechster Schritt: T2 fuer S9** — Frischkontext-Pruefer, eigene Session
 > (Sessionregel `docs/bauaufteilung-sonden.md` §0). Danach S10.

@@ -4,9 +4,9 @@
 > dieses Blatt entsteht daraus mit `py -3.13 tools/hub/plan_blatt.py`.
 > Aenderungen hier gehen beim naechsten Lauf verloren.
 
-**Stand:** 2026-08-22 · **13 von 34 Schritten fertig**
+**Stand:** 2026-08-23 · **14 von 34 Schritten fertig**
 
-`███████████████░░░░░░░░░░░░░░░░░░░░░░░░░` 38 %
+`████████████████░░░░░░░░░░░░░░░░░░░░░░░░` 41 %
 
 **Bei dir liegen:** 9 Punkt(e) — Details auf der Briefing-Seite (https://nakama-briefing.philipld.chatgpt.site)
 
@@ -16,7 +16,7 @@
 |---|---|---:|---:|
 | **Vorlauf** — Beweisen statt behaupten | `████████████████████████` | 1 | 0 |
 | **P0** — Bestand einfrieren, Hostgrenzen beweisen | `████████████████████████` | 8 | 0 |
-| **P1** — Verträge, gespeicherter Zustand, neutrale Hüllen | `████████████████░░░░░░░░` | 4 | 2 |
+| **P1** — Verträge, gespeicherter Zustand, neutrale Hüllen | `████████████████████░░░░` | 5 | 1 |
 | **P2** — Messkern, Nachrichtenweg, Speicher | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 5 |
 | **P3** — Passive Landkarte | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 2 |
 | **P4–P5** — Vergleichsevidenz und Ursachen | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 4 |
@@ -30,7 +30,7 @@ flowchart LR
   P0["Vorlauf<br/>1/1"]:::fertig
   P1["P0<br/>8/8"]:::fertig
   P0 --> P1
-  P2["P1<br/>4/6"]:::laeuft
+  P2["P1<br/>5/6"]:::laeuft
   P1 --> P2
   P3["P2<br/>0/5"]:::offen
   P2 --> P3
@@ -68,22 +68,22 @@ flowchart LR
 - ■ **S4** — Capabilityreport: die zehn Fähigkeitsbits für FL an die Rohdaten aus Termin A und B gebunden — zwei bestätigt (Hostkontext, Projektzeit), acht nicht: zwei gemessen „kann FL nicht“ (feine Automation, double), drei „noch nicht bewiesen“ (Latenzangabe, beide Nebenwege — Termin A2), eines ungemessen, zwei warten auf ihre Tickets. Prüfbein A13 (61 Prüfungen) misst den Report selbst gegen die Rohdaten; Kanon 18/18 grün. Frischer Prüfer: Runde 1 NEEDS_WORK (zwei Bits zu optimistisch), nachgearbeitet, Runde 2 PASS. (fertig · 22.08.)
 - ■ **G0** `Gate` — Erste adversariale Pruefrunde (C++-Review + Codex) ueber P0 — gefahren 22.08., Urteil PASS: beide Bruchauftraege (Gate 1, Gate 5) gescheitert, die P0-Kernflaeche traegt keinen Befund. Manifest docs/beweise/G0.md. Damit ist P0 vollstaendig. (fertig · 22.08.)
 
-### P1 — Verträge, gespeicherter Zustand, neutrale Hüllen  (4/6)
+### P1 — Verträge, gespeicherter Zustand, neutrale Hüllen  (5/6)
 
 *Alles, was zwischen den drei Apps und dem Broker hin- und hergeht, ist als Vertrag festgeschrieben und in drei Sprachen gleich geprüft — bevor der Messkern darauf baut.*
 
 - ■ **S5** `SONDE-005a` — Nachrichtenverträge (JSON) mit Bandgitter und 153 Prüffällen; in Python, C++ und Rust gleich gelesen. Gebaut und nachgearbeitet — das abschließende Prüfurteil eines frischen Prüfers steht noch aus. (fertig · 21.08.)
 - ■ **S6** `SONDE-005b` — Binärformat für Messdaten (FlatBuffers) mit festen Feldnummern und zwei handgeschriebenen Lesern; 6215 Byte-Mutanten bestanden. Prüfurteil wie S5 noch offen. (fertig · 21.08.)
 - ■ **S7** `SONDE-006` — Gespeicherter Zustand Schema 2: alte Projekte wandern verlustfrei, fremde Versionen werden nur-lesend geöffnet, FL sieht jede Änderung als „ungespeichert“. 109 Parameter-Kennungen festgeschrieben. (fertig · 22.08.)
-- ■ **S8** `SONDE-007a` — Gemeinsamer Kern fuer alle drei Plugins, der keine Bundle-Konstanten sieht — sonst bekaemen zwei Plugins die Identitaet des dritten. Gebaut: der geteilte Code wird jetzt EINMAL uebersetzt statt einmal je Programm, und vier unabhaengige Sperren passen auf, dass keine Kennung hineinrutscht. Jede Sperre wurde absichtlich ausgeloest, um zu zeigen, dass sie wirklich zufasst. Eine davon hat dabei einen Fehler in sich selbst gefunden. Das abschliessende Urteil eines frischen Pruefers steht noch aus. (fertig · 22.08.)
-- ▨ **S9** `SONDE-007b` — Drei eigene Plugin-Ziele (Gen, Probeeq, Suna), Rollen-Erkennung, Installer-Manifest. (läuft)
+- ■ **S8** `SONDE-007a` — Gemeinsamer Kern fuer alle drei Plugins, der keine Bundle-Konstanten sieht — sonst bekaemen zwei Plugins die Identitaet des dritten. Gebaut: der geteilte Code wird jetzt EINMAL uebersetzt statt einmal je Programm, und fuenf unabhaengige Sperren passen auf, dass keine Kennung hineinrutscht. Jede Sperre wurde absichtlich ausgeloest, um zu zeigen, dass sie wirklich zufasst. Eine davon hat dabei einen Fehler in sich selbst gefunden. NACHGEPRUEFT am 23.08.: das Herzstueck haelt (der Kern traegt nachweislich keine Kennung), aber das Urteil lautete 'nachbessern' — fuenf Punkte, darunter eine echte Verschlechterung durch den Umbau selbst: der geteilte Code hatte still die schaerfste Warnstufe des Compilers verloren. Alle fuenf noch am selben Tag geschlossen, die fuenfte Sperre ist genau daraus entstanden, danach wieder 19 von 19 Pruefungen gruen. Auf den nachgebesserten Stand fehlt ein zweites Urteil. (fertig · 22.08.)
+- ■ **S9** `SONDE-007b` — Drei eigene Plugin-Ziele, Rollen-Erkennung, Installer-Manifest. ALLE DREI TEILE GEBAUT am 23.08. (1) Die Kennung der Programme stand bisher als Text im Bauskript UND in der Kennungsdatei - zwei Wahrheiten, die auseinanderlaufen koennen. Jetzt liest das Bauskript die Kennungsdatei; der Test misst weiter das fertige Programm gegen dieselbe Datei. (2) Nakama Suna und Nakama Probeeq sind gebaut, aus EINER gemeinsamen Quelle, und tragen nachweislich ihre eigenen, seit Tagen reservierten Kennungen - keines traegt die eines anderen. Beide sind heute noch stumm: Ton geht unveraendert durch, keine Regler, keine Oberflaeche. Das ist Absicht. (3) Das Hauptprogramm erkennt jetzt seine Rolle, statt sie anzunehmen: beim Laden weiss es nichts ueber sich und bleibt still; erst ein geladenes Projekt entscheidet, ob es ein alter Messpunkt (dann fuer immer passiv) oder ein Hauptfenster ist. Eine frische Instanz wird nur dann zum Hauptfenster, wenn du das Fenster geoeffnet UND die Rolle gewaehlt hast. Ein Scannerlauf entscheidet nichts. Dazu die Packliste fuer die Auslieferung (drei Programme plus Broker, Pruefsumme, Rueckweg mit Warnung vor Datenverlust) - und das Installationsskript liegt endlich im Projekt statt nur auf einem Rechner. FOLGE, DIE MAN HOERT: ein reiner Messpunkt faerbt beim Anhoeren nichts mehr ein. 23 von 23 Pruefungen gruen. NICHT abgenommen: die Nachpruefung durch einen frischen Pruefer steht aus,; das fremde Pruefprogramm sagt bei allen drei Programmen SUCCESS. (fertig · 23.08.)
 - □ **G1** `Gate` — Prüfrunde über P1 (C++- und Rust-Review + Codex). (offen)
 
 ### P2 — Messkern, Nachrichtenweg, Speicher  (0/5)
 
 *Die größte Phase: Audio wird zeitgestempelt gemessen, über den Broker verteilt und gespeichert — ohne je den Audiothread zu blockieren. Danach: Release R0 (Vertrag steht, intern).*
 
-- □ **S10–11** `SONDE-008` — Zeitgestempelte Audio-Warteschlange, Quarantäne für kaputte Blöcke, Lautheitsmessung mit festem Speicher. Gefährlichster Eingriff der Phase (Audiothread). (offen)
+- ▨ **S10–11** `SONDE-008` — Zeitgestempelte Audio-Warteschlange, Quarantaene fuer kaputte Bloecke, Lautheitsmessung mit festem Speicher. Gefaehrlichster Eingriff der Phase (Audiothread). Kommt NACH der Nachpruefung von S9 - erst das Urteil, dann der naechste Bau. (läuft)
 - □ **S12–13** `SONDE-009` — Messkern v2: Zeit-, Gültigkeits-, Ereignis- und Bandverträge. (offen)
 - □ **S14–15** `SONDE-010` — Nachrichten-Clients in den Plugins und der Parser im Broker. (offen)
 - □ **S16–17** `SONDE-011` — Koordinator im Broker, Datenbank-Migration, Ausgangspuffer. (offen)

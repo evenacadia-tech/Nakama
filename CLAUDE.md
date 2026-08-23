@@ -206,9 +206,10 @@ des v3-Vertrags · A11 `pruefe_v2_schemas.py` · **A12
 jüngsten Manifest in `docs/beweise/`, nicht hier** (zuletzt
 `SONDE-007b.md`: 23/23 grün). Nicht im Kanon, aber vorhanden:
 `EqCopAuxSpikeTest` (NAK-37), Shot (`--state` lädt einen Host-State vor dem
-Render), PaintBench, PipeProbe. ⚠️ **`pluginval` ist nirgends gepinnt** und am
-23.08. auf dieser Maschine nicht auffindbar — NAK-53. Vier Beine
-stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
+Render), PaintBench, PipeProbe, `pluginval --strictness-level 8`
+(⚠️ liegt **nur** unter `%TEMP%\pluginval.exe` — NAK-26; wer es sucht, sucht
+dort zuerst). Vier Beine stehen als „geplant" und werden Pflicht, sobald ihr
+Ticket sie baut.
 
 - Golden-WAVs einmalig: `py -3.13 tools/eq-copilot/erzeuge_fixtures.py --nur-wav`
   (Erzeuger der Referenz `tools/analyze-track.py` liegt noch im FL-Studio-Repo — NAK-31).
@@ -376,8 +377,9 @@ stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
   Rückfall auf kleineres *oder unbekanntes* State-Schema (NAK-41-Riegel;
   unbekannt zählt wie älter). Broker nach `Program Files`, nicht
   `%LOCALAPPDATA%` — er ist ab SONDE-010 ein Spawn-Ziel.
-- **Stand S9:** alle drei Bauabschnitte gebaut, **T1/T2 beide offen** — und
-  `pluginval` fehlt am Main-Bundle (NAK-53).
+- **Stand S9:** alle drei Bauabschnitte gebaut, `pluginval` 8 an allen drei
+  Bundles SUCCESS, Kanon 23/23 — **T1 und T2 beide offen**, also „gebaut",
+  nicht „abgenommen".
 - **Hör-Markierung (0.3.0):** färbt auf Klick das Monitorsignal von Gen;
   Verriegelung im Code seit S9 **`klassifiziertAlsMain ∧`** `(echtzeitOk ∨ test)
   ∧ (spielt ∨ ¬hatTransport) ∧ ¬isNonRealtime ∧ (editorOffen ∨ test)`;

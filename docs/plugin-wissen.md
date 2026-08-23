@@ -49,13 +49,21 @@ KONZEPT.md`). Modi `aus / solo / puls`: **Solo** = nur das Problemband,
 vorberechnet, der Audiothread kopiert höchstens einen POD-Auftrag aus 4
 Ring-Slots.
 
-**Verriegelung, gemessen (`PluginProcessor.cpp:202-207`):**
-`erlaubt = (echtzeitOk ∨ testEchtzeit) ∧ (spielt ∨ ¬hatTransport) ∧
-¬isNonRealtime() ∧ (editorOffen ∨ testEchtzeit)` — `testEchtzeit` setzt nur
-`testForciereEchtzeit()`, ohne Aufrufer im Produkt. Der Editor beendet bei
-Fensterschluss, Samplerate-Wechsel, Freilauf und Totmann 10 min
-(`PluginEditor.cpp:186-219`). Analyse-Abgriff VOR der Färbung; Render bleibt
-bitidentisch (MarkierungTest T3/T4/T10).
+**Verriegelung, gemessen (`PluginProcessor.cpp:202-216`):**
+`erlaubt = istMainKlassifiziert ∧ (echtzeitOk ∨ testEchtzeit) ∧
+(spielt ∨ ¬hatTransport) ∧ ¬isNonRealtime() ∧ (editorOffen ∨ testEchtzeit)` —
+`testEchtzeit` setzt nur `testForciereEchtzeit()`, ohne Aufrufer im Produkt.
+Der Editor beendet bei Fensterschluss, Samplerate-Wechsel, Freilauf und
+Totmann 10 min (`PluginEditor.cpp:186-219`). Analyse-Abgriff VOR der Färbung;
+Render bleibt bitidentisch (MarkierungTest T3/T4/T10).
+
+⚠️ **`istMainKlassifiziert` ist seit S9 (SONDE-007b, 23.08.) der erste Term**
+— §53.5 Satz 1: bis zur positiven Klassifikation ist der Entry audio-neutral,
+und `legacy` ist „immer passiv". **Eine `legacy`-Instanz färbt damit nicht
+mehr**; wer die Markierung will, wählt im Editor die Rolle `hub`. Der Term ist
+die Atomic-Spiegelung von `Lebenslauf::audioAusnahmeErlaubt()` (§1.4c) und
+wird **nicht** von `testForciereEchtzeit` umgangen: der Schalter umgeht nur,
+was an der Wanduhr hängt. `EqCopLebenslaufTest` misst beide Seiten an Audio.
 
 ### 1.3 AnalyseEngine — die Uhren
 
@@ -117,6 +125,44 @@ Vertrag `eq-copilot/schemas/state/nakama-state-v2.md`; Code `plugin/state/`
   Plugin keinen einzigen `updateHostDisplay`-Aufruf.)
 - **v2-Brücke:** das `hello` trägt weiter `role` = `v2Rolle (common)`; die
   v3-Adresse (`hex32`) kommt mit SONDE-010 (NAK-40).
+- **Bundlevertrag aus der Target-Schicht (S9):** `setStateInformation` ruft
+  `bundleVertrag()` (`PluginProcessor.h`), nicht mehr `Bundle::eqcp()` direkt.
+  Welcher der drei Verträge gilt, sagt `NAKAMA_BUNDLE_MAIN` aus
+  `plugin/CMakeLists.txt`; ein `#error` fängt ein Ziel, das `src/`
+  mitübersetzt, ohne sich zu erklären.
+
+### 1.4c Lifecycle-Klassifikation (`state::Lebenslauf`, §53.5, S9, 23.08.)
+
+Im gemeinsamen Kern, JUCE-core-Code ohne Identitätskonstante. **Produktklasse
+≠ Klassifikation:** die Produktklasse sitzt fest am Bundle (Suna ist immer
+`passive_probe`), die Klassifikation entsteht erst aus dem restaurierten Stand.
+
+| Ereignis | Ergebnis |
+|---|---|
+| Konstruktor / frische Instanz | `unclassified` — audio-neutral, kein Brokerstart |
+| `lade()` ⇒ `ignoriert` (fremder Baum/Müll) | unverändert — der Host hat nichts restauriert |
+| `lade()` ⇒ `nurLesen` | zurück auf `unclassified`, **auch aus `main`** |
+| Schema-1 `sensor\|pre\|post` (migriert ⇒ `legacy`) | `legacy`, immer passiv |
+| Schema-1 `hub` / Schema-2 mit `plugin_kind=main` | `main` |
+| `setzeEditorOffen(true)` allein | **nichts** — klassifiziert nie für sich |
+| `setzeBindung(…)` bei offenem Editor | die explizite Initialisierung: klassifiziert nach dem neuen Stand, in **beide** Richtungen |
+| Sondenbundle, gültiger eigener Stand | seine Produktklasse; `main` ist unerreichbar |
+
+🔑 **„Ein Scannerlauf klassifiziert nicht" ist keine Sonderbehandlung.** Es
+gibt keine Zeile, die einen Scanner erkennt — es wäre auch keine ehrliche zu
+schreiben. Die Regel folgt aus der Startbedingung: ein Scanner ruft nie
+`setStateInformation` und öffnet nie einen Editor.
+
+🔑 **„Bestätigter Schema-2-Main-State" ist der Leser selbst.** `lade()` hat die
+Kind-Matrix §2.1 geprüft und damit ein `MainProject`-Kind gesehen, sonst wäre
+der Stand read-only. Eine zweite Prüfung im Automaten wäre eine Kopie.
+
+Zwei Verbraucher, mehr gibt es heute nicht: die Hör-Markierung (§1.2) und
+`darfBrokerStarten()` = `main` **und** offener Editor. Letzteres ist ein
+Vertrag ohne Pfad — in `plugin/src` gibt es keinen Spawn; `SONDE-010` hängt
+ihn dort an, statt eine zweite Bedingung zu erfinden. Der Automat ist **nicht**
+Teil des States: eine mitgespeicherte Klassifikation wäre eine zweite Wahrheit
+neben `plugin_kind`.
 - **Parameterbestand** (`schemas/state/nakama-parameter-v1.json`, C++-Tabelle
   `NakamaParameter.cpp`, deckungsgleich gemessen): 5 global + 8×13 = 109 IDs
   `v1.global.*` / `v1.band.<slot>.*`; heute trägt **kein** Bundle Hostparameter

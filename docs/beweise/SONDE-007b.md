@@ -53,6 +53,7 @@ Identitätsquelle wären drei Zielblöcke zwölf Literale):
 | 20 | **Gegenpfad installieren↔Rückweg im selben Änderungssatz**, samt NAK-41-Riegel: Rückfall auf einen Build mit kleinerem *oder unbekanntem* State-Schema wird verweigert und verlangt `-Erzwingen` | `Install-Nakama.ps1` §Rückweg · Vertrag §5.1 | ☑ | [↓ B12](#s9b12) | 2026-08-23 |
 | 21 | **NAK-32 geschlossen:** der ausführende Teil von `install/` ist versioniert (Skript + Manifest), Bundles/Rollbacks/Laufergebnisse bleiben Maschinenartefakte | `git check-ignore -v` | ☑ | [↓ B12](#s9b12) | 2026-08-23 |
 | 22 | **Kanon grün nach Abschnitt 3** — 21 → **23** Beine (A17, B8) | `pwsh -File tools/beweise.ps1 -Bauen` | ☑ 23/23 | [↓ §4](#4-kanon-lauf-roh-vom-runner-erzeugt) | 2026-08-23 |
+| 23 | **Fremder Host-Harness am geänderten Main-Bundle:** `pluginval --strictness-level 8` SUCCESS. Das ist die Stelle, an der Abschnitt 3 den Audiopfad berührt | `pluginval.exe --strictness-level 8 --validate-in-process --skip-gui-tests --validate …\EQ-Copilot.vst3` | ☑ SUCCESS | [↓ B13](#s9b13) | 2026-08-23 |
 
 **Was dieses Ticket ausdrücklich NICHT behauptet:**
 
@@ -73,13 +74,10 @@ Identitätsquelle wären drei Zielblöcke zwölf Literale):
   Spawn. Der Wert von Behauptung 15 liegt darin, dass SONDE-010 den Spawn an
   diese eine Frage hängen kann, statt eine zweite Bedingung zu erfinden — die
   auseinanderliefe. Bis dahin ist es ein Vertrag, keine Erfüllung.
-- **`pluginval` ist in dieser Session NICHT gelaufen.** Das Binary ist auf
-  dieser Maschine nicht auffindbar (gesucht 23.08. unter `Program Files`,
-  `Program Files (x86)`, `C:\Users\phili`, `C:\tools`, `C:\bin`, je vier
-  Ebenen tief: kein Treffer), und kein Repo-Eintrag pinnt seinen Ort. Für
-  Abschnitt 3 fehlt der fremde Host-Harness am **Main-Bundle** deshalb —
-  gerade dort, wo der Änderungssatz den Audiopfad berührt. Neuer offener
-  Punkt **NAK-53**; T1 muss ihn nachholen.
+- **`pluginval` prüft das VST3-Protokoll, nicht die Klassifikation.** Der
+  SUCCESS (Behauptung 23) sagt: der Änderungssatz hat das Hosting nicht
+  gebrochen. Er sagt **nicht**, dass §53.5 richtig umgesetzt ist — `pluginval`
+  lädt keinen FL-Projektstand und kennt keine Rollen. Das misst B9.
 - **Es ist nichts installiert.** Das Installer-Manifest beschreibt eine
   Auslieferung; der committete Stand trägt bewusst `sha256: null` („nicht
   ausliefer-bar"), weil kein Release erklärt ist. Die Installation bleibt ein
@@ -586,6 +584,52 @@ unbekannter Hash zählt wie älter**: eine Datei, die niemand einordnen kann,
 ist exakt der Fall, in dem ein Projekt still seine Messpunkt-Identität
 verliert.
 
+<a id="s9b13"></a>
+### B13 · `pluginval` Strenge 8 am Main-Bundle (Behauptung 23)
+
+**Befehl:** `%TEMP%\pluginval.exe --strictness-level 8 --validate-in-process --skip-gui-tests --validate "…\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3"`
+
+```text
+Starting tests in: pluginval / Listing available buses...
+Inputs:
+	Named layouts: Mono, Stereo
+	Discrete layouts: Discrete #1
+Outputs:
+	Named layouts: Mono, Stereo
+	Discrete layouts: Discrete #1
+Main bus num input channels: 2
+Main bus num output channels: 2
+Completed tests in pluginval / Listing available buses
+-----------------------------------------------------------------
+Starting tests in: pluginval / Enabling all buses...
+Completed tests in pluginval / Enabling all buses
+-----------------------------------------------------------------
+Starting tests in: pluginval / Disabling non-main busses...
+Completed tests in pluginval / Disabling non-main busses
+-----------------------------------------------------------------
+Starting tests in: pluginval / Restoring default layout...
+Main bus num input channels: 2
+Main bus num output channels: 2
+Completed tests in pluginval / Restoring default layout
+-----------------------------------------------------------------
+Starting tests in: pluginval / Fuzz parameters...
+Completed tests in pluginval / Fuzz parameters
+SUCCESS
+EXITCODE=0
+```
+
+⚠️ **Selbstaudit-Korrektur, offen protokolliert.** Dieser Abschnitt trug
+zuerst das Gegenteil: „`pluginval` ist in dieser Session NICHT gelaufen — das
+Binary ist nicht auffindbar", samt neuem offenen Punkt NAK-53. **Das war
+falsch.** Die Suche lief über `Program Files`, `C:\Users\phili` und drei
+weitere Wurzeln, aber nicht über `%TEMP%` — und genau dort liegt es, was
+**NAK-26 seit dem 21.08. wörtlich festhält** („`pluginval.exe` liegt nur unter
+`%TEMP%`"). Der Fehler war nicht die Suche, sondern dass ich einen bestehenden
+offenen Punkt nicht gelesen habe, bevor ich einen neuen anlegte. NAK-53 ist
+wieder entfernt; NAK-26 trägt jetzt den Nachtrag, dass S9 dieselbe
+`%TEMP%`-Kopie benutzt hat — womit sein eigentlicher Befund (**das Binary ist
+flüchtig und auf dem Zweitrechner nicht vorhanden**) unverändert offen bleibt.
+
 ---
 
 ## 3. Was in diesem Ticket noch aussteht
@@ -596,10 +640,9 @@ erledigen kann:
 
 | Offen | Warum |
 |---|---|
-| **T1 (Selbstprüfung gegen den Gate-Text)** | Nicht gefahren. Muss §53.4 und §53.5 Satz für Satz gegen den gebauten Stand halten — **und `pluginval` am Main-Bundle nachholen** (NAK-53) |
+| **T1 (Selbstprüfung gegen den Gate-Text)** | Nicht gefahren. Muss §53.4 und §53.5 Satz für Satz gegen den gebauten Stand halten |
 | **T2 (Frischkontext-Prüfer)** | Nicht gefahren. Sessionregel `docs/bauaufteilung-sonden.md` §0: urteilen darf nur, wer den Umbau nicht geschrieben hat. Bis dahin steht S9 wie S5, S6 und S8 auf „gebaut", nicht „abgenommen" |
 | **T3 / Gate G1** | Erst am Gate, nicht an diesem Ticket |
-| **`pluginval` am Main-Bundle** | Das Binary ist auf dieser Maschine nicht auffindbar und nirgends im Repo gepinnt → **NAK-53**. Für die beiden neuen Bundles liegt der SUCCESS aus Abschnitt 2 vor (B8), für das in Abschnitt 3 geänderte Main-Bundle nicht |
 
 **Was NICHT mehr offen ist, aber weiterhin Bedingung bleibt:**
 
@@ -627,6 +670,7 @@ nacharbeitet, urteilen darf nur, wer den Umbau nicht geschrieben hat.
 | Klassifiziert die Reihenfolge Editor↔Rollenwahl richtig? | Ja, und beide Richtungen sind gemessen (B9: „Rollenwahl OHNE offenen Editor klassifiziert nicht", „der geöffnete Editor allein holt es auch nicht nach") |
 | Bleibt `getStateInformation` unberührt? | Ja — der Automat ist **kein** Teil des States. Eine Klassifikation, die mitgespeichert würde, wäre eine zweite Wahrheit neben `plugin_kind`. `EqCopStateMigrationTest` und die beiden Sonden-Roundtrips sind unverändert grün |
 | Grundgesetz der beiden neuen Bundles | Unberührt: A15/A16 weiterhin grün, jetzt mit 62 statt 59 Prüfungen (die drei neuen sind Lifecycle-Zeilen, keine Audio-Zeilen) |
+| Fremder Host-Harness am geänderten Bundle | `pluginval` 8 SUCCESS (B13). **Der Selbstaudit hat hier eine falsche Aussage dieses Manifests gefunden und korrigiert** — siehe die Warnung in B13: ich hatte „nicht auffindbar" behauptet, ohne NAK-26 zu lesen, das den Ort seit dem 21.08. nennt |
 
 ---
 

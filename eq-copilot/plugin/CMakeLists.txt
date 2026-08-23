@@ -476,6 +476,34 @@ target_compile_definitions(EqCopLoudnessGoldenTest PRIVATE
 target_link_libraries(EqCopLoudnessGoldenTest PRIVATE juce::juce_core
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 
+# ── S12-13\SONDE-009: FeatureEngine v2 - Zeit, Validity, Events, Baender ───
+# Kanon B5 (stand seit S0 als "geplant (ab P2)" im Runner). Entwurf §66.1:
+# "EBU, Bandgitter, Stereo, Ereignisse, Epochgrenzen".
+#
+# Zwei Ebenen in EINEM Ziel, wie bei B4 und B8:
+#   1. Die FeatureEngine pur (core/analysis/) - Bandgitter gegen die
+#      eingefrorenen Fixtures, Quantisierung gegen alle 61 Vertragsvektoren,
+#      und die Fenstertrennung je Grenzart als eigener Fall.
+#   2. DERSELBE Weg verdrahtet im echten EqCopilotProcessor - Abschnitt K
+#      faehrt `nakamaBlockEmpfangen()`, die Brueckenhaelfte des Zeitstempels,
+#      die laut T2-Bericht zu SONDE-008 "kein Bein" hatte (NAK-56).
+# Ohne Ebene 2 waere es eine huebsche Engine, die im Produkt nichts misst.
+juce_add_console_app(EqCopAnalysisGoldenTest PRODUCT_NAME "eqcop-analysisgoldentest")
+target_sources(EqCopAnalysisGoldenTest PRIVATE
+    tests/AnalysisGoldenTestMain.cpp
+    src/PluginProcessor.cpp
+    src/PluginEditor.cpp
+    src/PipeClient.cpp
+    src/AnalyseEngine.cpp
+    src/Diagnose.cpp
+)
+target_include_directories(EqCopAnalysisGoldenTest PRIVATE src)
+target_compile_definitions(EqCopAnalysisGoldenTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopAnalysisGoldenTest PRIVATE juce::juce_audio_utils juce::juce_dsp
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopAnalysisGoldenTest)
+
 # ── S3b: Termin-B-Messgeraet (Wegwerfware wie SONDE-004a) ──────────────────
 # Erstes Ziel, das die Hostbruecke BENUTZT: sein Processor ist eine Senke.
 # Eigener Plugin-Code NkHp — bewusst ausserhalb der eingefrorenen Identitaet
@@ -586,7 +614,7 @@ nakama_kern_anbinden(EqCopSchemaTest)
 foreach(ziel EqCopilot
              EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest
-             EqCopQueueStressTest)
+             EqCopQueueStressTest EqCopAnalysisGoldenTest)
     target_compile_definitions(${ziel} PRIVATE NAKAMA_BUNDLE_MAIN=1)
 endforeach()
 
@@ -600,7 +628,7 @@ endforeach()
 foreach(ziel EqCopilot
              EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest
-             EqCopQueueStressTest EqCopLoudnessGoldenTest)
+             EqCopQueueStressTest EqCopLoudnessGoldenTest EqCopAnalysisGoldenTest)
     target_include_directories(${ziel} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/core"
         "${CMAKE_CURRENT_SOURCE_DIR}/hostbridge")
@@ -612,7 +640,7 @@ foreach(ziel NakamaKern
              EqCopilot EqCopPipeProbe EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopAuxSpike EqCopAuxSpikeTest EqCopHostContextTest
              EqCopSchemaTest EqCopStateMigrationTest EqCopLebenslaufTest
-             EqCopQueueStressTest EqCopLoudnessGoldenTest
+             EqCopQueueStressTest EqCopLoudnessGoldenTest EqCopAnalysisGoldenTest
              EqCopHostProbe EqCopHostProbeTest
              NakamaSuna NakamaProbeeq EqCopSunaNullTest EqCopProbeeqNullTest)
     target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")

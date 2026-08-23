@@ -307,6 +307,14 @@ $kanon = @(
     # wird, ist keine Zusage.
     [pscustomobject]@{ Kuerzel='A18'; Name='pruefe_installer_gegenpfad.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Gegenpfad installieren<->Rueckweg gefahren (Sandbox, nichts installiert): Erstinstallation traegt moduleinfo.json, ein Tausch ersetzt statt zu mischen, -Pruefen sieht den ganzen Ordner, der Rueckweg stellt den Vorzustand bytegleich her und laesst KEIN leeres .vst3-Gehaeuse stehen, selbst angelegte Ordner verschwinden nur leer, der NAK-41-Riegel greift und zerstoert seine eigene Wiederholungsquelle nicht, eine dritte Artefaktsorte bricht ab.' }
 
+    # S12-13/SONDE-009: Drift-Riegel des Bandgitter-Headers, gleiche Form wie der
+    # flatc-Drift-Test aus SONDE-005b. Das C++-Bein B5 misst die WERTE gegen die
+    # Fixture; dieses Bein misst zusaetzlich, dass die Datei reproduzierbar aus
+    # dem Erzeuger kommt. Die Luecke, die es schliesst: ein von Hand gepflegter
+    # Header mit zufaellig richtigen Zahlen sieht fuer B5 gruen aus - und der
+    # naechste Generatorlauf ueberschreibt die Handarbeit still.
+    [pscustomobject]@{ Kuerzel='A19'; Name='erzeuge_bandgitter_header.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='BandGridZahlen.h ist bytegleich aus den zwei eingefrorenen Gitterfixturen erzeugt; die 64 Live-Gruppen partitionieren die 221 Feinbaender lueckenlos und ueberschneidungsfrei, und die groben Kanten sind bitgleiche Kopien feiner Kanten (kein zweites Filterbank-Gitter).' }
+
     [pscustomobject]@{ Kuerzel='A15'; Name='EqCopSunaNullTest';   Art='plugin'; Argumente=@(); AbPhase='jetzt'; Behauptung='Nakama Suna (NkPr): Passthrough bitgleich ueber drei Samplerates und fuenf Blockgroessen, 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur passive_probe zu; speichern-laden-speichern bytegleich.' }
     [pscustomobject]@{ Kuerzel='A16'; Name='EqCopProbeeqNullTest'; Art='plugin'; Argumente=@(); AbPhase='jetzt'; Behauptung='Nakama Probeeq (NkAc): heute ebenfalls Passthrough bitgleich (die EQ-DSP kommt in P6), 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur active_probe zu; speichern-laden-speichern bytegleich.' }
 
@@ -334,7 +342,12 @@ $kanon = @(
     # AUSGEBAUTE Rechnung (unbegrenzter Vektor + Zweitdurchgang) - eine gegen
     # sich selbst gerechnete Zahl waere eine Tautologie.
     [pscustomobject]@{ Kuerzel='B9'; Name='EqCopLoudnessGoldenTest'; Art='plugin'; Argumente=@(); AbPhase='P2'; Behauptung='Fixed-memory Loudness (§48.1): der LoudnessAccumulator deckt sich mit der ausgebauten Vektorrechnung innerhalb ±0,1 LU (Entwurf §49) ueber konstante, rampende, zufaellige und einstuendige Korpora sowie ueber Stille unter dem absoluten Gate; Kurz-LUFS ist BITGLEICH; ein adversarialer Sweep legt 1000 Bloecke in den Grenzbin des relativen Gates und die selbstgemeldete Schranke unsicherheitLu() deckt jeden Lauf; eine Million Zellen laufen mit 0 Allokationen durch, waehrend die Gegenprobe (alte Rechnung) allozert; NaN/Inf-Zellen sind gezaehlt statt still als 0 verbucht und l_j == -70,0 exakt bleibt wertgleich; ueber dem Feingitter traegt ein OBERBAND aus Bins von 1 LU bis ueber lautheit(DBL_MAX) - mit ZWEI Pegeln darin (Korpus des T2-Pruefers), einem adversarialen Sweep im Oberband-Grenzbin, beiden Richtungen der Naht zwischen den Aufloesungen und der Gegenprobe, dass kein Block durch das Raster faellt.' }
-    [pscustomobject]@{ Kuerzel='B5'; Name='EqCopAnalysisGoldenTest'; Art='plugin'; Argumente=@(); AbPhase='P2'; Behauptung='FeatureEngine v2 haelt Zeit-, Validity-, Event- und Bandvertraege.' }
+    # S12-13/SONDE-009 gebaut: B5 ist Pflicht. Zwei Ebenen in einem Bein - die
+    # FeatureEngine pur (dort sind alle neun Grenzarten deterministisch
+    # herbeifuehrbar) UND derselbe Weg im echten Prozessor, wo Abschnitt K die
+    # Brueckenhaelfte des Zeitstempels faehrt, die bis hierher kein Bein hatte
+    # (NAK-56, T2-Bericht zu SONDE-008 §8.9 Punkt 2).
+    [pscustomobject]@{ Kuerzel='B5'; Name='EqCopAnalysisGoldenTest'; Art='plugin'; Argumente=@(); AbPhase='P2'; Behauptung='FeatureEngine v2 haelt Zeit-, Validity-, Event- und Bandvertraege: Bandgitter und alle 61 Quantisierungsvektoren bitgleich zum v3-Vertrag, Bitmap LSB-first mit Fuellbits 0, FFT gegen Parseval und einen Sinus auf der Binmitte, K-Gewichtung ueber 20 Hz..20 kHz unter 0,1 dB an der BS.1770-Referenzkette; Drop/Seek(laufend UND gestoppt)/Loop-Wrap/moeglicher Straddle/Transportkante/Sampleratewechsel/Neuanlauf/Beweislagewechsel trennen JEDES offene Fenster - auch den K-Filterzustand, bitgleich gemessen - waehrend FL-Teilstuecke mit stehender Projektzeit KEINE Grenze sind; Drop zaehlt als Segment, alles andere als Epoche; alle sechs NAK-29-Feldpflichten fallen einzeln und mit eigener Nummer; kein spektraler Fluss ueberbrueckt eine Grenze, der Ereignisring ist fest gedeckelt; LUFS-S trifft die analytisch gerechnete Erwartung unter 0,1 LU; die Nyquist-Kappe greift bei 22,05 kHz wirklich; verdrahtet: alle sieben Gueltigkeitsbits kommen ueber die Hostbruecke durch, der Playhead-Rueckfallweg nachweislich nur zwei.' }
     [pscustomobject]@{ Kuerzel='B6'; Name='EqCopDspGoldenTest';      Art='plugin'; Argumente=@(); AbPhase='P6'; Behauptung='Aktiver DSP-Kern liefert die eingefrorene Referenzantwort.' }
     [pscustomobject]@{ Kuerzel='B7'; Name='EqCopTransactionTest';    Art='plugin'; Argumente=@(); AbPhase='P6'; Behauptung='Apply/Revert ist transaktional - kein halber Zustand ueberlebt.' }
     # S9/SONDE-007b Abschnitt 3: die Lifecycle-Klassifikation (§53.5). Zwei

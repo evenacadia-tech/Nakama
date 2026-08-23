@@ -398,6 +398,17 @@
       "warum": "Dein Wort 22.08.: „ich habe am anfang versucht das zu trennen aber es funktioniert nicht … im anschluss wird dann nurnoch im nakama repo gearbeitet“. Solange der alte Ordner existiert, könnte eine Session versehentlich dort arbeiten — der Stub fängt das ab, Löschen macht es endgültig.",
       "wo": "design/LIES-MICH.md (Einstieg) · CLAUDE.md, Register 22.08.",
       "seit": "22.08."
+    },
+    {
+      "id": "U13",
+      "dringlichkeit": "wenn du dazu kommst",
+      "art": "Handgriff",
+      "titel": "FL-Kurztermin C: die eine ungemessene Zeit-Annahme im echten FL ablesen",
+      "was": "Der neue Messkern (S10-11) nimmt an, dass FL die Projektzeit auch ueber zerteilte Puffer hinweg fortschreibt. Ob das stimmt, kann nur ein Lauf im echten FL zeigen - abzulesen am Zaehler fuer Kontinuitaetsbrueche bei automationsreichem Material (Details: NAK-56). Dafuer muesste der neue Stand installiert werden, und das ist dein Klick als Admin. Wichtig vor dem Klick: NAK-41 - ein Projekt, das der neue Build speichert, verliert im alten 16.08.-Build still seine Messpunkt-Identitaet. Und beim Ablesen keine Playhead-Zuege machen: derselbe Zaehler steigt seit der Nacharbeit auch bei einem Sprung des Abspielzeigers im Stopp.",
+      "warum": "Empfehlung des Dirigenten (Vorschlag, kein Entscheid): erst S12-13 bauen, dann die frischen Pruefer-PASS fuer S9 und S10-11 holen, und Installation plus dieser Kurztermin danach in einem Rutsch. Dieser Punkt blockiert nichts - der Plan laeuft weiter, bis du entscheidest. Hinweis: die Briefing-Seite zeigt diese Karte erst nach einem Seiten-Deploy (Fragenkatalog der Seite ist gerade in fremder Hand); die Maschinenansicht /api/hub traegt sie ab sofort, und per Handy-Meldung hast du sie auch.",
+      "wo": "docs/offene-punkte.md (NAK-56) - docs/beweise/SONDE-008.md 4.3",
+      "seit": "2026-08-23",
+      "bilder": []
     }
   ],
   "plan": [

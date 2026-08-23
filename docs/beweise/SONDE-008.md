@@ -1250,6 +1250,18 @@ und beweist damit auch nichts über Warnungen. Deshalb sind die sechs geänderte
 Quellen einmal gezielt angefasst und die 18 Ziele neu übersetzt worden:
 **49 `.cpp` übersetzt, 0 Warnungen, 0 Fehler.**
 
+> **Gegenprobe ohne `-Bauen` — Exit 4, und es ist der bekannte Fehlalarm.** Ein
+> Lauf ohne `-Bauen` meldet „NICHT BEGLAUBIGT - 26/26 grün, aber Prüfbinaries
+> sind älter als die Quellen". Nachgemessen statt hingenommen: die ältesten
+> Binaries sind `EqCopAuxSpikeTest` (20.08.), `EqCopHostContextTest` und
+> `EqCopHostProbeTest` (21.08.) — deren **eigene** Quellen (`spike/`,
+> `hostprobe/`) hat diese Nacharbeit nie angefasst. Der Riegel bildet **einen**
+> globalen „neueste Quelle"-Zeitstempel und vergleicht ihn gegen **jede**
+> Binärdatei; das ist wörtlich **NAK-25** („ein Lauf OHNE `-Bauen` endet dadurch
+> immer auf Exitcode 4"). Mit `-Bauen` schlägt das Urteil des Buildsystems den
+> Zeitstempel, und dort steht zweimal **Exit 0, beglaubigt**. Kein neuer Befund,
+> NAK-25 bleibt unverändert offen.
+
 ### 9.6 T1 — Selbstaudit über die Nacharbeit
 
 Feste Sechserliste, über **diesen** Änderungssatz, nicht über das Ticket.

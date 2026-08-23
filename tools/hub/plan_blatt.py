@@ -25,21 +25,32 @@ ZIEL = WURZEL / "docs" / "PLAN-STAND.md"
 # hub.json fuehrt Status als Klartext. Alles, was hier nicht steht, gilt als
 # offen — lieber zu wenig gruen melden als Fortschritt behaupten, den es
 # nicht gibt (Projektregel: Fortschritt nur mit Beleg).
-FERTIG = {"erledigt", "fertig", "gebaut", "abgeschlossen"}
+#
+# 🔑 "gebaut" ist NICHT "abgenommen". Bis 23.08. zaehlte dieses Blatt beides in
+# denselben Topf — damit stand S12-13 als gruenes ■ im Blatt, waehrend sein
+# T2-Urteil NEEDS_WORK lautete. Ein Blatt, das ein offenes Urteil als fertig
+# malt, behauptet Fortschritt; genau das verbietet die Projektregel. Die beiden
+# Zustaende haben deshalb eigene Zeichen und eigene Zahlen, und die Kopfzahl
+# nennt die abgenommene zuerst.
+ABGENOMMEN = {"erledigt", "fertig", "abgeschlossen"}
+GEBAUT = {"gebaut"}
 LAEUFT = {"laeuft", "läuft", "in arbeit", "begonnen", "offen_teilweise", "naechster", "nächster"}
 
 
 def klasse(status: str) -> str:
     s = (status or "").strip().lower()
-    if s in FERTIG:
-        return "fertig"
+    if s in ABGENOMMEN:
+        return "abgenommen"
+    if s in GEBAUT:
+        return "gebaut"
     if s in LAEUFT:
         return "laeuft"
     return "offen"
 
 
-ZEICHEN = {"fertig": "■", "laeuft": "▨", "offen": "□"}
-WORT = {"fertig": "fertig", "laeuft": "läuft", "offen": "offen"}
+ZEICHEN = {"abgenommen": "■", "gebaut": "▣", "laeuft": "▨", "offen": "□"}
+WORT = {"abgenommen": "abgenommen", "gebaut": "gebaut, Urteil offen",
+        "laeuft": "läuft", "offen": "offen"}
 
 
 def alsText(wert) -> str:
@@ -62,11 +73,21 @@ def alsText(wert) -> str:
     return ""
 
 
-def balken(fertig: int, gesamt: int, breite: int = 24) -> str:
+def balken(abgenommen: int, gebaut: int, gesamt: int, breite: int = 24) -> str:
+    """Zwei Toene, nicht einer: voll = abgenommen, halb = gebaut ohne Urteil.
+    Der Balken darf nicht mehr Gruen zeigen, als ein Pruefer bestaetigt hat."""
     if gesamt <= 0:
         return "—"
-    voll = round(breite * fertig / gesamt)
-    return "█" * voll + "░" * (breite - voll)
+    voll = round(breite * abgenommen / gesamt)
+    mittel = max(0, round(breite * (abgenommen + gebaut) / gesamt) - voll)
+    return "█" * voll + "▓" * mittel + "░" * max(0, breite - voll - mittel)
+
+
+def zaehle(zeilen: list) -> tuple[int, int]:
+    """(abgenommen, gebaut) — beide getrennt, nie summiert."""
+    a = sum(1 for z in zeilen if klasse(z.get("status", "")) == "abgenommen")
+    g = sum(1 for z in zeilen if klasse(z.get("status", "")) == "gebaut")
+    return a, g
 
 
 def main() -> int:
@@ -79,7 +100,8 @@ def main() -> int:
     phasen = daten.get("plan") or []
     zeilen_gesamt = [z for p in phasen for z in (p.get("zeilen") or [])]
     n_ges = len(zeilen_gesamt)
-    n_fertig = sum(1 for z in zeilen_gesamt if klasse(z.get("status", "")) == "fertig")
+    n_abg, n_geb = zaehle(zeilen_gesamt)
+    n_rest = n_ges - n_abg - n_geb
 
     aus: list[str] = []
     aus.append("# Planstand Nakama")
@@ -87,11 +109,16 @@ def main() -> int:
     aus.append("> **Erzeugt, nicht gepflegt.** Quelle ist `docs/hub/hub.json`;")
     aus.append("> dieses Blatt entsteht daraus mit `py -3.13 tools/hub/plan_blatt.py`.")
     aus.append("> Aenderungen hier gehen beim naechsten Lauf verloren.")
+    aus.append("> ⚠️ Die Quelle wird von Hand gepflegt — das Blatt ist nur so frisch")
+    aus.append("> wie der letzte Eintrag in `hub.json`, nicht so frisch wie das Repo.")
     aus.append("")
     aus.append(f"**Stand:** {daten.get('stand', '?')} · "
-               f"**{n_fertig} von {n_ges} Schritten fertig**")
+               f"**{n_abg} von {n_ges} Schritten abgenommen** · "
+               f"{n_geb} gebaut, Urteil offen · {n_rest} offen")
     aus.append("")
-    aus.append(f"`{balken(n_fertig, n_ges, 40)}` {round(100 * n_fertig / n_ges) if n_ges else 0} %")
+    aus.append(f"`{balken(n_abg, n_geb, n_ges, 40)}` "
+               f"{round(100 * n_abg / n_ges) if n_ges else 0} % abgenommen, "
+               f"{round(100 * (n_abg + n_geb) / n_ges) if n_ges else 0} % gebaut")
     aus.append("")
 
     schritt = alsText(daten.get("naechster_schritt"))
@@ -108,13 +135,13 @@ def main() -> int:
     # ── Uebersicht je Phase ────────────────────────────────────────────────
     aus.append("## Phasen auf einen Blick")
     aus.append("")
-    aus.append("| Phase | Fortschritt | fertig | offen |")
-    aus.append("|---|---|---:|---:|")
+    aus.append("| Phase | Fortschritt | abgenommen | gebaut, Urteil offen | offen |")
+    aus.append("|---|---|---:|---:|---:|")
     for p in phasen:
         zl = p.get("zeilen") or []
-        f = sum(1 for z in zl if klasse(z.get("status", "")) == "fertig")
+        a, g = zaehle(zl)
         aus.append(f"| **{p.get('phase', '?')}** — {p.get('titel', '')} "
-                   f"| `{balken(f, len(zl))}` | {f} | {len(zl) - f} |")
+                   f"| `{balken(a, g, len(zl))}` | {a} | {g} | {len(zl) - a - g} |")
     aus.append("")
 
     # ── Mermaid: der Weg als Kette ─────────────────────────────────────────
@@ -124,10 +151,13 @@ def main() -> int:
     aus.append("flowchart LR")
     for i, p in enumerate(phasen):
         zl = p.get("zeilen") or []
-        f = sum(1 for z in zl if klasse(z.get("status", "")) == "fertig")
+        a, g = zaehle(zl)
         name = str(p.get("phase", f"P{i}")).replace('"', "'")
-        stil = "fertig" if zl and f == len(zl) else ("laeuft" if f else "offen")
-        aus.append(f'  P{i}["{name}<br/>{f}/{len(zl)}"]:::{stil}')
+        # Gruen erst, wenn ALLE Zeilen der Phase abgenommen sind — ein offenes
+        # Urteil faerbt die Phase gelb, nicht gruen.
+        stil = "fertig" if zl and a == len(zl) else ("laeuft" if a or g else "offen")
+        zusatz = f"<br/>+{g} gebaut" if g else ""
+        aus.append(f'  P{i}["{name}<br/>{a}/{len(zl)} abgenommen{zusatz}"]:::{stil}')
         if i:
             aus.append(f"  P{i-1} --> P{i}")
     aus.append("  classDef fertig fill:#1f6f43,stroke:#2ea36a,color:#eaf6ef")
@@ -141,8 +171,9 @@ def main() -> int:
     aus.append("")
     for p in phasen:
         zl = p.get("zeilen") or []
-        f = sum(1 for z in zl if klasse(z.get("status", "")) == "fertig")
-        aus.append(f"### {p.get('phase', '?')} — {p.get('titel', '')}  ({f}/{len(zl)})")
+        a, g = zaehle(zl)
+        kopf = f"{a}/{len(zl)} abgenommen" + (f", {g} gebaut" if g else "")
+        aus.append(f"### {p.get('phase', '?')} — {p.get('titel', '')}  ({kopf})")
         ziel = (p.get("ziel") or "").strip()
         if ziel:
             aus.append("")
@@ -153,20 +184,25 @@ def main() -> int:
             tick = z.get("ticket") or ""
             tick = f" `{tick}`" if tick else ""
             datum = z.get("datum") or ""
-            datum = f" · {datum}" if datum and k == "fertig" else ""
+            datum = f" · {datum}" if datum and k in ("abgenommen", "gebaut") else ""
             aus.append(f"- {ZEICHEN[k]} **{z.get('id', '?')}**{tick} — "
                        f"{z.get('text', '')} ({WORT[k]}{datum})")
         aus.append("")
 
     aus.append("---")
     aus.append("")
-    aus.append("■ fertig · ▨ läuft · □ offen — „fertig\" heisst in diesem Projekt: "
-               "es gibt ein Beweismanifest in `docs/beweise/`.")
+    aus.append("**■ abgenommen** — gebaut, gemessen UND von einem frischen Pruefer "
+               "bestaetigt (T2/T3-Urteil PASS).")
+    aus.append("**▣ gebaut, Urteil offen** — es gibt ein Beweismanifest in "
+               "`docs/beweise/`, aber kein PASS: der Pruefer steht aus oder hat "
+               "NEEDS_WORK gesagt. Zaehlt nicht als fertig.")
+    aus.append("**▨ läuft** · **□ offen** — noch kein Manifest.")
     aus.append("")
 
     ZIEL.write_text("\n".join(aus), encoding="utf-8")
     print(f"geschrieben: {ZIEL.relative_to(WURZEL)} "
-          f"({n_fertig}/{n_ges} fertig, {len(phasen)} Phasen)")
+          f"({n_abg} abgenommen, {n_geb} gebaut ohne Urteil, {n_ges} gesamt, "
+          f"{len(phasen)} Phasen)")
     return 0
 
 

@@ -18,6 +18,14 @@ Regeln und Zyklus: `.claude/skills/dirigent/SKILL.md`. Jüngster Eintrag oben.
 
 ---
 
+## 2026-08-23 abends · SONDE-008 · bau (S10–11)
+
+- **Session:** „S10–11 SONDE-008 — StampedAudioQueue" (`0fdf9dc4-e27e-4dcc-90af-1461081b1106`), Opus 5 mit 1M.
+- **Ergebnis:** Gebaut in vier Commits — `7fa1cf5` (StampedAudioQueue mit Ganz-oder-gar-nicht-Semantik statt Teilblöcken, Ein-Block-Quarantäne mit Halterückgabe für Loop-Sprünge, fixed-memory Loudness), `2bd6d6e` (Manifest + Fix am Beglaubigungsriegel: **drei Quellorte fehlten der Frische-Liste**, zwei davon seit zwei Arbeitsschritten — die gedruckte Ortsliste erzeugt sich jetzt selbst), `c3e9f2d` (Hub), `fb437e8` (Selbstaudit, drei Nachlese-Funde geschlossen). Manifest-Kopf **T1 ☑ / T2 ☐**; Kanon 24 → **26**, Lauf 14:41: **26/26, Exit 0, beglaubigt**; Bitidentität ausdrücklich belegt (A1 NullTest, A2 Golden, A3 Markierung, alle Exit 0). **U10 umgesetzt** (§5 des Manifests): Hör-Markierung nur noch mit gültigem „spielt" — **NAK-24/NAK-35 geschlossen**; Grundlage ist der Register-Entscheid vom 22.08. („Nein, nur mit Signal"), kein eigenmächtiger Produktentscheid. Der Stress-Testfall fand vor dem Merge einen echten Fehler (durchweg extrem lautes Material → kein Loudness-Wert) und eine eigene Falschbehauptung („exakt gleich" statt ULP-gleich) — beide im selben Änderungssatz berichtigt.
+- **Gestützt auf:** Repo-Messung, nicht Selbstbericht — git log, Manifest-Kopf, Kanon-Rohblock (26/26, Exit 0), A1/A2/A3-Zeilen, §5-U10-Abschnitt; alles gepusht; Hub von der Session selbst nachgezogen (`c3e9f2d`).
+- **Nicht geprüft:** Der Code selbst — Queue-Semantik, Halterückgabe, Quarantäneklasse, U10-Verriegelung sind Behauptungen des Erbauers, bis der frische Prüfer sie gemessen hat (genau dafür startet jetzt T2). Die drei Nachlese-Funde aus `fb437e8` habe ich nicht einzeln nachgemessen.
+- **Weiter mit:** T2-Prüf-Session für SONDE-008 — Basispunkt **`e330052`** (selbst gerechnet: Elterncommit von `7fa1cf5`), Bruchauftrag Blockgrößen-Fuzz über `maximumExpectedSamplesPerBlock` hinaus (Bauaufteilung-Vorgabe für dieses Ticket).
+
 ## 2026-08-23 nachmittags · SONDE-007b · nacharbeit
 
 - **Session:** „S9 Nacharbeit — T2-Befunde schließen + T1" (`cb6005c4-e646-424a-8d7e-c87db4cd1d51`), Opus 5 mit 1M.

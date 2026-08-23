@@ -22,6 +22,31 @@
 # die leitet JUCE aus Hersteller- und Plugin-Code ab, und genau diese Ableitung
 # misst EqCopIdentityTest am gebauten `moduleinfo.json` gegen das Manifest
 # nach. Zwei Wege zur selben Zahl, sonst waere der Test eine Tautologie.
+#
+# ── Nacharbeit 23.08.2026 (T2-Befund T2-2, Manifest SONDE-007b §6.1) ────────
+#
+# Der Satz oben stand hier schon, war aber nur zu drei Fuenfteln wahr: die
+# Null-Schleife deckte `produktname`, `bundle` und `plugin_code` - NICHT
+# `hersteller.name` und `hersteller.code`. Der Herstellercode ist kein Beiwerk
+# zum Viercode, er ist der ZWEITE SUMMAND derselben Class-ID (jucePluginId) und
+# steht einmal fuer alle drei Ziele. Gemessen: mit `hersteller.code: null` lief
+# der Configure gruen durch, und JUCE setzte still `Manu`
+# (JucePlugin_ManufacturerCode=0x4d616e75) bzw. `yourcompany` ein - genau der
+# Schaden, den der Absatz darueber ausschliesst.
+#
+# Beim Schliessen fiel eine zweite Luecke auf, gemessen statt vermutet
+# (`cmake -P` auf einem Probe-JSON):
+#
+#   string(JSON … GET) liefert bei JSON-`null`  einen LEEREN String
+#   und bei FEHLENDEM Schluessel (mit ERROR_VARIABLE)  `<membername>-NOTFOUND`
+#   - also den Namen des gesuchten Feldes, nicht den der Ausgabevariablen.
+#
+# Die alten Vergleiche gegen die Literale "null" und "NOTFOUND" konnten damit
+# NIE zutreffen. Der leere String fing `null` mit ab; ein GELOESCHTER Schluessel
+# aber rutschte durch. Gemessen am Leser von HEAD: `produktname` entfernt ⇒
+# Configure Exitcode 0 und `JucePlugin_Name="produktname-NOTFOUND"` im
+# erzeugten Projekt. Die Schleife prueft jetzt auf das, was CMake wirklich
+# zurueckgibt.
 
 include_guard(GLOBAL)
 
@@ -50,8 +75,11 @@ function(nakama_identitaet_lesen ziel_id praefix)
 
     file(READ "${NAKAMA_IDENTITAET_DATEI}" _js)
 
-    string(JSON _hersteller GET "${_js}" hersteller name)
-    string(JSON _herstellercode GET "${_js}" hersteller code)
+    # ERROR_VARIABLE, damit ein FEHLENDER Schluessel nicht mit CMakes eigener
+    # Meldung abbricht, sondern unten durch dieselbe Schleife laeuft wie
+    # `null` - eine Erklaerung, nicht zwei.
+    string(JSON _hersteller     ERROR_VARIABLE _e4 GET "${_js}" hersteller name)
+    string(JSON _herstellercode ERROR_VARIABLE _e5 GET "${_js}" hersteller code)
 
     # Das Ziel wird GESUCHT, nicht ueber einen Index gegriffen: die Reihenfolge
     # im Manifest ist keine Zusage, und ein stiller Griff daneben waere die
@@ -83,10 +111,20 @@ function(nakama_identitaet_lesen ziel_id praefix)
     # `null` heisst "noch nicht vergeben" - und damit "nicht baubar". Ein
     # Vorgabewert waere eine erfundene Identitaet, und die ueberlebt jeden
     # spaeteren Riegel, weil sie dann schon im ausgelieferten Bundle steht.
-    foreach(_paar "produktname:${_produktname}" "bundle:${_bundle}" "plugin_code:${_plugincode}")
+    #
+    # Die BEIDEN Herstellerfelder stehen seit 23.08. mit in der Schleife (T2-2):
+    # sie gelten fuer alle drei Ziele gleichzeitig, und der Herstellercode ist
+    # die eine Haelfte jeder Class-ID.
+    foreach(_paar "hersteller.name:${_hersteller}"
+                  "hersteller.code:${_herstellercode}"
+                  "produktname:${_produktname}"
+                  "bundle:${_bundle}"
+                  "plugin_code:${_plugincode}")
         string(REGEX REPLACE "^([^:]+):(.*)$" "\\1" _feld "${_paar}")
         string(REGEX REPLACE "^([^:]+):(.*)$" "\\2" _wert "${_paar}")
-        if(_wert STREQUAL "" OR _wert STREQUAL "NOTFOUND" OR _wert STREQUAL "null")
+        # Gemessen, nicht geraten (siehe Kopf): JSON-`null` kommt als LEERER
+        # String zurueck, ein fehlender Schluessel als `<varname>-NOTFOUND`.
+        if(_wert STREQUAL "" OR _wert MATCHES "-NOTFOUND$")
             message(FATAL_ERROR
                 "S9/SONDE-007b: Ziel '${ziel_id}' hat kein '${_feld}' im Identitaetsmanifest\n"
                 "(${NAKAMA_IDENTITAET_DATEI}).\n"
@@ -96,12 +134,20 @@ function(nakama_identitaet_lesen ziel_id praefix)
         endif()
     endforeach()
 
-    string(LENGTH "${_plugincode}" _len)
-    if(NOT _len EQUAL 4)
-        message(FATAL_ERROR
-            "S9/SONDE-007b: plugin_code von '${ziel_id}' ist '${_plugincode}' (${_len} Zeichen).\n"
-            "VST3-Viercodes sind genau vier Zeichen; JUCE baut daraus die Class-ID.")
-    endif()
+    # Beide Viercodes, nicht nur einer: JUCE bildet die Class-ID aus
+    # jucePluginId(herstellercode, plugincode, typ). Ein dreistelliger
+    # Herstellercode ergaebe dieselbe stille Verschiebung wie ein
+    # dreistelliger Plugincode - JUCE fuellt selbst auf, das Manifest nicht.
+    foreach(_codepaar "plugin_code:${_plugincode}" "hersteller.code:${_herstellercode}")
+        string(REGEX REPLACE "^([^:]+):(.*)$" "\\1" _codefeld "${_codepaar}")
+        string(REGEX REPLACE "^([^:]+):(.*)$" "\\2" _codewert "${_codepaar}")
+        string(LENGTH "${_codewert}" _len)
+        if(NOT _len EQUAL 4)
+            message(FATAL_ERROR
+                "S9/SONDE-007b: ${_codefeld} von '${ziel_id}' ist '${_codewert}' (${_len} Zeichen).\n"
+                "VST3-Viercodes sind genau vier Zeichen; JUCE baut daraus die Class-ID.")
+        endif()
+    endforeach()
 
     string(JSON _katanzahl ERROR_VARIABLE _e3 LENGTH "${_eintrag}" kategorien)
     set(_kategorien "")

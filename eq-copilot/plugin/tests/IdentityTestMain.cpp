@@ -114,6 +114,26 @@ juce::String cmakeBlock (const juce::String& text, const juce::String& marker)
     return ende < 0 ? text.substring (start) : text.substring (start, ende);
 }
 
+/** Liefert die erste Zeile, die `marker` enthaelt - oder einen leeren String.
+    Fuer Aufrufe, die auf EINER Zeile stehen: dort ist die Zeile die Einheit,
+    nicht der Block. */
+juce::String zeileMit (const juce::String& text, const juce::String& marker)
+{
+    for (const auto& zeile : juce::StringArray::fromLines (text))
+        if (zeile.contains (marker))
+            return zeile;
+    return {};
+}
+
+/** Der Manifesteintrag zu einer Ziel-ID, oder ein leeres var. */
+juce::var zielMitId (const juce::var& ziele, const juce::String& id)
+{
+    for (int i = 0; i < ziele.size(); ++i)
+        if (ziele[i]["id"].toString() == id)
+            return ziele[i];
+    return {};
+}
+
 juce::String alsHex (const juce::VST3Interface::Id& id)
 {
     juce::String s;
@@ -139,14 +159,22 @@ juce::VST3Interface::Id inLogischeReihenfolge (juce::VST3Interface::Id id)
     return id;
 }
 
+/** S9-Nacharbeit 23.08.2026 (Nebenbefund aus T2-2): las bis dahin blind
+    z[0..3]. Bei einem leeren oder zu kurzen Code stand das JENSEITS des
+    Stringendes - und `jassert` greift nur im Debug, also ausgerechnet nicht im
+    Release-Lauf des Kanons. Gelesen wird jetzt nur, was da ist; DASS genau
+    vier Zeichen dastehen, sagt der Aufrufer laut (siehe "Viercode ist vier
+    Zeichen lang" in main). Ein stiller Puffer-Ueberlauf im Riegel selbst waere
+    die schlechteste Stelle fuer undefiniertes Verhalten, die dieser Test
+    haben kann. */
 juce::uint32 codeAlsZahl (const juce::String& vierZeichen)
 {
-    jassert (vierZeichen.length() == 4);
     const auto* z = vierZeichen.toRawUTF8();
-    return ((juce::uint32) (unsigned char) z[0] << 24)
-         | ((juce::uint32) (unsigned char) z[1] << 16)
-         | ((juce::uint32) (unsigned char) z[2] << 8)
-         |  (juce::uint32) (unsigned char) z[3];
+    const auto vorhanden = vierZeichen.getNumBytesAsUTF8();
+    juce::uint32 wert = 0;
+    for (size_t i = 0; i < 4; ++i)
+        wert = (wert << 8) | (juce::uint32) (unsigned char) (i < vorhanden ? z[i] : 0);
+    return wert;
 }
 
 juce::String berechneteCid (const juce::String& herstellerCode,
@@ -220,6 +248,15 @@ int main (int argc, char* argv[])
 
     const auto herstellerCode = manifest["hersteller"]["code"].toString();
     pruefe (herstellerCode == "Evna", "Herstellercode im Manifest", herstellerCode);
+    // S9-Nacharbeit (T2-2): laut, statt still ueber das Stringende zu lesen.
+    // codeAlsZahl() liest jetzt nur, was da ist - DASS vier Zeichen dastehen,
+    // muss trotzdem jemand sagen, sonst waere eine gekuerzte Identitaet nur
+    // eine andere Zahl statt ein Fehler. Denselben Riegel hat der Configure
+    // seit heute auch (cmake/NakamaIdentitaet.cmake); zwei Stellen, weil der
+    // Test auch ohne Bau laufen koennen soll.
+    pruefe (herstellerCode.length() == 4,
+            "Viercode ist vier Zeichen lang: hersteller.code",
+            juce::String (herstellerCode.length()) + " Zeichen");
 
     const auto ziele = manifest["ziele"];
     pruefe (ziele.isArray() && ziele.size() == 3, "Manifest kennt drei Ziele",
@@ -246,6 +283,25 @@ int main (int argc, char* argv[])
     // mehr steht und die Werte aus dem Manifest kommen. Der eigentliche
     // Identitaetsbeweis bleibt das gebaute moduleinfo.json weiter unten -
     // zwei Wege zur selben Zahl.
+    // Die Zuordnung Manifest-ID -> CMake-Zielname steht hier von Hand. Sie ist
+    // die einzige Angabe, die NICHT aus dem Manifest kommen kann (dort steht
+    // der Bundlename, nicht der Zielname) - und absichtlich handgeschrieben:
+    // ein viertes Ziel im Manifest ohne Zeile hier bringt den Test zum
+    // Sprechen, statt still ungemessen zu bleiben. Sie traegt beide Haelften
+    // des Beweises: den Quellfrost unten (welcher Bauskriptblock gehoert zu
+    // welcher ID) und die Messung am gebauten moduleinfo.json weiter unten.
+    struct GebautesZiel { const char* id; const char* cmakeZiel; };
+    const GebautesZiel gebaute[] = {
+        { "main",          "EqCopilot"     },
+        { "passive-probe", "NakamaSuna"    },
+        { "active-probe",  "NakamaProbeeq" },
+    };
+
+    pruefe ((int) (sizeof (gebaute) / sizeof (gebaute[0])) == ziele.size(),
+            "jedes Ziel im Manifest hat hier eine Zeile",
+            juce::String ((int) (sizeof (gebaute) / sizeof (gebaute[0])))
+                + " vs " + juce::String (ziele.size()));
+
     const auto cmakeDatei = finde ("eq-copilot/plugin/CMakeLists.txt");
     pruefe (cmakeDatei.existsAsFile(), "plugin/CMakeLists.txt gefunden");
 
@@ -300,32 +356,91 @@ int main (int argc, char* argv[])
         // add_compile_definitions(), um am Zielblock vorbei umzuschalten.
         pruefe (! cmakeText.contains ("JUCE_VST3_CAN_REPLACE_VST2=1"),
                 "CMake-Quelle: das Define steht auch sonst nirgends auf 1");
+
+        // ── S9-Nacharbeit 23.08.2026, T2-Befund T2-3 ──────────────────────
+        // Bis hierher deckte der Quellfrost EIN Ziel von dreien. Der Kopf des
+        // Bauskripts begruendet NAK-52 gerade damit, dass "drei
+        // Bauskriptbloecke mit je vier Identitaetszeilen ... vier Stellen
+        // [sind], an denen zwei Wahrheiten auseinanderlaufen koennen" - der
+        // Riegel dagegen sah nur den ersten Block. Der T2-Pruefer hat das
+        // vorgefuehrt: dasselbe eingeschmuggelte Literal faellt im Main-Block
+        // auf und bleibt in nakama_sonde_ziel() unsichtbar.
+        //
+        // EIN zusaetzlicher Blockfrost genuegt, weil sich beide Sondenziele
+        // EINE Funktion teilen. Das ist kein Sparen, sondern Teil der
+        // Aussage: dass es nur einen Block gibt, misst die Aufrufpruefung
+        // unten mit - jedes Sondenziel muss ueber genau diese Funktion
+        // entstehen. Ein kuenftiges viertes Ziel mit eigenem juce_add_plugin
+        // haette hier keinen Frost und faellt an der Zeilenpruefung.
+        const auto sondeBlock    = cmakeBlock (cmakeText, "juce_add_plugin(${ziel}\n");
+        const auto sondeDefBlock = cmakeBlock (cmakeText, "target_compile_definitions(${ziel} PUBLIC");
+
+        pruefe (sondeBlock.isNotEmpty(),
+                "CMake: Zielblock juce_add_plugin(${ziel}) der Sondenfunktion gefunden");
+        pruefe (sondeDefBlock.isNotEmpty(),
+                "CMake: Defineblock der Sondenfunktion gefunden");
+
+        // (1) Auch die Sondenfunktion liest das Manifest ueberhaupt.
+        pruefe (cmakeText.contains ("nakama_identitaet_lesen(${identitaet} SONDE)"),
+                "CMake-Quelle: die Sondenfunktion liest ihre Identitaet aus dem Manifest");
+
+        // (2) Die vier Identitaetszeilen kommen von dort.
+        pruefe (sondeBlock.contains ("PLUGIN_CODE ${SONDE_PLUGINCODE}"),
+                "CMake-Quelle (Sonde): PLUGIN_CODE kommt aus dem Manifest");
+        pruefe (sondeBlock.contains ("PLUGIN_MANUFACTURER_CODE ${SONDE_HERSTELLERCODE}"),
+                "CMake-Quelle (Sonde): PLUGIN_MANUFACTURER_CODE kommt aus dem Manifest");
+        pruefe (sondeBlock.contains ("PRODUCT_NAME \"${SONDE_PRODUKTNAME}\""),
+                "CMake-Quelle (Sonde): PRODUCT_NAME kommt aus dem Manifest");
+        pruefe (sondeBlock.contains ("COMPANY_NAME \"${SONDE_HERSTELLER}\""),
+                "CMake-Quelle (Sonde): COMPANY_NAME kommt aus dem Manifest");
+
+        // (3) Keine zweite Wahrheit im Block - fuer BEIDE Sondenziele, und
+        //     jedes Ziel entsteht nachweislich ueber diese eine Funktion.
+        pruefe (! sondeBlock.contains (herstellerCode),
+                "CMake-Quelle (Sonde): der Herstellercode steht nicht literal im Zielblock",
+                herstellerCode);
+
+        for (const auto& g : gebaute)
+        {
+            const juce::String kennung (g.id);
+            if (kennung == "main")
+                continue;                      // hat seinen eigenen Block oben
+
+            const auto eintrag = zielMitId (ziele, kennung);
+            if (! eintrag.isObject())
+            {
+                pruefe (false, "Manifest kennt Sondenziel '" + kennung + "'");
+                continue;
+            }
+
+            const auto code        = eintrag["plugin_code"].toString();
+            const auto produktname = eintrag["produktname"].toString();
+
+            pruefe (! sondeBlock.contains (code),
+                    kennung + ": der Viercode steht nicht literal im Sonden-Zielblock", code);
+            pruefe (! sondeBlock.contains ("\"" + produktname + "\""),
+                    kennung + ": der Produktname steht nicht literal im Sonden-Zielblock",
+                    produktname);
+
+            // Der Aufruf steht auf EINER Zeile; dort ist die Zeile die
+            // Einheit. Gemessen wird, dass genau dieses CMake-Ziel mit genau
+            // dieser Manifest-ID gebaut wird - sonst traegt ein Bundle die
+            // Identitaet des anderen, und das faellt sonst erst am Artefakt
+            // auf (also nur, wenn jemand baut).
+            const auto aufruf = zeileMit (cmakeText,
+                                          juce::String ("nakama_sonde_ziel(") + g.cmakeZiel);
+            pruefe (aufruf.isNotEmpty(),
+                    kennung + ": " + g.cmakeZiel + " entsteht ueber nakama_sonde_ziel()");
+            pruefe (aufruf.contains (kennung),
+                    kennung + ": der Aufruf uebergibt genau diese Manifest-ID",
+                    aufruf.trim());
+        }
+
+        pruefe (sondeDefBlock.contains ("JUCE_VST3_CAN_REPLACE_VST2=0"),
+                "CMake-Quelle (Sonde): JUCE_VST3_CAN_REPLACE_VST2=0 steht im Defineblock");
     }
 
     // -- Die gebauten Bundles gegen das Manifest --------------------------
-    // S9/SONDE-007b (23.08.2026): bis dahin mass dieser Block EIN Bundle.
-    // §53.5 verlangt fuer die beiden neuen: "P1 verifiziert das erste
-    // Moduleinfo/Scanfixture" - die reservierten CIDs waren bis heute nur
-    // GERECHNET (§31.2), nie an einem Artefakt gesehen. Ab jetzt misst der
-    // Test alle drei.
-    //
-    // Der CMake-Zielname steht hier von Hand. Er ist die einzige Angabe, die
-    // NICHT aus dem Manifest kommen kann (dort steht der Bundlename, nicht
-    // der Zielname) - und absichtlich handgeschrieben: ein viertes Ziel im
-    // Manifest ohne Zeile hier bringt den Test zum Sprechen, statt still
-    // ungemessen zu bleiben.
-    struct GebautesZiel { const char* id; const char* cmakeZiel; };
-    const GebautesZiel gebaute[] = {
-        { "main",          "EqCopilot"     },
-        { "passive-probe", "NakamaSuna"    },
-        { "active-probe",  "NakamaProbeeq" },
-    };
-
-    pruefe ((int) (sizeof (gebaute) / sizeof (gebaute[0])) == ziele.size(),
-            "jedes Ziel im Manifest hat hier eine Zeile",
-            juce::String ((int) (sizeof (gebaute) / sizeof (gebaute[0])))
-                + " vs " + juce::String (ziele.size()));
-
     for (const auto& g : gebaute)
     {
         juce::var eintrag;
@@ -438,6 +553,9 @@ int main (int argc, char* argv[])
         const auto ziel = ziele[i];
         const auto id   = ziel["id"].toString();
         const auto code = ziel["plugin_code"].toString();
+
+        pruefe (code.length() == 4, "Viercode ist vier Zeichen lang: " + id + ".plugin_code",
+                juce::String (code.length()) + " Zeichen");
 
         const auto erwarteteComponent  = ziel["component_cid"].toString();
         const auto erwarteterController = ziel["controller_cid"].toString();

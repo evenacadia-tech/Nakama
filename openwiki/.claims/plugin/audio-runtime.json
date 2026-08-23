@@ -1,38 +1,38 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0e2fd21cc77093a41594ede28bc46e7c3d1427720cda6f8e3ea6456acf1254e5",
+  "pageVersion": "sha256:6c38519457c353a9e5eddc3cef0366a4200533dd47f871a0b83cea9e1ba89152",
   "claims": [
     {
       "id": "claim_d40e8cef1ed94444861f42a6fbad92c1",
-      "statement": "JUCE creates EqCopilotProcessor as the VST3 entrypoint, and the product target links the processor, editor, pipe client, analysis engine, and diagnosis implementation into one plugin.",
+      "statement": "JUCE creates EqCopilotProcessor as the main analyzer entrypoint, and its product target links the processor, editor, pipe client, analysis engine, and diagnosis implementation.",
       "evidence": [
         {
           "resource": "repo://eq-copilot/plugin/src/PluginFactory.cpp#L1-L8",
           "version": "repo-lines-v1:sha256:c9e7b29379902007e38bebe9666a13753edff610568215c9d0f81c56eff6c9f7:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiN2EwZThjYjA4NzU5MGZkYjFkMDZiOWJhYTVkYjE0ZjVkMGY5NzNjMGQ2OWQyZDQyN2FmNmY0ZTg4NWE0OTZhZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
         },
         {
-          "resource": "repo://eq-copilot/plugin/CMakeLists.txt#L11-L33",
-          "version": "repo-lines-v1:sha256:7ffdc8597e7065f4ff7031d60d5d5d9fbfe557c989e68bfcf170422964a106ab:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0NTIwOTZjYWJkMTgxOTM3NzIxYTk4Yzk5MzYxMDgwOTk1MzEyYjJkZWNmYTdkZTE1MDEwNjBmZjNiNzhhZTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhZmJhMDUyN2MzOTUzYzRiNmUwZTViNTczOWJhODM2MTJmODA1M2JjZGM5NDY2NzMwMTkzY2QxZDU5MGI0MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3ZDY3OTUyNDJiMDNkODlhZjA4MGUzMzMyNmI1YTUzNGI4NjU1MDA0ODRhNWJjNmE4YjM3NGE1ODNjNDE4ZjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzODA2MjU1MGRjZjEwOGNiNmQ3ZGZjYjUyMjA4ZDRkMjEzMDI0NzY3OTQ3YjQyOWUyMjgxN2RhYzQwMjBkZjQifQ"
+          "resource": "repo://eq-copilot/plugin/CMakeLists.txt#L32-L56",
+          "version": "repo-lines-v1:sha256:4e0c4fb9bfa11b5b6ccf93186337821730df13264f2db00f587b867c3e9d8a49:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBiNTJjNjhmYWY5ODE4NjJkMTUyOGJlZTg1Mjg0ZDMyNTEzOWRlMjhmMDc0NjNjM2RiMTZjNTg3ZGEyZmE2ODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhZmJhMDUyN2MzOTUzYzRiNmUwZTViNTczOWJhODM2MTJmODA1M2JjZGM5NDY2NzMwMTkzY2QxZDU5MGI0MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1Zjk1ZThlMWUxZjAxZDgyZTBjYjRiY2RjMTA4ODg1ZjBkNmM0MTJkYzdkODYxZTNlMDhhNWU0OWQwZjc5ZTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzODA2MjU1MGRjZjEwOGNiNmQ3ZGZjYjUyMjA4ZDRkMjEzMDI0NzY3OTQ3YjQyOWUyMjgxN2RhYzQwMjBkZjQifQ"
         }
       ]
     },
     {
       "id": "claim_1ec095484d104a02b64ec097c4ed6d23",
-      "statement": "Processor construction creates fresh persisted and runtime identities, allocates the analysis FIFO, starts the worker and pipe client, while destruction stops both threads and joins the worker.",
+      "statement": "EqCopilotProcessor construction creates fresh persisted and runtime identities, allocates the analysis FIFO, starts the worker and pipe client, while destruction stops both threads and joins the worker.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L12-L55",
-          "version": "repo-lines-v1:sha256:70539ca07b5cf1d027a8ae1d062bdc9b97403aec3be5c43e4951a6b5a1d1ee23:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkYmNhOGIyMWRmNWFiOWMxY2EyMDQ1Y2JhZWM1NzExMDgxN2RiOTIwMTdjYWE0OTMyYTNjMzA2MTEwZjY2ZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4MjBjMTdiMjBhMWM5ZjhmY2I1NTQwYTQ1N2M1NTVmZjE3OTE3MjMwNDc0ZDAwNDgwMzVjZGMxYTE4YmZlMDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ1MWFjYWJmZWI3MTFjNzA4ZWJmYWNjNmRkMmJlYWRkMTA2YTFjNzEwNTlhM2FiZjhjYjMxNGFjYTkzYjhiMGMifQ"
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L12-L58",
+          "version": "repo-lines-v1:sha256:8c8194782c52322eb59f2025f0c23ceb3c20fb00a4d2237ff82f70a57e81e2b7:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkYmNhOGIyMWRmNWFiOWMxY2EyMDQ1Y2JhZWM1NzExMDgxN2RiOTIwMTdjYWE0OTMyYTNjMzA2MTEwZjY2ZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM5YTJlYTkzNDllNDhiNzczMWNlYTgyOWE1NTVhZTQyYWRkNjdhMTQzMGVmMjJiMjRkNGU2ZjE1MGNjMzM4ZDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4MjBjMTdiMjBhMWM5ZjhmY2I1NTQwYTQ1N2M1NTVmZjE3OTE3MjMwNDc0ZDAwNDgwMzVjZGMxYTE4YmZlMDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk3ZjAwNjhiYTlkOGVlNGQ1MDg0ZmNjY2ZiYjkwZjFjNjQxNTYwMzdmMGFkZWMwMzFkMjQ3OGQ3ZWM5NWUwZjgifQ"
         }
       ]
     },
     {
       "id": "claim_ffc3a193dc2c47538737f4a49b62f27f",
-      "statement": "The audio callback measures and copies the dry input into the analysis FIFO before audible marking, so normal output is transparent and analysis never observes the marked signal.",
+      "statement": "The EqCopilot audio callback measures and copies dry input into the analysis FIFO before audible marking, so normal output is transparent and analysis never observes the marked signal.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L91-L208",
-          "version": "repo-lines-v1:sha256:8f20a37c0e5005cc03ecacfb8abea349d01fb8bf682315e65e100dffc5bf78d1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTE4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5NmVjOGFhMzE0NGFkZjdiMzU4MzI5NDBmOGQ5YTA5MWU3M2E5ODE1MTI2Yzk1ODdhOWJlMjVhNzMyN2E5MzQ5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI3OTI4NWFlMzRkMzlhYTVhYzg2N2NiMWM2YzAzZGM3MGIwOTEyNGU1OGE2NzExNTM1OTM5MDk0ZmNkN2ZmOGM3IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3NWI1MDljNmIzYTVjNmMyYjNhYzRhODQ3YTA5OGZlMjI3ZmIwZGU1ZGExMGYxOGMxYTU3NjE2ZGU0N2QxZDNhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhYzllMGE5NDZkNzY5MGY1M2E3N2U1YjY5ZmZhNTdiMzE3NTNjMTA4YzFhYzA5NTM1ZTA1NmJlYzdkYjJlNjBiIn0"
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L95-L222",
+          "version": "repo-lines-v1:sha256:47179e995b70cc263bda6903665388fff6aad962e668c17e7a227304cd464239:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5NmVjOGFhMzE0NGFkZjdiMzU4MzI5NDBmOGQ5YTA5MWU3M2E5ODE1MTI2Yzk1ODdhOWJlMjVhNzMyN2E5MzQ5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3NWI1MDljNmIzYTVjNmMyYjNhYzRhODQ3YTA5OGZlMjI3ZmIwZGU1ZGExMGYxOGMxYTU3NjE2ZGU0N2QxZDNhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5MTUzMTExZDY4OTk2NTA0YzNhZGZjYWIwYTFiNTA1MDcxMDVhYWZkNDMzYzQ0YmMxNDEzZmZlMGM5YjRjNmM3In0"
         }
       ]
     },
@@ -76,15 +76,15 @@
     },
     {
       "id": "claim_03aa1617376e422583d9fe942307a90b",
-      "statement": "Audible marking requires realtime proof or a test override, transport permission, non-offline processing, and an open editor or test override; realtime proof is revoked by timing gaps, transport edges, or free-running ratios.",
+      "statement": "Audible marking requires main lifecycle classification, realtime proof or a test override, transport permission, non-offline processing, and an open editor or test override; timing gaps, transport edges, or free-running ratios revoke realtime proof.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L197-L208",
-          "version": "repo-lines-v1:sha256:1b9e940724365d339e39697811cd922f1cdf5c86f9ff90e8f22ef8dad08a21e5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxMmUwM2NjMDQyMDFlOWZjOTAyYTIyMWQyN2I5N2EzYzk1NmExYjM0Nzg5OTVhZTI1M2Q0MDIxZWVkMjk5MjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5Mjg1YWUzNGQzOWFhNWFjODY3Y2IxYzZjMDNkYzcwYjA5MTI0ZTU4YTY3MTE1MzU5MzkwOTRmY2Q3ZmY4YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhZGQ0NmQyMDJlNTIxY2NhNTc0ODVkZDBkMGRiMTA3MmUyYmVhZDA5Y2MyYjdjYjg4NGEwZWY0NTI2ZDNkM2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjOWUwYTk0NmQ3NjkwZjUzYTc3ZTViNjlmZmE1N2IzMTc1M2MxMDhjMWFjMDk1MzVlMDU2YmVjN2RiMmU2MGIifQ"
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L199-L277",
+          "version": "repo-lines-v1:sha256:fdfb2b7d2b5e5993901f6320832677a3fcfa7d3c793566681f56acd505756c3a:eyJzZWxlY3RlZExpbmVDb3VudCI6NzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwZDBmYmJmNWQzNzViZGY2NzA5MTE1M2I4ZmM1MWExNjJkMzgxOTgzZGRiYjc2YWZlNjVmYWQ4NjNhZGU3MTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkMTUwZTY1MjMwZjMwMjljZWEyNWNlNDJkYWZhNGMzM2E3YzRlMzQ4ZmZmZjFkMzdlMDAxYzNhZDE1ZWFlY2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJhMGFhMTUyODI4MzljNThiMDVjNmFiMDY2NjU2YjgxYzQzMTU2NTgzMTUxMTdkZjdiODk0NTYxODdlZDA4NjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJhOWM5NDY5ODU0NWFjYzJhYzZjN2ZkNGYxMmIyZTE5NmYwNWJlZjU0MDBjNTc2OTkyMjdmMTFhNmQxMzdjMWUifQ"
         },
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L211-L277",
-          "version": "repo-lines-v1:sha256:a0ba979eb1a27e42188e39722dc72062f2b67366a9e57c3e3d017872b2d056a2:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRiMTcxYzFjNDc1YjJkNmQ3Y2Y4NGRlYzE2MDZjMTMzMTIyZWIzMjJiNmMzNzYyYWI5NzU1ZGQ1NmQ1YWU0ODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlYmVmODNhODY2YTY2NTUwYjJmNDk4Y2VmYjljMmQ1ZDFkYjc3Y2U1ZjgxMWUwMTA1ZWYxOGEyYmM5NWY0NDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3NWY0ZGY4OWZlNDU1NmEyOTA2N2M3YTMzM2E3NDQ2MTI1NWQ1MmRlOTRjNzJmZmJhZjZlMjI2ZWUxN2YxZDEifQ"
+          "resource": "repo://eq-copilot/plugin/state/NakamaLebenslauf.h#L119-L135",
+          "version": "repo-lines-v1:sha256:a3df412f2704612a48dc2c4ce1e0e484d33c56843862e702ee0e60c185eb1f40:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAzYWJkMWYxMWZhODEyNzFlYmZhY2Q5NWU4MjIwZjYxYjM2M2Q1ZTYyNzQ4MmQ0NzcxMDJlNTQ2NDVlYWNkYzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwMTU5ZDUyZGE2YjFmNGQ1MWJjNjcyZDFhZjE5YWJhZGFmYmI5NWIzZDRiMjYyYjMwODk4YTg5NWJhYTY1YTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMxYWY4YTY4YzcwOTk5NjVjN2VlMzAwMjkzYWMzZTU4Yzg0YmRjNmE5NDY4MmE5MDVlZDgwNjVkOTQ5YjIwNmUifQ"
         }
       ]
     },
@@ -104,15 +104,19 @@
     },
     {
       "id": "claim_faca23046f664421b993c40ad556cad2",
-      "statement": "Headless null and marking tests cover passthrough, latency and tail, non-finite preservation, realtime/offline gates, fades, dry return, and the separation between marked output and dry analysis.",
+      "statement": "Headless null, marking, and lifecycle tests cover passthrough, latency and tail, non-finite preservation, classification, realtime and offline gates, dry return, and the separation between marked output and dry analysis.",
       "evidence": [
         {
           "resource": "repo://eq-copilot/plugin/tests/NullTestMain.cpp#L25-L88",
           "version": "repo-lines-v1:sha256:c851218985aa8e0cb1f9803c2f877b8b18eb7bdd63551451f82bd78cbe72249f:eyJzZWxlY3RlZExpbmVDb3VudCI6NjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5Y2E4OTFiZmY3YWMxZjdjZWFhZTQwZWYwNTEwNjZiZTllZmU0N2I0ZTQyODFlODZjMzE5YmUyYzU1ZWJjZTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1MDAyMDM1MmY3ODA5OWMxNGJkYTlkM2ZiYzE0OWQ0ZjA3OTFlOTYxMTA4ZDIzZGIzZTQ2YTkzZWE3MTU1NTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI0M2UyNDYzMDUxZTc3YWE0NTVjMmY0NmUxODM5NWJhZjlkYmE5ODQ1N2RjY2I2YTk4NjZkYmU1YTk0ZGQ2MjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjNzA5NWM3ZWRmYTJlODdlNTZmNDZjYmVhYWJmZjU2OGIwZDg0MGY2MDk0YzIzOWIyZTA1N2ExZTYyN2NjNGMifQ"
         },
         {
-          "resource": "repo://eq-copilot/plugin/tests/MarkierungTestMain.cpp#L319-L499",
-          "version": "repo-lines-v1:sha256:f5d50a70ef239c8df9d97cc7ace9817ce6ae4e52cc4e9f20a87d418167269ea3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlMzljNzc2ZmFkMThlMTIzYmExYzMyNWFjYzA0ZjFjODdjZTcwYTUxMTkxMzQyOGYwMzg2NDU5Nzc4NmU5MTNmIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkZWEyMzYxYmQ1ZTkxN2RjMGNlMmVjN2M3ZTRiOTM1ZTc1NTE0YWYzM2EwMGQzZDI2M2M1NzhhZWIxM2IxZTEzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI2YzI4ZWNhMTk2OGNiNWJiZmIwNzBlNDY1MDljMTFkNzdlNzc3NjQ3ZmJmMDAyYWI5OWEwYWFmMTBhZTE2ZmQyIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlOGZlNDhlZDJiOWMwMDIwZjdhNTc5MmU1MTgxMmI0MmEwZDQ5MDAyZjg3MjgyYWZjNGU4YTI0ZDZmZGU5MTBlIn0"
+          "resource": "repo://eq-copilot/plugin/tests/MarkierungTestMain.cpp",
+          "version": "repo-file-v1:sha256:2a0074339c3733a8b5b4942d8cd8bbf1745714a9c13f18cc46dd59b6f80ee59c"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/tests/LebenslaufTestMain.cpp",
+          "version": "repo-file-v1:sha256:9c7ebc5a7ebb744d6af8fdcba4c899d651b151d2dee393a7f30679ef64882c7c"
         }
       ]
     },
@@ -135,10 +139,38 @@
           "version": "repo-lines-v1:sha256:45436fc97a1f56baf2056831fd67e5725236bdd3d3c887e1b43ec57c8144cc90:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNjZTBiZGExMzE0NjAzMTgxMjQ1MzM0OGE2NzEzYmFkMjZjZWEzNGI0MDU2NzYxMDUyYzU2Yzc2N2NiZjgwMDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU2ZDg3Y2VjYjBlOWE5YWVjZjlkOThhODQxMzI3NTY5MTMzOTdlZTQ3M2ZhODZmYjdmNjRhZDEwZDMwZjliZjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxMWJlNjM2NTRjOTdlMTdlMGI4NWNlYzg1ZTJkYmRlNzJmNGIzYzUwNDA5ZTU3NWVlYzI3NDlmNDVhZTc3NmUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_bb442d183a05478dae28acf47ee45a82",
+      "statement": "The Suna and Probeeq product targets use one shared SondeProcessor that has no editor, analysis worker, or pipe client.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/CMakeLists.txt#L170-L223",
+          "version": "repo-lines-v1:sha256:ebc1f72c7ff4f9c1cc48b73396b9a4bbe9e321d3494be09decaedcaeb4886998:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4YmIzMzNhN2Y2Y2FlMjZhYzBhNzg5ZmM0NTE5YWRjNmJiNGFlMWNjZTNmNzdjMjY3NDRlMzMwMjc2ZGUzZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzYzkxYTQxOGZmMGYxNmExMzY2MDAxMDllZTU2ZTA1YmQ3NWYyZTAwNDk5MGVjODFhMmM5ZjE5YTQ0MGM4YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdjNzI2ZWNmMjNiYTEyNWNiMjhmMzM4YWFlMjViMzIyODg3ZmEwM2QxZWVmOGY0NzMyMmNlM2VkN2FhNGVjNWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3NmVmMGZkOTM5ZTljNDI0ZTViNmE3ZDk5YjE5OGI2MWJjZmNmYTkzZTAzMGQ3NjFkZGFjNWRjNTQ4ODUwNjMifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/sonde/SondeProcessor.h#L95-L169",
+          "version": "repo-lines-v1:sha256:c72fe18fe5c4441a80d9f463f72fb5ae537da3eaf89afa05610d0602a9654217:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwNmI4NDZmNWM1ODdiOWYwM2Q0ZDQxYmU5MDAxMzQ4YTYzMjkzNTdlMjA4OGVkZmY3MDVkZmRiOWFhZjVlMGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhMWQxYTYzMzkwMjI5Yzc5ODM0N2U4M2EwNDA1NDQxYzk0MDAwMzUyODRhZDE2OGMxYmY2Y2RmMWQ3MGEzNzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZkZGJiMGFjYmM5YzFjZTczYmM0ODJmODA4OGRlZTBlM2U2YTM2ZDBkMjk5Y2IzNTM2NzZkOGJmMjFlOGE1ZGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM3MDQ2M2YwNmFiMGY4M2NjM2E1YTNkNjgyN2U3ODA5MTY1NDdjZWZhMzMxNWRhZmQwMGU4N2I2MWM2NTRiMzcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6e62cc4a0bbc4cfcbdef138e1356b47d",
+      "statement": "SondeProcessor currently accepts matching enabled input and output layouts and otherwise leaves supported audio buffers untouched, yielding sample-identical pass-through with zero declared latency and no tail.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/sonde/SondeProcessor.cpp#L28-L64",
+          "version": "repo-lines-v1:sha256:0724696fd42d13ea082d349a70c9b66bfddeb7ffa98d4fa67b14f8b249f214c9:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdhOWJjM2RlZTExOGI4MmZhNDhmZTlhOTBlMzI4Y2Y5N2Y3NzJlYTNlZjcyZmU3MzA0Yjg3ZWUxNzI5OTk4YTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjljNDg0M2Q3NmI5ZjUyOWYyNjE4MjQ1ZGI1ZjlkY2NjNDRjOWJhODZiZTZlZTQxOTBiNzQ0MWM2MTRkMDFhMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM0ZTE4MmZlZGViMWE3YzdlMzA3YjRiZTAzZDU1MjYwMWY1ZDQzZTVmNmYzYWM5OGY2OWVkYjAyNGZmYjhiNGEifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/tests/SondeNullTestMain.cpp#L80-L149",
+          "version": "repo-lines-v1:sha256:e6184b16a4dd8f1aba9dfb20684dc78f9598fd96fa2e6608bc51c3a580d4b1ae:eyJzZWxlY3RlZExpbmVDb3VudCI6NzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhN2Q2MDUzN2I1Zjc1Njk3MDc0NWZiMWYyZDU2NzY5MDVhYzExZjFjMGM4ODFkMDQyZThmZDgwMzk0ODFmYjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiZWJjMDFjNDllMTQ3NzFjZDg2YzljMDM5N2IzMzA0MDJjZDc0YWE5Y2M4OGJmNzFmZTI0MDE5ZmMwOWFkNGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc2MDQ4YTM0OWJlYWZlMjcwM2ZiMWMyODYyMjA0YjQ3OTcyOWE5YzkyNWNlYjg3OTY3ODEwNTVkMmQ3MjAxM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMGRlNTcxNTAzOTBiMzM0OWI1YmJlNWM1M2QzMTM2NTg0ODE5NGJmZDAxODE3NGFkM2VlYmFlZWMzYTZhZTgifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-22T15:50:39.855Z"
+    "at": "2026-08-23T10:03:23.427Z"
   }
 }

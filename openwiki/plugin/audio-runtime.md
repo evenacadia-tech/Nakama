@@ -6,6 +6,10 @@ tags: [plugin, audio, realtime]
 sources:
   - id: openwiki-source-71e7d4e3896d39625d69a0a7
     resource: repo://eq-copilot/plugin/CMakeLists.txt
+  - id: openwiki-source-241a5ddefd7551ffad5b4cd4
+    resource: repo://eq-copilot/plugin/sonde/SondeProcessor.cpp
+  - id: openwiki-source-4a4c345926a8944110cc12e3
+    resource: repo://eq-copilot/plugin/sonde/SondeProcessor.h
   - id: openwiki-source-e210bd27e224e2cb1ed8b94d
     resource: repo://eq-copilot/plugin/src/AnalyseEngine.cpp
   - id: openwiki-source-aae9122971bec7a0eeb0d4f1
@@ -16,24 +20,37 @@ sources:
     resource: repo://eq-copilot/plugin/src/PluginProcessor.cpp
   - id: openwiki-source-4cceb4b96a9e3ee42df1f62b
     resource: repo://eq-copilot/plugin/src/PluginProcessor.h
+  - id: openwiki-source-cc86afb122e93353cf462969
+    resource: repo://eq-copilot/plugin/state/NakamaLebenslauf.h
+  - id: openwiki-source-fbf3ece1b64be989360b59d4
+    resource: repo://eq-copilot/plugin/tests/LebenslaufTestMain.cpp
   - id: openwiki-source-fec150d1a89dadfca2ca4fd0
     resource: repo://eq-copilot/plugin/tests/MarkierungTestMain.cpp
   - id: openwiki-source-0603acc9be1cd4b61a7992db
     resource: repo://eq-copilot/plugin/tests/NullTestMain.cpp
-generated: {by: "claude-code", at: "2026-08-22T15:50:39.855Z"}
+  - id: openwiki-source-0943c58ff1bce1e8bb1ba64d
+    resource: repo://eq-copilot/plugin/tests/SondeNullTestMain.cpp
+generated: {by: "claude-code", at: "2026-08-23T10:03:23.427Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-22T15:50:39.855Z
+    at: 2026-08-23T10:03:23.427Z
 ---
 
 # Plugin audio runtime
 
-The current product entrypoint is `createPluginFilter`, which constructs
-`EqCopilotProcessor`. The CMake target links the processor, editor, pipe client,
-analysis engine, and diagnosis code into the same VST3. Construction creates a
+The main analyzer entrypoint is `createPluginFilter`, which constructs
+`EqCopilotProcessor`. Its CMake target links the processor, editor, pipe client,
+analysis engine, and diagnosis code into the Eqcp VST3. Construction creates a
 fresh persistent sensor identity and a separate runtime nonce, allocates the
 analysis FIFO, then starts the analysis worker and pipe client. Destruction
 stops pipe activity, wakes the worker, and joins it.
+
+Suna and Probeeq use separate thin targets over one `SondeProcessor`. That
+processor currently has no editor, parameter surface, analysis worker, or pipe
+client. It accepts matching enabled input/output layouts and otherwise leaves
+the supported host buffer untouched. The two current shells therefore have
+sample-identical pass-through, zero declared latency, and no tail. Probeeq's
+future EQ path will intentionally change that boundary and its proof.
 
 ## Audio path
 
@@ -88,6 +105,7 @@ designing filters or allocating memory.
 
 Authorization requires all applicable gates:
 
+- the instance is lifecycle-classified as `main`;
 - realtime behavior has been proved, or the headless test override is active;
 - transport is playing when a transport exists;
 - the host is not performing non-realtime processing; and
@@ -99,9 +117,11 @@ the proof; a free-running ratio revokes it and signals the editor. If marking is
 unauthorized, the request is disabled, or the host block exceeds prepared
 capacity, `HoerMarkierung` leaves the buffer dry.
 
-The FIFO, marking latch, realtime proof, and transport window are runtime-only
-state. Host persistence is owned by
-[State and identity](state-and-identity.md), not by this path.
+The audio thread reads main classification through an atomic mirror and never
+locks or queries the lifecycle object. The FIFO, marking latch, realtime proof,
+and transport window are runtime-only state. Host persistence and lifecycle
+transitions are owned by [State and identity](state-and-identity.md), not by
+this path.
 
 ## Failure and extension rules
 
@@ -115,17 +135,22 @@ state. Host persistence is owned by
 
 ## Source map and validation
 
-- Entrypoint and target: `eq-copilot/plugin/src/PluginFactory.cpp`,
+- Main entrypoint and targets: `eq-copilot/plugin/src/PluginFactory.cpp`,
   `eq-copilot/plugin/CMakeLists.txt`
 - Callback and worker: `PluginProcessor.h`, `PluginProcessor.cpp` —
   `prepareToPlay`, `processBlock`, `workerLauf`, `lebenszeichen`
+- Probe shells: `plugin/sonde/SondeFactory.cpp`, `SondeProcessor.h`,
+  `SondeProcessor.cpp`
 - Audible exception: `HoerMarkierung.h` — `MarkierungsAuftrag`,
   `HoerMarkierungDsp::reicheEin`, `verarbeite`
 - Pipe boundary: `PipeClient.h`, `PipeClient.cpp`
-- Focused checks: `NullTestMain.cpp` and `MarkierungTestMain.cpp`
+- Focused checks: `NullTestMain.cpp`, `MarkierungTestMain.cpp`,
+  `LebenslaufTestMain.cpp`, and `SondeNullTestMain.cpp`
 
 `EqCopNullTest` covers bit-exact blocks, latency/tail, layouts, state round-trip,
 and non-finite preservation. `EqCopMarkierungTest` covers engagement, fades,
 return to exact dry output, realtime/offline/transport gates, and the dry
-analysis boundary. These are headless simulations; they do not replace a real
-DAW offline-render or transport check.
+analysis boundary. `EqCopLebenslaufTest` connects classification to the real
+marking path, while the two probe null targets exercise each compile-time
+product class. These are headless simulations; they do not replace a real DAW
+offline-render or transport check.

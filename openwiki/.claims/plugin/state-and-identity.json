@@ -1,18 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:662ed34b2cf8ff819f7b16d2d950a1ab312ab39957b93ef42e031e2bd709405d",
+  "pageVersion": "sha256:e298417a41b8c3361c58c9ebc222c3d6663df881cb7e9d9b82e61b78b166c321",
   "claims": [
     {
       "id": "claim_5e548a92c3344dddb2cb9cb3e6883723",
       "statement": "NakamaState owns host-state parsing, migration, typed access, and byte production as an all-or-read-only layer that is not used from the audio thread.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/state/NakamaState.h#L3-L20",
-          "version": "repo-lines-v1:sha256:da181ab27bc8c689d6206c0f355bb2182bc670851b48f6a7513e24e10779606f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNhZWJkNTUzYzc5NGU1YTk5OWY2OWZhYTU4ZTkyOTZhNGIxMDk1MjUzZjVmNGE0NTY1MjYyMDViM2I1OTY5NGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1NWMzNGZmN2U3NTNlNzMyMDljMzAwZDE4NWU2M2E4ZjYyNGMxZDViY2Y4ZDM2ODU3YTQ4YjY1MzA4MjIxMjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2ZTkyMzBlY2ZkNWFkNTBiZTA1NzBlZDIxZTE2MTM5MDE3MGNlZDYxYjBiZDUzY2QxNDBiM2FmZTI4Njg0MDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzNDljMmQ1NDlkNDdlNjZiODM4MDg5OWY2ZGI5OGI3ZGMwZjE4NWQ4MzllZTAxYjdmNWExZjVhYjllZGVhYzAifQ"
-        },
-        {
-          "resource": "repo://eq-copilot/plugin/state/NakamaState.h#L49-L110",
-          "version": "repo-lines-v1:sha256:1b6ec19f47fd42ebbb771a8aa3029dae69488289b99d59a90d737d0f4dd044e0:eyJzZWxlY3RlZExpbmVDb3VudCI6NjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZThiYzhhYmU5NTJhYmRiOWRjZTQ2NzUzNGEyMzk4NWE5ZmVjNDkzZmIzMzgxZTc1NjA5YzNmMmY3ZTEzN2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllZTdmOTc5Mzg5ZjkzMGEyODNlMzQxYzlhNzg1Y2Y1NGU1NTY1NzkzZDc2OGUwYjYwNWZmOTdiZmE4NzEyZTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY4ZTZlOThlOTdlOGY5YTg4OTUyMmQ5MTRiYWZlY2FiN2NkZmZjY2MxZjU4ZTg5M2I5NWE5NWE5NDA5NDc2OWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM0MDdmYmYwZGMyMzgzMDRkMTk1OWFkZmZjN2IwYTBjMTVkZTJlZDRhZWQzNGU5ODA4MzE3YjQxZWI5ZTJhZWYifQ"
+          "resource": "repo://eq-copilot/plugin/state/NakamaState.h#L73-L115",
+          "version": "repo-lines-v1:sha256:fc0b455796712a9ca3c56732c0d7c46715382d44b43e95f393891ea1f706ff84:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2MTBiNmUwMzAxYzBlNDY5YmQ5N2RlZTlkNDczNTg3M2RlMzdlZWFhOTI3YzRjNTRmNzU3ZmE3OGE4MmJlNDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA4MzQ1NGNkODVlMzEyMTgzYWFmNmI0ZjY0YjBmNDM1MWFjNzJlNWNjMWYxNzQ3MWU0ZGVlMTY1MTNlOWE1YjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE1NTkzZjAxNzA0YzAzM2ZjNDQyOTljMjMwZmYxN2M2ZGIyNzNjYTM2MGJhNDQ4ZmFlNWU5NzZlNWJlNjlkZjUifQ"
         }
       ]
     },
@@ -32,11 +28,11 @@
       "evidence": [
         {
           "resource": "repo://eq-copilot/plugin/state/NakamaState.cpp#L350-L408",
-          "version": "repo-lines-v1:sha256:c53d852fb45c8abee0528b85bb076956ca0ec6267ca5414bb7f435c6d9176c65:eyJzZWxlY3RlZExpbmVDb3VudCI6NTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0YTUwNGQ1OGRkYmMyOTE3MDMyYjdjNjUzZTE3NGIzYmJlN2NiZWRkZmY1N2EyOTNiNmFhZTM1MTU3OGUyZTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjExYmQwODA0NDhlMzU4NGE5ODM2OWQ2YzE5M2JlYjUxM2VkNThkMWM4MTZkYmE4OWNkZmViMmQ5NmFjYmRmYzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkyNzlmYTdjNDc3MmQyYjAzZDI1ZTZiM2VkOWM4YTljMTEzYjUxMDg1M2ExZjg5NjQzZThmYmIwZDM5MzM2YzQifQ"
+          "version": "repo-lines-v1:sha256:6d78513b2f0c2f4ef087dbf8b039bc17feb531a42e0791d5da1cfbc239362091:eyJzZWxlY3RlZExpbmVDb3VudCI6NTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNhZjZlODA4MjQ5YTcyYTc4ZGQyN2E3NzRkNmU4YWFkNmY0NWE5YWQ1ZjRhMjNmYjg1OGJkNWEwNjQxYTAxM2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjNTcxNDFmNDM5ZTU3NjRlYzFkOGIzMTdmZmFmYTMwMWY2OWNlMDBmZmZkZmI1ZTkyNDNmYWY0ZGMwZTgzYzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZlZTkzMDliZGJlZGVjYzRmZmQ3NmU3M2UxNDA1NDQ4NzM0ZTc5NTllNjg5NTBiODQ1ZTc2MzI5ZTEwY2VjYWUifQ"
         },
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L427-L446",
-          "version": "repo-lines-v1:sha256:107287256109930eb52bb3854a9421aa8b582513a45fa63ec1f5ac311011583d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhZTdiYjcxYzUzYTgyNDVjMDQ0MDg4OGViZjY1MTNjY2JjNDBiNjk5Y2M0YTMzNDgzZGIzMWJmNTRlZmQ3MGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAyYjQwNWJhMWE0ZGQyMmNiZDc3OTBjMDczNzJlNDI3YThhMzk0OTJiZmU3NDIyMGQ4MWFiYTIxOWQ3MTZmNGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBiMmE3YTgzMGI1MTAyNTQ4NzUyNDM0MDNkYWMzYjMyOWJmMTI3NDlkNzIwMDViMmYwNTgxNmE3ODgwZjA0MzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQyNDViNzQ2OTljY2RjYWQ4NGU3ZGNiZDYxZmU4ZDg4ZGUxZTUzOWZmYTI0NDJjMmUxMzMwMWYzOTkzZDliODIifQ"
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L440-L478",
+          "version": "repo-lines-v1:sha256:d677fc6bc2a99902d24f14c7271798af83b101fd47a20058f86273ba0597bec1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhZTdiYjcxYzUzYTgyNDVjMDQ0MDg4OGViZjY1MTNjY2JjNDBiNjk5Y2M0YTMzNDgzZGIzMWJmNTRlZmQ3MGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBiMmE3YTgzMGI1MTAyNTQ4NzUyNDM0MDNkYWMzYjMyOWJmMTI3NDlkNzIwMDViMmYwNTgxNmE3ODgwZjA0MzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU1NmNmOWQ1YzBmMDliNGMzOTM4NmJhMTk0NGQ5MDgxN2MwOWMxMTk4NDU5ZDVhM2E2Y2M3NzE4OGNmODEyMjYifQ"
         }
       ]
     },
@@ -59,22 +55,22 @@
       "statement": "Loading stops pipe registration for read-only state and reconnects after a readable load or migration, without marking the host document dirty.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L427-L455",
-          "version": "repo-lines-v1:sha256:3643d75943f47bc1ff99df4033bdd40ba99eb4ca4080f500d3e07d19848e5f14:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhZTdiYjcxYzUzYTgyNDVjMDQ0MDg4OGViZjY1MTNjY2JjNDBiNjk5Y2M0YTMzNDgzZGIzMWJmNTRlZmQ3MGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkZDBmNzNlMWFhYzdkMTYxM2IyYjBiNDM5MTM3Mzc4NzBmZmUwYWM4NjJhZTE5YTI4OTQ1ZTE2YjkyZWZhNjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBiMmE3YTgzMGI1MTAyNTQ4NzUyNDM0MDNkYWMzYjMyOWJmMTI3NDlkNzIwMDViMmYwNTgxNmE3ODgwZjA0MzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM3MGY4ZDc0ZmVhZGM3MDA2YmNlZTgzZTgzYTI1YTQ4NzlmMDIxZjdkYzU4MWI3ZGM3MGY1M2NiYzc3NzY3NWUifQ"
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L440-L478",
+          "version": "repo-lines-v1:sha256:d677fc6bc2a99902d24f14c7271798af83b101fd47a20058f86273ba0597bec1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhZTdiYjcxYzUzYTgyNDVjMDQ0MDg4OGViZjY1MTNjY2JjNDBiNjk5Y2M0YTMzNDgzZGIzMWJmNTRlZmQ3MGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBiMmE3YTgzMGI1MTAyNTQ4NzUyNDM0MDNkYWMzYjMyOWJmMTI3NDlkNzIwMDViMmYwNTgxNmE3ODgwZjA0MzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU1NmNmOWQ1YzBmMDliNGMzOTM4NmJhMTk0NGQ5MDgxN2MwOWMxMTk4NDU5ZDVhM2E2Y2M3NzE4OGNmODEyMjYifQ"
         }
       ]
     },
     {
       "id": "claim_d595e4aee28c4b59918e68deb9157b44",
-      "statement": "Binding changes and duplicate-ID repair reject read-only state, ignore no-op changes, mark real persistent changes as non-parameter host-dirty, and reconnect with the new identity.",
+      "statement": "Binding changes and duplicate-ID repair reject read-only state, ignore no-op binding changes, mark real persistent changes as non-parameter host-dirty, and reconnect with the new identity.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L395-L415",
-          "version": "repo-lines-v1:sha256:aa802a49d55b0cda04d6901a0c5d2a4ff3f9c746ab1a53dda6ae57d2ce83db05:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxZTczODhiNmFmMTAwMzhlMmQ2OTIzYmMzYjA1OTg2MGMyMDA0YmFkZWM4ZTRhMmVhZTg4NzI5ZTRhMzg3NjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0MjAzOTE1Zjc0M2IyOTU2NzEyMDEyN2ZmMjM5MzA5YjU0NDdlYTQ1MmQ5OWY3YzYyZDBhZDVjNWIwMGRjNWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRlNzZjODNhNTczZTY1MTYzY2MyZTNlZTRkYWZlZmI3Y2M0OGNjNmMwNGNiYjM3ZjY4MTIxZDFhYzA5ODViMTIifQ"
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L412-L423",
+          "version": "repo-lines-v1:sha256:7e4599ecf286ca41511aacf6a188a61f76afb721423255db2472ee12ef8e592a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1ODUwODdlYjIzNGQxM2Q2ZTZmZGY4Y2JjYzAyN2U5OGVmOGY2NjIyNzBkNjM4ZDdkYjBiNDgzNWJhZWUwYWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcwMTY3ODJiOWI0NmZiMjhkZThmMmVlMWQ3YmRjZDI0ZWU1MmI1N2MyMWU3NGEwZGMzZGFhNGMyYmZlZmNiMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAwNDJlNTJkYjZhNjhkY2ZmZDRmYzE5ZGQ0ZDBlNGZkOTRmMjg2OWQ3YmI3OTgzYmIyZmQ5MjY5Y2ZiN2ZiMjAifQ"
         },
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L493-L515",
-          "version": "repo-lines-v1:sha256:e775a2d96ddc174aad0a4534df51a9dd93d3707d481a4f04ba39d8e6eae35787:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5ZTI4MjIyZjk4OGQwYmIxMGQ5ZmU0NTVkMjY2MmE3NzlhMDNmMmFhZDY1NzAzNzg4NmEwNmYwMjY1MjJjZjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmYWM0ZTQzNjMwYWJmNjhjM2E0YTc1NzNmZDRjNDMwMDhiYTc5OGRkNzZjMzc1OWVlZWY1M2U2Y2ZmOGQyZTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJjYmNjMWI2NzYyNDNhNzZiMDkxZmRkNmRiYTAxNDM1ZjdhNGEwYzdiYTcyZTlmZDU1YmQ4NjcwYzBkMTcxZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJmMWNlZmNkZjFjNDUwMDZlNzMyYzczYjExMTJkMDJmMmYzMDQ5NjUzYzg4N2I4YTBjYWU0N2FiMjQyYzZkZWUifQ"
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L554-L591",
+          "version": "repo-lines-v1:sha256:f6a7718a99dafc7b87f6f75135b0e4ff117b59204fdae1ea4722682171bfaf30:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5ZTI4MjIyZjk4OGQwYmIxMGQ5ZmU0NTVkMjY2MmE3NzlhMDNmMmFhZDY1NzAzNzg4NmEwNmYwMjY1MjJjZjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFiMjI5ZTQ1ZGVmMmE2MGI0ZDRmZjNjODBiODRlMzk2ZjhjMTgwZWZiOTRjMTI4M2Y4OWJhMjM3YzEwM2U5NzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ5MDdkZmFhY2YzYmQ1NTk4YTRjY2ZiMDMxZDBjNzBmNjY4OGEwMjZmOTBlMmZhNzhlNTAyYzFkYjgxYWFkNzMifQ"
         }
       ]
     },
@@ -108,47 +104,63 @@
     },
     {
       "id": "claim_f956d15d5e3e46a9b750c22030fad65c",
-      "statement": "The 109-entry parameter contract describes a future active probe, while the currently built Eqcp plugin exposes no host parameters.",
+      "statement": "The 109-entry parameter contract is serialized for active-probe state, but none of the three current bundles exposes host parameters and Probeeq's EQ processing remains future work.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/state/NakamaParameter.h#L3-L17",
-          "version": "repo-lines-v1:sha256:6f35bb4c830ad8a913a25786aa0cd5bade0684d5414c26a16ed33804a4f94d63:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEwNDA2ZjU4YzE1ZDY3NDk3ZjNkMjU4MjMzZGU1NzgxMDE5NjhlZmRiMjJkYTA5M2Q5MDA2MTU1ODQzMjFjMjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYmYyZjJmZDNkOTIwYTVkYmJjZjBkZmJhYjY3MjlmYzUzZjc1YmZlNzRlYjM5ZWVmNWNmMzEwNzM4ZTUzMTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2ZTkyMzBlY2ZkNWFkNTBiZTA1NzBlZDIxZTE2MTM5MDE3MGNlZDYxYjBiZDUzY2QxNDBiM2FmZTI4Njg0MDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzNDljMmQ1NDlkNDdlNjZiODM4MDg5OWY2ZGI5OGI3ZGMwZjE4NWQ4MzllZTAxYjdmNWExZjVhYjllZGVhYzAifQ"
-        },
-        {
           "resource": "repo://eq-copilot/plugin/state/NakamaParameter.cpp#L37-L70",
-          "version": "repo-lines-v1:sha256:a27a1b5a0fdab38ffe1987a945be4053590f543947fbf5036d256e962a50bf51:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExYTEyYWQ0MDdmM2E4YzJlMjdlMDQ4NjU1NWMxNjZlMWRjNjQ0YTk1YmRmNjE5YWQ0YWMxZDQzYzUwNzQzYjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwMWNhMDQwY2FlOTNjZjhjMDM5NmNlMGY2MTI2M2Y0MmNlMTdmMmI4ZjA5MDUxOWY1MTZlMWU0MDI2YjRmYzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImExN2U3NjQ1MTM4Njg2OTdhMTk1NDQzMmQ5ZGVkMDhiMGQyZjIyZjBkNWU4ZjAyYTM1MGY1NmU5NWY3YmJkNWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMwZmZkNTMwNzIyYTRlMWY0MzZmYjcxY2U5MGFmOWZkNDBkNzk1MTVkMWE4OTk1MTk3NWZjZmQ4NmIxNTNhNDMifQ"
+          "version": "repo-lines-v1:sha256:a83e0d84762fc46007826c1dc44accc23c93130fee5e43cfbf25667a995eb4eb:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2MzU0NTAwYjM3NGM0NWQzNmQ5ODk4ODNjOTA2MmI2NWFhOWMwNGNkNmI4MGFkZjI4ZjU0OGQyMDhmMjc2Y2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1NWRkNDBmN2NmMzhjODAzNTA1ZWFjNjMzYzI5MjRmOWQ2Nzk0MjNiYWJkN2I2NGMzYTFjMDM1MGVhYTMzYjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIzMzVjOGE0NWE2NGRhZDcyYjA3NjI4MGMyN2Y3YWIxNzU5MWMxMjY4MWIxZjIxNDNkM2VkY2E1YWY5NDBhYmIifQ"
         },
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.h#L1-L15",
-          "version": "repo-lines-v1:sha256:d089f047e68e255a3bc3cb22bf38edef64934c7427ae6a054f69562c7f58fae8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNjN2Y0MWM2YmRjOWQ2YjgzYzY4ZmRiODY0NjFiNmJjOWNjYTc1MDM4MzU2MzI3NTUwNTcyZmQ5OWUyNDc2MWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmNzYyYmY2YzJkMmFhMjU4OWNjMTg5ZTk1MTc4MzQ2MjU3Y2YwZjI0Y2RkMjkyMDVhOTQ3OGIyZTlhN2ZkZDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE0YjU1NjI2ZmY4MjRiMDliZDdjZWY1M2I2MWMyMzJjOGI0NzIzNWUzMzQ4ZjcyMjhiYjFjMzdhNjQyZTBmNTMifQ"
+          "resource": "repo://eq-copilot/plugin/state/NakamaState.h#L73-L93",
+          "version": "repo-lines-v1:sha256:a159126f60ebd62c5293b32ddf8182912ae7a77d707e922591ed315aa3f186c2:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2MTBiNmUwMzAxYzBlNDY5YmQ5N2RlZTlkNDczNTg3M2RlMzdlZWFhOTI3YzRjNTRmNzU3ZmE3OGE4MmJlNDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhMzQ4ZWIxOWI4ODcwNmM3MzJhZGRmMTdjMDIyNTM4M2IyYmRhZTg3OTZhY2I0Yzg3MjU3Nzc1MGIzY2UwMmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA4MzQ1NGNkODVlMzEyMTgzYWFmNmI0ZjY0YjBmNDM1MWFjNzJlNWNjMWYxNzQ3MWU0ZGVlMTY1MTNlOWE1YjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg0N2JhM2M3Y2M4NmFjNzVlZTViZDIyZjcyNWE4YzgwZTI4NzVkZjljOWQxNWIxZGFiNTUyOTliNjk3MTIxNGQifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/sonde/SondeProcessor.cpp#L6-L26",
+          "version": "repo-lines-v1:sha256:cbef65a2bf19671e12eeb7241c5a3a70c6ab3904304f98550d6475f51fe30cfe:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwYzk5ZDQ3ZjA2Y2VkYzQ2NzI3NWM2YjQyNDBmOTQ0M2MzYzUxNGZlZmMyZTIwZGUxNGVjNmE0NDQ3YzE4NjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc4M2Y0NzIyYjI1ZGY0MmIyZTgzMzQ3ZWM0MTMyOWMwMjVmMjI2Y2IzZGY4NzI3ZDMzMGY5OWY3ODBhNzZlYmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMzYjdhNzZjZGYxNjk3OWNhZDU4NTQ3N2EzYjFlNzY4Zjc4MTI1MDU5MmUzYzlhZDEwY2Y3ZTEyYzVkNDU3YTQifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/tests/SondeNullTestMain.cpp#L71-L78",
+          "version": "repo-lines-v1:sha256:aa881c884236a862c98b2384aea8ac21657adc41d6adca4622420ff23396611f:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDNhYzc4MDk1YmVkYzNiOTc2ZWIwNTJhNTIzOTBiN2Q4MzQ2N2Q3ZjllYjA3MDhhZDA2NGVkOWE1ZjdkYmVlMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDQ5Zjc5NmNmNzNlNmFmMzM1YWI2MTQyNzFmMmY4ZTJmZWVjNDYyYTY0ZmJjMmZlNWVmODA1ZTU2MThmODAwMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWIzYTU3YjVlMDBkODE2ZmY1NTE0YzUyMTY3Mjc3YTEwMzE3OTJkN2I1NDRjNjBiMzVhZmZhOGI3YzYzYTNjMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDUwYzFiNTI3MmZlZDU4ZWUyZTc4NWFlYzAyZGZlODcxNmRlMTNiNjY3MWVhZTU5NzAyMDU2NDhmNmM2Zjc5NyJ9"
         }
       ]
     },
     {
       "id": "claim_1d2d993a5c6f4487bb59958326cd26f8",
-      "statement": "The built Eqcp identity is fixed by the JUCE target and identity manifest, while passive and active probe identities are reserved but not built.",
+      "statement": "All three product VST3 identities are frozen in plugin-identities-v1.json, read into their thin CMake target layers, and checked against each built moduleinfo.json.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/CMakeLists.txt#L11-L24",
-          "version": "repo-lines-v1:sha256:14d53d1ae6277b8f5757d370c943f889b4584b2233efb2170fd0bbeb6c6942d9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0NTIwOTZjYWJkMTgxOTM3NzIxYTk4Yzk5MzYxMDgwOTk1MzEyYjJkZWNmYTdkZTE1MDEwNjBmZjNiNzhhZTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhZmJhMDUyN2MzOTUzYzRiNmUwZTViNTczOWJhODM2MTJmODA1M2JjZGM5NDY2NzMwMTkzY2QxZDU5MGI0MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3ZDY3OTUyNDJiMDNkODlhZjA4MGUzMzMyNmI1YTUzNGI4NjU1MDA0ODRhNWJjNmE4YjM3NGE1ODNjNDE4ZjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk0MzZhMTMxMjdiNWM0NzViZTkzMzg2MDJkMWQ2OGVjYTY3NjI0ZjdmZjcwNmNjMWFhZjllY2Y0MDI5MDM0NzAifQ"
+          "resource": "repo://eq-copilot/identity/plugin-identities-v1.json#L32-L73",
+          "version": "repo-lines-v1:sha256:82bce2cd9a17439e9f666e4f5314c025f6e5363fb2391aac844e66caf22f0bfc:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkNzRkMDE0NTJmODRiMjRmZjA5ZmQzYzU1MjRkZGFlMTRhM2QwYjI2YTViMGU4NTI1NjI5YjQ2ZGRmNjk4YzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2ODcyZjA3MjBlOWI3OTMxZjhmY2U5NTUwNTAwYmRmODRhYmZlNjZiZmJhODcxNDRjMTRjMTZlMDFmMDkwOTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU1YjM2ZDk3MjlmMzQ2ZDI4ZDg4ZDVhZDc1NzA5ZTgzZjNkNGRlN2ZkZjIxYzg4ZjU4ODk4YzU2MDYyODRmMTYifQ"
         },
         {
-          "resource": "repo://eq-copilot/identity/plugin-identities-v1.json#L21-L69",
-          "version": "repo-lines-v1:sha256:6a3aeba77f58484d3845da8512128704680d473fa92958cafd1b375b06106055:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1Y2Y1NjYyMTJkOTFiODVlZWU5ZjdjNDE5MTNjNGMyMjdjZWE1OGIwNzk2OGFkMDFiZjI0NmI1MTkzMWIxNzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1NGUxNjg5YzE5NzZiOTMzOWMxNmE3Yjg5MzBiMTc2Yzg0NWJiNWQ2ZmU0MmY2ZjAwYjRkNTY1ZjBjYTAzOGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU1YjM2ZDk3MjlmMzQ2ZDI4ZDg4ZDVhZDc1NzA5ZTgzZjNkNGRlN2ZkZjIxYzg4ZjU4ODk4YzU2MDYyODRmMTYifQ"
+          "resource": "repo://eq-copilot/cmake/NakamaIdentitaet.cmake#L31-L133",
+          "version": "repo-lines-v1:sha256:1a13a82d9bc12b2aabd522c79ef4ca2c99bdc2e31de96acd6d2665d57e8e5e3f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiMGNiNmNlOTQ0YTZiNWQ1YjUwNjRlOTdjYzE4MTAyODAwYTBjNmNkODQzMzM3MTM4OWZkOWY5ZDA3ZGZjNTM1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4ZmQwMTcyMGIzMWIxZGU0NjIwOTAwZTY2YThmNTU2NzIzOTQwYWMxNzBjODMxZjA0NGJlYmQwZDlhMmQ4NzJiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJjNWU5YjdjNDQ3MzVlZDMxNzRiZWNhN2Y3MWUyMDJkM2EwYzE1Nzk1ZjBmYmY5NzAzZjMwM2RjMTZmMDBkOThiIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/CMakeLists.txt#L24-L47",
+          "version": "repo-lines-v1:sha256:07e1fd5f7a5e17501a26f968524bec0673c261fee01c73c83e0be7943fc3d67a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlMDIzYTA3MzhhYWRlZDJmYTY3ZDJiZmNhMDk1MDgzOGI1NWM1ZjNhZjJkYTkxZjY1NTIzMDM2NGE2MjMxMzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhZmJhMDUyN2MzOTUzYzRiNmUwZTViNTczOWJhODM2MTJmODA1M2JjZGM5NDY2NzMwMTkzY2QxZDU5MGI0MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE5MzIyOTU4MjdjMmUxZjMyYWMzM2E4ODYzNzJiZGRlMzJkNmY1OTUwZWRjNjk4YmU5M2JkOWRkNGMxMThkMTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk0MzZhMTMxMjdiNWM0NzViZTkzMzg2MDJkMWQ2OGVjYTY3NjI0ZjdmZjcwNmNjMWFhZjllY2Y0MDI5MDM0NzAifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/CMakeLists.txt#L170-L223",
+          "version": "repo-lines-v1:sha256:ebc1f72c7ff4f9c1cc48b73396b9a4bbe9e321d3494be09decaedcaeb4886998:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4YmIzMzNhN2Y2Y2FlMjZhYzBhNzg5ZmM0NTE5YWRjNmJiNGFlMWNjZTNmNzdjMjY3NDRlMzMwMjc2ZGUzZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzYzkxYTQxOGZmMGYxNmExMzY2MDAxMDllZTU2ZTA1YmQ3NWYyZTAwNDk5MGVjODFhMmM5ZjE5YTQ0MGM4YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdjNzI2ZWNmMjNiYTEyNWNiMjhmMzM4YWFlMjViMzIyODg3ZmEwM2QxZWVmOGY0NzMyMmNlM2VkN2FhNGVjNWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3NmVmMGZkOTM5ZTljNDI0ZTViNmE3ZDk5YjE5OGI2MWJjZmNmYTkzZTAzMGQ3NjFkZGFjNWRjNTQ4ODUwNjMifQ"
         }
       ]
     },
     {
       "id": "claim_981b8ca762c24d24b50448850d599130",
-      "statement": "State and identity tests cover schema/table correspondence, migration, byte preservation, read-only behavior, duplicate IDs, dirty/no-op rules, built metadata, reserved IDs, and cross-language canonical hashes.",
+      "statement": "State and identity tests cover schema and parameter correspondence, migration, byte preservation, read-only behavior, dirty/no-op rules, lifecycle classification, three built bundle identities, and cross-language canonical hashes.",
       "evidence": [
         {
           "resource": "repo://eq-copilot/plugin/tests/StateMigrationTestMain.cpp#L536-L742",
           "version": "repo-lines-v1:sha256:1e44872cdd56f6d7a08dc8f24820707ff13f67e3b5055838b21011000e67eafe:eyJzZWxlY3RlZExpbmVDb3VudCI6MjA3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJkYTRlY2VhYWY0YWRjNDkyNWRmYmI2ZTRiMjMwMDY0MGZjMmExMzE0M2NkYjZiMWNkYTIyYTVlMGZiYWViMTExIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIyN2YzMWQ5ZDVkNGRiZDMzYjQyYWIxN2IxYWVlM2QwODNjNTg5NDg0YjI0YWRkNDI0NTY5MTZmODBiOTQyNjA5IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMmZjZmRlOGRmYjBjOWQxZGI5NGZiZjZkNDk1ODIyYTYwZTBmYTVlMTVhNmE0OGFmZTc3NDllZWVhMjg4MWE1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5MTQ1MTNmNTVlZjkxZDMzOTgwNmU2YWVmMzQxYWY0ZTFiYTYwZDljMDAxZmI1NTNjZDA1OWYyNDIyM2E5OGZmIn0"
         },
         {
-          "resource": "repo://eq-copilot/plugin/tests/IdentityTestMain.cpp#L291-L482",
-          "version": "repo-lines-v1:sha256:cc3ad01c9e2795710fd8969a66e09db124df3ee7d97f015e0dc0960ccfd1a375:eyJzZWxlY3RlZExpbmVDb3VudCI6MTkyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5M2UzNTU1MzA1M2Q2MjJlY2NjZjhlZjI0Nzg1MjVmNzM3YjM1ZjM2NDM2ZDE0MDUxMGZjODA1Yjc2NTk4ODk3IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4OTJjMDU4Y2RjYTVkMGRhMWQ1MTk5YjY1MjE0ODZmM2QzMTI2ODMzNTE1MmZkYTQ3NzYzZThiNmI2Y2Y3MWFjIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI5MGU0NDc5NzMyNTVlNDdhYzgxZGRlMDZlODMwZDk5NTA5MGE5MjZlMzM3YmUyYTc5YmUwM2RlMDNiOGNlOWZkIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzYzI4M2FmYmNkOGFkZTMwNDAwNWU0ODM4YTZjYWM1ZDE1NjhiZTFhZTY5ZTAzZTZjMzBkNzEzZTFhY2M4NTQzIn0"
+          "resource": "repo://eq-copilot/plugin/tests/IdentityTestMain.cpp",
+          "version": "repo-file-v1:sha256:19b1f17d0bdef0cedca4737dd86994d2370967f400902fbfb258696b19254e62"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/tests/LebenslaufTestMain.cpp",
+          "version": "repo-file-v1:sha256:9c7ebc5a7ebb744d6af8fdcba4c899d651b151d2dee393a7f30679ef64882c7c"
         },
         {
           "resource": "repo://broker/tests/contract_cross_language.rs#L384-L470",
@@ -161,18 +173,74 @@
       "statement": "Read-only state rejects both binding changes and persistent sensor-ID replacement without reconnecting or notifying the host that state changed.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L395-L455",
-          "version": "repo-lines-v1:sha256:19db90eee0def3a24fcbe90fcf8379fea9c183e4e4a49ba4c501612343caf5df:eyJzZWxlY3RlZExpbmVDb3VudCI6NjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxZTczODhiNmFmMTAwMzhlMmQ2OTIzYmMzYjA1OTg2MGMyMDA0YmFkZWM4ZTRhMmVhZTg4NzI5ZTRhMzg3NjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkZDBmNzNlMWFhYzdkMTYxM2IyYjBiNDM5MTM3Mzc4NzBmZmUwYWM4NjJhZTE5YTI4OTQ1ZTE2YjkyZWZhNjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0MjAzOTE1Zjc0M2IyOTU2NzEyMDEyN2ZmMjM5MzA5YjU0NDdlYTQ1MmQ5OWY3YzYyZDBhZDVjNWIwMGRjNWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM3MGY4ZDc0ZmVhZGM3MDA2YmNlZTgzZTgzYTI1YTQ4NzlmMDIxZjdkYzU4MWI3ZGM3MGY1M2NiYzc3NzY3NWUifQ"
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L412-L478",
+          "version": "repo-lines-v1:sha256:12050e8258e369834216ca66f964c991213ddff68532970afdde6f48f8147e7f:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1ODUwODdlYjIzNGQxM2Q2ZTZmZGY4Y2JjYzAyN2U5OGVmOGY2NjIyNzBkNjM4ZDdkYjBiNDgzNWJhZWUwYWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcwMTY3ODJiOWI0NmZiMjhkZThmMmVlMWQ3YmRjZDI0ZWU1MmI1N2MyMWU3NGEwZGMzZGFhNGMyYmZlZmNiMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU1NmNmOWQ1YzBmMDliNGMzOTM4NmJhMTk0NGQ5MDgxN2MwOWMxMTk4NDU5ZDVhM2E2Y2M3NzE4OGNmODEyMjYifQ"
         },
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L456-L515",
-          "version": "repo-lines-v1:sha256:1fbf662b90db1e2d564dad1313f32557aa36068d216d840220509f85681b5376:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmYWM0ZTQzNjMwYWJmNjhjM2E0YTc1NzNmZDRjNDMwMDhiYTc5OGRkNzZjMzc1OWVlZWY1M2U2Y2ZmOGQyZTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhhYmIzMzkyYTY4MWY4MmQ5OGUwNDVjOWJmYmMzMTllODVkMzkxZWI4NWNkZjNmNmMyNDczN2Y2ZTgyNzkxOTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJmMWNlZmNkZjFjNDUwMDZlNzMyYzczYjExMTJkMDJmMmYzMDQ5NjUzYzg4N2I4YTBjYWU0N2FiMjQyYzZkZWUifQ"
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L554-L591",
+          "version": "repo-lines-v1:sha256:f6a7718a99dafc7b87f6f75135b0e4ff117b59204fdae1ea4722682171bfaf30:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5ZTI4MjIyZjk4OGQwYmIxMGQ5ZmU0NTVkMjY2MmE3NzlhMDNmMmFhZDY1NzAzNzg4NmEwNmYwMjY1MjJjZjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFiMjI5ZTQ1ZGVmMmE2MGI0ZDRmZjNjODBiODRlMzk2ZjhjMTgwZWZiOTRjMTI4M2Y4OWJhMjM3YzEwM2U5NzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ5MDdkZmFhY2YzYmQ1NTk4YTRjY2ZiMDMxZDBjNzBmNjY4OGEwMjZmOTBlMmZhNzhlNTAyYzFkYjgxYWFkNzMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8e89446c16304da9ab9eec350be988f1",
+      "statement": "Lifecycle classification starts unclassified; ignored input leaves it unchanged, read-only input resets it to unclassified, and only a fully readable restored state assigns a product classification.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/state/NakamaLebenslauf.cpp#L45-L87",
+          "version": "repo-lines-v1:sha256:9d1d0ebbe1a20a7d9962a4b4a48971b7957e2268aaef96743151d98be73a92c9:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2MzJkNTVhMDI1MmMwMWIwMzU2NDNmOWJjZWZjOWYzNGMzOGM5ZDJlY2ViNGJhMjRiMzY2YThkYjgwZWIzM2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRjMzlmY2MwYzIzMDYyYmU4ZDRmYTNkZDgxYjFlNzE4NzU1MDJkNGM0YjhlMmU1NmVmMGU2YjkyY2M2MGEwMTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIzZjkxN2RjNjA1NzMzNDkwOTk4NjgwZWI1MGU3OWFkNzMwZGZhYTE1MGI0ZGZkMjE0MmUyNGNkYTI3YWNmMzcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_fc1dc81c1fbf41f19b0e11bf719ced34",
+      "statement": "The main bundle maps restored legacy sensor, pre, and post roles to legacy and restored hub or valid schema-2 main state to main; a fresh instance becomes main only through an explicit role change while its editor is open.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/state/NakamaLebenslauf.cpp#L45-L115",
+          "version": "repo-lines-v1:sha256:aa76b2b219d68d92018b40f359a9ed73618de3dd839bbd49a88c40f69d1139e1:eyJzZWxlY3RlZExpbmVDb3VudCI6NzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2MzJkNTVhMDI1MmMwMWIwMzU2NDNmOWJjZWZjOWYzNGMzOGM5ZDJlY2ViNGJhMjRiMzY2YThkYjgwZWIzM2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRjMzlmY2MwYzIzMDYyYmU4ZDRmYTNkZDgxYjFlNzE4NzU1MDJkNGM0YjhlMmU1NmVmMGU2YjkyY2M2MGEwMTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAwYTI2ODYwZTE3NmRmYjk0OTE2YzQ5ZmM0M2NkZTc1Mjc3YWRhOTJiMzg4YmY3Nzc3YWRhZWY0NjNlZDM5ZWEifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L542-L591",
+          "version": "repo-lines-v1:sha256:70396be8456ed4388d9d03e14d69d9bb58ba2f9fa6459eff9bad6d6e7be4c0f7:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2OTVjODVhZTkwODQ1OGQwMDVkMjZlMjk0ZWU5ZjJhNDAxYmE5MTE5ZTIzMjY4YTIwZTM1N2YxOGI1MDFhYzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmN2VjNmE0YThhMzA2MTc0MTdiZWQyOGYwOGUzZmM1YjRjMGZjNTM4OTI4ZDY0NWIzZTEzMzFiYmQ4NDMxZDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ5MDdkZmFhY2YzYmQ1NTk4YTRjY2ZiMDMxZDBjNzBmNjY4OGEwMjZmOTBlMmZhNzhlNTAyYzFkYjgxYWFkNzMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_15389765eb6a45d49c63cb33a0e91abe",
+      "statement": "Suna and Probeeq have fixed passive-probe and active-probe product classes, remain unclassified until a valid state restore, and can never classify as main.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/state/NakamaLebenslauf.h#L65-L146",
+          "version": "repo-lines-v1:sha256:c6dea0df56d53bcae11c921418f39b092d4c703efa933a0b843ca98a122d4e40:eyJzZWxlY3RlZExpbmVDb3VudCI6ODIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1ZGNjMDA5YzdmMWM3MDRlZmFkYjExY2MxYzhiYTlhZmVkNzE1NjVkZWJmOTc4ZjA2YzFmMzgxMDljYWU4ZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhMWQxYTYzMzkwMjI5Yzc5ODM0N2U4M2EwNDA1NDQxYzk0MDAwMzUyODRhZDE2OGMxYmY2Y2RmMWQ3MGEzNzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM0NTA4NDMyZDVhZTFhZDc3ZTA1MmY2ZTgyYTlkNjg4ZDFmMjcxMmRmNmVkMWE1MjI3NTM4MWQ2YTM5YzkyMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAwYTI2ODYwZTE3NmRmYjk0OTE2YzQ5ZmM0M2NkZTc1Mjc3YWRhOTJiMzg4YmY3Nzc3YWRhZWY0NjNlZDM5ZWEifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/sonde/SondeProcessor.cpp#L6-L26",
+          "version": "repo-lines-v1:sha256:cbef65a2bf19671e12eeb7241c5a3a70c6ab3904304f98550d6475f51fe30cfe:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwYzk5ZDQ3ZjA2Y2VkYzQ2NzI3NWM2YjQyNDBmOTQ0M2MzYzUxNGZlZmMyZTIwZGUxNGVjNmE0NDQ3YzE4NjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc4M2Y0NzIyYjI1ZGY0MmIyZTgzMzQ3ZWM0MTMyOWMwMjVmMjI2Y2IzZGY4NzI3ZDMzMGY5OWY3ODBhNzZlYmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMzYjdhNzZjZGYxNjk3OWNhZDU4NTQ3N2EzYjFlNzY4Zjc4MTI1MDU5MmUzYzlhZDEwY2Y3ZTEyYzVkNDU3YTQifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/sonde/SondeProcessor.cpp#L72-L93",
+          "version": "repo-lines-v1:sha256:68dca085598817a6466ab3aa2d2f2c4e4c366a8609f772b10739655fcbb692c5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ5ZDk3MmU0ZDk2ZmE1NDZmZWY3MzNlYmFjY2U3NDUzZWM0YjNlYmRkNDY0Nzc4ZTZiZTRkYWUwZmRiYWE1MzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBiMmE3YTgzMGI1MTAyNTQ4NzUyNDM0MDNkYWMzYjMyOWJmMTI3NDlkNzIwMDViMmYwNTgxNmE3ODgwZjA0MzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM3MDQ2M2YwNmFiMGY4M2NjM2E1YTNkNjgyN2U3ODA5MTY1NDdjZWZhMzMxNWRhZmQwMGU4N2I2MWM2NTRiMzcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_64caafc3566945f683503756654b16f7",
+      "statement": "The lifecycle predicate permits broker startup only for a main-classified instance with an open editor.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/state/NakamaLebenslauf.h#L104-L126",
+          "version": "repo-lines-v1:sha256:06ea86f6ac69857e2c5534a33ca6c6a31f58da31a2a72f37c5346fe78e4e1a9c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0ZjE3YTQ3OGMyOWI0ZjZiNTgxMzEzZGM2NjlmNTE0YjQ2MTY5MTNhNjk3Y2U4NjhjNDcyNWU4MmFlZGIyM2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRiOWVkNDg4ZWJjNTNlNGM3NWRjYTAzODYzNmQ0NDMxNDU4ZTAwMDk2MzgzOTE4MzBiMjBjMTExYzU3NTFlOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcwNzRmMDU1MGUzNDI4MjA3MWJkNmUxZjVkYTJlYzQwNGMzYTE0MjQ1Y2E2M2IyMmM5MGFkYzg0NGVhZTM2YTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFkNTc0YzkxZWU0ZWQ1ZTk3NTRjZTQ5MTA3Njg3MGE5NzZhNDhmMGY3ZDI1M2M1NDJjZTExMDQwYTdkYWY3OWIifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L536-L552",
+          "version": "repo-lines-v1:sha256:7290782f210d16a28708391db0a7b7b43f669e6e09690a5acdc1b017f02a3cbe:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU4NDcwYzhhNDdjZDY1M2FmOTdiNjdiNDFjNTM3OTE2MThiOTFkZDczZTI3MGMzOWQ3Nzk4ZWQwMGFiMzkzNjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI5MWNiMDBmMTBhZTE1YWIzMDQ1N2NhNTkyZThlNWVlODM4MTI1OGViYTcxMzczNjU1YTU2MjkyZTIzNTgzOTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkzMzhiZWM5NTU5YTE3MDIzNmZkOTRiOGRjOGQ5MTQ0MjU1OThiMjkwODVmM2E1NjJmOWZlOGMwMTA1ODg4MjcifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-22T15:50:39.855Z"
+    "at": "2026-08-23T10:03:23.427Z"
   }
 }

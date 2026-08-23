@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b01c4cf4d22f3eb21461a88e0844fb7ecd60610ad3c3bb9766cabd364ec9cd96",
+  "pageVersion": "sha256:b9a9bac86b1cbfde4feb58a1020f9f989d593873a9b5065898ea3c41163e8341",
   "claims": [
     {
       "id": "claim_4ae03914f07e4d8195f01c20b996ef62",
@@ -21,8 +21,8 @@
       "statement": "PluginProcessor constructs and starts PipeClient from persisted identity, a volatile nonce, audio configuration, statistics, and compact measurement providers.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L12-L42",
-          "version": "repo-lines-v1:sha256:ac4354cdf21859152d93c3c243693122275af437640cd201ad9f351b9880d1e0:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkYmNhOGIyMWRmNWFiOWMxY2EyMDQ1Y2JhZWM1NzExMDgxN2RiOTIwMTdjYWE0OTMyYTNjMzA2MTEwZjY2ZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0MDkzM2ZmZTQxNjJjM2I1MTk3ZDg0NDY3ZTY4MTcyZDgxNmFhOTA1ZmRjNDU1OWY0YjQ4NWZiZjVlNGI1NGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4MjBjMTdiMjBhMWM5ZjhmY2I1NTQwYTQ1N2M1NTVmZjE3OTE3MjMwNDc0ZDAwNDgwMzVjZGMxYTE4YmZlMDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwNDFkNWUxYWQzNmJmZmI1YmFhZjgwM2UwNWNlNWRlNDVhNTcwMzcyOTNjZjRhOTVmODE3YzAxZGMxNzk3NmYifQ"
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L12-L47",
+          "version": "repo-lines-v1:sha256:d842c3f3c81686412bb47016166c05110d792bbf9dbb074683323fe1dd3e665a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkYmNhOGIyMWRmNWFiOWMxY2EyMDQ1Y2JhZWM1NzExMDgxN2RiOTIwMTdjYWE0OTMyYTNjMzA2MTEwZjY2ZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4MjBjMTdiMjBhMWM5ZjhmY2I1NTQwYTQ1N2M1NTVmZjE3OTE3MjMwNDc0ZDAwNDgwMzVjZGMxYTE4YmZlMDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE4MDU3YjE3ZDI4NTVkMmIwYmJkZTQ2NWNlZmM0MDA5ODRiZjgzZWYzOTNmNTVjYTNkZjczMTI2YmU2NmVkNDEifQ"
         }
       ]
     },
@@ -159,6 +159,6 @@
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-22T15:50:39.855Z"
+    "at": "2026-08-23T10:24:07.287Z"
   }
 }

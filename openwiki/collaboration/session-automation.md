@@ -14,6 +14,8 @@ sources:
     resource: repo://tools/hooks/commit-stop.sh
   - id: openwiki-source-2cd8494ca40e3254ac097611
     resource: repo://tools/hooks/design-primer.sh
+  - id: openwiki-source-fd1a6e57ae515b99b5738b11
+    resource: repo://tools/hooks/fremdmodell-riegel.sh
   - id: openwiki-source-6e8b720fc9a1d660df2ad418
     resource: repo://tools/hooks/git-automatik-probe.sh
   - id: openwiki-source-06ae03db6b94d5384fee9f4a
@@ -34,10 +36,10 @@ sources:
     resource: repo://tools/hooks/session-start-marker.sh
   - id: openwiki-source-0bb50aef357b01738b1e12b7
     resource: repo://tools/hub/test_stop_hook.sh
-generated: {by: "claude-code", at: "2026-08-22T17:37:04.217Z"}
+generated: {by: "claude-code", at: "2026-08-23T10:03:23.427Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-22T17:37:04.217Z
+    at: 2026-08-23T10:03:23.427Z
 ---
 
 # Session automation
@@ -55,6 +57,7 @@ flowchart LR
     Start[SessionStart] --> Marker[Create session marker]
     Start --> Primers[Inject product, depth, Hub, design summaries]
     Pre[PreToolUse] --> GitGate[Git safety gate]
+    Pre --> ModelGate[External-model read-only gate]
     Pre --> Gates[Prototype and legacy design gates]
     Post[PostToolUse] --> Advice[Realtime and schema reminders]
     Post --> Push[Push commits ahead of upstream]
@@ -73,18 +76,29 @@ The configured primers summarize repository state:
 - `nakama-primer.sh` extracts the marked truth block from root `CLAUDE.md`,
   then adds recent commits and at most ten dirty paths;
 - `hub-primer.sh` reads only local `docs/hub/hub.json` plus Git drift and never
-  contacts the deployed briefing endpoint;
+  contacts the deployed briefing endpoint; its completion and next-step status
+  vocabulary matches the generated local plan view;
 - `design-primer.sh` reports local design-document, latest-acceptance, Figma
   snapshot, and design-contract state;
 - `depth-primer.sh` injects the repository's deeper-review guidance.
 
 ## Write gates and post actions
 
-PreToolUse first applies `git-riegel.sh` to Bash and PowerShell commands. It
-blocks broad staging without an explicit pathspec, amend, force-push,
-destructive reset or cleanup, mass discard, and forced branch deletion. The
-explicit `NAKAMA_GIT_RIEGEL_AUS=1` prefix is the emergency bypass for a user-
-authorized exception.
+PreToolUse first applies `git-riegel.sh` and `fremdmodell-riegel.sh` to Bash
+and PowerShell commands. The Git gate blocks broad staging without an explicit
+pathspec, amend, force-push and forcing refspecs, remote deletion, destructive
+reset or cleanup, mass discard, and forced branch deletion. It recognizes Git
+behind an absolute path and options such as `-C`; quoted prose is not treated
+as a command. The emergency bypass works only when
+`NAKAMA_GIT_RIEGEL_AUS=1` is actually set at a command boundary, not merely
+mentioned in a comment or message.
+
+The external-model gate keeps Antigravity/Gemini invocations in an audit role.
+Ordinary `agy` calls and plan mode remain available, while
+`--dangerously-skip-permissions` and `--mode accept-edits` are blocked because
+they authorize unattended writes. This is a command-surface restriction, not
+a claim that an external model's findings are correct; findings still require
+repository evidence.
 
 The other PreToolUse group applies the legacy `eq-copilot/design/`
 creative-release gate and the `design/prototyp/` design-contract gate. Their
@@ -115,7 +129,7 @@ without introducing a configured SessionEnd action.
 
 ## Focused checks
 
-The repository supplies Bash probes for the two blocking workflows:
+The repository supplies Bash probes for the blocking and lifecycle workflows:
 
 ```bash
 bash tools/hub/test_stop_hook.sh
@@ -126,7 +140,8 @@ bash tools/hooks/git-automatik-probe.sh
 The first covers block, no-commit, Hub-touched, recursive, and repeated Stop
 conditions. The second exercises allowed and denied Write, Edit, and Bash
 destinations, including source-versus-destination and heredoc edge cases. The
-third checks blocked and allowed Git commands plus auto-push's local gate.
+third checks blocked and allowed Git commands, both directions of the external-
+model gate, and auto-push's local gate.
 
 New lifecycle behavior belongs in `.claude/settings.json` with a narrowly
 scoped script and both pass and block tests. Keep real Hub synchronization in

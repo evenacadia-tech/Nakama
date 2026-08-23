@@ -21,7 +21,7 @@ sources:
 generated: {by: "claude-code", at: "2026-08-22T15:50:39.855Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-22T15:50:39.855Z
+    at: 2026-08-23T10:24:07.287Z
 ---
 
 # Broker service lifecycle

@@ -14,6 +14,10 @@ sources:
     resource: repo://design/assets/figma/LIES-MICH.md
   - id: openwiki-source-67cd3bebc4120709a33eba8e
     resource: repo://design/docs/arbeitsplan.md
+  - id: openwiki-source-f7b501308aa49855daf474fe
+    resource: repo://design/docs/interaktions-und-motion-spezifikation.md
+  - id: openwiki-source-c2986483e5dcca20fd70a326
+    resource: repo://design/docs/oberflaechen-spezifikation.md
   - id: openwiki-source-6d2cf17a390c97ede7b7186e
     resource: repo://design/LIES-MICH.md
   - id: openwiki-source-72fecea180aa55c1f523d84b
@@ -22,10 +26,10 @@ sources:
     resource: repo://design/werkzeug/pruefung/pruefen.mjs
   - id: openwiki-source-45f03cf42412683cac56f96d
     resource: repo://design/werkzeug/pruefung/sondenprobe.mjs
-generated: {by: "claude-code", at: "2026-08-22T15:50:39.855Z"}
+generated: {by: "claude-code", at: "2026-08-23T10:03:23.427Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-22T15:50:39.855Z
+    at: 2026-08-23T10:03:23.427Z
 ---
 
 # Design workflow
@@ -53,7 +57,8 @@ Repository responsibilities are deliberately separated:
 - root `CLAUDE.md` owns product truth;
 - `assets/figma/` preserves visual-source evidence;
 - `abnahmen/` records binding user judgments;
-- `docs/arbeitsplan.md` owns sequence and current work;
+- `docs/arbeitsplan.md` owns sequence and current work, while the surface and
+  interaction specifications own content/state and gesture/motion details;
 - `werkzeug/` contains measurement and falsification tools;
 - `prototyp/` is the implementation surface for living design sheets.
 
@@ -86,6 +91,22 @@ flowchart LR
 A new Figma state restarts the comparison at the source. When it conflicts
 with a recorded acceptance, or required content is absent from the image, the
 translator raises the mismatch rather than inventing a resolution.
+
+## Interaction and motion handoff
+
+`docs/interaktions-und-motion-spezifikation.md` complements the current Figma
+states without changing their layout or visual language. It defines how the
+visible controls and states react: direct band dragging, draft/audition/apply
+transitions, Gen's measurement-to-advice flow, and Suna's compact status
+behavior. It may not introduce measurements or product states that are absent
+from the owning surface specification and technical contracts.
+
+The visual presentation uses an approximately 140 ms ease-out without spring
+or bounce. That number is not an audio contract. Parameter ramps and DSP
+crossfades remain tied to measured technical behavior, while Figma variants or
+motion demos show the intended visible transition. Before implementation
+handoff, the required interaction sequences still need explicit visible start
+and end states in the design evidence.
 
 ## Exactness boundary
 

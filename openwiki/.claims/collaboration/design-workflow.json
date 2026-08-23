@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5e1c15ea162e96a5d6f36ca06aa3685e54f3308576d53d0975b914e0d66f3155",
+  "pageVersion": "sha256:554c9fdcc96cbffa111e4d93fe9e4b3be513c05ff124d9ad932760c5601d9124",
   "claims": [
     {
       "id": "claim_1e2563b8402a4f2684f3f5d5c11e0108",
@@ -171,10 +171,38 @@
           "version": "repo-lines-v1:sha256:0f6620b642654da10067ee49c84066dd78ab4dd101816399f3443a2796b0e3dd:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzNzkwNzg5NTdjNmRlMzRjNjkxZTk1OWJhOWZiMDVkZGRiZTZhNzMyMTEyNTNkZjM5NDM1MDZiODNkZjI2NWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM1MTEwYTVmYWQyMWZhZGRmNzdiNDgwNzQ1NDA0M2VmOTIyZWY2ZWY2ODlkM2NkMzI1NjMyZGJlY2FlNzRjMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ3YzUyOTBjMmY5MjNlZjg4NjBiYTM0Nzg3ODIyZmRlNDgyNjM3N2Y5OTNmYjgyNGIzODQxNzcyZThlM2MzZTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY1NjI1NmNhNjlkY2M4NDEwN2Q4NDcwMzM3YmJiMWMxMDExYzVhZTI0MzdmOThkNmJkMzVmMzA2ODQzMTMxMzQifQ"
         }
       ]
+    },
+    {
+      "id": "claim_8ed8ff95eb2e4c1aa6666b0ab3ce6a59",
+      "statement": "The interaction-and-motion specification complements the binding Figma layouts by defining how visible controls and states react without introducing new measurements or product states.",
+      "evidence": [
+        {
+          "resource": "repo://design/docs/interaktions-und-motion-spezifikation.md#L1-L22",
+          "version": "repo-lines-v1:sha256:342e55319451233e5333cbe8e028579c3c961cacec2446d0932881ea06ba3517:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYyNzk1Mjg4YjU3Y2IxYTEyM2M4MjYyYzZjOTU3Nzk0NzYxODliZDUwYTFmNmJlMTZjNjA3YzEwYTBmY2ViNWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhhNzM1ZTc1MGQyYjA0NzE4MDQwOTBlY2U2MzkzYWVjMjBjMmUwZmM3ZTk4NmU2ZGVjYTFlMWExOTRkNTEwNzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVhYmJhMDZjMDI3YTAzODUxYmNkYzEwZDk1NTNjODNjNDJjZjgyN2UyMjM0NjM2N2RlOWZkMDZhZDY3ZjhkNTAifQ"
+        },
+        {
+          "resource": "repo://design/docs/oberflaechen-spezifikation.md#L1-L15",
+          "version": "repo-lines-v1:sha256:296e51461c0981e0f1a4e0552cf485921a56a98663df4565c6ec1151399d4ed9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3MzY2MDcwNzEwZmFlMTJiZDhiMGY5MDQ4M2Q1ZTdlNWY5ZWJjYjc0NjBhYzA5NzM4ZDA1NmNjZGIwNWE4NzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhNWU0YzAzZTJiNDkxOGFkOTc0MGI5YzcyMjkxMzljMjM2N2RlNmU0ODIwNzdiOTUzMjgxN2EzNjM5MzdhNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBkMDkxOTEyY2MzNTYyNTgzODMyOWQ3ZDAzYTk2NDdmNmQzNGJjMzgxZDFmYjgzZmZhNDUyMjYwOGQyMDQ3YWQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4045b2ddc206425daf5446bfd58e594c",
+      "statement": "The approximately 140 ms motion value is a visual presentation requirement only; audio ramps and DSP crossfades remain governed by technical, measurable parameter contracts.",
+      "evidence": [
+        {
+          "resource": "repo://design/docs/interaktions-und-motion-spezifikation.md#L17-L22",
+          "version": "repo-lines-v1:sha256:9d7c660f213a055fc7656652bb7e9541e86dd1b34605e3e0008c7e04dc2a17f2:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTcyNzhiMDIwNTZiYzI3M2U2YTM2ZjdkYTRjYWEwM2Y4ODk2Njk4NmQzNGMxYTgwZmUxYzNhMWNkZTg2ZDBhYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOGE3MzVlNzUwZDJiMDQ3MTgwNDA5MGVjZTYzOTNhZWMyMGMyZTBmYzdlOTg2ZTZkZWNhMWUxYTE5NGQ1MTA3NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjEwYzg0N2IzODhlN2QzYWE2YmI1MTQ1YTc3YjU3OTY5M2IxNmYxZTIzYTk2NGZmYTY5M2UwZmY5NGRmOWRlZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWFiYmEwNmMwMjdhMDM4NTFiY2RjMTBkOTU1M2M4M2M0MmNmODI3ZTIyMzQ2MzY3ZGU5ZmQwNmFkNjdmOGQ1MCJ9"
+        },
+        {
+          "resource": "repo://design/docs/interaktions-und-motion-spezifikation.md#L133-L149",
+          "version": "repo-lines-v1:sha256:b8d82c6544a782b217af1e8a7d44f2ac729aaa683f620575f5bcf48431096d5f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2MjlkZWMxYWRkOWZjMGM0ZTQ4MjgzN2UzYTAxNTVmNzYwOWI2MzE4M2ZiNGMxY2FkNDI5YWQ2NTNhNWQyNmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmNzM2NTc0MzE5NTgxMWI3YjIzZWI1MDlhYWZjMmY3ZTlkYTA1MDRmMTI3MjczZGRjYWFkYTk1MWI2NzRmYjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkwYjBlNGM1MThjNWJjYTU0YzVhNmYxNzhkMDMzOGIyMDUzMDdkY2E5Njc4ODg5YzkxZmJmZmI4MWQwZjFjYzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY2N2JhMTk3ZmNkNTA5MmJmMWFhOTgzZTY0ODQxNWM2YjYzZWFkYzEwOTViZGM4YTg3OTYwMGVkMGJlMTMxZmIifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-22T15:50:39.855Z"
+    "at": "2026-08-23T10:03:23.427Z"
   }
 }

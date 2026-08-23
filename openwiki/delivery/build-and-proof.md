@@ -12,28 +12,46 @@ sources:
     resource: repo://broker/Cargo.lock
   - id: openwiki-source-e583d5ab37a07999439f7776
     resource: repo://broker/Cargo.toml
+  - id: openwiki-source-8c00b798547093381146e14f
+    resource: repo://docs/beweise/SONDE-007b.md
   - id: openwiki-source-8ede72b47276d5994a67791f
     resource: repo://docs/beweise/VORLAGE.md
   - id: openwiki-source-3b86c650ee8ef53fce40b450
     resource: repo://eq-copilot/cmake/NakamaFlatBuffers.cmake
+  - id: openwiki-source-a116440ab220f7233740fbf3
+    resource: repo://eq-copilot/cmake/NakamaIdentitaet.cmake
+  - id: openwiki-source-5abaadb23a6172bb86e411f3
+    resource: repo://eq-copilot/cmake/NakamaKern.cmake
   - id: openwiki-source-c3029ad49119415f8327accf
     resource: repo://eq-copilot/CMakeLists.txt
+  - id: openwiki-source-37e9aacc0356f8ec75bf7c61
+    resource: repo://eq-copilot/install/Install-Nakama.ps1
   - id: openwiki-source-71e7d4e3896d39625d69a0a7
     resource: repo://eq-copilot/plugin/CMakeLists.txt
   - id: openwiki-source-f780b20513754b3fdca3ce27
     resource: repo://eq-copilot/plugin/src/EqCopilotIds.h
+  - id: openwiki-source-84273268d8e1fa6f4315efab
+    resource: repo://eq-copilot/plugin/state/NakamaKernRiegel.h
+  - id: openwiki-source-a0a99c4dc2a7fccd852337ce
+    resource: repo://eq-copilot/plugin/tests/IdentityTestMain.cpp
   - id: openwiki-source-ad2376c5da28a40e4d710101
     resource: repo://eq-copilot/plugin/vertrag/generiert/nakama_telemetry_v1_generated.h
+  - id: openwiki-source-06e886aa87b57703eafe8c28
+    resource: repo://eq-copilot/schemas/installer/nakama-installer-v1.md
   - id: openwiki-source-bb8011d65e3d1ca7e008a187
     resource: repo://eq-copilot/schemas/v3/flatbuffers/WERKZEUG.json
   - id: openwiki-source-b9796d70c5f0967a458166b1
     resource: repo://tools/beweise.ps1
   - id: openwiki-source-6800e857bf3a2264beb57f17
     resource: repo://tools/eq-copilot/pruefe_flatc_drift.py
-generated: {by: "claude-code", at: "2026-08-22T15:50:39.855Z"}
+  - id: openwiki-source-7801e6da4b9b92f6f91e062f
+    resource: repo://tools/eq-copilot/pruefe_installer_manifest.py
+  - id: openwiki-source-4c899d7ff6a890ebbfac0687
+    resource: repo://tools/eq-copilot/pruefe_kern_identitaetsfrei.py
+generated: {by: "claude-code", at: "2026-08-23T10:03:23.427Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-22T15:50:39.855Z
+    at: 2026-08-23T10:03:23.427Z
 ---
 
 # Build and proof
@@ -68,28 +86,48 @@ exit 3, measured mismatch or drift exits 2, and a clean result exits 0.
 
 ## Native target map
 
-`eq-copilot/plugin/CMakeLists.txt` owns one product VST3, `EqCopilot`, plus
-disposable measurement plugins and focused headless test executables. Shared
-state-and-binding sources are supplied by one helper rather than copied into
-target definitions. The public `NAKAMA_HOST_BRIDGE=1` definition propagates
-into JUCE wrapper compilation.
+`eq-copilot/plugin/CMakeLists.txt` owns three product VST3s: `EqCopilot`,
+`NakamaSuna`, and `NakamaProbeeq`. The first is the current Gen analyzer;
+the latter two are thin identity and product-class layers over the shared
+`SondeProcessor`. Disposable measurement plugins and focused headless test
+executables remain separate from those shipped targets. The public
+`NAKAMA_HOST_BRIDGE=1` definition propagates into the EqCopilot JUCE wrapper.
+
+Names, vendor and plugin codes, and VST3 categories come from
+`identity/plugin-identities-v1.json` through `NakamaIdentitaet.cmake`. The
+reader does not invent defaults: a missing target or a missing, empty, or
+`null` identity field stops configuration. Class IDs are deliberately not read
+by CMake; JUCE derives them, and `EqCopIdentityTest` compares the resulting
+`moduleinfo.json` for all three products with the frozen manifest.
+
+State, parameter, canonicalization, v3 text-guard, and lifecycle sources are
+compiled once into the static `NakamaKern`. Its JUCE header facade inherits
+headers, definitions, and options without compiling a second copy of JUCE
+module sources. Five complementary checks protect the boundary:
+
+- K1 rejects named bundle-identity macros while compiling the kernel;
+- K2 inspects the kernel's CMake link closure for identity definitions;
+- K2b compares relevant JUCE configuration with every kernel consumer;
+- K2c compares the recommended compiler switches with every consumer; and
+- A14/K3 inspects the built static library for frozen names, codes, CIDs, and
+  unexpected objects, with the built main bundle as a positive countercheck.
 
 Representative focused targets include host context, HostProbe, AuxSpike,
 state, pipe, analysis, marking, schema, and editor tests. Add a new native proof
 target beside the existing map, then add its runner leg and freshness inputs.
 
-The current A1-A13 canon is complete and explicit: Null, analysis-golden, and
-marking native tests; the Rust broker test suite; v3 schema coverage, band-grid,
-quantization, and fixture regeneration; FlatBuffers drift and fixture checks;
-v2 schema validation; state fixtures; and host-capability reconciliation. Its
-phase-native entries are Identity, StateMigration, HostContext, HostProbe, and
-Schema tests. QueueStress, AnalysisGolden v2, DspGolden, and Transaction are
-declared as planned legs and automatically become required once their targets
-exist.
+The canon currently has 23 runnable legs. A1-A17 cover main and probe audio,
+the Rust broker, JSON and FlatBuffers contracts, regenerated fixtures, host
+capabilities, kernel identity, and the installer manifest. The runnable
+phase-native entries cover Identity, StateMigration, HostContext, HostProbe,
+Schema, and Lifecycle. QueueStress, AnalysisGolden v2, DspGolden, and
+Transaction remain planned and automatically become required once their
+targets exist.
 
-`EqCopilot_VST3` is a separately built measured target rather than a canon
-executable. `EqCopIdentityTest` inspects its `moduleinfo.json`, so the artifact
-whose identity reaches the host is part of the build evidence.
+`EqCopilot_VST3`, `NakamaSuna_VST3`, `NakamaProbeeq_VST3`, and `NakamaKern`
+are separately built measured targets rather than canon executables. The
+identity and kernel checks inspect those host-visible or linked artifacts, so
+the evidence does not stop at CMake declarations.
 
 ## Canonical evidence flow
 
@@ -130,13 +168,37 @@ timestamped log before the run aborts. A manifest is incomplete without raw
 output and an explicit review/disposition record; use `docs/beweise/VORLAGE.md`
 instead of an unstructured log.
 
+## Installer and rollback contract
+
+`schemas/installer/nakama-installer-v1.md` defines one manifest-driven package
+for the three VST3s and broker. The versioned delivery manifest identifies a
+VST3 only by its identity-manifest ID and CMake target. Its bundle source path
+is derived from those two authorities; product names, plugin codes, and CIDs
+are not copied into a second delivery identity table. Canon leg A17 checks this
+mapping and exercises deliberately corrupted manifests as counterexamples.
+
+`Install-Nakama.ps1` validates the entire plan before copying anything. A
+`null` hash means the package has not been frozen for delivery and causes an
+immediate refusal. Missing sources or hash mismatches also stop the run.
+Authenticode is checked only when a thumbprint is configured; the current
+manifest explicitly says that it is not checked without a certificate.
+
+Before replacement, the installer saves the file actually found at each
+destination and records its old and new hashes. `-Rueckweg` restores those
+captured files, or removes a newly introduced target when no predecessor
+existed. For plugin bundles, an unknown predecessor hash or a lower state
+schema is treated as a destructive downgrade and requires explicit
+`-Erzwingen`. Installation and rollback are user-invoked elevated operations;
+the repository does not run them automatically.
+
 ## Focused commands
 
 ```powershell
 cmake -S eq-copilot -B eq-copilot/build -G "Visual Studio 17 2022" -A x64
-cmake --build eq-copilot/build --config Release --target EqCopHostContextTest EqCopHostProbeTest EqCopAuxSpikeTest
+cmake --build eq-copilot/build --config Release --target EqCopilot_VST3 NakamaSuna_VST3 NakamaProbeeq_VST3 EqCopLebenslaufTest
 cargo test --manifest-path broker/Cargo.toml --color never
 py -3.13 tools/eq-copilot/pruefe_flatc_drift.py
+py -3.13 tools/eq-copilot/pruefe_installer_manifest.py
 ```
 
 For the briefing site, Node `22.13` or newer is declared. `package-lock.json`

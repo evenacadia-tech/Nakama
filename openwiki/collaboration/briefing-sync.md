@@ -10,12 +10,16 @@ sources:
     resource: repo://briefing-hub/app/api/state/route.ts
   - id: openwiki-source-656f4de3c56cf52f86685c9e
     resource: repo://docs/hub/LIES-MICH.md
+  - id: openwiki-source-8727fc48a62353a2f50be6db
+    resource: repo://tools/hub/antworten_blatt.py
   - id: openwiki-source-62c36f02c52e1a4c49232f4f
     resource: repo://tools/hub/hub_sync.py
-generated: {by: "claude-code", at: "2026-08-22T15:50:39.855Z"}
+  - id: openwiki-source-2cb73290515618c3785da4bb
+    resource: repo://tools/hub/plan_blatt.py
+generated: {by: "claude-code", at: "2026-08-23T10:03:23.427Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-22T15:50:39.855Z
+    at: 2026-08-23T10:03:23.427Z
 ---
 
 # Briefing synchronization
@@ -43,6 +47,22 @@ The target URL comes from `NAKAMA_HUB_URL` when set, otherwise from `hub_url`
 in the repository document. Requests use a 30-second timeout and a custom user
 agent. Because the environment variable redirects both reads and writes, treat
 it as a deployment trust boundary.
+
+## Derived local views
+
+Two additional tools render repository-only reading views from the same Hub
+source:
+
+```powershell
+py -3.13 tools/hub/antworten_blatt.py
+py -3.13 tools/hub/plan_blatt.py
+```
+
+The first rewrites `docs/ANTWORTEN-OFFEN.md` from answer lifecycle data; the
+second rewrites `docs/PLAN-STAND.md`, including its Mermaid progress view.
+Both outputs are disposable projections and are overwritten completely on
+each run. Change `docs/hub/hub.json`, not either generated Markdown file, then
+use the normal validate-and-send workflow when the shared state should change.
 
 ## Pull and incorporation
 

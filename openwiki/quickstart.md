@@ -1,11 +1,10 @@
 ---
-type: Overview
-title: Nakama quickstart
-description: Orients contributors to the current plugin and broker runtime, prepared family contracts, delivery evidence, and collaboration workflows.
-tags:
-  - overview
-  - architecture
-  - navigation
+type: "Reference"
+title: "Nakama quickstart"
+openwiki_generated: true
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-23T10:03:23.427Z
 sources:
   - id: openwiki-source-6d4b4e707b8d60b6ccfa3425
     resource: repo://.github/workflows/openwiki-update.yml
@@ -25,12 +24,18 @@ sources:
     resource: repo://design/LIES-MICH.md
   - id: openwiki-source-71e7d4e3896d39625d69a0a7
     resource: repo://eq-copilot/plugin/CMakeLists.txt
+  - id: openwiki-source-241a5ddefd7551ffad5b4cd4
+    resource: repo://eq-copilot/plugin/sonde/SondeProcessor.cpp
+  - id: openwiki-source-4a4c345926a8944110cc12e3
+    resource: repo://eq-copilot/plugin/sonde/SondeProcessor.h
   - id: openwiki-source-f780b20513754b3fdca3ce27
     resource: repo://eq-copilot/plugin/src/EqCopilotIds.h
   - id: openwiki-source-b9bdb2eeb341991ef4dd964b
     resource: repo://eq-copilot/plugin/src/PipeClient.cpp
   - id: openwiki-source-5a8cd5b65a1c7fa70f8bf898
     resource: repo://eq-copilot/plugin/src/PluginProcessor.cpp
+  - id: openwiki-source-0943c58ff1bce1e8bb1ba64d
+    resource: repo://eq-copilot/plugin/tests/SondeNullTestMain.cpp
   - id: openwiki-source-837d41a393a054d97a0b2271
     resource: repo://eq-copilot/schemas/eq-ipc.schema.json
   - id: openwiki-source-354d48e4a519e2dbf1225ae6
@@ -43,13 +48,8 @@ sources:
     resource: repo://tools/beweise.ps1
   - id: openwiki-source-62c36f02c52e1a4c49232f4f
     resource: repo://tools/hub/hub_sync.py
-generated: {by: "claude-code", at: "2026-08-22T15:50:39.855Z"}
-  by: claude-code
-  at: "2026-08-22T15:50:39.855Z"
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-22T15:50:39.855Z
 ---
+
 # Nakama quickstart
 
 Nakama is an FL Studio mixing-advice plugin family: **Nakama Gen** is the main
@@ -60,11 +60,17 @@ Current code, bundle, and pipe identifiers still use the legacy EQ-Copilot and
 
 ## What exists today
 
-The current native product build creates one `EqCopilot` VST3 analyzer. It
-links `EqCopilotProcessor`, the current editor, `PipeClient`, the analysis
-engine, and diagnosis logic. A standalone Rust broker owns the Windows named
-pipe, live sensor register, derived sessions and pairs, profile bindings, and
-aggregate export.
+The native product build now creates three VST3 bundles. `EQ-Copilot.vst3` is
+the current Nakama Gen implementation: it links `EqCopilotProcessor`, the
+current editor, `PipeClient`, the analysis engine, and diagnosis logic.
+`Nakama Suna.vst3` and `Nakama Probeeq.vst3` are newly built product shells
+over one shared `SondeProcessor`. They have frozen identities and state
+contracts but currently expose no editor or host parameters. Both are
+sample-identical pass-through processors today; Probeeq's EQ processing is
+still future work.
+
+A standalone Rust broker owns the Windows named pipe, live sensor register,
+derived sessions and pairs, profile bindings, and aggregate export.
 
 The repository also contains the deployed briefing application, the active
 Figma-to-browser design workflow, delivery evidence, and versioned cross-language
@@ -73,21 +79,26 @@ are not additional shipped audio plugins.
 
 ```mermaid
 flowchart LR
-    Host[FL Studio audio callback] --> Plugin[EqCopilot VST3]
-    Plugin --> FIFO[Lock-free analysis handoff]
+    Host[FL Studio audio callback] --> Gen[EQ-Copilot / Gen VST3]
+    Host --> Suna[Nakama Suna VST3]
+    Host --> Probeeq[Nakama Probeeq VST3]
+    Gen --> FIFO[Lock-free analysis handoff]
     FIFO --> Analysis[Analysis worker and snapshots]
     Analysis --> Editor[Current editor]
     Analysis --> Client[Compact v2 heartbeat]
     Client --> Pipe[Windows named pipe]
     Pipe --> Broker[Rust broker register]
     Broker --> Sessions[Sessions, pairs, bindings, aggregates]
+    Suna --> Dry[Current dry pass-through]
+    Probeeq --> Dry
 ```
 
-The plugin observes host audio, preserves the dry path unless an audible
+The Gen processor observes host audio, preserves the dry path unless an audible
 marking is explicitly authorized, and publishes analysis snapshots outside the
 audio callback. `PipeClient` sends compact measurements using production JSON
 protocol v2. The broker validates framing and messages before admitting them
-to its in-memory register.
+to its in-memory register. The two probe shells do not yet participate in that
+analysis or pipe flow.
 
 ## Current versus prepared contracts
 
@@ -113,8 +124,8 @@ For plugin runtime work:
 - [Analysis engine](plugin/analysis-engine.md) — measurements, active-time
   windows, evaluation, snapshots, and deterministic diagnoses.
 - [State and identity](plugin/state-and-identity.md) — state schema, migration,
-  read-only preservation, runtime identity, host-dirty signaling, and the
-  future parameter inventory.
+  read-only preservation, lifecycle classification, per-bundle identity,
+  host-dirty signaling, and the prepared parameter inventory.
 - [Editor and diagnostics](plugin/editor-and-diagnostics.md) — current editor,
   visible failure states, snapshot export, and headless visual tools.
 
@@ -138,7 +149,8 @@ For shared contracts:
 For construction and evidence:
 
 - [Build and proof](delivery/build-and-proof.md) — dependency pins, version
-  gates, target map, validation commands, freshness, and evidence manifests.
+  gates, three product targets, shared-kernel guardrails, installer contract,
+  validation commands, freshness, and evidence manifests.
 - [Host capabilities](delivery/host-capabilities.md) — JUCE patch, realtime
   bridge, disposable probes, FL Studio reports, and adoption boundary.
 

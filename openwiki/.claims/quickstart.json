@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9e4cacaa674ac67bf5f46d067baef5513a2d389b15c4a7070e4678df6fa1ce9e",
+  "pageVersion": "sha256:50f1868795e0abbea5b1d40be5c836f3af95a699fc5c681ba2e9ed7f5db6e22a",
   "claims": [
     {
       "id": "claim_f11a403300344d0ebd8f415690820173",
@@ -28,11 +28,15 @@
     },
     {
       "id": "claim_b88d7d19e08c431588f492e3a67275a5",
-      "statement": "The current native product build creates one EqCopilot VST3 analyzer and links its processor, editor, pipe client, analysis engine, and diagnosis implementation.",
+      "statement": "The native product build creates three VST3 bundles: the EqCopilot main analyzer plus Nakama Suna and Nakama Probeeq built from a shared probe processor.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/CMakeLists.txt#L1-L48",
-          "version": "repo-lines-v1:sha256:88bd3afc66a2a4ef6b452e3b4356d140d78772c7303431706f93475a56d29161:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4YjY0ODk3YjI5MmFkN2NkN2JiNGE0YjNkZGYzNzgxY2FjZDM5NWI0ODk0ZDZhMWUwMmY2YzIzMDgzNmI5ZDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE3N2Y0NDhkNWNkMTJiMjZlZDhkYzE0ZGM5OWQ1MDRmNjQxMmExMzQ2OGRmMDA0NjA3OTc3N2VmNGEyN2UyYmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJmMjZiYzA0YWVmNTJjMTg2MzEwNDA0NGI5N2ZiNjQ1YTYyMTU4MzI0N2ZjMzE4YzA3ZWY1MjFiNDU1YWE1OWEifQ"
+          "resource": "repo://eq-copilot/plugin/CMakeLists.txt#L32-L56",
+          "version": "repo-lines-v1:sha256:4e0c4fb9bfa11b5b6ccf93186337821730df13264f2db00f587b867c3e9d8a49:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBiNTJjNjhmYWY5ODE4NjJkMTUyOGJlZTg1Mjg0ZDMyNTEzOWRlMjhmMDc0NjNjM2RiMTZjNTg3ZGEyZmE2ODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhZmJhMDUyN2MzOTUzYzRiNmUwZTViNTczOWJhODM2MTJmODA1M2JjZGM5NDY2NzMwMTkzY2QxZDU5MGI0MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1Zjk1ZThlMWUxZjAxZDgyZTBjYjRiY2RjMTA4ODg1ZjBkNmM0MTJkYzdkODYxZTNlMDhhNWU0OWQwZjc5ZTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzODA2MjU1MGRjZjEwOGNiNmQ3ZGZjYjUyMjA4ZDRkMjEzMDI0NzY3OTQ3YjQyOWUyMjgxN2RhYzQwMjBkZjQifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/CMakeLists.txt#L170-L244",
+          "version": "repo-lines-v1:sha256:5e105fece91827e3ad1db0656c3f094044403a5e89948a5e918efe3070a98bc7:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4YmIzMzNhN2Y2Y2FlMjZhYzBhNzg5ZmM0NTE5YWRjNmJiNGFlMWNjZTNmNzdjMjY3NDRlMzMwMjc2ZGUzZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkODQzOTZhZWY5ZmExMjY5OTYwN2VjZDBkZmI1ZjU4MGZmYzQyODhkY2VjZDNlMTBkYzFiYWU0ODAyZWVjZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdjNzI2ZWNmMjNiYTEyNWNiMjhmMzM4YWFlMjViMzIyODg3ZmEwM2QxZWVmOGY0NzMyMmNlM2VkN2FhNGVjNWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljOWUwMWEwYTM2YzUxY2VjYmQ2ZWVkNDY3YjlkZjU0YjhjYjIzODJiODgyNzIxZDZmMjY2NDZhODBmYzMzNGEifQ"
         }
       ]
     },
@@ -56,15 +60,11 @@
     },
     {
       "id": "claim_da6b33455c6b4dce92e9de8d2c93c4bf",
-      "statement": "The plugin observes and analyzes host audio, publishes compact measurements through PipeClient, and the broker admits validated heartbeats into its live register.",
+      "statement": "The EqCopilot main processor analyzes host audio and publishes compact measurements through PipeClient, while the broker admits validated heartbeats into its live register.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L12-L42",
-          "version": "repo-lines-v1:sha256:ac4354cdf21859152d93c3c243693122275af437640cd201ad9f351b9880d1e0:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkYmNhOGIyMWRmNWFiOWMxY2EyMDQ1Y2JhZWM1NzExMDgxN2RiOTIwMTdjYWE0OTMyYTNjMzA2MTEwZjY2ZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0MDkzM2ZmZTQxNjJjM2I1MTk3ZDg0NDY3ZTY4MTcyZDgxNmFhOTA1ZmRjNDU1OWY0YjQ4NWZiZjVlNGI1NGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4MjBjMTdiMjBhMWM5ZjhmY2I1NTQwYTQ1N2M1NTVmZjE3OTE3MjMwNDc0ZDAwNDgwMzVjZGMxYTE4YmZlMDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwNDFkNWUxYWQzNmJmZmI1YmFhZjgwM2UwNWNlNWRlNDVhNTcwMzcyOTNjZjRhOTVmODE3YzAxZGMxNzk3NmYifQ"
-        },
-        {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L112-L180",
-          "version": "repo-lines-v1:sha256:f5593de2f1f4cc15b4524a5783f296349d4d5ddfe8adfda5b78bf88f3885b5c6:eyJzZWxlY3RlZExpbmVDb3VudCI6NjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlYWU2MDRhNDcwM2M2MmJiYjhjZTQwMzgxY2IzZTQ5NTVmNmYwY2U2MTE2MjA3M2RhNWY4NjllNTczMzliNjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5NTUzZjk3ZjAxYzk4NTExOTI4MzkwNGFlOWEyMTMzYzI2ZTRiMTljZDhhZWMyYzQwMDlmNzkyMWU4YmQ5NjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5YzQ4NDZhZDhmYTc3NGVmYjlhZmMzM2FhZWFkNTI4MGZhOGU1MWE1NTZhOThiOTIzMGY5NmNmMTg3MTMyNDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE2OGMzMDM4OWU3NTNiYjEyNjM4ZTdmYjViODcyNjRiYjU3OWQ3YmUxMzUxZDY1MDczMmNlMmYxMTY3NGM3ODAifQ"
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L95-L222",
+          "version": "repo-lines-v1:sha256:47179e995b70cc263bda6903665388fff6aad962e668c17e7a227304cd464239:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5NmVjOGFhMzE0NGFkZjdiMzU4MzI5NDBmOGQ5YTA5MWU3M2E5ODE1MTI2Yzk1ODdhOWJlMjVhNzMyN2E5MzQ5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3NWI1MDljNmIzYTVjNmMyYjNhYzRhODQ3YTA5OGZlMjI3ZmIwZGU1ZGExMGYxOGMxYTU3NjE2ZGU0N2QxZDNhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5MTUzMTExZDY4OTk2NTA0YzNhZGZjYWIwYTFiNTA1MDcxMDVhYWZkNDMzYzQ0YmMxNDEzZmZlMGM5YjRjNmM3In0"
         },
         {
           "resource": "repo://eq-copilot/plugin/src/PipeClient.cpp#L226-L287",
@@ -149,10 +149,38 @@
           "version": "repo-file-v1:sha256:16a80864d57b5b7381813d7cd7f4afad61885afe58be57902a8113406f9b5a93"
         }
       ]
+    },
+    {
+      "id": "claim_fef46b381a5b4d5d9c42f24157a13f2a",
+      "statement": "Nakama Suna and Nakama Probeeq currently expose neither an editor nor host parameters; their shared processor is a deliberately thin shell for the frozen bundle identity and state contract.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/sonde/SondeProcessor.h#L95-L124",
+          "version": "repo-lines-v1:sha256:a0e113e37e58f64ee892fa0b806548d550f98b531f33b240aa0201d9ae1251dd:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwNmI4NDZmNWM1ODdiOWYwM2Q0ZDQxYmU5MDAxMzQ4YTYzMjkzNTdlMjA4OGVkZmY3MDVkZmRiOWFhZjVlMGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3MWYwNWMzMDIwZjUzMjE0MzEyY2Y2ZTEyMmU3YjQ0ODMyNTNkOTExYmQ5MmExOTE5ZTMwZGQxYjBiOWY1OTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZkZGJiMGFjYmM5YzFjZTczYmM0ODJmODA4OGRlZTBlM2U2YTM2ZDBkMjk5Y2IzNTM2NzZkOGJmMjFlOGE1ZGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk3ZTBmNjk3YmEzZmEyNWNlMmQ4ZmE4M2RhNGYyNmM0MjdjODU5ZGFkMWQzZGQ0ZGVhMDdmN2E1ZDUzMTcxMjAifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/tests/SondeNullTestMain.cpp#L56-L78",
+          "version": "repo-lines-v1:sha256:0b3c06d53d75bc0e5c739aebacb97d31133b19865cd4c57e705760f7979743a0:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0OWY3OTZjZjczZTZhZjMzNWFiNjE0MjcxZjJmOGUyZmVlYzQ2MmE2NGZiYzJmZTVlZjgwNWU1NjE4ZjgwMDAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNiMjhmNmE4MDc5NWM3MWI0ZjI4MTE3MDIzYTgyNjk3YjUxNDRiMWIyN2Q5N2E0ZjUwZDk0ZWMwMzY5OWJjOGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1MGMxYjUyNzJmZWQ1OGVlMmU3ODVhZWMwMmRmZTg3MTZkZTEzYjY2NzFlYWU1OTcwMjA1NjQ4ZjZjNmY3OTcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7a6b211a0c074f84bb118d0e9be73146",
+      "statement": "Both probe bundles currently pass supported audio through sample-identically with zero latency and no tail; Probeeq's EQ processing is not implemented yet.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/sonde/SondeProcessor.cpp#L28-L64",
+          "version": "repo-lines-v1:sha256:0724696fd42d13ea082d349a70c9b66bfddeb7ffa98d4fa67b14f8b249f214c9:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdhOWJjM2RlZTExOGI4MmZhNDhmZTlhOTBlMzI4Y2Y5N2Y3NzJlYTNlZjcyZmU3MzA0Yjg3ZWUxNzI5OTk4YTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjljNDg0M2Q3NmI5ZjUyOWYyNjE4MjQ1ZGI1ZjlkY2NjNDRjOWJhODZiZTZlZTQxOTBiNzQ0MWM2MTRkMDFhMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM0ZTE4MmZlZGViMWE3YzdlMzA3YjRiZTAzZDU1MjYwMWY1ZDQzZTVmNmYzYWM5OGY2OWVkYjAyNGZmYjhiNGEifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/tests/SondeNullTestMain.cpp#L80-L149",
+          "version": "repo-lines-v1:sha256:e6184b16a4dd8f1aba9dfb20684dc78f9598fd96fa2e6608bc51c3a580d4b1ae:eyJzZWxlY3RlZExpbmVDb3VudCI6NzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhN2Q2MDUzN2I1Zjc1Njk3MDc0NWZiMWYyZDU2NzY5MDVhYzExZjFjMGM4ODFkMDQyZThmZDgwMzk0ODFmYjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiZWJjMDFjNDllMTQ3NzFjZDg2YzljMDM5N2IzMzA0MDJjZDc0YWE5Y2M4OGJmNzFmZTI0MDE5ZmMwOWFkNGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc2MDQ4YTM0OWJlYWZlMjcwM2ZiMWMyODYyMjA0YjQ3OTcyOWE5YzkyNWNlYjg3OTY3ODEwNTVkMmQ3MjAxM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMGRlNTcxNTAzOTBiMzM0OWI1YmJlNWM1M2QzMTM2NTg0ODE5NGJmZDAxODE3NGFkM2VlYmFlZWMzYTZhZTgifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-22T15:50:39.855Z"
+    "at": "2026-08-23T10:03:23.427Z"
   }
 }

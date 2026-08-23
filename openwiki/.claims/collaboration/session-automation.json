@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:13754ff99d9fc3f24ccc6e28df012aeb9da57223d82ee5bc7686e4dfae612c03",
+  "pageVersion": "sha256:add42104475ea81db1e979c7d818fc5948bfc12824dbd1f2493604980f97d853",
   "claims": [
     {
       "id": "claim_a62b47ff16fe4b70bff5ad614c4af185",
       "statement": "Claude Code settings dispatch SessionStart, PreToolUse, PostToolUse, and Stop hooks, but no SessionEnd hook.",
       "evidence": [
         {
-          "resource": "repo://.claude/settings.json#L42-L137",
-          "version": "repo-lines-v1:sha256:ff75e36d5bee1ed3eded6ec4d09de1148e9cda0215cdb9fd50c7f8f37dd1657a:eyJzZWxlY3RlZExpbmVDb3VudCI6OTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhMmI4NWIxOTc1M2Y2MGRkODliZmY3NWUwN2Q3MjU1NGJhN2E2Mzg0YjVlZWExZjhiN2U3YjQxZTU4MWY0MzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjZmQ1MjdlNWMwMWE0MDBhNDgwNzAzY2QzMzAzNGMzNmRjNzUzYWM2NDM0MTkzYzI3NzRjOTFlZGZiNTc1YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://.claude/settings.json#L42-L141",
+          "version": "repo-lines-v1:sha256:38c0270b048666f6c28b1b7313f6b7aa7eabc1d09ceb1fc2b448c725c11279d5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJkYTJiODViMTk3NTNmNjBkZDg5YmZmNzVlMDdkNzI1NTRiYTdhNjM4NGI1ZWVhMWY4YjdlN2I0MWU1ODFmNDM3IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI4Y2ZkNTI3ZTVjMDFhNDAwYTQ4MDcwM2NkMzMwMzRjMzZkYzc1M2FjNjQzNDE5M2MyNzc0YzkxZWRmYjU3NWM0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     },
@@ -44,11 +44,11 @@
     },
     {
       "id": "claim_f86688c0f06c43059f676ed122dfb626",
-      "statement": "The Hub primer reads only local docs/hub/hub.json and Git drift and never contacts the deployed briefing API.",
+      "statement": "The Hub primer reads only local docs/hub/hub.json plus Git drift, and normalizes completion and next-step status words to match the generated plan view.",
       "evidence": [
         {
-          "resource": "repo://tools/hooks/hub-primer.sh#L12-L53",
-          "version": "repo-lines-v1:sha256:b0597f1d157495a734b8826825def7085b06b4e843298abf62a26155ed1056dc:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNTcyNTdkYmZkYTM3MTVhM2ZkZTc2OTVmZTdmMWU5ZGI2YWRiZmI0NzBmOTFhYTc5M2Y4OTBlZjIyZDkzYTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyYjdiMjAxNWJjYTdhMzNmYmUyY2MxMzI0ZmQ3ZWQ3NjI4MTg4MjAyNTYyNTc0OWY4NjY0N2Q5NDlhNGQ2MzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ3MGVhNmRhMTFjZWNhNzJlY2Y4ZDYwZTc1MjU1NTcwNGFjNGYyOTBjN2JjZWRiY2VlMDM2YWUxMTJiYzZhYzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgxODVlOTFhMjMzYjcxZTMxOGZmN2QwYjY2NTQ2NjQzMWZiZWRmZDc2OTliZjE5M2MyYzVjMDE5ZWVlNTAzZmMifQ"
+          "resource": "repo://tools/hooks/hub-primer.sh#L12-L62",
+          "version": "repo-lines-v1:sha256:c7e95fee18975a8ec8df7430b0aff1a3cae79082ddd8a118b8e428974dd15490:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNTcyNTdkYmZkYTM3MTVhM2ZkZTc2OTVmZTdmMWU5ZGI2YWRiZmI0NzBmOTFhYTc5M2Y4OTBlZjIyZDkzYTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3ZTAzYjVhYzU3M2JjYWM2NjFlNDE2NmVmNGI4ZTgxNjU4MmU1ZGM3NmUxYWMyYTA0YWY2NjViNzllZjM2NGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ3MGVhNmRhMTFjZWNhNzJlY2Y4ZDYwZTc1MjU1NTcwNGFjNGYyOTBjN2JjZWRiY2VlMDM2YWUxMTJiYzZhYzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3YWMxNmZlMDE2MTJkZTkyZTNjYTAwZTcwMjI4YTNhZjRiNGZiZjIxZmM1NzI1YTkzOGE0YjhmZDhkMTZjNDIifQ"
         }
       ]
     },
@@ -64,15 +64,19 @@
     },
     {
       "id": "claim_a12e1fc53919462e94f545dbe70e4130",
-      "statement": "Configured PreToolUse applies a Git safety gate plus the prototype design-contract and legacy creative-release gates.",
+      "statement": "Configured PreToolUse applies Git and external-model safety gates to shell commands plus the prototype design-contract and legacy creative-release gates to writes.",
       "evidence": [
         {
-          "resource": "repo://.claude/settings.json#L78-L101",
-          "version": "repo-lines-v1:sha256:248ff77cc709958611af1c474839c12379ca003240ecf36b895a0465d9d4906b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4MThlOTAyMDc0NDJkOGM5N2U0NTdiNTBiMjVjYzVkZDRjODA5MzY0N2UzYzg5ZTRiZTAxODg1ODQxNzYwZDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2M2Q1MzVjZTM4MDYzZDZiNGM1MWQ4YzM4NmE3ZjliM2U1ODBhMTRhMTBjMDdiMTk4ZGZhZjE5YzkzYTNiZmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI0N2ZlZTRhY2NhMzA5MDIxNzMwMTE1YzhhZmQwZDk4ZDBjNDEyOWQwNjc5Mzk4Zjk3ODVmYTNkN2MyZmM4NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEzNTVlMTc4YjczMDVlZTkxOGQ5MDhiMWZlOWYzZmU0ZDFkNDZmNjdhY2JkNzYzOGMyOTA3Y2UwZTg5NTUzNjIifQ"
+          "resource": "repo://.claude/settings.json#L78-L105",
+          "version": "repo-lines-v1:sha256:0caf5aeaef42a76ea1b3f604f08526eb91438a1f2c8846644dca453aca3737f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4MThlOTAyMDc0NDJkOGM5N2U0NTdiNTBiMjVjYzVkZDRjODA5MzY0N2UzYzg5ZTRiZTAxODg1ODQxNzYwZDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2M2Q1MzVjZTM4MDYzZDZiNGM1MWQ4YzM4NmE3ZjliM2U1ODBhMTRhMTBjMDdiMTk4ZGZhZjE5YzkzYTNiZmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI0N2ZlZTRhY2NhMzA5MDIxNzMwMTE1YzhhZmQwZDk4ZDBjNDEyOWQwNjc5Mzk4Zjk3ODVmYTNkN2MyZmM4NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEzNTVlMTc4YjczMDVlZTkxOGQ5MDhiMWZlOWYzZmU0ZDFkNDZmNjdhY2JkNzYzOGMyOTA3Y2UwZTg5NTUzNjIifQ"
         },
         {
           "resource": "repo://tools/hooks/git-riegel.sh",
-          "version": "repo-file-v1:sha256:275cfca016793ca1495312cec3b4c4507e94fd045c7804870b60439276d797ff"
+          "version": "repo-file-v1:sha256:93311342d5fc1dfa7d45b714c44709444c43e8c57e83314e11636629300c29da"
+        },
+        {
+          "resource": "repo://tools/hooks/fremdmodell-riegel.sh",
+          "version": "repo-file-v1:sha256:4f6a4905fdb93a18283a77726411c05222fa4c6ad9a9c2106de84cdc1ea28aa2"
         },
         {
           "resource": "repo://tools/hooks/kreativ-schleuse.sh#L1-L41",
@@ -150,11 +154,11 @@
     },
     {
       "id": "claim_879499f9bbd342fa82df892bbcd87f09",
-      "statement": "The Git safety gate blocks broad staging, amend, destructive cleanup, history rewrite, and force-reference operations unless the explicit emergency bypass is present.",
+      "statement": "The Git safety gate blocks broad staging, amend, destructive cleanup, history rewrite, forced or deleting refspecs, and forced branch deletion while requiring the emergency bypass to be set as an actual command prefix.",
       "evidence": [
         {
-          "resource": "repo://tools/hooks/git-riegel.sh",
-          "version": "repo-file-v1:sha256:275cfca016793ca1495312cec3b4c4507e94fd045c7804870b60439276d797ff"
+          "resource": "repo://tools/hooks/git-riegel.sh#L17-L116",
+          "version": "repo-lines-v1:sha256:ec58286165a013838bcb0c3f66ffa190de66da59922e1637b4263b5bfb92b4ee:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxODFiOTE1YzJhN2E2OGYyZmE3NDljZGMzNjgxMGFjYzU0YmZjZDRiYjMzN2JmMjQ0MTZmYTZlMTk3MTI1NWI3IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIyOGQzYjllODgwYTc3OTc1NDkzZGM3ZTM1OTE0NGMwMjk1YTRmNjk0Y2ZlMGFmNGY5MjhjMjIzMDdiYzVjMzIwIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIyYzVjMWNiZmFmMWYwMGY4ZmY5NDc5YmM2ZDAwN2EwNWU3ZTkxNmIyZjMyNGY5YjczMjJjZmQ2OGVlMzA2NWE1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     },
@@ -180,17 +184,27 @@
     },
     {
       "id": "claim_d10b521af134474a9a5b5f515d3ec5b9",
-      "statement": "The Git automation probe tests blocked and allowed safety-gate commands and the local no-op or active decision of automatic push.",
+      "statement": "The Git automation probe tests blocked and allowed Git commands, the external-model read-only gate, and the local no-op or active decision of automatic push.",
       "evidence": [
         {
-          "resource": "repo://tools/hooks/git-automatik-probe.sh",
-          "version": "repo-file-v1:sha256:2a259da47a5f329e0c4a80e439a2752a2bf7b8ee83090b5ac1b79d1e6cc9cdf6"
+          "resource": "repo://tools/hooks/git-automatik-probe.sh#L51-L140",
+          "version": "repo-lines-v1:sha256:f88ae5e02834da34bc449960c0d382ae12c7e1b33abfbd389c805a985559f1f1:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5YjVhZmZmODExOGJiMTNlNDJiYWZkZGI0ZTkzNzdmMDNhMzJjNGI3YmFjNjBkZDNjNGM5NTEzODg3ODAxOGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjNjg2OGMyYzQ0ZjA1MzYxOWNlZjFjYzM4M2UxZDUzMDc0M2I1NzRjYTE5MmFjZTkxNjhhOWNjZjQ2YTg2ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYxNWE5NjkwNjUxNzFiNGU3N2ExMzk2Y2Q2NzE0YjFlMmMzZTU3Njc5OTYwOGZmMTNmOTlkODUzOGE3MTJkZDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7727c119235343748f7e1c9fd9729ef3",
+      "statement": "The external-model gate permits ordinary agy audit invocations but blocks --dangerously-skip-permissions and accept-edits modes that would authorize unattended writes.",
+      "evidence": [
+        {
+          "resource": "repo://tools/hooks/fremdmodell-riegel.sh#L1-L57",
+          "version": "repo-lines-v1:sha256:4f6a4905fdb93a18283a77726411c05222fa4c6ad9a9c2106de84cdc1ea28aa2:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4ZDNiOWU4ODBhNzc5NzU0OTNkYzdlMzU5MTQ0YzAyOTVhNGY2OTRjZmUwYWY0ZjkyOGMyMjMwN2JjNWMzMjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-22T17:37:04.217Z"
+    "at": "2026-08-23T10:03:23.427Z"
   }
 }

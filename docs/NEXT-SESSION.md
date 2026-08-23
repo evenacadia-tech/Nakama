@@ -2,40 +2,56 @@
 
 > ## ⚠ DER EINE NÄCHSTE SCHRITT — Stand 23.08.2026 abends
 >
-> **Ein frischer T2-Prüfer auf ZWEI Stände: die S9-Nacharbeit UND S10–11.**
-> Beide sind gebaut und beweisbelegt, beide haben **kein** PASS. Wer gebaut
-> hat, urteilt nicht (S8-Präzedenz).
+> **Nacharbeit an S10–11: vier T2-Befunde schließen (NAK-58).** Der T2-Prüfer
+> ist gefahren und hat **NEEDS_WORK** gegeben — Bericht
+> `docs/beweise/SONDE-008.md` **§8**. Zwei Stände warten damit weiter auf ein
+> PASS: die **S9-Nacharbeit** (noch ungeprüft, unten) und **S10–11** (geprüft,
+> Nacharbeit offen). Wer gebaut oder geprüft hat, urteilt nicht erneut.
 >
-> **S10–11 (`SONDE-008`) ist gebaut** (Manifest `docs/beweise/SONDE-008.md`,
-> Commit `7fa1cf5` + Folgecommits): der `AbstractFifo` im **Audiothread** ist
-> durch die `StampedAudioQueue` ersetzt — zwei feste SPSC-Ringe, ganz oder gar
-> nicht, dazu die Ein-Block-Quarantäne und der fixed-memory
-> `LoudnessAccumulator`. Kanon **24 → 26** (B4 `EqCopQueueStressTest` 68/0,
-> B9 `EqCopLoudnessGoldenTest` 66/0), Beweislauf **GRÜN 26/26, Exit 0,
-> beglaubigt**, `pluginval` Strenge 8 an allen drei Bundles SUCCESS.
+> **Was der Prüfer gemessen hat, und es ist die gute Nachricht zuerst:** der
+> Umbau selbst hält, und zwar unter härterer Last als sein eigenes Bein —
+> 60 000 Blöcke mit gemischtem Überlauf *und* Oversize *und* wechselnden Größen
+> (das Kanon-Bein leert nach jedem Block und kann darum gar nicht überlaufen),
+> dazu **4 000 000 Frames in echtem Zweithread-Betrieb** mit 7 786
+> Ganzblockdrops: kein zerrissener Block, keine Ordnungsverletzung, keine
+> falsch markierte Lücke, Frame- und Blockbilanz exakt. Der gefährlichste
+> Eingriff der Phase sitzt. Eigener Beweislauf des Prüfers: **GRÜN 26/26,
+> Exit 0, beglaubigt** (B4 `EqCopQueueStressTest` **69**/0, B9
+> `EqCopLoudnessGoldenTest` **66**/0).
 >
-> **Was ein Prüfer bei S10–11 zuerst ansehen sollte** — das, was noch niemand
-> mit fremdem Kontext gelesen hat:
-> - `eq-copilot/plugin/core/StampedAudioQueue.h` — **ganz neu**, der einzige
->   Ordnungspunkt zwischen Audio- und Workerthread liegt in `veroeffentliche()`
->   (Release) gegen `spitze()`/`freigeben()` (Acquire),
-> - `Blockquarantaene::schliesstAn()` im selben Header — dort steht die
->   Auslegung von „zeitlich konsistent"; besonders die Zeile, die eine
->   **stehende** Projektzeit NICHT als Bruch wertet (FL-Teilpuffer, NAK-56),
-> - `eq-copilot/plugin/core/analysis/LoudnessAccumulator.h` — **ganz neu**,
-> - `eq-copilot/plugin/src/PluginProcessor.cpp` — `processBlock`,
->   `nakamaBlockEmpfangen` und der Worker-Drain,
-> - `docs/beweise/SONDE-008.md` **§5** — die Transport-Entscheidung (Hub `U10`)
->   samt Begründung, warum sie hierher und nicht zu SONDE-009 gehört.
+> **Die vier Befunde — Reihenfolge der Nacharbeit:**
+> 1. **T2-1** (mittel–hoch) `LoudnessAccumulator.h`: der Eimer über dem
+>    Histogramm-Gitter entscheidet **den ganzen Eimer** an seinem Mittelwert.
+>    Zwei Pegel darin, Γ_r dazwischen ⇒ **2,918 LU** Fehler, während
+>    `unsicherheitLu()` **0,000000000 LU** meldet. Der Kopfkommentar nennt die
+>    Schranke „vollständig"; der Golden füllt den Eimer nur mit **einem** Pegel
+>    und kann darum nicht scheitern. Reproduktion (vier Zeilen) in §8.9.
+> 2. **T2-2** (mittel) der U10-Riegel ist **wirksam**, aber von **keinem**
+>    Kanon-Bein gedeckt: baut man das fail-open zurück, bleiben alle vier
+>    Audio-Beine grün. Es fehlt genau eine Prüfung — Main klassifiziert,
+>    Editor offen, `testForciereEchtzeit(true)`, aktiver Auftrag, **kein
+>    Playhead** ⇒ bitgleich.
+> 3. **T2-3** (niedrig–mittel) `StampedAudioQueue.h`: der Anlaufwechsel gilt
+>    erst ab dem ersten Audioblock **nach** `prepareToPlay`; bis dahin werden
+>    Blöcke der alten Samplerate mit der neuen analysiert.
+> 4. **T2-4** (niedrig) ein Seek bei **gestopptem** Transport ist keine
+>    Kontinuitätsgrenze, obwohl §32.3 Seek als Epochengrenze führt. Gehört zu
+>    `SONDE-009`.
 >
-> 🔑 **Die teuerste Lehre dieser Runde:** der EBU-Golden fand **zwei echte
-> Fehler**, und beide kamen aus dem *adversarialen* Teil, nicht aus dem
-> Normalfall. Der eine war ein Bug (überlaute Blöcke wurden in den obersten
-> Histogramm-Bin geklemmt — bei durchweg überlautem Material lieferte die
-> integrierte Lautheit dann **gar keinen Wert**), der andere eine **falsche
-> Behauptung von mir** („bitgleich" für LUFS-I; binweise Summation hat eine
-> andere Reihenfolge). Ein Golden, der nur den Normalfall fährt, hätte beide
-> durchgelassen.
+> ⚠️ **Die größte ungedeckte Fläche — vor SONDE-009 lesen:** die
+> **Brückenhälfte des Zeitstempels hat kein Bein.** Jede Messung, die des
+> Prüfers eingeschlossen, läuft über den **Playhead-Rückfallweg**;
+> `nakamaBlockEmpfangen()` ist gelesen, nie gefahren. Ebenso ungemessen: **kein
+> Lauf in FL** (NAK-56 — schreibt FL die Projektzeit über die Teilstücke eines
+> zerteilten Puffers fort?). Vollständige Liste des Ungeprüften in §8.9.
+>
+> 🔑 **Die teuerste Lehre dieser Runde, zweimal bestätigt:** beide Male fand der
+> *adversariale* Teil den Fehler, nie der Normalfall. Der Erbauer fand so das
+> Klemmen überlauter Blöcke; der Prüfer fand direkt daneben T2-1 — im **Fix**
+> dieses Bugs. Und die zweite Hälfte derselben Lehre: **ein Golden, dessen
+> Extremfall nur EINEN Pegel kennt, kann konstruktiv nicht scheitern** — er
+> meldet grün, weil nichts auseinanderlaufen *kann*, nicht weil nichts
+> auseinanderläuft.
 >
 > ⚠️ **`CLAUDE.md` trägt jetzt DREI veraltete Zahlen** — „(12)" Kern-Verbraucher
 > (gemessen **14**), „Kanon (23 Beine)" (jetzt **26**) und die Formel der
@@ -45,7 +61,7 @@
 >
 > **Danach:** S12–13 (`SONDE-009`) — FeatureEngine v2 mit Zeit-, Validity-,
 > Event- und Bandverträgen. Sie baut direkt auf der Grenze auf, die S10–11
-> liefert.
+> liefert — T2-4 gehört dorthin.
 >
 > ---
 >

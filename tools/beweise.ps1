@@ -226,7 +226,7 @@ $kanon = @(
         Art        = 'plugin'
         Argumente  = @()
         AbPhase    = 'jetzt'
-        Behauptung = 'Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung.'
+        Behauptung = 'Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung, und der U10-Term ist gedeckt - OHNE Playhead faerbt bei sonst voller Erlaubnis kein Sample (T11, mit Gegenprobe bei laufendem Transport).'
     }
     [pscustomobject]@{
         Kuerzel    = 'A4'

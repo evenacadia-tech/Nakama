@@ -575,6 +575,97 @@ int main()
         pruefe (maxDelta <= 0.75, "T4: LTAS mit/ohne Markierung gleich (Abgriff vor Faerbung)");
     }
 
+    // ── T11: DER U10-WAECHTER (Nacharbeit T2-2, 23.08.2026) ────────────────
+    //
+    // WOZU ES DIESEN ABSCHNITT GIBT. Der User hat am 22.08. im Hub (`U10`)
+    // entschieden: „Nein, nur mit Signal" - die Hoer-Markierung faerbt nur mit
+    // GUELTIGEM „spielt", das fail-open `(spielt ∨ ¬hatTransport)` ist
+    // gefallen. S10-11 hat das umgesetzt, und der T2-Pruefer hat es als
+    // wirksam gemessen. Er hat aber auch das Gegenteil gemessen: das fail-open
+    // probeweise zurueckgebaut - und ALLE VIER Audiobeine blieben gruen
+    // (NullTest, MarkierungTest, LebenslaufTest, QueueStressTest, je Exit 0).
+    // Ein Entscheid des Users, den kein Bein deckt, laesst sich spaeter
+    // unbemerkt zuruecknehmen.
+    //
+    // WARUM KEIN ANDERER ABSCHNITT DAS LEISTET, und das ist der Kern: alle
+    // uebrigen wurden dem neuen Term ANGEPASST (ueberall ein laufender
+    // Playhead, s. `LaufenderTransport` oben) statt gegen seine RUECKNAHME
+    // gehaertet. Mit laufendem Playhead ist `hatTransport` wahr, der
+    // fail-open-Zweig also wieder tot - beide Fassungen verhalten sich dann
+    // identisch. Genau die Eigenschaft, die den Term in FL harmlos macht,
+    // macht ihn untestbar, solange kein Bein einen Prozessor OHNE Playhead
+    // faehrt. T11 faehrt genau das.
+    {
+        EqCopilotProcessor p;
+        p.setPlayConfigDetails (2, 2, fs, bs);
+        p.prepareToPlay (fs, bs);
+        p.testForciereEchtzeit (true);
+        pruefe (alsMainKlassifizieren (p), "T11: als Main klassifiziert (§53.5)");
+
+        MarkierungsWunsch w;
+        w.modus = MarkierungsModus::solo;
+        w.fVon = 120.0; w.fBis = 300.0; w.fSchwerpunkt = 200.0; w.fs = fs;
+        MarkierungsAuftrag auftrag;
+        const bool gebaut = baueMarkierungsAuftrag (auftrag, w);
+        pruefe (gebaut, "T11: Auftrag gebaut");
+
+        juce::AudioBuffer<float> puffer (2, bs), kopie (2, bs);
+        juce::MidiBuffer midi;
+        auto fahre = [&] (int bloecke)
+        {
+            bool gefaerbt = false;
+            for (int block = 0; block < bloecke; ++block)
+            {
+                for (int k = 0; k < 2; ++k)
+                {
+                    float* d = puffer.getWritePointer (k);
+                    for (int i = 0; i < bs; ++i) d[i] = 0.5f * zufall();
+                }
+                kopie.makeCopyOf (puffer);
+                p.processBlock (puffer, midi);
+                if (! blockBitgleich (puffer, kopie))
+                    gefaerbt = true;
+            }
+            return gefaerbt;
+        };
+
+        // (a) DIE Pruefung. Volle Erlaubnis auf jeder anderen Achse - Main
+        //     klassifiziert, Editor offen (ueber alsMainKlassifizieren),
+        //     testForciereEchtzeit, aktiver Auftrag - und KEIN Playhead. Damit
+        //     ist „spielt" ungueltig, und der U10-Entscheid verlangt Stille.
+        //     Baut jemand das fail-open zurueck, faerbt hier sofort etwas.
+        p.setPlayHead (nullptr);
+        p.markierungEinreichen (auftrag);
+        pruefe (! fahre (120),
+                "T11: OHNE Playhead faerbt kein einziges Sample (U10, 22.08.)");
+        pruefe (! p.markierungHoerbar(),
+                "T11: und die Markierung meldet sich nicht hoerbar");
+
+        // (b) Der bekannt GESTOPPTE Transport ist derselbe Fall aus der anderen
+        //     Richtung: „spielt" ist gueltig und sagt nein.
+        TestPlayHead kopf;
+        kopf.spielt = false;
+        p.setPlayHead (&kopf);
+        p.markierungEinreichen (auftrag);
+        pruefe (! fahre (120), "T11: mit gestopptem Transport ebenfalls kein Sample");
+
+        // (c) GEGENPROBE, und ohne sie waere (a) wertlos: derselbe Aufbau mit
+        //     laufendem Playhead MUSS faerben. Sonst koennte T11 gruen sein,
+        //     weil die Markierung generell stumm ist - der Fehler, vor dem der
+        //     Kopf von `LaufenderTransport` warnt.
+        kopf.spielt = true;
+        p.markierungEinreichen (auftrag);
+        bool gefaerbt = false;
+        for (int block = 0; block < 200 && ! gefaerbt; ++block)
+        {
+            gefaerbt = fahre (1);
+            kopf.pos += bs;
+        }
+        pruefe (gefaerbt,
+                "T11: Gegenprobe - mit laufendem Transport faerbt genau dieser Aufbau");
+        p.setPlayHead (nullptr);
+    }
+
     std::cout << (fehler == 0 ? "MARKIERUNGSTEST OK" : "MARKIERUNGSTEST FEHLGESCHLAGEN") << std::endl;
     return fehler == 0 ? 0 : 1;
 }

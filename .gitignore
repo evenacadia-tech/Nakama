@@ -52,3 +52,9 @@ design/werkzeug/pruefung/.gegenprobe/
 
 # Prüflaufergebnisse (/c-review, T3-Gates) — regenerierbar, nie committen
 .c-review-results/
+
+# Nimbalyst-Automatiken: die Definition (nimbalyst-local/automations/*.md) ist
+# versioniert, ihre Laufergebnisse sind Maschinenartefakte (mode: replace, wird
+# bei jedem Lauf ueberschrieben). Muster mit Schraegstrich = nur Ordner, damit
+# die .md-Definitionen daneben getrackt bleiben.
+nimbalyst-local/automations/*/

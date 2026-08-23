@@ -15,6 +15,19 @@ WAS DIESES BEIN BEHAUPTET
   Pfad, und der muss im Manifest stehen. Ein Pfad, der auf ein fremdes Bundle
   zeigt, faellt hier.
 
+ORDNER-HASH v1 (S9-Nacharbeit 23.08.2026, T2-Befund T2-5)
+
+  Ein VST3-Bundle ist unter Windows ein ORDNER; die Auslieferungseinheit ist
+  seit der Nacharbeit derselbe Ordner. Dieses Bein traegt die PYTHON-Haelfte
+  des Ordner-Hashes (Vertrag §2.1) - die PowerShell-Haelfte liegt in
+  eq-copilot/install/NakamaOrdnerHash.ps1 und wird vom Installer benutzt.
+
+  Weil ein Hash, den ZWEI Sprachen bilden, nur so viel wert ist wie ihre
+  Uebereinstimmung, misst dieses Bein sie gegeneinander - an einem
+  SYNTHETISCHEN Ordner, nicht an einem gebauten Bundle, damit die Kreuzprobe
+  auch ohne Bau laeuft. Fehlt `pwsh`, ist das ein FEHLER und keine stille
+  Auslassung: eine Kreuzprobe, die nicht lief, hat nichts bewiesen.
+
 DIE GEGENPROBE (S8-Lehre, Manifest SONDE-007a):
 
   "Ein Riegel, der etwas NICHT findet, sagt nichts, bis gezeigt ist, dass er
@@ -37,16 +50,79 @@ import hashlib
 import json
 import pathlib
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 
 WURZEL = pathlib.Path(__file__).resolve().parents[2]
 MANIFEST = WURZEL / "eq-copilot" / "install" / "nakama-installer-v1.json"
 IDENTITAET = WURZEL / "eq-copilot" / "identity" / "plugin-identities-v1.json"
 BROKER_CARGO = WURZEL / "broker" / "Cargo.toml"
+PS_ORDNERHASH = WURZEL / "eq-copilot" / "install" / "NakamaOrdnerHash.ps1"
 
 SCHEMA = "nakama.installer/v1"
 HEX64 = re.compile(r"^[0-9A-F]{64}$")
+ARTEN = ("vst3", "broker")
+
+
+# ── Ordner-Hash v1 (Vertrag §2.1) ───────────────────────────────────────────
+
+
+class OrdnerHashFehler(Exception):
+    """Der Ordner verlaesst den Bereich, in dem beide Implementierungen
+    nachweislich dasselbe rechnen. Lieber laut abbrechen als zwei Zahlen."""
+
+
+def _ascii_pfad(rel: str) -> bool:
+    return all(0x20 <= ord(z) <= 0x7E for z in rel)
+
+
+def ordner_hash(ordner: pathlib.Path) -> str:
+    """SHA-256 ueber einen Ordner nach Vertrag §2.1.
+
+    Zeile je DATEI: `<64 Hex GROSS> <Leerzeichen> <relpfad mit '/'> <LF>`,
+    aufsteigend nach relpfad sortiert, UTF-8, darueber SHA-256.
+
+    Verzeichnisse zaehlen nicht mit - ein leeres Verzeichnis traegt nichts,
+    was ein Host laedt, und beide Seiten muessten sich sonst einigen, ob
+    `Contents/` eine Zeile bekommt.
+    """
+    if not ordner.is_dir():
+        raise OrdnerHashFehler(f"'{ordner}' ist kein Verzeichnis.")
+
+    zeilen: list[tuple[bytes, str]] = []
+    for eintrag in sorted(ordner.rglob("*"), key=lambda p: p.as_posix()):
+        # Reparse-Punkte: `-Recurse` steigt in ein Verzeichnis-Reparse NICHT
+        # hinab, rglob schon - dieselbe Definition ergaebe zwei Hashes.
+        if eintrag.is_symlink() or eintrag.is_junction():
+            raise OrdnerHashFehler(
+                f"Reparse-Punkt in der Auslieferung ('{eintrag}'). Nicht vorgesehen - "
+                "Python und PowerShell wuerden ihn verschieden behandeln."
+            )
+        if not eintrag.is_file():
+            continue
+        rel = eintrag.relative_to(ordner).as_posix()
+        if not _ascii_pfad(rel):
+            raise OrdnerHashFehler(
+                f"Pfad ist nicht ASCII ('{rel}'). Nur ASCII sortiert in beiden "
+                "Implementierungen gleich."
+            )
+        zeilen.append((rel.encode("utf-8"), datei_hash(eintrag)))
+
+    zeilen.sort(key=lambda z: z[0])
+    strom = b"".join(h.encode("ascii") + b" " + p + b"\n" for p, h in zeilen)
+    return hashlib.sha256(strom).hexdigest().upper()
+
+
+def artefakt_hash(pfad: pathlib.Path, art: str) -> str:
+    """`vst3` ist ein Ordner, `broker` eine Datei."""
+    return ordner_hash(pfad) if art == "vst3" else datei_hash(pfad)
+
+
+def artefakt_liegt_vor(pfad: pathlib.Path, art: str) -> bool:
+    return pfad.is_dir() if art == "vst3" else pfad.is_file()
 
 ok = 0
 fehler: list[str] = []
@@ -101,8 +177,26 @@ def r_jedes_ziel_genau_einmal(m: dict, i: dict):
     )
 
 
+def r_art_bekannt(m: dict, _i: dict):
+    """S9-Nacharbeit (T2-Befund T2-4): `art` ist eine GESCHLOSSENE Menge.
+
+    Vorher sah das keine der zwoelf Regeln: `_vst3()` filtert auf
+    `art == "vst3"`, die Broker-Regel zaehlt nur `broker` - ein drittes Wort
+    faellt durch beide Siebe. Im Skript landet es dann im Broker-ZWEIG von
+    `Ziel-Pfad()`, also unter `ziele.broker_verzeichnis`: genau dem Pfad, den
+    Vertrag §4 schuetzt, weil er ab SONDE-010 ein Spawn-Ziel wird.
+
+    Der realistische Fall ist ein Tippfehler beim Erweitern, kein Angriff -
+    und genau dagegen ist eine geschlossene Menge da."""
+    fremd = [str(a.get("art")) for a in m["artefakte"] if a.get("art") not in ARTEN]
+    return not fremd, ", ".join(fremd)
+
+
 def r_quellpfade_nachgerechnet(m: dict, i: dict):
-    """Der Kern dieses Beins: der Pfad wird abgeleitet, nicht geglaubt."""
+    """Der Kern dieses Beins: der Pfad wird abgeleitet, nicht geglaubt.
+
+    Seit der S9-Nacharbeit zeigt er auf den Bundle-ORDNER, nicht mehr auf die
+    innere Binaerdatei (Vertrag §2.1, T2-Befund T2-5)."""
     ziele = _ziele(i)
     abweichungen = []
     for a in _vst3(m):
@@ -110,10 +204,9 @@ def r_quellpfade_nachgerechnet(m: dict, i: dict):
         if ziel is None:
             abweichungen.append(f"{a.get('ziel_id')}: kein Identitaetseintrag")
             continue
-        bundle = ziel["bundle"]
         erwartet = (
             f"eq-copilot/build/plugin/{a.get('cmake_ziel')}_artefacts/Release/VST3/"
-            f"{bundle}/Contents/x86_64-win/{bundle}"
+            f"{ziel['bundle']}"
         )
         if a.get("quelle") != erwartet:
             abweichungen.append(f"{a.get('ziel_id')}: {a.get('quelle')!r} != {erwartet!r}")
@@ -201,6 +294,12 @@ def r_hashfelder(m: dict, _i: dict):
 
 
 def r_bekannte_staende(m: dict, i: dict):
+    """Seit dem Umzug auf den Ordner (Vertrag §5.1) traegt jeder Eintrag
+    ausserdem `hash_art`: `ordner` (Ordner-Hash v1) oder `datei-innen`
+    (Hash NUR der inneren Binaerdatei). Ohne dieses Feld waere nicht
+    entscheidbar, wogegen der Rueckweg vergleicht - und die zwei
+    historischen Eintraege wurden gegen die Binaerdatei eingefroren, lange
+    bevor der Ordner die Einheit war."""
     ziele = _ziele(i)
     schlecht = []
     for e in m["rueckweg"]["bekannte_staende"]:
@@ -210,6 +309,8 @@ def r_bekannte_staende(m: dict, i: dict):
             schlecht.append(f"{e.get('ziel_id')!r}: unbekanntes Ziel")
         if not isinstance(e.get("state_schema"), int):
             schlecht.append(f"{e.get('sha256')!r}: state_schema fehlt")
+        if e.get("hash_art") not in ("ordner", "datei-innen"):
+            schlecht.append(f"{e.get('sha256')!r}: hash_art {e.get('hash_art')!r}")
     return not schlecht, "; ".join(schlecht)
 
 
@@ -227,15 +328,16 @@ def r_rueckweg_vollstaendig(m: dict, _i: dict):
 REGELN = [
     (r_schema, "Manifest traegt das Vertragsschema nakama.installer/v1"),
     (r_identitaetsquelle, "es zeigt auf die eingefrorene Identitaetsdatei"),
+    (r_art_bekannt, "jede `art` ist vst3 oder broker - eine geschlossene Menge"),
     (r_jedes_ziel_genau_einmal, "jedes Ziel der Identitaetsdatei hat genau einen VST3-Eintrag"),
-    (r_quellpfade_nachgerechnet, "jeder Quellpfad ist aus Ziel + Identitaet NACHGERECHNET"),
+    (r_quellpfade_nachgerechnet, "jeder Quellpfad ist der Bundle-ORDNER aus Ziel + Identitaet"),
     (r_keine_identitaetsliterale, "kein Viercode, keine Class-ID im Installer-Manifest"),
     (r_broker, "genau ein Broker-Artefakt, aus dem Release-Pfad der Crate"),
     (r_broker_heisst_wie_die_crate, "der Broker-Binaername kommt aus broker/Cargo.toml"),
     (r_zielverzeichnisse, "VST3 nach Common Files, Broker geschuetzt unter Program Files"),
     (r_signatur_ehrlich, "die Signaturzeile behauptet keine Pruefung ohne Mittel"),
     (r_hashfelder, "jedes sha256 ist null oder ein SHA-256 in Grossbuchstaben"),
-    (r_bekannte_staende, "jeder bekannte Stand traegt Hash, Ziel und state_schema"),
+    (r_bekannte_staende, "jeder bekannte Stand traegt Hash, hash_art, Ziel und state_schema"),
     (r_rueckweg_vollstaendig, "der Rueckweg ist vollstaendig beschrieben (NAK-41 benannt)"),
 ]
 
@@ -270,9 +372,15 @@ def verdirb(m: dict) -> dict:
     if vst3:
         k["artefakte"].remove(vst3[-1])                  # ein Ziel fehlt jetzt
         vst3[0]["plugin_code_kopie"] = "NkPr"            # zweite Identitaet
+    # S9-Nacharbeit (T2-4): eine dritte Artefaktsorte. Genau dieser Eintrag
+    # rutschte vorher durch ALLE zwoelf Regeln - `_vst3()` filtert ihn weg,
+    # `r_broker` zaehlt ihn nicht - und landete im Skript im Broker-Zweig.
+    k["artefakte"].append({"art": "standalone", "name": "Nakama.exe",
+                           "quelle": "irgendwo/Nakama.exe", "sha256": "kein hash"})
     k["ziele"] = {"vst3_verzeichnis": "C:/Temp", "broker_verzeichnis": "%LOCALAPPDATA%/nakama"}
     k["signatur"] = {"verfahren": "sha256-manifest", "authenticode_thumbprint": None, "warum_null": ""}
-    k["rueckweg"] = {"strategie": "", "bekannte_staende": [{"sha256": "xx", "ziel_id": "?", "state_schema": "eins"}]}
+    k["rueckweg"] = {"strategie": "", "bekannte_staende": [
+        {"sha256": "xx", "ziel_id": "?", "state_schema": "eins", "hash_art": "erfunden"}]}
     return k
 
 
@@ -291,23 +399,118 @@ def hashen(manifest: dict) -> int:
     alle_da = True
     for a in manifest["artefakte"]:
         pfad = WURZEL / a["quelle"]
+        art = a.get("art")
         name = a.get("ziel_id") or a.get("name")
-        if not pfad.exists():
-            print(f"  FEHLT   {name}: {a['quelle']}")
+        if art not in ARTEN:
+            print(f"  FEHLER  {name}: unbekannte art {art!r} - vst3 oder broker, nichts sonst.")
             alle_da = False
             continue
-        a["sha256"] = datei_hash(pfad)
+        if not artefakt_liegt_vor(pfad, art):
+            was = "Ordner" if art == "vst3" else "Datei"
+            print(f"  FEHLT   {name}: {a['quelle']}  ({was})")
+            alle_da = False
+            continue
+        # Ein Bundle-Ordner OHNE Datei haette einen wohldefinierten Hash (den
+        # des leeren Bytestroms) - und waere trotzdem keine Auslieferung.
+        # Definiert heisst nicht ausliefer-bar.
+        if art == "vst3" and not any(p.is_file() for p in pfad.rglob("*")):
+            print(f"  FEHLER  {name}: Bundle-Ordner ist leer ({a['quelle']}).")
+            alle_da = False
+            continue
+        try:
+            a["sha256"] = artefakt_hash(pfad, art)
+        except OrdnerHashFehler as e:
+            print(f"  FEHLER  {name}: {e}")
+            alle_da = False
+            continue
         print(f"  ok      {name} = {a['sha256']}")
     if not alle_da:
         print(
-            "\nABGEBROCHEN - nicht alle Artefakte liegen gebaut vor. Ein Manifest mit\n"
-            "halben Hashes waere eine Auslieferung, die nur zur Haelfte eingefroren ist."
+            "\nABGEBROCHEN - nicht alle Artefakte liegen ausliefer-bar vor. Ein Manifest\n"
+            "mit halben Hashes waere eine Auslieferung, die nur zur Haelfte eingefroren ist."
         )
         return 3
     manifest["hashes_erzeugt_am"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     MANIFEST.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"\ngeschrieben: {MANIFEST.relative_to(WURZEL)}")
     return 0
+
+
+# ── Kreuzprobe: Python gegen PowerShell (Vertrag §2.1) ─────────────────────
+
+
+def _synthetischer_ordner(wurzel: pathlib.Path) -> None:
+    """Ein Ordner, der genau die Stellen trifft, an denen zwei
+    Implementierungen auseinanderlaufen KOENNTEN:
+
+      * `B.txt` vs `a.txt` - ordinal steht 'B' (0x42) VOR 'a' (0x61),
+        kulturabhaengig sortiert Windows sie andersherum. Sortierte eine
+        Seite nach Locale, faellt genau hier auf.
+      * ein Name MIT Leerzeichen - das Trennzeichen der Hashzeile,
+      * zwei Ebenen Verschachtelung wie im echten Bundle,
+      * ein LEERES Verzeichnis - es darf keine Zeile erzeugen.
+    """
+    (wurzel / "Contents" / "Resources").mkdir(parents=True)
+    (wurzel / "Contents" / "x86_64-win").mkdir(parents=True)
+    (wurzel / "leer").mkdir(parents=True)
+    (wurzel / "a.txt").write_bytes(b"a")
+    (wurzel / "B.txt").write_bytes(b"B")
+    (wurzel / "mit leerzeichen.txt").write_bytes(b"")
+    (wurzel / "Contents" / "Resources" / "moduleinfo.json").write_bytes(b'{"x":1}\n')
+    (wurzel / "Contents" / "x86_64-win" / "inner.bin").write_bytes(bytes(range(256)))
+
+
+def kreuzprobe() -> None:
+    """Ein Hash, den zwei Sprachen bilden, ist nur so viel wert wie ihre
+    Uebereinstimmung. Gemessen wird an einem SYNTHETISCHEN Ordner, damit die
+    Probe auch ohne gebautes Bundle laeuft."""
+    print("\n[4] Ordner-Hash v1 - Python gegen PowerShell")
+
+    if not PS_ORDNERHASH.is_file():
+        pruefe(False, "die PowerShell-Haelfte liegt vor", str(PS_ORDNERHASH))
+        return
+    pwsh = shutil.which("pwsh") or shutil.which("powershell")
+    if pwsh is None:
+        # Schweigen waere hier das Schlimmste: die Kreuzprobe IST der Beweis,
+        # dass beide Seiten dasselbe rechnen. Lief sie nicht, ist nichts bewiesen.
+        pruefe(False, "pwsh gefunden - ohne die zweite Sprache beweist diese Kreuzprobe nichts")
+        return
+
+    with tempfile.TemporaryDirectory(prefix="nakama-ordnerhash-") as tmp:
+        ordner = pathlib.Path(tmp) / "Probe.vst3"
+        ordner.mkdir()
+        _synthetischer_ordner(ordner)
+
+        aus_python = ordner_hash(ordner)
+        lauf = subprocess.run(
+            [pwsh, "-NoProfile", "-File", str(PS_ORDNERHASH), str(ordner)],
+            capture_output=True, text=True,
+        )
+        aus_ps = lauf.stdout.strip().splitlines()[-1].strip() if lauf.stdout.strip() else ""
+
+        if not pruefe(lauf.returncode == 0, "die PowerShell-Haelfte laeuft durch",
+                      (lauf.stderr.strip() or "")[:200]):
+            return
+        pruefe(HEX64.match(aus_python) is not None, "Python liefert einen SHA-256", aus_python[:16])
+        pruefe(aus_python == aus_ps,
+               "beide Sprachen bilden BYTEGLEICH denselben Ordner-Hash",
+               f"py {aus_python[:16]} | ps {aus_ps[:16]}")
+
+        # Und der Riegel selbst: ein Nicht-ASCII-Pfad muss ABBRECHEN, nicht
+        # irgendeinen Hash liefern. Ohne diese Zeile waere die Einengung nur
+        # eine Behauptung im Vertrag.
+        (ordner / "gruße.txt").write_bytes(b"x")
+        try:
+            ordner_hash(ordner)
+            pruefe(False, "Nicht-ASCII im Pfad bricht ab (Python)")
+        except OrdnerHashFehler:
+            pruefe(True, "Nicht-ASCII im Pfad bricht ab (Python)")
+        nicht_ascii = subprocess.run(
+            [pwsh, "-NoProfile", "-File", str(PS_ORDNERHASH), str(ordner)],
+            capture_output=True, text=True,
+        )
+        pruefe(nicht_ascii.returncode != 0, "Nicht-ASCII im Pfad bricht ab (PowerShell)",
+               f"Exit {nicht_ascii.returncode}")
 
 
 def main() -> int:
@@ -348,12 +551,20 @@ def main() -> int:
     else:
         for a in manifest["artefakte"]:
             pfad = WURZEL / a["quelle"]
+            art = a.get("art")
             name = a.get("ziel_id") or a.get("name")
-            if not pfad.exists():
+            if art not in ARTEN or not artefakt_liegt_vor(pfad, art):
                 pruefe(False, f"{name}: das festgeschriebene Artefakt liegt nicht vor", a["quelle"])
                 continue
-            pruefe(datei_hash(pfad) == a["sha256"],
+            try:
+                ist = artefakt_hash(pfad, art)
+            except OrdnerHashFehler as e:
+                pruefe(False, f"{name}: Ordner-Hash nicht bildbar", str(e))
+                continue
+            pruefe(ist == a["sha256"],
                    f"{name}: gebautes Artefakt stimmt mit dem festgeschriebenen Hash", a["sha256"][:16])
+
+    kreuzprobe()
 
     print(f"\n{ok} ok, {len(fehler)} Fehler")
     if fehler:

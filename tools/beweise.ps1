@@ -296,7 +296,16 @@ $kanon = @(
     # NACHGERECHNET, Viercodes und CIDs duerfen nirgends stehen. Das Bein
     # traegt seine Gegenprobe im Lauf: jede Regel muss an einem absichtlich
     # verdorbenen Manifest FALLEN, sonst prueft sie nichts (S8-Lehre).
-    [pscustomobject]@{ Kuerzel='A17'; Name='pruefe_installer_manifest.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Installer-Manifest: keine zweite Identitaet (kein Viercode, keine Class-ID), jeder Quellpfad aus Ziel + Identitaetsdatei nachgerechnet, jedes Ziel genau einmal, Broker aus dem Crate-Namen, Zielverzeichnisse geschuetzt, Signaturzeile behauptet keine Pruefung ohne Mittel, Rueckweg samt NAK-41-Riegel vollstaendig; jede Regel faellt an einem verdorbenen Manifest.' }
+    [pscustomobject]@{ Kuerzel='A17'; Name='pruefe_installer_manifest.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Installer-Manifest: keine zweite Identitaet (kein Viercode, keine Class-ID), jeder Quellpfad ist der aus Ziel + Identitaetsdatei nachgerechnete BUNDLE-ORDNER, `art` ist eine geschlossene Menge, jedes Ziel genau einmal, Broker aus dem Crate-Namen, Zielverzeichnisse geschuetzt, Signaturzeile behauptet keine Pruefung ohne Mittel, Rueckweg samt NAK-41-Riegel und hash_art vollstaendig; jede Regel faellt an einem verdorbenen Manifest; Ordner-Hash v1 bytegleich in Python und PowerShell, Nicht-ASCII bricht beide Haelften ab.' }
+
+    # S9-Nacharbeit 23.08.2026: die ZWEITE Haelfte des Gegenpfades. S9 hatte
+    # sie geschrieben, aber nie ausgefuehrt (T2 §5.9: "Weder installiert noch
+    # zurueckgerollt") - beim ersten wirklichen Lauf fielen zwei echte Fehler
+    # heraus, die dem Lesen entgangen waren. A18 faehrt das ECHTE
+    # Install-Nakama.ps1 in einer Sandbox unter %TEMP%; es installiert nichts
+    # und braucht keine Rechteerhoehung. Eine Zusage, die nie ausgefuehrt
+    # wird, ist keine Zusage.
+    [pscustomobject]@{ Kuerzel='A18'; Name='pruefe_installer_gegenpfad.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Gegenpfad installieren<->Rueckweg gefahren (Sandbox, nichts installiert): Erstinstallation traegt moduleinfo.json, ein Tausch ersetzt statt zu mischen, -Pruefen sieht den ganzen Ordner, der Rueckweg stellt den Vorzustand bytegleich her und laesst KEIN leeres .vst3-Gehaeuse stehen, selbst angelegte Ordner verschwinden nur leer, der NAK-41-Riegel greift und zerstoert seine eigene Wiederholungsquelle nicht, eine dritte Artefaktsorte bricht ab.' }
 
     [pscustomobject]@{ Kuerzel='A15'; Name='EqCopSunaNullTest';   Art='plugin'; Argumente=@(); AbPhase='jetzt'; Behauptung='Nakama Suna (NkPr): Passthrough bitgleich ueber drei Samplerates und fuenf Blockgroessen, 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur passive_probe zu; speichern-laden-speichern bytegleich.' }
     [pscustomobject]@{ Kuerzel='A16'; Name='EqCopProbeeqNullTest'; Art='plugin'; Argumente=@(); AbPhase='jetzt'; Behauptung='Nakama Probeeq (NkAc): heute ebenfalls Passthrough bitgleich (die EQ-DSP kommt in P6), 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur active_probe zu; speichern-laden-speichern bytegleich.' }

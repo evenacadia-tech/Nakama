@@ -16,9 +16,11 @@
 |---|---|
 | `eq-copilot/install/nakama-installer-v1.json` | die Auslieferung selbst (versioniert) |
 | `eq-copilot/install/Install-Nakama.ps1` | der einzige Ausführende (versioniert) |
-| `tools/eq-copilot/pruefe_installer_manifest.py` | Kanon-Bein **A17** + Release-Schritt `--hashen` |
+| `eq-copilot/install/NakamaOrdnerHash.ps1` | der Ordner-Hash für PowerShell — **eine** Funktion, zwei Aufrufer (versioniert) |
+| `tools/eq-copilot/pruefe_installer_manifest.py` | Kanon-Bein **A17** + Release-Schritt `--hashen` + die Python-Hälfte des Ordner-Hashes |
+| `tools/eq-copilot/pruefe_installer_gegenpfad.py` | Kanon-Bein **A18** — fährt den Gegenpfad in einer Sandbox (§5, installiert nichts) |
 | `eq-copilot/install/install-ergebnis.json` | Ergebnis des letzten Laufs (Maschinenartefakt, nicht versioniert) |
-| `eq-copilot/install/rueckweg/` | die gesicherten Vorgängerdateien (Maschinenartefakt) |
+| `eq-copilot/install/rueckweg/` | die gesicherten Vorgängerstände (Maschinenartefakt) |
 
 ---
 
@@ -39,7 +41,7 @@ zweiteilig, und beide Hälften sind nötig:
 1. **Nachrechnen statt lesen.** Der Quellpfad eines VST3-Artefakts ist
    vollständig bestimmt durch `cmake_ziel` und den Bundlenamen der
    Identitätsdatei:
-   `eq-copilot/build/plugin/{cmake_ziel}_artefacts/Release/VST3/{bundle}/Contents/x86_64-win/{bundle}`.
+   `eq-copilot/build/plugin/{cmake_ziel}_artefacts/Release/VST3/{bundle}`.
    A17 bildet ihn und vergleicht.
 2. **Keine Codes, keine CIDs.** Außerhalb der `quelle`-Felder darf kein
    Viercode und keine Class-ID vorkommen.
@@ -56,11 +58,11 @@ Einzeln wäre jede Hälfte löchrig; zusammen ist die Aussage dicht.
 | `ziele.broker_verzeichnis` | unter `C:/Program Files/` — **Sicherheitsentscheid**, siehe §4 |
 | `signatur.verfahren` | `sha256-manifest` |
 | `signatur.authenticode_thumbprint` | `null` = wird nicht geprüft; dann ist `warum_null` Pflicht |
-| `artefakte[].art` | `vst3` oder `broker` |
+| `artefakte[].art` | **genau** `vst3` oder `broker` — ein dritter Wert ist ein Fehler, kein Zukunftsfeld (§2.2) |
 | `artefakte[].ziel_id` | nur bei `vst3`: ID aus der Identitätsdatei |
 | `artefakte[].cmake_ziel` | nur bei `vst3`: das CMake-Ziel, aus dem der Pfad entsteht |
-| `artefakte[].quelle` | repo-relativer Pfad des gebauten Artefakts |
-| `artefakte[].sha256` | `null` oder SHA-256 in Großbuchstaben |
+| `artefakte[].quelle` | repo-relativer Pfad des gebauten Artefakts. Bei `vst3` der **Bundle-Ordner**, bei `broker` die Datei (§2.1) |
+| `artefakte[].sha256` | `null` oder SHA-256 in Großbuchstaben. Bei `vst3` der **Ordner-Hash** nach §2.1, bei `broker` der Dateihash |
 | `hashes_erzeugt_am` | UTC-Zeitpunkt des `--hashen`-Laufs |
 | `rueckweg.*` | siehe §5 |
 
@@ -68,6 +70,87 @@ Einzeln wäre jede Hälfte löchrig; zusammen ist die Aussage dicht.
 `3 vs 3`. Ein viertes Ziel im Identitätsmanifest ohne Installer-Eintrag bringt
 das Bein zum Sprechen, statt still ungemessen zu bleiben — dieselbe Zeile wie
 in `EqCopIdentityTest`.
+
+### 2.1 Die Auslieferungseinheit ist der Bundle-ORDNER
+
+> Entschieden am 23.08.2026 in der S9-Nacharbeit (T2-Befund T2-5). Eine
+> **Technikentscheidung** dieses Tickets, kein User-Entscheid.
+
+Bis dahin adressierte die Pfadformel die innere Binärdatei
+(`…/{bundle}/Contents/x86_64-win/{bundle}`). Ein VST3-Bundle ist unter Windows
+aber ein **Ordner**: neben der Binärdatei liegt `Contents/Resources/moduleinfo.json`.
+Gemessen an den gebauten Bundles — je zwei Dateien, 1 090 B und 5 598 208 B —
+und am installierten Stand: dessen `moduleinfo.json` sagt `"Version": "0.1.0"`,
+der heutige Bau `"0.3.0"`.
+
+Die alte Formel hatte vier Folgen, alle aus derselben Wurzel:
+
+- eine **Erstinstallation** von Suna/Probeeq erzeugte ein Bundle **ohne**
+  `moduleinfo.json`,
+- beim Main-Bundle bliebe das `moduleinfo.json` vom 16.08. liegen — Metadaten
+  „0.1.0" neben einer 0.3.0-Binärdatei,
+- `-Pruefen` meldete dazu `aktuell`, weil es nur die Binärdatei hasht,
+- `-Rueckweg` einer Erstinstallation entfernte die Datei und ließ die selbst
+  angelegten Ordner als leeres `.vst3`-Gehäuse stehen.
+
+**Der Ordner ist damit die Einheit** — beim Hashen, beim Sichern, beim
+Tauschen, beim Prüfen und beim Rückweg. Was ein Host von einem Bundle liest,
+ist der Ordner; was ausgeliefert und verifiziert wird, muss dasselbe sein.
+
+#### Ordner-Hash v1 — die kanonische Form
+
+Ein SHA-256 über einen Ordner ist keine Selbstverständlichkeit; er braucht eine
+Definition, an die sich **zwei Implementierungen** halten (Python schreibt ihn
+mit `--hashen`, PowerShell prüft ihn beim Installieren). Die Form ist:
+
+```
+Für jede DATEI unterhalb des Ordners, rekursiv (Verzeichnisse selbst zählen nicht):
+    relpfad  := Pfad relativ zum Ordner, Trennzeichen '/', kein führendes './'
+    zeile    := <SHA-256 der Datei, 64 Hex GROSS> <ein Leerzeichen> <relpfad> <LF>
+
+Alle Zeilen aufsteigend nach relpfad sortiert, aneinandergehängt, UTF-8;
+Ordner-Hash := SHA-256 über diesen Bytestrom, 64 Hex GROSS.
+```
+
+Drei Festlegungen, jede mit ihrem Grund:
+
+- **Nur Dateien, keine Verzeichniseinträge.** Ein leeres Verzeichnis trägt
+  nichts, was ein Host lädt — und zwei Implementierungen müssten sich sonst
+  darauf einigen, ob `Contents/` mitzählt. Dateien allein ist eindeutig.
+  Ein Ordner ohne jede Datei ergibt damit den SHA-256 des leeren Bytestroms;
+  `--hashen` verweigert ihn trotzdem ausdrücklich, weil ein Bundle ohne Datei
+  keine Auslieferung ist.
+- **Relative Pfade müssen ASCII sein — sonst Abbruch, nicht irgendein Hash.**
+  PowerShell sortiert Zeichenketten ordinal nach UTF-16-Code-Einheiten, Python
+  byteweise nach UTF-8; oberhalb der BMP laufen diese Ordnungen auseinander.
+  Statt zu hoffen, dass der Fall nie eintritt, wird der Bereich so weit
+  eingeengt, dass zwei Implementierungen **nicht** uneins sein können — und die
+  Einengung wird erzwungen. Beide Hälften brechen ab, wenn ein Pfad sie verlässt.
+- **Ein Reparse-Punkt (Junction, Symlink) im Ordner bricht ab.** Er ist
+  dieselbe Falle wie ein Nicht-ASCII-Pfad, nur unauffälliger: PowerShells
+  `-Recurse` steigt in ein Verzeichnis-Reparse **nicht** hinab, Pythons
+  `rglob` schon — dieselbe Definition ergäbe zwei Hashes. VST3-Bundles
+  enthalten keine; stünde je einer drin, sagen beide Hälften es, statt
+  verschiedene Zahlen zu liefern. Auch versteckte Dateien zählen mit
+  (PowerShell braucht dafür `-Force`), damit „unsichtbar" nicht „nicht
+  ausgeliefert" bedeutet.
+
+Dass beide Implementierungen wirklich denselben Wert bilden, misst **A17
+selbst** an einem synthetischen Ordner (verschachtelt, mit Leerzeichen im
+Namen, mit Groß-/Kleinschreibung an der Sortiergrenze) — nicht an einem
+gebauten Bundle, damit die Kreuzprobe auch ohne Bau läuft. Fehlt `pwsh`, ist
+das ein **Fehler** des Beins und keine stille Auslassung: eine Kreuzprobe, die
+nicht lief, hat nichts bewiesen.
+
+### 2.2 `art` ist eine geschlossene Menge
+
+`vst3` oder `broker`, nichts sonst. Der Grund ist der Zielpfad: `Ziel-Pfad()`
+im Skript behandelt alles, was nicht `vst3` ist, im **Broker-Zweig** — ein
+Tippfehler beim Erweitern legte die Datei also unter `ziele.broker_verzeichnis`,
+in genau den Pfad, den §4 schützt, weil er ab `SONDE-010` ein Spawn-Ziel wird.
+A17 hat dafür eine eigene Regel; sie fiel vorher niemandem auf, weil `_vst3()`
+auf `art == "vst3"` filtert und die Broker-Regel nur `broker` zählt — ein
+drittes Wort fällt durch beide Siebe (gemessen: 0 von 12 Regeln sahen es).
 
 ## 3. `sha256: null` heißt **nicht ausliefer-bar**
 
@@ -105,16 +188,59 @@ Das ist eine Technikentscheidung dieses Tickets, kein User-Entscheid.
 Hausinvariante: beide Hälften im selben Änderungssatz. Strategie
 `vor-dem-tausch-sichern`:
 
-1. Vor jedem Tausch wandert die **vorgefundene** Datei nach
-   `eq-copilot/install/rueckweg/<stempel>-<kennung>.bak`.
-2. Pfad, Hash davor, Hash danach und Sicherungsdatei landen in
-   `install-ergebnis.json`.
-3. `Install-Nakama.ps1 -Rueckweg` liest genau das: gesicherte Datei
-   zurückkopieren — oder **entfernen**, wenn vorher keine da war (die neuen
+1. Vor jedem Tausch wandert der **vorgefundene** Stand nach
+   `eq-copilot/install/rueckweg/<stempel>-<kennung>` — bei `vst3` als
+   **Ordnerkopie** (Suffix `.bundle`), bei `broker` als Datei (Suffix `.bak`).
+2. Pfad, Hash davor, Hash danach, Sicherung, `art` und die Liste der vom
+   Skript **selbst angelegten Verzeichnisse** landen in `install-ergebnis.json`.
+3. `Install-Nakama.ps1 -Rueckweg` liest genau das: gesicherten Stand
+   zurückstellen — oder **entfernen**, wenn vorher keiner da war (die neuen
    Bundles waren nie installiert).
 
 Ein Installer, der seinen Rückweg aus einer Liste historischer Bundles zöge,
 könnte nur Stände zurückgeben, die vorher jemand aufgeschrieben hat.
+
+**Der Rückweg stellt den Vorzustand her, auch wenn der Vorzustand „kein
+Ordner" war** (T2-5 (d), 23.08.2026). Drei Punkte, die das tragen:
+
+- Bei `vst3` wird der **ganze Bundle-Ordner** entfernt, nicht eine Datei
+  darin — sonst bliebe ein leeres `.vst3`-Gehäuse in `Common Files\VST3`
+  stehen, das jeder Scanner findet und das nichts enthält.
+- `erzeugte_ordner` verzeichnet jedes Verzeichnis, das der Installationslauf
+  **selbst** angelegt hat (etwa `Program Files\evenacadia\Nakama` für den
+  Broker). Der Rückweg entfernt sie in umgekehrter Reihenfolge — **nur wenn
+  sie leer sind**. Zwei Bedingungen, keine davon entbehrlich: *selbst
+  angelegt* schützt vorgefundene Verzeichnisse (`Common Files\VST3` steht
+  praktisch immer schon da und wird darum nie verzeichnet), *leer* schützt
+  davor, fremde Dateien mitzunehmen, die inzwischen dort gelandet sind. Das
+  Aufräumen darf nie mehr wegnehmen, als es angelegt hat.
+
+**Ein Tausch ersetzt, er mischt nicht.** Ein vorgefundener Bundle-Ordner wird
+vor dem Kopieren **entfernt**. `Copy-Item` über einen bestehenden Ordner würde
+zusammenführen — eine Datei, die der neue Bau nicht mehr enthält, überlebte
+still im installierten Bundle. Genau das ist die Form von T2-5 (b).
+
+### 5.0 Der Gegenpfad wird gefahren, nicht zugesagt
+
+Bis zur S9-Nacharbeit war die zweite Hälfte dieser Invariante **geschrieben,
+aber nie ausgeführt** — der T2-Prüfer sagte das selbst (Manifest §5.9: *„Nur
+gelesen und gegen den Vertrag gemessen. Weder installiert noch
+zurückgerollt."*). Beim ersten wirklichen Lauf fielen zwei echte Fehler
+heraus, die dem Lesen entgangen waren: ein Nachschlagen mit leerem Schlüssel
+(`$hashtable[$null]` wirft in PowerShell), das den Rückweg **ab der zweiten
+Installation** sterben ließ, und ein verweigerter Rückweg, der `status: ERROR`
+in die Ergebnisdatei schrieb und damit genau die Quelle zerstörte, aus der die
+angebotene Wiederholung mit `-Erzwingen` hätte lesen müssen.
+
+Deshalb läuft der Gegenpfad ab jetzt im Kanon mit (**A18**): das *echte*
+`Install-Nakama.ps1` in einer Sandbox unter `%TEMP%`, deren Manifest
+`ziele.*` dorthin zeigt. Es wird nichts installiert, es braucht keine
+Rechteerhöhung, und das Skript braucht keinen Testschalter. Genau **eine**
+Zeile unterscheidet die Sandbox-Kopie vom Original — Riegel 3 („Ruhe",
+verweigert solange FL läuft, was in einer Sandbox ohne Host keinen
+Gegenstand hat). A18 prüft vorher, dass diese Zeile im Original steht, und
+druckt die Ersetzung als Diff mit: ein Riegel darf nicht unbemerkt
+verschwinden, nur weil eine Probe ihn umgeht.
 
 ### 5.1 Der NAK-41-Riegel
 
@@ -123,13 +249,58 @@ verliert im 16.08.-Build **still** seine Messpunkt-Identität: jener Build kennt
 nur `EqCopilotState{schema=1}`, sieht einen fremden Baumtyp und ignoriert ihn —
 ohne Fehlermeldung.
 
-Der Rückweg schlägt den Hash der gesicherten Datei in `rueckweg.bekannte_staende`
-nach und vergleicht deren `state_schema` mit dem `state_schema` des Ziels in der
+Der Rückweg schlägt den Hash des gesicherten Standes in `rueckweg.bekannte_staende`
+nach und vergleicht dessen `state_schema` mit dem `state_schema` des Ziels in der
 Identitätsdatei. Ist es kleiner **oder unbekannt**, verweigert das Skript und
 verlangt `-Erzwingen` — sichtbar, mit Aufzählung der betroffenen Bundles.
 
-**Unbekannt zählt wie älter.** Schweigen ist hier kein Freibrief: eine Datei, die
+**Unbekannt zählt wie älter.** Schweigen ist hier kein Freibrief: ein Stand, den
 niemand einordnen kann, ist genau der Fall, in dem der stille Verlust passiert.
+
+**Zwei Hasharten, ein Nachschlagen** (23.08.2026, Folge von §2.1). Ein
+`bekannte_staende`-Eintrag trägt seit dem Umzug auf den Ordner das Feld
+`hash_art`:
+
+| `hash_art` | was der `sha256` beschreibt |
+|---|---|
+| `ordner` | Ordner-Hash des ganzen Bundles nach §2.1 |
+| `datei-innen` | Dateihash **nur** der inneren Binärdatei `Contents/x86_64-win/{bundle}` |
+
+Der Rückweg bildet von einem gesicherten `vst3`-Stand **beide** Hashes und
+schlägt beide nach. Das ist keine Kulanz, sondern die einzige ehrliche Form:
+die zwei historischen Einträge (Bau vom 16.08. und der Stand davor) wurden
+gegen die **Binärdatei** eingefroren, lange bevor der Ordner die Einheit war.
+Sie bleiben damit gültig und benennen weiter dieselben Builds. Ein neuer
+Eintrag wird als `ordner` geführt. Fällt ein Stand durch beide Nachschlagungen,
+gilt er als unbekannt — also als älter.
+
+## 5.2 Warum das v1 bleibt und kein Versionsschritt ist
+
+Hausregel: **Schemas sind Verträge** — eine Änderung an Schemaname,
+Feldbedeutung oder Riegel ist eine Versionierung mit Beleg, kein Edit. Die
+Änderung vom 23.08. ändert Feldbedeutungen (`quelle`, `sha256`) und trägt ein
+neues Feld (`hash_art`). Sie bleibt trotzdem **in v1**, und zwar aus einem
+Grund, der nachprüfbar ist statt bequem:
+
+**Unter v1 wurde nie etwas ausgeliefert.** Jedes `sha256` steht auf `null` und
+`hashes_erzeugt_am` ebenfalls — und genau dieser Zustand heißt laut §3 „nicht
+ausliefer-bar", das Skript bricht darin ab, bevor es irgendetwas anfasst. Es
+gibt also kein Paket, keine `install-ergebnis.json` und keinen installierten
+Stand, der nach der alten Feldbedeutung gelesen werden müsste. Der Zweck einer
+Versionierung — *alte Stände laden weiter* — hat hier **kein Subjekt**.
+
+Alle drei Leser (dieser Vertrag, `A17`, `Install-Nakama.ps1`) liegen in
+diesem Repo und ändern sich im selben Änderungssatz. Ein `v2` müsste einen
+`v1`-Zweig mitführen, den kein Manifest je genommen haben kann: totes
+Migrationsgerüst, das behauptet, einen Fall zu behandeln, den es nicht gibt —
+dieselbe Art Lüge, gegen die die Hausregel eigentlich gerichtet ist.
+
+**Wo die Grenze verläuft:** Sobald ein `--hashen`-Lauf gefüllte Hashes und
+`hashes_erzeugt_am` **committet**, ist v1 ausgeliefert. Von da an ist jede
+Änderung an der Pfadformel, an der Bedeutung von `sha256` oder an §2.1 ein
+**Versionsschritt** (`nakama.installer/v2`) mit beiden Ständen nebeneinander.
+Das ist kein Vorsatz, sondern an einem Feld ablesbar: `hashes_erzeugt_am`
+sagt, ob dieser Satz schon gilt.
 
 ## 6. Was dieser Vertrag ausdrücklich NICHT abdeckt
 

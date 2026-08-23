@@ -9,6 +9,7 @@ build/
 # den Ordner hinab, und die Ausnahmen unten blieben wirkungslos.
 install/*
 !install/Install-Nakama.ps1
+!install/NakamaOrdnerHash.ps1
 !install/nakama-installer-v1.json
 
 fixtures/*.wav

@@ -27,21 +27,21 @@
       "art": "vst3",
       "ziel_id": "main",
       "cmake_ziel": "EqCopilot",
-      "quelle": "eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3/Contents/x86_64-win/EQ-Copilot.vst3",
+      "quelle": "eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3",
       "sha256": null
     },
     {
       "art": "vst3",
       "ziel_id": "passive-probe",
       "cmake_ziel": "NakamaSuna",
-      "quelle": "eq-copilot/build/plugin/NakamaSuna_artefacts/Release/VST3/Nakama Suna.vst3/Contents/x86_64-win/Nakama Suna.vst3",
+      "quelle": "eq-copilot/build/plugin/NakamaSuna_artefacts/Release/VST3/Nakama Suna.vst3",
       "sha256": null
     },
     {
       "art": "vst3",
       "ziel_id": "active-probe",
       "cmake_ziel": "NakamaProbeeq",
-      "quelle": "eq-copilot/build/plugin/NakamaProbeeq_artefacts/Release/VST3/Nakama Probeeq.vst3/Contents/x86_64-win/Nakama Probeeq.vst3",
+      "quelle": "eq-copilot/build/plugin/NakamaProbeeq_artefacts/Release/VST3/Nakama Probeeq.vst3",
       "sha256": null
     },
     {
@@ -70,15 +70,19 @@
       "wo": "docs/offene-punkte.md"
     },
 
+    "hash_art_erklaerung": "Seit dem Umzug auf den Bundle-ORDNER (S9-Nacharbeit 23.08.2026, Vertrag §2.1/§5.1) sagt jeder Eintrag, WOGEGEN sein sha256 gebildet wurde: `ordner` = Ordner-Hash v1 ueber das ganze Bundle, `datei-innen` = Hash NUR der inneren Binaerdatei Contents/x86_64-win/<bundle>. Die beiden Eintraege unten wurden gegen die Binaerdatei eingefroren, lange bevor der Ordner die Einheit war - sie bleiben damit gueltig und benennen weiter dieselben Builds. Der Rueckweg bildet von einem gesicherten vst3-Stand BEIDE Hashes und schlaegt beide nach; faellt ein Stand durch beide, gilt er als unbekannt, also als aelter.",
+
     "bekannte_staende": [
       {
         "sha256": "74D86BD5A5F92B1135EC066AD65770BE5744F04E12D7D4C9F95BE0CD6656E0F8",
+        "hash_art": "datei-innen",
         "ziel_id": "main",
         "state_schema": 1,
         "beschreibung": "Bau vom 16.08.2026 mit Hoer-Markierung - der HEUTE installierte Stand. Vor SONDE-006, schreibt und liest nur EqCopilotState schema=1."
       },
       {
         "sha256": "B87AB70EAA9E96D7F93C39C66D690E2FECDF3E983E55A5FC31E21AA9AFBC8EF1",
+        "hash_art": "datei-innen",
         "ziel_id": "main",
         "state_schema": 1,
         "beschreibung": "Bau vor der Hoer-Markierung (Rollback-Bundle rollback-B87AB70E-before-hoermarkierung.vst3). Ebenfalls Schema 1."

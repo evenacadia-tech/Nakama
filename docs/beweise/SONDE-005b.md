@@ -1,4 +1,6 @@
 # Beweismanifest — S6 «`SONDE-005b`: FlatBuffers, gepinntes flatc, Codegen-Drift»
+<!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-21 -->
+
 
 **Ticket-Gate im Wortlaut** (`docs/FL-Nakama-Sonden-Design-Entwurf.md` §65):
 

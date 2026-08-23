@@ -1,4 +1,6 @@
 # Beweismanifest — SONDE-004a «Wegwerf-Target mit zwei Aux-Bussen + Impulsharness»
+<!-- NAKAMA-URTEIL: T1 PASS 2026-08-20 -->
+
 
 | Feld | Wert |
 |---|---|

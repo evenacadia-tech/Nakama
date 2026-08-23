@@ -1,4 +1,6 @@
 # Beweismanifest — S0 · Basislinie
+<!-- NAKAMA-URTEIL: T1 PASS 2026-08-20 -->
+
 
 **Lauf:** 2026-08-20 18:29 · **Runner:** `tools/beweise.ps1` · **Urteil:** GRUEN — 4/4 Kanon-Laeufe bestanden · 7 geplante Pruefung(en) noch nicht gebaut · **Exitcode:** 0
 

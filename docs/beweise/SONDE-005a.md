@@ -1,4 +1,6 @@
 # Beweismanifest — S5 «`SONDE-005a`: v3-JSON-Schemas, Bandgitter, Cross-Language-Fixtures»
+<!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-21 -->
+
 
 **Ticket-Gate im Wortlaut** (`docs/FL-Nakama-Sonden-Design-Entwurf.md` §65):
 

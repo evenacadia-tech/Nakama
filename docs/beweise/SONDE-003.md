@@ -1,4 +1,6 @@
 # Beweismanifest — SONDE-003 «JUCE-Bridge-Patch: Context, Parameterpunkte, Buslatenz»
+<!-- NAKAMA-URTEIL: T2 PASS 2026-08-21 -->
+
 
 | Feld | Wert |
 |---|---|

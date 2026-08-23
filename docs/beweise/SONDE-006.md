@@ -1,4 +1,6 @@
 # Beweismanifest — SONDE-006 «State-Schema 2, fester Parameterbestand, reine Schema-1-Migration»
+<!-- NAKAMA-URTEIL: T2 PASS 2026-08-22 -->
+
 
 > **Die eine harte Regel** (`docs/bauaufteilung-sonden.md` §2): *Eine Behauptung
 > ohne eingefügte Rohausgabe ist ein **gescheitertes** Ticket, kein fast

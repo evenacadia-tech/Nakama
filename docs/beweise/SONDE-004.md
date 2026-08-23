@@ -1,4 +1,6 @@
 # Beweismanifest — SONDE-004 «FL-Aux-/PDC-/Recall-Spike und Capabilityreport» (S4)
+<!-- NAKAMA-URTEIL: T2 PASS 2026-08-22 -->
+
 
 > **Die eine harte Regel** (`docs/bauaufteilung-sonden.md` §2): *Eine Behauptung
 > ohne eingefügte Rohausgabe ist ein **gescheitertes** Ticket.* Die Rohdaten

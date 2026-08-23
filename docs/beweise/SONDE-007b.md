@@ -1,4 +1,6 @@
 # Beweismanifest — SONDE-007b «Drei Ziele, Lifecycle-Klassifikation, Installer-Manifest»
+<!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-23 -->
+
 
 > **Die eine harte Regel** (`docs/bauaufteilung-sonden.md` §2): *Eine Behauptung
 > ohne eingefügte Rohausgabe ist ein **gescheitertes** Ticket, kein fast

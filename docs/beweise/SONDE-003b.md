@@ -1,4 +1,6 @@
 # Beweismanifest — S3b «Termin-B-Messgeraet `EqCopHostProbe`»
+<!-- NAKAMA-URTEIL: T2 PASS 2026-08-21 -->
+
 
 | Feld | Wert |
 |---|---|

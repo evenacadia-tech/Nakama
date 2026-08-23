@@ -1,4 +1,6 @@
 # Beweismanifest — SONDE-008 «StampedAudioQueue, Ein-Block-Quarantäne, fixed-memory Loudness»
+<!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-23 -->
+
 
 | Feld | Wert |
 |---|---|

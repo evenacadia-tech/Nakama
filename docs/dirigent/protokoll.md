@@ -18,6 +18,16 @@ Regeln und Zyklus: `.claude/skills/dirigent/SKILL.md`. Jüngster Eintrag oben.
 
 ---
 
+## 2026-08-24 nachts · SONDE-009 · nacharbeit (S12–13)
+
+- **Session:** „S12-13 T2-Befunde Nacharbeit" (`4cd48e2d-5ca5-41b6-bea4-ed658f56b1b1`), Opus 5 mit 1M, Effort **xhigh**.
+- **Ergebnis:** Alle fünf T2-Befunde geschlossen (Manifest **§10.1–§10.5**; Commits `ae10368` + `f6ddef6`). Umfang: `FeatureEngine.h` **+169**, `AnalysisGoldenTestMain.cpp` **+430** Zeilen — das Prüfbein ist um das **Zweieinhalbfache des Fixes** gewachsen, und genau das war die Bedingung im Auftrag: `keinFensterUeberbrueckt()` fragte fünf Füllstände und keinen Akkumulator ab, deshalb war B5 grün, während T2-1 offen dalag. B5 **120 → 155** Prüfungen. Beweislauf **28/28, Exit 0, beglaubigt**, kein Exit-4-Fehlalarm, `/W4` ohne Warnung. Bitidentität unangetastet (A1/A2/A3 Exit 0, dazu B4 und A15/A16). Marke `T2 NEEDS_WORK 2026-08-24 nachgearbeitet` angehängt — **kein PASS erklärt**, regelkonform. Neuer offener Punkt **NAK-68** (Plausibilität der Rahmenskalare nach einer Grenze) sauber ausgelagert statt nebenbei mitgefixt. Der Selbstaudit-Commit `f6ddef6` ist der eigentliche Qualitätsbeleg: die Session hat nach dem eigenen Commit noch einmal adversarial gelesen und gefunden, dass ihre Zeilenverweise ins Leere zeigten — Zeilennummern verschieben sich durch den eigenen Fix.
+- **Gestützt auf:** Repo-Messung, nicht Selbstbericht — `git log`/`git diff --stat` über `aa577b7..HEAD`, die zwei Urteilsmarken im Manifestkopf, §10.7 (Kanon-Rohblock) und §10.8 selbst gelesen; Baum nach Abschluss sauber bis auf die bekannten fremden Dateien; alles gepusht.
+- **Nicht geprüft:** Die Fixes selbst an den Quellen — das ist die Rolle des jetzt startenden frischen Prüfers. Ich habe die 28/28 nicht selbst nachgefahren (Rohblock im Manifest gelesen, nicht reproduziert) und die Zahl 155 nicht nachgezählt. Der Entwurfsentscheid aus §10.1 (welche Ehrlichkeit bei `rahmenLeeren()` an der Grenze gewinnt) ist eine Erbauer-Entscheidung, die ich bewusst **nicht** überstimmt habe — sie war im Auftrag ausdrücklich seine.
+- **Weiter mit:** T2 Runde 2 auf den nachgebesserten Stand — Session `01aa92b8-7a7e-42c7-8fc8-c8980ca24fc5`. Basispunkt **`aa577b7`** (selbst gerechnet: Elterncommit von `ae10368`), Ticketstand davor `ff24908`. Grabungsliste aus §10.8, allen voran Punkt 2: der Sweep in G12 fährt **nur den Seek**, die anderen acht Grenzarten sind auf Frame-Ebene ungedeckt — und genau eine Ebene über dem Riegel saß T2-1 aus Runde 1.
+
+**Berichtigung zum Eintrag vom 23.08. mittags** („xhigh ist über die Spawn-API nicht setzbar — nur Basisvariante + `-1m`"): Der erste Halbsatz stimmt, der Schluss daraus war falsch. `spawn_session` hat kein Effort-Feld, aber der Host löst je Session `resolveEffortLevel(session.metadata?.effortLevel, getDefaultEffortLevel())` auf; im App-Store steht `"defaultEffortLevel": "xhigh"`. Eine gespawnte Session ohne eigenes Metadatenfeld läuft damit **auf xhigh**. Gemessen 24.08. an der Konfiguration des Hosts, nicht angenommen.
+
 ## 2026-08-23 spät · HALT · User-Stopp
 
 - **Anlass:** User-Wort 23.08.: „bin wieder da, kannst das Dirigieren stoppen jetzt" — §4, expliziter Stopp. Es wird nichts mehr gespawnt.

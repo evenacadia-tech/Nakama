@@ -37,28 +37,37 @@ noch keine Vorgabe. Claude holt die Stände per Figma-MCP in die Truhe
 (`assets/figma/LIES-MICH.md`). (Der Figma-Dateiname `Nakama-Design` bleibt —
 er bezeichnet die Figma-Datei, nicht mehr ein Repo.)
 
-Die drei Oberflächen:
+Die Oberflächen (**seit 23.08. zwei Apps** — Entscheid
+`abnahmen/2026-08-23-gen-eq-zentrale.md`; Suna ist in Probeeq aufgegangen):
 
-1. **Nakama Gen** — die Main-App: Quellen-Übersicht, Befunde, Advisor.
-   760×430. Stand: `assets/figma/2026-08-22-gen.png` (Depot `6:13`, Studie 04
-   in der Probeeq-Sprache). Die 17 Lesarten dazu beantwortet der User im
-   Nakama-Hub (`abnahmen/2026-08-21-gen-auftrag-figma.md`). Der Stand vom
-   21.08. (cyan) ist Verlauf.
-2. **Nakama Probeeq** — die aktive Sonde: ein **vollwertiger, hochwertiger
-   EQ**, der Anweisungen von Gen direkt umsetzt **und** ganz normal manuell
-   bedienbar ist. Muss allein funktionieren, auch ohne Gen. 700×420.
-   Stand: `assets/figma/2026-08-22-probeeq.png` (Depot `6:1906`).
-3. **Nakama Suna** — die passive Sonde: eine kleine Status-/Identitätskachel.
-   260×84. Stand: `assets/figma/2026-08-22-suna.png` (Depot `6:2629`) —
-   entworfen von Claude in der Probeeq-Sprache (Studie 03; im Depot Rahmen
-   6:2111), vom User exportiert und damit User-Wort; die elf offenen Punkte
-   der Übersetzung stehen in `abnahmen/2026-08-21-suna-auftrag-figma.md`.
+1. **Nakama Gen** — Hub/„Studio". **Seite 1:** Quellen-Übersicht, Befunde,
+   Advisor — bleibt vorerst wie gehabt (User 23.08.: „die frontseite bleibt
+   trotzdem erstmal wie gehabt"); Stand: `assets/figma/2026-08-22-gen.png`
+   (Depot `6:13`, Studie 04). Die Lesarten dazu:
+   `abnahmen/2026-08-21-gen-auftrag-figma.md`. **Seite 2 (neu, Figma
+   offen — NAK-65):** EQ-Zentrale aller Sonden + vollwertiger Master-EQ;
+   Durchschalter direkt auf der Seite, zwei EQ-Spuren in EINEM Graph.
+   Spielregeln: `docs/ui-spielregeln-eq-zentrale.md`. Später werden beide
+   Seiten komplett überarbeitet (User 23.08.). 760×430 galt der Übersicht;
+   Größe Seite 2 offen. Der Stand vom 21.08. (cyan) ist Verlauf.
+2. **Nakama Probeeq** — DIE Sonde auf den Bussen: misst passiv, EQ
+   zuschaltbar, **bedient wird auf Gens Seite 2**; eine eigene
+   Minimal-Rückfallfläche ist Vorschlag (Zuschnitt offen). Der
+   Probeeq-Stand `assets/figma/2026-08-22-probeeq.png` (Depot `6:1906`,
+   700×420) ist **Working Design** der EQ-Fläche (User 23.08.), als
+   eigenständige Voll-UI aber Verlauf. Die Suna-Kachel
+   (`assets/figma/2026-08-22-suna.png`, 260×84, Depot `6:2629`) und ihre
+   offenen Punkte (`abnahmen/2026-08-21-suna-auftrag-figma.md`, U6) gelten
+   für die Kachel/Rückfallfläche der EINEN Sonde weiter, soweit sie eine
+   behält.
 
 Die Projektquellen — vollständig, nichts von außen dazuholen:
 
 - **DIE VORGABE** (wie es aussieht): `assets/figma/` — je Stand eine datierte
   Datei, beschrieben in `assets/figma/LIES-MICH.md`; der neueste gilt.
 - **WAS** jede Oberfläche zeigen muss: `docs/oberflaechen-spezifikation.md`
+- **WAS DIE TECHNIK VERLANGT** (Spielregeln der EQ-Zentrale, für die
+  Figma-Arbeit an Gen Seite 1+2): `docs/ui-spielregeln-eq-zentrale.md`
 - **WIE** gearbeitet wird (UX vor UI, Stufen 1–7, Schlusscheck):
   `docs/CLAUDE-UX-UI-ARBEITSKERN.md` — bei jeder Designaufgabe befolgen
 - **WAS SICHTBAR SEIN DARF**: `docs/DESIGN-GESETZE.md` — Progressive

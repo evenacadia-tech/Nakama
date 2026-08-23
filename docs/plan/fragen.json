@@ -1,0 +1,679 @@
+{
+ "_lies_mich": "docs/plan/LIES-MICH.md — offene Fragen an den User. Gestellt wird im Chat durch .claude/skills/fragen/. Eine Antwort ist User-Wort: sie wird WOERTLICH mit Datum hier und im Register bzw. in design/abnahmen/ festgehalten, nie zusammengefasst.",
+ "herkunft": "docs/hub/hub.json, Stand 2026-08-23 (bei_dir + antworten)",
+ "offen": [
+  {
+   "id": "U2",
+   "dringlichkeit": "wenn du dazu kommst",
+   "art": "Entscheid",
+   "titel": "Gen-Entwurf (Studie 04): alle 18 Lesarten beantwortet — 5 Folgefragen",
+   "was": "Du hast am 22.08. alle 18 Punkte beantwortet. Das Entscheidungstor U2.0 ist offen: Studie 04 wird weiterverfolgt. Neun Vorschlaege hast du uebernommen, sechs gedreht. Bei vier davon (U2.4, U2.6, U2.8, U2.9) bot der Alternativtext zwei Formen an — verworfen ist bindend, die Form ist offen. Dazu U2.1: ein Zeichen fuer die ganze Familie, aber offen ist, welches System sich beugt.",
+   "warum": "Die fuenf Folgefragen sind formuliert und stehen in design/abnahmen/2026-08-22-hub-antworten-35.md (Abschnitt 6). Sie erscheinen auf dieser Seite erst, wenn der Fragenkatalog der Seite sie kennt — bis dahin liegt nichts bei dir.",
+   "wo": "design/abnahmen/2026-08-22-hub-antworten-35.md",
+   "seit": "21.08.",
+   "bilder": [
+    {
+     "datei": "u2-gen-studie04-uebersicht.png",
+     "text": "Die ganze Studie 04: Schönfall, acht Zustände (Mix lesen, Urteilen, Vorhören, alles frisch, gemischt, 16 Quellen, alles getrennt, keine Quelle), zwei Zooms, Delta, die 17 Punkte. Der Schönfall selbst steht unten bei „Nakama Design“."
+    }
+   ],
+   "punkte": [
+    {
+     "id": "U2.0",
+     "titel": "Gesamturteil: trifft Gen die Sprache von Probeeq und Suna?",
+     "gewicht": "Entscheidungstor",
+     "entwurf": "Studie 04 so weiterverfolgen — Übersetzung in das lebende Blatt beginnt gegen deinen Export.",
+     "alternative": "Grundsätzlich anders — sag in Worten, was nicht stimmt (Material, Anordnung, Dichte, Farbwelt)."
+    },
+    {
+     "id": "U2.1",
+     "titel": "Zellen-Grammatik gegen Apertur-Grammatik",
+     "gewicht": "Tragweite 1",
+     "entwurf": "Die Karte folgt der Abnahme vom 20.08.: hohl = veraltet, Strichlinie = getrennt. Die Apertur spricht wie Probeeq und Suna: hohl = kein Kontakt. Beides nebeneinander.",
+     "alternative": "Ein Zeichen für die ganze Familie — dann braucht entweder „veraltet“ in der Karte ein neues Zeichen, oder die Apertur ändert ihre Bedeutung."
+    },
+    {
+     "id": "U2.2",
+     "titel": "Die vier Ebenen als Reiter oben links im Glas",
+     "gewicht": "Tragweite 2",
+     "entwurf": "OBSERVE · ADVISE ● · AUDITION · APPLY sitzen oben links im Glas, wo Probeeq seine Identitätszeile hat. Gen hat keine Identitätszeile; die Wortmarke im Kinn ist die Identität.",
+     "alternative": "Die Ebenen als Tasten im Kinn rechts (neben SOURCES und UNDO) — das Glas beginnt dann wie bei Probeeq mit einer Identitätszeile."
+    },
+    {
+     "id": "U2.3",
+     "titel": "Zeilenmarker nur beim Vorhören, Befundort als Ring",
+     "gewicht": "Tragweite 3",
+     "entwurf": "Der Befundort ist der Ring mit Cyan-Saum um die betroffenen Zellen (Probeeqs gewählter Griff). Die markierte Zeile gibt es nur, solange das Vorhören gehalten wird (Abnahme 20.08.).",
+     "alternative": "Wie im alten Gen-Stand: der Marker liegt in Ruhe auf der Fokusquelle — dann braucht das Vorhören ein anderes Zeichen."
+    },
+    {
+     "id": "U2.4",
+     "titel": "„1 STALE · SYNTH PAD“ — die Ausnahme nennt den Namen",
+     "gewicht": "Tragweite 4",
+     "entwurf": "Der Kartenkopf nennt Zahl und Namen (bis zwei je Sorte, Abnahme 20.08.), obwohl die Zeile den Namen inzwischen trägt.",
+     "alternative": "Nur die Zahl („1 STALE“) — oder ganz weg, weil die hohle Zeile mit Namen genügt."
+    },
+    {
+     "id": "U2.5",
+     "titel": "Wortlaut der Aktionen",
+     "gewicht": "Tragweite 5",
+     "entwurf": "HOLD TO AUDITION · APPLY · REJECT — Wort für Wort aus Probeeqs Draft-Kasten; ein Wortschatz für die Familie.",
+     "alternative": "AUDITION / HOLD · APPLY · DISCARD wie im alten Gen-Stand."
+    },
+    {
+     "id": "U2.6",
+     "titel": "Sicherheit und Alternativursache — wo sie stehen",
+     "gewicht": "Tragweite 6",
+     "entwurf": "CERTAINTY HIGH im Befundkopf rechts; OTHER CAUSE als sechste, gedimmte Zeile nach der festen Fünferform.",
+     "alternative": "Anderer Ort (z. B. vor dem kleinsten Versuch) — oder eine der beiden Angaben einen Schritt entfernt, nicht auf der Fläche."
+    },
+    {
+     "id": "U2.7",
+     "titel": "SOURCES-Taste im Kinn als Tür",
+     "gewicht": "Tragweite 7",
+     "entwurf": "Eine Taste SOURCES (Probeeqs GLOBAL-Grammatik) führt zu Quellenliste, Rollen, Suche, Pinning, Fokusgruppen. Die Tür ist gezeichnet, der Raum dahinter nicht.",
+     "alternative": "Anders benennen (ROLES, SETUP …), oder einzelne Dinge davon auf die Fläche holen."
+    },
+    {
+     "id": "U2.8",
+     "titel": "UNDO · n im Kinn",
+     "gewicht": "Tragweite 8",
+     "entwurf": "Ein Einsatz UNDO · n = „n changes applied“ und Rückweg in einem; bei 0 gedimmt. Kein Verlauf dahinter.",
+     "alternative": "Ein Verlauf der angewandten Änderungen (wie Probeeqs Undo) — oder der Zähler an anderer Stelle."
+    },
+    {
+     "id": "U2.9",
+     "titel": "Rollenwörter je Zeile statt LIVE",
+     "gewicht": "Tragweite 9",
+     "entwurf": "LEADS · CARRIES · SUPPORTS · PROTECTED · MERGED als Wort neben dem Namen (Sunas Vokabular). LIVE entfällt — frisch schweigt. Ohne Rolle stünde dort „—“.",
+     "alternative": "LIVE behalten, oder keine Rolle in der Zeile (Rolle nur hinter der SOURCES-Tür)."
+    },
+    {
+     "id": "U2.10",
+     "titel": "Wein-Rampe für die Energie der Zellen",
+     "gewicht": "Tragweite 10",
+     "entwurf": "Energie als Ein-Farb-Rampe der Probeeq-Kurvenfüllung (#7E3D3E, 0–55 % Deckkraft über dem Glas), dunkel → hell.",
+     "alternative": "Kräftiger, dezenter, andere Farbe, oder mehr Stufen — sag, was dein Auge bei 1:1 braucht."
+    },
+    {
+     "id": "U2.11",
+     "titel": "Drei Sorten Zustand, drei Orte",
+     "gewicht": "Tragweite 11",
+     "entwurf": "Degradierter Hinweis oben rechts im Glas (Warnglyphe, Suna-Ort) · Messung im Kinn links · Ausnahmen je Quelle im Kartenkopf rechts.",
+     "alternative": "Alles in einer Kopfzeile wie im alten Gen-Stand."
+    },
+    {
+     "id": "U2.12",
+     "titel": "FOCUS-Zeile im Kartenkopf und Schreibweise der Spalten",
+     "gewicht": "Tragweite 12",
+     "entwurf": "Keine FOCUS / BASS / 180–260 HZ-Zeile — der Ort steht als Ring in der Karte und in der PRIORITY-Zeile. Spalten 1k 2k 4k 8k wie bei Probeeq.",
+     "alternative": "FOCUS-Zeile behalten und/oder 1K 2K 4K 8K wie im alten Stand."
+    },
+    {
+     "id": "U2.13",
+     "titel": "Befund-Navigation und Detailansicht",
+     "gewicht": "Tragweite 13",
+     "entwurf": "Befund 2 von 3 öffnet man über OBSERVE; das Detail einer Quelle (Spektrum, Lautheit, Dynamik, Breite, Verlauf) lebt im Schritt Urteilen.",
+     "alternative": "‹ › im Assistenten, und/oder eine eigene Detailansicht je Quelle außerhalb des Urteils."
+    },
+    {
+     "id": "U2.14",
+     "titel": "16 Quellen: Namen bei 8 px, Raster 10 px",
+     "gewicht": "Tragweite 14",
+     "entwurf": "Bei 16 Quellen bleiben die Namen in der Zeile (Schrift 8, Zellen 8, Fuge 2) — trägt, ist aber die Obergrenze. Gemessen: 158 px.",
+     "alternative": "Bei 16 namenlos (wie in der Abnahme vom 20.08.), Namen nur im Regelfall."
+    },
+    {
+     "id": "U2.15",
+     "titel": "Shader-Füllung der Schale (Lichtstreifen)",
+     "gewicht": "Tragweite 15",
+     "entwurf": "Der Gen-Klon trägt sie nicht — der markierte Probeeq-Knoten trug sie beim zweiten Lesen auch nicht mehr.",
+     "alternative": "Sie gehört zum Design — dann kommt sie auf beide Schalen und wird mitgebacken."
+    },
+    {
+     "id": "U2.16",
+     "titel": "Ein gemeinsames Figma-Depot",
+     "gewicht": "Bereits geklärt",
+     "entwurf": "Gen, Probeeq und Suna liegen gemeinsam im verbindlichen Figma-Depot Nakama-Design.",
+     "alternative": "Wieder auf mehrere Dateien verteilen."
+    },
+    {
+     "id": "U2.17",
+     "titel": "Export in die Truhe und Skalierungsstufen",
+     "gewicht": "Tragweite 17",
+     "entwurf": "Erledigt durch dein Depot-Wort vom 22.08.: Claude holt den Stand und die gebackenen Teile je Skalierungsstufe per Figma-MCP aus dem Depot. Hier nur noch: welche Stufen sollen es sein?",
+     "alternative": "Andere Stufen als 100 / 125 / 150 / 200 % — sag welche.",
+     "wahlen": [
+      "100 / 125 / 150 / 200 %",
+      "Andere Stufen (siehe Text)",
+      "Anders (siehe Text)",
+      "Später"
+     ]
+    }
+   ],
+   "status": "offen"
+  },
+  {
+   "id": "U5",
+   "dringlichkeit": "wenn du dazu kommst",
+   "art": "Entscheid",
+   "titel": "Probeeq: die Sidechain-Quelle je Band — sichtbar, Untermenü oder unsichtbar?",
+   "was": "Dein Probeeq-Stand zeigt zwölf Parameter je Band. Der technische Entwurf kennt einen dreizehnten (die Sidechain-Quelle für den Dynamikteil). Drei Lesarten: als sichtbarer Parameter in der Bandzeile, als Untermenü unter DYN, oder im ersten Release unsichtbar.",
+   "warum": "Der gespeicherte Zustand trägt seit 22.08. alle dreizehn (unsichtbar kostet nichts, nachträglich einfügen hätte einen Versionssprung erzwungen). Offen ist nur noch, was die Oberfläche zeigt — das entscheidet dein Figma-Stand.",
+   "wo": "docs/offene-punkte.md, NAK-33",
+   "seit": "21.08.",
+   "bilder": [
+    {
+     "datei": "u5-probeeq-bandzeile.png",
+     "text": "Die Bandzeile aus deinem Probeeq-Stand: zwölf Werte (BAND … MODE | DYN … RELEASE). Die Frage ist, ob und wo ein dreizehnter (die Sidechain-Quelle für DYN) erscheint."
+    }
+   ],
+   "status": "offen",
+   "frueher_beantwortet": {
+    "wahl": "Später",
+    "text": "",
+    "datum": "2026-08-22 18:21",
+    "status": "eingearbeitet",
+    "ergebnis": "Spaeter — die Sidechain-Quelle je Band bleibt offen (NAK-33). Der gespeicherte Zustand traegt seit 22.08. alle dreizehn Parameter, unsichtbar kostet nichts. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+   }
+  },
+  {
+   "id": "U6",
+   "dringlichkeit": "wenn du dazu kommst",
+   "art": "Entscheid",
+   "titel": "Suna: alle zehn Lesarten beantwortet — 4 Folgefragen",
+   "was": "Fuenf Vorschlaege uebernommen (Apertur, PRE/INSERT/POST, Rollenwoerter, feste Spalten, kein Zustand 'Name unbestaetigt'), zwei gedreht (U6.4 Messstatus, U6.6 Kopfzeile faellt weg), drei mit eigenen Worten: 'so kurz wie moeglich' (U6.5), 'macht kein sinn die frage' (U6.8), 'alle wortmarken haben den stil wie ich ihn aus figma exportiert habe' (U6.9).",
+   "warum": "U6.9 gilt fuer alle drei Apps und steht im Register. U6.8 wird neu gestellt, weil die Frage schlecht war. Die vier Folgefragen stehen in design/abnahmen/2026-08-22-hub-antworten-35.md (Abschnitt 6).",
+   "wo": "design/abnahmen/2026-08-22-hub-antworten-35.md",
+   "seit": "21.08.",
+   "bilder": [
+    {
+     "datei": "u6-suna-kachel.png",
+     "text": "Die Suna-Kachel, wie du sie exportiert hast. Die zehn Lesarten betreffen Details dieser Kachel: Verbindungspunkt links, Rollenwort (CARRIES), Position (POST), Messstatus rechts, Kopfzeile, Schatten."
+    }
+   ],
+   "punkte": [
+    {
+     "id": "U6.1",
+     "titel": "Apertur-Logik wie Probeeq",
+     "gewicht": "Tragweite 1",
+     "entwurf": "Verbindungspunkt: gefüllt + Leuchtsaum = verbunden und liefert · gefüllt ohne Saum = verbunden, Messung veraltet · hohl = kein Kontakt. Gens Karte sagt dagegen: hohl = veraltet, Strichlinie = getrennt — der Widerspruch bleibt, Suna vergrößert ihn nicht.",
+     "alternative": "Ein Zeichen für die ganze Familie — dann muss entweder Gens Karte oder die Apertur ihre Bedeutung ändern."
+    },
+    {
+     "id": "U6.2",
+     "titel": "Messposition: PRE · INSERT · POST",
+     "gewicht": "Tragweite 2",
+     "entwurf": "Dreistellung, wo in der Kette die Sonde sitzt: vor der Kette, als Einsatz mittendrin, am Ende.",
+     "alternative": "„Insert“ als FL-Mixerspur (z. B. „Insert 4“) plus PRE/POST — bräuchte einen Spurnamen in der Kachel."
+    },
+    {
+     "id": "U6.3",
+     "titel": "Rollenwörter",
+     "gewicht": "Tragweite 3",
+     "entwurf": "LEADS · CARRIES · SUPPORTS · PROTECTED · MERGED (führt / trägt / begleitet / geschützt / bewusst verschmolzen).",
+     "alternative": "Andere Wörter — du sagst welche."
+    },
+    {
+     "id": "U6.4",
+     "titel": "Messstatus-Wörter",
+     "gewicht": "Tragweite 4",
+     "entwurf": "MEASURING (frisch) · STALE · 40 s (veraltet, mit Alter als Zahl hinter dem Wort).",
+     "alternative": "Alters-Abstufung in Worten (seit 10 s / seit 10 min) oder ganz ohne Alter."
+    },
+    {
+     "id": "U6.5",
+     "titel": "Hinweis-Wortlaut",
+     "gewicht": "Tragweite 5",
+     "entwurf": "NOT DELIVERING TO GEN (kein Kontakt) · DUPLICATE INSTANCE (doppelte Instanz) — passt neben die Kopfzeile (140 px).",
+     "alternative": "Anderer Wortlaut — kürzer geht kaum ohne Sinnverlust, länger passt nicht."
+    },
+    {
+     "id": "U6.6",
+     "titel": "Kopfzeile PASSIVE PROBE",
+     "gewicht": "Tragweite 6",
+     "entwurf": "Bleibt, wie Probeeqs „ACTIVE PROBE · PIANO BUS“; sie trägt rechts den Hinweis.",
+     "alternative": "Weg (bei zwölf gestapelten Kacheln zwölfmal dasselbe) — dann braucht der Hinweis einen anderen Ort."
+    },
+    {
+     "id": "U6.7",
+     "titel": "Feste Spalten",
+     "gewicht": "Tragweite 7",
+     "entwurf": "BUS 84 · ROLE 56 · POSITION 43 fest, damit Rolle und Position über viele Kacheln untereinander stehen; Preis: Lücke hinter kurzen Namen.",
+     "alternative": "Spalten hängen am Inhalt wie bei Probeeq — dann stehen sie je Kachel woanders."
+    },
+    {
+     "id": "U6.8",
+     "titel": "Schwebeschatten halbiert",
+     "gewicht": "Tragweite 8",
+     "entwurf": "Einzige Abweichung an der Schale; Probeeqs Schatten wäre so groß wie die Kachel selbst.",
+     "alternative": "Schatten in Probeeq-Originalgröße."
+    },
+    {
+     "id": "U6.9",
+     "titel": "Wortmarke mit Shader",
+     "gewicht": "Tragweite 9",
+     "entwurf": "Aus dem neuesten Probeeq-Rahmen (mit Shader-Verlauf), weil der Truhen-Export die Shader-Fassung zeigt.",
+     "alternative": "Die flache Wortmarke aus dem markierten Knoten."
+    },
+    {
+     "id": "U6.10",
+     "titel": "„Bestätigen“ des Namens",
+     "gewicht": "Tragweite 10",
+     "entwurf": "Ein unbestätigter Zustand hat keine Darstellung bekommen — er ist nirgends beschrieben, und erfunden wird nichts.",
+     "alternative": "Einen Zustand „Name unbestätigt“ zeigen — dann sag, wie er aussehen soll."
+    }
+   ],
+   "status": "offen"
+  },
+  {
+   "id": "U7",
+   "dringlichkeit": "wenn du dazu kommst",
+   "art": "Tätigkeit",
+   "titel": "Admin-Klick: alte Plugin-Kopie aus dem VST3-Ordner entfernen",
+   "was": "Unter C:/Program Files/Common Files/VST3/eq-copilot/ liegt eine 845 MB große alte Repo-Kopie vom 13.08. mit zwei alten „EQ-Copilot.vst3“, die FL bei jedem Scan mitnimmt. Wegräumen braucht einen Admin-Klick von dir; Claude bereitet den Befehl vor.",
+   "warum": "Doppelte Plugins im Scan verwirren FL und jede künftige Messung. Angebot seit dem Termin-A-Abend offen.",
+   "wo": "docs/NEXT-SESSION.md, „Morgen zuerst“ Punkt 3",
+   "seit": "22.08.",
+   "status": "offen"
+  },
+  {
+   "id": "U8",
+   "dringlichkeit": "wissen",
+   "art": "Wissen vor dem Klick",
+   "titel": "Installation des neuen Plugin-Stands (0.3.0) — vertagt, dein Wort 21.08.",
+   "was": "Installiert ist noch das Bundle vom 16.08. Der neue Stand (Hostbrücke, State-Schema 2) ist gebaut, aber nicht installiert („Version 0.3.0 angleichen, noch nicht installieren“). Installation bleibt dein Admin-Klick.",
+   "warum": "Vorher wissen: ein FL-Projekt, das du mit dem neuen Stand speicherst, verliert im alten Bundle still seine Messpunkt-Identität (kein Absturz, aber ein Rückweg zum 16.08.-Stand mit so einem Projekt ist verlustig). Das ist kein Fehler, den Code beheben kann — nur Wissen vor dem Klick.",
+   "wo": "docs/offene-punkte.md, NAK-41 und NAK-32",
+   "seit": "22.08.",
+   "status": "offen"
+  },
+  {
+   "id": "U9",
+   "dringlichkeit": "wenn du dazu kommst",
+   "art": "Entscheid (wenn das Ticket dran ist)",
+   "titel": "Figma gegen Entwurf: Rangfolge geklaert, zwei Fragen waren unverstaendlich",
+   "was": "Dein Satz 'figma ist keine technikreferenz, der implementplan ist es' klaert alle fuenf Stellen auf einmal: bei technischen Fragen entscheidet der Entwurf, fuer das Aussehen bleibt Figma die Quelle. U9.5 'Figma gilt' macht das Quellen-x-Band-Gitter zur Gen-Uebersicht. U9.3 und U9.4 hast du nicht verstanden — die Fragen waren schlecht gestellt.",
+   "warum": "U9.3 und U9.4 werden neu und verstaendlich gestellt, nicht wiederholt. U9.2 ist ein bedingtes Ja; die technische Bewertung steht aus (NAK-38).",
+   "wo": "design/abnahmen/2026-08-22-hub-antworten-35.md",
+   "seit": "21.08.",
+   "bilder": [
+    {
+     "datei": "u9-gen-gitter.png",
+     "text": "Das Quellen×Band-Gitter aus deinem Gen-Stand (21.08.). Die Abnahme vom 20.08. sagte „Overview + Detail ohne Heatmap“ — ob dieses Gitter die Heatmap ist oder etwas anderes, ist einer der fünf Punkte."
+    },
+    {
+     "datei": "u6-suna-kachel.png",
+     "text": "Suna-Kachel: das Design zeigt Bus, Rolle und Position bedienbar — der technische Entwurf sagt „keine Parameter, Bedienung über Gen“. Zweiter der fünf Punkte."
+    }
+   ],
+   "punkte": [
+    {
+     "id": "U9.1",
+     "titel": "Rollen: 5 oder 7",
+     "gewicht": "Stelle 1",
+     "entwurf": "Figma (Design): fünf Rollen — LEADS · CARRIES · SUPPORTS · PROTECTED · MERGED.",
+     "alternative": "Technischer Entwurf (§9): sieben Rollen.",
+     "wahlen": [
+      "Figma gilt",
+      "Entwurf gilt",
+      "Anders (siehe Text)",
+      "Später"
+     ]
+    },
+    {
+     "id": "U9.2",
+     "titel": "Suna-Kachel: bedienbar oder nicht",
+     "gewicht": "Stelle 2",
+     "entwurf": "Figma: Bus, Rolle und Position stehen in der Kachel und sind dort bedienbar.",
+     "alternative": "Technischer Entwurf (§0.4): Suna hat keine Parameter; bedient wird über Gen.",
+     "wahlen": [
+      "Figma gilt",
+      "Entwurf gilt",
+      "Anders (siehe Text)",
+      "Später"
+     ]
+    },
+    {
+     "id": "U9.3",
+     "titel": "Messzustände: 5 oder 2",
+     "gewicht": "Stelle 3",
+     "entwurf": "Figma: fünf Messzustände.",
+     "alternative": "Technischer Entwurf: zwei.",
+     "wahlen": [
+      "Figma gilt",
+      "Entwurf gilt",
+      "Anders (siehe Text)",
+      "Später"
+     ]
+    },
+    {
+     "id": "U9.4",
+     "titel": "Arbeitsschritte: 3 oder 5",
+     "gewicht": "Stelle 4",
+     "entwurf": "Figma: drei Arbeitsschritte (Mix lesen · Urteilen · …).",
+     "alternative": "Technischer Entwurf: fünf.",
+     "wahlen": [
+      "Figma gilt",
+      "Entwurf gilt",
+      "Anders (siehe Text)",
+      "Später"
+     ]
+    },
+    {
+     "id": "U9.5",
+     "titel": "Gen-Übersicht: Gitter oder Overview+Detail",
+     "gewicht": "Stelle 5",
+     "entwurf": "Figma (21.08.): Quellen×Band-Gitter als Übersicht.",
+     "alternative": "Abnahme 20.08.: Overview + Detail ohne Heatmap — ist das Gitter die Heatmap oder etwas anderes?",
+     "wahlen": [
+      "Figma gilt",
+      "Entwurf gilt",
+      "Anders (siehe Text)",
+      "Später"
+     ]
+    }
+   ],
+   "status": "offen"
+  },
+  {
+   "id": "U10",
+   "dringlichkeit": "später",
+   "art": "Entscheid (wenn das Ticket dran ist)",
+   "titel": "Hör-Markierung ohne Transport-Information: erlaubt lassen?",
+   "was": "Heute erlaubt der Code die Hör-Markierung auch, wenn FL keine Transport-Information liefert („fail-open“). Der Entwurf verlangt für die Zielfassung ein gültiges „spielt“. Entscheid zusammen mit einem Hörtest in FL, sobald Gen seine neue Oberfläche hat.",
+   "warum": "Gehört zu den Tickets S10–S13 (Messkern). Nicht vorher nötig.",
+   "wo": "docs/offene-punkte.md, NAK-35 und NAK-24",
+   "seit": "21.08.",
+   "status": "offen",
+   "frueher_beantwortet": {
+    "wahl": "Nein, nur mit Signal",
+    "text": "",
+    "datum": "2026-08-22 17:24",
+    "status": "eingearbeitet",
+    "ergebnis": "Hoer-Markierung nur noch mit gueltigem 'spielt'; das heutige fail-open faellt. Im Register (22.08.), umzusetzen mit S10-S13 (NAK-35/NAK-24). [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+   }
+  },
+  {
+   "id": "U11",
+   "dringlichkeit": "wenn du dazu kommst",
+   "art": "Handgriff in FL (5–10 min)",
+   "titel": "Termin A2: Nebenwege einmal MIT Verzögerung messen",
+   "was": "Dasselbe wie Termin A (drei Spuren mit Impuls, Messgerät EqCop-Aux-Spike auf Spur 1, Spuren 2 und 3 als „Sidechain to this track“) — nur mit einem Plugin, das Verzögerung meldet, auf Spur 2 (z. B. Fruity Limiter mit Lookahead oder ein Linear-Phase-EQ), dazu je Spur ein anderer Impulszeitpunkt und einmal nur links/nur rechts. Danach „Bericht sichern“. Dazu optional: das alte Projekt mit dem installierten EQ-Copilot einmal als nakama-altprojekt.flp speichern.",
+   "warum": "Termin A hat gezeigt, dass zwei Nebenwege sauber und samplegenau ankommen — aber in deinem Testprojekt hatte kein Plugin Verzögerung, FLs Latenzausgleich hatte nichts zu tun. Deshalb stehen beide Nebenweg-Fähigkeiten und die Latenzangabe vorerst auf „nicht bestätigt“. Mit A2 werden sie bewiesen — und damit das Entmaskieren (Kernfunktion 17) und der hörbare Vorher/Nachher-Vergleich freigegeben. Eilt nicht: erst ab Phase P6/P8 nötig.",
+   "wo": "docs/offene-punkte.md NAK-44 (und NAK-43); Schritt steht oben in eq-copilot/docs/FL-TERMIN-A-AUX-PDC.md",
+   "seit": "22.08.",
+   "status": "offen"
+  },
+  {
+   "id": "U12",
+   "dringlichkeit": "wenn du dazu kommst",
+   "art": "Handgriff (2 min)",
+   "titel": "Design-Repo zusammengeführt — alter Ordner und altes GitHub-Repo können weg",
+   "was": "Alles aus Projekte/Nakama-Design liegt jetzt im Nakama-Repo unter design/ (mit der ganzen Commit-Historie, 87 Commits). Der alte Ordner C:/Users/phili/Projekte/Nakama-Design und das GitHub-Repo evenacadia-tech/Nakama-Design sind damit überholt; die Stub-CLAUDE.md dort sagt das jedem Claude, der sie noch öffnet. Löschen (Ordner) bzw. Archivieren/Löschen (GitHub) ist dein Klick — Claude löscht nichts ungefragt. Auf dem Laptop: einmal git pull im Nakama-Repo, der alte Ordner dort kann ebenfalls weg.",
+   "warum": "Dein Wort 22.08.: „ich habe am anfang versucht das zu trennen aber es funktioniert nicht … im anschluss wird dann nurnoch im nakama repo gearbeitet“. Solange der alte Ordner existiert, könnte eine Session versehentlich dort arbeiten — der Stub fängt das ab, Löschen macht es endgültig.",
+   "wo": "design/LIES-MICH.md (Einstieg) · CLAUDE.md, Register 22.08.",
+   "seit": "22.08.",
+   "status": "offen"
+  },
+  {
+   "id": "U13",
+   "dringlichkeit": "wenn du dazu kommst",
+   "art": "Handgriff",
+   "titel": "FL-Kurztermin C: die eine ungemessene Zeit-Annahme im echten FL ablesen",
+   "was": "Der neue Messkern (S10-11) nimmt an, dass FL die Projektzeit auch ueber zerteilte Puffer hinweg fortschreibt. Ob das stimmt, kann nur ein Lauf im echten FL zeigen - abzulesen am Zaehler fuer Kontinuitaetsbrueche bei automationsreichem Material (Details: NAK-56). Dafuer muesste der neue Stand installiert werden, und das ist dein Klick als Admin. Wichtig vor dem Klick: NAK-41 - ein Projekt, das der neue Build speichert, verliert im alten 16.08.-Build still seine Messpunkt-Identitaet. Und beim Ablesen keine Playhead-Zuege machen: derselbe Zaehler steigt seit der Nacharbeit auch bei einem Sprung des Abspielzeigers im Stopp.",
+   "warum": "Empfehlung des Dirigenten (Vorschlag, kein Entscheid): erst S12-13 bauen, dann die frischen Pruefer-PASS fuer S9 und S10-11 holen, und Installation plus dieser Kurztermin danach in einem Rutsch. Dieser Punkt blockiert nichts - der Plan laeuft weiter, bis du entscheidest. Hinweis: die Briefing-Seite zeigt diese Karte erst nach einem Seiten-Deploy (Fragenkatalog der Seite ist gerade in fremder Hand); die Maschinenansicht /api/hub traegt sie ab sofort, und per Handy-Meldung hast du sie auch.",
+   "wo": "docs/offene-punkte.md (NAK-56) - docs/beweise/SONDE-008.md 4.3",
+   "seit": "2026-08-23",
+   "bilder": [],
+   "status": "offen"
+  }
+ ],
+ "beantwortet": {
+  "U2.16": {
+   "wahl": "Gemeinsames Nakama-Design-Depot",
+   "text": "Dein Wort vom 22.08.2026: Nakama-Design ist das gemeinsame verbindliche Depot.",
+   "datum": "2026-08-22 18:10",
+   "status": "eingearbeitet",
+   "ergebnis": "Depot-Wort steht seit 22.08. im Register; U2.17 setzt darauf auf. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U5": {
+   "wahl": "Später",
+   "text": "",
+   "datum": "2026-08-22 18:21",
+   "status": "eingearbeitet",
+   "ergebnis": "Spaeter — die Sidechain-Quelle je Band bleibt offen (NAK-33). Der gespeicherte Zustand traegt seit 22.08. alle dreizehn Parameter, unsichtbar kostet nichts. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U9.5": {
+   "wahl": "Figma gilt",
+   "text": "",
+   "datum": "2026-08-22 18:20",
+   "status": "eingearbeitet",
+   "ergebnis": "Figma gilt: das Quellen-x-Band-Gitter ist die Gen-Uebersicht. Die Abnahme vom 20.08. ist an der Stelle ueberholt, die es ausschloss. Im Register (22.08.). [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U9.4": {
+   "wahl": "Später",
+   "text": "verstehe frage nicht",
+   "datum": "2026-08-22 18:20",
+   "status": "eingearbeitet",
+   "ergebnis": "Kein Entscheid — Frage unverstaendlich. Wird neu und verstaendlich gestellt. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U9.3": {
+   "wahl": "Später",
+   "text": "frage nicht nachvollziehbar",
+   "datum": "2026-08-22 18:20",
+   "status": "eingearbeitet",
+   "ergebnis": "Kein Entscheid — Frage nicht nachvollziehbar. Wird neu und verstaendlich gestellt. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U9.2": {
+   "wahl": "Eigene Antwort",
+   "text": "das ist eine technische frage. wenn es kein problem ist dann ja",
+   "datum": "2026-08-22 18:19",
+   "status": "eingearbeitet",
+   "ergebnis": "Bedingtes Ja zur bedienbaren Suna-Kachel. Die Bedingung ist eine technische Bewertung, die noch aussteht (NAK-38) — insbesondere, ob bedienbare Felder Suna Hostparameter aufzwingen. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U9.1": {
+   "wahl": "Eigene Antwort",
+   "text": "figma ist keine technikreferenz, der implementplan ist es",
+   "datum": "2026-08-22 18:18",
+   "status": "eingearbeitet",
+   "ergebnis": "Rangfolge gesetzt: bei technischen Fragen entscheidet der Implementplan, fuer das Aussehen bleibt Figma die Quelle. Im Register (22.08.). Technisch gelten damit sieben Rollen; ob die Oberflaeche fuenf davon zeigt oder auf sieben waechst, ist offen. Folgefrage. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U6.9": {
+   "wahl": "Eigene Antwort",
+   "text": "alle wortmarken haben den stil wie ich ihn aus figma exportiert habe",
+   "datum": "2026-08-22 18:17",
+   "status": "eingearbeitet",
+   "ergebnis": "Fuer die Wortmarken aller drei Apps gilt der Figma-Export; Claude waehlt keine Fassung aus. Im Register (22.08.). [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U6.8": {
+   "wahl": "Eigene Antwort",
+   "text": "macht kein sinn die frage",
+   "datum": "2026-08-22 18:16",
+   "status": "eingearbeitet",
+   "ergebnis": "Kein Entscheid — die Frage war schlecht gestellt und wird neu gestellt. Der Schwebeschatten bleibt bis dahin unentschieden. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U2.17": {
+   "wahl": "100, 125, 150 und 200 Prozent",
+   "text": "",
+   "datum": "2026-08-22 18:10",
+   "status": "eingearbeitet",
+   "ergebnis": "Skalierungsstufen 100 / 125 / 150 / 200 Prozent. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U2.15": {
+   "wahl": "Vorschlag übernehmen",
+   "text": "",
+   "datum": "2026-08-22 18:10",
+   "status": "eingearbeitet",
+   "ergebnis": "Die Shader-Fuellung der Schale entfaellt. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U2.14": {
+   "wahl": "Alternative wählen",
+   "text": "",
+   "datum": "2026-08-22 18:09",
+   "status": "eingearbeitet",
+   "ergebnis": "Bei 16 Quellen keine Namen in der Zeile; Namen nur im Regelfall. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U2.13": {
+   "wahl": "Vorschlag übernehmen",
+   "text": "",
+   "datum": "2026-08-22 18:09",
+   "status": "eingearbeitet",
+   "ergebnis": "Befund-Navigation ueber OBSERVE; das Detail einer Quelle lebt im Schritt Urteilen. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U2.12": {
+   "wahl": "Vorschlag übernehmen",
+   "text": "",
+   "datum": "2026-08-22 18:09",
+   "status": "eingearbeitet",
+   "ergebnis": "Keine FOCUS-Zeile; der Ort steht als Ring und in der PRIORITY-Zeile. Spalten 1k 2k 4k 8k. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U2.11": {
+   "wahl": "Vorschlag übernehmen",
+   "text": "",
+   "datum": "2026-08-22 18:09",
+   "status": "eingearbeitet",
+   "ergebnis": "Drei Sorten Zustand an drei Orten: Hinweis oben rechts im Glas · Messung im Kinn links · Ausnahmen im Kartenkopf rechts. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U2.10": {
+   "wahl": "Vorschlag übernehmen",
+   "text": "",
+   "datum": "2026-08-22 18:08",
+   "status": "eingearbeitet",
+   "ergebnis": "Energie als Wein-Rampe #7E3D3E, 0-55 % Deckkraft ueber dem Glas, dunkel nach hell. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U2.9": {
+   "wahl": "Alternative wählen",
+   "text": "",
+   "datum": "2026-08-22 18:08",
+   "status": "eingearbeitet",
+   "ergebnis": "Entwurf verworfen — Rollenwoerter ersetzen LIVE nicht. Offen: LIVE behalten oder gar keine Rolle in der Zeile. Folgefrage. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U2.8": {
+   "wahl": "Alternative wählen",
+   "text": "",
+   "datum": "2026-08-22 18:07",
+   "status": "eingearbeitet",
+   "ergebnis": "Entwurf verworfen — kein schlichter Einsatz 'UNDO · n'. Offen: echter Verlauf oder Zaehler an anderer Stelle. Folgefrage. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U2.7": {
+   "wahl": "Vorschlag übernehmen",
+   "text": "",
+   "datum": "2026-08-22 18:06",
+   "status": "eingearbeitet",
+   "ergebnis": "SOURCES im Kinn ist die Tuer zu Quellen, Rollen, Suche, Pinning, Fokusgruppen; der Raum dahinter ist nicht gezeichnet. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U2.6": {
+   "wahl": "Alternative wählen",
+   "text": "",
+   "datum": "2026-08-22 18:06",
+   "status": "eingearbeitet",
+   "ergebnis": "Entwurf verworfen — CERTAINTY nicht im Befundkopf rechts, OTHER CAUSE nicht als sechste Zeile. Offen: welcher andere Ort. Folgefrage. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U2.5": {
+   "wahl": "Vorschlag übernehmen",
+   "text": "",
+   "datum": "2026-08-22 18:05",
+   "status": "eingearbeitet",
+   "ergebnis": "Wortlaut der Aktionen: HOLD TO AUDITION · APPLY · REJECT. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U2.4": {
+   "wahl": "Alternative wählen",
+   "text": "",
+   "datum": "2026-08-22 18:05",
+   "status": "eingearbeitet",
+   "ergebnis": "Entwurf verworfen — der Kartenkopf nennt nicht Zahl UND Name. Offen: nur die Zahl oder ganz weg. Folgefrage. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U2.3": {
+   "wahl": "Vorschlag übernehmen",
+   "text": "",
+   "datum": "2026-08-22 18:01",
+   "status": "eingearbeitet",
+   "ergebnis": "Befundort ist der Ring mit Cyan-Saum; die markierte Zeile gibt es nur, solange das Vorhoeren gehalten wird. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U2.2": {
+   "wahl": "Alternative wählen",
+   "text": "",
+   "datum": "2026-08-22 17:59",
+   "status": "eingearbeitet",
+   "ergebnis": "Die vier Ebenen sitzen als Tasten im Kinn rechts; das Glas beginnt mit einer Identitaetszeile wie Probeeq. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U2.1": {
+   "wahl": "Alternative wählen",
+   "text": "",
+   "datum": "2026-08-22 17:59",
+   "status": "eingearbeitet",
+   "ergebnis": "Entwurf verworfen — ein Zeichen fuer die ganze Familie. Offen: ob Gens Karte ein neues Zeichen fuer 'veraltet' bekommt oder die Apertur ihre Bedeutung aendert. Folgefrage. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U2.0": {
+   "wahl": "Vorschlag übernehmen",
+   "text": "",
+   "datum": "2026-08-22 17:58",
+   "status": "eingearbeitet",
+   "ergebnis": "Entscheidungstor offen: Studie 04 wird weiterverfolgt, die Uebersetzung beginnt gegen deinen Figma-Export. Im Register (22.08.). [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U6.10": {
+   "wahl": "Vorschlag übernehmen",
+   "text": "",
+   "datum": "2026-08-22 17:58",
+   "status": "eingearbeitet",
+   "ergebnis": "Kein Zustand 'Name unbestaetigt' — er ist nirgends beschrieben, und erfunden wird nichts. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U6.7": {
+   "wahl": "Vorschlag übernehmen",
+   "text": "",
+   "datum": "2026-08-22 17:56",
+   "status": "eingearbeitet",
+   "ergebnis": "Feste Spalten BUS 84 · ROLE 56 · POSITION 43; die Luecke hinter kurzen Namen ist angenommen. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U6.6": {
+   "wahl": "Alternative wählen",
+   "text": "",
+   "datum": "2026-08-22 17:56",
+   "status": "eingearbeitet",
+   "ergebnis": "Die Kopfzeile PASSIVE PROBE faellt weg. Offen: wo der Hinweis dann steht, den sie rechts trug. Folgefrage. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U6.5": {
+   "wahl": "Eigene Antwort",
+   "text": "so kurz wie möglich",
+   "datum": "2026-08-22 17:56",
+   "status": "eingearbeitet",
+   "ergebnis": "Der Hinweis-Wortlaut wird gekuerzt; die vorgelegten Fassungen sind damit zu lang. Kurzfassung kommt als Folgefrage mit Vorschlag. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U6.4": {
+   "wahl": "Alternative wählen",
+   "text": "",
+   "datum": "2026-08-22 17:55",
+   "status": "eingearbeitet",
+   "ergebnis": "Entwurf verworfen — nicht 'MEASURING · STALE · 40 s'. Offen: Alter in Worten oder ganz ohne Alter. Folgefrage. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U6.3": {
+   "wahl": "Vorschlag übernehmen",
+   "text": "",
+   "datum": "2026-08-22 17:54",
+   "status": "eingearbeitet",
+   "ergebnis": "Rollenwoerter LEADS · CARRIES · SUPPORTS · PROTECTED · MERGED. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U6.2": {
+   "wahl": "Vorschlag übernehmen",
+   "text": "",
+   "datum": "2026-08-22 17:54",
+   "status": "eingearbeitet",
+   "ergebnis": "Messposition als Dreistellung PRE · INSERT · POST. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U6.1": {
+   "wahl": "Vorschlag übernehmen",
+   "text": "",
+   "datum": "2026-08-22 17:53",
+   "status": "eingearbeitet",
+   "ergebnis": "Apertur-Logik wie Probeeq bestaetigt. Der mitgelieferte Zusatz 'der Widerspruch bleibt' ist durch deine spaetere Antwort U2.1 ueberholt. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U10": {
+   "wahl": "Nein, nur mit Signal",
+   "text": "",
+   "datum": "2026-08-22 17:24",
+   "status": "eingearbeitet",
+   "ergebnis": "Hoer-Markierung nur noch mit gueltigem 'spielt'; das heutige fail-open faellt. Im Register (22.08.), umzusetzen mit S10-S13 (NAK-35/NAK-24). [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  }
+ }
+}

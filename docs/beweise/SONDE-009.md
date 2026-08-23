@@ -1,5 +1,5 @@
 # Beweismanifest — SONDE-009 «FeatureEngine v2: Zeit-, Validity-, Event- und Bandverträge»
-<!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-23 -->
+<!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-23 offen -->
 
 
 | Feld | Wert |

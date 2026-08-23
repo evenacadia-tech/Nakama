@@ -1,5 +1,5 @@
 # Beweismanifest — SONDE-007b «Drei Ziele, Lifecycle-Klassifikation, Installer-Manifest»
-<!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-23 -->
+<!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-23 nachgearbeitet -->
 
 
 > **Die eine harte Regel** (`docs/bauaufteilung-sonden.md` §2): *Eine Behauptung

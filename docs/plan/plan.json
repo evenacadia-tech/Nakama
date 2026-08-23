@@ -1,0 +1,300 @@
+{
+ "_lies_mich": "docs/plan/LIES-MICH.md — diese Datei traegt NUR autorierten Text. Der Status wird gerechnet (tools/plan/planstand.py), nicht gepflegt: Beleg da = gebaut, Urteilsmarke im Manifest = abgenommen.",
+ "herkunft": "docs/hub/hub.json, Stand 2026-08-23 — beim Umbau 23.08. ohne die Statusfelder uebernommen",
+ "phasen": [
+  {
+   "phase": "Vorlauf",
+   "titel": "Beweisen statt behaupten",
+   "ziel": "Ein Befehl fährt alle Prüfungen und schreibt die rohe Ausgabe in ein Manifest — das ersetzt eine CI.",
+   "schritte": [
+    {
+     "id": "S0",
+     "ticket": "",
+     "text": "Beweis-Runner, Manifest-Vorlage, Basislinie. Heute 18 Prüfbeine.",
+     "beleg": "docs/beweise/S0-basislinie.md",
+     "stufe": "T1"
+    }
+   ]
+  },
+  {
+   "phase": "P0",
+   "titel": "Bestand einfrieren, Hostgrenzen beweisen",
+   "ziel": "Nichts bauen, was FL Studio am Ende nicht hergibt: erst messen, was der Host kann, und die Plugin-Kennungen festschreiben, damit alte Projekte immer laden.",
+   "schritte": [
+    {
+     "id": "S1",
+     "ticket": "SONDE-004a",
+     "text": "Wegwerf-Messgerät für Termin A: zwei Nebenwege (Aux) und Latenzausgleich messbar machen.",
+     "beleg": "docs/beweise/SONDE-004a.md",
+     "stufe": "T1"
+    },
+    {
+     "id": "Termin A",
+     "ticket": "FL, du",
+     "text": "Nebenwege und Latenzausgleich in FL gemessen: geht, samplegenau, überlebt Speichern/Laden.",
+     "beleg": "docs/beweise/termin-a/",
+     "stufe": null
+    },
+    {
+     "id": "S2",
+     "ticket": "SONDE-001/002",
+     "text": "Identität eingefroren: Kennungen aller drei Plugins festgeschrieben und mit 63 Prüfungen bewacht, damit FL alte Projekte weiter erkennt.",
+     "beleg": "docs/beweise/SONDE-001-002.md",
+     "stufe": "T2"
+    },
+    {
+     "id": "S3",
+     "ticket": "SONDE-003",
+     "text": "Hostbrücke: ein Patch am Plugin-Rahmenwerk macht sichtbar, was FL liefert (Transport, Latenz, Automationspunkte). 91 Prüfungen.",
+     "beleg": "docs/beweise/SONDE-003.md",
+     "stufe": "T2"
+    },
+    {
+     "id": "S3b",
+     "ticket": "Nachtrag",
+     "text": "Messgerät für Termin B (Host-Probe): zeichnet Zeitsprünge, Render, Automation als JSON auf. 85 Prüfungen.",
+     "beleg": "docs/beweise/SONDE-003b.md",
+     "stufe": "T2"
+    },
+    {
+     "id": "Termin B",
+     "ticket": "FL, du + Claude",
+     "text": "Hostzeit und Automation in FL gemessen (12:45–13:27): Kontext in allen 259 298 Blöcken, Sprünge/Schleifen/Render/Automation sauber getrennt gemeldet; FL liefert nur float. Du hast aufgebaut, Claude ist über den FL-MCP gefahren.",
+     "beleg": "docs/beweise/termin-b/",
+     "stufe": null
+    },
+    {
+     "id": "S4",
+     "ticket": "",
+     "text": "Capabilityreport: die zehn Fähigkeitsbits für FL an die Rohdaten aus Termin A und B gebunden — zwei bestätigt (Hostkontext, Projektzeit), acht nicht: zwei gemessen „kann FL nicht“ (feine Automation, double), drei „noch nicht bewiesen“ (Latenzangabe, beide Nebenwege — Termin A2), eines ungemessen, zwei warten auf ihre Tickets. Prüfbein A13 (61 Prüfungen) misst den Report selbst gegen die Rohdaten; Kanon 18/18 grün. Frischer Prüfer: Runde 1 NEEDS_WORK (zwei Bits zu optimistisch), nachgearbeitet, Runde 2 PASS.",
+     "beleg": "docs/beweise/SONDE-004.md",
+     "stufe": "T2"
+    },
+    {
+     "id": "G0",
+     "ticket": "Gate",
+     "text": "Erste adversariale Pruefrunde (C++-Review + Codex) ueber P0 — gefahren 22.08., Urteil PASS: beide Bruchauftraege (Gate 1, Gate 5) gescheitert, die P0-Kernflaeche traegt keinen Befund. Manifest docs/beweise/G0.md. Damit ist P0 vollstaendig.",
+     "beleg": "docs/beweise/G0.md",
+     "stufe": "T3"
+    }
+   ]
+  },
+  {
+   "phase": "P1",
+   "titel": "Verträge, gespeicherter Zustand, neutrale Hüllen",
+   "ziel": "Alles, was zwischen den drei Apps und dem Broker hin- und hergeht, ist als Vertrag festgeschrieben und in drei Sprachen gleich geprüft — bevor der Messkern darauf baut.",
+   "schritte": [
+    {
+     "id": "S5",
+     "ticket": "SONDE-005a",
+     "text": "Nachrichtenverträge (JSON) mit Bandgitter und 153 Prüffällen; in Python, C++ und Rust gleich gelesen. Gebaut und nachgearbeitet — das abschließende Prüfurteil eines frischen Prüfers steht noch aus.",
+     "beleg": "docs/beweise/SONDE-005a.md",
+     "stufe": "T2"
+    },
+    {
+     "id": "S6",
+     "ticket": "SONDE-005b",
+     "text": "Binärformat für Messdaten (FlatBuffers) mit festen Feldnummern und zwei handgeschriebenen Lesern; 6215 Byte-Mutanten bestanden. Prüfurteil wie S5 noch offen.",
+     "beleg": "docs/beweise/SONDE-005b.md",
+     "stufe": "T2"
+    },
+    {
+     "id": "S7",
+     "ticket": "SONDE-006",
+     "text": "Gespeicherter Zustand Schema 2: alte Projekte wandern verlustfrei, fremde Versionen werden nur-lesend geöffnet, FL sieht jede Änderung als „ungespeichert“. 109 Parameter-Kennungen festgeschrieben.",
+     "beleg": "docs/beweise/SONDE-006.md",
+     "stufe": "T2"
+    },
+    {
+     "id": "S8",
+     "ticket": "SONDE-007a",
+     "text": "Gemeinsamer Kern fuer alle drei Plugins, der keine Bundle-Konstanten sieht — sonst bekaemen zwei Plugins die Identitaet des dritten. Gebaut: der geteilte Code wird jetzt EINMAL uebersetzt statt einmal je Programm, und fuenf unabhaengige Sperren passen auf, dass keine Kennung hineinrutscht. Jede Sperre wurde absichtlich ausgeloest, um zu zeigen, dass sie wirklich zufasst. Eine davon hat dabei einen Fehler in sich selbst gefunden. NACHGEPRUEFT am 23.08.: das Herzstueck haelt (der Kern traegt nachweislich keine Kennung), aber das Urteil lautete 'nachbessern' — fuenf Punkte, darunter eine echte Verschlechterung durch den Umbau selbst: der geteilte Code hatte still die schaerfste Warnstufe des Compilers verloren. Alle fuenf noch am selben Tag geschlossen, die fuenfte Sperre ist genau daraus entstanden, danach wieder 19 von 19 Pruefungen gruen. Auf den nachgebesserten Stand fehlt ein zweites Urteil.",
+     "beleg": "docs/beweise/SONDE-007a.md",
+     "stufe": "T2"
+    },
+    {
+     "id": "S9",
+     "ticket": "SONDE-007b",
+     "text": "Drei eigene Plugin-Ziele, Rollen-Erkennung, Installer-Manifest. ALLE DREI TEILE GEBAUT am 23.08. (1) Die Kennung der Programme stand bisher als Text im Bauskript UND in der Kennungsdatei - zwei Wahrheiten, die auseinanderlaufen koennen. Jetzt liest das Bauskript die Kennungsdatei; der Test misst weiter das fertige Programm gegen dieselbe Datei. (2) Nakama Suna und Nakama Probeeq sind gebaut, aus EINER gemeinsamen Quelle, und tragen nachweislich ihre eigenen, seit Tagen reservierten Kennungen - keines traegt die eines anderen. Beide sind heute noch stumm: Ton geht unveraendert durch, keine Regler, keine Oberflaeche. Das ist Absicht. (3) Das Hauptprogramm erkennt jetzt seine Rolle, statt sie anzunehmen: beim Laden weiss es nichts ueber sich und bleibt still; erst ein geladenes Projekt entscheidet, ob es ein alter Messpunkt (dann fuer immer passiv) oder ein Hauptfenster ist. Eine frische Instanz wird nur dann zum Hauptfenster, wenn du das Fenster geoeffnet UND die Rolle gewaehlt hast. Ein Scannerlauf entscheidet nichts. Dazu die Packliste fuer die Auslieferung (drei Programme plus Broker, Pruefsumme, Rueckweg mit Warnung vor Datenverlust) - und das Installationsskript liegt endlich im Projekt statt nur auf einem Rechner. FOLGE, DIE MAN HOERT: ein reiner Messpunkt faerbt beim Anhoeren nichts mehr ein. 23 von 23 Pruefungen gruen. NICHT abgenommen: die Nachpruefung durch einen frischen Pruefer steht aus,; das fremde Pruefprogramm sagt bei allen drei Programmen SUCCESS. NACHARBEIT 23.08. nachmittags: alle vier Funde der Nachpruefung geschlossen, jeder erst an der Quelle nachgemessen und jede neue Sicherung beim Anschlagen vorgefuehrt; fuenf weitere Funde kamen dabei heraus und sind mit erledigt. Ein Plugin wird ab jetzt als ganzer ORDNER ausgeliefert statt nur als die Datei darin. Das Zurueckgehen wird ab jetzt bei jedem Pruefdurchlauf wirklich AUSGEFUEHRT (neues Pruefbein, Kanon 23 -> 24) - dabei fielen zwei echte Fehler heraus, die drei Leser uebersehen hatten. Selbstpruefung ueber den Gesamtstand gefahren, 24/24 gruen und beglaubigt. STATUS BLEIBT 'gebaut': wer repariert, spricht sich nicht selbst frei - der nachgebesserte Stand braucht einen frischen Pruefer.",
+     "beleg": "docs/beweise/SONDE-007b.md",
+     "stufe": "T2"
+    },
+    {
+     "id": "G1",
+     "ticket": "Gate",
+     "text": "Prüfrunde über P1 (C++- und Rust-Review + Codex).",
+     "beleg": "",
+     "stufe": "T3"
+    }
+   ]
+  },
+  {
+   "phase": "P2",
+   "titel": "Messkern, Nachrichtenweg, Speicher",
+   "ziel": "Die größte Phase: Audio wird zeitgestempelt gemessen, über den Broker verteilt und gespeichert — ohne je den Audiothread zu blockieren. Danach: Release R0 (Vertrag steht, intern).",
+   "schritte": [
+    {
+     "id": "S10–11",
+     "ticket": "SONDE-008",
+     "text": "Zeitgestempelte Audio-Warteschlange, Quarantaene fuer kaputte Bloecke, Lautheitsmessung mit festem Speicher. GEBAUT 23.08. — der gefaehrlichste Eingriff der ganzen Phase, weil er mitten im Audiothread sitzt. Bisher gab die Weitergabe an die Messung bei Platzmangel einen HALBEN Block weiter und zaehlte den Rest; die Messung sah danach einen lueckenlosen Strom, dem in der Mitte Zeit fehlte, und konnte das nicht mehr merken. Jetzt gilt ganz oder gar nicht: passt ein Block nicht, faellt er komplett, wird gezaehlt, und der naechste traegt die Markierung 'hier fehlt etwas'. Dazu haelt die Messung jeden Block einen Moment zurueck, bis der naechste beweist, dass er lueckenlos anschliesst — sonst koennte ein erst nachtraeglich sichtbarer Schleifensprung eine schon veroeffentlichte Auswertung verderben. Und die Lautheitsmessung sammelt nicht mehr endlos: sie braucht ab jetzt immer gleich viel Speicher, egal ob fuenf Minuten oder fuenf Stunden laufen — eine Million Messzellen ohne eine einzige Speicheranforderung, vorgefuehrt. Zwei neue Pruefungen (Kanon 24 → 26), alle 26 gruen und beglaubigt, Fremdpruefer pluginval auf hoechster Stufe an allen drei Plugins bestanden. Kein Sample Audio hat sich geaendert. NACHGEPRUEFT UND NACHGEBESSERT 23.08. abends: ein frischer Pruefer hat vier Sachen gefunden, alle vier haben sich bestaetigt, alle vier sind geschlossen - die Lautheitsmessung ist jetzt auch bei absurd lautem Material genau (statt nur ehrlich darueber), ihre eingebaute Pruefung kann den Fall ueberhaupt erst sehen, deine Entscheidung vom 22.08. hat eine Sicherung, und zwei Raender an der Zeitrechnung stimmen. Jede neue Pruefung wurde einmal absichtlich kaputtgemacht und schlug an. Alle 26 gruen und beglaubigt. Steht weiterhin auf 'gebaut' und nicht auf 'erledigt': wer repariert, spricht sich nicht selbst frei - das bestaetigt ein frischer Pruefer.",
+     "beleg": "docs/beweise/SONDE-008.md",
+     "stufe": "T2"
+    },
+    {
+     "id": "S12–13",
+     "ticket": "SONDE-009",
+     "text": "Messkern v2: Zeit-, Gueltigkeits-, Ereignis- und Bandvertraege. GEBAUT 23.08. — die Schicht, die aus gemessenem Audio ehrliche Zahlen macht. Der Auftrag stand in einem einzigen Satz: 'Drop/Seek/Loop trennt jedes offene Fenster.' Was das heisst: die Messung sammelt staendig ueber laengere Abschnitte (bis zu einer Drittelsekunde), um ueberhaupt etwas ueber tiefe Toene sagen zu koennen. Springt der Abspielzeiger mittendrin an eine andere Stelle, oder wiederholt sich eine Schleife, oder faellt ein Stueck Audio weg, dann liegen in so einem angefangenen Abschnitt ZWEI verschiedene Stellen der Musik. Die daraus gerechnete Zahl sieht aus wie eine Messung und ist keine. Jetzt wird an jeder solchen Stelle alles Angefangene weggeworfen und neu begonnen — und zwar an NEUN verschiedenen Ereignissen, jedes einzeln nachgewiesen. Dazu die Bandaufteilung des Vertrags als eingefrorene Zahlen im Programm (mit zwei unabhaengigen Waechtern) und der eine Weg, ueber den das Plugin im echten FL seine Zeitinformation bekommt, ist ERSTMALS wirklich gefahren worden statt nur gelesen. T2-GEPRUEFT 23.08.: Urteil NEEDS_WORK. Der schwierige Teil haelt - alles, was waehrend eines angefangenen Abschnitts Klang sammelt, wird wirklich weggeworfen, auch der unsichtbare Nachklang des Filters. Gefunden wurde ein Fehler eine Ebene darueber: die fertigen Messwerte (die 64 Balken, der feine Schnappschuss, die Angabe wieviel Klang da war) werden beim Sprung NICHT mit weggeworfen, so dass eine Meldung mit 'neue Stelle' beschriftet sein und ausschliesslich den Klang der alten enthalten kann - gemessen an 80 von 120 durchprobierten Zeitpunkten. Nicht abgenommen; Nacharbeit ist der naechste Schritt.",
+     "beleg": "docs/beweise/SONDE-009.md",
+     "stufe": "T2"
+    },
+    {
+     "id": "S14–15",
+     "ticket": "SONDE-010",
+     "text": "Nachrichten-Clients in den Plugins und der Parser im Broker.",
+     "beleg": "",
+     "stufe": "T2"
+    },
+    {
+     "id": "S16–17",
+     "ticket": "SONDE-011",
+     "text": "Koordinator im Broker, Datenbank-Migration, Ausgangspuffer.",
+     "beleg": "",
+     "stufe": "T2"
+    },
+    {
+     "id": "G2",
+     "ticket": "Gate",
+     "text": "Volles Programm: C++-, Rust- und Sicherheits-Review + Codex.",
+     "beleg": "",
+     "stufe": "T3"
+    }
+   ]
+  },
+  {
+   "phase": "P3",
+   "titel": "Passive Landkarte",
+   "ziel": "Gen zeigt alle Quellen mit Frische und Messpunkt — ehrlich, auch wenn etwas fehlt. Danach: Release R1.",
+   "schritte": [
+    {
+     "id": "S18–19",
+     "ticket": "SONDE-012",
+     "text": "Quellen verbinden und führen, Frische anzeigen, Messpunkt-Wahrheit, Fehlerzustände.",
+     "beleg": "",
+     "stufe": "T2"
+    },
+    {
+     "id": "G3",
+     "ticket": "Gate",
+     "text": "Rust-Review + Codex + 60-Minuten-Dauerlauf. Vorher fällig: deine fünf Entscheide aus U9.",
+     "beleg": "",
+     "stufe": "T3"
+    }
+   ]
+  },
+  {
+   "phase": "P4–P5",
+   "titel": "Vergleichsevidenz und Ursachen",
+   "ziel": "Der Advisor: aus Messungen werden belegte Befunde, mögliche Ursachen und der kleinste Test — regelbasiert, ohne KI-Schicht. Danach: Release R2, die erste Fassung, die wirklich nützt (passiv, 9 von 12 Kernfunktionen).",
+   "schritte": [
+    {
+     "id": "S20–22",
+     "ticket": "SONDE-013",
+     "text": "Dynamik, Stereo, vor/nach der Kette, Passagen — und der manuelle Experimentkern.",
+     "beleg": "",
+     "stufe": "T2"
+    },
+    {
+     "id": "G4",
+     "ticket": "Gate",
+     "text": "C++-Review (DSP) + Codex.",
+     "beleg": "",
+     "stufe": "T3"
+    },
+    {
+     "id": "S23–25",
+     "ticket": "SONDE-014",
+     "text": "Absicht, Ursachenhypothese, Vorschlag, Assistentenschritt — mit Prüfkorpus.",
+     "beleg": "",
+     "stufe": "T2"
+    },
+    {
+     "id": "G5",
+     "ticket": "Gate",
+     "text": "Codex + Gegenbeispiele: der Prüfer soll eine falsche starke Ursachenbehauptung provozieren.",
+     "beleg": "",
+     "stufe": "T3"
+    }
+   ]
+  },
+  {
+   "phase": "P6–P7",
+   "titel": "Aktiver Kern: Probeeq",
+   "ziel": "Probeeq wird der vollwertige EQ, der Anweisungen von Gen umsetzt und manuell bedienbar ist — mit Kopplung, Sicherheit und Rückweg. Danach: Release R3.",
+   "schritte": [
+    {
+     "id": "S26–28",
+     "ticket": "SONDE-015",
+     "text": "Lokaler EQ-Kern, vier vorbereitete Bänke, Zustand und Automation, A/B.",
+     "beleg": "",
+     "stufe": "T2"
+    },
+    {
+     "id": "G6",
+     "ticket": "Gate",
+     "text": "Härtestes Gate des Plans: C++-Review auf höchster Stufe, Nebenläufigkeits-Prüfung, Worst-Case-CPU.",
+     "beleg": "",
+     "stufe": "T3"
+    },
+    {
+     "id": "S29–31",
+     "ticket": "SONDE-016/017",
+     "text": "Kopplung Gen↔Probeeq mit Sicherheit, Lease, Anwenden/Zurücknehmen, aktiver Vergleich.",
+     "beleg": "",
+     "stufe": "T2"
+    },
+    {
+     "id": "G7",
+     "ticket": "Gate",
+     "text": "Sicherheits- und Rust-Review + Codex + 10 000 Befehle Stress.",
+     "beleg": "",
+     "stufe": "T3"
+    }
+   ]
+  },
+  {
+   "phase": "P8–P9",
+   "titel": "Entmaskierung und Härtung",
+   "ziel": "Sidechain-Entmaskierung (nur wenn Termin A und Gate G0 grün sind — Termin A ist grün, G0 steht aus) und alles für die Auslieferung: Verteilung, Migration, Dauerlauf, Privatsphäre, Rollback. Danach: Release R4, der volle Sondenkern.",
+   "schritte": [
+    {
+     "id": "S32–33",
+     "ticket": "SONDE-018",
+     "text": "Sidechain-Entmaskierung.",
+     "beleg": "",
+     "stufe": "T2"
+    },
+    {
+     "id": "G8",
+     "ticket": "Gate",
+     "text": "C++-Review + Codex + Hör-/Stem-Korpus.",
+     "beleg": "",
+     "stufe": "T3"
+    },
+    {
+     "id": "S34–35",
+     "ticket": "SONDE-019",
+     "text": "Verteilung, Migration, Dauerlauf, Privatsphäre, Rollback.",
+     "beleg": "",
+     "stufe": "T2"
+    },
+    {
+     "id": "G9",
+     "ticket": "Gate",
+     "text": "Alle acht harten Gates + pluginval Stufe 8 + 30 Minuten mit 32 Sonden.",
+     "beleg": "",
+     "stufe": "T3"
+    }
+   ]
+  }
+ ]
+}

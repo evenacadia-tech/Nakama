@@ -18,6 +18,15 @@ Regeln und Zyklus: `.claude/skills/dirigent/SKILL.md`. Jüngster Eintrag oben.
 
 ---
 
+## 2026-08-23 nachmittags · SONDE-007b · nacharbeit
+
+- **Session:** „S9 Nacharbeit — T2-Befunde schließen + T1" (`cb6005c4-e646-424a-8d7e-c87db4cd1d51`), Opus 5 mit 1M.
+- **Ergebnis:** Alle vier Befunde geschlossen (§6.1–§6.4; Commits `d93d536`, `9573546`), Auslieferungseinheit auf den Bundle-**Ordner** gehoben, neues Kanon-Bein **A18** (Installer-Gegenpfad läuft in einer Sandbox bei jedem Beweislauf mit), T1-Sechserliste gefahren mit zwei behobenen Funden (§6.6). Beim Reparieren fünf weitere echte Fehler gefunden und geschlossen — darunter tote `NOTFOUND`-Vergleichszweige im Identitätsriegel und zwei Rückweg-Fehler beim **ersten tatsächlichen Lauf** des Rückwegs überhaupt (wäre ab der zweiten Installation abgestürzt). Kanon 23 → **24**; Lauf 13:25: **24/24, Exit 0, beglaubigt** (Rohblock im Manifest). Manifest `0d5ec3d`, Hub/NEXT-SESSION `7557165`, Selbstaudit-Nachtrag `e2d2a9e`. Kein PASS erklärt — regelkonform.
+- **Gestützt auf:** Commits, Manifest-§6 und Kanon-Rohzeile im Repo gelesen; alles gepusht (origin eingeholt); keine fremde RUNNING-Session mehr (OpenWiki fertig, `e8b71a0`).
+- **Nicht geprüft:** Die Fixes selbst habe ich nicht an den Quelldateien nachgemessen — das ist die Rolle des noch ausstehenden frischen Prüfers (§6.7); die CLAUDE.md-Zeile 12→13 bleibt unter NAK-55 offen (fremde uncommittete Änderungen liegen weiter darauf).
+- **Abwägung vor S10:** Die Bauaufteilung warnt nach der S10-Zeile: „Kein Harness-Autopilot für die Audiothread-Tickets (S10–11, S26–28) … er gehört unter direkte Beobachtung." Das ist eine Arbeitsregel aus der Planungszeit (kein User-Entscheid mit Zitat) und zielte auf den unbeaufsichtigten Bau-Harness. Der Dirigent ist kein Autopilot-Loop: je Ticket eine dedizierte Session mit Manifestpflicht und Frischkontext-T2, alles im Hub sichtbar. Der jüngere User-Entscheid (23.08., „Durchlaufen bis der Plan leer ist") trägt; ich fahre S10–11 — mit verschärften Audio-Beweispflichten im Auftrag und vorheriger Handy-Meldung, damit der User eingreifen kann, wenn er es doch beobachten will.
+- **Weiter mit:** S10–11 (`SONDE-008`) Bau-Session. Offen für S9: frisches Prüfer-PASS auf den nachgebesserten Stand — Vorschlag: mit den gleichartigen Rückständen (S5-Runde-5, S8) am Gate G2 bündeln, dort laufen ohnehin fremde Prüfer.
+
 ## 2026-08-23 mittags · SONDE-007b · pruefung (T2 Teil B)
 
 - **Session:** „S9 T2 Teil B — Frischkontext-Prüfung" (`2e747d9a-d613-463f-a2d9-5ef6e6c8fc9e`), Opus 5 mit 1M-Kontext (User-Zusatz vom 23.08.; xhigh ist über die Spawn-API nicht setzbar — nur Basisvariante + `-1m`).

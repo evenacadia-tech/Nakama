@@ -1,0 +1,95 @@
+{
+  "schema": "nakama.installer/v1",
+  "ticket": "SONDE-007b",
+  "angelegt_am": "2026-08-23",
+
+  "was_das_ist": "Das Installer-Manifest der Sondenfamilie (Entwurf §55 P1: 'Installer-Manifest fuer alle drei Bundles plus Broker mit Hash-/Signaturpruefung, Repair/Uninstall'). Es beschreibt eine AUSLIEFERUNG - welche Artefakte zusammengehoeren, wohin sie kommen und wie ihre Echtheit geprueft wird. Der Vertrag dazu steht in eq-copilot/schemas/installer/nakama-installer-v1.md; das Installationsskript Install-Nakama.ps1 liest ausschliesslich diese Datei.",
+
+  "keine_zweite_identitaet": "Diese Datei traegt WEDER Produktnamen NOCH Viercodes NOCH Class-IDs. Sie nennt nur die Ziel-IDs aus identity/plugin-identities-v1.json; Skript und Pruefbein schlagen alles Uebrige dort nach. Das ist dieselbe Regel wie im Bauskript (NAK-52): eine Identitaet, ein Ort. Ein Installer, der Bundlenamen selbst fuehrte, koennte eine Datei ausliefern, deren Name nirgends eingefroren ist.",
+
+  "identitaetsquelle": "eq-copilot/identity/plugin-identities-v1.json",
+
+  "ziele": {
+    "vst3_verzeichnis": "C:/Program Files/Common Files/VST3",
+    "vst3_verzeichnis_warum": "FL Studio scannt VST3 ausschliesslich unter Common Files\\VST3 (gemessen an den Terminen A und B, 22.08.2026). Ein zweiter Pfad waere ein Bundle, das niemand findet.",
+    "broker_verzeichnis": "C:/Program Files/evenacadia/Nakama",
+    "broker_verzeichnis_warum": "Der Broker ist ein Prozess, den ein Plugin spaeter STARTET (§53.5, ab SONDE-010). Ein per-User-Pfad (LOCALAPPDATA) waere ohne Rechteerhoehung beschreibbar - ein Spawn-Ziel, das jeder Nutzerprozess austauschen kann. Deshalb dieselbe geschuetzte Ebene wie die Bundles; §53.9 nennt Installationspfad und Betriebssystemschutz ausdruecklich als massgeblich."
+  },
+
+  "signatur": {
+    "verfahren": "sha256-manifest",
+    "authenticode_thumbprint": null,
+    "warum_null": "Es gibt kein Codesigning-Zertifikat fuer evenacadia. Der SHA-256-Riegel dieses Manifests ist damit HEUTE die ganze Pruefung - und genau so steht es hier, statt eine Signaturpruefung zu behaupten, die es nicht gibt. Traegt das Feld einmal einen Thumbprint, prueft das Skript zusaetzlich Authenticode und verweigert bei Abweichung."
+  },
+
+  "artefakte": [
+    {
+      "art": "vst3",
+      "ziel_id": "main",
+      "cmake_ziel": "EqCopilot",
+      "quelle": "eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3/Contents/x86_64-win/EQ-Copilot.vst3",
+      "sha256": null
+    },
+    {
+      "art": "vst3",
+      "ziel_id": "passive-probe",
+      "cmake_ziel": "NakamaSuna",
+      "quelle": "eq-copilot/build/plugin/NakamaSuna_artefacts/Release/VST3/Nakama Suna.vst3/Contents/x86_64-win/Nakama Suna.vst3",
+      "sha256": null
+    },
+    {
+      "art": "vst3",
+      "ziel_id": "active-probe",
+      "cmake_ziel": "NakamaProbeeq",
+      "quelle": "eq-copilot/build/plugin/NakamaProbeeq_artefacts/Release/VST3/Nakama Probeeq.vst3/Contents/x86_64-win/Nakama Probeeq.vst3",
+      "sha256": null
+    },
+    {
+      "art": "broker",
+      "name": "eqcop-broker.exe",
+      "quelle": "broker/target/release/eqcop-broker.exe",
+      "sha256": null,
+      "hinweis": "Der Broker wird heute von KEINEM Bundle gestartet - eine Suche ueber plugin/src findet keinen Spawn-Pfad (Befund SONDE-007b §1). Er gehoert trotzdem in dieses Manifest: die Auslieferung ist ein Paket, und ein Broker, der erst mit SONDE-010 spawnbar wird, muss VORHER an einem verifizierten Pfad liegen. Bis dahin ist er ein Programm, das der User von Hand starten kann."
+    }
+  ],
+
+  "hashes_erzeugt_am": null,
+
+  "hashes_null_bedeutet": "NICHT AUSLIEFERBAR. `sha256: null` heisst 'dieses Artefakt wurde nie gegen einen Bau festgeschrieben'. Install-Nakama.ps1 bricht dann ab, statt irgendetwas zu kopieren - dieselbe Regel wie im Identitaetsleser (cmake/NakamaIdentitaet.cmake): ein Vorgabewert waere eine Auslieferung, die nirgends eingefroren ist. Gefuellt wird per `py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --hashen` unmittelbar nach einem gruenen Kanon-Lauf.",
+
+  "rueckweg": {
+    "strategie": "vor-dem-tausch-sichern",
+    "warum": "Ein Installer, der seinen Rueckweg aus einer Liste historischer Bundles zieht, kann nur die Staende zurueckgeben, die jemand vorher aufgeschrieben hat. Das Skript sichert stattdessen die tatsaechlich vorgefundene Datei nach install/rueckweg/ und schreibt Pfad, Hash und Zeitpunkt nach install/install-ergebnis.json. Der Rueckweg-Lauf liest genau das. Gegenpfad-Invariante des Hauses: installieren <-> Rollback, beide Haelften im selben Aenderungssatz.",
+    "verzeichnis": "eq-copilot/install/rueckweg",
+    "ergebnisdatei": "eq-copilot/install/install-ergebnis.json",
+
+    "nak_41": {
+      "gefahr": "Ein FL-Projekt, das dieser Bau als NakamaState schema=2 gespeichert hat, verliert im 16.08.-Build STILL seine Messpunkt-Identitaet: jener Build kennt nur EqCopilotState schema=1, sieht einen fremden Baumtyp und ignoriert ihn - ohne Fehlermeldung.",
+      "riegel": "Der Rueckweg-Lauf schlaegt den Hash der gesicherten Datei in `bekannte_staende` nach. Ist ihr `state_schema` kleiner als das des Manifest-Ziels (identity/plugin-identities-v1.json, Feld `state_schema`), verweigert er - oder verlangt -Erzwingen samt sichtbarer Warnung. Ein unbekannter Hash gilt als moeglicherweise aelter und faellt in dieselbe Verweigerung: Schweigen ist hier kein Freibrief.",
+      "punkt": "NAK-41",
+      "wo": "docs/offene-punkte.md"
+    },
+
+    "bekannte_staende": [
+      {
+        "sha256": "74D86BD5A5F92B1135EC066AD65770BE5744F04E12D7D4C9F95BE0CD6656E0F8",
+        "ziel_id": "main",
+        "state_schema": 1,
+        "beschreibung": "Bau vom 16.08.2026 mit Hoer-Markierung - der HEUTE installierte Stand. Vor SONDE-006, schreibt und liest nur EqCopilotState schema=1."
+      },
+      {
+        "sha256": "B87AB70EAA9E96D7F93C39C66D690E2FECDF3E983E55A5FC31E21AA9AFBC8EF1",
+        "ziel_id": "main",
+        "state_schema": 1,
+        "beschreibung": "Bau vor der Hoer-Markierung (Rollback-Bundle rollback-B87AB70E-before-hoermarkierung.vst3). Ebenfalls Schema 1."
+      }
+    ]
+  },
+
+  "nicht_teil_dieses_manifests": [
+    "Repair: das Skript prueft installierte Hashes und kann sie neu schreiben (-Nachbessern) - ein eigener Reparaturdienst ist P9.",
+    "Update-Kanal, atomarer Austausch und Signatur-Kette: Distribution, P9 (§57 ff.).",
+    "v2-Kompatibilitaetslistener (P1-Lieferumfang): gehoert zum Broker und kommt mit SONDE-010; hier steht kein Wort darueber, weil es kein Wort dazu zu sagen gibt.",
+    "Die Installation selbst: sie bleibt ein Klick des Users mit Rechteerhoehung (NAK-32). Dieses Manifest wird von keiner Automatik ausgefuehrt."
+  ]
+}

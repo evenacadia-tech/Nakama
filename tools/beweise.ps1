@@ -290,7 +290,15 @@ $kanon = @(
     # Lauf kann nicht beide messen. Probeeq ist heute ebenfalls Passthrough;
     # kommt seine DSP in P6, MUSS A16 umgeschrieben werden. Faellt es dann,
     # ist das die richtige Reaktion.
-    [pscustomobject]@{ Kuerzel='A15'; Name='EqCopSunaNullTest';    Art='plugin'; Argumente=@(); AbPhase='jetzt'; Behauptung='Nakama Suna (NkPr): Passthrough bitgleich ueber drei Samplerates und fuenf Blockgroessen, 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur passive_probe zu; speichern-laden-speichern bytegleich.' }
+    # S9/SONDE-007b Abschnitt 3: das Installer-Manifest. A17 misst dieselbe
+    # Regel wie NAK-52 auf der Bauseite - eine Identitaet, ein Ort - nur auf
+    # der Auslieferungsseite: Quellpfade werden aus Ziel + Identitaetsdatei
+    # NACHGERECHNET, Viercodes und CIDs duerfen nirgends stehen. Das Bein
+    # traegt seine Gegenprobe im Lauf: jede Regel muss an einem absichtlich
+    # verdorbenen Manifest FALLEN, sonst prueft sie nichts (S8-Lehre).
+    [pscustomobject]@{ Kuerzel='A17'; Name='pruefe_installer_manifest.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Installer-Manifest: keine zweite Identitaet (kein Viercode, keine Class-ID), jeder Quellpfad aus Ziel + Identitaetsdatei nachgerechnet, jedes Ziel genau einmal, Broker aus dem Crate-Namen, Zielverzeichnisse geschuetzt, Signaturzeile behauptet keine Pruefung ohne Mittel, Rueckweg samt NAK-41-Riegel vollstaendig; jede Regel faellt an einem verdorbenen Manifest.' }
+
+    [pscustomobject]@{ Kuerzel='A15'; Name='EqCopSunaNullTest';   Art='plugin'; Argumente=@(); AbPhase='jetzt'; Behauptung='Nakama Suna (NkPr): Passthrough bitgleich ueber drei Samplerates und fuenf Blockgroessen, 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur passive_probe zu; speichern-laden-speichern bytegleich.' }
     [pscustomobject]@{ Kuerzel='A16'; Name='EqCopProbeeqNullTest'; Art='plugin'; Argumente=@(); AbPhase='jetzt'; Behauptung='Nakama Probeeq (NkAc): heute ebenfalls Passthrough bitgleich (die EQ-DSP kommt in P6), 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur active_probe zu; speichern-laden-speichern bytegleich.' }
 
     # --- geplant: laufen automatisch mit, sobald sie gebaut sind -------------

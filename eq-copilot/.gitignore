@@ -1,3 +1,14 @@
 build/
-install/
+
+# NAK-32 geschlossen (S9/SONDE-007b Abschnitt 3, 23.08.2026): bis hierher stand
+# `install/` als Ganzes hier - damit lagen Installationsskript UND Manifest nur
+# auf dem Desktop, waehrend CLAUDE.md das Skript als den einzigen
+# Installationsweg nannte. Ab jetzt ist der ausfuehrende Teil versioniert; die
+# Bundles, Rollbacks und Laufergebnisse bleiben Maschinenartefakte.
+# `install/*` statt `install/`: mit Schraegstrich stiege Git gar nicht erst in
+# den Ordner hinab, und die Ausnahmen unten blieben wirkungslos.
+install/*
+!install/Install-Nakama.ps1
+!install/nakama-installer-v1.json
+
 fixtures/*.wav

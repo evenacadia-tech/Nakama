@@ -45,6 +45,11 @@ PLAN = WURZEL / "docs" / "plan" / "plan.json"
 FRAGEN = WURZEL / "docs" / "plan" / "fragen.json"
 ZIEL = WURZEL / "docs" / "PLAN-STAND.md"
 
+# Alles, woraus dieses Blatt gerechnet wird. Aendert sich hier nichts, kann
+# sich am Planstand nichts geaendert haben — darauf beruht der Auslöser des
+# Hooks (tools/hooks/planstand.sh) UND die Schleifenfreiheit des Stempels.
+QUELLEN = ("docs/plan", "docs/beweise", "tools/plan")
+
 # Die Marke. Das vierte Wort ist optional und sagt bei NEEDS_WORK, ob die
 # Befunde geschlossen sind — daraus faellt die Antwort „was ist als Naechstes
 # dran": ein OFFENER Befund ist Arbeit, ein nachgearbeiteter wartet nur auf
@@ -207,19 +212,25 @@ def main() -> int:
                if s["hinweis"] == "nachgearbeitet, frisches Urteil fehlt"
                or s["hinweis"].endswith("steht aus")]
 
-    sha = git("rev-parse", "--short", "HEAD") or "?"
+    # 🔑 Gestempelt wird der QUELLSTAND — der letzte Commit, der eine Quelle
+    # angefasst hat —, NICHT HEAD. Mit HEAD baute sich eine Endlosschleife:
+    # der Commit dieses Blattes aendert HEAD, beim naechsten Befehl wiche der
+    # Stempel wieder ab, es wuerde neu gerechnet und neu committet, ewig. Der
+    # Blatt-Commit beruehrt keine Quelle, also steht der Quellstand still und
+    # die Schleife schliesst sich von selbst.
+    sha = git("log", "-1", "--format=%h", "--",
+              *QUELLEN) or git("rev-parse", "--short", "HEAD") or "?"
     heute = datetime.date.today().isoformat()
-    # Gerechnet wird aus dem ARBEITSBAUM, gestempelt wird HEAD. Solange beides
-    # deckungsgleich ist, stimmt der Stempel; sobald eine Quelle uncommittet
-    # ist, stimmt er nicht mehr — und das muss dranstehen, sonst behauptet das
-    # Blatt eine Herkunft, die es nicht hat.
-    schmutzig = bool(git("status", "--porcelain", "--",
-                         "docs/plan", "docs/beweise", "tools/plan"))
+    # Gerechnet wird aus dem ARBEITSBAUM, gestempelt wird ein Commit. Solange
+    # beides deckungsgleich ist, stimmt der Stempel; sobald eine Quelle
+    # uncommittet ist, stimmt er nicht mehr — und das muss dranstehen, sonst
+    # behauptet das Blatt eine Herkunft, die es nicht hat.
+    schmutzig = bool(git("status", "--porcelain", "--", *QUELLEN))
 
     a: list[str] = []
     a.append("# Planstand Nakama")
     a.append("")
-    a.append(f"<!-- gerechnet-aus: {sha} -->")
+    a.append(f"<!-- quellstand: {sha} -->")
     a.append("")
     a.append("> **Gerechnet, nicht gepflegt.** Dieses Blatt entsteht aus dem Repo:")
     a.append("> `py -3.13 tools/plan/planstand.py`. Es wird **nie** von Hand editiert —")
@@ -228,12 +239,12 @@ def main() -> int:
     a.append("> *abgenommen* erst, wenn dort eine Urteilsmarke der geforderten Prüfstufe")
     a.append("> mit **PASS** steht. Fehlt sie, gilt der Schritt als nicht abgenommen.")
     a.append("")
-    a.append(f"**Stand:** {heute} · gerechnet aus Commit `{sha}` · "
+    a.append(f"**Stand:** {heute} · Quellstand `{sha}` · "
              f"**{n_abg} von {n_ges} abgenommen** · {n_geb} gebaut · "
              f"{n_ges - n_abg - n_geb} offen")
     a.append("")
     if schmutzig:
-        a.append(f"> ⚠️ Gerechnet aus dem Arbeitsbaum: unter `docs/plan/`, `docs/beweise/`")
+        a.append("> ⚠️ Gerechnet aus dem Arbeitsbaum: unter `docs/plan/`, `docs/beweise/`")
         a.append(f"> oder `tools/plan/` liegen Änderungen, die noch nicht in `{sha}` sind.")
         a.append("")
     a.append(f"`{balken(n_abg, n_geb, n_ges, 40)}` "

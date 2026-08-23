@@ -1,10 +1,12 @@
 # NAKAMA
 
 Plugin-Familie für FL Studio (Windows 11, JUCE 8/C++20, CMake) mit
-eigenständigem Rust-Broker (Named Pipe, `broker/`). Drei Apps, **eine**
-Design-Identität: **Nakama Gen** (Main), **Nakama Probeeq** (aktive Sonde,
-vollwertiger EQ), **Nakama Suna** (passive Sonde); Bundle-Name **Nakama
-Studio**. Code, Bundle, Pipes und Schemas tragen heute noch den Legacy-Namen
+eigenständigem Rust-Broker (Named Pipe, `broker/`). Seit 23.08.2026 **zwei**
+Apps, **eine** Design-Identität: **Nakama Gen** (Hub/„Studio": Übersicht,
+Befunde, Advisor; Seite 2 = EQ-Zentrale aller Sonden + Master-EQ) und
+**Nakama Probeeq** (DIE Sonde auf den Bussen, EQ zuschaltbar, bedient in
+Gen; Suna ist in Probeeq aufgegangen — Register 23.08.); Bundle-Name
+**Nakama Studio**. Code, Bundle, Pipes und Schemas tragen heute noch den Legacy-Namen
 **EQ-Copilot** (`EqCop*`, `Eqcp`) — Umbenennung ist ein eigenes
 Identitäts-Ticket (NAK-30), kein Nebenbei-Refactor.
 
@@ -25,16 +27,24 @@ im anschluss wird dann nurnoch im nakama repo gearbeitet". Einstieg dort:
      EINZIGE Kopie; Hook und Memory dürfen ihn nicht nachbauen. -->
 ## Wahrheitskern (Stand 21.08.2026, aus dem Kontext-Interview mit dem User)
 
-- **Produkt:** Nakama = Plugin-Familie. **Gen** (Main: Quellen-Übersicht,
-  Befunde, Advisor) · **Probeeq** (aktive Sonde) · **Suna** (passive Sonde).
-  Bundle „Nakama Studio". Alle drei Apps teilen EINE Design-Identität.
-- **Grundgesetz, differenziert:** Gen und Suna **beraten nur** — setzen keine
-  Parameter, schreiben keine Automation, Audio-Passthrough sampleidentisch
-  (0 Samples Latenz, kein Tail; einzige Ausnahme die verriegelte
-  Hör-Markierung von Gen). **Probeeq ist ein vollwertiger, hochwertiger EQ**:
-  er setzt Anweisungen von Gen direkt um UND ist ganz normal manuell
-  bedienbar. Audiothread überall: keine Sperren, Allokationen, Datei-/Pipe-/
-  Netz-Zugriffe, kein Logging; Überlast verwirft Analyseframes, nie Audio.
+- **Produkt (seit 23.08.):** Nakama = **zwei** Apps. **Gen** (Hub/„Studio":
+  Quellen-Übersicht, Befunde, Advisor; **Seite 2 = EQ-Zentrale**: bedient
+  die EQs aller Sonden UND einen vollwertigen Master-EQ; Sonden-Durchschalter
+  direkt auf der Seite, zwei EQ-Spuren in EINEM Graph farblich unterschieden
+  — Design-Vorgaben des Users) · **Probeeq** (DIE Sonde auf den Bussen:
+  misst passiv, EQ zuschaltbar, bedient in Gen). **Suna ist in Probeeq
+  aufgegangen** (Merge 23.08.). Bundle „Nakama Studio". EINE Design-Identität.
+  Wortlaut: `design/abnahmen/2026-08-23-gen-eq-zentrale.md`.
+- **Grundgesetz (Fassung 23.08.): nichts Ungefragtes.** Audio wird nur dort
+  verarbeitet, wo der User es einschaltet (Master-EQ in Gen, Sonden-EQ in
+  Probeeq, Hör-Markierung); ausgeschaltet = **beweisbar bitidentisch**
+  (NullTest-Standard), sonst Audio-Passthrough sampleidentisch (0 Samples
+  Latenz, kein Tail). Der EQ rechnet immer dort, wo das Audio fließt (Sonde
+  bzw. Gen auf dem Master); Gens Seite 2 ist Fernbedienung, die Parameter-
+  und Zustands-Hoheit bleibt in der Instanz. Der Advisor schlägt nur vor,
+  der User wendet an. Audiothread überall: keine Sperren, Allokationen,
+  Datei-/Pipe-/Netz-Zugriffe, kein Logging; Überlast verwirft
+  Analyseframes, nie Audio.
 - **Keine KI-/Claude-Erklärschicht** im Produkt (User 21.08.). Der Advisor ist
   regelbasiert.
 - **Design-Quelle ist Figma (User)** — seit 22.08. **eine** Datei, `Nakama-Design`
@@ -75,8 +85,8 @@ im anschluss wird dann nurnoch im nakama repo gearbeitet". Einstieg dort:
 | 20.08. | Prisma = eigenständige Begleit-App, Master-Plugin konventionell | Interview 21.08.: „Meine Entscheidung, so gesagt" |
 | 20.08. | Design-Abnahmen (Größen 760×430 / 700×420 / 260×84, Overview+Detail, Vorhören nur markierte Zeile, Zustände nach Ausnahme-Prinzip) | `design/abnahmen/2026-08-20-*` |
 | 21.08. | Nakama = Familie; Prisma nur Studie, geparkt | Interview: „Familie; Prisma nur Studie" · Prisma-Herkunft: „Meine Idee" · Hörkompass: „Alles nur Studie" |
-| 21.08. | Probeeq ist ein EQ | „die active Probe fester Name : Nakama Probeeq ist ein vollwertiger hochwertiger EQ der mit Nakama kommuniziert. er kann von nakama direkt anweisungen umsetzen aber auch ganz normal manuell vom user benutzt werden" |
-| 21.08. | Namen | „Nakama Gen = Main app · aktive sonde = Nakama Probeeq · passive sonde = Nakama Suna · Bundle = Nakama Studio" |
+| 21.08. | Probeeq ist ein EQ — **Bedienort revidiert 23.08.** (zentral in Gen, Seite 2) | „die active Probe fester Name : Nakama Probeeq ist ein vollwertiger hochwertiger EQ der mit Nakama kommuniziert. er kann von nakama direkt anweisungen umsetzen aber auch ganz normal manuell vom user benutzt werden" |
+| 21.08. | Namen — **Suna aufgegangen in Probeeq 23.08.** | „Nakama Gen = Main app · aktive sonde = Nakama Probeeq · passive sonde = Nakama Suna · Bundle = Nakama Studio" |
 | 21.08. | KI-Erklärschicht raus | „Nein – raus aus dem Produkt" |
 | 21.08. | Produktzahlen | „Hingenommen, passen aber" · Regelfall einstellige Quellenzahl: „ich habe schlicht 5 genommen weil 16 bedeutet 16 geladene proben auf instrumenten … 16 plugins nur für eq kostet auch massig leistung" (`design/abnahmen/2026-08-21-…`) |
 | 21.08. | Design-Quelle | „das finale design wird aktuell in figma gemacht . alle 3 apps werden ein design haben mit der selben identität. alle alten sind alt. Ein Design entwickelt sich und ist nicht einfach da." · Rolle des Design-Repos: „Figma ist Quelle; Repo setzt um" |
@@ -101,7 +111,11 @@ im anschluss wird dann nurnoch im nakama repo gearbeitet". Einstieg dort:
 | 22.08. | Gen-Übersicht: das Quellen×Band-Gitter aus Figma gilt; die Abnahme vom 20.08. ist an der Stelle überholt, die es ausschloss | Wahl „Figma gilt" (Hub `U9.5`) |
 | 23.08. | Dirigent-Autonomie: der Dirigent hält nicht nach jedem Ticket an, sondern arbeitet den Plan ohne Zwischenhalt ab (Halt nur an Gate, Bruch oder echter User-Frage) | „Durchlaufen bis der Plan leer ist" (`.claude/skills/dirigent/SKILL.md` §0; NAK-54) |
 | 23.08. | Gate-Strenge: **keine** harte Weiterschalt-Regel — je Fall entscheiden. An ihrer Stelle steht die Belegpflicht: jedes Weiterschalten protokolliert (a) worauf es sich stützt UND (b) was ungeprüft blieb | „ich will nicht dass es an einer harten regel scheitert. ich denke das kann variieren. die regel ist einfach das individuell zu entscheiden mit bestem wissen" (`.claude/skills/dirigent/SKILL.md` §3.4; NAK-54) |
+| 23.08. | **OpenWiki wird von Hand aufgefrischt, nicht nach Zeitplan.** Der tägliche GitHub-Workflow und der dafür nötige `OPENAI_API_KEY` entfallen; die Auffrischung läuft im Lauf einer Session über die OpenWiki-Werkzeuge (NAK-51 damit verworfen) | „upodate das openwiki und verwerfe das mit dem API key wir machen das manuell" |
 | 23.08. | **Die Briefing-Seite ist abgeschafft.** Der Planstand wird nicht mehr gepflegt, sondern aus dem Repo **gerechnet**; die offenen Fragen stellt ein Skill nach und nach im Chat und arbeitet die Antwort sofort ein | „wir brauchen eine andere möglichkeit als den hub. eie gibt keine automatische aktualisation , das heißt er wird driften und somit drifted plan stand auch." → Wahl **„saeite ganz weg, alles im repo + Skill bauen, der automatisch die offenen fragen nach und nach an mich stellt und gleich einarbeitet in den plan"** |
+| 23.08. | **Gen wird EQ-Zentrale; Suna und Probeeq verschmelzen zu EINER Sonde; Gen erhält vollwertigen Master-EQ.** Der EQ rechnet auf den Bussen, bedient wird auf Gens Seite 2 (voller Wortlaut `design/abnahmen/2026-08-23-gen-eq-zentrale.md`; Umschnitt NAK-64, Figma NAK-65) | „STATT mehrere eq auf den instrumenten liegen zu haben, könnte man das EQ UI des Probeeq auf eine neue 2. seite auf den Gen legen … Also im Prinzip liegt der EQ auf den Bussen wird aber eingestellt auf dem Gen" · „Gen wird ein vollwertiges HUB oder Studio … es ist ein vollwertiger eq für den master wie andere eq auf dem markt … das ziel ist maximale kontrolle ohne überkomplexe workflow" · Wahl „Merge: eine Sonde" · „ja festhalten" |
+| 23.08. | Name der verschmolzenen Sonde: **Nakama Probeeq** (Suna entfällt als App-Name) | Wahl „Nakama Probeeq" (ebd.) |
+| 23.08. | Design-Vorgaben EQ-Seite: Sonden-Durchschalter direkt AUF Seite 2, nie über Seite 1; zwei EQ-Spuren in EINEM Graph, farblich unterscheidbar | „auf der 2. seite dem EQ gibt eine UI an dem man die sonden durchklicken kann, nicht durch die 1. seite. das wäre wieder nicht intuitiv. in der musikproduktion ist workflow alles. 1 klick oder 3 klicks dazwischen liegen welten. zudem bei 2 EQ spuren liegen sie nicht nebeneinander, sondern sind in EINEM Graph visuell unterscheidbar durch zum beispiel farben." |
 
 **Was NICHT mehr gilt** (und nirgends mehr als gültig auftauchen darf):
 Recherche als „kanonischer Plan" · Spectral Field / Bauplan 2.0 / Tiefenfeld /
@@ -111,7 +125,12 @@ Material-Kit-Front als „abgenommen" · Claude-Klick im Grundgesetz · Tauri-Hu
 als Produktteil · „Lernsprache" / „Kernfunktion vor Verwaltung" als Regeln ·
 **die Briefing-Seite `nakama-briefing.philipld.chatgpt.site` und die Pflicht,
 sie zu lesen oder zu füttern** (abgeschafft 23.08. — sie hatte keine
-automatische Aktualisierung und driftete deshalb, samt Planstand).
+automatische Aktualisierung und driftete deshalb, samt Planstand) ·
+**Suna als eigene App** und „Gen und Suna beraten nur" in der Absolutform
+(Merge + Master-EQ 23.08. — es gilt „nichts Ungefragtes, alles beweisbar") ·
+**Probeeqs eigene Voll-UI als primärer Bedienort** (bedient wird auf Gens
+Seite 2; eine Minimal-Rückfallfläche der Sonde ist Vorschlag, nicht
+abgenommen).
 
 ## Wo was liegt
 
@@ -133,7 +152,7 @@ automatische Aktualisierung und driftete deshalb, samt Planstand).
 | **Archiv** (Recherche, Mockups, alte Baupläne, alte Design-Docs — nur Verlauf) | `docs/archiv/` · `eq-copilot/design/archive/` |
 | **Prisma-Studie** (geparkt, User-Idee) | `eq-copilot/design/prisma-studie/` (Statusblatt dort) |
 | Material-Kit-Kette (Provisorium, technisch lebendig: `tokens.json` → `LeitstandTokens.h`) | `eq-copilot/design/` Wurzel |
-| Design der drei Apps (Figma-Übersetzung, Abnahmen, Truhe, Werkzeug) | `design/` — Einstieg `design/LIES-MICH.md` · `design/abnahmen/` · `design/assets/figma/` · `design/werkzeug/` · `design/docs/` |
+| Design der Apps (Figma-Übersetzung, Abnahmen, Truhe, Werkzeug) | `design/` — Einstieg `design/LIES-MICH.md` · `design/abnahmen/` · `design/assets/figma/` · `design/werkzeug/` · `design/docs/` |
 
 ## Planstand — gerechnet, nicht gepflegt (seit 23.08.2026)
 
@@ -203,8 +222,9 @@ Baustand: sind Prüfbinaries älter als ihre Quellen, verweigert er mit Exitcode
 die Beglaubigung (0 grün · 2 rot · 3 Voraussetzung fehlt · 4 nicht beglaubigt).
 Vorlage `docs/beweise/VORLAGE.md`, Basislinie `docs/beweise/S0-basislinie.md`.
 
-**Kanon (26 Beine — gezählt in der Tabelle von `tools/beweise.ps1`, dort steht
-die Wahrheit):** NullTest · Golden ·
+**Kanon (30 Einträge deklariert, davon **28 heute lauffähig** — gezählt in der
+Tabelle von `tools/beweise.ps1`, dort steht die Wahrheit; die 28 decken sich mit
+dem `28/28` des jüngsten Manifests):** NullTest · Golden ·
 Markierung · `cargo test` (seit 22.08. mit dem JCS-Bein) · sechs Python-Beine
 des v3-Vertrags · A11 `pruefe_v2_schemas.py` · **A12
 `erzeuge_state_fixtures.py --pruefen`** (SONDE-006) · **A13
@@ -220,12 +240,13 @@ installiert) · Identität · **B2
 `EqCopLebenslaufTest`** (SONDE-007b) · **B4 `EqCopQueueStressTest`** und **B9
 `EqCopLoudnessGoldenTest`** (SONDE-008). **Die Prüfzahlen stehen im
 jüngsten Manifest in `docs/beweise/`, nicht hier** (zuletzt
-`SONDE-008.md`: 26/26 grün). Nicht im Kanon, aber vorhanden:
+`SONDE-009.md`: 28/28 grün). Nicht im Kanon, aber vorhanden:
 `EqCopAuxSpikeTest` (NAK-37), Shot (`--state` lädt einen Host-State vor dem
 Render), PaintBench, PipeProbe, `pluginval --strictness-level 8`
 (⚠️ liegt **nur** unter `%TEMP%\pluginval.exe` — NAK-26; wer es sucht, sucht
-dort zuerst). **Drei** Beine stehen als „geplant" (B5 FeatureEngine v2, B6
-DSP-Golden, B7 Transaktion) und werden Pflicht, sobald ihr Ticket sie baut.
+dort zuerst). **Zwei** Beine stehen noch als „geplant" (B6 DSP-Golden, B7
+Transaktion, beide Phase P6) und werden Pflicht, sobald ihr Ticket sie baut —
+B5 `EqCopAnalysisGoldenTest` ist seit SONDE-009 gebaut und läuft mit.
 
 - Golden-WAVs einmalig: `py -3.13 tools/eq-copilot/erzeuge_fixtures.py --nur-wav`
   (Erzeuger der Referenz `tools/analyze-track.py` liegt noch im FL-Studio-Repo — NAK-31).
@@ -505,7 +526,7 @@ DSP-Golden, B7 Transaktion) und werden Pflicht, sobald ihr Ticket sie baut.
 | FL-Termine A/B (gemessen 22.08.) + Capabilityreport | `docs/beweise/termin-a/` · `docs/beweise/termin-b/` · `docs/beweise/SONDE-004.md` · `eq-copilot/identity/host-capabilities-fl-v1.json` |
 | Benchmark-Mechaniken (Median-Basislinie, Zonen) | `eq-copilot/docs/BENCHMARK-STUDIE-RESO-SMARTEQ-PROQ.md` |
 | Offene Punkte | `docs/offene-punkte.md` |
-| Design der drei Apps | `design/LIES-MICH.md` + `design/abnahmen/` |
+| Design der Apps | `design/LIES-MICH.md` + `design/abnahmen/` |
 | Verlauf (nur zum Verstehen, nie als Vorgabe) | `docs/archiv/`, `eq-copilot/design/archive/`, `eq-copilot/design/prisma-studie/STATUS.md` |
 
 ## Arbeitsweise

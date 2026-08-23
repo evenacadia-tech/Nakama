@@ -1,6 +1,6 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
-> ## ⚠ Zuerst lesen — Stand 22.08.2026 abends
+> ## ⚠ Zuerst lesen — Stand 23.08.2026 mittags
 >
 > **P0 ist geschlossen.** Gate G0 ist gefahren, Urteil **PASS**
 > (`docs/beweise/G0.md`): beide Bruchauftraege (Gate 1, Gate 5) gescheitert,
@@ -34,7 +34,8 @@
 > EINER Quelle `plugin/sonde/` ueber duenne Target-Schichten; ihre CIDs sind
 > erstmals an Artefakten gemessen, kein Bundle traegt eine fremde Ziel-CID.
 > Auch entschieden und gebaut: K2b/K2c messen gegen **jeden** Kern-Verbraucher
-> (12), nicht gegen eine Stichprobe. Kanon 19 → **21** (A15/A16), `pluginval` 8
+> (12 damals, **13** seit Abschnitt 3 — vom T2-Teil-B-Pruefer nachgezaehlt),
+> nicht gegen eine Stichprobe. Kanon 19 → **21** (A15/A16), `pluginval` 8
 > an beiden neuen SUCCESS.
 >
 > ⚠️ **Beide neuen Bundles sind heute Passthrough** — keine Hostparameter,
@@ -93,14 +94,43 @@
 > schlaegt an, sobald ein Ziel zu Recht nicht neu gelinkt wird. Kein Beweis —
 > nachmessen, welche Quelle wirklich zu welchem Ziel gehoert.
 >
-> **Naechster Schritt: T2 Teil B fuer S9** — eigene Session, frischer Kontext.
-> Ungeprueft sind fuenf Dateien (~1 400 der 2 812 geaenderten Zeilen):
-> `tests/IdentityTestMain.cpp` (Behauptungen 2/3/7, umgedrehter Quellfrost) ·
-> `cmake/NakamaIdentitaet.cmake` (1/4) ·
-> `tools/eq-copilot/pruefe_installer_manifest.py` (17/18) ·
-> `schemas/installer/nakama-installer-v1.md` (neuer Vertrag — Hausinvariante
-> nicht nachgemessen) · `plugin/CMakeLists.txt` (6/11/16).
-> **Kein PASS auf S9 ohne diese Runde; T1 steht weiterhin ganz aus.** Danach S10.
+> **T2 Teil B ist gefahren** (23.08. mittags, Manifest §5.5–§5.9, zweite frische
+> Session): Urteil **NEEDS_WORK**. Die fuenf offenen Dateien sind jetzt gegen
+> die Quelle gemessen — nicht gelesen, sondern **gefahren**: acht
+> Configure-Laeufe mit verdorbenem Identitaetsmanifest, zwei Mutationsproben am
+> Bauskript, zwei Regelproben am Installer-Bein, jede Mutation byteweise
+> zurueckgenommen (SHA-256 gegengeprueft). Eigener Kanon-Lauf mit `-Bauen`:
+> **23/23 gruen, Exit 0, beglaubigt**.
+> **Gehalten haben**: die Verweigerung unvergebener Identitaeten (vier Proben,
+> viermal Exit 1 an `NakamaIdentitaet.cmake:74/90/101/116`) · der umgedrehte
+> Quellfrost **fuer `main`, beim Fallen vorgefuehrt** · die Zwei-Wege-Messung
+> der Class-IDs ist **keine Tautologie** (kein `.cmake` im Baum enthaelt eine
+> CID; JUCE rechnet, der Test misst am Artefakt) · alle drei Bundles gemessen
+> (93/93 selbst gefahren) · A17 24/24 samt Gegenprobe, beide Leermengen-Fallen
+> zu · `NAKAMA_BUNDLE_MAIN` deckt genau die acht Ziele, die `src/` uebersetzen.
+> **Vier Befunde, alle offen (T2-2…T2-5, Sammelzeile NAK-55):**
+> - **T2-2** — `NakamaIdentitaet.cmake` prueft `null` bei `produktname`,
+>   `bundle`, `plugin_code`, **nicht** bei `hersteller.name`/`hersteller.code`.
+>   Gemessen: `hersteller.code: null` konfiguriert **gruen** durch, JUCE setzt
+>   seinen Vorgabewert `Manu` — beide Class-IDs **aller drei** Bundles haengen
+>   daran. Der Dateikopf sagt zu, dass genau das nicht passiert.
+> - **T2-3** — der Quellfrost deckt **eines von drei** Zielen. Vorgefuehrt:
+>   dasselbe Literal faellt im `EqCopilot`-Block auf und bleibt in
+>   `nakama_sonde_ziel` unsichtbar. Ein zusaetzlicher Blockfrost genuegt.
+> - **T2-4** — ein `art` ausserhalb `vst3|broker` faellt durch alle zwoelf
+>   A17-Regeln und landet im Broker-Zweig des Skripts.
+> - **T2-5** — ausgeliefert wird die innere Binaerdatei, nicht das Bundle;
+>   `-Rueckweg` laesst nach einer Erstinstallation ein leeres `.vst3`-Gehaeuse.
+> ⚠️ Eine Zahl war falsch und ist berichtigt: K2b/K2c messen gegen **13**
+> Verbraucher, nicht 12 (§5.8). Dieselbe 12 steht noch in `CLAUDE.md` —
+> **nicht** angefasst, weil dort eine parallele Session uncommittete Aenderungen
+> hat (gleiche Sperre wie NAK-54).
+>
+> **Naechster Schritt: T2-2 und T2-3 schliessen** — beides sind kleine, klar
+> umrissene Ergaenzungen, und beide sitzen auf dem Riegel, der NAK-52
+> ueberhaupt begruendet hat. T2-4/T2-5 sind Vertragsarbeit und koennen mit
+> `SONDE-010` laufen. **Kein PASS auf S9, solange T2-2/T2-3 offen sind; T1
+> steht weiterhin ganz aus.** Danach S10–11 (`SONDE-008`).
 >
 > **Aber vorher zwei Dinge, die Vorrang haben:**
 >

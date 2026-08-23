@@ -10,13 +10,14 @@
 | Phase / Session | P1 / S9 |
 | Gate-Text (Quelle) | `docs/FL-Nakama-Sonden-Design-Entwurf.md` §53.4 — **wörtlich:** „Identität kommt ausschließlich aus `plugin-identities-v1.json` über die dünnen Target-Schichten." · §53.5 „Gebaute Pluginidentitäten und Klassifikation" (Tabelle Main/Passive/Active, Klassifikationsregeln, Broker-Spawn-Regel) · Errata (b): die Namen „Nakama Probe"/„Nakama Active Probe" sind durch den User-Entscheid vom 21.08. überholt |
 | Datum | 2026-08-23 |
-| Prüfstufen | T1 ☐ · T2 ◐ **Teil A gefahren 23.08. — NEEDS_WORK**, ein Befund (T2-1), gefunden und geschlossen; Urteil und Prüfumfang in [§5](#5-t2--frischkontext-prüfer). **Teil B (fünf Dateien, ~1 400 Zeilen) ungeprüft — §5.4** · T3 ☐ (erst am Gate G1) |
+| Prüfstufen | T1 ☐ · T2 ☑ **vollständig gefahren 23.08. — NEEDS_WORK.** Teil A ([§5.1](#51-was-gemessen-wurde--gegen-die-quelldatei-nicht-gegen-dieses-manifest)–§5.4): ein Befund (T2-1), gefunden und geschlossen. Teil B ([§5.5](#55-t2-teil-b--die-fünf-in-teil-a-ungeprüften-dateien) ff., die fünf ungeprüften Dateien): **vier weitere Befunde (T2-2…T2-5), offen** · T3 ☐ (erst am Gate G1) |
 
 > ⚠️ **Alle drei Abschnitte sind gebaut — abgenommen ist nichts.** T1 steht
-> offen. T2 ist **zur Hälfte** gefahren (23.08., §5): Urteil **NEEDS_WORK** auf
-> Teil A, ein Befund gefunden und geschlossen; Teil B — Identitätstest,
-> Identitäts-CMake, Installer-Bein, Installer-Vertrag, `plugin/CMakeLists.txt` —
-> ist **nicht** gegen die Quelle gemessen (§5.4). Was der Bau ausdrücklich
+> offen. T2 ist **ganz** gefahren (23.08., §5), von zwei verschiedenen
+> Frischkontext-Prüfern, Urteil beide Male **NEEDS_WORK**: Teil A fand einen
+> Befund und schloss ihn; Teil B — Identitätstest, Identitäts-CMake,
+> Installer-Bein, Installer-Vertrag, `plugin/CMakeLists.txt` — fand **vier
+> weitere (T2-2…T2-5), die offen sind** (§5.5 ff.). Was der Bau ausdrücklich
 > NICHT behauptet, steht unter §1; was am Ticket noch aussteht, in §3.
 
 **Bauabschnitte des Tickets** (Reihenfolge ist keine Bequemlichkeit: ohne eine
@@ -44,7 +45,7 @@ Identitätsquelle wären drei Zielblöcke zwölf Literale):
 | 8 | **Das Grundgesetz gilt für beide neuen Bundles, gemessen:** Passthrough bitgleich über 3 Samplerates × 5 Blockgrößen, 0 Samples Latenz, kein Tail, kein Hostparameter, Stille bleibt bitgenau still | `EqCopSunaNullTest` · `EqCopProbeeqNullTest` | ☑ 59/59 je | [↓ B6](#s9b6) | 2026-08-23 |
 | 9 | **Gegenpfad speichern↔laden hält** — und hat dabei **zwei echte Fehler gefunden**, die ohne ihn ins Bundle gegangen wären | dieselben zwei Beine | ☑ | [↓ B7](#s9b7) | 2026-08-23 |
 | 10 | **Fremder Host-Harness:** `pluginval --strictness-level 8` SUCCESS an **beiden** neuen Bundles | `pluginval.exe --strictness-level 8 --validate-in-process --validate …` | ☑ | [↓ B8](#s9b8) | 2026-08-23 |
-| 11 | **K2b/K2c messen jetzt gegen JEDEN Verbraucher des Kerns**, nicht gegen eine Stichprobe — die offene Frage aus `SONDE-007a.md` B8 ist damit entschieden und gebaut | Configure | ☑ 12 Verbraucher | [↓ B4](#s9b4) | 2026-08-23 |
+| 11 | **K2b/K2c messen jetzt gegen JEDEN Verbraucher des Kerns**, nicht gegen eine Stichprobe — die offene Frage aus `SONDE-007a.md` B8 ist damit entschieden und gebaut | Configure | ☑ **13** Verbraucher (Zahl berichtigt vom T2-Teil-B-Prüfer: die 12 in B4 sind der Stand von Abschnitt 2, `EqCopLebenslaufTest` kam erst mit Abschnitt 3 dazu — §5.8) | [↓ B4](#s9b4) | 2026-08-23 |
 | 12 | **§53.5 ist gebaut, nicht paraphrasiert:** `unclassified` beim Laden · Schema-1 `sensor\|pre\|post` → `legacy` · Schema-1 `hub` und bestätigter Schema-2-Main-State → `main` · read-only **nimmt** eine erteilte Klassifikation wieder weg · die Sondenbundles bleiben bis gültigem State neutral und werden nie `main` | `EqCopLebenslaufTest.exe` | ☑ 61/61 | [↓ B9](#s9b9) | 2026-08-23 |
 | 13 | **Der Automat hat Zähne — an AUDIO gemessen.** Dieselbe Markierung, die in `EqCopMarkierungTest` färbt, färbt hier **kein einziges Sample**, solange nicht klassifiziert ist; nach der Klassifikation färbt sie. §53.5 Satz 1 („audio-neutral") ist damit keine Zusage, sondern ein Messwert | `EqCopLebenslaufTest.exe`, Teil 2 | ☑ | [↓ B9](#s9b9) | 2026-08-23 |
 | 14 | **„Ein Scannerlauf klassifiziert nicht" ist gemessen, nicht behauptet.** Der Test fährt die Sequenz eines Plugin-Scanners (instanziieren, Busse/Parameter abfragen, verarbeiten, zerstören) und misst das Ergebnis | `EqCopLebenslaufTest.exe`, P1 | ☑ | [↓ B9](#s9b9) | 2026-08-23 |
@@ -215,6 +216,12 @@ als `namensherkunft` im Manifest selbst.
 -- Nakama-Kern: K2b/K2c gegen alle 12 Verbraucher gemessen.
 -- Configuring done (3.7s)
 ```
+
+> ⚠️ **Diese Rohausgabe ist der Stand von Abschnitt 2.** Abschnitt 3 hat
+> `EqCopLebenslaufTest` als dreizehnten Verbraucher angebunden
+> (`plugin/CMakeLists.txt:439`). Der T2-Teil-B-Prüfer hat den Configure am
+> 23.08. selbst gefahren: **13**. Die Zeile hier bleibt unangetastet, weil sie
+> roh ist — die Behauptung in §1 ist berichtigt (§5.8).
 
 `SONDE-007a.md` B8 ließ offen, ob der Kern gegen **eine** Referenz oder gegen
 alle geprüft wird. Entschieden: gegen **jeden** Verbraucher. `nakama_kern_anbinden()`
@@ -8173,6 +8180,11 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
 ## 5. T2 — Frischkontext-Prüfer
 
+> Zwei Läufe, zwei verschiedene frische Sessions: **Teil A** (§5.1–§5.4) und
+> **Teil B** (§5.5–§5.9). Beide urteilen **NEEDS_WORK**.
+
+### 5.0 Teil A — Lifecycle-Automat, Verdrahtung, Audio-Beweis, Installer-Rückweg
+
 | Feld | Wert |
 |---|---|
 | Prüfer | Frische Session, hat keine Zeile dieses Änderungssatzes geschrieben (Sessionregel `docs/bauaufteilung-sonden.md` §0) |
@@ -8235,9 +8247,144 @@ der 2 812 geänderten Zeilen** sind nicht gegen die Quelle gemessen worden:
 | `cmake/NakamaIdentitaet.cmake` (133 Z.) | Trägt Behauptungen 1 und 4 (Leser bricht bei `null` ab) |
 | `tools/eq-copilot/pruefe_installer_manifest.py` (368 Z.) | Trägt Behauptungen 17 und 18 samt der zwölf Strukturregeln und ihrer Gegenprobe |
 | `schemas/installer/nakama-installer-v1.md` (148 Z.) | Neuer **Vertrag**. Die Hausinvariante (Versionierung vor neuen Feldern, alte Stände laden weiter) ist an ihm nicht nachgemessen |
-| `plugin/CMakeLists.txt` (185 Z.) | Trägt Behauptungen 6, 11 und 16 — die drei Zielblöcke, K2b/K2c über alle zwölf Verbraucher, `NAKAMA_BUNDLE_MAIN` |
+| `plugin/CMakeLists.txt` (185 Z.) | Trägt Behauptungen 6, 11 und 16 — die drei Zielblöcke, K2b/K2c über alle Verbraucher, `NAKAMA_BUNDLE_MAIN` |
 
 **Was daraus folgt:** Das Ticket braucht eine **zweite T2-Runde** über diese
 fünf Dateien, bevor ein PASS ausgesprochen werden darf. Der hier geprüfte Teil A
 (Lifecycle-Automat, seine Verdrahtung, sein Audio-Beweis, der Installer-Rückweg,
 die Buchführung) hat gehalten — mit dem einen Befund oben.
+
+---
+
+### 5.5 T2 Teil B — die fünf in Teil A ungeprüften Dateien
+
+| Feld | Wert |
+|---|---|
+| Prüfer | Zweite frische Session, hat keine Zeile dieses Änderungssatzes geschrieben und war an Teil A nicht beteiligt |
+| Datum | 2026-08-23, mittags |
+| Gegenstand | genau die fünf Dateien aus §5.4 (~1 400 Zeilen): `tests/IdentityTestMain.cpp` · `cmake/NakamaIdentitaet.cmake` · `tools/eq-copilot/pruefe_installer_manifest.py` · `schemas/installer/nakama-installer-v1.md` · `plugin/CMakeLists.txt` |
+| Eigener Beweislauf | `pwsh -File tools/beweise.ps1 -Bauen` → **GRUEN 23/23, Exitcode 0** (Lauf 2026-08-23 12:33, Commit `e8b71a0`) — also **beglaubigt**, kein Exit 4 |
+| Methode | Nicht gelesen, sondern **gefahren**: acht Configure-Läufe mit gezielt verdorbenem Identitätsmanifest, zwei Mutationsproben am Bauskript, zwei Regelproben gegen das Installer-Bein. Jede Mutation byteweise zurückgenommen und per SHA-256 gegengeprüft |
+| Urteil | ☐ PASS ☑ **NEEDS_WORK** — **vier Befunde (T2-2…T2-5), alle offen.** Keine der Behauptungen 1, 2, 3, 4, 6, 7, 11, 16, 17, 18 ließ sich falsifizieren; die Befunde betreffen **Lücken in den Riegeln**, nicht falsche Zusagen. Eine Zahl (Behauptung 11) war falsch und ist berichtigt (§5.8) |
+
+**Zum eigenen Eingriff, offen protokolliert:** Für die Mutationsproben wurden
+`eq-copilot/plugin/CMakeLists.txt` und `eq-copilot/identity/plugin-identities-v1.json`
+mehrfach überschrieben und **byteweise** zurückgestellt (SHA-256 vorher =
+nachher, in beiden Fällen gemessen). Das ändert aber die `mtime` — und damit
+hätte der Beglaubigungsriegel von `tools/beweise.ps1` zu Recht angeschlagen.
+Geschlossen wurde das **nicht** durch einen zurückgedrehten Zeitstempel, sondern
+durch einen echten `-Bauen`-Lauf: Exitcode 0.
+
+<a id="s9t2b1"></a>
+### 5.6 Was gehalten hat — jedes an seiner Quelle gemessen
+
+| Frage | Ergebnis | Wie gemessen |
+|---|---|---|
+| **Beißt der umgedrehte Quellfrost** (Behauptung 3), oder ist er nur still? | ☑ **beißt** — vorgeführt | Mutationsprobe: `PLUGIN_CODE Eqcp` als zweite Zeile in den Block `juce_add_plugin(EqCopilot …)` gesetzt ⇒ `FEHLER  CMake-Quelle: der Viercode steht nicht literal im Zielblock  [Eqcp]`, Exit 1. Die drei Negativprüfungen (`! zielBlock.contains …`) hängen an `pruefe (zielBlock.isNotEmpty(), …)` — ein nicht gefundener Block macht sie also **laut**, nicht still grün |
+| Sind es wirklich „acht Prüfungen"? | ☑ **genau acht** | `git diff 4b500a4..HEAD -- …/IdentityTestMain.cpp` zählt 14 neue `pruefe`-Zeilen; davon liegen **8** im Quellfrostblock (1× `nakama_identitaet_lesen`, 4× „kommt aus dem Manifest", 3× „keine zweite Wahrheit"). Die übrigen 6 gehören zur Dreifachmessung der Bundles |
+| **Ist die Zwei-Wege-Messung der Class-IDs eine Tautologie?** | ☑ **nein** | `NakamaIdentitaet.cmake` liest `hersteller.name/code`, `plugin_code`, `produktname`, `bundle`, `kategorien` — `component_cid`/`controller_cid` kommen im ganzen Bauskript **nicht vor**. JUCE rechnet sie aus den zwei Viercodes; `IdentityTestMain.cpp:394-397` misst das gebaute `moduleinfo.json` gegen die eingefrorenen Felder. Zwei getrennte Wege zur selben Zahl |
+| Deckt sie **alle drei** Bundles? | ☑ | Selbst gefahren: `IDENTITY-TEST OK - 93 Pruefungen ok, 0 Fehler`. Je Bundle Produktname, Vendor, zwei Klassen, beide CIDs an **ihrer** Klasse, Unterkategorien, „keine fremde Ziel-CID". `:324` prüft `3 vs 3` — ein viertes Manifest-Ziel ohne Zeile im Test bringt ihn zum Sprechen |
+| **Verweigert der Leser eine unvergebene Identität** (Behauptung 4)? | ☑ **vier Proben, viermal Exit 1** | `produktname: null` ⇒ Abbruch in `NakamaIdentitaet.cmake:90` · `kategorien` entfernt ⇒ `:116` · `plugin_code` auf 3 Zeichen ⇒ `:101` (`'Eqc' (3 Zeichen)`) · Ziel-ID umbenannt ⇒ `:74`, samt `Bekannt sind: hauptsache, passive-probe, active-probe` |
+| K2b/K2c gegen **jeden** Verbraucher (Behauptung 11)? | ☑ der Sache nach | Configure selbst gefahren: 13 K2b- und 13 K2c-Zeilen, dann `K2b/K2c gegen alle 13 Verbraucher gemessen`. Der Leer-Riegel (`CMakeLists.txt:572-577`) ist echt — ohne ihn wäre eine leere Liste still grün. **Nur die Zahl in §1 war falsch, siehe §5.8** |
+| `NAKAMA_BUNDLE_MAIN` vollständig (Behauptung 16)? | ☑ | Genau 8 Ziele übersetzen `src/PluginProcessor.cpp`; genau diese 8 stehen in der `foreach`-Schleife `CMakeLists.txt:548-552`. Der Rückfall ist ein `#error` in `src/PluginProcessor.h:30-32` — ein vergessenes Ziel ist **nicht baubar**, nicht still falsch |
+| A17: 24/24 und die Gegenprobe (Behauptungen 17/18)? | ☑ selbst gefahren | `24 ok, 0 Fehler`, Exit 0: 12 Strukturregeln + 12 Gegenproben. Die beiden **Leermengen-Fallen** sind beide zu: `r_broker_heisst_wie_die_crate` sichert `all()` ausdrücklich mit `bool(eintraege)` ab (Z. 162), und ein leeres `bekannte_staende` — bei dem `r_bekannte_staende` vacuously grün bliebe — fällt an `r_rueckweg_vollstaendig` (Z. 219, `not r.get(k)`). Zwei Regeln, die einander decken |
+| A17: Pfadableitung bei fehlendem `cmake_ziel` (Grabungsstelle) | ☑ **fällt** | Regelprobe: `cmake_ziel` entfernt ⇒ erwarteter Pfad wird `…/None_artefacts/…`, Vergleich schlägt fehl, Regel fällt. Sichere Richtung |
+| Der Installer-Vertrag gegen den Ausführenden | ☑ | Jede Zusage aus `nakama-installer-v1.md` §2–§5 hat ihre Zeile: Schemaverweigerung `Install-Nakama.ps1:91`, Vollständigkeitsriegel `:194`, Echtheit vor jedem Schreibzugriff `:200-217`, Ruhe `:247`, sichern vor tauschen `:257-266`, NAK-41 `:146` inkl. „unbekannt zählt wie älter" |
+
+### 5.7 Vier Befunde — alle offen, keiner geschlossen
+
+> Der Prüfer schließt nichts. T2-2 bis T2-5 sind **Lücken in Riegeln**, nicht
+> falsche Behauptungen: was die Riegel messen, messen sie richtig. Sie messen
+> nur weniger, als der Text um sie herum nahelegt.
+
+#### T2-2 — Der Identitätsleser verweigert `null` bei vier Feldern, **nicht** beim Herstellercode
+
+| | |
+|---|---|
+| Schwere | **mittel** — trifft alle drei Bundles gleichzeitig |
+| Ort | `eq-copilot/cmake/NakamaIdentitaet.cmake:53-54` (gelesen) gegen `:86-97` (geprüft) |
+| Was der Riegel prüft | Die Null-/Leer-Schleife `:86` läuft über `produktname`, `bundle`, `plugin_code`; `:99-104` prüft zusätzlich, dass `plugin_code` **genau vier Zeichen** hat |
+| Was er nicht prüft | `hersteller.name` und `hersteller.code` werden `:53-54` gelesen und `:122-123` durchgereicht — ohne Null-Prüfung, ohne Längenprüfung |
+| Warum das die eine Hälfte ist, auf die es ankommt | JUCE bildet **beide** Class-IDs aus `jucePluginId(herstellercode, plugincode, typ)`. Der Herstellercode ist nicht Beiwerk zum Viercode, er ist der zweite Summand derselben Zahl — und er steht **einmal** für alle drei Ziele |
+| Gemessen, nicht geschlossen | Drei Configure-Läufe mit verdorbenem Manifest, jeweils **Exitcode 0**, danach die generierten Defines aus `build/plugin/EqCopilot.vcxproj` gelesen:<br>· unversehrt → `JucePlugin_ManufacturerCode=0x45766e61` (`Evna`), `JucePlugin_Manufacturer="evenacadia"`<br>· `hersteller.code: null` → **`JucePlugin_ManufacturerCode=0x4d616e75`** — das ist ASCII **`Manu`**, JUCEs Vorgabewert<br>· `hersteller.name: null` → **`JucePlugin_Manufacturer="yourcompany"`**, JUCEs Vorgabewert<br>· `hersteller.code: "Evn"` (3 Zeichen) → Configure grün |
+| Warum es ein Befund ist | Der Kopf derselben Datei sagt wörtlich (`:19-21`): *„Er erfindet nichts. Steht ein Feld im Manifest auf `null`, bricht der Bau ab, statt einen Vorgabewert einzusetzen."* Bei `hersteller.code` bricht er nicht ab — und JUCE setzt sehr wohl einen Vorgabewert ein. Die Folge wäre exakt der Schaden, den die Datei zwei Zeilen darüber beschreibt: geänderte Class-IDs, bestehende FL-Projekte verlieren ihr Plugin |
+| Restnetz (ehrlich) | `EqCopIdentityTest` fiele **am Artefakt** — die CIDs im `moduleinfo.json` stimmten dann nicht mehr mit dem Manifest. Genau dieses Netz erklärt der Test in `IdentityTestMain.cpp:234-238` aber selbst für unzureichend: *„Ein Freeze, der nur ein gebautes Artefakt prueft, greift genau dann nicht, wenn niemand baut."* Der Configure-Riegel ist die bauunabhängige Hälfte — und die hat hier ein Loch |
+| Wer es angeht | `hersteller.name` und `hersteller.code` in die Schleife `:86` aufnehmen und die Vier-Zeichen-Prüfung `:99` auch auf `hersteller.code` anwenden. Ein Nebeneffekt der Reparatur wäre eine zweite Kleinigkeit: `berechneteCid()` in `IdentityTestMain.cpp:142-150` liest bei leerem Code `z[1..3]` über das Stringende hinaus (`jassert` greift nur im Debug) |
+
+#### T2-3 — Der Quellfrost deckt eines von drei Zielen
+
+| | |
+|---|---|
+| Schwere | **mittel** — genau die Lücke, gegen die NAK-52 gebaut wurde |
+| Ort | `eq-copilot/plugin/tests/IdentityTestMain.cpp:249-303` gegen `eq-copilot/plugin/CMakeLists.txt:181-223` |
+| Gemessen (Gegenprobe in beide Richtungen) | Dieselbe Mutation, zwei Stellen:<br>· `PLUGIN_CODE Eqcp` als zweite Zeile im Block `juce_add_plugin(EqCopilot …)` ⇒ `FEHLER  CMake-Quelle: der Viercode steht nicht literal im Zielblock  [Eqcp]`, **Exit 1**<br>· `PLUGIN_CODE NkPr` als zweite Zeile in `nakama_sonde_ziel()` ⇒ **keine einzige Quellfrost-Meldung**; die drei gemeldeten Fehler waren ausschließlich der Frischeriegel, den die geänderte `mtime` ausgelöst hat |
+| Was fehlt konkret | Der Frost sucht nur in `cmakeBlock(…, "juce_add_plugin(EqCopilot\n")`. Für `NakamaSuna` und `NakamaProbeeq` prüft **nichts**, dass keine zweite Wahrheit danebensteht — und **nichts** prüft, dass `nakama_identitaet_lesen(passive-probe SONDE)` / `(active-probe SONDE)` überhaupt gerufen werden (für `main` tut das `:268`) |
+| Warum es ein Befund ist | Der Bauskriptkopf begründet NAK-52 wörtlich damit, dass „drei Bauskriptbloecke mit je vier Identitaetszeilen … vier Stellen [sind], an denen zwei Wahrheiten auseinanderlaufen koennen" (`CMakeLists.txt:12-15`). Behauptung 3 verspricht dagegen unbeschränkt: *„steht **keine zweite Wahrheit** mehr da"*. Gemessen gilt das für ein Drittel |
+| Was heute nicht passieren kann | Die beiden Sondenziele tragen tatsächlich kein Literal (gelesen, `:181-220`), und ein **abweichendes** Literal fiele am Artefakt auf (falsche CID). Unsichtbar bliebe genau der gefährliche Fall: ein Literal, das heute mit dem Manifest übereinstimmt und morgen nicht mehr |
+| Wer es angeht | Billig zu schließen: **ein** zusätzlicher Blockfrost auf `nakama_sonde_ziel` deckt beide Ziele, weil sie sich eine Funktion teilen. Der Sonderfall, der die Blockbindung überhaupt nötig macht, bleibt gültig — `EqCopAuxSpike` (`:341`) und `EqCopHostProbe` (`:449`) tragen `Evna` zu Recht literal |
+
+#### T2-4 — `art` außerhalb von `vst3\|broker` ist nirgends verriegelt
+
+| | |
+|---|---|
+| Schwere | klein — Autorenfehler, kein Angriffspfad |
+| Ort | `eq-copilot/schemas/installer/nakama-installer-v1.md:59` (die Regel) gegen `tools/eq-copilot/pruefe_installer_manifest.py` (kein Riegel) und `eq-copilot/install/Install-Nakama.ps1:99-108` (die Auswirkung) |
+| Gemessen | Ein zusätzliches Artefakt `{"art": "standalone", …}` ins Manifest gelegt und alle zwölf Regeln darüber laufen lassen: **0 von 12 sehen es.** `_vst3()` filtert auf `art == "vst3"`, `r_broker` zählt nur `broker` — ein drittes Wort fällt durch beide Siebe |
+| Auswirkung | `Ziel-Pfad()` behandelt jedes `art`, das nicht `vst3` ist, im **Broker-Zweig** (`:107`): die Datei landete unter `ziele.broker_verzeichnis` — dem Pfad, der laut Vertrag §4 ausdrücklich geschützt ist, weil er ab SONDE-010 ein Spawn-Ziel wird |
+| Grenze des Befunds | Ohne passenden `sha256` bricht Riegel 1 (`:194`) vorher ab; es braucht also einen `--hashen`-Lauf über dieselbe verdorbene Datei. Der realistische Fall ist ein Tippfehler beim Erweitern, nicht ein Angriff |
+| Wer es angeht | Dreizehnte Regel: `art ∈ {vst3, broker}`, samt Zeile in `verdirb()` |
+
+#### T2-5 — Ausgeliefert wird die innere Binärdatei, nicht das Bundle
+
+| | |
+|---|---|
+| Schwere | klein bis mittel — betrifft den Gegenpfad und die Diagnose |
+| Ort | `eq-copilot/schemas/installer/nakama-installer-v1.md:42` (die Pfadformel) und `eq-copilot/install/Install-Nakama.ps1:104-105` / `:268-271` / `:173` |
+| Gemessen | Gebautes Bundle `Nakama Suna.vst3` enthält **zwei** Dateien: `Contents\Resources\moduleinfo.json` (1 090 B) und `Contents\x86_64-win\Nakama Suna.vst3` (5 598 208 B). Die Formel adressiert nur die zweite. Am installierten Stand nachgemessen: `C:\Program Files\Common Files\VST3\EQ-Copilot.vst3` trägt ein `moduleinfo.json` mit `"Version": "0.1.0"`, der heutige Bau eines mit `"Version": "0.3.0"` |
+| Vier Folgen | (a) Eine **Erstinstallation** von Suna/Probeeq erzeugt ein Bundle **ohne** `moduleinfo.json` — anders als jedes bisher installierte.<br>(b) Beim Main-Bundle bliebe das `moduleinfo.json` vom 16.08. liegen: Metadaten „0.1.0" neben einer 0.3.0-Binärdatei.<br>(c) `-Pruefen` meldete dazu `aktuell`, weil es nur die Binärdatei hasht.<br>(d) `-Rueckweg` einer Erstinstallation entfernt die Datei (`:173`), lässt aber die Ordner stehen, die `:268-271` angelegt hat — ein leeres `.vst3`-Gehäuse in `Common Files\VST3` |
+| Warum (d) zählt | Hausinvariante: `installieren ↔ Rollback`. Beide Hälften stehen im selben Änderungssatz — aber der Rückweg stellt **nicht** den vorigen Zustand her, wenn der vorige Zustand „gar kein Ordner" war |
+| Nicht behauptet | Ob ein Host ein Bundle ohne `moduleinfo.json` ablehnt, ist hier **nicht** gemessen worden — die Datei ist im VST3-SDK optional. Gemessen ist nur, dass Auslieferungseinheit und Bauartefakt nicht dasselbe sind |
+| Wer es angeht | Entweder die Formel auf den Bundle-**Ordner** heben (dann hasht `--hashen` über den Ordner) — oder im Vertrag §2 ausdrücklich festschreiben, dass die Auslieferungseinheit die innere Binärdatei ist, und den Rückweg leere Ordner mit abräumen lassen |
+
+### 5.8 Eine Zahl war falsch: 12 Verbraucher → **13**
+
+Behauptung 11 führte „12 Verbraucher". Selbst gefahren (`cmake -S eq-copilot -B
+eq-copilot/build`, 23.08.):
+
+```text
+-- Nakama-Kern: K2b/K2c gegen alle 13 Verbraucher gemessen.
+```
+
+Nachgezählt an der Quelle: `nakama_kern_anbinden()` wird 13-mal wirksam — 9-mal
+direkt und 4-mal über die beiden Funktionen `nakama_sonde_ziel` (`:219`) und
+`nakama_sonde_nulltest` (`:240`), die je zweimal gerufen werden. Die Rohausgabe
+in B4 mit „12" ist **nicht** falsch: sie stammt aus Abschnitt 2, und
+`EqCopLebenslaufTest` kam erst mit Abschnitt 3 dazu (`:439`). Falsch war, sie
+als Stand des fertigen Tickets nach §1 zu übernehmen.
+
+⚠️ **Dieselbe 12 steht auch in `CLAUDE.md`** („gegen **jeden** Verbraucher des
+Kerns (12)"). Sie ist hier **nicht** berichtigt worden: `CLAUDE.md` trägt gerade
+uncommittete Änderungen einer anderen Session, und fremde Arbeit fasst dieser
+Prüfer nicht an. Die Zeile gehört in die Nacharbeit (NAK-55).
+
+🔑 **Die Lehre ist die alte:** eine gemessene Zahl gehört dorthin, wo sie
+gemessen wird. Sobald sie in eine Zusammenfassung abgeschrieben wird, altert sie
+im selben Ticket — hier zwischen Abschnitt 2 und Abschnitt 3.
+
+### 5.9 Was auch dieses T2 NICHT geprüft hat
+
+| Ungeprüft | Warum es zählt |
+|---|---|
+| **`Install-Nakama.ps1` im Vollzug** | Nur gelesen und gegen den Vertrag gemessen. Weder installiert noch zurückgerollt — Installation ist ein Klick des Users (NAK-32/NAK-41), und ein Prüfer installiert nichts. T2-5 ist damit aus dem Quelltext hergeleitet, nicht am laufenden Skript gesehen |
+| **`--hashen`** | Der Release-Schritt ist nie gefahren worden; er würde `nakama-installer-v1.json` beschreiben. Ob ein Manifest mit gefüllten Hashes alle Regeln hält, ist offen |
+| **Verhalten eines Hosts** gegenüber einem Bundle ohne `moduleinfo.json` | siehe T2-5 |
+| **Teil A erneut** | §5.1–§5.4 sind nicht nachgeprüft worden. Teil B misst genau die fünf Dateien, die Teil A ausgelassen hat — die beiden Läufe ergänzen sich, sie kontrollieren einander nicht |
+| **T1** | Steht für S9 unverändert aus (§3) |
+
+**Was daraus folgt:** T2 ist damit **vollständig gefahren**, und das Urteil
+bleibt **NEEDS_WORK** — vier offene Befunde. Keiner davon widerlegt eine
+Behauptung; alle vier verkleinern die Reichweite eines Riegels gegenüber dem,
+was der Text um ihn herum verspricht. **T2-2 und T2-3 gehören vor ein PASS
+geschlossen** (beide sind kleine, klar umrissene Ergänzungen); T2-4 und T2-5
+sind Vertragsarbeit und können mit SONDE-010 laufen, wenn der Broker ohnehin
+zum Spawn-Ziel wird. Sammelzeile im durablen Offen-Set: **NAK-55**.

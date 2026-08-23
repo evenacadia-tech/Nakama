@@ -218,6 +218,42 @@ rekonstruierbar. Er gilt als Codex-Annahme der Fassung 0.1; der
 Kernfunktionen-Satz des Entwurfs ist damit ein Startwert wie die Zahlen in (f).
 Frage an den User offen als **NAK-39**.
 
+**(n) Gen wird EQ-Zentrale; eine Sonde statt zwei; Master-EQ in Gen.**
+Entscheid 23.08.2026 (voller Wortlaut
+`../design/abnahmen/2026-08-23-gen-eq-zentrale.md`; Register in `CLAUDE.md`):
+„STATT mehrere eq auf den instrumenten liegen zu haben, könnte man das EQ UI
+des Probeeq auf eine neue 2. seite auf den Gen legen … Also im Prinzip liegt
+der EQ auf den Bussen wird aber eingestellt auf dem Gen" · „Gen wird ein
+vollwertiges HUB oder Studio … es ist ein vollwertiger eq für den master wie
+andere eq auf dem markt" · Merge-Wahl „eine Sonde" · Name **Nakama Probeeq**
+(Suna entfällt als App-Name). Folgen:
+
+- **Die EQ-Bedienoberfläche entsteht EINMAL, als Seite 2 von Gen.**
+  Design-Vorgaben des Users (ebd., wörtlich): Sonden-Durchschalter direkt
+  AUF der Seite, nie über Seite 1; zwei EQ-Spuren in EINEM Graph, farblich
+  unterscheidbar. Eine Minimal-Rückfallfläche der Sonde (Bypass, Kurve
+  lesbar) ist Vorschlag, nicht abgenommen.
+- **Der Fernsteuerweg (Kernfunktion 16, §44, P7) wird vom Nebenpfad zum
+  Hauptbedienweg.** Die Sicherheitsmechanik (Pairing, HMAC, Revision, Lease,
+  Revert) gilt unverändert. Die Deutung „±12 dB manuell, ±3 dB Remote"
+  (§44.2) ist damit überholt; Vorschlag zur Neudeutung (nicht entschieden,
+  NAK-64): das ±3-dB-Cap bindet Advisor-Vorschläge, User-Edits über Gen
+  sind der manuelle Weg (±12 dB).
+- **Parameter- und Zustands-Hoheit bleibt in der Sonde** (Host-Automation
+  ist instanzgebunden; §53.8-State unverändert); Gen ist Fernbedienung und
+  Ansicht. Der eigene Revisions-/Undo-Ring (§44) wird wichtiger, weil der
+  Host Ferneingriffe nicht zuverlässig in sein Undo nimmt — Befund, keine
+  neue Regel.
+- **§0.1 „Gen berät nur" gilt fortan als „nichts Ungefragtes":** Gen erhält
+  einen zuschaltbaren, minimalphasigen Master-EQ; aus = bitidentisch
+  (NullTest-Standard, dasselbe verriegelte-und-bewiesene Muster wie die
+  Hör-Markierung). Suna-spezifische Stellen (u. a. §0.4-Kachel, das dritte
+  Plugin-Ziel aus S9) beschreiben Verlauf.
+- **Umschnitt** von P6–P7 und `bauaufteilung-sonden.md` auf diesen Entscheid
+  ist **NAK-64**; die Figma-Flächen (Gen Seite 2, Rückfallfläche) sind
+  **NAK-65**. Bis zum Umschnitt hat dieses Erratum Vorrang vor dem
+  Entwurfstext darunter.
+
 ---
 
 ## 0. Zweck und Einordnung

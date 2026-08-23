@@ -228,8 +228,8 @@
   },
   {
    "phase": "P6–P7",
-   "titel": "Aktiver Kern: Probeeq",
-   "ziel": "Probeeq wird der vollwertige EQ, der Anweisungen von Gen umsetzt und manuell bedienbar ist — mit Kopplung, Sicherheit und Rückweg. Danach: Release R3.",
+   "titel": "Aktiver Kern: EQ in Sonde und Gen",
+   "ziel": "Der EQ entsteht: er rechnet in der Sonde (und als Master-EQ in Gen), bedient wird alles zentral auf Gens zweiter Seite — mit Kopplung, Sicherheit und Rückweg (Entscheid 23.08.; Umschnitt der Schritt-Texte: NAK-64). Danach: Release R3.",
    "schritte": [
     {
      "id": "S26–28",

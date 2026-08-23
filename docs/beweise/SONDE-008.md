@@ -33,7 +33,7 @@ das Ticket überhaupt zulässig ist (Grundgesetz).
 | 1 | **keine Teilblöcke** — die Analyseübergabe veröffentlicht ganz oder gar nicht | `EqCopQueueStressTest.exe` | ✅ 69/0 | [↓ B1](#b1) | 23.08. |
 | 2 | **keine unbegrenzten Vektoren** — fixed-memory Loudness | `EqCopLoudnessGoldenTest.exe` | ✅ 66/0 | [↓ B2](#b2) | 23.08. |
 | 3 | **RT-Golden** — der Umbau ändert kein Sample; Audiothread ohne Allokation | `EqCopNullTest` · `EqCopMarkierungTest` · `EqCopLebenslaufTest` · B4 §J/§L | ✅ | [↓ B3](#b3) | 23.08. |
-| 4 | **EBU-Golden** — Loudness bleibt in der Toleranz aus §49 (±0,1 LU) | `EqCopLoudnessGoldenTest` · `EqCopGoldenTest` | ✅ 0,000000000 LU bzw. 239/0 | [↓ B2](#b2), [↓ B4](#b4) | 23.08. |
+| 4 | **EBU-Golden** — Loudness bleibt in der Toleranz aus §49 (±0,1 LU) | `EqCopLoudnessGoldenTest` · `EqCopGoldenTest` | ✅ 0,000000000 LU bzw. 239/0 — ⚠️ **T2: gilt nur für die Korpora des Goldens**, siehe [T2-1](#t2-1) | [↓ B2](#b2), [↓ B4](#b4) | 23.08. |
 | 5 | Kanon unverändert grün, mit den zwei neuen Beinen | `tools/beweise.ps1 -Bauen` | ✅ 26/26, Exit 0, beglaubigt | [↓ §3](#3-kanon-lauf) | 23.08. |
 
 **Zusätzlich, außerhalb des Gate-Texts, weil dieses Ticket den Audiothread anfasst:**
@@ -537,11 +537,24 @@ Zahl im Kopfkommentar stimmt).
 Numerische Ränder, unabhängig nachgemessen — **alle in Ordnung**: exakte Null
 (Stille) zählt als unter-Gate, nicht als nicht-endlich, und liefert `null` statt
 einer Zahl · negative Zellenergie wird als nicht-endlich gezählt statt still zu
-Null gemacht · NaN am Stromanfang vergiftet nur die **vier** Blockfenster, die
-sie enthält (bei einer NaN in Zelle 0 ist es genau **eines** — selbst
-nachgezählt) · durchweg Vollaussteuerung (z = 2, ≈ +2,3 LUFS) ist wertgleich zur
-Referenz · `vorbereiten(0.0)` bildet gar keine Blöcke statt durch Null zu teilen
-· Kurz-LUFS bitgleich, auf einem eigenen Korpus gegengeprüft.
+Null gemacht · eine NaN-Zelle verdirbt **nur die Blockfenster, die sie
+enthalten**, und der Strom erholt sich danach vollständig — bei einer NaN in
+Zelle 0 ist das genau **ein** Fenster (Fenster = 4 Zellen, Hop 1; mitten im
+Strom wären es vier). Gemessen: `bloeckeNichtEndlich() == 1`, und
+`integriert()` liefert danach wieder einen endlichen Wert. ⚠️ Meine erste
+Erwartung war „vier" und war **falsch** — ein Fenster am Stromanfang hat keine
+Vorgänger; der Code hatte recht, nicht die Probe · durchweg Vollaussteuerung
+(z = 2, ≈ +2,3 LUFS) ist wertgleich zur Referenz · `vorbereiten(0.0)` bildet gar
+keine Blöcke statt durch Null zu teilen · Kurz-LUFS bitgleich, auf einem eigenen
+Korpus gegengeprüft.
+
+Ebenfalls nachgestellt, weil es hier zählt: `pruefe(...)` wertet seine Argumente
+in **unspezifizierter Reihenfolge** aus — dieselbe Falle, die der Erbauer in
+seinem eigenen Golden gefunden und dokumentiert hat (§6 Punkt 4). Meine Probe ist
+zweimal hineingelaufen und druckte grüne Prüfungen mit `0.000000`-Meldetext. Die
+**Prüfungen** waren richtig, die Texte nicht; in der obigen Ausgabe ist das
+korrigiert. Der Fund gehört dem Erbauer, nicht mir — er ist mir nur ein zweites
+Mal begegnet.
 
 **In der Nachbarschaft der Vollaussteuerung gegraben — und dort liegt T2-1.**
 
@@ -582,9 +595,9 @@ die lauten (49,30); der Akku entscheidet den **ganzen Eimer** an seinem
 Mittelwert (46,38) und nimmt beide.
 
 **Warum `unsicherheitLu()` dazu 0 meldet:** `grenze = floor((Γ_r + 70) / 0,01)`
-ergibt hier 10 638 ≥ `kBins` (10 001), die Funktion kehrt in Zeile 264 sofort mit
-`0.0` zurück. Sie kann die Unsicherheit gar nicht sehen — sie sucht sie nur im
-Gitter.
+ergibt hier 10 638 ≥ `kBins` (10 001), die Funktion kehrt in `:264-265` sofort
+mit `0.0` zurück. Sie kann die Unsicherheit gar nicht sehen — sie sucht sie nur
+im Gitter.
 
 **Was damit widerlegt ist** (Wortlaut, damit nichts verschoben wird):
 
@@ -843,9 +856,12 @@ Ausdrücklich, damit niemand mehr Deckung annimmt, als da ist:
 
 Die Proben liegen als `t2_queue.cpp` / `t2_loudness.cpp` unter
 `%TEMP%\nakama-t2\`, außerhalb des Repos übersetzt, damit weder der
-Beglaubigungsriegel noch der Kanon durch Prüfercode bewegt werden. Wer T2-1
-schließt, baut den Zwei-Pegel-Korpus als **echtes** Bein in `B9` nach; der Kern
-davon sind vier Zeilen:
+Beglaubigungsriegel noch der Kanon durch Prüfercode bewegt werden. ⚠️ **Und
+damit sind sie flüchtig — dieselbe Falle wie NAK-26** (`pluginval` unter
+`%TEMP%`). Deshalb steht die **rohe Ausgabe jeder tragenden Probe oben im
+Bericht** und der Kern des Gegenbeispiels hier: das ist der durable Teil, die
+Datei ist es nicht. Wer T2-1 schließt, baut den Zwei-Pegel-Korpus als **echtes**
+Bein in `B9` nach; der Kern davon sind vier Zeilen:
 
 ```cpp
 for (int i = 0; i < 1000; ++i) zellen.push_back (zelleFuer (1.0e5));   // ~ +49,3 LUFS

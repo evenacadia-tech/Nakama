@@ -87,7 +87,7 @@
   },
 
   "nicht_teil_dieses_manifests": [
-    "Repair: das Skript prueft installierte Hashes und kann sie neu schreiben (-Nachbessern) - ein eigener Reparaturdienst ist P9.",
+    "Repair ueber die Diagnose hinaus: `-Pruefen` vergleicht den installierten Stand gegen das Manifest und benennt aktuell / ABWEICHEND / nicht installiert. Ein eigener Reparaturdienst ist P9.",
     "Update-Kanal, atomarer Austausch und Signatur-Kette: Distribution, P9 (§57 ff.).",
     "v2-Kompatibilitaetslistener (P1-Lieferumfang): gehoert zum Broker und kommt mit SONDE-010; hier steht kein Wort darueber, weil es kein Wort dazu zu sagen gibt.",
     "Die Installation selbst: sie bleibt ein Klick des Users mit Rechteerhoehung (NAK-32). Dieses Manifest wird von keiner Automatik ausgefuehrt."

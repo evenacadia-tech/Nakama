@@ -519,7 +519,12 @@ void EqCopilotProcessor::spiegleKlassifikation()
     // Aufrufer haelt `bindungMutex`. Der Audiothread liest ausschliesslich
     // diese Atomic; er befragt den Automaten nie (§53.5: "Klassifikation,
     // Spawn und Pipe-I/O liegen nie im Audiocallback").
-    istMainKlassifiziert.store (lebenslauf.audioAusnahmeErlaubt(), std::memory_order_relaxed);
+    // Der Store bleibt bewusst seq_cst (Vorgabe) wie `editorOffen` und
+    // `echtzeitOk` daneben: er laeuft nie im Audiothread, die Ordnung kostet
+    // hier nichts, und eine dritte Ordnungsregel im selben Zustandsblock waere
+    // eine Frage, die ein Leser jedes Mal neu beantworten muesste. Gelesen
+    // wird im processBlock relaxed - dort haengt kein anderer Wert daran.
+    istMainKlassifiziert.store (lebenslauf.audioAusnahmeErlaubt());
 }
 
 nakama::state::Klassifikation EqCopilotProcessor::holeKlassifikation() const

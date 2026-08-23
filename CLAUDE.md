@@ -115,6 +115,7 @@ als Produktteil · „Lernsprache" / „Kernfunktion vor Verwaltung" als Regeln.
 | Schemas v2 (Vertrag des heutigen Plugins) / v3 (Sondenfamilie) | `eq-copilot/schemas/` · `eq-copilot/schemas/v3/` |
 | State-Schema 2 + Parameterbestand (SONDE-006) | `eq-copilot/schemas/state/` (Vertrag) · `eq-copilot/plugin/state/` (Code) · `eq-copilot/fixtures/state/` (Korpus, drei Beine) |
 | Identität (eingefroren, SONDE-001) | `eq-copilot/identity/plugin-identities-v1.json` |
+| Installer: Vertrag / Auslieferung / Ausführender (SONDE-007b) | `eq-copilot/schemas/installer/nakama-installer-v1.md` · `eq-copilot/install/nakama-installer-v1.json` · `eq-copilot/install/Install-Nakama.ps1` |
 | Broker (eigene Crate, `eqcop-broker.exe`) | `broker/` |
 | Beweis-Runner + Manifeste | `tools/beweise.ps1` · `docs/beweise/` |
 | Python-Erzeuger und -Prüfer | `tools/eq-copilot/` |
@@ -191,19 +192,22 @@ Baustand: sind Prüfbinaries älter als ihre Quellen, verweigert er mit Exitcode
 die Beglaubigung (0 grün · 2 rot · 3 Voraussetzung fehlt · 4 nicht beglaubigt).
 Vorlage `docs/beweise/VORLAGE.md`, Basislinie `docs/beweise/S0-basislinie.md`.
 
-**Kanon (21 Beine, Tabelle in `tools/beweise.ps1`):** NullTest · Golden ·
+**Kanon (23 Beine, Tabelle in `tools/beweise.ps1`):** NullTest · Golden ·
 Markierung · `cargo test` (seit 22.08. mit dem JCS-Bein) · sechs Python-Beine
 des v3-Vertrags · A11 `pruefe_v2_schemas.py` · **A12
 `erzeuge_state_fixtures.py --pruefen`** (SONDE-006) · **A13
 `pruefe_host_capabilities.py`** (SONDE-004) · **A14
 `pruefe_kern_identitaetsfrei.py`** (SONDE-007a) · **A15/A16
-`EqCopSunaNullTest` / `EqCopProbeeqNullTest`** (SONDE-007b) · Identität · **B2
+`EqCopSunaNullTest` / `EqCopProbeeqNullTest`** und **A17
+`pruefe_installer_manifest.py`** (SONDE-007b) · Identität · **B2
 `EqCopStateMigrationTest`** (SONDE-006) · Hostkontext · Host-Probe (zählt
-89 nur mit PNG-Ziel, sonst 85 — NAK-34) · Schema. **Die Prüfzahlen stehen im
+89 nur mit PNG-Ziel, sonst 85 — NAK-34) · Schema · **B8
+`EqCopLebenslaufTest`** (SONDE-007b). **Die Prüfzahlen stehen im
 jüngsten Manifest in `docs/beweise/`, nicht hier** (zuletzt
-`SONDE-007b.md`: 21/21 grün). Nicht im Kanon, aber vorhanden:
+`SONDE-007b.md`: 23/23 grün). Nicht im Kanon, aber vorhanden:
 `EqCopAuxSpikeTest` (NAK-37), Shot (`--state` lädt einen Host-State vor dem
-Render), PaintBench, PipeProbe, `pluginval --strictness-level 8`. Vier Beine
+Render), PaintBench, PipeProbe. ⚠️ **`pluginval` ist nirgends gepinnt** und am
+23.08. auf dieser Maschine nicht auffindbar — NAK-53. Vier Beine
 stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
 
 - Golden-WAVs einmalig: `py -3.13 tools/eq-copilot/erzeuge_fixtures.py --nur-wav`
@@ -217,10 +221,11 @@ stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
   still Clients; Produktion verweigert per FIRST_PIPE_INSTANCE).
 - **Version:** `project(… VERSION 0.3.0)` und `kPluginVersion` müssen eins sagen —
   ein Configure-Riegel in `eq-copilot/CMakeLists.txt` bricht sonst ab.
-  **Installiert ist das Bundle vom 16.08.** (Hash `74D86BD5…`); das gebaute vom
-  21.08. (mit Hostbrücke) ist nicht installiert — Installation nur per
-  User-Klick (`eq-copilot\install\Install-EQ-Copilot.ps1` als Admin; der Ordner
-  ist gitignoriert und existiert nur auf dem Desktop — NAK-32).
+  **Installiert ist das Bundle vom 16.08.** (Hash `74D86BD5…`); nichts
+  Neueres ist installiert — Installation bleibt ein User-Klick als Admin.
+  Der Weg dafür ist seit S9 `eq-copilot\install\Install-Nakama.ps1`
+  (manifestgetrieben, mit `-Pruefen` und `-Rueckweg`; NAK-32 geschlossen).
+  Vor einer Installation gilt weiterhin NAK-41.
 - **FL-Termine A/B sind gemessen (22.08.)** — Rohdaten `docs/beweise/termin-a/`,
   `termin-b/`; **Capabilityreport S4** `eq-copilot/identity/host-capabilities-fl-v1.json`
   (zehn §53.6-Bits mit Rohfeld, Kanon-Bein A13 misst sie gegen die Rohdaten):
@@ -339,13 +344,51 @@ stehen als „geplant" und werden Pflicht, sobald ihr Ticket sie baut.
   verlangt laut Kind-Matrix §2.1 genau ein `Parameters`-Kind, und
   `Zustand::parameters` war als `{}` deklariert, also **Nullen statt
   `standardSatz()`** (0 Hz liegt außerhalb von `band.0.freq_hz`). Manifest
-  `docs/beweise/SONDE-007b.md`; **Abschnitt 3 offen** (Lifecycle-Klassifikation,
-  Installer-Manifest), **T1/T2 beide offen**.
+  `docs/beweise/SONDE-007b.md`.
+- **Lifecycle-Klassifikation (SONDE-007b Abschnitt 3 / S9, 23.08.):**
+  `state::Lebenslauf` (im Kern) ist §53.5 als Code — `unclassified` beim Laden
+  und **audio-neutral**; Schema-1 `sensor|pre|post` → `legacy` („immer
+  passiv"); Schema-1 `hub` und bestätigter Schema-2-Main-State → `main`; ein nie
+  gespeicherter Stand wird `main` erst nach **geöffnetem Editor UND** expliziter
+  Initialisierung (= der User wählt im Editor die Rolle `hub`). 🔑 **„Ein
+  Scannerlauf klassifiziert nicht" ist keine Sonderbehandlung, sondern die
+  Folge der Startbedingung** — ein Scanner ruft nie `setStateInformation` und
+  öffnet nie einen Editor; das Bein fährt genau diese Sequenz. 🔑 „Bestätigt"
+  ist der Leser selbst: `lade()` hat die Kind-Matrix §2.1 geprüft, eine zweite
+  Prüfung wäre eine Kopie, die auseinanderläuft. Der Automat hängt an zwei
+  Dingen — der Hör-Markierung (Audio, siehe unten) und `darfBrokerStarten()`
+  (`main` + offener Editor; **heute gibt es keinen Spawn-Pfad**, SONDE-010 hängt
+  ihn dort an). `Bundle::eqcp()` ist kein Literal in `src/` mehr:
+  `NAKAMA_BUNDLE_MAIN` kommt aus der Target-Schicht, ein `#error` fängt ein
+  Ziel, das sich nicht erklärt. Kanon 21 → **23** (A17, B8).
+- **Installer-Manifest (SONDE-007b Abschnitt 3, 23.08., NAK-32 geschlossen):**
+  Vertrag `eq-copilot/schemas/installer/nakama-installer-v1.md`, Auslieferung
+  `eq-copilot/install/nakama-installer-v1.json`, Ausführender
+  `install/Install-Nakama.ps1` (beide versioniert; Bundles, Rollbacks und
+  Laufergebnisse bleiben Maschinenartefakte). 🔑 **Dieselbe Regel wie NAK-52,
+  nur auf der Auslieferungsseite:** das Manifest trägt weder Produktnamen noch
+  Viercodes noch Class-IDs. Weil ein Pfad den Bundlenamen zwangsläufig enthält,
+  ist der Riegel zweiteilig — A17 **rechnet** jeden Quellpfad aus `cmake_ziel` +
+  Identitätsdatei nach *und* verbietet Codes/CIDs; einzeln wäre jede Hälfte
+  löchrig. `sha256: null` heißt **nicht ausliefer-bar** (das Skript bricht ab,
+  bevor es etwas anfasst); der committete Stand trägt bewusst `null`.
+  Gegenpfad `-Rueckweg` sichert vor dem Tausch und **verweigert** einen
+  Rückfall auf kleineres *oder unbekanntes* State-Schema (NAK-41-Riegel;
+  unbekannt zählt wie älter). Broker nach `Program Files`, nicht
+  `%LOCALAPPDATA%` — er ist ab SONDE-010 ein Spawn-Ziel.
+- **Stand S9:** alle drei Bauabschnitte gebaut, **T1/T2 beide offen** — und
+  `pluginval` fehlt am Main-Bundle (NAK-53).
 - **Hör-Markierung (0.3.0):** färbt auf Klick das Monitorsignal von Gen;
-  Verriegelung im Code `(echtzeitOk ∨ test) ∧ (spielt ∨ ¬hatTransport) ∧
-  ¬isNonRealtime ∧ (editorOffen ∨ test)`; Analyse-Abgriff davor; Render
-  bitidentisch (MarkierungTest). Jede weitere Audio-Ausnahme von Gen/Suna
-  braucht denselben Beweisstandard.
+  Verriegelung im Code seit S9 **`klassifiziertAlsMain ∧`** `(echtzeitOk ∨ test)
+  ∧ (spielt ∨ ¬hatTransport) ∧ ¬isNonRealtime ∧ (editorOffen ∨ test)`;
+  Analyse-Abgriff davor; Render bitidentisch (MarkierungTest). Jede weitere
+  Audio-Ausnahme von Gen/Suna braucht denselben Beweisstandard.
+  ⚠️ **Der erste Term ist neu (23.08., §53.5 „audio-neutral"):** eine
+  `legacy`-Instanz (v2-Rolle `sensor`/`pre`/`post`) färbt **nicht mehr**. Wer
+  die Markierung will, wählt im Editor die Rolle `hub`. Der installierte
+  16.08.-Stand ist davon unberührt. Der Test-Schalter `testForciereEchtzeit`
+  umgeht diesen Term absichtlich **nicht** — er umgeht nur, was an der Wanduhr
+  hängt.
   ⚠️ **Das `∨ ¬hatTransport` ist abgewählt** (User 22.08., Hub `U10`: „Nein,
   nur mit Signal") — verlangt ist ein gültiges „spielt". Der Code trägt das
   fail-open **noch**; umzusetzen mit S10–S13 (NAK-35/NAK-24). Bis dahin

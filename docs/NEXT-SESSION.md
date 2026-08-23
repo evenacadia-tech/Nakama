@@ -46,14 +46,32 @@
 > und `Zustand::parameters` war `{}` — also **Nullen statt `standardSatz()`**,
 > und 0 Hz liegt ausserhalb von `band.0.freq_hz`.
 >
-> **Naechster Schritt: S9 Abschnitt 3** — Lifecycle-Klassifikation (§53.5:
-> `unclassified` beim Laden, `legacy` bei Schema-1-`sensor|pre|post`, `main`
-> bei `hub` oder bestaetigtem Schema-2-Main-State, „ein Scannerlauf
-> klassifiziert nicht") und das Installer-Manifest. Betrifft **nur** das
-> Main-Bundle; die beiden neuen haben eine feste Produktklasse und die steht.
-> Danach T1+T2 fuer S9. ⚠️ Vor einem Installer-Schritt muessen **NAK-41**
-> (Schema-2-Projekt verliert im 16.08.-Build still seine Identitaet) und
-> **NAK-32** (Installer-Ordner nur auf dem Desktop) entschieden sein.
+> **S9 Abschnitt 3 ist gebaut** (23.08., `42bfe6e` + `ff0e0b8`). Damit stehen
+> alle drei Bauabschnitte von `SONDE-007b`:
+> - `state::Lebenslauf` im gemeinsamen Kern ist §53.5 als Code. Neu ist nicht
+>   der Automat, sondern dass er **Zaehne** hat: die Hoer-Markierung faellt
+>   unter „audio-neutral", und `EqCopLebenslaufTest` misst das an AUDIO —
+>   dieselbe Markierung, die `EqCopMarkierungTest` faerben laesst, faerbt vor
+>   der Klassifikation **kein einziges Sample**. `darfBrokerStarten()` ist der
+>   eine Haken, an den SONDE-010 den Spawn haengt.
+> - Installer-Manifest: Vertrag (`schemas/installer/`), Auslieferung
+>   (`install/nakama-installer-v1.json`) und `Install-Nakama.ps1` mit beiden
+>   Haelften (installieren ↔ Rueckweg) samt NAK-41-Riegel. **NAK-32 ist damit
+>   geschlossen**; NAK-41 bleibt als Sachlage bestehen, ist aber kein Blocker
+>   des Installer-Schritts mehr. Der committete Stand traegt bewusst
+>   `sha256: null` = nicht ausliefer-bar.
+> - Kanon 21 → **23** (A17 Installer-Manifest, B8 Lebenslauf), 23/23 gruen.
+>
+> ⚠️ **Verhaltensaenderung, die ein Pruefer zuerst ansehen sollte:** eine
+> `legacy`-Instanz faerbt nicht mehr. §53.5 nennt `legacy` „immer passiv" —
+> gewollt, aber es ist der einzige Punkt, an dem dieser Aenderungssatz das
+> Verhalten des Produkts aendert.
+> ⚠️ **`pluginval` lief NICHT** am Main-Bundle: das Binary ist auf dieser
+> Maschine nicht auffindbar und nirgends im Repo gepinnt (**NAK-53**). Gerade
+> dort beruehrt der Aenderungssatz den Audiopfad — T1 muss es nachholen.
+>
+> **Naechster Schritt: T2 fuer S9** — Frischkontext-Pruefer, eigene Session
+> (Sessionregel `docs/bauaufteilung-sonden.md` §0). Danach S10.
 >
 > **Aber vorher zwei Dinge, die Vorrang haben:**
 >
@@ -196,12 +214,27 @@
 ## ▶ So startet der Projektleiter eine Bau-Session
 
 Neue Session in diesem Workspace aufmachen, diese zwei Zeilen einfügen, fertig.
-**Stand 23.08. ist das die T2-Prüfung von S8**, nicht der nächste Bau:
+**Stand 23.08. abends ist das die T2-Prüfung von S9**, nicht der nächste Bau:
 
 ```
-Pruefe S8 (SONDE-007a) als T2 mit frischem Kontext gegen git diff dafa5a5..HEAD.
-Urteil PASS/NEEDS_WORK in docs/beweise/SONDE-007a.md, Abschnitt 5.
+Pruefe S9 (SONDE-007b) als T2 mit frischem Kontext gegen git diff 657fe57..HEAD.
+Urteil PASS/NEEDS_WORK in docs/beweise/SONDE-007b.md, Abschnitt 5.
 ```
+
+Die drei Stellen, an denen ein Prüfer bei **S9 Abschnitt 3** zuerst graben
+sollte (aus dem Selbstaudit, ehrlich benannt statt versteckt):
+1. **Die Verhaltensänderung an der Hör-Markierung.** `legacy` färbt nicht mehr.
+   Ist der Term an der richtigen Stelle (vor `markierung.verarbeite`, nach dem
+   Analyse-Abgriff), und kann die Atomic-Spiegelung `istMainKlassifiziert`
+   veralten? Sie wird nur unter `bindungMutex` geschrieben — reicht
+   `memory_order_relaxed` für einen Audiothread, der sie liest?
+2. **Die explizite Initialisierung hängt an `setzeBindung`.** Das ist heute der
+   einzige User-Akt, der die Klasse setzt. Gibt es einen zweiten Weg, auf dem
+   `zustand.common.klasse` `main` wird, ohne dass der Automat es erfährt?
+   (`neueSensorId`, `setStateInformation`, Editor-Pfade.)
+3. **A17s Ableitung.** Der Quellpfad wird aus `cmake_ziel` + Bundlename
+   gebildet. Stimmt die Formel noch, wenn ein Ziel andere JUCE-Formate baut,
+   und was passiert bei einem Ziel ohne `cmake_ziel`-Feld?
 
 Das ist keine Wahl, sondern die Sessionregel (`docs/bauaufteilung-sonden.md`
 §0: „1 Session = 1 Ticket + sein Beweismanifest + **sein Frischkontext-Prüfer**").

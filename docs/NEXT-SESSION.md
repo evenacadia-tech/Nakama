@@ -418,12 +418,10 @@
 >
 > ## 👤 Was beim User liegt (nur er kann es)
 >
-> **Der OpenWiki-Schluessel.** Die taegliche Auffrischung
-> (`.github/workflows/openwiki-update.yml`, 08:00 UTC) ist seit `ba6d6c8`
-> scharf, bricht aber still ab: `OPENAI_API_KEY` ist als Repo-Geheimnis nicht
-> gesetzt (gemessen 22.08.: `gh secret list` leer, kein Lauf). Ein Befehl im
-> Projektordner, fragt den Wert interaktiv ab:
-> `gh secret set OPENAI_API_KEY`. Details NAK-51.
+> ~~**Der OpenWiki-Schluessel.**~~ — **erledigt sich am 23.08.**, auf dein Wort
+> („*verwerfe das mit dem API key wir machen das manuell*"). Der taegliche
+> Workflow ist geloescht, der Schluessel wird nicht mehr gebraucht; das Wiki
+> wird im Lauf einer Session von Hand aufgefrischt (NAK-51 verworfen).
 >
 > **Die Planblatt-Automation einschalten** (optional):
 > `nimbalyst-local/automations/planstand-nakama.md`, taeglich 09:00 — angelegt,

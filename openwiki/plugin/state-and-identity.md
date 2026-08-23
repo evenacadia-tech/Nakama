@@ -37,9 +37,6 @@ sources:
   - id: openwiki-source-78ba42cd6ffb895a08cd36be
     resource: repo://eq-copilot/plugin/tests/StateMigrationTestMain.cpp
 generated: {by: "claude-code", at: "2026-08-23T10:03:23.427Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-23T10:03:23.427Z
 ---
 
 # Plugin state and identity

@@ -14,10 +14,7 @@ sources:
     resource: repo://eq-copilot/plugin/src/PluginProcessor.cpp
   - id: openwiki-source-9a52c3877c1658a9868e49c2
     resource: repo://eq-copilot/plugin/tests/GoldenTestMain.cpp
-generated: {by: "claude-code", at: "2026-08-22T15:50:39.855Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-22T15:50:39.855Z
+generated: {by: "claude-code", at: "2026-08-23T16:26:37.107Z"}
 ---
 
 # Analysis engine
@@ -74,6 +71,11 @@ before readiness, turns at most the two strongest resonances into cards, adds
 other supported spectral findings, applies stable priority, and marks no more
 than three non-low-confidence findings as top-ranked. The editor and snapshot
 export call the same function, preventing two competing diagnosis paths.
+
+This engine is not the only measurement path in the tree. The newer
+[Measurement core](measurement-core.md) serves the versioned family contracts
+with its own window bookkeeping and boundary rules; the two currently coexist,
+and this one remains what the editor and the offline reference use.
 
 ## Persistence and failure behavior
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:940e109488f794d6790d7b5780d45603983dda9d03a01268c75889bbc07890c1",
+  "pageVersion": "sha256:d0185a5144f1ca18754e8be4255824951dcc0b3fc88ddb9811b5d7284fdb1767",
   "claims": [
     {
       "id": "claim_c7f26f19dc9e4f56be2a8458cc35e046",
@@ -97,16 +97,16 @@
       "statement": "The canonical product proof is a local append-capable PowerShell evidence runner, not a product CI workflow.",
       "evidence": [
         {
-          "resource": "repo://tools/beweise.ps1#L1-L48",
-          "version": "repo-lines-v1:sha256:192ace583c4b54dcb6d6f636849116cb8406c1313d136e4afc3315be4c31e094:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5N2M4M2Q2OWEwZWM0NGViZDBjNDA3MzQyZjJhYjgwZDQwZTBiMmE1MjhmMjY3OTU2MjlhY2E5YmI3Yjg2NmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxMzcxNDVjNGI2NDQwOWM4NGVjNDQ3OTA4YjQyYjZjYjE5NzgxYzE4NWEyODQ4ODBkNzM1YjhkM2FhZmQ5NmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBiMDcyZWE5ZTJhM2YzNjY3NDEwNjc2M2Y3NmI5MjMyM2ZkZGI3YjlmZTk1MWI1ODkwYjEyNTgzMGNlMjU5MTAifQ"
+          "resource": "repo://tools/beweise.ps1#L1-L67",
+          "version": "repo-lines-v1:sha256:2e311328d1b4fa2493e57c00c8f646c22212135c74ca5b09b007adadecfeff65:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5N2M4M2Q2OWEwZWM0NGViZDBjNDA3MzQyZjJhYjgwZDQwZTBiMmE1MjhmMjY3OTU2MjlhY2E5YmI3Yjg2NmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBiZWJiOTgyZGVlYmFjYmNkMWNjMDg1Y2M0MTU5OWFmMGYxMDdkMmQzNzA0OTZkMTMzMzBjZWJjNDYwMDljMTgifQ"
         },
         {
-          "resource": "repo://tools/beweise.ps1#L202-L355",
-          "version": "repo-lines-v1:sha256:925db038b8f01d4d4dfc99a83a300c229491008200cb751c33f511d97ab421a2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTU0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3MzlkYzMwN2IwNmNlMWQwMGQ3NTJiYzYzZDE2YmM2ZWVkZTBhNjc4MzQxZWNhNDVjNzFjMzk3NjE1ODE3NDVhIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJmYWZiYTA1MjdjMzk1M2M0YjZlMGU1YjU3MzliYTgzNjEyZjgwNTNiY2RjOTQ2NjczMDE5M2NkMWQ1OTBiNDA4IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIwOTAyMTBjMjA0ZjVhZmJlZTAxYzcxNDdjZDJhMjhkNzNhZTc2M2NmMDFhYmUyZTBlZjg5Yzg2ZGFiYjk2NWI5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5Zjg1NzVmZjA1MDg4OGMzMTZjM2U5NGE1YmM1MmZjMzNlYzk4ZmVkYWYwY2YwNmRjMDgyMzBjMGQ2YjRmYTg1In0"
+          "resource": "repo://tools/beweise.ps1#L576-L706",
+          "version": "repo-lines-v1:sha256:59f0f9461f0777d1f952c17ac253b61239373104aa9954ce4e289c0341d933c6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4ZmYzOTFjYjE3ZWI4MzUzNzUyNzcyYmY2NDg3YjE0ZmQ2Yzc5ZmQ4ZTI1YjYzNzBhOTUwNmIzOGEzNzI4ZWJjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxOWU3NjM1NWNmMTE5OTQ4MGMzZjk5ODM2YjE0ODZjODQxZDg5MWZhYWQ5MDRjNjA4ZTA5MzAyMmQzNzU3YWVlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyMDEwNzZkMjJlZDE0NTFkOWExOGE2YTdjYWFiNjlhMmYyNzNjZTgxM2RiNDk5MTAzMzJkYjZiNWNmNzVkMDIzIn0"
         },
         {
-          "resource": "repo://tools/beweise.ps1#L533-L706",
-          "version": "repo-lines-v1:sha256:aae45210dfc1fc7fd2c946c26ec25ad4232ed72ec01675a197e0e7a960f26ca9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTc0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4ZmYzOTFjYjE3ZWI4MzUzNzUyNzcyYmY2NDg3YjE0ZmQ2Yzc5ZmQ4ZTI1YjYzNzBhOTUwNmIzOGEzNzI4ZWJjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI1OWVjNzI1NTk1ZjgyMmQ3MTgyNTlkOGFlNmEyYzI1NDRiMmE1YTAyYTVhYWIzZGQ2ZGZmY2Y3YWM4ZTIyMTA3IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxOWU3NjM1NWNmMTE5OTQ4MGMzZjk5ODM2YjE0ODZjODQxZDg5MWZhYWQ5MDRjNjA4ZTA5MzAyMmQzNzU3YWVlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlZWI1NzZlNWQ3NmYzYzFiYWY1NTJmZTdkY2U3ZjQ0MWUxY2IyZjNmZDg1MGNiOWQ3Y2RiNDI3ZDI5ODNhMWNjIn0"
+          "resource": "repo://tools/beweise.ps1#L732-L855",
+          "version": "repo-lines-v1:sha256:0f8d3fd520b2f9f94868507bb1833b8b8bc850505d3b6f736bdbc6ca0412532d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIzYmMyMjQzY2Y3YTczYzNiODlmOGQwNDljYjQxNGI5OTQ5MDg2N2M2MzlkNzQ4ZTVkYTQxODBjYzY4NzM3YzM1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJjZTU3ZTFhZGQ2M2U4ZTYwMTQ4NzVkZjk0MDdlNTAzYTM5OGU0Yjg0ODNkMTNlM2NlNGI2ODQ3MGQ2ZWVhMDA1IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIyYTgxZDA2M2Y2YTBjMGY0MDFjMjNjYmI0Y2MyY2Y3YzE0YjQ3ZTQ1ZmNlMmY0ZTg3NmVjMzc5ZDZjOTYzMjA5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     },
@@ -115,12 +115,12 @@
       "statement": "With -Bauen, the proof runner configures Visual Studio 2022 x64 when needed, builds canonical and measured targets, and executes native, Cargo, and Python checks.",
       "evidence": [
         {
-          "resource": "repo://tools/beweise.ps1#L202-L355",
-          "version": "repo-lines-v1:sha256:925db038b8f01d4d4dfc99a83a300c229491008200cb751c33f511d97ab421a2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTU0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3MzlkYzMwN2IwNmNlMWQwMGQ3NTJiYzYzZDE2YmM2ZWVkZTBhNjc4MzQxZWNhNDVjNzFjMzk3NjE1ODE3NDVhIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJmYWZiYTA1MjdjMzk1M2M0YjZlMGU1YjU3MzliYTgzNjEyZjgwNTNiY2RjOTQ2NjczMDE5M2NkMWQ1OTBiNDA4IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIwOTAyMTBjMjA0ZjVhZmJlZTAxYzcxNDdjZDJhMjhkNzNhZTc2M2NmMDFhYmUyZTBlZjg5Yzg2ZGFiYjk2NWI5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5Zjg1NzVmZjA1MDg4OGMzMTZjM2U5NGE1YmM1MmZjMzNlYzk4ZmVkYWYwY2YwNmRjMDgyMzBjMGQ2YjRmYTg1In0"
+          "resource": "repo://tools/beweise.ps1#L389-L457",
+          "version": "repo-lines-v1:sha256:0f8b3951c81e8e71dbe73428673a029bedbf3aced56943a3830d788aebede996:eyJzZWxlY3RlZExpbmVDb3VudCI6NjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3OTU0MGExMWIxN2UyY2EyNjRmNzEwNTEyZWU1MjFhMDEzNzFiMmUwODEzMWRiMTk3NTkwYzE4Y2I1ZjAyNTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwYjM4MTg3ODBlYzEzM2IwMGFhYmU0MTdhMjUzZDk3NTI1ZWNhYjVjOGRiZjIzNzJjYWMyYjhjNDE0ODhmNzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjY2VjMTcyZTJmMDg3YjYyYjVlYTY3YTg3YjQ2NmE2YjY5YzY3MGRmZWRhYjg3NWNkMWRhOGQwYmU5MDI1MmIifQ"
         },
         {
-          "resource": "repo://tools/beweise.ps1#L488-L617",
-          "version": "repo-lines-v1:sha256:bc771ee04aba2cf52e23abda180b2b9c89665c6cd474424d0aacd355f988dd40:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI1ZDk2MDBhNTNjZGMwN2U4NjBhZDI4MmFlYTk3YmFlYTUwMzNlMzZlZWJmYTBhODMyNDYwOTYwMGU1MzdjYjIxIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI3NTViYjZkNGFhOWZiOTRmODVjYmU5YzQ2YTU0ZTkyYWJmOTJiZmJjNjIxMDczN2U5ZjE4MDQ5YzVhMzUxZmRiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI0ODkyYmJhYjU0YTFhOWQ2YTQ4Y2JmYTY0NDFiM2Y2NDZlYzVmMmU4MmRmYzRkZTZlMDE0N2EwYzZhOTUwNzhjIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlOGU5NjYxOTI4Mzk1NjljNjc4M2Q0MTBlNGQ0NTQ1YWNhNmNkMDVjODJmODM2ZjU0N2YyZGM0MmIyOWMyMmI2In0"
+          "resource": "repo://tools/beweise.ps1#L576-L706",
+          "version": "repo-lines-v1:sha256:59f0f9461f0777d1f952c17ac253b61239373104aa9954ce4e289c0341d933c6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4ZmYzOTFjYjE3ZWI4MzUzNzUyNzcyYmY2NDg3YjE0ZmQ2Yzc5ZmQ4ZTI1YjYzNzBhOTUwNmIzOGEzNzI4ZWJjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxOWU3NjM1NWNmMTE5OTQ4MGMzZjk5ODM2YjE0ODZjODQxZDg5MWZhYWQ5MDRjNjA4ZTA5MzAyMmQzNzU3YWVlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyMDEwNzZkMjJlZDE0NTFkOWExOGE2YTdjYWFiNjlhMmYyNzNjZTgxM2RiNDk5MTAzMzJkYjZiNWNmNzVkMDIzIn0"
         }
       ]
     },
@@ -129,12 +129,12 @@
       "statement": "Each proof manifest records environment provenance, freshness, raw output, build logs, and a deterministic verdict.",
       "evidence": [
         {
-          "resource": "repo://tools/beweise.ps1#L381-L485",
-          "version": "repo-lines-v1:sha256:ab9ff8a7b2c2b0ef86478069d8af37cb80ebe5579e73c2afef64a9dc150615de:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwN2YwZjc1ZjdjZGNmYWRkZmQwM2YyYTJmYjY4MTFkNmMzZWUzNjEwZTFhZTVhN2U3NGI1MDkyMmQ2NzNjZDE0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0ODkzZjQwZTM3ODFlYjg5NmM4MmQwNDZhMDgwNjdhMTFlMzVjZGYyZjFkZmFmMjZmZWE5MGI4ZGI2Njc2NDEzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJmZTRlOGNjNWZkNzNiMmI5ZDc1MGYyYzQ2YThhZTk5Mjc5MmY2ZjYzYmZiZWViZWIwZDkwZTFlN2E3MDNjZWFlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJiOWUyZGE0NTE1NzBhZjFiMGM4MDgzN2JjYzM1MzJkMDk3M2Y2MmNhMjljNmY4MWIwYmRiYTcxZWJjODI1YTdiIn0"
+          "resource": "repo://tools/beweise.ps1#L458-L575",
+          "version": "repo-lines-v1:sha256:6449d704ef346eae872bbdbe1e8dc92edb43e72203ba83017fea1bd13ae3bc00:eyJzZWxlY3RlZExpbmVDb3VudCI6MTE4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwN2YwZjc1ZjdjZGNmYWRkZmQwM2YyYTJmYjY4MTFkNmMzZWUzNjEwZTFhZTVhN2U3NGI1MDkyMmQ2NzNjZDE0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJmZTRlOGNjNWZkNzNiMmI5ZDc1MGYyYzQ2YThhZTk5Mjc5MmY2ZjYzYmZiZWViZWIwZDkwZTFlN2E3MDNjZWFlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJjNGYwOWNjY2JkZTc5ODU2Zjk5ODM4ZjNjOGYwN2I3ZWE5Y2M4ZTVkODRkYWU2Y2U3NThiMmIzMWE0NDY5MDViIn0"
         },
         {
-          "resource": "repo://tools/beweise.ps1#L619-L763",
-          "version": "repo-lines-v1:sha256:091280b1b6df85780affdf5b194bf8bac19d7a44b598cc7d509325882cbceded:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiNWZhNTAyMGZlYmM4ZTgxNzgwNTA1NTk5YTk4MmYyMGQzNGRiZmMwYWMyMTFhZmQ5MTlmZWQ3MzU4YzA2YjVjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJjZTU3ZTFhZGQ2M2U4ZTYwMTQ4NzVkZjk0MDdlNTAzYTM5OGU0Yjg0ODNkMTNlM2NlNGI2ODQ3MGQ2ZWVhMDA1IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxNGI3MDAyZDc2MjA5ZDI5ZDg4YzAxNThhZjZiNTUwYzA3NmE2OTUxMjU1NDNiZGIzNmU0MDhiYzAwZmZiZTE3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://tools/beweise.ps1#L732-L855",
+          "version": "repo-lines-v1:sha256:0f8d3fd520b2f9f94868507bb1833b8b8bc850505d3b6f736bdbc6ca0412532d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIzYmMyMjQzY2Y3YTczYzNiODlmOGQwNDljYjQxNGI5OTQ5MDg2N2M2MzlkNzQ4ZTVkYTQxODBjYzY4NzM3YzM1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJjZTU3ZTFhZGQ2M2U4ZTYwMTQ4NzVkZjk0MDdlNTAzYTM5OGU0Yjg0ODNkMTNlM2NlNGI2ODQ3MGQ2ZWVhMDA1IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIyYTgxZDA2M2Y2YTBjMGY0MDFjMjNjYmI0Y2MyY2Y3YzE0YjQ3ZTQ1ZmNlMmY0ZTg3NmVjMzc5ZDZjOTYzMjA5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     },
@@ -143,12 +143,12 @@
       "statement": "Proof-runner exit precedence is failed check, missing prerequisite, stale-but-green evidence, then success; build failures are preserved before abort.",
       "evidence": [
         {
-          "resource": "repo://tools/beweise.ps1#L332-L353",
-          "version": "repo-lines-v1:sha256:018ddac33b30a7c22253363da554efa3559ea505aadb17cb6acea1fca4283007:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNWYxZjNlODFhMjBlMDM2ZjRhZTAwNzU0ZWY5YmNlMDBkYTNkMTA5MDJkYTQyYWE1NGRjZDI4NTY1NWRkY2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmY2Q4MzM4YjVmMDBhZTI2M2JjOTFlYzk2MDYyYmVkZDBiZTlkNGMyOTBiMmM1NjY4NzVkMmM3YzM4YWY3M2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNjZGZhYTU3ZjA2OTNiNWM3MDUxYjFhN2E2MzE2MmFiNjQyNjk1MzQ0MWQzYzRkNTUwYWZjZTZkY2MyOTRkM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUyNzlkZThiZmY1MGUzYTdhZDk5OTQ3NmFiNmJkNWZjOGM2ZjIyM2VlOTNiY2ZkYTM4MDE5ZjAzMTVlY2ViNzEifQ"
+          "resource": "repo://tools/beweise.ps1#L707-L731",
+          "version": "repo-lines-v1:sha256:5fdab2f783e5dc611239e5aa81003bc6f94865b68fe63eda294df31d7f468841:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1ZmE1MDIwZmViYzhlODE3ODA1MDU1OTlhOTgyZjIwZDM0ZGJmYzBhYzIxMWFmZDkxOWZlZDczNThjMDZiNWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0YjcwMDJkNzYyMDlkMjlkODhjMDE1OGFmNmI1NTBjMDc2YTY5NTEyNTU0M2JkYjM2ZTQwOGJjMDBmZmJlMTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBjZTM2YzI3NmU5YmVhNWFlMjZiYmYyN2NhMjEyNGZjYjY5ZmM2YzUzMjRjOTI5ODdkMGRiYjc0MmZjZGJhOTEifQ"
         },
         {
-          "resource": "repo://tools/beweise.ps1#L619-L763",
-          "version": "repo-lines-v1:sha256:091280b1b6df85780affdf5b194bf8bac19d7a44b598cc7d509325882cbceded:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiNWZhNTAyMGZlYmM4ZTgxNzgwNTA1NTk5YTk4MmYyMGQzNGRiZmMwYWMyMTFhZmQ5MTlmZWQ3MzU4YzA2YjVjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJjZTU3ZTFhZGQ2M2U4ZTYwMTQ4NzVkZjk0MDdlNTAzYTM5OGU0Yjg0ODNkMTNlM2NlNGI2ODQ3MGQ2ZWVhMDA1IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxNGI3MDAyZDc2MjA5ZDI5ZDg4YzAxNThhZjZiNTUwYzA3NmE2OTUxMjU1NDNiZGIzNmU0MDhiYzAwZmZiZTE3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://tools/beweise.ps1#L409-L457",
+          "version": "repo-lines-v1:sha256:79e18cbdc4cc65577f514fd0e4b7ab0cd658cd7b0e3a3b373c1982457828f774:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNWYxZjNlODFhMjBlMDM2ZjRhZTAwNzU0ZWY5YmNlMDBkYTNkMTA5MDJkYTQyYWE1NGRjZDI4NTY1NWRkY2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNjZGZhYTU3ZjA2OTNiNWM3MDUxYjFhN2E2MzE2MmFiNjQyNjk1MzQ0MWQzYzRkNTUwYWZjZTZkY2MyOTRkM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjY2VjMTcyZTJmMDg3YjYyYjVlYTY3YTg3YjQ2NmE2YjY5YzY3MGRmZWRhYjg3NWNkMWRhOGQwYmU5MDI1MmIifQ"
         }
       ]
     },
@@ -171,26 +171,12 @@
       ]
     },
     {
-      "id": "claim_d714533469d34bc0af290823342b8e72",
-      "statement": "The briefing application requires Node 22.13 or newer and uses package-lock.json as resolved dependency authority.",
-      "evidence": [
-        {
-          "resource": "repo://briefing-hub/package.json#L1-L40",
-          "version": "repo-lines-v1:sha256:4d90f839184608ee92fce9f0b4dee2c50176e567c0f573512d73a4ea19815659:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2ZmIwOGZkYTFhY2I5NTdiNjExNmJkMzc4MTFhMWZlNDFhMDE2MTFjMDYzMWVkYmY3ODZkNjg4OWEyN2E1NWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM4OGQ2MWVlZGU0Zjg0MjYzMzkxZDZkZWU0OTY5NzY4MzQ1NWM0Njc5ZTE5MTk5Mjk0N2U2YmU3MDIzY2I1ZDkifQ"
-        },
-        {
-          "resource": "repo://briefing-hub/package-lock.json#L1-L39",
-          "version": "repo-lines-v1:sha256:e80b26712ef73664bf4cf1ab8fb4808d7ea09fc04e74c39c508fd0015db29f52:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2ZmIwOGZkYTFhY2I5NTdiNjExNmJkMzc4MTFhMWZlNDFhMDE2MTFjMDYzMWVkYmY3ODZkNjg4OWEyN2E1NWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFmMGNkYjk3MmE3YmZiN2VkMjQ2ZjlmZjY3MjM4NWU1NWY0OTY4ZmMxMTA0M2RjNWI2ODRkNTFkZmEzMWRiY2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBhM2IyZTIzYjM1M2M0ZDgyMDMwMGZjNjg0MWJiNTM1NzA0MzhjODc1OGRiYTNkMmZiNjU5ZTVlOWI4MGVhNmYifQ"
-        }
-      ]
-    },
-    {
       "id": "claim_a8974035ab37430fa5e1ce5a580fd546",
       "statement": "Python validator package versions and the Rust compiler toolchain are not pinned in tracked repository files.",
       "evidence": [
         {
-          "resource": "repo://tools/beweise.ps1#L202-L326",
-          "version": "repo-lines-v1:sha256:a1fb3a9a2f3a6470fba5990f971300fc96fd04479a4d7e24c5d2612f955e9d76:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3MzlkYzMwN2IwNmNlMWQwMGQ3NTJiYzYzZDE2YmM2ZWVkZTBhNjc4MzQxZWNhNDVjNzFjMzk3NjE1ODE3NDVhIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJmYWZiYTA1MjdjMzk1M2M0YjZlMGU1YjU3MzliYTgzNjEyZjgwNTNiY2RjOTQ2NjczMDE5M2NkMWQ1OTBiNDA4IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIwOTAyMTBjMjA0ZjVhZmJlZTAxYzcxNDdjZDJhMjhkNzNhZTc2M2NmMDFhYmUyZTBlZjg5Yzg2ZGFiYjk2NWI5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5NjA1YzdlZGU2YjFhNzE2NThjODA3YjMxZDdkN2ZmZWY4ZTAyMTVjNjc3NWNiNWFmOGE1YTQ1OTZjZjg5MDdmIn0"
+          "resource": "repo://tools/beweise.ps1#L206-L388",
+          "version": "repo-lines-v1:sha256:ec78456411ac825b081ca338011162c56505911e7cec920424827299db3b637b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwNGNjOTVkZTNmYzc0ZTRjMmMwMTNiMDkwMTNiODM3Zjc2OWZjMGE1NGY1ZGM3MWY5ODc2YjM3ZDA0M2UxMjZmIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIwZjBiMmQ3MzY5ZWIxM2I5OGQyOGQ4YTRlNDFkMjk1NzVkZjM5MjFiNmM1N2RlMjE2ODFjMjJjMGNjMDcxYjliIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhODU0ZmY0MDJiZTQxM2UyYTk1OThkNmE1NmRiMzBkOTBjMjU0NWIyNmU1NTE0ZThlZGZhZjE0ZThkZGUyZjE0In0"
         },
         {
           "resource": "repo://broker/Cargo.toml#L1-L29",
@@ -200,15 +186,15 @@
     },
     {
       "id": "claim_5f353fe39e924178843b91fca2898225",
-      "statement": "The proof canon currently has 23 runnable legs, while four planned legs become mandatory automatically once their targets exist.",
+      "statement": "The proof canon declares 30 legs; the two whose targets belong to the later active-EQ phase are not built yet and become mandatory automatically once they exist, which is why the most recent manifest reports 28 of 28 green.",
       "evidence": [
         {
-          "resource": "repo://tools/beweise.ps1#L202-L326",
-          "version": "repo-lines-v1:sha256:a1fb3a9a2f3a6470fba5990f971300fc96fd04479a4d7e24c5d2612f955e9d76:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3MzlkYzMwN2IwNmNlMWQwMGQ3NTJiYzYzZDE2YmM2ZWVkZTBhNjc4MzQxZWNhNDVjNzFjMzk3NjE1ODE3NDVhIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJmYWZiYTA1MjdjMzk1M2M0YjZlMGU1YjU3MzliYTgzNjEyZjgwNTNiY2RjOTQ2NjczMDE5M2NkMWQ1OTBiNDA4IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIwOTAyMTBjMjA0ZjVhZmJlZTAxYzcxNDdjZDJhMjhkNzNhZTc2M2NmMDFhYmUyZTBlZjg5Yzg2ZGFiYjk2NWI5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5NjA1YzdlZGU2YjFhNzE2NThjODA3YjMxZDdkN2ZmZWY4ZTAyMTVjNjc3NWNiNWFmOGE1YTQ1OTZjZjg5MDdmIn0"
+          "resource": "repo://tools/beweise.ps1#L206-L388",
+          "version": "repo-lines-v1:sha256:ec78456411ac825b081ca338011162c56505911e7cec920424827299db3b637b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwNGNjOTVkZTNmYzc0ZTRjMmMwMTNiMDkwMTNiODM3Zjc2OWZjMGE1NGY1ZGM3MWY5ODc2YjM3ZDA0M2UxMjZmIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIwZjBiMmQ3MzY5ZWIxM2I5OGQyOGQ4YTRlNDFkMjk1NzVkZjM5MjFiNmM1N2RlMjE2ODFjMjJjMGNjMDcxYjliIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhODU0ZmY0MDJiZTQxM2UyYTk1OThkNmE1NmRiMzBkOTBjMjU0NWIyNmU1NTE0ZThlZGZhZjE0ZThkZGUyZjE0In0"
         },
         {
-          "resource": "repo://docs/beweise/SONDE-007b.md",
-          "version": "repo-file-v1:sha256:bd5b1dc4acc3ae3c04c54d561e72fb47bef300615429064b80f7d9696d5b39a2"
+          "resource": "repo://docs/beweise/SONDE-009.md",
+          "version": "repo-file-v1:sha256:d2be946604ee3bf2336184e0c9e0060803765d4270d1969d02deb4c6268dde30"
         }
       ]
     },
@@ -217,12 +203,12 @@
       "statement": "The three product VST3s and NakamaKern are separately built measured targets whose module metadata or binary contents are inspected by canonical proofs.",
       "evidence": [
         {
-          "resource": "repo://tools/beweise.ps1#L328-L355",
-          "version": "repo-lines-v1:sha256:a02a6eaa4a8e0f8e9cd99f304777505ff9a5b5ca30873cf6ddaad0795bd108de:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmNTljOWJlYmUyMjNlMmFhOGIxYjU5NDYzZGYxMDUyNmIxZjE4NzlkOGQxNDY3ODY5M2MyNTg1YmZkZmIxZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhZmJhMDUyN2MzOTUzYzRiNmUwZTViNTczOWJhODM2MTJmODA1M2JjZGM5NDY2NzMwMTkzY2QxZDU5MGI0MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIyYmMzYzUwNmViOGFlNWUzN2VlZTNkMTA0NjEwMGZiMTllYzI5MWE3MDdhNjMyOGIwNjU0YTU1MTk5ZjQ3OWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlmODU3NWZmMDUwODg4YzMxNmMzZTk0YTViYzUyZmMzM2VjOThmZWRhZjBjZjA2ZGMwODIzMGMwZDZiNGZhODUifQ"
+          "resource": "repo://tools/beweise.ps1#L360-L388",
+          "version": "repo-lines-v1:sha256:72f72606c42552328b02a645649e9748137ed704256690e7587ec6349d6b9d07:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmNTljOWJlYmUyMjNlMmFhOGIxYjU5NDYzZGYxMDUyNmIxZjE4NzlkOGQxNDY3ODY5M2MyNTg1YmZkZmIxZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIyYmMzYzUwNmViOGFlNWUzN2VlZTNkMTA0NjEwMGZiMTllYzI5MWE3MDdhNjMyOGIwNjU0YTU1MTk5ZjQ3OWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE4NTRmZjQwMmJlNDEzZTJhOTU5OGQ2YTU2ZGIzMGQ5MGMyNTQ1YjI2ZTU1MTRlOGVkZmFmMTRlOGRkZTJmMTQifQ"
         },
         {
           "resource": "repo://eq-copilot/plugin/tests/IdentityTestMain.cpp",
-          "version": "repo-file-v1:sha256:19b1f17d0bdef0cedca4737dd86994d2370967f400902fbfb258696b19254e62"
+          "version": "repo-file-v1:sha256:7ead4554b685460977ff2b0ee98b769586603043b5a4d18788a3efa8d3f82815"
         },
         {
           "resource": "repo://tools/eq-copilot/pruefe_kern_identitaetsfrei.py",
@@ -235,8 +221,8 @@
       "statement": "Without -Bauen, the runner compares proof-binary timestamps with the newest relevant native source and marks older binaries stale; a successful requested build supersedes that heuristic.",
       "evidence": [
         {
-          "resource": "repo://tools/beweise.ps1#L431-L485",
-          "version": "repo-lines-v1:sha256:7a39d007b7bada13dc9f8e9e936c744e8414b9e5f220933d79052b20d0e3ae2f:eyJzZWxlY3RlZExpbmVDb3VudCI6NTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2YjY2ZWUwZTczNWMyYTExNjY0ODVhZjk1MmZhOWMwYTk3ZWQ4ZmM2N2I1YmUzNzZhNzc4MWQ3ZDk3NjY3YzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNhOTUzYWQzZmRkMDM3ZTRlMWNmY2JmMWEzNzkxMWNjYzJiNTk3N2RkNzZhNzAyOGY0NjA4MzMxMDY1MzBiMDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI5ZTJkYTQ1MTU3MGFmMWIwYzgwODM3YmNjMzUzMmQwOTczZjYyY2EyOWM2ZjgxYjBiZGJhNzFlYmM4MjVhN2IifQ"
+          "resource": "repo://tools/beweise.ps1#L508-L575",
+          "version": "repo-lines-v1:sha256:5580c88abdcf372b232e7ea2441c816accc14e787271b81a1cbee545f4e2c0f4:eyJzZWxlY3RlZExpbmVDb3VudCI6NjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2YjY2ZWUwZTczNWMyYTExNjY0ODVhZjk1MmZhOWMwYTk3ZWQ4ZmM2N2I1YmUzNzZhNzc4MWQ3ZDk3NjY3YzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNhOTUzYWQzZmRkMDM3ZTRlMWNmY2JmMWEzNzkxMWNjYzJiNTk3N2RkNzZhNzAyOGY0NjA4MzMxMDY1MzBiMDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM0ZjA5Y2NjYmRlNzk4NTZmOTk4MzhmM2M4ZjA3YjdlYTljYzhlNWQ4NGRhZTZjZTc1OGIyYjMxYTQ0NjkwNWIifQ"
         }
       ]
     },
@@ -255,8 +241,8 @@
       "statement": "Product names, vendor codes, plugin codes, and VST3 categories are read from plugin-identities-v1.json into thin CMake targets; missing or null identity fields stop configuration.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/cmake/NakamaIdentitaet.cmake#L31-L133",
-          "version": "repo-lines-v1:sha256:1a13a82d9bc12b2aabd522c79ef4ca2c99bdc2e31de96acd6d2665d57e8e5e3f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiMGNiNmNlOTQ0YTZiNWQ1YjUwNjRlOTdjYzE4MTAyODAwYTBjNmNkODQzMzM3MTM4OWZkOWY5ZDA3ZGZjNTM1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4ZmQwMTcyMGIzMWIxZGU0NjIwOTAwZTY2YThmNTU2NzIzOTQwYWMxNzBjODMxZjA0NGJlYmQwZDlhMmQ4NzJiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJjNWU5YjdjNDQ3MzVlZDMxNzRiZWNhN2Y3MWUyMDJkM2EwYzE1Nzk1ZjBmYmY5NzAzZjMwM2RjMTZmMDBkOThiIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://eq-copilot/cmake/NakamaIdentitaet.cmake#L67-L190",
+          "version": "repo-lines-v1:sha256:306b20c1e9b11a0d29f6d297e3867d148c90d86da7d01746291e89b78103712c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlOWVhYjIzZmU2ZTU5ZWM2ZWI2N2JjM2NlZjc4MzIzMzhiOWQxMGI3YjQ0Mzg4MTBhNjFiZTk1MmVmMzc3NDAzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4ZmQwMTcyMGIzMWIxZGU0NjIwOTAwZTY2YThmNTU2NzIzOTQwYWMxNzBjODMxZjA0NGJlYmQwZDlhMmQ4NzJiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxOTViODFmNzMwOTkyNjcwNDYyMDQ4OThjNDliMzAzNGM0MmZhZjM0OTFjMDFjZWVkOGM3MzEzYjc3YjUyMDJlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         },
         {
           "resource": "repo://eq-copilot/plugin/CMakeLists.txt#L24-L47",
@@ -299,12 +285,12 @@
       "statement": "The installer manifest names product targets only by identity IDs and derives each bundle source path from its CMake target plus the frozen identity manifest.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/schemas/installer/nakama-installer-v1.md#L25-L70",
-          "version": "repo-lines-v1:sha256:bc90cd203e703dfb6c1d3e29003ec66901d742222e371da7011926a85098c032:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg3Y2U1NzUxOGVmZjI3YWM3NTRhMDAyNzAwZGEwMzI4MTA1YzA3N2EyNjE2NzA3ZmY1MjUyZWU0MDYyZmQzYmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkMjY2NmY5ZTRiYWU1Y2I3NmU1MGI1MmRlYTBjNTQ5ZTQyNDY1NjIwZDExNGMwYzlkMDU1MDE5MjllZTA1ZjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwMWYyZWMxNzU5M2MxMDU0ZWI0NjM2N2Q4NDUzZWYyNGExNzNjZTk2YjcxMTdkOTFmOWE2OGQ0NGZlZjhiMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU4MzJiNjAxMDgyYjI2ZDk0MDliNDA0OWU1Y2NkNjAyOTZlZTA5ZjkzZTI1OGE0ZTM4YWIxMzJkMGUwMjEzMDYifQ"
+          "resource": "repo://eq-copilot/schemas/installer/nakama-installer-v1.md",
+          "version": "repo-file-v1:sha256:5042776701a085290666eddbfd075b618b60a7dfc76a2146f6ed6230044dfd4e"
         },
         {
           "resource": "repo://tools/eq-copilot/pruefe_installer_manifest.py#L120-L184",
-          "version": "repo-lines-v1:sha256:148ba86655f54f1c878cb6734c77e22859edec31d731857974b9c24d6b0e2e04:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljNDE4OGQxZjk1NGM3M2ExYmE0NTU4Mjk2ZTEwY2Q0NTVkNzRlOWZmNmRkOGQ5ZTdmZjcwOWEwMDgzY2NlZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0YjkxYzY4YWI2ZGM2YmFlOGZiZTJhNWJjMTBjMzA4YTkwNTZhMTE1MWFiOGQyNjc2NDExOTk0MGJlNjg4YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNmMDZkMzZjZTRmM2I0YTBmOTYwZGY4ZWU2YjE1NTFmMmEyZDA1MzNkOTNjNGM0M2NlMDkwYWEwZDgxOWZiNmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVhYjc0MzBiZWY1NGIwYzQ4NjZhZmYyOGQ4NzI0MWM0OWNjOTZlNzM3Njk2NmJiMjIwMjUxNDM0N2I1ODI5MWQifQ"
+          "version": "repo-lines-v1:sha256:15f6c1871d45658dadba0ccba0d38f6977dbea33ff55cb1c15b0a95b1ec42383:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhN2ZjMDI3YzNlMDhjNGMwZDIzYmZjODI4MzNlODI1MjRmZTg4ZTRhM2IyNDA2YTA2ODYwYjEyMWM1ZTEwZmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5YzJmZjJkODczNTdiY2Q0MDI3YmNiMmI0NDk0ZjE5MjZkZWFjZmY1ZmUyOTQ5Njg5NWRmMDMwOGU5MGZlYjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRjMzBlY2U0MWJlOGY2YTI1ZWVlNmVhOTE4ODdjMGNiZDkwNzY5NTcxODMzYTYxNTMzNzJjNzg3MGZkYTZjNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIxNjFkODRiN2M0ODdjNDM3MjM2ZWFmMzE0YjMyMTY1MTY3N2MwMzZkY2E3OGU3MzY3ZGJhZmMxYTA3NWFmYTcifQ"
         }
       ]
     },
@@ -313,28 +299,38 @@
       "statement": "Install-Nakama refuses the entire package before copying when any artifact hash is null, missing, or different from the manifest; Authenticode is checked only when a thumbprint is configured.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/install/Install-Nakama.ps1#L194-L230",
-          "version": "repo-lines-v1:sha256:2fbbd48014f17d720e48e9e405c127c692aaaa005f7061d726e27e285a460aab:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzNzdkOGQxNDA1NjFmMTc4NzYyODNlZjJjMjBmZjg0MDNlMTMwZjViYzM1YzYxY2U1YjI5M2UzY2I2MDMzYjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZTIwMDZjYWVjY2M2MjRhY2VmN2NmOWZlMzg0MmU3M2ZhNjNiNjI1YTExZTY2YzBkMGIxY2ZhMTIwMGYzMzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRiZDM1MmUzN2NkY2EyNmNmMWRlNmM3NTViNTU0ZjllZjUzNmY5NWUxYWJjYTAxZTNhMTA5NzQxNDMwYjNmMjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ4OWY4MmFlYjAxYzY5NTc0ZGJmMWQ0NjViM2VmODk4NjdkNGIyYWQxODgwMjViM2VkZDZlNmUwMDJkMjU4NjEifQ"
+          "resource": "repo://eq-copilot/install/Install-Nakama.ps1",
+          "version": "repo-file-v1:sha256:fe4a515cdab6ecc0be607621855e2efdab03d0cd7f9120c5195b51b4ca65f49d"
         }
       ]
     },
     {
       "id": "claim_a50744763767476ea71f58ada58a0c77",
-      "statement": "Installer rollback restores the files captured before replacement, but refuses an unknown or older state-schema predecessor unless the caller explicitly uses -Erzwingen.",
+      "statement": "Installer rollback restores the files captured before replacement, but refuses an unknown or older state-schema predecessor unless the caller explicitly passes -Erzwingen.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/install/Install-Nakama.ps1#L125-L184",
-          "version": "repo-lines-v1:sha256:2502455329568fe4549c89db52debd40a3111e928f75e463221079463e859874:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ3ZGZjNDE3YmQzOThkMTA1ZDQ4YzQ0YWI3ZmE2ODRjOTI2ZDNlZjNlMmQyYTdiNGMxODFhNjU1ZDVlZjEwNTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkNTE5NzMwNzJjODEzM2IzMDQ0Y2I1YzM4MGFmYzlhYjA1NTg1YjQ1NWVkZjY2YjEyZTQ1Y2FkOWYzZDFhNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUyODc1ODcyYmNiZDc0YmEwM2FlMjdjNDNlMDJmYzcxZjkzMTRiNTE3OWM0MDJkZDA0ZWZiMjY2YzI4M2U4OGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZkY2IyNDY4MGIxZGRhZTYyNWMyZDY0MWViYTY1ZTdjOGZlNzIyNWEyMDc1YjcyODJiNzMyMWQ3MTZjMWYxNGYifQ"
+          "resource": "repo://eq-copilot/install/Install-Nakama.ps1",
+          "version": "repo-file-v1:sha256:fe4a515cdab6ecc0be607621855e2efdab03d0cd7f9120c5195b51b4ca65f49d"
+        }
+      ]
+    },
+    {
+      "id": "claim_1664337d50674fa2aa186ab5cd47d622",
+      "statement": "Every evidence manifest carries a verdict marker comment naming review level, verdict, and date, and that single line is the only hand-written input to computed plan status, so a review that omits it leaves its step counted as built rather than accepted.",
+      "evidence": [
+        {
+          "resource": "repo://docs/beweise/SONDE-009.md#L1-L3",
+          "version": "repo-lines-v1:sha256:21afa90cb5cd0a64948e57e956f7b24597bd9aba62da59efc1aa3bc0c2ee2b1b:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDQzYTRmNjlmMmYxOWI1OTdjMTNlZjhhZmEyNmFhY2M0ODBjYTcyY2RkNjY5OGE0NjE0Y2Y3NjMyZGZlMGRiNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWViMjE0ZDQ2NjlkNzFmYTVhNzZmMzUyNDMxNTY3ZTA2ZmM5YTQ1MjNlOWM2Njg0ZWQyYTVkMzExZjA1N2VjZCJ9"
         },
         {
-          "resource": "repo://eq-copilot/install/Install-Nakama.ps1#L252-L292",
-          "version": "repo-lines-v1:sha256:70acf034fdcf6e77a213a819c9e091952ed46e40ab525a0e6fc90fc63239ba46:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlMzZkYjdhNjk4Zjc3MzZlOTQ5NjQzYmJiNmVhNTc4NDE4MjIyM2ExNzQxNWNkZmY4OThlOGI3NzRjZmYxMjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY4MzI1OTlhNmRlMWQyZjk5ZDg3MTBkMmIzZjUwMThmOGIwMGZjODZjY2VjY2ZhMDBlOTQ1M2E1ZmUyODBhZGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwNjExYjE1OTk4MzI2ZDdlMTYxMTZkN2UzMGUzNDllNTg5ZTFmZTEyMTYwNDIwNzI2MDIwOGM3NzgxNTIzOGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgwMDFlMTVhNThhYzRiYzk2ZTg0MWU0MTk0NGE5ZWM4ZTZlN2Y1OWNhMzAwNGM5NTFmODkwZTZiYjhkYmVhZDMifQ"
+          "resource": "repo://tools/plan/planstand.py#L54-L66",
+          "version": "repo-lines-v1:sha256:67b856248cd9bbf1f412010f25e060e5fb8204e96fa9cf83e0f928399fc0fbfb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhhNWQ3YjE5NjFkNzY1YTcxNDIzZjE4ODllNmFlYjEzZWNhOGY1ZWVkNjEzZjQ5ZjRkNTRkMzVmZDY0YTk1YzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZiNzI2ZTEyNGJiNThlZGM2ZDZmODU3YWVlMzAwMThlMDBjYTY3ZmIyYmE1Y2Q2Y2E4N2IxMjM3NDAyOGMyNWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQyNDE4YjgyOTk5MTk5MWJlMTUzNmE1ZmM5OGFjNDk5YzViYjNlN2YyMjE0YzI1NTMzMjNkMWI5NTQyM2M1MmEifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-23T10:03:23.427Z"
+    "at": "2026-08-23T16:37:16.902Z"
   }
 }

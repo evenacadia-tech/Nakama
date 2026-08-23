@@ -4,16 +4,12 @@ title: "Nakama quickstart"
 openwiki_generated: true
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-23T10:03:23.427Z
+    at: 2026-08-23T16:26:37.107Z
 sources:
-  - id: openwiki-source-6d4b4e707b8d60b6ccfa3425
-    resource: repo://.github/workflows/openwiki-update.yml
-  - id: openwiki-source-8cd33e1d9dedf73d03c17132
-    resource: repo://briefing-hub/.openai/hosting.json
-  - id: openwiki-source-d9d84bd60a961e5bd3a44f28
-    resource: repo://briefing-hub/db/index.ts
-  - id: openwiki-source-8a90364cb31264aedf742997
-    resource: repo://briefing-hub/package.json
+  - resource: repo://tools/plan/planstand.py
+  - resource: repo://docs/plan/LIES-MICH.md
+  - id: openwiki-source-8037e2358a2c4f9b2c722a11
+    resource: repo://AGENTS.md
   - id: openwiki-source-e583d5ab37a07999439f7776
     resource: repo://broker/Cargo.toml
   - id: openwiki-source-e8645ee57595da4a277f52d3
@@ -46,8 +42,7 @@ sources:
     resource: repo://README.md
   - id: openwiki-source-b9796d70c5f0967a458166b1
     resource: repo://tools/beweise.ps1
-  - id: openwiki-source-62c36f02c52e1a4c49232f4f
-    resource: repo://tools/hub/hub_sync.py
+generated: {by: "claude-code", at: "2026-08-23T16:26:37.107Z"}
 ---
 
 # Nakama quickstart
@@ -72,7 +67,7 @@ still future work.
 A standalone Rust broker owns the Windows named pipe, live sensor register,
 derived sessions and pairs, profile bindings, and aggregate export.
 
-The repository also contains the deployed briefing application, the active
+The repository also contains the computed plan-status pipeline, the active
 Figma-to-browser design workflow, delivery evidence, and versioned cross-language
 contracts. These collaboration and contract systems support product work but
 are not additional shipped audio plugins.
@@ -158,10 +153,9 @@ For human and agent collaboration:
 
 - [Design workflow](collaboration/design-workflow.md) — Figma evidence,
   acceptances, living browser sheets, edge cases, and design validation.
-- [Briefing application](collaboration/briefing-application.md) — deployed
-  vinext/React UI, D1 persistence, API routes, and trust boundary.
-- [Briefing synchronization](collaboration/briefing-sync.md) — repository Hub
-  authority, pull/incorporate/validate/send ordering, and consistency checks.
+- [Plan status and open questions](collaboration/plan-status.md) — progress
+  computed from evidence manifests and verdict markers, the refresh hook, and
+  how open questions reach the user.
 - [Session automation](collaboration/session-automation.md) — Claude Code
   primers, gates, reminders, stop handling, and generated handoffs.
 
@@ -171,10 +165,11 @@ Use focused commands from the owning page while iterating. For a repository
 evidence run, the canonical entrypoint is the freshness-aware local runner in
 `tools/beweise.ps1`; it can build the proof targets and append raw output,
 environment provenance, review fields, and one verdict to a named manifest.
-The generated OpenWiki workflow maintains these documentation pages and does
-not replace product proof.
+These documentation pages are reconciled through the OpenWiki lifecycle during
+a working session — there is no scheduled job — and that never replaces product
+proof.
 
 When changing a prepared v3 contract, run its independent C++, Rust, and
-Python validation path before claiming compatibility. When changing deployed
-briefing behavior, distinguish D1 application state from repository
-`docs/hub/hub.json` and use the explicit synchronization workflow.
+Python validation path before claiming compatibility. When a review verdict
+changes, record it as a marker in the evidence manifest rather than editing the
+generated plan sheet; the sheet is recomputed and would discard the edit.

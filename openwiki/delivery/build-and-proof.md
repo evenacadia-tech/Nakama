@@ -4,16 +4,12 @@ title: Build and proof
 description: Explains version and dependency gates, native targets, generated-code drift checks, and the canonical local evidence runner.
 tags: [delivery, build, validation]
 sources:
-  - id: openwiki-source-a8c9d2358da226f2593da7ac
-    resource: repo://briefing-hub/package-lock.json
-  - id: openwiki-source-8a90364cb31264aedf742997
-    resource: repo://briefing-hub/package.json
   - id: openwiki-source-1ad2c774859b8dc7a6ffd8f1
     resource: repo://broker/Cargo.lock
   - id: openwiki-source-e583d5ab37a07999439f7776
     resource: repo://broker/Cargo.toml
-  - id: openwiki-source-8c00b798547093381146e14f
-    resource: repo://docs/beweise/SONDE-007b.md
+  - id: openwiki-source-934bdc8aa32ff0664aca113a
+    resource: repo://docs/beweise/SONDE-009.md
   - id: openwiki-source-8ede72b47276d5994a67791f
     resource: repo://docs/beweise/VORLAGE.md
   - id: openwiki-source-3b86c650ee8ef53fce40b450
@@ -48,18 +44,21 @@ sources:
     resource: repo://tools/eq-copilot/pruefe_installer_manifest.py
   - id: openwiki-source-4c899d7ff6a890ebbfac0687
     resource: repo://tools/eq-copilot/pruefe_kern_identitaetsfrei.py
-generated: {by: "claude-code", at: "2026-08-23T10:03:23.427Z"}
+  - id: openwiki-source-d109abe665af1d06490df048
+    resource: repo://tools/plan/planstand.py
+generated: {by: "claude-code", at: "2026-08-23T16:26:37.107Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-23T10:03:23.427Z
+    at: 2026-08-23T16:37:16.902Z
 ---
 
 # Build and proof
 
 Nakama uses configure-time gates, focused native targets, contract validators,
-and a local evidence-manifest runner. Product proof is deliberately local; the
-generated OpenWiki workflow maintains documentation and is not a replacement
-for `tools/beweise.ps1`.
+and a local evidence-manifest runner. Product proof is deliberately local, and
+so is documentation refresh: there is no CI workflow for either. Wiki pages are
+reconciled through the OpenWiki lifecycle during a working session, which is
+never a replacement for `tools/beweise.ps1`.
 
 ## Configure gates and pins
 
@@ -116,13 +115,19 @@ Representative focused targets include host context, HostProbe, AuxSpike,
 state, pipe, analysis, marking, schema, and editor tests. Add a new native proof
 target beside the existing map, then add its runner leg and freshness inputs.
 
-The canon currently has 23 runnable legs. A1-A17 cover main and probe audio,
-the Rust broker, JSON and FlatBuffers contracts, regenerated fixtures, host
-capabilities, kernel identity, and the installer manifest. The runnable
-phase-native entries cover Identity, StateMigration, HostContext, HostProbe,
-Schema, and Lifecycle. QueueStress, AnalysisGolden v2, DspGolden, and
-Transaction remain planned and automatically become required once their
-targets exist.
+The canon declares 30 legs. The A entries cover main and probe audio, the Rust
+broker, JSON and FlatBuffers contracts, regenerated fixtures, host
+capabilities, kernel identity, the installer manifest, its rollback path, and
+the generated band grid. The phase-native entries add Identity,
+StateMigration, HostContext, HostProbe, Schema, Lifecycle, QueueStress,
+LoudnessGolden, and AnalysisGolden v2. Only DspGolden and Transaction are still
+unbuilt; both belong to the active-EQ phase and become required automatically
+once their targets exist, which is why the most recent manifest reports 28 of 28
+green.
+
+Count these from the runner's own table rather than from a summary. The
+declared list is the only place the number exists, and copied counts in this
+repository have gone stale twice within a single ticket.
 
 `EqCopilot_VST3`, `NakamaSuna_VST3`, `NakamaProbeeq_VST3`, and `NakamaKern`
 are separately built measured targets rather than canon executables. The
@@ -167,6 +172,13 @@ and therefore unattested evidence `4`, then success `0`. A native build failure 
 timestamped log before the run aborts. A manifest is incomplete without raw
 output and an explicit review/disposition record; use `docs/beweise/VORLAGE.md`
 instead of an unstructured log.
+
+A manifest also carries a verdict marker comment near its title, naming the
+review level, the verdict, and the date. That single line is the only
+hand-written input to computed plan status: a review that omits it leaves its
+step counted as built rather than accepted, which is the safe direction. The
+rules around it are in
+[Plan status and open questions](../collaboration/plan-status.md).
 
 ## Installer and rollback contract
 

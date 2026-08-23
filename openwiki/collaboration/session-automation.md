@@ -4,6 +4,8 @@ title: Session automation
 description: Explains Claude Code lifecycle hooks, local primers, write gates, automatic Git publication, and stop reminders.
 tags: [collaboration, hooks, claude-code]
 sources:
+  - resource: repo://tools/hooks/plan-primer.sh
+  - resource: repo://tools/hooks/planstand.sh
   - id: openwiki-source-1fe463fcf07912e5cdbb5a91
     resource: repo://.claude/settings.json
   - id: openwiki-source-aad178a39283868e8f309c49
@@ -20,10 +22,6 @@ sources:
     resource: repo://tools/hooks/git-automatik-probe.sh
   - id: openwiki-source-06ae03db6b94d5384fee9f4a
     resource: repo://tools/hooks/git-riegel.sh
-  - id: openwiki-source-122f2d678161005919212438
-    resource: repo://tools/hooks/hub-primer.sh
-  - id: openwiki-source-36d1ae790c978d9eec851f1d
-    resource: repo://tools/hooks/hub-stop.sh
   - id: openwiki-source-16d98a5e3231fc234899d002
     resource: repo://tools/hooks/kreativ-schleuse.sh
   - id: openwiki-source-c04e6e0477b585d394faf344
@@ -34,12 +32,10 @@ sources:
     resource: repo://tools/hooks/schleusen-probe.sh
   - id: openwiki-source-e49e9df85da5cafd2dc48e0f
     resource: repo://tools/hooks/session-start-marker.sh
-  - id: openwiki-source-0bb50aef357b01738b1e12b7
-    resource: repo://tools/hub/test_stop_hook.sh
-generated: {by: "claude-code", at: "2026-08-23T10:03:23.427Z"}
+generated: {by: "claude-code", at: "2026-08-23T16:26:37.107Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-23T10:03:23.427Z
+    at: 2026-08-23T16:26:37.107Z
 ---
 
 # Session automation
@@ -55,14 +51,14 @@ same hooks. Treat the scripts as Claude Code lifecycle contracts.
 ```mermaid
 flowchart LR
     Start[SessionStart] --> Marker[Create session marker]
-    Start --> Primers[Inject product, depth, Hub, design summaries]
+    Start --> Primers[Inject product, depth, plan-status, design summaries]
     Pre[PreToolUse] --> GitGate[Git safety gate]
     Pre --> ModelGate[External-model read-only gate]
     Pre --> Gates[Prototype and legacy design gates]
     Post[PostToolUse] --> Advice[Realtime and schema reminders]
+    Post --> Plan[Refresh plan status when sources moved]
     Post --> Push[Push commits ahead of upstream]
-    Stop[Stop] --> HubNag[One-time local Hub reminder]
-    Stop --> CommitNag[One-time uncommitted-work reminder]
+    Stop[Stop] --> CommitNag[One-time uncommitted-work reminder]
 ```
 
 On startup, resume, or clear, `session-start-marker.sh` records epoch, current
@@ -75,9 +71,10 @@ The configured primers summarize repository state:
 
 - `nakama-primer.sh` extracts the marked truth block from root `CLAUDE.md`,
   then adds recent commits and at most ten dirty paths;
-- `hub-primer.sh` reads only local `docs/hub/hub.json` plus Git drift and never
-  contacts the deployed briefing endpoint; its completion and next-step status
-  vocabulary matches the generated local plan view;
+- `plan-primer.sh` first invokes the plan-status refresh, then reads the
+  generated sheet and the open-question file. It carries no synchronization
+  duty at all, because the status it reports is computed rather than kept —
+  see [Plan status and open questions](plan-status.md);
 - `design-primer.sh` reports local design-document, latest-acceptance, Figma
   snapshot, and design-contract state;
 - `depth-primer.sh` injects the repository's deeper-review guidance.
@@ -108,41 +105,42 @@ accepted `*designvertrag*.md`; reads and writes elsewhere pass. The creative
 gate requires a `.claude/kreativ-freigabe.md` marker younger than 24 hours.
 
 PostToolUse is advisory. It adds context after changes to plugin realtime
-sources or versioned schemas but does not block the completed edit. After each
-Bash or PowerShell command, `auto-push.sh` also checks whether the current
-branch is ahead of its upstream. It skips detached HEAD, merge, and rebase
-states; otherwise it pushes without an interactive prompt. A failed push is
-remembered for that HEAD so later commands do not repeat the same failure.
+sources or versioned schemas but does not block the completed edit. Two further
+scripts then act on measured state rather than on the command that just ran.
+`planstand.sh` recomputes the plan sheet when its stamp no longer matches the
+last commit touching a status source, and commits that one file by pathspec;
+`auto-push.sh` checks whether the current branch is ahead of its upstream. Both
+skip detached HEAD, merge, and rebase states. A failed push is remembered for
+that HEAD so later commands do not repeat the same failure, and the ordering
+means a sheet commit created in one round is published by the push check in the
+same round.
 
 ## Stop behavior
 
-`hub-stop.sh` does not pull or push the Hub. If commits occurred after session
-start but `docs/hub/hub.json` was not touched, it emits one blocking reminder.
-A per-session nag marker prevents a loop, and recursive Stop calls are silent.
-
-`commit-stop.sh` independently looks for uncommitted paths whose modification
+`commit-stop.sh` looks for uncommitted paths whose modification
 time is later than the session-start marker. It presents that candidate list
 once, but does not stage or choose ownership: the agent must commit only its
-own paths explicitly and leave parallel-session work untouched. Together,
-commit Stop and auto-push close the local-commit and remote-publication halves
-without introducing a configured SessionEnd action.
+own paths explicitly and leave parallel-session work untouched. It is now the
+only consumer of the session-start marker, and together with auto-push it
+closes the local-commit and remote-publication halves without a configured
+SessionEnd action.
 
 ## Focused checks
 
-The repository supplies Bash probes for the blocking and lifecycle workflows:
+The repository supplies Bash probes for the write gates and the Git surface:
 
 ```bash
-bash tools/hub/test_stop_hook.sh
 bash tools/hooks/schleusen-probe.sh
 bash tools/hooks/git-automatik-probe.sh
 ```
 
-The first covers block, no-commit, Hub-touched, recursive, and repeated Stop
-conditions. The second exercises allowed and denied Write, Edit, and Bash
-destinations, including source-versus-destination and heredoc edge cases. The
-third checks blocked and allowed Git commands, both directions of the external-
-model gate, and auto-push's local gate.
+The first exercises allowed and denied Write, Edit, and Bash destinations,
+including source-versus-destination and heredoc edge cases. The second checks
+blocked and allowed Git commands, both directions of the external-model gate,
+and auto-push's local gate. A third probe covering the former briefing Stop
+reminder was removed with that reminder.
 
 New lifecycle behavior belongs in `.claude/settings.json` with a narrowly
-scoped script and both pass and block tests. Keep real Hub synchronization in
-[briefing sync](briefing-sync.md); hooks currently summarize and remind only.
+scoped script and both pass and block tests. Hooks summarize, remind, and — for
+the plan sheet and the push — act on measured repository state; the computation
+they invoke lives in [Plan status and open questions](plan-status.md).

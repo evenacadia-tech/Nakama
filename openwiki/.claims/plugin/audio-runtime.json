@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6c38519457c353a9e5eddc3cef0366a4200533dd47f871a0b83cea9e1ba89152",
+  "pageVersion": "sha256:fa715d4be968e04a81ea89f41f3ef6d5368f045c69e7dfaae0a029c766c714eb",
   "claims": [
     {
       "id": "claim_d40e8cef1ed94444861f42a6fbad92c1",
@@ -18,45 +18,49 @@
     },
     {
       "id": "claim_1ec095484d104a02b64ec097c4ed6d23",
-      "statement": "EqCopilotProcessor construction creates fresh persisted and runtime identities, allocates the analysis FIFO, starts the worker and pipe client, while destruction stops both threads and joins the worker.",
+      "statement": "EqCopilotProcessor construction creates fresh persisted and runtime identities and starts the worker and pipe client, while the whole backing store of the stamped analysis queue is allocated later in prepareToPlay on the message thread.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L12-L58",
-          "version": "repo-lines-v1:sha256:8c8194782c52322eb59f2025f0c23ceb3c20fb00a4d2237ff82f70a57e81e2b7:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkYmNhOGIyMWRmNWFiOWMxY2EyMDQ1Y2JhZWM1NzExMDgxN2RiOTIwMTdjYWE0OTMyYTNjMzA2MTEwZjY2ZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM5YTJlYTkzNDllNDhiNzczMWNlYTgyOWE1NTVhZTQyYWRkNjdhMTQzMGVmMjJiMjRkNGU2ZjE1MGNjMzM4ZDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4MjBjMTdiMjBhMWM5ZjhmY2I1NTQwYTQ1N2M1NTVmZjE3OTE3MjMwNDc0ZDAwNDgwMzVjZGMxYTE4YmZlMDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk3ZjAwNjhiYTlkOGVlNGQ1MDg0ZmNjY2ZiYjkwZjFjNjQxNTYwMzdmMGFkZWMwMzFkMjQ3OGQ3ZWM5NWUwZjgifQ"
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L12-L91",
+          "version": "repo-lines-v1:sha256:cb07187b390a020cce257fe5a53d857272f7738affa1b60892a6769faec3af34:eyJzZWxlY3RlZExpbmVDb3VudCI6ODAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkYmNhOGIyMWRmNWFiOWMxY2EyMDQ1Y2JhZWM1NzExMDgxN2RiOTIwMTdjYWE0OTMyYTNjMzA2MTEwZjY2ZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4MjBjMTdiMjBhMWM5ZjhmY2I1NTQwYTQ1N2M1NTVmZjE3OTE3MjMwNDc0ZDAwNDgwMzVjZGMxYTE4YmZlMDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM2ZmFlN2NlZDExY2VhY2ViOTc5OGQyOTc1NGJiNWQ5N2E0MDllNTQwNzBjNGNiMzY3ZDczMDVhMmE2OTMzMzAifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/core/StampedAudioQueue.h#L26-L31",
+          "version": "repo-lines-v1:sha256:d05647546eed29e07bcc97eb8acade83149ce2951f1e5274cf850ed27e770633:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmMyZjNiODU3MmZjNmM4NjM0YzAzNzA2YzU2NjE2ODFhMDhiMjE1ODBjMzg0YzQzM2FlNjUzMWRmODc0YmZiYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTAxZWFkOTM2YTIyODFkNTNkY2MwNjRiN2UyYTJhYjBkNTNiOTJlZjNlZjdiMzRiNjY4NjczMDA3ODk1Yzg2MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYmU2NDU1MzUxZjMyZTM2MDQ0ODVkNmU2NWJjZTRlMmVhZTA2Mzg4MTcwMmFkMjhmYmY2YjE1YzYwNTMxNjAxYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2U3MWY0ZmRjYjg0MmI2OTgyMTE4ZWZlNDhjNWJkNmE3ODFkYzZiNDQ0OWMwNmI2NjcwZDA5ZjdhZTI5N2IwNCJ9"
         }
       ]
     },
     {
       "id": "claim_ffc3a193dc2c47538737f4a49b62f27f",
-      "statement": "The EqCopilot audio callback measures and copies dry input into the analysis FIFO before audible marking, so normal output is transparent and analysis never observes the marked signal.",
+      "statement": "The audio callback measures the dry input and publishes it to the stamped analysis queue before audible marking runs, so meters and analysis never observe the marked signal.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L95-L222",
-          "version": "repo-lines-v1:sha256:47179e995b70cc263bda6903665388fff6aad962e668c17e7a227304cd464239:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5NmVjOGFhMzE0NGFkZjdiMzU4MzI5NDBmOGQ5YTA5MWU3M2E5ODE1MTI2Yzk1ODdhOWJlMjVhNzMyN2E5MzQ5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3NWI1MDljNmIzYTVjNmMyYjNhYzRhODQ3YTA5OGZlMjI3ZmIwZGU1ZGExMGYxOGMxYTU3NjE2ZGU0N2QxZDNhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5MTUzMTExZDY4OTk2NTA0YzNhZGZjYWIwYTFiNTA1MDcxMDVhYWZkNDMzYzQ0YmMxNDEzZmZlMGM5YjRjNmM3In0"
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L103-L308",
+          "version": "repo-lines-v1:sha256:f6a76e820dc922a8bf5c0a1c18005e82123a494626284e43b025f29ccea8a01c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjA2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5NmVjOGFhMzE0NGFkZjdiMzU4MzI5NDBmOGQ5YTA5MWU3M2E5ODE1MTI2Yzk1ODdhOWJlMjVhNzMyN2E5MzQ5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3NWI1MDljNmIzYTVjNmMyYjNhYzRhODQ3YTA5OGZlMjI3ZmIwZGU1ZGExMGYxOGMxYTU3NjE2ZGU0N2QxZDNhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIxMGI1YjA4ZmVkODAwNGVjYTA1NDhjY2YxMmFjMTUzNzMxYWI2OGMxZTM0MjZkMWY0MWI0OGQ1NThhNzAwZmJhIn0"
         }
       ]
     },
     {
       "id": "claim_7fef6f684fb04255be29faa6482c3388",
-      "statement": "FIFO pressure drops and counts analysis frames without waiting or modifying host audio, preserving the callback's no-lock, no-allocation, no-I/O contract.",
+      "statement": "Analysis back-pressure never touches host audio: the producer path runs on the audio thread without allocation, locks, I/O, or exceptions, and sees the audio buffer read-only.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.h#L1-L15",
-          "version": "repo-lines-v1:sha256:d089f047e68e255a3bc3cb22bf38edef64934c7427ae6a054f69562c7f58fae8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNjN2Y0MWM2YmRjOWQ2YjgzYzY4ZmRiODY0NjFiNmJjOWNjYTc1MDM4MzU2MzI3NTUwNTcyZmQ5OWUyNDc2MWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmNzYyYmY2YzJkMmFhMjU4OWNjMTg5ZTk1MTc4MzQ2MjU3Y2YwZjI0Y2RkMjkyMDVhOTQ3OGIyZTlhN2ZkZDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE0YjU1NjI2ZmY4MjRiMDliZDdjZWY1M2I2MWMyMzJjOGI0NzIzNWUzMzQ4ZjcyMjhiYjFjMzdhNjQyZTBmNTMifQ"
+          "resource": "repo://eq-copilot/plugin/core/StampedAudioQueue.h#L26-L31",
+          "version": "repo-lines-v1:sha256:d05647546eed29e07bcc97eb8acade83149ce2951f1e5274cf850ed27e770633:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmMyZjNiODU3MmZjNmM4NjM0YzAzNzA2YzU2NjE2ODFhMDhiMjE1ODBjMzg0YzQzM2FlNjUzMWRmODc0YmZiYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTAxZWFkOTM2YTIyODFkNTNkY2MwNjRiN2UyYTJhYjBkNTNiOTJlZjNlZjdiMzRiNjY4NjczMDA3ODk1Yzg2MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYmU2NDU1MzUxZjMyZTM2MDQ0ODVkNmU2NWJjZTRlMmVhZTA2Mzg4MTcwMmFkMjhmYmY2YjE1YzYwNTMxNjAxYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2U3MWY0ZmRjYjg0MmI2OTgyMTE4ZWZlNDhjNWJkNmE3ODFkYzZiNDQ0OWMwNmI2NjcwZDA5ZjdhZTI5N2IwNCJ9"
         },
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L176-L195",
-          "version": "repo-lines-v1:sha256:60c04361ccef45c1e0b2c4c47a963514da2ae23fe8f5ccee0da03fd9b41dca28:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhNjQxM2FmODQ4MzQxMzAxY2ZmMmY4ZDc3MGE3N2QwZjZiZWI4YTMxOTJiNWI2ZmMwMWUxNjZlZGMzNWZiOWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwZDBmYmJmNWQzNzViZGY2NzA5MTE1M2I4ZmM1MWExNjJkMzgxOTgzZGRiYjc2YWZlNjVmYWQ4NjNhZGU3MTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5OWJkZWZlZWFjYTYzNDBlMDI5MGRjODZlODg5Yzg5ZDVlMTg5YWE1YmE0NGI1ODViM2I3MDczNGY0YTYyZDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQzYzFiYjMzNmJjMDI2ZDA2MmRkYzFiNWE4ZGMyNTM3ODA3MTU3OWY1OWJkNWNjNWJhZjI0MzRiZGM2NzBjZTgifQ"
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L260-L268",
+          "version": "repo-lines-v1:sha256:45d089086629233189f072c745355e914f712de7be7e68e699f94dd8ae4f6b50:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2YyMDg3MGMxYTkyZGRjMzIyYmZjNTliNWExN2RmMDNjOGFiOTcxYzI5YWVjNzZhZmM1M2UzMjNlMGM1YTRhMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTk5YmRlZmVlYWNhNjM0MGUwMjkwZGM4NmU4ODljODlkNWUxODlhYTViYTQ0YjU4NWIzYjcwNzM0ZjRhNjJkOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWRhZTIyMWNkNTdmNjQ0ZjlkNmE0NmNlNDk1MTU1ZTNhYzA0MTBmZTJlZjk2MWFlYzhmMjVlZTYwYTQ4ZTFiZiJ9"
         }
       ]
     },
     {
       "id": "claim_9bbf888180814a3fb9a8960c491114b2",
-      "statement": "A dedicated worker is the single writer to AnalyseEngine, drains the FIFO about every 50 ms, publishes light updates between heavy evaluations, and skips duplicate heavy work when no samples arrived.",
+      "statement": "A dedicated worker is the single writer to AnalyseEngine, drains the stamped queue on its own cadence, publishes light updates between heavy evaluations, and skips duplicate heavy work when no samples arrived.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L279-L330",
-          "version": "repo-lines-v1:sha256:ad3153af87a420db18e89a0b5f1017b2d688368a9ca18045e33ebd843eb45b1b:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwMjE3ZTUwYTVhM2QyNTYzYzA1OTg1MGZjN2I2MDBlZGRjMmY0OWYyN2IwZjQ0MDdmNDI0ZjI3Y2NjNDZiM2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQyZjI0YmZhZmEzNDM3MjczYjU3ODMzN2MzZGUzNWIyODY5NjNhZWVjN2QwNDk2YWFlNjQ1YmM4NDE5MjE4ZTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRmYzYxNGIzMDEwMzEyZmQwMDE5Njc2MzFlMWYyYjY0Mjk1ZjZiZTkwYzQ5YjdmMDg1MzQ2MjhhOGJmNzBjN2MifQ"
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L443-L608",
+          "version": "repo-lines-v1:sha256:74b1a5666a9a5e720887a22248d052b508bbc8a2650e5542281be11582dd6b0b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTY2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3MDIxN2U1MGE1YTNkMjU2M2MwNTk4NTBmYzdiNjAwZWRkYzJmNDlmMjdiMGY0NDA3ZjQyNGYyN2NjYzQ2YjNlIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4YjQ5YWE1NDM0NmE4Mzg4ZDhjMWU1OTNlOWZkYmNmMGFlYjBjMTFkNGY3M2ZmMmUwY2QxNjUzMzY0MDc2Y2U0IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkMmYyNGJmYWZhMzQzNzI3M2I1NzgzMzdjM2RlMzViMjg2OTYzYWVlYzdkMDQ5NmFhZTY0NWJjODQxOTIxOGU3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhMTExMzA2NmU4OTQ1MDc1ZWQxNjgyYzM3Zjk5YmI0MTI4ZTM5NmY1ODA4MDEzMzQzNGNjN2VkYzczZjE1N2E1In0"
         }
       ]
     },
@@ -76,11 +80,11 @@
     },
     {
       "id": "claim_03aa1617376e422583d9fe942307a90b",
-      "statement": "Audible marking requires main lifecycle classification, realtime proof or a test override, transport permission, non-offline processing, and an open editor or test override; timing gaps, transport edges, or free-running ratios revoke realtime proof.",
+      "statement": "Audible marking requires main lifecycle classification, realtime proof or a test override, a valid host-reported playing flag, non-offline processing, and an open editor or test override; the earlier fail-open branch that permitted marking when no transport was reported has been removed.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L199-L277",
-          "version": "repo-lines-v1:sha256:fdfb2b7d2b5e5993901f6320832677a3fcfa7d3c793566681f56acd505756c3a:eyJzZWxlY3RlZExpbmVDb3VudCI6NzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwZDBmYmJmNWQzNzViZGY2NzA5MTE1M2I4ZmM1MWExNjJkMzgxOTgzZGRiYjc2YWZlNjVmYWQ4NjNhZGU3MTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkMTUwZTY1MjMwZjMwMjljZWEyNWNlNDJkYWZhNGMzM2E3YzRlMzQ4ZmZmZjFkMzdlMDAxYzNhZDE1ZWFlY2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJhMGFhMTUyODI4MzljNThiMDVjNmFiMDY2NjU2YjgxYzQzMTU2NTgzMTUxMTdkZjdiODk0NTYxODdlZDA4NjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJhOWM5NDY5ODU0NWFjYzJhYzZjN2ZkNGYxMmIyZTE5NmYwNWJlZjU0MDBjNTc2OTkyMjdmMTFhNmQxMzdjMWUifQ"
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L269-L308",
+          "version": "repo-lines-v1:sha256:3225cb6b23cf126efc16daf4607c20d4cc6499693876fd30da534b77a7193ffb:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxMmUwM2NjMDQyMDFlOWZjOTAyYTIyMWQyN2I5N2EzYzk1NmExYjM0Nzg5OTVhZTI1M2Q0MDIxZWVkMjk5MjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNhMjJiY2YzZmExYjMyNDExNzU0NTg3MGM4NDU1MzdhMGZiYmY0MmExOTI0NzE0OThlNDU4MDc4OWNmM2Y5YjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEwYjViMDhmZWQ4MDA0ZWNhMDU0OGNjZjEyYWMxNTM3MzFhYjY4YzFlMzQyNmQxZjQxYjQ4ZDU1OGE3MDBmYmEifQ"
         },
         {
           "resource": "repo://eq-copilot/plugin/state/NakamaLebenslauf.h#L119-L135",
@@ -104,7 +108,7 @@
     },
     {
       "id": "claim_faca23046f664421b993c40ad556cad2",
-      "statement": "Headless null, marking, and lifecycle tests cover passthrough, latency and tail, non-finite preservation, classification, realtime and offline gates, dry return, and the separation between marked output and dry analysis.",
+      "statement": "Headless null, marking, lifecycle, and queue-stress tests cover passthrough, latency and tail, non-finite preservation, classification, realtime and offline gates, dry return, whole-block queue behaviour, and the separation between marked output and dry analysis.",
       "evidence": [
         {
           "resource": "repo://eq-copilot/plugin/tests/NullTestMain.cpp#L25-L88",
@@ -112,11 +116,11 @@
         },
         {
           "resource": "repo://eq-copilot/plugin/tests/MarkierungTestMain.cpp",
-          "version": "repo-file-v1:sha256:2a0074339c3733a8b5b4942d8cd8bbf1745714a9c13f18cc46dd59b6f80ee59c"
+          "version": "repo-file-v1:sha256:bf74a963ace4d3ae02c42b2d33dc06d9e829c70ad328ee6777230796c43dcc98"
         },
         {
           "resource": "repo://eq-copilot/plugin/tests/LebenslaufTestMain.cpp",
-          "version": "repo-file-v1:sha256:9c7ebc5a7ebb744d6af8fdcba4c899d651b151d2dee393a7f30679ef64882c7c"
+          "version": "repo-file-v1:sha256:b376c04615f4695a5f8874ee42baf008cf268dc4e8e5d0189b39c0c43a869d7c"
         }
       ]
     },
@@ -127,16 +131,6 @@
         {
           "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L94-L123",
           "version": "repo-lines-v1:sha256:83641e9d6014c03f70345b59f33709cb9aa510d14b5ac82330b67ba3156fc800:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE1MWU5MjM5ODlhMzFiZWZkNzg5NmQyNTVhZjgxMmEwY2M0MTZkNWFmZTdmYjU0MzdjODhjMWZmMzM1ZTY4OGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE4YzE5NWEzYjc1ZTdhYmJjNDg0NDYwMjg2MjVhMDFkOGRlZjc1ZmZhODEwMGQ4ZDVlYWNhNTk4OTU4M2E3ZmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdhZDFkZmRkYzJmOWU2NGExNzU3YmE4NjNmNTQyMzdiMDYyMjI2NDZiY2FjN2VkMWQ0ZDdkODM2MWQ0OTRkMDIifQ"
-        }
-      ]
-    },
-    {
-      "id": "claim_e06f6d76718041dbb76bc98a9094c258",
-      "statement": "FIFO overflow increments the dropped-frame counter by the exact number of analysis frames that could not be written.",
-      "evidence": [
-        {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L125-L174",
-          "version": "repo-lines-v1:sha256:45436fc97a1f56baf2056831fd67e5725236bdd3d3c887e1b43ec57c8144cc90:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNjZTBiZGExMzE0NjAzMTgxMjQ1MzM0OGE2NzEzYmFkMjZjZWEzNGI0MDU2NzYxMDUyYzU2Yzc2N2NiZjgwMDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU2ZDg3Y2VjYjBlOWE5YWVjZjlkOThhODQxMzI3NTY5MTMzOTdlZTQ3M2ZhODZmYjdmNjRhZDEwZDMwZjliZjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxMWJlNjM2NTRjOTdlMTdlMGI4NWNlYzg1ZTJkYmRlNzJmNGIzYzUwNDA5ZTU3NWVlYzI3NDlmNDVhZTc3NmUifQ"
         }
       ]
     },
@@ -167,10 +161,54 @@
           "version": "repo-lines-v1:sha256:e6184b16a4dd8f1aba9dfb20684dc78f9598fd96fa2e6608bc51c3a580d4b1ae:eyJzZWxlY3RlZExpbmVDb3VudCI6NzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhN2Q2MDUzN2I1Zjc1Njk3MDc0NWZiMWYyZDU2NzY5MDVhYzExZjFjMGM4ODFkMDQyZThmZDgwMzk0ODFmYjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiZWJjMDFjNDllMTQ3NzFjZDg2YzljMDM5N2IzMzA0MDJjZDc0YWE5Y2M4OGJmNzFmZTI0MDE5ZmMwOWFkNGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc2MDQ4YTM0OWJlYWZlMjcwM2ZiMWMyODYyMjA0YjQ3OTcyOWE5YzkyNWNlYjg3OTY3ODEwNTVkMmQ3MjAxM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMGRlNTcxNTAzOTBiMzM0OWI1YmJlNWM1M2QzMTM2NTg0ODE5NGJmZDAxODE3NGFkM2VlYmFlZWMzYTZhZTgifQ"
         }
       ]
+    },
+    {
+      "id": "claim_daa4fd3800f240f6a6867850fd69b323",
+      "statement": "The analysis hand-off publishes a host block whole or not at all: two fixed single-producer rings carry samples and descriptors, the descriptor is released after the samples so a block becomes visible only when complete, and if either ring is short the entire analysis block is discarded and counted.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/core/StampedAudioQueue.h#L1-L24",
+          "version": "repo-lines-v1:sha256:8989fb55038016e31c11222fcbcdc1ff675e47c0668dcedd1a081f6a4b8504c2:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmZThhY2EyMzlhNGJkNWJiMjMyYjQ1MDQ2YzAxZDM2YzJhZTJmY2NmNDEyYmQ5MTE0Yjc3MTkwYThhYmVlZTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZlYzk2ZTk1ZDAyNDZkNzMyMGViZWFjZmE4Njk0OGJmNjI2YmI3ZjFhMjU1ODkyZjhkNTg2ODRiNGI5YjhiZTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyOGVkMWVmYzJjYzBiNjNjOTM0OTc5MDJkMThiNzNhOTA2OGY3NGI4MTk3MGMwMzA1N2RmYjkxMDJjZWQwMTIifQ"
+        },
+        {
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L260-L268",
+          "version": "repo-lines-v1:sha256:45d089086629233189f072c745355e914f712de7be7e68e699f94dd8ae4f6b50:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2YyMDg3MGMxYTkyZGRjMzIyYmZjNTliNWExN2RmMDNjOGFiOTcxYzI5YWVjNzZhZmM1M2UzMjNlMGM1YTRhMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTk5YmRlZmVlYWNhNjM0MGUwMjkwZGM4NmU4ODljODlkNWUxODlhYTViYTQ0YjU4NWIzYjcwNzM0ZjRhNjJkOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWRhZTIyMWNkNTdmNjQ0ZjlkNmE0NmNlNDk1MTU1ZTNhYzA0MTBmZTJlZjk2MWFlYzhmMjVlZTYwYTQ4ZTFiZiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_301dca21503346fb8933e447bcdc3f87",
+      "statement": "The local block stream counts every host block including discarded ones, because a counter that tallied only accepted frames could no longer express that time is missing.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/core/StampedAudioQueue.h#L32-L43",
+          "version": "repo-lines-v1:sha256:486fb562eaf33f74afb46676a73aa149a0cf8ff3cae2743a0a4cb1b183c74e61:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4NTM1YmY4OTZlNjk5ODdkZWMxZjJiZWEwNTY2NzRhMzMzYzIyODVhNTZiMmI1NDFjMDI5MzRlMTkyNjYzNTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUyNWZmMTg3YWUwNWNhMWRmMzlkYjBlMzIyODIyMTVhYTcxZTFmNDVmZDk0NjI0ZWJlMDNmYzNhZjdmZGQ3ODAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk0MDk4ODkyM2JjMDU0MzQzYTJkNmY0M2RmNmJiMmIxOTYwZjE5NjQ4YTQyZWFhMDJjZjdlYmRhMjBhNzVkZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk4ZmY4OTA1N2ExM2E1NjYyYjU3YWQxZTkwMmUzNjVkOWEwNzZhYTIyYWRhNTY2Mzg1OWMyNGE5YzA4MjJjMTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4e03ceab10da4ad5a705726ee4a734ad",
+      "statement": "A host block larger than the layout's fixed slot capacity is discarded for analysis only and counted separately, because the host's expected-block-size hint is unreliable and a runtime-derived capacity could not be checked deterministically.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/core/StampedAudioQueue.h#L40-L51",
+          "version": "repo-lines-v1:sha256:750b1cc7c53084d495734c2c981c2bd526aca709e5d6a90a63fae2618baf9729:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmYzA1OWQ1ZDM2MzFlYjdmODE4NjdmZGQ0MmZmYmJlYTFiNjlhMWFhMGZiMWQxYTE5ODM0OTU5NGVhYWI5NzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4MTIyNmFjYmYzYTcxYzZkMWE1NGZlYjE5ZGQ4YjE4NTU5YWQ2NTFiYWY0ODhlZGIyYTk4ZjNjNzhmNDZhOTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZlNjlmZGRmZDYxOGM0ZDZkOWRmOTI1YTA0YTNlNDI2YWM4M2ZjNjkyNTVkNjRiYzUyMDIwODkwNTMwYTJiNjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM0ZTIxYTdkZWY1M2IyNDhiZTA3YmFjOWU1YWNhZDBkZDk2NDU4MTM4NmI1NmM1ZTNmYWI3ZmE5ODI4YTlmYWYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_5e9cf7672af2416ab64b781bd2233e65",
+      "statement": "Transport terms come from the patched host bridge rather than the JUCE playhead, and each stamp field is valid only when a host context is present and the host reported that field in this block, which is what made a valid playing flag expressible at all.",
+      "evidence": [
+        {
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L321-L379",
+          "version": "repo-lines-v1:sha256:065ff03cdb8b7b2d81ea73564c1c079d7a65fc67b8fd625f26346b615c5501bc:eyJzZWxlY3RlZExpbmVDb3VudCI6NTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRiYmNhMTBmODI0OTMzNzFiNzcyZTcyZjE5ODM2YTY0YWM1YTRiNGY5ZGZmYTI4NzFiNjM2YTIwZGYyNmU2ZjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ2MGUzNzc0NzNlNjliNDkyOGIxMmE5OTRiOTI0ZWFmZDBlZDg2ZDEzZGM0ZWFmMTU0NzEwN2M1MTIxNmFiMDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA5ZGUyZmI2OWQxZWNmNGIxYjJkODM4NWVlODFlNTcyZDkzYWY1NzNjYjU0NzdiNjg5ZGIwZjljYzM2ZDE1ZDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3MWQ5M2UxYTYxYWIzODc3MWIyY2Q3Zjc5NmYzYWU3MTdiMmNlNGQ3MjhlYThlYjllNTBjZjczOTk5Nzc4MDgifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-23T10:03:23.427Z"
+    "at": "2026-08-23T16:37:16.902Z"
   }
 }

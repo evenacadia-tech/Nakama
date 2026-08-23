@@ -47,9 +47,6 @@ sources:
   - id: openwiki-source-b453891c83ed97f9eb07489e
     resource: repo://tools/eq-copilot/pruefe_host_capabilities.py
 generated: {by: "claude-code", at: "2026-08-22T15:50:39.855Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-22T15:50:39.855Z
 ---
 
 # Host capabilities

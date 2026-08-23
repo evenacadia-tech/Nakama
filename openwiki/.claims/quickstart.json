@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:50f1868795e0abbea5b1d40be5c836f3af95a699fc5c681ba2e9ed7f5db6e22a",
+  "pageVersion": "sha256:9e83acb72b2f0b9ce194c820f85ee8ec5c482ed9880b4f1e513527430b391a9c",
   "claims": [
     {
       "id": "claim_f11a403300344d0ebd8f415690820173",
@@ -63,8 +63,8 @@
       "statement": "The EqCopilot main processor analyzes host audio and publishes compact measurements through PipeClient, while the broker admits validated heartbeats into its live register.",
       "evidence": [
         {
-          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L95-L222",
-          "version": "repo-lines-v1:sha256:47179e995b70cc263bda6903665388fff6aad962e668c17e7a227304cd464239:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5NmVjOGFhMzE0NGFkZjdiMzU4MzI5NDBmOGQ5YTA5MWU3M2E5ODE1MTI2Yzk1ODdhOWJlMjVhNzMyN2E5MzQ5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3NWI1MDljNmIzYTVjNmMyYjNhYzRhODQ3YTA5OGZlMjI3ZmIwZGU1ZGExMGYxOGMxYTU3NjE2ZGU0N2QxZDNhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5MTUzMTExZDY4OTk2NTA0YzNhZGZjYWIwYTFiNTA1MDcxMDVhYWZkNDMzYzQ0YmMxNDEzZmZlMGM5YjRjNmM3In0"
+          "resource": "repo://eq-copilot/plugin/src/PluginProcessor.cpp#L255-L308",
+          "version": "repo-lines-v1:sha256:0d3592a4eea1b6d978dd559fddd3e90e08c8d79a1d775b12dca4837bafd24678:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhMzY1MmI0YjYzMzdkZThkMjUzMjQzYTVlODdjZDg3MTliNmExYTgwNWExNzRkMDg2NTU2NDExZDVmM2M3NDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJmNTcwM2E2MmFlYzUxYjY0MTIwZTg1MjkxNDUyNDVhN2MxZjg4ZDgwNTRiYmFlOTY5YWYzNjNjNjYwN2U2MTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEwYjViMDhmZWQ4MDA0ZWNhMDU0OGNjZjEyYWMxNTM3MzFhYjY4YzFlMzQyNmQxZjQxYjQ4ZDU1OGE3MDBmYmEifQ"
         },
         {
           "resource": "repo://eq-copilot/plugin/src/PipeClient.cpp#L226-L287",
@@ -95,38 +95,6 @@
       ]
     },
     {
-      "id": "claim_063535e0abe84c14951b0a85b1b3e021",
-      "statement": "The deployed briefing application is a separate vinext/React service with Cloudflare D1 persistence.",
-      "evidence": [
-        {
-          "resource": "repo://briefing-hub/package.json#L1-L40",
-          "version": "repo-lines-v1:sha256:4d90f839184608ee92fce9f0b4dee2c50176e567c0f573512d73a4ea19815659:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2ZmIwOGZkYTFhY2I5NTdiNjExNmJkMzc4MTFhMWZlNDFhMDE2MTFjMDYzMWVkYmY3ODZkNjg4OWEyN2E1NWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM4OGQ2MWVlZGU0Zjg0MjYzMzkxZDZkZWU0OTY5NzY4MzQ1NWM0Njc5ZTE5MTk5Mjk0N2U2YmU3MDIzY2I1ZDkifQ"
-        },
-        {
-          "resource": "repo://briefing-hub/.openai/hosting.json#L1-L4",
-          "version": "repo-lines-v1:sha256:d783c7fbfb117e49b7725ff86f64706645df1da42c42b3191a3cf591b05a31cf:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTZmYjA4ZmRhMWFjYjk1N2I2MTE2YmQzNzgxMWExZmU0MWEwMTYxMWMwNjMxZWRiZjc4NmQ2ODg5YTI3YTU1YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjY5YjU5NjdkYTA3Yzc1ZWI4YTViNTUyYWNkNDhhODA0MmJmZDIxNjc0OTE3YzQ0MTQ5YmNhMGYyODMyZWEwZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSJ9"
-        },
-        {
-          "resource": "repo://briefing-hub/db/index.ts#L3-L54",
-          "version": "repo-lines-v1:sha256:6632543b5b2fec940b66fcba3a3fd224dc30d438e9d52d8e92882712fdddede5:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2OTE1YzIyZDA3M2ExY2JmZTVkZDg4YWU3ZjE1NzlhMDA4YThhZGExYzhkN2YwMTRjNThkNmEwZGYyMWEzMmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0OTM2OWFlMmMzZDIzMDQxNDY2ZmMyMDg3NmE1NzA0MjM3YWI0OTI0YTM4YzgwOGZiMTkzMjUwNDIyNTJhOGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYyNTBmMWEwM2Q1ZTQ3MTJkZGFlYTFmMTM0MGM3NDE5N2U2Y2Y0MTNkYmJlYzIwMmJlNzkyMWEzNGNmMWI1OWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
-        }
-      ]
-    },
-    {
-      "id": "claim_339479e590284f468a248db768440a57",
-      "statement": "Repository hub state is synchronized with the deployed briefing service through an explicit pull, validate, and send CLI workflow.",
-      "evidence": [
-        {
-          "resource": "repo://tools/hub/hub_sync.py#L1-L20",
-          "version": "repo-lines-v1:sha256:f3bc279e2aea3b31727ac118e3e978167d880ad9c67368cad59e06cce8f36745:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2ODJjYmRiNGM4YjA3NTE4YmY0ODZjNTg5OTBmYzM5MTc4M2FhMjBhOTE2YmZiMjdhZDIxMWViMWQ1YzM2NDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzMDNlY2RkNGE0ZDEwZjE5YzczZmQ0MmZkMTI0MzdmZDMzNTRhODI2ODE2MDVkYTUyNTVhOTdhMzkwNjhkYmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRjYzhmYTg3N2Q4MDM0MDA1Yzc1NmQxYWU1ZWEzZmY2MTBjNmU4ZTliYzkyMjY1MDY5MThjM2QwMmQyYTZjMmMifQ"
-        },
-        {
-          "resource": "repo://tools/hub/hub_sync.py#L223-L283",
-          "version": "repo-lines-v1:sha256:56f6444240b267b93b72a9c72a854a11a11551bba436ac9804616ec2849e66c4:eyJzZWxlY3RlZExpbmVDb3VudCI6NjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViOTA0ZjE5ZDBjMWM5YzNjNjYxM2ExNjg3MTQzYmU5YjczMzc5YzViYTA1OTM0YzgzNWQzOTM4ZWM0MDM3NDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNDFmODVmMzA0ZDA4OGEzMGFiYTg4MTgzYjhiNTI4ZjNjYTM2MTRhM2Q0NDE4NGM5YjU5ZTliNjEwMTc4NTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMwMDViZDc3NjdmMjg0MjkyMjBkOGJiYzkzMGNkMTI2OWY0MmM0MGEzNTJmNjMyMDJkMDdkYjBiZDdjZmY5ZGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNkNDEzNDBjYzIzOWExNTljZTliNjAyMmU5ZjYzMjI4MzJlMmVhZDc2Y2FlOWU0NzU0ZDIxMGViOGZiNmQ1ZTgifQ"
-        }
-      ]
-    },
-    {
       "id": "claim_10a3f0f17aa448749625815c6e665258",
       "statement": "The design domain translates user-owned Figma states into living browser sheets and does not own plugin implementation.",
       "evidence": [
@@ -138,15 +106,15 @@
     },
     {
       "id": "claim_99c8ab0e79d945928f7ffb6a2e8689fb",
-      "statement": "The repository's canonical product proof is the local freshness-aware evidence runner, while the generated OpenWiki workflow maintains documentation.",
+      "statement": "The repository's canonical product proof is the local freshness-aware evidence runner; wiki documentation is refreshed through the OpenWiki lifecycle rather than by product CI.",
       "evidence": [
         {
           "resource": "repo://tools/beweise.ps1#L1-L48",
           "version": "repo-lines-v1:sha256:192ace583c4b54dcb6d6f636849116cb8406c1313d136e4afc3315be4c31e094:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5N2M4M2Q2OWEwZWM0NGViZDBjNDA3MzQyZjJhYjgwZDQwZTBiMmE1MjhmMjY3OTU2MjlhY2E5YmI3Yjg2NmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxMzcxNDVjNGI2NDQwOWM4NGVjNDQ3OTA4YjQyYjZjYjE5NzgxYzE4NWEyODQ4ODBkNzM1YjhkM2FhZmQ5NmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBiMDcyZWE5ZTJhM2YzNjY3NDEwNjc2M2Y3NmI5MjMyM2ZkZGI3YjlmZTk1MWI1ODkwYjEyNTgzMGNlMjU5MTAifQ"
         },
         {
-          "resource": "repo://.github/workflows/openwiki-update.yml",
-          "version": "repo-file-v1:sha256:16a80864d57b5b7381813d7cd7f4afad61885afe58be57902a8113406f9b5a93"
+          "resource": "repo://AGENTS.md",
+          "version": "repo-file-v1:sha256:e196ae5aef70399b7f4cd655c0440c5c589dbecac5863d6178aa1c195d5a4325"
         }
       ]
     },
@@ -177,10 +145,24 @@
           "version": "repo-lines-v1:sha256:e6184b16a4dd8f1aba9dfb20684dc78f9598fd96fa2e6608bc51c3a580d4b1ae:eyJzZWxlY3RlZExpbmVDb3VudCI6NzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhN2Q2MDUzN2I1Zjc1Njk3MDc0NWZiMWYyZDU2NzY5MDVhYzExZjFjMGM4ODFkMDQyZThmZDgwMzk0ODFmYjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiZWJjMDFjNDllMTQ3NzFjZDg2YzljMDM5N2IzMzA0MDJjZDc0YWE5Y2M4OGJmNzFmZTI0MDE5ZmMwOWFkNGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc2MDQ4YTM0OWJlYWZlMjcwM2ZiMWMyODYyMjA0YjQ3OTcyOWE5YzkyNWNlYjg3OTY3ODEwNTVkMmQ3MjAxM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMGRlNTcxNTAzOTBiMzM0OWI1YmJlNWM1M2QzMTM2NTg0ODE5NGJmZDAxODE3NGFkM2VlYmFlZWMzYTZhZTgifQ"
         }
       ]
+    },
+    {
+      "id": "claim_2190867d3d434187a4327675fcdd2210",
+      "statement": "Project plan status is a measured artifact computed from evidence manifests and their verdict markers, and open questions for the user are asked in chat rather than on an external site.",
+      "evidence": [
+        {
+          "resource": "repo://tools/plan/planstand.py#L118-L170",
+          "version": "repo-lines-v1:sha256:ae1ab2a22a210cc33a9f48202a6d3a8e39080b656573269d8502a3ff2b805a0e:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA0ZjIzZDQ0MDE3ZTY2Y2JlODc3NWVlMWMzZGM2YmE5NDg2ZTVmODYzOTg0YWE1Mjk4ZTA0NzkxY2JkNTczMzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1YWY3YjhhNDRiOGJmZTlmNTU2MjZiMmI5YmVmMzdlZjc4MzEwM2Y0MjBjOTc2YzgxOWYxOTYzZjIzZmFlNjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYyNTMyODVhNjBmMGQxMjI0OTM2NDM4ODNkNDVkYmMwMzY0MGVjZDNmYzU0MGEzZDRjYThmN2FkNGVjNDNjYjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJkNDMyYWM5MTgzY2MzYTBkODc3NTBiY2FhMTIwMDNiYzgwNjJmMDdiNzg4OGM4ZjVmYzZhMDY4ZmVkNDNhMWYifQ"
+        },
+        {
+          "resource": "repo://docs/plan/LIES-MICH.md",
+          "version": "repo-file-v1:sha256:be54c48b52839c9c6c0898a154087ff864f345bbebf2883ab3949f8f2fc91926"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-23T10:03:23.427Z"
+    "at": "2026-08-23T16:26:37.107Z"
   }
 }

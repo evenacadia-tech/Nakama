@@ -1,5 +1,21 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## 🎨 Design-Strang — 23.08.2026 spät: Gen Seite 1+2 im Prototyp-Figma umgebaut
+>
+> Im Figma `Probeeq-Nakama-Prototyp-Design` (Key `5TazApiPrImtLJZ2a71acV`,
+> User-Link 23.08.) sind die zwei vom User markierten Designs auf die
+> Spielregeln (`design/docs/ui-spielregeln-eq-zentrale.md`) umgebaut — als
+> **Klone**, die Originale stehen unangetastet daneben: **Page 1 / Overview**
+> (`4082:3`), **Page 2 / EQ Center** (`4082:139`) und zwei Zustands-Tafeln
+> (`4085:2`, `4086:2`: Draft-Automat, DISCONNECTED/unterwegs/Host-Automation,
+> Zwei-Spuren-Graph, GLOBAL offen, 16-Bus-Rad, MIX PLANNED; Seite 1:
+> LIVE/STALE/**GAP≠EPOCH**, Geste blockiert). Renders + Regelzuordnung:
+> `design/docs/spielregeln-umbau-2026-08-23/LIES-MICH.md`.
+> **Alles Vorschlag, nichts abgenommen** — nächster Design-Schritt: der User
+> sichtet die vier Frames in Figma; Urteil dann nach `design/abnahmen/`.
+> Bewusst offen gelassen: Größe Seite 2 (NAK-65), Undo-Form Seite 1 (U2.8),
+> Sidechain-Sichtbarkeit (U5).
+
 > ## ⚠ DER EINE NÄCHSTE SCHRITT — Stand 23.08.2026, nach dem T2 auf S12–13
 >
 > **Die S12–13-Nacharbeit: T2-1 schließen.** Der T2-Prüfer ist auf S12–13

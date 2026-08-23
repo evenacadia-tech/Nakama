@@ -93,7 +93,7 @@ im anschluss wird dann nurnoch im nakama repo gearbeitet". Einstieg dort:
 | 22.08. | Design-Repo und Technik-Repo zusammengeführt: `Nakama-Design` wird `design/` im Nakama-Repo, danach nur noch hier gearbeitet | „ich möchte dass du die nakama design und nakama arbeitsbereiche zusammenführst. ich habe am anfang versucht das zu trennen aber es funktioniert nicht … einfach infos die im nakama design exisitieren die nicht im nakama folder präsent sind reinholen, so dass nichts verloren ist. im anschluss wird dann nurnoch im nakama repo gearbeitet" · Commits `6fd08a1` (Merge) + Folgecommits |
 | 22.08. | Committen und Pushen laufen ohne Rückfrage; Rückfragen nur noch bei Unumkehrbarem (Riegel `tools/hooks/git-riegel.sh`, Auto-Push `tools/hooks/auto-push.sh`) | „wie funktioniert das commiten und pushen hier, ich möchte dass das so automatisch wie möglich ist" · Commit `39bb30a` |
 | 22.08. | Gemini (Antigravity-CLI `agy`) nur lesend: Audits und Gegenproben, nie schreibend — auch nicht eigenständig (Riegel `tools/hooks/fremdmodell-riegel.sh`) | „gemini ist nicht sehr zuverlässig , ich möchte dass er ausschlisslich für audits und read only benutzt wird. falls du ihn mal eigenständig nutzen solltest" |
-| 22.08. | Der Hub ist die Seite `https://nakama-briefing.philipld.chatgpt.site` (Maschinenansicht `/api/hub`); das Claude-Artefakt und alle anderen Artefakte gelten nicht mehr | „das ist der neue und einzige hub , alle anderen artefakte sind hiermit nichtmehr zu beachten" · Commits `f55c2fe`, `8974a74` (Codex-Vorarbeit) |
+| 22.08. | ~~Der Hub ist die Seite `https://nakama-briefing.philipld.chatgpt.site`~~ — **überholt 23.08.** (Seite abgeschafft, siehe unten); die Aussage „alle anderen Artefakte gelten nicht mehr" gilt weiter | „das ist der neue und einzige hub , alle anderen artefakte sind hiermit nichtmehr zu beachten" · Commits `f55c2fe`, `8974a74` (Codex-Vorarbeit) |
 | 22.08. | 35 Antworten im Hub: Gen (18), Suna (10), Figma-gegen-Entwurf (5), `U5`, `U10`. Entscheidungstor Gen offen — Studie 04 wird weiterverfolgt, die Übersetzung beginnt gegen den Figma-Export | Wahl „Vorschlag übernehmen" auf `U2.0`; alle 35 mit Wortlaut in `design/abnahmen/2026-08-22-hub-antworten-35.md` |
 | 22.08. | Bei **technischen** Fragen entscheidet der Implementplan (`docs/FL-Nakama-Sonden-Design-Entwurf.md`), nicht der Figma-Stand; für das Aussehen bleibt Figma die Quelle | „figma ist keine technikreferenz, der implementplan ist es" (Hub `U9.1`) |
 | 22.08. | Wortmarken aller drei Apps: es gilt der Figma-Export, Claude wählt keine Fassung aus | „alle wortmarken haben den stil wie ich ihn aus figma exportiert habe" (Hub `U6.9`) |
@@ -101,13 +101,17 @@ im anschluss wird dann nurnoch im nakama repo gearbeitet". Einstieg dort:
 | 22.08. | Gen-Übersicht: das Quellen×Band-Gitter aus Figma gilt; die Abnahme vom 20.08. ist an der Stelle überholt, die es ausschloss | Wahl „Figma gilt" (Hub `U9.5`) |
 | 23.08. | Dirigent-Autonomie: der Dirigent hält nicht nach jedem Ticket an, sondern arbeitet den Plan ohne Zwischenhalt ab (Halt nur an Gate, Bruch oder echter User-Frage) | „Durchlaufen bis der Plan leer ist" (`.claude/skills/dirigent/SKILL.md` §0; NAK-54) |
 | 23.08. | Gate-Strenge: **keine** harte Weiterschalt-Regel — je Fall entscheiden. An ihrer Stelle steht die Belegpflicht: jedes Weiterschalten protokolliert (a) worauf es sich stützt UND (b) was ungeprüft blieb | „ich will nicht dass es an einer harten regel scheitert. ich denke das kann variieren. die regel ist einfach das individuell zu entscheiden mit bestem wissen" (`.claude/skills/dirigent/SKILL.md` §3.4; NAK-54) |
+| 23.08. | **Die Briefing-Seite ist abgeschafft.** Der Planstand wird nicht mehr gepflegt, sondern aus dem Repo **gerechnet**; die offenen Fragen stellt ein Skill nach und nach im Chat und arbeitet die Antwort sofort ein | „wir brauchen eine andere möglichkeit als den hub. eie gibt keine automatische aktualisation , das heißt er wird driften und somit drifted plan stand auch." → Wahl **„saeite ganz weg, alles im repo + Skill bauen, der automatisch die offenen fragen nach und nach an mich stellt und gleich einarbeitet in den plan"** |
 
 **Was NICHT mehr gilt** (und nirgends mehr als gültig auftauchen darf):
 Recherche als „kanonischer Plan" · Spectral Field / Bauplan 2.0 / Tiefenfeld /
 Kunstwerk / Feld-Alphabet als Hauptansicht („alle alten sind alt") ·
 Hörkompass als Zielvertrag der Plugin-UI · Geschmacksprofil für die Plugin-UI ·
 Material-Kit-Front als „abgenommen" · Claude-Klick im Grundgesetz · Tauri-Hub-App
-als Produktteil · „Lernsprache" / „Kernfunktion vor Verwaltung" als Regeln.
+als Produktteil · „Lernsprache" / „Kernfunktion vor Verwaltung" als Regeln ·
+**die Briefing-Seite `nakama-briefing.philipld.chatgpt.site` und die Pflicht,
+sie zu lesen oder zu füttern** (abgeschafft 23.08. — sie hatte keine
+automatische Aktualisierung und driftete deshalb, samt Planstand).
 
 ## Wo was liegt
 
@@ -131,49 +135,52 @@ als Produktteil · „Lernsprache" / „Kernfunktion vor Verwaltung" als Regeln.
 | Material-Kit-Kette (Provisorium, technisch lebendig: `tokens.json` → `LeitstandTokens.h`) | `eq-copilot/design/` Wurzel |
 | Design der drei Apps (Figma-Übersetzung, Abnahmen, Truhe, Werkzeug) | `design/` — Einstieg `design/LIES-MICH.md` · `design/abnahmen/` · `design/assets/figma/` · `design/werkzeug/` · `design/docs/` |
 
-## Hub — gemeinsames Briefing (Pflicht seit 22.08.2026)
+## Planstand — gerechnet, nicht gepflegt (seit 23.08.2026)
 
-Der User (Projektleiter, kein Coder) liest **eine** Seite:
-<https://nakama-briefing.philipld.chatgpt.site> (User 22.08.: „das ist der neue
-und einzige hub , alle anderen artefakte sind hiermit nichtmehr zu beachten").
-Sie zeigt Plan erledigt/offen, was bei ihm liegt (Entscheide · Handgriffe ·
-Wissen vor dem Klick) und den Figma-Stand der drei Apps mit Bild; er
-antwortet dort je Frage und legt Punkte an. User-Wort zur Pflicht (22.08.):
-„die pflicht für jeden claude dieses dokument zu aktualisieren und bei session
-beginn anzusehen … wie ein gemeinsames briefing und übersichtshub". Quelle des
-Projektstands ist `docs/hub/hub.json` (Adresse dort: `hub_url`); die Seite
-liefert ihn unter `/api/hub` zusammen mit den Antworten (`answers`) und neuen
-Punkten (`items`), Quellcode der Seite in `briefing-hub/`. Das frühere
-Claude-Artefakt ist stillgelegt — nie mehr bauen, lesen oder veröffentlichen.
-Drei Pflichten je Session, Details in `docs/hub/LIES-MICH.md`:
+Der Planstand ist ein **Messwert**, kein Feld. Bis 23.08. stand er als
+`status`-Text in `hub.json` und wurde von Hand umgestellt; wer es vergaß,
+hinterließ einen still falschen Stand, und die Briefing-Seite driftete
+mit. Der User hat beides abgeschafft (Register 23.08.). Es gilt dieselbe
+Regel wie im Beweis-Runner: **erst messen, dann melden.**
 
-1. **Lesen** — der SessionStart-Hook (`tools/hooks/hub-primer.sh`) liest Kopf
-   und Drift vor; `py -3.13 tools/hub/hub_sync.py holen` holt Antworten und
-   neue Punkte von der Seite nach `hub.json` (Status `neu` bzw. `eingang`).
-2. **Einarbeiten** — jede Antwort ist User-Wort: mit Datum + Wortlaut ins
-   Register bzw. in die Design-Abnahmen, danach Status `eingearbeitet` +
-   `ergebnis`. Punkte aus dem Eingang in Karten oder Plan überführen. Reviews
-   Befund für Befund gegen die Quelldatei (T3-Regel, Bauaufteilung §2).
-   **Antworten kommen von der Seite, nicht per Zuruf** (User 22.08.: „baue
-   eine antwortfunktion für mich ein, dass ich zu jedem punkt stellung nehmen
-   kann, dann musst du nur noch die seite anschauen um infos zu bekommen") —
-   nie eine Frage im Chat stellen, die auf der Seite beantwortbar ist.
-3. **Nachziehen** — `hub.json` fortschreiben (Klartext, kein Entscheid ohne
-   Register-Zitat, „erledigt" nur mit Manifest) → `py -3.13
-   tools/hub/hub_sync.py senden` (prüft, POSTet den Vollstand als Claude an
-   `/api/state`, liest gegen) → `hub.json` per Pathspec committen. Der
-   Stop-Hook (`tools/hooks/hub-stop.sh`) erinnert einmal je Session, wenn
-   Commits ohne Hub-Update enden.
+| Frage | Antwort kommt aus | wer pflegt das |
+|---|---|---|
+| Welche Schritte gibt es? | `docs/plan/plan.json` — Phasen, Ticket, Klartext. **Kein Statusfeld.** | autoriert (Text ist kein Messwert) |
+| Gebaut? | liegt `docs/beweise/<Ticket>.md`? | `tools/beweise.ps1` schreibt es |
+| Abgenommen? | **Urteilsmarke** im Manifest | der frische Prüfer (T2/T3) |
+| Wie frisch ist das Blatt? | Stempel `gerechnet-aus: <sha>` gegen HEAD | git |
 
-**Zeigen, nicht beschreiben** (User 22.08.: „ich muss sehen können um was es
-geht und selbst bilder hochladen können"): jede „bei dir"-Karte, bei der es um
-etwas Sichtbares geht, trägt das Bild (`bilder` in `hub.json`, Dateien in
-`docs/hub/bilder/`, committet). Die Seite hält ihre Kopien unter
-`briefing-hub/public/images/` und ihren Fragenkatalog in
-`briefing-hub/data/friendly-copy.ts` — ein neues Bild oder eine neue Frage
-braucht dort eine Ergänzung und einen neuen Deploy der Seite; `hub.json`
-allein reicht dafür nicht. Die Seite bleibt knapp: Alltagssprache, Belege
-direkt am Punkt, keine zusätzliche Projektverwaltung.
+**Die Urteilsmarke** ist eine Zeile im Manifest, das einzige Stück Status,
+das ein Mensch schreibt — weil ein Urteil kein Messwert ist:
+
+```
+<!-- NAKAMA-URTEIL: T2 PASS 2026-08-23 -->     bzw. T3 / NEEDS_WORK
+```
+
+🔑 **Fail-closed:** nur `T2`/`T3` + `PASS` macht einen Schritt *abgenommen*.
+Fehlende Marke, `T1` (Selbstaudit des Erbauers) oder `NEEDS_WORK` heißen
+**„gebaut, Urteil offen"**. Vergessen führt damit zur Untertreibung, nie zur
+Übertreibung — die einzige Fehlerrichtung, die dieses Projekt sich leisten
+kann. Gilt die letzte Marke je Stufe (Prüfrunden stapeln sich).
+
+**Erzeugt** wird das Blatt `docs/PLAN-STAND.md` von
+`py -3.13 tools/plan/planstand.py`. Es wird **nie von Hand editiert**.
+Automatik: `tools/hooks/planstand.sh` (PostToolUse) misst nach jedem Befehl
+den Zustand — weicht der Stempel von HEAD ab, wird neu gerechnet und das
+Blatt **allein per Pathspec** committet. Auslöser ist der gemessene Zustand,
+nicht der Text eines Befehls (dasselbe Muster wie `auto-push.sh`); die Drift
+kann damit höchstens einen Commit groß werden.
+
+**Offene Fragen an den User** stehen in `docs/plan/fragen.json`, Bilder in
+`docs/plan/bilder/`. Sie werden **im Chat** gestellt — der Skill
+`.claude/skills/fragen/` nimmt sie eine nach der anderen, zeigt das Bild, wo
+es um Sichtbares geht, schreibt die Antwort **wörtlich mit Datum** ins
+Register bzw. nach `design/abnahmen/` und arbeitet die Folge sofort in den
+Plan ein. Details `docs/plan/LIES-MICH.md`.
+
+⚠️ **Die Briefing-Seite ist abgeschafft** (User 23.08.). `briefing-hub/`
+bleibt als Verlauf liegen — nicht deployen, nicht füttern, nicht lesen.
+`tools/hub/hub_sync.py` ist stillgelegt.
 
 ## Bauen & Beweisen (vom Workspace-Root)
 
@@ -487,7 +494,7 @@ DSP-Golden, B7 Transaktion) und werden Pflicht, sobald ihr Ticket sie baut.
 
 | Bereich | Zuerst lesen |
 |---|---|
-| Gemeinsames Briefing (Plan · bei dir · Design · Reviews) | `docs/hub/hub.json` (Quelle) · `docs/hub/LIES-MICH.md` |
+| Planstand (gerechnet) · offene Fragen an den User | `docs/PLAN-STAND.md` (Ansicht) · `docs/plan/plan.json` + `docs/plan/fragen.json` (Quelle) · `docs/plan/LIES-MICH.md` |
 | Einstieg, der eine nächste Schritt | `docs/NEXT-SESSION.md` |
 | Plugin heute (Architektur, Datenfluss, IPC, Tests) | `docs/plugin-wissen.md` |
 | Sondenfamilie: Technik + Phasen (Fassung 0.4 + Errata 21.08.) | `docs/FL-Nakama-Sonden-Design-Entwurf.md` · `docs/bauaufteilung-sonden.md` |

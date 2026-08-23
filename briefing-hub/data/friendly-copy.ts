@@ -37,7 +37,7 @@ export const decisionPackages: DecisionPackage[] = [
     questionIds: [
       'U2.0', 'U2.1', 'U2.2', 'U2.3', 'U2.4', 'U2.5', 'U2.6', 'U2.7',
       'U2.8', 'U2.9', 'U2.10', 'U2.11', 'U2.12', 'U2.13', 'U2.14', 'U2.15',
-      'U2.17',
+      'U2.16', 'U2.17',
     ],
   },
   {
@@ -206,6 +206,14 @@ export const friendlyQuestions: Record<string, FriendlyQuestion> = {
     options: [
       option('Vorschlag übernehmen', 'Ohne Lichtstreifen', 'Die Schale bleibt ruhig und dunkel.'),
       option('Alternative wählen', 'Lichtstreifen auf beiden Apps', 'Gen und Probeeq erhalten denselben sichtbaren Effekt.'),
+    ],
+  },
+  'U2.16': {
+    title: 'Sollen alle Designs im gemeinsamen Figma-Depot bleiben?',
+    prompt: 'Diese Frage ist bereits geklärt. Sie bleibt sichtbar, damit keine der ursprünglichen 18 Entscheidungen verschwindet.',
+    options: [
+      option('Gemeinsames Nakama-Design-Depot', 'Gemeinsames Depot', 'Gen, Probeeq und Suna bleiben zusammen an einem verbindlichen Ort.'),
+      option('Wieder auf mehrere Dateien verteilen', 'Wieder trennen', 'Die Designs würden erneut auf verschiedene Dateien verteilt.'),
     ],
   },
   'U2.17': {

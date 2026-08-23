@@ -1,19 +1,19 @@
 {
   "stand": "2026-08-22",
-  "stand_notiz": "nach S7, FL-Termin A und B, S4 mit T2 PASS (22.08.); Figma-Depot „Nakama-Design“ ist seit 22.08. die einzige Design-Quelle (dunkel verbindlich); Design-Repo Nakama-Design ist seit 22.08. als design/ Teil des Nakama-Repos (dein Wort: „im anschluss wird dann nurnoch im nakama repo gearbeitet“)",
-  "artefakt_url": "https://claude.ai/code/artifact/81bdcb02-796e-4dc0-a6df-347d2d7225fe",
+  "stand_notiz": "nach S7, FL-Termin A und B, S4 mit T2 PASS (22.08.); Figma-Depot „Nakama-Design“ ist seit 22.08. die einzige Design-Quelle (dunkel verbindlich); Design-Repo Nakama-Design ist seit 22.08. als design/ Teil des Nakama-Repos (dein Wort: „im anschluss wird dann nurnoch im nakama repo gearbeitet“); seit 22.08. ist die Seite nakama-briefing.philipld.chatgpt.site der einzige Hub (dein Wort: „das ist der neue und einzige hub, alle anderen artefakte sind hiermit nichtmehr zu beachten“) — das Claude-Artefakt ist stillgelegt",
+  "hub_url": "https://nakama-briefing.philipld.chatgpt.site",
   "naechster_schritt": {
     "technik": "Gate G0 — erste adversariale Prüfrunde über P0 (C++-Review + Codex, eigene Session). Danach S8: gemeinsamer Plugin-Kern ohne Bundle-Konstanten (SONDE-007a).",
-    "design": "Phase 1b, Schritt Gen — kann beginnen: der Gen-Stand (Studie 04, dunkel) liegt als Export aus dem Depot in der Truhe. Parallel beantwortest du die 18 Lesarten (U2); was du drehst, holt Claude als neuen Stand.",
-    "dich": "Die 18 Gen-Lesarten in Karte U2 beantworten (00 = Gesamturteil). Exporte aus Figma sind nicht mehr deine Arbeit — Claude holt sie aus dem Depot."
+    "design": "Phase 1b, Schritt Gen — kann beginnen: der Gen-Stand (Studie 04, dunkel) liegt als Export aus dem Depot in der Truhe. Die 18 Lesarten bleiben vollständig sichtbar; eine davon ist bereits geklärt.",
+    "dich": "Die 17 noch offenen Gen-Lesarten in Karte U2 beantworten (00 = Gesamturteil). Alle 18 bleiben sichtbar."
   },
   "bei_dir": [
     {
       "id": "U2",
       "dringlichkeit": "jetzt",
       "art": "Entscheid",
-      "titel": "Gen-Entwurf (Studie 04): die 18 Lesarten beantworten",
-      "was": "Die Studie 04 liegt in deinem Depot (Rahmen „Lumia Material Lab / Study 04 — Gen“) und ist damit der aktuelle Gen-Stand — dunkel. Offen sind die Lesarten darin: 00 das Gesamturteil (trifft Gen die Sprache?), 01–17 je eine Entscheidung mit Entwurf und Alternative. Unten je Punkt wählen, Text dazu, unten „Antworten speichern“.",
+      "titel": "Gen-Entwurf (Studie 04): 18 Lesarten, davon 17 offen",
+      "was": "Die Studie 04 liegt in deinem Depot (Rahmen „Lumia Material Lab / Study 04 — Gen“) und ist damit der aktuelle Gen-Stand — dunkel. Alle 18 ursprünglichen Lesarten bleiben sichtbar. U2.16 ist durch dein Depot-Wort vom 22.08. bereits geklärt; die übrigen 17 sind offen.",
       "warum": "Die Übersetzung (Phase 1b) beginnt mit Gen gegen diesen Stand. Jede Lesart, die du nicht bestätigst, wird beim Übersetzen erneut vorgelegt. Was du in Figma änderst, holt Claude als neuen Stand aus dem Depot — exportieren musst du nicht mehr.",
       "wo": "design/abnahmen/2026-08-21-gen-auftrag-figma.md (Abschnitt „Was ausdrücklich offen bleibt“)",
       "seit": "21.08.",
@@ -138,10 +138,10 @@
         },
         {
           "id": "U2.16",
-          "titel": "Zwei Figma-Dateien: Testdummy und fable-dummy",
-          "gewicht": "Tragweite 16",
-          "entwurf": "Gen liegt als Studie 04 in Testdummy; Suna als Studie 03 in fable-dummy. Bleibt so.",
-          "alternative": "Zusammenführen — in welche Datei?"
+          "titel": "Ein gemeinsames Figma-Depot",
+          "gewicht": "Bereits geklärt",
+          "entwurf": "Gen, Probeeq und Suna liegen gemeinsam im verbindlichen Figma-Depot Nakama-Design.",
+          "alternative": "Wieder auf mehrere Dateien verteilen."
         },
         {
           "id": "U2.17",
@@ -732,7 +732,7 @@
   ],
   "design": {
     "massstab": "Dein Wort vom 22.08.: „Hauptsache die Apps selbst in FL Studio sehen dann exakt aus wie in Figma.“ Darum: Statisches wird aus Figma gebacken, nur Dynamisches (Texte, Zellen, Kurven, Zustände) wird gezeichnet. Seit dem 22.08. ist die Figma-Datei „Nakama-Design“ die einzige verbindliche Quelle — je App ist eine helle und eine dunkle Fassung geplant, verbindlich ist heute die dunkle. Die Stände unten holt Claude als 4×-Export aus dem Depot in die Truhe.",
-    "phase": "Phase 1b — Figma-Stände übersetzen, Reihenfolge Gen → Probeeq → Suna. Gen kann beginnen (Stand vom 22.08.); die 18 Lesarten beantwortest du parallel in Karte U2.",
+    "phase": "Phase 1b — Figma-Stände übersetzen, Reihenfolge Gen → Probeeq → Suna. Gen kann beginnen (Stand vom 22.08.); alle 18 Lesarten bleiben sichtbar, 17 davon sind offen.",
     "apps": [
       {
         "key": "gen",
@@ -741,7 +741,7 @@
         "groesse": "760 × 430",
         "stand_text": "Stand vom 22.08. aus dem Depot (Rahmen 6:13, Studie 04): Nakama Gen in der Probeeq-Sprache — Graphit-Schale, Glas, Kinn mit Wortmarke; Ebenenzeile, Karte mit Rollenwörtern und Wein-Zellen, Advisor mit „OTHER CAUSE“ und „CERTAINTY HIGH“. Dunkel. Der cyanfarbene Stand vom 21.08. ist Verlauf.",
         "status": "Vorgabe steht",
-        "offen": "18 Lesarten (U2) · helle Fassung geplant",
+        "offen": "17 offene von 18 sichtbaren Lesarten (U2) · helle Fassung geplant",
         "wo": "design/assets/figma/LIES-MICH.md · design/abnahmen/2026-08-22-figma-depot.md"
       },
       {
@@ -783,6 +783,14 @@
     }
   ],
   "uploads": [],
-  "antworten": {},
+  "antworten": {
+    "U2.16": {
+      "wahl": "Gemeinsames Nakama-Design-Depot",
+      "text": "Dein Wort vom 22.08.2026: Nakama-Design ist das gemeinsame verbindliche Depot.",
+      "datum": "2026-08-22",
+      "status": "eingearbeitet",
+      "ergebnis": "Gen, Probeeq und Suna bleiben im gemeinsamen Nakama-Design-Depot."
+    }
+  },
   "eingang": []
 }

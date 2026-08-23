@@ -152,21 +152,27 @@ function packageProgress(decision: DecisionPackage, answers: Record<string, Answ
   return { answered, total: decision.questionIds.length };
 }
 
+function answerIsOpen(answer?: AnswerRecord) {
+  return !answer?.choice || answer.choice === 'Später';
+}
+
 function Topbar({
   view,
   answers,
+  items,
   onNavigate,
   onNewItem,
 }: {
   view: View;
   answers: Record<string, AnswerRecord>;
+  items: AddedItem[];
   onNavigate: (view: Exclude<View, 'decision'>) => void;
   onNewItem: () => void;
 }) {
-  const openPackages = decisionPackages.filter((item) => {
+  const openQuestions = decisionPackages.reduce((sum, item) => {
     const progress = packageProgress(item, answers);
-    return progress.answered < progress.total;
-  }).length;
+    return sum + progress.total - progress.answered;
+  }, 0) + items.filter((item) => item.kind === 'Entscheidung' && answerIsOpen(answers[`item.${item.id}`])).length;
 
   return (
     <header className="topbar">
@@ -190,7 +196,9 @@ function Topbar({
               aria-current={active ? 'page' : undefined}
             >
               {item.label}
-              {item.id === 'decisions' && <span>{openPackages}</span>}
+              {item.id === 'decisions' && (
+                <span aria-label={`${openQuestions} offene Einzelfragen`}>{openQuestions}</span>
+              )}
             </button>
           );
         })}
@@ -438,6 +446,7 @@ function TodayView({
 }) {
   const focus = decisionPackages[0];
   const progress = packageProgress(focus, answers);
+  const open = progress.total - progress.answered;
   const nextOpen = Math.max(0, focus.questionIds.findIndex((id) => !answers[id] || answers[id].choice === 'Später'));
   const tasks = hub.bei_dir
     .map((item) => ({ id: item.id, ...taskCopy[item.id] }))
@@ -465,7 +474,7 @@ function TodayView({
         <div className="focus-copy">
           <div className="focus-meta">
             <span className="status-label">Jetzt entscheiden</span>
-            <span>{progress.answered} von {progress.total} beantwortet</span>
+            <span>{open} offen, {progress.total} insgesamt</span>
           </div>
           <h2 id="focus-title">Passt Gen als Ganzes?</h2>
           <p>
@@ -578,18 +587,29 @@ function DecisionsView({
   onSaved: (id: string, answer: AnswerRecord) => void;
 }) {
   const addedDecisions = items.filter((item) => item.kind === 'Entscheidung');
+  const packageQuestionTotal = decisionPackages.reduce((sum, decision) => sum + decision.questionIds.length, 0);
+  const packageAnswered = decisionPackages.reduce((sum, decision) => sum + packageProgress(decision, answers).answered, 0);
+  const addedAnswered = addedDecisions.filter((item) => !answerIsOpen(answers[`item.${item.id}`])).length;
+  const totalQuestions = packageQuestionTotal + addedDecisions.length;
+  const answeredQuestions = packageAnswered + addedAnswered;
+  const openQuestions = totalQuestions - answeredQuestions;
 
   return (
     <section className="view-section" aria-labelledby="decisions-title">
       <div className="view-heading">
         <p className="date-line">Deine Entscheidungen</p>
         <h1 id="decisions-title">Offene Entscheidungen</h1>
-        <p>Die Fragen sind nach Dringlichkeit geordnet. Technische Hintergründe bleiben für Claude und Codex erhalten, stehen dir aber nicht im Weg.</p>
+        <p className="view-description">Alle Einzelfragen bleiben sichtbar. Beim Antworten öffnet sich jeweils nur eine, damit die Seite übersichtlich bleibt.</p>
+        <p className="decision-count">
+          <strong>{openQuestions} offene Einzelfragen</strong>
+          <span>{totalQuestions} insgesamt, gebündelt in {decisionPackages.length} Themen</span>
+        </p>
       </div>
 
       <div className="decision-list">
         {decisionPackages.map((decision) => {
           const progress = packageProgress(decision, answers);
+          const open = progress.total - progress.answered;
           const nextOpen = Math.max(0, decision.questionIds.findIndex((id) => !answers[id] || answers[id].choice === 'Später'));
           const complete = progress.answered === progress.total;
           return (
@@ -600,10 +620,28 @@ function DecisionsView({
               <div className="decision-row-copy">
                 <div className="item-meta">
                   <span>{complete ? 'Beantwortet' : decision.timing}</span>
-                  <span>{progress.answered} von {progress.total}</span>
+                  <span>{open} offen, {progress.total} insgesamt</span>
                 </div>
                 <h2>{decision.title}</h2>
                 <p>{decision.summary}</p>
+                <details className="question-index">
+                  <summary>
+                    {progress.total === 1 ? 'Einzelfrage anzeigen' : `Alle ${progress.total} Einzelfragen anzeigen`}
+                  </summary>
+                  <ol>
+                    {decision.questionIds.map((questionId, index) => {
+                      const answered = !answerIsOpen(answers[questionId]);
+                      return (
+                        <li key={questionId}>
+                          <button type="button" onClick={() => onOpenDecision(decision.id, index)}>
+                            <span>{friendlyQuestions[questionId].title}</span>
+                            <small>{answered ? 'Beantwortet' : 'Offen'}</small>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </details>
               </div>
               <button className={decision.id === 'U2' ? 'primary-action' : 'secondary-action'} type="button" onClick={() => onOpenDecision(decision.id, nextOpen)}>
                 {complete ? 'Antworten prüfen' : progress.answered ? 'Weiter beantworten' : 'Öffnen'}
@@ -966,6 +1004,7 @@ export default function BriefingApp({ initialHub }: BriefingAppProps) {
       <Topbar
         view={view}
         answers={answers}
+        items={items}
         onNavigate={navigate}
         onNewItem={() => setComposerOpen(true)}
       />

@@ -7471,15 +7471,24 @@ und die FeatureEngine ist vom Audiothread ohnehin nicht erreichbar (§9.3).
 
 ### 10.1 T2-1 — der Entwurfsentscheid, und warum er so ausfällt
 
-**Nachgemessen.** `grenzeZiehen()` (`FeatureEngine.h:836`) leerte: beide
-FFT-Ringe, die Loudness-Zelle, die 3-s-Historie, **beide K-Filter**, zehn
-`rahmen…`-Felder und den Fluss-Vorgänger. Nicht auf der Liste standen genau
-die sieben, die der Prüfer nennt: `liveAkku`, `evidenzAkku`, `liveBreiteAkku`,
-`rahmenAktivZellen`, `rahmenZellen`, `liveSamples`, `evidenzSamples`. Der
-Befund ist wörtlich richtig, und die Diagnose auch: der veröffentlichte
-Bandwert **ist** das FFT-Ergebnis, über das Frameintervall linear integriert
-(`:1012`–`:1017`, §33.1) — sein Integrationsfenster ist ein Fenster im Sinne
-des Gate-Textes, und es überbrückte die Grenze.
+> 📍 **Zeilennummern in diesem Abschnitt.** §7 und §9 zitieren den Stand
+> **vor** der Nacharbeit (`grenzeZiehen()` bei `:836`, `rahmenLeeren()` bei
+> `:1225`, `baueFrame()`-Ausstieg bei `:1190`, `++sequenz` bei `:1212`) — dort
+> waren sie richtig und werden nicht nachträglich geglättet. §10 nennt die
+> Stellen **nach** der Nacharbeit; die Datei ist um rund 170 Zeilen gewachsen,
+> die Nummern sind deshalb andere. Wo ein alter Stand gemeint ist, steht es
+> dabei.
+
+**Nachgemessen.** `grenzeZiehen()` (im damaligen Stand `FeatureEngine.h:836`,
+heute `:945`) leerte: beide FFT-Ringe, die Loudness-Zelle, die 3-s-Historie,
+**beide K-Filter**, zehn `rahmen…`-Felder und den Fluss-Vorgänger. Nicht auf
+der Liste standen genau die sieben, die der Prüfer nennt: `liveAkku`,
+`evidenzAkku`, `liveBreiteAkku`, `rahmenAktivZellen`, `rahmenZellen`,
+`liveSamples`, `evidenzSamples`. Der Befund ist wörtlich richtig, und die
+Diagnose auch: der veröffentlichte Bandwert **ist** das FFT-Ergebnis, über das
+Frameintervall linear integriert (heute `:1164`–`:1169`, §33.1) — sein
+Integrationsfenster ist ein Fenster im Sinne des Gate-Textes, und es
+überbrückte die Grenze.
 
 #### Der Entscheid: **die Grenze schneidet den Inhalt, nicht die Uhr**
 
@@ -7493,8 +7502,8 @@ dem Erbauer gehört. Hier ist sie, mit Begründung:
 Drei Gründe, jeder an der Quelle nachgesehen:
 
 1. **Die zwei Zähler sind kein Messwert, sondern ein Fahrplan.** Sie werden im
-   ganzen Kern an genau zwei Stellen gelesen — `:512` für die Live-Kadenz und
-   `:1201` für `evidenzFrisch`. Sie stehen in keinem Frame, in keinem Stempel
+   ganzen Kern an genau zwei Stellen gelesen — `:547` für die Live-Kadenz und
+   `:1358` für `evidenzFrisch`. Sie stehen in keinem Frame, in keinem Stempel
    und in keiner Auskunft. Was an einer Grenze fallen muss, ist der *Inhalt*,
    über den ein Wert gebildet wird; die Uhr, die sagt *wann* der nächste Wert
    fällig ist, trägt nichts von vor der Grenze in die Zeit danach.
@@ -7511,7 +7520,7 @@ Drei Gründe, jeder an der Quelle nachgesehen:
    keine* Bänder. Dass ein Band nichts sagt, ist über die Bitmap ehrlich
    ausdrückbar — „gemeldete 0" ≠ „nie gesagt", und `fuelleLive`/`fuelleEvidenz`
    überspringen jedes Band mit `n == 0`, setzen also **kein Bit** statt einer
-   Null (`:1342`, `:1375`). Ein Frame, der gar nicht kommt, ist dagegen von
+   Null (`:1498`, `:1531`). Ein Frame, der gar nicht kommt, ist dagegen von
    „die Analyse ist tot" nicht unterscheidbar.
 
 ⚠️ **Was der Entscheid kostet, und warum es kein neuer Fehler ist.** Die
@@ -7519,7 +7528,7 @@ Rahmenskalare (`peakDb`, `crestDb`, `breite`, `korrelation`) werden dann über
 einen kürzeren Rahmen gerechnet und sehen aus wie sonst — ein Empfänger kann
 „leise" nicht von „kurz gemessen" unterscheiden. Nur: **die Integrationslänge
 schwankte schon vorher.** Der Rahmen ist ohnehin 4800…4800+Blockgröße Samples
-lang, und in die Bandakkus gehen ausschließlich **aktive** Fenster (`:992`),
+lang, und in die Bandakkus gehen ausschließlich **aktive** Fenster (`:1144`),
 die Länge hängt also längst am Inhalt. Der Entscheid vergrößert die Spanne, er
 erfindet sie nicht. Die saubere Lösung ist ein Feld `integration_samples` im
 Frame und in `table Frame` — das ist eine `.fbs`-Änderung und gehört zu
@@ -7528,7 +7537,7 @@ erfasst**, nicht nebenbei gebaut.
 
 Die drei Selbstgates halten das ohne Zutun: `rahmenZellen > 0` für
 `aktivitaet`, `rahmenSamples > 0` für Peak/Crest/Breite/Korrelation, volle
-3-s-Historie für LUFS-S (`kurzLufs`, `:1166`) — ein Rahmen ohne Inhalt liefert
+3-s-Historie für LUFS-S (`kurzLufs`, `:1316`) — ein Rahmen ohne Inhalt liefert
 **keine** Zahl, nicht eine schlechte.
 
 #### Und das Bein musste mit — es war der eigentliche Fehler
@@ -7614,11 +7623,11 @@ gemessene.
 
 ### 10.2 T2-2 — der Meldeweg gebaut, die Unerreichbarkeit benannt
 
-**Nachgemessen.** Beides bestätigt sich. `baueFrame()` stieg bei `:1190` aus,
-`++sequenz` stand bei `:1212` — ein abgelehnter Frame verbrauchte keine
-Nummer, der Empfänger sähe `1, 2, 3, …` ohne Lücke, und §4.5 beschrieb ein
-Verhalten, das der Code nicht hatte. Und `baueStempel()` setzt in **allen
-sechs** NAK-29-Fällen Wert und Bit gemeinsam (`:1260`–`:1317`), Fall 2 ist
+**Nachgemessen.** Beides bestätigt sich. `baueFrame()` stieg im damaligen
+Stand bei `:1190` aus, `++sequenz` stand bei `:1212` — ein abgelehnter Frame
+verbrauchte keine Nummer, der Empfänger sähe `1, 2, 3, …` ohne Lücke, und §4.5
+beschrieb ein Verhalten, das der Code nicht hatte. Und `baueStempel()` setzt in
+**allen sechs** NAK-29-Fällen Wert und Bit gemeinsam (heute `:1399`–`:1474`), Fall 2 ist
 durch die if/else-Struktur ausgeschlossen, Fall 4 durch `cycle_derivation`,
 das nur im `cycle_bounds_valid`-Zweig und dort immer `unproven` gesetzt wird.
 
@@ -7661,7 +7670,8 @@ Ergebnis: 153 bestanden, 2 Fehler.
 ### 10.3 T2-3 — der Lese-Überlauf, den der Schreib-Fix aufgemacht hat
 
 **Nachgemessen.** Bestätigt. `grundZaehler` hat exakt
-`(std::size_t) Grenzgrund::anzahl` Elemente (`:1501`), `grenzenMitGrund()` las
+`(std::size_t) Grenzgrund::anzahl` Elemente (heute `:1658`), `grenzenMitGrund()`
+(heute `:590`) las
 `grundZaehler[(std::size_t) g]` ungeprüft — und `anzahl` ist ein öffentlich
 sichtbarer Enumwert, den das Bein selbst benennt. Vor `48fcd9c` lag `[9]` in
 einem `[10]`-Array noch im Puffer; die Kopplung an die Aufzählung hat den

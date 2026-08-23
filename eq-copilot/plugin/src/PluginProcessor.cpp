@@ -39,7 +39,10 @@ EqCopilotProcessor::EqCopilotProcessor()
     // ruft nie `setStateInformation` und oeffnet nie einen Editor.
     zustand = nakama::state::frisch (juce::Uuid().toString());
     instanceNonce = juce::Uuid().toString();
-    fifoPuffer.calloc ((size_t) kFifoKapazitaet * 2);
+    // SONDE-008: der gesamte Backing-Store beider Ringe entsteht HIER - vor dem
+    // Start des Workers und lange vor dem ersten Audioblock. `prepareToPlay`
+    // fasst danach keinen Speicher mehr an, es meldet nur einen Neuanlauf.
+    queue.vorbereiten();
 
     workerLaeuft.store (true);
     worker = std::thread ([this] { workerLauf(); });
@@ -67,7 +70,12 @@ void EqCopilotProcessor::prepareToPlay (double samplerate, int maxBlock)
         fensterResetWunsch.store (true);
     blockSizeAtomic.store (maxBlock);
     kanaeleAtomic.store (getTotalNumInputChannels());
-    fifo.reset();
+    // SONDE-008: KEIN Reset von hier aus. Bis 23.08. rief diese Zeile
+    // `fifo.reset()` — der Nachrichtenthread verstellte damit beide Enden eines
+    // SPSC-Rings mitten in einen laufenden Leser hinein. Stattdessen ein
+    // Wunsch, den der Audiothread als Einziger einlöst; der Worker erkennt die
+    // Reste des alten Anlaufs an ihrer kleineren `startFolge`.
+    queue.neustartAnfordern();
 
     // Hör-Markierung: Puffer/Zustände neu, Echtzeit-Beweis verfällt — nach
     // jedem prepareToPlay (auch Render-Vorlauf) gilt wieder „neutral, bis
@@ -136,72 +144,93 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
         fensterErwartetGueltig = false;
     }
 
-    // Hostzeit (M0-Prüfpunkt §9.3) — PositionInfo ist wertbasiert, kein Heap.
-    if (auto* kopf = getPlayHead())
+    // ── Zeitstempel: woher die Zeit kommt, und wie sicher (SONDE-008) ──────
+    // Zwei Quellen, in dieser Reihenfolge, und die Reihenfolge ist der Punkt:
+    //  1. die HOSTBRÜCKE (SONDE-003). Nur sie kann „Context fehlt" überhaupt
+    //     ausdrücken — JUCEs VST3-Playhead liefert nie `nullopt`, weil der
+    //     Wrapper seinen internen Context nullt und daraus ein gefülltes
+    //     PositionInfo baut (NakamaHostBridge.h, Kopf; NAK-24).
+    //  2. der Playhead als Rückfallweg für Ziele OHNE gepatchten Wrapper
+    //     (Konsolentests, andere Formate). Dort ist „PositionInfo da" ehrlich
+    //     das Beste, was zu wissen ist — und ohne Playhead ist Transport
+    //     ausdrücklich UNBEKANNT, nicht „gestoppt" und nicht „läuft".
+    nakama::echtzeit::Stempel stempel;
+    stempel.nichtEchtzeit = isNonRealtime();
+    if (brueckeStand.frisch)
+    {
+        stempel.kontextAnwesend    = brueckeStand.kontextAnwesend;
+        stempel.zeitGueltig        = brueckeStand.zeitGueltig;
+        stempel.projectSampleStart = brueckeStand.zeit;
+        stempel.spieltGueltig      = brueckeStand.spieltGueltig;
+        stempel.spielt             = brueckeStand.spielt;
+        brueckeStand.frisch = false;
+    }
+    else if (auto* kopf = getPlayHead())
     {
         if (const auto pos = kopf->getPosition())
         {
-            hatTransport.store (true);
-            transportSpielt.store (pos->getIsPlaying());
+            stempel.kontextAnwesend = true;
+            stempel.spieltGueltig   = true;
+            stempel.spielt          = pos->getIsPlaying();
             if (const auto zeit = pos->getTimeInSamples())
             {
-                projektZeitSamples.store (*zeit);
-                // Projektzeit-Fenster der Messung (Plan §5.7): nur während
-                // Play akkumulieren — der stehende Playhead ist kein Fenster.
-                if (pos->getIsPlaying())
-                {
-                    const juce::int64 t = *zeit;
-                    if (! fensterAktiv.load())
-                    {
-                        fensterAktiv.store (true);
-                        fensterVon.store (t);
-                        fensterBis.store (t + n);
-                    }
-                    else
-                    {
-                        // Sprung = Loop/Seek/Stop-Rücksprung. Toleranz 64
-                        // Samples für Rundungen des Hosts. Auch über eine
-                        // Pause hinweg gemessen: Resume an anderer Stelle
-                        // IST eine Lücke im Fenster.
-                        if (fensterErwartetGueltig && std::llabs (t - fensterErwartet) > 64)
-                            fensterSpruenge.fetch_add (1);
-                        if (t < fensterVon.load())
-                            fensterVon.store (t);
-                        if (t + n > fensterBis.load())
-                            fensterBis.store (t + n);
-                    }
-                    fensterErwartet = t + n;
-                    fensterErwartetGueltig = true;
-                }
+                stempel.zeitGueltig        = true;
+                stempel.projectSampleStart = *zeit;
             }
         }
     }
 
-    // Analyseweg: interleaved in den Lock-free-FIFO; zu wenig Platz ⇒ Frames
-    // verwerfen und zählen — niemals warten, niemals Audio anfassen.
-    int s1, n1, s2, n2;
-    fifo.prepareToWrite (n, s1, n1, s2, n2);
-    const int schreibbar = n1 + n2;
-    const float* l = buffer.getReadPointer (0);
-    const float* r = kanaele > 1 ? buffer.getReadPointer (1) : l;
-    for (int i = 0; i < n1; ++i)
+    // Nach außen sichtbarer Transportstand (Editor, Heartbeat). `hatTransport`
+    // heißt ab hier „Transport ist BEKANNT" statt „irgendein PositionInfo kam" —
+    // mit der Brücke ist das erstmals unterscheidbar (NAK-24).
+    hatTransport.store (stempel.spieltGueltig);
+    transportSpielt.store (stempel.spieltGueltig && stempel.spielt);
+
+    // Hostzeit (M0-Prüfpunkt §9.3) — Projektzeit-Fenster der Messung (Plan
+    // §5.7): nur während Play akkumulieren, der stehende Playhead ist kein
+    // Fenster.
+    if (stempel.zeitGueltig)
     {
-        fifoPuffer[(size_t) (s1 + i) * 2]     = l[i];
-        fifoPuffer[(size_t) (s1 + i) * 2 + 1] = r[i];
+        projektZeitSamples.store (stempel.projectSampleStart);
+        if (stempel.spieltGueltig && stempel.spielt)
+        {
+            const juce::int64 t = stempel.projectSampleStart;
+            if (! fensterAktiv.load())
+            {
+                fensterAktiv.store (true);
+                fensterVon.store (t);
+                fensterBis.store (t + n);
+            }
+            else
+            {
+                // Sprung = Loop/Seek/Stop-Rücksprung. Toleranz 64 Samples für
+                // Rundungen des Hosts. Auch über eine Pause hinweg gemessen:
+                // Resume an anderer Stelle IST eine Lücke im Fenster.
+                if (fensterErwartetGueltig && std::llabs (t - fensterErwartet) > 64)
+                    fensterSpruenge.fetch_add (1);
+                if (t < fensterVon.load())
+                    fensterVon.store (t);
+                if (t + n > fensterBis.load())
+                    fensterBis.store (t + n);
+            }
+            fensterErwartet = t + n;
+            fensterErwartetGueltig = true;
+        }
     }
-    for (int i = 0; i < n2; ++i)
-    {
-        fifoPuffer[(size_t) (s2 + i) * 2]     = l[n1 + i];
-        fifoPuffer[(size_t) (s2 + i) * 2 + 1] = r[n1 + i];
-    }
-    fifo.finishedWrite (schreibbar);
-    if (schreibbar < n)
-        framesDropped.fetch_add ((juce::uint64) (n - schreibbar));
+
+    // Analyseweg: der GANZE Block in die zeitgestempelte Queue — oder gar
+    // nicht. Reicht ein Ring nicht, verwirft sie den kompletten Analyseblock,
+    // zählt ihn und markiert die Lücke im Folgeblock; sie wartet nie und fasst
+    // Audio nie an (Entwurf §48.1/§53.7).
+    Queue::TapQuelle abgriff;
+    abgriff.links  = buffer.getReadPointer (0);
+    abgriff.rechts = kanaele > 1 ? buffer.getReadPointer (1) : nullptr;
+    queue.veroeffentliche (&abgriff, 1, kanaele, n, stempel);
 
     // ── Hör-Markierung (Konzept v2): Erlaubnis prüfen, dann färben ─────────
-    // Reihenfolge ist Vertrag: RMS + FIFO-Abgriff liegen OBEN — die Messung
+    // Reihenfolge ist Vertrag: RMS + Analyse-Abgriff liegen OBEN — die Messung
     // sieht nie das gefärbte Signal (Beweis: Markierungstest T4).
-    const bool spielt = transportSpielt.load();
+    const bool spielt = stempel.spieltGueltig && stempel.spielt;
     lebenszeichen (n, spielt);
     // §53.5 Satz 1 (S9/SONDE-007b Abschnitt 3): bis zur positiven
     // Klassifikation ist der Entry AUDIO-NEUTRAL. Die Hoer-Markierung ist die
@@ -211,14 +240,56 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     // Spawn und Pipe-I/O liegen nie im Audiocallback".
     // Der Term steht ZUERST, damit beim Lesen sofort klar ist: ohne Main
     // faerbt hier nichts, egal was die uebrigen Bedingungen sagen.
+    //
+    // ⚠️ TRANSPORT-TERM, geändert mit SONDE-008 (User-Entscheid 22.08., Hub
+    // `U10`: „Nein, nur mit Signal"). Bis 23.08. stand hier
+    // `(spielt ∨ ¬hatTransport)` — ein fail-open: wo kein Transport gemeldet
+    // wurde, färbte die Markierung. Verlangt ist ein GÜLTIGES „spielt".
+    // Der Term war nicht früher zu schließen, weil „Transport unbekannt" bis
+    // zur Verdrahtung der Hostbrücke gar nicht ausdrückbar war (Entwurf §0.1:
+    // „Der eigentliche Mangel ist, dass `hatTransport` ‚Transport unbekannt'
+    // gar nicht ausdrücken kann"); genau diese Verdrahtung bringt SONDE-008
+    // für den Zeitstempel mit. NAK-35/NAK-24.
+    // In FL ändert sich dadurch nichts: dort lag `hatTransport` ab dem ersten
+    // Block auf true, der fail-open-Zweig war ein toter Zweig (Prüfbericht 1.2).
+    // Ohne Playhead und ohne Brücke — also headless — färbt jetzt nichts mehr.
+    //
+    // `testForciereEchtzeit` umgeht diesen Term ABSICHTLICH NICHT: der Schalter
+    // umgeht, was an der Wanduhr hängt (Lebenszeichen, Editor). Transport hängt
+    // an nichts dergleichen; ein Test, der ihn mit umginge, prüfte einen Pfad,
+    // den das Produkt nicht hat (dieselbe Begründung wie beim §53.5-Term).
     const bool erlaubt = istMainKlassifiziert.load (std::memory_order_relaxed)
                       && (echtzeitOk.load (std::memory_order_relaxed)
                           || testEchtzeit.load (std::memory_order_relaxed))
-                      && (spielt || ! hatTransport.load (std::memory_order_relaxed))
+                      && spielt
                       && ! isNonRealtime()
                       && (editorOffen.load (std::memory_order_relaxed)
                           || testEchtzeit.load (std::memory_order_relaxed));
     markierung.verarbeite (buffer, kanaele, erlaubt);
+}
+
+//==============================================================================
+// SONDE-008: die Gegenseite der Hostbrücke. Läuft auf DEMSELBEN Thread wie
+// `processBlock` und unmittelbar davor — der gepatchte Wrapper ruft
+// `uebergib()` zwischen `kontextAus()` und dem Prozessoraufruf.
+//
+// ⚠️ Der Befund ist NICHT 1:1 mit `processBlock` gepaart (NakamaHostBridge.h,
+// `uebergib()`): ein Parameter-Flush (`blockGroesse == 0`) und der
+// Wavelab-Riegel liefern einen Befund, ohne dass danach ein Block verarbeitet
+// wird. Deshalb ein `frisch`-Bit statt einer Annahme: `processBlock`
+// VERBRAUCHT es, und ein Befund ohne Folgeblock wird schlicht vom nächsten
+// überschrieben.
+void EqCopilotProcessor::nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbefund& befund) noexcept
+{
+    const auto& k = befund.kontext;
+    brueckeStand.kontextAnwesend = k.processContextPresent;
+    // `projectTimeSamples` ist laut VST3-Doku gültig, SOBALD ein Context
+    // existiert — die Brücke setzt das Gültigkeitsbit deshalb genau dann.
+    brueckeStand.zeitGueltig   = k.processContextPresent && k.projectTimeSamples.gueltig;
+    brueckeStand.zeit          = (juce::int64) k.projectTimeSamples.oder (0);
+    brueckeStand.spieltGueltig = k.processContextPresent && k.playing.gueltig;
+    brueckeStand.spielt        = k.playing.oder (false);
+    brueckeStand.frisch        = true;
 }
 
 // „Neutral, bis Echtzeit bewiesen" (Konzept v2 §4): zwei Fenster mit
@@ -291,10 +362,11 @@ void EqCopilotProcessor::lebenszeichen (int samples, bool spielt)
 
 void EqCopilotProcessor::workerLauf()
 {
-    // Leert den FIFO im 50-ms-Takt und rechnet die M1-Messung (Plan §5.10.1).
-    // Die Engine gehört exklusiv diesem Thread; Reset/Samplerate kommen als
-    // Atomics herein. Kein Realtime-Anspruch — Überlast verwirft der FIFO.
-    std::vector<float> lokal ((size_t) kFifoKapazitaet * 2);
+    // Leert die Analysequeue im 50-ms-Takt und rechnet die M1-Messung (Plan
+    // §5.10.1). Die Engine gehört exklusiv diesem Thread; Reset/Samplerate
+    // kommen als Atomics herein. Kein Realtime-Anspruch — Überlast verwirft die
+    // Queue, und zwar ganze Blöcke (SONDE-008).
+    quarantaene.vorbereiten();     // einmalige Allokation, im Worker, vor dem ersten Zug
     int auswertTeiler = 0;
     juce::uint64 unverarbeitet = 0;   // Samples seit der letzten Schwer-Auswertung
     while (workerLaeuft.load())
@@ -303,19 +375,40 @@ void EqCopilotProcessor::workerLauf()
         if (srWunsch > 0.0)
             engine.vorbereiten (srWunsch);          // no-op bei gleicher Rate
         if (messResetWunsch.exchange (false))
-            engine.zuruecksetzen();
-
-        int s1, n1, s2, n2;
-        fifo.prepareToRead (fifo.getNumReady(), s1, n1, s2, n2);
-        if (n1 > 0) std::memcpy (lokal.data(), fifoPuffer.getData() + (size_t) s1 * 2, (size_t) n1 * 2 * sizeof (float));
-        if (n2 > 0) std::memcpy (lokal.data() + (size_t) n1 * 2, fifoPuffer.getData() + (size_t) s2 * 2, (size_t) n2 * 2 * sizeof (float));
-        fifo.finishedRead (n1 + n2);
-        samplesAnalysiert.fetch_add ((juce::uint64) (n1 + n2));
-
-        if (n1 + n2 > 0)
         {
-            engine.verarbeite (lokal.data(), n1 + n2, kanaeleAtomic.load());
-            unverarbeitet += (juce::uint64) (n1 + n2);
+            engine.zuruecksetzen();
+            // Gegenpfad: was in Quarantäne liegt, gehört zur alten Messung.
+            quarantaene.zuruecksetzen();
+        }
+
+        // SONDE-008: Block für Block durch die Ein-Block-Quarantäne. Ein Block
+        // erreicht die Engine erst, wenn sein Nachfolger beweist, dass er ihn
+        // fortsetzt (§53.7) — die Engine sieht damit nie zwei Blöcke über eine
+        // Grenze hinweg zusammenhängen, deren Lage erst nachträglich sichtbar
+        // wurde (§32.3).
+        const juce::uint32 anlauf = queue.aktuellerAnlauf();
+        while (const auto* roh = queue.spitze())
+        {
+            if (roh->startFolge != anlauf)
+            {
+                // Rest eines früheren prepareToPlay-Anlaufs: dort kann die
+                // Samplerate eine andere gewesen sein. Nicht analysieren,
+                // sondern zählen — das ist der ehrliche Ersatz für das alte
+                // `fifo.reset()` vom Nachrichtenthread aus.
+                veralteteBloecke.fetch_add (1);
+                quarantaene.zuruecksetzen();
+                queue.freigeben();
+                continue;
+            }
+            const auto frei = quarantaene.schiebe (queue, *roh);
+            queue.freigeben();          // Ringplatz zurück; `frei` liegt schon in der Quarantäne
+            if (frei)
+            {
+                engine.verarbeite (frei.audio, (int) frei.block->sampleCount,
+                                   (int) frei.block->kanaele);
+                samplesAnalysiert.fetch_add ((juce::uint64) frei.block->sampleCount);
+                unverarbeitet += (juce::uint64) frei.block->sampleCount;
+            }
         }
         if (++auswertTeiler >= 5)                   // ~250 ms: Gating/Kandidaten
         {
@@ -348,7 +441,10 @@ StatsSnapshot EqCopilotProcessor::statsSnapshot() const
     StatsSnapshot s;
     s.rmsL = rmsL.load();
     s.rmsR = rmsR.load();
-    s.framesDropped = framesDropped.load();
+    // SONDE-008: EINE Wahrheit. Der Zähler lebt in der Queue, die den Verlust
+    // verursacht; ein zweiter Atomic daneben könnte nur auseinanderlaufen.
+    // Einheit unverändert: verlorene Analyse-FRAMES.
+    s.framesDropped = queue.verloreneFrames();
     s.nanSeen = nanSeen.load();
     s.hasTransport = hatTransport.load();
     s.transportPlaying = transportSpielt.load();

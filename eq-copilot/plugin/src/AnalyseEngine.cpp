@@ -286,6 +286,9 @@ void AnalyseEngine::vorbereiten (double samplerate)
     tpVerlaufR.assign (64, 0.0f);
 
     zellenSamples = (int) std::lround (0.1 * sr);
+    // SONDE-008: der einzige Ort, an dem der Loudness-Akku Speicher holt.
+    // Danach ist sein Bedarf konstant (LoudnessAccumulator::speicherBytes()).
+    loudness.vorbereiten (sr);
     zuruecksetzen();
 }
 
@@ -323,7 +326,7 @@ void AnalyseEngine::zuruecksetzen()
     hpL.z1 = hpL.z2 = hpR.z1 = hpR.z2 = 0.0;
     zellenStand = 0;
     zelleKEnergie = zelleAktivEnergie = 0.0;
-    kZellen.clear();
+    loudness.zuruecksetzen();     // SONDE-008: leert Histogramm und Ring, ohne Allokation
     aktiveZellen = 0;
 
     std::fill (tpVerlaufL.begin(), tpVerlaufL.end(), 0.0f);
@@ -399,7 +402,7 @@ void AnalyseEngine::verarbeite (const float* interleaved, int frames, int kanael
         zelleAktivEnergie += stereo ? 0.5 * (l * l + r * r) : l * l;
         if (++zellenStand >= zellenSamples)
         {
-            kZellen.push_back (zelleKEnergie);
+            loudness.zelle (zelleKEnergie);     // SONDE-008: fester Speicher statt push_back
             if (10.0 * std::log10 (zelleAktivEnergie / zellenSamples + 1e-30) > kAktivSchwelleDb)
                 ++aktiveZellen;
             zelleKEnergie = zelleAktivEnergie = 0.0;
@@ -706,45 +709,19 @@ void AnalyseEngine::finalisiereLtas (MessSnapshot& s) const
 
 void AnalyseEngine::finalisiereLoudness (MessSnapshot& s) const
 {
-    // pyloudnorm-Gating exakt: Blöcke = 4 Zellen (400 ms), Hop 1 Zelle.
-    // (True Peak / Crest / Kurz-LUFS leben seit m4 in fuelleBasis — dem
-    // 20-Hz-Leichtpfad; hier bleibt nur das integrierte Gating.)
-    const size_t nZellen = kZellen.size();
-    if (nZellen >= 4)
+    // SONDE-008 (Entwurf §48.1): das Gating steckt jetzt im fixed-memory
+    // `LoudnessAccumulator`. Bis 23.08. stand hier ein Zweitdurchgang über eine
+    // frisch allozierte Blockliste über die GANZE Sessionlänge — 4×/s.
+    // Gleiche Kette (Blöcke = 4 Zellen à 100 ms, Hop 1 Zelle, absolutes Gate
+    // ">= −70", relatives Gate "> Γ_r und > −70"); der einzige Unterschied ist,
+    // dass die AUSWAHL für das relative Gate aus einem Histogramm kommt statt
+    // aus der Liste. Wieviel das höchstens ausmacht, sagt
+    // `loudness.unsicherheitLu()`, und der EBU-Golden misst es (§49: ±0,1 LU).
+    double lufs = 0.0;
+    if (loudness.integriert (lufs))
     {
-        std::vector<double> bloecke;   // Σ_ch-Blockleistung s_j
-        bloecke.reserve (nZellen - 3);
-        const double norm = 0.4 * sr;
-        for (size_t j = 3; j < nZellen; ++j)
-            bloecke.push_back ((kZellen[j - 3] + kZellen[j - 2] + kZellen[j - 1] + kZellen[j]) / norm);
-
-        auto loudness = [] (double z) { return -0.691 + 10.0 * std::log10 (z + 1e-30); };
-        double summe1 = 0.0; juce::uint64 n1 = 0;
-        for (const double z : bloecke)
-            if (loudness (z) >= -70.0)     // absolutes Gate (pyloudnorm: >=)
-            {
-                summe1 += z;
-                ++n1;
-            }
-        if (n1 > 0)
-        {
-            const double gammaR = loudness (summe1 / (double) n1) - 10.0;
-            double summe2 = 0.0; juce::uint64 n2 = 0;
-            for (const double z : bloecke)
-            {
-                const double lj = loudness (z);
-                if (lj > gammaR && lj > -70.0)   // relatives Gate (pyloudnorm: >)
-                {
-                    summe2 += z;
-                    ++n2;
-                }
-            }
-            if (n2 > 0)
-            {
-                s.lufsIntegriert = loudness (summe2 / (double) n2);
-                s.lufsGueltig = true;
-            }
-        }
+        s.lufsIntegriert = lufs;
+        s.lufsGueltig = true;
     }
 }
 
@@ -786,12 +763,13 @@ void AnalyseEngine::fuelleBasis (MessSnapshot& s) const
         s.crestDb = sicheresDb (peakAbs) - sicheresDb (rms);
         s.crestGueltig = true;
     }
-    if (kZellen.size() >= 30)
+    // SONDE-008: derselbe Wert aus dem 30-Zellen-Ring des Akkus — dieselbe
+    // Reihenfolge (ältest → jüngst), dieselbe Assoziativität, also BITGLEICH
+    // zur bisherigen Schleife über `kZellen[size-30 … size-1]`.
+    double kurzLufs = 0.0;
+    if (loudness.kurz (kurzLufs))
     {
-        double e = 0.0;
-        for (size_t j = kZellen.size() - 30; j < kZellen.size(); ++j)
-            e += kZellen[j];
-        s.lufsShort = -0.691 + 10.0 * std::log10 (e / (3.0 * sr) + 1e-30);
+        s.lufsShort = kurzLufs;
         s.lufsShortGueltig = true;
     }
 }

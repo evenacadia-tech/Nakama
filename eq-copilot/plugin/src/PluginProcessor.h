@@ -21,6 +21,8 @@
 #include "HoerMarkierung.h"
 #include "NakamaState.h"
 #include "NakamaLebenslauf.h"
+#include "NakamaHostBridge.h"
+#include "StampedAudioQueue.h"
 
 // ── S9/SONDE-007b Abschnitt 3: welches Bundle uebersetzt hier? ─────────────
 // Die duenne Target-Schicht sagt es (plugin/CMakeLists.txt), nicht dieser
@@ -42,11 +44,24 @@ inline nakama::state::Bundle bundleVertrag()
     return nakama::state::Bundle::eqcp();
 }
 
-class EqCopilotProcessor : public juce::AudioProcessor
+// S10-11/SONDE-008: der Prozessor ist eine `Senke` der Hostbruecke. Bis hierher
+// war die Bruecke aus SONDE-003 im Produkt zwar uebersetzt, aber UNBENUTZT
+// (`plugin-wissen.md` §2.1: "im Produkt kompiliert, aber unbenutzt … Verbraucher
+// SONDE-008/009"). Sie ist die einzige Quelle, die "Context fehlt" ueberhaupt
+// ausdruecken kann - und ohne diese Unterscheidung waere jeder Zeitstempel der
+// StampedAudioQueue geraten statt bewiesen (§32.3, NAK-24).
+class EqCopilotProcessor : public juce::AudioProcessor,
+                           public eqcop::hostbruecke::Senke
 {
 public:
     EqCopilotProcessor();
     ~EqCopilotProcessor() override;
+
+    /** Audiothread, unmittelbar VOR `processBlock` (gepatchter VST3-Wrapper).
+        Nimmt nur die sechs Felder ab, die der Zeitstempel braucht - eine Kopie
+        des ganzen `HostBlockContext` waere 256 Byte Buslatenztabelle je Block,
+        die hier niemand liest. */
+    void nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbefund&) noexcept override;
 
     // ── AudioProcessor ──
     void prepareToPlay (double samplerate, int blockSize) override;
@@ -110,6 +125,19 @@ public:
     bool darfBrokerStarten() const;
     // true, solange der Broker per heartbeat_ack einen Kennungs-Konflikt meldet.
     bool konfliktGemeldet() const                          { return pipe.snapshot().konflikt; }
+
+    // ── SONDE-008: Telemetrie des Analyseweges (Entwurf §53.7 „Droptelemetrie") ──
+    // Ein Drop ist hier IMMER ein ganzer Block; `verloreneFrames` sagt, wieviel
+    // Zeit das war. Beide Zahlen misst `EqCopQueueStressTest`.
+    juce::uint64  analyseDropsUeberlauf() const   { return queue.dropsUeberlauf(); }
+    juce::uint64  analyseDropsOversize() const    { return queue.dropsOversize(); }
+    juce::uint64  analyseBloeckeAngenommen() const { return queue.bloeckeAngenommen(); }
+    juce::uint32  analyseGroessterBlock() const   { return queue.groessterBlock(); }
+    juce::uint64  analyseVersiegelt() const       { return quarantaene.versiegelteBloecke(); }
+    juce::uint64  analyseQuarantaeneVerworfen() const { return quarantaene.verworfeneBloecke(); }
+    juce::uint64  analyseKontinuitaetsbrueche() const { return quarantaene.kontinuitaetsbrueche(); }
+    juce::uint64  analyseVeraltet() const         { return veralteteBloecke.load(); }
+    static constexpr int analyseMaxBlockFrames()  { return Strom::maxBlockFrames; }
 
     // ── Live-Status für Editor/Heartbeat ──
     StatsSnapshot statsSnapshot() const;
@@ -181,7 +209,6 @@ private:
     std::atomic<int>    blockSizeAtomic  { 0 };
     std::atomic<int>    kanaeleAtomic    { 0 };
     std::atomic<float>  rmsL { 0.0f }, rmsR { 0.0f };
-    std::atomic<juce::uint64> framesDropped { 0 };
     std::atomic<bool>   nanSeen { false };
     std::atomic<bool>   hatTransport { false };
     std::atomic<bool>   transportSpielt { false };
@@ -198,11 +225,38 @@ private:
     juce::int64 fensterErwartet = 0;
     bool        fensterErwartetGueltig = false;
 
-    // Lock-free Analyseweg (M0: Worker leert und zählt; M1 rechnet hier LTAS).
-    static constexpr int kFifoKapazitaet = 1 << 16;   // Samples, interleaved L/R
-    juce::AbstractFifo  fifo { kFifoKapazitaet };
-    juce::HeapBlock<float> fifoPuffer;                 // [kFifoKapazitaet * 2]
+    // ── Analyseweg: zeitgestempelte Ganzblock-Queue (SONDE-008, §53.7) ──────
+    // Bis 23.08. stand hier ein `juce::AbstractFifo` über 65 536 interleavten
+    // Frames. Sein Vertrag war „nimm, was passt": bei Platzmangel schrieb der
+    // Audiothread einen TEILBLOCK und zählte den Rest — der Worker sah danach
+    // einen lückenlosen Samplestrom, dem in der Mitte Zeit fehlte, und konnte
+    // das nicht mehr sehen. Entwurf §48.1 verlangt „ganz oder gar nicht".
+    using Strom = nakama::echtzeit::GenStrom;          // ein Stereo-Tap (Insert)
+    using Queue = nakama::echtzeit::StampedAudioQueue<Strom>;
+    Queue queue;
+    // Die Quarantäne gehört ALLEIN dem Worker (§53.7 „Worker hält den jüngsten
+    // vollständigen Block") — sie taucht deshalb in keinem anderen Pfad auf.
+    nakama::echtzeit::Blockquarantaene<Strom>  quarantaene;
     std::atomic<juce::uint64> samplesAnalysiert { 0 };
+    // Blöcke, die aus einem früheren `prepareToPlay`-Anlauf im Ring lagen. Der
+    // alte Weg warf sie per `fifo.reset()` vom Nachrichtenthread aus weg —
+    // mitten in einen laufenden Leser hinein.
+    std::atomic<juce::uint64> veralteteBloecke { 0 };
+
+    // ── Hostbrücke → Audiothread (SONDE-003 endlich verdrahtet) ─────────────
+    // `nakamaBlockEmpfangen` läuft auf DEMSELBEN Thread wie `processBlock` und
+    // unmittelbar davor (gepatchter Wrapper). Deshalb reichen einfache Member:
+    // ein Atomic würde hier eine Threadgrenze behaupten, die es nicht gibt.
+    struct BrueckeStand
+    {
+        bool         frisch          { false };
+        bool         kontextAnwesend { false };
+        bool         zeitGueltig     { false };
+        juce::int64  zeit            { 0 };
+        bool         spieltGueltig   { false };
+        bool         spielt          { false };
+    };
+    BrueckeStand brueckeStand;
 
     std::thread worker;
     std::atomic<bool> workerLaeuft { false };

@@ -135,14 +135,40 @@ MarkierungsAuftrag soloAuftrag (double fs)
     return a;
 }
 
+/** Laufender Transport fuer die Audio-Haelfte.
+
+    ⚠️ S10-11/SONDE-008: Seit dem User-Entscheid vom 22.08. (Hub `U10`: „Nein,
+    nur mit Signal") verlangt die Hoer-Markierung ein GUELTIGES „spielt" - das
+    fail-open `(spielt ∨ ¬hatTransport)` ist gefallen. Ohne Playhead faerbte
+    dieser Test ab jetzt NIE, und die Haelfte „und faerben, sobald es so weit
+    ist" waere still zu einer Tautologie geworden: sie haette gruen gemeldet,
+    weil die Markierung generell stumm ist, nicht weil die Klassifikation
+    greift. `testForciereEchtzeit` hilft dagegen nicht - der Schalter umgeht
+    nur, was an der Wanduhr haengt. */
+struct TestPlayHead : juce::AudioPlayHead
+{
+    bool spielt = true;
+    juce::int64 pos = 0;
+    juce::Optional<PositionInfo> getPosition() const override
+    {
+        PositionInfo p;
+        p.setIsPlaying (spielt);
+        p.setTimeInSamples (pos);
+        return p;
+    }
+};
+
 /** Faehrt `bloecke` Sinusbloecke und meldet, ob EIN Sample abwich. */
 bool faerbtAudio (EqCopilotProcessor& p, double fs, int bs, int bloecke)
 {
     juce::AudioBuffer<float> puffer (2, bs), kopie (2, bs);
     juce::MidiBuffer midi;
+    TestPlayHead kopf;
+    p.setPlayHead (&kopf);
     double phase = 0.0;
     const double dPhase = 2.0 * juce::MathConstants<double>::pi * 200.0 / fs;
-    for (int block = 0; block < bloecke; ++block)
+    bool gefaerbt = false;
+    for (int block = 0; block < bloecke && ! gefaerbt; ++block)
     {
         for (int i = 0; i < bs; ++i)
         {
@@ -153,12 +179,14 @@ bool faerbtAudio (EqCopilotProcessor& p, double fs, int bs, int bloecke)
         }
         kopie.makeCopyOf (puffer);
         p.processBlock (puffer, midi);
+        kopf.pos += bs;
         for (int k = 0; k < 2; ++k)
             if (std::memcmp (puffer.getReadPointer (k), kopie.getReadPointer (k),
                              (size_t) bs * sizeof (float)) != 0)
-                return true;
+                gefaerbt = true;
     }
-    return false;
+    p.setPlayHead (nullptr);     // der Playhead lebt nur in diesem Aufruf
+    return gefaerbt;
 }
 
 } // namespace

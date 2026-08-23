@@ -323,7 +323,17 @@ $kanon = @(
     # SONDE-005a: der v3-Vertrag. Das C++-Bein misst gegen dasselbe
     # handgeschriebene MANIFEST wie contract_cross_language auf der Rust-Seite.
     [pscustomobject]@{ Kuerzel='B3c'; Name='EqCopSchemaTest';         Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='v3-Vertrag: C++ klassifiziert den Fixture-Korpus wie das Manifest (Urteil UND Verletzungsmenge), Bandgitter und Quantisierung bitgleich.' }
-    [pscustomobject]@{ Kuerzel='B4'; Name='EqCopQueueStressTest';    Art='plugin'; Argumente=@(); AbPhase='P2'; Behauptung='StampedAudioQueue haelt Blockgroessen-Stress ohne Allokation/Lock aus.' }
+    # S10-11/SONDE-008: B4 wird Pflicht. Zwei Ebenen in einem Bein - Queue und
+    # Quarantaene pur (dort sind Ueberlauf, Wrap und Oversize deterministisch
+    # herbeifuehrbar) UND derselbe Weg verdrahtet im echten Prozessor, dort an
+    # AUDIO und am Allokationszaehler gemessen. Der Zaehler ist thread_local:
+    # der Worker DARF allozieren, der Audiothread nicht - ein globaler Zaehler
+    # koennte beide nicht auseinanderhalten und waere damit wertlos.
+    [pscustomobject]@{ Kuerzel='B4'; Name='EqCopQueueStressTest';    Art='plugin'; Argumente=@(); AbPhase='P2'; Behauptung='StampedAudioQueue und Ein-Block-Quarantaene: Ganzblockaufnahme bitgleich ueber jeden Ringumlauf, Ueberlauf BEIDER Ringe verwirft den ganzen Block und nie eine Teilmenge, Oversize ueber der Slotkapazitaet faellt fuer die Analyse und laesst Audio unberuehrt, Flush (numSamples 0) ist kein Verlust, Mono dupliziert L, Mehrfach-Tap-Layout traegt; Quarantaene versiegelt erst mit bewiesener Fortsetzung, Seek und Transportkante verwerfen genau EINEN Block, stehende Projektzeit (FL-Teilpuffer) ist kein Bruch, Projektzeit-Ueberlauf und negative Zeit sind behandelt; verdrahtet: Passthrough bitgleich ueber 18 Blockgroessen von 1 bis 16384, 0 Samples Latenz, kein Tail, 0 Allokationen im Audiothread ueber 4000 Bloecke wechselnder Groesse mit Transportkanten, und die Engine bekommt den Strom bis auf den Block in Quarantaene.' }
+    # S10-11/SONDE-008: der EBU-Golden des Gate-Textes. Seine Referenz ist die
+    # AUSGEBAUTE Rechnung (unbegrenzter Vektor + Zweitdurchgang) - eine gegen
+    # sich selbst gerechnete Zahl waere eine Tautologie.
+    [pscustomobject]@{ Kuerzel='B9'; Name='EqCopLoudnessGoldenTest'; Art='plugin'; Argumente=@(); AbPhase='P2'; Behauptung='Fixed-memory Loudness (§48.1): der LoudnessAccumulator deckt sich mit der ausgebauten Vektorrechnung innerhalb ±0,1 LU (Entwurf §49) ueber konstante, rampende, zufaellige und einstuendige Korpora sowie ueber Stille unter dem absoluten Gate; Kurz-LUFS ist BITGLEICH; ein adversarialer Sweep legt 1000 Bloecke in den Grenzbin des relativen Gates und die selbstgemeldete Schranke unsicherheitLu() deckt jeden Lauf; eine Million Zellen laufen mit 0 Allokationen durch, waehrend die Gegenprobe (alte Rechnung) allozert; NaN/Inf-Zellen sind gezaehlt statt still als 0 verbucht, l_j == -70,0 exakt und ueber dem Gitter geklemmt bleiben wertgleich.' }
     [pscustomobject]@{ Kuerzel='B5'; Name='EqCopAnalysisGoldenTest'; Art='plugin'; Argumente=@(); AbPhase='P2'; Behauptung='FeatureEngine v2 haelt Zeit-, Validity-, Event- und Bandvertraege.' }
     [pscustomobject]@{ Kuerzel='B6'; Name='EqCopDspGoldenTest';      Art='plugin'; Argumente=@(); AbPhase='P6'; Behauptung='Aktiver DSP-Kern liefert die eingefrorene Referenzantwort.' }
     [pscustomobject]@{ Kuerzel='B7'; Name='EqCopTransactionTest';    Art='plugin'; Argumente=@(); AbPhase='P6'; Behauptung='Apply/Revert ist transaktional - kein halber Zustand ueberlebt.' }

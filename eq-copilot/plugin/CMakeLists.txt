@@ -438,6 +438,44 @@ target_link_libraries(EqCopLebenslaufTest PRIVATE juce::juce_audio_utils juce::j
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopLebenslaufTest)
 
+# ── S10-11/SONDE-008: Ganzblock-Queue, Quarantaene, Blockgroessen-Stress ───
+# Kanon B4. Zwei Ebenen in EINEM Ziel, wie bei B8:
+#   1. Queue und Quarantaene pur (core/StampedAudioQueue.h) - Ganzblockaufnahme,
+#      Drop, Wrap, Oversize, Kontinuitaet.
+#   2. Derselbe Weg VERDRAHTET im echten EqCopilotProcessor - inklusive
+#      Blockgroessen-Stress ueber maximumExpectedSamplesPerBlock hinaus (FL
+#      zerteilt Puffer bis auf 1 Sample, Capabilityreport S4) und dem Beweis,
+#      dass der Audiothread dabei nicht alloziert.
+# Ohne Ebene 2 waere es ein huebscher Ring, der im Produkt nichts verriegelt.
+juce_add_console_app(EqCopQueueStressTest PRODUCT_NAME "eqcop-queuestresstest")
+target_sources(EqCopQueueStressTest PRIVATE
+    tests/QueueStressTestMain.cpp
+    src/PluginProcessor.cpp
+    src/PluginEditor.cpp
+    src/PipeClient.cpp
+    src/AnalyseEngine.cpp
+    src/Diagnose.cpp
+)
+target_include_directories(EqCopQueueStressTest PRIVATE src)
+target_compile_definitions(EqCopQueueStressTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopQueueStressTest PRIVATE juce::juce_audio_utils juce::juce_dsp
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopQueueStressTest)
+
+# ── S10-11/SONDE-008: EBU-Golden der fixed-memory Loudness ─────────────────
+# Kanon B9. Misst den `LoudnessAccumulator` gegen die AUSGEBAUTE Rechnung:
+# den unbegrenzten Vektor mit Zweitdurchgang, den dieses Ticket ersetzt. Das
+# ist die einzige Referenz, die die Frage des Gate-Textes beantwortet ("RT-/
+# EBU-Goldens gruen") - eine gegen sich selbst gerechnete Zahl waere eine
+# Tautologie. Kein juce_dsp noetig: die Kopfdatei ist bibliotheksfrei.
+juce_add_console_app(EqCopLoudnessGoldenTest PRODUCT_NAME "eqcop-loudnessgoldentest")
+target_sources(EqCopLoudnessGoldenTest PRIVATE tests/LoudnessGoldenTestMain.cpp)
+target_compile_definitions(EqCopLoudnessGoldenTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopLoudnessGoldenTest PRIVATE juce::juce_core
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
 # ── S3b: Termin-B-Messgeraet (Wegwerfware wie SONDE-004a) ──────────────────
 # Erstes Ziel, das die Hostbruecke BENUTZT: sein Processor ist eine Senke.
 # Eigener Plugin-Code NkHp — bewusst ausserhalb der eingefrorenen Identitaet
@@ -547,8 +585,25 @@ nakama_kern_anbinden(EqCopSchemaTest)
 # NAKAMA_SONDE_PASSIV/AKTIV in sonde/SondeProcessor.h.
 foreach(ziel EqCopilot
              EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
-             EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest)
+             EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest
+             EqCopQueueStressTest)
     target_compile_definitions(${ziel} PRIVATE NAKAMA_BUNDLE_MAIN=1)
+endforeach()
+
+# ── S10-11/SONDE-008: Realtime-Core (plugin/core/) auf dem Suchpfad ─────────
+# `core/StampedAudioQueue.h` und `core/analysis/LoudnessAccumulator.h` sind
+# JUCE-freie Kopfdateien (dieselbe Form wie hostbridge/NakamaHostBridge.h):
+# dadurch liegt die riskante Realtime-Logik in UNSEREM Repo und ist headless
+# pruefbar. Jedes Ziel, das src/ uebersetzt, braucht beide Pfade - PluginProcessor
+# ist seit diesem Ticket eine `Senke` der Hostbruecke (der Zeitstempel kommt von
+# dort), und AnalyseEngine haelt den fixed-memory LoudnessAccumulator.
+foreach(ziel EqCopilot
+             EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
+             EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest
+             EqCopQueueStressTest EqCopLoudnessGoldenTest)
+    target_include_directories(${ziel} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/core"
+        "${CMAKE_CURRENT_SOURCE_DIR}/hostbridge")
 endforeach()
 
 # Die Quellen sind UTF-8 (deutsche UI-Texte). Ohne /utf-8 rät MSVC die
@@ -557,6 +612,7 @@ foreach(ziel NakamaKern
              EqCopilot EqCopPipeProbe EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopAuxSpike EqCopAuxSpikeTest EqCopHostContextTest
              EqCopSchemaTest EqCopStateMigrationTest EqCopLebenslaufTest
+             EqCopQueueStressTest EqCopLoudnessGoldenTest
              EqCopHostProbe EqCopHostProbeTest
              NakamaSuna NakamaProbeeq EqCopSunaNullTest EqCopProbeeqNullTest)
     target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")

@@ -39,6 +39,37 @@ struct TestPlayHead : juce::AudioPlayHead
     }
 };
 
+// ⚠️ S10-11/SONDE-008 — WARUM ab hier JEDER Abschnitt einen Playhead braucht.
+//
+// Bis 23.08. lautete der Transport-Term der Verriegelung `(spielt ∨
+// ¬hatTransport)`: ohne gemeldeten Transport faerbte die Markierung. Genau
+// dieses fail-open hat der User am 22.08. abgewaehlt (Hub `U10`: „Nein, nur mit
+// Signal"); der Code verlangt jetzt ein GUELTIGES „spielt". Diese Abschnitte
+// liefen vorher ganz ohne Playhead und lebten damit vom fail-open - sie
+// pruefen ab jetzt denselben Weg, den ein Host geht.
+//
+// Der Playhead ist NICHT durch `testForciereEchtzeit` zu ersetzen: der Schalter
+// umgeht, was an der Wanduhr haengt (Lebenszeichen, Editor). Transport haengt an
+// nichts dergleichen - waere er mit umgangen, pruefte der Test einen Pfad, den
+// das Produkt nicht hat (dieselbe Begruendung wie beim §53.5-Term).
+//
+// `pos` wandert je Block mit: eine stehende Projektzeit ist zwar kein
+// Kontinuitaetsbruch (FL zerteilt Puffer bis 1 Sample), aber ein laufender
+// Transport bewegt sie, und der Test soll den Normalfall fahren.
+struct LaufenderTransport
+{
+    TestPlayHead kopf;
+    explicit LaufenderTransport (EqCopilotProcessor& p) : prozessor (p)
+    {
+        kopf.spielt = true;
+        prozessor.setPlayHead (&kopf);
+    }
+    ~LaufenderTransport() { prozessor.setPlayHead (nullptr); }
+    void weiter (int samples) { kopf.pos += samples; }
+private:
+    EqCopilotProcessor& prozessor;
+};
+
 // S9/SONDE-007b Abschnitt 3: Seit der Lifecycle-Klassifikation (§53.5) faerbt
 // NUR ein positiv klassifiziertes Main - `unclassified` und `legacy` sind
 // audio-neutral. Der Test geht dafuer denselben Weg wie der User: Editor auf,
@@ -115,6 +146,7 @@ int main()
         p.setPlayConfigDetails (2, 2, fs, bs);
         p.prepareToPlay (fs, bs);
         p.testForciereEchtzeit (true);
+        LaufenderTransport transport (p);              // SONDE-008 / Hub U10
         pruefe (alsMainKlassifizieren (p), "T2: als Main klassifiziert (§53.5)");
 
         MarkierungsWunsch w;
@@ -167,6 +199,7 @@ int main()
             fuelleSinus();
             kopie.makeCopyOf (puffer);
             p.processBlock (puffer, midi);
+            transport.weiter (bs);
             beobachte (block);
         }
         pruefe (ersteDifferenz >= 0, "T2: Solo greift (Ausgang weicht ab)");
@@ -179,6 +212,7 @@ int main()
             fuelleSinus();
             kopie.makeCopyOf (puffer);
             p.processBlock (puffer, midi);
+            transport.weiter (bs);
             beobachte (100 + block);
             if (! blockBitgleich (puffer, kopie))
                 letzteDifferenz = block;
@@ -192,6 +226,7 @@ int main()
             fuelleSinus();
             kopie.makeCopyOf (puffer);
             p.processBlock (puffer, midi);
+            transport.weiter (bs);
             if (! blockBitgleich (puffer, kopie))
                 danachBitgleich = false;
         }
@@ -208,6 +243,7 @@ int main()
         p.setPlayConfigDetails (2, 2, fs, bs);
         p.prepareToPlay (fs, bs);
         p.testForciereEchtzeit (true);
+        LaufenderTransport transport (p);              // SONDE-008 / Hub U10
         pruefe (alsMainKlassifizieren (p), "T9: als Main klassifiziert (§53.5)");
 
         MarkierungsWunsch w;
@@ -243,6 +279,7 @@ int main()
             }
             kopie.makeCopyOf (puffer);
             p.processBlock (puffer, midi);
+            transport.weiter (bs);
             for (int i = 0; i < bs; ++i, ++sampleIndex)
             {
                 const double delta = std::abs ((double) puffer.getSample (0, i)
@@ -290,6 +327,7 @@ int main()
         q.setPlayConfigDetails (2, 2, fs, bs);
         q.prepareToPlay (fs, bs);
         q.testForciereEchtzeit (true);
+        LaufenderTransport transportQ (q);         // SONDE-008 / Hub U10
         juce::AudioBuffer<float> puffer (2, bs), kopie (2, bs);
         juce::MidiBuffer midi;
         bool bitgleich = true;
@@ -314,6 +352,7 @@ int main()
         p.setPlayConfigDetails (1, 1, fs, bs);
         p.prepareToPlay (fs, bs);
         p.testForciereEchtzeit (true);
+        LaufenderTransport transport (p);              // SONDE-008 / Hub U10
         pruefe (alsMainKlassifizieren (p), "T7: als Main klassifiziert (§53.5)");
         MarkierungsWunsch w;
         w.modus = MarkierungsModus::solo;
@@ -334,6 +373,7 @@ int main()
             }
             kopie.makeCopyOf (puffer);
             p.processBlock (puffer, midi);
+            transport.weiter (bs);
             if (! blockBitgleich (puffer, kopie)) differenz = true;
             for (int i = 0; i < bs; ++i)
                 if (! std::isfinite (puffer.getSample (0, i))) endlich = false;
@@ -470,6 +510,7 @@ int main()
             beideMain = alsMainKlassifizieren (*p) && beideMain;
         }
         pruefe (beideMain, "T4: beide Instanzen als Main klassifiziert (§53.5)");
+        LaufenderTransport transportM (markiert), transportS (sauber);   // SONDE-008 / Hub U10
         MarkierungsWunsch w;
         w.modus = MarkierungsModus::solo;
         w.fVon = 120.0; w.fBis = 300.0; w.fSchwerpunkt = 200.0; w.fs = fs;
@@ -491,6 +532,8 @@ int main()
             }
             markiert.processBlock (a, midi);
             sauber.processBlock (b, midi);
+            transportM.weiter (bs);
+            transportS.weiter (bs);
             if (markiert.markierungHoerbar())
                 hoerbarWaehrendMessung = true;
             // FIFO-Drain-Takt des Workers respektieren — sonst zaehlen Drops.

@@ -33,6 +33,7 @@
 
 #include <juce_dsp/juce_dsp.h>
 #include "ZonenRegeln.h"
+#include "analysis/LoudnessAccumulator.h"
 #include <array>
 #include <limits>
 #include <mutex>
@@ -314,10 +315,17 @@ private:
     };
     Biquad shelfL, shelfR, hpL, hpR;
     // 100-ms-Zellen der K-gewichteten Energie (Σ über Kanäle) + Kanalenergie-
-    // Zellen für Aktivität §5.10.2. 10 Werte/s — unproblematisch über Stunden.
+    // Zellen für Aktivität §5.10.2.
+    // SONDE-008: die Zellen wandern NICHT mehr in einen wachsenden Vektor. Bis
+    // 23.08. stand hier `std::vector<double> kZellen` mit dem Kommentar „10
+    // Werte/s — unproblematisch über Stunden"; Entwurf §48.1 verlangt das
+    // Gegenteil („fixed-memory `LoudnessAccumulator` … keine unbeschränkt
+    // wachsenden `kZellen`"). Teuer war ohnehin nicht der Speicher, sondern
+    // `finalisiereLoudness`: es legte 4×/s einen Vektor über die ganze
+    // Sessionlänge an — quadratischer Aufwand über die Spieldauer.
     int zellenSamples = 0, zellenStand = 0;
     double zelleKEnergie = 0.0, zelleAktivEnergie = 0.0;
-    std::vector<double> kZellen;        // Σ_ch Σ x_K² pro 100 ms
+    nakama::analyse::LoudnessAccumulator loudness;
     juce::uint64 aktiveZellen = 0;      // Zellen über dem −60-dBFS-Gate
 
     // ── True Peak: 8×-Polyphase (Kaiser β5, 161 Taps) ──

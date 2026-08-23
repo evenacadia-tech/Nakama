@@ -153,9 +153,29 @@ Urteilt sie `NEEDS_WORK` mit offenen Befunden, spawnst du eine
 **Nacharbeit-Session**. Befunde schließt, wer nacharbeitet; urteilen darf nur,
 wer nicht gebaut hat.
 
-### 3.6 Protokollieren, dann das nächste Ticket
+### 3.6 Protokollieren, melden, dann das nächste Ticket
 
-Eintrag nach `docs/dirigent/protokoll.md` (§5), dann zurück zu 3.1.
+Eintrag nach `docs/dirigent/protokoll.md` (§5).
+
+Dann **eine kurze WhatsApp an den User** — Entscheid 24.08.2026: *„du schickst
+nur nachrichten an mich selbst … das ist der offizielle weg mich zu erreichen
+ab jetzt. schreib immer wenn eine session fertig ist ein ganz kurzen bericht"*
+(Register in `CLAUDE.md`). Werkzeug: MCP `whatsapp`, `send_message`. Die
+Zieladresse steht **nicht im Repo**, sondern im Memory
+`feedback_whatsapp-berichtskanal`.
+
+- **Auslöser:** jede fertige Session — nicht jeder Commit, nicht jeder
+  Zwischenstand.
+- **Form:** drei Zeilen. Ticket · Ergebnis (am Repo gemessen, nie der
+  Selbstbericht der Session) · was als Nächstes läuft. Keine Rohausgabe,
+  kein Manifest-Auszug; die Details stehen im Repo.
+- **Nur an ihn selbst.** Nie an Dritte, nie in eine Gruppe. `send_message`
+  schreibt nach draußen — diese Freigabe deckt genau eine Adresse.
+- Scheitert der Versand, ist das **kein Grund anzuhalten**: einmal im
+  Protokolleintrag vermerken und weiterfahren. Der Kanal ist ein Rückkanal,
+  kein Riegel.
+
+Dann zurück zu 3.1.
 
 ## 4. Wo du HÄLTST
 

@@ -18,6 +18,14 @@ Regeln und Zyklus: `.claude/skills/dirigent/SKILL.md`. Jüngster Eintrag oben.
 
 ---
 
+## 2026-08-23 spät · SONDE-008 · pruefung (T2)
+
+- **Session:** „SONDE-008 T2 — Frischkontext-Prüfung" (`4bb58934-da4e-4249-9672-94f3eaaa2337`), Opus 5 mit 1M.
+- **Ergebnis:** **NEEDS_WORK — der Kern hält, vier Befunde** (Manifest §8, Commits `3c4d215` + `014248f`; Hub von der Session nachgezogen). Die Queue überstand einen härteren Stress als ihr eigenes Bein: 4 Mio. Samples mit parallelem Schreiber/Leser und absichtlich zu kleinem Ring (~8000 erzwungene Drops) — 0 zerrissene Blöcke, 0 Umordnungen, jede Lücke markiert; die Loop-Rückhaltung hält. Befunde: **T2-1** `unsicherheitLu()` meldet 0 LU, wo 2,918 LU Fehler stehen (Über-Gitter-Eimer = zweite, unbegrenzte, ungemeldete Quantisierung; das Golden prüft dort nur EINEN Pegel und kann nicht scheitern) · **T2-2** der U10-Riegel ist wirksam (Positivfall gemessen), aber ungedeckt — fail-open zurückgebaut ⇒ 4/4 Beine weiter grün · **T2-3** Anlaufwechsel: 0/3 Altblöcke an `startFolge` erkennbar, anders als der Kommentar behauptet · **T2-4** Seek bei gestopptem Transport erzeugt keine Epochengrenze, Entwurf §32.3 führt Seek als Grenze.
+- **Gestützt auf:** Repo-Messung — Manifest-Kopf (T2 ☑, NEEDS_WORK), §8-Befundtabelle mit konkreten Messwerten je Befund, beide Commits gepusht; die Methode des Prüfers (Mutationen byteweise zurückgestellt, U10-Positivfall ausdrücklich gemessen) ist im Manifest protokolliert.
+- **Nicht geprüft:** Die vier Befunde habe ich nicht selbst an den Quellen nachgemessen — die Nacharbeit misst beim Schließen (T3-Regel). Der Prüfer benennt als größte ungedeckte Fläche den **echten FL-Transportpfad** (nichts lief in FL Studio; der Weg, über den das Plugin live seine Zeitinformation bekommt, wurde gelesen, nie gefahren) — das live zu messen braucht absehbar eine Installation des neuen Builds = User-Klick (NAK-41). Diese Entscheidung stelle ich mit der S12-13-Runde, nicht jetzt.
+- **Weiter mit:** Nacharbeit-Session für T2-1…T2-4 — alle vier (Fund = Fix); T2-1/T2-2 blockieren ein PASS laut Prüfer.
+
 ## 2026-08-23 abends · SONDE-008 · bau (S10–11)
 
 - **Session:** „S10–11 SONDE-008 — StampedAudioQueue" (`0fdf9dc4-e27e-4dcc-90af-1461081b1106`), Opus 5 mit 1M.

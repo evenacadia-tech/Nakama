@@ -7022,7 +7022,9 @@ Zustand über eine Grenze?") habe ich Feld für Feld über die Klasse gelegt:
    Fenster — `liveAkku` bleibt;
 3. derselbe Block treibt `liveSamples` auf 5120 ≥ 4800 ⇒ `baueFrame()`.
 
-Ergebnis, roh:
+Ergebnis, roh (die `P`-Zeilen aus dem ersten Probeprogramm, die `Q`-Zeile aus
+dem zweiten — dasselbe Szenario, nur mit der Frage „wie laut ist der
+überlebende Inhalt?" nachgeschärft):
 
 ```text
 P1  Grenzblock (Stille): Frame gebaut? JA | Epochenwechsel 1 | Epoche 1
@@ -7056,9 +7058,12 @@ der Quelle:
    (`rahmenPeak`, `rahmenSummeQuadrat`, `rahmenSamples`, `rahmenMid2`,
    `rahmenSide2`, `rahmenL/R/L2/R2/LR`) und zwei nicht
    (`rahmenAktivZellen`, `rahmenZellen`). Das ist keine Politik, das ist eine
-   Auslassung: `rahmenLeeren()` (`:1225`) leert **alle zwölf plus die drei
-   Akkus** — die vollständige Liste existiert also schon, nur nicht an der
-   Grenze.
+   Auslassung: `rahmenLeeren()` (`:1225`) leert **alle zwölf** und dazu
+   `liveAkku`, `liveBreiteAkku` und `liveSamples` — die vollständige Liste
+   existiert also schon, nur wird sie an der Grenze nicht gefahren.
+   (`evidenzAkku`/`evidenzSamples` fallen auch dort nicht, sondern nur bei
+   `evidenzFrisch` in `baueFrame()` — deshalb reicht die Evidenzseite über
+   noch mehr Grenzen.)
 3. Der §32.3-Satz, den das Blatt selbst zitiert, spricht vom
    **FFT-Fenster**: der veröffentlichte Bandwert **ist** das
    FFT-Ergebnis, über das Frameintervall linear integriert (§33.1). Sein
@@ -7286,7 +7291,7 @@ benennt (`grundName()` gibt dafür `"<anzahl, kein Grund>"` zurück, `:254`). Vo
 Puffer; die Kopplung hat den Schlupf entfernt, ohne die Auskunft mitzuziehen.
 
 **Heute unerreicht:** `git grep` findet kein Aufrufziel mit `anzahl` — alle
-elf Aufrufe übergeben echte Gründe. Es ist eine Landmine, kein Ausfall,
+**acht** Aufrufe (alle in B5) übergeben echte Gründe. Es ist eine Landmine, kein Ausfall,
 **derselben Sorte wie der Fund, den sie ersetzt**: eine Zahl neben einer
 Aufzählung, an der niemand rot wird.
 

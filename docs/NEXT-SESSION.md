@@ -75,8 +75,32 @@
 > Suche, sondern einen bestehenden offenen Punkt nicht zu lesen, bevor ein
 > neuer angelegt wird. NAK-53 ist zurueckgenommen, NAK-26 hat den Nachtrag.
 >
-> **Naechster Schritt: T2 fuer S9** — Frischkontext-Pruefer, eigene Session
-> (Sessionregel `docs/bauaufteilung-sonden.md` §0). Danach S10.
+> **T2 fuer S9 ist zur HAELFTE gefahren** (23.08. nachts, Commit `d351d4a`,
+> Manifest §5): Urteil **NEEDS_WORK** auf Teil A. Gemessen und gehalten haben
+> der §53.5-Automat, der Scannerlauf-Pfad (unabhaengig nachgezogen: der Automat
+> hat genau vier Aufrufer, die Atomic genau einen Schreiber und einen Leser),
+> Behauptung 13 an echtem Audio, der Installer-Rueckweg samt NAK-41-Riegel und
+> die NAK-32-Buchfuehrung. Eigener Kanon-Lauf mit `-Bauen`: **23/23 gruen,
+> beglaubigt**.
+> **Ein Befund, im selben Zug geschlossen (T2-1):** `SondeProcessor` las
+> `klassifikation()`/`darfBrokerStarten()` ohne `zustandSchloss`, waehrend
+> `setStateInformation` den Automaten unter genau diesem Schloss schreibt — und
+> waehrend das Main-Bundle dieselben zwei Methoden mutex-schuetzt
+> (`PluginProcessor.cpp:531-540`). Heute folgenlos, aber Behauptung 15 bewirbt
+> `darfBrokerStarten()` als die Stelle, an die **SONDE-010** den Spawn haengt.
+> ⚠️ Ein Fehlalarm ist als solcher protokolliert (§5.2): der Beglaubigungsriegel
+> vergleicht die neueste Quelle im GANZEN Baum gegen jede Binaerdatei und
+> schlaegt an, sobald ein Ziel zu Recht nicht neu gelinkt wird. Kein Beweis —
+> nachmessen, welche Quelle wirklich zu welchem Ziel gehoert.
+>
+> **Naechster Schritt: T2 Teil B fuer S9** — eigene Session, frischer Kontext.
+> Ungeprueft sind fuenf Dateien (~1 400 der 2 812 geaenderten Zeilen):
+> `tests/IdentityTestMain.cpp` (Behauptungen 2/3/7, umgedrehter Quellfrost) ·
+> `cmake/NakamaIdentitaet.cmake` (1/4) ·
+> `tools/eq-copilot/pruefe_installer_manifest.py` (17/18) ·
+> `schemas/installer/nakama-installer-v1.md` (neuer Vertrag — Hausinvariante
+> nicht nachgemessen) · `plugin/CMakeLists.txt` (6/11/16).
+> **Kein PASS auf S9 ohne diese Runde; T1 steht weiterhin ganz aus.** Danach S10.
 >
 > **Aber vorher zwei Dinge, die Vorrang haben:**
 >
@@ -222,9 +246,19 @@ Neue Session in diesem Workspace aufmachen, diese zwei Zeilen einfügen, fertig.
 **Stand 23.08. abends ist das die T2-Prüfung von S9**, nicht der nächste Bau:
 
 ```
-Pruefe S9 (SONDE-007b) als T2 mit frischem Kontext gegen git diff 657fe57..HEAD.
-Urteil PASS/NEEDS_WORK in docs/beweise/SONDE-007b.md, Abschnitt 5.
+Pruefe S9 (SONDE-007b) als T2 Teil B mit frischem Kontext gegen git diff 4b500a4..HEAD.
+Teil A ist gefahren (Manifest §5). Ungeprueft: tests/IdentityTestMain.cpp,
+cmake/NakamaIdentitaet.cmake, tools/eq-copilot/pruefe_installer_manifest.py,
+schemas/installer/nakama-installer-v1.md, plugin/CMakeLists.txt.
+Urteil nach docs/beweise/SONDE-007b.md, Abschnitt 5.
 ```
+
+⚠️ **Der Basispunkt ist `4b500a4`, nicht `657fe57`.** Bis zum 23.08. stand hier
+der falsche — `657fe57` ist S9s *Hub*-Commit, also die Mitte des Tickets; ein
+Prüfer, der ihn kopiert, misst nur Abschnitt 3 und sieht weder die
+Identitätsumstellung (NAK-52) noch die beiden neuen Bundles. S9 sind fünf
+Commits: `8e32baf` · `fdece75` · `657fe57` · `42bfe6e` · `ff0e0b8`; der Stand
+davor ist `4b500a4`.
 
 Die drei Stellen, an denen ein Prüfer bei **S9 Abschnitt 3** zuerst graben
 sollte (aus dem Selbstaudit, ehrlich benannt statt versteckt):

@@ -18,6 +18,14 @@ Regeln und Zyklus: `.claude/skills/dirigent/SKILL.md`. Jüngster Eintrag oben.
 
 ---
 
+## 2026-08-23 spät · HALT · User-Stopp
+
+- **Anlass:** User-Wort 23.08.: „bin wieder da, kannst das Dirigieren stoppen jetzt" — §4, expliziter Stopp. Es wird nichts mehr gespawnt.
+- **Letzter Rundenstand, am Repo gemessen:** Das T2-Urteil zu SONDE-009 ist gelandet (`d2144a1`): **NEEDS_WORK — die Bandakkumulatoren überbrücken jede Epochengrenze.** Der Kernbefund trifft genau den Gate-Satz; Details im Manifest-T2-Abschnitt. Positiv aus derselben Prüfung: die BS.1770-Koeffizienten sind unabhängig aus den publizierten ITU-Werten nachgerechnet (0,04312 dB, deckungsgleich mit dem Manifest). Die Prüfsession (`f870959a`) schrieb beim Stopp noch ihre Abschluss-Doku (A19-Falsifikationsprobe, Manifest, Hub, NEXT-SESSION) — sie darf fertig schreiben; das ist Abschluss ihrer Runde, keine neue.
+- **Bewusst NICHT angesetzt:** die Nacharbeit für die SONDE-009-T2-Befunde (Stopp kam vor §3.5). Die Befunde stehen protokolliert im Manifest und warten auf die nächste Session.
+- **Offen bei Übergabe:** (1) Nacharbeit SONDE-009-T2-Befunde · (2) drei frische Prüfer-PASS für S9, S10–11, S12–13 — Vorschlag: am Gate G2 bündeln · (3) S14–15/`SONDE-010` (dort NAK-59, NAK-40, Broker wird Spawn-Ziel) · (4) danach **Gate G2** = T3-HALT mit fremden Prüfern · (5) User-Karte **U13** (FL-Kurztermin C / NAK-56-Ablesung, Installation = User-Klick; Seite zeigt die Karte erst nach Deploy, `/api/hub` trägt sie) · (6) NAK-57 (Telemetrie-Anzeige, wartet auf Figma-Übersetzung) · (7) die dokumentiert liegengelassenen verwaisten Stände (`design/docs`-Paar + untracked Spezifikation, zwei `eq-copilot/design`-Löschungen, „Untitled Workspace").
+- **Bilanz des Laufs (23.08., ein Tag):** S9-T2 Teil B gefahren + Nacharbeit (4 Befunde zu, Kanon-Bein A18 neu) · S10–11 gebaut + T2 + Nacharbeit (4 Befunde zu, U10-Wächter, Oberband-Fix) · S12–13 gebaut + T2 gefahren (Urteil da, Nacharbeit offen) · Hygiene-Runde (CLAUDE.md-Register vollständig, NAK-54/55 zu) · Kanon 23 → **28** Beine · Plan 14 → **16/34** Zeilen · geschlossene Punkte: NAK-24, NAK-29, NAK-32*, NAK-35, NAK-54, NAK-55, NAK-58, NAK-56-Werkbankhälfte (*NAK-32 schon vor dem Lauf) · alles gepusht, **nichts installiert**, kein PASS behauptet, der nicht von einem frischen Prüfer kam.
+
 ## 2026-08-23 spät · SONDE-009 · bau (S12–13)
 
 - **Session:** „S12–13 SONDE-009 — FeatureEngine v2" (`7e47fcfb-d9c2-45bc-8cfe-f74e5ceb3c1c`), Opus 5 mit 1M.

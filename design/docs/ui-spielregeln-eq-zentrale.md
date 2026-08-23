@@ -106,7 +106,9 @@
     Pro-Q-Konvention) **(Angenommen, unbestätigt)**.
 21. **Mengen:** Regelfall einstellige Quellenzahl, sichtbar bis 16,
     Vertrag bis 32 (Startwerte 21.08.). Der Durchschalter muss 1–16
-    ohne Menü tragen; die **Reihenfolge** der Sonden ist offen (Interview).
+    ohne Menü tragen; die **Reihenfolge** ist die FL-Mixer-Reihenfolge,
+    und der Master ist keine Rad-Position, sondern ein eigenes UI-Element
+    (Regel 33).
 22. **Zwei Spuren in EINEM Graph** (Entscheid 23.08.): Standard EINE
     Spur; optional eine frei wählbare zweite; Kurven farblich
     unterscheidbar; bei zwei aktiven wählt der User das
@@ -154,7 +156,31 @@
     Sonden-Telemetrie + Sprung zur Sonde mit vorgeladener Frequenz;
     echtes Bus-Audio-Streaming nach Gen ist geparkt.
 
-## 9. Offen (Kennungen)
+## 9. Nachträge — Interview `struktur` Runde 2 (23.08., Abnahme
+`../abnahmen/2026-08-23-interview-struktur.md`)
+
+32. **Mix (Dry/Wet je Sonde) ist beschlossen, steht aber NOCH NICHT im
+    Parameterbestand** — `nakama-parameter-v1.json` kennt global nur
+    Bypass/Trims/Width/Mono-Bass. Umsetzung als versionierte Erweiterung
+    mit neuer ID (NAK-64 Punkt 4). Sichtbar auf der Rückfallfläche UND
+    („ganz wichtig") in Gen. Bis der Vertrag ihn trägt, darf kein Blatt
+    ihn als vorhanden zeigen, wohl aber als geplanten Platz.
+33. **Durchschalt-Reihenfolge = FL-Mixer-Reihenfolge; Master als eigenes
+    UI-Element** neben dem Rad-Kreis (Entscheid).
+34. **Rückfallfläche der Sonde** (Entscheid + Annahme): Performance
+    zuerst — die Fläche bleibt minimal und kostet geschlossen nichts.
+    Inhalt: CONNECTED/DISCONNECTED · EQ-Mode-Punkt grün/rot · aktuell
+    veränderte EQ-Werte (Anzeige) · Bypass (bedienbar) · Mix (bedienbar).
+    Prüfstein für jeden weiteren Inhalt: „was könnte den User veranlassen,
+    Probeeq zu öffnen statt gleich Gen?" Finaler Zuschnitt erst, wenn der
+    User Gens Je-Sonde-Anzeige gesehen hat (offen).
+35. **Master-EQ-Umfang: das Rad nicht neu erfinden** — Vorbild Pro-Q /
+    Smooth Operator Pro, Machbarkeit bewertet die Technik. Die sechs
+    Filtertypen des Vertrags (bell, low/high_shelf, notch, low/high_cut)
+    decken „alle gängigen filter"; SOPs Resonanzpeak-Fokus ist spätere
+    Ausbaustufe.
+
+## 10. Offen (Kennungen)
 
 | Was | Wo |
 |---|---|
@@ -162,5 +188,6 @@
 | Sidechain-Quelle je Band sichtbar/Untermenü/unsichtbar | **U5** / NAK-33 |
 | Größe Seite 2 · Figma-Flächen · Rückfallfläche der Sonde | **NAK-65** |
 | Undo-Form (Verlauf oder Zähler) | U2.8-Folgefrage |
-| Sonden-Reihenfolge beim Durchschalten · Master-EQ-Umfang · Überladen-Grenze | Interview `struktur`, Runde 2 |
+| Überladen-Grenze / Elementbestand Seite 2: Button-für-Button-Durchgang am Probeeq-Working-Design | Interview `struktur`, Runde 3 |
+| Mix/Dry-Wet je Sonde: versionierte Parameter-Erweiterung (beschlossen, ungebaut) | NAK-64 Punkt 4 · Regel 32 |
 | Umschnitt Bauaufteilung/P6–P7 auf den neuen Schnitt | **NAK-64** |

@@ -387,6 +387,12 @@ int main()
         pruefe (inhalt, "jeder Tap liegt getrennt und richtig; der inaktive liefert false");
         pruefe (q.veroeffentliche (t, 2, 2, 32, stempelBei (0)) == false,
                 "eine falsche Tapzahl wird abgewiesen statt halb kopiert");
+        // Kein einziger aktiver Tap: Verlust, nicht leerer Deskriptor.
+        StampedAudioQueue<DreiTapStrom>::TapQuelle leer[3] {};
+        const auto vorher = q.dropsGesamt();
+        pruefe (! q.veroeffentliche (leer, 3, 2, 32, stempelBei (0))
+                    && q.dropsGesamt() == vorher + 1,
+                "ein Block ohne aktiven Tap ist ein Verlust, kein leerer Deskriptor");
     }
 
     //==========================================================================

@@ -97,8 +97,10 @@ Lebenslauftest tragen deshalb einen laufenden Transport.
 
 ### 1.3 AnalyseEngine — die Uhren
 
-Worker (`PluginProcessor.cpp:279-331`): alle 50 ms FIFO leeren →
-`verarbeite()`; jeder 5. Tick (~250 ms) `auswerten()` schwer, nur wenn neue
+Worker (`PluginProcessor.cpp:367-441`): alle 50 ms die Analysequeue **Block für
+Block** durch die Quarantäne ziehen (§1.1) und jeden versiegelten Block an
+`verarbeite()` geben — bis SONDE-008 war es EIN Bulk-Zug aus dem FIFO ohne
+Blockgrenzen. Jeder 5. Tick (~250 ms) `auswerten()` schwer, nur wenn neue
 Samples kamen; sonst `auswertenLeicht()` (~20 Hz). Beide publizieren über
 `fuelleBasis()` (EINE Quelle) mit monotoner `revision`; ohne neue Samples
 publiziert niemand. `zonenTick()` je 1 s AKTIVER Zeit in `verarbeite()`.
@@ -115,14 +117,14 @@ publiziert niemand. `zonenTick()` je 1 s AKTIVER Zeit in `verarbeite()`.
 
 `Diagnose.cpp` — pur, zustandslos, auf der Snapshot-KOPIE; dieselbe Funktion
 speist Hinweis-Knopf (1×/s), Snapshot-Datei und GoldenTest. Fünf Befundklassen
-(`Diagnose.h:39-46`; Snapshot-Namen `PluginProcessor.cpp:674-678`):
+(`Diagnose.h:39-46`; Snapshot-Namen `PluginProcessor.cpp:855-859`):
 `resonanz` (die zwei stärksten Kandidaten) · `mitten_loch` (500–2000 Hz
 ≥ 3 dB UNTER der Schulterlinie) · `mulm` (120–300 Hz ≥ 4 dB darüber) ·
 `haerte` (2,5–5 kHz ≥ 4 dB darüber) · `hoehen_hype` (8–14 kHz > 1 dB über
 2–6 kHz). Geometrie EINMAL in `ZonenRegeln.h:30-35`, geteilt mit der Engine;
 eigenkurven-relativ, kein Zielkorridor.
 
-`schreibeSnapshotDatei()` (`PluginProcessor.cpp:516-724`): `snapshot_version
+`schreibeSnapshotDatei()` (`PluginProcessor.cpp:697-857`): `snapshot_version
 3`, alle Messfelder, Befunde, `raw_audio: null`; NaN/±inf ⇒ `null`; Ablage
 `%LOCALAPPDATA%\evenacadia\EQ-Copilot\snapshots\`. Kein Befundarchiv im
 Plugin.

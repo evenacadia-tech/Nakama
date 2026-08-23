@@ -296,16 +296,22 @@ public:
         if (schreib - deskLese.load (std::memory_order_acquire) >= (std::uint64_t) Layout::deskriptorPlaetze)
             return verlust (ueberlaufDrops);
 
-        // --- ab hier ist der Block angenommen -------------------------------
-        const std::uint32_t n = (std::uint32_t) frames;
+        // Kein einziger aktiver Tap: es gibt nichts zu analysieren. Die
+        // Audiozeit ist trotzdem vergangen, also ist das ein VERLUST und kein
+        // stillschweigend leerer Block - sonst reichte die Queue einen
+        // Deskriptor weiter, zu dem `lies()` nichts liefern kann.
         std::uint32_t maske = 0;
         for (int t = 0; t < Layout::taps; ++t)
-        {
-            if (quellen[t].links == nullptr)
-                continue;                       // inaktiver Tap: keine Kopie, kein Speicher
-            maske |= (std::uint32_t) 1u << t;
-            kopiereTap (t, quellen[t], kanaele, n);
-        }
+            if (quellen[t].links != nullptr)
+                maske |= (std::uint32_t) 1u << t;
+        if (maske == 0)
+            return verlust (ueberlaufDrops);
+
+        // --- ab hier ist der Block angenommen -------------------------------
+        const std::uint32_t n = (std::uint32_t) frames;
+        for (int t = 0; t < Layout::taps; ++t)
+            if ((maske & ((std::uint32_t) 1u << t)) != 0)
+                kopiereTap (t, quellen[t], kanaele, n);   // inaktiv ⇒ keine Kopie
 
         StampedBlock& b = deskriptoren[(std::size_t) (schreib & Layout::deskMaske)];
         b.projectSampleStart = stempel.zeitGueltig ? stempel.projectSampleStart : 0;

@@ -1,5 +1,48 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ⚠ DER EINE NÄCHSTE SCHRITT — Stand 23.08.2026 nachmittags
+>
+> **Ein frischer T2-Prüfer auf den NACHGEBESSERTEN S9-Stand.** Nicht diese
+> Session, nicht die beiden bisherigen Prüfer: die vier Befunde aus §5.7 sind
+> geschlossen, und **wer nacharbeitet, urteilt nicht** (S8-Präzedenz). Das
+> Urteil in `docs/beweise/SONDE-007b.md` §5 steht weiterhin auf
+> **NEEDS_WORK**; ein PASS auf S9 fehlt.
+>
+> **Was die Nacharbeit getan hat** (Commits `d93d536`, `9573546`, `0d5ec3d`;
+> Manifest **§6**): alle vier Befunde geschlossen — jeder erst an der
+> Quelldatei nachgemessen (alle vier bestätigten sich, kein Fehlalarm), jeder
+> neue Riegel **beim Fallen vorgeführt** mit roher Ausgabe. **T1 ist gefahren**
+> (§6.6, feste Sechserliste über `git diff 4b500a4..HEAD`), Kopf-Kästchen auf
+> ☑. Beweislauf **GRÜN 24/24, Exit 0, beglaubigt**.
+>
+> **Was ein Prüfer zuerst ansehen sollte** — genau das, was noch niemand mit
+> fremdem Kontext gelesen hat:
+> - `eq-copilot/schemas/installer/nakama-installer-v1.md` **§2.1** (Ordner-Hash v1),
+>   **§2.2**, **§5.0/§5.1** und **§5.2** (warum das v1 bleibt) — neuer Vertragstext,
+> - `eq-copilot/install/NakamaOrdnerHash.ps1` und
+>   `tools/eq-copilot/pruefe_installer_gegenpfad.py` — **beide ganz neu**,
+> - `eq-copilot/install/Install-Nakama.ps1` — Ordner statt Datei, plus drei
+>   Verhaltensänderungen im Rückweg,
+> - `eq-copilot/cmake/NakamaIdentitaet.cmake` und
+>   `eq-copilot/plugin/tests/IdentityTestMain.cpp` — die zwei Riegel aus T2-2/T2-3.
+>
+> 🔑 **Die teuerste Lehre dieser Runde:** der Gegenpfad `installieren ↔ Rückweg`
+> stand vollständig im selben Änderungssatz — und war trotzdem kaputt. Drei
+> Leser (Autor, T2 Teil A, T2 Teil B) hatten ihn gelesen; **beim ersten
+> wirklichen Lauf fielen zwei echte Fehler heraus.** Geschrieben ≠ gefahren.
+> Deshalb läuft er ab jetzt als **Kanon-Bein A18** bei jedem Beweislauf mit
+> (Sandbox unter `%TEMP%`, es wird nichts installiert). **Kanon 23 → 24.**
+>
+> ⚠️ **`CLAUDE.md` trägt zwei veraltete Zahlen** — „(12)" Kern-Verbraucher
+> (gemessen 13) und „Kanon (23 Beine)" (jetzt 24). Beide **nicht** berichtigt:
+> die Datei hat uncommittete Änderungen einer anderen Session. Nachliste in
+> **NAK-55**, dieselbe Sperre wie NAK-54.
+>
+> **Danach:** S10–11 (`SONDE-008`) — Messkern, zeitgestempelte
+> Audio-Warteschlange, Quarantäne für kaputte Blöcke.
+>
+> ---
+>
 > ## ⚠ Zuerst lesen — Stand 23.08.2026 mittags
 >
 > **P0 ist geschlossen.** Gate G0 ist gefahren, Urteil **PASS**

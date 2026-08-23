@@ -1,6 +1,6 @@
 # Plugin-Wissen — wie Plugin, Broker und Verträge heute funktionieren
 
-> **Stand: 23.08.2026** (S10–11/SONDE-008: Analyseweg und Loudness) · Version **0.3.0** (`project(… VERSION 0.3.0)` ==
+> **Stand: 23.08.2026** (S12–13/SONDE-009: FeatureEngine v2, Zeit- und Bandverträge) · Version **0.3.0** (`project(… VERSION 0.3.0)` ==
 > `kPluginVersion`, Configure-Riegel `eq-copilot/CMakeLists.txt:3-22`) ·
 > metrics/diagnose `m4.1-2026-08-15` · Snapshot-Datei v3 · IPC-Protokoll v2 ·
 > **Host-State Schema 2** (`NakamaState`, seit SONDE-006 am 22.08.; liest Schema 1).
@@ -123,6 +123,46 @@ publiziert niemand. `zonenTick()` je 1 s AKTIVER Zeit in `verarbeite()`.
 - Schwellen versioniert in `AnalyseEngine.cpp:18-27`. NaN-Riegel:
   nicht-endliche Samples werden VOR jeder Rechnung ersetzt und als
   `nanErsetzt` gezählt. `snapshot()` ist der einzige threadsichere Einstieg.
+- **Seit SONDE-009 (23.08.) teilt sie ihre K-Gewichtung**: die zwei
+  RBJ-Filterentwürfe standen als Lambdas in `AnalyseEngine.cpp` und liegen
+  jetzt in `plugin/core/analysis/KGewichtung.h`, weil die FeatureEngine v2
+  dieselbe Kette braucht. Dass es dieselbe Rechnung geblieben ist, misst
+  `EqCopGoldenTest` — die Lautheit ist Teil seiner Kreuzvalidierung.
+
+### 1.3b FeatureEngine v2 — die zweite Analyseschicht (SONDE-009, 23.08.)
+
+`plugin/core/analysis/FeatureEngine.h`, JUCE-frei wie der Rest von `core/`.
+Der Worker reicht **jeden versiegelten Block an beide** Engines: M1 bekommt die
+Samples, die FeatureEngine zusätzlich den Deskriptor (sie braucht Zeit, Flags
+und Kontinuität).
+
+⚠️ **Warum zwei Engines und nicht eine.** Beide messen 221 Bänder à 1/24
+Oktave — auf **verschiedenen Achsen**: M1 verankert bei 30 Hz (die Achse von
+`tools/analyze-track.py`, Maßstab der Golden-Kreuzvalidierung), der v3-Vertrag
+nach IEC 61260-1 bei 1000 Hz. Gemessen **1,2 % Versatz**, rund ein Fünftel
+Bandbreite. M1 auf das v3-Gitter zu ziehen hieße, `EqCopGoldenTest` aufzugeben.
+Der Vermerk steht im Kopf von `BandGrid.h`.
+
+- **Zwei Auflösungsstufen** (16384 unter 200 Hz, 4096 darüber) — nicht nur
+  Genauigkeit: zwei gleichzeitig offene Fenster verschiedener Länge (341 ms und
+  85 ms) sind die Beweisfläche für die Fenstertrennung.
+- **Neun Grenzarten** mit je eigener Ursache (`Grenzgrund`). Drop zählt als
+  `continuity_segment`, alles andere als `transport_epoch` (§32.3 — „die
+  Host-Zeitachse wird dadurch nicht fälschlich als Seek bezeichnet").
+- **An jeder Grenze fällt alles Offene:** FFT-Fenster beider Stufen,
+  Loudness-Zelle, 3-s-Historie, Korrelationsfenster, Fluss-Vorgänger **und der
+  K-Filterzustand**. 🔑 Der Filterzustand ist die subtilste Form der
+  Überbrückung — er trägt Audio über die Grenze, ohne dass ein Puffer wächst.
+- **Möglicher Straddle** (§32.3): liegt die Schleifengrenze rechnerisch im
+  Block und ist die PPQ→Sample-Abbildung unbewiesen (sie ist es immer —
+  Capabilityreport S4 hat kein Golden), fällt der Block ganz. Fehlen Tempo oder
+  PPQ, wird **nicht** vorsorglich getrennt: das träfe jeden Block einer
+  laufenden Schleife.
+- **NAK-29 im Erzeuger:** `nak29Verstoss()` verhindert, dass ein
+  widersprüchlicher Transportstempel überhaupt entsteht.
+- Fester Speicher, alles in `vorbereiten()`; Ereignisring auf 64 gedeckelt.
+  Telemetrie über `EqCopilotProcessor::merkmale*()` — **ohne Anzeige**
+  (NAK-57).
 
 ### 1.4 Diagnose und Snapshot-Datei
 
@@ -432,10 +472,10 @@ A9 `pruefe_flatc_drift.py` · A10 `erzeuge_fb_fixtures.py --pruefen` · A11
 IdentityTest · **B2 StateMigrationTest** · B3 HostContextTest · B3b
 HostProbeTest (ohne Argument) · B3c SchemaTest · **B4 `EqCopQueueStressTest`**
 (SONDE-008) · **B8 `EqCopLebenslaufTest`** · **B9 `EqCopLoudnessGoldenTest`**
-(SONDE-008). Die Prüfzahlen stehen im jüngsten Manifest
-(`docs/beweise/SONDE-008.md`: 26/26). Geplant, nicht gebaut:
-B5 `EqCopAnalysisGoldenTest` (SONDE-009), B6 `EqCopDspGoldenTest`,
-B7 `EqCopTransactionTest`.
+(SONDE-008) · **A19 `erzeuge_bandgitter_header.py --pruefen`** und **B5
+`EqCopAnalysisGoldenTest`** (SONDE-009). Die Prüfzahlen stehen im jüngsten
+Manifest (`docs/beweise/SONDE-009.md`: 28/28). Geplant, nicht gebaut:
+B6 `EqCopDspGoldenTest`, B7 `EqCopTransactionTest`.
 
 Runner `pwsh -File tools/beweise.ps1 [-Bauen] -Ziel docs/beweise/<Ticket>.md
 [-Anhaengen] -Titel '…'`. Exitcodes (`:43-48`): 0 grün · 2 ein Bein rot · 3

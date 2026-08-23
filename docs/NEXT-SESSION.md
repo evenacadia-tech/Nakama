@@ -1,10 +1,76 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
-> ## ⚠ DER EINE NÄCHSTE SCHRITT — Stand 23.08.2026 abends
+> ## ⚠ DER EINE NÄCHSTE SCHRITT — Stand 23.08.2026, nach S12–13
 >
-> **Ein frischer T2-Prüfer — und zwar auf ZWEI Stände.** Beide sind
-> nachgebessert, beide warten auf ein PASS, keinen davon darf jemand geben, der
-> daran gebaut hat:
+> **Ein frischer T2-Prüfer — jetzt auf DREI Stände.** Alle drei sind gebaut
+> bzw. nachgebessert, alle drei warten auf ein PASS, und keines davon darf
+> jemand geben, der daran gebaut hat:
+>
+> | Stand | Manifest | Urteil heute | Was fehlt |
+> |---|---|---|---|
+> | **S9** / `SONDE-007b` | §5 (Bericht), **§6** (Nacharbeit) | NEEDS_WORK | nie geprüft |
+> | **S10–11** / `SONDE-008` | §8 (Bericht), **§9** (Nacharbeit) | NEEDS_WORK | nie geprüft |
+> | **S12–13** / `SONDE-009` | `docs/beweise/SONDE-009.md` | — | **T2 nie gelaufen** |
+>
+> ### S12–13 (`SONDE-009`) ist GEBAUT — 23.08.2026
+>
+> Commits `f14924a` · `357786e` · `133526e` · `f1e4a08`. Beweislauf **GRÜN
+> 28/28, Exit 0, beglaubigt**; Kanon **26 → 28** (B5 `EqCopAnalysisGoldenTest`
+> mit 120 Prüfungen gebaut, A19 `erzeuge_bandgitter_header.py --pruefen` neu).
+> `EqCopNullTest`/`GoldenTest`/`MarkierungTest`/`QueueStressTest` unverändert
+> grün — **kein Sample hat sich geändert**, und `schliesstAn()` ist nicht
+> angefasst.
+>
+> **Was das Gate verlangte** („Drop/Seek/Loop trennt jedes offene Fenster"):
+> neun Grenzarten, jede mit eigener Ursache und eigenem Prüffall — Drop (zählt
+> als **Segment**, nicht als Epoche), Seek laufend, Seek **gestoppt** (das
+> T2-4-Erbe aus S10–11), Loop-Wrap, möglicher Straddle, Transportkante,
+> Sampleratewechsel, Neuanlauf, Beweislagewechsel. Getrennt wird alles:
+> FFT-Fenster **beider** Auflösungsstufen, Loudness-Zelle, 3-s-Historie,
+> Korrelationsfenster, Fluss-Vorgänger **und der K-Filterzustand**.
+>
+> **Was ein Prüfer bei S12–13 zuerst ansehen sollte:**
+> - `plugin/core/analysis/FeatureEngine.h`, `grenzeZwischen()` — die
+>   **Reihenfolge** der neun Fragen ist die Aussage (Manifest §4.3). Kann ein
+>   Drop als Seek durchgehen oder umgekehrt?
+> - `moeglicherStraddleIn()` — hier wird bewusst **nicht** vorsorglich getrennt,
+>   wenn Tempo/PPQ fehlen (§4.4). Ist das die richtige Lesart von §32.3, oder
+>   fällt damit ein Straddle-Fall durch?
+> - `plugin/tests/AnalysisGoldenTestMain.cpp` §G — **kann jeder dieser Fälle
+>   scheitern?** Genau daran ist §F in SONDE-008 gescheitert. Die
+>   Mutationstabelle in Manifest §5 ist die Behauptung dazu; sie ist
+>   nachrechenbar.
+> - **§5.1 zuerst lesen:** ein Prüfpunkt (G11) war beim ersten Anlauf blind und
+>   ließ seine Mutation grün durchlaufen. Gibt es weitere dieser Sorte?
+> - `nak29Verstoss()` — sechs Fälle, sechs Nummern. Fehlt ein siebter?
+> - `plugin/core/analysis/BandGrid.h` Kopf — die Behauptung „1,2 % Versatz
+>   zwischen v3-Gitter und M1-Achse" ist nachrechenbar, und die ganze
+>   Architekturentscheidung (v2 **neben** M1) hängt daran.
+>
+> ⚠️ **Was S12–13 NICHT geprüft hat**, vollständig in Manifest §8. Die zwei
+> wichtigsten: die FeatureEngine ist **an keinen Sender angeschlossen** (die
+> Felder sind gegen `nakama_telemetry_v1.fbs` gelegt, aber nie serialisiert —
+> die Cross-Language-Probe fehlt, das ist `SONDE-010`), und die
+> **Ereignis-Erkennung ist nicht gegen einen annotierten Korpus gemessen** —
+> §39.3 („bekannte Impulsereignisse bleiben über Blockgrößen und Sampleraten
+> zeitlich stabil") ist damit **nicht** erfüllt und gehört zu `SONDE-013`.
+>
+> ✅ **Zwei offene Punkte geschlossen:** NAK-29 (bedingte Feldpflichten, im
+> **Erzeuger**) und die **Werkbankhälfte** von NAK-56 (`nakamaBlockEmpfangen()`
+> am echten Prozessor gefahren, mit Gegenprobe Brücke 0x7f gegen Playhead 0x3).
+> Neu: **NAK-59** — Band-Stereo wird berechnet, hat aber keinen Platz im
+> v3-Binärvertrag (`SONDE-010`).
+>
+> ⚠️ **`CLAUDE.md` trägt jetzt wieder eine veraltete Zahl:** „Kanon (24 Beine)"
+> bzw. was dort nach der Hygiene-Runde steht — gemessen sind es **28**
+> (`tools/beweise.ps1`, jüngstes Manifest `SONDE-009.md`). Diese Session hat
+> `CLAUDE.md` auftragsgemäß **nicht** angefasst. Dieselbe Ursache wie in NAK-55
+> beschrieben: eine gemessene Zahl, die in eine Zusammenfassung abgeschrieben
+> wurde, altert dort.
+>
+> ---
+>
+> ## S10–11 — Stand 23.08.2026 abends
 >
 > | Stand | Manifest | Urteil heute | Was fehlt |
 > |---|---|---|---|
@@ -74,9 +140,15 @@
 > Datei hat uncommittete Änderungen einer anderen Session. Nachliste in
 > **NAK-55**, dieselbe Sperre wie NAK-54.
 >
-> **Danach:** S12–13 (`SONDE-009`) — FeatureEngine v2 mit Zeit-, Validity-,
-> Event- und Bandverträgen. Sie baut direkt auf der Grenze auf, die S10–11
-> liefert — und diese Grenze trägt seit T2-4 den Seek bei Stopp mit.
+> **Danach:** ~~S12–13 (`SONDE-009`)~~ — **gebaut am 23.08.**, siehe den Block
+> ganz oben. Sie baut direkt auf der Grenze auf, die S10–11 liefert; das
+> T2-4-Erbe (Seek bei bekannt gestopptem Transport) hat dort mit B5 §G3 sein
+> eigenes Bein bekommen, und die Mutationsprobe M3 zeigt, dass es **genau
+> zwei** Zeilen deckt — den Riegel und nichts sonst.
+> **Nächste Fläche nach dem Prüfer:** S14–15 (`SONDE-010`) — v3-Control-/
+> Telemetry-Clients und Rust-Envelopeparser. Dort werden NAK-59 (Band-Stereo
+> ohne Wire-Platz), der v3-Schema-Schnitt aus NAK-29 und der Doppelpuffer für
+> `merkmalFrame()` fällig.
 >
 > ---
 >

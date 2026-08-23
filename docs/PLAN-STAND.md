@@ -9,7 +9,7 @@
 > *abgenommen* erst, wenn dort eine Urteilsmarke der geforderten Prüfstufe
 > mit **PASS** steht. Fehlt sie, gilt der Schritt als nicht abgenommen.
 
-**Stand:** 2026-08-23 · Quellstand `e3dbad4` · **10 von 36 abgenommen** · 6 gebaut · 20 offen
+**Stand:** 2026-08-24 · Quellstand `e3dbad4` · **10 von 36 abgenommen** · 6 gebaut · 20 offen
 
 `███████████▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░` 28 % abgenommen · 44 % gebaut
 

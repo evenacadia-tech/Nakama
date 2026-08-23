@@ -251,6 +251,7 @@ const char* grundName (Grenzgrund g)
         case Grenzgrund::neuanlauf:          return "neuanlauf";
         case Grenzgrund::moeglicherStraddle: return "moeglicherStraddle";
         case Grenzgrund::beweislageWechsel:  return "beweislageWechsel";
+        case Grenzgrund::anzahl:             return "<anzahl, kein Grund>";
     }
     return "?";
 }

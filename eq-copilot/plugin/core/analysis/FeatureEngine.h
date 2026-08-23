@@ -103,6 +103,14 @@ enum class Grenzgrund : std::uint8_t
     /** Die Beweislage selbst hat gewechselt (Kontext kommt oder geht,
         Offline-Render beginnt).  Danach bedeutet dieselbe Zahl etwas anderes. */
     beweislageWechsel,
+
+    /** Kein Grund, sondern die ANZAHL.  ⚠️ Sie steht hier, damit der
+        Ursachenzaehler an die Aufzaehlung GEKOPPELT ist statt an eine
+        handgeschriebene Zahl daneben.  Die erste Fassung trug
+        `grundZaehler[10]` — richtig fuer neun Gruende, und ein zehnter Grund
+        haette still ueber das Array hinausgeschrieben, ohne dass irgendetwas
+        rot geworden waere (Selbstaudit 23.08., T1 Punkt 1 „Ueberlauf"). */
+    anzahl
 };
 
 /** Die sieben Gueltigkeitsbits des v3-Transportstempels.  Bitwerte und
@@ -1490,7 +1498,7 @@ private:
     std::uint64_t zEpochenwechsel { 0 }, zSegmentwechsel { 0 };
     std::uint64_t zStraddleVerworfen { 0 }, zEreignisseVerworfen { 0 };
     std::uint64_t zNak29Abgelehnt { 0 }, zBloecke { 0 };
-    std::uint64_t grundZaehler[10] {};
+    std::uint64_t grundZaehler[(std::size_t) Grenzgrund::anzahl] {};
 };
 
 } // namespace nakama::analyse

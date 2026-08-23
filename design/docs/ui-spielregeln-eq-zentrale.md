@@ -245,5 +245,5 @@
 | Sidechain-Quelle je Band sichtbar/Untermenü/unsichtbar | **U5** / NAK-33 |
 | Größe Seite 2 · Figma-Flächen · Rückfallfläche der Sonde | **NAK-65** |
 | Undo-Form auf Gen **Seite 1** (Verlauf oder Zähler) | U2.8-Folgefrage |
-| Mix/Dry-Wet: versionierte Parameter-Erweiterung, zweistufig global↔Spur (beschlossen, ungebaut) | NAK-64 Punkt 4 · Regeln 32/42 |
-| Umschnitt Bauaufteilung/P6–P7 auf den neuen Schnitt | **NAK-64** |
+| Mix/Dry-Wet: versionierte Parameter-Erweiterung, zweistufig global↔Spur (beschlossen, ungebaut) | Plan S26–28/S29–31 (`SONDE-015`/`016`) · Regeln 32/42 |
+| ~~Umschnitt Bauaufteilung/P6–P7~~ — **gefahren 23.08.** (`e3dbad4`): S28b Gen-Master-EQ, S31b EQ-Zentrale-UI, Schutz-Zonen und Mix in S26–31 eingeplant | NAK-64 geschlossen |

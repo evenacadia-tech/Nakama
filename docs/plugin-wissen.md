@@ -53,10 +53,12 @@ des Puffers.
   Seek, Transportkante, Kanalwechsel) kostet genau EINEN Block, der Strom läuft
   weiter. ⚠️ **Stehende Projektzeit ist KEIN Bruch** — FL zerteilt Puffer bis
   1 Sample, die Teilstücke tragen dieselbe Zeit (NAK-56). 🔑 Die **Kehrseite**
-  seit der T2-Nacharbeit (23.08.): eine Zeit, die bei **bekannt gestopptem**
-  Transport *springt*, ist sehr wohl eine Grenze — §32.3 führt „einen Sprung"
-  als Epochengrenze, und *stehen* und *springen* sind an den vorhandenen Bits
-  unterscheidbar. Ist `spielt` **unbekannt**, bleibt die Zeit unbewertet.
+  seit der T2-Nacharbeit (23.08.): geprüft wird bei **bekanntem** Transport —
+  laufend *oder* stehend — dieselbe eine Frage: **bewegt sich die Zeit, muss sie
+  es lückenlos tun.** Eine stehende Zeit sagt nichts, eine lückenlos
+  fortschreitende ist eine Fortsetzung, ein *Sprung* ist eine Grenze (§32.3).
+  Ist `spielt` **unbekannt**, bleibt die Zeit unbewertet — dort wäre dieselbe
+  Regel ein Bruch je Block.
 - **Anlaufwechsel (`startFolge`):** `prepareToPlay` erhöht den Anlauf
   **sofort** (`neustartAnfordern()`), nicht erst mit dem nächsten Audioblock —
   sonst sähen die Blöcke, die noch im Ring liegen, wie aktuelle aus und würden

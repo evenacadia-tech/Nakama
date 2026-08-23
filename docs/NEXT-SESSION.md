@@ -12,7 +12,7 @@
 > | **S10–11** / `SONDE-008` | §8 (Bericht), **§9** (Nacharbeit) | NEEDS_WORK | nie geprüft |
 >
 > **Die S10–11-Nacharbeit ist gefahren** (Commits `f88f8c4` · `90c387a` ·
-> `a563d4c` · `0373c51`; Manifest **§9**, NAK-58 geschlossen). Alle vier
+> `a563d4c` · `0373c51` · `bbe4b3f`; Manifest **§9**, NAK-58 geschlossen). Alle vier
 > T2-Befunde geschlossen — jeder erst an der **Quelldatei** nachgemessen, und
 > **alle vier haben sich bestätigt, keiner war ein Fehlalarm**. Jeder neue oder
 > erweiterte Riegel ist **beim Fallen vorgeführt** worden, mit echtem Bau und
@@ -29,7 +29,7 @@
 > - **T2-2** — `EqCopMarkierungTest` **T11**. Die Prüfer-Mutation macht dieses
 >   Bein jetzt rot; die drei anderen bleiben zu Recht grün.
 > - **T2-3 / T2-4** — Anlauf steigt sofort; Seek bei **bekannt** gestopptem
->   Transport ist eine Grenze. Bein **B4 69 → 79** (Abschnitte O und P).
+>   Transport ist eine Grenze. Bein **B4 69 → 81** (Abschnitte O und P).
 >
 > Der **Kanon bleibt bei 26 Beinen** — kein neues Bein, sondern zwei vorhandene
 > sehend gemacht.
@@ -59,11 +59,14 @@
 > *adversariale* Teil den Fehler, nie der Normalfall. Der Erbauer fand so das
 > Klemmen überlauter Blöcke; der Prüfer fand direkt daneben T2-1 — im **Fix**
 > dieses Bugs; und die Nacharbeit fand beim Bauen von §O noch, dass zwei
-> Neuanläufe sich verschluckten. Zwei Sätze, die das zusammenfassen:
-> **ein Test, der nicht scheitern KANN, beweist nichts** (§F mit einem Pegel) —
-> und **ein Bein kann am richtigen Ort stehen und trotzdem blind sein**
+> Neuanläufe sich verschluckten. Drei Sätze, die das zusammenfassen:
+> **ein Test, der nicht scheitern KANN, beweist nichts** (§F mit einem Pegel) ·
+> **ein Bein kann am richtigen Ort stehen und trotzdem blind sein**
 > (§N fährt genau den `prepareToPlay`-Gegenpfad von T2-3, sah ihn aber nie,
-> weil dort zwischen Neuanlauf und Drain immer ein Audioblock läuft).
+> weil dort zwischen Neuanlauf und Drain immer ein Audioblock läuft) ·
+> **ein Fix, der näher am Wortlaut liegt, ist nicht automatisch näher an der
+> Absicht** (`bbe4b3f`: die erste T2-4-Regel brach bei *jeder* Zeitbewegung im
+> Stopp — §32.3 nennt „einen Sprung" als Grenze, nicht „eine Bewegung").
 >
 > ⚠️ **`CLAUDE.md` trägt DREI veraltete Zahlen** — „(12)" Kern-Verbraucher
 > (gemessen **14**), „Kanon (23 Beine)" (jetzt **26**) und die Formel der

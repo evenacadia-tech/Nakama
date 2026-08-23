@@ -156,7 +156,7 @@
     Sonden-Telemetrie + Sprung zur Sonde mit vorgeladener Frequenz;
     echtes Bus-Audio-Streaming nach Gen ist geparkt.
 
-## 9. Nachträge — Interview `struktur` Runde 2 (23.08., Abnahme
+## 9. Nachträge — Interview `struktur` Runden 2–3 (23.08., Abnahme
 `../abnahmen/2026-08-23-interview-struktur.md`)
 
 32. **Mix (Dry/Wet je Sonde) ist beschlossen, steht aber NOCH NICHT im
@@ -180,6 +180,29 @@
     decken „alle gängigen filter"; SOPs Resonanzpeak-Fokus ist spätere
     Ausbaustufe.
 
+**Runde 3 (Button für Button am Working Design):**
+
+36. **Durchschalter je Sonde: nur der Bus-Name** — kein Status, kein
+    Vorschlags-Hinweis im Schalter selbst (Entscheid).
+37. **Draft-Kasten-Zustandsautomat** (Entscheid „stimmt so"): HOLD TO
+    AUDITION = Halten (Preview, Regel 10) · APPLY = erster Klick
+    (temporär, Lease läuft) und derselbe Button wechselt in den
+    Bestätigen-Zustand mit sichtbarer Restzeit · REJECT bleibt daneben
+    und bricht ab · Ablauf ohne zweiten Klick = automatischer Revert
+    (Regel 11).
+38. **Live-Spektrum hinter der Kurve: ja** — aus der Sonden-Telemetrie;
+    bei zwei aktiven Spuren NUR das Spektrum der gerade bearbeiteten
+    Spur (Entscheid). Kadenz-Ehrlichkeit (Regel 25) gilt unverändert.
+39. **PROTECTED-Zonen: harte Sperre für alle Nakama-Bedienwege**
+    (Entscheid) — auch eigene Bänder lassen sich nicht in die Zone
+    ziehen, bis sie gelöst ist. Anlegen durch den User; Gen darf eine
+    Zone aus einem Befund VORSCHLAGEN, angelegt wird sie erst per
+    User-Klick. Technisch: „User-Schutz" ist im Fernweg bereits ein
+    Ablehnungsgrund; neu ist die Sperre für die eigene Hand.
+    ⚠️ Ehrliche Grenze: FLs Host-Automation schreibt an der Sperre
+    vorbei (Regel 17) — die Zone zeigt die Verletzung, verhindern kann
+    sie sie dort nicht. Persistenz/Vertragsort: NAK-64 Punkt 5.
+
 ## 10. Offen (Kennungen)
 
 | Was | Wo |
@@ -188,6 +211,6 @@
 | Sidechain-Quelle je Band sichtbar/Untermenü/unsichtbar | **U5** / NAK-33 |
 | Größe Seite 2 · Figma-Flächen · Rückfallfläche der Sonde | **NAK-65** |
 | Undo-Form (Verlauf oder Zähler) | U2.8-Folgefrage |
-| Überladen-Grenze / Elementbestand Seite 2: Button-für-Button-Durchgang am Probeeq-Working-Design | Interview `struktur`, Runde 3 |
+| Button-für-Button, Rest: BYPASS ↔ EQ-Mode-Punkt · Undo-Form · GLOBAL-Tür inkl. Mix-Platz · Wortlaut „DRAFT FROM MAIN" | Interview `struktur`, Runde 4 |
 | Mix/Dry-Wet je Sonde: versionierte Parameter-Erweiterung (beschlossen, ungebaut) | NAK-64 Punkt 4 · Regel 32 |
 | Umschnitt Bauaufteilung/P6–P7 auf den neuen Schnitt | **NAK-64** |

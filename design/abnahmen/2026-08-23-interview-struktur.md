@@ -102,6 +102,38 @@ Umschnitt NAK-64, Punkt 4.
 Zusammenfassung beider Befunde und aller fünf Punkte vorgelesen —
 Antwort: **„ok"**.
 
+## Runde 3 — Button für Button am Working Design (Fragen 9–12)
+
+Grundlage: Inventur des Figma-Stands `assets/figma/2026-08-22-probeeq.png`
+im Chat (was da ist / was fehlt / was überholt ist), wie in Runde 2
+gefordert („button für button").
+
+### Frage 9 — was der Durchschalter je Sonde zeigt
+
+> „Den Namen auf welchem Bus er sitzt mehr nicht"
+
+### Frage 10 — Draft-Kasten und Drei-Stufen-Geste
+
+Vorgelegte Lesart: APPLY = erster Klick; danach wechselt derselbe Button
+in einen Bestätigen-Zustand mit sichtbarer Restzeit; REJECT bleibt.
+
+> „stimmt so"
+
+### Frage 11 — Live-Spektrum im Graph
+
+> „spektrum ja, bei 2 nur die spur die bearbeitet wird."
+
+### Frage 12 — PROTECTED (nach erneuter Erklärung, Antwort per Auswahl)
+
+Erklärt wurde: Schutz-Zone = unantastbarer Frequenzbereich; technisch
+existieren bereits „User-Schutz" als Ablehnungsgrund im Fernweg und die
+Guardrail „geschützte Bereiche" im Advisor-Urteil.
+
+- Wirkung: Wahl **„Harte Sperre für alle"** — auch eigene Bänder lassen
+  sich nicht in die Zone ziehen, bis sie gelöst wird.
+- Anlegen: Wahl **„Ich + Gen darf vorschlagen"** — Gen darf aus einem
+  Befund eine Zone vorschlagen, angelegt wird sie erst durch User-Klick.
+
 ---
 
 ## Festgelegt (User-Wort, 23.08.2026)
@@ -136,6 +168,15 @@ Antwort: **„ok"**.
     aktuellen Probeeq-Design, „so halb halb bringt das nix".
 11. **Durchschalt-Reihenfolge = FL-Mixer-Reihenfolge; der Master ist
     keine Rad-Position, sondern erhält ein eigenes UI-Element.**
+12. **Durchschalter zeigt je Sonde nur den Bus-Namen** — sonst nichts.
+13. **Draft-Kasten:** HOLD TO AUDITION = Halten; APPLY = erster Klick,
+    derselbe Button wird zum Bestätigen mit sichtbarer Restzeit; REJECT
+    bleibt daneben („stimmt so").
+14. **Live-Spektrum hinter der Kurve: ja** — bei zwei Spuren nur das
+    Spektrum der gerade bearbeiteten Spur.
+15. **PROTECTED = harte Sperre für alle:** auch eigene Bänder nicht in
+    die Zone, bis sie gelöst wird. Anlegen durch den User; Gen darf aus
+    einem Befund eine Zone vorschlagen, angelegt erst per User-Klick.
 
 ## Angenommen (unbestätigt — Claude-Lesart, risikoarm)
 
@@ -151,12 +192,19 @@ Antwort: **„ok"**.
 - Mix wird eine neue versionierte Parameter-ID (Technik, NAK-64 Punkt 4).
 - Smooth Operators Resonanzpeak-Fokus = spätere Ausbaustufe, nicht der
   erste Wurf.
+- „Lösen" der Schutz-Zone = entfernen/deaktivieren über dasselbe Element,
+  mit dem sie angelegt wurde.
+- Ehrliche Grenze der harten Sperre: sie bindet Nakamas Bedienwege
+  (Gen-Maus, Advisor, Fernweg) — FLs Host-Automation schreibt an der
+  Sonden-Instanz vorbei und „gewinnt sichtbar" (Entwurf); die Zone zeigt
+  eine solche Verletzung, verhindern kann sie sie dort nicht.
 
 ## Offen (nächste Runden / Kennungen)
 
-- **Runde 3: Button-für-Button-Durchgang** am Probeeq-Working-Design
-  (Inventur: was ist da / was fehlt / was ist unklar), daraus die
-  Überladen-Grenze für Seite 2.
+- **Runde 4 (Rest der Buttons):** Verhältnis BYPASS ↔ EQ-Mode-Punkt
+  grün/rot (ein Zustand oder zwei?) · Undo-Form (U2.8-Folge, gilt jetzt
+  für beide Flächen) · Inhalt der GLOBAL-Tür inkl. Platz des Mix ·
+  Wortlaut „DRAFT FROM MAIN" nach dem Merge.
 - Rückfallflächen-Zuschnitt final erst, wenn der User sieht, was Gen je
   Sonde zeigt (sein Vorbehalt: „ich habe nicht im kopf was GEN anzeigt
   bezüglich des alten Suna konzeptes"). Leitfrage dafür: „was könnte den

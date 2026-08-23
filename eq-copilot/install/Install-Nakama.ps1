@@ -318,6 +318,12 @@ if ($Rueckweg) {
 
     $getan = @()
     foreach ($e in $letzte.eintraege) {
+        # `broker` als Rueckfall ist kein Raten, sondern die richtige Antwort
+        # fuer einen ALTEN Ergebnisstand: eine Ergebnisdatei ohne `art` stammt
+        # aus der Zeit vor dem Umzug auf den Ordner, und ihr `ziel` zeigt dann
+        # auf die innere BINAERDATEI - dort ist Datei-Semantik korrekt. Ein
+        # Rueckfall auf 'vst3' wuerde versuchen, eine Datei als Ordner zu
+        # behandeln.
         $art = if ($e.PSObject.Properties.Name -contains 'art' -and $e.art) { $e.art } else { 'broker' }
         if ($Pruefen) { Write-Host "  wuerde zurueckstellen: $($e.ziel)"; continue }
         if ($e.gesichert) {

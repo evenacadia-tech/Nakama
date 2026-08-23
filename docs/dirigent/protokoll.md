@@ -18,6 +18,14 @@ Regeln und Zyklus: `.claude/skills/dirigent/SKILL.md`. Jüngster Eintrag oben.
 
 ---
 
+## 2026-08-23 abends · Baumhygiene · hygiene (parallel zu S12–13)
+
+- **Session:** „Baumhygiene + Registerpflege (NAK-54/55)" (`1d1f86d1-c131-4695-a05e-acd4ed9c40e6`), Opus 5 mit 1M — parallel zur S12–13-Bau-Session auf strikt disjunkten Territorien; Anstoß war der Stop-Hook (Fund = Fix statt „sobald die Datei frei ist").
+- **Ergebnis:** Fünf Commits — `6e67662` (die verwaiste Briefing-Seiten-Arbeit war fertige Arbeit und ist committet: alle 18 Gen-Lesarten sichtbar, U2.16 geklärt) · `ccc6c19` (.gitignore-Hygiene: Automatik-Laufergebnisse, TS-Buildcache) · `09c5899` (**CLAUDE.md nachgezogen**: die zwei Register-Einträge vom 23.08. mit Wortlaut; drei gealterte Zahlen an der Quelle nachgemessen — Kanon **26** [Tabelle + drei Manifest-Rohblöcke, zwei Wege], Verbraucher **14** [GLOBAL-Property; NAK-55s „13" war von vor `EqCopQueueStressTest`]; die fail-open-Passage berichtigt, an `PluginProcessor.cpp:300-306` gegengelesen) · `803f0f0` (NAK-54 und NAK-55 geschlossen; drei weiterhin unklare Stände **dokumentiert statt geraten**: `design/docs`-Paar, die zwei `eq-copilot/design`-Löschungen, „Untitled Workspace") · `0efffa6` (Formatierungs-Selbstaudit). **Nichts verworfen.**
+- **Gestützt auf:** Commits im Repo, gepusht; die Zahlen tragen Zwei-Wege-Belege im Commit/Insight der Session.
+- **Nicht geprüft:** Die CLAUDE.md-Diffs habe ich nicht Zeile für Zeile gegengelesen (die Session hat je Zahl die Quelle genannt); die bewusst liegengelassenen verwaisten Stände bleiben mit datierter Zeile im Offen-Set — gewollt, kein Raten über fremde Absicht.
+- **Weiter mit:** S12–13-Bau läuft weiter (aktive uncommittete Edits an `StampedAudioQueue.h`, `PluginProcessor.*`, neu `BandGrid.h`).
+
 ## 2026-08-23 abends · SONDE-008 · nacharbeit
 
 - **Session:** „SONDE-008 Nacharbeit — T2-1…T2-4 schließen" (`62326e9e-fc5b-49e7-ae6f-d97b734f1e3f`), Opus 5 mit 1M.

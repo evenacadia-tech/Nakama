@@ -40,6 +40,11 @@ struct StatsSnapshot
     bool     nanSeen = false;
     bool     hasTransport = false;
     bool     transportPlaying = false;
+    // SONDE-008: eigenes Gueltigkeitsbit fuer die Projektzeit. Sie hing bisher
+    // am Transportbit mit - zwei verschiedene Aussagen des Hosts an einem
+    // Schalter (§53.7 fuehrt sie als getrennte ValidValue). Ohne Beweis geht
+    // `project_time_samples` als null hinaus, nie als 0 (NAK-24).
+    bool     projectTimeValid = false;
     juce::int64 projectTimeSamples = 0;
 };
 

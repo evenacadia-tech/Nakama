@@ -210,8 +210,12 @@ private:
     std::atomic<int>    kanaeleAtomic    { 0 };
     std::atomic<float>  rmsL { 0.0f }, rmsR { 0.0f };
     std::atomic<bool>   nanSeen { false };
+    // `hatTransport` heißt seit SONDE-008 „Transport ist BEKANNT" — mit der
+    // Hostbrücke ist das erstmals von „irgendein PositionInfo kam"
+    // unterscheidbar (NAK-24).
     std::atomic<bool>   hatTransport { false };
     std::atomic<bool>   transportSpielt { false };
+    std::atomic<bool>   projektZeitGueltig { false };
     std::atomic<juce::int64> projektZeitSamples { 0 };
 
     // Projektzeit-Fenster der akkumulierten Messung (Plan §5.7): nur der

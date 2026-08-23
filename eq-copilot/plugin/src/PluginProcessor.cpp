@@ -189,6 +189,10 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     // Hostzeit (M0-Prüfpunkt §9.3) — Projektzeit-Fenster der Messung (Plan
     // §5.7): nur während Play akkumulieren, der stehende Playhead ist kein
     // Fenster.
+    // NAK-24 zweite Hälfte: die Projektzeit trägt ihr eigenes Gültigkeitsbit.
+    // Bis 23.08. blieb `projektZeitSamples` stehen, wenn der Context wegfiel —
+    // ein alter Wert sah aus wie eine aktuelle Position.
+    projektZeitGueltig.store (stempel.zeitGueltig);
     if (stempel.zeitGueltig)
     {
         projektZeitSamples.store (stempel.projectSampleStart);
@@ -448,6 +452,7 @@ StatsSnapshot EqCopilotProcessor::statsSnapshot() const
     s.nanSeen = nanSeen.load();
     s.hasTransport = hatTransport.load();
     s.transportPlaying = transportSpielt.load();
+    s.projectTimeValid = projektZeitGueltig.load();
     s.projectTimeSamples = projektZeitSamples.load();
     return s;
 }

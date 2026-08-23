@@ -1,6 +1,6 @@
 # Plugin-Wissen — wie Plugin, Broker und Verträge heute funktionieren
 
-> **Stand: 22.08.2026** · Version **0.3.0** (`project(… VERSION 0.3.0)` ==
+> **Stand: 23.08.2026** (S10–11/SONDE-008: Analyseweg und Loudness) · Version **0.3.0** (`project(… VERSION 0.3.0)` ==
 > `kPluginVersion`, Configure-Riegel `eq-copilot/CMakeLists.txt:3-22`) ·
 > metrics/diagnose `m4.1-2026-08-15` · Snapshot-Datei v3 · IPC-Protokoll v2 ·
 > **Host-State Schema 2** (`NakamaState`, seit SONDE-006 am 22.08.; liest Schema 1).
@@ -27,19 +27,41 @@ die AnalyseEngine) · **Pipe-Thread** (besitzt den PipeClient) · Message-Thread
 
 ### 1.1 Audiopfad
 
-`processBlock` (`PluginProcessor.cpp:91-209`), Reihenfolge ist Vertrag:
-`ScopedNoDenormals` → RMS-/NaN-Scan → Hostzeit und Projektzeit-Fenster (nur
-bei Play; Sprünge > 64 Samples gezählt) → **Analyse-Abgriff in den FIFO** →
-`lebenszeichen()` → Hör-Markierung als einziger Schreiber des Puffers.
+`processBlock`, Reihenfolge ist Vertrag: `ScopedNoDenormals` → RMS-/NaN-Scan →
+**Zeitstempel** (Hostbrücke, sonst Playhead) → Projektzeit-Fenster (nur bei
+Play; Sprünge > 64 Samples gezählt) → **Analyse-Abgriff in die
+StampedAudioQueue** → `lebenszeichen()` → Hör-Markierung als einziger Schreiber
+des Puffers.
 
-- FIFO `juce::AbstractFifo`, 65 536 Frames interleaved L/R, einmal alloziert;
-  Überlast ⇒ `framesDropped`, nie warten. 0 Samples Latenz, kein Tail, Busse
-  nur mono/stereo mit Eingang == Ausgang. Nach außen nur Atomics; keine
-  Sperre, Allokation, Datei, Pipe, Logging.
-- Lebenszeichen (`:216-277`): Audiozeit/Wandzeit je Fenster; Verhältnis
-  0,5…1,2 zweimal ⇒ `echtzeitOk`; > 1,5 (Freilauf/Offline) löscht den Beweis
-  und meldet `freilaufKill`; Transportkante oder Lücke > 250 ms setzt zurück.
-  `hatTransport` ist im VST3-Pfad immer wahr (NAK-24).
+- **Analyseweg seit SONDE-008 (23.08.):** `nakama::echtzeit::StampedAudioQueue`
+  statt `juce::AbstractFifo` (`plugin/core/StampedAudioQueue.h`, JUCE-frei wie
+  die Hostbrücke). Zwei feste SPSC-Ringe — Samples (131 072 Frames je
+  Stereo-Tap) und 2 048 Deskriptoren; ein Block geht **ganz oder gar nicht**
+  hinein. Der alte FIFO schrieb bei Platzmangel einen Teilblock; der Worker sah
+  danach einen lückenlosen Strom mit fehlender Zeit darin. Reicht ein Ring
+  nicht, fällt der komplette Analyseblock, ein Zähler steigt, der nächste
+  Deskriptor trägt `kFlagLueckeDavor` und ein neues `continuity_segment`.
+  Blöcke über der festen Slotkapazität (16 384 Frames) sind `oversize_drop` —
+  Audio läuft unberührt weiter. Der Backing-Store entsteht im **Konstruktor**;
+  `prepareToPlay` meldet nur noch einen Neuanlauf (kein `fifo.reset()` vom
+  Nachrichtenthread mehr in einen laufenden Leser hinein). 0 Samples Latenz,
+  kein Tail, Busse nur mono/stereo mit Eingang == Ausgang. Nach außen nur
+  Atomics; keine Sperre, Allokation, Datei, Pipe, Logging — gemessen in
+  `EqCopQueueStressTest` §L (4 000 Blöcke wechselnder Größe, 0 Allokationen).
+- **Ein-Block-Quarantäne im Worker (§53.7):** ein Block erreicht die Engine
+  erst, wenn sein Nachfolger die Fortsetzung beweist. Ein Bruch (Queue-Lücke,
+  Seek, Transportkante, Kanalwechsel) kostet genau EINEN Block, der Strom läuft
+  weiter. ⚠️ **Stehende Projektzeit ist KEIN Bruch** — FL zerteilt Puffer bis
+  1 Sample, die Teilstücke tragen dieselbe Zeit (NAK-56).
+- **Hostbrücke verdrahtet (SONDE-008):** `EqCopilotProcessor` ist eine `Senke`;
+  der Zeitstempel kommt aus dem echten `processContextPresent`, nicht aus dem
+  tautologischen Playhead. Ohne Brücke (Konsolenziele) gilt der Playhead als
+  Rückfallweg; ohne beides ist Transport **unbekannt**. `hatTransport` heißt
+  seither „Transport ist bekannt", die Projektzeit trägt ihr eigenes
+  Gültigkeitsbit — **NAK-24 geschlossen**.
+- Lebenszeichen: Audiozeit/Wandzeit je Fenster; Verhältnis 0,5…1,2 zweimal ⇒
+  `echtzeitOk`; > 1,5 (Freilauf/Offline) löscht den Beweis und meldet
+  `freilaufKill`; Transportkante oder Lücke > 250 ms setzt zurück.
 
 ### 1.2 Hör-Markierung — die eine Audio-Ausnahme
 
@@ -49,9 +71,9 @@ KONZEPT.md`). Modi `aus / solo / puls`: **Solo** = nur das Problemband,
 vorberechnet, der Audiothread kopiert höchstens einen POD-Auftrag aus 4
 Ring-Slots.
 
-**Verriegelung, gemessen (`PluginProcessor.cpp:202-216`):**
+**Verriegelung, gemessen:**
 `erlaubt = istMainKlassifiziert ∧ (echtzeitOk ∨ testEchtzeit) ∧
-(spielt ∨ ¬hatTransport) ∧ ¬isNonRealtime() ∧ (editorOffen ∨ testEchtzeit)` —
+(spieltGültig ∧ spielt) ∧ ¬isNonRealtime() ∧ (editorOffen ∨ testEchtzeit)` —
 `testEchtzeit` setzt nur `testForciereEchtzeit()`, ohne Aufrufer im Produkt.
 Der Editor beendet bei Fensterschluss, Samplerate-Wechsel, Freilauf und
 Totmann 10 min (`PluginEditor.cpp:186-219`). Analyse-Abgriff VOR der Färbung;
@@ -64,6 +86,14 @@ mehr**; wer die Markierung will, wählt im Editor die Rolle `hub`. Der Term ist
 die Atomic-Spiegelung von `Lebenslauf::audioAusnahmeErlaubt()` (§1.4c) und
 wird **nicht** von `testForciereEchtzeit` umgangen: der Schalter umgeht nur,
 was an der Wanduhr hängt. `EqCopLebenslaufTest` misst beide Seiten an Audio.
+
+⚠️ **Der Transport-Term ist seit SONDE-008 (23.08.) `spieltGültig ∧ spielt`** —
+das fail-open `(spielt ∨ ¬hatTransport)` ist gefallen (User 22.08., Hub `U10`:
+„Nein, nur mit Signal"; NAK-35/NAK-24 geschlossen). Schließbar war er erst mit
+der verdrahteten Hostbrücke: vorher konnte `hatTransport` „Transport unbekannt"
+gar nicht ausdrücken (Entwurf §0.1). **In FL ändert das nichts** — dort war der
+Zweig tot. Headless färbt ohne Playhead nichts mehr; Markierungs- und
+Lebenslauftest tragen deshalb einen laufenden Transport.
 
 ### 1.3 AnalyseEngine — die Uhren
 
@@ -210,10 +240,12 @@ CRLF→LF-normalisierten Inhalt: gepatcht `6e5d4660…` ⇒ No-Op, unberührt
 
 Gegenseite `plugin/hostbridge/NakamaHostBridge.h`: `Bruecke` sammelt je Block
 einen `Blockbefund` für eine `Senke`. `NAKAMA_HOST_BRIDGE=1` steht PUBLIC an
-`EqCopilot` und `EqCopHostProbe` (`plugin/CMakeLists.txt:45,237`) — **im
-Produkt kompiliert, aber unbenutzt**: `src/` hat keinen Treffer auf
-`hostbruecke`; einzige `Senke` ist `HostProbeProcessor`
-(`hostprobe/HostProbeProcessor.h:166`); Verbraucher SONDE-008/009.
+`EqCopilot` und `EqCopHostProbe` — **seit SONDE-008 (23.08.) im Produkt
+BENUTZT**: `EqCopilotProcessor` ist eine `Senke` und bezieht daraus den
+Zeitstempel der `StampedAudioQueue` sowie den ehrlichen Transportstand
+(§1.1/§1.2). Bis dahin war sie kompiliert, aber ohne Verbraucher; zweite
+`Senke` bleibt `HostProbeProcessor`. Die Auswertung der Zeit (Epochen, Fenster)
+kommt mit SONDE-009.
 `EqCopHostContextTest` (91) misst Gate und Abbildung gegen den echten
 `Steinberg::Vst::ProcessContext`.
 
@@ -341,7 +373,10 @@ Binaries `eqcop-broker.exe [--bindungen <pfad>]` (Standard
 
 ## 5 · Bauen und Beweisen
 
-**19 Programm-Ziele + 1 Bibliothek** (`plugin/CMakeLists.txt`). Seit S9
+**22 Programm-Ziele + 1 Bibliothek** (`plugin/CMakeLists.txt`; gezählt am
+23.08.: 18 benannte `juce_add_*`-Aufrufe plus 4 aus den beiden Zielfunktionen.
+Bis dahin stand hier 19 — die Zahl war schon vor SONDE-008 um eins zu klein).
+Seit S9
 (SONDE-007b, 23.08.) sind es **drei Produkt-Bundles**: `EqCopilot` (`Eqcp`),
 **`NakamaSuna`** (`NkPr`, Bundle „Nakama Suna.vst3") und **`NakamaProbeeq`**
 (`NkAc`, „Nakama Probeeq.vst3"). Die beiden neuen entstehen aus einer
@@ -360,7 +395,8 @@ Gegenpfad). Weiter: `EqCopilot` (VST3-Produkt) ·
 Static-Lib **`NakamaKern`** (SONDE-007a). Sie trägt die vier geteilten Quellen
 (`state/NakamaKanon`, `state/NakamaParameter`, `state/NakamaState`,
 `vertrag/NakamaVertrag`), wird **einmal** übersetzt und über
-`nakama_kern_anbinden(<ziel>)` an acht Verbraucher gehängt. Vorher übersetzten
+`nakama_kern_anbinden(<ziel>)` an **14** Verbraucher gehängt (Zahl aus der
+Configure-Ausgabe, nicht abgeschrieben — sie wächst mit jedem Ziel). Vorher übersetzten
 sieben Ziele alle vier Quellen selbst (`nakama_state_anbinden()`) und
 `EqCopSchemaTest` eine davon — 29 Übersetzungen derselben vier Dateien, jetzt 4.
 Ihre Übersetzungsschalter hängen seit dem T2-Lauf (23.08.) ausdrücklich am Kern
@@ -371,19 +407,22 @@ als eigene Lib erbt er die PUBLIC-Schalter seiner Verbraucher nicht mehr und
 Binaries unter `eq-copilot/build/plugin/<Ziel>_artefacts/Release/`, die Lib
 unter `eq-copilot/build/plugin/Release/NakamaKern.lib`.
 
-**Kanon, 21 Beine (`tools/beweise.ps1`, Tabelle `$kanon`):** A1 NullTest · A2
+**Kanon, 26 Beine (`tools/beweise.ps1`, Tabelle `$kanon`):** A1 NullTest · A2
 GoldenTest · A3 MarkierungTest · A4 `cargo test` (inkl. JCS-Bein) · A5
 `pruefe_v3_vertrag.py --abdeckung` · A6 `erzeuge_bandgitter.py --pruefen` · A7
 `erzeuge_quantisierung.py --pruefen` · A8 `erzeuge_v3_fixtures.py --pruefen` ·
 A9 `pruefe_flatc_drift.py` · A10 `erzeuge_fb_fixtures.py --pruefen` · A11
 `pruefe_v2_schemas.py` · **A12 `erzeuge_state_fixtures.py --pruefen`** · **A13
 `pruefe_host_capabilities.py`** · **A14 `pruefe_kern_identitaetsfrei.py`** ·
-**A15 `EqCopSunaNullTest`** · **A16 `EqCopProbeeqNullTest`** · B1
+**A15 `EqCopSunaNullTest`** · **A16 `EqCopProbeeqNullTest`** · **A17
+`pruefe_installer_manifest.py`** · **A18 `pruefe_installer_gegenpfad.py`** · B1
 IdentityTest · **B2 StateMigrationTest** · B3 HostContextTest · B3b
-HostProbeTest (ohne Argument) · B3c SchemaTest. Die Prüfzahlen stehen im
-jüngsten Manifest (`docs/beweise/SONDE-007b.md`: 21/21). Geplant, nicht gebaut:
-B4 `EqCopQueueStressTest`, B5 `EqCopAnalysisGoldenTest`, B6
-`EqCopDspGoldenTest`, B7 `EqCopTransactionTest`.
+HostProbeTest (ohne Argument) · B3c SchemaTest · **B4 `EqCopQueueStressTest`**
+(SONDE-008) · **B8 `EqCopLebenslaufTest`** · **B9 `EqCopLoudnessGoldenTest`**
+(SONDE-008). Die Prüfzahlen stehen im jüngsten Manifest
+(`docs/beweise/SONDE-008.md`: 26/26). Geplant, nicht gebaut:
+B5 `EqCopAnalysisGoldenTest` (SONDE-009), B6 `EqCopDspGoldenTest`,
+B7 `EqCopTransactionTest`.
 
 Runner `pwsh -File tools/beweise.ps1 [-Bauen] -Ziel docs/beweise/<Ticket>.md
 [-Anhaengen] -Titel '…'`. Exitcodes (`:43-48`): 0 grün · 2 ein Bein rot · 3
@@ -422,7 +461,13 @@ JSON-Korpus + MANIFEST · `erzeuge_fb_fixtures.py` Binärkorpus + MANIFEST (je
   NAK-37 · Broker-Binaries älter als Quellen — NAK-36 · kein Autostart —
   NAK-13 · `hoermarkierung` ungelesen — NAK-10 · Sensorübersicht (`.svelte` ohne Zuhause; NAK-12 am 21.08. geschlossen: Hub-App kein Produktteil) —
   NAK-12 · Baustand-Riegel zu grob — NAK-25 · `pluginval` nur in `%TEMP%` —
-  NAK-26 · `hatTransport` Tautologie — NAK-24.
+  NAK-26. **`hatTransport` Tautologie (NAK-24) und das Markierungs-fail-open
+  (NAK-35) sind seit SONDE-008 geschlossen.**
+- **Neu offen aus SONDE-008:** ob FL die Projektzeit über die Teilstücke eines
+  zerteilten Puffers fortschreibt, ist ungemessen — beide Fälle sind abgedeckt,
+  der reale zeigt sich am Zähler `analyseKontinuitaetsbrueche()` (NAK-56). Die
+  neue Analyse-Telemetrie (Drops, Oversize, Brüche, `unsicherheitLu`) ist
+  auslesbar, aber nirgends angezeigt (NAK-57) — die Oberfläche kommt aus Figma.
 - Veraltete Kommentare: `plugin/CMakeLists.txt:3` („Vier Targets"),
   `tests/ShotTestMain.cpp:7` und `probe/PipeProbeMain.cpp:1` (Hub-App bzw.
   „Tauri-Broker" — gibt es nicht mehr). `PipeClient.cpp:252` (v1-Zweig) ist
@@ -449,7 +494,9 @@ HEAD `c5f6833`, Arbeitskopie mit uncommitteten SONDE-005b-Änderungen.
   Kodierungen · 221/64 · 8 Tabellen/47 Felder:** `json.load` über die
   Manifeste und `schemas/v3/**.json` · `grep "^table\|^enum"
   nakama_telemetry_v1.fbs` · `WERKZEUG.json`.
-- **Brücke ohne Senke:** `grep -rn "hostbruecke\|Senke" eq-copilot/plugin/src/` → 0.
+- ~~**Brücke ohne Senke:** `grep -rn "hostbruecke\|Senke" eq-copilot/plugin/src/` → 0.~~
+  **Überholt seit SONDE-008 (23.08.):** derselbe grep trifft jetzt — der
+  Prozessor ist die zweite `Senke`.
 - **Kein Broker · leerer Spike-Ordner · keine Bindungsdatei · Binaries 18.08.:**
   `tasklist` (nur drei `FL64.exe`) · `%APPDATA%\evenacadia\nakama\` ·
   `ls broker/target/release/*.exe`. **paint() 2,47 ms:** `EqCopPaintBench`.

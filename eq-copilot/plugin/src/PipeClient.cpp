@@ -45,7 +45,7 @@ static juce::String baueHeartbeat (const juce::String& token, juce::int64 seq,
     stats->setProperty ("frames_dropped", (juce::int64) s.framesDropped);
     stats->setProperty ("nan_seen", s.nanSeen);
     stats->setProperty ("transport_playing", s.hasTransport ? juce::var (s.transportPlaying) : juce::var());
-    stats->setProperty ("project_time_samples", s.hasTransport ? juce::var (s.projectTimeSamples) : juce::var());
+    stats->setProperty ("project_time_samples", s.projectTimeValid ? juce::var (s.projectTimeSamples) : juce::var());
 
     auto* wurzel = new juce::DynamicObject();
     wurzel->setProperty ("type", "heartbeat");

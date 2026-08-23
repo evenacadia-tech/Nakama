@@ -1,6 +1,55 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
-> ## ⚠ DER EINE NÄCHSTE SCHRITT — Stand 23.08.2026 nachmittags
+> ## ⚠ DER EINE NÄCHSTE SCHRITT — Stand 23.08.2026 abends
+>
+> **Ein frischer T2-Prüfer auf ZWEI Stände: die S9-Nacharbeit UND S10–11.**
+> Beide sind gebaut und beweisbelegt, beide haben **kein** PASS. Wer gebaut
+> hat, urteilt nicht (S8-Präzedenz).
+>
+> **S10–11 (`SONDE-008`) ist gebaut** (Manifest `docs/beweise/SONDE-008.md`,
+> Commit `7fa1cf5` + Folgecommits): der `AbstractFifo` im **Audiothread** ist
+> durch die `StampedAudioQueue` ersetzt — zwei feste SPSC-Ringe, ganz oder gar
+> nicht, dazu die Ein-Block-Quarantäne und der fixed-memory
+> `LoudnessAccumulator`. Kanon **24 → 26** (B4 `EqCopQueueStressTest` 68/0,
+> B9 `EqCopLoudnessGoldenTest` 66/0), Beweislauf **GRÜN 26/26, Exit 0,
+> beglaubigt**, `pluginval` Strenge 8 an allen drei Bundles SUCCESS.
+>
+> **Was ein Prüfer bei S10–11 zuerst ansehen sollte** — das, was noch niemand
+> mit fremdem Kontext gelesen hat:
+> - `eq-copilot/plugin/core/StampedAudioQueue.h` — **ganz neu**, der einzige
+>   Ordnungspunkt zwischen Audio- und Workerthread liegt in `veroeffentliche()`
+>   (Release) gegen `spitze()`/`freigeben()` (Acquire),
+> - `Blockquarantaene::schliesstAn()` im selben Header — dort steht die
+>   Auslegung von „zeitlich konsistent"; besonders die Zeile, die eine
+>   **stehende** Projektzeit NICHT als Bruch wertet (FL-Teilpuffer, NAK-56),
+> - `eq-copilot/plugin/core/analysis/LoudnessAccumulator.h` — **ganz neu**,
+> - `eq-copilot/plugin/src/PluginProcessor.cpp` — `processBlock`,
+>   `nakamaBlockEmpfangen` und der Worker-Drain,
+> - `docs/beweise/SONDE-008.md` **§5** — die Transport-Entscheidung (Hub `U10`)
+>   samt Begründung, warum sie hierher und nicht zu SONDE-009 gehört.
+>
+> 🔑 **Die teuerste Lehre dieser Runde:** der EBU-Golden fand **zwei echte
+> Fehler**, und beide kamen aus dem *adversarialen* Teil, nicht aus dem
+> Normalfall. Der eine war ein Bug (überlaute Blöcke wurden in den obersten
+> Histogramm-Bin geklemmt — bei durchweg überlautem Material lieferte die
+> integrierte Lautheit dann **gar keinen Wert**), der andere eine **falsche
+> Behauptung von mir** („bitgleich" für LUFS-I; binweise Summation hat eine
+> andere Reihenfolge). Ein Golden, der nur den Normalfall fährt, hätte beide
+> durchgelassen.
+>
+> ⚠️ **`CLAUDE.md` trägt jetzt DREI veraltete Zahlen** — „(12)" Kern-Verbraucher
+> (gemessen **14**), „Kanon (23 Beine)" (jetzt **26**) und die Formel der
+> Hör-Markierung (`∨ ¬hatTransport` ist gefallen). **Nicht** berichtigt: die
+> Datei hat uncommittete Änderungen einer anderen Session. Nachliste in
+> **NAK-55**, dieselbe Sperre wie NAK-54.
+>
+> **Danach:** S12–13 (`SONDE-009`) — FeatureEngine v2 mit Zeit-, Validity-,
+> Event- und Bandverträgen. Sie baut direkt auf der Grenze auf, die S10–11
+> liefert.
+>
+> ---
+>
+> ## S9-Nacharbeit — Stand 23.08.2026 nachmittags
 >
 > **Ein frischer T2-Prüfer auf den NACHGEBESSERTEN S9-Stand.** Nicht diese
 > Session, nicht die beiden bisherigen Prüfer: die vier Befunde aus §5.7 sind
@@ -38,8 +87,8 @@
 > die Datei hat uncommittete Änderungen einer anderen Session. Nachliste in
 > **NAK-55**, dieselbe Sperre wie NAK-54.
 >
-> **Danach:** S10–11 (`SONDE-008`) — Messkern, zeitgestempelte
-> Audio-Warteschlange, Quarantäne für kaputte Blöcke.
+> ~~**Danach:** S10–11 (`SONDE-008`)~~ — **erledigt am 23.08. abends**, siehe
+> den Block ganz oben.
 >
 > ---
 >

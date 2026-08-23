@@ -499,8 +499,19 @@ if ($Bauen -and $cmakeBefehl) { $kopf['cmake'] = (Einzeilig $cmakeBefehl @('--ve
 # genau der T2-Befund vom 20.08., nur eine Ebene tiefer. hostbridge/, spike/,
 # probe/, cmake/ und der JUCE-Bridge-Patch kamen mit SONDE-003/004a dazu,
 # vertrag/ mit SONDE-005a.
+#
+# ⚠️ Nachgezogen am 23.08. (S10-11/SONDE-008, Selbstaudit): DREI Orte fehlten.
+# `core/` ist neu in diesem Ticket - aber `state/` (seit SONDE-006, seit S8 der
+# halbe NakamaKern) und `sonde/` (seit S9 die Quelle BEIDER neuen Bundles)
+# fehlten seit ihrem jeweiligen Ticket. Der Riegel haette eine Aenderung an
+# `NakamaState.cpp` oder `SondeProcessor.cpp` nicht bemerkt und einen veralteten
+# Lauf als frisch beglaubigt - genau der Fehler, gegen den er errichtet wurde.
+# Der Kommentar oben sagt "JEDE Quelle"; zwei Tickets lang stimmte das nicht.
 $quellOrte = @(
     (Join-Path $Wurzel 'eq-copilot\plugin\src'),
+    (Join-Path $Wurzel 'eq-copilot\plugin\core'),
+    (Join-Path $Wurzel 'eq-copilot\plugin\state'),
+    (Join-Path $Wurzel 'eq-copilot\plugin\sonde'),
     (Join-Path $Wurzel 'eq-copilot\plugin\tests'),
     (Join-Path $Wurzel 'eq-copilot\plugin\hostbridge'),
     (Join-Path $Wurzel 'eq-copilot\plugin\vertrag'),
@@ -756,7 +767,11 @@ else {
     $z.Add('|---|---|---|---|')
     foreach ($b in $baustand) { $z.Add("| ``$($b.Name)`` | $($b.Gebaut) | ``$($b.Hash)`` | $($b.Stand) |") }
     $z.Add('')
-    $z.Add("Neueste Quelldatei (``plugin/src``, ``tests``, ``hostbridge``, ``vertrag``, ``hostprobe``, ``spike``, ``probe``, ``cmake``, ``third_party/patches``, CMakeLists): **$(if ($neuesteQuelle) { $neuesteQuelle.ToString('yyyy-MM-dd HH:mm:ss') } else { 'nicht ermittelbar' })**. ``cargo test`` uebersetzt selbst und ist damit immer frisch.")
+    # Die Liste kommt aus $quellOrte selbst, statt danebengeschrieben zu werden:
+    # eine abgeschriebene Aufzaehlung altert genau dann, wenn ein Ort dazukommt -
+    # also in dem Moment, in dem sie wichtig waere (Selbstaudit 23.08.).
+    $orteText = (($quellOrte | ForEach-Object { '`' + (RelativZurWurzel $_).Replace('\', '/').Replace('eq-copilot/', '') + '`' }) -join ', ')
+    $z.Add("Neueste Quelldatei ($orteText): **$(if ($neuesteQuelle) { $neuesteQuelle.ToString('yyyy-MM-dd HH:mm:ss') } else { 'nicht ermittelbar' })**. ``cargo test`` uebersetzt selbst und ist damit immer frisch.")
     if ($bauBestaetigt) {
         $z.Add('')
         $z.Add('Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar vor diesem Lauf erfolgreich gebaut, das Buildsystem hat die Abhaengigkeiten also selbst geprueft.')

@@ -140,12 +140,25 @@ public:
         nichts davon - beide Bundles sind heute Passthrough -, aber der
         Brokerstart tut es: `darfBrokerStarten()` ist fuer eine Sonde IMMER
         falsch, weil sie nie `main` wird. Das ist die Sonden-Haelfte von
-        "Scanner/Probe/Render spawnen nie Broker". */
+        "Scanner/Probe/Render spawnen nie Broker".
+
+        Beide lesen unter `zustandSchloss` - demselben Schloss, unter dem
+        `setStateInformation` den Automaten schreibt. Ohne das waeren Schreiber
+        und Leser desselben Zustands verschieden verriegelt, und genau hier
+        haengt SONDE-010 den Brokerstart an: dann liest ein anderer Thread,
+        waehrend der Host einen Stand nachreicht. Das Main-Bundle beantwortet
+        dieselbe Frage schon so (`PluginProcessor.cpp:531-540`, `bindungMutex`).
+        T2-Befund 23.08. */
     nakama::state::Klassifikation klassifikation() const noexcept
     {
+        const juce::ScopedLock l (zustandSchloss);
         return lebenslauf.klassifikation();
     }
-    bool darfBrokerStarten() const noexcept { return lebenslauf.darfBrokerStarten(); }
+    bool darfBrokerStarten() const noexcept
+    {
+        const juce::ScopedLock l (zustandSchloss);
+        return lebenslauf.darfBrokerStarten();
+    }
 
 private:
     nakama::state::Zustand zustand;

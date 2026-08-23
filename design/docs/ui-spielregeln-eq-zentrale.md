@@ -6,13 +6,18 @@
   ‚mal eben schnell machen'"). Dieses Blatt sind die **Spielregeln, die das
   Design erfüllen muss, um umsetzbar zu sein** — was die Technik liefert,
   was sie verlangt, was sie (noch) nicht kann.
-- **Quellen:** Entwurf `docs/FL-Nakama-Sonden-Design-Entwurf.md`
-  (§44, §53.8, Erratum (n)) · Parameterbestand
-  `eq-copilot/schemas/state/nakama-parameter-v1.json` · Capability-Report
-  `eq-copilot/identity/host-capabilities-fl-v1.json` · Register/Abnahmen
-  23.08. Jede Regel trägt ihre Quelle; **(Vorschlag)** = Claude-Setzung,
-  noch ohne User-Wort. Zahlen sind Startwerte (Errata (f)), änderbar —
-  aber nur versioniert, nie stillschweigend.
+- **Quellen (alle im Repo, vom Workspace-Root):** Entwurf
+  `docs/FL-Nakama-Sonden-Design-Entwurf.md` (§44, §53.8, Erratum (n)) ·
+  Parameterbestand `eq-copilot/schemas/state/nakama-parameter-v1.json` ·
+  Capability-Report `eq-copilot/identity/host-capabilities-fl-v1.json` ·
+  Entscheid-Register in `CLAUDE.md` · Wortlaut der Entscheide:
+  `design/abnahmen/2026-08-23-gen-eq-zentrale.md` und
+  `design/abnahmen/2026-08-23-interview-struktur.md` (21 Festlegungen).
+  Jede Regel trägt ihre Quelle; **(Vorschlag)** / **(Annahme)** =
+  Claude-Setzung, noch ohne User-Wort. Zahlen sind Startwerte
+  (Errata (f)), änderbar — aber nur versioniert, nie stillschweigend.
+  **Für frische Sessions:** dieses Blatt gilt nur zusammen mit dem Repo —
+  im Nakama-Workspace öffnen, nicht als loser Text weitergeben.
 
 ## 1. Rahmen
 

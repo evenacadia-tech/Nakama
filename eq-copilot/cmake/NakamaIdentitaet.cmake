@@ -85,6 +85,17 @@ function(nakama_identitaet_lesen ziel_id praefix)
     # im Manifest ist keine Zusage, und ein stiller Griff daneben waere die
     # schlimmste Art von Fehler, die diese Datei haben kann.
     string(JSON _anzahl LENGTH "${_js}" ziele)
+    # T1-Selbstaudit 23.08. (numerische Raender): `foreach(x RANGE -1)` laeuft
+    # NICHT null Mal, sondern ueber '0;-1' - gemessen mit `cmake -P`. Bei
+    # leerem `ziele` griffe die Schleife also auf Index 0 zu und braeche mit
+    # CMakes eigener Meldung ab statt mit dieser hier. Der Abbruch waere
+    # richtig, die Erklaerung waere es nicht.
+    if(_anzahl EQUAL 0)
+        message(FATAL_ERROR
+            "S9/SONDE-007b: Das Identitaetsmanifest enthaelt kein einziges Ziel\n"
+            "(${NAKAMA_IDENTITAET_DATEI}).\n"
+            "Ohne eingefrorene Ziele gibt es keine Identitaet - und geraten wird sie nicht.")
+    endif()
     math(EXPR _letzter "${_anzahl} - 1")
     set(_eintrag "")
     set(_bekannte "")

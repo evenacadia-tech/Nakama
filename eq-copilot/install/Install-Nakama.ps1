@@ -7,10 +7,19 @@
     Dieses Skript entscheidet NICHTS. Es liest
     eq-copilot/install/nakama-installer-v1.json (was ausgeliefert wird) und
     eq-copilot/identity/plugin-identities-v1.json (wie die Bundles heissen)
-    und tut genau das, was dort steht. Kein Bundlename, kein Pfad und kein
-    Hash steht in diesem Skript - das war der Fehler der Vorgaengerfassung
-    Install-EQ-Copilot.ps1, die drei Hashes und zwei Pfade als Literale trug
-    und mit jedem Bau von Hand nachgezogen werden musste.
+    und tut genau das, was dort steht. Kein Bundlename, kein Zielpfad und
+    kein Hash steht in diesem Skript - das war der Fehler der
+    Vorgaengerfassung Install-EQ-Copilot.ps1, die drei Hashes und zwei Pfade
+    als Literale trug und mit jedem Bau von Hand nachgezogen werden musste.
+
+    Genau EIN Pfadliteral bleibt, und es ist bewusst hier: `Contents\x86_64-win`
+    in Innen-Pfad(). Das ist die VST3-Bundlestruktur, kein Nakama-Name - sie
+    steht im Format, nicht in unserer Identitaet, und wuerde sich mit einer
+    neuen VST3-Fassung aendern, nicht mit einem neuen Bundle. Der Satz oben
+    sagt darum "Zielpfad": genannt wird hier nichts, was in
+    plugin-identities-v1.json oder im Installer-Manifest steht.
+    (T1-Selbstaudit 23.08., Punkt "luegt der Text?" - vorher stand da
+    pauschal "kein Pfad", und das war um dieses Fragment zu viel.)
 
     DREI RIEGEL, VOR JEDEM SCHREIBZUGRIFF:
       1. Vollstaendigkeit - ein Artefakt mit `sha256: null` bricht ab. Ein

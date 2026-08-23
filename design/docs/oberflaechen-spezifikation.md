@@ -1,7 +1,11 @@
 # Oberflächen-Spezifikation — was jede Ansicht zeigen MUSS
 
-Diese Datei ist die einzige Sachquelle des Projekts. Sie beschreibt
-Inhalte und Zustände, keine Gestaltung. Die Gestaltung kommt aus Figma
+**Ergänzung für Bedienung und Bewegung:** Die [Interaktions- und Motion-Spezifikation](interaktions-und-motion-spezifikation.md) konkretisiert Gesten und Zustandswechsel, ohne die sichtbare Figma-Anordnung zu ändern.
+
+Diese Datei ist die zentrale Sachquelle des Projekts für Inhalte und
+Zustände. Die verlinkte Interaktions- und Motion-Spezifikation ergänzt
+nur die Bediengesten und Übergänge dieser festgelegten Elemente. Sie
+erfindet keine zusätzlichen Messwerte oder Produktzustände. Die Gestaltung kommt aus Figma
 (User, Designvertrag 2026-08-21: „Figma ist Quelle; Repo setzt um");
 sie wird hier nicht beschrieben. Was hier nicht steht, existiert nicht —
 keine zusätzlichen Messwerte oder Zustände erfinden.

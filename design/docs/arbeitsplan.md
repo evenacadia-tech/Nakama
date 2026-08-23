@@ -1,5 +1,7 @@
 # Arbeitsplan — womit konkret angefangen wird
 
+**Ergänzung zu den aktuellen Figma-Ständen:** Die [Interaktions- und Motion-Spezifikation](interaktions-und-motion-spezifikation.md) hält die vereinbarten Gesten, Zustandswechsel und die Motion-Übergabe für Gen, Probeeq und Suna fest.
+
 Der Fahrplan dieses Projekts. Eine Phase endet erst mit einer Abnahme in
 `abnahmen/`; keine Phase wird übersprungen, keine vorgezogen. Methodik je
 Phase: `CLAUDE-UX-UI-ARBEITSKERN.md` (Stufen 1–7); Hintergründe:

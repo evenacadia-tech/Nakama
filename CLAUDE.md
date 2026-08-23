@@ -99,6 +99,8 @@ im anschluss wird dann nurnoch im nakama repo gearbeitet". Einstieg dort:
 | 22.08. | Wortmarken aller drei Apps: es gilt der Figma-Export, Claude wählt keine Fassung aus | „alle wortmarken haben den stil wie ich ihn aus figma exportiert habe" (Hub `U6.9`) |
 | 22.08. | Hör-Markierung nur noch mit gültigem „spielt"; das heutige fail-open ohne Transport-Information fällt (NAK-35/NAK-24, Tickets S10–S13) | Wahl „Nein, nur mit Signal" (Hub `U10`) |
 | 22.08. | Gen-Übersicht: das Quellen×Band-Gitter aus Figma gilt; die Abnahme vom 20.08. ist an der Stelle überholt, die es ausschloss | Wahl „Figma gilt" (Hub `U9.5`) |
+| 23.08. | Dirigent-Autonomie: der Dirigent hält nicht nach jedem Ticket an, sondern arbeitet den Plan ohne Zwischenhalt ab (Halt nur an Gate, Bruch oder echter User-Frage) | „Durchlaufen bis der Plan leer ist" (`.claude/skills/dirigent/SKILL.md` §0; NAK-54) |
+| 23.08. | Gate-Strenge: **keine** harte Weiterschalt-Regel — je Fall entscheiden. An ihrer Stelle steht die Belegpflicht: jedes Weiterschalten protokolliert (a) worauf es sich stützt UND (b) was ungeprüft blieb | „ich will nicht dass es an einer harten regel scheitert. ich denke das kann variieren. die regel ist einfach das individuell zu entscheiden mit bestem wissen" (`.claude/skills/dirigent/SKILL.md` §3.4; NAK-54) |
 
 **Was NICHT mehr gilt** (und nirgends mehr als gültig auftauchen darf):
 Recherche als „kanonischer Plan" · Spectral Field / Bauplan 2.0 / Tiefenfeld /
@@ -192,24 +194,29 @@ Baustand: sind Prüfbinaries älter als ihre Quellen, verweigert er mit Exitcode
 die Beglaubigung (0 grün · 2 rot · 3 Voraussetzung fehlt · 4 nicht beglaubigt).
 Vorlage `docs/beweise/VORLAGE.md`, Basislinie `docs/beweise/S0-basislinie.md`.
 
-**Kanon (23 Beine, Tabelle in `tools/beweise.ps1`):** NullTest · Golden ·
+**Kanon (26 Beine — gezählt in der Tabelle von `tools/beweise.ps1`, dort steht
+die Wahrheit):** NullTest · Golden ·
 Markierung · `cargo test` (seit 22.08. mit dem JCS-Bein) · sechs Python-Beine
 des v3-Vertrags · A11 `pruefe_v2_schemas.py` · **A12
 `erzeuge_state_fixtures.py --pruefen`** (SONDE-006) · **A13
 `pruefe_host_capabilities.py`** (SONDE-004) · **A14
 `pruefe_kern_identitaetsfrei.py`** (SONDE-007a) · **A15/A16
 `EqCopSunaNullTest` / `EqCopProbeeqNullTest`** und **A17
-`pruefe_installer_manifest.py`** (SONDE-007b) · Identität · **B2
+`pruefe_installer_manifest.py`** (SONDE-007b) · **A18
+`pruefe_installer_gegenpfad.py`** (S9-Nacharbeit 23.08.: fährt den Gegenpfad
+installieren↔Rückweg wirklich, in einer Sandbox unter `%TEMP%` — es wird nichts
+installiert) · Identität · **B2
 `EqCopStateMigrationTest`** (SONDE-006) · Hostkontext · Host-Probe (zählt
 89 nur mit PNG-Ziel, sonst 85 — NAK-34) · Schema · **B8
-`EqCopLebenslaufTest`** (SONDE-007b). **Die Prüfzahlen stehen im
+`EqCopLebenslaufTest`** (SONDE-007b) · **B4 `EqCopQueueStressTest`** und **B9
+`EqCopLoudnessGoldenTest`** (SONDE-008). **Die Prüfzahlen stehen im
 jüngsten Manifest in `docs/beweise/`, nicht hier** (zuletzt
-`SONDE-007b.md`: 23/23 grün). Nicht im Kanon, aber vorhanden:
+`SONDE-008.md`: 26/26 grün). Nicht im Kanon, aber vorhanden:
 `EqCopAuxSpikeTest` (NAK-37), Shot (`--state` lädt einen Host-State vor dem
 Render), PaintBench, PipeProbe, `pluginval --strictness-level 8`
 (⚠️ liegt **nur** unter `%TEMP%\pluginval.exe` — NAK-26; wer es sucht, sucht
-dort zuerst). Vier Beine stehen als „geplant" und werden Pflicht, sobald ihr
-Ticket sie baut.
+dort zuerst). **Drei** Beine stehen als „geplant" (B5 FeatureEngine v2, B6
+DSP-Golden, B7 Transaktion) und werden Pflicht, sobald ihr Ticket sie baut.
 
 - Golden-WAVs einmalig: `py -3.13 tools/eq-copilot/erzeuge_fixtures.py --nur-wav`
   (Erzeuger der Referenz `tools/analyze-track.py` liegt noch im FL-Studio-Repo — NAK-31).
@@ -338,7 +345,12 @@ Ticket sie baut.
   sind damit erstmals an Artefakten gemessen (§53.5 „P1 verifiziert das erste
   Moduleinfo"), und **kein Bundle trägt eine fremde Ziel-CID** — die
   Artefakt-Seite von §53.4. K2b/K2c messen seit S9 gegen **jeden** Verbraucher
-  des Kerns (12), nicht gegen eine Stichprobe. ⚠️ Beide neuen sind heute
+  des Kerns, nicht gegen eine Stichprobe — heute **14**, und die Zahl ist keine
+  abgeschriebene: `plugin/CMakeLists.txt:156` trägt jeden
+  `nakama_kern_anbinden()`-Aufruf in eine GLOBAL-Property ein, `:627` zählt sie
+  und der Configure-Lauf meldet sie („K2b/K2c gegen alle N Verbraucher
+  gemessen"); eine leere Liste bricht ab, statt still ins Leere zu messen.
+  ⚠️ Beide neuen sind heute
   **Passthrough ohne Hostparameter und ohne Editor**: Probeeqs EQ-DSP gehört zu
   P6, die Oberflächen kommen aus Figma. 🔑 Der Gegenpfad speichern↔laden fand
   zwei echte Fehler, die sonst ins Bundle gegangen wären — `active_probe`
@@ -378,11 +390,19 @@ Ticket sie baut.
   unbekannt zählt wie älter). Broker nach `Program Files`, nicht
   `%LOCALAPPDATA%` — er ist ab SONDE-010 ein Spawn-Ziel.
 - **Stand S9:** alle drei Bauabschnitte gebaut, `pluginval` 8 an allen drei
-  Bundles SUCCESS, Kanon 23/23 — **T1 und T2 beide offen**, also „gebaut",
-  nicht „abgenommen".
+  Bundles SUCCESS, Kanon 23/23 **im damaligen Umfang** (heute 26 — die Zahl ist
+  gewachsen, nicht das Urteil). **T1 ist gefahren und T2s vier Befunde sind
+  geschlossen** (`docs/beweise/SONDE-007b.md` §6). Ein **PASS steht weiter aus**:
+  den darf nur ein frischer Prüfer geben, der weder gebaut noch nachgearbeitet
+  hat (§6.7). Also „gebaut und nachgebessert", nicht „abgenommen".
 - **Hör-Markierung (0.3.0):** färbt auf Klick das Monitorsignal von Gen;
-  Verriegelung im Code seit S9 **`klassifiziertAlsMain ∧`** `(echtzeitOk ∨ test)
-  ∧ (spielt ∨ ¬hatTransport) ∧ ¬isNonRealtime ∧ (editorOffen ∨ test)`;
+  Verriegelung im Code seit S10–11 **`klassifiziertAlsMain ∧`** `(echtzeitOk ∨
+  test) ∧ spielt ∧ ¬isNonRealtime ∧ (editorOffen ∨ test)` —
+  `PluginProcessor.cpp:300-306`. Der Term `spielt` ist dabei die UND-Verknüpfung
+  **zweier** Stempelbits (`:272`): `stempel.spieltGültig ∧ stempel.spielt`, und
+  `spieltGültig` selbst ist `processContextPresent ∧ playing.gueltig` (`:332`) —
+  also „der Host hat einen Kontext geliefert UND sein Spielbit ist gültig UND es
+  spielt";
   Analyse-Abgriff davor; Render bitidentisch (MarkierungTest). Jede weitere
   Audio-Ausnahme von Gen/Suna braucht denselben Beweisstandard.
   ⚠️ **Der erste Term ist neu (23.08., §53.5 „audio-neutral"):** eine
@@ -391,10 +411,16 @@ Ticket sie baut.
   16.08.-Stand ist davon unberührt. Der Test-Schalter `testForciereEchtzeit`
   umgeht diesen Term absichtlich **nicht** — er umgeht nur, was an der Wanduhr
   hängt.
-  ⚠️ **Das `∨ ¬hatTransport` ist abgewählt** (User 22.08., Hub `U10`: „Nein,
-  nur mit Signal") — verlangt ist ein gültiges „spielt". Der Code trägt das
-  fail-open **noch**; umzusetzen mit S10–S13 (NAK-35/NAK-24). Bis dahin
-  beschreibt die Formel oben den Ist-Stand, nicht den Soll-Stand.
+  ⚠️ **Das `∨ ¬hatTransport` ist gefallen** (User 22.08., Hub `U10`: „Nein, nur
+  mit Signal") — **umgesetzt mit SONDE-008** (23.08.); an seiner Stelle steht ein
+  gültiges „spielt". NAK-35 und NAK-24 sind damit geschlossen; die Formel oben
+  ist der Ist-Stand, an der Quelle gelesen. In FL ändert das nichts (dort lag
+  `hatTransport` ab dem ersten Block auf true, der fail-open-Zweig war tot) —
+  **headless färbt ohne Playhead jetzt nichts mehr**. 🔑 Gedeckt ist der Term
+  von genau EINEM Bein: `EqCopMarkierungTest` **T11**, erst in der
+  SONDE-008-Nacharbeit gebaut. Davor ließ sich das fail-open zurückbauen, ohne
+  dass eines der vier Audio-Beine rot wurde (T2-2 in NAK-58) — ein Term ohne
+  Bein ist eine Zusage, die sich unbemerkt zurücknehmen lässt.
 - **Editor heute:** Material-Kit-Front, festes Verhältnis 750:520, frei ziehbar
   600×416…1950×1352 (`PluginEditor.cpp:176-183`) — Provisorium; für die
   neue UI gilt die abgenommene Größe 760×430 („so oder so die zweitkleinste

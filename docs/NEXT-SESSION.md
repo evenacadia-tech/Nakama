@@ -424,7 +424,10 @@
 > sitzungen sind lange schon fertig und ruhen" — sie sind also verwaist, nicht
 > in Arbeit): vier Dateien unter `briefing-hub/` und zwei **Loeschungen** unter
 > `eq-copilot/design/` (`ASSET-KIT.md`, `eq-copilot-material-preview.png`).
-> Nicht blind committen — erst pruefen, ob die Loeschungen gewollt waren.
+> ~~Nicht blind committen — erst pruefen, ob die Loeschungen gewollt waren.~~
+> **Geklaert 23.08.:** die briefing-hub-Arbeit ist geborgen (`6e67662`), die
+> Loeschungen sind auf User-Wort committet („ASSET KIT is alt und längst
+> verworfen"), die Motion-Spezifikation ebenso (`7020f06`).
 
 
 > Stand: **22.08.2026, nach S7 (`SONDE-006`).** Davor: 21.08., Kontext-Inventur und Interview mit dem User.

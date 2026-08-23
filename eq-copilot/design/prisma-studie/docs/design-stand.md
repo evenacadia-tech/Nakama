@@ -446,6 +446,7 @@ Tiefenfeld geparkt; für die Kunstwerk-Richtung gilt er NICHT.
 
 Das installierte Plugin (0.3.0, M3a) trägt noch die **Material-Kit-Front**:
 warme Metallfläche + schwarzes Analyseglas + Ember-Akzent, eigenständige
-Vektorfront aus `plugin/src/EqCopilotAssetKit.h` (Vertrag:
-`design/ASSET-KIT.md`), Fensterformat 750:520. Diese Front wird durch das
+Vektorfront aus `plugin/src/EqCopilotAssetKit.h` (das Vertragsblatt
+`design/ASSET-KIT.md` wurde 23.08.2026 auf User-Wort gelöscht; Historie in
+git), Fensterformat 750:520. Diese Front wird durch das
 Spectral Field **ersetzt**, sobald der Design-Freeze steht.

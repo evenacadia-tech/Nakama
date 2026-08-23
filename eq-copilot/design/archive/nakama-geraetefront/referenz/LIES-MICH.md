@@ -17,5 +17,5 @@ NUR Anschauungsmaterial, nichts davon wird kopiert oder eingebettet.
 | `original-bea83c06….webp` | Cosmin Negoita — dunkles Gerät, helles Papier-Display mit EQ-Kurven |
 | `original-f806632d….webp` | Quanta-Recreation (Nenad Milosevic) — dunkles Multi-FX-UI |
 
-Bezug: `NAKAMA-Design-Studie.html` (Repo-Wurzel) · `../ASSET-KIT.md` ·
-`NakamaGehaeuse.h` im Plugin.
+Bezug: `NAKAMA-Design-Studie.html` (Repo-Wurzel) · `NakamaGehaeuse.h` im
+Plugin. (`../ASSET-KIT.md` gelöscht 23.08.2026 auf User-Wort; Historie in git.)

@@ -74,8 +74,9 @@ Diagnose (Plan §11).
 v2 (L==R) + 6 adversariale GoldenTest-Fälle — **GOLDEN OK 178/178**
 (`docs/CS1-BEFUND.md`; Auftrag: `../docs/archiv/EQ-COPILOT-TECHNIK-UX-UEBERGABE.md`, Archiv).
 **EQ-Copilot Material Kit (2026-08-15):** vollständige eigenständige
-Vektorfront aus `plugin/src/EqCopilotAssetKit.h` (Tokens-Gruppe `copilot`, Vertrag:
-`design/ASSET-KIT.md`). Warme Metallfläche + schwarzes Analyseglas + sparsamer
+Vektorfront aus `plugin/src/EqCopilotAssetKit.h` (Tokens-Gruppe `copilot`; das
+Vertragsblatt `design/ASSET-KIT.md` ist am 23.08.2026 auf User-Wort gelöscht —
+„alt und längst verworfen"; Historie in git). Warme Metallfläche + schwarzes Analyseglas + sparsamer
 Ember-Akzent; keine übernommenen Fremd-Assets und keine Fake-Potis. LUFS Short
 und True Peak sind eigene Anzeigeschienen, Werkzeuge echte physische Tasten,
 Kennzahlen getrennte Statuszellen. Jedes Bauteil ist unabhängig verschiebbar

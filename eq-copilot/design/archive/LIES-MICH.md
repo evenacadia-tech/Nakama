@@ -42,9 +42,11 @@ Die neue Front aller drei Apps kommt aus Figma — diese hier ist Verlauf.
 
 - `../prisma-studie/` — die Prisma-/Hörkompass-Studie (User-Idee, geparkt,
   eigenes Statusblatt).
-- `../tokens.json`, `../gen-tokens.mjs`, `../ASSET-KIT.md` — die Material-Kit-
+- `../tokens.json`, `../gen-tokens.mjs` — die Material-Kit-
   Kette ist technisch lebendig (`tokens.json` → `plugin/src/LeitstandTokens.h`)
-  und bleibt im Wurzelordner, beschriftet als Provisorium.
+  und bleibt im Wurzelordner, beschriftet als Provisorium. Ihr
+  Beschreibungsblatt `../ASSET-KIT.md` wurde am 23.08.2026 auf User-Wort
+  gelöscht („alt und längst verworfen"; Historie in git).
 - `../vendor-build/` — Playwright-Render-Infrastruktur (gemeinsam, `npm ci` dort).
 - `docs/inspirationen/` (14 OpenAI-generierte Prisma-Bilder) — gelöscht 21.08.
   (User: „Weiß nicht mehr – raus"); in der Git-Historie bis `e2b553e` lesbar.

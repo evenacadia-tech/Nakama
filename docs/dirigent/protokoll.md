@@ -18,6 +18,14 @@ Regeln und Zyklus: `.claude/skills/dirigent/SKILL.md`. Jüngster Eintrag oben.
 
 ---
 
+## 2026-08-23 spät · SONDE-009 · bau (S12–13)
+
+- **Session:** „S12–13 SONDE-009 — FeatureEngine v2" (`7e47fcfb-d9c2-45bc-8cfe-f74e5ceb3c1c`), Opus 5 mit 1M.
+- **Ergebnis:** Gebaut in sieben Commits (`f14924a` Bandvertrag/K-Gewichtung/FFT im Realtime-Core · `357786e` FeatureEngine v2 + erweiterter Zeitstempel · `133526e` Kanon-Beine B5+A19 · `f1e4a08` Manifest, **NAK-29 und die NAK-56-Werkbankhälfte geschlossen**, NAK-59 neu · `aed5fcf` Docs · `39b4cdd` Hub · `48fcd9c` Selbstaudit). Der Gate-Satz „Drop/Seek/Loop trennt jedes offene Fenster" ist als **neun** unterscheidbare Epochengrenzen gebaut, je mit eigenem Testfall; der Filterzustands-Flush ist gemessen (ohne ihn >9 LU Fehler). **Sieben Vorführungen, eine davon ehrlich protokolliert zunächst blind** (der Test schaute erst nach 3,5 s — nachgeschärft, dann schlug er an; derselbe Fehlertyp wie T2-1 gestern). Die Brücken-Gegenprobe zeigt, dass der `nakamaBlockEmpfangen`-Pfad gebraucht wird: 7 Zeitangaben über die Brücke, 2 über den Ersatzweg. Kanon 26 → **28**; **maßgeblich ist der vierte Lauf** (17:07, 28/28, Exit 0) — der dritte galt, bis der Selbstaudit einen numerischen Rand am Ursachenzähler fand (`48fcd9c`). Bitidentität gemessen, kein Sample geändert. NAK-59 (Band-Stereo hat keinen Platz im v3-Binärvertrag) korrekt bei SONDE-010 verortet — Wire-Format-Versionierung gehört in das Ticket, das den Vertrag anfasst („Schemas sind Verträge").
+- **Gestützt auf:** Repo-Messung — Commits gepusht, Manifest-Rohblöcke (16:56 + 17:07 je 28/28 Exit 0), §5 „Jedes neue Bein beim Fallen vorgeführt", NAK-Buchführung in `offene-punkte.md`.
+- **Nicht geprüft:** Das T1-Kästchen im Manifestkopf habe ich nicht explizit verifiziert (geht als Prüfauftrag an den T2-Prüfer); den Code selbst misst der frische Prüfer — insbesondere die **FFT im Realtime-Core** (heikelste neue Fläche) und die neun Grenzen einzeln.
+- **Weiter mit:** T2-Prüf-Session für SONDE-009 — Basispunkt **`ff24908`** (selbst gerechnet: Elterncommit von `f14924a`). Danach warten DREI Stände auf frische Prüfer-PASS (S9, S10–11, S12–13) — die G2-Bündelung wird konkreter.
+
 ## 2026-08-23 abends · Baumhygiene · hygiene (parallel zu S12–13)
 
 - **Session:** „Baumhygiene + Registerpflege (NAK-54/55)" (`1d1f86d1-c131-4695-a05e-acd4ed9c40e6`), Opus 5 mit 1M — parallel zur S12–13-Bau-Session auf strikt disjunkten Territorien; Anstoß war der Stop-Hook (Fund = Fix statt „sobald die Datei frei ist").

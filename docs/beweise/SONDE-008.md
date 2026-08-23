@@ -197,13 +197,20 @@ Speicher ist **unmöglich** (es ist im Kern eine Quantil-Summen-Abfrage).
 - Das **absolute** Gate läuft als kompensierte Laufsumme (Neumaier) plus Zähler
   — Γ_r ist damit **exakt**, ohne jede Historie.
 - Nur die **Auswahl** für das relative Gate kommt aus einem Histogramm über die
-  Blocklautheit (10 001 Bins à 0,01 LU über [−70, +30] LUFS). Die Bin-**Summen**
-  sind exakt; unsicher ist allein die Zugehörigkeit **eines einzigen** Bins.
-  > ⚠️ **T2 23.08.: dieser letzte Halbsatz ist widerlegt** — der Eimer über dem
-  > Gitter ist eine zweite, unbeschränkte und von `unsicherheitLu()` **nicht**
+  Blocklautheit (10 001 Bins à 0,01 LU über [−70, **+30,01**) LUFS). Die
+  Bin-**Summen** sind exakt; unsicher ist allein die Zugehörigkeit **eines
+  einzigen** Bins.
+  > ⚠️ **T2 23.08.: dieser letzte Halbsatz war widerlegt** — der Eimer über dem
+  > Gitter war eine zweite, unbeschränkte und von `unsicherheitLu()` **nicht**
   > gemeldete Quantisierungsquelle (gemessen: 2,918 LU Fehler bei 0,000000000 LU
-  > gemeldeter Schranke). Siehe [§8.4 T2-1](#t2-1). Auch die Gitterobergrenze ist
-  > +30,01 LUFS, nicht +30,0.
+  > gemeldeter Schranke), siehe [§8.4 T2-1](#t2-1).
+  > **Geschlossen in der Nacharbeit ([§9.1](#nacharbeit-t2-1)):** über dem
+  > Feingitter liegt jetzt ein **Oberband** aus 3070 Bins à 1 LU bis +3100,01
+  > LUFS — es gibt keinen Eimer mehr, jede endliche Blocklautheit hat einen Bin
+  > endlicher Breite, und damit ist der Halbsatz keine Zusage mehr, sondern eine
+  > Folge der Konstruktion. Der Korpus des Prüfers liefert seither `d =
+  > 0,000000000 LU`. Die Gitterobergrenze steht oben berichtigt (+30,01, nicht
+  > +30,0 — die T2-Zahlenberichtigung aus §8.8).
 - `unsicherheitLu()` macht genau diese Schranke auslesbar, statt sie zu
   behaupten. §48.1 verlangt: „Der EBU-Korpus prüft, dass Quantisierung und
   Gating innerhalb der Toleranz aus Abschnitt 49 bleiben."

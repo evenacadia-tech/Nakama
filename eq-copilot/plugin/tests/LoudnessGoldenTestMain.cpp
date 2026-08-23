@@ -28,6 +28,16 @@
 //      alloziert, und die Zahl steht im Protokoll.
 //   F  Numerische Raender: NaN/Inf-Zellen, Stille unter dem absoluten Gate,
 //      exakt -70,0 LUFS, leerer Zustand.
+//   G  DAS OBERBAND (Nacharbeit T2-1, 23.08.2026). Der Bereich ueber dem
+//      Feingitter, mit MEHR ALS EINEM PEGEL. Bis zur Nacharbeit fuellte §F ihn
+//      nur mit einem einzigen (200x z=1e6) - und mit einem Pegel ist der
+//      Mittelwert eines Eimers zwangslaeufig die Blocklautheit jedes seiner
+//      Bloecke, der Fall konnte konstruktiv nicht scheitern. Der T2-Pruefer hat
+//      genau dort das Gegenbeispiel gefunden: zwei Pegel, Gamma_r dazwischen,
+//      2,918 LU Fehler bei 0,000000000 LU gemeldeter Schranke. G faehrt diesen
+//      Korpus, den Sweep DARUEBER (dieselbe Adversarialitaet wie C, nur oberhalb
+//      des Gitters), die Naht zwischen beiden Aufloesungen und die
+//      Vollstaendigkeit des Rasters.
 //
 // Exit 0 nur bei "LOUDNESS-GOLDEN OK".
 #include "analysis/LoudnessAccumulator.h"
@@ -163,6 +173,7 @@ namespace
         double schranke { 0.0 };
         bool   kurzAkkuGueltig { false }, kurzRefGueltig { false };
         double kurzAkku { 0.0 }, kurzRef { 0.0 };
+        std::uint64_t ueberGitter { 0 }, ueberOberband { 0 };
     };
 
     Ergebnis fahre (const std::vector<double>& zellen)
@@ -179,6 +190,8 @@ namespace
         r.schranke    = akku.unsicherheitLu();
         r.kurzAkkuGueltig = akku.kurz (r.kurzAkku);
         r.kurzRefGueltig  = ref.kurz (r.kurzRef);
+        r.ueberGitter     = akku.bloeckeUeberGitter();
+        r.ueberOberband   = akku.bloeckeUeberOberband();
         return r;
     }
 
@@ -191,6 +204,12 @@ namespace
                 name + ": Gueltigkeit wie die Referenz",
                 std::string ("akku=") + (r.akkuGueltig ? "1" : "0")
                     + " ref=" + (r.refGueltig ? "1" : "0"));
+        // Vollstaendigkeit des Rasters, bei JEDEM Korpus: faellt ein Block durch,
+        // meldet `unsicherheitLu()` unendlich und die Schranke unten waere
+        // wertlos. Die Zeile kostet nichts und haelt die Voraussetzung fest,
+        // von der der ganze Beweis lebt.
+        pruefe (r.ueberOberband == 0, name + ": kein Block faellt durch das Raster",
+                std::to_string (r.ueberOberband));
         if (! r.refGueltig)
             return 0.0;
 
@@ -239,10 +258,19 @@ int main()
     std::cout << "Referenz: die ausgebaute Rechnung (unbegrenzter Vektor + Zweitdurchgang)."
               << std::endl;
     std::cout << "Toleranz: +-" << zahl (kToleranz, 1) << " LU (Entwurf §49)." << std::endl;
-    std::cout << "Histogramm: " << LoudnessAccumulator::kBins << " Bins a "
+    // Die gedruckten Kanten sind AUSGERECHNET, nicht abgelesen: `kBinOben` ist
+    // die Rechengroesse fuer die Binzahl, die oberste Kante liegt bei -70 +
+    // 10001*0,01 = +30,01 (T2-Berichtigung, Manifest §8.8).
+    std::cout << "Feingitter: " << LoudnessAccumulator::kBins << " Bins a "
               << zahl (LoudnessAccumulator::kBinBreite, 2) << " LU ueber ["
-              << zahl (LoudnessAccumulator::kBinUnten, 1) << ", "
-              << zahl (LoudnessAccumulator::kBinOben, 1) << "] LUFS." << std::endl;
+              << zahl (LoudnessAccumulator::kBinUnten, 2) << ", "
+              << zahl (LoudnessAccumulator::kFeinObersteKante, 2) << ") LUFS." << std::endl;
+    std::cout << "Oberband:   " << LoudnessAccumulator::kObenBins << " Bins a "
+              << zahl (LoudnessAccumulator::kObenBreite, 2) << " LU ueber ["
+              << zahl (LoudnessAccumulator::kObenUnten, 2) << ", "
+              << zahl (LoudnessAccumulator::kObenUnten
+                       + LoudnessAccumulator::kObenBins * LoudnessAccumulator::kObenBreite, 2)
+              << ") LUFS - lautheit(DBL_MAX) = 3081,86." << std::endl;
     std::cout << std::endl;
 
     double schlimmster = 0.0;
@@ -394,7 +422,7 @@ int main()
                   << LoudnessAccumulator::speicherBytes() << " Byte - haengt an keiner "
                   << "Laufzeitgroesse." << std::endl;
         pruefe (LoudnessAccumulator::speicherBytes()
-                    == (std::size_t) LoudnessAccumulator::kBins * (sizeof (double) + sizeof (std::uint32_t))
+                    == (std::size_t) LoudnessAccumulator::kBinsGesamt * (sizeof (double) + sizeof (std::uint32_t))
                      + (std::size_t) LoudnessAccumulator::kZellenRing * sizeof (double),
                 "speicherBytes() ist eine reine Compile-Time-Groesse");
     }
@@ -455,9 +483,17 @@ int main()
             const bool gA = a.integriert (x);
             const bool gR = ref.integriert (y);
             pruefe (gA && gR && std::abs (x - y) <= kToleranz,
-                    "ueber dem Gitter: eigener exakter Eimer, wertgleich",
+                    "ueber dem Gitter: EIN Pegel bleibt wertgleich",
                     "akku=" + zahl (x, 6) + " ref=" + zahl (y, 6)
                         + " ueberGitter=" + std::to_string (a.bloeckeUeberGitter()));
+            // Gegenprobe: dieser Fall MUSS das Oberband wirklich erreichen -
+            // sonst prueft er nichts ueber das Oberband, sondern nur ueber das
+            // Feingitter. Genau diese Zeile fehlte, als §F noch der einzige
+            // Beleg fuer den Bereich war (T2-1).
+            pruefe (a.bloeckeUeberGitter() > 0,
+                    "Gegenprobe: der Korpus liegt wirklich im Oberband",
+                    std::to_string (a.bloeckeUeberGitter()));
+            pruefe (a.bloeckeUeberOberband() == 0, "und kein Block faellt durch das Raster");
         }
         {   // Blockzahl: Zellen minus 3 (Hop 1, Fenster 4)
             LoudnessAccumulator a; a.vorbereiten (kFs);
@@ -477,6 +513,140 @@ int main()
                     std::to_string (allokationen));
             pruefe (! a.integriert (x) && ! a.kurz (x) && a.zellenGesamt() == 0,
                     "zuruecksetzen(): der Akku ist danach wirklich leer");
+        }
+    }
+
+    // ── G · Das Oberband: MEHR ALS EIN PEGEL ueber dem Feingitter ──────────
+    // Nacharbeit T2-1. Bis hierher war der Bereich ueber dem Gitter nur mit
+    // EINEM Pegel belegt (§F) - und mit einem Pegel kann eine Zuordnung "ganzer
+    // Bereich an seinem Mittelwert" konstruktiv nicht falsch sein.
+    std::cout << "== G - Oberband: zwei Pegel ueber dem Feingitter ==" << std::endl;
+    {
+        // G1 · Das Gegenbeispiel des Pruefers, Zeile fuer Zeile (Manifest §8.9).
+        // Vorher: Akku 46,384702 gegen Referenz 49,302611 - 2,917909 LU
+        // Abweichung bei 0,000000000 LU gemeldeter Schranke.
+        std::vector<double> zwei;
+        zwei.reserve (2000);
+        for (int i = 0; i < 1000; ++i) zwei.push_back (zelleFuer (1.0e5));   // ~ +49,31 LUFS
+        for (int i = 0; i < 1000; ++i) zwei.push_back (zelleFuer (2.0e3));   // ~ +32,32 LUFS
+        const Ergebnis g1 = fahre (zwei);
+        std::cout << "  G1: akku=" << zahl (g1.akku, 6) << " ref=" << zahl (g1.ref, 6)
+                  << " schranke=" << zahl (g1.schranke, 9)
+                  << " ueberGitter=" << g1.ueberGitter << std::endl;
+        pruefe (g1.ueberGitter == 1997,
+                "G1: alle 1997 Bloecke liegen im Oberband (Gegenprobe)",
+                std::to_string (g1.ueberGitter));
+        schlimmster = std::max (schlimmster,
+                                vergleiche ("zwei Pegel ueber dem Gitter (T2-1)", zwei));
+
+        // G2 · Die Naht: ein Teil im Feingitter, ein Teil im Oberband. Einmal
+        // mit Gamma_r oberhalb der Naht, einmal unterhalb - beide Male muss die
+        // Auswahl dieselbe sein wie in der Referenz, obwohl links und rechts
+        // der Naht verschiedene Binbreiten gelten.
+        {
+            std::vector<double> naht;
+            for (int i = 0; i < 1000; ++i) naht.push_back (zelleFuer (1.0));     // ~ -0,69 LUFS
+            for (int i = 0; i < 1000; ++i) naht.push_back (zelleFuer (1.0e5));   // ~ +49,31 LUFS
+            schlimmster = std::max (schlimmster,
+                                    vergleiche ("Naht, Gamma_r im Oberband", naht));
+        }
+        {
+            std::vector<double> naht;
+            for (int i = 0; i < 1900; ++i) naht.push_back (zelleFuer (1.0));
+            for (int i = 0; i <  100; ++i) naht.push_back (zelleFuer (1.0e5));
+            schlimmster = std::max (schlimmster,
+                                    vergleiche ("Naht, Gamma_r im Feingitter", naht));
+        }
+
+        // G3 · Derselbe adversariale Aufbau wie §D - nur OBERHALB des Gitters.
+        // z_laut = z_leise * (10*(n_l+n_q) - n_q)/n_l legt den leisen Lauf exakt
+        // auf Gamma_r; mit z_leise = 2000 (~ +32,32 LUFS) liegen beide Laeufe im
+        // Oberband. Der Grenzbin ist dort 1 LU breit statt 0,01 - die Schranke
+        // muss den Fehler trotzdem decken, sonst ist sie keine.
+        constexpr int nL = 1000, nQ = 1000;
+        const double zQ = 2.0e3;
+        const double zLexakt = zQ * (10.0 * (nL + nQ) - nQ) / nL;      // = 19 * zQ
+        double maxD = 0.0, maxSchranke = 0.0, beiFaktor = 0.0;
+        double maxRefSprung = 0.0, letzteRef = 0.0;
+        int gedeckt = 0, laeufe = 0;
+        std::uint64_t minUeberGitter = ~0ull, ueberOberband = 0;
+        for (int k = -100; k <= 100; ++k)
+        {
+            const double faktor = 1.0 + (double) k * 1.0e-5;
+            std::vector<double> zellen;
+            zellen.reserve ((std::size_t) (nL + nQ));
+            for (int i = 0; i < nL; ++i) zellen.push_back (zelleFuer (zLexakt * faktor));
+            for (int i = 0; i < nQ; ++i) zellen.push_back (zelleFuer (zQ));
+
+            const Ergebnis r = fahre (zellen);
+            if (! (r.akkuGueltig && r.refGueltig)) { pruefe (false, "G3: beide gueltig"); break; }
+            const double d = std::abs (r.akku - r.ref);
+            if (laeufe > 0) maxRefSprung = std::max (maxRefSprung, std::abs (r.ref - letzteRef));
+            letzteRef = r.ref;
+            ++laeufe;
+            if (d <= r.schranke + 1e-12) ++gedeckt;
+            if (d > maxD) { maxD = d; beiFaktor = faktor; }
+            maxSchranke   = std::max (maxSchranke, r.schranke);
+            minUeberGitter = std::min (minUeberGitter, r.ueberGitter);
+            ueberOberband += r.ueberOberband;
+        }
+        std::cout << "  G3-Sweep: " << laeufe << " Laeufe, groesste Abweichung "
+                  << zahl (maxD, 6) << " LU bei Faktor " << zahl (beiFaktor, 6)
+                  << ", groesste gemeldete Schranke " << zahl (maxSchranke, 6) << " LU"
+                  << std::endl;
+        std::cout << "  Groesster Sprung der REFERENZ zwischen zwei benachbarten Laeufen: "
+                  << zahl (maxRefSprung, 6) << " LU" << std::endl;
+        pruefe (laeufe == 201, "G3: Sweep vollstaendig gefahren",
+                std::to_string (laeufe) + "/201");
+        pruefe (minUeberGitter > 0,
+                "G3: JEDER Lauf liegt wirklich im Oberband (Gegenprobe)",
+                std::to_string (minUeberGitter));
+        pruefe (maxSchranke > 0.0,
+                "G3: der Grenzbin des Oberbands wurde wirklich getroffen (Gegenprobe)",
+                "sonst pruefte G3 nichts; schranke=" + zahl (maxSchranke, 6));
+        // ⚠️ DIE Zeile, die vor der Nacharbeit gefehlt hat. Vor dem Fix meldete
+        // der Akku hier 0,000000000 LU Schranke bei mehreren LU Fehler.
+        pruefe (gedeckt == laeufe,
+                "G3: die selbstgemeldete Schranke deckt JEDEN Lauf auch im Oberband",
+                std::to_string (gedeckt) + "/" + std::to_string (laeufe));
+        pruefe (maxD <= maxRefSprung + kToleranz,
+                "G3: die Abweichung bleibt unter dem eigenen Sprung der Referenz",
+                "maxD=" + zahl (maxD, 6) + " refSprung=" + zahl (maxRefSprung, 6));
+        pruefe (ueberOberband == 0, "G3: kein Block faellt durch das Raster",
+                std::to_string (ueberOberband));
+        std::cout << "  (Wie §D misst G3 an der Unstetigkeit der Norm, nicht an 0,1 LU - "
+                  << "1000 Bloecke kippen gemeinsam die Gateseite.)" << std::endl;
+
+        // G4 · Vollstaendigkeit des Rasters am aeussersten ERREICHBAREN Rand.
+        // Das Raster ist gegen `lautheit(DBL_MAX)` = +3081,86 LUFS ausgelegt -
+        // aber so hoch kommt ein Block bei 48 kHz gar nicht: er ist die Summe
+        // VON VIER Zellen, und z = e/(0,4*sr) heisst e = z*19200. Damit ist bei
+        // z > 9,363e303 schon die Zellensumme unendlich, und ein nicht-endlicher
+        // Wert wird eine Zeile frueher gezaehlt statt gebinnt.
+        //
+        // ⚠️ Diese vier Zeilen sind die zweite Fassung. Die erste rechnete mit
+        // z = 1e304 und lief prompt in genau diesen Ueberlauf: `bloeckeNichtEndlich`
+        // stand auf 197 und `integriert()` lieferte gar nichts. Der Code hatte
+        // recht, die Probe nicht - dieselbe Lehre wie beim NaN-Fenster in §8.4
+        // des Pruefberichts.
+        {
+            LoudnessAccumulator a; a.vorbereiten (kFs);
+            for (int i = 0; i < 200; ++i) a.zelle (zelleFuer (9.0e303));   // ~ +3038,85 LUFS
+            double x = 0.0;
+            const bool g = a.integriert (x);
+            const double s = a.unsicherheitLu();
+            std::cout << "  G4: LUFS-I " << zahl (x, 3) << ", Schranke " << zahl (s, 9)
+                      << ", ueberGitter " << a.bloeckeUeberGitter()
+                      << ", ueberOberband " << a.bloeckeUeberOberband() << std::endl;
+            pruefe (g && std::isfinite (x) && x > 3000.0,
+                    "G4: die lauteste darstellbare Blocklautheit liefert einen endlichen Wert",
+                    zahl (x, 3));
+            pruefe (a.bloeckeNichtEndlich() == 0, "G4: nichts wird faelschlich als nicht-endlich gezaehlt",
+                    std::to_string (a.bloeckeNichtEndlich()));
+            pruefe (a.bloeckeUeberOberband() == 0,
+                    "G4: auch am aeussersten Rand faellt kein Block durch das Raster",
+                    std::to_string (a.bloeckeUeberOberband()));
+            pruefe (std::isfinite (s), "G4: und die Schranke bleibt endlich", zahl (s, 9));
         }
     }
 

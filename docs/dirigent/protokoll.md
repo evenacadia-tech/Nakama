@@ -18,6 +18,14 @@ Regeln und Zyklus: `.claude/skills/dirigent/SKILL.md`. Jüngster Eintrag oben.
 
 ---
 
+## 2026-08-23 abends · SONDE-008 · nacharbeit
+
+- **Session:** „SONDE-008 Nacharbeit — T2-1…T2-4 schließen" (`62326e9e-fc5b-49e7-ae6f-d97b734f1e3f`), Opus 5 mit 1M.
+- **Ergebnis:** Alle vier Befunde geschlossen (Manifest §9.1–§9.4; Commits `f88f8c4`, `90c387a`, `a563d4c`, `0373c51`), alle vier vorher an der Quelle bestätigt — 4 von 4 echt, gegen die ~25-%-Fehlbefundquote des Projekts bemerkenswert. T2-1 wurde auf dem **richtigen** Weg geschlossen (Gitter nach oben erweitert statt Schranke gemeldet; der Prüfer-Testfall fällt von 2,918 LU auf 0,000000000 LU; Zwei-Pegel-Korpus jetzt echtes Bein). Der U10-Wächter existiert und wurde beim Fallen vorgeführt (fail-open rein ⇒ Bein rot ⇒ byteweise zurück). Drei Selbstaudit-Nachträge derselben Session: T2-4-Regel war zu scharf (`bbe4b3f`), zweiter Beweislauf (`1d86083`), Exit-4-Fehlalarm nachgemessen statt geglaubt (`0b23cf5`) — außerdem fand ihr Selbstaudit im eigenen G4-Testfall einen `DBL_MAX`-Überlauf und zog den erreichbaren Rand nach. Drei Kanon-Läufe 26/26, Exit 0 (14:41, 15:01, 15:42). Hub und NEXT-SESSION nachgezogen (`87fe56b`). Kein PASS erklärt — regelkonform.
+- **Gestützt auf:** Repo-Messung (Manifest §9 vollständig, Kanon-Rohblöcke, Commits gepusht, Baum sauber bis auf die bekannten fremden Dateien).
+- **Nicht geprüft:** Die Fixes selbst an den Quellen (Rolle des ausstehenden frischen Prüfers — S9 UND S10–11 warten jetzt beide auf ihr PASS, Vorschlag G2-Bündelung). Der FL-Transportpfad bleibt nie live gefahren — geht jetzt als „bei dir"-Karte an den User.
+- **Weiter mit:** S12–13 (`SONDE-009`, FeatureEngine v2 — Gate-Text: „Drop/Seek/Loop trennt jedes offene Fenster") + FL-Transportpfad-Frage an den User.
+
 ## 2026-08-23 spät · SONDE-008 · pruefung (T2)
 
 - **Session:** „SONDE-008 T2 — Frischkontext-Prüfung" (`4bb58934-da4e-4249-9672-94f3eaaa2337`), Opus 5 mit 1M.

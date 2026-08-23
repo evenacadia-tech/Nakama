@@ -2,58 +2,70 @@
 
 > ## ⚠ DER EINE NÄCHSTE SCHRITT — Stand 23.08.2026 abends
 >
-> **Nacharbeit an S10–11: vier T2-Befunde schließen (NAK-58).** Der T2-Prüfer
-> ist gefahren und hat **NEEDS_WORK** gegeben — Bericht
-> `docs/beweise/SONDE-008.md` **§8**. Zwei Stände warten damit weiter auf ein
-> PASS: die **S9-Nacharbeit** (noch ungeprüft, unten) und **S10–11** (geprüft,
-> Nacharbeit offen). Wer gebaut oder geprüft hat, urteilt nicht erneut.
+> **Ein frischer T2-Prüfer — und zwar auf ZWEI Stände.** Beide sind
+> nachgebessert, beide warten auf ein PASS, keinen davon darf jemand geben, der
+> daran gebaut hat:
 >
-> **Was der Prüfer gemessen hat, und es ist die gute Nachricht zuerst:** der
-> Umbau selbst hält, und zwar unter härterer Last als sein eigenes Bein —
-> 60 000 Blöcke mit gemischtem Überlauf *und* Oversize *und* wechselnden Größen
-> (das Kanon-Bein leert nach jedem Block und kann darum gar nicht überlaufen),
-> dazu **4 000 000 Frames in echtem Zweithread-Betrieb** mit 7 786
-> Ganzblockdrops: kein zerrissener Block, keine Ordnungsverletzung, keine
-> falsch markierte Lücke, Frame- und Blockbilanz exakt. Der gefährlichste
-> Eingriff der Phase sitzt. Eigener Beweislauf des Prüfers: **GRÜN 26/26,
-> Exit 0, beglaubigt** (B4 `EqCopQueueStressTest` **69**/0, B9
-> `EqCopLoudnessGoldenTest` **66**/0).
+> | Stand | Manifest | Urteil heute | Was fehlt |
+> |---|---|---|---|
+> | **S9** / `SONDE-007b` | §5 (Bericht), **§6** (Nacharbeit) | NEEDS_WORK | nie geprüft |
+> | **S10–11** / `SONDE-008` | §8 (Bericht), **§9** (Nacharbeit) | NEEDS_WORK | nie geprüft |
 >
-> **Die vier Befunde — Reihenfolge der Nacharbeit:**
-> 1. **T2-1** (mittel–hoch) `LoudnessAccumulator.h`: der Eimer über dem
->    Histogramm-Gitter entscheidet **den ganzen Eimer** an seinem Mittelwert.
->    Zwei Pegel darin, Γ_r dazwischen ⇒ **2,918 LU** Fehler, während
->    `unsicherheitLu()` **0,000000000 LU** meldet. Der Kopfkommentar nennt die
->    Schranke „vollständig"; der Golden füllt den Eimer nur mit **einem** Pegel
->    und kann darum nicht scheitern. Reproduktion (vier Zeilen) in §8.9.
-> 2. **T2-2** (mittel) der U10-Riegel ist **wirksam**, aber von **keinem**
->    Kanon-Bein gedeckt: baut man das fail-open zurück, bleiben alle vier
->    Audio-Beine grün. Es fehlt genau eine Prüfung — Main klassifiziert,
->    Editor offen, `testForciereEchtzeit(true)`, aktiver Auftrag, **kein
->    Playhead** ⇒ bitgleich.
-> 3. **T2-3** (niedrig–mittel) `StampedAudioQueue.h`: der Anlaufwechsel gilt
->    erst ab dem ersten Audioblock **nach** `prepareToPlay`; bis dahin werden
->    Blöcke der alten Samplerate mit der neuen analysiert.
-> 4. **T2-4** (niedrig) ein Seek bei **gestopptem** Transport ist keine
->    Kontinuitätsgrenze, obwohl §32.3 Seek als Epochengrenze führt. Gehört zu
->    `SONDE-009`.
+> **Die S10–11-Nacharbeit ist gefahren** (Commits `f88f8c4` · `90c387a` ·
+> `a563d4c` · `0373c51`; Manifest **§9**, NAK-58 geschlossen). Alle vier
+> T2-Befunde geschlossen — jeder erst an der **Quelldatei** nachgemessen, und
+> **alle vier haben sich bestätigt, keiner war ein Fehlalarm**. Jeder neue oder
+> erweiterte Riegel ist **beim Fallen vorgeführt** worden, mit echtem Bau und
+> byteweiser Rückstellung (SHA-256 vorher = nachher). Beweislauf **GRÜN 26/26,
+> Exit 0, beglaubigt**, kein Exit-4-Fehlalarm.
 >
-> ⚠️ **Die größte ungedeckte Fläche — vor SONDE-009 lesen:** die
-> **Brückenhälfte des Zeitstempels hat kein Bein.** Jede Messung, die des
-> Prüfers eingeschlossen, läuft über den **Playhead-Rückfallweg**;
+> - **T2-1** — nicht den Eimer *melden*, sondern die **Voraussetzung**
+>   reparieren: der Satz „unsicher ist allein die Zugehörigkeit **eines
+>   einzigen** Bins" stimmt genau dann, wenn jede endliche Blocklautheit in
+>   einem Bin **endlicher Breite** liegt. Über dem Feingitter liegt jetzt ein
+>   **Oberband** (3070 Bins à 1 LU bis +3100,01 LUFS, also über
+>   `lautheit(DBL_MAX)` = +3081,86). Kosten 36 KB, Nutzen: der Prüfer-Korpus
+>   liefert **d = 0,000000000 LU** statt 2,917909. Bein **B9 66 → 108**.
+> - **T2-2** — `EqCopMarkierungTest` **T11**. Die Prüfer-Mutation macht dieses
+>   Bein jetzt rot; die drei anderen bleiben zu Recht grün.
+> - **T2-3 / T2-4** — Anlauf steigt sofort; Seek bei **bekannt** gestopptem
+>   Transport ist eine Grenze. Bein **B4 69 → 79** (Abschnitte O und P).
+>
+> Der **Kanon bleibt bei 26 Beinen** — kein neues Bein, sondern zwei vorhandene
+> sehend gemacht.
+>
+> **Was ein Prüfer bei S10–11 zuerst ansehen sollte:**
+> - `plugin/core/analysis/LoudnessAccumulator.h` — der Indexraum ist neu
+>   (`binIndex`, `grenzBin`, `binMitte` über zwei Auflösungen). Die Frage, an
+>   der alles hängt: **durchschneidet Γ_r wirklich immer genau einen Bin?**
+> - `plugin/tests/LoudnessGoldenTestMain.cpp` §G — kann G3 scheitern, oder ist
+>   auch er konstruktiv grün? Genau daran ist §F gescheitert.
+> - `plugin/core/StampedAudioQueue.h` — `neustartAnfordern()` hat jetzt **zwei**
+>   Schreiber auf `aktuelleStartFolge`. Die Ordnungsaussage in §9.6 Punkt 3 ist
+>   **Argument, nicht Messung**.
+> - `plugin/tests/MarkierungTestMain.cpp` T11 — deckt (c) wirklich ab, dass (a)
+>   nicht aus einem anderen Grund grün ist?
+>
+> ⚠️ **Die größte ungedeckte Fläche, unverändert — vor SONDE-009 lesen:** die
+> **Brückenhälfte des Zeitstempels hat kein Bein.** Jede Messung, auch die des
+> Prüfers und auch T11, läuft über den **Playhead-Rückfallweg**;
 > `nakamaBlockEmpfangen()` ist gelesen, nie gefahren. Ebenso ungemessen: **kein
-> Lauf in FL** (NAK-56 — schreibt FL die Projektzeit über die Teilstücke eines
-> zerteilten Puffers fort?). Vollständige Liste des Ungeprüften in §8.9.
+> Lauf in FL** (NAK-56). ⚠️ **Neu daran seit T2-4:** derselbe Zähler
+> `analyseKontinuitaetsbrueche()`, an dem NAK-56 beim FL-Termin abgelesen werden
+> soll, steigt jetzt **auch** bei einem Seek mit gestopptem Transport — beim
+> Messen die Ursachen trennen. Vollständige Liste des Ungeprüften: §8.9 und §9.7.
 >
-> 🔑 **Die teuerste Lehre dieser Runde, zweimal bestätigt:** beide Male fand der
+> 🔑 **Die teuerste Lehre dieser Runde, jetzt dreimal bestätigt:** immer fand der
 > *adversariale* Teil den Fehler, nie der Normalfall. Der Erbauer fand so das
 > Klemmen überlauter Blöcke; der Prüfer fand direkt daneben T2-1 — im **Fix**
-> dieses Bugs. Und die zweite Hälfte derselben Lehre: **ein Golden, dessen
-> Extremfall nur EINEN Pegel kennt, kann konstruktiv nicht scheitern** — er
-> meldet grün, weil nichts auseinanderlaufen *kann*, nicht weil nichts
-> auseinanderläuft.
+> dieses Bugs; und die Nacharbeit fand beim Bauen von §O noch, dass zwei
+> Neuanläufe sich verschluckten. Zwei Sätze, die das zusammenfassen:
+> **ein Test, der nicht scheitern KANN, beweist nichts** (§F mit einem Pegel) —
+> und **ein Bein kann am richtigen Ort stehen und trotzdem blind sein**
+> (§N fährt genau den `prepareToPlay`-Gegenpfad von T2-3, sah ihn aber nie,
+> weil dort zwischen Neuanlauf und Drain immer ein Audioblock läuft).
 >
-> ⚠️ **`CLAUDE.md` trägt jetzt DREI veraltete Zahlen** — „(12)" Kern-Verbraucher
+> ⚠️ **`CLAUDE.md` trägt DREI veraltete Zahlen** — „(12)" Kern-Verbraucher
 > (gemessen **14**), „Kanon (23 Beine)" (jetzt **26**) und die Formel der
 > Hör-Markierung (`∨ ¬hatTransport` ist gefallen). **Nicht** berichtigt: die
 > Datei hat uncommittete Änderungen einer anderen Session. Nachliste in
@@ -61,7 +73,7 @@
 >
 > **Danach:** S12–13 (`SONDE-009`) — FeatureEngine v2 mit Zeit-, Validity-,
 > Event- und Bandverträgen. Sie baut direkt auf der Grenze auf, die S10–11
-> liefert — T2-4 gehört dorthin.
+> liefert — und diese Grenze trägt seit T2-4 den Seek bei Stopp mit.
 >
 > ---
 >

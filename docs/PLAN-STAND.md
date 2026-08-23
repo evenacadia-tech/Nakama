@@ -1,6 +1,6 @@
 # Planstand Nakama
 
-<!-- quellstand: 184bbd9 -->
+<!-- quellstand: e3dbad4 -->
 
 > **Gerechnet, nicht gepflegt.** Dieses Blatt entsteht aus dem Repo:
 > `py -3.13 tools/plan/planstand.py`. Es wird **nie** von Hand editiert —
@@ -9,9 +9,9 @@
 > *abgenommen* erst, wenn dort eine Urteilsmarke der geforderten Prüfstufe
 > mit **PASS** steht. Fehlt sie, gilt der Schritt als nicht abgenommen.
 
-**Stand:** 2026-08-23 · Quellstand `184bbd9` · **10 von 34 abgenommen** · 6 gebaut · 18 offen
+**Stand:** 2026-08-23 · Quellstand `e3dbad4` · **10 von 36 abgenommen** · 6 gebaut · 20 offen
 
-`████████████▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░` 29 % abgenommen · 47 % gebaut
+`███████████▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░` 28 % abgenommen · 44 % gebaut
 
 **Als Nächstes:** **Nacharbeit an S12–13** — der Prüfer hat einen Befund offen gelassen (docs/beweise/SONDE-009.md).
 
@@ -29,7 +29,7 @@
 | **P2** — Messkern, Nachrichtenweg, Speicher | `▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░` | 0 | 2 | 3 |
 | **P3** — Passive Landkarte | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 2 |
 | **P4–P5** — Vergleichsevidenz und Ursachen | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 4 |
-| **P6–P7** — Aktiver Kern: EQ in Sonde und Gen | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 4 |
+| **P6–P7** — Aktiver Kern: EQ in Sonde und Gen | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 6 |
 | **P8–P9** — Entmaskierung und Härtung | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 4 |
 
 ## Der Weg
@@ -47,7 +47,7 @@ flowchart LR
   P3 --> P4
   P5["P4–P5<br/>0/4 abgenommen"]:::offen
   P4 --> P5
-  P6["P6–P7<br/>0/4 abgenommen"]:::offen
+  P6["P6–P7<br/>0/6 abgenommen"]:::offen
   P5 --> P6
   P7["P8–P9<br/>0/4 abgenommen"]:::offen
   P6 --> P7
@@ -114,14 +114,16 @@ flowchart LR
 - □ **S23–25** `SONDE-014` — Absicht, Ursachenhypothese, Vorschlag, Assistentenschritt — mit Prüfkorpus. (offen)
 - □ **G5** `Gate` — Codex + Gegenbeispiele: der Prüfer soll eine falsche starke Ursachenbehauptung provozieren. (offen)
 
-### P6–P7 — Aktiver Kern: EQ in Sonde und Gen  (0/4 abgenommen)
+### P6–P7 — Aktiver Kern: EQ in Sonde und Gen  (0/6 abgenommen)
 
-*Der EQ entsteht: er rechnet in der Sonde (und als Master-EQ in Gen), bedient wird alles zentral auf Gens zweiter Seite — mit Kopplung, Sicherheit und Rückweg (Entscheid 23.08.; Umschnitt der Schritt-Texte: NAK-64). Danach: Release R3.*
+*Der EQ entsteht: er rechnet in der Sonde (und als Master-EQ in Gen), bedient wird alles zentral auf Gens zweiter Seite — mit Kopplung, Sicherheit und Rückweg (Entscheid 23.08., Umschnitt gefahren; Spielregeln der UI: design/docs/ui-spielregeln-eq-zentrale.md). Danach: Release R3.*
 
-- □ **S26–28** `SONDE-015` — Lokaler EQ-Kern, vier vorbereitete Bänke, Zustand und Automation, A/B. (offen)
-- □ **G6** `Gate` — Härtestes Gate des Plans: C++-Review auf höchster Stufe, Nebenläufigkeits-Prüfung, Worst-Case-CPU. (offen)
-- □ **S29–31** `SONDE-016/017` — Kopplung Gen↔Probeeq mit Sicherheit, Lease, Anwenden/Zurücknehmen, aktiver Vergleich. (offen)
+- □ **S26–28** `SONDE-015` — Lokaler EQ-Kern in der Sonde: vier vorbereitete Bänke, Zustand und Automation, A/B — dazu die versionierte Zustands-Erweiterung aus dem 23.08.-Entscheid: Mix je Sonde und die Schutz-Zonen bekommen ihren Platz im gespeicherten Zustand (Layout v2, neue Kennungen, nie umgewidmet). (offen)
+- □ **S28b** `SONDE-015b` — Derselbe EQ-Kern auf dem Master: Gen bekommt seinen eigenen EQ-Pfad — ausgeschaltet beweisbar bitidentisch, das NullTest-Bein wächst mit. Im selben Zug wird das Suna-Ziel stillgelegt (Suna ist in Probeeq aufgegangen) und sein Prüfbein verabschiedet sich deklariert aus dem Kanon, nicht still. (offen)
+- □ **G6** `Gate` — Härtestes Gate des Plans: C++-Review auf höchster Stufe, Nebenläufigkeits-Prüfung, Worst-Case-CPU — deckt seit dem Umschnitt auch Gens Master-Pfad. (offen)
+- □ **S29–31** `SONDE-016/017` — Kopplung Gen↔Sonde als Hauptbedienweg: Pairing, Verschlüsselung, Lease, Anwenden/Zurücknehmen, aktiver Vergleich — dazu die Drei-Stufen-Geste (Halten = hören · 1. Klick = 10-Sekunden-Probe · 2. Klick = fest), volle Bereiche ohne Remote-Limit (Entscheid 23.08.), die harte Schutz-Zonen-Sperre und der zweistufige Mix (ganze App ↔ gewählte Spur). (offen)
 - □ **G7** `Gate` — Sicherheits- und Rust-Review + Codex + 10 000 Befehle Stress. (offen)
+- □ **S31b** `SONDE-020` — EQ-Zentrale-UI: Gen Seite 2 gegen deinen Figma-Stand gebaut (Prüfmaßstab: design/docs/ui-spielregeln-eq-zentrale.md), dazu die Minimal-Rückfallfläche der Sonde. Startet erst, wenn dein Figma-Stand vorliegt (NAK-65). (offen)
 
 ### P8–P9 — Entmaskierung und Härtung  (0/4 abgenommen)
 

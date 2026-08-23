@@ -1,6 +1,6 @@
 # Planstand Nakama
 
-<!-- quellstand: d4430ad -->
+<!-- quellstand: ba7350d -->
 
 > **Gerechnet, nicht gepflegt.** Dieses Blatt entsteht aus dem Repo:
 > `py -3.13 tools/plan/planstand.py`. Es wird **nie** von Hand editiert —
@@ -9,7 +9,7 @@
 > *abgenommen* erst, wenn dort eine Urteilsmarke der geforderten Prüfstufe
 > mit **PASS** steht. Fehlt sie, gilt der Schritt als nicht abgenommen.
 
-**Stand:** 2026-08-23 · Quellstand `d4430ad` · **10 von 34 abgenommen** · 6 gebaut · 18 offen
+**Stand:** 2026-08-23 · Quellstand `ba7350d` · **10 von 34 abgenommen** · 6 gebaut · 18 offen
 
 `████████████▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░` 29 % abgenommen · 47 % gebaut
 
@@ -17,7 +17,7 @@
 
 **Wartet auf ein Urteil** (gebaut, nachgemessen, aber ohne PASS eines frischen Prüfers): `S5` · `S6` · `S8` · `S9` · `S10–11`
 
-**Bei dir liegen 10 Fragen** — `U2, U5, U6, U7, U8, U9, U10, U11, U12, U13`. Sie werden im Chat gestellt: Skill `/fragen`.
+**Bei dir liegen 11 Fragen** — `U2, U5, U6, U7, U8, U9, U10, U11, U12, U13, U14`. Sie werden im Chat gestellt: Skill `/fragen`.
 
 ## Phasen auf einen Blick
 
@@ -29,7 +29,7 @@
 | **P2** — Messkern, Nachrichtenweg, Speicher | `▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░` | 0 | 2 | 3 |
 | **P3** — Passive Landkarte | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 2 |
 | **P4–P5** — Vergleichsevidenz und Ursachen | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 4 |
-| **P6–P7** — Aktiver Kern: Probeeq | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 4 |
+| **P6–P7** — Aktiver Kern: EQ in Sonde und Gen | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 4 |
 | **P8–P9** — Entmaskierung und Härtung | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 4 |
 
 ## Der Weg
@@ -114,9 +114,9 @@ flowchart LR
 - □ **S23–25** `SONDE-014` — Absicht, Ursachenhypothese, Vorschlag, Assistentenschritt — mit Prüfkorpus. (offen)
 - □ **G5** `Gate` — Codex + Gegenbeispiele: der Prüfer soll eine falsche starke Ursachenbehauptung provozieren. (offen)
 
-### P6–P7 — Aktiver Kern: Probeeq  (0/4 abgenommen)
+### P6–P7 — Aktiver Kern: EQ in Sonde und Gen  (0/4 abgenommen)
 
-*Probeeq wird der vollwertige EQ, der Anweisungen von Gen umsetzt und manuell bedienbar ist — mit Kopplung, Sicherheit und Rückweg. Danach: Release R3.*
+*Der EQ entsteht: er rechnet in der Sonde (und als Master-EQ in Gen), bedient wird alles zentral auf Gens zweiter Seite — mit Kopplung, Sicherheit und Rückweg (Entscheid 23.08.; Umschnitt der Schritt-Texte: NAK-64). Danach: Release R3.*
 
 - □ **S26–28** `SONDE-015` — Lokaler EQ-Kern, vier vorbereitete Bänke, Zustand und Automation, A/B. (offen)
 - □ **G6** `Gate` — Härtestes Gate des Plans: C++-Review auf höchster Stufe, Nebenläufigkeits-Prüfung, Worst-Case-CPU. (offen)

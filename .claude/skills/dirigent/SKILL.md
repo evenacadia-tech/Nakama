@@ -79,8 +79,12 @@ Design-Stand und Git-Stand von selbst vor.
 setzt du `mcp__nimbalyst-host__schedule_wakeup` (~1200 s) als Netz, falls die
 Session still stirbt — die Benachrichtigung kommt dann nicht.
 
-**Kein Polling.** Kein `Monitor` mit Sekundentakt, keine Warteschleife. Der User
-hat das am 23.08. ausdrücklich abgelehnt.
+**Kein Dauerpoll** — Wecker statt Sekundentakt, kein `Monitor` in einer
+Warteschleife. Das ist eine **Arbeitsregel, kein User-Entscheid**: der User hat
+am 23.08. verlangt, ein laufendes Polling zu beenden („DENK DRAN DAS POLLING ZU
+BEENDEN dann"), und das galt einem abgestürzten Monitor, nicht dem Verfahren.
+Der sachliche Grund trägt trotzdem: ein Poll erzeugt je Runde Nachrichten, ohne
+je früher fertig zu sein als die Benachrichtigung, auf die er wartet.
 
 ⚠️ **`lastActivity` aus `get_session_status` ist KEIN Aktivitätssignal** —
 gemessen am 23.08.: es stand 22 Minuten still, während die Session committete.

@@ -1,18 +1,43 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
-> ## ⚠ DER EINE NÄCHSTE SCHRITT — Stand 23.08.2026, nach S12–13
+> ## ⚠ DER EINE NÄCHSTE SCHRITT — Stand 23.08.2026, nach dem T2 auf S12–13
 >
-> **Ein frischer T2-Prüfer — jetzt auf DREI Stände.** Alle drei sind gebaut
-> bzw. nachgebessert, alle drei warten auf ein PASS, und keines davon darf
-> jemand geben, der daran gebaut hat:
+> **Die S12–13-Nacharbeit: T2-1 schließen.** Der T2-Prüfer ist auf S12–13
+> gelaufen (Manifest §9) und sagt **NEEDS_WORK** — mit **einem** blockierenden
+> Befund, der genau die Zusage des Gate-Textes trifft:
+>
+> > **T2-1 — die Band- und Rahmen-Akkumulatoren stehen nicht auf der Leerliste
+> > von `grenzeZiehen()`.** Sieben Träger überleben jede Epochengrenze:
+> > `liveAkku`, `evidenzAkku`, `liveBreiteAkku`, `rahmenAktivZellen`,
+> > `rahmenZellen`, `liveSamples`, `evidenzSamples`. Gemessen: ein Frame mit
+> > `transport_epoch = 1` meldet **23 Live-Bänder**, das stärkste bei 1029 Hz
+> > mit **−23,7 dB**, obwohl nach der Grenze ausschließlich digitale Stille
+> > eingespeist wurde. Sweep über 120 Grenzzeitpunkte: **80** mit
+> > Vor-Grenze-Bändern, **43** zusätzlich mit Aktivität > 0 auf Stille, **40**
+> > auch im Evidenzsatz.
+>
+> **Der Ansatzpunkt steht schon im Code:** `rahmenLeeren()`
+> (`FeatureEngine.h:1225`) ist die vollständige Liste — `grenzeZiehen()`
+> (`:836`) leert zehn `rahmen…`-Felder und lässt zwei plus die drei Akkus
+> stehen. ⚠️ Der naheliegende Griff (an der Grenze `rahmenLeeren()` rufen) zieht
+> den **Evidenzsnapshot** und seine 250-ms-Kadenz mit — welche Ehrlichkeit
+> gewinnt, ist eine Entscheidung des Erbauers, nicht des Prüfers. Und das Bein
+> muss mit: `keinFensterUeberbrueckt()` fragt heute **fünf Füllstände und
+> keinen Akkumulator** ab — genau deshalb war B5 grün, während der Bruch da war.
+>
+> Dazu vier kleinere Befunde (**T2-2** Sequenz springt nicht bei einer
+> NAK-29-Ablehnung, und der Riegel ist aus `baueStempel()` unerreichbar ·
+> **T2-3** `grenzenMitGrund(Grenzgrund::anzahl)` liest ein Element hinter dem
+> Ende · **T2-4** L2 im Bein ist eine Tautologie · **T2-5** der Ereignisdeckel
+> ist ungemessen). Alle in Manifest §9.0 mit Schwere und Messung.
 >
 > | Stand | Manifest | Urteil heute | Was fehlt |
 > |---|---|---|---|
-> | **S9** / `SONDE-007b` | §5 (Bericht), **§6** (Nacharbeit) | NEEDS_WORK | nie geprüft |
-> | **S10–11** / `SONDE-008` | §8 (Bericht), **§9** (Nacharbeit) | NEEDS_WORK | nie geprüft |
-> | **S12–13** / `SONDE-009` | `docs/beweise/SONDE-009.md` | — | **T2 nie gelaufen** |
+> | **S9** / `SONDE-007b` | §5 (Bericht), **§6** (Nacharbeit) | NEEDS_WORK | **kein PASS** — nie ein zweites Mal geprüft |
+> | **S10–11** / `SONDE-008` | §8 (Bericht), **§9** (Nacharbeit) | NEEDS_WORK | **kein PASS** — nie ein zweites Mal geprüft |
+> | **S12–13** / `SONDE-009` | §9 (T2-Bericht, 23.08.) | **NEEDS_WORK** | **Nacharbeit T2-1…T2-5**, danach erneuter T2 |
 >
-> ### S12–13 (`SONDE-009`) ist GEBAUT — 23.08.2026
+> ### S12–13 (`SONDE-009`) ist GEBAUT und T2-GEPRÜFT — 23.08.2026
 >
 > Commits `f14924a` · `357786e` · `133526e` · `f1e4a08`. Beweislauf **GRÜN
 > 28/28, Exit 0, beglaubigt**; Kanon **26 → 28** (B5 `EqCopAnalysisGoldenTest`
@@ -29,23 +54,33 @@
 > FFT-Fenster **beider** Auflösungsstufen, Loudness-Zelle, 3-s-Historie,
 > Korrelationsfenster, Fluss-Vorgänger **und der K-Filterzustand**.
 >
-> **Was ein Prüfer bei S12–13 zuerst ansehen sollte:**
-> - `plugin/core/analysis/FeatureEngine.h`, `grenzeZwischen()` — die
->   **Reihenfolge** der neun Fragen ist die Aussage (Manifest §4.3). Kann ein
->   Drop als Seek durchgehen oder umgekehrt?
-> - `moeglicherStraddleIn()` — hier wird bewusst **nicht** vorsorglich getrennt,
->   wenn Tempo/PPQ fehlen (§4.4). Ist das die richtige Lesart von §32.3, oder
->   fällt damit ein Straddle-Fall durch?
-> - `plugin/tests/AnalysisGoldenTestMain.cpp` §G — **kann jeder dieser Fälle
->   scheitern?** Genau daran ist §F in SONDE-008 gescheitert. Die
->   Mutationstabelle in Manifest §5 ist die Behauptung dazu; sie ist
->   nachrechenbar.
-> - **§5.1 zuerst lesen:** ein Prüfpunkt (G11) war beim ersten Anlauf blind und
->   ließ seine Mutation grün durchlaufen. Gibt es weitere dieser Sorte?
-> - `nak29Verstoss()` — sechs Fälle, sechs Nummern. Fehlt ein siebter?
-> - `plugin/core/analysis/BandGrid.h` Kopf — die Behauptung „1,2 % Versatz
->   zwischen v3-Gitter und M1-Achse" ist nachrechenbar, und die ganze
->   Architekturentscheidung (v2 **neben** M1) hängt daran.
+> **Was der T2 beantwortet hat** (Manifest §9.2–§9.9), damit die Nacharbeit es
+> nicht noch einmal fragt:
+> - **Der Kern hält.** Bass-/Hauptfenster, Loudnesszelle, 3-s-Historie,
+>   Flussvorgänger **und die K-Filterzustände** fallen bei allen neun
+>   Grenzarten — kein Pfad gefunden. Auch `flussHistorie` und `vorigesSpektrum`
+>   sind unschädlich (ihre Werte werden vor der nächsten Nutzung überschrieben).
+> - **Realtime:** keine Allokation, keine Sperre, kein I/O, kein Logging im
+>   `processBlock`-Pfad; die FeatureEngine ist von dort gar nicht erreichbar.
+>   NaN/Inf, DC, Nyquist, Subnormale, 1-Sample-Blöcke und ein 65536-Sample-Block
+>   selbst gefahren — alles sauber.
+> - **K-Gewichtung:** gegen die *gedruckten* BS.1770-Koeffizienten nachgerechnet,
+>   0,04312 dB exakt reproduziert. Der Umzug nach `KGewichtung.h` ist wirklich
+>   ein Umzug.
+> - **Bitidentität:** A1/A2/A3 in zwei unabhängigen Läufen grün.
+> - **NAK-56-Werkbankhälfte:** das Bein fährt `nakamaBlockEmpfangen()` wirklich
+>   und kann scheitern. ⚠️ Präzisiert: „Ersatzweg nur zwei Bits" gilt für den
+>   minimalen Playhead des Beins — ein Host-Playhead mit Schleifenpunkten
+>   erreicht **drei** von sieben.
+> - **A19** selbst gebrochen: es schlägt an, mit Zeilenangabe.
+> - **§5.1/G11 ist wirklich scharf geworden**, nicht anders blind — der Lauf
+>   endet beim ersten LUFS-Frame und vergleicht bitgleich.
+>
+> **Was offen blieb** (Manifest §9.12): die sieben Mutationsproben M1–M7 sind
+> **nicht** nachgemessen, `FeatureFrame` ist **nicht** Feld für Feld gegen
+> `nakama_telemetry_v1.fbs` gelegt, kein Thread-Sanitizer, kein FL-Lauf, und
+> die Bandgitter-Fixtures sind nicht gegen IEC 61260-1 nachgerechnet (nur
+> Header ↔ Fixture ↔ Bein auf Deckungsgleichheit).
 >
 > ⚠️ **Was S12–13 NICHT geprüft hat**, vollständig in Manifest §8. Die zwei
 > wichtigsten: die FeatureEngine ist **an keinen Sender angeschlossen** (die
@@ -60,6 +95,11 @@
 > am echten Prozessor gefahren, mit Gegenprobe Brücke 0x7f gegen Playhead 0x3).
 > Neu: **NAK-59** — Band-Stereo wird berechnet, hat aber keinen Platz im
 > v3-Binärvertrag (`SONDE-010`).
+> ⚠️ **T2-Nachtrag zu NAK-29:** der Riegel steht am richtigen Ort, aber er ist
+> aus `baueStempel()` konstruktiv nie auslösbar, und der beschriebene Meldeweg
+> („die `sequence` springt") existiert im Code nicht — `++sequenz` steht hinter
+> dem Ablehnungszweig. Beides gehört in die Nacharbeit, bevor `SONDE-010` den
+> ersten echten Leser anhängt (Manifest §9.10).
 >
 > ⚠️ **`CLAUDE.md` trägt jetzt wieder eine veraltete Zahl:** „Kanon (24 Beine)"
 > bzw. was dort nach der Hygiene-Runde steht — gemessen sind es **28**

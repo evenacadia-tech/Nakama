@@ -231,6 +231,40 @@ inline int nak29Verstoss (const Transportstempel& t) noexcept
 }
 
 //==============================================================================
+/** Der Entscheid ueber EINEN Frameversuch — und der Grund, warum er als eigene
+    Funktion dasteht statt als zwei Zeilen in `baueFrame()`.
+
+    §4.5 verspricht dem Empfaenger einen Meldeweg: "ein Frame mit verletztem
+    Stempel wird nicht veroeffentlicht; der Empfaenger sieht die Luecke an der
+    springenden `sequence`."  ⚠️ BIS ZUM 24.08. HATTE DER CODE DIESEN WEG NICHT
+    (T2-2): `++sequenz` stand HINTER dem Ablehnungszweig, ein abgelehnter Frame
+    verbrauchte also gar keine Nummer, und der Empfaenger saehe `1, 2, 3, …`
+    ohne Luecke.  Der Frameverlust waere still — und `SONDE-010` haengt den
+    ersten echten Leser dort an.
+
+    🔑 UND EIN MELDEWEG BRAUCHT EIN BEIN.  Der Ablehnungszweig in `baueFrame()`
+    ist heute konstruktiv unerreichbar: `baueStempel()` setzt Wert und Bit in
+    allen sechs NAK-29-Faellen gemeinsam.  Waere die Reihenfolge nur dort
+    verdrahtet, waere "die Sequenz springt" erneut eine Zusage, die kein Bein
+    deckt.  Als reine Funktion ist der Entscheid einzeln fahrbar — B5 §L5 gibt
+    ihm kaputte Stempel und misst, dass die Nummer trotzdem faellt.
+
+    ⚠️ Das belegt den MECHANISMUS, nicht die Erreichbarkeit des Zweiges im
+    Betrieb.  Der Unterschied steht im Manifest §10.2, damit ihn niemand
+    verwechselt. */
+struct Frameversuch
+{
+    std::uint64_t sequence { 0 };   ///< die verbrauchte Nummer — auch bei Verstoss
+    int           verstoss { 0 };   ///< 0 = veroeffentlichen, sonst NAK-29-Fallnummer
+};
+
+inline Frameversuch frameversuch (std::uint64_t& zaehler,
+                                  const Transportstempel& t) noexcept
+{
+    return { ++zaehler, nak29Verstoss (t) };
+}
+
+//==============================================================================
 // ── Eventvertrag ────────────────────────────────────────────────────────────
 
 /** Ein `DynamicsEvent` nach §39.1: "Jedes Ereignis traegt Samplezeit, Staerke,
@@ -458,6 +492,7 @@ public:
         zEreignisseVerworfen = 0;
         zNak29Abgelehnt = 0;
         zBloecke = 0;
+        zVerworfeneBandfenster = 0;
         for (auto& g : grundZaehler) g = 0;
     }
 
@@ -540,9 +575,24 @@ public:
     std::uint64_t ereignisseVerworfen() const noexcept     { return zEreignisseVerworfen; }
     std::uint64_t nak29Abgelehnt() const noexcept          { return zNak29Abgelehnt; }
     std::uint64_t bloeckeGesehen() const noexcept          { return zBloecke; }
+    /** Wie oft aus Grund `g` getrennt wurde.
+
+        ⚠️ DER BEREICHSRIEGEL IST NICHT ZIERAT (T2-3, 23.08.).  `grundZaehler`
+        hat exakt `anzahl` Elemente, `Grenzgrund::anzahl` ist ein oeffentlich
+        sichtbarer Enumwert — und `grenzenMitGrund (Grenzgrund::anzahl)` las
+        damit EIN ELEMENT HINTER DEM ENDE, ausgerechnet hinter dem letzten
+        Member der Klasse.  Der Selbstaudit-Fix `48fcd9c` hat den SCHREIB-
+        Ueberlauf geschlossen (Array an die Aufzaehlung gekoppelt statt an eine
+        Zahl daneben) und dabei den LESE-Ueberlauf erst aufgemacht: vorher lag
+        `[9]` in einem `[10]`-Array noch im Puffer.  🔑 Dieselbe Sorte Landmine
+        wie der Fund, den sie ersetzt hat — eine Zahl neben einer Aufzaehlung,
+        an der niemand rot wird. */
     std::uint64_t grenzenMitGrund (Grenzgrund g) const noexcept
     {
-        return grundZaehler[(std::size_t) g];
+        const auto i = (std::size_t) g;
+        if (i >= (std::size_t) Grenzgrund::anzahl)
+            return 0;                   // `anzahl` ist kein Grund, also null Grenzen
+        return grundZaehler[i];
     }
     std::uint64_t transportEpocheJetzt() const noexcept { return transportEpoche; }
     std::uint64_t segmentJetzt() const noexcept         { return segmentInEpoche; }
@@ -554,6 +604,56 @@ public:
     int fuellstandLoudnessZelle() const noexcept { return zelleStand; }
     int fuellstandKurzLoudness() const noexcept  { return kurzGefuellt; }
     bool flussHatVorgaenger() const noexcept     { return vorigesSpektrumGueltig; }
+
+    /** Fuellstand der BANDAKKUS — der Traeger, an dem T2-1 unsichtbar war.
+
+        🔑 DIESE VIER AUSKUENFTE EXISTIEREN WEGEN EINES LOCHS IM EIGENEN BEIN,
+        genau wie `kFilterZustand()` unten.  `keinFensterUeberbrueckt()` fragte
+        bis zum 24.08. fuenf Fuellstaende ab und KEINEN Akkumulator; deshalb war
+        B5 gruen, waehrend ein Frame unter neuem Epochenstempel den Ton von vor
+        der Grenze meldete.  Ein Fuellstand ist eben nicht dasselbe wie ein
+        Integrationsfenster — wer nur ihn misst, misst die halbe Zusage. */
+    int liveAkkuBelegteBaender() const noexcept
+    {
+        int n = 0;
+        for (const auto& v : liveAkku) if (v.n > 0) ++n;
+        return n;
+    }
+    int evidenzAkkuBelegteBaender() const noexcept
+    {
+        int n = 0;
+        for (const auto& v : evidenzAkku) if (v.n > 0) ++n;
+        return n;
+    }
+    /** Betragssumme der Breiten-Akkus — sie tragen KEIN `n`, also braucht es
+        die Summe selbst, sonst bliebe dieser dritte Akku ungemessen. */
+    double liveBreiteAkkuZustand() const noexcept
+    {
+        double su = 0.0;
+        for (const auto& v : liveBreiteAkku) su += std::abs (v.seite) + std::abs (v.gesamt);
+        return su;
+    }
+    /** Fertige Zellen des laufenden Rahmens.  `rahmenAktivZellen` kann nie
+        groesser sein (beide wachsen in `zelleSchliessen()`, die aktive nur
+        bedingt) — 0 hier heisst also 0 in beiden. */
+    std::uint64_t rahmenZellenJetzt() const noexcept      { return rahmenZellen; }
+    std::uint64_t rahmenAktivZellenJetzt() const noexcept { return rahmenAktivZellen; }
+
+    /** Die zwei KADENZ-Zaehler.  Sie ueberleben eine Grenze absichtlich
+        (§10.1: die Grenze schneidet den Inhalt, nicht die Uhr) — und weil das
+        ein Entscheid ist und kein Versehen, hat er hier seine Auskunft und in
+        B5 seinen eigenen Pruefpunkt.  Ein Entscheid ohne Bein laesst sich
+        unbemerkt zuruecknehmen; das ist die teuerste Lehre aus S10-11. */
+    std::uint64_t liveSamplesJetzt() const noexcept    { return liveSamples; }
+    std::uint64_t evidenzSamplesJetzt() const noexcept { return evidenzSamples; }
+
+    /** Wie viele Band-Fensterbeitraege an Grenzen verworfen wurden.
+
+        Er trennt "der Akku ist leer, weil geleert wurde" von "der Akku ist
+        leer, weil nie etwas drin war" — ohne ihn koennte ein Bein, das nur
+        `liveAkkuBelegteBaender() == 0` prueft, gruen sein, ohne dass die
+        Leerung je gelaufen ist. */
+    std::uint64_t verworfeneBandfenster() const noexcept { return zVerworfeneBandfenster; }
 
     /** Betragssumme der Filterzustände beider K-Ketten.
 
@@ -831,8 +931,17 @@ private:
 
         Jedes offene Fenster faellt.  Nicht eines, nicht die langen, nicht die,
         die schon halb voll sind — alle.  Die Aufzaehlung steht bewusst
-        vollstaendig und ohne Schleife da: wer spaeter ein Fenster hinzufuegt,
-        soll an dieser Liste vorbeikommen und merken, dass er es eintragen muss. */
+        vollstaendig und ohne Sammelschleife da: wer spaeter ein Fenster
+        hinzufuegt, soll an dieser Liste vorbeikommen und merken, dass er es
+        eintragen muss.
+
+        ⚠️ GENAU DAS HAT BEIM ERSTEN MAL NICHT FUNKTIONIERT.  Die Liste war
+        unvollstaendig (T2-1, 23.08.): sieben Zustandstraeger standen nicht
+        darauf, darunter die drei Bandakkus.  Ein Kommentar, der Vollstaendigkeit
+        BEHAUPTET, ersetzt keinen Riegel, der sie MISST — deshalb hat jeder
+        Traeger hier heute eine Auskunft (`liveAkkuBelegteBaender()` und
+        Nachbarn), und `keinFensterUeberbrueckt()` in B5 fragt sie alle ab
+        statt nur die fuenf Fuellstaende, an denen der Bruch unsichtbar war. */
     void grenzeZiehen (Grenzgrund grund) noexcept
     {
         ++zGetrennteFenster;
@@ -845,6 +954,49 @@ private:
         bass.leeren();                  // FFT-Fenster, Bassstufe
         haupt.leeren();                 // FFT-Fenster, Hauptstufe
 
+        // ── Die Bandakkus: das INTEGRATIONSFENSTER des Bandwertes ────────────
+        //
+        // 🔑 T2-1 (23.08.): DIESE DREI STANDEN NICHT AUF DER LISTE, und deshalb
+        // meldete ein Frame unter dem Stempel der NEUEN Epoche den Ton von VOR
+        // der Grenze — 23 Live-Baender, staerkstes bei 1029 Hz mit -23,7 dB,
+        // obwohl danach nur noch digitale Stille lief.  Die Fuellstaende sagten
+        // dabei korrekt "getrennt": ein geleerter FFT-Ring ist eben nicht
+        // dasselbe wie ein geleertes Integrationsfenster.  Der veroeffentlichte
+        // Bandwert IST das FFT-Ergebnis, ueber das Frameintervall linear
+        // integriert (§33.1) — also ist der Akku ein Fenster wie jedes andere,
+        // und der Gate-Text ("trennt JEDES offene Fenster") meint ihn mit.
+        for (auto& v : liveAkku)
+        {
+            zVerworfeneBandfenster += v.n;
+            v = { 0.0, 0 };
+        }
+        for (auto& v : evidenzAkku)
+        {
+            zVerworfeneBandfenster += v.n;
+            v = { 0.0, 0 };
+        }
+        for (auto& v : liveBreiteAkku) v = { 0.0, 0.0 };
+
+        // Aktivitaetszaehler: `zelleStand` (die angefangene Zelle) faellt schon
+        // seit der ersten Fassung, die FERTIGEN Zellen des laufenden Rahmens
+        // fielen nicht — `aktivitaet` war damit ein Anteil ueber Zellen aus
+        // zwei Epochen.  Dieselbe Auslassung, andere Zeile.
+        rahmenAktivZellen = 0;
+        rahmenZellen = 0;
+
+        // ⚠️ `liveSamples` und `evidenzSamples` bleiben BEWUSST stehen —
+        // Entwurfsentscheid des Erbauers, Begruendung im Manifest §10.1.
+        // Kurzfassung: DIE GRENZE SCHNEIDET DEN INHALT, NICHT DIE UHR.  Die
+        // beiden Zaehler sind kein Messwert, sondern der Fahrplan (sie werden
+        // nirgends sonst gelesen als von den zwei Kadenzabfragen).  Wer sie hier
+        // mitnullte, liesse eine Folge dichter Grenzen — Queue-Drops unter Last,
+        // eine enge Schleife — die Telemetrie VOLLSTAENDIG verstummen lassen;
+        // genau die Todesart, die §4.4 fuer den Straddle schon einmal
+        // ausdruecklich verworfen hat ("die Analyse stuerbe waehrend jeder
+        // Schleife").  Ein Frame, der kurz nach einer Grenze faellig wird,
+        // traegt stattdessen WENIGER oder GAR KEINE Baender — und dass ein Band
+        // nichts sagt, statt etwas Falsches zu sagen, ist ueber die Bitmap
+        // ehrlich ausdrueckbar ("gemeldete 0" != "nie gesagt").
         zelleStand = 0;                 // Loudness-Zelle, angefangen
         zelleKEnergie = 0.0;
         zelleAktivEnergie = 0.0;
@@ -1187,7 +1339,12 @@ private:
         // veroeffentlicht.  Lieber kein Frame als ein Frame, dessen Zeitangabe
         // sich selbst widerspricht — ein Empfaenger kann den fehlenden Frame
         // sehen (die `sequence` springt), einen widerspruechlichen nicht.
-        if (nak29Verstoss (f.transport) != 0)
+        //
+        // ⚠️ DIE NUMMER FAELLT VOR DER PRUEFUNG, nicht danach (T2-2).  Genau
+        // darin besteht der Meldeweg: ein abgelehnter Versuch verbraucht seine
+        // Sequenznummer, und die Luecke ist die Nachricht.
+        const auto versuch = frameversuch (sequenz, f.transport);
+        if (versuch.verstoss != 0)
         {
             ++zNak29Abgelehnt;
             rahmenLeeren();
@@ -1209,8 +1366,7 @@ private:
 
         fuelleSkalare (f);
 
-        ++sequenz;
-        f.transport.sequence = sequenz;
+        f.transport.sequence = versuch.sequence;
         aktuell = f;
 
         rahmenLeeren();
@@ -1498,6 +1654,7 @@ private:
     std::uint64_t zEpochenwechsel { 0 }, zSegmentwechsel { 0 };
     std::uint64_t zStraddleVerworfen { 0 }, zEreignisseVerworfen { 0 };
     std::uint64_t zNak29Abgelehnt { 0 }, zBloecke { 0 };
+    std::uint64_t zVerworfeneBandfenster { 0 };
     std::uint64_t grundZaehler[(std::size_t) Grenzgrund::anzahl] {};
 };
 

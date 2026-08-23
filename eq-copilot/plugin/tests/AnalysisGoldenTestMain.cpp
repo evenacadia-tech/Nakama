@@ -167,6 +167,26 @@ struct Speiser
         return r;
     }
 
+    /** Wie `senden`, aber mit eigenem Inhalt: `f(i)` liefert das Sample fuer
+        beide Kanaele.  Die Buchfuehrung (Strom, Projektzeit) ist dieselbe —
+        sonst pruefte der Test gegen einen selbstgebauten Zeitfehler. */
+    bool sendenMit (const rt::StampedBlock& b,
+                    const std::function<float (std::uint32_t)>& f)
+    {
+        audio.resize ((std::size_t) b.sampleCount * 2u);
+        for (std::uint32_t i = 0; i < b.sampleCount; ++i)
+        {
+            const float v = f (i);
+            audio[(std::size_t) i * 2u]      = v;
+            audio[(std::size_t) i * 2u + 1u] = v;
+        }
+        const bool r = engine.nimmBlock (b, audio.data());
+        strom   += b.sampleCount;
+        if ((b.flags & rt::kFlagZeitGueltig) != 0 && (b.flags & rt::kFlagSpielt) != 0)
+            projekt += (std::int64_t) b.sampleCount;
+        return r;
+    }
+
     /** `n` normale, lueckenlose Bloecke. */
     void laufen (int n)
     {
@@ -181,6 +201,56 @@ struct Speiser
     {
         const int noetig = (int) (3.4 * sr / (double) frames) + 4;
         laufen (noetig);
+        bisBandakkuGefuellt();
+    }
+
+    /** Noch so lange weiter, bis die BANDAKKUS und die fertigen Rahmenzellen
+        Inhalt tragen.
+
+        ⚠️ Ohne das haengt der Grenzfall an einer Phasenrechnung: ein Frame
+        leert `liveAkku` und `rahmenZellen` (`rahmenLeeren()`), und je nachdem,
+        wie viele Bloecke seither liefen, ist beides beim Grenzblock voll oder
+        ohnehin leer.  Ein Bein, das gegen einen ohnehin leeren Akku prueft, ist
+        genau die Blindheit, die T2-1 durchgelassen hat — deshalb wird der
+        Zustand HERGESTELLT und nicht ausgerechnet.
+
+        Der Blockbauer kommt von aussen, weil nicht jeder Fall dieselbe
+        Blockart fahren darf: ein `bauen()`-Block mitten in G3 waere selbst eine
+        Transportkante und traefe die Fenster vor dem eigentlichen Fall. */
+    void bisBandakkuGefuellt (const std::function<rt::StampedBlock()>& bauer,
+                              int hoechstens = 400)
+    {
+        for (int i = 0; i < hoechstens && ! (akkusTragenInhalt() && ! frameStehtAn()); ++i)
+            senden (bauer());
+    }
+    void bisBandakkuGefuellt (int hoechstens = 400)
+    {
+        bisBandakkuGefuellt ([this] { return bauen(); }, hoechstens);
+    }
+
+    /** Die Traeger aus T2-1 tragen Inhalt — die Vorbedingung, ohne die eine
+        Pruefung auf "danach leer" nichts aussagt. */
+    bool akkusTragenInhalt() const
+    {
+        return engine.liveAkkuBelegteBaender() > 0
+            && engine.evidenzAkkuBelegteBaender() > 0
+            && engine.rahmenZellenJetzt() > 0;
+    }
+
+    /** Wuerde der NAECHSTE Block einen Frame faellig machen?
+
+        🔑 DAS IST DER UNTERSCHIED ZWISCHEN EINEM SCHARFEN UND EINEM BLINDEN
+        GRENZFALL, und er ist beim Vorfuehren aufgefallen: baut der Grenzblock
+        selbst einen Frame, laeuft danach `rahmenLeeren()` — und das raeumt die
+        Bandakkus HINTERHER weg, egal ob `grenzeZiehen()` sie geraeumt hat.  Die
+        Pruefung "danach ist der Akku leer" waere dann auch mit dem Bruch gruen,
+        waehrend der eben gebaute Frame den Ton von davor bereits ausgeliefert
+        hat.  Der Grenzfall wartet deshalb auf eine Phase, in der der Grenzblock
+        NICHT faellig wird. */
+    bool frameStehtAn() const
+    {
+        return (double) (engine.liveSamplesJetzt() + (std::uint64_t) frames) / sr
+                 >= FeatureEngine::kLiveIntervallS;
     }
 
     bool allesOffen() const
@@ -192,13 +262,28 @@ struct Speiser
     }
 };
 
+/** 1 kHz bei -6 dBFS, phasenrichtig aus der Stromposition gerechnet — der Ton,
+    mit dem der T2-Pruefer den Befund T2-1 sichtbar gemacht hat. */
+float sinus1k (std::uint64_t stromPos, double sr = 48000.0)
+{
+    constexpr double kZweiPi = 6.283185307179586476925286766559;
+    return (float) (0.5 * std::sin (kZweiPi * 1000.0 * (double) stromPos / sr));
+}
+
 juce::String fuellstaende (const FeatureEngine& e)
 {
     return "Bass=" + juce::String (e.fuellstandBass())
          + " Haupt=" + juce::String (e.fuellstandHaupt())
          + " Zelle=" + juce::String (e.fuellstandLoudnessZelle())
          + " Kurz=" + juce::String (e.fuellstandKurzLoudness())
-         + " Fluss=" + juce::String (e.flussHatVorgaenger() ? 1 : 0);
+         + " Fluss=" + juce::String (e.flussHatVorgaenger() ? 1 : 0)
+         // T2-1: die vier Traeger, an denen der Bruch unsichtbar war. Sie
+         // stehen hier mit in der Diagnosezeile, damit eine rote Zeile
+         // gleich sagt, WELCHER Traeger ueberbrueckt hat.
+         + " LiveAkku=" + juce::String (e.liveAkkuBelegteBaender())
+         + " EvidAkku=" + juce::String (e.evidenzAkkuBelegteBaender())
+         + " Breite=" + juce::String (e.liveBreiteAkkuZustand(), 3)
+         + " RZellen=" + juce::String ((int) e.rahmenZellenJetzt());
 }
 
 /** DER Kernbefund je Grenzart — und die Formulierung ist der halbe Beweis.
@@ -219,13 +304,30 @@ juce::String fuellstaende (const FeatureEngine& e)
     verworfen (§32.3 "als ungueltig markiert"), also beginnt er auch kein neues
     Fenster.  Dass die beiden Faelle sich hier unterscheiden, ist der Beleg,
     dass die Straddle-Regel etwas anderes tut als eine gewoehnliche Trennung. */
+/** Die vier Traeger aus T2-1, die keinen Fuellstand haben.
+
+    🔑 SIE SIND DER GRUND, WARUM B5 GRUEN WAR, WAEHREND DER BRUCH DA WAR.
+    `keinFensterUeberbrueckt()` fragte bis zum 24.08. fuenf Fuellstaende ab und
+    keinen einzigen Akkumulator; die sieben Mutationen dieses Tickets zielten
+    ebenfalls auf keinen.  Ein Akku traegt kein Fuellstandsfeld — er traegt den
+    Wert selbst, und genau deshalb muss er einzeln gefragt werden. */
+bool keineAkkusUeberleben (const FeatureEngine& e)
+{
+    return e.liveAkkuBelegteBaender() == 0
+        && e.evidenzAkkuBelegteBaender() == 0
+        && e.liveBreiteAkkuZustand() == 0.0
+        && e.rahmenZellenJetzt() == 0
+        && e.rahmenAktivZellenJetzt() == 0;
+}
+
 bool alleFensterLeer (const FeatureEngine& e)
 {
     return e.fuellstandBass() == 0
         && e.fuellstandHaupt() == 0
         && e.fuellstandLoudnessZelle() == 0
         && e.fuellstandKurzLoudness() == 0
-        && ! e.flussHatVorgaenger();
+        && ! e.flussHatVorgaenger()
+        && keineAkkusUeberleben (e);
 }
 
 bool keinFensterUeberbrueckt (const FeatureEngine& e, int blockFrames, double sr)
@@ -235,7 +337,8 @@ bool keinFensterUeberbrueckt (const FeatureEngine& e, int blockFrames, double sr
         && e.fuellstandHaupt() == blockFrames
         && e.fuellstandLoudnessZelle() == blockFrames % zellenSamples
         && e.fuellstandKurzLoudness() == 0        // die 3-s-Historie ist weg
-        && ! e.flussHatVorgaenger();              // und der Fluss hat keinen Vorgaenger
+        && ! e.flussHatVorgaenger()               // und der Fluss hat keinen Vorgaenger
+        && keineAkkusUeberleben (e);              // T2-1: und kein Akku ueberlebt
 }
 
 const char* grundName (Grenzgrund g)
@@ -270,8 +373,12 @@ void grenzfall (const juce::String& name, Grenzgrund erwartet,
     const auto epochenVorher  = e.epochenwechsel();
     const auto segmenteVorher = e.segmentwechsel();
     const auto grundVorher    = e.grenzenMitGrund (erwartet);
+    const auto verworfenVorher = e.verworfeneBandfenster();
 
     pruefe (s.allesOffen(), name + ": vor der Grenze sind alle Fenster offen",
+            fuellstaende (e));
+    pruefe (s.akkusTragenInhalt(),
+            name + ": und die Bandakkus tragen Inhalt - sonst prueft der Rest nichts",
             fuellstaende (e));
 
     ausloesen (s);
@@ -279,6 +386,13 @@ void grenzfall (const juce::String& name, Grenzgrund erwartet,
     pruefe (keinFensterUeberbrueckt (e, s.frames, s.sr),
             name + ": NACH der Grenze traegt kein Fenster ein Sample von davor",
             fuellstaende (e) + " (erwartet je " + juce::String (s.frames) + ")");
+    // Die positive Haelfte: der Akku ist GELEERT worden, nicht ohnehin leer
+    // gewesen.  Ohne diesen Zaehler waere "belegte Baender == 0" auch dann
+    // gruen, wenn die Leerung nie gelaufen ist.
+    pruefe (e.verworfeneBandfenster() > verworfenVorher,
+            name + ": und die Bandakkus wurden dabei WIRKLICH verworfen",
+            juce::String ((int) (e.verworfeneBandfenster() - verworfenVorher))
+            + " Band-Fensterbeitraege gefallen");
     pruefe (e.grenzenMitGrund (erwartet) == grundVorher + 1,
             name + ": Ursache ist " + grundName (erwartet),
             "Zaehler " + juce::String (e.grenzenMitGrund (erwartet)));
@@ -692,7 +806,12 @@ int main()
             auto b = s.bauen (0, /*spielt*/ false);
             s.senden (b);                    // Projektzeit STEHT (Vorhoeren)
         }
+        // Weiter mit DERSELBEN Blockart, bis die Akkus tragen — ein
+        // `bauen()`-Block waere hier selbst eine Transportkante.
+        s.bisBandakkuGefuellt ([&s] { return s.bauen (0, false); });
         pruefe (s.allesOffen(), "G3: bei gestopptem Transport laufen die Fenster normal weiter",
+                fuellstaende (e));
+        pruefe (s.akkusTragenInhalt(), "G3: und die Bandakkus tragen Inhalt",
                 fuellstaende (e));
         pruefe (e.epochenwechsel() == 0,
                 "G3: eine STEHENDE Zeit bei Stopp ist keine Grenze (sonst stuerbe das Vorhoeren)",
@@ -727,7 +846,16 @@ int main()
             s.senden (b);
             ppq += ppqProBlock;
         }
+        s.bisBandakkuGefuellt ([&]
+        {
+            auto bb = s.bauen (loop);
+            bb.tempo = bpm; bb.ppqPosition = ppq;
+            bb.cycleStartPpq = 96.0; bb.cycleEndePpq = 1000.0;
+            ppq += ppqProBlock;
+            return bb;
+        });
         pruefe (s.allesOffen(), "G4: aktive Schleife allein trennt nichts", fuellstaende (e));
+        pruefe (s.akkusTragenInhalt(), "G4: und die Bandakkus tragen Inhalt", fuellstaende (e));
 
         const auto vorher = e.grenzenMitGrund (Grenzgrund::loopWrap);
         s.projekt -= 480000;                 // zurueck an den Schleifenanfang
@@ -761,8 +889,17 @@ int main()
             s.senden (b);
             ppq += ppqProBlock;
         }
+        s.bisBandakkuGefuellt ([&]
+        {
+            auto bb = s.bauen (loop);
+            bb.tempo = bpm; bb.ppqPosition = ppq;
+            bb.cycleStartPpq = 0.0; bb.cycleEndePpq = 1e9;
+            ppq += ppqProBlock;
+            return bb;
+        });
         pruefe (s.allesOffen(), "G5: Schleife ohne erreichbare Grenze trennt nichts",
                 fuellstaende (e));
+        pruefe (s.akkusTragenInhalt(), "G5: und die Bandakkus tragen Inhalt", fuellstaende (e));
 
         const auto vorher = e.straddleVerworfen();
         auto b = s.bauen (loop);
@@ -913,6 +1050,110 @@ int main()
                 fuellstaende (e));
     }
 
+    // G12 - T2-1 ALS STEHENDES BEIN: nicht der Fuellstand, sondern der FRAME.
+    //
+    // 🔑 DAS IST DIE LEHRE DIESER NACHARBEIT.  G1..G11 messen, was NACH der
+    // Grenze in den Fenstern steht — und das war die ganze Zeit richtig.
+    // Ungemessen blieb, was im veroeffentlichten FRAME steht, und dort meldete
+    // die Engine unter dem Stempel der NEUEN Epoche den Ton von VOR der Grenze
+    // (23 Live-Baender, staerkstes bei 1029 Hz mit -23,7 dB).  Gemessen wird
+    // deshalb hier wie beim Pruefer: nach der Grenze laeuft AUSSCHLIESSLICH
+    // digitale Stille, jeder Wert im Frame kann also nur von davor stammen.
+    {
+        const double fs = 48000.0;
+        FeatureEngine e;
+        e.vorbereiten (fs);
+        Speiser s { e };
+        auto ton    = [&s] (std::uint32_t i) { return sinus1k (s.strom + i); };
+        auto stille = [] (std::uint32_t) { return 0.0f; };
+
+        // 29 Bloecke Ton: Frames fallen bei Block 10 und 20 (je 4800 Samples),
+        // der Evidenzsatz sammelt ueber alle 29 weiter (er faellt erst bei
+        // 12000).  Block 30 traegt dann BEIDE Kadenzen zugleich — nur so ist
+        // auch die Evidenzseite wirklich geprueft und nicht bloss deshalb leer,
+        // weil sie gar nicht faellig war.
+        for (int i = 0; i < 29; ++i)
+            s.sendenMit (s.bauen(), ton);
+
+        const int liveVorher    = e.liveAkkuBelegteBaender();
+        const int evidenzVorher = e.evidenzAkkuBelegteBaender();
+        pruefe (liveVorher > 0 && evidenzVorher > 0,
+                "G12: vor der Grenze tragen BEIDE Bandakkus den Ton",
+                "Live " + juce::String (liveVorher) + " / Evidenz "
+                + juce::String (evidenzVorher) + " Baender");
+
+        s.projekt += 480000;                          // Seek um 10 s = Grenze
+        const bool gebaut = s.sendenMit (s.bauen(), stille);
+        const auto& f = e.frame();
+
+        pruefe (gebaut,
+                "G12: der Grenzblock macht den Frame faellig - die Uhr laeuft ueber "
+                "die Grenze weiter (Entscheid §10.1)",
+                "liveSamples=" + juce::String ((int) e.liveSamplesJetzt()));
+        pruefe (f.transport.transport_epoch == 1,
+                "G12: und der Frame traegt die NEUE Epoche",
+                juce::String ((int) f.transport.transport_epoch));
+        pruefe (f.evidenzFrisch,
+                "G12: der Evidenzsatz ist in genau diesem Frame faellig - er wird "
+                "also wirklich geprueft");
+
+        int liveGesetzt = 0, evidenzGesetzt = 0;
+        for (int b = 0; b < Gitter::liveBaender; ++b)
+            if (bitmapLies (f.live.bitmap, b)) ++liveGesetzt;
+        for (int b = 0; b < Gitter::evidenzBaender; ++b)
+            if (bitmapLies (f.evidenz.bitmap, b)) ++evidenzGesetzt;
+
+        pruefe (liveGesetzt == 0,
+                "G12: KEIN Live-Band im Frame - der Ton von vor der Grenze ist weg (T2-1)",
+                juce::String (liveGesetzt) + " gesetzte Baender");
+        pruefe (evidenzGesetzt == 0,
+                "G12: und KEIN Evidenzband - die langsamere Kadenz reicht nicht weiter",
+                juce::String (evidenzGesetzt) + " gesetzte Baender");
+        pruefe (! (f.aktivitaetGesetzt && f.aktivitaet > 0.0f),
+                "G12: auch keine Aktivitaet auf Stille - die fertigen Zellen fielen mit",
+                f.aktivitaetGesetzt ? juce::String (f.aktivitaet, 3) : juce::String ("nicht gesetzt"));
+        pruefe (e.verworfeneBandfenster() > 0,
+                "G12: die Akkus wurden GELEERT, nicht bloss leer vorgefunden",
+                juce::String ((int) e.verworfeneBandfenster()) + " Band-Fensterbeitraege");
+
+        // Kein Einzelfall: derselbe Sweep, den der Pruefer gefahren hat.
+        int mitBaendern = 0, mitAktivitaet = 0, mitEvidenz = 0, gemessen = 0;
+        for (int vorlauf = 1; vorlauf <= 120; ++vorlauf)
+        {
+            FeatureEngine ee;
+            ee.vorbereiten (fs);
+            Speiser ss { ee };
+            auto tonS    = [&ss] (std::uint32_t i) { return sinus1k (ss.strom + i); };
+            auto stilleS = [] (std::uint32_t) { return 0.0f; };
+            for (int i = 0; i < vorlauf; ++i)
+                ss.sendenMit (ss.bauen(), tonS);
+
+            ss.projekt += 480000;                     // Grenze, danach nur Stille
+            bool fertig = false;
+            for (int i = 0; i < 40 && ! fertig; ++i)
+                fertig = ss.sendenMit (ss.bauen(), stilleS);
+            if (! fertig)
+                continue;                             // kein Frame faellig geworden
+            ++gemessen;
+
+            const auto& fr = ee.frame();
+            for (int b = 0; b < Gitter::liveBaender; ++b)
+                if (bitmapLies (fr.live.bitmap, b)) { ++mitBaendern; break; }
+            for (int b = 0; b < Gitter::evidenzBaender; ++b)
+                if (bitmapLies (fr.evidenz.bitmap, b)) { ++mitEvidenz; break; }
+            if (fr.aktivitaetGesetzt && fr.aktivitaet > 0.0f) ++mitAktivitaet;
+        }
+        pruefe (gemessen >= 100,
+                "G12: der Sweep hat genug Grenzzeitpunkte wirklich bis zum Frame gefahren",
+                juce::String (gemessen) + " von 120");
+        pruefe (mitBaendern == 0 && mitEvidenz == 0 && mitAktivitaet == 0,
+                "G12: ueber 120 Grenzzeitpunkte traegt KEIN Frame etwas von davor "
+                "(Pruefer-Messung: 80 / 40 / 43)",
+                juce::String (mitBaendern) + " mit Live-Baendern, "
+                + juce::String (mitEvidenz) + " mit Evidenz, "
+                + juce::String (mitAktivitaet) + " mit Aktivitaet");
+    }
+
     //==========================================================================
     std::cout << std::endl << "== H - NAK-29: bedingte Feldpflichten des Transportstempels ==" << std::endl;
     {
@@ -946,14 +1187,23 @@ int main()
         pruefe (nak29Verstoss (t6) == 6,
                 "Fall 6: continuous_time-Bit ohne continuous_time_samples");
 
-        // Und der Riegel ist im ERZEUGER wirksam, nicht nur als Funktion:
-        // ein Frame mit verletztem Stempel wird gar nicht erst veroeffentlicht.
+        // Und der Riegel sitzt im ERZEUGER, nicht nur als Funktion daneben.
+        //
+        // ⚠️ EHRLICH GESAGT, WAS DIESE ZEILE IST (T2-2): sie ist konstruktiv
+        // wahr.  `baueStempel()` setzt Wert und Bit in allen sechs Faellen
+        // gemeinsam, `zNak29Abgelehnt` kann heute gar nicht ungleich 0 werden —
+        // die Zeile misst also KEINEN befahrenen Gegenpfad, sondern haelt fest,
+        // dass der Erzeuger den Riegel nicht ausloest.  Das ist eine Aussage
+        // ueber `baueStempel()` und als solche wertvoll: aendert dort jemand
+        // eine Zuweisung, wird sie rot.  Der Meldeweg selbst hat sein Bein in
+        // L5, der Riegel seines in L3.
         FeatureEngine e;
         e.vorbereiten (48000.0);
         Speiser s { e };
         s.laufen (60);
         pruefe (e.nak29Abgelehnt() == 0,
-                "im Normalbetrieb entsteht kein einziger verletzter Stempel",
+                "der ERZEUGER loest den Riegel nicht aus - kein verletzter Stempel "
+                "entsteht im Normalbetrieb (konstruktiv, siehe L5)",
                 juce::String ((int) e.nak29Abgelehnt()));
     }
 
@@ -999,10 +1249,71 @@ int main()
                 alleInEpoche = false;
         pruefe (alleInEpoche, "jedes Ereignis traegt die Epoche, in der es gesehen wurde",
                 juce::String (e2.ereignisAnzahlJetzt()) + " Ereignis(se)");
-        pruefe (e2.ereignisAnzahlJetzt() <= FeatureEngine::kEreignisPlaetze,
-                "der Ereignisstrom ist fest gedeckelt (§33 'feste Obergrenzen')",
-                juce::String (e2.ereignisAnzahlJetzt()) + " / "
+
+        // ── Der Deckel, WIRKLICH gefahren ───────────────────────────────────
+        //
+        // ⚠️ T2-5: bis zum 24.08. stand hier nur `1 <= 64`.  Der Lauf oben
+        // erzeugt EIN Ereignis, `ereignisseVerworfen()` wurde nirgends geprueft
+        // und keine der sieben Mutationen zielte auf den Ring — "Ring fest
+        // gedeckelt" war damit eine Behauptung ueber einen Fall, den das Bein
+        // nie erreicht hat.
+        //
+        // Der Reiz liegt im Signal: ein Onset feuert nur, wenn der Fluss
+        // Median+3·MAD ueber die letzten 16 Fenster ueberschreitet, und stille
+        // Fenster gehen gar nicht erst in die Flussrechnung (das Aktivitaetsgate
+        // greift davor).  Ein strenger Wechsel laut/leise feuert deshalb NIE
+        // (bei acht hohen und acht tiefen Werten liegt die Schwelle bei 2H-L).
+        // Was feuert, ist ein RUHIGER Boden mit seltenen Ausschlaegen: ein
+        // 1-kHz-Sinus bei -26 dBFS haelt jedes Fenster aktiv und den Fluss nahe
+        // null, ein breitbandiger Ausschlag alle vier Hops hebt ihn weit
+        // darueber.
+        FeatureEngine e5;
+        e5.vorbereiten (48000.0);
+        Speiser s5 { e5 };
+        constexpr double kZweiPi = 6.283185307179586476925286766559;
+        std::uint64_t aeltestesBeiVoll = 0;
+        bool warVoll = false;
+        int bloecke = 0;
+        for (; bloecke < 4000; ++bloecke)
+        {
+            const bool ausschlag = (bloecke % 16) == 0;
+            s5.sendenMit (s5.bauen(), [&] (std::uint32_t i)
+            {
+                if (ausschlag)
+                    return s5.rausch() * 3.2f;        // breitbandig, ~-2 dBFS
+                return (float) (0.05 * std::sin (kZweiPi * 1000.0
+                                * (double) (s5.strom + i) / 48000.0));
+            });
+            if (! warVoll && e5.ereignisAnzahlJetzt() == FeatureEngine::kEreignisPlaetze
+                && e5.ereignisseVerworfen() == 0)
+            {
+                warVoll = true;
+                aeltestesBeiVoll = e5.ereignis (0).stromSample;
+            }
+            if (e5.ereignisseVerworfen() > 0)
+                break;
+        }
+        pruefe (warVoll && e5.ereignisseVerworfen() > 0,
+                "der Ereignisring laeuft WIRKLICH ueber - der Deckel ist gemessen, "
+                "nicht behauptet",
+                juce::String (e5.ereignisAnzahlJetzt()) + " im Ring, "
+                + juce::String ((int) e5.ereignisseVerworfen()) + " verworfen, nach "
+                + juce::String (bloecke) + " Bloecken");
+        pruefe (e5.ereignisAnzahlJetzt() == FeatureEngine::kEreignisPlaetze,
+                "und er waechst dabei NICHT ueber seine 64 Plaetze hinaus (§48.1: ein "
+                "Strom, der bei Ueberlast waechst, waere ein unbegrenzter Vektor)",
+                juce::String (e5.ereignisAnzahlJetzt()) + " / "
                 + juce::String (FeatureEngine::kEreignisPlaetze));
+        pruefe (warVoll && e5.ereignis (0).stromSample > aeltestesBeiVoll,
+                "drop-oldest: beim Ueberlauf faellt das AELTESTE, nicht das neueste",
+                "aeltestes vorher " + juce::String ((int) aeltestesBeiVoll)
+                + ", jetzt " + juce::String ((int) e5.ereignis (0).stromSample));
+        bool aufsteigend = true;
+        for (int i = 1; i < e5.ereignisAnzahlJetzt(); ++i)
+            if (e5.ereignis (i).stromSample <= e5.ereignis (i - 1).stromSample)
+                aufsteigend = false;
+        pruefe (aufsteigend,
+                "und der Ring gibt sie weiter aeltestes-zuerst zurueck, auch nach dem Umlauf");
     }
 
     //==========================================================================
@@ -1213,11 +1524,38 @@ int main()
         pruefe (keinFensterUeberbrueckt (e, s.frames, s.sr),
                 "L1: MIT Grenze meldet sie TRUE - beide Richtungen vorgefuehrt");
 
-        // L2 - Der Gitterriegel reagiert auf eine geaenderte Zahl.
-        const auto echt = bitsVon (Gitter::evidenzKante (0));
-        pruefe (echt != (echt ^ 1ull),
-                "L2: eine um EIN Bit geaenderte Gitterzahl ist von der echten unterscheidbar",
-                "0x" + juce::String::toHexString ((juce::int64) echt));
+        // L2 - Der Gittervergleich aus Abschnitt A, gegen eine um EIN Bit
+        // veraenderte Fixture-Zeile gefahren.
+        //
+        // ⚠️ DIE ERSTE FASSUNG WAR EINE TAUTOLOGIE (T2-4): `echt != (echt ^ 1)`
+        // ist fuer jedes uint64 wahr und ruft keine Produktionszeile auf — eine
+        // Gegenprobe, die nicht scheitern kann, ausgerechnet im Abschnitt "kann
+        // dieses Bein ueberhaupt rot werden?".  Jetzt faehrt sie den ECHTEN
+        // Vergleich: dieselbe Kette `bitsVon(Gitter::…) != hexBits(text)` wie in
+        // A, einmal gegen den Sollwert und einmal gegen eine gekippte Zeile.
+        auto hexZeile = [] (std::uint64_t b)
+        {
+            return "0x" + juce::String::toHexString ((juce::int64) b).paddedLeft ('0', 16);
+        };
+        const int gekippteZeile = 26;
+        int abwEcht = 0, abwGekippt = 0;
+        for (int i = 0; i <= Gitter::evidenzBaender; ++i)
+        {
+            const auto soll = bitsVon (Gitter::evidenzKante (i));
+            if (bitsVon (Gitter::evidenzKante (i)) != hexBits (hexZeile (soll)))
+                ++abwEcht;
+            const auto zeile = (i == gekippteZeile) ? (soll ^ 1ull) : soll;
+            if (bitsVon (Gitter::evidenzKante (i)) != hexBits (hexZeile (zeile)))
+                ++abwGekippt;
+        }
+        pruefe (abwEcht == 0,
+                "L2: der Gittervergleich meldet gegen die UNVERAENDERTE Zeile 0 Abweichungen",
+                juce::String (abwEcht));
+        pruefe (abwGekippt == 1,
+                "L2: und gegen eine um EIN Bit gekippte Zeile genau 1 - er reagiert also, "
+                "und zwar nur dort",
+                juce::String (abwGekippt) + " Abweichung(en), Zeile "
+                + juce::String (gekippteZeile));
 
         // L3 - Der NAK-29-Riegel unterscheidet die Faelle, statt nur 'nein' zu
         // sagen: sechs verschiedene Verletzungen, sechs verschiedene Nummern.
@@ -1257,6 +1595,70 @@ int main()
         pruefe (gesetzteBaender == 0,
                 "L4: auf Stille ist KEIN Band gueltig - es steht nicht '0 dB' da, sondern nichts",
                 juce::String (gesetzteBaender) + " gesetzte Baender");
+
+        // L5 - Der Meldeweg des NAK-29-Riegels: ein abgelehnter Frameversuch
+        // VERBRAUCHT seine Sequenznummer, und die Luecke ist die Nachricht.
+        //
+        // ⚠️ Bis zum 24.08. stimmte das nicht (T2-2): `++sequenz` stand hinter
+        // dem Ablehnungszweig, der Empfaenger saehe `1, 2, 3, …` ohne Luecke,
+        // und §4.5 beschrieb ein Verhalten, das der Code nicht hatte.
+        // Gefahren wird der Entscheid hier EINZELN (`frameversuch()`), weil der
+        // Zweig in `baueFrame()` konstruktiv unerreichbar ist — `baueStempel()`
+        // setzt Wert und Bit in allen sechs Faellen gemeinsam.  Das belegt den
+        // MECHANISMUS, nicht die Erreichbarkeit; der Unterschied steht im
+        // Manifest §10.2.
+        {
+            Transportstempel gut;
+            gut.zeitbasis = Zeitbasis::project_samples;
+            gut.project_sample_start_gesetzt = true;
+            gut.gueltigkeit = kGProjectTime;
+            auto kaputt = gut; kaputt.project_sample_start_gesetzt = false;
+
+            std::uint64_t zaehler = 0;
+            std::vector<std::uint64_t> veroeffentlicht;
+            for (const auto& t : { gut, kaputt, gut })
+            {
+                const auto v = frameversuch (zaehler, t);
+                if (v.verstoss == 0)
+                    veroeffentlicht.push_back (v.sequence);
+            }
+            pruefe (zaehler == 3,
+                    "L5: drei Versuche verbrauchen drei Sequenznummern - auch der abgelehnte",
+                    juce::String ((int) zaehler));
+            pruefe (veroeffentlicht.size() == 2
+                    && veroeffentlicht[0] == 1 && veroeffentlicht[1] == 3,
+                    "L5: der Empfaenger sieht 1 und 3 - die LUECKE bei 2 ist die Meldung",
+                    veroeffentlicht.size() == 2
+                        ? juce::String ((int) veroeffentlicht[0]) + ", "
+                          + juce::String ((int) veroeffentlicht[1])
+                        : juce::String ((int) veroeffentlicht.size()) + " Frames");
+            pruefe (frameversuch (zaehler, kaputt).verstoss == 1,
+                    "L5: und der Versuch nennt den FALL, nicht nur 'abgelehnt'");
+        }
+
+        // L6 - Die Ursachen-Auskunft liest nicht ueber ihr Array hinaus.
+        //
+        // ⚠️ T2-3: `grundZaehler` hat exakt `anzahl` Elemente, und
+        // `Grenzgrund::anzahl` ist ein oeffentlich sichtbarer Enumwert - der
+        // Aufruf damit las ein Element HINTER dem Ende, hinter dem letzten
+        // Member der Klasse.  Der Selbstaudit-Fix `48fcd9c` hat den Schreib-
+        // ueberlauf geschlossen und diesen Lese-Ueberlauf erst aufgemacht.
+        {
+            FeatureEngine e6;
+            e6.vorbereiten (48000.0);
+            Speiser s6 { e6 };
+            s6.bisAllesOffen();
+            s6.projekt += 480000;
+            s6.senden (s6.bauen());               // eine echte Grenze
+            pruefe (e6.grenzenMitGrund (Grenzgrund::zeitSprung) == 1,
+                    "L6: ein echter Grund wird gezaehlt",
+                    juce::String ((int) e6.grenzenMitGrund (Grenzgrund::zeitSprung)));
+            pruefe (e6.grenzenMitGrund (Grenzgrund::anzahl) == 0,
+                    "L6: `anzahl` ist kein Grund und liefert 0, statt hinter das Array zu lesen",
+                    "gelesen: " + juce::String ((juce::int64) e6.grenzenMitGrund (Grenzgrund::anzahl)));
+            pruefe (e6.grenzenMitGrund (Grenzgrund::keine) == 0,
+                    "L6: und `keine` ebenso - getrennt wird nie ohne Grund");
+        }
     }
 
     //==========================================================================

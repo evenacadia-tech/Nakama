@@ -27,42 +27,54 @@
 > `design/abnahmen/`. Bewusst offen: Undo-Form Seite 1 (U2.8),
 > Sidechain-Sichtbarkeit (U5), Rückfallfläche der Sonde (NAK-65-Rest).
 
-> ## ⚠ DER EINE NÄCHSTE SCHRITT — Stand 23.08.2026, nach dem T2 auf S12–13
+> ## ⚠ DER EINE NÄCHSTE SCHRITT — Stand 24.08.2026, nach der S12–13-Nacharbeit
 >
-> **Die S12–13-Nacharbeit: T2-1 schließen.** Der T2-Prüfer ist auf S12–13
-> gelaufen (Manifest §9) und sagt **NEEDS_WORK** — mit **einem** blockierenden
-> Befund, der genau die Zusage des Gate-Textes trifft:
+> **Die S12–13-Nacharbeit ist gefahren (Manifest §10) — alle fünf T2-Befunde
+> sind geschlossen.** Jeder wurde zuerst an der Quelldatei nachgemessen; alle
+> fünf haben sich bestätigt, kein Fehlalarm. Beweislauf **GRÜN 28/28, Exit 0,
+> beglaubigt**; das Bein B5 ist von **120 auf 155 Prüfungen** gewachsen.
 >
-> > **T2-1 — die Band- und Rahmen-Akkumulatoren stehen nicht auf der Leerliste
-> > von `grenzeZiehen()`.** Sieben Träger überleben jede Epochengrenze:
-> > `liveAkku`, `evidenzAkku`, `liveBreiteAkku`, `rahmenAktivZellen`,
-> > `rahmenZellen`, `liveSamples`, `evidenzSamples`. Gemessen: ein Frame mit
-> > `transport_epoch = 1` meldet **23 Live-Bänder**, das stärkste bei 1029 Hz
-> > mit **−23,7 dB**, obwohl nach der Grenze ausschließlich digitale Stille
-> > eingespeist wurde. Sweep über 120 Grenzzeitpunkte: **80** mit
-> > Vor-Grenze-Bändern, **43** zusätzlich mit Aktivität > 0 auf Stille, **40**
-> > auch im Evidenzsatz.
+> **Der Entwurfsentscheid zu T2-1 ist gefallen** (§10.1, Begründung dort):
+> *die Grenze schneidet den Inhalt, nicht die Uhr.* `grenzeZiehen()` leert
+> jetzt auch die drei Bandakkus und die zwei Zellzähler; `liveSamples` und
+> `evidenzSamples` bleiben **bewusst** stehen, weil sie kein Messwert sind,
+> sondern der Fahrplan — würden sie mitgenullt, verstummte die Telemetrie
+> vollständig, sobald Grenzen dichter kommen als die Kadenz (Queue-Drops unter
+> Last, enge Schleife). Das ist dieselbe Todesart, die §4.4 für den Straddle
+> schon einmal ausdrücklich verworfen hat.
 >
-> **Der Ansatzpunkt steht schon im Code:** `rahmenLeeren()`
-> (`FeatureEngine.h:1225`) ist die vollständige Liste — `grenzeZiehen()`
-> (`:836`) leert zehn `rahmen…`-Felder und lässt zwei plus die drei Akkus
-> stehen. ⚠️ Der naheliegende Griff (an der Grenze `rahmenLeeren()` rufen) zieht
-> den **Evidenzsnapshot** und seine 250-ms-Kadenz mit — welche Ehrlichkeit
-> gewinnt, ist eine Entscheidung des Erbauers, nicht des Prüfers. Und das Bein
-> muss mit: `keinFensterUeberbrueckt()` fragt heute **fünf Füllstände und
-> keinen Akkumulator** ab — genau deshalb war B5 grün, während der Bruch da war.
+> **Das Bein ist mitgewachsen** — das war der eigentliche Fehler:
+> `keinFensterUeberbrueckt()` fragte fünf Füllstände und keinen Akkumulator.
+> Neu: acht Auskünfte an der Engine, `keineAkkusUeberleben()` in beiden
+> Kernfragen, eine Vorbedingung je Grenzfall und **Abschnitt G12**, der nicht
+> den Füllstand misst, sondern den **Frame**. Mutation **M8** (Fix ganz zurück)
+> macht **14 Zeilen** rot und reproduziert die Prüferzahlen **23 / 80 / 40 / 43**
+> Ziffer für Ziffer.
 >
-> Dazu vier kleinere Befunde (**T2-2** Sequenz springt nicht bei einer
-> NAK-29-Ablehnung, und der Riegel ist aus `baueStempel()` unerreichbar ·
-> **T2-3** `grenzenMitGrund(Grenzgrund::anzahl)` liest ein Element hinter dem
-> Ende · **T2-4** L2 im Bein ist eine Tautologie · **T2-5** der Ereignisdeckel
-> ist ungemessen). Alle in Manifest §9.0 mit Schwere und Messung.
+> 🔑 **Trotzdem steht kein PASS da, und das ist Absicht:** wer repariert,
+> spricht sich nicht selbst frei. Die Urteilsmarke lautet
+> `T2 NEEDS_WORK 2026-08-24 nachgearbeitet` — der Stand wartet auf einen
+> **frischen Prüfer**, der weder gebaut noch nachgearbeitet hat.
 >
 > | Stand | Manifest | Urteil heute | Was fehlt |
 > |---|---|---|---|
 > | **S9** / `SONDE-007b` | §5 (Bericht), **§6** (Nacharbeit) | NEEDS_WORK | **kein PASS** — nie ein zweites Mal geprüft |
 > | **S10–11** / `SONDE-008` | §8 (Bericht), **§9** (Nacharbeit) | NEEDS_WORK | **kein PASS** — nie ein zweites Mal geprüft |
-> | **S12–13** / `SONDE-009` | §9 (T2-Bericht, 23.08.) | **NEEDS_WORK** | **Nacharbeit T2-1…T2-5**, danach erneuter T2 |
+> | **S12–13** / `SONDE-009` | §9 (T2-Bericht), **§10** (Nacharbeit 24.08.) | NEEDS_WORK · nachgearbeitet | **kein PASS** — erneuter T2 durch einen frischen Prüfer |
+>
+> **Damit hat sich der eine nächste Schritt verschoben:** der gerechnete
+> Planstand nennt jetzt **G1** (`Gate` — Prüfrunde über P1, eigene Session).
+> Vier Schritte warten auf ein Urteil, keiner auf Bauarbeit. Wer prüft, prüft
+> mit frischem Kontext und **schließt keine eigenen Befunde**.
+>
+> **Was die Nacharbeit ausdrücklich NICHT geprüft hat** (§10.8, damit niemand
+> mehr Deckung annimmt als da ist): der G12-Sweep fährt nur den **Seek** auf
+> Frame-Ebene (die anderen acht Grenzarten sind auf Träger-Ebene gedeckt);
+> die Rahmenskalare nach einer Grenze sind nicht auf Plausibilität geprüft
+> (**NAK-68** — ein Frame sagt nicht, über wie viel Audio er integriert wurde;
+> gehört mit NAK-59 in denselben `.fbs`-Änderungssatz in `SONDE-010`); M1–M7
+> wurden nicht wiederholt; kein FL-Lauf, kein Thread-Sanitizer, keine
+> Serialisierung.
 >
 > ### ⚙️ Neu am 23.08. (Werkzeug, nicht Produkt): der Planstand wird GERECHNET
 >

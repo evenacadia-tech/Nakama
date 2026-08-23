@@ -390,10 +390,16 @@ void EqCopilotProcessor::workerLauf()
         // fortsetzt (§53.7) — die Engine sieht damit nie zwei Blöcke über eine
         // Grenze hinweg zusammenhängen, deren Lage erst nachträglich sichtbar
         // wurde (§32.3).
-        const juce::uint32 anlauf = queue.aktuellerAnlauf();
         while (const auto* roh = queue.spitze())
         {
-            if (roh->startFolge != anlauf)
+            // T2-3 zweite Hälfte (23.08.): der Anlauf wird JE BLOCK gelesen.
+            // Bis dahin stand er einmal VOR der Schleife — kippte er während
+            // des Drains, zählte der Worker frische Blöcke als
+            // `veralteteBloecke`. Verwerfen wäre die sichere Seite geblieben,
+            // aber der Zähler vermischte damit „alter Anlauf" mit „neuer Anlauf
+            // zu früh gesehen" und trug seinen Namen zu Unrecht. Eine
+            // relaxed-Atomic je Block ist auf dem Workerthread nichts.
+            if (roh->startFolge != queue.aktuellerAnlauf())
             {
                 // Rest eines früheren prepareToPlay-Anlaufs: dort kann die
                 // Samplerate eine andere gewesen sein. Nicht analysieren,

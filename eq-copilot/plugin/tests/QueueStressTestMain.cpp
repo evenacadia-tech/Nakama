@@ -793,6 +793,133 @@ int main()
     }
 
     //==========================================================================
+    // Nacharbeit T2-3: die Zusage im Kopf von `neustartAnfordern()` lautet „der
+    // Consument erkennt Bloecke aus dem alten Anlauf an ihrer kleineren
+    // startFolge". Gemessen hat der T2-Pruefer 0 von 3 - weil die Nummer erst
+    // beim naechsten Audioblock stieg, `prepareToPlay` aber typischerweise
+    // ruft, WAEHREND der Callback steht. Genau diese Sequenz faehrt O.
+    std::cout << "== O - Anlaufwechsel: Altbloecke sind SOFORT erkennbar (T2-3) ==" << std::endl;
+    {
+        StampedAudioQueue<MiniStrom> q; q.vorbereiten();
+        std::vector<float> l (64, 0.1f);
+        StampedAudioQueue<MiniStrom>::TapQuelle t { l.data(), l.data() };
+        std::int64_t zeit = 0;
+        for (int i = 0; i < 3; ++i)
+        {
+            q.veroeffentliche (&t, 1, 2, 64, stempelBei (zeit));
+            zeit += 64;
+        }
+        const std::uint32_t vorher = q.aktuellerAnlauf();
+
+        // Der Nachrichtenthread meldet den Neuanlauf - KEIN Audioblock dazwischen.
+        q.neustartAnfordern();
+        pruefe (q.aktuellerAnlauf() != vorher,
+                "der Anlauf steigt sofort, nicht erst beim naechsten Audioblock",
+                std::to_string (vorher) + " -> " + std::to_string (q.aktuellerAnlauf()));
+
+        int alt = 0, aktuell = 0;
+        const std::uint32_t anlauf = q.aktuellerAnlauf();
+        while (const auto* b = q.spitze())
+        {
+            if (b->startFolge != anlauf) ++alt; else ++aktuell;
+            q.freigeben();
+        }
+        std::cout << "  Bloecke aus dem ALTEN Anlauf: als veraltet erkannt " << alt
+                  << ", als aktuell durchgelassen " << aktuell << std::endl;
+        pruefe (alt == 3 && aktuell == 0,
+                "alle drei Bloecke des alten Anlaufs sind als veraltet erkennbar",
+                std::to_string (alt) + "/3");
+
+        // Gegenprobe: der erste Block DANACH traegt die neue Nummer - sonst
+        // koennte O gruen sein, weil gar nichts mehr durchkommt.
+        q.veroeffentliche (&t, 1, 2, 64, stempelBei (zeit));
+        const auto* neu = q.spitze();
+        pruefe (neu != nullptr && neu->startFolge == q.aktuellerAnlauf(),
+                "Gegenprobe: der erste Block nach dem Neuanlauf gilt als aktuell");
+        pruefe (neu != nullptr && (neu->flags & kFlagLueckeDavor) != 0,
+                "und er traegt die Luecke, die der Neuanlauf gerissen hat");
+
+        // Zwei Neuanlaeufe ohne Audioblock dazwischen duerfen sich nicht
+        // gegenseitig verschlucken.
+        const std::uint32_t a1 = q.aktuellerAnlauf();
+        q.neustartAnfordern();
+        q.neustartAnfordern();
+        pruefe (q.aktuellerAnlauf() == a1 + 2,
+                "zwei Neuanlaeufe hintereinander gehen beide nicht verloren",
+                std::to_string (a1) + " -> " + std::to_string (q.aktuellerAnlauf()));
+        while (q.spitze()) q.freigeben();
+        q.veroeffentliche (&t, 1, 2, 64, stempelBei (zeit + 64));
+        const auto* nach = q.spitze();
+        pruefe (nach != nullptr && nach->startFolge == q.aktuellerAnlauf(),
+                "und der Produzent holt sich die ENDGUELTIGE Nummer, nicht die erste");
+    }
+
+    //==========================================================================
+    // Nacharbeit T2-4: ein Seek bei gestopptem Transport ist eine Grenze
+    // (§32.3 „ein Sprung"). Gemessen hatte der Pruefer: Sprung um 10 s => 0
+    // Brueche. Die Kehrseite - eine STEHENDE Zeit bei Stopp ist weiterhin kein
+    // Bruch - steht als zweite Haelfte daneben, sonst waere der Fix eine
+    // Ruecknahme der Entscheidung aus §4.3 Punkt 2.
+    std::cout << "== P - Seek bei gestopptem Transport ist eine Grenze (T2-4) ==" << std::endl;
+    {
+        auto fahre = [] (bool spielt, std::int64_t sprung, std::uint64_t& brueche)
+        {
+            StampedAudioQueue<MiniStrom> q; q.vorbereiten();
+            Blockquarantaene<MiniStrom> quar; quar.vorbereiten();
+            std::vector<float> l (64, 0.1f);
+            StampedAudioQueue<MiniStrom>::TapQuelle t { l.data(), l.data() };
+            std::int64_t zeit = 5000;
+            auto zug = [&] (std::int64_t bei)
+            {
+                q.veroeffentliche (&t, 1, 2, 64, stempelBei (bei, spielt));
+                while (const auto* b = q.spitze()) { quar.schiebe (q, *b); q.freigeben(); }
+            };
+            // Drei Bloecke ohne Sprung. Bei laufendem Transport wandert die
+            // Zeit mit, bei Stopp steht sie - beides ist der Normalfall.
+            for (int i = 0; i < 3; ++i) { zug (zeit); if (spielt) zeit += 64; }
+            const std::uint64_t vor = quar.kontinuitaetsbrueche();
+            zug (zeit + sprung);
+            zug (zeit + sprung + (spielt ? 64 : 0));
+            brueche = quar.kontinuitaetsbrueche() - vor;
+        };
+
+        std::uint64_t b = 0;
+        fahre (/*spielt*/ false, /*sprung*/ 480000, b);      // 10 s, Transport steht
+        pruefe (b == 1, "Seek um 10 s bei gestopptem Transport ist EIN Bruch",
+                std::to_string (b));
+
+        fahre (/*spielt*/ false, /*sprung*/ 0, b);
+        pruefe (b == 0, "Gegenprobe: stehende Zeit bei Stopp bleibt KEIN Bruch (§4.3 Punkt 2)",
+                std::to_string (b));
+
+        fahre (/*spielt*/ true, /*sprung*/ 480000, b);
+        pruefe (b == 1, "und bei laufendem Transport ist der Seek weiterhin ein Bruch",
+                std::to_string (b));
+
+        // Der dritte Fall, den die Regel bewusst NICHT anfasst: ohne gueltiges
+        // „spielt" koennte eine wandernde Zeit ganz normale Wiedergabe sein.
+        // Waere sie dort ein Bruch, stuerbe jede Analyse ohne Transportbeweis.
+        {
+            StampedAudioQueue<MiniStrom> q; q.vorbereiten();
+            Blockquarantaene<MiniStrom> quar; quar.vorbereiten();
+            std::vector<float> l (64, 0.1f);
+            StampedAudioQueue<MiniStrom>::TapQuelle t { l.data(), l.data() };
+            for (int i = 0; i < 5; ++i)
+            {
+                Stempel s;                       // Transport UNBEKANNT
+                s.kontextAnwesend = true;
+                s.zeitGueltig = true;
+                s.projectSampleStart = 1000 + (std::int64_t) i * 64;
+                q.veroeffentliche (&t, 1, 2, 64, s);
+                while (const auto* bl = q.spitze()) { quar.schiebe (q, *bl); q.freigeben(); }
+            }
+            pruefe (quar.kontinuitaetsbrueche() == 0,
+                    "ohne gueltiges „spielt“ bleibt eine wandernde Zeit unbewertet",
+                    std::to_string (quar.kontinuitaetsbrueche()));
+        }
+    }
+
+    //==========================================================================
     std::cout << std::endl << geprueft << " Pruefungen, " << fehler << " Fehler." << std::endl;
     std::cout << (fehler == 0 ? "QUEUE-STRESSTEST OK" : "QUEUE-STRESSTEST FEHLGESCHLAGEN")
               << std::endl;

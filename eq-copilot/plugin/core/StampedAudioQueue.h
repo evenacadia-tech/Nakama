@@ -228,11 +228,35 @@ public:
         Nachrichtenthread aus mitten in einen laufenden Leser hinein - beide
         Enden eines SPSC-Rings von einem dritten Thread aus zu verstellen, ist
         genau die Stelle, an der ein Ring still Muell liefert. Stattdessen
-        NIMMT DER PRODUZENT den Wunsch entgegen: er erhoeht `startFolge` und
-        oeffnet eine Luecke. Der Consument erkennt Bloecke aus dem alten Anlauf
-        an ihrer kleineren `startFolge` und traegt sie nicht in die Analyse -
-        dasselbe Ergebnis wie der alte Reset, ohne den Fremdzugriff. */
-    void neustartAnfordern() noexcept { neustartWunsch.store (true, std::memory_order_relaxed); }
+        NIMMT DER PRODUZENT den Wunsch entgegen: er uebernimmt die neue
+        `startFolge` und oeffnet eine Luecke. Der Consument erkennt Bloecke aus
+        dem alten Anlauf an ihrer kleineren `startFolge` und traegt sie nicht in
+        die Analyse - dasselbe Ergebnis wie der alte Reset, ohne den
+        Fremdzugriff.
+
+        ⚠️ DER ANLAUF STEIGT HIER, NICHT ERST BEIM NAECHSTEN AUDIOBLOCK (T2-3,
+        23.08.2026). Die erste Fassung setzte nur den Wunsch und liess den
+        Produzenten `startFolge` erhoehen - aber `prepareToPlay` ruft hier
+        typischerweise hinein, WAEHREND der Audiocallback steht. Bis zum
+        naechsten Block blieb `aktuellerAnlauf()` also auf dem alten Wert, und
+        die Bloecke, die schon im Ring lagen, sahen aus wie aktuelle: gemessen
+        0 von 3 erkennbar. Weil der Worker am Kopf derselben Runde
+        `engine.vorbereiten(neueSr)` ruft, wurden sie mit der NEUEN Samplerate
+        analysiert - genau das, was diese Nummer verhindern soll. §32.3 fuehrt
+        den Sampleratewechsel ausdruecklich als Epochengrenze.
+
+        🔑 Die Reihenfolge der zwei Zeilen ist tragend, nicht Geschmack: erst
+        den Anlauf erhoehen, DANN den Wunsch setzen. Umgekehrt koennte der
+        Produzent den Wunsch verbrauchen und sich dabei die noch UNVERAENDERTE
+        Nummer holen - der Neuanlauf waere spurlos verloren. In der gewaehlten
+        Reihenfolge ist der schlimmste Fall, dass ein Block aus dem Augenblick
+        dazwischen als veraltet verworfen wird; das ist die sichere Seite und
+        genau das, was der alte `fifo.reset()` ohnehin tat. */
+    void neustartAnfordern() noexcept
+    {
+        aktuelleStartFolge.fetch_add (1, std::memory_order_relaxed);
+        neustartWunsch.store (true, std::memory_order_relaxed);
+    }
 
     /** Der Anlauf, der gerade gilt (Consument: alles Kleinere ist veraltet). */
     std::uint32_t aktuellerAnlauf() const noexcept
@@ -259,10 +283,11 @@ public:
             return false;
 
         // Neuanlauf zuerst: er gilt ab DIESEM Block, nicht ab dem naechsten.
+        // Die Nummer steht schon (s. `neustartAnfordern`) - hier wird sie nur
+        // uebernommen, damit ab jetzt gestempelte Bloecke als aktuell gelten.
         if (neustartWunsch.exchange (false, std::memory_order_relaxed))
         {
-            ++startFolge;
-            aktuelleStartFolge.store (startFolge, std::memory_order_relaxed);
+            startFolge = aktuelleStartFolge.load (std::memory_order_relaxed);
             lueckeOffen = true;
         }
 
@@ -490,6 +515,10 @@ static_assert (std::atomic<std::uint64_t>::is_always_lock_free,
         (Vorhoeren am Instrument): waere die stehende Projektzeit ein Bruch,
         stuerbe jede Analyse ausserhalb der Wiedergabe. Sie sagt dort schlicht
         nichts.
+      * ... aber eine Zeit, die bei bekannt gestopptem Transport SPRINGT, sagt
+        sehr wohl etwas: das ist ein Seek, und §32.3 fuehrt "einen Sprung" als
+        Epochengrenze. STEHEN und SPRINGEN sind an den vorhandenen Bits
+        unterscheidbar, und seit T2-4 (23.08.2026) werden sie es auch.
       * Eine Transportkante (`spielt` kippt) ist ein Bruch - §32.3 fuehrt sie
         ausdruecklich als Epochengrenze.
       * Epochen-, Segment- und Fensterbuchhaltung der FEATURES gehoert nicht
@@ -588,9 +617,31 @@ public:
 
         // Die Flagmaske oben hat schon geprueft, dass beide Bloecke DIESELBE
         // Beweislage haben - hier genuegt daher ein Blick auf `neu`.
-        const bool beideSpielen = (neu.flags & kFlagSpieltGueltig) != 0
-                               && (neu.flags & kFlagSpielt) != 0;
+        const bool transportBekannt = (neu.flags & kFlagSpieltGueltig) != 0;
+        const bool beideSpielen = transportBekannt && (neu.flags & kFlagSpielt) != 0;
+        const bool beideStehen  = transportBekannt && (neu.flags & kFlagSpielt) == 0;
         const bool beideZeit    = (neu.flags & kFlagZeitGueltig) != 0;
+
+        // T2-4 (23.08.2026): ein Seek bei GESTOPPTEM Transport ist eine Grenze.
+        // Der Entwurf §32.3 fuehrt "ein Sprung" als Epochengrenze, ohne ihn an
+        // laufende Wiedergabe zu binden - und der Fall ist alltaeglich: der User
+        // zieht den Playhead, waehrend er am Instrument vorhoert.
+        //
+        // 🔑 Das ist die KEHRSEITE der Regel unten, nicht ihr Widerspruch. Eine
+        // Zeit, die bei Stopp STEHT, sagt nichts (deshalb ist sie kein Bruch).
+        // Eine Zeit, die bei Stopp SPRINGT, sagt sehr wohl etwas - und beides
+        // ist an den vorhandenen Bits unterscheidbar. Bis 23.08. fiel der Sprung
+        // durch, weil die Zeitpruefung nur mit `spielt` lief (gemessen: Sprung
+        // um 10 s => 0 Brueche).
+        //
+        // ⚠️ Nur bei BEKANNT gestopptem Transport. Ist `spielt` unbekannt
+        // (kein Playhead, kein Kontext), koennte eine wandernde Zeit ganz
+        // normale Wiedergabe sein; dort waere dieselbe Regel ein Bruch je
+        // Block und wuerde jede Analyse toeten.
+        if (beideStehen && beideZeit
+            && neu.projectSampleStart != gehalten.projectSampleStart)
+            return false;
+
         if (beideSpielen && beideZeit
             && neu.projectSampleStart != gehalten.projectSampleStart)   // s. u.
         {

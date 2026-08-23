@@ -32,7 +32,11 @@ EqCopilotProcessor::EqCopilotProcessor()
             [this] { return messKompakt(); })
 {
     // Frische Instanz (nie restauriert): legacy + insert, v2-Rolle "sensor".
-    // Ein Scannerlauf klassifiziert nichts (§53.5) - er sieht genau diesen Stand.
+    // Der Lebenslauf-Automat startet auf `unclassified` (§53.5) und bekommt
+    // hier KEIN Ereignis - genau das ist der Grund, warum "ein Scannerlauf
+    // klassifiziert nicht" keine Sonderbehandlung braucht: ein Scanner
+    // instanziiert, fragt Busse und Parameter ab und zerstoert wieder. Er
+    // ruft nie `setStateInformation` und oeffnet nie einen Editor.
     zustand = nakama::state::frisch (juce::Uuid().toString());
     instanceNonce = juce::Uuid().toString();
     fifoPuffer.calloc ((size_t) kFifoKapazitaet * 2);
@@ -199,7 +203,16 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     // sieht nie das gefärbte Signal (Beweis: Markierungstest T4).
     const bool spielt = transportSpielt.load();
     lebenszeichen (n, spielt);
-    const bool erlaubt = (echtzeitOk.load (std::memory_order_relaxed)
+    // §53.5 Satz 1 (S9/SONDE-007b Abschnitt 3): bis zur positiven
+    // Klassifikation ist der Entry AUDIO-NEUTRAL. Die Hoer-Markierung ist die
+    // einzige Audio-Ausnahme des Grundgesetzes und faellt damit unter diesen
+    // Satz; `legacy` bleibt zu, weil §53.5 es "immer passiv" nennt. Gelesen
+    // wird die Atomic-Spiegelung, nie der Automat selbst - "Klassifikation,
+    // Spawn und Pipe-I/O liegen nie im Audiocallback".
+    // Der Term steht ZUERST, damit beim Lesen sofort klar ist: ohne Main
+    // faerbt hier nichts, egal was die uebrigen Bedingungen sagen.
+    const bool erlaubt = istMainKlassifiziert.load (std::memory_order_relaxed)
+                      && (echtzeitOk.load (std::memory_order_relaxed)
                           || testEchtzeit.load (std::memory_order_relaxed))
                       && (spielt || ! hatTransport.load (std::memory_order_relaxed))
                       && ! isNonRealtime()
@@ -430,7 +443,7 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
         return;
 
     nakama::state::Zustand geladen;
-    const auto ergebnis = nakama::state::lade (daten, (size_t) groesse, nakama::state::Bundle::eqcp(), geladen);
+    const auto ergebnis = nakama::state::lade (daten, (size_t) groesse, bundleVertrag(), geladen);
     if (ergebnis == nakama::state::LadeErgebnis::ignoriert)
         return;   // fremder Baumtyp / Muell: Zustand bleibt (wie seit 0.1)
 
@@ -443,12 +456,21 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
         pipe.stop();
         std::lock_guard<std::mutex> l (bindungMutex);
         zustand = geladen;
+        // §53.5: read-only ist kein vollstaendiger State-Restore. Zurueck auf
+        // neutral - auch aus einer frueheren positiven Klassifikation.
+        lebenslauf.stateRestauriert (ergebnis, geladen);
+        spiegleKlassifikation();
         return;
     }
 
     {
         std::lock_guard<std::mutex> l (bindungMutex);
         zustand = geladen;
+        // §53.5: JETZT, nach vollstaendigem Restore, darf klassifiziert
+        // werden - Schema-1 `sensor|pre|post` ist zu `legacy` migriert,
+        // Schema-1 `hub` und ein bestaetigter Schema-2-Main-State zu `main`.
+        lebenslauf.stateRestauriert (ergebnis, geladen);
+        spiegleKlassifikation();
     }
     pipe.start();       // No-Op, wenn sie laeuft; hebt einen frueheren read-only-Stopp auf
     pipe.reconnect();   // frisches hello mit der geladenen Bindung
@@ -490,6 +512,40 @@ nakama::state::Zustand EqCopilotProcessor::holeZustandKopie() const
     return zustand;
 }
 
+// ── Lifecycle-Klassifikation (§53.5) ───────────────────────────────────────
+
+void EqCopilotProcessor::spiegleKlassifikation()
+{
+    // Aufrufer haelt `bindungMutex`. Der Audiothread liest ausschliesslich
+    // diese Atomic; er befragt den Automaten nie (§53.5: "Klassifikation,
+    // Spawn und Pipe-I/O liegen nie im Audiocallback").
+    istMainKlassifiziert.store (lebenslauf.audioAusnahmeErlaubt(), std::memory_order_relaxed);
+}
+
+nakama::state::Klassifikation EqCopilotProcessor::holeKlassifikation() const
+{
+    std::lock_guard<std::mutex> l (bindungMutex);
+    return lebenslauf.klassifikation();
+}
+
+bool EqCopilotProcessor::darfBrokerStarten() const
+{
+    std::lock_guard<std::mutex> l (bindungMutex);
+    return lebenslauf.darfBrokerStarten();
+}
+
+void EqCopilotProcessor::setzeEditorOffen (bool offen)
+{
+    // Zwei Verbraucher, ein Ereignis: der Audiothread-Term der Markierungs-
+    // Verriegelung und die Editor-Haelfte der Brokerstart-Bedingung.
+    editorOffen.store (offen);
+    std::lock_guard<std::mutex> l (bindungMutex);
+    lebenslauf.editorOffen (offen);
+    // Kein spiegleKlassifikation(): der Editor allein klassifiziert nichts
+    // (§53.5 verlangt Editor UND explizite Initialisierung). Die
+    // Markierungs-Verriegelung traegt `editorOffen` ohnehin als eigenen Term.
+}
+
 bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String& lbl, const juce::String& p)
 {
     nakama::state::Klasse klasse;
@@ -509,6 +565,20 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
         if (neu == zustand.common)
             return false;   // keine Aenderung: kein Dirty, kein Reconnect-Geflacker
         zustand.common = neu;
+
+        // §53.5, dritter Punkt: "leerer, nie gespeicherter Altstate → Main
+        // erst nach geoeffnetem Editor UND expliziter Initialisierung". Genau
+        // hier ist dieser Akt - der einzige Aufrufer von `setzeBindung` ist
+        // die Rollenwahl im Editor (PluginEditor.cpp), und der Automat
+        // verlangt zusaetzlich selbst einen offenen Editor. Ein Scannerlauf
+        // kann ihn nicht ausloesen: er bedient nichts und oeffnet nichts.
+        //
+        // Der Weg gilt in BEIDE Richtungen: stellt der User `hub` zurueck auf
+        // `sensor`, faellt die Klassifikation auf `legacy`. Sonst behauptete
+        // der Automat etwas anderes als der Stand, den dieselbe Instanz im
+        // naechsten Projekt-Save schreibt.
+        lebenslauf.expliziteInitialisierung (zustand);
+        spiegleKlassifikation();
     }
     meldeHostDirty();
     pipe.reconnect();

@@ -103,12 +103,14 @@ def _normiere(define: str) -> str:
     """`"CMAKE_INTDIR=\\"Release\\""` und `CMAKE_INTDIR="Release"` sind dasselbe."""
     return define.replace("\\", "").replace('"', "").strip()
 
-# Die vier Uebersetzungseinheiten des Kerns (plugin/CMakeLists.txt,
+# Die Uebersetzungseinheiten des Kerns (plugin/CMakeLists.txt,
 # NAKAMA_KERN_QUELLEN). Die Liste steht hier absichtlich handgeschrieben: ein
 # neues Kernobjekt soll dieses Bein zum Sprechen bringen, nicht still
-# durchrutschen.
+# durchrutschen. Genau das ist am 23.08. passiert, als S9 Abschnitt 3
+# NakamaLebenslauf.cpp (§53.5, Lifecycle-Klassifikation) in den Kern legte.
 ERWARTETE_OBJEKTE = {
     "NakamaKanon.obj",
+    "NakamaLebenslauf.obj",
     "NakamaParameter.obj",
     "NakamaState.obj",
     "NakamaVertrag.obj",
@@ -349,7 +351,7 @@ def main() -> int:
     else:
         namen = {pathlib.PurePath(m).name for m in mitglieder}
         pruefe(namen == ERWARTETE_OBJEKTE,
-               "Archivmitglieder sind genau die vier Kernobjekte",
+               f"Archivmitglieder sind genau die {len(ERWARTETE_OBJEKTE)} Kernobjekte",
                ", ".join(sorted(namen)) if namen != ERWARTETE_OBJEKTE else "")
         juce = sorted(n for n in namen if n.lower().startswith("juce"))
         pruefe(not juce,

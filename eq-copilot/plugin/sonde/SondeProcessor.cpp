@@ -84,6 +84,11 @@ void SondeProcessor::setStateInformation (const void* daten, int groesse)
         return;
 
     const juce::ScopedLock l (zustandSchloss);
+    // §53.5: erst der Restore klassifiziert. `read-only` faellt auf neutral
+    // zurueck, ein gueltiger Stand mit der eigenen Produktklasse setzt sie.
+    // Der Automat bekommt den geladenen Stand, BEVOR er weggezogen wird -
+    // `std::move` laesst `geladen` sonst als Huelle zurueck.
+    lebenslauf.stateRestauriert (ergebnis, geladen);
     zustand = std::move (geladen);
 }
 

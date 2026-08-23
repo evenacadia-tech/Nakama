@@ -43,6 +43,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
+#include "NakamaLebenslauf.h"
 #include "NakamaState.h"
 
 // Genau EINE Produktklasse je Ziel - gesetzt von der duennen Target-Schicht
@@ -62,9 +63,10 @@ namespace nakama::sonde
 
     §53.5 unterscheidet zwei Dinge, die leicht verwechselt werden:
     die PRODUKTKLASSE (fest am Bundle, hier) und die KLASSIFIKATION
-    (`unclassified` -> `legacy`/`main`, erst nach vollstaendigem
-    State-Restore). Die zweite ist noch nicht gebaut; sie betrifft ohnehin
-    nur das Main-Bundle.
+    (`unclassified` bis zu einem gueltigen State - siehe `lebenslauf` unten,
+    gebaut in S9 Abschnitt 3). Fuer Gen sind beide verschieden, weil sein
+    Bundle `main` ODER `legacy` sein kann; hier fallen sie nach gueltigem
+    State zusammen - aber erst dann.
 */
 constexpr nakama::state::Klasse kProduktklasse =
    #if defined (NAKAMA_SONDE_PASSIV)
@@ -72,6 +74,13 @@ constexpr nakama::state::Klasse kProduktklasse =
    #else
     nakama::state::Klasse::active_probe;
    #endif
+
+// Der Lebenslauf-Automat nimmt fuer die feste Produktklasse ausdruecklich nur
+// Sondenklassen an: waere `main` moeglich, koennte sich ein Sondenbundle zum
+// Main erklaeren. Die Garantie steht hier, wo die Konstante entsteht.
+static_assert (kProduktklasse == nakama::state::Klasse::passive_probe
+            || kProduktklasse == nakama::state::Klasse::active_probe,
+               "S9/SONDE-007b: ein Sondenbundle traegt passive_probe oder active_probe - nichts sonst.");
 
 /** Welche Klassen dieses Bundle laden darf (Vertrag §2.3, SONDE-006). */
 inline nakama::state::Bundle bundleVertrag()
@@ -124,8 +133,23 @@ public:
     /** Fuer Tests: der gehaltene Zustand. Kein Hostweg. */
     const nakama::state::Zustand& zustandLesen() const noexcept { return zustand; }
 
+    /** §53.5, letzter Aufzaehlungspunkt: "die beiden neuen Bundles haben eine
+        feste Produktklasse, bleiben aber bis gueltigem State neutral."
+
+        Der Automat sagt, welche Haelfte gerade gilt. Audio haengt hier an
+        nichts davon - beide Bundles sind heute Passthrough -, aber der
+        Brokerstart tut es: `darfBrokerStarten()` ist fuer eine Sonde IMMER
+        falsch, weil sie nie `main` wird. Das ist die Sonden-Haelfte von
+        "Scanner/Probe/Render spawnen nie Broker". */
+    nakama::state::Klassifikation klassifikation() const noexcept
+    {
+        return lebenslauf.klassifikation();
+    }
+    bool darfBrokerStarten() const noexcept { return lebenslauf.darfBrokerStarten(); }
+
 private:
     nakama::state::Zustand zustand;
+    nakama::state::Lebenslauf lebenslauf { kProduktklasse };
     juce::CriticalSection zustandSchloss;   ///< nur Nachrichten-/Hostthread, nie processBlock
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SondeProcessor)

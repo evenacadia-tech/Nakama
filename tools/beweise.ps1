@@ -283,7 +283,7 @@ $kanon = @(
     # das ARTEFAKT misst - und der einzige, der ein Stringliteral faende, das
     # kein Makro ist. Er traegt seine eigene Gegenprobe: derselbe Scanner muss
     # die Werte im gebauten Bundle FINDEN, sonst ist sein Schweigen wertlos.
-    [pscustomobject]@{ Kuerzel='A14'; Name='pruefe_kern_identitaetsfrei.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Der gemeinsame Kern traegt keine Bundle-Identitaet: NakamaKern.lib enthaelt keinen eingefrorenen Identitaetswert (Namen, Viercodes, CIDs roh und COM-vertauscht) und genau seine vier eigenen Objekte, kein JUCE-Modulobjekt; die Gegenprobe findet dieselben Werte im gebauten EQ-Copilot-Bundle.' }
+    [pscustomobject]@{ Kuerzel='A14'; Name='pruefe_kern_identitaetsfrei.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Der gemeinsame Kern traegt keine Bundle-Identitaet: NakamaKern.lib enthaelt keinen eingefrorenen Identitaetswert (Namen, Viercodes, CIDs roh und COM-vertauscht) und genau seine eigenen Uebersetzungseinheiten, kein JUCE-Modulobjekt; die Gegenprobe findet dieselben Werte im gebauten EQ-Copilot-Bundle.' }
 
     # S9/SONDE-007b: das Grundgesetz gilt fuer JEDES Bundle, das Audio traegt.
     # Zwei Beine, weil die Produktklasse ein Uebersetzungsschalter ist - ein
@@ -310,6 +310,11 @@ $kanon = @(
     [pscustomobject]@{ Kuerzel='B5'; Name='EqCopAnalysisGoldenTest'; Art='plugin'; Argumente=@(); AbPhase='P2'; Behauptung='FeatureEngine v2 haelt Zeit-, Validity-, Event- und Bandvertraege.' }
     [pscustomobject]@{ Kuerzel='B6'; Name='EqCopDspGoldenTest';      Art='plugin'; Argumente=@(); AbPhase='P6'; Behauptung='Aktiver DSP-Kern liefert die eingefrorene Referenzantwort.' }
     [pscustomobject]@{ Kuerzel='B7'; Name='EqCopTransactionTest';    Art='plugin'; Argumente=@(); AbPhase='P6'; Behauptung='Apply/Revert ist transaktional - kein halber Zustand ueberlebt.' }
+    # S9/SONDE-007b Abschnitt 3: die Lifecycle-Klassifikation (§53.5). Zwei
+    # Ebenen in einem Bein - der Automat pur UND derselbe Automat verdrahtet im
+    # echten Prozessor, dort an AUDIO gemessen: dieselbe Markierung, die A3
+    # faerben laesst, bleibt hier stumm, solange nicht klassifiziert ist.
+    [pscustomobject]@{ Kuerzel='B8'; Name='EqCopLebenslaufTest';     Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='Lifecycle-Klassifikation §53.5: unclassified beim Laden und audio-neutral; Schema-1 sensor|pre|post -> legacy (immer passiv), hub bzw. bestaetigter Schema-2-Main-State -> main; ein Scannerlauf klassifiziert nicht; read-only nimmt die Klassifikation zurueck; Brokerstart nur fuer main mit offenem Editor; die Sondenbundles bleiben bis gueltigem State neutral und werden nie main.' }
 )
 
 # Ziele, die nicht selbst im Kanon laufen, aber von einem Kanon-Lauf GEMESSEN

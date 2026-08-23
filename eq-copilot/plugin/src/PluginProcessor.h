@@ -20,9 +20,27 @@
 #include "AnalyseEngine.h"
 #include "HoerMarkierung.h"
 #include "NakamaState.h"
+#include "NakamaLebenslauf.h"
+
+// ── S9/SONDE-007b Abschnitt 3: welches Bundle uebersetzt hier? ─────────────
+// Die duenne Target-Schicht sagt es (plugin/CMakeLists.txt), nicht dieser
+// geteilte Quelltext - dieselbe Form wie NAKAMA_SONDE_PASSIV/AKTIV bei den
+// beiden neuen Zielen. Ohne diesen Riegel erbte ein kuenftiges Ziel, das src/
+// mituebersetzt, still den Vertrag des Main-Bundles.
+#if ! defined (NAKAMA_BUNDLE_MAIN)
+ #error "S9/SONDE-007b: NAKAMA_BUNDLE_MAIN ist nicht gesetzt. Welchen Bundlevertrag ein Ziel laedt, kommt aus der Target-Schicht in plugin/CMakeLists.txt - nicht aus src/."
+#endif
 
 namespace eqcop
 {
+
+/** Welche Produktklassen dieses Bundle laden darf (State-Vertrag §2.3).
+    `Eqcp` ⇒ {main, legacy}. Der Wert steht im Kern; hier steht nur, WELCHER
+    der drei Vertraege gilt - und das sagt die Target-Schicht. */
+inline nakama::state::Bundle bundleVertrag()
+{
+    return nakama::state::Bundle::eqcp();
+}
 
 class EqCopilotProcessor : public juce::AudioProcessor
 {
@@ -77,6 +95,19 @@ public:
     juce::String            holeStateGrund() const;
     int                     holeStateFremdesMajor() const;
     nakama::state::Zustand  holeZustandKopie() const;
+
+    // ── Lifecycle-Klassifikation (§53.5, S9/SONDE-007b Abschnitt 3) ──
+    // `unclassified` beim Laden und audio-neutral; `legacy` bzw. `main` erst
+    // nach vollstaendigem State-Restore; ein nie gespeicherter Stand wird
+    // `main` erst nach geoeffnetem Editor UND expliziter Initialisierung
+    // (= der User setzt die Rolle im Editor). Ein Scannerlauf klassifiziert
+    // nicht - er ruft `setStateInformation` nie.
+    nakama::state::Klassifikation holeKlassifikation() const;
+    // §53.5: "Ausschliesslich ein positiv klassifiziertes Main mit geoeffnetem
+    // Editor darf den installierten Broker starten." Heute gibt es keinen
+    // Spawn-Pfad; SONDE-010 haengt ihn HIER an, statt eine neue Bedingung zu
+    // erfinden. Verbinden duerfen alle Instanzen - auch die neutralen.
+    bool darfBrokerStarten() const;
     // true, solange der Broker per heartbeat_ack einen Kennungs-Konflikt meldet.
     bool konfliktGemeldet() const                          { return pipe.snapshot().konflikt; }
 
@@ -106,7 +137,10 @@ public:
     bool  markierungEchtzeitOk() const                       { return echtzeitOk.load(); }
     // Liest UND löscht das Freilauf-Signal (Editor-Poll: Latch fällt sichtbar).
     bool  markierungKillGemeldet()                           { return freilaufKill.exchange (false); }
-    void  setzeEditorOffen (bool offen)                      { editorOffen.store (offen); }
+    // Setzt zugleich den Editor-Term der Markierungs-Verriegelung UND die
+    // Editor-Haelfte der Brokerstart-Bedingung (§53.5) - eine Wahrheit, ein
+    // Aufruf.
+    void  setzeEditorOffen (bool offen);
     // Nur für Headless-Tests: erzwingt Echtzeit- UND Editor-Erlaubnis, um
     // DSP-Verhalten ohne Wanduhr-Taktung und ohne Editor deterministisch zu
     // prüfen. Kein Aufrufer im Produktpfad; Transport- und isNonRealtime-Gates
@@ -127,6 +161,13 @@ private:
     // Eqcp darf die Klassen main und legacy laden.
     mutable std::mutex bindungMutex;
     nakama::state::Zustand zustand;
+    // §53.5-Automat. Er wird ausschliesslich unter `bindungMutex` gefuehrt
+    // (Nachrichten-/Hostthread); der Audiothread liest nie ihn, sondern die
+    // Atomic-Spiegelung `istMainKlassifiziert` darunter.
+    nakama::state::Lebenslauf lebenslauf;
+    // Setzt die Spiegelung nach jeder Zustandsaenderung. Ruft der Aufrufer
+    // unter gehaltenem `bindungMutex`.
+    void spiegleKlassifikation();
     // Meldet dem Host eine gespeicherte Aenderung (withNonParameterStateChanged)
     // — der VST3-Wrapper setzt daraus IComponentHandler2::setDirty.
     void meldeHostDirty();
@@ -176,6 +217,11 @@ private:
     HoerMarkierungDsp markierung;
     std::atomic<bool> editorOffen { false };
     std::atomic<bool> testEchtzeit { false };     // nur Tests, s. testForciereEchtzeit
+    // §53.5 Satz 1 ("unclassified und audio-neutral") als Atomic fuer den
+    // Audiothread. Geschrieben nur von spiegleKlassifikation(), gelesen nur
+    // in processBlock - der Automat selbst wird nie aus dem Audiocallback
+    // befragt ("Klassifikation, Spawn und Pipe-I/O liegen nie im Audiocallback").
+    std::atomic<bool> istMainKlassifiziert { false };
     std::atomic<bool> echtzeitOk { false };       // „Echtzeit bewiesen"
     std::atomic<bool> freilaufKill { false };     // Freilauf bei gesetztem Ziel → Editor
     // Lebenszeichen-Zustand — ausschließlich Audiothread.

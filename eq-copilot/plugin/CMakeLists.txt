@@ -79,8 +79,14 @@ target_include_directories(EqCopilot PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/hostbri
 #
 # Die drei Riegel dazu stehen in cmake/NakamaKern.cmake (K1/K2) und in
 # tools/eq-copilot/pruefe_kern_identitaetsfrei.py (K3).
+# S9/SONDE-007b Abschnitt 3: NakamaLebenslauf.cpp kommt dazu - die
+# Lifecycle-Klassifikation (§53.5) ist reine Regelarbeit ueber dem State und
+# gilt fuer alle drei Bundles. Sie gehoert damit genau in die Menge, die Gen,
+# Probeeq und Suna teilen duerfen; das Kanon-Bein A14 fuehrt die Objektliste
+# handgeschrieben und hat den Zuwachs beim ersten Lauf gemeldet.
 set(NAKAMA_KERN_QUELLEN
     state/NakamaKanon.cpp
+    state/NakamaLebenslauf.cpp
     state/NakamaParameter.cpp
     state/NakamaState.cpp
     vertrag/NakamaVertrag.cpp
@@ -410,6 +416,28 @@ target_link_libraries(EqCopStateMigrationTest PRIVATE juce::juce_audio_utils juc
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopStateMigrationTest)
 
+# ── S9/SONDE-007b Abschnitt 3: Lifecycle-Klassifikation (Kanon B8) ─────────
+# Zwei Ebenen in einem Ziel: der Automat pur (NakamaLebenslauf, im Kern) UND
+# derselbe Automat verdrahtet im echten EqCopilotProcessor. Die zweite Ebene
+# misst AUDIO - dieselbe Markierung, die EqCopMarkierungTest faerben laesst,
+# muss hier stumm bleiben, solange nicht klassifiziert ist. Ein Automat ohne
+# diese Haelfte waere ein Riegel, der nichts verriegelt.
+juce_add_console_app(EqCopLebenslaufTest PRODUCT_NAME "eqcop-lebenslauftest")
+target_sources(EqCopLebenslaufTest PRIVATE
+    tests/LebenslaufTestMain.cpp
+    src/PluginProcessor.cpp
+    src/PluginEditor.cpp
+    src/PipeClient.cpp
+    src/AnalyseEngine.cpp
+    src/Diagnose.cpp
+)
+target_include_directories(EqCopLebenslaufTest PRIVATE src)
+target_compile_definitions(EqCopLebenslaufTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopLebenslaufTest PRIVATE juce::juce_audio_utils juce::juce_dsp
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopLebenslaufTest)
+
 # ── S3b: Termin-B-Messgeraet (Wegwerfware wie SONDE-004a) ──────────────────
 # Erstes Ziel, das die Hostbruecke BENUTZT: sein Processor ist eine Senke.
 # Eigener Plugin-Code NkHp — bewusst ausserhalb der eingefrorenen Identitaet
@@ -506,12 +534,29 @@ target_link_libraries(EqCopSchemaTest PRIVATE juce::juce_core flatbuffers
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopSchemaTest)
 
+# ── S9/SONDE-007b Abschnitt 3: welchen Bundlevertrag src/ laedt ────────────
+# Bis 23.08. stand `Bundle::eqcp()` als Literal in PluginProcessor.cpp — an
+# genau der Stelle, an der die beiden neuen Ziele ihre Klasse laengst aus der
+# duennen Target-Schicht bekommen (Manifest SONDE-007b §3). Jetzt sagt auch
+# hier die Schicht, welches Bundle uebersetzt wird; der geteilte Quelltext
+# behauptet es nicht selbst.
+#
+# Der Riegel dazu ist ein #error in PluginProcessor.h: ein kuenftiges Ziel,
+# das src/ uebersetzt, ohne sich zu erklaeren, ist nicht baubar — statt still
+# den Vertrag des Main-Bundles zu erben. Genau dieselbe Form wie
+# NAKAMA_SONDE_PASSIV/AKTIV in sonde/SondeProcessor.h.
+foreach(ziel EqCopilot
+             EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
+             EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest)
+    target_compile_definitions(${ziel} PRIVATE NAKAMA_BUNDLE_MAIN=1)
+endforeach()
+
 # Die Quellen sind UTF-8 (deutsche UI-Texte). Ohne /utf-8 rät MSVC die
 # Codepage — Literale wie „Klavier-Bus“ hingen dann an der Systemlocale.
 foreach(ziel NakamaKern
              EqCopilot EqCopPipeProbe EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopAuxSpike EqCopAuxSpikeTest EqCopHostContextTest
-             EqCopSchemaTest EqCopStateMigrationTest
+             EqCopSchemaTest EqCopStateMigrationTest EqCopLebenslaufTest
              EqCopHostProbe EqCopHostProbeTest
              NakamaSuna NakamaProbeeq EqCopSunaNullTest EqCopProbeeqNullTest)
     target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")

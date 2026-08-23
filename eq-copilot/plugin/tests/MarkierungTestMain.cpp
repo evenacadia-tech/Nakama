@@ -39,6 +39,20 @@ struct TestPlayHead : juce::AudioPlayHead
     }
 };
 
+// S9/SONDE-007b Abschnitt 3: Seit der Lifecycle-Klassifikation (§53.5) faerbt
+// NUR ein positiv klassifiziertes Main - `unclassified` und `legacy` sind
+// audio-neutral. Der Test geht dafuer denselben Weg wie der User: Editor auf,
+// Rolle "hub" waehlen. Absichtlich NICHT ueber testForciereEchtzeit(): dieser
+// Schalter umgeht das Lebenszeichen und die Editor-Pflicht, weil beide an der
+// Wanduhr haengen. Die Klassifikation haengt an nichts dergleichen - waere sie
+// mit umgangen, pruefte dieser Test einen Pfad, den das Produkt nicht hat.
+static bool alsMainKlassifizieren (EqCopilotProcessor& p)
+{
+    p.setzeEditorOffen (true);
+    p.setzeBindung ("hub", {}, {});
+    return p.holeKlassifikation() == nakama::state::Klassifikation::main;
+}
+
 static bool blockBitgleich (const juce::AudioBuffer<float>& a, const juce::AudioBuffer<float>& b)
 {
     for (int k = 0; k < a.getNumChannels(); ++k)
@@ -101,6 +115,7 @@ int main()
         p.setPlayConfigDetails (2, 2, fs, bs);
         p.prepareToPlay (fs, bs);
         p.testForciereEchtzeit (true);
+        pruefe (alsMainKlassifizieren (p), "T2: als Main klassifiziert (§53.5)");
 
         MarkierungsWunsch w;
         w.modus = MarkierungsModus::solo;
@@ -193,6 +208,7 @@ int main()
         p.setPlayConfigDetails (2, 2, fs, bs);
         p.prepareToPlay (fs, bs);
         p.testForciereEchtzeit (true);
+        pruefe (alsMainKlassifizieren (p), "T9: als Main klassifiziert (§53.5)");
 
         MarkierungsWunsch w;
         w.modus = MarkierungsModus::puls;
@@ -252,6 +268,12 @@ int main()
         p.setPlayConfigDetails (2, 2, fs, bs);
         p.prepareToPlay (fs, bs);
         p.testForciereEchtzeit (true);
+        // Erst klassifizieren, DANN speichern: sonst waere `q` unten schon
+        // wegen §53.5 stumm und der Test bewiese nicht mehr, was er behauptet
+        // ("kein Markierungszustand im State"), sondern nur, dass ein legacy-
+        // Stand nicht faerbt. `q` erbt die Klassifikation ueber den Restore -
+        // der Stand sagt `main`.
+        pruefe (alsMainKlassifizieren (p), "T6: als Main klassifiziert (§53.5)");
         MarkierungsWunsch w;
         w.modus = MarkierungsModus::solo;
         w.fVon = 120.0; w.fBis = 300.0; w.fSchwerpunkt = 200.0; w.fs = fs;
@@ -263,6 +285,8 @@ int main()
 
         EqCopilotProcessor q;
         q.setStateInformation (state.getData(), (int) state.getSize());
+        pruefe (q.holeKlassifikation() == nakama::state::Klassifikation::main,
+                "T6: der geladene Main-Stand klassifiziert die neue Instanz (§53.5)");
         q.setPlayConfigDetails (2, 2, fs, bs);
         q.prepareToPlay (fs, bs);
         q.testForciereEchtzeit (true);
@@ -290,6 +314,7 @@ int main()
         p.setPlayConfigDetails (1, 1, fs, bs);
         p.prepareToPlay (fs, bs);
         p.testForciereEchtzeit (true);
+        pruefe (alsMainKlassifizieren (p), "T7: als Main klassifiziert (§53.5)");
         MarkierungsWunsch w;
         w.modus = MarkierungsModus::solo;
         w.fVon = 120.0; w.fBis = 300.0; w.fSchwerpunkt = 200.0; w.fs = fs;
@@ -322,6 +347,7 @@ int main()
         p.setPlayConfigDetails (2, 2, fs, bs);
         p.prepareToPlay (fs, bs);
         p.setzeEditorOffen (true);          // Editor-Pflicht erfüllt, KEIN Echtzeit-Zwang
+        pruefe (alsMainKlassifizieren (p), "T3: als Main klassifiziert (§53.5)");
         TestPlayHead kopf;
         kopf.spielt = true;
         p.setPlayHead (&kopf);
@@ -431,12 +457,19 @@ int main()
     // ── T4: Abgriff-Beweis — die Messung sieht NIE das gefärbte Signal ─────
     {
         EqCopilotProcessor markiert, sauber;
+        bool beideMain = true;
         for (auto* p : { &markiert, &sauber })
         {
             p->setPlayConfigDetails (2, 2, fs, bs);
             p->prepareToPlay (fs, bs);
             p->testForciereEchtzeit (true);
+            // BEIDE klassifizieren, obwohl nur `markiert` einen Auftrag
+            // bekommt: die zwei Instanzen sollen sich in genau EINER Sache
+            // unterscheiden. Ein unterschiedlicher Lebenslauf waere eine
+            // zweite Variable im Vergleich.
+            beideMain = alsMainKlassifizieren (*p) && beideMain;
         }
+        pruefe (beideMain, "T4: beide Instanzen als Main klassifiziert (§53.5)");
         MarkierungsWunsch w;
         w.modus = MarkierungsModus::solo;
         w.fVon = 120.0; w.fBis = 300.0; w.fSchwerpunkt = 200.0; w.fs = fs;

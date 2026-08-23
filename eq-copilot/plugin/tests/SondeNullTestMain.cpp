@@ -74,6 +74,16 @@ int main()
     pruefe (! prozessor.hasEditor(),
             "keine erfundene Oberflaeche (Gestaltung kommt aus Figma)");
 
+    // -- 2b. Lifecycle: neutral bis gueltigem State (§53.5, S9 Abschnitt 3) --
+    // Ein Scannerlauf sieht genau diese frische Instanz - und klassifiziert
+    // nichts. Der Brokerstart ist fuer eine Sonde in JEDEM Zustand zu; das
+    // ist ihre Haelfte von "Scanner/Probe/Render spawnen nie Broker".
+    pruefe (prozessor.klassifikation() == nakama::state::Klassifikation::unclassified,
+            "frische Instanz ist neutral, trotz fester Produktklasse",
+            nakama::state::wort (prozessor.klassifikation()));
+    pruefe (! prozessor.darfBrokerStarten(),
+            "eine Sonde darf den Broker nie starten");
+
     // -- 3. Passthrough, bitgleich ------------------------------------------
     const double raten[]   = { 44100.0, 48000.0, 96000.0 };
     const int    bloecke[] = { 1, 16, 64, 512, 4096 };
@@ -150,6 +160,16 @@ int main()
         pruefe (! zweiter.zustandLesen().nurLesen,
                 "der eigene Stand kommt NICHT als read-only zurueck",
                 zweiter.zustandLesen().grund);
+
+        // §53.5 (S9 Abschnitt 3): "die beiden neuen Bundles haben eine feste
+        // Produktklasse, bleiben aber bis gueltigem State neutral." Der
+        // Restore ist der Moment, in dem aus neutral die Produktklasse wird.
+        pruefe (zweiter.klassifikation()
+                    == (nakama::sonde::kProduktklasse == nakama::state::Klasse::passive_probe
+                            ? nakama::state::Klassifikation::passive_probe
+                            : nakama::state::Klassifikation::active_probe),
+                "nach gueltigem State traegt der Lebenslauf die Produktklasse",
+                nakama::state::wort (zweiter.klassifikation()));
 
         juce::MemoryBlock zurueck;
         zweiter.getStateInformation (zurueck);

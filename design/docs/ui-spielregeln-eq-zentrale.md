@@ -26,10 +26,12 @@
    Übergänge sind Seitenwechsel, keine Popups mit Eigenleben.
 2. **Produktsprache Englisch** (Register 21.08.); dunkel verbindlich,
    hell geplant (Figma-Depot 22.08.).
-3. **Größen:** 760×430 ist für die Übersicht abgenommen (20.08.); die
-   Größe von Seite 2 ist **offen** (NAK-65). Freie Skalierung ist technisch
-   da (der heutige Editor skaliert frei bei festem Verhältnis), aber als
-   Produktentscheid offen.
+3. **Größen:** 760×430 gilt für **beide** Seiten — Entscheid 24.08.: „da es
+   sich um 2 flächen der selben app handelt müssen die selbstverständlich
+   gleich groß sein" (die Abnahme vom 20.08. galt der Übersicht; die
+   Größenfrage aus NAK-65 ist damit beantwortet). Freie Skalierung ist
+   technisch da (der heutige Editor skaliert frei bei festem Verhältnis),
+   aber als Produktentscheid offen.
 4. **Working Design:** Probeeq-Figma ist die Arbeitsgrundlage der
    EQ-Fläche (User 23.08.); Handling-Referenzen: Smooth Operator Pro,
    Pro-Q — Bedienlogik studieren erlaubt, die Optik bleibt Nakama.
@@ -238,12 +240,28 @@
     kann im eq dann ja angepasst werden von selbst") — siehe Regel 6;
     U14 damit beantwortet, Register 23.08.
 
+**Nachtrag 24.08. (Rückmeldung auf den ersten Figma-Umbau, Wortlaut
+`../abnahmen/2026-08-24-seite2-groesse-keine-toten-elemente.md`):**
+
+45. **Beide Seiten gleich groß:** 760×430 gilt für Seite 1 UND Seite 2
+    (Entscheid; Wortlaut in Regel 3).
+46. **Keine toten Elemente** (Entscheid: „die schlimmste ui/ux sünde sind
+    sinnlose tote elemente"): jedes sichtbare Element bedient einen
+    Handgriff oder meldet ehrlich einen Zustand. Folgen für die
+    EQ-Zentrale: EIN Link-Zustand statt CONNECTED·PAIRED — im Fehlerfall
+    benennt der Text den gefallenen Abschnitt (BROKER OFFLINE ≠
+    PROBE OFFLINE); kein Dauer-„LIVE" (nur Ausnahmen sprechen, Abnahme
+    20.08.); der Seitenwechsel ist ein Tab-Paar OVERVIEW · EQ CENTER an
+    identischer Position auf beiden Seiten; Aufklapp-Pfeile sitzen IM
+    Bedienelement, nie frei daneben. Material/Schale (Glas, Grain,
+    Lichtsaum) ist Design-Identität, kein totes Element.
+
 ## 10. Offen (Kennungen)
 
 | Was | Wo |
 |---|---|
 | Sidechain-Quelle je Band sichtbar/Untermenü/unsichtbar | **U5** / NAK-33 |
-| Größe Seite 2 · Figma-Flächen · Rückfallfläche der Sonde | **NAK-65** |
+| ~~Größe Seite 2~~ (beantwortet 24.08.: 760×430, Regel 45) · Figma-Flächen · Rückfallfläche der Sonde | **NAK-65** |
 | Undo-Form auf Gen **Seite 1** (Verlauf oder Zähler) | U2.8-Folgefrage |
 | Mix/Dry-Wet: versionierte Parameter-Erweiterung, zweistufig global↔Spur (beschlossen, ungebaut) | Plan S26–28/S29–31 (`SONDE-015`/`016`) · Regeln 32/42 |
 | ~~Umschnitt Bauaufteilung/P6–P7~~ — **gefahren 23.08.** (`e3dbad4`): S28b Gen-Master-EQ, S31b EQ-Zentrale-UI, Schutz-Zonen und Mix in S26–31 eingeplant | NAK-64 geschlossen |

@@ -1,0 +1,44 @@
+# Entscheid 24.08.2026 — Seite-2-Größe und das Verbot toter Elemente
+
+**Anlass:** Rückmeldung des Users auf den ersten Spielregeln-Umbau der
+Gen-Seiten im Prototyp-Figma (23.08., Commit `8bea367`). Zweiter Durchgang
+läuft in der Kopie-Datei `Probeeq-Nakama-Prototyp-Design (Copy)`
+(Key `f9a5zdQ0tQ3e4dzrsF2k5y`).
+
+## 1. Beide Seiten gleich groß (beantwortet die Größenfrage aus NAK-65)
+
+> „da ist einiges falsch. page 2 des Gen , also die EQ fläche hat kleinere
+> maße als die 1. seite. da es sich um 2 flächen der selben app handelt
+> müssen die selbstverständlich gleich groß sein."
+
+Folge: Gen Seite 2 (EQ-Zentrale) nutzt dieselbe Fläche wie Seite 1 —
+**760×430** (Abnahme 20.08. galt der Übersicht, jetzt für beide Seiten).
+Umgesetzt im 2. Durchgang: Seite 2 ist auf der Seite-1-Schale neu aufgebaut
+(gleiche Chrome-Zeile, Wortmarke, Material).
+
+## 2. Keine toten Elemente
+
+> „zudem solltest du mal überlegen was fassade und was gebraucht wird. was
+> ist der unterschied zu connected und paired ? was soll der global button
+> bewirken ? WAS SOLL DER PLAY symbol button bewirken ? live ? overview ?
+> die schlimmste ui/ux sünde sind sinnlose tote elemente . mach einen
+> 2. durchgang über das gebaute eben und fokus auf logik."
+
+Regel daraus (bindend für jede weitere Fläche): **Jedes sichtbare Element
+bedient einen Handgriff oder meldet ehrlich einen Zustand.** Material/Schale
+(Glas, Grain, Lichtsaum) ist Design-Identität des Users und zählt nicht als
+totes Element; Beschriftungen zählen nur, wenn sie Information tragen
+(Skalen, Analyzer-Abgriff).
+
+Antworten des 2. Durchgangs auf die fünf genannten Sünder:
+
+| Element (Durchgang 1) | Befund | Durchgang 2 |
+|---|---|---|
+| CONNECTED · PAIRED | zwei Wörter, ein Zustand — Fassade | EIN Link-Punkt; gesund = still (Ausnahme-Prinzip 20.08.); im Fehlerfall benennt der Text den gefallenen Abschnitt: BROKER OFFLINE ≠ PROBE OFFLINE |
+| GLOBAL (Text + freier Pfeil) | Pfeil las sich als Play-Button, Text ohne erkennbare Funktion | EIN Aufklapp-Button „GLOBAL ⌄" (Chevron IM Button); klappt die vier globalen Regler aus (Regel 43) |
+| „PLAY-Symbol" | war der frei schwebende Einklapp-Pfeil — Fehler | entfernt; Chevron sitzt im GLOBAL-Button |
+| LIVE (Dauer-Chip) | Dauer-Status ist Rauschen | entfernt; nur Ausnahmen sprechen (STALE etc. erscheinen im Ausnahme-Slot) |
+| OVERVIEW (toter Einzeltext) | Funktion (Seitenwechsel) nicht ablesbar, inkonsistent | Seiten-Tab-Paar **OVERVIEW · EQ CENTER** an identischer Position auf BEIDEN Seiten, aktive Seite hell |
+
+**Status:** Der 2. Durchgang ist Claude-Umsetzung dieser Entscheide;
+die Optik der Frames bleibt Vorschlag bis zum User-Urteil.

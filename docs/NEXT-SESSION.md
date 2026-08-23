@@ -11,10 +11,21 @@
 > Zwei-Spuren-Graph, GLOBAL offen, 16-Bus-Rad, MIX PLANNED; Seite 1:
 > LIVE/STALE/**GAP≠EPOCH**, Geste blockiert). Renders + Regelzuordnung:
 > `design/docs/spielregeln-umbau-2026-08-23/LIES-MICH.md`.
+> **Durchgang 2 am 24.08.** nach User-Rückmeldung („da ist einiges falsch"),
+> jetzt in der **Kopie-Datei** `f9a5zdQ0tQ3e4dzrsF2k5y`: Seite 2 komplett neu
+> auf der Seite-1-Schale (**Entscheid 24.08.: beide Seiten gleich groß,
+> 760×430** — Register) und **Tote-Elemente-Pass** (Entscheid: „die schlimmste
+> ui/ux sünde sind sinnlose tote elemente"): CONNECTED·PAIRED → ein
+> Link-Punkt mit benanntem Fehler-Abschnitt (BROKER≠PROBE OFFLINE), GLOBAL →
+> echter Aufklapp-Button mit Chevron im Button, freier Pfeil („Play-Symbol")
+> entfernt, LIVE-Dauerchip entfernt, Seitenwechsel als Tab-Paar
+> OVERVIEW · EQ CENTER identisch auf beiden Seiten. Neue Nodes: Seite 1
+> `4090:685`, Seite 2 `6002:2`, Tafeln `4085:2`/`4086:2`; Spielregeln um
+> Regeln 45/46 ergänzt.
 > **Alles Vorschlag, nichts abgenommen** — nächster Design-Schritt: der User
-> sichtet die vier Frames in Figma; Urteil dann nach `design/abnahmen/`.
-> Bewusst offen gelassen: Größe Seite 2 (NAK-65), Undo-Form Seite 1 (U2.8),
-> Sidechain-Sichtbarkeit (U5).
+> sichtet die vier Frames in der **Kopie-Datei**; Urteil dann nach
+> `design/abnahmen/`. Bewusst offen: Undo-Form Seite 1 (U2.8),
+> Sidechain-Sichtbarkeit (U5), Rückfallfläche der Sonde (NAK-65-Rest).
 
 > ## ⚠ DER EINE NÄCHSTE SCHRITT — Stand 23.08.2026, nach dem T2 auf S12–13
 >

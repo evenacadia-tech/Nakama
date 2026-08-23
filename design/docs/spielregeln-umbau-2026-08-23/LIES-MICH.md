@@ -72,3 +72,40 @@ Renders hier sind Verlauf/Doku; die Truhe (`design/assets/figma/`) hält weiter
 nur die Stände des Users. Nimmt der User die Frames (ggf. nach eigenen Figma-
 Änderungen) ab, wird der Stand regulär in die Truhe geholt und die Abnahme nach
 `design/abnahmen/` geschrieben.
+
+---
+
+## Durchgang 2 — 24.08.2026, Fokus Logik (User-Rückmeldung)
+
+**Ort gewechselt:** Der 2. Durchgang lebt in der Kopie-Datei
+`Probeeq-Nakama-Prototyp-Design (Copy)`, Key **`f9a5zdQ0tQ3e4dzrsF2k5y`**
+(User-Link 24.08.). Die Node-IDs oben gelten nur für die Ursprungsdatei.
+
+| Frame (Durchgang 2) | Node in der Kopie | Bild |
+|---|---|---|
+| Page 1 / Overview / 760×430 | `4090:685` | `gen-seite1-v2.png` |
+| Page 2 / EQ Center / **760×430** | `6002:2` | `gen-seite2-760x430-v2.png` |
+| Seite 1 — Zustände | `4085:2` | `gen-seite1-zustaende.png` (unverändert) |
+| Seite 2 — Zustände | `4086:2` | `gen-seite2-zustaende-v2.png` |
+
+Entscheide dazu (Wortlaut:
+`design/abnahmen/2026-08-24-seite2-groesse-keine-toten-elemente.md`):
+
+1. **Gleiche Größe:** Seite 2 komplett neu auf der Seite-1-Schale
+   (760×430, gleiche Chrome-Zeile, Wortmarke oben links); der
+   700×420-Bau aus Durchgang 1 ist in der Kopie gelöscht.
+2. **Keine toten Elemente** — die fünf benannten Sünder:
+   - CONNECTED·PAIRED → EIN Link-Punkt; gesund still, im Fehlerfall
+     benennt der Text den gefallenen Abschnitt (BROKER OFFLINE ≠ PROBE
+     OFFLINE; Tafel angepasst)
+   - GLOBAL → echter Aufklapp-Button, Chevron IM Button (Regel 43)
+   - „Play-Symbol" (frei schwebender Pfeil aus Durchgang 1) → entfernt
+   - LIVE-Dauerchip → entfernt (Ausnahme-Prinzip 20.08.)
+   - OVERVIEW-Einzeltext → Seiten-Tab-Paar **OVERVIEW · EQ CENTER** an
+     identischer Position auf beiden Seiten (aktive Seite hell); auf
+     Seite 1 dafür die Modes nach rechts gerückt
+3. Beibehalten, weil funktional: MASTER-Element (wechselt auf den
+   Master-EQ), BYPASS (Hard-Bypass, Regel 40), MIX mit PLANNED-Tag
+   (Regeln 32/42 — beschlossener, noch unvertraglicher Platz), Undo ↶ auf
+   dem Display (Regel 41), Analyzer-Beschriftung (Regel 26), WIDTH
+   UNAVAILABLE oben rechts (Capability-Degradation, Regel 23).

@@ -37,6 +37,24 @@
 > | **S10–11** / `SONDE-008` | §8 (Bericht), **§9** (Nacharbeit) | NEEDS_WORK | **kein PASS** — nie ein zweites Mal geprüft |
 > | **S12–13** / `SONDE-009` | §9 (T2-Bericht, 23.08.) | **NEEDS_WORK** | **Nacharbeit T2-1…T2-5**, danach erneuter T2 |
 >
+> ### ⚙️ Neu am 23.08. (Werkzeug, nicht Produkt): der Planstand wird GERECHNET
+>
+> Die Briefing-Seite ist **abgeschafft** (User-Wort im Register; NAK-50
+> geschlossen). Was das für dich ändert: **nichts nachziehen.**
+> `docs/PLAN-STAND.md` entsteht aus `docs/plan/plan.json` (Text) und den
+> **Urteilsmarken** in den Manifesten (Status); `tools/hooks/planstand.sh`
+> rechnet nach jedem Befehl neu und committet das Blatt allein.
+>
+> **Deine eine neue Pflicht als Prüfer:** nach einem Urteil eine Zeile in den
+> Kopf des Manifests setzen —
+> `<!-- NAKAMA-URTEIL: T2 PASS 2026-08-23 -->` bzw.
+> `<!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-23 offen|nachgearbeitet -->`.
+> Ohne Marke bleibt der Schritt „gebaut" (fail-closed, Vergessen
+> untertreibt). Das vierte Wort steuert, was das Blatt als Nächstes nennt:
+> `offen` ⇒ Nacharbeit, `nachgearbeitet` ⇒ wartet auf einen frischen Prüfer.
+> Offene Fragen an den User stellt der Skill **`/fragen`**, nie improvisiert
+> im Chat. Hausordnung: `docs/plan/LIES-MICH.md`.
+>
 > ### S12–13 (`SONDE-009`) ist GEBAUT und T2-GEPRÜFT — 23.08.2026
 >
 > Commits `f14924a` · `357786e` · `133526e` · `f1e4a08`. Beweislauf **GRÜN

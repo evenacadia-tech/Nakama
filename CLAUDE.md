@@ -161,7 +161,9 @@ das ein Mensch schreibt — weil ein Urteil kein Messwert ist:
 Fehlende Marke, `T1` (Selbstaudit des Erbauers) oder `NEEDS_WORK` heißen
 **„gebaut, Urteil offen"**. Vergessen führt damit zur Untertreibung, nie zur
 Übertreibung — die einzige Fehlerrichtung, die dieses Projekt sich leisten
-kann. Gilt die letzte Marke je Stufe (Prüfrunden stapeln sich).
+kann. Bei mehreren Marken gilt die **letzte, die die geforderte Stufe
+erreicht** — Prüfrunden werden unten angehängt, ein späteres `T3 NEEDS_WORK`
+kassiert also ein früheres `T2 PASS`.
 
 **Erzeugt** wird das Blatt `docs/PLAN-STAND.md` von
 `py -3.13 tools/plan/planstand.py`. Es wird **nie von Hand editiert**.

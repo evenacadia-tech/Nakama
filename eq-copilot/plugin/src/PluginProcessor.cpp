@@ -155,14 +155,11 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     //     das Beste, was zu wissen ist — und ohne Playhead ist Transport
     //     ausdrücklich UNBEKANNT, nicht „gestoppt" und nicht „läuft".
     nakama::echtzeit::Stempel stempel;
-    stempel.nichtEchtzeit = isNonRealtime();
     if (brueckeStand.frisch)
     {
-        stempel.kontextAnwesend    = brueckeStand.kontextAnwesend;
-        stempel.zeitGueltig        = brueckeStand.zeitGueltig;
-        stempel.projectSampleStart = brueckeStand.zeit;
-        stempel.spieltGueltig      = brueckeStand.spieltGueltig;
-        stempel.spielt             = brueckeStand.spielt;
+        // Der Stand IST der Stempel (SONDE-009) — nichts wird umkopiert, also
+        // kann auch nichts beim Umkopieren vergessen werden.
+        stempel = brueckeStand.stempel;
         brueckeStand.frisch = false;
     }
     else if (auto* kopf = getPlayHead())
@@ -177,6 +174,44 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
                 stempel.zeitGueltig        = true;
                 stempel.projectSampleStart = *zeit;
             }
+            // SONDE-009: was der öffentliche Playhead über den Rest sagen kann.
+            // Weniger als die Brücke, und das ist ehrlich so: JUCE hat kein
+            // Gültigkeitsbit für `isRecording`, weshalb hier bewusst KEINS
+            // gesetzt wird — „PositionInfo da" beweist Transport, nicht
+            // Aufnahmezustand. Was die Brücke unterscheiden kann, unterscheidet
+            // nur die Brücke.
+            if (const auto ppq = pos->getPpqPosition())
+            {
+                stempel.ppqGueltig  = true;
+                stempel.ppqPosition = *ppq;
+            }
+            if (const auto bpm = pos->getBpm())
+            {
+                stempel.tempoGueltig = true;
+                stempel.tempo        = *bpm;
+            }
+            stempel.cycleAktiv = pos->getIsLooping();
+            if (const auto schleife = pos->getLoopPoints())
+            {
+                stempel.cycleGrenzenGueltig = true;
+                stempel.cycleStartPpq = schleife->ppqStart;
+                stempel.cycleEndePpq  = schleife->ppqEnd;
+            }
+        }
+    }
+    // `isNonRealtime()` fragt den PROZESSOR, nicht den Hostkontext — es steht
+    // deshalb hinter beiden Zweigen und überschreibt keinen Brückenwert.
+    stempel.nichtEchtzeit = isNonRealtime();
+    // Die Samplerate ist im Playhead-Zweig nicht erfragbar; die des Prozessors
+    // ist der einzige Wert, den wir hier ehrlich behaupten können, und er
+    // stammt aus `prepareToPlay`.
+    if (! stempel.sampleRateGueltig)
+    {
+        const double fs = samplerateAtomic.load();
+        if (fs > 0.0)
+        {
+            stempel.sampleRateGueltig = true;
+            stempel.sampleRate        = fs;
         }
     }
 
@@ -286,14 +321,55 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
 void EqCopilotProcessor::nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbefund& befund) noexcept
 {
     const auto& k = befund.kontext;
-    brueckeStand.kontextAnwesend = k.processContextPresent;
+    auto& s = brueckeStand.stempel;
+    s = nakama::echtzeit::Stempel {};     // kein Feld erbt den Vorblock
+
+    s.kontextAnwesend = k.processContextPresent;
     // `projectTimeSamples` ist laut VST3-Doku gültig, SOBALD ein Context
     // existiert — die Brücke setzt das Gültigkeitsbit deshalb genau dann.
-    brueckeStand.zeitGueltig   = k.processContextPresent && k.projectTimeSamples.gueltig;
-    brueckeStand.zeit          = (juce::int64) k.projectTimeSamples.oder (0);
-    brueckeStand.spieltGueltig = k.processContextPresent && k.playing.gueltig;
-    brueckeStand.spielt        = k.playing.oder (false);
-    brueckeStand.frisch        = true;
+    s.zeitGueltig        = k.processContextPresent && k.projectTimeSamples.gueltig;
+    s.projectSampleStart = (std::int64_t) k.projectTimeSamples.oder (0);
+    s.spieltGueltig      = k.processContextPresent && k.playing.gueltig;
+    s.spielt             = k.playing.oder (false);
+
+    // ── SONDE-009: der Rest des Transportstempels (§32.3) ──────────────────
+    // Jedes Feld hängt an `processContextPresent` UND an seinem eigenen Bit.
+    // Der Kontext ist die Voraussetzung dafür, dass die Zahl überhaupt etwas
+    // bedeutet; das Einzelbit sagt, ob der Host sie in DIESEM Block gemeldet
+    // hat. Beide Fragen sind verschieden, deshalb beide Konjunktionen.
+    s.recordingGueltig      = k.processContextPresent && k.recording.gueltig;
+    s.recording             = k.recording.oder (false);
+    s.continuousGueltig     = k.processContextPresent && k.continuousTimeSamples.gueltig;
+    s.continuousTimeSamples = (std::int64_t) k.continuousTimeSamples.oder (0);
+    s.tempoGueltig          = k.processContextPresent && k.tempo.gueltig;
+    s.tempo                 = k.tempo.oder (0.0);
+    s.ppqGueltig            = k.processContextPresent && k.ppqPosition.gueltig;
+    s.ppqPosition           = k.ppqPosition.oder (0.0);
+    s.sampleRateGueltig     = k.processContextPresent && k.sampleRate.gueltig;
+    s.sampleRate            = k.sampleRate.oder (0.0);
+
+    // Schleife: `aktiv` und `gueltig` sind ZWEI Aussagen. VST3 kann melden
+    // „die Schleife läuft" und trotzdem keine brauchbaren Grenzen liefern
+    // (`kCycleValid` fehlt) — dann ist der Loop-Wrap bekannt, seine Lage aber
+    // nicht. §32.3 nennt genau diesen Fall: „Liegen nur PPQ-Bounds vor oder
+    // fehlen die Bounds, wird der mögliche Straddle als ungültig markiert."
+    s.cycleAktiv          = k.processContextPresent && k.cycle.aktiv;
+    s.cycleGrenzenGueltig = k.processContextPresent && k.cycle.gueltig;
+    s.cycleStartPpq       = k.cycle.startPpq;
+    s.cycleEndePpq        = k.cycle.endePpq;
+
+    // Presentation-Latency: Bus 0 je Richtung — der Main-Bus. Die weiteren
+    // Busse gehören zu Probeeqs Aux-Wegen (P6) und haben heute keinen
+    // Verbraucher. `gemeldet` trennt „der Host hat 0 gesagt" von „der Host hat
+    // nie etwas gesagt"; ein Latenzwert 0 kann beides heißen (§32.3).
+    const auto& ein = k.presentationLatency.hole (true, 0);
+    const auto& aus = k.presentationLatency.hole (false, 0);
+    s.eingangLatenzGemeldet = ein.gemeldet;
+    s.eingangLatenzSamples  = ein.samples;
+    s.ausgangLatenzGemeldet = aus.gemeldet;
+    s.ausgangLatenzSamples  = aus.samples;
+
+    brueckeStand.frisch = true;
 }
 
 // „Neutral, bis Echtzeit bewiesen" (Konzept v2 §4): zwei Fenster mit
@@ -377,10 +453,18 @@ void EqCopilotProcessor::workerLauf()
     {
         const double srWunsch = samplerateAtomic.load();
         if (srWunsch > 0.0)
+        {
             engine.vorbereiten (srWunsch);          // no-op bei gleicher Rate
+            // SONDE-009: derselbe Wunsch, dieselbe Stelle. Die FeatureEngine
+            // legt bei einer NEUEN Rate ihre Bin-Zuordnung neu an — eine
+            // Zuordnung aus der alten Rate wäre danach schlicht falsch, und
+            // §32.3 führt den Sampleratewechsel ohnehin als Epochengrenze.
+            merkmale.vorbereiten (srWunsch);
+        }
         if (messResetWunsch.exchange (false))
         {
             engine.zuruecksetzen();
+            merkmale.zuruecksetzen();
             // Gegenpfad: was in Quarantäne liegt, gehört zur alten Messung.
             quarantaene.zuruecksetzen();
         }
@@ -416,6 +500,12 @@ void EqCopilotProcessor::workerLauf()
             {
                 engine.verarbeite (frei.audio, (int) frei.block->sampleCount,
                                    (int) frei.block->kanaele);
+                // SONDE-009: DERSELBE versiegelte Block, zwei Leser. Die
+                // FeatureEngine bekommt zusätzlich den Deskriptor — sie braucht
+                // ihn, weil ihre ganze Arbeit an Zeit, Flags und Kontinuität
+                // hängt, während M1 nur Samples sieht.
+                if (merkmale.nimmBlock (*frei.block, frei.audio))
+                    merkmalFrames.fetch_add (1);
                 samplesAnalysiert.fetch_add ((juce::uint64) frei.block->sampleCount);
                 unverarbeitet += (juce::uint64) frei.block->sampleCount;
             }

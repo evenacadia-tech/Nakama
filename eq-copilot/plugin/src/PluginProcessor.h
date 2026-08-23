@@ -23,6 +23,7 @@
 #include "NakamaLebenslauf.h"
 #include "NakamaHostBridge.h"
 #include "StampedAudioQueue.h"
+#include "analysis/FeatureEngine.h"
 
 // ── S9/SONDE-007b Abschnitt 3: welches Bundle uebersetzt hier? ─────────────
 // Die duenne Target-Schicht sagt es (plugin/CMakeLists.txt), nicht dieser
@@ -139,6 +140,25 @@ public:
     juce::uint64  analyseVeraltet() const         { return veralteteBloecke.load(); }
     static constexpr int analyseMaxBlockFrames()  { return Strom::maxBlockFrames; }
 
+    // ── SONDE-009: Fensterbuchhaltung der FeatureEngine v2 ──────────────────
+    // Der Gate-Text („Drop/Seek/Loop trennt jedes offene Fenster") wird hier
+    // auslesbar. NAK-57 gilt unverändert: eine ANZEIGE bekommen diese Zahlen in
+    // diesem Ticket nicht — die Oberflächen kommen aus Figma. `EqCopAnalysis-
+    // GoldenTest` liest sie, sonst niemand.
+    juce::uint64 merkmaleGetrennteFenster() const   { return merkmale.getrennteFenster(); }
+    juce::uint64 merkmaleEpochenwechsel() const     { return merkmale.epochenwechsel(); }
+    juce::uint64 merkmaleSegmentwechsel() const     { return merkmale.segmentwechsel(); }
+    juce::uint64 merkmaleStraddleVerworfen() const  { return merkmale.straddleVerworfen(); }
+    juce::uint64 merkmaleNak29Abgelehnt() const     { return merkmale.nak29Abgelehnt(); }
+    juce::uint64 merkmaleBloecke() const            { return merkmale.bloeckeGesehen(); }
+    juce::uint64 merkmaleFrames() const             { return merkmalFrames.load(); }
+    // Der zuletzt gebaute Frame. ⚠️ Nur vom Worker geschrieben; der Test liest
+    // ihn, nachdem der Worker steht (`testWorkerZug`). Ein Live-Leser bräuchte
+    // hier denselben Doppelpuffer wie `AnalyseEngine::snapshot()` — den baut
+    // SONDE-010, wenn der Telemetry-Client der erste echte Leser wird.
+    const nakama::analyse::FeatureFrame& merkmalFrame() const { return merkmale.frame(); }
+    const nakama::analyse::FeatureEngine& merkmalEngine() const { return merkmale; }
+
     // ── Live-Status für Editor/Heartbeat ──
     StatsSnapshot statsSnapshot() const;
     PipeClient::Snapshot pipeSnapshot() const             { return pipe.snapshot(); }
@@ -251,14 +271,19 @@ private:
     // `nakamaBlockEmpfangen` läuft auf DEMSELBEN Thread wie `processBlock` und
     // unmittelbar davor (gepatchter Wrapper). Deshalb reichen einfache Member:
     // ein Atomic würde hier eine Threadgrenze behaupten, die es nicht gibt.
+    //
+    // SONDE-009: der Stand IST der Stempel. Bis S12-13 stand hier eine eigene
+    // Struktur mit sechs Feldern, die `processBlock` einzeln in den `Stempel`
+    // umkopierte. Mit den zehn Transportfeldern des v3-Vertrags waeren daraus
+    // zwei Strukturen mit je sechzehn Feldern geworden, die dasselbe sagen —
+    // und die irgendwann auseinanderlaufen, weil jemand ein Feld nur in einer
+    // von beiden ergaenzt. `nichtEchtzeit` bleibt das einzige Feld, das NICHT
+    // von der Bruecke kommt: `isNonRealtime()` ist eine Frage an den
+    // Prozessor, nicht an den Hostkontext.
     struct BrueckeStand
     {
-        bool         frisch          { false };
-        bool         kontextAnwesend { false };
-        bool         zeitGueltig     { false };
-        juce::int64  zeit            { 0 };
-        bool         spieltGueltig   { false };
-        bool         spielt          { false };
+        bool                      frisch { false };
+        nakama::echtzeit::Stempel stempel {};
     };
     BrueckeStand brueckeStand;
 
@@ -270,6 +295,17 @@ private:
     // M1: der Worker besitzt die Engine exklusiv; UI/Host stellen nur Wünsche.
     AnalyseEngine engine;
     std::atomic<bool> messResetWunsch { false };
+
+    // ── SONDE-009: FeatureEngine v2, neben M1 statt an ihrer Stelle ─────────
+    // Beide bekommen denselben versiegelten Blockstrom, und das ist Absicht:
+    // sie messen dieselbe Physik auf VERSCHIEDENEN Achsen (M1 auf der bei 30 Hz
+    // verankerten `analyze-track`-Achse, v2 auf dem bei 1000 Hz verankerten
+    // IEC-61260-Gitter des v3-Vertrags — 1,2 % Versatz, siehe BandGrid.h).
+    // M1 abzulösen hieße, die Golden-Kreuzvalidierung aufzugeben; das ist kein
+    // Nebenbei-Schritt und gehört nicht in dieses Ticket.
+    // Derselbe Single-Writer-Kontrakt wie bei `engine`: nur der Worker.
+    nakama::analyse::FeatureEngine merkmale;
+    std::atomic<juce::uint64> merkmalFrames { 0 };
 
     // ── Hör-Markierung: DSP + Erlaubnis-Zustand ──
     HoerMarkierungDsp markierung;

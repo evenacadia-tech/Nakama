@@ -33,6 +33,7 @@
 
 #include <juce_dsp/juce_dsp.h>
 #include "ZonenRegeln.h"
+#include "analysis/KGewichtung.h"
 #include "analysis/LoudnessAccumulator.h"
 #include <array>
 #include <limits>
@@ -301,18 +302,16 @@ private:
     juce::uint64 revisionZaehler = 0;
 
     // ── Loudness (BS.1770, pyloudnorm-gleich) ──
-    struct Biquad
-    {
-        double b0 = 1, b1 = 0, b2 = 0, a1 = 0, a2 = 0;
-        double z1 = 0, z2 = 0;
-        double tick (double x) noexcept
-        {
-            const double y = b0 * x + z1;
-            z1 = b1 * x - a1 * y + z2;
-            z2 = b2 * x - a2 * y;
-            return y;
-        }
-    };
+    // SONDE-009: Biquad und Filterentwurf liegen seit S12-13 in
+    // `core/analysis/KGewichtung.h`. Bis dahin standen sie hier — und die
+    // FeatureEngine v2 hätte sie ein zweites Mal gebraucht. Zwei Kopien
+    // derselben Filterrechnung laufen genau so lange gleich, bis jemand eine
+    // davon anfasst; danach messen zwei Teile desselben Produkts dieselbe
+    // Lautheit verschieden, und zwar still.
+    // 🔑 Dass es DIESELBE Rechnung geblieben ist, misst `EqCopGoldenTest`: die
+    // Lautheit ist Teil seiner Kreuzvalidierung gegen `analyze-track.py`, und
+    // ein einziges abweichendes Bit ließe ihn fallen.
+    using Biquad = nakama::analyse::Biquad;
     Biquad shelfL, shelfR, hpL, hpR;
     // 100-ms-Zellen der K-gewichteten Energie (Σ über Kanäle) + Kanalenergie-
     // Zellen für Aktivität §5.10.2.

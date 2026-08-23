@@ -71,6 +71,30 @@ inline constexpr std::uint32_t kFlagSpielt          = 1u << 3;  // Transport lae
 inline constexpr std::uint32_t kFlagLueckeDavor     = 1u << 4;  // vor diesem Block ging Analysezeit verloren
 inline constexpr std::uint32_t kFlagNichtEchtzeit   = 1u << 5;  // Offline-Render (isNonRealtime)
 
+// ── SONDE-009: was der Zeit- und Validity-Vertrag zusaetzlich braucht ───────
+// Bis S12-13 trug der Stempel nur, was die Ein-Block-Quarantaene fuer ihre
+// Grenzentscheidung braucht. Der Transportstempel des v3-Vertrags (§32.3,
+// `nakama_telemetry_v1.fbs` Tabelle `Transportstempel`) verlangt mehr, und
+// zwar mit je EIGENEM Gueltigkeitsbit - allen voran die Schleifengrenzen: ohne
+// sie kann die Fensterbuchhaltung einen Loop-Wrap nicht von einem Seek
+// unterscheiden, und "Loop trennt jedes offene Fenster" waere unbelegbar.
+//
+// ⚠️ ALLE NEUEN BITS SIND ADDITIV UND STEHEN BEWUSST NICHT IN DER `bruchMaske`
+// von `schliesstAn()`. Diese Klasse liefert die Grenze; die Fensterbuchhaltung
+// wertet sie aus (§4.3 des SONDE-008-Manifests: "Nicht hier, sondern in
+// SONDE-009"). Waeren sie in der Maske, aenderte ein blosser Loop-Einschalter
+// das Verhalten eines T2-geprueften Riegels - und B4 mit ihm.
+inline constexpr std::uint32_t kFlagRecordingGueltig  = 1u << 6;
+inline constexpr std::uint32_t kFlagRecording         = 1u << 7;
+inline constexpr std::uint32_t kFlagContinuousGueltig = 1u << 8;
+inline constexpr std::uint32_t kFlagCycleAktiv        = 1u << 9;   // Schleife laeuft gerade
+inline constexpr std::uint32_t kFlagCycleGrenzenGueltig = 1u << 10; // rohe PPQ-Grenzen liegen an
+inline constexpr std::uint32_t kFlagTempoGueltig      = 1u << 11;
+inline constexpr std::uint32_t kFlagPpqGueltig        = 1u << 12;
+inline constexpr std::uint32_t kFlagSampleRateGueltig = 1u << 13;
+inline constexpr std::uint32_t kFlagEingangLatenzGemeldet = 1u << 14;
+inline constexpr std::uint32_t kFlagAusgangLatenzGemeldet = 1u << 15;
+
 /** Was der Audiothread ueber den Block weiss, bevor er ihn einstellt. Alles mit
     eigenem Gueltigkeitsbit - "nicht gesagt" ist nicht "0". */
 struct Stempel
@@ -82,6 +106,26 @@ struct Stempel
     bool         spielt           { false };
     bool         nichtEchtzeit    { false };
 
+    // ── SONDE-009 ──
+    bool         recordingGueltig  { false };
+    bool         recording         { false };
+    bool         continuousGueltig { false };
+    std::int64_t continuousTimeSamples { 0 };
+    bool         cycleAktiv        { false };
+    bool         cycleGrenzenGueltig { false };
+    double       cycleStartPpq     { 0.0 };
+    double       cycleEndePpq      { 0.0 };
+    bool         tempoGueltig      { false };
+    double       tempo             { 0.0 };
+    bool         ppqGueltig        { false };
+    double       ppqPosition       { 0.0 };
+    bool         sampleRateGueltig { false };
+    double       sampleRate        { 0.0 };
+    bool          eingangLatenzGemeldet { false };
+    std::uint32_t eingangLatenzSamples  { 0 };
+    bool          ausgangLatenzGemeldet { false };
+    std::uint32_t ausgangLatenzSamples  { 0 };
+
     std::uint32_t flags() const noexcept
     {
         std::uint32_t f = 0;
@@ -90,6 +134,16 @@ struct Stempel
         if (spieltGueltig)   f |= kFlagSpieltGueltig;
         if (spielt)          f |= kFlagSpielt;
         if (nichtEchtzeit)   f |= kFlagNichtEchtzeit;
+        if (recordingGueltig)      f |= kFlagRecordingGueltig;
+        if (recording)             f |= kFlagRecording;
+        if (continuousGueltig)     f |= kFlagContinuousGueltig;
+        if (cycleAktiv)            f |= kFlagCycleAktiv;
+        if (cycleGrenzenGueltig)   f |= kFlagCycleGrenzenGueltig;
+        if (tempoGueltig)          f |= kFlagTempoGueltig;
+        if (ppqGueltig)            f |= kFlagPpqGueltig;
+        if (sampleRateGueltig)     f |= kFlagSampleRateGueltig;
+        if (eingangLatenzGemeldet) f |= kFlagEingangLatenzGemeldet;
+        if (ausgangLatenzGemeldet) f |= kFlagAusgangLatenzGemeldet;
         return f;
     }
 };
@@ -125,6 +179,29 @@ struct StampedBlock
         Laufzeit-Bitset verhindert Kopien fuer inaktive Taps, ohne Speicher
         nachzuallozieren (§53.7). */
     std::uint32_t tapMaske         { 0 };
+
+    // ── SONDE-009: Traeger des v3-Transportstempels (§32.3) ────────────────
+    // Jedes Feld gilt NUR mit seinem Flag. Ohne Flag steht hier der
+    // Nullwert - nie ein fortgeschriebener alter Wert, denn genau das war
+    // NAK-24 (ein alter `projektZeitSamples` sah aus wie eine aktuelle
+    // Position).
+    /** NUR gueltig mit `kFlagContinuousGueltig`. */
+    std::int64_t  continuousTimeSamples { 0 };
+    /** NUR gueltig mit `kFlagCycleGrenzenGueltig`. Rohe PPQ, keine Samples. */
+    double        cycleStartPpq   { 0.0 };
+    double        cycleEndePpq    { 0.0 };
+    /** NUR gueltig mit `kFlagTempoGueltig` bzw. `kFlagPpqGueltig`. Beide
+        zusammen sind die Voraussetzung dafuer, aus PPQ-Grenzen ueberhaupt
+        Samplegrenzen ABLEITEN zu duerfen (§32.3). */
+    double        tempo           { 0.0 };
+    double        ppqPosition     { 0.0 };
+    /** Kontext-Samplerate des Hosts, roh. NUR mit `kFlagSampleRateGueltig`. */
+    double        sampleRate      { 0.0 };
+    /** NUR gueltig mit dem jeweiligen `…LatenzGemeldet`-Flag. 0 ohne Flag heisst
+        "nie gesagt", 0 mit Flag heisst "der Host hat 0 gesagt" - genau die
+        Unterscheidung, die §32.3 verlangt. */
+    std::uint32_t eingangLatenzSamples { 0 };
+    std::uint32_t ausgangLatenzSamples { 0 };
 };
 
 //==============================================================================
@@ -340,6 +417,20 @@ public:
 
         StampedBlock& b = deskriptoren[(std::size_t) (schreib & Layout::deskMaske)];
         b.projectSampleStart = stempel.zeitGueltig ? stempel.projectSampleStart : 0;
+        // SONDE-009: dieselbe Regel fuer jedes neue Feld - ohne sein
+        // Gueltigkeitsbit steht der Nullwert da, nie ein alter Wert. Der
+        // Deskriptor liegt in einem RING und traegt beim Wiederverwenden noch
+        // die Werte seines Vorgaengers; ohne diese Zuweisungen laege in einem
+        // Block ohne Kontext die Schleifengrenze des Blocks von vor 2048
+        // Runden - ununterscheidbar von einer aktuellen.
+        b.continuousTimeSamples = stempel.continuousGueltig ? stempel.continuousTimeSamples : 0;
+        b.cycleStartPpq = stempel.cycleGrenzenGueltig ? stempel.cycleStartPpq : 0.0;
+        b.cycleEndePpq  = stempel.cycleGrenzenGueltig ? stempel.cycleEndePpq  : 0.0;
+        b.tempo         = stempel.tempoGueltig ? stempel.tempo : 0.0;
+        b.ppqPosition   = stempel.ppqGueltig   ? stempel.ppqPosition : 0.0;
+        b.sampleRate    = stempel.sampleRateGueltig ? stempel.sampleRate : 0.0;
+        b.eingangLatenzSamples = stempel.eingangLatenzGemeldet ? stempel.eingangLatenzSamples : 0;
+        b.ausgangLatenzSamples = stempel.ausgangLatenzGemeldet ? stempel.ausgangLatenzSamples : 0;
         b.stromVon    = von;
         b.ringVon     = ringSchreib;
         b.sampleCount = n;

@@ -213,38 +213,19 @@ void AnalyseEngine::vorbereiten (double samplerate)
 
     // K-Weighting wie pyloudnorm (RBJ, KEINE DeMan-Variante): High-Shelf
     // G=+4 dB, Q=1/√2, fc=1500 · Hochpass G=0, Q=0.5, fc=38.
-    auto rbjHighShelf = [this] (double G, double Q, double fc)
-    {
-        const double A = std::pow (10.0, G / 40.0);
-        const double w0 = 2.0 * juce::MathConstants<double>::pi * fc / sr;
-        const double alpha = std::sin (w0) / (2.0 * Q);
-        const double c = std::cos (w0);
-        const double a0 = (A + 1) - (A - 1) * c + 2 * std::sqrt (A) * alpha;
-        Biquad f;
-        f.b0 = A * ((A + 1) + (A - 1) * c + 2 * std::sqrt (A) * alpha) / a0;
-        f.b1 = -2 * A * ((A - 1) + (A + 1) * c) / a0;
-        f.b2 = A * ((A + 1) + (A - 1) * c - 2 * std::sqrt (A) * alpha) / a0;
-        f.a1 = 2 * ((A - 1) - (A + 1) * c) / a0;
-        f.a2 = ((A + 1) - (A - 1) * c - 2 * std::sqrt (A) * alpha) / a0;
-        return f;
-    };
-    auto rbjHighpass = [this] (double Q, double fc)
-    {
-        const double w0 = 2.0 * juce::MathConstants<double>::pi * fc / sr;
-        const double alpha = std::sin (w0) / (2.0 * Q);
-        const double c = std::cos (w0);
-        const double a0 = 1 + alpha;
-        Biquad f;
-        f.b0 = (1 + c) / 2 / a0;
-        f.b1 = -(1 + c) / a0;
-        f.b2 = (1 + c) / 2 / a0;
-        f.a1 = -2 * c / a0;
-        f.a2 = (1 - alpha) / a0;
-        return f;
-    };
-    shelfL = rbjHighShelf (4.0, 1.0 / std::sqrt (2.0), 1500.0);
+    //
+    // SONDE-009: die zwei Filterentwürfe standen bis S12-13 als Lambdas hier.
+    // Sie liegen jetzt in `core/analysis/KGewichtung.h`, weil die FeatureEngine
+    // v2 dieselbe Kette braucht — Ausdruck für Ausdruck übernommen, damit die
+    // Gleitkomma-Reihenfolge dieselbe bleibt. Der Beweis dafür ist der
+    // GoldenTest: er misst die Lautheit gegen die `analyze-track`-Referenz und
+    // fiele bei einem einzigen abweichenden Bit.
+    shelfL = nakama::analyse::rbjHighShelf (sr, nakama::analyse::kShelfGainDb,
+                                            nakama::analyse::shelfQ(),
+                                            nakama::analyse::kShelfFreqHz);
     shelfR = shelfL;
-    hpL = rbjHighpass (0.5, 38.0);
+    hpL = nakama::analyse::rbjHighpass (sr, nakama::analyse::kHochpassQ,
+                                        nakama::analyse::kHochpassFreqHz);
     hpR = hpL;
 
     // True-Peak-FIR: 8×, Kaiser β=5.0, 161 Taps — scipy resample_poly-gleich

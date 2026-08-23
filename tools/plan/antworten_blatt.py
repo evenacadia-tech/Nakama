@@ -1,7 +1,12 @@
-"""Erzeugt docs/ANTWORTEN-OFFEN.md aus docs/hub/hub.json.
+"""Erzeugt docs/ANTWORTEN-OFFEN.md aus docs/plan/fragen.json.
 
-EINE Wahrheit, ein Ort: hub.json ist die Quelle, dieses Blatt ist NUR eine
+EINE Wahrheit, ein Ort: fragen.json ist die Quelle, dieses Blatt ist NUR eine
 Ansicht davon. Es wird bei jedem Lauf vollstaendig ueberschrieben.
+
+Umgezogen 23.08.2026: bis dahin las es docs/hub/hub.json (`antworten`). Die
+Briefing-Seite ist abgeschafft, die Antworten stehen jetzt unter
+`beantwortet` in fragen.json — dieselbe Form, anderer Ort. Neue Antworten
+traegt der Skill .claude/skills/fragen/ dort ein.
 
 Der Status kommt aus den Daten, nicht aus dem Text: solange eine Antwort
 `neu` ist, sagt das Blatt das; sobald sie `eingearbeitet` ist, zeigt es das
@@ -12,7 +17,7 @@ wenn laengst alles uebernommen war.
 import json
 import pathlib
 
-QUELLE = pathlib.Path("docs/hub/hub.json")
+QUELLE = pathlib.Path("docs/plan/fragen.json")
 ZIEL = pathlib.Path("docs/ANTWORTEN-OFFEN.md")
 
 NEU = "neu"
@@ -35,7 +40,7 @@ def zelle(wert):
 
 def main() -> int:
     d = json.loads(QUELLE.read_text(encoding="utf-8"))
-    a = d.get("antworten") or {}
+    a = d.get("beantwortet") or {}
     schluessel = sorted(a, key=num)
     eintrag = {k: (a[k] if isinstance(a[k], dict) else {}) for k in schluessel}
 
@@ -56,7 +61,7 @@ def main() -> int:
         titel = "# Deine Antworten — alle eingearbeitet"
 
     aus = [titel, "",
-           "> **Erzeugt, nicht gepflegt.** Quelle ist `docs/hub/hub.json`;",
+           "> **Erzeugt, nicht gepflegt.** Quelle ist `docs/plan/fragen.json`;",
            "> hier nur zum Lesen. Handarbeit geht beim naechsten Lauf verloren.",
            ""]
 
@@ -71,7 +76,7 @@ def main() -> int:
                 "(`CLAUDE.md`) oder nach `design/abnahmen/` uebernommen.", "",
                 "Pflicht laut CLAUDE.md: jede Antwort ist User-Wort und gehoert mit Datum "
                 "und Wortlaut eingetragen; danach Status `eingearbeitet` und `ergebnis` "
-                "in `hub.json`.", ""]
+                "in `docs/plan/fragen.json`.", ""]
     else:
         aus += ["Alle tragen Status `eingearbeitet` — jede ist mit Datum und Wortlaut "
                 "uebernommen. Was daraus gilt, steht in der Spalte *Ergebnis*.", ""]

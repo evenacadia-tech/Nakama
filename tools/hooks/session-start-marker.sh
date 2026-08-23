@@ -1,9 +1,12 @@
 #!/bin/bash
 # SessionStart hook: Marker mit Zeitstempel + git-HEAD schreiben. Verbraucher
-# ist seit 22.08.2026 nur noch hub-stop.sh — er misst daran, ob diese Session
-# Commits erzeugt hat, ohne den Hub nachzuziehen. (Bis dahin las auch
-# session-end-handoff.sh den Marker; dieser Hook ist entfallen, weil sein
-# Erzeugnis niemand las — Commit ef1efee.)
+# ist seit 23.08.2026 nur noch commit-stop.sh — er misst daran, ob diese
+# Session Aenderungen erzeugt hat, die uncommittet liegenblieben.
+# (Frueher lasen ihn auch session-end-handoff.sh — entfallen 22.08., weil sein
+# Erzeugnis niemand las, Commit ef1efee — und hub-stop.sh, entfallen 23.08.
+# mit der Briefing-Seite: es gibt keinen Hub mehr nachzuziehen, der Planstand
+# wird gerechnet. Die *.hub-nag-Zeile unten bleibt als Aufraeumregel fuer
+# Altlasten stehen; neue entstehen keine mehr.)
 #
 # Liest session_id aus dem JSON-stdin. Marker ${session_id}.start unter
 # ~/.claude/sessions/ trägt vier Zeilen:

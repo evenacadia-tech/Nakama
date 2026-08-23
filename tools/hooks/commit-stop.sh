@@ -14,7 +14,7 @@
 # committen (expliziter Pathspec), fremde stehen lassen und benennen.
 #
 # Hoechstens EINMAL je Session (Marker), damit daraus nie eine Schleife wird —
-# dieselbe Selbstbegrenzung wie in hub-stop.sh.
+# dieselbe Selbstbegrenzung wie im entfallenen hub-stop.sh (23.08.2026).
 
 set -u
 STDIN_JSON=$(cat 2>/dev/null || printf '')

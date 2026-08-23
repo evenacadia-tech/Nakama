@@ -30,15 +30,21 @@ schon gebaut hat.
 
 In dieser Reihenfolge, die erste Quelle mit einer klaren Antwort gewinnt:
 
-1. `docs/NEXT-SESSION.md` — der Kopfblock nennt „**Naechster Schritt**". Das ist
-   die genaueste Quelle, weil die letzte Session sie geschrieben hat.
-2. `docs/bauaufteilung-sonden.md` — die Ticket-Tabellen (`S10–11 | SONDE-008 |
-   … | T1+T2`). Sie sagt auch, **welche Prüfstufen** eine Zeile verlangt.
-3. `docs/hub/hub.json` (`plan`, `naechster_schritt`) — der Stand, den der User
-   auf seiner Briefing-Seite sieht.
+1. `docs/PLAN-STAND.md` — die Zeile „**Als Nächstes**". Seit 23.08.2026 wird
+   sie **gerechnet**: gibt es einen Schritt mit offenem Prüfbefund, ist die
+   Nacharbeit dran, sonst der erste Schritt ohne Beleg. Diese Quelle kann
+   nicht veralten — ein Hook hält sie frisch.
+2. `docs/NEXT-SESSION.md` — der Kopfblock nennt „**Naechster Schritt**" im
+   Klartext, mit dem Warum der letzten Session.
+3. `docs/bauaufteilung-sonden.md` — die Ticket-Tabellen (`S10–11 | SONDE-008 |
+   … | T1+T2`). Sie sagt, **welche Prüfstufen** eine Zeile verlangt.
+   ⚠️ Sie ist handgepflegt und war am 23.08. an zwei Stellen selbst veraltet
+   (sie führte S10–11 und S12–13 als „kein Prüfer gelaufen", während beide
+   T2-Berichte im Manifest lagen). Gegen das Manifest prüfen, nicht glauben.
 
-Widersprechen sie sich, gilt `CLAUDE.md` und danach die Datei mit dem jüngsten
-Datum — und du berichtigst die andere im Protokoll.
+Widersprechen sie sich, gilt `CLAUDE.md`, danach das **Beweismanifest** (dort
+wird gemessen), danach die Datei mit dem jüngsten Datum — und du berichtigst
+die andere im Protokoll.
 
 ## 3. Der Zyklus
 

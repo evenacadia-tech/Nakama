@@ -11,6 +11,9 @@
 
 **Stand:** 2026-08-23 · Quellstand `56de4fb` · **10 von 34 abgenommen** · 6 gebaut · 18 offen
 
+> ⚠️ Gerechnet aus dem Arbeitsbaum: unter `docs/plan/`, `docs/beweise/`
+> oder `tools/plan/` liegen Änderungen, die noch nicht in `56de4fb` sind.
+
 `████████████▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░` 29 % abgenommen · 47 % gebaut
 
 **Als Nächstes:** **Nacharbeit an S12–13** — der Prüfer hat einen Befund offen gelassen (docs/beweise/SONDE-009.md).

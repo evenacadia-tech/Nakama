@@ -370,7 +370,8 @@
 > **Aber vorher zwei Dinge, die Vorrang haben:**
 >
 > 1. ~~35 unbearbeitete Antworten~~ — **eingearbeitet am 22.08. spaet**
->    (`hub_sync.py` meldet jetzt „Antworten: 35 (0 neu)"). Jede traegt Wortlaut
+>    (alle 35 mit Status `eingearbeitet`; heute in `docs/plan/fragen.json`
+>    unter `beantwortet`, lesbar als `docs/ANTWORTEN-OFFEN.md`). Jede traegt Wortlaut
 >    und Ergebnis in `design/abnahmen/2026-08-22-hub-antworten-35.md`; fuenf
 >    Entscheide stehen im Register in `CLAUDE.md` (Rangfolge Implementplan vor
 >    Figma · Wortmarken aus dem Figma-Export · Hoer-Markierung nur mit Signal ·
@@ -380,18 +381,21 @@
 >    aber zwei Formen anbot, und dort, wo eine Frage schlecht gestellt war
 >    (`U6.8`, `U9.3`, `U9.4`: „macht kein sinn die frage", „verstehe frage
 >    nicht"). **Nichts davon wurde geraten.**
->    ⚠️ Sie sind **nicht auf der Seite**: `briefing-app.tsx` zieht die
->    Kartentexte aus `briefing-hub/data/friendly-copy.ts` und filtert mit
->    `.filter((item) => item.title)` jede Karte still weg, die dort fehlt —
->    `hub.json` allein reicht nicht, es braucht Katalog-Eintrag **und** Deploy.
->    Vorher aber Punkt 2 klaeren: wandert der Hub ins Nimbalyst-GUI, waere die
->    Arbeit an `friendly-copy.ts` umsonst.
-> 2. **NAK-50: Der User will den Hub im Nimbalyst-GUI statt auf der Seite**
->    („EIGENTLICH ist die seite unnötig noise, es wäre mir lieber alles hier im
->    nimbalyst GUI zu haben", 22.08. abends). Noch **kein** Register-Entscheid —
->    Wortlaut ist Praeferenz, nicht Abschaltbefehl, und beruehrt den Entscheid
->    desselben Tages. Vor dem Umbau klaeren; die asynchrone Antwortfunktion
->    (Punkt 1) darf dabei nicht verlorengehen. Details in
+>    ✅ **Erledigt sich mit dem 23.08.:** die zwoelf Folgefragen brauchen keinen
+>    Deploy mehr. Sie stehen als Karten in `docs/plan/fragen.json` und werden
+>    mit dem Skill **`/fragen`** einzeln im Chat gestellt. (Das alte Hindernis
+>    war genau diese Kette: `briefing-app.tsx` filterte jede Karte still weg,
+>    die nicht auch in `briefing-hub/data/friendly-copy.ts` stand — eine neue
+>    Frage brauchte Katalog-Eintrag **und** Deploy.)
+> 2. ~~**NAK-50: Der User will den Hub im Nimbalyst-GUI statt auf der Seite**~~
+>    — **entschieden und gebaut am 23.08.** Aus der Praeferenz vom 22.08.
+>    („EIGENTLICH ist die seite unnötig noise") wurde ein Entscheid: „*saeite
+>    ganz weg, alles im repo + Skill bauen, der automatisch die offenen fragen
+>    nach und nach an mich stellt und gleich einarbeitet in den plan*". Die
+>    asynchrone Antwortfunktion ist **nicht** verlorengegangen, sie hat den Ort
+>    gewechselt: Karten in `docs/plan/fragen.json`, gestellt vom Skill
+>    `/fragen`, Antwort woertlich mit Datum. Der Planstand wird seither
+>    gerechnet. Register-Zeile in `CLAUDE.md`, Punkt geschlossen in
 >    `docs/offene-punkte.md`.
 >
 > ## 👤 Was beim User liegt (nur er kann es)
@@ -414,11 +418,13 @@
 > kontextsystem auf") — nicht gegen `docs/` abwaegen, nicht als Zusatzquelle
 > behandeln, nicht abschalten vorschlagen.
 >
-> **Neu seit 22.08.:** `docs/PLAN-STAND.md` zeigt den Planstand direkt in
-> Nimbalyst (erzeugt aus `hub.json` mit `tools/hub/plan_blatt.py`, Diagramm
-> rendert live). Stand jetzt: **12 von 34 Schritten**. Eine Nimbalyst-Automation
-> (`nimbalyst-local/automations/planstand-nakama.md`, taeglich 09:00) frischt es
-> auf — **noch nicht aktiviert**, der User schaltet sie selbst ein.
+> **Neu seit 23.08.:** `docs/PLAN-STAND.md` wird **gerechnet**, nicht gepflegt
+> (`tools/plan/planstand.py` aus `docs/plan/plan.json` + den Urteilsmarken in
+> `docs/beweise/`); `tools/hooks/planstand.sh` haelt es nach jedem Befehl
+> frisch und committet es allein. **Keine Zahl mehr von Hand hier eintragen** —
+> das Blatt sagt den Stand, dieses Kapitel sagt das Warum. Die
+> Nimbalyst-Automation (`nimbalyst-local/automations/planstand-nakama.md`,
+> taeglich 09:00) ist nur noch das Netz fuer Zeiten ohne Session.
 >
 > **Unverbuchte Fremd-Aenderungen im Baum** (der User 22.08.: „alle anderen
 > sitzungen sind lange schon fertig und ruhen" — sie sind also verwaist, nicht
@@ -436,14 +442,16 @@
 > es wiederholt die Wahrheit nicht. Wenn hier und in CLAUDE.md etwas
 > Verschiedenes steht, gilt CLAUDE.md; dann dieses Blatt berichtigen.
 
-> **Seit 22.08. gibt es den Nakama-Hub**: die Seite
-> <https://nakama-briefing.philipld.chatgpt.site> (Quelle `docs/hub/hub.json`,
-> Werkzeug `tools/hub/hub_sync.py holen|senden`; Quellcode `briefing-hub/`) —
-> das Briefing für den User und jede Session: Plan erledigt/offen, was bei ihm
-> liegt, Figma-Stand der drei Apps, seine Antworten je Punkt. Pflicht: holen ·
-> einarbeiten · senden (CLAUDE.md, Abschnitt „Hub"). Das Claude-Artefakt ist
-> stillgelegt (User 22.08.: „alle anderen artefakte sind hiermit nichtmehr zu beachten"). Dieses
-> Blatt bleibt der technische Einstieg; der Hub ist die Sicht des Projektleiters.
+> ~~**Seit 22.08. gibt es den Nakama-Hub**: die Seite
+> <https://nakama-briefing.philipld.chatgpt.site>~~ — **abgeschafft am
+> 23.08.2026** (User-Wort im Register; NAK-50 geschlossen). Sie hatte keine
+> automatische Aktualisierung und driftete deshalb, samt Planstand. An ihre
+> Stelle treten zwei Dinge im Repo: der **gerechnete** Planstand
+> (`docs/PLAN-STAND.md`, Quelle `docs/plan/` + Urteilsmarken in
+> `docs/beweise/`) und der Skill **`/fragen`**, der die offenen Punkte einzeln
+> im Chat stellt und die Antwort wörtlich einarbeitet
+> (`docs/plan/LIES-MICH.md`). `briefing-hub/` bleibt als Verlauf liegen —
+> nicht deployen, nicht füttern. Dieses Blatt bleibt der technische Einstieg.
 
 ## Was heute passiert ist
 

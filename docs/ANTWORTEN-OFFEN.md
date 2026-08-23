@@ -1,6 +1,6 @@
 # Deine Antworten — alle eingearbeitet
 
-> **Erzeugt, nicht gepflegt.** Quelle ist `docs/hub/hub.json`;
+> **Erzeugt, nicht gepflegt.** Quelle ist `docs/plan/fragen.json`;
 > hier nur zum Lesen. Handarbeit geht beim naechsten Lauf verloren.
 
 **35 Antworten**, gegeben am 2026-08-22.

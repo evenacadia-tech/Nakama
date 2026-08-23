@@ -64,8 +64,8 @@
           },
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/hub-primer.sh\"",
-            "statusMessage": "Nakama-Hub vorlesen (Plan, bei dir, Eingang)..."
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/plan-primer.sh\"",
+            "statusMessage": "Planstand rechnen und vorlesen (Plan, offene Fragen)..."
           },
           {
             "type": "command",
@@ -130,10 +130,6 @@
     "Stop": [
       {
         "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/hub-stop.sh\""
-          },
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/commit-stop.sh\""

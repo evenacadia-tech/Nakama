@@ -63,7 +63,7 @@ probe durch "Heredoc zitiert force-push"  'git commit -F - <<EOF
 Riegel: git push --force bleibt Entscheidung des Users
 EOF'
 probe durch "Notausgang gesetzt"          'NAKAMA_GIT_RIEGEL_AUS=1 git push --force'
-probe durch "gar kein git"                'py -3.13 tools/hub/hub_sync.py holen'
+probe durch "gar kein git"                'py -3.13 -c "print(1)"'
 
 echo
 echo "=== Gegenprobe von Gemini 3.1 Pro (22.08.2026, agy -p) ==="

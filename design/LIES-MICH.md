@@ -102,9 +102,11 @@ eingebettet, der Prototyp mit denselben Assets wie das Plugin; Beweis ist der
    Metapher, Farbwelt) ohne sein Wort festlegen oder wieder aufmachen —
    und nichts davon selbst vorschlagen. Fehlende oder unklare Vorstellung
    wird per **`/interview <phase>`** erfragt — Pflicht zu Beginn jeder
-   Arbeitsplan-Phase, jederzeit zusätzlich einsetzbar. Was auf der
-   Hub-Seite beantwortbar ist, wird dort erfragt, nicht im Chat
-   (`docs/hub/LIES-MICH.md` an der Repo-Wurzel).
+   Arbeitsplan-Phase, jederzeit zusätzlich einsetzbar. Offene Fragen an den
+   User stehen in `docs/plan/fragen.json` und werden mit dem Skill
+   **`/fragen`** gestellt — er hält die Antwort wörtlich fest und arbeitet
+   sie ein (`docs/plan/LIES-MICH.md`). Die Briefing-Seite ist seit dem
+   23.08.2026 abgeschafft.
 4. **Abnahmen sind bindend.** Jedes User-Urteil sofort als Datei in
    `abnahmen/` festhalten (Format dort). Festgelegtes wird nicht ohne
    neues User-Wort erneut zur Diskussion gestellt — genau das erzeugt
@@ -182,5 +184,5 @@ eingebettet, der Prototyp mit denselben Assets wie das Plugin; Beweis ist der
 - Kleine, benannte Commits nach jedem abgenommenen Schritt — immer mit
   explizitem Pathspec, nie `git add -A` (parallele Sessions).
 - Sessionende: eine Zeile in `abnahmen/` was offen blieb — kein
-  Wissenstransfer über Gedächtnis — und den Nakama-Hub nachziehen
-  (Pflicht seit 22.08., `docs/hub/LIES-MICH.md`).
+  Wissenstransfer über Gedächtnis. Am Planstand ist **nichts** nachzuziehen:
+  er wird gerechnet (`docs/plan/LIES-MICH.md`, seit 23.08.2026).

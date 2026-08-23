@@ -54,7 +54,7 @@ Kandidat für Eviction. Nein → tragend, behalten.
 | Plugin-/Broker-Sessions (Architektur, Datenfluss, IPC) | `docs/plugin-wissen.md` + `eq-copilot/docs/M*-BEFUND.md` + git log |
 | Offene Punkte / NAK-IDs | `docs/offene-punkte.md` (durabel; schließen NUR mit ID + Commit-SHA, nie still löschen) |
 | Nächste Schritte | `docs/NEXT-SESSION.md` |
-| Session-Übergaben | `docs/hub/hub.json` + die Briefing-Seite (seit 22.08.); `docs/NEXT-SESSION.md` für den einen nächsten Schritt. Die Auto-Handoffs unter `docs/handoffs/` sind am 22.08. entfallen — sie wurden geschrieben, aber nie gelesen (Commit `ef1efee`) |
+| Session-Übergaben | `docs/PLAN-STAND.md` — **gerechnet**, nicht gepflegt (seit 23.08.; Quelle `docs/plan/` + die Urteilsmarken in `docs/beweise/`); `docs/NEXT-SESSION.md` für den einen nächsten Schritt. Zwei Vorgänger sind entfallen, beide aus demselben Grund — sie kosteten Handarbeit, die jemand vergaß: die Auto-Handoffs unter `docs/handoffs/` (22.08., `ef1efee`, geschrieben aber nie gelesen) und `docs/hub/hub.json` + Briefing-Seite (23.08., NAK-50, gepflegt aber nie automatisch) |
 | Verworfene Wege (nie neu vorschlagen) | CLAUDE.md „Was NICHT mehr gilt" + `eq-copilot/design/archive/LIES-MICH.md` + `docs/archiv/LIES-MICH.md` |
 
 ## Phasen

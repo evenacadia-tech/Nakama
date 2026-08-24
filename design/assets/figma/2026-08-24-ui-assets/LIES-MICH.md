@@ -26,8 +26,9 @@ im verbindlichen Depot-Workflow; dieser Ordner sammelt nur die
 | `beleg-design-1-viewport.png` | 1920×1080 | `3f20093a0037cab2` | Browser-Capture (anonyme Figma-Ansicht, Node `1:2`) | Frame „Design 1" — dieselbe Delay-UI, Gesamtbild |
 | `beleg-praesentation-2-3-viewport.png` | 1920×1080 | `ccb32f1d699156a6` | Browser-Capture (Nodes `1:202`/`1:300`) | Presentation 2 (hell, Detail LEFT) + Presentation 3 (dunkel, Detail RIGHT) |
 | `beleg-iphone-frame-viewport.png` | 1920×1080 | `cd1f8376e567ce29` | Browser-Capture (Node `105:2`) | Live-Frame derselben Delay-UI |
-| `beleg-toggle-nav-viewport.png` | 1920×1080 | `243ccca2a6e23232` | Browser-Capture (Node `108:1650`) | „Figue.io — Skeuomorphic Toggle Navigation Component": rundes Soft-Button-Dock |
-| `beleg-review-a-b-c-viewport.png` | 1920×1080 | `751f6990ec4c228d` | Browser-Capture (Section `108:15`) | Übersicht der drei Gen/Probeeq-Familien A/B/C (Kontext, kein Asset) |
+| `toggle-nav-node-108-1650.png` | 2400×1350 RGBA | `5ddd4cf16cee2521` | **Echter Figma-Render** (MCP, 2026-08-25, 1:1) | „Figue.io — Skeuomorphic Toggle Navigation Component": eingelassene Pillenwanne, vier Soft-Tasten; die aktive (Home) ist versenkt mit gedimmtem Icon |
+| `review-a-b-c-node-108-15.png` | 2680×1345 RGBA | `2c9661c89eba3c88` | **Echter Figma-Render** (MCP, 2026-08-25) | Übersicht der drei Gen/Probeeq-Familien A/B/C (Kontext, kein Asset) |
+| `beleg-review-a-b-c-viewport.png` | 1920×1080 | `751f6990ec4c228d` | Browser-Capture (Section `108:15`) | wie oben, unscharfe Erstfassung — bleibt als Verlauf |
 
 **Zwei Klassen auseinanderhalten:** die beiden ersten Dateien sind
 **bytegleiche User-Exporte** (pixel-taugliche Vorlage). Die `beleg-*` sind
@@ -35,9 +36,12 @@ im verbindlichen Depot-Workflow; dieser Ordner sammelt nur die
 Pixel-Wahrheit. Für 1:1-Arbeit an einem dieser Boards einen echten Export
 vom User holen.
 
-**Warum Browser-Captures:** Das Figma-MCP-Kontingent (Starter-Plan) war am
-2026-08-24 erschöpft; die Datei ist als Community-Copy anonym im Browser
-lesbar. Erfasst über die Nimbalyst-Browser-Session, gleiche Sitzung.
+**Warum zuerst Browser-Captures:** Am 2026-08-24 schien das
+Figma-MCP-Kontingent erschöpft (falscher Workspace); die Datei ist als
+Community-Copy anonym im Browser lesbar. Am 2026-08-25 lief das MCP wieder —
+Dock und Review-Section liegen seitdem als echte 1:1-Render vor. Der
+unscharfe Dock-Beleg (`beleg-toggle-nav-viewport.png`, SHA `243ccca2…`)
+wurde dadurch ersetzt und entfernt; er steckt im Git-Verlauf (`a486ca1`).
 
 ## Übersetzung
 

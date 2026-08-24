@@ -28,7 +28,7 @@ in derselben Figma-Datei, Section `108:15`).
 | **Kippschalter** 3 Stellungen (Gewindering, Chromhebel) | Guitar-Pedal, SYNC-OFF-FREE u. a. |
 | **LED** (Bezel + Glut, akzentfarbig) | Guitar-Pedal, TAP/BYPASS-Punkte |
 | **Fußschalter** (Schraubring + Tastfläche, schaltet seine LED) | Guitar-Pedal, Footswitches |
-| **Dock** (runde Soft-Tasten in Pillenwanne, genau eine aktiv) | Figue.io-Toggle-Nav (`beleg-toggle-nav-viewport.png`) |
+| **Dock** (eingelassene Pillenwanne, runde Soft-Tasten; aktiv = versenkt mit gedimmtem Icon, wie die Vorlage) | Figue.io-Toggle-Nav (`toggle-nav-node-108-1650.png`, echter 1:1-Render) |
 | **Power**, **Stepper** ‹ › mit Preset-Anzeige | Delay-UI, Kopfzeile |
 | **Gehäuse** (Schale mit großem Radius) + **Einlass**-Gruppe | Delay-UI, Korpus + Filterkasten |
 
@@ -37,10 +37,13 @@ in derselben Figma-Datei, Section `108:15`).
 - **Keine toten Elemente:** jeder Baustein ist bedienbar (ziehen, klicken,
   Tastatur: Pfeile/Shift, Doppelklick = Ausgangswert) und zeigt seinen
   echten lokalen Zustand. Werte sind Demo — Standband sagt es.
-- **Bedien-Panel** (rechts, deutsch): Thema dunkel/hell · Akzentfarbe
+- **Asset-Werkstatt** (Panel rechts, deutsch): alle Regler wirken auf die
+  Bausteine selbst, nicht auf die Seite. Thema dunkel/hell · Akzentfarbe
   (Nakama-Rot Voreinstellung, Referenz-Neutral, Pedal-Grün, frei) ·
-  Grundton/Radius/Typo/Dichte live · Zustand „Deaktiviert" (ehrlich stumpf,
-  Werte „—") · Vorlagen-Ausschnitte · Werte mischen.
+  Material (Relief = Schattentiefe, Glanz = Lichtkanten/Spiegelpunkte,
+  Metallton) · Wertweg (Bogenstärke, Glut, Punktkranz-Dichte) · Zustand
+  „Deaktiviert" (ehrlich stumpf, Werte „—") · Vorlagen-Ausschnitte ·
+  Werte mischen.
 - **Produktsprache englisch** auf den Spezimen, Chrome deutsch.
 - Beurteilt wird bei **1:1**; die Größenreihe zeigt echte Pixelgrößen
   nebeneinander statt zu skalieren.

@@ -132,7 +132,7 @@
     Pillenwanne, genau eine ist aktiv (eingedrückt). Kandidat für den
     Seiten-/Sondenwechsel in Gen.</p>
     <div class="reihe">
-      <div class="probe probe--breit" data-quelle="beleg-toggle-nav-viewport" data-crop="710,500,510,200">
+      <div class="probe probe--breit" data-quelle="toggle-nav-node-108-1650" data-crop="790,530,880,300">
         <div class="dock" data-aktiv="0">
           <button class="dock-taste" data-icon="haus" aria-label="Overview"></button>
           <button class="dock-taste" data-icon="pfad" aria-label="Routing"></button>
@@ -183,7 +183,9 @@
 
 <!-- ================= Editor-Panel (Werkzeug-Chrome, nicht Teil der Spezimen) ================= -->
 <aside class="panel" id="panel">
-  <h2>Bedien-Panel</h2>
+  <h2>Asset-Werkstatt</h2>
+  <p class="p-hinweis">Alle Regler wirken auf die Bausteine selbst, nicht
+  auf diese Seite.</p>
 
   <fieldset>
     <legend>Thema</legend>
@@ -206,11 +208,26 @@
   </fieldset>
 
   <fieldset>
-    <legend>Feinwerte</legend>
-    <label class="p-slider">Grundton <input type="range" id="p-grundton" min="-6" max="8" value="0" step="1"><output>0</output></label>
-    <label class="p-slider">Radius <input type="range" id="p-radius" min="4" max="16" value="9" step="1"><output>9</output></label>
-    <label class="p-slider">Beschriftung <input type="range" id="p-typo" min="9" max="13" value="11" step="0.5"><output>11</output></label>
-    <label class="p-slider">Dichte <input type="range" id="p-dichte" min="16" max="44" value="30" step="2"><output>30</output></label>
+    <legend>Material</legend>
+    <label class="p-slider">Relief <input type="range" id="p-relief" min="40" max="170" value="100" step="5"><output>100</output></label>
+    <label class="p-slider">Glanz <input type="range" id="p-glanz" min="0" max="220" value="100" step="10"><output>100</output></label>
+    <label class="p-slider">Metallton <input type="range" id="p-metall" min="-10" max="12" value="0" step="1"><output>0</output></label>
+    <p class="p-hinweis">Relief = Schattentiefe der Körper · Glanz =
+    Lichtkanten und Spiegelpunkte · Metallton = Helligkeit des
+    Knopfmetalls.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Wertweg</legend>
+    <label class="p-slider">Bogenstärke <input type="range" id="p-bogen" min="2" max="7" value="4" step="0.5"><output>4</output></label>
+    <label class="p-slider">Glut <input type="range" id="p-glut" min="0" max="220" value="100" step="10"><output>100</output></label>
+    <div class="p-reihe" id="p-ticks">
+      <button class="p-taste" data-ticks="grob">Grob</button>
+      <button class="p-taste" data-ticks="normal" aria-pressed="true">Normal</button>
+      <button class="p-taste" data-ticks="fein">Fein</button>
+    </div>
+    <p class="p-hinweis">Bogenstärke und Glut formen den Leuchtbogen;
+    Grob/Normal/Fein setzt die Dichte der Punktkränze.</p>
   </fieldset>
 
   <fieldset>

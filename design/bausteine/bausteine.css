@@ -17,11 +17,16 @@
 
 :root {
   --akzent: #b04038;
-  --radius: 9px;
+  --radius: 9px;    /* fest — Seitendarstellung, kein Regler */
   --typo: 11px;
   --dichte: 30px;
-  --mixw: 0%;   /* Grundton heller  */
-  --mixb: 0%;   /* Grundton dunkler */
+  --mixw: 0%; --mixb: 0%;
+  /* Asset-Werkstatt: wirkt auf die Bausteine selbst */
+  --relief: 1;        /* Schattentiefe der Körper       */
+  --glanz: 1;         /* Lichtkanten und Spiegelpunkte  */
+  --glut: 1;          /* Leuchten von Bogen, Punkt, LED */
+  --bogen: 4px;       /* Stärke des Wertbogens          */
+  --metallw: 0%; --metallb: 0%;   /* Metallton heller/dunkler */
 }
 
 /* ---------- Themen ---------- */
@@ -29,9 +34,9 @@ html[data-thema="dunkel"] {
   --grund0:   #131417;
   --flaeche0: #1d1f22;
   --einlass0: #17181b;
-  --metall-a: #3c3f43;  /* Knopfkörper hell(st)e Kante */
-  --metall-b: #232527;
-  --metall-c: #161719;
+  --metall-a0: #3c3f43;  /* Knopfkörper hell(st)e Kante */
+  --metall-b0: #232527;
+  --metall-c0: #161719;
   --text:        #d6d4d0;
   --text-schwach:#8b8b90;
   --linie:       #33353a;
@@ -40,18 +45,20 @@ html[data-thema="dunkel"] {
   --tick:        #5b5e64;
   --taste-flaeche: linear-gradient(180deg, #2c2e32, #212327);
   --taste-kante:   #0c0d0e;
-  --taste-licht:   rgba(255,255,255,.14);
+  --taste-licht:   rgba(255,255,255, calc(.14 * var(--glanz)));
   --schatten-tief: rgba(0,0,0,.6);
-  --dock-wanne: #101113;
+  --dock-wanne: #0e0f12;
+  --dock-icon: #d9dadd;
+  --dock-icon-aktiv: #46474c;
   color-scheme: dark;
 }
 html[data-thema="hell"] {
   --grund0:   #e9e8e6;
   --flaeche0: #f4f3f1;
   --einlass0: #efeeec;
-  --metall-a: #4a4d51;
-  --metall-b: #2b2d30;
-  --metall-c: #1b1c1e;
+  --metall-a0: #4a4d51;
+  --metall-b0: #2b2d30;
+  --metall-c0: #1b1c1e;
   --text:        #2c2c2e;
   --text-schwach:#77777c;
   --linie:       #cfcecb;
@@ -60,17 +67,22 @@ html[data-thema="hell"] {
   --tick:        #9a9996;
   --taste-flaeche: linear-gradient(180deg, #ffffff, #e8e7e5);
   --taste-kante:   #1c1c1e;
-  --taste-licht:   rgba(255,255,255,.9);
+  --taste-licht:   rgba(255,255,255, calc(.9 * var(--glanz)));
   --schatten-tief: rgba(0,0,0,.28);
-  --dock-wanne: #d9d8d5;
+  --dock-wanne: #dbdad7;
+  --dock-icon: #4a4a4e;
+  --dock-icon-aktiv: #a6a5a2;
   color-scheme: light;
 }
 
-/* Grundton-Feinregler wirkt auf beide Themen */
+/* abgeleitete Farben; Metallton-Regler mischt das Knopfmetall */
 :root {
   --grund:   color-mix(in srgb, color-mix(in srgb, var(--grund0),   white var(--mixw)), black var(--mixb));
   --flaeche: color-mix(in srgb, color-mix(in srgb, var(--flaeche0), white var(--mixw)), black var(--mixb));
   --einlass: color-mix(in srgb, color-mix(in srgb, var(--einlass0), white var(--mixw)), black var(--mixb));
+  --metall-a: color-mix(in srgb, color-mix(in srgb, var(--metall-a0), white var(--metallw)), black var(--metallb));
+  --metall-b: color-mix(in srgb, color-mix(in srgb, var(--metall-b0), white var(--metallw)), black var(--metallb));
+  --metall-c: color-mix(in srgb, color-mix(in srgb, var(--metall-c0), white var(--metallw)), black var(--metallb));
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -168,24 +180,41 @@ code { font-family: "Geist Mono", ui-monospace, monospace; font-size: .92em; }
 .k-buehne { position: relative; display: grid; place-items: center; }
 .k-buehne svg { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
 
-/* Leucht-/Wertbogen */
-.bogen-rest  { stroke: var(--bahn); }
-.bogen-wert  { stroke: var(--akzent); filter: drop-shadow(0 0 5px color-mix(in srgb, var(--akzent) 65%, transparent)); }
+/* Leucht-/Wertbogen — Stärke und Glut aus der Asset-Werkstatt */
+.bogen-rest  { stroke: var(--bahn); stroke-width: calc(var(--bogen) * .85); }
+.bogen-wert  {
+  stroke: var(--akzent);
+  stroke-width: var(--bogen);
+  filter: drop-shadow(0 0 calc(5px * var(--glut)) color-mix(in srgb, var(--akzent) 65%, transparent));
+}
+.knob--orbit .bogen-rest { stroke-width: calc(var(--bogen) * .5); }
+.knob--orbit .bogen-wert { stroke-width: calc(var(--bogen) * .62); }
 .kranz-punkte { fill: var(--tick); }
 
 /* Teller + Kappe: der skeuomorphe Körper */
 .teller {
   width: var(--kd); height: var(--kd);
   border-radius: 50%;
+  position: relative;
   background:
     radial-gradient(circle at 32% 26%, var(--metall-a), var(--metall-b) 52%, var(--metall-c) 96%);
   box-shadow:
-    0 calc(var(--kd) * .10) calc(var(--kd) * .26) var(--schatten-tief),
-    0 2px 5px rgba(0,0,0,.45),
+    0 calc(var(--kd) * .10 * var(--relief)) calc(var(--kd) * .26 * var(--relief)) var(--schatten-tief),
+    0 2px 5px rgba(0,0,0, calc(.45 * var(--relief))),
     inset 0 1px 1px var(--taste-licht),
-    inset 0 -2px 6px rgba(0,0,0,.5);
+    inset 0 calc(-2px * var(--relief)) calc(6px * var(--relief)) rgba(0,0,0,.5);
   display: grid; place-items: center;
   cursor: ns-resize;
+}
+/* Konischer Lichtschimmer auf dem Tellerrand */
+.teller::before {
+  content: ""; position: absolute; inset: 3%;
+  border-radius: 50%; pointer-events: none;
+  background: conic-gradient(from 205deg,
+    rgba(255,255,255,.09), transparent 22% 40%,
+    rgba(255,255,255,.05) 55%, transparent 72% 88%,
+    rgba(255,255,255,.09));
+  opacity: var(--glanz);
 }
 .kappe {
   width: 76%; height: 76%;
@@ -193,10 +222,17 @@ code { font-family: "Geist Mono", ui-monospace, monospace; font-size: .92em; }
   background:
     radial-gradient(circle at 36% 30%, color-mix(in srgb, var(--metall-a) 82%, white 6%), var(--metall-b) 58%, color-mix(in srgb, var(--metall-c) 88%, black 10%));
   box-shadow:
-    inset 0 2px 3px rgba(255,255,255,.10),
-    inset 0 -3px 7px rgba(0,0,0,.55),
-    0 1px 2px rgba(0,0,0,.6);
+    inset 0 2px 3px rgba(255,255,255, calc(.10 * var(--glanz))),
+    inset 0 calc(-3px * var(--relief)) calc(7px * var(--relief)) rgba(0,0,0,.55),
+    0 1px 2px rgba(0,0,0, calc(.6 * var(--relief)));
   position: relative;
+}
+/* Spiegelpunkt oben links auf der Kappe */
+.kappe::before {
+  content: ""; position: absolute; left: 18%; top: 12%;
+  width: 34%; height: 26%; border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 40%, rgba(255,255,255,.13), transparent 70%);
+  opacity: var(--glanz); pointer-events: none;
 }
 /* Wertpunkt auf der Kappe (Hero) */
 .kappe .punkt {
@@ -205,7 +241,7 @@ code { font-family: "Geist Mono", ui-monospace, monospace; font-size: .92em; }
   min-width: 4px; min-height: 4px;
   border-radius: 50%;
   background: var(--akzent);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--akzent) 80%, transparent);
+  box-shadow: 0 0 calc(6px * var(--glut)) color-mix(in srgb, var(--akzent) 80%, transparent);
   transform: translate(-50%, -50%) rotate(var(--winkel, 0deg)) translateY(calc(var(--kd) * -0.27));
 }
 
@@ -215,23 +251,41 @@ code { font-family: "Geist Mono", ui-monospace, monospace; font-size: .92em; }
   width: calc(var(--kd) * .17); height: calc(var(--kd) * .17);
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #4a4d52, #2a2c2f 60%, #1a1b1d);
-  box-shadow: 0 3px 7px rgba(0,0,0,.55), inset 0 1px 1px rgba(255,255,255,.22);
+  box-shadow: 0 calc(3px * var(--relief)) calc(7px * var(--relief)) rgba(0,0,0,.55),
+              inset 0 1px 1px rgba(255,255,255, calc(.22 * var(--glanz)));
   transform: translate(-50%, -50%) rotate(var(--winkel, 0deg)) translateY(calc(var(--kd) * -0.62));
   pointer-events: none;
+}
+.knob--orbit .orbit-kugel::after {   /* Spiegelpunkt der Kugel */
+  content: ""; position: absolute; left: 26%; top: 18%;
+  width: 30%; height: 24%; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255,255,255,.4), transparent 75%);
+  opacity: var(--glanz);
 }
 .knob--orbit .kappe .punkt { display: none; }
 
 /* Pointer-Variante: gebürstetes Pedal-Metall + Zeigerstrich */
 .knob--pointer .teller {
   background:
+    repeating-conic-gradient(from 8deg,
+      rgba(255,255,255,.035) 0deg 1.6deg, rgba(0,0,0,.05) 1.6deg 3.2deg),
     conic-gradient(from 210deg,
       #34363a, #232527 12%, #3d4045 25%, #26282b 38%,
       #191a1c 52%, #2f3236 66%, #202225 80%, #34363a 100%);
   box-shadow:
-    0 calc(var(--kd) * .12) calc(var(--kd) * .22) var(--schatten-tief),
-    0 2px 4px rgba(0,0,0,.5),
-    inset 0 1px 1px rgba(255,255,255,.16),
-    inset 0 -2px 5px rgba(0,0,0,.55);
+    0 calc(var(--kd) * .12 * var(--relief)) calc(var(--kd) * .22 * var(--relief)) var(--schatten-tief),
+    0 2px 4px rgba(0,0,0, calc(.5 * var(--relief))),
+    inset 0 1px 1px rgba(255,255,255, calc(.16 * var(--glanz))),
+    inset 0 calc(-2px * var(--relief)) calc(5px * var(--relief)) rgba(0,0,0,.55);
+}
+.knob--pointer .teller::before {   /* Chromkante statt Schimmerring */
+  inset: 1.5%;
+  background: conic-gradient(from 30deg,
+    rgba(255,255,255,.14), transparent 18% 32%,
+    rgba(255,255,255,.07) 48%, transparent 62% 78%,
+    rgba(255,255,255,.14));
+  -webkit-mask: radial-gradient(circle, transparent 88%, black 90%);
+          mask: radial-gradient(circle, transparent 88%, black 90%);
 }
 .knob--pointer .kappe {
   width: 84%; height: 84%;
@@ -274,7 +328,7 @@ code { font-family: "Geist Mono", ui-monospace, monospace; font-size: .92em; }
   position: absolute; left: 0; top: 50%; height: 3px;
   transform: translateY(-50%);
   background: var(--akzent);
-  box-shadow: 0 0 5px color-mix(in srgb, var(--akzent) 55%, transparent);
+  box-shadow: 0 0 calc(5px * var(--glut)) color-mix(in srgb, var(--akzent) 55%, transparent);
   border-radius: 2px;
 }
 .s-griff {
@@ -284,7 +338,7 @@ code { font-family: "Geist Mono", ui-monospace, monospace; font-size: .92em; }
   border-radius: 5px;
   background: var(--taste-flaeche);
   border: 1px solid var(--taste-kante);
-  box-shadow: 0 2px 4px rgba(0,0,0,.4), inset 0 1px 0 var(--taste-licht);
+  box-shadow: 0 calc(2px * var(--relief)) calc(4px * var(--relief)) rgba(0,0,0,.4), inset 0 1px 0 var(--taste-licht);
   cursor: grab;
 }
 .s-griff::after {          /* Fingerrille */
@@ -323,7 +377,7 @@ code { font-family: "Geist Mono", ui-monospace, monospace; font-size: .92em; }
   border-radius: var(--radius);
   background: var(--taste-flaeche);
   border: 1.5px solid var(--taste-kante);
-  box-shadow: 0 2.5px 5px rgba(0,0,0,.35), inset 0 1px 0 var(--taste-licht);
+  box-shadow: 0 calc(2.5px * var(--relief)) calc(5px * var(--relief)) rgba(0,0,0,.35), inset 0 1px 0 var(--taste-licht);
   cursor: pointer;
 }
 .pille:active { transform: translateY(1px); box-shadow: 0 1px 2px rgba(0,0,0,.3), inset 0 1px 0 var(--taste-licht); }
@@ -343,7 +397,7 @@ code { font-family: "Geist Mono", ui-monospace, monospace; font-size: .92em; }
   display: flex; overflow: hidden;
   border-radius: var(--radius);
   border: 1.5px solid var(--taste-kante);
-  box-shadow: 0 2.5px 5px rgba(0,0,0,.35);
+  box-shadow: 0 calc(2.5px * var(--relief)) calc(5px * var(--relief)) rgba(0,0,0,.35);
   cursor: pointer;
 }
 .segment span { padding: 8px 16px; background: var(--taste-flaeche); }
@@ -365,16 +419,19 @@ html[data-thema="dunkel"] .segment span.aktiv {
   background:
     radial-gradient(circle at 34% 28%, #45484d, #2a2c2f 55%, #17181a 100%);
   box-shadow:
-    0 5px 12px var(--schatten-tief),
-    inset 0 1px 1px rgba(255,255,255,.2),
+    0 calc(5px * var(--relief)) calc(12px * var(--relief)) var(--schatten-tief),
+    inset 0 1px 1px rgba(255,255,255, calc(.2 * var(--glanz))),
     inset 0 -3px 6px rgba(0,0,0,.55);
   display: grid; place-items: center;
   position: relative;
 }
-.kipp-schacht::before {     /* Gewindering */
+.kipp-schacht::before {     /* Gewindering mit feiner Rillenstruktur */
   content: ""; position: absolute; inset: 7px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #333539, #1c1d1f 70%);
-  box-shadow: inset 0 2px 4px rgba(0,0,0,.6), inset 0 -1px 1px rgba(255,255,255,.08);
+  background:
+    repeating-radial-gradient(circle,
+      rgba(255,255,255, calc(.05 * var(--glanz))) 0 1px, transparent 1px 3.5px),
+    radial-gradient(circle at 35% 30%, #333539, #1c1d1f 70%);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.6), inset 0 -1px 1px rgba(255,255,255, calc(.08 * var(--glanz)));
 }
 .hebel {
   position: relative; z-index: 1;
@@ -428,10 +485,17 @@ html[data-thema="dunkel"] .segment span.aktiv {
 .ledfeld { display: flex; align-items: center; gap: 18px; }
 .led {
   width: 15px; height: 15px; border-radius: 50%;
+  position: relative;
   background: radial-gradient(circle at 40% 32%, #303236, #1a1b1d);
   box-shadow: inset 0 1px 2px rgba(0,0,0,.7), 0 1px 1px var(--taste-licht);
   border: 2.5px solid #0e0f10;
   cursor: pointer;
+}
+.led::after {               /* Glaskuppe */
+  content: ""; position: absolute; left: 15%; top: 8%;
+  width: 45%; height: 32%; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255,255,255,.55), transparent 75%);
+  opacity: calc(.7 * var(--glanz));
 }
 .led--klein { width: 10px; height: 10px; border-width: 2px; }
 .led[data-an="1"] {
@@ -440,7 +504,7 @@ html[data-thema="dunkel"] .segment span.aktiv {
     var(--akzent) 60%,
     color-mix(in srgb, var(--akzent) 70%, black 30%));
   box-shadow:
-    0 0 9px 2px color-mix(in srgb, var(--akzent) 70%, transparent),
+    0 0 calc(9px * var(--glut)) calc(2px * var(--glut)) color-mix(in srgb, var(--akzent) 70%, transparent),
     inset 0 1px 1px rgba(255,255,255,.5);
 }
 
@@ -453,16 +517,20 @@ html[data-thema="dunkel"] .segment span.aktiv {
   background:
     radial-gradient(circle at 35% 28%, #57595d, #323438 40%, #1d1e20 72%, #2c2e31 100%);
   box-shadow:
-    0 8px 18px var(--schatten-tief),
-    inset 0 2px 2px rgba(255,255,255,.22),
+    0 calc(8px * var(--relief)) calc(18px * var(--relief)) var(--schatten-tief),
+    inset 0 2px 2px rgba(255,255,255, calc(.22 * var(--glanz))),
     inset 0 -4px 9px rgba(0,0,0,.6);
   display: grid; place-items: center;
   position: relative;
 }
-.stomp::before {           /* äußerer Schraubring */
+.stomp::before {           /* äußerer Schraubring, gerändelt */
   content: ""; position: absolute; inset: 9px; border-radius: 50%;
-  background: conic-gradient(from 120deg, #3c3e42, #232528 22%, #43454a 46%, #26282b 70%, #3c3e42 100%);
-  box-shadow: inset 0 1px 2px rgba(255,255,255,.14), inset 0 -2px 5px rgba(0,0,0,.6);
+  background:
+    repeating-conic-gradient(
+      rgba(255,255,255, calc(.07 * var(--glanz))) 0deg 3deg,
+      rgba(0,0,0,.12) 3deg 6deg),
+    conic-gradient(from 120deg, #3c3e42, #232528 22%, #43454a 46%, #26282b 70%, #3c3e42 100%);
+  box-shadow: inset 0 1px 2px rgba(255,255,255, calc(.14 * var(--glanz))), inset 0 -2px 5px rgba(0,0,0,.6);
 }
 .stomp::after {            /* Tastfläche */
   content: ""; position: absolute; inset: 22px; border-radius: 50%;
@@ -476,45 +544,49 @@ html[data-thema="dunkel"] .segment span.aktiv {
 /* =========================================================
    D · DOCK
    ========================================================= */
+/* Wanne: ins Umfeld eingelassen, Doppellicht-Prägung wie die Vorlage —
+   Lichtsaum oben links, Schattenlippe unten, Boden minimal dunkler */
 .dock {
-  display: flex; gap: 14px; align-items: center;
-  padding: 14px 18px;
+  display: flex; gap: 16px; align-items: center;
+  padding: 13px 16px;
   border-radius: 999px;
-  background: linear-gradient(180deg,
-    color-mix(in srgb, var(--dock-wanne) 92%, white 4%),
-    var(--dock-wanne));
+  background: linear-gradient(165deg,
+    color-mix(in srgb, var(--dock-wanne) 94%, white 3%),
+    var(--dock-wanne) 55%,
+    color-mix(in srgb, var(--dock-wanne) 92%, black 8%));
   box-shadow:
-    0 12px 28px var(--schatten-tief),
-    inset 0 1px 1px rgba(255,255,255,.09),
-    inset 0 -2px 6px rgba(0,0,0,.4);
+    inset 0 calc(7px * var(--relief)) calc(14px * var(--relief)) rgba(0,0,0,.42),
+    inset 0 -1px 1px rgba(255,255,255, calc(.05 * var(--glanz))),
+    0 1px 1px rgba(255,255,255, calc(.07 * var(--glanz))),
+    0 calc(10px * var(--relief)) calc(26px * var(--relief)) var(--schatten-tief);
 }
 .dock-taste {
   width: 62px; height: 62px; border-radius: 50%;
   border: none; cursor: pointer;
-  color: #a7a7ac;
-  background: radial-gradient(circle at 35% 28%,
-    color-mix(in srgb, var(--dock-wanne) 70%, white 9%),
-    color-mix(in srgb, var(--dock-wanne) 92%, white 2%) 58%,
-    color-mix(in srgb, var(--dock-wanne) 88%, black 10%));
+  color: var(--dock-icon);
+  background: radial-gradient(circle at 32% 26%,
+    color-mix(in srgb, var(--dock-wanne) 82%, white 8%),
+    color-mix(in srgb, var(--dock-wanne) 96%, white 2%) 55%,
+    color-mix(in srgb, var(--dock-wanne) 90%, black 8%));
   box-shadow:
-    0 5px 10px rgba(0,0,0,.5),
-    inset 0 1.5px 1.5px rgba(255,255,255,.12),
-    inset 0 -3px 6px rgba(0,0,0,.45);
+    0 calc(7px * var(--relief)) calc(14px * var(--relief)) rgba(0,0,0,.5),
+    inset 0 1.5px 1.5px rgba(255,255,255, calc(.10 * var(--glanz))),
+    inset 0 calc(-3px * var(--relief)) calc(6px * var(--relief)) rgba(0,0,0,.4);
   display: grid; place-items: center;
 }
-.dock-taste svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+.dock-taste svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+/* Aktiv = gedrückt und versenkt; das Icon tritt in den Schatten zurück
+   (so zeigt es die Vorlage — Figue.io-Dock, Home-Taste) */
 .dock-taste.aktiv {
-  color: #e8e6e3;
-  background: radial-gradient(circle at 50% 60%,
-    color-mix(in srgb, var(--dock-wanne) 86%, black 14%),
-    color-mix(in srgb, var(--dock-wanne) 92%, black 4%));
+  color: var(--dock-icon-aktiv);
+  background: radial-gradient(circle at 50% 62%,
+    color-mix(in srgb, var(--dock-wanne) 84%, black 16%),
+    color-mix(in srgb, var(--dock-wanne) 94%, black 5%));
   box-shadow:
-    inset 0 4px 9px rgba(0,0,0,.6),
-    inset 0 -1px 1px rgba(255,255,255,.07),
-    0 1px 0 rgba(255,255,255,.05);
+    inset 0 calc(5px * var(--relief)) calc(11px * var(--relief)) rgba(0,0,0,.6),
+    inset 0 -1px 1px rgba(255,255,255, calc(.05 * var(--glanz))),
+    0 1px 1px rgba(255,255,255, calc(.05 * var(--glanz)));
 }
-html[data-thema="hell"] .dock-taste { color: #6c6c70; }
-html[data-thema="hell"] .dock-taste.aktiv { color: #1f2022; }
 
 /* =========================================================
    E · GEHÄUSE
@@ -527,7 +599,7 @@ html[data-thema="hell"] .dock-taste.aktiv { color: #1f2022; }
     color-mix(in srgb, var(--flaeche) 94%, black 5%));
   border: 2.5px solid var(--taste-kante);
   box-shadow:
-    0 22px 50px var(--schatten-tief),
+    0 calc(22px * var(--relief)) calc(50px * var(--relief)) var(--schatten-tief),
     inset 0 1.5px 1px var(--taste-licht),
     inset 0 -6px 16px rgba(0,0,0,.25);
   padding: 22px 28px 26px;
@@ -578,9 +650,9 @@ body[data-zustand="deaktiviert"] .blatt .geraet {
 }
 .p-farbe.aktiv { border-color: var(--text); }
 #akzent-frei { width: 30px; height: 26px; border: none; background: none; cursor: pointer; padding: 0; }
-.p-slider { display: flex; align-items: center; gap: 8px; margin-top: 8px; color: var(--text-schwach); }
-.p-slider input { flex: 1; accent-color: var(--akzent); }
-.p-slider output { font-family: "Geist Mono", monospace; width: 3ch; text-align: right; }
+.p-slider { display: grid; grid-template-columns: 78px 1fr 3.5ch; align-items: center; gap: 6px; margin-top: 8px; color: var(--text-schwach); }
+.p-slider input { min-width: 0; width: 100%; accent-color: var(--akzent); }
+.p-slider output { font-family: "Geist Mono", monospace; text-align: right; }
 .p-hinweis { color: var(--text-schwach); font-size: 10.5px; line-height: 1.5; margin-top: 8px; }
 
 /* Fokus sichtbar, überall */

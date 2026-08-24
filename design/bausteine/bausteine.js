@@ -58,9 +58,11 @@ function bauKnob(k) {
   svg.setAttribute("viewBox", `0 0 ${S} ${S}`);
   svg.setAttribute("width", S); svg.setAttribute("height", S);
 
-  // Punktkranz — nur Hero/Orbit; der Pedal-Knopf hat in der Vorlage keinen
+  // Punktkranz — nur Hero/Orbit; der Pedal-Knopf hat in der Vorlage keinen.
+  // Dichte kommt aus der Asset-Werkstatt (Grob/Normal/Fein).
   if (!skala && !zeiger) {
-    const n = kd > 120 ? 40 : kd > 90 ? 28 : 18;
+    const dichteFaktor = { grob: 0.6, normal: 1, fein: 1.6 }[document.documentElement.dataset.ticks || "normal"];
+    const n = Math.round((kd > 120 ? 40 : kd > 90 ? 28 : 18) * dichteFaktor);
     for (let i = 0; i <= n; i++) {
       const g = START + i * SWEEP / n;
       const c = document.createElementNS(svgNS, "circle");
@@ -401,9 +403,9 @@ function zeigWerte() {
    Vorlagen-Ausschnitte aus der Truhe
    ========================================================= */
 const BILDER = {
-  "presentation-1":            { datei: "../assets/figma/2026-08-24-ui-assets/presentation-1.png",            w: 2048, h: 2048 },
-  "guitar-pedal":              { datei: "../assets/figma/2026-08-24-ui-assets/guitar-pedal.jpg",              w: 1350, h: 2048 },
-  "beleg-toggle-nav-viewport": { datei: "../assets/figma/2026-08-24-ui-assets/beleg-toggle-nav-viewport.png", w: 1920, h: 1080 }
+  "presentation-1":           { datei: "../assets/figma/2026-08-24-ui-assets/presentation-1.png",           w: 2048, h: 2048 },
+  "guitar-pedal":             { datei: "../assets/figma/2026-08-24-ui-assets/guitar-pedal.jpg",             w: 1350, h: 2048 },
+  "toggle-nav-node-108-1650": { datei: "../assets/figma/2026-08-24-ui-assets/toggle-nav-node-108-1650.png", w: 2400, h: 1350 }
 };
 
 function vorlagen(an) {
@@ -452,13 +454,22 @@ function bauPanel() {
     const inp = $("#" + id), out = inp.nextElementSibling;
     inp.addEventListener("input", () => { out.value = inp.value; wirkung(+inp.value); });
   };
-  binde("p-grundton", v => {
-    document.documentElement.style.setProperty("--mixw", (v > 0 ? v : 0) + "%");
-    document.documentElement.style.setProperty("--mixb", (v < 0 ? -v : 0) + "%");
+  const setzVar = (name) => (v) => document.documentElement.style.setProperty(name, v);
+  binde("p-relief", v => setzVar("--relief")(v / 100));
+  binde("p-glanz",  v => setzVar("--glanz")(v / 100));
+  binde("p-glut",   v => setzVar("--glut")(v / 100));
+  binde("p-bogen",  v => setzVar("--bogen")(v + "px"));
+  binde("p-metall", v => {
+    document.documentElement.style.setProperty("--metallw", (v > 0 ? v : 0) + "%");
+    document.documentElement.style.setProperty("--metallb", (v < 0 ? -v : 0) + "%");
   });
-  binde("p-radius", v => document.documentElement.style.setProperty("--radius", v + "px"));
-  binde("p-typo",   v => document.documentElement.style.setProperty("--typo", v + "px"));
-  binde("p-dichte", v => document.documentElement.style.setProperty("--dichte", v + "px"));
+
+  // Punktkranz-Dichte: Knobs mit erhaltenem Wert neu aufbauen
+  $$("#p-ticks .p-taste").forEach(b => b.addEventListener("click", () => {
+    document.documentElement.dataset.ticks = b.dataset.ticks;
+    $$("#p-ticks .p-taste").forEach(x => x.setAttribute("aria-pressed", x === b));
+    $$(".knob").forEach(k => { k.innerHTML = ""; bauKnob(k); });
+  }));
 
   $$("[data-zustand]", $("#panel")).forEach(b => b.addEventListener("click", () => {
     document.body.dataset.zustand = b.dataset.zustand;

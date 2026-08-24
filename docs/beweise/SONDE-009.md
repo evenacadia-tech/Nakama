@@ -8824,9 +8824,27 @@ gewordenen Kadenzzähler **sehen**.
 * **T2R2-1** (Rahmen-Skalare ungedeckt): geschlossen, siehe §13.2 — M10 macht
   sechs G13-Zeilen rot, vorher keine.
 * **T2R2-2** (positive Hälfte fehlte bei G3/G4/G5): die drei Zeilen stehen im
-  Diff und sind **wirksam** — M3 und M4 (Bandakku-Leerungen) machen je 12
-  andere Beine rot statt 11. Die Zeilen prüfen `verworfeneBandfenster()`, also
-  einen Zähler, der die Verwerfung **bezeugt**, statt nur einen Füllstand.
+  Diff, und ich habe ihre **Wirksamkeit eigens gemessen** statt sie aus einer
+  Nachbarmutation zu erschließen. Sie lesen `verworfeneBandfenster()` — also
+  habe ich genau diesen Zähler stillgelegt (`M15`: die beiden
+  `zVerworfeneBandfenster += v.n` in `grenzeZiehen()` auskommentiert, die
+  Leerung selbst unberührt):
+
+  > **10 rot** — G1 bis **G9** je „*und die Bandakkus wurden dabei WIRKLICH
+  > verworfen*  [0 Band-Fensterbeiträge gefallen]", dazu G12 „*die Akkus wurden
+  > GELEERT, nicht bloß leer vorgefunden*".
+
+  Die Zeilen können also scheitern, und die Zusage aus §12.4 („die positive
+  Hälfte gibt es jetzt **neunmal**") ist an der Zahl bestätigt: neun
+  Grenzfälle, nicht drei. 🔑 Der Unterschied zu einem Füllstand ist der Punkt:
+  ein Zähler **bezeugt** die Verwerfung, ein Füllstand von 0 kann auch heißen,
+  dass nie etwas drin war.
+
+  ⚠️ **Diese Zeile stand hier zuerst falsch begründet** — mit „M3/M4 machen 12
+  statt 11 andere rot". Das ist ein Vergleich zwischen zwei *verschiedenen*
+  Mutationen, kein Vor/Nach-Beleg, und er hätte gar nichts zeigen können: M3
+  und M4 lassen den Zähler mitlaufen, die T2R2-2-Zeilen bleiben dort grün.
+  Beim Selbstaudit nach dem Commit gefunden und durch M15 ersetzt.
 * **T2R2-3** (Zeilennummer zeigt daneben): an der Quelle nachgeschlagen.
   `liveSamples += n` steht **heute in `:1150`** — selbst gemessen. §12.1 nennt
   „geprüfter Stand `:1096`, heute `:1150`", also berichtigt; die Quellkommentare
@@ -8948,7 +8966,11 @@ aufhört zu suchen.
 
 ### 13.8 Alle Mutationen dieses Berichts und ihre byteweise Rücknahme
 
-Achtzehn Läufe, jeder vom unveränderten Stand aus gebaut. Rücknahme belegt:
+**Zwanzig** Läufe, jeder vom unveränderten Stand aus gebaut — M1–M11 (elf
+Trägerleerungen) · M12–M14 (drei grundabhängige, eine davon Gegenprobe) ·
+M15 (Zähler der T2R2-2-Zeilen) · N1/N2 (neuer Träger, zwei Varianten) · M9 mit
+Nachlauf 140 und 400 (zwei) · `memcmp` statt `operator==` (einer). Rücknahme
+belegt:
 
 ```text
 FeatureEngine.h            vorher/nachher  544346BEF0B70D6564EF34F77EB261DEB27D785703E75BB69E74D55C6910304A
@@ -8956,11 +8978,14 @@ AnalysisGoldenTestMain.cpp vorher/nachher  4349ACB09DB0DB4426DE8BF94D069E8524EDE
 git status -- eq-copilot/                  leer
 ```
 
-M1–M11 (Trägerleerungen) · M12–M14 (grundabhängig, mit Gegenprobe) · N1/N2
-(neuer Träger) · M9 mit verlängertem Nachlauf · `memcmp` statt `operator==`.
-Nach der letzten Rücknahme **erzwungen neu gebaut** und gefahren: `212
-bestanden, 0 Fehler`, Exit 0 — die Zahl der Basislinie. Erst danach der
-Beweislauf in §13.1.
+Nach jeder Rücknahme **Zeitstempel erneuert und erzwungen neu gebaut** (§13.1),
+zuletzt gefahren: `212 bestanden, 0 Fehler`, Exit 0 — die Zahl der Basislinie.
+
+⚠️ **M15 und diese Berichtigung sind nach dem Commit des Berichts entstanden**
+(Selbstaudit, §13.4). Der Beweislauf in §13.1 lief davor; M15 ist danach
+byteweise zurückgenommen und der Kanon-Stand durch einen erneuten Lauf des
+Beins bestätigt worden — die Marke steht auf demselben Quellstand wie der
+beglaubigte Lauf.
 
 ### 13.9 Was ich **nicht** geprüft habe
 

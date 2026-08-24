@@ -54,9 +54,11 @@
 > - **Melden:** `py -3.13 melden.py "Ticket · Ergebnis · was als Nächstes"`
 >   (aus dem Brücken-Ordner). `--status` zeigt den Zustand.
 > - **Rückweg:** Antworten des Users landen als Prompt in der Session, die in
->   `config.json` unter `nimbalyst.session_id` steht. Bei einem
->   Session-Wechsel **diese Kennung nachziehen** — sie ist die
->   Nimbalyst-Kennung aus `list_recent_sessions`, **nicht** die
+>   `config.json` unter `nimbalyst.session_id` steht. Ist die weg, sucht der
+>   Dienst **selbst** die neueste lebende claude-code-Session, liefert dorthin,
+>   schreibt die Kennung fest und sagt es dem User im Raum — von Hand
+>   nachziehen ist also nicht nötig. Wer sie doch setzt: es ist die
+>   **Nimbalyst**-Kennung aus `list_recent_sessions`, **nicht** die
 >   Claude-Code-Kennung aus dem Scratchpad-Ordnernamen (die liefert
 >   „Session not found").
 > - **Der Dienst** (`dienst.py`) startet mit Windows und muss laufen, sonst
@@ -285,32 +287,26 @@
 > **Nach dem Gate** wäre `S14–15` (`SONDE-010`) die nächste Baufläche — dort
 > werden NAK-69, NAK-59, NAK-40 und der v3-Schema-Schnitt aus NAK-29 fällig.
 
-> ## 🎨 Design-Strang — 23.08.2026 spät: Gen Seite 1+2 im Prototyp-Figma umgebaut
+> ## 🎨 Design-Strang — Quellenkorrektur und Live-Stand 24.08.2026
 >
-> Im Figma `Probeeq-Nakama-Prototyp-Design` (Key `5TazApiPrImtLJZ2a71acV`,
-> User-Link 23.08.) sind die zwei vom User markierten Designs auf die
-> Spielregeln (`design/docs/ui-spielregeln-eq-zentrale.md`) umgebaut — als
-> **Klone**, die Originale stehen unangetastet daneben: **Page 1 / Overview**
-> (`4082:3`), **Page 2 / EQ Center** (`4082:139`) und zwei Zustands-Tafeln
-> (`4085:2`, `4086:2`: Draft-Automat, DISCONNECTED/unterwegs/Host-Automation,
-> Zwei-Spuren-Graph, GLOBAL offen, 16-Bus-Rad, MIX PLANNED; Seite 1:
-> LIVE/STALE/**GAP≠EPOCH**, Geste blockiert). Renders + Regelzuordnung:
-> `design/docs/spielregeln-umbau-2026-08-23/LIES-MICH.md`.
-> **Durchgang 2 am 24.08.** nach User-Rückmeldung („da ist einiges falsch"),
-> jetzt in der **Kopie-Datei** `f9a5zdQ0tQ3e4dzrsF2k5y`: Seite 2 komplett neu
-> auf der Seite-1-Schale (**Entscheid 24.08.: beide Seiten gleich groß,
-> 760×430** — Register) und **Tote-Elemente-Pass** (Entscheid: „die schlimmste
-> ui/ux sünde sind sinnlose tote elemente"): CONNECTED·PAIRED → ein
-> Link-Punkt mit benanntem Fehler-Abschnitt (BROKER≠PROBE OFFLINE), GLOBAL →
-> echter Aufklapp-Button mit Chevron im Button, freier Pfeil („Play-Symbol")
-> entfernt, LIVE-Dauerchip entfernt, Seitenwechsel als Tab-Paar
-> OVERVIEW · EQ CENTER identisch auf beiden Seiten. Neue Nodes: Seite 1
-> `4090:685`, Seite 2 `6002:2`, Tafeln `4085:2`/`4086:2`; Spielregeln um
-> Regeln 45/46 ergänzt.
-> **Alles Vorschlag, nichts abgenommen** — nächster Design-Schritt: der User
-> sichtet die vier Frames in der **Kopie-Datei**; Urteil dann nach
-> `design/abnahmen/`. Bewusst offen: Undo-Form Seite 1 (U2.8),
-> Sidechain-Sichtbarkeit (U5), Rückfallfläche der Sonde (NAK-65-Rest).
+> Der User hat verbindlich bekräftigt: **Immer nur** `Nakama-Design`
+> (`NPCQYSkoZEd4Av0NlKxBOd`) enthält die aktuellsten Varianten; alle anderen
+> Figma-Dateien, Kopien und Node-IDs sind Verlauf. Entscheid:
+> `design/abnahmen/2026-08-24-figma-depot-immer-aktuell.md`.
+>
+> Direkt per Figma-API gelesen: Overview-Wrapper `25:443` mit Artboard
+> `25:444` = 760×430; EQ-Wrapper `25:583` mit Artboard `25:584` = 700×420;
+> Zustandstafeln `25:805` und `25:901`. In den vier Bereichen: 0 Reaktionen,
+> 0 Components/Component Sets/Instances. Alles weiterhin Vorschlag, nichts
+> abgenommen.
+>
+> **Nächster Design-Schritt:** Seite 2 im verbindlichen Depot auf den bereits
+> entschiedenen Stand 760×430 und dieselbe Gen-Schale bringen, tote Elemente
+> entfernen und dann die vier Depotbereiche sichten/abnehmen. Die historische
+> Copy-Fassung wird nicht als aktuelle Wahrheit übernommen. Ausführliche
+> Restarbeiten: `design/docs/figma-restarbeiten-nakama-gen.md`. Bewusst offen:
+> zweite Vergleichsquelle, Schutzbereich-Geste, Undo-Form Seite 1 (U2.8),
+> Sidechain-Sichtbarkeit (U5) und Rückfallfläche der Sonde (NAK-65-Rest).
 
 > ## ⚠ DER EINE NÄCHSTE SCHRITT — Stand 24.08.2026, nach **T2 Runde 2** und der zweiten Nacharbeit
 >

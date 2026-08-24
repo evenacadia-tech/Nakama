@@ -163,30 +163,33 @@ ab jetzt. schreib immer wenn eine session fertig ist ein ganz kurzen bericht"*
 (Register in `CLAUDE.md`). Die Zieladresse steht **nicht im Repo**, sondern im
 Memory `feedback_whatsapp-berichtskanal`.
 
-🔑 **Nimm den kurzlebigen Sender, nicht das MCP-Werkzeug:**
+🔑 **Nimm die MCP-Werkzeuge. Öffne NIE einen zweiten WhatsApp-Client.**
 
-```bash
-node C:/Users/phili/.claude/mcp-servers/whatsapp-mcp-ts/nachricht.mjs "<jid>" "<text>"
-```
+Der Ablauf (Architektur des Users, 24.08.): `whatsapp` hält die **einzige**
+Verbindung, `whatsapp-replies` leiht sich den Sendeweg, statt eine zweite
+aufzumachen.
 
-Grund, am 24.08. gemessen: Claude Code startet den WhatsApp-MCP **je Session**
-als eigenen Prozess, WhatsApp erlaubt pro verknüpftem Gerät aber nur **einen**
-Socket. `connectionReplaced` (440) trifft immer die **ältere** Verbindung, und
-der MCP-Server reagiert auf sein Verdrängtwerden mit `Reconnecting…` — er
-verdrängt also sofort zurück und gewinnt strukturell gegen jeden, der nicht
-reagiert. `send_message` aus einer langlebigen Session schlägt darum
-**zuverlässig** fehl, nicht gelegentlich. Dieselbe Klasse wie „zwei Broker auf
-einem Pipenamen stehlen sich still Clients" (`CLAUDE.md`, Maschinen-Landminen):
-eine von Natur aus einzelne Ressource, betrieben von einem Werkzeug, das pro
-Session eine Instanz startet.
+1. `whatsapp-replies.open_reply_channel` (Ziel-Chat + Status)
+2. `whatsapp.send_message` mit dem zurückgegebenen `message_to_send`
+3. `whatsapp-replies.register_outbound_message` mit der Nachrichten-ID
+4. `whatsapp-replies.wait_for_reply`, falls du eine Antwort brauchst
 
-Der Sender löst das in drei Schritten, jeder einzeln gemessen: er beendet
-leerlaufende Instanzen, **lässt die Sitzung serverseitig abklingen** (ein Kill
-meldet den Socket nicht bei WhatsApp ab; wer sofort danach verbindet, bekommt
-die Verdrängungsmeldung des Geistes) und wiederholt bis zu dreimal.
-**Exit 0 heißt wirklich gesendet** — der erste Wurf maß den Erfolg am Zustand
-der *Verbindung* statt am Zustand der *Nachricht* und erzeugte damit Duplikate
-bei gleichzeitig lügendem Exitcode. Unter laufender Konkurrenz vorgeführt.
+🚨 **Die teuerste Lehre dieser Nacht, in einem Satz:** WhatsApp erlaubt pro
+verknüpftem Gerät **einen** Socket, und eine zweite Verbindung wird nicht bloß
+verdrängt — bei genug Wiederholung antwortet der Server mit **`loggedOut`**,
+und dann ist die **Gerätekopplung gelöst**. Nur ein neuer QR-Scan des Users
+stellt sie wieder her. Genau das ist am 24.08. passiert.
+
+⚠️ `nachricht.mjs` im selben Verzeichnis ist der **Irrweg dorthin** und
+verweigert seit dem Vorfall den Dienst, solange die reply-bridge läuft
+(Exit 7). Er bleibt nur als Notnagel für den Fall liegen, dass es die
+Rückkanal-Architektur einmal nicht gibt. Der Denkfehler, der ihn erzeugt hat,
+lohnt das Aufheben: die Frage lautete „wie gewinne ich den Socket?" statt
+**„darf hier überhaupt ein zweiter Client existieren?"** — und die Antwort auf
+die zweite Frage war von Anfang an nein. Dieselbe Klasse wie „zwei Broker auf
+einem Pipenamen stehlen sich still Clients" (`CLAUDE.md`,
+Maschinen-Landminen), nur mit einer Ebene mehr Schaden: dort verlieren
+Clients, hier verliert man die Kopplung.
 
 - **Auslöser:** jede fertige Session — nicht jeder Commit, nicht jeder
   Zwischenstand.

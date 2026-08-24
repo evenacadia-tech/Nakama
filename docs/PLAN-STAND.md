@@ -1,6 +1,6 @@
 # Planstand Nakama
 
-<!-- quellstand: 4bc18c6 -->
+<!-- quellstand: c69289d -->
 
 > **Gerechnet, nicht gepflegt.** Dieses Blatt entsteht aus dem Repo:
 > `py -3.13 tools/plan/planstand.py`. Es wird **nie** von Hand editiert —
@@ -9,7 +9,7 @@
 > *abgenommen* erst, wenn dort eine Urteilsmarke der geforderten Prüfstufe
 > mit **PASS** steht. Fehlt sie, gilt der Schritt als nicht abgenommen.
 
-**Stand:** 2026-08-24 · Quellstand `4bc18c6` · **11 von 36 abgenommen** · 6 gebaut · 19 offen
+**Stand:** 2026-08-24 · Quellstand `c69289d` · **11 von 36 abgenommen** · 6 gebaut · 19 offen
 
 `████████████▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░` 31 % abgenommen · 47 % gebaut
 
@@ -17,7 +17,7 @@
 
 **Wartet auf ein Urteil** (gebaut, nachgemessen, aber ohne PASS eines frischen Prüfers): `S5` · `S6` · `S7` · `S8`
 
-**Bei dir liegen 9 Fragen** — `U2, U5, U6, U8, U9, U10, U11, U12, U13`. Sie werden im Chat gestellt: Skill `/fragen`.
+**Bei dir liegen 8 Fragen** — `U2, U6, U8, U9, U10, U11, U12, U13`. Sie werden im Chat gestellt: Skill `/fragen`.
 
 ## Phasen auf einen Blick
 

@@ -8051,8 +8051,16 @@ Felder, die dabei übrig blieben.
 **Was daran wirklich zählt.** Der Code ist richtig; die Zusage „Die Aufzählung
 steht bewusst vollständig da" ist heute wahr. Sie war es aber schon einmal
 geschrieben, als sie es nicht war — und was den Unterschied macht, ist nicht
-der Kommentar, sondern ob ein Bein rot wird. Für neun der sechzehn geleerten
-Träger wird jetzt eines rot; für die restlichen sieben nicht. §10.1 sagt das
+der Kommentar, sondern ob ein Bein rot wird. **Gezählt**: `grenzeZiehen()`
+räumt heute elf Träger, die eine eigene Auskunft haben und damit einzeln
+befragt werden können — `fuellstandBass` · `fuellstandHaupt` ·
+`fuellstandLoudnessZelle` · `fuellstandKurzLoudness` · `flussHatVorgaenger` ·
+`kFilterZustand` · `liveAkkuBelegteBaender` · `evidenzAkkuBelegteBaender` ·
+`liveBreiteAkkuZustand` · `rahmenZellenJetzt` · `rahmenAktivZellenJetzt`.
+Daneben räumt sie **zehn Rahmen-Skalarfelder**, für die es **keine** Auskunft
+gibt und die deshalb kein Bein befragt: `rahmenPeak`, `rahmenSummeQuadrat`,
+`rahmenSamples`, `rahmenMid2`, `rahmenSide2`, `rahmenL`, `rahmenR`,
+`rahmenL2`, `rahmenR2`, `rahmenLR`. Genau diese zehn sind P1. §10.1 sagt es
 selbst am schärfsten: *„Ein Kommentar, der Vollständigkeit BEHAUPTET, ersetzt
 keinen Riegel, der sie MISST."*
 
@@ -8120,10 +8128,13 @@ Damit sichtbar ist, was gehalten hat:
   „Berichtigt 24.08."-Sätze, §1 Behauptung 12 das `⚠️→✅` mit Datum, §5 den
   Warnkasten. **NAK-68** steht in `docs/offene-punkte.md` und beschreibt die
   Sache richtig.
-- **Zeilenverweise in §10 durchgezählt.** 18 Verweise, jeder an der Quelle
-  aufgelöst: 17 treffen, einer nicht (T2R2-3). Die als „alter Stand" markierten
-  (`:836`, `:1190`, `:1212`, `:1225`) sind im Merkkasten von §10.1 als solche
-  ausgewiesen und werden zu Recht nicht nachgezogen.
+- **Zeilenverweise in §10 durchgezählt.** **18 verschiedene Zeilennummern**,
+  jede einzeln aufgelöst: **13** treffen den heutigen Stand, **4** sind im
+  Merkkasten von §10.1 ausdrücklich als „Stand **vor** der Nacharbeit"
+  ausgewiesen — und die habe ich gegen `git show aa577b7:…` geprüft, sie
+  stimmen dort alle vier (`:836` `grenzeZiehen`, `:1190` der
+  NAK-29-Ausstieg, `:1212` `++sequenz`, `:1225` `rahmenLeeren`). **Eine**
+  trifft nichts: `:992` (T2R2-3).
 
 ### 11.6 Alle Mutationen dieses Berichts, und ihre byteweise Rücknahme
 

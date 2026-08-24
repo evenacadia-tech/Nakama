@@ -305,8 +305,8 @@ code { font-family: "Geist Mono", ui-monospace, monospace; font-size: .92em; }
 
 /* feste Skala um den Pointer-Knopf (BALANCE) */
 .skala-wort { fill: var(--text-schwach); font-family: "Geist", sans-serif;
-  font-size: 9px; letter-spacing: .08em; }
-.skala-wort.aktiv { fill: var(--text); font-weight: 600; }
+  font-size: 9px; letter-spacing: .08em; font-weight: 560; }
+.skala-wort.aktiv { fill: var(--text); }
 
 /* =========================================================
    B · SCHIEBEREGLER
@@ -372,7 +372,10 @@ code { font-family: "Geist Mono", ui-monospace, monospace; font-size: .92em; }
   font-size: var(--typo); font-weight: 560; letter-spacing: .1em;
   color: var(--text);
 }
+/* Material-Regel: eine Taste ändert beim Drücken NIE ihre Maße.
+   Zustände wechseln nur Fläche, Schatten und Transform — nie Breite/Höhe. */
 .pille {
+  position: relative;
   padding: 8px 16px;
   border-radius: var(--radius);
   background: var(--taste-flaeche);
@@ -386,12 +389,16 @@ code { font-family: "Geist Mono", ui-monospace, monospace; font-size: .92em; }
   box-shadow: inset 0 2px 5px rgba(0,0,0,.45), inset 0 -1px 0 var(--taste-licht);
   transform: translateY(1px);
 }
-.pille[data-an="1"]::after {
-  content: ""; display: inline-block; width: 5px; height: 5px; border-radius: 50%;
-  margin-left: 7px; vertical-align: 1px;
+/* Akzentpunkt liegt IM Polster (absolut) — er schiebt nie Text oder Nachbarn */
+.pille::after {
+  content: ""; position: absolute; right: 5px; top: 50%;
+  width: 5px; height: 5px; border-radius: 50%;
+  transform: translateY(-50%);
   background: var(--akzent);
-  box-shadow: 0 0 5px color-mix(in srgb, var(--akzent) 75%, transparent);
+  box-shadow: 0 0 calc(5px * var(--glut)) color-mix(in srgb, var(--akzent) 75%, transparent);
+  opacity: 0;
 }
+.pille[data-an="1"]::after { opacity: 1; }
 
 .segment {
   display: flex; overflow: hidden;
@@ -445,9 +452,10 @@ html[data-thema="dunkel"] .segment span.aktiv {
 .kipp-skala { display: flex; gap: 9px; }
 .kipp-skala span {
   font-size: calc(var(--typo) - 1.5px); letter-spacing: .1em;
-  color: var(--text-schwach); font-weight: 520;
+  color: var(--text-schwach); font-weight: 560;
 }
-.kipp-skala span.aktiv { color: var(--text); font-weight: 650; }
+/* aktiv = nur Farbe; Gewicht bleibt, sonst wandern die Nachbarworte */
+.kipp-skala span.aktiv { color: var(--text); }
 
 /* Power */
 .power {
@@ -642,7 +650,10 @@ body[data-zustand="deaktiviert"] .blatt .geraet {
   border: 1px solid var(--linie); border-radius: 6px;
   padding: 5px 10px; cursor: pointer;
 }
-.p-taste[aria-pressed="true"] { border-color: var(--text); font-weight: 650; }
+.p-taste[aria-pressed="true"] {
+  border-color: var(--text);
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+}
 .p-farbe {
   width: 24px; height: 24px; border-radius: 50%;
   border: 2px solid var(--linie); cursor: pointer;

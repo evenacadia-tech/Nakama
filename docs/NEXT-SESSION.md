@@ -1,5 +1,29 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ✅ NACHTRAG 24.08.2026 — `S10–11` ist abgenommen
+>
+> Die **Ausnahme**, die der Dirigent im Block darunter empfohlen hat („es lohnt,
+> `S10–11` sein `T2` einzeln zu geben"), ist gefahren: ein zweiter frischer
+> Prüfer hat die Nacharbeit (`334f185..0b23cf5`) beurteilt und gibt
+> **`T2 PASS`** — Bericht `docs/beweise/SONDE-008.md` **§10**, Marke im
+> Manifestkopf. Alle vier Befunde aus §8 sind geschlossen **und** jeder ist von
+> einem Bein gedeckt, das der Prüfer mit einer *eigenen* Mutation zum Fallen
+> gebracht hat (M1–M8). Kanon **28/28 grün, Exit 0, beglaubigt**.
+>
+> **Damit warten noch VIER Stände auf ein Urteil, nicht fünf:** `S5` · `S6` ·
+> `S8` · `S9` — alle vier gehören zu **P1** und damit zu **G1**. Die Empfehlung
+> „B, mit einer Ausnahme" unten hat ihre Ausnahme verbraucht; was bleibt, ist
+> schlicht **B**. Der gerechnete Planstand steht auf **12 von 36**.
+>
+> **Neu offen aus dieser Prüfung** (keiner ein heute erreichbarer Fehler):
+> **NAK-71** (die Ordnungszusage in `neustartAnfordern()` hat kein Bein; ihr
+> beschriebener Schadensfall ist zu harmlos; zwei Texte stimmen nicht mit der
+> Quelle überein) · **NAK-72** (`tools/beweise.ps1` kann still hängen, weil
+> `Start-Process -Wait` auf `VCTIP.EXE` wartet — hat diesen Lauf 13 Minuten
+> gekostet) · **NAK-73** (`git checkout` ist hier **keine** byteweise
+> Rückstellung, `core.autocrlf=true` — betrifft jeden Mutationsbeweis, der
+> „SHA-256 vorher = nachher" behauptet).
+
 > ## 🛑 HALT DES DIRIGENTEN — 24.08.2026 nachts: der nächste Schritt ist ein Gate
 >
 > **S12–13 (`SONDE-009`) ist ABGENOMMEN** — `T2 PASS` von einem frischen Prüfer

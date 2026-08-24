@@ -1,5 +1,55 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## 🛑 HALT DES DIRIGENTEN — 24.08.2026 nachts: der nächste Schritt ist ein Gate
+>
+> **S12–13 (`SONDE-009`) ist ABGENOMMEN** — `T2 PASS` von einem frischen Prüfer
+> in Runde 3 (`65613f6`, Manifest §13). Der Planstand steht damit auf
+> **11 von 36**. Der Weg dorthin waren drei Prüf- und zwei Nacharbeitsrunden in
+> einer Nacht; das Protokoll steht in `docs/dirigent/protokoll.md`.
+>
+> **Der Dirigent hält hier an, nach §4.1 seines Skills:** der gerechnete
+> Planstand nennt als Nächstes **G1** — ein Gate. Gates sind `T3`, verlangen
+> **fremde** Prüfer (`/c-review`, `/rust-review`, `/security-review`, Codex) und
+> Bruchaufträge. Das ist keine Runde, die ein Dirigent blind startet.
+>
+> ### 👤 Die Entscheidung, die beim User liegt
+>
+> **Fünf Stände warten weiter auf ein frisches Urteil:** `S5` · `S6` · `S8` ·
+> `S9` · `S10–11`. Alle sind gebaut, nachgearbeitet und grün — keinem fehlt
+> Arbeit, allen fehlt ein **PASS eines Prüfers, der sie nicht gebaut hat**.
+>
+> | Weg | Was er kostet | Was er bringt |
+> |---|---|---|
+> | **A — einzeln nachholen** | fünf frische T2-Sessions, je eigener Basispunkt; jede kann eine Nacharbeitsrunde nach sich ziehen | präzise; jeder Stand bekommt sein eigenes Urteil, unabhängig vom Gate |
+> | **B — am Gate bündeln** *(Empfehlung)* | eine G1-Runde deckt `S5`, `S6`, `S8`, `S9` (alle P1); `S10–11` gehört zu P2 und fiele erst bei **G2** | `T3` ist **strenger** als das fehlende `T2`; fremde Prüfer sind eine andere Art Auge als eine weitere Claude-Runde; der Kontext wird einmal aufgebaut statt viermal |
+>
+> **Empfehlung: B, mit einer Ausnahme.** `S10–11` ist der jüngste Stand und
+> hätte bei G2 den weitesten Weg — es lohnt, ihm sein `T2` einzeln zu geben,
+> während die vier P1-Stände auf G1 warten.
+>
+> ⚠️ **Ein technisches Detail, das über Erfolg oder Schein entscheidet:** ein
+> `PASS` in `docs/beweise/G1.md` allein bewegt den Planstand **nicht**. Der
+> Rechner liest die Urteilsmarke **je Ticketmanifest**
+> (`tools/plan/planstand.py`). Wer G1 fährt, muss in **jedes** geprüfte
+> Ticketmanifest eine Marke setzen — sonst bleiben S5/S6/S8/S9 auf „gebaut",
+> obwohl sie geprüft wurden. Das ist keine Entscheidung, sondern eine
+> Arbeitsanweisung an die Gate-Session.
+>
+> ### Was S12–13 offen lässt (aus dem PASS selbst, §13.9)
+>
+> Das PASS deckt die **Deckungsfrage**, nicht die Bedeutungsfrage und nicht den
+> Lauf im Host. Drei benannte Punkte reisen mit:
+> **NAK-68** (Plausibilität der Rahmenskalare — „ist ein Crest über 10 ms noch
+> dieselbe Größe?") · **NAK-69** (ein veröffentlichter Frame trägt unter `/O2`
+> unbestimmte Füllbytes aus `Transportstempel`; heute folgenlos, ab
+> **`SONDE-010`** wäre es eine nicht reproduzierbare Zahl im Wire-Vertrag) ·
+> **NAK-70** (eine *grundabhängige* Auslassung in `grenzeZiehen()` ist bei
+> `loopWrap` und `moeglicherStraddle` von keinem Bein gedeckt — keine heutige
+> Fehlfunktion, eine Lücke gegen eine künftige Änderungsform).
+>
+> **Nach dem Gate** wäre `S14–15` (`SONDE-010`) die nächste Baufläche — dort
+> werden NAK-69, NAK-59, NAK-40 und der v3-Schema-Schnitt aus NAK-29 fällig.
+
 > ## 🎨 Design-Strang — 23.08.2026 spät: Gen Seite 1+2 im Prototyp-Figma umgebaut
 >
 > Im Figma `Probeeq-Nakama-Prototyp-Design` (Key `5TazApiPrImtLJZ2a71acV`,

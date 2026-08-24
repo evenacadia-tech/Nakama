@@ -1,6 +1,7 @@
 # Beweismanifest — S6 «`SONDE-005b`: FlatBuffers, gepinntes flatc, Codegen-Drift»
 <!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-21 nachgearbeitet -->
 <!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-24 offen -->
+<!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-24 nachgearbeitet -->
 
 > **T3 / Gate G1, 24.08.2026 — NEEDS_WORK.** Zwei der vier Wire-Float-Traeger
 > des `.fbs` (`start_ppq`, `end_ppq`, Zeilen 145-146) sind in **beiden**
@@ -6014,3 +6015,29 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
 </details>
 
+
+---
+
+## Nacharbeit zum Gate G1 — 24.08.2026
+
+**Marke:** `T3 NEEDS_WORK 2026-08-24 nachgearbeitet`. Der G1-Befund §4.3 ist
+geschlossen (`fa976fd`); das Urteil bleibt NEEDS_WORK, weil wer repariert, sich
+nicht selbst freispricht.
+
+`start_ppq` und `end_ppq` werden in **beiden** Lesern auf Endlichkeit geprüft,
+dazu die Ordnungsregel `ppq_verdreht` (nur bei `bounds_valid`, weil §32.3 ohne
+das Bit über die Grenzen nichts behauptet). Vier neue Binärfixtures, Korpus
+51 → 55.
+
+🔑 **Der tragende Teil des Fixes war nicht die Prüfung, sondern der Eintrag ins
+MANIFEST.** Beide Leser hatten dieselbe Auslassung und waren sich deshalb
+einig — der Kreuzsprachtest stimmte überein, auf der falschen Antwort.
+`grep -c ppq MANIFEST.json` = 0 war der eigentliche Befund. Das Manifest ist die
+dritte Partei: jeder Leser wird gegen *es* gemessen, nie gegen den anderen.
+
+Vorgeführt: Prüfung **nur im Rust-Leser** entfernt →
+`fb_korpus_klassifiziert_wie_das_manifest` FAILED mit drei Zeilen („Urteil
+ungueltig erwartet, Leser sagt gueltig"). Damit ist die Auflage des Prüfers
+erfüllt, dass die Prüfung schon in *einem* Leser allein rot wird. Rückstellung
+byteweise statt per `git checkout` (NAK-73): SHA-256 vorher == nachher, `cmp`
+bytegleich. Roh in `G1.md` §10.3.

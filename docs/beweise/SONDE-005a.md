@@ -1,6 +1,7 @@
 # Beweismanifest — S5 «`SONDE-005a`: v3-JSON-Schemas, Bandgitter, Cross-Language-Fixtures»
 <!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-21 nachgearbeitet -->
 <!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-24 offen -->
+<!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-24 nachgearbeitet -->
 
 > **T3 / Gate G1, 24.08.2026 — NEEDS_WORK.** Der Bruchauftrag Gate 7 ist an
 > diesem Vertrag gelungen: `measurement_position: insert` + `aussageklasse:
@@ -2038,3 +2039,28 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
 </details>
 
+
+---
+
+## Nacharbeit zum Gate G1 — 24.08.2026
+
+**Marke:** `T3 NEEDS_WORK 2026-08-24 nachgearbeitet`. Beide G1-Befunde gegen
+dieses Ticket sind geschlossen; das Urteil bleibt NEEDS_WORK, weil **wer
+repariert, sich nicht selbst freispricht** — ein PASS darf nur ein frischer
+Prüfer geben.
+
+| G1-Befund | Was geschlossen wurde | Commit |
+|---|---|---|
+| §4.1 Gate 7, Vertragsebene | `probe_descriptor` ist eine über `measurement_position` diskriminierte Union; die Aussageklasse folgt aus der Position. **Ohne Versionsanhebung** — Begründung in `G1.md` §10.0 (Kurzfassung: keine neue Fläche, der Vertragstext trug die Regel bereits, kein Erzeuger im Baum, und eine Anhebung würde die Lücke als unterstützte v3.0-Variante *einfrieren*). | `ebfe02e` |
+| §4.5 Länge geprüft, Alphabet nicht | `state_hash` als eigenes `$def` mit `^[0-9a-f]{64}$`; beide Bitmaps mit Base64-Muster inkl. Base64-Füllbits. Alle drei Muster handgeschrieben in allen drei Beinen. | `ebfe02e` |
+
+Vorgeführt: alle zehn neuen Fixtures waren **vor** dem Fix gültig und sind es
+danach nicht mehr, während alle 36 gültigen gültig bleiben — darunter
+`session-beitragsklasse.json`, die *erlaubte* Paarung
+(`tools/eq-copilot/vorfuehrung_g1_vertrag.py`, rohe Tabelle in `G1.md` §10.1).
+Korpus 153 → 164, Abdeckung `pattern` 4/4, `$defs` ohne Negativfixture: keine.
+
+⚠️ Berichtigt am eigenen Korpus: `aussageklasse-vermischt.json` heißt jetzt
+`aussageklasse-erfunden.json`. Sein Inhalt war richtig, sein **Name** versprach
+die Gate-7-Absicherung, die er nicht leistete — und ein falsches Etikett macht
+eine Lücke unsichtbar.

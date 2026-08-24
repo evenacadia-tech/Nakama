@@ -1,6 +1,7 @@
 # Beweismanifest — SONDE-007a «Gemeinsamer Kern ohne `JucePlugin_*`-Konstanten»
 <!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-23 nachgearbeitet -->
 <!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-24 offen -->
+<!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-24 nachgearbeitet -->
 
 > **T3 / Gate G1, 24.08.2026 — NEEDS_WORK.** Der Riegel **K2b**
 > (`cmake/NakamaKern.cmake:218 ff.`, tragende Schleife `:234`) laeuft nur ueber
@@ -3160,3 +3161,39 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
 </details>
 
+
+---
+
+## Nacharbeit zum Gate G1 — 24.08.2026
+
+**Marke:** `T3 NEEDS_WORK 2026-08-24 nachgearbeitet`. Der G1-Befund §4.4 ist
+geschlossen (`fac67f4`); das Urteil bleibt NEEDS_WORK, weil wer repariert, sich
+nicht selbst freispricht.
+
+K2b misst jetzt in **beide** Richtungen und zusätzlich auf **Wertwidersprüche**
+(ein Name, zwei Werte — für den alten Test unsichtbar, weil der erwartete Wert
+ja vorhanden war, nur nicht allein). Voraussetzung war, beide Seiten *gleich*
+zu rechnen; zwei verschieden gerechnete Mengen lassen sich nur in eine Richtung
+vergleichen, und genau in eine wurde verglichen.
+
+🚨 **Der Befund war größer als beschrieben.** Die Kopf-Fassade trägt ihre
+Defines als **Generatorausdruck**, den `get_target_property` zur
+Konfigurierzeit nicht auflöst. Damit fällt eine Aussage vom 22.08., die als
+gemessener Befund im Riegelkopf stand — *„heute weicht genau eine ab
+(JUCE_USE_CURL; der Kern sähe den Vorgabewert 1)"* — als **falsch** auf: die
+Abweichung war nie eine Eigenschaft des Baus, sondern des **Blicks**. Beim
+Übersetzen expandiert derselbe Ausdruck sehr wohl, der Kern hatte die `0`
+immer. Aufgelöst wird jetzt über dieselbe Herkunftsspur
+`NAKAMA_KERN_ABGELEITET_VON`, die K2 aus genau diesem Grund schon benutzt — die
+Datei kannte die Falle, der Riegel nutzte das Wissen nicht.
+
+Der Riegel **nennt jetzt die verglichene Menge** in der Konfigurierausgabe
+(vier Defines), damit sein Umfang nicht wieder unsichtbar wird. Grün gegen alle
+**14** Verbraucher. Vorgeführt an zwei Mutationen (nur-am-Kern,
+Wertwiderspruch), beide vorher unsichtbar; Rückstellung byteweise, `git status`
+leer. Roh in `G1.md` §10.4.
+
+⚠️ **Dabei aufgefallen, offen als NAK-80:** K2b/K2c leben ausschließlich im
+Configure-Schritt und tauchen in keiner der 28 Kanonzeilen auf. Heute folgenlos,
+aber das ist eine Annahme über das Buildsystem, keine Messung — dieselbe Klasse
+wie T2-2 in NAK-58.

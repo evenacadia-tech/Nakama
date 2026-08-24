@@ -1,5 +1,60 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ✅ G1-NACHARBEIT IST GEFAHREN — 24.08.2026 · **kein PASS erklärt**
+>
+> Die fünf Befunde aus `docs/beweise/G1.md` §4 **und** die §55-Klausel 4
+> (NAK-42) sind **geschlossen**, jeder erst an der Quelle nachgemessen (alle
+> fünf hielten) und jeder neue Riegel **beim Fallen vorgeführt**. Neuer
+> Abschnitt **§10/§11** im Gate-Manifest; §1–§9 sind unangetastet.
+> Kanon **28/28 grün, Exit 0, beglaubigt**.
+>
+> | Befund | Commit | Kern |
+> |---|---|---|
+> | §4.1 Gate 7, Vertrag | `ebfe02e` | `probe_descriptor` = diskriminierte Union über `measurement_position` |
+> | §4.2 Gate 7, State | `a2fe0f5` | `post_fader_contribution` für **keine** Klasse |
+> | §4.3 `ppq` | `fa976fd` | beide Leser + **Manifest-Eintrag** (das war der eigentliche Fix) |
+> | §4.4 K2b | `fac67f4` | beide Richtungen + Wertwiderspruch |
+> | §4.5 Alphabet | `ebfe02e` | Muster für `state_hash` und beide Bitmaps |
+> | §55 Klausel 4 | `5ffcc60` | `broker/src/dto.rs` — Rust klassifiziert alle 15 ungültigen DTOs |
+>
+> **Die Entwurfsentscheidung, ohne Versionsanhebung** (`G1.md` §10.0): keine
+> neue Fläche, der Vertragstext trug die Regel bereits, kein Erzeuger im Baum —
+> und tragend: **eine Anhebung würde die Lücke als unterstützte v3.0-Variante
+> einfrieren. Wer einen Bug versioniert, konserviert ihn.**
+>
+> **Marken:** `S5` · `S6` · `S8` stehen auf `T3 NEEDS_WORK … nachgearbeitet`
+> (= warten auf einen frischen Prüfer). **`S9` bleibt auf `offen`** — von
+> seinen zwei Befunden ist einer nicht geschlossen, siehe unten.
+>
+> ### 🚨 Was P1 weiterhin blockiert — und nur ein Mensch kann es
+>
+> 1. 👤 **§55 Klausel 1: „Alle drei Ziele scannen und laden in FL" ist
+>    ungemessen.** Braucht Installation (Admin-Klick) + FL-Lauf. **NAK-41 gilt
+>    davor.** **P1 ist NICHT exit-fähig**, egal wie grün alles andere ist.
+> 2. 👤 **NAK-79 — offene Produktfrage:** *welche* `plugin_kind` darf
+>    `post_fader_contribution` führen, wenn es den diskreten Aux-Bus gibt? Der
+>    Entwurf sagt, wer der **Receiver** ist (§32.2 `:1610`), aber nicht, wer die
+>    **Position trägt**. Heute kostet die Frage nichts (die Position ist
+>    unerreichbar, `contribution_aux` ist `unsupported`); im Code steht dafür
+>    eine **fail-closed-Vorgabe, kein Urteil**. Sie wird fällig, sobald ein Bau
+>    den Bus bekommt (`SONDE-011`).
+> 3. **Ein frischer Gate-Lauf.** Dass der geschlossene Weg zu Gate 7 zu ist, ist
+>    gemessen; dass es **keinen anderen** gibt, ist nicht gezeigt — das kann nur
+>    ein neuer Gate-Lauf, und diese Session hat nicht geurteilt.
+>
+> **Neu im Offen-Set:** **NAK-79** (Produktfrage oben) · **NAK-80** (K2b/K2c
+> leben nur im Configure-Schritt und sind in keiner der 28 Kanonzeilen sichtbar
+> — heute folgenlos, aber eine Annahme über das Buildsystem statt einer
+> Messung). **NAK-78** bleibt unberührt (war nicht Auftrag).
+> ⚠️ **NAK-73 in der Praxis:** Rückstellungen liefen **nie** über
+> `git checkout`, sondern über zurückgeschriebene Bytes mit SHA-256- und
+> `cmp`-Beleg. Das Muster steht in `G1.md` §10.2–§10.6 und ist nachnutzbar.
+> ⚠️ **Berichtigt:** der Riegelkopf in `NakamaKern.cmake` behauptete seit dem
+> 22.08. eine gemessene JUCE_USE_CURL-Abweichung. Sie existierte nie — sie war
+> ein Artefakt eines Generatorausdrucks, den `get_target_property` nicht
+> auflöst (`G1.md` §10.4).
+
+
 > ## 🚨 GATE G1 IST GEFAHREN — 24.08.2026 · Urteil **NEEDS_WORK**
 >
 > Die gebündelte T3-Runde über **P1** ist durch, alle drei Prüfer sind gelaufen:

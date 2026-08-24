@@ -308,8 +308,13 @@ B5 `EqCopAnalysisGoldenTest` ist seit SONDE-009 gebaut und läuft mit.
   unsere Struktur passte.
 - **v3-Vertragsbaum (SONDE-005a):** `eq-copilot/schemas/v3/`, gelesen von drei
   Beinen (`pruefe_v3_vertrag.py`, `EqCopSchemaTest`, `broker/tests/
-  contract_cross_language.rs`) gegen ein **handgeschriebenes** Manifest (153
-  Fixtures). 🔑 Ein Schema mit nicht implementiertem Schlüsselwort bricht den
+  contract_cross_language.rs`) gegen ein **handgeschriebenes** Manifest (164
+  Fixtures seit der G1-Nacharbeit 24.08., vorher 153). 🔑 **`probe_descriptor`
+  ist seit dem 24.08. eine über `measurement_position` diskriminierte Union**
+  — die Aussageklasse folgt aus der Position, `insert`+`beitrag` ist damit
+  kein gültiges Dokument mehr (Gate-7-Bruch, `docs/beweise/G1.md` §4.1/§10.1;
+  bewusst **ohne** Versionsanhebung, Begründung §10.0).
+  🔑 Ein Schema mit nicht implementiertem Schlüsselwort bricht den
   Ladevorgang. ⚠️ Bandgitter sind eingefrorene Hex-Zahlen, keine Rechenvorschrift.
   🔑 **Textriegel** = Stufe VOR dem Parser (8 Regeln, 59 Fälle in EINER Datei),
   weil JUCEs Zahlenleser überläuft. 🚨 Ein Riegel darf nie die Bibliothek
@@ -340,6 +345,16 @@ B5 `EqCopAnalysisGoldenTest` ist seit SONDE-009 gebaut und läuft mit.
   einen Korpus, dessen RFC-Zeilen den **vom RFC gedruckten** Text tragen.
   ⚠️ NAK-41: ein Schema-2-Projekt verliert im 16.08.-Build still seine
   Identität — vor der Installation wissen.
+  ⚠️ **Messpositionsmatrix §2.2 seit 24.08. (G1-Nacharbeit):**
+  `post_fader_contribution` ist für **keine** Klasse mehr erlaubt — zwei
+  unabhängige Riegel in `positionErlaubt` (Capability `contribution_aux` ist
+  gemessen `unsupported`; Klassenmatrix fail-closed). Vorher ließ
+  `passive_probe` sie zu, und das war die State-Hälfte des Gate-7-Bruchs. Ein
+  Altstand mit dieser Position wird **read-only mit Originalbytes**, verliert
+  also nichts. Der Wortschatz bleibt im v3-Vertrag: verboten ist nicht das
+  Wort, sondern die Behauptung einer Instanz ohne den Bus. **Offen (NAK-79):**
+  welche Klasse sie führen darf, wenn es den Bus gibt — Produktfrage,
+  `SONDE-011`.
 - **Gemeinsamer Kern (SONDE-007a / S8, 22.08.):** `NakamaKern` ist eine echte
   Static-Lib (`add_library(… STATIC)`, `plugin/CMakeLists.txt`) mit den vier
   geteilten Quellen (`state/*.cpp` + `vertrag/NakamaVertrag.cpp`), einmal

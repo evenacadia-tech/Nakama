@@ -10486,3 +10486,46 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
 </details>
 
+
+---
+
+## Nacharbeit zum Gate G1 — 24.08.2026
+
+⚠️ **Die Marke bleibt `T3 NEEDS_WORK 2026-08-24 offen` — bewusst.** Von den
+**zwei** Befunden, die G1 §7.1 diesem Ticket zurechnet, ist einer geschlossen
+und einer nicht:
+
+| G1-Befund | Stand | Warum |
+|---|---|---|
+| §4.2 Gate 7, State-Ebene | **geschlossen** (`a2fe0f5`) | siehe unten |
+| §5 Klausel 1: „Alle drei Ziele scannen und laden in FL" | **offen** | braucht eine Installation und einen FL-Lauf, also **einen Menschen am Rechner**. Installation ist ein Admin-Klick, **NAK-41 gilt davor.** Kein Claude-Schritt. |
+
+Deshalb `offen` und nicht `nachgearbeitet`: an diesem Ticket ist noch **Arbeit
+dran**, sie wartet nicht bloß auf einen frischen Prüfer. **P1 ist nicht
+exit-fähig**, unabhängig von allem anderen in dieser Runde.
+
+**Zu §4.2.** `positionErlaubt` ließ `post_fader_contribution` für die passive
+Sonde zu, obwohl ihr Bundle genau einen Stereo-Ein- und -Ausgang deklariert.
+Der Gate-Bericht ließ die Zuordnung als mögliche **Produktfrage** offen. Zwei
+Messungen entscheiden sie, ohne den User zu bemühen:
+
+1. `schemas/state/nakama-state-v2.md` nannte die Erlaubnis ausdrücklich
+   **„Vorschlag für SONDE-007b"** — und ein Vorschlag bindet in diesem Projekt
+   nichts. **Eine Notiz, die Code durchsetzt, ist die teuerste Sorte Notiz.**
+2. `identity/host-capabilities-fl-v1.json` führt `contribution_aux` als
+   **`unsupported`**; §53.6 gibt genau diesem Fall den Fallback „nur
+   Assoziation statt exakter Attribution".
+
+Damit ist §4.2 dieselbe Fehlerklasse wie §4.1 — ein Vertragstext, der nie
+eingelöst wurde. Zwei unabhängige Riegel (Capability + fail-closed
+Klassenmatrix); wer nur einen umstellt, öffnet die Lücke nicht. Ein Altstand
+verliert nichts: er fällt auf read-only mit den Originalbytes.
+
+⚠️ **Offen bleibt als NAK-79 die eigentliche Produktfrage:** *welche* Klasse
+darf die Position führen, wenn es den Bus gibt? Der Entwurf beantwortet sie
+nicht; bis dahin steht in der Matrix eine Vorgabe, kein Urteil.
+
+Vorgeführt: neuer Block **G8b** im `EqCopStateMigrationTest` fährt die ganze
+16er-Matrix, jede Klasse in dem Bundle, das sie zulässt. Mit dem Vorzustand
+fällt **genau eine** Zeile, und das Bein meldet Exitcode 1. Roh in `G1.md`
+§10.2.

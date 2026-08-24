@@ -162,8 +162,7 @@ nur nachrichten an mich selbst … das ist der offizielle weg mich zu erreichen
 ab jetzt. schreib immer wenn eine session fertig ist ein ganz kurzen bericht"*
 (Register in `CLAUDE.md`). ~~Kanal: WhatsApp~~ — **überholt am 24.08.; der Kanal
 ist die claude.ai-Routine unten.** Unverändert gilt: **nur an den User selbst,
-nie an Dritte.** Die WhatsApp-Zieladresse steht **nicht im Repo**, sondern im
-Memory `feedback_whatsapp-berichtskanal`.
+nie an Dritte.**
 
 🔑 **Der Kanal ist die claude.ai-Routine — und er trägt AUCH deine Fragen.**
 
@@ -189,37 +188,28 @@ User** · jeder HALT, der auf ihn wartet. Stellst du eine Frage, sag im selben
 Text, was du in der Zwischenzeit tust — er soll nicht raten müssen, ob du
 wartest oder weiterläufst.
 
-⚠️ **WhatsApp ist seit 24.08. optional** und darf ausfallen, ohne dass eine
-Meldung ausfällt. Die Gerätekopplung lässt sich nur von einem Menschen **am PC**
-wiederherstellen — also genau dann nicht, wenn der User remote ist. Steht sie,
-ist der Ablauf: `whatsapp-replies.open_reply_channel` →
-`whatsapp.send_message` → `register_outbound_message` → ggf. `wait_for_reply`.
-**Öffne dabei NIE einen zweiten WhatsApp-Client.**
+⚠️ **WhatsApp gibt es nicht mehr** (User 24.08.: *„wir machen das anders ,
+nichtmehr über whatsapp das funktioniert ."*). Der MCP, der Daemon, der
+Autostart-Eintrag und das ganze Gerüst sind **entfernt** — es gibt dort nichts
+mehr aufzurufen. Als Messenger ist **Matrix (E2EE)** entschieden, aber **noch
+nicht gebaut**; bis dahin ist die claude.ai-Routine oben der einzige Kanal.
 
-🚨 **Die teuerste Lehre dieser Nacht, in einem Satz:** WhatsApp erlaubt pro
-verknüpftem Gerät **einen** Socket, und eine zweite Verbindung wird nicht bloß
-verdrängt — bei genug Wiederholung antwortet der Server mit **`loggedOut`**,
-und dann ist die **Gerätekopplung gelöst**. Nur ein neuer QR-Scan des Users
-stellt sie wieder her. Genau das ist am 24.08. passiert.
-
-⚠️ `nachricht.mjs` im selben Verzeichnis ist der **Irrweg dorthin** und
-verweigert seit dem Vorfall den Dienst, solange die reply-bridge läuft
-(Exit 7). Er bleibt nur als Notnagel für den Fall liegen, dass es die
-Rückkanal-Architektur einmal nicht gibt. Der Denkfehler, der ihn erzeugt hat,
-lohnt das Aufheben: die Frage lautete „wie gewinne ich den Socket?" statt
-**„darf hier überhaupt ein zweiter Client existieren?"** — und die Antwort auf
-die zweite Frage war von Anfang an nein. Dieselbe Klasse wie „zwei Broker auf
-einem Pipenamen stehlen sich still Clients" (`CLAUDE.md`,
-Maschinen-Landminen), nur mit einer Ebene mehr Schaden: dort verlieren
-Clients, hier verliert man die Kopplung.
+🚨 **Die teuerste Lehre daraus, und sie überlebt den Kanal:** die Frage lautete
+„wie gewinne ich den Socket?" statt **„darf hier überhaupt ein zweiter Client
+existieren?"** — und die Antwort auf die zweite Frage war von Anfang an nein.
+Ein selbstgebauter zweiter WhatsApp-Client hat damit die Gerätekopplung
+gelöst und den Kanal getötet. Dieselbe Klasse wie „zwei Broker auf einem
+Pipenamen stehlen sich still Clients" (`CLAUDE.md`, Maschinen-Landminen).
+**Die Berechtigungsfrage kommt vor der Technikfrage** — das gilt für die
+Matrix-Brücke genauso.
 
 - **Auslöser:** jede fertige Session — nicht jeder Commit, nicht jeder
   Zwischenstand.
 - **Form:** drei Zeilen. Ticket · Ergebnis (am Repo gemessen, nie der
   Selbstbericht der Session) · was als Nächstes läuft. Keine Rohausgabe,
   kein Manifest-Auszug; die Details stehen im Repo.
-- **Nur an ihn selbst.** Nie an Dritte, nie in eine Gruppe. `send_message`
-  schreibt nach draußen — diese Freigabe deckt genau eine Adresse.
+- **Nur an ihn selbst.** Nie an Dritte, nie in eine Gruppe. Jede Meldung
+  schreibt nach draußen — diese Freigabe deckt genau einen Empfänger.
 - Scheitert der Versand, ist das **kein Grund anzuhalten**: einmal im
   Protokolleintrag vermerken und weiterfahren. Der Kanal ist ein Rückkanal,
   kein Riegel.

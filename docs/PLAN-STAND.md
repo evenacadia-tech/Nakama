@@ -1,6 +1,6 @@
 # Planstand Nakama
 
-<!-- quellstand: 3c0230a -->
+<!-- quellstand: 65613f6 -->
 
 > **Gerechnet, nicht gepflegt.** Dieses Blatt entsteht aus dem Repo:
 > `py -3.13 tools/plan/planstand.py`. Es wird **nie** von Hand editiert —
@@ -9,13 +9,13 @@
 > *abgenommen* erst, wenn dort eine Urteilsmarke der geforderten Prüfstufe
 > mit **PASS** steht. Fehlt sie, gilt der Schritt als nicht abgenommen.
 
-**Stand:** 2026-08-24 · Quellstand `3c0230a` · **10 von 36 abgenommen** · 6 gebaut · 20 offen
+**Stand:** 2026-08-24 · Quellstand `65613f6` · **11 von 36 abgenommen** · 5 gebaut · 20 offen
 
-`███████████▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░` 28 % abgenommen · 44 % gebaut
+`████████████▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░` 31 % abgenommen · 44 % gebaut
 
 **Als Nächstes:** **G1** `Gate` — Prüfrunde über P1 (C++- und Rust-Review + Codex).
 
-**Wartet auf ein Urteil** (gebaut, nachgemessen, aber ohne PASS eines frischen Prüfers): `S5` · `S6` · `S8` · `S9` · `S10–11` · `S12–13`
+**Wartet auf ein Urteil** (gebaut, nachgemessen, aber ohne PASS eines frischen Prüfers): `S5` · `S6` · `S8` · `S9` · `S10–11`
 
 **Bei dir liegen 10 Fragen** — `U2, U5, U6, U7, U8, U9, U10, U11, U12, U13`. Sie werden im Chat gestellt: Skill `/fragen`.
 
@@ -26,7 +26,7 @@
 | **Vorlauf** — Beweisen statt behaupten | `████████████████████████` | 1 | 0 | 0 |
 | **P0** — Bestand einfrieren, Hostgrenzen beweisen | `████████████████████████` | 8 | 0 | 0 |
 | **P1** — Verträge, gespeicherter Zustand, neutrale Hüllen | `████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░` | 1 | 4 | 1 |
-| **P2** — Messkern, Nachrichtenweg, Speicher | `▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░` | 0 | 2 | 3 |
+| **P2** — Messkern, Nachrichtenweg, Speicher | `█████▓▓▓▓▓░░░░░░░░░░░░░░` | 1 | 1 | 3 |
 | **P3** — Passive Landkarte | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 2 |
 | **P4–P5** — Vergleichsevidenz und Ursachen | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 4 |
 | **P6–P7** — Aktiver Kern: EQ in Sonde und Gen | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 6 |
@@ -41,7 +41,7 @@ flowchart LR
   P0 --> P1
   P2["P1<br/>1/6 abgenommen<br/>+4 gebaut"]:::laeuft
   P1 --> P2
-  P3["P2<br/>0/5 abgenommen<br/>+2 gebaut"]:::laeuft
+  P3["P2<br/>1/5 abgenommen<br/>+1 gebaut"]:::laeuft
   P2 --> P3
   P4["P3<br/>0/2 abgenommen"]:::offen
   P3 --> P4
@@ -88,12 +88,12 @@ flowchart LR
 - ▣ **S9** `SONDE-007b` — Drei eigene Plugin-Ziele, Rollen-Erkennung, Installer-Manifest. ALLE DREI TEILE GEBAUT am 23.08. (1) Die Kennung der Programme stand bisher als Text im Bauskript UND in der Kennungsdatei - zwei Wahrheiten, die auseinanderlaufen koennen. Jetzt liest das Bauskript die Kennungsdatei; der Test misst weiter das fertige Programm gegen dieselbe Datei. (2) Nakama Suna und Nakama Probeeq sind gebaut, aus EINER gemeinsamen Quelle, und tragen nachweislich ihre eigenen, seit Tagen reservierten Kennungen - keines traegt die eines anderen. Beide sind heute noch stumm: Ton geht unveraendert durch, keine Regler, keine Oberflaeche. Das ist Absicht. (3) Das Hauptprogramm erkennt jetzt seine Rolle, statt sie anzunehmen: beim Laden weiss es nichts ueber sich und bleibt still; erst ein geladenes Projekt entscheidet, ob es ein alter Messpunkt (dann fuer immer passiv) oder ein Hauptfenster ist. Eine frische Instanz wird nur dann zum Hauptfenster, wenn du das Fenster geoeffnet UND die Rolle gewaehlt hast. Ein Scannerlauf entscheidet nichts. Dazu die Packliste fuer die Auslieferung (drei Programme plus Broker, Pruefsumme, Rueckweg mit Warnung vor Datenverlust) - und das Installationsskript liegt endlich im Projekt statt nur auf einem Rechner. FOLGE, DIE MAN HOERT: ein reiner Messpunkt faerbt beim Anhoeren nichts mehr ein. 23 von 23 Pruefungen gruen. NICHT abgenommen: die Nachpruefung durch einen frischen Pruefer steht aus,; das fremde Pruefprogramm sagt bei allen drei Programmen SUCCESS. NACHARBEIT 23.08. nachmittags: alle vier Funde der Nachpruefung geschlossen, jeder erst an der Quelle nachgemessen und jede neue Sicherung beim Anschlagen vorgefuehrt; fuenf weitere Funde kamen dabei heraus und sind mit erledigt. Ein Plugin wird ab jetzt als ganzer ORDNER ausgeliefert statt nur als die Datei darin. Das Zurueckgehen wird ab jetzt bei jedem Pruefdurchlauf wirklich AUSGEFUEHRT (neues Pruefbein, Kanon 23 -> 24) - dabei fielen zwei echte Fehler heraus, die drei Leser uebersehen hatten. Selbstpruefung ueber den Gesamtstand gefahren, 24/24 gruen und beglaubigt. STATUS BLEIBT 'gebaut': wer repariert, spricht sich nicht selbst frei - der nachgebesserte Stand braucht einen frischen Pruefer. (gebaut · T2 NEEDS_WORK 2026-08-23 · nachgearbeitet, frisches Urteil fehlt · Kanon 24/24 grün)
 - □ **G1** `Gate` — Prüfrunde über P1 (C++- und Rust-Review + Codex). (offen)
 
-### P2 — Messkern, Nachrichtenweg, Speicher  (0/5 abgenommen, 2 gebaut)
+### P2 — Messkern, Nachrichtenweg, Speicher  (1/5 abgenommen, 1 gebaut)
 
 *Die größte Phase: Audio wird zeitgestempelt gemessen, über den Broker verteilt und gespeichert — ohne je den Audiothread zu blockieren. Danach: Release R0 (Vertrag steht, intern).*
 
 - ▣ **S10–11** `SONDE-008` — Zeitgestempelte Audio-Warteschlange, Quarantaene fuer kaputte Bloecke, Lautheitsmessung mit festem Speicher. GEBAUT 23.08. — der gefaehrlichste Eingriff der ganzen Phase, weil er mitten im Audiothread sitzt. Bisher gab die Weitergabe an die Messung bei Platzmangel einen HALBEN Block weiter und zaehlte den Rest; die Messung sah danach einen lueckenlosen Strom, dem in der Mitte Zeit fehlte, und konnte das nicht mehr merken. Jetzt gilt ganz oder gar nicht: passt ein Block nicht, faellt er komplett, wird gezaehlt, und der naechste traegt die Markierung 'hier fehlt etwas'. Dazu haelt die Messung jeden Block einen Moment zurueck, bis der naechste beweist, dass er lueckenlos anschliesst — sonst koennte ein erst nachtraeglich sichtbarer Schleifensprung eine schon veroeffentlichte Auswertung verderben. Und die Lautheitsmessung sammelt nicht mehr endlos: sie braucht ab jetzt immer gleich viel Speicher, egal ob fuenf Minuten oder fuenf Stunden laufen — eine Million Messzellen ohne eine einzige Speicheranforderung, vorgefuehrt. Zwei neue Pruefungen (Kanon 24 → 26), alle 26 gruen und beglaubigt, Fremdpruefer pluginval auf hoechster Stufe an allen drei Plugins bestanden. Kein Sample Audio hat sich geaendert. NACHGEPRUEFT UND NACHGEBESSERT 23.08. abends: ein frischer Pruefer hat vier Sachen gefunden, alle vier haben sich bestaetigt, alle vier sind geschlossen - die Lautheitsmessung ist jetzt auch bei absurd lautem Material genau (statt nur ehrlich darueber), ihre eingebaute Pruefung kann den Fall ueberhaupt erst sehen, deine Entscheidung vom 22.08. hat eine Sicherung, und zwei Raender an der Zeitrechnung stimmen. Jede neue Pruefung wurde einmal absichtlich kaputtgemacht und schlug an. Alle 26 gruen und beglaubigt. Steht weiterhin auf 'gebaut' und nicht auf 'erledigt': wer repariert, spricht sich nicht selbst frei - das bestaetigt ein frischer Pruefer. (gebaut · T2 NEEDS_WORK 2026-08-23 · nachgearbeitet, frisches Urteil fehlt · Kanon 26/26 grün)
-- ▣ **S12–13** `SONDE-009` — Messkern v2: Zeit-, Gueltigkeits-, Ereignis- und Bandvertraege. GEBAUT 23.08. — die Schicht, die aus gemessenem Audio ehrliche Zahlen macht. Der Auftrag stand in einem einzigen Satz: 'Drop/Seek/Loop trennt jedes offene Fenster.' Was das heisst: die Messung sammelt staendig ueber laengere Abschnitte (bis zu einer Drittelsekunde), um ueberhaupt etwas ueber tiefe Toene sagen zu koennen. Springt der Abspielzeiger mittendrin an eine andere Stelle, oder wiederholt sich eine Schleife, oder faellt ein Stueck Audio weg, dann liegen in so einem angefangenen Abschnitt ZWEI verschiedene Stellen der Musik. Die daraus gerechnete Zahl sieht aus wie eine Messung und ist keine. Jetzt wird an jeder solchen Stelle alles Angefangene weggeworfen und neu begonnen — und zwar an NEUN verschiedenen Ereignissen, jedes einzeln nachgewiesen. Dazu die Bandaufteilung des Vertrags als eingefrorene Zahlen im Programm (mit zwei unabhaengigen Waechtern) und der eine Weg, ueber den das Plugin im echten FL seine Zeitinformation bekommt, ist ERSTMALS wirklich gefahren worden statt nur gelesen. T2-GEPRUEFT 23.08.: Urteil NEEDS_WORK. Der schwierige Teil haelt - alles, was waehrend eines angefangenen Abschnitts Klang sammelt, wird wirklich weggeworfen, auch der unsichtbare Nachklang des Filters. Gefunden wurde ein Fehler eine Ebene darueber: die fertigen Messwerte (die 64 Balken, der feine Schnappschuss, die Angabe wieviel Klang da war) werden beim Sprung NICHT mit weggeworfen, so dass eine Meldung mit 'neue Stelle' beschriftet sein und ausschliesslich den Klang der alten enthalten kann - gemessen an 80 von 120 durchprobierten Zeitpunkten. Nicht abgenommen; Nacharbeit ist der naechste Schritt. (gebaut · T2 NEEDS_WORK 2026-08-24 · nachgearbeitet, frisches Urteil fehlt · Kanon 28/28 grün)
+- ■ **S12–13** `SONDE-009` — Messkern v2: Zeit-, Gueltigkeits-, Ereignis- und Bandvertraege. GEBAUT 23.08. — die Schicht, die aus gemessenem Audio ehrliche Zahlen macht. Der Auftrag stand in einem einzigen Satz: 'Drop/Seek/Loop trennt jedes offene Fenster.' Was das heisst: die Messung sammelt staendig ueber laengere Abschnitte (bis zu einer Drittelsekunde), um ueberhaupt etwas ueber tiefe Toene sagen zu koennen. Springt der Abspielzeiger mittendrin an eine andere Stelle, oder wiederholt sich eine Schleife, oder faellt ein Stueck Audio weg, dann liegen in so einem angefangenen Abschnitt ZWEI verschiedene Stellen der Musik. Die daraus gerechnete Zahl sieht aus wie eine Messung und ist keine. Jetzt wird an jeder solchen Stelle alles Angefangene weggeworfen und neu begonnen — und zwar an NEUN verschiedenen Ereignissen, jedes einzeln nachgewiesen. Dazu die Bandaufteilung des Vertrags als eingefrorene Zahlen im Programm (mit zwei unabhaengigen Waechtern) und der eine Weg, ueber den das Plugin im echten FL seine Zeitinformation bekommt, ist ERSTMALS wirklich gefahren worden statt nur gelesen. T2-GEPRUEFT 23.08.: Urteil NEEDS_WORK. Der schwierige Teil haelt - alles, was waehrend eines angefangenen Abschnitts Klang sammelt, wird wirklich weggeworfen, auch der unsichtbare Nachklang des Filters. Gefunden wurde ein Fehler eine Ebene darueber: die fertigen Messwerte (die 64 Balken, der feine Schnappschuss, die Angabe wieviel Klang da war) werden beim Sprung NICHT mit weggeworfen, so dass eine Meldung mit 'neue Stelle' beschriftet sein und ausschliesslich den Klang der alten enthalten kann - gemessen an 80 von 120 durchprobierten Zeitpunkten. Nicht abgenommen; Nacharbeit ist der naechste Schritt. (abgenommen · T2 PASS 2026-08-24 · Kanon 28/28 grün)
 - □ **S14–15** `SONDE-010` — Nachrichten-Clients in den Plugins und der Parser im Broker. (offen)
 - □ **S16–17** `SONDE-011` — Koordinator im Broker, Datenbank-Migration, Ausgangspuffer. (offen)
 - □ **G2** `Gate` — Volles Programm: C++-, Rust- und Sicherheits-Review + Codex. (offen)

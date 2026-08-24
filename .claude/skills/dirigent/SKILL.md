@@ -163,16 +163,36 @@ ab jetzt. schreib immer wenn eine session fertig ist ein ganz kurzen bericht"*
 (Register in `CLAUDE.md`). Die Zieladresse steht **nicht im Repo**, sondern im
 Memory `feedback_whatsapp-berichtskanal`.
 
-🔑 **Nimm die MCP-Werkzeuge. Öffne NIE einen zweiten WhatsApp-Client.**
+🔑 **Der Kanal ist die claude.ai-Routine — und er trägt AUCH deine Fragen.**
 
-Der Ablauf (Architektur des Users, 24.08.): `whatsapp` hält die **einzige**
-Verbindung, `whatsapp-replies` leiht sich den Sendeweg, statt eine zweite
-aufzumachen.
+Entscheid des Users 24.08.: *„ich moechte eine Meldung von ihm in der Routine,
+er haette auch vorhin die Frage dort stellen muessen."* Der Grund ist keine
+Vorliebe, sondern eine Reichweite: der User ist oft **nur per Handy** da. Eine
+Frage, die in der Nimbalyst-Unterhaltung stehenbleibt, **erreicht ihn nicht** —
+sie blockiert dich nur still. Genau das ist am 24.08. mit der Aufwandsfrage
+A/B passiert.
 
-1. `whatsapp-replies.open_reply_channel` (Ziel-Chat + Status)
-2. `whatsapp.send_message` mit dem zurückgegebenen `message_to_send`
-3. `whatsapp-replies.register_outbound_message` mit der Nachrichten-ID
-4. `whatsapp-replies.wait_for_reply`, falls du eine Antwort brauchst
+**Routine „Nakama: Dirigent-Meldung"** — `trig_01BUKf1i5Y9ztqGkA6Ev4eff`.
+Kein Cron, `notifications.push = true`: ein **Push-Kanal auf Abruf**. So geht
+eine Meldung raus:
+
+1. `RemoteTrigger {action: "update", trigger_id: "…", body: {job_config: …}}` —
+   die Meldung wörtlich zwischen die `--- MELDUNG ---`-Marker im Prompt setzen.
+   Der Prompt sagt dem Cloud-Agenten ausdrücklich: *nur wiedergeben, keine
+   Werkzeuge, nichts hinzuerfinden.*
+2. `RemoteTrigger {action: "run", trigger_id: "…"}` — der Push geht raus.
+
+**Was hier hineingehört:** jede fertige Runde (kurz) · **jede Frage an den
+User** · jeder HALT, der auf ihn wartet. Stellst du eine Frage, sag im selben
+Text, was du in der Zwischenzeit tust — er soll nicht raten müssen, ob du
+wartest oder weiterläufst.
+
+⚠️ **WhatsApp ist seit 24.08. optional** und darf ausfallen, ohne dass eine
+Meldung ausfällt. Die Gerätekopplung lässt sich nur von einem Menschen **am PC**
+wiederherstellen — also genau dann nicht, wenn der User remote ist. Steht sie,
+ist der Ablauf: `whatsapp-replies.open_reply_channel` →
+`whatsapp.send_message` → `register_outbound_message` → ggf. `wait_for_reply`.
+**Öffne dabei NIE einen zweiten WhatsApp-Client.**
 
 🚨 **Die teuerste Lehre dieser Nacht, in einem Satz:** WhatsApp erlaubt pro
 verknüpftem Gerät **einen** Socket, und eine zweite Verbindung wird nicht bloß

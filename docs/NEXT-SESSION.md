@@ -45,11 +45,25 @@
 > schreiben, dann `run`. Das ist derzeit der **einzige** Kanal.
 >
 > ⚠️ **WhatsApp ist abgeschafft** (User 24.08.) — MCP, Daemon, Autostart und
-> Gerüst sind **entfernt**, es gibt dort nichts mehr aufzurufen und nichts
-> wiederherzustellen. Als Messenger ist **Matrix (E2EE)** entschieden, aber
-> **noch nicht gebaut**: es fehlen Bot-Konto und Zugangsdaten, die nur der User
-> anlegen kann. Grund für den Wechsel: WhatsApps QR-Kopplung braucht einen
-> Menschen **am PC**, Matrix meldet sich per Passwort selbst neu an.
+> Gerüst sind **entfernt**, es gibt dort nichts mehr aufzurufen.
+>
+> 🔑 **Der Messenger ist Matrix (E2EE), gebaut und belegt am 24.08.**
+> Werkzeug: `C:\Users\phili\.claude\matrix-bridge\` — **außerhalb des Repos**,
+> weil dort Zugangsdaten liegen; nie hierher kopieren.
+>
+> - **Melden:** `py -3.13 melden.py "Ticket · Ergebnis · was als Nächstes"`
+>   (aus dem Brücken-Ordner). `--status` zeigt den Zustand.
+> - **Rückweg:** Antworten des Users landen als Prompt in der Session, die in
+>   `config.json` unter `nimbalyst.session_id` steht. Bei einem
+>   Session-Wechsel **diese Kennung nachziehen** — sie ist die
+>   Nimbalyst-Kennung aus `list_recent_sessions`, **nicht** die
+>   Claude-Code-Kennung aus dem Scratchpad-Ordnernamen (die liefert
+>   „Session not found").
+> - **Der Dienst** (`dienst.py`) startet mit Windows und muss laufen, sonst
+>   kommt nichts an. Er ist der **einzige** Prozess, der mit Matrix spricht;
+>   `melden.py` übergibt ihm nur Aufträge. Nie einen zweiten Klienten
+>   aufmachen — zwei Prozesse auf einem Kryptospeicher legen sich Megolm-
+>   Sitzungen an, die der andere nicht kennt.
 >
 > ### Neue offene Punkte dieses Tages
 >

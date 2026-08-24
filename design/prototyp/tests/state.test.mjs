@@ -172,5 +172,37 @@ function band(snapshot, sourceId = snapshot.probeEq.targetId, bandId = 3) {
   assert.ok(state.eqBands.master);
 }
 
-console.log("State tests passed: 11 lifecycle, protection, automation and source-order cases.");
+{
+  const { ui } = adapter("eq-golden");
+  const targetId = ui.getSnapshot().probeEq.targetId;
+  ui.dispatch({ type: N.ACTION.SET_BAND_PARAMETER, bandId: 3, parameter: "type", value: "NOTCH" });
+  ui.dispatch({ type: N.ACTION.SET_BAND_PARAMETER, bandId: 3, parameter: "mode", value: "MID" });
+  ui.dispatch({ type: N.ACTION.SET_BAND_PARAMETER, bandId: 3, parameter: "dynamic", value: "OFF" });
+  ui.dispatch({ type: N.ACTION.SET_GLOBAL_PARAMETER, parameter: "outputTrim", value: 2.5 });
+  const state = ui.getSnapshot();
+  assert.equal(band(state).type, "NOTCH");
+  assert.equal(band(state).mode, "MID");
+  assert.equal(band(state).dynamic, false);
+  assert.equal(state.probeEq.globalsByTarget[targetId].outputTrim, 2.5);
+}
 
+{
+  const { ui } = adapter("eq-golden");
+  ui.dispatch({ type: N.ACTION.DRAG_BAND, phase: "start", bandId: 4, pointerId: 7 });
+  assert.deepEqual(ui.getSnapshot().view.drag, { bandId: 4, pointerId: 7 });
+  ui.dispatch({ type: N.ACTION.DRAG_BAND, phase: "move", bandId: 4, pointerId: 7, frequency: 720, gain: 2.4 });
+  assert.equal(band(ui.getSnapshot(), undefined, 4).gain, 2.4);
+  ui.dispatch({ type: N.ACTION.DRAG_BAND, phase: "end", bandId: 4, pointerId: 7 });
+  assert.equal(ui.getSnapshot().view.drag, null);
+}
+
+{
+  const { ui } = adapter("eq-golden");
+  ui.dispatch({ type: N.ACTION.TEMPORARY_APPLY });
+  ui.dispatch({ type: N.ACTION.PREVIEW_BEGIN });
+  const state = ui.getSnapshot();
+  assert.equal(state.draft.state, "lease");
+  assert.match(state.meta.notice, /AWAITS CONFIRMATION/);
+}
+
+console.log("State tests passed: 14 lifecycle, protection, automation, controls and source-order cases.");

@@ -28,14 +28,14 @@
 
   function createBands() {
     return [
-      { id: 1, enabled: true, type: "BELL", frequency: 36, gain: 0.6, q: 0.8, mode: "STEREO", dynamic: false, threshold: -24, range: -3, attack: 12, hold: 0, release: 180, reduction: 0 },
-      { id: 2, enabled: true, type: "BELL", frequency: 102, gain: -1.0, q: 1.0, mode: "STEREO", dynamic: false, threshold: -24, range: -3, attack: 12, hold: 0, release: 180, reduction: 0 },
+      { id: 1, enabled: true, type: "LOW CUT", frequency: 38, gain: 0, q: 0.8, mode: "STEREO", dynamic: false, threshold: -24, range: -3, attack: 12, hold: 0, release: 180, reduction: 0 },
+      { id: 2, enabled: true, type: "LOW SHELF", frequency: 110, gain: -1.5, q: 1.0, mode: "STEREO", dynamic: false, threshold: -24, range: -3, attack: 12, hold: 0, release: 180, reduction: 0 },
       { id: 3, enabled: true, type: "BELL", frequency: 240, gain: -1.5, q: 1.2, mode: "STEREO", dynamic: true, threshold: -24, range: -6, attack: 12, hold: 0, release: 180, reduction: -0.45 },
-      { id: 4, enabled: true, type: "BELL", frequency: 580, gain: 1.6, q: 1.1, mode: "STEREO", dynamic: false, threshold: -24, range: -3, attack: 12, hold: 0, release: 180, reduction: 0 },
-      { id: 5, enabled: true, type: "BELL", frequency: 3100, gain: -2.0, q: 1.5, mode: "STEREO", dynamic: true, threshold: -22, range: -4, attack: 18, hold: 0, release: 220, reduction: -0.25 },
-      { id: 6, enabled: true, type: "BELL", frequency: 5900, gain: 2.2, q: 1.35, mode: "STEREO", dynamic: false, threshold: -24, range: -3, attack: 12, hold: 0, release: 180, reduction: 0 },
-      { id: 7, enabled: false, type: "NOTCH", frequency: 9000, gain: 2.8, q: 3.2, mode: "STEREO", dynamic: false, threshold: -24, range: -3, attack: 12, hold: 0, release: 180, reduction: 0 },
-      { id: 8, enabled: true, type: "HIGH SHELF", frequency: 13200, gain: 1.6, q: 0.7, mode: "STEREO", dynamic: false, threshold: -24, range: -3, attack: 12, hold: 0, release: 180, reduction: 0 },
+      { id: 4, enabled: true, type: "BELL", frequency: 620, gain: 1.0, q: 1.1, mode: "STEREO", dynamic: false, threshold: -24, range: -3, attack: 12, hold: 0, release: 180, reduction: 0 },
+      { id: 5, enabled: true, type: "BELL", frequency: 1800, gain: -2.0, q: 1.9, mode: "STEREO", dynamic: true, threshold: -22, range: -4, attack: 18, hold: 0, release: 220, reduction: -0.25 },
+      { id: 6, enabled: true, type: "BELL", frequency: 3400, gain: 1.6, q: 1.35, mode: "STEREO", dynamic: false, threshold: -24, range: -3, attack: 12, hold: 0, release: 180, reduction: 0 },
+      { id: 7, enabled: false, type: "NOTCH", frequency: 9000, gain: 2.0, q: 3.2, mode: "STEREO", dynamic: false, threshold: -24, range: -3, attack: 12, hold: 0, release: 180, reduction: 0 },
+      { id: 8, enabled: true, type: "HIGH SHELF", frequency: 12000, gain: 1.0, q: 0.7, mode: "STEREO", dynamic: false, threshold: -24, range: -3, attack: 12, hold: 0, release: 180, reduction: 0 },
     ];
   }
 
@@ -79,7 +79,8 @@
     const count = fixture === "sixteen-sources" ? 16 : 5;
     const names = fixture === "overview-golden" ? OVERVIEW_GOLDEN_NAMES : EQ_GOLDEN_NAMES;
     const sources = createSources(names, count);
-    const selectedSourceId = sources[Math.min(2, sources.length - 1)].id;
+    const selectedIndex = fixture === "eq-golden" ? 3 : 2;
+    const selectedSourceId = sources[Math.min(selectedIndex, sources.length - 1)].id;
     const time = Number.isFinite(nowMs) ? nowMs : 0;
 
     const state = {
@@ -198,6 +199,7 @@
     if (state.transport.recordState === "unknown") return "AUDITION BLOCKED · RECORD STATE UNKNOWN";
     if (state.transport.recordState !== "playing") return "AUDITION BLOCKED · TRANSPORT STOPPED";
     if (state.draft.state === "stale") return "AUDITION BLOCKED · DRAFT IS STALE";
+    if (state.draft.state === "lease") return "AUDITION BLOCKED · TEMPORARY APPLY AWAITS CONFIRMATION";
     if (state.draft.state === "none") return "NO DRAFT TO AUDITION";
     return "";
   }
@@ -216,6 +218,22 @@
     const band = findBand(state, action.bandId || state.view.selectedBandId, targetId);
     if (!band) return;
     const parameter = action.parameter;
+
+    if (parameter === "type") {
+      if (["BELL", "LOW SHELF", "HIGH SHELF", "NOTCH", "LOW CUT", "HIGH CUT"].includes(action.value)) {
+        band.type = action.value;
+      }
+      return;
+    }
+    if (parameter === "mode") {
+      if (["STEREO", "LEFT", "RIGHT", "MID", "SIDE"].includes(action.value)) band.mode = action.value;
+      return;
+    }
+    if (parameter === "dynamic") {
+      band.dynamic = action.value === true || action.value === "ON";
+      return;
+    }
+
     let value = Number(action.value);
     if (!Number.isFinite(value)) return;
 
@@ -243,6 +261,23 @@
     else return;
 
     band[parameter] = value;
+  }
+
+  function applyGlobalParameter(state, action) {
+    const targetId = action.targetId || selectedTarget(state);
+    const globals = state.probeEq.globalsByTarget[targetId];
+    if (!globals) return;
+
+    const ranges = {
+      inputTrim: [-24, 24],
+      outputTrim: [-24, 24],
+      monoBass: [0, 500],
+    };
+    const range = ranges[action.parameter];
+    const value = Number(action.value);
+    if (!range || !Number.isFinite(value)) return;
+    globals[action.parameter] = N.clamp(value, range[0], range[1]);
+    state.meta.notice = `${String(action.parameter).replace(/([A-Z])/g, " $1").toUpperCase()} UPDATED`;
   }
 
   function reduce(state, action, nowMs) {
@@ -285,9 +320,28 @@
         applyParameter(next, action, false);
         break;
 
+      case A.SET_GLOBAL_PARAMETER:
+        applyGlobalParameter(next, action);
+        break;
+
       case A.DRAG_BAND:
-        applyParameter(next, { ...action, parameter: "frequency", value: action.frequency }, false);
-        applyParameter(next, { ...action, parameter: "gain", value: action.gain }, false);
+        if (action.phase === "end") {
+          next.view.drag = null;
+        } else {
+          const bandId = Number(action.bandId || next.view.selectedBandId);
+          if (findBand(next, bandId)) {
+            next.view.selectedBandId = bandId;
+            next.view.drag = { bandId, pointerId: action.pointerId ?? null };
+            if (Number.isFinite(Number(action.frequency)) && Number.isFinite(Number(action.gain))) {
+              applyParameter(next, { ...action, bandId, parameter: "frequency", value: action.frequency }, false);
+              applyParameter(next, { ...action, bandId, parameter: "gain", value: action.gain }, false);
+            }
+          }
+        }
+        break;
+
+      case A.SET_HOVERED_CONTROL:
+        next.view.hoveredControl = action.controlId || null;
         break;
 
       case A.PREVIEW_BEGIN: {
@@ -303,12 +357,14 @@
         break;
       }
 
-      case A.PREVIEW_END:
-        if (next.draft.state === "auditioning") next.draft.state = "ready";
+      case A.PREVIEW_END: {
+        const wasAuditioning = next.draft.state === "auditioning";
+        if (wasAuditioning) next.draft.state = "ready";
         next.view.heldControl = null;
         next.view.lifecycle = "advise";
-        next.meta.notice = next.draft.state === "ready" ? "AUDITION ENDED · CONFIRMED EQ RESTORED" : next.meta.notice;
+        if (wasAuditioning) next.meta.notice = "AUDITION ENDED · CONFIRMED EQ RESTORED";
         break;
+      }
 
       case A.SEND_DRAFT:
         if (connectedFor(next, next.finding.targetSourceId)) {

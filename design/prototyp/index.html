@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Nakama Gen — Web Simulator</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="workbench" id="workbench">
+      <header class="workbench-header">
+        <div>
+          <p class="eyebrow">NAKAMA GEN · INTERACTION REFERENCE</p>
+          <h1>Web Simulator</h1>
+        </div>
+        <p class="demo-disclosure">Deterministic demo data · not a DSP reference</p>
+      </header>
+
+      <div class="stage-holder" id="stageHolder">
+        <main
+          class="plugin-stage"
+          id="pluginStage"
+          data-page="overview"
+          aria-label="Nakama Gen plug-in simulator"
+        >
+          <div class="shell" aria-hidden="true"></div>
+          <div class="shell-grain" aria-hidden="true"></div>
+          <div class="shell-top-sheen" aria-hidden="true"></div>
+          <div class="shell-side-rolloff" aria-hidden="true"></div>
+
+          <div class="fusion-frame">
+            <div class="glass-plane">
+              <img
+                class="wordmark"
+                src="../assets/figma/nakama-gen-2026-08-24/figma/nakama-gen-wordmark@4x.png"
+                alt="Nakama Gen"
+                width="48"
+                height="17"
+              />
+
+              <nav class="navigation" aria-label="Nakama Gen views and status">
+                <div class="page-tabs" role="tablist" aria-label="Editor page">
+                  <button
+                    class="nav-tab is-selected"
+                    id="tab-overview"
+                    type="button"
+                    role="tab"
+                    aria-selected="true"
+                    aria-controls="panel-overview"
+                    data-page-target="overview"
+                  >
+                    OVERVIEW
+                  </button>
+                  <button
+                    class="nav-tab"
+                    id="tab-eq-center"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="panel-eq-center"
+                    data-page-target="eq-center"
+                    tabindex="-1"
+                  >
+                    EQ CENTER
+                  </button>
+                </div>
+
+                <div class="nav-divider nav-divider-primary" aria-hidden="true"></div>
+
+                <ol class="lifecycle" aria-label="Current lifecycle stage">
+                  <li data-lifecycle="observe">OBSERVE</li>
+                  <li data-lifecycle="advise" class="is-current">ADVISE</li>
+                  <li data-lifecycle="audition">AUDITION</li>
+                  <li data-lifecycle="apply">APPLY</li>
+                </ol>
+
+                <div
+                  class="source-switcher"
+                  id="sourceSwitcher"
+                  role="radiogroup"
+                  aria-label="EQ target source"
+                >
+                  <div class="source-switcher-track" id="sourceSwitcherTrack"></div>
+                </div>
+                <div class="nav-divider nav-divider-master" aria-hidden="true"></div>
+                <button class="master-switch" id="masterSwitch" type="button">MASTER</button>
+
+                <div class="overview-statuses" aria-label="Overview status">
+                  <span id="probeCount">5 PROBES</span>
+                  <span id="staleCount">1 STALE</span>
+                  <span class="measurement-status" id="measurementStatus">
+                    <span class="measurement-dot" aria-hidden="true"></span>
+                    <span id="measurementLabel">MEASURING 68%</span>
+                  </span>
+                </div>
+
+                <button
+                  class="unavailable-status"
+                  id="widthUnavailable"
+                  type="button"
+                  aria-describedby="contextExplanation"
+                >
+                  WIDTH UNAVAILABLE
+                </button>
+              </nav>
+
+              <section
+                class="page-panel overview-panel is-active"
+                id="panel-overview"
+                role="tabpanel"
+                aria-labelledby="tab-overview"
+              >
+                <section class="probe-overview" aria-labelledby="probeOverviewTitle">
+                  <h2 id="probeOverviewTitle">PROBE OVERVIEW</h2>
+                  <p class="focus-readout" id="focusReadout">FOCUS&nbsp; / &nbsp;BASS&nbsp; / &nbsp;180–260 HZ</p>
+                  <p class="linked-readout" id="linkedReadout">5 / 5 LINKED</p>
+                  <div class="section-divider" aria-hidden="true"></div>
+                  <div class="heatmap-scale" aria-hidden="true">
+                    <span>20</span><span>60</span><span>120</span><span>250</span><span>500</span>
+                    <span>1K</span><span>2K</span><span>4K</span><span>8K</span>
+                  </div>
+                  <div class="probe-rows" id="probeRows">
+                    <canvas class="heatmap-canvas" id="heatmapCanvas" width="1408" height="298"></canvas>
+                  </div>
+                </section>
+
+                <section class="advisor" aria-labelledby="advisorTitle">
+                  <div class="section-divider" aria-hidden="true"></div>
+                  <h2 id="advisorTitle">ADVISOR</h2>
+                  <p class="finding-meta" id="findingMeta">FINDING 1 OF 3 · CONFIDENCE HIGH</p>
+                  <p class="finding-score" id="findingScore">5 / 5</p>
+
+                  <dl class="finding-details">
+                    <div><dt>PRIORITY</dt><dd id="findingPriority">Bass against piano, 180–260 Hz</dd></div>
+                    <div><dt>LIKELY CAUSE</dt><dd id="findingCause">Bass carries 3.4 dB too much there</dd></div>
+                    <div><dt>SMALLEST TEST</dt><dd id="findingTest">Bass −2 dB at 220 Hz, Q 1.2</dd></div>
+                    <div><dt>LISTEN FOR</dt><dd id="findingListen">Piano left hand, bars 33–41</dd></div>
+                    <div><dt>THEN</dt><dd id="findingThen">Re-check the same passage</dd></div>
+                  </dl>
+
+                  <div class="advisor-actions">
+                    <button class="glass-action audition-action" type="button" data-hold-audition>
+                      HOLD TO AUDITION
+                    </button>
+                    <button class="glass-action is-primary" id="overviewApply" type="button">APPLY</button>
+                    <button class="glass-action" id="overviewReject" type="button">REJECT</button>
+                    <button class="glass-action" id="openInEq" type="button">OPEN IN EQ</button>
+                  </div>
+                  <p class="test-ready" id="testReady">
+                    <span class="test-ready-dot" aria-hidden="true"></span>
+                    <span id="testReadyText">TEST READY&nbsp; / &nbsp;BASS&nbsp; −2.0 DB&nbsp; @ &nbsp;220 HZ&nbsp; / &nbsp;Q 1.2</span>
+                  </p>
+                  <div class="advisor-pipe" aria-hidden="true"></div>
+                </section>
+              </section>
+
+              <section
+                class="page-panel eq-panel"
+                id="panel-eq-center"
+                role="tabpanel"
+                aria-labelledby="tab-eq-center"
+                hidden
+              >
+                <section class="eq-graph" id="eqGraph" aria-label="Eight-band equalizer graph">
+                  <img
+                    class="eq-grid"
+                    src="../assets/figma/nakama-gen-2026-08-24/figma/eq-field-grid.svg"
+                    alt=""
+                  />
+                  <canvas class="spectrum-canvas" id="spectrumCanvas" width="1304" height="540"></canvas>
+                  <div class="protected-range" id="protectedRange" role="status" aria-label="Protected range from 3 to 6 kilohertz">
+                    <span class="protected-lock" aria-hidden="true">▱</span>
+                    <span>PROTECTED</span>
+                  </div>
+                  <svg class="curve-layer" id="curveLayer" viewBox="0 0 652 270" aria-hidden="true">
+                    <defs>
+                      <linearGradient id="confirmedFill" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0" stop-color="#7e3d3e" stop-opacity="0.34" />
+                        <stop offset="1" stop-color="#521220" stop-opacity="0.15" />
+                      </linearGradient>
+                    </defs>
+                    <g id="bandCurves"></g>
+                    <path id="confirmedFillPath" class="confirmed-fill" d=""></path>
+                    <path id="comparisonPath" class="comparison-curve" d=""></path>
+                    <path id="confirmedPath" class="confirmed-curve" d=""></path>
+                    <path id="draftPath" class="draft-curve" d=""></path>
+                    <path id="dynamicPath" class="dynamic-curve" d=""></path>
+                  </svg>
+                  <div class="band-handles" id="bandHandles"></div>
+
+                  <div class="graph-scales" aria-hidden="true">
+                    <div class="frequency-scale">
+                      <span>50</span><span>100</span><span>200</span><span>500</span>
+                      <span>1k</span><span>2k</span><span>5k</span><span>10k</span>
+                    </div>
+                    <div class="gain-scale">
+                      <span>+12</span><span>+6</span><span>0</span><span>−6</span><span>−12</span>
+                    </div>
+                  </div>
+
+                  <button class="graph-undo" id="undoButton" type="button" aria-label="Undo last confirmed change">↶</button>
+                  <p class="spectrum-label" id="spectrumLabel">SPECTRUM POST · COMMITTED</p>
+
+                  <section class="draft-card" id="draftCard" aria-labelledby="draftTitle">
+                    <h2 id="draftTitle">DRAFT</h2>
+                    <p id="draftDescription">Band 3 · 240 Hz · −1.5 → −3.0 dB · Q 1.6</p>
+                    <div class="draft-actions">
+                      <button type="button" data-hold-audition>HOLD TO AUDITION</button>
+                      <button type="button" id="eqApply">APPLY</button>
+                      <button type="button" id="eqReject">REJECT</button>
+                    </div>
+                  </section>
+                </section>
+
+                <form class="parameter-row" id="parameterForm" novalidate aria-label="Selected band parameters">
+                  <label class="parameter-control band-selector-control">
+                    <span>BAND</span>
+                    <select id="bandSelect" aria-label="Selected EQ band">
+                      <option>1</option><option>2</option><option selected>3</option><option>4</option>
+                      <option>5</option><option>6</option><option>7</option><option>8</option>
+                    </select>
+                    <button class="band-power" id="bandPower" type="button" aria-label="Disable band 3" aria-pressed="true"></button>
+                  </label>
+
+                  <label class="parameter-control">
+                    <span>TYPE</span>
+                    <select id="paramType" data-param="type" aria-label="Filter type">
+                      <option>BELL</option><option>LOW SHELF</option><option>HIGH SHELF</option>
+                      <option>NOTCH</option><option>LOW CUT</option><option>HIGH CUT</option>
+                    </select>
+                  </label>
+                  <label class="parameter-control" data-unit="Hz">
+                    <span>FREQ</span>
+                    <input id="paramFrequency" data-param="frequency" type="text" inputmode="decimal" value="240" />
+                  </label>
+                  <label class="parameter-control" data-unit="dB">
+                    <span>GAIN</span>
+                    <input id="paramGain" data-param="gain" type="text" inputmode="decimal" value="−1.5" />
+                  </label>
+                  <label class="parameter-control parameter-q">
+                    <span>Q</span>
+                    <input id="paramQ" data-param="q" type="text" inputmode="decimal" value="1.20" />
+                  </label>
+                  <label class="parameter-control">
+                    <span>MODE</span>
+                    <select id="paramMode" data-param="mode" aria-label="Channel mode">
+                      <option>STEREO</option><option>LEFT</option><option>RIGHT</option><option>MID</option><option>SIDE</option>
+                    </select>
+                  </label>
+
+                  <div class="parameter-divider" aria-hidden="true"></div>
+
+                  <label class="parameter-control">
+                    <span>DYN</span>
+                    <select id="paramDynamic" data-param="dynamic" aria-label="Dynamic EQ">
+                      <option selected>ON</option><option>OFF</option>
+                    </select>
+                  </label>
+                  <label class="parameter-control" data-unit="dB">
+                    <span>THRESH</span>
+                    <input id="paramThreshold" data-param="threshold" type="text" inputmode="decimal" value="−24" />
+                  </label>
+                  <label class="parameter-control" data-unit="dB">
+                    <span>RANGE</span>
+                    <input id="paramRange" data-param="range" type="text" inputmode="decimal" value="−6" />
+                  </label>
+                  <label class="parameter-control" data-unit="ms">
+                    <span>ATTACK</span>
+                    <input id="paramAttack" data-param="attack" type="text" inputmode="decimal" value="12" />
+                  </label>
+                  <label class="parameter-control" data-unit="ms">
+                    <span>HOLD</span>
+                    <input id="paramHold" data-param="hold" type="text" inputmode="decimal" value="0" />
+                  </label>
+                  <label class="parameter-control" data-unit="ms">
+                    <span>RELEASE</span>
+                    <input id="paramRelease" data-param="release" type="text" inputmode="decimal" value="180" />
+                  </label>
+                </form>
+
+                <button class="connection-aperture" id="connectionAperture" type="button" aria-label="Probe connected"></button>
+
+                <div class="bottom-controls">
+                  <button class="utility-pill" id="globalButton" type="button" aria-expanded="false" aria-controls="globalPanel">
+                    GLOBAL <span aria-hidden="true">⌄</span>
+                  </button>
+                  <button class="utility-pill" id="bypassButton" type="button" aria-pressed="false">BYPASS</button>
+                  <button class="mix-planned" id="mixPlanned" type="button" aria-describedby="contextExplanation">
+                    <span class="mix-knob" aria-hidden="true"></span>
+                    <span><strong>MIX</strong><small>PLANNED</small></span>
+                  </button>
+                </div>
+
+                <section class="global-panel" id="globalPanel" aria-label="Global EQ parameters" hidden>
+                  <label>INPUT <input id="globalInput" data-global-param="inputTrim" type="number" min="-24" max="24" step="0.1" value="0" /></label>
+                  <label>OUTPUT <input id="globalOutput" data-global-param="outputTrim" type="number" min="-24" max="24" step="0.1" value="0" /></label>
+                  <label>WIDTH · PLANNED <input id="globalWidth" type="number" min="0" max="2" step="0.01" value="1" readonly aria-readonly="true" aria-describedby="contextExplanation" /></label>
+                  <label>MONO BASS <input id="globalMonoBass" data-global-param="monoBass" type="number" min="0" max="500" step="1" value="0" /></label>
+                </section>
+              </section>
+
+              <div class="glass-reflection" aria-hidden="true"></div>
+              <div class="glass-vignette" aria-hidden="true"></div>
+              <div class="glass-assimilation" aria-hidden="true"></div>
+              <div class="signal-pipe" aria-hidden="true"></div>
+              <div class="glass-inner-shadow" aria-hidden="true"></div>
+
+              <p class="context-explanation" id="contextExplanation" role="status" aria-live="polite" hidden></p>
+            </div>
+            <div class="glass-contour" aria-hidden="true"></div>
+          </div>
+        </main>
+      </div>
+
+      <aside class="inspector" aria-labelledby="inspectorTitle">
+        <div class="inspector-heading">
+          <div>
+            <p class="eyebrow">PRÜFPANEL · AUSSERHALB DES PLUG-INS</p>
+            <h2 id="inspectorTitle">Zustände und Qualität</h2>
+          </div>
+          <span class="demo-badge">DEMO</span>
+        </div>
+
+        <div class="inspector-grid">
+          <label>
+            Szenario
+            <select id="fixtureSelect">
+              <option value="overview-golden">Overview Golden</option>
+              <option value="eq-golden">EQ Center Golden</option>
+              <option value="sixteen-sources">16 Quellen</option>
+              <option value="disconnected">Broker getrennt</option>
+              <option value="recording-gate">Aufnahme blockiert</option>
+              <option value="stale-automation">Stale durch Automation</option>
+            </select>
+          </label>
+          <label>
+            Skalierung
+            <select id="scaleSelect">
+              <option value="1">100 % · 760×430</option>
+              <option value="1.25">125 % · 950×538</option>
+              <option value="1.5">150 % · 1140×645</option>
+              <option value="2">200 % · 1520×860</option>
+            </select>
+          </label>
+          <label>
+            Verbindung
+            <select id="connectionSelect">
+              <option value="connected">Verbunden</option>
+              <option value="broker-offline">Broker offline</option>
+              <option value="probe-offline">Probe offline</option>
+            </select>
+          </label>
+          <label>
+            Transport
+            <select id="transportSelect">
+              <option value="playing">Spielt</option>
+              <option value="stopped">Gestoppt</option>
+              <option value="recording">Aufnahme</option>
+              <option value="unknown">Unbekannt</option>
+            </select>
+          </label>
+          <label>
+            Messung
+            <select id="measurementSelect">
+              <option value="measuring">Misst</option>
+              <option value="fresh">Frisch</option>
+              <option value="stale">Veraltet</option>
+              <option value="incomplete">Unvollständig</option>
+            </select>
+          </label>
+          <label>
+            Vergleich
+            <select id="comparisonSelect">
+              <option value="">Keine zweite Spur</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="inspector-actions">
+          <button id="automationButton" type="button">Externe Automation simulieren</button>
+          <button id="audioButton" type="button" aria-pressed="false">Demo-Loop starten</button>
+        </div>
+        <p class="inspector-status" id="inspectorStatus" role="status" aria-live="polite">Bereit.</p>
+      </aside>
+    </div>
+
+    <output id="stateProbe" hidden aria-hidden="true"></output>
+
+    <script src="src/contract.js"></script>
+    <script src="src/demo-adapter.js"></script>
+    <script src="src/audio-demo.js"></script>
+    <script src="src/renderers.js"></script>
+    <script src="src/app.js"></script>
+  </body>
+</html>

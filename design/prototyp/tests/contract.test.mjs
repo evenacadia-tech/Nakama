@@ -46,6 +46,7 @@ for (const required of [
   "PREVIEW_BEGIN",
   "PREVIEW_END",
   "SEND_DRAFT",
+  "SET_GLOBAL_PARAMETER",
   "TEMPORARY_APPLY",
   "CONFIRM_APPLY",
   "REJECT_DRAFT",
@@ -56,4 +57,3 @@ for (const required of [
 }
 
 console.log("Contract tests passed: manifests, motion tokens, action vocabulary and golden hashes agree.");
-

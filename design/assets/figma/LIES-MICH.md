@@ -182,3 +182,16 @@ Gezeigt ist **eine** Kachel im Schönfall; der Export enthält keine Zustände.
 Anmerkung, keine Wertung: der Export zeigt den Host-Grund 811 Einheiten breit
 statt 900 wie bei Probeeq; die Kachel sitzt bei x = 320, also nicht mittig im
 exportierten Grund. Für die Übersetzung ist nur die Kachel maßgeblich.
+
+
+## `2026-08-24-ui-assets/` — skeuomorphe Bedienelement-Assets (User-Vorgabe)
+
+Eine andere Klasse als die App-Stände oben: keine Nakama-Oberfläche,
+sondern eine vom User ausgesucht und bereitgestellte **Sammlung
+hochwertiger UI-Assets** (Delay-UI hell/dunkel, Guitar-Pedal, Toggle-Dock)
+aus der Figma-Copy `Skeuomorphic synth (Community)`, Key
+`ctqT46dZpyVxmyXX9XfUtx`. Auftrag: daraus die Bedienelement-Sammlung für
+die Plugins bauen („diese assets sind gold", 2026-08-24). Inhalt, Hashes
+und die Grenze zwischen bytegleichen User-Exporten und bloßen
+Viewport-Belegen: `2026-08-24-ui-assets/LIES-MICH.md`. Übersetzung:
+`design/bausteine/`.

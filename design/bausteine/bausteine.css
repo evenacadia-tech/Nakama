@@ -1,0 +1,589 @@
+/* Bausteine — Nakama Control Library
+   Übersetzung der UI-Assets 2026-08-24 (Truhe: assets/figma/2026-08-24-ui-assets/).
+   Spezimen englisch, Werkzeug-Chrome deutsch. Kein Build, keine Abhängigkeit. */
+
+@font-face {
+  font-family: "Geist";
+  src: url("../prototyp/assets/fonts/Geist-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist Mono";
+  src: url("../prototyp/assets/fonts/GeistMono-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --akzent: #b04038;
+  --radius: 9px;
+  --typo: 11px;
+  --dichte: 30px;
+  --mixw: 0%;   /* Grundton heller  */
+  --mixb: 0%;   /* Grundton dunkler */
+}
+
+/* ---------- Themen ---------- */
+html[data-thema="dunkel"] {
+  --grund0:   #131417;
+  --flaeche0: #1d1f22;
+  --einlass0: #17181b;
+  --metall-a: #3c3f43;  /* Knopfkörper hell(st)e Kante */
+  --metall-b: #232527;
+  --metall-c: #161719;
+  --text:        #d6d4d0;
+  --text-schwach:#8b8b90;
+  --linie:       #33353a;
+  --bahn:        #3a3d42;
+  --bahn-voll:   #e8e6e3;
+  --tick:        #5b5e64;
+  --taste-flaeche: linear-gradient(180deg, #2c2e32, #212327);
+  --taste-kante:   #0c0d0e;
+  --taste-licht:   rgba(255,255,255,.14);
+  --schatten-tief: rgba(0,0,0,.6);
+  --dock-wanne: #101113;
+  color-scheme: dark;
+}
+html[data-thema="hell"] {
+  --grund0:   #e9e8e6;
+  --flaeche0: #f4f3f1;
+  --einlass0: #efeeec;
+  --metall-a: #4a4d51;
+  --metall-b: #2b2d30;
+  --metall-c: #1b1c1e;
+  --text:        #2c2c2e;
+  --text-schwach:#77777c;
+  --linie:       #cfcecb;
+  --bahn:        #c9c8c5;
+  --bahn-voll:   #1f2022;
+  --tick:        #9a9996;
+  --taste-flaeche: linear-gradient(180deg, #ffffff, #e8e7e5);
+  --taste-kante:   #1c1c1e;
+  --taste-licht:   rgba(255,255,255,.9);
+  --schatten-tief: rgba(0,0,0,.28);
+  --dock-wanne: #d9d8d5;
+  color-scheme: light;
+}
+
+/* Grundton-Feinregler wirkt auf beide Themen */
+:root {
+  --grund:   color-mix(in srgb, color-mix(in srgb, var(--grund0),   white var(--mixw)), black var(--mixb));
+  --flaeche: color-mix(in srgb, color-mix(in srgb, var(--flaeche0), white var(--mixw)), black var(--mixb));
+  --einlass: color-mix(in srgb, color-mix(in srgb, var(--einlass0), white var(--mixw)), black var(--mixb));
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Geist", system-ui, sans-serif;
+  background: var(--grund);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 26px clamp(280px, 24vw, 320px) 80px 34px;
+}
+
+code { font-family: "Geist Mono", ui-monospace, monospace; font-size: .92em; }
+
+/* ---------- Kopf & Standband (Chrome) ---------- */
+.kopf { max-width: 1100px; margin-bottom: 10px; }
+.kopf h1 { font-size: 22px; font-weight: 650; letter-spacing: .02em; }
+.kopf-en { color: var(--text-schwach); font-weight: 400; font-size: 15px; margin-left: 8px; }
+.kopf-zeile { color: var(--text-schwach); font-size: 12.5px; line-height: 1.55; max-width: 78ch; margin-top: 6px; }
+.standband {
+  margin-top: 12px;
+  font-family: "Geist Mono", monospace;
+  font-size: 11px;
+  color: var(--text-schwach);
+  border: 1px solid var(--linie);
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: inline-block;
+}
+.standband.warnt { color: #d08030; border-color: #d08030; }
+
+/* ---------- Gruppen ---------- */
+.gruppe { margin-top: 42px; max-width: 1100px; }
+.gruppe h2 { font-size: 15px; font-weight: 600; letter-spacing: .04em; }
+.gruppe h3 { font-size: 12.5px; font-weight: 600; color: var(--text-schwach); margin-top: 26px; letter-spacing: .04em; }
+.erklaer { color: var(--text-schwach); font-size: 12.5px; line-height: 1.55; max-width: 82ch; margin-top: 6px; }
+
+.reihe {
+  display: flex; flex-wrap: wrap; align-items: flex-end;
+  gap: var(--dichte);
+  margin-top: 18px;
+}
+.probe {
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  padding: calc(var(--dichte) * .7);
+  background: var(--flaeche);
+  border: 1px solid var(--linie);
+  border-radius: calc(var(--radius) + 5px);
+  min-width: 150px;
+}
+.probe--breit { min-width: 380px; }
+
+/* Vorlagen-Ausschnitt (von JS erzeugt) */
+.ref {
+  width: 150px; height: 150px;
+  border-radius: 6px;
+  border: 1px dashed var(--text-schwach);
+  position: relative;
+  overflow: hidden;
+}
+.ref img { position: absolute; max-width: none; display: block; }
+.ref::after {
+  content: "VORLAGE";
+  position: absolute; right: 4px; bottom: 3px;
+  font-family: "Geist Mono", monospace; font-size: 8px; letter-spacing: .08em;
+  color: var(--text-schwach);
+  background: color-mix(in srgb, var(--grund) 78%, transparent);
+  padding: 1px 4px; border-radius: 3px;
+}
+
+/* ---------- gemeinsame Beschriftung der Spezimen ---------- */
+.k-label {
+  font-size: var(--typo);
+  font-weight: 560;
+  letter-spacing: .18em;
+  color: var(--text);
+  text-align: center;
+}
+.k-wert, .wertzeile, .step-anzeige, .stomp-label {
+  font-family: "Geist Mono", monospace;
+  font-size: calc(var(--typo) - 1px);
+  color: var(--text-schwach);
+  letter-spacing: .06em;
+  text-align: center;
+}
+
+/* =========================================================
+   A · DREHREGLER
+   ========================================================= */
+.knob { --kd: 150px; position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; touch-action: none; }
+.knob--m { --kd: 104px; }
+.knob--s { --kd: 64px; }
+.knob--pointer { --kd: 96px; }
+
+.k-buehne { position: relative; display: grid; place-items: center; }
+.k-buehne svg { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+
+/* Leucht-/Wertbogen */
+.bogen-rest  { stroke: var(--bahn); }
+.bogen-wert  { stroke: var(--akzent); filter: drop-shadow(0 0 5px color-mix(in srgb, var(--akzent) 65%, transparent)); }
+.kranz-punkte { fill: var(--tick); }
+
+/* Teller + Kappe: der skeuomorphe Körper */
+.teller {
+  width: var(--kd); height: var(--kd);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 26%, var(--metall-a), var(--metall-b) 52%, var(--metall-c) 96%);
+  box-shadow:
+    0 calc(var(--kd) * .10) calc(var(--kd) * .26) var(--schatten-tief),
+    0 2px 5px rgba(0,0,0,.45),
+    inset 0 1px 1px var(--taste-licht),
+    inset 0 -2px 6px rgba(0,0,0,.5);
+  display: grid; place-items: center;
+  cursor: ns-resize;
+}
+.kappe {
+  width: 76%; height: 76%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 36% 30%, color-mix(in srgb, var(--metall-a) 82%, white 6%), var(--metall-b) 58%, color-mix(in srgb, var(--metall-c) 88%, black 10%));
+  box-shadow:
+    inset 0 2px 3px rgba(255,255,255,.10),
+    inset 0 -3px 7px rgba(0,0,0,.55),
+    0 1px 2px rgba(0,0,0,.6);
+  position: relative;
+}
+/* Wertpunkt auf der Kappe (Hero) */
+.kappe .punkt {
+  position: absolute; left: 50%; top: 50%;
+  width: calc(var(--kd) * .055); height: calc(var(--kd) * .055);
+  min-width: 4px; min-height: 4px;
+  border-radius: 50%;
+  background: var(--akzent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--akzent) 80%, transparent);
+  transform: translate(-50%, -50%) rotate(var(--winkel, 0deg)) translateY(calc(var(--kd) * -0.27));
+}
+
+/* Orbit-Variante: Kugel-Griff auf der Kreisbahn */
+.knob--orbit .orbit-kugel {
+  position: absolute; left: 50%; top: 50%;
+  width: calc(var(--kd) * .17); height: calc(var(--kd) * .17);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #4a4d52, #2a2c2f 60%, #1a1b1d);
+  box-shadow: 0 3px 7px rgba(0,0,0,.55), inset 0 1px 1px rgba(255,255,255,.22);
+  transform: translate(-50%, -50%) rotate(var(--winkel, 0deg)) translateY(calc(var(--kd) * -0.62));
+  pointer-events: none;
+}
+.knob--orbit .kappe .punkt { display: none; }
+
+/* Pointer-Variante: gebürstetes Pedal-Metall + Zeigerstrich */
+.knob--pointer .teller {
+  background:
+    conic-gradient(from 210deg,
+      #34363a, #232527 12%, #3d4045 25%, #26282b 38%,
+      #191a1c 52%, #2f3236 66%, #202225 80%, #34363a 100%);
+  box-shadow:
+    0 calc(var(--kd) * .12) calc(var(--kd) * .22) var(--schatten-tief),
+    0 2px 4px rgba(0,0,0,.5),
+    inset 0 1px 1px rgba(255,255,255,.16),
+    inset 0 -2px 5px rgba(0,0,0,.55);
+}
+.knob--pointer .kappe {
+  width: 84%; height: 84%;
+  background:
+    radial-gradient(circle at 38% 30%, #37393d, #26272a 55%, #151618 100%);
+}
+.knob--pointer .kappe .punkt { display: none; }
+.knob--pointer .zeiger {
+  position: absolute; left: 50%; top: 50%;
+  width: 2.5px; height: calc(var(--kd) * .34);
+  border-radius: 2px;
+  background: linear-gradient(180deg, #d9d7d3, #9c9a96);
+  box-shadow: 0 0 3px rgba(0,0,0,.6);
+  transform: translate(-50%, -100%) rotate(var(--winkel, 0deg));
+  transform-origin: 50% 100%;
+}
+
+/* feste Skala um den Pointer-Knopf (BALANCE) */
+.skala-wort { fill: var(--text-schwach); font-family: "Geist", sans-serif;
+  font-size: 9px; letter-spacing: .08em; }
+.skala-wort.aktiv { fill: var(--text); font-weight: 600; }
+
+/* =========================================================
+   B · SCHIEBEREGLER
+   ========================================================= */
+.slider { width: 240px; display: flex; flex-direction: column; gap: 8px; touch-action: none; }
+.slider--schmal { width: 190px; }
+.slider .s-kopf { display: flex; justify-content: space-between; align-items: baseline; }
+.s-ticks { display: flex; justify-content: space-between; padding: 0 2px; }
+.s-ticks i { width: 2.5px; height: 2.5px; border-radius: 50%; background: var(--tick); }
+.s-bahn {
+  position: relative; height: 22px; cursor: ew-resize;
+}
+.s-linie {
+  position: absolute; left: 0; right: 0; top: 50%; height: 2px;
+  transform: translateY(-50%);
+  background: var(--bahn); border-radius: 1px;
+}
+.s-voll {
+  position: absolute; left: 0; top: 50%; height: 3px;
+  transform: translateY(-50%);
+  background: var(--akzent);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--akzent) 55%, transparent);
+  border-radius: 2px;
+}
+.s-griff {
+  position: absolute; top: 50%;
+  width: 34px; height: 17px;
+  transform: translate(-50%, -50%);
+  border-radius: 5px;
+  background: var(--taste-flaeche);
+  border: 1px solid var(--taste-kante);
+  box-shadow: 0 2px 4px rgba(0,0,0,.4), inset 0 1px 0 var(--taste-licht);
+  cursor: grab;
+}
+.s-griff::after {          /* Fingerrille */
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: 14px; height: 2px; transform: translate(-50%,-50%);
+  border-radius: 1px;
+  background: rgba(0,0,0,.35);
+  box-shadow: 0 1px 0 var(--taste-licht);
+}
+.s-griff:active { cursor: grabbing; }
+
+/* Doppelgriff-Bereich */
+.range { width: 340px; padding: 12px 16px 10px;
+  border: 1.5px solid var(--taste-kante);
+  border-radius: calc(var(--radius) + 3px);
+  background: var(--einlass);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,.22);
+  display: flex; flex-direction: column; gap: 8px; touch-action: none;
+}
+.range .r-koepfe { display: flex; justify-content: space-around; }
+.range .r-fuss { display: flex; justify-content: space-between; }
+.range .s-voll { box-shadow: none; }
+
+/* =========================================================
+   C · TASTEN & SCHALTER
+   ========================================================= */
+.pillen { display: flex; align-items: center; gap: 14px; }
+
+.pille, .segment span {
+  font-family: "Geist", sans-serif;
+  font-size: var(--typo); font-weight: 560; letter-spacing: .1em;
+  color: var(--text);
+}
+.pille {
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  background: var(--taste-flaeche);
+  border: 1.5px solid var(--taste-kante);
+  box-shadow: 0 2.5px 5px rgba(0,0,0,.35), inset 0 1px 0 var(--taste-licht);
+  cursor: pointer;
+}
+.pille:active { transform: translateY(1px); box-shadow: 0 1px 2px rgba(0,0,0,.3), inset 0 1px 0 var(--taste-licht); }
+.pille[data-an="1"] {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--einlass) 88%, black 6%), var(--einlass));
+  box-shadow: inset 0 2px 5px rgba(0,0,0,.45), inset 0 -1px 0 var(--taste-licht);
+  transform: translateY(1px);
+}
+.pille[data-an="1"]::after {
+  content: ""; display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+  margin-left: 7px; vertical-align: 1px;
+  background: var(--akzent);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--akzent) 75%, transparent);
+}
+
+.segment {
+  display: flex; overflow: hidden;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--taste-kante);
+  box-shadow: 0 2.5px 5px rgba(0,0,0,.35);
+  cursor: pointer;
+}
+.segment span { padding: 8px 16px; background: var(--taste-flaeche); }
+.segment span.aktiv {
+  background: linear-gradient(180deg, var(--metall-b), var(--metall-c));
+  color: #e8e6e3;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,.5);
+}
+html[data-thema="dunkel"] .segment span.aktiv {
+  background: linear-gradient(180deg, #dedcd8, #c6c4c0);
+  color: #1d1e20;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.25);
+}
+
+/* Dreistellungs-Kippschalter */
+.kipp { display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer; }
+.kipp-schacht {
+  width: 58px; height: 58px; border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 28%, #45484d, #2a2c2f 55%, #17181a 100%);
+  box-shadow:
+    0 5px 12px var(--schatten-tief),
+    inset 0 1px 1px rgba(255,255,255,.2),
+    inset 0 -3px 6px rgba(0,0,0,.55);
+  display: grid; place-items: center;
+  position: relative;
+}
+.kipp-schacht::before {     /* Gewindering */
+  content: ""; position: absolute; inset: 7px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #333539, #1c1d1f 70%);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.6), inset 0 -1px 1px rgba(255,255,255,.08);
+}
+.hebel {
+  position: relative; z-index: 1;
+  width: 13px; height: 13px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, #e6e4e0, #9d9b97 55%, #64625e);
+  box-shadow: 0 2px 4px rgba(0,0,0,.6);
+  transition: transform .12s ease, height .12s ease;
+}
+.kipp[data-pos="0"] .hebel { height: 24px; border-radius: 8px; transform: translateY(-7px); }
+.kipp[data-pos="2"] .hebel { height: 24px; border-radius: 8px; transform: translateY(7px); }
+.kipp-skala { display: flex; gap: 9px; }
+.kipp-skala span {
+  font-size: calc(var(--typo) - 1.5px); letter-spacing: .1em;
+  color: var(--text-schwach); font-weight: 520;
+}
+.kipp-skala span.aktiv { color: var(--text); font-weight: 650; }
+
+/* Power */
+.power {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: transparent;
+  border: 1.5px solid var(--text-schwach);
+  color: var(--text-schwach);
+  display: grid; place-items: center;
+  cursor: pointer;
+}
+.power--klein { width: 30px; height: 30px; }
+.power svg { width: 46%; height: 46%; stroke: currentColor; }
+.power[data-an="1"] {
+  color: var(--text);
+  border-color: var(--text);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--akzent) 45%, transparent),
+              inset 0 0 5px color-mix(in srgb, var(--akzent) 25%, transparent);
+}
+
+/* Stepper */
+.stepper { display: flex; align-items: center; gap: 12px; }
+.step {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1.5px solid var(--text-schwach);
+  background: transparent; color: var(--text-schwach);
+  font-size: 17px; line-height: 1;
+  display: grid; place-items: center;
+  cursor: pointer; padding-bottom: 2px;
+}
+.step:hover { color: var(--text); border-color: var(--text); }
+.step:active { transform: translateY(1px); }
+.stepper--kompakt .step { width: 26px; height: 26px; font-size: 14px; }
+
+/* LEDs */
+.ledfeld { display: flex; align-items: center; gap: 18px; }
+.led {
+  width: 15px; height: 15px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 32%, #303236, #1a1b1d);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.7), 0 1px 1px var(--taste-licht);
+  border: 2.5px solid #0e0f10;
+  cursor: pointer;
+}
+.led--klein { width: 10px; height: 10px; border-width: 2px; }
+.led[data-an="1"] {
+  background: radial-gradient(circle at 42% 35%,
+    color-mix(in srgb, var(--akzent) 55%, white 45%),
+    var(--akzent) 60%,
+    color-mix(in srgb, var(--akzent) 70%, black 30%));
+  box-shadow:
+    0 0 9px 2px color-mix(in srgb, var(--akzent) 70%, transparent),
+    inset 0 1px 1px rgba(255,255,255,.5);
+}
+
+/* Fußschalter */
+.stomp-block { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.led--stomp { cursor: default; }
+.stomp {
+  width: 92px; height: 92px; border-radius: 50%;
+  border: none; cursor: pointer;
+  background:
+    radial-gradient(circle at 35% 28%, #57595d, #323438 40%, #1d1e20 72%, #2c2e31 100%);
+  box-shadow:
+    0 8px 18px var(--schatten-tief),
+    inset 0 2px 2px rgba(255,255,255,.22),
+    inset 0 -4px 9px rgba(0,0,0,.6);
+  display: grid; place-items: center;
+  position: relative;
+}
+.stomp::before {           /* äußerer Schraubring */
+  content: ""; position: absolute; inset: 9px; border-radius: 50%;
+  background: conic-gradient(from 120deg, #3c3e42, #232528 22%, #43454a 46%, #26282b 70%, #3c3e42 100%);
+  box-shadow: inset 0 1px 2px rgba(255,255,255,.14), inset 0 -2px 5px rgba(0,0,0,.6);
+}
+.stomp::after {            /* Tastfläche */
+  content: ""; position: absolute; inset: 22px; border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #4b4d52, #2b2d30 62%, #202124);
+  box-shadow: 0 3px 7px rgba(0,0,0,.55), inset 0 1px 1px rgba(255,255,255,.16);
+  transition: transform .06s ease, box-shadow .06s ease;
+}
+.stomp:active::after { transform: scale(.97); box-shadow: 0 1px 3px rgba(0,0,0,.5), inset 0 1px 1px rgba(255,255,255,.12); }
+.stomp-label { letter-spacing: .18em; }
+
+/* =========================================================
+   D · DOCK
+   ========================================================= */
+.dock {
+  display: flex; gap: 14px; align-items: center;
+  padding: 14px 18px;
+  border-radius: 999px;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--dock-wanne) 92%, white 4%),
+    var(--dock-wanne));
+  box-shadow:
+    0 12px 28px var(--schatten-tief),
+    inset 0 1px 1px rgba(255,255,255,.09),
+    inset 0 -2px 6px rgba(0,0,0,.4);
+}
+.dock-taste {
+  width: 62px; height: 62px; border-radius: 50%;
+  border: none; cursor: pointer;
+  color: #a7a7ac;
+  background: radial-gradient(circle at 35% 28%,
+    color-mix(in srgb, var(--dock-wanne) 70%, white 9%),
+    color-mix(in srgb, var(--dock-wanne) 92%, white 2%) 58%,
+    color-mix(in srgb, var(--dock-wanne) 88%, black 10%));
+  box-shadow:
+    0 5px 10px rgba(0,0,0,.5),
+    inset 0 1.5px 1.5px rgba(255,255,255,.12),
+    inset 0 -3px 6px rgba(0,0,0,.45);
+  display: grid; place-items: center;
+}
+.dock-taste svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+.dock-taste.aktiv {
+  color: #e8e6e3;
+  background: radial-gradient(circle at 50% 60%,
+    color-mix(in srgb, var(--dock-wanne) 86%, black 14%),
+    color-mix(in srgb, var(--dock-wanne) 92%, black 4%));
+  box-shadow:
+    inset 0 4px 9px rgba(0,0,0,.6),
+    inset 0 -1px 1px rgba(255,255,255,.07),
+    0 1px 0 rgba(255,255,255,.05);
+}
+html[data-thema="hell"] .dock-taste { color: #6c6c70; }
+html[data-thema="hell"] .dock-taste.aktiv { color: #1f2022; }
+
+/* =========================================================
+   E · GEHÄUSE
+   ========================================================= */
+.geraet {
+  width: 640px; max-width: 100%;
+  border-radius: 26px;
+  background: linear-gradient(160deg,
+    color-mix(in srgb, var(--flaeche) 96%, white 3%),
+    color-mix(in srgb, var(--flaeche) 94%, black 5%));
+  border: 2.5px solid var(--taste-kante);
+  box-shadow:
+    0 22px 50px var(--schatten-tief),
+    inset 0 1.5px 1px var(--taste-licht),
+    inset 0 -6px 16px rgba(0,0,0,.25);
+  padding: 22px 28px 26px;
+  display: flex; flex-direction: column; gap: 22px;
+}
+.geraet-kopf { display: flex; align-items: center; justify-content: space-between; }
+.geraet-mitte { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.geraet-slider { display: flex; flex-direction: column; gap: 16px; }
+.einlass { display: flex; justify-content: center; }
+
+/* =========================================================
+   Zustand „deaktiviert" (ehrlich stumpf)
+   ========================================================= */
+body[data-zustand="deaktiviert"] .blatt .probe > :not(.ref),
+body[data-zustand="deaktiviert"] .blatt .geraet {
+  filter: grayscale(.7) contrast(.82) brightness(.85);
+  opacity: .6;
+  pointer-events: none;
+}
+
+/* =========================================================
+   Bedien-Panel (Werkzeug-Chrome)
+   ========================================================= */
+.panel {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: 252px;
+  background: var(--flaeche);
+  border-left: 1px solid var(--linie);
+  padding: 20px 18px 30px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+.panel h2 { font-size: 13px; letter-spacing: .05em; margin-bottom: 14px; }
+.panel fieldset { border: 1px solid var(--linie); border-radius: 8px; padding: 10px 12px 12px; margin-bottom: 14px; }
+.panel legend { padding: 0 6px; color: var(--text-schwach); font-size: 11px; letter-spacing: .05em; }
+.p-reihe { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.p-taste {
+  font: inherit; color: var(--text);
+  background: transparent;
+  border: 1px solid var(--linie); border-radius: 6px;
+  padding: 5px 10px; cursor: pointer;
+}
+.p-taste[aria-pressed="true"] { border-color: var(--text); font-weight: 650; }
+.p-farbe {
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 2px solid var(--linie); cursor: pointer;
+  background: var(--f);
+}
+.p-farbe.aktiv { border-color: var(--text); }
+#akzent-frei { width: 30px; height: 26px; border: none; background: none; cursor: pointer; padding: 0; }
+.p-slider { display: flex; align-items: center; gap: 8px; margin-top: 8px; color: var(--text-schwach); }
+.p-slider input { flex: 1; accent-color: var(--akzent); }
+.p-slider output { font-family: "Geist Mono", monospace; width: 3ch; text-align: right; }
+.p-hinweis { color: var(--text-schwach); font-size: 10.5px; line-height: 1.5; margin-top: 8px; }
+
+/* Fokus sichtbar, überall */
+:where(button, .segment, .kipp, .s-bahn, .led, .teller):focus-visible {
+  outline: 2px solid var(--akzent); outline-offset: 3px;
+}

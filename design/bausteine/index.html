@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="de" data-thema="dunkel">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bausteine — Nakama Control Library</title>
+<link rel="stylesheet" href="bausteine.css">
+</head>
+<body>
+
+<header class="kopf">
+  <div>
+    <h1>Bausteine <span class="kopf-en">Nakama Control Library</span></h1>
+    <p class="kopf-zeile">Übersetzung der UI-Assets vom 2026-08-24
+      (<code>assets/figma/2026-08-24-ui-assets/</code> · Figma
+      <code>Skeuomorphic synth</code>, Copy des Users). Jedes Element ist
+      bedienbar; Werte sind lokaler Blattzustand — <strong>Demo, keine
+      Plugin-Daten</strong>. Beurteilt wird bei 1:1.</p>
+  </div>
+  <div class="standband" id="standband">Blatt lädt …</div>
+</header>
+
+<main class="blatt" id="blatt">
+
+  <!-- ================= A · Drehregler ================= -->
+  <section class="gruppe" data-ref="hero">
+    <h2>A · Drehregler</h2>
+    <p class="erklaer">Drei Typen aus der Vorlage: <em>Hero</em> (Leuchtbogen +
+    Punktkranz, Delay-UI rechts) · <em>Orbit</em> (Kugel-Griff auf der
+    Kreisbahn, Delay-UI links) · <em>Pointer</em> (Pedal-Knopf mit Zeiger,
+    auch mit fester Skala). Ziehen = Wert, Doppelklick = Ausgang, Mausrad fein.</p>
+    <div class="reihe">
+      <div class="probe" data-quelle="presentation-1" data-crop="1180,750,470,470">
+        <div class="knob knob--hero" data-wert="72" data-label="TIME" data-einheit="%"></div>
+      </div>
+      <div class="probe" data-quelle="presentation-1" data-crop="330,740,470,470">
+        <div class="knob knob--orbit" data-wert="35" data-label="FEEDBACK" data-einheit="%"></div>
+      </div>
+      <div class="probe" data-quelle="guitar-pedal" data-crop="290,70,240,240">
+        <div class="knob knob--pointer" data-wert="55" data-label="MIX" data-einheit="%"></div>
+      </div>
+      <div class="probe" data-quelle="guitar-pedal" data-crop="540,350,280,300">
+        <div class="knob knob--pointer knob--skala" data-wert="50" data-label="BALANCE"
+             data-skala="REV OCT,REV,FWD,ALL" data-bipolar="1"></div>
+      </div>
+    </div>
+    <h3>Größenreihe (S · M · L, echte Pixel)</h3>
+    <div class="reihe">
+      <div class="probe"><div class="knob knob--hero knob--s" data-wert="30" data-label="Q" data-einheit="" data-max="10"></div></div>
+      <div class="probe"><div class="knob knob--hero knob--m" data-wert="58" data-label="GAIN" data-einheit="dB" data-bipolar="1"></div></div>
+      <div class="probe"><div class="knob knob--hero" data-wert="72" data-label="TIME" data-einheit="%"></div></div>
+    </div>
+  </section>
+
+  <!-- ================= B · Schieberegler ================= -->
+  <section class="gruppe">
+    <h2>B · Schieberegler</h2>
+    <p class="erklaer">Waagerechte Bahn mit Punkt-Ticks und Fasen-Griff; die
+    zurückgelegte Strecke leuchtet. Dazu der Doppelgriff-Bereich
+    (LPASS/HPASS) im eingelassenen Rahmen — beide Griffe einzeln ziehbar,
+    sie können einander nicht überholen.</p>
+    <div class="reihe">
+      <div class="probe" data-quelle="presentation-1" data-crop="810,870,350,110">
+        <div class="slider" data-wert="34" data-label="GAIN" data-einheit="dB" data-bipolar="1"></div>
+      </div>
+      <div class="probe">
+        <div class="slider" data-wert="62" data-label="MIX" data-einheit="%"></div>
+      </div>
+      <div class="probe probe--breit" data-quelle="presentation-1" data-crop="720,1290,540,180">
+        <div class="range" data-von="18" data-bis="74"
+             data-label-von="LPASS" data-label-bis="HPASS"
+             data-min-text="0 Hz" data-max-text="20 kHz"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= C · Tasten & Schalter ================= -->
+  <section class="gruppe">
+    <h2>C · Tasten &amp; Schalter</h2>
+    <p class="erklaer">Rastende Pille (gedrückt = einwärts), Segment-Schalter,
+    Dreistellungs-Kippschalter vom Pedal (Klick schaltet weiter), Power und
+    Preset-Stepper. Die Tasten bleiben bewusst unbunt — Farbe ist dem
+    Wertweg und den LEDs vorbehalten.</p>
+    <div class="reihe">
+      <div class="probe" data-quelle="presentation-1" data-crop="700,590,610,90">
+        <div class="pillen">
+          <button class="pille" data-an="0">LINK</button>
+          <div class="segment" data-aktiv="1"><span>PING</span><span>PONG</span></div>
+          <button class="pille" data-an="0">DUCK</button>
+        </div>
+        <div class="wertzeile" data-fuer="pillen"></div>
+      </div>
+      <div class="probe" data-quelle="guitar-pedal" data-crop="320,660,180,200">
+        <div class="kipp" data-pos="0" data-skala="SYNC,OFF,FREE" data-label="MODULATION"></div>
+      </div>
+      <div class="probe" data-quelle="presentation-1" data-crop="180,555,110,100">
+        <button class="power" data-an="1" aria-label="Power"></button>
+        <div class="wertzeile" data-fuer="power"></div>
+      </div>
+      <div class="probe" data-quelle="presentation-1" data-crop="1600,555,180,100">
+        <div class="stepper">
+          <button class="step" data-dir="-1" aria-label="Vorheriges Preset">‹</button>
+          <span class="step-anzeige">PRESET 02/16</span>
+          <button class="step" data-dir="1" aria-label="Nächstes Preset">›</button>
+        </div>
+      </div>
+    </div>
+    <h3>LED &amp; Fußschalter (Pedal)</h3>
+    <div class="reihe">
+      <div class="probe" data-quelle="guitar-pedal" data-crop="360,1140,140,140">
+        <div class="ledfeld">
+          <span class="led" data-an="1"></span>
+          <span class="led" data-an="0"></span>
+          <span class="led led--klein" data-an="1"></span>
+        </div>
+        <div class="wertzeile" data-fuer="led"></div>
+      </div>
+      <div class="probe" data-quelle="guitar-pedal" data-crop="300,1310,240,240">
+        <div class="stomp-block">
+          <span class="led led--stomp" data-an="1"></span>
+          <button class="stomp" data-an="1" aria-label="Bypass"></button>
+          <span class="stomp-label">BYPASS</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= D · Dock-Navigation ================= -->
+  <section class="gruppe">
+    <h2>D · Dock-Navigation</h2>
+    <p class="erklaer">Das Figue.io-Toggle-Dock: runde Soft-Tasten in einer
+    Pillenwanne, genau eine ist aktiv (eingedrückt). Kandidat für den
+    Seiten-/Sondenwechsel in Gen.</p>
+    <div class="reihe">
+      <div class="probe probe--breit" data-quelle="beleg-toggle-nav-viewport" data-crop="710,500,510,200">
+        <div class="dock" data-aktiv="0">
+          <button class="dock-taste" data-icon="haus" aria-label="Overview"></button>
+          <button class="dock-taste" data-icon="pfad" aria-label="Routing"></button>
+          <button class="dock-taste" data-icon="stab" aria-label="Advisor"></button>
+          <button class="dock-taste" data-icon="raster" aria-label="EQ Center"></button>
+        </div>
+        <div class="wertzeile" data-fuer="dock"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= E · Gehäuse ================= -->
+  <section class="gruppe">
+    <h2>E · Gehäuse &amp; Einbau</h2>
+    <p class="erklaer">Die Bausteine im Zusammenhang: Geräteschale mit großem
+    Radius, eingelassene Gruppe, Beschriftung über dem Element. So sitzen
+    die Teile später auf einer Plugin-Fläche.</p>
+    <div class="reihe">
+      <div class="geraet">
+        <div class="geraet-kopf">
+          <button class="power power--klein" data-an="1" aria-label="Power"></button>
+          <div class="pillen">
+            <button class="pille" data-an="1">SYNC</button>
+          </div>
+          <div class="stepper stepper--kompakt">
+            <button class="step" data-dir="-1" aria-label="Zurück">‹</button>
+            <button class="step" data-dir="1" aria-label="Vor">›</button>
+          </div>
+        </div>
+        <div class="geraet-mitte">
+          <div class="knob knob--hero knob--m" data-wert="64" data-label="DELAY" data-einheit="ms" data-max="960"></div>
+          <div class="geraet-slider">
+            <div class="slider slider--schmal" data-wert="40" data-label="GAIN" data-einheit="dB" data-bipolar="1"></div>
+            <div class="slider slider--schmal" data-wert="70" data-label="MIX" data-einheit="%"></div>
+          </div>
+          <div class="knob knob--hero knob--m" data-wert="28" data-label="TONE" data-einheit="%"></div>
+        </div>
+        <div class="einlass">
+          <div class="range" data-von="12" data-bis="82"
+               data-label-von="LPASS" data-label-bis="HPASS"
+               data-min-text="0 Hz" data-max-text="20 kHz"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ================= Editor-Panel (Werkzeug-Chrome, nicht Teil der Spezimen) ================= -->
+<aside class="panel" id="panel">
+  <h2>Bedien-Panel</h2>
+
+  <fieldset>
+    <legend>Thema</legend>
+    <div class="p-reihe">
+      <button class="p-taste" data-thema="dunkel" aria-pressed="true">Dunkel</button>
+      <button class="p-taste" data-thema="hell" aria-pressed="false">Hell</button>
+    </div>
+    <p class="p-hinweis">Verbindlich ist dunkel; hell liegt in der Vorlage
+    bereits vor.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Akzent (Wertweg &amp; LEDs)</legend>
+    <div class="p-reihe">
+      <button class="p-farbe" data-akzent="#b04038" title="Nakama-Rot" style="--f:#b04038"></button>
+      <button class="p-farbe" data-akzent="#e8e6e3" title="Referenz-Neutral" style="--f:#e8e6e3"></button>
+      <button class="p-farbe" data-akzent="#59d659" title="Pedal-Grün" style="--f:#59d659"></button>
+      <input type="color" id="akzent-frei" value="#b04038" title="Frei wählen">
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Feinwerte</legend>
+    <label class="p-slider">Grundton <input type="range" id="p-grundton" min="-6" max="8" value="0" step="1"><output>0</output></label>
+    <label class="p-slider">Radius <input type="range" id="p-radius" min="4" max="16" value="9" step="1"><output>9</output></label>
+    <label class="p-slider">Beschriftung <input type="range" id="p-typo" min="9" max="13" value="11" step="0.5"><output>11</output></label>
+    <label class="p-slider">Dichte <input type="range" id="p-dichte" min="16" max="44" value="30" step="2"><output>30</output></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Zustand</legend>
+    <div class="p-reihe">
+      <button class="p-taste" data-zustand="normal" aria-pressed="true">Normal</button>
+      <button class="p-taste" data-zustand="deaktiviert" aria-pressed="false">Deaktiviert</button>
+    </div>
+    <p class="p-hinweis">Deaktiviert = Element meldet ehrlich „nicht
+    verfügbar": stumpf, ohne Griffigkeit, Wert zeigt „—".</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Vorlage</legend>
+    <div class="p-reihe">
+      <button class="p-taste" id="p-vorlagen" aria-pressed="false">Ausschnitte zeigen</button>
+      <button class="p-taste" id="p-mischen">Werte mischen</button>
+    </div>
+    <p class="p-hinweis">Ausschnitte kommen 1:1 aus der Truhe
+    (<code>2026-08-24-ui-assets/</code>) und liegen dann neben jedem
+    Baustein.</p>
+  </fieldset>
+</aside>
+
+<script src="bausteine.js"></script>
+</body>
+</html>

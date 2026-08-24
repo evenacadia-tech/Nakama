@@ -1,5 +1,29 @@
 # Beweismanifest — SONDE-006 «State-Schema 2, fester Parameterbestand, reine Schema-1-Migration»
 <!-- NAKAMA-URTEIL: T2 PASS 2026-08-22 -->
+<!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-24 nachgearbeitet -->
+
+> **T3 / Gate G1, 24.08.2026 — NEEDS_WORK (nachgearbeitet). Das kassiert das
+> T2 PASS vom 22.08. — nicht wegen eines offenen Fehlers, sondern weil das
+> ARTEFAKT sich nach dem PASS geaendert hat.**
+>
+> Der Befund war real: `positionErlaubt` liess bis `a2fe0f5` als EINZIGE Klasse
+> `passive_probe` die Messposition `post_fader_contribution` fuehren
+> (`return true`), waehrend `main`, `legacy` und `active_probe` sie alle
+> ablehnten — nach der physischen Realitaet genau invertiert. **Er ist in der
+> G1-Nacharbeit geschlossen worden:** heute lehnen alle vier Klassen sie ab,
+> dazu ein zweiter, unabhaengiger Riegel auf die gemessene Capability
+> (`contribution_aux: unsupported`). Am Code nachgemessen 24.08.
+>
+> Warum die Marke trotzdem steht: `plugin/state/NakamaState.cpp` ist S7s
+> Artefakt, und es ist nach seinem PASS angefasst worden. Ein Urteil beschreibt
+> einen Stand, nicht einen Namen — der geaenderte Stand braucht einen frischen
+> Pruefer. Dieselbe Regel, die S9 traegt: wer repariert, spricht sich nicht
+> selbst frei.
+>
+> ⚠️ **Die uebrige S7-Flaeche ist unberuehrt** — Schema-2-Migration,
+> `state_hash`, RFC-8785-Kanon, Kind-Matrix, die 109 Parameter-IDs; alles im
+> T2 vom 22.08. geprueft und seither unveraendert.
+> Vollstaendig: `docs/beweise/G1.md` §4.2, §7.1, §7.2.
 
 
 > **Die eine harte Regel** (`docs/bauaufteilung-sonden.md` §2): *Eine Behauptung

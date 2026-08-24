@@ -42,9 +42,14 @@
 > Berichte **und Rückfragen** gehen über die claude.ai-Routine
 > **„Nakama: Dirigent-Meldung"** (`trig_01BUKf1i5Y9ztqGkA6Ev4eff`, kein Cron,
 > `push: true`): Meldung zwischen die `--- MELDUNG ---`-Marker im Prompt
-> schreiben, dann `run`. **WhatsApp ist optional** und derzeit **abgemeldet**
-> (Gerätekopplung gelöst, nur per QR-Scan am PC wiederherstellbar). Nie einen
-> zweiten WhatsApp-Client öffnen — genau das hat die Kopplung gelöst.
+> schreiben, dann `run`. Das ist derzeit der **einzige** Kanal.
+>
+> ⚠️ **WhatsApp ist abgeschafft** (User 24.08.) — MCP, Daemon, Autostart und
+> Gerüst sind **entfernt**, es gibt dort nichts mehr aufzurufen und nichts
+> wiederherzustellen. Als Messenger ist **Matrix (E2EE)** entschieden, aber
+> **noch nicht gebaut**: es fehlen Bot-Konto und Zugangsdaten, die nur der User
+> anlegen kann. Grund für den Wechsel: WhatsApps QR-Kopplung braucht einen
+> Menschen **am PC**, Matrix meldet sich per Passwort selbst neu an.
 >
 > ### Neue offene Punkte dieses Tages
 >
@@ -144,13 +149,22 @@
 >
 > ### Was als Nächstes ansteht — in dieser Reihenfolge
 >
-> 1. 👤 **Eine User-Frage geht allem voran:** *welche Produktklasse darf die
->    Messposition `post_fader_contribution` tragen?* Der Entwurf sagt, wer der
->    **Receiver** ist (§32.2, „der Main-Audioprozessor"), aber nicht, wer die
->    **Position führt**. Ohne diese Entscheidung ist nicht bestimmbar, ob
->    `NakamaState.cpp:100` falsch ist oder das Schema — beide Fixes sind
->    möglich, sie widersprechen einander.
-> 2. **Gate 7 schließen** (NAK-74): Kopplung im Schema per `oneOf` — das
+> ✅ **Die vormals hier stehende User-Frage ist beantwortet** (24.08., im Chat):
+> *„EINE Sonde kann nur dort messen wo sie steckt. und sie kann nur dort EQ
+> anwenden durch GEN wo sie steckt. das ist kein prinzip das ist die einzige
+> realität."* Damit ist der Fix eindeutig statt zweideutig — und **`SONDE-006`
+> hat nachträglich ebenfalls `T3 NEEDS_WORK` bekommen** (`G1.md` §7.2):
+> `positionErlaubt` erlaubt die Beitragsposition ausgerechnet der Sonde.
+>
+> ✅ **Erledigt in der G1-Nacharbeit** (`a2fe0f5`, am Code nachgemessen): keine
+> Klasse darf die Position mehr führen, zwei unabhängige Riegel. **NAK-79 ist
+> mit derselben User-Aussage beantwortet** — und zwar so, dass die fail-closed-
+> Vorgabe im Klassen-Riegel die *richtige Dauerantwort* ist, keine Platzhalter-
+> entscheidung: der Beitrag gehört gar nicht auf die Instanzposition, sondern
+> auf die Frage, aus welchem Gen-Eingang eine Messung stammt. Was bleibt, ist
+> eine Vertragsfrage für `SONDE-018` — meine Entscheidung, nicht deine.
+>
+> 1. **Gate 7 schließen** (NAK-74): Kopplung im Schema per `oneOf` — das
 >    Schlüsselwort ist im Engine-Subset und wird in derselben Datei viermal
 >    benutzt — **plus** ein Fixture `ungueltig/insert-mit-beitragsklasse.json`,
 >    das ohne den Fix grün wäre.

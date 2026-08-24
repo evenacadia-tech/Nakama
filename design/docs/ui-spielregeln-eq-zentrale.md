@@ -237,7 +237,8 @@
     Spur; der wirksame Mix einer Sonde ist das Produkt beider.
 43. **Die GLOBAL-Sektion ist einklappbar** (Entscheid): eingeklappt als
     Standard, ein kleiner Pfeil klappt sie aus. Inhalt unverändert die
-    vier Werte aus Regel 5.
+    vier Werte aus Regel 5 — seit dem Nachtrag 24.08. **plus den
+    AUTO-Schalter** (Regel 47), also fünf Bedienelemente.
 44. **Draft-Kasten-Wortlaut** (Entscheid): oben **„DRAFT"**, darunter
     die Klick/Hold-Elemente. **Limit-Angabe und Limit entfallen** („das
     kann im eq dann ja angepasst werden von selbst") — siehe Regel 6;
@@ -258,6 +259,26 @@
     identischer Position auf beiden Seiten; Aufklapp-Pfeile sitzen IM
     Bedienelement, nie frei daneben. Material/Schale (Glas, Grain,
     Lichtsaum) ist Design-Identität, kein totes Element.
+
+**Nachtrag 24.08. (Auto-Gain; Wortlaut und Herleitung
+`../abnahmen/2026-08-24-auto-gain-schalter.md`):**
+
+47. **AUTO-Schalter im GLOBAL-Panel, Standard aus** (Entscheid): ein
+    Schalter neben OUTPUT, der den Pegelgewinn der aktuellen Kurve am
+    Ausgang wieder abzieht — damit ein An/Aus-Vergleich die Klangfarbe
+    zeigt und nicht „lauter". **Aus** ist der Auslieferungszustand
+    (Grundgesetz „nichts Ungefragtes"); **an** muss den wandernden
+    Ausgangswert sichtbar machen, ein stiller Ausgleich wäre ein
+    unsichtbarer Eingriff. Der Output-Trim bleibt daneben, was er ist —
+    Auto-Gain ersetzt ihn nicht, es legt seinen Ausgleich darauf.
+    ⚠️ **Nicht mit dem Vorhören verwechseln:** die Lautheitsangleichung
+    des Advisor-Vergleichs (Match-Gain, Entwurf §41) gibt es schon und
+    bleibt unberührt; Regel 47 löst den Handbetrieb an den Bändern.
+    ⚠️ **Noch kein Vertrag:** AUTO ist **nicht** einer der 109
+    eingefrorenen Hostparameter aus Regel 5. Es braucht eine neue ID und
+    reist als Layout-v2-Erweiterung im selben Änderungssatz wie der
+    Mix-Regler (S26–28, NAK-64 Punkt 4). Bis dahin ist die Fläche zu
+    gestalten, aber nichts daran ist bedienbar zu versprechen.
 
 ## 10. Offen (Kennungen)
 

@@ -300,6 +300,13 @@ Die temporäre Kurve, Draft-Kurve und bestätigte Kurve müssen in jeder Variant
 - collapsed ist Standard;
 - expanded ist ein verankertes Panel, kein dauerhafter zweiter Footer;
 - Inhalt: Input Trim, Output Trim, Width und Mono Bass;
+- **dazu der AUTO-Schalter neben OUTPUT** (Entscheid 24.08.,
+  Spielregel 47, Wortlaut `../abnahmen/2026-08-24-auto-gain-schalter.md`)
+  — zieht den Pegelgewinn der Kurve am Ausgang wieder ab, damit ein
+  An/Aus-Vergleich die Klangfarbe zeigt und nicht „lauter". Standard
+  **aus**; im Zustand **an** muss der Ausgangswert sichtbar mitwandern,
+  ein stiller Ausgleich wäre ein unsichtbarer Eingriff. Damit sind es
+  fünf Bedienelemente im Panel, nicht vier;
 - Chevron sitzt im Button;
 - Panel braucht Focus-, Changed- und Disabled-Zustände.
 

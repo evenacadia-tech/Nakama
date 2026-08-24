@@ -91,13 +91,77 @@ bool positionAusWort (const juce::String& w, Messposition& aus)
     return false;
 }
 
+/*  §53.6-Capability `contribution_aux`, gemessen und eingefroren in
+    identity/host-capabilities-fl-v1.json: **unsupported**. Rohfeld dort:
+    "nicht gemessen - kein Geraet misst die Main-Aux-Busse des Receivers".
+    Der in §53.6 festgelegte Fallback dazu lautet woertlich "nur Assoziation
+    statt exakter Attribution".
+
+    Solange das so steht, kann KEIN Bau dieses Repos die Messposition
+    `post_fader_contribution` tragen: §32.2 definiert sie als "post-fader
+    Sidechain-only-Send auf einen eigenen diskreten Aux-Bus eines
+    Contribution-Receivers", und kein gebautes Bundle hat einen solchen Bus -
+    `sonde/SondeProcessor.cpp` deklariert genau einen Stereo-Ein- und einen
+    Stereo-Ausgang, das Main-Bundle keine Contribution-Aux-Busse.
+
+    Deshalb ist das hier eine KONSTANTE und kein Schalter: sie wird wahr, wenn
+    ein Bau den Bus wirklich hat und die Capability es gemessen sagt (SONDE-011
+    haengt daran), nicht wenn jemand sie umstellt. */
+constexpr bool kContributionAuxVerfuegbar = false;
+
+/*  Welche Messposition darf eine Instanz dieser Klasse FUEHREN?
+
+    ⚠️ Bis zum 24.08.2026 stand hier `case Klasse::passive_probe: return true;`
+    - die passive Sonde war die einzige Klasse ohne Einschraenkung und durfte
+    sich damit dauerhaft `post_fader_contribution` nennen, obwohl ihr Bundle
+    gar keinen Aux-Bus hat. Der Gate-Lauf G1 (§4.2) hat den Pfad gefahren:
+    Host-State-Restore -> lade() -> positionErlaubt -> uebernommen -> beim
+    naechsten Speichern wieder hinausgeschrieben. Eine gewoehnliche
+    Standard-Insertinstanz konnte sich so als exakter Mastersummenbeitrag
+    bezeichnen - Gate 7 aus §49.2 Nr. 7 im Wortlaut.
+
+    🔑 Das war KEINE offene Produktfrage, obwohl es zunaechst so aussah. Zwei
+    gemessene Dinge entscheiden sie:
+      1. `schemas/state/nakama-state-v2.md` nannte die Erlaubnis ausdruecklich
+         "Vorschlag fuer SONDE-007b" - und ein Vorschlag bindet in diesem
+         Projekt nichts (CLAUDE.md: "Ein Entscheid existiert nur mit Datum +
+         Zitat des Users").
+      2. Der eingefrorene Capabilityreport sagt `contribution_aux:
+         unsupported` und gibt dem Fall seinen eigenen Fallback.
+    Der Code setzte also einen unangenommenen Vorschlag GEGEN eine gemessene
+    Capability durch. Das ist dieselbe Fehlerklasse wie §4.1: ein Vertragstext,
+    der nie eingelöst wurde.
+
+    Ein Altprojekt geht dabei nicht verloren: `lade()` faellt bei verletzter
+    Matrix auf read-only mit den ORIGINALBYTES zurueck (§53.8), sichtbar im
+    Editor - es verliert seinen Stand nicht, es darf ihn nur nicht mehr
+    behaupten. */
 bool positionErlaubt (Klasse k, Messposition p)
 {
+    // Riegel 1 - die CAPABILITY-Frage: hat ueberhaupt irgendein Bau den Bus?
+    // Heute nein, gemessen (siehe oben). Diese Haelfte faellt weg, sobald ein
+    // Bau ihn hat.
+    if (p == Messposition::post_fader_contribution && ! kContributionAuxVerfuegbar)
+        return false;
+
+    // Riegel 2 - die KLASSEN-Frage: WELCHE Klasse darf die Position fuehren,
+    // wenn es den Bus gibt? Die beantwortet der Entwurf nicht: §32.2 ordnet
+    // Positionen ihren Aussageklassen zu und benennt in :1610 den Receiver,
+    // sagt aber nirgends, welche Produktklasse die Position TRAEGT. Der
+    // Gate-Bericht G1 §4.2 ist an genau dieser Kante stehengeblieben und nennt
+    // sie eine offene Produktfrage - zu Recht.
+    //
+    // Hier steht deshalb kein Urteil, sondern die fail-closed-Vorgabe: was
+    // niemand erlaubt hat, gilt nicht. Sie kostet nichts (die Position ist
+    // heute ohnehin unerreichbar) und sie haelt, wenn Riegel 1 spaeter faellt -
+    // die beiden Haelften beantworten VERSCHIEDENE Fragen, und keine ersetzt
+    // die andere. Wer die Position oeffnet, muss beide anfassen und dabei die
+    // Produktfrage beantwortet haben (offene Frage im Register, SONDE-011).
     switch (k)
     {
         case Klasse::main:          return p == Messposition::insert;
         case Klasse::legacy:        return p != Messposition::post_fader_contribution;
-        case Klasse::passive_probe: return true;
+        case Klasse::passive_probe: return p != Messposition::post_fader_contribution;
         case Klasse::active_probe:  return p != Messposition::post_fader_contribution;
     }
     return false;

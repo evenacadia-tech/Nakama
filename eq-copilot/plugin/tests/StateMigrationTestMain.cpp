@@ -596,6 +596,78 @@ int main (int argc, char* argv[])
     }
 
     // ══════════════════════════════════════════════════════════════════════
+    // G8b · Messposition je Klasse — die GANZE Matrix, in ihrem eigenen Bundle
+    //
+    // G1-Nacharbeit 24.08.2026 zu Gate-Befund §4.2. Bis dahin gab es fuer diese
+    // Matrix genau EINEN Fall (`legacy mit post_fader_contribution`, G9), und
+    // der lief ueber das Eqcp-Bundle. Die Luecke, die der Gate-Lauf gefahren
+    // hat, lag bei `passive_probe` — einer Klasse, die im Eqcp-Bundle schon aus
+    // einem ANDEREN Grund read-only wird (fremdes Bundle). Ein Fall, der aus
+    // dem falschen Grund gruen ist, deckt nichts.
+    //
+    // 🔑 Deshalb faehrt dieser Block jede Klasse in dem Bundle, das sie
+    // ueberhaupt zulaesst — sonst misst der Bundlevertrag und nicht die
+    // Positionsmatrix. Ohne den Fix in `positionErlaubt` ist die Zeile
+    // `passive_probe | post_fader_contribution | false` rot: sie laedt.
+    // ══════════════════════════════════════════════════════════════════════
+    {
+        Abschnitt a;
+        struct Zeile { state::Klasse k; const char* position; bool erlaubt; };
+        // Wortlaut: schemas/state/nakama-state-v2.md §2.2 (Fassung 24.08.).
+        const Zeile matrix[] = {
+            { state::Klasse::main,          "insert",                  true  },
+            { state::Klasse::main,          "pre",                     false },
+            { state::Klasse::main,          "post",                    false },
+            { state::Klasse::main,          "post_fader_contribution", false },
+            { state::Klasse::legacy,        "insert",                  true  },
+            { state::Klasse::legacy,        "pre",                     true  },
+            { state::Klasse::legacy,        "post",                    true  },
+            { state::Klasse::legacy,        "post_fader_contribution", false },
+            { state::Klasse::passive_probe, "insert",                  true  },
+            { state::Klasse::passive_probe, "pre",                     true  },
+            { state::Klasse::passive_probe, "post",                    true  },
+            { state::Klasse::passive_probe, "post_fader_contribution", false },
+            { state::Klasse::active_probe,  "insert",                  true  },
+            { state::Klasse::active_probe,  "pre",                     true  },
+            { state::Klasse::active_probe,  "post",                    true  },
+            { state::Klasse::active_probe,  "post_fader_contribution", false },
+        };
+
+        int ok = 0, geprueft = 0;
+        for (const auto& z : matrix)
+        {
+            // Jede Klasse in IHREM Bundle - sonst antwortet der Bundlevertrag.
+            const auto bundle = (z.k == state::Klasse::passive_probe) ? state::Bundle::nkpr()
+                              : (z.k == state::Klasse::active_probe)  ? state::Bundle::nkac()
+                                                                      : state::Bundle::eqcp();
+
+            auto baum = schema2Baum (state::wort (z.k), z.position,
+                                     z.k == state::Klasse::main);
+            // Kind-Matrix §2.1: active_probe verlangt GENAU EIN Parameters-Kind.
+            // Ohne das waere ein Fall aus dem falschen Grund read-only.
+            if (z.k == state::Klasse::active_probe)
+                baum.appendChild (parametersKind (param::standardSatz()), nullptr);
+
+            const auto roh = alsBlock (baum);
+            state::Zustand zurueck;
+            const auto erg = state::lade (roh.getData(), roh.getSize(), bundle, zurueck);
+            const bool geladen = (erg == state::LadeErgebnis::geladen);
+            ++geprueft;
+            if (geladen == z.erlaubt)
+                ++ok;
+            else
+                pruefe (false, juce::String ("Matrix ") + state::wort (z.k) + " / " + z.position,
+                        juce::String (z.erlaubt ? "sollte laden" : "sollte read-only sein")
+                        + ", Grund '" + zurueck.grund + "'");
+        }
+        pruefe (ok == geprueft,
+                juce::String (geprueft) + " Kombinationen aus Klasse x Messposition wie §2.2 - "
+                "post_fader_contribution fuer KEINE Klasse (contribution_aux unsupported)",
+                juce::String (ok));
+        a.schliesse ("Positionsmatrix vollstaendig, jede Klasse in ihrem Bundle");
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
     // G9 · Unbekanntes Major / unzulaessige Kombination → read-only
     // ══════════════════════════════════════════════════════════════════════
     {

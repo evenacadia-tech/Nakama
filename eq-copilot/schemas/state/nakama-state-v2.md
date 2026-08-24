@@ -48,8 +48,46 @@ Ein Kind mit unbekanntem Namen ⇒ read-only (ein neues Kind ist eine Root-Versi
 |---|---|
 | `main` | `insert` |
 | `legacy` | `insert`, `pre`, `post` |
-| `passive_probe` | `insert`, `pre`, `post`, `post_fader_contribution` (Vorschlag für SONDE-007b; Erweiterung ist additiv) |
-| `active_probe` | `insert`, `pre`, `post` (Vorschlag für SONDE-007b) |
+| `passive_probe` | `insert`, `pre`, `post` |
+| `active_probe` | `insert`, `pre`, `post` |
+
+**`post_fader_contribution` ist heute für KEINE Klasse erlaubt** (geändert
+24.08.2026, G1-Nacharbeit zu Befund §4.2). Bis dahin stand in der
+`passive_probe`-Zeile zusätzlich `post_fader_contribution`, ausdrücklich als
+„Vorschlag für SONDE-007b" — und `NakamaState.cpp` setzte genau diesen
+Vorschlag durch (`case Klasse::passive_probe: return true;`). Damit konnte eine
+gewöhnliche Standard-Insertinstanz sich dauerhaft als exakter
+Mastersummenbeitrag bezeichnen: **Gate 7** aus Entwurf §49.2 Nr. 7 im Wortlaut,
+gefahren vom Gate-Lauf G1.
+
+Zwei gemessene Dinge tragen die Rücknahme, keine Meinung:
+
+1. Der Vorschlag war **nie angenommen**. In diesem Projekt existiert ein
+   Entscheid nur mit Datum und Wortlaut des Users (`CLAUDE.md`); alles andere
+   heißt Vorschlag und bindet nichts. Ein Vorschlag, den Code durchsetzt, ist
+   die teuerste Sorte Notiz.
+2. Die Capability `contribution_aux` steht im eingefrorenen Capabilityreport
+   (`identity/host-capabilities-fl-v1.json`) auf **`unsupported`**, Rohfeld
+   „nicht gemessen — kein Gerät misst die Main-Aux-Busse des Receivers". Der in
+   §53.6 dafür festgelegte Fallback lautet wörtlich „nur Assoziation statt
+   exakter Attribution". Und kein gebautes Bundle hat den Bus: `SondeProcessor`
+   deklariert genau einen Stereo-Ein- und einen Stereo-Ausgang.
+
+Der Wortschatz bleibt: `post_fader_contribution` steht weiter im v3-Vertrag
+(`eq-ipc-v3.schema.json`, Zweig `probe_descriptor_beitrag`) und in
+`Messposition`. Ein Vertrag muss die Position **ausdrücken** können, bevor ein
+Wirt sie tragen kann — verboten ist nicht das Wort, sondern die **Behauptung**
+einer Instanz, die den Bus nachweislich nicht hat.
+
+Ein Altprojekt verliert dadurch nichts: ein State mit dieser Position fällt auf
+**read-only mit den Originalbytes** (§4), sichtbar im Editor. Er behält seinen
+Stand, er darf ihn nur nicht mehr behaupten.
+
+Die Frage „**welche** Klasse darf die Position führen, wenn es den Bus gibt?"
+bleibt **offen** und ist eine Produktfrage — der Entwurf beantwortet sie nicht
+(§32.2 ordnet Positionen ihren Aussageklassen zu und benennt in :1610 den
+Receiver, sagt aber nicht, welche Produktklasse die Position trägt). Bis zu
+einer Antwort gilt oben die fail-closed-Vorgabe. Eigentümer: `SONDE-011`.
 
 ### 2.3 Bundle → erlaubte Klassen
 

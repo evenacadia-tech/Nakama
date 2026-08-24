@@ -52,7 +52,22 @@ SCHLUESSELWOERTER = {
 }
 ANMERKUNGEN = {"$schema", "$id", "title", "description", "$comment", "$defs"}
 
-MUSTER = {"^[0-9a-f]{32}$"}
+# Geschlossene Mustertabelle — dieselbe Menge wie `musterPasst` (NakamaVertrag.cpp)
+# und `muster_passt` (broker/src/vertrag.rs). Ein Muster, das hier fehlt, bricht
+# den Ladevorgang, statt still zu gelten.
+#
+# 🔑 Jedes Muster steht im Schema NEBEN einem festen minLength == maxLength.
+# Das ist keine Doppelung, sondern der Grund, warum die drei Beine hier zum
+# selben Urteil kommen: Pythons `re` laesst `$` auch VOR einem abschliessenden
+# Zeilenumbruch passen, die beiden Handschleifen in C++ und Rust nicht. Die
+# Laengenschranke faengt den Umbruch, bevor die Ankersemantik zaehlt
+# (Fixture `state-hash-mit-umbruch`, G1-Nacharbeit 24.08.).
+MUSTER = {
+    "^[0-9a-f]{32}$",
+    "^[0-9a-f]{64}$",
+    "^[A-Za-z0-9+/]{37}[AQgw]==$",
+    "^[A-Za-z0-9+/]{10}[AEIMQUYcgkosw048]=$",
+}
 
 
 class Lauf:
@@ -394,6 +409,88 @@ def pruefe_schema(lauf: Lauf, schema: dict) -> None:
     lauf.wahr("keine haengende Referenz", not haengend, ", ".join(haengend))
 
 
+# Die Kopplung aus Entwurf §32.2: jede Messposition traegt GENAU EINE
+# Aussageklasse. Handgeschrieben, nicht aus dem Schema abgeleitet — eine aus dem
+# Schema gerechnete Erwartung koennte nur bestaetigen, was dort steht.
+KOPPLUNG = {
+    "probe_descriptor_insert": ("insert", "beobachtend"),
+    "probe_descriptor_pre": ("pre", "beobachtend"),
+    "probe_descriptor_post": ("post", "beobachtend"),
+    "probe_descriptor_beitrag": ("post_fader_contribution", "beitrag"),
+}
+
+
+def pruefe_probe_descriptor(lauf: Lauf, schema: dict) -> None:
+    """§32.2-Kopplung: Messposition bestimmt die Aussageklasse (G1-Befund §4.1).
+
+    Bis zum 24.08.2026 standen `measurement_position` und `aussageklasse`
+    unabhaengig nebeneinander — `insert` + `beitrag` validierte, also eine
+    gewoehnliche Insertmessung, die sich exakter Mastersummenbeitrag nennt
+    (Gate 7 aus §49.2). Die Kopplung steht jetzt als diskriminierte Union.
+
+    Der Preis dieser Form sind vier fast gleiche Zweige. Dieser Riegel macht
+    daraus eine GEMESSENE Invariante: er verlangt, dass sich die vier Zweige in
+    NICHTS unterscheiden ausser den beiden `const`. Ohne ihn waere jeder Zweig
+    eine eigene Stelle, an der eine spaetere Feldaenderung haengenbleiben kann.
+    """
+    defs = schema["$defs"]
+
+    fehlend = sorted(n for n in KOPPLUNG if n not in defs)
+    lauf.wahr("alle vier probe_descriptor-Zweige sind definiert", not fehlend, ", ".join(fehlend))
+    if fehlend:
+        return
+
+    wurzel = defs["probe_descriptor"]
+    lauf.wahr("probe_descriptor diskriminiert ueber measurement_position",
+              wurzel.get("x-nakama-discriminator") == "measurement_position",
+              repr(wurzel.get("x-nakama-discriminator")))
+    lauf.wahr("probe_descriptor traegt NUR das oneOf",
+              set(wurzel) == {"description", "x-nakama-discriminator", "oneOf"},
+              # Ein Geschwister neben oneOf waere still wirkungslos: beide
+              # eigenen Engines steigen in den gewaehlten Zweig ab und kehren
+              # zurueck (NakamaVertrag.cpp `pruefeWert`), waehrend jsonschema
+              # es anwenden wuerde. Das Urteil liefe auseinander.
+              f"{sorted(set(wurzel))}")
+    lauf.wahr("die oneOf-Zweige sind genau die vier gekoppelten",
+              [r.get("$ref") for r in wurzel.get("oneOf", [])]
+              == [f"#/$defs/{n}" for n in KOPPLUNG],
+              f"{[r.get('$ref') for r in wurzel.get('oneOf', [])]}")
+
+    for name, (position, klasse) in KOPPLUNG.items():
+        zweig = defs[name]
+        props = zweig.get("properties", {})
+        lauf.wahr(f"{name} pinnt measurement_position auf {position}",
+                  props.get("measurement_position") == {"const": position},
+                  f"{props.get('measurement_position')}")
+        lauf.wahr(f"{name} pinnt aussageklasse auf {klasse}",
+                  props.get("aussageklasse") == {"const": klasse},
+                  f"{props.get('aussageklasse')}")
+        lauf.wahr(f"{name} verlangt beide Felder",
+                  {"measurement_position", "aussageklasse"} <= set(zweig.get("required", [])))
+        lauf.wahr(f"{name} ist strikt", zweig.get("additionalProperties") is False)
+
+    # Der eigentliche Riegel: die vier Zweige duerfen sich NUR in den zwei
+    # const unterscheiden. `description` ist Anmerkung und darf abweichen.
+    def rumpf(name: str) -> dict:
+        z = {k: v for k, v in defs[name].items() if k != "description"}
+        z["properties"] = {k: v for k, v in z["properties"].items()
+                           if k not in ("measurement_position", "aussageklasse")}
+        return z
+
+    erster = rumpf(next(iter(KOPPLUNG)))
+    abweichend = [n for n in KOPPLUNG if rumpf(n) != erster]
+    lauf.wahr("die vier Zweige unterscheiden sich NUR in den zwei const",
+              not abweichend, ", ".join(abweichend))
+
+    # Und die Gegenprobe zum Riegel selbst: er muss ueberhaupt etwas finden
+    # koennen. Ein Riegel, der nichts FINDET, sagt nichts, bis gezeigt ist,
+    # dass er etwas finden koennte (Lehre A14/SONDE-007a).
+    verdorben = {n: rumpf(n) for n in KOPPLUNG}
+    verdorben["probe_descriptor_pre"]["required"] = ["adresse"]
+    lauf.wahr("Gegenprobe: ein verdorbener Zweig faellt am selben Vergleich",
+              any(v != erster for v in verdorben.values()))
+
+
 def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
     zweige = [r["$ref"].removeprefix("#/$defs/") for r in schema["oneOf"]]
     definiert = reserviert["definiert"]
@@ -605,6 +702,7 @@ def main(argv: list[str]) -> int:
     pruefe_textriegel(lauf)
     pruefe_schema(lauf, schema)
     pruefe_namen(lauf, schema, reserviert)
+    pruefe_probe_descriptor(lauf, schema)
     pruefe_fixtures(lauf, schema, manifest)
 
     print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")

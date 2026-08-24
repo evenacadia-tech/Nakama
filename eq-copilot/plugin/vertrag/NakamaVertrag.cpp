@@ -44,25 +44,68 @@ bool istAnmerkung (const juce::String& n)
     return enthaelt (kAnmerkungen, juce::numElementsInArray (kAnmerkungen), n);
 }
 
+bool hexKette (const juce::String& wert, int laenge)
+{
+    if (wert.length() != laenge)
+        return false;
+    for (auto z = wert.getCharPointer(); ! z.isEmpty(); ++z)
+    {
+        const auto c = *z;
+        const bool ok = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+        if (! ok)
+            return false;
+    }
+    return true;
+}
+
+bool istBase64Zeichen (juce_wchar c)
+{
+    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+        || (c >= '0' && c <= '9') || c == '+' || c == '/';
+}
+
+/*  `alphabet` Zeichen aus dem Base64-Alphabet, dann EIN Zeichen aus `schluss`,
+    dann `fuell` Gleichheitszeichen.
+
+    `schluss` ist nicht Kosmetik: das letzte Alphabetzeichen einer gepolsterten
+    Base64-Kette traegt weniger als sechs echte Bits, der Rest sind FUELLBITS.
+    Ein Restbyte laesst vier frei, zwei Restbytes zwei. Nur die Zeichen, in
+    denen diese Bits null sind, sind kanonisch — sonst erzeugen zwei Sender
+    fuer dieselbe Bitmap zwei verschiedene Zeichenketten, und ein
+    Bytevergleich waere keine Aussage mehr. */
+bool base64Kette (const juce::String& wert, int alphabet, const char* schluss, int fuell)
+{
+    if (wert.length() != alphabet + 1 + fuell)
+        return false;
+    for (int i = 0; i < alphabet; ++i)
+        if (! istBase64Zeichen (wert[i]))
+            return false;
+    if (juce::String (schluss).indexOfChar (wert[alphabet]) < 0)
+        return false;
+    for (int i = 0; i < fuell; ++i)
+        if (wert[alphabet + 1 + i] != '=')
+            return false;
+    return true;
+}
+
 /*  Geschlossene Mustertabelle. Regex ist zwischen Python, C++ und Rust nicht
     in jeder Ecke gleich; deshalb gibt es hier keine Regex-Auswertung, sondern
     benannte Muster. Ein unbekanntes Muster bricht den Ladevorgang.
-    -1 = Muster unbekannt, 0 = passt nicht, 1 = passt. */
+    -1 = Muster unbekannt, 0 = passt nicht, 1 = passt.
+
+    🔑 Jedes dieser Muster steht im Schema NEBEN einem festen minLength ==
+    maxLength. Das ist keine Doppelung: Pythons `re` laesst `$` auch VOR einem
+    abschliessenden Zeilenumbruch passen, diese Handschleifen nicht. Weil die
+    Laengenschranke den Umbruch schon faengt, kommen alle drei Beine trotzdem
+    zum selben URTEIL — die Schranke ist der Grund, warum die Ankersemantik
+    hier folgenlos bleibt (gemessen in der G1-Nacharbeit, Fixture
+    `state-hash-mit-umbruch`). */
 int musterPasst (const juce::String& muster, const juce::String& wert)
 {
-    if (muster == "^[0-9a-f]{32}$")
-    {
-        if (wert.length() != 32)
-            return 0;
-        for (auto z = wert.getCharPointer(); ! z.isEmpty(); ++z)
-        {
-            const auto c = *z;
-            const bool ok = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
-            if (! ok)
-                return 0;
-        }
-        return 1;
-    }
+    if (muster == "^[0-9a-f]{32}$")                         return hexKette (wert, 32) ? 1 : 0;
+    if (muster == "^[0-9a-f]{64}$")                         return hexKette (wert, 64) ? 1 : 0;
+    if (muster == "^[A-Za-z0-9+/]{37}[AQgw]==$")            return base64Kette (wert, 37, "AQgw", 2) ? 1 : 0;
+    if (muster == "^[A-Za-z0-9+/]{10}[AEIMQUYcgkosw048]=$") return base64Kette (wert, 10, "AEIMQUYcgkosw048", 1) ? 1 : 0;
     return -1;
 }
 

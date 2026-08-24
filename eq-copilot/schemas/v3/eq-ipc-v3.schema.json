@@ -36,6 +36,14 @@
       "pattern": "^[0-9a-f]{32}$"
     },
 
+    "state_hash": {
+      "description": "SHA-256 ueber den RFC-8785-Kanon des Parameter-DTOs (SONDE-006), 64 Kleinbuchstaben-Hexziffern, oder `null`, wenn die Instanz keinen Stand zu melden hat. Bis zum 24.08.2026 stand hier nur die LAENGE 64 — damit galten 64 beliebige Zeichen (`z` × 64) als SHA-256. Ein Empfaenger, der zwei Hashes vergleicht, um eine Transaktion zu akzeptieren (§33.5), haette so einen Wert verglichen, der keiner ist. Befund des Gate-Laufs G1 (§4.5). Das Muster ist dieselbe Antwort, die `hex32` fuer `command_id` schon traegt.",
+      "type": ["string", "null"],
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+
     "sid": {
       "description": "Windows-Logon-SID in S-R-I-S...-Form. Wird nie geparst, nur verglichen.",
       "type": "string",
@@ -63,16 +71,6 @@
     "plugin_kind": {
       "description": "Ladbare Produktklasse (§32.2). `legacy` ist der heutige Eqcp-Bestand.",
       "enum": ["main", "passive_probe", "active_probe", "legacy"]
-    },
-
-    "measurement_position": {
-      "description": "Ort der Messung (§32.2).",
-      "enum": ["insert", "pre", "post", "post_fader_contribution"]
-    },
-
-    "aussageklasse": {
-      "description": "Aussagekraft der Messposition (§32.2). `beobachtend` erlaubt Zusammenhangs- und Kettenhypothesen; `beitrag` erlaubt Beitragsaussagen und setzt einen eigenen diskreten Aux-Bus voraus. Die beiden Klassen duerfen in Text und Konfidenz NIE vermischt werden.",
-      "enum": ["beobachtend", "beitrag"]
     },
 
     "capability_wert": {
@@ -287,7 +285,13 @@
           "maxItems": 221,
           "items": { "type": "number" }
         },
-        "gueltig_bitmap": { "type": "string", "minLength": 40, "maxLength": 40 },
+        "gueltig_bitmap": {
+          "$comment": "28 Byte = 40 Base64-Zeichen: neun volle Dreiergruppen plus ein Restbyte, also 38 Alphabetzeichen und ZWEI Fuellzeichen. Bis zum 24.08.2026 stand hier nur die Laenge 40 — `!!!!…` galt damit als Bitmap (Gate-Lauf G1, §4.5). Das letzte Alphabetzeichen traegt nur zwei echte Bits; die Klasse [AQgw] erzwingt, dass die vier BASE64-Fuellbits null sind. Die BAND-Fuellbits des 28. Bytes (Baender 222-224) bleiben Erzeugerdisziplin — ein Muster erreicht sie nicht.",
+          "type": "string",
+          "minLength": 40,
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9+/]{37}[AQgw]==$"
+        },
         "saturated": { "type": "boolean" }
       }
     },
@@ -306,13 +310,30 @@
           "maxItems": 64,
           "items": { "type": "number" }
         },
-        "gueltig_bitmap": { "type": "string", "minLength": 12, "maxLength": 12 },
+        "gueltig_bitmap": {
+          "$comment": "8 Byte = 12 Base64-Zeichen: zwei volle Dreiergruppen plus zwei Restbytes, also 11 Alphabetzeichen und EIN Fuellzeichen. Das letzte Alphabetzeichen traegt vier echte Bits; die 16er-Klasse erzwingt, dass die zwei BASE64-Fuellbits null sind. 64 Baender fuellen acht Byte glatt aus — hier gibt es keine Band-Fuellbits.",
+          "type": "string",
+          "minLength": 12,
+          "maxLength": 12,
+          "pattern": "^[A-Za-z0-9+/]{10}[AEIMQUYcgkosw048]=$"
+        },
         "saturated": { "type": "boolean" }
       }
     },
 
     "probe_descriptor": {
-      "description": "Identitaet, Produktklasse, Messposition, Faehigkeiten und Frische einer Instanz (§34.1). NICHT additiv.",
+      "description": "Identitaet, Produktklasse, Messposition, Faehigkeiten und Frische einer Instanz (§34.1). NICHT additiv. DISKRIMINIERT UEBER `measurement_position`, weil die Aussageklasse aus der Position FOLGT und nicht frei ist: §32.2 ordnet `insert`, `pre` und `post` der Klasse `beobachtend` zu und `post_fader_contribution` der Klasse `beitrag`, und schliesst mit 'Beide Klassen duerfen in Text und Konfidenz nie vermischt werden.' Bis zum 24.08.2026 standen die beiden Felder nebeneinander OHNE Kopplung — damit validierte `insert` + `beitrag`, also eine gewoehnliche Insertmessung, die sich exakter Mastersummenbeitrag nennt. Das ist Gate 7 aus §49.2 im Wortlaut, gefunden vom Gate-Lauf G1. Ein gemeinsames Feldpaar ohne Kopplung haette genau das erlaubt, wie ein gemeinsames minItems ueber beide Bandgitter (siehe `bandwerte`). Die Klasse steht trotz Ableitbarkeit ausdruecklich im Vertrag: ein Verbraucher, der Text und Konfidenz erzeugt, liest die Aussageklasse und nicht die Positionstabelle — das oneOf garantiert, dass die beiden nie widersprechen.",
+      "x-nakama-discriminator": "measurement_position",
+      "oneOf": [
+        { "$ref": "#/$defs/probe_descriptor_insert" },
+        { "$ref": "#/$defs/probe_descriptor_pre" },
+        { "$ref": "#/$defs/probe_descriptor_post" },
+        { "$ref": "#/$defs/probe_descriptor_beitrag" }
+      ]
+    },
+
+    "probe_descriptor_insert": {
+      "description": "Messung an der Insert-Position, typischerweise vor Mixerfader und nachfolgenden Sends (§32.2). Beobachtend: erlaubt Zusammenhangs- und Kettenhypothesen, NIE Beitragsaussagen — sie kennt ihren exakten Beitrag zur Mastersumme nicht.",
       "type": "object",
       "required": [
         "adresse",
@@ -327,17 +348,99 @@
       "properties": {
         "adresse": { "$ref": "#/$defs/adresse" },
         "plugin_kind": { "$ref": "#/$defs/plugin_kind" },
-        "measurement_position": { "$ref": "#/$defs/measurement_position" },
-        "aussageklasse": { "$ref": "#/$defs/aussageklasse" },
-        "label": {
-          "$comment": "User-Label — untrusted data: wird gespeichert und angezeigt, nie interpretiert. Ein Hosthinweis (Trackname, Farbe) darf es nie still ueberschreiben (§32.2).",
-          "type": "string",
-          "maxLength": 120
-        },
-        "pair_id": { "type": ["string", "null"] },
+        "measurement_position": { "const": "insert" },
+        "aussageklasse": { "const": "beobachtend" },
+        "label": { "$ref": "#/$defs/probe_label" },
+        "pair_id": { "$ref": "#/$defs/pair_id" },
         "capabilities": { "$ref": "#/$defs/capabilities" },
         "frische": { "$ref": "#/$defs/frische" }
       }
+    },
+
+    "probe_descriptor_pre": {
+      "description": "PRE-Haelfte eines ueber `pair_id` verbundenen PRE-/POST-Paares (§32.2). Beobachtend, aus demselben Grund wie `insert`.",
+      "type": "object",
+      "required": [
+        "adresse",
+        "plugin_kind",
+        "measurement_position",
+        "aussageklasse",
+        "label",
+        "capabilities",
+        "frische"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "adresse": { "$ref": "#/$defs/adresse" },
+        "plugin_kind": { "$ref": "#/$defs/plugin_kind" },
+        "measurement_position": { "const": "pre" },
+        "aussageklasse": { "const": "beobachtend" },
+        "label": { "$ref": "#/$defs/probe_label" },
+        "pair_id": { "$ref": "#/$defs/pair_id" },
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "frische": { "$ref": "#/$defs/frische" }
+      }
+    },
+
+    "probe_descriptor_post": {
+      "description": "POST-Haelfte eines ueber `pair_id` verbundenen PRE-/POST-Paares (§32.2). Beobachtend, aus demselben Grund wie `insert`.",
+      "type": "object",
+      "required": [
+        "adresse",
+        "plugin_kind",
+        "measurement_position",
+        "aussageklasse",
+        "label",
+        "capabilities",
+        "frische"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "adresse": { "$ref": "#/$defs/adresse" },
+        "plugin_kind": { "$ref": "#/$defs/plugin_kind" },
+        "measurement_position": { "const": "post" },
+        "aussageklasse": { "const": "beobachtend" },
+        "label": { "$ref": "#/$defs/probe_label" },
+        "pair_id": { "$ref": "#/$defs/pair_id" },
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "frische": { "$ref": "#/$defs/frische" }
+      }
+    },
+
+    "probe_descriptor_beitrag": {
+      "description": "Optionaler, vom User eingerichteter post-fader Sidechain-only-Send auf einen EIGENEN DISKRETEN Aux-Bus eines Contribution-Receivers (§32.2). Die EINZIGE Position mit der Klasse `beitrag`: nur sie erlaubt deutlich staerkere Beitragsaussagen, und nur sie setzt den diskreten Aux-Bus voraus. Ob eine Instanz diese Position tatsaechlich fuehren DARF, entscheidet nicht dieser Wortschatz, sondern die Capability `contribution_aux` (§53.6) am jeweiligen Bau — der Vertrag muss die Position ausdruecken koennen, bevor ein Wirt sie tragen kann.",
+      "type": "object",
+      "required": [
+        "adresse",
+        "plugin_kind",
+        "measurement_position",
+        "aussageklasse",
+        "label",
+        "capabilities",
+        "frische"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "adresse": { "$ref": "#/$defs/adresse" },
+        "plugin_kind": { "$ref": "#/$defs/plugin_kind" },
+        "measurement_position": { "const": "post_fader_contribution" },
+        "aussageklasse": { "const": "beitrag" },
+        "label": { "$ref": "#/$defs/probe_label" },
+        "pair_id": { "$ref": "#/$defs/pair_id" },
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "frische": { "$ref": "#/$defs/frische" }
+      }
+    },
+
+    "probe_label": {
+      "$comment": "User-Label — untrusted data: wird gespeichert und angezeigt, nie interpretiert. Ein Hosthinweis (Trackname, Farbe) darf es nie still ueberschreiben (§32.2). Steht seit dem 24.08.2026 als eigene Definition, damit die vier `probe_descriptor_*`-Zweige sich NUR in den zwei `const` unterscheiden — vier Kopien derselben Feldregel waeren vier Stellen, an denen sie auseinanderlaufen kann.",
+      "type": "string",
+      "maxLength": 120
+    },
+
+    "pair_id": {
+      "description": "Optionale stabile ID, die genau ein PRE-/POST-Paar verbindet (§32.2). `null` heisst: kein Paar.",
+      "type": ["string", "null"]
     },
 
     "steuerkopf": {
@@ -712,7 +815,7 @@
         "command_id": { "$ref": "#/$defs/hex32" },
         "ergebnis": { "enum": ["angewandt", "abgelehnt", "konflikt", "abgelaufen", "idempotent_wiederholt"] },
         "state_revision": { "type": "integer", "minimum": 0 },
-        "state_hash": { "type": ["string", "null"], "minLength": 64, "maxLength": 64 },
+        "state_hash": { "$ref": "#/$defs/state_hash" },
         "code": { "$ref": "#/$defs/fehlercode" }
       }
     },
@@ -727,7 +830,7 @@
         "adresse": { "$ref": "#/$defs/adresse" },
         "dsp_schema_version": { "type": "integer", "minimum": 1 },
         "state_revision": { "type": "integer", "minimum": 0 },
-        "state_hash": { "type": ["string", "null"], "minLength": 64, "maxLength": 64 },
+        "state_hash": { "$ref": "#/$defs/state_hash" },
         "record_state": {
           "$comment": "Remote-Preview und Remote-Apply sind nur erlaubt, wenn valid=true UND recording=false; ein UNBEKANNTER Aufnahmezustand blockiert sichtbar (§33.4). Deshalb ist `valid` Pflicht und nicht weglassbar.",
           "type": "object",

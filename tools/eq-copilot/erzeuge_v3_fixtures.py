@@ -722,7 +722,7 @@ UNGUELTIG: list[tuple] = [
      "1 ist in JSON kein true"),
 
     ("label-als-null", "session_snapshot", [setze("mitglieder", 0, "label", None)],
-     [v("/mitglieder/0/label", f"{S}/probe_descriptor/properties/label/type", "type")],
+     [v("/mitglieder/0/label", f"{S}/probe_label/type", "type")],
      "null ist ein eigener Typ, nicht `fehlt`"),
 
     # --- Enums und const --------------------------------------------------
@@ -734,10 +734,59 @@ UNGUELTIG: list[tuple] = [
      [v("/mitglieder/0/plugin_kind", f"{S}/plugin_kind/enum", "enum")],
      "`hub` ist die v2-Rolle; v3 kennt main|passive_probe|active_probe|legacy (§32.2)"),
 
-    ("aussageklasse-vermischt", "session_snapshot",
+    # Bis zum 24.08.2026 hiess dieses Fixture `aussageklasse-vermischt` und
+    # versprach damit die Gate-7-Absicherung — sein Inhalt war aber ein
+    # ERFUNDENES Wort, das schon jede Enumpruefung faengt. Der Gate-Lauf G1
+    # (§4.1) hat den Namen als Zusage gelesen, die der Inhalt nicht haelt:
+    # "Ein Fixture, dessen Name mehr zusagt als sein Inhalt haelt, ist
+    # schlimmer als ein fehlendes: es macht die Luecke unsichtbar."
+    # Der Name sagt jetzt, was drinsteht — die echte Vermischung ZWEIER
+    # gueltiger Woerter steht in den vier `*-mit-beitragsklasse`-Fixturen
+    # darunter.
+    ("aussageklasse-erfunden", "session_snapshot",
      [setze("mitglieder", 0, "aussageklasse", "beobachtend_mit_beitrag")],
-     [v("/mitglieder/0/aussageklasse", f"{S}/aussageklasse/enum", "enum")],
-     "die beiden Klassen duerfen nie vermischt werden (§32.2)"),
+     [v("/mitglieder/0/aussageklasse",
+        f"{S}/probe_descriptor_insert/properties/aussageklasse/const", "const")],
+     "es gibt genau zwei Aussageklassen, keine dritte (§32.2)"),
+
+    # --- Gate 7: die verbotene Paarung ZWEIER gueltiger Woerter -------------
+    # Entwurf §32.2 ordnet jeder Messposition genau eine Aussageklasse zu und
+    # schliesst mit "Beide Klassen duerfen in Text und Konfidenz nie vermischt
+    # werden." Ohne die Kopplung im Schema validierten alle 4x2 Kombinationen —
+    # auch `insert` + `beitrag`, also eine gewoehnliche Insertmessung, die sich
+    # exakter Mastersummenbeitrag nennt. Das ist Gate 7 aus §49.2 im Wortlaut.
+    # Diese vier Fixtures waeren VOR dem Fix vom 24.08. gruen gewesen.
+    ("insert-mit-beitragsklasse", "session_snapshot",
+     [setze("mitglieder", 0, "aussageklasse", "beitrag")],
+     [v("/mitglieder/0/aussageklasse",
+        f"{S}/probe_descriptor_insert/properties/aussageklasse/const", "const")],
+     "eine Standard-Insertprobe kennt ihren exakten Beitrag zur Mastersumme "
+     "NICHT und darf sich nie so nennen (Gate 7, §49.2 Nr. 7)"),
+
+    ("pre-mit-beitragsklasse", "session_snapshot",
+     [setze("mitglieder", 0, "measurement_position", "pre"),
+      setze("mitglieder", 0, "aussageklasse", "beitrag")],
+     [v("/mitglieder/0/aussageklasse",
+        f"{S}/probe_descriptor_pre/properties/aussageklasse/const", "const")],
+     "die PRE-Haelfte eines Paares ist beobachtend (§32.2)"),
+
+    ("post-mit-beitragsklasse", "session_snapshot",
+     [setze("mitglieder", 0, "measurement_position", "post"),
+      setze("mitglieder", 0, "aussageklasse", "beitrag")],
+     [v("/mitglieder/0/aussageklasse",
+        f"{S}/probe_descriptor_post/properties/aussageklasse/const", "const")],
+     "die POST-Haelfte eines Paares ist beobachtend (§32.2)"),
+
+    # Die Gegenrichtung. Sie ist kein Gate-7-Bruch — eine Beitragsposition, die
+    # sich schwaecher nennt, behauptet zu wenig statt zu viel —, aber sie macht
+    # das Feld mehrdeutig: zwei Sender beschrieben dieselbe Topologie mit
+    # verschiedenen Klassen. §32.2 ordnet zu, es raeumt keinen Spielraum ein.
+    ("beitragsposition-beobachtend", "session_snapshot",
+     [setze("mitglieder", 0, "measurement_position", "post_fader_contribution")],
+     [v("/mitglieder/0/aussageklasse",
+        f"{S}/probe_descriptor_beitrag/properties/aussageklasse/const", "const")],
+     "post_fader_contribution ist die einzige Beitragsposition und traegt "
+     "immer `beitrag` (§32.2)"),
 
     ("gitter-erfunden", "evidence_snapshot", [setze("baender", "gitter_id", "nakama_log32_v1")],
      [v("/baender/gitter_id", f"{S}/bandwerte/oneOf", "oneOf")],
@@ -833,12 +882,44 @@ UNGUELTIG: list[tuple] = [
      "eine leere SID ist keine SID"),
 
     ("label-zu-lang", "session_snapshot", [setze("mitglieder", 0, "label", "x" * 121)],
-     [v("/mitglieder/0/label", f"{S}/probe_descriptor/properties/label/maxLength", "maxLength")],
+     [v("/mitglieder/0/label", f"{S}/probe_label/maxLength", "maxLength")],
      "das Label ist untrusted data und begrenzt"),
 
+    # Seit dem Muster (24.08.) faellt eine zu kurze Kette an ZWEI Behauptungen:
+    # die Laenge stimmt nicht, und `^…{64}$` passt auf 63 Zeichen ebenfalls
+    # nicht. Beide eigenen Engines melden ALLE Verletzungen des gewaehlten
+    # Zweiges, also stehen beide hier.
     ("state-hash-zu-kurz", "state_report", [setze("state_hash", "d" * 63)],
-     [v("/state_hash", f"{S}/state_report/properties/state_hash/minLength", "minLength")],
+     [v("/state_hash", f"{S}/state_hash/minLength", "minLength"),
+      v("/state_hash", f"{S}/state_hash/pattern", "pattern")],
      "SHA-256 hex hat 64 Zeichen"),
+
+    # G1-Befund §4.5: bis zum 24.08. stand am state_hash nur die LAENGE. 64
+    # beliebige Zeichen galten als SHA-256 — ein Empfaenger, der zwei Hashes
+    # vergleicht, um eine Transaktion anzunehmen (§33.5), haette einen Wert
+    # verglichen, der keiner ist. Dieses Fixture waere vor dem Fix gruen
+    # gewesen: die Laenge stimmt, nur das Alphabet nicht.
+    ("state-hash-alphabet", "state_report", [setze("state_hash", "z" * 64)],
+     [v("/state_hash", f"{S}/state_hash/pattern", "pattern")],
+     "64 Zeichen sind noch kein SHA-256; `z` ist keine Hexziffer"),
+
+    ("state-hash-grossbuchstaben", "state_report", [setze("state_hash", "D" * 64)],
+     [v("/state_hash", f"{S}/state_hash/pattern", "pattern")],
+     "Hex ist hier kleingeschrieben — zwei Schreibweisen desselben Hashes "
+     "waeren zwei Zeichenketten und ein Vergleich waere keine Aussage mehr"),
+
+    # 🔑 Der Grund, warum minLength/maxLength NEBEN dem Muster kein Ballast
+    # sind: Pythons `re` laesst `$` auch VOR einem abschliessenden
+    # Zeilenumbruch passen, die Handschleifen in C++ und Rust nicht. Beim
+    # Referenzbein passt das Muster hier also, bei den beiden eigenen Engines
+    # nicht — die Laengenschranke faengt den Umbruch trotzdem in ALLEN dreien,
+    # deshalb ist das URTEIL identisch. Genau das misst dieses Fixture; ohne es
+    # waere die Aussage eine Ueberlegung statt einer Messung.
+    ("state-hash-mit-umbruch", "state_report", [setze("state_hash", "d" * 64 + "\n")],
+     [v("/state_hash", f"{S}/state_hash/maxLength", "maxLength"),
+      v("/state_hash", f"{S}/state_hash/pattern", "pattern")],
+     "65 Zeichen: die Laengenschranke faengt den Umbruch in allen drei Beinen, "
+     "bevor die Ankersemantik von `$` ueberhaupt zaehlt"),
 
     # --- Arrays -------------------------------------------------------------
     ("baender-leer", "evidence_snapshot", [setze("baender", "werte", [])],
@@ -860,7 +941,7 @@ UNGUELTIG: list[tuple] = [
 
     ("mitglied-unvollstaendig", "session_snapshot",
      [loesche("mitglieder", 0, "capabilities")],
-     [v("/mitglieder/0", f"{S}/probe_descriptor/required/capabilities", "required")],
+     [v("/mitglieder/0", f"{S}/probe_descriptor_insert/required/capabilities", "required")],
      "Pflichtfelder gelten auch im Arrayelement"),
 
     # --- mehrere Verletzungen in einer Nachricht -----------------------------
@@ -915,9 +996,14 @@ UNGUELTIG: list[tuple] = [
      [v("/host", f"{S}/host_angabe/required/pid", "required")],
      "pid ist ein starkes Signal; wer host sendet, sendet sie"),
 
+    # Seit dem 24.08. ist `measurement_position` der Discriminator des
+    # probe_descriptor. Eine fuenfte Position waehlt damit KEINEN Zweig — die
+    # Verletzung heisst `oneOf` statt `enum`, und der Vertrag lehnt sie ab,
+    # statt sie gegen alle Zweige zu halten (v3-README, §33.1: unbekannter
+    # Discriminator erzwingt Ablehnung).
     ("messposition-erfunden", "session_snapshot",
      [setze("mitglieder", 0, "measurement_position", "send")],
-     [v("/mitglieder/0/measurement_position", f"{S}/measurement_position/enum", "enum")],
+     [v("/mitglieder/0/measurement_position", f"{S}/probe_descriptor/oneOf", "oneOf")],
      "vier Positionen, keine fuenfte (§32.2)"),
 
     ("frische-ohne-stale", "session_snapshot", [loesche("mitglieder", 0, "frische", "stale")],
@@ -972,7 +1058,7 @@ UNGUELTIG: list[tuple] = [
      "das Saettigungsbit ist ein bool"),
 
     ("pair-id-als-zahl", "session_snapshot", [setze("mitglieder", 0, "pair_id", 7)],
-     [v("/mitglieder/0/pair_id", f"{S}/probe_descriptor/properties/pair_id/type", "type")],
+     [v("/mitglieder/0/pair_id", f"{S}/pair_id/type", "type")],
      "pair_id ist String oder null"),
 
     ("continuity-segment-negativ", "evidence_snapshot",
@@ -1002,7 +1088,7 @@ UNGUELTIG: list[tuple] = [
      "32 Sonden sind die Auslegung; 64 die harte Grenze"),
 
     ("aussageklasse-fehlt", "session_snapshot", [loesche("mitglieder", 0, "aussageklasse")],
-     [v("/mitglieder/0", f"{S}/probe_descriptor/required/aussageklasse", "required")],
+     [v("/mitglieder/0", f"{S}/probe_descriptor_insert/required/aussageklasse", "required")],
      "ohne Aussageklasse waere eine Insert-Messung als Summenbeitrag lesbar (hartes Gate 7)"),
 
     # --- Wurzeltyp -----------------------------------------------------------
@@ -1039,9 +1125,57 @@ UNGUELTIG: list[tuple] = [
     ("bitmap-laenge-passt-nicht", "evidence_snapshot",
      [setze("baender", "gueltig_bitmap", bitmap(64))],
      [v("/baender/gueltig_bitmap", f"{S}/bandwerte_fein/properties/gueltig_bitmap/minLength",
-        "minLength")],
+        "minLength"),
+      v("/baender/gueltig_bitmap", f"{S}/bandwerte_fein/properties/gueltig_bitmap/pattern",
+        "pattern")],
      "ceil(221/8) = 28 Byte = 40 Base64-Zeichen; eine 12-Zeichen-Bitmap "
      "beschreibt 64 Baender und kann fuer 221 nicht stimmen"),
+
+    # G1-Befund §4.5: bis zum 24.08. stand an der Bitmap nur die LAENGE. `!` mal
+    # 40 galt damit als gueltige Base64-Bitmap. Ein Empfaenger, der sie
+    # dekodiert, um zu wissen, WELCHE Baender gueltig sind, haette Muell
+    # dekodiert — oder je nach Dekodierer etwas anderes. Diese drei Fixtures
+    # waeren vor dem Fix gruen gewesen; die Laenge stimmt in allen dreien.
+    # Dasselbe fuer das GROBE Gitter — 8 Byte, 12 Zeichen, EIN Fuellzeichen,
+    # und ein letztes Alphabetzeichen mit zwei Fuellbits. Ohne diese Zeile
+    # traegt genau eines der vier Muster kein Negativfixture; die Quote
+    # `pattern 3 / 4` des Abdeckungslaufs hat es sichtbar gemacht.
+    ("bitmap-grob-fuellbits-gesetzt", "evidence_snapshot",
+     [setze("baender", "gitter_id", "nakama_log64_v1"),
+      setze("baender", "werte", [-123] * 64),
+      setze("baender", "gueltig_bitmap", "/" * 10 + "9=")],
+     [v("/baender/gueltig_bitmap", f"{S}/bandwerte_grob/properties/gueltig_bitmap/pattern",
+        "pattern")],
+     "`9` ist Index 61 (111101b): die zwei untersten Bits gehoeren zu keinem "
+     "der acht Byte und muessen null sein"),
+
+    ("bitmap-alphabet-fremd", "evidence_snapshot",
+     [setze("baender", "gueltig_bitmap", "!" * 38 + "==")],
+     [v("/baender/gueltig_bitmap", f"{S}/bandwerte_fein/properties/gueltig_bitmap/pattern",
+        "pattern")],
+     "`!` steht in keinem Base64-Alphabet — 40 Zeichen sind noch keine Bitmap"),
+
+    ("bitmap-fuellzeichen-vorn", "evidence_snapshot",
+     [setze("baender", "gueltig_bitmap", "==" + "/" * 37 + "w")],
+     [v("/baender/gueltig_bitmap", f"{S}/bandwerte_fein/properties/gueltig_bitmap/pattern",
+        "pattern")],
+     "Fuellzeichen stehen am ENDE. Base64 mit `=` vorn ist keine Umkodierung "
+     "derselben Bytes, sondern eine andere Zeichenkette"),
+
+    # Die schaerfste der drei: alle 40 Zeichen sind aus dem Alphabet, beide
+    # Fuellzeichen sitzen richtig — nur das letzte Alphabetzeichen traegt
+    # BASE64-FUELLBITS, die nicht null sind. `x` ist Index 49 (110001b): das
+    # unterste Bit gehoert zu keinem Byte. Ein Dekodierer wirft es weg, ein
+    # anderer meldet einen Fehler, und zwei Sender erzeugen fuer dieselben 28
+    # Byte zwei verschiedene Ketten — womit ein Bytevergleich der Bitmaps keine
+    # Aussage mehr waere. Genau diese Klasse faengt die Zeichenklasse [AQgw].
+    ("bitmap-fuellbits-gesetzt", "evidence_snapshot",
+     [setze("baender", "gueltig_bitmap", "/" * 37 + "x==")],
+     [v("/baender/gueltig_bitmap", f"{S}/bandwerte_fein/properties/gueltig_bitmap/pattern",
+        "pattern")],
+     "das letzte Alphabetzeichen einer 40er-Kette traegt nur zwei echte Bits; "
+     "die vier Fuellbits muessen null sein, sonst ist die Kodierung nicht "
+     "eindeutig"),
 
     # T-6: §33.2 zaehlt den Inhalt des Evidenzsnapshots abschliessend auf.
     ("evidence-ohne-verteilung", "evidence_snapshot", [loesche("verteilung")],

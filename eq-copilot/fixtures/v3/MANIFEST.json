@@ -7,7 +7,7 @@
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
   "anzahl_gueltig": 36,
-  "anzahl_ungueltig": 117,
+  "anzahl_ungueltig": 128,
   "fixtures": [
     {
       "datei": "gueltig/audible_intervention_begin.json",
@@ -298,26 +298,26 @@
       ]
     },
     {
+      "datei": "ungueltig/aussageklasse-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "es gibt genau zwei Aussageklassen, keine dritte (§32.2)",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/aussageklasse",
+          "schema": "#/$defs/probe_descriptor_insert/properties/aussageklasse/const",
+          "schluessel": "const"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/aussageklasse-fehlt.json",
       "urteil": "ungueltig",
       "warum": "ohne Aussageklasse waere eine Insert-Messung als Summenbeitrag lesbar (hartes Gate 7)",
       "verletzungen": [
         {
           "instanz": "/mitglieder/0",
-          "schema": "#/$defs/probe_descriptor/required/aussageklasse",
+          "schema": "#/$defs/probe_descriptor_insert/required/aussageklasse",
           "schluessel": "required"
-        }
-      ]
-    },
-    {
-      "datei": "ungueltig/aussageklasse-vermischt.json",
-      "urteil": "ungueltig",
-      "warum": "die beiden Klassen duerfen nie vermischt werden (§32.2)",
-      "verletzungen": [
-        {
-          "instanz": "/mitglieder/0/aussageklasse",
-          "schema": "#/$defs/aussageklasse/enum",
-          "schluessel": "enum"
         }
       ]
     },
@@ -406,6 +406,66 @@
       ]
     },
     {
+      "datei": "ungueltig/beitragsposition-beobachtend.json",
+      "urteil": "ungueltig",
+      "warum": "post_fader_contribution ist die einzige Beitragsposition und traegt immer `beitrag` (§32.2)",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/aussageklasse",
+          "schema": "#/$defs/probe_descriptor_beitrag/properties/aussageklasse/const",
+          "schluessel": "const"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bitmap-alphabet-fremd.json",
+      "urteil": "ungueltig",
+      "warum": "`!` steht in keinem Base64-Alphabet — 40 Zeichen sind noch keine Bitmap",
+      "verletzungen": [
+        {
+          "instanz": "/baender/gueltig_bitmap",
+          "schema": "#/$defs/bandwerte_fein/properties/gueltig_bitmap/pattern",
+          "schluessel": "pattern"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bitmap-fuellbits-gesetzt.json",
+      "urteil": "ungueltig",
+      "warum": "das letzte Alphabetzeichen einer 40er-Kette traegt nur zwei echte Bits; die vier Fuellbits muessen null sein, sonst ist die Kodierung nicht eindeutig",
+      "verletzungen": [
+        {
+          "instanz": "/baender/gueltig_bitmap",
+          "schema": "#/$defs/bandwerte_fein/properties/gueltig_bitmap/pattern",
+          "schluessel": "pattern"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bitmap-fuellzeichen-vorn.json",
+      "urteil": "ungueltig",
+      "warum": "Fuellzeichen stehen am ENDE. Base64 mit `=` vorn ist keine Umkodierung derselben Bytes, sondern eine andere Zeichenkette",
+      "verletzungen": [
+        {
+          "instanz": "/baender/gueltig_bitmap",
+          "schema": "#/$defs/bandwerte_fein/properties/gueltig_bitmap/pattern",
+          "schluessel": "pattern"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bitmap-grob-fuellbits-gesetzt.json",
+      "urteil": "ungueltig",
+      "warum": "`9` ist Index 61 (111101b): die zwei untersten Bits gehoeren zu keinem der acht Byte und muessen null sein",
+      "verletzungen": [
+        {
+          "instanz": "/baender/gueltig_bitmap",
+          "schema": "#/$defs/bandwerte_grob/properties/gueltig_bitmap/pattern",
+          "schluessel": "pattern"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/bitmap-laenge-passt-nicht.json",
       "urteil": "ungueltig",
       "warum": "ceil(221/8) = 28 Byte = 40 Base64-Zeichen; eine 12-Zeichen-Bitmap beschreibt 64 Baender und kann fuer 221 nicht stimmen",
@@ -414,6 +474,11 @@
           "instanz": "/baender/gueltig_bitmap",
           "schema": "#/$defs/bandwerte_fein/properties/gueltig_bitmap/minLength",
           "schluessel": "minLength"
+        },
+        {
+          "instanz": "/baender/gueltig_bitmap",
+          "schema": "#/$defs/bandwerte_fein/properties/gueltig_bitmap/pattern",
+          "schluessel": "pattern"
         }
       ]
     },
@@ -822,6 +887,18 @@
       ]
     },
     {
+      "datei": "ungueltig/insert-mit-beitragsklasse.json",
+      "urteil": "ungueltig",
+      "warum": "eine Standard-Insertprobe kennt ihren exakten Beitrag zur Mastersumme NICHT und darf sich nie so nennen (Gate 7, §49.2 Nr. 7)",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/aussageklasse",
+          "schema": "#/$defs/probe_descriptor_insert/properties/aussageklasse/const",
+          "schluessel": "const"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/instance-id-grossbuchstaben.json",
       "urteil": "ungueltig",
       "warum": "Kleinbuchstaben, damit ein Vergleich nie normalisieren muss",
@@ -965,7 +1042,7 @@
       "verletzungen": [
         {
           "instanz": "/mitglieder/0/label",
-          "schema": "#/$defs/probe_descriptor/properties/label/type",
+          "schema": "#/$defs/probe_label/type",
           "schluessel": "type"
         }
       ]
@@ -977,7 +1054,7 @@
       "verletzungen": [
         {
           "instanz": "/mitglieder/0/label",
-          "schema": "#/$defs/probe_descriptor/properties/label/maxLength",
+          "schema": "#/$defs/probe_label/maxLength",
           "schluessel": "maxLength"
         }
       ]
@@ -1059,8 +1136,8 @@
       "verletzungen": [
         {
           "instanz": "/mitglieder/0/measurement_position",
-          "schema": "#/$defs/measurement_position/enum",
-          "schluessel": "enum"
+          "schema": "#/$defs/probe_descriptor/oneOf",
+          "schluessel": "oneOf"
         }
       ]
     },
@@ -1071,7 +1148,7 @@
       "verletzungen": [
         {
           "instanz": "/mitglieder/0",
-          "schema": "#/$defs/probe_descriptor/required/capabilities",
+          "schema": "#/$defs/probe_descriptor_insert/required/capabilities",
           "schluessel": "required"
         }
       ]
@@ -1114,7 +1191,7 @@
       "verletzungen": [
         {
           "instanz": "/mitglieder/0/pair_id",
-          "schema": "#/$defs/probe_descriptor/properties/pair_id/type",
+          "schema": "#/$defs/pair_id/type",
           "schluessel": "type"
         }
       ]
@@ -1140,6 +1217,30 @@
           "instanz": "/mitglieder/0/plugin_kind",
           "schema": "#/$defs/plugin_kind/enum",
           "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/post-mit-beitragsklasse.json",
+      "urteil": "ungueltig",
+      "warum": "die POST-Haelfte eines Paares ist beobachtend (§32.2)",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/aussageklasse",
+          "schema": "#/$defs/probe_descriptor_post/properties/aussageklasse/const",
+          "schluessel": "const"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/pre-mit-beitragsklasse.json",
+      "urteil": "ungueltig",
+      "warum": "die PRE-Haelfte eines Paares ist beobachtend (§32.2)",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/aussageklasse",
+          "schema": "#/$defs/probe_descriptor_pre/properties/aussageklasse/const",
+          "schluessel": "const"
         }
       ]
     },
@@ -1312,14 +1413,60 @@
       ]
     },
     {
+      "datei": "ungueltig/state-hash-alphabet.json",
+      "urteil": "ungueltig",
+      "warum": "64 Zeichen sind noch kein SHA-256; `z` ist keine Hexziffer",
+      "verletzungen": [
+        {
+          "instanz": "/state_hash",
+          "schema": "#/$defs/state_hash/pattern",
+          "schluessel": "pattern"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/state-hash-grossbuchstaben.json",
+      "urteil": "ungueltig",
+      "warum": "Hex ist hier kleingeschrieben — zwei Schreibweisen desselben Hashes waeren zwei Zeichenketten und ein Vergleich waere keine Aussage mehr",
+      "verletzungen": [
+        {
+          "instanz": "/state_hash",
+          "schema": "#/$defs/state_hash/pattern",
+          "schluessel": "pattern"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/state-hash-mit-umbruch.json",
+      "urteil": "ungueltig",
+      "warum": "65 Zeichen: die Laengenschranke faengt den Umbruch in allen drei Beinen, bevor die Ankersemantik von `$` ueberhaupt zaehlt",
+      "verletzungen": [
+        {
+          "instanz": "/state_hash",
+          "schema": "#/$defs/state_hash/maxLength",
+          "schluessel": "maxLength"
+        },
+        {
+          "instanz": "/state_hash",
+          "schema": "#/$defs/state_hash/pattern",
+          "schluessel": "pattern"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/state-hash-zu-kurz.json",
       "urteil": "ungueltig",
       "warum": "SHA-256 hex hat 64 Zeichen",
       "verletzungen": [
         {
           "instanz": "/state_hash",
-          "schema": "#/$defs/state_report/properties/state_hash/minLength",
+          "schema": "#/$defs/state_hash/minLength",
           "schluessel": "minLength"
+        },
+        {
+          "instanz": "/state_hash",
+          "schema": "#/$defs/state_hash/pattern",
+          "schluessel": "pattern"
         }
       ]
     },

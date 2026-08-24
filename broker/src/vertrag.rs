@@ -55,11 +55,43 @@ const ANMERKUNGEN: &[&str] = &["$schema", "$id", "title", "description", "$comme
 /// Geschlossene Mustertabelle. Regex ist zwischen Python, C++ und Rust nicht
 /// in jeder Ecke gleich; deshalb gibt es hier keine Regex-Auswertung, sondern
 /// benannte Muster. Ein unbekanntes Muster bricht den Ladevorgang.
+fn hex_kette(wert: &str, laenge: usize) -> bool {
+    wert.len() == laenge && wert.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+}
+
+/// `alphabet` Zeichen aus dem Base64-Alphabet, dann EIN Zeichen aus `schluss`,
+/// dann `fuell` Gleichheitszeichen.
+///
+/// `schluss` ist nicht Kosmetik: das letzte Alphabetzeichen einer gepolsterten
+/// Base64-Kette traegt weniger als sechs echte Bits, der Rest sind FUELLBITS.
+/// Ein Restbyte laesst vier frei, zwei Restbytes zwei. Nur die Zeichen, in
+/// denen diese Bits null sind, sind kanonisch — sonst erzeugen zwei Sender fuer
+/// dieselbe Bitmap zwei verschiedene Zeichenketten.
+fn base64_kette(wert: &str, alphabet: usize, schluss: &[u8], fuell: usize) -> bool {
+    let b = wert.as_bytes();
+    b.len() == alphabet + 1 + fuell
+        && b[..alphabet]
+            .iter()
+            .all(|&c| c.is_ascii_alphanumeric() || c == b'+' || c == b'/')
+        && schluss.contains(&b[alphabet])
+        && b[alphabet + 1..].iter().all(|&c| c == b'=')
+}
+
+/// Geschlossene Mustertabelle — Spiegel von `musterPasst` in NakamaVertrag.cpp.
+///
+/// 🔑 Jedes dieser Muster steht im Schema NEBEN einem festen `minLength ==
+/// maxLength`. Das ist keine Doppelung: Pythons `re` laesst `$` auch VOR einem
+/// abschliessenden Zeilenumbruch passen, diese Handschleifen nicht. Weil die
+/// Laengenschranke den Umbruch schon faengt, kommen alle drei Beine trotzdem
+/// zum selben URTEIL (gemessen in der G1-Nacharbeit).
 fn muster_passt(muster: &str, wert: &str) -> Option<bool> {
     match muster {
-        "^[0-9a-f]{32}$" => Some(
-            wert.len() == 32 && wert.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)),
-        ),
+        "^[0-9a-f]{32}$" => Some(hex_kette(wert, 32)),
+        "^[0-9a-f]{64}$" => Some(hex_kette(wert, 64)),
+        "^[A-Za-z0-9+/]{37}[AQgw]==$" => Some(base64_kette(wert, 37, b"AQgw", 2)),
+        "^[A-Za-z0-9+/]{10}[AEIMQUYcgkosw048]=$" => {
+            Some(base64_kette(wert, 10, b"AEIMQUYcgkosw048", 1))
+        }
         _ => None,
     }
 }

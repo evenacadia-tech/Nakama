@@ -122,8 +122,8 @@
     {
      "id": "G1",
      "ticket": "Gate",
-     "text": "Prüfrunde über P1 (C++- und Rust-Review + Codex).",
-     "beleg": "",
+     "text": "Prüfrunde über P1 (C++- und Rust-Review + Codex) — gefahren 24.08., Urteil NEEDS_WORK: Gate 1 hielt (beide Modelle „kein Pfad gefunden“), Gate 7 fiel — von Claude über das v3-Schema (insert + beitrag validiert) und unabhängig davon von Codex über den gespeicherten Zustand (eine Sonde ohne Aux-Bus darf sich post_fader_contribution nennen). Dazu zwei offene §55-Exit-Klauseln: die drei Bundles sind nie in FL gescannt worden, und Rust klassifiziert die 15 ungültigen State-DTOs nicht (NAK-42). Kanon 28/28 grün und beglaubigt. Manifest docs/beweise/G1.md.",
+     "beleg": "docs/beweise/G1.md",
      "stufe": "T3"
     }
    ]

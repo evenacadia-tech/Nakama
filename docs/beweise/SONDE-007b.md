@@ -1,5 +1,13 @@
 # Beweismanifest — SONDE-007b «Drei Ziele, Lifecycle-Klassifikation, Installer-Manifest»
 <!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-23 nachgearbeitet -->
+<!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-24 offen -->
+
+> **T3 / Gate G1, 24.08.2026 — NEEDS_WORK.** Zwei Gruende: (1) die State-Haelfte
+> des Gate-7-Bruchs — eine Sonde mit nur einem Stereo-Bus
+> (`sonde/SondeProcessor.cpp:7-9`) kann sich dauerhaft
+> `post_fader_contribution` nennen; (2) die §55-Exit-Klausel „Alle drei Ziele
+> scannen und laden in FL" ist fuer genau diese Bundles **ungemessen**.
+> Vollstaendig: `docs/beweise/G1.md` §4.2, §5, §7.1.
 
 
 > **Die eine harte Regel** (`docs/bauaufteilung-sonden.md` §2): *Eine Behauptung

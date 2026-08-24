@@ -1,5 +1,14 @@
 # Beweismanifest — S6 «`SONDE-005b`: FlatBuffers, gepinntes flatc, Codegen-Drift»
 <!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-21 nachgearbeitet -->
+<!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-24 offen -->
+
+> **T3 / Gate G1, 24.08.2026 — NEEDS_WORK.** Zwei der vier Wire-Float-Traeger
+> des `.fbs` (`start_ppq`, `end_ppq`, Zeilen 145-146) sind in **beiden**
+> handgeschriebenen Lesern ungeprueft — Rust `telemetrie.rs` und C++
+> `NakamaTelemetrie.cpp` haben dieselbe Auslassung, weshalb der Kreuzsprachtest
+> uebereinstimmt: auf der falschen Antwort. Kein Binaerfixture deckt `ppq` ab
+> (gezaehlt: 0), waehrend dieselbe Fehlerklasse fuer die anderen Traeger gedeckt
+> ist. Vollstaendig: `docs/beweise/G1.md` §4.3, §7.1.
 
 
 **Ticket-Gate im Wortlaut** (`docs/FL-Nakama-Sonden-Design-Entwurf.md` §65):

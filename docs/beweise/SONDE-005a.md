@@ -1,5 +1,13 @@
 # Beweismanifest — S5 «`SONDE-005a`: v3-JSON-Schemas, Bandgitter, Cross-Language-Fixtures»
 <!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-21 nachgearbeitet -->
+<!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-24 offen -->
+
+> **T3 / Gate G1, 24.08.2026 — NEEDS_WORK.** Der Bruchauftrag Gate 7 ist an
+> diesem Vertrag gelungen: `measurement_position: insert` + `aussageklasse:
+> beitrag` validiert (selbst gefahren, 0 Fehler), und `fixtures/v3/MANIFEST.json:303`
+> behauptet genau die Absicherung, die der Korpus nicht leistet. Dazu zwei
+> Vertragsloecher (`state_hash`, `gueltig_bitmap`: Laenge geprueft, Alphabet nicht).
+> Vollstaendig: `docs/beweise/G1.md` §4.1, §4.5, §7.1.
 
 
 **Ticket-Gate im Wortlaut** (`docs/FL-Nakama-Sonden-Design-Entwurf.md` §65):

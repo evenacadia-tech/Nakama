@@ -1,5 +1,61 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## 🚨 GATE G1 IST GEFAHREN — 24.08.2026 · Urteil **NEEDS_WORK**
+>
+> Die gebündelte T3-Runde über **P1** ist durch, alle drei Prüfer sind gelaufen:
+> `/c-review` (13 Cluster-Worker + 2 Richter über `eq-copilot/plugin`),
+> `/rust-review` (21 Worker + 2 Richter über `broker`) und **Codex**
+> (`gpt-5.6-sol`, `xhigh`) als zweites Modell. Manifest: **`docs/beweise/G1.md`**.
+> Kanon **28/28 grün, Exit 0, beglaubigt**.
+>
+> **Gate 1 hielt** — beide Modelle antworteten wörtlich „kein Pfad gefunden".
+> **Gate 7 fiel** — und zwar *zweimal, unabhängig, auf verschiedenen Ebenen*:
+> Claude über das **v3-Schema** (`insert` + `beitrag` validiert; selbst
+> nachgefahren, 0 Fehler in allen 4×2 Kombinationen), Codex über den
+> **gespeicherten Zustand** (eine Sonde mit nur einem Stereo-Bus darf sich
+> `post_fader_contribution` nennen). Entwurf §49.2 ist dort unbedingt — ein
+> gefallenes Gate kann kein PASS bekommen.
+>
+> **Vier Ticketmarken sind gesetzt** (`T3 NEEDS_WORK 2026-08-24 offen`), damit
+> der gerechnete Planstand sie sieht: `SONDE-005a` · `SONDE-005b` ·
+> `SONDE-007a` · `SONDE-007b`. **`SONDE-006` behält sein `T2 PASS`** — der
+> Befund an `NakamaState.cpp:100` ist erfasst, aber nicht dem Ticket
+> zurechenbar: die Regel, die er durchsetzt, steht im Entwurf gar nicht
+> (Begründung `G1.md` §7.2).
+>
+> ### Was als Nächstes ansteht — in dieser Reihenfolge
+>
+> 1. 👤 **Eine User-Frage geht allem voran:** *welche Produktklasse darf die
+>    Messposition `post_fader_contribution` tragen?* Der Entwurf sagt, wer der
+>    **Receiver** ist (§32.2, „der Main-Audioprozessor"), aber nicht, wer die
+>    **Position führt**. Ohne diese Entscheidung ist nicht bestimmbar, ob
+>    `NakamaState.cpp:100` falsch ist oder das Schema — beide Fixes sind
+>    möglich, sie widersprechen einander.
+> 2. **Gate 7 schließen** (NAK-74): Kopplung im Schema per `oneOf` — das
+>    Schlüsselwort ist im Engine-Subset und wird in derselben Datei viermal
+>    benutzt — **plus** ein Fixture `ungueltig/insert-mit-beitragsklasse.json`,
+>    das ohne den Fix grün wäre.
+> 3. **NAK-75** `start_ppq`/`end_ppq` in **beiden** Lesern prüfen, je ein
+>    Binärfixture; die Prüfung so bauen, dass schon *ein* fehlender Leser rot wird.
+> 4. **NAK-76** K2b in beide Richtungen messen und beim Fallen vorführen.
+> 5. **NAK-42** schließen — jetzt ein **Phasen**-Blocker: §55 verlangt am
+>    P1-Exit, dass C++ und Rust *jedes* Fixture gleich klassifizieren; Rust liest
+>    die 15 ungültigen State-DTOs nicht (gemessen: 6 gültig, 15 ungültig,
+>    `contract_cross_language.rs:458` liest nur `dto_gueltig`).
+> 6. 👤 **§55-Klausel 1 ist ein User-Termin:** „Alle drei Ziele scannen und laden
+>    in FL" ist **ungemessen** — installiert ist weiterhin nur das
+>    16.08.-Bundle, und Installation bleibt ein Admin-Klick. **NAK-41 gilt davor.**
+>
+> **Neu im Offen-Set:** NAK-74 (Gate-7-Bruch) · NAK-75 (`ppq` ungeprüft) ·
+> NAK-76 (K2b einseitig) · NAK-77 (`state_hash`/Bitmap: Länge geprüft, Alphabet
+> nicht) · NAK-78 (Sammelzeile: 27 + 20 überlebende Prüferbefunde).
+> ⚠️ **NAK-72 berichtigt:** `VSCMD_SKIP_SENDTELEMETRY=1` war in diesem Lauf
+> gesetzt und hat **nicht** geholfen — VCTIP kam trotzdem, der Lauf stand still,
+> `Stop-Process -Name vctip` löste ihn. Es bleiben die beiden anderen Wege.
+> ⚠️ **Neue Landmine:** `build_run_plan.py` von *rust-review* liest `context.md`
+> in der Windows-Codepage und **stürzt ab** (`⚠️` enthält das Byte `0x8f`) —
+> `PYTHONUTF8=1` davor.
+
 > ## ✅ NACHTRAG 24.08.2026 — `S10–11` ist abgenommen
 >
 > Die **Ausnahme**, die der Dirigent im Block darunter empfohlen hat („es lohnt,

@@ -50,8 +50,12 @@ GATES.md
 design/werkzeug/pruefung/bilder/
 design/werkzeug/pruefung/.gegenprobe/
 
-# Prüflaufergebnisse (/c-review, T3-Gates) — regenerierbar, nie committen
+# Prüflaufergebnisse (/c-review, /rust-review, T3-Gates) — regenerierbar,
+# nie committen. Das Urteil gehört ins Manifest unter docs/beweise/, die
+# Rohberichte bleiben Maschinenartefakte. (rust-Zeile nachgezogen 24.08. in
+# G1 — sie fehlte, obwohl dieselbe Artefaktklasse.)
 .c-review-results/
+.rust-review-results/
 
 # Nimbalyst-Automatiken: die Definition (nimbalyst-local/automations/*.md) ist
 # versioniert, ihre Laufergebnisse sind Maschinenartefakte (mode: replace, wird

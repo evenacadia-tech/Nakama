@@ -1,5 +1,15 @@
 # Beweismanifest — SONDE-007a «Gemeinsamer Kern ohne `JucePlugin_*`-Konstanten»
 <!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-23 nachgearbeitet -->
+<!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-24 offen -->
+
+> **T3 / Gate G1, 24.08.2026 — NEEDS_WORK.** Der Riegel **K2b**
+> (`cmake/NakamaKern.cmake:218 ff.`, tragende Schleife `:234`) laeuft nur ueber
+> die Referenz und fragt „fehlt das im Kern?" — nie umgekehrt. Ein kern-eigenes
+> Zusatz-Define ist damit unsichtbar, obwohl der Kopf desselben Riegels (`:202`)
+> zusagt: „dieser Riegel haelt die beiden Mengen zusammen" — eine Aussage ueber
+> MENGENGLEICHHEIT, die einseitige Enthaltung nicht leistet. Ein Riegel, der
+> weniger kann als er behauptet, beweist mit seinem Schweigen nichts.
+> Vollstaendig: `docs/beweise/G1.md` §4.4, §7.1.
 
 
 > **Die eine harte Regel** (`docs/bauaufteilung-sonden.md` §2): *Eine Behauptung

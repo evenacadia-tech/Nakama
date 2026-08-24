@@ -105,4 +105,3 @@ Motion communicates state rather than decoration. Pointer drags are immediate; f
 - Do not replace the Figma material with generic cards, gradients chosen for novelty or oversized web typography.
 - Do not animate static status, smooth direct drags, fake data cadence or let visual timing drive DSP timing.
 - Do not present Mix as implemented before its versioned parameter contract exists.
-

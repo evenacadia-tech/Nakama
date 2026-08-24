@@ -68,4 +68,3 @@ Motion values come from `design/prototyp/contract/motion-tokens.json`. Pointer m
 ## Approval gate
 
 The native JUCE editor must not adopt this surface until both pages, required negative states and the named web release candidate have been visually accepted against the user goldens. That approval starts the VST3 transfer; it is not implied by passing automated tests.
-

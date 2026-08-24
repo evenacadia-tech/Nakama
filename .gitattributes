@@ -7,6 +7,13 @@
 *.flac binary
 *.exr  binary
 
+# Die freigegebenen Design-Assets und Goldens werden ueber SHA-256 im
+# Asset-Manifest verifiziert. Sie muessen deshalb auf jedem Rechner exakt
+# dieselben Bytes behalten; insbesondere duerfen SVGs nicht per autocrlf
+# zwischen LF und CRLF umgeschrieben werden.
+design/assets/**  -text
+design/goldens/** -text
+
 # Alles andere bleibt wie gehabt: core.autocrlf regelt die Arbeitskopie.
 # Werkzeuge, die Quelltext lesen, muessen zeilenendenfest sein - der
 # Identitaetstest normalisiert deshalb selbst (T2-Runde 2, 20.08.2026).

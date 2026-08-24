@@ -469,3 +469,66 @@ fn jcs_fixtures_stimmen_mit_manifest() {
     assert_eq!(dto_ok, manifest["dto_gueltig"].as_array().unwrap().len());
     println!("JCS: {ok} Zahlenvektoren, {abgelehnt} abgelehnt, {dok_ok} Dokumente, {dto_ok} DTOs bytegleich");
 }
+
+/// §55 Klausel 4 fuer die State-DTOs — NAK-42.
+///
+/// Bis zum 24.08.2026 endete die Rust-Seite bei `dto_gueltig`: sechs Dateien,
+/// Kanon und Hash nachgerechnet. Die **15 ungueltigen** DTOs las hier niemand
+/// (`grep` ueber `broker/`: 0 Treffer), obwohl das Manifest fuer jede einen
+/// `grund` fuehrt. Der Exit-Satz aus Entwurf §55 — „C++ und Rust klassifizieren
+/// jedes gueltige und ungueltige Fixture identisch" — war fuer diesen Korpus
+/// also nicht erfuellt, und der Gate-Lauf G1 hat ihn als Exit-Blocker
+/// ausgewiesen.
+///
+/// 🔑 Gemessen wird gegen das MANIFEST, nicht gegen die C++-Ausgabe. Das ist
+/// derselbe Aufbau wie beim v3-Korpus und aus demselben Grund: stimmen beide
+/// Beine je mit der dritten Partei ueberein, stimmen sie transitiv miteinander
+/// ueberein — und eine GEMEINSAME Auslassung faellt trotzdem auf. Zwei Beine
+/// gegeneinander zu halten koennte sie nicht finden (die Lehre aus §4.3
+/// desselben Gates).
+#[test]
+fn dto_korpus_klassifiziert_wie_das_manifest() {
+    let fixtures = wurzel().join("eq-copilot/fixtures/state");
+    let manifest: Value =
+        serde_json::from_str(&std::fs::read_to_string(fixtures.join("MANIFEST.json")).unwrap())
+            .unwrap();
+
+    // Der Bestand kommt aus dem Vertrag, nicht aus einer dritten Kopie.
+    assert_eq!(
+        eqcop_broker::dto::bestand().anzahl(),
+        109,
+        "Parameterbestand aus nakama-parameter-v1.json"
+    );
+
+    let mut ja = 0usize;
+    for e in manifest["dto_gueltig"].as_array().unwrap() {
+        let pfad = fixtures.join(e["datei"].as_str().unwrap());
+        let roh = std::fs::read(&pfad).unwrap();
+        match eqcop_broker::dto::pruefe(&roh) {
+            Ok(()) => ja += 1,
+            Err(g) => panic!("{}: gueltig erwartet, Rust sagt {}", pfad.display(), g.wort()),
+        }
+    }
+    assert_eq!(ja, manifest["dto_gueltig"].as_array().unwrap().len());
+
+    let mut nein = 0usize;
+    for e in manifest["dto_ungueltig"].as_array().unwrap() {
+        let pfad = fixtures.join(e["datei"].as_str().unwrap());
+        let soll = e["grund"].as_str().unwrap();
+        let roh = std::fs::read(&pfad).unwrap();
+        match eqcop_broker::dto::pruefe(&roh) {
+            Ok(()) => panic!("{}: ANGENOMMEN, Manifest sagt {soll}", pfad.display()),
+            Err(g) => {
+                assert_eq!(g.wort(), soll, "{}: falscher Grund", pfad.display());
+                nein += 1;
+            }
+        }
+    }
+    assert_eq!(nein, manifest["dto_ungueltig"].as_array().unwrap().len());
+
+    // Der Korpus muss Substanz haben — sonst waere ein Lauf mit geleerter
+    // Liste gruen und diese Pruefung eine, die nicht fehlschlagen kann
+    // (dieselbe Lehre wie MINDESTKORPUS im v3-Referenzbein).
+    assert!(nein >= 15, "nur {nein} ungueltige DTOs - Korpus geschrumpft?");
+    println!("DTO: {ja} gueltige, {nein} ungueltige wie im Manifest klassifiziert");
+}

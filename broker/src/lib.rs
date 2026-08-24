@@ -9,6 +9,7 @@
 
 pub mod aggregat;
 pub mod bindung;
+pub mod dto;
 pub mod framing;
 pub mod generiert;
 pub mod protokoll;

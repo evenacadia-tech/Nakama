@@ -1,5 +1,69 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## 🛑 ÜBERGABE — 24.08.2026, Dirigentenlauf beendet (Kontext voll)
+>
+> **Stand: 12 von 36 abgenommen.** An diesem Tag abgenommen: **S12–13**
+> (`T2 PASS`, drei Prüf- und zwei Nacharbeitsrunden) und **S10–11**
+> (`T2 PASS`). Danach **Gate G1** gefahren, Urteil **NEEDS_WORK**, Nacharbeit
+> vollständig gefahren.
+>
+> ### Was G1 ergab und was daraus geschlossen wurde
+>
+> **Gate 1 hielt** („kein Pfad gefunden"), **Gate 7 fiel** — von zwei Modellen
+> unabhängig, auf zwei Ebenen. Der v3-Vertrag verlangte
+> `measurement_position` und `aussageklasse`, **koppelte sie aber nicht**:
+> `insert` + `beitrag` validierte fehlerfrei. Alle fünf Befunde plus §55
+> Klausel 4 (NAK-42) sind geschlossen, Kanon **28/28 Exit 0**.
+> Manifest: `docs/beweise/G1.md` §1–§9 (Gate) und §10 (Nacharbeit).
+>
+> Marken heute: `SONDE-005a`, `SONDE-005b`, `SONDE-007a` = `T3 NEEDS_WORK
+> nachgearbeitet` · **`SONDE-007b` = `offen`**, bewusst, siehe unten.
+>
+> ### 👤 Das Einzige, was noch fehlt — und nur der User kann es
+>
+> **§55 Klausel 1: „Alle drei Ziele scannen und laden in FL."** Nie gemessen;
+> installiert ist weiterhin das Bundle vom 16.08. Braucht **Installation als
+> Admin + einen FL-Lauf**. ⚠️ **NAK-41**: ein Projekt, das der neue Build
+> speichert, verliert im 16.08.-Build still seine Messpunkt-Identität — nicht
+> zwischen alt und neu springen. Deshalb steht `SONDE-007b` auf `offen`: sein
+> zweiter Befund ist kein Code, sondern ein Termin.
+>
+> ### ❓ Offene Frage an den User (per Routine gestellt, Antwort steht aus)
+>
+> **A** *(Empfehlung)* — erst FL-Termin, dann **G1 Runde 2** in einem Zug; dann
+> ist alles Prüfbare geprüft und das Gate kann durchgehen.
+> **B** — G1 Runde 2 sofort, um die sechs Reparaturen unabhängig prüfen zu
+> lassen; die FL-Klausel fällt dabei zwangsläufig wieder auf.
+>
+> ⚠️ **G1 Runde 2 ist ein Gate** — nach Skill §4.1 **nie ohne den User starten.**
+>
+> ### Kanäle (Entscheid 24.08., Register + Skill §3.6)
+>
+> Berichte **und Rückfragen** gehen über die claude.ai-Routine
+> **„Nakama: Dirigent-Meldung"** (`trig_01BUKf1i5Y9ztqGkA6Ev4eff`, kein Cron,
+> `push: true`): Meldung zwischen die `--- MELDUNG ---`-Marker im Prompt
+> schreiben, dann `run`. **WhatsApp ist optional** und derzeit **abgemeldet**
+> (Gerätekopplung gelöst, nur per QR-Scan am PC wiederherstellbar). Nie einen
+> zweiten WhatsApp-Client öffnen — genau das hat die Kopplung gelöst.
+>
+> ### Neue offene Punkte dieses Tages
+>
+> **NAK-68** (Plausibilität der Rahmenskalare) · **NAK-69** (veröffentlichte
+> Frames tragen unter `/O2` unbestimmte Füllbytes aus `Transportstempel` —
+> heute folgenlos, ab **`SONDE-010`** eine nicht reproduzierbare Zahl im
+> Wire-Vertrag) · **NAK-70** (grundabhängige Auslassung in `grenzeZiehen()` bei
+> `loopWrap`/`moeglicherStraddle` ohne Bein) · **NAK-71** · **NAK-72**
+> (`beweise.ps1` kann still auf `VCTIP.EXE` warten) · ⚠️ **NAK-73**:
+> `git checkout` ist hier wegen `core.autocrlf=true` **keine** byteweise
+> Rückstellung — die Formel „SHA-256 vorher = nachher" trägt in keinem Manifest
+> mehr ohne Nachweis.
+>
+> **Nach dem Gate** wäre `S14–15` (`SONDE-010`) die nächste Baufläche — normale
+> Bau-Runde, kein Gate. Dort werden NAK-69, NAK-59, NAK-40 und der
+> v3-Schema-Schnitt aus NAK-29 fällig.
+>
+> Vollständige Begründungen je Runde: `docs/dirigent/protokoll.md`.
+
 > ## ✅ G1-NACHARBEIT IST GEFAHREN — 24.08.2026 · **kein PASS erklärt**
 >
 > Die fünf Befunde aus `docs/beweise/G1.md` §4 **und** die §55-Klausel 4

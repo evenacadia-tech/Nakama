@@ -18,6 +18,14 @@ Regeln und Zyklus: `.claude/skills/dirigent/SKILL.md`. Jüngster Eintrag oben.
 
 ---
 
+## 2026-08-24 abends · HALT · User-Stopp (Kontext voll)
+
+- **Anlass:** User-Wort: „dein kontext ist fast voll . wir machen hier halt" — §4, expliziter Stopp. Es wird nichts mehr gespawnt.
+- **Bilanz des Laufs (24.08.):** **zwei Stände abgenommen** — S12–13 (`T2 PASS` nach drei Prüf- und zwei Nacharbeitsrunden) und S10–11 (`T2 PASS`, jeder Riegel vom Prüfer mit einer *eigenen* Mutation zum Fallen gebracht). Danach **Gate G1** gefahren: Gate 1 hielt, **Gate 7 fiel** (zwei Modelle, zwei Ebenen), fünf Befunde plus §55 Klausel 4 in einer Nacharbeit geschlossen, Kanon 28/28 Exit 0. Planstand **10 → 12 von 36**. Sechs neue offene Punkte sauber ausgelagert statt nebenbei gefixt (NAK-68…NAK-73). Der Berichts- und Rückfragekanal wurde auf die claude.ai-Routine umgestellt und im Register verankert.
+- **Offen bei Übergabe:** (1) **§55 Klausel 1** — FL-Lauf mit allen drei Bundles, nur der User kann es, `SONDE-007b` steht deshalb bewusst auf `offen` · (2) die per Routine gestellte **Frage A/B** (FL-Termin zuerst, oder G1 Runde 2 sofort) — Antwort steht aus · (3) `S5`, `S6`, `S8` warten auf das Urteil eines frischen Gate-Laufs · (4) neun Design-Fragen bei `/fragen` · (5) WhatsApp-Kopplung gelöst, per QR am PC wiederherstellbar (optional).
+- **Nicht geprüft:** Die sechs Fixes der G1-Nacharbeit habe ich nicht an den Quellen gegengelesen — bis auf zwei, die ich während des HALTs nachgemessen habe (NAK-42 und der State-Entzug, beide halten, Nachtrag im Eintrag darunter). Der nächste Gate-Lauf misst den Rest.
+- **Übergabe:** Kopf von `docs/NEXT-SESSION.md` — Stand, offene Frage, Kanäle, neue Offen-Punkte.
+
 ## 2026-08-24 nachmittags · HALT · G1-Nacharbeit fertig — was bleibt, kann nur der User (§4.3)
 
 - **Ergebnis:** Alle fünf Gate-Befunde geschlossen **und** §55 Klausel 4 dazu (Manifest `G1.md` §10.0–§10.6; Commits `ebfe02e` §4.1/§4.5 · `a2fe0f5` §4.2 · `fa976fd` §4.3 · `fac67f4` §4.4 · NAK-42 im Broker · Selbstaudit `3807b0e` „drei eigene Fehler berichtigt" · Bauriegel `ca593d6` · zweiter Kanonlauf `5c69200`). Kanon **28/28, Exit 0**.

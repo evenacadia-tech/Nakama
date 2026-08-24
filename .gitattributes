@@ -28,6 +28,12 @@
 eq-copilot/schemas/v3/**  -text
 eq-copilot/fixtures/v3/** -text
 
+# `flatc --cpp` schreibt den generierten Header auch unter Windows mit LF.
+# Der Drift-Riegel vergleicht ihn absichtlich bytegleich; core.autocrlf=true
+# darf deshalb beim Checkout kein CRLF daraus machen. Die Rust-Ausgabe bleibt
+# ausgenommen, weil flatc sie unter Windows selbst mit CRLF erzeugt.
+eq-copilot/plugin/vertrag/generiert/nakama_telemetry_v1_generated.h -text
+
 # SONDE-006: Der State-Vertrag (Parameterbestand, Schema-2-Blatt) und sein
 # Fixture-Korpus werden von drei Sprachen gelesen und bytegleich geprueft
 # (erzeuge_state_fixtures.py --pruefen, EqCopStateMigrationTest,

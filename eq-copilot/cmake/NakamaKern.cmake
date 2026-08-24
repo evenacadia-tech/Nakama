@@ -193,13 +193,37 @@ endfunction()
 # hier anders steht als dort, koennte derselbe Header zwei verschiedene Dinge
 # bedeuten - genau die Voraussetzung einer ODR-Verletzung.
 #
-# Gemessen am 22.08.2026: heute weicht genau eine ab (JUCE_USE_CURL; der Kern
-# saehe den Vorgabewert 1 aus juce_core.h:152 statt der 0 des Projekts), und
-# sie ist folgenlos - eine Grep ueber alle Kopfdateien von juce_core,
-# juce_events, juce_data_structures und juce_cryptography findet den Namen NUR
-# im Konfigblock von juce_core.h selbst, kein Header verzweigt darauf, und der
-# Kern uebersetzt ohnehin keine juce_core-Quelle. Folgenlos heute heisst nicht
-# folgenlos morgen: dieser Riegel haelt die beiden Mengen zusammen.
+# ⚠️ BERICHTIGT 24.08.2026 (G1-Nacharbeit). Hier stand seit dem 22.08.:
+# "heute weicht genau eine ab (JUCE_USE_CURL; der Kern saehe den Vorgabewert 1
+# aus juce_core.h:152 statt der 0 des Projekts), und sie ist folgenlos."
+#
+# Das ist GEMESSEN FALSCH, und der Fehler ist lehrreich: die Abweichung war nie
+# eine Eigenschaft des Baus, sondern eine Eigenschaft des BLICKS. Die
+# Kopf-Fassade traegt ihre Defines als Generatorausdruck; zur Konfigurierzeit
+# las der alte Riegel davon nur unaufgeloesten Text und sah deshalb KEIN
+# JUCE_USE_CURL am Kern. Beim Uebersetzen expandiert derselbe Ausdruck sehr
+# wohl - der Kern hatte die 0 also immer. Aus einer Messluecke wurde eine
+# Aussage ueber das Produkt, und die stand hier zwei Tage als Befund.
+# Seit die Fassade aufgeloest wird, meldet der Riegel beide Seiten literal:
+# JUCE_DISPLAY_SPLASH_SCREEN=0, JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1,
+# JUCE_USE_CURL=0, JUCE_WEB_BROWSER=0 - vier Defines, beide Seiten gleich.
+#
+# ⚠️ Und der zweite Teil desselben Befunds (G1 §4.4): der Satz "haelt die
+# beiden Mengen zusammen" stand hier, seit es den Riegel gibt — er war eine
+# Zusage auf MENGENGLEICHHEIT, und der Code darunter leistete sie nicht. Die
+# tragende Schleife lief NUR ueber die Referenz und fragte nur "fehlt es am
+# Kern?".
+# Damit war unsichtbar:
+#
+#   * ein Define, das es NUR am Kern gibt        -> derselbe Header, andere
+#                                                   Bedeutung, kein Alarm
+#   * ein Name mit ZWEI Werten am Kern           -> der erwartete Wert stand ja
+#                                                   drin, nur nicht allein
+#
+# Das ist genau die Befundklasse, fuer die S8 gebaut wurde: ein Riegel, der
+# weniger kann, als er behauptet, und dessen Schweigen deshalb nichts beweist.
+# Er misst jetzt in BEIDE Richtungen und zusaetzlich auf Wertwiderspruch; die
+# Zusage oben stimmt seitdem.
 #
 # K2b vergleicht DEFINES. Uebersetzungsschalter liegen ausserhalb seiner
 # Reichweite - dafuer steht K2c darunter (T2-Befund 23.08.).
@@ -215,23 +239,61 @@ endfunction()
 #                              Bis 23.08. stand hier "K1 verbietet die ersten
 #                              beiden" - das war falsch; der Ausschluss haelt,
 #                              aber ein anderer Riegel traegt ihn.
-function(nakama_kern_konfig_pruefen kern referenz)
-    get_target_property(_ref "${referenz}" COMPILE_DEFINITIONS)
-    get_target_property(_kern_defs "${kern}" COMPILE_DEFINITIONS)
-    get_target_property(_fassade "${kern}" LINK_LIBRARIES)
+# Sammelt die WIRKSAMEN JUCE-Defines eines Ziels: seine eigenen plus die
+# INTERFACE-Defines aller Ziele, gegen die es linkt. Beide Seiten des Vergleichs
+# werden damit GLEICH gerechnet — das ist die Voraussetzung dafuer, dass ein
+# Mengenvergleich in beide Richtungen ueberhaupt aussagekraeftig ist.
+#
+# ⚠️ Vor dem 24.08.2026 war genau das nicht so: die Referenzseite wurde nur aus
+# COMPILE_DEFINITIONS gelesen, die Kernseite zusaetzlich aus der Fassade. Zwei
+# verschieden gerechnete Mengen kann man nur in EINE Richtung vergleichen, ohne
+# Fehlalarme zu ernten — und genau in eine Richtung wurde verglichen.
+function(_nakama_kern_wirksame_defines ziel aus)
+    get_target_property(_eigene "${ziel}" COMPILE_DEFINITIONS)
+    get_target_property(_links "${ziel}" LINK_LIBRARIES)
 
-    set(_haben "${_kern_defs}")
-    foreach(_f IN LISTS _fassade)
-        if(TARGET "${_f}")
-            get_target_property(_fd "${_f}" INTERFACE_COMPILE_DEFINITIONS)
-            if(_fd)
-                list(APPEND _haben ${_fd})
-            endif()
+    set(_alle "")
+    if(_eigene)
+        list(APPEND _alle ${_eigene})
+    endif()
+    foreach(_l IN LISTS _links)
+        if(NOT TARGET "${_l}")
+            continue()
         endif()
+
+        # 🚨 Die Kopf-Fassade traegt ihre Defines als GENERATORAUSDRUCK
+        # ($<TARGET_PROPERTY:...>, siehe nakama_kern_juce_fassade). Zur
+        # Konfigurierzeit liefert get_target_property davon den unaufgeloesten
+        # Text — kein einziges JUCE_-Literal. Wer die beiden Seiten naiv
+        # vergleicht, haelt eine literale Menge gegen eine unaufgeloeste und
+        # bekommt Fehlalarme fuer JEDES Define, das nur ueber die Fassade
+        # kommt (gemessen 24.08.: JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1).
+        #
+        # Deshalb wird die Fassade ueber dieselbe Herkunftsspur aufgeloest,
+        # die K2 schon benutzt, und zwar aus demselben Grund, den der Kommentar
+        # dort nennt: "Generatorausdruecke sind zur Konfigurierzeit keine
+        # Kante." Danach sind BEIDE Seiten literal — und erst dann ist ein
+        # Mengenvergleich in beide Richtungen ueberhaupt eine Aussage.
+        set(_quellen "${_l}")
+        get_target_property(_abgeleitet "${_l}" NAKAMA_KERN_ABGELEITET_VON)
+        if(_abgeleitet)
+            list(APPEND _quellen ${_abgeleitet})
+        endif()
+
+        foreach(_q IN LISTS _quellen)
+            if(TARGET "${_q}")
+                get_target_property(_ld "${_q}" INTERFACE_COMPILE_DEFINITIONS)
+                if(_ld)
+                    list(APPEND _alle ${_ld})
+                endif()
+            endif()
+        endforeach()
     endforeach()
 
-    set(_fehlt "")
-    foreach(_d IN LISTS _ref)
+    # Nur JUCE-Konfiguration, und nur das, was legitim verschieden sein DARF,
+    # faellt raus (Begruendung im Kopf dieses Abschnitts).
+    set(_gefiltert "")
+    foreach(_d IN LISTS _alle)
         if(NOT "${_d}" MATCHES "^JUCE_")
             continue()
         endif()
@@ -241,22 +303,105 @@ function(nakama_kern_konfig_pruefen kern referenz)
            OR "${_d}" MATCHES "^JUCE_VST3_CAN_REPLACE_VST2")
             continue()
         endif()
+        list(APPEND _gefiltert "${_d}")
+    endforeach()
+    list(REMOVE_DUPLICATES _gefiltert)
+    list(SORT _gefiltert)
+    set(${aus} "${_gefiltert}" PARENT_SCOPE)
+endfunction()
+
+# Findet Namen, die in EINER Menge mit ZWEI verschiedenen Werten stehen.
+#
+# ⚠️ Diese Klasse war vor dem 24.08. voellig unsichtbar, und zwar aus einem
+# subtilen Grund: der einseitige Test fragte "steht der erwartete Wert in der
+# Kernmenge?". Bei `JUCE_USE_CURL=0` UND `JUCE_USE_CURL=1` am Kern lautet die
+# Antwort JA — der erwartete Wert steht ja da, nur eben nicht allein. Der
+# Uebersetzer sieht dann zwei -D fuer denselben Namen; welcher gewinnt, haengt
+# an der Reihenfolge.
+function(_nakama_kern_widersprueche menge aus)
+    set(_namen "")
+    set(_treffer "")
+    foreach(_d IN LISTS menge)
+        string(REGEX REPLACE "=.*$" "" _n "${_d}")
+        if("${_n}" IN_LIST _namen)
+            list(APPEND _treffer "${_n}")
+        else()
+            list(APPEND _namen "${_n}")
+        endif()
+    endforeach()
+    if(_treffer)
+        list(REMOVE_DUPLICATES _treffer)
+    endif()
+    set(${aus} "${_treffer}" PARENT_SCOPE)
+endfunction()
+
+function(nakama_kern_konfig_pruefen kern referenz)
+    _nakama_kern_wirksame_defines("${referenz}" _ref)
+    _nakama_kern_wirksame_defines("${kern}" _haben)
+
+    # Richtung 1 (gab es schon): hat der Kern alles, was der Verbraucher hat?
+    set(_fehlt "")
+    foreach(_d IN LISTS _ref)
         if(NOT "${_d}" IN_LIST _haben)
             list(APPEND _fehlt "${_d}")
         endif()
     endforeach()
 
+    # Richtung 2 (NEU, G1-Befund §4.4): hat der Kern etwas, was der Verbraucher
+    # NICHT hat? Der Kopf dieses Riegels sagt seit jeher, er halte "die beiden
+    # Mengen zusammen" — das ist eine Zusage auf MENGENGLEICHHEIT, und
+    # einseitige Enthaltung (_ref ⊆ _haben) leistet sie nicht. Ein Define, das
+    # NUR am Kern haengt, laesst denselben Header dort etwas anderes bedeuten
+    # als beim Verbraucher; die Richtung des Unterschieds ist dafuer egal.
+    set(_zuviel "")
+    foreach(_d IN LISTS _haben)
+        if(NOT "${_d}" IN_LIST _ref)
+            list(APPEND _zuviel "${_d}")
+        endif()
+    endforeach()
+
+    # Richtung 3 (NEU): derselbe Name zweimal mit verschiedenem Wert.
+    _nakama_kern_widersprueche("${_haben}" _wider_kern)
+    _nakama_kern_widersprueche("${_ref}" _wider_ref)
+
+    set(_klagen "")
     if(_fehlt)
-        string(REPLACE ";" "\n    " _liste "${_fehlt}")
+        string(REPLACE ";" "\n        " _l "${_fehlt}")
+        list(APPEND _klagen "  fehlt am Kern (hat der Verbraucher, der Kern nicht):\n        ${_l}")
+    endif()
+    if(_zuviel)
+        string(REPLACE ";" "\n        " _l "${_zuviel}")
+        list(APPEND _klagen "  nur am Kern (hat der Kern, der Verbraucher nicht):\n        ${_l}")
+    endif()
+    if(_wider_kern)
+        string(REPLACE ";" "\n        " _l "${_wider_kern}")
+        list(APPEND _klagen "  widerspruechlich AM KERN (ein Name, zwei Werte):\n        ${_l}")
+    endif()
+    if(_wider_ref)
+        string(REPLACE ";" "\n        " _l "${_wider_ref}")
+        list(APPEND _klagen "  widerspruechlich AM VERBRAUCHER (ein Name, zwei Werte):\n        ${_l}")
+    endif()
+
+    if(_klagen)
+        string(REPLACE ";" "\n" _text "${_klagen}")
         message(FATAL_ERROR
             "S8/SONDE-007a K2b: Der Kern '${kern}' uebersetzt die JUCE-Kopfdateien mit einer\n"
-            "anderen Konfiguration als '${referenz}'. Fehlend am Kern:\n"
-            "    ${_liste}\n"
+            "anderen Konfiguration als '${referenz}':\n"
+            "${_text}\n"
             "Derselbe Header kann dort dann etwas anderes bedeuten als hier. Trag die\n"
             "Schraube an der Kopf-Fassade nach (plugin/CMakeLists.txt, NakamaKernJuce).")
     endif()
 
-    message(STATUS "Nakama-Kern: K2b gruen — JUCE-Konfiguration von '${kern}' deckt '${referenz}'.")
+    # Der Riegel nennt, WAS er verglichen hat. Ein Riegel, der nur "gruen"
+    # sagt, macht seinen eigenen Umfang unsichtbar - und ein Riegel, der nichts
+    # findet, sagt nichts, solange nicht gezeigt ist, dass er ueberhaupt etwas
+    # finden koennte (Lehre A14/SONDE-007a). Schrumpft die Menge hier still auf
+    # null, faellt es in der Konfigurierausgabe auf.
+    list(LENGTH _ref _n)
+    string(REPLACE ";" ", " _gemessen "${_ref}")
+    message(STATUS
+        "Nakama-Kern: K2b gruen — Mengen von '${kern}' und '${referenz}' GLEICH "
+        "(beide Richtungen, keine Wertwidersprueche); ${_n} verglichen: ${_gemessen}")
 endfunction()
 
 # ── K2c: dieselben JUCE-Empfehlungsschalter wie der Verbraucher ─────────────

@@ -395,7 +395,9 @@ B5 `EqCopAnalysisGoldenTest` ist seit SONDE-009 gebaut und läuft mit.
   sind damit erstmals an Artefakten gemessen (§53.5 „P1 verifiziert das erste
   Moduleinfo"), und **kein Bundle trägt eine fremde Ziel-CID** — die
   Artefakt-Seite von §53.4. K2b/K2c messen seit S9 gegen **jeden** Verbraucher
-  des Kerns, nicht gegen eine Stichprobe — heute **14**, und die Zahl ist keine
+  des Kerns, nicht gegen eine Stichprobe — heute **15** (gemessen 24.08.; sie
+  wächst mit jedem neuen Verbraucher, hier steht nur eine Momentaufnahme —
+  am 23.08. waren es 14), und die Zahl ist keine
   abgeschriebene: `plugin/CMakeLists.txt:156` trägt jeden
   `nakama_kern_anbinden()`-Aufruf in eine GLOBAL-Property ein, `:627` zählt sie
   und der Configure-Lauf meldet sie („K2b/K2c gegen alle N Verbraucher

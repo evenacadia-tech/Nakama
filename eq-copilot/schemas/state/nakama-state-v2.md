@@ -80,7 +80,7 @@ Wirt sie tragen kann — verboten ist nicht das Wort, sondern die **Behauptung**
 einer Instanz, die den Bus nachweislich nicht hat.
 
 Ein Altprojekt verliert dadurch nichts: ein State mit dieser Position fällt auf
-**read-only mit den Originalbytes** (§4), sichtbar im Editor. Er behält seinen
+**read-only mit den Originalbytes** (§5), sichtbar im Editor. Er behält seinen
 Stand, er darf ihn nur nicht mehr behaupten.
 
 Die Frage „**welche** Klasse darf die Position führen, wenn es den Bus gibt?"

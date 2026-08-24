@@ -350,12 +350,21 @@ pub fn pruefe(roh: &[u8]) -> Result<(), Grund> {
         match &e.art {
             Art::Bool => {}
             Art::Float { min, max } => {
-                // 🔑 serde_json kann NaN/Infinity gar nicht erst parsen (sie
-                // sind kein JSON), und der Textriegel hat Literale jenseits
-                // 1e308 schon in Stufe 1 gefangen. `as_f64` kann hier trotzdem
-                // None liefern — bei einer Ganzzahl jenseits f64. Ein Wert, den
-                // dieses Bein nicht als endliche Zahl lesen kann, ist
-                // `nicht endlich`, nicht stillschweigend in Ordnung.
+                // 🔑 Diese Stufe kann heute nicht mehr feuern, und das ist
+                // KEIN Grund, sie wegzulassen. serde_json parst NaN/Infinity
+                // gar nicht erst (sie sind kein JSON), der Textriegel hat
+                // Literale jenseits 1e308 schon in Stufe 1 gefangen, und
+                // `as_f64` liefert fuer JEDE `Number` einen Wert — auch fuer
+                // u64/i64, dann verlustbehaftet (gemessen im Test
+                // `as_f64_liefert_fuer_jede_number_einen_wert`; eine frueherer
+                // Fassung dieses Kommentars behauptete das Gegenteil).
+                //
+                // Der Zweig bleibt, weil die anderen beiden Beine ihn auch
+                // haben: `validiere` in NakamaParameter.cpp und der
+                // Python-Referenzvalidator pruefen `isfinite` ausdruecklich.
+                // Ein Bein, das eine Stufe der Leiter AUSLAESST, weil sie
+                // heute unerreichbar ist, laeuft auseinander, sobald eine
+                // Vorstufe sich aendert.
                 let x = match w.as_f64() {
                     Some(x) if x.is_finite() => x,
                     _ => return Err(Grund::NichtEndlich),
@@ -394,6 +403,24 @@ mod tests {
         let hart = serde_json::from_slice::<StrengerWert>(roh);
         assert!(hart.is_err(), "StrengerWert muss ablehnen");
         assert!(hart.unwrap_err().to_string().contains(MARKE_DOPPELT));
+    }
+
+    #[test]
+    fn as_f64_liefert_fuer_jede_number_einen_wert() {
+        // Selbstaudit 24.08.: der Kommentar an der Nichtendlich-Stufe
+        // behauptete, `as_f64` koenne bei einer Ganzzahl jenseits f64 `None`
+        // liefern. Gemessen stimmt das NICHT — serde_json wandelt u64/i64
+        // immer um, notfalls verlustbehaftet. Der Test haelt die Tatsache
+        // fest, statt sie im Fliesstext zu behaupten.
+        let gross: Value = serde_json::from_str("18446744073709551615").unwrap();
+        assert!(gross.is_number());
+        assert!(gross.as_f64().is_some(), "as_f64 auf u64::MAX liefert Some");
+        assert!(gross.as_f64().unwrap().is_finite());
+
+        // Und die Gegenrichtung: NaN/Infinity sind kein JSON, der Parser lehnt
+        // sie ab, bevor irgendeine Bereichsstufe sie sehen koennte.
+        assert!(serde_json::from_str::<Value>("NaN").is_err());
+        assert!(serde_json::from_str::<Value>("Infinity").is_err());
     }
 
     #[test]

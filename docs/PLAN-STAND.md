@@ -11,6 +11,9 @@
 
 **Stand:** 2026-08-24 · Quellstand `906e932` · **12 von 36 abgenommen** · 5 gebaut · 19 offen
 
+> ⚠️ Gerechnet aus dem Arbeitsbaum: unter `docs/plan/`, `docs/beweise/`
+> oder `tools/plan/` liegen Änderungen, die noch nicht in `906e932` sind.
+
 `█████████████▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░` 33 % abgenommen · 47 % gebaut
 
 **Als Nächstes:** **Nacharbeit an S9** — der Prüfer hat einen Befund offen gelassen (docs/beweise/SONDE-007b.md).

@@ -18,6 +18,17 @@ Regeln und Zyklus: `.claude/skills/dirigent/SKILL.md`. Jüngster Eintrag oben.
 
 ---
 
+## 2026-08-24 vormittags · SONDE-008 · pruefung angesetzt (T2 Runde 2, S10–11)
+
+- **Anlass:** Der User hat den Lauf wieder aufgenommen. Der HALT von heute Nacht galt **dem Gate**, nicht dem Rückstand — und mein eigener Vorschlag im Kopf von `NEXT-SESSION.md` nennt den nächsten Schritt bereits: *„`S10–11` ist der jüngste Stand und hätte bei G2 den weitesten Weg — es lohnt, ihm sein `T2` einzeln zu geben, während die vier P1-Stände auf G1 warten."* Eine T2-Runde ist keine Gate-Runde; §4.1 steht ihr nicht im Weg.
+- **Session:** „SONDE-008 T2 Runde 2 — S10–11 abschließend prüfen" (`782b6d20-c739-40a1-ad6d-3cdc44840505`), Opus 5 mit 1M, xhigh.
+- **Basispunkt — selbst gerechnet, und die Rechnung war nötig:** Nacharbeit = **`334f185..0b23cf5`** (`334f185` = Elterncommit von `f88f8c4`). ⚠️ `87fe56b` („Hub und NEXT-SESSION nachgezogen") **sieht** wie das Ende der Runde aus — danach kamen aber noch **drei** echte Nachträge, darunter `bbe4b3f`, das eine zu scharfe Regel zurücknahm. Wer bei `87fe56b` aufgehört hätte, hätte eine Fassung geprüft, die es nicht mehr gibt. Ticketrahmen `e330052..0b53364`. Umfang am Code: 626 Zeilen über fünf Dateien.
+- **Grabungsliste im Auftrag:** die vier Stellen aus dem Selbstaudit des Erbauers (Indexraum von `LoudnessAccumulator.h` und die Ränder des neuen Oberbands · kann §G3 scheitern, oder ist er konstruktiv grün wie das gescheiterte §F · **zwei Schreiber auf `aktuelleStartFolge` im Audiothread, Ordnung ist Argument statt Messung, §9.7 Punkt 3** · deckt T11 den U10-Entscheid wirklich), dazu `bbe4b3f` (ist die zweite Fassung jetzt zu lasch?) und die Frage, ob die inzwischen für SONDE-009 geschlossene Brückenhälfte hier etwas ändert.
+- **Gestützt auf:** Repo-Messung — Marke im Manifestkopf ist `T2 NEEDS_WORK 2026-08-23 **nachgearbeitet**` (also „wartet auf einen frischen Prüfer", nicht „Nacharbeit offen"); `git log` über die sieben Commits; Baum frei von Bausessions (nur Bereitschafts-Sessions des WhatsApp-Rückkanals laufen, die `eq-copilot/build/` nicht anfassen).
+- **Nicht geprüft:** Nichts am Ticket selbst — das ist die Rolle des Prüfers. Ich habe den Kanon nicht gefahren; die im Manifest stehende 26 ist **datiert, nicht falsch** (heute sind es 28, B5 und A19 kamen mit SONDE-009 dazu), und der Auftrag sagt dem Prüfer ausdrücklich, er solle schreiben, was **er** misst.
+- ⚠️ **Kein WhatsApp-Bericht möglich:** die Gerätekopplung ist gelöst (`loggedOut`, gemessen 09:48 im Daemon-Log). Nach der Skill-Regel ist das kein Grund anzuhalten — einmal vermerkt, weitergefahren. Ursache und Lehre stehen im Eintrag darunter.
+- **Weiter mit:** Urteil abwarten. **PASS** ⇒ S10–11 abgenommen, danach bleiben `S5`, `S6`, `S8`, `S9` für das Gate. **NEEDS_WORK** ⇒ Nacharbeit-Session, die Befunde sind dann neu (Runde 1 ist geschlossen).
+
 ## 2026-08-24 nachts · HALT · Gate G1 ist dran (§4.1)
 
 - **Anlass:** **S12–13 ist ABGENOMMEN** — `T2 PASS` in Runde 3 (`65613f6` + Selbstaudit `9aa7887`, Manifest §13). Der gerechnete Planstand springt auf **11 von 36** und nennt als Nächstes **G1**, ein Gate. Gates sind `T3` mit fremden Prüfern und Bruchaufträgen — nach §4.1 halte ich davor an.

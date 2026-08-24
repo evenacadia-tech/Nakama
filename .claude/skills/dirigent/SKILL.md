@@ -194,7 +194,12 @@ py -3.13 melden.py --status                          # Zustand des Dienstes
 
 **Seine Antwort kommt zurück** in die Session, die in `config.json` unter
 `nimbalyst.session_id` steht — als normaler Prompt. Existiert die nicht mehr,
-sucht der Dienst selbst eine lebende Claude-Session. Du musst nichts pflegen.
+sucht der Dienst selbst eine lebende Session, in dieser Reihenfolge:
+**laufende Claude → ruhende Claude → laufende Codex → ruhende Codex**
+(User-Entscheid 24.08.: *„wenn keine claude session verfügbar ist, muss die
+nachricht an codex gehen können"*). Der User erfährt im Raum, welche Session
+übernommen hat, und bei einem fremden Anbieter ausdrücklich, dass die den
+Nakama-Kontext nicht kennt. Du musst nichts pflegen.
 
 - **Form:** drei Zeilen. Ticket · Ergebnis (am Repo gemessen, **nie** der
   Selbstbericht der Session) · was als Nächstes läuft. Keine Rohausgabe, kein

@@ -1,0 +1,252 @@
+{
+  "schemaVersion": 1,
+  "manifestId": "nakama-gen-dark-2026-08-24-rc0",
+  "product": "Nakama Gen",
+  "theme": "dark",
+  "capturedAt": "2026-08-24T15:16:00+02:00",
+  "logicalStage": {
+    "width": 760,
+    "height": 430,
+    "unit": "css-px"
+  },
+  "figma": {
+    "fileKey": "f9a5zdQ0tQ3e4dzrsF2k5y",
+    "snapshotLabel": "nakama-gen-dark-2026-08-24",
+    "versionId": null,
+    "versionIdReason": "The connector exposes the live file and node IDs but no immutable Figma version ID.",
+    "nodes": {
+      "overview": "4090:685",
+      "eqCenter": "6002:2"
+    },
+    "motion": {
+      "overviewAnimatedNodes": 0,
+      "eqCenterAnimatedNodes": 0,
+      "source": "get_motion_context(recursive=true)"
+    }
+  },
+  "goldenCrop": {
+    "sourceWidth": 3840,
+    "sourceHeight": 2520,
+    "x": 400,
+    "y": 400,
+    "width": 3040,
+    "height": 1720,
+    "renderScale": 4
+  },
+  "surfaces": {
+    "overview": {
+      "userOriginal": {
+        "path": "design/assets/figma/nakama-gen-2026-08-24/goldens/overview-user-original-3840x2520.png",
+        "width": 3840,
+        "height": 2520,
+        "sizeBytes": 4228530,
+        "sha256": "3d4eff541b9b2d27c75ed07e31d41108629791f239588e9de9619475133e89d0"
+      },
+      "pixelGolden4x": {
+        "path": "design/assets/figma/nakama-gen-2026-08-24/goldens/overview-artboard@4x.png",
+        "width": 3040,
+        "height": 1720,
+        "sha256": "ff0b4f67346026eb9100bd2777e2cc895abf27c0d058f4713a1694c04715d290"
+      },
+      "figmaStructureControl": {
+        "path": "design/assets/figma/nakama-gen-2026-08-24/figma/overview-node-4090-685@4x.png",
+        "width": 3296,
+        "height": 1976,
+        "shadowInsetAt4x": 128,
+        "sha256": "8e43666796b8ce208f6361b5802924186f341c6404ab17de28d6b16a701b12d5",
+        "isPixelGolden": false
+      },
+      "qualityTiers": {
+        "100": {
+          "path": "design/assets/figma/nakama-gen-2026-08-24/scales/overview@1x.png",
+          "width": 760,
+          "height": 430,
+          "sha256": "4f1b8af2da64c4401e8527580796bc3fd74478ed19f8fa50fe31c96b6cf7d4a3",
+          "derivedDirectlyFrom": "pixelGolden4x"
+        },
+        "125": {
+          "path": "design/assets/figma/nakama-gen-2026-08-24/scales/overview@1.25x.png",
+          "width": 950,
+          "height": 538,
+          "sha256": "3ab9367873060b31348dc7bcfba3ae07d8dcffb3e1fed72f32781938cfe52806",
+          "derivedDirectlyFrom": "pixelGolden4x"
+        },
+        "150": {
+          "path": "design/assets/figma/nakama-gen-2026-08-24/scales/overview@1.5x.png",
+          "width": 1140,
+          "height": 645,
+          "sha256": "a62225102b63ac10526e57826e90d437f0a002ede3c0bb2f6518c50880fc0d50",
+          "derivedDirectlyFrom": "pixelGolden4x"
+        },
+        "200": {
+          "path": "design/assets/figma/nakama-gen-2026-08-24/scales/overview@2x.png",
+          "width": 1520,
+          "height": 860,
+          "sha256": "10004e7cfcad84cff0aa4f92671faaadc492ed0c77c2b2226d80312c8b60b7af",
+          "derivedDirectlyFrom": "pixelGolden4x"
+        }
+      }
+    },
+    "eqCenter": {
+      "userOriginal": {
+        "path": "design/assets/figma/nakama-gen-2026-08-24/goldens/eq-center-user-original-3840x2520.png",
+        "width": 3840,
+        "height": 2520,
+        "sizeBytes": 4500498,
+        "sha256": "bb88de3a4ebd31e06e5de54fab80a5dbc15a082bc6a6a68fcaf3e6acaf5a41a4"
+      },
+      "pixelGolden4x": {
+        "path": "design/assets/figma/nakama-gen-2026-08-24/goldens/eq-center-artboard@4x.png",
+        "width": 3040,
+        "height": 1720,
+        "sha256": "8b05f0f1397184cf9de8c296f670c08ece124f7df9e56daf2d1c25a5716d8835"
+      },
+      "figmaStructureControl": {
+        "path": "design/assets/figma/nakama-gen-2026-08-24/figma/eq-center-node-6002-2@4x.png",
+        "width": 3296,
+        "height": 1976,
+        "shadowInsetAt4x": 128,
+        "sha256": "01dd8a287ae6994548d36005cb34cc2c8c1385603f0dad4c2154b28f977ddf51",
+        "isPixelGolden": false
+      },
+      "qualityTiers": {
+        "100": {
+          "path": "design/assets/figma/nakama-gen-2026-08-24/scales/eq-center@1x.png",
+          "width": 760,
+          "height": 430,
+          "sha256": "baee097993627dd064daa3ac9f18e06ab5157457155fb45b5f1665a8a2ba1a46",
+          "derivedDirectlyFrom": "pixelGolden4x"
+        },
+        "125": {
+          "path": "design/assets/figma/nakama-gen-2026-08-24/scales/eq-center@1.25x.png",
+          "width": 950,
+          "height": 538,
+          "sha256": "a906aa68b0999c0abf5c388971260ea7e3435e56361b897a7b7101b78f32d78b",
+          "derivedDirectlyFrom": "pixelGolden4x"
+        },
+        "150": {
+          "path": "design/assets/figma/nakama-gen-2026-08-24/scales/eq-center@1.5x.png",
+          "width": 1140,
+          "height": 645,
+          "sha256": "3ad8f2d9e598adf4a900c44cac1fe541fab2b68a570dfbb1e3c31b1bd4f38c24",
+          "derivedDirectlyFrom": "pixelGolden4x"
+        },
+        "200": {
+          "path": "design/assets/figma/nakama-gen-2026-08-24/scales/eq-center@2x.png",
+          "width": 1520,
+          "height": 860,
+          "sha256": "2b101e238fcc947e8d83cec9f5c55cf5b8554130bf61c850fcdecfa33e980e5d",
+          "derivedDirectlyFrom": "pixelGolden4x"
+        }
+      }
+    }
+  },
+  "fonts": {
+    "source": "geist@1.7.2",
+    "license": "SIL Open Font License 1.1",
+    "files": [
+      {
+        "path": "design/prototyp/assets/fonts/Geist-Variable.woff2",
+        "sha256": "a369fcf5628ea2aa4e1b9e2ec6a5b3624e365bda588e1f0f2f12b564f728fbb8"
+      },
+      {
+        "path": "design/prototyp/assets/fonts/GeistMono-Variable.woff2",
+        "sha256": "fba8f577f38a2bbcbe818efa6348dd58f36303a10b8737c42fefad275be563ab"
+      }
+    ]
+  },
+  "runtimeAssets": [
+    {
+      "id": "shell.micrograin",
+      "class": "baked",
+      "path": "design/assets/figma/nakama-gen-2026-08-24/figma/overview-shell-micrograin.png",
+      "sha256": "c435ec375fd4fb5d6f62092bf665f81ef0dcc2645d8b80d98ed905e82efd4a2d"
+    },
+    {
+      "id": "brand.wordmark",
+      "class": "baked",
+      "path": "design/assets/figma/nakama-gen-2026-08-24/figma/nakama-gen-wordmark@4x.png",
+      "sha256": "b214f6018f16639c4850cc68b6a34ebb79daaaea68b847fb7de7a3d901a42cef"
+    },
+    {
+      "id": "eq.grid",
+      "class": "baked",
+      "path": "design/assets/figma/nakama-gen-2026-08-24/figma/eq-field-grid.svg",
+      "sha256": "043f2bf43ff3d3f5fd61be127d860991c11667089e5ea69809d067376da7a52d"
+    },
+    {
+      "id": "eq.protectedRange",
+      "class": "live",
+      "path": "design/assets/figma/nakama-gen-2026-08-24/figma/eq-protected-range.svg",
+      "sha256": "a271300b54be7a4ea543641ea659da44f2056a06a780daf463c3a92a42171d97"
+    },
+    {
+      "id": "eq.handle",
+      "class": "live",
+      "path": "design/assets/figma/nakama-gen-2026-08-24/figma/eq-handle.svg",
+      "sha256": "0083ad49a9ddb433a2de8d76d2b563c1935f8d9c965f25e6db507ff043c64686"
+    },
+    {
+      "id": "eq.handleSelected",
+      "class": "live",
+      "path": "design/assets/figma/nakama-gen-2026-08-24/figma/eq-handle-selected.svg",
+      "sha256": "09fb6e8ca396d6bc4c184642929ad1070745480125a5ba41e0eed474398adc0e"
+    },
+    {
+      "id": "eq.focusRing",
+      "class": "live",
+      "path": "design/assets/figma/nakama-gen-2026-08-24/figma/eq-focus-ring.svg",
+      "sha256": "1705417661d205d42cc14542f824ff7039bc75cf69d8488595398db832b5087b"
+    },
+    {
+      "id": "eq.lock",
+      "class": "live",
+      "path": "design/assets/figma/nakama-gen-2026-08-24/figma/eq-lock.svg",
+      "sha256": "6b621c30be3030a32ca35624ab9af4934258f7681e7c0a77293d0e0de0468d63"
+    },
+    {
+      "id": "eq.powerOn",
+      "class": "live",
+      "path": "design/assets/figma/nakama-gen-2026-08-24/figma/eq-power-on.svg",
+      "sha256": "14db8429943d5357a56a6a2fcde4af0870f2bd5d0c16dcb6b702a02f772e9729"
+    },
+    {
+      "id": "eq.linkAperture",
+      "class": "live",
+      "path": "design/assets/figma/nakama-gen-2026-08-24/figma/eq-link-aperture.svg",
+      "sha256": "c9567d736c33e132872f1cb1d39cd1c860a0a5ca140ebd2521a1c68e75e1cdaf"
+    },
+    {
+      "id": "eq.mixKnob",
+      "class": "planned",
+      "path": "design/assets/figma/nakama-gen-2026-08-24/figma/eq-mix-knob.svg",
+      "sha256": "e1680571f5a2de223085b72ed994233dbb2e4dd50e3cbbdbfe43404e5ac28656"
+    }
+  ],
+  "layerPolicy": {
+    "baked": [
+      "shell",
+      "glass material",
+      "grain",
+      "wordmark",
+      "reflections",
+      "material light details",
+      "static EQ grid"
+    ],
+    "live": [
+      "text",
+      "status",
+      "heatmap",
+      "spectrum",
+      "EQ curves",
+      "bands",
+      "draft",
+      "selection",
+      "protected ranges",
+      "controls"
+    ],
+    "referenceOnly": [
+      "figma/eq-curves-reference.svg"
+    ]
+  }
+}

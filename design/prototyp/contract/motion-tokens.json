@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "directManipulationMs": 0,
+  "feedbackMs": 100,
+  "stateChangeMs": 140,
+  "pageChangeMs": 180,
+  "measuringPulseMs": 1600,
+  "spectrumDataHz": 20,
+  "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+  "reducedMotion": {
+    "transform": "none",
+    "maxOpacityTransitionMs": 100,
+    "measuringPulse": "static-active-indicator"
+  },
+  "rules": [
+    "Pointer drags update handle, value and curve in the same display frame.",
+    "Interrupted transitions continue from the visible intermediate value.",
+    "Measuring pulses only while measurement is actually active.",
+    "Spectrum samples arrive at 20 Hz and are interpolated only for display.",
+    "Audio ramps and DSP crossfades never inherit visual timing values.",
+    "No springs, bounce or decorative perpetual animation."
+  ]
+}

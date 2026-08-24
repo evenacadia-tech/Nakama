@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "contractId": "nakama-gen-ui-v1",
+  "scope": "Internal UI reference contract; not IPC, host state or a new plug-in parameter schema.",
+  "types": {
+    "AssetManifest": {
+      "source": "asset-manifest.json"
+    },
+    "DomainSnapshot": {
+      "required": [
+        "sources",
+        "connections",
+        "measurement",
+        "finding",
+        "transport",
+        "probeEq",
+        "spectrum",
+        "eqBands",
+        "draft",
+        "revisions",
+        "protectedRanges"
+      ]
+    },
+    "ViewState": {
+      "required": [
+        "page",
+        "selectedSourceId",
+        "selectedBandId",
+        "comparisonSourceId",
+        "openPanel",
+        "hoveredControl",
+        "heldControl",
+        "drag"
+      ]
+    },
+    "UiAction": {
+      "names": [
+        "NAVIGATE_PAGE",
+        "SELECT_SOURCE",
+        "SELECT_COMPARISON_SOURCE",
+        "SELECT_BAND",
+        "SET_BAND_ENABLED",
+        "SET_BAND_PARAMETER",
+        "DRAG_BAND",
+        "PREVIEW_BEGIN",
+        "PREVIEW_END",
+        "SEND_DRAFT",
+        "TEMPORARY_APPLY",
+        "CONFIRM_APPLY",
+        "REJECT_DRAFT",
+        "UNDO",
+        "SET_BYPASS",
+        "TOGGLE_PANEL",
+        "SET_CONNECTION",
+        "SET_TRANSPORT",
+        "SET_MEASUREMENT",
+        "EXTERNAL_AUTOMATION",
+        "TICK"
+      ]
+    },
+    "UiAdapter": {
+      "methods": [
+        "getSnapshot()",
+        "dispatch(action)",
+        "subscribe(listener)",
+        "setClock(clock)"
+      ],
+      "implementations": {
+        "web": "DemoAdapter",
+        "vst3": "Future native adapter to Processor, Broker and Probeeq"
+      }
+    }
+  },
+  "enums": {
+    "page": ["overview", "eq-center"],
+    "connection": ["connected", "broker-offline", "probe-offline"],
+    "freshness": ["measuring", "fresh", "stale", "incomplete", "disconnected"],
+    "recordState": ["stopped", "playing", "recording", "unknown"],
+    "draftState": ["none", "ready", "auditioning", "lease", "stale"],
+    "lifecycle": ["observe", "advise", "audition", "apply"],
+    "controlClass": ["control", "status", "measurement", "identity", "planned"]
+  },
+  "invariants": [
+    "Preview and draft never create a confirmed revision.",
+    "Sending a draft from Overview never changes confirmed EQ state.",
+    "The first EQ Apply starts a ten-second temporary lease; only confirmation creates a revision.",
+    "Reject, lease expiry, transport invalidation or connection loss return to the confirmed curve.",
+    "Recording or unknown record state blocks preview visibly.",
+    "Protected ranges are hard limits for Nakama pointer, keyboard and numeric input.",
+    "External host automation may cross a protected range and must mark the violation visibly.",
+    "External automation makes any open draft stale.",
+    "Undo is scoped to the selected source and confirmed revisions only.",
+    "Master is separate from the source switcher and source wheel order.",
+    "Mix remains planned until a versioned parameter contract exists.",
+    "Every visible non-identity element is either an operating control or an honest state/value."
+  ]
+}

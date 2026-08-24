@@ -1,0 +1,31 @@
+{
+  "profile": "product-admin",
+  "sourceRoots": [
+    "design/prototyp"
+  ],
+  "locale": "en",
+  "canonicalMap": "UX-CONTRACT.md",
+  "requiredCapabilities": [
+    "Select/Listbox",
+    "Scrollbar"
+  ],
+  "ownership": {
+    "Select/Listbox": "native",
+    "Scrollbar": "global-css"
+  },
+  "requiredCommands": [
+    "unit",
+    "contract",
+    "baselines"
+  ],
+  "commands": {
+    "unit": "node design/prototyp/tests/state.test.mjs",
+    "contract": "node design/prototyp/tests/contract.test.mjs",
+    "baselines": "python design/prototyp/tools/verify_baselines.py"
+  },
+  "evidence": {
+    "interactionStates": "design/prototyp/tests/state.test.mjs",
+    "contractIntegrity": "design/prototyp/tests/contract.test.mjs",
+    "visualBaselines": "design/prototyp/tools/verify_baselines.py"
+  }
+}

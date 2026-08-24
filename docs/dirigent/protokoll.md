@@ -18,6 +18,15 @@ Regeln und Zyklus: `.claude/skills/dirigent/SKILL.md`. Jüngster Eintrag oben.
 
 ---
 
+## 2026-08-24 nachmittags · HALT · G1-Nacharbeit fertig — was bleibt, kann nur der User (§4.3)
+
+- **Ergebnis:** Alle fünf Gate-Befunde geschlossen **und** §55 Klausel 4 dazu (Manifest `G1.md` §10.0–§10.6; Commits `ebfe02e` §4.1/§4.5 · `a2fe0f5` §4.2 · `fa976fd` §4.3 · `fac67f4` §4.4 · NAK-42 im Broker · Selbstaudit `3807b0e` „drei eigene Fehler berichtigt" · Bauriegel `ca593d6` · zweiter Kanonlauf `5c69200`). Kanon **28/28, Exit 0**.
+- **Die Entwurfsentscheidung der Nacharbeit** (§10.0, ihre, nicht meine): **keine Versionsanhebung.** Die Gate-7-Kopplung wurde als Korrektur eines nie eingelösten Vertragstextes gewertet, nicht als neue Vertragsfähigkeit — §32.2 hatte die Regel längst, das Schema hat sie nur nicht erzwungen. Begründet im Manifest.
+- ✅ **Die Gegenregel gegen den Gummistempel hat gehalten, und zwar messbar:** S5, S6, S8 tragen `T3 NEEDS_WORK … nachgearbeitet`, **S9 bleibt auf `offen`**. Grund im Manifest benannt: S9 trug **zwei** Befunde — der Gate-7-Bruch auf State-Ebene ist zu, aber **§55 Klausel 1** („alle drei Ziele scannen und laden in FL") ist „offen, User-Termin". Keine Session kann sie schließen. Der gerechnete Planstand zeigt deshalb weiter auf S9; die Untertreibung ist sichtbar statt versteckt.
+- **Gestützt auf:** Repo-Messung — die vier Marken einzeln gelesen, §10-Struktur und die Klausel-1-Zeilen im Manifest, Planstand gegengerechnet (12/36, „Als Nächstes: Nacharbeit an S9", drei Stände unter „wartet auf ein Urteil"), alles gepusht, Baum sauber bis auf die bekannten fremden Dateien.
+- **Nicht geprüft:** Keinen der sechs Fixes an der Quelle — das ist Sache des nächsten Gate-Laufs. Kanon nicht reproduziert, die §10-Vorführungen nicht nachgefahren, und ob §10.0s Begründung gegen die Invariante „Discriminator … nie additiv" wirklich trägt, habe ich **nicht** gegengelesen. Die Nacharbeit hat `CLAUDE.md` angefasst; den Diff habe ich nicht Zeile für Zeile geprüft.
+- **HALT nach §4.3 — nur der User kann liefern.** Eine zweite Nacharbeit hätte nichts zu tun: was offen ist, ist kein Code, sondern ein **Termin am Rechner** (Installation als Admin + FL-Lauf, dazu die NAK-41-Warnung). Und ein frischer G1-Lauf ist ein **Gate**, also ohnehin §4.1. Beide Wege führen an den User. **Die Frage geht über die Routine raus, nicht in die Unterhaltung** (Entscheid 24.08.): erst FL-Termin und dann G1 Runde 2 in einem Zug — oder G1 Runde 2 jetzt, um die sechs Fixes unabhängig prüfen zu lassen, wohl wissend, dass Klausel 1 dabei wieder auffällt.
+
 ## 2026-08-24 nachmittags · G1 · Gate gefahren — NEEDS_WORK, Gate 7 gebrochen
 
 - **Ergebnis:** **`T3 NEEDS_WORK`** (`cbb1a10`, Manifest `docs/beweise/G1.md`). **Gate 1 hielt, Gate 7 fiel** — von **zwei Modellen unabhängig, auf zwei verschiedenen Wegen**, beide an der Quelle nachgemessen, einer selbst nachgefahren. Entwurf §49.2 ist dort unbedingt: *„Ein Build ist nicht freigabefähig, wenn eines dieser Gates fällt."* Kein Ermessen.

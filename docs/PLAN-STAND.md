@@ -1,6 +1,6 @@
 # Planstand Nakama
 
-<!-- quellstand: 2e86444 -->
+<!-- quellstand: cbb1a10 -->
 
 > **Gerechnet, nicht gepflegt.** Dieses Blatt entsteht aus dem Repo:
 > `py -3.13 tools/plan/planstand.py`. Es wird **nie** von Hand editiert —
@@ -9,10 +9,7 @@
 > *abgenommen* erst, wenn dort eine Urteilsmarke der geforderten Prüfstufe
 > mit **PASS** steht. Fehlt sie, gilt der Schritt als nicht abgenommen.
 
-**Stand:** 2026-08-24 · Quellstand `2e86444` · **12 von 36 abgenommen** · 5 gebaut · 19 offen
-
-> ⚠️ Gerechnet aus dem Arbeitsbaum: unter `docs/plan/`, `docs/beweise/`
-> oder `tools/plan/` liegen Änderungen, die noch nicht in `2e86444` sind.
+**Stand:** 2026-08-24 · Quellstand `cbb1a10` · **12 von 36 abgenommen** · 5 gebaut · 19 offen
 
 `█████████████▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░` 33 % abgenommen · 47 % gebaut
 

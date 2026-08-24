@@ -7,7 +7,7 @@
   "byte_mutation_von": "Markiert einen Puffer, den flatc nicht erzeugen KANN (falsche Dateikennung, abgeschnitten, zerstoerter Wurzeloffset). Er entsteht als Byte-Mutation des genannten gueltigen Puffers.",
   "regeln": "Die geschlossene Liste der Regelnamen steht in eq-copilot/schemas/v3/flatbuffers/README.md. Ein Verstoss ist (pfad, regel); die Menge wird kanonisch nach (pfad, regel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "anzahl_gueltig": 9,
-  "anzahl_ungueltig": 42,
+  "anzahl_ungueltig": 46,
   "fixtures": [
     {
       "datei": "gueltig/alle-validity-bits.bin",
@@ -340,6 +340,54 @@
         }
       ],
       "byte_mutation_von": "gueltig/mit-schleife.bin"
+    },
+    {
+      "datei": "ungueltig/ppq-beide-nicht-endlich.bin",
+      "urteil": "ungueltig",
+      "warum": "beide Traeger fallen einzeln und mit eigenem Pfad",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/schleife/end_ppq",
+          "regel": "nicht_endlich"
+        },
+        {
+          "pfad": "/eintraege/0/frame/transport/schleife/start_ppq",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/ppq-ende-unendlich.bin",
+      "urteil": "ungueltig",
+      "warum": "Unendlich ist kein Schleifenende",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/schleife/end_ppq",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/ppq-start-nan.bin",
+      "urteil": "ungueltig",
+      "warum": "NaN ist keine Position in der Zeitbasis des Hosts - dieselbe Regel, die sample_rate, werte_f32 und die sieben Frame-Kennzahlen laengst hatten",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/schleife/start_ppq",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/ppq-verdreht.bin",
+      "urteil": "ungueltig",
+      "warum": "eine Schleife, deren Ende vor ihrem Anfang liegt",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/schleife",
+          "regel": "ppq_verdreht"
+        }
+      ]
     },
     {
       "datei": "ungueltig/puffer-leer.bin",

@@ -382,6 +382,31 @@ fn pruefe_transport(t: &fb::Transportstempel, p: &str, out: &mut Vec<Verstoss>) 
     }
 
     if let Some(s) = t.schleife() {
+        // 🔑 G1-Befund §4.3, geschlossen am 24.08.2026. `start_ppq` und
+        // `end_ppq` waren die zwei von vier Fliesskomma-Traegern des Vertrags,
+        // die in BEIDEN handgeschriebenen Lesern ungeprueft blieben — und
+        // genau deshalb sah es kein Bein: der Kreuzsprachtest vergleicht die
+        // beiden Leser miteinander, und sie waren sich einig. Er stimmte
+        // ueberein, auf der falschen Antwort. Ein Vergleich zweier Spiegel
+        // findet keine gemeinsame Auslassung.
+        for (name, wert) in [("start_ppq", s.start_ppq()), ("end_ppq", s.end_ppq())] {
+            if let Some(x) = wert {
+                if !x.is_finite() {
+                    out.push(Verstoss::neu(&format!("{p}/schleife/{name}"), "nicht_endlich"));
+                }
+            }
+        }
+        // Dieselbe Frage wie `grenzen_verdreht` eine Ebene tiefer, nur in der
+        // Zeitbasis des Hosts. `bounds_valid` ist die Bedingung: ohne es
+        // behauptet §32.3 ueber die Grenzen nichts, und ein Vergleich waere
+        // eine erfundene Zusage.
+        if s.bounds_valid() {
+            if let (Some(a), Some(b)) = (s.start_ppq(), s.end_ppq()) {
+                if a.is_finite() && b.is_finite() && b < a {
+                    out.push(Verstoss::neu(&format!("{p}/schleife"), "ppq_verdreht"));
+                }
+            }
+        }
         if let Some(g) = s.abgeleitete_grenzen() {
             let pg = format!("{p}/schleife/abgeleitete_grenzen");
             if g.herleitung() == fb::Herleitung::unbekannt

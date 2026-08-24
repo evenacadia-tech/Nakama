@@ -209,6 +209,33 @@ void pruefeTransport (const fb::Transportstempel& t, const juce::String& p,
 
     if (const auto* s = t.schleife())
     {
+        /*  🔑 G1-Befund §4.3, geschlossen am 24.08.2026. `start_ppq` und
+            `end_ppq` waren die zwei von vier Fliesskomma-Traegern des
+            Vertrags, die in BEIDEN handgeschriebenen Lesern ungeprueft
+            blieben — und genau deshalb sah es kein Bein: der Kreuzsprachtest
+            vergleicht die beiden Leser miteinander, und sie waren sich einig.
+            Er stimmte ueberein, auf der falschen Antwort. Ein Vergleich
+            zweier Spiegel findet keine gemeinsame Auslassung. */
+        const std::pair<const char*, ::flatbuffers::Optional<double>> ppq[] = {
+            { "start_ppq", s->start_ppq() },
+            { "end_ppq",   s->end_ppq() }
+        };
+        for (const auto& [name, wert] : ppq)
+            if (wert && ! std::isfinite (*wert))
+                hinzu (out, p + "/schleife/" + name, "nicht_endlich");
+
+        /*  Dieselbe Frage wie `grenzen_verdreht` eine Ebene tiefer, nur in der
+            Zeitbasis des Hosts. `bounds_valid` ist die Bedingung: ohne es
+            behauptet §32.3 ueber die Grenzen nichts, und ein Vergleich waere
+            eine erfundene Zusage. */
+        if (s->bounds_valid())
+        {
+            const auto a = s->start_ppq();
+            const auto b = s->end_ppq();
+            if (a && b && std::isfinite (*a) && std::isfinite (*b) && *b < *a)
+                hinzu (out, p + "/schleife", "ppq_verdreht");
+        }
+
         if (const auto* g = s->abgeleitete_grenzen())
         {
             const auto pg = p + "/schleife/abgeleitete_grenzen";

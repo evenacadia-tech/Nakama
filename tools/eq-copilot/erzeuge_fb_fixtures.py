@@ -510,6 +510,58 @@ def ungueltige() -> list[tuple[str, dict, list[dict], str]]:
         [v(f"{P}/transport/schleife/abgeleitete_grenzen/herleitung", "enum_unbekannt")],
         "abgeleitete Grenzen OHNE Herleitung sind eine Behauptung ohne Beleg (§32.3)"))
 
+    # --- G1-Befund §4.3: die zwei ungeprueften Fliesskomma-Traeger ----------
+    #
+    # `start_ppq` und `end_ppq` waren bis zum 24.08.2026 die einzigen der vier
+    # Float-Gruppen des Vertrags, die in BEIDEN handgeschriebenen Lesern
+    # ungeprueft blieben. Kein Bein sah es, weil der Kreuzsprachtest die beiden
+    # Leser GEGENEINANDER haelt - und sie waren sich einig. Ein Vergleich
+    # zweier Spiegel findet keine gemeinsame Auslassung; erst ein Fixture, das
+    # von aussen kommt, tut es. `grep -c ppq MANIFEST.json` war 0.
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["transport"]["schleife"] = {
+        "active": True, "bounds_valid": True,
+        "start_ppq": float("nan"), "end_ppq": 928.75}
+    faelle.append((
+        "ppq-start-nan", b,
+        [v(f"{P}/transport/schleife/start_ppq", "nicht_endlich")],
+        "NaN ist keine Position in der Zeitbasis des Hosts - dieselbe Regel, "
+        "die sample_rate, werte_f32 und die sieben Frame-Kennzahlen laengst "
+        "hatten"))
+
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["transport"]["schleife"] = {
+        "active": True, "bounds_valid": True,
+        "start_ppq": 918.333333, "end_ppq": float("inf")}
+    faelle.append((
+        "ppq-ende-unendlich", b,
+        [v(f"{P}/transport/schleife/end_ppq", "nicht_endlich")],
+        "Unendlich ist kein Schleifenende"))
+
+    # Beide nicht endlich: die Verstossmenge traegt BEIDE Zeilen. Ein Leser,
+    # der beim ersten Fund abbricht, faellt hier auf - er meldete nur eine.
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["transport"]["schleife"] = {
+        "active": True, "bounds_valid": True,
+        "start_ppq": float("nan"), "end_ppq": float("-inf")}
+    faelle.append((
+        "ppq-beide-nicht-endlich", b,
+        [v(f"{P}/transport/schleife/end_ppq", "nicht_endlich"),
+         v(f"{P}/transport/schleife/start_ppq", "nicht_endlich")],
+        "beide Traeger fallen einzeln und mit eigenem Pfad"))
+
+    # Die Ordnungsregel, die `grenzen_verdreht` eine Ebene tiefer schon hatte -
+    # in der Zeitbasis des Hosts fehlte sie. Nur bei `bounds_valid`: ohne das
+    # Bit behauptet §32.3 ueber die Grenzen nichts.
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["transport"]["schleife"] = {
+        "active": True, "bounds_valid": True,
+        "start_ppq": 928.75, "end_ppq": 918.333333}
+    faelle.append((
+        "ppq-verdreht", b,
+        [v(f"{P}/transport/schleife", "ppq_verdreht")],
+        "eine Schleife, deren Ende vor ihrem Anfang liegt"))
+
     return faelle
 
 

@@ -160,9 +160,13 @@ alle Sonden UND den Master-EQ bedient) und die **Minimal-Rückfallfläche der
 einen Sonde** (**Probeeq** — Suna ist in Probeeq aufgegangen; die alte
 Suna-Kachel-Arbeit und ihre offenen U6-Punkte gelten für die Rückfallfläche
 weiter, soweit sie eine behält). Die Oberfläche kommt aus Figma (User) über
-`design/`; abgenommen ist 760×430 für die Übersicht (20.08.), die Größe von
-Seite 2 ist **offen** (NAK-65); der Probeeq-Stand 700×420 ist **Working
-Design** der EQ-Fläche (User 23.08.), als eigenständige Voll-UI Verlauf.
+`design/`; beide Gen-Seiten sind 760×430 (Entscheid 24.08.; im verbindlichen
+Figma für Overview `25:444` und EQ Center `28:994` umgesetzt). Der
+Probeeq-Stand 700×420 ist nur noch historisches **Working Design** der
+EQ-Fläche (User 23.08.), als eigenständige Voll-UI Verlauf. Offen in NAK-65
+bleibt der Umbau und die visuelle Abnahme der minimalen
+Probeeq-Rückfallfläche; Ausgangsbasis ist der aktuelle Suna-Entwurf
+`Nakama-Design` Node `6:2864` (260×84).
 Prüfmaßstab jeder UI-Fassung zusätzlich:
 `../design/docs/ui-spielregeln-eq-zentrale.md`. Vorschlag (nicht
 abgenommen): `SONDE-007b` baut keine eigene Kachelgestaltung, sondern den

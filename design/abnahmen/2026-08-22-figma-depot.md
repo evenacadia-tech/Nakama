@@ -41,3 +41,14 @@
 - `abnahmen/2026-08-21-designvertrag.md` — „Figma ist Quelle; Repo setzt um"
 - `abnahmen/2026-08-21-gen-auftrag-figma.md` — die 18 Punkte (Antworten im Hub)
 - `Nakama/docs/hub/` — der Hub (Register-Zeile in `Nakama/CLAUDE.md`)
+
+## Bekräftigung 24.08.2026
+
+Der User hat die Regel ausdrücklich verschärft beziehungsweise klargestellt:
+
+> „hier sind die aktuellsten varianten. die sind IMMER in diesem figma,
+> nirgends wo anders. hier ist immer das aktuellste“
+
+Damit sind Copy-Dateien nicht einmal vorläufige aktuelle Arbeitsquellen. Der
+vollständige Nachtrag mit Live-Inventar steht in
+`2026-08-24-figma-depot-immer-aktuell.md`.

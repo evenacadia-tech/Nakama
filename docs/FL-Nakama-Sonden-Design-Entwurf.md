@@ -258,6 +258,30 @@ andere eq auf dem markt" · Merge-Wahl „eine Sonde" · Name **Nakama Probeeq**
   **NAK-65**. Bis zum Umschnitt hat dieses Erratum Vorrang vor dem
   Entwurfstext darunter.
 
+**(o) Drei-Stufen-Geste und UI-Baugrenze.** Entscheid 23.08.2026 (Wortlaut
+`../design/abnahmen/2026-08-23-interview-struktur.md`, in
+`plan/plan.json` S29–31 übernommen): **Halten** = hören und beim Loslassen
+zurück · **erster Klick** = zehn Sekunden temporär angewendet · **zweiter
+Klick** = als neue Revision bestätigt. Das überschreibt die direkte Kante
+`Draft --> Applied: apply_transaction` in §33.4 für den Gen-Hauptbedienweg:
+
+- Hold-to-hear bleibt die kurze, regelmäßig erneuerte technische
+  `preview_begin/renew/end`-Lease mit lokalem Failsafe aus §33.4.
+- Der erste Klick startet einen getrennten, flüchtigen Zehn-Sekunden-
+  Kandidaten. Stop, Transportepochenwechsel, Verbindungs-/Prozessorfehler,
+  Ablauf oder Reject führen zum bestätigten Stand zurück; weder Projektstate
+  noch Undo-Ring erhalten einen Eintrag.
+- Erst der zweite Klick erzeugt `apply_transaction`, eine bestätigte
+  `state_revision`, Host-/Plugin-State und den eigenen Undo-Eintrag. Damit
+  bleiben §33.5 (Draft/Preview flüchtig) und §44.3 (nur bestätigte Revisionen
+  persistent) erhalten.
+
+Der Web-Simulator unter `../design/prototyp/` ist dabei ausschließlich die
+ausführbare Design-, Interaktions- und Motion-Referenz. Er erfüllt weder den
+DSP-/Remote-Lieferumfang von S26–31 noch die native UI aus S31b. Die native
+JUCE-Oberfläche beginnt weiterhin erst hinter den in `plan/plan.json`
+festgelegten Eintrittslinien und übernimmt dann den abgenommenen UI-Vertrag.
+
 ---
 
 ## 0. Zweck und Einordnung

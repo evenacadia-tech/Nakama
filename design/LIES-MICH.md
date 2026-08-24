@@ -17,7 +17,8 @@ Repo-Wurzel (Wahrheitskern); hier wird sie nicht abgeschrieben, nur verwiesen.
 ## Dein Job
 
 **Figma übersetzen, nicht Design erfinden.** Der User gestaltet das finale
-Design in Figma; seine Stände liegen in `assets/figma/` und sind die Vorgabe
+Design im einzig verbindlichen Figma `Nakama-Design`. `assets/figma/` enthält
+datierte Beleg-Snapshots, aber nie eine aktuellere Wahrheit als die Live-Datei
 (Designvertrag 2026-08-21: „Figma ist Quelle; Repo setzt um"). Dieser Ordner
 macht daraus **lebende Blätter** und prüft, was ein Bild nicht prüfen kann:
 **Zustände** (frisch / veraltet / getrennt, Messung, degradiert, Draft,
@@ -26,12 +27,14 @@ Bypass …), **Größen** (bei 1:1 auf den abgenommenen Maßen) und
 Stand etwas anderes zeigt als eine Abnahme, wird das benannt und dem User
 vorgelegt — nicht still entschieden.
 
-**Die Quelle ist seit 2026-08-22 EINE Figma-Datei: `Nakama-Design`**
+**Die Quelle ist seit 2026-08-22 und immer EINE Figma-Datei: `Nakama-Design`**
 (https://www.figma.com/design/NPCQYSkoZEd4Av0NlKxBOd/Nakama-Design?node-id=0-1,
-Key `NPCQYSkoZEd4Av0NlKxBOd`). User-Wort: „das ist das neue verbindliche und
-einzige Depot indem sich die aktuellsten Designs befinden. ich habe für jedes
-design vor eine helle und dunke variante zu erstellen. stand jetzt aber
-erstmal nur dunkel" (`abnahmen/2026-08-22-figma-depot.md`). Verbindlich ist
+Key `NPCQYSkoZEd4Av0NlKxBOd`). User-Wort 22.08.: „das ist das neue
+verbindliche und einzige Depot indem sich die aktuellsten Designs befinden";
+am 24.08. bekräftigt: „die sind IMMER in diesem figma, nirgends wo anders.
+hier ist immer das aktuellste". Helle und dunkle Varianten sind geplant,
+„stand jetzt aber erstmal nur dunkel"
+(`abnahmen/2026-08-24-figma-depot-immer-aktuell.md`). Verbindlich ist
 je App die **dunkle** Fassung; helle Varianten liegen dort in Arbeit und sind
 noch keine Vorgabe. Claude holt die Stände per Figma-MCP in die Truhe
 (`assets/figma/LIES-MICH.md`). (Der Figma-Dateiname `Nakama-Design` bleibt —
@@ -48,23 +51,28 @@ Die Oberflächen (**seit 23.08. zwei Apps** — Entscheid
    offen — NAK-65):** EQ-Zentrale aller Sonden + vollwertiger Master-EQ;
    Durchschalter direkt auf der Seite, zwei EQ-Spuren in EINEM Graph.
    Spielregeln: `docs/ui-spielregeln-eq-zentrale.md`. Später werden beide
-   Seiten komplett überarbeitet (User 23.08.). 760×430 galt der Übersicht;
-   Größe Seite 2 offen. Der Stand vom 21.08. (cyan) ist Verlauf.
+   Seiten komplett überarbeitet (User 23.08.). **Beide Seiten müssen 760×430
+   sein** (Entscheid 24.08.). Der aktuelle Live-Stand im einzig verbindlichen
+   Depot ist Overview `25:444` = 760×430 und EQ Center `28:994` = 760×430.
+   Die Größenabweichung wurde vom User am 24.08. korrigiert; der frühere
+   EQ-Stand `25:584` sowie alle anderen Figma-Dateien sind Verlauf.
 2. **Nakama Probeeq** — DIE Sonde auf den Bussen: misst passiv, EQ
    zuschaltbar, **bedient wird auf Gens Seite 2**; eine eigene
-   Minimal-Rückfallfläche ist Vorschlag (Zuschnitt offen). Der
+   Minimal-Rückfallfläche entsteht aus dem aktuellen Suna-Entwurf
+   `6:2864` (260×84) im verbindlichen Figma. Der
    Probeeq-Stand `assets/figma/2026-08-22-probeeq.png` (Depot `6:1906`,
    700×420) ist **Working Design** der EQ-Fläche (User 23.08.), als
-   eigenständige Voll-UI aber Verlauf. Die Suna-Kachel
+   eigenständige Voll-UI aber Verlauf. Der ältere Export der Suna-Kachel
    (`assets/figma/2026-08-22-suna.png`, 260×84, Depot `6:2629`) und ihre
    offenen Punkte (`abnahmen/2026-08-21-suna-auftrag-figma.md`, U6) gelten
-   für die Kachel/Rückfallfläche der EINEN Sonde weiter, soweit sie eine
-   behält.
+   als Verlauf und Prüfhinweise; aktuelle visuelle Basis ist immer der
+   Live-Knoten `6:2864`.
 
 Die Projektquellen — vollständig, nichts von außen dazuholen:
 
-- **DIE VORGABE** (wie es aussieht): `assets/figma/` — je Stand eine datierte
-  Datei, beschrieben in `assets/figma/LIES-MICH.md`; der neueste gilt.
+- **DIE VORGABE** (wie es aussieht): ausschließlich der Live-Stand in
+  `Nakama-Design` (`NPCQYSkoZEd4Av0NlKxBOd`). `assets/figma/` enthält
+  datierte Belege früherer Stände, keine aktuellere Designquelle.
 - **WAS** jede Oberfläche zeigen muss: `docs/oberflaechen-spezifikation.md`
 - **WAS DIE TECHNIK VERLANGT** (Spielregeln der EQ-Zentrale, für die
   Figma-Arbeit an Gen Seite 1+2): `docs/ui-spielregeln-eq-zentrale.md`
@@ -163,17 +171,12 @@ eingebettet, der Prototyp mit denselben Assets wie das Plugin; Beweis ist der
   designvertrag · struktur · ~~richtung~~ (entfallen seit 2026-08-21: die
   Richtung kommt aus Figma) · komponente · zustaende · abnahme) — die
   Vorstellung des Users erfassen, wörtlich protokollieren.
-- **Hooks** (alle in `tools/hooks/`, verdrahtet in `.claude/settings.json`
-  der Repo-Wurzel): `design-primer.sh` misst zu Sessionbeginn Truhe,
-  Abnahmen und Schleusenzustand; `prototyp-schleuse.sh` blockt
-  `Write`/`Edit` **und `Bash`**-Schreibzugriffe nach `prototyp/`, solange
-  keine Datei mit **`designvertrag`** im Namen in `abnahmen/` liegt
-  (Arbeitsplan Phase 0). **Seit 2026-08-21 liegt sie vor**
-  (`abnahmen/2026-08-21-designvertrag.md`), die Schleuse ist offen.
-  Gegenprobe: `bash tools/hooks/schleusen-probe.sh` (misst den
-  geschlossenen Zustand gegen ein leeres Temp-Verzeichnis und den offenen
-  gegen das echte `abnahmen/` — 26/26, zuletzt nach dem Umzug am 22.08.
-  ausgeführt).
+- **Hooks** (in `tools/hooks/`, verdrahtet in `.claude/settings.json` der
+  Repo-Wurzel): `design-primer.sh` misst zu Sessionbeginn Truhe und Abnahmen.
+  Die frühere `prototyp-schleuse.sh` wurde am 24.08.2026 stillgelegt: Ihr
+  einziges Gate war mit dem Designvertrag vom 21.08. dauerhaft erfüllt und
+  erzeugte danach nur noch Start- und Werkzeuglast. Der Prototyp ist frei.
+  `schleusen-probe.sh` prüft weiterhin die aktive Kreativ-Schleuse.
 - Prototyp = statisches HTML/CSS/JS in `prototyp/`, ohne Build-Kette,
   per Doppelklick lauffähig. Struktur (ein Blatt pro Oberfläche oder
   Tabs) ist die erste Entscheidung — mit dem User.

@@ -1,5 +1,13 @@
 # Spielregeln-Umbau der Gen-Seiten — 23.08.2026 (Vorschlag, nicht abgenommen)
 
+> **Gültigkeitskorrektur 24.08.2026:** Der User hat bekräftigt, dass
+> ausschließlich `Nakama-Design` (`NPCQYSkoZEd4Av0NlKxBOd`) immer den
+> aktuellen Stand trägt. Diese Datei dokumentiert die Umbauhistorie; die unten
+> genannte Ursprungs- und Copy-Datei sowie ihre Node-IDs sind **keine aktuellen
+> Designquellen**. Aktuelle Depot-Nodes: Overview-Wrapper `25:443` / Artboard
+> `25:444`, EQ-Wrapper `28:993` / Artboard `28:994`, Zustände `25:805` und
+> `25:901`. Beide aktuellen Haupt-Artboards sind 760×430.
+
 **Auftrag des Users (23.08.):** die zwei von ihm markierten Designs im Figma
 `Probeeq-Nakama-Prototyp-Design` (Key `5TazApiPrImtLJZ2a71acV`) anpassen bzw.
 umbauen, so dass sie die Spielregeln der EQ-Zentrale erfüllen
@@ -66,6 +74,11 @@ Slate-Akzent, Signal-Rot, Glas/Chin) sind unverändert übernommen.
 - Undo-Form auf Seite 1: Verlauf oder Zähler (**U2.8**)
 - Sichtbarkeit der Sidechain-Quelle je Band (**U5** / NAK-33)
 - Lease-Restzeit „7 s" in den Tafeln ist Demo-Wert; Startwert des Users ist 10 s
+
+**Nachtrag 24.08.:** U2.8 ist inzwischen als kleines Symbol mit echtem
+Revisionsverlauf entschieden. U5/NAK-33 ist ebenfalls geschlossen: Die
+Sidechain-Quelle bleibt im ersten Release unsichtbar. Entscheid:
+`../../abnahmen/2026-08-24-offene-figma-entscheide.md`.
 
 **Status: Claude-Vorschlag auf Spielregeln-Basis — kein User-Urteil.** Die
 Renders hier sind Verlauf/Doku; die Truhe (`design/assets/figma/`) hält weiter

@@ -459,6 +459,7 @@
         next.measurement.state = action.state;
         if (Number.isFinite(action.progress)) next.measurement.progress = N.clamp(action.progress, 0, 100);
         next.measurement.gapKind = action.gapKind || null;
+        if (typeof action.notice === "string") next.meta.notice = action.notice;
         break;
 
       case A.EXTERNAL_AUTOMATION:
@@ -494,8 +495,12 @@
             return N.clamp(value, 0.04, 0.72);
           });
           next.meta.lastSpectrumAt = now;
-          next.measurement.progress = Math.min(100, next.measurement.progress + 1);
-          if (next.measurement.progress >= 100) next.measurement.state = "fresh";
+          if (action.continuous) {
+            next.measurement.progress = Math.min(99, next.measurement.progress + 1);
+          } else {
+            next.measurement.progress = Math.min(100, next.measurement.progress + 1);
+            if (next.measurement.progress >= 100) next.measurement.state = "fresh";
+          }
         }
         break;
       }

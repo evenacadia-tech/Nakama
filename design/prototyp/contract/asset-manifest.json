@@ -9,11 +9,39 @@
     "height": 430,
     "unit": "css-px"
   },
+  "sourceStatus": "historical-snapshot",
+  "currentDesignSource": {
+    "fileKey": "NPCQYSkoZEd4Av0NlKxBOd",
+    "fileName": "Nakama-Design",
+    "liveCheckedAt": "2026-08-24",
+    "rule": "This file is always the only current Figma source; every other Figma file is history.",
+    "nodes": {
+      "overviewWrapper": "25:443",
+      "overviewArtboard": "25:444",
+      "eqCenterWrapper": "28:993",
+      "eqCenterArtboard": "28:994",
+      "overviewStates": "25:805",
+      "eqCenterStates": "25:901",
+      "probeeqFallbackWorkspace": "6:2863",
+      "probeeqFallbackArtboard": "6:2864"
+    },
+    "artboards": {
+      "overview": { "width": 760, "height": 430 },
+      "eqCenter": { "width": 760, "height": 430 },
+      "probeeqFallback": { "width": 260, "height": 84 }
+    },
+    "inventory": {
+      "nodeCount": 554,
+      "reactionCount": 0,
+      "componentLikeCount": 0
+    }
+  },
   "figma": {
     "fileKey": "f9a5zdQ0tQ3e4dzrsF2k5y",
     "snapshotLabel": "nakama-gen-dark-2026-08-24",
     "versionId": null,
     "versionIdReason": "The connector exposes the live file and node IDs but no immutable Figma version ID.",
+    "status": "historical asset source; not the current design source",
     "nodes": {
       "overview": "4090:685",
       "eqCenter": "6002:2"

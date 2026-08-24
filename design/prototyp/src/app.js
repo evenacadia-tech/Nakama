@@ -42,6 +42,7 @@
   let tickTimer = null;
   let spectrumFrame = null;
   let dragPointer = null;
+  let parameterPointer = null;
   let auditionPointer = null;
   let auditionKey = null;
 
@@ -105,7 +106,10 @@
   function syncActivity() {
     const shouldTick = !captureMode && adapter.needsTick();
     if (shouldTick && tickTimer === null) {
-      tickTimer = root.setInterval(() => adapter.dispatch({ type: N.ACTION.TICK }), 50);
+      tickTimer = root.setInterval(
+        () => adapter.dispatch({ type: N.ACTION.TICK, continuous: audio.running }),
+        50,
+      );
     } else if (!shouldTick && tickTimer !== null) {
       root.clearInterval(tickTimer);
       tickTimer = null;
@@ -205,11 +209,92 @@
     dragPointer = null;
   }
 
+  function selectedBand() {
+    return state.eqBands[state.probeEq.targetId].find((band) => band.id === state.view.selectedBandId);
+  }
+
+  function beginParameterEdit(input) {
+    input.readOnly = false;
+    input.dataset.editing = "true";
+    input.focus({ preventScroll: true });
+    input.select();
+  }
+
+  function finishParameterEdit(input, commit) {
+    if (input.dataset.editing !== "true") return;
+    if (commit) {
+      dispatch({
+        type: N.ACTION.SET_BAND_PARAMETER,
+        bandId: state.view.selectedBandId,
+        parameter: input.dataset.param,
+        value: numericInputValue(input.value),
+      });
+    }
+    input.readOnly = true;
+    delete input.dataset.editing;
+    input.blur();
+    render(state);
+  }
+
+  function moveParameterFromPointer(event) {
+    if (!parameterPointer || parameterPointer.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    const upwardPixels = parameterPointer.startY - event.clientY;
+    if (Math.abs(upwardPixels) >= 2) parameterPointer.moved = true;
+    if (!parameterPointer.moved) return;
+
+    dispatch({
+      type: N.ACTION.SET_BAND_PARAMETER,
+      bandId: parameterPointer.bandId,
+      parameter: parameterPointer.parameter,
+      value: N.adjustParameterFromVerticalDrag(
+        parameterPointer.parameter,
+        parameterPointer.startValue,
+        upwardPixels,
+        event.shiftKey,
+      ),
+    });
+    stage.classList.add("is-parameter-dragging");
+  }
+
+  function endParameterDrag(event) {
+    if (!parameterPointer || parameterPointer.pointerId !== event.pointerId) return;
+    if (event.type === "pointerup") moveParameterFromPointer(event);
+    const { input, moved } = parameterPointer;
+    input.releasePointerCapture?.(event.pointerId);
+    parameterPointer = null;
+    stage.classList.remove("is-parameter-dragging");
+    if (!moved) input.focus({ preventScroll: true });
+  }
+
   adapter.subscribe((snapshot) => render(snapshot));
   setScale(initialScale(), false);
   render(state);
 
   document.addEventListener("pointerdown", (event) => {
+    const parameterInput = event.target.closest("input[data-drag-edit]");
+    if (
+      parameterInput &&
+      !parameterInput.disabled &&
+      parameterInput.dataset.editing !== "true" &&
+      event.button === 0
+    ) {
+      event.preventDefault();
+      const parameter = parameterInput.dataset.param;
+      parameterPointer = {
+        input: parameterInput,
+        pointerId: event.pointerId,
+        bandId: state.view.selectedBandId,
+        parameter,
+        startY: event.clientY,
+        startValue: selectedBand()[parameter],
+        moved: false,
+      };
+      parameterInput.setPointerCapture?.(event.pointerId);
+      stage.classList.add("is-parameter-dragging");
+      return;
+    }
+
     const audition = event.target.closest("[data-hold-audition]");
     if (audition && !audition.disabled && event.button === 0) {
       event.preventDefault();
@@ -230,6 +315,10 @@
   });
 
   document.addEventListener("pointermove", (event) => {
+    if (parameterPointer) {
+      moveParameterFromPointer(event);
+      return;
+    }
     if (dragPointer) {
       event.preventDefault();
       moveBandFromPointer(event);
@@ -237,11 +326,13 @@
   });
 
   document.addEventListener("pointerup", (event) => {
+    endParameterDrag(event);
     endBandDrag(event);
     if (auditionPointer === event.pointerId) releaseAudition();
   });
 
   document.addEventListener("pointercancel", (event) => {
+    endParameterDrag(event);
     endBandDrag(event);
     if (auditionPointer === event.pointerId) releaseAudition();
   });
@@ -304,6 +395,25 @@
   });
 
   document.addEventListener("keydown", (event) => {
+    const parameterInput = event.target.closest("input[data-drag-edit]");
+    if (parameterInput) {
+      if (parameterInput.dataset.editing === "true" && event.key === "Enter") {
+        event.preventDefault();
+        finishParameterEdit(parameterInput, true);
+        return;
+      }
+      if (parameterInput.dataset.editing === "true" && event.key === "Escape") {
+        event.preventDefault();
+        finishParameterEdit(parameterInput, false);
+        return;
+      }
+      if (parameterInput.readOnly && ["Enter", "F2"].includes(event.key)) {
+        event.preventDefault();
+        beginParameterEdit(parameterInput);
+        return;
+      }
+    }
+
     const hold = event.target.closest("[data-hold-audition]");
     if (hold && [" ", "Enter"].includes(event.key) && !event.repeat) {
       event.preventDefault();
@@ -370,6 +480,13 @@
     }
   });
 
+  document.addEventListener("dblclick", (event) => {
+    const input = event.target.closest("input[data-drag-edit]");
+    if (!input || input.disabled) return;
+    event.preventDefault();
+    beginParameterEdit(input);
+  });
+
   document.addEventListener("pointerover", (event) => {
     const control = event.target.closest("button, input, select");
     if (!control || control.contains(event.relatedTarget)) return;
@@ -392,7 +509,7 @@
 
   document.getElementById("parameterForm").addEventListener("input", (event) => {
     const input = event.target.closest("input[data-param]");
-    if (!input) return;
+    if (!input || input.dataset.editing === "true") return;
     dispatch({
       type: N.ACTION.SET_BAND_PARAMETER,
       bandId: state.view.selectedBandId,
@@ -422,7 +539,9 @@
     dispatch({ type: N.ACTION.SET_GLOBAL_PARAMETER, parameter: control.dataset.globalParam, value: numericInputValue(control.value) });
   });
 
-  document.getElementById("parameterForm").addEventListener("focusout", () => {
+  document.getElementById("parameterForm").addEventListener("focusout", (event) => {
+    const input = event.target.closest("input[data-drag-edit][data-editing='true']");
+    if (input) finishParameterEdit(input, true);
     root.setTimeout(() => render(state), 0);
   });
 
@@ -481,13 +600,25 @@
     button.disabled = true;
     try {
       const running = await audio.toggle();
+      const notice = running
+        ? "Interner lizenzfreier Demo-Loop aktiv · deterministische EQ-Messung läuft, keine DSP-Referenz."
+        : "Demo-Loop gestoppt · letzter Messstand eingefroren.";
+      dispatch({
+        type: N.ACTION.SET_MEASUREMENT,
+        state: running ? "measuring" : "fresh",
+        progress: running ? 0 : 100,
+        notice,
+      });
       button.setAttribute("aria-pressed", String(running));
       button.textContent = running ? "Demo-Loop stoppen" : "Demo-Loop starten";
-      document.getElementById("inspectorStatus").textContent = running
-        ? "Interner lizenzfreier Demo-Loop aktiv · Bedien-Demo, keine DSP-Referenz."
-        : "Demo-Loop gestoppt.";
     } catch (error) {
-      document.getElementById("inspectorStatus").textContent = `Demo-Audio nicht verfügbar: ${error.message}`;
+      dispatch({
+        type: N.ACTION.SET_MEASUREMENT,
+        state: state.measurement.state,
+        progress: state.measurement.progress,
+        gapKind: state.measurement.gapKind,
+        notice: `Demo-Audio nicht verfügbar: ${error.message}`,
+      });
     } finally {
       button.disabled = false;
     }

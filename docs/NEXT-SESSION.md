@@ -305,18 +305,25 @@
 > `design/abnahmen/2026-08-24-figma-depot-immer-aktuell.md`.
 >
 > Direkt per Figma-API gelesen: Overview-Wrapper `25:443` mit Artboard
-> `25:444` = 760×430; EQ-Wrapper `25:583` mit Artboard `25:584` = 700×420;
-> Zustandstafeln `25:805` und `25:901`. In den vier Bereichen: 0 Reaktionen,
-> 0 Components/Component Sets/Instances. Alles weiterhin Vorschlag, nichts
-> abgenommen.
+> `25:444` = 760×430; nach der User-Korrektur EQ-Wrapper `28:993` mit
+> Artboard `28:994` = 760×430; Zustandstafeln `25:805` und `25:901`.
+> In den vier Bereichen: 554 Nodes, 0 Reaktionen,
+> 0 Components/Component Sets/Instances. Die Größenabweichung ist geschlossen;
+> das Gesamtdesign ist weiterhin nicht abgenommen.
 >
-> **Nächster Design-Schritt:** Seite 2 im verbindlichen Depot auf den bereits
-> entschiedenen Stand 760×430 und dieselbe Gen-Schale bringen, tote Elemente
-> entfernen und dann die vier Depotbereiche sichten/abnehmen. Die historische
-> Copy-Fassung wird nicht als aktuelle Wahrheit übernommen. Ausführliche
-> Restarbeiten: `design/docs/figma-restarbeiten-nakama-gen.md`. Bewusst offen:
-> zweite Vergleichsquelle, Schutzbereich-Geste, Undo-Form Seite 1 (U2.8),
-> Sidechain-Sichtbarkeit (U5) und Rückfallfläche der Sonde (NAK-65-Rest).
+> **Nächster Design-Schritt:** Den korrigierten EQ-Stand zusammen mit Overview
+> und den beiden Zustandstafeln sichten/abnehmen, danach Komponentenvarianten
+> und Motion-Prototypen ergänzen. Die Größenkorrektur sowie die Entfernung der
+> konkret beanstandeten toten Elemente sind im aktuellen EQ-Hauptframe sichtbar
+> umgesetzt. Die historische Copy-Fassung wird nicht als aktuelle Wahrheit
+> übernommen. Ausführliche
+> Restarbeiten: `design/docs/figma-restarbeiten-nakama-gen.md`. Bereits
+> entschieden, aber noch zu gestalten: zweite Vergleichsquelle,
+> PROTECTED-Detailgesten, zweistufiger Mix und der kleine Revisionsverlauf
+> auf Seite 1. Sidechain bleibt im ersten Release unsichtbar. Für die
+> Probeeq-Rückfallfläche ist der vorhandene Suna-Entwurf `6:2864` die
+> verbindliche visuelle Basis. Offen ist nur noch die visuelle Abnahme der
+> ausgearbeiteten Gen- und Probeeq-Flächen.
 
 > ## ⚠ DER EINE NÄCHSTE SCHRITT — Stand 24.08.2026, nach **T2 Runde 2** und der zweiten Nacharbeit
 >

@@ -6,9 +6,9 @@
    "id": "U2",
    "dringlichkeit": "wenn du dazu kommst",
    "art": "Entscheid",
-   "titel": "Gen-Entwurf (Studie 04): alle 18 Lesarten beantwortet — 5 Folgefragen",
-   "was": "Du hast am 22.08. alle 18 Punkte beantwortet. Das Entscheidungstor U2.0 ist offen: Studie 04 wird weiterverfolgt. Neun Vorschlaege hast du uebernommen, sechs gedreht. Bei vier davon (U2.4, U2.6, U2.8, U2.9) bot der Alternativtext zwei Formen an — verworfen ist bindend, die Form ist offen. Dazu U2.1: ein Zeichen fuer die ganze Familie, aber offen ist, welches System sich beugt.",
-   "warum": "Die fuenf Folgefragen sind formuliert und stehen in design/abnahmen/2026-08-22-hub-antworten-35.md (Abschnitt 6). Sie erscheinen auf dieser Seite erst, wenn der Fragenkatalog der Seite sie kennt — bis dahin liegt nichts bei dir.",
+   "titel": "Gen-Entwurf (Studie 04): alle 18 Lesarten beantwortet — 4 Folgefragen",
+   "was": "Du hast am 22.08. alle 18 Punkte beantwortet. Das Entscheidungstor U2.0 ist offen: Studie 04 wird weiterverfolgt. Neun Vorschlaege hast du uebernommen, sechs gedreht. Bei drei davon (U2.4, U2.6, U2.9) bot der Alternativtext zwei Formen an — verworfen ist bindend, die Form ist offen. Dazu U2.1: ein Zeichen fuer die ganze Familie, aber offen ist, welches System sich beugt. U2.8 ist seit 24.08. geschlossen: kleines Symbol mit echtem Revisionsverlauf.",
+   "warum": "Die vier verbleibenden Folgefragen sind formuliert und stehen in design/abnahmen/2026-08-22-hub-antworten-35.md (Abschnitt 6). Sie erscheinen auf dieser Seite erst, wenn der Fragenkatalog der Seite sie kennt — bis dahin liegt nichts bei dir.",
    "wo": "design/abnahmen/2026-08-22-hub-antworten-35.md",
    "seit": "21.08.",
    "bilder": [
@@ -152,30 +152,6 @@
     }
    ],
    "status": "offen"
-  },
-  {
-   "id": "U5",
-   "dringlichkeit": "wenn du dazu kommst",
-   "art": "Entscheid",
-   "titel": "Probeeq: die Sidechain-Quelle je Band — sichtbar, Untermenü oder unsichtbar?",
-   "was": "Dein Probeeq-Stand zeigt zwölf Parameter je Band. Der technische Entwurf kennt einen dreizehnten (die Sidechain-Quelle für den Dynamikteil). Drei Lesarten: als sichtbarer Parameter in der Bandzeile, als Untermenü unter DYN, oder im ersten Release unsichtbar.",
-   "warum": "Der gespeicherte Zustand trägt seit 22.08. alle dreizehn (unsichtbar kostet nichts, nachträglich einfügen hätte einen Versionssprung erzwungen). Offen ist nur noch, was die Oberfläche zeigt — das entscheidet dein Figma-Stand.",
-   "wo": "docs/offene-punkte.md, NAK-33",
-   "seit": "21.08.",
-   "bilder": [
-    {
-     "datei": "u5-probeeq-bandzeile.png",
-     "text": "Die Bandzeile aus deinem Probeeq-Stand: zwölf Werte (BAND … MODE | DYN … RELEASE). Die Frage ist, ob und wo ein dreizehnter (die Sidechain-Quelle für DYN) erscheint."
-    }
-   ],
-   "status": "offen",
-   "frueher_beantwortet": {
-    "wahl": "Später",
-    "text": "",
-    "datum": "2026-08-22 18:21",
-    "status": "eingearbeitet",
-    "ergebnis": "Spaeter — die Sidechain-Quelle je Band bleibt offen (NAK-33). Der gespeicherte Zustand traegt seit 22.08. alle dreizehn Parameter, unsichtbar kostet nichts. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
-   }
   },
   {
    "id": "U6",
@@ -434,11 +410,11 @@
    "ergebnis": "Depot-Wort steht seit 22.08. im Register; U2.17 setzt darauf auf. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
   },
   "U5": {
-   "wahl": "Später",
-   "text": "",
-   "datum": "2026-08-22 18:21",
+   "wahl": "Erstmal unsichtbar",
+   "text": "Sidechain-Quelle bleibt im ersten Release unsichtbar.",
+   "datum": "2026-08-24",
    "status": "eingearbeitet",
-   "ergebnis": "Spaeter — die Sidechain-Quelle je Band bleibt offen (NAK-33). Der gespeicherte Zustand traegt seit 22.08. alle dreizehn Parameter, unsichtbar kostet nichts. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+   "ergebnis": "Im ersten Release unsichtbar: kein dreizehntes Feld und kein DYN-Untermenue. Der gespeicherte Parameter bleibt mit Default none erhalten; sichtbare Bedienung erst nach spaeterer technischer Freigabe. U5/NAK-33 geschlossen. [design/abnahmen/2026-08-24-offene-figma-entscheide.md]"
   },
   "U9.5": {
    "wahl": "Figma gilt",
@@ -546,11 +522,11 @@
    "ergebnis": "Entwurf verworfen — Rollenwoerter ersetzen LIVE nicht. Offen: LIVE behalten oder gar keine Rolle in der Zeile. Folgefrage. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
   },
   "U2.8": {
-   "wahl": "Alternative wählen",
-   "text": "",
-   "datum": "2026-08-22 18:07",
+   "wahl": "Kleiner Revisionsverlauf",
+   "text": "Ein kleines Verlaufssymbol oeffnet den echten Revisionsverlauf.",
+   "datum": "2026-08-24",
    "status": "eingearbeitet",
-   "ergebnis": "Entwurf verworfen — kein schlichter Einsatz 'UNDO · n'. Offen: echter Verlauf oder Zaehler an anderer Stelle. Folgefrage. [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+   "ergebnis": "Gen Seite 1 nutzt ein kleines Verlaufssymbol mit echtem Revisionsverlauf bestaetigter Aenderungen. Kein grosser Undo-Button und kein bloesses 'UNDO · n' ohne Verlauf. U2.8 geschlossen. [design/abnahmen/2026-08-24-offene-figma-entscheide.md]"
   },
   "U2.7": {
    "wahl": "Vorschlag übernehmen",

@@ -42,3 +42,23 @@ Antworten des 2. Durchgangs auf die fünf genannten Sünder:
 
 **Status:** Der 2. Durchgang ist Claude-Umsetzung dieser Entscheide;
 die Optik der Frames bleibt Vorschlag bis zum User-Urteil.
+
+## Nachträgliche Quellenkorrektur 24.08.2026
+
+Die Copy-Datei oben bleibt Teil der Entstehungsgeschichte, ist aber keine
+aktuelle Designquelle. Der User hat anschließend bekräftigt, dass immer nur
+`Nakama-Design` (`NPCQYSkoZEd4Av0NlKxBOd`) den aktuellen Stand enthält. Beim
+ersten Live-Check stand das EQ Center dort noch auf 700×420 (`25:584`).
+
+Danach korrigierte der User diesen Fehler direkt im verbindlichen Figma:
+
+> „habe eq center aktualisiert, war ein fehler. ist jetzt das aktuelle drin
+> mit 430“
+
+Der erneute Live-Check bestätigt Wrapper `28:993` und Artboard `28:994`
+mit 760×430. Die Größenentscheidung ist damit umgesetzt. Im sichtbaren
+Hauptframe sind außerdem CONNECTED · PAIRED, der LIVE-Dauerchip und der freie
+Pfeil nicht mehr vorhanden; GLOBAL ist ein beschrifteter Button mit Chevron
+und OVERVIEW/EQ CENTER sind als Tab-Paar dargestellt. Die vollständige
+Optik-, Komponenten- und Motion-Abnahme bleibt offen. Vollständiger Beleg:
+`2026-08-24-figma-depot-immer-aktuell.md`.

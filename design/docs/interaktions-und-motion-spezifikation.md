@@ -65,7 +65,9 @@ Die vorhandene eine Parameterzeile ist die Präzisionsbedienung; sie wird nicht 
 - Kontinuierliche Werte wie Frequenz, Gain, Q, Dynamic Range, Threshold, Attack, Hold und Release lassen sich im Wertfeld vertikal ziehen und per Doppelklick direkt numerisch eingeben.
 - Filtertyp, Kanalmodus und Dynamic sind Auswahlfelder mit einer kleinen, verankerten Liste.
 - Nicht aktive dynamische Werte zeigen einen klar deaktivierten Zustand statt scheinbar gültiger Zahlen.
-- Der Sidechain-Source-Parameter bleibt offen. Er wird erst sichtbar platziert, wenn NAK-33 entschieden ist; diese Spezifikation erfindet keinen Platz dafür.
+- Der Sidechain-Source-Parameter bleibt im ersten Release unsichtbar
+  (Entscheid 24.08.) und steht technisch auf Default `none`. Diese
+  Spezifikation erzeugt dafür weder Feld noch Untermenü.
 - Änderungen an Filtertyp, Kanalmodus, Dynamic oder später Sidechain sind strukturelle Änderungen. Das UI zeigt kurz den Zustand **SWITCHING**; die Audioseite nutzt dafür den vorgesehenen blockgrenzensicheren Crossfade.
 
 ### 3.3 Dynamisches Band
@@ -145,6 +147,8 @@ Erst wenn jede Sequenz von einem sichtbaren Ausgangs- zu einem eindeutigen Endzu
 
 ## 7. Bewusst offen
 
-- Die sichtbare Platzierung des technischen Sidechain-Source-Parameters wartet auf die Entscheidung zu NAK-33.
+- Eine spätere sichtbare Sidechain-Bedienung wird erst nach dem technischen
+  Sidechain-/PDC-Gate gestaltet; im ersten Release ist sie entschieden
+  unsichtbar.
 - Die exakten, gemessenen DSP-Crossfade- und Rampenzeiten werden technisch kalibriert und versioniert; die oben genannte Dauer beschreibt nur die Darstellung in Figma.
 - Weitere dB-Meter werden nicht aus Dekoration ergänzt. Sie brauchen eine eigene, reale Datenquelle und eine klare Lesefrage.

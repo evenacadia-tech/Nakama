@@ -82,6 +82,41 @@
     return `${numeric < 0 ? "−" : "+"}${Math.abs(numeric).toFixed(precision)} dB`;
   };
 
+  Nakama.PARAMETER_DRAG = Object.freeze({
+    frequency: Object.freeze({ mode: "exponential", pixelsPerDouble: 96, step: 1 }),
+    gain: Object.freeze({ mode: "linear", unitsPerPixel: 0.1, fineUnitsPerPixel: 0.02, step: 0.1, fineStep: 0.01 }),
+    q: Object.freeze({ mode: "exponential", pixelsPerDouble: 120, step: 0.01 }),
+    threshold: Object.freeze({ mode: "linear", unitsPerPixel: 0.25, fineUnitsPerPixel: 0.05, step: 0.1, fineStep: 0.01 }),
+    range: Object.freeze({ mode: "linear", unitsPerPixel: 0.1, fineUnitsPerPixel: 0.02, step: 0.1, fineStep: 0.01 }),
+    attack: Object.freeze({ mode: "exponential", pixelsPerDouble: 100, step: 0.1 }),
+    hold: Object.freeze({ mode: "linear", unitsPerPixel: 1, fineUnitsPerPixel: 0.1, step: 1, fineStep: 0.1 }),
+    release: Object.freeze({ mode: "exponential", pixelsPerDouble: 100, step: 1 }),
+  });
+
+  Nakama.adjustParameterFromVerticalDrag = function adjustParameterFromVerticalDrag(
+    parameter,
+    startValue,
+    upwardPixels,
+    fine,
+  ) {
+    const rule = Nakama.PARAMETER_DRAG[parameter];
+    const start = Number(startValue);
+    const delta = Number(upwardPixels);
+    if (!rule || !Number.isFinite(start) || !Number.isFinite(delta)) return start;
+
+    let value;
+    if (rule.mode === "exponential") {
+      const sensitivity = rule.pixelsPerDouble * (fine ? 4 : 1);
+      value = start * Math.pow(2, delta / sensitivity);
+    } else {
+      const unitsPerPixel = fine ? rule.fineUnitsPerPixel : rule.unitsPerPixel;
+      value = start + delta * unitsPerPixel;
+    }
+
+    const step = fine && rule.fineStep ? rule.fineStep : rule.step;
+    return Math.round(value / step) * step;
+  };
+
   Nakama.applyProtectedFrequency = function applyProtectedFrequency(
     currentFrequency,
     requestedFrequency,

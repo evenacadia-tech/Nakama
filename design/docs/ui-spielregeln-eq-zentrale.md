@@ -41,7 +41,8 @@
 5. **Je Sonde: 8 Band-Slots** mit je 13 Parametern — enabled · type ·
    freq · gain · Q · channel_mode (Stereo/L/R/M/S) | dyn_enabled ·
    threshold · range · attack · hold · release · sidechain_source
-   (§53.8; Sichtbarkeit der Sidechain-Quelle offen: U5/NAK-33). Dazu
+   (§53.8; im ersten Release bleibt die Sidechain-Quelle unsichtbar,
+   Entscheid 24.08.; Default `none`). Dazu
    **globale Regler je Spur:** Hard-Bypass · Input-Trim ±24 dB ·
    Output-Trim ±24 dB · Width 0–2 · Mono-Bass 0–500 Hz
    (`nakama-parameter-v1.json`, 109 Hostparameter, IDs eingefroren).
@@ -104,8 +105,10 @@
     bewegen; das Design darf keine Exklusivität der Maus suggerieren.
 18. **Undo ist unser eigenes:** Host-Undo sieht Ferneingriffe nicht
     zuverlässig (Entwurf §44); es gibt den eigenen Revisions-Ring. Ein
-    sichtbares eigenes Undo je Fläche ist Pflicht; seine Form ist offen
-    (U2.8-Folgefrage: Verlauf oder Zähler).
+    sichtbares eigenes Undo je Fläche ist Pflicht. Auf Seite 1 öffnet ein
+    kleines Verlaufssymbol den echten Revisionsverlauf bestätigter Änderungen;
+    auf Seite 2 wirkt das kleine Undo-Symbol je gewählter Sonde. Ein bloßes
+    `UNDO · n` ohne Verlauf kommt nicht zurück (Entscheid 24.08.).
 
 ## 5. Durchschalten und Mengen
 
@@ -260,8 +263,8 @@
 
 | Was | Wo |
 |---|---|
-| Sidechain-Quelle je Band sichtbar/Untermenü/unsichtbar | **U5** / NAK-33 |
+| ~~Sidechain-Quelle je Band~~ — beantwortet 24.08.: im ersten Release unsichtbar, Parameter bleibt mit Default `none` gespeichert | **U5 / NAK-33 geschlossen** |
 | ~~Größe Seite 2~~ (beantwortet 24.08.: 760×430, Regel 45) · Figma-Flächen · Rückfallfläche der Sonde | **NAK-65** |
-| Undo-Form auf Gen **Seite 1** (Verlauf oder Zähler) | U2.8-Folgefrage |
+| ~~Undo-Form auf Gen Seite 1~~ — beantwortet 24.08.: kleines Symbol öffnet echten Revisionsverlauf | **U2.8 geschlossen** |
 | Mix/Dry-Wet: versionierte Parameter-Erweiterung, zweistufig global↔Spur (beschlossen, ungebaut) | Plan S26–28/S29–31 (`SONDE-015`/`016`) · Regeln 32/42 |
 | ~~Umschnitt Bauaufteilung/P6–P7~~ — **gefahren 23.08.** (`e3dbad4`): S28b Gen-Master-EQ, S31b EQ-Zentrale-UI, Schutz-Zonen und Mix in S26–31 eingeplant | NAK-64 geschlossen |

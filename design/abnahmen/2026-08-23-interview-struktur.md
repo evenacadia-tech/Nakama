@@ -279,3 +279,15 @@ auf der gerade gewählten Spur zurück.
   User veranlassen den probeeq zu öffnen statt gleich Gen?"
 - U14 (±3-dB-Cap) · U5/NAK-33 (Sidechain sichtbar) · NAK-65 (Größe
   Seite 2, Figma-Flächen) · Undo-Form (U2.8-Folgefrage).
+
+## Nachtrag 24.08.2026
+
+Die hier noch offenen U2.8- und U5-Folgefragen sind beantwortet:
+
+- Gen Seite 1 erhält ein kleines Symbol mit echtem Revisionsverlauf.
+- Die Sidechain-Quelle bleibt im ersten Release unsichtbar.
+- Für die Probeeq-Rückfallfläche ist der bestehende Suna-Entwurf
+  `Nakama-Design` Node `6:2864` die visuelle Ausgangsbasis.
+
+Wortlaut und Folgen:
+`2026-08-24-offene-figma-entscheide.md`.

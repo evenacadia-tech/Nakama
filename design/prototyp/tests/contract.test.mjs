@@ -15,6 +15,20 @@ assert.equal(uiContract.schemaVersion, 1);
 assert.equal(assets.schemaVersion, 1);
 assert.equal(motion.schemaVersion, 1);
 assert.deepEqual(assets.logicalStage, { width: 760, height: 430, unit: "css-px" });
+assert.equal(assets.sourceStatus, "historical-snapshot");
+assert.equal(assets.currentDesignSource.fileKey, "NPCQYSkoZEd4Av0NlKxBOd");
+assert.equal(assets.currentDesignSource.nodes.overviewArtboard, "25:444");
+assert.equal(assets.currentDesignSource.nodes.eqCenterWrapper, "28:993");
+assert.equal(assets.currentDesignSource.nodes.eqCenterArtboard, "28:994");
+assert.equal(assets.currentDesignSource.nodes.probeeqFallbackArtboard, "6:2864");
+assert.deepEqual(assets.currentDesignSource.artboards.overview, { width: 760, height: 430 });
+assert.deepEqual(assets.currentDesignSource.artboards.eqCenter, { width: 760, height: 430 });
+assert.deepEqual(assets.currentDesignSource.artboards.probeeqFallback, { width: 260, height: 84 });
+assert.deepEqual(assets.currentDesignSource.inventory, {
+  nodeCount: 554,
+  reactionCount: 0,
+  componentLikeCount: 0,
+});
 assert.equal(assets.figma.nodes.overview, "4090:685");
 assert.equal(assets.figma.nodes.eqCenter, "6002:2");
 assert.equal(assets.figma.motion.overviewAnimatedNodes, 0);

@@ -4,6 +4,22 @@ Der Simulator ist die ausführbare Referenz für Zustände, Gesten und Motion de
 760×430-Oberfläche. Er verwendet deterministische Demo-Daten und ist weder eine
 DSP-Referenz noch eine später in das Plug-in eingebettete Webseite.
 
+## Status der Figma-Baseline
+
+Die einzige aktuelle Designquelle ist immer `Nakama-Design`, Key
+`NPCQYSkoZEd4Av0NlKxBOd`. Das heutige Simulator-Assetpaket
+`nakama-gen-dark-2026-08-24-rc0` wurde aus einer inzwischen als Verlauf
+eingeordneten Copy-Datei erzeugt. Seine Hashes und Tests bleiben als Beleg des
+gebauten Snapshots gültig, es ist aber keine aktuelle Figma-Baseline.
+
+Live-Stand im verbindlichen Depot am 24.08.: Overview `25:444` = 760×430,
+EQ Center `28:994` = 760×430. Die Größenkorrektur ist damit im Figma
+erledigt. Der Suna-Entwurf `6:2864` = 260×84 ist die aktuelle visuelle Basis
+für die Probeeq-Rückfallfläche. Vor dem nächsten Pixelabgleich muss der
+korrigierte aktuelle Stand neu exportiert und daraus ein neues
+Asset-/Golden-Paket erzeugt werden; das vorhandene Paket bleibt ein
+historischer Build-Snapshot.
+
 ## Öffnen
 
 - Direkt: `design/prototyp/index.html` doppelklicken.

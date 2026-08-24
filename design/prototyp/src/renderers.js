@@ -148,16 +148,16 @@
     byId("masterSwitch").setAttribute("aria-pressed", String(masterSelected));
   }
 
-  function visibleOverviewSources(state) {
-    if (state.sources.length <= 5) return state.sources;
-    const selectedIndex = Math.max(0, state.sources.findIndex((source) => source.id === state.view.selectedSourceId));
-    const start = N.clamp(selectedIndex - 2, 0, state.sources.length - 5);
-    return state.sources.slice(start, start + 5);
+  function overviewContentHeight(sourceCount) {
+    const count = Math.max(0, Number(sourceCount) || 0);
+    if (count <= 5) return 149;
+    return (count - 1) * OVERVIEW_ROW_HEIGHT + 25;
   }
 
   function renderOverviewRows(state) {
     const rows = byId("probeRows");
-    const sources = visibleOverviewSources(state);
+    const sources = state.sources;
+    rows.classList.toggle("is-scrollable", sources.length > 5);
     const signature = sources.map((source) => `${source.id}:${source.name}`).join("|");
     if (rows.dataset.signature !== signature) {
       rows.dataset.signature = signature;
@@ -199,6 +199,17 @@
       button.setAttribute("aria-pressed", String(selected));
       button.setAttribute("aria-label", `${source.name}, ${status}`);
     }
+
+    if (rows.dataset.selectedSourceId !== state.view.selectedSourceId) {
+      rows.dataset.selectedSourceId = state.view.selectedSourceId;
+      const selectedRow = rows.querySelector(`[data-source-id="${state.view.selectedSourceId}"]`);
+      if (selectedRow) {
+        const rowTop = selectedRow.offsetTop;
+        const rowBottom = rowTop + selectedRow.offsetHeight;
+        if (rowTop < rows.scrollTop) rows.scrollTop = rowTop;
+        else if (rowBottom > rows.scrollTop + rows.clientHeight) rows.scrollTop = rowBottom - rows.clientHeight;
+      }
+    }
   }
 
   function setupCanvas(canvas, cssWidth, cssHeight) {
@@ -216,9 +227,11 @@
 
   function drawHeatmap(state) {
     const canvas = byId("heatmapCanvas");
-    const context = setupCanvas(canvas, 704, 149);
-    const sources = visibleOverviewSources(state);
-    context.clearRect(0, 0, 704, 149);
+    const sources = state.sources;
+    const contentHeight = overviewContentHeight(sources.length);
+    canvas.style.height = `${contentHeight}px`;
+    const context = setupCanvas(canvas, 704, contentHeight);
+    context.clearRect(0, 0, 704, contentHeight);
 
     sources.forEach((source, rowIndex) => {
       const y = rowIndex * OVERVIEW_ROW_HEIGHT + 3;
@@ -574,4 +587,5 @@
   N.drawSpectrum = drawSpectrum;
   N.curvePath = curvePath;
   N.responseAtFrequency = responseAtFrequency;
+  N.overviewContentHeight = overviewContentHeight;
 })(globalThis);

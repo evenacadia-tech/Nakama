@@ -209,5 +209,12 @@ Nicht geraten, sondern gefragt — je Punkt genau die eine offene Form:
 - `abnahmen/2026-08-21-gen-auftrag-figma.md` — die 18 Lesarten (hier beantwortet)
 - `abnahmen/2026-08-21-suna-auftrag-figma.md` — die 10 Lesarten (hier beantwortet)
 - `abnahmen/2026-08-22-figma-depot.md` — Depot-Wort, auf das `U2.16`/`U2.17` aufsetzen
+
+## Nachtrag 24.08.2026
+
+U2.8 und U5 aus der damaligen Folgefragenliste sind inzwischen geschlossen:
+Gen Seite 1 erhält ein kleines Symbol mit echtem Revisionsverlauf; die
+Sidechain-Quelle bleibt im ersten Release unsichtbar. Aktueller Entscheid:
+`2026-08-24-offene-figma-entscheide.md`.
 - `Nakama/docs/hub/hub.json` — Quelle der Antworten (`antworten`)
 - `Nakama/docs/offene-punkte.md` — NAK-33 (`U5`), NAK-35/NAK-24 (`U10`), NAK-38 (`U9`)

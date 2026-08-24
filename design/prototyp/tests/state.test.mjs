@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const prototypeRoot = path.resolve(here, "..");
 
-for (const script of ["src/contract.js", "src/demo-adapter.js"]) {
+for (const script of ["src/contract.js", "src/demo-adapter.js", "src/renderers.js"]) {
   const source = fs.readFileSync(path.join(prototypeRoot, script), "utf8");
   vm.runInThisContext(source, { filename: script });
 }
@@ -162,6 +162,27 @@ function band(snapshot, sourceId = snapshot.probeEq.targetId, bandId = 3) {
   assert.equal(state.sources.length, 16);
   assert.equal(state.sources.at(-1).name, "MUSIC BUS");
   assert.ok(!state.sources.some((source) => source.id === "master"), "Master must stay outside source order");
+  assert.equal(N.overviewContentHeight(state.sources.length), 490);
+  assert.equal(N.overviewContentHeight(5), 149);
+}
+
+{
+  const { ui, time } = adapter("eq-golden");
+  ui.dispatch({ type: N.ACTION.SET_MEASUREMENT, state: "measuring", progress: 99, notice: "DEMO LOOP ACTIVE" });
+  const before = ui.getSnapshot().meta.spectrumFrame;
+  time.advance(50);
+  ui.dispatch({ type: N.ACTION.TICK, continuous: true });
+  let state = ui.getSnapshot();
+  assert.equal(state.meta.spectrumFrame, before + 1);
+  assert.equal(state.measurement.progress, 99);
+  assert.equal(state.measurement.state, "measuring", "demo playback keeps the deterministic spectrum moving");
+  assert.equal(state.meta.notice, "DEMO LOOP ACTIVE");
+
+  time.advance(50);
+  ui.dispatch({ type: N.ACTION.TICK });
+  state = ui.getSnapshot();
+  assert.equal(state.measurement.progress, 100);
+  assert.equal(state.measurement.state, "fresh", "normal measurements still complete");
 }
 
 {
@@ -205,4 +226,13 @@ function band(snapshot, sourceId = snapshot.probeEq.targetId, bandId = 3) {
   assert.match(state.meta.notice, /AWAITS CONFIRMATION/);
 }
 
-console.log("State tests passed: 14 lifecycle, protection, automation, controls and source-order cases.");
+{
+  assert.equal(N.adjustParameterFromVerticalDrag("frequency", 1000, 96, false), 2000);
+  assert.equal(N.adjustParameterFromVerticalDrag("frequency", 1000, -96, false), 500);
+  assert.equal(N.adjustParameterFromVerticalDrag("gain", -1.5, 10, false), -0.5);
+  assert.equal(N.adjustParameterFromVerticalDrag("gain", -1.5, 10, true), -1.3);
+  assert.equal(N.adjustParameterFromVerticalDrag("q", 1, 120, false), 2);
+  assert.equal(N.adjustParameterFromVerticalDrag("hold", 0, 12, false), 12);
+}
+
+console.log("State tests passed: 16 lifecycle, animation, protection, automation, controls and source-order cases.");

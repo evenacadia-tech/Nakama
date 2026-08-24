@@ -1,4 +1,4 @@
-# Figma-Stände — die Vorgabe
+# Figma-Stände — datierte Belege aus der Vorgabe
 
 **Herkunft:** Figma, gestaltet vom **User** (Gen, Probeeq) bzw. von Claude auf
 seinen Auftrag in seiner Figma-Datei (Suna, siehe unten). Exportiert vom User
@@ -6,8 +6,9 @@ am 2026-08-21 (20:04 / 20:05 / 22:18) in seinen Downloads-Ordner, von dort
 **bytegleich** hierher kopiert (SHA-256 unten). Die Dateien werden nicht
 bearbeitet, nicht verkleinert, nicht umbenannt.
 
-**Status: aktueller Stand — Vorgabe für die Übersetzung.** Ein Design
-entwickelt sich, neuere Stände ersetzen diese. Wörtlich, Interview
+**Status: datierte Beleg-Snapshots — nicht die aktuelle Designquelle.** Die
+aktuelle Vorgabe lebt immer ausschließlich im Figma `Nakama-Design`. Ein Design
+entwickelt sich, neuere Depotstände ersetzen diese Snapshots. Wörtlich, Interview
 2026-08-21:
 
 > „das finale design wird aktuell in figma gemacht . alle 3 apps werden ein
@@ -66,8 +67,13 @@ https://www.figma.com/design/NPCQYSkoZEd4Av0NlKxBOd/Nakama-Design?node-id=0-1):
 
 > „das ist das neue verbindliche und einzige Depot indem sich die aktuellsten Designs befinden. ich habe für jedes design vor eine helle und dunke variante zu erstellen. stand jetzt aber erstmal nur dunkel“
 
-Daraus folgt: **diese eine Datei ist die Quelle**; die älteren Dateien
-(`Testdummy`, `fable-dummy`) sind Verlauf. Verbindlich ist je App die **dunkle**
+Am 24.08.2026 hat der User diese Regel bekräftigt und jede Copy-Lesart
+ausgeschlossen: „die sind IMMER in diesem figma, nirgends wo anders. hier ist
+immer das aktuellste“. Vollständiger Entscheid und aktuelles Live-Inventar:
+`../../abnahmen/2026-08-24-figma-depot-immer-aktuell.md`.
+
+Daraus folgt: **diese eine Datei ist die Quelle**; alle anderen Figma-Dateien,
+einschließlich Copy-/Prototyp-Dateien, sind Verlauf. Verbindlich ist je App die **dunkle**
 Fassung; helle Varianten entstehen dort als eigene Host/Ground-Rahmen und sind
 noch nicht Vorgabe. Claude holt die Stände per Figma-MCP (`download_assets`,
 PNG, 4× — dieselbe Form wie die Exporte des Users vom 21.08.) in die Truhe;

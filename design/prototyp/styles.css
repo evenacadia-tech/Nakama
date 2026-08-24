@@ -675,6 +675,20 @@ input:focus-visible {
   left: 18px;
   width: 704px;
   height: 149px;
+  overflow: hidden;
+}
+
+.probe-rows.is-scrollable {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  touch-action: pan-y;
+}
+
+.probe-rows:focus-visible {
+  outline: 1px solid rgba(141, 147, 154, 0.5);
+  outline-offset: -1px;
 }
 
 .heatmap-canvas {
@@ -1001,7 +1015,15 @@ input:focus-visible {
 .plugin-stage[data-dragging="true"] .confirmed-fill,
 .plugin-stage[data-dragging="true"] .confirmed-curve,
 .plugin-stage[data-dragging="true"] .draft-curve,
-.plugin-stage[data-dragging="true"] .band-handle {
+.plugin-stage[data-dragging="true"] .dynamic-curve,
+.plugin-stage[data-dragging="true"] .individual-band-curve,
+.plugin-stage[data-dragging="true"] .band-handle,
+.plugin-stage.is-parameter-dragging .confirmed-fill,
+.plugin-stage.is-parameter-dragging .confirmed-curve,
+.plugin-stage.is-parameter-dragging .draft-curve,
+.plugin-stage.is-parameter-dragging .dynamic-curve,
+.plugin-stage.is-parameter-dragging .individual-band-curve,
+.plugin-stage.is-parameter-dragging .band-handle {
   transition: none;
 }
 
@@ -1349,6 +1371,17 @@ input:focus-visible {
 .parameter-control input:hover,
 .parameter-control select:hover {
   background: rgba(255, 255, 255, 0.035);
+}
+
+.parameter-control input[data-drag-edit] {
+  cursor: ns-resize;
+  user-select: none;
+}
+
+.parameter-control input[data-drag-edit][data-editing="true"] {
+  background: rgba(255, 255, 255, 0.055);
+  cursor: text;
+  user-select: text;
 }
 
 .parameter-control input:disabled,

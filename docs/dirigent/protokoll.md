@@ -18,6 +18,18 @@ Regeln und Zyklus: `.claude/skills/dirigent/SKILL.md`. Jüngster Eintrag oben.
 
 ---
 
+## 2026-08-24 mittags · G1 · Gate angesetzt (T3) — HALT vom User aufgehoben
+
+- **Freigabe:** Der User hat die Aufwandsfrage aus `NEXT-SESSION.md` entschieden — **„B — am Gate bündeln"**, meine eigene Empfehlung unverändert übernommen: `T3` ist strenger als das fehlende `T2`, fremde Prüfer sind eine andere Art Auge als eine weitere Claude-Runde, und der Kontext wird einmal aufgebaut statt viermal. Damit ist der HALT nach §4.1 aufgehoben; ich darf G1 starten. Der Entscheid kam über eine Claude-Code-Session am Handy, weil die WhatsApp-Kopplung weiter gelöst ist.
+- **Session:** „G1 — Gate über Phase P1 (T3, fremde Prüfer)" (`05f25385-449f-437a-a8c5-31f2bb71612e`), Opus 5 mit 1M, xhigh.
+- **Vorgaben nicht aus dem Gedächtnis, sondern aus dem Plan geholt** (`bauaufteilung-sonden.md:300` + §Bruchaufträge + Gate-Tabelle `:424`): G1 = **`/c-review` + `/rust-review` + Codex**, Falsifikation **Gate 1** („Passive/neutrale Instanz verändert einen gültigen Audiopuffer") und **Gate 7** („Standard-Insertprobe wird als exakter Summenbeitrag bezeichnet"), beide **wörtlich** im Auftrag, samt der Regel, dass „kein Pfad gefunden" ein gültiges Ergebnis ist — G0 endete genau so. Aufbau nach dem Vorbild `docs/beweise/G0.md`.
+- **Umfang gemessen:** vier Manifeste tragen `T2 NEEDS_WORK` und brauchen ein Urteil — `SONDE-005a`, `SONDE-005b`, `SONDE-007a`, `SONDE-007b`. `SONDE-006` (S7) trägt bereits `T2 PASS` und braucht keine Marke.
+- 🚨 **Die Arbeitsanweisung des Users ist im Auftrag hervorgehoben:** eine Urteilsmarke **je Ticketmanifest**, nicht nur in `G1.md` — `tools/plan/planstand.py` liest je Ticket, ein PASS allein im Gate-Manifest bewegt den gerechneten Planstand nicht. Dazu die Gegenregel, damit daraus kein Gummistempel wird: **nur markieren, was wirklich geprüft wurde**; eine nicht erreichte Fläche bleibt ohne Marke und wird in `G1.md` benannt. Fehlendes Urteil = ehrliche Untertreibung, PASS über Ungeprüftes = die eine Fehlerrichtung, die dieses Projekt nicht tragen kann.
+- **Drei frische Warnungen mitgegeben:** **NAK-73** (`git checkout` ist hier wegen `core.autocrlf=true` **keine** byteweise Rückstellung — betrifft die eigenen Mutationsproben des Prüfers), **NAK-42** (als „vor G1" markiert: Rust klassifiziert ungültige DTOs noch nicht — nachsehen, ob das noch gilt), **NAK-72** (`beweise.ps1` kann auf `VCTIP.EXE` still hängen, nicht als Absturz fehldeuten).
+- **Gestützt auf:** Repo-Messung — Baum frei (alle vorherigen Sessions `idle`, nur die bekannten fremden Dateien uncommittet), lokal = remote = `a9b66a2`, die vier Marken einzeln gelesen.
+- **Nicht geprüft:** Nichts an P1 selbst — das ist die Aufgabe des Gates. Ich habe auch nicht verifiziert, ob `/c-review`, `/rust-review` und der Codex-Agent in dieser Umgebung wirklich durchlaufen; scheitert einer, ist genau das ein Befund für `G1.md` und kein Grund für ein stilles PASS.
+- **Weiter mit:** Urteil abwarten. Danach ist P1 entweder geschlossen (dann steht **S14–15 / `SONDE-010`** als nächste Baufläche an, mit NAK-69, NAK-59, NAK-40 und dem v3-Schema-Schnitt aus NAK-29) oder es gibt Nacharbeit je betroffenem Stand.
+
 ## 2026-08-24 mittags · HALT · Gate G1 — S10–11 abgenommen, der Rückstand ist auf vier geschrumpft
 
 - **Ergebnis:** **`T2 PASS` auf S10–11 / `SONDE-008`** (`5d26002`, Manifest §10; Selbstaudit `2e86444`, **NAK-58 geschlossen** mit `676654c`). Der gerechnete Planstand springt auf **12 von 36**; es warten nur noch `S5`, `S6`, `S8`, `S9` — alle vier in P1, alle vier im Zuständigkeitsbereich von **G1**.

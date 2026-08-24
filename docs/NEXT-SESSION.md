@@ -15,6 +15,14 @@
 > „B, mit einer Ausnahme" unten hat ihre Ausnahme verbraucht; was bleibt, ist
 > schlicht **B**. Der gerechnete Planstand steht auf **12 von 36**.
 >
+> 🛑 **Der Dirigent hält hier erneut an (§4.1).** Der gerechnete Planstand nennt
+> als Nächstes **G1** — ein Gate: `T3`, fremde Prüfer, Bruchaufträge. Das
+> startet er nicht blind. Beim User liegt damit nur noch **eine** Frage, und sie
+> ist eine Aufwandsfrage: `S5`, `S6`, `S8`, `S9` einzeln nachholen oder am Gate
+> bündeln. ⚠️ Bündeln heißt: die Gate-Session muss eine Urteilsmarke **je
+> Ticketmanifest** setzen — ein `PASS` allein in `G1.md` bewegt den gerechneten
+> Planstand nicht (`tools/plan/planstand.py` liest je Ticket).
+>
 > **Neu offen aus dieser Prüfung** (keiner ein heute erreichbarer Fehler):
 > **NAK-71** (die Ordnungszusage in `neustartAnfordern()` hat kein Bein; ihr
 > beschriebener Schadensfall ist zu harmlos; zwei Texte stimmen nicht mit der

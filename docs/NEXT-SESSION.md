@@ -736,9 +736,16 @@
 2. ~~Klicklisten A und B nachziehen~~ — beide tragen einen Stand-Hinweis mit den
    Berichtigungen (VST3 nur unter `Common Files\VST3`; Nebenwege als
    „Sidechain to this track"; Song ≥ 16 Takte; Arbeitsteilung).
-3. **Angebot weiter offen beim User:** `C:/Program Files/Common Files/VST3/eq-copilot/`
+3. **Entschieden (User 24.08., 13:26): „wird gelöscht, ich bin nicht am pc. muss
+   vertagt werden"** — `C:/Program Files/Common Files/VST3/eq-copilot/`
    (845 MB alte Repo-Kopie vom 13.08. mit zwei alten `EQ-Copilot.vst3`, die FL
-   mitscannt) wegräumen — braucht einen Admin-Klick.
+   mitscannt) wird entfernt, sobald der User am PC ist. Fertiger Befehl,
+   PowerShell **als Administrator**:
+   ```powershell
+   Remove-Item -LiteralPath "C:\Program Files\Common Files\VST3\eq-copilot" -Recurse -Force
+   ```
+   Danach `docs/offene-punkte.md`/hier als erledigt markieren (kein NAK-Eintrag
+   vorhanden, war ein reiner Handgriff — U7 in `docs/plan/fragen.json`).
 4. ~~S4~~ — **gebaut**: `docs/beweise/SONDE-004.md`,
    `eq-copilot/identity/host-capabilities-fl-v1.json` (**2 supported, 8
    unsupported** — T2 hat `presentation_latency`, `aux_priority_sidechain` und

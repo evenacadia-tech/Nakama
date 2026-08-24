@@ -267,17 +267,6 @@
    "status": "offen"
   },
   {
-   "id": "U7",
-   "dringlichkeit": "wenn du dazu kommst",
-   "art": "Tätigkeit",
-   "titel": "Admin-Klick: alte Plugin-Kopie aus dem VST3-Ordner entfernen",
-   "was": "Unter C:/Program Files/Common Files/VST3/eq-copilot/ liegt eine 845 MB große alte Repo-Kopie vom 13.08. mit zwei alten „EQ-Copilot.vst3“, die FL bei jedem Scan mitnimmt. Wegräumen braucht einen Admin-Klick von dir; Claude bereitet den Befehl vor.",
-   "warum": "Doppelte Plugins im Scan verwirren FL und jede künftige Messung. Angebot seit dem Termin-A-Abend offen.",
-   "wo": "docs/NEXT-SESSION.md, „Morgen zuerst“ Punkt 3",
-   "seit": "22.08.",
-   "status": "offen"
-  },
-  {
    "id": "U8",
    "dringlichkeit": "wissen",
    "art": "Wissen vor dem Klick",
@@ -681,6 +670,13 @@
    "datum": "2026-08-22 17:24",
    "status": "eingearbeitet",
    "ergebnis": "Hoer-Markierung nur noch mit gueltigem 'spielt'; das heutige fail-open faellt. Im Register (22.08.), umzusetzen mit S10-S13 (NAK-35/NAK-24). [design/abnahmen/2026-08-22-hub-antworten-35.md]"
+  },
+  "U7": {
+   "wahl": "Loeschen -- vertagt, User ist nicht am PC",
+   "text": "wird gelöscht , ich bin nicht am pc. muss vertagt werden",
+   "datum": "2026-08-24 13:26",
+   "status": "eingearbeitet",
+   "ergebnis": "Entschieden: die alte Plugin-Kopie wird geloescht. Ausfuehrung vertagt, bis der User am PC ist -- der fertige Loeschbefehl liegt bereit in docs/NEXT-SESSION.md, Morgen zuerst Punkt 3."
   }
  }
 }

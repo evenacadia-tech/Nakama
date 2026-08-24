@@ -1364,10 +1364,19 @@ Unverändert offen aus §8.9 — die Nacharbeit hat davon **nichts** angefasst:
 ## 10. T2 Runde 2 — Prüfbericht über die Nacharbeit (frischer Prüfer, 24.08.2026)
 
 **Prüfer:** eigene Session, weder am Bau noch an der Nacharbeit beteiligt.
-**Gegenstand:** `git diff 334f185..0b23cf5` (sieben Commits, 626 Zeilen Code über
-fünf Dateien) im Rahmen des ganzen Tickets `e330052..0b53364`. **Grundlage:**
+**Gegenstand:** `git diff 334f185..0b23cf5` im Rahmen des ganzen Tickets
+`e330052..0b53364`. **Grundlage:**
 T3-Regel — jeder Befund an der **Quelldatei** gemessen, jede Zahl selbst
 nachgezählt, und wo es ging **gefahren statt gelesen**.
+
+⚠️ **Zwei Zahlen aus dem Auftrag habe ich beim Selbstaudit berichtigt, weil ich
+sie zuerst übernommen statt gemessen hatte:** der Bereich sind **acht** Commits,
+nicht sieben (`git log --oneline 334f185..0b23cf5`: `f88f8c4` · `90c387a` ·
+`a563d4c` · `0373c51` · `87fe56b` · `bbe4b3f` · `1d86083` · `0b23cf5`), und die
+626 Zeilen sind die **Einfügungen** über **sechs** Quelldateien, nicht fünf —
+`StampedAudioQueue.h` gehört dazu (`git diff --stat 334f185..0b23cf5 --
+eq-copilot/plugin/`: 6 files, 626 insertions, 65 deletions). Für das Urteil
+ändert das nichts; für die Regel „jede Zahl selbst nachzählen" schon.
 
 ### 10.0 Urteil
 
@@ -1518,11 +1527,15 @@ liegt bei *unbekanntem* Transport — dazu §10.5 Punkt 3.
 
 - **`schliesstAn()` ist seit der Nacharbeit unverändert.** `git diff 0b23cf5..HEAD`
   auf `StampedAudioQueue.h` besteht **ausschließlich aus `+`-Zeilen** (91, SONDE-009,
-  additive Stempelfelder); `bruchMaske` und die Zeitprüfung sind nicht angefasst.
-  Der Stand, den ich beurteile, ist also der Stand der Nacharbeit.
+  additive Stempelfelder, alle bewusst **nicht** in der `bruchMaske`); `bruchMaske`
+  und die Zeitprüfung sind nicht angefasst. Der Queue-Stand, den ich beurteile, ist
+  also byteweise der Stand der Nacharbeit. `PluginProcessor.cpp` hat SONDE-009
+  dagegen sehr wohl angefasst (114 Zeilen, Stempelaufbau) — der U10-Term ist dabei
+  nur **verschoben** worden (`:265-271` → `:300-306`), und dass er heute noch lebt
+  und deckt, ist nicht gelesen, sondern mit M3 gemessen.
 - **Die U10-Formel an der Quelle** (`PluginProcessor.cpp:300-306`, `spielt` bei
   `:272`) deckt sich Term für Term mit dem, was `CLAUDE.md` behauptet.
-- **§32.3 im Entwurf gelesen** (Z. 1653): „Ein Sprung, Stop/Start, Loop-Wrap,
+- **§32.3 im Entwurf gelesen** (Z. 1654): „Ein Sprung, Stop/Start, Loop-Wrap,
   Sampleratewechsel oder Hostreset beginnt eine neue `transport_epoch`" — ohne
   Bindung an laufende Wiedergabe. T2-3 und T2-4 stützen sich zu Recht darauf.
 - **§9.7 Punkt 2 ist datiert, nicht falsch.** „`nakamaBlockEmpfangen()` hat kein
@@ -1578,8 +1591,9 @@ dem Augenblick dazwischen als veraltet verworfen wird." Drei Messungen dazu:
 
 **Einstufung: niedrig.** Kein heute erreichbarer Fehler. Was fehlt, ist die
 Deckung: die Garantie kommt vom Ziel, nicht vom Code, und kein Bein hält sie
-fest. `SONDE-009` hat §9.7 Punkt 3 („kein Thread-Sanitizer") unverändert
-übernommen — der Punkt bleibt damit auch dort offen. Wer ihn schließt, macht die
+fest. Seither ist dazu auch nichts hinzugekommen — `SONDE-009.md` führt „**kein
+Thread-Sanitizer**" in jeder seiner eigenen „was nicht geprüft"-Listen
+(`:6944`, `:7434`, `:7860`, `:8191`, `:8578`). Wer ihn schließt, macht die
 beiden Zugriffe zu einem `release`/`acquire`-Paar (dann trägt der Code die Zusage
 selbst) **oder** schreibt ins Bein, was M7 fallen lässt. **Das Argument allein
 darf nicht stehen bleiben**, denn es beschreibt heute den falschen Schadensfall.

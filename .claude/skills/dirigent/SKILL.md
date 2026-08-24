@@ -171,12 +171,22 @@ node C:/Users/phili/.claude/mcp-servers/whatsapp-mcp-ts/nachricht.mjs "<jid>" "<
 
 Grund, am 24.08. gemessen: Claude Code startet den WhatsApp-MCP **je Session**
 als eigenen Prozess, WhatsApp erlaubt pro verknüpftem Gerät aber nur **einen**
-Socket. Jeder Spawn verdrängt die ältere Instanz (`connectionReplaced`) — und
-der Dirigent ist immer die älteste. `send_message` aus dem Dirigenten schlägt
-darum **strukturell** fehl, nicht zufällig. Dieselbe Klasse wie „zwei Broker auf
+Socket. `connectionReplaced` (440) trifft immer die **ältere** Verbindung, und
+der MCP-Server reagiert auf sein Verdrängtwerden mit `Reconnecting…` — er
+verdrängt also sofort zurück und gewinnt strukturell gegen jeden, der nicht
+reagiert. `send_message` aus einer langlebigen Session schlägt darum
+**zuverlässig** fehl, nicht gelegentlich. Dieselbe Klasse wie „zwei Broker auf
 einem Pipenamen stehlen sich still Clients" (`CLAUDE.md`, Maschinen-Landminen):
 eine von Natur aus einzelne Ressource, betrieben von einem Werkzeug, das pro
-Session eine Instanz startet. Der Sender belegt sie nur für Sekunden.
+Session eine Instanz startet.
+
+Der Sender löst das in drei Schritten, jeder einzeln gemessen: er beendet
+leerlaufende Instanzen, **lässt die Sitzung serverseitig abklingen** (ein Kill
+meldet den Socket nicht bei WhatsApp ab; wer sofort danach verbindet, bekommt
+die Verdrängungsmeldung des Geistes) und wiederholt bis zu dreimal.
+**Exit 0 heißt wirklich gesendet** — der erste Wurf maß den Erfolg am Zustand
+der *Verbindung* statt am Zustand der *Nachricht* und erzeugte damit Duplikate
+bei gleichzeitig lügendem Exitcode. Unter laufender Konkurrenz vorgeführt.
 
 - **Auslöser:** jede fertige Session — nicht jeder Commit, nicht jeder
   Zwischenstand.

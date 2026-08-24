@@ -157,62 +157,74 @@ wer nicht gebaut hat.
 
 Eintrag nach `docs/dirigent/protokoll.md` (§5).
 
-Dann **eine kurze Meldung an den User** — Entscheid 24.08.2026: *„du schickst
-nur nachrichten an mich selbst … das ist der offizielle weg mich zu erreichen
-ab jetzt. schreib immer wenn eine session fertig ist ein ganz kurzen bericht"*
-(Register in `CLAUDE.md`). ~~Kanal: WhatsApp~~ — **überholt am 24.08.; der Kanal
-ist die claude.ai-Routine unten.** Unverändert gilt: **nur an den User selbst,
-nie an Dritte.**
+🔑 **Der Kanal ist Matrix. Das ist eine feste Regel, kein Vorschlag.**
 
-🔑 **Der Kanal ist die claude.ai-Routine — und er trägt AUCH deine Fragen.**
+Entscheid des Users 24.08.2026: *„der dirigieren skill braucht als feste regel
+dieser kommunikationsweg. update bei jedem abschluss einer session , mindest
+stündlich sowieso und bei blockenden entscheidungen"*.
 
-Entscheid des Users 24.08.: *„ich moechte eine Meldung von ihm in der Routine,
-er haette auch vorhin die Frage dort stellen muessen."* Der Grund ist keine
-Vorliebe, sondern eine Reichweite: der User ist oft **nur per Handy** da. Eine
-Frage, die in der Nimbalyst-Unterhaltung stehenbleibt, **erreicht ihn nicht** —
-sie blockiert dich nur still. Genau das ist am 24.08. mit der Aufwandsfrage
-A/B passiert.
+Der Grund ist keine Vorliebe, sondern Reichweite: der User ist beim Dirigieren
+oft **nur per Handy** da. Eine Meldung oder Frage, die in der
+Nimbalyst-Unterhaltung stehenbleibt, **erreicht ihn nicht** — sie blockiert
+dich nur still. Genau das ist am 24.08. mit der Aufwandsfrage A/B passiert.
 
-**Routine „Nakama: Dirigent-Meldung"** — `trig_01BUKf1i5Y9ztqGkA6Ev4eff`.
-Kein Cron, `notifications.push = true`: ein **Push-Kanal auf Abruf**. So geht
-eine Meldung raus:
+**Werkzeug** (`C:\Users\phili\.claude\matrix-bridge\`, außerhalb des Repos,
+weil dort Zugangsdaten liegen):
 
-1. `RemoteTrigger {action: "update", trigger_id: "…", body: {job_config: …}}` —
-   die Meldung wörtlich zwischen die `--- MELDUNG ---`-Marker im Prompt setzen.
-   Der Prompt sagt dem Cloud-Agenten ausdrücklich: *nur wiedergeben, keine
-   Werkzeuge, nichts hinzuerfinden.*
-2. `RemoteTrigger {action: "run", trigger_id: "…"}` — der Push geht raus.
+```powershell
+py -3.13 melden.py "Ticket · Ergebnis · was als Nächstes"
+py -3.13 melden.py --datei <pfad> ["Beschriftung"]   # Bild/Datei, z. B. Render
+py -3.13 melden.py --letzte                          # Exit 1 = überfällig
+py -3.13 melden.py --status                          # Zustand des Dienstes
+```
 
-**Was hier hineingehört:** jede fertige Runde (kurz) · **jede Frage an den
-User** · jeder HALT, der auf ihn wartet. Stellst du eine Frage, sag im selben
-Text, was du in der Zwischenzeit tust — er soll nicht raten müssen, ob du
-wartest oder weiterläufst.
+**Die drei Pflichtauslöser:**
+
+1. **Jeder Abschluss einer Session.** Nicht jeder Commit, nicht jeder
+   Zwischenstand — aber jede fertige Runde, auch eine gescheiterte.
+2. **Mindestens stündlich, auch wenn nichts fertig wurde.** Läuft ein Ticket
+   länger, geht trotzdem eine Zeile raus („S9 läuft seit 40 min, Kanon 12/28").
+   Schweigen ist für den User nicht von einem Absturz zu unterscheiden.
+   **Prüfbar, nicht gutgemeint:** vor jedem neuen Ticket
+   `py -3.13 melden.py --letzte` — Exit 1 heißt überfällig, dann sofort melden.
+3. **Jede blockende Entscheidung.** Alles, was nur er entscheiden kann (Gate,
+   Produktfrage, Installation, Abnahme), geht **dorthin**, nicht in die
+   Unterhaltung. Sag im selben Text, was du in der Zwischenzeit tust — er soll
+   nicht raten müssen, ob du wartest oder weiterläufst.
+
+**Seine Antwort kommt zurück** in die Session, die in `config.json` unter
+`nimbalyst.session_id` steht — als normaler Prompt. Existiert die nicht mehr,
+sucht der Dienst selbst eine lebende Claude-Session. Du musst nichts pflegen.
+
+- **Form:** drei Zeilen. Ticket · Ergebnis (am Repo gemessen, **nie** der
+  Selbstbericht der Session) · was als Nächstes läuft. Keine Rohausgabe, kein
+  Manifest-Auszug; die Details stehen im Repo.
+- **Nur an ihn selbst.** Nie an Dritte, nie in eine Gruppe.
+- **Der Dienst muss laufen** (`dienst.py`, startet mit Windows). Er ist der
+  **einzige** Prozess, der mit Matrix spricht; `melden.py` übergibt ihm nur
+  Aufträge. Nie einen zweiten Klienten aufmachen.
+- **Scheitert eine Meldung**, ist das für Auslöser 1 und 2 kein Grund
+  anzuhalten: im Protokolleintrag vermerken und weiterfahren. Bei Auslöser 3
+  **hältst du an** — eine blockende Entscheidung, die ihn nie erreicht hat,
+  ist kein Warten, sondern ein stiller Stillstand.
+- **Rückfall**, wenn Matrix wirklich tot ist: die claude.ai-Routine
+  „Nakama: Dirigent-Meldung" (`trig_01BUKf1i5Y9ztqGkA6Ev4eff`, Push) —
+  Meldung zwischen die `--- MELDUNG ---`-Marker im Prompt, dann `run`. Sie
+  kann nur senden, nicht empfangen.
 
 ⚠️ **WhatsApp gibt es nicht mehr** (User 24.08.: *„wir machen das anders ,
-nichtmehr über whatsapp das funktioniert ."*). Der MCP, der Daemon, der
-Autostart-Eintrag und das ganze Gerüst sind **entfernt** — es gibt dort nichts
-mehr aufzurufen. Als Messenger ist **Matrix (E2EE)** entschieden, aber **noch
-nicht gebaut**; bis dahin ist die claude.ai-Routine oben der einzige Kanal.
+nichtmehr über whatsapp das funktioniert ."*). MCP, Daemon, Autostart und
+Gerüst sind **entfernt** — dort ist nichts mehr aufzurufen.
 
 🚨 **Die teuerste Lehre daraus, und sie überlebt den Kanal:** die Frage lautete
 „wie gewinne ich den Socket?" statt **„darf hier überhaupt ein zweiter Client
 existieren?"** — und die Antwort auf die zweite Frage war von Anfang an nein.
-Ein selbstgebauter zweiter WhatsApp-Client hat damit die Gerätekopplung
-gelöst und den Kanal getötet. Dieselbe Klasse wie „zwei Broker auf einem
-Pipenamen stehlen sich still Clients" (`CLAUDE.md`, Maschinen-Landminen).
-**Die Berechtigungsfrage kommt vor der Technikfrage** — das gilt für die
-Matrix-Brücke genauso.
-
-- **Auslöser:** jede fertige Session — nicht jeder Commit, nicht jeder
-  Zwischenstand.
-- **Form:** drei Zeilen. Ticket · Ergebnis (am Repo gemessen, nie der
-  Selbstbericht der Session) · was als Nächstes läuft. Keine Rohausgabe,
-  kein Manifest-Auszug; die Details stehen im Repo.
-- **Nur an ihn selbst.** Nie an Dritte, nie in eine Gruppe. Jede Meldung
-  schreibt nach draußen — diese Freigabe deckt genau einen Empfänger.
-- Scheitert der Versand, ist das **kein Grund anzuhalten**: einmal im
-  Protokolleintrag vermerken und weiterfahren. Der Kanal ist ein Rückkanal,
-  kein Riegel.
+Ein selbstgebauter zweiter WhatsApp-Client hat die Gerätekopplung gelöst und
+den Kanal getötet. Dieselbe Klasse wie „zwei Broker auf einem Pipenamen
+stehlen sich still Clients" (`CLAUDE.md`, Maschinen-Landminen).
+**Die Berechtigungsfrage kommt vor der Technikfrage** — bei Matrix genauso:
+zwei Prozesse auf einem Kryptospeicher legen sich Megolm-Sitzungen an, die der
+jeweils andere nicht kennt.
 
 Dann zurück zu 3.1.
 

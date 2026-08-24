@@ -53,6 +53,16 @@
 >
 > - **Melden:** `py -3.13 melden.py "Ticket · Ergebnis · was als Nächstes"`
 >   (aus dem Brücken-Ordner). `--status` zeigt den Zustand.
+> - **Bild/Datei an den User:** `py -3.13 melden.py --datei <pfad> ["Text"]`
+>   — verschlüsselt, mit Bildmaßen, damit die Vorschau auf dem Handy stimmt.
+>   Das ist der Weg für `/fragen`: Design-Stand hinschicken, Antwort kommt
+>   zurück. ⚠️ Anhänge kann **nur der Dienst** senden; läuft er nicht, bricht
+>   `melden.py` mit Exit 3 ab (Text hat einen Notweg, Dateien bewusst nicht —
+>   verschlüsselten Upload zweimal zu pflegen hieße zwei Kopien, die
+>   auseinanderlaufen).
+> - **Vom User kommen Text, Bilder und Dateien an.** Anhänge landen
+>   entschlüsselt unter `eingang/`, der Pfad steht im zugestellten Prompt.
+>   Ein Nachhol-Lauf beim Start reicht nach, was ein Absturz verschluckt hat.
 > - **Rückweg:** Antworten des Users landen als Prompt in der Session, die in
 >   `config.json` unter `nimbalyst.session_id` steht. Ist die weg, sucht der
 >   Dienst **selbst** die neueste lebende claude-code-Session, liefert dorthin,

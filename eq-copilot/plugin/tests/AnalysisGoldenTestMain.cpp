@@ -470,8 +470,10 @@ void grenzfall (const juce::String& name, Grenzgrund erwartet,
 // Akkus, fuer den K-Filterzustand, fuer die 3-s-Historie und fuer jedes Feld,
 // das es heute noch nicht gibt.
 //
-// 🔑 WARUM DAS UEBERHAUPT GEHT, steht in `FeatureEngine.h:1096`: `liveSamples`
-// waechst je Block UNBEDINGT, inhaltsunabhaengig.  Die zwei Kadenzzaehler, die
+// 🔑 WARUM DAS UEBERHAUPT GEHT, steht am ENDE von `verarbeiteSamples()`:
+// `liveSamples += n` laeuft dort UNBEDINGT, inhaltsunabhaengig.  (Bewusst ohne
+// Zeilennummer — T2R2-3 war genau so ein Verweis, der nach ein paar Edits
+// danebenzeigte.)  Die zwei Kadenzzaehler, die
 // eine Grenze nach dem Entscheid §10.1 absichtlich UEBERLEBEN, koennen zwischen
 // den Zwillingen deshalb gar nicht auseinanderlaufen — die Probe steht dem
 // Entscheid nicht im Weg, sie lebt von ihm.  Wer ihn kippen wollte, wird von

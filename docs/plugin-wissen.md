@@ -180,7 +180,8 @@ verschiedenen Fragen** (Stand 24.08., nach zwei T2-Runden; Manifest
    jeder Frame **feldgleich** sein. Verglichen wird mit
    `FeatureFrame::operator== = default`: memberweise, vom **Compiler** gepflegt,
    also ist ein künftig hinzugefügtes Feld automatisch gedeckt. Möglich ist das
-   nur, weil `liveSamples` inhaltsunabhängig wächst (`:1096`) — die Zwillinge
+   nur, weil `liveSamples` am Ende von `verarbeiteSamples()` **unbedingt**
+   wächst, inhaltsunabhängig — die Zwillinge
    bleiben deshalb in exakt gleicher Kadenz.
 
 ⚠️ **Keins ersetzt das andere.** Bandgetorte Träger (`liveBreiteAkku` erreicht

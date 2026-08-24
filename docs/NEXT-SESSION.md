@@ -74,7 +74,8 @@
 > die positive Hälfte gab es in **6 von 9** Grenzfällen (nicht neun), der Wert
 > ist **690** je Fall (die Zahl **1435** kommt im Lauf nicht vor) — G3, G4, G5
 > sind nachgerüstet, jetzt sind es **9 von 9**; und das Aktivitätsgate steht bei
-> `FeatureEngine.h:1144`, nicht `:992`. Die Diagnosezeile druckt `Breite` jetzt
+> `if (! aktiv)` in `rechneFenster()` — im geprüften Stand `FeatureEngine.h:1144`,
+> nicht `:992`; heute (nach dieser Nacharbeit) `:1198`. Die Diagnosezeile druckt `Breite` jetzt
 > als Bänderzahl + Exponent (`196B/2.660e-04` statt `0.000`) — eine Diagnose,
 > die bei echtem Bruch alle Träger unschuldig aussehen lässt, ist schlimmer als
 > keine.

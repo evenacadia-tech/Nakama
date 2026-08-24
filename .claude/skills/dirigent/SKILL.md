@@ -157,10 +157,12 @@ wer nicht gebaut hat.
 
 Eintrag nach `docs/dirigent/protokoll.md` (§5).
 
-Dann **eine kurze WhatsApp an den User** — Entscheid 24.08.2026: *„du schickst
+Dann **eine kurze Meldung an den User** — Entscheid 24.08.2026: *„du schickst
 nur nachrichten an mich selbst … das ist der offizielle weg mich zu erreichen
 ab jetzt. schreib immer wenn eine session fertig ist ein ganz kurzen bericht"*
-(Register in `CLAUDE.md`). Die Zieladresse steht **nicht im Repo**, sondern im
+(Register in `CLAUDE.md`). ~~Kanal: WhatsApp~~ — **überholt am 24.08.; der Kanal
+ist die claude.ai-Routine unten.** Unverändert gilt: **nur an den User selbst,
+nie an Dritte.** Die WhatsApp-Zieladresse steht **nicht im Repo**, sondern im
 Memory `feedback_whatsapp-berichtskanal`.
 
 🔑 **Der Kanal ist die claude.ai-Routine — und er trägt AUCH deine Fragen.**

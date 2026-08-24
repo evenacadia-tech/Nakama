@@ -187,6 +187,24 @@ struct Speiser
         return r;
     }
 
+    /** Wie `senden`, aber mit FERTIGEM Audio: der Aufrufer liefert den
+        interleavten Puffer selbst.
+
+        🔑 DAS IST DIE VORAUSSETZUNG DER ZWILLINGSPROBE (G13).  `senden` und
+        `sendenMit` erzeugen ihr Audio je Speiser — zwei Speiser lieferten damit
+        nur dann dieselben Samples, wenn ihre Rauschzustaende Zug um Zug
+        gleichlaufen.  Ein Bein, das BITGLEICHHEIT zweier Engines behauptet,
+        darf diese Gleichheit nicht selbst voraussetzen, sondern muss sie
+        herstellen: derselbe Puffer geht in beide. */
+    bool sendenRoh (const rt::StampedBlock& b, const std::vector<float>& stereo)
+    {
+        const bool r = engine.nimmBlock (b, stereo.data());
+        strom   += b.sampleCount;
+        if ((b.flags & rt::kFlagZeitGueltig) != 0 && (b.flags & rt::kFlagSpielt) != 0)
+            projekt += (std::int64_t) b.sampleCount;
+        return r;
+    }
+
     /** `n` normale, lueckenlose Bloecke. */
     void laufen (int n)
     {
@@ -280,9 +298,23 @@ juce::String fuellstaende (const FeatureEngine& e)
          // T2-1: die vier Traeger, an denen der Bruch unsichtbar war. Sie
          // stehen hier mit in der Diagnosezeile, damit eine rote Zeile
          // gleich sagt, WELCHER Traeger ueberbrueckt hat.
+         //
+         // ⚠️ ZWEI BERICHTIGUNGEN AN DIESEM VERSPRECHEN (T2R2-4, 24.08.):
+         // (1) `Breite` stand mit drei Nachkommastellen da und druckte den
+         //     gemessenen Wert 2,6e-04 als `0.000` — vor UND nach der Grenze.
+         //     Mutation P2 machte zehn Zeilen rot, und in JEDER sahen alle vier
+         //     Traeger unauffaellig aus.  Jetzt steht die Anzahl belegter
+         //     Baender davor (eine Anzahl rundet nicht auf null) und die Summe
+         //     in Exponentialschreibweise dahinter.
+         // (2) Die Zeile zeigt die Traeger MIT AUSKUNFT.  Die zehn
+         //     Rahmen-Skalare haben keine und stehen deshalb NICHT hier — sie
+         //     sind von aussen nur ueber den FRAME sichtbar, und genau dort
+         //     deckt sie G13 (Zwillingsprobe).  Diese Zeile behauptet also
+         //     nicht mehr, jeden Traeger zu nennen.
          + " LiveAkku=" + juce::String (e.liveAkkuBelegteBaender())
          + " EvidAkku=" + juce::String (e.evidenzAkkuBelegteBaender())
-         + " Breite=" + juce::String (e.liveBreiteAkkuZustand(), 3)
+         + " Breite=" + juce::String (e.liveBreiteAkkuBelegteBaender()) + "B/"
+         + juce::String (e.liveBreiteAkkuZustand(), 3, true)
          + " RZellen=" + juce::String ((int) e.rahmenZellenJetzt());
 }
 
@@ -406,6 +438,289 @@ void grenzfall (const juce::String& name, Grenzgrund erwartet,
                 name + ": zaehlt als SEGMENT, nicht als Epoche (§32.3)",
                 "Epochen " + juce::String (e.epochenwechsel())
                 + " Segmente " + juce::String (e.segmentwechsel()));
+}
+
+//==============================================================================
+// ── G13: DIE ZWILLINGSPROBE ─────────────────────────────────────────────────
+//
+// 🔑 DIE ANTWORT AUF T2R2-1, UND SIE IST BEWUSST KEINE LAENGERE FELDLISTE.
+//
+// Dieses Ticket hat dieselbe Lehre zweimal bezahlt.  T2-1: die drei Bandakkus
+// standen nicht auf der Liste in `grenzeZiehen()`, und kein Bein sah es.
+// T2R2-1: die Leerung der zehn Rahmen-Skalare liess sich entfernen, ohne dass
+// eine einzige Zeile rot wurde (gemessen 24.08.: `155 bestanden, 0 Fehler`).
+// Beide Male war der Fix richtig und das Bein blind, und beide Male aus
+// demselben Grund: DIE PRUEFFRAGE LAUTETE "welche AUSKUNFT steht auf null?".
+// Diese Frage kann nur Felder sehen, die eine Auskunft haben.  Die zehn
+// Rahmen-Skalare haben keine — und jedes Feld, das jemand morgen hinzufuegt,
+// hat auch keine.  Eine Liste im Bein neben der Liste in `grenzeZiehen()` waere
+// die Ursache noch einmal, nicht die Kur: zwei Listen laufen auseinander.
+//
+// Deshalb wechselt hier die FRAGE, nicht die Liste:
+//
+//     EINE GRENZE MACHT DIE ENGINE UNUNTERSCHEIDBAR VON EINER,
+//     DIE DAS FRUEHERE AUDIO NIE GESEHEN HAT.
+//
+// Zwei Engines, dieselbe Blockfolge Zug um Zug, GEGENSAETZLICHER Inhalt davor
+// (A: zwei laute Toene, B: digitale Stille), dann in beiden dieselbe Grenze und
+// danach BITGLEICHES Audio in beide.  Ab da muss jeder Frame in A byteweise
+// derselbe sein wie in B.  Ueberlebt IRGENDEIN Traeger die Grenze und erreicht
+// den Frame, tragen A und B verschiedene Zahlen — ohne dass dieses Bein den
+// Traeger kennen muesste.  Das gilt fuer die zehn Rahmen-Skalare, fuer die drei
+// Akkus, fuer den K-Filterzustand, fuer die 3-s-Historie und fuer jedes Feld,
+// das es heute noch nicht gibt.
+//
+// 🔑 WARUM DAS UEBERHAUPT GEHT, steht in `FeatureEngine.h:1096`: `liveSamples`
+// waechst je Block UNBEDINGT, inhaltsunabhaengig.  Die zwei Kadenzzaehler, die
+// eine Grenze nach dem Entscheid §10.1 absichtlich UEBERLEBEN, koennen zwischen
+// den Zwillingen deshalb gar nicht auseinanderlaufen — die Probe steht dem
+// Entscheid nicht im Weg, sie lebt von ihm.  Wer ihn kippen wollte, wird von
+// G12 rot gemacht, nicht von hier; jedes Bein misst genau eine Sache.
+//
+// ⚠️ WAS DIESE PROBE NICHT DECKT, und das gehoert dazu: einen Traeger, der die
+// Grenze ueberlebt, aber NIE einen Frame erreicht.  Ein solcher Traeger ist
+// vom Vertrag her unsichtbar — der Empfaenger sieht Frames.  Und sie deckt
+// nicht die PLAUSIBILITAET der Werte (NAK-68), sondern nur ihre Herkunft.
+//
+// ⚠️ VERGLICHEN WIRD MIT `operator==`, NICHT MIT `memcmp` — und das ist eine
+// GEMESSENE Entscheidung, kein Geschmack.  Die erste Fassung dieses Beins
+// verglich Bytes; sie meldete in allen sechs Faellen 18 bis 21 abweichende
+// Bytes, ohne einen einzigen Feldunterschied.  Die Offsets (26..29, 46..47,
+// 59..61, 89) lagen samt und sonders in FUELLBYTES des Transportstempels, an
+// 46/47 standen die oberen Bytes einer `double 1.0` aus einem frueheren
+// Objekt.  Fuellbytes sind unbeobachtbar, also darf `/O2` ihr Nullen
+// weglassen — auch bei `FeatureFrame f {}`.  `operator== = default` vergleicht
+// memberweise, ignoriert Fuellbytes und wird vom COMPILER gepflegt: ein neues
+// Feld ist automatisch dabei.  Das ist dieselbe Eigenschaft, die der Byte-
+// vergleich haben sollte, nur ohne seinen Fehler.
+
+/** Was an zwei Frames verschieden ist — DIAGNOSE, NICHT DECKUNG.
+
+    ⚠️ Die Deckung ist `a == b` in `zwillingsprobe()` und damit der vom Compiler
+    erzeugte memberweise Vergleich.  Diese Aufzaehlung macht eine rote Zeile nur
+    LESBAR.  Wer ein Feld zu `FeatureFrame` hinzufuegt und hier vergisst,
+    verliert Lesbarkeit — keine Schaerfe; der Vergleich schlaegt trotzdem an,
+    und die letzte Zeile dieser Funktion sagt dann ausdruecklich, dass der
+    Unterschied in einem nicht gezeigten Feld liegt.  Genau darin liegt der
+    Unterschied zu der Liste, die T2-1 und T2R2-1 erzeugt hat. */
+juce::String frameUnterschied (const FeatureFrame& a, const FeatureFrame& b)
+{
+    juce::String s;
+    auto zeige = [&s] (const char* was, bool gesetztA, float wertA,
+                       bool gesetztB, float wertB)
+    {
+        if (gesetztA != gesetztB || bitsVon (wertA) != bitsVon (wertB))
+            s += " " + juce::String (was) + "=" + (gesetztA ? juce::String (wertA, 3) : juce::String ("-"))
+               + "/" + (gesetztB ? juce::String (wertB, 3) : juce::String ("-"));
+    };
+    zeige ("peakDb",      a.peakGesetzt,        a.peakDb,      b.peakGesetzt,        b.peakDb);
+    zeige ("crestDb",     a.crestGesetzt,       a.crestDb,     b.crestGesetzt,       b.crestDb);
+    zeige ("psrDb",       a.psrGesetzt,         a.psrDb,       b.psrGesetzt,         b.psrDb);
+    zeige ("breite",      a.breiteGesetzt,      a.breite,      b.breiteGesetzt,      b.breite);
+    zeige ("korrelation", a.korrelationGesetzt, a.korrelation, b.korrelationGesetzt, b.korrelation);
+    zeige ("lufsS",       a.lufsSGesetzt,       a.lufsS,       b.lufsSGesetzt,       b.lufsS);
+    zeige ("aktivitaet",  a.aktivitaetGesetzt,  a.aktivitaet,  b.aktivitaetGesetzt,  b.aktivitaet);
+
+    int liveA = 0, liveB = 0, evA = 0, evB = 0;
+    for (int i = 0; i < Gitter::liveBaender; ++i)
+    {
+        if (bitmapLies (a.live.bitmap, i)) ++liveA;
+        if (bitmapLies (b.live.bitmap, i)) ++liveB;
+    }
+    for (int i = 0; i < Gitter::evidenzBaender; ++i)
+    {
+        if (bitmapLies (a.evidenz.bitmap, i)) ++evA;
+        if (bitmapLies (b.evidenz.bitmap, i)) ++evB;
+    }
+    if (liveA != liveB)
+        s += " liveBaender=" + juce::String (liveA) + "/" + juce::String (liveB);
+    if (evA != evB)
+        s += " evidenzBaender=" + juce::String (evA) + "/" + juce::String (evB);
+    if (a.transport.sequence != b.transport.sequence)
+        s += " sequence=" + juce::String ((int) a.transport.sequence)
+           + "/" + juce::String ((int) b.transport.sequence);
+    if (a.transport.transport_epoch != b.transport.transport_epoch)
+        s += " epoch=" + juce::String ((int) a.transport.transport_epoch)
+           + "/" + juce::String ((int) b.transport.transport_epoch);
+    // 🔑 DIE EHRLICHE ZEILE: die Aufzaehlung oben ist Lesbarkeit, nicht Deckung.
+    // Findet sie nichts, obwohl `operator==` ungleich meldet, sagt sie das —
+    // statt eine leere Diagnose zu drucken, die wie "alles unauffaellig"
+    // aussieht.  Das ist derselbe Fehler, den T2R2-4 an `Breite=0.000` gefunden
+    // hat: eine Diagnose, die bei echtem Bruch unschuldig aussieht, ist
+    // schlimmer als keine.
+    if (s.isEmpty())
+        s = "der Unterschied liegt in einem Feld, das diese Diagnose nicht "
+            "namentlich zeigt - `operator==` deckt mehr als sie";
+    return s;
+}
+
+/** Ereignisse, die der Ring der JETZIGEN Epoche/Segment zuschreibt.
+
+    Der Ring wird an einer Grenze bewusst NICHT geleert (`rahmenLeeren()`:
+    "ein Ereignis gehoert zu seiner Epoche, es traegt sie mit").  Damit dieser
+    Entscheid nicht bloss dasteht, zaehlt die Zwillingsprobe die Ereignisse
+    NACH Epoche: ein Fluss, der ueber die Grenze gerechnet wuerde, erfaende
+    einen Onset in der NEUEN Epoche — und dann traegt A einen, den B nicht hat. */
+int ereignisseDieserEpoche (const FeatureEngine& e)
+{
+    int n = 0;
+    for (int i = 0; i < e.ereignisAnzahlJetzt(); ++i)
+        if (e.ereignis (i).epoche == e.transportEpocheJetzt()
+            && e.ereignis (i).segment == e.segmentJetzt())
+            ++n;
+    return n;
+}
+
+void zwillingsprobe (const juce::String& name, Grenzgrund erwartet,
+                     const std::function<rt::StampedBlock (Speiser&)>& grenzblock,
+                     const std::function<rt::StampedBlock (Speiser&)>& nachBlock,
+                     int vorlauf = 340, int nachlauf = 140)
+{
+    constexpr double kZweiPi = 6.283185307179586476925286766559;
+    const double fs = 48000.0;
+    FeatureEngine eA, eB;
+    eA.vorbereiten (fs);
+    eB.vorbereiten (fs);
+    Speiser sA { eA }, sB { eB };
+    const int n = sA.frames;
+
+    std::vector<float> laut  ((std::size_t) n * 2u, 0.0f);
+    std::vector<float> leise ((std::size_t) n * 2u, 0.0f);
+    const std::vector<float> stille ((std::size_t) n * 2u, 0.0f);
+
+    // Das leise Audio NACH der Grenze: eigener, fester Zufall — es geht als
+    // DERSELBE Puffer in beide Engines, damit die behauptete Bitgleichheit
+    // nicht die Gleichheit zweier Generatoren voraussetzt.  Dekorreliert (L und
+    // R aus eigenen Zuegen), damit auch die Stereo-Traeger etwas zu rechnen
+    // haben, und mit rund -38 dBFS deutlich ueber dem Aktivitaetsgate (-60 dB),
+    // aber weit unter dem Ton davor: ein ueberlebender Peak dominiert dann.
+    std::uint32_t lcg = 0x13579bdfu;
+    auto leiseFuellen = [&]
+    {
+        auto zug = [&lcg]
+        {
+            lcg = lcg * 1664525u + 1013904223u;
+            return (float) (0.02 * (((double) ((lcg >> 8) & 0xffffu) / 32768.0) - 1.0));
+        };
+        for (int k = 0; k < n; ++k)
+        {
+            leise[(std::size_t) k * 2u]      = zug();
+            leise[(std::size_t) k * 2u + 1u] = zug();
+        }
+    };
+
+    // ── Vorlauf: gleiche Bloecke, gegensaetzlicher Inhalt ───────────────────
+    auto vorlaufBlock = [&]
+    {
+        const auto b = sA.bauen();
+        for (int k = 0; k < n; ++k)
+        {
+            const double t = (double) (sA.strom + (std::uint64_t) k) / fs;
+            laut[(std::size_t) k * 2u]      = (float) (0.50 * std::sin (kZweiPi * 1000.0 * t));
+            laut[(std::size_t) k * 2u + 1u] = (float) (0.31 * std::sin (kZweiPi * 1487.0 * t + 0.7));
+        }
+        sA.sendenRoh (b, laut);
+        sB.sendenRoh (sB.bauen(), stille);   // gleicher Block, leerer Inhalt
+    };
+    for (int i = 0; i < vorlauf; ++i)
+        vorlaufBlock();
+
+    // ⚠️ DIESELBE PHASENFALLE WIE IN `bisBandakkuGefuellt`, und sie hat beim
+    // ersten Lauf zugeschlagen: nach einer festen Blockzahl kann der letzte
+    // Frame gerade gefallen sein, dann hat `rahmenLeeren()` die Akkus schon
+    // geraeumt und A saehe aus wie B.  Der Zustand wird deshalb HERGESTELLT,
+    // nicht ausgerechnet — und weil B nie Inhalt traegt, fuehrt A die
+    // Schleife; gesendet wird trotzdem in BEIDE, sonst liefe die Kadenz
+    // auseinander und der ganze Vergleich waere hinfaellig.
+    for (int i = 0; i < 400 && ! (sA.akkusTragenInhalt() && ! sA.frameStehtAn()); ++i)
+        vorlaufBlock();
+
+    // Die Vorbedingung, ohne die der ganze Vergleich nichts sagt: die beiden
+    // sind VOR der Grenze wirklich verschieden.  Ohne diese Zeile koennte die
+    // Probe zweimal denselben leeren Zustand vergleichen und waere gruen, weil
+    // sie nichts misst — genau die Sorte Gegenprobe, die §10.4 (T2-4) als
+    // Tautologie entlarvt hat.
+    pruefe (eA.liveAkkuBelegteBaender() > 0 && eA.evidenzAkkuBelegteBaender() > 0
+              && eA.liveBreiteAkkuBelegteBaender() > 0 && eA.kFilterZustand() > 0.0
+              && eA.rahmenAktivZellenJetzt() > 0,
+            name + " [Zwilling]: A traegt vor der Grenze auf JEDEM Traeger etwas",
+            fuellstaende (eA) + " kFilter=" + juce::String (eA.kFilterZustand(), 3, true)
+            + " RAktiv=" + juce::String ((int) eA.rahmenAktivZellenJetzt()));
+    pruefe (eB.liveAkkuBelegteBaender() == 0 && eB.evidenzAkkuBelegteBaender() == 0
+              && eB.liveBreiteAkkuBelegteBaender() == 0 && eB.kFilterZustand() == 0.0
+              && eB.rahmenAktivZellenJetzt() == 0,
+            name + " [Zwilling]: B traegt auf keinem - die zwei sind wirklich verschieden",
+            fuellstaende (eB) + " kFilter=" + juce::String (eB.kFilterZustand(), 3, true)
+            + " RAktiv=" + juce::String ((int) eB.rahmenAktivZellenJetzt()));
+
+    // ── Die Grenze, in beiden derselbe Block mit demselben Audio ────────────
+    const auto grundVorher = eA.grenzenMitGrund (erwartet);
+    leiseFuellen();
+    const auto gA = grenzblock (sA);
+    const auto gB = grenzblock (sB);
+    sA.sendenRoh (gA, leise);
+    sB.sendenRoh (gB, leise);
+    pruefe (eA.grenzenMitGrund (erwartet) == grundVorher + 1
+              && eB.grenzenMitGrund (erwartet) == grundVorher + 1,
+            name + " [Zwilling]: beide haben die Grenze " + grundName (erwartet) + " gezogen",
+            "A " + juce::String ((int) eA.grenzenMitGrund (erwartet))
+            + " / B " + juce::String ((int) eB.grenzenMitGrund (erwartet)));
+
+    // ── Nachlauf: bitgleiches Audio in beide, jeder Frame verglichen ────────
+    int frames = 0, ungleich = 0, kadenzUngleich = 0, mitBaendern = 0, erstesUngleich = -1;
+    juce::String ersteDiagnose;
+    for (int i = 0; i < nachlauf; ++i)
+    {
+        leiseFuellen();
+        const bool a = sA.sendenRoh (nachBlock (sA), leise);
+        const bool b = sB.sendenRoh (nachBlock (sB), leise);
+        if (a != b) { ++kadenzUngleich; continue; }
+        if (! a) continue;
+        ++frames;
+
+        const auto& fa = eA.frame();
+        const auto& fb = eB.frame();
+        if (! (fa == fb))
+        {
+            ++ungleich;
+            if (erstesUngleich < 0)
+            {
+                erstesUngleich = i;
+                ersteDiagnose = frameUnterschied (fa, fb);
+            }
+        }
+        for (int bd = 0; bd < Gitter::liveBaender; ++bd)
+            if (bitmapLies (fa.live.bitmap, bd)) { ++mitBaendern; break; }
+    }
+
+    pruefe (kadenzUngleich == 0,
+            name + " [Zwilling]: beide bauen ihre Frames im selben Block - die Uhr "
+            "haengt nicht am Inhalt (Entscheid §10.1)",
+            juce::String (kadenzUngleich) + " Bloecke auseinander");
+    pruefe (frames >= 8,
+            name + " [Zwilling]: es wurden ueberhaupt genug Frames verglichen",
+            juce::String (frames) + " Frames");
+    // Zweite Vorbedingung: die verglichenen Frames tragen wirklich Messwerte.
+    // Zwei leere Frames waeren auch dann gleich, wenn alles ueberlebte.
+    // Hoechstens der ERSTE darf leer sein: das 4096-Punkte-Fenster der
+    // Hauptstufe braucht nach der Grenze acht Bloecke, bis es wieder ein
+    // Spektrum liefert, und der erste Frame faellt schon nach 9,375 — je nach
+    // Phase liegt er davor.  Verglichen wird er trotzdem, er ist der
+    // interessanteste.
+    pruefe (frames > 0 && mitBaendern >= frames - 1,
+            name + " [Zwilling]: und sie tragen Messwerte - verglichen wird nicht zweimal Stille",
+            juce::String (mitBaendern) + " von " + juce::String (frames) + " mit Live-Baendern");
+    pruefe (ungleich == 0,
+            name + " [Zwilling]: nach der Grenze ist A von B in JEDEM FELD nicht zu "
+            "unterscheiden - kein Traeger hat ueberbrueckt (T2R2-1)",
+            ungleich == 0 ? juce::String (frames) + " Frames feldgleich"
+                          : juce::String (ungleich) + " von " + juce::String (frames)
+                            + " ungleich, erster bei Block " + juce::String (erstesUngleich)
+                            + "; " + ersteDiagnose);
+    pruefe (ereignisseDieserEpoche (eA) == ereignisseDieserEpoche (eB),
+            name + " [Zwilling]: und keiner erfindet ein Ereignis in der neuen Epoche",
+            "A " + juce::String (ereignisseDieserEpoche (eA))
+            + " / B " + juce::String (ereignisseDieserEpoche (eB)));
 }
 
 /** |H(e^{jw})|² eines Biquads — analytisch, ohne den Zeitbereichspfad. */
@@ -818,11 +1133,19 @@ int main()
                 juce::String ((int) e.epochenwechsel()) + " Epochenwechsel");
 
         const auto vorher = e.grenzenMitGrund (Grenzgrund::zeitSprung);
+        const auto verworfenVorher = e.verworfeneBandfenster();
         s.projekt += 480000;                 // der User zieht den Playhead
         auto b = s.bauen (0, false);
         s.senden (b);
         pruefe (keinFensterUeberbrueckt (e, s.frames, s.sr),
                 "G3: eine SPRINGENDE Zeit bei Stopp trennt jedes Fenster", fuellstaende (e));
+        // T2R2-2 (24.08.): die positive Haelfte gab es hier NICHT — G3, G4 und
+        // G5 bauen sich selbst auf statt ueber `grenzfall()`, und die Zusage
+        // "jeder der neun Grenzfaelle prueft sie" war damit fuer drei falsch.
+        pruefe (e.verworfeneBandfenster() > verworfenVorher,
+                "G3: und die Bandakkus wurden dabei WIRKLICH verworfen",
+                juce::String ((int) (e.verworfeneBandfenster() - verworfenVorher))
+                + " Band-Fensterbeitraege gefallen");
         pruefe (e.grenzenMitGrund (Grenzgrund::zeitSprung) == vorher + 1,
                 "G3: und sie heisst zeitSprung, nicht lokaleLuecke");
     }
@@ -858,6 +1181,7 @@ int main()
         pruefe (s.akkusTragenInhalt(), "G4: und die Bandakkus tragen Inhalt", fuellstaende (e));
 
         const auto vorher = e.grenzenMitGrund (Grenzgrund::loopWrap);
+        const auto verworfenVorher = e.verworfeneBandfenster();
         s.projekt -= 480000;                 // zurueck an den Schleifenanfang
         auto b = s.bauen (loop);
         b.tempo = bpm; b.ppqPosition = 96.0;
@@ -865,6 +1189,10 @@ int main()
         s.senden (b);
         pruefe (keinFensterUeberbrueckt (e, s.frames, s.sr),
                 "G4 Loop-Wrap: jedes Fenster getrennt", fuellstaende (e));
+        pruefe (e.verworfeneBandfenster() > verworfenVorher,   // T2R2-2
+                "G4: und die Bandakkus wurden dabei WIRKLICH verworfen",
+                juce::String ((int) (e.verworfeneBandfenster() - verworfenVorher))
+                + " Band-Fensterbeitraege gefallen");
         pruefe (e.grenzenMitGrund (Grenzgrund::loopWrap) == vorher + 1,
                 "G4: und die Ursache heisst loopWrap, nicht zeitSprung");
     }
@@ -902,6 +1230,7 @@ int main()
         pruefe (s.akkusTragenInhalt(), "G5: und die Bandakkus tragen Inhalt", fuellstaende (e));
 
         const auto vorher = e.straddleVerworfen();
+        const auto verworfenVorher = e.verworfeneBandfenster();
         auto b = s.bauen (loop);
         b.tempo = bpm; b.ppqPosition = ppq;
         b.cycleStartPpq = 0.0;
@@ -910,6 +1239,10 @@ int main()
         pruefe (alleFensterLeer (e),
                 "G5 moeglicher Straddle: jedes Fenster getrennt - und WIRKLICH leer, "
                 "weil der Straddle-Block auch kein neues beginnt", fuellstaende (e));
+        pruefe (e.verworfeneBandfenster() > verworfenVorher,   // T2R2-2
+                "G5: und die Bandakkus wurden dabei WIRKLICH verworfen",
+                juce::String ((int) (e.verworfeneBandfenster() - verworfenVorher))
+                + " Band-Fensterbeitraege gefallen");
         pruefe (e.straddleVerworfen() == vorher + 1,
                 "G5: der Straddle-Block selbst wird verworfen, nicht halb verwendet");
         pruefe (e.grenzenMitGrund (Grenzgrund::moeglicherStraddle) >= 1,
@@ -1153,6 +1486,81 @@ int main()
                 + juce::String (mitEvidenz) + " mit Evidenz, "
                 + juce::String (mitAktivitaet) + " mit Aktivitaet");
     }
+
+    //==========================================================================
+    std::cout << std::endl
+              << "== G13 - ZWILLINGSPROBE: strukturelle Deckung statt Feldliste (T2R2-1) =="
+              << std::endl;
+    // G13.0 - KANN DER VERGLEICH ueberhaupt ungleich melden?  Dieselbe Frage,
+    // die §10.4 (T2-4) an der alten L2-Gegenprobe gestellt hat, nur diesmal
+    // VORHER: der ganze Abschnitt haengt an `FeatureFrame::operator==`, und ein
+    // Vergleich, der immer `true` sagt, machte jede Zeile darunter zur
+    // Tautologie.  Geprueft wird in beide Richtungen und ueber die drei
+    // Feldsorten (Skalar, Bitmap, Bandwert), damit nicht bloss EIN Member den
+    // Vergleich traegt.
+    {
+        FeatureFrame x {}, y {};
+        pruefe (x == y, "G13.0: zwei frische Frames sind gleich - der Vergleich sagt "
+                        "nicht pauschal ungleich");
+        y.peakDb = 1.0f;
+        pruefe (! (x == y), "G13.0: ein einziger geaenderter Skalar macht sie ungleich");
+        y = x; y.live.werte[17] = 42;
+        pruefe (! (x == y), "G13.0: ein einziger geaenderter Bandwert ebenso");
+        y = x; y.evidenz.bitmap[3] = 0x08;
+        pruefe (! (x == y), "G13.0: und ein einziges Bitmapbit ebenso");
+        y = x; y.transport.sequence = 5;
+        pruefe (! (x == y), "G13.0: und ein Feld im verschachtelten Transportstempel - "
+                            "der Vergleich reicht bis dorthin");
+        y = x;
+        pruefe (x == y, "G13.0: nach dem Zuruecksetzen wieder gleich - beide Richtungen "
+                        "vorgefuehrt");
+    }
+    // Sechs der neun Grenzarten laufen hier als Zwillingspaar.  Nicht dabei
+    // sind `loopWrap` und `moeglicherStraddle` (sie brauchen eine PPQ-Fuehrung
+    // in JEDEM Block, auch im Nachlauf) und der gestoppte `zeitSprung` aus G3.
+    // Das ist eine Grenze der VORFUEHRUNG, nicht der Deckung: alle neun Arten
+    // laufen durch dieselbe `grenzeZiehen()`, und die ist es, die hier geprueft
+    // wird — die Ausloesepfade selbst deckt G1..G12 auf Traegerebene ab.
+    zwillingsprobe ("G13a lokaleLuecke", Grenzgrund::lokaleLuecke,
+                    [] (Speiser& s)
+                    {
+                        ++s.segment;
+                        auto b = s.bauen (rt::kFlagLueckeDavor);
+                        s.strom += 4096;                 // die verlorene Zeit
+                        b.stromVon = s.strom;
+                        return b;
+                    },
+                    [] (Speiser& s) { return s.bauen(); });
+
+    zwillingsprobe ("G13b zeitSprung", Grenzgrund::zeitSprung,
+                    [] (Speiser& s) { s.projekt += 480000; return s.bauen(); },
+                    [] (Speiser& s) { return s.bauen(); });
+
+    zwillingsprobe ("G13c transportKante", Grenzgrund::transportKante,
+                    [] (Speiser& s) { return s.bauen (0, /*spielt*/ false); },
+                    [] (Speiser& s) { return s.bauen (0, false); });
+
+    zwillingsprobe ("G13d sampleratewechsel", Grenzgrund::sampleratewechsel,
+                    [] (Speiser& s) { s.sr = 44100.0; return s.bauen(); },
+                    [] (Speiser& s) { return s.bauen(); });
+
+    zwillingsprobe ("G13e neuanlauf", Grenzgrund::neuanlauf,
+                    [] (Speiser& s) { ++s.startFolge; return s.bauen(); },
+                    [] (Speiser& s) { return s.bauen(); });
+
+    zwillingsprobe ("G13f beweislageWechsel", Grenzgrund::beweislageWechsel,
+                    [] (Speiser& s)
+                    {
+                        auto b = s.bauen (0, true, /*zeitGueltig*/ false);
+                        b.flags &= ~rt::kFlagKontextAnwesend;
+                        return b;
+                    },
+                    [] (Speiser& s)
+                    {
+                        auto b = s.bauen (0, true, false);
+                        b.flags &= ~rt::kFlagKontextAnwesend;
+                        return b;
+                    });
 
     //==========================================================================
     std::cout << std::endl << "== H - NAK-29: bedingte Feldpflichten des Transportstempels ==" << std::endl;

@@ -164,6 +164,38 @@ Der Vermerk steht im Kopf von `BandGrid.h`.
   Telemetrie über `EqCopilotProcessor::merkmale*()` — **ohne Anzeige**
   (NAK-57).
 
+🔑 **Wie „an jeder Grenze fällt alles Offene" GEDECKT wird — zwei Beine mit
+verschiedenen Fragen** (Stand 24.08., nach zwei T2-Runden; Manifest
+`docs/beweise/SONDE-009.md` §10.1, §11.4, §12.1):
+
+1. **`keineAkkusUeberleben()` fragt Auskünfte** — je Träger eine
+   (`liveAkkuBelegteBaender()` und Nachbarn). Scharf, benennbar, und
+   **strukturell blind für alles ohne Auskunft**. Genau daran ist es zweimal
+   gescheitert: erst an den drei Bandakkus (T2-1), dann an den zehn
+   Rahmen-Skalaren (T2R2-1) — beide Male war der Code richtig und das Bein sah
+   nichts.
+2. **G13, die Zwillingsprobe, fragt den FRAME.** Zwei Engines, dieselbe
+   Blockfolge Zug um Zug, gegensätzlicher Inhalt davor (laut / digitale
+   Stille), dieselbe Grenze, danach **bitgleiches** Audio in beide — ab da muss
+   jeder Frame **feldgleich** sein. Verglichen wird mit
+   `FeatureFrame::operator== = default`: memberweise, vom **Compiler** gepflegt,
+   also ist ein künftig hinzugefügtes Feld automatisch gedeckt. Möglich ist das
+   nur, weil `liveSamples` inhaltsunabhängig wächst (`:1096`) — die Zwillinge
+   bleiben deshalb in exakt gleicher Kadenz.
+
+⚠️ **Keins ersetzt das andere.** Bandgetorte Träger (`liveBreiteAkku` erreicht
+den Frame nur über Bänder mit `liveAkku[b].n > 0`) sieht G13 nicht: der erste
+Frame nach der Grenze fällt ~1–2 Blöcke später, das 4096-Fenster braucht 8.
+Per-Sample-Träger (die `rahmen…`-Skalare) sieht dafür nur G13. **Nie eine
+zweite Feldliste neben `grenzeZiehen()` anlegen** — zwei Listen laufen
+auseinander, das ist die Ursache, nicht die Kur.
+
+⚠️ **Ein `FeatureFrame` ist nicht byteweise vergleichbar** (NAK-69): seine
+Füllbytes tragen unter `/O2` unbestimmte Werte, auch bei `FeatureFrame f {}` —
+gemessen 24.08. an 18–21 abweichenden Bytes ohne einen einzigen
+Feldunterschied. Wer ihn serialisiert, hasht oder als Golden einfriert, muss
+das **feldweise** tun.
+
 ### 1.4 Diagnose und Snapshot-Datei
 
 `Diagnose.cpp` — pur, zustandslos, auf der Snapshot-KOPIE; dieselbe Funktion

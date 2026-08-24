@@ -27,12 +27,31 @@
 > `design/abnahmen/`. Bewusst offen: Undo-Form Seite 1 (U2.8),
 > Sidechain-Sichtbarkeit (U5), Rückfallfläche der Sonde (NAK-65-Rest).
 
-> ## ⚠ DER EINE NÄCHSTE SCHRITT — Stand 24.08.2026, nach der S12–13-Nacharbeit
+> ## ⚠ DER EINE NÄCHSTE SCHRITT — Stand 24.08.2026, nach **T2 Runde 2** und der zweiten Nacharbeit
 >
-> **Die S12–13-Nacharbeit ist gefahren (Manifest §10) — alle fünf T2-Befunde
-> sind geschlossen.** Jeder wurde zuerst an der Quelldatei nachgemessen; alle
-> fünf haben sich bestätigt, kein Fehlalarm. Beweislauf **GRÜN 28/28, Exit 0,
-> beglaubigt**; das Bein B5 ist von **120 auf 155 Prüfungen** gewachsen.
+> **Runde 2 ist gefahren (Manifest §11) und lautete NEEDS_WORK; die Nacharbeit
+> dazu steht in §12.** Vier Befunde, alle vier an der Quelle nachgemessen und
+> bestätigt, alle vier geschlossen. Beweislauf **GRÜN 28/28, Exit 0,
+> beglaubigt**; B5 ist von **155 auf 212 Prüfungen** gewachsen.
+>
+> **Der tragende Befund T2R2-1 war eine Deckungslücke, kein Ausfall:** die zehn
+> Rahmen-Skalare (`rahmenPeak`, `rahmenSamples`, `rahmenL/R/L2/R2/LR`, …) werden
+> von `grenzeZiehen()` korrekt geleert — aber die Leerung ließ sich **entfernen,
+> ohne dass eine einzige Zeile rot wurde** (`155 bestanden, 0 Fehler`,
+> selbst gefahren). Dieselbe Gestalt wie T2-1, ein Feldbündel weiter.
+>
+> 🔑 **Die Antwort ist bewusst KEINE längere Liste.** Die Ursache war nie eine
+> vergessene Zeile, sondern die Prüffrage *„welche Auskunft steht auf null?"* —
+> die kann nur Felder sehen, die eine Auskunft **haben**, und ein künftiges Feld
+> hat keine. Neu ist deshalb **G13, die Zwillingsprobe**: zwei Engines, dieselbe
+> Blockfolge Zug um Zug, gegensätzlicher Inhalt davor (laut / Stille), dieselbe
+> Grenze, danach **bitgleiches** Audio in beide — ab da muss jeder Frame
+> **feldgleich** sein. Verglichen wird mit `FeatureFrame::operator== = default`,
+> also memberweise und **vom Compiler gepflegt**: ein neues Feld ist automatisch
+> dabei. Vorgeführt an einem eigens eingebauten **neuen** Träger (Mutation Q2) —
+> gefangen, **ohne dass an irgendeiner Liste etwas geändert wurde**.
+> ⚠️ Nicht `memcmp`: gemessen tragen die Füllbytes des Frames unter `/O2`
+> unbestimmte Werte (**NAK-69**, trifft SONDE-010).
 >
 > **Der Entwurfsentscheid zu T2-1 ist gefallen** (§10.1, Begründung dort):
 > *die Grenze schneidet den Inhalt, nicht die Uhr.* `grenzeZiehen()` leert
@@ -51,30 +70,49 @@
 > macht **14 Zeilen** rot und reproduziert die Prüferzahlen **23 / 80 / 40 / 43**
 > Ziffer für Ziffer.
 >
+> Die zwei kleinen Befunde am Text sind hier berichtigt, **nicht** in §10:
+> die positive Hälfte gab es in **6 von 9** Grenzfällen (nicht neun), der Wert
+> ist **690** je Fall (die Zahl **1435** kommt im Lauf nicht vor) — G3, G4, G5
+> sind nachgerüstet, jetzt sind es **9 von 9**; und das Aktivitätsgate steht bei
+> `FeatureEngine.h:1144`, nicht `:992`. Die Diagnosezeile druckt `Breite` jetzt
+> als Bänderzahl + Exponent (`196B/2.660e-04` statt `0.000`) — eine Diagnose,
+> die bei echtem Bruch alle Träger unschuldig aussehen lässt, ist schlimmer als
+> keine.
+>
 > 🔑 **Trotzdem steht kein PASS da, und das ist Absicht:** wer repariert,
-> spricht sich nicht selbst frei. Die Urteilsmarke lautet
+> spricht sich nicht selbst frei. Die jüngste Urteilsmarke lautet
 > `T2 NEEDS_WORK 2026-08-24 nachgearbeitet` — der Stand wartet auf einen
-> **frischen Prüfer**, der weder gebaut noch nachgearbeitet hat.
+> **frischen Prüfer**, der weder gebaut noch nachgearbeitet hat. Das ist jetzt
+> die **dritte** Runde, die er anschauen würde (§9 → §10 → §11 → §12).
 >
 > | Stand | Manifest | Urteil heute | Was fehlt |
 > |---|---|---|---|
 > | **S9** / `SONDE-007b` | §5 (Bericht), **§6** (Nacharbeit) | NEEDS_WORK | **kein PASS** — nie ein zweites Mal geprüft |
 > | **S10–11** / `SONDE-008` | §8 (Bericht), **§9** (Nacharbeit) | NEEDS_WORK | **kein PASS** — nie ein zweites Mal geprüft |
-> | **S12–13** / `SONDE-009` | §9 (T2-Bericht), **§10** (Nacharbeit 24.08.) | NEEDS_WORK · nachgearbeitet | **kein PASS** — erneuter T2 durch einen frischen Prüfer |
+> | **S12–13** / `SONDE-009` | §9 (T2 R1), §10 (Nacharbeit 1), §11 (**T2 R2**), **§12** (Nacharbeit 2, 24.08.) | NEEDS_WORK · nachgearbeitet | **kein PASS** — erneuter T2 durch einen frischen Prüfer |
 >
 > **Damit hat sich der eine nächste Schritt verschoben:** der gerechnete
 > Planstand nennt jetzt **G1** (`Gate` — Prüfrunde über P1, eigene Session).
-> Vier Schritte warten auf ein Urteil, keiner auf Bauarbeit. Wer prüft, prüft
+> Sechs Schritte warten auf ein Urteil, keiner auf Bauarbeit. Wer prüft, prüft
 > mit frischem Kontext und **schließt keine eigenen Befunde**.
 >
-> **Was die Nacharbeit ausdrücklich NICHT geprüft hat** (§10.8, damit niemand
-> mehr Deckung annimmt als da ist): der G12-Sweep fährt nur den **Seek** auf
-> Frame-Ebene (die anderen acht Grenzarten sind auf Träger-Ebene gedeckt);
-> die Rahmenskalare nach einer Grenze sind nicht auf Plausibilität geprüft
-> (**NAK-68** — ein Frame sagt nicht, über wie viel Audio er integriert wurde;
-> gehört mit NAK-59 in denselben `.fbs`-Änderungssatz in `SONDE-010`); M1–M7
-> wurden nicht wiederholt; kein FL-Lauf, kein Thread-Sanitizer, keine
-> Serialisierung.
+> **Was die zweite Nacharbeit ausdrücklich NICHT geprüft hat** (§12.7, damit
+> niemand mehr Deckung annimmt als da ist):
+> - **G13 deckt keinen Träger, der im Messfenster kein Frame-Feld erreicht** —
+>   gemessen, nicht vermutet: `liveBreiteAkku` erreicht den Frame nur über
+>   Bänder mit `liveAkku[b].n > 0`, und der erste Frame nach der Grenze fällt
+>   ~1–2 Blöcke später, während das 4096-Punkte-Fenster **8** Blöcke braucht.
+>   Deshalb macht Mutation Q3 die **neun G-Fälle** rot, aber nicht G13. Die
+>   zwei Beine sind **komplementär**: bandgetorte Träger deckt
+>   `keineAkkusUeberleben()`, per-Sample-Träger deckt G13.
+> - **`loopWrap`, `moeglicherStraddle` und der gestoppte `zeitSprung` (G3)**
+>   laufen nicht als Zwillingspaar (PPQ-Führung in jedem Block nötig).
+> - **Plausibilität** der Rahmenskalare bleibt **NAK-68** (mit NAK-59 in
+>   denselben `.fbs`-Änderungssatz in `SONDE-010`); **NAK-69** ist neu (Frame
+>   nicht byteweise vergleichbar/hashbar).
+> - Der G12-Sweep fährt weiterhin nur den **Seek** auf Frame-Ebene; M1–M14
+>   wurden nicht wiederholt (außer P1 als Q1 und P2 als Q3); kein FL-Lauf, kein
+>   Thread-Sanitizer, keine Serialisierung.
 >
 > ### ⚙️ Neu am 23.08. (Werkzeug, nicht Produkt): der Planstand wird GERECHNET
 >

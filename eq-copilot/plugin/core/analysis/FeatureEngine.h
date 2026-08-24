@@ -175,6 +175,10 @@ struct Transportstempel
     std::uint8_t  gueltigkeit         { 0 };
     bool          process_context_present_gesetzt { false };
     bool          process_context_present { false };
+
+    /** Siehe den Kasten bei `FeatureFrame::operator==` — der Vergleich ist
+        memberweise und wird vom Compiler gepflegt, nicht von einer Liste. */
+    bool operator== (const Transportstempel&) const = default;
 };
 
 //==============================================================================
@@ -316,6 +320,9 @@ struct Bandsatz
         bitmapNullen (bitmap, N);
         saturated = false;
     }
+
+    /** Siehe den Kasten bei `FeatureFrame::operator==`. */
+    bool operator== (const Bandsatz&) const = default;
 };
 
 using LiveBaender    = Bandsatz<Gitter::liveBaender>;      // 64
@@ -361,6 +368,36 @@ struct FeatureFrame
     bool  psrGesetzt         { false };  float psrDb       { 0.0f };
     bool  breiteGesetzt      { false };  float breite      { 0.0f };
     bool  korrelationGesetzt { false };  float korrelation { 0.0f };
+
+    /** ZWEI FRAMES SIND GLEICH, WENN JEDES FELD GLEICH IST — und welche Felder
+        es gibt, weiss der Compiler, nicht eine Liste (T2R2-1, 24.08.).
+
+        🔑 Das ist die tragende Hälfte der Antwort auf T2R2-1.  Das Bein G13
+        (Zwillingsprobe) behauptet: nach einer Grenze ist eine Engine, die
+        vorher lautes Audio gesehen hat, von einer ununterscheidbar, die Stille
+        gesehen hat.  „Ununterscheidbar" muss dabei ALLE Felder meinen, auch
+        die, die es morgen erst gibt — sonst waere das Bein wieder eine Liste,
+        die neben `grenzeZiehen()` verrottet, und genau daran sind T2-1 und
+        T2R2-1 entstanden.  `= default` erzeugt den memberweisen Vergleich und
+        zieht jedes neue Feld automatisch mit hinein.
+
+        ⚠️ WARUM NICHT `memcmp`, obwohl der Typ trivial kopierbar ist — das ist
+        GEMESSEN, nicht befuerchtet (24.08.): `FeatureFrame` mischt `bool` und
+        `float`/`double` und hat deshalb Fuellbytes (Offsets 26..31, 44..47,
+        59..63, 89..95 im Stempel).  Fuellbytes sind unbeobachtbar, also darf
+        der Optimierer ihr Nullen weglassen — unter `/O2` standen dort Reste
+        eines frueheren Objekts (an 46/47 die oberen Bytes einer `double 1.0`),
+        und ein `memcmp` meldete 18 bis 21 Byte Unterschied ohne einen einzigen
+        Feldunterschied.  Auch `FeatureFrame f {}` aendert daran nichts
+        VERLAESSLICH; es bleibt richtig, aber es ist keine Zusage ueber Bytes.
+        Merksatz: EIN FRAME WIRD NACH WERT VERGLICHEN, NIE NACH BYTES — wer ihn
+        je hashen oder als Golden einfrieren will, muss ihn vorher feldweise
+        serialisieren.
+
+        ⚠️ Die zwei bekannten Grenzen dieses Vergleichs: `NaN != NaN` (ein Frame
+        mit NaN gilt als ungleich sich selbst — im Frame ist NaN ohnehin ein
+        Fehler, §"NaN-Ehrlichkeit"), und `-0.0 == +0.0`. */
+    bool operator== (const FeatureFrame&) const = default;
 };
 
 //==============================================================================
@@ -632,6 +669,23 @@ public:
         double su = 0.0;
         for (const auto& v : liveBreiteAkku) su += std::abs (v.seite) + std::abs (v.gesamt);
         return su;
+    }
+    /** Wie viele Baender im Breiten-Akku ueberhaupt etwas tragen.
+
+        🔑 DIESE AUSKUNFT EXISTIERT WEGEN EINER DIAGNOSEZEILE, DIE LOG (T2R2-4,
+        24.08.).  `liveBreiteAkkuZustand()` liegt beim Signal der G-Faelle bei
+        2,6e-04; mit drei Nachkommastellen gedruckt stand in der Diagnosezeile
+        `Breite=0.000` — VOR und NACH der Grenze, also sah der Traeger in jeder
+        roten Zeile unauffaellig aus.  Eine Diagnosezeile, die bei einem echten
+        Bruch alle Traeger unschuldig aussehen laesst, ist SCHLIMMER als keine:
+        sie erzeugt Vertrauen, das sie nicht deckt.  Eine ANZAHL kann nicht auf
+        null runden — sie ist entweder 0 oder sie ist es nicht. */
+    int liveBreiteAkkuBelegteBaender() const noexcept
+    {
+        int n = 0;
+        for (const auto& v : liveBreiteAkku)
+            if (v.seite != 0.0 || v.gesamt != 0.0) ++n;
+        return n;
     }
     /** Fertige Zellen des laufenden Rahmens.  `rahmenAktivZellen` kann nie
         groesser sein (beide wachsen in `zelleSchliessen()`, die aktive nur
@@ -1331,7 +1385,14 @@ private:
 
     bool baueFrame (const echtzeit::StampedBlock& block) noexcept
     {
-        FeatureFrame f;
+        // Wert-Initialisierung statt Default-Initialisierung: sie nullt das
+        // ganze Objekt, bevor die NSDMIs greifen.  ⚠️ Das ist die richtige
+        // Vorgabe, aber KEINE Zusage ueber Fuellbytes — der Optimierer darf ihr
+        // Nullen weglassen, weil sie unbeobachtbar sind, und unter `/O2` tut er
+        // es (gemessen 24.08., Einzelheiten im Kasten bei
+        // `FeatureFrame::operator==`).  Ein Frame wird deshalb NACH WERT
+        // verglichen, nie nach Bytes.
+        FeatureFrame f {};
         f.metricsVersion = kFeatureMetricsVersion;
         f.transport = baueStempel (block);
 
@@ -1398,7 +1459,11 @@ private:
 
     Transportstempel baueStempel (const echtzeit::StampedBlock& b) const noexcept
     {
-        Transportstempel t;
+        // Wert-Initialisierung, gleiche Vorgabe und gleiche Grenze wie in
+        // `baueFrame()`: die Fuellbytes zwischen `bool` und `int64` bleiben
+        // unter `/O2` trotzdem unbestimmt.  Gelesen werden sie nie — der
+        // Vergleich zweier Stempel laeuft ueber `operator==`, also memberweise.
+        Transportstempel t {};
         t.transport_epoch    = transportEpoche;
         t.continuity_segment = segmentInEpoche;
         t.sample_count       = b.sampleCount;

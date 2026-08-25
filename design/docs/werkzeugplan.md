@@ -5,9 +5,10 @@ entschieden.** `.claude/skills/` enthält weiterhin nur `interview`,
 `.claude/agents/` existiert nicht, `settings.json` ist unverändert.
 
 > **Seit 22.08.2026 im Nakama-Repo:** `.claude/` meint die Repo-Wurzel (dort liegt
-> neben `interview` auch der Skill `prompt`), die Hooks dieses Ordners liegen in
-> `tools/hooks/` (`design-primer.sh`, `prototyp-schleuse.sh`, `schleusen-probe.sh`)
-> und sind in der Wurzel-`settings.json` verdrahtet.
+> neben `interview` auch der Skill `prompt`). Die aktiven Hooks dieses Ordners
+> liegen in `tools/hooks/`; `schleusen-probe.sh` prüft die Kreativ-Schleuse.
+> Die frühere Prototyp-Schleuse wurde am 24.08.2026 nach dauerhaft erfülltem
+> Designvertrag stillgelegt.
 
 Diese Datei entscheidet nichts. Sie legt hin, **welche Fehler dieses Projekt
 nachweislich wiederholt** und welches Werkzeug jeden davon trifft. Jeder
@@ -201,9 +202,10 @@ Hausstil wie `interview`: deutsch, `name` + `description`, Prozedur statt Prosa.
 | **`standband-wahrheit`** | `Stop` | Prüft das mechanisch Prüfbare: geändertes Blatt ohne Prüflauf · Standband ohne Datum · Standband-Datum älter als die letzte Änderung des Blattes. | Genau der Fehler vom 2026-08-21 früh. Der bestehende Test prüft die **Form** des Standbands, nicht seinen **Inhalt**. `Stop` **kann** blocken (exit 2) — braucht deshalb einen ehrlichen Ausgang, sonst baut man sich eine Falle. |
 
 Beide bekommen eine **Gegenprobe** nach dem Muster von `schleusen-probe.sh` —
-was blocken muss **und** was durchmuss. Die Prototyp-Schleuse war blind und hat
-nach der ersten Reparatur zweimal echte Arbeit abgewiesen; das ist der bekannte
-Preis eines Wachhunds ohne Gegenprobe.
+was blocken muss **und** was durchmuss. Die historische Prototyp-Schleuse war
+blind und hat nach der ersten Reparatur zweimal echte Arbeit abgewiesen; sie
+wurde am 24.08.2026 stillgelegt. Das bleibt der bekannte Preis eines
+Wachhunds ohne Gegenprobe.
 
 ---
 

@@ -1,5 +1,12 @@
 # Figma-Stände — datierte Belege aus der Vorgabe
 
+> **Aktueller Status seit User-Entscheid 25.08.2026:** Dieser gesamte Ordner
+> ist Verlauf. Die drei aktuellen visuellen Rework-Referenzen liegen unter
+> `../rework-basis-2026-08-25/`; Wortlaut und Leseregel stehen in
+> `../../abnahmen/2026-08-25-rework-referenz-drei-designs.md`. Weder die
+> früheren PNGs noch die Live-Nodes `25:444`, `28:994` und `6:2864` dürfen
+> die drei neuen Userbilder als aktuelle Grundlage überschreiben.
+
 **Herkunft:** Figma, gestaltet vom **User** (Gen, Probeeq) bzw. von Claude auf
 seinen Auftrag in seiner Figma-Datei (Suna, siehe unten). Exportiert vom User
 am 2026-08-21 (20:04 / 20:05 / 22:18) in seinen Downloads-Ordner, von dort
@@ -7,9 +14,10 @@ am 2026-08-21 (20:04 / 20:05 / 22:18) in seinen Downloads-Ordner, von dort
 bearbeitet, nicht verkleinert, nicht umbenannt.
 
 **Status: datierte Beleg-Snapshots — nicht die aktuelle Designquelle.** Die
-aktuelle Vorgabe lebt immer ausschließlich im Figma `Nakama-Design`. Ein Design
-entwickelt sich, neuere Depotstände ersetzen diese Snapshots. Wörtlich, Interview
-2026-08-21:
+frühere Depotregel und ihre Entwicklung sind unten als Herkunft dokumentiert.
+Der neuere User-Entscheid vom 25.08. setzt die drei gelieferten PNGs außerhalb
+dieses Ordners als aktuelle Wahrheit in progress. Wörtlich, Interview
+2026-08-21 zur damaligen Arbeitsweise:
 
 > „das finale design wird aktuell in figma gemacht . alle 3 apps werden ein
 > design haben mit der selben identität. alle alten sind alt. Ein Design

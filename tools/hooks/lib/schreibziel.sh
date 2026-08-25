@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Gemeinsamer Kern beider Schleusen: "Schreibt dieser Werkzeugaufruf IN den
-# Ordner X?" — genau eine Antwort, ein Ort.
+# Kern der aktiven Kreativ-Schleuse: "Schreibt dieser Werkzeugaufruf IN den
+# Ordner X?" — genau eine Antwort, ein Ort. Die frühere Prototyp-Schleuse hat
+# dieselbe Logik bis zu ihrer Stilllegung am 24.08.2026 verwendet.
 #
 # Herkunft: die sieben Praezisierungen der Prototyp-Schleuse (21.08.2026,
 # jede aus einem echten Fehler) lagen bis zum 22.08. nur in prototyp-schleuse.sh.
@@ -8,7 +9,7 @@
 # eq-copilot/design/neu.html` ungebremst durch (gemessen 22.08.: exit 0) —
 # in einer Arbeitsumgebung, die Dateiaenderungen ueber Bash ausdruecklich
 # bevorzugt, war das nicht die theoretische Luecke, sondern der Regelweg.
-# Deshalb steht die Logik jetzt hier und wird von beiden Schleusen gelesen.
+# Deshalb steht die Logik hier und wird von der Kreativ-Schleuse gelesen.
 #
 # Die sieben Praezisierungen, die dieser Kern traegt:
 # 1. Geprueft wird auf den ORDNER als Pfadsegment, nicht auf die Zeichenfolge

@@ -61,6 +61,3 @@ Antwort des Users (25.08.2026, über Matrix), vollständig:
 Der Entscheid ist verbindlich und betrifft **den Plan**, nicht die Fläche. Die
 visuelle Abnahme der Gen-Seiten steht weiterhin aus; drei geplante Varianten
 sind drei Vorschläge, keine abgenommene Richtung.
-
-**Plandokument:** `design/docs/2026-08-25-plan-gen-designaufwertung.md`
-(von Codex, `gpt-5.6-sol`).

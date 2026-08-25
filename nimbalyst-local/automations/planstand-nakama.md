@@ -10,9 +10,9 @@ automationStatus:
     mode: replace
     location: nimbalyst-local/automations/planstand-nakama/
     fileNameTemplate: "{{date}}-output.md"
-  runCount: 2
-  nextRun: "2026-08-24T07:00:00.000Z"
-  lastRun: "2026-08-23T07:00:54.734Z"
+  runCount: 4
+  nextRun: "2026-08-26T07:00:00.000Z"
+  lastRun: "2026-08-25T07:02:12.146Z"
   lastRunStatus: success
 ---
 # Planstand Nakama auffrischen

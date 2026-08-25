@@ -1,0 +1,32 @@
+{
+  "name": "audio-plugin-ux",
+  "version": "0.2.1+codex.20260825113932",
+  "description": "Evidence-based reasoning and layout generation for desktop audio-plugin interaction, focus, control placement, state, and constrained host surfaces.",
+  "author": {
+    "name": "Nakama Studio"
+  },
+  "keywords": [
+    "audio-plugin",
+    "ux",
+    "vst",
+    "juce",
+    "eq"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Audio Plugin UX",
+    "shortDescription": "Reason from hearing work before drawing controls.",
+    "longDescription": "Studies an audio plug-in as a stateful instrument rather than a web page. Produces evidence-tagged focus, visibility, control-placement, state, and constrained-layout reasoning before UI changes.",
+    "developerName": "Nakama Studio",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive"
+    ],
+    "defaultPrompt": [
+      "Audit this audio-plugin UI before changing it.",
+      "Explain why each primary control belongs where it is.",
+      "Build a visibility matrix for this plugin workflow.",
+      "Derive a layout hypothesis from this parameter inventory and fixed host surface."
+    ]
+  }
+}

@@ -30,10 +30,13 @@ Commits gehen ohne Rückfrage raus.
   schlägt nur vor. Audio-Thread: keine Sperren, Allokationen, Datei-, Pipe- oder
   Netz-Zugriffe und kein Logging; Überlast verwirft Analyseframes, nie Audio.
 - **Keine KI-Erklärschicht** im Produkt. Der Advisor ist regelbasiert.
-- **Designquelle ist ausschließlich Figma:** Datei `Nakama-Design`, Key
-  `NPCQYSkoZEd4Av0NlKxBOd`; dunkel ist verbindlich, hell geplant. `design/`
-  übersetzt die User-Vorgabe in Zustände, Größen und Grenzfälle. Keine eigene
-  Stilsuche. Produktsprache Englisch; Docs, Commits und Gespräch Deutsch.
+- **Aktuelle visuelle Wahrheit in progress:** Seit dem User-Entscheid vom
+  25.08.2026 sind ausschließlich die drei Bilder unter
+  `design/assets/rework-basis-2026-08-25/` Grundlage des großen Reworks.
+  Wortlaut und Leseregel stehen in
+  `design/abnahmen/2026-08-25-rework-referenz-drei-designs.md`. Frühere
+  Figma-Nodes und Exporte sind Verlauf. Keine eigene Stilsuche.
+  Produktsprache Englisch; Docs, Commits und Gespräch Deutsch.
 - **Keine toten UI-Elemente.** Jedes sichtbare Element führt einen Handgriff
   aus oder meldet ehrlich einen Zustand.
 - **Geparkt:** Material-Kit-Front ist ein nie abgenommenes Provisorium. Prisma,
@@ -78,7 +81,7 @@ Commits gehen ohne Rückfrage raus.
 | State / Migration | `eq-copilot/schemas/state/`, `eq-copilot/plugin/state/`, `eq-copilot/fixtures/state/` |
 | Beweise | jüngstes passendes Manifest in `docs/beweise/` |
 | FL-Capabilities | `eq-copilot/identity/host-capabilities-fl-v1.json`, `docs/beweise/termin-a/`, `docs/beweise/termin-b/` |
-| App-Design | `design/LIES-MICH.md`, relevante Datei in `design/abnahmen/` und aktueller Figma-Stand |
+| App-Design | `design/LIES-MICH.md`, relevante Datei in `design/abnahmen/` und die drei aktuellen Rework-Bilder |
 | Verlauf, nie Vorgabe | `docs/archiv/`, `eq-copilot/design/archive/`, `eq-copilot/design/prisma-studie/STATUS.md` |
 
 Die vollständige frühere Daueranweisung liegt als historischer Snapshot in
@@ -144,12 +147,16 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
 
 ## Design-Arbeitsmodell
 
-1. Den aktuellen Figma-Stand lesen; Figma bestimmt Look und Identität.
-2. `design/` übersetzt ihn in funktionierende Blätter und dokumentiert
-   Zustände, Größen und Grenzfälle. User-Wortlaut kommt nach
+1. Die drei aktuellen Rework-Bilder und ihren bindenden Abnahmetext lesen;
+   sie bestimmen Look und Identität in progress.
+2. Strukturfragen zuerst als Skizze, bei Bedarf als 760×430-Graybox klären;
+   erst danach in Figma ausarbeiten
+   (`design/abnahmen/2026-08-25-skizzen-vor-figma.md`).
+3. `design/` übersetzt die Vorgabe in funktionierende Blätter und
+   dokumentiert Zustände, Größen und Grenzfälle. User-Wortlaut kommt nach
    `design/abnahmen/`.
-3. Erst eine Abnahme erlaubt die Spiegelung in `eq-copilot/`.
-4. `eq-copilot/design/` ist Altbestand/Studie. Der aktive
+4. Erst eine Abnahme erlaubt die Spiegelung in `eq-copilot/`.
+5. `eq-copilot/design/` ist Altbestand/Studie. Der aktive
    `tools/hooks/kreativ-schleuse.sh` schützt ihn ohne frischen
    Freigabe-Marker. Der normale Prototyp unter `design/prototyp/` ist frei;
    die frühere Prototyp-Schleuse ist seit 24.08.2026 stillgelegt.

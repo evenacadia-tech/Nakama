@@ -130,10 +130,11 @@
 
 ## Was das für die Schleuse heißt
 
-Phase 0 des Arbeitsplans ist mit dieser Datei erfüllt. Ihr Name enthält
-`designvertrag`; damit lässt `.claude/hooks/prototyp-schleuse.sh`
-Schreibzugriffe in `prototyp/` zu. Das erste, was dort entsteht, ist die
-Übersetzung des Gen-Stands — nicht ein neuer Entwurf.
+Phase 0 des Arbeitsplans wurde mit dieser Datei erfüllt. Die damalige
+Prototyp-Schleuse ließ damit Schreibzugriffe in `prototyp/` zu. Weil diese
+Bedingung danach dauerhaft erfüllt war, wurde der Hook am 24.08.2026
+stillgelegt. Inhaltlich gilt weiter: Der Prototyp übersetzt den Gen-Stand und
+ist kein neuer Entwurf.
 
 ## Bezug
 

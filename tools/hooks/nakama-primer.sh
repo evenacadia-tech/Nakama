@@ -1,14 +1,22 @@
 #!/bin/bash
-# SessionStart hook: Wahrheitskern + Live-Stand injizieren.
+# SessionStart hook: Wahrheitskern + Live-Stand nur nach Context-Compaction
+# injizieren. Normale Starts/Resume/Clear bleiben still, weil CLAUDE.md dort
+# ohnehin frisch geladen wird.
 #
 # Bis zum 21.08.2026 stand hier eine STATISCHE „Systemkarte" (Stand 18.08.,
 # „bewusstes Duplikat der CLAUDE.md-Invarianten, nie zum Pointer kürzen").
 # Ergebnis der Kontext-Inventur: 18 CLAUDE.md-Commits später war die Karte
 # 0-mal nachgezogen — eine frische Session bekam zwei Wahrheiten mit zwei
 # Daten (36 statt 56 Broker-Tests, Prototyp „ABGENOMMEN", keine Sondenfamilie).
-# Deshalb liest der Hook den Kern jetzt AUS CLAUDE.md (Block zwischen den
-# WAHRHEITSKERN-Markern) — eine Quelle, zwei Leser. Die Fade-Resilienz bleibt:
-# der Hook feuert auch nach Compaction (source=compact), CLAUDE.md nicht.
+# Deshalb liest der Hook den Kern AUS CLAUDE.md (Block zwischen den
+# WAHRHEITSKERN-Markern) — eine Quelle, zwei Leser. Die Fade-Resilienz greift
+# gezielt nach Compaction (source=compact), nicht bei jedem Sessionstart.
+
+INPUT=$(cat)
+SOURCE=$(printf '%s' "$INPUT" \
+  | sed -n 's/.*"source"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+  | head -1)
+[ "$SOURCE" = "compact" ] || exit 0
 
 NAK="${CLAUDE_PROJECT_DIR:-$HOME/Projekte/Nakama}"
 KARTE="$NAK/CLAUDE.md"

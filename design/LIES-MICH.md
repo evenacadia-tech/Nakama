@@ -1,4 +1,4 @@
-# design/ — Design der drei Nakama-Apps
+# design/ — Design der Nakama-Oberflächen
 
 **Seit 22.08.2026 Teil des Nakama-Repos** (User: „ich möchte dass du die
 nakama design und nakama arbeitsbereiche zusammenführst … im anschluss wird
@@ -9,17 +9,28 @@ zu `design/`**; ältere Texte, die `Nakama-Design/…` sagen, meinen denselben
 Ort.
 
 Hier entsteht das Design als **Web-Prototyp im Browser**, als Übersetzung der
-Figma-Stände des Users. Es wird KEIN Plugin-Code geschrieben — der lebt in
-`eq-copilot/` und `broker/`. Die Produktwahrheit (was die drei Apps sind und
+aktuellen visuellen User-Vorgabe. Es wird KEIN Plugin-Code geschrieben — der lebt in
+`eq-copilot/` und `broker/`. Die Produktwahrheit (was die Apps und Flächen sind und
 dürfen) und das Register der User-Entscheide stehen in `CLAUDE.md` an der
 Repo-Wurzel (Wahrheitskern); hier wird sie nicht abgeschrieben, nur verwiesen.
 
 ## Dein Job
 
-**Figma übersetzen, nicht Design erfinden.** Der User gestaltet das finale
-Design im einzig verbindlichen Figma `Nakama-Design`. `assets/figma/` enthält
-datierte Beleg-Snapshots, aber nie eine aktuellere Wahrheit als die Live-Datei
-(Designvertrag 2026-08-21: „Figma ist Quelle; Repo setzt um"). Dieser Ordner
+**Die aktuelle User-Vorgabe übersetzen, nicht Design erfinden.** Seit dem
+neuesten User-Entscheid vom 25.08. sind genau drei gelieferte PNGs die
+**aktuelle visuelle Wahrheit in progress** und die Grundlage des späteren
+großen Reworks:
+
+- `assets/rework-basis-2026-08-25/gen-page-1-overview.png`
+- `assets/rework-basis-2026-08-25/gen-page-2-eq-center.png`
+- `assets/rework-basis-2026-08-25/probeeq.png`
+
+Wortlaut, Hashes und Leseregel stehen in
+`abnahmen/2026-08-25-rework-referenz-drei-designs.md`. Die frühere Regel
+„immer ausschließlich der Live-Stand in Nakama-Design“ ist für die aktuelle
+visuelle Ausgangsbasis durch diesen neueren Entscheid abgelöst. Figma und
+`assets/figma/` sind bis zu einer späteren ausdrücklichen Aktualisierung
+Verlauf, nicht stiller Gegenspieler dieser drei Bilder. Dieser Ordner
 macht daraus **lebende Blätter** und prüft, was ein Bild nicht prüfen kann:
 **Zustände** (frisch / veraltet / getrennt, Messung, degradiert, Draft,
 Bypass …), **Größen** (bei 1:1 auf den abgenommenen Maßen) und
@@ -27,7 +38,8 @@ Bypass …), **Größen** (bei 1:1 auf den abgenommenen Maßen) und
 Stand etwas anderes zeigt als eine Abnahme, wird das benannt und dem User
 vorgelegt — nicht still entschieden.
 
-**Die Quelle ist seit 2026-08-22 und immer EINE Figma-Datei: `Nakama-Design`**
+**Historische Quellenregel bis zum neueren Entscheid vom 25.08.: eine
+Figma-Datei `Nakama-Design`.**
 (https://www.figma.com/design/NPCQYSkoZEd4Av0NlKxBOd/Nakama-Design?node-id=0-1,
 Key `NPCQYSkoZEd4Av0NlKxBOd`). User-Wort 22.08.: „das ist das neue
 verbindliche und einzige Depot indem sich die aktuellsten Designs befinden";
@@ -40,39 +52,28 @@ noch keine Vorgabe. Claude holt die Stände per Figma-MCP in die Truhe
 (`assets/figma/LIES-MICH.md`). (Der Figma-Dateiname `Nakama-Design` bleibt —
 er bezeichnet die Figma-Datei, nicht mehr ein Repo.)
 
-Die Oberflächen (**seit 23.08. zwei Apps** — Entscheid
+Die Oberflächen (**seit 23.08. zwei Apps, seit 25.08. drei aktuelle
+Referenzbilder** — Entscheide
 `abnahmen/2026-08-23-gen-eq-zentrale.md`; Suna ist in Probeeq aufgegangen):
 
-1. **Nakama Gen** — Hub/„Studio". **Seite 1:** Quellen-Übersicht, Befunde,
-   Advisor — bleibt vorerst wie gehabt (User 23.08.: „die frontseite bleibt
-   trotzdem erstmal wie gehabt"); Stand: `assets/figma/2026-08-22-gen.png`
-   (Depot `6:13`, Studie 04). Die Lesarten dazu:
-   `abnahmen/2026-08-21-gen-auftrag-figma.md`. **Seite 2 (neu, Figma
-   offen — NAK-65):** EQ-Zentrale aller Sonden + vollwertiger Master-EQ;
-   Durchschalter direkt auf der Seite, zwei EQ-Spuren in EINEM Graph.
-   Spielregeln: `docs/ui-spielregeln-eq-zentrale.md`. Später werden beide
-   Seiten komplett überarbeitet (User 23.08.). **Beide Seiten müssen 760×430
-   sein** (Entscheid 24.08.). Der aktuelle Live-Stand im einzig verbindlichen
-   Depot ist Overview `25:444` = 760×430 und EQ Center `28:994` = 760×430.
-   Die Größenabweichung wurde vom User am 24.08. korrigiert; der frühere
-   EQ-Stand `25:584` sowie alle anderen Figma-Dateien sind Verlauf.
-2. **Nakama Probeeq** — DIE Sonde auf den Bussen: misst passiv, EQ
-   zuschaltbar, **bedient wird auf Gens Seite 2**; eine eigene
-   Minimal-Rückfallfläche entsteht aus dem aktuellen Suna-Entwurf
-   `6:2864` (260×84) im verbindlichen Figma. Der
-   Probeeq-Stand `assets/figma/2026-08-22-probeeq.png` (Depot `6:1906`,
-   700×420) ist **Working Design** der EQ-Fläche (User 23.08.), als
-   eigenständige Voll-UI aber Verlauf. Der ältere Export der Suna-Kachel
-   (`assets/figma/2026-08-22-suna.png`, 260×84, Depot `6:2629`) und ihre
-   offenen Punkte (`abnahmen/2026-08-21-suna-auftrag-figma.md`, U6) gelten
-   als Verlauf und Prüfhinweise; aktuelle visuelle Basis ist immer der
-   Live-Knoten `6:2864`.
+1. **Nakama Gen** — Hub/„Studio". Die aktuelle Seite 1 ist
+   `assets/rework-basis-2026-08-25/gen-page-1-overview.png`; die aktuelle
+   Seite 2 ist `assets/rework-basis-2026-08-25/gen-page-2-eq-center.png`.
+   Beide sind die sichtbare Grundlage für den großen Rework. Frühere Depot-
+   Nodes (`25:444`, `28:994`) und Exporte bleiben Verlauf. Funktionale
+   Spielregeln, die ein Bild nicht beweisen kann, stehen weiterhin in
+   `docs/ui-spielregeln-eq-zentrale.md` und den neueren Abnahmen.
+2. **Nakama Probeeq** — DIE Sonde auf den Bussen. Ihre aktuelle kompakte
+   Referenz ist `assets/rework-basis-2026-08-25/probeeq.png`. Der Suna-Knoten
+   `6:2864`, die frühere große Probeeq-Vollfläche und alle Suna-Exporte sind
+   nur noch Verlauf und dürfen nicht als aktuelle visuelle Basis zitiert
+   werden.
 
 Die Projektquellen — vollständig, nichts von außen dazuholen:
 
-- **DIE VORGABE** (wie es aussieht): ausschließlich der Live-Stand in
-  `Nakama-Design` (`NPCQYSkoZEd4Av0NlKxBOd`). `assets/figma/` enthält
-  datierte Belege früherer Stände, keine aktuellere Designquelle.
+- **DIE VORGABE** (wie es aussieht): die drei Bilder unter
+  `assets/rework-basis-2026-08-25/`, gemäß
+  `abnahmen/2026-08-25-rework-referenz-drei-designs.md`.
 - **WAS** jede Oberfläche zeigen muss: `docs/oberflaechen-spezifikation.md`
 - **WAS DIE TECHNIK VERLANGT** (Spielregeln der EQ-Zentrale, für die
   Figma-Arbeit an Gen Seite 1+2): `docs/ui-spielregeln-eq-zentrale.md`
@@ -91,8 +92,10 @@ Die Projektquellen — vollständig, nichts von außen dazuholen:
   lebende Blätter und Messbank in `werkzeug/` (`werkzeug/LIES-MICH.md`,
   `werkzeug/PRUEFLISTE.md`).
 
-Die Gestaltung kommt aus Figma. Offen ist, was Figma nicht zeigt — und das
-wird am lebenden Blatt MIT dem User geklärt.
+Die Gestaltung kommt derzeit aus den drei aktuellen Rework-Bildern. Offen
+ist, was diese Bilder nicht zeigen — und das wird zuerst als Skizze, bei
+Bedarf als Graybox und erst danach in Figma mit dem User geklärt
+(`abnahmen/2026-08-25-skizzen-vor-figma.md`).
 
 **Maßstab (User-Wort 2026-08-22): die Apps sehen in FL Studio exakt aus wie
 in Figma.** Zwischenbilder zählen nicht. Darum: **Statisches wird gebacken,
@@ -105,8 +108,9 @@ eingebettet, der Prototyp mit denselben Assets wie das Plugin; Beweis ist der
 ## Harte Regeln (nicht verhandelbar)
 
 1. **Assettruhe zuerst.** `assets/` ist die erste Anlaufstelle vor JEDER
-   Gestaltungsentscheidung; die Figma-Stände in `assets/figma/` sind ihr
-   wichtigster Inhalt. Was dort liegt, wird verwendet — nicht neu
+   Gestaltungsentscheidung; aktuell sind die drei Bilder unter
+   `assets/rework-basis-2026-08-25/` ihr wichtigster Inhalt. Was dort liegt,
+   wird verwendet — nicht neu
    erfunden. Fehlt etwas, den User fragen statt improvisieren. Die Truhe
    wird nie ungefragt verändert.
 2. **Ein Schritt pro Runde.** Genau eine Frage öffnen, am lebenden Blatt

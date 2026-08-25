@@ -1,0 +1,4 @@
+interface:
+  display_name: "Audio Plugin UX"
+  short_description: "Reasons from listening work before layout"
+  default_prompt: "Use $audio-plugin-ux to audit this audio-plugin interface before changing its design."

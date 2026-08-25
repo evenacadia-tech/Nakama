@@ -284,9 +284,11 @@ und nicht selbst gebaut werden muss.
 ### §3.3 „Kein Dauerpoll" — Regel bleibt, Anlass entfällt
 
 Der Satz gegen Polling (Z. 88–93) wird technisch gegenstandslos: Ein
-blockierender Aufruf hat nichts zu pollen. Er bleibt trotzdem stehen, weil
-seine Begründung den Kanalwechsel überlebt — und weil das Datei-Postfach
-unten sonst zum Poll-Einfallstor würde.
+blockierender Aufruf hat nichts zu pollen. Er bleibt trotzdem wörtlich
+stehen, weil seine Begründung den Kanalwechsel überlebt — ein Poll erzeugt
+je Runde Nachrichten, ohne je früher fertig zu sein als das Ergebnis, auf
+das er wartet. Wer später einen Wartemechanismus nachrüstet, soll das
+gelesen haben.
 
 ### Der Matrix-RÜCKkanal entfällt ersatzlos
 

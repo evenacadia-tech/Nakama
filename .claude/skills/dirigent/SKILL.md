@@ -212,10 +212,13 @@ Nakama-Kontext nicht kennt. Du musst nichts pflegen.
   anzuhalten: im Protokolleintrag vermerken und weiterfahren. Bei Auslöser 3
   **hältst du an** — eine blockende Entscheidung, die ihn nie erreicht hat,
   ist kein Warten, sondern ein stiller Stillstand.
-- **Rückfall**, wenn Matrix wirklich tot ist: die claude.ai-Routine
-  „Nakama: Dirigent-Meldung" (`trig_01BUKf1i5Y9ztqGkA6Ev4eff`, Push) —
-  Meldung zwischen die `--- MELDUNG ---`-Marker im Prompt, dann `run`. Sie
-  kann nur senden, nicht empfangen.
+- **Es gibt keinen Rückfallkanal mehr.** Die claude.ai-Routine „Nakama:
+  Dirigent-Meldung" (`trig_01BUKf1i5Y9ztqGkA6Ev4eff`) ist seit 25.08.2026
+  abgeschafft — User: *„Ich habe die Routinen im der webapp ausgeschaltet.
+  Brauchen wir nicht mehr , also die Dirigenten benachrichtigung über Routine
+  Funktion."* Sie darf nicht mehr aufgerufen werden. Ist Matrix tot, ist der
+  Dirigent stumm — dann gilt die Regel darüber unverändert: Auslöser 1 und 2
+  ins Protokoll und weiterfahren, bei Auslöser 3 anhalten.
 
 ⚠️ **WhatsApp gibt es nicht mehr** (User 24.08.: *„wir machen das anders ,
 nichtmehr über whatsapp das funktioniert ."*). MCP, Daemon, Autostart und

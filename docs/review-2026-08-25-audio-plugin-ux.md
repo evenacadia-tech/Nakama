@@ -90,7 +90,7 @@ aufzufrischen:
 - Zeile 3: *„Refresh claims against current source, tests, design decisions, and Figma evidence before acting."*
 - Zeile 26: *„Refresh these from the current repository before citing them."*
 - Zeile 36: *„Locate the current acceptance documents rather than quoting this file alone."*
-- Zeile 85: fordert *„an evidence ledger with current repository links"*
+- Zeile 86: fordert *„an evidence ledger with current repository links"*
 
 Die Datei nennt **keinen einzigen Dateipfad**. Kein `design/abnahmen/`, kein
 `CLAUDE.md`, kein `docs/`. Die Selbstkorrektur, auf der die Datei ihre

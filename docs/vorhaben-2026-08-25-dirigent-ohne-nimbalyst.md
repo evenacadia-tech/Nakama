@@ -243,6 +243,75 @@ und nicht selbst gebaut werden muss.
 
 ---
 
+## Teil 1c — Der Skill wird ÜBERNOMMEN, nicht neu geschrieben
+
+> **User-Wort 25.08.:** *„aber der dirigenten skill wird exakt so übernommen
+> wie er aktuell ist nur technisch angepasst, weil das hat super
+> funktioniert"*
+
+`.claude/skills/dirigent/SKILL.md` hat 289 Zeilen. Betroffen sind davon
+**rund 35** — alles andere bleibt wörtlich stehen.
+
+### Bleibt unangetastet (die Substanz)
+
+- **§1** Warum es die Rolle gibt — Frischkontext als Prüfmechanismus.
+- **§2** Woher der nächste Schritt kommt (PLAN-STAND → NEXT-SESSION →
+  Bauaufteilung, mit der Warnung, dass die Bauaufteilung handgepflegt und
+  am 23.08. selbst veraltet war).
+- **§3.4** Messen und Urteilen — Belegpflicht mit (a) worauf du dich stützt
+  und (b) was du NICHT geprüft hast; die vier Indizien; *„Glaube keinem
+  Selbstbericht"*; die Warnung, dass ein roter Riegel nicht automatisch ein
+  Befund ist.
+- **§3.6** Meldepflichten — Matrix als einziger Kanal, die drei
+  Pflichtauslöser, die Drei-Zeilen-Form, „kein Rückfallkanal mehr", die
+  Zweiter-Client-Lehre.
+- **§4** Wo du hältst (alle sechs Punkte).
+- **§5** Protokollformat.
+- **§6** Was du nie tust.
+
+### Technisch zu ersetzen
+
+| Stelle | heute | künftig |
+|---|---|---|
+| §3.1, Z. 55 | `mcp__nimbalyst-host__list_recent_sessions` | `claude agents --json --cwd . --all`; für die in Z. 59 verlangte Codex-Prüfung zusätzlich `codex exec resume --last` bzw. ein Blick in `~/.codex/sessions/` |
+| §3.2, Z. 65 | `spawn_session` mit `inheritModel: true`, `notifyOnComplete: true` | `claude -p --model <opus> --output-format json --json-schema … --session-id <uuid>`; `inheritModel` wird zu **explizitem** `--model` (die CLI nimmt sonst ihr Default — im Test `claude-fable-5`) |
+| §3.2, Z. 66 | „**Nicht** `useWorktree`" | entfällt technisch (CLI arbeitet ohnehin im cwd), der **Grund** bleibt als Satz stehen |
+| §3.3, Z. 84–86 | `notifyOnComplete` + `schedule_wakeup` als Netz | **entfällt** — der Werkzeugaufruf blockiert. Neu stattdessen: Langläufer über den Hintergrundmodus des Shell-Werkzeugs |
+| §3.3, Z. 95–97 | `lastActivity` taugt nicht, nur `updatedAt` + Commits | wird zu: **Exit-Code + neue Commits**. Die Lehre bleibt, ihr Träger ändert sich |
+| §3.5, Z. 138 | Prüf-Session = frische Claude-Session | **`codex review --commit <SHA>`** — anderes Modell statt nur anderer Kontext. Der Basispunkt-Hinweis (Z. 141–144) bleibt wörtlich: Basis selbst ausrechnen, nie aus einem Dokument übernehmen |
+| §3.5, Z. 152 | Nacharbeit-Session spawnen | `codex exec --output-schema …` — der Fixer ist derselbe, der gefunden hat; die Regel *„urteilen darf nur, wer nicht gebaut hat"* bleibt damit gewahrt |
+
+### §3.3 „Kein Dauerpoll" — Regel bleibt, Anlass entfällt
+
+Der Satz gegen Polling (Z. 88–93) wird technisch gegenstandslos: Ein
+blockierender Aufruf hat nichts zu pollen. Er bleibt trotzdem stehen, weil
+seine Begründung den Kanalwechsel überlebt — und weil das Datei-Postfach
+unten sonst zum Poll-Einfallstor würde.
+
+### ⚠️ Die einzige echte Lücke: der Matrix-RÜCKkanal
+
+Ausgehend ist unkritisch: `melden.py` übergibt dem Dienst nur Aufträge und
+kennt Nimbalyst nicht.
+
+**Eingehend hängt fest.** `C:\Users\phili\.claude\matrix-bridge\config.json`
+trägt einen Block `nimbalyst` mit `workspace_path` und `session_id`; dazu
+gibt es ein eigenes Modul `nimbalyst.py`. Die Antwort des Users wird darüber
+als Prompt in eine Nimbalyst-Session eingespeist. Ohne Nimbalyst gibt es
+diesen Weg nicht mehr — und §3.6 Auslöser 3 (blockende Entscheidung) hängt
+genau daran.
+
+**Vorschlag (nicht entschieden): Datei-Postfach.** Der Dienst legt eingehende
+Nachrichten als Datei ab; der Dirigent liest sie **in §3.1**, wo er ohnehin
+`git status` prüft. Das ist kein Dauerpoll, sondern ein Schritt im ohnehin
+stattfindenden Zyklus — die Regel aus §3.3 bleibt gewahrt. Zu klären: was
+passiert, wenn der Dirigent gerade in einem langen Bau-Aufruf steht und eine
+blockende Antwort eintrifft.
+
+Aufwand für die Skill-Anpassung: ~30 min. Der Rückkanal ist ein eigenes
+Stück, ~45 min, und betrifft `dienst.py` außerhalb des Repos.
+
+---
+
 ## Teil 2 — Werkzeug-Entrümpelung (offen, nicht entschieden)
 
 **Warum das hierher gehört:** Der Testlauf meldete **56 713 Tokens

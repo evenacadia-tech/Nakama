@@ -217,23 +217,49 @@ nächste Ticket begonnen wird. Genau dafür ist er ein Modell und kein
 Kein `Start-Process`, kein zweites Fenster. `Tee-Object` hält den Verlauf
 zugleich auf der Platte fest.
 
-### Was daraus noch zu klären ist
+### Was daraus noch zu klären ist — alles beantwortet
 
 1. ~~Ist der Dirigent das Skript oder eine LLM-Session?~~ **Beantwortet
    25.08.:** echte Claude-Session mit Fable, kein Skript. *„beim dirigenten
    spart man nicht."*
-2. **Langläufer.** Baut ein Ticket länger als das Werkzeug-Timeout
-   (bei Claude Code max. 10 min), muss der Bau-Aufruf in den
-   Hintergrundmodus des Shell-Werkzeugs — der Harness meldet dem Dirigenten
-   die Fertigstellung. Zu messen: wie lange ein echtes Ticket wirklich baut.
-3. **Abbruchregel:** Wie oft darf Fixer→Prüfer kreisen, bevor das Ticket an
-   den User geht? Vorschlag: zweimal, dann Matrix-Meldung und Stopp.
-4. **Wer setzt die Urteilsmarke** in `docs/beweise/`? Nach heutiger Regel nur
-   ein Prüfer — das spräche für Codex, verlangt aber, dass er das Manifest
-   schreiben darf.
+2. ~~Langläufer und Werkzeug-Timeout.~~ **Beantwortet 25.08.:** *„eine
+   session baut solange wie sie braucht. dafür ist fable da das im auge zu
+   haben. das hat bis jetzt immer geklappt."* Kein Zeitzaun um den Bau. Der
+   Bau-Aufruf läuft im **Hintergrundmodus** des Shell-Werkzeugs, damit der
+   Dirigent handlungsfähig bleibt; der Harness meldet die Fertigstellung.
+3. ~~Abbruchregel der Fix-Schleife.~~ **Steht bereits im Skill**, §4 Punkt 5:
+   *„Zweimal in Folge gescheitert am selben Ticket. Nicht ein drittes Mal
+   dasselbe versuchen — das ist die Schleife, vor der `CLAUDE.md` warnt."*
+   Da der Skill wörtlich übernommen wird, gilt sie unverändert. Die Frage
+   war überflüssig.
+4. ~~Wer setzt die Urteilsmarke in `docs/beweise/`?~~ **Beantwortet 25.08.:**
+   *„codex hat genausoviel rechte wie claude."* Codex prüft, urteilt und
+   schreibt sein Urteil ins Manifest. Die Skill-Regel *„urteilen darf nur,
+   wer nicht gebaut hat"* bleibt gewahrt — gebaut hat Claude.
 5. **Modellwahl je Rolle:** Dirigent Fable (gesetzt), Bauer Opus
    (`--model` explizit, sonst nimmt die CLI ihr Default — im Test kam
    `claude-fable-5`), Prüfer/Fixer Codex nach `config.toml`.
+
+### 🔑 Warum der Bau NICHT blockierend laufen darf
+
+Das folgt aus dem Skill selbst und war in der ersten Fassung dieses Blatts
+falsch: §3.6 Auslöser 2 verlangt **mindestens stündliche** Meldung, auch
+während ein Ticket noch läuft — *„S9 läuft seit 40 min, Kanon 12/28.
+Schweigen ist für den User nicht von einem Absturz zu unterscheiden."*
+Prüfbar gemacht durch `py -3.13 melden.py --letzte` (Exit 1 = überfällig).
+
+Ein Dirigent, der im blockierenden Bau-Aufruf steht, **kann diese Pflicht
+nicht erfüllen**. Deshalb:
+
+| Schritt | Modus |
+|---|---|
+| Bauen (lang, offenes Ende) | **Hintergrund** — Dirigent bleibt handlungsfähig, meldet stündlich, sieht bei Bedarf in `git log` und Manifest |
+| Prüfen (`codex review`) | blockierend |
+| Fixen (`codex exec`) | blockierend |
+
+Das ist kein Dauerpoll (§3.3 bleibt gewahrt): Der Dirigent wird bei
+Fertigstellung geweckt und sieht dazwischen nur dann nach, wenn die
+Meldepflicht ihn ohnehin zum Hinsehen zwingt.
 
 ### Aufwand mit Codex-Rollen
 

@@ -51,30 +51,19 @@ Dazu §3.6: Die Matrix-Antwort landet in der Session aus `config.json` →
 | Frische Session | `spawn_session` | `claude -p --model opus --session-id <uuid> --output-format json` |
 | Läuft schon was? | `list_recent_sessions` | `claude agents --json --cwd . --all` + `git status --porcelain` |
 | Fortschritt | `get_session_status` | **Exit-Code + neue Commits** |
-| Fertig-Signal | `notifyOnComplete` | **entfällt** — `$p.WaitForExit()` |
-| Netz gegen stillen Tod | `schedule_wakeup` (~1200 s) | **entfällt** — Timeout um den Prozess |
+| Fertig-Signal | `notifyOnComplete` | **entfällt** — der Werkzeugaufruf ist synchron |
+| Netz gegen stillen Tod | `schedule_wakeup` (~1200 s) | **entfällt** — Timeout des Werkzeugaufrufs |
 | Urteil einsammeln | freie Prosa | `--json-schema urteil.json` → validiertes JSON |
 | Meldung an den User | Matrix `melden.py` | **identisch, hängt nicht an Nimbalyst** |
 
 🔑 **Der Kern der Vereinfachung:** `notifyOnComplete` und `schedule_wakeup`
-existieren nur, weil der Dirigent selbst ein LLM ist und nicht blockierend
-warten kann. Ein Skript ruft `WaitForExit()`. Damit entfällt auch die im
-Skill dokumentierte Falle (Z. 95–97): *„`lastActivity` ist KEIN
+existieren, weil Nimbalysts `spawn_session` **asynchron** ist — es setzt ab
+und kehrt sofort zurück, also muss der Dirigent später geweckt werden. Ein
+`claude -p` über das Shell-Werkzeug ist **synchron**: Der Dirigent bleibt im
+Werkzeugaufruf stehen und bekommt das Ergebnis zurück. Damit entfällt auch
+die im Skill dokumentierte Falle (Z. 95–97): *„`lastActivity` ist KEIN
 Aktivitätssignal — es stand 22 Minuten still, während die Session
-committete."*
-
-### Skizze
-
-```powershell
-foreach ($ticket in $offene) {
-  $uuid = [guid]::NewGuid()
-  $p = Start-Process pwsh -PassThru -ArgumentList '-NoExit','-Command',
-       "claude -p '$prompt' --model opus --output-format json --session-id $uuid > $log"
-  $p.WaitForExit()                      # sequenziell — Pflicht, s. u.
-  $urteil = Get-Content $log | ConvertFrom-Json
-  # bewerten, melden (melden.py), naechstes Ticket
-}
-```
+committete."* Ein Exit-Code lügt nicht.
 
 **Sequenziell ist Pflicht, nicht Geschmack:** Skill §3.1 —
 `eq-copilot/build/` ist ein geteiltes Verzeichnis, zwei parallele Läufe
@@ -130,10 +119,34 @@ entscheidet in ~20 min, ob der Rest sinnvoll ist.
 
 | Rolle | Werkzeug | Warum |
 |---|---|---|
-| **Dirigent** | das PowerShell-Skript | deterministische Ablaufsteuerung, blockierendes Warten |
-| **Bauer** | `claude -p` | frischer Kontext je Ticket |
+| **Dirigent** | **echte Claude-Session, Modell Fable**, interaktiv im Terminal | urteilt, entscheidet, meldet — **kein Skript** |
+| **Bauer** | `claude -p`, vom Dirigenten aufgerufen | frischer Kontext je Ticket |
 | **Prüfer** | `codex review` | **anderes Modell** — stärker als nur eine frische Session |
 | **Fixer** | `codex exec` | derselbe Prüfer behebt, was er gefunden hat |
+
+> **User-Wort 25.08.:** *„nein dirigent ist eine richtige claude session mit
+> fable. kein script oder sonst was. beim dirigenten spart man nicht."*
+
+🔑 **Korrektur einer früheren Fehlanalyse (stand vorher in diesem Blatt):**
+Es hieß hier, `notifyOnComplete` und `schedule_wakeup` entfielen, weil „ein
+Skript blockierend warten kann, ein LLM nicht". Der zweite Halbsatz ist
+falsch. Ein LLM-Dirigent, der `claude -p` oder `codex exec` über sein
+Shell-Werkzeug aufruft, **wartet blockierend** — der Werkzeugaufruf ist
+synchron und liefert das Ergebnis zurück. Am 25.08. selbst vorgeführt:
+`claude -p` aus einer laufenden Claude-Session, 11,2 s blockiert, Exit 0,
+Ergebnis im Tool-Output.
+
+Die Wakeup-Mechanik kompensiert also **Nimbalysts asynchrones
+`spawn_session`** (fire and forget), nicht eine Eigenschaft von LLMs. Ein
+blockierender CLI-Aufruf braucht sie nicht. Der Dirigent darf deshalb ein
+vollwertiges Modell sein und trotzdem ohne Weckmechanik auskommen.
+
+⚠️ **Die eine echte Grenze: das Werkzeug-Zeitlimit.** Shell-Werkzeugaufrufe
+laufen typisch in ein Timeout (bei Claude Code max. 10 min). Eine Bau-Session
+dauert länger. Lösung ist **nicht** ein Wakeup, sondern der
+Hintergrundmodus des Shell-Werkzeugs: Der Aufruf wird abgesetzt, der Harness
+verfolgt den Prozess und meldet dem Dirigenten die Fertigstellung. Für
+kurze Schritte (Prüfen, Fixen) reicht blockierend.
 
 🔑 **Warum Codex als Prüfer die stärkere Lösung ist:** Der heutige Dirigent
 begründet den Prüfmechanismus mit frischem Kontext (SKILL.md Z. 24–27). Ein
@@ -168,44 +181,59 @@ die Bedingung dafür, dass ein Skript entscheiden kann.
 `~/.codex/config.toml` steht bereits auf `approval_policy = "never"` und
 `sandbox_mode = "danger-full-access"`, läuft also ohne Rückfragen durch.
 
-### Ablauf je Ticket — alles in EINEM Terminal, sequenziell
+### Ablauf je Ticket — alles in EINEM Terminal
+
+Der Dirigent wird **einmal** gestartet und läuft durch:
 
 ```powershell
-foreach ($ticket in $offene) {
-  # 1. BAUEN (Claude, frischer Kontext)
-  claude -p $bauPrompt --model opus --output-format json `
-         --json-schema schemas/bau-urteil.json --session-id $uuid | Tee-Object $log
-
-  $sha = git rev-parse HEAD
-
-  # 2. PRUEFEN (Codex, anderes Modell)
-  codex review --commit $sha --json | Tee-Object $reviewLog
-
-  # 3. FIXEN, nur bei Befund
-  if ($befund) {
-    codex exec "Behebe: $befund. Beleg an der Quelle." `
-               --output-schema schemas/fix-urteil.json --json
-  }
-  # 4. melden.py, dann naechstes Ticket
-}
+claude --model fable          # ein Terminal, eine Session, der Dirigent
 ```
 
-Kein `Start-Process`, kein zweites Fenster: Jeder Aufruf schreibt in
-dasselbe Terminal und blockiert bis zum Ende. `Tee-Object` hält den Verlauf
+Von dort ruft er je Ticket über sein Shell-Werkzeug auf — jeder Aufruf
+blockiert, jede Ausgabe landet im selben Terminal:
+
+```powershell
+# 1. BAUEN (Claude, frischer Kontext, laenger -> Hintergrundmodus)
+claude -p $bauPrompt --model opus --output-format json `
+       --json-schema schemas/bau-urteil.json --session-id $uuid | Tee-Object $log
+
+$sha = git rev-parse HEAD
+
+# 2. PRUEFEN (Codex, anderes Modell) - kurz, blockierend
+codex review --commit $sha --json | Tee-Object $reviewLog
+
+# 3. FIXEN, nur bei Befund
+codex exec "Behebe: $befund. Beleg an der Quelle." `
+           --output-schema schemas/fix-urteil.json --json
+
+# 4. melden.py
+```
+
+Zwischen den Schritten **urteilt der Dirigent** — er liest Exit-Code, JSON,
+Diff und Manifest und entscheidet, ob gefixt, wiederholt, gemeldet oder das
+nächste Ticket begonnen wird. Genau dafür ist er ein Modell und kein
+`foreach`.
+
+Kein `Start-Process`, kein zweites Fenster. `Tee-Object` hält den Verlauf
 zugleich auf der Platte fest.
 
 ### Was daraus noch zu klären ist
 
-1. **Ist der Dirigent das Skript oder eine LLM-Session?** Diese Skizze macht
-   das Skript zum Dirigenten — deterministisch, kein Wakeup nötig. Braucht
-   der Dirigent echtes Urteilsvermögen (z. B. „ist S9 wirklich fertig?"),
-   ruft das Skript dafür einen eigenen `claude -p`-Schritt mit Schema auf,
-   statt selbst eine dauerhafte LLM-Session zu sein.
-2. **Abbruchregel:** Wie oft darf Fixer→Prüfer kreisen, bevor das Ticket an
+1. ~~Ist der Dirigent das Skript oder eine LLM-Session?~~ **Beantwortet
+   25.08.:** echte Claude-Session mit Fable, kein Skript. *„beim dirigenten
+   spart man nicht."*
+2. **Langläufer.** Baut ein Ticket länger als das Werkzeug-Timeout
+   (bei Claude Code max. 10 min), muss der Bau-Aufruf in den
+   Hintergrundmodus des Shell-Werkzeugs — der Harness meldet dem Dirigenten
+   die Fertigstellung. Zu messen: wie lange ein echtes Ticket wirklich baut.
+3. **Abbruchregel:** Wie oft darf Fixer→Prüfer kreisen, bevor das Ticket an
    den User geht? Vorschlag: zweimal, dann Matrix-Meldung und Stopp.
-3. **Wer setzt die Urteilsmarke** in `docs/beweise/`? Nach heutiger Regel nur
+4. **Wer setzt die Urteilsmarke** in `docs/beweise/`? Nach heutiger Regel nur
    ein Prüfer — das spräche für Codex, verlangt aber, dass er das Manifest
    schreiben darf.
+5. **Modellwahl je Rolle:** Dirigent Fable (gesetzt), Bauer Opus
+   (`--model` explizit, sonst nimmt die CLI ihr Default — im Test kam
+   `claude-fable-5`), Prüfer/Fixer Codex nach `config.toml`.
 
 ### Aufwand mit Codex-Rollen
 

@@ -1,493 +1,352 @@
-# Vorhaben 25.08.2026 — Dirigent ohne Nimbalyst
+# Vorhaben 25.08.2026 — schlanker Dirigent ohne Nimbalyst
 
-Status: **entscheidungsreif, noch nicht umgesetzt**. Dieser Text ist der
-verbindliche Umsetzungs- und Abnahmeplan für den Umbau. Er ersetzt den ersten,
-widersprüchlichen Entwurf vom selben Tag.
+Status: **entscheidungsreif, noch nicht umgesetzt**. Dieser Plan ersetzt die
+technisch belastbare, aber zu komplex geratene Fassung vom selben Tag.
 
-## 1. Ziel und bindende Entscheidungen
+## 1. Leitentscheidung
 
-Der Dirigent bleibt eine **echte, interaktive Claude-Session mit Fable**. Er
-urteilt, priorisiert, startet genau einen ausführenden Arbeiter, prüft dessen
-Belege und entscheidet über den nächsten Schritt. Ein kleines PowerShell-Harness
-übernimmt ausschließlich Prozessstart, Zustandsablage, Sperre und mechanische
-Validierung. Es wird nicht zum Dirigenten und trifft keine Produktentscheidung.
+User-Wort vom 25.08.2026:
 
-Bindendes User-Wort vom 25.08.2026:
+> *„Ein komplexes System erfordert genauso viel Komplexität, es zu pflegen,
+> und lenkt die Aufmerksamkeit weg vom eigentlichen Projekt. Der Drift ist
+> vorprogrammiert. Ein schlankes System hält den Fokus auf dem Projekt.“*
 
-- *„beim dirigenten spart man nicht“* — Fable bleibt der Dirigent.
-- *„eine session baut solange wie sie braucht. dafür ist fable da das im auge
-  zu haben.“* — kein willkürlicher Bau-Timeout und kein Töten wegen bloßer
-  Stille.
-- Nimbalyst ist vollständig deinstalliert und soll keine aktive Abhängigkeit
-  mehr sein.
-- Matrix wurde nur wegen Nimbalysts fehlendem Remote-Zugang benutzt und ist bis
-  auf Weiteres stillgelegt. Seine Daten werden erhalten, nicht vernichtet.
-- Ein kleiner PowerShell-Harness ist gewünscht.
-- Ein Codex-Prüfer darf seine bestätigten Befunde **in derselben Codex-Session**
-  beheben; anschließend prüft eine **neue, frische Codex-Session** den gesamten
-  Ticket-Diff erneut.
-- Reviews suchen nur nach abnahmerelevanten Fehlern. Kosmetik, Stilpflege,
-  theoretische Randfälle und Nadel-im-Heuhaufen-Suche sind kein Arbeitsauftrag.
+Das Ziel ist deshalb nicht, Nimbalyst funktionsgleich nachzubauen. Das Ziel ist
+ein begrenzter Nakama-Workspace, in dem die Aufmerksamkeit auf Ticket, Code und
+Beweis liegt. Hilfswerkzeuge dürfen nur Mechanik abnehmen, die bereits vom
+verwendeten Werkzeug getragen wird. Sie bekommen keine eigene Produktlogik,
+keinen dauerhaften Zustand und keine zweite Wahrheit über das Projekt.
 
-Nicht Bestandteil dieses Vorhabens ist eine allgemeine
-„Werkzeug-Entrümpelung“. Insbesondere bleibt `codebase-memory-mcp` bestehen; es
-ist laut `AGENTS.md` der verbindliche erste Weg zur Code-Navigation.
+Der Dirigent bleibt eine **echte interaktive Claude-Session mit Fable**. Er
+entscheidet. Ein frischer Claude-Agent baut. Codex prüft. Das Repository mit
+seinen Manifesteinträgen und Tests ist der einzige dauerhafte Beleg.
 
-## 2. Gemessener Ausgangszustand
+## 2. Was die vorige Fassung übersehen hat
 
-Die folgenden Aussagen wurden am 25.08.2026 im aktuellen Workspace gemessen:
+Die vorige Fassung entfernte Nimbalyst, plante aber an seiner Stelle bereits
+wieder ein Orchestrierungssystem:
 
-- Claude Code ist in Version `2.1.240` installiert. Der Start einer echten
-  Session unterstützt `--model`, `--session-id`, `--name` und
-  `--remote-control`.
-- `claude -p` unterstützt unter anderem `--output-format json` und
-  `--json-schema`. `claude agents --json --cwd <repo> --all` ist verfügbar,
-  zeigt aber nur Claude-Agenten und ist keine atomare Prozesssperre.
-- Codex CLI ist in Version `0.144.6` installiert. `codex review --json` ist
-  ungültig. Der geeignete Weg ist `codex exec review`; dieser unterstützt
-  JSONL, ein Ergebnisschema und eine gespeicherte Thread-ID. Mit
-  `codex exec resume <thread-id>` kann genau dieser Kontext fortgesetzt werden.
-- Die globale Codex-Konfiguration gewährt derzeit weitreichende Rechte. Der
-  Harness darf sich darauf nicht verlassen, sondern setzt die Rechte pro
-  Phase explizit.
-- Die aktive Dirigenten- und Fragen-Dokumentation enthält noch
-  Nimbalyst-/Matrix-Annahmen.
-- Entgegen der beabsichtigten Stilllegung lief bei der Prüfung noch der lokale
-  Matrix-Bridge-Prozess. Außerdem existiert weiterhin
-  `Startup/Nakama Matrix Bridge.vbs`. Das Log war am 25.08.2026 noch verändert
-  worden. Die Stilllegung ist deshalb ein eigener, zuerst auszuführender und
-  zu beweisender Schritt.
+- drei PowerShell-Skripte,
+- drei Ergebnisschemata,
+- eigene Laufverzeichnisse und Logs,
+- Owner-Lease, Worker-Sperre und acht Prozesszustände,
+- Crash-Recovery, PID-Wiederverwendungslogik und eine eigene Testmatrix.
 
-Die alte Fassung verwirft damit folgende Annahmen ausdrücklich:
+Das wäre technisch kontrollierbar, aber es hätte wieder einen zweiten
+Pflegegegenstand neben Nakama geschaffen. Seine Zuverlässigkeit müsste
+überwacht, seine Verträge müssten migriert und seine Dokumentation müsste mit
+Claude, Codex und dem Repository synchron gehalten werden. Genau das ist der
+Drift, den dieser Umbau beenden soll.
 
-1. Ein Hintergrundprozess weckt Fable nicht nachweislich von selbst auf.
-2. Remote Control ist der Bedienkanal derselben Claude-Session, kein
-   Automations-Callback für Kindprozesse.
-3. Exit-Code `0`, ein neuer Commit oder nichtleere Ausgabe bedeuten noch keinen
-   fachlichen Erfolg.
-4. `codex review --commit <head>` deckt weder mehrere Ticket-Commits noch den
-   gewünschten strukturierten Ablauf ab.
-5. Matrix-Ausgang und `nimbalyst.py` sind nicht unabhängig: Der Bridge-Dienst
-   importiert die Datei und liest den zugehörigen Konfigurationsblock.
+Zusätzlich fehlten fünf Grenzen:
 
-## 3. Zielarchitektur
+1. **Native Fähigkeiten zuerst.** Claude Code kann mit `claude -p --bg`
+   Hintergrund-Agenten starten und mit `claude agents` verwalten. Dafür wird
+   kein eigener WorkerHost benötigt.
+2. **Manuelle Erholung ist erlaubt.** Ein seltener fehlender Wakeup ist billiger
+   als ein dauerhaft zu pflegender Scheduler. Fable oder der User prüft dann
+   den vorhandenen Agentenstatus; daraus entsteht kein neues Subsystem.
+3. **Nur eine aktive Wahrheit.** `CLAUDE.md`, `NEXT-SESSION.md`, der
+   Dirigenten-Skill und ein eigenes Dirigentenprotokoll dürfen den Stand nicht
+   viermal erzählen. `NEXT-SESSION.md` ist bereits zur Chronik angewachsen und
+   dupliziert den gerechneten Planstand; es wird deshalb nicht erneut „kurz
+   gepflegt“, sondern aus dem aktiven Einstieg entfernt.
+4. **Hilfsartefakte brauchen ein Ende.** Dieser Migrationsplan darf nach der
+   Umsetzung nicht als weitere aktive Anleitung liegen bleiben.
+5. **Aufmerksamkeitskosten sind ein Abnahmekriterium.** Nicht nur „funktioniert
+   es?“, sondern auch „was muss ab morgen zusätzlich verstanden und gepflegt
+   werden?“ entscheidet über die Annahme einer Lösung.
+6. **Automatische Hooks sind ebenfalls ein System.** Heute laufen bei jedem
+   Sessionstart Depth-, Plan- und Design-Primer; nach Werkzeugaufrufen folgen
+   Erinnerer, Planstand-Commit und Auto-Push, beim Stop ein weiterer Wächter.
+   Auch wenn jeder einzeln gut begründet ist, formen sie zusammen wieder eine
+   unsichtbare Orchestrierung und laden Kontext unabhängig vom Auftrag.
 
-### 3.1 Eine echte Dirigenten-Session
+## 3. Feste Komplexitätsgrenze
 
-Der kanonische Einstieg wird:
+Für diesen Umbau gelten folgende Grenzen:
 
-```powershell
-pwsh -File tools/dirigent/Start-Dirigent.ps1
-```
+- kein Daemon, Scheduler, Watchdog oder Autostart für den Dirigenten,
+- kein eigener Prozessmanager, Zustandsautomat oder Lockdienst,
+- keine neuen JSON-Schemata für Bauer-, Review- oder Fixergebnisse,
+- keine dauerhaften Laufprotokolle oder Runtime-Dateien im Repository,
+- kein neues Dashboard und keine externe Statusdatenbank,
+- keine Kopie von Ticketstand oder Produktwahrheit in Hilfsdokumenten,
+- keine informierenden oder automatisch commit-/pushenden Dauer-Hooks,
+- kein allgemeines Aufräumen funktionierender Werkzeuge nebenbei.
 
-Das Skript erzeugt eine UUID, legt den Laufzustand an und startet im selben
-Terminal genau diese interaktive Session:
+Standardfall: **keine neue dauerhafte Harness-Datei**. Falls sich beim realen
+Probelauf zeigt, dass der direkte Startbefehl wiederholt falsch eingegeben
+wird, ist höchstens ein dünnes `Start-Dirigent.ps1` erlaubt. Es darf nur den
+unten stehenden Claude-Aufruf weiterreichen — ohne Zustand, Monitoring,
+Prozessverwaltung oder eigene Regeln.
 
-```powershell
-claude --model fable --session-id <uuid> --name nakama-dirigent `
-  --remote-control nakama-dirigent
-```
+Reichen die nativen Fähigkeiten nachweislich nicht aus, hält die Umsetzung an
+und legt dem User genau die fehlende Fähigkeit vor. Sie erweitert den Umfang
+nicht still um ein Ersatz-Nimbalyst.
 
-Lokales Terminal und Claude Remote Control bedienen dadurch dieselbe Session.
-Das Schließen des Terminals beendet diesen lokalen Betriebsmodus; der Plan
-verspricht keine davon unabhängige Dauerinstanz.
+## 4. Begrenzter aktiver Workspace
 
-### 3.2 Das Harness ist Mechanik, nicht Urteil
+Eine frische Nakama-Arbeit braucht nur diesen Einstieg:
 
-Vorgesehene Dateien:
+1. `AGENTS.md` führt zu `CLAUDE.md`; dort stehen Produkt und harte Invarianten.
+2. `tools/plan/planstand.py` rechnet bei Arbeitsbeginn `docs/PLAN-STAND.md`
+   neu; das Blatt nennt dann den nächsten Schritt. Offene User-Fragen stehen
+   in `docs/plan/fragen.json`.
+3. Für das konkrete Ticket werden nur dessen Gate-Text, betroffene Fachquellen
+   und Beweismanifest gelesen.
 
-```text
-tools/dirigent/Start-Dirigent.ps1
-tools/dirigent/Invoke-DirigentWorker.ps1
-tools/dirigent/DirigentWorkerHost.ps1
-tools/dirigent/schemas/bau-ergebnis.schema.json
-tools/dirigent/schemas/review-ergebnis.schema.json
-tools/dirigent/schemas/fix-ergebnis.schema.json
-tools/dirigent/tests/DirigentHarness.Tests.ps1
-```
+Git und das Ticketmanifest belegen, was tatsächlich geschehen ist. Historische
+Erklärungen werden nicht in aktive Einstiegsdateien kopiert; die Git-Historie
+und bestehende Archive reichen zur Spurensuche.
 
-Laufdaten und Logs gehören nicht in das Repository, sondern nach:
+Der Dirigent führt kein zweites fortlaufendes Projektprotokoll. Das bestehende
+`docs/dirigent/protokoll.md` bleibt historisch lesbar, wird aber nicht mehr als
+Pflichtartefakt fortgeschrieben. Seine verwertbare Wahrheit steht bereits in
+Commits, Manifesten und Planstand.
 
-```text
-%LOCALAPPDATA%\Nakama\dirigent\<repo-hash>\runs\<run-id>\
-```
+## 5. Minimaler Ablauf
 
-Pro kanonischem Repository besitzt genau **eine Dirigenten-Session** eine
-atomare Owner-Lease. Ein zweiter lokaler Start wird bei lebendem Owner
-abgewiesen und zeigt dessen Session-ID; Remote Control verbindet sich mit
-demselben Owner. Unter der Lease darf höchstens **ein Worker beliebiger Rolle**
-laufen — auch ein lesender Review braucht einen stabilen Repository-Stand.
-Lease und Worker-Sperre speichern mindestens Rolle, Ticket, Run-ID,
-Dirigenten-Session, Basis-HEAD, Supervisor-PID samt Startzeit und Executable
-sowie Kind-PID samt Startzeit und Executable. PID allein genügt wegen
-Wiederverwendung nicht.
+### 5.1 Dirigent starten
 
-Prozesse werden über .NET `ProcessStartInfo.ArgumentList` mit explizitem
-Arbeitsverzeichnis gestartet. Prompts gehen über Datei oder stdin, nie über
-zusammengesetzte Shell-Befehle. stdout, stderr, Startzeit, Endzeit und Exit-Code
-werden getrennt aufgezeichnet.
-
-Vor jedem Spawn wird zunächst atomar `RESERVED` persistiert. Nach Start des
-Supervisors folgt `STARTING`; erst wenn auch die geprüfte Kindidentität sicher
-gespeichert ist, wird der Zustand `RUNNING`. Stirbt eine Startphase, darf die
-Sperre nicht freigegeben werden, solange ein möglicher Supervisor oder
-Kindprozess nicht eindeutig ausgeschlossen ist.
-
-Mechanische Zustände sind ausschließlich:
-
-```text
-RESERVED · STARTING · RUNNING · EXITED_0 · EXITED_NONZERO · ORPHANED · LOST · CANCELLED
-```
-
-Keiner dieser Zustände bedeutet `PASS`. Der Dirigent entscheidet erst nach
-Repository-, Schema- und Beweisprüfung über Erfolg.
-
-### 3.3 Beobachten ohne erfundenen Wakeup
-
-Das Harness bietet kurze synchrone Wartescheiben von höchstens 60 Sekunden, die
-sicher unter dem Timeout des aufrufenden Shell-Werkzeugs bleiben. Eine Scheibe
-endet sofort, wenn der Worker endet; andernfalls kehrt sie mit `RUNNING` und
-`nextCheckAt` zurück. Fable ruft bis dahin nur weitere Wartescheiben auf; die
-teurere Prüfung von Prozess, Log und Repository erfolgt höchstens alle 30
-Minuten. Dadurch kann eine Remote-Nachricht höchstens eine kurze Scheibe warten.
-
-Bei Stille prüft Fable Prozessidentität, letzte strukturierte Ausgabe,
-Logfortschritt, CPU-Aktivität und Repository-HEAD. Es beendet einen Worker nicht
-allein wegen verstrichener Zeit. Ein autonomer Callback darf diese Lösung erst
-ersetzen, wenn ein Ende-zu-Ende-Test beweist, dass er die laufende Fable-Session
-ohne neuen User-Impuls tatsächlich fortsetzt.
-
-`claude agents --json` darf ergänzend diagnostizieren, aber weder die Sperre
-noch die Prozesswahrheit ersetzen.
-
-## 4. Ablauf je Ticket
-
-### 4.1 Vorbedingungen
-
-Fable liest die laut `AGENTS.md`, `CLAUDE.md` und Planstand für das Ticket
-verbindlichen Quellen. Danach hält der Harness fest:
-
-- Ticket und unveränderten Gate-Text aus der kanonischen Planung,
-- absoluten Repository-Pfad,
-- vollständigen `base_sha = git rev-parse HEAD`,
-- `git status --short`, einschließlich fremder Ausgangsänderungen,
-- erwartetes Beweismanifest und passende Prüfkommandos.
-
-Fremde Änderungen bleiben unangetastet. Der Harness bereinigt, verwirft,
-stash-t oder committet sie nie.
-
-### 4.2 Bauen — frische Claude-Worker-Session
-
-Der Bauer ist pro Ticket eine frische, nichtinteraktive Claude-Session mit
-Opus. Er erhält nur den Ticketauftrag, die verbindlichen Quellen, den
-Ausgangsstatus und den erwarteten Beweisweg. Er arbeitet so lange, wie
-Fortschritt oder ein ehrlicher Blocker nachweisbar ist, führt passende Tests
-aus und committet ausschließlich seine eigenen Pfade mit explizitem Pathspec.
-
-Sein schemageprüftes Ergebnis enthält mindestens:
-
-- Ticket, Run-ID, `base_sha` und resultierendes `head_sha`,
-- Status `completed`, `blocked` oder `failed`,
-- geänderte Pfade und erzeugte Commits,
-- ausgeführte Prüfungen mit Exit-Codes,
-- Manifestpfad,
-- verbleibende Risiken und nicht gelaufene Prüfungen.
-
-Nach Prozessende validiert Fable unabhängig:
-
-1. Ergebnisdatei und Schema sind gültig.
-2. `base_sha` und `head_sha` sind vollständige SHAs und der Ausgangs-Commit
-   ist Vorfahr des neuen HEAD. Nur `completed` verlangt einen neuen HEAD;
-   `blocked` oder `failed` darf ohne Commit bei `head_sha == base_sha` enden.
-3. Falls ein neuer HEAD existiert, gehört der gesamte Bereich
-   `base_sha..head_sha`, nicht nur der letzte Commit, zum Ticket. Auch
-   Teilcommits eines blockierten oder fehlgeschlagenen Laufs werden geprüft
-   und bleiben offen; sie gehen nicht automatisch ins Review.
-4. Ausgangsfremde Pfade wurden nicht verändert.
-5. Manifest und aktuelle Testbelege existieren und stimmen mit dem Ergebnis
-   überein.
-
-Exit `0` ohne diese Nachweise ist nur `EXITED_0`, nicht fertig.
-
-Unmittelbar vor und nach jeder Worker-Phase vergleicht der Harness HEAD und
-Worktree mit dem letzten akzeptierten Snapshot. Insbesondere vor jeder
-schreibenden Phase müssen `HEAD == erwarteter head_sha` und alle fremden Pfade
-unverändert sein. Drift macht einen lesenden Lauf ungültig und führt vor einem
-Fix oder Manifesteintrag zu `HALT`; der Harness schreibt nie auf einen
-unerwarteten Stand.
-
-### 4.3 Prüfen — frischer Codex-Thread, lesend
-
-Für T2 bekommt eine neue Codex-Session genau den unveränderten Gate-Text, den
-gesamten Diff `base_sha..head_sha` und das aktuelle Beweismanifest. Die
-Zusammenfassung des Bauers ist kein Prüfmaßstab.
-
-Der Harness startet aus dem Workspace-Root sinngemäß:
+Der User startet direkt eine echte Fable-Session:
 
 ```powershell
-codex -C <repo> -s read-only -a never --strict-config exec review `
-  --json `
-  --output-schema <review-ergebnis.schema.json> `
-  -o <review-ergebnis.json> -
+claude --model fable --name nakama-dirigent --remote-control nakama-dirigent
 ```
 
-Der Prompt kommt über stdin und nennt die exakten vollständigen SHAs. Er weist
-Codex an, `git diff --find-renames <base_sha>..<head_sha>` sowie bei Bedarf
-`git show <head_sha>:<pfad>` zu prüfen. Ein eigener Prompt wird nicht mit den
-konkurrierenden Zieloptionen `--base`, `--commit` oder `--uncommitted`
-kombiniert.
+Terminal und Remote Control bedienen dieselbe Session. Es gibt keinen
+zusätzlichen Nachrichtenkanal und keinen Hintergrunddienst. Schließt das
+Terminal, endet dieser lokale Betriebsmodus; das ist eine bewusste Grenze,
+kein Fehler, der durch weitere Infrastruktur verdeckt werden muss.
 
-Ein technisch gültiger Lauf verlangt gleichzeitig:
+### 5.2 Ticket festlegen
 
-- Exit-Code `0`, parsebares JSONL und genau ein `thread.started.thread_id`,
-- `turn.completed`, kein `turn.failed`,
-- eine schemagültige Ergebnisdatei,
-- dieselben `base_sha` und `head_sha` im Urteil,
-- ein semantisch konsistentes Ergebnis.
-
-stderr darf Fortschritt enthalten und ist allein kein Fehler. Der Status ist
-`pass`, `findings` oder `blocked`; `pass` verlangt null Befunde, `findings`
-mindestens einen Befund und `blocked` mindestens einen konkreten Blocker.
-
-### 4.4 Befunde priorisieren und an der Quelle validieren
-
-Ein Review darf nur folgende Prioritäten ausgeben:
-
-| Priorität | Bedeutung |
-|---|---|
-| `critical` | Daten-/State-Verlust, Sicherheitsbruch, Audio-Thread-/Nulltest-Verletzung oder schwere reproduzierbare Korruption/Absturz |
-| `high` | expliziter Vertrag, Gate oder normaler unterstützter Bedienpfad ist verletzt |
-| `medium` | reproduzierbarer Funktionsfehler in einem unterstützten engeren Pfad, der die Ticketabnahme verhindert |
-
-Jeder Befund braucht Pfad, Zeile, Auslöser, Auswirkung, Beleg und geforderte
-Korrektur. Nicht zulässig sind reine Kosmetik, Benennungs- oder Formatwünsche,
-optionale Härtung, theoretische/unwahrscheinliche Randfälle, vorbestehende oder
-ticketfremde Punkte sowie pauschal „fehlende Tests“ ohne eine dadurch
-unbewiesene konkrete Ticketbehauptung.
-
-Fable prüft jeden Befund an der Quelle. Ein widerlegter oder nicht materieller
-Befund löst keine Änderung aus. Ein bestätigter Befund blockiert `PASS`.
-
-### 4.5 Beheben — derselbe Codex-Thread, gezielt schreibend
-
-Nur bei bestätigten Befunden setzt der Harness exakt den gespeicherten
-Review-Thread fort und wechselt für diese Phase ausdrücklich auf
-`workspace-write`:
+Fable rechnet den Planstand einmal zu Arbeitsbeginn und liest ihn:
 
 ```powershell
-codex -C <repo> -s workspace-write -a never --strict-config exec resume `
-  --json `
-  --output-schema <fix-ergebnis.schema.json> `
-  -o <fix-ergebnis.json> <thread_id> -
+py -3.13 tools/plan/planstand.py
 ```
 
-Der Fixauftrag enthält nur die von Fable bestätigten Befund-IDs. Codex muss
-jeden eigenen Befund nochmals reproduzieren, darf ihn als widerlegt
-dokumentieren, ändert keine Kosmetik und eröffnet keine neue allgemeine Suche.
-Es führt gezielte Prüfungen aus und committet nur seine eigenen Pfade mit
-explizitem Pathspec. Als nun beteiligter Bauer darf dieser Thread sich selbst
-kein abschließendes `PASS` erteilen.
+Ändert der Generator das Blatt auf Basis bereits committeter Quellen, wird nur
+`docs/PLAN-STAND.md` vor dem Ticket mit explizitem Pathspec committet und
+gepusht. Bei uncommittierten Planquellen hält Fable stattdessen an. Danach liest
+es die Quellen des genau einen Tickets. Vor jedem Arbeiter prüft Fable:
 
-Das Fixergebnis enthält Befunddispositionen samt Beleg, geänderte Pfade, Tests,
-neuen HEAD und nicht behobene Blocker. Fable wiederholt danach alle
-Repository- und Beweisprüfungen aus Abschnitt 4.2.
-
-### 4.6 Erneut prüfen — zwingend frischer Codex-Thread
-
-Nach einer Nacharbeit startet **ein neuer** `codex exec review`-Lauf. Seine
-Thread-ID muss von der Fix-Session verschieden sein. Er prüft wieder den
-vollständigen Bereich vom ursprünglichen `base_sha` bis zum aktuellen HEAD,
-nicht nur den Fix-Commit.
-
-Falls wieder materielle Befunde bleiben, darf genau dieser neue Prüfer seine
-bestätigten Befunde in seinem Thread beheben; darauf folgt noch eine frische
-Prüfung. Nach zwei erfolglosen Zyklen aus Nacharbeit und frischer Wiederprüfung
-hält Fable an und meldet den Blocker. Eine dritte Reparaturschleife startet
-nicht automatisch.
-
-Ergibt bereits die erste unabhängige Prüfung `pass`, entfällt eine redundante
-zweite Prüfung. Das exakte Urteil wird erst danach kontrolliert in das
-Ticketmanifest übernommen. Soll Codex selbst diesen Eintrag schreiben, wird
-der bestandene Review-Thread nur dafür mit `workspace-write` fortgesetzt; als
-Postcondition darf ausschließlich das erwartete Manifest geändert und
-committet worden sein.
-
-### 4.7 Zustandsautomat
-
-```text
-IDLE
-  -> BUILD_RUNNING
-  -> BUILD_EXITED
-  -> REPO_VALIDATED
-  -> REVIEW_RUNNING (frischer Thread, read-only)
-       -> PASS -> RECORD_VERDICT -> ACCEPTED
-       -> FINDINGS -> FABLE_VALIDATES
-            -> FIX_RUNNING (derselbe Review-Thread, workspace-write)
-            -> REPO_VALIDATED
-            -> REREVIEW_RUNNING (neuer frischer Thread, read-only)
-            -> PASS oder nächster/letzter Fixzyklus
-       -> BLOCKED -> HALT
+```powershell
+git status --short
+claude agents --json --cwd . --all
+git rev-parse HEAD
 ```
 
-Fable allein löst die fachlichen Übergänge `PASS`, `FINDINGS`, `ACCEPTED` und
-`HALT` aus. Das Harness kann nur mechanische Unterzustände feststellen.
+Läuft bereits ein verändernder Agent oder Bau im selben Workspace, wartet
+Fable. Fremde Änderungen werden benannt und nicht angefasst. Der vollständige
+Ausgangs-SHA bleibt im Dirigentenkontext und im Ticketauftrag; dafür braucht es
+keine eigene Zustandsdatei.
 
-## 5. Nimbalyst entfernen und Matrix wirklich stilllegen
+### 5.3 Bauen
 
-Dieser Umbau erhält historische Belege, entfernt aber jede aktive
-Laufzeitabhängigkeit.
+Der Bauer ist ein frischer Claude-Hintergrund-Agent mit Opus:
 
-### 5.1 Matrix reversibel stilllegen
+```powershell
+claude -p --bg --model opus "<selbsttragender Ticketauftrag>"
+```
 
-Als erster Umsetzungsschritt:
+Der Auftrag enthält nur Ticketgrenze, verbindliche Quellen, Manifestpfad,
+Beweislauf und die Git-Regeln. Claude Code verwaltet den Agenten; Fable prüft
+seinen Zustand mit `claude agents`. Es gibt genau einen verändernden Arbeiter
+zur Zeit als einfache Arbeitsregel, nicht als eigenes Locksystem.
 
-1. Prozess-Executable und Commandline prüfen, damit ausschließlich der echte
-   Matrix-Bridge-Prozess adressiert wird.
-2. Genau diesen Prozessbaum geordnet beenden.
-3. `Nakama Matrix Bridge.vbs` aus dem Autostart **verschieben/deaktivieren**,
-   nicht löschen.
-4. Beweisen, dass kein Bridge-Prozess und keine zugehörige TCP-Verbindung mehr
-   läuft und das Dienstlog während eines Beobachtungsfensters nicht wächst.
-5. Den gesamten Bridge-Ordner mit Konfiguration, Store, Queue, Inbox, Outbox
-   und `nimbalyst.py` unverändert erhalten. Matrix ist pausiert, nicht
-   deinstalliert oder migriert.
+Fable übernimmt keinen Selbstbericht. Nach Ende misst es direkt:
 
-Der Dirigent sendet keine Matrix-Meldungen mehr. Fortschritt, Rückfragen und
-Abschluss laufen über dieselbe Remote-Control-/Terminal-Session.
+- den vollständigen Diff vom Ausgangs-SHA bis zum aktuellen HEAD,
+- das aktuelle Ticketmanifest,
+- die ausgeführten gezielten Tests,
+- unberührte fremde Pfade.
 
-### 5.2 Aktive Nimbalyst-Verweise bereinigen
+Ein Exit-Code oder Commit allein bedeutet nicht fertig. Ein blockierter Agent
+darf ehrlich ohne Änderung enden. Unerwarteter HEAD- oder Worktree-Drift führt
+zum Halt; Fable baut dafür keine automatische Reparatur.
 
-Im selben Änderungssatz werden nur aktive Wahrheitsquellen korrigiert:
+### 5.4 Mit Codex prüfen und gezielt nacharbeiten
 
-- `CLAUDE.md`: Remote-Bericht auf Terminal/Remote Control umstellen.
-- `.claude/skills/dirigent/SKILL.md`: Nimbalyst-Start, Session-Suche, Wakeup
-  und Matrix-Meldeweg durch den hier definierten Harness-Ablauf ersetzen; die
-  fachliche Substanz, Priorisierung und Stop-Regeln bleiben erhalten.
-- `.claude/skills/fragen/SKILL.md`: die drei entfernten Nimbalyst-Werkzeuge
-  durch eine native Bild-/Dateiübergabe im echten Claude-Bedienkanal ersetzen.
-  Wenn Remote Control eine benötigte Bilddarstellung nicht unterstützt, muss
-  der Skill das ehrlich melden und darf keinen erfundenen Pfad behaupten.
-- `docs/NEXT-SESSION.md`: aktive Matrix-/Nimbalyst-Aufträge entfernen oder als
-  stillgelegt kennzeichnen und auf diesen Plan verweisen.
-- `nimbalyst-local/automations/planstand-nakama.md`: entfernen; Nimbalyst ist
-  deinstalliert. Danach den exakten ignorierten Laufartefakt-Ordner
-  `nimbalyst-local/automations/planstand-nakama/` mit `history.json` und
-  `output.md` gezielt prüfen und entfernen. Der weiterhin nützliche,
-  Nimbalyst-freie `tools/hooks/planstand.sh` bleibt bestehen.
-- `.gitignore`: erst nach der Artefaktbereinigung nur den dadurch verwaisten,
-  eigens beschrifteten Nimbalyst-Automationsblock entfernen.
+Ein frischer Codex-Thread prüft lesend den vollständigen Ticketbereich, den
+unveränderten Gate-Text und das Manifest. Temporäre CLI-Ausgaben liegen nur
+unter `$env:TEMP` und werden nach dem Ticket entfernt.
 
-Nicht umgeschrieben werden historische Belege und Protokolle unter
-`docs/beweise/`, `docs/dirigent/protokoll.md`, `docs/archiv/`, abgeschlossene
-historische Einträge in `docs/offene-punkte.md` oder Designabnahmen. Ebenso
-bleiben fachliche „Matrix“-Begriffe aus Mathematik, State oder DSP unangetastet.
+```powershell
+codex -C . -s read-only -a never --strict-config exec review `
+  --json -o <temp-review.txt> -
+```
 
-## 6. Umsetzungspakete und Gates
+Der Prompt nennt die exakten Basis- und HEAD-SHAs. Der JSONL-Stream liefert die
+Thread-ID; ein eigenes Ergebnisschema wird nicht gepflegt. Das Urteil ist
+`PASS`, `NEEDS_WORK` oder `BLOCKED` und nennt knapp, was tatsächlich geprüft
+und nicht geprüft wurde.
 
-### Paket A — Stilllegung und Wahrheitsabgleich
+Ein zulässiger Befund muss reproduzierbar sein und die Ticketabnahme berühren:
 
-- Matrix-Prozess und Autostart reversibel stilllegen und beweisen.
-- Aktive Nimbalyst-/Matrix-Verweise gemäß Abschnitt 5 korrigieren.
-- Keine Historie und keine Bridge-Daten löschen.
+- `critical`: Daten-/State-Verlust, Sicherheitsbruch,
+  Audio-Thread-/Nulltest-Verletzung oder schwere Korruption,
+- `high`: expliziter Vertrag, Gate oder normaler unterstützter Pfad gebrochen,
+- `medium`: konkreter Funktionsfehler in einem unterstützten engeren Pfad, der
+  die Abnahme verhindert.
 
-**Gate A:** Nach Neustartprüfung startet die Bridge nicht; aktive
-Dirigenten-/Fragen-Dokumentation verlangt kein Nimbalyst und kein Matrix.
-`claude mcp list` enthält kein Nimbalyst und `git status --ignored` zeigt keine
-Reste unter `nimbalyst-local/`.
+Kosmetik, Stil, Benennung, optionale Härtung, theoretische Randfälle,
+vorgefundene ticketfremde Probleme und Nadel-im-Heuhaufen-Suche werden nicht
+weiterverfolgt. Fable validiert jeden Befund an der Quelle.
 
-### Paket B — Harness-Kern
+Bestätigte Befunde behebt derselbe Codex-Thread gezielt:
 
-- Laufverzeichnis, atomare Sperre, Prozessidentität und Zustandsdateien bauen.
-- stdout/stderr und strukturierte Ergebnisse getrennt persistieren.
-- Fremde Ausgangsänderungen erkennen und schützen.
-- Crashzustände `ORPHANED` und `LOST` ehrlich behandeln; nie still einen
-  zweiten schreibenden Worker starten.
+```powershell
+codex -C . -s workspace-write -a never --strict-config exec resume `
+  <thread-id> -
+```
 
-**Gate B:** Pester-Tests beweisen Owner-Lease, atomaren
-`RESERVED`/`STARTING`-Handshake, PID-Wiederverwendungs-Schutz,
-Exit-Code-Zustände, Crash-Recovery und unveränderte Fremdpfade. Ein zweiter
-Dirigentenstart sowie jeder parallele Worker — auch `read-only` — werden
-abgewiesen.
+Danach prüft ein neuer frischer Codex-Thread erneut den **gesamten** Bereich
+vom ursprünglichen Ausgangs-SHA bis zum neuen HEAD. Nach zwei erfolglosen
+Nacharbeitsrunden hält Fable an. Ein bestandenes Urteil wird unverändert in das
+vorhandene Ticketmanifest übernommen; dafür entsteht kein weiteres Protokoll.
 
-### Paket C — Dirigentenstart und Beobachtung
+### 5.5 Weiter oder halten
 
-- kanonischen Start derselben Fable-Session lokal und über Remote Control
-  bauen,
-- Wartescheiben und `nextCheckAt` integrieren,
-- den bisherigen Dirigenten-Skill ohne fachliche Verarmung umstellen.
+Fable fährt mit dem nächsten Ticket fort. Es hält nur bei:
 
-**Gate C:** Derselbe Session-ID-Kontext ist im Terminal und remote bedienbar;
-ein Dummy-Worker endet ohne neuen User-Prompt innerhalb einer Wartescheibe und
-ein weiterlaufender Worker gibt Fable rechtzeitig die Kontrolle zurück.
+- einem User-, Figma-, FL- oder Installationsschritt,
+- einem Produktentscheid,
+- überlappenden fremden Änderungen,
+- einem materiellen, zweimal nicht geschlossenen Befund,
+- einer fehlenden nativen Fähigkeit, deren Ersatz neue Infrastruktur
+  erfordern würde,
+- einem Phasengate oder leerem Plan.
 
-### Paket D — Bauer, Reviewer, Fixer
+## 6. Aktive Altlasten entfernen
 
-- Claude-Bauer mit Schema und vollständiger Repository-Nachprüfung integrieren.
-- Codex-Review mit frischer Thread-ID und `read-only` integrieren.
-- gezielte Nacharbeit via `exec resume` desselben Threads mit
-  `workspace-write` integrieren.
-- frische Vollbereichs-Wiederprüfung und Zwei-Zyklen-Stopp integrieren.
+### 6.1 Matrix pausieren
 
-**Gate D:** Ein Wegwerf-Repository durchläuft den vollständigen Ablauf mit
-mindestens zwei Ticket-Commits. Ein absichtlich materieller Fehler wird
-gefunden, im selben Thread behoben und von einem neuen Thread über
-`base_sha..fixed_head_sha` bestanden. Eine kosmetische Falle löst keinen
-Befund aus. Simulierte HEAD- oder Worktree-Drift zwischen Review und Fix bzw.
-Urteilseintrag führt vor dem Schreiben zu `HALT`.
+Matrix ist nicht Teil des neuen Wegs. Die Umsetzung:
 
-### Paket E — Ende-zu-Ende-Abnahme
+1. prüft die Identität des noch laufenden Bridge-Prozesses,
+2. beendet genau diesen Prozess,
+3. verschiebt/deaktiviert `Startup/Nakama Matrix Bridge.vbs`,
+4. beweist nach Neustart, dass Prozess und Log inaktiv bleiben.
 
-- Einen echten, kleinen Nakama-Auftrag ohne Produktinstallation durchführen.
-- Aktuelles Manifest und gezielte Tests prüfen.
-- Terminal/Remote-Control-Rückfrage sowie Abschlussbericht erproben.
+Der Bridge-Ordner außerhalb des Repositories bleibt mit Konfiguration, Store,
+Queues und `nimbalyst.py` unangetastet. Matrix ist pausiert, nicht zerstört.
 
-**Gate E:** Der Ablauf benötigt weder Nimbalyst noch Matrix, bewahrt fremde
-Änderungen, akzeptiert nur schemagültige aktuelle Belege und erzeugt genau den
-beabsichtigten Ticket-Diff.
+### 6.2 Nimbalyst aus dem aktiven Workspace entfernen
 
-## 7. Pflichtprüfungen
+- `.claude/skills/dirigent/SKILL.md` wird auf Rolle, Quellen, Minimalzyklus,
+  Prioritäten und Haltgründe gekürzt. Historische Nimbalyst-/Matrix-Erzählung
+  und Werkzeuganekdoten gehören nicht in den aktiven Skill.
+- `.claude/skills/fragen/SKILL.md` stellt Fragen und Bilder direkt im
+  Claude-/Remote-Control-Kanal; keine Nimbalyst-Werkzeuge und kein Ersatzbus.
+- `CLAUDE.md` verliert den gesamten Matrix-Remote-Berichtsblock und verweist
+  für den nächsten Schritt auf `docs/PLAN-STAND.md` statt auf
+  `docs/NEXT-SESSION.md`. Der direkte Remote-Control-Start wird nur im
+  Dirigenten-Skill beschrieben, nicht erneut als zweite Anleitung.
+- `AGENTS.md` verweist für geplante Arbeit ebenfalls direkt auf
+  `docs/PLAN-STAND.md` und die konkrete Ticketquelle.
+- `docs/NEXT-SESSION.md` wird aus dem aktiven Workspace entfernt; seine
+  Chronik bleibt über Git auffindbar. Echte offene User-Fragen bleiben in
+  `docs/plan/fragen.json`, technische offene Punkte in
+  `docs/offene-punkte.md`.
+- `nimbalyst-local/automations/planstand-nakama.md` und der ignorierte
+  Laufartefakt-Ordner darunter werden nach exakter Pfadprüfung entfernt.
+- Danach fällt nur der zugehörige Nimbalyst-Block aus `.gitignore`.
 
-Vor Freigabe müssen mindestens diese Szenarien nachweislich bestehen:
+### 6.3 Automatische Kontext- und Pflegeebene verkleinern
 
-1. Ein Terminal und Remote Control zeigen dieselbe Fable-Session-ID.
-2. Ein Dummy hält die atomare Sperre; ein zweiter Dirigent sowie ein paralleler
-   schreibender oder lesender Worker werden abgewiesen, eine fremde
-   ungetrackte Datei bleibt bytegleich.
-3. Dummy-Prozesse mit Exit `0` und Exit `7` sowie getrenntem stdout/stderr
-   ergeben korrekte mechanische Zustände und niemals automatisch `PASS`.
-4. Eine verkürzte 30-Sekunden-Wakeup-Probe zeigt: Fable bekommt ohne
-   User-Prompt Kontrolle zurück, plant die nächste Prüfung und erkennt ein
-   früheres Worker-Ende.
-5. Supervisor-Abbruch und verwaister Kindprozess ergeben `ORPHANED`/`LOST`
-   und keinen parallelen Schreibstart.
-6. Ein Git-Wegwerfrepo beweist den vollständigen Bau-/Review-/Fix-/Frischreview-
-   Ablauf über mehrere Commits und exakte SHAs.
-7. Zwei erfolglose Nacharbeitszyklen führen zuverlässig zu `HALT`.
-8. Nimbalyst ist aus allen aktiven Pfaden entfernt, Matrix bleibt aus und alle
-   Bridge-Daten bleiben erhalten.
-9. `/fragen` zeigt ein Bild nativ im Remote-Control-Kanal oder weist die
-   konkrete Einschränkung ehrlich aus.
+In `.claude/settings.json` bleiben nur Hooks, die einen konkreten schweren
+Fehler verhindern und deren Wirkung nicht schon durch die normale
+Arbeitsanweisung getragen wird:
 
-Zusätzlich gelten die risikobasierten Nakama-Prüfungen aus `AGENTS.md` und dem
-jeweiligen Ticket. Installation und FL-Studio-Handgriffe bleiben bewusste
-User-Schritte und werden vom Harness nie automatisch ausgelöst.
+- `nakama-primer.sh` nur nach Context-Compaction, weil er den Wahrheitskern aus
+  `CLAUDE.md` liest statt ihn zu kopieren,
+- `git-riegel.sh` als enger Blocker gegen destruktive oder fremde Arbeit
+  erfassende Git-Befehle.
 
-## 8. Abbruch- und Fertigkriterien
+Aus der aktiven Hook-Konfiguration fallen:
 
-Fable hält an und fragt den User, wenn:
+- `depth-primer.sh`, `plan-primer.sh` und `design-primer.sh` — Kontext wird nur
+  geladen, wenn der Auftrag ihn braucht,
+- `agent-reminder-nakama.sh` — seine Invarianten stehen bereits in
+  `CLAUDE.md`,
+- `planstand.sh` als PostToolUse-Automatik — der vorhandene Generator wird
+  bewusst zu Arbeitsbeginn und nach einem Ticket ausgeführt,
+- `auto-push.sh` — die arbeitende Session committet und pusht ihren eigenen
+  Änderungssatz unmittelbar selbst,
+- `session-start-marker.sh` und `commit-stop.sh` — Abschlussprüfung und
+  explizite Pathspec-Commits bleiben Aufgabe der arbeitenden Session,
+- `fremdmodell-riegel.sh` — fremde Modelle erhalten bei ihrem konkreten Aufruf
+  explizit nur Leserechte statt eines globalen Dauerwächters,
+- `kreativ-schleuse.sh` — alte Designflächen sind durch aktive
+  Arbeitsanweisung und Git geschützt; Designarbeit liest ohnehin zuerst
+  `design/LIES-MICH.md` und die aktuelle Abnahme.
 
-- die Sperre nicht sicher einem lebenden oder toten Prozess zugeordnet werden
-  kann,
-- fremde Änderungen den Ticketbereich überlappen,
-- Basis-/HEAD-Beziehung, Ergebnis-Schema oder Manifest widersprüchlich ist,
-- ein benötigter User-/FL-Schritt erreicht ist,
-- ein materieller Befund nach zwei Nacharbeitszyklen fortbesteht,
-- der nächste Schritt neue Rechte oder einen größeren Umfang erfordern würde.
+Danach werden die nicht mehr referenzierten Hook-Skripte, Proben und Marker
+entfernt statt als totes Wartungsinventar liegen zu bleiben. Der kleine Test
+des verbleibenden Git-Riegels wird auf dessen reale Verbote begrenzt. Die
+aktuelle ungetrackte `.claude/settings.local.json` besteht aus alten
+Einmal-Berechtigungen für Temp-Pfade und erledigte Befehle. Nach Sicherung
+außerhalb des Workspaces wird sie entfernt; neue Einmal-Freigaben werden nicht
+als dauerhafte Projektkonfiguration behandelt.
 
-Das Vorhaben ist erst fertig, wenn alle Pakete A–E und ihre Belege grün sind,
-die aktive Doku den gebauten Ablauf beschreibt und ein realer kleiner
-Nakama-Durchlauf ohne Nimbalyst und Matrix akzeptiert wurde. Ein bloß grüner
-Build, Exit-Code `0` oder ein Commit reicht ausdrücklich nicht.
+Historische Beweise und Archive werden nicht umgeschrieben. Es gibt keine
+allgemeine MCP-/Skill-Aufräumaktion; nur die bei jeder Session aktive
+Kontext-/Pflegeebene wird auf ihren belegten Kern reduziert.
 
-Rollback bleibt je Paket möglich: Harness-Commits sind getrennt, der
-Autostart-Eintrag wird nur verschoben, und Bridge-Daten werden nicht verändert.
+## 7. Umsetzung in drei kleinen Schritten
+
+### A — Altlast aus
+
+Matrix-Prozess und Autostart pausieren. Nimbalyst-Laufartefakte und aktive
+Verweise entfernen. `claude mcp list` und `git status --ignored` zeigen keine
+Nimbalyst-Reste im aktiven Workspace.
+
+### B — Aktiven Kontext kürzen
+
+Dirigenten- und Fragen-Skill umstellen, Routen in `AGENTS.md`/`CLAUDE.md` auf
+den gerechneten Planstand reduzieren, `NEXT-SESSION.md` aus dem aktiven
+Workspace entfernen, das alte Dirigentenprotokoll aus dem Pflichtablauf nehmen
+und die Hook-Konfiguration auf Compaction-Primer plus Git-Riegel verkleinern.
+
+Prüfmaßstab: Jeder verbleibende Absatz in diesen aktiven Dateien steuert eine
+heutige Entscheidung oder einen heutigen Handgriff. Historie und doppelte
+Begründungen fallen heraus.
+
+### C — Ein realer Probelauf
+
+Mit einem kleinen echten Nakama-Ticket den direkten Ablauf einmal vollständig
+fahren: Fable per Remote Control, ein nativer Claude-Hintergrund-Agent, Messung
+am Repo, frischer Codex-Review und — nur bei materiellem Befund — Nacharbeit im
+selben Thread plus frischer Wiederreview.
+
+Wenn dieser Ablauf trägt, ist kein Harness zu bauen. Dieser Plan wird danach
+aus dem aktiven Dokumentationsbereich entfernt oder als abgeschlossener Verlauf
+archiviert. Der gebaute Endzustand steht ausschließlich im kurzen
+Dirigenten-Skill und den ohnehin kanonischen Projektquellen.
+
+## 8. Fertig bedeutet weniger System
+
+Das Vorhaben ist fertig, wenn:
+
+- Nimbalyst im aktiven Workspace nicht mehr existiert,
+- Matrix weder läuft noch automatisch startet,
+- der Dirigent in derselben Fable-Session lokal und remote bedienbar ist,
+- Bauer und Prüfer einmal über native Werkzeuge erfolgreich geführt wurden,
+- kein eigener Prozessmanager, Scheduler, Zustandsspeicher, Ergebnisschema oder
+  dauerhaftes Laufprotokoll hinzugekommen ist,
+- normale Sessionstarts keinen auftragsfremden Plan-, Design- oder
+  Tiefenkontext mehr injizieren und kein Hook selbst committet oder pusht,
+- eine frische Session nach dem kurzen Einstieg sofort am Nakama-Ticket statt
+  am Orchestrierungssystem arbeitet,
+- dieser Migrationsplan selbst keine zweite aktive Wahrheit mehr ist.
+
+Für künftige Hilfswerkzeuge gilt vor dem Bau eine einzige Entscheidung:
+
+> Verhindert dieses Werkzeug gerade einen konkreten Produktfehler, den weder
+> das vorhandene Werkzeug noch ein einfacher Handgriff abdeckt — und kann es
+> später vollständig entfernt werden?
+
+Wenn nicht, wird es nicht gebaut.

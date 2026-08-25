@@ -38,14 +38,16 @@ Pflegegegenstand neben Nakama geschaffen. Seine Zuverlässigkeit müsste
 Claude, Codex und dem Repository synchron gehalten werden. Genau das ist der
 Drift, den dieser Umbau beenden soll.
 
-Zusätzlich fehlten fünf Grenzen:
+Zusätzlich fehlten sechs Grenzen:
 
-1. **Native Fähigkeiten zuerst.** Claude Code kann mit `claude -p --bg`
-   Hintergrund-Agenten starten und mit `claude agents` verwalten. Dafür wird
-   kein eigener WorkerHost benötigt.
-2. **Manuelle Erholung ist erlaubt.** Ein seltener fehlender Wakeup ist billiger
-   als ein dauerhaft zu pflegender Scheduler. Fable oder der User prüft dann
-   den vorhandenen Agentenstatus; daraus entsteht kein neues Subsystem.
+1. **Native Fähigkeiten zuerst.** Claude Code kann mit `claude --bg` einen
+   direkten CLI-Prozess im Hintergrund starten. `claude agents` startet ihn
+   nicht, sondern zeigt danach nur seinen Zustand. Dafür wird kein eigener
+   WorkerHost benötigt. `--bg` und `-p` sind nicht kombinierbar.
+2. **Ein nativer Wecker gehört hinein.** Fable setzt pro laufendem Worker mit
+   `/loop 30m` eine sessiongebundene Kontrolle. Das nimmt Fable das eigene
+   Erinnern ab, ohne einen selbstgebauten Scheduler, Dienst oder dauerhaften
+   Zustand einzuführen. Nach Ende des Workers wird der Loop sofort beendet.
 3. **Nur eine aktive Wahrheit.** `CLAUDE.md`, `NEXT-SESSION.md`, der
    Dirigenten-Skill und ein eigenes Dirigentenprotokoll dürfen den Stand nicht
    viermal erzählen. `NEXT-SESSION.md` ist bereits zur Chronik angewachsen und
@@ -66,7 +68,8 @@ Zusätzlich fehlten fünf Grenzen:
 
 Für diesen Umbau gelten folgende Grenzen:
 
-- kein Daemon, Scheduler, Watchdog oder Autostart für den Dirigenten,
+- kein eigener Daemon, Scheduler, Watchdog oder Autostart für den Dirigenten;
+  der native sessiongebundene `/loop` ist ausdrücklich erlaubt,
 - kein eigener Prozessmanager, Zustandsautomat oder Lockdienst,
 - keine neuen JSON-Schemata für Bauer-, Review- oder Fixergebnisse,
 - keine dauerhaften Laufprotokolle oder Runtime-Dateien im Repository,
@@ -107,12 +110,30 @@ Commits, Manifesten und Planstand.
 
 ## 5. Minimaler Ablauf
 
-### 5.1 Dirigent starten
+### 5.1 Rollen, Modelle und Effort
+
+Modell und Effort werden pro Rolle ausdrücklich gesetzt und nie aus einer
+globalen Default-Konfiguration abgeleitet:
+
+| Rolle | Modell | Effort | Grund |
+|---|---|---|---|
+| Dirigent | Claude Fable | `max` | hält den Gesamtfaden, priorisiert und entscheidet; *„beim Dirigenten spart man nicht“* |
+| Bauer | Claude Opus | `max` | baut genau ein Ticket samt Beweis; Implementierungsqualität geht vor Laufzeit |
+| alle Codex-Instanzen | `gpt-5.6-sol` | `max` | Erstprüfung, Fix im selben Thread und frische Wiederprüfung arbeiten qualitätsorientiert mit derselben festen Konfiguration |
+
+Auch T2 nutzt `max`. Reasoning-Tiefe und Prüfbreite sind zwei verschiedene
+Dinge: `max` soll einen konkreten materiellen Befund gründlich validieren; der
+enge Ticket- und Prioritätsprompt verhindert Kosmetik, Randfallgrabung und
+Scope-Ausweitung. So entsteht keine zweite Modellregel für T2 und T3. Die
+aktuelle globale Codex-Konfiguration (`xhigh`) wird bewusst überschrieben.
+
+### 5.2 Dirigent starten
 
 Der User startet direkt eine echte Fable-Session:
 
 ```powershell
-claude --model fable --name nakama-dirigent --remote-control nakama-dirigent
+claude --model fable --effort max --name nakama-dirigent `
+  --remote-control nakama-dirigent
 ```
 
 Terminal und Remote Control bedienen dieselbe Session. Es gibt keinen
@@ -120,7 +141,7 @@ zusätzlichen Nachrichtenkanal und keinen Hintergrunddienst. Schließt das
 Terminal, endet dieser lokale Betriebsmodus; das ist eine bewusste Grenze,
 kein Fehler, der durch weitere Infrastruktur verdeckt werden muss.
 
-### 5.2 Ticket festlegen
+### 5.3 Ticket festlegen
 
 Fable rechnet den Planstand einmal zu Arbeitsbeginn und liest ihn:
 
@@ -144,18 +165,34 @@ Fable. Fremde Änderungen werden benannt und nicht angefasst. Der vollständige
 Ausgangs-SHA bleibt im Dirigentenkontext und im Ticketauftrag; dafür braucht es
 keine eigene Zustandsdatei.
 
-### 5.3 Bauen
+### 5.4 Bauen
 
-Der Bauer ist ein frischer Claude-Hintergrund-Agent mit Opus:
+Der Bauer ist ein direkt gestarteter, frischer Opus-CLI-Prozess im
+Hintergrund:
 
 ```powershell
-claude -p --bg --model opus "<selbsttragender Ticketauftrag>"
+claude --model opus --effort max --bg "<selbsttragender Ticketauftrag>"
 ```
 
 Der Auftrag enthält nur Ticketgrenze, verbindliche Quellen, Manifestpfad,
-Beweislauf und die Git-Regeln. Claude Code verwaltet den Agenten; Fable prüft
-seinen Zustand mit `claude agents`. Es gibt genau einen verändernden Arbeiter
-zur Zeit als einfache Arbeitsregel, nicht als eigenes Locksystem.
+Beweislauf und die Git-Regeln. `claude agents` wird nicht zum Starten oder
+Delegieren benutzt; es liest ausschließlich den von der CLI registrierten
+Prozesszustand. Es gibt genau einen verändernden Arbeiter zur Zeit als einfache
+Arbeitsregel, nicht als eigenes Locksystem. Direkt nach dem Start aktiviert
+Fable den nativen Kontrollloop:
+
+```text
+/loop 30m Prüfe den laufenden Nakama-Worker über `claude agents --json --cwd . --all`.
+Wenn er arbeitet, prüfe nur auf Blockade oder erkennbaren Stillstand und warte weiter.
+Wenn er fertig, fehlgeschlagen oder blockiert ist, beende diesen Loop und führe den
+passenden Mess-, Nacharbeits- oder Haltpfad des Dirigenten aus.
+```
+
+Der Loop ist das regelmäßige Sicherheitsnetz. Eine native Fertigmeldung darf
+Fable früher zurückholen. Der Loop lebt nur in dieser Dirigenten-Session,
+erzeugt keine Projektdatei und wird bei Worker-Ende oder Halt gelöscht. Läuft
+Fable beim Fälligkeitszeitpunkt noch in einem Turn, wird die Kontrolle direkt
+danach ausgeführt statt parallel in den laufenden Turn einzugreifen.
 
 Fable übernimmt keinen Selbstbericht. Nach Ende misst es direkt:
 
@@ -168,14 +205,15 @@ Ein Exit-Code oder Commit allein bedeutet nicht fertig. Ein blockierter Agent
 darf ehrlich ohne Änderung enden. Unerwarteter HEAD- oder Worktree-Drift führt
 zum Halt; Fable baut dafür keine automatische Reparatur.
 
-### 5.4 Mit Codex prüfen und gezielt nacharbeiten
+### 5.5 Mit Codex prüfen und gezielt nacharbeiten
 
 Ein frischer Codex-Thread prüft lesend den vollständigen Ticketbereich, den
 unveränderten Gate-Text und das Manifest. Temporäre CLI-Ausgaben liegen nur
 unter `$env:TEMP` und werden nach dem Ticket entfernt.
 
 ```powershell
-codex -C . -s read-only -a never --strict-config exec review `
+codex -m gpt-5.6-sol -c 'model_reasoning_effort="max"' `
+  -C . -s read-only -a never --strict-config exec review `
   --json -o <temp-review.txt> -
 ```
 
@@ -199,7 +237,8 @@ weiterverfolgt. Fable validiert jeden Befund an der Quelle.
 Bestätigte Befunde behebt derselbe Codex-Thread gezielt:
 
 ```powershell
-codex -C . -s workspace-write -a never --strict-config exec resume `
+codex -m gpt-5.6-sol -c 'model_reasoning_effort="max"' `
+  -C . -s workspace-write -a never --strict-config exec resume `
   <thread-id> -
 ```
 
@@ -207,8 +246,10 @@ Danach prüft ein neuer frischer Codex-Thread erneut den **gesamten** Bereich
 vom ursprünglichen Ausgangs-SHA bis zum neuen HEAD. Nach zwei erfolglosen
 Nacharbeitsrunden hält Fable an. Ein bestandenes Urteil wird unverändert in das
 vorhandene Ticketmanifest übernommen; dafür entsteht kein weiteres Protokoll.
+Die frische Wiederprüfung verwendet denselben expliziten Modell-/Effort-Aufruf
+wie die Erstprüfung, aber eine neue Thread-ID.
 
-### 5.5 Weiter oder halten
+### 5.6 Weiter oder halten
 
 Fable fährt mit dem nächsten Ticket fort. Es hält nur bei:
 
@@ -318,9 +359,12 @@ Begründungen fallen heraus.
 ### C — Ein realer Probelauf
 
 Mit einem kleinen echten Nakama-Ticket den direkten Ablauf einmal vollständig
-fahren: Fable per Remote Control, ein nativer Claude-Hintergrund-Agent, Messung
-am Repo, frischer Codex-Review und — nur bei materiellem Befund — Nacharbeit im
-selben Thread plus frischer Wiederreview.
+fahren: Fable `max` per Remote Control, Opus `max` als direkter
+CLI-Hintergrundprozess, Messung am Repo sowie `gpt-5.6-sol` mit Effort `max` für
+frischen Review und — nur bei materiellem Befund — Nacharbeit im selben Thread
+plus frischen Wiederreview. Vorher beweist ein einmaliger `/loop 1m`-Kurztest,
+dass Fable ohne User-Prompt geweckt wird und den Loop nach erkanntem
+Worker-Ende löscht; im Normalbetrieb gilt anschließend `/loop 30m`.
 
 Wenn dieser Ablauf trägt, ist kein Harness zu bauen. Dieser Plan wird danach
 aus dem aktiven Dokumentationsbereich entfernt oder als abgeschlossener Verlauf
@@ -335,6 +379,10 @@ Das Vorhaben ist fertig, wenn:
 - Matrix weder läuft noch automatisch startet,
 - der Dirigent in derselben Fable-Session lokal und remote bedienbar ist,
 - Bauer und Prüfer einmal über native Werkzeuge erfolgreich geführt wurden,
+- der sessiongebundene Weckloop Fable regelmäßig ohne User-Prompt zurückholt
+  und nach Worker-Ende nicht weiterläuft,
+- alle drei Rollen nachweislich mit den festgelegten Modellen und Efforts
+  gestartet wurden,
 - kein eigener Prozessmanager, Scheduler, Zustandsspeicher, Ergebnisschema oder
   dauerhaftes Laufprotokoll hinzugekommen ist,
 - normale Sessionstarts keinen auftragsfremden Plan-, Design- oder

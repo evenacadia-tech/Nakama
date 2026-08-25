@@ -143,12 +143,12 @@ keinen eigenen Weckdienst: Wo blockierend gearbeitet wird, kommt das
 Ergebnis direkt zurück; wo im Hintergrund gearbeitet wird, meldet der
 Harness die Fertigstellung.
 
-⚠️ **Der Bau läuft trotzdem im Hintergrund — und zwar nicht wegen des
-Zeitlimits.** Der tragende Grund ist die Meldepflicht aus §3.6 Auslöser 2
-(siehe Teil 1b unten): Ein Dirigent, der in einem blockierenden Bau-Aufruf
-steht, kann nicht stündlich melden. Das Werkzeug-Zeitlimit (bei Claude Code
-max. 10 min) kommt als zweiter, schwächerer Grund dazu. Für die kurzen
-Schritte — Prüfen und Fixen — bleibt blockierend richtig.
+⚠️ **Zu wissen, nicht zu befolgen:** Ein blockierender Werkzeugaufruf läuft
+in ein Zeitlimit (bei Claude Code max. 10 min) und macht den Dirigenten so
+lange handlungsunfähig — er kann in dieser Zeit weder melden noch
+nachsehen. Das ist eine Eigenschaft des Werkzeugs. Wie der Dirigent damit
+umgeht, entscheidet er selbst; siehe Teil 1b, „Wie der Dirigent
+beobachtet".
 
 🔑 **Warum Codex als Prüfer die stärkere Lösung ist:** Der heutige Dirigent
 begründet den Prüfmechanismus mit frischem Kontext (SKILL.md Z. 24–27). Ein
@@ -242,26 +242,33 @@ zugleich auf der Platte fest.
    (`--model` explizit, sonst nimmt die CLI ihr Default — im Test kam
    `claude-fable-5`), Prüfer/Fixer Codex nach `config.toml`.
 
-### 🔑 Warum der Bau NICHT blockierend laufen darf
+### Wie der Dirigent beobachtet — seine Entscheidung, nicht Vorschrift
 
-Das folgt aus dem Skill selbst und war in der ersten Fassung dieses Blatts
-falsch: §3.6 Auslöser 2 verlangt **mindestens stündliche** Meldung, auch
-während ein Ticket noch läuft — *„S9 läuft seit 40 min, Kanon 12/28.
-Schweigen ist für den User nicht von einem Absturz zu unterscheiden."*
-Prüfbar gemacht durch `py -3.13 melden.py --letzte` (Exit 1 = überfällig).
+**User-Wort 25.08.:** *„fable aktiviert das monitoring checkt alle 30 min
+die sessions, wenn er gewisse zeit kein lebenszeichen bemerkt checkt er es
+ab und unternimmt was eben zu unternehmen ist. du tust so als wäre fable ein
+dummes script. wir nehmen doch fable weil er versteht was zu tun ist durch
+den dirigenten skill."*
 
-Ein Dirigent, der im blockierenden Bau-Aufruf steht, **kann diese Pflicht
-nicht erfüllen**. Deshalb:
+Hier steht deshalb **keine** Ablauftabelle. Der Skill gibt die Pflichten vor,
+der Dirigent wählt die Mittel:
 
-| Schritt | Modus |
+| Pflicht | Woher |
 |---|---|
-| Bauen (lang, offenes Ende) | **Hintergrund** — Dirigent bleibt handlungsfähig, meldet stündlich, sieht bei Bedarf in `git log` und Manifest |
-| Prüfen (`codex review`) | blockierend |
-| Fixen (`codex exec`) | blockierend |
+| Mindestens stündlich melden, auch während ein Ticket läuft | §3.6 Auslöser 2, prüfbar per `melden.py --letzte` (Exit 1 = überfällig) |
+| Kein Dauerpoll — Wecker statt Sekundentakt, **kein `Monitor` in einer Warteschleife** | §3.3 |
+| Fortschritt am Repo messen, nie am Selbstbericht | §3.4 |
+| Zweimal gescheitert am selben Ticket → HALT | §4 Punkt 5 |
 
-Das ist kein Dauerpoll (§3.3 bleibt gewahrt): Der Dirigent wird bei
-Fertigstellung geweckt und sieht dazwischen nur dann nach, wenn die
-Meldepflicht ihn ohnehin zum Hinsehen zwingt.
+Ob er dafür einen Bau-Aufruf in den Hintergrund legt, ein Monitoring in
+sinnvollem Abstand setzt oder bei ausbleibendem Lebenszeichen selbst
+nachsieht und handelt — das entscheidet er im Lauf. Genau dafür ist der
+Dirigent ein urteilsfähiges Modell und kein `foreach`.
+
+Einzige harte Randbedingung, die er kennen muss: Ein **blockierender**
+Werkzeugaufruf läuft in ein Zeitlimit (bei Claude Code max. 10 min) und
+macht ihn so lange handlungsunfähig. Das ist eine Eigenschaft des Werkzeugs,
+kein Verfahren — was er daraus macht, ist seine Sache.
 
 ### Aufwand mit Codex-Rollen
 

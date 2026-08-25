@@ -137,16 +137,18 @@ synchron und liefert das Ergebnis zurück. Am 25.08. selbst vorgeführt:
 Ergebnis im Tool-Output.
 
 Die Wakeup-Mechanik kompensiert also **Nimbalysts asynchrones
-`spawn_session`** (fire and forget), nicht eine Eigenschaft von LLMs. Ein
-blockierender CLI-Aufruf braucht sie nicht. Der Dirigent darf deshalb ein
-vollwertiges Modell sein und trotzdem ohne Weckmechanik auskommen.
+`spawn_session`** (fire and forget), nicht eine Eigenschaft von LLMs. Der
+Dirigent darf deshalb ein vollwertiges Modell sein und braucht trotzdem
+keinen eigenen Weckdienst: Wo blockierend gearbeitet wird, kommt das
+Ergebnis direkt zurück; wo im Hintergrund gearbeitet wird, meldet der
+Harness die Fertigstellung.
 
-⚠️ **Die eine echte Grenze: das Werkzeug-Zeitlimit.** Shell-Werkzeugaufrufe
-laufen typisch in ein Timeout (bei Claude Code max. 10 min). Eine Bau-Session
-dauert länger. Lösung ist **nicht** ein Wakeup, sondern der
-Hintergrundmodus des Shell-Werkzeugs: Der Aufruf wird abgesetzt, der Harness
-verfolgt den Prozess und meldet dem Dirigenten die Fertigstellung. Für
-kurze Schritte (Prüfen, Fixen) reicht blockierend.
+⚠️ **Der Bau läuft trotzdem im Hintergrund — und zwar nicht wegen des
+Zeitlimits.** Der tragende Grund ist die Meldepflicht aus §3.6 Auslöser 2
+(siehe Teil 1b unten): Ein Dirigent, der in einem blockierenden Bau-Aufruf
+steht, kann nicht stündlich melden. Das Werkzeug-Zeitlimit (bei Claude Code
+max. 10 min) kommt als zweiter, schwächerer Grund dazu. Für die kurzen
+Schritte — Prüfen und Fixen — bleibt blockierend richtig.
 
 🔑 **Warum Codex als Prüfer die stärkere Lösung ist:** Der heutige Dirigent
 begründet den Prüfmechanismus mit frischem Kontext (SKILL.md Z. 24–27). Ein

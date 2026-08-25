@@ -805,10 +805,19 @@
 >
 > **Klarstellungen vom 22.08. abends, damit sie niemand wieder falsch liest:**
 > der Fremdmodell-Riegel bindet **nur Gemini** („gpt IST WAS anderes. das galt
-> nur für gemini. gpt vertraue ich."); **OpenWiki ist das Kontextsystem, auf
-> dem der Workspace aufbaut** („das workspace hier baut auf openwiki als
-> kontextsystem auf") — nicht gegen `docs/` abwaegen, nicht als Zusatzquelle
-> behandeln, nicht abschalten vorschlagen.
+> nur für gemini. gpt vertraue ich.").
+>
+> ~~**OpenWiki ist das Kontextsystem, auf dem der Workspace aufbaut**
+> („das workspace hier baut auf openwiki als kontextsystem auf") — nicht gegen
+> `docs/` abwaegen, nicht als Zusatzquelle behandeln, nicht abschalten
+> vorschlagen.~~ — **AUFGEHOBEN am 25.08.**, neues User-Wort: *„entferne das
+> komplette openwiki konstrukt"*. Vorausgegangen ist eine Messung der
+> tatsaechlichen Nutzung (Transkripte beider Werkzeuge): Claude hat das Wiki
+> **nie** als Kontext gelesen, Codex genau **einmal**, und mehrfach aktiv aus
+> Suchen ausgeschlossen (`--glob '!openwiki/**'`). Das Konstrukt ist restlos
+> entfernt — Ordner, MCP-Registrierungen, Skills, Server, Prozesse. Nichts
+> davon suchen, nichts davon wiederbeleben. Wortlaut und Umfang:
+> `design/abnahmen/2026-08-25-openwiki-entfernt.md`.
 >
 > **Neu seit 23.08.:** `docs/PLAN-STAND.md` wird **gerechnet**, nicht gepflegt
 > (`tools/plan/planstand.py` aus `docs/plan/plan.json` + den Urteilsmarken in

@@ -113,11 +113,105 @@ entscheidet in ~20 min, ob der Rest sinnvoll ist.
 
 ### Was verloren geht
 
-1. Das Kanban-Board. Ersatz: ein sichtbares Terminal je Ticket — zeigt die
-   Session sogar live statt nur ihren Status.
+1. Das Kanban-Board. Ersatz: die laufende Ausgabe im Terminal selbst.
 2. Reinsehen in eine laufende Session: teilweise über `claude --resume <id>`.
 3. Der Lauf überlebt das geschlossene Terminal nicht — außer über Task
    Scheduler oder `Start-Process -WindowStyle Hidden`.
+
+---
+
+## Teil 1b — ANFORDERUNG des Users (25.08., wörtlich)
+
+> „unser wrapper muss aber codex mit einschließen. 1 dirigenten session ->
+> spawnt 1 bauer session, codex ist immer prüfer und fixer. alle laufen in
+> einem terminal im powershell. das ist meine anforderung"
+
+### Rollen
+
+| Rolle | Werkzeug | Warum |
+|---|---|---|
+| **Dirigent** | das PowerShell-Skript | deterministische Ablaufsteuerung, blockierendes Warten |
+| **Bauer** | `claude -p` | frischer Kontext je Ticket |
+| **Prüfer** | `codex review` | **anderes Modell** — stärker als nur eine frische Session |
+| **Fixer** | `codex exec` | derselbe Prüfer behebt, was er gefunden hat |
+
+🔑 **Warum Codex als Prüfer die stärkere Lösung ist:** Der heutige Dirigent
+begründet den Prüfmechanismus mit frischem Kontext (SKILL.md Z. 24–27). Ein
+anderes Modell schlägt das — es hat andere blinde Flecken, nicht nur einen
+leeren Kontext. Im Repo bereits belegt: `NAK-78` hält fest, dass
+`/c-review` (25 TRUE_POSITIVE) und `/rust-review` (17 TRUE_POSITIVE, **0
+FALSE_POSITIVE**) über Codex echte Befunde lieferten.
+
+⚠️ Gegenprobe aus derselben Historie: Fremdmodell-Befunde sind nicht
+automatisch wahr — beim Gemini-Vorfall waren 8 von 9 Befunden echt, einer
+frei erfunden (`tools/hooks/fremdmodell-riegel.sh`). Der Fixer darf deshalb
+nur beheben, was er an der Quelle belegen kann; das Urteil gehört ins
+Manifest, nicht in eine Sitzungsnotiz.
+
+### Verifizierte Codex-Bausteine (25.08. an `codex --help` gemessen)
+
+| Befehl | Zweck |
+|---|---|
+| `codex exec` (alias `e`) | „Run Codex non-interactively" |
+| `codex review` | „Run a code review non-interactively" — genau die Prüferrolle |
+| `codex review --commit <SHA>` / `--base <BRANCH>` / `--uncommitted` | Prüfumfang wählen |
+| `codex exec --output-schema <FILE>` | JSON-Schema für die **finale Antwort** — das Urteil kommt strukturiert zurück |
+| `codex exec --json` | Events als JSONL auf stdout |
+| `codex exec -C <DIR>` / `--add-dir` | Arbeitsverzeichnis |
+| `codex exec -m <MODEL>` / `-s <SANDBOX>` | Modell- und Sandbox-Wahl |
+| `codex apply` | letzten Agent-Diff als `git apply` übernehmen |
+
+Symmetrie zu Claude: `--output-schema` (Codex) entspricht `--json-schema`
+(Claude). Beide Seiten liefern damit validiertes JSON statt Prosa — das ist
+die Bedingung dafür, dass ein Skript entscheiden kann.
+
+`~/.codex/config.toml` steht bereits auf `approval_policy = "never"` und
+`sandbox_mode = "danger-full-access"`, läuft also ohne Rückfragen durch.
+
+### Ablauf je Ticket — alles in EINEM Terminal, sequenziell
+
+```powershell
+foreach ($ticket in $offene) {
+  # 1. BAUEN (Claude, frischer Kontext)
+  claude -p $bauPrompt --model opus --output-format json `
+         --json-schema schemas/bau-urteil.json --session-id $uuid | Tee-Object $log
+
+  $sha = git rev-parse HEAD
+
+  # 2. PRUEFEN (Codex, anderes Modell)
+  codex review --commit $sha --json | Tee-Object $reviewLog
+
+  # 3. FIXEN, nur bei Befund
+  if ($befund) {
+    codex exec "Behebe: $befund. Beleg an der Quelle." `
+               --output-schema schemas/fix-urteil.json --json
+  }
+  # 4. melden.py, dann naechstes Ticket
+}
+```
+
+Kein `Start-Process`, kein zweites Fenster: Jeder Aufruf schreibt in
+dasselbe Terminal und blockiert bis zum Ende. `Tee-Object` hält den Verlauf
+zugleich auf der Platte fest.
+
+### Was daraus noch zu klären ist
+
+1. **Ist der Dirigent das Skript oder eine LLM-Session?** Diese Skizze macht
+   das Skript zum Dirigenten — deterministisch, kein Wakeup nötig. Braucht
+   der Dirigent echtes Urteilsvermögen (z. B. „ist S9 wirklich fertig?"),
+   ruft das Skript dafür einen eigenen `claude -p`-Schritt mit Schema auf,
+   statt selbst eine dauerhafte LLM-Session zu sein.
+2. **Abbruchregel:** Wie oft darf Fixer→Prüfer kreisen, bevor das Ticket an
+   den User geht? Vorschlag: zweimal, dann Matrix-Meldung und Stopp.
+3. **Wer setzt die Urteilsmarke** in `docs/beweise/`? Nach heutiger Regel nur
+   ein Prüfer — das spräche für Codex, verlangt aber, dass er das Manifest
+   schreiben darf.
+
+### Aufwand mit Codex-Rollen
+
+Die Schätzung oben (~4 h) bleibt gültig; die Prüfer-/Fixer-Stufe kostet
+zusätzlich ~45 min, weil `codex review` das Review-Format bereits mitbringt
+und nicht selbst gebaut werden muss.
 
 ---
 

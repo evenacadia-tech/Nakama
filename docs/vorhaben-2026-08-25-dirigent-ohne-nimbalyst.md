@@ -288,27 +288,39 @@ blockierender Aufruf hat nichts zu pollen. Er bleibt trotzdem stehen, weil
 seine Begründung den Kanalwechsel überlebt — und weil das Datei-Postfach
 unten sonst zum Poll-Einfallstor würde.
 
-### ⚠️ Die einzige echte Lücke: der Matrix-RÜCKkanal
+### Der Matrix-RÜCKkanal entfällt ersatzlos
 
-Ausgehend ist unkritisch: `melden.py` übergibt dem Dienst nur Aufträge und
-kennt Nimbalyst nicht.
+**User-Entscheid 25.08.:** *„ohne nimbalyst kann ich doch ganz normal die
+claude remote verbindung über die claude handy app benutzen. daher ist das
+egal"* — auf die Frage, wie eine Antwort in die Dirigenten-Session
+zurückfindet.
 
-**Eingehend hängt fest.** `C:\Users\phili\.claude\matrix-bridge\config.json`
-trägt einen Block `nimbalyst` mit `workspace_path` und `session_id`; dazu
-gibt es ein eigenes Modul `nimbalyst.py`. Die Antwort des Users wird darüber
-als Prompt in eine Nimbalyst-Session eingespeist. Ohne Nimbalyst gibt es
-diesen Weg nicht mehr — und §3.6 Auslöser 3 (blockende Entscheidung) hängt
-genau daran.
+Der Dirigent wird deshalb mit **Remote Control** gestartet:
 
-**Vorschlag (nicht entschieden): Datei-Postfach.** Der Dienst legt eingehende
-Nachrichten als Datei ab; der Dirigent liest sie **in §3.1**, wo er ohnehin
-`git status` prüft. Das ist kein Dauerpoll, sondern ein Schritt im ohnehin
-stattfindenden Zyklus — die Regel aus §3.3 bleibt gewahrt. Zu klären: was
-passiert, wenn der Dirigent gerade in einem langen Bau-Aufruf steht und eine
-blockende Antwort eintrifft.
+```powershell
+claude --model fable --remote-control nakama-dirigent
+```
 
-Aufwand für die Skill-Anpassung: ~30 min. Der Rückkanal ist ein eigenes
-Stück, ~45 min, und betrifft `dienst.py` außerhalb des Repos.
+Damit erreicht der User die **laufende lokale Session** direkt aus der
+Claude-App und antwortet dort hinein. Der Umweg über Matrix ist für die
+Rückrichtung nicht mehr nötig.
+
+**Folgen:**
+
+- `matrix-bridge/config.json` → Block `nimbalyst` (`workspace_path`,
+  `session_id`) und das Modul `nimbalyst.py` werden **gegenstandslos**.
+- Im Skill fällt §3.6 Z. 195–202 (Antwort landet in der
+  `nimbalyst.session_id`, Suchreihenfolge laufende Claude → ruhende Claude →
+  laufende Codex → ruhende Codex) **ersatzlos weg** statt ersetzt zu werden.
+- **Ausgehend bleibt Matrix unverändert bestehen**: `melden.py` kennt
+  Nimbalyst nicht und erfüllt weiter die drei Pflichtauslöser aus §3.6. Der
+  Grund dafür trägt weiter — eine Push-Nachricht erreicht den User, ohne
+  dass er die App offen hat.
+- Der zuvor hier veranschlagte Aufwand für einen Ersatz-Rückkanal (~45 min)
+  **entfällt**.
+
+Aufwand für die Skill-Anpassung damit: **~30 min**, und es bleibt beim
+Gesamtrahmen von rund 4–5 Stunden.
 
 ---
 

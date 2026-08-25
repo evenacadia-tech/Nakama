@@ -150,6 +150,25 @@ nachsehen. Das ist eine Eigenschaft des Werkzeugs. Wie der Dirigent damit
 umgeht, entscheidet er selbst; siehe Teil 1b, „Wie der Dirigent
 beobachtet".
 
+🚨 **Codex ist ein EIGENER PROZESS, niemals ein Werkzeug in Fables Session.**
+
+**User-Wort 25.08.:** *„wenn fable den codex skill review nutzt, dann läuft
+es in seiner eigenen dirigenten session und das ist nicht akzeptabel. codex
+läuft genauso im terminal in powershell, der kann genauso gestartet werden
+wie claude."*
+
+| Falsch | Richtig |
+|---|---|
+| Fable ruft in seiner Session einen Review-Skill auf | Fable startet `codex review …` als eigenen Prozess |
+| Prüfung läuft in Fables Kontext → **Fable ist der Prüfer** | Prüfung läuft in Codex' eigenem, frischem Kontext |
+| Verbrennt Dirigenten-Kontext (§6: *„dein Kontext ist der Faden durch alle Runden"*) | Dirigent bleibt schlank, bekommt nur das Urteil |
+| Verletzt §1: *„eine Session prüfen lassen, die gebaut hat"* — sinngemäß auch: die dirigiert hat | Prüfer ist weder Bauer noch Dirigent |
+
+Das gilt für **beide** Codex-Rollen: `codex review` (Prüfer) und
+`codex exec` (Fixer) sind je ein eigener Prozessaufruf mit eigener Session
+in `~/.codex/sessions/`, genau wie `claude -p` für den Bauer. Fable startet
+sie, wartet, liest das Ergebnis — mehr nicht.
+
 🔑 **Warum Codex als Prüfer die stärkere Lösung ist:** Der heutige Dirigent
 begründet den Prüfmechanismus mit frischem Kontext (SKILL.md Z. 24–27). Ein
 anderes Modell schlägt das — es hat andere blinde Flecken, nicht nur einen

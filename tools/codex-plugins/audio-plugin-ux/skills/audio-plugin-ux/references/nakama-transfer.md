@@ -9,8 +9,12 @@ Work from the Nakama workspace root: the directory containing `CLAUDE.md`, `desi
 Run the read-only contract check before Nakama-specific analysis or design:
 
 ```powershell
-pwsh -File C:/Users/phili/plugins/audio-plugin-ux/skills/audio-plugin-ux/scripts/check-nakama-contract.ps1 -RepoRoot C:/Users/phili/Projekte/Nakama
+pwsh -File <directory-of-this-SKILL.md>/scripts/check-nakama-contract.ps1 -RepoRoot .
 ```
+
+Replace `<directory-of-this-SKILL.md>` with the actual directory from which
+this skill was loaded. Do not assume a user profile, plugin cache, or Nakama
+checkout path.
 
 Exit code `0` means the required source routes and contract anchors were found. Any non-zero exit means the Nakama adapter has drifted: report the failed checks, read the newer decisions, and update this adapter before giving product-specific layout advice.
 

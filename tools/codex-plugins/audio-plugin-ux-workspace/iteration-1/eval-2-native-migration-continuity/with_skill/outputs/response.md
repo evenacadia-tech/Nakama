@@ -1,0 +1,3 @@
+Ich behandle die Web-RC-Abnahme als **user-decided** und öffne die Gestaltung nicht erneut. Die gewünschte Ablösung samt Entfernung des alten Editors ist gesetzt.
+
+Bevor ich etwas ändere, führe ich den verpflichtenden read-only Nakama-Vertragscheck aus und gleiche anschließend ausschließlich die dafür gerouteten Quellen mit Editor, Parametern, Automation und gespeichertem Zustand ab. Die Form der schöneren Controls allein darf keine Parameterbedeutung verändern: echte Bereichsänderungen müssen DSP, Host-Automation, Defaultwerte, Save/Load und Migration gemeinsam konsistent halten. Noch keine Änderungen; kein Host-, Browser- oder Figma-Start.

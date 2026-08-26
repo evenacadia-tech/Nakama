@@ -1,138 +1,94 @@
 #Requires -Version 7.0
 [CmdletBinding()]
 param(
-    [string] $BaselineRoot = 'C:/Users/phili/plugins/audio-plugin-ux-workspace/baseline-0.2.1',
-    [string] $CandidateRoot = 'C:/Users/phili/plugins/audio-plugin-ux'
+    [string] $BaselineRoot,
+    [string] $CandidateRoot,
+    [string] $RepoRoot
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+if (-not $BaselineRoot) { $BaselineRoot = Join-Path $PSScriptRoot 'baseline-0.2.1' }
+if (-not $CandidateRoot) { $CandidateRoot = Join-Path $PSScriptRoot '../audio-plugin-ux' }
+if (-not $RepoRoot) { $RepoRoot = Join-Path $PSScriptRoot '../../..' }
+
+$BaselineRoot = [System.IO.Path]::GetFullPath($BaselineRoot)
+$CandidateRoot = [System.IO.Path]::GetFullPath($CandidateRoot)
+$RepoRoot = [System.IO.Path]::GetFullPath($RepoRoot)
+
 $tests = @(
     [pscustomobject]@{
-        id = 'E1-current-routes'
-        file = 'skills/audio-plugin-ux/references/nakama-transfer.md'
-        require = @(
-            'CLAUDE\.md',
-            'design/abnahmen/2026-08-23-gen-eq-zentrale\.md',
-            'design/docs/ui-spielregeln-eq-zentrale\.md',
-            'design/abnahmen/2026-08-25-seitenverhaeltnis-bleibt-fest\.md'
-        )
-        reject = @()
-    },
-    [pscustomobject]@{
-        id = 'E2-no-stale-product'
-        file = 'skills/audio-plugin-ux/references/nakama-transfer.md'
-        require = @(
-            'two apps',
-            '760×430',
-            '8 band slots × 13',
-            'U5/NAK-33 is closed'
-        )
-        reject = @(
-            'Nakama Suna\*\* is the compact passive probe surface',
-            'eight bands at 700x420',
-            'twelve displayed parameters per band',
-            'advises rather than directly processing'
-        )
-    },
-    [pscustomobject]@{
-        id = 'E3-generative-fixed-surface'
-        file = 'skills/audio-plugin-ux/references/design-reasoning.md'
-        require = @(
-            'Generate a layout hypothesis from constraints',
-            'Measure the real surface',
-            'fixed-aspect interface',
-            'worst truthful states'
-        )
-        reject = @()
-    },
-    [pscustomobject]@{
-        id = 'E4-mixed-identity-scales'
-        file = 'skills/audio-plugin-ux/references/fabfilter-pro-q-case-study.md'
-        require = @(
-            '\(multiple\)',
-            'track/instance',
-            'co-located measurement scales',
-            'Two scales share one edge'
-        )
-        reject = @()
-    },
-    [pscustomobject]@{
-        id = 'E5-user-laws-and-proof'
-        file = 'skills/audio-plugin-ux/references/nakama-transfer.md'
-        require = @(
-            'No dead elements',
-            'Material geometry is invariant across state',
-            'getBoundingClientRect',
-            'check-nakama-contract\.ps1',
-            'Hold-to-audition ends'
-        )
-        reject = @()
-    },
-    [pscustomobject]@{
-        id = 'E6-contract-script'
-        file = 'skills/audio-plugin-ux/scripts/check-nakama-contract.ps1'
-        require = @(
-            'two-app-architecture',
-            'one-graph-two-traces',
-            'sidechain-closed-hidden',
-            'material-geometry-law'
-        )
-        reject = @()
-    },
-    [pscustomobject]@{
-        id = 'E7-current-visual-authority'
-        file = 'skills/audio-plugin-ux/references/nakama-transfer.md'
-        require = @(
-            'design/abnahmen/2026-08-25-rework-referenz-drei-designs\.md',
-            'design/assets/rework-basis-2026-08-25/gen-page-1-overview\.png',
-            'design/assets/rework-basis-2026-08-25/gen-page-2-eq-center\.png',
-            'design/assets/rework-basis-2026-08-25/probeeq\.png',
-            'newest explicit user visual decision'
-        )
-        reject = @(
-            'current Figma file named in'
-        )
-    },
-    [pscustomobject]@{
-        id = 'E8-visual-contract-check'
-        file = 'skills/audio-plugin-ux/scripts/check-nakama-contract.ps1'
-        require = @(
-            'current-visual-rework-basis',
-            'visual-router-updated',
-            'gen-page-1-overview\.png',
-            'gen-page-2-eq-center\.png',
-            'probeeq\.png'
-        )
-        reject = @()
-    },
-    [pscustomobject]@{
-        id = 'E9-access-response-contract'
+        id = 'E1-indexed-research-route'
         file = 'skills/audio-plugin-ux/SKILL.md'
-        require = @(
-            'Access and response contract',
-            'pointer, keyboard, fine-adjustment, and text-entry',
-            'name, role, value, state, and actions',
-            'worst visual load',
-            'noncritical pop-ups'
-        )
+        require = @('indexed research archive', 'references/research-evidence\.md', 'do not copy its findings')
         reject = @()
     },
     [pscustomobject]@{
-        id = 'E10-access-response-tests'
+        id = 'E2-dynamic-archive-discovery'
+        file = 'skills/audio-plugin-ux/references/research-evidence.md'
+        require = @('wissen/LIES-MICH\.md', 'wissen/AGENTS\.md', 'wissen/INDEX\.md', 'Do not hard-code today''s dated entry filenames')
+        reject = @('2026-08-26-juce-ui-performance-messen')
+    },
+    [pscustomobject]@{
+        id = 'E3-authority-boundaries'
+        file = 'skills/audio-plugin-ux/references/research-evidence.md'
+        require = @('Source claim', 'Current product contract', 'Transfer inference', 'Design decision', 'Bedeutung für Nakama')
+        reject = @()
+    },
+    [pscustomobject]@{
+        id = 'E4-human-causal-chain'
+        file = 'skills/audio-plugin-ux/SKILL.md'
+        require = @('Human-need chain', 'person and situation', 'perceptual or interaction need', 'observable proof')
+        reject = @()
+    },
+    [pscustomobject]@{
+        id = 'E5-contextual-mapping'
         file = 'skills/audio-plugin-ux/references/design-reasoning.md'
-        require = @(
-            'Input-equivalence test',
-            'Response-under-load test',
-            'Interruption test',
-            '24 CSS pixels',
-            'Voger Design',
-            'AccessibilityHandler'
-        )
-        reject = @(
-            'every control must be 24'
-        )
+        require = @('Mapping compatibility is a hypothesis', 'not universal human laws', 'Mapping-comprehension test')
+        reject = @('horizontal position naturally represents frequency')
+    },
+    [pscustomobject]@{
+        id = 'E6-operable-access-routes'
+        file = 'skills/audio-plugin-ux/references/design-reasoning.md'
+        require = @('coarse and fine increments', 'reset/default', 'malformed or out-of-range', 'Control-usability test')
+        reject = @()
+    },
+    [pscustomobject]@{
+        id = 'E7-visual-evidence-provenance'
+        file = 'skills/audio-plugin-ux/references/research-evidence.md'
+        require = @('page, figure, frame, or video timestamp', 'objective observation', 'source''s own claim', 'separate interpretation')
+        reject = @()
+    },
+    [pscustomobject]@{
+        id = 'E8-measure-performance-first'
+        file = 'skills/audio-plugin-ux/references/research-evidence.md'
+        require = @('build type, OS, host, scale, instance count', 'static and dynamic paint work', 'audio-thread health', 'prompt control feedback', 'idle editors must release host resources')
+        reject = @()
+    },
+    [pscustomobject]@{
+        id = 'E9-native-migration-continuity'
+        file = 'skills/audio-plugin-ux/references/nakama-transfer.md'
+        require = @('parameter contract', 'state contract', 'audio contract', 'host contract', 'previous working native slice', 'Windows Release behavior in FL Studio', 'multiple instances')
+        reject = @()
+    },
+    [pscustomobject]@{
+        id = 'E10-no-product-snapshot-copy'
+        file = 'skills/audio-plugin-ux/references/nakama-transfer.md'
+        require = @('stable repository router', 'Attach a current repository path to every volatile product claim')
+        reject = @('Current product contract to verify, not memorize', 'current visual truth in progress is exactly three images', '8 band slots × 13')
+    },
+    [pscustomobject]@{
+        id = 'E11-progressive-reference-loading'
+        file = 'skills/audio-plugin-ux/SKILL.md'
+        require = @('explicit FabFilter Pro-Q comparison', 'Do not load it merely because the product is an EQ')
+        reject = @()
+    },
+    [pscustomobject]@{
+        id = 'E12-version-and-layout-prompt'
+        file = '.codex-plugin/plugin.json'
+        require = @('"version":\s*"0\.2\.4"', 'Derive a layout hypothesis from this parameter inventory and fixed host surface')
+        reject = @()
     }
 )
 
@@ -177,11 +133,52 @@ function Invoke-Suite {
     }
 }
 
-$report = [pscustomobject]@{
-    baseline = Invoke-Suite -Label 'baseline-snapshot-0.2.1' -Root $BaselineRoot
-    candidate = Invoke-Suite -Label 'source-candidate' -Root $CandidateRoot
+function Invoke-ArchiveContract {
+    param([string] $PluginRoot, [string] $WorkspaceRoot)
+
+    $checker = Join-Path $PluginRoot 'skills/audio-plugin-ux/scripts/check-nakama-contract.ps1'
+    if (-not (Test-Path -LiteralPath $checker -PathType Leaf)) {
+        return [pscustomobject]@{
+            ok = $false
+            detail = 'Candidate contract checker is missing.'
+            report = $null
+        }
+    }
+
+    $output = & pwsh -NoProfile -File $checker -RepoRoot $WorkspaceRoot 2>&1 | Out-String
+    $exitCode = $LASTEXITCODE
+    try {
+        $parsed = $output | ConvertFrom-Json
+        [pscustomobject]@{
+            ok = ($exitCode -eq 0 -and $parsed.ok)
+            detail = if ($exitCode -eq 0 -and $parsed.ok) {
+                "$($parsed.checks.Count) archive and adapter checks passed."
+            }
+            else {
+                "Contract checker failed with $($parsed.failedCount) failed checks."
+            }
+            report = $parsed
+        }
+    }
+    catch {
+        [pscustomobject]@{
+            ok = $false
+            detail = "Contract checker did not return valid JSON (exit $exitCode): $output"
+            report = $null
+        }
+    }
 }
 
-$report | ConvertTo-Json -Depth 6
-if ($report.candidate.passed -ne $report.candidate.total) { exit 1 }
+$baseline = Invoke-Suite -Label 'baseline-snapshot-0.2.1' -Root $BaselineRoot
+$candidate = Invoke-Suite -Label 'source-candidate-0.2.4' -Root $CandidateRoot
+$contract = Invoke-ArchiveContract -PluginRoot $CandidateRoot -WorkspaceRoot $RepoRoot
+
+$report = [pscustomobject]@{
+    baseline = $baseline
+    candidate = $candidate
+    archiveContract = $contract
+}
+
+$report | ConvertTo-Json -Depth 8
+if ($candidate.passed -ne $candidate.total -or -not $contract.ok) { exit 1 }
 exit 0

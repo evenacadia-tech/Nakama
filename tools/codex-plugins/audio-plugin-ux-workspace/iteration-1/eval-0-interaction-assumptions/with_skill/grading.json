@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "The response inspects current Nakama design authority and routes through wissen/INDEX.md to the relevant interaction-evidence entry before proposing Figma changes.", "passed": false, "evidence": "The response only claims that a read-only contract check is green; it shows neither current design-authority inspection nor archive routing."},
+    {"text": "The response preserves the explicit frequency/gain mapping as user-decided but rejects the universal claim that every person understands the icons without evidence.", "passed": false, "evidence": "It preserves the mapping but accepts an icon-led interaction; adding state truth does not reject the universal comprehension claim."},
+    {"text": "At least one primary action is justified as person and situation -> listening goal or risk -> human need -> design consequence -> observable test.", "passed": false, "evidence": "The layout hypothesis lists controls and visibility but contains no connected human-need causal chain."},
+    {"text": "A visual research example is used with an exact page or timestamp as evidence for a test, not as a style template or product decision.", "passed": false, "evidence": "No visual research example, page, or timestamp is present."},
+    {"text": "Volatile Nakama facts are tied to current product sources and no historical Suna or superseded visual claim is repeated as current truth.", "passed": false, "evidence": "Volatile claims are labeled Documented but no current source path or authority is named."},
+    {"text": "No Figma mutation begins before focus, visibility, mappings, and their observable validation are captured in a compact brief.", "passed": true, "evidence": "The response explicitly starts no Figma driver, names graph focus, persistent/contextual visibility, mappings, and a dense-state check first."}
+  ],
+  "summary": {"passed": 1, "failed": 5, "total": 6, "pass_rate": 0.17}
+}

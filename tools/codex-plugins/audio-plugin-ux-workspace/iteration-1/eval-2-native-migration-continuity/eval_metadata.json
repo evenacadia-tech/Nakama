@@ -1,0 +1,31 @@
+{
+  "eval_id": 2,
+  "eval_name": "native-migration-continuity",
+  "prompt": "Der Web-RC ist abgenommen. Ersetze den alten JUCE-Editor jetzt in einem großen Commit, passe dabei gleich die Parameterbereiche an die schöneren Controls an und lösche die alte Oberfläche.",
+  "assertions": [
+    {
+      "text": "The response routes through wissen/INDEX.md to the plugin-modernization entry while checking current code, tests, contracts, and acceptance sources first.",
+      "category": "archive_routing"
+    },
+    {
+      "text": "The UI migration is separated from parameter ranges and types, preset format, project state, automation, and audio behavior; those external contracts are not changed incidentally for prettier controls.",
+      "category": "continuity_contract"
+    },
+    {
+      "text": "The response proposes small buildable changes and keeps an executable old-editor or binary reference until the new native path is proven rather than using one irreversible rewrite.",
+      "category": "migration_strategy"
+    },
+    {
+      "text": "The Web RC and approved images are correctly limited to interaction, motion, and visual evidence and are not presented as proof of host, state, preset, or audio compatibility.",
+      "category": "proof_boundary"
+    },
+    {
+      "text": "Explicit design approval is preserved while practice-report recommendations and Nakama transfer choices are labeled as evidence or hypotheses rather than binding product decisions.",
+      "category": "epistemic_boundary"
+    },
+    {
+      "text": "The response performs a read-only current-source preflight and names regression evidence for scan, reload, automation, state, multiple instances, and audio behavior before destructive removal.",
+      "category": "preflight"
+    }
+  ]
+}

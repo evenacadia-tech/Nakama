@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "The response inspects current Nakama design authority and routes through wissen/INDEX.md to the relevant interaction-evidence entry before proposing Figma changes.",
+      "passed": true,
+      "evidence": "It cites current design authorities and explicitly records the completed route through wissen/INDEX.md to the active interaction entry before any Figma intervention."
+    },
+    {
+      "text": "The response preserves the explicit frequency/gain mapping as user-decided but rejects the universal claim that every person understands the icons without evidence.",
+      "passed": true,
+      "evidence": "It preserves the mapping as the user's Nakama decision, rejects it as a natural law, rejects icon-only operation, and leaves universal icon comprehension open until tested."
+    },
+    {
+      "text": "At least one primary action is justified as person and situation -> listening goal or risk -> human need -> design consequence -> observable test.",
+      "passed": true,
+      "evidence": "The Human Need section supplies the complete causal chain from divided FL Studio attention through wrong-target risk to visible authority and an observable attribution/recovery test."
+    },
+    {
+      "text": "A visual research example is used with an exact page or timestamp as evidence for a test, not as a style template or product decision.",
+      "passed": true,
+      "evidence": "It cites 32:40 exactly, explicitly rejects style transfer, and derives a concrete prediction/error test."
+    },
+    {
+      "text": "Volatile Nakama facts are tied to current product sources and no historical Suna or superseded visual claim is repeated as current truth.",
+      "passed": true,
+      "evidence": "Mix, size, source selection, Master targeting, and trace claims cite current sources; older Figma nodes are marked history and no Suna claim is reused."
+    },
+    {
+      "text": "No Figma mutation begins before focus, visibility, mappings, and their observable validation are captured in a compact brief.",
+      "passed": true,
+      "evidence": "The response postpones Figma, then captures focus, all visibility classes, mappings, and concrete validation before declaring the preflight complete."
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "pass_rate": 1.0
+  }
+}

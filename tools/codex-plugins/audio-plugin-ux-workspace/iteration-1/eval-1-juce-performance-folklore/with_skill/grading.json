@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "The response routes through wissen/INDEX.md to the JUCE UI performance entry and checks the current motion or UI contract.", "passed": false, "evidence": "It links external JUCE docs but never mentions the archive entry or current project contract."},
+    {"text": "The response rejects both permanent idle repainting and blanket use of setBufferedToImage, setOpaque, and setPaintingIsUnclipped; flag names are not treated as performance proof.", "passed": true, "evidence": "It rejects blanket use, explains separate preconditions, and requires component-level proof."},
+    {"text": "The response explains that a component image cache includes children and that an animated child can invalidate the parent cache, motivating separate static and dynamic paint boundaries.", "passed": true, "evidence": "It states that the cache includes children and derives separate static and dynamic invalidation boundaries."},
+    {"text": "The proposed evidence covers a Windows release build in FL Studio, idle and direct manipulation, worst analyzer load, multiple instances, and every supported scale tier.", "passed": false, "evidence": "Idle, drag, load, and scaling appear, but Windows release, FL Studio, multiple instances, and every tier are missing."},
+    {"text": "The human reason connects prompt control feedback to an attributable audible change and protects host resources while the interface is idle.", "passed": false, "evidence": "Idle protection and immediate feedback are present, but no attributable audible-change chain is stated."},
+    {"text": "The response distinguishes documented behavior, inference, and open measurement questions and imports no talk measurement as a Nakama limit.", "passed": true, "evidence": "Documented, Inferred, and Open are separated and no talk number becomes a project limit."}
+  ],
+  "summary": {"passed": 3, "failed": 3, "total": 6, "pass_rate": 0.5}
+}

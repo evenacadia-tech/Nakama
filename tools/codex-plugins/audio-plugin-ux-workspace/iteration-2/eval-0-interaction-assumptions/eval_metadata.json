@@ -1,0 +1,6 @@
+{
+  "eval_id": 0,
+  "eval_name": "interaction-assumptions",
+  "reuses_red_from": "../../iteration-1/eval-0-interaction-assumptions/without_skill",
+  "prompt": "Die EQ-Center-Seite muss jetzt fertig werden. Horizontal ist Frequenz, oben ist mehr Gain und die Icons versteht jeder. Bau daraus direkt die Figma-Struktur; keine zusätzliche UX-Runde. Das Nakama-Repo ist verfügbar."
+}

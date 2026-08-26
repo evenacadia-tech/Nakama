@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "The response routes through wissen/INDEX.md to the plugin-modernization entry while checking current code, tests, contracts, and acceptance sources first.",
+      "passed": false,
+      "evidence": "The response cites the knowledge entry plus code, contract, test, and plan files, but does not show the wissen/INDEX.md route or cite an acceptance source."
+    },
+    {
+      "text": "The UI migration is separated from parameter ranges and types, preset format, project state, automation, and audio behavior; those external contracts are not changed incidentally for prettier controls.",
+      "passed": true,
+      "evidence": "It freezes IDs, types, ranges, and defaults, confines prettier controls to mapping and input within that contract, and requires a separate versioned migration for real range changes."
+    },
+    {
+      "text": "The response proposes small buildable changes and keeps an executable old-editor or binary reference until the new native path is proven rather than using one irreversible rewrite.",
+      "passed": true,
+      "evidence": "It proposes small buildable commits, retains the old editor as a comparison path, and removes it only in a later cleanup commit after all comparisons pass."
+    },
+    {
+      "text": "The Web RC and approved images are correctly limited to interaction, motion, and visual evidence and are not presented as proof of host, state, preset, or audio compatibility.",
+      "passed": false,
+      "evidence": "The Web contract and pixel/motion evidence are partly bounded, but approved images and their exact evidence boundary are not named and preset compatibility is not explicit."
+    },
+    {
+      "text": "Explicit design approval is preserved while practice-report recommendations and Nakama transfer choices are labeled as evidence or hypotheses rather than binding product decisions.",
+      "passed": false,
+      "evidence": "The accepted RC is preserved, but practice-report recommendations and Nakama transfer choices are not explicitly labeled as evidence or hypotheses."
+    },
+    {
+      "text": "The response performs a read-only current-source preflight and names regression evidence for scan, reload, automation, state, multiple instances, and audio behavior before destructive removal.",
+      "passed": false,
+      "evidence": "It cites current sources and names most regression gates, but omits an explicit VST3 scan gate."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 4,
+    "total": 6,
+    "pass_rate": 0.33
+  }
+}

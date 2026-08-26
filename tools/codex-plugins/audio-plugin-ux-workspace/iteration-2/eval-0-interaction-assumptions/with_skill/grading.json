@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "The response inspects current Nakama design authority and routes through wissen/INDEX.md to the relevant interaction-evidence entry before proposing Figma changes.",
+      "passed": false,
+      "evidence": "The response cites current design-authority files and names the archive entry, but it never names, links, or otherwise observably routes through wissen/INDEX.md."
+    },
+    {
+      "text": "The response preserves the explicit frequency/gain mapping as user-decided but rejects the universal claim that every person understands the icons without evidence.",
+      "passed": true,
+      "evidence": "The Mapping section preserves horizontal frequency and upward positive gain as the user's current decision. The Icons section explicitly states that universal understanding is not evidenced and requires visible names or values."
+    },
+    {
+      "text": "At least one primary action is justified as person and situation -> listening goal or risk -> human need -> design consequence -> observable test.",
+      "passed": true,
+      "evidence": "The human-need bullet supplies the full chain from a producer with divided FL Studio attention through wrong-target risk and visible-state need to stable controls and a pre-gesture attribution test."
+    },
+    {
+      "text": "A visual research example is used with an exact page or timestamp as evidence for a test, not as a style template or product decision.",
+      "passed": true,
+      "evidence": "The response cites the exact timestamp 32:40 and explicitly uses it to justify a prediction/error test rather than a style template."
+    },
+    {
+      "text": "Volatile Nakama facts are tied to current product sources and no historical Suna or superseded visual claim is repeated as current truth.",
+      "passed": false,
+      "evidence": "Most claims cite current sources, but the current prototype mapping and green contract/state-test claims lack a cited repository source or fresh command evidence."
+    },
+    {
+      "text": "No Figma mutation begins before focus, visibility, mappings, and their observable validation are captured in a compact brief.",
+      "passed": true,
+      "evidence": "The response explicitly postpones Figma mutation and supplies focus, visibility, mapping, and observable validation in a compact structure contract."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 2,
+    "total": 6,
+    "pass_rate": 0.67
+  }
+}

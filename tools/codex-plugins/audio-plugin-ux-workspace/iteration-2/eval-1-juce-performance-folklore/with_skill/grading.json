@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "The response routes through wissen/INDEX.md to the JUCE UI performance entry and checks the current motion or UI contract.",
+      "passed": false,
+      "evidence": "The response checks the current UX contract via UX-CONTRACT.md and cites the JUCE performance entry directly, but it never mentions or demonstrates routing through wissen/INDEX.md. The assertion requires both parts."
+    },
+    {
+      "text": "The response rejects both permanent idle repainting and blanket use of setBufferedToImage, setOpaque, and setPaintingIsUnclipped; flag names are not treated as performance proof.",
+      "passed": true,
+      "evidence": "It explicitly rejects the blanket strategy, states that the native editor does not repaint while idle, limits 60 Hz to active drag/interpolation, and explains separate correctness conditions for all three flags before concluding that using them everywhere is wrong."
+    },
+    {
+      "text": "The response explains that a component image cache includes children and that an animated child can invalidate the parent cache, motivating separate static and dynamic paint boundaries.",
+      "passed": true,
+      "evidence": "It states that setBufferedToImage caches a component including its children and that every repaint of a dynamic child invalidates the cache, then separates the static shell and labels from graph, spectrum, and transient feedback."
+    },
+    {
+      "text": "The proposed evidence covers a Windows release build in FL Studio, idle and direct manipulation, worst analyzer load, multiple instances, and every supported scale tier.",
+      "passed": false,
+      "evidence": "The profiling gate explicitly includes Windows release in FL Studio, all four scale tiers, idle, drag, spectrum, and multiple instances. However, it says only spectrum and never specifies maximum or worst-case analyzer load, so the full conjunctive assertion is not satisfied."
+    },
+    {
+      "text": "The human reason connects prompt control feedback to an attributable audible change and protects host resources while the interface is idle.",
+      "passed": true,
+      "evidence": "The opening directly requires grip, value, curve, and audible change to remain connected during interaction and also requires idle instances to perform no unnecessary work."
+    },
+    {
+      "text": "The response distinguishes documented behavior, inference, and open measurement questions and imports no talk measurement as a Nakama limit.",
+      "passed": true,
+      "evidence": "It labels source-backed claims as documented and the local benchmark as observed, identifies the 236 ms figure as a calculation, explicitly says the offscreen result does not prove host performance, and defines the remaining FL Studio measurements as the release gate. No talk measurement is imported as a Nakama limit."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 2,
+    "total": 6,
+    "pass_rate": 0.67
+  }
+}

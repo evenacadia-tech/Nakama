@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "The response routes through wissen/INDEX.md to the plugin-modernization entry while checking current code, tests, contracts, and acceptance sources first.",
+      "passed": true,
+      "evidence": "It records the explicit index route and supports its preflight with current implementation, plan, contract, acceptance, manifest, schema, and test-evidence citations."
+    },
+    {
+      "text": "The UI migration is separated from parameter ranges and types, preset format, project state, automation, and audio behavior; those external contracts are not changed incidentally for prettier controls.",
+      "passed": true,
+      "evidence": "It freezes existing parameter contracts, limits prettier controls to ergonomic mapping, and separately gates presets, state, automation, and audio; true range changes require a separate versioned migration."
+    },
+    {
+      "text": "The response proposes small buildable changes and keeps an executable old-editor or binary reference until the new native path is proven rather than using one irreversible rewrite.",
+      "passed": true,
+      "evidence": "It uses small buildable commits, retains a reference binary or test-only switch, replaces by interaction family, and deletes only after every slice is green."
+    },
+    {
+      "text": "The Web RC and approved images are correctly limited to interaction, motion, and visual evidence and are not presented as proof of host, state, preset, or audio compatibility.",
+      "passed": true,
+      "evidence": "It limits PNGs to visible evidence and Web RC to executed states, gestures, and motion, while explicitly excluding VST3, reload, parameters, and audio proof."
+    },
+    {
+      "text": "Explicit design approval is preserved while practice-report recommendations and Nakama transfer choices are labeled as evidence or hypotheses rather than binding product decisions.",
+      "passed": true,
+      "evidence": "It labels the explicit RC approval User-decided and the practice-report transfer Inferred, a hypothesis rather than host proof."
+    },
+    {
+      "text": "The response performs a read-only current-source preflight and names regression evidence for scan, reload, automation, state, multiple instances, and audio behavior before destructive removal.",
+      "passed": true,
+      "evidence": "Current source findings and pre-removal gates cover forced VST3 scan, reload, state migration, automation, up to 16 instances, and detailed audio continuity."
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "pass_rate": 1.0
+  }
+}

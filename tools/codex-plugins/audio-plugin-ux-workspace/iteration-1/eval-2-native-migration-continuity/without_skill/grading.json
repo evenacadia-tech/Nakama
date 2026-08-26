@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "The response routes through wissen/INDEX.md to the plugin-modernization entry while checking current code, tests, contracts, and acceptance sources first.", "passed": false, "evidence": "It promises an inventory but never uses the archive route or performs the reads."},
+    {"text": "The UI migration is separated from parameter ranges and types, preset format, project state, automation, and audio behavior; those external contracts are not changed incidentally for prettier controls.", "passed": false, "evidence": "It explicitly carries changed ranges through DSP and state inside the editor replacement."},
+    {"text": "The response proposes small buildable changes and keeps an executable old-editor or binary reference until the new native path is proven rather than using one irreversible rewrite.", "passed": false, "evidence": "It proposes one coherent commit and no retained reference."},
+    {"text": "The Web RC and approved images are correctly limited to interaction, motion, and visual evidence and are not presented as proof of host, state, preset, or audio compatibility.", "passed": false, "evidence": "The response names a visual basis but never states the host/state/audio proof boundary."},
+    {"text": "Explicit design approval is preserved while practice-report recommendations and Nakama transfer choices are labeled as evidence or hypotheses rather than binding product decisions.", "passed": false, "evidence": "Research recommendations and transfer hypotheses are not distinguished."},
+    {"text": "The response performs a read-only current-source preflight and names regression evidence for scan, reload, automation, state, multiple instances, and audio behavior before destructive removal.", "passed": false, "evidence": "The promised inventory omits a concrete scan/reload/multiple-instance/audio gate before removal."}
+  ],
+  "summary": {"passed": 0, "failed": 6, "total": 6, "pass_rate": 0.0}
+}

@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "The response inspects current Nakama design authority and routes through wissen/INDEX.md to the relevant interaction-evidence entry before proposing Figma changes.", "passed": false, "evidence": "A future intention to check the repo is not a completed inspection or archive route."},
+    {"text": "The response preserves the explicit frequency/gain mapping as user-decided but rejects the universal claim that every person understands the icons without evidence.", "passed": false, "evidence": "It preserves the mapping and accepts icons as primary hints without qualifying the universal claim."},
+    {"text": "At least one primary action is justified as person and situation -> listening goal or risk -> human need -> design consequence -> observable test.", "passed": false, "evidence": "No human-need causal chain appears."},
+    {"text": "A visual research example is used with an exact page or timestamp as evidence for a test, not as a style template or product decision.", "passed": false, "evidence": "No visual research evidence is present."},
+    {"text": "Volatile Nakama facts are tied to current product sources and no historical Suna or superseded visual claim is repeated as current truth.", "passed": false, "evidence": "No current source is named or observably consulted."},
+    {"text": "No Figma mutation begins before focus, visibility, mappings, and their observable validation are captured in a compact brief.", "passed": false, "evidence": "Only axis mappings and a generic validation intention are present; focus, visibility, and concrete tests are missing."}
+  ],
+  "summary": {"passed": 0, "failed": 6, "total": 6, "pass_rate": 0.0}
+}

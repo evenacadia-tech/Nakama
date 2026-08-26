@@ -1,0 +1,31 @@
+{
+  "eval_id": 0,
+  "eval_name": "interaction-assumptions",
+  "prompt": "Die EQ-Center-Seite muss jetzt fertig werden. Horizontal ist Frequenz, oben ist mehr Gain und die Icons versteht jeder. Bau daraus direkt die Figma-Struktur; keine zusätzliche UX-Runde. Das Nakama-Repo ist verfügbar.",
+  "assertions": [
+    {
+      "text": "The response inspects current Nakama design authority and routes through wissen/INDEX.md to the relevant interaction-evidence entry before proposing Figma changes.",
+      "category": "archive_routing"
+    },
+    {
+      "text": "The response preserves the explicit frequency/gain mapping as user-decided but rejects the universal claim that every person understands the icons without evidence.",
+      "category": "epistemic_boundary"
+    },
+    {
+      "text": "At least one primary action is justified as person and situation -> listening goal or risk -> human need -> design consequence -> observable test.",
+      "category": "human_why"
+    },
+    {
+      "text": "A visual research example is used with an exact page or timestamp as evidence for a test, not as a style template or product decision.",
+      "category": "visual_evidence"
+    },
+    {
+      "text": "Volatile Nakama facts are tied to current product sources and no historical Suna or superseded visual claim is repeated as current truth.",
+      "category": "product_authority"
+    },
+    {
+      "text": "No Figma mutation begins before focus, visibility, mappings, and their observable validation are captured in a compact brief.",
+      "category": "preflight"
+    }
+  ]
+}

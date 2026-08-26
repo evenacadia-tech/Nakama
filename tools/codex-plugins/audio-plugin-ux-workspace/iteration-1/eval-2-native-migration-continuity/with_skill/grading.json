@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "The response routes through wissen/INDEX.md to the plugin-modernization entry while checking current code, tests, contracts, and acceptance sources first.", "passed": false, "evidence": "It promises a vague contract check but names neither archive route nor concrete current sources."},
+    {"text": "The UI migration is separated from parameter ranges and types, preset format, project state, automation, and audio behavior; those external contracts are not changed incidentally for prettier controls.", "passed": false, "evidence": "It allows range changes in the same scope if propagated consistently instead of separating the contracts."},
+    {"text": "The response proposes small buildable changes and keeps an executable old-editor or binary reference until the new native path is proven rather than using one irreversible rewrite.", "passed": false, "evidence": "No incremental stages or retained executable reference are proposed."},
+    {"text": "The Web RC and approved images are correctly limited to interaction, motion, and visual evidence and are not presented as proof of host, state, preset, or audio compatibility.", "passed": false, "evidence": "The proof boundary is not stated and approved images are not mentioned."},
+    {"text": "Explicit design approval is preserved while practice-report recommendations and Nakama transfer choices are labeled as evidence or hypotheses rather than binding product decisions.", "passed": false, "evidence": "The Web RC is tagged user-decided, but research recommendations and transfer choices are not classified."},
+    {"text": "The response performs a read-only current-source preflight and names regression evidence for scan, reload, automation, state, multiple instances, and audio behavior before destructive removal.", "passed": false, "evidence": "It promises a check but omits scan, reload, multiple instances, and an explicit audio proof gate."}
+  ],
+  "summary": {"passed": 0, "failed": 6, "total": 6, "pass_rate": 0.0}
+}

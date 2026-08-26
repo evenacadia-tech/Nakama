@@ -1,51 +1,93 @@
 # Audio Plugin UX benchmark
 
-## Target card
+## Ziel
 
-- Target: Codex plugin and skill
-- True source: `C:/Users/phili/plugins/audio-plugin-ux`
-- Durable baseline snapshot: `C:/Users/phili/plugins/audio-plugin-ux-workspace/baseline-0.2.1`
-- Mode: fix
-- Must-read files: plugin manifest, skill instructions, three references, agent metadata
-- Evaluation classes: first-response/routing, runtime proof, plugin metadata
-- Provider: deterministic current-versus-candidate assertions
-- Constraint: no subagents; the active session forbids delegation unless the user asks for it
+Der Benchmark prüft, ob der Skill das Nakama-Wissensarchiv als einzige Forschungsquelle nutzt und daraus bessere, menschenbezogene UX-Entscheidungen ableitet, ohne aktuelle Produktverträge oder Forschung in den Skill zu kopieren.
 
-The review in `C:/Users/phili/Projekte/Nakama/docs/reviews/2026-08-25-audio-plugin-ux.md` is the first RED baseline. A byte-for-byte content snapshot of the installed 0.2.1 source before the Voger refactor is the durable baseline for this iteration; it lives in the benchmark workspace so plugin cache cleanup cannot invalidate later runs. The benchmark does not re-grade accepted generic research; it targets documented regressions and concrete newly identified gaps.
+- Kandidat: `../audio-plugin-ux/`
+- Dauerhafte Basis: `baseline-0.2.1/`
+- Aktuelle Kandidatenversion: `0.2.4`
+- Wissenseinstieg: `../../../wissen/INDEX.md`
+- Testarten: deterministische Strukturprüfung und getrennte Agenten-Verhaltenstests
 
-## Eval cases
+Alle Pfade werden vom Speicherort des Benchmark-Skripts aufgelöst. Der Lauf hängt nicht mehr von einem bestimmten Windows-Nutzerprofil oder einem lokalen Plugin-Cache ab.
 
-1. **E1 — Current routes:** Nakama analysis names the current primary files instead of saying only “refresh the repo.”
-2. **E2 — No stale product:** the adapter states two apps, 760×430, 8 × 13, and the closed sidechain decision; it rejects the old Suna/700×420/12-parameter/advisory-only claims.
-3. **E3 — Generative fixed surface:** the generic reasoning derives and measures a layout hypothesis before audit/polish.
-4. **E4 — Screenshot omissions:** the Pro-Q study models mixed values, instance/track identity, and co-located scales.
-5. **E5 — User laws and proof:** Nakama names no-dead-elements, material geometry invariance, rectangle proof, contract check, and release-bound audition.
-6. **E6 — Executable drift check:** the plugin ships a read-only contract checker for the critical Nakama anchors.
-7. **E7 — Current visual authority:** the adapter names the three exact 2026-08-25 reference images and the acceptance decision that gives them priority.
-8. **E8 — Visual contract check:** the executable checker guards both the new image set and the updated design router.
-9. **E9 — Access and response contract:** the entrypoint requires alternative input paths, assistive semantics, response under visual load, and interruption discipline.
-10. **E10 — Executable review prompts:** the reasoning reference provides concrete input-equivalence, response-under-load, and interruption tests without misapplying a web pixel threshold as a native-plugin law.
+## Deterministische Fälle
 
-Run:
+1. Der Skill routet zu einem indexierten Forschungsarchiv und kopiert dessen Erkenntnisse nicht.
+2. Die Archivsuche folgt `wissen/LIES-MICH.md`, `wissen/AGENTS.md` und `wissen/INDEX.md`, ohne datierte Einträge im Skill festzuschreiben.
+3. Quellenbehauptung, aktueller Produktvertrag, Transferhypothese und Designentscheid bleiben getrennt.
+4. Jede wesentliche Designbegründung beginnt mit der menschlichen Kausalkette.
+5. Mappings, Richtungen und Icons werden als kontextabhängige Hypothesen behandelt.
+6. Alternative Bedienwege besitzen brauchbare Schritte, Grenzen, Reset und Fehlerverhalten.
+7. Visuelle Belege tragen Seite, Abbildung, Frame oder Zeitstempel und bleiben Beleg statt Stilvorlage.
+8. JUCE-Performance wird im Zielhost gemessen, bevor Caches oder Paint-Flags verordnet werden.
+9. Web-zu-Native-Migration bewahrt Parameter-, State-, Automation-, Audio- und Hostverträge.
+10. Der Nakama-Adapter enthält keine kopierte aktuelle Produktmomentaufnahme.
+11. Die Pro-Q-Fallstudie wird nur für passende Mechanismen geladen, nicht für jeden EQ-Auftrag.
+12. Manifestversion und generativer Layout-Prompt entsprechen dem aktuellen Release.
+
+Zusätzlich prüft `check-nakama-contract.ps1` dynamisch:
+
+- erforderliche Produkt-, Design-, UX-, Wissens- und Skill-Router;
+- eindeutige Wissenseintrags-IDs;
+- zulässige `pruefstand`-Werte;
+- jeden aktiven Eintrag genau einmal im Index;
+- auflösbare relative Indexlinks;
+- das Fehlen von Roh-PDFs, E-Books, Transkripten und Untertiteldateien im Archiv;
+- die Trennung von Archivwissen und Nakama-Produktwahrheit.
+
+Lauf vom Repository-Root:
 
 ```powershell
-pwsh -File C:/Users/phili/plugins/audio-plugin-ux-workspace/benchmark.ps1
+pwsh -NoProfile -File tools/codex-plugins/audio-plugin-ux-workspace/benchmark.ps1
 ```
 
-## Results
+Aktuelles Ergebnis:
 
-### Iteration 0 — stale Nakama adapter to 0.2.1
+| Prüfung | Basis 0.2.1 | Kandidat 0.2.4 |
+|---|---:|---:|
+| Strukturtests | 0/12 | 12/12 |
+| Archiv- und Adaptervertrag | nicht vorhanden | 25/25 |
+| Offizieller Skill-Validator | nicht erneut bewertet | grün |
 
-- Installed 0.1.0 baseline: **0/8**
-- Source 0.2.1 candidate: **8/8**
-- Nakama repository contract check: **30/30 checks passed**
+Die Regex-Fälle beweisen Struktur und Schutzgeländer. Sie beweisen nicht, dass ein Agent die Regeln unter Druck tatsächlich anwendet; dafür existiert die folgende Verhaltenssuite.
 
-The baseline score does not mean its accepted generic analysis is worthless; these eight cases deliberately target the review's missing and unsafe behavior plus the newly declared visual truth.
+## Verhaltenstests
 
-### Iteration 1 — Voger source review
+Die drei Aufgaben greifen die Lecks auf, die beim Aufbau des Wissensarchivs sichtbar wurden:
 
-- Installed 0.2.1 baseline: **8/10**
-- Source 0.2.2 candidate: **10/10**
-- Value-add: E9 and E10 now pass; E1–E8 did not regress.
+1. **Interaktionsannahmen:** Eine Aufforderung zum sofortigen Figma-Bau behauptet universelles Icon-Verständnis und ein vermeintlich natürliches Mapping.
+2. **JUCE-Performance-Folklore:** Eine pauschale Cache-/Paint-Flag-Strategie und permanentes 60-FPS-Repainting sollen ohne Profiling übernommen werden.
+3. **Native Migrationskontinuität:** Ein abgenommener Web-RC soll in einem Big-Bang inklusive Parameteränderungen und sofortiger Löschung des alten Editors portiert werden.
 
-The Voger article's simplicity, consistency, feedback, and screen-size points were already covered. The refactor adds only the gaps it exposed: alternative/assistive operation, response truth under visual load, and interruption/focus discipline. Its named plugin examples remain editorial examples rather than causal evidence.
+Jeder Fall besitzt sechs wörtlich bewertete Erwartungen. RED wurde einmal ohne Skill erzeugt und für spätere Iterationen wiederverwendet. Nach jeder Skill-Änderung wurde nur der noch undichte GREEN-Fall neu ausgeführt und von einem getrennten Grader bewertet.
+
+| Stand | Interaktion | Performance | Migration | Gesamt |
+|---|---:|---:|---:|---:|
+| Ohne Skill, RED | 0/6 | 1/6 | 0/6 | 1/18 |
+| Vor Archivintegration, GREEN | 1/6 | 3/6 | 0/6 | 4/18 |
+| Iteration 2 | 4/6 | 4/6 | 2/6 | 10/18 |
+| Iteration 3 | 6/6 | 5/6 | 6/6 | 17/18 |
+| Iteration 4, final | 6/6 | 6/6 | 6/6 | 18/18 |
+
+Die final geschlossenen Verhaltenslücken sind:
+
+- sichtbare Route `wissen/INDEX.md -> Eintrag-ID/Pfad/Prüfstand` statt nur einer still benutzten Quelle;
+- vollständige Mensch-Situation-Risiko-Bedarf-Entwurfsfolge-Test-Kette;
+- exakter visueller Zeitstempel als Testbeleg statt Stilkopie;
+- aktuelle Nakama-Behauptungen nur mit kanonischem Pfad oder frischer Testevidenz;
+- vollständige FL-Studio-Matrix aus Windows Release, Idle, direkter Manipulation, maximaler Analyzerlast, allen Skalierungen und mehreren Instanzen;
+- sichtbare Reaktion als Voraussetzung dafür, die hörbare Änderung der aktuellen Geste zuzuordnen, bei zugleich ruhigem Ressourcenverbrauch im Idle;
+- explizite Beweisgrenzen zwischen PNG, Web-RC, nativer Hostfunktion, State, Automation und Audio;
+- kleine, baubare Migration mit erhaltenem Vergleichspfad und separatem Lösch-Commit;
+- VST3-Scan, Preset/Projekt-Reload, Automation, mehrere Instanzen und Audiokontinuität vor destruktiver Entfernung.
+
+## Artefakte
+
+- `iteration-1/` enthält RED, erste GREEN-Antworten und alle Ausgangsgradings.
+- `iteration-2/` enthält die erste Archivintegration und ihre Restlecks.
+- `iteration-3/` enthält die finalen Interaktions- und Migrationsantworten sowie den vorletzten Performance-Fall.
+- `iteration-4/` enthält den finalen Performance-Fall.
+
+Die Antworten sind Testartefakte, keine neuen Nakama-Verträge. Aktuelle Produktwahrheit bleibt in Code, Tests und den dafür zuständigen Registern; Forschungswissen bleibt ausschließlich unter `wissen/`.

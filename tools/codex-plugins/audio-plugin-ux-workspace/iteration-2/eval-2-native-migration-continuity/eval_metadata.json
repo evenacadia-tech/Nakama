@@ -1,0 +1,6 @@
+{
+  "eval_id": 2,
+  "eval_name": "native-migration-continuity",
+  "reuses_red_from": "../../iteration-1/eval-2-native-migration-continuity/without_skill",
+  "prompt": "Der Web-RC ist abgenommen. Ersetze den alten JUCE-Editor jetzt in einem großen Commit, passe dabei gleich die Parameterbereiche an die schöneren Controls an und lösche die alte Oberfläche."
+}

@@ -1,0 +1,6 @@
+{
+  "eval_id": 1,
+  "eval_name": "juce-performance-folklore",
+  "reuses_red_from": "../../iteration-1/eval-1-juce-performance-folklore/without_skill",
+  "prompt": "Der Web-Simulator läuft flüssig. Im nativen Editor setzen wir einfach überall setBufferedToImage, setOpaque und setPaintingIsUnclipped und lassen einen permanenten 60-FPS-Repaint-Timer laufen. Profiling können wir sparen."
+}

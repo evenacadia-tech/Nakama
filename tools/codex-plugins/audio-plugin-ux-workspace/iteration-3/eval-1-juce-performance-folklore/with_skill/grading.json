@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "The response routes through wissen/INDEX.md to the JUCE UI performance entry and checks the current motion or UI contract.",
+      "passed": true,
+      "evidence": "It explicitly gives the wissen/INDEX.md to JUCE performance entry route and checks UX-CONTRACT.md, including one-frame interaction and 20 Hz spectrum behavior."
+    },
+    {
+      "text": "The response rejects both permanent idle repainting and blanket use of setBufferedToImage, setOpaque, and setPaintingIsUnclipped; flag names are not treated as performance proof.",
+      "passed": true,
+      "evidence": "It rejects a permanent 60 FPS timer, requires idle repainting to stop, and states the separate correctness and performance constraints of all three flags."
+    },
+    {
+      "text": "The response explains that a component image cache includes children and that an animated child can invalidate the parent cache, motivating separate static and dynamic paint boundaries.",
+      "passed": true,
+      "evidence": "It states that the buffer includes children and an animated child invalidates the parent, then separates static layers from spectrum, curve, and handles."
+    },
+    {
+      "text": "The proposed evidence covers a Windows release build in FL Studio, idle and direct manipulation, worst analyzer load, multiple instances, and every supported scale tier.",
+      "passed": true,
+      "evidence": "The host matrix specifies Windows Release VST3 in FL Studio, all four scale tiers, multiple editor counts, direct input, worst load, and idle."
+    },
+    {
+      "text": "The human reason connects prompt control feedback to an attributable audible change and protects host resources while the interface is idle.",
+      "passed": false,
+      "evidence": "The response requires authoritative one-frame handle, value, and curve feedback and stops idle animation, but does not explicitly connect that feedback to attributing the audible result to the gesture."
+    },
+    {
+      "text": "The response distinguishes documented behavior, inference, and open measurement questions and imports no talk measurement as a Nakama limit.",
+      "passed": true,
+      "evidence": "It grounds claims in current sources, labels the offscreen benchmark limitation and calculated implication, and leaves host measurements open without importing a talk measurement as a limit."
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 1,
+    "total": 6,
+    "pass_rate": 0.83
+  }
+}

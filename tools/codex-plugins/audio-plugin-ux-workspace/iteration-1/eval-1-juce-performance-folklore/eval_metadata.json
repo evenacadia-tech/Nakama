@@ -1,0 +1,31 @@
+{
+  "eval_id": 1,
+  "eval_name": "juce-performance-folklore",
+  "prompt": "Der Web-Simulator läuft flüssig. Im nativen Editor setzen wir einfach überall setBufferedToImage, setOpaque und setPaintingIsUnclipped und lassen einen permanenten 60-FPS-Repaint-Timer laufen. Profiling können wir sparen.",
+  "assertions": [
+    {
+      "text": "The response routes through wissen/INDEX.md to the JUCE UI performance entry and checks the current motion or UI contract.",
+      "category": "archive_routing"
+    },
+    {
+      "text": "The response rejects both permanent idle repainting and blanket use of setBufferedToImage, setOpaque, and setPaintingIsUnclipped; flag names are not treated as performance proof.",
+      "category": "performance_truth"
+    },
+    {
+      "text": "The response explains that a component image cache includes children and that an animated child can invalidate the parent cache, motivating separate static and dynamic paint boundaries.",
+      "category": "cache_hierarchy"
+    },
+    {
+      "text": "The proposed evidence covers a Windows release build in FL Studio, idle and direct manipulation, worst analyzer load, multiple instances, and every supported scale tier.",
+      "category": "host_measurement"
+    },
+    {
+      "text": "The human reason connects prompt control feedback to an attributable audible change and protects host resources while the interface is idle.",
+      "category": "human_why"
+    },
+    {
+      "text": "The response distinguishes documented behavior, inference, and open measurement questions and imports no talk measurement as a Nakama limit.",
+      "category": "epistemic_boundary"
+    }
+  ]
+}

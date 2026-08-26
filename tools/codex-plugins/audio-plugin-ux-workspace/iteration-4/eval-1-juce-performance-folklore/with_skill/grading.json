@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "The response routes through wissen/INDEX.md to the JUCE UI performance entry and checks the current motion or UI contract.",
+      "passed": true,
+      "evidence": "It gives an explicit route through wissen/INDEX.md to the active JUCE performance entry and checks current behavior against UX-CONTRACT.md."
+    },
+    {
+      "text": "The response rejects both permanent idle repainting and blanket use of setBufferedToImage, setOpaque, and setPaintingIsUnclipped; flag names are not treated as performance proof.",
+      "passed": true,
+      "evidence": "It rejects the blanket strategy, explains each flag's distinct correctness and cost conditions, and requires idle repainting to stop or be reduced."
+    },
+    {
+      "text": "The response explains that a component image cache includes children and that an animated child can invalidate the parent cache, motivating separate static and dynamic paint boundaries.",
+      "passed": true,
+      "evidence": "It states that the cache includes children and child repaint invalidates it, then separates static shell/labels from dynamic curve, spectrum, and controls."
+    },
+    {
+      "text": "The proposed evidence covers a Windows release build in FL Studio, idle and direct manipulation, worst analyzer load, multiple instances, and every supported scale tier.",
+      "passed": true,
+      "evidence": "The profiling matrix explicitly covers the named build and host, every scale, multiple instances, idle, direct manipulation, and maximum supported analyzer/overlay load."
+    },
+    {
+      "text": "The human reason connects prompt control feedback to an attributable audible change and protects host resources while the interface is idle.",
+      "passed": true,
+      "evidence": "It connects synchronized cursor, handle, value, and curve feedback to attribution of the audible change and separately protects idle host resources."
+    },
+    {
+      "text": "The response distinguishes documented behavior, inference, and open measurement questions and imports no talk measurement as a Nakama limit.",
+      "passed": true,
+      "evidence": "It separates observation, documented JUCE behavior, implementation inference, and open profiling questions without importing a talk measurement as a product limit."
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "pass_rate": 1.0
+  }
+}

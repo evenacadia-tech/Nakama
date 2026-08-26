@@ -1,6 +1,15 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "outputStyle": "Sachlich",
+  "worktree": {
+    "bgIsolation": "none"
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "pwsh -NoProfile -File \"$CLAUDE_PROJECT_DIR/tools/dirigent/cockpit.ps1\" -StatusLine",
+    "padding": 0,
+    "refreshInterval": 5
+  },
   "permissions": {
     "additionalDirectories": [
       "C:\\Users\\phili\\FL-Studio"
@@ -42,40 +51,12 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "startup|resume|clear",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/session-start-marker.sh\""
-          }
-        ]
-      },
-      {
         "matcher": "compact",
         "hooks": [
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/nakama-primer.sh\"",
             "statusMessage": "Nakama-Systemkarte + Live-Stand injizieren..."
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/depth-primer.sh\"",
-            "statusMessage": "Depth-Primer injizieren..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/plan-primer.sh\"",
-            "statusMessage": "Planstand rechnen und vorlesen (Plan, offene Fragen)..."
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/design-primer.sh\"",
-            "statusMessage": "Design-Stand messen (Figma-Truhe, Abnahmen)..."
           }
         ]
       }
@@ -87,53 +68,6 @@
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/git-riegel.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/fremdmodell-riegel.sh\""
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/kreativ-schleuse.sh\""
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write|Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/agent-reminder-nakama.sh\""
-          }
-        ]
-      },
-      {
-        "matcher": "Bash|PowerShell",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/planstand.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/auto-push.sh\""
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/commit-stop.sh\""
           }
         ]
       }

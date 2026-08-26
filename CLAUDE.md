@@ -47,8 +47,9 @@ Commits gehen ohne Rückfrage raus.
   Alles andere heißt Vorschlag, Annahme oder Studie.
 - **Plan:** Der technische Entwurf ist
   `docs/FL-Nakama-Sonden-Design-Entwurf.md`; der aktuelle, aus dem Repo
-  gerechnete Stand liegt in `docs/PLAN-STAND.md`, die nächste Arbeit in
-  `docs/NEXT-SESSION.md`. Die frühere Briefing-Seite ist abgeschafft.
+  gerechnete Stand und die nächste Arbeit liegen in `docs/PLAN-STAND.md`.
+  Danach werden nur Gate-Text, Fachquellen und Manifest des konkreten Tickets
+  gelesen. Die frühere Briefing-Seite ist abgeschafft.
 <!-- WAHRHEITSKERN:ENDE -->
 
 ## Arbeitsregeln
@@ -68,12 +69,16 @@ Commits gehen ohne Rückfrage raus.
 - Große technische Schritte ziehen `docs/plugin-wissen.md` nach. Offene
   außerhalb des Auftrags liegende Produktpunkte gehen datiert nach
   `docs/offene-punkte.md`.
+- Im Dirigentenbetrieb schreibt genau ein Hintergrundworker im sichtbaren
+  Checkout. `worktree.bgIsolation = "none"` ist nur zusammen mit dieser
+  Ein-Schreiber-Regel zulässig; Fable bleibt währenddessen bei Repo-Dateien
+  lesend.
 
 ## Lesen vor der Arbeit
 
 | Bereich | Zuerst lesen |
 |---|---|
-| Nächster Schritt | `docs/NEXT-SESSION.md` |
+| Nächster Schritt | `docs/PLAN-STAND.md`, danach die konkrete Ticketquelle |
 | Planstand / offene Fragen | `docs/PLAN-STAND.md`, `docs/plan/plan.json`, `docs/plan/fragen.json`, `docs/plan/LIES-MICH.md` |
 | Plugin heute | `docs/plugin-wissen.md` |
 | Sondenfamilie / Phasen | `docs/FL-Nakama-Sonden-Design-Entwurf.md`, `docs/bauaufteilung-sonden.md` |
@@ -159,27 +164,9 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
    dokumentiert Zustände, Größen und Grenzfälle. User-Wortlaut kommt nach
    `design/abnahmen/`.
 4. Erst eine Abnahme erlaubt die Spiegelung in `eq-copilot/`.
-5. `eq-copilot/design/` ist Altbestand/Studie. Der aktive
-   `tools/hooks/kreativ-schleuse.sh` schützt ihn ohne frischen
-   Freigabe-Marker. Der normale Prototyp unter `design/prototyp/` ist frei;
-   die frühere Prototyp-Schleuse ist seit 24.08.2026 stillgelegt.
-
-## Remote-Bericht für dieses Projekt
-
-**Nimbalyst und die Matrix-Bridge sind seit 26.08.2026 vollständig
-deinstalliert** — User-Wort: *„nimbalyst ist vollständig deinstalliert, die
-alte fassung ist daher unnötig"*; der Bridge-Ordner existiert nicht mehr, ein
-Nimbalyst-MCP ist nicht registriert. `melden.py`, `mcp__nimbalyst__*` und
-jeder Ersatzbus sind tot — nichts davon aufrufen. WhatsApp (24.08.) und die
-claude.ai-Routine „Nakama: Dirigent-Meldung" (25.08.) waren schon vorher
-abgeschafft.
-
-Der einzige Weg zum User ist die Session selbst: Der Dirigent läuft als echte
-Fable-Session mit `--remote-control` — Terminal und Remote-Oberfläche sind
-dieselbe Sitzung. Meldungen, Zwischenstände und blockierende Fragen enden als
-klare, wartende Frage in genau dieser Sitzung. Ablauf, Haltgründe und
-Kontexthaushalt: `.claude/skills/dirigent/SKILL.md`; Migrationsstand:
-`docs/vorhaben-2026-08-25-dirigent-ohne-nimbalyst.md`.
+5. `eq-copilot/design/` ist Altbestand/Studie. Aktive Arbeitsanweisung und Git
+   schützen diese alte Fläche. Der normale Prototyp unter `design/prototyp/`
+   ist frei; die frühere Prototyp-Schleuse ist seit 24.08.2026 stillgelegt.
 
 ## Maschinen-Landminen
 

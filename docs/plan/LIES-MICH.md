@@ -22,7 +22,7 @@ Der alte Stand liegt vollständig unter `docs/archiv/hub-2026-08-23.json`.
 
 | Datei | Was drin steht | Wer sie pflegt |
 |---|---|---|
-| `plan.json` | Phasen, Schritte, Ticket, Klartext, Beleg-Pfad, geforderte Prüfstufe. **Kein Statusfeld.** | Mensch/Session — es ist Text, kein Messwert |
+| `plan.json` | Phasen, Schritte, Ticket, Klartext, kurzer `leitungsname`, Beleg-Pfad, geforderte Prüfstufe. **Kein Statusfeld.** | Mensch/Session — es ist Text, kein Messwert |
 | `fragen.json` | `offen[]` = Fragen an den User · `beantwortet{}` = jede Antwort im Wortlaut mit Datum | der Skill `/fragen` |
 | `bilder/` | die Bilder zu den Fragen | Mensch/Session |
 
@@ -67,15 +67,21 @@ Exitcode 4.
 
 ## Was du tun musst
 
-**Nichts nachziehen.** `tools/hooks/planstand.sh` läuft nach jedem Befehl,
-misst, ob der Quellstand im Blatt noch stimmt, rechnet sonst neu und committet
-das Blatt allein. Der SessionStart-Hook `plan-primer.sh` liest den Kopf vor.
+Zu Arbeitsbeginn und nach jedem abgeschlossenen Ticket bewusst ausführen:
+
+```powershell
+py -3.13 tools/plan/planstand.py
+```
+
+Ändert sich das gerechnete Blatt aus bereits committeten Quellen, wird nur
+`docs/PLAN-STAND.md` mit explizitem Pathspec committet und direkt gepusht. Bei
+uncommittierten Plan- oder Beweisquellen wird nichts automatisch committet.
 
 Was du tust, wenn du etwas **änderst**:
 
 | Du hast … | … dann |
 |---|---|
-| ein Ticket gebaut + Manifest geschrieben | nichts — der Beleg liegt, das Blatt sieht ihn |
+| ein Ticket gebaut + Manifest geschrieben | Generator ausführen; der Beleg wird dadurch sichtbar |
 | als Prüfer geurteilt | **Marke ins Manifest** setzen. Sonst bleibt der Schritt „gebaut" |
 | einen Befund geschlossen | das vierte Wort auf `nachgearbeitet` setzen |
 | einen Schritt im Plan ergänzt/umformuliert | `plan.json` — Text, kein Status |

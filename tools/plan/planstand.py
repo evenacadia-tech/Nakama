@@ -29,7 +29,8 @@ Warnung ins Blatt geschrieben: ein Tippfehler darf keinen Schritt unsichtbar
 herabstufen.
 
 Aufruf vom Repo-Root:  py -3.13 tools/plan/planstand.py
-Exit 0 = geschrieben · 3 = Quelle fehlt/unlesbar · 4 = Marke unlesbar.
+Exit 0 = geschrieben · 3 = Quelle fehlt, unlesbar oder strukturell ungültig
+· 4 = Marke unlesbar.
 """
 from __future__ import annotations
 
@@ -46,8 +47,8 @@ FRAGEN = WURZEL / "docs" / "plan" / "fragen.json"
 ZIEL = WURZEL / "docs" / "PLAN-STAND.md"
 
 # Alles, woraus dieses Blatt gerechnet wird. Aendert sich hier nichts, kann
-# sich am Planstand nichts geaendert haben — darauf beruht der Auslöser des
-# Hooks (tools/hooks/planstand.sh) UND die Schleifenfreiheit des Stempels.
+# sich am Planstand nichts geaendert haben. Darauf beruht die Frischepruefung
+# beim bewussten Lauf zu Arbeitsbeginn und nach einem Ticket.
 QUELLEN = ("docs/plan", "docs/beweise", "tools/plan")
 
 # Die Marke. Das vierte Wort ist optional und sagt bei NEEDS_WORK, ob die
@@ -68,6 +69,25 @@ RANG = {"T1": 1, "T2": 2, "T3": 3}
 
 ZEICHEN = {"abgenommen": "■", "gebaut": "▣", "offen": "□"}
 WORT = {"abgenommen": "abgenommen", "gebaut": "gebaut", "offen": "offen"}
+
+
+def leitungsnamen_pruefen(plan: dict) -> list[str]:
+    """Die Projektleitungsansicht darf keinen Schritt verlieren oder kaschieren."""
+    fehler: list[str] = []
+    for phase in plan.get("phasen", []):
+        for schritt in phase.get("schritte", []):
+            kennung = schritt.get("id", "?")
+            name = schritt.get("leitungsname")
+            if not isinstance(name, str) or not name.strip():
+                fehler.append(f"{kennung}: leitungsname fehlt oder ist leer")
+                continue
+            if "\n" in name or "\r" in name:
+                fehler.append(f"{kennung}: leitungsname muss einzeilig sein")
+            if len(name) > 90:
+                fehler.append(
+                    f"{kennung}: leitungsname hat {len(name)} statt hoechstens 90 Zeichen"
+                )
+    return fehler
 
 
 def git(*args: str) -> str:
@@ -179,6 +199,12 @@ def main() -> int:
         plan = json.loads(PLAN.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as e:
         print(f"Quelle nicht lesbar: {PLAN} ({e})", file=sys.stderr)
+        return 3
+    leitungsfehler = leitungsnamen_pruefen(plan)
+    if leitungsfehler:
+        print(f"Plan strukturell ungueltig: {PLAN}", file=sys.stderr)
+        for fehler in leitungsfehler:
+            print(f"  - {fehler}", file=sys.stderr)
         return 3
     try:
         offene_fragen = json.loads(FRAGEN.read_text(encoding="utf-8")).get("offen", [])

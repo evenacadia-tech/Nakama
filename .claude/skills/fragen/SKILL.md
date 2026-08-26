@@ -26,8 +26,8 @@ Zwei Wörter aus diesem Satz sind der ganze Auftrag:
 |---|---|
 | `docs/plan/fragen.json` | `offen[]` = die Karten · `beantwortet{}` = 35 frühere Antworten im Wortlaut |
 | `docs/plan/bilder/` | die Bilder zu den Karten (`bilder[].datei`) |
-| `CLAUDE.md` (Register) | was schon entschieden ist — **frag nie etwas, das dort steht** |
-| `docs/PLAN-STAND.md` | wo der Plan steht (gerechnet, nie von Hand) |
+| `CLAUDE.md` und passende Abnahmen | was schon entschieden ist — **frag nie etwas, das dort steht** |
+| `docs/PLAN-STAND.md` | wo der Plan steht (vorher bewusst neu rechnen, nie von Hand ändern) |
 
 🔑 **Prüfe vor jeder Frage, ob sie noch offen IST.** Zwei Karten (`U5`, `U10`)
 tragen `frueher_beantwortet` — zu ihrer Kennung liegt schon ein Wortlaut vor.
@@ -52,9 +52,9 @@ In dieser Reihenfolge:
 direkt in der Sitzung: `Read` auf den absoluten Pfad
 `docs/plan/bilder/<datei>` — Bilder erscheinen nativ im Claude-Kanal, auch in
 Remote Control — und nenne den `text` der Karte dazu. Der User ist Gestalter —
-er entscheidet an Bildern, nicht an Beschreibungen. (Nimbalyst ist seit
-26.08.2026 vollständig deinstalliert; es gibt keine `mcp__nimbalyst__*`-
-Werkzeuge und keinen Ersatzbus. Gefragt wird direkt hier.)
+er entscheidet an Bildern, nicht an Beschreibungen. Gefragt und geantwortet
+wird ausschließlich in dieser Claude-/Remote-Control-Sitzung; das Cockpit
+zeigt währenddessen `? ENTSCHEIDUNG WARTET`.
 
 Dann die Frage, wo verfügbar über das native `AskUserQuestion`, sonst als
 klar abgesetzte Einzelfrage im Text:
@@ -84,21 +84,21 @@ Regeln für den Text der Frage:
 Die Antwort ist **User-Wort**. Sie wird **wörtlich** übernommen, nie
 zusammengefasst, nie geglättet, auch nicht bei Tippfehlern.
 
-An **drei** Orten, in dieser Reihenfolge:
+In dieser Reihenfolge:
 
 1. **`docs/plan/fragen.json`** — die Karte wandert von `offen` nach
    `beantwortet` mit `{"wahl": …, "text": <Wortlaut>, "datum": "JJJJ-MM-TT HH:MM",
    "status": "eingearbeitet", "ergebnis": <was daraus folgt, ein Satz>}`.
-2. **Das Register in `CLAUDE.md`** — nur bei einem **Entscheid**: eine Zeile
-   `| TT.MM. | <was gilt> | „<Wortlaut>" |`. Ohne Zitat kein Registereintrag;
-   ohne Registereintrag gilt nichts als entschieden.
-3. **`design/abnahmen/JJJJ-MM-TT-<thema>.md`** — wenn es um Aussehen oder
-   Verhalten der drei Apps geht (`U2`, `U5`, `U6`, `U9`). Dort steht der volle
-   Wortlaut mit der Frage, die er beantwortet hat.
+2. **`design/abnahmen/JJJJ-MM-TT-<thema>.md`** — wenn es um Aussehen oder
+   Verhalten der Apps geht (`U2`, `U5`, `U6`, `U9`). Dort stehen Datum, Frage
+   und voller Wortlaut. Für einen nicht gestalterischen Produktentscheid wird
+   im selben Zug der ausdrücklich bezeichnete Fachentscheid mit Datum und
+   Zitat aktualisiert. `CLAUDE.md` erhält nur dann eine knappe Folge, wenn seine
+   heutigen Invarianten oder Routen tatsächlich betroffen sind.
 
-Widerspricht die Antwort einem älteren Registereintrag: den alten **nicht
-löschen**, sondern als überholt markieren (`~~…~~` + „überholt TT.MM.") und den
-neuen darunter setzen. Die Historie ist Teil der Wahrheit.
+Widerspricht die Antwort einem älteren Entscheid: den alten **nicht löschen**,
+sondern am Entscheidungsort als überholt markieren und den neuen darunter
+setzen. Die Historie ist Teil der Wahrheit.
 
 ## 5. Wie du sie einarbeitest
 
@@ -109,22 +109,25 @@ gearbeitet wird — **im selben Änderungssatz**:
 |---|---|
 | ändert, **was** gebaut wird | `docs/plan/plan.json` (Text des Schrittes) + `docs/bauaufteilung-sonden.md` |
 | ändert, **wie** etwas aussieht/sich verhält | `design/abnahmen/` + der betroffenen Spezifikation unter `design/docs/` |
-| erledigt einen Handgriff | die Stelle, die ihn führte (`docs/offene-punkte.md` mit NAK-ID, `docs/NEXT-SESSION.md`) |
+| erledigt einen Handgriff | die konkrete Ticketquelle oder `docs/offene-punkte.md` mit Kennung |
 | macht einen offenen Punkt gegenstandslos | `docs/offene-punkte.md` — schließen **mit ID + Commit-SHA**, nie still löschen |
 
-Der Planstand selbst wird **nicht** angefasst: `docs/PLAN-STAND.md` ist
-gerechnet (`tools/plan/planstand.py`), und der Hook zieht ihn selbst nach.
+Der Planstand selbst wird **nicht von Hand** angefasst. Nach der Einarbeitung
+`py -3.13 tools/plan/planstand.py` ausführen und die erzeugte Datei zusammen
+mit den bewusst geänderten Quellen per explizitem Pathspec committen.
 
 ## 6. Committen
 
 Ein Commit je Karte, mit **explizitem Pathspec** (parallele Sessions!):
 
 ```
-git add docs/plan/fragen.json CLAUDE.md <weitere betroffene Pfade>
+git add -- docs/plan/fragen.json <konkreter Entscheidungsort> <weitere betroffene Pfade>
 git commit -m "Antwort U9 eingearbeitet: <was jetzt gilt> — User-Wort 23.08."
+git push
 ```
 
-Nie `git add -A`, nie `--amend`. Der Auto-Push-Hook schickt es raus.
+Nie `git add -A`, nie `--amend`. Den eigenen Commit direkt pushen; kein Hook
+holt Commit oder Push nach.
 
 ## 7. Wann du aufhörst
 
@@ -141,4 +144,6 @@ Nie `git add -A`, nie `--amend`. Der Auto-Push-Hook schickt es raus.
 - Aus einer Antwort mehr ableiten, als dasteht — im Zweifel nachfragen, welche
   Lesart gilt, statt eine zu wählen.
 - Eine technische Entscheidung als Frage verkleiden.
+- Eine technische Frage an den User delegieren, die der Dirigent innerhalb der
+  Produkt- und Designgrenzen selbst entscheiden kann.
 - Eine Karte selbst schließen, weil sie dir erledigt vorkommt.

@@ -13,7 +13,8 @@ Vor Änderungen:
 
 1. `git status --short` prüfen und fremde oder unklare Änderungen markieren.
 2. Nur die für den Auftrag passenden Quellen und Fachdateien lesen.
-3. Bei fortgesetzter Planarbeit mit `docs/NEXT-SESSION.md` beginnen.
+3. Bei fortgesetzter Planarbeit `tools/plan/planstand.py` ausführen und mit
+   `docs/PLAN-STAND.md` beginnen; danach nur die dort genannte Ticketquelle lesen.
 4. Umfang und passenden Beweisweg festlegen, bevor Code geändert wird.
 
 Aktueller Code und Beweise aus der laufenden Session gehen beschreibender Doku vor.
@@ -24,7 +25,7 @@ und User-Wortlaut dokumentiert sind. Archive und Studien sind Verlauf, keine Vor
 
 | Aufgabe | Verbindlicher Einstieg |
 |---|---|
-| Nächster geplanter Schritt | `docs/NEXT-SESSION.md` |
+| Nächster geplanter Schritt | `docs/PLAN-STAND.md`, danach Gate-Text, Fachquelle und Manifest des konkreten Tickets |
 | Planstand oder offene Fragen | `docs/PLAN-STAND.md`, `docs/plan/LIES-MICH.md` und die zugehörigen JSON-Dateien |
 | Heutige Plugin-Architektur | `docs/plugin-wissen.md` |
 | Sondenfamilie und Bauphasen | `docs/FL-Nakama-Sonden-Design-Entwurf.md`, `docs/bauaufteilung-sonden.md` |

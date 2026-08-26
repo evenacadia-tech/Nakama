@@ -5,38 +5,67 @@ description: Führt den Nakama-Bauplan Ticket für Ticket als echte Fable-Sessio
 
 # /dirigent — den Plan durchfahren
 
-## 0. Vorbedingung
+## 0. Start und Cockpit
 
-Der erste echte Lauf setzt voraus, dass der Stufe-A-Preflight belegt und der
-Stufe-B-Umstellungscommit gesetzt ist (u. a. `worktree.bgIsolation = "none"`)
-— beides in `docs/vorhaben-2026-08-25-dirigent-ohne-nimbalyst.md` (§5.0, §7).
-Fehlt eines davon: anhalten und genau die fehlende Fähigkeit vorlegen, nichts
-improvisieren. Nimbalyst und Matrix sind seit 26.08.2026 vollständig
-deinstalliert; es gibt keinen zweiten Kanal und keinen Altpfad.
+Der Dirigent ist eine echte interaktive Fable-Session:
+
+```powershell
+claude --model fable --effort xhigh --permission-mode auto --name nakama-dirigent --remote-control
+```
+
+Terminal und Remote Control sind dieselbe Sitzung; dort erscheinen auch jede
+Meldung und jede wartende Frage. Die projektweite native `statusLine` startet
+`tools/dirigent/cockpit.ps1 -StatusLine`. Vor dem ersten Worker müssen dort
+Fable/xhigh, das echte Kontextfenster, Claude- und Codex-Kontingente sowie der
+frische Planstand ehrlich lesbar sein. `nicht verfügbar`, ein unbekannter
+Arbeitsanker oder ein zusätzliches Worktree wird nie grün dargestellt.
+
+`/dirigent stand` bedeutet:
+
+```powershell
+pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Plan
+pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Plan -CurrentStep <Schritt-ID> # während eines Tickets
+```
+
+Die Ansicht muss dieselben Fertig-/Offen-Zahlen wie `docs/PLAN-STAND.md`
+zeigen. Ein voller Ticketlauf beginnt nicht, wenn eine dafür nötige native
+Fähigkeit ungeprüft ist. Ein einzelner ungültiger CLI-Aufruf ist aber noch kein
+Halt: lokale Hilfe, aktuelle offizielle Doku und die kleinste semantisch
+gleiche Konstruktion werden zuerst geprüft.
 
 ## 1. Rolle
 
-- Der Dirigent ist eine **echte interaktive Fable-Session**:
-
-  ```powershell
-  claude --model fable --effort xhigh --permission-mode auto --name nakama-dirigent --remote-control
-  ```
-
-  Terminal und Remote Control sind **dieselbe** Sitzung. Meldungen,
-  Zwischenstände und blockierende Fragen enden als wartende Frage in genau
-  dieser Sitzung — das ist der ganze Meldeweg. Der ausdrückliche Auto-Modus
-  verhindert, dass ein globaler `bypassPermissions`-Default geerbt wird.
+- Der ausdrückliche Auto-Modus verhindert, dass ein globaler
+  `bypassPermissions`-Default geerbt wird.
 - Der Dirigent entscheidet und misst. Er baut **nie**; solange ein Worker
   läuft, bleibt er auch bei Repo-Dateien strikt lesend.
+- Technische Wege innerhalb von Ticket, Produktinvarianten und freigegebener
+  Designrichtung entscheidet Fable selbst und begründet Abweichungen im
+  vorhandenen Manifest. Produktwirkung, Bedienlogik, sichtbare Priorität und
+  kreative Richtung entscheidet der User.
 - Genau **ein** schreibender Worker zur Zeit. Kein eigener Prozessmanager,
   keine Zustands- oder Protokolldatei: Repo, Ticketmanifest und gerechneter
   Planstand **sind** der Zustand.
+
+Für jede Arbeitsphase setzt Fable eine Aufsichtsstufe. Wichtige Ereignisse
+melden sich unabhängig davon sofort:
+
+| Aufsicht | Kontrolle | Einsatz |
+|---|---:|---|
+| `LOCKER` | 30 Minuten | klein, lokal, leicht rücknehmbar |
+| `NORMAL` | 15 Minuten | normales Ticket oder mehrere gekoppelte Dateien |
+| `ENG` | 5 Minuten | Audio, State, Vertrag, Nebenläufigkeit, Sicherheit, Gate oder Nacharbeit |
+
+Hochstufen gilt sofort; herabstufen erst nach einer erfolgreichen Kontrolle.
+Beim Wechsel wird der alte Loop zuerst gelöscht und sein Fehlen geprüft, erst
+dann entsteht genau ein neuer.
 
 ## 2. Quellen
 
 1. `py -3.13 tools/plan/planstand.py` rechnen, dann `docs/PLAN-STAND.md`
    lesen — die Zeile „Als Nächstes" gewinnt. Das Blatt nur bei sauberem
-   Quellstand und mit explizitem Pathspec committen; sonst anhalten.
+   Quellstand und mit explizitem Pathspec committen und direkt pushen; sonst
+   anhalten. Es gibt keinen Hook, der das nachholt.
 2. Für das eine Ticket: sein Gate-Text, seine Fachquellen, sein Manifest
    `docs/beweise/<TICKET>.md`.
 3. Offene User-Fragen: `docs/plan/fragen.json` — stellen über `/fragen`.
@@ -52,12 +81,16 @@ Datum. Kein Selbstbericht einer Session ist eine Quelle.
 git status --short
 claude agents --json --cwd . --all
 git rev-parse HEAD
+py -3.13 tools/plan/planstand.py
+pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -Plan
 ```
 
 Nur aktive Agentenzustände (arbeitend, eingabebedürftig) blockieren; alte
 abgeschlossene Zeilen nicht. Fremde Änderungen benennen und **nie** anfassen;
 läuft ein fremder Schreiber, warten. Den vollständigen Basis-SHA merken — er
-steckt zusätzlich im Workernamen.
+steckt zusätzlich im Workernamen. Gate-Text, Fachquellen und Manifest nur für
+das konkrete Paket lesen; historische Übergaben und Protokolle sind keine
+Arbeitsquellen mehr.
 
 ### 3.2 Bauen
 
@@ -77,18 +110,30 @@ fällt Auto still auf Manual zurück, gilt das als fehlende Fähigkeit → Halt.
 Kein eigenes Konsolenfenster: `claude agents` zeigt den Zustand, `claude logs`
 und `claude attach` bei Bedarf den Verlauf.
 
-Direkt nach dem Start den nativen Kontrollloop setzen und die Task-ID merken:
+Direkt nach dem Start den Zustandsbeobachter als Hintergrundkommando derselben
+Fable-Sitzung starten und mit Claudes nativem `Monitor` beobachten:
 
-```text
-/loop 30m Prüfe den laufenden Nakama-Worker über `claude agents --json --cwd . --all`.
-Wenn er arbeitet, prüfe nur auf Blockade oder erkennbaren Stillstand und warte weiter.
-Wenn er fertig, fehlgeschlagen oder blockiert ist, beende diesen Loop und führe den
-passenden Mess-, Nacharbeits- oder Haltpfad des Dirigenten aus.
+```powershell
+pwsh -NoProfile -File tools/dirigent/cockpit.ps1 -WatchWorker `
+  -WorkerId <worker-id> -BaseSha <basis-sha> -Aufsicht <LOCKER|NORMAL|ENG> `
+  -StartModel Opus -StartEffort max -DirigentSessionId <session-id>
 ```
 
-Der Loop ist das einzige verlässliche Wiederaufwachen — eine Fertigmeldung des
-Workers weckt die Sitzung nicht. Bei Worker-Ende oder Halt: `CronDelete` auf
-genau diese Task, mit `CronList` belegen, dass sie weg ist.
+Der Helfer meldet nur Zustandsänderungen, HEAD-/Worktree-Drift und eine alte
+oder kritische Telemetriequelle; er schreibt kein Log und keine Projektdatei
+und endet mit dem Worker. Zusätzlich genau einen nativen Kontrollloop im
+Intervall der Aufsicht setzen und die Task-ID im Sitzungskontext merken:
+
+```text
+/loop <30m|15m|5m> Prüfe den laufenden Nakama-Worker und seinen Ereignisbeobachter.
+Wenn beides gesund arbeitet, bestätige nur die Spurlage und warte weiter. Wenn der
+Worker fertig, fehlgeschlagen, blockiert oder der Beobachter ausgefallen ist, beende
+diesen Loop und führe den passenden Mess-, Nacharbeits- oder Haltpfad aus.
+```
+
+Der Monitor ist der schnelle Weg, der Loop das zeitliche Sicherheitsnetz. Bei
+Worker-Ende oder Halt: Beobachter beenden, `CronDelete` auf genau diese Task
+und mit `CronList` belegen, dass beides weg ist.
 
 Meldet Agent View `needs input`: zuerst `claude logs <worker-id>`. Eine
 erwartete, nicht destruktive Ticketaktion darf der User auf konkrete Empfehlung
@@ -180,9 +225,11 @@ Basis-SHA bis zum neuen HEAD. Nach zwei erfolglosen Nacharbeitsrunden → Halt.
 Urteil, Modell, Effort, Basis- und End-SHA sowie die tatsächlich gelaufenen
 Beweise ins **vorhandene** Manifest; Planstand neu rechnen; nur diese
 Abschlussdateien mit explizitem Pathspec committen und pushen. Dann: temporäre
-Codex-Dateien löschen, `claude rm <worker-id>`, und mit `CronList` plus
-`claude agents --json` belegen, dass weder Loop noch Worker übrig sind.
-Weiter mit 3.1.
+Codex-Dateien und alle exakt zur Dirigenten-Session gehörenden
+`$env:TEMP\nakama-dirigent-<session-id>-*.json`-Caches löschen,
+`claude rm <worker-id>`, und mit beendetem Beobachter, `CronList` plus
+`claude agents --json` belegen, dass weder Loop noch Worker übrig sind. Weiter
+mit 3.1.
 
 ## 4. Haltgründe
 
@@ -212,6 +259,14 @@ erreicht er den User über Remote Control. Einen zweiten Kanal gibt es nicht.
 Der Dirigentenkontext ist das Einzige, was zwischen den Tickets lebt — und er
 ist endlich. Der Lauf endet planmäßig an dieser Grenze, nicht an einem Fehler:
 
+- Unter 70 % Kontextverbrauch normal arbeiten; 70 bis unter 85 % enger lesen
+  und die Ticketgrenze vorbereiten; ab 85 % kein neues Ticket beginnen.
+  Nach einer Compaction bleibt der Arbeitsanker unbestätigt, bis Planstand,
+  Ticketquelle und HEAD erneut gelesen und abgeglichen sind.
+- Für Claude- und Codex-Kontingente gilt: ab 85 % warnen, ab 95 % keine neue
+  Arbeitsphase beginnen. Ein bereits laufender sicherer Abschluss darf nur
+  ohne Qualitätsverlust bis zur sauberen Grenze geführt werden.
+
 - Gezielt lesen statt vollständig: Diffs erst `--stat`, dann relevante Hunks;
   vom Codex-JSONL nur Thread-ID und Schlussurteil; vom Worker-Log nur den
   Blockadegrund. Rohausgaben bleiben in ihren Temp-Dateien. Ein Loop-Tick ohne
@@ -222,7 +277,7 @@ ist endlich. Der Lauf endet planmäßig an dieser Grenze, nicht an einem Fehler:
   Übergabetext.
 - Bei Kontextdruck (Compaction gelaufen, Tragendes nur noch aus
   Zusammenfassungen zitierbar): laufendes Ticket bis zur sauberen Grenze
-  fahren, Worker und Loop abräumen, Abschluss ins Manifest, Lauf beenden mit
+  fahren, Worker, Beobachter und Loop abräumen, Abschluss ins Manifest, Lauf beenden mit
   dem Hinweis, eine frische Dirigenten-Session zu starten. Mit angeschlagenem
   Kontext beginnt kein neues Ticket.
 
@@ -236,8 +291,9 @@ claude --resume <session-id> --model fable --effort xhigh --permission-mode auto
 
 Die fortgesetzte Sitzung beginnt mit `claude agents --json`, `CronList`,
 `git status` und dem Vergleich Basis-SHA zu HEAD. Läuft der bekannte Worker
-ohne Loop → genau einen neuen Loop setzen. Fehlt der Worker → verbliebenen
-Loop löschen. Nie Zustand raten, nie eine Recovery-Datei bauen.
+ohne Beobachter oder Loop → genau je einen neuen setzen. Fehlt der Worker →
+verbliebenen Beobachter beenden und Loop löschen. Nie Zustand raten, nie eine
+Recovery-Datei bauen.
 
 ## 6. Was der Dirigent nie tut
 

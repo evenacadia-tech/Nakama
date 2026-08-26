@@ -82,6 +82,7 @@ Commits gehen ohne Rückfrage raus.
 | Beweise | jüngstes passendes Manifest in `docs/beweise/` |
 | FL-Capabilities | `eq-copilot/identity/host-capabilities-fl-v1.json`, `docs/beweise/termin-a/`, `docs/beweise/termin-b/` |
 | App-Design | `design/LIES-MICH.md`, relevante Datei in `design/abnahmen/` und die drei aktuellen Rework-Bilder |
+| Externes Wissen | `wissen/INDEX.md`, danach der passende Wissensbereich |
 | Verlauf, nie Vorgabe | `docs/archiv/`, `eq-copilot/design/archive/`, `eq-copilot/design/prisma-studie/STATUS.md` |
 
 Die vollständige frühere Daueranweisung liegt als historischer Snapshot in
@@ -98,6 +99,8 @@ vor.
 - `broker/`: eigenständiger Rust-Broker `eqcop-broker.exe`.
 - `tools/beweise.ps1`: kanonischer lokaler Beweis-Runner.
 - `design/`: Figma-Übersetzung, Prototyp, Abnahmen und Designregeln.
+- `wissen/`: eingeordnetes externes Wissen und visuelle Belege; keine
+  parallelen Produktentscheide und keine Roh-PDFs.
 - `docs/beweise/`: rohe, ticketspezifische Belegmanifeste.
 
 ## Tragende technische Invarianten

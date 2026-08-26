@@ -15,6 +15,7 @@ in lebende Blätter übersetzt.
 | `CLAUDE.md` | Wahrheitskern, Register der User-Entscheide (mit Zitat), Bauen & Beweisen, Invarianten |
 | `docs/NEXT-SESSION.md` | Einstieg: Stand und der eine nächste Schritt |
 | `docs/plugin-wissen.md` | Wie das Plugin heute funktioniert |
+| `wissen/INDEX.md` | Zentraler Einstieg für eingeordnetes externes Wissen und visuelle Belege |
 | `docs/FL-Nakama-Sonden-Design-Entwurf.md` | Technischer Entwurf der Sondenfamilie (Fassung 0.4 + Errata) |
 | `docs/bauaufteilung-sonden.md` | Sessions, Gates, Prüfstufen |
 | `docs/beweise/` | Beweismanifeste je Ticket (rohe Ausgabe) |

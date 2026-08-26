@@ -1,0 +1,5 @@
+# Rohquellen und temporäre Exporte bleiben lokal und kurzlebig.
+_eingang/
+_lokal/
+*.pdf
+*.epub

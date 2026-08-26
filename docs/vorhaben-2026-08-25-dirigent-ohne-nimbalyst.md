@@ -1,7 +1,12 @@
 # Vorhaben 25.08.2026 — schlanker Dirigent ohne Nimbalyst
 
-Status: **entscheidungsreif, noch nicht umgesetzt**. Dieser Plan ersetzt die
+Status: **Planungsfassung 2, noch nicht umgesetzt**. Dieser Plan ersetzt die
 technisch belastbare, aber zu komplex geratene Fassung vom selben Tag.
+
+Arbeitsgrenze vom 26.08.2026: Dieses Dokument wird zuerst verbessert und
+abgenommen. Bis der User die Umsetzung ausdrücklich startet, werden daraus
+keine Prozesse gestartet oder beendet, keine Hooks umgestellt und keine
+Altlasten entfernt.
 
 ## 1. Leitentscheidung
 
@@ -38,7 +43,7 @@ Pflegegegenstand neben Nakama geschaffen. Seine Zuverlässigkeit müsste
 Claude, Codex und dem Repository synchron gehalten werden. Genau das ist der
 Drift, den dieser Umbau beenden soll.
 
-Zusätzlich fehlten sechs Grenzen:
+Zusätzlich fehlten neun Grenzen:
 
 1. **Native Fähigkeiten zuerst.** Claude Code kann mit `claude --bg` einen
    direkten CLI-Prozess im Hintergrund starten. `claude agents` startet ihn
@@ -63,6 +68,19 @@ Zusätzlich fehlten sechs Grenzen:
    Erinnerer, Planstand-Commit und Auto-Push, beim Stop ein weiterer Wächter.
    Auch wenn jeder einzeln gut begründet ist, formen sie zusammen wieder eine
    unsichtbare Orchestrierung und laden Kontext unabhängig vom Auftrag.
+7. **Hintergrundagenten schreiben standardmäßig nicht in diesen Checkout.**
+   Claude Code verschiebt jeden mit `--bg` gestarteten Schreiber vor dem ersten
+   Edit in ein eigenes Worktree. Nakama braucht für den geteilten Build und den
+   unmittelbar sichtbaren HEAD ausdrücklich die native Einstellung
+   `worktree.bgIsolation = "none"`; sonst misst der Dirigent den falschen Baum.
+8. **Der Werkzeugzustand darf nicht mit eigenem Systemzustand verwechselt
+   werden.** Claudes eigener, bei Bedarf gestarteter Supervisor und seine
+   Sessiondaten unter dem Benutzerprofil sind zulässig. Nakama baut darauf
+   weder ein zweites Protokoll noch eigene Recovery-Dateien.
+9. **Die konkreten CLI-Aufrufe müssen vor dem Umbau parsebar sein.** Die lokal
+   installierte Codex-CLI akzeptiert `model_reasoning_effort` nur bis `xhigh`
+   und kennt `--strict-config` nicht. Ein Plan mit `max` oder diesem Schalter
+   würde erst nach dem Rückbau des alten Wegs scheitern.
 
 ## 3. Feste Komplexitätsgrenze
 
@@ -76,7 +94,14 @@ Für diesen Umbau gelten folgende Grenzen:
 - kein neues Dashboard und keine externe Statusdatenbank,
 - keine Kopie von Ticketstand oder Produktwahrheit in Hilfsdokumenten,
 - keine informierenden oder automatisch commit-/pushenden Dauer-Hooks,
+- kein Abschalten des alten Wegs, bevor der neue Weg Ende-zu-Ende belegt ist,
+- während eines Dirigentenlaufs genau ein schreibender Nakama-Worker; andere
+  Sessions bleiben lesend oder der Dirigent hält,
 - kein allgemeines Aufräumen funktionierender Werkzeuge nebenbei.
+
+Vom Werkzeug selbst verwaltete Session- und Supervisor-Daten außerhalb des
+Repositories zählen nicht als neues Nakama-System. Sie werden nur über die
+offiziellen Claude-Befehle gelesen, fortgesetzt, gestoppt oder entfernt.
 
 Standardfall: **keine neue dauerhafte Harness-Datei**. Falls sich beim realen
 Probelauf zeigt, dass der direkte Startbefehl wiederholt falsch eingegeben
@@ -110,6 +135,37 @@ Commits, Manifesten und Planstand.
 
 ## 5. Minimaler Ablauf
 
+### 5.0 Erst beweisen, dann umstellen
+
+Die Umstellung beginnt mit einem nicht schreibenden Werkzeug-Preflight. Er
+prüft im sauberen Nakama-Checkout:
+
+```powershell
+claude --version
+codex --version
+claude agents --json --cwd . --all
+git status --short
+git rev-parse HEAD
+```
+
+Danach werden die vorgesehenen Startbefehle jeweils mit `--help` bis zum
+Unterbefehl geparst. Der Preflight muss außerdem belegen, dass
+
+- Fable für das Konto tatsächlich startbar ist,
+- Terminal und Remote Control dieselbe Sitzung zeigen,
+- ein einmaliger `/loop 1m` die idle Fable-Sitzung weckt und anschließend
+  vollständig gelöscht werden kann,
+- ein nicht schreibender Opus-Hintergrundagent in `claude agents --json`
+  sichtbar, stoppbar und wieder entfernbar ist,
+- Opus mit `--permission-mode auto` tatsächlich im Auto-Modus startet und
+  einen ausdrücklich erlaubten harmlosen Prüfkommando-Pfad ohne Rückfrage
+  beendet; ein stiller Rückfall auf Manual zählt als Fehlschlag,
+- der Codex-Review- und Resume-Aufruf die gewählten Optionen akzeptiert.
+
+Dieser Preflight verändert keine Produktdatei. Scheitert eine Fähigkeit,
+bleiben Matrix, Nimbalyst, Hooks und Einstiegsdateien unangetastet. Der Plan
+hält mit genau dieser fehlenden Fähigkeit an.
+
 ### 5.1 Rollen, Modelle und Effort
 
 Modell und Effort werden pro Rolle ausdrücklich gesetzt und nie aus einer
@@ -119,7 +175,7 @@ globalen Default-Konfiguration abgeleitet:
 |---|---|---|---|
 | Dirigent | Claude Fable | `xhigh` | hält den Gesamtfaden, priorisiert und entscheidet; `xhigh` genügt für diese begrenzte Orchestrierung |
 | Bauer | Claude Opus | `max` | baut genau ein Ticket samt Beweis; Implementierungsqualität geht vor Laufzeit |
-| alle Codex-Instanzen | `gpt-5.6-sol` | durch Fable: `high`, `xhigh` oder `max` | Fable setzt die Denktiefe passend zum materiellen Risiko des konkreten Tickets |
+| alle Codex-Instanzen | `gpt-5.6-sol` | durch Fable: `high` oder `xhigh` | Fable setzt die höchste von der aktuellen CLI belegte Denktiefe passend zum materiellen Risiko des konkreten Tickets |
 
 Fable trifft die Sol-Auswahl ohne weitere Datei oder Punktesystem:
 
@@ -127,8 +183,10 @@ Fable trifft die Sol-Auswahl ohne weitere Datei oder Punktesystem:
   Auswirkung und eindeutiger Abnahme,
 - `xhigh` als Standard für normale Implementierungstickets, mehrere gekoppelte
   Dateien oder einen nicht trivialen Befund,
-- `max` für qualitätskritische Arbeit an Audio-Thread, State/Migration,
-  IPC/Verträgen, Nebenläufigkeit, Sicherheit oder einem Phasengate.
+- ebenfalls `xhigh` für qualitätskritische Arbeit an Audio-Thread,
+  State/Migration, IPC/Verträgen, Nebenläufigkeit, Sicherheit oder einem
+  Phasengate, weil die aktuelle Codex-Konfiguration oberhalb davon keinen
+  gültigen Wert anbietet.
 
 Die Auswahl wird bei Beginn eines frischen Review-Threads einmal getroffen und
 im vorhandenen Ticketmanifest zusammen mit Modell und Urteil vermerkt. Eine
@@ -147,14 +205,28 @@ Nadel-im-Heuhaufen-Suche bleiben bei jeder Stufe ausgeschlossen.
 Der User startet direkt eine echte Fable-Session:
 
 ```powershell
-claude --model fable --effort xhigh --name nakama-dirigent `
-  --remote-control nakama-dirigent
+claude --model fable --effort xhigh --name nakama-dirigent --remote-control
 ```
 
 Terminal und Remote Control bedienen dieselbe Session. Es gibt keinen
-zusätzlichen Nachrichtenkanal und keinen Hintergrunddienst. Schließt das
-Terminal, endet dieser lokale Betriebsmodus; das ist eine bewusste Grenze,
-kein Fehler, der durch weitere Infrastruktur verdeckt werden muss.
+zusätzlichen Nachrichtenkanal. Der von Claude selbst bei Bedarf gestartete
+Hintergrund-Supervisor ist Werkzeugmechanik, kein Nakama-Dienst.
+
+Wird nur die Remote-Verbindung getrennt, läuft die lokale Sitzung weiter. Wird
+der Terminalprozess beendet, feuern keine `/loop`-Aufgaben, bis genau diese
+Sitzung fortgesetzt wird:
+
+```powershell
+claude --resume nakama-dirigent --model fable --effort xhigh --remote-control
+```
+
+Beim bewussten Beenden stoppt Fable zuerst einen laufenden Worker und löscht
+seinen Kontrollloop. Nach Absturz oder Neustart beginnt die fortgesetzte
+Sitzung mit `claude agents --json`, `CronList`, `git status` und dem Vergleich
+von Ausgangs-SHA zu aktuellem HEAD. Läuft der bekannte Worker noch und fehlt
+sein Loop, wird genau ein neuer Kontrollloop gesetzt. Fehlt der Worker, wird
+ein verbliebener Loop gelöscht. Die Sitzung rät keinen Zustand und baut keine
+eigene Recovery-Datei.
 
 ### 5.3 Ticket festlegen
 
@@ -175,26 +247,58 @@ claude agents --json --cwd . --all
 git rev-parse HEAD
 ```
 
-Läuft bereits ein verändernder Agent oder Bau im selben Workspace, wartet
-Fable. Fremde Änderungen werden benannt und nicht angefasst. Der vollständige
-Ausgangs-SHA bleibt im Dirigentenkontext und im Ticketauftrag; dafür braucht es
-keine eigene Zustandsdatei.
+Bei `claude agents --json` zählen nur aktive Zustände wie arbeitend oder
+eingabebedürftig; alte abgeschlossene Zeilen sind kein Blocker. Läuft bereits
+ein verändernder Agent oder Bau im selben Workspace, wartet Fable. Da Claude
+nicht jede fremde interaktive Anwendung als Agent registriert, gilt für den
+Dirigentenlauf zusätzlich der sichtbare Betriebsmodus: kein anderer
+schreibender Nakama-Task parallel. Fremde Änderungen werden benannt und nicht
+angefasst. Der vollständige Ausgangs-SHA bleibt im Dirigentenkontext und im
+Ticketauftrag; dafür braucht es keine eigene Zustandsdatei.
 
 ### 5.4 Bauen
+
+Claude-Hintergrundagenten wechseln vor dem ersten Edit standardmäßig in ein
+eigenes Worktree. Für Nakama wird deshalb in der Projektkonfiguration die
+native Ausnahme gesetzt:
+
+```json
+{
+  "worktree": {
+    "bgIsolation": "none"
+  }
+}
+```
+
+Das ist nur zusammen mit der Ein-Schreiber-Regel zulässig. Der Preflight und
+der reale Probelauf müssen belegen, dass kein neues `.claude/worktrees/`
+entsteht und der Worker tatsächlich den sichtbaren HEAD dieses Checkouts
+ändert. Die vorhandenen engen `allow`- und `ask`-Regeln in
+`.claude/settings.json` bleiben dabei erhalten.
 
 Der Bauer ist ein direkt gestarteter, frischer Opus-CLI-Prozess im
 Hintergrund:
 
 ```powershell
-claude --model opus --effort max --bg "<selbsttragender Ticketauftrag>"
+claude --model opus --effort max --permission-mode auto `
+  --name "nakama-<ticket>-<basis-kurz>-bau" `
+  --bg "<selbsttragender Ticketauftrag>"
 ```
 
 Der Auftrag enthält nur Ticketgrenze, verbindliche Quellen, Manifestpfad,
-Beweislauf und die Git-Regeln. `claude agents` wird nicht zum Starten oder
-Delegieren benutzt; es liest ausschließlich den von der CLI registrierten
-Prozesszustand. Es gibt genau einen verändernden Arbeiter zur Zeit als einfache
-Arbeitsregel, nicht als eigenes Locksystem. Direkt nach dem Start aktiviert
-Fable den nativen Kontrollloop:
+Beweislauf und die Git-Regeln. Zusätzlich nötige, nicht destruktive
+Ticketkommandos werden beim Start eng über `--allowed-tools` freigegeben, nicht
+als globale Wildcard. `auto` ist erforderlich, weil `acceptEdits` zwar Dateien,
+aber nicht jeden Test- oder Buildbefehl ohne Rückfrage erlaubt;
+`bypassPermissions` bleibt verboten. Ist Auto für Konto und Opus nicht
+verfügbar, greift die Haltregel aus 5.0 statt eines stillen Moduswechsels.
+
+`claude agents` wird nicht zum Starten oder Delegieren benutzt; es liest
+ausschließlich den von der CLI registrierten Prozesszustand. Es gibt genau
+einen verändernden Arbeiter zur Zeit als einfache Arbeitsregel, nicht als
+eigenes Locksystem. Solange der Worker läuft, bleibt Fable selbst bei
+Repo-Dateien strikt lesend. Direkt nach dem Start aktiviert Fable den nativen
+Kontrollloop:
 
 ```text
 /loop 30m Prüfe den laufenden Nakama-Worker über `claude agents --json --cwd . --all`.
@@ -203,11 +307,22 @@ Wenn er fertig, fehlgeschlagen oder blockiert ist, beende diesen Loop und führe
 passenden Mess-, Nacharbeits- oder Haltpfad des Dirigenten aus.
 ```
 
-Der Loop ist das regelmäßige Sicherheitsnetz. Eine native Fertigmeldung darf
-Fable früher zurückholen. Der Loop lebt nur in dieser Dirigenten-Session,
-erzeugt keine Projektdatei und wird bei Worker-Ende oder Halt gelöscht. Läuft
-Fable beim Fälligkeitszeitpunkt noch in einem Turn, wird die Kontrolle direkt
-danach ausgeführt statt parallel in den laufenden Turn einzugreifen.
+Der Loop ist das regelmäßige Sicherheitsnetz. Eine Fertigmeldung des Workers
+weckt die unabhängige Fable-Sitzung nicht verlässlich; autonomes
+Wiederaufwachen kommt deshalb ausschließlich über den Loop. Der User darf
+jederzeit früher eine Kontrolle anstoßen. Beim Anlegen merkt sich Fable die von
+Claude gemeldete Task-ID nur im Sitzungskontext. Bei Worker-Ende oder Halt
+löscht es genau diese Aufgabe über `CronDelete` und prüft über `CronList`, dass
+sie nicht mehr existiert. Der Loop erzeugt keine Projektdatei. Läuft Fable beim
+Fälligkeitszeitpunkt noch in einem Turn, wird die Kontrolle direkt danach
+ausgeführt statt parallel in den laufenden Turn einzugreifen. Das Intervall ist
+ein Kontrollfenster, keine exakte Deadline.
+
+Meldet Agent View trotz Auto `needs input`, liest Fable zuerst
+`claude logs <worker-id>`. Eine erwartete, nicht destruktive Ticketaktion darf
+der User auf Fables konkrete Empfehlung einmalig im Peek-Panel freigeben. Ein
+Produktentscheid führt zum User-Halt; eine destruktive, ticketfremde oder nicht
+erklärbare Aktion wird nicht freigegeben und der Worker wird gestoppt.
 
 Fable übernimmt keinen Selbstbericht. Nach Ende misst es direkt:
 
@@ -220,6 +335,11 @@ Ein Exit-Code oder Commit allein bedeutet nicht fertig. Ein blockierter Agent
 darf ehrlich ohne Änderung enden. Unerwarteter HEAD- oder Worktree-Drift führt
 zum Halt; Fable baut dafür keine automatische Reparatur.
 
+Ein verändernder Worker gilt außerdem erst als beendet, wenn der Arbeitsbaum
+sauber ist, der Ausgangs-SHA Vorfahr des gemessenen HEAD ist und genau dieser
+HEAD nachweislich auf `origin/master` liegt. Uncommittierte Reste, fremde
+Commits oder ein nur lokal vorhandener Commit führen vor dem Review zum Halt.
+
 ### 5.5 Mit Codex prüfen und gezielt nacharbeiten
 
 Ein frischer Codex-Thread prüft lesend den vollständigen Ticketbereich, den
@@ -227,16 +347,28 @@ unveränderten Gate-Text und das Manifest. Temporäre CLI-Ausgaben liegen nur
 unter `$env:TEMP` und werden nach dem Ticket entfernt.
 
 ```powershell
-$solEffort = 'xhigh' # Fable setzt hier nach 5.1 high, xhigh oder max
-codex -m gpt-5.6-sol -c "model_reasoning_effort=`"$solEffort`"" `
-  -C . -s read-only -a never --strict-config exec review `
-  --json -o <temp-review.txt> -
+$baseSha = '<Stand vor dem Ticket>'
+$headSha = git rev-parse HEAD
+$solEffort = 'xhigh' # Fable setzt nach 5.1 high oder xhigh
+$reviewJsonl = Join-Path $env:TEMP "nakama-$headSha-review.jsonl"
+$reviewLast = Join-Path $env:TEMP "nakama-$headSha-review-last.txt"
+
+$reviewPrompt | codex -a never exec --ignore-user-config `
+  -m gpt-5.6-sol -c "model_reasoning_effort=`"$solEffort`"" `
+  -C . -s read-only review --base $baseSha --json -o $reviewLast - |
+  Tee-Object -FilePath $reviewJsonl
 ```
 
-Der Prompt nennt die exakten Basis- und HEAD-SHAs. Der JSONL-Stream liefert die
-Thread-ID; ein eigenes Ergebnisschema wird nicht gepflegt. Das Urteil ist
-`PASS`, `NEEDS_WORK` oder `BLOCKED` und nennt knapp, was tatsächlich geprüft
-und nicht geprüft wurde.
+`--ignore-user-config` verhindert, dass ein später geänderter globaler Default
+den Rollenvertrag bricht; Authentifizierung und Repo-Anweisungen bleiben
+erhalten. `--strict-config` wird nicht verwendet, weil die installierte
+Codex-CLI diesen Schalter nicht besitzt. Der Prompt nennt die exakten Basis-
+und HEAD-SHAs, `--base` bindet den Review zusätzlich an den Ausgangsstand. Vor
+und nach dem Lauf muss HEAD weiter `$headSha` sein; sonst ist das Urteil
+ungültig. Der JSONL-Stream wird nur temporär gehalten und liefert die Thread-ID.
+Fehlt sie, gilt der Lauf als `BLOCKED`; ein eigenes Ergebnisschema wird nicht
+gepflegt. Das Urteil ist `PASS`, `NEEDS_WORK` oder `BLOCKED` und nennt knapp,
+was tatsächlich geprüft und nicht geprüft wurde.
 
 Ein zulässiger Befund muss reproduzierbar sein und die Ticketabnahme berühren:
 
@@ -253,10 +385,18 @@ weiterverfolgt. Fable validiert jeden Befund an der Quelle.
 Bestätigte Befunde behebt derselbe Codex-Thread gezielt:
 
 ```powershell
-codex -m gpt-5.6-sol -c "model_reasoning_effort=`"$solEffort`"" `
-  -C . -s workspace-write -a never --strict-config exec resume `
-  <thread-id> -
+$fixJsonl = Join-Path $env:TEMP "nakama-$headSha-fix.jsonl"
+$fixLast = Join-Path $env:TEMP "nakama-$headSha-fix-last.txt"
+
+$fixPrompt | codex -a never exec --ignore-user-config `
+  -m gpt-5.6-sol -c "model_reasoning_effort=`"$solEffort`"" `
+  -C . -s workspace-write resume <thread-id> --json -o $fixLast - |
+  Tee-Object -FilePath $fixJsonl
 ```
+
+Der Fixerauftrag verbietet Stage, Commit und Push. Nach seinem Ende prüft Fable
+den engen Fixdiff und die betroffenen Tests, committet ausschließlich diese
+Pfade und pusht den neuen HEAD. Währenddessen läuft kein weiterer Schreiber.
 
 Danach prüft ein neuer frischer Codex-Thread erneut den **gesamten** Bereich
 vom ursprünglichen Ausgangs-SHA bis zum neuen HEAD. Nach zwei erfolglosen
@@ -278,7 +418,21 @@ Fable fährt mit dem nächsten Ticket fort. Es hält nur bei:
   erfordern würde,
 - einem Phasengate oder leerem Plan.
 
+Vor dem nächsten Ticket schreibt Fable Urteil, Modell, Effort, Basis- und
+End-SHA sowie die tatsächlich gelaufenen Beweise in das vorhandene Manifest,
+rechnet den Planstand neu und committet/pusht nur diese Abschlussdateien. Dann
+löscht es alle für dieses Ticket erzeugten temporären Codex-Dateien, entfernt
+die beendete Worker-Session mit `claude rm <worker-id>` und belegt mit
+`CronList` und `claude agents --json`, dass weder Kontrollloop noch aktiver
+Worker übrig sind.
+
 ## 6. Aktive Altlasten entfernen
+
+Dieser Abschnitt ist der **letzte** Umsetzungsschritt, nicht der erste. Er wird
+erst freigegeben, wenn Remote Control, Loop, direkter Hintergrundworker und
+Codex-Prüfpfad an einem echten Ticket belegt sind. Bis dahin bleibt der alte
+Weg als Rückfallmöglichkeit unverändert. Scheitert der Probelauf, wird nur der
+reversible Umstellungscommit zurückgenommen; es wird nichts weiter abgebaut.
 
 ### 6.1 Matrix pausieren
 
@@ -295,7 +449,7 @@ Queues und `nimbalyst.py` unangetastet. Matrix ist pausiert, nicht zerstört.
 ### 6.2 Nimbalyst aus dem aktiven Workspace entfernen
 
 - `.claude/skills/dirigent/SKILL.md` wird auf Rolle, Quellen, Minimalzyklus,
-  Prioritäten, die drei Sol-Effort-Regeln und Haltgründe gekürzt. Historische
+  Prioritäten, die Sol-Effort-Regeln und Haltgründe gekürzt. Historische
   Nimbalyst-/Matrix-Erzählung und Werkzeuganekdoten gehören nicht in den
   aktiven Skill.
 - `.claude/skills/fragen/SKILL.md` stellt Fragen und Bilder direkt im
@@ -355,35 +509,73 @@ Historische Beweise und Archive werden nicht umgeschrieben. Es gibt keine
 allgemeine MCP-/Skill-Aufräumaktion; nur die bei jeder Session aktive
 Kontext-/Pflegeebene wird auf ihren belegten Kern reduziert.
 
-## 7. Umsetzung in drei kleinen Schritten
+## 7. Umsetzung in vier reversiblen Stufen
 
-### A — Altlast aus
+### A — Native Fähigkeiten beweisen
 
-Matrix-Prozess und Autostart pausieren. Nimbalyst-Laufartefakte und aktive
-Verweise entfernen. `claude mcp list` und `git status --ignored` zeigen keine
-Nimbalyst-Reste im aktiven Workspace.
+Den Preflight aus 5.0 durchführen, ohne Produktdateien zu ändern. Der
+`/loop 1m`-Test muss seine Task-ID zeigen, einmal feuern und nach `CronDelete`
+in `CronList` fehlen. Ein nicht schreibender Opus-Testagent muss über `--bg`
+starten, in `claude agents --json` erscheinen und sich über `claude stop` und
+`claude rm` vollständig beenden lassen. Remote Control muss dieselbe
+Fable-Sitzung gleichzeitig im Terminal und auf der zweiten Oberfläche zeigen.
+Der Opus-Test muss außerdem den tatsächlich aktiven Auto-Modus und einen
+harmlosen, eng freigegebenen Kommandoaufruf ohne Eingriff des Users belegen.
 
-### B — Aktiven Kontext kürzen
+Scheitert diese Stufe, endet das Vorhaben ohne Migration. Es wird kein
+Hilfsskript gebaut und kein alter Weg verändert.
 
-Dirigenten- und Fragen-Skill umstellen, Routen in `AGENTS.md`/`CLAUDE.md` auf
-den gerechneten Planstand reduzieren, `NEXT-SESSION.md` aus dem aktiven
-Workspace entfernen, das alte Dirigentenprotokoll aus dem Pflichtablauf nehmen
-und die Hook-Konfiguration auf Compaction-Primer plus Git-Riegel verkleinern.
+### B — Aktiven Kontext reversibel umstellen
 
-Prüfmaßstab: Jeder verbleibende Absatz in diesen aktiven Dateien steuert eine
-heutige Entscheidung oder einen heutigen Handgriff. Historie und doppelte
-Begründungen fallen heraus.
+In einem eigenen, expliziten Commit:
 
-### C — Ein realer Probelauf
+- `worktree.bgIsolation = "none"` zusammen mit der Ein-Schreiber-Regel setzen,
+- Dirigenten- und Fragen-Skill auf den Minimalablauf umstellen,
+- Routen in `AGENTS.md`/`CLAUDE.md` auf den gerechneten Planstand reduzieren,
+- die Hook-Konfiguration auf Compaction-Primer plus Git-Riegel verkleinern,
+- aktive Hinweise auf Auto-Push, automatische Planpflege und die entfernten
+  Schleusen berichtigen.
 
-Mit einem kleinen echten Nakama-Ticket den direkten Ablauf einmal vollständig
-fahren: Fable `xhigh` per Remote Control, Opus `max` als direkter
-CLI-Hintergrundprozess, Messung am Repo sowie `gpt-5.6-sol` mit dem von Fable
-nach 5.1 gewählten und im Manifest genannten Effort für frischen Review und —
-nur bei materiellem Befund — Nacharbeit im selben Thread plus frischen
-Wiederreview. Vorher beweist ein einmaliger `/loop 1m`-Kurztest, dass Fable
-ohne User-Prompt geweckt wird und den Loop nach erkanntem Worker-Ende löscht;
-im Normalbetrieb gilt anschließend `/loop 30m`.
+Matrix, Nimbalyst, `NEXT-SESSION.md` und das historische
+Dirigentenprotokoll bleiben in dieser Stufe noch erhalten, werden aber vom
+neuen Skill nicht mehr benutzt. Prüfmaßstab: Jeder verbleibende Absatz in den
+aktiven Dateien steuert eine heutige Entscheidung oder einen heutigen
+Handgriff. Historie und doppelte Begründungen fallen heraus. Der Commit wird
+gepusht, damit die Rückkehr ein normaler `git revert` bleibt.
+
+### C — Ein echtes Ticket Ende-zu-Ende führen
+
+Fable wählt den nächsten planmäßigen Schritt nur dann als Probeticket, wenn er
+kein Gate und kein User-, Figma-, FL- oder Installationsschritt ist. Das Ticket
+wird vollständig gefahren: Fable `xhigh` in Terminal plus Remote Control,
+Opus `max` als direkter CLI-Hintergrundprozess im sichtbaren Checkout,
+Messung am Repo sowie `gpt-5.6-sol` mit `high` oder `xhigh` für frischen Review
+und — nur bei materiellem Befund — Nacharbeit im selben Thread plus frischen
+Wiederreview.
+
+Der Beweis muss zeigen:
+
+- kein neues Claude-Worktree und genau ein schreibender Worker,
+- sauberer Arbeitsbaum sowie Worker-Commit und Push liegen mit identischem HEAD
+  im sichtbaren `master` und auf `origin/master`,
+- Basis- und HEAD-SHA des Codex-Reviews stimmen mit dem Ticketbereich überein,
+- die Thread-ID stammt aus dem JSONL-Lauf und Resume nutzt genau diesen Thread,
+- der Kontrollloop ist nach Worker-Ende gelöscht,
+- die beendete Worker-Session ist nach Sicherung der Beweise entfernt,
+- Manifest und gezielte Tests tragen das Ergebnis; kein Selbstbericht ersetzt
+  den Beleg.
+
+Scheitert der Probelauf, hält Fable. Der Umstellungscommit aus B kann normal
+zurückgenommen werden; die Altlasten aus D sind zu diesem Zeitpunkt noch da.
+
+### D — Alten Weg erst nach dem Beweis stilllegen
+
+Erst nach bestandenem C werden Matrix-Prozess und Autostart pausiert,
+Nimbalyst-Laufartefakte und aktive Verweise entfernt, `NEXT-SESSION.md` aus dem
+aktiven Workspace genommen und die nicht mehr referenzierten Hooks, Proben und
+Marker gelöscht. `claude mcp list`, `git status --ignored`, die verbleibende
+Hook-Probe und ein Neustart belegen den Endzustand. Der Bridge-Ordner bleibt als
+Rückweg unangetastet.
 
 Wenn dieser Ablauf trägt, ist kein Harness zu bauen. Dieser Plan wird danach
 aus dem aktiven Dokumentationsbereich entfernt oder als abgeschlossener Verlauf
@@ -397,12 +589,19 @@ Das Vorhaben ist fertig, wenn:
 - Nimbalyst im aktiven Workspace nicht mehr existiert,
 - Matrix weder läuft noch automatisch startet,
 - der Dirigent in derselben Fable-Session lokal und remote bedienbar ist,
+- die Sitzung nach Prozessende über ihren Namen fortgesetzt werden kann und
+  vor jeder Fortsetzung Worker, Kontrollloop, Git-Status und HEAD neu abgleicht,
 - Bauer und Prüfer einmal über native Werkzeuge erfolgreich geführt wurden,
+- der Bauer ohne `bypassPermissions`, ohne eigenes Worktree und als einziger
+  Schreiber im sichtbaren Checkout im belegten Auto-Modus gearbeitet hat,
 - der sessiongebundene Weckloop Fable regelmäßig ohne User-Prompt zurückholt
-  und nach Worker-Ende nicht weiterläuft,
+  und nach Worker-Ende laut `CronList` nicht weiterläuft,
 - Fable nachweislich mit `xhigh`, Opus mit `max` und jeder Sol-Lauf mit dem von
-  Fable ausdrücklich gewählten und im Ticketmanifest genannten Effort gestartet
-  wurde,
+  Fable ausdrücklich gewählten, von der CLI unterstützten `high` oder `xhigh`
+  gestartet und im Ticketmanifest genannt wurde,
+- jeder Codex-Review mit dem ursprünglichen Basis-SHA, dem gemessenen HEAD und
+  temporär gesichertem JSONL-Stream lief; kein Aufruf enthält den nicht
+  unterstützten Schalter `--strict-config`,
 - kein eigener Prozessmanager, Scheduler, Zustandsspeicher, Ergebnisschema oder
   dauerhaftes Laufprotokoll hinzugekommen ist,
 - normale Sessionstarts keinen auftragsfremden Plan-, Design- oder
@@ -418,3 +617,31 @@ Für künftige Hilfswerkzeuge gilt vor dem Bau eine einzige Entscheidung:
 > später vollständig entfernt werden?
 
 Wenn nicht, wird es nicht gebaut.
+
+## 9. Verifizierte Werkzeugannahmen
+
+Diese Links begründen die Mechanik, nicht den Nakama-Produktstand:
+
+- [Claude Code: Agent View](https://code.claude.com/docs/en/agent-view) —
+  `--bg`, Supervisor, `claude agents` und das standardmäßige Worktree-Verhalten
+  samt `worktree.bgIsolation = "none"`.
+- [Claude Code: Scheduled Tasks](https://code.claude.com/docs/en/scheduled-tasks)
+  — `/loop`, Task-IDs, Löschen, Wiederaufnahme und Grenzen bei geschlossener
+  Sitzung.
+- [Claude Code: Remote Control](https://code.claude.com/docs/en/remote-control)
+  — dieselbe lokale Session in Terminal und Remote-Oberfläche.
+- [Claude Code: Permission Modes](https://code.claude.com/docs/en/permission-modes)
+  — Unterschiede zwischen Auto, `acceptEdits`, manuellen Freigaben und
+  `bypassPermissions`.
+- [OpenAI: Codex Configuration Reference](https://learn.chatgpt.com/docs/config-file/config-reference)
+  — gültige Werte für `model_reasoning_effort`.
+
+Am 26.08.2026 lokal geprüft: Claude Code `2.1.218` unterstützt `fable`,
+`--effort`, `--bg`, `--name`, `--remote-control`, `agents`, `attach`, `logs`,
+`stop`, `rm` und `worktree.bgIsolation`; die CLI listet Auto als
+Berechtigungsmodus, seine Konto-/Modellverfügbarkeit bleibt bewusst Beweis von
+Stufe A. Codex CLI `0.130.0-alpha.5` akzeptiert die geplanten `exec review`-/
+`exec resume`-Formen, `--ignore-user-config`, `--base`, `-a never` und
+Sandboxes; `--strict-config` und Effort `max` werden nicht akzeptiert. Diese
+Versionszeile ist nur Preflight-Snapshot und wird vor einer späteren Umsetzung
+neu gemessen.

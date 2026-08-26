@@ -130,9 +130,10 @@ Zusätzlich fehlten zwölf Grenzen:
    Sessiondaten unter dem Benutzerprofil sind zulässig. Nakama baut darauf
    weder ein zweites Protokoll noch eigene Recovery-Dateien.
 9. **Die konkreten CLI-Aufrufe müssen vor dem Umbau parsebar sein.** Die lokal
-   installierte Codex-CLI akzeptiert `model_reasoning_effort` nur bis `xhigh`
-   und kennt `--strict-config` nicht. Ein Plan mit `max` oder diesem Schalter
-   würde erst nach dem Rückbau des alten Wegs scheitern.
+   installierte Codex-CLI akzeptiert `model_reasoning_effort` nur bis `xhigh`.
+   Werkzeugschalter werden im Preflight gegen die dann installierte Version
+   geprüft; der Ablauf hängt nicht von `--strict-config` ab. Ein Plan mit
+   Codex-Effort `max` würde erst nach dem Rückbau des alten Wegs scheitern.
 10. **Projektleitung braucht eine andere Sicht als ein Entwickler.** Der User
     muss auf einen Blick erkennen, ob alle Beteiligten in der Spur sind, wie
     viel des Plans wirklich abgenommen ist und ob eine Entscheidung wartet.
@@ -724,8 +725,9 @@ $reviewPrompt | codex -a never exec --ignore-user-config `
 
 `--ignore-user-config` verhindert, dass ein später geänderter globaler Default
 den Rollenvertrag bricht; Authentifizierung und Repo-Anweisungen bleiben
-erhalten. `--strict-config` wird nicht verwendet, weil die installierte
-Codex-CLI diesen Schalter nicht besitzt. Der Prompt nennt die exakten Basis-
+erhalten. `--strict-config` wird nicht benötigt: alle für den Rollenvertrag
+relevanten Werte werden ausdrücklich gesetzt, und der Aufruf bleibt damit auch
+mit der zuvor belegten älteren CLI parsebar. Der Prompt nennt die exakten Basis-
 und HEAD-SHAs, `--base` bindet den Review zusätzlich an den Ausgangsstand. Vor
 und nach dem Lauf muss HEAD weiter `$headSha` sein; sonst ist das Urteil
 ungültig. Der JSONL-Stream wird nur temporär gehalten und liefert die Thread-ID.
@@ -1097,8 +1099,8 @@ Das Vorhaben ist fertig, wenn:
   Fable ausdrücklich gewählten, von der CLI unterstützten `high` oder `xhigh`
   gestartet und im Ticketmanifest genannt wurde,
 - jeder Codex-Review mit dem ursprünglichen Basis-SHA, dem gemessenen HEAD und
-  temporär gesichertem JSONL-Stream lief; kein Aufruf enthält den nicht
-  unterstützten Schalter `--strict-config`,
+  temporär gesichertem JSONL-Stream lief; kein Aufruf hängt für seine
+  Korrektheit von `--strict-config` ab,
 - außer `tools/dirigent/cockpit.ps1` kein Dirigenten-Harness hinzugekommen ist
   und dieser Helfer weder Prozesse verwaltet noch Projektzustand, Logs,
   Ergebnisschemata oder Recovery dauerhaft speichert,
@@ -1148,18 +1150,20 @@ Diese Links begründen die Mechanik, nicht den Nakama-Produktstand:
   — `/status` weist Kontextverbrauch und Rate-Limits als native
   Sitzungsinformationen aus.
 
-Am 26.08.2026 lokal geprüft (zweitgeprüft am selben Tag): Claude Code `2.1.218`
+Am 26.08.2026 lokal geprüft (zuletzt auf diesem Rechner): Claude Code `2.1.240`
 unterstützt `fable`, `--effort`, `--bg`, `--name`, `--remote-control`,
 `agents --json --cwd --all`, `attach`, `logs`, `stop`, `rm` und
 `worktree.bgIsolation`; `--permission-mode` listet `auto` als Wahlwert, seine
 Konto-/Modellverfügbarkeit bleibt bewusst Beweis von Stufe A. `--resume` mit
 einem Nicht-ID-Wert öffnet laut CLI-Hilfe nur den interaktiven Picker mit
 Suchbegriff — deterministische Fortsetzung braucht die Session-ID (in 5.2
-eingearbeitet). Codex CLI `0.130.0-alpha.5` akzeptiert die geplanten
+eingearbeitet). Codex CLI `0.144.6` akzeptiert die geplanten
 `exec review`-/`exec resume`-Formen (`exec resume` nimmt UUID oder
 Thread-Namen), `--ignore-user-config`, `--base`, `-a never` und Sandboxes;
-`--strict-config` und Effort `max` werden nicht akzeptiert. Diese Versionszeile
-ist nur Preflight-Snapshot und wird vor einer späteren Umsetzung neu gemessen.
+`--strict-config` ist inzwischen verfügbar, bleibt für diesen Ablauf aber
+unnötig; Codex-Effort `max` ist weiterhin nicht Teil des geplanten Vertrags.
+Diese Versionszeile ist nur Preflight-Snapshot und wird vor einer späteren
+Umsetzung neu gemessen.
 Das am selben Tag lokal aus `codex app-server generate-json-schema` erzeugte
 Protokoll enthält außerdem `account/rateLimits/read`,
 `account/rateLimits/updated`, `usedPercent`, `resetsAt` und

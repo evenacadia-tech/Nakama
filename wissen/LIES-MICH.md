@@ -31,6 +31,8 @@ Für die Übergabe reichen:
 Codex übernimmt Einordnung, Zusammenführung mit vorhandenem Wissen,
 Widerspruchsprüfung, visuelle Karten, Indexpflege, Commit und Push. Die Vorlage
 liegt unter [`vorlagen/wissenseintrag.md`](vorlagen/wissenseintrag.md).
+YouTube-Videos kann Codex direkt prüfen; auch dort werden nur relevante
+Erkenntnisse und präzise Zeitstempel übernommen, keine Transkript-Sammlung.
 
 Ein Forschungsbefund ist noch keine Produktentscheidung. Verbindliche
 Entscheide bleiben in den bereits vorhandenen Projektregistern und werden nur

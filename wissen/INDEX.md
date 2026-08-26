@@ -28,5 +28,7 @@ Stand: 26.08.2026
 
 ## Neue Einträge
 
-Noch keine externen Wissenseinträge eingepflegt. Der erste übergebene Extrakt
-eröffnet diese Liste im passenden Themenbereich.
+| Datum | Eintrag | Bereich | Prüfstand |
+|---|---|---|---|
+| 26.08.2026 | [AudioDevCon: kuratierte Videoauswahl](engineering/2026-08-26-audiodevcon-videoauswahl.md) | Engineering, UX, UI/Motion, DSP, FL Studio | Auswahl und Metadaten geprüft; Einzelstatus im Eintrag |
+| 26.08.2026 | [Nutzerzentriertes Design für Audio-Produkte](ux/2026-08-26-nutzerzentriertes-audio-design.md) | UX | Quelle und Transkript geprüft |

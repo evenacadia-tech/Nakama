@@ -12,10 +12,11 @@ Diese Regeln gelten für alle Dateien unter `wissen/`.
 
 ## Eingehende Extrakte
 
-Ein vom User übergebener NotebookLM-Text wird direkt in das passende Thema
-eingearbeitet. Es entsteht keine zusätzliche Kopie des Extrakts. Er wird
-paraphrasiert, strukturiert und mit der verfügbaren Herkunft versehen.
-Fehlende Metadaten werden als unbekannt markiert, nicht erfunden.
+Ein vom User übergebener NotebookLM-Text oder ein direkt geprüftes
+YouTube-Video wird in das passende Thema eingearbeitet. Es entsteht keine
+zusätzliche Kopie des Extrakts oder Transkripts. Der Inhalt wird paraphrasiert,
+strukturiert und mit der verfügbaren Herkunft versehen. Fehlende Metadaten
+werden als unbekannt markiert, nicht erfunden.
 
 Ein neuer Wissenseintrag braucht mindestens:
 
@@ -23,7 +24,8 @@ Ein neuer Wissenseintrag braucht mindestens:
 - Autor oder `unbekannt`;
 - Jahr oder `unbekannt`;
 - DOI oder Fund-URL;
-- Eingangsart `notebooklm-auszug`;
+- Eingangsart, zum Beispiel `notebooklm-auszug`, `youtube-transkript` oder
+  `web-recherche`;
 - mindestens ein Thema;
 - einen ehrlichen Prüfstand.
 

@@ -35,7 +35,7 @@ Wo endet die Aussage und wodurch könnte sie widerlegt werden?
 - Autorinnen oder Autoren:
 - Jahr:
 - DOI oder URL:
-- Eingang: `notebooklm-auszug`
+- Eingang: `notebooklm-auszug` | `youtube-transkript` | `web-recherche`
 - relevante Seiten oder Abschnitte:
 
 ## Verknüpfungen

@@ -20,7 +20,8 @@ pruefstand: nur-extrakt
 
 Die Kausalkette in einem Satz:
 
-> Weil …, braucht …, damit …
+> Weil [Mensch] in [Situation] [Problem oder Risiko] erlebt, braucht diese
+> Person [Unterstützung], damit [Ziel oder Wirkung].
 
 ## Belegtes Wissen
 

@@ -16,14 +16,15 @@ asset: ""
 
 Nur beschreiben, was im Bild tatsächlich zu erkennen ist.
 
-## Menschliche Funktion
-
-Welches Ziel, welche Wahrnehmung, Entscheidung, Handlung, Rückmeldung oder
-Wiederherstellung unterstützt das Sichtbare – und in welcher Situation?
-
 ## Quellenkontext
 
 Was behauptet oder untersucht die zugehörige Quelle?
+
+## Menschliche Funktion
+
+Welches Ziel, welche Wahrnehmung, Entscheidung, Handlung, Rückmeldung oder
+Wiederherstellung unterstützt das Sichtbare – und in welcher Situation? Dabei
+trennen, was die Quelle belegt und was wir für Nakama ableiten.
 
 ## Interpretation
 

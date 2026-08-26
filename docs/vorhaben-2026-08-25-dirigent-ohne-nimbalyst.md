@@ -1,11 +1,15 @@
 # Vorhaben 25.08.2026 — schlanker Dirigent ohne Nimbalyst
 
-Status: **Planungsfassung 4, noch nicht umgesetzt**. Dieser Plan ersetzt die
-technisch belastbare, aber zu komplex geratene Fassung vom selben Tag. Die
-vierte Fassung übernimmt den lokalen Machbarkeitscheck vom 26.08.2026:
-Fables Permission-Modus ist ausdrücklich gesetzt, Worker und Codex werden nur
-mit ihrem belegbaren Startvertrag bezeichnet, und die native Sichtgrenze der
-Claude-`statusLine` ist Teil der Abnahme.
+Status: **Planungsfassung 5; Migration noch nicht begonnen, Stufe A teilweise
+belegt**.
+Dieser Plan ersetzt die technisch belastbare, aber zu komplex geratene Fassung
+vom selben Tag. Die fünfte Fassung übernimmt den lokalen Machbarkeitscheck vom
+26.08.2026: Fables Permission-Modus ist ausdrücklich gesetzt, Worker und Codex
+werden nur mit ihrem belegbaren Startvertrag bezeichnet, und die native
+Sichtgrenze der Claude-`statusLine` ist Teil der Abnahme. Zusätzlich korrigiert
+sie den in Stufe A belegten Codex-Aufruf: Review-Zielschalter und eigener
+Review-Prompt sind gegenseitig exklusiv, und bei ignorierter User-Konfiguration
+muss das native Windows-Sandbox-Backend ausdrücklich gesetzt werden.
 
 Arbeitsgrenze vom 26.08.2026: Dieses Dokument wird zuerst verbessert und
 abgenommen. Bis der User die Umsetzung ausdrücklich startet, werden daraus
@@ -394,6 +398,19 @@ Neustart nicht wiederhergestellt.
 
 ### 5.0 Erst beweisen, dann umstellen
 
+User-Wort vom 26.08.2026:
+
+> *„andere codex session hat den plan ohne vorschlag einer alternativlösung
+> abgebrochen. das ist nicht hinnehmbar.“*
+
+Ein fehlgeschlagener geplanter CLI-Aufruf ist deshalb nicht automatisch eine
+fehlende native Fähigkeit. Fable prüft zuerst die lokale Unterbefehlshilfe und
+die aktuelle offizielle Werkzeugdokumentation und erprobt mindestens die
+kleinste semantisch gleichwertige Konstruktion, die Rollenvertrag, Sandbox,
+Prüfbereich und Beweis erhält. Erst wenn keine solche Variante innerhalb der
+Komplexitäts- und Sicherheitsgrenze funktioniert, greift der Halt. Der
+korrigierte Aufruf muss vor jeder Migration denselben Preflight bestehen.
+
 Die Umstellung beginnt mit einem nicht schreibenden Werkzeug-Preflight. Er
 prüft im sauberen Nakama-Checkout:
 
@@ -751,23 +768,34 @@ $solEffort = 'xhigh' # Fable setzt nach 5.1 high oder xhigh
 $reviewJsonl = Join-Path $env:TEMP "nakama-$headSha-review.jsonl"
 $reviewLast = Join-Path $env:TEMP "nakama-$headSha-review-last.txt"
 
+# $reviewPrompt ist das einzige Review-Ziel. Er nennt Basis- und Ziel-SHA,
+# unveränderten Gate-Text, Manifest und den vollständigen Ticketbereich.
 $reviewPrompt | codex -a never exec --ignore-user-config `
   -m gpt-5.6-sol -c "model_reasoning_effort=`"$solEffort`"" `
-  -C . -s read-only review --base $baseSha --json -o $reviewLast - |
+  -c 'windows.sandbox="elevated"' `
+  -C . -s read-only review --json -o $reviewLast - |
   Tee-Object -FilePath $reviewJsonl
 ```
 
 `--ignore-user-config` verhindert, dass ein später geänderter globaler Default
 den Rollenvertrag bricht; Authentifizierung und Repo-Anweisungen bleiben
-erhalten. `--strict-config` wird nicht benötigt: alle für den Rollenvertrag
-relevanten Werte werden ausdrücklich gesetzt, und der Aufruf bleibt damit auch
-mit der zuvor belegten älteren CLI parsebar. Der Prompt nennt die exakten Basis-
-und HEAD-SHAs, `--base` bindet den Review zusätzlich an den Ausgangsstand. Vor
-und nach dem Lauf muss HEAD weiter `$headSha` sein; sonst ist das Urteil
-ungültig. Der JSONL-Stream wird nur temporär gehalten und liefert die Thread-ID.
-Fehlt sie, gilt der Lauf als `BLOCKED`; ein eigenes Ergebnisschema wird nicht
-gepflegt. Das Urteil ist `PASS`, `NEEDS_WORK` oder `BLOCKED` und nennt knapp,
-was tatsächlich geprüft und nicht geprüft wurde.
+erhalten. Weil dieser Schalter auch die lokale Windows-Sandbox-Auswahl entfernt,
+setzt der Aufruf das auf diesem Windows-11-Rechner belegte native Backend
+`elevated` ausdrücklich; `read-only` beziehungsweise `workspace-write` bleibt
+weiterhin die eigentliche Dateisystemgrenze. `--strict-config` wird nicht
+benötigt: alle für den Rollenvertrag relevanten Werte werden ausdrücklich
+gesetzt.
+
+`codex exec review` behandelt `--base`, `--commit`, `--uncommitted` und einen
+eigenen `PROMPT` als gegenseitig exklusive Review-Ziele. Der Prompt ist hier
+deshalb das einzige Ziel: Er nennt die exakten Basis- und HEAD-SHAs und weist
+Codex an, genau `git diff $baseSha...$headSha`, den unveränderten Gate-Text und
+das Manifest zu prüfen. Ein zusätzliches `--base` ist verboten. Vor und nach
+dem Lauf muss HEAD weiter `$headSha` sein; sonst ist das Urteil ungültig. Der
+JSONL-Stream wird nur temporär gehalten und liefert die Thread-ID. Fehlt sie,
+gilt der Lauf als `BLOCKED`; ein eigenes Ergebnisschema wird nicht gepflegt.
+Das Urteil ist `PASS`, `NEEDS_WORK` oder `BLOCKED` und nennt knapp, was
+tatsächlich geprüft und nicht geprüft wurde.
 
 Ein zulässiger Befund muss reproduzierbar sein und die Ticketabnahme berühren:
 
@@ -789,6 +817,7 @@ $fixLast = Join-Path $env:TEMP "nakama-$headSha-fix-last.txt"
 
 $fixPrompt | codex -a never exec --ignore-user-config `
   -m gpt-5.6-sol -c "model_reasoning_effort=`"$solEffort`"" `
+  -c 'windows.sandbox="elevated"' `
   -C . -s workspace-write resume <thread-id> --json -o $fixLast - |
   Tee-Object -FilePath $fixJsonl
 ```
@@ -1192,11 +1221,14 @@ Diese Links begründen die Mechanik, nicht den Nakama-Produktstand:
   `bypassPermissions`.
 - [OpenAI: Codex Configuration Reference](https://learn.chatgpt.com/docs/config-file/config-reference)
   — gültige Werte für `model_reasoning_effort`.
+- [OpenAI: Codex Developer Commands](https://learn.chatgpt.com/docs/developer-commands?surface=cli)
+  — Review-Ziele, eigener Prompt, `exec resume`, JSONL und die gegenseitigen
+  Ausschlüsse der Review-Argumente.
 - [OpenAI: Codex slash commands](https://learn.chatgpt.com/docs/reference/slash-commands)
   — `/status` weist Kontextverbrauch und Rate-Limits als native
   Sitzungsinformationen aus.
 
-Am 26.08.2026 lokal geprüft (zuletzt auf diesem Rechner): Claude Code `2.1.240`
+Am 26.08.2026 lokal geprüft (zuletzt auf diesem Rechner): Claude Code `2.1.246`
 unterstützt `fable`, `--effort`, `--bg`, `--name`, `--remote-control`,
 `agents --json --cwd --all`, `attach`, `logs`, `stop`, `rm` und
 `worktree.bgIsolation`; `--permission-mode` listet `auto` als Wahlwert, seine
@@ -1207,13 +1239,17 @@ eingearbeitet). Der auf diesem Rechner gesetzte globale Permission-Default ist
 `bypassPermissions`; deshalb setzen Start und Resume des Dirigenten den
 Auto-Modus ausdrücklich. `claude agents --json` meldet Zustand und Namen, aber
 kein Modell oder Effort; die Cockpit-Texte wurden deshalb auf belegbare
-Startverträge begrenzt. Codex CLI `0.149.1` akzeptiert die geplanten
-`exec review`-/`exec resume`-Formen (`exec resume` nimmt UUID oder
-Thread-Namen), `--ignore-user-config`, `--base`, `-a never` und Sandboxes;
-`--strict-config` ist inzwischen verfügbar, bleibt für diesen Ablauf aber
-unnötig; Codex-Effort `max` ist weiterhin nicht Teil des geplanten Vertrags.
-Diese Versionszeile ist nur Preflight-Snapshot und wird vor einer späteren
-Umsetzung neu gemessen.
+Startverträge begrenzt. Codex CLI `0.149.1` lehnt `--base` zusammen mit einem
+eigenen Review-Prompt erwartungsgemäß ab. Belegt erfolgreich sind stattdessen
+`exec review` mit dem gepipten Prompt als einzigem Review-Ziel und
+`exec resume` über dieselbe JSONL-Thread-ID. Mit `--ignore-user-config` muss
+auf diesem Rechner zusätzlich `windows.sandbox="elevated"` ausdrücklich
+gesetzt werden; ohne diese Wahl blockiert die Windows-Prozesspolicy bereits
+rein lesende Git-Befehle. Mit der expliziten Wahl liefen `-a never`,
+`read-only`, `workspace-write`, Sol `xhigh`, JSONL und Resume. `--strict-config`
+ist verfügbar, bleibt für diesen Ablauf aber unnötig; Codex-Effort `max` ist
+weiterhin nicht Teil des geplanten Vertrags. Diese Versionszeile ist nur
+Preflight-Snapshot und wird vor einer späteren Umsetzung neu gemessen.
 Das installierte App-Server-Protokoll lieferte am selben Tag über
 `account/rateLimits/read` tatsächlich `usedPercent`, `resetsAt` und ein
 Wochenfenster mit `windowDurationMins = 10080`; Stufe A belegt vor Verwendung

@@ -123,11 +123,21 @@ $solEffort = 'xhigh' # oder 'high', Regel unten
 $reviewJsonl = Join-Path $env:TEMP "nakama-$headSha-review.jsonl"
 $reviewLast = Join-Path $env:TEMP "nakama-$headSha-review-last.txt"
 
+# $reviewPrompt ist das einzige Review-Ziel. Er nennt Basis- und Ziel-SHA,
+# unveränderten Gate-Text, Manifest und den vollständigen Ticketbereich.
 $reviewPrompt | codex -a never exec --ignore-user-config `
   -m gpt-5.6-sol -c "model_reasoning_effort=`"$solEffort`"" `
-  -C . -s read-only review --base $baseSha --json -o $reviewLast - |
+  -c 'windows.sandbox="elevated"' `
+  -C . -s read-only review --json -o $reviewLast - |
   Tee-Object -FilePath $reviewJsonl
 ```
+
+Ein eigener Review-Prompt und `--base` sind in Codex gegenseitig exklusiv.
+Deshalb muss der Prompt Codex ausdrücklich auf
+`git diff $baseSha...$headSha`, Gate und Manifest begrenzen; `--base` darf in
+dieser Form nicht ergänzt werden. Die explizite Windows-Sandbox-Auswahl ist
+nötig, weil `--ignore-user-config` sonst auf diesem Rechner bereits lesende
+Git-Prozesse blockiert.
 
 Vor und nach dem Lauf muss HEAD `$headSha` sein, sonst ist das Urteil ungültig.
 Die Thread-ID kommt aus dem JSONL; fehlt sie → `BLOCKED`. Urteil ist `PASS`,
@@ -155,6 +165,7 @@ $fixLast = Join-Path $env:TEMP "nakama-$headSha-fix-last.txt"
 
 $fixPrompt | codex -a never exec --ignore-user-config `
   -m gpt-5.6-sol -c "model_reasoning_effort=`"$solEffort`"" `
+  -c 'windows.sandbox="elevated"' `
   -C . -s workspace-write resume <thread-id> --json -o $fixLast - |
   Tee-Object -FilePath $fixJsonl
 ```
@@ -184,6 +195,13 @@ Weiter mit 3.1.
   Codex — Worker stoppen, Loop löschen, dann Halt statt blindem Wiederholen,
 - Kontextdruck der eigenen Sitzung (§5),
 - ein Phasengate oder leerer Plan.
+
+Ein einzelner CLI-Parse- oder Versionsfehler ist noch keine fehlende native
+Fähigkeit. Vor dem Halt prüft Fable lokale Unterbefehlshilfe, aktuelle
+offizielle Werkzeugdokumentation und die kleinste Alternative, die Ziel,
+Sandbox, Modell/Effort, JSONL- und Thread-Vertrag unverändert erhält. Nur wenn
+keine solche Variante funktioniert, greift der Halt; neue Infrastruktur bleibt
+verboten.
 
 Vor jedem Halt: Worker gestoppt, Loop gelöscht, Stand ins Manifest. Jeder Halt
 endet als klare, wartende Frage oder Statusmeldung in der Sitzung selbst — so

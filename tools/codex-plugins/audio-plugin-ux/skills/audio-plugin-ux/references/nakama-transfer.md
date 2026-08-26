@@ -1,144 +1,132 @@
 # Transfer to Nakama
 
-Use this file as a repository router and constraint adapter for Nakama Gen and Probeeq. It is not a dated product snapshot. Do not cite a Nakama fact from this file without reading the adjacent repository source.
+Use this file as a stable repository router and reasoning adapter for Nakama. It is not a product snapshot and must not become a second copy of current decisions or research findings.
 
 ## Required preflight
 
-Work from the Nakama workspace root: the directory containing `CLAUDE.md`, `design/`, `docs/`, and `tools/`.
+Work from the Nakama workspace root: the directory containing `CLAUDE.md`, `DESIGN.md`, `UX-CONTRACT.md`, `design/`, `docs/`, `wissen/`, and `tools/`.
 
-Run the read-only contract check before Nakama-specific analysis or design:
+Run the read-only structural check before Nakama-specific analysis or design:
 
 ```powershell
 pwsh -File <directory-of-this-SKILL.md>/scripts/check-nakama-contract.ps1 -RepoRoot .
 ```
 
-Replace `<directory-of-this-SKILL.md>` with the actual directory from which
-this skill was loaded. Do not assume a user profile, plugin cache, or Nakama
-checkout path.
+Replace `<directory-of-this-SKILL.md>` with the actual directory from which this skill was loaded. Do not assume a user profile, plugin cache, or checkout path.
 
-Exit code `0` means the required source routes and contract anchors were found. Any non-zero exit means the Nakama adapter has drifted: report the failed checks, read the newer decisions, and update this adapter before giving product-specific layout advice.
+Exit code `0` means the current routers, knowledge-index structure, and adapter anchors were found. It does not certify that every product statement is current. On a non-zero result, report the failed checks and repair the route or archive structure before giving Nakama-specific advice.
 
-Then read, in this order:
+## Read current truth through routers
 
-1. `CLAUDE.md` — compact current truth, authority rules, and design source.
-2. `design/abnahmen/2026-08-25-rework-referenz-drei-designs.md` — newest binding visual authority and its three exact image paths.
-3. `design/abnahmen/2026-08-23-gen-eq-zentrale.md` — binding user wording for the architecture cut.
-4. `design/docs/ui-spielregeln-eq-zentrale.md` — numbered implementation constraints and proposal/assumption labels.
-5. `design/abnahmen/2026-08-25-seitenverhaeltnis-bleibt-fest.md` — fixed-aspect information constraint.
-6. `design/abnahmen/2026-08-24-seite2-groesse-keine-toten-elemente.md` — equal page size and the no-dead-elements law.
-7. `design/abnahmen/2026-08-24-offene-figma-entscheide.md` — closed Undo/sidechain decisions; its Suna visual basis is superseded.
-8. `docs/bauaufteilung-sonden.md` — current surface/build allocation; distinguish current sections from historical narrative.
-9. `design/LIES-MICH.md` — current visual router and hard design rules.
-10. `docs/PLAN-STAND.md` — generated current plan state; read only, never hand-edit.
-11. `docs/review-2026-08-25-audio-plugin-ux.md` — failure analysis for this adapter, including the material law.
+Start with the narrowest current owner instead of a dated list embedded here:
 
-Read newer, more specific acceptance files when they affect the task. Never use `briefing-hub/`, `docs/archiv/`, historical Suna wording, old Figma nodes `25:444`/`28:994`/`6:2864`, or the plugin cache as current product authority.
+1. `CLAUDE.md` for product scope, explicit user decisions, and authority rules.
+2. `DESIGN.md` and `design/LIES-MICH.md` for the current visual authority, design routes, and approved goldens or Figma sources.
+3. `UX-CONTRACT.md` for approved observable interaction and state behavior.
+4. The newest task-relevant file under `design/abnahmen/` and any implementation rule it explicitly routes to.
+5. Current source and tests for implemented behavior, parameter identity, serialization, host automation, threading, and DSP truth.
+6. `docs/PLAN-STAND.md` and the task-relevant technical router for implementation status. Treat generated plan files as read-only.
+7. `wissen/LIES-MICH.md`, `wissen/AGENTS.md`, and `wissen/INDEX.md` for external evidence and its human why; then read only the active entries relevant to the decision.
+8. `tools/beweise.ps1` and the newest matching evidence manifest when implementation proof is required.
 
-## Authority and epistemic rules
+Never use the plugin cache, this adapter, an old review, `docs/archiv/`, or historical app wording as current product authority. Old files may explain why a decision changed, but they do not silently regain ownership.
 
-- Current code and tests own implemented behavior.
-- Binding user decisions require user wording in `design/abnahmen/` or an explicitly authorized register.
-- `design/docs/ui-spielregeln-eq-zentrale.md` translates those decisions into technical UI constraints and labels unaccepted additions as **(Vorschlag)** or **(Annahme)**.
-- The newest explicit user visual decision owns appearance and product identity. The current authority is the three user-supplied PNGs under `design/assets/rework-basis-2026-08-25/`; prior Figma nodes are history until a newer user decision promotes another source. Pro-Q may inform handling, never Nakama's style.
-- Closed decisions stay closed unless a newer explicit user decision supersedes them. Do not turn an open item into a fact, and do not reopen a closed item as a design question.
-- Attach a repository path to every volatile product claim. Do not add a date unless the cited source carries that date.
+## Route knowledge by the decision
 
-When sources conflict, name the conflict and prefer current source/tests for implementation truth and newer explicit user wording for product decisions. Ask only when the conflict would materially change the design and cannot be resolved from the routed sources.
+Use `wissen/INDEX.md` dynamically; do not memorize dated entry filenames.
 
-## Current product contract to verify, not memorize
+- user goals, mental models, interaction assumptions, accessibility, failure, and recovery -> `wissen/ux/`;
+- hierarchy, controls, material, lighting, motion, and visual fidelity -> `wissen/ui-motion/` plus UX;
+- JUCE rendering, UI-thread behavior, performance, architecture, and test method -> `wissen/engineering/` plus the experienced consequence;
+- FL Studio lifecycle, automation, scaling, state restore, compatibility, and migration continuity -> `wissen/fl-studio/` plus Engineering and UX;
+- perception, measurement, audible comparison, and DSP claims -> `wissen/dsp/` plus UX;
+- product purpose and terminology -> `wissen/produkt/`, then verify the current decision in the product owner routed by `wissen/INDEX.md`.
 
-These statements summarize the routed sources and must be refreshed before use:
+Record each used entry's ID, repository path, and `pruefstand`. A “Bedeutung für Nakama” section is a transfer hypothesis unless a canonical current source separately confirms it.
 
-- The current visual truth in progress is exactly three images: `design/assets/rework-basis-2026-08-25/gen-page-1-overview.png`, `design/assets/rework-basis-2026-08-25/gen-page-2-eq-center.png`, and `design/assets/rework-basis-2026-08-25/probeeq.png`. They are the basis for the future large rework and supersede earlier Figma/Gen/Probeeq/Suna visuals (`design/abnahmen/2026-08-25-rework-referenz-drei-designs.md`).
-- Nakama has two apps with one design identity: **Gen** is the hub/studio and EQ center; **Probeeq** is the single bus probe and executes its switchable EQ. Suna has been absorbed into Probeeq and is no longer an app name (`CLAUDE.md`; `design/abnahmen/2026-08-23-gen-eq-zentrale.md`).
-- Gen page 2 centrally controls the probes and contains a full master EQ. The law is **nothing unasked**: processing occurs only when enabled; “Gen only advises” is obsolete (`CLAUDE.md`; `design/abnahmen/2026-08-23-gen-eq-zentrale.md`).
-- The probe EQ runs on the buses, while Gen remotely controls it. Probeeq's compact current surface is the supplied `probeeq.png`, not the former Suna tile or old full Probeeq editor (`design/abnahmen/2026-08-25-rework-referenz-drei-designs.md`; `docs/bauaufteilung-sonden.md`).
-- Gen pages 1 and 2 are designed at **760×430**. The editor may scale, but the product currently keeps a fixed aspect ratio: enlargement buys zoom, not more information area (`design/abnahmen/2026-08-25-seitenverhaeltnis-bleibt-fest.md`).
-- Each EQ path has 8 band slots × 13 stored parameters and 5 global host parameters. `sidechain_source` exists with default `none` but is hidden in the first release; U5/NAK-33 is closed (`design/docs/ui-spielregeln-eq-zentrale.md`; `design/abnahmen/2026-08-24-offene-figma-entscheide.md`).
-- The source switcher lives directly on Gen page 2. An optional second EQ trace shares the same graph, and the edit target must remain unambiguous (`design/abnahmen/2026-08-23-gen-eq-zentrale.md`; `design/docs/ui-spielregeln-eq-zentrale.md`).
-- Advisor preview is **hold to audition** and must end on release; it is not a click-to-latch control. Apply/confirm/reject are separate states (`design/docs/ui-spielregeln-eq-zentrale.md`, rules 10–14 and 37).
+## Authority and conflict rules
 
-## Where Pro-Q stops being the model
+- Code and tests own implemented behavior.
+- Explicit current user decisions and their authorized registers own product intent.
+- `UX-CONTRACT.md` owns approved observable UI behavior.
+- The current visual sources routed by `DESIGN.md` and `design/LIES-MICH.md` own the pixels and editable design authority they explicitly claim.
+- The indexed knowledge archive owns the collected external evidence and human reasoning, not Nakama's binding behavior.
+- A Web prototype owns only the state, gesture, and motion behavior actually accepted from it. It does not own host, parameter, state-restore, DSP, or audio-thread truth.
 
-Pro-Q is useful for direct manipulation, selected-band ownership, contextual precision, mixed-value display, instance identity, and keeping the aggregate response visible. It does not solve Nakama's core arrangement:
+Attach a current repository path to every volatile product claim. When sources conflict, name the exact conflict and resolve it by scope and recency. Prefer current code/tests for implementation truth and newer explicit user wording for product intent. Ask only when the unresolved difference would materially change the result.
 
-- two independently owned EQ paths overlaid in one graph;
-- one surface controlling remote probe instances plus Gen's master path;
-- a one-click source switcher on the same EQ page;
-- 8 × 13 band state plus global state on a 760×430 fixed-aspect information field.
+## Derive the object and transaction model
 
-Therefore do not copy Pro-Q's panel geometry and assume disclosure will fit. Pro-Q can gain information area as its work surface grows; Nakama currently cannot. Transfer the reasoning, then re-budget the surface.
+Do not reuse the product model from memory. Read the current contracts and derive:
 
-Do not redesign the three current images during context loading. First inventory what they visibly establish, then use the generic reasoning only to expose unanswered transitions and future rework risks. “In progress” permits later revision by the user; it does not permit an agent to merge them with an older favorite.
+1. the system and host context;
+2. each independently owned processing path or source;
+3. the selected sonic object or group;
+4. the listening and edit transaction states;
+5. which authority can change each state: UI gesture, host automation, remote component, preset/session restore, or DSP.
 
-## Nakama sonic-object and identity model
+For every visible control or status, create an action/state/material ledger:
 
-Model at least four nested scopes:
+- **action** -> real command, target scope, success, failure, cancel, and recovery;
+- **state** -> authoritative source, freshness, unavailable behavior, and refresh path;
+- **material** -> intentionally non-interactive product identity with no false affordance.
 
-1. **System context:** Gen, broker/link truth, host transport, and current project.
-2. **EQ path:** Gen master or a named Probeeq bus instance.
-3. **Band or band selection:** one locus, several selected loci, or a mixed-value group.
-4. **Listening transaction:** confirmed, draft, held preview, temporary apply, reject/revert, host-automated, stale, or unreachable.
+If a current Nakama contract imposes a stricter law such as no dead elements, fixed geometry across states, momentary release, protected ranges, or explicit confirmation, cite that current contract and add the corresponding transition test. Do not claim the law from this adapter alone.
 
-The selected EQ path is not generic navigation metadata. It determines which remote DSP state a gesture changes. Keep the path name and edit ownership legible in resting, selected, comparison, lost-link, and return states. With two traces visible, distinguish all three facts without color alone: which trace belongs to which path, which trace is audible, and which trace will receive the next edit.
+## Build the human reasoning brief
 
-## Generate the first layout hypothesis at the real surface
+Before changing Figma, the Web simulator, or native UI, write one compact chain for each primary job:
 
-Do not begin with 109 controls or a copied inspector. Produce one measured hypothesis:
+**person and situation -> listening goal or risk -> perceptual/interaction need -> proposed UI consequence -> observable proof**
 
-1. Rank the listening tasks: switch source, orient in the aggregate result, select/edit a band, compare a second path, audition, apply/reject, bypass/undo, and recover from stale or lost link.
-2. Reserve persistent pixels for the graph, active path identity, trace ownership/edit target, bypass/transaction truth, and scoped exceptions.
-3. Put band precision into a contextual region owned by the selected band or group. Define mixed/indeterminate values before styling multiselection.
-4. Reveal dynamics or other capability-specific controls only when meaningful, while leaving an active collapsed marker.
-5. Keep the source switcher one action away on page 2; do not route through overview.
-6. Account for both EQ-gain and analyzer-level scales if they share an edge. Unit, ticks, grid, and ownership must remain readable without color.
-7. Build the worst truthful state at 760×430: eight active bands, longest labels/values, second trace visible, mixed selection, dynamic state active, and one scoped exception.
-8. State which information is deliberately not simultaneous, then measure occlusion, clipping, hit targets, control-box stability, and graph area.
+Then add:
 
-`design/werkzeug/sonde-messung.html` is useful as a measurement-method specimen and worst-state harness. Its embedded 700×420 and 8 × 12 inventory are historical; never copy those numbers into the current Gen design. `design/werkzeug/formfaktor.html` likewise supplies measurement technique, not authority over newer decisions.
+- task frequency and recovery cost;
+- current object ownership and edit authority;
+- persistent, contextual, transient, exceptional, unavailable, and pinned information;
+- a measured information budget from the current host surface and scaling contract;
+- the worst truthful state derived from current limits rather than old numbers;
+- a source ledger that separates research claims, current contracts, user decisions, observations, and hypotheses.
 
-## Two binding Nakama UI laws
+Icons, directions, gestures, and competitor conventions remain contextual hypotheses. Preserve an explicit user decision, but do not call a mapping universal or obvious without evidence from the target workflow.
 
-### No dead elements
+## Compare references without importing their product
 
-“Keine toten Elemente” means every visible element either performs a real action or reports an honest state at the correct scope. Decorative controls, duplicated status words, false affordances, and labels with no information role fail. Material such as shell, grain, and light edge is identity rather than a control, but must not pretend to be interactive (`CLAUDE.md`; `design/abnahmen/2026-08-24-seite2-groesse-keine-toten-elemente.md`).
+When using Pro-Q or another plugin, compare only mechanisms that solve the same human problem under compatible constraints. Check sonic-object ownership, available surface, automation/state model, target users, and recovery cost before transferring contextual disclosure, direct manipulation, comparison traces, or selection behavior.
 
-For each visible element record one of:
+Every visual example needs a source path or URL plus page, figure, frame, or timestamp. Separate objective observation, source claim, and Nakama interpretation. A screenshot cannot establish hidden states, motion, audible behavior, or designer intent.
 
-- action -> real handler/command and reachable result;
-- state -> real source, scope, refresh/failure behavior;
-- material -> explicitly non-interactive visual identity.
+## Preserve continuity from Web reference to native VST3
 
-Anything with no row is removed before polish.
+Treat migration as several contracts, not a visual rewrite:
 
-### Material geometry is invariant across state
+- **UI reference:** geometry, text, states, gestures, timing, visual hierarchy, and accepted motion;
+- **parameter contract:** IDs, normalized ranges, defaults, units, gesture begin/end, automation, and ownership;
+- **state contract:** presets, session serialization, migrations, undo, drafts, and recovery;
+- **audio contract:** DSP output, bypass, ramps, latency, channel layouts, and real-time safety;
+- **host contract:** FL Studio scan/open/close, focus, scaling, multiple instances, reopen, automation, and project reload.
 
-A button is a material object, not text that changes width when its label or state changes. Idle, hover, pressed, selected, armed, and disabled states keep the same outer width, height, and learned locus. Communicate state through fill, light, shadow, outline, or a contained inner transform rather than changing layout dimensions (`docs/review-2026-08-25-audio-plugin-ux.md`, binding user law recorded under B9).
+Keep the accepted Web simulator and previous working native slice available as comparison evidence while replacing one bounded surface or interaction family at a time. For each slice:
 
-In a running HTML/prototype check, capture each repeated control's outer `getBoundingClientRect()` in every state and compare `x`, `y`, `width`, and `height`. Use `offsetWidth`/`offsetHeight` as an independent layout-size check when transforms exist. A visual inner transform must not move the outer hit target or its neighbors.
+1. freeze the explicit design acceptance, current Web contract, and approved image/golden relevant to that slice;
+2. implement native rendering and input without changing parameter or audio contracts unless separately authorized;
+3. compare pixels and motion against the accepted reference;
+4. verify VST3 scan plus Windows Release behavior in FL Studio at every supported scale, with multiple instances, automation, preset and project save/reload, reopen, bypass, and interrupted transactions;
+5. run the relevant state and audio proofs before removing the old slice.
 
-## Nakama placement-proof additions
-
-For each control also state:
-
-- owning EQ path and whether it is master, probe, selected group, or global;
-- current DSP, draft, audition, temporary apply, confirmed, comparison, or visualization-only state;
-- remote-command authority, host-automation identity, stale/conflict behavior, and lost-link behavior;
-- behavior during hold, release, apply, confirm, reject, undo, source switch, reload, and second-trace entry/exit;
-- whether a collapsed entry still explains active sound;
-- whether moving the control adds source-switch clicks, obscures trace ownership, or destabilizes a repeated motor path.
+Explicit design approval remains **User-decided**. Approved images and pixel diffs prove visual fidelity only; the Web RC can additionally prove its accepted interaction and motion behavior. Neither proves VST3 scan, host lifecycle, parameter identity, preset/project state, automation, or audio compatibility. Practice-report recommendations remain **Source claims**, and Nakama-specific transfers from them remain **Inferred** until a canonical current contract adopts them. Host lifecycle, parameter continuity, and sound require native host and audio evidence. Cache or repaint prescriptions require profiling under a named build, host, scale, instance count, worst supported analyzer/visual load, direct manipulation, idle state, and failure symptom; folklore is not a performance diagnosis.
 
 ## Executable completion gate
 
-A Nakama pre-Figma brief is complete only when:
+A Nakama pre-design brief is complete only when:
 
 1. `check-nakama-contract.ps1` exits `0` against the current workspace.
-2. Every volatile fact in the brief has a current repository path.
-3. The 760×430 worst truthful state is measured, not asserted.
-4. Every visible element passes the action/state/material ledger.
-5. Repeated control rectangles are invariant across interactive states.
-6. Source identity, edit target, audible path, and second-trace ownership remain unambiguous without color alone.
-7. Hold-to-audition ends on pointer/key release and cannot latch by click.
-8. Closed decisions are not presented as questions; genuine open decisions are labeled **Open**.
+2. Each volatile product claim cites its current canonical path.
+3. Each research-derived consequence cites the indexed entry ID/path/verification level and labels unsupported transfer links as hypotheses.
+4. The real target surface and worst truthful state are measured from current contracts.
+5. Every visible element has an action, state, or material role and every primary action has a recovery route.
+6. Source identity, edit target, audible state, automation authority, and stale/unavailable state remain truthful through the tested transitions.
+7. Visual, Web-interaction, VST3 scan/native-host, preset/project state, automation, and audio claims are closed only by matching evidence.
+8. Closed decisions are not presented as open questions; genuine conflicts and unknowns are labeled **Open**.
 
-If implementation exists, add the narrowest relevant proof to the repo's established evidence workflow. Read `tools/beweise.ps1` and the newest matching manifest in `docs/beweise/` rather than inventing a command or claiming a visual prototype proves host/audio behavior.
+If implementation exists, add the narrowest proof to the repository's established evidence workflow. Do not invent a command or claim that one proof type establishes a different boundary.

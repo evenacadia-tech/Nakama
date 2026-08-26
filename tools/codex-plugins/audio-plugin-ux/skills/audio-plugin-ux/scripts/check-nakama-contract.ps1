@@ -8,6 +8,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$adapterContractVersion = '0.3.0'
 $checks = [System.Collections.Generic.List[object]]::new()
 
 function Add-ContractCheck {
@@ -31,12 +32,12 @@ try {
 }
 catch {
     [pscustomobject]@{
-        ok                    = $false
-        pluginContractVersion = '0.2.1'
-        repoRoot              = $RepoRoot
-        checks                = @()
-        error                 = "Repository root could not be resolved: $($_.Exception.Message)"
-    } | ConvertTo-Json -Depth 6
+        ok                     = $false
+        adapterContractVersion = $adapterContractVersion
+        repoRoot               = $RepoRoot
+        checks                 = @()
+        error                  = "Repository root could not be resolved: $($_.Exception.Message)"
+    } | ConvertTo-Json -Depth 7
     exit 2
 }
 
@@ -45,7 +46,8 @@ function Test-ContractAnchor {
         [string] $Name,
         [string] $RelativePath,
         [string] $Pattern,
-        [string] $Expected
+        [string] $Expected,
+        [bool] $Reject = $false
     )
 
     $fullPath = Join-Path $root $RelativePath
@@ -61,27 +63,33 @@ function Test-ContractAnchor {
         [System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor
         [System.Text.RegularExpressions.RegexOptions]::Singleline
     )
-    $detail = if ($matches) { $Expected } else { "Missing contract anchor: $Expected" }
-    Add-ContractCheck -Name $Name -Passed $matches -Path $RelativePath -Detail $detail
+    $passed = if ($Reject) { -not $matches } else { $matches }
+    $detail = if ($passed) {
+        $Expected
+    }
+    elseif ($Reject) {
+        "Forbidden duplicate or stale anchor found: $Expected"
+    }
+    else {
+        "Missing contract anchor: $Expected"
+    }
+    Add-ContractCheck -Name $Name -Passed $passed -Path $RelativePath -Detail $detail
 }
 
 $requiredFiles = @(
     'CLAUDE.md',
-    'design/abnahmen/2026-08-25-rework-referenz-drei-designs.md',
-    'design/assets/rework-basis-2026-08-25/gen-page-1-overview.png',
-    'design/assets/rework-basis-2026-08-25/gen-page-2-eq-center.png',
-    'design/assets/rework-basis-2026-08-25/probeeq.png',
-    'design/abnahmen/2026-08-23-gen-eq-zentrale.md',
-    'design/docs/ui-spielregeln-eq-zentrale.md',
-    'design/abnahmen/2026-08-25-seitenverhaeltnis-bleibt-fest.md',
-    'design/abnahmen/2026-08-24-seite2-groesse-keine-toten-elemente.md',
-    'design/abnahmen/2026-08-24-offene-figma-entscheide.md',
-    'docs/bauaufteilung-sonden.md',
+    'DESIGN.md',
+    'UX-CONTRACT.md',
     'design/LIES-MICH.md',
     'docs/PLAN-STAND.md',
-    'docs/review-2026-08-25-audio-plugin-ux.md',
-    'design/werkzeug/sonde-messung.html',
-    'tools/beweise.ps1'
+    'tools/beweise.ps1',
+    'wissen/LIES-MICH.md',
+    'wissen/AGENTS.md',
+    'wissen/INDEX.md',
+    'tools/codex-plugins/audio-plugin-ux/skills/audio-plugin-ux/SKILL.md',
+    'tools/codex-plugins/audio-plugin-ux/skills/audio-plugin-ux/references/design-reasoning.md',
+    'tools/codex-plugins/audio-plugin-ux/skills/audio-plugin-ux/references/research-evidence.md',
+    'tools/codex-plugins/audio-plugin-ux/skills/audio-plugin-ux/references/nakama-transfer.md'
 )
 
 foreach ($relativePath in $requiredFiles) {
@@ -91,59 +99,145 @@ foreach ($relativePath in $requiredFiles) {
     )
 }
 
-Test-ContractAnchor -Name 'two-app-architecture' -RelativePath 'CLAUDE.md' `
-    -Pattern 'zwei Apps[\s\S]*Suna ist in Probeeq aufgegangen' `
-    -Expected 'Gen and Probeeq are the two apps; Suna is absorbed into Probeeq.'
-Test-ContractAnchor -Name 'current-visual-rework-basis' -RelativePath 'design/abnahmen/2026-08-25-rework-referenz-drei-designs.md' `
-    -Pattern 'aktuelle Rework-Referenz[\s\S]*gen-page-1-overview\.png[\s\S]*gen-page-2-eq-center\.png[\s\S]*probeeq\.png[\s\S]*Frühere Referenzen sind Verlauf' `
-    -Expected 'The three supplied PNGs are the current visual truth in progress; previous Figma and Suna visuals are history.'
-Test-ContractAnchor -Name 'visual-router-updated' -RelativePath 'design/LIES-MICH.md' `
-    -Pattern 'aktuelle visuelle Wahrheit in progress[\s\S]*rework-basis-2026-08-25[\s\S]*Live-Stand in Nakama-Design[\s\S]*abgelöst' `
-    -Expected 'The design router points to the three new rework images and marks the former Figma-only rule superseded.'
-Test-ContractAnchor -Name 'gen-master-eq' -RelativePath 'CLAUDE.md' `
-    -Pattern 'Seite 2[\s\S]*vollwertige[mn]? Master-EQ' `
-    -Expected 'Gen page 2 is the EQ center and includes a full master EQ.'
-Test-ContractAnchor -Name 'one-graph-two-traces' -RelativePath 'design/abnahmen/2026-08-23-gen-eq-zentrale.md' `
-    -Pattern '2 EQ spuren[\s\S]*EINEM Graph' `
-    -Expected 'Two EQ traces share one graph.'
-Test-ContractAnchor -Name 'switcher-on-page-two' -RelativePath 'design/abnahmen/2026-08-23-gen-eq-zentrale.md' `
-    -Pattern '2\. seite[\s\S]*sonden durchklicken[\s\S]*nicht durch die[\s>]*1\. seite' `
-    -Expected 'Probe switching lives directly on page 2.'
-Test-ContractAnchor -Name 'band-inventory' -RelativePath 'design/docs/ui-spielregeln-eq-zentrale.md' `
-    -Pattern '8 Band-Slots[\s\S]*je 13 Parametern' `
-    -Expected 'The current stored inventory is 8 band slots x 13 parameters.'
-Test-ContractAnchor -Name 'sidechain-closed-hidden' -RelativePath 'design/docs/ui-spielregeln-eq-zentrale.md' `
-    -Pattern 'sidechain_source[\s\S]*ersten Release[\s\S]*unsichtbar[\s\S]*U5 / NAK-33 geschlossen' `
-    -Expected 'Sidechain source is stored, hidden in release one, and U5/NAK-33 is closed.'
-Test-ContractAnchor -Name 'hold-to-audition' -RelativePath 'design/docs/ui-spielregeln-eq-zentrale.md' `
-    -Pattern 'Halten = hören[\s\S]*HOLD TO\s+AUDITION' `
-    -Expected 'Audition is a hold/release contract, separate from apply.'
-Test-ContractAnchor -Name 'fixed-aspect-information-budget' -RelativePath 'design/abnahmen/2026-08-25-seitenverhaeltnis-bleibt-fest.md' `
-    -Pattern 'Festes Seitenverhältnis bleibt[\s\S]*8 Bänder × 13 Parameter \+ 5 globale' `
-    -Expected 'The current design constraint is a fixed-aspect 8 x 13 + 5 information field.'
-Test-ContractAnchor -Name 'no-dead-elements' -RelativePath 'design/abnahmen/2026-08-24-seite2-groesse-keine-toten-elemente.md' `
-    -Pattern 'Keine toten Elemente[\s\S]*Jedes sichtbare Element[\s\S]*(Handgriff|Zustand)' `
-    -Expected 'Every visible element performs an action or reports honest state.'
-Test-ContractAnchor -Name 'material-geometry-law' -RelativePath 'docs/review-2026-08-25-audio-plugin-ux.md' `
-    -Pattern 'button ist ein material[\s\S]*getBoundingClientRect' `
-    -Expected 'Control material keeps dimensions stable and is verified by rectangles.'
-Test-ContractAnchor -Name 'historical-measurement-specimen' -RelativePath 'design/werkzeug/sonde-messung.html' `
-    -Pattern 'Arbeitsstand, kein Urteil[\s\S]*700×420[\s\S]*8 Slots × 12 Parameter' `
-    -Expected 'The measurement bank is explicitly historical evidence, not the current product inventory.'
-Test-ContractAnchor -Name 'canonical-proof-runner' -RelativePath 'tools/beweise.ps1' `
-    -Pattern 'Nakama-Beweis-Runner[\s\S]*\[CmdletBinding\(\)\]' `
-    -Expected 'The canonical repository proof runner is present.'
+Test-ContractAnchor -Name 'skill-routes-indexed-research' `
+    -RelativePath 'tools/codex-plugins/audio-plugin-ux/skills/audio-plugin-ux/SKILL.md' `
+    -Pattern 'indexed research archive[\s\S]*references/research-evidence\.md[\s\S]*do not copy its findings' `
+    -Expected 'The skill routes to indexed evidence without copying archive findings.'
+Test-ContractAnchor -Name 'research-router-is-dynamic' `
+    -RelativePath 'tools/codex-plugins/audio-plugin-ux/skills/audio-plugin-ux/references/research-evidence.md' `
+    -Pattern 'wissen/LIES-MICH\.md[\s\S]*wissen/AGENTS\.md[\s\S]*wissen/INDEX\.md[\s\S]*Do not hard-code today''s dated entry filenames' `
+    -Expected 'Research discovery uses the current archive index rather than dated skill routes.'
+Test-ContractAnchor -Name 'research-authority-boundary' `
+    -RelativePath 'tools/codex-plugins/audio-plugin-ux/skills/audio-plugin-ux/references/research-evidence.md' `
+    -Pattern 'Source claim[\s\S]*Current product contract[\s\S]*Transfer inference[\s\S]*Design decision' `
+    -Expected 'Source evidence, current contract, inference, and decision remain separate.'
+Test-ContractAnchor -Name 'nakama-routes-current-owners' `
+    -RelativePath 'tools/codex-plugins/audio-plugin-ux/skills/audio-plugin-ux/references/nakama-transfer.md' `
+    -Pattern 'CLAUDE\.md[\s\S]*DESIGN\.md[\s\S]*UX-CONTRACT\.md[\s\S]*Current source and tests[\s\S]*wissen/INDEX\.md' `
+    -Expected 'The Nakama adapter resolves current product, visual, behavior, code, and research owners.'
+Test-ContractAnchor -Name 'nakama-does-not-duplicate-product-snapshot' `
+    -RelativePath 'tools/codex-plugins/audio-plugin-ux/skills/audio-plugin-ux/references/nakama-transfer.md' `
+    -Pattern 'Current product contract to verify, not memorize' `
+    -Expected 'No duplicated current-product snapshot remains in the adapter.' `
+    -Reject $true
+Test-ContractAnchor -Name 'archive-declares-skill-entrypoint' `
+    -RelativePath 'wissen/LIES-MICH.md' `
+    -Pattern 'INDEX\.md[\s\S]*(Skill|KI-Agent)' `
+    -Expected 'The archive declares its index as the machine-consumable skill route.'
+
+$knowledgeRoot = Join-Path $root 'wissen'
+$indexPath = Join-Path $knowledgeRoot 'INDEX.md'
+$indexContent = if (Test-Path -LiteralPath $indexPath -PathType Leaf) {
+    [System.IO.File]::ReadAllText($indexPath)
+}
+else {
+    ''
+}
+
+$entryRecords = [System.Collections.Generic.List[object]]::new()
+if (Test-Path -LiteralPath $knowledgeRoot -PathType Container) {
+    $markdownFiles = Get-ChildItem -LiteralPath $knowledgeRoot -Recurse -File -Filter '*.md'
+    foreach ($file in $markdownFiles) {
+        $relativePath = [System.IO.Path]::GetRelativePath($knowledgeRoot, $file.FullName).Replace('\', '/')
+        if ($relativePath.StartsWith('vorlagen/', [System.StringComparison]::OrdinalIgnoreCase)) { continue }
+
+        $content = [System.IO.File]::ReadAllText($file.FullName)
+        $frontmatter = [regex]::Match($content, '\A---\s*\r?\n(?<body>.*?)\r?\n---', 'Singleline')
+        if (-not $frontmatter.Success) { continue }
+
+        $body = $frontmatter.Groups['body'].Value
+        $typeMatch = [regex]::Match($body, '(?m)^typ:\s*(?<value>.+?)\s*$')
+        if (-not $typeMatch.Success -or $typeMatch.Groups['value'].Value.Trim('"', "'") -ne 'wissenseintrag') { continue }
+
+        $idMatch = [regex]::Match($body, '(?m)^id:\s*(?<value>.+?)\s*$')
+        $statusMatch = [regex]::Match($body, '(?m)^status:\s*(?<value>.+?)\s*$')
+        $verificationMatch = [regex]::Match($body, '(?m)^pruefstand:\s*(?<value>.+?)\s*$')
+        $entryRecords.Add([pscustomobject]@{
+            id = if ($idMatch.Success) { $idMatch.Groups['value'].Value.Trim('"', "'") } else { '' }
+            status = if ($statusMatch.Success) { $statusMatch.Groups['value'].Value.Trim('"', "'") } else { '' }
+            pruefstand = if ($verificationMatch.Success) { $verificationMatch.Groups['value'].Value.Trim('"', "'") } else { '' }
+            relativePath = $relativePath
+        })
+    }
+}
+
+$missingMetadata = @($entryRecords | Where-Object { -not $_.id -or -not $_.status -or -not $_.pruefstand })
+Add-ContractCheck -Name 'archive-entry-metadata' -Passed ($missingMetadata.Count -eq 0 -and $entryRecords.Count -gt 0) `
+    -Path 'wissen/' -Detail $(
+        if ($entryRecords.Count -eq 0) { 'No knowledge entries with typ: wissenseintrag were found.' }
+        elseif ($missingMetadata.Count -gt 0) { "Missing id, status, or pruefstand: $($missingMetadata.relativePath -join ', ')" }
+        else { "All $($entryRecords.Count) knowledge entries provide id, status, and pruefstand." }
+    )
+
+$duplicateIds = @($entryRecords | Where-Object id | Group-Object id | Where-Object Count -gt 1)
+Add-ContractCheck -Name 'archive-unique-entry-ids' -Passed ($duplicateIds.Count -eq 0) -Path 'wissen/' -Detail $(
+    if ($duplicateIds.Count -eq 0) { 'Knowledge entry IDs are unique.' }
+    else { "Duplicate IDs: $($duplicateIds.Name -join ', ')" }
+)
+
+$allowedVerification = @('nur-extrakt', 'metadaten-geprueft', 'quellen-geprueft', 'mehrfach-belegt')
+$invalidVerification = @($entryRecords | Where-Object { $_.status -eq 'aktiv' -and $_.pruefstand -notin $allowedVerification })
+Add-ContractCheck -Name 'archive-allowed-verification-levels' -Passed ($invalidVerification.Count -eq 0) -Path 'wissen/' -Detail $(
+    if ($invalidVerification.Count -eq 0) { 'Every active entry uses an allowed pruefstand value.' }
+    else { "Invalid pruefstand: $($invalidVerification.relativePath -join ', ')" }
+)
+
+$activeEntries = @($entryRecords | Where-Object status -eq 'aktiv')
+$indexFailures = [System.Collections.Generic.List[string]]::new()
+foreach ($entry in $activeEntries) {
+    $pattern = '\]\((?:\./)?' + [regex]::Escape($entry.relativePath) + '(?:#[^)]*)?\)'
+    $count = [regex]::Matches($indexContent, $pattern, 'IgnoreCase').Count
+    if ($count -ne 1) { $indexFailures.Add("$($entry.relativePath)=$count") }
+}
+Add-ContractCheck -Name 'archive-active-entries-indexed-once' -Passed ($indexFailures.Count -eq 0 -and $activeEntries.Count -gt 0) `
+    -Path 'wissen/INDEX.md' -Detail $(
+        if ($activeEntries.Count -eq 0) { 'No active knowledge entries were found.' }
+        elseif ($indexFailures.Count -gt 0) { "Active entry link counts must equal one: $($indexFailures -join ', ')" }
+        else { "All $($activeEntries.Count) active entries are indexed exactly once." }
+    )
+
+$brokenLinks = [System.Collections.Generic.List[string]]::new()
+if ($indexContent) {
+    $links = [regex]::Matches($indexContent, '\[[^\]]+\]\((?<target>[^)]+)\)')
+    foreach ($link in $links) {
+        $target = $link.Groups['target'].Value.Trim().Trim('<', '>')
+        if ($target -match '^(?:[a-z]+:|#)') { continue }
+        $target = ($target -replace '#.*$', '')
+        if (-not $target) { continue }
+        $decodedTarget = [uri]::UnescapeDataString($target)
+        $resolvedTarget = [System.IO.Path]::GetFullPath((Join-Path $knowledgeRoot $decodedTarget))
+        if (-not (Test-Path -LiteralPath $resolvedTarget)) { $brokenLinks.Add($target) }
+    }
+}
+Add-ContractCheck -Name 'archive-index-relative-links-resolve' -Passed ($brokenLinks.Count -eq 0) -Path 'wissen/INDEX.md' -Detail $(
+    if ($brokenLinks.Count -eq 0) { 'Every relative link in the knowledge index resolves.' }
+    else { "Broken relative links: $($brokenLinks -join ', ')" }
+)
+
+$rawExtensions = @('.pdf', '.epub', '.txt', '.vtt', '.srt')
+$rawSources = @(
+    if (Test-Path -LiteralPath $knowledgeRoot -PathType Container) {
+        Get-ChildItem -LiteralPath $knowledgeRoot -Recurse -File |
+            Where-Object { $_.Extension.ToLowerInvariant() -in $rawExtensions }
+    }
+)
+Add-ContractCheck -Name 'archive-no-raw-source-files' -Passed ($rawSources.Count -eq 0) -Path 'wissen/' -Detail $(
+    if ($rawSources.Count -eq 0) { 'No raw PDF, ebook, transcript, subtitle, or text source is stored in the archive.' }
+    else { "Raw source files found: $($rawSources.FullName -join ', ')" }
+)
 
 $failed = @($checks | Where-Object { -not $_.passed })
 $result = [pscustomobject]@{
-    ok                    = ($failed.Count -eq 0)
-    pluginContractVersion = '0.2.1'
-    repoRoot              = $root
-    checkedAt             = (Get-Date).ToString('o')
-    checks                = @($checks)
-    failedCount           = $failed.Count
+    ok                     = ($failed.Count -eq 0)
+    adapterContractVersion = $adapterContractVersion
+    repoRoot               = $root
+    checkedAt              = (Get-Date).ToString('o')
+    entryCount             = $entryRecords.Count
+    activeEntryCount       = $activeEntries.Count
+    checks                 = @($checks)
+    failedCount            = $failed.Count
 }
 
-$result | ConvertTo-Json -Depth 6
+$result | ConvertTo-Json -Depth 7
 if ($failed.Count -gt 0) { exit 1 }
 exit 0

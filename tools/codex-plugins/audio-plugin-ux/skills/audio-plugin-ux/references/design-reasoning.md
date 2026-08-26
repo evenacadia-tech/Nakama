@@ -6,6 +6,12 @@ Use this reference before judging or changing the layout of a desktop audio plug
 
 The central unit of work is an auditory decision. A useful control shortens or clarifies the loop between an intention, a gesture, the changed sound, the visible consequence, and a reversible judgment.
 
+Begin with the human causal chain, not the component inventory:
+
+**person and situation -> listening goal, risk, or uncertainty -> perceptual or interaction need -> proposed design consequence -> observable proof**
+
+Evidence may establish only part of that chain. Label the missing link as a hypothesis and design a test for it. A familiar interaction pattern is a candidate consequence, not proof of the need that supposedly justifies it.
+
 Website conventions start from navigation, content hierarchy, completion, and page transitions. An audio plugin starts from a live process whose state may change continuously and externally. A fixed sidebar, dashboard grid, or complete form can be appropriate, but it needs an audio-task reason; familiarity from web design is not enough.
 
 Use six interacting maps:
@@ -38,11 +44,15 @@ Scaling is not automatically more information. A fixed-aspect interface that enl
 
 Accessibility is part of control truth, not a final contrast pass. For each primary action, distinguish the direct gesture from its outcome. A freehand curve may genuinely depend on a pointer path; band selection, numeric gain entry, bypass, reset, apply, reject, and source switching usually have endpoint meanings that can support keyboard or text alternatives. Define the focus order from sonic-object ownership and task sequence, and return focus to the invoking object after a temporary panel or dialog closes.
 
+An alternative route must be usable, not merely reachable. Define meaningful coarse and fine increments in the parameter's perceptual domain, a discoverable reset/default, safe min/max behavior, and an honest response to malformed or out-of-range text. Verify that repeated key operation neither traps focus nor requires impractical step counts.
+
 Custom-rendered controls also need programmatic semantics. JUCE's `AccessibilityHandler` exposes a control's role, title/description/help, current state, supported actions, and value interface. Use that native route for JUCE custom components, or the equivalent API in another framework; a painted knob with a tooltip is not sufficient evidence that assistive technology can identify or operate it.
 
 Target size must be evaluated in the real editor coordinate system and at the actual OS/DAW scale. WCAG 2.2 uses **24 CSS pixels** as a web minimum with spacing and equivalent-control exceptions. Do not transplant that number as a literal native audio-plugin law. Use it as a documented risk comparator, then record the plugin's logical units, physical scaling, target spacing, precision mode, and equivalent routes and test them with the intended users and host sizes.
 
 Response is temporal state truth. Under maximum analyzers, objects, overlays, scaling, and incoming automation, the gesture needs prompt acknowledgment and the displayed value must remain attributable to the audible or host-authoritative state. Reduce analyzer frame rate or decorative animation before allowing a control readout to drift ambiguously. If evidence becomes stale, report that state instead of presenting an old visualization as current.
+
+Do not diagnose a render path from folklore. Measure a named Release build in the target OS and host, at relevant scales and instance counts, while separating input latency, UI paint cost, analyzer cadence, audio-thread health, and the user's visible or audible symptom. Split static and dynamic paint work and add caches only after profiling; define invalidation and verify child-component behavior. The goal is trustworthy action-to-sound attribution, not a low repaint count in isolation.
 
 Interruptions have scope. Noncritical marketing, update, onboarding, and informational pop-ups should not steal focus during dragging, audition, comparison, or text entry. A clipping, link-loss, or invalid-state exception may displace lower-priority content when continued work would be false or unsafe; preserve the interrupted transaction where possible and return focus predictably.
 
@@ -96,9 +106,9 @@ Evaluate placement in this order:
 
 Put a local control inside the selected object's territory or make the relationship visually explicit. Distance weakens perceived ownership and requires mental recoding.
 
-### Natural mapping
+### Mapping compatibility is a hypothesis
 
-Align movement and display consequences where the domain supports it. In a parametric EQ, horizontal position naturally represents frequency and vertical position represents gain. Width represents bandwidth. Direct manipulation makes these relationships inspectable and reversible.
+Align movement and display consequences where the product representation and target users support it. In a conventional parametric-EQ graph, horizontal position can map compatibly to its frequency axis and vertical position to its gain axis; bandwidth may be expressed through a separate gesture or control. These are contextual mappings, not universal human laws. “Up means more,” an unlabeled icon, a wheel direction, and a competitor gesture all require either a current product contract or a comprehension/error test in the target context. Direct manipulation is valuable when the object, gesture, consequence, and reversal remain attributable.
 
 ### Workflow order
 
@@ -164,6 +174,10 @@ For each cell use an explicit behavior: visible, emphasized, normal, dimmed, hid
 - **Input-equivalence test**: operate every endpoint action without a pointer, inspect focus order and focus return, and verify name/role/value/state/action semantics with the framework accessibility client.
 - **Response-under-load test**: enable the maximum visual load and incoming automation while dragging or entering a value. Does acknowledgment stay prompt, and can the user tell which state is audible and authoritative?
 - **Interruption test**: deliver a noncritical notice during drag, audition, comparison, and text entry. Does the transaction finish without focus theft, while real safety or connection failures still appear at the correct scope?
+- **Mapping-comprehension test**: remove explanatory coaching and ask target users to predict the result of the icon, direction, or gesture. Record hesitation, wrong prediction, recovery, and whether a label or different mapping fixes the error.
+- **Control-usability test**: traverse by keyboard or assistive route, use coarse/fine adjustment, enter valid and invalid values, reset, hit both bounds, cancel, and return focus. Are all paths efficient and truthful?
+- **Performance-attribution test**: in a named Release build and host, vary scale, analyzer load, automation, and instance count. Can the user still attribute gesture, displayed state, host state, and sound without dropouts or ambiguous lag?
+- **Migration-continuity test**: replace one UI slice while retaining the prior reference. Do parameter IDs/ranges, automation gestures, preset/session restore, bypass, audio output, host reopen, multiple instances, and supported scaling remain unchanged unless separately authorized?
 
 ## 8. Common failure modes
 
@@ -183,6 +197,10 @@ For each cell use an explicit behavior: visible, emphasized, normal, dimmed, hid
 - Pointer-only endpoint actions, custom controls with no assistive semantics, or a focus order unrelated to sonic-object ownership.
 - Visual feedback that falls behind audible or host state under analyzer load without declaring itself stale.
 - A noncritical pop-up that steals focus or ends an audition, drag, comparison, or value-entry transaction.
+- A familiar icon, “up means more,” or another plugin's gesture presented as universal without a target-context comprehension test.
+- A technically keyboard-reachable control whose steps, bounds, reset, or invalid-input behavior make it impractical to use.
+- A repaint or caching rewrite prescribed before profiling the actual Release build, host, scale, and human-visible or audible symptom.
+- A pixel-perfect native port that silently changes parameter identity, automation, preset restore, host lifecycle, or sound.
 
 ## Sources
 

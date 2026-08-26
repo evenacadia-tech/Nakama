@@ -1,6 +1,6 @@
 {
   "name": "audio-plugin-ux",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Evidence-based reasoning and layout generation for desktop audio-plugin interaction, focus, control placement, state, and constrained host surfaces.",
   "author": {
     "name": "Nakama Studio"
@@ -27,7 +27,8 @@
     "defaultPrompt": [
       "Audit this audio-plugin UI before changing it.",
       "Explain why each primary control belongs where it is.",
-      "Build a visibility matrix for this plugin workflow."
+      "Build a visibility matrix for this plugin workflow.",
+      "Derive a layout hypothesis from this parameter inventory and fixed host surface."
     ]
   }
 }

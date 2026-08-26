@@ -22,7 +22,8 @@ Never turn an inference into the designer's intent. Replace words such as "intui
 ## Load the relevant model
 
 - Before evaluating or changing an audio-plugin layout, read [references/design-reasoning.md](references/design-reasoning.md).
-- For equalizers, FabFilter Pro-Q comparisons, contextual controls, or show/hide behavior, also read [references/fabfilter-pro-q-case-study.md](references/fabfilter-pro-q-case-study.md).
+- When the repository contains an indexed research archive, or the user supplies research, also read [references/research-evidence.md](references/research-evidence.md). Use the archive as the evidence source; do not copy its findings into this skill.
+- For an explicit FabFilter Pro-Q comparison, contextual parameter disclosure, multi-selection, instance identity, or co-located EQ/analyzer scales, also read [references/fabfilter-pro-q-case-study.md](references/fabfilter-pro-q-case-study.md). Do not load it merely because the product is an EQ.
 - For Nakama Gen, Probeeq, or the historical Suna surface, also read [references/nakama-transfer.md](references/nakama-transfer.md). Follow its explicit repository routes and run its contract check before using Nakama-specific facts.
 
 ## The primary loop
@@ -46,15 +47,16 @@ An audio plugin differs from a web page in ways that change layout decisions:
 
 Do not edit Figma or production UI until the following compact reasoning brief exists:
 
-1. **Task frequency**: the engineer's common, occasional, and recovery jobs.
-2. **Sonic object map**: what is manipulated, what it affects, and what is global versus local.
-3. **Focus statement**: the one object or decision that owns the resting state.
-4. **Visibility matrix**: persistent, contextual, transient, exceptional, unavailable, and user-pinned elements across real states.
-5. **Placement proofs** for every primary control or control group.
-6. **Source ledger**: observed, documented, inferred, user-decided, conflicting, and open claims.
-7. **Information budget**: the real target width, height, aspect/reflow behavior, reserved chrome, minimum targets, and evidence density before controls are arranged.
-8. **Host-size and audio-state checks**: smallest supported size, no-signal, playback, bypass, automation, single selection, multiselection with mixed values, instance/context switching, and error/degraded states.
-9. **Access and response contract**: alternative input routes, focus behavior, assistive semantics, interaction feedback, interruption policy, and response under the worst visual load.
+1. **Human-need chain**: person and situation -> goal, risk, or uncertainty -> perceptual or interaction need -> proposed consequence -> observable proof. If a link is not evidenced, mark it as a hypothesis.
+2. **Task frequency**: the engineer's common, occasional, and recovery jobs.
+3. **Sonic object map**: what is manipulated, what it affects, and what is global versus local.
+4. **Focus statement**: the one object or decision that owns the resting state.
+5. **Visibility matrix**: persistent, contextual, transient, exceptional, unavailable, and user-pinned elements across real states.
+6. **Placement proofs** for every primary control or control group.
+7. **Source ledger**: observed, documented, inferred, user-decided, conflicting, and open claims. For indexed research include entry ID, repository path, and verification level.
+8. **Information budget**: the real target width, height, aspect/reflow behavior, reserved chrome, minimum targets, and evidence density before controls are arranged.
+9. **Host-size and audio-state checks**: smallest supported size, no-signal, playback, bypass, automation, single selection, multiselection with mixed values, instance/context switching, and error/degraded states.
+10. **Access and response contract**: alternative input routes, focus behavior, assistive semantics, interaction feedback, interruption policy, and response under the worst visual load.
 
 For a new design, do not stop at critique. Derive one falsifiable layout hypothesis from the task ranking, object ownership, visibility classes, and measured surface budget. State what remains persistent, what is selected into view, what can collapse, and what the design deliberately refuses to show simultaneously. Then measure the hypothesis at the real host surface before polishing it.
 
@@ -63,6 +65,7 @@ If the user only requests analysis, stop at the brief. If implementation is requ
 ## Access and response contract
 
 - Document a pointer, keyboard, fine-adjustment, and text-entry route for each primary action whose meaning does not inherently depend on a freehand path. Include reset, cancel, undo, and focus return. Do not force a path-dependent gesture into a misleading keyboard clone; provide an equivalent endpoint operation where practical.
+- Define meaningful coarse and fine increments, a discoverable default/reset route, safe bounds, and honest rejection of invalid numeric input. Do not make keyboard access technically present but practically unusable.
 - Expose each interactive custom control's semantic name, role, value, state, and actions through the native framework's accessibility API. Tooltips and visible labels do not by themselves make an unlabeled custom widget operable by assistive technology.
 - Define the immediate acknowledgment and authoritative state under the worst visual load: maximum analyzers, active objects, overlays, automation, and scaling. Throttling decorative or analytical redraw is acceptable; letting the visible parameter value lag ambiguously behind audible or host state is not.
 - Defer noncritical pop-ups, update notices, upsells, and onboarding while the user is dragging, auditioning, comparing, or entering a value. A scoped safety or connection failure may interrupt when continued work is impossible or unsafe; restore focus to a predictable owner afterward.
@@ -111,11 +114,13 @@ Inspect and test state transitions, not only static polish:
 - pointer/direct gesture -> alternative input route -> predictable focus return
 - nominal visual load -> worst visual load -> host automation or state change
 - uninterrupted listening gesture -> noncritical notice arrives -> gesture completes without focus theft
+- assumed mapping or icon -> comprehension test in the target context -> retain, relabel, or revise
+- prototype/reference UI -> incremental native replacement -> preset, automation, audio, and host continuity proof
 
 Run the interface with audio in the real host when possible. A visual-only prototype cannot prove whether focus supports listening, whether a gesture masks the audible comparison, or whether momentary audition releases correctly.
 
 ## Output
 
-Lead with the actual focus and visibility conclusion. Then provide the placement proofs, state matrix, tradeoffs, and open questions. Separate what the evidence proves from what remains a design hypothesis.
+Lead with the human need, actual focus, and visibility conclusion. Then provide the placement proofs, state matrix, tradeoffs, and open questions. Separate source claims, current product contracts, and design hypotheses. When indexed research was used, make the retrieval route explicit as `archive index -> entry ID/path/verification level` in the compact source ledger. Cite every volatile product fact and current test-status claim to its repository source or fresh command evidence; otherwise omit it or mark it **Open**.
 
 Do not imitate FabFilter's colors, shapes, or arrangement as a style kit. Transfer the interaction reasoning only when the target's sonic objects, jobs, and constraints support the same conclusion.

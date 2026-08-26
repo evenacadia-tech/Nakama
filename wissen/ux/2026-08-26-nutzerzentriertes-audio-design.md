@@ -50,8 +50,8 @@ funktionalen Erlebnis sinnvoll beurteilt werden kann.
 - Der Web-Simulator ist richtig eingeordnet: Er muss Zustände, Gesten und
   hörbare Reaktion funktional prüfbar machen. Ein Figma-Klickpfad allein wäre
   für Hold-to-Audition, Preview, Apply und Recovery zu schwach.
-- Gen, Probeeq und Suna brauchen eine gemeinsame Interaktionssprache, nicht nur
-  dieselben Materialien. Gleiche Aktionen und Zustände müssen über alle drei
+- Gen und Probeeq brauchen eine gemeinsame Interaktionssprache, nicht nur
+  dieselben Materialien. Gleiche Aktionen und Zustände müssen über beide
   Produkte gleich benannt und rückgemeldet werden.
 - Der bestehende UI-Vertrag übernimmt die Rolle einer Interaction Library:
   Aktion, Zustand und sichtbare Rückmeldung werden gemeinsam geführt.

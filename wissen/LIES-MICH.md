@@ -73,4 +73,7 @@ statt Kopien anzulegen. Jede visuelle Karte trennt:
 ## Einstieg
 
 Die vollständige Karte steht in [`INDEX.md`](INDEX.md). Arbeitsregeln für
-Agenten stehen in [`AGENTS.md`](AGENTS.md).
+Agenten stehen in [`AGENTS.md`](AGENTS.md). `INDEX.md` ist zugleich der
+maschinenlesbare Einstieg für Projekt-Skills: Ein aktiver, dort verlinkter
+Eintrag wird für Codex und andere KI-Agenten auffindbar, ohne dass sein Inhalt
+in einen Skill kopiert oder dort als zweite Wahrheit gepflegt werden muss.

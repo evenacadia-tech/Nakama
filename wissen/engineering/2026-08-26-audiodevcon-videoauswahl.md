@@ -19,17 +19,19 @@ Messvisualisierung und Plugin-Validierung.
 
 ## Priorität 1
 
-Diese sechs Videos bilden den Kern. Der erste Vortrag ist bereits vollständig
-ausgewertet; die übrigen fünf werden als Nächstes geprüft.
+Diese sechs Videos bilden den Kern. Alle sechs sind ausgewertet und in die
+jeweiligen Themenblätter eingearbeitet. Wo kein Transkript verfügbar war,
+bleibt der Erkenntnisumfang ausdrücklich auf direkt geprüfte Folien,
+Beschreibung und Kapitel begrenzt.
 
 | Video | Bereich | Warum für Nakama wichtig | Prüfstand |
 |---|---|---|---|
-| [Enabling Unique Sound Experiences Through User-Centred Design](https://www.youtube.com/watch?v=UEyGN9DG7Ns) | UX, Produkt | Nutzeranforderungen, Audio-Feedback, Designsystem und funktionale Prototypen | vollständig per Transkript geprüft; Erkenntnisse bereits eingepflegt |
-| [PSD to DAW – Building a Pixel-Perfect UI Pipeline](https://www.youtube.com/watch?v=hebLkAR5X3I) | UI/Motion, Engineering | native Asset-Pipeline, visuelle Treue, Resampling, Layering und Displaygrößen | Beschreibung geprüft; visueller Durchgang nötig |
-| [Measuring and Improving UI Performance with the JUCE C++ Framework](https://www.youtube.com/watch?v=0n9x6R0fheo) | Engineering, UI/Motion | Komponentenbaum, Paint-Kosten, Text, Caching und Windows-Direct2D in JUCE | Beschreibung geprüft |
-| [Modernizing Legacy Audio Plugin Codebases – Lessons from FL Studio’s Plugin Suite](https://www.youtube.com/watch?v=zY8uHzAdnzk) | FL Studio, Engineering | echte FL-Studio-Pluginmigration, GUI-Modernisierung, Validierung, CI und Installer | Beschreibung geprüft |
-| [The UX of Audio Experiences](https://www.youtube.com/watch?v=E3zUIR8xkrw) | UX, DSP | Psychoakustik, Timing, Kontext und falsche Annahmen bei Audio-Interaktionen | Beschreibung und Kapitel geprüft |
-| [Building Inclusive Audio Tools](https://www.youtube.com/watch?v=O5xX9a7P-SU) | UX, UI/Motion | komplexe Audio-Controls für Screenreader und Tastatur, WCAG/ETSI, praktische Tests | Beschreibung geprüft |
+| [Enabling Unique Sound Experiences Through User-Centred Design](https://www.youtube.com/watch?v=UEyGN9DG7Ns) | UX, Produkt | Nutzeranforderungen, Audio-Feedback, Designsystem und funktionale Prototypen | vollständiges Auto-Transkript geprüft; [eingearbeitet](../ux/2026-08-26-nutzerzentriertes-audio-design.md) |
+| [PSD to DAW – Building a Pixel-Perfect UI Pipeline](https://www.youtube.com/watch?v=hebLkAR5X3I) | UI/Motion, Engineering | native Asset-Pipeline, visuelle Treue, Resampling, Layering und Displaygrößen | vollständiger 52-Folien-Satz, Beschreibung und Ressourcen-Repository geprüft; kein Transkript; [eingearbeitet](../ui-motion/2026-08-26-visuelle-treue-native-ui-pipeline.md) |
+| [Measuring and Improving UI Performance with the JUCE C++ Framework](https://www.youtube.com/watch?v=0n9x6R0fheo) | Engineering, UI/Motion | Komponentenbaum, Paint-Kosten, Text, Caching und Windows-Direct2D in JUCE | vollständiges Auto-Transkript, Demonstrationen und aktuelle JUCE-Referenz geprüft; [eingearbeitet](2026-08-26-juce-ui-performance-messen.md) |
+| [Modernizing Legacy Audio Plugin Codebases – Lessons from FL Studio’s Plugin Suite](https://www.youtube.com/watch?v=zY8uHzAdnzk) | FL Studio, Engineering | echte FL-Studio-Pluginmigration, GUI-Modernisierung, Validierung, CI und Installer | vollständiges Auto-Transkript und sichtbare Kernfolien geprüft; [eingearbeitet](../fl-studio/2026-08-26-plugin-modernisierung-ohne-vertrauensbruch.md) |
+| [The UX of Audio Experiences](https://www.youtube.com/watch?v=E3zUIR8xkrw) | UX, DSP | Psychoakustik, Kontext und falsche Annahmen bei Audio-Interaktionen | Beschreibung, vollständige Kapitelstruktur und ausgewählte sichtbare Folien geprüft; kein Transkript, Aussagen bewusst begrenzt; [eingearbeitet](../ux/2026-08-26-audio-interaktion-kontext-statt-annahmen.md) |
+| [Building Inclusive Audio Tools](https://www.youtube.com/watch?v=O5xX9a7P-SU) | UX, UI/Motion | komplexe Audio-Controls für Screenreader und Tastatur, WCAG/ETSI, praktische Tests | vollständiges Auto-Transkript, Demonstrationen, aktuelle W3C- und JUCE-Referenz geprüft; [eingearbeitet](../ux/2026-08-26-zugaengliche-audio-controls.md) |
 
 ## Priorität 2
 

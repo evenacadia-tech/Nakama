@@ -30,5 +30,10 @@ Stand: 26.08.2026
 
 | Datum | Eintrag | Bereich | Prüfstand |
 |---|---|---|---|
+| 26.08.2026 | [Zugängliche Audio-Controls müssen auch benutzbar sein](ux/2026-08-26-zugaengliche-audio-controls.md) | UX, UI/Motion, Engineering | Vortrag, W3C und JUCE geprüft |
+| 26.08.2026 | [Audio-Interaktion: Kontext statt ungeprüfter Annahmen](ux/2026-08-26-audio-interaktion-kontext-statt-annahmen.md) | UX, UI/Motion, DSP | Videoabschnitte geprüft; kein Transkript verfügbar |
+| 26.08.2026 | [Plugin-Modernisierung ohne Vertrauensbruch](fl-studio/2026-08-26-plugin-modernisierung-ohne-vertrauensbruch.md) | FL Studio, Engineering, UX | Quelle und Transkript geprüft |
+| 26.08.2026 | [JUCE-UI-Performance messen statt vermuten](engineering/2026-08-26-juce-ui-performance-messen.md) | Engineering, UI/Motion, UX | Quelle, Transkript und JUCE-Referenz geprüft |
+| 26.08.2026 | [Visuelle Treue in einer nativen UI-Pipeline](ui-motion/2026-08-26-visuelle-treue-native-ui-pipeline.md) | UI/Motion, Engineering, UX | Folien, Ressourcen und Beschreibung geprüft |
 | 26.08.2026 | [AudioDevCon: kuratierte Videoauswahl](engineering/2026-08-26-audiodevcon-videoauswahl.md) | Engineering, UX, UI/Motion, DSP, FL Studio | Auswahl und Metadaten geprüft; Einzelstatus im Eintrag |
 | 26.08.2026 | [Nutzerzentriertes Design für Audio-Produkte](ux/2026-08-26-nutzerzentriertes-audio-design.md) | UX | Quelle und Transkript geprüft |

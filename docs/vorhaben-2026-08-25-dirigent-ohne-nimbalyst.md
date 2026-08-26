@@ -117,22 +117,37 @@ globalen Default-Konfiguration abgeleitet:
 
 | Rolle | Modell | Effort | Grund |
 |---|---|---|---|
-| Dirigent | Claude Fable | `max` | hält den Gesamtfaden, priorisiert und entscheidet; *„beim Dirigenten spart man nicht“* |
+| Dirigent | Claude Fable | `xhigh` | hält den Gesamtfaden, priorisiert und entscheidet; `xhigh` genügt für diese begrenzte Orchestrierung |
 | Bauer | Claude Opus | `max` | baut genau ein Ticket samt Beweis; Implementierungsqualität geht vor Laufzeit |
-| alle Codex-Instanzen | `gpt-5.6-sol` | `max` | Erstprüfung, Fix im selben Thread und frische Wiederprüfung arbeiten qualitätsorientiert mit derselben festen Konfiguration |
+| alle Codex-Instanzen | `gpt-5.6-sol` | durch Fable: `high`, `xhigh` oder `max` | Fable setzt die Denktiefe passend zum materiellen Risiko des konkreten Tickets |
 
-Auch T2 nutzt `max`. Reasoning-Tiefe und Prüfbreite sind zwei verschiedene
-Dinge: `max` soll einen konkreten materiellen Befund gründlich validieren; der
-enge Ticket- und Prioritätsprompt verhindert Kosmetik, Randfallgrabung und
-Scope-Ausweitung. So entsteht keine zweite Modellregel für T2 und T3. Die
-aktuelle globale Codex-Konfiguration (`xhigh`) wird bewusst überschrieben.
+Fable trifft die Sol-Auswahl ohne weitere Datei oder Punktesystem:
+
+- `high` nur bei einer kleinen, lokal begrenzten Änderung mit geringer
+  Auswirkung und eindeutiger Abnahme,
+- `xhigh` als Standard für normale Implementierungstickets, mehrere gekoppelte
+  Dateien oder einen nicht trivialen Befund,
+- `max` für qualitätskritische Arbeit an Audio-Thread, State/Migration,
+  IPC/Verträgen, Nebenläufigkeit, Sicherheit oder einem Phasengate.
+
+Die Auswahl wird bei Beginn eines frischen Review-Threads einmal getroffen und
+im vorhandenen Ticketmanifest zusammen mit Modell und Urteil vermerkt. Eine
+Nacharbeit im selben Thread behält dieses Effort. Die anschließende frische
+Wiederprüfung verwendet mindestens dasselbe Effort; Fable darf es erhöhen,
+aber nach einem bestätigten Fehler nicht absenken. Globale Codex-Defaults sind
+damit unerheblich.
+
+Reasoning-Tiefe und Prüfbreite bleiben zwei verschiedene Dinge. Mehr Effort
+darf einen materiellen Befund gründlicher validieren, aber niemals den engen
+Ticket- und Prioritätsprompt ausweiten. Kosmetik, Randfallgrabung und
+Nadel-im-Heuhaufen-Suche bleiben bei jeder Stufe ausgeschlossen.
 
 ### 5.2 Dirigent starten
 
 Der User startet direkt eine echte Fable-Session:
 
 ```powershell
-claude --model fable --effort max --name nakama-dirigent `
+claude --model fable --effort xhigh --name nakama-dirigent `
   --remote-control nakama-dirigent
 ```
 
@@ -212,7 +227,8 @@ unveränderten Gate-Text und das Manifest. Temporäre CLI-Ausgaben liegen nur
 unter `$env:TEMP` und werden nach dem Ticket entfernt.
 
 ```powershell
-codex -m gpt-5.6-sol -c 'model_reasoning_effort="max"' `
+$solEffort = 'xhigh' # Fable setzt hier nach 5.1 high, xhigh oder max
+codex -m gpt-5.6-sol -c "model_reasoning_effort=`"$solEffort`"" `
   -C . -s read-only -a never --strict-config exec review `
   --json -o <temp-review.txt> -
 ```
@@ -237,7 +253,7 @@ weiterverfolgt. Fable validiert jeden Befund an der Quelle.
 Bestätigte Befunde behebt derselbe Codex-Thread gezielt:
 
 ```powershell
-codex -m gpt-5.6-sol -c 'model_reasoning_effort="max"' `
+codex -m gpt-5.6-sol -c "model_reasoning_effort=`"$solEffort`"" `
   -C . -s workspace-write -a never --strict-config exec resume `
   <thread-id> -
 ```
@@ -246,8 +262,9 @@ Danach prüft ein neuer frischer Codex-Thread erneut den **gesamten** Bereich
 vom ursprünglichen Ausgangs-SHA bis zum neuen HEAD. Nach zwei erfolglosen
 Nacharbeitsrunden hält Fable an. Ein bestandenes Urteil wird unverändert in das
 vorhandene Ticketmanifest übernommen; dafür entsteht kein weiteres Protokoll.
-Die frische Wiederprüfung verwendet denselben expliziten Modell-/Effort-Aufruf
-wie die Erstprüfung, aber eine neue Thread-ID.
+Die frische Wiederprüfung verwendet eine neue Thread-ID und einen erneut
+expliziten Modell-/Effort-Aufruf. Sie behält `$solEffort` oder erhöht es nach
+den Regeln aus 5.1.
 
 ### 5.6 Weiter oder halten
 
@@ -278,8 +295,9 @@ Queues und `nimbalyst.py` unangetastet. Matrix ist pausiert, nicht zerstört.
 ### 6.2 Nimbalyst aus dem aktiven Workspace entfernen
 
 - `.claude/skills/dirigent/SKILL.md` wird auf Rolle, Quellen, Minimalzyklus,
-  Prioritäten und Haltgründe gekürzt. Historische Nimbalyst-/Matrix-Erzählung
-  und Werkzeuganekdoten gehören nicht in den aktiven Skill.
+  Prioritäten, die drei Sol-Effort-Regeln und Haltgründe gekürzt. Historische
+  Nimbalyst-/Matrix-Erzählung und Werkzeuganekdoten gehören nicht in den
+  aktiven Skill.
 - `.claude/skills/fragen/SKILL.md` stellt Fragen und Bilder direkt im
   Claude-/Remote-Control-Kanal; keine Nimbalyst-Werkzeuge und kein Ersatzbus.
 - `CLAUDE.md` verliert den gesamten Matrix-Remote-Berichtsblock und verweist
@@ -359,12 +377,13 @@ Begründungen fallen heraus.
 ### C — Ein realer Probelauf
 
 Mit einem kleinen echten Nakama-Ticket den direkten Ablauf einmal vollständig
-fahren: Fable `max` per Remote Control, Opus `max` als direkter
-CLI-Hintergrundprozess, Messung am Repo sowie `gpt-5.6-sol` mit Effort `max` für
-frischen Review und — nur bei materiellem Befund — Nacharbeit im selben Thread
-plus frischen Wiederreview. Vorher beweist ein einmaliger `/loop 1m`-Kurztest,
-dass Fable ohne User-Prompt geweckt wird und den Loop nach erkanntem
-Worker-Ende löscht; im Normalbetrieb gilt anschließend `/loop 30m`.
+fahren: Fable `xhigh` per Remote Control, Opus `max` als direkter
+CLI-Hintergrundprozess, Messung am Repo sowie `gpt-5.6-sol` mit dem von Fable
+nach 5.1 gewählten und im Manifest genannten Effort für frischen Review und —
+nur bei materiellem Befund — Nacharbeit im selben Thread plus frischen
+Wiederreview. Vorher beweist ein einmaliger `/loop 1m`-Kurztest, dass Fable
+ohne User-Prompt geweckt wird und den Loop nach erkanntem Worker-Ende löscht;
+im Normalbetrieb gilt anschließend `/loop 30m`.
 
 Wenn dieser Ablauf trägt, ist kein Harness zu bauen. Dieser Plan wird danach
 aus dem aktiven Dokumentationsbereich entfernt oder als abgeschlossener Verlauf
@@ -381,8 +400,9 @@ Das Vorhaben ist fertig, wenn:
 - Bauer und Prüfer einmal über native Werkzeuge erfolgreich geführt wurden,
 - der sessiongebundene Weckloop Fable regelmäßig ohne User-Prompt zurückholt
   und nach Worker-Ende nicht weiterläuft,
-- alle drei Rollen nachweislich mit den festgelegten Modellen und Efforts
-  gestartet wurden,
+- Fable nachweislich mit `xhigh`, Opus mit `max` und jeder Sol-Lauf mit dem von
+  Fable ausdrücklich gewählten und im Ticketmanifest genannten Effort gestartet
+  wurde,
 - kein eigener Prozessmanager, Scheduler, Zustandsspeicher, Ergebnisschema oder
   dauerhaftes Laufprotokoll hinzugekommen ist,
 - normale Sessionstarts keinen auftragsfremden Plan-, Design- oder

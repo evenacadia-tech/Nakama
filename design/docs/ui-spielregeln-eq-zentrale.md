@@ -1,17 +1,18 @@
 # UI-Spielregeln der EQ-Zentrale — was jedes Design erfüllen muss
 
-- **Stand:** 2026-08-23 · **Autor:** Claude (Technik-Vorgaben, keine Gestaltung)
-- **Zweck:** Der User designt Gen Seite 1 + Seite 2 parallel zur
-  Implementierung in Figma (sein Wort 23.08.: „das ist ja ein prozess kein
-  ‚mal eben schnell machen'"). Dieses Blatt sind die **Spielregeln, die das
-  Design erfüllen muss, um umsetzbar zu sein** — was die Technik liefert,
-  was sie verlangt, was sie (noch) nicht kann.
+- **Stand:** 2026-08-23, präzisiert 2026-08-27 · **Autor:** Claude
+  (Technik-Vorgaben, keine Gestaltung)
+- **Zweck:** technische Spielregeln für die zwei Gen-Oberflächen. „Overview"
+  und „EQ-Zentrale" beziehungsweise „EQ Center" sind nur Arbeitsnamen, keine
+  festgelegte Produktbeschriftung. Die Gestaltung kommt aus der aktuellen
+  User-Referenz, nicht aus diesem Blatt.
 - **Quellen (alle im Repo, vom Workspace-Root):** Entwurf
   `docs/FL-Nakama-Sonden-Design-Entwurf.md` (§44, §53.8, Erratum (n)) ·
   Parameterbestand `eq-copilot/schemas/state/nakama-parameter-v1.json` ·
   Capability-Report `eq-copilot/identity/host-capabilities-fl-v1.json` ·
   Entscheid-Register in `CLAUDE.md` · Wortlaut der Entscheide:
-  `design/abnahmen/2026-08-23-gen-eq-zentrale.md` und
+  `design/abnahmen/2026-08-23-gen-eq-zentrale.md`,
+  `design/abnahmen/2026-08-27-arbeitsnamen-und-probeeq-doppelrolle.md` und
   `design/abnahmen/2026-08-23-interview-struktur.md` (21 Festlegungen).
   Jede Regel trägt ihre Quelle; **(Vorschlag)** / **(Annahme)** =
   Claude-Setzung, noch ohne User-Wort. Zahlen sind Startwerte
@@ -32,9 +33,10 @@
    Größenfrage aus NAK-65 ist damit beantwortet). Freie Skalierung ist
    technisch da (der heutige Editor skaliert frei bei festem Verhältnis),
    aber als Produktentscheid offen.
-4. **Working Design:** Probeeq-Figma ist die Arbeitsgrundlage der
-   EQ-Fläche (User 23.08.); Handling-Referenzen: Smooth Operator Pro,
-   Pro-Q — Bedienlogik studieren erlaubt, die Optik bleibt Nakama.
+4. **Aktuelle visuelle Grundlage:** die drei Rework-Bilder vom 25.08.; der
+   frühere Probeeq-Figma-Stand ist Verlauf. Handling-Referenzen wie Smooth
+   Operator Pro oder Pro-Q dürfen Bedienlogik erklären, nie die User-Optik
+   ersetzen.
 
 ## 2. Was eine EQ-Spur an Bedienbarem hat (Datenmodell)
 
@@ -255,10 +257,11 @@
     EQ-Zentrale: EIN Link-Zustand statt CONNECTED·PAIRED — im Fehlerfall
     benennt der Text den gefallenen Abschnitt (BROKER OFFLINE ≠
     PROBE OFFLINE); kein Dauer-„LIVE" (nur Ausnahmen sprechen, Abnahme
-    20.08.); der Seitenwechsel ist ein Tab-Paar OVERVIEW · EQ CENTER an
-    identischer Position auf beiden Seiten; Aufklapp-Pfeile sitzen IM
-    Bedienelement, nie frei daneben. Material/Schale (Glas, Grain,
-    Lichtsaum) ist Design-Identität, kein totes Element.
+    20.08.); der Seitenwechsel bleibt an identischer Position auf beiden
+    Flächen erkennbar. `OVERVIEW` und `EQ CENTER` im Referenzbild sind dabei
+    Arbeitsnamen, keine festgelegte Produktcopy. Aufklapp-Pfeile sitzen IM
+    Bedienelement, nie frei daneben. Material/Schale (Glas, Grain, Lichtsaum)
+    ist Design-Identität, kein totes Element.
 
 **Nachtrag 24.08. (Auto-Gain; Wortlaut und Herleitung
 `../abnahmen/2026-08-24-auto-gain-schalter.md`):**

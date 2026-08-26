@@ -2,11 +2,14 @@
 
 Plugin-Familie für FL Studio unter Windows 11 (JUCE 8/C++20, CMake) mit
 eigenständigem Rust-Broker über Named Pipes. Seit 23.08.2026 besteht Nakama aus
-zwei Apps mit einer Design-Identität: **Nakama Gen** ist Hub/Studio und
-EQ-Zentrale; **Nakama Probeeq** ist die Sonde auf den Bussen und führt den
-zuschaltbaren EQ aus. Suna ist in Probeeq aufgegangen. Der Bundle-Name lautet
-**Nakama Studio**. Legacy-Bezeichner wie `EQ-Copilot`, `EqCop*` und `Eqcp`
-bleiben bis zum eigenen Identitäts-Ticket NAK-30 bestehen.
+zwei Apps mit einer Design-Identität: **Nakama Gen** hat zwei Oberflächen;
+„Overview" und „EQ-Zentrale" sind dafür nur Arbeits- und Platzhalternamen.
+**Nakama Probeeq** vereint die frühere Suna- und Probeeq-Rolle: Sie misst auf
+dem Bus passiv und beliefert Gen; bei zugeschaltetem EQ führt dieselbe Instanz
+Gens Fernsteuerung auf ihrem Bus aus. Suna ist als App-Name durch Probeeq
+ersetzt. Der Bundle-Name lautet **Nakama Studio**. Legacy-Bezeichner wie
+`EQ-Copilot`, `EqCop*` und `Eqcp` bleiben bis zum eigenen Identitäts-Ticket
+NAK-30 bestehen.
 
 Das Repo ist eigenständig und privat. `design/` gehört seit 22.08.2026 zum
 selben Repo. Parallele Sessions sind normal: fremde uncommittete Änderungen nie
@@ -19,11 +22,15 @@ Commits gehen ohne Rückfrage raus.
      Block ausschließlich nach einer Context-Compaction. -->
 ## Wahrheitskern
 
-- **Produkt:** Gen zeigt Quellen, Befunde und Advisor. Seite 2 ist die
-  EQ-Zentrale für alle Sonden plus vollwertigem Master-EQ. Die Sonden werden
-  direkt dort durchgeschaltet; zwei EQ-Spuren liegen farblich unterscheidbar im
-  selben Graph. Gen Seite 1 und 2 sind beide 760×430. Probeeq misst auf den
-  Bussen und führt dort seinen EQ aus; Gen fernbedient ihn.
+- **Produkt:** Gen hat zwei Oberflächen. Die erste zeigt Quellen, Befunde und
+  Advisor; die zweite bedient die Probeeq-Instanzen zentral und enthält den
+  vollwertigen Master-EQ. „Overview" und „EQ-Zentrale" sind nur Arbeitsnamen,
+  keine festgelegten Produktnamen. Die Sonden werden direkt auf der zweiten
+  Oberfläche durchgeschaltet; zwei EQ-Spuren liegen farblich unterscheidbar im
+  selben Graph. Beide Gen-Oberflächen sind 760×430. Probeeq misst auf den
+  Bussen passiv und beliefert Gen. Wird ihr EQ zugeschaltet, führt dieselbe
+  Instanz die von Gen ferngesteuerten Eingriffe auf ihrem Bus aus; Messsonde
+  und EQ-Ausführer sind keine alternativen Produktrollen.
 - **Grundgesetz: nichts Ungefragtes.** Verarbeitung findet nur statt, wenn der
   User sie einschaltet. Ausgeschaltet ist der Pfad im Nulltest bitidentisch;
   sonst ist der Passthrough sampleidentisch, ohne Latenz oder Tail. Der Advisor

@@ -11,6 +11,11 @@ Gen-/Probeeq-/Suna-Exporte als aktuelle Ausgangsbasis.
 
 ## Die drei Referenzflächen
 
+**Namens- und Rollenpräzisierung 27.08.2026:** Overview und EQ Center sind
+nur Arbeitsnamen der zwei Gen-Oberflächen. Probeeq vereint passive Messsonde
+und ferngesteuerten Bus-EQ; Suna ist kein eigener App-Name mehr. Wortlaut:
+`2026-08-27-arbeitsnamen-und-probeeq-doppelrolle.md`.
+
 | Oberfläche | Unverändertes Userbild im Repo | Pixel | SHA-256 |
 |---|---|---:|---|
 | Gen Seite 1 · Overview/Advisor | `design/assets/rework-basis-2026-08-25/gen-page-1-overview.png` | 2048×1228 RGBA | `60E7108722A36B435A1EA6782BEC1C77BFA08A5F00AED3B27365127AFE72E417` |
@@ -26,9 +31,10 @@ nicht skaliert, nachgezeichnet, überschrieben oder still korrigiert.
 1. **Aktuelle visuelle Wahrheit in progress:** Material, Hierarchie,
    Proportionen, Gruppierung, sichtbare Begriffe und die gezeigten Zustände
    werden beim großen Rework von diesen Bildern aus gelesen.
-2. **Zwei Apps, drei Flächen:** Gen besitzt Seite 1 und Seite 2; Probeeq ist
-   die kompakte zweite App. Das dritte Bild macht Suna nicht wieder zu einer
-   App.
+2. **Zwei Apps, drei Flächen:** Gen besitzt zwei Oberflächen; Probeeq ist die
+   kompakte zweite App mit passiver Mess- und zugeschalteter EQ-Ausführungs-
+   rolle. Das dritte Bild macht Suna nicht wieder zu einer App. Die in Bild
+   und Dateinamen sichtbaren Flächennamen sind Arbeitsnamen.
 3. **Frühere Referenzen sind Verlauf:** insbesondere Figma `25:444`,
    `28:994`, der Suna-Knoten `6:2864` und die datierten Exporte unter
    `design/assets/figma/`. Sie dürfen zur Herkunftssuche dienen, aber keine

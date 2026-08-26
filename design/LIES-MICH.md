@@ -54,20 +54,25 @@ er bezeichnet die Figma-Datei, nicht mehr ein Repo.)
 
 Die Oberflächen (**seit 23.08. zwei Apps, seit 25.08. drei aktuelle
 Referenzbilder** — Entscheide
-`abnahmen/2026-08-23-gen-eq-zentrale.md`; Suna ist in Probeeq aufgegangen):
+`abnahmen/2026-08-23-gen-eq-zentrale.md` und
+`abnahmen/2026-08-27-arbeitsnamen-und-probeeq-doppelrolle.md`):
 
-1. **Nakama Gen** — Hub/„Studio". Die aktuelle Seite 1 ist
+1. **Nakama Gen** — Hub/„Studio" mit zwei Oberflächen. „Overview" und
+   „EQ-Zentrale" beziehungsweise „EQ Center" sind nur Arbeits- und
+   Platzhalternamen. Die aktuelle Fläche 1 ist
    `assets/rework-basis-2026-08-25/gen-page-1-overview.png`; die aktuelle
-   Seite 2 ist `assets/rework-basis-2026-08-25/gen-page-2-eq-center.png`.
+   Fläche 2 ist `assets/rework-basis-2026-08-25/gen-page-2-eq-center.png`.
    Beide sind die sichtbare Grundlage für den großen Rework. Frühere Depot-
    Nodes (`25:444`, `28:994`) und Exporte bleiben Verlauf. Funktionale
    Spielregeln, die ein Bild nicht beweisen kann, stehen weiterhin in
    `docs/ui-spielregeln-eq-zentrale.md` und den neueren Abnahmen.
-2. **Nakama Probeeq** — DIE Sonde auf den Bussen. Ihre aktuelle kompakte
-   Referenz ist `assets/rework-basis-2026-08-25/probeeq.png`. Der Suna-Knoten
-   `6:2864`, die frühere große Probeeq-Vollfläche und alle Suna-Exporte sind
-   nur noch Verlauf und dürfen nicht als aktuelle visuelle Basis zitiert
-   werden.
+2. **Nakama Probeeq** — DIE Bus-Sonde mit Doppelrolle. Sie misst passiv und
+   beliefert Gen; bei zugeschaltetem EQ führt dieselbe Instanz Gens
+   Fernsteuerung auf ihrem Bus aus. Suna ist als App-Name durch Probeeq
+   ersetzt. Die aktuelle kompakte Referenz ist
+   `assets/rework-basis-2026-08-25/probeeq.png`. Der Suna-Knoten `6:2864`,
+   die frühere große Probeeq-Vollfläche und alle Suna-Exporte sind nur noch
+   Verlauf und dürfen nicht als aktuelle visuelle Basis zitiert werden.
 
 Die Projektquellen — vollständig, nichts von außen dazuholen:
 
@@ -198,8 +203,9 @@ historischen Kriterium.
   bleibt deutsch.
 - Docs, Abnahmen, Commits und Gespräch auf Deutsch.
 - Die aktuellen Apps heißen Gen und Probeeq. Suna sowie Main /
-  Active-Probe-Editor / Passive-Kachel sind Legacy- oder Verlaufsbegriffe
-  und werden in neuen Produkttexten nicht als aktuelle Flächen geführt.
+  Active-Probe-Editor / Passive-Kachel sind Legacy- oder Verlaufsbegriffe.
+  Overview und EQ-Zentrale/EQ Center benennen die zwei Gen-Flächen nur
+  vorläufig und werden nicht als abgenommene Produktnamen behandelt.
 - Kleine, benannte Commits nach jedem abgenommenen Schritt — immer mit
   explizitem Pathspec, nie `git add -A` (parallele Sessions).
 - Sessionende: eine Zeile in `abnahmen/` was offen blieb — kein

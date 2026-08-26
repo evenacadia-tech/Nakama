@@ -13,11 +13,17 @@
 > Beweise. Produkt und Entscheide → `CLAUDE.md`; Sondenfamilie im Entwurf →
 > `docs/FL-Nakama-Sonden-Design-Entwurf.md`, `docs/bauaufteilung-sonden.md`.
 >
-> Namen: **Nakama Gen** (Main), **Probeeq** (aktive Sonde, vollwertiger EQ),
-> **Suna** (passive Sonde), Bundle künftig „Nakama Studio". Im Code heißt
-> heute alles `EqCop*` / „EQ-Copilot" / `Eqcp` — Legacy, Umbenennung ist
-> NAK-30, kein Nebenbei-Refactor. Das gebaute Plugin ist der Vorläufer von
-> Gen; seine Material-Kit-Front ist ein Provisorium.
+> **Produktziel, präzisiert 27.08.:** Gen hat zwei Oberflächen; Overview und
+> EQ-Zentrale/EQ Center sind nur Arbeitsnamen. **Probeeq** vereint passive
+> Messsonde und den bei Bedarf von Gen ferngesteuerten EQ-Ausführer auf dem
+> Bus; Suna ist als App-Name ersetzt. Wortlaut:
+> `../design/abnahmen/2026-08-27-arbeitsnamen-und-probeeq-doppelrolle.md`.
+> **Heutiger Code ist noch vor diesem Umschnitt:** Er baut weiterhin getrennte
+> `NakamaSuna`- und `NakamaProbeeq`-Ziele; beide sind audio-neutrale Hüllen.
+> Probeeq trägt bereits aktive Produktklasse und Parameter-State, seine DSP
+> ist laut `plugin/sonde/SondeProcessor.h` und `plugin/CMakeLists.txt` erst für
+> P6 vorgesehen. Produktziel und aktueller Implementierungsstand nicht
+> vermischen. `EqCop*` / „EQ-Copilot" / `Eqcp` bleiben bis NAK-30 Legacy.
 
 Vier Threads im Plugin: **Audiothread** (`processBlock`) · **Worker** (besitzt
 die AnalyseEngine) · **Pipe-Thread** (besitzt den PipeClient) · Message-Thread

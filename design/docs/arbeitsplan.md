@@ -12,8 +12,10 @@ und die betroffene Implementierung.
 - Designvertrag, Formfaktor, Informationsstruktur, Wireframes, Skizzen und
   Graybox waren frühe Projektschritte und sind abgeschlossen. Sie werden im
   laufenden Rework nicht als Phasen oder Gates wiederholt.
-- Nakama hat zwei Apps und drei aktuelle Flächen: Gen Seite 1, Gen Seite 2
-  und Probeeq. Suna ist in Probeeq aufgegangen.
+- Nakama hat zwei Apps und drei aktuelle Flächen: zwei Gen-Oberflächen und
+  Probeeq. Overview und EQ-Zentrale/EQ Center sind nur Arbeitsnamen. Probeeq
+  vereint passive Messsonde und zugeschalteten, von Gen ferngesteuerten
+  Bus-EQ; Suna ist als App-Name durch Probeeq ersetzt.
 - Die aktuelle visuelle Wahrheit in progress sind ausschließlich die drei
   Bilder unter `../assets/rework-basis-2026-08-25/` gemäß
   `../abnahmen/2026-08-25-rework-referenz-drei-designs.md`.

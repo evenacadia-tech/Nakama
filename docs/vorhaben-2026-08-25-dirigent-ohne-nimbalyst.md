@@ -1,7 +1,7 @@
 # Vorhaben 25.08.2026 — schlanker Dirigent ohne Nimbalyst
 
-Status: **Planungsfassung 5; Migration noch nicht begonnen, Stufe A teilweise
-belegt**.
+Status: **Stufe B umgesetzt und grundlegend belegt; Stufe A bleibt teilweise
+belegt, Stufe C und D sind nicht begonnen**.
 Dieser Plan ersetzt die technisch belastbare, aber zu komplex geratene Fassung
 vom selben Tag. Die fünfte Fassung übernimmt den lokalen Machbarkeitscheck vom
 26.08.2026: Fables Permission-Modus ist ausdrücklich gesetzt, Worker und Codex
@@ -11,10 +11,15 @@ sie den in Stufe A belegten Codex-Aufruf: Review-Zielschalter und eigener
 Review-Prompt sind gegenseitig exklusiv, und bei ignorierter User-Konfiguration
 muss das native Windows-Sandbox-Backend ausdrücklich gesetzt werden.
 
-Arbeitsgrenze vom 26.08.2026: Dieses Dokument wird zuerst verbessert und
-abgenommen. Bis der User die Umsetzung ausdrücklich startet, werden daraus
-keine Prozesse gestartet oder beendet, keine Hooks umgestellt und keine
-Altlasten entfernt.
+Umsetzungsfreigabe vom 26.08.2026, User-Wort:
+
+> *„ja aber du kannst doch schonmal alles bauen? das restkontingent reicht um
+> mit fable zu testen ob es funktioniert. es muss ja kein durchlauf sein,
+> sondern die die grundfunktionen?“*
+
+Das gibt Stufe B und einen schmalen Fable-Grundtest ausdrücklich frei. Es ist
+keine Abnahme der noch offenen Stufe-A-Fälle und keine Freigabe für das echte
+Ticket, den Opus-Worker, Kontrollloops oder den Codex-Review aus Stufe C.
 
 Stand 26.08.2026, später am Tag: Der User hat Nimbalyst samt Matrix-Bridge
 selbst vollständig deinstalliert — User-Wort: *„nimbalyst ist vollständig
@@ -25,8 +30,10 @@ Skill-Umbau aus 6.2 (Dirigent und Fragen) wurde vorgezogen, weil beide Skills
 sonst tote Werkzeuge aufriefen, ebenso der Matrix-Block in `CLAUDE.md`. Der
 alte Weg steht **nicht mehr als Rückfall** zur Verfügung: scheitert Stufe C,
 bleibt nur der `git revert` des Umstellungscommits, kein funktionierender
-Altpfad. Alles Übrige (Hooks, `NEXT-SESSION.md`, Nimbalyst-Laufartefakte im
-Repo) wartet weiter auf den ausdrücklichen Start der Umsetzung.
+Altpfad. Die Hook-Konfiguration wurde inzwischen in Stufe B umgestellt.
+`NEXT-SESSION.md`, Nimbalyst-Laufartefakte im Repo und historische Protokolle
+blieben dabei wie vorgeschrieben unangetastet und warten auf Stufe D nach dem
+Ende-zu-Ende-Beweis.
 
 ## 1. Leitentscheidung
 
@@ -1040,6 +1047,12 @@ Scheitert diese Stufe, endet das Vorhaben ohne Migration. Es wird kein
 Produkt-Hilfsskript gebaut, kein Cockpitwert erfunden und keine fehlende
 Fähigkeit mit einem neuen Dienst nachgebaut.
 
+Die spätere ausdrückliche Umsetzungsfreigabe oben ersetzt diese Haltfolge nur
+für Stufe B und den eng begrenzten Grundtest. Sie erklärt Stufe A nicht
+rückwirkend für bestanden; Überlagerungen, alle Teilnehmerzustände,
+Monitor/Loops, die echte Remote-Frage und der vollständige Codex-Pfad bleiben
+offene Stufe-A-Beweise.
+
 ### B — Aktiven Kontext reversibel umstellen
 
 In einem eigenen, expliziten Commit:
@@ -1071,6 +1084,37 @@ Absatz in den aktiven Dateien steuert eine heutige Entscheidung oder einen
 heutigen Handgriff. Der Commit wird gepusht, damit die Rückkehr ein normaler
 `git revert` bleibt. Die bereits deinstallierten Matrix-/Nimbalyst-Prozesse
 werden dadurch nicht wiederhergestellt.
+
+**Umgesetzt und in derselben Session belegt am 26.08.2026:**
+
+- `f3bc7e2` baut Cockpit, Leitungsnamen, Validator, Settings, Skills, Routen
+  und die verkleinerte Hook-Konfiguration; `2f857dd` ist der daraus frisch
+  gerechnete Planstand. Beide Commits wurden auf `origin/master` gepusht.
+- Der Helper besitzt genau die drei Modi `-StatusLine`, `-WatchWorker` und
+  `-Plan`. PowerShell-7-Parser, JSON-/Hook-Invarianten, Leitungsnamen aller 36
+  Pakete, Cache-Takte, der beendende Worker-Beobachter und der exakte
+  StatusLine-Aufruf über Git Bash bestanden die gezielten Prüfungen.
+- Die vollständige Planansicht zeigte alle 36 Pakete in derselben Reihenfolge:
+  11 fertig und 25 nicht fertig; die sechs gebauten, noch nicht abgenommenen
+  Pakete bleiben dabei wie vorgeschrieben offen. Ein unbekannter aktueller
+  Schritt wurde mit Exitcode 5 abgewiesen.
+- Die echte Sitzung `nakama-dirigent-stage-b-smoke` startete mit Claude Code
+  2.1.246 als Fable 5/xhigh im Auto-Modus und mit aktiver Remote-Control-
+  Verbindung. Die native StatusLine meldete das echte Fenster von 1.000.000
+  Token, Claude 5 Stunden 0–1 %, Claude Woche 95 % und Codex Woche 28 % sowie
+  11/36 fertig und 25 offen. Die Quotenwarnung erschien ehrlich als
+  `EINGRIFF NÖTIG`, hielt den ausdrücklich freigegebenen Lesetest aber nicht
+  vorzeitig an.
+- Der reale Test deckte eine fehlende `cat`-Erkennung beim Plananker auf.
+  `3b20248` ergänzt genau diese Leseform; das echte Sitzungstranskript
+  ergab danach `PlanRead=true` und `HeadRead=true`. Der Folgefix wurde
+  ebenfalls gepusht.
+- Der Fable-Test las nur Plan, HEAD, Status und Planansicht und änderte keine
+  Repository-Datei. Parallel entstandene fremde Änderungen unter `CLAUDE.md`
+  und `design/` wurden nicht angefasst und gehören nicht zu diesem Beleg.
+
+Das ist der geforderte Grundfunktionstest, kein Stufe-C-Durchlauf: Es liefen
+kein Opus-Worker, kein Monitor, kein Kontrollloop und kein Codex-Ticketreview.
 
 ### C — Ein echtes Ticket Ende-zu-Ende führen
 

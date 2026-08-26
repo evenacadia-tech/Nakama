@@ -10,11 +10,21 @@ description: Führt den Nakama-Bauplan Ticket für Ticket als echte Fable-Sessio
 Der Dirigent ist eine echte interaktive Fable-Session:
 
 ```powershell
-claude --model fable --effort xhigh --permission-mode auto --name nakama-dirigent --remote-control
+pwsh -NoProfile -File tools/dirigent/start-dirigent.ps1
 ```
 
-Terminal und Remote Control sind dieselbe Sitzung; dort erscheinen auch jede
-Meldung und jede wartende Frage. Die projektweite native `statusLine` startet
+Der Starter öffnet das lokale Windows-Terminal-Profil
+`Nakama · Champagne Night`, zeigt `tools/dirigent/logo.ps1` und ruft Claude mit
+Fable/xhigh, Auto-Modus und `/dirigent` auf. Fehlt das Profil oder scheitert die
+Terminal-Aktivierung, öffnet er ein normales lokales PowerShell-Fenster. Remote
+Control bleibt aus; das lokale Terminal ist der einzige Bedien- und Meldekanal.
+Der direkte Ersatzaufruf lautet:
+
+```powershell
+claude --model fable --effort xhigh --permission-mode auto --name nakama-dirigent /dirigent
+```
+
+Die projektweite native `statusLine` startet
 `tools/dirigent/cockpit.ps1 -StatusLine`. Vor dem ersten Worker müssen dort
 Fable/xhigh, das echte Kontextfenster, Claude- und Codex-Kontingente sowie der
 frische Planstand ehrlich lesbar sein. `nicht verfügbar`, ein unbekannter
@@ -252,7 +262,7 @@ verboten.
 
 Vor jedem Halt: Worker gestoppt, Loop gelöscht, Stand ins Manifest. Jeder Halt
 endet als klare, wartende Frage oder Statusmeldung in der Sitzung selbst — so
-erreicht er den User über Remote Control. Einen zweiten Kanal gibt es nicht.
+erreicht er den User im lokalen Terminal. Einen zweiten Kanal gibt es nicht.
 
 ## 5. Kontexthaushalt
 
@@ -285,8 +295,8 @@ Nach Absturz oder Neustart: Fortsetzung über den Picker oder deterministisch
 über die Session-ID; beide Wege setzen den Rollenvertrag erneut ausdrücklich:
 
 ```powershell
-claude --resume nakama-dirigent --model fable --effort xhigh --permission-mode auto --remote-control
-claude --resume <session-id> --model fable --effort xhigh --permission-mode auto --remote-control
+claude --resume nakama-dirigent --model fable --effort xhigh --permission-mode auto
+claude --resume <session-id> --model fable --effort xhigh --permission-mode auto
 ```
 
 Die fortgesetzte Sitzung beginnt mit `claude agents --json`, `CronList`,

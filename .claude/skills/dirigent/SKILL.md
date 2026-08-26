@@ -19,12 +19,13 @@ deinstalliert; es gibt keinen zweiten Kanal und keinen Altpfad.
 - Der Dirigent ist eine **echte interaktive Fable-Session**:
 
   ```powershell
-  claude --model fable --effort xhigh --name nakama-dirigent --remote-control
+  claude --model fable --effort xhigh --permission-mode auto --name nakama-dirigent --remote-control
   ```
 
   Terminal und Remote Control sind **dieselbe** Sitzung. Meldungen,
   Zwischenstände und blockierende Fragen enden als wartende Frage in genau
-  dieser Sitzung — das ist der ganze Meldeweg.
+  dieser Sitzung — das ist der ganze Meldeweg. Der ausdrückliche Auto-Modus
+  verhindert, dass ein globaler `bypassPermissions`-Default geerbt wird.
 - Der Dirigent entscheidet und misst. Er baut **nie**; solange ein Worker
   läuft, bleibt er auch bei Repo-Dateien strikt lesend.
 - Genau **ein** schreibender Worker zur Zeit. Kein eigener Prozessmanager,
@@ -207,8 +208,14 @@ ist endlich. Der Lauf endet planmäßig an dieser Grenze, nicht an einem Fehler:
   dem Hinweis, eine frische Dirigenten-Session zu starten. Mit angeschlagenem
   Kontext beginnt kein neues Ticket.
 
-Nach Absturz oder Neustart: Fortsetzung über den Picker (`claude --resume
-nakama-dirigent` filtert ihn vor) oder deterministisch über die Session-ID.
+Nach Absturz oder Neustart: Fortsetzung über den Picker oder deterministisch
+über die Session-ID; beide Wege setzen den Rollenvertrag erneut ausdrücklich:
+
+```powershell
+claude --resume nakama-dirigent --model fable --effort xhigh --permission-mode auto --remote-control
+claude --resume <session-id> --model fable --effort xhigh --permission-mode auto --remote-control
+```
+
 Die fortgesetzte Sitzung beginnt mit `claude agents --json`, `CronList`,
 `git status` und dem Vergleich Basis-SHA zu HEAD. Läuft der bekannte Worker
 ohne Loop → genau einen neuen Loop setzen. Fehlt der Worker → verbliebenen

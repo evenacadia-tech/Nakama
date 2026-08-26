@@ -1,7 +1,11 @@
 # Vorhaben 25.08.2026 — schlanker Dirigent ohne Nimbalyst
 
-Status: **Planungsfassung 3, noch nicht umgesetzt**. Dieser Plan ersetzt die
-technisch belastbare, aber zu komplex geratene Fassung vom selben Tag.
+Status: **Planungsfassung 4, noch nicht umgesetzt**. Dieser Plan ersetzt die
+technisch belastbare, aber zu komplex geratene Fassung vom selben Tag. Die
+vierte Fassung übernimmt den lokalen Machbarkeitscheck vom 26.08.2026:
+Fables Permission-Modus ist ausdrücklich gesetzt, Worker und Codex werden nur
+mit ihrem belegbaren Startvertrag bezeichnet, und die native Sichtgrenze der
+Claude-`statusLine` ist Teil der Abnahme.
 
 Arbeitsgrenze vom 26.08.2026: Dieses Dokument wird zuerst verbessert und
 abgenommen. Bis der User die Umsetzung ausdrücklich startet, werden daraus
@@ -64,8 +68,9 @@ Für die sichtbare Bedienung gilt zusätzlich das User-Wort:
 > wurde und wiewviel noch offen ist. das heißt eine übersichtliche liste anfang
 > bis ende , in welcher deutlich ist was fertig und was noch zu erledigen ist.“*
 
-Daraus folgt ein **dauerhaft sichtbares Dirigenten-Cockpit im bestehenden
-Terminal**. Es zeigt nur Führungsinformationen: beteiligte Sitzungen, Fables
+Daraus folgt ein **im normalen TUI-Betrieb dauerhaft sichtbares
+Dirigenten-Cockpit im bestehenden Terminal**. Es zeigt nur
+Führungsinformationen: beteiligte Sitzungen, Fables
 Kontext, verfügbare Kontingente, Aufsichtsstufe, Gesamtfortschritt und eine
 offene User-Frage. Technische Rohdaten, Logausgaben und lange Begründungen
 bleiben dahinter. Fable wird bei eingriffsbedürftigen Ereignissen sofort
@@ -209,21 +214,25 @@ Der Dirigent führt kein zweites fortlaufendes Projektprotokoll. Das bestehende
 Pflichtartefakt fortgeschrieben. Seine verwertbare Wahrheit steht bereits in
 Commits, Manifesten und Planstand.
 
-### 4.1 Das dauerhaft sichtbare Dirigenten-Cockpit
+### 4.1 Das im normalen TUI dauerhaft sichtbare Dirigenten-Cockpit
 
-Das Cockpit sitzt als mehrzeilige native Claude-`statusLine` dauerhaft am
-unteren Rand des Dirigententerminals. Es ist eine **Projektleitungsansicht**,
-keine Technik-Konsole. Sein Normalzustand passt ohne Scrollen in ungefähr zehn
-Zeilen. Die folgenden Zahlen sind nur ein Layoutbeispiel, kein behaupteter
-aktueller Projektstand:
+Das Cockpit sitzt als mehrzeilige native Claude-`statusLine` im normalen
+TUI-Betrieb dauerhaft am unteren Rand des Dirigententerminals. Native
+Claude-Überlagerungen für Hilfe, Autovervollständigung und Permission-Dialoge
+blenden die `statusLine` vorübergehend aus; nach dem Schließen erscheint sie
+ohne Handgriff wieder. Diese dokumentierte Werkzeuggrenze ist kein
+Cockpitausfall und wird in Stufe A ausdrücklich vorgeführt. Das Cockpit ist
+eine **Projektleitungsansicht**, keine Technik-Konsole. Sein Normalzustand
+passt ohne Scrollen in ungefähr zehn Zeilen. Die folgenden Zahlen sind nur ein
+Layoutbeispiel, kein behaupteter aktueller Projektstand:
 
 ```text
 NAKAMA DIRIGENT                              ✓ ALLES IN SPUR
 AUFSICHT ENG · nächste Kontrolle 04:12 · wichtige Events sofort
 
-Fable       Dirigent · xhigh · aktiv        Kontext ✓ Gesamtplan + Ticket
-Claude Opus Bauer · max · arbeitet          Kontext ✓ aktueller Auftrag
-Codex Sol   Prüfer · xhigh · wartet          Kontext ✓ voller Prüfbereich
+Fable       Dirigent · Fable/xhigh · aktiv  Kontext ✓ Gesamtplan + Ticket
+Claude      Bauer · Start Opus/max · arbeitet    Kontext ✓ aktueller Auftrag
+Codex       Prüfer · Start Sol/xhigh · wartet    Kontext ✓ voller Prüfbereich
 
 FABLE-KONTEXT  214k / 1.000k  [██░░░░░░░░] 21 %
 CLAUDE          5 Stunden 27 % verbraucht · Woche 44 %
@@ -237,6 +246,15 @@ Dirigentenlauf gehörenden Sitzungen — arbeitend, wartend, eingabebedürftig o
 seit dem letzten Ticketabschluss beendet. Alte, nicht beteiligte Sitzungen und
 technische IDs bleiben verborgen. Nach der Ticketbereinigung verschwinden die
 beendeten Teilnehmer.
+
+Nur Fables eigene Zeile bezeichnet Modell und Effort als tatsächlich laufende
+Werte, weil Claude sie der `statusLine` direkt meldet. Für Worker und Codex
+zeigt `Start <Modell>/<Effort>` ausschließlich den belegbaren Startvertrag:
+den ausdrücklichen CLI-Aufruf, seine erfolgreiche Annahme und die zugehörige
+Session- beziehungsweise Thread-ID. `claude agents --json` liefert für
+Hintergrundsitzungen Zustand und Name, aber kein tatsächliches Modell und
+keinen Effort; das Cockpit erfindet diese Felder deshalb nicht. Fehlt der
+Startbeleg, steht `Start ?/?` und die Spurlage ist nicht grün.
 
 Die oberste Aussage hat genau drei Zustände:
 
@@ -341,13 +359,19 @@ Antwort nicht aus, stellt Fable genau eine präzisierte Folgefrage.
 
 Der Renderer liest ausschließlich:
 
-- das von Claudes `statusLine` gelieferte JSON für Fable-Modell, Effort,
+- das von Claudes `statusLine` gelieferte JSON für Fables tatsächlich laufendes
+  Modell und Effort,
   tatsächliches Kontextfenster, Kontextverbrauch sowie Claude-5-Stunden- und
   Claude-Wochenkontingent,
-- `claude agents --json` und den werkzeugeigenen Sitzungskontext für
-  beteiligte Claude-Sitzungen und ihre Zustände,
-- den aktuellen Codex-JSONL-Strom beziehungsweise die offizielle
-  `account/rateLimits/read`-Antwort für das Codex-Wochenkontingent,
+- `claude agents --json` für Identität, Name und Zustand beteiligter
+  Claude-Sitzungen; Modell und Effort werden daraus ausdrücklich nicht
+  behauptet,
+- den im werkzeugeigenen Fable-Sitzungsverlauf sichtbaren, ausdrücklich
+  gesetzten CLI-Aufruf sowie Session-/Thread-ID für den Startvertrag von
+  Worker und Codex,
+- den aktuellen Codex-JSONL-Strom für Thread-ID und Laufzustand sowie die
+  offizielle `account/rateLimits/read`-Antwort für das
+  Codex-Wochenkontingent,
 - die kanonischen Plan- und Beweisquellen für Fortschritt und Arbeitsanker.
 
 Das Kontextmaß zeigt `verbraucht / tatsächlich gemeldete Fenstergröße` auf
@@ -391,11 +415,15 @@ Unterbefehl geparst. Der Preflight muss außerdem belegen, dass
   Effort-Stufe,
   Kontextverbrauch, 5-Stunden- und Wochenkontingent ohne Schätzung liefert und
   auf eine Statusänderung sichtbar aktualisiert,
-- das Codex-Wochenkontingent aus dem aktuellen JSONL-Ereignis oder über
-  `account/rateLimits/read` lesbar ist; die Anzeige eines absichtlich
+- die `statusLine` bei Hilfe, Autovervollständigung und Permission-Dialogen
+  nativ vorübergehend verschwindet und danach selbständig wieder erscheint,
+- das Codex-Wochenkontingent über `account/rateLimits/read` lesbar ist; die
+  Anzeige eines absichtlich
   unterbrochenen Datenwegs ehrlich auf `nicht verfügbar` fällt,
 - die Cockpit-Sitzungsliste einen gestarteten, wartenden,
-  eingabebedürftigen und beendeten Testteilnehmer jeweils richtig darstellt,
+  eingabebedürftigen und beendeten Testteilnehmer jeweils richtig darstellt
+  und für Worker/Codex nur den belegten Startvertrag statt eines nicht
+  gemeldeten tatsächlichen Modells oder Efforts ausgibt,
 - ein sessiongebundener Zustandsbeobachter zusammen mit Claudes nativem
   `Monitor` eine idle Fable-Sitzung bei einem bedeutsamen Testereignis sofort
   aufweckt und nach dem Endereignis vollständig endet,
@@ -494,12 +522,15 @@ auf ein Risiko, einen Befund oder eine technische Abweichung reagiert.
 Der User startet direkt eine echte Fable-Session:
 
 ```powershell
-claude --model fable --effort xhigh --name nakama-dirigent --remote-control
+claude --model fable --effort xhigh --permission-mode auto --name nakama-dirigent --remote-control
 ```
 
 Terminal und Remote Control bedienen dieselbe Session. Es gibt keinen
 zusätzlichen Nachrichtenkanal. Der von Claude selbst bei Bedarf gestartete
-Hintergrund-Supervisor ist Werkzeugmechanik, kein Nakama-Dienst.
+Hintergrund-Supervisor ist Werkzeugmechanik, kein Nakama-Dienst. Der
+Permission-Modus ist ebenso wie Modell und Effort ausdrücklich gesetzt; ein
+globaler Default — insbesondere `bypassPermissions` — darf den Rollenvertrag
+nicht verändern.
 
 Die in Stufe B gesetzte native `statusLine` startet mit dieser Sitzung das
 Cockpit. Bevor Fable einen Worker startet, müssen dort Fable-Modell und
@@ -517,8 +548,8 @@ Picker, vorgefiltert auf den Suchbegriff. Der Name `nakama-dirigent` macht die
 Sitzung dort sofort auffindbar; ohne Klick geht es nur über die Session-ID:
 
 ```powershell
-claude --resume nakama-dirigent   # Picker, vorgefiltert — ein Klick des Users
-claude --resume <session-id> --model fable --effort xhigh --remote-control
+claude --resume nakama-dirigent --model fable --effort xhigh --permission-mode auto --remote-control   # Picker, vorgefiltert
+claude --resume <session-id> --model fable --effort xhigh --permission-mode auto --remote-control
 ```
 
 Beim bewussten Beenden stoppt Fable zuerst einen laufenden Worker, beendet den
@@ -704,8 +735,11 @@ unbrauchbar.
 
 Während dieses Vordergrundlaufs sieht Fable den JSONL-Strom fortlaufend; das
 ist eine engere Aufsicht als jedes Kontrollintervall. Das Cockpit führt den
-Codex-Thread mit Modell, tatsächlichem Effort, Rolle und Zustand und übernimmt
-aus dessen `token_count`-Ereignis das aktuelle Wochenkontingent. Reißt der
+Codex-Thread mit Rolle, Zustand und dem belegten Startvertrag für Modell und
+Effort. Der ausdrückliche Vordergrundaufruf belegt die Anforderung, der
+erfolgreiche JSONL-Start mit Thread-ID ihre Annahme; ein vom Anbieter nicht
+gemeldetes tatsächlich laufendes Backend-Modell wird nicht behauptet. Das
+Wochenkontingent kommt ausschließlich aus `account/rateLimits/read`. Reißt der
 Strom ab, obwohl der Prozess weiterläuft, gilt das als sofortiges
 Eingriffsereignis. Ein losgelöster Codex-Prozess ohne sichtbaren Strom ist in
 diesem Ablauf nicht zulässig.
@@ -950,10 +984,17 @@ Der Beweis umfasst mindestens:
 - dieselbe Fable-Sitzung in Terminal und Remote Control, die tatsächlich
   aktive Effort-Stufe `xhigh` und ein gemeldetes Kontextfenster von
   `1.000.000` Token,
+- Fable im ausdrücklich gesetzten Auto-Modus, unabhängig von einem globalen
+  Permission-Default,
 - echte Claude-5-Stunden-/Wochenwerte und den echten Codex-Wochenwert samt
   ehrlichem Ausfallzustand,
 - eine dynamische Liste der beteiligten Testsitzungen mit richtigem Zustand
-  und unbestätigtem Kontext nach einem simulierten Ankerfehler,
+  und unbestätigtem Kontext nach einem simulierten Ankerfehler; Worker und
+  Codex erscheinen dabei mit `Start <Modell>/<Effort>`, nicht als angeblich
+  tatsächlich ausgelesene Werte,
+- das vorübergehende native Ausblenden des Cockpits in Hilfe,
+  Autovervollständigung und Permission-Dialog sowie seine selbständige
+  Rückkehr danach,
 - eine sofortige Monitor-Wiederaufnahme der idle Fable-Sitzung nach einem
   bedeutsamen Testereignis sowie das vollständige Ende des Beobachters,
 - `/loop 1m` als Weckbeweis und anschließend alle drei realen Intervalle;
@@ -1014,9 +1055,10 @@ Wiederreview.
 
 Der Beweis muss zeigen:
 
-- das Cockpit bleibt während des gesamten Laufs sichtbar und zeigt Fable,
-  Worker und Codex mit tatsächlichem Modell, Effort, Rolle, Zustand und
-  ehrlichem Kontextanker,
+- das Cockpit bleibt im normalen TUI-Betrieb während des gesamten Laufs
+  sichtbar, kehrt nach nativen Überlagerungen selbständig zurück und zeigt
+  Fables tatsächlich gemeldetes Modell/Effort sowie Worker und Codex mit
+  belegtem Startvertrag, Rolle, Zustand und ehrlichem Kontextanker,
 - Fables Kontextmaß läuft gegen das echte 1-Million-Token-Fenster; Claude- und
   Codex-Kontingente sind aktuell oder sichtbar als nicht verfügbar markiert,
 - der Plan nennt vor und nach dem Ticket dieselbe vollständige Paketmenge; nur
@@ -1070,11 +1112,14 @@ Das Vorhaben ist fertig, wenn:
   deterministisch über ihre Session-ID fortgesetzt werden kann und vor jeder
   Fortsetzung Worker, Beobachter, Kontrollloop, Git-Status, HEAD und
   Arbeitsanker neu abgleicht,
-- das dauerhaft sichtbare Cockpit in seiner Grundansicht ohne Technikprotokoll
-  eindeutig `ALLES IN SPUR`, `EINGRIFF NÖTIG` oder `ENTSCHEIDUNG WARTET` zeigt,
+- das im normalen TUI-Betrieb dauerhaft sichtbare Cockpit nach nativen
+  Überlagerungen selbständig zurückkehrt und in seiner Grundansicht ohne
+  Technikprotokoll eindeutig `ALLES IN SPUR`, `EINGRIFF NÖTIG` oder
+  `ENTSCHEIDUNG WARTET` zeigt,
 - alle zum Lauf gehörenden Fable-, Claude- und Codex-Sitzungen dynamisch mit
-  tatsächlichem Modell, Effort, Rolle, Zustand und ehrlichem Kontextanker
-  erscheinen; ein unbekannter Anker nie als grün gilt,
+  Rolle, Zustand und ehrlichem Kontextanker erscheinen; nur Fable zeigt
+  tatsächlich gemeldetes Modell/Effort, Worker und Codex den belegten
+  Startvertrag; ein unbekannter Wert oder Anker gilt nie als grün,
 - Fables tatsächlicher Kontextverbrauch gegen ein belegtes
   1-Million-Token-Fenster sowie Claude-5-Stunden-/Wochen- und
   Codex-Wochenkontingent sichtbar sind; fehlende oder alte Werte werden
@@ -1097,7 +1142,8 @@ Das Vorhaben ist fertig, wenn:
   beim User bleiben,
 - Fable nachweislich mit `xhigh`, Opus mit `max` und jeder Sol-Lauf mit dem von
   Fable ausdrücklich gewählten, von der CLI unterstützten `high` oder `xhigh`
-  gestartet und im Ticketmanifest genannt wurde,
+  gestartet und im Ticketmanifest genannt wurde; Fable läuft dabei
+  ausdrücklich im Auto-Modus und erbt nie `bypassPermissions`,
 - jeder Codex-Review mit dem ursprünglichen Basis-SHA, dem gemessenen HEAD und
   temporär gesichertem JSONL-Stream lief; kein Aufruf hängt für seine
   Korrektheit von `--strict-config` ab,
@@ -1157,15 +1203,18 @@ unterstützt `fable`, `--effort`, `--bg`, `--name`, `--remote-control`,
 Konto-/Modellverfügbarkeit bleibt bewusst Beweis von Stufe A. `--resume` mit
 einem Nicht-ID-Wert öffnet laut CLI-Hilfe nur den interaktiven Picker mit
 Suchbegriff — deterministische Fortsetzung braucht die Session-ID (in 5.2
-eingearbeitet). Codex CLI `0.144.6` akzeptiert die geplanten
+eingearbeitet). Der auf diesem Rechner gesetzte globale Permission-Default ist
+`bypassPermissions`; deshalb setzen Start und Resume des Dirigenten den
+Auto-Modus ausdrücklich. `claude agents --json` meldet Zustand und Namen, aber
+kein Modell oder Effort; die Cockpit-Texte wurden deshalb auf belegbare
+Startverträge begrenzt. Codex CLI `0.149.1` akzeptiert die geplanten
 `exec review`-/`exec resume`-Formen (`exec resume` nimmt UUID oder
 Thread-Namen), `--ignore-user-config`, `--base`, `-a never` und Sandboxes;
 `--strict-config` ist inzwischen verfügbar, bleibt für diesen Ablauf aber
 unnötig; Codex-Effort `max` ist weiterhin nicht Teil des geplanten Vertrags.
 Diese Versionszeile ist nur Preflight-Snapshot und wird vor einer späteren
 Umsetzung neu gemessen.
-Das am selben Tag lokal aus `codex app-server generate-json-schema` erzeugte
-Protokoll enthält außerdem `account/rateLimits/read`,
-`account/rateLimits/updated`, `usedPercent`, `resetsAt` und
-`windowDurationMins`; Stufe A belegt vor Verwendung erneut, dass das
-installierte Protokoll diese Felder wirklich liefert.
+Das installierte App-Server-Protokoll lieferte am selben Tag über
+`account/rateLimits/read` tatsächlich `usedPercent`, `resetsAt` und ein
+Wochenfenster mit `windowDurationMins = 10080`; Stufe A belegt vor Verwendung
+erneut, dass diese Quelle weiterhin verfügbar ist.

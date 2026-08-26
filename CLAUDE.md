@@ -103,7 +103,7 @@ vor.
 - `eq-copilot/install/`: manifestgetriebener Installer und Rückweg.
 - `broker/`: eigenständiger Rust-Broker `eqcop-broker.exe`.
 - `tools/beweise.ps1`: kanonischer lokaler Beweis-Runner.
-- `design/`: Figma-Übersetzung, Prototyp, Abnahmen und Designregeln.
+- `design/`: Übersetzung der aktuellen User-Vorgabe, Prototyp, Abnahmen und Designregeln.
 - `wissen/`: eingeordnetes externes Wissen und visuelle Belege; keine
   parallelen Produktentscheide und keine Roh-PDFs.
 - `docs/beweise/`: rohe, ticketspezifische Belegmanifeste.
@@ -157,9 +157,11 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
 
 1. Die drei aktuellen Rework-Bilder und ihren bindenden Abnahmetext lesen;
    sie bestimmen Look und Identität in progress.
-2. Strukturfragen zuerst als Skizze, bei Bedarf als 760×430-Graybox klären;
-   erst danach in Figma ausarbeiten
-   (`design/abnahmen/2026-08-25-skizzen-vor-figma.md`).
+2. Die grundlegende Struktur-, Skizzen- und Graybox-Phase ist abgeschlossen;
+   sie war der erste Projektschritt und wird nicht als laufendes Gate
+   wiederholt (`design/abnahmen/2026-08-25-skizzen-vor-figma.md`, Nachtrag
+   26.08.2026). Nur konkrete Lücken oder Widersprüche der aktuellen Arbeit
+   werden dem User einzeln vorgelegt.
 3. `design/` übersetzt die Vorgabe in funktionierende Blätter und
    dokumentiert Zustände, Größen und Grenzfälle. User-Wortlaut kommt nach
    `design/abnahmen/`.

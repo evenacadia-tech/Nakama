@@ -1,8 +1,8 @@
-# 2026-08-25 — Skizzen vor Figma
+# 2026-08-25 — Skizzen vor Figma (abgeschlossener Anfangsschritt)
 
-## Arbeitsentscheid
+## Historischer Arbeitsentscheid
 
-Der User will Struktur und Bedienabläufe künftig zuerst als einfache
+Am 25.08. wollte der User Struktur und Bedienabläufe zunächst als einfache
 Skizzen oder Entwürfe klären, bevor Zeit und Figma-Tokens in ausgearbeitete
 UI fließen:
 
@@ -13,17 +13,16 @@ UI fließen:
 Die vorgeschlagene Reihenfolge **Skizze → Graybox-Beweis → Figma** wurde vom
 User mit „ok“ bestätigt.
 
-## Geltung
+## Nachtrag 26.08.2026 — heute maßgebliche Geltung
 
-1. **Skizze:** Excalidraw oder ein vergleichbar grobes Wireframe klärt
-   Fokus, Reihenfolge, Ownership, sichtbare/ausblendbare Elemente und
-   Übergänge. Keine Farben, Materialien oder Pixelpolitur entscheiden.
-2. **Graybox-Beweis:** Nur wenn Interaktion oder Platzbedarf nicht aus der
-   Skizze hervorgeht, wird eine einfache klickbare Fläche im festen
-   760×430-Rahmen gebaut. Sie beweist Verhalten, nicht Look.
-3. **Figma:** Erst nach dem Struktururteil wird die akzeptierte Lösung in die
-   visuelle Sprache der drei aktuellen Rework-Referenzen übertragen.
+Der User stellt klar:
 
-Die drei Referenzbilder bleiben die visuelle Wahrheit in progress. Diese
-Arbeitsreihenfolge ändert ihre Gestaltung nicht; sie verhindert nur, dass
-offene UX-Fragen erst während der visuellen Ausarbeitung entdeckt werden.
+> „ich bin projektleiter und natürlich gebe ich visuelle richtung vor,
+> generell. aber das mit graybox usw. ist längst gemacht und war der erste
+> schritt ganz am anfang“
+
+Damit beschreibt die frühere Reihenfolge ausschließlich den bereits
+abgeschlossenen ersten Projektabschnitt. Sie ist keine aktuelle
+Arbeitsanweisung und kein wiederkehrendes Gate. Der laufende Rework darf
+dadurch nicht an den Anfang zurückgesetzt werden. Der User ist Projektleiter
+und gibt die visuelle Richtung grundsätzlich vor.

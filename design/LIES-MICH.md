@@ -76,34 +76,37 @@ Die Projektquellen — vollständig, nichts von außen dazuholen:
   `abnahmen/2026-08-25-rework-referenz-drei-designs.md`.
 - **WAS** jede Oberfläche zeigen muss: `docs/oberflaechen-spezifikation.md`
 - **WAS DIE TECHNIK VERLANGT** (Spielregeln der EQ-Zentrale, für die
-  Figma-Arbeit an Gen Seite 1+2): `docs/ui-spielregeln-eq-zentrale.md`
+  Arbeit an Gen Seite 1+2): `docs/ui-spielregeln-eq-zentrale.md`
 - **WIE** gearbeitet wird (UX vor UI, Stufen 1–7, Schlusscheck):
   `docs/CLAUDE-UX-UI-ARBEITSKERN.md` — bei jeder Designaufgabe befolgen
 - **WAS SICHTBAR SEIN DARF**: `docs/DESIGN-GESETZE.md` — Progressive
   Disclosure, Shneiderman-Mantra, Overview+Detail / Focus+Context / Zoom,
   Aufmerksamkeitsgesetze. Beim Übersetzen der Prüfmaßstab für Zustände und
   Grenzfälle, die der Stand nicht zeigt.
-- **IN WELCHER REIHENFOLGE**: `docs/arbeitsplan.md` — Phase 0 (Designvertrag)
-  ist seit 2026-08-21 erledigt: `abnahmen/2026-08-21-designvertrag.md`.
-  Der nächste Schritt steht dort.
+- **AKTUELLER DESIGN-ARBEITSWEG**: `docs/arbeitsplan.md` — die frühen
+  Discovery-, Wireframe- und Graybox-Phasen sind abgeschlossen. Den nächsten
+  Produktauftrag bestimmt `../docs/PLAN-STAND.md`, nicht eine alte
+  Design-Phasennummer.
 - **Nachschlagewerk** (Quellenkritik, Wahrnehmung, Licht/Material):
   `docs/UX-UI-WISSENSBASIS-FUER-CLAUDE.md`
 - **Werkzeug-Pläne:** `docs/sondenplan.md`, `docs/werkzeugplan.md`;
   lebende Blätter und Messbank in `werkzeug/` (`werkzeug/LIES-MICH.md`,
   `werkzeug/PRUEFLISTE.md`).
 
-Die Gestaltung kommt derzeit aus den drei aktuellen Rework-Bildern. Offen
-ist, was diese Bilder nicht zeigen — und das wird zuerst als Skizze, bei
-Bedarf als Graybox und erst danach in Figma mit dem User geklärt
-(`abnahmen/2026-08-25-skizzen-vor-figma.md`).
+Die Gestaltung kommt derzeit aus den drei aktuellen Rework-Bildern. Die
+grundlegende Struktur-, Skizzen- und Graybox-Phase war der erste Schritt am
+Projektanfang und ist abgeschlossen; sie ist kein wiederkehrendes Gate für
+die aktuelle Arbeit. Was die Bilder nicht zeigen, wird gezielt am konkreten
+Verhalten geklärt, ohne den Anfangsprozess neu zu starten
+(`abnahmen/2026-08-25-skizzen-vor-figma.md`, Nachtrag 26.08.).
 
-**Maßstab (User-Wort 2026-08-22): die Apps sehen in FL Studio exakt aus wie
-in Figma.** Zwischenbilder zählen nicht. Darum: **Statisches wird gebacken,
-Dynamisches gezeichnet** — Wortmarken (Shader), Schale/Glas/Kinn und
-Leuchtsäume als Figma-Exporte je Skalierungsstufe, Geist/Geist Mono
-eingebettet, der Prototyp mit denselben Assets wie das Plugin; Beweis ist der
-1:1-Pixelvergleich gegen den Export des Users
-(`abnahmen/2026-08-22-erfolgskriterium-exakt-wie-figma.md`).
+**Maßstab:** Die Umsetzung in FL Studio folgt der jeweils aktuellen
+User-Vorgabe und ihrer dokumentierten Abnahme. Seit dem 25.08.2026 sind dafür
+die drei Rework-Bilder maßgeblich; der frühere Figma-Stand und sein
+Pixelvergleich sind Verlauf
+(`abnahmen/2026-08-22-erfolgskriterium-exakt-wie-figma.md`). Beweisziel und
+Vergleichsgröße werden aus dem aktuellen Auftrag abgeleitet, nicht aus diesem
+historischen Kriterium.
 
 ## Harte Regeln (nicht verhandelbar)
 
@@ -116,25 +119,26 @@ eingebettet, der Prototyp mit denselben Assets wie das Plugin; Beweis ist der
 2. **Ein Schritt pro Runde.** Genau eine Frage öffnen, am lebenden Blatt
    zeigen, User-Urteil einholen, festhalten — dann die nächste. Keine
    Groß-Lieferungen mit zehn gleichzeitigen Entscheidungen.
-3. **Der User entscheidet die Richtung, du übersetzt.** Die Richtung steht
-   in Figma. 2–3 Varianten NEBENEINANDER zeigen gilt nur noch dort, wo
-   Figma eine Frage offenlässt (ein Zustand, den kein Stand zeigt; ein
-   Grenzfall, der das Bild sprengt). Nichts Grundsätzliches (Stilrichtung,
-   Metapher, Farbwelt) ohne sein Wort festlegen oder wieder aufmachen —
-   und nichts davon selbst vorschlagen. Fehlende oder unklare Vorstellung
-   wird per **`/interview <phase>`** erfragt — Pflicht zu Beginn jeder
-   Arbeitsplan-Phase, jederzeit zusätzlich einsetzbar. Offene Fragen an den
-   User stehen in `docs/plan/fragen.json` und werden mit dem Skill
+3. **Der User entscheidet als Projektleiter die visuelle Richtung, du
+   übersetzt.** Sie steht in den aktuellen drei Rework-Bildern und neueren
+   ausdrücklichen User-Entscheiden. Varianten sind nur dort nötig, wo diese
+   Vorgaben eine konkrete Frage offenlassen (ein Zustand, den kein Stand
+   zeigt; ein Grenzfall, der das Bild sprengt). Nichts Grundsätzliches
+   (Stilrichtung, Metapher, Farbwelt) ohne sein Wort festlegen oder wieder
+   aufmachen. Eine konkrete fehlende oder unklare Vorstellung wird einzeln
+   erfragt; der abgeschlossene Anfangsprozess wird dafür nicht neu gestartet.
+   Offene Fragen an den User stehen in
+   `../docs/plan/fragen.json` und werden mit dem Skill
    **`/fragen`** gestellt — er hält die Antwort wörtlich fest und arbeitet
-   sie ein (`docs/plan/LIES-MICH.md`). Die Briefing-Seite ist seit dem
+   sie ein (`../docs/plan/LIES-MICH.md`). Die Briefing-Seite ist seit dem
    23.08.2026 abgeschafft.
 4. **Abnahmen sind bindend.** Jedes User-Urteil sofort als Datei in
    `abnahmen/` festhalten (Format dort). Festgelegtes wird nicht ohne
    neues User-Wort erneut zur Diskussion gestellt — genau das erzeugt
    die „Ausbessern-Zeremonie", die dieses Projekt verhindern soll. Ein
-   neuer Figma-Stand ist neues User-Wort. Entscheide, die das ganze
-   Produkt betreffen, stehen zusätzlich mit Datum + Zitat im Register der
-   Wurzel-`CLAUDE.md`.
+   neuer ausdrücklicher User-Entscheid oder eine neue User-Referenz kann den
+   älteren Stand ersetzen. Produktweite Entscheide stehen zusätzlich mit
+   Datum + Zitat an der dafür bezeichneten Stelle gemäß Wurzel-`CLAUDE.md`.
 5. **Editor-Funktionen für den User sind Pflicht.** Jedes Blatt bekommt
    ein eingebautes Bedien-Panel: Look-Parameter live verstellbar (Farben,
    Typo-Größen, Dichte, Radien, Abstände), alle Zustände durchschaltbar,
@@ -143,7 +147,8 @@ eingebettet, der Prototyp mit denselben Assets wie das Plugin; Beweis ist der
    einen Zustand zeigen, den die Spezifikation nicht kennt. Demo-Daten
    sind erlaubt, aber realistisch UND sichtbar als Demo gekennzeichnet.
 7. **Kein Kontext-Import aus dem Verlauf.** Für Gestaltung zählen nur
-   dieser Ordner und die Figma-Stände des Users. Die übrigen Design-Orte
+   dieser Ordner, die drei aktuellen Rework-Bilder und neuere ausdrückliche
+   User-Entscheide. Die übrigen Design-Orte
    des Repos sind Verlauf, kein Referenzmaterial: `docs/archiv/`,
    `eq-copilot/design/archive/`, die geparkte Prisma-Studie
    (`eq-copilot/design/prisma-studie/`) und das Material-Kit-Provisorium
@@ -169,21 +174,19 @@ eingebettet, der Prototyp mit denselben Assets wie das Plugin; Beweis ist der
 - **/design**, **/dataviz**: für jede Diagramm-/Meter-Gestaltung (Heatmap,
   EQ-Kurve, Pegel) VOR dem Bauen laden — als Handwerk für die Übersetzung,
   nicht als Quelle einer Richtung.
-- **/diverge**: nur bei echten Gabelungen, die Figma offenlässt.
-- **/interview**: der Fragenkatalog dieses Ordners
-  (`.claude/skills/interview/SKILL.md` an der Repo-Wurzel; Phasen:
-  designvertrag · struktur · ~~richtung~~ (entfallen seit 2026-08-21: die
-  Richtung kommt aus Figma) · komponente · zustaende · abnahme) — die
-  Vorstellung des Users erfassen, wörtlich protokollieren.
-- **Hooks** (in `tools/hooks/`, verdrahtet in `.claude/settings.json` der
-  Repo-Wurzel): `design-primer.sh` misst zu Sessionbeginn Truhe und Abnahmen.
-  Die frühere `prototyp-schleuse.sh` wurde am 24.08.2026 stillgelegt: Ihr
-  einziges Gate war mit dem Designvertrag vom 21.08. dauerhaft erfüllt und
-  erzeugte danach nur noch Start- und Werkzeuglast. Der Prototyp ist frei.
-  `schleusen-probe.sh` prüft weiterhin die aktive Kreativ-Schleuse.
+- **/diverge**: nur bei echten Gabelungen, die die aktuelle User-Vorgabe
+  offenlässt.
+- **/interview**: nur wenn der User ausdrücklich eine neue Konzeptphase
+  öffnet oder eine neue Vorstellung von Grund auf erarbeiten will; nicht als
+  Pflichtschleife für den laufenden Rework.
+- **Hooks:** Es gibt keinen Design-Primer und kein Design-Gate beim normalen
+  Sessionstart. `.claude/settings.json` injiziert den kompakten Nakama-Primer
+  nur nach einer Kontextkomprimierung und schützt Git-Befehle mit dem
+  `git-riegel.sh`. Designkontext kommt aus diesem Router, der aktuellen
+  Abnahme und dem konkreten Auftrag.
 - Prototyp = statisches HTML/CSS/JS in `prototyp/`, ohne Build-Kette,
-  per Doppelklick lauffähig. Struktur (ein Blatt pro Oberfläche oder
-  Tabs) ist die erste Entscheidung — mit dem User.
+  per Doppelklick lauffähig. Seine bestehende Grundstruktur wird nicht
+  erneut als offene Anfangsentscheidung behandelt.
 
 ## Arbeitsweise
 
@@ -194,9 +197,9 @@ eingebettet, der Prototyp mit denselben Assets wie das Plugin; Beweis ist der
   Produkt zeigen. Das Werkzeug-Chrome darum herum (Fragen an den User)
   bleibt deutsch.
 - Docs, Abnahmen, Commits und Gespräch auf Deutsch.
-- Die neuen Namen (Gen · Probeeq · Suna) in allem, was neu geschrieben
-  wird; alte Texte mit Main / Active-Probe-Editor / Passive-Kachel meinen
-  dieselben drei Oberflächen und werden nicht rückwirkend umgeschrieben.
+- Die aktuellen Apps heißen Gen und Probeeq. Suna sowie Main /
+  Active-Probe-Editor / Passive-Kachel sind Legacy- oder Verlaufsbegriffe
+  und werden in neuen Produkttexten nicht als aktuelle Flächen geführt.
 - Kleine, benannte Commits nach jedem abgenommenen Schritt — immer mit
   explizitem Pathspec, nie `git add -A` (parallele Sessions).
 - Sessionende: eine Zeile in `abnahmen/` was offen blieb — kein

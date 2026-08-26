@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex-Kontextpflege"
+  short_description: "Prueft und pflegt Codex-Kontext sicher"
+  default_prompt: "Nutze $codex-context-pflege, um den Codex-Kontext dieses Projekts zu pruefen und gezielt zu pflegen."

@@ -8,6 +8,18 @@ abgenommen. Bis der User die Umsetzung ausdrücklich startet, werden daraus
 keine Prozesse gestartet oder beendet, keine Hooks umgestellt und keine
 Altlasten entfernt.
 
+Stand 26.08.2026, später am Tag: Der User hat Nimbalyst samt Matrix-Bridge
+selbst vollständig deinstalliert — User-Wort: *„nimbalyst ist vollständig
+deinstalliert, die alte fassung ist daher unnötig"*. Nachgemessen: der
+Bridge-Ordner unter dem Benutzerprofil existiert nicht mehr, ein
+Nimbalyst-MCP ist nicht registriert. Folgen: 6.1 ist faktisch erledigt; der
+Skill-Umbau aus 6.2 (Dirigent und Fragen) wurde vorgezogen, weil beide Skills
+sonst tote Werkzeuge aufriefen, ebenso der Matrix-Block in `CLAUDE.md`. Der
+alte Weg steht **nicht mehr als Rückfall** zur Verfügung: scheitert Stufe C,
+bleibt nur der `git revert` des Umstellungscommits, kein funktionierender
+Altpfad. Alles Übrige (Hooks, `NEXT-SESSION.md`, Nimbalyst-Laufartefakte im
+Repo) wartet weiter auf den ausdrücklichen Start der Umsetzung.
+
 ## 1. Leitentscheidung
 
 User-Wort vom 25.08.2026:
@@ -94,7 +106,9 @@ Für diesen Umbau gelten folgende Grenzen:
 - kein neues Dashboard und keine externe Statusdatenbank,
 - keine Kopie von Ticketstand oder Produktwahrheit in Hilfsdokumenten,
 - keine informierenden oder automatisch commit-/pushenden Dauer-Hooks,
-- kein Abschalten des alten Wegs, bevor der neue Weg Ende-zu-Ende belegt ist,
+- kein Abschalten des alten Wegs, bevor der neue Weg Ende-zu-Ende belegt ist
+  — seit 26.08.2026 gegenstandslos: der User hat den alten Weg selbst
+  deinstalliert (Stand-Notiz oben),
 - während eines Dirigentenlaufs genau ein schreibender Nakama-Worker; andere
   Sessions bleiben lesend oder der Dirigent hält,
 - kein allgemeines Aufräumen funktionierender Werkzeuge nebenbei.
@@ -486,24 +500,21 @@ reversible Umstellungscommit zurückgenommen; es wird nichts weiter abgebaut.
 
 ### 6.1 Matrix pausieren
 
-Matrix ist nicht Teil des neuen Wegs. Die Umsetzung:
-
-1. prüft die Identität des noch laufenden Bridge-Prozesses,
-2. beendet genau diesen Prozess,
-3. verschiebt/deaktiviert `Startup/Nakama Matrix Bridge.vbs`,
-4. beweist nach Neustart, dass Prozess und Log inaktiv bleiben.
-
-Der Bridge-Ordner außerhalb des Repositories bleibt mit Konfiguration, Store,
-Queues und `nimbalyst.py` unangetastet. Matrix ist pausiert, nicht zerstört.
+**Erledigt durch den User am 26.08.2026.** Der Bridge-Ordner unter dem
+Benutzerprofil existiert nicht mehr; es gibt nichts zu pausieren und keinen
+Matrix-Rückweg. Bei einer späteren Stufe D bleibt nur zu prüfen, dass kein
+Autostart-Eintrag (`Startup/Nakama Matrix Bridge.vbs`) zurückgeblieben ist.
 
 ### 6.2 Nimbalyst aus dem aktiven Workspace entfernen
 
 - `.claude/skills/dirigent/SKILL.md` wird auf Rolle, Quellen, Minimalzyklus,
   Prioritäten, die Sol-Effort-Regeln und Haltgründe gekürzt. Historische
   Nimbalyst-/Matrix-Erzählung und Werkzeuganekdoten gehören nicht in den
-  aktiven Skill.
+  aktiven Skill. **Erledigt 26.08.2026** (vorgezogen, da die alte Fassung
+  tote Werkzeuge aufrief; die alte Fassung liegt in der Git-Historie).
 - `.claude/skills/fragen/SKILL.md` stellt Fragen und Bilder direkt im
   Claude-/Remote-Control-Kanal; keine Nimbalyst-Werkzeuge und kein Ersatzbus.
+  **Erledigt 26.08.2026** (vorgezogen, gleicher Grund).
 - `CLAUDE.md` verliert den gesamten Matrix-Remote-Berichtsblock und verweist
   für den nächsten Schritt auf `docs/PLAN-STAND.md` statt auf
   `docs/NEXT-SESSION.md`. Der direkte Remote-Control-Start wird nur im
@@ -616,7 +627,8 @@ Der Beweis muss zeigen:
   den Beleg.
 
 Scheitert der Probelauf, hält Fable. Der Umstellungscommit aus B kann normal
-zurückgenommen werden; die Altlasten aus D sind zu diesem Zeitpunkt noch da.
+zurückgenommen werden; einen funktionierenden Altpfad gibt es seit dem
+26.08.2026 nicht mehr (Stand-Notiz oben).
 
 ### D — Alten Weg erst nach dem Beweis stilllegen
 

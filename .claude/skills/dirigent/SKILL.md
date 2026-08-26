@@ -1,288 +1,226 @@
 ---
 name: dirigent
-description: Arbeitet den Bauplan Ticket für Ticket ab, indem er je Schritt eine FRISCHE Session spawnt, auf sie wartet, ihr Ergebnis misst und dann die nächste startet. Läuft durch, bis der Plan leer ist, ein Gate kommt oder etwas nur der User entscheiden kann. Der Dirigent baut selbst nie — er führt, misst und protokolliert. Aufruf ohne Argument (nächstes offenes Ticket) oder mit Ticketnummer.
+description: Führt den Nakama-Bauplan Ticket für Ticket als echte Fable-Session aus — startet je Ticket einen frischen Opus-Worker als nativen Hintergrundagenten im sichtbaren Checkout, misst das Ergebnis am Repo, lässt Codex frisch prüfen und gezielt nacharbeiten, und fährt fort, bis der Plan leer ist, ein Gate kommt oder nur der User entscheiden kann. Der Dirigent baut selbst nie. Aufruf ohne Argument (nächstes offenes Ticket) oder mit Ticketnummer.
 ---
 
-# /dirigent — den Plan durchfahren, Session für Session
+# /dirigent — den Plan durchfahren
 
-Du bist **Dirigent**, nicht Erbauer. Du schreibst in dieser Rolle **keine
-Produktzeile** — dein Kontext ist das Einzige, was zwischen den Runden überlebt,
-und er ist zu wertvoll, um ihn an Implementierungsarbeit zu verbrauchen.
+## 0. Vorbedingung
 
-Der User hat das am 23.08.2026 so gewählt: **„Durchlaufen bis der Plan leer
-ist"**. Du hältst also nicht nach jedem Ticket an. Du hältst nur an den unter
-§4 genannten Stellen.
+Der erste echte Lauf setzt voraus, dass der Stufe-A-Preflight belegt und der
+Stufe-B-Umstellungscommit gesetzt ist (u. a. `worktree.bgIsolation = "none"`)
+— beides in `docs/vorhaben-2026-08-25-dirigent-ohne-nimbalyst.md` (§5.0, §7).
+Fehlt eines davon: anhalten und genau die fehlende Fähigkeit vorlegen, nichts
+improvisieren. Nimbalyst und Matrix sind seit 26.08.2026 vollständig
+deinstalliert; es gibt keinen zweiten Kanal und keinen Altpfad.
 
-## 1. Warum es diese Rolle gibt
+## 1. Rolle
 
-`docs/bauaufteilung-sonden.md` §0: *„1 Session = 1 Ticket + sein Beweismanifest
-+ **sein Frischkontext-Prüfer**"*. Ein Ticket braucht damit **mindestens zwei**
-Sessions, und die prüfende darf die bauende nicht sein. Von Hand kostet das
-jedes Mal einen Menschen, der zur richtigen Zeit eine neue Session aufmacht.
-Genau das nimmst du ab.
+- Der Dirigent ist eine **echte interaktive Fable-Session**:
 
-🔑 **Frischer Kontext ist keine Bequemlichkeit, sondern der Prüfmechanismus.**
-Ein Prüfer, der den Umbau selbst geschrieben hat, findet seine eigenen blinden
-Flecken nicht. Deshalb: `spawn_session`, nie `send_prompt` an eine Session, die
-schon gebaut hat.
+  ```powershell
+  claude --model fable --effort xhigh --name nakama-dirigent --remote-control
+  ```
 
-## 2. Woher du den nächsten Schritt nimmst
+  Terminal und Remote Control sind **dieselbe** Sitzung. Meldungen,
+  Zwischenstände und blockierende Fragen enden als wartende Frage in genau
+  dieser Sitzung — das ist der ganze Meldeweg.
+- Der Dirigent entscheidet und misst. Er baut **nie**; solange ein Worker
+  läuft, bleibt er auch bei Repo-Dateien strikt lesend.
+- Genau **ein** schreibender Worker zur Zeit. Kein eigener Prozessmanager,
+  keine Zustands- oder Protokolldatei: Repo, Ticketmanifest und gerechneter
+  Planstand **sind** der Zustand.
 
-In dieser Reihenfolge, die erste Quelle mit einer klaren Antwort gewinnt:
+## 2. Quellen
 
-1. `docs/PLAN-STAND.md` — die Zeile „**Als Nächstes**". Seit 23.08.2026 wird
-   sie **gerechnet**: gibt es einen Schritt mit offenem Prüfbefund, ist die
-   Nacharbeit dran, sonst der erste Schritt ohne Beleg. Diese Quelle kann
-   nicht veralten — ein Hook hält sie frisch.
-2. `docs/NEXT-SESSION.md` — der Kopfblock nennt „**Naechster Schritt**" im
-   Klartext, mit dem Warum der letzten Session.
-3. `docs/bauaufteilung-sonden.md` — die Ticket-Tabellen (`S10–11 | SONDE-008 |
-   … | T1+T2`). Sie sagt, **welche Prüfstufen** eine Zeile verlangt.
-   ⚠️ Sie ist handgepflegt und war am 23.08. an zwei Stellen selbst veraltet
-   (sie führte S10–11 und S12–13 als „kein Prüfer gelaufen", während beide
-   T2-Berichte im Manifest lagen). Gegen das Manifest prüfen, nicht glauben.
+1. `py -3.13 tools/plan/planstand.py` rechnen, dann `docs/PLAN-STAND.md`
+   lesen — die Zeile „Als Nächstes" gewinnt. Das Blatt nur bei sauberem
+   Quellstand und mit explizitem Pathspec committen; sonst anhalten.
+2. Für das eine Ticket: sein Gate-Text, seine Fachquellen, sein Manifest
+   `docs/beweise/<TICKET>.md`.
+3. Offene User-Fragen: `docs/plan/fragen.json` — stellen über `/fragen`.
 
-Widersprechen sie sich, gilt `CLAUDE.md`, danach das **Beweismanifest** (dort
-wird gemessen), danach die Datei mit dem jüngsten Datum — und du berichtigst
-die andere im Protokoll.
+Widersprechen sich Quellen: `CLAUDE.md`, dann das Manifest, dann das jüngste
+Datum. Kein Selbstbericht einer Session ist eine Quelle.
 
-## 3. Der Zyklus
+## 3. Zyklus je Ticket
 
-Für jedes Ticket, bis der Plan leer ist:
-
-### 3.1 Vorher: ist der Baum frei?
-
-- `git status --porcelain` und `mcp__nimbalyst-host__list_recent_sessions`.
-- **Läuft eine fremde Session** (`[RUNNING]`, die nicht du gespawnt hast):
-  warte. `eq-copilot/build/` ist ein **geteiltes** Verzeichnis — zwei parallele
-  `cmake --build` zerlegen sich die Objektdateien, und `tools/beweise.ps1`
-  bricht danach mit Exitcode 4 ab. Auch Codex-Sessions zählen.
-- Uncommittete Fremddateien sind **kein** Hinderungsgrund, aber du fasst sie
-  nie an und nennst sie im Protokoll.
-
-### 3.2 Bau-Session spawnen
-
-`mcp__nimbalyst-host__spawn_session` mit `inheritModel: true` und
-`notifyOnComplete: true`. **Nicht** `useWorktree` — der Beweislauf braucht
-`eq-copilot/build/`, und die Session soll dort committen, wo der User hinsieht.
-
-Der Prompt ist ein **selbsttragender Auftrag**, kein Zuruf. Er nennt:
-
-- das Ticket und seinen Gate-Text (`docs/FL-Nakama-Sonden-Design-Entwurf.md`,
-  Errata-Block zuerst),
-- wohin das Manifest gehört (`docs/beweise/<TICKET>.md`),
-- den Beweislauf-Befehl,
-- die harten Regeln: nie `git add -A`, nie `--amend`, fremde uncommittete
-  Dateien nie anfassen,
-- **die Ticketgrenze**: nur dieses Ticket, kein Nebenrefactor.
-
-Mehr braucht es nicht — die SessionStart-Hooks legen Wahrheitskern, Hub-Stand,
-Design-Stand und Git-Stand von selbst vor.
-
-### 3.3 Warten
-
-`notifyOnComplete: true` weckt dich, wenn die Session fertig ist. **Zusätzlich**
-setzt du `mcp__nimbalyst-host__schedule_wakeup` (~1200 s) als Netz, falls die
-Session still stirbt — die Benachrichtigung kommt dann nicht.
-
-**Kein Dauerpoll** — Wecker statt Sekundentakt, kein `Monitor` in einer
-Warteschleife. Das ist eine **Arbeitsregel, kein User-Entscheid**: der User hat
-am 23.08. verlangt, ein laufendes Polling zu beenden („DENK DRAN DAS POLLING ZU
-BEENDEN dann"), und das galt einem abgestürzten Monitor, nicht dem Verfahren.
-Der sachliche Grund trägt trotzdem: ein Poll erzeugt je Runde Nachrichten, ohne
-je früher fertig zu sein als die Benachrichtigung, auf die er wartet.
-
-⚠️ **`lastActivity` aus `get_session_status` ist KEIN Aktivitätssignal** —
-gemessen am 23.08.: es stand 22 Minuten still, während die Session committete.
-Nur `updatedAt` und neue Commits taugen.
-
-### 3.4 Messen — und urteilen
-
-Der User hat am 23.08. entschieden: **„ich will nicht dass es an einer harten
-regel scheitert … die regel ist einfach das individuell zu entscheiden mit
-bestem wissen"**.
-
-Es gibt hier also **keine Checkliste, die du abhaken musst.** Du entscheidest.
-Dafür gilt die **Belegpflicht** — sie ist der Ersatz für die Regel, nicht ihre
-Rückkehr:
-
-> **Jedes Weiterschalten wird protokolliert mit (a) worauf du dich stützt und
-> (b) was du NICHT geprüft hast.**
-
-Ohne (b) ist der Eintrag unvollständig. Ein Dirigent, der nur seine Gründe
-notiert, überredet sich selbst; einer, der seine Lücken mitschreibt, kann es
-nicht unbemerkt.
-
-**Indizien** (Hinweise, keine Pflichten — fehlt eines, entscheide trotzdem und
-schreib auf, warum du es für unwesentlich hältst):
-
-| Indiz | Wie gemessen |
-|---|---|
-| Manifest trägt das Ticket | `docs/beweise/<TICKET>.md` existiert und hat Abschnitte für alle Bauteile |
-| Der Kanon läuft grün **und beglaubigt** | `pwsh -File tools/beweise.ps1` — Exit **0**, nicht 4 |
-| Das verlangte Urteil steht | Die Bauaufteilung sagt je Zeile `T1+T2`; ein Ticket ohne Frischkontext-Urteil ist offen |
-| Der Commit ist gelandet und gepusht | `git log`, und der auto-push-Hook hat gemeldet |
-
-🔑 **Glaube keinem Selbstbericht.** Am 23.08. meldete eine Session „Abschnitt 3
-gebaut" und committete — das Manifest kam erst 20 Minuten später. Was eine
-Session *sagt*, ist ein Hinweis; was im Repo *steht*, ist der Befund.
-
-⚠️ **Ein roter Riegel ist nicht automatisch ein Befund.** Der
-Beglaubigungsriegel vergleicht „neueste Quelle im GANZEN Baum" gegen jede
-Binärdatei und schlägt an, sobald ein Ziel zu Recht nicht neu gelinkt wurde
-(gemessen 23.08., `SONDE-007b.md` §5.2). Nachmessen, welche Quelle wirklich zu
-welchem Ziel gehört, bevor du eine Runde als gescheitert wertest.
-
-### 3.5 Prüf-Session spawnen
-
-Verlangt die Planzeile `T2` und liegt noch kein Urteil vor: **frische Session**,
-niemals dieselbe, die gebaut hat. Der Prompt nennt:
-
-- **den richtigen Basispunkt** — `git diff <Stand vor dem Ticket>..HEAD`.
-  ⚠️ Rechne ihn aus (`git log` über die Ticket-Commits), übernimm ihn nie aus
-  einem Dokument. Am 23.08. stand in `NEXT-SESSION.md` ein Basispunkt, der die
-  Mitte des Tickets traf — ein Prüfer hätte zwei Drittel übersehen.
-- wohin das Urteil gehört (`docs/beweise/<TICKET>.md`, Abschnitt 5),
-- die **T3-Regel**: jeden Befund gegen die Quelldatei messen, nie gegen Doku,
-  Manifest oder Gedächtnis (~25 % der AI-Auditbefunde hier waren falsch),
-- jede Zahl selbst nachzählen,
-- Grabungsstellen, wenn das Manifest welche nennt (§3.1 „Selbstaudit"),
-- und: **ehrlich benennen, was nicht geprüft wurde.**
-
-Urteilt sie `NEEDS_WORK` mit offenen Befunden, spawnst du eine
-**Nacharbeit-Session**. Befunde schließt, wer nacharbeitet; urteilen darf nur,
-wer nicht gebaut hat.
-
-### 3.6 Protokollieren, melden, dann das nächste Ticket
-
-Eintrag nach `docs/dirigent/protokoll.md` (§5).
-
-🔑 **Der Kanal ist Matrix. Das ist eine feste Regel, kein Vorschlag.**
-
-Entscheid des Users 24.08.2026: *„der dirigieren skill braucht als feste regel
-dieser kommunikationsweg. update bei jedem abschluss einer session , mindest
-stündlich sowieso und bei blockenden entscheidungen"*.
-
-Der Grund ist keine Vorliebe, sondern Reichweite: der User ist beim Dirigieren
-oft **nur per Handy** da. Eine Meldung oder Frage, die in der
-Nimbalyst-Unterhaltung stehenbleibt, **erreicht ihn nicht** — sie blockiert
-dich nur still. Genau das ist am 24.08. mit der Aufwandsfrage A/B passiert.
-
-**Werkzeug** (`C:\Users\phili\.claude\matrix-bridge\`, außerhalb des Repos,
-weil dort Zugangsdaten liegen):
+### 3.1 Vorher
 
 ```powershell
-py -3.13 melden.py "Ticket · Ergebnis · was als Nächstes"
-py -3.13 melden.py --datei <pfad> ["Beschriftung"]   # Bild/Datei, z. B. Render
-py -3.13 melden.py --letzte                          # Exit 1 = überfällig
-py -3.13 melden.py --status                          # Zustand des Dienstes
+git status --short
+claude agents --json --cwd . --all
+git rev-parse HEAD
 ```
 
-**Die drei Pflichtauslöser:**
+Nur aktive Agentenzustände (arbeitend, eingabebedürftig) blockieren; alte
+abgeschlossene Zeilen nicht. Fremde Änderungen benennen und **nie** anfassen;
+läuft ein fremder Schreiber, warten. Den vollständigen Basis-SHA merken — er
+steckt zusätzlich im Workernamen.
 
-1. **Jeder Abschluss einer Session.** Nicht jeder Commit, nicht jeder
-   Zwischenstand — aber jede fertige Runde, auch eine gescheiterte.
-2. **Mindestens stündlich, auch wenn nichts fertig wurde.** Läuft ein Ticket
-   länger, geht trotzdem eine Zeile raus („S9 läuft seit 40 min, Kanon 12/28").
-   Schweigen ist für den User nicht von einem Absturz zu unterscheiden.
-   **Prüfbar, nicht gutgemeint:** vor jedem neuen Ticket
-   `py -3.13 melden.py --letzte` — Exit 1 heißt überfällig, dann sofort melden.
-3. **Jede blockende Entscheidung.** Alles, was nur er entscheiden kann (Gate,
-   Produktfrage, Installation, Abnahme), geht **dorthin**, nicht in die
-   Unterhaltung. Sag im selben Text, was du in der Zwischenzeit tust — er soll
-   nicht raten müssen, ob du wartest oder weiterläufst.
+### 3.2 Bauen
 
-**Seine Antwort kommt zurück** in die Session, die in `config.json` unter
-`nimbalyst.session_id` steht — als normaler Prompt. Existiert die nicht mehr,
-sucht der Dienst selbst eine lebende Session, in dieser Reihenfolge:
-**laufende Claude → ruhende Claude → laufende Codex → ruhende Codex**
-(User-Entscheid 24.08.: *„wenn keine claude session verfügbar ist, muss die
-nachricht an codex gehen können"*). Der User erfährt im Raum, welche Session
-übernommen hat, und bei einem fremden Anbieter ausdrücklich, dass die den
-Nakama-Kontext nicht kennt. Du musst nichts pflegen.
+Der Worker ist ein frischer Opus-Hintergrundprozess im **sichtbaren** Checkout:
 
-- **Form:** drei Zeilen. Ticket · Ergebnis (am Repo gemessen, **nie** der
-  Selbstbericht der Session) · was als Nächstes läuft. Keine Rohausgabe, kein
-  Manifest-Auszug; die Details stehen im Repo.
-- **Nur an ihn selbst.** Nie an Dritte, nie in eine Gruppe.
-- **Der Dienst muss laufen** (`dienst.py`, startet mit Windows). Er ist der
-  **einzige** Prozess, der mit Matrix spricht; `melden.py` übergibt ihm nur
-  Aufträge. Nie einen zweiten Klienten aufmachen.
-- **Scheitert eine Meldung**, ist das für Auslöser 1 und 2 kein Grund
-  anzuhalten: im Protokolleintrag vermerken und weiterfahren. Bei Auslöser 3
-  **hältst du an** — eine blockende Entscheidung, die ihn nie erreicht hat,
-  ist kein Warten, sondern ein stiller Stillstand.
-- **Es gibt keinen Rückfallkanal mehr.** Die claude.ai-Routine „Nakama:
-  Dirigent-Meldung" (`trig_01BUKf1i5Y9ztqGkA6Ev4eff`) ist seit 25.08.2026
-  abgeschafft — User: *„Ich habe die Routinen im der webapp ausgeschaltet.
-  Brauchen wir nicht mehr , also die Dirigenten benachrichtigung über Routine
-  Funktion."* Sie darf nicht mehr aufgerufen werden. Ist Matrix tot, ist der
-  Dirigent stumm — dann gilt die Regel darüber unverändert: Auslöser 1 und 2
-  ins Protokoll und weiterfahren, bei Auslöser 3 anhalten.
-
-⚠️ **WhatsApp gibt es nicht mehr** (User 24.08.: *„wir machen das anders ,
-nichtmehr über whatsapp das funktioniert ."*). MCP, Daemon, Autostart und
-Gerüst sind **entfernt** — dort ist nichts mehr aufzurufen.
-
-🚨 **Die teuerste Lehre daraus, und sie überlebt den Kanal:** die Frage lautete
-„wie gewinne ich den Socket?" statt **„darf hier überhaupt ein zweiter Client
-existieren?"** — und die Antwort auf die zweite Frage war von Anfang an nein.
-Ein selbstgebauter zweiter WhatsApp-Client hat die Gerätekopplung gelöst und
-den Kanal getötet. Dieselbe Klasse wie „zwei Broker auf einem Pipenamen
-stehlen sich still Clients" (`CLAUDE.md`, Maschinen-Landminen).
-**Die Berechtigungsfrage kommt vor der Technikfrage** — bei Matrix genauso:
-zwei Prozesse auf einem Kryptospeicher legen sich Megolm-Sitzungen an, die der
-jeweils andere nicht kennt.
-
-Dann zurück zu 3.1.
-
-## 4. Wo du HÄLTST
-
-Anhalten heißt: Protokoll schreiben, `docs/NEXT-SESSION.md` und den Hub
-nachziehen, dem User in einem Absatz sagen, was ist — und **nicht** weiter
-spawnen.
-
-1. **Ein Gate ist dran** (`G0`–`G7` in der Bauaufteilung). Gates sind `T3` und
-   verlangen fremde Prüfer (`/c-review`, `/rust-review`, `/security-review`,
-   Codex) und Bruchaufträge. Das ist keine Runde, die du blind startest.
-2. **Etwas Unumkehrbares** steht an: Installation (UAC-Klick),
-   `git push --force`, `reset --hard`, Löschen, externer Versand.
-3. **Nur der User kann liefern:** eine Design-Richtung, ein Figma-Stand, eine
-   Abnahme, eine FL-Messung, ein Schlüssel, ein Klick. Der Hub sagt unter
-   „bei dir", was das ist.
-4. **Ein Produktentscheid** ohne Register-Eintrag. Technik ist deine
-   Entscheidung, Produkt und Gestaltung sind seine.
-5. **Zweimal in Folge gescheitert am selben Ticket.** Nicht ein drittes Mal
-   dasselbe versuchen — das ist die Schleife, vor der `CLAUDE.md` warnt. Lege
-   den Grund vor und schlage einen anderen Weg vor.
-6. **Der Plan ist leer.** Melde es und halte an.
-
-## 5. Das Protokoll
-
-`docs/dirigent/protokoll.md`, jüngster Eintrag oben. Je Runde:
-
-```markdown
-## <Datum Uhrzeit> · <TICKET> · <bau|pruefung|nacharbeit>
-
-- **Session:** <Titel> (`<id>`)
-- **Ergebnis:** <was im Repo steht — Commits, Manifest, Kanon-Zahl>
-- **Gestützt auf:** <die Belege, die dich weiterschalten ließen>
-- **Nicht geprüft:** <was du bewusst offen lässt, und warum es dich nicht hält>
-- **Weiter mit:** <nächstes Ticket> · oder **HALT:** <Grund aus §4>
+```powershell
+claude --model opus --effort max --permission-mode auto `
+  --name "nakama-<ticket>-<basis-kurz>-bau" `
+  --bg "<selbsttragender Ticketauftrag>"
 ```
 
-Der Eintrag ist kurz. Er ersetzt kein Manifest — er sagt nur, **warum du
-weitergefahren bist**. Er ist das, was der User morgens liest, wenn er wissen
-will, ob die Nacht ehrlich war.
+Der Auftrag nennt nur: Ticketgrenze, verbindliche Quellen, Manifestpfad,
+Beweislauf und die Git-Regeln (nie `git add -A`, nie `--amend`, fremde
+uncommittete Dateien nie anfassen). Nötige, nicht destruktive Ticketkommandos
+eng über `--allowed-tools`, keine Wildcard. `bypassPermissions` ist verboten;
+fällt Auto still auf Manual zurück, gilt das als fehlende Fähigkeit → Halt.
+Kein eigenes Konsolenfenster: `claude agents` zeigt den Zustand, `claude logs`
+und `claude attach` bei Bedarf den Verlauf.
 
-## 6. Was du nie tust
+Direkt nach dem Start den nativen Kontrollloop setzen und die Task-ID merken:
 
-- **Selbst bauen.** Auch nicht „nur schnell". Dein Kontext ist der Faden durch
-  alle Runden; verbrauchst du ihn, reißt er.
-- **Ein Häkchen als Fortschritt nehmen.** Fortschritt steht im Repo.
-- **Eine Session prüfen lassen, die gebaut hat.**
-- **`git add -A`**, `--amend`, oder fremde uncommittete Dateien anfassen.
-- **Ein Urteil beschönigen.** `NEEDS_WORK` mit geschlossenen Befunden ist ein
-  gutes Ergebnis; ein `PASS`, das über eine ungeprüfte Hälfte schweigt, ist es
-  nicht.
-- **Bauen, während eine fremde Session läuft.**
+```text
+/loop 30m Prüfe den laufenden Nakama-Worker über `claude agents --json --cwd . --all`.
+Wenn er arbeitet, prüfe nur auf Blockade oder erkennbaren Stillstand und warte weiter.
+Wenn er fertig, fehlgeschlagen oder blockiert ist, beende diesen Loop und führe den
+passenden Mess-, Nacharbeits- oder Haltpfad des Dirigenten aus.
+```
+
+Der Loop ist das einzige verlässliche Wiederaufwachen — eine Fertigmeldung des
+Workers weckt die Sitzung nicht. Bei Worker-Ende oder Halt: `CronDelete` auf
+genau diese Task, mit `CronList` belegen, dass sie weg ist.
+
+Meldet Agent View `needs input`: zuerst `claude logs <worker-id>`. Eine
+erwartete, nicht destruktive Ticketaktion darf der User auf konkrete Empfehlung
+einmalig freigeben. Ein Produktentscheid → Halt. Destruktives, Ticketfremdes
+oder Unerklärliches → nicht freigeben, Worker stoppen.
+
+### 3.3 Messen
+
+Kein Selbstbericht zählt; gemessen wird am Repo:
+
+- Diff vom Basis-SHA bis HEAD (zuerst `--stat`, dann nur relevante Hunks),
+- das Ticketmanifest, die gezielten Tests, unberührte fremde Pfade.
+
+Beendet heißt: Arbeitsbaum sauber, Basis-SHA ist Vorfahr des gemessenen HEAD,
+und genau dieser HEAD liegt auf `origin/master`. Fremde Commits → Halt.
+Eigene uncommittete Reste oder ein nur lokaler Commit → genau **ein** frischer
+Fortsetzungs-Worker (Suffix `-fort`, derselbe Basis-SHA, enger
+Abschlussauftrag: fertig committen und pushen, **nie** verwerfen). Gelingt auch
+das nicht → Halt. Unerwarteter HEAD- oder Worktree-Drift → Halt, keine
+automatische Reparatur.
+
+### 3.4 Prüfen und nacharbeiten (Codex)
+
+Frischer Codex-Thread, lesend, über den **vollständigen** Ticketbereich.
+Pipelines laufen in `pwsh` (PowerShell 5.1 schreibt `Tee-Object` als UTF-16
+und zerstört die JSONL-Weiterverarbeitung). Temp nur unter `$env:TEMP`.
+
+```powershell
+$baseSha = '<Stand vor dem Ticket>'
+$headSha = git rev-parse HEAD
+$solEffort = 'xhigh' # oder 'high', Regel unten
+$reviewJsonl = Join-Path $env:TEMP "nakama-$headSha-review.jsonl"
+$reviewLast = Join-Path $env:TEMP "nakama-$headSha-review-last.txt"
+
+$reviewPrompt | codex -a never exec --ignore-user-config `
+  -m gpt-5.6-sol -c "model_reasoning_effort=`"$solEffort`"" `
+  -C . -s read-only review --base $baseSha --json -o $reviewLast - |
+  Tee-Object -FilePath $reviewJsonl
+```
+
+Vor und nach dem Lauf muss HEAD `$headSha` sein, sonst ist das Urteil ungültig.
+Die Thread-ID kommt aus dem JSONL; fehlt sie → `BLOCKED`. Urteil ist `PASS`,
+`NEEDS_WORK` oder `BLOCKED` und nennt, was geprüft und was nicht geprüft wurde.
+
+**Sol-Effort** (bei Review-Beginn wählen, im Manifest vermerken):
+
+- `high` nur bei kleiner, lokal begrenzter Änderung mit geringer Auswirkung
+  und eindeutiger Abnahme,
+- `xhigh` als Standard — und zwingend bei Audio-Thread, State/Migration,
+  IPC/Verträgen, Nebenläufigkeit, Sicherheit oder einem Phasengate.
+- Nacharbeit behält das Effort; eine Wiederprüfung senkt es nie ab.
+
+**Zulässige Befunde** müssen reproduzierbar sein und die Ticketabnahme
+berühren (critical: Daten-/State-Verlust, Sicherheitsbruch, Audio-/Nulltest;
+high: Vertrag/Gate/normaler Pfad gebrochen; medium: konkreter Funktionsfehler,
+der die Abnahme verhindert). Kosmetik, Stil, optionale Härtung, theoretische
+Randfälle und Ticketfremdes: nein. Jeden Befund an der Quelle validieren.
+
+Bestätigte Befunde behebt **derselbe** Thread:
+
+```powershell
+$fixJsonl = Join-Path $env:TEMP "nakama-$headSha-fix.jsonl"
+$fixLast = Join-Path $env:TEMP "nakama-$headSha-fix-last.txt"
+
+$fixPrompt | codex -a never exec --ignore-user-config `
+  -m gpt-5.6-sol -c "model_reasoning_effort=`"$solEffort`"" `
+  -C . -s workspace-write resume <thread-id> --json -o $fixLast - |
+  Tee-Object -FilePath $fixJsonl
+```
+
+Codex stagt, committet und pusht **nie**. Fable prüft den engen Fixdiff und
+die betroffenen Tests, committet ausschließlich diese Pfade, pusht. Danach
+prüft ein **neuer** frischer Thread den ganzen Bereich vom ursprünglichen
+Basis-SHA bis zum neuen HEAD. Nach zwei erfolglosen Nacharbeitsrunden → Halt.
+
+### 3.5 Abschluss
+
+Urteil, Modell, Effort, Basis- und End-SHA sowie die tatsächlich gelaufenen
+Beweise ins **vorhandene** Manifest; Planstand neu rechnen; nur diese
+Abschlussdateien mit explizitem Pathspec committen und pushen. Dann: temporäre
+Codex-Dateien löschen, `claude rm <worker-id>`, und mit `CronList` plus
+`claude agents --json` belegen, dass weder Loop noch Worker übrig sind.
+Weiter mit 3.1.
+
+## 4. Haltgründe
+
+- ein User-, Figma-, FL- oder Installationsschritt,
+- ein Produktentscheid (Technik entscheidet der Dirigent, Produkt der User),
+- überlappende fremde Änderungen,
+- ein materieller, zweimal nicht geschlossener Befund,
+- eine fehlende native Fähigkeit, deren Ersatz neue Infrastruktur erfordert,
+- erschöpftes Kontingent oder wiederholte API-Fehler bei Fable, Opus oder
+  Codex — Worker stoppen, Loop löschen, dann Halt statt blindem Wiederholen,
+- Kontextdruck der eigenen Sitzung (§5),
+- ein Phasengate oder leerer Plan.
+
+Vor jedem Halt: Worker gestoppt, Loop gelöscht, Stand ins Manifest. Jeder Halt
+endet als klare, wartende Frage oder Statusmeldung in der Sitzung selbst — so
+erreicht er den User über Remote Control. Einen zweiten Kanal gibt es nicht.
+
+## 5. Kontexthaushalt
+
+Der Dirigentenkontext ist das Einzige, was zwischen den Tickets lebt — und er
+ist endlich. Der Lauf endet planmäßig an dieser Grenze, nicht an einem Fehler:
+
+- Gezielt lesen statt vollständig: Diffs erst `--stat`, dann relevante Hunks;
+  vom Codex-JSONL nur Thread-ID und Schlussurteil; vom Worker-Log nur den
+  Blockadegrund. Rohausgaben bleiben in ihren Temp-Dateien. Ein Loop-Tick ohne
+  Befund bleibt ein Einzeiler.
+- Nichts im Kopf führen, was im Repo steht: Basis-SHA im Workernamen, Urteil
+  im Manifest, nächster Schritt im Planstand. Nach jedem Ticketabschluss ist
+  der Kontext verzichtbar — eine frische Dirigenten-Session übernimmt ohne
+  Übergabetext.
+- Bei Kontextdruck (Compaction gelaufen, Tragendes nur noch aus
+  Zusammenfassungen zitierbar): laufendes Ticket bis zur sauberen Grenze
+  fahren, Worker und Loop abräumen, Abschluss ins Manifest, Lauf beenden mit
+  dem Hinweis, eine frische Dirigenten-Session zu starten. Mit angeschlagenem
+  Kontext beginnt kein neues Ticket.
+
+Nach Absturz oder Neustart: Fortsetzung über den Picker (`claude --resume
+nakama-dirigent` filtert ihn vor) oder deterministisch über die Session-ID.
+Die fortgesetzte Sitzung beginnt mit `claude agents --json`, `CronList`,
+`git status` und dem Vergleich Basis-SHA zu HEAD. Läuft der bekannte Worker
+ohne Loop → genau einen neuen Loop setzen. Fehlt der Worker → verbliebenen
+Loop löschen. Nie Zustand raten, nie eine Recovery-Datei bauen.
+
+## 6. Was der Dirigent nie tut
+
+- Selbst bauen — auch nicht „nur schnell" — oder bei laufendem Worker
+  schreiben.
+- Einen Selbstbericht, Exit-Code oder Commit allein als fertig nehmen.
+- Prüfen lassen, was derselbe Thread gebaut hat: die Wiederprüfung ist immer
+  ein frischer Thread.
+- `git add -A`, `--amend`, fremde uncommittete Dateien anfassen.
+- `bypassPermissions` nutzen oder einen stillen Moduswechsel hinnehmen.
+- Ein zweites Protokoll, eine Statusdatei oder einen Ersatzkanal bauen.

@@ -163,27 +163,20 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
 
 ## Remote-Bericht für dieses Projekt
 
-**Der Kanal ist Matrix** (User-Entscheid 24.08.2026, gebaut und Ende-zu-Ende
-belegt). Werkzeug: `C:\Users\phili\.claude\matrix-bridge\` — außerhalb des
-Repos, weil dort Zugangsdaten liegen. Text, Bilder und Dateien laufen in beide
-Richtungen; Antworten des Users kommen als Prompt in der Session an.
+**Nimbalyst und die Matrix-Bridge sind seit 26.08.2026 vollständig
+deinstalliert** — User-Wort: *„nimbalyst ist vollständig deinstalliert, die
+alte fassung ist daher unnötig"*; der Bridge-Ordner existiert nicht mehr, ein
+Nimbalyst-MCP ist nicht registriert. `melden.py`, `mcp__nimbalyst__*` und
+jeder Ersatzbus sind tot — nichts davon aufrufen. WhatsApp (24.08.) und die
+claude.ai-Routine „Nakama: Dirigent-Meldung" (25.08.) waren schon vorher
+abgeschafft.
 
-```powershell
-py -3.13 melden.py "Ticket · Ergebnis · was als Nächstes"
-py -3.13 melden.py --datei <pfad> ["Beschriftung"]
-py -3.13 melden.py --letzte     # Exit 1 = überfällig
-```
-
-Für den **Dirigenten** ist das eine feste Regel mit drei Pflichtauslösern:
-jeder Session-Abschluss · **mindestens stündlich**, auch ohne Ergebnis · jede
-blockende Entscheidung. Wortlaut und Ausnahmen in
-`.claude/skills/dirigent/SKILL.md` §3.6. **Matrix ist der einzige Kanal.**
-WhatsApp ist abgeschafft (24.08.), die claude.ai-Routine **„Nakama:
-Dirigent-Meldung“** (`trig_01BUKf1i5Y9ztqGkA6Ev4eff`) seit 25.08.2026 ebenfalls
-— User: *„Ich habe die Routinen im der webapp ausgeschaltet. Brauchen wir nicht
-mehr , also die Dirigenten benachrichtigung über Routine Funktion."* Sie wird
-nicht mehr aufgerufen; einen Ersatzweg gibt es nicht. Eine lokale
-Nimbalyst-Frage allein ist kein Remote-Bericht.
+Der einzige Weg zum User ist die Session selbst: Der Dirigent läuft als echte
+Fable-Session mit `--remote-control` — Terminal und Remote-Oberfläche sind
+dieselbe Sitzung. Meldungen, Zwischenstände und blockierende Fragen enden als
+klare, wartende Frage in genau dieser Sitzung. Ablauf, Haltgründe und
+Kontexthaushalt: `.claude/skills/dirigent/SKILL.md`; Migrationsstand:
+`docs/vorhaben-2026-08-25-dirigent-ohne-nimbalyst.md`.
 
 ## Maschinen-Landminen
 

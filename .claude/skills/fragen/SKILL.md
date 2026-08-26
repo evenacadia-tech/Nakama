@@ -49,20 +49,25 @@ In dieser Reihenfolge:
 ## 3. Wie du fragst
 
 **Zeigen, nicht beschreiben.** Trägt die Karte `bilder`, zeig sie **zuerst**
-mit `mcp__nimbalyst__display_to_user` (absoluter Pfad auf
-`docs/plan/bilder/<datei>`), mit dem `text` der Karte als Beschreibung. Der
-User ist Gestalter — er entscheidet an Bildern, nicht an Beschreibungen.
+direkt in der Sitzung: `Read` auf den absoluten Pfad
+`docs/plan/bilder/<datei>` — Bilder erscheinen nativ im Claude-Kanal, auch in
+Remote Control — und nenne den `text` der Karte dazu. Der User ist Gestalter —
+er entscheidet an Bildern, nicht an Beschreibungen. (Nimbalyst ist seit
+26.08.2026 vollständig deinstalliert; es gibt keine `mcp__nimbalyst__*`-
+Werkzeuge und keinen Ersatzbus. Gefragt wird direkt hier.)
 
-Dann die Frage, **immer** über ein interaktives Werkzeug, nie als Fließtext:
+Dann die Frage, wo verfügbar über das native `AskUserQuestion`, sonst als
+klar abgesetzte Einzelfrage im Text:
 
-- **Ein Entscheid mit 2–4 klaren Wegen** → `mcp__nimbalyst__AskUserQuestion`.
-  Deine Empfehlung steht an erster Stelle und trägt „(Empfohlen)".
-- **Mehrere Folgefragen einer Karte** (`U2` hat fünf, `U6` vier) →
-  `mcp__nimbalyst__PromptForUserInput` mit einem Feld je Folgefrage. Das ist
-  die eine erlaubte Ausnahme von „eine Frage je Runde": es ist **eine Karte**.
+- **Ein Entscheid mit 2–4 klaren Wegen** → `AskUserQuestion`. Deine Empfehlung
+  steht an erster Stelle und trägt „(Empfohlen)".
+- **Mehrere Folgefragen einer Karte** (`U2`, `U6`) → ein
+  `AskUserQuestion`-Aufruf mit bis zu vier Fragen; sind es mehr, in derselben
+  Runde aufteilen. Das ist die eine erlaubte Ausnahme von „eine Frage je
+  Runde": es ist **eine Karte**.
 - **Ein Handgriff** (`U7`, `U11`, `U12`, `U13`) → keine Meinungsfrage. Sag,
-  was zu tun ist, was du vorbereitet hast, und frag per `confirm`, ob es
-  erledigt ist oder liegen bleiben soll.
+  was zu tun ist, was du vorbereitet hast, und frag mit zwei klaren Wegen
+  (erledigt / bleibt liegen), wie es steht.
 
 Regeln für den Text der Frage:
 

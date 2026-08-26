@@ -467,7 +467,7 @@ function Get-TranscriptEvidence {
                 $command = [string](Get-PropertyValue $inputValue 'command')
                 if (-not $command) { continue }
                 $normal = ($command -replace '[`\r\n]+', ' ' -replace '\s+', ' ').Trim()
-                if ($normal -match '(Get-Content|Select-String|rg|type)\b.*docs[\\/]PLAN-STAND\.md') { $planRead = $true }
+                if ($normal -match '(Get-Content|Select-String|rg|type|cat)\b.*docs[\\/]PLAN-STAND\.md') { $planRead = $true }
                 if ($normal -match 'git(?:\.exe)?\s+(?:-C\s+\S+\s+)?rev-parse\s+HEAD') { [void]$headToolIds.Add($toolId) }
                 if ($normal -match 'tools[\\/]plan[\\/]planstand\.py' -and $codexContracts.Count) {
                     $codexContracts.Clear()

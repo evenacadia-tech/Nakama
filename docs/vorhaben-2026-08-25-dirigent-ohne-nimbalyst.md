@@ -178,8 +178,8 @@ sessiongebundenen Beobachtungsmodus Zustandswechsel eines konkret benannten
 Workers ausgeben; er verwaltet oder startet den Worker nicht. Er besitzt keine
 Produktlogik, keine Recovery, keine Logs und keine eigene dauerhafte Wahrheit.
 Außer seinem letzten Vergleichswert im laufenden Prozess hält er keinen
-Zustand. Falls sich beim
-realen Probelauf zeigt, dass der direkte Startbefehl wiederholt falsch
+Zustand. Falls sich beim realen Probelauf zeigt, dass der direkte Startbefehl
+wiederholt falsch
 eingegeben wird, ist zusätzlich höchstens ein dünnes `Start-Dirigent.ps1`
 erlaubt. Es darf nur den unten stehenden Claude-Aufruf weiterreichen — ohne
 Zustand, Prozessverwaltung oder eigene Regeln.
@@ -386,7 +386,8 @@ Unterbefehl geparst. Der Preflight muss außerdem belegen, dass
 - Fable für das Konto tatsächlich startbar ist und das von der Sitzung
   gemeldete Kontextfenster `1.000.000` Token beträgt,
 - Terminal und Remote Control dieselbe Sitzung zeigen,
-- Claudes mehrzeilige `statusLine` das Fable-Modell, tatsächliche Effort,
+- Claudes mehrzeilige `statusLine` das Fable-Modell, die tatsächliche
+  Effort-Stufe,
   Kontextverbrauch, 5-Stunden- und Wochenkontingent ohne Schätzung liefert und
   auf eine Statusänderung sichtbar aktualisiert,
 - das Codex-Wochenkontingent aus dem aktuellen JSONL-Ereignis oder über
@@ -944,8 +945,9 @@ gelöscht.
 
 Der Beweis umfasst mindestens:
 
-- dieselbe Fable-Sitzung in Terminal und Remote Control, tatsächliches
-  `xhigh` und ein gemeldetes Kontextfenster von `1.000.000` Token,
+- dieselbe Fable-Sitzung in Terminal und Remote Control, die tatsächlich
+  aktive Effort-Stufe `xhigh` und ein gemeldetes Kontextfenster von
+  `1.000.000` Token,
 - echte Claude-5-Stunden-/Wochenwerte und den echten Codex-Wochenwert samt
   ehrlichem Ausfallzustand,
 - eine dynamische Liste der beteiligten Testsitzungen mit richtigem Zustand
@@ -1161,5 +1163,5 @@ ist nur Preflight-Snapshot und wird vor einer späteren Umsetzung neu gemessen.
 Das am selben Tag lokal aus `codex app-server generate-json-schema` erzeugte
 Protokoll enthält außerdem `account/rateLimits/read`,
 `account/rateLimits/updated`, `usedPercent`, `resetsAt` und
-`windowDurationMins`; Stufe A belegt vor Verwendung erneut, dass das installierte
-Protokoll diese Felder wirklich liefert.
+`windowDurationMins`; Stufe A belegt vor Verwendung erneut, dass das
+installierte Protokoll diese Felder wirklich liefert.

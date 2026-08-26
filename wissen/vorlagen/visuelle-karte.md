@@ -16,6 +16,11 @@ asset: ""
 
 Nur beschreiben, was im Bild tatsächlich zu erkennen ist.
 
+## Menschliche Funktion
+
+Welches Ziel, welche Wahrnehmung, Entscheidung, Handlung, Rückmeldung oder
+Wiederherstellung unterstützt das Sichtbare – und in welcher Situation?
+
 ## Quellenkontext
 
 Was behauptet oder untersucht die zugehörige Quelle?
@@ -27,6 +32,11 @@ Welche Bedeutung lesen wir daraus? Vermutungen ausdrücklich markieren.
 ## Nakama-Transfer
 
 Was lässt sich übertragen, was nicht und warum?
+
+## Nicht blind kopieren
+
+Welche sichtbare Form wäre ohne die begründende menschliche Funktion nur
+Oberflächenkopie?
 
 ## Verknüpfungen
 

@@ -5,6 +5,27 @@ Nakama. Das gesamte Git-Repository bleibt die einzige Projektwahrheit.
 Bestehende Verträge, Designquellen und technische Dokumente werden verlinkt,
 nicht kopiert.
 
+## Zweck: Entscheidungskontext für KI
+
+Die primären Leser dieses Archivs sind Codex, Claude und andere künftig am
+Projekt arbeitende KI-Agenten. Ein Eintrag soll ihnen nicht nur sagen, **was**
+eine Quelle empfiehlt, sondern vor allem, **warum** ein Mensch etwas braucht
+und welche Produkt-, Design- oder Technikentscheidung sich daraus begründen
+lässt.
+
+Die kleinste nützliche Wissenseinheit ist deshalb eine Kausalkette:
+
+```text
+Mensch + Situation → Ziel oder Problem → menschlicher Bedarf
+                   → Entwurfsfolge → beobachtbare Wirkung
+```
+
+Das gilt für alle Themen. Bei allem Sichtbaren und Bedienbaren ist es
+besonders streng: Ein Muster, Control oder Animation ist erst verstanden, wenn
+klar ist, welche Wahrnehmung, Entscheidung, Handlung, Rückmeldung oder
+Wiederherstellung es für Menschen unterstützt. Visuelle Beispiele belegen eine
+mögliche Lösung; sie sind keine Vorlage zum gedankenlosen Nachbauen.
+
 ## Grundsatz
 
 Ein Sachverhalt lebt genau einmal im passenden Wissensbereich. Neue Extrakte
@@ -29,8 +50,9 @@ Für die Übergabe reichen:
   ein ausgewählter Screenshot.
 
 Codex übernimmt Einordnung, Zusammenführung mit vorhandenem Wissen,
-Widerspruchsprüfung, visuelle Karten, Indexpflege, Commit und Push. Die Vorlage
-liegt unter [`vorlagen/wissenseintrag.md`](vorlagen/wissenseintrag.md).
+Widerspruchsprüfung, die menschliche Kausalkette, visuelle Karten, Indexpflege,
+Commit und Push. Die Vorlage liegt unter
+[`vorlagen/wissenseintrag.md`](vorlagen/wissenseintrag.md).
 YouTube-Videos kann Codex direkt prüfen; auch dort werden nur relevante
 Erkenntnisse und präzise Zeitstempel übernommen, keine Transkript-Sammlung.
 

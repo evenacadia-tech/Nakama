@@ -11,14 +11,33 @@ pruefstand: nur-extrakt
 
 # Thema
 
-## Das Wichtigste
+## Menschliches Warum
+
+- Mensch und Situation:
+- Ziel, Problem oder Unsicherheit:
+- daraus entstehender Bedarf:
+- gewünschte beobachtbare Wirkung:
+
+Die Kausalkette in einem Satz:
+
+> Weil …, braucht …, damit …
+
+## Belegtes Wissen
 
 Die relevanten Erkenntnisse aus dem übergebenen Extrakt, bereits mit
 vorhandenem Nakama-Wissen zusammengeführt.
 
+## Konsequenz für Entwurf und Bedienung
+
+Was muss dadurch sichtbar, verständlich, bedienbar, hörbar oder sicher
+wiederherstellbar werden? Ursache und Wirkung verbinden, keine bloße
+Feature-Liste anlegen.
+
 ## Visuelle Belege
 
 Welche Bilder, Diagramme oder Zustandsfolgen machen die Erkenntnis sichtbar?
+Welche menschliche Funktion zeigen sie, und welche oberflächliche Form darf
+nicht ohne dieses Warum kopiert werden?
 
 ## Bedeutung für Nakama
 
@@ -27,7 +46,8 @@ formulieren, wenn sie nicht ausdrücklich getroffen wurde.
 
 ## Grenzen, Widersprüche und offene Fragen
 
-Wo endet die Aussage und wodurch könnte sie widerlegt werden?
+Wo endet die Aussage, wodurch könnte sie widerlegt werden und welcher Teil der
+Übertragung ist nur eine Nakama-Hypothese?
 
 ## Quellen
 

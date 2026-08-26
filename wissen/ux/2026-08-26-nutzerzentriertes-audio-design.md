@@ -11,7 +11,17 @@ pruefstand: quellen-geprueft
 
 # Nutzerzentriertes Design für Audio-Produkte
 
-## Das Wichtigste
+## Menschliches Warum
+
+Für Nakama lässt sich aus dem Vortrag folgende menschliche Ausgangslage
+ableiten: Menschen beurteilen in einem Audio-Produkt gleichzeitig Klang und
+Systemreaktion. Wenn gleiche Handlungen je nach Produkt anders funktionieren
+oder Rückmeldungen unklar und verspätet sind, müssen sie Aufmerksamkeit von
+ihrem eigentlichen Hörziel auf die Bedienlogik verlagern. Sie brauchen deshalb
+vorhersehbare Interaktionen und eine erkennbare Ursache-Wirkungs-Beziehung
+zwischen Handgriff, Systemzustand und hörbarem Ergebnis.
+
+## Belegtes Wissen
 
 Ein Audio-Designsystem ist nicht nur eine Sammlung visueller Komponenten. Es
 legt über eine Produktfamilie hinweg dieselbe Interaktionssprache fest:

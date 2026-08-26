@@ -10,6 +10,35 @@ Diese Regeln gelten für alle Dateien unter `wissen/`.
 3. Bestehende Einträge nach demselben Sachverhalt und derselben Quelle
    durchsuchen. Nicht duplizieren.
 
+## Denkpflicht: Warum vor Was
+
+Die primären Leser sind nachfolgende KI-Agenten. Optimiere Einträge deshalb
+für begründete Entscheidungen, nicht für eine möglichst vollständige
+Quellenzusammenfassung.
+
+Jeder neue Befund wird, soweit die Quelle es erlaubt, als Kausalkette erfasst:
+
+1. Welcher Mensch befindet sich in welcher Situation?
+2. Welches Ziel, Problem, Risiko oder welche Unsicherheit hat er?
+3. Welcher Wahrnehmungs-, Verständnis- oder Bedienbedarf entsteht daraus?
+4. Welche Entwurfs- oder Technikfolge beantwortet genau diesen Bedarf?
+5. Woran wäre für Menschen beobachtbar, dass die Lösung funktioniert?
+
+Bei Produkt, UX, UI und Motion sind alle fünf Antworten Pflicht. Bei
+technischen Themen muss die Kette mindestens bis zur erlebbaren Wirkung
+reichen, zum Beispiel Vertrauen, Reaktionsfähigkeit, Audiokontinuität oder
+sichere Wiederherstellung. Wenn die Quelle das menschliche Warum nicht belegt,
+wird es als Nakama-Hypothese markiert und nicht als Forschungsergebnis
+ausgegeben.
+
+- Keine Feature- oder Best-Practice-Liste ohne Ursache und Wirkung übernehmen.
+- Ein visuelles Beispiel zeigt eine mögliche Antwort, beweist aber nicht den
+  Bedarf und ist keine Stilvorgabe.
+- Nicht nur den Erfolgsweg erfassen: Unsicherheit, Fehler, Unterbrechung und
+  Recovery gehören zum menschlichen Nutzungskontext.
+- Eine Entwurfsfolge muss benennen, was sichtbar, bedienbar oder hörbar werden
+  soll und warum.
+
 ## Eingehende Extrakte
 
 Ein vom User übergebener NotebookLM-Text oder ein direkt geprüftes
@@ -27,6 +56,8 @@ Ein neuer Wissenseintrag braucht mindestens:
 - Eingangsart, zum Beispiel `notebooklm-auszug`, `youtube-transkript` oder
   `web-recherche`;
 - mindestens ein Thema;
+- ein menschliches Warum oder bei rein technischer Forschung die daraus
+  entstehende erlebbare Wirkung;
 - einen ehrlichen Prüfstand.
 
 ## Ablage

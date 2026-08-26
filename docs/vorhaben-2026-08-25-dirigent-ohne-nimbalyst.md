@@ -160,6 +160,12 @@ Unterbefehl geparst. Der Preflight muss außerdem belegen, dass
 - Opus mit `--permission-mode auto` tatsächlich im Auto-Modus startet und
   einen ausdrücklich erlaubten harmlosen Prüfkommando-Pfad ohne Rückfrage
   beendet; ein stiller Rückfall auf Manual zählt als Fehlschlag,
+- der Wiedereinstieg real funktioniert: `--resume` mit einem Nicht-ID-Wert
+  öffnet nur den interaktiven Picker mit diesem Suchbegriff; deterministisch
+  fortgesetzt wird allein über die Session-ID. Der Preflight belegt beide Wege,
+- eine wartende Frage der idle Fable-Sitzung auf der Remote-Oberfläche
+  sichtbar wird. Ohne diesen Rückweg ersetzt der neue Weg die abgeschaffte
+  Matrix-Meldung bei blockenden Entscheidungen nicht,
 - der Codex-Review- und Resume-Aufruf die gewählten Optionen akzeptiert.
 
 Dieser Preflight verändert keine Produktdatei. Scheitert eine Fähigkeit,
@@ -214,10 +220,14 @@ Hintergrund-Supervisor ist Werkzeugmechanik, kein Nakama-Dienst.
 
 Wird nur die Remote-Verbindung getrennt, läuft die lokale Sitzung weiter. Wird
 der Terminalprozess beendet, feuern keine `/loop`-Aufgaben, bis genau diese
-Sitzung fortgesetzt wird:
+Sitzung fortgesetzt wird. `--resume` mit dem Sitzungsnamen ist dabei **keine**
+deterministische Fortsetzung: ein Nicht-ID-Wert öffnet nur den interaktiven
+Picker, vorgefiltert auf den Suchbegriff. Der Name `nakama-dirigent` macht die
+Sitzung dort sofort auffindbar; ohne Klick geht es nur über die Session-ID:
 
 ```powershell
-claude --resume nakama-dirigent --model fable --effort xhigh --remote-control
+claude --resume nakama-dirigent   # Picker, vorgefiltert — ein Klick des Users
+claude --resume <session-id> --model fable --effort xhigh --remote-control
 ```
 
 Beim bewussten Beenden stoppt Fable zuerst einen laufenden Worker und löscht
@@ -288,7 +298,9 @@ claude --model opus --effort max --permission-mode auto `
 Der Auftrag enthält nur Ticketgrenze, verbindliche Quellen, Manifestpfad,
 Beweislauf und die Git-Regeln. Zusätzlich nötige, nicht destruktive
 Ticketkommandos werden beim Start eng über `--allowed-tools` freigegeben, nicht
-als globale Wildcard. `auto` ist erforderlich, weil `acceptEdits` zwar Dateien,
+als globale Wildcard. Ein eigenes Konsolenfenster bekommt der Worker nicht:
+`claude agents` zeigt seinen Zustand, `claude logs` und `claude attach` bei
+Bedarf den Verlauf — dieselbe Sichtbarkeit ohne zweiten Fensterhaushalt. `auto` ist erforderlich, weil `acceptEdits` zwar Dateien,
 aber nicht jeden Test- oder Buildbefehl ohne Rückfrage erlaubt;
 `bypassPermissions` bleibt verboten. Ist Auto für Konto und Opus nicht
 verfügbar, greift die Haltregel aus 5.0 statt eines stillen Moduswechsels.
@@ -337,14 +349,21 @@ zum Halt; Fable baut dafür keine automatische Reparatur.
 
 Ein verändernder Worker gilt außerdem erst als beendet, wenn der Arbeitsbaum
 sauber ist, der Ausgangs-SHA Vorfahr des gemessenen HEAD ist und genau dieser
-HEAD nachweislich auf `origin/master` liegt. Uncommittierte Reste, fremde
-Commits oder ein nur lokal vorhandener Commit führen vor dem Review zum Halt.
+HEAD nachweislich auf `origin/master` liegt. Fremde Commits führen vor dem
+Review zum Halt. Hinterlässt der eigene Worker uncommittierte Reste oder einen
+nur lokalen Commit, darf genau **ein** frischer Fortsetzungs-Worker (Name mit
+Suffix `-fort`, derselbe Basis-SHA, enger Abschlussauftrag) den Stand fertig
+committen und pushen; verwerfen darf er nichts, und eine zweite Fortsetzung
+gibt es nicht. Gelingt auch das nicht, gilt der Halt.
 
 ### 5.5 Mit Codex prüfen und gezielt nacharbeiten
 
 Ein frischer Codex-Thread prüft lesend den vollständigen Ticketbereich, den
 unveränderten Gate-Text und das Manifest. Temporäre CLI-Ausgaben liegen nur
-unter `$env:TEMP` und werden nach dem Ticket entfernt.
+unter `$env:TEMP` und werden nach dem Ticket entfernt. Die Pipelines laufen in
+`pwsh` (PowerShell 7): Windows PowerShell 5.1 schreibt `Tee-Object` ohne
+Encoding-Wahl als UTF-16 und macht die JSONL-Datei für die Weiterverarbeitung
+unbrauchbar.
 
 ```powershell
 $baseSha = '<Stand vor dem Ticket>'
@@ -416,7 +435,14 @@ Fable fährt mit dem nächsten Ticket fort. Es hält nur bei:
 - einem materiellen, zweimal nicht geschlossenen Befund,
 - einer fehlenden nativen Fähigkeit, deren Ersatz neue Infrastruktur
   erfordern würde,
+- erschöpftem Kontingent oder wiederholten API-Fehlern bei Fable, Opus oder
+  Codex — Worker stoppen, Loop löschen, dann Halt statt blindem Wiederholen,
+- Kontextdruck der Dirigentensitzung nach 5.7,
 - einem Phasengate oder leerem Plan.
+
+Jeder Halt endet als klare, wartende Frage oder Statusmeldung in der Sitzung
+selbst — das ist der Weg, auf dem er den User über die Remote-Oberfläche
+erreicht. Einen zweiten Meldekanal gibt es nicht.
 
 Vor dem nächsten Ticket schreibt Fable Urteil, Modell, Effort, Basis- und
 End-SHA sowie die tatsächlich gelaufenen Beweise in das vorhandene Manifest,
@@ -425,6 +451,30 @@ löscht es alle für dieses Ticket erzeugten temporären Codex-Dateien, entfernt
 die beendete Worker-Session mit `claude rm <worker-id>` und belegt mit
 `CronList` und `claude agents --json`, dass weder Kontrollloop noch aktiver
 Worker übrig sind.
+
+### 5.7 Kontexthaushalt des Dirigenten
+
+Der Dirigentenkontext ist das Einzige, was zwischen den Tickets lebt — und er
+ist endlich. Der Lauf endet planmäßig nicht an einem Fehler, sondern an dieser
+Grenze. Zwei Regeln halten den Kontext klein, eine macht ihn ersetzbar:
+
+- Fable liest groß Gewachsenes gezielt statt vollständig: Diffs zuerst als
+  `--stat`, dann nur die relevanten Hunks; vom Codex-JSONL nur Thread-ID und
+  Schlussurteil; vom Worker-Log nur den Blockadegrund. Rohausgaben bleiben in
+  ihren Temp-Dateien. Ein Loop-Tick ohne Befund bleibt ein Einzeiler.
+- Reihenfolge und Zwischenstände werden nicht im Kopf mitgeführt: Basis-SHA
+  steckt im Workernamen, Urteil und Beweise im Manifest, der nächste Schritt
+  im gerechneten Planstand.
+- Nach jedem Ticketabschluss (5.6) steht deshalb alles Tragende im Repo.
+  Ab dieser Grenze ist der Dirigentenkontext verzichtbar; eine frische
+  Dirigenten-Session kann ohne Übergabetext übernehmen.
+
+Meldet die Sitzung Kontextdruck — eine Compaction ist gelaufen oder Fable kann
+Tragendes nur noch aus Zusammenfassungen zitieren —, fährt Fable das laufende
+Ticket bis zur nächsten sauberen Grenze, räumt Worker und Loop ab, schreibt
+den Abschluss ins Manifest und beendet den Lauf mit dem Hinweis, eine frische
+Dirigenten-Session zu starten. Mit angeschlagenem Kontext beginnt kein neues
+Ticket.
 
 ## 6. Aktive Altlasten entfernen
 
@@ -608,6 +658,8 @@ Das Vorhaben ist fertig, wenn:
   Tiefenkontext mehr injizieren und kein Hook selbst committet oder pusht,
 - eine frische Session nach dem kurzen Einstieg sofort am Nakama-Ticket statt
   am Orchestrierungssystem arbeitet,
+- eine frische Dirigenten-Session an jeder Ticketgrenze allein aus Repo-Stand
+  übernehmen kann — Manifest, Planstand und Git genügen, ohne Übergabetext,
 - dieser Migrationsplan selbst keine zweite aktive Wahrheit mehr ist.
 
 Für künftige Hilfswerkzeuge gilt vor dem Bau eine einzige Entscheidung:
@@ -636,12 +688,15 @@ Diese Links begründen die Mechanik, nicht den Nakama-Produktstand:
 - [OpenAI: Codex Configuration Reference](https://learn.chatgpt.com/docs/config-file/config-reference)
   — gültige Werte für `model_reasoning_effort`.
 
-Am 26.08.2026 lokal geprüft: Claude Code `2.1.218` unterstützt `fable`,
-`--effort`, `--bg`, `--name`, `--remote-control`, `agents`, `attach`, `logs`,
-`stop`, `rm` und `worktree.bgIsolation`; die CLI listet Auto als
-Berechtigungsmodus, seine Konto-/Modellverfügbarkeit bleibt bewusst Beweis von
-Stufe A. Codex CLI `0.130.0-alpha.5` akzeptiert die geplanten `exec review`-/
-`exec resume`-Formen, `--ignore-user-config`, `--base`, `-a never` und
-Sandboxes; `--strict-config` und Effort `max` werden nicht akzeptiert. Diese
-Versionszeile ist nur Preflight-Snapshot und wird vor einer späteren Umsetzung
-neu gemessen.
+Am 26.08.2026 lokal geprüft (zweitgeprüft am selben Tag): Claude Code `2.1.218`
+unterstützt `fable`, `--effort`, `--bg`, `--name`, `--remote-control`,
+`agents --json --cwd --all`, `attach`, `logs`, `stop`, `rm` und
+`worktree.bgIsolation`; `--permission-mode` listet `auto` als Wahlwert, seine
+Konto-/Modellverfügbarkeit bleibt bewusst Beweis von Stufe A. `--resume` mit
+einem Nicht-ID-Wert öffnet laut CLI-Hilfe nur den interaktiven Picker mit
+Suchbegriff — deterministische Fortsetzung braucht die Session-ID (in 5.2
+eingearbeitet). Codex CLI `0.130.0-alpha.5` akzeptiert die geplanten
+`exec review`-/`exec resume`-Formen (`exec resume` nimmt UUID oder
+Thread-Namen), `--ignore-user-config`, `--base`, `-a never` und Sandboxes;
+`--strict-config` und Effort `max` werden nicht akzeptiert. Diese Versionszeile
+ist nur Preflight-Snapshot und wird vor einer späteren Umsetzung neu gemessen.

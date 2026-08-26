@@ -20,25 +20,6 @@ Aktueller Code und Beweise aus der laufenden Session gehen beschreibender Doku v
 Produktentscheidungen sind nur bindend, wenn sie entsprechend `CLAUDE.md` mit Datum
 und User-Wortlaut dokumentiert sind. Archive und Studien sind Verlauf, keine Vorgabe.
 
-<!-- codebase-memory-mcp:start -->
-## Code-Discovery mit dem Knowledge Graph
-
-Dieses Projekt verwendet `codebase-memory-mcp`. Für die Suche nach Definitionen,
-Beziehungen und Aufrufern immer zuerst die Graph-Werkzeuge verwenden:
-
-1. `search_graph` — Funktionen, Klassen, Routen und Variablen finden
-2. `trace_call_path` — Aufrufer und ausgehende Aufrufe verfolgen
-3. `get_code_snippet` — gezielt den Quelltext eines gefundenen Symbols lesen
-4. `query_graph` — komplexe Zusammenhänge per Cypher untersuchen
-5. `get_architecture` — einen groben Architekturüberblick gewinnen
-
-Graph-Ergebnisse dienen der Navigation; vor einer Änderung bleibt die konkrete
-Quelldatei maßgeblich. `rg` ist der Fallback für Stringliterale, Fehlermeldungen,
-Konfigurationen, Skripte, Dokumentation, generierte Dateien oder unzureichend
-indexierten Code. Den Index nur aktualisieren, wenn Status oder Änderungsprüfung
-zeigen, dass er für den Auftrag veraltet ist.
-<!-- codebase-memory-mcp:end -->
-
 ## Aufgabenbezogen lesen
 
 | Aufgabe | Verbindlicher Einstieg |

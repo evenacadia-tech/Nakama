@@ -810,7 +810,7 @@ public:
 private:
     static void hoch (std::atomic<std::uint64_t>& z) noexcept
     {
-        z.store (z.load (std::memory_order_relaxed) + 1, std::memory_order_relaxed);
+        z.fetch_add (1, std::memory_order_relaxed);
     }
 
     std::vector<float> puffer[2];

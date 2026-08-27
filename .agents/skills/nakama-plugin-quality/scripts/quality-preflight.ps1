@@ -55,6 +55,38 @@ function Get-CommandInfo {
     }
 }
 
+function Get-CMakeInfo {
+    $command = Get-Command 'cmake' -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($null -ne $command) {
+        return [pscustomobject]@{
+            Name = 'cmake'
+            Required = $true
+            Available = $true
+            Path = $command.Source
+        }
+    }
+
+    # Muss dieselben Windows-Fallbacks kennen wie tools/beweise.ps1::Finde-CMake.
+    # Sonst meldet der Preflight den kanonischen Bauweg faelschlich als unklar,
+    # obwohl der Runner das mit Visual Studio gelieferte CMake verwenden kann.
+    $candidates = @()
+    foreach ($root in @(${env:ProgramFiles(x86)}, $env:ProgramFiles)) {
+        if (-not $root) { continue }
+        foreach ($edition in @('BuildTools', 'Community', 'Professional', 'Enterprise')) {
+            $candidates += Join-Path $root "Microsoft Visual Studio\2022\$edition\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
+        }
+        $candidates += Join-Path $root 'CMake\bin\cmake.exe'
+    }
+
+    $fallback = $candidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+    return [pscustomobject]@{
+        Name = 'cmake'
+        Required = $true
+        Available = $null -ne $fallback
+        Path = $fallback
+    }
+}
+
 function Get-ScopeTag {
     param([Parameter(Mandatory)][string] $Path)
 
@@ -134,7 +166,7 @@ $tools = @(
     Get-CommandInfo -Name 'pwsh' -Required $true
     Get-CommandInfo -Name 'cargo' -Required $true
     Get-CommandInfo -Name 'python' -Required $false
-    Get-CommandInfo -Name 'cmake' -Required $false
+    Get-CMakeInfo
 )
 foreach ($tool in $tools) {
     if ($tool.Required -and -not $tool.Available) {

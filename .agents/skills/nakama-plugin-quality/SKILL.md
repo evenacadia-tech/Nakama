@@ -23,6 +23,9 @@ liefert zunächst nur Verdachtsstellen.
    <ref>`. Der Preflight fetcht und verändert nichts. Fehlt `pwsh`, ist der
    kanonische Runner `BLOCKED`; starte `tools/beweise.ps1` nicht ersatzweise
    unter Windows PowerShell 5.1.
+
+   Nach Änderungen am Preflight dessen Vertrag mit
+   `scripts/quality-preflight-selftest.ps1` prüfen.
 3. Lies den tatsächlichen Diff und danach nur die betroffene Implementierung,
    Tests, Aufrufer und Gegenwege. Code und Belege der laufenden Session gehen
    Plan, Doku und älteren Audits vor.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Nakama Plugin Quality"
+  short_description: "Misst Realtime, Stabilitaet und Codequalitaet"
+  default_prompt: "Nutze $nakama-plugin-quality, um die aktuelle Nakama-Aenderung mit frischen Belegen zu pruefen und bestaetigte Luecken dauerhaft abzusichern."

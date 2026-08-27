@@ -30,6 +30,7 @@ Stand: 27.08.2026
 
 | Datum | Eintrag | Bereich | Prüfstand |
 |---|---|---|---|
+| 27.08.2026 | [Beweise müssen aus versionierten Quellen neu entstehen](engineering/2026-08-27-beweise-muessen-reproduzierbar-sein.md) | Engineering, DSP, UI/Motion | Reproducible-Builds- und SLSA-Quellen sowie zwei Nakama-Gegenbeweise geprüft |
 | 27.08.2026 | [Ein Installer ist eine privilegierte Transaktion](engineering/2026-08-27-installer-als-privilegierte-transaktion.md) | Engineering, FL Studio | Microsoft-Referenz, Installer-Code und Rollback-Beweise geprüft |
 | 27.08.2026 | [JSON-Verträge vor dem Parser beweisen](engineering/2026-08-27-json-vertraege-vor-dem-parser.md) | Engineering, FL Studio | RFCs, Code und Mehrsprachenbeweise geprüft |
 | 27.08.2026 | [Windows-Pipes sind Sicherheits- und Lebenszyklusverträge](engineering/2026-08-27-windows-pipes-sicherheit-und-lifecycle.md) | Engineering, FL Studio | Microsoft-Referenz, Code und Regressionen geprüft |

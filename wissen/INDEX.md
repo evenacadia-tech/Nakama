@@ -1,6 +1,6 @@
 # Index des Nakama-Wissensarchivs
 
-Stand: 26.08.2026
+Stand: 27.08.2026
 
 ## Verbindliche bestehende Quellen
 
@@ -30,6 +30,12 @@ Stand: 26.08.2026
 
 | Datum | Eintrag | Bereich | Prüfstand |
 |---|---|---|---|
+| 27.08.2026 | [Ein Installer ist eine privilegierte Transaktion](engineering/2026-08-27-installer-als-privilegierte-transaktion.md) | Engineering, FL Studio | Microsoft-Referenz, Installer-Code und Rollback-Beweise geprüft |
+| 27.08.2026 | [JSON-Verträge vor dem Parser beweisen](engineering/2026-08-27-json-vertraege-vor-dem-parser.md) | Engineering, FL Studio | RFCs, Code und Mehrsprachenbeweise geprüft |
+| 27.08.2026 | [Windows-Pipes sind Sicherheits- und Lebenszyklusverträge](engineering/2026-08-27-windows-pipes-sicherheit-und-lifecycle.md) | Engineering, FL Studio | Microsoft-Referenz, Code und Regressionen geprüft |
+| 27.08.2026 | [Crashfester Store und Outbox: mindestens einmal, genau einmal wirksam](engineering/2026-08-27-crashfester-store-und-outbox.md) | Engineering | SQLite- und Outbox-Primärquellen sowie Debugging-Beweise geprüft |
+| 27.08.2026 | [Realtime-Qualität misst den seltenen Spike](engineering/2026-08-27-realtime-worst-case-statt-durchschnitt.md) | Engineering, DSP, FL Studio | ADC-Quelle und vollständiger Folientext geprüft; kein visueller Render |
+| 27.08.2026 | [Messwerte brauchen Supportintervall und Zeitanker](dsp/2026-08-27-messwerte-brauchen-support-und-zeitanker.md) | DSP, Engineering, FL Studio | Welch, EBU, VST3, Code und Debugging-Beweise geprüft |
 | 26.08.2026 | [Zugängliche Audio-Controls müssen auch benutzbar sein](ux/2026-08-26-zugaengliche-audio-controls.md) | UX, UI/Motion, Engineering | Vortrag, W3C und JUCE geprüft |
 | 26.08.2026 | [Audio-Interaktion: Kontext statt ungeprüfter Annahmen](ux/2026-08-26-audio-interaktion-kontext-statt-annahmen.md) | UX, UI/Motion, DSP | Videoabschnitte geprüft; kein Transkript verfügbar |
 | 26.08.2026 | [Plugin-Modernisierung ohne Vertrauensbruch](fl-studio/2026-08-26-plugin-modernisierung-ohne-vertrauensbruch.md) | FL Studio, Engineering, UX | Quelle und Transkript geprüft |

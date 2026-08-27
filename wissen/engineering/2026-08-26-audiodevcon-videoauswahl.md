@@ -3,7 +3,7 @@ id: w-2026-08-26-audiodevcon-videoauswahl
 typ: wissenseintrag
 status: aktiv
 datum: 2026-08-26
-aktualisiert: 2026-08-26
+aktualisiert: 2026-08-27
 hauptbereich: engineering
 weitere_bereiche: [ux, ui-motion, dsp, fl-studio]
 pruefstand: metadaten-geprueft
@@ -35,12 +35,14 @@ Beschreibung und Kapitel begrenzt.
 
 ## Priorität 2
 
-Diese Videos sind relevant, aber nach den sechs Kernvorträgen dran.
+Diese Videos sind relevant, aber nach den sechs Kernvorträgen dran. Der
+Einzelstatus ist maßgeblich; ausgewertete Vorträge bleiben zur Nachverfolgung
+in der Auswahl verzeichnet.
 
 | Video | Bereich | Erwarteter Nutzen |
 |---|---|---|
 | [Real-Time, Low Latency and High Temporal Resolution Spectrograms](https://www.youtube.com/watch?v=QbNPA5QJ6OU) | DSP, UI/Motion | Datenkadenz, Zeitauflösung und Darstellung für Nakamas Spektrum |
-| [Mind the Spike – Benchmarking for Worst-Case Execution Time in Realtime Code](https://www.youtube.com/watch?v=7RrOjl996WQ) | Engineering | Worst-Case statt Durchschnitt; passend zu Nakamas Echtzeit- und p95-Prüfungen |
+| [Mind the Spike – Benchmarking for Worst-Case Execution Time in Realtime Code](https://www.youtube.com/watch?v=7RrOjl996WQ) | Engineering | Worst-Case statt Durchschnitt; ADC-Session und vollständiger Folientext geprüft; [eingearbeitet](2026-08-27-realtime-worst-case-statt-durchschnitt.md) |
 | [VST3 History, Advantages and Best Practice](https://www.youtube.com/watch?v=0QBWXC8KNz0) | Engineering, FL Studio | ältere, aber grundlegende VST3-Semantik und Host-/Plugin-Grenzen |
 | [Hybrid Prototyping With Web Tech and JUCE/C++](https://www.youtube.com/watch?v=nRAQ2a7ghYA) | UI/Motion, Engineering | Vergleichsfolie für Nakamas Web-Simulator und spätere native Übertragung |
 | [Pluginval – Yeah, but Why Validate Plugins?](https://www.youtube.com/watch?v=Q97LBXqgMus) | Engineering | Plugin-Validierung, Fehlerklassen und Teststrategie |

@@ -190,7 +190,11 @@ bool ausDtoText (const void* utf8, size_t laenge, Satz& aus, juce::String& grund
     // 1. Byte-/Textriegel des v3-Vertrags (textriegelBytes faehrt beide Stufen):
     //    BOM, UTF-8, fuehrende Nullen, Zahlenbereich AUS DEM LITERAL, Escapes,
     //    NUL, Surrogate, leere Schluessel.
-    if (! vertrag::textriegelBytes (utf8, laenge, detail))
+    // Der DTO-Kanon besitzt danach einen eigenen korrekt gerundeten
+    // Zahlenleser und eine feldgenaue Typ-/Bereichspruefung. Der zusaetzliche
+    // 15-Ziffern-Riegel des binary64-Schemawegs ist hier deshalb weder noetig
+    // noch zulaessig (z. B. Q = 0.7071067811865476).
+    if (! vertrag::textriegelBytes (utf8, laenge, detail, false))
     {
         // Ein Literal jenseits von 1e308 liest Python als inf, serde_json lehnt
         // ab - fuer das DTO ist beides "nichtendlich". Eine Ganzzahl jenseits

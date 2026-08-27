@@ -254,6 +254,19 @@ target_compile_definitions(EqCopPipeProbe PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CU
 target_link_libraries(EqCopPipeProbe PRIVATE juce::juce_core
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 
+# Adversarialer Client-Lifecycle ohne Produktionspipe: blockierte Reads,
+# Reconnect-Generation, SQOS, UTF-8/NUL, strikte ACK-Sequenz und absolute
+# Frame-Deadline.
+juce_add_console_app(EqCopPipeClientTest PRODUCT_NAME "eqcop-pipeclienttest")
+target_sources(EqCopPipeClientTest PRIVATE
+    tests/PipeClientLifecycleTestMain.cpp
+    src/PipeClient.cpp
+)
+target_include_directories(EqCopPipeClientTest PRIVATE src)
+target_compile_definitions(EqCopPipeClientTest PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_link_libraries(EqCopPipeClientTest PRIVATE juce::juce_core Advapi32
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
 # ── Nulltest: Passthrough-Beweis ohne Host ──────────────────────────────────
 juce_add_console_app(EqCopNullTest PRODUCT_NAME "eqcop-nulltest")
 target_sources(EqCopNullTest PRIVATE
@@ -637,7 +650,7 @@ endforeach()
 # Die Quellen sind UTF-8 (deutsche UI-Texte). Ohne /utf-8 rät MSVC die
 # Codepage — Literale wie „Klavier-Bus“ hingen dann an der Systemlocale.
 foreach(ziel NakamaKern
-             EqCopilot EqCopPipeProbe EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
+             EqCopilot EqCopPipeProbe EqCopPipeClientTest EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopAuxSpike EqCopAuxSpikeTest EqCopHostContextTest
              EqCopSchemaTest EqCopStateMigrationTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopLoudnessGoldenTest EqCopAnalysisGoldenTest

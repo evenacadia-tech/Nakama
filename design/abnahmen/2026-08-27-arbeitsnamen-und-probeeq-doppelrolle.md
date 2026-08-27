@@ -27,3 +27,16 @@ gelesen wurde:
 Dieser Entscheid präzisiert die Produktkurzform und die sichtbaren Namen. Er
 bestätigt den Fernsteuer- und Bus-DSP-Weg aus dem Entscheid vom 23.08.2026,
 statt ihn aufzuheben.
+
+## Nachtrag — keine lokale Vollbedienung
+
+Frage: „Soll Probeeq künftig auch ohne Gen lokal als vollständiger EQ
+bedienbar sein?"
+
+> „nein"
+
+Damit liegt die vollständige EQ-Bedienung ausschließlich in Gens zweiter
+Oberfläche. Probeeq führt den EQ lokal auf dem Bus aus, erhält aber keinen
+zweiten vollständigen EQ-Editor. Ihre eigene Oberfläche bleibt die kompakte
+Status- und Rückfallfläche mit den dafür ausdrücklich vorgesehenen
+Handgriffen.

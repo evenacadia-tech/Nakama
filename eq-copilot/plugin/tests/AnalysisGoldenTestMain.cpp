@@ -1040,6 +1040,234 @@ int main()
                 "der Frame traegt seine Metrikversion", juce::String ((int) f.metricsVersion));
         pruefe (f.transport.sample_rate == 48000.0, "und die Samplerate");
 
+        // Ein Frame integriert mehrere Hostbloecke. Sein Start und seine
+        // Laenge muessen genau dieses Fenster beschreiben, nicht nur den Block,
+        // der die 100-ms-Kadenz zuletzt ueberschritten hat.
+        {
+            FeatureEngine extent;
+            extent.vorbereiten (48000.0);
+            Speiser sx { extent };
+            int bloeckeImFrame = 0;
+            while (! sx.senden (sx.bauen()) && bloeckeImFrame < 20)
+                ++bloeckeImFrame;
+            ++bloeckeImFrame;
+            const auto& fx = extent.frame();
+            pruefe (fx.transport.project_sample_start_gesetzt
+                    && fx.transport.project_sample_start == 0
+                    && fx.transport.sample_count == (std::uint32_t) (bloeckeImFrame * sx.frames),
+                    "Frame-Stempel spannt alle integrierten Hostbloecke auf",
+                    juce::String ((juce::int64) fx.transport.project_sample_start) + " + "
+                    + juce::String ((int) fx.transport.sample_count));
+        }
+
+        // Das zweite Live-Intervall enthaelt wegen 50-%-FFT-Ueberlappung ein
+        // Fenster, das VOR seinem ersten Skalarblock beginnt. Der Stempel muss
+        // diesen echten Support nennen statt die alte 100-ms-Schablone.
+        {
+            FeatureEngine extent;
+            extent.vorbereiten (48000.0);
+            Speiser sx { extent };
+            bool erster = false;
+            for (int i = 0; i < 20 && ! erster; ++i)
+            {
+                auto b = sx.bauen (rt::kFlagContinuousGueltig);
+                b.continuousTimeSamples = b.projectSampleStart;
+                erster = sx.senden (b);
+            }
+            bool zweiter = false;
+            for (int i = 0; i < 20 && ! zweiter; ++i)
+            {
+                auto b = sx.bauen (rt::kFlagContinuousGueltig);
+                b.continuousTimeSamples = b.projectSampleStart;
+                zweiter = sx.senden (b);
+            }
+            const auto& fx = extent.frame();
+            pruefe (erster && zweiter
+                    && fx.transport.project_sample_start_gesetzt
+                    && fx.transport.project_sample_start == 2048
+                    && fx.transport.sample_count == 8192,
+                    "Frame-Stempel umfasst den ueberlappenden FFT-Support",
+                    juce::String ((juce::int64) fx.transport.project_sample_start) + " + "
+                    + juce::String ((int) fx.transport.sample_count));
+            pruefe ((fx.transport.gueltigkeit & kGContinuousTime) != 0
+                    && fx.transport.continuous_time_samples_gesetzt
+                    && fx.transport.continuous_time_samples
+                         == fx.transport.project_sample_start,
+                    "ein vorgezogener FFT-Start zieht die Continuous-Time gleich weit zurueck");
+        }
+
+        {
+            FeatureEngine rand;
+            rand.vorbereiten (48000.0);
+            Speiser sx { rand };
+            bool erster = false;
+            for (int i = 0; i < 20 && ! erster; ++i)
+                erster = sx.senden (sx.bauen());
+            bool zweiter = false;
+            for (int i = 0; i < 20 && ! zweiter; ++i)
+            {
+                auto b = sx.bauen (rt::kFlagContinuousGueltig);
+                b.continuousTimeSamples = std::numeric_limits<std::int64_t>::min();
+                zweiter = sx.senden (b);
+            }
+            const auto& fx = rand.frame();
+            pruefe (erster && zweiter
+                    && (fx.transport.gueltigkeit & kGContinuousTime) == 0
+                    && ! fx.transport.continuous_time_samples_gesetzt,
+                    "Continuous-Time-Unterlauf laesst nur die optionale Uhr fallen");
+        }
+
+        {
+            FeatureEngine luecke;
+            luecke.vorbereiten (48000.0);
+            Speiser sx { luecke };
+            bool erster = false;
+            for (int i = 0; i < 20 && ! erster; ++i)
+                erster = sx.senden (sx.bauen()); // Host meldet die Uhr noch nicht
+            bool zweiter = false;
+            for (int i = 0; i < 20 && ! zweiter; ++i)
+            {
+                auto b = sx.bauen (rt::kFlagContinuousGueltig);
+                b.continuousTimeSamples = b.projectSampleStart;
+                zweiter = sx.senden (b);
+            }
+            const auto& fx = luecke.frame();
+            pruefe (erster && zweiter
+                    && (fx.transport.gueltigkeit & kGContinuousTime) == 0,
+                    "fehlende Continuous-Werte im FFT-Support werden nicht rueckwaerts erfunden");
+        }
+
+        // Der zweite faellige Evidenzsnapshot vereinigt auch den aelteren
+        // Basssupport. Dieses Bein deckt beide nichttrivialen Union-Zweige;
+        // ein reiner Live-/Hauptstufentest koennte sie nicht rot machen.
+        {
+            FeatureEngine extent;
+            extent.vorbereiten (48000.0);
+            Speiser sx { extent };
+            int frischeEvidenzen = 0;
+            FeatureFrame letzter {};
+            for (int i = 0; i < 80 && frischeEvidenzen < 2; ++i)
+            {
+                if (sx.senden (sx.bauen()) && extent.frame().evidenzFrisch)
+                {
+                    letzter = extent.frame();
+                    ++frischeEvidenzen;
+                }
+            }
+            int evidenzBaender = 0;
+            for (int b = 0; b < Gitter::evidenzBaender; ++b)
+                if (bitmapLies (letzter.evidenz.bitmap, b))
+                    ++evidenzBaender;
+            pruefe (frischeEvidenzen == 2
+                    && letzter.transport.project_sample_start_gesetzt
+                    && letzter.transport.project_sample_start == 0
+                    && letzter.transport.sample_count == 30720
+                    && evidenzBaender > 0,
+                    "Evidenzframe vereinigt Haupt- und aelteren Basssupport",
+                    juce::String ((juce::int64) letzter.transport.project_sample_start)
+                    + " + " + juce::String ((int) letzter.transport.sample_count)
+                    + ", " + juce::String (evidenzBaender) + " Baender");
+        }
+
+        // Ein band-inaktiver Abschnitt darf eine fehlende Continuous-Uhr
+        // nicht verstecken. Bei 192 kHz ist das Evidenzintervall lang genug,
+        // um aktive Fenster vor und nach einer voll ausgespuellten stillen
+        // Luecke in denselben Snapshot zu legen.
+        {
+            FeatureEngine luecke;
+            luecke.vorbereiten (192000.0);
+            Speiser sx { luecke };
+            sx.sr = 192000.0;
+            auto aktiv = [&]
+            {
+                auto b = sx.bauen (rt::kFlagContinuousGueltig);
+                b.continuousTimeSamples = b.projectSampleStart;
+                return sx.senden (b);
+            };
+            auto stille = [&] (bool continuous)
+            {
+                auto b = sx.bauen (continuous ? rt::kFlagContinuousGueltig : 0u);
+                b.continuousTimeSamples = b.projectSampleStart;
+                return sx.sendenMit (b, [] (std::uint32_t) { return 0.0f; });
+            };
+
+            bool ersteEvidenz = false;
+            for (int i = 0; i < 114; ++i)
+                if (aktiv() && luecke.frame().evidenzFrisch)
+                    ersteEvidenz = true;
+            for (int i = 0; i < 10; ++i) aktiv();
+            for (int i = 0; i < 32; ++i) stille (true);
+            for (int i = 0; i < 10; ++i) stille (false);
+            for (int i = 0; i < 32; ++i) stille (true);
+            bool zweiteEvidenz = false;
+            for (int i = 0; i < 30; ++i)
+                if (aktiv() && luecke.frame().evidenzFrisch)
+                    zweiteEvidenz = true;
+
+            const auto& fx = luecke.frame();
+            pruefe (ersteEvidenz && zweiteEvidenz && fx.evidenzFrisch
+                    && (fx.transport.gueltigkeit & kGContinuousTime) == 0,
+                    "stille Evidenzluecke kann fehlende Continuous-Time nicht verbergen");
+        }
+
+        // FL darf stehende 1-Sample-Teilstuecke lokal zusammenhalten (G10),
+        // aber daraus entsteht keine fortlaufende Projektachse.
+        {
+            FeatureEngine stehend;
+            stehend.vorbereiten (48000.0);
+            Speiser sx { stehend };
+            sx.frames = 1;
+            bool gebaut = false;
+            for (int i = 0; i < 5000 && ! gebaut; ++i)
+            {
+                gebaut = sx.senden (sx.bauen());
+                sx.projekt = 0;
+            }
+            const auto& fx = stehend.frame();
+            pruefe (gebaut && fx.transport.zeitbasis == Zeitbasis::local_monotonic
+                    && ! fx.transport.project_sample_start_gesetzt
+                    && (fx.transport.gueltigkeit & kGProjectTime) == 0,
+                    "stehende FL-Teilstuecke erfinden kein Projektintervall");
+        }
+
+        // Auch ein einzelner Hostblock nahe INT64_MAX darf nicht mit einer
+        // ueberlaufenden Projektspanne publiziert werden. Lokal bleibt er
+        // verwendbar; nur die unbewiesene Zeitangabe faellt.
+        {
+            FeatureEngine rand;
+            rand.vorbereiten (48000.0);
+            Speiser sx { rand };
+            sx.frames = 4800;
+            auto b = sx.bauen();
+            b.projectSampleStart = std::numeric_limits<std::int64_t>::max() - 100;
+            sx.audio.assign ((std::size_t) b.sampleCount * 2u, 0.1f);
+            const bool gebaut = rand.nimmBlock (b, sx.audio.data());
+            const auto& fx = rand.frame();
+            pruefe (gebaut && fx.transport.zeitbasis == Zeitbasis::local_monotonic
+                    && ! fx.transport.project_sample_start_gesetzt
+                    && fx.transport.sample_count == b.sampleCount,
+                    "ueberlaufende Host-Projektspanne wird konservativ lokal publiziert");
+        }
+
+        // Die Kadenzuhr bleibt an einer Grenze bewusst stehen. Dann darf ein
+        // unmittelbar faelliger Frame trotzdem NUR Nachgrenzen-Audio nennen.
+        {
+            FeatureEngine extent;
+            extent.vorbereiten (48000.0);
+            Speiser sx { extent };
+            for (int i = 0; i < 9; ++i)
+                sx.senden (sx.bauen());
+            sx.projekt += 100000;
+            const auto ersterNachGrenze = sx.projekt;
+            const bool gebaut = sx.senden (sx.bauen());
+            const auto& fx = extent.frame();
+            pruefe (gebaut && fx.transport.project_sample_start == ersterNachGrenze
+                    && fx.transport.sample_count == (std::uint32_t) sx.frames,
+                    "Frame direkt nach Seek beschreibt nur den Nachgrenzen-Block",
+                    juce::String ((juce::int64) fx.transport.project_sample_start) + " + "
+                    + juce::String ((int) fx.transport.sample_count));
+        }
+
         // Ohne Zeitbeweis: local_monotonic, KEIN Zeitbit, KEIN Startwert.
         FeatureEngine e2;
         e2.vorbereiten (48000.0);
@@ -1065,7 +1293,7 @@ int main()
         for (int i = 0; i < 60; ++i)
         {
             auto b = s3.bauen (alles);
-            b.continuousTimeSamples = 12345;
+            b.continuousTimeSamples = b.projectSampleStart + 12345;
             b.cycleStartPpq = 4.0; b.cycleEndePpq = 8.0;
             b.eingangLatenzSamples = 0;      // "gemeldet 0" - der schwierige Fall
             b.ausgangLatenzSamples = 4410;
@@ -1080,8 +1308,53 @@ int main()
                 "eine GEMELDETE 0 ist etwas anderes als 'nie gesagt' (§32.3)");
         pruefe (f3.transport.cycle_derivation == Herleitung::unproven,
                 "Schleifen-Samplegrenzen sind `unproven` - es gibt kein FL-Golden dafuer");
-        pruefe (f3.transport.continuous_time_samples == 12345,
-                "continuous_time_samples kommt durch");
+        pruefe (f3.transport.continuous_time_samples
+                    == f3.transport.project_sample_start + 12345,
+                "continuous_time_samples kommt mit demselben Frameanker durch");
+
+        auto pruefeKaputteCycleGrenze = [&] (double start, double ende,
+                                             const juce::String& fall)
+        {
+            FeatureEngine kaputt;
+            kaputt.vorbereiten (48000.0);
+            Speiser sx { kaputt };
+            bool gebaut = false;
+            for (int i = 0; i < 20 && ! gebaut; ++i)
+            {
+                auto b = sx.bauen (rt::kFlagCycleGrenzenGueltig);
+                b.cycleStartPpq = start;
+                b.cycleEndePpq = ende;
+                gebaut = sx.senden (b);
+            }
+            const auto& fx = kaputt.frame();
+            pruefe (gebaut && ! fx.transport.cycle_bounds_valid
+                    && ! fx.transport.cycle_start_ppq_gesetzt
+                    && ! fx.transport.cycle_end_ppq_gesetzt
+                    && (fx.transport.gueltigkeit & kGCycleBounds) == 0,
+                    "unbrauchbare Cycle-Bounds werden nicht publiziert: " + fall);
+        };
+        pruefeKaputteCycleGrenze (std::numeric_limits<double>::quiet_NaN(), 8.0,
+                                  "NaN");
+        pruefeKaputteCycleGrenze (4.0, std::numeric_limits<double>::infinity(),
+                                  "Inf");
+        pruefeKaputteCycleGrenze (8.0, 4.0, "Ende vor Start");
+
+        // valid -> invalid ist der wichtige Gegenpfad: ein blosses `return`
+        // liesse die alte Rate und Freigabe aktiv.
+        FeatureEngine rate;
+        rate.vorbereiten (48000.0);
+        Speiser sr { rate };
+        sr.laufen (10);
+        rate.vorbereiten (std::numeric_limits<double>::quiet_NaN());
+        auto blockNachNaN = sr.bauen();
+        sr.audio.assign ((std::size_t) blockNachNaN.sampleCount * 2u, 0.1f);
+        const bool liefMitAlterRate = rate.nimmBlock (blockNachNaN, sr.audio.data());
+        rate.vorbereiten (48000.0);
+        bool nachReprepare = false;
+        for (int i = 0; i < 20 && ! nachReprepare; ++i)
+            nachReprepare = sr.senden (sr.bauen());
+        pruefe (! liefMitAlterRate && nachReprepare,
+                "ungueltiger Folge-Prepare deaktiviert; gueltiger Reprepare erholt sich");
     }
 
     //==========================================================================
@@ -1571,6 +1844,7 @@ int main()
         gut.zeitbasis = Zeitbasis::project_samples;
         gut.project_sample_start_gesetzt = true;
         gut.gueltigkeit = kGProjectTime;
+        gut.sample_count = 1;
         pruefe (nak29Verstoss (gut) == 0, "ein sauberer Stempel kommt durch");
 
         auto t1 = gut; t1.project_sample_start_gesetzt = false;
@@ -1597,24 +1871,48 @@ int main()
         pruefe (nak29Verstoss (t6) == 6,
                 "Fall 6: continuous_time-Bit ohne continuous_time_samples");
 
+        auto t7 = gut;
+        t7.project_sample_start = std::numeric_limits<std::int64_t>::max();
+        pruefe (nak29Verstoss (t7) == 7,
+                "Fall 7: das Projektintervall laeuft nicht ueber int64 hinaus");
+        auto t7b = gut; t7b.sample_count = 1048577u;
+        pruefe (nak29Verstoss (t7b) == 7,
+                "Fall 7: sample_count bleibt unter der Vertragsobergrenze");
+        auto t7c = gut; t7c.sample_count = 0;
+        pruefe (nak29Verstoss (t7c) == 7,
+                "Fall 7: der Feature-Erzeuger publiziert keinen Leerframe");
+
         // Und der Riegel sitzt im ERZEUGER, nicht nur als Funktion daneben.
         //
-        // ⚠️ EHRLICH GESAGT, WAS DIESE ZEILE IST (T2-2): sie ist konstruktiv
-        // wahr.  `baueStempel()` setzt Wert und Bit in allen sechs Faellen
-        // gemeinsam, `zNak29Abgelehnt` kann heute gar nicht ungleich 0 werden —
-        // die Zeile misst also KEINEN befahrenen Gegenpfad, sondern haelt fest,
-        // dass der Erzeuger den Riegel nicht ausloest.  Das ist eine Aussage
-        // ueber `baueStempel()` und als solche wertvoll: aendert dort jemand
-        // eine Zuweisung, wird sie rot.  Der Meldeweg selbst hat sein Bein in
-        // L5, der Riegel seines in L3.
+        // Der normale Pfad bleibt ablehnungsfrei; der unmittelbar folgende
+        // Oversize-Fall befährt bewusst den echten Gegenpfad.
         FeatureEngine e;
         e.vorbereiten (48000.0);
         Speiser s { e };
         s.laufen (60);
         pruefe (e.nak29Abgelehnt() == 0,
                 "der ERZEUGER loest den Riegel nicht aus - kein verletzter Stempel "
-                "entsteht im Normalbetrieb (konstruktiv, siehe L5)",
+                "entsteht im normalen, gedeckelten Betrieb",
                 juce::String ((int) e.nak29Abgelehnt()));
+
+        // Ein einmaliger, zu grosser Erzeugerversuch darf den laenger laufenden
+        // Evidenzakku nicht festklemmen. Ohne dessen Konsum wiederholt jeder
+        // Folgeframe denselben >1-Mi-Sample-Stempel und die Telemetrie kommt
+        // nie mehr hoch.
+        FeatureEngine erholung;
+        erholung.vorbereiten (48000.0);
+        Speiser gross { erholung };
+        gross.frames = 1048577;
+        auto zuGross = gross.bauen();
+        gross.audio.assign ((std::size_t) zuGross.sampleCount * 2u, 0.1f);
+        const bool abgelehnt = gross.sendenRoh (zuGross, gross.audio);
+        gross.frames = 512;
+        bool wiederDa = false;
+        for (int i = 0; i < 30 && ! wiederDa; ++i)
+            wiederDa = gross.senden (gross.bauen());
+        pruefe (! abgelehnt && erholung.nak29Abgelehnt() == 1 && wiederDa,
+                "abgelehnte faellige Evidenz wird konsumiert und der Erzeuger erholt sich",
+                juce::String ((int) erholung.nak29Abgelehnt()));
     }
 
     //==========================================================================
@@ -1719,11 +2017,50 @@ int main()
                 "aeltestes vorher " + juce::String ((int) aeltestesBeiVoll)
                 + ", jetzt " + juce::String ((int) e5.ereignis (0).stromSample));
         bool aufsteigend = true;
+        bool fensterstartGenau = true;
         for (int i = 1; i < e5.ereignisAnzahlJetzt(); ++i)
             if (e5.ereignis (i).stromSample <= e5.ereignis (i - 1).stromSample)
                 aufsteigend = false;
+        for (int i = 0; i < e5.ereignisAnzahlJetzt(); ++i)
+        {
+            const auto& ereignis = e5.ereignis (i);
+            if ((ereignis.stromSample % 2048u) != 0u
+                || ! ereignis.projektzeitGesetzt
+                || ereignis.projektSample != (std::int64_t) ereignis.stromSample)
+                fensterstartGenau = false;
+        }
         pruefe (aufsteigend,
                 "und der Ring gibt sie weiter aeltestes-zuerst zurueck, auch nach dem Umlauf");
+        pruefe (fensterstartGenau,
+                "Eventzeit ist der 4096er-Fensteranfang und unabhaengig vom 512er Hostblock");
+
+        // Gegenpfad zur normalen Eventzeit: derselbe lokale Signalverlauf bei
+        // einer ueber alle Hostbloecke STEHENDEN Projektzeit. Ein Event darf
+        // lokal weiter existieren, seine Projektzeit ist aber unbewiesen.
+        FeatureEngine e6;
+        e6.vorbereiten (48000.0);
+        Speiser s6 { e6 };
+        int stehendBloecke = 0;
+        for (; stehendBloecke < 1500 && e6.ereignisAnzahlJetzt() == 0; ++stehendBloecke)
+        {
+            const bool ausschlag = (stehendBloecke % 16) == 0;
+            s6.sendenMit (s6.bauen(), [&] (std::uint32_t i)
+            {
+                if (ausschlag)
+                    return s6.rausch() * 3.2f;
+                return (float) (0.05 * std::sin (kZweiPi * 1000.0
+                                * (double) (s6.strom + i) / 48000.0));
+            });
+            s6.projekt = 0;
+        }
+        bool alleEventsLokal = e6.ereignisAnzahlJetzt() > 0;
+        for (int i = 0; i < e6.ereignisAnzahlJetzt(); ++i)
+            if (e6.ereignis (i).projektzeitGesetzt)
+                alleEventsLokal = false;
+        pruefe (alleEventsLokal,
+                "stehende Host-Zeit erzeugt keine extrapolierte FFT-Event-Projektzeit",
+                juce::String (e6.ereignisAnzahlJetzt()) + " Ereignis(se) nach "
+                + juce::String (stehendBloecke) + " Bloecken");
     }
 
     //==========================================================================
@@ -1861,7 +2198,8 @@ int main()
         pruefe (p.merkmaleFrames() > 0, "und mindestens einen Frame gebaut",
                 juce::String ((int) p.merkmaleFrames()) + " Frames");
 
-        const auto& t = p.merkmalFrame().transport;
+        const auto frame = p.merkmalFrame();
+        const auto& t = frame.transport;
         pruefe (t.process_context_present,
                 "process_context_present kommt aus der BRUECKE durch (§32.3)");
         pruefe ((t.gueltigkeit & kGRecordState) != 0 && ! t.recording,
@@ -1907,12 +2245,52 @@ int main()
         const auto frist3 = juce::Time::getMillisecondCounter() + 3000;
         while (p2.merkmaleFrames() == 0 && juce::Time::getMillisecondCounter() < frist3)
             juce::Thread::sleep (10);
-        const auto& t2 = p2.merkmalFrame().transport;
+        const auto frame2 = p2.merkmalFrame();
+        const auto& t2 = frame2.transport;
         pruefe (p2.merkmaleFrames() > 0 && t2.gueltigkeit != kGAlleSieben,
                 "Gegenprobe: der Playhead-Rueckfallweg erreicht NICHT alle sieben Bits",
                 "0x" + juce::String::toHexString ((int) t2.gueltigkeit));
         pruefe ((t2.gueltigkeit & kGRecordState) == 0,
                 "insbesondere kennt JUCEs Playhead kein Gueltigkeitsbit fuer `recording`");
+
+        // Projektfenster am int64-Rand: kein signed overflow im Audiocallback,
+        // und ein nicht darstellbares Blockende wird nicht als echte Zeit
+        // publiziert.
+        auto randBlock = [&] (EqCopilotProcessor& prozessor, std::int64_t start)
+        {
+            eqcop::hostbruecke::Blockbefund rand;
+            rand.kontext.leeren();
+            rand.kontext.processContextPresent = true;
+            rand.kontext.projectTimeSamples.setze (start);
+            rand.kontext.playing.setze (true);
+            rand.kontext.sampleRate.setze (fs);
+            rand.blockGroesse = (std::uint32_t) bs;
+            prozessor.nakamaBlockEmpfangen (rand);
+            puffer.clear();
+            prozessor.processBlock (puffer, midi);
+        };
+        EqCopilotProcessor p3;
+        p3.setPlayConfigDetails (2, 2, fs, bs);
+        p3.prepareToPlay (fs, bs);
+        randBlock (p3, std::numeric_limits<std::int64_t>::max() - 100);
+        const auto randUeberlauf = p3.messKompakt();
+        pruefe (! randUeberlauf.fensterGueltig && randUeberlauf.fensterSpruenge == 1,
+                "Projektblock ueber INT64_MAX wird als ungueltiges Fenster verworfen");
+
+        EqCopilotProcessor p4;
+        p4.setPlayConfigDetails (2, 2, fs, bs);
+        p4.prepareToPlay (fs, bs);
+        randBlock (p4, std::numeric_limits<std::int64_t>::min());
+        randBlock (p4, std::numeric_limits<std::int64_t>::max() - bs);
+        const auto randAbstand = p4.messKompakt();
+        pruefe (randAbstand.fensterGueltig && randAbstand.fensterSpruenge == 1,
+                "Abstand INT64_MIN zu INT64_MAX wird ohne Subtraktionsueberlauf als Sprung erkannt");
+
+        FeatureEngine ungueltigeRate;
+        ungueltigeRate.vorbereiten (std::numeric_limits<double>::infinity());
+        ungueltigeRate.vorbereiten (std::numeric_limits<double>::quiet_NaN());
+        pruefe (ungueltigeRate.samplerate() == 0.0,
+                "nichtendliche Sampleraten initialisieren keine Analyseengine");
     }
 
     //==========================================================================
@@ -1968,23 +2346,25 @@ int main()
                 + juce::String (gekippteZeile));
 
         // L3 - Der NAK-29-Riegel unterscheidet die Faelle, statt nur 'nein' zu
-        // sagen: sechs verschiedene Verletzungen, sechs verschiedene Nummern.
+        // sagen: sieben verschiedene Verletzungen, sieben verschiedene Nummern.
         Transportstempel g;
         g.zeitbasis = Zeitbasis::project_samples;
         g.project_sample_start_gesetzt = true;
         g.gueltigkeit = kGProjectTime;
+        g.sample_count = 1;
         bool alleVerschieden = true;
-        int gesehen[7] = {};
-        auto zaehle = [&] (Transportstempel t) { const int v = nak29Verstoss (t); if (v >= 1 && v <= 6) ++gesehen[v]; };
+        int gesehen[8] = {};
+        auto zaehle = [&] (Transportstempel t) { const int v = nak29Verstoss (t); if (v >= 1 && v <= 7) ++gesehen[v]; };
         { auto t = g; t.project_sample_start_gesetzt = false; zaehle (t); }
         { auto t = g; t.zeitbasis = Zeitbasis::local_monotonic; zaehle (t); }
         { auto t = g; t.cycle_bounds_valid = true; zaehle (t); }
         { auto t = g; t.cycle_derivation = Herleitung::validated_block_mapping; zaehle (t); }
         { auto t = g; t.gueltigkeit |= kGCycleBounds; zaehle (t); }
         { auto t = g; t.gueltigkeit |= kGContinuousTime; zaehle (t); }
-        for (int i = 1; i <= 6; ++i) if (gesehen[i] != 1) alleVerschieden = false;
+        { auto t = g; t.project_sample_start = std::numeric_limits<std::int64_t>::max(); zaehle (t); }
+        for (int i = 1; i <= 7; ++i) if (gesehen[i] != 1) alleVerschieden = false;
         pruefe (alleVerschieden,
-                "L3: sechs Verletzungen ergeben sechs VERSCHIEDENE Nummern, nicht sechsmal 'nein'");
+                "L3: sieben Verletzungen ergeben sieben VERSCHIEDENE Nummern, nicht siebenmal 'nein'");
 
         // L4 - Der Aktivitaetsriegel: Stille fuellt keine Bandakkus. Ohne ihn
         // waere jeder Bandwert eine Aussage ueber die Pausen.
@@ -2012,16 +2392,14 @@ int main()
         // ⚠️ Bis zum 24.08. stimmte das nicht (T2-2): `++sequenz` stand hinter
         // dem Ablehnungszweig, der Empfaenger saehe `1, 2, 3, …` ohne Luecke,
         // und §4.5 beschrieb ein Verhalten, das der Code nicht hatte.
-        // Gefahren wird der Entscheid hier EINZELN (`frameversuch()`), weil der
-        // Zweig in `baueFrame()` konstruktiv unerreichbar ist — `baueStempel()`
-        // setzt Wert und Bit in allen sechs Faellen gemeinsam.  Das belegt den
-        // MECHANISMUS, nicht die Erreichbarkeit; der Unterschied steht im
-        // Manifest §10.2.
+        // Hier wird der Entscheid zusaetzlich EINZELN gefahren, damit exakt die
+        // Sequenzluecke 1,3 sichtbar wird; H befährt den Produktionszweig.
         {
             Transportstempel gut;
             gut.zeitbasis = Zeitbasis::project_samples;
             gut.project_sample_start_gesetzt = true;
             gut.gueltigkeit = kGProjectTime;
+            gut.sample_count = 1;
             auto kaputt = gut; kaputt.project_sample_start_gesetzt = false;
 
             std::uint64_t zaehler = 0;

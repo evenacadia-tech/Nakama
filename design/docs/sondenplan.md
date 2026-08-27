@@ -1,5 +1,14 @@
 # Sondenplan — Active-Probe-Editor und Passive-Kachel
 
+> **Historischer Messplan, seit 27.08.2026 kein Arbeitsauftrag.** Die hier
+> vermessenen getrennten Oberflächen wurden durch die vereinte Probeeq-Rolle
+> ersetzt. Probeeq misst passiv und führt bei Zuschaltung Gens Fern-EQ auf dem
+> Bus aus, besitzt aber keinen lokalen vollständigen EQ-Editor. Aktuelle
+> Produkt- und Oberflächenquelle:
+> `../abnahmen/2026-08-27-arbeitsnamen-und-probeeq-doppelrolle.md` und
+> `oberflaechen-spezifikation.md`. Die Messwerte unten bleiben nur als Verlauf
+> und dürfen keine neue Editor-Phase starten.
+
 Der Auftrag für die nächsten zwei Oberflächen. Entstanden am **2026-08-21** aus
 einer Code-Review der bisherigen Arbeit; Prüfbericht:
 `abnahmen/2026-08-21-codereview.md`.

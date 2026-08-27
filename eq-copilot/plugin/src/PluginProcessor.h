@@ -138,6 +138,9 @@ public:
     juce::uint64  analyseQuarantaeneVerworfen() const { return quarantaene.verworfeneBloecke(); }
     juce::uint64  analyseKontinuitaetsbrueche() const { return quarantaene.kontinuitaetsbrueche(); }
     juce::uint64  analyseVeraltet() const         { return veralteteBloecke.load(); }
+    // Test-/Diagnosezaehler: echte Aufrufe der teuren Gating-/Kandidatenrunde.
+    // Er ist absichtlich monoton ueber Resets; Tests vergleichen Differenzen.
+    juce::uint64  analyseSchwereAuswertungen() const { return schwereAuswertungen.load(); }
     static constexpr int analyseMaxBlockFrames()  { return Strom::maxBlockFrames; }
 
     // ── SONDE-009: Fensterbuchhaltung der FeatureEngine v2 ──────────────────
@@ -145,19 +148,20 @@ public:
     // auslesbar. NAK-57 gilt unverändert: eine ANZEIGE bekommen diese Zahlen in
     // diesem Ticket nicht — die Oberflächen kommen aus Figma. `EqCopAnalysis-
     // GoldenTest` liest sie, sonst niemand.
-    juce::uint64 merkmaleGetrennteFenster() const   { return merkmale.getrennteFenster(); }
-    juce::uint64 merkmaleEpochenwechsel() const     { return merkmale.epochenwechsel(); }
-    juce::uint64 merkmaleSegmentwechsel() const     { return merkmale.segmentwechsel(); }
-    juce::uint64 merkmaleStraddleVerworfen() const  { return merkmale.straddleVerworfen(); }
-    juce::uint64 merkmaleNak29Abgelehnt() const     { return merkmale.nak29Abgelehnt(); }
-    juce::uint64 merkmaleBloecke() const            { return merkmale.bloeckeGesehen(); }
+    juce::uint64 merkmaleGetrennteFenster() const   { auto l = externerAnalyseSteuerZug(); return merkmale.getrennteFenster(); }
+    juce::uint64 merkmaleEpochenwechsel() const     { auto l = externerAnalyseSteuerZug(); return merkmale.epochenwechsel(); }
+    juce::uint64 merkmaleSegmentwechsel() const     { auto l = externerAnalyseSteuerZug(); return merkmale.segmentwechsel(); }
+    juce::uint64 merkmaleStraddleVerworfen() const  { auto l = externerAnalyseSteuerZug(); return merkmale.straddleVerworfen(); }
+    juce::uint64 merkmaleNak29Abgelehnt() const     { auto l = externerAnalyseSteuerZug(); return merkmale.nak29Abgelehnt(); }
+    juce::uint64 merkmaleBloecke() const            { auto l = externerAnalyseSteuerZug(); return merkmale.bloeckeGesehen(); }
     juce::uint64 merkmaleFrames() const             { return merkmalFrames.load(); }
-    // Der zuletzt gebaute Frame. ⚠️ Nur vom Worker geschrieben; der Test liest
-    // ihn, nachdem der Worker steht (`testWorkerZug`). Ein Live-Leser bräuchte
-    // hier denselben Doppelpuffer wie `AnalyseEngine::snapshot()` — den baut
-    // SONDE-010, wenn der Telemetry-Client der erste echte Leser wird.
-    const nakama::analyse::FeatureFrame& merkmalFrame() const { return merkmale.frame(); }
-    const nakama::analyse::FeatureEngine& merkmalEngine() const { return merkmale; }
+    // Kopie unter derselben Sperre wie der Single-Writer. Damit ist dieser
+    // bereits oeffentliche Pfad auch fuer den ersten Live-Consumer sicher.
+    nakama::analyse::FeatureFrame merkmalFrame() const
+    {
+        auto l = externerAnalyseSteuerZug();
+        return merkmale.frame();
+    }
 
     // ── Live-Status für Editor/Heartbeat ──
     StatsSnapshot statsSnapshot() const;
@@ -171,8 +175,15 @@ public:
     // Fenster BESCHREIBT die akkumulierte Messung (Plan §5.7).
     void fordereMessResetAn()
     {
-        messResetWunsch.store (true);
-        fensterResetWunsch.store (true);
+        {
+            auto l = externerAnalyseSteuerZug();
+            // Die Queue-Generation IST die Fensterkante. Ihr Produzent meldet
+            // dem Audiothread beim tatsaechlichen Uebernehmen den Reset; ein
+            // separates Fensterbit waere zwischen zwei Atomics wieder racy.
+            queue.neustartAnfordern();
+            messResetWunsch.store (true);
+        }
+        workerWarte.notify_all();
     }
     // Kompakter Messstand für den v2-Heartbeat (läuft im Pipe-Thread).
     MessKompakt messKompakt() const;
@@ -244,7 +255,6 @@ private:
     std::atomic<bool>         fensterAktiv { false };
     std::atomic<juce::int64>  fensterVon { 0 }, fensterBis { 0 };
     std::atomic<juce::uint32> fensterSpruenge { 0 };
-    std::atomic<bool>         fensterResetWunsch { false };
     // Nur-Audiothread-Zustand der Sprungerkennung (kein Atomic nötig).
     juce::int64 fensterErwartet = 0;
     bool        fensterErwartetGueltig = false;
@@ -262,6 +272,7 @@ private:
     // vollständigen Block") — sie taucht deshalb in keinem anderen Pfad auf.
     nakama::echtzeit::Blockquarantaene<Strom>  quarantaene;
     std::atomic<juce::uint64> samplesAnalysiert { 0 };
+    std::atomic<juce::uint64> schwereAuswertungen { 0 };
     // Blöcke, die aus einem früheren `prepareToPlay`-Anlauf im Ring lagen. Der
     // alte Weg warf sie per `fifo.reset()` vom Nachrichtenthread aus weg —
     // mitten in einen laufenden Leser hinein.
@@ -291,6 +302,30 @@ private:
     std::atomic<bool> workerLaeuft { false };
     std::mutex workerWarteMutex;
     std::condition_variable workerWarte;
+
+    // Nie vom Audiothread genommen. Koppelt Samplerate/Queue-Generation,
+    // Reset und den exklusiven Engine-Zug zu einer atomaren Steueroperation.
+    mutable std::mutex analyseSteuerMutex;
+    // `std::mutex` verspricht keine Fairness. Ein externer Leser/Steuerer
+    // meldet sich deshalb VOR dem Lock an; der Worker beginnt keinen weiteren
+    // 8er-Zug, solange jemand wartet. Nach Lock-Erwerb wird die Anmeldung
+    // geloescht - der Mutex selbst schuetzt dann bis zum Zugende.
+    mutable std::atomic<unsigned> analyseSteuerWartende { 0 };
+    std::unique_lock<std::mutex> externerAnalyseSteuerZug() const
+    {
+        struct WarteMarke
+        {
+            explicit WarteMarke (std::atomic<unsigned>& z) : zaehler (z)
+            {
+                zaehler.fetch_add (1);
+            }
+            ~WarteMarke() { zaehler.fetch_sub (1); }
+            std::atomic<unsigned>& zaehler;
+        } wartet (analyseSteuerWartende);
+
+        std::unique_lock<std::mutex> zug (analyseSteuerMutex);
+        return zug;
+    }
 
     // M1: der Worker besitzt die Engine exklusiv; UI/Host stellen nur Wünsche.
     AnalyseEngine engine;

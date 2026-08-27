@@ -59,8 +59,11 @@ dasselbe sehen koennen, ist der Text.
 **Acht Regeln**, jede gegen eine **gemessene** Abweichung:
 
 1. **Keine fuehrende Null** — RFC 8259 verbietet sie, JUCE nimmt sie an.
-2. **Ganzzahlen nur innerhalb ±(2^53−1)** — der exakt darstellbare Bereich von
-   binary64. Darueber verfaelscht JUCE still.
+2. **Parser-sichere Dezimalpraezision:** mathematische Ganzzahlen nur innerhalb
+   ±(2^53−1), unabhaengig davon, ob sie als `5`, `5.0`, `5e0` oder mit
+   verschobenen Endnullen geschrieben sind. Nichtganzzahlige Werte tragen
+   hoechstens 15 signifikante Dezimalziffern. Andernfalls kann binary64 den
+   Nachkommateil verlieren und ein `type: integer` faelschlich passieren.
 3. **Zahlen betragsmaessig unter 1e308, und ein `e` braucht Ziffern.**
 4. **Genau vier ASCII-Hexziffern** in einem `\u`-Escape. Vorher hatten die drei
    Beine drei Hex-Grammatiken: Pythons `int(roh, 16)` nahm `+123`, `` 12 ``,
@@ -75,10 +78,12 @@ dasselbe sehen koennen, ist der Text.
    **additiven** Objekt (`zaehler`, `konfidenz`, `verteilung`) haette
    `serde_json` ihn dagegen angenommen, weil `additionalProperties: true` ihn
    nicht auffaengt.
-8. **Auf Byteebene: kein BOM, gueltiges UTF-8.** Bei einem BOM streift JUCE es
-   und parst weiter, waehrend die anderen beiden ablehnen; bei kaputtem UTF-8
-   liefen alle drei auseinander (ungefangene Ausnahme · Panik beim Lesen ·
-   stille Ersetzung).
+8. **Auf Byteebene: höchstens 16 MiB, kein BOM, kein rohes NUL, gültiges
+   UTF-8.** Der produktive Pipe-Framer ist mit 256 KiB enger; 16 MiB begrenzen
+   zusätzlich direkte Datei-/DTO-Aufrufer in allen drei Sprachen. Bei einem BOM
+   streift JUCE es und parst weiter, rohes NUL beendet dort die Prüfung am
+   gültigen Präfix, und bei kaputtem UTF-8 liefen alle drei auseinander
+   (ungefangene Ausnahme · Panik beim Lesen · stille Ersetzung).
 
 Auch der **Ziffernbegriff** ist jetzt derselbe: `str.isdigit()` ist fuer
 arabisch-indische Ziffern und Hochzahlen wahr, `is_ascii_digit` und
@@ -104,10 +109,29 @@ Exponentziffern. Gemessen in T2-Runde 2:
 > **Ein Riegel darf nie die Bibliothek befragen, gegen deren Verhalten er
 > schuetzt.**
 
-Regel 2 war von Anfang an aus dem Literal gerechnet und hat gehalten. Regel 3
-rechnet den Dezimalexponenten jetzt genauso — aus Vorkommastellen, fuehrenden
-Nullen und explizitem Exponenten, mit lauter kleinen ganzen Zahlen und ohne
-jede Gleitkommaoperation.
+Regel 2 pruefte anfangs nur Literale ohne Punkt und Exponent. Damit passierten
+mathematisch identische Formen wie `9007199254740992.0`,
+`90071992547409920e-1` und `0.9007199254740992e16` den Riegel. Sie werden nun
+exakt als `Ziffern * 10^Skala` normalisiert: bei negativer Skala ist der Wert
+nur dann ganzzahlig, wenn die abzuschneidenden Stellen ausschliesslich Nullen
+sind; erst danach erfolgt der Laengen-/Lexikvergleich gegen 2^53−1. Regel 3
+rechnet den Dezimalexponenten ebenfalls aus Vorkommastellen, fuehrenden Nullen
+und explizitem Exponenten. Ein zweiter gemessener Bypass waren lexikalisch
+nichtganzzahlige Werte wie `9007199254740991.1`: der Nachkommateil ging beim
+binary64-Lesen verloren, sodass die Schema-Engines ihn als Integer sahen;
+Rust und Python rundeten dabei im Produktionspfad sogar auf verschiedene
+Ganzzahlen. Darum kappt Regel 2 echte Brueche auf 15 signifikante
+Dezimalziffern; fuehrende und wertgleiche abschliessende Nullen zaehlen dabei
+nicht. Beide Regeln verwenden nur kleine ganze Zahlen und keine
+Gleitkommaoperation.
+
+Diese 15-Ziffern-Sicherung gehoert zum **v3-Schemaweg**, dessen drei Engines
+den Zahlenwert vor der Typpruefung als binary64 lesen. Der DSP-DTO-/JCS-Weg
+nutzt dieselben Byte-, Grammatik-, Endlichkeits- und Ganzzahlregeln, besitzt
+danach aber einen eigenen korrekt gerundeten Zahlenleser mit feldgenauer
+Typ-/Bereichspruefung. Dort bleibt deshalb z. B. der vertragliche Wert
+`0.7071067811865476` zulaessig; eine globale Kappung wuerde echte DSP-Daten
+veraendern, ohne den Schema-Bug zu beheben.
 
 ### Die Falltabelle ist eine Datei, keine drei Kopien
 

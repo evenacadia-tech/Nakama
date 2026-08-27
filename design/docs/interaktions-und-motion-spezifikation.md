@@ -1,18 +1,27 @@
 # Interaktions- und Motion-Spezifikation
 
-> **Status:** Arbeitsvorgabe, festgehalten am 23.08.2026 auf ausdrücklichen Auftrag.  
-> **Geltung:** Ergänzt die bestehenden Figma-Stände. Sie verändert weder deren Layout noch deren visuelle Sprache, sondern legt fest, wie die sichtbaren Elemente reagieren müssen.  
-> **Grundlage:** [Oberflächen-Spezifikation](oberflaechen-spezifikation.md), [Arbeitsplan](arbeitsplan.md), [Figma-Depot](../assets/figma/LIES-MICH.md) und der technische Entwurf [FL-Nakama-Sonden-Design](../../docs/FL-Nakama-Sonden-Design-Entwurf.md).
+> **Status:** Arbeitsvorgabe vom 23.08.2026, auf die Produktstruktur vom
+> 27.08.2026 berichtigt.  
+> **Geltung:** Ergänzt die drei aktuellen Rework-Bilder um Bedienung und
+> Zustandswechsel, ohne ihre visuelle Sprache umzudeuten.  
+> **Grundlage:** [Oberflächen-Spezifikation](oberflaechen-spezifikation.md),
+> [Arbeitsplan](arbeitsplan.md),
+> [aktuelle Rework-Referenz](../abnahmen/2026-08-25-rework-referenz-drei-designs.md)
+> und der technische Entwurf
+> [FL-Nakama-Sonden-Design](../../docs/FL-Nakama-Sonden-Design-Entwurf.md).
 
 ## 1. Grundsatz
 
-Die drei aktuellen Figma-Ansichten bleiben die visuelle Referenz:
+Die drei aktuellen User-Bilder bleiben die visuelle Referenz:
 
-- [Gen](../assets/figma/2026-08-22-gen.png)
-- [Probeeq](../assets/figma/2026-08-22-probeeq.png)
-- [Suna](../assets/figma/2026-08-22-suna.png)
+- [Gen Fläche 1](../assets/rework-basis-2026-08-25/gen-page-1-overview.png)
+- [Gen Fläche 2](../assets/rework-basis-2026-08-25/gen-page-2-eq-center.png)
+- [Probeeq](../assets/rework-basis-2026-08-25/probeeq.png)
 
-Figma zeigt Material, Anordnung und Zustände. Im fertigen Plugin werden der EQ-Graph, die Bänder, die Auswahl, Statusanzeigen, Messwerte und alle Bewegungen aus dem tatsächlichen Zustand gezeichnet. Eine exportierte, statische SVG-Kurve darf nicht als scheinbar lebendiger EQ-Graph verwendet werden.
+Die Bilder zeigen Material, Anordnung und einzelne Zustände. Im fertigen
+Plugin werden EQ-Graph, Bänder, Auswahl, Statusanzeigen, Messwerte und
+Bewegungen aus dem tatsächlichen Zustand gezeichnet. Eine exportierte,
+statische Kurve darf nicht als scheinbar lebendiger EQ-Graph verwendet werden.
 
 Jede sichtbare Bewegung muss einen echten Grund haben:
 
@@ -26,9 +35,10 @@ Die Zustände müssen immer wahr sein: Messen, unvollständig, frisch, veraltet,
 
 ## 2. Gemeinsamer Ablauf
 
-Die Bedienung folgt für alle drei Plugins derselben Kette:
+Die Bedienung folgt über die zwei Apps und drei Oberflächen derselben Kette:
 
-1. **Observe:** Gen oder Suna liefert echte Mess- und Verbindungsdaten.
+1. **Observe:** Probeeq liefert echte Mess- und Verbindungsdaten; Gen macht
+   sie vergleichbar und verständlich.
 2. **Advise:** Gen zeigt genau einen nächsten Befund mit Ursache, kleinstem Test und Höraufgabe.
 3. **Audition:** Der Nutzer hält die Vorschau bewusst gedrückt. Beim Loslassen endet sie selbsttätig.
 4. **Draft:** Gen sendet nur einen sichtbaren, noch nicht wirksamen Entwurf an das Ziel-Probeeq.
@@ -37,9 +47,14 @@ Die Bedienung folgt für alle drei Plugins derselben Kette:
 
 Ein Entwurf oder eine gehaltene Vorschau ist nie Teil des bestätigten Zustands und erscheint nicht als Undo-Schritt. Erst Apply erzeugt eine Revision und darf über Undo zurückgenommen werden.
 
-Bei Verbindungsverlust gilt: ein bestätigter lokaler EQ bleibt hörbar und bedienbar; eine unbestätigte Vorschau läuft sauber aus und verschwindet; neue Fernentwürfe werden nicht vorgetäuscht.
+Bei Verbindungsverlust bleibt ein bestätigter Probeeq-EQ auf seinem Bus
+hörbar. Die vollständige Band- und Kurvenbedienung liegt jedoch nur in Gen
+und ist ohne Verbindung nicht verfügbar; die Probeeq-Rückfallfläche zeigt
+nur ihre ausdrücklich vorgesehenen kompakten Handgriffe. Eine unbestätigte
+Vorschau läuft sauber aus und verschwindet, neue Fernentwürfe werden nicht
+vorgetäuscht.
 
-## 3. Probeeq – Bedienung des EQ-Graphen
+## 3. Gen Fläche 2 – Bedienung des EQ-Graphen
 
 ### 3.1 Entscheidend: Bänder werden gezogen, nicht über ein Knob-Feld gesteuert
 
@@ -91,9 +106,10 @@ Stattdessen zeigt ein dezentes zweites Signal am Band oder an der Kurve die gera
 
 **BYPASS** ist ein echter Zustand: die aktive Bearbeitung wird erkennbar als umgangen markiert, nicht lediglich farblich abgeschwächt. **UNDO n** öffnet den Revisionsverlauf mit „letzten Schritt rückgängig“ und der vorhandenen Möglichkeit, auf neutral zurückzugehen.
 
-### 3.5 Benötigte Figma-Zustände
+### 3.5 Benötigte Oberflächenzustände
 
-Für die Übergabe reichen keine einzelnen Screens. Probeeq benötigt Komponenten-Varianten für:
+Für die Übergabe reichen keine einzelnen Screens. Gens zweite Oberfläche
+benötigt Zustände für:
 
 - Band: ausgewählt, nicht ausgewählt, aus, geschützt, Draft-Ziel und dynamisch aktiv.
 - Verbindung: verbunden, misst, veraltet, getrennt und gepaart/nicht gepaart.
@@ -102,14 +118,15 @@ Für die Übergabe reichen keine einzelnen Screens. Probeeq benötigt Komponente
 
 Die Varianten demonstrieren die Reaktion. Der veröffentlichte Plugin-Code übernimmt die echte flüssige Bewegung; Figma Smart Animate oder Motion ist dafür die Vorführung, nicht die technische Implementierung.
 
-## 4. Gen – Messung, Befund und Übergabe
+## 4. Gen Fläche 1 – Messung, Befund und Übergabe
 
-Gen bleibt die Oberfläche zum Verstehen und Entscheiden, nicht das Plugin, das heimlich Audio verändert.
+Fläche 1 bleibt der Ort zum Verstehen und Entscheiden. Klangänderung entsteht
+nur nach ausdrücklicher Aktion und wird auf Fläche 2 bedient.
 
 | Bereich | Erforderliche Interaktion |
 | --- | --- |
 | Observe | Ein Quelleneintrag wählt die Quelle und aktualisiert Detail, Heatmap und Berater-Kontext. Der Messzustand zeigt frisch, misst, unvollständig, veraltet, getrennt oder nicht verfügbar. |
-| Sources | Öffnet die zentrale Quellenverwaltung: Name, Rolle, Messposition, Verbindung und Frische. Suna führt genau hierhin. |
+| Sources | Öffnet die zentrale Quellenverwaltung: Name, Rolle, Messposition, Verbindung und Frische. Probeeq verweist bei Bedarf genau hierhin. |
 | Advise | Zeigt eine Priorität nach der anderen, mit Ursache, kleinstem Test, Höraufgabe und Alternativen. Es gibt eine sichtbare Befundposition, etwa „FINDING 1 OF 3“. |
 | Unsicherheit | „Mehr Daten nötig“ und „keine Änderung empfohlen“ sind gültige Ergebnisse, keine leeren Fehlerzustände. |
 | Audition | Hold to audition ist eine Halte-Geste: gedrückt hören, losgelassen zurück. Quelle und betroffener Bereich werden währenddessen markiert. |
@@ -120,28 +137,44 @@ Gen bleibt die Oberfläche zum Verstehen und Entscheiden, nicht das Plugin, das 
 
 Der sichtbare Messfortschritt, zum Beispiel 68 %, wird nur angezeigt, wenn die Messung ihn tatsächlich liefert. Während einer echten Messung darf der Statuspunkt langsam und zurückhaltend pulsieren; bei einer statischen oder veralteten Messung bleibt er ruhig.
 
-## 5. Suna – kompakte Status-Karte
+## 5. Probeeq – kompakte Status- und Rückfallfläche
 
-Suna bleibt eine kleine Status-Karte und wird nicht zu einem zweiten Editor.
+Probeeq bleibt kompakt und wird nicht zu einem zweiten vollständigen
+EQ-Editor. Sie misst passiv und führt bei Zuschaltung Gens Fern-EQ auf ihrem
+Bus aus.
 
-- Bus, Rolle und Messposition werden auf der Karte angezeigt, aber nicht in der engen Karte bearbeitet.
-- Ein Klick auf die Karte oder den eindeutig ausgewählten Bereich führt in Gen zu **SOURCES**, dem einzigen Ort für Benennung, Rolle, Position und Verbindung.
+- Bus, Rolle und Messposition werden angezeigt; Bearbeitung führt an den
+  dafür vorgesehenen Ort in Gen.
+- Link-/Verbindungszustand, Messfrische, EQ an/aus und geänderte Bänder sind
+  ehrlich ablesbar.
+- Nur die im kompakten Vertrag vorgesehenen direkten Handgriffe wie Bypass
+  und Mix bleiben lokal; Bänder, Kurve und Präzisionswerte werden
+  ausschließlich in Gen bedient.
 - CONNECTED und MEASURING bleiben getrennt. Ein Puls ist nur bei echter Messung zulässig.
-- Zusätzlich braucht die Karte klare Varianten für frisch, unvollständig mit Grund, veraltet mit tatsächlichem Alter, getrennt und doppelt/konflikthaft gekoppelt.
-- Suna besitzt keinen erfundenen dB-Meter. Ein echter Pegelmesser gehört nur in eine spätere Detailansicht, wenn dafür eine technische Anforderung und Datenquelle vorliegen.
+- Die Fläche braucht klare Varianten für frisch, unvollständig mit Grund,
+  veraltet mit tatsächlichem Alter, getrennt und konflikthaft gekoppelt.
+- Probeeq besitzt keinen erfundenen dB-Meter. Ein Pegelmesser braucht eine
+  reale Datenquelle und eine klare Lesefrage.
 
-Damit löst Suna die Zustandswahrheit vor Ort, während die eigentliche Bedienung übersichtlich in Gen stattfindet.
+Damit bleibt die Zustandswahrheit vor Ort, während die vollständige
+EQ-Bedienung in Gen stattfindet.
 
 ## 6. Umsetzungsabnahme
 
-Die vorhandenen Figma-Bilder decken bereits Anordnung, Hierarchie und die zentralen sichtbaren Elemente ab. Sie decken die hier festgelegten Gesten und Zustandswechsel noch nicht vollständig ab.
+Die drei aktuellen Rework-Bilder decken Anordnung, Hierarchie und zentrale
+sichtbare Elemente ab. Sie beweisen die hier festgelegten Gesten und
+Zustandswechsel noch nicht vollständig.
 
 Vor einer Entwicklungsübergabe werden auf einer zusätzlichen Figma-Seite „Motion / Interactions“ genau diese vier Sequenzen als Varianten oder Motion-Demo gezeigt:
 
-1. Probeeq: Band wählen, horizontal/vertikal ziehen und einen überlappenden Griff über BAND auswählen.
-2. Probeeq: Draft → halten → loslassen → Apply → Undo sowie Verbindungsausfall während Preview.
-3. Gen: Quelle wählen → Befund → Hold to audition → Draft senden → Vergleich.
-4. Suna: verbunden/misst, frisch, unvollständig, veraltet und getrennt; Übergang zu Gen Sources.
+1. Gen Fläche 2: Band wählen, horizontal/vertikal ziehen und einen
+   überlappenden Griff über BAND auswählen.
+2. Gen Fläche 2: Draft → halten → loslassen → Apply → Undo sowie
+   Verbindungsausfall während Preview.
+3. Gen Fläche 1: Quelle wählen → Befund → Hold to audition → Draft senden →
+   Vergleich.
+4. Probeeq: verbunden/misst, frisch, unvollständig, veraltet, getrennt und
+   EQ aktiv; Übergang zu Gen.
 
 Erst wenn jede Sequenz von einem sichtbaren Ausgangs- zu einem eindeutigen Endzustand führt, ist die Bewegung des Designs vollständig beschrieben. Die Audio-Rampe, Schutzgrenzen, maximale Fernänderung und die Validierung bleiben dabei die technischen Verträge des Projekts.
 

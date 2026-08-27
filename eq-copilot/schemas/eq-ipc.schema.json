@@ -22,18 +22,18 @@
       "properties": {
         "type": { "const": "hello" },
         "protocol_version": { "type": "integer", "const": 2 },
-        "plugin_version": { "type": "string" },
-        "host_pid": { "type": "integer", "minimum": 0 },
+        "plugin_version": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "host_pid": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
         "sensor": {
           "type": "object",
           "required": ["sensor_id", "role", "label"],
           "additionalProperties": false,
           "properties": {
-            "sensor_id": { "type": "string", "description": "persistente UUID aus dem Plugin-State" },
-            "instance_nonce": { "type": "string", "description": "flüchtige Verbindungs-ID pro Plugin-Instanz-Lebenszeit (Plan §8.2) — unterscheidet zwei lebende Verbindungen derselben sensor_id nach FL-Duplikation" },
+            "sensor_id": { "type": "string", "minLength": 1, "maxLength": 64, "description": "persistente UUID aus dem Plugin-State" },
+            "instance_nonce": { "type": ["string", "null"], "minLength": 1, "maxLength": 64, "description": "flüchtige Verbindungs-ID pro Plugin-Instanz-Lebenszeit (Plan §8.2) — unterscheidet zwei lebende Verbindungen derselben sensor_id nach FL-Duplikation; null/fehlend bleibt nur für ältere Sender kompatibel, ein vorhandener String ist nie leer" },
             "role": { "enum": ["sensor", "hub", "pre", "post"] },
             "label": { "type": "string", "maxLength": 120, "description": "User-Label — untrusted data" },
-            "pair_id": { "type": ["string", "null"], "description": "PRE/POST-Paar-ID, sonst null" }
+            "pair_id": { "type": ["string", "null"], "minLength": 1, "maxLength": 64, "description": "PRE/POST-Paar-ID, sonst null" }
           }
         },
         "audio": {
@@ -41,9 +41,9 @@
           "required": ["samplerate", "block_size", "channels"],
           "additionalProperties": false,
           "properties": {
-            "samplerate": { "type": "number", "minimum": 0 },
-            "block_size": { "type": "integer", "minimum": 0 },
-            "channels": { "type": "integer", "minimum": 0 }
+            "samplerate": { "type": "number", "minimum": 0, "maximum": 768000 },
+            "block_size": { "type": "integer", "minimum": 0, "maximum": 65536 },
+            "channels": { "type": "integer", "minimum": 0, "maximum": 64 }
           }
         }
       }
@@ -56,8 +56,8 @@
       "properties": {
         "type": { "const": "welcome" },
         "protocol_version": { "type": "integer", "enum": [1, 2] },
-        "broker_version": { "type": "string" },
-        "session_token": { "type": "string", "description": "zufällig pro Broker-Lauf; Client zitiert es in jedem heartbeat" }
+        "broker_version": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "session_token": { "type": "string", "minLength": 1, "maxLength": 256, "description": "zufällig pro Broker-Lauf; Client zitiert es in jedem heartbeat" }
       }
     },
     "reject": {
@@ -67,9 +67,9 @@
       "additionalProperties": false,
       "properties": {
         "type": { "const": "reject" },
-        "reason": { "type": "string" },
-        "min_protocol": { "type": "integer" },
-        "max_protocol": { "type": "integer" }
+        "reason": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "min_protocol": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+        "max_protocol": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
       }
     },
     "heartbeat": {
@@ -79,21 +79,21 @@
       "additionalProperties": false,
       "properties": {
         "type": { "const": "heartbeat" },
-        "session_token": { "type": "string" },
-        "seq": { "type": "integer", "minimum": 0 },
+        "session_token": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "seq": { "type": "integer", "minimum": 0, "maximum": 9223372036854775807 },
         "stats": {
-          "type": "object",
+          "type": ["object", "null"],
           "additionalProperties": false,
           "properties": {
-            "rms_l": { "type": "number", "description": "linear 0..∞, letzter Block" },
-            "rms_r": { "type": "number" },
-            "frames_dropped": { "type": "integer", "minimum": 0, "description": "verworfene Analyseframes seit Start — Überlast verwirft Analyse, nie Audio (Plan §9.1)" },
+            "rms_l": { "type": "number", "minimum": 0, "maximum": 3.4028234663852886e38, "description": "linear, letzter Block; gemeinsame Wire-Repräsentation ist endliches float32" },
+            "rms_r": { "type": "number", "minimum": 0, "maximum": 3.4028234663852886e38 },
+            "frames_dropped": { "type": "integer", "minimum": 0, "maximum": 9223372036854775807, "description": "verworfene Analyseframes seit Start — Überlast verwirft Analyse, nie Audio (Plan §9.1); gemeinsame Wire-Breite mit JUCE var ist i64" },
             "nan_seen": { "type": "boolean", "description": "NaN/Inf im Eingang beobachtet (Signal unverändert weitergereicht)" },
             "transport_playing": { "type": ["boolean", "null"], "description": "aus dem Hostkontext, null wenn der Host nichts liefert" },
-            "project_time_samples": { "type": ["integer", "null"] }
+            "project_time_samples": { "type": ["integer", "null"], "minimum": -9223372036854775808, "maximum": 9223372036854775807 }
           }
         },
-        "measurement": { "$ref": "#/$defs/measurement" }
+        "measurement": { "oneOf": [{ "$ref": "#/$defs/measurement" }, { "type": "null" }] }
       }
     },
     "measurement": {
@@ -103,22 +103,22 @@
       "additionalProperties": false,
       "properties": {
         "zustand": { "enum": ["keine_daten", "sammelt", "messbereit"] },
-        "metrics_version": { "type": "string" },
-        "hoermarkierung": { "type": "boolean", "description": "Hör-Markierung (Einfärben) ist gerade hörbar — nachgelagerte Sensoren messen gefärbtes Signal; Aggregate anderer Sensoren in diesem Zeitfenster pausieren/markieren (Konzept HOER-MARKIERUNG v2 §5)" },
-        "aktiv_s": { "type": "number", "minimum": 0 },
-        "gesamt_s": { "type": "number", "minimum": 0 },
-        "lufs_i": { "type": ["number", "null"], "description": "BS.1770 integriert; null solange kein Block über dem absoluten Gate" },
-        "lufs_s": { "type": ["number", "null"], "description": "Short-Term 3 s" },
-        "true_peak_db": { "type": ["number", "null"], "description": "dBTP, 8×-Oversampling, ungegated über die Passage" },
-        "crest_db": { "type": ["number", "null"] },
-        "centroid_hz": { "type": ["number", "null"], "description": "MAGNITUDE-gewichtet (Landmine: nie power)" },
-        "low_frac": { "type": ["number", "null"] },
-        "width": { "type": ["number", "null"] },
-        "corr": { "type": ["number", "null"] },
+        "metrics_version": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "hoermarkierung": { "type": "boolean", "default": false, "description": "Hör-Markierung (Einfärben) dieser Instanz ist gerade hörbar. Ihr eigener Messabgriff liegt vor der Färbung und bleibt sauber; fremde Sensoren können gefärbtes Signal akkumulieren. Der Broker sperrt deshalb fremde Evidenz ab dem Empfang des Flags und gibt sie erst nach einem nachweisbaren Messreset wieder frei. Das Flag kommt im Richtwert-1-Hz-Heartbeat: die Zeit bis zum ersten true ist in v2 unvermeidlich unbeobachtet (Konzept HOER-MARKIERUNG v2 §5)." },
+        "aktiv_s": { "type": "number", "minimum": 0, "maximum": 1.7976931348623157e308 },
+        "gesamt_s": { "type": "number", "minimum": 0, "maximum": 1.7976931348623157e308 },
+        "lufs_i": { "type": ["number", "null"], "minimum": -1.7976931348623157e308, "maximum": 1.7976931348623157e308, "description": "BS.1770 integriert; null solange kein Block über dem absoluten Gate" },
+        "lufs_s": { "type": ["number", "null"], "minimum": -1.7976931348623157e308, "maximum": 1.7976931348623157e308, "description": "Short-Term 3 s" },
+        "true_peak_db": { "type": ["number", "null"], "minimum": -1.7976931348623157e308, "maximum": 1.7976931348623157e308, "description": "dBTP, 8×-Oversampling, ungegated über die Passage" },
+        "crest_db": { "type": ["number", "null"], "minimum": -1.7976931348623157e308, "maximum": 1.7976931348623157e308 },
+        "centroid_hz": { "type": ["number", "null"], "minimum": -1.7976931348623157e308, "maximum": 1.7976931348623157e308, "description": "MAGNITUDE-gewichtet (Landmine: nie power)" },
+        "low_frac": { "type": ["number", "null"], "minimum": -1.7976931348623157e308, "maximum": 1.7976931348623157e308 },
+        "width": { "type": ["number", "null"], "minimum": -1.7976931348623157e308, "maximum": 1.7976931348623157e308 },
+        "corr": { "type": ["number", "null"], "minimum": -1.7976931348623157e308, "maximum": 1.7976931348623157e308 },
         "ltas_komposit_db": {
           "type": ["array", "null"],
           "maxItems": 512,
-          "items": { "type": ["number", "null"] },
+          "items": { "type": ["number", "null"], "minimum": -1.7976931348623157e308, "maximum": 1.7976931348623157e308 },
           "description": "221 Werte auf dem 1/24-Okt-Raster ab 30 Hz (eq-snapshot-Achse), auf 0,1 dB gerundet; null = Band unbelegt. Array-Obergrenze ist ein Robustheits-Guard des Brokers."
         },
         "projekt_fenster": {
@@ -127,9 +127,9 @@
           "required": ["von_samples", "bis_samples", "spruenge"],
           "additionalProperties": false,
           "properties": {
-            "von_samples": { "type": "integer" },
-            "bis_samples": { "type": "integer" },
-            "spruenge": { "type": "integer", "minimum": 0 }
+            "von_samples": { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+            "bis_samples": { "type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807 },
+            "spruenge": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
           }
         }
       }
@@ -141,18 +141,18 @@
       "additionalProperties": false,
       "properties": {
         "type": { "const": "heartbeat_ack" },
-        "seq": { "type": "integer", "minimum": 0, "description": "zitiert die seq des beantworteten Heartbeats" },
+        "seq": { "type": "integer", "minimum": 0, "maximum": 9223372036854775807, "description": "zitiert die seq des beantworteten Heartbeats" },
         "konflikt": { "type": "boolean" }
       }
     },
     "bye": {
       "type": "object",
       "description": "Geordneter Abschied (Plugin-Destruktor). Fehlt er, greift Last-Seen/Timeout im Broker.",
-      "required": ["type"],
+      "required": ["type", "session_token"],
       "additionalProperties": false,
       "properties": {
         "type": { "const": "bye" },
-        "session_token": { "type": "string" }
+        "session_token": { "type": "string", "minLength": 1, "maxLength": 256 }
       }
     }
   }

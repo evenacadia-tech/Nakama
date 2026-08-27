@@ -17,8 +17,8 @@ NakamaState                               schema = 2  (int)
 │     instance_id          string   bytegleich aus Schema-1 sensor_id; frisch: 32 Hex-Kleinbuchstaben (juce::Uuid)
 │     plugin_kind          string   main | passive_probe | active_probe | legacy          (§32.2, v3 plugin_kind)
 │     measurement_position string   insert | pre | post | post_fader_contribution         (§32.2, v3 measurement_position)
-│     label                string   User-Wort, untrusted, nie interpretiert (auch leer)
-│     pair_id              string   NUR wenn nicht leer (fehlt = kein Paar)
+│     label                string   User-Wort, untrusted, nie interpretiert (auch leer; eigener Writer höchstens 120 Zeichen)
+│     pair_id              string   NUR wenn nicht leer (fehlt = kein Paar; eigener Writer höchstens 60 Zeichen)
 │     project_binding_id   string   NUR wenn bestätigt gebunden (hex32); wird NIE still erzeugt (§32.2)
 ├── MainProject                           schema = 1  (int)   nur plugin_kind = main (Pflicht dort)
 │     (heute keine weiteren Eigenschaften; Intent/Mitgliedschaft/Passage/AssistantStep/Outbox ergänzen P3/P5 ADDITIV)
@@ -129,6 +129,23 @@ Tritt ein, wenn: Root-`schema` ≠ 2 (oder `EqCopilotState` mit `schema` ≠ 1) 
 Verhalten: **audio-neutral** (Passthrough wie immer) · **read-only** (`setzeBindung`/`neueSensorId` werden verweigert, kein Host-Dirty) · `getStateInformation` liefert die **Originalbytes unverändert** zurück (nie ein Teilstate) · keine Pipe-Anmeldung (es gibt keine vertrauenswürdige Identität zu melden) · Editor zeigt den Zustand (Anzeige-Pflicht „Capability-Degradation", §0.4).
 
 Fremder Baumtyp oder Müllbytes: Zustand bleibt wie vor dem Aufruf (heutiges Verhalten, IdentityTest „Muellbytes aendern den Zustand nicht").
+
+Vor dem JUCE-Leser prüft ein allokationsfreier Byte-Riegel genau einen
+vollständigen `ValueTree`: höchstens 16 MiB, höchstens 64 `ValueTree`-Knoten
+inklusive Wurzel sowie 63 ineinander geschachtelte Variantenarrays plus
+Skalarblatt, höchstens 65.536 Einträge je
+Sammlung sowie 262.144 Einträge im gesamten Baum. Abgeschnittene Streams,
+Suffixbytes und deklarierte Längen außerhalb des vorhandenen Puffers gelten als
+Müllbytes. Für einen **schreibbaren** geladenen State baut der Leser zusätzlich
+den größten mit den heutigen API-Grenzen erreichbaren Folgezustand über demselben
+additiven Baum. Passt dieser nicht vollständig unter 16 MiB, bleibt der Eingang
+read-only und damit bytegleich. Dieser konkrete Headroom deckt die maximalen
+heutigen Userfelder und verhindert, dass `Save(Load(x))` einen State erzeugt, den
+derselbe Leser beim nächsten Start wegen seiner eigenen Grenze ablehnt. Marker, die JUCE
+8 nicht byteverlustfrei zurückschreiben kann
+(`undefined`/Marker 9 oder ein zukünftiger Marker), machen eine bekannte
+`NakamaState`-/`EqCopilotState`-Wurzel dagegen **read-only**; die Originalbytes
+gehen unverändert an den Host zurück.
 
 ## 6 · Host-Dirty (§32.2, §67 Punkt 4)
 

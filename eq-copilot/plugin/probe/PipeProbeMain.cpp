@@ -76,12 +76,12 @@ int main (int argc, char** argv)
     auto a = baueClient (sensorId, "pipe-probe A", pipeName);
     a->start();
 
-    // Stufe 1+2: v2 verbunden, ≥2 Heartbeats — jeder davon wurde quittiert
-    // (ein fehlendes ACK beendete die Verbindung nach dem ersten Heartbeat).
+    // Stufe 1+2: v2 verbunden, mindestens zwei streng passende ACKs. Der
+    // Sendezähler allein wäre kein Beweis, solange das zweite ACK aussteht.
     if (! warteAuf (sekunden * 10, [&] {
             const auto z = a->snapshot();
             return z.status == eqcop::PipeClient::Status::verbunden
-                && z.protokollVersion == 2 && z.heartbeatsGesendet >= 2;
+                && z.protokollVersion == 2 && z.heartbeatsBestaetigt >= 2;
         }))
     {
         const auto z = a->snapshot();
@@ -98,6 +98,7 @@ int main (int argc, char** argv)
         std::cout << "PROBE OK v2 · broker " << z.brokerVersion
                   << " · token " << z.sessionToken.substring (0, 8) << "..."
                   << " · heartbeats " << z.heartbeatsGesendet
+                  << "/" << z.heartbeatsBestaetigt << " bestaetigt"
                   << " · konflikt " << (z.konflikt ? "ja" : "nein") << std::endl;
     }
 
@@ -113,6 +114,7 @@ int main (int argc, char** argv)
                           : z.status == eqcop::PipeClient::Status::verbindet ? "verbindet" : "getrennt")
                       << " · protokoll " << z.protokollVersion
                       << " · heartbeats " << z.heartbeatsGesendet
+                      << "/" << z.heartbeatsBestaetigt << " bestaetigt"
                       << " · versuche " << z.verbindungsVersuche
                       << " · konflikt " << (z.konflikt ? "ja" : "nein")
                       << " · letztesAck " << z.letztesAck

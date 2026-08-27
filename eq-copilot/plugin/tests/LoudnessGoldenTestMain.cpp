@@ -423,7 +423,7 @@ int main()
                   << "Laufzeitgroesse." << std::endl;
         pruefe (LoudnessAccumulator::speicherBytes()
                     == (std::size_t) LoudnessAccumulator::kBinsGesamt * (sizeof (double) + sizeof (std::uint32_t))
-                     + (std::size_t) LoudnessAccumulator::kZellenRing * sizeof (double),
+                     + (std::size_t) LoudnessAccumulator::kZellenRing * (sizeof (double) + sizeof (bool)),
                 "speicherBytes() ist eine reine Compile-Time-Groesse");
     }
 
@@ -467,6 +467,14 @@ int main()
                     "NaN/Inf-Zellen sind gezaehlt", std::to_string (a.bloeckeNichtEndlich()));
             pruefe (g && std::isfinite (x),
                     "NaN/Inf vergiften das Gating nicht", zahl (x, 6));
+
+            LoudnessAccumulator kurzAkku; kurzAkku.vorbereiten (kFs);
+            for (int i = 0; i < LoudnessAccumulator::kZellenRing; ++i)
+                kurzAkku.zelle (zelleFuer (0.2));
+            kurzAkku.zelle (std::numeric_limits<double>::quiet_NaN());
+            double kurzWert = 0.0;
+            pruefe (! kurzAkku.kurz (kurzWert),
+                    "Kurz-LUFS meldet einen nichtendlichen Ring nie als gueltig");
         }
         {   // Zellen ueber dem Gitter (extrem laut) - Gate kann das nicht faelschen
             std::vector<double> zellen (200, zelleFuer (1e6));      // ~ +59 LUFS

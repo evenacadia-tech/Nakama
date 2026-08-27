@@ -282,6 +282,16 @@ DSP-/Remote-Lieferumfang von S26–31 noch die native UI aus S31b. Die native
 JUCE-Oberfläche beginnt weiterhin erst hinter den in `plan/plan.json`
 festgelegten Eintrittslinien und übernimmt dann den abgenommenen UI-Vertrag.
 
+**(p) Probeeq hat keinen lokalen Voll-Editor.** Entscheid 27.08.2026
+(`../design/abnahmen/2026-08-27-arbeitsnamen-und-probeeq-doppelrolle.md`):
+Auf die Frage, ob Probeeq künftig auch ohne Gen lokal als vollständiger EQ
+bedienbar sein soll, antwortet der User „nein". Damit überschreibt dieser
+Entscheid den manuellen Bedienanteil aus Erratum (d), nicht aber Probeeqs
+Bus-DSP: Probeeq misst passiv und führt bei zugeschaltetem EQ Gens
+Fernsteuerung lokal auf dem Bus aus. Vollständige Band-, Kurven- und
+Präzisionsbedienung liegt ausschließlich in Gens zweiter Oberfläche;
+Probeeq selbst erhält nur die kompakte Status- und Rückfallfläche.
+
 ---
 
 ## 0. Zweck und Einordnung

@@ -238,8 +238,11 @@ def validiere_dto_python(v: dict, text: str) -> str | None:
     (Textstufe) -> Struktur -> dsp_schema_version -> unbekannt -> fehlend ->
     Typ -> nichtendlich -> Bereich/Enum.
     """
-    # Stufe 0: v3-Textriegel auf den Bytes - dieselbe Abbildung wie NakamaParameter.cpp.
-    riegel = textriegel_bytes(text.encode("utf-8"))
+    # Stufe 0: v3-Byte-/Grammatikriegel in der Variante fuer den danach
+    # folgenden exakt gerundeten DTO-Leser - wie in NakamaParameter.cpp.
+    # Der eigene JCS-Leser rundet korrekt und validiert Typ/Bereich feldgenau;
+    # nur der binary64-Schemaweg braucht die globale 15-Ziffern-Sicherung.
+    riegel = textriegel_bytes(text.encode("utf-8"), schema_ganzzahl_sichern=False)
     if riegel is not None:
         if riegel.startswith("Exponent ausserhalb") or riegel.startswith("Zahl ausserhalb"):
             return "nichtendlich"

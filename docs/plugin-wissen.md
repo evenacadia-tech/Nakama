@@ -16,7 +16,8 @@
 > **Produktziel, präzisiert 27.08.:** Gen hat zwei Oberflächen; Overview und
 > EQ-Zentrale/EQ Center sind nur Arbeitsnamen. **Probeeq** vereint passive
 > Messsonde und den bei Bedarf von Gen ferngesteuerten EQ-Ausführer auf dem
-> Bus; Suna ist als App-Name ersetzt. Wortlaut:
+> Bus; Suna ist als App-Name ersetzt. Die vollständige EQ-Bedienung liegt nur
+> in Gen; Probeeq bekommt keinen lokalen Voll-Editor. Wortlaut:
 > `../design/abnahmen/2026-08-27-arbeitsnamen-und-probeeq-doppelrolle.md`.
 > **Heutiger Code ist noch vor diesem Umschnitt:** Er baut weiterhin getrennte
 > `NakamaSuna`- und `NakamaProbeeq`-Ziele; beide sind audio-neutrale Hüllen.

@@ -270,9 +270,10 @@ impl<'de> Deserialize<'de> for StrengerWert {
 ///
 /// `Ok(())` heisst gueltig; `Err(Grund)` traegt den ERSTEN Grund der Leiter.
 pub fn pruefe(roh: &[u8]) -> Result<(), Grund> {
-    // 1. Byte-/Textriegel des v3-Vertrags — dieselbe Abbildung wie
-    //    NakamaParameter.cpp:190-205 und erzeuge_state_fixtures.py:241-248.
-    if let Err(detail) = crate::vertrag::textriegel_bytes(roh) {
+    // 1. Byte-/Textriegel des v3-Vertrags in der Variante fuer den danach
+    //    folgenden exakt gerundeten DTO-Leser — dieselbe Abbildung wie
+    //    NakamaParameter.cpp und erzeuge_state_fixtures.py.
+    if let Err(detail) = crate::vertrag::textriegel_bytes_fuer_exakten_zahlenleser(roh) {
         if detail.starts_with("Exponent ausserhalb") || detail.starts_with("Zahl ausserhalb") {
             return Err(Grund::NichtEndlich);
         }

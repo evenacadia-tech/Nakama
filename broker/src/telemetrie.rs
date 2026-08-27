@@ -426,9 +426,9 @@ fn pruefe_baender(b: &fb::Bandwerte, p: &str, out: &mut Vec<Verstoss>) {
     let encoding = b.encoding();
 
     let gitter_ok = gitter != fb::Bandgitter::unbekannt
-        && fb::Bandgitter::ENUM_VALUES.iter().any(|v| *v == gitter);
+        && fb::Bandgitter::ENUM_VALUES.contains(&gitter);
     let encoding_ok = encoding != fb::BandEncoding::unbekannt
-        && fb::BandEncoding::ENUM_VALUES.iter().any(|v| *v == encoding);
+        && fb::BandEncoding::ENUM_VALUES.contains(&encoding);
     if !gitter_ok {
         out.push(Verstoss::neu(&format!("{p}/gitter"), "enum_unbekannt"));
     }

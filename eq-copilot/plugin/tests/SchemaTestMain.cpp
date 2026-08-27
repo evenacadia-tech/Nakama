@@ -591,15 +591,15 @@ void fahreTextriegelproben()
         juce::MemoryBlock roh;
         roh.loadFromHexString (hex);
 
-        juce::String fehler;
-        const bool sauber = nakama::vertrag::textriegelBytes (roh.getData(), roh.getSize(), fehler);
+        juce::String fallFehler;
+        const bool sauber = nakama::vertrag::textriegelBytes (roh.getData(), roh.getSize(), fallFehler);
         const bool sollAbgelehnt = static_cast<bool> (fall.getProperty ("wird_abgelehnt", false));
         if (sauber == sollAbgelehnt)
         {
             ++rot;
             std::cout << "[ROT]  Textriegel #" << (int) fall.getProperty ("nr", 0)
                       << " " << fall.getProperty ("zeigetext", {}).toString().toRawUTF8()
-                      << " -> " << (sauber ? "angenommen" : fehler.toRawUTF8()) << std::endl;
+                      << " -> " << (sauber ? "angenommen" : fallFehler.toRawUTF8()) << std::endl;
         }
     }
 
@@ -607,6 +607,13 @@ void fahreTextriegelproben()
             juce::String (faelle->size()) + " Faelle");
     pruefe (faelle->size() >= 50, "Falltabelle hat Substanz",
             juce::String (faelle->size()) + " Faelle");
+
+    const char winzig = ' ';
+    juce::String grenzenFehler;
+    pruefe (! nakama::vertrag::textriegelBytes (
+                &winzig, nakama::vertrag::kMaxDokumentBytes + 1u, grenzenFehler)
+            && grenzenFehler == "Dokument zu gross",
+            "Textriegel lehnt oberhalb der gemeinsamen 16-MiB-Grenze vor dem Bytezugriff ab");
 }
 
 void fahreRiegelproben()

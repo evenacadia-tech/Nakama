@@ -39,6 +39,7 @@ WURZEL = pathlib.Path(__file__).resolve().parents[2]
 SCHEMA = WURZEL / "eq-copilot" / "schemas" / "v3" / "eq-ipc-v3.schema.json"
 RESERVIERT = WURZEL / "eq-copilot" / "schemas" / "v3" / "reservierte-nachrichten-v1.json"
 FIXTURES = WURZEL / "eq-copilot" / "fixtures" / "v3"
+MAX_DOKUMENT_BYTES = 16 * 1024 * 1024
 
 # Genau die Liste aus schemas/v3/README.md. Wer sie hier erweitert, muss sie
 # in BEIDEN Engines und im README erweitern - sonst faellt diese Pruefung.
@@ -120,7 +121,7 @@ def ist_ascii_ziffer(c: str) -> bool:
 
 
 def zahl_pruefen(ganz: str, bruch: str, exp_ziffern: str, exp_negativ: bool,
-                 lit: str) -> str | None:
+                 lit: str, schema_ganzzahl_sichern: bool) -> str | None:
     """Entscheidet AUS DEM LITERAL, ob eine Zahl im Vertragsbereich liegt.
 
     T2-Runde 2, Blocker BL-1/BL-2: die erste Fassung fragte hier `float(lit)`
@@ -133,9 +134,10 @@ def zahl_pruefen(ganz: str, bruch: str, exp_ziffern: str, exp_negativ: bool,
     schreibt bei 1018 Vorkommastellen `':00'` statt eines Exponenten.
 
     Die Lehre, die ueber diesen Fall hinausgeht: **ein Riegel darf nie die
-    Bibliothek befragen, gegen deren Verhalten er schuetzt.** Die Ganzzahlregel
-    war von Anfang an aus dem Literal gerechnet und hat gehalten; die
-    Endlichkeitsregel war delegiert und hat nicht gehalten.
+    Bibliothek befragen, gegen deren Verhalten er schuetzt.** Die erste
+    Ganzzahlregel erfasste nur die Form ohne Punkt/Exponent; heute werden Wert,
+    Ganzzahligkeit und Praezision fuer alle Schreibweisen lexikalisch bestimmt.
+    Die Endlichkeitsregel war delegiert und hat ebenfalls nicht gehalten.
 
     Hier wird deshalb nur mit kleinen ganzen Zahlen gerechnet, ohne jede
     Gleitkommaoperation.
@@ -158,34 +160,79 @@ def zahl_pruefen(ganz: str, bruch: str, exp_ziffern: str, exp_negativ: bool,
     signifikant = alle.lstrip("0")
     if not signifikant:
         return None                       # der Wert ist exakt 0
+
+    # Die Endlichkeitsgrenze hat Vorrang vor der engeren Ganzzahlregel, damit
+    # ein 1e308-Ueberlauf sprachuebergreifend ein Zahlenbereichsfehler bleibt.
     fuehrende = len(alle) - len(signifikant)
     dez = (len(ganz) - fuehrende - 1) + exp
     if dez >= DEZ_GRENZE or dez <= -DEZ_GRENZE:
         return f"Zahl ausserhalb +/-1e{DEZ_GRENZE}: {lit[:40]}"
+
+    # JSON Schema beurteilt den mathematischen Wert: auch 5.0 und 5e0 sind
+    # Integer. Daher gilt die 2^53-Grenze fuer jede exakt ganzzahlige
+    # Dezimal-/Exponentialschreibweise, noch bevor binary64 runden kann.
+    skala = exp - len(bruch)               # alle * 10**skala
+    ist_ganzzahl = False
+    ganzzahl_zu_gross = False
+    if skala >= 0:
+        ist_ganzzahl = True
+        stellen = len(signifikant) + skala
+        if stellen > 16:
+            ganzzahl_zu_gross = True
+        elif stellen == 16:
+            ganzzahl_zu_gross = signifikant + "0" * skala > "9007199254740991"
+    else:
+        abzuschneiden = -skala
+        if (abzuschneiden <= len(alle)
+                and alle[len(alle) - abzuschneiden:] == "0" * abzuschneiden):
+            ist_ganzzahl = True
+            normalisiert = alle[:len(alle) - abzuschneiden].lstrip("0")
+            ganzzahl_zu_gross = (len(normalisiert) > 16
+                                  or (len(normalisiert) == 16
+                                      and normalisiert > "9007199254740991"))
+    if ganzzahl_zu_gross:
+        return f"Ganzzahl ausserhalb 2^53-1: {lit}"
+
+    # Nichtganzzahlige Eingaben mit mehr als 15 signifikanten Dezimalziffern
+    # koennen beim binary64-Lesen auf eine Ganzzahl kippen und damit einen
+    # `type: integer`-Riegel umgehen. Exakte Integer haben oben die 2^53-Kante.
+    signifikante_stellen = len(signifikant.rstrip("0"))
+    if schema_ganzzahl_sichern and not ist_ganzzahl and signifikante_stellen > 15:
+        return f"Zahl mit mehr als 15 signifikanten Dezimalziffern: {lit[:40]}"
+
     return None
 
 
-def textriegel_bytes(roh: bytes) -> str | None:
+def textriegel_bytes(roh: bytes, *, schema_ganzzahl_sichern: bool = True) -> str | None:
     """Der Riegel auf BYTE-Ebene — so, wie ein Dokument wirklich ankommt.
 
-    Zwei Regeln lassen sich nur hier ausdruecken (T2-Runde 2, BF-6/BF-7):
+    Vier Regeln lassen sich nur hier ausdruecken (T2-Runde 2, BF-6/BF-7 und
+    der Roh-NUL-Gegenpfad):
 
     * **BOM.** RFC 8259 §8.1: `serde_json` und Pythons `json` lehnen ein BOM
       ab, JUCEs `loadFileAsString` streift es und parst weiter.
     * **Kaputtes UTF-8.** Gemessen liefen die drei Beine hier voellig
       auseinander: dieses hier warf eine ungefangene `UnicodeDecodeError`, das
       Rust-Bein panickte beim Lesen, und JUCE ersetzte das Byte still.
+    * **Rohes NUL.** Terminatorbasierte C++-Leser duerfen keinen gueltigen
+      Praefix annehmen und die restliche Bytefolge ignorieren.
+    * **Groesse.** Direkte DTO-/Datei-Caller sind wie C++ und Rust auf
+      inklusive 16 MiB begrenzt; der Pipe-Framer ist mit 256 KiB enger.
     """
+    if len(roh) > MAX_DOKUMENT_BYTES:
+        return "Dokument zu gross"
     if roh.startswith(b"\xef\xbb\xbf"):
         return "BOM am Dokumentanfang"
+    if b"\0" in roh:
+        return "rohes NUL im Dokument"
     try:
         text = roh.decode("utf-8")
     except UnicodeDecodeError as e:
         return f"kein gueltiges UTF-8 an Byte {e.start}"
-    return textriegel(text)
+    return textriegel(text, schema_ganzzahl_sichern=schema_ganzzahl_sichern)
 
 
-def textriegel(text: str) -> str | None:
+def textriegel(text: str, *, schema_ganzzahl_sichern: bool = True) -> str | None:
     """Prueft die Zeichen eines v3-Dokuments, BEVOR ein Parser sie sieht.
 
     Acht Regeln, jede gegen eine GEMESSENE Abweichung zwischen den Beinen.
@@ -282,7 +329,8 @@ def textriegel(text: str) -> str | None:
                     # BF-1: getDoubleValue("1e") liefert 1.0.
                     return f"Exponent ohne Ziffern an Position {i}"
 
-            grund = zahl_pruefen(ganz, bruch, exp_ziffern, exp_negativ, text[i:j])
+            grund = zahl_pruefen(ganz, bruch, exp_ziffern, exp_negativ, text[i:j],
+                                 schema_ganzzahl_sichern)
             if grund:
                 return grund
             i = j
@@ -518,6 +566,9 @@ MINDESTKORPUS = 100
 
 def pruefe_fixtures(lauf: Lauf, schema: dict, manifest: dict) -> None:
     pruefer = jsonschema.Draft202012Validator(schema)
+
+    lauf.wahr("Textriegel lehnt ein Dokument oberhalb 16 MiB vor dem Parser ab",
+              textriegel_bytes(b" " * (MAX_DOKUMENT_BYTES + 1)) == "Dokument zu gross")
 
     # T2-Runde 1: C++ und Rust haben je einen `>= 100`-Riegel, dieses Bein
     # hatte keinen. Mit geleerter Fixtureliste waere ein Lauf OHNE --abdeckung

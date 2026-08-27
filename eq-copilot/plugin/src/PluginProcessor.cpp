@@ -2,12 +2,34 @@
 #include "PluginEditor.h"
 #include "EqCopilotIds.h"
 #include "Diagnose.h"
+#include "WorkerCadence.h"
 #include <chrono>
 #include <cmath>
 #include <limits>
 
 namespace eqcop
 {
+
+namespace
+{
+bool projektEnde (juce::int64 start, int samples, juce::int64& aus) noexcept
+{
+    if (samples < 0 || start > std::numeric_limits<juce::int64>::max() - (juce::int64) samples)
+        return false;
+    aus = start + (juce::int64) samples;
+    return true;
+}
+
+bool projektAbstandGroesserAls64 (juce::int64 a, juce::int64 b) noexcept
+{
+    // Vorzeichenbit kippen bildet int64 streng monoton auf uint64 ab. Die
+    // anschliessende Differenz ist auch zwischen INT64_MIN/MAX definiert.
+    constexpr std::uint64_t bias = std::uint64_t { 1 } << 63u;
+    const auto ua = static_cast<std::uint64_t> (a) ^ bias;
+    const auto ub = static_cast<std::uint64_t> (b) ^ bias;
+    return (ua >= ub ? ua - ub : ub - ua) > 64u;
+}
+} // namespace
 
 EqCopilotProcessor::EqCopilotProcessor()
     : juce::AudioProcessor (BusesProperties()
@@ -63,11 +85,20 @@ EqCopilotProcessor::~EqCopilotProcessor()
 
 void EqCopilotProcessor::prepareToPlay (double samplerate, int maxBlock)
 {
-    // Samplerate-Wechsel: der Worker setzt die Engine zurück (vorbereiten) —
-    // das Projektzeit-Fenster MUSS mit, sonst stünden von/bis in der alten
-    // Sample-Achse neben einer frischen Messung (Selbst-Audit-Fund M2).
-    if (samplerateAtomic.exchange (samplerate) != samplerate)
-        fensterResetWunsch.store (true);
+    const double sichereSamplerate = std::isfinite (samplerate)
+                                  && samplerate > 0.0 && samplerate <= 768000.0
+        ? samplerate : 0.0;
+    // Jeder Prepare-Aufruf ist eine Queue-Generation. Der Audiothread setzt
+    // sein Projektfenster exakt dann zurueck, wenn `veroeffentliche()` diese
+    // Generation wirklich uebernimmt - auch bei unveraenderter Samplerate.
+    {
+        auto l = externerAnalyseSteuerZug();
+        samplerateAtomic.store (sichereSamplerate);
+        // Samplerate und Generation werden unter EINER Steuerkante sichtbar.
+        // Der Worker kann daher nie alte Bloecke mit der neuen Binzuordnung
+        // auswerten.
+        queue.neustartAnfordern();
+    }
     blockSizeAtomic.store (maxBlock);
     kanaeleAtomic.store (getTotalNumInputChannels());
     // SONDE-008: KEIN Reset von hier aus. Bis 23.08. rief diese Zeile
@@ -75,12 +106,10 @@ void EqCopilotProcessor::prepareToPlay (double samplerate, int maxBlock)
     // SPSC-Rings mitten in einen laufenden Leser hinein. Stattdessen ein
     // Wunsch, den der Audiothread als Einziger einlöst; der Worker erkennt die
     // Reste des alten Anlaufs an ihrer kleineren `startFolge`.
-    queue.neustartAnfordern();
-
     // Hör-Markierung: Puffer/Zustände neu, Echtzeit-Beweis verfällt — nach
     // jedem prepareToPlay (auch Render-Vorlauf) gilt wieder „neutral, bis
     // Echtzeit bewiesen" (Konzept v2 §4).
-    markierung.setzeSamplerate (samplerate);
+    markierung.setzeSamplerate (sichereSamplerate);
     markierung.vorbereiten (maxBlock);
     echtzeitOk.store (false);
     lzBestanden = 0;
@@ -133,16 +162,6 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
         rmsR.store (rmsL.load());
     if (nan)
         nanSeen.store (true);
-
-    // Fenster-Reset konsumiert der Audiothread selbst — er bleibt der einzige
-    // Schreiber der Fenster-Atomics (Single-Writer, Plan §9.1-konform: nur
-    // Atomics, keine Allokation).
-    if (fensterResetWunsch.exchange (false))
-    {
-        fensterAktiv.store (false);
-        fensterSpruenge.store (0);
-        fensterErwartetGueltig = false;
-    }
 
     // ── Zeitstempel: woher die Zeit kommt, und wie sicher (SONDE-008) ──────
     // Zwei Quellen, in dieser Reihenfolge, und die Reihenfolge ist der Punkt:
@@ -229,42 +248,74 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     // ein alter Wert sah aus wie eine aktuelle Position.
     projektZeitGueltig.store (stempel.zeitGueltig);
     if (stempel.zeitGueltig)
-    {
         projektZeitSamples.store (stempel.projectSampleStart);
-        if (stempel.spieltGueltig && stempel.spielt)
-        {
-            const juce::int64 t = stempel.projectSampleStart;
-            if (! fensterAktiv.load())
-            {
-                fensterAktiv.store (true);
-                fensterVon.store (t);
-                fensterBis.store (t + n);
-            }
-            else
-            {
-                // Sprung = Loop/Seek/Stop-Rücksprung. Toleranz 64 Samples für
-                // Rundungen des Hosts. Auch über eine Pause hinweg gemessen:
-                // Resume an anderer Stelle IST eine Lücke im Fenster.
-                if (fensterErwartetGueltig && std::llabs (t - fensterErwartet) > 64)
-                    fensterSpruenge.fetch_add (1);
-                if (t < fensterVon.load())
-                    fensterVon.store (t);
-                if (t + n > fensterBis.load())
-                    fensterBis.store (t + n);
-            }
-            fensterErwartet = t + n;
-            fensterErwartetGueltig = true;
-        }
-    }
 
     // Analyseweg: der GANZE Block in die zeitgestempelte Queue — oder gar
-    // nicht. Reicht ein Ring nicht, verwirft sie den kompletten Analyseblock,
-    // zählt ihn und markiert die Lücke im Folgeblock; sie wartet nie und fasst
-    // Audio nie an (Entwurf §48.1/§53.7).
+    // nicht. Der Out-Parameter ist die einzige Wahrheit fuer die tatsaechlich
+    // im Produzenten uebernommene Generation. Ein Resetwunsch kann waehrend
+    // dieses Callbacks eintreffen; ein separates, frueher gelesenes Atomic
+    // koennte dann einen neuen Block noch ins alte Projektfenster schreiben.
     Queue::TapQuelle abgriff;
     abgriff.links  = buffer.getReadPointer (0);
     abgriff.rechts = kanaele > 1 ? buffer.getReadPointer (1) : nullptr;
-    queue.veroeffentliche (&abgriff, 1, kanaele, n, stempel);
+    bool neustartUebernommen = false;
+    bool lueckeVorBlock = false;
+    const bool queueAngenommen = queue.veroeffentliche (
+        &abgriff, 1, kanaele, n, stempel, &neustartUebernommen, &lueckeVorBlock);
+
+    // Nur der Audiothread schreibt das Projektfenster. Generation und
+    // Kontinuitaetskante kommen direkt aus demselben Queue-Zug, der diesen
+    // Block gestempelt hat: kein Lock, keine Allokation und keine
+    // atomuebergreifende Sichtbarkeitsannahme. Ein abgewiesener Block gehoert
+    // nicht zur M1-Messung; erst der naechste angenommene Block beginnt mit der
+    // dort wirklich veroeffentlichten Luecke ein neues Projektfenster.
+    if (neustartUebernommen || lueckeVorBlock)
+    {
+        fensterAktiv.store (false);
+        fensterSpruenge.store (0);
+        fensterErwartetGueltig = false;
+    }
+
+    const bool analyseRateGueltig = samplerateAtomic.load() > 0.0;
+    if (queueAngenommen && analyseRateGueltig
+        && stempel.zeitGueltig && stempel.spieltGueltig && stempel.spielt)
+    {
+        const juce::int64 t = stempel.projectSampleStart;
+        juce::int64 ende = 0;
+        if (! projektEnde (t, n, ende))
+        {
+            // Ein nicht darstellbares Hostintervall ist keine echte
+            // Projektposition. Vorheriges Fenster nicht damit vermischen.
+            fensterAktiv.store (false);
+            fensterErwartetGueltig = false;
+            fensterSpruenge.fetch_add (1);
+        }
+        else if (! fensterAktiv.load())
+        {
+            // `fensterAktiv` ist zugleich das Publikationsbit fuer Leser:
+            // Grenzen zuerst schreiben, sonst koennte ein Heartbeat die neue
+            // Generation schon als gueltig mit den alten Grenzen beobachten.
+            fensterVon.store (t);
+            fensterBis.store (ende);
+            fensterErwartet = ende;
+            fensterErwartetGueltig = true;
+            fensterAktiv.store (true);
+        }
+        else
+        {
+            // Sprung = Loop/Seek/Stop-Rücksprung. Toleranz 64 Samples für
+            // Rundungen des Hosts. Auch über eine Pause hinweg gemessen:
+            // Resume an anderer Stelle IST eine Lücke im Fenster.
+            if (fensterErwartetGueltig && projektAbstandGroesserAls64 (t, fensterErwartet))
+                fensterSpruenge.fetch_add (1);
+            if (t < fensterVon.load())
+                fensterVon.store (t);
+            if (ende > fensterBis.load())
+                fensterBis.store (ende);
+            fensterErwartet = ende;
+            fensterErwartetGueltig = true;
+        }
+    }
 
     // ── Hör-Markierung (Konzept v2): Erlaubnis prüfen, dann färben ─────────
     // Reihenfolge ist Vertrag: RMS + Analyse-Abgriff liegen OBEN — die Messung
@@ -442,92 +493,171 @@ void EqCopilotProcessor::lebenszeichen (int samples, bool spielt)
 
 void EqCopilotProcessor::workerLauf()
 {
-    // Leert die Analysequeue im 50-ms-Takt und rechnet die M1-Messung (Plan
-    // §5.10.1). Die Engine gehört exklusiv diesem Thread; Reset/Samplerate
-    // kommen als Atomics herein. Kein Realtime-Anspruch — Überlast verwirft die
-    // Queue, und zwar ganze Blöcke (SONDE-008).
+    // FP-Modi sind threadlokal: der ScopedNoDenormals im Audiocallback
+    // schuetzt diesen Worker und seine rekursiven K-Filter nicht.
+    juce::ScopedNoDenormals keineDenormals;
+    // Leert die Analysequeue in begrenzten Zuegen; ohne Rueckstau schlaeft der
+    // Worker bis zu 50 ms, bei Rueckstau arbeitet er direkt weiter. Leichte und
+    // schwere Publikation bleiben trotzdem an 50-/250-ms-Wanduhrdeadlines.
+    // Die Engine gehoert exklusiv diesem Thread; Reset/Samplerate kommen als
+    // Atomics herein. Kein Realtime-Anspruch — Überlast verwirft ganze Bloecke.
     quarantaene.vorbereiten();     // einmalige Allokation, im Worker, vor dem ersten Zug
-    int auswertTeiler = 0;
     juce::uint64 unverarbeitet = 0;   // Samples seit der letzten Schwer-Auswertung
+    auto workerAnlauf = queue.aktuellerAnlauf();
+    detail::WorkerKadenz kadenz;
     while (workerLaeuft.load())
     {
-        const double srWunsch = samplerateAtomic.load();
-        if (srWunsch > 0.0)
+        // Explizite Uebergabe statt Fairness-Hoffnung: sobald Prepare, Reset
+        // oder ein Frame-Leser wartet, konkurriert der Worker nicht um den
+        // naechsten Zug. Der laufende Zug bleibt durch acht Bloecke begrenzt.
+        if (analyseSteuerWartende.load() != 0)
         {
-            engine.vorbereiten (srWunsch);          // no-op bei gleicher Rate
-            // SONDE-009: derselbe Wunsch, dieselbe Stelle. Die FeatureEngine
-            // legt bei einer NEUEN Rate ihre Bin-Zuordnung neu an — eine
-            // Zuordnung aus der alten Rate wäre danach schlicht falsch, und
-            // §32.3 führt den Sampleratewechsel ohnehin als Epochengrenze.
-            merkmale.vorbereiten (srWunsch);
-        }
-        if (messResetWunsch.exchange (false))
-        {
-            engine.zuruecksetzen();
-            merkmale.zuruecksetzen();
-            // Gegenpfad: was in Quarantäne liegt, gehört zur alten Messung.
-            quarantaene.zuruecksetzen();
+            std::this_thread::yield();
+            continue;
         }
 
-        // SONDE-008: Block für Block durch die Ein-Block-Quarantäne. Ein Block
-        // erreicht die Engine erst, wenn sein Nachfolger beweist, dass er ihn
-        // fortsetzt (§53.7) — die Engine sieht damit nie zwei Blöcke über eine
-        // Grenze hinweg zusammenhängen, deren Lage erst nachträglich sichtbar
-        // wurde (§32.3).
-        while (const auto* roh = queue.spitze())
+        bool queueHatRest = false;
         {
-            // T2-3 zweite Hälfte (23.08.): der Anlauf wird JE BLOCK gelesen.
-            // Bis dahin stand er einmal VOR der Schleife — kippte er während
-            // des Drains, zählte der Worker frische Blöcke als
-            // `veralteteBloecke`. Verwerfen wäre die sichere Seite geblieben,
-            // aber der Zähler vermischte damit „alter Anlauf" mit „neuer Anlauf
-            // zu früh gesehen" und trug seinen Namen zu Unrecht. Eine
-            // relaxed-Atomic je Block ist auf dem Workerthread nichts.
-            if (roh->startFolge != queue.aktuellerAnlauf())
+            std::unique_lock<std::mutex> steuerung (analyseSteuerMutex);
+            // Schliesst die Luecke zwischen Vorpruefung und Lock-Erwerb: hat
+            // sich dort jemand angemeldet, geben wir sofort wieder frei.
+            if (analyseSteuerWartende.load() != 0)
             {
-                // Rest eines früheren prepareToPlay-Anlaufs: dort kann die
-                // Samplerate eine andere gewesen sein. Nicht analysieren,
-                // sondern zählen — das ist der ehrliche Ersatz für das alte
-                // `fifo.reset()` vom Nachrichtenthread aus.
-                veralteteBloecke.fetch_add (1);
-                quarantaene.zuruecksetzen();
-                queue.freigeben();
+                steuerung.unlock();
+                std::this_thread::yield();
                 continue;
             }
-            const auto frei = quarantaene.schiebe (queue, *roh);
-            queue.freigeben();          // Ringplatz zurück; `frei` liegt schon in der Quarantäne
-            if (frei)
+
+            const double srWunsch = samplerateAtomic.load();
+            const bool analyseRateGueltig = srWunsch > 0.0;
+            if (analyseRateGueltig)
             {
-                engine.verarbeite (frei.audio, (int) frei.block->sampleCount,
-                                   (int) frei.block->kanaele);
-                // SONDE-009: DERSELBE versiegelte Block, zwei Leser. Die
-                // FeatureEngine bekommt zusätzlich den Deskriptor — sie braucht
-                // ihn, weil ihre ganze Arbeit an Zeit, Flags und Kontinuität
-                // hängt, während M1 nur Samples sieht.
-                if (merkmale.nimmBlock (*frei.block, frei.audio))
-                    merkmalFrames.fetch_add (1);
-                samplesAnalysiert.fetch_add ((juce::uint64) frei.block->sampleCount);
-                unverarbeitet += (juce::uint64) frei.block->sampleCount;
+                engine.vorbereiten (srWunsch);          // no-op bei gleicher Rate
             }
-        }
-        if (++auswertTeiler >= 5)                   // ~250 ms: Gating/Kandidaten
-        {
-            auswertTeiler = 0;
-            // Leerlauf-Riegel (m4): ohne neue Samples keine Schwer-Auswertung —
-            // sie publizierte sonst 4×/s identische Snapshots, und der Editor
-            // malte im Stillstand weiter (auswertenLeicht hat den Riegel intern).
-            if (unverarbeitet > 0)
+            // Auch die ungueltige Rate muss die FeatureEngine sehen: sie
+            // deaktiviert damit eine eventuell alte, gueltige Binzuordnung.
+            merkmale.vorbereiten (srWunsch);
+
+            const auto aktuellerAnlauf = queue.aktuellerAnlauf();
+            if (aktuellerAnlauf != workerAnlauf)
             {
+                // Auch ein same-rate-prepare ist eine Messgrenze. M1 besitzt
+                // keinen Deskriptor und muss sie hier explizit bekommen.
+                engine.zuruecksetzen();
+                quarantaene.zuruecksetzen();
                 unverarbeitet = 0;
-                engine.auswerten();
+                workerAnlauf = aktuellerAnlauf;
+                kadenz.zuruecksetzen (detail::WorkerKadenz::Uhr::now());
+            }
+
+            if (messResetWunsch.exchange (false))
+            {
+                engine.zuruecksetzen();
+                merkmale.zuruecksetzen();
+                // Gegenpfad: was in Quarantäne liegt, gehört zur alten Messung.
+                quarantaene.zuruecksetzen();
+                unverarbeitet = 0;
+                kadenz.zuruecksetzen (detail::WorkerKadenz::Uhr::now());
+            }
+
+            // SONDE-008: Block für Block durch die Ein-Block-Quarantäne.
+            // Die Steuer-Sperre bleibt bewusst auf einen kleinen Zug begrenzt.
+            // Ein dauerhaft voller Producer darf Prepare/Reset/Snapshot nicht
+            // hinter einem unendlichen Drain verhungern lassen.
+            constexpr int kMaxBloeckeJeSteuerzug = 8;
+            int bloeckeInDiesemZug = 0;
+            while (bloeckeInDiesemZug < kMaxBloeckeJeSteuerzug)
+            {
+                // Kommt waehrend des Zugs ein Steuerer hinzu, endet der Zug
+                // nach hoechstens dem gerade laufenden Block statt erst bei 8.
+                if (analyseSteuerWartende.load() != 0)
+                    break;
+                const auto* roh = queue.spitze();
+                if (roh == nullptr)
+                    break;
+                ++bloeckeInDiesemZug;
+                if (roh->startFolge != queue.aktuellerAnlauf())
+                {
+                    veralteteBloecke.fetch_add (1);
+                    quarantaene.zuruecksetzen();
+                    queue.freigeben();
+                    continue;
+                }
+
+                const auto bruecheVorher = quarantaene.kontinuitaetsbrueche();
+                const auto frei = quarantaene.schiebe (queue, *roh);
+                queue.freigeben();
+                if (quarantaene.kontinuitaetsbrueche() != bruecheVorher)
+                {
+                    // FeatureEngine erkennt die Grenze am naechsten freigegebenen
+                    // Deskriptor selbst. M1 sieht nur Samples und braucht den
+                    // expliziten Gegenpfad fuer FFT-, K- und Loudness-Zustaende.
+                    engine.zuruecksetzen();
+                    unverarbeitet = 0;
+                    kadenz.zuruecksetzen (detail::WorkerKadenz::Uhr::now());
+                }
+                if (frei)
+                {
+                    // Fail-closed: ein Hostblock ohne gueltige aktuelle Rate
+                    // darf weder die alte FeatureEngine noch M1 fuettern. Die
+                    // Queue/Quarantaene werden weiterhin begrenzt geleert;
+                    // beim naechsten Prepare trennt die Generation den Rest.
+                    if (! analyseRateGueltig)
+                        continue;
+
+                    const auto grenzenVorher = merkmale.getrennteFenster();
+                    const auto straddlesVorher = merkmale.straddleVerworfen();
+                    if (merkmale.nimmBlock (*frei.block, frei.audio))
+                        merkmalFrames.fetch_add (1);
+
+                    const bool featureGrenze = merkmale.getrennteFenster() != grenzenVorher;
+                    const bool blockVerworfen = merkmale.straddleVerworfen() != straddlesVorher;
+                    if (featureGrenze)
+                    {
+                        engine.zuruecksetzen();
+                        unverarbeitet = 0;
+                        kadenz.zuruecksetzen (detail::WorkerKadenz::Uhr::now());
+                    }
+                    if (! blockVerworfen)
+                    {
+                        engine.verarbeite (frei.audio, (int) frei.block->sampleCount,
+                                           (int) frei.block->kanaele);
+                        samplesAnalysiert.fetch_add ((juce::uint64) frei.block->sampleCount);
+                        unverarbeitet += (juce::uint64) frei.block->sampleCount;
+                    }
+                }
+            }
+            queueHatRest = queue.spitze() != nullptr;
+
+            // Eine volle Queue fuehrt sofort zum naechsten begrenzten Zug.
+            // Daher ist nur die monotone Deadline ein Zeitbeweis; eine Anzahl
+            // abgearbeiteter Zuege wuerde Gating/Kandidaten unter Rueckstau
+            // bis auf CPU-Geschwindigkeit beschleunigen.
+            // Eine bereits sichtbare Steueranfrage geht auch vor einer jetzt
+            // faelligen Auswertung. Die Deadline wird dann nicht verbraucht,
+            // sondern nach der Uebergabe im naechsten Workerzug bedient.
+            const auto faellig = analyseRateGueltig && analyseSteuerWartende.load() == 0
+                ? kadenz.faellig (detail::WorkerKadenz::Uhr::now())
+                : detail::WorkerKadenz::Faelligkeit {};
+            if (faellig.schwer)
+            {
+                if (unverarbeitet > 0)
+                {
+                    unverarbeitet = 0;
+                    schwereAuswertungen.fetch_add (1);
+                    engine.auswerten();
+                }
+            }
+            else if (faellig.leicht)
+            {
+                engine.auswertenLeicht();
             }
         }
-        else
+
+        if (queueHatRest)
         {
-            // FPS-Fix (m4): Live-Kurve, Meter und Zustand publizieren mit dem
-            // Worker-Takt (~20 Hz) statt am 250-ms-Schwertakt zu hängen — die
-            // sichtbare Datenrate des Graphen war vorher 4 Hz.
-            engine.auswertenLeicht();
+            std::this_thread::yield();
+            continue;
         }
 
         std::unique_lock<std::mutex> l (workerWarteMutex);
@@ -588,12 +718,12 @@ MessKompakt EqCopilotProcessor::messKompakt() const
                 : std::numeric_limits<double>::quiet_NaN();   // ⇒ null im JSON
         }
     }
+    k.fensterSpruenge = fensterSpruenge.load();
     if (fensterAktiv.load())
     {
         k.fensterGueltig  = true;
         k.fensterVon      = fensterVon.load();
         k.fensterBis      = fensterBis.load();
-        k.fensterSpruenge = fensterSpruenge.load();
     }
     // Hör-Markierung aktiv ⇒ nachgelagerte Sensoren hören gefärbtes Signal —
     // der Broker markiert den Messstand und pausiert fremde Aggregate
@@ -750,6 +880,12 @@ void EqCopilotProcessor::setzeEditorOffen (bool offen)
 
 bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String& lbl, const juce::String& p)
 {
+    // Dieselben Grenzen wie der einzige UI-Aufrufer. Sie gehoeren auch an die
+    // API-Kante: der State-Leser beweist seinen Writer-Headroom gegen genau
+    // diese Grenzen; ein kuenftiger Caller darf sie nicht umgehen.
+    if (lbl.length() > 120 || p.length() > 60)
+        return false;
+
     nakama::state::Klasse klasse;
     nakama::state::Messposition position;
     if (! nakama::state::ausV2Rolle (r, klasse, position))

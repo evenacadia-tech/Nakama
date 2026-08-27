@@ -7,7 +7,7 @@
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
   "anzahl_gueltig": 36,
-  "anzahl_ungueltig": 128,
+  "anzahl_ungueltig": 133,
   "fixtures": [
     {
       "datei": "gueltig/audible_intervention_begin.json",
@@ -1483,6 +1483,18 @@
       ]
     },
     {
+      "datei": "ungueltig/state-report-ohne-state-hash.json",
+      "urteil": "ungueltig",
+      "warum": "kein Stand wird explizit als null gemeldet; ein fehlendes Feld ist keine dritte Wahrheit",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/state_report/required/state_hash",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/steuerkopf-ohne-base-revision.json",
       "urteil": "ungueltig",
       "warum": "ohne base_revision kann die Probe keinen Konflikt erkennen (§33.3)",
@@ -1760,6 +1772,27 @@
       ]
     },
     {
+      "datei": "ungueltig/zahl-bruch-rundet-auf-2hoch53.json",
+      "urteil": "ungueltig",
+      "warum": "Der mathematische Bruch rundet in binary64 auf 2^53 und konnte so die Schema-Typpruefung fuer integer umgehen",
+      "verletzungen": [],
+      "textriegel_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/zahl-bruch-rundet-nahe-2hoch53-ab.json",
+      "urteil": "ungueltig",
+      "warum": "GEMESSEN: Python und Rust koennen aus denselben Bytes verschiedene Ganzzahlen bilden; alle drei Schema-Engines sahen vor dem Textriegel statt des mathematischen Bruchs eine zulaessige Ganzzahl",
+      "verletzungen": [],
+      "textriegel_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/zahl-bruch-rundet-unter-2hoch53-auf.json",
+      "urteil": "ungueltig",
+      "warum": "Der mathematische Bruch rundet in binary64 auf eine scheinbar sichere Ganzzahl unterhalb von 2^53",
+      "verletzungen": [],
+      "textriegel_lehnt_ab": true
+    },
+    {
       "datei": "ungueltig/zahl-fuehrende-null.json",
       "urteil": "ungueltig",
       "warum": "GEMESSEN: JUCE liest 91, serde_json und Python lehnen im Parser ab. RFC 8259 verbietet die fuehrende Null",
@@ -1770,6 +1803,13 @@
       "datei": "ungueltig/zahl-jenseits-u64.json",
       "urteil": "ungueltig",
       "warum": "GEMESSEN: JUCEs parseNumber akkumuliert in int64 ohne Bereichspruefung und liest hier 400. Rust und Python lesen 1.8446744e19 bzw. den exakten Wert - dieselbe Datei, drei verschiedene Zahlen",
+      "verletzungen": [],
+      "textriegel_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/zahl-kleiner-bruch-rundet-auf-eins.json",
+      "urteil": "ungueltig",
+      "warum": "Ein hochpraeziser mathematischer Bruch rundet in binary64 auf 1 und konnte so die Schema-Typpruefung fuer integer umgehen",
       "verletzungen": [],
       "textriegel_lehnt_ab": true
     },

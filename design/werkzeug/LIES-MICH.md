@@ -1,5 +1,12 @@
 # Werkzeug — Messinstrumente, keine Entwürfe
 
+> **Aktuelle Geltung 27.08.2026:** Active-Probe-Editor und Passive-Kachel sind
+> historische getrennte Konzepte. Probeeq vereint passive Messung und
+> ferngesteuerte EQ-Ausführung, hat aber keinen lokalen vollständigen
+> EQ-Editor. Die 700×420-Messbank bleibt ein historischer Beleg und ist kein
+> offener Bauauftrag. Aktuell gelten `../docs/oberflaechen-spezifikation.md`
+> und `../abnahmen/2026-08-27-arbeitsnamen-und-probeeq-doppelrolle.md`.
+
 Hier liegen Hilfsmittel, mit denen die Vorstellung des Users **gemessen** wird.
 Nichts davon ist ein Gestaltungsvorschlag. Layoutentscheidungen gehören nach
 `prototyp/` und in Phase 1 des Arbeitsplans.

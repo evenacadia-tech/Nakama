@@ -48,6 +48,7 @@ import argparse
 import copy
 import hashlib
 import json
+import ntpath
 import pathlib
 import re
 import shutil
@@ -61,10 +62,24 @@ MANIFEST = WURZEL / "eq-copilot" / "install" / "nakama-installer-v1.json"
 IDENTITAET = WURZEL / "eq-copilot" / "identity" / "plugin-identities-v1.json"
 BROKER_CARGO = WURZEL / "broker" / "Cargo.toml"
 PS_ORDNERHASH = WURZEL / "eq-copilot" / "install" / "NakamaOrdnerHash.ps1"
+STATE_CPP = WURZEL / "eq-copilot" / "plugin" / "state" / "NakamaState.cpp"
 
 SCHEMA = "nakama.installer/v1"
 HEX64 = re.compile(r"^[0-9A-F]{64}$")
+THUMBPRINT = re.compile(r"^(?:[0-9A-F]{40}|[0-9A-F]{64})$")
 ARTEN = ("vst3", "broker")
+CMAKE_ZIEL = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
+
+
+def _writer_state_schema() -> int:
+    text = STATE_CPP.read_text(encoding="utf-8")
+    treffer = re.search(r"constexpr\s+int\s+kRootSchema\s*=\s*(\d+)\s*;", text)
+    if treffer is None:
+        raise RuntimeError(f"kRootSchema fehlt in {STATE_CPP}")
+    return int(treffer.group(1))
+
+
+STATE_SCHEMA = _writer_state_schema()
 
 
 # ── Ordner-Hash v1 (Vertrag §2.1) ───────────────────────────────────────────
@@ -155,6 +170,18 @@ def _vst3(manifest: dict) -> list[dict]:
     return [a for a in manifest["artefakte"] if a.get("art") == "vst3"]
 
 
+def _windows_kanon(pfad: object) -> str | None:
+    """Kanonisiert einen absoluten Windows-Pfad rein lexikalisch.
+
+    Der Validator laeuft auch ohne vorhandenes Installationsziel; `resolve()`
+    waere deshalb die falsche Operation. `ntpath` verhindert zugleich, dass
+    das Host-OS die Windows-Semantik der Manifestpfade umdeutet.
+    """
+    if not isinstance(pfad, str) or not re.match(r"^[A-Za-z]:[\\/]", pfad):
+        return None
+    return ntpath.normcase(ntpath.normpath(pfad.replace("/", "\\")))
+
+
 def r_schema(m: dict, _i: dict):
     return m.get("schema") == SCHEMA, str(m.get("schema"))
 
@@ -168,13 +195,33 @@ def r_jedes_ziel_genau_einmal(m: dict, i: dict):
     """Wie im Identitaetstest: 3 vs 3. Ein viertes Ziel im Identitaetsmanifest
     ohne Installer-Eintrag bringt dieses Bein zum Sprechen, statt still
     ungemessen zu bleiben."""
+    ident_ziele = i.get("ziele", [])
+    ids = [z.get("id") for z in ident_ziele]
+    bundles = [z.get("bundle") for z in ident_ziele]
     aus_manifest = [a.get("ziel_id") for a in _vst3(m)]
-    aus_identitaet = sorted(_ziele(i))
-    return (
-        sorted(x for x in aus_manifest if x is not None) == aus_identitaet
-        and len(aus_manifest) == len(set(aus_manifest)),
-        f"{len(aus_manifest)} vs {len(aus_identitaet)}",
+    sichere_bundles = all(
+        isinstance(b, str)
+        and b not in ("", ".", "..")
+        and ntpath.basename(b) == b
+        and b.lower().endswith(".vst3")
+        for b in bundles
     )
+    identity_ok = (
+        STATE_SCHEMA == 2
+        and len(ident_ziele) == 3
+        and all(isinstance(zid, str) and zid for zid in ids)
+        and len([zid.casefold() for zid in ids]) == len(set(zid.casefold() for zid in ids))
+        and sichere_bundles
+        and len([b.casefold() for b in bundles]) == len(set(b.casefold() for b in bundles))
+        and all(type(z.get("state_schema")) is int and z["state_schema"] == STATE_SCHEMA
+                for z in ident_ziele)
+    )
+    passt = (
+        identity_ok
+        and sorted(x for x in aus_manifest if x is not None) == sorted(ids)
+        and len(aus_manifest) == len(set(aus_manifest))
+    )
+    return passt, f"{len(aus_manifest)} vs {len(ids)}; identity={'ok' if identity_ok else 'ungueltig'}"
 
 
 def r_art_bekannt(m: dict, _i: dict):
@@ -204,12 +251,21 @@ def r_quellpfade_nachgerechnet(m: dict, i: dict):
         if ziel is None:
             abweichungen.append(f"{a.get('ziel_id')}: kein Identitaetseintrag")
             continue
+        cmake_ziel = a.get("cmake_ziel")
+        if not isinstance(cmake_ziel, str) or CMAKE_ZIEL.fullmatch(cmake_ziel) is None:
+            abweichungen.append(f"{a.get('ziel_id')}: unsicheres cmake_ziel {cmake_ziel!r}")
+            continue
         erwartet = (
-            f"eq-copilot/build/plugin/{a.get('cmake_ziel')}_artefacts/Release/VST3/"
+            f"eq-copilot/build/plugin/{cmake_ziel}_artefacts/Release/VST3/"
             f"{ziel['bundle']}"
         )
         if a.get("quelle") != erwartet:
             abweichungen.append(f"{a.get('ziel_id')}: {a.get('quelle')!r} != {erwartet!r}")
+            continue
+        quellpfad = (WURZEL / erwartet).resolve()
+        bauwurzel = (WURZEL / "eq-copilot" / "build" / "plugin").resolve()
+        if not quellpfad.is_relative_to(bauwurzel):
+            abweichungen.append(f"{a.get('ziel_id')}: Quelle verlaesst {bauwurzel}")
     return not abweichungen, "; ".join(abweichungen)
 
 
@@ -267,8 +323,8 @@ def r_zielverzeichnisse(m: dict, _i: dict):
     vst3 = ziele.get("vst3_verzeichnis", "")
     broker = ziele.get("broker_verzeichnis", "")
     passt = (
-        vst3 == "C:/Program Files/Common Files/VST3"
-        and broker.startswith("C:/Program Files/")
+        _windows_kanon(vst3) == _windows_kanon("C:/Program Files/Common Files/VST3")
+        and _windows_kanon(broker) == _windows_kanon("C:/Program Files/evenacadia/Nakama")
     )
     return passt, f"{vst3} | {broker}"
 
@@ -281,7 +337,7 @@ def r_signatur_ehrlich(m: dict, _i: dict):
         return False, str(s.get("verfahren"))
     if s.get("authenticode_thumbprint") is None:
         return bool(s.get("warum_null", "").strip()), "kein Zertifikat, Grund steht da"
-    return HEX64.match(str(s["authenticode_thumbprint"]).upper()) is not None, "Thumbprint"
+    return THUMBPRINT.match(str(s["authenticode_thumbprint"]).upper()) is not None, "Thumbprint"
 
 
 def r_hashfelder(m: dict, _i: dict):
@@ -316,8 +372,15 @@ def r_bekannte_staende(m: dict, i: dict):
 
 def r_rueckweg_vollstaendig(m: dict, _i: dict):
     r = m.get("rueckweg", {})
-    noetig = ("strategie", "verzeichnis", "ergebnisdatei", "nak_41", "bekannte_staende")
+    noetig = ("strategie", "verzeichnis", "ergebnisdatei", "transaktionsanker",
+              "nak_41", "bekannte_staende")
     fehlend = [k for k in noetig if not r.get(k)]
+    if _windows_kanon(r.get("transaktionsanker")) != _windows_kanon(
+            "C:/Program Files/evenacadia/.nakama-installer/aktive-transaktion.json"):
+        fehlend.append("transaktionsanker: kanonische Program-Files-Autoritaet")
+    if _windows_kanon(r.get("verzeichnis")) != _windows_kanon(
+            "C:/Program Files/evenacadia/.nakama-installer/backups"):
+        fehlend.append("verzeichnis: geschuetzte per-Transaktion-Backups")
     nak = r.get("nak_41", {})
     benannt = nak.get("punkt") == "NAK-41" and bool(nak.get("riegel", "").strip())
     if not benannt:
@@ -329,7 +392,7 @@ REGELN = [
     (r_schema, "Manifest traegt das Vertragsschema nakama.installer/v1"),
     (r_identitaetsquelle, "es zeigt auf die eingefrorene Identitaetsdatei"),
     (r_art_bekannt, "jede `art` ist vst3 oder broker - eine geschlossene Menge"),
-    (r_jedes_ziel_genau_einmal, "jedes Ziel der Identitaetsdatei hat genau einen VST3-Eintrag"),
+    (r_jedes_ziel_genau_einmal, "Identitaet ist kollisionsfrei, schema=2 und jedes Ziel hat genau einen VST3-Eintrag"),
     (r_quellpfade_nachgerechnet, "jeder Quellpfad ist der Bundle-ORDNER aus Ziel + Identitaet"),
     (r_keine_identitaetsliterale, "kein Viercode, keine Class-ID im Installer-Manifest"),
     (r_broker, "genau ein Broker-Artefakt, aus dem Release-Pfad der Crate"),
@@ -384,6 +447,57 @@ def verdirb(m: dict) -> dict:
     return k
 
 
+def adversariale_strukturproben(m: dict, i: dict) -> None:
+    """Die vier ehemals offenen Kanten einzeln brechen.
+
+    Die grobe `verdirb`-Probe beweist, dass eine Regel ueberhaupt sehen kann.
+    Diese Proben beweisen dagegen die konkreten Umgehungen aus Paket 03:
+    Zielkollision, Identity/Writer-Schemadrift und lexikalisches Traversal.
+    """
+    print("\n[3] Adversariale Pfad- und Identitaetsgegenproben")
+
+    ident = copy.deepcopy(i)
+    manifest = copy.deepcopy(m)
+    ident["ziele"][1]["bundle"] = ident["ziele"][0]["bundle"]
+    zid = ident["ziele"][1]["id"]
+    artefakt = next(a for a in manifest["artefakte"] if a.get("ziel_id") == zid)
+    artefakt["quelle"] = (
+        f"eq-copilot/build/plugin/{artefakt['cmake_ziel']}_artefacts/Release/VST3/"
+        f"{ident['ziele'][1]['bundle']}"
+    )
+    pruefe(not r_jedes_ziel_genau_einmal(manifest, ident)[0],
+           "faellt an einer Bundle-Zielkollision")
+
+    for wert, name in ((1, "1"), ("kaputt", "Text"), (None, "fehlend")):
+        ident = copy.deepcopy(i)
+        if wert is None:
+            ident["ziele"][0].pop("state_schema", None)
+        else:
+            ident["ziele"][0]["state_schema"] = wert
+        pruefe(not r_jedes_ziel_genau_einmal(m, ident)[0],
+               f"faellt an Identity-state_schema {name}")
+
+    manifest = copy.deepcopy(m)
+    manifest["ziele"]["broker_verzeichnis"] = "C:/Program Files/../Temp/Nakama"
+    pruefe(not r_zielverzeichnisse(manifest, i)[0],
+           "faellt an kanonischem Broker-Zieltraversal")
+
+    manifest = copy.deepcopy(m)
+    artefakt = next(a for a in manifest["artefakte"] if a.get("art") == "vst3")
+    artefakt["cmake_ziel"] = "../../../../outside"
+    bundle = _ziele(i)[artefakt["ziel_id"]]["bundle"]
+    artefakt["quelle"] = (
+        f"eq-copilot/build/plugin/{artefakt['cmake_ziel']}_artefacts/Release/VST3/{bundle}"
+    )
+    pruefe(not r_quellpfade_nachgerechnet(manifest, i)[0],
+           "faellt an cmake_ziel-Quelltraversal")
+
+    manifest = copy.deepcopy(m)
+    manifest["rueckweg"]["verzeichnis"] = "eq-copilot/install/rueckweg"
+    pruefe(not r_rueckweg_vollstaendig(manifest, i)[0],
+           "faellt an benutzerbeschreibbaren Rueckweg-Backups")
+
+
 # ── Hashen (Release-Schritt, nicht Kanon) ──────────────────────────────────
 
 def datei_hash(pfad: pathlib.Path) -> str:
@@ -398,9 +512,13 @@ def hashen(manifest: dict) -> int:
     print("[hashen] Artefakte gegen den gebauten Stand festschreiben")
     alle_da = True
     for a in manifest["artefakte"]:
-        pfad = WURZEL / a["quelle"]
+        pfad = (WURZEL / a["quelle"]).resolve()
         art = a.get("art")
         name = a.get("ziel_id") or a.get("name")
+        if not pfad.is_relative_to(WURZEL):
+            print(f"  FEHLER  {name}: Quelle verlaesst die Repo-Wurzel ({pfad}).")
+            alle_da = False
+            continue
         if art not in ARTEN:
             print(f"  FEHLER  {name}: unbekannte art {art!r} - vst3 oder broker, nichts sonst.")
             alle_da = False
@@ -464,7 +582,7 @@ def kreuzprobe() -> None:
     """Ein Hash, den zwei Sprachen bilden, ist nur so viel wert wie ihre
     Uebereinstimmung. Gemessen wird an einem SYNTHETISCHEN Ordner, damit die
     Probe auch ohne gebautes Bundle laeuft."""
-    print("\n[4] Ordner-Hash v1 - Python gegen PowerShell")
+    print("\n[5] Ordner-Hash v1 - Python gegen PowerShell")
 
     if not PS_ORDNERHASH.is_file():
         pruefe(False, "die PowerShell-Haelfte liegt vor", str(PS_ORDNERHASH))
@@ -523,6 +641,20 @@ def main() -> int:
     identitaet = json.loads(IDENTITAET.read_text(encoding="utf-8"))
 
     if args.hashen:
+        # Auch der mutierende Release-Aufruf muss erst denselben Strukturvertrag
+        # bestehen. Sonst koennte er ausgerechnet die Pfad- und Zielregeln
+        # umgehen, die der normale Kanonlauf prueft, und beliebige `quelle`-
+        # Eintraege mit einem gueltigen Hash adeln.
+        print("[0] Struktur vor dem mutierenden Release-Schritt")
+        for regel, text in REGELN:
+            try:
+                bedingung, zusatz = regel(manifest, identitaet)
+            except Exception as e:
+                bedingung, zusatz = False, str(e)
+            pruefe(bedingung, text, zusatz)
+        if fehler:
+            print("\nABGEBROCHEN - ein strukturell ungueltiges Manifest wird nicht gehasht.")
+            return 2
         return hashen(manifest)
 
     print("[1] Struktur - eine Identitaet, ein Ort")
@@ -540,7 +672,9 @@ def main() -> int:
             _ = e
         pruefe(not bedingung, "faellt am verdorbenen Manifest: " + text)
 
-    print("\n[3] Auslieferungsstand")
+    adversariale_strukturproben(manifest, identitaet)
+
+    print("\n[4] Auslieferungsstand")
     offen = [a.get("ziel_id") or a.get("name") for a in manifest["artefakte"] if a.get("sha256") is None]
     if offen:
         # KEIN Fehler: ein Manifest ohne Hashes ist der ehrliche Normalfall

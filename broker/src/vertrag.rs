@@ -18,6 +18,10 @@
 use serde_json::Value;
 use std::collections::BTreeSet;
 
+/// Gemeinsame Obergrenze des C++-/Rust-/Python-Textriegels. Der Pipe-Framer
+/// ist mit 256 KiB enger; direkte DTO-/Dateiaufrufer bleiben dennoch begrenzt.
+pub const MAX_DOKUMENT_BYTES: usize = 16 * 1024 * 1024;
+
 /// Eine einzelne Vertragsverletzung.
 ///
 /// `schema` ist der AUFGELOESTE Pfad — ueber `$ref` hinweg. Sonst haetten die
@@ -119,11 +123,12 @@ fn ist_hexziffer(c: char) -> bool {
 /// an, waehrend Rust und Python `inf` lasen.
 ///
 /// Die Lehre, die ueber diesen Fall hinausgeht: **ein Riegel darf nie die
-/// Bibliothek befragen, gegen deren Verhalten er schuetzt.** Die Ganzzahlregel
-/// war von Anfang an aus dem Literal gerechnet und hat gehalten; die
-/// Endlichkeitsregel war delegiert und hat nicht gehalten.
+/// Bibliothek befragen, gegen deren Verhalten er schuetzt.** Die erste
+/// Ganzzahlregel erfasste nur die Form ohne Punkt/Exponent; heute werden Wert,
+/// Ganzzahligkeit und Praezision fuer alle Schreibweisen lexikalisch bestimmt.
+/// Die Endlichkeitsregel war delegiert und hat ebenfalls nicht gehalten.
 fn zahl_pruefen(ganz: &str, bruch: &str, exp_ziffern: &str, exp_negativ: bool,
-                lit: &str) -> Result<(), String> {
+                lit: &str, schema_ganzzahl_sichern: bool) -> Result<(), String> {
     if bruch.is_empty() && exp_ziffern.is_empty() {
         let zu_gross = ganz.len() > 16
             || (ganz.len() == 16 && ganz.parse::<u64>().unwrap_or(u64::MAX) > SICHERE_GANZZAHL);
@@ -149,11 +154,58 @@ fn zahl_pruefen(ganz: &str, bruch: &str, exp_ziffern: &str, exp_negativ: bool,
     if signifikant.is_empty() {
         return Ok(()); // der Wert ist exakt 0
     }
+
+    // Die Endlichkeitsgrenze hat Vorrang vor der engeren Ganzzahlregel, damit
+    // ein 1e308-Ueberlauf sprachuebergreifend ein Zahlenbereichsfehler bleibt.
     let fuehrende = (alle.len() - signifikant.len()) as i64;
     let dez = (ganz.len() as i64 - fuehrende - 1) + exp;
     if dez >= DEZ_GRENZE || dez <= -DEZ_GRENZE {
         return Err(format!("Zahl ausserhalb +/-1e{DEZ_GRENZE}: {}", kurz(lit)));
     }
+
+    // JSON Schema beurteilt den mathematischen Wert: auch 5.0 und 5e0 sind
+    // Integer. Die sichere Ganzzahlgrenze muss deshalb jede exakt
+    // ganzzahlige Dezimal-/Exponentialschreibweise vor dem f64-Parser sehen.
+    let skala = exp - bruch.len() as i64; // alle * 10^skala
+    let (ist_ganzzahl, ganzzahl_zu_gross) = if skala >= 0 {
+        let stellen = signifikant.len() as i64 + skala;
+        if stellen > 16 {
+            (true, true)
+        } else if stellen == 16 {
+            let mut normalisiert = signifikant.to_owned();
+            normalisiert.extend(std::iter::repeat_n('0', skala as usize));
+            (true, normalisiert.as_str() > "9007199254740991")
+        } else {
+            (true, false)
+        }
+    } else {
+        let abzuschneiden = (-skala) as usize;
+        if abzuschneiden <= alle.len()
+            && alle.as_bytes()[alle.len() - abzuschneiden..]
+                .iter()
+                .all(|&z| z == b'0')
+        {
+            let normalisiert = alle[..alle.len() - abzuschneiden].trim_start_matches('0');
+            (true, normalisiert.len() > 16
+                || (normalisiert.len() == 16 && normalisiert > "9007199254740991"))
+        } else {
+            (false, false)
+        }
+    };
+    if ganzzahl_zu_gross {
+        return Err(format!("Ganzzahl ausserhalb 2^53-1: {lit}"));
+    }
+    // Mehr als 15 signifikante Dezimalziffern koennen beim f64-Lesen eine
+    // nichtganzzahlige Eingabe auf eine Ganzzahl runden. Exakte Integer haben
+    // oben bewusst die weitere 2^53-Grenze.
+    let signifikante_stellen = signifikant.trim_end_matches('0').len();
+    if schema_ganzzahl_sichern && !ist_ganzzahl && signifikante_stellen > 15 {
+        return Err(format!(
+            "Zahl mit mehr als 15 signifikanten Dezimalziffern: {}",
+            kurz(lit)
+        ));
+    }
+
     Ok(())
 }
 
@@ -163,19 +215,44 @@ fn kurz(s: &str) -> String {
 
 /// Der Riegel auf BYTE-Ebene — so, wie ein Dokument wirklich ankommt.
 ///
-/// Zwei Regeln lassen sich nur hier ausdruecken (T2-Runde 2, BF-6/BF-7):
+/// Vier Regeln lassen sich nur hier ausdruecken (T2-Runde 2, BF-6/BF-7 und
+/// der Roh-NUL-Gegenpfad):
 ///
 /// * **BOM.** RFC 8259 §8.1: `serde_json` und Pythons `json` lehnen ein BOM
 ///   ab, JUCEs `loadFileAsString` streift es und parst weiter.
 /// * **Kaputtes UTF-8.** Gemessen liefen die drei Beine hier voellig
 ///   auseinander: das Python-Bein warf eine ungefangene `UnicodeDecodeError`,
 ///   dieses hier panickte beim Lesen, und JUCE ersetzte das Byte still.
+/// * **Rohes NUL.** Terminatorbasierte C++-Leser duerfen keinen gueltigen
+///   Praefix annehmen und die restliche Bytefolge ignorieren.
+/// * **Groesse.** Direkte DTO-/Datei-Caller sind wie C++ und Python auf
+///   inklusive 16 MiB begrenzt; der Pipe-Framer ist mit 256 KiB enger.
 pub fn textriegel_bytes(roh: &[u8]) -> Result<(), String> {
+    textriegel_bytes_mit_zahlenpolitik(roh, true)
+}
+
+/// Byte-/Textregeln fuer den eigenen korrekt gerundeten DTO-Zahlenleser.
+/// Anders als die binary64-Schema-Engines braucht er keinen globalen
+/// 15-Ziffern-Riegel, weil er Typ und Bereich feldgenau auswertet.
+pub(crate) fn textriegel_bytes_fuer_exakten_zahlenleser(roh: &[u8]) -> Result<(), String> {
+    textriegel_bytes_mit_zahlenpolitik(roh, false)
+}
+
+fn textriegel_bytes_mit_zahlenpolitik(
+    roh: &[u8],
+    schema_ganzzahl_sichern: bool,
+) -> Result<(), String> {
+    if roh.len() > MAX_DOKUMENT_BYTES {
+        return Err("Dokument zu gross".into());
+    }
     if roh.starts_with(&[0xEF, 0xBB, 0xBF]) {
         return Err("BOM am Dokumentanfang".into());
     }
+    if roh.contains(&0) {
+        return Err("rohes NUL im Dokument".into());
+    }
     match std::str::from_utf8(roh) {
-        Ok(text) => textriegel(text),
+        Ok(text) => textriegel_mit_zahlenpolitik(text, schema_ganzzahl_sichern),
         Err(e) => Err(format!("kein gueltiges UTF-8 an Byte {}", e.valid_up_to())),
     }
 }
@@ -188,6 +265,13 @@ pub fn textriegel_bytes(roh: &[u8]) -> Result<(), String> {
 /// Gezaehlt wird in CODEPUNKTEN, damit die Positionsangabe in allen drei
 /// Beinen dieselbe ist.
 pub fn textriegel(text: &str) -> Result<(), String> {
+    textriegel_mit_zahlenpolitik(text, true)
+}
+
+fn textriegel_mit_zahlenpolitik(
+    text: &str,
+    schema_ganzzahl_sichern: bool,
+) -> Result<(), String> {
     let z: Vec<char> = text.chars().collect();
     let n = z.len();
     let mut i = 0usize;
@@ -317,7 +401,14 @@ pub fn textriegel(text: &str) -> Result<(), String> {
             }
 
             let lit: String = z[i..j].iter().collect();
-            zahl_pruefen(&ganz, &bruch, &exp_ziffern, exp_negativ, &lit)?;
+            zahl_pruefen(
+                &ganz,
+                &bruch,
+                &exp_ziffern,
+                exp_negativ,
+                &lit,
+                schema_ganzzahl_sichern,
+            )?;
             i = j;
             continue;
         }
@@ -535,7 +626,7 @@ fn gleich(a: &Value, b: &Value) -> bool {
         }
         (Value::Object(x), Value::Object(y)) => {
             x.len() == y.len()
-                && x.iter().all(|(k, p)| y.get(k).map_or(false, |q| gleich(p, q)))
+                && x.iter().all(|(k, p)| y.get(k).is_some_and(|q| gleich(p, q)))
         }
         _ => a == b,
     }
@@ -624,7 +715,7 @@ fn pruefe_wert(
     if let Some(t) = obj.get("type") {
         let ok = match t {
             Value::String(s) => typ_passt(s, daten),
-            Value::Array(a) => a.iter().any(|x| x.as_str().map_or(false, |s| typ_passt(s, daten))),
+            Value::Array(a) => a.iter().any(|x| x.as_str().is_some_and(|s| typ_passt(s, daten))),
             _ => false,
         };
         if !ok {
@@ -712,7 +803,7 @@ fn pruefe_wert(
         let deklariert = obj.get("properties").and_then(|v| v.as_object());
         if obj.get("additionalProperties").and_then(|v| v.as_bool()) == Some(false) {
             for name in o.keys() {
-                if !deklariert.map_or(false, |d| d.contains_key(name)) {
+                if !deklariert.is_some_and(|d| d.contains_key(name)) {
                     out.push(Verletzung::neu(
                         &pfad_plus(instanz, name),
                         &format!("{sp}/additionalProperties"),
@@ -876,6 +967,12 @@ mod tests {
     fn fehlendes_pflichtfeld_zeigt_auf_das_elternobjekt() {
         let v = schema().pruefe(&json!({ "type": "a" }));
         assert_eq!(v, vec![Verletzung::neu("", "#/$defs/a/required/n", "required")]);
+    }
+
+    #[test]
+    fn textriegel_hat_dieselbe_dokumentgrenze_wie_cpp_und_python() {
+        let roh = vec![b' '; MAX_DOKUMENT_BYTES + 1];
+        assert_eq!(textriegel_bytes(&roh), Err("Dokument zu gross".into()));
     }
 
     #[test]

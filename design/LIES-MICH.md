@@ -69,7 +69,8 @@ Referenzbilder** — Entscheide
 2. **Nakama Probeeq** — DIE Bus-Sonde mit Doppelrolle. Sie misst passiv und
    beliefert Gen; bei zugeschaltetem EQ führt dieselbe Instanz Gens
    Fernsteuerung auf ihrem Bus aus. Suna ist als App-Name durch Probeeq
-   ersetzt. Die aktuelle kompakte Referenz ist
+   ersetzt. Die vollständige EQ-Bedienung liegt ausschließlich in Gen;
+   Probeeq besitzt keinen lokalen Voll-Editor. Die aktuelle kompakte Referenz ist
    `assets/rework-basis-2026-08-25/probeeq.png`. Der Suna-Knoten `6:2864`,
    die frühere große Probeeq-Vollfläche und alle Suna-Exporte sind nur noch
    Verlauf und dürfen nicht als aktuelle visuelle Basis zitiert werden.
@@ -94,9 +95,10 @@ Die Projektquellen — vollständig, nichts von außen dazuholen:
   Design-Phasennummer.
 - **Nachschlagewerk** (Quellenkritik, Wahrnehmung, Licht/Material):
   `docs/UX-UI-WISSENSBASIS-FUER-CLAUDE.md`
-- **Werkzeug-Pläne:** `docs/sondenplan.md`, `docs/werkzeugplan.md`;
-  lebende Blätter und Messbank in `werkzeug/` (`werkzeug/LIES-MICH.md`,
-  `werkzeug/PRUEFLISTE.md`).
+- **Werkzeuge:** `docs/werkzeugplan.md`; lebende Blätter und Messbank in
+  `werkzeug/` (`werkzeug/LIES-MICH.md`, `werkzeug/PRUEFLISTE.md`). Der alte
+  `docs/sondenplan.md` vermisst den verworfenen lokalen Voll-Editor und dient
+  nur noch der Spurensuche, nicht als Arbeitsauftrag.
 
 Die Gestaltung kommt derzeit aus den drei aktuellen Rework-Bildern. Die
 grundlegende Struktur-, Skizzen- und Graybox-Phase war der erste Schritt am

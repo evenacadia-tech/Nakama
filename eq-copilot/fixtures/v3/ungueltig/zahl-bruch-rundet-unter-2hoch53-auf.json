@@ -1,0 +1,30 @@
+{
+  "type": "heartbeat",
+  "adresse": {
+    "logon_sid": "S-1-5-21-1111111111-2222222222-3333333333-1001",
+    "project_binding_id": "11111111111111111111111111111111",
+    "session_epoch": "22222222222222222222222222222222",
+    "instance_id": "33333333333333333333333333333333",
+    "runtime_nonce": "44444444444444444444444444444444"
+  },
+  "sequence": 4503599627370495.9,
+  "state_revision": 12,
+  "capabilities": {
+    "host_context_presence": "supported",
+    "project_time_samples": "supported",
+    "sample_accurate_automation": "supported",
+    "presentation_latency": "unsupported",
+    "aux_compare_pre": "supported",
+    "aux_priority_sidechain": "unsupported",
+    "contribution_aux": "supported",
+    "float64_processing": "unsupported",
+    "binary_telemetry": "supported",
+    "remote_control": "unsupported"
+  },
+  "zaehler": {
+    "frames_dropped": 0,
+    "parse_errors": 0,
+    "queue_overflows": 0
+  },
+  "intervention_state_unknown": false
+}

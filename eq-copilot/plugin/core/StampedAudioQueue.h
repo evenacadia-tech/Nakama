@@ -332,7 +332,9 @@ public:
     void neustartAnfordern() noexcept
     {
         aktuelleStartFolge.fetch_add (1, std::memory_order_relaxed);
-        neustartWunsch.store (true, std::memory_order_relaxed);
+        // Release koppelt die neue Nummer an das Wunschbit. Der Produzent darf
+        // `true` nie sehen und danach noch die alte Nummer laden.
+        neustartWunsch.store (true, std::memory_order_release);
     }
 
     /** Der Anlauf, der gerade gilt (Consument: alles Kleinere ist veraltet). */
@@ -352,20 +354,50 @@ public:
 
         `frames <= 0` ist KEIN Verlust: VST3 erlaubt `numSamples == 0`
         (Parameter-Flush, siehe NakamaHostBridge.h). Ein Flush traegt keine
-        Audiozeit, also darf er auch keine Luecke erzeugen. */
+        Audiozeit, also darf er auch keine Luecke erzeugen.
+
+        `neustartUebernommen` ist optional und wird bei jedem Aufruf gesetzt:
+        true genau dann, wenn DIESER Produzentenzug den wartenden Neuanlauf
+        uebernommen hat. Das gilt auch, wenn der Block danach wegen Kapazitaet
+        oder Form abgewiesen wird - die Produzentengeneration ist bereits
+        gewechselt. Ein Aufrufer kann damit eigenen Single-Writer-Zustand an
+        exakt derselben Kante trennen, ohne fremde Atomics zu erraten.
+
+        `lueckeVorBlock` ist ebenfalls optional und bei jedem Aufruf definiert.
+        Es ist nur dann true, wenn der Block wirklich angenommen wurde und
+        `kFlagLueckeDavor` traegt. Ein verworfener Block oeffnet zwar die
+        ausstehende Luecke, meldet sie aber erst am naechsten angenommenen
+        Block zurueck. */
     bool veroeffentliche (const TapQuelle* quellen, int anzahlQuellen,
-                          int kanaele, int frames, const Stempel& stempel) noexcept
+                          int kanaele, int frames, const Stempel& stempel,
+                          bool* neustartUebernommen = nullptr,
+                          bool* lueckeVorBlock = nullptr) noexcept
     {
+        if (neustartUebernommen != nullptr)
+            *neustartUebernommen = false;
+        if (lueckeVorBlock != nullptr)
+            *lueckeVorBlock = false;
         if (frames <= 0 || quellen == nullptr)
             return false;
 
         // Neuanlauf zuerst: er gilt ab DIESEM Block, nicht ab dem naechsten.
         // Die Nummer steht schon (s. `neustartAnfordern`) - hier wird sie nur
         // uebernommen, damit ab jetzt gestempelte Bloecke als aktuell gelten.
-        if (neustartWunsch.exchange (false, std::memory_order_relaxed))
+        if (neustartWunsch.exchange (false, std::memory_order_acquire))
         {
-            startFolge = aktuelleStartFolge.load (std::memory_order_relaxed);
-            lueckeOffen = true;
+            const auto neueStartFolge = aktuelleStartFolge.load (std::memory_order_relaxed);
+            // Eine weitere Anforderung kann genau zwischen exchange() und
+            // diesem Load eintreffen. Dann uebernimmt schon DIESER Zug deren
+            // Endgeneration; ihr spaeter noch sichtbares Wunschbit darf im
+            // Folgezug weder dieselbe Generation noch eine zweite Luecke
+            // vortaeuschen.
+            if (neueStartFolge != startFolge)
+            {
+                startFolge = neueStartFolge;
+                lueckeOffen = true;
+                if (neustartUebernommen != nullptr)
+                    *neustartUebernommen = true;
+            }
         }
 
         // Der lokale Strom laeuft IMMER weiter - Annahme oder Verlust, das Audio
@@ -441,6 +473,8 @@ public:
         if (lueckeOffen)
         {
             b.flags |= kFlagLueckeDavor;
+            if (lueckeVorBlock != nullptr)
+                *lueckeVorBlock = true;
             ++segment;
             lueckeOffen = false;
         }

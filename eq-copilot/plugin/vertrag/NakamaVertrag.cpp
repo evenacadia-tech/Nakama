@@ -1,7 +1,9 @@
 #include "NakamaKernRiegel.h"   // S8/SONDE-007a: K1 — keine JucePlugin_*-Konstante im Kern
 #include "NakamaVertrag.h"
+#include "NakamaUtf8.h"
 
 #include <cmath>
+#include <cstring>
 #include <set>
 #include <string>
 #include <vector>
@@ -276,16 +278,19 @@ bool istHexziffer (juce::juce_wchar c) noexcept
     strtod bricht dort ab, und JUCE liest 1e17.
 
     Die Lehre, die ueber diesen Fall hinausgeht: EIN RIEGEL DARF NIE DIE
-    BIBLIOTHEK BEFRAGEN, GEGEN DEREN VERHALTEN ER SCHUETZT. Die Ganzzahlregel
-    war von Anfang an aus dem Literal gerechnet und hat gehalten; die
-    Endlichkeitsregel war delegiert und hat nicht gehalten.
+    BIBLIOTHEK BEFRAGEN, GEGEN DEREN VERHALTEN ER SCHUETZT. Die erste
+    Ganzzahlregel rechnete zwar aus dem Literal, erfasste aber nur die Form
+    ohne Punkt/Exponent; heute werden Wert, Ganzzahligkeit und Praezision fuer
+    alle Schreibweisen lexikalisch bestimmt. Die Endlichkeitsregel war
+    delegiert und hat ebenfalls nicht gehalten.
 
     Hier wird deshalb nur mit kleinen ganzen Zahlen gerechnet, ohne jede
     Gleitkommaoperation.
 */
 bool zahlPruefen (const juce::String& ganz, const juce::String& bruch,
                   const juce::String& expZiffern, bool expNegativ,
-                  const juce::String& lit, juce::String& fehler)
+                  const juce::String& lit, juce::String& fehler,
+                  bool schemaGanzzahlSichern)
 {
     if (bruch.isEmpty() && expZiffern.isEmpty())
     {
@@ -320,18 +325,85 @@ bool zahlPruefen (const juce::String& ganz, const juce::String& bruch,
     if (fuehrende == alle.length())
         return true;                      // der Wert ist exakt 0
 
+    // Die Endlichkeitsgrenze hat Vorrang vor der engeren Ganzzahlregel: so
+    // bleibt ein 1e308-Ueberlauf in allen drei Beinen als Zahlenbereichsfehler
+    // klassifiziert, statt zufaellig als Praezisionsfehler.
     const auto dez = (ganz.length() - fuehrende - 1) + exp;
     if (dez >= dezGrenze || dez <= -dezGrenze)
     {
         fehler = "Zahl ausserhalb +/-1e" + juce::String (dezGrenze) + ": " + lit.substring (0, 40);
         return false;
     }
+
+    // JSON Schema meint mit `integer` den mathematischen Wert, nicht nur ein
+    // Literal ohne Punkt: auch 5.0 und 5e0 sind ganze Zahlen. Deshalb muss
+    // die 2^53-Regel alle exakt ganzzahligen Schreibweisen erfassen, bevor
+    // ein binary64-Parser z. B. 9007199254740992.0 still rundet.
+    const auto skala = exp - bruch.length(); // alle * 10^skala
+    bool istGanzzahl = false;
+    bool ganzzahlZuGross = false;
+    if (skala >= 0)
+    {
+        istGanzzahl = true;
+        const auto signifikant = alle.substring (fuehrende);
+        const auto stellen = signifikant.length() + skala;
+        if (stellen > 16)
+        {
+            ganzzahlZuGross = true;
+        }
+        else if (stellen == 16)
+        {
+            auto normalisiert = signifikant;
+            for (int i = 0; i < skala; ++i)
+                normalisiert += '0';
+            ganzzahlZuGross = normalisiert.compare ("9007199254740991") > 0;
+        }
+    }
+    else
+    {
+        const auto abzuschneiden = -skala;
+        istGanzzahl = abzuschneiden <= alle.length();
+        for (int i = alle.length() - abzuschneiden;
+             istGanzzahl && i < alle.length(); ++i)
+            istGanzzahl = alle[i] == '0';
+
+        if (istGanzzahl)
+        {
+            auto normalisiert = alle.substring (0, alle.length() - abzuschneiden);
+            while (normalisiert.startsWithChar ('0'))
+                normalisiert = normalisiert.substring (1);
+            ganzzahlZuGross = normalisiert.length() > 16
+                || (normalisiert.length() == 16
+                    && normalisiert.compare ("9007199254740991") > 0);
+        }
+    }
+    if (ganzzahlZuGross)
+    {
+        fehler = "Ganzzahl ausserhalb 2^53-1: " + lit;
+        return false;
+    }
+
+    // Nichtganzzahlige Dezimalwerte mit mehr als 15 signifikanten Ziffern
+    // koennen schon beim binary64-Lesen auf eine Ganzzahl kippen. Dann wuerde
+    // `type: integer` einen im Rohtext gebrochenen Wert akzeptieren. Exakte
+    // Ganzzahlen haben oben ihre eigene, weitere 2^53-Grenze.
+    auto signifikanteStellen = alle.length() - fuehrende;
+    while (signifikanteStellen > 0
+           && alle[fuehrende + signifikanteStellen - 1] == '0')
+        --signifikanteStellen;
+    if (schemaGanzzahlSichern && ! istGanzzahl && signifikanteStellen > 15)
+    {
+        fehler = "Zahl mit mehr als 15 signifikanten Dezimalziffern: " + lit.substring (0, 40);
+        return false;
+    }
+
     return true;
 }
 
 } // namespace
 
-bool textriegelBytes (const void* daten, size_t laenge, juce::String& fehler)
+bool textriegelBytes (const void* daten, size_t laenge, juce::String& fehler,
+                      bool schemaGanzzahlSichern)
 {
     const auto* bytes = static_cast<const unsigned char*> (daten);
     if (daten == nullptr)
@@ -339,22 +411,38 @@ bool textriegelBytes (const void* daten, size_t laenge, juce::String& fehler)
         fehler = "kein Puffer";
         return false;
     }
+    if (laenge > kMaxDokumentBytes)
+    {
+        fehler = "Dokument zu gross";
+        return false;
+    }
     if (laenge >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
     {
         fehler = "BOM am Dokumentanfang";
         return false;
     }
-    if (! juce::CharPointer_UTF8::isValidString (static_cast<const char*> (daten),
-                                                 static_cast<int> (laenge)))
+    // JUCEs Stringaufbau endet am ersten NUL. Ohne diesen Byte-Riegel wuerde
+    // C++ nur einen gueltigen JSON-Praefix
+    // pruefen und alles dahinter ignorieren, waehrend Rust und Python die
+    // gesamte Bytefolge beurteilen. Ein NUL im JSON muss als `\u0000`
+    // escaped sein; roh ist es ein ungueltiges Steuerzeichen.
+    if (std::memchr (daten, 0, laenge) != nullptr)
+    {
+        fehler = "rohes NUL im Dokument";
+        return false;
+    }
+    if (! utf8::istGueltig (daten, laenge))
     {
         fehler = "kein gueltiges UTF-8";
         return false;
     }
     return textriegel (juce::String::fromUTF8 (static_cast<const char*> (daten),
-                                               static_cast<int> (laenge)), fehler);
+                                               static_cast<int> (laenge)), fehler,
+                       schemaGanzzahlSichern);
 }
 
-bool textriegel (const juce::String& text, juce::String& fehler)
+bool textriegel (const juce::String& text, juce::String& fehler,
+                 bool schemaGanzzahlSichern)
 {
     // Codepunkte statt Bytes: die Positionsangabe soll in allen drei Beinen
     // dieselbe sein, und juce::juce_wchar ist UTF-32. Der Namensraum muss
@@ -525,7 +613,8 @@ bool textriegel (const juce::String& text, juce::String& fehler)
                 }
             }
 
-            if (! zahlPruefen (ganz, bruch, expZiffern, expNegativ, teil (i, j), fehler))
+            if (! zahlPruefen (ganz, bruch, expZiffern, expNegativ, teil (i, j), fehler,
+                               schemaGanzzahlSichern))
                 return false;
             i = j;
             continue;

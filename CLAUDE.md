@@ -30,7 +30,9 @@ Commits gehen ohne Rückfrage raus.
   selben Graph. Beide Gen-Oberflächen sind 760×430. Probeeq misst auf den
   Bussen passiv und beliefert Gen. Wird ihr EQ zugeschaltet, führt dieselbe
   Instanz die von Gen ferngesteuerten Eingriffe auf ihrem Bus aus; Messsonde
-  und EQ-Ausführer sind keine alternativen Produktrollen.
+  und EQ-Ausführer sind keine alternativen Produktrollen. Die vollständige
+  EQ-Bedienung existiert nur in Gen; Probeeq erhält lokal keinen vollständigen
+  EQ-Editor, sondern eine kompakte Status- und Rückfallfläche.
 - **Grundgesetz: nichts Ungefragtes.** Verarbeitung findet nur statt, wenn der
   User sie einschaltet. Ausgeschaltet ist der Pfad im Nulltest bitidentisch;
   sonst ist der Passthrough sampleidentisch, ohne Latenz oder Tail. Der Advisor

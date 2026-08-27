@@ -106,7 +106,8 @@ Probeeq, Gen ist die zentrale Bedien- und Ansichtsfläche.
 EQ-Status beziehungsweise geänderte Bänder sowie die dafür abgenommenen
 direkten Handgriffe. Die aktuelle sichtbare Grundlage ist
 `../assets/rework-basis-2026-08-25/probeeq.png`; ein zweiter vollflächiger
-EQ-Editor wird daraus nicht abgeleitet.
+EQ-Editor ist ausdrücklich ausgeschlossen. Die vollständige Band- und
+Kurvenbedienung liegt nur in Gens zweiter Oberfläche.
 
 **Implementierungsstand:** Der heutige Code baut noch getrennte Suna- und
 Probeeq-Hüllen; beide sind derzeit audio-neutral. Probeeq trägt bereits die

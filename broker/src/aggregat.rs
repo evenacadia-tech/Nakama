@@ -9,8 +9,9 @@
 //! Snapshot: der Filter steht im Dokument (Plan §8.4).
 
 use super::{paare_auswerten, SensorEintrag};
+use crate::bindung::persistenz;
 use serde_json::{json, Value};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub fn aggregat_bauen(
     alle: &[SensorEintrag],
@@ -144,17 +145,32 @@ pub fn snapshot_ordner() -> Result<PathBuf, String> {
 /// Atomisch (tmp + rename), Dateiname sortierbar über den Zeitstempel.
 pub fn aggregat_schreiben(dokument: &Value) -> Result<PathBuf, String> {
     let ordner = snapshot_ordner()?;
-    std::fs::create_dir_all(&ordner).map_err(|e| format!("{} anlegen: {e}", ordner.display()))?;
-    let ms = dokument.get("erzeugt_ms").and_then(Value::as_u64).unwrap_or(0);
-    let pfad = ordner.join(format!("aggregat-{ms}.json"));
-    let tmp = ordner.join(format!("aggregat-{ms}.tmp-{}", std::process::id()));
+    aggregat_schreiben_in(&ordner, dokument)
+}
+
+fn aggregat_schreiben_in(ordner: &Path, dokument: &Value) -> Result<PathBuf, String> {
+    let ms = dokument
+        .get("erzeugt_ms")
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
     let json = serde_json::to_string_pretty(dokument).map_err(|e| format!("serialisieren: {e}"))?;
-    std::fs::write(&tmp, json).map_err(|e| format!("{} schreiben: {e}", tmp.display()))?;
-    std::fs::rename(&tmp, &pfad).map_err(|e| {
-        let _ = std::fs::remove_file(&tmp);
-        format!("{} ersetzen: {e}", pfad.display())
-    })?;
-    Ok(pfad)
+
+    for versuch in 0..32 {
+        let dateiname = if versuch == 0 {
+            format!("aggregat-{ms}.json")
+        } else {
+            format!("aggregat-{ms}-{}.json", uuid::Uuid::new_v4().simple())
+        };
+        let pfad = ordner.join(dateiname);
+        if persistenz::atomar_neu(&pfad, json.as_bytes())? {
+            return Ok(pfad);
+        }
+    }
+
+    Err(format!(
+        "kein kollisionsfreier Snapshotname in {}",
+        ordner.display()
+    ))
 }
 
 #[cfg(test)]
@@ -162,6 +178,16 @@ mod tests {
     use super::super::protokoll::{AudioAngabe, Hello, MessStand, ProjektFenster, SensorAngabe};
     use super::super::Register;
     use super::*;
+    use std::collections::HashSet;
+    use std::sync::{Arc, Barrier};
+
+    fn tmp_ordner(name: &str) -> PathBuf {
+        std::env::temp_dir().join(format!(
+            "eqcop-aggregat-test-{}-{name}-{}",
+            std::process::id(),
+            uuid::Uuid::new_v4().simple()
+        ))
+    }
 
     fn hello(id: &str, role: &str, label: &str, pair: Option<&str>, pid: u32) -> Hello {
         Hello {
@@ -252,7 +278,8 @@ mod tests {
     }
 
     #[test]
-    fn schreiben_erzeugt_datei_im_snapshot_ordner() {
+    fn schreiben_erzeugt_haltbare_datei() {
+        let ordner = tmp_ordner("einfach");
         let doc = json!({
             "schema": "evenacadia.eq-copilot.aggregat.v1",
             "erzeugt_ms": 987_654_321u64,
@@ -261,10 +288,92 @@ mod tests {
             "sensoren": [],
             "paare": [],
         });
-        let pfad = aggregat_schreiben(&doc).unwrap();
+        let pfad = aggregat_schreiben_in(&ordner, &doc).unwrap();
         assert!(pfad.exists());
         let text = std::fs::read_to_string(&pfad).unwrap();
         assert!(text.contains("aggregat.v1"));
-        let _ = std::fs::remove_file(&pfad);
+        std::fs::remove_dir_all(ordner).unwrap();
+    }
+
+    #[test]
+    fn gleicher_zeitstempel_ueberschreibt_keinen_snapshot() {
+        let ordner = tmp_ordner("wiederholt");
+        let erster = json!({ "erzeugt_ms": 42, "beleg": "eins" });
+        let zweiter = json!({ "erzeugt_ms": 42, "beleg": "zwei" });
+
+        let erster_pfad = aggregat_schreiben_in(&ordner, &erster).unwrap();
+        let zweiter_pfad = aggregat_schreiben_in(&ordner, &zweiter).unwrap();
+
+        assert_ne!(erster_pfad, zweiter_pfad);
+        assert_eq!(
+            serde_json::from_str::<Value>(&std::fs::read_to_string(erster_pfad).unwrap()).unwrap()
+                ["beleg"],
+            "eins"
+        );
+        assert_eq!(
+            serde_json::from_str::<Value>(&std::fs::read_to_string(zweiter_pfad).unwrap()).unwrap()
+                ["beleg"],
+            "zwei"
+        );
+        std::fs::remove_dir_all(ordner).unwrap();
+    }
+
+    #[test]
+    fn parallele_snapshots_gleicher_millisekunde_bleiben_alle_erhalten() {
+        let ordner = tmp_ordner("parallel");
+        let anzahl = 12;
+        let start = Arc::new(Barrier::new(anzahl));
+        let mut threads = Vec::new();
+
+        for nummer in 0..anzahl {
+            let ordner = ordner.clone();
+            let start = Arc::clone(&start);
+            threads.push(std::thread::spawn(move || {
+                let doc = json!({ "erzeugt_ms": 1234, "beleg": nummer });
+                start.wait();
+                aggregat_schreiben_in(&ordner, &doc)
+            }));
+        }
+
+        let pfade: Vec<PathBuf> = threads
+            .into_iter()
+            .map(|t| t.join().unwrap().unwrap())
+            .collect();
+        let eindeutig: HashSet<PathBuf> = pfade.iter().cloned().collect();
+        assert_eq!(eindeutig.len(), anzahl);
+        let belege: HashSet<u64> = pfade
+            .iter()
+            .map(|p| {
+                serde_json::from_str::<Value>(&std::fs::read_to_string(p).unwrap()).unwrap()
+                    ["beleg"]
+                    .as_u64()
+                    .unwrap()
+            })
+            .collect();
+        assert_eq!(belege.len(), anzahl);
+        assert_eq!(
+            std::fs::read_dir(&ordner)
+                .unwrap()
+                .filter_map(Result::ok)
+                .filter(|e| e.file_name().to_string_lossy().contains(".tmp-"))
+                .count(),
+            0,
+            "keine temporären Restdateien"
+        );
+        std::fs::remove_dir_all(ordner).unwrap();
+    }
+
+    #[test]
+    fn alte_temp_restdatei_blockiert_snapshot_nicht() {
+        let ordner = tmp_ordner("rest");
+        std::fs::create_dir_all(&ordner).unwrap();
+        let rest = ordner.join(format!("aggregat-7.tmp-{}", std::process::id()));
+        std::fs::write(&rest, b"fremder Rest").unwrap();
+
+        let pfad = aggregat_schreiben_in(&ordner, &json!({ "erzeugt_ms": 7 })).unwrap();
+
+        assert!(pfad.exists());
+        assert_eq!(std::fs::read(&rest).unwrap(), b"fremder Rest");
+        std::fs::remove_dir_all(ordner).unwrap();
     }
 }

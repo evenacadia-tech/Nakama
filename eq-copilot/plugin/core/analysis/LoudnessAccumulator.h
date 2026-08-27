@@ -192,6 +192,7 @@ public:
         anzahlUnterGate = 0;
         anzahlNichtEndlich = 0;
         for (auto& v : ring) v = 0.0;
+        for (auto& v : ringGueltig) v = false;
         ringKopf = 0;
         zellen = 0;
         bloecke = 0;
@@ -204,7 +205,9 @@ public:
         `kZellen` schob). */
     void zelle (double kEnergie) noexcept
     {
-        ring[(std::size_t) ringKopf] = kEnergie;
+        const bool endlich = std::isfinite (kEnergie);
+        ring[(std::size_t) ringKopf] = endlich ? kEnergie : 0.0;
+        ringGueltig[(std::size_t) ringKopf] = endlich;
         ringKopf = (ringKopf + 1) % kZellenRing;
         ++zellen;
 
@@ -216,7 +219,15 @@ public:
         // ((((0+a)+b)+c)+d entspricht ((a+b)+c)+d) - deshalb bitgleich.
         double e = 0.0;
         for (int k = 0; k < kZellenJeBlock; ++k)
-            e += ring[(std::size_t) ((ringKopf + kZellenRing - kZellenJeBlock + k) % kZellenRing)];
+        {
+            const auto index = (std::size_t) ((ringKopf + kZellenRing - kZellenJeBlock + k) % kZellenRing);
+            if (! ringGueltig[index])
+            {
+                ++anzahlNichtEndlich;
+                return;
+            }
+            e += ring[index];
+        }
         const double z = e / (0.4 * sr);
         ++bloecke;
 
@@ -346,9 +357,14 @@ public:
             return false;
         double e = 0.0;
         for (int i = 0; i < kZellenRing; ++i)
-            e += ring[(std::size_t) ((ringKopf + i) % kZellenRing)];   // aeltest -> juengst
+        {
+            const auto index = (std::size_t) ((ringKopf + i) % kZellenRing);
+            if (! ringGueltig[index])
+                return false;
+            e += ring[index];   // aeltest -> juengst
+        }
         heraus = -0.691 + 10.0 * std::log10 (e / (3.0 * sr) + 1e-30);
-        return true;
+        return std::isfinite (heraus);
     }
 
     //== Telemetrie ===========================================================
@@ -371,7 +387,7 @@ public:
     static constexpr std::size_t speicherBytes() noexcept
     {
         return (std::size_t) kBinsGesamt * (sizeof (double) + sizeof (std::uint32_t))
-             + (std::size_t) kZellenRing * sizeof (double);
+             + (std::size_t) kZellenRing * (sizeof (double) + sizeof (bool));
     }
 
 private:
@@ -435,6 +451,7 @@ private:
 
     // Begrenzte Passage-Blockstatistik (§48.1): die letzten 3 s.
     double        ring[kZellenRing] {};
+    bool          ringGueltig[kZellenRing] {};
     int           ringKopf { 0 };
     std::uint64_t zellen   { 0 };
     std::uint64_t bloecke  { 0 };

@@ -823,7 +823,7 @@
     "state_report": {
       "description": "Die Probe meldet ZUERST ihren Zustand; Main gleicht ab. Der Broker ist NICHT berechtigt, beim Reconnect blind seinen Cache auf die Probe zu druecken (§33.5).",
       "type": "object",
-      "required": ["type", "adresse", "dsp_schema_version", "state_revision", "record_state"],
+      "required": ["type", "adresse", "dsp_schema_version", "state_revision", "state_hash", "record_state"],
       "additionalProperties": false,
       "properties": {
         "type": { "const": "state_report" },

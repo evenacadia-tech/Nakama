@@ -59,9 +59,11 @@
 
   "rueckweg": {
     "strategie": "vor-dem-tausch-sichern",
-    "warum": "Ein Installer, der seinen Rueckweg aus einer Liste historischer Bundles zieht, kann nur die Staende zurueckgeben, die jemand vorher aufgeschrieben hat. Das Skript sichert stattdessen die tatsaechlich vorgefundene Datei nach install/rueckweg/ und schreibt Pfad, Hash und Zeitpunkt nach install/install-ergebnis.json. Der Rueckweg-Lauf liest genau das. Gegenpfad-Invariante des Hauses: installieren <-> Rollback, beide Haelften im selben Aenderungssatz.",
-    "verzeichnis": "eq-copilot/install/rueckweg",
+    "warum": "Ein Installer, der seinen Rueckweg aus einer Liste historischer Bundles zieht, kann nur die Staende zurueckgeben, die jemand vorher aufgeschrieben hat. Das Skript sichert stattdessen den tatsaechlich vorgefundenen Stand pro Transaktion unter dem geschuetzten Program-Files-Transaktionsordner. Sicherungsbytes und Erwartungshash liegen damit in derselben geschuetzten Autoritaetsgrenze; install/install-ergebnis.json bleibt reine lesbare Diagnose und kann weder Restore noch Zielpfad autorisieren. Gegenpfad-Invariante des Hauses: installieren <-> Rollback, beide Haelften im selben Aenderungssatz.",
+    "verzeichnis": "C:/Program Files/evenacadia/.nakama-installer/backups",
     "ergebnisdatei": "eq-copilot/install/install-ergebnis.json",
+    "transaktionsanker": "C:/Program Files/evenacadia/.nakama-installer/aktive-transaktion.json",
+    "transaktionsanker_warum": "Dieser Pfad wird vom Ausfuehrer aus der fest verdrahteten Broker-Produktpolicy abgeleitet, nicht aus diesem Datenfeld. Er liegt als Geschwister des Broker-Ziels unter Program Files, erbt dessen Schreibschutz und bindet jede relative Sicherungsreferenz an den geschuetzten backups/<transaktions-id>-Unterordner. Unfertige Anker werden nie superseded; abgeschlossene Staende haben eine explizite Cleanup-Regel.",
 
     "nak_41": {
       "gefahr": "Ein FL-Projekt, das dieser Bau als NakamaState schema=2 gespeichert hat, verliert im 16.08.-Build STILL seine Messpunkt-Identitaet: jener Build kennt nur EqCopilotState schema=1, sieht einen fremden Baumtyp und ignoriert ihn - ohne Fehlermeldung.",

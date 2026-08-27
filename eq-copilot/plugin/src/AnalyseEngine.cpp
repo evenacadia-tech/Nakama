@@ -168,7 +168,8 @@ AnalyseEngine::AnalyseEngine()
 
 void AnalyseEngine::vorbereiten (double samplerate)
 {
-    if (samplerate <= 0.0 || std::abs (samplerate - sr) < 0.5)
+    if (! std::isfinite (samplerate) || samplerate <= 0.0 || samplerate > 768000.0
+        || std::abs (samplerate - sr) < 0.5)
         return;    // gleiche Rate ⇒ Messung NICHT wegwerfen (FL ruft prepare mehrfach)
     sr = samplerate;
 

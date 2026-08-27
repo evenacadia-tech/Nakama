@@ -21,8 +21,11 @@
 #include "NakamaState.h"
 #include "PluginProcessor.h"
 
+#include <algorithm>
+#include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <limits>
 
 using namespace eqcop;
 namespace kanon = nakama::kanon;
@@ -174,6 +177,170 @@ juce::ValueTree parametersKind (const param::Satz& s)
     p.setProperty ("schema", 1, nullptr);
     param::schreibeInBaum (s, p);
     return p;
+}
+
+/** Feindlicher ValueTree-Stream: ein winziger Puffer behauptet eine fast
+    2-GiB-Binaervariante. Der State-Leser darf dafuer nichts allokieren. */
+juce::MemoryBlock riesenVarianteOhneNutzdaten()
+{
+    juce::MemoryBlock b;
+    juce::MemoryOutputStream s (b, false);
+    s.writeString ("NakamaState");
+    s.writeCompressedInt (1);
+    s.writeString ("payload");
+    s.writeCompressedInt (std::numeric_limits<int>::max());
+    s.writeByte (8); // JUCE varMarker_Binary
+    s.flush();
+    return b;
+}
+
+juce::MemoryBlock zuTieferBaum (int kinder)
+{
+    juce::ValueTree wurzel ("NakamaState");
+    auto cursor = wurzel;
+    for (int i = 0; i < kinder; ++i)
+    {
+        juce::ValueTree kind ("Depth");
+        cursor.appendChild (kind, nullptr);
+        cursor = kind;
+    }
+    return alsBlock (wurzel);
+}
+
+juce::MemoryBlock baumMitRohVariante (const juce::MemoryBlock& variante)
+{
+    juce::MemoryBlock b;
+    juce::MemoryOutputStream s (b, false);
+    auto eigenschaft = [&s] (const char* name, const juce::var& wert)
+    {
+        s.writeString (name);
+        wert.writeToStream (s);
+    };
+
+    s.writeString ("NakamaState");
+    s.writeCompressedInt (1);
+    eigenschaft ("schema", 2);
+    s.writeCompressedInt (1);
+
+    s.writeString ("Common");
+    s.writeCompressedInt (6);
+    eigenschaft ("schema", 1);
+    eigenschaft ("instance_id", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    eigenschaft ("plugin_kind", "legacy");
+    eigenschaft ("measurement_position", "insert");
+    eigenschaft ("label", "Bytegate");
+    s.writeString ("future_value");
+    s.write (variante.getData(), variante.getSize());
+    s.writeCompressedInt (0);
+    s.flush();
+    return b;
+}
+
+juce::MemoryBlock markerVariante (std::uint8_t marker)
+{
+    juce::MemoryBlock b;
+    juce::MemoryOutputStream s (b, false);
+    s.writeCompressedInt (1);
+    s.writeByte (static_cast<char> (marker));
+    s.flush();
+    return b;
+}
+
+juce::MemoryBlock variantenArray (int verschachtelung)
+{
+    juce::MemoryBlock inner;
+    {
+        juce::MemoryOutputStream s (inner, false);
+        juce::var (1).writeToStream (s);
+        s.flush();
+    }
+
+    for (int tiefe = 0; tiefe < verschachtelung; ++tiefe)
+    {
+        juce::MemoryBlock nutzdaten;
+        juce::MemoryOutputStream n (nutzdaten, false);
+        n.writeCompressedInt (1);
+        n.write (inner.getData(), inner.getSize());
+        n.flush();
+
+        juce::MemoryBlock aussen;
+        juce::MemoryOutputStream a (aussen, false);
+        a.writeCompressedInt (static_cast<int> (nutzdaten.getSize() + 1));
+        a.writeByte (7); // JUCE varMarker_Array
+        a.write (nutzdaten.getData(), nutzdaten.getSize());
+        a.flush();
+        inner = aussen;
+    }
+    return baumMitRohVariante (inner);
+}
+
+juce::MemoryBlock stateMitBallast (size_t bytes)
+{
+    auto v = schema2Baum ("legacy", "insert", false);
+    juce::MemoryBlock ballast;
+    ballast.setSize (bytes, true);
+    v.getChildWithName ("Common").setProperty ("future_ballast", juce::var (ballast), nullptr);
+    return alsBlock (v);
+}
+
+juce::MemoryBlock stateMitZielgroesse (size_t ziel)
+{
+    size_t ballast = ziel > 1024u ? ziel - 1024u : 0u;
+    juce::MemoryBlock roh;
+    for (int versuch = 0; versuch < 8; ++versuch)
+    {
+        roh = stateMitBallast (ballast);
+        if (roh.getSize() == ziel)
+            break;
+        if (roh.getSize() < ziel)
+            ballast += ziel - roh.getSize();
+        else
+            ballast -= std::min (ballast, roh.getSize() - ziel);
+    }
+    return roh;
+}
+
+juce::MemoryBlock baumMitEigenschaftszahl (int anzahl)
+{
+    juce::MemoryBlock b;
+    juce::MemoryOutputStream s (b, false);
+    s.writeString ("NakamaState");
+    s.writeCompressedInt (anzahl);
+    for (int i = 0; i < anzahl; ++i)
+    {
+        s.writeString ("x");
+        juce::var().writeToStream (s);
+    }
+    s.writeCompressedInt (0);
+    s.flush();
+    return b;
+}
+
+juce::MemoryBlock baumMitGesamteintraegen (int gesamt)
+{
+    // Vier Kinder zaehlen selbst als vier Sammlungseintraege. Der Rest wird
+    // so verteilt, dass keine einzelne Property-Sammlung 65.536 ueberschreitet.
+    juce::MemoryBlock b;
+    juce::MemoryOutputStream s (b, false);
+    s.writeString ("NakamaState");
+    s.writeCompressedInt (0);
+    s.writeCompressedInt (4);
+    int rest = gesamt - 4;
+    for (int kind = 0; kind < 4; ++kind)
+    {
+        const int n = std::min (65536, rest);
+        rest -= n;
+        s.writeString ("Future");
+        s.writeCompressedInt (n);
+        for (int i = 0; i < n; ++i)
+        {
+            s.writeString ("x");
+            juce::var().writeToStream (s);
+        }
+        s.writeCompressedInt (0);
+    }
+    s.flush();
+    return b;
 }
 
 } // namespace
@@ -692,6 +859,10 @@ int main (int argc, char* argv[])
         { auto v = schema2Baum ("legacy", "insert", false); v.getChildWithName ("Common").removeProperty ("instance_id", nullptr); faelle.push_back ({ "Common ohne instance_id", v }); }
         { auto v = schema2Baum ("legacy", "insert", false); v.getChildWithName ("Common").setProperty ("plugin_kind", "hub", nullptr); faelle.push_back ({ "plugin_kind unbekanntes Wort", v }); }
         { auto v = schema2Baum ("legacy", "insert", false); v.appendChild (schema2Baum ("legacy", "insert", false).getChildWithName ("Common").createCopy(), nullptr); faelle.push_back ({ "Common doppelt", v }); }
+        { auto v = schema2Baum ("legacy", "insert", false); v.getChildWithName ("Common").setProperty ("pair_id", "", nullptr); faelle.push_back ({ "pair_id vorhanden aber leer", v }); }
+        { auto v = schema2Baum ("legacy", "insert", false); v.getChildWithName ("Common").setProperty ("project_binding_id", "", nullptr); faelle.push_back ({ "project_binding_id vorhanden aber leer", v }); }
+        { auto v = schema2Baum ("legacy", "insert", false); v.getChildWithName ("Common").setProperty ("project_binding_id", "abc", nullptr); faelle.push_back ({ "project_binding_id kein hex32", v }); }
+        { auto v = schema2Baum ("legacy", "insert", false); v.getChildWithName ("Common").setProperty ("project_binding_id", "ABCDEF0123456789ABCDEF0123456789", nullptr); faelle.push_back ({ "project_binding_id Grossbuchstaben", v }); }
 
         int readOnly = 0;
         for (const auto& f : faelle)
@@ -733,6 +904,188 @@ int main (int argc, char* argv[])
                     && z.common.instanceId == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "fremder Baumtyp wird ignoriert, Zustand bleibt");
             const char muell[] = { 'n', 'i', 'c', 'h', 't', 's' };
             pruefe (state::lade (muell, sizeof (muell), state::Bundle::eqcp(), z) == state::LadeErgebnis::ignoriert, "Muellbytes werden ignoriert");
+
+            auto kaputtesUtf8 = alsBlock (schema2Baum ("legacy", "insert", false));
+            auto* kaputteBytes = static_cast<std::uint8_t*> (kaputtesUtf8.getData());
+            bool labelGefunden = false;
+            for (size_t i = 0; i + 5u <= kaputtesUtf8.getSize(); ++i)
+            {
+                if (std::memcmp (kaputteBytes + i, "Probe", 5) == 0)
+                {
+                    kaputteBytes[i] = 0xc3;
+                    kaputteBytes[i + 1] = 0x28; // kein 10xxxxxx-Fortsetzungsbyte
+                    labelGefunden = true;
+                    break;
+                }
+            }
+            pruefe (labelGefunden
+                    && state::lade (kaputtesUtf8.getData(), kaputtesUtf8.getSize(), state::Bundle::eqcp(), z)
+                        == state::LadeErgebnis::ignoriert,
+                    "ungueltiges UTF-8 im ValueTree faellt vor JUCEs tolerantem Stringleser");
+
+            auto gueltig = alsBlock (schema2Baum ("legacy", "insert", false));
+            const std::uint8_t suffix = 0x7f;
+            gueltig.append (&suffix, 1);
+            pruefe (state::lade (gueltig.getData(), gueltig.getSize(), state::Bundle::eqcp(), z) == state::LadeErgebnis::ignoriert
+                    && z.common.instanceId == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "gueltiger Praefix mit Suffix wird vollstaendig ignoriert");
+
+            auto abgeschnitten = alsBlock (schema2Baum ("main", "insert", true));
+            abgeschnitten.setSize (abgeschnitten.getSize() - 1, false);
+            pruefe (state::lade (abgeschnitten.getData(), abgeschnitten.getSize(), state::Bundle::eqcp(), z) == state::LadeErgebnis::ignoriert
+                    && z.common.instanceId == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "abgeschnittener spaeter Kindbaum wird nicht als Teilstate uebernommen");
+
+            const auto riesig = riesenVarianteOhneNutzdaten();
+            pruefe (state::lade (riesig.getData(), riesig.getSize(), state::Bundle::eqcp(), z) == state::LadeErgebnis::ignoriert
+                    && z.common.instanceId == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "deklarierte Riesenvariante wird vor JUCE-Allokation verworfen");
+
+            const auto tief = zuTieferBaum (64);
+            pruefe (state::lade (tief.getData(), tief.getSize(), state::Bundle::eqcp(), z) == state::LadeErgebnis::ignoriert
+                    && z.common.instanceId == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "zu tiefer ValueTree wird begrenzt und ignoriert");
+
+            const auto arrayTief = variantenArray (64);
+            pruefe (state::lade (arrayTief.getData(), arrayTief.getSize(), state::Bundle::eqcp(), z) == state::LadeErgebnis::ignoriert
+                    && z.common.instanceId == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "zu tief geschachteltes Variantenarray wird begrenzt und ignoriert");
+
+            const std::uint8_t winzig = 0;
+            pruefe (state::lade (&winzig, 16u * 1024u * 1024u + 1u, state::Bundle::eqcp(), z) == state::LadeErgebnis::ignoriert
+                    && z.common.instanceId == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "State oberhalb 16 MiB wird vor dem ersten Bytezugriff verworfen");
+        }
+
+        // Exakte Inklusiv-/Exklusivkanten der neuen Bytegrenzen. Die
+        // Grenzfaelle muessen den Byte-Riegel wirklich passieren; ihr spaeteres
+        // semantisches Urteil ist getrennt sichtbar.
+        {
+            const auto baumGrenze = zuTieferBaum (63);
+            state::Zustand z;
+            pruefe (state::lade (baumGrenze.getData(), baumGrenze.getSize(), state::Bundle::eqcp(), z)
+                        == state::LadeErgebnis::nurLesen,
+                    "ValueTree-Tiefe 64 inklusive Wurzel passiert den Byte-Riegel");
+
+            const auto arrayGrenze = variantenArray (63);
+            pruefe (state::lade (arrayGrenze.getData(), arrayGrenze.getSize(), state::Bundle::eqcp(), z)
+                        == state::LadeErgebnis::geladen,
+                    "63 verschachtelte Arrays plus Blatt passieren und laden");
+
+            const auto eintraegeGrenze = baumMitEigenschaftszahl (65536);
+            pruefe (state::lade (eintraegeGrenze.getData(), eintraegeGrenze.getSize(), state::Bundle::eqcp(), z)
+                        == state::LadeErgebnis::nurLesen,
+                    "65.536 Eintraege in einer Sammlung passieren den Byte-Riegel");
+            const auto eintragZuViel = baumMitEigenschaftszahl (65537);
+            pruefe (state::lade (eintragZuViel.getData(), eintragZuViel.getSize(), state::Bundle::eqcp(), z)
+                        == state::LadeErgebnis::ignoriert,
+                    "65.537 Eintraege in einer Sammlung werden verworfen");
+
+            const auto gesamtGrenze = baumMitGesamteintraegen (262144);
+            pruefe (state::lade (gesamtGrenze.getData(), gesamtGrenze.getSize(), state::Bundle::eqcp(), z)
+                        == state::LadeErgebnis::nurLesen,
+                    "262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel");
+            const auto gesamtZuViel = baumMitGesamteintraegen (262145);
+            pruefe (state::lade (gesamtZuViel.getData(), gesamtZuViel.getSize(), state::Bundle::eqcp(), z)
+                        == state::LadeErgebnis::ignoriert,
+                    "262.145 Eintraege ueber mehrere Sammlungen werden verworfen");
+        }
+
+        // Ein schreibbarer Input braucht bis zur absoluten 16-MiB-Grenze genau
+        // den Headroom, den der groesste heute erreichbare Folgezustand braucht.
+        // Das wird dynamisch am erhaltenen additiven Baum gemessen: eine feste
+        // Schwelle waere nach dem ersten Save verbraucht und wuerde das eigene
+        // Ergebnis beim naechsten Load faelschlich read-only machen.
+        {
+            constexpr size_t maxState = 16u * 1024u * 1024u;
+            constexpr size_t maxSchreibbarerInput = maxState - 4096u;
+            const auto rand = stateMitZielgroesse (maxSchreibbarerInput);
+            pruefe (rand.getSize() == maxSchreibbarerInput,
+                    "Teststate trifft die schreibbare Bytegrenze exakt",
+                    juce::String (static_cast<juce::int64> (rand.getSize())));
+
+            state::Zustand z;
+            const auto erg = state::lade (rand.getData(), rand.getSize(), state::Bundle::eqcp(), z);
+            juce::String langesLabel, langesPaar;
+            const auto vierByte = juce::String::charToString (
+                static_cast<juce::juce_wchar> (0x10ffff));
+            for (int i = 0; i < 120; ++i) langesLabel += vierByte;
+            for (int i = 0; i < 60; ++i) langesPaar += vierByte;
+            z.common.label = langesLabel;
+            z.common.pairId = langesPaar;
+            juce::MemoryBlock geschrieben;
+            state::speichere (z, geschrieben);
+            state::Zustand erneut;
+            pruefe (erg == state::LadeErgebnis::geladen
+                    && geschrieben.getSize() <= maxState
+                    && state::lade (geschrieben.getData(), geschrieben.getSize(), state::Bundle::eqcp(), erneut)
+                        == state::LadeErgebnis::geladen,
+                    "Writer bleibt mit maximalen bekannten Userfeldern innerhalb seiner Lesergrenze",
+                    juce::String (static_cast<juce::int64> (geschrieben.getSize())));
+
+            const auto ohneReserve = stateMitZielgroesse (maxState - 64u);
+            state::Zustand gehalten;
+            const auto gehaltenErg = state::lade (
+                ohneReserve.getData(), ohneReserve.getSize(), state::Bundle::eqcp(), gehalten);
+            juce::MemoryBlock wieder;
+            state::speichere (gehalten, wieder);
+            pruefe (ohneReserve.getSize() == maxState - 64u
+                    && gehaltenErg == state::LadeErgebnis::nurLesen
+                    && gleich (ohneReserve, wieder),
+                    "State ohne konkreten Writer-Headroom bleibt read-only bytegleich");
+
+            const auto exaktMax = stateMitZielgroesse (maxState);
+            state::Zustand exaktGehalten;
+            const auto exaktErg = state::lade (
+                exaktMax.getData(), exaktMax.getSize(), state::Bundle::eqcp(), exaktGehalten);
+            juce::MemoryBlock exaktWieder;
+            state::speichere (exaktGehalten, exaktWieder);
+            pruefe (exaktMax.getSize() == maxState
+                    && exaktErg == state::LadeErgebnis::nurLesen
+                    && gleich (exaktMax, exaktWieder),
+                    "vollstaendiger bekannter State exakt bei 16 MiB bleibt read-only bytegleich");
+        }
+
+        // Marker 9 (`undefined`) und zukuenftige Marker kann JUCE 8 zwar
+        // ueberspringen, liest sie aber als void und wuerde sie beim Save
+        // veraendern. Ein bekannter State bleibt deshalb read-only bytegleich.
+        for (const auto marker : { std::uint8_t { 9 }, std::uint8_t { 10 } })
+        {
+            const auto roh = baumMitRohVariante (markerVariante (marker));
+            state::Zustand z = state::frisch ("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+            const auto erg = state::lade (roh.getData(), roh.getSize(), state::Bundle::eqcp(), z);
+            juce::MemoryBlock wieder;
+            state::speichere (z, wieder);
+            pruefe (erg == state::LadeErgebnis::nurLesen && z.nurLesen && gleich (roh, wieder),
+                    "nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich",
+                    juce::String (static_cast<int> (marker)));
+        }
+
+        // Additive Properties duerfen weiterhin alle von JUCE serialisierten
+        // Variantentypen tragen; der Byte-Riegel ist kein neues Produktschema.
+        {
+            auto v = schema2Baum ("legacy", "insert", false);
+            auto common = v.getChildWithName ("Common");
+            juce::MemoryBlock blob;
+            const std::uint8_t bytes[] = { 0x00, 0x7f, 0xff };
+            blob.append (bytes, sizeof (bytes));
+            juce::Array<juce::var> liste;
+            liste.add (1);
+            liste.add ("zukunft");
+            common.setProperty ("future_binary", juce::var (blob), nullptr);
+            common.setProperty ("future_array", juce::var (liste), nullptr);
+
+            const auto roh = alsBlock (v);
+            state::Zustand z;
+            const auto erg = state::lade (roh.getData(), roh.getSize(), state::Bundle::eqcp(), z);
+            juce::MemoryBlock wieder;
+            state::speichere (z, wieder);
+            const auto commonWieder = z.baum.getChildWithName ("Common");
+            pruefe (erg == state::LadeErgebnis::geladen
+                    && commonWieder.getProperty ("future_binary").isBinaryData()
+                    && commonWieder.getProperty ("future_array").isArray()
+                    && gleich (roh, wieder),
+                    "additive Binaer- und Array-Properties bleiben bytegleich lesbar");
         }
 
         // Ein read-only-Prozessor wird durch einen gueltigen Stand wieder schreibbar.
@@ -803,6 +1156,14 @@ int main (int argc, char* argv[])
         pruefe (dirty.nonParam == 2, "getStateInformation meldet nichts");
 
         pruefe (! p.setzeBindung ("dirigent", "x", "") && dirty.nonParam == 2, "unbekannte v2-Rolle wird verweigert, keine Meldung");
+
+        juce::String zuLangesLabel, zuLangesPaar;
+        for (int i = 0; i < 121; ++i) zuLangesLabel += "L";
+        for (int i = 0; i < 61; ++i) zuLangesPaar += "P";
+        pruefe (! p.setzeBindung ("hub", zuLangesLabel, "")
+                && ! p.setzeBindung ("pre", "ok", zuLangesPaar)
+                && dirty.nonParam == 2 && p.holeLabel() == "Leitstand",
+                "Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation");
 
         // read-only verweigert ohne Meldung
         auto ro = schema2Baum ("legacy", "insert", false); ro.setProperty ("schema", 9, nullptr);

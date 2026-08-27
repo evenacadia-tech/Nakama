@@ -18,8 +18,15 @@
 
 #include <juce_core/juce_core.h>
 
+#include <cstddef>
+
 namespace nakama::vertrag
 {
+
+/** Gemeinsame Obergrenze des sprachuebergreifenden JSON-/DTO-Textriegels.
+    Der aktuelle Pipe-Framer ist mit 256 KiB enger; diese Grenze gilt auch fuer
+    direkte Datei-/DTO-Aufrufer und verhindert size_t->int-Drift in C++. */
+inline constexpr size_t kMaxDokumentBytes = 16u * 1024u * 1024u;
 
 /** Eine einzelne Vertragsverletzung.
 
@@ -59,7 +66,8 @@ constexpr int dezGrenze = 308;
     ACHT Regeln, jede gegen eine GEMESSENE Abweichung zwischen den Beinen:
 
       1. keine fuehrende Null (`091`) - JUCE liest 91, RFC 8259 verbietet es;
-      2. Ganzzahlen nur innerhalb +/-(2^53-1);
+      2. mathematische Ganzzahlen nur innerhalb +/-(2^53-1), echte Brueche
+         mit hoechstens 15 signifikanten Dezimalziffern;
       3. Zahlen betragsmaessig unter 1e308, und ein `e` braucht Ziffern -
          beides AUS DEM LITERAL gerechnet, nie ueber getDoubleValue();
       4. genau vier ASCII-Hexziffern in einem u-Escape;
@@ -69,7 +77,8 @@ constexpr int dezGrenze = 308;
          nur das Referenzbein nimmt an;
       7. kein leerer Objektschluessel - JUCE lehnt ihn ab, in einem additiven
          Objekt haette serde_json ihn akzeptiert;
-      8. auf Byteebene (textriegelBytes): kein BOM, gueltiges UTF-8.
+      8. auf Byteebene (textriegelBytes): hoechstens 16 MiB, kein BOM,
+         kein rohes NUL und strikt gueltiges UTF-8.
 
     ZU REGEL 3, teuer bezahlt in T2-Runde 2: die erste Fassung fragte hier
     `lit.getDoubleValue()` - also GENAU den Leser, gegen dessen Ueberlauf der
@@ -88,21 +97,26 @@ constexpr int dezGrenze = 308;
 
     @returns true, wenn der Text sauber ist; sonst false mit gesetztem `fehler`.
 */
-bool textriegel (const juce::String& text, juce::String& fehler);
+bool textriegel (const juce::String& text, juce::String& fehler,
+                 bool schemaGanzzahlSichern = true);
 
 /** Derselbe Riegel auf BYTE-Ebene - so, wie ein Dokument wirklich ankommt.
 
-    Zwei Regeln lassen sich nur hier ausdruecken (T2-Runde 2, BF-6/BF-7):
+    Vier Regeln lassen sich nur hier ausdruecken: maximale Dokumentgroesse,
+    kein BOM, kein rohes NUL und gueltiges UTF-8.
 
       * BOM. RFC 8259 §8.1: serde_json und Pythons json lehnen ein BOM ab,
         JUCEs loadFileAsString streift es und parst weiter.
       * Kaputtes UTF-8. Gemessen liefen die drei Beine hier voellig
-        auseinander: das Python-Bein warf eine ungefangene Ausnahme, das
-        Rust-Bein panickte beim Lesen, und JUCE ersetzte das Byte STILL.
+         auseinander: das Python-Bein warf eine ungefangene Ausnahme, das
+         Rust-Bein panickte beim Lesen, und JUCE ersetzte das Byte STILL.
+      * Rohes NUL. JUCE beendet seine UTF-8-Pruefung dort, die anderen Beine
+        beurteilen die volle Bytefolge.
 
     @returns true, wenn der Puffer sauber ist; sonst false mit gesetztem `fehler`.
 */
-bool textriegelBytes (const void* daten, size_t laenge, juce::String& fehler);
+bool textriegelBytes (const void* daten, size_t laenge, juce::String& fehler,
+                      bool schemaGanzzahlSichern = true);
 
 class Schema
 {

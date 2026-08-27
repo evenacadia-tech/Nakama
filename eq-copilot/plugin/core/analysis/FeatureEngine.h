@@ -203,7 +203,7 @@ struct Transportstempel
     verteilt ueber jeden Empfaenger, der ihn haette fangen sollen.
 
     Rueckgabe 0 heisst "in Ordnung"; sonst die Nummer des verletzten Falles
-    (1..6).  Eine Nummer statt eines bool, damit der Golden zeigen kann, WELCHE
+    (1..7).  Eine Nummer statt eines bool, damit der Golden zeigen kann, WELCHE
     Regel gefallen ist — ein Riegel, der nur "nein" sagt, laesst offen, ob er
     aus dem richtigen Grund nein gesagt hat. */
 inline int nak29Verstoss (const Transportstempel& t) noexcept
@@ -231,6 +231,18 @@ inline int nak29Verstoss (const Transportstempel& t) noexcept
     if ((t.gueltigkeit & kGContinuousTime) != 0 && ! t.continuous_time_samples_gesetzt)
         return 6;
 
+    // Ein vom Feature-Erzeuger publiziertes Intervall ist nur dann sinnvoll,
+    // wenn es nicht leer ist, seine Vertragsobergrenze haelt und die halboffene
+    // Projektgrenze `start + sample_count` noch in int64 passt.  Der allgemeine
+    // Wire-Vertrag kann 0 darstellen; dieser Erzeuger baut aber nie Leerframes.
+    if (t.sample_count == 0 || t.sample_count > 1048576u
+        || (t.zeitbasis == Zeitbasis::project_samples
+            && t.project_sample_start_gesetzt
+            && t.project_sample_start
+                 > std::numeric_limits<std::int64_t>::max()
+                     - static_cast<std::int64_t> (t.sample_count)))
+        return 7;
+
     return 0;
 }
 
@@ -246,16 +258,10 @@ inline int nak29Verstoss (const Transportstempel& t) noexcept
     ohne Luecke.  Der Frameverlust waere still — und `SONDE-010` haengt den
     ersten echten Leser dort an.
 
-    🔑 UND EIN MELDEWEG BRAUCHT EIN BEIN.  Der Ablehnungszweig in `baueFrame()`
-    ist heute konstruktiv unerreichbar: `baueStempel()` setzt Wert und Bit in
-    allen sechs NAK-29-Faellen gemeinsam.  Waere die Reihenfolge nur dort
-    verdrahtet, waere "die Sequenz springt" erneut eine Zusage, die kein Bein
-    deckt.  Als reine Funktion ist der Entscheid einzeln fahrbar — B5 §L5 gibt
-    ihm kaputte Stempel und misst, dass die Nummer trotzdem faellt.
-
-    ⚠️ Das belegt den MECHANISMUS, nicht die Erreichbarkeit des Zweiges im
-    Betrieb.  Der Unterschied steht im Manifest §10.2, damit ihn niemand
-    verwechselt. */
+    🔑 UND EIN MELDEWEG BRAUCHT EIN BEIN. Als reine Funktion ist der Entscheid
+    mit gezielt kaputten Stempeln fahrbar (B5 §L5). Der Produktionszweig wird
+    zusaetzlich durch den gedeckelten Oversize-Versuch erreicht; dessen
+    Erholung beweist, dass Ablehnung weder Sequenz noch Evidenz verriegelt. */
 struct Frameversuch
 {
     std::uint64_t sequence { 0 };   ///< die verbrauchte Nummer — auch bei Verstoss
@@ -447,8 +453,17 @@ public:
         Rate waere danach schlicht falsch. */
     void vorbereiten (double samplerate)
     {
-        if (samplerate <= 0.0)
+        if (! std::isfinite (samplerate) || samplerate <= 0.0 || samplerate > 768000.0)
+        {
+            // Ein ungueltiger Folge-Prepare darf keine zuvor gueltige Engine
+            // unter der alten Rate weiterlaufen lassen. Speicher bleibt
+            // angelegt; nur Messzustand und Betriebsfreigabe verfallen.
+            if (vorbereitet)
+                zuruecksetzen();
+            vorbereitet = false;
+            sr = 0.0;
             return;
+        }
         if (samplerate == sr && vorbereitet)
             return;
 
@@ -486,6 +501,8 @@ public:
         for (auto& v : liveAkku)    v = { 0.0, 0 };
         for (auto& v : evidenzAkku) v = { 0.0, 0 };
         for (auto& v : liveBreiteAkku)    v = { 0.0, 0.0 };
+        liveSupport = {};
+        evidenzSupport = {};
 
         zelleStand = 0;
         zelleKEnergie = 0.0;
@@ -499,6 +516,9 @@ public:
         rahmenPeak = 0.0;
         rahmenSummeQuadrat = 0.0;
         rahmenSamples = 0;
+        rahmenStartBlock = {};
+        rahmenProjektDurchgehend = false;
+        rahmenContinuousDurchgehend = false;
         rahmenMid2 = rahmenSide2 = 0.0;
         rahmenL = rahmenR = rahmenL2 = rahmenR2 = rahmenLR = 0.0;
         rahmenAktivZellen = 0;
@@ -506,6 +526,9 @@ public:
 
         liveSamples = 0;
         evidenzSamples = 0;
+        evidenzContinuousHabe = false;
+        evidenzContinuousDurchgehend = true;
+        evidenzContinuousErwartet = 0;
         for (auto& v : vorigesSpektrum) v = 0.0;
         vorigesSpektrumGueltig = false;
         flussStand = 0;
@@ -583,7 +606,7 @@ public:
         // ── 4. Kadenz: ist ein Frame faellig? ───────────────────────────────
         const double liveS = (double) liveSamples / sr;
         if (liveS >= kLiveIntervallS)
-            frameBereit = baueFrame (block);
+            frameBereit = baueFrame();
 
         return frameBereit;
     }
@@ -742,6 +765,14 @@ private:
         int punkte { 0 }, hop { 0 }, gefuellt { 0 };
         double fs { 0.0 };
         std::vector<double> ringM, ringS;      // Mid und Side, `punkte` lang
+        // Projekt- und Continuous-Zeit werden PRO SAMPLE mitgeschoben. Ein
+        // einzelner Startwert plus blindes `+ hop` waere bei fehlenden oder
+        // stehenden Hostwerten eine erfundene Zeitachse: lokal schliesst das
+        // Audio an, die jeweilige Hostuhr nachweislich nicht.
+        std::vector<std::int64_t> ringProjekt;
+        std::vector<std::uint8_t> ringProjektGueltig;
+        std::vector<std::int64_t> ringContinuous;
+        std::vector<std::uint8_t> ringContinuousGueltig;
         std::vector<double> fenster;           // Hann periodisch
         std::vector<double> arbeit;            // ein Fensterausschnitt
         std::vector<double> psd;               // punkte/2+1
@@ -749,6 +780,11 @@ private:
         double fensterEnergie { 0.0 };
         // Bin-Fenster [von,bis) je Evidenzband; bis<=von heisst "nicht messbar".
         std::vector<int> bandVon, bandBis;
+        std::uint64_t fensterStromStart { 0 };
+        std::int64_t fensterProjektStart { 0 };
+        bool fensterProjektGueltig { false };
+        std::int64_t fensterContinuousStart { 0 };
+        bool fensterContinuousGueltig { false };
 
         void vorbereiten (int n, double samplerate)
         {
@@ -757,6 +793,10 @@ private:
             fs = samplerate;
             ringM.assign ((std::size_t) n, 0.0);
             ringS.assign ((std::size_t) n, 0.0);
+            ringProjekt.assign ((std::size_t) n, 0);
+            ringProjektGueltig.assign ((std::size_t) n, 0);
+            ringContinuous.assign ((std::size_t) n, 0);
+            ringContinuousGueltig.assign ((std::size_t) n, 0);
             arbeit.assign ((std::size_t) n, 0.0);
             psd.assign ((std::size_t) (n / 2 + 1), 0.0);
             fenster.assign ((std::size_t) n, 0.0);
@@ -772,16 +812,113 @@ private:
             bandVon.assign ((std::size_t) Gitter::evidenzBaender, 0);
             bandBis.assign ((std::size_t) Gitter::evidenzBaender, 0);
             gefuellt = 0;
+            fensterStromStart = 0;
+            fensterProjektStart = 0;
+            fensterProjektGueltig = false;
+            fensterContinuousStart = 0;
+            fensterContinuousGueltig = false;
         }
 
         /** Verwirft, was gerade gesammelt wird.  DAS ist die Trennung. */
         void leeren() noexcept
         {
             gefuellt = 0;
+            fensterStromStart = 0;
+            fensterProjektStart = 0;
+            fensterProjektGueltig = false;
+            fensterContinuousStart = 0;
+            fensterContinuousGueltig = false;
             for (auto& v : ringM) v = 0.0;
             for (auto& v : ringS) v = 0.0;
+            for (auto& v : ringProjekt) v = 0;
+            for (auto& v : ringProjektGueltig) v = 0;
+            for (auto& v : ringContinuous) v = 0;
+            for (auto& v : ringContinuousGueltig) v = 0;
         }
     };
+
+    /** Lokaler Beginn und — nur bei lueckenlosem Samplebeweis — die dazu
+        gehoerende Projektzeit eines offenen Analysefensters.  Live und
+        Evidenz brauchen getrennte Buecher, weil ihre Publikationskadenzen
+        verschieden sind. */
+    struct Support
+    {
+        bool gesetzt { false };
+        std::uint64_t stromStart { 0 };
+        bool projektGueltig { false };
+        std::int64_t projektStart { 0 };
+        bool continuousGueltig { false };
+        std::int64_t continuousStart { 0 };
+    };
+
+    static bool projektVorwaerts (std::int64_t start, std::uint64_t delta,
+                                  std::int64_t& heraus) noexcept
+    {
+        if (delta > static_cast<std::uint64_t> (std::numeric_limits<std::int64_t>::max()))
+            return false;
+        const auto d = static_cast<std::int64_t> (delta);
+        if (start > std::numeric_limits<std::int64_t>::max() - d)
+            return false;
+        heraus = start + d;
+        return true;
+    }
+
+    /** Vereinigt zwei lokale Anfaenge und erhaelt einen Zeitbeweis nur, wenn
+        beide dieselbe affine 1-Sample-Abbildung belegen. */
+    static void supportVereinen (Support& ziel, const Support& neu) noexcept
+    {
+        if (! neu.gesetzt)
+            return;
+        if (! ziel.gesetzt)
+        {
+            ziel = neu;
+            return;
+        }
+
+        const auto achsePasst = [&] (bool zielGueltig, std::int64_t zielStart,
+                                     bool neuGueltig, std::int64_t neuStart)
+        {
+            if (! zielGueltig || ! neuGueltig)
+                return false;
+            std::int64_t erwartet = 0;
+            if (neu.stromStart < ziel.stromStart)
+                return projektVorwaerts (neuStart,
+                                         ziel.stromStart - neu.stromStart,
+                                         erwartet)
+                    && erwartet == zielStart;
+            return projektVorwaerts (zielStart,
+                                     neu.stromStart - ziel.stromStart,
+                                     erwartet)
+                && erwartet == neuStart;
+        };
+
+        const bool projektPasst = achsePasst (ziel.projektGueltig,
+                                              ziel.projektStart,
+                                              neu.projektGueltig,
+                                              neu.projektStart);
+        const bool continuousPasst = achsePasst (ziel.continuousGueltig,
+                                                 ziel.continuousStart,
+                                                 neu.continuousGueltig,
+                                                 neu.continuousStart);
+
+        if (neu.stromStart < ziel.stromStart)
+        {
+            ziel.stromStart = neu.stromStart;
+            ziel.projektStart = neu.projektStart;
+            ziel.continuousStart = neu.continuousStart;
+        }
+        ziel.projektGueltig = projektPasst;
+        ziel.continuousGueltig = continuousPasst;
+    }
+
+    static void supportMerken (Support& ziel, const Stufe& s) noexcept
+    {
+        supportVereinen (ziel, Support { true, s.fensterStromStart,
+                                        s.fensterProjektGueltig,
+                                        s.fensterProjektStart,
+                                        s.fensterContinuousGueltig,
+                                        s.fensterContinuousStart });
+    }
 
     int trennIndex() const noexcept
     {
@@ -1030,6 +1167,11 @@ private:
             v = { 0.0, 0 };
         }
         for (auto& v : liveBreiteAkku) v = { 0.0, 0.0 };
+        liveSupport = {};
+        evidenzSupport = {};
+        evidenzContinuousHabe = false;
+        evidenzContinuousDurchgehend = true;
+        evidenzContinuousErwartet = 0;
 
         // Aktivitaetszaehler: `zelleStand` (die angefangene Zelle) faellt schon
         // seit der ersten Fassung, die FERTIGEN Zellen des laufenden Rahmens
@@ -1067,6 +1209,9 @@ private:
         rahmenPeak = 0.0;               // Korrelations-/Peakfenster
         rahmenSummeQuadrat = 0.0;
         rahmenSamples = 0;
+        rahmenStartBlock = {};
+        rahmenProjektDurchgehend = false;
+        rahmenContinuousDurchgehend = false;
         rahmenMid2 = rahmenSide2 = 0.0;
         rahmenL = rahmenR = rahmenL2 = rahmenR2 = rahmenLR = 0.0;
 
@@ -1089,10 +1234,92 @@ private:
 
     //== Samples =============================================================
 
+    static bool blockProjektSpanneGueltig (const echtzeit::StampedBlock& b) noexcept
+    {
+        const auto muss = echtzeit::kFlagZeitGueltig
+                        | echtzeit::kFlagSpieltGueltig
+                        | echtzeit::kFlagSpielt;
+        if ((b.flags & muss) != muss)
+            return false;
+        return b.projectSampleStart
+            <= std::numeric_limits<std::int64_t>::max()
+                 - static_cast<std::int64_t> (b.sampleCount);
+    }
+
+    static bool blockContinuousSpanneGueltig (const echtzeit::StampedBlock& b) noexcept
+    {
+        if ((b.flags & echtzeit::kFlagContinuousGueltig) == 0)
+            return false;
+        return b.continuousTimeSamples
+            <= std::numeric_limits<std::int64_t>::max()
+                 - static_cast<std::int64_t> (b.sampleCount);
+    }
+
+    void evidenzContinuousBelegen (const echtzeit::StampedBlock& block) noexcept
+    {
+        const bool gueltig = blockContinuousSpanneGueltig (block);
+        if (! evidenzContinuousHabe)
+        {
+            evidenzContinuousHabe = true;
+            evidenzContinuousDurchgehend = gueltig;
+        }
+        else if (evidenzContinuousDurchgehend)
+        {
+            evidenzContinuousDurchgehend
+                = gueltig && block.continuousTimeSamples == evidenzContinuousErwartet;
+        }
+
+        std::int64_t ende = 0;
+        if (evidenzContinuousDurchgehend
+            && projektVorwaerts (block.continuousTimeSamples,
+                                 block.sampleCount, ende))
+            evidenzContinuousErwartet = ende;
+        else
+            evidenzContinuousDurchgehend = false;
+    }
+
+    void rahmenZeitBelegen (const echtzeit::StampedBlock& block) noexcept
+    {
+        if (rahmenSamples == 0)
+        {
+            rahmenStartBlock = block;
+            rahmenProjektDurchgehend = blockProjektSpanneGueltig (block);
+            rahmenContinuousDurchgehend = blockContinuousSpanneGueltig (block);
+            return;
+        }
+
+        if (rahmenProjektDurchgehend && blockProjektSpanneGueltig (block))
+        {
+            std::int64_t erwartet = 0;
+            rahmenProjektDurchgehend = projektVorwaerts (
+                                          rahmenStartBlock.projectSampleStart,
+                                          rahmenSamples, erwartet)
+                                    && erwartet == block.projectSampleStart;
+        }
+        else
+            rahmenProjektDurchgehend = false;
+
+        if (rahmenContinuousDurchgehend && blockContinuousSpanneGueltig (block))
+        {
+            std::int64_t erwartet = 0;
+            rahmenContinuousDurchgehend = projektVorwaerts (
+                                             rahmenStartBlock.continuousTimeSamples,
+                                             rahmenSamples, erwartet)
+                                       && erwartet == block.continuousTimeSamples;
+        }
+        else
+            rahmenContinuousDurchgehend = false;
+    }
+
     void verarbeiteSamples (const echtzeit::StampedBlock& block, const float* daten) noexcept
     {
         const int n = (int) block.sampleCount;
         const bool stereo = block.kanaele > 1;
+
+        // Der Transportstempel beschreibt den GESAMTEN publizierten Rahmen,
+        // nicht bloss den letzten Block, der seine Kadenzschwelle ueberschritt.
+        evidenzContinuousBelegen (block);
+        rahmenZeitBelegen (block);
 
         for (int i = 0; i < n; ++i)
         {
@@ -1107,8 +1334,8 @@ private:
             const double m = 0.5 * (l + r);
             const double s = 0.5 * (l - r);
 
-            schiebeStufe (bass, m, s, block);
-            schiebeStufe (haupt, m, s, block);
+            schiebeStufe (bass, m, s, block, i);
+            schiebeStufe (haupt, m, s, block, i);
 
             // Loudness: K-Gewichtung je Kanal, Energie in 100-ms-Zellen.
             //
@@ -1152,25 +1379,89 @@ private:
     }
 
     void schiebeStufe (Stufe& s, double m, double side,
-                       const echtzeit::StampedBlock& block) noexcept
+                       const echtzeit::StampedBlock& block, int sampleOffset) noexcept
     {
+        if (s.gefuellt == 0)
+            s.fensterStromStart = block.stromVon + static_cast<std::uint64_t> (sampleOffset);
+        const bool projektGueltig = blockProjektSpanneGueltig (block);
+        const bool continuousGueltig = blockContinuousSpanneGueltig (block);
+        const auto index = (std::size_t) s.gefuellt;
         s.ringM[(std::size_t) s.gefuellt] = m;
         s.ringS[(std::size_t) s.gefuellt] = side;
+        s.ringProjektGueltig[index] = projektGueltig ? 1u : 0u;
+        s.ringProjekt[index] = projektGueltig
+            ? block.projectSampleStart + static_cast<std::int64_t> (sampleOffset)
+            : 0;
+        s.ringContinuousGueltig[index] = continuousGueltig ? 1u : 0u;
+        s.ringContinuous[index] = continuousGueltig
+            ? block.continuousTimeSamples + static_cast<std::int64_t> (sampleOffset)
+            : 0;
         if (++s.gefuellt < s.punkte)
             return;
 
-        rechneFenster (s, block);
+        // Der Fensterstart ist nur dann Projektzeit, wenn JEDES Sample im Ring
+        // dieselbe fortlaufende Achse belegt.  Das ist absichtlich O(N) pro
+        // FFT-Fenster und laeuft auf dem Worker; die FFT selbst ist teurer und
+        // der Beweis darf nicht aus einer Host-Heuristik bestehen.
+        s.fensterProjektGueltig = s.ringProjektGueltig[0] != 0;
+        if (s.fensterProjektGueltig)
+        {
+            s.fensterProjektStart = s.ringProjekt[0];
+            for (int i = 1; i < s.punkte; ++i)
+            {
+                const auto vorher = s.ringProjekt[(std::size_t) (i - 1)];
+                if (s.ringProjektGueltig[(std::size_t) i] == 0
+                    || vorher == std::numeric_limits<std::int64_t>::max()
+                    || s.ringProjekt[(std::size_t) i] != vorher + 1)
+                {
+                    s.fensterProjektGueltig = false;
+                    break;
+                }
+            }
+        }
+
+        s.fensterContinuousGueltig = s.ringContinuousGueltig[0] != 0;
+        if (s.fensterContinuousGueltig)
+        {
+            s.fensterContinuousStart = s.ringContinuous[0];
+            for (int i = 1; i < s.punkte; ++i)
+            {
+                const auto vorher = s.ringContinuous[(std::size_t) (i - 1)];
+                if (s.ringContinuousGueltig[(std::size_t) i] == 0
+                    || vorher == std::numeric_limits<std::int64_t>::max()
+                    || s.ringContinuous[(std::size_t) i] != vorher + 1)
+                {
+                    s.fensterContinuousGueltig = false;
+                    break;
+                }
+            }
+        }
+
+        rechneFenster (s);
 
         // 50 % Ueberlappung: die zweite Haelfte wird die erste.
         for (int i = 0; i < s.punkte - s.hop; ++i)
         {
             s.ringM[(std::size_t) i] = s.ringM[(std::size_t) (i + s.hop)];
             s.ringS[(std::size_t) i] = s.ringS[(std::size_t) (i + s.hop)];
+            s.ringProjekt[(std::size_t) i] = s.ringProjekt[(std::size_t) (i + s.hop)];
+            s.ringProjektGueltig[(std::size_t) i]
+                = s.ringProjektGueltig[(std::size_t) (i + s.hop)];
+            s.ringContinuous[(std::size_t) i]
+                = s.ringContinuous[(std::size_t) (i + s.hop)];
+            s.ringContinuousGueltig[(std::size_t) i]
+                = s.ringContinuousGueltig[(std::size_t) (i + s.hop)];
         }
         s.gefuellt = s.punkte - s.hop;
+        s.fensterStromStart += static_cast<std::uint64_t> (s.hop);
+        // Bis zum naechsten vollen Ring gibt es noch keinen neuen Beweis.
+        s.fensterProjektGueltig = false;
+        s.fensterProjektStart = 0;
+        s.fensterContinuousGueltig = false;
+        s.fensterContinuousStart = 0;
     }
 
-    void rechneFenster (Stufe& s, const echtzeit::StampedBlock& block) noexcept
+    void rechneFenster (Stufe& s) noexcept
     {
         // Mid.
         for (int i = 0; i < s.punkte; ++i)
@@ -1198,6 +1489,7 @@ private:
         if (! aktiv)
             return;
 
+        bool hatBandBeitrag = false;
         for (int b = 0; b < Gitter::evidenzBaender; ++b)
         {
             const int von = s.bandVon[(std::size_t) b];
@@ -1221,6 +1513,13 @@ private:
             ++evidenzAkku[(std::size_t) b].n;
             liveBreiteAkku[(std::size_t) b].seite += seite;
             liveBreiteAkku[(std::size_t) b].gesamt += energie;
+            hatBandBeitrag = true;
+        }
+
+        if (hatBandBeitrag)
+        {
+            supportMerken (liveSupport, s);
+            supportMerken (evidenzSupport, s);
         }
 
         // Ereignisse nur aus der HAUPTstufe: sie hat die zeitliche Aufloesung
@@ -1228,7 +1527,7 @@ private:
         // Ereignis mit einer Dauer, die groesser ist als der Abstand zweier
         // Ereignisse — das ist keine Detektion mehr.
         if (&s == &haupt)
-            flussSchritt (s, block);
+            flussSchritt (s);
     }
 
     static double summeBereich (const Stufe& s, int von, int bis) noexcept
@@ -1249,7 +1548,7 @@ private:
         unsichtbar, weil kein Puffer dabei waechst.  `grenzeZiehen()` setzt ihn
         deshalb ungueltig.  Der Golden prueft das eigens: ein Fluss, der ueber
         einen Seek hinweg gerechnet wird, meldet einen Onset, den es nicht gab. */
-    void flussSchritt (Stufe& s, const echtzeit::StampedBlock& block) noexcept
+    void flussSchritt (Stufe& s) noexcept
     {
         double fluss = 0.0, zentrumZaehler = 0.0, zentrumNenner = 0.0;
         const bool hatteVorgaenger = vorigesSpektrumGueltig;
@@ -1304,9 +1603,9 @@ private:
             if (fluss > schwelle && mad > 0.0)
             {
                 Ereignis e;
-                e.stromSample = block.stromVon;
-                e.projektzeitGesetzt = (block.flags & echtzeit::kFlagZeitGueltig) != 0;
-                e.projektSample = block.projectSampleStart;
+                e.stromSample = s.fensterStromStart;
+                e.projektzeitGesetzt = s.fensterProjektGueltig;
+                e.projektSample = s.fensterProjektStart;
                 e.epoche  = transportEpoche;
                 e.segment = segmentInEpoche;
                 e.staerke = (float) ((fluss - med) / mad);
@@ -1383,7 +1682,7 @@ private:
 
     //== Frame bauen ==========================================================
 
-    bool baueFrame (const echtzeit::StampedBlock& block) noexcept
+    bool baueFrame() noexcept
     {
         // Wert-Initialisierung statt Default-Initialisierung: sie nullt das
         // ganze Objekt, bevor die NSDMIs greifen.  ⚠️ Das ist die richtige
@@ -1394,7 +1693,9 @@ private:
         // verglichen, nie nach Bytes.
         FeatureFrame f {};
         f.metricsVersion = kFeatureMetricsVersion;
-        f.transport = baueStempel (block);
+        const double evidenzS = (double) evidenzSamples / sr;
+        f.evidenzFrisch = evidenzS >= kEvidenzIntervallS;
+        f.transport = baueStempel (rahmenStartBlock, f.evidenzFrisch);
 
         // NAK-29: ein Stempel, der die Feldpflichten verletzt, wird NICHT
         // veroeffentlicht.  Lieber kein Frame als ein Frame, dessen Zeitangabe
@@ -1409,6 +1710,13 @@ private:
         {
             ++zNak29Abgelehnt;
             rahmenLeeren();
+            // Ein faelliger Evidenzsnapshot ist mit diesem Versuch verbraucht,
+            // auch wenn dessen Stempel am Erzeugerriegel scheitert.  Bliebe
+            // sein fruehester Support stehen, waere derselbe zu grosse
+            // Zeitbereich im naechsten Versuch wieder enthalten: ein einmaliger
+            // Vertragsverstoss wuerde die Telemetrie dauerhaft verriegeln.
+            if (f.evidenzFrisch)
+                evidenzLeeren();
             return false;
         }
 
@@ -1416,8 +1724,6 @@ private:
         f.live.encoding  = BandEncoding::q_db_0p1_i16;
         fuelleLive (f.live, f.liveBreite, f.liveBreiteBitmap);
 
-        const double evidenzS = (double) evidenzSamples / sr;
-        f.evidenzFrisch = evidenzS >= kEvidenzIntervallS;
         f.evidenz.gitter   = GitterId::nakama_1_24_oct_30_18k_v1;
         f.evidenz.encoding = BandEncoding::q_db_0p01_i16;
         if (f.evidenzFrisch)
@@ -1432,21 +1738,32 @@ private:
 
         rahmenLeeren();
         if (f.evidenzFrisch)
-        {
-            for (auto& v : evidenzAkku) v = { 0.0, 0 };
-                evidenzSamples = 0;
-        }
+            evidenzLeeren();
         return true;
+    }
+
+    void evidenzLeeren() noexcept
+    {
+        for (auto& v : evidenzAkku) v = { 0.0, 0 };
+        evidenzSamples = 0;
+        evidenzSupport = {};
+        evidenzContinuousHabe = false;
+        evidenzContinuousDurchgehend = true;
+        evidenzContinuousErwartet = 0;
     }
 
     void rahmenLeeren() noexcept
     {
         for (auto& v : liveAkku) v = { 0.0, 0 };
         for (auto& v : liveBreiteAkku) v = { 0.0, 0.0 };
+        liveSupport = {};
         liveSamples = 0;
         rahmenPeak = 0.0;
         rahmenSummeQuadrat = 0.0;
         rahmenSamples = 0;
+        rahmenStartBlock = {};
+        rahmenProjektDurchgehend = false;
+        rahmenContinuousDurchgehend = false;
         rahmenMid2 = rahmenSide2 = 0.0;
         rahmenL = rahmenR = rahmenL2 = rahmenR2 = rahmenLR = 0.0;
         rahmenAktivZellen = 0;
@@ -1457,7 +1774,8 @@ private:
         // `zuruecksetzen()`.
     }
 
-    Transportstempel baueStempel (const echtzeit::StampedBlock& b) const noexcept
+    Transportstempel baueStempel (const echtzeit::StampedBlock& b,
+                                  bool evidenzWirdPubliziert) const noexcept
     {
         // Wert-Initialisierung, gleiche Vorgabe und gleiche Grenze wie in
         // `baueFrame()`: die Fuellbytes zwischen `bool` und `int64` bleiben
@@ -1466,7 +1784,33 @@ private:
         Transportstempel t {};
         t.transport_epoch    = transportEpoche;
         t.continuity_segment = segmentInEpoche;
-        t.sample_count       = b.sampleCount;
+        // Der Stempel umfasst nicht nur die skalaren Samples, sondern auch den
+        // fruehesten FFT-Support, der TATSAECHLICH in die publizierten Baender
+        // eingegangen ist.  Durch 50-%-Ueberlappung kann der vor `b` beginnen.
+        Support gesamt { true, b.stromVon, rahmenProjektDurchgehend,
+                         b.projectSampleStart, rahmenContinuousDurchgehend,
+                         b.continuousTimeSamples };
+        supportVereinen (gesamt, liveSupport);
+        if (evidenzWirdPubliziert)
+        {
+            supportVereinen (gesamt, evidenzSupport);
+            // Auch band-inaktive Zwischenzeit gehoert zum Beweis der
+            // Evidenzspanne. Sonst koennte eine fehlende/springende Hostuhr in
+            // einer stillen Luecke verschwinden und spaeter scheinbar passend
+            // auf die alte affine Achse zurueckkehren.
+            if (! evidenzContinuousDurchgehend)
+                gesamt.continuousGueltig = false;
+        }
+
+        bool stromSpanneGueltig = b.stromVon
+            <= std::numeric_limits<std::uint64_t>::max() - rahmenSamples;
+        const auto stromEnde = stromSpanneGueltig ? b.stromVon + rahmenSamples : 0;
+        if (stromSpanneGueltig && gesamt.stromStart <= stromEnde)
+        {
+            const auto laenge = stromEnde - gesamt.stromStart;
+            if (laenge > 0 && laenge <= std::numeric_limits<std::uint32_t>::max())
+                t.sample_count = static_cast<std::uint32_t> (laenge);
+        }
         t.sample_rate        = sr;
 
         t.process_context_present_gesetzt = true;
@@ -1478,11 +1822,11 @@ private:
         // `project_samples` setzte, weil der Host "meistens" eine Zeit liefert,
         // erlaubte damit Cross-Probe-Alignment auf einer Zahl, die es nicht
         // gibt — und NAK-29-Fall 2 faengt genau diesen Griff.
-        if ((b.flags & echtzeit::kFlagZeitGueltig) != 0)
+        if (gesamt.projektGueltig)
         {
             t.zeitbasis = Zeitbasis::project_samples;
             t.project_sample_start_gesetzt = true;
-            t.project_sample_start = b.projectSampleStart;
+            t.project_sample_start = gesamt.projektStart;
             t.gueltigkeit |= kGProjectTime;
         }
         else
@@ -1501,15 +1845,24 @@ private:
             t.recording = (b.flags & echtzeit::kFlagRecording) != 0;
             t.gueltigkeit |= kGRecordState;
         }
-        if ((b.flags & echtzeit::kFlagContinuousGueltig) != 0)
+        // Auch die optionale Continuous-Uhr bezeichnet denselben Frameanfang.
+        // Ihr Beweis wird pro Sample durch FFT-Ringe und ueber alle Skalar-
+        // bloecke gefuehrt; eine bloss lokal zurueckgerechnete Hostzahl waere
+        // bei fehlendem oder springendem Continuous-Feld erfunden.
+        if (gesamt.continuousGueltig)
         {
             t.continuous_time_samples_gesetzt = true;
-            t.continuous_time_samples = b.continuousTimeSamples;
+            t.continuous_time_samples = gesamt.continuousStart;
             t.gueltigkeit |= kGContinuousTime;
         }
 
         t.cycle_active = (b.flags & echtzeit::kFlagCycleAktiv) != 0;
-        if ((b.flags & echtzeit::kFlagCycleGrenzenGueltig) != 0)
+        const bool cycleGrenzenBrauchbar
+            = (b.flags & echtzeit::kFlagCycleGrenzenGueltig) != 0
+           && std::isfinite (b.cycleStartPpq)
+           && std::isfinite (b.cycleEndePpq)
+           && b.cycleEndePpq >= b.cycleStartPpq;
+        if (cycleGrenzenBrauchbar)
         {
             t.cycle_bounds_valid = true;
             t.cycle_start_ppq_gesetzt = true;
@@ -1683,6 +2036,8 @@ private:
     // Nur auf der Live-Seite: §33.2 fuehrt "Breite/Korrelation" bei der
     // Live-Telemetrie und beim Evidenzsnapshot ausdruecklich nicht.
     Breite liveBreiteAkku[Gitter::evidenzBaender] {};
+    Support liveSupport {};
+    Support evidenzSupport {};
 
     // Loudness
     KKette kL, kR;
@@ -1694,10 +2049,16 @@ private:
     // Rahmen (zwischen zwei Live-Frames)
     double rahmenPeak { 0.0 }, rahmenSummeQuadrat { 0.0 };
     std::uint64_t rahmenSamples { 0 };
+    echtzeit::StampedBlock rahmenStartBlock {};
+    bool rahmenProjektDurchgehend { false };
+    bool rahmenContinuousDurchgehend { false };
     double rahmenMid2 { 0.0 }, rahmenSide2 { 0.0 };
     double rahmenL { 0.0 }, rahmenR { 0.0 }, rahmenL2 { 0.0 }, rahmenR2 { 0.0 }, rahmenLR { 0.0 };
     std::uint64_t rahmenAktivZellen { 0 }, rahmenZellen { 0 };
     std::uint64_t liveSamples { 0 }, evidenzSamples { 0 };
+    bool evidenzContinuousHabe { false };
+    bool evidenzContinuousDurchgehend { true };
+    std::int64_t evidenzContinuousErwartet { 0 };
 
     // Ereignisse
     std::vector<Ereignis> ereignisse;

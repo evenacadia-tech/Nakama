@@ -179,13 +179,45 @@ TEXTRIEGEL_FAELLE: list[tuple[str, bool, str]] = [
     ('{"w": -0}', False, "negative Null ebenso"),
     ('{"w": 0.5}', False, "und als Vorkommastelle eines Bruchs"),
 
+    # JSON Schema wertet den mathematischen Wert: auch 5.0 und 5e0 sind
+    # Integer. Die sichere Grenze darf deshalb nicht an der Schreibweise
+    # ohne Dezimalpunkt/Exponent haengen.
+    ('{"w": 9007199254740991.0}', False, "2^53-1 auch als Dezimalform"),
+    ('{"w": -9007199254740991.0}', False, "negative Dezimalgrenze"),
+    ('{"w": 9007199254740991e0}', False, "2^53-1 in Exponentialform"),
+    ('{"w": 90071992547409910e-1}', False, "sichere Grenze mit entfernbarer Endnull"),
+    ('{"w": 0.9007199254740991e16}', False, "sichere Grenze aus einem echten Bruch"),
+    ('{"w": 90071992547409.1}', False, "nichtganzzahlig mit 15 signifikanten Ziffern"),
+    ('{"w": 90071992547409.1000}', False, "aequivalente Endnullen aendern die Praezision nicht"),
+    ('{"w": 1.2300000000000000}', False, "Endnullen sind keine zusaetzliche Wertpraezision"),
+    ('{"w": 1.23456789012345e-100}', False, "15 signifikante Ziffern mit Exponent"),
+    ('{"w": 1.00000000000001}', False, "15 signifikante Ziffern an der Praezisionskante"),
+    ('{"w": -0.0}', False, "negative Null als Dezimalform"),
+    ('{"w": -0e0}', False, "negative Null in Exponentialform"),
+    ('{"w": 9007199254740992.0}', True,
+     "eine zu grosse Ganzzahl darf sich nicht hinter .0 verstecken"),
+    ('{"w": -9007199254740992.0}', True, "derselbe Bypass mit negativem Vorzeichen"),
+    ('{"w": 9007199254740992e0}', True, "derselbe Bypass in Exponentialform"),
+    ('{"w": 90071992547409920e-1}', True, "Endnull und negativer Exponent"),
+    ('{"w": -90071992547409920e-1}', True, "Endnull, Exponent und negatives Vorzeichen"),
+    ('{"w": 0.9007199254740992e16}', True, "Ganzzahl aus Bruch und positivem Exponenten"),
+    ('{"w": 9007199254740992e-1}', True,
+     "nichtganzzahlig, aber mehr als 15 signifikante Ziffern"),
+    ('{"w": 9007199254740991.1}', True,
+     "GEMESSEN: Python und C++ runden auf eine Ganzzahl; Rust kann abweichend runden"),
+    ('{"w": 9007199254740992.1}', True, "binary64 verliert den Nachkommateil"),
+    ('{"w": 4503599627370495.9}', True, "binary64 rundet auch unterhalb 2^52 auf ganzzahlig"),
+    ('{"w": 1.00000000000000001}', True, "kleiner Wert, aber Nachkommateil geht in binary64 verloren"),
+    ('{"w": 1.000000000000001}', True, "16 signifikante Ziffern fallen konservativ"),
+
     # --- Gleitkommabereich (T2-Runde 2, BL-1/BL-2/BF-1) --------------------
     ('{"w": 1e400}', True, "als binary64 unendlich"),
     ('{"w": -1e400}', True, "auch negativ"),
     ('{"w": 1e-400}', True,
      "unterlaeuft zu 0. Der Riegel lehnt ab, damit alle drei Beine DASSELBE "
      "sagen statt drei stille Nullen zu erzeugen"),
-    ('{"w": 1e307}', False, "gerade noch im Vertragsbereich"),
+    ('{"w": 1e307}', True,
+     "zwar unter 1e308, aber mathematisch eine Ganzzahl weit oberhalb 2^53-1"),
     ('{"w": 1e308}', True, "die Grenze selbst liegt ausserhalb"),
     ('{"w": 1.5e3}', False, "gewoehnliche Exponentialform"),
     ('{"w": 4.8e4}', False, "eine legitime Samplerate in Exponentialform"),
@@ -264,6 +296,16 @@ TEXTRIEGEL_BYTEFAELLE: list[tuple[bytes, bool, str]] = [
      "BF-6 GEMESSEN: kaputtes UTF-8. Das Python-Bein warf eine ungefangene "
      "UnicodeDecodeError, das Rust-Bein panickte beim Lesen, und JUCE ersetzte das "
      "Byte still - drei verschiedene Ausgaenge fuer dieselbe Datei"),
+    (b'{"w":"\xc3("}', True,
+     "ungueltiges Fortsetzungsbyte: JUCEs isValidString prueft dessen 10xxxxxx-Form nicht"),
+    (b'{"w":"\x80"}', True, "freistehendes Fortsetzungsbyte"),
+    (b'{"w":"\xc0\xaf"}', True, "overlong kodierter ASCII-Codepunkt"),
+    (b'{"w":"\xed\xa0\x80"}', True, "UTF-8-kodierter Surrogat-Codepunkt"),
+    (b'{"w":"\xf4\x90\x80\x80"}', True, "Codepunkt oberhalb U+10FFFF"),
+    (b'{"w":"\xe2\x82"}', True, "abgeschnittene Mehrbytefolge"),
+    (b'{"w": 1}\x00{"hinter_dem_nul": true}', True,
+     "GEMESSEN: JUCEs UTF-8-Pruefer und Stringaufbau endeten am rohen NUL und "
+     "nahmen nur den gueltigen Praefix an; Rust und Python beurteilen die ganze Bytefolge"),
     (b'{"w": 1}', False, "dieselbe Nachricht ohne BOM ist gueltig"),
 ]
 
@@ -615,6 +657,10 @@ UNGUELTIG: list[tuple] = [
     ("state-report-ohne-record-state", "state_report", [loesche("record_state")],
      [v("", f"{S}/state_report/required/record_state", "required")],
      "unbekannter Aufnahmezustand blockiert sichtbar (§33.4) — er darf nicht fehlen"),
+
+    ("state-report-ohne-state-hash", "state_report", [loesche("state_hash")],
+     [v("", f"{S}/state_report/required/state_hash", "required")],
+     "kein Stand wird explizit als null gemeldet; ein fehlendes Feld ist keine dritte Wahrheit"),
 
     ("record-state-ohne-valid", "state_report", [loesche("record_state", "valid")],
      [v("/record_state", f"{S}/state_report/properties/record_state/required/valid", "required")],
@@ -1294,7 +1340,7 @@ BS = chr(92)   # Backslash — als Literal frisst ihn jede Zwischenschicht
 def rohtext_faelle() -> list[tuple[str, bytes, str]]:
     """Fixtures, die der TEXTRIEGEL abweisen muss — vor jedem Parser.
 
-    Diese sieben lassen sich nicht ueber `json.dumps` erzeugen: eine fuehrende
+    Diese elf lassen sich nicht ueber `json.dumps` erzeugen: eine fuehrende
     Null oder ein einsames Surrogat ist keine Ausgabe, die ein Serialisierer
     je schreiben wuerde. Sie entstehen deshalb aus einer gueltigen Grundform
     durch eine TEXTUELLE Ersetzung — so bleibt drumherum eine echte Nachricht
@@ -1313,6 +1359,27 @@ def rohtext_faelle() -> list[tuple[str, bytes, str]]:
         ("zahl-ueber-2hoch53",
          aus("heartbeat", '"sequence": 91', '"sequence": 9007199254740992'),
          "2^53 ist die erste ganze Zahl, die binary64 nicht mehr exakt traegt"),
+
+        ("zahl-bruch-rundet-nahe-2hoch53-ab",
+         aus("heartbeat", '"sequence": 91', '"sequence": 9007199254740991.1'),
+         "GEMESSEN: Python und Rust koennen aus denselben Bytes verschiedene "
+         "Ganzzahlen bilden; alle drei Schema-Engines sahen vor dem Textriegel "
+         "statt des mathematischen Bruchs eine zulaessige Ganzzahl"),
+
+        ("zahl-bruch-rundet-auf-2hoch53",
+         aus("heartbeat", '"sequence": 91', '"sequence": 9007199254740992.1'),
+         "Der mathematische Bruch rundet in binary64 auf 2^53 und konnte so die "
+         "Schema-Typpruefung fuer integer umgehen"),
+
+        ("zahl-bruch-rundet-unter-2hoch53-auf",
+         aus("heartbeat", '"sequence": 91', '"sequence": 4503599627370495.9'),
+         "Der mathematische Bruch rundet in binary64 auf eine scheinbar sichere "
+         "Ganzzahl unterhalb von 2^53"),
+
+        ("zahl-kleiner-bruch-rundet-auf-eins",
+         aus("heartbeat", '"sequence": 91', '"sequence": 1.00000000000000001'),
+         "Ein hochpraeziser mathematischer Bruch rundet in binary64 auf 1 und "
+         "konnte so die Schema-Typpruefung fuer integer umgehen"),
 
         ("zahl-jenseits-u64",
          aus("heartbeat", '"sequence": 91', '"sequence": 18446744073709552016'),

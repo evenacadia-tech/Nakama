@@ -1,5 +1,11 @@
 #include "NakamaKernRiegel.h"   // S8/SONDE-007a: K1 — keine JucePlugin_*-Konstante im Kern
 #include "NakamaState.h"
+#include "NakamaUtf8.h"
+
+#include <cstdint>
+#include <cstring>
+#include <limits>
+#include <new>
 
 namespace nakama::state
 {
@@ -28,6 +34,248 @@ constexpr int kRootSchema   = 2;
 constexpr int kCommonSchema = 1;
 constexpr int kMainSchema   = 1;
 constexpr int kParamSchema  = 1;
+
+// `ValueTree::readFromData()` ist absichtlich tolerant: es prueft weder EOF
+// noch einen abgebrochenen spaeten Kindbaum und `var::readFromStream()` glaubt
+// deklarierte Binaerlaengen. Host-State ist jedoch ein persistenter Vertrag,
+// kein Best-Effort-Stream. Dieser kleine, allokationsfreie Vorleser akzeptiert
+// deshalb nur genau EINEN vollstaendigen, begrenzten JUCE-ValueTree.
+constexpr size_t kMaxStateBytes = 16u * 1024u * 1024u;
+constexpr int kMaxStateTiefe = 64;
+constexpr int kMaxVariantenTiefe = 64;
+constexpr int kMaxEintraegeJeSammlung = 65536;
+constexpr int kMaxEintraegeGesamt = 262144;
+
+enum class BytePruefung
+{
+    ungueltig,
+    verlustfrei,
+    bekannteWurzelNichtVerlustfrei
+};
+
+class ValueTreeByteRiegel
+{
+public:
+    ValueTreeByteRiegel (const void* daten, size_t laenge)
+        : anfang (static_cast<const std::uint8_t*> (daten)), pos (anfang),
+          ende (anfang != nullptr ? anfang + laenge : nullptr)
+    {
+    }
+
+    BytePruefung pruefe()
+    {
+        if (anfang == nullptr || anfang == ende)
+            return BytePruefung::ungueltig;
+
+        if (! baum (0) || pos != ende)
+            return BytePruefung::ungueltig;
+        if (nichtVerlustfrei && bekannteWurzel)
+            return BytePruefung::bekannteWurzelNichtVerlustfrei;
+        return BytePruefung::verlustfrei;
+    }
+
+private:
+    bool hat (size_t n) const noexcept
+    {
+        return n <= static_cast<size_t> (ende - pos);
+    }
+
+    bool komprimierteZahl (std::int64_t& aus)
+    {
+        if (! hat (1))
+            return false;
+
+        const auto kopf = *pos++;
+        if (kopf == 0)
+        {
+            aus = 0;
+            return true;
+        }
+
+        const auto n = static_cast<size_t> (kopf & 0x7fu);
+        if (n == 0 || n > 4 || ! hat (n))
+            return false;
+
+        std::uint32_t wert = 0;
+        for (size_t i = 0; i < n; ++i)
+            wert |= static_cast<std::uint32_t> (pos[i]) << (8u * static_cast<unsigned> (i));
+        pos += n;
+
+        if ((kopf & 0x80u) != 0)
+        {
+            if (wert > 0x80000000u)
+                return false;
+            aus = -static_cast<std::int64_t> (wert);
+        }
+        else
+        {
+            if (wert > static_cast<std::uint32_t> (std::numeric_limits<int>::max()))
+                return false;
+            aus = static_cast<std::int64_t> (wert);
+        }
+        return true;
+    }
+
+    bool utf8CString (bool darfLeerSein, bool istWurzel = false)
+    {
+        const auto rest = static_cast<size_t> (ende - pos);
+        const auto* nul = static_cast<const std::uint8_t*> (std::memchr (pos, 0, rest));
+        if (nul == nullptr || (! darfLeerSein && nul == pos))
+            return false;
+
+        const auto n = static_cast<size_t> (nul - pos);
+        if (n > static_cast<size_t> (std::numeric_limits<int>::max())
+            || ! utf8::istGueltig (pos, n))
+            return false;
+
+        if (istWurzel)
+        {
+            const auto gleich = [this, n] (const char* text)
+            {
+                return n == std::strlen (text)
+                    && std::memcmp (pos, text, n) == 0;
+            };
+            bekannteWurzel = gleich ("NakamaState") || gleich ("EqCopilotState");
+        }
+
+        pos = nul + 1;
+        return true;
+    }
+
+    bool zaehler (int& aus)
+    {
+        std::int64_t wert = 0;
+        if (! komprimierteZahl (wert) || wert < 0 || wert > kMaxEintraegeJeSammlung)
+            return false;
+        if (eintraegeGesamt > kMaxEintraegeGesamt - static_cast<int> (wert))
+            return false;
+        eintraegeGesamt += static_cast<int> (wert);
+        aus = static_cast<int> (wert);
+        return true;
+    }
+
+    bool variante (int tiefe)
+    {
+        if (tiefe >= kMaxVariantenTiefe)
+            return false;
+
+        std::int64_t laenge64 = 0;
+        if (! komprimierteZahl (laenge64) || laenge64 < 0)
+            return false;
+        if (laenge64 == 0)
+            return true;
+
+        const auto laenge = static_cast<size_t> (laenge64);
+        if (! hat (laenge))
+            return false;
+
+        const auto* const variantenEnde = pos + laenge;
+        const auto marke = *pos++;
+        const auto nutzlaenge = laenge - 1u;
+
+        switch (marke)
+        {
+            case 1: // int32
+                if (nutzlaenge != 4u) return false;
+                pos += 4;
+                break;
+            case 2: // bool true
+            case 3: // bool false
+                if (nutzlaenge != 0u) return false;
+                break;
+            case 4: // double
+            case 6: // int64
+                if (nutzlaenge != 8u) return false;
+                pos += 8;
+                break;
+            case 5: // UTF-8 inklusive genau eines abschliessenden NUL
+            {
+                if (nutzlaenge == 0u || variantenEnde[-1] != 0
+                    || std::memchr (pos, 0, nutzlaenge - 1u) != nullptr
+                    || nutzlaenge - 1u > static_cast<size_t> (std::numeric_limits<int>::max())
+                    || ! utf8::istGueltig (pos, nutzlaenge - 1u))
+                    return false;
+                pos = variantenEnde;
+                break;
+            }
+            case 7: // Array: eigener, laengenbegrenzter Unterstrom
+            {
+                const auto* const altesEnde = ende;
+                ende = variantenEnde;
+                int n = 0;
+                const bool kopfOk = zaehler (n);
+                bool inhaltOk = kopfOk;
+                for (int i = 0; inhaltOk && i < n; ++i)
+                    inhaltOk = variante (tiefe + 1);
+                const bool genau = inhaltOk && pos == ende;
+                ende = altesEnde;
+                if (! genau)
+                    return false;
+                break;
+            }
+            case 8: // MemoryBlock
+                pos = variantenEnde;
+                break;
+            case 9: // undefined
+            default:
+                // JUCE 8 schreibt `undefined` als Marker 9, liest Marker 9 und
+                // unbekannte Marker aber als void. Ein schreibbarer Load
+                // wuerde die Bytes beim naechsten Save still veraendern. Die
+                // Struktur ist sicher ueberspringbar, der bekannte State wird
+                // deshalb als read-only mit Originalbytes gehalten.
+                nichtVerlustfrei = true;
+                pos = variantenEnde;
+                break;
+        }
+
+        return pos == variantenEnde;
+    }
+
+    bool baum (int tiefe)
+    {
+        if (tiefe >= kMaxStateTiefe || ! utf8CString (false, tiefe == 0))
+            return false;
+
+        int eigenschaften = 0;
+        if (! zaehler (eigenschaften))
+            return false;
+        for (int i = 0; i < eigenschaften; ++i)
+            if (! utf8CString (false) || ! variante (0))
+                return false;
+
+        int kinder = 0;
+        if (! zaehler (kinder))
+            return false;
+        for (int i = 0; i < kinder; ++i)
+            if (! baum (tiefe + 1))
+                return false;
+        return true;
+    }
+
+    const std::uint8_t* anfang = nullptr;
+    const std::uint8_t* pos = nullptr;
+    const std::uint8_t* ende = nullptr;
+    int eintraegeGesamt = 0;
+    bool bekannteWurzel = false;
+    bool nichtVerlustfrei = false;
+};
+
+BytePruefung pruefeValueTreeBytes (const void* daten, size_t laenge)
+{
+    if (laenge > kMaxStateBytes)
+        return BytePruefung::ungueltig;
+    return ValueTreeByteRiegel (daten, laenge).pruefe();
+}
+
+bool istHex32 (const juce::String& wert)
+{
+    if (wert.length() != 32)
+        return false;
+    for (const auto c : wert)
+        if (! ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')))
+            return false;
+    return true;
+}
 
 bool istInt (const juce::var& v, int erwartet)
 {
@@ -259,6 +507,75 @@ juce::ValueTree synchronisiert (const Zustand& z)
     return kopie;
 }
 
+/** Beweist beim Laden, dass jede heute ueber die Produkt-API erreichbare
+    Aenderung wieder einen State <= 16 MiB schreibt. Eine pauschale Reserve
+    funktioniert hier nicht: sobald der Writer sie verbraucht, laege sein
+    eigenes Ergebnis oberhalb derselben Schreibbar-Schwelle. Deshalb wird der
+    groesste konkrete Folgezustand gegen den gehaltenen additiven Baum gebaut.
+
+    Die UI-Grenzen gelten in Unicode-Codepunkten. U+10FFFF belegt vier UTF-8-
+    Bytes und bildet damit die echte Worst-Case-Groesse fuer 120/60 Zeichen. */
+bool hatWriterHeadroom (const Zustand& eingang, const Bundle& bundle)
+{
+    auto maximalerText = [] (int zeichen)
+    {
+        juce::String s;
+        s.preallocateBytes (zeichen * 4);
+        for (int i = 0; i < zeichen; ++i)
+            s += juce::String::charToString (static_cast<juce::juce_wchar> (0x10ffff));
+        return s;
+    };
+    auto laenger = [] (const juce::String& a, const juce::String& b)
+    {
+        return a.getNumBytesAsUTF8() >= b.getNumBytesAsUTF8() ? a : b;
+    };
+    auto passt = [] (const Zustand& kandidat)
+    {
+        try
+        {
+            juce::MemoryBlock bytes;
+            juce::MemoryOutputStream strom (bytes, false);
+            synchronisiert (kandidat).writeToStream (strom);
+            strom.flush();
+            return bytes.getSize() <= kMaxStateBytes;
+        }
+        catch (...)
+        {
+            return false;
+        }
+    };
+
+    Zustand kandidat = eingang;
+    kandidat.common.instanceId = laenger (eingang.common.instanceId,
+                                          "ffffffffffffffffffffffffffffffff");
+    kandidat.common.label = laenger (eingang.common.label, maximalerText (120));
+    kandidat.common.pairId = laenger (eingang.common.pairId, maximalerText (60));
+    kandidat.common.projectBindingId = laenger (
+        eingang.common.projectBindingId, "ffffffffffffffffffffffffffffffff");
+
+    // Eqcp kann zwischen main und legacy sowie allen heute erlaubten v2-
+    // Positionen wechseln. Fuer Sonden ist die Menge kleiner; die Schleife
+    // bleibt trotzdem die eine Wahrheit aus dem Bundlevertrag.
+    constexpr Messposition positionen[] = {
+        Messposition::insert, Messposition::pre, Messposition::post,
+        Messposition::post_fader_contribution
+    };
+    for (const auto klasse : bundle.klassen)
+    {
+        for (const auto position : positionen)
+        {
+            if (! positionErlaubt (klasse, position))
+                continue;
+            kandidat.common.klasse = klasse;
+            kandidat.common.position = position;
+            kandidat.hatParameters = klasse == Klasse::active_probe;
+            if (! passt (kandidat))
+                return false;
+        }
+    }
+    return true;
+}
+
 /** Liest einen NakamaState-Baum vollstaendig oder gar nicht. */
 bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, juce::String& grund)
 {
@@ -320,10 +637,16 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
     if (common.hasProperty (kLabel) && ! label.isString()) { grund = "Common.label is not a string"; return false; }
     c.label = label.toString();
     const auto pair = common.getProperty (kPairId);
-    if (common.hasProperty (kPairId) && ! pair.isString()) { grund = "Common.pair_id is not a string"; return false; }
+    if (common.hasProperty (kPairId) && (! pair.isString() || pair.toString().isEmpty()))
+    {
+        grund = "Common.pair_id must be a non-empty string"; return false;
+    }
     c.pairId = pair.toString();
     const auto binding = common.getProperty (kBinding);
-    if (common.hasProperty (kBinding) && ! binding.isString()) { grund = "Common.project_binding_id is not a string"; return false; }
+    if (common.hasProperty (kBinding) && (! binding.isString() || ! istHex32 (binding.toString())))
+    {
+        grund = "Common.project_binding_id must be lowercase hex32"; return false;
+    }
     c.projectBindingId = binding.toString();
 
     // Kind-Matrix (§2.1 des Vertrags).
@@ -414,10 +737,6 @@ bool migriereSchema1 (const juce::ValueTree& alt, juce::ValueTree& neu, juce::St
 
 LadeErgebnis lade (const void* daten, size_t laenge, const Bundle& bundle, Zustand& aus)
 {
-    const auto v = juce::ValueTree::readFromData (daten, laenge);
-    if (! v.isValid())
-        return LadeErgebnis::ignoriert;
-
     auto nurLesen = [&] (const juce::String& grund, const juce::ValueTree& baum) -> LadeErgebnis
     {
         Zustand z;
@@ -431,6 +750,28 @@ LadeErgebnis lade (const void* daten, size_t laenge, const Bundle& bundle, Zusta
         return LadeErgebnis::nurLesen;
     };
 
+    const auto bytePruefung = pruefeValueTreeBytes (daten, laenge);
+    if (bytePruefung == BytePruefung::ungueltig)
+        return LadeErgebnis::ignoriert;
+    if (bytePruefung == BytePruefung::bekannteWurzelNichtVerlustfrei)
+        return nurLesen ("variant marker is not losslessly readable by this JUCE version", {});
+
+    juce::ValueTree v;
+    try
+    {
+        v = juce::ValueTree::readFromData (daten, laenge);
+    }
+    catch (const std::bad_alloc&)
+    {
+        return LadeErgebnis::ignoriert;
+    }
+    catch (...)
+    {
+        return LadeErgebnis::ignoriert;
+    }
+    if (! v.isValid())
+        return LadeErgebnis::ignoriert;
+
     if (v.hasType (kAltRoot))
     {
         juce::ValueTree neu;
@@ -440,6 +781,8 @@ LadeErgebnis lade (const void* daten, size_t laenge, const Bundle& bundle, Zusta
         Zustand z;
         if (! leseSchema2 (neu, bundle, z, grund))
             return nurLesen ("migration did not yield a readable state: " + grund, v);
+        if (! hatWriterHeadroom (z, bundle))
+            return nurLesen ("state leaves no bounded headroom for a losslessly reloadable save", v);
         z.herkunft = Herkunft::schema1Migriert;
         aus = z;
         return LadeErgebnis::migriert;
@@ -451,6 +794,8 @@ LadeErgebnis lade (const void* daten, size_t laenge, const Bundle& bundle, Zusta
         juce::String grund;
         if (! leseSchema2 (v, bundle, z, grund))
             return nurLesen (grund, v);
+        if (! hatWriterHeadroom (z, bundle))
+            return nurLesen ("state leaves no bounded headroom for a losslessly reloadable save", v);
         z.herkunft = Herkunft::schema2Geladen;
         aus = z;
         return LadeErgebnis::geladen;

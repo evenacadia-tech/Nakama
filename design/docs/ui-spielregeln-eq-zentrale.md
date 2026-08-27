@@ -186,9 +186,10 @@
     zuerst — die Fläche bleibt minimal und kostet geschlossen nichts.
     Inhalt: CONNECTED/DISCONNECTED · EQ-Mode-Punkt grün/rot · aktuell
     veränderte EQ-Werte (Anzeige) · Bypass (bedienbar) · Mix (bedienbar).
-    Prüfstein für jeden weiteren Inhalt: „was könnte den User veranlassen,
-    Probeeq zu öffnen statt gleich Gen?" Finaler Zuschnitt erst, wenn der
-    User Gens Je-Sonde-Anzeige gesehen hat (offen).
+    Entscheid 27.08.: Probeeq ist ohne Gen **kein** lokal vollständiger EQ;
+    Band-, Kurven- und Präzisionsbedienung liegen ausschließlich in Gen. Die
+    frühere Leitfrage „was könnte den User veranlassen, Probeeq statt Gen zu
+    öffnen?" begründet keinen zweiten Voll-Editor mehr.
 35. **Master-EQ-Umfang: das Rad nicht neu erfinden** — Vorbild Pro-Q /
     Smooth Operator Pro, Machbarkeit bewertet die Technik. Die sechs
     Filtertypen des Vertrags (bell, low/high_shelf, notch, low/high_cut)

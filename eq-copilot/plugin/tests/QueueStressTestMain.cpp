@@ -23,13 +23,18 @@
 // Exit 0 nur bei "QUEUE-STRESSTEST OK".
 #include "PluginProcessor.h"
 #include "StampedAudioQueue.h"
+#include "WorkerCadence.h"
 
+#include <atomic>
 #include <chrono>
 #include <cmath>
+#include <condition_variable>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <memory>
+#include <mutex>
 #include <new>
 #include <string>
 #include <thread>
@@ -123,6 +128,70 @@ namespace
             p.setTimeInSamples (pos);
             return p;
         }
+    };
+
+    /** Testbarriere fuer das Reset-Race: `getPosition()` liegt im echten
+        Prozesspfad vor der Queue-Publikation und Fensterfortschreibung. Der
+        Steuerthread kann dort deterministisch eine neue Generation anfordern
+        und danach genau diesen Callback freigeben. */
+    struct BlockierenderPlayHead : juce::AudioPlayHead
+    {
+        void setzePosition (juce::int64 neuePosition)
+        {
+            std::lock_guard<std::mutex> l (mutex);
+            position = neuePosition;
+        }
+
+        void blockiereNaechstenAbruf (juce::int64 neuePosition)
+        {
+            std::lock_guard<std::mutex> l (mutex);
+            position = neuePosition;
+            sollBlockieren = true;
+            eingetreten = false;
+            darfWeiter = false;
+        }
+
+        bool warteBisEingetreten()
+        {
+            std::unique_lock<std::mutex> l (mutex);
+            return zustand.wait_for (l, std::chrono::seconds (2),
+                                     [this] { return eingetreten; });
+        }
+
+        void freigeben()
+        {
+            {
+                std::lock_guard<std::mutex> l (mutex);
+                darfWeiter = true;
+            }
+            zustand.notify_all();
+        }
+
+        juce::Optional<PositionInfo> getPosition() const override
+        {
+            std::unique_lock<std::mutex> l (mutex);
+            if (sollBlockieren)
+            {
+                eingetreten = true;
+                zustand.notify_all();
+                zustand.wait (l, [this] { return darfWeiter; });
+                sollBlockieren = false;
+            }
+            const auto aktuell = position;
+            l.unlock();
+
+            PositionInfo p;
+            p.setIsPlaying (true);
+            p.setTimeInSamples (aktuell);
+            return p;
+        }
+
+        mutable std::mutex mutex;
+        mutable std::condition_variable zustand;
+        mutable bool sollBlockieren = false;
+        mutable bool eingetreten = false;
+        mutable bool darfWeiter = false;
+        mutable juce::int64 position = 0;
     };
 
     /** Wie EqCopMarkierungTest: den echten Weg des Users gehen (Editor auf,
@@ -243,10 +312,14 @@ int main()
 
         int angenommen = 0;
         std::int64_t zeit = 0;
+        bool lueckeBeiAbweisung = true;
         // 1024 Frames Ring / 256 je Block => vier passen, der fuenfte nicht.
         for (int i = 0; i < 6; ++i)
         {
-            if (q.veroeffentliche (&t, 1, 2, 256, stempelBei (zeit))) ++angenommen;
+            const bool an = q.veroeffentliche (
+                &t, 1, 2, 256, stempelBei (zeit), nullptr,
+                i == 4 ? &lueckeBeiAbweisung : nullptr);
+            if (an) ++angenommen;
             zeit += 256;
         }
         pruefe (angenommen == 4, "vier Bloecke passen, danach ist Schluss",
@@ -255,6 +328,8 @@ int main()
                 std::to_string (q.dropsUeberlauf()));
         pruefe (q.verloreneFrames() == 512, "verlorene Frames = 2 x 256 (keine Teilmenge)",
                 std::to_string (q.verloreneFrames()));
+        pruefe (! lueckeBeiAbweisung,
+                "ein verworfener Block behauptet die noch ausstehende Luecke nicht selbst");
 
         // Nichts Halbes im Ring: genau vier Deskriptoren, jeder voll.
         int drin = 0; bool vollstaendig = true;
@@ -269,9 +344,13 @@ int main()
 
         // Gegenpfad fuellen<->leeren: nach dem Leeren nimmt sie wieder an, und
         // der erste neue Block traegt die Luecke samt neuem Segment.
-        const bool wiederAn = q.veroeffentliche (&t, 1, 2, 256, stempelBei (zeit));
+        bool lueckeVorBlock = false;
+        const bool wiederAn = q.veroeffentliche (
+            &t, 1, 2, 256, stempelBei (zeit), nullptr, &lueckeVorBlock);
         const auto* b = q.spitze();
         pruefe (wiederAn && b != nullptr, "nach dem Leeren nimmt der Ring wieder an");
+        pruefe (lueckeVorBlock,
+                "die Produzentenrueckmeldung markiert genau den angenommenen Lueckenblock");
         pruefe (b != nullptr && (b->flags & kFlagLueckeDavor) != 0,
                 "der erste Block nach dem Verlust traegt kFlagLueckeDavor");
         pruefe (b != nullptr && b->segment == 1,
@@ -650,6 +729,25 @@ int main()
         pruefe (p.analyseDropsOversize() == vorher + 1,
                 "und ist als Oversize-Drop der ANALYSE gezaehlt",
                 std::to_string (p.analyseDropsOversize()));
+
+        const auto nachDrop = p.messKompakt();
+        pruefe (! nachDrop.fensterGueltig,
+                "der abgewiesene Oversize-Block erscheint nicht im Projektfenster");
+
+        kopf.pos += n;
+        constexpr int folgeFrames = 64;
+        juce::AudioBuffer<float> folge (puffer.getArrayOfWritePointers(), 2, folgeFrames);
+        p.processBlock (folge, midi);
+        const auto nachLuecke = p.messKompakt();
+        pruefe (nachLuecke.fensterGueltig
+                    && nachLuecke.fensterVon == n
+                    && nachLuecke.fensterBis == n + folgeFrames,
+                "der naechste angenommene Lueckenblock beginnt das Fenster exakt neu",
+                std::to_string (nachLuecke.fensterVon) + ".."
+                    + std::to_string (nachLuecke.fensterBis));
+        pruefe (nachLuecke.fensterSpruenge == 0,
+                "der Analyseverlust wird nicht als Seek im alten Fenster ausgegeben",
+                std::to_string (nachLuecke.fensterSpruenge));
         p.setPlayHead (nullptr);
     }
 
@@ -832,12 +930,20 @@ int main()
 
         // Gegenprobe: der erste Block DANACH traegt die neue Nummer - sonst
         // koennte O gruen sein, weil gar nichts mehr durchkommt.
-        q.veroeffentliche (&t, 1, 2, 64, stempelBei (zeit));
+        bool neustartUebernommen = false;
+        q.veroeffentliche (&t, 1, 2, 64, stempelBei (zeit), &neustartUebernommen);
+        pruefe (neustartUebernommen,
+                "der Produzent meldet exakt den Zug, der den Neuanlauf uebernimmt");
         const auto* neu = q.spitze();
         pruefe (neu != nullptr && neu->startFolge == q.aktuellerAnlauf(),
                 "Gegenprobe: der erste Block nach dem Neuanlauf gilt als aktuell");
         pruefe (neu != nullptr && (neu->flags & kFlagLueckeDavor) != 0,
                 "und er traegt die Luecke, die der Neuanlauf gerissen hat");
+
+        neustartUebernommen = true;  // Out-Parameter muss immer beschrieben werden.
+        q.veroeffentliche (&t, 1, 2, 64, stempelBei (zeit + 64), &neustartUebernommen);
+        pruefe (! neustartUebernommen,
+                "der Folgezug meldet keinen bereits verbrauchten Neuanlauf erneut");
 
         // Zwei Neuanlaeufe ohne Audioblock dazwischen duerfen sich nicht
         // gegenseitig verschlucken.
@@ -848,10 +954,28 @@ int main()
                 "zwei Neuanlaeufe hintereinander gehen beide nicht verloren",
                 std::to_string (a1) + " -> " + std::to_string (q.aktuellerAnlauf()));
         while (q.spitze()) q.freigeben();
-        q.veroeffentliche (&t, 1, 2, 64, stempelBei (zeit + 64));
+        neustartUebernommen = false;
+        q.veroeffentliche (&t, 1, 2, 64, stempelBei (zeit + 128),
+                           &neustartUebernommen);
         const auto* nach = q.spitze();
+        pruefe (neustartUebernommen,
+                "zwei zusammengefallene Anforderungen ergeben eine uebernommene Endgeneration");
         pruefe (nach != nullptr && nach->startFolge == q.aktuellerAnlauf(),
                 "und der Produzent holt sich die ENDGUELTIGE Nummer, nicht die erste");
+
+        // Ein Flush hat keine Audiozeit und darf die wartende Generation nicht
+        // konsumieren. Der Out-Parameter bleibt dabei trotzdem definiert.
+        while (q.spitze()) q.freigeben();
+        q.neustartAnfordern();
+        neustartUebernommen = true;
+        pruefe (! q.veroeffentliche (&t, 1, 2, 0, stempelBei (zeit + 192),
+                                     &neustartUebernommen)
+                    && ! neustartUebernommen,
+                "Nullframe konsumiert die wartende Generation nicht");
+        q.veroeffentliche (&t, 1, 2, 64, stempelBei (zeit + 192),
+                           &neustartUebernommen);
+        pruefe (neustartUebernommen,
+                "der naechste echte Block uebernimmt sie weiterhin");
     }
 
     //==========================================================================
@@ -942,6 +1066,264 @@ int main()
                     "ohne gueltiges „spielt“ bleibt eine wandernde Zeit unbewertet",
                     std::to_string (quar.kontinuitaetsbrueche()));
         }
+    }
+
+    //==========================================================================
+    std::cout << "== Q - Worker-Kadenz: monotone Deadlines statt Batchzaehler ==" << std::endl;
+    {
+        using Kadenz = eqcop::detail::WorkerKadenz;
+        using namespace std::chrono_literals;
+        const Kadenz::Zeitpunkt null {};
+        Kadenz k (null);
+
+        const auto sofort = k.faellig (null);
+        pruefe (sofort.leicht && ! sofort.schwer,
+                "nach Start ist nur die leichte Publikation sofort faellig");
+
+        bool batchSturmBeschleunigt = false;
+        for (int zug = 0; zug < 10000; ++zug)
+            batchSturmBeschleunigt = batchSturmBeschleunigt || k.faellig (null + 1ms).schwer;
+        pruefe (! batchSturmBeschleunigt,
+                "10 000 Workerzuege bei gleicher Wanduhr loesen keine Schwer-Auswertung aus");
+
+        const auto vorDeadline = k.faellig (null + 249ms);
+        pruefe (! vorDeadline.schwer, "vor 250 ms bleibt Gating/Kandidaten gesperrt");
+        const auto aufDeadline = k.faellig (null + 250ms);
+        pruefe (aufDeadline.schwer && ! aufDeadline.leicht,
+                "bei 250 ms ist genau die schwere Runde faellig");
+        pruefe (! k.faellig (null + 250ms).schwer,
+                "dieselbe Deadline kann nicht zweimal verbraucht werden");
+
+        const auto nachLangerPause = k.faellig (null + 10s);
+        const auto gleicherZeitpunkt = k.faellig (null + 10s);
+        pruefe (nachLangerPause.schwer && ! gleicherZeitpunkt.schwer,
+                "nach Pause genau eine Runde, kein Catch-up-Sturm");
+
+        k.zuruecksetzen (null + 20s);
+        const auto resetSofort = k.faellig (null + 20s);
+        const auto resetVorher = k.faellig (null + 20249ms);
+        const auto resetExakt = k.faellig (null + 20250ms);
+        pruefe (resetSofort.leicht && ! resetSofort.schwer
+                    && ! resetVorher.schwer && resetExakt.schwer,
+                "Reset/Generation startet die 250-ms-Deadline neu");
+    }
+
+    //==========================================================================
+    std::cout << "== R - verdrahtet: Rueckstau beschleunigt Auswertung nicht; Stop bleibt begrenzt ==" << std::endl;
+    {
+        using Uhr = std::chrono::steady_clock;
+        constexpr double fs = 48000.0;
+        constexpr int bs = 512;
+        auto p = std::make_unique<EqCopilotProcessor>();
+        p->setPlayConfigDetails (2, 2, fs, bs);
+        p->prepareToPlay (fs, bs);
+        TestPlayHead kopf; kopf.spielt = true;
+        p->setPlayHead (&kopf);
+
+        juce::AudioBuffer<float> puffer (2, bs);
+        juce::MidiBuffer midi;
+        for (int kanal = 0; kanal < 2; ++kanal)
+            for (int i = 0; i < bs; ++i)
+                puffer.setSample (kanal, i, 0.25f * std::sin ((float) i * 0.031f));
+
+        // Erst beim ersten Ueberlauf stoppen: zu diesem Zeitpunkt steht der
+        // Produktionsring nachweislich unter Rueckstau, aber es kommt KEIN
+        // spaeterer Block mehr, der aus dem Drop eine neue Kontinuitaetskante
+        // machen und damit die Messung zuruecksetzen koennte.
+        int eingespeist = 0;
+        while (p->analyseDropsUeberlauf() == 0 && eingespeist < 20000)
+        {
+            p->processBlock (puffer, midi);
+            kopf.pos += bs;
+            ++eingespeist;
+        }
+        pruefe (p->analyseDropsUeberlauf() > 0,
+                "Test hat echten Queue-Rueckstau hergestellt",
+                std::to_string (eingespeist) + " Bloecke bis zum ersten Drop");
+
+        const auto schwerVorher = p->analyseSchwereAuswertungen();
+        std::this_thread::sleep_for (std::chrono::milliseconds (600));
+        const auto schwerNachher = p->analyseSchwereAuswertungen();
+        const auto schwereRunden = schwerNachher - schwerVorher;
+        pruefe (schwereRunden >= 1 && schwereRunden <= 3,
+                "unter Rueckstau hoechstens ~1 Schwer-Auswertung je 250 ms",
+                std::to_string (schwereRunden) + " Runden in 600 ms");
+
+        // Same-rate-prepare ist ebenfalls eine Queue-Generation. Der
+        // verdrahtete Gegenpfad muss die Deadline neu beginnen, nicht einen
+        // fast faelligen Takt aus der alten Epoche erben.
+        p->prepareToPlay (fs, bs);
+        const auto generationVorher = p->analyseSchwereAuswertungen();
+        for (int i = 0; i < 32; ++i)
+        {
+            p->processBlock (puffer, midi);
+            kopf.pos += bs;
+        }
+        std::this_thread::sleep_for (std::chrono::milliseconds (100));
+        const auto generationDelta = p->analyseSchwereAuswertungen() - generationVorher;
+        pruefe (generationDelta <= 1,
+                "neue Generation erbt keinen Batch-beschleunigten Schwertakt",
+                std::to_string (generationDelta) + " Runden in den ersten 100 ms");
+
+        // Noch einmal bis zum Drop fuellen und dann direkt zerstoeren. Stop
+        // setzt das Atomic, weckt den 50-ms-Wait und joint; ein voller Ring darf
+        // daraus weder einen unbeschraenkten Drain noch ein langes Warten machen.
+        while (p->analyseDropsUeberlauf() < 2 && eingespeist < 40000)
+        {
+            p->processBlock (puffer, midi);
+            kopf.pos += bs;
+            ++eingespeist;
+        }
+
+        std::atomic<bool> los { false };
+        std::atomic<long long> frameMs { -1 }, resetMs { -1 };
+        std::thread frameLeser ([&]
+        {
+            while (! los.load()) std::this_thread::yield();
+            const auto von = Uhr::now();
+            (void) p->merkmalFrame();
+            frameMs.store (std::chrono::duration_cast<std::chrono::milliseconds>
+                (Uhr::now() - von).count());
+        });
+        std::thread resetSteuerer ([&]
+        {
+            while (! los.load()) std::this_thread::yield();
+            const auto von = Uhr::now();
+            p->fordereMessResetAn();
+            resetMs.store (std::chrono::duration_cast<std::chrono::milliseconds>
+                (Uhr::now() - von).count());
+        });
+        los.store (true);
+        frameLeser.join();
+        resetSteuerer.join();
+        pruefe (frameMs.load() >= 0 && frameMs.load() < 1000,
+                "Frame-Leser wird unter Rueckstau explizit vorgelassen",
+                std::to_string (frameMs.load()) + " ms");
+        pruefe (resetMs.load() >= 0 && resetMs.load() < 1000,
+                "Reset-Steuerer wird unter Rueckstau explizit vorgelassen",
+                std::to_string (resetMs.load()) + " ms");
+
+        p->setPlayHead (nullptr);
+        const auto stopStart = Uhr::now();
+        p.reset();
+        const auto stopMs = std::chrono::duration_cast<std::chrono::milliseconds>
+            (Uhr::now() - stopStart).count();
+        pruefe (stopMs < 2000,
+                "Stop/Join bleibt auch mit Queue-Rest begrenzt",
+                std::to_string (stopMs) + " ms");
+    }
+
+    //==========================================================================
+    std::cout << "== S - Projektfenster folgt der tatsaechlich uebernommenen Queue-Generation ==" << std::endl;
+    {
+        constexpr double fs = 48000.0;
+        constexpr int bs = 64;
+        EqCopilotProcessor p;
+        p.setPlayConfigDetails (2, 2, fs, bs);
+        p.prepareToPlay (fs, bs);
+
+        BlockierenderPlayHead kopf;
+        kopf.setzePosition (0);
+        p.setPlayHead (&kopf);
+        juce::AudioBuffer<float> puffer (2, bs);
+        puffer.clear();
+        juce::MidiBuffer midi;
+
+        p.processBlock (puffer, midi);
+        const auto altesFenster = p.messKompakt();
+        pruefe (altesFenster.fensterGueltig && altesFenster.fensterVon == 0
+                    && altesFenster.fensterBis == bs,
+                "Gegenprobe: erste Generation hat ihr eigenes Projektfenster");
+
+        // Der zweite Callback hat den fruehen Callbackteil bereits passiert
+        // und steht in getPosition(), also sicher VOR Queue-Publikation. Genau
+        // hier fordert der normale Steuerthread Reset + neue Generation an.
+        constexpr juce::int64 neuerStart = 10000;
+        kopf.blockiereNaechstenAbruf (neuerStart);
+        std::thread audio ([&] { p.processBlock (puffer, midi); });
+        const bool anKante = kopf.warteBisEingetreten();
+        pruefe (anKante, "Testbarriere liegt deterministisch im laufenden Audiocallback");
+        p.fordereMessResetAn();
+        kopf.freigeben();
+        audio.join();
+
+        const auto neuesFenster = p.messKompakt();
+        pruefe (neuesFenster.fensterGueltig
+                    && neuesFenster.fensterVon == neuerStart
+                    && neuesFenster.fensterBis == neuerStart + bs,
+                "der erste Block der neuen Queue-Generation beginnt ein frisches Projektfenster",
+                std::to_string (neuesFenster.fensterVon) + ".."
+                    + std::to_string (neuesFenster.fensterBis));
+        pruefe (neuesFenster.fensterSpruenge == 0,
+                "die Generationskante ist kein Seek innerhalb des alten Fensters",
+                std::to_string (neuesFenster.fensterSpruenge));
+        p.setPlayHead (nullptr);
+    }
+
+    //==========================================================================
+    std::cout << "== T - ungueltige Samplerate deaktiviert beide Analyse-Engines ==" << std::endl;
+    {
+        constexpr double fs = 48000.0;
+        constexpr int bs = 512;
+        EqCopilotProcessor p;
+        p.setPlayConfigDetails (2, 2, fs, bs);
+        p.prepareToPlay (fs, bs);
+        TestPlayHead kopf;
+        p.setPlayHead (&kopf);
+        juce::AudioBuffer<float> puffer (2, bs);
+        juce::MidiBuffer midi;
+        for (int kanal = 0; kanal < 2; ++kanal)
+            for (int i = 0; i < bs; ++i)
+                puffer.setSample (kanal, i, 0.2f * std::sin ((float) i * 0.02f));
+
+        auto speise = [&] (int bloecke)
+        {
+            for (int i = 0; i < bloecke; ++i)
+            {
+                p.processBlock (puffer, midi);
+                kopf.pos += bs;
+                std::this_thread::sleep_for (std::chrono::milliseconds (2));
+            }
+        };
+        speise (24);
+        for (int i = 0; i < 100; ++i)
+        {
+            if (p.messSnapshot().verarbeiteteSamples > 0 && p.merkmaleBloecke() > 0)
+                break;
+            std::this_thread::sleep_for (std::chrono::milliseconds (10));
+        }
+        pruefe (p.messSnapshot().verarbeiteteSamples > 0 && p.merkmaleBloecke() > 0,
+                "Gegenprobe: mit 48 kHz laufen M1 und FeatureEngine");
+
+        // prepareToPlay sanitisiert NaN auf 0 und setzt eine neue Generation.
+        // Die danach wirklich eingestellten Bloecke duerfen keine Engine mit
+        // der alten 48-kHz-Zuordnung weiterfuettern.
+        p.prepareToPlay (std::numeric_limits<double>::quiet_NaN(), bs);
+        speise (64);
+        std::this_thread::sleep_for (std::chrono::milliseconds (350));
+        const auto ohneRate = p.messSnapshot();
+        pruefe (p.holeSamplerate() == 0.0,
+                "nichtendliche Hostrate wird fail-closed auf 0 gespiegelt");
+        pruefe (ohneRate.verarbeiteteSamples == 0,
+                "M1 verarbeitet unter ungueltiger Rate keinen Block",
+                std::to_string (ohneRate.verarbeiteteSamples));
+        pruefe (p.merkmaleBloecke() == 0,
+                "FeatureEngine verarbeitet unter ungueltiger Rate keinen Block",
+                std::to_string (p.merkmaleBloecke()));
+        pruefe (! p.messKompakt().fensterGueltig,
+                "ohne gueltige Analyserate behauptet auch das Projektfenster keine Messung");
+
+        p.prepareToPlay (fs, bs);
+        speise (24);
+        for (int i = 0; i < 100; ++i)
+        {
+            if (p.messSnapshot().verarbeiteteSamples > 0 && p.merkmaleBloecke() > 0)
+                break;
+            std::this_thread::sleep_for (std::chrono::milliseconds (10));
+        }
+        pruefe (p.messSnapshot().verarbeiteteSamples > 0 && p.merkmaleBloecke() > 0,
+                "eine folgende gueltige Generation aktiviert beide Engines wieder");
+        p.setPlayHead (nullptr);
     }
 
     //==========================================================================

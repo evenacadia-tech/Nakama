@@ -32,12 +32,43 @@ pub const PIPE_NAME: &str = r"\\.\pipe\evenacadia.eq-copilot.v1";
 /// Verbunden, aber länger als das hier ohne Heartbeat ⇒ stale. Sichtbar
 /// markiert, nie still entfernt (Plan §11 M2-Abnahme).
 pub const STALE_MS: u64 = 5000;
+const MAX_MARKIERUNGS_NONCES_PRO_SENSOR: usize = 64;
 
 pub fn jetzt_ms() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_millis() as u64)
         .unwrap_or(0)
+}
+
+static MONOTONER_START: OnceLock<std::time::Instant> = OnceLock::new();
+
+fn monoton_ms() -> u64 {
+    MONOTONER_START
+        .get_or_init(std::time::Instant::now)
+        .elapsed()
+        .as_millis() as u64
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Zeitstempel {
+    utc_ms: u64,
+    monoton_ms: u64,
+}
+
+impl Zeitstempel {
+    fn jetzt() -> Self {
+        Self { utc_ms: jetzt_ms(), monoton_ms: monoton_ms() }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct VerbindungsMetadaten {
+    nonce: String,
+    hello: Hello,
+    verbunden_seit_ms: u64,
+    last_seen_ms: u64,
+    last_seen_monoton_ms: u64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -64,7 +95,7 @@ pub struct SensorEintrag {
     /// Entscheidung im Plugin, nie still (Plan §8.4).
     pub konflikt: bool,
     /// Verbunden, aber seit > STALE_MS kein Heartbeat. Wird bei jeder
-    /// Status-Abfrage aus last_seen_ms berechnet.
+    /// Status-Abfrage aus dem internen monotonen Zeitstempel berechnet.
     pub stale: bool,
     /// Lebende Verbindungen dieser Sensor-ID (1 = normal, >1 = Konflikt).
     pub lebende: u32,
@@ -80,6 +111,37 @@ pub struct SensorEintrag {
     /// oder vor dem ersten Heartbeat mit Messdaten.
     pub messung: Option<MessStand>,
     pub messung_ms: Option<u64>,
+    /// Letzter gemeldeter Zustand der hörbaren Markierung. `true` bleibt bei
+    /// stale/disconnect bewusst stehen, bis dieselbe Verbindung explizit
+    /// `false` meldet: fehlende Telemetrie beweist kein Markierungsende.
+    pub hoermarkierung: bool,
+    /// Fremde Messung wurde während einer bekannten Hör-Markierung gesehen
+    /// oder könnte wegen der 1-Hz-Reihenfolge betroffen sein. Solange dieses
+    /// Bit steht, gibt der Broker den gespeicherten Messstand nicht als
+    /// Evidenz aus; Freigabe braucht einen nachweisbaren Messreset.
+    pub messung_gesperrt_durch_hoermarkierung: bool,
+    /// Frische ist reine Laufzeitlogik. UTC bleibt nur für die sichtbaren
+    /// `*_ms`-Felder; ein Wallclock-Sprung darf stale nicht beeinflussen.
+    #[serde(skip)]
+    last_seen_monoton_ms: u64,
+    /// Jede lebende oder ohne bestätigtes `false` getrennte Marker-Verbindung
+    /// bleibt einzeln sichtbar, auch bei duplizierter Sensor-ID.
+    #[serde(skip)]
+    markierungs_nonces: Vec<String>,
+    /// Mehr unbestätigte Quellen werden nicht unbeschränkt gespeichert. Ein
+    /// Überlauf bleibt stattdessen sticky/fail-closed bis zum Brokerneustart,
+    /// weil die verworfene Nonce später nicht mehr sicher zuordenbar wäre.
+    #[serde(skip)]
+    markierung_unaufloesbar: bool,
+    /// Erste saubere Beobachtung nach Ende aller fremden Markierungen. Erst
+    /// ein späterer Rücklauf von `gesamt_s` beweist einen Reset danach.
+    #[serde(skip)]
+    entsperr_basis_gesamt_s: Option<f64>,
+    /// Vollständige Hello-/Zeit-Metadaten je lebender Instanz. Beim Ende des
+    /// jüngsten Owners kann nur daraus der überlebende Owner verlustfrei
+    /// wiederhergestellt werden; Heartbeats tragen diese Felder nicht.
+    #[serde(skip)]
+    verbindungs_metadaten: Vec<VerbindungsMetadaten>,
     /// Besitzer der Schreibrechte auf stats/messung: die Nonce des jüngsten
     /// hello. Bei Konflikt schreibt nur sie — sonst flackerten zwei
     /// Instanzen gegeneinander.
@@ -87,6 +149,18 @@ pub struct SensorEintrag {
     besitzer_nonce: String,
     #[serde(skip)]
     lebende_nonces: Vec<String>,
+}
+
+fn hello_metadaten_uebernehmen(eintrag: &mut SensorEintrag, hello: &Hello) {
+    eintrag.role = hello.sensor.role.clone();
+    eintrag.label = hello.sensor.label.clone();
+    eintrag.pair_id = hello.sensor.pair_id.clone();
+    eintrag.plugin_version = hello.plugin_version.clone();
+    eintrag.protokoll_version = hello.protocol_version;
+    eintrag.host_pid = hello.host_pid;
+    eintrag.samplerate = hello.audio.samplerate;
+    eintrag.block_size = hello.audio.block_size;
+    eintrag.channels = hello.audio.channels;
 }
 
 #[derive(Debug, Default)]
@@ -102,7 +176,12 @@ impl Register {
     /// `nonce` ist die effektive Verbindungs-Nonce: die des v2-Clients oder
     /// eine server-vergebene für v1 (damit die Konfliktzählung einheitlich ist).
     pub fn sensor_verbinden(&mut self, hello: &Hello, nonce: &str) {
-        let jetzt = jetzt_ms();
+        self.sensor_verbinden_zu(hello, nonce, Zeitstempel::jetzt());
+    }
+
+    fn sensor_verbinden_zu(&mut self, hello: &Hello, nonce: &str, zeit: Zeitstempel) {
+        let fremde_markierung = self.hat_fremde_hoermarkierung(&hello.sensor.sensor_id, nonce);
+        let jetzt = zeit.utc_ms;
         let profil = self.bindungen.get(&hello.sensor.sensor_id).cloned();
         let eintrag = self
             .sensoren
@@ -131,31 +210,53 @@ impl Register {
                 stats: HeartbeatStats::default(),
                 messung: None,
                 messung_ms: None,
+                hoermarkierung: false,
+                messung_gesperrt_durch_hoermarkierung: false,
+                last_seen_monoton_ms: zeit.monoton_ms,
+                markierungs_nonces: Vec::new(),
+                markierung_unaufloesbar: false,
+                entsperr_basis_gesamt_s: None,
+                verbindungs_metadaten: Vec::new(),
                 besitzer_nonce: String::new(),
                 lebende_nonces: Vec::new(),
             });
         if !eintrag.lebende_nonces.iter().any(|n| n == nonce) {
             eintrag.lebende_nonces.push(nonce.to_string());
-            eintrag.verbindungen += 1;
+            eintrag.verbindungs_metadaten.push(VerbindungsMetadaten {
+                nonce: nonce.to_string(),
+                hello: hello.clone(),
+                verbunden_seit_ms: jetzt,
+                last_seen_ms: jetzt,
+                last_seen_monoton_ms: zeit.monoton_ms,
+            });
+            eintrag.verbindungen = eintrag.verbindungen.saturating_add(1);
+        } else if let Some(metadaten) = eintrag
+            .verbindungs_metadaten
+            .iter_mut()
+            .find(|m| m.nonce == nonce)
+        {
+            // Der Server weist eine zweite lebende gleiche Nonce ab. Diese
+            // idempotente Sicherung hält direkte Register-Nutzer trotzdem
+            // konsistent, ohne eine zweite Lebenszählung zu erfinden.
+            metadaten.hello = hello.clone();
+            metadaten.last_seen_ms = jetzt;
+            metadaten.last_seen_monoton_ms = zeit.monoton_ms;
         }
         eintrag.lebende = eintrag.lebende_nonces.len() as u32;
         eintrag.konflikt = eintrag.lebende > 1;
         // Das jüngste hello gewinnt die Schreibrechte und die Metadaten.
         eintrag.besitzer_nonce = nonce.to_string();
-        eintrag.role = hello.sensor.role.clone();
-        eintrag.label = hello.sensor.label.clone();
-        eintrag.pair_id = hello.sensor.pair_id.clone();
+        hello_metadaten_uebernehmen(eintrag, hello);
         eintrag.profil_id = profil;
-        eintrag.plugin_version = hello.plugin_version.clone();
-        eintrag.protokoll_version = hello.protocol_version;
-        eintrag.host_pid = hello.host_pid;
-        eintrag.samplerate = hello.audio.samplerate;
-        eintrag.block_size = hello.audio.block_size;
-        eintrag.channels = hello.audio.channels;
         eintrag.verbunden = true;
         eintrag.verbunden_seit_ms = jetzt;
         eintrag.getrennt_seit_ms = None;
         eintrag.last_seen_ms = jetzt;
+        eintrag.last_seen_monoton_ms = zeit.monoton_ms;
+        if fremde_markierung {
+            eintrag.messung_gesperrt_durch_hoermarkierung = true;
+            eintrag.entsperr_basis_gesamt_s = None;
+        }
     }
 
     pub fn heartbeat(
@@ -165,22 +266,117 @@ impl Register {
         stats: Option<HeartbeatStats>,
         messung: Option<MessStand>,
     ) {
-        if let Some(e) = self.sensoren.get_mut(sensor_id) {
-            // Eigener Zähler statt seq-Übernahme: seq beginnt nach jedem
-            // Reconnect wieder bei 0, der Eintrag lebt über Verbindungen hinweg.
-            e.heartbeats += 1;
-            e.last_seen_ms = jetzt_ms();
-            if e.besitzer_nonce.is_empty() {
-                e.besitzer_nonce = nonce.to_string();
+        self.heartbeat_zu(sensor_id, nonce, stats, messung, Zeitstempel::jetzt());
+    }
+
+    fn heartbeat_zu(
+        &mut self,
+        sensor_id: &str,
+        nonce: &str,
+        stats: Option<HeartbeatStats>,
+        messung: Option<MessStand>,
+        zeit: Zeitstempel,
+    ) {
+        let Some(e) = self.sensoren.get_mut(sensor_id) else { return };
+        let Some(verbindung) = e
+            .verbindungs_metadaten
+            .iter_mut()
+            .find(|m| m.nonce == nonce)
+        else {
+            return;
+        };
+        verbindung.last_seen_ms = zeit.utc_ms;
+        verbindung.last_seen_monoton_ms = zeit.monoton_ms;
+
+        // Eigener Zähler statt seq-Übernahme: seq beginnt nach jedem
+        // Reconnect wieder bei 0, der Eintrag lebt über Verbindungen hinweg.
+        e.heartbeats = e.heartbeats.saturating_add(1);
+        e.last_seen_ms = zeit.utc_ms;
+        e.last_seen_monoton_ms = zeit.monoton_ms;
+        if e.besitzer_nonce.is_empty() {
+            e.besitzer_nonce = nonce.to_string();
+        }
+        let ist_besitzer = e.besitzer_nonce == nonce;
+
+        // Markierungszustand gehört zur Verbindung, nicht zu den exklusiven
+        // Mess-Schreibrechten: auch eine duplizierte, nicht besitzende Instanz
+        // kann hörbar färben. Ein fehlender Messblock ändert den letzten
+        // Zustand nicht. Explizites false entfernt nur DIESE Nonce.
+        let neue_markierung = messung.as_ref().map(|m| m.hoermarkierung);
+        let markierung_begann = if neue_markierung == Some(true) {
+            if e.markierung_unaufloesbar || e.markierungs_nonces.iter().any(|n| n == nonce) {
+                false
+            } else if e.markierungs_nonces.len() < MAX_MARKIERUNGS_NONCES_PRO_SENSOR {
+                e.markierungs_nonces.push(nonce.to_string());
+                true
+            } else {
+                e.markierung_unaufloesbar = true;
+                true
             }
-            if e.besitzer_nonce == nonce {
-                if let Some(s) = stats {
-                    e.stats = s;
-                }
-                if let Some(m) = messung {
-                    e.messung_ms = Some(e.last_seen_ms);
-                    e.messung = Some(m);
-                }
+        } else {
+            if neue_markierung == Some(false) {
+                e.markierungs_nonces.retain(|n| n != nonce);
+            }
+            false
+        };
+        e.hoermarkierung = e.markierung_unaufloesbar || !e.markierungs_nonces.is_empty();
+
+        if markierung_begann {
+            self.fremde_messungen_sperren(sensor_id, nonce);
+        }
+
+        let fremde_markierung = self.hat_fremde_hoermarkierung(sensor_id, nonce);
+        let Some(e) = self.sensoren.get_mut(sensor_id) else { return };
+        if !ist_besitzer {
+            return;
+        }
+        if let Some(s) = stats {
+            e.stats = s;
+        }
+        let Some(m) = messung else { return };
+
+        if fremde_markierung {
+            e.messung_gesperrt_durch_hoermarkierung = true;
+            // Ein Reset während der Färbung ist kein Sauberkeitsbeweis. Die
+            // erste Basis darf erst nach dem bestätigten Ende entstehen.
+            e.entsperr_basis_gesamt_s = None;
+            return;
+        }
+
+        if e.messung_gesperrt_durch_hoermarkierung {
+            let leerer_reset = m.zustand == "keine_daten" && m.gesamt_s == 0.0 && m.aktiv_s == 0.0;
+            let reset_nach_freier_basis = e
+                .entsperr_basis_gesamt_s
+                .is_some_and(|vorher| m.gesamt_s < vorher);
+            if !leerer_reset && !reset_nach_freier_basis {
+                e.entsperr_basis_gesamt_s = Some(m.gesamt_s);
+                return;
+            }
+            e.messung_gesperrt_durch_hoermarkierung = false;
+            e.entsperr_basis_gesamt_s = None;
+        }
+
+        e.messung_ms = Some(e.last_seen_ms);
+        e.messung = Some(m);
+    }
+
+    fn hat_fremde_hoermarkierung(&self, sensor_id: &str, nonce: &str) -> bool {
+        self.sensoren.values().any(|e| {
+            e.markierung_unaufloesbar
+                || e.markierungs_nonces
+                    .iter()
+                    .any(|marker_nonce| e.sensor_id != sensor_id || marker_nonce != nonce)
+        })
+    }
+
+    fn fremde_messungen_sperren(&mut self, sensor_id: &str, nonce: &str) {
+        for e in self.sensoren.values_mut() {
+            // Nur der Messabgriff genau der färbenden Instanz liegt garantiert
+            // vor ihrer eigenen Färbung. Jede andere ID oder Duplikat-Nonce
+            // könnte das gefärbte Signal empfangen.
+            if e.sensor_id != sensor_id || e.besitzer_nonce != nonce {
+                e.messung_gesperrt_durch_hoermarkierung = true;
+                e.entsperr_basis_gesamt_s = None;
             }
         }
     }
@@ -190,20 +386,61 @@ impl Register {
         self.sensoren.get(sensor_id).map(|e| e.konflikt).unwrap_or(false)
     }
 
+    pub(crate) fn verbindung_ist_lebend(&self, sensor_id: &str, nonce: &str) -> bool {
+        self.sensoren
+            .get(sensor_id)
+            .is_some_and(|e| e.lebende_nonces.iter().any(|n| n == nonce))
+    }
+
+    /// Ein semantisch ungültiger Messblock darf den zuvor gültigen Stand des
+    /// sendenden Owners nicht als scheinbar frische Evidenz zurücklassen.
+    pub(crate) fn messung_verwerfen_von(&mut self, sensor_id: &str, nonce: &str) {
+        if let Some(e) = self
+            .sensoren
+            .get_mut(sensor_id)
+            .filter(|e| e.besitzer_nonce == nonce)
+        {
+            e.messung = None;
+            e.messung_ms = None;
+        }
+    }
+
     pub fn sensor_trennen(&mut self, sensor_id: &str, nonce: &str) {
+        self.sensor_trennen_zu(sensor_id, nonce, jetzt_ms());
+    }
+
+    fn sensor_trennen_zu(&mut self, sensor_id: &str, nonce: &str, utc_ms: u64) {
         if let Some(e) = self.sensoren.get_mut(sensor_id) {
             e.lebende_nonces.retain(|n| n != nonce);
+            e.verbindungs_metadaten.retain(|m| m.nonce != nonce);
             e.lebende = e.lebende_nonces.len() as u32;
             e.konflikt = e.lebende > 1;
             if e.besitzer_nonce == nonce {
-                // Die überlebende Verbindung (falls es eine gibt) übernimmt die
-                // Schreibrechte mit ihrem nächsten Heartbeat.
-                e.besitzer_nonce = e.lebende_nonces.last().cloned().unwrap_or_default();
+                if let Some(metadaten) = e.verbindungs_metadaten.last().cloned() {
+                    // Hello-Metadaten existieren nur dort vollständig. Der
+                    // Heartbeat des Überlebenden könnte Label/Paar/Rolle nie
+                    // reparieren, wenn hier die Daten des Abgängers blieben.
+                    e.besitzer_nonce = metadaten.nonce;
+                    hello_metadaten_uebernehmen(e, &metadaten.hello);
+                    e.verbunden_seit_ms = metadaten.verbunden_seit_ms;
+                    e.last_seen_ms = metadaten.last_seen_ms;
+                    e.last_seen_monoton_ms = metadaten.last_seen_monoton_ms;
+                    // Messung/Stats gehörten dem alten Owner. Bis zum nächsten
+                    // Heartbeat des neuen Owners sind sie keine Evidenz.
+                    e.stats = HeartbeatStats::default();
+                    e.messung = None;
+                    e.messung_ms = None;
+                } else {
+                    e.besitzer_nonce.clear();
+                }
             }
             if e.lebende == 0 {
                 e.verbunden = false;
-                e.getrennt_seit_ms = Some(jetzt_ms());
+                e.getrennt_seit_ms = Some(utc_ms);
             }
+            // `markierungs_nonces` absichtlich NICHT entfernen: ein Pipe-Ende
+            // beweist nicht, dass die Audiofärbung schon neutral ist. Dieselbe
+            // Instanz-Nonce kann nach Reconnect explizit false melden.
         }
     }
 
@@ -224,7 +461,7 @@ impl Register {
     }
 
     pub fn paket_verworfen(&mut self) {
-        self.pakete_verworfen += 1;
+        self.pakete_verworfen = self.pakete_verworfen.saturating_add(1);
     }
 
     pub fn fehler_merken(&mut self, text: String) {
@@ -237,13 +474,25 @@ impl Register {
 
     /// Momentaufnahme aller Sensoren mit frisch berechnetem stale-Flag,
     /// sortiert: verbundene zuerst, dann nach Label.
-    pub fn sensoren_snapshot(&self, jetzt: u64) -> Vec<SensorEintrag> {
+    pub fn sensoren_snapshot(&self, _jetzt_utc_ms: u64) -> Vec<SensorEintrag> {
+        self.sensoren_snapshot_zu(monoton_ms())
+    }
+
+    fn sensoren_snapshot_zu(&self, jetzt_monoton_ms: u64) -> Vec<SensorEintrag> {
         let mut sensoren: Vec<SensorEintrag> = self
             .sensoren
             .values()
             .cloned()
             .map(|mut e| {
-                e.stale = e.verbunden && jetzt.saturating_sub(e.last_seen_ms) > STALE_MS;
+                e.stale = e.verbunden
+                    && jetzt_monoton_ms.saturating_sub(e.last_seen_monoton_ms) > STALE_MS;
+                if e.messung_gesperrt_durch_hoermarkierung {
+                    // Intern bleibt der letzte angenommene Stand für Diagnose
+                    // und Resetvergleich erhalten; nach außen ist er solange
+                    // ausdrücklich KEINE verwendbare Evidenz.
+                    e.messung = None;
+                    e.messung_ms = None;
+                }
                 e
             })
             .collect();
@@ -251,6 +500,7 @@ impl Register {
             b.verbunden
                 .cmp(&a.verbunden)
                 .then_with(|| a.label.cmp(&b.label))
+                .then_with(|| a.sensor_id.cmp(&b.sensor_id))
         });
         sensoren
     }
@@ -310,6 +560,43 @@ pub struct PaarStatus {
     pub grund: String,
 }
 
+fn hoermarkierungs_sperrgrund(sensoren: &[SensorEintrag]) -> Option<String> {
+    sensoren.iter().find(|s| s.hoermarkierung).map(|s| {
+        let name = if s.label.is_empty() { &s.sensor_id } else { &s.label };
+        if s.markierung_unaufloesbar {
+            format!(
+                "Hör-Markierung an »{name}« ist nach zu vielen unbestätigten Instanzen nicht mehr eindeutig zuordenbar"
+            )
+        } else if !s.verbunden {
+            format!(
+                "Hör-Markierung an »{name}« wurde vor der Trennung nicht als beendet bestätigt"
+            )
+        } else if s.stale {
+            format!(
+                "Hör-Markierung an »{name}« meldet sich nicht mehr — ihr Ende ist nicht bestätigt"
+            )
+        } else {
+            format!(
+                "Hör-Markierung an mindestens einer Instanz von »{name}« ist aktiv oder ihr Ende nicht bestätigt — fremde Messung ist pausiert"
+            )
+        }
+    })
+}
+
+fn aggregat_sperrgrund(sensoren: &[SensorEintrag]) -> Option<String> {
+    hoermarkierungs_sperrgrund(sensoren).or_else(|| {
+        sensoren
+            .iter()
+            .find(|s| s.messung_gesperrt_durch_hoermarkierung)
+            .map(|sensor| {
+                format!(
+                    "Messung von »{}« kann Hör-Markierung enthalten — bitte neu messen",
+                    sensor.label
+                )
+            })
+    })
+}
+
 pub fn paare_auswerten(sensoren: &[SensorEintrag]) -> Vec<PaarStatus> {
     let mut nach_paar: HashMap<&str, (Vec<&SensorEintrag>, Vec<&SensorEintrag>)> = HashMap::new();
     for s in sensoren {
@@ -363,6 +650,22 @@ pub fn paare_auswerten(sensoren: &[SensorEintrag]) -> Vec<PaarStatus> {
             p.timing = "unklar".into();
             p.grund = grund;
         };
+        if let Some(grund) = hoermarkierungs_sperrgrund(sensoren) {
+            unklar(grund, &mut p);
+            ergebnis.push(p);
+            continue;
+        }
+        if pre.messung_gesperrt_durch_hoermarkierung
+            || post.messung_gesperrt_durch_hoermarkierung
+        {
+            unklar(
+                "Messung nach Hör-Markierung gesperrt — betroffene Messpunkte bitte neu messen"
+                    .into(),
+                &mut p,
+            );
+            ergebnis.push(p);
+            continue;
+        }
         if !pre.verbunden || !post.verbunden {
             let wer = if !pre.verbunden { "VORHER" } else { "NACHHER" };
             unklar(format!("{wer}-Messpunkt ist getrennt"), &mut p);
@@ -411,7 +714,13 @@ pub fn paare_auswerten(sensoren: &[SensorEintrag]) -> Vec<PaarStatus> {
             ergebnis.push(p);
             continue;
         }
-        let overlap = fp.bis_samples.min(fq.bis_samples) - fp.von_samples.max(fq.von_samples);
+        // Projektzeiten sind volle i64-Vertragswerte. Zwei gueltige Fenster an
+        // entgegengesetzten Zahlenraendern duerfen weder im Debug-Build paniken
+        // noch im Release-Build umbrechen und dadurch als deckungsgleich gelten.
+        let overlap = fp
+            .bis_samples
+            .min(fq.bis_samples)
+            .saturating_sub(fp.von_samples.max(fq.von_samples));
         if overlap <= 0 {
             unklar("die Messfenster überlappen nicht — vermutlich verschiedene Passagen".into(), &mut p);
             ergebnis.push(p);
@@ -636,6 +945,9 @@ pub fn aggregat_schreiben(
             lauf.session_token.chars().take(8).collect::<String>(),
         )
     };
+    if let Some(grund) = aggregat_sperrgrund(&sensoren) {
+        return Err(format!("Aggregat gesperrt: {grund}"));
+    }
     let dokument = aggregat::aggregat_bauen(
         &sensoren,
         filter_profil.as_deref(),
@@ -704,6 +1016,23 @@ mod register_tests {
     }
 
     #[test]
+    fn snapshot_sortiert_gleiche_labels_stabil_nach_sensor_id() {
+        let mut r = Register::default();
+        for id in ["s-c", "s-a", "s-b"] {
+            r.sensor_verbinden(
+                &hello(id, "sensor", "GLEICH", None, 100),
+                &format!("n-{id}"),
+            );
+        }
+        let ids: Vec<_> = r
+            .sensoren_snapshot(jetzt_ms())
+            .into_iter()
+            .map(|s| s.sensor_id)
+            .collect();
+        assert_eq!(ids, ["s-a", "s-b", "s-c"]);
+    }
+
+    #[test]
     fn konflikt_kommt_und_geht_mit_der_zweiten_verbindung() {
         let mut r = Register::default();
         r.sensor_verbinden(&hello("s-dup", "post", "PIANO", None, 1), "n-a");
@@ -727,16 +1056,275 @@ mod register_tests {
     }
 
     #[test]
-    fn stale_wird_sichtbar_aber_nie_entfernt() {
+    fn owner_wechsel_stellt_die_vollstaendigen_hello_metadaten_und_rechte_wieder_her() {
         let mut r = Register::default();
-        r.sensor_verbinden(&hello("s-1", "sensor", "CHOR", None, 1), "n-1");
-        let bald = jetzt_ms();
-        let snap = r.sensoren_snapshot(bald);
+        let mut a = hello("s-owner", "pre", "A", Some("paar-a"), 11);
+        a.plugin_version = "plugin-a".into();
+        a.audio = AudioAngabe { samplerate: 44100.0, block_size: 256, channels: 1 };
+        let mut b = hello("s-owner", "post", "B", Some("paar-b"), 22);
+        b.plugin_version = "plugin-b".into();
+        b.audio = AudioAngabe { samplerate: 96000.0, block_size: 1024, channels: 6 };
+
+        r.sensor_verbinden_zu(&a, "nonce-a", Zeitstempel { utc_ms: 100, monoton_ms: 10 });
+        r.sensor_verbinden_zu(&b, "nonce-b", Zeitstempel { utc_ms: 200, monoton_ms: 20 });
+        r.heartbeat(
+            "s-owner",
+            "nonce-b",
+            Some(HeartbeatStats { rms_l: 0.2, ..Default::default() }),
+            Some(messbereit(None, 2.0)),
+        );
+        assert_eq!(r.sensoren["s-owner"].label, "B");
+
+        r.sensor_trennen_zu("s-owner", "nonce-b", 300);
+        let sensor = &r.sensoren["s-owner"];
+        assert!(sensor.verbunden);
+        assert_eq!(sensor.lebende, 1);
+        assert!(!sensor.konflikt);
+        assert_eq!(sensor.role, "pre");
+        assert_eq!(sensor.label, "A");
+        assert_eq!(sensor.pair_id.as_deref(), Some("paar-a"));
+        assert_eq!(sensor.plugin_version, "plugin-a");
+        assert_eq!(sensor.protokoll_version, 2);
+        assert_eq!(sensor.host_pid, 11);
+        assert_eq!(sensor.samplerate, 44100.0);
+        assert_eq!(sensor.block_size, 256);
+        assert_eq!(sensor.channels, 1);
+        assert_eq!(sensor.stats.rms_l, 0.0);
+        assert!(sensor.messung.is_none());
+
+        // Der getrennte ehemalige Owner darf nicht weiter schreiben; A schon.
+        let heartbeats_vorher = sensor.heartbeats;
+        r.heartbeat(
+            "s-owner",
+            "nonce-b",
+            Some(HeartbeatStats { rms_l: 0.9, ..Default::default() }),
+            Some(messbereit(None, 9.0)),
+        );
+        assert_eq!(r.sensoren["s-owner"].heartbeats, heartbeats_vorher);
+        r.heartbeat(
+            "s-owner",
+            "nonce-a",
+            Some(HeartbeatStats { rms_l: 0.7, ..Default::default() }),
+            Some(messbereit(None, 3.0)),
+        );
+        assert_eq!(r.sensoren["s-owner"].stats.rms_l, 0.7);
+        assert_eq!(r.sensoren["s-owner"].messung.as_ref().unwrap().gesamt_s, 3.0);
+    }
+
+    #[test]
+    fn stale_nutzt_monotone_zeit_und_ignoriert_wallclock_spruenge() {
+        let mut r = Register::default();
+        r.sensor_verbinden_zu(
+            &hello("s-1", "sensor", "CHOR", None, 1),
+            "n-1",
+            Zeitstempel { utc_ms: 1_000_000, monoton_ms: 100 },
+        );
+        // Wallclock springt rückwärts, monotone Zeit läuft normal weiter.
+        r.heartbeat_zu(
+            "s-1",
+            "n-1",
+            None,
+            None,
+            Zeitstempel { utc_ms: 10, monoton_ms: 200 },
+        );
+        let snap = r.sensoren_snapshot_zu(200 + STALE_MS);
         assert!(!snap[0].stale);
-        let viel_spaeter = bald + STALE_MS + 1000;
-        let snap = r.sensoren_snapshot(viel_spaeter);
+        assert_eq!(snap[0].last_seen_ms, 10, "sichtbares UTC bleibt Ausgabezeit");
+
+        // Wallclock springt weit vorwärts: auch das macht nicht sofort stale.
+        r.heartbeat_zu(
+            "s-1",
+            "n-1",
+            None,
+            None,
+            Zeitstempel { utc_ms: u64::MAX - 1, monoton_ms: 300 },
+        );
+        assert!(!r.sensoren_snapshot_zu(300)[0].stale);
+        let snap = r.sensoren_snapshot_zu(300 + STALE_MS + 1);
         assert!(snap[0].stale, "verbunden ohne Heartbeats muss stale werden");
         assert!(snap[0].verbunden, "stale heißt sichtbar, nicht weg");
+    }
+
+    #[test]
+    fn hoermarkierung_sperrt_fremde_evidenz_bis_reset_nach_beobachtetem_false() {
+        let mut r = Register::default();
+        paar_basis(&mut r);
+        r.sensor_verbinden(&hello("s-marker", "sensor", "MARKER", None, 1), "n-m");
+        r.heartbeat(
+            "s-pre",
+            "n-p",
+            None,
+            Some(messbereit(Some(fenster(0, 480000, 0)), 10.0)),
+        );
+        r.heartbeat(
+            "s-post",
+            "n-q",
+            None,
+            Some(messbereit(Some(fenster(0, 480000, 0)), 10.0)),
+        );
+
+        let mut marker = messbereit(None, 4.0);
+        marker.hoermarkierung = true;
+        marker.lufs_i = Some(-12.0);
+        r.heartbeat("s-marker", "n-m", None, Some(marker));
+        assert_eq!(
+            r.sensoren["s-marker"].messung.as_ref().unwrap().lufs_i,
+            Some(-12.0),
+            "eigener Tap vor der Färbung bleibt verwendbar"
+        );
+
+        // Der bereits vorher angenommene fremde Stand wird sofort verborgen;
+        // auch der nächste kumulative Stand während true wird nicht übernommen.
+        let alter_gesamtstand = r.sensoren["s-pre"].messung.as_ref().unwrap().gesamt_s;
+        r.heartbeat(
+            "s-pre",
+            "n-p",
+            None,
+            Some(messbereit(Some(fenster(0, 576000, 0)), 12.0)),
+        );
+        assert_eq!(
+            r.sensoren["s-pre"].messung.as_ref().unwrap().gesamt_s,
+            alter_gesamtstand
+        );
+        let snapshot = r.sensoren_snapshot(jetzt_ms());
+        let pre = snapshot.iter().find(|s| s.sensor_id == "s-pre").unwrap();
+        assert!(pre.messung_gesperrt_durch_hoermarkierung);
+        assert!(pre.messung.is_none());
+        let paar = &paare_auswerten(&snapshot)[0];
+        assert_eq!(paar.timing, "unklar");
+        assert!(paar.grund.contains("Hör-Markierung"));
+        assert!(aggregat_sperrgrund(&snapshot).unwrap().contains("aktiv"));
+
+        let mut marker_aus = messbereit(None, 5.0);
+        marker_aus.hoermarkierung = false;
+        r.heartbeat("s-marker", "n-m", None, Some(marker_aus));
+        let snapshot = r.sensoren_snapshot(jetzt_ms());
+        assert!(hoermarkierungs_sperrgrund(&snapshot).is_none());
+        assert!(aggregat_sperrgrund(&snapshot).unwrap().contains("neu messen"));
+
+        // Der erste Stand nach beobachtetem false ist nur eine Basis. Erst ein
+        // danach beobachteter Reset (leer oder Zählerrücklauf) beweist Sauberkeit.
+        r.heartbeat("s-pre", "n-p", None, Some(messbereit(None, 13.0)));
+        r.heartbeat("s-post", "n-q", None, Some(messbereit(None, 13.0)));
+        assert!(r.sensoren["s-pre"].messung_gesperrt_durch_hoermarkierung);
+        let reset = MessStand {
+            zustand: "keine_daten".into(),
+            metrics_version: "m1-2026-08-13".into(),
+            ..Default::default()
+        };
+        r.heartbeat("s-pre", "n-p", None, Some(reset));
+        // POST beweist den Reset alternativ durch Rücklauf nach der freien Basis.
+        r.heartbeat("s-post", "n-q", None, Some(messbereit(None, 1.0)));
+        assert!(!r.sensoren["s-pre"].messung_gesperrt_durch_hoermarkierung);
+        assert!(!r.sensoren["s-post"].messung_gesperrt_durch_hoermarkierung);
+
+        r.heartbeat(
+            "s-pre",
+            "n-p",
+            None,
+            Some(messbereit(Some(fenster(0, 48000, 0)), 1.0)),
+        );
+        r.heartbeat(
+            "s-post",
+            "n-q",
+            None,
+            Some(messbereit(Some(fenster(0, 48000, 0)), 1.0)),
+        );
+        let snapshot = r.sensoren_snapshot(jetzt_ms());
+        assert!(aggregat_sperrgrund(&snapshot).is_none());
+        assert_eq!(paare_auswerten(&snapshot)[0].timing, "ausgerichtet");
+    }
+
+    #[test]
+    fn marker_disconnect_bleibt_fail_closed_bis_reconnect_false_und_neuem_reset() {
+        let mut r = Register::default();
+        paar_basis(&mut r);
+        r.sensor_verbinden(&hello("s-marker", "sensor", "MARKER", None, 1), "n-m");
+        r.heartbeat("s-pre", "n-p", None, Some(messbereit(None, 10.0)));
+        r.heartbeat("s-post", "n-q", None, Some(messbereit(None, 10.0)));
+        let mut marker = messbereit(None, 1.0);
+        marker.hoermarkierung = true;
+        r.heartbeat("s-marker", "n-m", None, Some(marker));
+
+        // Ein Reset während true kann zeitlich nicht als sauber bewiesen werden.
+        let reset_waehrend_true = MessStand {
+            zustand: "keine_daten".into(),
+            metrics_version: "m1-2026-08-13".into(),
+            ..Default::default()
+        };
+        r.heartbeat("s-pre", "n-p", None, Some(reset_waehrend_true));
+        let marker_mono = r.sensoren["s-marker"].last_seen_monoton_ms;
+        let stale = r.sensoren_snapshot_zu(marker_mono + STALE_MS + 1);
+        assert!(hoermarkierungs_sperrgrund(&stale)
+            .unwrap()
+            .contains("Ende ist nicht bestätigt"));
+
+        r.sensor_trennen("s-marker", "n-m");
+        assert!(!r.verbindung_ist_lebend("s-marker", "n-m"));
+        let getrennt = r.sensoren_snapshot(jetzt_ms());
+        assert!(hoermarkierungs_sperrgrund(&getrennt)
+            .unwrap()
+            .contains("Trennung nicht als beendet bestätigt"));
+
+        // Dieselbe nicht mehr lebende Instanz darf ihre unbestätigte true-
+        // Markierung nach Reconnect explizit beenden.
+        r.sensor_verbinden(&hello("s-marker", "sensor", "MARKER", None, 1), "n-m");
+        let mut marker_aus = messbereit(None, 2.0);
+        marker_aus.hoermarkierung = false;
+        r.heartbeat("s-marker", "n-m", None, Some(marker_aus));
+        assert!(hoermarkierungs_sperrgrund(&r.sensoren_snapshot(jetzt_ms())).is_none());
+
+        // Der frühere Reset bleibt unbrauchbar: erste/steigende Stände nach
+        // false lassen die sichtbare Quarantäne bestehen.
+        r.heartbeat("s-pre", "n-p", None, Some(messbereit(None, 1.0)));
+        r.heartbeat("s-pre", "n-p", None, Some(messbereit(None, 2.0)));
+        assert!(r.sensoren["s-pre"].messung_gesperrt_durch_hoermarkierung);
+        let snapshot = r.sensoren_snapshot(jetzt_ms());
+        assert!(snapshot.iter().find(|s| s.sensor_id == "s-pre").unwrap().messung.is_none());
+        assert!(aggregat_sperrgrund(&snapshot).unwrap().contains("neu messen"));
+
+        let reset_nach_false = MessStand {
+            zustand: "keine_daten".into(),
+            metrics_version: "m1-2026-08-13".into(),
+            ..Default::default()
+        };
+        r.heartbeat("s-pre", "n-p", None, Some(reset_nach_false));
+        assert!(!r.sensoren["s-pre"].messung_gesperrt_durch_hoermarkierung);
+    }
+
+    #[test]
+    fn unbestaetigte_marker_nonces_wachsen_nicht_unbegrenzt() {
+        let mut r = Register::default();
+        for i in 0..(MAX_MARKIERUNGS_NONCES_PRO_SENSOR + 3) {
+            let nonce = format!("marker-{i}");
+            r.sensor_verbinden(&hello("s-marker-cap", "sensor", "MARKER", None, 1), &nonce);
+            let mut marker = messbereit(None, 1.0);
+            marker.hoermarkierung = true;
+            r.heartbeat("s-marker-cap", &nonce, None, Some(marker));
+            r.sensor_trennen("s-marker-cap", &nonce);
+        }
+
+        let sensor = &r.sensoren["s-marker-cap"];
+        assert_eq!(
+            sensor.markierungs_nonces.len(),
+            MAX_MARKIERUNGS_NONCES_PRO_SENSOR
+        );
+        assert!(sensor.markierung_unaufloesbar);
+        assert!(sensor.hoermarkierung);
+
+        // Auch ein späteres false einer bekannten Quelle darf den nicht mehr
+        // zuordenbaren Überlauf nicht fälschlich als vollständig beendet werten.
+        r.sensor_verbinden(
+            &hello("s-marker-cap", "sensor", "MARKER", None, 1),
+            "marker-0",
+        );
+        let mut marker_aus = messbereit(None, 2.0);
+        marker_aus.hoermarkierung = false;
+        r.heartbeat("s-marker-cap", "marker-0", None, Some(marker_aus));
+        assert!(r.sensoren["s-marker-cap"].hoermarkierung);
+        assert!(aggregat_sperrgrund(&r.sensoren_snapshot(jetzt_ms()))
+            .unwrap()
+            .contains("nicht mehr eindeutig zuordenbar"));
     }
 
     #[test]
@@ -813,6 +1401,27 @@ mod register_tests {
         assert_eq!(paare[0].timing, "wahrscheinlich");
         // Keine Überlappung → unklar.
         r.heartbeat("s-post", "n-q", None, Some(messbereit(Some(fenster(500_000, 600_000, 0)), 10.0)));
+        let paare = paare_auswerten(&r.sensoren_snapshot(jetzt_ms()));
+        assert_eq!(paare[0].timing, "unklar");
+        assert!(paare[0].grund.contains("überlappen nicht"));
+    }
+
+    #[test]
+    fn paarfenster_an_i64_raendern_bleiben_unklar_statt_ueberzulaufen() {
+        let mut r = Register::default();
+        paar_basis(&mut r);
+        r.heartbeat(
+            "s-pre",
+            "n-p",
+            None,
+            Some(messbereit(Some(fenster(i64::MIN, i64::MIN + 4096, 0)), 1.0)),
+        );
+        r.heartbeat(
+            "s-post",
+            "n-q",
+            None,
+            Some(messbereit(Some(fenster(i64::MAX - 4096, i64::MAX, 0)), 1.0)),
+        );
         let paare = paare_auswerten(&r.sensoren_snapshot(jetzt_ms()));
         assert_eq!(paare[0].timing, "unklar");
         assert!(paare[0].grund.contains("überlappen nicht"));

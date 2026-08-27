@@ -2,9 +2,9 @@
 //
 // Läuft in einem eigenen std::thread, nie im Audiothread. Ablauf pro Runde:
 // verbinden → hello → welcome lesen → 1-Hz-Heartbeats mit Live-Statistik →
-// bei Fehler trennen und mit exponentiellem Backoff neu versuchen. stop()
-// bricht auch blockierende Pipe-I/O ab (CancelSynchronousIo) — der
-// Plugin-Destruktor darf nie am Broker hängen.
+// bei Fehler trennen und mit exponentiellem Backoff neu versuchen. Alle I/O
+// ist overlapped und wird bei stop()/reconnect() ueber das stabile Pipehandle
+// abgebrochen — der Plugin-Destruktor darf nie am Broker haengen.
 //
 // Die Klasse ist bewusst hostfrei (nur juce_core + Win32), damit die Konsolen-
 // Probe EqCopPipeProbe denselben Code gegen den Broker fährt wie das Plugin.
@@ -12,10 +12,12 @@
 
 #include <juce_core/juce_core.h>
 #include <atomic>
+#include <chrono>
 #include <functional>
 #include <mutex>
 #include <thread>
 #include <condition_variable>
+#include <cstdint>
 #include <vector>
 
 namespace eqcop
@@ -87,6 +89,7 @@ public:
         juce::String letzterFehler;
         int          verbindungsVersuche = 0;
         juce::int64  heartbeatsGesendet  = 0;
+        juce::int64  heartbeatsBestaetigt = 0;
         // Vom Broker ausgehandelte Protokollversion (welcome); 0 = getrennt.
         int          protokollVersion = 0;
         // Letztes heartbeat_ack meldet: eine WEITERE lebende Verbindung nutzt
@@ -104,7 +107,8 @@ public:
     PipeClient (std::function<HelloInfo()> helloProvider,
                 std::function<StatsSnapshot()> statsProvider,
                 std::function<MessKompakt()> messProvider = {},
-                const juce::String& pipeName = {});
+                const juce::String& pipeName = {},
+                std::chrono::milliseconds ioTimeout = std::chrono::milliseconds { 5000 });
     ~PipeClient();
 
     void start();
@@ -117,27 +121,39 @@ public:
     Snapshot snapshot() const;
 
 private:
+    using IoDeadline = std::chrono::steady_clock::time_point;
+
     void threadLauf();
-    bool eineVerbindung();                       // true = geordnet beendet (stop)
-    bool sende (void* handle, const juce::String& json);
-    bool empfange (void* handle, juce::String& jsonOut);
+    bool eineVerbindung (std::uint64_t generation);
+    bool sende (void* handle, const juce::String& json, std::uint64_t generation,
+                juce::String& fehler);
+    bool empfange (void* handle, juce::String& jsonOut, std::uint64_t generation,
+                   juce::String& fehler);
+    bool ioGenau (void* handle, void* daten, unsigned bytes, bool schreiben,
+                  std::uint64_t generation, IoDeadline deadline, juce::String& fehler);
+    bool sollAbbrechen (std::uint64_t generation) const noexcept;
+    void aktiveIoAbbrechen();
 
     std::function<HelloInfo()>     helloProvider;
     std::function<StatsSnapshot()> statsProvider;
     std::function<MessKompakt()>   messProvider;
     juce::String                   pipeName;
+    const std::chrono::milliseconds ioTimeout;
 
+    std::mutex              lebenslaufMutex;
     std::thread             thread;
     std::atomic<bool>       laeuft { false };
-    std::atomic<bool>       neuVerbinden { false };
+    std::atomic<std::uint64_t> verbindungsGeneration { 0 };
     std::mutex              wartemutex;
     std::condition_variable warte;
 
     mutable std::mutex      zustandMutex;
     Snapshot                zustand;
 
-    std::atomic<void*>      aktivesHandle { nullptr };  // für CancelSynchronousIo
-    std::atomic<void*>      threadHandle  { nullptr };
+    // Schliessen und CancelIoEx werden unter demselben Mutex serialisiert:
+    // kein Check-then-use auf einem bereits wiederverwendeten Win32-HANDLE.
+    std::mutex              handleMutex;
+    void*                   aktivesHandle = nullptr;
 };
 
 } // namespace eqcop

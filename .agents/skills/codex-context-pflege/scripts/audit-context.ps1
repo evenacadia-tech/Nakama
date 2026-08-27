@@ -114,13 +114,20 @@ function Get-ProjectDirectories {
 
     $rootPath = [IO.Path]::GetFullPath($Root).TrimEnd('\', '/')
     $currentPath = [IO.Path]::GetFullPath($Current).TrimEnd('\', '/')
-    $relative = [IO.Path]::GetRelativePath($rootPath, $currentPath)
-    if ($relative -eq '.') {
+    $pathComparison = if ([IO.Path]::DirectorySeparatorChar -eq '\') {
+        [StringComparison]::OrdinalIgnoreCase
+    } else {
+        [StringComparison]::Ordinal
+    }
+    if ($currentPath.Equals($rootPath, $pathComparison)) {
         return @($rootPath)
     }
-    if ($relative -eq '..' -or $relative.StartsWith("..$([IO.Path]::DirectorySeparatorChar)")) {
+
+    $rootPrefix = $rootPath + [IO.Path]::DirectorySeparatorChar
+    if (-not $currentPath.StartsWith($rootPrefix, $pathComparison)) {
         return @($currentPath)
     }
+    $relative = $currentPath.Substring($rootPrefix.Length)
 
     $directories = [Collections.Generic.List[string]]::new()
     $directories.Add($rootPath)

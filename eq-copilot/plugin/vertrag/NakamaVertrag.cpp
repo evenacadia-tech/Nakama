@@ -1082,3 +1082,5 @@ juce::Array<Verletzung> Schema::pruefe (const juce::var& daten) const
 }
 
 } // namespace nakama::vertrag
+
+#include "NakamaKernRiegel.h"   // S8/SONDE-007a: K1-Endpruefung nach allen Kern-Headern

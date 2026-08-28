@@ -470,3 +470,5 @@ bool lies (const juce::String& jsonText, Wert& aus, juce::String& fehler)
 }
 
 } // namespace nakama::kanon
+
+#include "NakamaKernRiegel.h"   // S8/SONDE-007a: K1-Endpruefung nach allen Kern-Headern

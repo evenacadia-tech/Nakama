@@ -1,6 +1,12 @@
-#pragma once
-
 /*  S8 / SONDE-007a - Kompilier-Riegel des gemeinsamen Kerns.
+
+    ABSICHTLICH OHNE INCLUDE-GUARD: Jede Kern-Uebersetzungseinheit bindet
+    diesen reinen Praeprozessor-Riegel zuerst und als letzte Zeile erneut ein.
+    Die zweite Auswertung sieht damit auch JucePlugin_*-Makros, die erst ein
+    eigener oder generierter, danach eingebundener Header definiert und bis
+    zum TU-Ende definiert laesst. Ein `#pragma once` wuerde genau diese
+    Endpruefung still ausschalten; bereits in Bytes umgesetzte, danach wieder
+    entfernte Makros bleiben Aufgabe von K3.
 
     WOGEGEN DAS SCHUETZT (Entwurf §53.4, Static-Lib-Randbedingung):
 
@@ -20,17 +26,25 @@
     wuerde, traegt "Eqcp" fuer alle drei Apps in seinem Objektcode - und der
     Identitaets-Golden aus S2 faellt, sobald Probeeq oder Suna gebaut werden.
 
-    DREI RIEGEL, ARBEITSTEILUNG (Manifest docs/beweise/SONDE-007a.md):
+    FUENF RIEGEL, ARBEITSTEILUNG (Manifest docs/beweise/SONDE-007a.md):
 
-      K1 - dieser hier. Namentlich, im Uebersetzer, VOR dem Linken. Schnell und
-           mit klarer Fehlermeldung, aber nur fuer die Makros, die unten
-           stehen: der Praeprozessor kann nicht auf ein Praefix pruefen.
+      K1 - dieser hier. Namentlich, im Uebersetzer, VOR dem Linken; ausgewertet
+           am Anfang und Ende jeder Kern-Uebersetzungseinheit. Schnell und mit
+           klarer Fehlermeldung, aber nur fuer die Makros, die unten stehen:
+           der Praeprozessor kann nicht auf ein Praefix pruefen.
       K2 - der Konfigurier-Riegel in cmake/NakamaKern.cmake. Laeuft die
-           Linkhuelle des Kerns ab und faellt auf JEDES `JucePlugin_`
-           per Regex - er schliesst genau die Luecke, die K1 offenlaesst.
+           rekursive Linkhuelle je Konfiguration ab und faellt auf jedes
+           compilerwirksame `JucePlugin_` aus Definitions- oder /D-/D-
+           Optionseigenschaften; unbekannte relevante Generatorausdruecke
+           sind ROT statt unsichtbar.
+      K2b - haelt die wirksamen JUCE-Konfigurationsdefines von Kern und jedem
+           Verbraucher je Konfiguration als echte Mengengleichheit zusammen.
+      K2c - haelt die rekursive Quelle der JUCE-Empfehlungsschalter je
+           Konfiguration zusammen.
       K3 - tools/eq-copilot/pruefe_kern_identitaetsfrei.py misst das GEBAUTE
-           NakamaKern.lib gegen die eingefrorenen Identitaetswerte. Erst das
-           ist eine Aussage ueber das Artefakt statt ueber die Baubeschreibung.
+           NakamaKern.lib gegen Text-, Viercode-Integer- und CID-Bytes der
+           eingefrorenen Identitaetswerte und prueft vorher die Frische. Erst
+           das ist eine Aussage ueber das Artefakt statt die Baubeschreibung.
 
     Der Riegel gilt nur beim Uebersetzen der Kern-Uebersetzungseinheiten
     (NAKAMA_KERN_UEBERSETZUNG, gesetzt von cmake/NakamaKern.cmake). Dieselben

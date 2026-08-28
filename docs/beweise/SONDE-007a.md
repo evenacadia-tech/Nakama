@@ -44,15 +44,17 @@
 - `tools/beweise.ps1` — Kanon-Bein **A14**; `NakamaKern` als *gemessenes Ziel*
   (wird gebaut, läuft aber nicht selbst).
 
-**Arbeitsteilung der drei Riegel** — der Punkt des Tickets, nicht Redundanz:
+**Arbeitsteilung der fünf Riegel** — der Punkt des Tickets, nicht Redundanz.
+Diese Übersicht beschreibt den heutigen Arbeitsbaum; ältere Rohausgaben weiter
+unten bleiben datierte Belege ihres damaligen Quellstands:
 
 | | misst | sieht | sieht **nicht** |
 |---|---|---|---|
-| **K1** Präprozessor | Baubeschreibung | 46 Makros namentlich, in jeder Kern-Übersetzungseinheit | Makros, die nicht auf der Liste stehen (der Präprozessor kann kein Präfix prüfen) |
-| **K2** CMake-Konfigurierzeit | Baubeschreibung | **jedes** `JucePlugin_` per Regex über die ganze Linkhülle | Werte, die erst über einen Generatorausdruck entstehen |
-| **K3** Artefakt | die gebaute `.lib` | jeden eingefrorenen Identitätswert als Bytes — auch als Stringliteral, das nie ein Makro war | nichts von dem, was oben steht (er läuft nach dem Bau) |
-| **K2b** CMake-Konfigurierzeit | Baubeschreibung | ob Kern und Verbraucher dieselben `JUCE_`-**Defines** über den JUCE-Kopfdateien haben | Übersetzungs**schalter** (dafür kam K2c) · Identität (dafür die drei oben) |
-| **K2c** CMake-Konfigurierzeit | Baubeschreibung | ob jedes `juce_recommended_*`-Ziel der Referenz auch am Kern hängt — die **Quelle** der Schalter, nicht einzelne Flags | `lto_flags` (ausgenommen: `/GL` ohne `-LTCG` im Verbraucher) · alles, was kein Empfehlungsziel ist |
+| **K1** Präprozessor | Quelltext | 46 bekannte Makros namentlich, am Anfang **und Ende** jeder der fünf Kern-Übersetzungseinheiten; damit auch bis zum TU-Ende definierte Makros aus später eingebundenen eigenen/generierten Headern | Makronamen außerhalb der Liste und vor dem TU-Ende wieder entfernte Makros (der Präprozessor kann kein Präfix aufzählen; resultierende Identitätsbytes misst K3) |
+| **K2** CMake-Konfigurierzeit | Kernziel plus dessen compilerwirksame Usage-Requirements-Hülle; Verbraucher nur bei einer echten fehlerhaften Rückkante | jedes compilerwirksame `JucePlugin_` aus eigenen und transitiven `*_COMPILE_DEFINITIONS` sowie `-D`/`/D` in `*_COMPILE_OPTIONS`; rekursive `LINK_LIBRARIES` am Kern und danach `INTERFACE_LINK_LIBRARIES`, Aliase/importierte Ziele und bedingte Kanten je Konfiguration | Makros, die erst im C++-Quelltext entstehen (dafür K1/K3); ein unbekannter relevanter Generatorausdruck ist ausdrücklich **ROT**, nicht „sieht nicht“ |
+| **K3/A14** Artefakt + Frische | gebaute `.lib`, `.vcxproj`, `.tlog` und echte Kern-Includehülle | jeden eingefrorenen Text als ASCII/UTF-16LE, Viercodes zusätzlich als 4-Byte-Integer in **beiden** Byteordnungen, CIDs roh/COM-vertauscht; rekursive lokale Includes aus den tatsächlichen `NAKAMA_KERN_QUELLEN`; heutige Definemenge exakt in beide Richtungen gegen **jede** gebaute Kern-TU | Baubeschreibung ohne resultierende Artefaktbytes (dafür K1/K2/K2b/K2c) |
+| **K2b** CMake-Konfigurierzeit | Kern und je ein registrierter Verbraucher als **getrennte** Wurzeln mit ihrer jeweiligen compilerwirksamen Usage-Requirements-Hülle | Mengengleichheit und Wertwidersprüche der `JUCE_`-Defines beider Zielmengen, je Konfiguration, rekursiv und inklusive `-D`/`/D`; `JucePlugin_*` des Verbrauchers gehört nicht zur Vergleichsmenge | bewusst ausgenommene Hüllendefines (`JUCE_MODULE_AVAILABLE_*`, `JUCE_SHARED_CODE`, `JUCE_STANDALONE_APPLICATION`, `JUCE_VST3_CAN_REPLACE_VST2`) · Nicht-Define-Schalter (dafür K2c) |
+| **K2c** CMake-Konfigurierzeit | volle Linkhülle des Kerns und volle Linkhülle je eines registrierten Verbrauchers, **getrennt** je Konfiguration | ob jedes transitiv und bedingt erreichbare `juce_recommended_*`-Ziel der Referenz in derselben Konfiguration auch am Kern hängt — Quelle der Schalter, nicht einzelne Flags | `lto_flags` (begründet ausgenommen: `/GL` ohne `-LTCG` im Verbraucher) · alles, was kein Empfehlungsziel ist; Verbraucher werden nicht zur Kernquelle erklärt |
 
 K2b ist im Selbstaudit nach dem ersten Commit dazugekommen (§2 B8), **K2c** aus
 dem T2-Lauf am 23.08. (§5 T2-1/T2-3, Nacharbeit §6) — bis dahin sagte die
@@ -62,6 +64,207 @@ Kern eine fremde Identität?", sondern „bedeutet derselbe JUCE-Header im Kern
 dasselbe wie im Verbraucher, und wird er gleich scharf übersetzt?". Die
 Rohausgaben in §2 stammen von vor K2c: dort steht die Linkhülle noch mit
 **7** statt 9 Zielen.
+
+### Riegel-Nacharbeit S8 vom 28.08.2026 — acht übergebene P1
+
+Alle acht Fälle werden gemessen; keine Zusage wurde auf eine unbenannte Lücke
+verengt. Die kontrollierten roten Fälle bleiben als manuelle Repro-Blöcke
+erhalten. Jeweils **eine** Probe an der angegebenen Stelle in
+`plugin/CMakeLists.txt` einsetzen, mit dem angegebenen frischen Bauverzeichnis
+konfigurieren, den roten Configure-Ausgang sichern und die Probe wieder entfernen:
+
+1. **Konfigurationsabhängiger Wertwiderspruch, nur Release (K2b):**
+
+   ```cmake
+   target_compile_definitions(NakamaKernJuce INTERFACE
+       "$<$<CONFIG:Release>:JUCE_USE_CURL=1>")
+   ```
+
+   ```powershell
+   cmake -S eq-copilot -B eq-copilot/build-riegelprobe-config -G "Visual Studio 17 2022" -A x64
+   ```
+
+   Erwartet: K2b bleibt für Debug widerspruchsfrei und fällt für Release auf
+   `JUCE_USE_CURL=0` plus `JUCE_USE_CURL=1`.
+
+2. **Transitives Interface-Define über `mid -> leaf` (K2b):**
+
+   ```cmake
+   add_library(NakamaKernProbeLeaf INTERFACE)
+   add_library(NakamaKernProbeMid INTERFACE)
+   target_compile_definitions(NakamaKernProbeLeaf INTERFACE JUCE_NUR_AM_KERN=1)
+   target_link_libraries(NakamaKernProbeMid INTERFACE NakamaKernProbeLeaf)
+   target_link_libraries(NakamaKern PRIVATE NakamaKernProbeMid)
+   ```
+
+   ```powershell
+   cmake -S eq-copilot -B eq-copilot/build-riegelprobe-transitiv -G "Visual Studio 17 2022" -A x64
+   ```
+
+   Erwartet: K2b nennt `JUCE_NUR_AM_KERN=1` als nur am Kern vorhanden.
+
+3. **Identitätsdefine als `/D`-Compile-Option (K2):**
+
+   ```cmake
+   target_compile_options(NakamaKern PRIVATE /DJucePlugin_NeueIdentitaet=0x45716370)
+   ```
+
+   ```powershell
+   cmake -S eq-copilot -B eq-copilot/build-riegelprobe-option -G "Visual Studio 17 2022" -A x64
+   ```
+
+   Erwartet: K2 fällt auf `JucePlugin_NeueIdentitaet=0x45716370`.
+
+4. **Bedingte, verschachtelte Release-Linkkante (K2; derselbe Läufer trägt K2c):**
+
+   ```cmake
+   add_library(NakamaKernIdentitaetsIface INTERFACE)
+   target_compile_definitions(NakamaKernIdentitaetsIface INTERFACE
+       JucePlugin_NeueIdentitaet=0x45716370)
+   target_link_libraries(NakamaKern PRIVATE
+       "$<$<CONFIG:Release>:NakamaKernIdentitaetsIface>")
+   ```
+
+   ```powershell
+   cmake -S eq-copilot -B eq-copilot/build-riegelprobe-linkkante -G "Visual Studio 17 2022" -A x64
+   ```
+
+   Erwartet: K2 fällt in Release; die Debug-Hülle enthält das Interface-Ziel
+   nicht. K2c wird mit derselben Kantenform separat vorgeführt (ebenfalls vor
+   dem K2-Aufruf einfügen):
+
+   ```cmake
+   add_library(juce_recommended_k2c_probe INTERFACE)
+   target_link_libraries(EqCopilot PUBLIC
+       "$<$<CONFIG:Release>:juce_recommended_k2c_probe>")
+   ```
+
+   ```powershell
+   cmake -S eq-copilot -B eq-copilot/build-riegelprobe-k2c-linkkante -G "Visual Studio 17 2022" -A x64
+   ```
+
+   Erwartet: K2c fällt nur für Release, weil der Verbraucher dort die bedingte
+   Empfehlungsquelle trägt und der Kern nicht.
+
+5. **K1 nach einem späteren Kern-Header:** Als temporär letzte Zeile von
+   `plugin/state/NakamaState.h` einsetzen:
+
+   ```cpp
+   #define JucePlugin_PluginCode 0x45716370
+   ```
+
+   ```powershell
+   cmake -S eq-copilot -B eq-copilot/build-riegelprobe-k1 -G "Visual Studio 17 2022" -A x64
+   cmake --build eq-copilot/build-riegelprobe-k1 --config Release --target NakamaKern
+   ```
+
+   Erwartet: Der Configure bleibt grün (isolierte K1-Probe), der Bau fällt in
+   der Endprüfung von `NakamaState.cpp`. Die Anfangsprüfung allein liegt vor
+   `NakamaState.h` und würde diese Probe nicht sehen.
+
+Die baulose A14-Vorführung ist direkt ausführbar und benutzt als Testobjekt
+exakt die little-endian Immediate-Bytes `70 63 71 45` von `0x45716370`:
+
+```powershell
+py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py --selbsttest
+```
+
+Erwartet: `fourcc-int-le`, `fourcc-int-be`, `roh16`, beide Define-Differenz-
+richtungen und `NakamaUtf8.h` in der Includehülle, Exitcode 0. Der vollständige
+A14-Lauf bleibt ein Nach-Bau-Bein; vor dem Scannen muss seine
+rekursiv abgeleitete Includehülle (einschließlich `vertrag/NakamaUtf8.h`) älter
+als die Lib sein und die Define-Mengen aus `.vcxproj` und `.tlog` müssen exakt
+gleich sein.
+
+### Runde 2/3 — JUCE-Generatorausdrücke und Listen-Eigenschaften
+
+Die Inventur vom 28.08.2026 umfasst alle `$<`-Vorkommen in
+`extras/Build/CMake/*.cmake`, `eq-copilot/cmake/*.cmake` und den beiden
+Projekt-`CMakeLists.txt`. Für die von K2/K2b/K2c gelesenen Definitions-,
+Options- und Linkeigenschaften ergibt sich:
+
+| Fundstelle | dort vorkommende Formen | Behandlung im Riegelauswerter |
+|---|---|---|
+| `JUCEHelperTargets.cmake:41-44,78-84,109,123,137,144-165` | `CONFIG`, `OR`, `COMPILE_LANGUAGE`, `IF`, `STREQUAL` und die bedingte Kurzform | je Konfiguration verschachtelt ausgewertet; die Compile-Sprache ist für die ausschließlich aus C++-Quellen bestehenden Riegelzielmengen `CXX` |
+| `JUCEModuleSupport.cmake:108-109,535,594` | `IF`, `OR`, `CONFIG`, `PLATFORM_ID`, `TARGET_EXISTS` und die bedingte Kurzform | verschachtelt ausgewertet; fehlende explizit referenzierte Ziele bleiben ROT |
+| `JUCEUtils.cmake:309-312,841-849,1058-1062,1521-1582,2111` | `TARGET_GENEX_EVAL`, zweistelliges `TARGET_PROPERTY`, `FILTER`, `BOOL`, `TARGET_EXISTS` und die bedingte Kurzform | Ziel/Alias zuerst aufgelöst; skalare Eigenschaften direkt, Listeneigenschaften Element für Element rekursiv; `FILTER` unterstützt `INCLUDE`/`EXCLUDE`; die RC-Quellproperty in 841-849 gehört nicht zum Kern, benutzt aber dieselben unterstützten Formen |
+| `plugin/CMakeLists.txt:664` | `CXX_COMPILER_ID` | gegen `CMAKE_CXX_COMPILER_ID` ausgewertet |
+| `NakamaKern.cmake:1119-1123` (Zeilenstand dieser Nacharbeit) | zweistelliges `TARGET_PROPERTY` für `INTERFACE_INCLUDE_DIRECTORIES`, `INTERFACE_COMPILE_DEFINITIONS`, `INTERFACE_COMPILE_OPTIONS` | Listenexpansion mit Besuchtmenge `Ziel::Eigenschaft`; Aliase werden aufgelöst, importierte CMake-Ziele wie normale Ziele gelesen, Zyklen und fehlende Ziele sind ROT |
+
+Zusätzlich kennt der Auswerter die in den Riegelproben beziehungsweise von
+CMake in Usage Requirements benötigten Formen `AND`, `NOT`, `EQUAL`,
+`GENEX_EVAL`, `$<CONFIG>`, `LINK_ONLY`, `COMPILE_ONLY`, `BUILD_INTERFACE`,
+`INSTALL_INTERFACE`, `TARGET_NAME` und `TARGET_NAME_IF_EXISTS`. Die übrigen
+gefundenen JUCE-Formen `TARGET_FILE`, `TARGET_BUNDLE_DIR` und
+`TARGET_BUNDLE_CONTENT_DIR` stehen nur in Custom-Command-, Ausgabe- und
+Bundlepfaden (`JUCEUtils.cmake:212-221,748,962-965,1184-1192,1251-1362`),
+nicht in einer von K2/K2b/K2c gelesenen Eigenschaft; dasselbe gilt für
+`CONFIG`/`TARGET_FILE` in den FlatBuffers-Ausgabe- und Custom-Command-Pfaden
+(`NakamaFlatBuffers.cmake:145-224`). Ebenso liegen
+`EQUAL`/`GENEX_EVAL` mit der einstelligen, zielkontextabhängigen
+`TARGET_PROPERTY` nur in `INTERFACE_LINK_DIRECTORIES`
+(`JUCEModuleSupport.cmake:434-444`). Diese Pfadformen werden daher nicht
+behauptet; tauchen ein unbekannter Ausdruck oder eine Zielreferenz doch in
+einer Riegelzielmenge auf, wird nicht still verworfen, sondern ROT gemeldet.
+
+Die Zielmengen bleiben getrennt: K2 liest `NakamaKern` plus dessen
+compilerwirksame Usage-Requirements-Hülle. K2b berechnet Kern und registrierten
+Verbraucher als zwei eigene Wurzeln und vergleicht nur ihre `JUCE_`-Defines;
+die `JucePlugin_*`-Defines des Verbrauchers werden dabei zwar vollständig
+ausgewertet, gehören aber nicht zur Vergleichsmenge. K2c vergleicht die volle
+Linkhülle beider Wurzeln je Konfiguration. `EqCopilot`, `NakamaSuna` und
+`NakamaProbeeq` sind Verbraucher und werden nur durch eine echte Rückkante zu
+Quellen des Kerns.
+
+Der baulose Regressionstest prüft zwanzig Ausdrücke, darunter genau
+`JucePlugin_IsSynth=$<BOOL:$<TARGET_PROPERTY:EqCopilot,JUCE_IS_SYNTH>>`, die
+reale `juce_core`-Liste aus `INTERFACE_COMPILE_DEFINITIONS`, eine bedingte
+`INTERFACE_LINK_LIBRARIES`-Liste über einen Alias und alle oben als unterstützt
+benannten Inventurformen. Sensitivitätsproben prüfen zusätzlich Property-Zyklus,
+fehlendes Ziel, unbekannte Eigenschaft und die Regel: Eine Zielreferenz muss
+auch ohne sichtbares `JUCE_`-/`JucePlugin_`-Präfix expandieren. Nur ein Ausdruck
+ohne beide Präfixe **und ohne Zielreferenz** darf irrelevant bleiben:
+
+```powershell
+$cmake = 'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe'
+& $cmake -DNAKAMA_TEST_CONFIG=Debug -DNAKAMA_TEST_IS_SYNTH=FALSE -P eq-copilot/cmake/pruefe_nakama_kern_genex.cmake
+& $cmake -DNAKAMA_TEST_CONFIG=Release -DNAKAMA_TEST_IS_SYNTH=TRUE -P eq-copilot/cmake/pruefe_nakama_kern_genex.cmake
+```
+
+Erwartet: beide Läufe enden mit
+`Nakama-Kern-Genex-Selbsttest: 20/20 Ausdruecke korrekt.` und Exitcode 0.
+Der fail-closed Pfad ist mit demselben Skript kontrolliert rot ausführbar:
+
+```powershell
+& $cmake -DNAKAMA_TEST_CONFIG=Debug -DNAKAMA_TEST_IS_SYNTH=FALSE -DNAKAMA_TEST_UNBEKANNT_ROT=ON -P eq-copilot/cmake/pruefe_nakama_kern_genex.cmake
+```
+
+Erwartet: Exitcode ungleich 0 und die Meldung
+`JUCE_RIEGEL_UNBEKANNT=$<TARGET_PROPERTY:EqCopilot,NAKAMA_UNBEKANNT>` sei
+„nicht aufloesbar; stilles Verwerfen waere falsch gruen“.
+
+**Kontrollierter Bruch für eine unbekannte relevante Eigenschaft:** Unmittelbar
+vor der abschließenden `foreach(verbraucher IN LISTS
+NAKAMA_KERN_VERBRAUCHER)`-Schleife einsetzen:
+
+```cmake
+target_compile_definitions(EqCopilot PRIVATE
+    "JUCE_RIEGEL_UNBEKANNT=$<TARGET_PROPERTY:EqCopilot,NAKAMA_UNBEKANNT>")
+```
+
+Dann aus der Repo-Wurzel:
+
+```powershell
+$cmake = 'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe'
+& $cmake -S eq-copilot -B eq-copilot/build-riegelprobe-unbekannt -G "Visual Studio 17 2022" -A x64
+```
+
+Erwartet: K2b fällt beim Configure mit
+`JUCE_RIEGEL_UNBEKANNT=$<TARGET_PROPERTY:EqCopilot,NAKAMA_UNBEKANNT>` als
+„nicht aufloesbar; stilles Verwerfen waere falsch gruen“. Auch ein anders
+benanntes Define wie
+`NAKAMA_TEST=$<TARGET_PROPERTY:EqCopilot,NAKAMA_UNBEKANNT>` bleibt ROT, weil
+die Zielreferenz expandiert werden muss und dabei Defines tragen könnte.
 
 ---
 

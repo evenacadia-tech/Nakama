@@ -846,3 +846,5 @@ juce::String alsText (const Zustand& z)
 }
 
 } // namespace nakama::state
+
+#include "NakamaKernRiegel.h"   // S8/SONDE-007a: K1-Endpruefung nach allen Kern-Headern

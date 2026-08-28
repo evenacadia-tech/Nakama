@@ -77,8 +77,10 @@ target_include_directories(EqCopilot PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/hostbri
 # duerfen. Bis 22.08. wurde sie je Ziel neu uebersetzt (sieben Kopien);
 # ab hier einmal.
 #
-# Die drei Riegel dazu stehen in cmake/NakamaKern.cmake (K1/K2) und in
-# tools/eq-copilot/pruefe_kern_identitaetsfrei.py (K3).
+# Die fuenf Riegel dazu: K1 steht am Anfang und Ende jeder Kernquelle;
+# K2/K2b/K2c stehen in cmake/NakamaKern.cmake, K3/A14 in
+# tools/eq-copilot/pruefe_kern_identitaetsfrei.py. Ihre exakt gemessene
+# Arbeitsteilung steht in der Riegeluebersicht von SONDE-007a.
 # S9/SONDE-007b Abschnitt 3: NakamaLebenslauf.cpp kommt dazu - die
 # Lifecycle-Klassifikation (§53.5) ist reine Regelarbeit ueber dem State und
 # gilt fuer alle drei Bundles. Sie gehoert damit genau in die Menge, die Gen,
@@ -125,13 +127,16 @@ target_link_libraries(NakamaKern PRIVATE NakamaKernJuce)
 target_link_libraries(NakamaKern PRIVATE
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags)
-# Schaltet K1 scharf (plugin/state/NakamaKernRiegel.h). Nur PRIVATE: dieselben
-# Kopfdateien liest auch die Target-Schicht, und DORT sind die Konstanten der
-# Zweck und kein Fehler.
+# Schaltet K1 scharf (plugin/state/NakamaKernRiegel.h, bewusst ohne
+# Include-Guard und am Anfang/Ende jeder Kernquelle eingebunden). Nur PRIVATE:
+# dieselben Kopfdateien liest auch die Target-Schicht, und DORT sind die
+# Konstanten der Zweck und kein Fehler.
 target_compile_definitions(NakamaKern PRIVATE NAKAMA_KERN_UEBERSETZUNG=1)
 
 # K2 laeuft, sobald alle Kanten des KERNS stehen — also nach den
-# target_link_libraries oben.
+# target_link_libraries oben. Seine Zielmenge ist nur NakamaKern plus dessen
+# compilerwirksame Usage-Requirements-Huelle; spaeter registrierte Verbraucher
+# sind keine Quellen des Kerns.
 nakama_kern_riegel_pruefen(NakamaKern)
 # K2b und K2c stehen NICHT hier: sie lesen die Eigenschaften der VERBRAUCHER,
 # und die entstehen erst weiter unten. Hier gerufen saehen sie eine leere
@@ -663,7 +668,10 @@ endforeach()
 # Erst hier ist die Frage stellbar. SONDE-007a liess offen, ob der Kern gegen
 # EINE Referenz oder gegen alle geprueft wird (B8, "Fuer S9 offen"); mit drei
 # Bundles ist die Antwort: gegen jeden einzelnen. Waeren zwei Verbraucher
-# untereinander uneins, faende eine Stichprobe das nicht.
+# untereinander uneins, faende eine Stichprobe das nicht. K2b berechnet die
+# compilerwirksamen Definehuellen von Kern und Verbraucher getrennt; K2c
+# berechnet ihre Linkhuellen getrennt. Beide laufen rekursiv und je
+# Baukonfiguration, ohne einen Verbraucher in die Kernhuelle hineinzuziehen.
 get_property(NAKAMA_KERN_VERBRAUCHER GLOBAL PROPERTY NAKAMA_KERN_VERBRAUCHER)
 list(LENGTH NAKAMA_KERN_VERBRAUCHER NAKAMA_KERN_VERBRAUCHER_ANZAHL)
 if(NAKAMA_KERN_VERBRAUCHER_ANZAHL EQUAL 0)

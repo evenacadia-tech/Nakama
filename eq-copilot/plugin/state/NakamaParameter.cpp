@@ -361,3 +361,5 @@ bool leseAusBaum (const juce::ValueTree& parameters, Satz& aus, juce::String& gr
 }
 
 } // namespace nakama::parameter
+
+#include "NakamaKernRiegel.h"   // S8/SONDE-007a: K1-Endpruefung nach allen Kern-Headern

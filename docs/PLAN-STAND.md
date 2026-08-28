@@ -1,6 +1,6 @@
 # Planstand Nakama
 
-<!-- quellstand: 2f3ee24 -->
+<!-- quellstand: e3fb578 -->
 
 > **Gerechnet, nicht gepflegt.** Dieses Blatt entsteht aus dem Repo:
 > `py -3.13 tools/plan/planstand.py`. Es wird **nie** von Hand editiert —
@@ -9,13 +9,16 @@
 > *abgenommen* erst, wenn dort eine Urteilsmarke der geforderten Prüfstufe
 > mit **PASS** steht. Fehlt sie, gilt der Schritt als nicht abgenommen.
 
-**Stand:** 2026-08-28 · Quellstand `2f3ee24` · **11 von 36 abgenommen** · 6 gebaut · 19 offen
+**Stand:** 2026-08-28 · Quellstand `e3fb578` · **12 von 36 abgenommen** · 5 gebaut · 19 offen
 
-`████████████▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░` 31 % abgenommen · 47 % gebaut
+> ⚠️ Gerechnet aus dem Arbeitsbaum: unter `docs/plan/`, `docs/beweise/`
+> oder `tools/plan/` liegen Änderungen, die noch nicht in `e3fb578` sind.
+
+`█████████████▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░` 33 % abgenommen · 47 % gebaut
 
 **Als Nächstes:** **Nacharbeit an S9** — der Prüfer hat einen Befund offen gelassen (docs/beweise/SONDE-007b.md).
 
-**Wartet auf ein Urteil** (gebaut, nachgemessen, aber ohne PASS eines frischen Prüfers): `S5` · `S6` · `S7` · `S8`
+**Wartet auf ein Urteil** (gebaut, nachgemessen, aber ohne PASS eines frischen Prüfers): `S6` · `S7` · `S8`
 
 **Bei dir liegen 8 Fragen** — `U2, U6, U8, U9, U10, U11, U12, U13`. Sie werden im Chat gestellt: Skill `/fragen`.
 
@@ -25,7 +28,7 @@
 |---|---|---:|---:|---:|
 | **Vorlauf** — Beweisen statt behaupten | `████████████████████████` | 1 | 0 | 0 |
 | **P0** — Bestand einfrieren, Hostgrenzen beweisen | `████████████████████████` | 8 | 0 | 0 |
-| **P1** — Verträge, gespeicherter Zustand, neutrale Hüllen | `▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓` | 0 | 6 | 0 |
+| **P1** — Verträge, gespeicherter Zustand, neutrale Hüllen | `████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓` | 1 | 5 | 0 |
 | **P2** — Messkern, Nachrichtenweg, Speicher | `██████████░░░░░░░░░░░░░░` | 2 | 0 | 3 |
 | **P3** — Passive Landkarte | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 2 |
 | **P4–P5** — Vergleichsevidenz und Ursachen | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 4 |
@@ -39,7 +42,7 @@ flowchart LR
   P0["Vorlauf<br/>1/1 abgenommen"]:::fertig
   P1["P0<br/>8/8 abgenommen"]:::fertig
   P0 --> P1
-  P2["P1<br/>0/6 abgenommen<br/>+6 gebaut"]:::laeuft
+  P2["P1<br/>1/6 abgenommen<br/>+5 gebaut"]:::laeuft
   P1 --> P2
   P3["P2<br/>2/5 abgenommen"]:::laeuft
   P2 --> P3
@@ -77,11 +80,11 @@ flowchart LR
 - ■ **S4** — Capabilityreport: die zehn Fähigkeitsbits für FL an die Rohdaten aus Termin A und B gebunden — zwei bestätigt (Hostkontext, Projektzeit), acht nicht: zwei gemessen „kann FL nicht“ (feine Automation, double), drei „noch nicht bewiesen“ (Latenzangabe, beide Nebenwege — Termin A2), eines ungemessen, zwei warten auf ihre Tickets. Prüfbein A13 (61 Prüfungen) misst den Report selbst gegen die Rohdaten; Kanon 18/18 grün. Frischer Prüfer: Runde 1 NEEDS_WORK (zwei Bits zu optimistisch), nachgearbeitet, Runde 2 PASS. (abgenommen · T2 PASS 2026-08-22 · Kanon 18/18 grün)
 - ■ **G0** `Gate` — Erste adversariale Pruefrunde (C++-Review + Codex) ueber P0 — gefahren 22.08., Urteil PASS: beide Bruchauftraege (Gate 1, Gate 5) gescheitert, die P0-Kernflaeche traegt keinen Befund. Manifest docs/beweise/G0.md. Damit ist P0 vollstaendig. (abgenommen · T3 PASS 2026-08-22)
 
-### P1 — Verträge, gespeicherter Zustand, neutrale Hüllen  (0/6 abgenommen, 6 gebaut)
+### P1 — Verträge, gespeicherter Zustand, neutrale Hüllen  (1/6 abgenommen, 5 gebaut)
 
 *Alles, was zwischen den drei Apps und dem Broker hin- und hergeht, ist als Vertrag festgeschrieben und in drei Sprachen gleich geprüft — bevor der Messkern darauf baut.*
 
-- ▣ **S5** `SONDE-005a` — Nachrichtenverträge (JSON) mit Bandgitter und 153 Prüffällen; in Python, C++ und Rust gleich gelesen. Gebaut und nachgearbeitet — das abschließende Prüfurteil eines frischen Prüfers steht noch aus. (gebaut · T3 NEEDS_WORK 2026-08-24 · nachgearbeitet, frisches Urteil fehlt · Kanon 12/12 grün)
+- ■ **S5** `SONDE-005a` — Nachrichtenverträge (JSON) mit Bandgitter und 153 Prüffällen; in Python, C++ und Rust gleich gelesen. Gebaut und nachgearbeitet — das abschließende Prüfurteil eines frischen Prüfers steht noch aus. (abgenommen · T3 PASS 2026-08-28 · Kanon 29/29 grün)
 - ▣ **S6** `SONDE-005b` — Binärformat für Messdaten (FlatBuffers) mit festen Feldnummern und zwei handgeschriebenen Lesern; 6215 Byte-Mutanten bestanden. Prüfurteil wie S5 noch offen. (gebaut · T3 NEEDS_WORK 2026-08-24 · nachgearbeitet, frisches Urteil fehlt · Kanon 15/15 grün)
 - ▣ **S7** `SONDE-006` — Gespeicherter Zustand Schema 2: alte Projekte wandern verlustfrei, fremde Versionen werden nur-lesend geöffnet, FL sieht jede Änderung als „ungespeichert“. 109 Parameter-Kennungen festgeschrieben. (gebaut · T3 NEEDS_WORK 2026-08-24 · nachgearbeitet, frisches Urteil fehlt · Kanon 17/17 grün)
 - ▣ **S8** `SONDE-007a` — Gemeinsamer Kern fuer alle drei Plugins, der keine Bundle-Konstanten sieht — sonst bekaemen zwei Plugins die Identitaet des dritten. Gebaut: der geteilte Code wird jetzt EINMAL uebersetzt statt einmal je Programm, und fuenf unabhaengige Sperren passen auf, dass keine Kennung hineinrutscht. Jede Sperre wurde absichtlich ausgeloest, um zu zeigen, dass sie wirklich zufasst. Eine davon hat dabei einen Fehler in sich selbst gefunden. NACHGEPRUEFT am 23.08.: das Herzstueck haelt (der Kern traegt nachweislich keine Kennung), aber das Urteil lautete 'nachbessern' — fuenf Punkte, darunter eine echte Verschlechterung durch den Umbau selbst: der geteilte Code hatte still die schaerfste Warnstufe des Compilers verloren. Alle fuenf noch am selben Tag geschlossen, die fuenfte Sperre ist genau daraus entstanden, danach wieder 19 von 19 Pruefungen gruen. Auf den nachgebesserten Stand fehlt ein zweites Urteil. (gebaut · T3 NEEDS_WORK 2026-08-24 · nachgearbeitet, frisches Urteil fehlt · Kanon 19/19 grün)

@@ -11,18 +11,20 @@ und §53 sagt, wie das gemeint ist:
      Dateien werden committed und ein Drift-Test verlangt bitgleichen
      Neugenerierungsdiff."
 
-Dieses Skript ist dieser Test. Es prueft vier Dinge, und drei davon sind
-Voraussetzungen der vierten:
+Dieses Skript ist dieser Test. Es prueft fuenf Dinge, und vier davon sind
+Voraussetzungen der fuenften:
 
-  1. `flatc` ist DA und traegt die gepinnte Version (sonst waere "Drift 0"
-     eine Aussage ueber ein unbekanntes Werkzeug);
-  2. die Rust-Crate `flatbuffers` traegt DIESELBE Version (der erzeugte Code
+  1. `flatc` ist DA und traegt die gepinnte Version;
+  2. sein CMake-Bau belegt den tatsaechlich ausgecheckten Git-Commit und
+     dieser stimmt mit dem Pin ueberein (die Version allein unterscheidet die
+     mehreren 25.12.19-Schnitte nicht);
+  3. die Rust-Crate `flatbuffers` traegt DIESELBE Version (der erzeugte Code
      ruft in die Laufzeit; eine andere Version ist entweder ein
      Uebersetzungsfehler oder - schlimmer - stille Inkompatibilitaet);
-  3. der Feld-ID-Riegel ist gruen (Aufruf von `pruefe_fbs_feldids.py`);
-  4. die Neugenerierung ist BYTEGLEICH zum committeten Stand.
+  4. der Feld-ID-Riegel ist gruen (Aufruf von `pruefe_fbs_feldids.py`);
+  5. die Neugenerierung ist BYTEGLEICH zum committeten Stand.
 
-Mit `--conform` kommt eine fuenfte Pruefung dazu: dass `flatc --conform`
+Mit `--conform` kommt eine sechste Pruefung dazu: dass `flatc --conform`
 wirklich scharf ist. Ein Riegel, den niemand fallen gesehen hat, ist eine
 Behauptung - deshalb werden vier schemabrechende Mutationen erzeugt und
 gemessen, dass jede abgelehnt wird.
@@ -44,20 +46,21 @@ WURZEL = pathlib.Path(__file__).resolve().parents[2]
 WERKZEUG = WURZEL / "eq-copilot/schemas/v3/flatbuffers/WERKZEUG.json"
 BAU = WURZEL / "eq-copilot/build"
 CARGO = WURZEL / "broker/Cargo.toml"
+KONFIGURATION = "Release"
 
 
 def sha256(pfad: pathlib.Path) -> str:
     return hashlib.sha256(pfad.read_bytes()).hexdigest()
 
 
-def finde_flatc(steckbrief: dict) -> pathlib.Path | None:
+def finde_flatc() -> pathlib.Path | None:
     """Der Bau schreibt den Pfad hin; wir raten ihn nicht.
 
     Ein geratener Pfad, der ins Leere zeigt, saehe aus wie "kein flatc" - und
     der Drift-Test wuerde uebersprungen. Genau die Pruefung, die nicht
     fehlschlagen kann.
     """
-    zeiger = BAU / "nakama-flatc-pfad-Release.txt"
+    zeiger = BAU / f"nakama-flatc-pfad-{KONFIGURATION}.txt"
     if zeiger.exists():
         kandidat = pathlib.Path(zeiger.read_text(encoding="utf-8").strip())
         if kandidat.exists():
@@ -65,6 +68,27 @@ def finde_flatc(steckbrief: dict) -> pathlib.Path | None:
         print(f"  ROT: Zeiger {zeiger} verweist auf {kandidat}, das es nicht gibt")
         return None
     return None
+
+
+def belegter_commit() -> tuple[str | None, pathlib.Path]:
+    """Liest den vom CMake-Bau aus dem FetchContent-Checkout gemessenen Commit.
+
+    WERKZEUG.json darf nicht selbst Quelle dieses Werts sein: dann wuerde der
+    Pruefer wieder nur die Behauptung ausgeben, die er pruefen soll. Fehlender
+    oder ungueltiger Beleg ist ROT und wird nie als uebersprungene Voraussetzung
+    behandelt, weil ein vorhandenes Binary ohne Provenienz kein gepinntes
+    Werkzeug ist.
+    """
+    beleg = BAU / f"nakama-flatc-commit-{KONFIGURATION}.txt"
+    if not beleg.exists():
+        return None, beleg
+    try:
+        commit = beleg.read_text(encoding="ascii").strip().lower()
+    except (OSError, UnicodeError):
+        return None, beleg
+    if re.fullmatch(r"[0-9a-f]{40}", commit) is None:
+        return None, beleg
+    return commit, beleg
 
 
 def version_von(flatc: pathlib.Path) -> str | None:
@@ -197,7 +221,7 @@ def main(argv: list[str]) -> int:
 
     print(f"Gepinnt: flatbuffers {steckbrief['version']} @ {steckbrief['git_commit'][:12]}")
 
-    flatc = finde_flatc(steckbrief)
+    flatc = finde_flatc()
     if flatc is None:
         print("VORAUSSETZUNG FEHLT: flatc nicht gefunden.")
         print("  Der Bau schreibt seinen Pfad nach eq-copilot/build/nakama-flatc-pfad-Release.txt.")
@@ -218,6 +242,19 @@ def main(argv: list[str]) -> int:
               "entweder ist der Steckbrief manipuliert oder der Bau veraltet.")
         return 2
     print(f"  flatc: {gemessen}  ({flatc})")
+
+    commit, commit_beleg = belegter_commit()
+    if commit is None:
+        print(f"  ROT: Commit-Beleg fehlt oder ist ungueltig: {commit_beleg}. "
+              "Ein vorhandenes flatc mit passender --version belegt bei mehreren "
+              "Upstream-Schnitten nicht den gepinnten Quellstand.")
+        return 2
+    erwartet = steckbrief["git_commit"].lower()
+    if commit != erwartet:
+        print(f"  ROT: flatc-Commit {commit} weicht vom Pin {erwartet} ab "
+              f"(Beleg: {commit_beleg}).")
+        return 2
+    print(f"  flatc-Commit: {commit}  (CMake-Beleg: {commit_beleg})")
 
     anforderung, aufgeloest = cargo_version()
     if anforderung != steckbrief["rust_crate"]:

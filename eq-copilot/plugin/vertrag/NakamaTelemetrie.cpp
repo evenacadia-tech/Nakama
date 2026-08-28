@@ -197,7 +197,9 @@ void pruefeTransport (const fb::Transportstempel& t, const juce::String& p,
         hinzu (out, p + "/sample_count", "sample_count_bereich");
 
     const auto sr = t.sample_rate();
-    if (! std::isfinite (sr) || sr <= 0.0 || sr > 768000.0)
+    if (! std::isfinite (sr))
+        hinzu (out, p + "/sample_rate", "nicht_endlich");
+    else if (sr <= 0.0 || sr > 768000.0)
         hinzu (out, p + "/sample_rate", "sample_rate_bereich");
 
     // Ein gesetztes Bit ausserhalb der sieben bekannten. FlatBuffers prueft

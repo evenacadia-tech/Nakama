@@ -7,7 +7,7 @@
   "byte_mutation_von": "Markiert einen Puffer, den flatc nicht erzeugen KANN (falsche Dateikennung, abgeschnitten, zerstoerter Wurzeloffset). Er entsteht als Byte-Mutation des genannten gueltigen Puffers.",
   "regeln": "Die geschlossene Liste der Regelnamen steht in eq-copilot/schemas/v3/flatbuffers/README.md. Ein Verstoss ist (pfad, regel); die Menge wird kanonisch nach (pfad, regel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "anzahl_gueltig": 9,
-  "anzahl_ungueltig": 46,
+  "anzahl_ungueltig": 53,
   "fixtures": [
     {
       "datei": "gueltig/alle-validity-bits.bin",
@@ -74,6 +74,17 @@
         }
       ],
       "byte_mutation_von": "gueltig/live-64-band.bin"
+    },
+    {
+      "datei": "ungueltig/aktivitaet-nicht-endlich.bin",
+      "urteil": "ungueltig",
+      "warum": "Plus unendlich ist keine Aktivitaetskennzahl",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/aktivitaet",
+          "regel": "nicht_endlich"
+        }
+      ]
     },
     {
       "datei": "ungueltig/bandwert-ausser-bereich.bin",
@@ -149,6 +160,28 @@
         {
           "pfad": "/eintraege/0/frame/breite",
           "regel": "breite_negativ"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/breite-nicht-endlich.bin",
+      "urteil": "ungueltig",
+      "warum": "Minus unendlich ist keine Stereobreite",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/breite",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/crest-db-nicht-endlich.bin",
+      "urteil": "ungueltig",
+      "warum": "NaN ist kein Crest-Faktor",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/crest_db",
+          "regel": "nicht_endlich"
         }
       ]
     },
@@ -308,6 +341,17 @@
       ]
     },
     {
+      "datei": "ungueltig/korrelation-nicht-endlich.bin",
+      "urteil": "ungueltig",
+      "warum": "NaN ist keine Korrelation",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/korrelation",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/korrelation-ueber-1.bin",
       "urteil": "ungueltig",
       "warum": "Korrelation liegt in [-1, 1]",
@@ -340,6 +384,17 @@
         }
       ],
       "byte_mutation_von": "gueltig/mit-schleife.bin"
+    },
+    {
+      "datei": "ungueltig/peak-db-nicht-endlich.bin",
+      "urteil": "ungueltig",
+      "warum": "Minus unendlich wird weggelassen statt uebertragen",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/peak_db",
+          "regel": "nicht_endlich"
+        }
+      ]
     },
     {
       "datei": "ungueltig/ppq-beide-nicht-endlich.bin",
@@ -386,6 +441,17 @@
         {
           "pfad": "/eintraege/0/frame/transport/schleife",
           "regel": "ppq_verdreht"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/psr-db-nicht-endlich.bin",
+      "urteil": "ungueltig",
+      "warum": "Plus unendlich ist kein PSR-Messwert",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/psr_db",
+          "regel": "nicht_endlich"
         }
       ]
     },
@@ -444,6 +510,17 @@
         {
           "pfad": "/eintraege/0/frame/transport/sample_count",
           "regel": "sample_count_bereich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/sample-rate-nicht-endlich.bin",
+      "urteil": "ungueltig",
+      "warum": "Minus unendlich ist keine Abtastrate. Nichtendlichkeit ist eine eigene Vertragsverletzung; die endlichen Grenzen pruefen sample-rate-null und sample-rate-zu-hoch",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/sample_rate",
+          "regel": "nicht_endlich"
         }
       ]
     },

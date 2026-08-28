@@ -422,6 +422,15 @@ def ungueltige() -> list[tuple[str, dict, list[dict], str]]:
         faelle.append((name, b, [v(f"{P}/transport/{feld}", regel)], warum))
 
     b = batch(eintrag())
+    b["eintraege"][0]["frame"]["transport"]["sample_rate"] = float("-inf")
+    faelle.append((
+        "sample-rate-nicht-endlich", b,
+        [v(f"{P}/transport/sample_rate", "nicht_endlich")],
+        "Minus unendlich ist keine Abtastrate. Nichtendlichkeit ist eine eigene "
+        "Vertragsverletzung; die endlichen Grenzen pruefen sample-rate-null und "
+        "sample-rate-zu-hoch"))
+
+    b = batch(eintrag())
     b["eintraege"][0]["quelle"]["instance_id"] = "3" * 31 + "A"
     faelle.append((
         "hex32-grossbuchstabe", b,
@@ -464,6 +473,29 @@ def ungueltige() -> list[tuple[str, dict, list[dict], str]]:
         [v(f"{P}/lufs_s", "nicht_endlich")],
         "NaN wird abgelehnt, nicht sanitisiert: ein nicht messbarer Wert wird "
         "WEGGELASSEN (siehe gueltig/ohne-optionale-kennzahlen)"))
+
+    # Jede optionale Frame-Kennzahl hat ein EIGENES Nichtendlich-Fixture. Ein
+    # Sammelfall wuerde nur beweisen, dass irgendein Feld aus der Leserschleife
+    # faellt; diese Einzelpuffer machen jede ausgelassene Zeile lokalisierbar.
+    # `lufs_s` ist oben bereits durch `kennzahl-nan` gedeckt und wird deshalb
+    # hier nicht ein zweites Mal erzeugt.
+    for name, feld, wert, warum in [
+        ("aktivitaet-nicht-endlich", "aktivitaet", float("inf"),
+         "Plus unendlich ist keine Aktivitaetskennzahl"),
+        ("peak-db-nicht-endlich", "peak_db", float("-inf"),
+         "Minus unendlich wird weggelassen statt uebertragen"),
+        ("crest-db-nicht-endlich", "crest_db", float("nan"),
+         "NaN ist kein Crest-Faktor"),
+        ("psr-db-nicht-endlich", "psr_db", float("inf"),
+         "Plus unendlich ist kein PSR-Messwert"),
+        ("breite-nicht-endlich", "breite", float("-inf"),
+         "Minus unendlich ist keine Stereobreite"),
+        ("korrelation-nicht-endlich", "korrelation", float("nan"),
+         "NaN ist keine Korrelation"),
+    ]:
+        b = batch(eintrag())
+        b["eintraege"][0]["frame"][feld] = wert
+        faelle.append((name, b, [v(f"{P}/{feld}", "nicht_endlich")], warum))
 
     # --- T2-Runde 3: eingebettete NUL in laengenbehafteten Strings ----------
     #

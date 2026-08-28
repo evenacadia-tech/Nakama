@@ -371,7 +371,9 @@ fn pruefe_transport(t: &fb::Transportstempel, p: &str, out: &mut Vec<Verstoss>) 
         out.push(Verstoss::neu(&format!("{p}/sample_count"), "sample_count_bereich"));
     }
     let sr = t.sample_rate();
-    if !sr.is_finite() || sr <= 0.0 || sr > 768_000.0 {
+    if !sr.is_finite() {
+        out.push(Verstoss::neu(&format!("{p}/sample_rate"), "nicht_endlich"));
+    } else if sr <= 0.0 || sr > 768_000.0 {
         out.push(Verstoss::neu(&format!("{p}/sample_rate"), "sample_rate_bereich"));
     }
 

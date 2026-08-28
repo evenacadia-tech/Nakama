@@ -84,6 +84,47 @@ function(nakama_flatbuffers_version_pruefen quelle major minor revision)
     message(STATUS "Nakama-FlatBuffers: Quellstand ${_gemessen_major}.${_gemessen_minor}.${_gemessen_revision} bestaetigt")
 endfunction()
 
+# Misst den tatsaechlich ausgecheckten Git-Commit. `flatc --version` reicht
+# dafuer nicht: fuer 25.12.19 existieren mehrere Upstream-Schnitte, die dieselbe
+# Versionszeichenkette melden. Der Beleg muss deshalb aus genau dem
+# FetchContent-Quellverzeichnis kommen, aus dem auch `flatc` und die Header
+# gebaut werden. Ein behaupteter Steckbriefwert waere hier zirkulaer.
+function(nakama_flatbuffers_commit_pruefen quelle erwartet ergebnis)
+    find_package(Git REQUIRED)
+    execute_process(
+        COMMAND "${GIT_EXECUTABLE}" rev-parse HEAD
+        WORKING_DIRECTORY "${quelle}"
+        RESULT_VARIABLE _git_exit
+        OUTPUT_VARIABLE _gemessen
+        ERROR_VARIABLE _git_fehler
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+    string(LENGTH "${_gemessen}" _commit_laenge)
+    if(NOT _git_exit EQUAL 0
+       OR NOT _commit_laenge EQUAL 40
+       OR _gemessen MATCHES "[^0-9a-fA-F]")
+        message(FATAL_ERROR
+            "Nakama-FlatBuffers: Commit des geholten Quellstands nicht belegbar.\n"
+            "  Quelle: ${quelle}\n"
+            "  git rev-parse HEAD: Exit ${_git_exit}, Ausgabe '${_gemessen}'\n"
+            "  Fehler: ${_git_fehler}\n"
+            "Ohne gemessenen Commit darf der Drift-Pruefer nie gruen melden.")
+    endif()
+
+    string(TOLOWER "${_gemessen}" _gemessen)
+    string(TOLOWER "${erwartet}" _erwartet)
+    if(NOT _gemessen STREQUAL _erwartet)
+        message(FATAL_ERROR
+            "Nakama-FlatBuffers: geholter Commit weicht vom Werkzeugsteckbrief ab.\n"
+            "  Steckbrief: ${_erwartet}\n"
+            "  Checkout:   ${_gemessen}\n"
+            "Ein gleichlautendes --version belegt bei mehreren Schnitten nicht den Pin.")
+    endif()
+
+    set(${ergebnis} "${_gemessen}" PARENT_SCOPE)
+    message(STATUS "Nakama-FlatBuffers: Commit ${_gemessen} bestaetigt")
+endfunction()
+
 # Holt FlatBuffers am gepinnten Commit und baut `flatc` daraus mit.
 #
 # `flatc` wird hier gebaut und nicht als Release-Binary geladen: die
@@ -113,6 +154,8 @@ function(nakama_flatbuffers_bereitstellen steckbrief_datei)
     nakama_flatbuffers_version_pruefen(
         "${flatbuffers_SOURCE_DIR}"
         "${NAKAMA_FLATC_MAJOR}" "${NAKAMA_FLATC_MINOR}" "${NAKAMA_FLATC_REVISION}")
+    nakama_flatbuffers_commit_pruefen(
+        "${flatbuffers_SOURCE_DIR}" "${NAKAMA_FLATC_COMMIT}" _gemessen_commit)
 
     # Der Drift-Pruefer laeuft ausserhalb von CMake (Python, aus dem Runner).
     # Er darf den Pfad zum gebauten flatc nicht raten: ein geratener Pfad, der
@@ -124,5 +167,13 @@ function(nakama_flatbuffers_bereitstellen steckbrief_datei)
     # Eine einzige Datei mit drei Inhalten laesst CMake zu Recht nicht zu.
     set(_zeiger "${CMAKE_BINARY_DIR}/nakama-flatc-pfad-$<CONFIG>.txt")
     file(GENERATE OUTPUT "${_zeiger}" CONTENT "$<TARGET_FILE:flatc>\n")
+    # Konfigurationsbezogen wie der Binary-Pfad: ein Release-Pruefer darf nicht
+    # versehentlich den Beleg eines Debug-Baus lesen. Der Inhalt ist bewusst
+    # der oben per `git rev-parse HEAD` GEMESSENE Checkout, nicht der Pin aus
+    # WERKZEUG.json. Nur so kann der externe Pruefer beide unabhaengig
+    # vergleichen und einen veralteten Bau rot melden.
+    set(_commit_beleg "${CMAKE_BINARY_DIR}/nakama-flatc-commit-$<CONFIG>.txt")
+    file(GENERATE OUTPUT "${_commit_beleg}" CONTENT "${_gemessen_commit}\n")
     message(STATUS "Nakama-FlatBuffers: flatc-Zeiger -> ${CMAKE_BINARY_DIR}/nakama-flatc-pfad-<CONFIG>.txt")
+    message(STATUS "Nakama-FlatBuffers: Commit-Beleg -> ${CMAKE_BINARY_DIR}/nakama-flatc-commit-<CONFIG>.txt")
 endfunction()

@@ -15,10 +15,10 @@ Dieses Skript ist dieser Test. Es prueft fuenf Dinge, und vier davon sind
 Voraussetzungen der fuenften:
 
   1. `flatc` ist DA und traegt die gepinnte Version;
-  2. sein CMake-Bau belegt den tatsaechlich ausgecheckten Git-Commit UND den
-     SHA-256 des gebauten Binaries; beides stimmt mit Pin und ausgefuehrter
-     Datei ueberein (die Version allein unterscheidet die mehreren
-     25.12.19-Schnitte nicht);
+  2. sein CMake-POST_BUILD misst im sauberen Checkout den tatsaechlichen
+     Git-Commit UND den SHA-256 des gebauten Binaries; beides stimmt mit Pin
+     und ausgefuehrter Datei ueberein (die Version allein unterscheidet die
+     mehreren 25.12.19-Schnitte nicht);
   3. die Rust-Crate `flatbuffers` traegt DIESELBE Version (der erzeugte Code
      ruft in die Laufzeit; eine andere Version ist entweder ein
      Uebersetzungsfehler oder - schlimmer - stille Inkompatibilitaet);
@@ -89,7 +89,7 @@ def finde_flatc(vorgegeben: pathlib.Path | None = None) -> pathlib.Path | None:
 
 def belegter_bau(vorgegeben: pathlib.Path | None = None) \
         -> tuple[str | None, str | None, pathlib.Path, str | None]:
-    """Liest Commit und Binary-Hash aus dem POST_BUILD-Sidecar.
+    """Liest Bauzeit-Commit und Binary-Hash aus dem POST_BUILD-Sidecar.
 
     WERKZEUG.json darf nicht selbst Quelle dieses Werts sein: dann wuerde der
     Pruefer wieder nur die Behauptung ausgeben, die er pruefen soll. Fehlender

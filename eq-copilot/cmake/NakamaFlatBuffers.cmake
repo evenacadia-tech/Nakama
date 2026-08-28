@@ -129,8 +129,8 @@ endfunction()
 # die TARGET-Form von add_custom_command nur dort, wo das Ziel definiert wurde;
 # deshalb ruft NakamaFlatBuffersProjektHook.cmake diese Funktion am Ende des
 # FlatBuffers-Unterverzeichnisses auf. Entscheidend ist der Lebenszyklus:
-# Configure misst den Checkout, aber erst ein tatsaechlicher flatc-Bau schreibt
-# Commit UND Hash des soeben erzeugten Executables in denselben Sidecar.
+# Configure prueft den Checkout frueh, aber POST_BUILD misst ihn erneut und
+# schreibt erst dann Commit UND Hash des soeben erzeugten Executables zusammen.
 function(nakama_flatbuffers_flatc_beleg_anhaengen)
     if(NOT TARGET flatc)
         message(FATAL_ERROR
@@ -147,7 +147,8 @@ function(nakama_flatbuffers_flatc_beleg_anhaengen)
         TARGET flatc POST_BUILD
         COMMAND "${CMAKE_COMMAND}"
             "-DNAKAMA_FLATC_BINARY=$<TARGET_FILE:flatc>"
-            "-DNAKAMA_FLATC_COMMIT=${_gemessen_commit}"
+            "-DNAKAMA_FLATC_QUELLE=${_flatc_quelle}"
+            "-DNAKAMA_FLATC_PIN=${NAKAMA_FLATC_COMMIT}"
             "-DNAKAMA_FLATC_BELEG=${_commit_beleg}"
             -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/NakamaFlatcBeleg.cmake"
         BYPRODUCTS "${_commit_beleg}"

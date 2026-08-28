@@ -1,0 +1,6 @@
+{
+  "type": "command_ack",
+  "command_id": "55555555555555555555555555555555",
+  "ergebnis": "angewandt",
+  "state_revision": 13
+}

@@ -11,15 +11,62 @@ import sys
 
 import jsonschema
 
-WURZEL = pathlib.Path(sys.argv[1])
+
+def ermittle_wurzel(argv: list[str]) -> pathlib.Path:
+    if len(argv) > 1:
+        print("FEHLER: hoechstens ein optionaler Repository-Pfad ist erlaubt", file=sys.stderr)
+        raise SystemExit(2)
+    wurzel = (pathlib.Path(argv[0]) if argv else pathlib.Path(__file__).resolve().parents[2]).resolve()
+    erwartet = wurzel / "eq-copilot/schemas/v3/eq-ipc-v3.schema.json"
+    if not erwartet.is_file():
+        print(f"FEHLER: kein Nakama-Repository-Root: {wurzel} "
+              f"(fehlt: {erwartet.relative_to(wurzel)})", file=sys.stderr)
+        raise SystemExit(2)
+    return wurzel
+
+
+WURZEL = ermittle_wurzel(sys.argv[1:])
 SCHEMA = WURZEL / "eq-copilot/schemas/v3/eq-ipc-v3.schema.json"
 FIX = WURZEL / "eq-copilot/fixtures/v3"
 
 schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
 
-# --- Vorzustand vom 23.08.: die beiden Felder standen UNGEKOPPELT nebeneinander.
+# --- Der jeweilige Vorzustand wird ausschliesslich im Speicher rekonstruiert.
 alt = json.loads(json.dumps(schema))
 d = alt["$defs"]
+
+# --- Vorzustand vom 28.08.: ACK-Ergebnis und state_hash waren ungekoppelt.
+d["command_ack"] = {
+    "type": "object",
+    "required": ["type", "command_id", "ergebnis", "state_revision"],
+    "additionalProperties": False,
+    "properties": {
+        "type": {"const": "command_ack"},
+        "command_id": {"$ref": "#/$defs/hex32"},
+        "ergebnis": {"enum": ["angewandt", "abgelehnt", "konflikt", "abgelaufen",
+                                "idempotent_wiederholt"]},
+        "state_revision": {"type": "integer", "minimum": 0},
+        "state_hash": {"$ref": "#/$defs/state_hash"},
+        "code": {"$ref": "#/$defs/fehlercode"},
+    },
+}
+d.pop("state_hash_erfolg", None)
+
+# --- Vorzustand vom 28.08.: encoding war nur ein Enum neben number-Werten.
+d["band_encoding"] = {
+    "enum": ["q_db_0p1_i16", "q_db_0p01_i16", "float32"]
+}
+for name in ("bandwerte_fein", "bandwerte_grob"):
+    zweig = json.loads(json.dumps(d[name]["oneOf"][0]))
+    zweig["properties"]["encoding"] = {"$ref": "#/$defs/band_encoding"}
+    zweig["properties"]["werte"]["items"] = {"type": "number"}
+    d[name] = zweig
+
+# --- Vorzustand vom 28.08.: pair_id war String oder null ohne Laenge.
+d["pair_id"].pop("minLength")
+d["pair_id"].pop("maxLength")
+
+# --- Vorzustand vom 23.08.: Messposition und Aussageklasse waren ungekoppelt.
 d["measurement_position"] = {"enum": ["insert", "pre", "post", "post_fader_contribution"]}
 d["aussageklasse"] = {"enum": ["beobachtend", "beitrag"]}
 zweig = json.loads(json.dumps(d["probe_descriptor_insert"]))
@@ -50,6 +97,17 @@ FAELLE = [
     ("§4.5 bitmap", "ungueltig/bitmap-fuellzeichen-vorn.json"),
     ("§4.5 bitmap", "ungueltig/bitmap-fuellbits-gesetzt.json"),
     ("§4.5 bitmap", "ungueltig/bitmap-grob-fuellbits-gesetzt.json"),
+    ("ACK hash", "ungueltig/command-ack-angewandt-ohne-state-hash.json"),
+    ("ACK hash", "ungueltig/command-ack-angewandt-state-hash-null.json"),
+    ("ACK hash", "ungueltig/command-ack-idempotent-ohne-state-hash.json"),
+    ("Band q0p1", "ungueltig/bandwert-q0p1-nicht-ganzzahlig.json"),
+    ("Band q0p1", "ungueltig/bandwert-q0p1-unter-minimum.json"),
+    ("Band q0p1", "ungueltig/bandwert-q0p1-ueber-maximum.json"),
+    ("Band q0p01", "ungueltig/bandwert-q0p01-nicht-ganzzahlig.json"),
+    ("Band q0p01", "ungueltig/bandwert-q0p01-unter-minimum.json"),
+    ("Band q0p01", "ungueltig/bandwert-q0p01-ueber-maximum.json"),
+    ("pair_id", "ungueltig/pair-id-leer.json"),
+    ("pair_id", "ungueltig/pair-id-65-codepoints.json"),
 ]
 
 print(f"{'Befund':12} {'Fixture':38} {'VOR dem Fix':>12}  {'NACH dem Fix':>13}")

@@ -44,6 +44,14 @@
       "pattern": "^[0-9a-f]{64}$"
     },
 
+    "state_hash_erfolg": {
+      "description": "Nicht-null SHA-256 fuer einen erfolgreichen command_ack. Laenge und Alphabet sind absichtlich dieselben wie bei state_hash; nur `null` ist hier ausgeschlossen, weil Erfolg einen konkreten angewandten Stand bestaetigt.",
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+
     "sid": {
       "description": "Windows-Logon-SID in S-R-I-S...-Form. Wird nie geparst, nur verglichen.",
       "type": "string",
@@ -257,13 +265,8 @@
       }
     },
 
-    "band_encoding": {
-      "description": "Empfaenger raten die Skalierung NIE aus dem Nachrichtentyp (§33.1) — sie steht in jedem Batch. Vertrag und Testvektoren: quantisierung-v1.json.",
-      "enum": ["q_db_0p1_i16", "q_db_0p01_i16", "float32"]
-    },
-
     "bandwerte": {
-      "description": "Ein Bandsatz mit seinem Gitter, seiner Kodierung, seiner Gueltigkeitsbitmap und seinem Saettigungsbit (§33.1). DISKRIMINIERT UEBER `gitter_id`, weil die Bandzahl aus dem Gitter FOLGT und nicht frei ist: die beiden Gitter sind als Zahlen eingefroren (221 und 64), und eine Nachricht, die 221 Werte unter `nakama_log64_v1` traegt, ist keine 'grosszuegige' Nachricht, sondern eine falsche. Ein gemeinsames minItems/maxItems ueber beide Gitter haette genau das erlaubt. Die Bitmap ist Base64 ueber ceil(n/8) Bytes, LSB-first je Byte — daraus folgt ihre Laenge exakt, deshalb steht sie je Zweig fest statt als Spanne.",
+      "description": "Ein Bandsatz mit seinem Gitter, seiner Kodierung, seiner Gueltigkeitsbitmap und seinem Saettigungsbit (§33.1). DISKRIMINIERT UEBER `gitter_id`, weil die Bandzahl aus dem Gitter FOLGT und nicht frei ist: die beiden Gitter sind als Zahlen eingefroren (221 und 64), und eine Nachricht, die 221 Werte unter `nakama_log64_v1` traegt, ist keine 'grosszuegige' Nachricht, sondern eine falsche. Jeder Gitterzweig diskriminiert zusaetzlich ueber `encoding`: q_db_0p1_i16 und q_db_0p01_i16 tragen Ganzzahlen innerhalb der jeweiligen `plausibler_bereich_db.traegergrenzen` aus quantisierung-v1.json; float32 traegt endliche Zahlen, deren Endlichkeit der gemeinsame Textriegel vor dem Parser erzwingt. Bis zum 28.08.2026 waren alle Werte nur `number`; dadurch galten Brueche und Werte ausserhalb der plausiblen Traegergrenzen auch fuer i16 als gueltig. Die Bitmap ist Base64 ueber ceil(n/8) Bytes, LSB-first je Byte — daraus folgt ihre Laenge exakt, deshalb steht sie je Zweig fest statt als Spanne. Am 28.08.2026 mit `git grep` bestaetigt: kein Produktionscode im Baum erzeugt v3-Nachrichten; nach G1 §10.0 wird diese Verschaerfung deshalb ohne Versionsanhebung eingetragen.",
       "x-nakama-discriminator": "gitter_id",
       "oneOf": [
         { "$ref": "#/$defs/bandwerte_fein" },
@@ -272,53 +275,161 @@
     },
 
     "bandwerte_fein": {
-      "description": "221 Baender (nakama_1_24_oct_30_18k_v1, Evidenz 1-4 Hz). Bitmap: ceil(221/8) = 28 Bytes = 40 Base64-Zeichen.",
-      "type": "object",
-      "required": ["gitter_id", "encoding", "werte", "gueltig_bitmap", "saturated"],
-      "additionalProperties": false,
-      "properties": {
-        "gitter_id": { "const": "nakama_1_24_oct_30_18k_v1" },
-        "encoding": { "$ref": "#/$defs/band_encoding" },
-        "werte": {
-          "type": "array",
-          "minItems": 221,
-          "maxItems": 221,
-          "items": { "type": "number" }
+      "description": "221 Baender (nakama_1_24_oct_30_18k_v1, Evidenz 1-4 Hz), zusaetzlich ueber encoding diskriminiert. Bitmap: ceil(221/8) = 28 Bytes = 40 Base64-Zeichen.",
+      "x-nakama-discriminator": "encoding",
+      "oneOf": [
+        {
+          "description": "221 Bandwerte als q_db_0p1_i16 innerhalb [-1440, 240].",
+          "type": "object",
+          "required": ["gitter_id", "encoding", "werte", "gueltig_bitmap", "saturated"],
+          "additionalProperties": false,
+          "properties": {
+            "gitter_id": { "const": "nakama_1_24_oct_30_18k_v1" },
+            "encoding": { "const": "q_db_0p1_i16" },
+            "werte": {
+              "type": "array",
+              "minItems": 221,
+              "maxItems": 221,
+              "items": { "type": "integer", "minimum": -1440, "maximum": 240 }
+            },
+            "gueltig_bitmap": {
+              "$comment": "28 Byte = 40 Base64-Zeichen: neun volle Dreiergruppen plus ein Restbyte, also 38 Alphabetzeichen und ZWEI Fuellzeichen. Bis zum 24.08.2026 stand hier nur die Laenge 40 — `!!!!…` galt damit als Bitmap (Gate-Lauf G1, §4.5). Das letzte Alphabetzeichen traegt nur zwei echte Bits; die Klasse [AQgw] erzwingt, dass die vier BASE64-Fuellbits null sind. Die BAND-Fuellbits des 28. Bytes (Baender 222-224) bleiben Erzeugerdisziplin — ein Muster erreicht sie nicht.",
+              "type": "string",
+              "minLength": 40,
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9+/]{37}[AQgw]==$"
+            },
+            "saturated": { "type": "boolean" }
+          }
         },
-        "gueltig_bitmap": {
-          "$comment": "28 Byte = 40 Base64-Zeichen: neun volle Dreiergruppen plus ein Restbyte, also 38 Alphabetzeichen und ZWEI Fuellzeichen. Bis zum 24.08.2026 stand hier nur die Laenge 40 — `!!!!…` galt damit als Bitmap (Gate-Lauf G1, §4.5). Das letzte Alphabetzeichen traegt nur zwei echte Bits; die Klasse [AQgw] erzwingt, dass die vier BASE64-Fuellbits null sind. Die BAND-Fuellbits des 28. Bytes (Baender 222-224) bleiben Erzeugerdisziplin — ein Muster erreicht sie nicht.",
-          "type": "string",
-          "minLength": 40,
-          "maxLength": 40,
-          "pattern": "^[A-Za-z0-9+/]{37}[AQgw]==$"
+        {
+          "description": "221 Bandwerte als q_db_0p01_i16 innerhalb [-14400, 2400].",
+          "type": "object",
+          "required": ["gitter_id", "encoding", "werte", "gueltig_bitmap", "saturated"],
+          "additionalProperties": false,
+          "properties": {
+            "gitter_id": { "const": "nakama_1_24_oct_30_18k_v1" },
+            "encoding": { "const": "q_db_0p01_i16" },
+            "werte": {
+              "type": "array",
+              "minItems": 221,
+              "maxItems": 221,
+              "items": { "type": "integer", "minimum": -14400, "maximum": 2400 }
+            },
+            "gueltig_bitmap": {
+              "$comment": "28 Byte = 40 Base64-Zeichen: neun volle Dreiergruppen plus ein Restbyte, also 38 Alphabetzeichen und ZWEI Fuellzeichen. Bis zum 24.08.2026 stand hier nur die Laenge 40 — `!!!!…` galt damit als Bitmap (Gate-Lauf G1, §4.5). Das letzte Alphabetzeichen traegt nur zwei echte Bits; die Klasse [AQgw] erzwingt, dass die vier BASE64-Fuellbits null sind. Die BAND-Fuellbits des 28. Bytes (Baender 222-224) bleiben Erzeugerdisziplin — ein Muster erreicht sie nicht.",
+              "type": "string",
+              "minLength": 40,
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9+/]{37}[AQgw]==$"
+            },
+            "saturated": { "type": "boolean" }
+          }
         },
-        "saturated": { "type": "boolean" }
-      }
+        {
+          "description": "221 Bandwerte als float32; nichtendliche JSON-Zahlen fallen am gemeinsamen Textriegel.",
+          "type": "object",
+          "required": ["gitter_id", "encoding", "werte", "gueltig_bitmap", "saturated"],
+          "additionalProperties": false,
+          "properties": {
+            "gitter_id": { "const": "nakama_1_24_oct_30_18k_v1" },
+            "encoding": { "const": "float32" },
+            "werte": {
+              "type": "array",
+              "minItems": 221,
+              "maxItems": 221,
+              "items": { "type": "number" }
+            },
+            "gueltig_bitmap": {
+              "$comment": "28 Byte = 40 Base64-Zeichen: neun volle Dreiergruppen plus ein Restbyte, also 38 Alphabetzeichen und ZWEI Fuellzeichen. Bis zum 24.08.2026 stand hier nur die Laenge 40 — `!!!!…` galt damit als Bitmap (Gate-Lauf G1, §4.5). Das letzte Alphabetzeichen traegt nur zwei echte Bits; die Klasse [AQgw] erzwingt, dass die vier BASE64-Fuellbits null sind. Die BAND-Fuellbits des 28. Bytes (Baender 222-224) bleiben Erzeugerdisziplin — ein Muster erreicht sie nicht.",
+              "type": "string",
+              "minLength": 40,
+              "maxLength": 40,
+              "pattern": "^[A-Za-z0-9+/]{37}[AQgw]==$"
+            },
+            "saturated": { "type": "boolean" }
+          }
+        }
+      ]
     },
 
     "bandwerte_grob": {
-      "description": "64 Gruppen (nakama_log64_v1, Live 10 Hz). Bitmap: ceil(64/8) = 8 Bytes = 12 Base64-Zeichen.",
-      "type": "object",
-      "required": ["gitter_id", "encoding", "werte", "gueltig_bitmap", "saturated"],
-      "additionalProperties": false,
-      "properties": {
-        "gitter_id": { "const": "nakama_log64_v1" },
-        "encoding": { "$ref": "#/$defs/band_encoding" },
-        "werte": {
-          "type": "array",
-          "minItems": 64,
-          "maxItems": 64,
-          "items": { "type": "number" }
+      "description": "64 Gruppen (nakama_log64_v1, Live 10 Hz), zusaetzlich ueber encoding diskriminiert. Bitmap: ceil(64/8) = 8 Bytes = 12 Base64-Zeichen.",
+      "x-nakama-discriminator": "encoding",
+      "oneOf": [
+        {
+          "description": "64 Bandwerte als q_db_0p1_i16 innerhalb [-1440, 240].",
+          "type": "object",
+          "required": ["gitter_id", "encoding", "werte", "gueltig_bitmap", "saturated"],
+          "additionalProperties": false,
+          "properties": {
+            "gitter_id": { "const": "nakama_log64_v1" },
+            "encoding": { "const": "q_db_0p1_i16" },
+            "werte": {
+              "type": "array",
+              "minItems": 64,
+              "maxItems": 64,
+              "items": { "type": "integer", "minimum": -1440, "maximum": 240 }
+            },
+            "gueltig_bitmap": {
+              "$comment": "8 Byte = 12 Base64-Zeichen: zwei volle Dreiergruppen plus zwei Restbytes, also 11 Alphabetzeichen und EIN Fuellzeichen. Das letzte Alphabetzeichen traegt vier echte Bits; die 16er-Klasse erzwingt, dass die zwei BASE64-Fuellbits null sind. 64 Baender fuellen acht Byte glatt aus — hier gibt es keine Band-Fuellbits.",
+              "type": "string",
+              "minLength": 12,
+              "maxLength": 12,
+              "pattern": "^[A-Za-z0-9+/]{10}[AEIMQUYcgkosw048]=$"
+            },
+            "saturated": { "type": "boolean" }
+          }
         },
-        "gueltig_bitmap": {
-          "$comment": "8 Byte = 12 Base64-Zeichen: zwei volle Dreiergruppen plus zwei Restbytes, also 11 Alphabetzeichen und EIN Fuellzeichen. Das letzte Alphabetzeichen traegt vier echte Bits; die 16er-Klasse erzwingt, dass die zwei BASE64-Fuellbits null sind. 64 Baender fuellen acht Byte glatt aus — hier gibt es keine Band-Fuellbits.",
-          "type": "string",
-          "minLength": 12,
-          "maxLength": 12,
-          "pattern": "^[A-Za-z0-9+/]{10}[AEIMQUYcgkosw048]=$"
+        {
+          "description": "64 Bandwerte als q_db_0p01_i16 innerhalb [-14400, 2400].",
+          "type": "object",
+          "required": ["gitter_id", "encoding", "werte", "gueltig_bitmap", "saturated"],
+          "additionalProperties": false,
+          "properties": {
+            "gitter_id": { "const": "nakama_log64_v1" },
+            "encoding": { "const": "q_db_0p01_i16" },
+            "werte": {
+              "type": "array",
+              "minItems": 64,
+              "maxItems": 64,
+              "items": { "type": "integer", "minimum": -14400, "maximum": 2400 }
+            },
+            "gueltig_bitmap": {
+              "$comment": "8 Byte = 12 Base64-Zeichen: zwei volle Dreiergruppen plus zwei Restbytes, also 11 Alphabetzeichen und EIN Fuellzeichen. Das letzte Alphabetzeichen traegt vier echte Bits; die 16er-Klasse erzwingt, dass die zwei BASE64-Fuellbits null sind. 64 Baender fuellen acht Byte glatt aus — hier gibt es keine Band-Fuellbits.",
+              "type": "string",
+              "minLength": 12,
+              "maxLength": 12,
+              "pattern": "^[A-Za-z0-9+/]{10}[AEIMQUYcgkosw048]=$"
+            },
+            "saturated": { "type": "boolean" }
+          }
         },
-        "saturated": { "type": "boolean" }
-      }
+        {
+          "description": "64 Bandwerte als float32; nichtendliche JSON-Zahlen fallen am gemeinsamen Textriegel.",
+          "type": "object",
+          "required": ["gitter_id", "encoding", "werte", "gueltig_bitmap", "saturated"],
+          "additionalProperties": false,
+          "properties": {
+            "gitter_id": { "const": "nakama_log64_v1" },
+            "encoding": { "const": "float32" },
+            "werte": {
+              "type": "array",
+              "minItems": 64,
+              "maxItems": 64,
+              "items": { "type": "number" }
+            },
+            "gueltig_bitmap": {
+              "$comment": "8 Byte = 12 Base64-Zeichen: zwei volle Dreiergruppen plus zwei Restbytes, also 11 Alphabetzeichen und EIN Fuellzeichen. Das letzte Alphabetzeichen traegt vier echte Bits; die 16er-Klasse erzwingt, dass die zwei BASE64-Fuellbits null sind. 64 Baender fuellen acht Byte glatt aus — hier gibt es keine Band-Fuellbits.",
+              "type": "string",
+              "minLength": 12,
+              "maxLength": 12,
+              "pattern": "^[A-Za-z0-9+/]{10}[AEIMQUYcgkosw048]=$"
+            },
+            "saturated": { "type": "boolean" }
+          }
+        }
+      ]
     },
 
     "probe_descriptor": {
@@ -439,8 +550,10 @@
     },
 
     "pair_id": {
-      "description": "Optionale stabile ID, die genau ein PRE-/POST-Paar verbindet (§32.2). `null` heisst: kein Paar.",
-      "type": ["string", "null"]
+      "description": "Optionale stabile ID, die genau ein PRE-/POST-Paar verbindet (§32.2). `null` heisst: kein Paar; eine leere Zeichenkette ist deshalb keine zweite Schreibweise fuer 'kein Paar'. Strings tragen 1 bis 64 Unicode-Codepoints, gezaehlt wie probe_label. Bis zum 28.08.2026 fehlten beide Laengengrenzen, obwohl der v2-Produktvertrag leer ablehnt und MAX_PAIR_ID_ZEICHEN = 64 setzt. Am 28.08.2026 mit `git grep` bestaetigt: kein Produktionscode im Baum erzeugt v3-Nachrichten; nach G1 §10.0 wird diese Verschaerfung deshalb ohne Versionsanhebung eingetragen.",
+      "type": ["string", "null"],
+      "minLength": 1,
+      "maxLength": 64
     },
 
     "steuerkopf": {
@@ -806,18 +919,75 @@
     },
 
     "command_ack": {
-      "description": "Bestaetigung einer steuernden Nachricht. `state_hash` umfasst ausschliesslich das validierte DSP-DTO in RFC-8785-kanonischem JSON (§53.8); erzeugt und geprueft wird er in SONDE-006.",
-      "type": "object",
-      "required": ["type", "command_id", "ergebnis", "state_revision"],
-      "additionalProperties": false,
-      "properties": {
-        "type": { "const": "command_ack" },
-        "command_id": { "$ref": "#/$defs/hex32" },
-        "ergebnis": { "enum": ["angewandt", "abgelehnt", "konflikt", "abgelaufen", "idempotent_wiederholt"] },
-        "state_revision": { "type": "integer", "minimum": 0 },
-        "state_hash": { "$ref": "#/$defs/state_hash" },
-        "code": { "$ref": "#/$defs/fehlercode" }
-      }
+      "description": "Bestaetigung einer steuernden Nachricht, diskriminiert ueber `ergebnis`. Bei `angewandt` ist `state_hash` Pflicht und nicht null: Apply schreibt laut Entwurf §33.4 eine neue Revision und bestaetigt den Hash plus die tatsaechlich angewandten Werte. `idempotent_wiederholt` traegt dieselbe Pflicht, weil die Wiederholung keinen neuen Zustand erzeugt, sondern denselben bereits angewandten Befehl und damit denselben konkreten Stand bestaetigt. Ablehnung, Konflikt und Ablauf duerfen ohne Hash antworten. Bis zum 28.08.2026 war state_hash in jedem Ergebnis optional und nullable. Am 28.08.2026 mit `git grep` bestaetigt: kein Produktionscode im Baum erzeugt v3-Nachrichten; nach G1 §10.0 wird diese Verschaerfung deshalb ohne Versionsanhebung eingetragen. `state_hash` umfasst ausschliesslich das validierte DSP-DTO in RFC-8785-kanonischem JSON (§53.8); erzeugt und geprueft wird er in SONDE-006.",
+      "x-nakama-discriminator": "ergebnis",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "command_id", "ergebnis", "state_revision", "state_hash"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "const": "command_ack" },
+            "command_id": { "$ref": "#/$defs/hex32" },
+            "ergebnis": { "const": "angewandt" },
+            "state_revision": { "type": "integer", "minimum": 0 },
+            "state_hash": { "$ref": "#/$defs/state_hash_erfolg" },
+            "code": { "$ref": "#/$defs/fehlercode" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type", "command_id", "ergebnis", "state_revision"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "const": "command_ack" },
+            "command_id": { "$ref": "#/$defs/hex32" },
+            "ergebnis": { "const": "abgelehnt" },
+            "state_revision": { "type": "integer", "minimum": 0 },
+            "state_hash": { "$ref": "#/$defs/state_hash" },
+            "code": { "$ref": "#/$defs/fehlercode" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type", "command_id", "ergebnis", "state_revision"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "const": "command_ack" },
+            "command_id": { "$ref": "#/$defs/hex32" },
+            "ergebnis": { "const": "konflikt" },
+            "state_revision": { "type": "integer", "minimum": 0 },
+            "state_hash": { "$ref": "#/$defs/state_hash" },
+            "code": { "$ref": "#/$defs/fehlercode" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type", "command_id", "ergebnis", "state_revision"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "const": "command_ack" },
+            "command_id": { "$ref": "#/$defs/hex32" },
+            "ergebnis": { "const": "abgelaufen" },
+            "state_revision": { "type": "integer", "minimum": 0 },
+            "state_hash": { "$ref": "#/$defs/state_hash" },
+            "code": { "$ref": "#/$defs/fehlercode" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type", "command_id", "ergebnis", "state_revision", "state_hash"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "const": "command_ack" },
+            "command_id": { "$ref": "#/$defs/hex32" },
+            "ergebnis": { "const": "idempotent_wiederholt" },
+            "state_revision": { "type": "integer", "minimum": 0 },
+            "state_hash": { "$ref": "#/$defs/state_hash_erfolg" },
+            "code": { "$ref": "#/$defs/fehlercode" }
+          }
+        }
+      ]
     },
 
     "state_report": {

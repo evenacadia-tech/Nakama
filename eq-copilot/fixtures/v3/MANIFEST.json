@@ -6,8 +6,8 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 36,
-  "anzahl_ungueltig": 133,
+  "anzahl_gueltig": 42,
+  "anzahl_ungueltig": 145,
   "fixtures": [
     {
       "datei": "gueltig/audible_intervention_begin.json",
@@ -19,6 +19,18 @@
       "datei": "gueltig/audible_intervention_end.json",
       "urteil": "gueltig",
       "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/command-ack-abgelehnt-ohne-state-hash.json",
+      "urteil": "gueltig",
+      "warum": "eine Ablehnung bestaetigt keinen angewandten Stand und darf ohne Hash antworten",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/command-ack-idempotent-mit-state-hash.json",
+      "urteil": "gueltig",
+      "warum": "die Wiederholung bestaetigt denselben bereits angewandten Stand samt Hash",
       "verletzungen": []
     },
     {
@@ -37,6 +49,24 @@
       "datei": "gueltig/evidence-abdeckung-raender.json",
       "urteil": "gueltig",
       "warum": "0 und 1 sind einschliesslich",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/evidence-bandwerte-float32.json",
+      "urteil": "gueltig",
+      "warum": "float32 traegt endliche JSON-Zahlen und darf Bruchteile enthalten",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/evidence-bandwerte-q0p01-raender.json",
+      "urteil": "gueltig",
+      "warum": "q_db_0p01_i16: -14400 und 2400 sind einschliessliche Traegergrenzen aus quantisierung-v1.json",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/evidence-bandwerte-q0p1-raender.json",
+      "urteil": "gueltig",
+      "warum": "q_db_0p1_i16: -1440 und 240 sind einschliessliche Traegergrenzen aus quantisierung-v1.json",
       "verletzungen": []
     },
     {
@@ -157,6 +187,12 @@
       "datei": "gueltig/invalidate-ganze-sitzung.json",
       "urteil": "gueltig",
       "warum": "bei unbekanntem Routing quarantaenisiert der Broker die ganze Sitzung (§34.2)",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/pair-id-64-codepoints.json",
+      "urteil": "gueltig",
+      "warum": "pair_id zaehlt wie label Unicode-Codepoints; genau 64 sind gueltig",
       "verletzungen": []
     },
     {
@@ -328,7 +364,7 @@
       "verletzungen": [
         {
           "instanz": "/baender/werte",
-          "schema": "#/$defs/bandwerte_fein/properties/werte/minItems",
+          "schema": "#/$defs/bandwerte_fein/oneOf/0/properties/werte/minItems",
           "schluessel": "minItems"
         }
       ]
@@ -340,7 +376,7 @@
       "verletzungen": [
         {
           "instanz": "/baender",
-          "schema": "#/$defs/bandwerte_fein/required/gueltig_bitmap",
+          "schema": "#/$defs/bandwerte_fein/oneOf/0/required/gueltig_bitmap",
           "schluessel": "required"
         }
       ]
@@ -351,9 +387,9 @@
       "warum": "Empfaenger raten die Skalierung nie aus dem Nachrichtentyp (§33.1)",
       "verletzungen": [
         {
-          "instanz": "/baender",
-          "schema": "#/$defs/bandwerte_fein/required/encoding",
-          "schluessel": "required"
+          "instanz": "/baender/encoding",
+          "schema": "#/$defs/bandwerte_fein/oneOf",
+          "schluessel": "oneOf"
         }
       ]
     },
@@ -364,7 +400,7 @@
       "verletzungen": [
         {
           "instanz": "/baender/werte",
-          "schema": "#/$defs/bandwerte_fein/properties/werte/maxItems",
+          "schema": "#/$defs/bandwerte_fein/oneOf/0/properties/werte/maxItems",
           "schluessel": "maxItems"
         }
       ]
@@ -376,8 +412,92 @@
       "verletzungen": [
         {
           "instanz": "/baender/werte/1",
-          "schema": "#/$defs/bandwerte_fein/properties/werte/items/type",
+          "schema": "#/$defs/bandwerte_fein/oneOf/0/properties/werte/items/type",
           "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bandwert-float32-als-string.json",
+      "urteil": "ungueltig",
+      "warum": "float32 traegt endliche JSON-Zahlen, keine Zahltexte",
+      "verletzungen": [
+        {
+          "instanz": "/baender/werte/0",
+          "schema": "#/$defs/bandwerte_fein/oneOf/2/properties/werte/items/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bandwert-q0p01-nicht-ganzzahlig.json",
+      "urteil": "ungueltig",
+      "warum": "q_db_0p01_i16 traegt Ganzzahlen, keine zu rundenden Bruchteile",
+      "verletzungen": [
+        {
+          "instanz": "/baender/werte/0",
+          "schema": "#/$defs/bandwerte_fein/oneOf/1/properties/werte/items/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bandwert-q0p01-ueber-maximum.json",
+      "urteil": "ungueltig",
+      "warum": "q_db_0p01_i16 endet laut quantisierung-v1.json bei 2400",
+      "verletzungen": [
+        {
+          "instanz": "/baender/werte/0",
+          "schema": "#/$defs/bandwerte_fein/oneOf/1/properties/werte/items/maximum",
+          "schluessel": "maximum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bandwert-q0p01-unter-minimum.json",
+      "urteil": "ungueltig",
+      "warum": "q_db_0p01_i16 endet laut quantisierung-v1.json bei -14400",
+      "verletzungen": [
+        {
+          "instanz": "/baender/werte/0",
+          "schema": "#/$defs/bandwerte_fein/oneOf/1/properties/werte/items/minimum",
+          "schluessel": "minimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bandwert-q0p1-nicht-ganzzahlig.json",
+      "urteil": "ungueltig",
+      "warum": "q_db_0p1_i16 traegt Ganzzahlen, keine zu rundenden Bruchteile",
+      "verletzungen": [
+        {
+          "instanz": "/baender/werte/0",
+          "schema": "#/$defs/bandwerte_fein/oneOf/0/properties/werte/items/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bandwert-q0p1-ueber-maximum.json",
+      "urteil": "ungueltig",
+      "warum": "q_db_0p1_i16 endet laut quantisierung-v1.json bei 240",
+      "verletzungen": [
+        {
+          "instanz": "/baender/werte/0",
+          "schema": "#/$defs/bandwerte_fein/oneOf/0/properties/werte/items/maximum",
+          "schluessel": "maximum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/bandwert-q0p1-unter-minimum.json",
+      "urteil": "ungueltig",
+      "warum": "q_db_0p1_i16 endet laut quantisierung-v1.json bei -1440",
+      "verletzungen": [
+        {
+          "instanz": "/baender/werte/0",
+          "schema": "#/$defs/bandwerte_fein/oneOf/0/properties/werte/items/minimum",
+          "schluessel": "minimum"
         }
       ]
     },
@@ -388,7 +508,7 @@
       "verletzungen": [
         {
           "instanz": "/baender/saturated",
-          "schema": "#/$defs/bandwerte_fein/properties/saturated/type",
+          "schema": "#/$defs/bandwerte_fein/oneOf/0/properties/saturated/type",
           "schluessel": "type"
         }
       ]
@@ -400,7 +520,7 @@
       "verletzungen": [
         {
           "instanz": "/baender/werte",
-          "schema": "#/$defs/bandwerte_grob/properties/werte/maxItems",
+          "schema": "#/$defs/bandwerte_grob/oneOf/0/properties/werte/maxItems",
           "schluessel": "maxItems"
         }
       ]
@@ -424,7 +544,7 @@
       "verletzungen": [
         {
           "instanz": "/baender/gueltig_bitmap",
-          "schema": "#/$defs/bandwerte_fein/properties/gueltig_bitmap/pattern",
+          "schema": "#/$defs/bandwerte_fein/oneOf/0/properties/gueltig_bitmap/pattern",
           "schluessel": "pattern"
         }
       ]
@@ -436,7 +556,7 @@
       "verletzungen": [
         {
           "instanz": "/baender/gueltig_bitmap",
-          "schema": "#/$defs/bandwerte_fein/properties/gueltig_bitmap/pattern",
+          "schema": "#/$defs/bandwerte_fein/oneOf/0/properties/gueltig_bitmap/pattern",
           "schluessel": "pattern"
         }
       ]
@@ -448,7 +568,7 @@
       "verletzungen": [
         {
           "instanz": "/baender/gueltig_bitmap",
-          "schema": "#/$defs/bandwerte_fein/properties/gueltig_bitmap/pattern",
+          "schema": "#/$defs/bandwerte_fein/oneOf/0/properties/gueltig_bitmap/pattern",
           "schluessel": "pattern"
         }
       ]
@@ -460,7 +580,7 @@
       "verletzungen": [
         {
           "instanz": "/baender/gueltig_bitmap",
-          "schema": "#/$defs/bandwerte_grob/properties/gueltig_bitmap/pattern",
+          "schema": "#/$defs/bandwerte_grob/oneOf/0/properties/gueltig_bitmap/pattern",
           "schluessel": "pattern"
         }
       ]
@@ -472,12 +592,12 @@
       "verletzungen": [
         {
           "instanz": "/baender/gueltig_bitmap",
-          "schema": "#/$defs/bandwerte_fein/properties/gueltig_bitmap/minLength",
+          "schema": "#/$defs/bandwerte_fein/oneOf/0/properties/gueltig_bitmap/minLength",
           "schluessel": "minLength"
         },
         {
           "instanz": "/baender/gueltig_bitmap",
-          "schema": "#/$defs/bandwerte_fein/properties/gueltig_bitmap/pattern",
+          "schema": "#/$defs/bandwerte_fein/oneOf/0/properties/gueltig_bitmap/pattern",
           "schluessel": "pattern"
         }
       ]
@@ -599,14 +719,50 @@
       ]
     },
     {
+      "datei": "ungueltig/command-ack-angewandt-ohne-state-hash.json",
+      "urteil": "ungueltig",
+      "warum": "angewandt ohne state_hash kann die bestaetigte Revision keinem konkreten Zustand zuordnen (Entwurf §33.4)",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/command_ack/oneOf/0/required/state_hash",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/command-ack-angewandt-state-hash-null.json",
+      "urteil": "ungueltig",
+      "warum": "null bedeutet keinen gemeldeten Stand und ist deshalb keine Erfolgsbestaetigung",
+      "verletzungen": [
+        {
+          "instanz": "/state_hash",
+          "schema": "#/$defs/state_hash_erfolg/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/command-ack-ergebnis-erfunden.json",
       "urteil": "ungueltig",
       "warum": "es gibt kein halbes Apply — genau das ist der Transaktionsvertrag",
       "verletzungen": [
         {
           "instanz": "/ergebnis",
-          "schema": "#/$defs/command_ack/properties/ergebnis/enum",
-          "schluessel": "enum"
+          "schema": "#/$defs/command_ack/oneOf",
+          "schluessel": "oneOf"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/command-ack-idempotent-ohne-state-hash.json",
+      "urteil": "ungueltig",
+      "warum": "idempotent_wiederholt bestaetigt denselben angewandten Stand und muss dessen Hash wiederholen",
+      "verletzungen": [
+        {
+          "instanz": "",
+          "schema": "#/$defs/command_ack/oneOf/4/required/state_hash",
+          "schluessel": "required"
         }
       ]
     },
@@ -672,8 +828,8 @@
       "verletzungen": [
         {
           "instanz": "/baender/encoding",
-          "schema": "#/$defs/band_encoding/enum",
-          "schluessel": "enum"
+          "schema": "#/$defs/bandwerte_fein/oneOf",
+          "schluessel": "oneOf"
         }
       ]
     },
@@ -1185,6 +1341,18 @@
       "textriegel_lehnt_ab": true
     },
     {
+      "datei": "ungueltig/pair-id-65-codepoints.json",
+      "urteil": "ungueltig",
+      "warum": "v2 und v3 begrenzen pair_id auf 64 Unicode-Codepoints",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/pair_id",
+          "schema": "#/$defs/pair_id/maxLength",
+          "schluessel": "maxLength"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/pair-id-als-zahl.json",
       "urteil": "ungueltig",
       "warum": "pair_id ist String oder null",
@@ -1193,6 +1361,18 @@
           "instanz": "/mitglieder/0/pair_id",
           "schema": "#/$defs/pair_id/type",
           "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/pair-id-leer.json",
+      "urteil": "ungueltig",
+      "warum": "null bezeichnet bereits 'kein Paar'; die leere Zeichenkette ist keine zweite Form",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/pair_id",
+          "schema": "#/$defs/pair_id/minLength",
+          "schluessel": "minLength"
         }
       ]
     },

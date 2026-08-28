@@ -529,6 +529,48 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     ev["konvergenz"] = 1.0
     faelle.append(("evidence-abdeckung-raender", ev, "0 und 1 sind einschliesslich"))
 
+    # 28.08.2026: Die Kodierung bestimmt Typ und plausible Traegergrenzen.
+    # Diese Gegenproben halten die einschliesslichen Raender und float32 als
+    # endlichen Zahlenzweig offen, waehrend die Negativfixtures unten direkt
+    # daneben fallen.
+    ev = copy.deepcopy(GRUND["evidence_snapshot"])
+    ev["baender"]["werte"][0] = -1440
+    ev["baender"]["werte"][-1] = 240
+    faelle.append(("evidence-bandwerte-q0p1-raender", ev,
+                   "q_db_0p1_i16: -1440 und 240 sind einschliessliche "
+                   "Traegergrenzen aus quantisierung-v1.json"))
+
+    ev = copy.deepcopy(GRUND["evidence_snapshot"])
+    ev["baender"] = baender(221, "nakama_1_24_oct_30_18k_v1", "q_db_0p01_i16")
+    ev["baender"]["werte"][0] = -14400
+    ev["baender"]["werte"][-1] = 2400
+    faelle.append(("evidence-bandwerte-q0p01-raender", ev,
+                   "q_db_0p01_i16: -14400 und 2400 sind einschliessliche "
+                   "Traegergrenzen aus quantisierung-v1.json"))
+
+    ev = copy.deepcopy(GRUND["evidence_snapshot"])
+    ev["baender"] = baender(221, "nakama_1_24_oct_30_18k_v1", "float32")
+    ev["baender"]["werte"][0] = 0.5
+    faelle.append(("evidence-bandwerte-float32", ev,
+                   "float32 traegt endliche JSON-Zahlen und darf Bruchteile enthalten"))
+
+    ack = copy.deepcopy(GRUND["command_ack"])
+    ack["ergebnis"] = "abgelehnt"
+    del ack["state_hash"]
+    ack["code"] = "revision_conflict"
+    faelle.append(("command-ack-abgelehnt-ohne-state-hash", ack,
+                   "eine Ablehnung bestaetigt keinen angewandten Stand und darf ohne Hash antworten"))
+
+    ack = copy.deepcopy(GRUND["command_ack"])
+    ack["ergebnis"] = "idempotent_wiederholt"
+    faelle.append(("command-ack-idempotent-mit-state-hash", ack,
+                   "die Wiederholung bestaetigt denselben bereits angewandten Stand samt Hash"))
+
+    ss = copy.deepcopy(GRUND["session_snapshot"])
+    ss["mitglieder"][0]["pair_id"] = "😀" * 64
+    faelle.append(("pair-id-64-codepoints", ss,
+                   "pair_id zaehlt wie label Unicode-Codepoints; genau 64 sind gueltig"))
+
     # Der grobe Bandsatz.
     ev = copy.deepcopy(GRUND["evidence_snapshot"])
     ev["baender"] = baender(64, "nakama_log64_v1", "q_db_0p01_i16")
@@ -676,12 +718,30 @@ UNGUELTIG: list[tuple] = [
      "ein fehlendes Bit ist ein Nein, kein Vielleicht — es darf nicht weggelassen werden"),
 
     ("baender-ohne-encoding", "evidence_snapshot", [loesche("baender", "encoding")],
-     [v("/baender", f"{S}/bandwerte_fein/required/encoding", "required")],
+     [v("/baender/encoding", f"{S}/bandwerte_fein/oneOf", "oneOf")],
      "Empfaenger raten die Skalierung nie aus dem Nachrichtentyp (§33.1)"),
 
     ("baender-ohne-bitmap", "evidence_snapshot", [loesche("baender", "gueltig_bitmap")],
-     [v("/baender", f"{S}/bandwerte_fein/required/gueltig_bitmap", "required")],
+     [v("/baender", f"{S}/bandwerte_fein/oneOf/0/required/gueltig_bitmap", "required")],
      "ohne Bitmap ist nicht unterscheidbar, welcher Wert gemessen wurde"),
+
+    # 28.08.2026: Apply bestaetigt einen KONKRETEN Stand. Die idempotente
+    # Wiederholung bestaetigt denselben bereits angewandten Befehl und traegt
+    # deshalb dieselbe Pflicht. Ablehnung ohne Hash bleibt oben positiv.
+    ("command-ack-angewandt-ohne-state-hash", "command_ack", [loesche("state_hash")],
+     [v("", f"{S}/command_ack/oneOf/0/required/state_hash", "required")],
+     "angewandt ohne state_hash kann die bestaetigte Revision keinem konkreten "
+     "Zustand zuordnen (Entwurf §33.4)"),
+
+    ("command-ack-angewandt-state-hash-null", "command_ack", [setze("state_hash", None)],
+     [v("/state_hash", f"{S}/state_hash_erfolg/type", "type")],
+     "null bedeutet keinen gemeldeten Stand und ist deshalb keine Erfolgsbestaetigung"),
+
+    ("command-ack-idempotent-ohne-state-hash", "command_ack",
+     [setze("ergebnis", "idempotent_wiederholt"), loesche("state_hash")],
+     [v("", f"{S}/command_ack/oneOf/4/required/state_hash", "required")],
+     "idempotent_wiederholt bestaetigt denselben angewandten Stand und muss "
+     "dessen Hash wiederholen"),
 
     ("steuerkopf-ohne-ttl", "preview_begin", [loesche("kopf", "ttl_ms")],
      [v("/kopf", f"{S}/steuerkopf/required/ttl_ms", "required")],
@@ -840,7 +900,7 @@ UNGUELTIG: list[tuple] = [
      "diskriminiert, ist ein drittes kein enum-Fehler, sondern ein Zweig, den es nicht gibt"),
 
     ("encoding-erfunden", "evidence_snapshot", [setze("baender", "encoding", "q_db_1_i8")],
-     [v("/baender/encoding", f"{S}/band_encoding/enum", "enum")],
+     [v("/baender/encoding", f"{S}/bandwerte_fein/oneOf", "oneOf")],
      "die Kodierungen stehen in quantisierung-v1.json"),
 
     ("protokoll-2-auf-v3", "hello_control", [setze("protocol", 2)],
@@ -931,6 +991,15 @@ UNGUELTIG: list[tuple] = [
      [v("/mitglieder/0/label", f"{S}/probe_label/maxLength", "maxLength")],
      "das Label ist untrusted data und begrenzt"),
 
+    ("pair-id-leer", "session_snapshot", [setze("mitglieder", 0, "pair_id", "")],
+     [v("/mitglieder/0/pair_id", f"{S}/pair_id/minLength", "minLength")],
+     "null bezeichnet bereits 'kein Paar'; die leere Zeichenkette ist keine zweite Form"),
+
+    ("pair-id-65-codepoints", "session_snapshot",
+     [setze("mitglieder", 0, "pair_id", "😀" * 65)],
+     [v("/mitglieder/0/pair_id", f"{S}/pair_id/maxLength", "maxLength")],
+     "v2 und v3 begrenzen pair_id auf 64 Unicode-Codepoints"),
+
     # Seit dem Muster (24.08.) faellt eine zu kurze Kette an ZWEI Behauptungen:
     # die Laenge stimmt nicht, und `^…{64}$` passt auf 63 Zeichen ebenfalls
     # nicht. Beide eigenen Engines melden ALLE Verletzungen des gewaehlten
@@ -969,17 +1038,59 @@ UNGUELTIG: list[tuple] = [
 
     # --- Arrays -------------------------------------------------------------
     ("baender-leer", "evidence_snapshot", [setze("baender", "werte", [])],
-     [v("/baender/werte", f"{S}/bandwerte_fein/properties/werte/minItems", "minItems")],
+     [v("/baender/werte", f"{S}/bandwerte_fein/oneOf/0/properties/werte/minItems", "minItems")],
      "ein Bandsatz ohne Werte"),
 
     ("baender-zu-viele", "evidence_snapshot", [setze("baender", "werte", [0] * 222)],
-     [v("/baender/werte", f"{S}/bandwerte_fein/properties/werte/maxItems", "maxItems")],
+     [v("/baender/werte", f"{S}/bandwerte_fein/oneOf/0/properties/werte/maxItems", "maxItems")],
      "222 Werte passen in kein Gitter dieses Vertrags"),
 
     ("bandwert-als-string", "evidence_snapshot",
      [setze("baender", "werte", [-123] + ["-124"] + [-123] * 219)],
-     [v("/baender/werte/1", f"{S}/bandwerte_fein/properties/werte/items/type", "type")],
+     [v("/baender/werte/1", f"{S}/bandwerte_fein/oneOf/0/properties/werte/items/type", "type")],
      "der Index steht im Instanzpfad"),
+
+    # Typ und plausible Traegergrenzen folgen aus encoding, nicht bloss aus
+    # der Existenz eines numerischen JSON-Werts. Je i16-Kodierung fallen
+    # Bruch, Unter- und Obergrenze getrennt; float32 bleibt ein Zahlenzweig.
+    ("bandwert-q0p1-nicht-ganzzahlig", "evidence_snapshot",
+     [setze("baender", "werte", [0.5] + [-123] * 220)],
+     [v("/baender/werte/0", f"{S}/bandwerte_fein/oneOf/0/properties/werte/items/type", "type")],
+     "q_db_0p1_i16 traegt Ganzzahlen, keine zu rundenden Bruchteile"),
+
+    ("bandwert-q0p1-unter-minimum", "evidence_snapshot",
+     [setze("baender", "werte", [-1441] + [-123] * 220)],
+     [v("/baender/werte/0", f"{S}/bandwerte_fein/oneOf/0/properties/werte/items/minimum", "minimum")],
+     "q_db_0p1_i16 endet laut quantisierung-v1.json bei -1440"),
+
+    ("bandwert-q0p1-ueber-maximum", "evidence_snapshot",
+     [setze("baender", "werte", [241] + [-123] * 220)],
+     [v("/baender/werte/0", f"{S}/bandwerte_fein/oneOf/0/properties/werte/items/maximum", "maximum")],
+     "q_db_0p1_i16 endet laut quantisierung-v1.json bei 240"),
+
+    ("bandwert-q0p01-nicht-ganzzahlig", "evidence_snapshot",
+     [setze("baender", "encoding", "q_db_0p01_i16"),
+      setze("baender", "werte", [0.5] + [-123] * 220)],
+     [v("/baender/werte/0", f"{S}/bandwerte_fein/oneOf/1/properties/werte/items/type", "type")],
+     "q_db_0p01_i16 traegt Ganzzahlen, keine zu rundenden Bruchteile"),
+
+    ("bandwert-q0p01-unter-minimum", "evidence_snapshot",
+     [setze("baender", "encoding", "q_db_0p01_i16"),
+      setze("baender", "werte", [-14401] + [-123] * 220)],
+     [v("/baender/werte/0", f"{S}/bandwerte_fein/oneOf/1/properties/werte/items/minimum", "minimum")],
+     "q_db_0p01_i16 endet laut quantisierung-v1.json bei -14400"),
+
+    ("bandwert-q0p01-ueber-maximum", "evidence_snapshot",
+     [setze("baender", "encoding", "q_db_0p01_i16"),
+      setze("baender", "werte", [2401] + [-123] * 220)],
+     [v("/baender/werte/0", f"{S}/bandwerte_fein/oneOf/1/properties/werte/items/maximum", "maximum")],
+     "q_db_0p01_i16 endet laut quantisierung-v1.json bei 2400"),
+
+    ("bandwert-float32-als-string", "evidence_snapshot",
+     [setze("baender", "encoding", "float32"),
+      setze("baender", "werte", ["0.5"] + [-123] * 220)],
+     [v("/baender/werte/0", f"{S}/bandwerte_fein/oneOf/2/properties/werte/items/type", "type")],
+     "float32 traegt endliche JSON-Zahlen, keine Zahltexte"),
 
     ("evidence-ids-leer", "evidence_invalidate", [setze("umfang", "evidence_ids", [])],
      [v("/umfang/evidence_ids", f"{S}/invalidate_ids/properties/evidence_ids/minItems", "minItems")],
@@ -1070,7 +1181,7 @@ UNGUELTIG: list[tuple] = [
      "die fuenf Gruende decken den Zustandsautomaten aus §33.4 ab"),
 
     ("command-ack-ergebnis-erfunden", "command_ack", [setze("ergebnis", "teilweise")],
-     [v("/ergebnis", f"{S}/command_ack/properties/ergebnis/enum", "enum")],
+     [v("/ergebnis", f"{S}/command_ack/oneOf", "oneOf")],
      "es gibt kein halbes Apply — genau das ist der Transaktionsvertrag"),
 
     ("error-rueckweg-erfunden", "error", [setze("rueckweg", "ignorieren")],
@@ -1100,7 +1211,7 @@ UNGUELTIG: list[tuple] = [
 
     ("bandwerte-saturated-als-string", "evidence_snapshot",
      [setze("baender", "saturated", "false")],
-     [v("/baender/saturated", f"{S}/bandwerte_fein/properties/saturated/type", "type")],
+     [v("/baender/saturated", f"{S}/bandwerte_fein/oneOf/0/properties/saturated/type", "type")],
      "das Saettigungsbit ist ein bool"),
 
     ("pair-id-als-zahl", "session_snapshot", [setze("mitglieder", 0, "pair_id", 7)],
@@ -1165,14 +1276,14 @@ UNGUELTIG: list[tuple] = [
     ("bandzahl-passt-nicht-zum-gitter", "evidence_snapshot",
      [setze("baender", "gitter_id", "nakama_log64_v1"),
       setze("baender", "gueltig_bitmap", bitmap(64))],
-     [v("/baender/werte", f"{S}/bandwerte_grob/properties/werte/maxItems", "maxItems")],
+     [v("/baender/werte", f"{S}/bandwerte_grob/oneOf/0/properties/werte/maxItems", "maxItems")],
      "221 Werte unter nakama_log64_v1: das grobe Gitter hat genau 64 Gruppen"),
 
     ("bitmap-laenge-passt-nicht", "evidence_snapshot",
      [setze("baender", "gueltig_bitmap", bitmap(64))],
-     [v("/baender/gueltig_bitmap", f"{S}/bandwerte_fein/properties/gueltig_bitmap/minLength",
+     [v("/baender/gueltig_bitmap", f"{S}/bandwerte_fein/oneOf/0/properties/gueltig_bitmap/minLength",
         "minLength"),
-      v("/baender/gueltig_bitmap", f"{S}/bandwerte_fein/properties/gueltig_bitmap/pattern",
+      v("/baender/gueltig_bitmap", f"{S}/bandwerte_fein/oneOf/0/properties/gueltig_bitmap/pattern",
         "pattern")],
      "ceil(221/8) = 28 Byte = 40 Base64-Zeichen; eine 12-Zeichen-Bitmap "
      "beschreibt 64 Baender und kann fuer 221 nicht stimmen"),
@@ -1190,20 +1301,20 @@ UNGUELTIG: list[tuple] = [
      [setze("baender", "gitter_id", "nakama_log64_v1"),
       setze("baender", "werte", [-123] * 64),
       setze("baender", "gueltig_bitmap", "/" * 10 + "9=")],
-     [v("/baender/gueltig_bitmap", f"{S}/bandwerte_grob/properties/gueltig_bitmap/pattern",
+     [v("/baender/gueltig_bitmap", f"{S}/bandwerte_grob/oneOf/0/properties/gueltig_bitmap/pattern",
         "pattern")],
      "`9` ist Index 61 (111101b): die zwei untersten Bits gehoeren zu keinem "
      "der acht Byte und muessen null sein"),
 
     ("bitmap-alphabet-fremd", "evidence_snapshot",
      [setze("baender", "gueltig_bitmap", "!" * 38 + "==")],
-     [v("/baender/gueltig_bitmap", f"{S}/bandwerte_fein/properties/gueltig_bitmap/pattern",
+     [v("/baender/gueltig_bitmap", f"{S}/bandwerte_fein/oneOf/0/properties/gueltig_bitmap/pattern",
         "pattern")],
      "`!` steht in keinem Base64-Alphabet — 40 Zeichen sind noch keine Bitmap"),
 
     ("bitmap-fuellzeichen-vorn", "evidence_snapshot",
      [setze("baender", "gueltig_bitmap", "==" + "/" * 37 + "w")],
-     [v("/baender/gueltig_bitmap", f"{S}/bandwerte_fein/properties/gueltig_bitmap/pattern",
+     [v("/baender/gueltig_bitmap", f"{S}/bandwerte_fein/oneOf/0/properties/gueltig_bitmap/pattern",
         "pattern")],
      "Fuellzeichen stehen am ENDE. Base64 mit `=` vorn ist keine Umkodierung "
      "derselben Bytes, sondern eine andere Zeichenkette"),
@@ -1217,7 +1328,7 @@ UNGUELTIG: list[tuple] = [
     # Aussage mehr waere. Genau diese Klasse faengt die Zeichenklasse [AQgw].
     ("bitmap-fuellbits-gesetzt", "evidence_snapshot",
      [setze("baender", "gueltig_bitmap", "/" * 37 + "x==")],
-     [v("/baender/gueltig_bitmap", f"{S}/bandwerte_fein/properties/gueltig_bitmap/pattern",
+     [v("/baender/gueltig_bitmap", f"{S}/bandwerte_fein/oneOf/0/properties/gueltig_bitmap/pattern",
         "pattern")],
      "das letzte Alphabetzeichen einer 40er-Kette traegt nur zwei echte Bits; "
      "die vier Fuellbits muessen null sein, sonst ist die Kodierung nicht "

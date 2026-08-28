@@ -38,6 +38,7 @@ except ImportError:
 WURZEL = pathlib.Path(__file__).resolve().parents[2]
 SCHEMA = WURZEL / "eq-copilot" / "schemas" / "v3" / "eq-ipc-v3.schema.json"
 RESERVIERT = WURZEL / "eq-copilot" / "schemas" / "v3" / "reservierte-nachrichten-v1.json"
+QUANTISIERUNG = WURZEL / "eq-copilot" / "schemas" / "v3" / "quantisierung-v1.json"
 FIXTURES = WURZEL / "eq-copilot" / "fixtures" / "v3"
 MAX_DOKUMENT_BYTES = 16 * 1024 * 1024
 
@@ -539,6 +540,131 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict) -> None:
               any(v != erster for v in verdorben.values()))
 
 
+def zweige_nach_const(knoten: dict, discriminator: str) -> dict[str, dict]:
+    """Ordnet vollstaendige oneOf-Zweige ihrem Discriminator-const zu."""
+    ergebnis: dict[str, dict] = {}
+    for zweig in knoten.get("oneOf", []):
+        wert = zweig.get("properties", {}).get(discriminator, {}).get("const")
+        if isinstance(wert, str) and wert not in ergebnis:
+            ergebnis[wert] = zweig
+    return ergebnis
+
+
+def pruefe_bandkodierung(lauf: Lauf, schema: dict, quantisierung: dict) -> None:
+    """28.08.2026: encoding bestimmt Typ und plausible Traegergrenzen."""
+    defs = schema["$defs"]
+    grenzen = quantisierung["plausibler_bereich_db"]["traegergrenzen"]
+    erwartet = {
+        "q_db_0p1_i16": grenzen["q_db_0p1_i16"],
+        "q_db_0p01_i16": grenzen["q_db_0p01_i16"],
+        "float32": None,
+    }
+
+    for name, (gitter, anzahl) in {
+        "bandwerte_fein": ("nakama_1_24_oct_30_18k_v1", 221),
+        "bandwerte_grob": ("nakama_log64_v1", 64),
+    }.items():
+        wurzel = defs[name]
+        lauf.wahr(f"{name} diskriminiert ueber encoding",
+                  wurzel.get("x-nakama-discriminator") == "encoding")
+        lauf.wahr(f"{name} traegt NUR das oneOf",
+                  set(wurzel) == {"description", "x-nakama-discriminator", "oneOf"},
+                  f"{sorted(set(wurzel))}")
+        zweige = zweige_nach_const(wurzel, "encoding")
+        lauf.wahr(f"{name} kennt genau die drei Kodierungen",
+                  set(zweige) == set(erwartet), f"{sorted(zweige)}")
+
+        # Die vollstaendigen Zweige sind wegen der bewusst kleinen Engine-
+        # Teilmenge noetig. Alles ausser encoding und dessen Wertevertrag muss
+        # trotzdem identisch bleiben; sonst reparierte ein spaeterer Autor nur
+        # eine von sechs Kopien.
+        def bandrumpf(zweig: dict) -> dict:
+            rumpf = json.loads(json.dumps(zweig))
+            rumpf.pop("description", None)
+            rumpf["properties"].pop("encoding", None)
+            rumpf["properties"]["werte"].pop("items", None)
+            return rumpf
+
+        if zweige:
+            erster = bandrumpf(next(iter(zweige.values())))
+            abweichend = [e for e, z in zweige.items() if bandrumpf(z) != erster]
+            lauf.wahr(f"{name}-Zweige unterscheiden sich nur im Wertevertrag",
+                      not abweichend, ", ".join(abweichend))
+
+        for encoding, soll_grenzen in erwartet.items():
+            zweig = zweige.get(encoding)
+            if zweig is None:
+                continue
+            props = zweig.get("properties", {})
+            werte = props.get("werte", {})
+            items = werte.get("items", {})
+            lauf.wahr(f"{name}/{encoding} pinnt das Gitter",
+                      props.get("gitter_id") == {"const": gitter})
+            lauf.wahr(f"{name}/{encoding} verlangt {anzahl} Werte",
+                      werte.get("minItems") == anzahl and werte.get("maxItems") == anzahl)
+            lauf.wahr(f"{name}/{encoding} ist strikt",
+                      zweig.get("additionalProperties") is False)
+            if soll_grenzen is None:
+                lauf.wahr(f"{name}/{encoding} traegt Zahlen",
+                          items == {"type": "number"}, repr(items))
+            else:
+                lauf.wahr(f"{name}/{encoding} folgt quantisierung-v1.json",
+                          items == {"type": "integer", "minimum": soll_grenzen[0],
+                                    "maximum": soll_grenzen[1]}, repr(items))
+
+
+def pruefe_command_ack(lauf: Lauf, schema: dict) -> None:
+    """28.08.2026: Erfolg bestaetigt immer einen konkreten Stand."""
+    defs = schema["$defs"]
+    wurzel = defs["command_ack"]
+    lauf.wahr("command_ack diskriminiert ueber ergebnis",
+              wurzel.get("x-nakama-discriminator") == "ergebnis")
+    lauf.wahr("command_ack traegt NUR das oneOf",
+              set(wurzel) == {"description", "x-nakama-discriminator", "oneOf"},
+              f"{sorted(set(wurzel))}")
+
+    zweige = zweige_nach_const(wurzel, "ergebnis")
+    erfolg = {"angewandt", "idempotent_wiederholt"}
+    alle = erfolg | {"abgelehnt", "konflikt", "abgelaufen"}
+    lauf.wahr("command_ack kennt genau die fuenf Ergebnisse",
+              set(zweige) == alle, f"{sorted(zweige)}")
+    for ergebnis, zweig in zweige.items():
+        pflicht = set(zweig.get("required", []))
+        hash_ref = zweig.get("properties", {}).get("state_hash", {}).get("$ref")
+        if ergebnis in erfolg:
+            lauf.wahr(f"command_ack/{ergebnis} verlangt state_hash",
+                      "state_hash" in pflicht)
+            lauf.wahr(f"command_ack/{ergebnis} verlangt nicht-null state_hash",
+                      hash_ref == "#/$defs/state_hash_erfolg", repr(hash_ref))
+        else:
+            lauf.wahr(f"command_ack/{ergebnis} laesst state_hash optional",
+                      "state_hash" not in pflicht)
+            lauf.wahr(f"command_ack/{ergebnis} darf nullable state_hash tragen",
+                      hash_ref == "#/$defs/state_hash", repr(hash_ref))
+
+    def ackrumpf(zweig: dict) -> dict:
+        rumpf = json.loads(json.dumps(zweig))
+        rumpf["required"] = sorted(f for f in rumpf.get("required", [])
+                                   if f != "state_hash")
+        rumpf["properties"].pop("ergebnis", None)
+        rumpf["properties"].pop("state_hash", None)
+        return rumpf
+
+    if zweige:
+        erster = ackrumpf(next(iter(zweige.values())))
+        abweichend = [e for e, z in zweige.items() if ackrumpf(z) != erster]
+        lauf.wahr("command_ack-Zweige unterscheiden sich nur in Ergebnis und Hashpflicht",
+                  not abweichend, ", ".join(abweichend))
+
+    normal = defs["state_hash"]
+    erfolgs_hash = defs["state_hash_erfolg"]
+    lauf.wahr("Erfolgs- und nullable state_hash teilen Laenge und Alphabet",
+              all(normal.get(k) == erfolgs_hash.get(k)
+                  for k in ("minLength", "maxLength", "pattern")))
+    lauf.wahr("state_hash_erfolg schliesst null aus",
+              erfolgs_hash.get("type") == "string")
+
+
 def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
     zweige = [r["$ref"].removeprefix("#/$defs/") for r in schema["oneOf"]]
     definiert = reserviert["definiert"]
@@ -747,6 +873,7 @@ def abdeckung(schema: dict, manifest: dict) -> tuple[list[str], dict[str, tuple[
 def main(argv: list[str]) -> int:
     schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
     reserviert = json.loads(RESERVIERT.read_text(encoding="utf-8"))
+    quantisierung = json.loads(QUANTISIERUNG.read_text(encoding="utf-8"))
     manifest = json.loads((FIXTURES / "MANIFEST.json").read_text(encoding="utf-8"))
 
     lauf = Lauf()
@@ -754,6 +881,8 @@ def main(argv: list[str]) -> int:
     pruefe_schema(lauf, schema)
     pruefe_namen(lauf, schema, reserviert)
     pruefe_probe_descriptor(lauf, schema)
+    pruefe_bandkodierung(lauf, schema, quantisierung)
+    pruefe_command_ack(lauf, schema)
     pruefe_fixtures(lauf, schema, manifest)
 
     print(f"jsonschema {jsonschema.__version__} (draft 2020-12)")

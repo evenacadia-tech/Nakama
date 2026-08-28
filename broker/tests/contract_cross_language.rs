@@ -297,6 +297,7 @@ fn bandwertgrenzen_stimmen_mit_dem_vertrag() {
     use eqcop_broker::telemetrie::{Q_0P01_MAX, Q_0P01_MIN, Q_0P1_MAX, Q_0P1_MIN};
 
     let q = lies(&wurzel().join("eq-copilot/schemas/v3/quantisierung-v1.json"));
+    let schema = lies(&wurzel().join("eq-copilot/schemas/v3/eq-ipc-v3.schema.json"));
     let g = &q["plausibler_bereich_db"]["traegergrenzen"];
     assert_eq!(g["q_db_0p1_i16"][0].as_i64().unwrap() as i16, Q_0P1_MIN);
     assert_eq!(g["q_db_0p1_i16"][1].as_i64().unwrap() as i16, Q_0P1_MAX);
@@ -308,6 +309,40 @@ fn bandwertgrenzen_stimmen_mit_dem_vertrag() {
     let (lo, hi) = (db[0].as_f64().unwrap(), db[1].as_f64().unwrap());
     assert_eq!((lo * 10.0) as i16, Q_0P1_MIN);
     assert_eq!((hi * 100.0) as i16, Q_0P01_MAX);
+
+    // 28.08.2026: Die JSON-Zweige werden gegen dieselbe Quelle gemessen wie
+    // die Binaerleser. Damit sind die Grenzen im Schema keine unbewachte
+    // dritte Kopie.
+    fn schema_grenzen(schema: &Value, definition: &str, encoding: &str) -> (i64, i64) {
+        let zweige = schema["$defs"][definition]["oneOf"].as_array().unwrap();
+        let zweig = zweige
+            .iter()
+            .find(|z| z["properties"]["encoding"]["const"] == encoding)
+            .unwrap_or_else(|| panic!("{definition}: Encoding {encoding} fehlt"));
+        let items = &zweig["properties"]["werte"]["items"];
+        assert_eq!(items["type"], "integer", "{definition}/{encoding}");
+        (
+            items["minimum"].as_i64().unwrap(),
+            items["maximum"].as_i64().unwrap(),
+        )
+    }
+
+    for definition in ["bandwerte_fein", "bandwerte_grob"] {
+        assert_eq!(
+            schema_grenzen(&schema, definition, "q_db_0p1_i16"),
+            (
+                g["q_db_0p1_i16"][0].as_i64().unwrap(),
+                g["q_db_0p1_i16"][1].as_i64().unwrap(),
+            )
+        );
+        assert_eq!(
+            schema_grenzen(&schema, definition, "q_db_0p01_i16"),
+            (
+                g["q_db_0p01_i16"][0].as_i64().unwrap(),
+                g["q_db_0p01_i16"][1].as_i64().unwrap(),
+            )
+        );
+    }
 }
 
 #[test]

@@ -357,6 +357,11 @@ void fahreBandwertgrenzen()
     if (! ok)
         return;
 
+    bool schemaOk = false;
+    const auto schema = lies ("eq-copilot/schemas/v3/eq-ipc-v3.schema.json", schemaOk);
+    if (! schemaOk)
+        return;
+
     const auto plaus = q.getProperty ("plausibler_bereich_db", {});
     const auto grenzen = plaus.getProperty ("traegergrenzen", {});
     auto paar = [&grenzen] (const char* name, int index)
@@ -378,6 +383,41 @@ void fahreBandwertgrenzen()
     pruefe (static_cast<int> (lo * 10.0) == nakama::telemetrie::q0p1Min
             && static_cast<int> (hi * 100.0) == nakama::telemetrie::q0p01Max,
             "Traegergrenzen folgen aus den dB-Werten mal Skalierung");
+
+    // 28.08.2026: Auch der JSON-Vertrag liest die Grenzen nicht aus einer
+    // dritten, ungemessenen Kopie. Seine vier i16-Zweige muessen bei jedem
+    // Lauf mit derselben quantisierung-v1.json uebereinstimmen wie die beiden
+    // Binaerleser oben.
+    const auto defs = schema.getProperty ("$defs", {});
+    auto schemaHatGrenzen = [&defs] (const char* definition, const char* encoding,
+                                     int minimum, int maximum)
+    {
+        auto* zweige = defs.getProperty (definition, {}).getProperty ("oneOf", {}).getArray();
+        if (zweige == nullptr)
+            return false;
+        for (const auto& zweig : *zweige)
+        {
+            const auto props = zweig.getProperty ("properties", {});
+            if (props.getProperty ("encoding", {}).getProperty ("const", {}).toString()
+                != encoding)
+                continue;
+            const auto items = props.getProperty ("werte", {}).getProperty ("items", {});
+            return items.getProperty ("type", {}).toString() == "integer"
+                   && static_cast<int> (items.getProperty ("minimum", {})) == minimum
+                   && static_cast<int> (items.getProperty ("maximum", {})) == maximum;
+        }
+        return false;
+    };
+
+    const int q0p1Min = paar ("q_db_0p1_i16", 0);
+    const int q0p1Max = paar ("q_db_0p1_i16", 1);
+    const int q0p01Min = paar ("q_db_0p01_i16", 0);
+    const int q0p01Max = paar ("q_db_0p01_i16", 1);
+    pruefe (schemaHatGrenzen ("bandwerte_fein", "q_db_0p1_i16", q0p1Min, q0p1Max)
+            && schemaHatGrenzen ("bandwerte_fein", "q_db_0p01_i16", q0p01Min, q0p01Max)
+            && schemaHatGrenzen ("bandwerte_grob", "q_db_0p1_i16", q0p1Min, q0p1Max)
+            && schemaHatGrenzen ("bandwerte_grob", "q_db_0p01_i16", q0p01Min, q0p01Max),
+            "JSON-Bandwertgrenzen stimmen mit quantisierung-v1.json");
 }
 
 // ------------------------------------------------------------------ Bandgitter

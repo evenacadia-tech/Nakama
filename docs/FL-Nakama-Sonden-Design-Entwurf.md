@@ -3831,6 +3831,11 @@ ohne den Audiopfad zu verändern.
   Repair/Uninstall und v2-Kompatibilitätslistener;
 - Golden-Tests für State-Roundtrip, unbekanntes Major, Copy/Paste-Duplikat und Browser-Recall.
 
+**Nachtrag 28.08.2026 (User-Entscheid, `design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md`):**
+Seit dem 23.08.2026 gibt es zwei Ziele — Nakama Gen und Nakama Probeeq; Suna ist in Probeeq
+aufgegangen. Das dritte Ziel wird in `SONDE-007c` (S9b) stillgelegt. Klausel 1 des Exit-Gates gilt
+danach für **beide** verbleibenden Ziele.
+
 **Exit-Gate:** Alle drei Ziele scannen und laden in FL; Passive und Active-Hard-Bypass nullen;
 Schema-1-Fixtures migrieren deterministisch und erzeugen keine Brokerstarts im Scanner oder
 Offline-Render. C++ und Rust klassifizieren jedes gültige und ungültige Fixture identisch. R0 ist
@@ -4076,6 +4081,7 @@ sortiert. Ein Ticket darf intern kleiner geschnitten werden, aber sein Gate nich
 | `SONDE-005` | v3-Domain-/JSON-/FlatBuffers-Schemas, Bandgitter und Cross-Language-Fixtures | C++/Rust validieren identisch; Codegen-Drift ist 0 |
 | `SONDE-006` | State-Schema 2, fester Parameterbestand und reine Schema-1-Migration | Roundtrip, unbekanntes Major, Duplicate und Host-Dirty grün |
 | `SONDE-007` | drei Pluginziele und Lifecycle-Klassifikation | IDs eingefroren; Scanner/Probe/Render spawnen nie Broker |
+| `SONDE-007c` | Stilllegung des Suna-Ziels (Nachtrag 28.08.2026, S9b) | Kanon grün ohne A15; Installer liefert zwei Bundles plus Broker; keine fremde CID; Kennungen von Gen und Probeeq unverändert |
 | `SONDE-008` | `StampedAudioQueue`, Quarantäne und fixed-memory Loudness | keine Teilblöcke/unbegrenzten Vektoren; RT-/EBU-Goldens grün |
 | `SONDE-009` | FeatureEngine v2 mit Zeit-, Validity-, Event- und Bandverträgen | Drop/Seek/Loop trennt jedes offene Fenster |
 | `SONDE-010` | v3-Control-/Telemetry-Clients und Rust-Envelopeparser | CRC/Fuzz/Backpressure/Reconnect ohne P0-Starvation |

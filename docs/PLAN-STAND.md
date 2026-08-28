@@ -1,6 +1,6 @@
 # Planstand Nakama
 
-<!-- quellstand: e3fb578 -->
+<!-- quellstand: 6c314e1 -->
 
 > **Gerechnet, nicht gepflegt.** Dieses Blatt entsteht aus dem Repo:
 > `py -3.13 tools/plan/planstand.py`. Es wird **nie** von Hand editiert —
@@ -9,12 +9,12 @@
 > *abgenommen* erst, wenn dort eine Urteilsmarke der geforderten Prüfstufe
 > mit **PASS** steht. Fehlt sie, gilt der Schritt als nicht abgenommen.
 
-**Stand:** 2026-08-28 · Quellstand `e3fb578` · **12 von 36 abgenommen** · 5 gebaut · 19 offen
+**Stand:** 2026-08-28 · Quellstand `6c314e1` · **12 von 37 abgenommen** · 5 gebaut · 20 offen
 
 > ⚠️ Gerechnet aus dem Arbeitsbaum: unter `docs/plan/`, `docs/beweise/`
-> oder `tools/plan/` liegen Änderungen, die noch nicht in `e3fb578` sind.
+> oder `tools/plan/` liegen Änderungen, die noch nicht in `6c314e1` sind.
 
-`█████████████▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░` 33 % abgenommen · 47 % gebaut
+`█████████████▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░` 32 % abgenommen · 46 % gebaut
 
 **Als Nächstes:** **Nacharbeit an S9** — der Prüfer hat einen Befund offen gelassen (docs/beweise/SONDE-007b.md).
 
@@ -28,7 +28,7 @@
 |---|---|---:|---:|---:|
 | **Vorlauf** — Beweisen statt behaupten | `████████████████████████` | 1 | 0 | 0 |
 | **P0** — Bestand einfrieren, Hostgrenzen beweisen | `████████████████████████` | 8 | 0 | 0 |
-| **P1** — Verträge, gespeicherter Zustand, neutrale Hüllen | `████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓` | 1 | 5 | 0 |
+| **P1** — Verträge, gespeicherter Zustand, neutrale Hüllen | `███▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░` | 1 | 5 | 1 |
 | **P2** — Messkern, Nachrichtenweg, Speicher | `██████████░░░░░░░░░░░░░░` | 2 | 0 | 3 |
 | **P3** — Passive Landkarte | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 2 |
 | **P4–P5** — Vergleichsevidenz und Ursachen | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 4 |
@@ -42,7 +42,7 @@ flowchart LR
   P0["Vorlauf<br/>1/1 abgenommen"]:::fertig
   P1["P0<br/>8/8 abgenommen"]:::fertig
   P0 --> P1
-  P2["P1<br/>1/6 abgenommen<br/>+5 gebaut"]:::laeuft
+  P2["P1<br/>1/7 abgenommen<br/>+5 gebaut"]:::laeuft
   P1 --> P2
   P3["P2<br/>2/5 abgenommen"]:::laeuft
   P2 --> P3
@@ -80,15 +80,16 @@ flowchart LR
 - ■ **S4** — Capabilityreport: die zehn Fähigkeitsbits für FL an die Rohdaten aus Termin A und B gebunden — zwei bestätigt (Hostkontext, Projektzeit), acht nicht: zwei gemessen „kann FL nicht“ (feine Automation, double), drei „noch nicht bewiesen“ (Latenzangabe, beide Nebenwege — Termin A2), eines ungemessen, zwei warten auf ihre Tickets. Prüfbein A13 (61 Prüfungen) misst den Report selbst gegen die Rohdaten; Kanon 18/18 grün. Frischer Prüfer: Runde 1 NEEDS_WORK (zwei Bits zu optimistisch), nachgearbeitet, Runde 2 PASS. (abgenommen · T2 PASS 2026-08-22 · Kanon 18/18 grün)
 - ■ **G0** `Gate` — Erste adversariale Pruefrunde (C++-Review + Codex) ueber P0 — gefahren 22.08., Urteil PASS: beide Bruchauftraege (Gate 1, Gate 5) gescheitert, die P0-Kernflaeche traegt keinen Befund. Manifest docs/beweise/G0.md. Damit ist P0 vollstaendig. (abgenommen · T3 PASS 2026-08-22)
 
-### P1 — Verträge, gespeicherter Zustand, neutrale Hüllen  (1/6 abgenommen, 5 gebaut)
+### P1 — Verträge, gespeicherter Zustand, neutrale Hüllen  (1/7 abgenommen, 5 gebaut)
 
 *Alles, was zwischen den drei Apps und dem Broker hin- und hergeht, ist als Vertrag festgeschrieben und in drei Sprachen gleich geprüft — bevor der Messkern darauf baut.*
 
 - ■ **S5** `SONDE-005a` — Nachrichtenverträge (JSON) mit Bandgitter und 153 Prüffällen; in Python, C++ und Rust gleich gelesen. Gebaut und nachgearbeitet — das abschließende Prüfurteil eines frischen Prüfers steht noch aus. (abgenommen · T3 PASS 2026-08-28 · Kanon 29/29 grün)
-- ▣ **S6** `SONDE-005b` — Binärformat für Messdaten (FlatBuffers) mit festen Feldnummern und zwei handgeschriebenen Lesern; 6215 Byte-Mutanten bestanden. Prüfurteil wie S5 noch offen. (gebaut · T3 NEEDS_WORK 2026-08-24 · nachgearbeitet, frisches Urteil fehlt · Kanon 15/15 grün)
+- ▣ **S6** `SONDE-005b` — Binärformat für Messdaten (FlatBuffers) mit festen Feldnummern und zwei handgeschriebenen Lesern; 6215 Byte-Mutanten bestanden. Prüfurteil wie S5 noch offen. (gebaut · T3 NEEDS_WORK 2026-08-24 · nachgearbeitet, frisches Urteil fehlt · Kanon 29/29 grün)
 - ▣ **S7** `SONDE-006` — Gespeicherter Zustand Schema 2: alte Projekte wandern verlustfrei, fremde Versionen werden nur-lesend geöffnet, FL sieht jede Änderung als „ungespeichert“. 109 Parameter-Kennungen festgeschrieben. (gebaut · T3 NEEDS_WORK 2026-08-24 · nachgearbeitet, frisches Urteil fehlt · Kanon 17/17 grün)
 - ▣ **S8** `SONDE-007a` — Gemeinsamer Kern fuer alle drei Plugins, der keine Bundle-Konstanten sieht — sonst bekaemen zwei Plugins die Identitaet des dritten. Gebaut: der geteilte Code wird jetzt EINMAL uebersetzt statt einmal je Programm, und fuenf unabhaengige Sperren passen auf, dass keine Kennung hineinrutscht. Jede Sperre wurde absichtlich ausgeloest, um zu zeigen, dass sie wirklich zufasst. Eine davon hat dabei einen Fehler in sich selbst gefunden. NACHGEPRUEFT am 23.08.: das Herzstueck haelt (der Kern traegt nachweislich keine Kennung), aber das Urteil lautete 'nachbessern' — fuenf Punkte, darunter eine echte Verschlechterung durch den Umbau selbst: der geteilte Code hatte still die schaerfste Warnstufe des Compilers verloren. Alle fuenf noch am selben Tag geschlossen, die fuenfte Sperre ist genau daraus entstanden, danach wieder 19 von 19 Pruefungen gruen. Auf den nachgebesserten Stand fehlt ein zweites Urteil. (gebaut · T3 NEEDS_WORK 2026-08-24 · nachgearbeitet, frisches Urteil fehlt · Kanon 19/19 grün)
-- ▣ **S9** `SONDE-007b` — Drei eigene Plugin-Ziele, Rollen-Erkennung, Installer-Manifest. ALLE DREI TEILE GEBAUT am 23.08. (1) Die Kennung der Programme stand bisher als Text im Bauskript UND in der Kennungsdatei - zwei Wahrheiten, die auseinanderlaufen koennen. Jetzt liest das Bauskript die Kennungsdatei; der Test misst weiter das fertige Programm gegen dieselbe Datei. (2) Nakama Suna und Nakama Probeeq sind gebaut, aus EINER gemeinsamen Quelle, und tragen nachweislich ihre eigenen, seit Tagen reservierten Kennungen - keines traegt die eines anderen. Beide sind heute noch stumm: Ton geht unveraendert durch, keine Regler, keine Oberflaeche. Das ist Absicht. (3) Das Hauptprogramm erkennt jetzt seine Rolle, statt sie anzunehmen: beim Laden weiss es nichts ueber sich und bleibt still; erst ein geladenes Projekt entscheidet, ob es ein alter Messpunkt (dann fuer immer passiv) oder ein Hauptfenster ist. Eine frische Instanz wird nur dann zum Hauptfenster, wenn du das Fenster geoeffnet UND die Rolle gewaehlt hast. Ein Scannerlauf entscheidet nichts. Dazu die Packliste fuer die Auslieferung (drei Programme plus Broker, Pruefsumme, Rueckweg mit Warnung vor Datenverlust) - und das Installationsskript liegt endlich im Projekt statt nur auf einem Rechner. FOLGE, DIE MAN HOERT: ein reiner Messpunkt faerbt beim Anhoeren nichts mehr ein. 23 von 23 Pruefungen gruen. NICHT abgenommen: die Nachpruefung durch einen frischen Pruefer steht aus,; das fremde Pruefprogramm sagt bei allen drei Programmen SUCCESS. NACHARBEIT 23.08. nachmittags: alle vier Funde der Nachpruefung geschlossen, jeder erst an der Quelle nachgemessen und jede neue Sicherung beim Anschlagen vorgefuehrt; fuenf weitere Funde kamen dabei heraus und sind mit erledigt. Ein Plugin wird ab jetzt als ganzer ORDNER ausgeliefert statt nur als die Datei darin. Das Zurueckgehen wird ab jetzt bei jedem Pruefdurchlauf wirklich AUSGEFUEHRT (neues Pruefbein, Kanon 23 -> 24) - dabei fielen zwei echte Fehler heraus, die drei Leser uebersehen hatten. Selbstpruefung ueber den Gesamtstand gefahren, 24/24 gruen und beglaubigt. STATUS BLEIBT 'gebaut': wer repariert, spricht sich nicht selbst frei - der nachgebesserte Stand braucht einen frischen Pruefer. (gebaut · T3 NEEDS_WORK 2026-08-24 · Befund offen · Kanon 24/24 grün)
+- ▣ **S9** `SONDE-007b` — Drei eigene Plugin-Ziele, Rollen-Erkennung, Installer-Manifest. ALLE DREI TEILE GEBAUT am 23.08. (1) Die Kennung der Programme stand bisher als Text im Bauskript UND in der Kennungsdatei - zwei Wahrheiten, die auseinanderlaufen koennen. Jetzt liest das Bauskript die Kennungsdatei; der Test misst weiter das fertige Programm gegen dieselbe Datei. (2) Nakama Suna und Nakama Probeeq sind gebaut, aus EINER gemeinsamen Quelle, und tragen nachweislich ihre eigenen, seit Tagen reservierten Kennungen - keines traegt die eines anderen. Beide sind heute noch stumm: Ton geht unveraendert durch, keine Regler, keine Oberflaeche. Das ist Absicht. (3) Das Hauptprogramm erkennt jetzt seine Rolle, statt sie anzunehmen: beim Laden weiss es nichts ueber sich und bleibt still; erst ein geladenes Projekt entscheidet, ob es ein alter Messpunkt (dann fuer immer passiv) oder ein Hauptfenster ist. Eine frische Instanz wird nur dann zum Hauptfenster, wenn du das Fenster geoeffnet UND die Rolle gewaehlt hast. Ein Scannerlauf entscheidet nichts. Dazu die Packliste fuer die Auslieferung (drei Programme plus Broker, Pruefsumme, Rueckweg mit Warnung vor Datenverlust) - und das Installationsskript liegt endlich im Projekt statt nur auf einem Rechner. FOLGE, DIE MAN HOERT: ein reiner Messpunkt faerbt beim Anhoeren nichts mehr ein. 23 von 23 Pruefungen gruen. NICHT abgenommen: die Nachpruefung durch einen frischen Pruefer steht aus,; das fremde Pruefprogramm sagt bei allen drei Programmen SUCCESS. NACHARBEIT 23.08. nachmittags: alle vier Funde der Nachpruefung geschlossen, jeder erst an der Quelle nachgemessen und jede neue Sicherung beim Anschlagen vorgefuehrt; fuenf weitere Funde kamen dabei heraus und sind mit erledigt. Ein Plugin wird ab jetzt als ganzer ORDNER ausgeliefert statt nur als die Datei darin. Das Zurueckgehen wird ab jetzt bei jedem Pruefdurchlauf wirklich AUSGEFUEHRT (neues Pruefbein, Kanon 23 -> 24) - dabei fielen zwei echte Fehler heraus, die drei Leser uebersehen hatten. Selbstpruefung ueber den Gesamtstand gefahren, 24/24 gruen und beglaubigt. STATUS BLEIBT 'gebaut': wer repariert, spricht sich nicht selbst frei - der nachgebesserte Stand braucht einen frischen Pruefer. NACHTRAG 28.08.: Suna ist seit 23.08. in Probeeq aufgegangen; die Stilllegung des dritten Ziels ist als S9b (SONDE-007c) vorgezogen. Der offene FL-Schritt gilt danach fuer beide verbleibenden Ziele: Nakama Gen und Nakama Probeeq. (gebaut · T3 NEEDS_WORK 2026-08-24 · Befund offen · Kanon 24/24 grün)
+- □ **S9b** `SONDE-007c` — Suna ist seit dem 23.08. in Probeeq aufgegangen; Bau, Installer-Manifest und Identitätsdatei sind aber noch dreispurig. Vorgezogen aus S28b am 28.08.2026 (User: „ja stell das einfach richtig“, design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md), damit der FL-Schritt von S9 das Produkt misst, das es gibt. Das Ziel NakamaSuna_VST3 wird stillgelegt; sein Prüfbein A15 verabschiedet sich deklariert aus dem Kanon (tools/beweise.ps1-Tabelle), nicht still; das Installer-Manifest liefert zwei Bundles plus Broker; der Suna-Eintrag in plugin-identities-v1.json wird als stillgelegt markiert, ohne eine eingefrorene Kennung von Gen oder Probeeq anzufassen (NAK-30 gilt weiter); der Rückweg bleibt vollständig. Gate: Kanon grün ohne A15, Installer-Manifestprüfung A17 grün mit zwei Bundles, pluginval SUCCESS an beiden Bundles, kein Bundle trägt eine fremde CID. Danach lautet §55 Klausel 1: beide Ziele scannen und laden in FL. (offen · Beleg `docs/beweise/SONDE-007c.md` fehlt)
 - ▣ **G1** `Gate` — Prüfrunde über P1 (C++- und Rust-Review + Codex) — gefahren 24.08., Urteil NEEDS_WORK: Gate 1 hielt (beide Modelle „kein Pfad gefunden“), Gate 7 fiel — von Claude über das v3-Schema (insert + beitrag validiert) und unabhängig davon von Codex über den gespeicherten Zustand (eine Sonde ohne Aux-Bus darf sich post_fader_contribution nennen). Dazu zwei offene §55-Exit-Klauseln: die drei Bundles sind nie in FL gescannt worden, und Rust klassifiziert die 15 ungültigen State-DTOs nicht (NAK-42). Kanon 28/28 grün und beglaubigt. Manifest docs/beweise/G1.md. (gebaut · T3 NEEDS_WORK 2026-08-24 · Befund offen · Kanon 28/28 grün)
 
 ### P2 — Messkern, Nachrichtenweg, Speicher  (2/5 abgenommen)
@@ -122,7 +123,7 @@ flowchart LR
 *Der EQ entsteht: er rechnet in der Sonde (und als Master-EQ in Gen), bedient wird alles zentral auf Gens zweiter Seite — mit Kopplung, Sicherheit und Rückweg (Entscheid 23.08., Umschnitt gefahren; Spielregeln der UI: design/docs/ui-spielregeln-eq-zentrale.md). Danach: Release R3.*
 
 - □ **S26–28** `SONDE-015` — Lokaler EQ-Kern in der Sonde: vier vorbereitete Bänke, Zustand und Automation, A/B — dazu die versionierte Zustands-Erweiterung aus dem 23.08.-Entscheid: Mix je Sonde und die Schutz-Zonen bekommen ihren Platz im gespeicherten Zustand (Layout v2, neue Kennungen, nie umgewidmet). (offen)
-- □ **S28b** `SONDE-015b` — Derselbe EQ-Kern auf dem Master: Gen bekommt seinen eigenen EQ-Pfad — ausgeschaltet beweisbar bitidentisch, das NullTest-Bein wächst mit. Im selben Zug wird das Suna-Ziel stillgelegt (Suna ist in Probeeq aufgegangen) und sein Prüfbein verabschiedet sich deklariert aus dem Kanon, nicht still. (offen)
+- □ **S28b** `SONDE-015b` — Derselbe EQ-Kern auf dem Master: Gen bekommt seinen eigenen EQ-Pfad — ausgeschaltet beweisbar bitidentisch, das NullTest-Bein wächst mit. Die Stilllegung des Suna-Ziels ist am 28.08.2026 nach S9b (SONDE-007c) vorgezogen und gehört nicht mehr hierher. (offen)
 - □ **G6** `Gate` — Härtestes Gate des Plans: C++-Review auf höchster Stufe, Nebenläufigkeits-Prüfung, Worst-Case-CPU — deckt seit dem Umschnitt auch Gens Master-Pfad. (offen)
 - □ **S29–31** `SONDE-016/017` — Kopplung Gen↔Sonde als Hauptbedienweg: Pairing, Verschlüsselung, Lease, Anwenden/Zurücknehmen, aktiver Vergleich — dazu die Drei-Stufen-Geste (Halten = hören · 1. Klick = 10-Sekunden-Probe · 2. Klick = fest), volle Bereiche ohne Remote-Limit (Entscheid 23.08.), die harte Schutz-Zonen-Sperre und der zweistufige Mix (ganze App ↔ gewählte Spur). (offen)
 - □ **G7** `Gate` — Sicherheits- und Rust-Review + Codex + 10 000 Befehle Stress. (offen)

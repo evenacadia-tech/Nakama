@@ -1,5 +1,21 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ✅ NACHTRAG — 29.08.2026, S9 `SONDE-007b` T3-Nacharbeit
+>
+> Die Marke von `SONDE-007b` ist nicht mehr `offen`, sondern
+> **`T3 NEEDS_WORK 2026-08-29 nachgearbeitet`** (`1ca5fdb`). Von den zwei
+> G1-Befunden ist **§4.2 geschlossen** — die State-Hälfte des Gate-7-Bruchs
+> wird jetzt **am Bundle** gemessen statt nur auf `lade()`-Ebene: neuer Block
+> 5b im `EqCopProbeeqNullTest` (16 Prüfungen), Riegel per Mutationsprobe rot
+> vorgeführt (8 von 16 fallen). Kanon zweimal GRÜN 28/28.
+>
+> **Der Satz weiter unten gilt weiter**, nur genauer: **§55 Klausel 1** ist
+> weiterhin ungemessen und damit der einzige offene Punkt an diesem Ticket.
+> Seit S9b/`SONDE-007c` betrifft er **zwei** Ziele — Nakama Gen und Nakama
+> Probeeq —, nicht drei. Datiert als **`NAK-87`**. Nur der User kann ihn
+> schließen: Installation als Admin-Klick, dann FL starten und beide Bundles
+> laden. **P1 bleibt bis dahin nicht exit-fähig.**
+
 > ## 🛑 ÜBERGABE — 24.08.2026, Dirigentenlauf beendet (Kontext voll)
 >
 > **Stand: 12 von 36 abgenommen.** An diesem Tag abgenommen: **S12–13**

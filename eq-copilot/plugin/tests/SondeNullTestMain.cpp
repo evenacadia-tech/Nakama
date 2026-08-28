@@ -177,6 +177,156 @@ int main()
                 juce::String ((int) zurueck.getSize()) + " Bytes");
     }
 
+    // -- 5b. Gate 7 auf State-Ebene, gemessen AM BUNDLE (G1 §4.2) ----------
+    // Der Gate-Lauf G1 vom 24.08.2026 ist genau diese Kette gefahren:
+    // Host-State-Restore -> lade() -> positionAusWort -> positionErlaubt ->
+    // uebernommen -> beim naechsten Speichern wieder hinausgeschrieben. Eine
+    // Sonde mit genau einem Stereo-Bus (SondeProcessor.cpp:7-9) konnte sich so
+    // dauerhaft `post_fader_contribution` nennen - die exakte Bezeichnung
+    // eines Mastersummenbeitrags auf einem Aux-Bus, den dieses Bundle nicht
+    // hat. Das ist Gate 7 aus §49.2 Nr. 7 im Wortlaut.
+    //
+    // Der Riegel dagegen sitzt seit a2fe0f5 in `positionErlaubt`
+    // (state/NakamaState.cpp): Riegel 1 sperrt die Position fuer JEDE Klasse,
+    // solange kein Bau den Aux-Bus hat (`kContributionAuxVerfuegbar`, gemessen
+    // unsupported), Riegel 2 ist die Klassenmatrix. Gemessen wurde er bisher
+    // nur auf `lade()`-Ebene (EqCopStateMigrationTest G8b) und am Eqcp-Bundle.
+    //
+    // 🔑 Hier faehrt die GANZE Kette durch die echte Sondenschale. Das ist
+    // keine Wiederholung: `SondeProcessor::setStateInformation` hat einen
+    // eigenen Weg - bei `ignoriert` kehrt er VOR dem Schloss um, bei
+    // `nurLesen` nicht -, und das Artefakt dieses Tickets ist das Bundle,
+    // nicht `lade()`.
+    {
+        // Ein sonst GUELTIGER Stand dieses Bundles: eigene Produktklasse,
+        // eigener Bundlevertrag, richtige Kind-Matrix (§2.1) - nur die
+        // Messposition ist die verbotene. Gebaut ueber den oeffentlichen
+        // State-Weg (`speichere`), nicht ueber eine Hintertuer im Produktcode.
+        nakama::state::Zustand gebastelt =
+            nakama::state::frisch ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        gebastelt.common.klasse   = nakama::sonde::kProduktklasse;
+        gebastelt.common.position = nakama::state::Messposition::post_fader_contribution;
+        gebastelt.hatParameters   = (nakama::sonde::kProduktklasse
+                                        == nakama::state::Klasse::active_probe);
+
+        juce::MemoryBlock verboten;
+        nakama::state::speichere (gebastelt, verboten);
+
+        // Ohne diese Probe waere der ganze Block aus dem FALSCHEN Grund gruen:
+        // haette `speichere` die Position stillschweigend begradigt, gaebe es
+        // unten gar nichts mehr abzuwehren.
+        const auto probe = juce::ValueTree::readFromData (verboten.getData(), verboten.getSize());
+        const auto probeWort = probe.isValid()
+            ? probe.getChildWithName ("Common").getProperty ("measurement_position").toString()
+            : juce::String ("<kein Baum>");
+        pruefe (probeWort == "post_fader_contribution",
+                "die Probebytes tragen wirklich measurement_position=post_fader_contribution",
+                probeWort);
+
+        nakama::sonde::SondeProcessor opfer;
+        opfer.setStateInformation (verboten.getData(), (int) verboten.getSize());
+
+        // 1) Der Stand wird NICHT als eigener uebernommen: `leseSchema2`
+        //    bricht an `positionErlaubt` ab, `lade()` faellt auf read-only mit
+        //    Grund, und der Prozessor haelt genau diesen Zustand.
+        pruefe (opfer.zustandLesen().nurLesen,
+                "der Stand kommt als read-only zurueck, nicht als eigener",
+                opfer.zustandLesen().grund);
+        pruefe (opfer.zustandLesen().grund.isNotEmpty(),
+                "read-only nennt seinen Grund");
+        pruefe (opfer.zustandLesen().common.position
+                    != nakama::state::Messposition::post_fader_contribution,
+                "das Bundle FUEHRT die verbotene Position nicht",
+                nakama::state::wort (opfer.zustandLesen().common.position));
+
+        // 2) Die Instanz bleibt neutral - keine Klassifikation auf die
+        //    Produktklasse, kein Brokerstart. §53.5: read-only ist das
+        //    Gegenteil eines vollstaendigen State-Restore.
+        pruefe (opfer.klassifikation() == nakama::state::Klassifikation::unclassified,
+                "die Instanz klassifiziert NICHT auf die Produktklasse, sie bleibt neutral",
+                nakama::state::wort (opfer.klassifikation()));
+        pruefe (! opfer.darfBrokerStarten(),
+                "eine read-only-Sonde darf den Broker nicht starten");
+
+        // 3) §53.8 verlustfrei: die Originalbytes reisen unveraendert zum Host
+        //    zurueck. Ein Altprojekt verliert seinen Stand nicht - es darf ihn
+        //    nur nicht mehr behaupten.
+        juce::MemoryBlock zurueck;
+        opfer.getStateInformation (zurueck);
+        pruefe (zurueck == verboten,
+                "Vertrag 53.8: dieselben Originalbytes gehen unveraendert an den Host zurueck",
+                juce::String ((int) zurueck.getSize()) + " Bytes");
+
+        // 4) Und der Rueckweg waescht nichts: eine DRITTE frische Instanz, die
+        //    genau die herausgegebenen Bytes laedt, kommt wieder read-only und
+        //    neutral. Damit gibt es keinen Umweg, ueber den das Bundle die
+        //    Position doch als gueltigen eigenen Stand fuehrt.
+        nakama::sonde::SondeProcessor dritte;
+        dritte.setStateInformation (zurueck.getData(), (int) zurueck.getSize());
+        pruefe (dritte.zustandLesen().nurLesen,
+                "der Rueckweg waescht nichts: erneut geladen bleibt read-only",
+                dritte.zustandLesen().grund);
+        pruefe (dritte.klassifikation() == nakama::state::Klassifikation::unclassified,
+                "und erneut geladen bleibt die Instanz neutral",
+                nakama::state::wort (dritte.klassifikation()));
+
+        // 5) Gegenprobe: DERSELBE Stand mit einer fuer die Klasse erlaubten
+        //    Position laedt normal und klassifiziert. Ohne sie wuesste
+        //    niemand, ob oben die POSITION abgewiesen wurde oder irgendetwas
+        //    anderes am Bastelstand.
+        gebastelt.common.position = nakama::state::Messposition::insert;
+        juce::MemoryBlock erlaubteBytes;
+        nakama::state::speichere (gebastelt, erlaubteBytes);
+
+        nakama::sonde::SondeProcessor gegenprobe;
+        gegenprobe.setStateInformation (erlaubteBytes.getData(), (int) erlaubteBytes.getSize());
+        pruefe (! gegenprobe.zustandLesen().nurLesen,
+                "Gegenprobe: derselbe Stand mit erlaubter Position laedt normal",
+                gegenprobe.zustandLesen().grund);
+        pruefe (gegenprobe.zustandLesen().common == gebastelt.common,
+                "Gegenprobe: der geladene Common ist derselbe (Position insert)",
+                nakama::state::wort (gegenprobe.zustandLesen().common.position));
+        pruefe (gegenprobe.klassifikation()
+                    == (nakama::sonde::kProduktklasse == nakama::state::Klasse::passive_probe
+                            ? nakama::state::Klassifikation::passive_probe
+                            : nakama::state::Klassifikation::active_probe),
+                "Gegenprobe: nach gueltigem Stand traegt der Lebenslauf die Produktklasse",
+                nakama::state::wort (gegenprobe.klassifikation()));
+
+        // 6) Und der Weg, den FL wirklich geht: die Instanz steht laengst im
+        //    Projekt und ist klassifiziert, DANN reicht der Host ihr den
+        //    verbotenen Stand nach (Preset-Browser, Copy/Paste, geoeffnetes
+        //    Altprojekt). Punkt 1-5 haben nur frische Instanzen gemessen -
+        //    haette der Riegel hier eine Luecke, waere sie die einzige, die im
+        //    Betrieb ueberhaupt erreichbar ist.
+        //
+        //    §53.5: read-only ist das Gegenteil eines vollstaendigen Restore,
+        //    also faellt auch eine ZUVOR positiv klassifizierte Instanz auf
+        //    neutral zurueck. Sie darf ihre Rechte nicht behalten, nur weil sie
+        //    sie einmal hatte.
+        pruefe (gegenprobe.klassifikation() != nakama::state::Klassifikation::unclassified,
+                "Nachreichen: die Instanz ist VOR dem verbotenen Stand klassifiziert",
+                nakama::state::wort (gegenprobe.klassifikation()));
+
+        gegenprobe.setStateInformation (verboten.getData(), (int) verboten.getSize());
+
+        pruefe (gegenprobe.zustandLesen().nurLesen,
+                "Nachreichen: der verbotene Stand kommt auch bei einer laufenden Instanz read-only",
+                gegenprobe.zustandLesen().grund);
+        pruefe (gegenprobe.klassifikation() == nakama::state::Klassifikation::unclassified,
+                "Nachreichen: die Klassifikation faellt zurueck auf neutral, alte Rechte bleiben nicht",
+                nakama::state::wort (gegenprobe.klassifikation()));
+
+        // §53.8 auch hier: der Prozessor erfindet keinen Stand und faellt auch
+        // nicht auf den vorherigen zurueck - er gibt heraus, was der Host ihm
+        // gegeben hat. Alles andere waere ein stiller Stand-Tausch hinter dem
+        // Ruecken des Projekts.
+        juce::MemoryBlock nachReichen;
+        gegenprobe.getStateInformation (nachReichen);
+        pruefe (nachReichen == verboten,
+                "Nachreichen: der Host bekommt genau die Bytes zurueck, die er gab - kein stiller Tausch",
+                juce::String ((int) nachReichen.getSize()) + " Bytes");
+    }
     // -- 6. Muell aendert nichts --------------------------------------------
     {
         const auto vorher = prozessor.zustandLesen().common;

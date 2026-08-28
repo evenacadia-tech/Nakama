@@ -295,15 +295,82 @@ foreach ($a in $manifest.artefakte) {
         Abbruch "Unbekannte Artefaktsorte '$($a.art)'. Der Vertrag kennt genau zwei: vst3 und broker. Ein dritter Wert landete sonst im Broker-Zweig - also im geschuetzten Spawn-Pfad."
     }
 }
+# S9b/SONDE-007c (28.08.2026): stillgelegte Ziele gehoeren NICHT in die
+# Auslieferung - und die Sollmenge ist ab hier "jedes Ziel OHNE das Feld
+# `stillgelegt`". Wichtig ist die zweite Haelfte darunter: ein stillgelegtes
+# Ziel muss im Manifest ausdruecklich BENANNT sein. Ohne sie koennte ein Ziel
+# still aus der Auslieferung fallen, indem jemand nur seinen Artefakteintrag
+# loescht - der Zaehlvergleich bliebe gruen, weil beide Seiten schrumpfen.
+$stillgelegteIds = @($identitaet.ziele | Where-Object { $null -ne $_.stillgelegt } | ForEach-Object { [string]$_.id })
 $vst3Ids = @($manifest.artefakte | Where-Object { $_.art -eq 'vst3' } | ForEach-Object { [string]$_.ziel_id })
-$sollIds = @($identitaet.ziele | ForEach-Object { [string]$_.id })
+$sollIds = @($identitaet.ziele | Where-Object { $null -eq $_.stillgelegt } | ForEach-Object { [string]$_.id })
+if ($sollIds.Count -eq 0) {
+    Abbruch 'Kein einziges aktives Identitaetsziel - eine Auslieferung ohne Bundle waere keine.'
+}
 if ($vst3Ids.Count -ne $sollIds.Count -or
     @($vst3Ids | Sort-Object -Unique).Count -ne $vst3Ids.Count -or
     (Compare-Object ($vst3Ids | Sort-Object) ($sollIds | Sort-Object))) {
-    Abbruch 'Das Manifest muss jedes Identitaetsziel genau einmal als VST3-Artefakt enthalten.'
+    Abbruch 'Das Manifest muss jedes NICHT stillgelegte Identitaetsziel genau einmal als VST3-Artefakt enthalten.'
+}
+$benannteStillgelegte = @($manifest.stillgelegte_ziele | Where-Object { $null -ne $_ } | ForEach-Object { [string]$_.ziel_id })
+# Der Zaehlvergleich steht VOR dem Mengenvergleich, und der Mengenvergleich
+# laeuft nur bei nicht-leeren Listen. Gemessen (T1-Selbstaudit 28.08.2026):
+# `@() | Sort-Object` liefert $null, und `Compare-Object $null $null` bricht
+# mit "Cannot bind argument to parameter 'ReferenceObject'" ab - unter
+# $ErrorActionPreference='Stop' also ein harter Fehler statt eines gruenen
+# Durchlaufs. Heute feuert das nicht, weil es genau ein stillgelegtes Ziel
+# gibt; es feuerte an dem Tag, an dem das letzte wieder verschwindet.
+if ($benannteStillgelegte.Count -ne $stillgelegteIds.Count -or
+    @($benannteStillgelegte | Sort-Object -Unique).Count -ne $benannteStillgelegte.Count -or
+    ($benannteStillgelegte.Count -gt 0 -and
+     (Compare-Object ($benannteStillgelegte | Sort-Object) ($stillgelegteIds | Sort-Object)))) {
+    Abbruch 'Jedes stillgelegte Identitaetsziel muss im Manifest unter `stillgelegte_ziele` genau einmal benannt sein - und nur die stillgelegten.'
 }
 $brokerArtefakte = @($manifest.artefakte | Where-Object { $_.art -eq 'broker' })
 if ($brokerArtefakte.Count -ne 1) { Abbruch 'Das Manifest muss genau ein Broker-Artefakt enthalten.' }
+
+<# S9b/SONDE-007c (28.08.2026): ein stillgelegtes Ziel, das auf dieser
+   Maschine noch installiert liegt.
+
+   ENTSCHEIDUNG: melden, nicht loeschen. Der Grund steht im Manifest
+   (`stillgelegte_ziele[].umgang_begruendung`) und ist zweiteilig: der
+   Gegenpfad installieren<->Rueckweg ist eine strenge 1:1-Beziehung zwischen
+   Journal und `artefakte` - eine Loeschung waere ein vierter Akt, dessen
+   Rueckweg das Bundle wiederherstellen muesste, sonst verloere der Rueckweg
+   einen Stand statt ihn zurueckzugeben. Und Common Files\VST3 gehoert nicht
+   diesem Installer.
+
+   Was NICHT passiert: stillschweigen. Die Meldung laeuft im normalen
+   Installationslauf UND in -Pruefen, mit vollem Pfad und dem Handgriff. #>
+function Melde-StillgelegteAltlasten {
+    foreach ($s in @($manifest.stillgelegte_ziele | Where-Object { $null -ne $_ })) {
+        $ident = Ident-Von ([string]$s.ziel_id)
+        if ($null -eq $ident) {
+            Abbruch "Stillgelegtes Ziel '$($s.ziel_id)' steht nicht in der Identitaetsdatei - die Kennung darf nicht geloescht werden."
+        }
+        # Derselbe Weg wie fuer ein aktives Ziel: Bundlename AUSSCHLIESSLICH
+        # aus der Identitaetsdatei, Pfad gegen das Zielverzeichnis gerichtet.
+        if ([IO.Path]::GetFileName($ident.bundle) -ne $ident.bundle) {
+            Abbruch "Bundle '$($ident.bundle)' ist kein einzelner sicherer Dateiname."
+        }
+        $alt = Kanonischer-Pfad (Join-Path $vst3Basis $ident.bundle)
+        if (-not (Kanonischer-Pfad (Split-Path -Parent $alt)).Equals($vst3Basis, [StringComparison]::OrdinalIgnoreCase)) {
+            Abbruch "Pfad eines stillgelegten Ziels verlaesst sein Zielverzeichnis: $alt"
+        }
+        if (Test-Path -LiteralPath $alt) {
+            Write-Host ''
+            Write-Host "ALTLAST: '$($ident.produktname)' ist seit $($s.seit) stillgelegt, liegt hier aber noch installiert." -ForegroundColor Yellow
+            Write-Host "  $alt" -ForegroundColor Yellow
+            Write-Host "  Dieser Installer entfernt es NICHT ($($s.umgang_mit_altbestand)). Von Hand, mit Adminrechten und geschlossenem FL:" -ForegroundColor Yellow
+            Write-Host "    Remove-Item -Recurse -Force '$alt'" -ForegroundColor Yellow
+            Write-Host "  Grund der Stilllegung: $($s.warum)" -ForegroundColor DarkGray
+            Write-Host ''
+        }
+        else {
+            Write-Host "  ok      $($ident.produktname) : stillgelegt seit $($s.seit), nicht installiert"
+        }
+    }
+}
 
 function Ziel-Pfad($artefakt) {
     if ($artefakt.art -eq 'vst3') {
@@ -826,6 +893,8 @@ if ($null -ne $manifest.signatur.authenticode_thumbprint) {
 else {
     Write-Host '  hinweis Authenticode wird NICHT geprueft - es gibt kein Zertifikat (siehe signatur.warum_null).' -ForegroundColor DarkGray
 }
+
+Melde-StillgelegteAltlasten
 
 if ($Pruefen) {
     Write-Host ''

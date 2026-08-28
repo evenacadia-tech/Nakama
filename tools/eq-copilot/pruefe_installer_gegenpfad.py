@@ -139,7 +139,22 @@ def main() -> int:
         manifest["ziele"]["broker_verzeichnis"] = zielBroker.as_posix()
 
         ident = json.loads(IDENTITAET.read_text(encoding="utf-8"))
+        # S9b/SONDE-007c: `bundles` fuehrt weiter JEDE Kennung - auch die
+        # stillgelegte, denn Block [3b] braucht ihren Bundlenamen. Alles, was
+        # eine INSTALLATION erwartet, laeuft dagegen ueber `aktivBundles`.
+        # Beides zu vermischen war der Fehler, den dieses Bein beim ersten
+        # Lauf nach der Stilllegung sofort gemeldet hat: es verlangte ein
+        # installiertes "Nakama Suna.vst3", das niemand mehr ausliefert.
         bundles = {z["id"]: z["bundle"] for z in ident["ziele"]}
+        aktivBundles = {z["id"]: z["bundle"] for z in ident["ziele"]
+                        if "stillgelegt" not in z}
+        # Die Ziele neben dem Main-Bundle standen bis zum 28.08.2026 als
+        # ("passive-probe", "active-probe") in fuenf Schleifen. Das war eine
+        # abgeschriebene Liste - sie verlangte nach der Stilllegung ein
+        # Bundle, das niemand mehr ausliefert. Jetzt kommt sie aus derselben
+        # Datei wie alles andere (S9b/SONDE-007c).
+        nebenZiele = [zid for zid in aktivBundles if zid != "main"]
+        assert nebenZiele, "ohne ein Ziel neben main misst dieses Bein die halbe Mechanik nicht"
         oeffentlichesJournal = inst / "install-ergebnis.json"
         transaktionsOrdner = zielBroker.parent / ".nakama-installer"
         transaktionsWeg = transaktionsOrdner / "aktive-transaktion.json"
@@ -231,7 +246,7 @@ def main() -> int:
                "wiederholte Veroeffentlichung hinterlaesst weder Temp noch autoritativen Repo-Lock")
 
         print("\n[2] Die Auslieferungseinheit ist der Ordner (T2-5 a/b)")
-        for zid, bname in bundles.items():
+        for zid, bname in aktivBundles.items():
             pruefe((zielVst3 / bname / "Contents" / "Resources" / "moduleinfo.json").is_file(),
                    f"{zid}: Bundle traegt moduleinfo.json", bname)
         pruefe(json.loads((zielVst3 / bundles["main"] / "Contents/Resources/moduleinfo.json")
@@ -243,7 +258,7 @@ def main() -> int:
                "Broker liegt im selbst angelegten Verzeichnis")
 
         print("\n[2b] Aktiver Recovery-Anker wird nicht still superseded")
-        zielHashes = [ordner_hash(zielVst3 / bundles[zid]) for zid in bundles]
+        zielHashes = [ordner_hash(zielVst3 / aktivBundles[zid]) for zid in aktivBundles]
         lockWeg = transaktionsOrdner / "installer.lock"
         with lockWeg.open("a+b"):
             code, aus = lauf(skript)
@@ -260,7 +275,7 @@ def main() -> int:
             pruefe(code == 1 and "Erst -Rueckweg" in aus,
                    f"{status} verlangt Rueckweg statt neuem Journalstart", f"Exit {code}")
             pruefe(transaktionsWeg.read_bytes() == ankerBytes
-                   and zielHashes == [ordner_hash(zielVst3 / bundles[zid]) for zid in bundles],
+                   and zielHashes == [ordner_hash(zielVst3 / aktivBundles[zid]) for zid in aktivBundles],
                    f"{status}: verweigerter Neustart laesst Anker und Ziele bytegleich")
 
         schreibe_transaktion(ersterAnker)
@@ -279,7 +294,13 @@ def main() -> int:
 
         print("\n[3] -Pruefen sieht den ganzen Ordner (T2-5 c)")
         code, aus = lauf(skript, "-Pruefen")
-        pruefe(aus.count("aktuell") == 4, "alle vier Artefakte melden `aktuell`",
+        # Die Zahl kommt aus dem Manifest, nicht aus dem Gedaechtnis
+        # (S9b/SONDE-007c): mit der Stilllegung von Suna sind es zwei Bundles
+        # plus Broker statt drei plus Broker. Ein Test, der die alte Zahl
+        # festschreibt, misst eine Wunschvorstellung statt den gebauten Stand.
+        sollArtefakte = len(manifest["artefakte"])
+        pruefe(aus.count("aktuell") == sollArtefakte,
+               f"alle {sollArtefakte} Artefakte melden `aktuell`",
                f"{aus.count('aktuell')}x")
         (zielVst3 / bundles["main"] / "Contents/Resources/moduleinfo.json").write_text(
             '{"Name":"EQ-Copilot","Version":"0.0.0"}\n', encoding="utf-8")
@@ -287,6 +308,62 @@ def main() -> int:
         # Die Binaerdatei ist unveraendert - die alte Pfadformel haette hier
         # weiter `aktuell` gesagt. Genau das ist Befund T2-5 (c).
         pruefe("ABWEICHEND" in aus, "eine Aenderung NUR am moduleinfo.json faellt auf")
+
+        # ── S9b/SONDE-007c: die Altlast-Zusage wird AUSGEFUEHRT ────────────
+        # Das Manifest sagt "melden, nicht loeschen". Eine Zusage, die nie
+        # gefahren wird, ist keine Zusage - genau die Lehre, die dieses Bein
+        # ueberhaupt entstehen liess (S9-Nacharbeit 23.08.). Also: das
+        # stillgelegte Bundle wirklich hinlegen, messen was das Skript sagt,
+        # und messen dass es danach noch da ist.
+        stillgelegte = [z for z in ident["ziele"] if "stillgelegt" in z]
+        if stillgelegte:
+            print("\n[3b] Ein stillgelegtes Bundle wird gemeldet, nicht geloescht")
+            altlast = zielVst3 / bundles[stillgelegte[0]["id"]]
+            bundle_bauen(altlast, "0.0.1", b"ALT-stillgelegt")
+            vorher = ordner_hash(altlast)
+            code, aus = lauf(skript, "-Pruefen")
+            pruefe("ALTLAST" in aus and str(altlast) in aus,
+                   "das vorgefundene stillgelegte Bundle wird mit vollem Pfad gemeldet")
+            pruefe("Remove-Item -Recurse -Force" in aus,
+                   "die Meldung nennt den Handgriff, statt nur zu klagen")
+            pruefe(altlast.is_dir() and ordner_hash(altlast) == vorher,
+                   "und der Installer hat es NICHT angefasst - bytegleich vorgefunden")
+            shutil.rmtree(altlast)
+            code, aus = lauf(skript, "-Pruefen")
+            pruefe("ALTLAST" not in aus and "stillgelegt seit" in aus,
+                   "ohne Altbestand bleibt die Zeile ehrlich (`nicht installiert`)")
+        else:
+            pruefe(True, "kein stillgelegtes Ziel in der Identitaetsdatei - nichts zu melden")
+
+        # ── S9b/SONDE-007c: der Fall OHNE stillgelegtes Ziel ───────────────
+        # Der T1-Selbstaudit fand ihn durch Lesen, nicht durch Laufen:
+        # `@() | Sort-Object` liefert $null, und `Compare-Object $null $null`
+        # bricht ab - unter $ErrorActionPreference='Stop' ein harter Fehler.
+        # Der Riegel feuerte heute nicht, weil es genau ein stillgelegtes Ziel
+        # gibt; er feuerte an dem Tag, an dem das letzte verschwindet. Ein
+        # gelesener Fehler ist erst geschlossen, wenn sein Fall gefahren wird.
+        if stillgelegte:
+            print("\n[3c] Eine Auslieferung ganz OHNE stillgelegtes Ziel laeuft weiter")
+            identWeg = sand / "eq-copilot" / "identity" / IDENTITAET.name
+            identAlt = identWeg.read_bytes()
+            manifestAlt = (inst / "nakama-installer-v1.json").read_bytes()
+            try:
+                ohne = json.loads(identAlt.decode("utf-8"))
+                ohne["ziele"] = [z for z in ohne["ziele"] if "stillgelegt" not in z]
+                identWeg.write_text(json.dumps(ohne, ensure_ascii=False, indent=2) + "\n",
+                                    encoding="utf-8")
+                ohneManifest = json.loads(manifestAlt.decode("utf-8"))
+                ohneManifest.pop("stillgelegte_ziele", None)
+                (inst / "nakama-installer-v1.json").write_text(
+                    json.dumps(ohneManifest, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8")
+                code, aus = lauf(skript, "-Pruefen")
+                pruefe(code == 0 and "ALTLAST" not in aus and "stillgelegt" not in aus,
+                       "ohne stillgelegtes Ziel laeuft -Pruefen durch und schweigt darueber",
+                       f"Exit {code}")
+            finally:
+                identWeg.write_bytes(identAlt)
+                (inst / "nakama-installer-v1.json").write_bytes(manifestAlt)
 
         print("\n[4] NAK-41: unbekannter Vorstand verweigert den Rueckweg")
         vorzustand()
@@ -335,9 +412,9 @@ def main() -> int:
                "main: bytegleich zum Vorzustand", altOrdner[:16])
         pruefe(ordner_hash(repoFakeBackup) == fakeHash and repoSentinel.is_file(),
                "manipuliertes Repo-Journal/Repo-rueckweg beeinflusst Restore und Schreibpfad nicht")
-        for zid in ("passive-probe", "active-probe"):
-            pruefe(not (zielVst3 / bundles[zid]).exists(),
-                   f"{zid}: KEIN leeres .vst3-Gehaeuse zurueckgeblieben", bundles[zid])
+        for zid in nebenZiele:
+            pruefe(not (zielVst3 / aktivBundles[zid]).exists(),
+                   f"{zid}: KEIN leeres .vst3-Gehaeuse zurueckgeblieben", aktivBundles[zid])
         pruefe(not (zielBroker / "eqcop-broker.exe").exists(), "Broker entfernt")
         pruefe(zielBroker.is_dir() and (zielBroker / "fremd.txt").is_file(),
                "das selbst angelegte Verzeichnis BLEIBT, weil fremde Dateien darin liegen")
@@ -366,8 +443,8 @@ def main() -> int:
                "Journal bestaetigt die vollstaendige Kompensation", journal["status"])
         pruefe(ordner_hash(altesMain) == altOrdner,
                "Main ist nach der Kompensation bytegleich zum Vorzustand")
-        for zid in ("passive-probe", "active-probe"):
-            pruefe(not (zielVst3 / bundles[zid]).exists(),
+        for zid in nebenZiele:
+            pruefe(not (zielVst3 / aktivBundles[zid]).exists(),
                    f"{zid}: kein Teilstand nach spaetem Fehler")
         pruefe(blocker.is_file() and blocker.read_bytes() == b"kein Verzeichnis",
                "der fremde Blocker wurde nicht angetastet")
@@ -401,8 +478,8 @@ def main() -> int:
         # halb da, alle spaeteren Ziele wurden noch nicht angefasst.
         shutil.rmtree(altesMain)
         bundle_bauen(altesMain, "HALB", b"PARTIAL-COPY")
-        for zid in ("passive-probe", "active-probe"):
-            shutil.rmtree(zielVst3 / bundles[zid])
+        for zid in nebenZiele:
+            shutil.rmtree(zielVst3 / aktivBundles[zid])
         shutil.rmtree(zielBroker)
         teilHash = ordner_hash(altesMain)
         schreibe_transaktion(crashJournal, auch_oeffentlich=True)
@@ -421,8 +498,8 @@ def main() -> int:
         # starb mitten im Restore aus seiner vorhandenen Sicherung.
         for eintrag in crashJournal["eintraege"]:
             eintrag["rollback_abgeschlossen"] = eintrag["ziel_id"] != "main"
-        for zid in ("passive-probe", "active-probe"):
-            shutil.rmtree(zielVst3 / bundles[zid])
+        for zid in nebenZiele:
+            shutil.rmtree(zielVst3 / aktivBundles[zid])
         shutil.rmtree(zielBroker)
         shutil.rmtree(altesMain)
         bundle_bauen(altesMain, "HALB-RUECKWEG", b"PARTIAL-RESTORE")

@@ -9,9 +9,9 @@
 # GETEILTE QUELLEN, Stand S8 (SONDE-007a, 22.08.2026): Bis hierher stand an
 # dieser Stelle "Probe und Tests kompilieren die geteilten Quellen erneut,
 # statt eine static-lib mit fremden JUCE-Moduldefinitionen zu teilen — bewusst
-# simpel." Das war richtig fuer EIN Bundle. Fuer Gen, Probeeq und Suna ist es
-# falsch: dieselbe Quelle waere dann bis zu dreimal je Ziel uebersetzt, und
-# jede dieser Uebersetzungen koennte eine fremde Identitaet einatmen.
+# simpel." Das war richtig fuer EIN Bundle. Fuer mehrere Bundles ist es
+# falsch: dieselbe Quelle waere dann je Ziel erneut uebersetzt, und jede
+# dieser Uebersetzungen koennte eine fremde Identitaet einatmen.
 #
 # Ab jetzt gilt der Kern NakamaKern (cmake/NakamaKern.cmake): eine Static-Lib,
 # einmal uebersetzt, ohne JucePlugin_*-Konstante — die "fremden JUCE-
@@ -25,7 +25,7 @@
 # NAK-52 geschlossen. Bis 23.08. standen COMPANY_NAME, PLUGIN_CODE und
 # PRODUCT_NAME hier als Literale — eine zweite Wahrheit neben
 # identity/plugin-identities-v1.json, die EqCopIdentityTest gegeneinander
-# messen musste. Mit drei Zielen waeren daraus zwoelf Literale geworden.
+# messen musste. Mit mehreren Zielen waeren daraus je vier Literale geworden.
 # Jetzt liest das Bauskript das Manifest; der Test misst weiterhin das GEBAUTE
 # moduleinfo.json gegen dieselbe Datei — zwei Wege zur selben Zahl, sonst
 # waere er eine Tautologie.
@@ -73,7 +73,7 @@ target_include_directories(EqCopilot PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/hostbri
 # ── S8/SONDE-007a: der gemeinsame Kern als eigene Static-Lib ────────────────
 # Inhalt: State-Schema 2 + Parameterbestand + RFC-8785-Kanon (SONDE-006) und
 # der v3-Textriegel (SONDE-005a). Beides ist JUCE-core-Code ohne eine einzige
-# JucePlugin_*-Konstante — genau die Menge, die Gen, Probeeq und Suna teilen
+# JucePlugin_*-Konstante — genau die Menge, die Gen und Probeeq teilen
 # duerfen. Bis 22.08. wurde sie je Ziel neu uebersetzt (sieben Kopien);
 # ab hier einmal.
 #
@@ -83,8 +83,8 @@ target_include_directories(EqCopilot PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/hostbri
 # Arbeitsteilung steht in der Riegeluebersicht von SONDE-007a.
 # S9/SONDE-007b Abschnitt 3: NakamaLebenslauf.cpp kommt dazu - die
 # Lifecycle-Klassifikation (§53.5) ist reine Regelarbeit ueber dem State und
-# gilt fuer alle drei Bundles. Sie gehoert damit genau in die Menge, die Gen,
-# Probeeq und Suna teilen duerfen; das Kanon-Bein A14 fuehrt die Objektliste
+# gilt fuer jedes Bundle. Sie gehoert damit genau in die Menge, die Gen und
+# Probeeq teilen duerfen; das Kanon-Bein A14 fuehrt die Objektliste
 # handgeschrieben und hat den Zuwachs beim ersten Lauf gemeldet.
 set(NAKAMA_KERN_QUELLEN
     state/NakamaKanon.cpp
@@ -156,9 +156,9 @@ function(nakama_kern_anbinden ziel)
         juce::juce_cryptography)
     # Jeder Verbraucher traegt sich ein. K2b und K2c messen am Ende dieser
     # Datei gegen JEDEN davon - offene Frage aus SONDE-007a B8 ("ob der Kern
-    # gegen alle drei geprueft wird oder die drei untereinander gleich
+    # gegen alle geprueft wird oder die Verbraucher untereinander gleich
     # konfiguriert sein muessen"). Gegen jeden ist strikt staerker und
-    # braucht keine Annahme darueber, ob die drei sich einig sind.
+    # braucht keine Annahme darueber, ob sie sich einig sind.
     set_property(GLOBAL APPEND PROPERTY NAKAMA_KERN_VERBRAUCHER "${ziel}")
 endfunction()
 nakama_kern_anbinden(EqCopilot)
@@ -173,17 +173,23 @@ target_link_libraries(EqCopilot
         juce::juce_recommended_warning_flags
 )
 
-# ── S9/SONDE-007b: die beiden neuen Sonden-Bundles ─────────────────────────
-# Zwei duenne Target-Schichten ueber EINER geteilten Quelle (plugin/sonde/).
-# Identisch ist alles ausser drei Dingen, und genau die machen die Ziele aus:
+# ── S9/SONDE-007b: die duenne Target-Schicht der Sonden  ─────────────────────────
+# Eine duenne Target-Schicht ueber der geteilten Quelle (plugin/sonde/).
+# Identisch ist alles ausser drei Dingen, und genau die machen ein Ziel aus:
 #   1. die Identitaet - aus dem Manifest, nicht aus dieser Datei
 #   2. die Produktklasse - als Define, weil der geteilte Code sie nicht wissen
-#      darf (er wuerde sonst fuer beide Bundles dasselbe behaupten)
-#   3. die VST3-Kategorie - Suna analysiert, Probeeq ist ein EQ (User 21.08.)
+#      darf (er wuerde sonst fuer jedes Bundle dasselbe behaupten)
+#   3. die VST3-Kategorie - Probeeq ist ein EQ (User 21.08.)
 #
-# Beide sind heute audio-neutral: Suna dauerhaft (sie beraet nur), Probeeq
-# bis seine DSP in P6 kommt. Ein Bundle, das schon Parameter meldete, ohne
-# dass sie etwas taeten, waere eine Oberflaeche, die luegt.
+# Probeeq ist heute audio-neutral, bis seine DSP in P6 kommt. Ein Bundle, das
+# schon Parameter meldete, ohne dass sie etwas taeten, waere eine Oberflaeche,
+# die luegt.
+#
+# S9b/SONDE-007c (28.08.2026): die Funktion bleibt eine FUNKTION, obwohl sie
+# heute nur einen Aufrufer hat. Sie ist die Stelle, an der ein Sondenziel
+# entstehen DARF - EqCopIdentityTest friert genau diesen einen Block ein und
+# misst, dass jedes Sondenziel ueber ihn entsteht. Ein zweiter, eigener
+# juce_add_plugin-Block haette dort keinen Frost.
 function(nakama_sonde_ziel ziel identitaet klassendefine)
     nakama_identitaet_lesen(${identitaet} SONDE)
 
@@ -225,15 +231,35 @@ function(nakama_sonde_ziel ziel identitaet klassendefine)
     nakama_kern_anbinden(${ziel})
 endfunction()
 
-nakama_sonde_ziel(NakamaSuna    passive-probe NAKAMA_SONDE_PASSIV)
+# ── STILLGELEGT 28.08.2026: das Ziel NakamaSuna (passive-probe, NkPr) ────
+# Hier stand bis zum 28.08.2026 der Aufruf fuer das dritte Ziel - Bundle
+# "Nakama Suna.vst3". Er ist ENTFERNT, nicht auskommentiert-vergessen:
+#
+#   Ticket    S9b / SONDE-007c
+#   Entscheid design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md
+#   User      "suna gibt es nichtmehr . nurnoch Nakama Gen mit 2 Oberflaechen
+#              und Nakama Probeeq"  /  "ja stell das einfach richtig"
+#
+# Suna ist seit dem 23.08.2026 in Nakama Probeeq aufgegangen: dieselbe
+# Instanz misst passiv auf ihrem Bus UND fuehrt bei zugeschaltetem EQ Gens
+# Fernsteuerung aus. Eine eigene, rein passive Sonde hat damit keine
+# Produktrolle mehr - und ein Bundle, das kein Produkt ist, gehoert nicht in
+# die Auslieferung.
+#
+# Was NICHT passiert ist: die Kennung ist nicht geloescht. NkPr, beide
+# Class-IDs und der Bundlename stehen weiter in
+# identity/plugin-identities-v1.json und bleiben gesperrt (NAK-30). Wer den
+# Aufruf hier wieder einsetzte, braeuchte den Eintrag - und
+# nakama_identitaet_lesen() bricht bei einem stillgelegten Ziel ab. Der
+# Riegel liegt damit am Manifest, nicht an dieser Zeile: eine geloeschte
+# Zeile allein waere nur eine Meinung.
 nakama_sonde_ziel(NakamaProbeeq active-probe  NAKAMA_SONDE_AKTIV)
 
 # Passthrough-Beweis je Produktklasse. Das Grundgesetz sagt "sampleidentisch,
 # 0 Samples Latenz, kein Tail" — fuer das Main-Bundle misst das seit M0 der
-# EqCopNullTest; zwei neue Bundles tragen jetzt ebenfalls Audio, und eine
-# Zusage ohne Messung ist hier keine Zusage. ZWEI Ziele, weil die
-# Produktklasse ein Uebersetzungsschalter ist: ein Lauf kann nicht beide
-# messen.
+# EqCopNullTest; das Sondenbundle traegt ebenfalls Audio, und eine Zusage
+# ohne Messung ist hier keine Zusage. Die Produktklasse ist ein
+# Uebersetzungsschalter: ein Lauf misst genau eine.
 function(nakama_sonde_nulltest ziel klassendefine)
     juce_add_console_app(${ziel} PRODUCT_NAME "${ziel}")
     target_sources(${ziel} PRIVATE tests/SondeNullTestMain.cpp sonde/SondeProcessor.cpp)
@@ -246,7 +272,12 @@ function(nakama_sonde_nulltest ziel klassendefine)
     nakama_kern_anbinden(${ziel})
 endfunction()
 
-nakama_sonde_nulltest(EqCopSunaNullTest    NAKAMA_SONDE_PASSIV)
+# STILLGELEGT 28.08.2026 (S9b/SONDE-007c): das Bein fuer die passive Klasse
+# ist mit seinem Ziel gegangen. Es mass Nakama Suna, und Nakama Suna wird
+# nicht mehr gebaut - ein Passthrough-Beweis fuer ein Bundle, das niemand
+# ausliefert, beweist nichts. Im Kanon (tools/beweise.ps1) steht die Zeile
+# A15 weiter, ausdruecklich als stillgelegt markiert: der Runner darf eine
+# Pruefung nie STILL verlieren, sonst sinkt die Zahl und niemand weiss warum.
 nakama_sonde_nulltest(EqCopProbeeqNullTest NAKAMA_SONDE_AKTIV)
 
 # ── Konsolen-Probe: Ende-zu-Ende-Handshake ohne FL ──────────────────────────
@@ -661,7 +692,7 @@ foreach(ziel NakamaKern
              EqCopSchemaTest EqCopStateMigrationTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopLoudnessGoldenTest EqCopAnalysisGoldenTest
              EqCopHostProbe EqCopHostProbeTest
-             NakamaSuna NakamaProbeeq EqCopSunaNullTest EqCopProbeeqNullTest)
+             NakamaProbeeq EqCopProbeeqNullTest)
     target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endforeach()
 

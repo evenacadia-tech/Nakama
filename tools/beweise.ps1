@@ -203,6 +203,16 @@ function RelativZurWurzel {
 
 $fixtureVerzeichnis = Join-Path $Wurzel 'eq-copilot\fixtures'
 
+<# Stillgelegt? Unter `Set-StrictMode -Version Latest` wirft `$e.Stillgelegt`
+   bei jedem Eintrag, der das Feld gar nicht hat - also bei allen ausser dem
+   einen. Die Frage nach der ANWESENHEIT einer Eigenschaft gehoert deshalb an
+   PSObject, nicht an den Punktzugriff. (Gemessen am ersten Lauf nach der
+   Aenderung, S9b/SONDE-007c: "The property 'Stillgelegt' cannot be found on
+   this object.") #>
+function Ist-Stillgelegt($eintrag) {
+    return $null -ne $eintrag.PSObject.Properties['Stillgelegt']
+}
+
 $kanon = @(
     [pscustomobject]@{
         Kuerzel    = 'A1'
@@ -323,7 +333,20 @@ $kanon = @(
     # naechste Generatorlauf ueberschreibt die Handarbeit still.
     [pscustomobject]@{ Kuerzel='A19'; Name='erzeuge_bandgitter_header.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='BandGridZahlen.h ist bytegleich aus den zwei eingefrorenen Gitterfixturen erzeugt; die 64 Live-Gruppen partitionieren die 221 Feinbaender lueckenlos und ueberschneidungsfrei, und die groben Kanten sind bitgleiche Kopien feiner Kanten (kein zweites Filterbank-Gitter).' }
 
-    [pscustomobject]@{ Kuerzel='A15'; Name='EqCopSunaNullTest';   Art='plugin'; Argumente=@(); AbPhase='jetzt'; Behauptung='Nakama Suna (NkPr): Passthrough bitgleich ueber drei Samplerates und fuenf Blockgroessen, 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur passive_probe zu; speichern-laden-speichern bytegleich.' }
+    # ── STILLGELEGT 28.08.2026 (S9b/SONDE-007c) ────────────────────────────
+    # Die Zeile bleibt STEHEN. Ein Runner, der ein Bein einfach loescht, meldet
+    # eine kleinere Zahl und sagt nicht, warum - und "28 statt 29" ist von
+    # aussen nicht von "eine Pruefung verschwunden" zu unterscheiden. Deshalb
+    # traegt der Eintrag ab hier `Stillgelegt`: er laeuft nicht mehr, wird
+    # nicht mehr gebaut, zaehlt weder als gruen noch als rot - und steht in
+    # der Uebersichtstabelle jedes Manifests mit Datum und Grund.
+    #
+    # Grund: das gemessene Ziel NakamaSuna ist stillgelegt (Suna ist seit dem
+    # 23.08.2026 in Probeeq aufgegangen; User-Entscheid 28.08.2026,
+    # design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md). Ein
+    # Passthrough-Beweis fuer ein Bundle, das niemand baut und niemand
+    # ausliefert, beweist nichts.
+    [pscustomobject]@{ Kuerzel='A15'; Name='EqCopSunaNullTest';   Art='plugin'; Argumente=@(); AbPhase='jetzt'; Stillgelegt='seit 2026-08-28 (S9b/SONDE-007c): das Ziel NakamaSuna ist stillgelegt - Suna ist in Nakama Probeeq aufgegangen (design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md). Weder gebaut noch gefahren; die Zeile bleibt sichtbar, damit die Kanonzahl nicht still sinkt.'; Behauptung='STILLGELEGT - mass bis 28.08.2026 Nakama Suna (NkPr): Passthrough bitgleich ueber drei Samplerates und fuenf Blockgroessen, 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur passive_probe zu; speichern-laden-speichern bytegleich.' }
     [pscustomobject]@{ Kuerzel='A16'; Name='EqCopProbeeqNullTest'; Art='plugin'; Argumente=@(); AbPhase='jetzt'; Behauptung='Nakama Probeeq (NkAc): heute ebenfalls Passthrough bitgleich (die EQ-DSP kommt in P6), 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur active_probe zu; speichern-laden-speichern bytegleich.' }
 
     # --- geplant: laufen automatisch mit, sobald sie gebaut sind -------------
@@ -379,14 +402,17 @@ $gemesseneZiele = @(
         Marker = 'add_library(NakamaKern STATIC'
         Wegen  = 'A14 misst die gebaute NakamaKern.lib (S8/SONDE-007a)'
     }
-    # S9/SONDE-007b: die beiden neuen Bundles. Ihr Marker ist der Aufruf der
-    # gemeinsamen Zielfunktion - beide Ziele entstehen aus EINER Vorschrift,
-    # also ist der Aufruf die Zeile, die sich aendert, wenn sich etwas aendert.
-    [pscustomobject]@{
-        Ziel   = 'NakamaSuna_VST3'
-        Marker = 'nakama_sonde_ziel(NakamaSuna'
-        Wegen  = 'EqCopIdentityTest misst dessen moduleinfo.json gegen die reservierte NkPr-CID'
-    }
+    # S9/SONDE-007b: das Sondenbundle. Sein Marker ist der Aufruf der
+    # gemeinsamen Zielfunktion - jedes Sondenziel entsteht aus EINER
+    # Vorschrift, also ist der Aufruf die Zeile, die sich aendert, wenn sich
+    # etwas aendert.
+    #
+    # S9b/SONDE-007c (28.08.2026): der Eintrag fuer 'NakamaSuna_VST3' ist hier
+    # ENTFERNT, weil das Ziel stillgelegt ist. Ein Marker, der ins Leere
+    # zeigte, waere harmlos-still (die Where-Object-Bedingung faende ihn
+    # einfach nicht mehr); ein Marker, der noch traefe, liesse den Runner ein
+    # Ziel bauen, das es nicht gibt, und der Bau braeche ab. Beides waere
+    # falsch - der Grund gehoert in den Text, nicht in eine tote Zeile.
     [pscustomobject]@{
         Ziel   = 'NakamaProbeeq_VST3'
         Marker = 'nakama_sonde_ziel(NakamaProbeeq'
@@ -455,7 +481,11 @@ if ($Bauen) {
 
     # Nur Ziele bauen, die es im CMakeLists wirklich gibt (geplante Tests noch nicht).
     $cmakeText = Get-Content -LiteralPath (Join-Path $Wurzel 'eq-copilot\plugin\CMakeLists.txt') -Raw
-    $zuBauen = @($kanon | Where-Object { $_.Art -eq 'plugin' -and $cmakeText -match [regex]::Escape($_.Name) } | ForEach-Object { $_.Name })
+    # `Ist-Stillgelegt` steht VOR dem Textvergleich, nicht dahinter: ein
+    # stillgelegtes Bein darf auch dann nicht gebaut werden, wenn sein Name im
+    # CMakeLists noch in einem Kommentar steht (S9b/SONDE-007c). Sonst suchte
+    # der Bau ein Ziel, das es nicht mehr gibt, und braeche ab.
+    $zuBauen = @($kanon | Where-Object { $_.Art -eq 'plugin' -and -not (Ist-Stillgelegt $_) -and $cmakeText -match [regex]::Escape($_.Name) } | ForEach-Object { $_.Name })
     $zuBauen += @($gemesseneZiele | Where-Object { $cmakeText -match [regex]::Escape($_.Marker) } | ForEach-Object { $_.Ziel })
     Write-Host ('Baue: ' + ($zuBauen -join ', ')) -ForegroundColor DarkGray
     $b = Fuehre-Aus -Datei $cmakeBefehl -Argumente (@('--build', 'eq-copilot/build', '--config', 'Release', '--target') + $zuBauen)
@@ -566,7 +596,12 @@ $bauBestaetigt = $Bauen -and (@($bauProtokoll | Where-Object { $_.Schritt -eq 'b
 
 $baustand = @()
 $veraltet = $false
-foreach ($eintrag in ($kanon | Where-Object { $_.Art -eq 'plugin' })) {
+foreach ($eintrag in ($kanon | Where-Object { $_.Art -eq 'plugin' -and -not (Ist-Stillgelegt $_) })) {
+    # Stillgelegte Beine bleiben hier draussen (S9b/SONDE-007c): ihre alte
+    # .exe liegt nach dem letzten Bau noch im Baumverzeichnis und waere ab
+    # sofort dauerhaft "aelter als die Quellen" - der Runner verweigerte dann
+    # jede Beglaubigung wegen eines Binaerbildes, das gar nicht mehr gemessen
+    # wird.
     $exe = Pruefbinaer $eintrag.Name
     if (-not (Test-Path -LiteralPath $exe)) { continue }
     $datei = Get-Item -LiteralPath $exe
@@ -601,6 +636,19 @@ foreach ($eintrag in $kanon) {
         StdOut     = ''
         StdErr     = ''
         Gelaufen   = $false
+    }
+
+    # Stillgelegt: nicht gefahren, nicht gezaehlt - aber sichtbar. Die Zeile
+    # steht mit Datum und Grund in der Uebersichtstabelle jedes Manifests
+    # (S9b/SONDE-007c). Weder gruen noch rot noch "geplant": ein stillgelegtes
+    # Bein kommt nicht wieder, ein geplantes schon.
+    if (Ist-Stillgelegt $eintrag) {
+        $zeile.Symbol = '[STILLGELEGT]'
+        $zeile.Status = $eintrag.Stillgelegt
+        $zeile.Befehl = '(nicht gefahren)'
+        $ergebnisse += $zeile
+        Write-Host ('[STILLGELEGT] {0} - {1}' -f $zeile.Name, $eintrag.Stillgelegt) -ForegroundColor DarkGray
+        continue
     }
 
     if ($eintrag.Art -eq 'cargo') {
@@ -717,8 +765,12 @@ foreach ($eintrag in $kanon) {
 $gelaufen = @($ergebnisse | Where-Object { $_.Gelaufen })
 $gruen = @($gelaufen | Where-Object { $_.ExitCode -eq 0 })
 $geplant = @($ergebnisse | Where-Object { $_.Symbol -eq '[GEPLANT]' })
+$stillgelegt = @($ergebnisse | Where-Object { $_.Symbol -eq '[STILLGELEGT]' })
 # Ein "4/4 gruen" waere geschoenigt, solange sieben Kanon-Eintraege nur geplant sind.
 $nachsatz = if ($geplant.Count -gt 0) { " | $($geplant.Count) geplante Pruefung(en) noch nicht gebaut" } else { '' }
+# Und eine gesunkene Zahl ohne Erklaerung waere die andere Schoenung: das
+# Urteil sagt selbst, wie viele Beine stillgelegt sind (S9b/SONDE-007c).
+if ($stillgelegt.Count -gt 0) { $nachsatz += " | $($stillgelegt.Count) stillgelegte(s) Bein(e), siehe Uebersicht" }
 
 $exitcode = 0
 if ($rot -gt 0) {

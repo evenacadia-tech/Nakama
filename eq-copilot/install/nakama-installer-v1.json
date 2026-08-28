@@ -3,7 +3,7 @@
   "ticket": "SONDE-007b",
   "angelegt_am": "2026-08-23",
 
-  "was_das_ist": "Das Installer-Manifest der Sondenfamilie (Entwurf §55 P1: 'Installer-Manifest fuer alle drei Bundles plus Broker mit Hash-/Signaturpruefung, Repair/Uninstall'). Es beschreibt eine AUSLIEFERUNG - welche Artefakte zusammengehoeren, wohin sie kommen und wie ihre Echtheit geprueft wird. Der Vertrag dazu steht in eq-copilot/schemas/installer/nakama-installer-v1.md; das Installationsskript Install-Nakama.ps1 liest ausschliesslich diese Datei.",
+  "was_das_ist": "Das Installer-Manifest der Sondenfamilie (Entwurf §55 P1: 'Installer-Manifest fuer alle Bundles plus Broker mit Hash-/Signaturpruefung, Repair/Uninstall' - seit S9b/SONDE-007c sind es ZWEI Bundles statt drei; welche, sagt die Identitaetsdatei). Es beschreibt eine AUSLIEFERUNG - welche Artefakte zusammengehoeren, wohin sie kommen und wie ihre Echtheit geprueft wird. Der Vertrag dazu steht in eq-copilot/schemas/installer/nakama-installer-v1.md; das Installationsskript Install-Nakama.ps1 liest ausschliesslich diese Datei.",
 
   "keine_zweite_identitaet": "Diese Datei traegt WEDER Produktnamen NOCH Viercodes NOCH Class-IDs. Sie nennt nur die Ziel-IDs aus identity/plugin-identities-v1.json; Skript und Pruefbein schlagen alles Uebrige dort nach. Das ist dieselbe Regel wie im Bauskript (NAK-52): eine Identitaet, ein Ort. Ein Installer, der Bundlenamen selbst fuehrte, koennte eine Datei ausliefern, deren Name nirgends eingefroren ist.",
 
@@ -22,19 +22,28 @@
     "warum_null": "Es gibt kein Codesigning-Zertifikat fuer evenacadia. Der SHA-256-Riegel dieses Manifests ist damit HEUTE die ganze Pruefung - und genau so steht es hier, statt eine Signaturpruefung zu behaupten, die es nicht gibt. Traegt das Feld einmal einen Thumbprint, prueft das Skript zusaetzlich Authenticode und verweigert bei Abweichung."
   },
 
+  "stillgelegte_ziele": [
+    {
+      "ziel_id": "passive-probe",
+      "seit": "2026-08-28",
+      "ticket": "SONDE-007c",
+      "entscheid": "design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md",
+      "warum": "Die rein passive Sonde ist seit dem 23.08.2026 in der aktiven aufgegangen: dieselbe Instanz misst passiv auf ihrem Bus UND fuehrt bei zugeschaltetem EQ die Fernsteuerung aus. Es gibt nur noch zwei Apps, und ein Bundle, das kein Produkt ist, gehoert nicht in die Auslieferung. Produktnamen stehen auch hier nicht - der Entscheid unter `entscheid` nennt sie.",
+      "umgang_mit_altbestand": "melden-nicht-loeschen",
+      "umgang_begruendung": "Install-Nakama.ps1 meldet ein vorgefundenes Bundle dieses Ziels als ALTLAST - im Lauf und in -Pruefen, mit vollem Pfad und dem Handgriff zum Entfernen. Es LOESCHT nichts, aus zwei Gruenden: (1) Der Gegenpfad installieren<->Rueckweg ist eine strenge 1:1-Beziehung zwischen Journal und `artefakte`; eine Loeschung waere ein vierter Akt, dessen Rueckweg das Bundle wiederherstellen muesste - sonst verloere der Rueckweg einen Stand, statt ihn zurueckzugeben. (2) C:/Program Files/Common Files/VST3 gehoert nicht diesem Installer; still ein Verzeichnis auszuraeumen, das jeder Hersteller mitbenutzt, waere genau die Art unbestellter Verarbeitung, die das Grundgesetz ausschliesst. Der Fall ist heute leer: dieses Bundle war nie ausgeliefert (nachgemessen 28.08.2026 im VST3-Zielverzeichnis, nicht vorhanden). Der Bundlename steht bewusst NICHT hier - er kommt wie jeder andere aus der Identitaetsdatei.",
+      "handgriff": "Remove-Item -Recurse -Force 'C:/Program Files/Common Files/VST3/<bundle>' - Bundlename aus identity/plugin-identities-v1.json, bewusst NICHT hier wiederholt (keine zweite Identitaet).",
+      "kennung_bleibt": "Die Kennung des Ziels bleibt in identity/plugin-identities-v1.json eingefroren und gesperrt (NAK-30). Stillgelegt heisst 'nicht mehr ausgeliefert', nicht 'wieder frei'."
+    }
+  ],
+
+  "stillgelegte_ziele_regel": "Jedes Ziel der Identitaetsdatei mit dem Feld `stillgelegt` MUSS hier genau einmal stehen und darf in `artefakte` NICHT vorkommen; jedes Ziel OHNE dieses Feld muss genau ein VST3-Artefakt haben und darf hier nicht stehen. A17 misst beide Richtungen. Ohne die zweite Haelfte koennte ein Ziel still aus der Auslieferung fallen, indem jemand nur seinen Artefakteintrag entfernt.",
+
   "artefakte": [
     {
       "art": "vst3",
       "ziel_id": "main",
       "cmake_ziel": "EqCopilot",
       "quelle": "eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3",
-      "sha256": null
-    },
-    {
-      "art": "vst3",
-      "ziel_id": "passive-probe",
-      "cmake_ziel": "NakamaSuna",
-      "quelle": "eq-copilot/build/plugin/NakamaSuna_artefacts/Release/VST3/Nakama Suna.vst3",
       "sha256": null
     },
     {

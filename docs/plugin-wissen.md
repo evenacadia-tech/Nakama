@@ -19,12 +19,18 @@
 > Bus; Suna ist als App-Name ersetzt. Die vollständige EQ-Bedienung liegt nur
 > in Gen; Probeeq bekommt keinen lokalen Voll-Editor. Wortlaut:
 > `../design/abnahmen/2026-08-27-arbeitsnamen-und-probeeq-doppelrolle.md`.
-> **Heutiger Code ist noch vor diesem Umschnitt:** Er baut weiterhin getrennte
-> `NakamaSuna`- und `NakamaProbeeq`-Ziele; beide sind audio-neutrale Hüllen.
-> Probeeq trägt bereits aktive Produktklasse und Parameter-State, seine DSP
-> ist laut `plugin/sonde/SondeProcessor.h` und `plugin/CMakeLists.txt` erst für
-> P6 vorgesehen. Produktziel und aktueller Implementierungsstand nicht
-> vermischen. `EqCop*` / „EQ-Copilot" / `Eqcp` bleiben bis NAK-30 Legacy.
+> **Nachgezogen 28.08.2026 (S9b `SONDE-007c`):** Der Code baut jetzt **zwei**
+> Produkt-Bundles — `EqCopilot` (Gen) und `NakamaProbeeq`. Das dritte Ziel
+> `NakamaSuna` ist **stillgelegt**: kein CMake-Ziel, kein Nulltest, kein
+> Installer-Artefakt, kein Kanon-Bein. Seine Kennung (`NkPr`, beide CIDs,
+> Bundlename) bleibt in `identity/plugin-identities-v1.json` eingefroren und
+> gesperrt — stillgelegt heißt „nicht mehr ausgeliefert", nicht „wieder frei".
+> Entscheid: `../design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md`.
+> Probeeq trägt aktive Produktklasse und Parameter-State, seine DSP ist laut
+> `plugin/sonde/SondeProcessor.h` und `plugin/CMakeLists.txt` erst für P6
+> vorgesehen — es ist heute eine audio-neutrale Hülle. Produktziel und
+> aktueller Implementierungsstand nicht vermischen. `EqCop*` / „EQ-Copilot" /
+> `Eqcp` bleiben bis NAK-30 Legacy.
 
 Vier Threads im Plugin: **Audiothread** (`processBlock`) · **Worker** (besitzt
 die AnalyseEngine) · **Pipe-Thread** (besitzt den PipeClient) · Message-Thread
@@ -257,8 +263,8 @@ Vertrag `eq-copilot/schemas/state/nakama-state-v2.md`; Code `plugin/state/`
 ### 1.4c Lifecycle-Klassifikation (`state::Lebenslauf`, §53.5, S9, 23.08.)
 
 Im gemeinsamen Kern, JUCE-core-Code ohne Identitätskonstante. **Produktklasse
-≠ Klassifikation:** die Produktklasse sitzt fest am Bundle (Suna ist immer
-`passive_probe`), die Klassifikation entsteht erst aus dem restaurierten Stand.
+≠ Klassifikation:** die Produktklasse sitzt fest am Bundle (Probeeq ist immer
+`active_probe`), die Klassifikation entsteht erst aus dem restaurierten Stand.
 
 | Ereignis | Ergebnis |
 |---|---|
@@ -425,7 +431,9 @@ Verletzungsmenge). Alle gegen dieselben **handgeschriebenen** Manifeste:
 `identity/plugin-identities-v1.json`: Hersteller `evenacadia` / `Evna`; `main`
 = `Eqcp`, Bundle `EQ-Copilot.vst3`, Component-CID
 `ABCDEF019182FAEB45766E6145716370`, Controller-CID `ABCDEF011234ABCD…`,
-`state_schema 1`; reserviert `NkPr` (Suna) und `NkAc` (Probeeq) mit CIDs.
+`state_schema 1`; `NkAc` (Probeeq) mit CIDs vergeben, `NkPr` (Suna) seit dem
+28.08.2026 **stillgelegt**, aber weiter reserviert und gesperrt (Feld
+`stillgelegt`, S9b/`SONDE-007c`).
 `JUCE_VST3_CAN_REPLACE_VST2=0` ist Teil der Identität
 (`plugin/CMakeLists.txt:43`). `NkSp` ausdrücklich nicht hier vergeben, `NkHp`
 kommt nicht vor. `EqCopIdentityTest` (63) misst das gebaute `moduleinfo.json`,
@@ -470,16 +478,22 @@ Binaries `eqcop-broker.exe [--bindungen <pfad>]` (Standard
 23.08.: 18 benannte `juce_add_*`-Aufrufe plus 4 aus den beiden Zielfunktionen.
 Bis dahin stand hier 19 — die Zahl war schon vor SONDE-008 um eins zu klein).
 Seit S9
-(SONDE-007b, 23.08.) sind es **drei Produkt-Bundles**: `EqCopilot` (`Eqcp`),
-**`NakamaSuna`** (`NkPr`, Bundle „Nakama Suna.vst3") und **`NakamaProbeeq`**
-(`NkAc`, „Nakama Probeeq.vst3"). Die beiden neuen entstehen aus einer
-geteilten Quelle `plugin/sonde/` über die CMake-Funktion `nakama_sonde_ziel()`;
-ihre Identität kommt wie die des Mains aus `identity/plugin-identities-v1.json`
-(`cmake/NakamaIdentitaet.cmake`, kein Literal im Bauskript). Ihre
-Produktklasse ist ein **Define** aus der dünnen Schicht — der geteilte Code
-darf sie nicht wissen, er behauptete sonst für beide dasselbe. Beweise:
-`EqCopSunaNullTest` / `EqCopProbeeqNullTest` (Kanon A15/A16, Passthrough +
-Gegenpfad). Weiter: `EqCopilot` (VST3-Produkt) ·
+(SONDE-007b, 23.08.) waren es drei Produkt-Bundles; seit **S9b (SONDE-007c,
+28.08.)** sind es **zwei**: `EqCopilot` (`Eqcp`, „EQ-Copilot.vst3") und
+**`NakamaProbeeq`** (`NkAc`, „Nakama Probeeq.vst3"). Das dritte,
+`NakamaSuna` (`NkPr`, „Nakama Suna.vst3"), ist **stillgelegt** — Suna ist in
+Probeeq aufgegangen; Kennung gesperrt, Ziel weg (Entscheid
+`../design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md`). Das
+Sondenbundle entsteht aus der geteilten Quelle `plugin/sonde/` über die
+CMake-Funktion `nakama_sonde_ziel()`; seine Identität kommt wie die des Mains
+aus `identity/plugin-identities-v1.json` (`cmake/NakamaIdentitaet.cmake`, kein
+Literal im Bauskript) — und derselbe Leser **bricht ab**, wenn jemand ein
+stillgelegtes Ziel bauen will. Die Produktklasse ist ein **Define** aus der
+dünnen Schicht — der geteilte Code darf sie nicht wissen, er behauptete sonst
+für jedes Bundle dasselbe. Beweis: `EqCopProbeeqNullTest` (Kanon A16,
+Passthrough + Gegenpfad); das Gegenstück `EqCopSunaNullTest` (A15) ist mit
+seinem Ziel stillgelegt und steht im Kanon ausdrücklich als solches, damit die
+Zahl nicht still sinkt. Weiter: `EqCopilot` (VST3-Produkt) ·
 `EqCopAuxSpike`, `EqCopHostProbe` (VST3, Wegwerf) · Konsolen `EqCopPipeProbe`,
 `EqCopNullTest`, `EqCopGoldenTest`, `EqCopMarkierungTest`, `EqCopShot`
 (seit 22.08. mit `--state <datei.bin>`), `EqCopPaintBench`, `EqCopAuxSpikeTest`,
@@ -488,8 +502,9 @@ Gegenpfad). Weiter: `EqCopilot` (VST3-Produkt) ·
 Static-Lib **`NakamaKern`** (SONDE-007a). Sie trägt die vier geteilten Quellen
 (`state/NakamaKanon`, `state/NakamaParameter`, `state/NakamaState`,
 `vertrag/NakamaVertrag`), wird **einmal** übersetzt und über
-`nakama_kern_anbinden(<ziel>)` an **14** Verbraucher gehängt (Zahl aus der
-Configure-Ausgabe, nicht abgeschrieben — sie wächst mit jedem Ziel). Vorher übersetzten
+`nakama_kern_anbinden(<ziel>)` an **13** Verbraucher gehängt (Zahl aus der
+Configure-Ausgabe vom 28.08.2026, nicht abgeschrieben — sie folgt der Zahl der
+Ziele, seit S9b/`SONDE-007c` also zwei weniger). Vorher übersetzten
 sieben Ziele alle vier Quellen selbst (`nakama_state_anbinden()`) und
 `EqCopSchemaTest` eine davon — 29 Übersetzungen derselben vier Dateien, jetzt 4.
 Ihre Übersetzungsschalter hängen seit dem T2-Lauf (23.08.) ausdrücklich am Kern
@@ -500,14 +515,18 @@ als eigene Lib erbt er die PUBLIC-Schalter seiner Verbraucher nicht mehr und
 Binaries unter `eq-copilot/build/plugin/<Ziel>_artefacts/Release/`, die Lib
 unter `eq-copilot/build/plugin/Release/NakamaKern.lib`.
 
-**Kanon, 26 Beine (`tools/beweise.ps1`, Tabelle `$kanon`):** A1 NullTest · A2
+**Kanon, 31 Einträge (`tools/beweise.ps1`, Tabelle `$kanon`) — Lauf vom
+29.08.2026 00:20: 28 gefahren und grün, 2 geplant, 1 stillgelegt:** A1 NullTest · A2
 GoldenTest · A3 MarkierungTest · A4 `cargo test` (inkl. JCS-Bein) · A5
 `pruefe_v3_vertrag.py --abdeckung` · A6 `erzeuge_bandgitter.py --pruefen` · A7
 `erzeuge_quantisierung.py --pruefen` · A8 `erzeuge_v3_fixtures.py --pruefen` ·
 A9 `pruefe_flatc_drift.py` · A10 `erzeuge_fb_fixtures.py --pruefen` · A11
 `pruefe_v2_schemas.py` · **A12 `erzeuge_state_fixtures.py --pruefen`** · **A13
 `pruefe_host_capabilities.py`** · **A14 `pruefe_kern_identitaetsfrei.py`** ·
-**A15 `EqCopSunaNullTest`** · **A16 `EqCopProbeeqNullTest`** · **A17
+**A15 `EqCopSunaNullTest` — STILLGELEGT 28.08.2026** (S9b/`SONDE-007c`; die
+Zeile bleibt mit Datum und Grund in der Tabelle stehen und erscheint in jedem
+Manifest als `[STILLGELEGT]`, damit die Kanonzahl nicht *still* sinkt — der
+Runner baut sie nicht und fährt sie nicht) · **A16 `EqCopProbeeqNullTest`** · **A17
 `pruefe_installer_manifest.py`** · **A18 `pruefe_installer_gegenpfad.py`** · B1
 IdentityTest · **B2 StateMigrationTest** · B3 HostContextTest · B3b
 HostProbeTest (ohne Argument) · B3c SchemaTest · **B4 `EqCopQueueStressTest`**

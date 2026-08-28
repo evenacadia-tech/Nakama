@@ -23,6 +23,8 @@
     "code": "Evna"
   },
 
+  "stillgelegt_bedeutet": "Ein Ziel mit dem Feld `stillgelegt` wird NICHT MEHR GEBAUT und NICHT MEHR AUSGELIEFERT: kein CMake-Ziel, kein Bundle, kein Installer-Artefakt, kein Kanon-Bein. Seine Kennung bleibt trotzdem hier stehen und bleibt eingefroren - `status` sagt weiter 'eingefroren'. Das sind zwei verschiedene Aussagen: `status` gilt der KENNUNG (Viercode, Class-IDs, Bundlename duerfen nie neu vergeben oder anderweitig benutzt werden; NAK-30 gilt weiter), `stillgelegt` gilt dem LIEFERUMFANG. Wer die Zeile loeschte, gaebe NkPr wieder frei - und ein spaeteres Ziel koennte still die Class-ID eines Bundles erben, das in FL-Projekten stand. Leser (cmake/NakamaIdentitaet.cmake, EqCopIdentityTest, A17, Install-Nakama.ps1) muessen stillgelegte Ziele daher aktiv ueberspringen, nicht mitzaehlen.",
+
   "nicht_teil_der_identitaet": [
     "Version (0.1.0 bei der Messung) — steigt mit jedem Release",
     "SDK-Version (VST 3.7.12) — folgt dem gepinnten JUCE",
@@ -47,7 +49,15 @@
       "id": "passive-probe",
       "status": "eingefroren",
       "eingefroren_am": "2026-08-23",
-      "rolle": "Nakama Suna — passive Sonde (SONDE-007b / S9). Beraet nur: Passthrough sampleidentisch, keine Hostparameter.",
+      "stillgelegt": {
+        "am": "2026-08-28",
+        "ticket": "SONDE-007c",
+        "entscheid": "design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md",
+        "warum": "Suna ist seit dem 23.08.2026 in Nakama Probeeq aufgegangen; es gibt nur noch zwei Apps (Nakama Gen mit zwei Oberflaechen und Nakama Probeeq). User-Wort 28.08.2026: „suna gibt es nichtmehr . nurnoch Nakama Gen mit 2 Oberflaechen und Nakama Probeeq\" und „ja stell das einfach richtig\". Probeeq misst passiv auf dem Bus UND fuehrt bei zugeschaltetem EQ Gens Fernsteuerung aus - eine eigene rein passive Sonde hat damit keine Produktrolle mehr.",
+        "folge": "Kein CMake-Ziel NakamaSuna, kein Nulltest EqCopSunaNullTest, kein Installer-Artefakt, kein Kanon-Bein A15. Die Kennung NkPr samt beider Class-IDs und dem Bundlenamen bleibt reserviert und gesperrt.",
+        "nie_installiert": "Nakama Suna.vst3 war zu keinem Zeitpunkt ausgeliefert oder installiert (SONDE-007b §1: 'Es ist nichts installiert'; nachgemessen am 28.08.2026 unter C:/Program Files/Common Files/VST3 - nicht vorhanden). Sollte auf einer Maschine dennoch ein Bundle dieses Namens liegen, meldet der Installer es als Altlast; siehe install/nakama-installer-v1.json, `stillgelegte_ziele`."
+      },
+      "rolle": "Nakama Suna — passive Sonde (SONDE-007b / S9), STILLGELEGT am 28.08.2026 (siehe `stillgelegt`). Beriet nur: Passthrough sampleidentisch, keine Hostparameter.",
       "plugin_code": "NkPr",
       "bundle": "Nakama Suna.vst3",
       "produktname": "Nakama Suna",

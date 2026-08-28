@@ -9,10 +9,13 @@
 # trug COMPANY_NAME, PLUGIN_CODE, PRODUCT_NAME als Literale im Bauskript.
 #
 # Mit EINEM Ziel war das Zeremonie ohne Nutzen (NAK-52 sagt das selbst). Mit
-# DREI Zielen ist es das Gegenteil: drei Bauskriptbloecke mit je vier
-# Identitaetszeilen sind vier Stellen, an denen zwei Wahrheiten auseinander-
+# MEHREREN Zielen ist es das Gegenteil: je Ziel ein Bauskriptblock mit vier
+# Identitaetszeilen - lauter Stellen, an denen zwei Wahrheiten auseinander-
 # laufen koennen - und Identitaet ist hier ein DATEIFORMAT. Aendert sich eine
 # dieser Zeilen, verlieren bestehende FL-Projekte ihr Plugin.
+# (S9b/SONDE-007c, 28.08.2026: gebaut werden seither ZWEI Ziele - Nakama Gen
+#  und Nakama Probeeq. Das dritte, Nakama Suna, ist stillgelegt; seine Kennung
+#  bleibt im Manifest gesperrt. Siehe den Riegel in nakama_identitaet_lesen.)
 #
 # ── Was dieser Leser NICHT tut ──────────────────────────────────────────────
 #
@@ -29,7 +32,7 @@
 # Null-Schleife deckte `produktname`, `bundle` und `plugin_code` - NICHT
 # `hersteller.name` und `hersteller.code`. Der Herstellercode ist kein Beiwerk
 # zum Viercode, er ist der ZWEITE SUMMAND derselben Class-ID (jucePluginId) und
-# steht einmal fuer alle drei Ziele. Gemessen: mit `hersteller.code: null` lief
+# steht einmal fuer alle Ziele. Gemessen: mit `hersteller.code: null` lief
 # der Configure gruen durch, und JUCE setzte still `Manu`
 # (JucePlugin_ManufacturerCode=0x4d616e75) bzw. `yourcompany` ein - genau der
 # Schaden, den der Absatz darueber ausschliesst.
@@ -115,6 +118,30 @@ function(nakama_identitaet_lesen ziel_id praefix)
             "Bekannt sind: ${_liste}")
     endif()
 
+    # ── S9b/SONDE-007c (28.08.2026): stillgelegte Ziele sind nicht baubar ───
+    # Die Kennung bleibt im Manifest stehen und bleibt gesperrt - genau
+    # deshalb faende der Leser sie oben weiter und braute daraus klaglos ein
+    # Bundle. Das waere die stillste Art, eine Stilllegung rueckgaengig zu
+    # machen: ein einzelner wieder eingefuegter Aufruf, und die Auslieferung
+    # traegt wieder ein Produkt, das es nicht gibt. Der Riegel ist
+    # fail-closed - er faellt auf die ANWESENHEIT des Feldes, nicht auf
+    # seinen Inhalt.
+    # Gemessen (cmake -P, 28.08.2026): `string(JSON … TYPE)` liefert bei
+    # vorhandenem Objekt "OBJECT" und bei fehlendem Schluessel
+    # "<membername>-NOTFOUND" - deshalb der Vergleich gegen OBJECT und nicht
+    # gegen NOTFOUND.
+    string(JSON _stilltyp ERROR_VARIABLE _e6 TYPE "${_eintrag}" stillgelegt)
+    if(_stilltyp STREQUAL "OBJECT")
+        string(JSON _stillam    ERROR_VARIABLE _e7 GET "${_eintrag}" stillgelegt am)
+        string(JSON _stillwarum ERROR_VARIABLE _e8 GET "${_eintrag}" stillgelegt entscheid)
+        message(FATAL_ERROR
+            "S9b/SONDE-007c: Ziel '${ziel_id}' ist seit ${_stillam} STILLGELEGT und wird nicht gebaut.\n"
+            "Entscheid: ${_stillwarum}\n"
+            "Seine Kennung bleibt im Identitaetsmanifest reserviert und gesperrt (NAK-30) -\n"
+            "das ist kein Freibrief, sie wieder zu bauen. Soll das Ziel zurueckkommen, gehoert\n"
+            "der Weg dorthin in ein eigenes Ticket samt Abnahme, nicht in diese Zeile.")
+    endif()
+
     string(JSON _plugincode GET "${_eintrag}" plugin_code)
     string(JSON _produktname ERROR_VARIABLE _e1 GET "${_eintrag}" produktname)
     string(JSON _bundle      ERROR_VARIABLE _e2 GET "${_eintrag}" bundle)
@@ -124,7 +151,7 @@ function(nakama_identitaet_lesen ziel_id praefix)
     # spaeteren Riegel, weil sie dann schon im ausgelieferten Bundle steht.
     #
     # Die BEIDEN Herstellerfelder stehen seit 23.08. mit in der Schleife (T2-2):
-    # sie gelten fuer alle drei Ziele gleichzeitig, und der Herstellercode ist
+    # sie gelten fuer alle Ziele gleichzeitig, und der Herstellercode ist
     # die eine Haelfte jeder Class-ID.
     foreach(_paar "hersteller.name:${_hersteller}"
                   "hersteller.code:${_herstellercode}"

@@ -166,6 +166,21 @@ def _ziele(identitaet: dict) -> dict[str, dict]:
     return {z["id"]: z for z in identitaet["ziele"]}
 
 
+def _aktive(identitaet: dict) -> list[dict]:
+    """Ziele, die heute gebaut und ausgeliefert werden.
+
+    S9b/SONDE-007c (28.08.2026): ein Ziel mit dem Feld `stillgelegt` bleibt in
+    der Identitaetsdatei stehen - seine Kennung ist gesperrt, nicht frei -,
+    gehoert aber nicht mehr in die Auslieferung. Die Trennung faellt auf die
+    ANWESENHEIT des Feldes, nicht auf seinen Inhalt: fail-closed.
+    """
+    return [z for z in identitaet.get("ziele", []) if "stillgelegt" not in z]
+
+
+def _stillgelegte(identitaet: dict) -> list[dict]:
+    return [z for z in identitaet.get("ziele", []) if "stillgelegt" in z]
+
+
 def _vst3(manifest: dict) -> list[dict]:
     return [a for a in manifest["artefakte"] if a.get("art") == "vst3"]
 
@@ -192,11 +207,21 @@ def r_identitaetsquelle(m: dict, _i: dict):
 
 
 def r_jedes_ziel_genau_einmal(m: dict, i: dict):
-    """Wie im Identitaetstest: 3 vs 3. Ein viertes Ziel im Identitaetsmanifest
-    ohne Installer-Eintrag bringt dieses Bein zum Sprechen, statt still
-    ungemessen zu bleiben."""
+    """Jedes AKTIVE Ziel genau einmal - und kein stillgelegtes.
+
+    Bis zum 28.08.2026 stand hier die harte Zahl `len(ident_ziele) == 3`. Sie
+    war nie die eigentliche Aussage: die traegt der Mengenvergleich darunter
+    (ein viertes Ziel ohne Installer-Eintrag bringt dieses Bein zum Sprechen).
+    Mit S9b/SONDE-007c wurde die Zahl ausserdem falsch - drei Kennungen, zwei
+    Bundles. Ein Test misst den gebauten Stand, nicht eine gewuenschte Zahl.
+
+    Kollisionsfreiheit gilt weiter ueber ALLE Kennungen, auch die
+    stillgelegten: NkPr und "Nakama Suna.vst3" bleiben gesperrt, ein neues
+    Ziel darf sie nicht wiederverwenden."""
     ident_ziele = i.get("ziele", [])
+    aktive = _aktive(i)
     ids = [z.get("id") for z in ident_ziele]
+    aktiv_ids = [z.get("id") for z in aktive]
     bundles = [z.get("bundle") for z in ident_ziele]
     aus_manifest = [a.get("ziel_id") for a in _vst3(m)]
     sichere_bundles = all(
@@ -208,7 +233,8 @@ def r_jedes_ziel_genau_einmal(m: dict, i: dict):
     )
     identity_ok = (
         STATE_SCHEMA == 2
-        and len(ident_ziele) == 3
+        and len(ident_ziele) >= 1
+        and len(aktive) >= 1          # eine Auslieferung ohne Bundle waere keine
         and all(isinstance(zid, str) and zid for zid in ids)
         and len([zid.casefold() for zid in ids]) == len(set(zid.casefold() for zid in ids))
         and sichere_bundles
@@ -218,10 +244,47 @@ def r_jedes_ziel_genau_einmal(m: dict, i: dict):
     )
     passt = (
         identity_ok
-        and sorted(x for x in aus_manifest if x is not None) == sorted(ids)
+        and sorted(x for x in aus_manifest if x is not None) == sorted(aktiv_ids)
         and len(aus_manifest) == len(set(aus_manifest))
     )
-    return passt, f"{len(aus_manifest)} vs {len(ids)}; identity={'ok' if identity_ok else 'ungueltig'}"
+    return passt, (f"{len(aus_manifest)} vs {len(aktiv_ids)} aktiv "
+                   f"({len(ident_ziele)} Kennungen gesamt); "
+                   f"identity={'ok' if identity_ok else 'ungueltig'}")
+
+
+def r_stillgelegte_benannt(m: dict, i: dict):
+    """Die zweite Haelfte: ein Ziel darf nicht STILL aus der Auslieferung fallen.
+
+    Ohne diese Regel genuegte es, einen Artefakteintrag zu loeschen - der
+    Zaehlvergleich oben bliebe gruen, weil er dann gegen eine ebenso
+    geschrumpfte Sollmenge misst. Erst die Forderung "jedes stillgelegte Ziel
+    steht im Manifest namentlich, mit Datum, Grund und Umgang, und nur die
+    stillgelegten" macht das Verschwinden sichtbar. Gefordert wird ausserdem,
+    dass ein stillgelegtes Ziel NICHT als Artefakt auftaucht."""
+    stillgelegt_ids = sorted(z.get("id") for z in _stillgelegte(i))
+    eintraege = m.get("stillgelegte_ziele")
+    if not isinstance(eintraege, list):
+        return not stillgelegt_ids, "kein `stillgelegte_ziele`-Block"
+    benannt = [e.get("ziel_id") for e in eintraege if isinstance(e, dict)]
+    fehler = []
+    if len(benannt) != len(eintraege):
+        fehler.append("ein Eintrag ist kein Objekt")
+    if sorted(x for x in benannt if x is not None) != stillgelegt_ids:
+        fehler.append(f"benannt {sorted(x for x in benannt if x is not None)} "
+                      f"!= stillgelegt {stillgelegt_ids}")
+    if len(benannt) != len(set(benannt)):
+        fehler.append("ein Ziel ist doppelt benannt")
+    for e in eintraege:
+        if not isinstance(e, dict):
+            continue
+        for feld in ("seit", "warum", "umgang_mit_altbestand", "kennung_bleibt"):
+            if not str(e.get(feld, "")).strip():
+                fehler.append(f"{e.get('ziel_id')}: {feld} fehlt")
+    aus_artefakten = {a.get("ziel_id") for a in _vst3(m)}
+    for zid in stillgelegt_ids:
+        if zid in aus_artefakten:
+            fehler.append(f"{zid}: stillgelegt, steht aber in `artefakte`")
+    return not fehler, "; ".join(fehler)
 
 
 def r_art_bekannt(m: dict, _i: dict):
@@ -278,11 +341,26 @@ def r_keine_identitaetsliterale(m: dict, i: dict):
     text = json.dumps(m, ensure_ascii=False)
     ohne_quellen = re.sub(r'"quelle"\s*:\s*"[^"]*"', '"quelle":""', text)
     treffer = []
+    # S9b/SONDE-007c (28.08.2026): `produktname` und `bundle` stehen jetzt mit
+    # in der Liste. Der Kopf dieser Datei sagt seit dem 23.08. "WEDER
+    # Produktnamen NOCH Viercodes NOCH Class-IDs" - gemessen wurde davon bis
+    # heute nur die zweite und dritte Haelfte. Aufgefallen ist es beim
+    # Schreiben des Stilllegungs-Blocks: dessen Fliesstext haette den
+    # Bundlenamen beilaeufig ein zweites Mal festgeschrieben, und keine Regel
+    # haette das gesehen. Die Ausnahme fuer `quelle` bleibt - dort steckt der
+    # Bundlename zwangslaeufig im Pfad, und genau deshalb rechnet
+    # r_quellpfade_nachgerechnet ihn nach.
     for ziel in i["ziele"]:
-        for feld in ("plugin_code", "component_cid", "controller_cid"):
+        for feld in ("plugin_code", "component_cid", "controller_cid",
+                     "produktname", "bundle"):
             wert = ziel.get(feld)
             if wert and wert in ohne_quellen:
                 treffer.append(f"{ziel['id']}.{feld}")
+    # `hersteller.name` steht bewusst NICHT in dieser Liste: er ist Bestandteil
+    # der von Vertrag §4 festgelegten geschuetzten Pfade
+    # (C:/Program Files/evenacadia/...), also dieselbe Zwangslage wie der
+    # Bundlename in `quelle` - und im Gegensatz zum Herstellercode geht er in
+    # keine Class-ID ein. Der CODE bleibt verboten.
     code = i["hersteller"]["code"]
     if code in ohne_quellen:
         treffer.append("hersteller.code")
@@ -392,9 +470,10 @@ REGELN = [
     (r_schema, "Manifest traegt das Vertragsschema nakama.installer/v1"),
     (r_identitaetsquelle, "es zeigt auf die eingefrorene Identitaetsdatei"),
     (r_art_bekannt, "jede `art` ist vst3 oder broker - eine geschlossene Menge"),
-    (r_jedes_ziel_genau_einmal, "Identitaet ist kollisionsfrei, schema=2 und jedes Ziel hat genau einen VST3-Eintrag"),
+    (r_jedes_ziel_genau_einmal, "Identitaet ist kollisionsfrei, schema=2 und jedes AKTIVE Ziel hat genau einen VST3-Eintrag"),
+    (r_stillgelegte_benannt, "jedes stillgelegte Ziel ist benannt (Datum, Grund, Umgang) und steht in keinem Artefakt"),
     (r_quellpfade_nachgerechnet, "jeder Quellpfad ist der Bundle-ORDNER aus Ziel + Identitaet"),
-    (r_keine_identitaetsliterale, "kein Viercode, keine Class-ID im Installer-Manifest"),
+    (r_keine_identitaetsliterale, "kein Viercode, keine Class-ID, kein Produkt- oder Bundlename im Installer-Manifest (ausser im Pfad)"),
     (r_broker, "genau ein Broker-Artefakt, aus dem Release-Pfad der Crate"),
     (r_broker_heisst_wie_die_crate, "der Broker-Binaername kommt aus broker/Cargo.toml"),
     (r_zielverzeichnisse, "VST3 nach Common Files, Broker geschuetzt unter Program Files"),
@@ -407,7 +486,7 @@ REGELN = [
 
 # ── Gegenprobe: jede Regel muss an einem verdorbenen Manifest FALLEN ────────
 
-def verdirb(m: dict) -> dict:
+def verdirb(m: dict, i: dict) -> dict:
     """Ein Manifest, das gegen JEDE Regel gleichzeitig verstoesst.
 
     Bewusst grob: die Gegenprobe beweist nicht, WIE fein eine Regel ist,
@@ -435,11 +514,21 @@ def verdirb(m: dict) -> dict:
     if vst3:
         k["artefakte"].remove(vst3[-1])                  # ein Ziel fehlt jetzt
         vst3[0]["plugin_code_kopie"] = "NkPr"            # zweite Identitaet
+        # ... und ein Produktname, seit die Regel auch den verbietet (S9b).
+        # Er kommt aus der Identitaetsdatei, nicht aus einem Literal: ein hier
+        # abgeschriebener Name waere selbst die zweite Wahrheit, gegen die
+        # die Regel gerichtet ist.
+        vst3[0]["produktname_kopie"] = i["ziele"][0]["produktname"]
     # S9-Nacharbeit (T2-4): eine dritte Artefaktsorte. Genau dieser Eintrag
     # rutschte vorher durch ALLE zwoelf Regeln - `_vst3()` filtert ihn weg,
     # `r_broker` zaehlt ihn nicht - und landete im Skript im Broker-Zweig.
     k["artefakte"].append({"art": "standalone", "name": "Nakama.exe",
                            "quelle": "irgendwo/Nakama.exe", "sha256": "kein hash"})
+    # S9b/SONDE-007c: ein erfundener Name statt einer leeren Liste. Eine leere
+    # Liste faellt nur, SOLANGE es ein stillgelegtes Ziel gibt - dieser Eintrag
+    # faellt immer, weil er weder zur Sollmenge passt noch seine Pflichtfelder
+    # traegt. Eine Gegenprobe, die von der Datenlage abhaengt, ist keine.
+    k["stillgelegte_ziele"] = [{"ziel_id": "erfunden-fuer-die-gegenprobe"}]
     k["ziele"] = {"vst3_verzeichnis": "C:/Temp", "broker_verzeichnis": "%LOCALAPPDATA%/nakama"}
     k["signatur"] = {"verfahren": "sha256-manifest", "authenticode_thumbprint": None, "warum_null": ""}
     k["rueckweg"] = {"strategie": "", "bekannte_staende": [
@@ -456,14 +545,28 @@ def adversariale_strukturproben(m: dict, i: dict) -> None:
     """
     print("\n[3] Adversariale Pfad- und Identitaetsgegenproben")
 
+    # S9b/SONDE-007c: die Indizes werden GESUCHT, nicht angenommen. Vorher
+    # stand hier `ziele[1]` - der Eintrag der passiven Sonde. Seit ihrer
+    # Stilllegung hat er kein Artefakt mehr, und `next(...)` waere mit
+    # StopIteration gestorben: eine Gegenprobe, die an der Datenlage haengt,
+    # verschwindet genau dann, wenn sich die Datenlage aendert.
+    aktiv_idx = [n for n, z in enumerate(i["ziele"]) if "stillgelegt" not in z]
+    if len(aktiv_idx) < 2:
+        raise SystemExit(
+            "Gegenprobe unmoeglich: die Bundle-Zielkollision braucht ZWEI aktive "
+            "Ziele. Weniger als zwei bedeutet, dass diese Probe nichts mehr misst - "
+            "und eine stillschweigend ausgelassene Gegenprobe ist schlimmer als keine."
+        )
+    a0, a1 = aktiv_idx[0], aktiv_idx[1]
+
     ident = copy.deepcopy(i)
     manifest = copy.deepcopy(m)
-    ident["ziele"][1]["bundle"] = ident["ziele"][0]["bundle"]
-    zid = ident["ziele"][1]["id"]
+    ident["ziele"][a1]["bundle"] = ident["ziele"][a0]["bundle"]
+    zid = ident["ziele"][a1]["id"]
     artefakt = next(a for a in manifest["artefakte"] if a.get("ziel_id") == zid)
     artefakt["quelle"] = (
         f"eq-copilot/build/plugin/{artefakt['cmake_ziel']}_artefacts/Release/VST3/"
-        f"{ident['ziele'][1]['bundle']}"
+        f"{ident['ziele'][a1]['bundle']}"
     )
     pruefe(not r_jedes_ziel_genau_einmal(manifest, ident)[0],
            "faellt an einer Bundle-Zielkollision")
@@ -471,11 +574,48 @@ def adversariale_strukturproben(m: dict, i: dict) -> None:
     for wert, name in ((1, "1"), ("kaputt", "Text"), (None, "fehlend")):
         ident = copy.deepcopy(i)
         if wert is None:
-            ident["ziele"][0].pop("state_schema", None)
+            ident["ziele"][a0].pop("state_schema", None)
         else:
-            ident["ziele"][0]["state_schema"] = wert
+            ident["ziele"][a0]["state_schema"] = wert
         pruefe(not r_jedes_ziel_genau_einmal(m, ident)[0],
                f"faellt an Identity-state_schema {name}")
+
+    # S9b/SONDE-007c: die beiden konkreten Umgehungen der Stilllegung.
+    # (a) Ein stillgelegtes Ziel wird wieder ausgeliefert.
+    # (b) Ein aktives Ziel faellt still aus der Auslieferung, indem nur sein
+    #     Artefakteintrag verschwindet.
+    stillgelegte = _stillgelegte(i)
+    if stillgelegte:
+        manifest = copy.deepcopy(m)
+        vorlage = next(a for a in manifest["artefakte"] if a.get("art") == "vst3")
+        heimlich = copy.deepcopy(vorlage)
+        heimlich["ziel_id"] = stillgelegte[0]["id"]
+        manifest["artefakte"].append(heimlich)
+        pruefe(not r_stillgelegte_benannt(manifest, i)[0],
+               "faellt, wenn ein stillgelegtes Ziel doch ausgeliefert wird")
+
+        manifest = copy.deepcopy(m)
+        manifest["stillgelegte_ziele"] = []
+        pruefe(not r_stillgelegte_benannt(manifest, i)[0],
+               "faellt, wenn ein stillgelegtes Ziel nirgends benannt ist")
+
+    manifest = copy.deepcopy(m)
+    entfernt = next(a for a in manifest["artefakte"] if a.get("art") == "vst3")
+    manifest["artefakte"].remove(entfernt)
+    pruefe(not r_jedes_ziel_genau_einmal(manifest, i)[0],
+           "faellt, wenn ein aktives Ziel still aus der Auslieferung faellt")
+
+    # S9b/SONDE-007c: die neue Haelfte der Literalregel EINZELN gebrochen.
+    # Die grobe `verdirb`-Probe traegt schon einen Viercode - sie wuerde also
+    # auch dann fallen, wenn der Produktname gar nicht geprueft wuerde.
+    manifest = copy.deepcopy(m)
+    manifest["nur_ein_produktname"] = _aktive(i)[0]["produktname"]
+    pruefe(not r_keine_identitaetsliterale(manifest, i)[0],
+           "faellt an einem Produktnamen ausserhalb der Pfade")
+    manifest = copy.deepcopy(m)
+    manifest["nur_ein_bundlename"] = _aktive(i)[0]["bundle"]
+    pruefe(not r_keine_identitaetsliterale(manifest, i)[0],
+           "faellt an einem Bundlenamen ausserhalb der Pfade")
 
     manifest = copy.deepcopy(m)
     manifest["ziele"]["broker_verzeichnis"] = "C:/Program Files/../Temp/Nakama"
@@ -663,7 +803,7 @@ def main() -> int:
         pruefe(bedingung, text, zusatz)
 
     print("\n[2] Gegenprobe - dieselben Regeln an einem verdorbenen Manifest")
-    kaputt = verdirb(manifest)
+    kaputt = verdirb(manifest, identitaet)
     for regel, text in REGELN:
         try:
             bedingung, _ = regel(kaputt, identitaet)

@@ -1,10 +1,19 @@
 #pragma once
 
-/*  S9 / SONDE-007b - die geteilte Schale der beiden neuen Sonden.
+/*  S9 / SONDE-007b - die geteilte Schale der Sonden.
 
-    ZWEI BUNDLES, EINE QUELLE, GETRENNTE IDENTITAET:
+    NACHTRAG S9b / SONDE-007c (28.08.2026): Das passive Ziel Nakama Suna ist
+    STILLGELEGT (design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md).
+    Kein Bauziel setzt NAKAMA_SONDE_PASSIV mehr; gebaut wird aus dieser Quelle
+    heute nur noch Nakama Probeeq. Der Zweig der passiven Klasse bleibt hier
+    absichtlich stehen: er ist die zweite Haelfte des `#error`-Riegels weiter
+    unten - ohne ihn koennte ein Ziel wieder OHNE Produktklasse uebersetzen
+    und still den Vertrag des anderen erben. Der Text darunter beschreibt
+    deshalb weiter beide Klassen; als PRODUKT gibt es Suna nicht mehr.
 
-      Nakama Suna    (NkPr) - passive Sonde. Beraet nur.
+    EINE QUELLE, GETRENNTE IDENTITAET JE ZIEL:
+
+      Nakama Suna    (NkPr) - passive Sonde. Beriet nur. Stillgelegt 28.08.2026.
       Nakama Probeeq (NkAc) - aktive Sonde. Laut User ein vollwertiger EQ
                               ("die active Probe fester Name : Nakama Probeeq
                               ist ein vollwertiger hochwertiger EQ", 21.08.);

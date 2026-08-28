@@ -259,8 +259,22 @@ int main (int argc, char* argv[])
             juce::String (herstellerCode.length()) + " Zeichen");
 
     const auto ziele = manifest["ziele"];
-    pruefe (ziele.isArray() && ziele.size() == 3, "Manifest kennt drei Ziele",
+    // S9b/SONDE-007c (28.08.2026): hier stand "genau drei". Diese Zahl war nie
+    // die Aussage - sie war die Abkuerzung dafuer, dass jedes Ziel des
+    // Manifests hier eine Zeile hat. Seit der Stilllegung von Nakama Suna
+    // sind es drei KENNUNGEN und zwei gebaute Ziele, und ein Test, der die
+    // alte Zahl festschreibt, misst eine Wunschvorstellung statt den
+    // gebauten Stand. Gemessen wird ab hier die Beziehung: aktive Kennungen
+    // (ohne `stillgelegt`) zu gebauten Zielen, und stillgelegte zu
+    // NICHT-gebauten.
+    pruefe (ziele.isArray() && ziele.size() >= 1, "Manifest kennt mindestens ein Ziel",
             juce::String (ziele.isArray() ? ziele.size() : -1));
+
+    int aktiveZiele = 0, stillgelegteZiele = 0;
+    for (int i = 0; i < ziele.size(); ++i)
+        (ziele[i]["stillgelegt"].isObject() ? stillgelegteZiele : aktiveZiele) += 1;
+    pruefe (aktiveZiele >= 1, "mindestens ein Ziel ist nicht stillgelegt",
+            juce::String (aktiveZiele) + " aktiv, " + juce::String (stillgelegteZiele) + " stillgelegt");
 
     juce::var mainZiel;
     for (int i = 0; i < ziele.size(); ++i)
@@ -293,14 +307,55 @@ int main (int argc, char* argv[])
     struct GebautesZiel { const char* id; const char* cmakeZiel; };
     const GebautesZiel gebaute[] = {
         { "main",          "EqCopilot"     },
-        { "passive-probe", "NakamaSuna"    },
         { "active-probe",  "NakamaProbeeq" },
     };
 
-    pruefe ((int) (sizeof (gebaute) / sizeof (gebaute[0])) == ziele.size(),
-            "jedes Ziel im Manifest hat hier eine Zeile",
-            juce::String ((int) (sizeof (gebaute) / sizeof (gebaute[0])))
-                + " vs " + juce::String (ziele.size()));
+    // S9b/SONDE-007c: dieselbe handgeschriebene Zuordnung, nur fuer die
+    // Gegenrichtung. Ein stillgelegtes Ziel behaelt seine Kennung im
+    // Manifest (NkPr bleibt gesperrt) - gemessen wird deshalb, dass sein
+    // CMake-Ziel WIRKLICH VERSCHWUNDEN ist. Ohne diese Tabelle waere die
+    // Stilllegung nur eine geloeschte Zeile, also eine Meinung.
+    const GebautesZiel stillgelegte[] = {
+        { "passive-probe", "NakamaSuna" },
+    };
+
+    const int gebauteZeilen     = (int) (sizeof (gebaute) / sizeof (gebaute[0]));
+    const int stillgelegteZeilen = (int) (sizeof (stillgelegte) / sizeof (stillgelegte[0]));
+
+    pruefe (gebauteZeilen == aktiveZiele,
+            "jedes AKTIVE Ziel im Manifest hat hier eine Zeile",
+            juce::String (gebauteZeilen) + " vs " + juce::String (aktiveZiele));
+    pruefe (stillgelegteZeilen == stillgelegteZiele,
+            "jedes STILLGELEGTE Ziel im Manifest hat hier eine Zeile",
+            juce::String (stillgelegteZeilen) + " vs " + juce::String (stillgelegteZiele));
+
+    // Und die Zeilen zeigen auf das, was sie behaupten: kein aktives Ziel
+    // traegt `stillgelegt`, jedes stillgelegte traegt es.
+    for (const auto& g : gebaute)
+    {
+        const auto e = zielMitId (ziele, juce::String (g.id));
+        pruefe (e.isObject() && ! e["stillgelegt"].isObject(),
+                juce::String (g.id) + ": steht als AKTIVES Ziel im Manifest");
+    }
+    for (const auto& s : stillgelegte)
+    {
+        const auto e = zielMitId (ziele, juce::String (s.id));
+        pruefe (e.isObject(), juce::String (s.id) + ": die Kennung steht weiter im Manifest");
+        pruefe (e["stillgelegt"].isObject(),
+                juce::String (s.id) + ": und ist dort als stillgelegt markiert");
+        // Die Kennung bleibt VOLLSTAENDIG - genau das unterscheidet eine
+        // Stilllegung von einem Loeschen. Waere sie halb weg, koennte ein
+        // spaeteres Ziel ihre Class-ID erben, ohne dass jemand es merkt.
+        for (const auto* feld : { "plugin_code", "bundle", "produktname",
+                                  "component_cid", "controller_cid" })
+            pruefe (e[feld].toString().isNotEmpty(),
+                    juce::String (s.id) + ": " + feld + " ist nicht geloescht",
+                    e[feld].toString());
+        pruefe (e["stillgelegt"]["am"].toString().isNotEmpty()
+                    && e["stillgelegt"]["entscheid"].toString().isNotEmpty(),
+                juce::String (s.id) + ": die Stilllegung nennt Datum und Entscheid",
+                e["stillgelegt"]["am"].toString() + " / " + e["stillgelegt"]["entscheid"].toString());
+    }
 
     const auto cmakeDatei = finde ("eq-copilot/plugin/CMakeLists.txt");
     pruefe (cmakeDatei.existsAsFile(), "plugin/CMakeLists.txt gefunden");
@@ -438,6 +493,42 @@ int main (int argc, char* argv[])
 
         pruefe (sondeDefBlock.contains ("JUCE_VST3_CAN_REPLACE_VST2=0"),
                 "CMake-Quelle (Sonde): JUCE_VST3_CAN_REPLACE_VST2=0 steht im Defineblock");
+
+        // ── S9b/SONDE-007c: die Stilllegung am BAUSKRIPT gemessen ─────────
+        // Ein stillgelegtes Ziel darf im Bauskript nicht mehr vorkommen -
+        // weder ueber die gemeinsame Sondenfunktion noch ueber einen eigenen
+        // juce_add_plugin-Block, mit dem sich jemand an ihr vorbeibauen
+        // koennte. Die Kennung bleibt im Manifest; das Ziel darf nicht
+        // zurueckkommen, ohne dass es hier auffaellt.
+        //
+        // Zweiter Riegel derselben Sache liegt in cmake/NakamaIdentitaet.cmake
+        // (der Leser bricht bei `stillgelegt` ab). Zwei Stellen, weil dieser
+        // Test auch OHNE Bau laufen koennen soll - der Leser laeuft nur beim
+        // Configure.
+        for (const auto& s : stillgelegte)
+        {
+            const juce::String ziel (s.cmakeZiel);
+            pruefe (zeileMit (cmakeText, "nakama_sonde_ziel(" + ziel).isEmpty(),
+                    ziel + ": stillgelegt - kein Aufruf von nakama_sonde_ziel() mehr",
+                    zeileMit (cmakeText, "nakama_sonde_ziel(" + ziel).trim());
+            pruefe (zeileMit (cmakeText, "juce_add_plugin(" + ziel).isEmpty(),
+                    ziel + ": stillgelegt - auch kein eigener juce_add_plugin-Block",
+                    zeileMit (cmakeText, "juce_add_plugin(" + ziel).trim());
+            // Und der Grund steht da, wo er hingehoert: an der Stelle, an der
+            // der Aufruf stand. Eine spurlos geloeschte Zeile ist von einem
+            // Versehen nicht zu unterscheiden.
+            //
+            // Gesucht wird eine Zeile, die BEIDES traegt - das Wort und den
+            // Zielnamen. Zwei getrennte contains() ueber die ganze Datei
+            // waeren schwaecher: bei einem zweiten stillgelegten Ziel liesse
+            // sich der Nachweis mit EINEM Kommentar fuer beide erschleichen.
+            bool erklaert = false;
+            for (const auto& zeile : juce::StringArray::fromLines (cmakeText))
+                if (zeile.contains ("STILLGELEGT") && zeile.contains (ziel))
+                    erklaert = true;
+            pruefe (erklaert,
+                    ziel + ": das Bauskript erklaert die Stilllegung an Ort und Stelle");
+        }
     }
 
     // -- Die gebauten Bundles gegen das Manifest --------------------------

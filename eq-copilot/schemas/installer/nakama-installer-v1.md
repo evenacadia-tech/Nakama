@@ -11,6 +11,15 @@
 > für alle drei Bundles plus Broker mit Hash-/Signaturprüfung, Repair/Uninstall
 > und v2-Kompatibilitätslistener"* — und §53.9 (Installationspfad und
 > Betriebssystemschutz sind maßgeblich).
+>
+> **Nachtrag S9b `SONDE-007c`, 28.08.2026:** Der zitierte §55-Wortlaut sagt
+> „alle drei Bundles"; seit dem User-Entscheid vom 28.08.2026
+> (`design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md`) sind es **zwei**
+> — Nakama Gen und Nakama Probeeq. Nakama Suna ist stillgelegt: die Kennung
+> bleibt in der Identitätsdatei gesperrt, das Bundle wird nicht mehr gebaut und
+> nicht mehr ausgeliefert. Der Vertrag bekommt dafür das Feld
+> `stillgelegte_ziele` (§2.3). Das Zitat bleibt im Wortlaut stehen, weil es
+> zitiert ist; der Stand steht hier.
 
 | Datei | Rolle |
 |---|---|
@@ -29,6 +38,18 @@
 Das Manifest trägt **weder Produktnamen noch Viercodes noch Class-IDs**. Es
 nennt nur `ziel_id` aus `eq-copilot/identity/plugin-identities-v1.json`; Skript
 und Prüfbein schlagen alles Übrige dort nach.
+
+> **Nachtrag 28.08.2026 (S9b `SONDE-007c`):** Dieser Satz stand seit dem 23.08.
+> hier, aber `A17` maß nur zwei seiner drei Hälften — Viercodes und Class-IDs.
+> **Produkt- und Bundlenamen prüfte niemand.** Aufgefallen ist es beim
+> Schreiben des Stilllegungsblocks (§2.3): dessen Fließtext hätte den
+> Bundlenamen beiläufig ein zweites Mal festgeschrieben, und keine Regel hätte
+> das gesehen. `r_keine_identitaetsliterale` deckt sie jetzt mit ab, mit zwei
+> eigenen Gegenproben. **Zwei Ausnahmen, beide begründet:** `quelle` (dort
+> steckt der Bundlename zwangsläufig im Pfad — genau deshalb rechnet
+> `r_quellpfade_nachgerechnet` ihn nach) und `hersteller.name` (er ist
+> Bestandteil der von §4 festgelegten geschützten Pfade und geht, anders als
+> `hersteller.code`, in keine Class-ID ein).
 
 Das ist dieselbe Regel, die S9 Abschnitt 1 im Bauskript durchgesetzt hat
 (NAK-52). Ein Installer ist die andere Hälfte derselben Gefahr: ein Paket, das
@@ -63,6 +84,7 @@ Einzeln wäre jede Hälfte löchrig; zusammen ist die Aussage dicht.
 | `artefakte[].cmake_ziel` | nur bei `vst3`: das CMake-Ziel, aus dem der Pfad entsteht |
 | `artefakte[].quelle` | repo-relativer Pfad des gebauten Artefakts. Bei `vst3` der **Bundle-Ordner**, bei `broker` die Datei (§2.1) |
 | `artefakte[].sha256` | `null` oder SHA-256 in Großbuchstaben. Bei `vst3` der **Ordner-Hash** nach §2.1, bei `broker` der Dateihash |
+| `stillgelegte_ziele[]` | Ziele der Identitätsdatei, die **nicht mehr** ausgeliefert werden (§2.3). Pflichtfelder je Eintrag: `ziel_id`, `seit`, `warum`, `umgang_mit_altbestand`, `kennung_bleibt` |
 | `hashes_erzeugt_am` | UTC-Zeitpunkt des `--hashen`-Laufs |
 | `rueckweg.*` | siehe §5 |
 
@@ -152,6 +174,61 @@ A17 hat dafür eine eigene Regel; sie fiel vorher niemandem auf, weil `_vst3()`
 auf `art == "vst3"` filtert und die Broker-Regel nur `broker` zählt — ein
 drittes Wort fällt durch beide Siebe (gemessen: 0 von 12 Regeln sahen es).
 
+### 2.3 Stillgelegte Ziele (S9b `SONDE-007c`, 28.08.2026)
+
+Ein Ziel kann seine **Kennung behalten** und trotzdem aus der Auslieferung
+verschwinden. Das sind zwei verschiedene Aussagen, und sie dürfen nicht
+zusammenfallen:
+
+- Die **Kennung** (Viercode, beide Class-IDs, Bundlename) bleibt in
+  `identity/plugin-identities-v1.json` eingefroren und gesperrt. Löschte man
+  sie, wäre `NkPr` wieder frei — und ein späteres Ziel könnte still die
+  Class-ID eines Bundles erben, das einmal in FL-Projekten stand.
+- Die **Auslieferung** endet: kein CMake-Ziel, kein Bundle, kein
+  Artefakteintrag, kein Kanon-Bein.
+
+Die Identitätsdatei trägt dafür das Feld `stillgelegt` am Ziel; dieses Manifest
+trägt den Gegenpart `stillgelegte_ziele`. **A17 misst beide Richtungen:**
+
+| Regel | Wogegen sie schützt |
+|---|---|
+| jedes Ziel **ohne** `stillgelegt` hat genau einen `vst3`-Eintrag | ein aktives Ziel fällt aus der Auslieferung |
+| jedes Ziel **mit** `stillgelegt` steht genau einmal in `stillgelegte_ziele` | eine Stilllegung geschieht **still** |
+| ein stillgelegtes Ziel hat **keinen** Artefakteintrag | ein stillgelegtes Bundle wird doch ausgeliefert |
+| jeder Eintrag trägt `seit`, `warum`, `umgang_mit_altbestand`, `kennung_bleibt` | „stillgelegt" ohne Grund und Datum |
+
+Ohne die zweite Zeile bliebe die erste zahnlos: wer nur den Artefakteintrag
+löscht, ließe Soll- und Ist-Menge **gemeinsam** schrumpfen, und der
+Mengenvergleich bliebe grün.
+
+#### Altbestand: melden, nicht löschen
+
+`umgang_mit_altbestand: "melden-nicht-loeschen"`. Findet
+`Install-Nakama.ps1` das Bundle eines stillgelegten Ziels im
+Installationsverzeichnis, meldet es **ALTLAST** mit vollem Pfad und dem
+Handgriff zum Entfernen — im Installationslauf und in `-Pruefen`. Es entfernt
+nichts. Zwei Gründe:
+
+1. **Der Gegenpfad bliebe halb.** Journal und `artefakte` stehen 1:1
+   zueinander (§5). Eine Löschung wäre ein vierter Akt, dessen Rückweg das
+   Bundle wiederherstellen müsste — sonst verlöre der Rückweg einen Stand,
+   statt ihn zurückzugeben. Das ist ein eigener Änderungssatz, kein Nebenzug.
+2. **`Common Files\VST3` gehört nicht diesem Installer.** Dort liegt jeder
+   Hersteller. Ein Verzeichnis auszuräumen, das man mitbenutzt, ist genau die
+   Art unbestellter Verarbeitung, die das Grundgesetz ausschließt.
+
+Ausgeführt statt zugesagt: A18 legt das stillgelegte Bundle in der Sandbox
+wirklich hin, misst die Meldung — und misst, dass das Bundle danach
+**bytegleich** noch da ist (Block `[3b]`).
+
+**Warum das v1 bleibt:** aus demselben Grund wie in §5.2 — jedes `sha256`
+steht auf `null`, es wurde unter v1 nie etwas ausgeliefert, also gibt es kein
+altes Manifest, das nach der alten Feldbedeutung gelesen werden müsste. Das
+Feld ist additiv, seine Pflicht greift nur, wenn ein Ziel überhaupt
+stillgelegt ist.
+
+---
+
 ## 3. `sha256: null` heißt **nicht ausliefer-bar**
 
 Ein Artefakt ohne festgeschriebenen Hash wurde nie gegen einen Bau eingefroren.
@@ -194,8 +271,10 @@ Hausinvariante: beide Hälften im selben Änderungssatz. Strategie
 2. Pfad, Hash davor, Hash danach, Sicherung, `art` und die Liste der vom
    Skript **selbst angelegten Verzeichnisse** landen in `install-ergebnis.json`.
 3. `Install-Nakama.ps1 -Rueckweg` liest genau das: gesicherten Stand
-   zurückstellen — oder **entfernen**, wenn vorher keiner da war (die neuen
-   Bundles waren nie installiert).
+   zurückstellen — oder **entfernen**, wenn vorher keiner da war (Nakama
+   Probeeq war nie installiert). Ein stillgelegtes Ziel steht in keinem
+   Journal und wird vom Rückweg deshalb nie angefasst — es wurde ja auch
+   nicht installiert (§2.3).
 
 Ein Installer, der seinen Rückweg aus einer Liste historischer Bundles zöge,
 könnte nur Stände zurückgeben, die vorher jemand aufgeschrieben hat.

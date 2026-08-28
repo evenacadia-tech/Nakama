@@ -99,6 +99,18 @@ bool gleich (const juce::MemoryBlock& a, const juce::MemoryBlock& b)
     return a.getSize() == b.getSize() && std::memcmp (a.getData(), b.getData(), a.getSize()) == 0;
 }
 
+const char* ladeErgebnisWort (state::LadeErgebnis ergebnis)
+{
+    switch (ergebnis)
+    {
+        case state::LadeErgebnis::geladen:   return "geladen";
+        case state::LadeErgebnis::migriert:  return "migriert";
+        case state::LadeErgebnis::nurLesen:  return "nurLesen";
+        case state::LadeErgebnis::ignoriert: return "ignoriert";
+    }
+    return "unbekannt";
+}
+
 juce::String utf8 (const juce::MemoryBlock& b)
 {
     return juce::String::fromUTF8 ((const char*) b.getData(), (int) b.getSize());
@@ -818,14 +830,45 @@ int main (int argc, char* argv[])
             const auto roh = alsBlock (baum);
             state::Zustand zurueck;
             const auto erg = state::lade (roh.getData(), roh.getSize(), bundle, zurueck);
-            const bool geladen = (erg == state::LadeErgebnis::geladen);
+            const auto erwartet = z.erlaubt ? state::LadeErgebnis::geladen
+                                            : state::LadeErgebnis::nurLesen;
+
+            bool zustandOk = ! zurueck.nurLesen;
+            bool rueckwegOk = true;
+            bool hostReadOnlyOk = true;
+            bool hostDirtyOk = true;
+            juce::MemoryBlock rueckweg;
+            if (! z.erlaubt)
+            {
+                zustandOk = zurueck.nurLesen && zurueck.grund.isNotEmpty();
+                state::speichere (zurueck, rueckweg);
+                rueckwegOk = gleich (rueckweg, roh);
+
+                EqCopilotProcessor p;
+                DirtyZaehler dirty;
+                p.addListener (&dirty);
+                p.setStateInformation (roh.getData(), (int) roh.getSize());
+                hostReadOnlyOk = p.stateNurLesen();
+                hostDirtyOk = dirty.nonParam == 0;
+                p.removeListener (&dirty);
+            }
+
+            const bool fallOk = erg == erwartet && zustandOk && rueckwegOk
+                                && hostReadOnlyOk && hostDirtyOk;
             ++geprueft;
-            if (geladen == z.erlaubt)
+            if (fallOk)
                 ++ok;
-            else
-                pruefe (false, juce::String ("Matrix ") + state::wort (z.k) + " / " + z.position,
-                        juce::String (z.erlaubt ? "sollte laden" : "sollte read-only sein")
-                        + ", Grund '" + zurueck.grund + "'");
+            pruefe (fallOk,
+                    juce::String ("Matrix Klasse=") + state::wort (z.k) + ", Position=" + z.position
+                        + ": erwartet LadeErgebnis::" + ladeErgebnisWort (erwartet)
+                        + ", tatsaechlich LadeErgebnis::" + ladeErgebnisWort (erg),
+                    juce::String ("nurLesen=") + (zurueck.nurLesen ? "true" : "false")
+                        + ", Grund='" + zurueck.grund + "', Rueckweg="
+                        + (z.erlaubt ? "nicht gefordert" : (rueckwegOk ? "bytegleich" : "abweichend"))
+                        + ", Host-read-only="
+                        + (z.erlaubt ? "nicht gefordert" : (hostReadOnlyOk ? "true" : "false"))
+                        + ", Host-Dirty="
+                        + (z.erlaubt ? "nicht gefordert" : (hostDirtyOk ? "nein" : "JA")));
         }
         pruefe (ok == geprueft,
                 juce::String (geprueft) + " Kombinationen aus Klasse x Messposition wie §2.2 - "

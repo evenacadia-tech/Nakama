@@ -54,8 +54,13 @@
 #       eq-copilot/identity/plugin-identities-v1.json und bewacht seine Frische.
 #
 # K1/K2/K2b/K2c reden ueber Quell- und Baubeschreibung, K3 ueber das Artefakt.
-# Erst zusammen sind sie eine Aussage. Ein relevanter Generatorausdruck, den
-# diese Konfigurier-Riegel nicht aufloesen koennen, ist ROT statt unsichtbar.
+# Erst zusammen sind sie eine Aussage. Linkkanten werden bis zu direkten
+# Zielnamen, debug/optimized/general-Kanten und den unten benannten bedingten
+# bzw. zielbezogenen Generatorausdruecken aufgeloest. String-transformierende
+# Generatorausdruecke (LOWER_CASE, UPPER_CASE, MAKE_C_IDENTIFIER, JOIN, ...)
+# werden in Linkkanten nicht aufgeloest und sind dort ROT. Dasselbe gilt fuer
+# importierte Ziele mit gesetztem MAP_IMPORTED_CONFIG_* in der Linkhuelle: Die
+# Konfigurationsabbildung wird nicht nachgebildet, sondern fail-closed abgewiesen.
 
 include_guard(GLOBAL)
 
@@ -105,6 +110,41 @@ function(_nakama_kern_ziel_existiert eingabe ausgabe)
         set(_existiert FALSE)
     endif()
     set(${ausgabe} ${_existiert} PARENT_SCOPE)
+endfunction()
+
+function(_nakama_kern_importierte_konfigabbildung_pruefen ziel kontext)
+    if(CMAKE_SCRIPT_MODE_FILE)
+        return()
+    endif()
+
+    _nakama_kern_ziel_aufloesen("${ziel}" _ziel)
+    if(NOT TARGET "${_ziel}")
+        return()
+    endif()
+    get_target_property(_importiert "${_ziel}" IMPORTED)
+    if(NOT _importiert)
+        return()
+    endif()
+
+    _nakama_kern_konfigurationen(_projektkonfigurationen)
+    foreach(_projektkonfiguration IN LISTS _projektkonfigurationen)
+        string(TOUPPER "${_projektkonfiguration}" _konfiguration_gross)
+        set(_abbildung "MAP_IMPORTED_CONFIG_${_konfiguration_gross}")
+        get_property(_abbildung_gesetzt
+            TARGET "${_ziel}" PROPERTY "${_abbildung}" SET)
+        if(_abbildung_gesetzt)
+            get_target_property(_abbildungswert "${_ziel}" "${_abbildung}")
+            if(_abbildungswert STREQUAL "_abbildungswert-NOTFOUND"
+               OR _abbildungswert STREQUAL "")
+                set(_abbildungswert "<leer>")
+            endif()
+            message(FATAL_ERROR
+                "S8/SONDE-007a: importiertes Ziel '${_ziel}' in ${kontext} setzt "
+                "${_abbildung}=${_abbildungswert}. Der Riegelauswerter bildet "
+                "MAP_IMPORTED_CONFIG_* nicht nach; die Linkhuelle bleibt deshalb "
+                "fail-closed ROT statt mit der Projektkonfiguration falsch gruen.")
+        endif()
+    endforeach()
 endfunction()
 
 function(_nakama_kern_konfiguration_passt namen konfiguration ausgabe)
@@ -978,7 +1018,30 @@ function(_nakama_kern_wert_relevant wert art ausgabe)
     set(${ausgabe} ${_relevant} PARENT_SCOPE)
 endfunction()
 
+function(_nakama_kern_linkkante_stringoperator wert ausgabe)
+    set(_operator "")
+    string(REGEX MATCH
+        "\\$<(LOWER_CASE|UPPER_CASE|MAKE_C_IDENTIFIER|JOIN|REMOVE_DUPLICATES|LIST|PATH|SHELL_PATH):"
+        _fund "${wert}")
+    if(_fund)
+        set(_operator "${CMAKE_MATCH_1}")
+    endif()
+    set(${ausgabe} "${_operator}" PARENT_SCOPE)
+endfunction()
+
 function(_nakama_kern_wert_auswerten wert konfiguration art kontext ausgabe)
+    if(art STREQUAL "LINK" OR art STREQUAL "COMPILE_LINK")
+        _nakama_kern_linkkante_stringoperator("${wert}" _stringoperator)
+        if(_stringoperator)
+            message(FATAL_ERROR
+                "S8/SONDE-007a: String-transformierender Generatorausdruck "
+                "${_stringoperator} in Linkkante wird nicht aufgeloest; stilles "
+                "Verwerfen koennte ein Ziel und dessen Defines verbergen und ist "
+                "deshalb fail-closed ROT.\n"
+                "  Ausdruck: ${wert}\n"
+                "  Kontext: ${kontext}")
+        endif()
+    endif()
     _nakama_kern_wert_relevant("${wert}" "${art}" _relevant)
     # Diese beiden Variablen sind absichtlich read-only und an den Scope genau
     # dieses Auswertungsaufrufs gebunden. Verschachtelte Funktionen erben sie,
@@ -1017,6 +1080,8 @@ function(_nakama_kern_huelle start konfiguration ausgabe)
         if("${_ziel}" IN_LIST _gesehen)
             continue()
         endif()
+        _nakama_kern_importierte_konfigabbildung_pruefen(
+            "${_ziel}" "Linkhuelle von '${start}' [${konfiguration}]")
         list(APPEND _gesehen "${_ziel}")
 
         foreach(_eigenschaft INTERFACE_LINK_LIBRARIES LINK_LIBRARIES)
@@ -1074,6 +1139,8 @@ function(_nakama_kern_nutzungshuelle start konfiguration ausgabe)
         if(NOT TARGET "${_ziel}" OR "${_ziel}" IN_LIST _gesehen)
             continue()
         endif()
+        _nakama_kern_importierte_konfigabbildung_pruefen(
+            "${_ziel}" "Usage-Requirements-Huelle von '${start}' [${konfiguration}]")
         list(APPEND _gesehen "${_ziel}")
 
         if(_ziel STREQUAL _wurzel)
@@ -1345,7 +1412,9 @@ endfunction()
 # Nicht verglichen wird, was legitim verschieden ist:
 #   JUCE_MODULE_AVAILABLE_*  - der Kern nutzt weniger Module, das ist sein Sinn
 #   JUCE_SHARED_CODE / JUCE_STANDALONE_APPLICATION / JUCE_VST3_CAN_REPLACE_VST2
-#                            - Sache der Plugin-Huelle. K1 nennt davon nur
+#                            - exakt diese drei vollstaendigen Makronamen (ohne
+#                              Wert oder mit =Wert), nicht gleich beginnende
+#                              Zusatzdefines; Sache der Plugin-Huelle. K1 nennt davon nur
 #                              JUCE_SHARED_CODE namentlich; die anderen beiden
 #                              haelt K2 auf, denn ihre WERTE tragen den Praefix
 #                              (JUCE_STANDALONE_APPLICATION=JucePlugin_Build_Standalone,
@@ -1363,6 +1432,20 @@ endfunction()
 # COMPILE_DEFINITIONS gelesen, die Kernseite zusaetzlich aus der Fassade. Zwei
 # verschieden gerechnete Mengen kann man nur in EINE Richtung vergleichen, ohne
 # Fehlalarme zu ernten — und genau in eine Richtung wurde verglichen.
+function(_nakama_kern_juce_define_ist_ausgenommen define aus)
+    set(_ausgenommen FALSE)
+    if("${define}" MATCHES "^JUCE_MODULE_AVAILABLE_"
+       OR "${define}" STREQUAL "JUCE_SHARED_CODE"
+       OR "${define}" MATCHES "^JUCE_SHARED_CODE="
+       OR "${define}" STREQUAL "JUCE_STANDALONE_APPLICATION"
+       OR "${define}" MATCHES "^JUCE_STANDALONE_APPLICATION="
+       OR "${define}" STREQUAL "JUCE_VST3_CAN_REPLACE_VST2"
+       OR "${define}" MATCHES "^JUCE_VST3_CAN_REPLACE_VST2=")
+        set(_ausgenommen TRUE)
+    endif()
+    set(${aus} ${_ausgenommen} PARENT_SCOPE)
+endfunction()
+
 function(_nakama_kern_juce_defines ziel konfiguration aus)
     _nakama_kern_wirksame_defines("${ziel}" "${konfiguration}" JUCE _alle)
     # Nur JUCE-Konfiguration, und nur das, was legitim verschieden sein DARF,
@@ -1372,10 +1455,8 @@ function(_nakama_kern_juce_defines ziel konfiguration aus)
         if(NOT "${_d}" MATCHES "^JUCE_")
             continue()
         endif()
-        if("${_d}" MATCHES "^JUCE_MODULE_AVAILABLE_"
-           OR "${_d}" MATCHES "^JUCE_SHARED_CODE"
-           OR "${_d}" MATCHES "^JUCE_STANDALONE_APPLICATION"
-           OR "${_d}" MATCHES "^JUCE_VST3_CAN_REPLACE_VST2")
+        _nakama_kern_juce_define_ist_ausgenommen("${_d}" _ausgenommen)
+        if(_ausgenommen)
             continue()
         endif()
         list(APPEND _gefiltert "${_d}")

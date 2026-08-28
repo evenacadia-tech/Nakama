@@ -133,11 +133,12 @@ target_link_libraries(NakamaKern PRIVATE
 # Konstanten der Zweck und kein Fehler.
 target_compile_definitions(NakamaKern PRIVATE NAKAMA_KERN_UEBERSETZUNG=1)
 
-# K2 laeuft, sobald alle Kanten des KERNS stehen — also nach den
-# target_link_libraries oben. Seine Zielmenge ist nur NakamaKern plus dessen
-# compilerwirksame Usage-Requirements-Huelle; spaeter registrierte Verbraucher
-# sind keine Quellen des Kerns.
-nakama_kern_riegel_pruefen(NakamaKern)
+# K2 wird hier registriert, laeuft aber erst am Ende dieses Verzeichnisses.
+# Damit sieht er auch spaetere target_compile_definitions/-options/-libraries
+# am Kern. Seine Zielmenge bleibt nur NakamaKern plus dessen compilerwirksame
+# Usage-Requirements-Huelle; registrierte Verbraucher sind keine Kernquellen.
+cmake_language(DEFER DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    CALL nakama_kern_riegel_pruefen NakamaKern)
 # K2b und K2c stehen NICHT hier: sie lesen die Eigenschaften der VERBRAUCHER,
 # und die entstehen erst weiter unten. Hier gerufen saehen sie eine leere
 # Menge und waeren still gruen. Der Aufruf steht am Dateiende.

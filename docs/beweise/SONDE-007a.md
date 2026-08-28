@@ -51,10 +51,10 @@ unten bleiben datierte Belege ihres damaligen Quellstands:
 | | misst | sieht | sieht **nicht** |
 |---|---|---|---|
 | **K1** Präprozessor | Quelltext | 46 bekannte Makros namentlich, am Anfang **und Ende** jeder der fünf Kern-Übersetzungseinheiten; damit auch bis zum TU-Ende definierte Makros aus später eingebundenen eigenen/generierten Headern | Makronamen außerhalb der Liste und vor dem TU-Ende wieder entfernte Makros (der Präprozessor kann kein Präfix aufzählen; resultierende Identitätsbytes misst K3) |
-| **K2** CMake-Konfigurierzeit | Kernziel plus dessen compilerwirksame Usage-Requirements-Hülle; Verbraucher nur bei einer echten fehlerhaften Rückkante | jedes compilerwirksame `JucePlugin_` aus eigenen und transitiven `*_COMPILE_DEFINITIONS` sowie `-D`/`/D` in `*_COMPILE_OPTIONS`; rekursive `LINK_LIBRARIES` am Kern und danach `INTERFACE_LINK_LIBRARIES`, Aliase/importierte Ziele und bedingte Kanten je Konfiguration | Makros, die erst im C++-Quelltext entstehen (dafür K1/K3); ein unbekannter relevanter Generatorausdruck ist ausdrücklich **ROT**, nicht „sieht nicht“ |
+| **K2** CMake-Konfigurierzeit | Kernziel plus dessen compilerwirksame Usage-Requirements-Hülle; Verbraucher nur bei einer echten fehlerhaften Rückkante; Ausführung verzögert bis zum Ende von `plugin/` nach allen Zieländerungen | jedes compilerwirksame `JucePlugin_` aus eigenen und transitiven `*_COMPILE_DEFINITIONS` sowie `-D`/`/D` in `*_COMPILE_OPTIONS`; direkte Zielnamen, `debug`/`optimized`/`general`-Kanten und die unten inventarisierten bedingten bzw. zielbezogenen Generatorausdrücke | Makros, die erst im C++-Quelltext entstehen (dafür K1/K3); String-Transformationen in Linkkanten und `MAP_IMPORTED_CONFIG_*` werden nicht ausgewertet, sondern ausdrücklich **ROT** gemeldet |
 | **K3/A14** Artefakt + Frische | gebaute `.lib`, `.vcxproj`, `.tlog` und echte Kern-Includehülle | jeden eingefrorenen Text als ASCII/UTF-16LE, Viercodes zusätzlich als 4-Byte-Integer in **beiden** Byteordnungen, CIDs roh/COM-vertauscht; rekursive lokale Includes aus den tatsächlichen `NAKAMA_KERN_QUELLEN`; heutige Definemenge exakt in beide Richtungen gegen **jede** gebaute Kern-TU | Baubeschreibung ohne resultierende Artefaktbytes (dafür K1/K2/K2b/K2c) |
-| **K2b** CMake-Konfigurierzeit | Kern und je ein registrierter Verbraucher als **getrennte** Wurzeln mit ihrer jeweiligen compilerwirksamen Usage-Requirements-Hülle | Mengengleichheit und Wertwidersprüche der `JUCE_`-Defines beider Zielmengen, je Konfiguration, rekursiv und inklusive `-D`/`/D`; `JucePlugin_*` des Verbrauchers gehört nicht zur Vergleichsmenge | bewusst ausgenommene Hüllendefines (`JUCE_MODULE_AVAILABLE_*`, `JUCE_SHARED_CODE`, `JUCE_STANDALONE_APPLICATION`, `JUCE_VST3_CAN_REPLACE_VST2`) · Nicht-Define-Schalter (dafür K2c) |
-| **K2c** CMake-Konfigurierzeit | volle Linkhülle des Kerns und volle Linkhülle je eines registrierten Verbrauchers, **getrennt** je Konfiguration | ob jedes transitiv und bedingt erreichbare `juce_recommended_*`-Ziel der Referenz in derselben Konfiguration auch am Kern hängt — Quelle der Schalter, nicht einzelne Flags | `lto_flags` (begründet ausgenommen: `/GL` ohne `-LTCG` im Verbraucher) · alles, was kein Empfehlungsziel ist; Verbraucher werden nicht zur Kernquelle erklärt |
+| **K2b** CMake-Konfigurierzeit | Kern und je ein registrierter Verbraucher als **getrennte** Wurzeln mit ihrer jeweiligen compilerwirksamen Usage-Requirements-Hülle | Mengengleichheit und Wertwidersprüche der `JUCE_`-Defines beider Zielmengen, je Konfiguration, rekursiv und inklusive `-D`/`/D`; `JucePlugin_*` des Verbrauchers gehört nicht zur Vergleichsmenge | bewusst ausgenommene Hüllendefines (`JUCE_MODULE_AVAILABLE_*` als Familie; exakt die Makronamen `JUCE_SHARED_CODE`, `JUCE_STANDALONE_APPLICATION`, `JUCE_VST3_CAN_REPLACE_VST2`, jeweils ohne Wert oder mit `=…`) · Nicht-Define-Schalter (dafür K2c) |
+| **K2c** CMake-Konfigurierzeit | volle Linkhülle des Kerns und volle Linkhülle je eines registrierten Verbrauchers, **getrennt** je Konfiguration | ob jedes transitiv und bedingt erreichbare `juce_recommended_*`-Ziel der Referenz in derselben Konfiguration auch am Kern hängt — Quelle der Schalter, nicht einzelne Flags | `lto_flags` (begründet ausgenommen: `/GL` ohne `-LTCG` im Verbraucher) · alles, was kein Empfehlungsziel ist; String-Transformationen und importierte Konfigurationsabbildungen sind nicht unterstützt und deshalb ROT |
 
 K2b ist im Selbstaudit nach dem ersten Commit dazugekommen (§2 B8), **K2c** aus
 dem T2-Lauf am 23.08. (§5 T2-1/T2-3, Nacharbeit §6) — bis dahin sagte die
@@ -176,6 +176,91 @@ rekursiv abgeleitete Includehülle (einschließlich `vertrag/NakamaUtf8.h`) ält
 als die Lib sein und die Define-Mengen aus `.vcxproj` und `.tlog` müssen exakt
 gleich sein.
 
+### Letzte Nacharbeit S8 vom 28.08.2026 — vier frische Prüferfälle
+
+Die ersten beiden Fälle erweitern die Messung. Die letzten beiden werten die
+jeweilige CMake-Semantik bewusst **nicht** nach, sondern fassen die Zusage enger
+und machen die nicht unterstützte Form fail-closed ROT.
+
+1. **Gemessen — K2 läuft erst nach allen Änderungen am Kernziel.** Direkt nach
+   der heutigen verzögerten Registrierung einsetzen:
+
+   ```cmake
+   cmake_language(DEFER DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+       CALL nakama_kern_riegel_pruefen NakamaKern)
+   target_compile_options(NakamaKern PRIVATE /DJucePlugin_NeueIdentitaet=17)
+   ```
+
+   ```powershell
+   cmake -S eq-copilot -B eq-copilot/build-riegelprobe-k2-reihenfolge -G "Visual Studio 17 2022" -A x64
+   ```
+
+   Erwartet: Erst nachdem die restliche `plugin/CMakeLists.txt` verarbeitet ist,
+   fällt der verzögerte K2 auf `JucePlugin_NeueIdentitaet=17`. Ein früher
+   Snapshot am alten Aufrufort würde diese Probe übersehen.
+
+2. **Gemessen — die drei K2b-Einzelausnahmen sind vollständige Makronamen.**
+   Unmittelbar vor dem abschließenden K2b/K2c-Lauf einsetzen:
+
+   ```cmake
+   target_compile_definitions(NakamaKern PRIVATE JUCE_SHARED_CODE_EXTRA=1)
+   ```
+
+   ```powershell
+   cmake -S eq-copilot -B eq-copilot/build-riegelprobe-k2b-ausnahme -G "Visual Studio 17 2022" -A x64
+   ```
+
+   Erwartet: K2b nennt `JUCE_SHARED_CODE_EXTRA=1` als nur am Kern vorhanden.
+   Nur `JUCE_SHARED_CODE` beziehungsweise `JUCE_SHARED_CODE=…` ist ausgenommen;
+   dasselbe gilt exakt für die beiden anderen Einzelmakros. Der baulose
+   Genex-Selbsttest prüft die drei Namen jeweils mit/ohne Wert und ihre
+   `*_EXTRA`-Gegenstücke.
+
+3. **Enger gefasst — String-Transformationen in Linkkanten.** Linkkanten werden
+   bis zu direkten Zielnamen, `debug`/`optimized`/`general` und den inventarisierten
+   Bedingungen/Zielreferenzen (`IF`, Kurzform, `CONFIG`, `TARGET_*`,
+   `LINK_ONLY`, `BUILD_INTERFACE`, `COMPILE_ONLY`) aufgelöst.
+   String-transformierende Generatorausdrücke (`LOWER_CASE`, `UPPER_CASE`,
+   `MAKE_C_IDENTIFIER`, `JOIN`, `REMOVE_DUPLICATES`, `LIST`, `PATH`,
+   `SHELL_PATH`) werden in Linkkanten nicht aufgelöst; ihr Auftreten ist ROT:
+
+   ```cmake
+   add_library(nakamaidentitaetsiface INTERFACE)
+   target_compile_definitions(nakamaidentitaetsiface INTERFACE
+       JucePlugin_NeueIdentitaet=17)
+   target_link_libraries(NakamaKern PRIVATE
+       "$<LOWER_CASE:NakamaIdentitaetsIface>")
+   ```
+
+   Erwartet: Configure fällt mit `String-transformierender Generatorausdruck
+   LOWER_CASE in Linkkante wird nicht aufgeloest`, bevor die Kante still leer
+   werden kann. **Benannte Lücke: `NAK-xx` (neue Nummer ausstehend) —
+   String-Transformationen in Linkkanten werden nicht semantisch ausgewertet.**
+
+4. **Enger gefasst — importierte Konfigurationsabbildung.**
+   `MAP_IMPORTED_CONFIG_<CONFIG>` wird nicht berücksichtigt. Sobald ein
+   importiertes Ziel in einer K2/K2b/K2c-Linkhülle für eine aktive
+   Projektkonfiguration eine solche Property gesetzt hat, ist die Hülle ROT:
+
+   ```cmake
+   add_library(NakamaImportiert INTERFACE IMPORTED)
+   set_target_properties(NakamaImportiert PROPERTIES
+       IMPORTED_CONFIGURATIONS Hidden
+       MAP_IMPORTED_CONFIG_DEBUG Hidden
+       MAP_IMPORTED_CONFIG_RELEASE Hidden
+       MAP_IMPORTED_CONFIG_RELWITHDEBINFO Hidden
+       MAP_IMPORTED_CONFIG_MINSIZEREL Hidden
+       INTERFACE_COMPILE_DEFINITIONS
+           "$<$<CONFIG:Hidden>:JucePlugin_NeueIdentitaet=17>")
+   target_link_libraries(NakamaKern PRIVATE NakamaImportiert)
+   ```
+
+   Erwartet: Configure fällt mit Ziel und erster gesetzter
+   `MAP_IMPORTED_CONFIG_*`-Property; es behauptet nicht, die `Hidden`-Abbildung
+   selbst ausgewertet zu haben. **Benannte Lücke: `NAK-xx` (neue Nummer
+   ausstehend) — importierte Konfigurationsabbildungen werden nicht semantisch
+   ausgewertet.**
+
 ### Runde 2/3 — JUCE-Generatorausdrücke und Listen-Eigenschaften
 
 Die Inventur vom 28.08.2026 umfasst alle `$<`-Vorkommen in
@@ -188,13 +273,16 @@ Options- und Linkeigenschaften ergibt sich:
 | `JUCEHelperTargets.cmake:41-44,78-84,109,123,137,144-165` | `CONFIG`, `OR`, `COMPILE_LANGUAGE`, `IF`, `STREQUAL` und die bedingte Kurzform | je Konfiguration verschachtelt ausgewertet; die Compile-Sprache ist für die ausschließlich aus C++-Quellen bestehenden Riegelzielmengen `CXX` |
 | `JUCEModuleSupport.cmake:108-109,535,594` | `IF`, `OR`, `CONFIG`, `PLATFORM_ID`, `TARGET_EXISTS` und die bedingte Kurzform | verschachtelt ausgewertet; fehlende explizit referenzierte Ziele bleiben ROT |
 | `JUCEUtils.cmake:309-312,841-849,1058-1062,1521-1582,2111` | `TARGET_GENEX_EVAL`, zweistelliges `TARGET_PROPERTY`, `FILTER`, `BOOL`, `TARGET_EXISTS` und die bedingte Kurzform | Ziel/Alias zuerst aufgelöst; skalare Eigenschaften direkt, Listeneigenschaften Element für Element rekursiv; `FILTER` unterstützt `INCLUDE`/`EXCLUDE`; die RC-Quellproperty in 841-849 gehört nicht zum Kern, benutzt aber dieselben unterstützten Formen |
-| `plugin/CMakeLists.txt:664` | `CXX_COMPILER_ID` | gegen `CMAKE_CXX_COMPILER_ID` ausgewertet |
-| `NakamaKern.cmake:1119-1123` (Zeilenstand dieser Nacharbeit) | zweistelliges `TARGET_PROPERTY` für `INTERFACE_INCLUDE_DIRECTORIES`, `INTERFACE_COMPILE_DEFINITIONS`, `INTERFACE_COMPILE_OPTIONS` | Listenexpansion mit Besuchtmenge `Ziel::Eigenschaft`; Aliase werden aufgelöst, importierte CMake-Ziele wie normale Ziele gelesen, Zyklen und fehlende Ziele sind ROT |
+| `plugin/CMakeLists.txt` | `CXX_COMPILER_ID` | gegen `CMAKE_CXX_COMPILER_ID` ausgewertet |
+| `NakamaKern.cmake` | zweistelliges `TARGET_PROPERTY` für `INTERFACE_INCLUDE_DIRECTORIES`, `INTERFACE_COMPILE_DEFINITIONS`, `INTERFACE_COMPILE_OPTIONS` | Listenexpansion mit Besuchtmenge `Ziel::Eigenschaft`; Aliase werden aufgelöst, importierte CMake-Ziele ohne Konfigurationsabbildung wie normale Ziele gelesen, Zyklen/fehlende Ziele und gesetztes `MAP_IMPORTED_CONFIG_*` sind ROT |
 
 Zusätzlich kennt der Auswerter die in den Riegelproben beziehungsweise von
 CMake in Usage Requirements benötigten Formen `AND`, `NOT`, `EQUAL`,
 `GENEX_EVAL`, `$<CONFIG>`, `LINK_ONLY`, `COMPILE_ONLY`, `BUILD_INTERFACE`,
-`INSTALL_INTERFACE`, `TARGET_NAME` und `TARGET_NAME_IF_EXISTS`. Die übrigen
+`INSTALL_INTERFACE`, `TARGET_NAME` und `TARGET_NAME_IF_EXISTS`. Linkkanten mit
+`LOWER_CASE`, `UPPER_CASE`, `MAKE_C_IDENTIFIER`, `JOIN`, `REMOVE_DUPLICATES`,
+`LIST`, `PATH` oder `SHELL_PATH` werden nicht transformiert, sondern ROT
+gemeldet. Die übrigen
 gefundenen JUCE-Formen `TARGET_FILE`, `TARGET_BUNDLE_DIR` und
 `TARGET_BUNDLE_CONTENT_DIR` stehen nur in Custom-Command-, Ausgabe- und
 Bundlepfaden (`JUCEUtils.cmake:212-221,748,962-965,1184-1192,1251-1362`),
@@ -216,14 +304,15 @@ Linkhülle beider Wurzeln je Konfiguration. `EqCopilot`, `NakamaSuna` und
 `NakamaProbeeq` sind Verbraucher und werden nur durch eine echte Rückkante zu
 Quellen des Kerns.
 
-Der baulose Regressionstest prüft zwanzig Ausdrücke, darunter genau
+Der baulose Regressionstest prüft 26 Ausdrücke, darunter genau
 `JucePlugin_IsSynth=$<BOOL:$<TARGET_PROPERTY:EqCopilot,JUCE_IS_SYNTH>>`, die
 reale `juce_core`-Liste aus `INTERFACE_COMPILE_DEFINITIONS`, eine bedingte
 `INTERFACE_LINK_LIBRARIES`-Liste über einen Alias und alle oben als unterstützt
 benannten Inventurformen. Sensitivitätsproben prüfen zusätzlich Property-Zyklus,
-fehlendes Ziel, unbekannte Eigenschaft und die Regel: Eine Zielreferenz muss
-auch ohne sichtbares `JUCE_`-/`JucePlugin_`-Präfix expandieren. Nur ein Ausdruck
-ohne beide Präfixe **und ohne Zielreferenz** darf irrelevant bleiben:
+fehlendes Ziel, unbekannte Eigenschaft, die exakten K2b-Ausnahmen und die Regel:
+Eine Zielreferenz muss auch ohne sichtbares `JUCE_`-/`JucePlugin_`-Präfix
+expandieren. Eine eigene Unterprozessprobe hält die `LOWER_CASE`-Linkkante ROT.
+Nur ein Ausdruck ohne beide Präfixe **und ohne Zielreferenz** darf irrelevant bleiben:
 
 ```powershell
 $cmake = 'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe'
@@ -232,7 +321,7 @@ $cmake = 'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7
 ```
 
 Erwartet: beide Läufe enden mit
-`Nakama-Kern-Genex-Selbsttest: 20/20 Ausdruecke korrekt.` und Exitcode 0.
+`Nakama-Kern-Genex-Selbsttest: 26/26 Ausdruecke korrekt.` und Exitcode 0.
 Der fail-closed Pfad ist mit demselben Skript kontrolliert rot ausführbar:
 
 ```powershell

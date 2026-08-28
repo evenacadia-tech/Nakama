@@ -73,6 +73,14 @@ if(NAKAMA_TEST_INNERER_OPERATOR_ROT)
     message(FATAL_ERROR "Unbekannter innerer Operator blieb unerwartet gruen: ${_darf_nie_gruen}")
 endif()
 
+if(NAKAMA_TEST_STRINGOPERATOR_ROT)
+    _nakama_kern_wert_auswerten(
+        "$<LOWER_CASE:NakamaIdentitaetsIface>"
+        "${NAKAMA_TEST_CONFIG}" LINK "Selbsttest Stringtransformation in Linkkante"
+        _darf_nie_gruen)
+    message(FATAL_ERROR "Stringtransformation in Linkkante blieb unerwartet gruen: ${_darf_nie_gruen}")
+endif()
+
 set(_nakama_test_anzahl 0)
 
 function(_nakama_genex_erwarte name ausdruck erwartung)
@@ -400,6 +408,63 @@ if(NOT _fremdes_define STREQUAL "")
     message(FATAL_ERROR "Ausdruck ohne JUCE_-Define und ohne Ziel wurde unerwartet beansprucht.")
 endif()
 message(STATUS "PASS Abgrenzung: ohne JUCE_-Define und ohne Ziel irrelevant")
+
+foreach(_define IN ITEMS
+        JUCE_SHARED_CODE JUCE_SHARED_CODE=1
+        JUCE_STANDALONE_APPLICATION JUCE_STANDALONE_APPLICATION=0
+        JUCE_VST3_CAN_REPLACE_VST2 JUCE_VST3_CAN_REPLACE_VST2=1)
+    _nakama_kern_juce_define_ist_ausgenommen("${_define}" _ausgenommen)
+    if(NOT _ausgenommen)
+        message(FATAL_ERROR "Dokumentierte K2b-Ausnahme wurde nicht erkannt: ${_define}")
+    endif()
+endforeach()
+foreach(_define IN ITEMS
+        JUCE_SHARED_CODE_EXTRA=1
+        JUCE_STANDALONE_APPLICATION_EXTRA=1
+        JUCE_VST3_CAN_REPLACE_VST2_EXTRA=1)
+    _nakama_kern_juce_define_ist_ausgenommen("${_define}" _ausgenommen)
+    if(_ausgenommen)
+        message(FATAL_ERROR "K2b-Ausnahme griff faelschlich als Praefix: ${_define}")
+    endif()
+endforeach()
+message(STATUS "PASS K2b-Ausnahmen: drei Einzelmakros exakt, *_EXTRA bleibt sichtbar")
+
+foreach(_operator IN ITEMS
+        LOWER_CASE UPPER_CASE MAKE_C_IDENTIFIER JOIN REMOVE_DUPLICATES LIST PATH SHELL_PATH)
+    _nakama_kern_linkkante_stringoperator("$<${_operator}:NakamaIdentitaetsIface>" _erkannt)
+    if(NOT _erkannt STREQUAL _operator)
+        message(FATAL_ERROR
+            "Stringoperator in Linkkante nicht erkannt: erwartet=${_operator}, ist=${_erkannt}")
+    endif()
+endforeach()
+message(STATUS "PASS Linkkanten-Abgrenzung: bekannte String-/Listenoperatoren werden erkannt")
+
+execute_process(
+    COMMAND "${CMAKE_COMMAND}"
+        "-DNAKAMA_TEST_CONFIG=${NAKAMA_TEST_CONFIG}"
+        "-DNAKAMA_TEST_IS_SYNTH=${NAKAMA_TEST_IS_SYNTH}"
+        -DNAKAMA_TEST_STRINGOPERATOR_ROT=ON
+        -P "${CMAKE_CURRENT_LIST_FILE}"
+    RESULT_VARIABLE _stringoperator_exit
+    OUTPUT_VARIABLE _stringoperator_stdout
+    ERROR_VARIABLE _stringoperator_stderr)
+set(_stringoperator_ausgabe "${_stringoperator_stdout}\n${_stringoperator_stderr}")
+foreach(_diagnose_fragment
+        "String-transformierender Generatorausdruck LOWER_CASE"
+        "$<LOWER_CASE:NakamaIdentitaetsIface>"
+        "fail-closed ROT")
+    string(FIND "${_stringoperator_ausgabe}" "${_diagnose_fragment}"
+        _diagnose_position)
+    if(_diagnose_position EQUAL -1)
+        message(FATAL_ERROR
+            "Stringoperator-Diagnose nennt '${_diagnose_fragment}' nicht. "
+            "Ausgabe=${_stringoperator_ausgabe}")
+    endif()
+endforeach()
+if(_stringoperator_exit EQUAL 0)
+    message(FATAL_ERROR "LOWER_CASE-Linkkante blieb unerwartet gruen.")
+endif()
+message(STATUS "PASS Sensitivitaet: LOWER_CASE-Linkkante bleibt kontrolliert ROT")
 
 if(NOT _nakama_test_anzahl EQUAL 26)
     message(FATAL_ERROR "Interner Testfehler: ${_nakama_test_anzahl} statt 26 Ausdruecken geprueft.")

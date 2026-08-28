@@ -125,6 +125,42 @@ function(nakama_flatbuffers_commit_pruefen quelle erwartet ergebnis)
     message(STATUS "Nakama-FlatBuffers: Commit ${_gemessen} bestaetigt")
 endfunction()
 
+# Haengt den Binary-Beleg im Verzeichnis des Upstream-Ziels an. CMake erlaubt
+# die TARGET-Form von add_custom_command nur dort, wo das Ziel definiert wurde;
+# deshalb ruft NakamaFlatBuffersProjektHook.cmake diese Funktion am Ende des
+# FlatBuffers-Unterverzeichnisses auf. Entscheidend ist der Lebenszyklus:
+# Configure misst den Checkout, aber erst ein tatsaechlicher flatc-Bau schreibt
+# Commit UND Hash des soeben erzeugten Executables in denselben Sidecar.
+function(nakama_flatbuffers_flatc_beleg_anhaengen)
+    if(NOT TARGET flatc)
+        message(FATAL_ERROR
+            "Nakama-FlatBuffers: das FetchContent-Unterprojekt hat kein flatc-Ziel erzeugt.\n"
+            "Ohne Ziel kann der Commit-/Binary-Beleg nicht an den Bau gebunden werden.")
+    endif()
+
+    get_target_property(_flatc_quelle flatc SOURCE_DIR)
+    nakama_flatbuffers_commit_pruefen(
+        "${_flatc_quelle}" "${NAKAMA_FLATC_COMMIT}" _gemessen_commit)
+
+    set(_commit_beleg "${CMAKE_BINARY_DIR}/nakama-flatc-commit-$<CONFIG>.txt")
+    add_custom_command(
+        TARGET flatc POST_BUILD
+        COMMAND "${CMAKE_COMMAND}"
+            "-DNAKAMA_FLATC_BINARY=$<TARGET_FILE:flatc>"
+            "-DNAKAMA_FLATC_COMMIT=${_gemessen_commit}"
+            "-DNAKAMA_FLATC_BELEG=${_commit_beleg}"
+            -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/NakamaFlatcBeleg.cmake"
+        BYPRODUCTS "${_commit_beleg}"
+        COMMENT "Nakama-FlatBuffers: Commit und SHA-256 an das gebaute flatc binden"
+        VERBATIM)
+
+    # Der Aufrufer prueft nach FetchContent_MakeAvailable, dass der Hook
+    # tatsaechlich lief. So kann eine Aenderung am Upstream-Projekt den Beleg
+    # nicht unbemerkt aus dem Buildgraphen entfernen.
+    set_property(GLOBAL PROPERTY
+        NAKAMA_FLATBUFFERS_GEMESSENER_COMMIT "${_gemessen_commit}")
+endfunction()
+
 # Holt FlatBuffers am gepinnten Commit und baut `flatc` daraus mit.
 #
 # `flatc` wird hier gebaut und nicht als Release-Binary geladen: die
@@ -149,13 +185,31 @@ function(nakama_flatbuffers_bereitstellen steckbrief_datei)
         GIT_REPOSITORY "${NAKAMA_FLATC_REPO}"
         GIT_TAG        "${NAKAMA_FLATC_COMMIT}"
     )
+
+    # `flatc` wird im FlatBuffers-Unterverzeichnis definiert. Der
+    # projektspezifische Include plant dort einen Callback fuer das Ende genau
+    # dieses Verzeichnisses; nur dort ist ein echtes TARGET/POST_BUILD legal.
+    # Einen eventuell vom Aufrufer gesetzten Projekt-Include verkettet der Hook.
+    set_property(GLOBAL PROPERTY NAKAMA_FLATBUFFERS_GEMESSENER_COMMIT "")
+    set(NAKAMA_FLATBUFFERS_PROJECT_INCLUDE_VORHER
+        "${CMAKE_PROJECT_FlatBuffers_INCLUDE}")
+    set(CMAKE_PROJECT_FlatBuffers_INCLUDE
+        "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/NakamaFlatBuffersProjektHook.cmake")
     FetchContent_MakeAvailable(flatbuffers)
+    set(CMAKE_PROJECT_FlatBuffers_INCLUDE
+        "${NAKAMA_FLATBUFFERS_PROJECT_INCLUDE_VORHER}")
+
+    get_property(_gemessen_commit GLOBAL PROPERTY
+        NAKAMA_FLATBUFFERS_GEMESSENER_COMMIT)
+    if(NOT _gemessen_commit)
+        message(FATAL_ERROR
+            "Nakama-FlatBuffers: der POST_BUILD-Beleg wurde nicht an flatc angehaengt.\n"
+            "Der FlatBuffers-Projekthook lief nicht; ohne ihn darf der Bau nicht fortfahren.")
+    endif()
 
     nakama_flatbuffers_version_pruefen(
         "${flatbuffers_SOURCE_DIR}"
         "${NAKAMA_FLATC_MAJOR}" "${NAKAMA_FLATC_MINOR}" "${NAKAMA_FLATC_REVISION}")
-    nakama_flatbuffers_commit_pruefen(
-        "${flatbuffers_SOURCE_DIR}" "${NAKAMA_FLATC_COMMIT}" _gemessen_commit)
 
     # Der Drift-Pruefer laeuft ausserhalb von CMake (Python, aus dem Runner).
     # Er darf den Pfad zum gebauten flatc nicht raten: ein geratener Pfad, der
@@ -167,13 +221,6 @@ function(nakama_flatbuffers_bereitstellen steckbrief_datei)
     # Eine einzige Datei mit drei Inhalten laesst CMake zu Recht nicht zu.
     set(_zeiger "${CMAKE_BINARY_DIR}/nakama-flatc-pfad-$<CONFIG>.txt")
     file(GENERATE OUTPUT "${_zeiger}" CONTENT "$<TARGET_FILE:flatc>\n")
-    # Konfigurationsbezogen wie der Binary-Pfad: ein Release-Pruefer darf nicht
-    # versehentlich den Beleg eines Debug-Baus lesen. Der Inhalt ist bewusst
-    # der oben per `git rev-parse HEAD` GEMESSENE Checkout, nicht der Pin aus
-    # WERKZEUG.json. Nur so kann der externe Pruefer beide unabhaengig
-    # vergleichen und einen veralteten Bau rot melden.
-    set(_commit_beleg "${CMAKE_BINARY_DIR}/nakama-flatc-commit-$<CONFIG>.txt")
-    file(GENERATE OUTPUT "${_commit_beleg}" CONTENT "${_gemessen_commit}\n")
     message(STATUS "Nakama-FlatBuffers: flatc-Zeiger -> ${CMAKE_BINARY_DIR}/nakama-flatc-pfad-<CONFIG>.txt")
-    message(STATUS "Nakama-FlatBuffers: Commit-Beleg -> ${CMAKE_BINARY_DIR}/nakama-flatc-commit-<CONFIG>.txt")
+    message(STATUS "Nakama-FlatBuffers: Binary-Beleg (POST_BUILD) -> ${CMAKE_BINARY_DIR}/nakama-flatc-commit-<CONFIG>.txt")
 endfunction()

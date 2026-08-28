@@ -15,9 +15,10 @@ Dieses Skript ist dieser Test. Es prueft fuenf Dinge, und vier davon sind
 Voraussetzungen der fuenften:
 
   1. `flatc` ist DA und traegt die gepinnte Version;
-  2. sein CMake-Bau belegt den tatsaechlich ausgecheckten Git-Commit und
-     dieser stimmt mit dem Pin ueberein (die Version allein unterscheidet die
-     mehreren 25.12.19-Schnitte nicht);
+  2. sein CMake-Bau belegt den tatsaechlich ausgecheckten Git-Commit UND den
+     SHA-256 des gebauten Binaries; beides stimmt mit Pin und ausgefuehrter
+     Datei ueberein (die Version allein unterscheidet die mehreren
+     25.12.19-Schnitte nicht);
   3. die Rust-Crate `flatbuffers` traegt DIESELBE Version (der erzeugte Code
      ruft in die Laufzeit; eine andere Version ist entweder ein
      Uebersetzungsfehler oder - schlimmer - stille Inkompatibilitaet);
@@ -30,10 +31,20 @@ Behauptung - deshalb werden vier schemabrechende Mutationen erzeugt und
 gemessen, dass jede abgelehnt wird.
 
 Exitcodes: 0 gruen · 2 Drift oder Riegel rot · 3 Voraussetzung fehlt.
+
+Der Sidecar `nakama-flatc-commit-<CONFIG>.txt` hat exakt dieses Format:
+
+    commit <40 hexadezimale Zeichen>
+    sha256 <64 hexadezimale Zeichen>
+
+Nur der POST_BUILD-Schritt des `flatc`-Ziels schreibt ihn. Fuer isolierte
+Riegelproben koennen Binary und Sidecar mit `--flatc` und `--beleg` umgebogen
+werden; ohne diese Argumente gelten weiter die Pfadzeiger aus dem Release-Bau.
 """
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import pathlib
@@ -53,13 +64,19 @@ def sha256(pfad: pathlib.Path) -> str:
     return hashlib.sha256(pfad.read_bytes()).hexdigest()
 
 
-def finde_flatc() -> pathlib.Path | None:
+def finde_flatc(vorgegeben: pathlib.Path | None = None) -> pathlib.Path | None:
     """Der Bau schreibt den Pfad hin; wir raten ihn nicht.
 
     Ein geratener Pfad, der ins Leere zeigt, saehe aus wie "kein flatc" - und
     der Drift-Test wuerde uebersprungen. Genau die Pruefung, die nicht
     fehlschlagen kann.
     """
+    if vorgegeben is not None:
+        if vorgegeben.is_file():
+            return vorgegeben
+        print(f"  ROT: vorgegebenes flatc gibt es nicht: {vorgegeben}")
+        return None
+
     zeiger = BAU / f"nakama-flatc-pfad-{KONFIGURATION}.txt"
     if zeiger.exists():
         kandidat = pathlib.Path(zeiger.read_text(encoding="utf-8").strip())
@@ -70,8 +87,9 @@ def finde_flatc() -> pathlib.Path | None:
     return None
 
 
-def belegter_commit() -> tuple[str | None, pathlib.Path]:
-    """Liest den vom CMake-Bau aus dem FetchContent-Checkout gemessenen Commit.
+def belegter_bau(vorgegeben: pathlib.Path | None = None) \
+        -> tuple[str | None, str | None, pathlib.Path, str | None]:
+    """Liest Commit und Binary-Hash aus dem POST_BUILD-Sidecar.
 
     WERKZEUG.json darf nicht selbst Quelle dieses Werts sein: dann wuerde der
     Pruefer wieder nur die Behauptung ausgeben, die er pruefen soll. Fehlender
@@ -79,16 +97,37 @@ def belegter_commit() -> tuple[str | None, pathlib.Path]:
     behandelt, weil ein vorhandenes Binary ohne Provenienz kein gepinntes
     Werkzeug ist.
     """
-    beleg = BAU / f"nakama-flatc-commit-{KONFIGURATION}.txt"
+    beleg = (vorgegeben if vorgegeben is not None
+             else BAU / f"nakama-flatc-commit-{KONFIGURATION}.txt")
     if not beleg.exists():
-        return None, beleg
+        return None, None, beleg, "fehlt"
     try:
-        commit = beleg.read_text(encoding="ascii").strip().lower()
-    except (OSError, UnicodeError):
-        return None, beleg
-    if re.fullmatch(r"[0-9a-f]{40}", commit) is None:
-        return None, beleg
-    return commit, beleg
+        zeilen = beleg.read_text(encoding="ascii").splitlines()
+    except (OSError, UnicodeError) as fehler:
+        return None, None, beleg, f"nicht lesbar: {fehler}"
+    if len(zeilen) != 2:
+        return None, None, beleg, "Format ist nicht exakt zweizeilig"
+
+    commit_treffer = re.fullmatch(r"commit ([0-9a-fA-F]{40})", zeilen[0])
+    hash_treffer = re.fullmatch(r"sha256 ([0-9a-fA-F]{64})", zeilen[1])
+    if commit_treffer is None or hash_treffer is None:
+        return None, None, beleg, "Format oder Hex-Laenge ist ungueltig"
+    return (commit_treffer.group(1).lower(), hash_treffer.group(1).lower(),
+            beleg, None)
+
+
+def argumente_lesen(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--conform", action="store_true",
+        help="zusaetzlich vier brechende Schema-Mutationen pruefen")
+    parser.add_argument(
+        "--flatc", type=pathlib.Path,
+        help="flatc-Binary fuer eine isolierte Riegelprobe (sonst Release-Pfadzeiger)")
+    parser.add_argument(
+        "--beleg", type=pathlib.Path,
+        help="Commit/SHA-256-Sidecar fuer eine isolierte Riegelprobe")
+    return parser.parse_args(argv)
 
 
 def version_von(flatc: pathlib.Path) -> str | None:
@@ -210,6 +249,7 @@ def pruefe_conform(flatc: pathlib.Path, schema: pathlib.Path) -> int:
 
 
 def main(argv: list[str]) -> int:
+    argumente = argumente_lesen(argv)
     if not WERKZEUG.exists():
         print(f"VORAUSSETZUNG FEHLT: {WERKZEUG} nicht gefunden")
         return 3
@@ -221,7 +261,7 @@ def main(argv: list[str]) -> int:
 
     print(f"Gepinnt: flatbuffers {steckbrief['version']} @ {steckbrief['git_commit'][:12]}")
 
-    flatc = finde_flatc()
+    flatc = finde_flatc(argumente.flatc)
     if flatc is None:
         print("VORAUSSETZUNG FEHLT: flatc nicht gefunden.")
         print("  Der Bau schreibt seinen Pfad nach eq-copilot/build/nakama-flatc-pfad-Release.txt.")
@@ -243,18 +283,27 @@ def main(argv: list[str]) -> int:
         return 2
     print(f"  flatc: {gemessen}  ({flatc})")
 
-    commit, commit_beleg = belegter_commit()
-    if commit is None:
-        print(f"  ROT: Commit-Beleg fehlt oder ist ungueltig: {commit_beleg}. "
-              "Ein vorhandenes flatc mit passender --version belegt bei mehreren "
-              "Upstream-Schnitten nicht den gepinnten Quellstand.")
+    commit, beleg_hash, commit_beleg, beleg_fehler = belegter_bau(argumente.beleg)
+    if beleg_fehler is not None:
+        print(f"  ROT: Binary-Beleg {beleg_fehler}: {commit_beleg}. Ein vorhandenes "
+              "flatc mit passender --version belegt bei mehreren Upstream-Schnitten "
+              "nicht den gepinnten Quellstand.")
         return 2
     erwartet = steckbrief["git_commit"].lower()
     if commit != erwartet:
         print(f"  ROT: flatc-Commit {commit} weicht vom Pin {erwartet} ab "
               f"(Beleg: {commit_beleg}).")
         return 2
-    print(f"  flatc-Commit: {commit}  (CMake-Beleg: {commit_beleg})")
+    try:
+        binary_hash = sha256(flatc)
+    except OSError as fehler:
+        print(f"  ROT: SHA-256 des ausgefuehrten flatc nicht lesbar: {flatc}: {fehler}")
+        return 2
+    if beleg_hash != binary_hash:
+        print(f"  ROT: flatc-SHA-256 {binary_hash} weicht vom gebundenen Hash "
+              f"{beleg_hash} ab (Beleg: {commit_beleg}).")
+        return 2
+    print(f"  flatc-Beleg: Commit {commit}, sha256={binary_hash}  ({commit_beleg})")
 
     anforderung, aufgeloest = cargo_version()
     if anforderung != steckbrief["rust_crate"]:
@@ -282,7 +331,7 @@ def main(argv: list[str]) -> int:
         return 2
     print("  Feld-IDs: 0 rot")
 
-    if "--conform" in argv:
+    if argumente.conform:
         print("\n--conform (Evolutionsriegel):")
         rot = pruefe_conform(flatc, schema)
         print(f"\nPruefungen: {'0 rot' if rot == 0 else f'{rot} rot'}")

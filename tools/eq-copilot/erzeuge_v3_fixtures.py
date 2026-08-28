@@ -283,6 +283,23 @@ TEXTRIEGEL_FAELLE: list[tuple[str, bool, str]] = [
 
     # --- Dokumentrahmen (T2-Runde 2, BF-6/BF-7) -----------------------------
     ('{"w": 512, "x": [1,2,3]}', False, "eine gewoehnliche Nachricht"),
+
+    # --- Alphabetische JSON-Literale --------------------------------------
+    ('{"w": NaN}', True,
+     "GEMESSEN: Pythons json.loads akzeptiert NaN, JUCE und serde_json lehnen ab"),
+    ('{"w": Infinity}', True,
+     "GEMESSEN: Pythons json.loads akzeptiert Infinity als nicht-endliche Zahl"),
+    ('{"w": -Infinity}', True,
+     "das optionale Minus gehoert zum unbekannten Literal und dessen Position"),
+    ('[NaN]', True, "dieselbe Python-Erweiterung als Arrayelement"),
+    ('{"w": nan}', True, "Kleinschreibung macht aus NaN kein JSON-Literal"),
+    ('{"w": inf}', True, "auch die Kurzform inf ist kein JSON-Literal"),
+    ('{"w": undefined}', True, "undefined ist weder JSON noch ein Vertragswert"),
+    ('{"w": True}', True, "JSON-Literale sind kleingeschrieben"),
+    ('{"w": "NaN"}', False, "innerhalb einer Zeichenkette ist NaN nur Text"),
+    ('{"w": true}', False, "true ist ein erlaubtes JSON-Literal"),
+    ('{"w": false}', False, "false ist ein erlaubtes JSON-Literal"),
+    ('{"w": null}', False, "null ist ein erlaubtes JSON-Literal"),
 ]
 
 # Faelle, die sich nur auf BYTE-Ebene ausdruecken lassen - sie stehen als
@@ -1451,7 +1468,7 @@ BS = chr(92)   # Backslash — als Literal frisst ihn jede Zwischenschicht
 def rohtext_faelle() -> list[tuple[str, bytes, str]]:
     """Fixtures, die der TEXTRIEGEL abweisen muss — vor jedem Parser.
 
-    Diese elf lassen sich nicht ueber `json.dumps` erzeugen: eine fuehrende
+    Diese zwoelf lassen sich nicht ueber `json.dumps` erzeugen: eine fuehrende
     Null oder ein einsames Surrogat ist keine Ausgabe, die ein Serialisierer
     je schreiben wuerde. Sie entstehen deshalb aus einer gueltigen Grundform
     durch eine TEXTUELLE Ersetzung — so bleibt drumherum eine echte Nachricht
@@ -1460,11 +1477,18 @@ def rohtext_faelle() -> list[tuple[str, bytes, str]]:
     Jeder Fall steht fuer eine in T2-Runde 1 GEMESSENE Abweichung zwischen den
     Beinen, nicht fuer eine ausgedachte.
     """
-    def aus(grundform: str, alt: str, neu: str) -> bytes:
-        text = als_text(GRUND[grundform]).decode("utf-8")
+    def aus_daten(daten: dict, alt: str, neu: str) -> bytes:
+        text = als_text(daten).decode("utf-8")
         if alt not in text:
-            raise SystemExit(f"Rohtext-Fixture: {alt!r} steht nicht in {grundform}")
+            raise SystemExit(f"Rohtext-Fixture: {alt!r} steht nicht in den Daten")
         return text.replace(alt, neu, 1).encode("utf-8")
+
+    def aus(grundform: str, alt: str, neu: str) -> bytes:
+        return aus_daten(GRUND[grundform], alt, neu)
+
+    float32 = copy.deepcopy(GRUND["evidence_snapshot"])
+    float32["baender"] = baender(221, "nakama_1_24_oct_30_18k_v1", "float32")
+    float32["baender"]["werte"][0] = 0.5
 
     return [
         ("zahl-ueber-2hoch53",
@@ -1506,6 +1530,11 @@ def rohtext_faelle() -> list[tuple[str, bytes, str]]:
         ("zahl-nicht-endlich",
          aus("evidence_snapshot", '"sample_rate": 48000', '"sample_rate": 1e400'),
          "1e400 ist als binary64 unendlich; ein Vertrag traegt keine Unendlichkeit"),
+
+        ("zahl-nan-token",
+         aus_daten(float32, '"werte": [0.5,', '"werte": [NaN,'),
+         "GEMESSEN: Pythons json.loads akzeptiert rohes NaN als nicht-endliche "
+         "float32-Bandzahl, waehrend JUCE und serde_json schon im Parser ablehnen"),
 
         ("nul-escape-im-label",
          aus("session_snapshot", '"label": "Klavier-Bus"', '"label": "a' + BS + 'u0000b"'),

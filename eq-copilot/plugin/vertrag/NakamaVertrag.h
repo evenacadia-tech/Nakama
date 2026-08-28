@@ -63,7 +63,7 @@ constexpr int dezGrenze = 308;
     der Wert ist beim Ankommen bereits verfaelscht. Der einzige Ort, an dem
     alle drei Beine dasselbe sehen koennen, ist der Text.
 
-    ACHT Regeln, jede gegen eine GEMESSENE Abweichung zwischen den Beinen:
+    NEUN Regeln, jede gegen eine GEMESSENE Abweichung zwischen den Beinen:
 
       1. keine fuehrende Null (`091`) - JUCE liest 91, RFC 8259 verbietet es;
       2. mathematische Ganzzahlen nur innerhalb +/-(2^53-1), echte Brueche
@@ -77,7 +77,9 @@ constexpr int dezGrenze = 308;
          nur das Referenzbein nimmt an;
       7. kein leerer Objektschluessel - JUCE lehnt ihn ab, in einem additiven
          Objekt haette serde_json ihn akzeptiert;
-      8. auf Byteebene (textriegelBytes): hoechstens 16 MiB, kein BOM,
+      8. alphabetische Literale ausser true, false und null werden abgelehnt;
+         insbesondere Pythons NaN-/Infinity-Erweiterungen;
+      9. auf Byteebene (textriegelBytes): hoechstens 16 MiB, kein BOM,
          kein rohes NUL und strikt gueltiges UTF-8.
 
     ZU REGEL 3, teuer bezahlt in T2-Runde 2: die erste Fassung fragte hier

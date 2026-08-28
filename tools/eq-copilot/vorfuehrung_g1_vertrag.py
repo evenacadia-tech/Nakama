@@ -11,6 +11,8 @@ import sys
 
 import jsonschema
 
+from pruefe_v3_vertrag import textriegel_bytes
+
 
 def ermittle_wurzel(argv: list[str]) -> pathlib.Path:
     if len(argv) > 1:
@@ -113,6 +115,29 @@ FAELLE = [
 print(f"{'Befund':12} {'Fixture':38} {'VOR dem Fix':>12}  {'NACH dem Fix':>13}")
 print("-" * 80)
 schlecht = 0
+
+# Der alte Scanner uebersprang alphabetische Tokens vollstaendig. Fuer genau
+# den neuen Fall rekonstruiert `null` diesen Vorzustand im Speicher: alter und
+# neuer Scanner lassen das erlaubte Literal passieren, waehrend nur der neue
+# Scanner das an derselben Stelle stehende NaN ablehnt. Alle anderen Bytes und
+# damit alle bisherigen Riegel bleiben unveraendert in der Vorfuehrung.
+nan_rel = "ungueltig/zahl-nan-token.json"
+nan_roh = (FIX / nan_rel).read_bytes()
+nan_marke = b'"werte": [NaN,'
+if nan_roh.count(nan_marke) != 1:
+    print(f"REGRESSION: {nan_rel} traegt nicht genau ein erwartetes NaN-Token")
+    schlecht += 1
+    nan_vor_sauber = False
+else:
+    nan_vor_roh = nan_roh.replace(nan_marke, b'"werte": [null,', 1)
+    nan_vor_sauber = textriegel_bytes(nan_vor_roh) is None
+nan_nach_sauber = textriegel_bytes(nan_roh) is None
+if not (nan_vor_sauber and not nan_nach_sauber):
+    schlecht += 1
+print(f"{'NaN-Riegel':12} {pathlib.Path(nan_rel).name:38} "
+      f"{'gueltig' if nan_vor_sauber else 'abgelehnt':>12}  "
+      f"{'gueltig' if nan_nach_sauber else 'abgelehnt':>13}")
+
 for befund, rel in FAELLE:
     daten = json.loads((FIX / rel).read_text(encoding="utf-8"))
     v = vorher.is_valid(daten)
@@ -138,6 +163,8 @@ for p in sorted((FIX / "gueltig").glob("*.json")):
         gueltig_ok += 1
 print(f"Gegenprobe: {gueltig_ok} gueltige Fixtures sind weiterhin gueltig "
       f"(darunter session-beitragsklasse.json = die ERLAUBTE Paarung).")
+print(f"NaN-Textriegel: VOR={'gueltig' if nan_vor_sauber else 'abgelehnt'}/"
+      f"NACH={'gueltig' if nan_nach_sauber else 'abgelehnt'}")
 
 if schlecht:
     print(f"\nROT: {schlecht} Faelle verhalten sich nicht wie behauptet")

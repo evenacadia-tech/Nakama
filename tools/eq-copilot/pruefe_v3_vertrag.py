@@ -109,6 +109,21 @@ HEX = "0123456789abcdefABCDEF"
 FALLTABELLE = FIXTURES / "TEXTRIEGEL-FAELLE.json"
 
 
+def json_konstante_ablehnen(name: str):
+    raise ValueError(f"nicht-endliches JSON-Literal: {name}")
+
+
+def json_laden_strikt(quelle):
+    """JSON ohne Pythons nicht-standardisierte NaN-/Infinity-Erweiterungen.
+
+    Der Textriegel bleibt fuer dieselbe Klassifikation samt Position in allen
+    drei Sprachen noetig. `parse_constant` ist der unabhaengige zweite Riegel:
+    selbst bei einer kuenftigen Scannerluecke erzeugt `json.loads` aus den
+    Python-Erweiterungen niemals einen nicht-endlichen Wert.
+    """
+    return json.loads(quelle, parse_constant=json_konstante_ablehnen)
+
+
 def ist_ascii_ziffer(c: str) -> bool:
     """NICHT `str.isdigit()`.
 
@@ -119,6 +134,10 @@ def ist_ascii_ziffer(c: str) -> bool:
     Ziffernbegriffe waeren drei Grammatiken.
     """
     return "0" <= c <= "9"
+
+
+def ist_ascii_buchstabe(c: str) -> bool:
+    return "a" <= c <= "z" or "A" <= c <= "Z"
 
 
 def zahl_pruefen(ganz: str, bruch: str, exp_ziffern: str, exp_negativ: bool,
@@ -236,7 +255,7 @@ def textriegel_bytes(roh: bytes, *, schema_ganzzahl_sichern: bool = True) -> str
 def textriegel(text: str, *, schema_ganzzahl_sichern: bool = True) -> str | None:
     """Prueft die Zeichen eines v3-Dokuments, BEVOR ein Parser sie sieht.
 
-    Acht Regeln, jede gegen eine GEMESSENE Abweichung zwischen den Beinen.
+    Neun Regeln, jede gegen eine GEMESSENE Abweichung zwischen den Beinen.
     Auslegung und Begruendung: `eq-copilot/schemas/v3/README.md`.
 
     @returns None wenn sauber, sonst den Grund.
@@ -291,6 +310,23 @@ def textriegel(text: str, *, schema_ganzzahl_sichern: bool = True) -> str | None
             if leer and k < n and text[k] == ":":
                 return f"leerer Objektschluessel an Position {i}"
             i = j + 1
+            continue
+
+        # JSON kennt ausserhalb von Zeichenketten genau drei alphabetische
+        # Literale. Python akzeptiert zusaetzlich NaN/Infinity, JUCE und
+        # serde_json nicht. Das optionale Minus gehoert zur Position und zum
+        # gemeldeten Literal, damit -Infinity in allen drei Beinen gleich
+        # klassifiziert wird.
+        vorzeichen_vor_literal = (c == "-" and i + 1 < n
+                                   and ist_ascii_buchstabe(text[i + 1]))
+        if ist_ascii_buchstabe(c) or vorzeichen_vor_literal:
+            j = i + (1 if c == "-" else 0)
+            while j < n and ist_ascii_buchstabe(text[j]):
+                j += 1
+            literal = text[i:j]
+            if literal not in ("true", "false", "null"):
+                return f"unbekanntes Literal {literal} an Position {i}"
+            i = j
             continue
 
         if c == "-" or ist_ascii_ziffer(c):
@@ -352,7 +388,7 @@ def pruefe_textriegel(lauf: Lauf) -> None:
     if not FALLTABELLE.exists():
         lauf.wahr("Textriegel-Falltabelle vorhanden", False, str(FALLTABELLE))
         return
-    tabelle = json.loads(FALLTABELLE.read_text(encoding="utf-8"))
+    tabelle = json_laden_strikt(FALLTABELLE.read_text(encoding="utf-8"))
     rot: list[str] = []
     for fall in tabelle["faelle"]:
         roh = bytes.fromhex(fall["text_hex"])
@@ -369,6 +405,15 @@ def pruefe_textriegel(lauf: Lauf) -> None:
     lauf.wahr("Falltabelle: `anzahl` stimmt mit der Liste ueberein",
               tabelle["anzahl"] == len(tabelle["faelle"]),
               f'{tabelle["anzahl"]} vs. {len(tabelle["faelle"])}')
+    parser_durchlass: list[str] = []
+    for literal in ("NaN", "Infinity", "-Infinity"):
+        try:
+            json_laden_strikt(f'{{"w": {literal}}}')
+            parser_durchlass.append(literal)
+        except ValueError:
+            pass
+    lauf.wahr("json.loads lehnt nicht-endliche Python-Erweiterungen unabhaengig ab",
+              not parser_durchlass, ", ".join(parser_durchlass))
 
 
 def werttyp_passt(name: str, wert) -> bool:
@@ -579,7 +624,7 @@ def pruefe_bandkodierung(lauf: Lauf, schema: dict, quantisierung: dict) -> None:
         # trotzdem identisch bleiben; sonst reparierte ein spaeterer Autor nur
         # eine von sechs Kopien.
         def bandrumpf(zweig: dict) -> dict:
-            rumpf = json.loads(json.dumps(zweig))
+            rumpf = json_laden_strikt(json.dumps(zweig))
             rumpf.pop("description", None)
             rumpf["properties"].pop("encoding", None)
             rumpf["properties"]["werte"].pop("items", None)
@@ -643,7 +688,7 @@ def pruefe_command_ack(lauf: Lauf, schema: dict) -> None:
                       hash_ref == "#/$defs/state_hash", repr(hash_ref))
 
     def ackrumpf(zweig: dict) -> dict:
-        rumpf = json.loads(json.dumps(zweig))
+        rumpf = json_laden_strikt(json.dumps(zweig))
         rumpf["required"] = sorted(f for f in rumpf.get("required", [])
                                    if f != "state_hash")
         rumpf["properties"].pop("ergebnis", None)
@@ -724,8 +769,8 @@ def pruefe_fixtures(lauf: Lauf, schema: dict, manifest: dict) -> None:
             continue
 
         try:
-            daten = json.loads(roh_bytes.decode("utf-8"))
-        except json.JSONDecodeError as e:
+            daten = json_laden_strikt(roh_bytes.decode("utf-8"))
+        except (json.JSONDecodeError, ValueError) as e:
             # Ein nicht lesbares Fixture ist eine benannte Abweichung, kein
             # Abbruch des Laufs - dasselbe Prinzip wie der wurzel_skalar-Zweig
             # der C++-Seite.
@@ -794,8 +839,8 @@ def pruefe_fixtures(lauf: Lauf, schema: dict, manifest: dict) -> None:
         if not pfad.exists() or eintrag.get("textriegel_lehnt_ab"):
             continue
         try:
-            sammle_benutzt(json.loads(pfad.read_text(encoding="utf-8")))
-        except json.JSONDecodeError:
+            sammle_benutzt(json_laden_strikt(pfad.read_text(encoding="utf-8")))
+        except (json.JSONDecodeError, ValueError):
             continue
 
     unberuehrt = sorted(deklariert - benutzt)
@@ -871,10 +916,10 @@ def abdeckung(schema: dict, manifest: dict) -> tuple[list[str], dict[str, tuple[
 # ------------------------------------------------------------------ Hauptlauf
 
 def main(argv: list[str]) -> int:
-    schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
-    reserviert = json.loads(RESERVIERT.read_text(encoding="utf-8"))
-    quantisierung = json.loads(QUANTISIERUNG.read_text(encoding="utf-8"))
-    manifest = json.loads((FIXTURES / "MANIFEST.json").read_text(encoding="utf-8"))
+    schema = json_laden_strikt(SCHEMA.read_text(encoding="utf-8"))
+    reserviert = json_laden_strikt(RESERVIERT.read_text(encoding="utf-8"))
+    quantisierung = json_laden_strikt(QUANTISIERUNG.read_text(encoding="utf-8"))
+    manifest = json_laden_strikt((FIXTURES / "MANIFEST.json").read_text(encoding="utf-8"))
 
     lauf = Lauf()
     pruefe_textriegel(lauf)

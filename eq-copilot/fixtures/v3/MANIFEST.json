@@ -7,7 +7,7 @@
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
   "anzahl_gueltig": 42,
-  "anzahl_ungueltig": 145,
+  "anzahl_ungueltig": 146,
   "fixtures": [
     {
       "datei": "gueltig/audible_intervention_begin.json",
@@ -1990,6 +1990,13 @@
       "datei": "ungueltig/zahl-kleiner-bruch-rundet-auf-eins.json",
       "urteil": "ungueltig",
       "warum": "Ein hochpraeziser mathematischer Bruch rundet in binary64 auf 1 und konnte so die Schema-Typpruefung fuer integer umgehen",
+      "verletzungen": [],
+      "textriegel_lehnt_ab": true
+    },
+    {
+      "datei": "ungueltig/zahl-nan-token.json",
+      "urteil": "ungueltig",
+      "warum": "GEMESSEN: Pythons json.loads akzeptiert rohes NaN als nicht-endliche float32-Bandzahl, waehrend JUCE und serde_json schon im Parser ablehnen",
       "verletzungen": [],
       "textriegel_lehnt_ab": true
     },

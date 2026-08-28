@@ -259,6 +259,11 @@ bool istAsciiZiffer (juce::juce_wchar c) noexcept
     return c >= '0' && c <= '9';
 }
 
+bool istAsciiBuchstabe (juce::juce_wchar c) noexcept
+{
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
+
 bool istHexziffer (juce::juce_wchar c) noexcept
 {
     return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
@@ -557,6 +562,28 @@ bool textriegel (const juce::String& text, juce::String& fehler,
                 return false;
             }
             i = ende + 1;
+            continue;
+        }
+
+        // JSON kennt ausserhalb von Zeichenketten genau drei alphabetische
+        // Literale. Python akzeptiert zusaetzlich NaN/Infinity, JUCE und
+        // serde_json nicht. Das optionale Minus gehoert zur Position und zum
+        // gemeldeten Literal, damit -Infinity in allen drei Beinen gleich
+        // klassifiziert wird.
+        const bool vorzeichenVorLiteral = c == '-' && i + 1 < n
+                                       && istAsciiBuchstabe (z[i + 1]);
+        if (istAsciiBuchstabe (c) || vorzeichenVorLiteral)
+        {
+            size_t j = i + static_cast<size_t> (c == '-');
+            while (j < n && istAsciiBuchstabe (z[j])) ++j;
+            const auto literal = teil (i, j);
+            if (literal != "true" && literal != "false" && literal != "null")
+            {
+                fehler = "unbekanntes Literal " + literal
+                       + " an Position " + juce::String ((int) i);
+                return false;
+            }
+            i = j;
             continue;
         }
 

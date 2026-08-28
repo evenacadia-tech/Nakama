@@ -56,7 +56,7 @@ verfaelscht. Ein `maximum: 400` wuerde auf der C++-Seite anstandslos passieren
 und auf der Rust-Seite fallen. Der einzige Ort, an dem alle drei Beine
 dasselbe sehen koennen, ist der Text.
 
-**Acht Regeln**, jede gegen eine **gemessene** Abweichung:
+**Neun Regeln**, jede gegen eine **gemessene** Abweichung:
 
 1. **Keine fuehrende Null** — RFC 8259 verbietet sie, JUCE nimmt sie an.
 2. **Parser-sichere Dezimalpraezision:** mathematische Ganzzahlen nur innerhalb
@@ -78,7 +78,11 @@ dasselbe sehen koennen, ist der Text.
    **additiven** Objekt (`zaehler`, `konfidenz`, `verteilung`) haette
    `serde_json` ihn dagegen angenommen, weil `additionalProperties: true` ihn
    nicht auffaengt.
-8. **Auf Byteebene: höchstens 16 MiB, kein BOM, kein rohes NUL, gültiges
+8. **Nur die alphabetischen JSON-Literale `true`, `false` und `null`.** Jedes
+   andere ASCII-Buchstabentoken ausserhalb einer Zeichenkette wird abgelehnt,
+   einschliesslich Pythons nicht-standardisierter Erweiterungen `NaN`,
+   `Infinity` und `-Infinity`.
+9. **Auf Byteebene: höchstens 16 MiB, kein BOM, kein rohes NUL, gültiges
    UTF-8.** Der produktive Pipe-Framer ist mit 256 KiB enger; 16 MiB begrenzen
    zusätzlich direkte Datei-/DTO-Aufrufer in allen drei Sprachen. Bei einem BOM
    streift JUCE es und parst weiter, rohes NUL beendet dort die Prüfung am

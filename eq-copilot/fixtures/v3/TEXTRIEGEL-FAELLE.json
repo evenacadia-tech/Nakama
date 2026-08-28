@@ -3,7 +3,7 @@
   "titel": "Gemeinsame Falltabelle des Textriegels",
   "zweck": "Der Textriegel ist in DREI Sprachen von Hand implementiert. Diese Datei ist die eine Tabelle, gegen die alle drei gefahren werden. Vorher trug jedes Bein eine eigene Kopie - gezaehlt 31, 32 und 33 Faelle -, waehrend das Beweismanifest 'dieselbe 31-Faelle-Tabelle' behauptete (T2-Runde 2, Befund BF-5). Drei handgepflegte Kopien driften; eine gelesene Datei kann es nicht.",
   "warum_hex": "Die Tabelle enthaelt NUL-Escapes, rohe Steuerzeichen, kaputtes UTF-8 und ein BOM. Als Text waere sie von keinem JSON-Leser unveraendert transportierbar. `zeigetext` ist nur fuer Menschen.",
-  "anzahl": 90,
+  "anzahl": 102,
   "faelle": [
     {
       "nr": 1,
@@ -567,69 +567,153 @@
     },
     {
       "nr": 81,
+      "text_hex": "7b2277223a204e614e7d",
+      "zeigetext": "{\"w\": NaN}",
+      "wird_abgelehnt": true,
+      "warum": "GEMESSEN: Pythons json.loads akzeptiert NaN, JUCE und serde_json lehnen ab"
+    },
+    {
+      "nr": 82,
+      "text_hex": "7b2277223a20496e66696e6974797d",
+      "zeigetext": "{\"w\": Infinity}",
+      "wird_abgelehnt": true,
+      "warum": "GEMESSEN: Pythons json.loads akzeptiert Infinity als nicht-endliche Zahl"
+    },
+    {
+      "nr": 83,
+      "text_hex": "7b2277223a202d496e66696e6974797d",
+      "zeigetext": "{\"w\": -Infinity}",
+      "wird_abgelehnt": true,
+      "warum": "das optionale Minus gehoert zum unbekannten Literal und dessen Position"
+    },
+    {
+      "nr": 84,
+      "text_hex": "5b4e614e5d",
+      "zeigetext": "[NaN]",
+      "wird_abgelehnt": true,
+      "warum": "dieselbe Python-Erweiterung als Arrayelement"
+    },
+    {
+      "nr": 85,
+      "text_hex": "7b2277223a206e616e7d",
+      "zeigetext": "{\"w\": nan}",
+      "wird_abgelehnt": true,
+      "warum": "Kleinschreibung macht aus NaN kein JSON-Literal"
+    },
+    {
+      "nr": 86,
+      "text_hex": "7b2277223a20696e667d",
+      "zeigetext": "{\"w\": inf}",
+      "wird_abgelehnt": true,
+      "warum": "auch die Kurzform inf ist kein JSON-Literal"
+    },
+    {
+      "nr": 87,
+      "text_hex": "7b2277223a20756e646566696e65647d",
+      "zeigetext": "{\"w\": undefined}",
+      "wird_abgelehnt": true,
+      "warum": "undefined ist weder JSON noch ein Vertragswert"
+    },
+    {
+      "nr": 88,
+      "text_hex": "7b2277223a20547275657d",
+      "zeigetext": "{\"w\": True}",
+      "wird_abgelehnt": true,
+      "warum": "JSON-Literale sind kleingeschrieben"
+    },
+    {
+      "nr": 89,
+      "text_hex": "7b2277223a20224e614e227d",
+      "zeigetext": "{\"w\": \"NaN\"}",
+      "wird_abgelehnt": false,
+      "warum": "innerhalb einer Zeichenkette ist NaN nur Text"
+    },
+    {
+      "nr": 90,
+      "text_hex": "7b2277223a20747275657d",
+      "zeigetext": "{\"w\": true}",
+      "wird_abgelehnt": false,
+      "warum": "true ist ein erlaubtes JSON-Literal"
+    },
+    {
+      "nr": 91,
+      "text_hex": "7b2277223a2066616c73657d",
+      "zeigetext": "{\"w\": false}",
+      "wird_abgelehnt": false,
+      "warum": "false ist ein erlaubtes JSON-Literal"
+    },
+    {
+      "nr": 92,
+      "text_hex": "7b2277223a206e756c6c7d",
+      "zeigetext": "{\"w\": null}",
+      "wird_abgelehnt": false,
+      "warum": "null ist ein erlaubtes JSON-Literal"
+    },
+    {
+      "nr": 93,
       "text_hex": "efbbbf7b2277223a20317d",
       "zeigetext": "\\xef\\xbb\\xbf{\"w\": 1}",
       "wird_abgelehnt": true,
       "warum": "BF-7 GEMESSEN: RFC 8259 §8.1 - serde_json und Pythons json lehnen ein BOM ab, JUCEs loadFileAsString streift es und parst weiter. Der Riegel lehnt ab, damit alle drei dasselbe sehen"
     },
     {
-      "nr": 82,
+      "nr": 94,
       "text_hex": "7b2277223a202261ff62227d",
       "zeigetext": "{\"w\": \"a\\xffb\"}",
       "wird_abgelehnt": true,
       "warum": "BF-6 GEMESSEN: kaputtes UTF-8. Das Python-Bein warf eine ungefangene UnicodeDecodeError, das Rust-Bein panickte beim Lesen, und JUCE ersetzte das Byte still - drei verschiedene Ausgaenge fuer dieselbe Datei"
     },
     {
-      "nr": 83,
+      "nr": 95,
       "text_hex": "7b2277223a22c328227d",
       "zeigetext": "{\"w\":\"\\xc3(\"}",
       "wird_abgelehnt": true,
       "warum": "ungueltiges Fortsetzungsbyte: JUCEs isValidString prueft dessen 10xxxxxx-Form nicht"
     },
     {
-      "nr": 84,
+      "nr": 96,
       "text_hex": "7b2277223a2280227d",
       "zeigetext": "{\"w\":\"\\x80\"}",
       "wird_abgelehnt": true,
       "warum": "freistehendes Fortsetzungsbyte"
     },
     {
-      "nr": 85,
+      "nr": 97,
       "text_hex": "7b2277223a22c0af227d",
       "zeigetext": "{\"w\":\"\\xc0\\xaf\"}",
       "wird_abgelehnt": true,
       "warum": "overlong kodierter ASCII-Codepunkt"
     },
     {
-      "nr": 86,
+      "nr": 98,
       "text_hex": "7b2277223a22eda080227d",
       "zeigetext": "{\"w\":\"\\xed\\xa0\\x80\"}",
       "wird_abgelehnt": true,
       "warum": "UTF-8-kodierter Surrogat-Codepunkt"
     },
     {
-      "nr": 87,
+      "nr": 99,
       "text_hex": "7b2277223a22f4908080227d",
       "zeigetext": "{\"w\":\"\\xf4\\x90\\x80\\x80\"}",
       "wird_abgelehnt": true,
       "warum": "Codepunkt oberhalb U+10FFFF"
     },
     {
-      "nr": 88,
+      "nr": 100,
       "text_hex": "7b2277223a22e282227d",
       "zeigetext": "{\"w\":\"\\xe2\\x82\"}",
       "wird_abgelehnt": true,
       "warum": "abgeschnittene Mehrbytefolge"
     },
     {
-      "nr": 89,
+      "nr": 101,
       "text_hex": "7b2277223a20317d007b2268696e7465725f64656d5f6e756c223a20747275657d",
       "zeigetext": "{\"w\": 1}\\x00{\"hinter_dem_nul\": true}",
       "wird_abgelehnt": true,
       "warum": "GEMESSEN: JUCEs UTF-8-Pruefer und Stringaufbau endeten am rohen NUL und nahmen nur den gueltigen Praefix an; Rust und Python beurteilen die ganze Bytefolge"
     },
     {
-      "nr": 90,
+      "nr": 102,
       "text_hex": "7b2277223a20317d",
       "zeigetext": "{\"w\": 1}",
       "wird_abgelehnt": false,

@@ -259,7 +259,7 @@ fn textriegel_bytes_mit_zahlenpolitik(
 
 /// Prueft die Zeichen eines v3-Dokuments, BEVOR ein Parser sie sieht.
 ///
-/// Acht Regeln, jede gegen eine GEMESSENE Abweichung zwischen den Beinen.
+/// Neun Regeln, jede gegen eine GEMESSENE Abweichung zwischen den Beinen.
 /// Auslegung und Begruendung: `eq-copilot/schemas/v3/README.md`.
 ///
 /// Gezaehlt wird in CODEPUNKTEN, damit die Positionsangabe in allen drei
@@ -347,6 +347,25 @@ fn textriegel_mit_zahlenpolitik(
                 return Err(format!("leerer Objektschluessel an Position {i}"));
             }
             i = ende + 1;
+            continue;
+        }
+
+        // JSON kennt ausserhalb von Zeichenketten genau drei alphabetische
+        // Literale. Python akzeptiert zusaetzlich NaN/Infinity, JUCE und
+        // serde_json nicht. Das optionale Minus gehoert zur Position und zum
+        // gemeldeten Literal, damit -Infinity in allen drei Beinen gleich
+        // klassifiziert wird.
+        let vorzeichen_vor_literal = c == '-' && i + 1 < n && z[i + 1].is_ascii_alphabetic();
+        if c.is_ascii_alphabetic() || vorzeichen_vor_literal {
+            let mut j = i + if c == '-' { 1 } else { 0 };
+            while j < n && z[j].is_ascii_alphabetic() {
+                j += 1;
+            }
+            let literal: String = z[i..j].iter().collect();
+            if !matches!(literal.as_str(), "true" | "false" | "null") {
+                return Err(format!("unbekanntes Literal {literal} an Position {i}"));
+            }
+            i = j;
             continue;
         }
 

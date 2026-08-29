@@ -16739,3 +16739,147 @@ Wiederholung war deshalb nicht nötig; es steht genau ein Abschlusslauf hier.
 | B10 | v3-Envelope in C++ klassifiziert den Envelope-Korpus wie das Manifest (Urteil UND Verstossmenge, alle 14 Regeln mit Negativfixture); CRC32C trifft die RFC-3720-Vektoren, P0/P1 tragen CRC exakt 0, P2 die Pflichtsumme ueber genau die Payloadbytes; 40 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und 7671 angenommene EINBIT-Mutanten gueltiger Frames halten jede Kopfregel (reiner Zufall wird praktisch immer abgewiesen - die Invariante braucht deshalb die Mutanten, sonst spraeche sie ueber eine leere Menge), 3000 gekippte P2-Bits fallen einzeln, byteweise Zustellung liefert dieselben 40 Frames und ein kaputter Frame beendet den Strom; Pipetoken trifft das Golden aus §48.3 samt SHA-256- und RFC-4648-Vektoren; P0 verwirft nichts und meldet den 65. Eintrag, P1 koalesziert an der Position und haelt Ereignisse fuer den Reconnect vor, die P2-Schleuse ersetzt den aeltesten ungesendeten Frame, uebergibt 100 000 Frames mit 0 Allokationen (mit Gegenprobe am selben Zaehler) und liefert unter Flut keinen zerrissenen Frame; verdrahtet: Control koppelt Telemetry ueber link_id + challenge, ein ungekoppelter Telemetry-Connect wird geschlossen, der Client verbindet nach Serverneustart von selbst wieder, ein kaputter Envelope vom Server schliesst die Verbindung, und ein P0-Ueberlauf WAEHREND einer stehenden Verbindung schliesst sie ebenfalls statt still zu kuerzen. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 32,79 s | [B10](roh/SONDE-007c-9b4bb4d.md#b10) |
 | B8 | Lifecycle-Klassifikation §53.5: unclassified beim Laden und audio-neutral; Schema-1 sensor\|pre\|post -> legacy (immer passiv), hub bzw. bestaetigter Schema-2-Main-State -> main; ein Scannerlauf klassifiziert nicht; read-only nimmt die Klassifikation zurueck; Brokerstart nur fuer main mit offenem Editor; die Sondenbundles bleiben bis gueltigem State neutral und werden nie main. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,23 s | [B8](roh/SONDE-007c-9b4bb4d.md#b8) |
 
+
+## NAK-94 Nacharbeit Runde 1 — 2026-08-29 (Prüfer-Thread 01a04ecb-50f0…)
+
+**Stand dieses Abschnitts:** `25b57ec` — Basis-SHA dieser Runde; beide Befunde
+stehen wörtlich unten und wurden an genau diesem Stand reproduziert. Positionen
+sind Symbole.
+
+Ein frischer Prüfer (high) hat die NAK-94-Arbeit aus `2ed7caa` gelesen und zwei
+Befunde gemeldet. Beide sind **stille** Ausfälle: C1 ließ ein fehlendes Bundle
+im Kanon grün, C2 tötete den ganzen Lauf mit einem `TypeError`. Nicht berührt:
+**NAK-89**, **NAK-93**, **NAK-98**, **NAK-99**, der Installer selbst,
+`--hashen` und jedes andere Bein.
+
+### Die zwei Befunde, wörtlich
+
+**C1 [P1, Defekt hoch]** — `tools/eq-copilot/pruefe_installer_manifest.py`,
+`auslieferungsstand()` `@ 25b57ec`:
+
+> Sobald irgendein `sha256` null ist, beendet `return` den gesamten
+> Artefaktcheck; ein fehlendes Bundle bleibt im Kanon grün.
+
+**C2 [P2, Defekt mittel]** — `installierter_stand()`, Abschnitt `[4b]`
+`@ 25b57ec`:
+
+> `{"ziel_id":["main"]}` → `TypeError: unhashable type: 'list'` in `setdefault`.
+
+### Reproduktion am Stand `25b57ec`
+
+```text
+=== C1: ein sha256=null beendet den ganzen Artefaktcheck ===
+
+[4] Auslieferungsstand  - Kanon: eine Abweichung ist ein Hinweis, kein Fehler
+  hinweis nicht ausgeliefert - 1 Artefakt(e) ohne Hash: main
+          Install-Nakama.ps1 bricht in diesem Zustand ab (hashes_null_bedeutet).
+Fehlerliste nach dem Lauf: []
+-> das fehlende Artefakt 'broker/target/release/eqcop-broker.exe-GIBT-ES-NICHT' wurde VERSCHLUCKT
+
+=== C2: ziel_id als Liste im Journal ===
+
+[4b] Installierter Stand  - Bericht, kein Urteil
+  Journal: status='OK'  zeit='2026-08-29T00:00:00Z'
+-> ABBRUCH:
+TypeError: unhashable type: 'list'
+```
+
+### Was jetzt gilt — Regel für Regel
+
+| Regel | Vorher `@ 25b57ec` | Jetzt |
+|---|---|---|
+| **C1** — Existenz und Hash-Bildbarkeit gelten für **jedes** Artefakt, unabhängig von `sha256` | ein einziges `sha256: null` beendete `auslieferungsstand()` mit `return`, bevor irgendein Artefakt angefasst wurde | kein überspringendes `return`. Die Schleife läuft über alle Artefakte; fehlendes Artefakt und nicht bildbarer Ordner-Hash sind in **beiden** Modi Fehler |
+| **C1** — der Hash wird nur **verglichen**, wo einer festgeschrieben ist | `ist == a["sha256"]` lief auch gegen `None` und hätte an `a['sha256'][:16]` zerbrochen | eigener Zweig: ohne festgeschriebenen Hash meldet das Bein „Artefakt liegt vor, Ordner-Hash bildbar" mit dem gebauten Kurz-Hash und sagt ausdrücklich, dass es nichts zu vergleichen gibt |
+| **C1** — `null` bleibt Hinweis im Kanon, Fehler unter `--release` | unverändert richtig, aber durch das `return` folgenlos | unverändert, und jetzt folgenreich: unter `--release` sind der fehlende Hash **und** das fehlende Artefakt Fehler |
+| **C2** — `[4b]` bricht nie ab | `nach_kennung.setdefault(_artefakt_name(e), …)` mit einer Liste als Kennung → `TypeError` | zwei Riegel: die Kennung muss `str` sein (sonst `hinweis <index>: Journaleintrag ohne lesbare Kennung`), ein Nicht-Objekt wird ebenso benannt — und der ganze Block liegt in `installierter_stand()` in einem `try/except Exception`, das jeden übrigen Fehler in `hinweis install-ergebnis.json nicht auswertbar: <Fehler>` verwandelt |
+
+`installierter_stand()` ist dafür in Hülle und Kern geteilt: die Hülle trägt die
+Überschrift `[4b]` und das `try/except`, `_installierter_stand()` die Arbeit.
+So kann kein späterer Rückgabepfad die Fangschicht versehentlich umgehen.
+
+### Proben — im Kanon selbst, jede Kante einmal gebrochen
+
+Die Gegenproben stehen nicht in einem Nebenskript, sondern laufen als
+Abschnitt `[3b]` in **jedem** A17-Lauf mit (`gegenproben_nacharbeit()`).
+Ausgabe und Klagen eines Probelaufs werden über `_probelauf()` abgefangen,
+Zähler und Urteil des echten Laufs bleiben unberührt; eine Ausnahme aus einer
+Probe wird ausdrücklich **nicht** geschluckt.
+
+```text
+[3b] Gegenproben zu [4] Auslieferungsstand und [4b] installiertem Stand
+  ok      C1: ein fehlendes Artefakt ist auch im Kanon ROT, wenn ein anderes keinen festgeschriebenen Hash traegt  [eqcop-broker.exe: das festgeschriebene Artefakt liegt nicht vor  [broker/target/release/eqcop-broker.exe-GIBT-ES-NICHT]]
+  ok      C1: das Artefakt ohne Hash wird trotzdem gemessen (liegt vor, Ordner-Hash bildbar) statt uebersprungen  [ok      main: Artefakt liegt vor, Ordner-Hash bildbar  [gebaut 50F3149B860D6014; kein festgeschriebener Hash zum Vergleich]]
+  ok      C1: unter --release sind BEIDE Befunde Fehler - der fehlende Hash und das fehlende Artefakt  [nicht ausgeliefert - 1 Artefakt(e) ohne Hash: main | active-probe: gebautes Artefakt stimmt mit dem festgeschriebenen Hash  [Manifest 1DDC92E3B8525F1F | gebaut F1C7DF3D03AE21AB]]
+  ok      C2: ein Journaleintrag mit ziel_id als Liste ist ein Hinweis, kein TypeError - und [4b] faellt kein Urteil  [hinweis 0: Journaleintrag ohne lesbare Kennung (['main']) / hinweis 1: Journaleintrag ist kein Objekt (str)]
+  ok      C2: auch ein Fehler auf der MANIFEST-Seite bleibt ein Hinweis - [4b] toetet keinen Kanonlauf  [hinweis install-ergebnis.json nicht auswertbar: TypeError("unhashable type: 'list'")]
+```
+
+Die zweite C2-Probe bricht die **Manifest**-Seite (`artefakte[0].ziel_id` als
+Liste) und beweist damit die Fangschicht selbst — die Eintragsprüfung im
+Journal deckt sie nicht ab.
+
+### Kanon-Modus und `--release` am Endstand
+
+`py -3.13 tools/eq-copilot/pruefe_installer_manifest.py`
+
+```text
+[4] Auslieferungsstand  - Kanon: eine Abweichung ist ein Hinweis, kein Fehler
+  hinweis main: Bau weicht vom festgeschriebenen Paket ab (nach Relink erwartet; vor einer Auslieferung --hashen)  [Manifest AC8102F23EDC7D7C | gebaut 50F3149B860D6014]
+  hinweis active-probe: Bau weicht vom festgeschriebenen Paket ab (nach Relink erwartet; vor einer Auslieferung --hashen)  [Manifest 1DDC92E3B8525F1F | gebaut F1C7DF3D03AE21AB]
+  ok      eqcop-broker.exe: gebautes Artefakt stimmt mit dem festgeschriebenen Hash  [21C7A8DC985BCA16]
+
+[4b] Installierter Stand  - Bericht, kein Urteil
+  Journal: status='OK'  zeit='2026-08-29T09:46:53.0057417Z'
+  hinweis main: installierter Stand ist ein anderer als der im Manifest festgeschriebene  [installiert 4E0BED966D834BC1 | Manifest AC8102F23EDC7D7C]  C:\Program Files\Common Files\VST3\EQ-Copilot.vst3
+  hinweis active-probe: installierter Stand ist ein anderer als der im Manifest festgeschriebene  [installiert AD7678B7C34A64FE | Manifest 1DDC92E3B8525F1F]  C:\Program Files\Common Files\VST3\Nakama Probeeq.vst3
+  hinweis eqcop-broker.exe: installierter Stand ist ein anderer als der im Manifest festgeschriebene  [installiert 53808359C59B5D09 | Manifest 21C7A8DC985BCA16]  C:\Program Files\evenacadia\Nakama\eqcop-broker.exe
+
+100 ok, 0 Fehler
+EXIT=0
+```
+
+`py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --release`
+
+```text
+[4] Auslieferungsstand  - HART (--release: das hier ist die Auslieferung)
+  FEHLER  main: gebautes Artefakt stimmt mit dem festgeschriebenen Hash  [Manifest AC8102F23EDC7D7C | gebaut 50F3149B860D6014]
+  FEHLER  active-probe: gebautes Artefakt stimmt mit dem festgeschriebenen Hash  [Manifest 1DDC92E3B8525F1F | gebaut F1C7DF3D03AE21AB]
+  ok      eqcop-broker.exe: gebautes Artefakt stimmt mit dem festgeschriebenen Hash  [21C7A8DC985BCA16]
+
+100 ok, 2 Fehler
+EXIT=2
+```
+
+Dasselbe Paar Abweichungen, nur der Härtegrad unterscheidet — genau wie in
+`2ed7caa` zugesagt. Das Manifest wurde **nicht** neu gehasht.
+
+### Bruchprobe am echten Baum: das Bundle ist weg
+
+Der Bundle-Ordner wurde umbenannt, A17 lief **ohne** `--release`, danach wurde
+der Name zurückgesetzt:
+
+```text
+Bundle: eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3
+liegt vor: True
+  FEHLER  main: das festgeschriebene Artefakt liegt nicht vor  [eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3]
+99 ok, 2 Fehler
+  - main: das festgeschriebene Artefakt liegt nicht vor  [eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3]
+Exit 2  (ohne --release)
+zurueckgenommen, Bundle liegt wieder: True
+```
+
+Der zweite Fehler in diesem Lauf ist die `[3b]`-Zeile „das Artefakt ohne Hash
+wird trotzdem gemessen": ohne Bundle gibt es die erwartete `ok`-Zeile nicht.
+Das ist richtig so — eine Gegenprobe, die im kaputten Zustand grün bliebe,
+würde nichts messen.
+
+### Prüfliste D / E / F
+
+| Regel | Fundstelle in dieser Nacharbeit |
+|---|---|
+| **D** — „Ein Riegel ist fail-closed; Unbekanntes ist ROT." | Fehlendes Artefakt und nicht bildbarer Ordner-Hash sind in beiden Modi Fehler, jetzt ohne überspringendes `return` (`[3b]` C1, Bruchprobe am echten Baum). Ein Journaleintrag ohne lesbare Kennung wird benannt statt übergangen. |
+| **D** — „Ein Bericht ohne Urteil darf keinen Lauf töten." | `installierter_stand()` ist Hülle plus `_installierter_stand()`; jeder Fehler wird zu `hinweis install-ergebnis.json nicht auswertbar: …` (`[3b]` C2, zweite Probe). |
+| **E** — „Jede Behauptung sagt nicht mehr, als der Test misst." | Runner-Behauptung `A17` und Skriptkopf nennen jetzt, dass die Existenzfrage **unabhängig von `sha256`** gestellt wird, dass `[3b]` beide Kanten fallen lässt und dass `[4b]` weder urteilt noch abbricht. |
+| **E** — „Zahlen sind gemessen, nicht abgeschrieben." | Jede Zahl in diesem Abschnitt (`100 ok`, `99 ok, 2 Fehler`, Kurz-Hashes) steht in einer eingefügten Rohausgabe. |
+| **E** — „Positionen als Symbol/Anker oder `Datei:Zeile @ sha7`." | Dieser Abschnitt nennt Symbole (`auslieferungsstand`, `installierter_stand`, `_installierter_stand`, `_artefakt_name`, `gegenproben_nacharbeit`, `_probelauf`) und trägt oben seinen Stand; die Befunde tragen `@ 25b57ec`. |
+| **F** — „Eine Behauptung ohne eingefügte Rohausgabe ist ein gescheitertes Ticket." | Eingefügt sind: die Reproduktion beider Befunde am Stand `25b57ec`, der `[3b]`-Block, Kanon- und `--release`-Lauf am Endstand, die Bruchprobe mit umbenanntem Bundle samt Rücknahme — dazu der gemeinsame Kanon-Anhang, auf den unten verwiesen wird.

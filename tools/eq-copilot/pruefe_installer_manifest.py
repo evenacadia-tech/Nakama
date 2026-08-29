@@ -62,11 +62,20 @@ DREI HAERTEGRADE FUER DENSELBEN HASH (NAK-94, 29.08.2026)
 
   Was in KEINEM Modus weich wird: ein fehlendes Artefakt und ein nicht
   bildbarer Ordner-Hash. Beides kann ein Relink nicht verursachen - dort bleibt
-  der Riegel fail-closed (Pruefliste D).
+  der Riegel fail-closed (Pruefliste D). Seit der Nacharbeit 1 (29.08.2026,
+  Befund C1) gilt das UNABHAENGIG von `sha256`: die Existenzfrage wird fuer
+  jedes Artefakt gestellt, verglichen wird nur, wo ein Hash festgeschrieben
+  ist. Vorher beendete ein einziges `sha256: null` den ganzen Artefaktcheck
+  mit `return` - ein umbenanntes Bundle blieb im Kanon gruen.
 
   [4b] berichtet zusaetzlich, ob der INSTALLIERTE Stand (install-ergebnis.json)
-  dem heutigen Manifest entspricht. Dieser Block urteilt nie: installieren ist
-  ein bewusster Admin-Handgriff des Users und keine Zusage des Kanons.
+  dem heutigen Manifest entspricht. Dieser Block urteilt nie und BRICHT NIE AB
+  (Befund C2): eine unbrauchbare Kennung im Journal oder im Manifest wird zum
+  Hinweis, nicht zum TypeError. Installieren ist ein bewusster Admin-Handgriff
+  des Users und keine Zusage des Kanons.
+
+  [3b] laesst beide Kanten einmal fallen - eine Wache, die niemand hat fallen
+  sehen, ist keine.
 
 Aufrufe:
   py -3.13 tools/eq-copilot/pruefe_installer_manifest.py            # Kanon
@@ -77,8 +86,10 @@ Aufrufe:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import copy
 import hashlib
+import io
 import json
 import ntpath
 import pathlib
@@ -875,6 +886,111 @@ def adversariale_strukturproben(m: dict, i: dict) -> None:
            "faellt an benutzerbeschreibbaren Rueckweg-Backups")
 
 
+def _probelauf(arbeit) -> tuple[str, list[str]]:
+    """Laesst einen Riegel PROBEWEISE laufen. (Ausgabe, Klagen des Probelaufs)
+
+    Ausgabe und Klagen werden abgefangen; Zaehler und Urteil des echten Laufs
+    bleiben unberuehrt. Eine Ausnahme aus `arbeit` wird NICHT geschluckt - eine
+    Gegenprobe, die selbst stirbt, darf nicht als bestanden durchgehen.
+    """
+    global ok
+    merk_ok, merk_fehler = ok, list(fehler)
+    fehler.clear()
+    puffer = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(puffer):
+            arbeit()
+        gefunden = list(fehler)
+    finally:
+        fehler.clear()
+        fehler.extend(merk_fehler)
+        ok = merk_ok
+    return puffer.getvalue(), gefunden
+
+
+def gegenproben_nacharbeit(manifest: dict) -> None:
+    """[3b] Die beiden Kanten aus NAK-94 Nacharbeit 1, einzeln gebrochen.
+
+    Beide Befunde waren stille Ausfaelle: C1 liess ein fehlendes Bundle im
+    Kanon gruen, C2 toetete den Lauf mit einem TypeError. Eine Wache, die
+    niemand hat fallen sehen, ist keine - also faellt sie hier.
+    """
+    global INSTALL_ERGEBNIS
+    print("\n[3b] Gegenproben zu [4] Auslieferungsstand und [4b] installiertem Stand")
+
+    # -- C1: ein `sha256: null` darf den Artefaktcheck nicht beenden --------
+    #
+    # Die Probe braucht ZWEI Artefakte: eines ohne Hash und ein anderes, das
+    # fehlt. Faellt das Manifest je auf eines zusammen, misst sie nichts mehr -
+    # und eine stillschweigend ausgelassene Gegenprobe ist schlimmer als keine
+    # (dieselbe Regel wie in adversariale_strukturproben).
+    if len(manifest["artefakte"]) < 2:
+        raise SystemExit(
+            "Gegenprobe unmoeglich: die C1-Probe braucht ZWEI Artefakte - eines "
+            "ohne festgeschriebenen Hash und ein anderes, das fehlt. Mit nur "
+            "einem laesst sich nicht zeigen, dass der Artefaktcheck WEITERLAEUFT."
+        )
+    probe = copy.deepcopy(manifest)
+    probe["artefakte"][0]["sha256"] = None
+    fehlt = probe["artefakte"][-1]
+    fehlt["quelle"] = fehlt["quelle"] + "-GIBT-ES-NICHT"
+    ausgabe, klagen = _probelauf(lambda: auslieferungsstand(probe, hart=False))
+    pruefe(any("liegt nicht vor" in k for k in klagen),
+           "C1: ein fehlendes Artefakt ist auch im Kanon ROT, wenn ein anderes "
+           "keinen festgeschriebenen Hash traegt",
+           " | ".join(klagen[:2]) if klagen else "keine Klage")
+    pruefe("Ordner-Hash bildbar" in ausgabe,
+           "C1: das Artefakt ohne Hash wird trotzdem gemessen (liegt vor, "
+           "Ordner-Hash bildbar) statt uebersprungen",
+           next((z.strip() for z in ausgabe.splitlines()
+                 if "Ordner-Hash bildbar" in z), "keine solche Zeile"))
+    _, hart_klagen = _probelauf(lambda: auslieferungsstand(
+        copy.deepcopy(probe), hart=True))
+    pruefe(any("liegt nicht vor" in k for k in hart_klagen)
+           and any("ohne Hash" in k for k in hart_klagen),
+           "C1: unter --release sind BEIDE Befunde Fehler - der fehlende Hash "
+           "und das fehlende Artefakt",
+           " | ".join(hart_klagen[:2]) if hart_klagen else "keine Klage")
+
+    # -- C2: [4b] bricht nie ab ---------------------------------------------
+    with tempfile.TemporaryDirectory(prefix="nakama-journal-") as tmp:
+        journal = pathlib.Path(tmp) / "install-ergebnis.json"
+        merk = INSTALL_ERGEBNIS
+        INSTALL_ERGEBNIS = journal
+        try:
+            # (a) unbrauchbare Kennung IM JOURNAL - Hinweis, kein Absturz.
+            journal.write_text(json.dumps({
+                "schema": ERGEBNIS_SCHEMA, "status": "OK",
+                "zeit": "2026-08-29T00:00:00Z",
+                "eintraege": [{"ziel_id": ["main"]}, "keine Abbildung"],
+            }), encoding="utf-8")
+            ausgabe, klagen = _probelauf(lambda: installierter_stand(manifest))
+            pruefe("ohne lesbare Kennung" in ausgabe
+                   and "kein Objekt" in ausgabe and not klagen,
+                   "C2: ein Journaleintrag mit ziel_id als Liste ist ein Hinweis, "
+                   "kein TypeError - und [4b] faellt kein Urteil",
+                   " / ".join(z.strip() for z in ausgabe.splitlines()
+                              if "hinweis 0" in z or "hinweis 1" in z))
+
+            # (b) unbrauchbare Kennung IM MANIFEST - die Huelle faengt sie.
+            kaputt = copy.deepcopy(manifest)
+            kaputt["artefakte"][0]["ziel_id"] = ["main"]
+            journal.write_text(json.dumps({
+                "schema": ERGEBNIS_SCHEMA, "status": "OK",
+                "zeit": "2026-08-29T00:00:00Z",
+                "eintraege": [{"ziel_id": "main", "mutation_abgeschlossen": True,
+                               "sha256": "0" * 64, "ziel": "irgendwo"}],
+            }), encoding="utf-8")
+            ausgabe, klagen = _probelauf(lambda: installierter_stand(kaputt))
+            pruefe("nicht auswertbar" in ausgabe and not klagen,
+                   "C2: auch ein Fehler auf der MANIFEST-Seite bleibt ein "
+                   "Hinweis - [4b] toetet keinen Kanonlauf",
+                   next((z.strip() for z in ausgabe.splitlines()
+                         if "nicht auswertbar" in z), "keine solche Zeile"))
+        finally:
+            INSTALL_ERGEBNIS = merk
+
+
 # ── Hashen (Release-Schritt, nicht Kanon) ──────────────────────────────────
 
 def datei_hash(pfad: pathlib.Path) -> str:
@@ -1024,7 +1140,21 @@ def auslieferungsstand(manifest: dict, hart: bool) -> None:
 
     `hart` (nur bei --release) macht aus einer Abweichung einen Fehler. Im
     Kanon ist sie ein Hinweis: nach einem Relink MUSS sie auftreten, und ein
-    Riegel, der immer rot ist, unterscheidet nichts mehr (NAK-94)."""
+    Riegel, der immer rot ist, unterscheidet nichts mehr (NAK-94).
+
+    Zwei Fragen, die NICHT dasselbe sind (Befund C1, Nacharbeit 1):
+
+      LIEGT das festgeschriebene Artefakt ueberhaupt vor und ist sein Hash
+      bildbar? Das wird fuer JEDES Artefakt geprueft, unabhaengig davon, ob
+      `sha256` gesetzt ist, und ist in BEIDEN Modi ein Fehler. Ein Relink
+      aendert Bytes; er laesst kein Bundle verschwinden.
+
+      STIMMT der Hash mit dem festgeschriebenen ueberein? Verglichen wird nur,
+      wo `sha256` gesetzt ist. Ein `null` bleibt Hinweis (Kanon) bzw. Fehler
+      (--release).
+
+    Frueher beendete ein einziges `sha256: null` mit `return` den ganzen
+    Artefaktcheck - gemessen: ein umbenanntes Bundle blieb im Kanon gruen."""
     print("\n[4] Auslieferungsstand"
           + ("  - HART (--release: das hier ist die Auslieferung)" if hart
              else "  - Kanon: eine Abweichung ist ein Hinweis, kein Fehler"))
@@ -1043,7 +1173,7 @@ def auslieferungsstand(manifest: dict, hart: bool) -> None:
             # das steht hier - statt still gruen zu sein.
             print("  hinweis " + text)
         print("          Install-Nakama.ps1 bricht in diesem Zustand ab (hashes_null_bedeutet).")
-        return
+        # KEIN return (Befund C1): die Existenzfrage steht unabhaengig davon.
 
     for a in manifest["artefakte"]:
         pfad = WURZEL / a["quelle"]
@@ -1061,19 +1191,43 @@ def auslieferungsstand(manifest: dict, hart: bool) -> None:
         except OrdnerHashFehler as e:
             pruefe(False, f"{name}: Ordner-Hash nicht bildbar", str(e))
             continue
-        if ist == a["sha256"]:
+        soll = a.get("sha256")
+        if soll is None:
+            # Ohne festgeschriebenen Hash gibt es nichts zu VERGLEICHEN - dass
+            # das Artefakt vorliegt und sein Hash bildbar ist, ist trotzdem
+            # gemessen und wird als solches gezaehlt.
+            pruefe(True, f"{name}: Artefakt liegt vor, Ordner-Hash bildbar",
+                   f"gebaut {ist[:16]}; kein festgeschriebener Hash zum Vergleich")
+            continue
+        if ist == soll:
             pruefe(True, f"{name}: gebautes Artefakt stimmt mit dem festgeschriebenen Hash",
-                   a["sha256"][:16])
+                   soll[:16])
         elif hart:
             pruefe(False, f"{name}: gebautes Artefakt stimmt mit dem festgeschriebenen Hash",
-                   f"Manifest {a['sha256'][:16]} | gebaut {ist[:16]}")
+                   f"Manifest {soll[:16]} | gebaut {ist[:16]}")
         else:
             print(f"  hinweis {name}: Bau weicht vom festgeschriebenen Paket ab "
                   f"(nach Relink erwartet; vor einer Auslieferung --hashen)"
-                  f"  [Manifest {a['sha256'][:16]} | gebaut {ist[:16]}]")
+                  f"  [Manifest {soll[:16]} | gebaut {ist[:16]}]")
 
 
 def installierter_stand(manifest: dict) -> None:
+    """[4b] als Bericht, der NIE abbricht (Befund C2, Nacharbeit 1).
+
+    Gemessen wurde, dass ein Journaleintrag `{"ziel_id": ["main"]}` den ganzen
+    Lauf mit `TypeError: unhashable type: 'list'` beendete - ein Bericht ohne
+    Urteil darf einen Kanonlauf nicht toeten. Die eigentliche Arbeit steht in
+    _installierter_stand(); hier steht nur die Huelle, die jeden Fehler in
+    einen Hinweis verwandelt.
+    """
+    print("\n[4b] Installierter Stand  - Bericht, kein Urteil")
+    try:
+        _installierter_stand(manifest)
+    except Exception as e:
+        print(f"  hinweis install-ergebnis.json nicht auswertbar: {e!r}")
+
+
+def _installierter_stand(manifest: dict) -> None:
     """Entspricht der INSTALLIERTE Stand dem heutigen Manifest?
 
     Reiner Bericht. Dieser Block erzeugt nie einen Fehler: Installieren ist ein
@@ -1085,8 +1239,6 @@ def installierter_stand(manifest: dict) -> None:
     Zug schreibt. Sein `eintraege[].sha256` ist nicht bloss eine Absicht: das
     Skript prueft nach dem Kopieren den Zielstand gegen genau diesen Wert und
     bricht sonst ab. Der Eintrag sagt also, was WIRKLICH liegt."""
-    print("\n[4b] Installierter Stand  - Bericht, kein Urteil")
-
     if not INSTALL_ERGEBNIS.is_file():
         print("  hinweis nichts installiert - install-ergebnis.json liegt nicht vor "
               f"({INSTALL_ERGEBNIS.relative_to(WURZEL).as_posix()})")
@@ -1107,10 +1259,21 @@ def installierter_stand(manifest: dict) -> None:
         return
     print(f"  Journal: status={journal.get('status')!r}  zeit={journal.get('zeit')!r}")
 
+    # Die Kennung MUSS eine Zeichenkette sein: `_artefakt_name` reicht
+    # durch, was im Journal steht, und `{"ziel_id": ["main"]}` waere als
+    # dict-Schluessel nicht hashbar (Befund C2).
     nach_kennung: dict[str, list[dict]] = {}
-    for e in eintraege:
-        if isinstance(e, dict):
-            nach_kennung.setdefault(_artefakt_name(e), []).append(e)
+    for index, e in enumerate(eintraege):
+        if not isinstance(e, dict):
+            print(f"  hinweis {index}: Journaleintrag ist kein Objekt "
+                  f"({type(e).__name__})")
+            continue
+        kennung = _artefakt_name(e)
+        if not isinstance(kennung, str):
+            print(f"  hinweis {index}: Journaleintrag ohne lesbare Kennung "
+                  f"({kennung!r})")
+            continue
+        nach_kennung.setdefault(kennung, []).append(e)
 
     for a in manifest["artefakte"]:
         name = _artefakt_name(a)
@@ -1200,6 +1363,7 @@ def main() -> int:
         pruefe(not bedingung, "faellt an verdorbener Eingabe: " + text)
 
     adversariale_strukturproben(manifest, identitaet)
+    gegenproben_nacharbeit(manifest)
 
     auslieferungsstand(manifest, hart=args.release)
     installierter_stand(manifest)

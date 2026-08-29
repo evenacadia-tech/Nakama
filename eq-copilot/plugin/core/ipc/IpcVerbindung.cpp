@@ -323,8 +323,7 @@ bool leseString (const std::string& t, std::size_t& i, std::string& ziel)
 }
 } // namespace
 
-bool flachesJsonObjekt (const std::string& text,
-                        std::vector<std::pair<std::string, std::string>>& felder)
+bool flachesJsonObjekt (const std::string& text, std::vector<JsonFeld>& felder)
 {
     felder.clear();
     std::size_t i = 0;
@@ -355,10 +354,12 @@ bool flachesJsonObjekt (const std::string& text,
             return false;
 
         std::string wert;
+        bool istString = false;
         if (text[i] == '"')
         {
             if (! leseString (text, i, wert))
                 return false;
+            istString = true;
         }
         else if (text[i] == '{' || text[i] == '[')
         {
@@ -377,9 +378,9 @@ bool flachesJsonObjekt (const std::string& text,
 
         // Doppelter Schluessel ist eine Ablehnung, keine "letzter gewinnt"-Regel.
         for (const auto& f : felder)
-            if (f.first == schluessel)
+            if (f.name == schluessel)
                 return false;
-        felder.emplace_back (schluessel, wert);
+        felder.push_back (JsonFeld { schluessel, wert, istString });
 
         ueberspringeLeerraum (text, i);
         if (i >= text.size())
@@ -399,16 +400,48 @@ bool flachesJsonObjekt (const std::string& text,
     }
 }
 
-bool jsonFeld (const std::vector<std::pair<std::string, std::string>>& felder,
-               const std::string& name, std::string& wert)
+namespace
+{
+const JsonFeld* feldSuchen (const std::vector<JsonFeld>& felder, const std::string& name)
 {
     for (const auto& f : felder)
-        if (f.first == name)
-        {
-            wert = f.second;
-            return true;
-        }
-    return false;
+        if (f.name == name)
+            return &f;
+    return nullptr;
+}
+} // namespace
+
+bool jsonText (const std::vector<JsonFeld>& felder, const std::string& name,
+               std::string& wert)
+{
+    const auto* f = feldSuchen (felder, name);
+    if (f == nullptr || ! f->istString)
+        return false;
+    wert = f->wert;
+    return true;
+}
+
+bool jsonLiteral (const std::vector<JsonFeld>& felder, const std::string& name,
+                  std::string& wert)
+{
+    const auto* f = feldSuchen (felder, name);
+    if (f == nullptr || f->istString)
+        return false;
+    wert = f->wert;
+    return true;
+}
+
+bool feldmengeGenau (const std::vector<JsonFeld>& felder,
+                     std::initializer_list<const char*> erwartet)
+{
+    // Doppelte Schluessel hat `flachesJsonObjekt` schon abgelehnt; ein
+    // Groessenvergleich plus "jedes Erwartete ist da" ist damit exakt.
+    if (felder.size() != erwartet.size())
+        return false;
+    for (const char* name : erwartet)
+        if (feldSuchen (felder, name) == nullptr)
+            return false;
+    return true;
 }
 
 } // namespace nakama::ipc

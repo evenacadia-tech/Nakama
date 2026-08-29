@@ -111,11 +111,13 @@ int main (int argc, char** argv)
             },
             pipe,
             [roh] (const std::string& antwort) {
-                std::vector<std::pair<std::string, std::string>> felder;
+                std::vector<JsonFeld> felder;
                 std::string typ, seqText;
+                // `type` ist ein String, `sequence` eine ZAHL. Der Leser
+                // unterscheidet das seit T2-Befund 3 vom 2026-08-29 wieder.
                 if (! flachesJsonObjekt (antwort, felder)
-                    || ! jsonFeld (felder, "type", typ) || typ != "heartbeat_ack"
-                    || ! jsonFeld (felder, "sequence", seqText))
+                    || ! jsonText (felder, "type", typ) || typ != "heartbeat_ack"
+                    || ! jsonLiteral (felder, "sequence", seqText))
                     return;
                 const auto seq = static_cast<std::size_t> (std::strtoull (seqText.c_str(),
                                                                           nullptr, 10));

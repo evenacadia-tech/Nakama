@@ -37,6 +37,22 @@ inline constexpr std::size_t kCapP2JeSonde = 2;
 
 /// P0-Steuerqueue: feste Kapazitaet, nichts wird verworfen. `einreihen`
 /// liefert false ⇒ die Verbindung ist zu schliessen (§53.9).
+///
+/// ── Warum der entnommene Eintrag RESERVIERT bleibt ────────────────────────
+///
+/// Die erste Fassung nahm ihn beim `entnehmen` restlos aus der Kapazitaets-
+/// rechnung. Blockierte danach der Write und liefen 64 neue Befehle ein, war
+/// die Queue wieder voll — und `zuruecklegen` fand keinen Platz mehr. Sein
+/// `false` wurde im Client ignoriert, der Befehl war weg, und der oeffentliche
+/// Ueberlaufzaehler meldete den Verlust nicht (T2-Befund 1 vom 2026-08-29).
+/// Das ist genau der Bruch der P0-Zusage "nichts verwerfen".
+///
+/// Deshalb zaehlt der entnommene Eintrag bis `bestaetigen()` oder
+/// `zuruecklegen()` WEITER gegen die Kapazitaet. Die Invariante lautet
+/// `inhalt.size() + reserviert <= kap`; damit hat das Zuruecklegen immer
+/// Platz und kann gar nicht scheitern. Der Preis ist ein Platz weniger
+/// waehrend eines laufenden Writes — und genau dieser Platz ist es, der
+/// vorher still verlorenging.
 class P0Warteschlange
 {
 public:
@@ -44,7 +60,7 @@ public:
 
     bool einreihen (std::string nachricht)
     {
-        if (inhalt.size() >= kap)
+        if (inhalt.size() + reserviert >= kap)
         {
             ++ueberlaeufe;
             return false;
@@ -53,36 +69,46 @@ public:
         return true;
     }
 
+    /// Entnimmt UND reserviert. Der Aufrufer schuldet danach genau ein
+    /// `bestaetigen()` (auf dem Draht) oder `zuruecklegen()` (nicht auf dem
+    /// Draht).
     bool entnehmen (std::string& ziel)
     {
         if (inhalt.empty())
             return false;
         ziel = std::move (inhalt.front());
         inhalt.pop_front();
+        ++reserviert;
         return true;
+    }
+
+    /// Der Eintrag ist auf dem Draht: der reservierte Platz wird frei.
+    void bestaetigen() noexcept
+    {
+        if (reserviert > 0)
+            --reserviert;
     }
 
     /// Der Sender hat entnommen, aber NICHT geschrieben. "Nichts verwerfen"
     /// gilt auch fuer den Weg zwischen Queue und Pipe: der Eintrag geht an
-    /// seinen Platz zurueck. `false` heisst, dass inzwischen kein Platz mehr
-    /// ist — dann ist es ein Ueberlauf wie jeder andere.
-    bool zuruecklegen (std::string nachricht)
+    /// seinen Platz zurueck. Dank der Reservierung ist dort Platz — dieser
+    /// Weg hat keinen Fehlerfall.
+    void zuruecklegen (std::string nachricht)
     {
-        if (inhalt.size() >= kap)
-        {
-            ++ueberlaeufe;
-            return false;
-        }
         inhalt.push_front (std::move (nachricht));
-        return true;
+        if (reserviert > 0)
+            --reserviert;
     }
 
     std::size_t groesse()     const noexcept { return inhalt.size(); }
+    /// Wie viele Eintraege gerade zwischen Queue und Pipe unterwegs sind.
+    std::size_t inFlug()      const noexcept { return reserviert; }
     std::size_t kapazitaet()  const noexcept { return kap; }
     std::uint64_t ueberlauf() const noexcept { return ueberlaeufe; }
 
 private:
     std::size_t kap;
+    std::size_t reserviert = 0;
     std::deque<std::string> inhalt;
     std::uint64_t ueberlaeufe = 0;
 };
@@ -100,6 +126,10 @@ enum class P1Ergebnis
     /// Auch der Wiederholpuffer ist voll — die aelteste Wiederholung faellt,
     /// gezaehlt, nie still.
     wiederholungVerdraengt,
+    /// Groesser, als ein v3-Frame tragen kann. Sie wird an der TUER abgewiesen
+    /// statt eingereiht: eine Nachricht, die nie auf den Draht passt, wuerde
+    /// den Sender sonst bei jedem Verbindungsaufbau erneut scheitern lassen.
+    zuGross,
 };
 
 /// P1-Queue: Snapshots koaleszieren nach Objektschluessel, Ereignisse nicht.
@@ -123,7 +153,7 @@ public:
                     return P1Ergebnis::koalesziert;
                 }
 
-        if (inhalt.size() < kap)
+        if (inhalt.size() + reserviert < kap)
         {
             inhalt.push_back ({ schluessel, std::move (nachricht) });
             return P1Ergebnis::eingereiht;
@@ -155,7 +185,15 @@ public:
         schluessel = std::move (inhalt.front().schluessel);
         ziel = std::move (inhalt.front().nachricht);
         inhalt.pop_front();
+        ++reserviert;   // zaehlt bis bestaetigen()/zuruecklegen() gegen die Kapazitaet
         return true;
+    }
+
+    /// Der Eintrag ist auf dem Draht: der reservierte Platz wird frei.
+    void bestaetigen() noexcept
+    {
+        if (reserviert > 0)
+            --reserviert;
     }
 
     /// Gegenstueck zu `entnehmen`: der Sender hat den Eintrag NICHT auf die
@@ -166,37 +204,25 @@ public:
     ///
     /// Ein SNAPSHOT geht nur zurueck, wenn kein neuerer desselben Objekts
     /// wartet: der neuere ist die Wahrheit, der alte waere ein Rueckschritt.
-    /// Ein EREIGNIS geht an seinen Platz zurueck oder — wenn dort kein Platz
-    /// mehr ist — in den Wiederholpuffer, aus dem der naechste Reconnect es
-    /// holt.
+    /// Ein EREIGNIS geht an seinen Platz zurueck — dank der Reservierung aus
+    /// `entnehmen` ist dort immer Platz. Der frueher noetige Umweg ueber den
+    /// Wiederholpuffer entfaellt damit; der Eintrag konnte auf diesem Weg auch
+    /// nie verlorengehen (T2-Befund 1 vom 2026-08-29, P1-Haelfte).
     P1Ergebnis zuruecklegen (const std::string& schluessel, std::string nachricht)
     {
         if (! schluessel.empty())
-        {
             for (auto& e : inhalt)
                 if (e.schluessel == schluessel)
+                {
+                    if (reserviert > 0)
+                        --reserviert;
                     return P1Ergebnis::koalesziert;  // der neuere steht schon da
-            if (inhalt.size() < kap)
-            {
-                inhalt.push_front ({ schluessel, std::move (nachricht) });
-                return P1Ergebnis::eingereiht;
-            }
-        }
-        else if (inhalt.size() < kap)
-        {
-            inhalt.push_front ({ std::string(), std::move (nachricht) });
-            return P1Ergebnis::eingereiht;
-        }
+                }
 
-        if (wiederholung.size() >= wkap)
-        {
-            wiederholung.pop_front();
-            wiederholung.push_back (std::move (nachricht));
-            ++verdraengt;
-            return P1Ergebnis::wiederholungVerdraengt;
-        }
-        wiederholung.push_back (std::move (nachricht));
-        return P1Ergebnis::zurWiederholung;
+        inhalt.push_front ({ schluessel, std::move (nachricht) });
+        if (reserviert > 0)
+            --reserviert;
+        return P1Ergebnis::eingereiht;
     }
 
     /// Nach einem Reconnect: die vorgehaltenen Ereignisse wandern VOR den
@@ -214,6 +240,8 @@ public:
     }
 
     std::size_t groesse()        const noexcept { return inhalt.size(); }
+    /// Wie viele Eintraege gerade zwischen Queue und Pipe unterwegs sind.
+    std::size_t inFlug()         const noexcept { return reserviert; }
     std::size_t wiederholungen() const noexcept { return wiederholung.size(); }
     std::uint64_t verdraengte()  const noexcept { return verdraengt; }
 
@@ -221,6 +249,7 @@ private:
     struct Eintrag { std::string schluessel; std::string nachricht; };
 
     std::size_t kap, wkap;
+    std::size_t reserviert = 0;
     std::deque<Eintrag> inhalt;
     std::deque<std::string> wiederholung;
     std::uint64_t verdraengt = 0;

@@ -8,14 +8,16 @@
 #include "WireEnvelope.h"
 
 #include <algorithm>
+#include <chrono>
 
 namespace nakama::ipc
 {
 namespace
 {
-/// Wie lange der Thread schlaeft, wenn die Schleuse leer ist. Bei 10 Hz
-/// Livekadenz (§33.2) ist das reichlich; laenger wuerde die Latenz eines
-/// frischen Frames unnoetig strecken.
+/// Frist des Leerlauf-LESEVORGANGS, wenn die Schleuse leer ist. Er hat den
+/// Schlaf ersetzt: dieselbe Wartezeit, aber er sieht, wenn der Broker die
+/// Pipe schliesst. Bei 10 Hz Livekadenz (§33.2) ist die Frist reichlich;
+/// laenger wuerde die Latenz eines frischen Frames unnoetig strecken.
 constexpr int kLeerlaufMs = 5;
 
 std::string jsonStringSicher (const std::string& roh)
@@ -139,6 +141,75 @@ void TelemetryClient::threadLauf()
     }
 }
 
+bool TelemetryClient::leerlaufLesen (StromLeser& leser, Ratengrenze& rate,
+                                     std::chrono::steady_clock::time_point rateBeginn,
+                                     std::uint64_t generation)
+{
+    std::uint8_t puffer[4096];
+    std::size_t gelesen = 0;
+    std::string fehler;
+    const auto ausgang = verbindung.lesen (puffer, sizeof (puffer), gelesen,
+                                           IpcVerbindung::fristIn (kLeerlaufMs), fehler);
+    if (ausgang == LeseAusgang::ende || ausgang == LeseAusgang::fehler)
+    {
+        if (! sollAbbrechen (generation))
+        {
+            std::lock_guard<std::mutex> l (zustandMutex);
+            zustand.letzterFehler =
+                fehler.empty() ? "Telemetriepipe vom Broker geschlossen" : fehler;
+        }
+        return false;
+    }
+    if (ausgang == LeseAusgang::daten && gelesen > 0)
+        leser.fuettern (puffer, gelesen);
+
+    for (;;)
+    {
+        const auto e = leser.naechster();
+        if (e.art == StromLeser::Art::unvollstaendig)
+            return true;
+        if (e.art == StromLeser::Art::verstoss)
+        {
+            std::lock_guard<std::mutex> l (zustandMutex);
+            zustand.letzterFehler = "Envelope abgelehnt — Verbindung wird geschlossen";
+            ++zustand.envelopeAbweisungen;
+            return false;
+        }
+
+        // Die Telemetrieverbindung traegt ausschliesslich P2 (§33.1). Ein P0-
+        // oder P1-Frame hier ist derselbe Vertragsbruch wie ein P2-Frame auf
+        // der Control-Verbindung — der Broker weist ihn in der Gegenrichtung
+        // genauso ab (`server_v3.rs`, `geschlossen_familie`).
+        if (e.kopf.familie != Familie::p2)
+        {
+            std::lock_guard<std::mutex> l (zustandMutex);
+            zustand.letzterFehler =
+                "P0/P1 auf der Telemetrieverbindung — wird geschlossen";
+            ++zustand.familieAbweisungen;
+            return false;
+        }
+
+        const auto jetztMs = static_cast<std::uint64_t> (
+            std::chrono::duration_cast<std::chrono::milliseconds> (
+                std::chrono::steady_clock::now() - rateBeginn).count());
+        if (! rate.erlaubt (jetztMs))
+        {
+            std::lock_guard<std::mutex> l (zustandMutex);
+            zustand.letzterFehler =
+                "Nachrichtenratengrenze ueberschritten — Verbindung wird geschlossen";
+            ++zustand.rateAbweisungen;
+            return false;
+        }
+
+        // Broker→Main-Liveupdates (§33.1) sind auf DIESER Verbindung
+        // vertragsgemaess, haben in diesem Ticket aber noch keinen Verbraucher:
+        // die Landkarte, die sie verteilt, ist SONDE-012. Sie werden deshalb
+        // gezaehlt und verworfen — sichtbar, nicht still.
+        std::lock_guard<std::mutex> l (zustandMutex);
+        ++zustand.empfangen;
+    }
+}
+
 bool TelemetryClient::eineVerbindung (std::uint64_t generation, const TelemetryHello& hello)
 {
     {
@@ -217,9 +288,9 @@ bool TelemetryClient::eineVerbindung (std::uint64_t generation, const TelemetryH
                 break;
             }
             const std::string text (reinterpret_cast<const char*> (e.payload), e.payloadLaenge);
-            std::vector<std::pair<std::string, std::string>> felder;
-            std::string typ, protokoll, linkId, challenge, brokerEpoch, brokerVersion;
-            if (! flachesJsonObjekt (text, felder) || ! jsonFeld (felder, "type", typ))
+            std::vector<JsonFeld> felder;
+            std::string typ, linkId, challenge, brokerEpoch, brokerVersion;
+            if (! flachesJsonObjekt (text, felder) || ! jsonText (felder, "type", typ))
             {
                 std::lock_guard<std::mutex> l (zustandMutex);
                 zustand.letzterFehler = "welcome: kein flaches JSON-Objekt";
@@ -228,19 +299,18 @@ bool TelemetryClient::eineVerbindung (std::uint64_t generation, const TelemetryH
             if (typ == "reject")
             {
                 std::string grund;
-                jsonFeld (felder, "reason", grund);
                 std::lock_guard<std::mutex> l (zustandMutex);
-                zustand.letzterFehler = "Broker lehnt ab: " + grund;
+                zustand.letzterFehler =
+                    rejectHaeltVertrag (felder, grund) ? "Broker lehnt ab: " + grund
+                                                       : "reject haelt den Vertrag nicht";
                 break;
             }
-            // Die KOPPLUNGSWERTE muessen die eigenen sein: ein welcome mit
+            // Derselbe Vertragspruefer wie im ControlClient — Typ, Laenge und
+            // exakte Feldmenge (T2-Befund 3 vom 2026-08-29). Zusaetzlich
+            // muessen die KOPPLUNGSWERTE die eigenen sein: ein welcome mit
             // fremder link_id bestaetigt die Kopplung einer anderen Instanz.
-            if (typ != "welcome"
-                || ! jsonFeld (felder, "protocol", protokoll) || protokoll != "3"
-                || ! jsonFeld (felder, "link_id", linkId) || linkId != hello.linkId
-                || ! jsonFeld (felder, "challenge", challenge) || challenge != hello.challenge
-                || ! jsonFeld (felder, "broker_epoch", brokerEpoch) || ! istHex32 (brokerEpoch)
-                || ! jsonFeld (felder, "broker_version", brokerVersion) || brokerVersion.empty())
+            if (! welcomeHaeltVertrag (felder, linkId, challenge, brokerEpoch, brokerVersion)
+                || linkId != hello.linkId || challenge != hello.challenge)
             {
                 std::lock_guard<std::mutex> l (zustandMutex);
                 zustand.letzterFehler = "unerwartete Antwort auf das Telemetry-Hello";
@@ -283,17 +353,47 @@ bool TelemetryClient::eineVerbindung (std::uint64_t generation, const TelemetryH
         zustand.letzterFehler.clear();
     }
 
+    // Ratengrenze je Verbindung, dieselbe wie im Broker und im ControlClient
+    // (§33.1 "Parser erhalten ... Nachrichtenratenlimits").
+    Ratengrenze rate (kRateProSekunde, kRateFensterMs);
+    const auto rateBeginn = std::chrono::steady_clock::now();
+
     std::vector<std::uint8_t> ausgang;
     std::vector<std::uint8_t> frame (schleuse.slotGroesse());
     while (! sollAbbrechen (generation))
     {
+        // ── 1) Gehoert diese Pipe noch zur aktuellen Kopplung? ────────────
+        //
+        // Die Kopplung ist eine Eigenschaft der CONTROL-Verbindung. Wird sie
+        // getrennt oder neu aufgebaut, gilt eine neue `link_id`/`challenge`,
+        // und der Broker schliesst die alte Telemetriepipe. Bei leerer
+        // Schleuse merkte die alte Fassung davon NICHTS: sie las nicht und
+        // verglich nicht, blieb unbegrenzt als `verbunden` sichtbar und
+        // koppelte erst nach einer spaeteren Veroeffentlichung mit
+        // gescheitertem Write neu (T2-Befund 2 vom 2026-08-29).
+        if (helloProvider)
+        {
+            const TelemetryHello jetzt = helloProvider();
+            if (jetzt.linkId != hello.linkId || jetzt.challenge != hello.challenge)
+            {
+                std::lock_guard<std::mutex> l (zustandMutex);
+                zustand.letzterFehler = "Kopplung gewechselt — Telemetrie koppelt neu";
+                ++zustand.kopplungswechsel;
+                break;
+            }
+        }
+
+        // ── 2) Frisches Material senden ───────────────────────────────────
         const std::size_t n = schleuse.abholen (frame.data(), frame.size());
         if (n == 0)
         {
-            std::unique_lock<std::mutex> l (wartemutex);
-            warte.wait_for (l, std::chrono::milliseconds (kLeerlaufMs), [this, generation] {
-                return ! laeuft.load() || verbindungsGeneration.load() != generation;
-            });
+            // Leerlauf: LESEN statt schlafen. Dieselbe Frist, dieselbe
+            // Groessenordnung an Syscalls — aber ein Schlaf kann keinen
+            // Pipe-Abschluss sehen, ein fristbegrenztes Lesen schon. `stop`
+            // und `reconnect` brechen es ueber `ioAbbrechen` sofort ab, genau
+            // wie sie vorher die Condvar weckten.
+            if (! leerlaufLesen (leser, rate, rateBeginn, generation))
+                break;
             continue;
         }
         if (! envelopeSchreiben (Familie::p2, 0, frame.data(), n, ausgang)

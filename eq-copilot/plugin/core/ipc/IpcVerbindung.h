@@ -23,6 +23,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <initializer_list>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -94,6 +95,23 @@ private:
 /// dann waere es kein Hello mehr.
 bool bootstrapRahmen (const std::string& json, std::vector<std::uint8_t>& ziel);
 
+/// Ein Feld aus einem flachen JSON-Objekt — MIT seinem Typ.
+///
+/// Die alte Fassung gab nur `(name, roher Text)` zurueck. Damit war
+/// `"broker_version":null` von `"broker_version":"null"` nicht mehr zu
+/// unterscheiden: der Leser HAT die Typinformation, warf sie aber am
+/// Rueckgabewert weg, und der Client nahm ein typfalsches welcome an
+/// (T2-Befund 3 vom 2026-08-29). Der Vertrag
+/// (`eq-copilot/schemas/v3/eq-ipc-v3.schema.json`) unterscheidet sehr wohl:
+/// `broker_version` ist ein String, `protocol` eine Zahl.
+struct JsonFeld
+{
+    std::string name;
+    /// String OHNE Anfuehrungszeichen; Zahl, `true`, `false`, `null` als Text.
+    std::string wert;
+    bool istString = false;
+};
+
 /// Sehr kleiner, STRENGER Leser fuer ein FLACHES JSON-Objekt.
 ///
 /// Er kann absichtlich fast nichts: keine Verschachtelung, keine Arrays, keine
@@ -101,13 +119,23 @@ bool bootstrapRahmen (const std::string& json, std::vector<std::uint8_t>& ziel);
 /// Client liest nur `welcome` und `reject`, beide flach und beide aus unserem
 /// eigenen Vertrag. Alles andere wird ABGELEHNT statt geraten; ein Leser, der
 /// raet, waere die groessere Angriffsflaeche als einer, der nein sagt.
-/// Werte kommen roh zurueck: Strings ohne Anfuehrungszeichen, Zahlen und
-/// Literale als Text.
-bool flachesJsonObjekt (const std::string& text,
-                        std::vector<std::pair<std::string, std::string>>& felder);
+bool flachesJsonObjekt (const std::string& text, std::vector<JsonFeld>& felder);
 
-/// Feld aus dem Ergebnis von `flachesJsonObjekt`.
-bool jsonFeld (const std::vector<std::pair<std::string, std::string>>& felder,
-               const std::string& name, std::string& wert);
+/// Feld als JSON-STRING. `false`, wenn es fehlt ODER kein String ist.
+bool jsonText (const std::vector<JsonFeld>& felder, const std::string& name,
+               std::string& wert);
+
+/// Feld als Zahl oder Literal (`true`/`false`/`null`), roh als Text. `false`,
+/// wenn es fehlt ODER ein String ist.
+bool jsonLiteral (const std::vector<JsonFeld>& felder, const std::string& name,
+                  std::string& wert);
+
+/// Traegt das Objekt GENAU diese Felder — keines zu wenig, keines zu viel?
+///
+/// Das ist die C++-Haelfte von `additionalProperties:false`. Ohne sie ist eine
+/// Pruefung der Pflichtfelder per Konstruktion blind fuer ein Zusatzfeld: sie
+/// liest, was sie kennt, und uebersieht, was sie nicht kennt.
+bool feldmengeGenau (const std::vector<JsonFeld>& felder,
+                     std::initializer_list<const char*> erwartet);
 
 } // namespace nakama::ipc

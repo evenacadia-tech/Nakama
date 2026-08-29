@@ -58,6 +58,22 @@ bool adresseGueltig (const Adresse& a);
 /// in eine Ganzzahl gewandelt oder gesendet wird.
 bool audioGueltig (double samplerate, int blockSize, int channels) noexcept;
 
+/// Haelt ein `welcome` den VOLLSTAENDIGEN Vertrag aus
+/// `eq-copilot/schemas/v3/eq-ipc-v3.schema.json`: exakte Feldmenge
+/// (`additionalProperties:false`), jeder Typ, jede Laenge?
+///
+/// BEIDE Clients rufen dieselbe Funktion. Zwei getrennte Fassungen waren die
+/// Ursache dafuer, dass die Strenge auseinanderlief (T2-Befund 3 vom
+/// 2026-08-29): der Telemetriepfad prueft die Kopplungswerte zusaetzlich, der
+/// VERTRAG ist aber derselbe.
+bool welcomeHaeltVertrag (const std::vector<JsonFeld>& felder,
+                          std::string& linkId, std::string& challenge,
+                          std::string& brokerEpoch, std::string& brokerVersion);
+
+/// Dasselbe fuer `reject`: `required [type, code, reason]`,
+/// `additionalProperties:false`, `reason` hoechstens 500 Zeichen.
+bool rejectHaeltVertrag (const std::vector<JsonFeld>& felder, std::string& grund);
+
 struct ControlHello
 {
     Adresse      adresse;
@@ -87,6 +103,18 @@ public:
         std::uint64_t p0Ueberlaeufe = 0;
         std::uint64_t p1Wiederholungen = 0;
         std::uint64_t envelopeAbweisungen = 0;
+        /// Frames einer auf DIESER Verbindung unzulaessigen Familie. Control
+        /// traegt ausschliesslich P0/P1 (§33.1); ein P2-Frame darf hier nicht
+        /// beim Aufrufer landen, sondern beendet die Verbindung.
+        std::uint64_t familieAbweisungen = 0;
+        /// Wie oft die Nachrichtenratengrenze (§33.1) die Verbindung beendet
+        /// hat.
+        std::uint64_t rateAbweisungen = 0;
+        /// An der TUER abgewiesene Nachrichten: groesser, als ein v3-Frame
+        /// tragen kann. Sie kommen gar nicht erst in die Queue — eine
+        /// eingereihte Nachricht, die nie auf den Draht passt, wuerde die
+        /// Verbindung endlos schliessen und neu aufbauen.
+        std::uint64_t zuGross = 0;
     };
 
     /// `beiAntwort` wird auf dem Client-Thread gerufen, nie im Audiothread.

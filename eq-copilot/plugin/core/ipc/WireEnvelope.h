@@ -49,6 +49,15 @@ inline constexpr std::uint8_t kSchemaMajor = 3u;
 /// Bootstrap-Hello: hoechstens 16 KiB, nur u32-laengenpraefigiertes JSON (§53.9).
 inline constexpr std::uint32_t kMaxBootstrapBytes = 16u * 1024u;
 
+/// Nachrichtenratengrenze je Verbindung (§33.1 "Parser erhalten Tiefen-,
+/// Laengen- und Nachrichtenratenlimits"). DIESELBEN Zahlen wie im Broker
+/// (`server_v3.rs`, `RATE_PRO_SEKUNDE`): das Limit ist eine Eigenschaft des
+/// Vertrags, nicht der Sprache. Sie gilt auf JEDER Parserseite — bis
+/// 2026-08-29 stand die C++-`Ratengrenze` nur im Test, und ein Peer konnte
+/// den Client hinter dem welcome beliebig zupipelinen (T2-Befund 5).
+inline constexpr std::uint32_t kRateProSekunde = 4000;
+inline constexpr std::uint64_t kRateFensterMs  = 1000;
+
 enum class Kodierung : std::uint8_t { json = 0, flatBuffers = 1 };
 enum class Familie   : std::uint8_t { p0 = 0, p1 = 1, p2 = 2 };
 

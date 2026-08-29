@@ -19,8 +19,10 @@
 #include "ControlClient.h"
 #include "IpcQueues.h"
 #include "IpcVerbindung.h"
+#include "WireEnvelope.h"
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <functional>
 #include <mutex>
@@ -54,6 +56,19 @@ public:
         std::uint64_t ersetzt = 0;      ///< aelteste ungesendete Frames (Cap 2)
         std::uint64_t zuGross = 0;      ///< Frames ueber der Slotgroesse
         std::uint64_t envelopeAbweisungen = 0;
+        /// Broker→Main-Liveupdates, die auf dieser Verbindung ankamen. Sie
+        /// sind vertragsgemaess (§33.1), haben in diesem Ticket aber noch
+        /// keinen Verbraucher — die Landkarte ist `SONDE-012`. Die Zahl macht
+        /// sichtbar, dass sie verworfen werden.
+        std::uint64_t empfangen = 0;
+        /// P0/P1 auf der Telemetrieverbindung — vertragswidrig, schliesst.
+        std::uint64_t familieAbweisungen = 0;
+        /// Wie oft die Nachrichtenratengrenze (§33.1) die Verbindung beendet
+        /// hat.
+        std::uint64_t rateAbweisungen = 0;
+        /// Wie oft die Control-Verbindung neue Kopplungswerte hatte und diese
+        /// Verbindung deshalb neu gekoppelt hat.
+        std::uint64_t kopplungswechsel = 0;
     };
 
     TelemetryClient (std::function<TelemetryHello()> helloProvider, std::string pipeName);
@@ -75,6 +90,12 @@ public:
 private:
     void threadLauf();
     bool eineVerbindung (std::uint64_t generation, const TelemetryHello& hello);
+    /// Leerlauf einer stehenden Verbindung: LIEST mit Frist, statt zu
+    /// schlafen. `false` ⇒ die Verbindung ist zu beenden (Pipe zu, Envelope
+    /// abgelehnt, falsche Familie oder Ratengrenze).
+    bool leerlaufLesen (StromLeser& leser, Ratengrenze& rate,
+                        std::chrono::steady_clock::time_point rateBeginn,
+                        std::uint64_t generation);
     bool sollAbbrechen (std::uint64_t generation) const noexcept;
 
     std::function<TelemetryHello()> helloProvider;

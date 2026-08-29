@@ -98,6 +98,21 @@ pub const CAP_WRITER: usize = 256;
 
 /// Was der I/O-Worker nach oben gibt. Bewusst byteorientiert: die Bedeutung
 /// des Payloads kennt erst der Coordinator.
+/// Frist, die der Verbindungsschluss einem LAUFENDEN Senkenaufruf noch
+/// laesst. Danach wird der Verbraucherthread abgeloest statt gejoint.
+pub const SENKE_FRIST: Duration = Duration::from_millis(2000);
+
+/// Wohin der Listener seine Nachrichten uebergibt.
+///
+/// **Senkenvertrag.** `p0`, `p1` und `p2` laufen auf dem Ingressthread der
+/// Verbindung und muessen ZUEGIG zurueckkehren. Blockieren duerfen sie, aber
+/// nicht unbegrenzt: beim Verbindungsschluss wartet der Broker hoechstens
+/// `SENKE_FRIST` auf einen laufenden Aufruf und LOEST den Verbraucherthread
+/// danach AB, statt ihn zu joinen (`V3Statistik::senke_abgeloest`). Vorher
+/// wartete `stoppen()` unbegrenzt im Fremdaufruf: weder das Schliessen der
+/// Queue noch `CancelIoEx` loesen einen Thread, der in fremdem Code steht
+/// (T2-Befund 7 vom 2026-08-29). Ein abgeloester Thread haelt nur noch seine
+/// `Arc`s und endet von selbst, sobald der Fremdaufruf zurueckkommt.
 pub trait Senke: Send + Sync {
     fn control_verbunden(&self, link_id: &str, hello: &HelloControl);
     fn control_getrennt(&self, link_id: &str);
@@ -502,6 +517,13 @@ pub struct V3Statistik {
     /// Hoechststand der Ingressqueue ueber alle Verbindungen. Er ist der
     /// Beleg, dass der Leser nicht am ersten Frame haengt.
     pub ingress_hoechststand: AtomicU64,
+    /// Wie oft ein Verbraucherthread beim Verbindungsschluss ABGELOEST wurde,
+    /// weil sein Senkenaufruf laenger als `SENKE_FRIST` stand. Die Zahl ist
+    /// der sichtbare Preis dafuer, dass `stoppen()` trotzdem endet.
+    pub senke_abgeloest: AtomicU64,
+    /// Dasselbe fuer den Schreiberthread, dessen `ov_schreiben` trotz
+    /// wiederholtem `CancelIoEx` nicht zurueckkam.
+    pub schreiber_abgeloest: AtomicU64,
 }
 
 impl V3Statistik {
@@ -534,6 +556,13 @@ impl V3Griff {
         self.verbindungen.lock().unwrap_or_else(|e| e.into_inner()).len()
     }
 
+    /// Wie viele Verbindungshandles das Abbruchregister gerade fuehrt. Ein
+    /// Handle steht dort, seit der Acceptor die Verbindung angenommen hat —
+    /// NICHT erst, seit sein Thread laeuft (T2-Befund 6 vom 2026-08-29).
+    pub fn gehaltene_handles(&self) -> usize {
+        self.handles.lock().unwrap_or_else(|e| e.into_inner()).offen.len()
+    }
+
     /// Gegenpfad zu `v3_server_starten`. Setzt Stop, weckt den parkenden
     /// Acceptor mit einer eigenen Verbindung und bricht die I/O aller
     /// lebenden Verbindungen ab; danach werden alle Threads gejoint.
@@ -554,7 +583,13 @@ impl V3Griff {
             };
             match naechster {
                 Some(j) => {
-                    alle_io_abbrechen(&self.handles);
+                    // WIEDERHOLT abbrechen, nicht einmal. Ein einzelnes
+                    // `CancelIoEx` verpufft, wenn der Thread seinen Read erst
+                    // danach absetzt — und `join` waere dann ein Hang.
+                    while !j.is_finished() {
+                        alle_io_abbrechen(&self.handles);
+                        std::thread::sleep(Duration::from_millis(5));
+                    }
                     let _ = j.join();
                 }
                 None => break,
@@ -593,6 +628,29 @@ fn io_abbrechen(handles: &Arc<Mutex<HandleRegister>>, id: u64) {
             }
         }
     }
+}
+
+/// Joint mit Frist. Laeuft sie ab, wird der Thread ABGELOEST statt gejoint:
+/// das `JoinHandle` faellt, der Thread haelt nur noch seine `Arc`s und endet
+/// von selbst, sobald sein Fremdaufruf zurueckkommt. `false` = abgeloest.
+///
+/// `zwischendurch` laeuft in jeder Warterunde — der Schreiber braucht dort
+/// sein wiederholtes `CancelIoEx`, der Verbraucher nichts.
+fn join_mit_frist(
+    j: JoinHandle<()>,
+    frist: Duration,
+    mut zwischendurch: impl FnMut(),
+) -> bool {
+    let bis = Instant::now() + frist;
+    while !j.is_finished() {
+        if Instant::now() >= bis {
+            return false;
+        }
+        zwischendurch();
+        std::thread::sleep(Duration::from_millis(2));
+    }
+    let _ = j.join();
+    true
 }
 
 /// Beendete Verbindungsthreads joinen und aus der Liste nehmen. Ohne das
@@ -703,6 +761,19 @@ pub fn v3_server_starten(
     pipe_name: &str,
     senke: Arc<dyn Senke>,
     broker_version: String,
+) -> Result<V3Griff, String> {
+    v3_server_starten_intern(pipe_name, senke, broker_version, Arc::new(AtomicU64::new(0)))
+}
+
+/// Wie `v3_server_starten`, aber mit einer Testnaht: `probe_verzoegerung_ms`
+/// laesst jeden frisch angenommenen Verbindungsthread vor seiner ersten Arbeit
+/// warten. Damit trifft ein Test das Fenster zwischen Annahme und Bedienung
+/// deterministisch, statt es zu erwuerfeln. In Produktion ist der Wert 0.
+fn v3_server_starten_intern(
+    pipe_name: &str,
+    senke: Arc<dyn Senke>,
+    broker_version: String,
+    probe_verzoegerung_ms: Arc<AtomicU64>,
 ) -> Result<V3Griff, String> {
     let sicherheit = crate::server::sicherheit_nur_user()?;
     let stop = Arc::new(AtomicBool::new(false));
@@ -837,6 +908,23 @@ pub fn v3_server_starten(
                 let griff = Arc::new(Verbindungsgriff { h: naechstes });
                 statistik2.angenommen.fetch_add(1, Ordering::SeqCst);
 
+                // Das Handle geht ins Abbruchregister, BEVOR der Thread
+                // existiert. Lief `stoppen()` frueher zwischen Spawn und
+                // Registrierung, sahen beide `alle_io_abbrechen`-Aufrufe ein
+                // leeres Register; der Thread startete danach, trug sein
+                // Handle ein und blockierte ohne verbliebenen Wachhund im
+                // Bootstrap-Read (T2-Befund 6 vom 2026-08-29). Jetzt gilt:
+                // entweder der Stop erfasst das Handle, oder der Thread sieht
+                // `stop` selbst und endet.
+                {
+                    let mut r = handles2.lock().unwrap_or_else(|e| e.into_inner());
+                    r.offen.push((id, naechstes as isize));
+                }
+                // Der Eintrag gehoert ab hier dem Thread; scheitert `spawn`,
+                // faellt die Closure samt Eintrag und traegt ihn wieder aus.
+                let handle_eintrag = HandleEintrag { id, register: handles2.clone() };
+                let verzoegerung = probe_verzoegerung_ms.clone();
+
                 let senke = senke.clone();
                 let kopplungen = kopplungen.clone();
                 let handles = handles2.clone();
@@ -848,9 +936,16 @@ pub fn v3_server_starten(
                 match std::thread::Builder::new()
                     .name("eqcop-v3-conn".into())
                     .spawn(move || {
+                        // Testnaht: reisst das Fenster zwischen Annahme und
+                        // erster Arbeit deterministisch auf. In Produktion
+                        // steht hier 0 und der Aufruf kostet einen Ladevorgang.
+                        let ms = verzoegerung.load(Ordering::SeqCst);
+                        if ms > 0 {
+                            std::thread::sleep(Duration::from_millis(ms));
+                        }
                         verbindung_bedienen(
                             id, griff, senke, kopplungen, handles, bootstraps, statistik, bv, be,
-                            conn_stop,
+                            conn_stop, handle_eintrag,
                         );
                     }) {
                     Ok(j) => verbindungen2.lock().unwrap_or_else(|e| e.into_inner()).push(j),
@@ -950,12 +1045,18 @@ fn verbindung_bedienen(
     broker_version: String,
     broker_epoch: String,
     stop: Arc<AtomicBool>,
+    handle_eintrag: HandleEintrag,
 ) {
-    let roh_handle = griff.h as isize;
-    if let Ok(mut r) = handles.lock() {
-        r.offen.push((id, roh_handle));
+    // Der Acceptor hat das Handle schon registriert; der Eintrag traegt es
+    // beim Verlassen dieser Funktion wieder aus.
+    let _handle_eintrag = handle_eintrag;
+
+    // Und JETZT `stop` pruefen. Kam der Stop im Fenster zwischen Annahme und
+    // diesem Punkt, endet der Thread hier — statt sich in einen Bootstrap-Read
+    // zu legen, den kein Wachhund mehr aufloest (T2-Befund 6 vom 2026-08-29).
+    if stop.load(Ordering::SeqCst) {
+        return;
     }
-    let _handle_eintrag = HandleEintrag { id, register: handles.clone() };
 
     let leseereignis = match Ereignis::neu() {
         Some(e) => e,
@@ -1274,11 +1375,19 @@ fn verbindung_bedienen(
     eingang.schliessen();
     ausgang.schliessen();
     io_abbrechen(&handles, id);
+    // Beide Joins haben eine FRIST. Steht der Verbraucher in einem
+    // Senkenaufruf oder der Schreiber in einem Write, den `CancelIoEx` nicht
+    // loest, wird der Thread abgeloest statt gejoint — sonst waere `stoppen()`
+    // ein unbegrenztes Warten auf fremden Code (T2-Befund 7 vom 2026-08-29).
     if let Some(j) = verbraucher {
-        let _ = j.join();
+        if !join_mit_frist(j, SENKE_FRIST, || {}) {
+            statistik.senke_abgeloest.fetch_add(1, Ordering::SeqCst);
+        }
     }
     if let Some(j) = schreiber {
-        let _ = j.join();
+        if !join_mit_frist(j, SENKE_FRIST, || io_abbrechen(&handles, id)) {
+            statistik.schreiber_abgeloest.fetch_add(1, Ordering::SeqCst);
+        }
     }
 
     trennen(&kopplungen, &handles, &link_id, ist_control, &senke);
@@ -1509,6 +1618,9 @@ mod tests {
     struct BlockSenke {
         zaehl: ZaehlSenke,
         blockiert: AtomicBool,
+        /// Steht gerade ein Aufruf IN der Senke? Ohne diese Zahl misst ein
+        /// Test ueber den Senkenhang nur seine eigene Hoffnung.
+        in_senke: AtomicBool,
     }
 
     impl BlockSenke {
@@ -1517,10 +1629,12 @@ mod tests {
         /// Hang sagt nichts. Die Frist ist um Groessenordnungen laenger als
         /// jede Wartezeit im Test.
         fn warten(&self) {
+            self.in_senke.store(true, Ordering::SeqCst);
             let bis = Instant::now() + Duration::from_secs(20);
             while self.blockiert.load(Ordering::SeqCst) && Instant::now() < bis {
                 std::thread::sleep(Duration::from_millis(5));
             }
+            self.in_senke.store(false, Ordering::SeqCst);
         }
     }
 
@@ -1795,6 +1909,97 @@ mod tests {
             warte_auf(8000, || griff.gehaltene_verbindungen() <= 4),
             "nach 40 Zyklen haelt der Listener noch {} Threadhandles",
             griff.gehaltene_verbindungen()
+        );
+    }
+
+    /// T2-Befund 6 vom 2026-08-29: `stoppen()` genau im Fenster zwischen
+    /// Annahme der Verbindung und der ersten Arbeit ihres Threads.
+    ///
+    /// Die Testnaht `probe_verzoegerung_ms` haelt den Thread dort fest, statt
+    /// das Fenster zu erwuerfeln. Gemessen wird dreierlei, und jede Zusicherung
+    /// gehoert zu einem anderen Teil des Fixes:
+    ///
+    ///   1. das Handle steht im Register, BEVOR der Thread gearbeitet hat
+    ///      (Registrierung im Acceptor);
+    ///   2. der Thread endet AM STOP und nicht erst an einem abgebrochenen
+    ///      Read (`geschlossen_bootstrap` bleibt 0);
+    ///   3. `stoppen()` kehrt ueberhaupt zurueck (wiederholter Abbruch).
+    #[test]
+    fn stop_im_fenster_vor_der_bedienung_haengt_nicht() {
+        let pipe = probe_pipe("stopfenster");
+        let verzoegerung = Arc::new(AtomicU64::new(600));
+        let senke = Arc::new(ZaehlSenke::default());
+        let mut griff =
+            v3_server_starten_intern(&pipe, senke, "test".into(), verzoegerung).unwrap();
+
+        // Verbinden, aber KEIN Hello senden: ohne den Fix legte sich der Thread
+        // gleich danach in einen Read, den nach dem Stop niemand mehr aufloest.
+        let c = Testclient::neu(&pipe).unwrap();
+        let stat = griff.statistik.clone();
+        assert!(
+            warte_auf(3000, || stat.angenommen.load(Ordering::SeqCst) >= 1),
+            "der Acceptor muss die Verbindung angenommen haben"
+        );
+
+        assert!(
+            warte_auf(200, || griff.gehaltene_handles() >= 1),
+            "das Handle muss VOR der ersten Arbeit des Threads im Register stehen"
+        );
+
+        let (tx, rx) = std::sync::mpsc::channel();
+        let t = std::thread::spawn(move || {
+            griff.stoppen();
+            let _ = tx.send(());
+        });
+        assert!(
+            rx.recv_timeout(Duration::from_secs(10)).is_ok(),
+            "stoppen() darf im Fenster vor der Registrierung nicht haengen"
+        );
+        t.join().unwrap();
+        assert_eq!(
+            stat.geschlossen_bootstrap.load(Ordering::SeqCst),
+            0,
+            "der Thread muss am Stop enden, nicht erst an einem abgebrochenen Read"
+        );
+        drop(c);
+    }
+
+    /// T2-Befund 7 vom 2026-08-29: `stoppen()` endet binnen Frist, auch wenn
+    /// die Senke WEITER blockiert. Der bestehende Blocktest gab vor dem Ende
+    /// frei und prueft diesen Gegenpfad deshalb nicht.
+    #[test]
+    fn stoppen_endet_auch_bei_haengender_senke() {
+        let pipe = probe_pipe("senkenhang");
+        let senke = Arc::new(BlockSenke::default());
+        senke.blockiert.store(true, Ordering::SeqCst);
+        let mut griff = v3_server_starten(&pipe, senke.clone(), "test".into()).unwrap();
+
+        let steuer = Testclient::neu(&pipe).unwrap();
+        assert!(steuer.schreiben(&control_hello(&"b".repeat(32))));
+        assert!(welcome_lesen(&steuer).is_some());
+        assert!(steuer.schreiben(&p1("{\"type\":\"state_report\"}")));
+        assert!(
+            warte_auf(5000, || senke.in_senke.load(Ordering::SeqCst)),
+            "der Verbraucher muss WIRKLICH in der Senke stehen, sonst misst der Test nichts"
+        );
+
+        let stat = griff.statistik.clone();
+        let (tx, rx) = std::sync::mpsc::channel();
+        let t = std::thread::spawn(move || {
+            griff.stoppen();
+            let _ = tx.send(());
+        });
+        // Grosszuegig, aber ENDLICH: gemessen wird "endet", nicht "ist schnell".
+        let rechtzeitig = rx.recv_timeout(SENKE_FRIST + Duration::from_secs(8)).is_ok();
+        let abgeloest = stat.senke_abgeloest.load(Ordering::SeqCst);
+        // Erst JETZT freigeben — vorher waere der Gegenpfad nicht gemessen.
+        senke.blockiert.store(false, Ordering::SeqCst);
+        t.join().unwrap();
+
+        assert!(rechtzeitig, "stoppen() haengt im Senkenaufruf");
+        assert!(
+            abgeloest >= 1,
+            "der haengende Verbraucher muss abgeloest und gezaehlt sein (war {abgeloest})"
         );
     }
 }

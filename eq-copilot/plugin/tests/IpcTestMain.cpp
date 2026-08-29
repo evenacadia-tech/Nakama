@@ -162,12 +162,49 @@ public:
     std::atomic<bool> welcomeAlsP2 { false };
     std::atomic<bool> welcomeFremdeLinkId { false };
     std::atomic<bool> welcomeOhneProtokoll { false };
+    /// Welcome-Varianten fuer den VERTRAG (T2-Befund 3): typfalsches
+    /// `broker_version` (`null`), ein Zusatzfeld trotz
+    /// `additionalProperties:false`, und eine Version ueber der Laengengrenze.
+    std::atomic<bool> welcomeTypfalsch { false };
+    std::atomic<bool> welcomeZusatzfeld { false };
+    std::atomic<bool> welcomeLangeVersion { false };
+    /// Nach dem welcome einen korrekt gerahmten P2-Frame ueber die CONTROL-
+    /// Verbindung schicken (T2-Befund 4).
+    std::atomic<bool> sendeP2AufControl { false };
+    /// So viele P0-Frames nach dem welcome so schnell wie moeglich
+    /// hinterherschicken (T2-Befund 5).
+    std::atomic<int> frameFlut { 0 };
+    /// Die naechste Telemetrieverbindung einmalig schliessen — der Fall, den
+    /// der Leerlauf ohne Lesen nie bemerkte (T2-Befund 2).
+    std::atomic<bool> telemetrieSchliessen { false };
     std::mutex textMutex;
     std::string letztesControlHello, letztesTelemetryHello, letzterAbweisungsgrund;
-    /// Jeder empfangene P1-Payload, woertlich. Damit laesst sich pruefen, ob
-    /// ein bestimmtes Ereignis WIRKLICH angekommen ist — eine Zahl allein
-    /// sagt nichts darueber, WELCHES fehlt.
-    std::vector<std::string> p1Texte;
+    /// Jeder empfangene P0-/P1-Payload, woertlich. Damit laesst sich pruefen,
+    /// ob eine bestimmte Nachricht WIRKLICH angekommen ist — eine Zahl allein
+    /// sagt nichts darueber, WELCHE fehlt.
+    std::vector<std::string> p0Texte, p1Texte;
+
+    /// Kopplungswerte. Sie sind veraenderlich: eine neu aufgebaute
+    /// Control-Verbindung bekommt beim echten Broker eine frische `link_id`,
+    /// und genau das muss der TelemetryClient bemerken (T2-Befund 2).
+    std::string kopplungLinkId()
+    {
+        std::lock_guard<std::mutex> l (kopplungMutex);
+        return linkId;
+    }
+    std::string kopplungChallenge()
+    {
+        std::lock_guard<std::mutex> l (kopplungMutex);
+        return challenge;
+    }
+    void neueKopplung (std::string l2, std::string c2)
+    {
+        std::lock_guard<std::mutex> l (kopplungMutex);
+        linkId = std::move (l2);
+        challenge = std::move (c2);
+    }
+
+    std::mutex kopplungMutex;
     std::string linkId = hex32 ('a'), challenge = hex32 ('b');
 
     explicit TestServer (std::string pipeName) : name (std::move (pipeName)) {}
@@ -346,8 +383,10 @@ private:
         {
             // Kopplung: link_id UND challenge muessen aus dem eigenen welcome
             // stammen. Fehlt eines, wird geschlossen (§53.9).
-            const bool passt = helloJson.find ("\"link_id\":\"" + linkId + "\"") != std::string::npos
-                            && helloJson.find ("\"challenge\":\"" + challenge + "\"") != std::string::npos;
+            const bool passt =
+                helloJson.find ("\"link_id\":\"" + kopplungLinkId() + "\"") != std::string::npos
+                && helloJson.find ("\"challenge\":\"" + kopplungChallenge() + "\"")
+                       != std::string::npos;
             if (! passt)
             {
                 ++abgewiesen;
@@ -362,13 +401,23 @@ private:
 
         // ── welcome, bereits v3-gerahmt ───────────────────────────────────
         const std::string ausgegebeneLink =
-            welcomeFremdeLinkId.load() ? hex32 ('9') : linkId;
+            welcomeFremdeLinkId.load() ? hex32 ('9') : kopplungLinkId();
         std::string welcome = std::string ("{\"type\":\"welcome\"");
         if (! welcomeOhneProtokoll.load())
             welcome += ",\"protocol\":3";
-        welcome += std::string (",\"broker_version\":\"test\",\"broker_epoch\":\"")
-                 + hex32 ('c') + "\",\"link_id\":\"" + ausgegebeneLink
-                 + "\",\"challenge\":\"" + challenge + "\"}";
+        welcome += ",\"broker_version\":";
+        if (welcomeTypfalsch.load())
+            welcome += "null";                                  // Typ statt Text
+        else if (welcomeLangeVersion.load())
+            welcome += "\"" + std::string (65, 'v') + "\"";      // maxLength 64
+        else
+            welcome += "\"test\"";
+        welcome += std::string (",\"broker_epoch\":\"") + hex32 ('c')
+                 + "\",\"link_id\":\"" + ausgegebeneLink
+                 + "\",\"challenge\":\"" + kopplungChallenge() + "\"";
+        if (welcomeZusatzfeld.load())
+            welcome += ",\"extra\":1";                          // additionalProperties:false
+        welcome += "}";
         std::vector<std::uint8_t> aus;
         envelopeSchreiben (welcomeAlsP2.load() ? Familie::p2 : Familie::p0, 0,
                            reinterpret_cast<const std::uint8_t*> (welcome.data()),
@@ -379,6 +428,40 @@ private:
         {
             schliessen (h);
             return;
+        }
+
+        // Ein korrekt gerahmter P2-Frame auf der CONTROL-Verbindung: der
+        // Client darf ihn NICHT an `beiAntwort` weiterreichen (T2-Befund 4).
+        if (sendeP2AufControl.load() && ! istTelemetry)
+        {
+            std::uint8_t nutz[32];
+            std::memset (nutz, 0x11, sizeof (nutz));
+            std::vector<std::uint8_t> p2rahmen;
+            envelopeSchreiben (Familie::p2, 0, nutz, sizeof (nutz), p2rahmen);
+            if (! schreiben (h, p2rahmen.data(), p2rahmen.size()))
+            {
+                schliessen (h);
+                return;
+            }
+        }
+
+        // Mehr Frames, als die Nachrichtenrate erlaubt (T2-Befund 5). In
+        // Haeppchen, damit der Server nicht 5 s in einem einzigen Write steht,
+        // wenn der Client die Verbindung — richtigerweise — schliesst.
+        if (const int flut = frameFlut.load(); flut > 0 && ! istTelemetry)
+        {
+            const std::string ack =
+                "{\"type\":\"heartbeat_ack\",\"sequence\":0,\"duplicate_instance_id\":false}";
+            std::vector<std::uint8_t> einer;
+            envelopeSchreiben (Familie::p0, 0,
+                               reinterpret_cast<const std::uint8_t*> (ack.data()),
+                               ack.size(), einer);
+            std::vector<std::uint8_t> haeppchen;
+            for (int i = 0; i < 64; ++i)
+                haeppchen.insert (haeppchen.end(), einer.begin(), einer.end());
+            for (int gesendet = 0; gesendet < flut && laeuft.load(); gesendet += 64)
+                if (! schreiben (h, haeppchen.data(), haeppchen.size()))
+                    break;   // der Client hat geschlossen — genau das ist das Ziel
         }
 
         if (nichtLesen.load())
@@ -394,6 +477,13 @@ private:
         leser.fuettern (roh.data(), roh.size());
         while (laeuft.load())
         {
+            // Einmalig: die Telemetriepipe schliessen. Der echte Broker tut
+            // das, wenn die zugehoerige Control-Verbindung endet.
+            if (istTelemetry && telemetrieSchliessen.exchange (false))
+            {
+                schliessen (h);
+                return;
+            }
             bool weiter = true;
             while (weiter)
             {
@@ -411,6 +501,10 @@ private:
                     // heartbeat -> heartbeat_ack, sonst nichts.
                     const std::string text (reinterpret_cast<const char*> (e.payload),
                                             e.payloadLaenge);
+                    {
+                        std::lock_guard<std::mutex> l (textMutex);
+                        p0Texte.push_back (text);
+                    }
                     if (text.find ("\"heartbeat\"") != std::string::npos)
                     {
                         const std::string ack =
@@ -842,10 +936,39 @@ int main()
         {
             std::string s;
             reihenfolge = reihenfolge && p0.entnehmen (s) && s == "n" + std::to_string (i);
+            p0.bestaetigen();   // "auf dem Draht" — erst das gibt den Platz frei
         }
         std::string weg;
-        pruefe (reihenfolge && ! p0.entnehmen (weg),
+        pruefe (reihenfolge && ! p0.entnehmen (weg) && p0.inFlug() == 0,
                 "alle 64 kommen unveraendert und in Reihenfolge zurueck");
+
+        // ── T2-Befund 1: der Platz des unterwegs befindlichen Eintrags ────
+        //
+        // Solange ein Befehl zwischen Queue und Pipe steht, darf sein Platz
+        // NICHT neu vergeben werden. Sonst hat das Zuruecklegen nach einem
+        // gescheiterten Write keinen Platz mehr — und der Befehl ist weg,
+        // ohne dass es der Ueberlaufzaehler meldet.
+        P0Warteschlange p0c (64);
+        for (int i = 0; i < 64; ++i)
+            p0c.einreihen ("n" + std::to_string (i));
+        std::string unterwegs;
+        pruefe (p0c.entnehmen (unterwegs) && unterwegs == "n0" && p0c.inFlug() == 1,
+                "der Sender entnimmt den ersten Befehl und reserviert seinen Platz");
+        int angenommen = 0;
+        for (int i = 0; i < 64; ++i)
+            if (p0c.einreihen ("neu" + std::to_string (i)))
+                ++angenommen;
+        pruefe (angenommen == 0 && p0c.ueberlauf() == 64,
+                "64 neue Befehle waehrend des Writes finden KEINEN Platz — ehrlich gezaehlt",
+                std::to_string (angenommen) + " angenommen, "
+                    + std::to_string (p0c.ueberlauf()) + " Ueberlaeufe");
+        p0c.zuruecklegen (unterwegs);
+        pruefe (p0c.groesse() == 64 && p0c.inFlug() == 0,
+                "der gescheiterte Write legt ihn zurueck; die Queue traegt wieder genau 64",
+                std::to_string (p0c.groesse()) + " Eintraege");
+        std::string wiederVorn;
+        pruefe (p0c.entnehmen (wiederVorn) && wiederVorn == "n0",
+                "und zwar VORN — kein P0-Befehl ist verlorengegangen");
 
         P1Warteschlange p1 (4, 4);
         pruefe (p1.einreihen ("a", "a1") == P1Ergebnis::eingereiht, "P1 nimmt Snapshot a");
@@ -855,7 +978,9 @@ int main()
                     && p1.groesse() == 3,
                 "ein zweiter Snapshot desselben Objekts koalesziert, ohne zu wachsen");
         std::string s1, s2, s3;
-        p1.entnehmen (s1); p1.entnehmen (s2); p1.entnehmen (s3);
+        p1.entnehmen (s1); p1.bestaetigen();
+        p1.entnehmen (s2); p1.bestaetigen();
+        p1.entnehmen (s3); p1.bestaetigen();
         pruefe (s1 == "a2" && s2 == "ereignis" && s3 == "b1",
                 "Koaleszieren behaelt die Position, tauscht nur den Inhalt");
 
@@ -868,9 +993,11 @@ int main()
                     && p1b.verdraengte() == 1,
                 "ein voller Wiederholpuffer verdraengt gezaehlt, nie still");
         std::string x;
-        p1b.entnehmen (x); p1b.entnehmen (x);
+        p1b.entnehmen (x); p1b.bestaetigen();
+        p1b.entnehmen (x); p1b.bestaetigen();
         pruefe (p1b.nachReconnectWiederholen() == 2, "Reconnect holt beide zurueck");
-        p1b.entnehmen (s1); p1b.entnehmen (s2);
+        p1b.entnehmen (s1); p1b.bestaetigen();
+        p1b.entnehmen (s2); p1b.bestaetigen();
         pruefe (s1 == "4" && s2 == "5" && p1b.wiederholungen() == 0,
                 "und zwar in der urspruenglichen Reihenfolge");
 
@@ -902,23 +1029,30 @@ int main()
         p1d.entnehmen (dz);
         pruefe (dz == "neu", "und der neuere geht raus");
 
-        // Voller Platz: das Ereignis geht in den Wiederholpuffer statt ins
-        // Nichts.
+        // Auch bei P1 haelt die Reservierung den Platz des unterwegs
+        // befindlichen Eintrags frei: ein waehrenddessen eingereihtes Ereignis
+        // findet KEINEN Platz und wartet auf den Reconnect, statt den Platz zu
+        // belegen, an den der unterwegs befindliche zurueckmuss.
         P1Warteschlange p1e (1, 2);
         p1e.einreihen ("", "erst");
         std::string ek, en;
         p1e.entnehmen (ek, en);
-        p1e.einreihen ("", "zweit");
-        pruefe (p1e.zuruecklegen (ek, en) == P1Ergebnis::zurWiederholung
+        pruefe (p1e.inFlug() == 1,
+                "der entnommene P1-Eintrag zaehlt weiter gegen die Kapazitaet");
+        pruefe (p1e.einreihen ("", "zweit") == P1Ergebnis::zurWiederholung
                     && p1e.wiederholungen() == 1,
-                "ist kein Platz mehr, wartet es auf den naechsten Reconnect");
+                "ein neues Ereignis findet deshalb keinen Platz und wartet auf den Reconnect");
+        pruefe (p1e.zuruecklegen (ek, en) == P1Ergebnis::eingereiht
+                    && p1e.groesse() == 1 && p1e.inFlug() == 0,
+                "und der unterwegs gewesene Eintrag kommt an SEINEN Platz zurueck");
 
         // P0 kennt dieselbe Zusage, nur strenger: nichts verwerfen.
         P0Warteschlange p0b (2);
         p0b.einreihen ("a"); p0b.einreihen ("b");
         std::string p0raus;
         p0b.entnehmen (p0raus);
-        pruefe (p0b.zuruecklegen (p0raus) && p0b.groesse() == 2,
+        p0b.zuruecklegen (p0raus);
+        pruefe (p0b.groesse() == 2,
                 "ein nicht geschriebener P0-Befehl geht ebenfalls zurueck");
         std::string p0wieder;
         pruefe (p0b.entnehmen (p0wieder) && p0wieder == "a",
@@ -1468,6 +1602,285 @@ int main()
         server.stoppen();
     }
 
+    abschnitt ("G9 · ein P0-Befehl ueberlebt einen gescheiterten Write bei voller Queue");
+    {
+        // T2-Befund 1 vom 2026-08-29: der Sender hat den Befehl ENTNOMMEN, der
+        // Write blockiert, und waehrenddessen laufen neue Befehle ein. Ohne
+        // die Reservierung war der entnommene danach nicht mehr unterzubringen
+        // — und weg, ohne dass es der oeffentliche Zaehler meldete.
+        const auto name = testPipeName ("p0verlust");
+        auto server1 = std::make_unique<TestServer> (name);
+        server1->nichtLesen.store (true);
+        server1->starten();
+
+        const auto adresse = testAdresse (hex32 ('b'));
+        ControlClient control ([&] { ControlHello h; h.adresse = adresse; return h; }, name);
+        control.start();
+        pruefe (warteAuf (5000, [&] {
+                    return control.snapshot().status == ControlClient::Status::verbunden;
+                }),
+                "Verbindung steht (der Server liest nur nicht mehr)",
+                control.snapshot().letzterFehler);
+
+        // Der erste Befehl fuellt den 64-KiB-Pipepuffer: der Write blockiert
+        // sicher, statt zufaellig.
+        std::string gross = "{\"type\":\"apply\",\"id\":0,\"fuell\":\"";
+        gross.append (200 * 1024, 'x');
+        gross += "\"}";
+        pruefe (control.sendeP0 (gross), "der erste, grosse Befehl wird eingereiht");
+        std::this_thread::sleep_for (std::chrono::milliseconds (300));
+
+        // Jetzt die Queue randvoll fahren. Der abgewiesene Aufruf bricht den
+        // blockierten Write ab — genau der Fall aus dem Befund.
+        std::vector<int> angenommen { 0 };
+        int abgelehnt = 0;
+        for (int i = 1; i <= 200; ++i)
+        {
+            if (control.sendeP0 ("{\"type\":\"apply\",\"id\":" + std::to_string (i) + "}"))
+                angenommen.push_back (i);
+            else
+            {
+                ++abgelehnt;
+                break;
+            }
+        }
+        pruefe (abgelehnt == 1 && angenommen.size() == 64,
+                "genau 64 passen — der unterwegs befindliche belegt seinen Platz weiter",
+                std::to_string (angenommen.size()) + " angenommen");
+        pruefe (control.snapshot().p0Ueberlaeufe >= 1,
+                "und der Ueberlauf ist oeffentlich gezaehlt",
+                std::to_string (control.snapshot().p0Ueberlaeufe));
+        pruefe (warteAuf (5000, [&] {
+                    return control.snapshot().letzterFehler.find ("P0-Ueberlauf")
+                           != std::string::npos;
+                }),
+                "die Verbindung wird deswegen geschlossen",
+                control.snapshot().letzterFehler);
+
+        server1->stoppen();
+        server1.reset();
+
+        // Ein lesender Server: jetzt muss JEDER angenommene Befehl ankommen.
+        auto server2 = std::make_unique<TestServer> (name);
+        server2->starten();
+        auto fehltNoch = [&] () -> int {
+            std::lock_guard<std::mutex> l (server2->textMutex);
+            for (int id : angenommen)
+            {
+                const std::string gesucht = "\"id\":" + std::to_string (id)
+                                          + (id == 0 ? "," : "}");
+                bool gefunden = false;
+                for (const auto& t : server2->p0Texte)
+                    if (t.find (gesucht) != std::string::npos)
+                    {
+                        gefunden = true;
+                        break;
+                    }
+                if (! gefunden)
+                    return id;
+            }
+            return -1;
+        };
+        const bool alleDa = warteAuf (30000, [&] { return fehltNoch() < 0; });
+        pruefe (alleDa,
+                "nach dem Reconnect kommt JEDER angenommene Befehl an — auch der, "
+                "dessen Write scheiterte",
+                alleDa ? std::string() : "erster fehlender: id " + std::to_string (fehltNoch()));
+
+        control.stop();
+        server2->stoppen();
+    }
+
+    abschnitt ("G10 · beide Clients pruefen das welcome gegen den VOLLSTAENDIGEN Vertrag");
+    {
+        // T2-Befund 3 vom 2026-08-29: `"broker_version":null` kam als
+        // nichtleerer Text `null` durch, und ein Zusatzfeld fiel gar nicht auf,
+        // obwohl `eq-ipc-v3.schema.json` `additionalProperties:false` sagt.
+        auto telemetrieProbe = [&] (const char* fall, bool typfalsch, bool zusatz,
+                                    bool langeVersion, const char* was) {
+            TestServer server (testPipeName (fall));
+            server.welcomeTypfalsch.store (typfalsch);
+            server.welcomeZusatzfeld.store (zusatz);
+            server.welcomeLangeVersion.store (langeVersion);
+            server.starten();
+            TelemetryClient telemetrie ([&] {
+                TelemetryHello t;
+                t.adresse = testAdresse (hex32 ('7'));
+                t.linkId = hex32 ('a');
+                t.challenge = hex32 ('b');
+                return t;
+            }, server.pipeName());
+            telemetrie.start();
+            const bool nieVerbunden = ! warteAuf (2500, [&] {
+                return telemetrie.snapshot().status == TelemetryClient::Status::verbunden;
+            });
+            const auto text = telemetrie.snapshot().letzterFehler;
+            telemetrie.stop();
+            server.stoppen();
+            pruefe (nieVerbunden, was, text);
+        };
+
+        telemetrieProbe ("wc-typ", true, false, false,
+                         "Telemetry: `broker_version` als `null` ist kein gueltiges welcome");
+        telemetrieProbe ("wc-extra", false, true, false,
+                         "Telemetry: ein Zusatzfeld verletzt additionalProperties:false");
+        telemetrieProbe ("wc-lang", false, false, true,
+                         "Telemetry: `broker_version` ueber 64 Zeichen faellt an der Laenge");
+
+        auto controlProbe = [&] (const char* fall, bool typfalsch, bool zusatz,
+                                 bool langeVersion, const char* was) {
+            TestServer server (testPipeName (fall));
+            server.welcomeTypfalsch.store (typfalsch);
+            server.welcomeZusatzfeld.store (zusatz);
+            server.welcomeLangeVersion.store (langeVersion);
+            server.starten();
+            ControlClient control ([&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('c'));
+                return h;
+            }, server.pipeName());
+            control.start();
+            const bool nieVerbunden = ! warteAuf (2500, [&] {
+                return control.snapshot().status == ControlClient::Status::verbunden;
+            });
+            const auto text = control.snapshot().letzterFehler;
+            control.stop();
+            server.stoppen();
+            pruefe (nieVerbunden, was, text);
+        };
+
+        controlProbe ("wcc-typ", true, false, false,
+                      "Control: dieselbe Strenge — `null` statt String verbindet nicht");
+        controlProbe ("wcc-extra", false, true, false,
+                      "Control: ein Zusatzfeld verbindet nicht");
+        controlProbe ("wcc-lang", false, false, true,
+                      "Control: eine zu lange `broker_version` verbindet nicht");
+    }
+
+    abschnitt ("G11 · ein P2-Frame auf der Control-Verbindung wird abgewiesen");
+    {
+        // T2-Befund 4 vom 2026-08-29: der Pfad zaehlte ihn als empfangen und
+        // reichte die BINAERPAYLOAD an `beiAntwort` weiter, das JSON erwartet.
+        TestServer server (testPipeName ("p2aufcontrol"));
+        server.sendeP2AufControl.store (true);
+        server.starten();
+        std::atomic<int> rueckrufe { 0 };
+        ControlClient control ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('d'));
+            return h;
+        }, server.pipeName(), [&] (const std::string&) { rueckrufe.fetch_add (1); });
+        control.start();
+        pruefe (warteAuf (5000, [&] {
+                    return control.snapshot().familieAbweisungen >= 1;
+                }),
+                "der Client weist den P2-Frame ab und schliesst die Verbindung",
+                control.snapshot().letzterFehler);
+        pruefe (rueckrufe.load() == 0,
+                "und er hat die Binaerpayload NIE an den Aufrufer weitergereicht",
+                std::to_string (rueckrufe.load()) + " Rueckrufe");
+        control.stop();
+        server.stoppen();
+    }
+
+    abschnitt ("G12 · die Nachrichtenratengrenze gilt auch im Client");
+    {
+        // T2-Befund 5 vom 2026-08-29: die C++-`Ratengrenze` existierte, wurde
+        // aber nur im Test benutzt. §33.1 verlangt sie auf JEDER Parserseite.
+        TestServer server (testPipeName ("rateflut"));
+        server.frameFlut.store (8000);   // doppelt so viele wie erlaubt
+        server.starten();
+        std::atomic<int> rueckrufe { 0 };
+        ControlClient control ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('e'));
+            return h;
+        }, server.pipeName(), [&] (const std::string&) { rueckrufe.fetch_add (1); });
+        control.start();
+        pruefe (warteAuf (10000, [&] { return control.snapshot().rateAbweisungen >= 1; }),
+                "ein Peer, der schneller pipelined als die Rate erlaubt, wird getrennt",
+                control.snapshot().letzterFehler);
+        pruefe (rueckrufe.load() <= static_cast<int> (kRateProSekunde),
+                "und hoechstens die erlaubte Zahl Frames hat den Aufrufer erreicht",
+                std::to_string (rueckrufe.load()) + " von 8000");
+        control.stop();
+        server.stoppen();
+    }
+
+    abschnitt ("G13 · die Telemetrie merkt im Leerlauf, dass ihre Kopplung fort ist");
+    {
+        // T2-Befund 2 vom 2026-08-29: bei leerer P2-Schleuse las der
+        // Leerlaufzweig weder von der Pipe noch verglich er die aktuellen
+        // Kopplungswerte. Der Client blieb unbegrenzt als `verbunden` sichtbar.
+        TestServer server (testPipeName ("kopplungneu"));
+        server.starten();
+
+        const auto adresse = testAdresse (hex32 ('f'));
+        ControlClient control ([&] { ControlHello h; h.adresse = adresse; return h; },
+                               server.pipeName());
+        control.start();
+        pruefe (warteAuf (5000, [&] {
+                    return control.snapshot().status == ControlClient::Status::verbunden;
+                }),
+                "Control steht", control.snapshot().letzterFehler);
+
+        TelemetryClient telemetrie ([&] {
+            TelemetryHello t;
+            t.adresse = adresse;
+            std::string l, c;
+            control.kopplung (l, c);
+            t.linkId = l;
+            t.challenge = c;
+            return t;
+        }, server.pipeName());
+        telemetrie.start();
+        pruefe (warteAuf (5000, [&] {
+                    return telemetrie.snapshot().status == TelemetryClient::Status::verbunden;
+                }),
+                "Telemetry koppelt", telemetrie.snapshot().letzterFehler);
+
+        // ── a) Der Broker schliesst die Telemetriepipe. KEIN P2-Verkehr. ──
+        const int versucheVorher = telemetrie.snapshot().verbindungsVersuche;
+        server.telemetrieSchliessen.store (true);
+        pruefe (warteAuf (5000, [&] {
+                    return telemetrie.snapshot().verbindungsVersuche > versucheVorher;
+                }),
+                "ohne eine einzige Veroeffentlichung bemerkt der Client den Pipe-Abschluss",
+                telemetrie.snapshot().letzterFehler);
+        pruefe (warteAuf (8000, [&] {
+                    return telemetrie.snapshot().status == TelemetryClient::Status::verbunden;
+                }),
+                "und koppelt binnen Frist wieder",
+                telemetrie.snapshot().letzterFehler);
+
+        // ── b) Die Control-Verbindung bekommt NEUE Kopplungswerte. ────────
+        server.neueKopplung (hex32 ('4'), hex32 ('5'));
+        control.reconnect();
+        pruefe (warteAuf (8000, [&] {
+                    std::string l, c;
+                    return control.kopplung (l, c) && l == hex32 ('4');
+                }),
+                "Control koppelt neu und traegt eine frische link_id",
+                control.snapshot().letzterFehler);
+        pruefe (warteAuf (8000, [&] {
+                    return telemetrie.snapshot().kopplungswechsel >= 1;
+                }),
+                "die Telemetrie bemerkt die neuen Kopplungswerte im Leerlauf",
+                telemetrie.snapshot().letzterFehler);
+        pruefe (warteAuf (10000, [&] {
+                    return telemetrie.snapshot().status == TelemetryClient::Status::verbunden;
+                }),
+                "und koppelt sich mit ihnen neu — ohne dass je ein P2-Frame floss",
+                telemetrie.snapshot().letzterFehler);
+        pruefe (telemetrie.snapshot().gesendet == 0,
+                "Gegenprobe: es wurde in diesem Abschnitt wirklich nichts veroeffentlicht",
+                std::to_string (telemetrie.snapshot().gesendet) + " gesendet");
+
+        telemetrie.stop();
+        control.stop();
+        server.stoppen();
+    }
+
     // ── H · Bootstrapgrenze und der strenge kleine JSON-Leser ─────────────
     abschnitt ("H · Bootstrapgrenze und JSON-Riegel");
     {
@@ -1478,11 +1891,33 @@ int main()
         pruefe (! bootstrapRahmen (std::string (kMaxBootstrapBytes + 1, 'x'), rahmen),
                 "ein Byte darueber nicht mehr");
 
-        std::vector<std::pair<std::string, std::string>> felder;
+        std::vector<JsonFeld> felder;
         pruefe (flachesJsonObjekt ("{\"a\":\"b\",\"c\":3}", felder) && felder.size() == 2,
                 "flaches Objekt wird gelesen");
         std::string w;
-        pruefe (jsonFeld (felder, "c", w) && w == "3", "Zahlen kommen als Text zurueck");
+        pruefe (jsonLiteral (felder, "c", w) && w == "3", "Zahlen kommen als Text zurueck");
+
+        // T2-Befund 3: der Leser HATTE den Typ und warf ihn am Rueckgabewert
+        // weg. `null` und "null" waren danach dasselbe.
+        pruefe (jsonText (felder, "a", w) && w == "b", "ein String kommt als String");
+        pruefe (! jsonText (felder, "c", w), "eine Zahl ist KEIN String");
+        pruefe (! jsonLiteral (felder, "a", w), "und ein String ist kein Literal");
+        pruefe (flachesJsonObjekt ("{\"v\":null}", felder)
+                    && ! jsonText (felder, "v", w)
+                    && jsonLiteral (felder, "v", w) && w == "null",
+                "`null` ist ein Literal und wird nie als Text `null` durchgereicht");
+        pruefe (flachesJsonObjekt ("{\"v\":\"null\"}", felder)
+                    && jsonText (felder, "v", w) && w == "null",
+                "der STRING \"null\" dagegen ist einer — beide sind unterscheidbar");
+
+        // additionalProperties:false braucht einen Vergleich der FELDMENGE.
+        pruefe (flachesJsonObjekt ("{\"a\":1,\"b\":2}", felder)
+                    && feldmengeGenau (felder, { "a", "b" }),
+                "die exakte Feldmenge wird erkannt");
+        pruefe (! feldmengeGenau (felder, { "a" }),
+                "ein Zusatzfeld faellt auf (additionalProperties:false)");
+        pruefe (! feldmengeGenau (felder, { "a", "b", "c" }),
+                "und ein fehlendes Pflichtfeld ebenso");
         pruefe (! flachesJsonObjekt ("{\"a\":{\"b\":1}}", felder),
                 "Verschachtelung wird ABGELEHNT, nicht geraten");
         pruefe (! flachesJsonObjekt ("{\"a\":[1]}", felder), "Arrays ebenso");

@@ -8,6 +8,7 @@
 #include "WireEnvelope.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 
 namespace nakama::ipc
@@ -47,6 +48,47 @@ std::string zahl (double w)
     return std::to_string (w);
 }
 } // namespace
+
+/// Haelt ein `welcome` den VOLLSTAENDIGEN Vertrag aus
+/// `eq-copilot/schemas/v3/eq-ipc-v3.schema.json`?
+///
+/// Die alte Fassung las nur die Pflichtfelder und nahm jeden Wert als Text.
+/// `"broker_version":null` kam damit als nichtleerer Text `null` durch, und
+/// ein Zusatzfeld wie `"extra":1` fiel gar nicht auf, obwohl der Vertrag
+/// `additionalProperties:false` sagt (T2-Befund 3 vom 2026-08-29). Geprueft
+/// werden deshalb DREI Dinge: die Feldmenge exakt, jeder Typ, jede Laenge.
+bool welcomeHaeltVertrag (const std::vector<JsonFeld>& felder,
+                          std::string& linkId, std::string& challenge,
+                          std::string& brokerEpoch, std::string& brokerVersion)
+{
+    if (! feldmengeGenau (felder, { "type", "protocol", "broker_version",
+                                    "broker_epoch", "link_id", "challenge" }))
+        return false;
+
+    std::string typ, protokoll;
+    if (! jsonText (felder, "type", typ) || typ != "welcome")
+        return false;
+    // `protocol` ist im Schema eine ZAHL mit dem Wert 3, kein String "3".
+    if (! jsonLiteral (felder, "protocol", protokoll) || protokoll != "3")
+        return false;
+    if (! jsonText (felder, "broker_version", brokerVersion)
+        || brokerVersion.empty() || brokerVersion.size() > 64)
+        return false;
+    return jsonText (felder, "link_id", linkId) && istHex32 (linkId)
+        && jsonText (felder, "challenge", challenge) && istHex32 (challenge)
+        && jsonText (felder, "broker_epoch", brokerEpoch) && istHex32 (brokerEpoch);
+}
+
+/// Dasselbe fuer `reject`: `required [type, code, reason]`,
+/// `additionalProperties:false`, `reason` hoechstens 500 Zeichen.
+bool rejectHaeltVertrag (const std::vector<JsonFeld>& felder, std::string& grund)
+{
+    if (! feldmengeGenau (felder, { "type", "code", "reason" }))
+        return false;
+    std::string code;
+    return jsonText (felder, "code", code) && ! code.empty()
+        && jsonText (felder, "reason", grund) && grund.size() <= 500;
+}
 
 bool audioGueltig (double samplerate, int blockSize, int channels) noexcept
 {
@@ -138,6 +180,17 @@ bool ControlClient::sollAbbrechen (std::uint64_t generation) const noexcept
 
 bool ControlClient::sendeP0 (const std::string& json)
 {
+    // An der TUER, nicht am Draht. Eine eingereihte Nachricht ueber der
+    // Paketgrenze koennte NIE gesendet werden — sie bliebe dank der
+    // Reservierung fuer immer vorn in der Queue und liesse jede neue
+    // Verbindung an derselben Stelle scheitern.
+    if (json.size() > kMaxPayloadBytes)
+    {
+        std::lock_guard<std::mutex> z (zustandMutex);
+        ++zustand.zuGross;
+        return false;
+    }
+
     bool ueberlauf = false;
     {
         std::lock_guard<std::mutex> l (sendeMutex);
@@ -163,6 +216,13 @@ bool ControlClient::sendeP0 (const std::string& json)
 
 P1Ergebnis ControlClient::sendeP1 (const std::string& schluessel, const std::string& json)
 {
+    if (json.size() > kMaxPayloadBytes)
+    {
+        std::lock_guard<std::mutex> z (zustandMutex);
+        ++zustand.zuGross;
+        return P1Ergebnis::zuGross;
+    }
+
     std::lock_guard<std::mutex> l (sendeMutex);
     const auto e = p1.einreihen (schluessel, json);
     std::lock_guard<std::mutex> z (zustandMutex);
@@ -305,9 +365,9 @@ bool ControlClient::eineVerbindung (std::uint64_t generation)
                 break;
             }
             const std::string text (reinterpret_cast<const char*> (e.payload), e.payloadLaenge);
-            std::vector<std::pair<std::string, std::string>> felder;
-            std::string typ, protokoll;
-            if (! flachesJsonObjekt (text, felder) || ! jsonFeld (felder, "type", typ))
+            std::vector<JsonFeld> felder;
+            std::string typ;
+            if (! flachesJsonObjekt (text, felder) || ! jsonText (felder, "type", typ))
             {
                 std::lock_guard<std::mutex> l (zustandMutex);
                 zustand.letzterFehler = "welcome: kein flaches JSON-Objekt";
@@ -316,17 +376,13 @@ bool ControlClient::eineVerbindung (std::uint64_t generation)
             if (typ == "reject")
             {
                 std::string grund;
-                jsonFeld (felder, "reason", grund);
                 std::lock_guard<std::mutex> l (zustandMutex);
-                zustand.letzterFehler = "Broker lehnt ab: " + grund;
+                zustand.letzterFehler =
+                    rejectHaeltVertrag (felder, grund) ? "Broker lehnt ab: " + grund
+                                                       : "reject haelt den Vertrag nicht";
                 break;
             }
-            if (typ != "welcome"
-                || ! jsonFeld (felder, "protocol", protokoll) || protokoll != "3"
-                || ! jsonFeld (felder, "link_id", linkId) || ! istHex32 (linkId)
-                || ! jsonFeld (felder, "challenge", challenge) || ! istHex32 (challenge)
-                || ! jsonFeld (felder, "broker_epoch", brokerEpoch) || ! istHex32 (brokerEpoch)
-                || ! jsonFeld (felder, "broker_version", brokerVersion))
+            if (! welcomeHaeltVertrag (felder, linkId, challenge, brokerEpoch, brokerVersion))
             {
                 std::lock_guard<std::mutex> l (zustandMutex);
                 zustand.letzterFehler = "unerwartete Antwort auf hello";
@@ -390,6 +446,11 @@ bool ControlClient::eineVerbindung (std::uint64_t generation)
         return p0UeberlaufZaehler.load() != ueberlaufBeimVerbinden;
     };
 
+    // Ratengrenze je Verbindung, DIESELBE wie im Broker (§33.1). Die Uhr ist
+    // die des Aufrufers, damit die Klasse selbst keine liest.
+    Ratengrenze rate (kRateProSekunde, kRateFensterMs);
+    const auto rateBeginn = std::chrono::steady_clock::now();
+
     std::vector<std::uint8_t> ausgang;
     while (! sollAbbrechen (generation))
     {
@@ -433,6 +494,8 @@ bool ControlClient::eineVerbindung (std::uint64_t generation)
                     std::lock_guard<std::mutex> z (zustandMutex);
                     zustand.p1Wiederholungen = p1.wiederholungen();
                 }
+                // Der Platz war bis hierher reserviert; `zuruecklegen` hat ihn
+                // wieder mit dem Eintrag belegt. Nichts ist verlorengegangen.
                 if (! sollAbbrechen (generation))
                 {
                     std::lock_guard<std::mutex> l (zustandMutex);
@@ -444,6 +507,15 @@ bool ControlClient::eineVerbindung (std::uint64_t generation)
                             : (fehler.empty() ? std::string ("Nachricht zu gross") : fehler);
                 }
                 break;
+            }
+            // Auf dem Draht: erst JETZT gibt die Queue den reservierten Platz
+            // frei (§53.9 "nichts verwerfen" gilt bis zum Write-Commit).
+            {
+                std::lock_guard<std::mutex> l (sendeMutex);
+                if (istP0)
+                    p0.bestaetigen();
+                else
+                    p1.bestaetigen();
             }
             std::lock_guard<std::mutex> l (zustandMutex);
             if (istP0)
@@ -486,6 +558,38 @@ bool ControlClient::eineVerbindung (std::uint64_t generation)
                 abbrechen = true;
                 break;
             }
+            // Die Familienzuordnung des Vertrags gilt in BEIDE Richtungen:
+            // die Control-Verbindung traegt ausschliesslich P0/P1 (§33.1).
+            // Ohne diese Sperre reichte ein korrekt gerahmter P2-Frame vom
+            // Peer seine Binaerpayload an `beiAntwort` weiter, das JSON
+            // erwartet (T2-Befund 4 vom 2026-08-29).
+            if (e.kopf.familie == Familie::p2
+                || e.kopf.encoding != Kodierung::json)
+            {
+                std::lock_guard<std::mutex> l (zustandMutex);
+                zustand.letzterFehler =
+                    "P2 oder Nicht-JSON auf der Control-Verbindung — wird geschlossen";
+                ++zustand.familieAbweisungen;
+                abbrechen = true;
+                break;
+            }
+
+            // Ratengrenze VOR dem Callback: ein Peer, der hinter dem welcome
+            // beliebig viele Frames pipelined, darf den Aufrufer nicht damit
+            // fluten (§33.1, T2-Befund 5 vom 2026-08-29).
+            const auto jetztMs = static_cast<std::uint64_t> (
+                std::chrono::duration_cast<std::chrono::milliseconds> (
+                    std::chrono::steady_clock::now() - rateBeginn).count());
+            if (! rate.erlaubt (jetztMs))
+            {
+                std::lock_guard<std::mutex> l (zustandMutex);
+                zustand.letzterFehler =
+                    "Nachrichtenratengrenze ueberschritten — Verbindung wird geschlossen";
+                ++zustand.rateAbweisungen;
+                abbrechen = true;
+                break;
+            }
+
             {
                 std::lock_guard<std::mutex> l (zustandMutex);
                 ++zustand.empfangen;

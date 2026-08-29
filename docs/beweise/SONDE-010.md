@@ -19464,3 +19464,42 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
 </details>
 
+
+---
+
+## Abschluss der Dirigentenrunde — 2026-08-29 (Runde 3): NEEDS_WORK, dreimal nachgearbeitet, Urteil offen
+
+**Marke:** `T2 NEEDS_WORK 2026-08-29 nachgearbeitet` (unverändert; Präzedenz S8/S9). Stand `444e125`; Ticketbasis `a7b0740`; Basis dieser Runde `e9ae2e9`. Die dritte Nacharbeitsrunde lief auf ausdrückliche User-Freigabe vom 29.08. (`docs/beweise/G1.md` §12) durch einen frischen Opus-Worker (`max`, Aufsicht ENG): Commits `1bdb93d` · `c444ca3` · `66e4a09` · `e3e8e57` · `a88d32e` · `833baff` · `444e125`; Kanon beglaubigt **GRÜN 32/32** auf `a88d32e` (12:51, Exit 0), davor ein ROT 1/32 an A17 durch Relink, in §9.9 erklärt und als NAK-93/NAK-94 registriert.
+
+**Prüfer Runde 4:** Codex `gpt-5.6-sol`, Effort `xhigh`, frischer Thread `01a04d2b-7926-7da2-b061-1991cd6d3a4b`, lesend über den vollständigen Ticketbereich `git diff a7b0740...444e125`; HEAD vor und nach dem Lauf `444e125` (12:58–13:16). **Urteil: NEEDS_WORK** — die sechs NAK-92-Schlüsse sind laut Prüfer an Quelle und Rohausgaben bestätigt; sieben neue Befunde (6 P1, 1 P2). Wortlaut:
+
+> Die sechs in §9 genannten NAK-92-Fixes und ihre Bruchproben stimmen mit Quelle und Rohausgaben überein. Zusätzliche P1-, Lifecycle- und Stop-Lücken brechen jedoch weiterhin Backpressure- und P0-Starvation-Zusagen; außerdem überzieht A21 seine Messung.
+>
+> Full review comments:
+>
+> - [P1] Dräne den P1-Wiederholpuffer auch ohne Reconnect — eq-copilot/plugin/core/ipc/ControlClient.cpp:439-439
+>   Bei nur vorübergehendem P1-Rückstau verbleiben akzeptierte Ereignisse unbegrenzt im Wiederholpuffer, weil dessen einzige Entleerung hier beim Verbindungsaufbau erfolgt. Repro: mit Kapazität 1 E1 aktiv und E2 als `zurWiederholung` einreihen, E1 senden und die Verbindung offen lassen; E2 wird nie gesendet, während spätere Nachrichten sie überholen. Damit fehlt der Fortschritt für die Wiederholungszusage aus `docs/FL-Nakama-Sonden-Design-Entwurf.md:3749`.
+>
+> - [P1] Bewahre Snapshot-Schlüssel im Wiederholpuffer — eq-copilot/plugin/core/ipc/IpcQueues.h:191-191
+>   Bei einer vollen Hauptqueue verliert ein Snapshot hier seinen Objektschlüssel. Repro: Kapazität 1/1, einen fremden Eintrag aktiv halten, Snapshot K=alt in den Wiederholpuffer legen und danach K=neu einreihen; der neuere Snapshot wird abgewiesen und nach Reconnect erscheint der alte als nicht koaleszierbares Ereignis. Das kehrt die Snapshot-Koaleszierung aus `docs/FL-Nakama-Sonden-Design-Entwurf.md:3749` um.
+>
+> - [P1] Verwirf keine akzeptierten Rust-P1-Ereignisse — broker/src/transport/warteschlange.rs:148-151
+>   Die als eine der vier Backpressure-Politiken ausgelieferte Rust-Queue enthält weiterhin exakt den behobenen C++-Fehler: bei Kapazität 2/2 und Ereignissen 1–5 wird das zuvor akzeptierte Ereignis 3 entfernt und nach Reconnect kommen nur 4 und 5. Der bestehende Test `p1_haelt_ereignisse_fuer_den_reconnect_vor` kodifiziert diesen Verlust sogar, obwohl §53.9 Wiederholung statt Verdrängung verlangt.
+>
+> - [P1] Lies P0-Antworten trotz wartender P1-Nachrichten — eq-copilot/plugin/core/ipc/ControlClient.cpp:525-525
+>   Solange irgendeine Ausgangsnachricht wartet, überspringt dieses `continue` den Lesepfad vollständig. Repro: der Peer liest und beantwortet zuerst einen P0-Heartbeat, liest danach aber eine große wartende P1-Nachricht nicht mehr; der Client blockiert fünf Sekunden im P1-Write, schließt anschließend und verarbeitet den bereits verfügbaren P0-ACK nie. Damit kann P1-Backpressure einen bestätigten P0-Rundlauf aushungern, was dem Gate „ohne P0-Starvation“ widerspricht.
+>
+> - [P1] Ordne Control- vor Telemetry-Lifecycle — broker/src/transport/server_v3.rs:1245-1247
+>   Das Control-Welcome wird gesendet, bevor `control_verbunden` abgeschlossen ist, obwohl die Kopplung bereits registriert wurde. Repro: die Senke in `control_verbunden` blockieren, nach Empfang des Welcome sofort Telemetry verbinden und die Callback-Reihenfolge protokollieren; `telemetrie_gekoppelt` läuft auf dem anderen Verbindungsthread zuerst, selbst wenn Control später in die Frist läuft. Da dieser Callback nur die `link_id` erhält, kann die Senke den fehlenden Control-Kontext nicht rekonstruieren; das verletzt die gekoppelte Lifecycle-Regel aus `AGENTS.md:48-50`.
+>
+> - [P1] Entkopple Client-Callbacks vom stop()-Join — eq-copilot/plugin/core/ipc/ControlClient.cpp:162-163
+>   Die Provider und `beiAntwort` laufen synchron auf demselben Clientthread, während `stop()` diesen Thread ohne Frist joint. Ein blockierender Callback lässt daher Stop und Destruktor unbegrenzt hängen; ruft `beiAntwort` selbst `stop()` auf, versucht der Thread sich selbst zu joinen und endet typischerweise per `std::system_error`/`std::terminate`. Die öffentliche API verbietet diese Reentranz nicht; sie benötigt einen begrenzten oder vom Worker entkoppelten Abschlussweg.
+>
+> - [P2] Belege die Allokationsaussage von A21 — tools/beweise.ps1:345-345
+>   A21 behauptet, feindliche Längen lösten keine Allokation aus, aber der Test zählt Allokationen überhaupt nicht und `envelope_pruefen` erzeugt auf diesen Fehlerpfaden jeweils ein `Vec<Verstoss>`. Er prüft ausschließlich die Fehlerklasse; selbst eine neue, begrenzte Allokation anhand von `frame_len` bliebe grün. Der Kanon-Lauf belegt daher nur, dass keine riesige Eingabeallokation bzw. kein Absturz auftrat, nicht die hier festgeschriebene Allokationsfreiheit.
+
+**Vom Dirigenten an der Quelle bestätigt: alle sieben.** `ControlClient.cpp:439` ist der einzige Aufrufer von `nachReconnectWiederholen()` — der Wiederholpuffer leert sich nur beim Verbindungsaufbau; `IpcQueues.h:191` legt den Snapshot ohne Schlüssel in `wiederholung` (Deque von Strings); `warteschlange.rs:148-151` trägt weiterhin `pop_front()` mit `WiederholungVerdraengt` — der in C++ geschlossene Befund 1 ist in Rust offen, und `p1_haelt_ereignisse_fuer_den_reconnect_vor` (Zeile 359) schreibt den Verlust fest; `ControlClient.cpp:525` `continue` überspringt den Lesepfad, solange irgendetwas wartet; `server_v3.rs:1225/1245/1274`: `control_anmelden` → Welcome schreiben → erst dann `control_verbunden`; `ControlClient.cpp:155-166`: `stop()` joint ohne Frist unter `lebenslaufMutex`, Callbacks laufen auf demselben Thread; `tools/beweise.ps1:345` behauptet für A21 „lösen keine Allokation aus", der Fuzz-Test zählt keine Allokationen.
+
+**Warum hier gestoppt:** Die vom User freigegebene dritte Runde ist verbraucht; jede Runde schloss ihre Befunde und legte eine neue Schicht derselben Frage frei (Rückstau- und Lebenszykluspolitik unter Stop, Reconnect und Fehlerpfaden). Die sieben Restbefunde sind reproduzierbar und klein umrissen, aber materiell: vier davon berühren direkt den Gate-Satz „ohne P0-Starvation" bzw. §53.9. Eine vierte Runde nur auf ausdrückliche User-Freigabe; bis dahin bleibt S14–15 „gebaut, nachgearbeitet, frisches Urteil fehlt". Datiert als **NAK-95** in `docs/offene-punkte.md`. Für `SONDE-011` bleibt NAK-95 (wie zuvor NAK-92) Vorbedingung — der Coordinator ist die Senke, deren Lebenszyklus hier offen ist.
+
+**Tatsächlich gelaufene Beweise:** Kanon `-Bauen` zweimal in Runde 3 (ROT 1/32 auf `e3e8e57` durch A17-Relink, GRÜN 32/32 auf `a88d32e`), B10 159 → 161, Rust-Tests 150 → 154, A22 grün (32 Sonden, 9984/9984 P0 beantwortet, max 21 ms); ein Codex-Lauf read-only, HEAD vor/nach identisch. Nicht gelaufen: kein zweiter FL-Scan des neu festgeschriebenen Pakets (§9.9).

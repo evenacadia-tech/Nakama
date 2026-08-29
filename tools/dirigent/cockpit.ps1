@@ -167,10 +167,17 @@ function Invoke-TextProcess {
 }
 
 function Invoke-GitText {
+    # Alle Aufrufe hier sind lesend (status, log, rev-parse, worktree list,
+    # merge-base). `--no-optional-locks` steht VOR `-C`, weil git globale
+    # Schalter vor dem Unterbefehl erwartet. Ohne den Schalter frischt
+    # `git status` den Index auf und legt dafuer `.git/index.lock` an; wird der
+    # Aufruf nach $TimeoutSeconds abgeschossen - unter Baulast am 29.08.
+    # dreimal passiert - bleibt eine 0-Byte-Sperre liegen und blockiert jedes
+    # spaetere git (NAK-96).
     param([string]$Arguments, [int]$TimeoutSeconds = 4)
     try {
         $gitPath = (Get-Command git -ErrorAction Stop).Source
-        return Invoke-TextProcess $gitPath "-C $(Quote-ProcessArgument $script:RepoRoot) $Arguments" $TimeoutSeconds
+        return Invoke-TextProcess $gitPath "--no-optional-locks -C $(Quote-ProcessArgument $script:RepoRoot) $Arguments" $TimeoutSeconds
     }
     catch {
         return [pscustomobject]@{ Ok = $false; ExitCode = -1; StdOut = ''; Error = $_.Exception.Message }

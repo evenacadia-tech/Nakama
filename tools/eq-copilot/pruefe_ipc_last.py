@@ -184,6 +184,20 @@ def main(argv: list[str]) -> int:
         pruefe(client.get("p2_ersetzt", 0) > 0,
                "es lag wirklich Rueckstau an",
                f"{client.get('p2_ersetzt')} ersetzte P2-Frames")
+        # Rueckstau heisst "der aelteste weicht". Faellt stattdessen der
+        # gerade erzeugte Frame, ist die P2-Politik aus §53.9 umgekehrt
+        # (T2-Befund 2 Runde 3). Das Bein ignorierte Rueckgabe und Zaehler
+        # und konnte den Verlust deshalb gar nicht sehen.
+        pruefe(client.get("p2_neueste_verworfen", -1) == 0,
+               "und dabei fiel nie der neueste Frame (replace-oldest)",
+               f"{client.get('p2_neueste_verworfen')} neueste verworfen, "
+               f"{client.get('p2_kollisionsloecher')} Positionen uebersprungen")
+        pruefe(client.get("p2_abgelehnt", -1)
+               == client.get("p2_zu_gross", 0) + client.get("p2_neueste_verworfen", 0),
+               "jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund",
+               f"{client.get('p2_abgelehnt')} abgelehnt = "
+               f"{client.get('p2_zu_gross')} zu gross + "
+               f"{client.get('p2_neueste_verworfen')} ohne Platz")
 
     print("GRUEN" if fehler == 0 else "ROT")
     return 0 if fehler == 0 else 2

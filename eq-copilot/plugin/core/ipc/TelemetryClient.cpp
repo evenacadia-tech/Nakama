@@ -91,6 +91,8 @@ TelemetryClient::Snapshot TelemetryClient::snapshot() const
     Snapshot s = zustand;
     s.ersetzt = schleuse.ersetzteFrames();
     s.zuGross = schleuse.zuGrosseFrames();
+    s.kollisionsLoecher = schleuse.kollisionsLoecher();
+    s.beanspruchtVerworfen = schleuse.beanspruchtVerworfen();
     return s;
 }
 

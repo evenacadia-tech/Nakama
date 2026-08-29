@@ -178,14 +178,19 @@ int main (int argc, char** argv)
 
     // ── Flut: ein Erzeuger bedient alle Schleusen der Reihe nach ──────────
     std::atomic<bool> laeuft { true };
-    std::atomic<std::uint64_t> veroeffentlicht { 0 };
+    std::atomic<std::uint64_t> veroeffentlicht { 0 }, abgelehnt { 0 };
     std::vector<std::uint8_t> frame (512, 0x5A);
     std::thread fluter ([&] {
         while (laeuft.load())
         {
             for (auto& s : alle)
             {
-                s->telemetrie->veroeffentlichen (frame.data(), frame.size());
+                // Die RUECKGABE zaehlt mit. Sie ist die einzige Stelle, an der
+                // ein nicht uebernommener Frame ueberhaupt sichtbar wird; sie
+                // zu verwerfen hiess, den Verlust nicht messen zu koennen
+                // (T2-Befund 2 Runde 3, A22-Haelfte).
+                if (! s->telemetrie->veroeffentlichen (frame.data(), frame.size()))
+                    abgelehnt.fetch_add (1);
                 veroeffentlicht.fetch_add (1);
             }
             std::this_thread::sleep_for (std::chrono::milliseconds (1));
@@ -228,6 +233,7 @@ int main (int argc, char** argv)
 
     std::uint64_t p0Gesendet = 0, p0Beantwortet = 0, p2Ersetzt = 0, p2Gesendet = 0;
     std::uint64_t envelopeAbweisungen = 0, p0Ueberlaeufe = 0;
+    std::uint64_t p2ZuGross = 0, p2Loecher = 0, p2NeuesteVerworfen = 0;
     long long maxLatenz = 0;
     std::vector<long long> alleLatenzen;
     for (auto& s : alle)
@@ -238,6 +244,9 @@ int main (int argc, char** argv)
         const auto ts = s->telemetrie->snapshot();
         p2Ersetzt += ts.ersetzt;
         p2Gesendet += ts.gesendet;
+        p2ZuGross += ts.zuGross;
+        p2Loecher += ts.kollisionsLoecher;
+        p2NeuesteVerworfen += ts.beanspruchtVerworfen;
         envelopeAbweisungen += cs.envelopeAbweisungen + ts.envelopeAbweisungen;
         p0Ueberlaeufe += cs.p0Ueberlaeufe;
         std::lock_guard<std::mutex> l (s->mutex);
@@ -260,6 +269,10 @@ int main (int argc, char** argv)
               << ",\"p2_veroeffentlicht\":" << veroeffentlicht.load()
               << ",\"p2_gesendet\":" << p2Gesendet
               << ",\"p2_ersetzt\":" << p2Ersetzt
+              << ",\"p2_abgelehnt\":" << abgelehnt.load()
+              << ",\"p2_zu_gross\":" << p2ZuGross
+              << ",\"p2_kollisionsloecher\":" << p2Loecher
+              << ",\"p2_neueste_verworfen\":" << p2NeuesteVerworfen
               << ",\"p0_gesendet\":" << p0Gesendet
               << ",\"p0_beantwortet\":" << p0Beantwortet
               << ",\"p0_latenz_max_ms\":" << maxLatenz
@@ -284,6 +297,21 @@ int main (int argc, char** argv)
                 + " ms, Schranke " + std::to_string (kMaxP0LatenzMs) + " ms");
     pruefe (p2Ersetzt > 0, "es lag WIRKLICH Rueckstau an (Cap 2 hat ersetzt)",
             std::to_string (p2Ersetzt) + " ersetzte P2-Frames");
+    // Rueckstau heisst "der aelteste weicht" — nie "der neueste faellt".
+    // Unter echter Flut ueber eine echte Pipe laeuft der Erzeuger auf den
+    // Platz des Telemetriethreads; er ueberspringt die Position, statt den
+    // gerade erzeugten Frame zu opfern (T2-Befund 2 Runde 3).
+    pruefe (p2NeuesteVerworfen == 0,
+            "und dabei faellt NIE der neueste Frame (replace-oldest)",
+            std::to_string (p2NeuesteVerworfen) + " neueste verworfen, "
+                + std::to_string (p2Loecher) + " Positionen uebersprungen");
+    // Jede Ablehnung hat einen benannten Grund. Ohne diese Gleichung koennte
+    // ein `false` aus einem Grund kommen, den niemand zaehlt.
+    pruefe (abgelehnt.load() == p2ZuGross + p2NeuesteVerworfen,
+            "jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund",
+            std::to_string (abgelehnt.load()) + " abgelehnt = "
+                + std::to_string (p2ZuGross) + " zu gross + "
+                + std::to_string (p2NeuesteVerworfen) + " ohne Platz");
     pruefe (envelopeAbweisungen == 0, "kein Envelope wurde abgewiesen",
             std::to_string (envelopeAbweisungen));
     pruefe (p0Ueberlaeufe == 0, "keine P0-Queue lief ueber",

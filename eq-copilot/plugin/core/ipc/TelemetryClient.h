@@ -55,6 +55,13 @@ public:
         std::uint64_t gesendet = 0;
         std::uint64_t ersetzt = 0;      ///< aelteste ungesendete Frames (Cap 2)
         std::uint64_t zuGross = 0;      ///< Frames ueber der Slotgroesse
+        /// Wie oft der Erzeuger auf den Platz lief, den der Telemetriethread
+        /// gerade beansprucht hatte, und die Position deshalb uebersprang.
+        std::uint64_t kollisionsLoecher = 0;
+        /// Wie oft dabei GAR KEIN Platz zu holen war und der neue Frame fiel.
+        /// Muss bei einem Verbraucher 0 bleiben — die Zahl ist die Wache
+        /// darueber, dass replace-oldest nie zu replace-newest wird.
+        std::uint64_t beanspruchtVerworfen = 0;
         std::uint64_t envelopeAbweisungen = 0;
         /// Broker→Main-Liveupdates, die auf dieser Verbindung ankamen. Sie
         /// sind vertragsgemaess (§33.1), haben in diesem Ticket aber noch

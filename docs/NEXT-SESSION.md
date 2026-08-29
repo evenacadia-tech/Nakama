@@ -35,6 +35,19 @@
 > tragen „geschlossen — Urteil offen"; ein frischer Prüfer hat noch nicht
 > geurteilt, die Urteilsmarke am Manifestkopf ist unverändert. Nächster Schritt
 > der Reihenfolge ist damit S9 (NAK-88).
+>
+> **Nachtrag Nacharbeit Runde 4 29.08. (`8ec0e79`):** Der vierte frische
+> T3-Prüfer (Codex `gpt-5.6-sol`/xhigh, Thread `01a04dff`, Stand `facea2d`)
+> urteilte **NEEDS_WORK** mit drei Befunden auf denselben Riegel. Alle drei
+> sind geschlossen (`5acf7f7`): A14 vergleicht jetzt vier Schalterklassen
+> beidseitig statt nur Defines, prüft die Linkfrische gegen Objekte und Tlog
+> und hält Tlog, `NAKAMA_KERN_QUELLEN` und Archiv als drei paarweise gleiche
+> Mengen; ein veralteter Tlog-Eintrag wird benannt statt mitgezählt. Neue
+> Prueflistenregel E zur Standbindung ganzer Manifestabschnitte, neun
+> Altabschnitte nachgezogen. Kanon auf `0ea62e4`: **GRUEN, 32/32**,
+> beglaubigt. NAK-85 trägt weiter „geschlossen — Urteil offen“; die
+> Urteilsmarke am Manifestkopf ist unverändert. Nächster Schritt der
+> Reihenfolge bleibt S9 (NAK-88).
 
 > ## ✅ NACHTRAG — 29.08.2026, S14–15 `SONDE-010` T2-Nacharbeit Runde 1
 >

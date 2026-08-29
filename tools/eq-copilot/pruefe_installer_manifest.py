@@ -1032,7 +1032,17 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
             _ziele = json.loads(IDENTITAET.read_text(encoding="utf-8"))["ziele"]
             _ident = next((z for z in _ziele
                            if z.get("id") == artefakt.get("ziel_id")), None)
-            if artefakt.get("art") == "vst3" and _ident is not None:
+            if artefakt.get("art") == "vst3":
+                # Ein vst3 ohne Identitaetseintrag ist in [1] schon ROT
+                # (r_quellpfade_nachgerechnet). Hier trotzdem laut abbrechen
+                # statt still auf den Broker-Zweig zu fallen - eine Fixtur, die
+                # sich heimlich eine andere Form baut, misst nichts.
+                if _ident is None:
+                    raise SystemExit(
+                        "Gegenprobe unmoeglich: vst3-Artefakt "
+                        f"{artefakt.get('ziel_id')!r} hat keinen Eintrag in "
+                        "der Identitaetsdatei - die Writer-Form von `name` "
+                        "und `ziel` waere nicht ableitbar.")
                 writer_name = _ident.get("produktname")
                 # `Ziel-Pfad`: Zielverzeichnis des Manifests + Bundlename der
                 # Identitaet, Schraegstriche wie im Writer gedreht.
@@ -1123,6 +1133,11 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
             # Nicht abgeschrieben: das Muster wird aus Install-Nakama.ps1
             # gelesen. Aendert der Writer seine ID-Form, faellt diese Zeile -
             # und nicht erst der naechste Pruefer.
+            #
+            # PowerShells `-match` ist von Haus aus ohne Ruecksicht auf
+            # Gross-/Kleinschreibung, `re.match` nicht. Diese Wache ist damit
+            # STRENGER als der Writer: was hier besteht, besteht dort auch.
+            # Umgekehrt gilt es nicht - fail-closed, und das ist gewollt.
             writer_text = INSTALLER.read_text(encoding="utf-8")
             muster = re.search(r"function Ist-TransaktionsId.*?-match\s*'([^']+)'",
                                writer_text, re.S)

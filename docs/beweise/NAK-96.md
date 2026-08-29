@@ -2354,3 +2354,33 @@ Commit gelesen; fremde uncommittete Dateien gab es in dieser Sitzung nicht.
   `a9c6450`.
 - **NAK-93, NAK-94, NAK-98** sind unverändert außerhalb der Grenze.
 - **`docs/offene-punkte.md`** ist nicht angefasst: datierter Verlauf.
+
+---
+
+## Abschluss der Dirigentenrunde — 2026-08-29 (NAK-96 + NAK-97): PASS
+
+**Urteil des frischen Prüfers (Runde 4):** PASS · Codex `gpt-5.6-sol`, Effort `high` (Register NAK-96: kleiner, lokal begrenzter Werkzeugeingriff; Effort über alle Runden konstant), Thread `01a04de3-06d7-7c93-b802-637f1e624f79`, lesend über `git diff 2271df5...202f2f8592bb271d788ca9eef513240a190c3969`, HEAD vor und nach dem Lauf `202f2f8592bb271d788ca9eef513240a190c3969`.
+
+**Bereich:** Basis `2271df5bc7ab2ba823ecbf1f7c7dbb68e16984d8` → Ende `202f2f8592bb271d788ca9eef513240a190c3969`. Sitzung des Dirigenten `0fc7441c-06b5-4795-bf96-a0558e341b76` (Fable/xhigh, Auto-Modus).
+
+**Verlauf der Runde**
+
+| Schritt | Worker / Prüfer | Stand | Ergebnis |
+|---|---|---|---|
+| Bau NAK-96 | Opus/max `nakama-nak96-2271df5-bau` (7214fe8d), Aufsicht NORMAL | `ad7ac99`…`f501704` | Runner-Aufteilung, `--no-optional-locks` in Cockpit und Runner, Doku; Abschlusslauf 2 GRÜN 32/32 beglaubigt auf `d993894`; NAK-97 und NAK-98 als Funde außerhalb der Grenze |
+| Folge NAK-97 | Opus/max `nakama-nak97-f501704-bau` (7b187706), Aufsicht LOCKER | `da1b04e`…`afc0978` | `planstand.py`: Schalter, KANON liest GRÜN und ROT |
+| Prüfer 1 | Codex high, Thread `01a04d8b-1e7b-79f2-bc9a-821a986283f3` | `afc0978` | NEEDS_WORK — P1 Reservierung nicht atomar (Lücke, Regel entschieden), P2 Manifestzahl (Defekt) |
+| Nacharbeit 1 | Opus/max `nakama-nak96-fix1-afc0978-bau` (e9bc2869), Aufsicht NORMAL | `b4b1e29`…`34491e0` | `tools/beweise-roh.ps1` CreateNew-Reservierung, Rennprobe 20/20, Exit 5; Abschlusslauf 3 GRÜN 32/32 beglaubigt auf `f124746` |
+| Prüfer 2 | Codex high, Thread `01a04dae-6270-7ce1-b759-4c0d756af57a` | `34491e0` | NEEDS_WORK — zwei P2-Textbefunde (Zeilenenden-Behauptung, veraltete Positionsangaben) |
+| Nacharbeit 2 | derselbe Codex-Thread mit Schreibrecht; Fixdiff vom Dirigenten geprüft und committet | `631ac34`, `a9c6450` | Behauptungen auf das Gemessene begrenzt; Prüfliste-E-Regel: Positionen als Symbol/Anker oder `Datei:Zeile @ sha7` |
+| Prüfer 3 | Codex high, Thread `01a04dbd-51d2-7a71-956d-6a46d5f2439d` | `a9c6450` | NEEDS_WORK — vier P2: `kanon_lesen()` nicht fail-closed bei verweigernden Urteilen, Zeilenzahl §9.11, nackte Positionen §1–§8, VORLAGE widersprüchlich |
+| Nacharbeit 3 | Opus/max `nakama-nak96-fix3-a9c6450-bau` (cb5e1a6b), Aufsicht NORMAL | `7be6cd5`…`202f2f8` | KANON trifft alle vier Runner-Urteile, jüngster gilt; Korpus 28 Manifeste, 0 geändert; Vorlage getrennt nach Ticketproben/Kanon |
+| Prüfer 4 | Codex high, Thread `01a04de3-06d7-7c93-b802-637f1e624f79` | `202f2f8592bb271d788ca9eef513240a190c3969` | PASS — kein Defekt, keine Lücke, keine Härtung gemeldet; Python 3.13 in der Codex-Sandbox nicht startbar, Regex-Proben dort mit 3.14 |
+
+**Tatsächlich gelaufene Beweise:** drei volle Kanon-Läufe mit `-Bauen` über den neuen Mechanismus (`8a1ea8a` ROT 31/32 durch B10 → NAK-98; `d993894` GRÜN 32/32; `f124746` GRÜN 32/32), zwei Kollisionsläufe ohne `-Bauen`, Bruchproben zu Suffixlogik, Reservierung und Regex, Rennprobe 20/20 mit und ohne atomare Reservierung, Korpusproben über alle Manifeste (alter gegen neuer Leser), Cockpit `-Plan` und `-StatusLine`. Nach Nacharbeit 3 kein Kanon: geändert wurden nur `planstand.py`, Manifest, Vorlage und Prüfliste — kein Kanon-Bein deckt sie, `tools/beweise.ps1` ist seit `f124746` bis auf einen Kommentar unverändert.
+
+**Lehre dieser Runde (Prozess):** Drei von vier Prüferrunden fanden Behauptungen, die das Manifest über das Gemessene hinaus machte — Zeilennummern, Zeilenzahlen, Zeilenenden. Die Regel dagegen steht jetzt in `tools/dirigent/pruefliste.md` E (Positionen nur als Symbol/Anker oder mit Commit; Rohausgaben und Zitate wortgleich, der einleitende Satz trägt den Commit).
+
+**Offen, außerhalb der Grenze (Register):** NAK-93 (Broker nicht im Kanon-Bau), NAK-94 (A17 nach Relink), NAK-98 (B10 unter Last am P2-Slot-Anspruch — gehört zu S14–15 / NAK-95).
+
+**Nächster Schritt laut Reihenfolge (G1 §12, Nachtrag 29.08.):** S8 `SONDE-007a` Nacharbeit Runde 3 fortsetzen (NAK-85), danach S9 (NAK-88), S9b (NAK-89, NAK-94), S14–15 mit Verhaltensmatrix (NAK-95, NAK-98), dann G1-Gate-Lauf.

@@ -41,7 +41,7 @@ traegt der einleitende Satz den Stand.
 
 **Was gebaut wurde (Karte, keine Behauptung — Behauptungen stehen in §1):**
 
-**Stand dieser Karte:** `60717c5` — an diesem Stand sind ihre Anker geprüft.
+**Stand dieser Karte:** `5dfe3a3` — an diesem Stand sind ihre Anker geprüft.
 Sie nennt bewusst **keine** Anzahlen (Befund B4, Runde 6): Quellen, Verbraucher
 und Makros stehen als Quellenanker da, weil jede abgeschriebene Zahl still
 falsch wird, sobald jemand eine Datei oder ein Ziel ergänzt.
@@ -74,8 +74,8 @@ unten bleiben datierte Belege ihres damaligen Quellstands:
 | **K1** Präprozessor | Quelltext | die in `eq-copilot/plugin/state/NakamaKernRiegel.h` namentlich geführten `JucePlugin_*`-Makros — die Liste dort ist die Quelle, nicht diese Karte —, am Anfang **und Ende** jeder Kern-Übersetzungseinheit (gemessen aus `NAKAMA_KERN_QUELLEN`; die aktuelle Anzahl gibt der Messlauf aus); damit auch bis zum TU-Ende definierte Makros aus später eingebundenen eigenen/generierten Headern | Makronamen außerhalb der Liste und vor dem TU-Ende wieder entfernte Makros (der Präprozessor kann kein Präfix aufzählen; resultierende Identitätsbytes misst K3, den Quelltext selbst **K1b**) |
 | **K1b** Quelltext-Token | die tatsächlichen Compiler-Eingaben: jede Datei aus dem frisch geschriebenen `CL.read.1.tlog`, die **nicht** aus den JUCE-Modulen und nicht aus den Toolchain-/SDK-Wurzeln stammt — also `plugin/**` **und alles Übrige**, `/FI` und vorkompilierte Köpfe eingeschlossen —, plus die literale Include-Hülle als Gegenprobe; die namentlich erlaubten Systemdateien werden dabei roh in ASCII und UTF-16LE durchsucht statt als C++ geparst | jedes `JucePlugin_`-Token im Quelltext, unabhängig von `#define`/`#undef`; Kommentare werden vorher entfernt, Stringliterale nicht; einzige Ausnahme ist `NakamaKernRiegel.h`, gemessen und namentlich | den Inhalt der JUCE-Module (dafür der JUCE-Baum-Riegel) und der Toolchain-/SDK-Header außerhalb des Repos (benannte Nichtzusage, kein Fingerprint); Makronamen, die erst durch Tokenverkettung entstehen. Lässt sich eine der drei Ausschlusswurzeln nicht ableiten, bildet K1b **keine** Menge, sondern klagt |
 | **K2** CMake-Konfigurierzeit | Kernziel plus dessen compilerwirksame Usage-Requirements-Hülle; Verbraucher nur bei einer echten fehlerhaften Rückkante; Ausführung verzögert bis zum Ende von `plugin/` nach allen Zieländerungen | jedes compilerwirksame `JucePlugin_` aus eigenen und transitiven `*_COMPILE_DEFINITIONS` sowie `-D`/`/D` in `*_COMPILE_OPTIONS`; direkte Zielnamen, `debug`/`optimized`/`general`-Kanten und die unten inventarisierten bedingten bzw. zielbezogenen Generatorausdrücke | Makros, die erst im C++-Quelltext entstehen (dafür K1/K3); String-Transformationen in Linkkanten und `MAP_IMPORTED_CONFIG_*` werden nicht ausgewertet, sondern ausdrücklich **ROT** gemeldet |
-| **K3/A14** Artefakt + Neubau | die `.lib`, die das Bein im selben Lauf selbst hat neu erzeugen lassen, dazu `.vcxproj`, `.tlog` und `lastbuildstate` | jeden eingefrorenen Text als ASCII/UTF-16LE, Viercodes zusätzlich als 4-Byte-Integer in **beiden** Byteordnungen, CIDs roh/COM-vertauscht; dass Objekte, Tlogs und Lib vor der Messung gelöscht und vollständig neu erzeugt wurden (Zeitanker, Bauausgabe, Objektzahl) — damit ist „veraltetes Artefakt" keine Frage mehr; die früheren Frischewachen bleiben als Diagnose „womit wurde gebaut" | Baubeschreibung ohne resultierende Artefaktbytes (dafür K1/K1b/K2/K2b/K2c); ein Compilerwechsel innerhalb derselben `lastbuildstate`-Kennung (benannte Nichtzusage) |
-| **Tlog-Riegel** Leseorte | das frisch geschriebene `CL.read.1.tlog` des Kerns | aus welchen Orten der Compiler wirklich gelesen hat: erlaubt sind `plugin/**`, `juce-src/modules/**` ohne `juce_audio_plugin_client`, die **aus dem Bau abgeleiteten** MSVC- und Windows-SDK-Wurzeln und — **namentlich, nicht über ihr Verzeichnis** — die gemessenen Systemdateien unter `%SystemRoot%` (Liste `SYSTEMDATEIEN` im Skript). Es gibt weder eine Endungsausnahme noch eine Ortserlaubnis für `%SystemRoot%`: jede andere Datei darunter, `<ziel>_artefacts/JuceLibraryCode/**` und alles Unbekannte sind ROT und werden namentlich genannt. Fehlt eine heutige Kernquelle als Marker, ist auch das ROT | den **Inhalt** der gelesenen Dateien (dafür K1b und der JUCE-Baum-Riegel) |
+| **K3/A14** Artefakt + Neubau | die `.lib`, die das Bein im selben Lauf selbst hat neu erzeugen lassen, dazu `.vcxproj`, `.tlog` und `lastbuildstate`; fehlt eine Voraussetzung, endet der Lauf über `voraussetzung_exit()` — ein bereits registrierter Befund gewinnt und macht aus der 3 eine 2 (Matrix F14/F15, Runde 8) | jeden eingefrorenen Text als ASCII/UTF-16LE, Viercodes zusätzlich als 4-Byte-Integer in **beiden** Byteordnungen, CIDs roh/COM-vertauscht; dass Objekte, Tlogs und Lib vor der Messung gelöscht und vollständig neu erzeugt wurden (Zeitanker, Bauausgabe, Objektzahl) — damit ist „veraltetes Artefakt" keine Frage mehr; die früheren Frischewachen bleiben als Diagnose „womit wurde gebaut" | Baubeschreibung ohne resultierende Artefaktbytes (dafür K1/K1b/K2/K2b/K2c); ein Compilerwechsel innerhalb derselben `lastbuildstate`-Kennung (benannte Nichtzusage) |
+| **Tlog-Riegel** Leseorte | das frisch geschriebene `CL.read.1.tlog` des Kerns | aus welchen Orten der Compiler wirklich gelesen hat: erlaubt sind `plugin/**`, `juce-src/modules/**` ohne `juce_audio_plugin_client`, die **aus dem Bau abgeleiteten** MSVC- und Windows-SDK-Wurzeln und — **namentlich, nicht über ihr Verzeichnis** — die gemessenen Systemdateien unter `%SystemRoot%` (Liste `SYSTEMDATEIEN` im Skript; ihre beiden Namen stehen seit Runde 8 als eingefügte `CL.read.1.tlog`-Rohausgabe im Abschnitt „Nacharbeit Runde 8", Probe `P8-SYS` — vorher war die Liste eine Behauptung ohne Rohausgabe). Es gibt weder eine Endungsausnahme noch eine Ortserlaubnis für `%SystemRoot%`: jede andere Datei darunter, `<ziel>_artefacts/JuceLibraryCode/**` und alles Unbekannte sind ROT und werden namentlich genannt. Fehlt eine heutige Kernquelle als Marker, ist auch das ROT | den **Inhalt** der gelesenen Dateien (dafür K1b und der JUCE-Baum-Riegel) |
 | **JUCE-Baum-Riegel** Herkunft | der ganze FetchContent-Baum `build/_deps/juce-src` gegen `git status` und den Nakama-Patch | dass juce-src der gepinnte Tag plus **genau** `third_party/patches/juce-8.0.9-nakama-vst3-bridge.patch` ist, gemessen in drei Zeilen: (i) `HEAD` **ist** der Commit des Tags (`8.0.9^{commit}`, verglichen statt nur beschrieben); (ii) `git status --porcelain --ignored -uall` — die geänderte Menge ist genau die Patchdateimenge, **ignorierte** Fremddateien eingeschlossen; (iii) die Patchdateien tragen genau den Patch, gemessen als Inhalt gegen den in einem temporären Index gerechneten Sollzustand „Tag + Patch" (`read-tree` → `apply --cached` → `diff-files`). `git apply --check --reverse` ist dafür **ersetzt**, nicht ergänzt: es prüft nur rückwärts passende Hunks und schwieg zu einer zusätzlichen Zeile | Löschungen außerhalb `modules/**` (gezählt und benannt, nicht ROT — eine gelöschte Datei kann keine Compiler-Eingabe werden); Toolchain- und SDK-Header außerhalb des Repos (benannte Nichtzusage, kein Fingerprint) |
 | **K2b** CMake-Konfigurierzeit | Kern und je ein registrierter Verbraucher als **getrennte** Wurzeln mit ihrer jeweiligen compilerwirksamen Usage-Requirements-Hülle | Mengengleichheit und Wertwidersprüche der `JUCE_`-Defines beider Zielmengen, je Konfiguration, rekursiv und inklusive `-D`/`/D`; `JucePlugin_*` des Verbrauchers gehört nicht zur Vergleichsmenge | bewusst ausgenommene Hüllendefines (`JUCE_MODULE_AVAILABLE_*` als Familie; exakt die Makronamen `JUCE_SHARED_CODE`, `JUCE_STANDALONE_APPLICATION`, `JUCE_VST3_CAN_REPLACE_VST2`, jeweils ohne Wert oder mit `=…`) · Nicht-Define-Schalter (dafür K2c) |
 | **K2c** CMake-Konfigurierzeit | volle Linkhülle des Kerns und volle Linkhülle je eines registrierten Verbrauchers, **getrennt** je Konfiguration | ob jedes transitiv und bedingt erreichbare `juce_recommended_*`-Ziel der Referenz in derselben Konfiguration auch am Kern hängt — Quelle der Schalter, nicht einzelne Flags | `lto_flags` (begründet ausgenommen: `/GL` ohne `-LTCG` im Verbraucher) · alles, was kein Empfehlungsziel ist; String-Transformationen und importierte Konfigurationsabbildungen sind nicht unterstützt und deshalb ROT |
@@ -12628,7 +12628,8 @@ Testkennungen: `P5-x` = Probe am echten Baum, `R5-x` = bauloser Selbsttest,
 | **F10** | **TU hinzugefügt oder entfernt** — *keine Frischefrage*: „ist der Kern still gewachsen?" | `NAKAMA_KERN_QUELLEN` als Soll, `Cl.items.tlog`/Projektdatei und die Archivmitglieder als Ist | `tu_mengen_abgleich()` und `ERWARTETE_OBJEKTE` bleiben unverändert | Abweichung → **2**; sonst → **0** | `Selbsttest-Schalter/TU H, J, K, L` (bestehend) |
 | **F11** | **veralteter Tlog-Eintrag** (entfernte Quelle bleibt in `CL.command`) | niemand — er ist Buchhaltung, kein Bauzustand | `tu_mengen_abgleich()` benennt ihn, zählt ihn nicht | benannt, → **0** | `Selbsttest-Schalter/TU I` (bestehend) |
 | **F13** | **Bau nicht möglich** (kein cmake, kein Generator, kein Toolset, Bau bricht ab) | der Bau selbst: cmake nicht auffindbar oder Exitcode ≠ 0 | fängt beides ab, **bevor** irgendetwas gemessen wird | **3** mit Klartext, nie 0, nie 2 | `R5-3`: erzwungen fehlschlagender Bau-Befehl → Exit 3, keine Messzeile |
-| **F14** | **lesende Umgebung, `--nur-messen`** | niemand — es ist niemand gefragt worden | baut nicht; die Identitätsprüfung ([1]–[3]) läuft trotzdem und wird ausgegeben | **3** mit Klartext „ohne Neubau kein Frische-Urteil"; ein echter Identitätsbefund gewinnt und macht daraus **2**. **Nie 0.** | `R5-4`: Aufruf mit `--nur-messen` → Exit 3 und genau diese Zeile; `P5-F14` am echten Baum |
+| **F14** | **lesende Umgebung, `--nur-messen`** | niemand — es ist niemand gefragt worden | baut nicht; die Identitätsprüfung ([1]–[3]) läuft trotzdem und wird ausgegeben | **3** mit Klartext „ohne Neubau kein Frische-Urteil"; ein echter Identitätsbefund gewinnt und macht daraus **2**. **Nie 0.** | `R8-1` (baulos, Runde 8): `voraussetzung_exit()` gibt ohne Befund 3, mit Befund 2; `P5-F14` und `P8-F15` (2) am echten Baum. ⚠️ Bis Runde 8 stand hier `R5-4` — diese Kennung gibt es im Selbsttest **nicht** und gab es nie; die Zeile benannte damit einen Test, der nicht existiert (Prüfliste E). Korrigiert in Runde 8, Beleg im Abschnitt „Nacharbeit Runde 8“ |
+| **F15** (Runde 8; die Kennung war seit Runde 5 frei) | **kein schreibbares temporäres Verzeichnis für den Sollindex des JUCE-Baums** | niemand — die Umgebung fehlt, gefragt wurde niemand | misst bis dorthin weiter; der Sollindex-Vergleich entfällt und wird als fehlende Voraussetzung benannt (`VoraussetzungFehlt`, kein Traceback) | Klartext „VORAUSSETZUNG: kein schreibbares temporaeres Verzeichnis …" **und** derselbe Ausgang wie F14: **Fehler gesammelt → 2, sonst 3, nie 0** | `R8-1` (baulos): `voraussetzung_exit()` gibt mit Befund 2, ohne Befund 3 und nennt den Befund im Klartext; `R8-2`: kein nackter `return 3` in `main()`; `P8-F15` am echten Baum, beide Richtungen |
 
 Was aus den alten Zeilen wurde:
 
@@ -12637,6 +12638,7 @@ Was aus den alten Zeilen wurde:
 | F2–F9 (Define hinzu/weg, Include-/`/FI`-/`/std:`-Schalter, AdditionalOptions hinzu/entfernt, lokaler Header, externer Header, Objekt jünger als Lib) | **F-N** — gegenstandslos durch den Neubau |
 | F12 (Toolchain-/Compilerwechsel) | **F-N** für das Urteil; `lastbuildstate` bleibt Diagnose, ihre Kennung wird gegen die abgeleiteten Toolchain-Wurzeln gehalten |
 | F15 (`--nur-messen --frisch-gebaut`) | **entfällt ersatzlos** — es gibt kein Zeugnis mehr, das missbraucht werden könnte |
+| die Kennung **F15** | seit Runde 8 (29.08.2026) neu vergeben an einen **anderen** Fall — „kein schreibbares Temp für den Sollindex". Die Zeile oben in der korrigierten Matrix ist die gültige; das `--frisch-gebaut`-Zeugnis dieser Tabelle ist Verlauf und kommt nicht zurück |
 
 Die bisherigen Wachen — `configure_frische()`, die vier Schalterklassen
 beidseitig, `tu_mengen_abgleich()`, `linkfrische()` — bleiben erhalten, aber sie
@@ -14312,3 +14314,433 @@ unverändert — sie setzt der Dirigent nach dem Prüfer.
 **Nächster Schritt:** ein Nacharbeits-Worker für S8 Runde 8 **und** NAK-94 Nacharbeit 3 (siehe `docs/beweise/SONDE-007c.md`, „Dirigentenstand NAK-94 — Prüfer 3"), gemeinsamer Kanon auf dem Endstand, dann Prüfer 9 (xhigh) für S8 und Prüfer 4 (high) für NAK-94 — je frischer Thread über den vollen Ticketbereich. Kein Halt: technische Befunde, keine Produktfrage.
 
 **Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99.
+
+## Nacharbeit Runde 8 — 2026-08-29 (Prüfer-Thread `01a04f48-d1a8…`)
+
+**Stand dieses Abschnitts:** `5dfe3a3` — Ticketbasis der Runde `9f1333c`,
+Prüferstand `a94c33e`, Code-Endstand `5dfe3a3`. Jede nackte Zeilennummer
+darunter ist an diesen Stand gebunden; wörtlich zitierte Rohausgaben tragen die
+Zahlen so, wie das Werkzeug sie schrieb.
+
+Drei bestätigte Befunde des achten Prüfers (Codex xhigh, lesend über
+`git diff dafa5a5...a94c33e`), Regeln des Dirigenten im Abschnitt
+„Dirigentenstand — 2026-08-29 23:04 (Sitzung 054eedac)". Alle drei sind
+geschlossen. Reihenfolge je Befund: Wortlaut → Reproduktion am Basis-Stand →
+Regel → Fix → Proben → Bruch und Rücknahme.
+
+**Werkzeugregel dieser Runde:** keine Datei unter `%SystemRoot%` angelegt, keine
+`Remove-Item`/`rm`/`del`-Aufrufe. Die Wegwerf-Übersetzungseinheiten der Probe
+`P8-SYS` lagen ausschließlich unter `$env:TEMP` und wurden mit
+`[System.IO.Directory]::Delete($p, $true)` entfernt; `Test-Path` danach `False`
+(Rohausgabe unten). Die zwei Wegwerf-Basisfassungen der Reproduktion lagen
+kurzzeitig neben ihren heutigen Fassungen und sind mit `unlink()` entfernt —
+`git status --short` war danach leer.
+
+---
+
+### Befund 1 — Bewahre rote Befunde vor dem Temp-Exit (Defekt, Matrix F14 → neue Zeile F15)
+
+Wortlaut des Prüfers (Positionen `@ a94c33e`):
+
+> **[P2] Bewahre rote Befunde vor dem Temp-Exit** — `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:3030-3032`. Wenn kein schreibbares Temp-Verzeichnis verfügbar ist und zuvor bereits ein Identitätsbefund registriert wurde, gibt dieser frühe Rückweg trotzdem 3 zurück; ein lesender Repro mit einer zusätzlichen roten K1b-Eingabe druckte `FEHLER`, endete aber mit `AUDIT_RETURN=3`. Das widerspricht F14, wonach ein echter Identitätsbefund gewinnen und Exit 2 ergeben muss (`docs/beweise/SONDE-007a.md:12631`); werte daher vor dem Voraussetzung-Exit die bereits gesammelten Fehler aus.
+
+**Regel des Dirigenten.** Der Sollindex-Temp-Fall ist eine Voraussetzung wie
+`--nur-messen`; für ihn gilt dieselbe Zeile: ein bereits registrierter
+Identitätsbefund gewinnt → **Exit 2**, der Klartext „VORAUSSETZUNG: …" bleibt
+zusätzlich stehen. Jeder `return 3` im Bein wertet vorher die gesammelten Fehler
+aus. Die Matrix bekommt die Zeile **F15**.
+
+**Ursache, an der Quelle nachgelesen.** `fehler` ist eine Modulliste, die
+`pruefe()` füllt; ausgewertet wurde sie ausschließlich am **Ende** von `main()`
+(`if fehler: return 2`). Jeder frühere `return 3` sprang daran vorbei — der
+Temp-Ausgang war nur der erste, an dem das jemand gemessen hat. Ein Fix, der
+allein diesen einen Ausgang behandelt, hätte den nächsten neuen `return 3`
+wieder offen gelassen.
+
+**Reproduktion am Basis-Stand `9f1333c`** (Treiber holt die Basisfassung mit
+`git show`, hängt eine rote K1b-Eingabe an und setzt `tempfile.tempdir` auf ein
+nicht existierendes Verzeichnis):
+
+```text
+VORAUSSETZUNG: kein schreibbares temporaeres Verzeichnis fuer den Sollindex des JUCE-Baums (FileNotFoundError: [WinError 3] Das System kann den angegebenen Pfad nicht finden: 'C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-gibt-es-nicht-r8\\tmpcn8uevei') - ohne ihn ist '8.0.9 + Patch' nicht rechenbar. TMPDIR, TEMP und TMP pruefen.
+Basisfassung geholt: git show 9f1333c:tools/eq-copilot/pruefe_kern_identitaetsfrei.py -> zz-basis-9f1333c-pruefe_kern_identitaetsfrei.py (154777 Byte)
+
+================ BEFUND 1 @ 9f1333c: Exit 3 trotz rotem Befund ================
+HINWEIS: --nur-messen - es wird NICHT gebaut.
+         Ohne Neubau kein Frische-Urteil; dieser Lauf endet nie mit 0,
+         ohne weiteren Befund mit Exit 3. Die Identitaetspruefung und
+         die Riegel laufen trotzdem und koennen fuer sich rot sein.
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - der Kern wurde fuer diese Messung neu gebaut
+  --      nicht gebaut (--nur-messen); ueber die Frische des gemessenen
+          Artefakts behauptet dieser Lauf nichts
+
+[0b] Riegel - Quelltext, Leseorte, JUCE-Baum
+  --      CL.read.1.tlog stammt NICHT aus diesem Lauf (--nur-messen); die Orte darunter sind Diagnose
+  ok      alle 460 vom Compiler gelesenen Dateien stammen aus erlaubten Wurzeln oder sind eine der 2 namentlich erlaubten Systemdateien (plugin 12, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, Windows-System 0)
+  FEHLER  keine der 21 Compiler-Eingaben ausserhalb der JUCE-Module und der Toolchain-/SDK-Wurzeln traegt ein JucePlugin_-Token (Tlog 12, Huelle 22, davon 0 benannte Systemdatei(en) roh durchsucht; Ausnahme NakamaKernRiegel.h mit 56 Treffern)  [C:\Users\phili\AppData\Local\Temp\nakama-basis-k1b-0qtbt94t\NakamaProbeR8.h: JucePlugin_-Token im Quelltext, Zeile(n) 1]
+
+VORAUSSETZUNG: kein schreibbares temporaeres Verzeichnis fuer den Sollindex des JUCE-Baums (FileNotFoundError: [WinError 3] Das System kann den angegebenen Pfad nicht finden: 'C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-gibt-es-nicht-r8\\tmpcn8uevei') - ohne ihn ist '8.0.9 + Patch' nicht rechenbar. TMPDIR, TEMP und TMP pruefen.
+AUDIT_RETURN=3
+```
+
+**Fix.** Neu in `tools/eq-copilot/pruefe_kern_identitaetsfrei.py`:
+`fehlerbericht()` (die Befundliste, wortgleich an jedem Ausgang) und
+`voraussetzung_exit()` — der **eine** Voraussetzungs-Ausgang des Beins. **Jeder**
+Voraussetzungs-Rückweg in `main()` geht jetzt durch ihn, der
+`--nur-messen`-Ausgang am Ende eingeschlossen; `R8-2` misst das strukturell, statt eine
+Anzahl festzuschreiben. Der Klartext „VORAUSSETZUNG: …" steht
+weiterhin davor und bleibt in beiden Fällen stehen. Kopfkommentar des Skripts und
+die A14-Behauptung in `tools/beweise.ps1` sagen die Regel jetzt ausdrücklich.
+
+**Proben.** `P8-F15` am echten Baum, **beide** Richtungen — mit roter K1b-Eingabe
+Exit 2, ohne sie Exit 3:
+
+```text
+VORAUSSETZUNG: kein schreibbares temporaeres Verzeichnis fuer den Sollindex des JUCE-Baums (FileNotFoundError: [WinError 3] Das System kann den angegebenen Pfad nicht finden: 'C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-gibt-es-nicht-r8\\tmpplzl3sof') - ohne ihn ist '8.0.9 + Patch' nicht rechenbar. TMPDIR, TEMP und TMP pruefen.
+VORAUSSETZUNG: kein schreibbares temporaeres Verzeichnis fuer den Sollindex des JUCE-Baums (FileNotFoundError: [WinError 3] Das System kann den angegebenen Pfad nicht finden: 'C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-gibt-es-nicht-r8\\tmpt8nngtg5') - ohne ihn ist '8.0.9 + Patch' nicht rechenbar. TMPDIR, TEMP und TMP pruefen.
+
+================ (1) MIT roter K1b-Eingabe ================
+HINWEIS: --nur-messen - es wird NICHT gebaut.
+         Ohne Neubau kein Frische-Urteil; dieser Lauf endet nie mit 0,
+         ohne weiteren Befund mit Exit 3. Die Identitaetspruefung und
+         die Riegel laufen trotzdem und koennen fuer sich rot sein.
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - der Kern wurde fuer diese Messung neu gebaut
+  --      nicht gebaut (--nur-messen); ueber die Frische des gemessenen
+          Artefakts behauptet dieser Lauf nichts
+
+[0b] Riegel - Quelltext, Leseorte, JUCE-Baum
+  --      CL.read.1.tlog stammt NICHT aus diesem Lauf (--nur-messen); die Orte darunter sind Diagnose
+  ok      alle 460 vom Compiler gelesenen Dateien stammen aus erlaubten Wurzeln oder sind eine der 2 namentlich erlaubten Systemdateien (plugin 12, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, Windows-System 0)
+  FEHLER  keine der 21 Compiler-Eingaben ausserhalb der JUCE-Module und der Toolchain-/SDK-Wurzeln traegt ein JucePlugin_-Token (Tlog 12, Huelle 22, davon 0 benannte Systemdatei(en) roh durchsucht; Ausnahme NakamaKernRiegel.h mit 56 Treffern)  [C:\Users\phili\AppData\Local\Temp\nakama-p8f15-hk4koozl\NakamaProbeR8.h: JucePlugin_-Token im Quelltext, Zeile(n) 1]
+
+VORAUSSETZUNG: kein schreibbares temporaeres Verzeichnis fuer den Sollindex des JUCE-Baums (FileNotFoundError: [WinError 3] Das System kann den angegebenen Pfad nicht finden: 'C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-gibt-es-nicht-r8\\tmpplzl3sof') - ohne ihn ist '8.0.9 + Patch' nicht rechenbar. TMPDIR, TEMP und TMP pruefen.
+
+1 ok, 1 Fehler
+
+FEHLGESCHLAGEN:
+  - keine der 21 Compiler-Eingaben ausserhalb der JUCE-Module und der Toolchain-/SDK-Wurzeln traegt ein JucePlugin_-Token (Tlog 12, Huelle 22, davon 0 benannte Systemdatei(en) roh durchsucht; Ausnahme NakamaKernRiegel.h mit 56 Treffern)  [C:\Users\phili\AppData\Local\Temp\nakama-p8f15-hk4koozl\NakamaProbeR8.h: JucePlugin_-Token im Quelltext, Zeile(n) 1]
+
+Ein registrierter Befund gewinnt gegen die fehlende Voraussetzung (Matrix F14/F15): Exit 2.
+AUDIT_RETURN=2
+
+================ (2) OHNE rote K1b-Eingabe ================
+HINWEIS: --nur-messen - es wird NICHT gebaut.
+         Ohne Neubau kein Frische-Urteil; dieser Lauf endet nie mit 0,
+         ohne weiteren Befund mit Exit 3. Die Identitaetspruefung und
+         die Riegel laufen trotzdem und koennen fuer sich rot sein.
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - der Kern wurde fuer diese Messung neu gebaut
+  --      nicht gebaut (--nur-messen); ueber die Frische des gemessenen
+          Artefakts behauptet dieser Lauf nichts
+
+[0b] Riegel - Quelltext, Leseorte, JUCE-Baum
+  --      CL.read.1.tlog stammt NICHT aus diesem Lauf (--nur-messen); die Orte darunter sind Diagnose
+  ok      alle 460 vom Compiler gelesenen Dateien stammen aus erlaubten Wurzeln oder sind eine der 2 namentlich erlaubten Systemdateien (plugin 12, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, Windows-System 0)
+  ok      keine der 20 Compiler-Eingaben ausserhalb der JUCE-Module und der Toolchain-/SDK-Wurzeln traegt ein JucePlugin_-Token (Tlog 12, Huelle 21, davon 0 benannte Systemdatei(en) roh durchsucht; Ausnahme NakamaKernRiegel.h mit 56 Treffern)
+
+VORAUSSETZUNG: kein schreibbares temporaeres Verzeichnis fuer den Sollindex des JUCE-Baums (FileNotFoundError: [WinError 3] Das System kann den angegebenen Pfad nicht finden: 'C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-gibt-es-nicht-r8\\tmpt8nngtg5') - ohne ihn ist '8.0.9 + Patch' nicht rechenbar. TMPDIR, TEMP und TMP pruefen.
+
+2 ok, 0 Fehler
+AUDIT_RETURN=3
+```
+
+Baulos im Selbsttest: `R8-1` misst den Exitcode beider Richtungen und dass der
+Befund im Klartext genannt wird; `R8-2` misst strukturell, dass in `main()` kein
+nackter `return 3` mehr steht.
+
+**Beim Nachlesen der Zeile mitgefunden und in derselben Zeile korrigiert.**
+Die F14-Zeile nannte als messenden Test `R5-4` — diese Kennung gibt es im
+Selbsttest **nicht**, und die Historie kennt sie auch nicht (`git log -S'"R5-4' -- tools/eq-copilot/pruefe_kern_identitaetsfrei.py` — kein Commit; `grep -o '"R5-[0-9a-z]*' tools/eq-copilot/pruefe_kern_identitaetsfrei.py` listet
+`R5-2a/b/c`, `R5-3a/b`, `R5-5a–d`, `R5-6a/b`, `R5-7`, `R5-7b`, `R5-8a/b`, `R5-9`,
+`R5-11a–f`, `R5-13` — kein `R5-4`). Eine Matrixzeile, die einen nicht
+existierenden Test benennt, ist gefährlicher als eine ohne Test: sie täuscht
+Messung vor (Prüfliste E). Die Zeile nennt jetzt `R8-1` (baulos) sowie `P5-F14`
+und `P8-F15` (2) am echten Baum. Nichts anderes an der Matrix wurde angefasst.
+
+---
+
+### Befund 2 — Erzeuge die R6-3-Warnung deterministisch (Lücke → Regel)
+
+Wortlaut des Prüfers:
+
+> **[P2] Erzeuge die R6-3-Warnung deterministisch** — `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:2243-2244`. Wenn Git in allen zwölf Wegwerf-Repos keine Attributwarnung ausgibt, bleibt `err` leer und R6-3a/R6-3b fallen trotz korrekter Streamtrennung; der Nacharbeitsbeleg bestätigt bereits warnungsfreie identische Läufe (`docs/beweise/SONDE-007a.md:14089-14101`). Die Wiederholung reduziert somit nur die Flackerwahrscheinlichkeit und erfüllt die verlangte deterministische Behebung nicht; erzeuge den Exit-0/stderr-Fall kontrolliert statt ihn probabilistisch abzuwarten.
+
+**Regel des Dirigenten.** Weder Matrix noch Prüfliste verlangten Determinismus
+einer Selbsttest-Wache; ab jetzt gilt: **eine Wache, deren Voraussetzung nur
+probabilistisch eintritt, ist kein Beleg.** Der Fall „Exit 0 und Warnung auf
+stderr" wird kontrolliert erzeugt und gilt erst als Wache, wenn **20/20** Läufe
+die Voraussetzung treffen. Die Schleife über zwölf Versuche entfällt.
+
+**Gemessene Ursache — nicht die Warnung, der Stat-Cache.** `git status`
+vergleicht zuerst Größe und mtime des Indexeintrags. Weicht die **Größe** ab,
+weiß git ohne Lesen, dass die Datei geändert ist: der Konvertierungspfad wird nie
+betreten, `.gitattributes` nie gelesen, die Warnung bleibt aus. Erst wenn die
+Größe **gleich** bleibt und nur die mtime abweicht, muss git den Inhalt neu
+hashen und konsultiert dabei die Attribute. Gemessen (git 2.54.0.windows.1,
+je 20 Läufe): bloßer `status` 16/20 · unlesbare `core.excludesFile` 17/20 ·
+`update-index --really-refresh` davor 15/20 · Datei geändert (andere Größe)
+16/20 · **gleiche Größe, anderer Inhalt 20/20**.
+
+**Fix.** Neue Funktion `_r6_3_warnlauf()`: Wegwerf-Repo mit `"eins\n"` im Commit
+und `"zwei\n"` im Arbeitsbaum — fünf Bytes gegen fünf Bytes —, danach genau der
+`status`-Aufruf, den die Wache prüft. `R6-3a` misst die Stromtrennung des
+`_git`-Wrappers (Exit 0, Daten nur auf stdout), `R6-3b` was der früher gemischte
+Strom im Porcelain-Parser angerichtet hätte. Die Wache ist fail-closed: bleibt
+die Warnung aus, ist sie ROT.
+
+**Probe `P8-R63` — 20/20 gegen 17/20**, gefahren über **dieselbe** Funktion, die
+der Selbsttest ruft (keine Nachbildung):
+
+```text
+git: git version 2.54.0.windows.1
+Funktion: _r6_3_warnlauf() aus tools/eq-copilot/pruefe_kern_identitaetsfrei.py
+
+=== NEU  _r6_3_warnlauf() ===
+   1: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+   2: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+   3: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+   4: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+   5: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+   6: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+   7: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+   8: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+   9: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  10: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  11: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  12: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  13: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  14: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  15: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  16: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  17: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  18: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  19: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  20: Exit 0 | stdout 'M datei.txt' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  Ergebnis: 20/20
+
+=== ALT  Ausloeser Runde 7 (ein Versuch) ===
+   1: Exit 0 | stdout '' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+   2: Exit 0 | stdout '' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+   3: Exit 0 | stdout '' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+   4: Exit 0 | stdout '' | stderr '-' -> VERFEHLT
+   5: Exit 0 | stdout '' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+   6: Exit 0 | stdout '' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+   7: Exit 0 | stdout '' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+   8: Exit 0 | stdout '' | stderr '-' -> VERFEHLT
+   9: Exit 0 | stdout '' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  10: Exit 0 | stdout '' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  11: Exit 0 | stdout '' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  12: Exit 0 | stdout '' | stderr '-' -> VERFEHLT
+  13: Exit 0 | stdout '' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  14: Exit 0 | stdout '' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  15: Exit 0 | stdout '' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  16: Exit 0 | stdout '' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  17: Exit 0 | stdout '' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  18: Exit 0 | stdout '' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  19: Exit 0 | stdout '' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  20: Exit 0 | stdout '' | stderr 'warning: Negative patterns are ignored in git attributes' -> Voraussetzung getroffen
+  Ergebnis: 17/20
+```
+
+---
+
+### Befund 3 — Belege die Namen der System-Erlaubnisliste roh (Defekt, Manifest §2 / Prüfliste E)
+
+Wortlaut des Prüfers:
+
+> **[P2] Belege die Namen der System-Erlaubnisliste roh** — `docs/beweise/SONDE-007a.md:13958-13959`. Für die Freischaltung dieser beiden Pfade verweist der Abschnitt auf P5-W5b, dessen eingefügte Ausgabe aber nur `ohne Uebersetzungsstoff 3` und keinen der beiden Dateinamen zeigt (`docs/beweise/SONDE-007a.md:12975`); der aktuelle Kanon misst sogar `Windows-System 0`. Damit ist die verlangte Ableitung der Namensliste aus einer Messung nicht durch Rohausgabe nachvollziehbar und verletzt die harte Beweisregel im Manifest (`docs/beweise/SONDE-007a.md:30-32`); füge die betreffenden Tlog-Zeilen samt Stand und Befehl ein oder miss die Liste erneut.
+
+**Regel des Dirigenten.** `SYSTEMDATEIEN` enthält ausschließlich Namen, die in
+einer **im Manifest eingefügten** `CL.read.1.tlog`-Rohausgabe (Stand + Befehl)
+unter `%SystemRoot%` stehen. Der Diagnosefall wird einmal ernsthaft
+reproduziert: erscheinen die Namen → Rohzeilen ins Manifest, Liste bleibt;
+erscheint nichts → Liste ist leer und die Behauptungen werden umformuliert.
+Fail-closed geht vor Bequemlichkeit.
+
+**Der Diagnosefall ist reproduziert — die Liste bleibt.** Warum Runde 7 daran
+scheiterte, steht jetzt fest: ein **fehlgeschlagener** Bau schreibt gar kein
+`CL.read.1.tlog` (der FileTracker legt sein Protokoll erst bei Exit 0 ab), und
+eine erzwungene Makroneudefinition unter `/WX` lässt den Bau fehlschlagen.
+Gemessen wurde deshalb ohne den Kernbau: zwei Wegwerf-Übersetzungseinheiten
+unter `$env:TEMP`, übersetzt unter demselben MSBuild-FileTracker, mit dem
+Toolset aus `NakamaKern.lastbuildstate`
+(`VCToolsVersion=14.44.35207`, VS 2022 BuildTools).
+
+Befehl (`%P%` = `%TEMP%\nakama-diagnoseprobe`, `%TB%` =
+`…\BuildTools\MSBuild\Current\Bin\amd64`, vorher `vcvars64.bat`):
+
+```text
+"%TB%\Tracker.exe" /if diag  /r probe.cpp /c cl.exe /c /W4 /nologo /Foprobe.obj probe.cpp
+"%TB%\Tracker.exe" /if still /r still.cpp /c cl.exe /c /W4 /nologo /Fostill.obj still.cpp
+"%TB%\Tracker.exe" /if utf8  /r probe.cpp /c cl.exe /c /W4 /nologo /utf-8 /bigobj /Foprobe_utf8.obj probe.cpp
+```
+
+`probe.cpp` trägt ein `#pragma message` und eine C4189-Warnung (keine
+`/WX`-Einstellung im Kernprojekt, der Bau fällt also nicht); `still.cpp` ist
+dieselbe TU **ohne** jede Diagnose. Ausgabe des Übersetzens:
+
+```text
+=== A) MIT Diagnose (pragma message + C4189) ===
+probe.cpp
+Nakama-Diagnoseprobe: cl.exe formatiert hier eine Meldung
+probe.cpp(8): warning C4189: "nichtBenutzt": Lokale Variable ist initialisiert aber nicht referenziert
+TRACKER_EXIT=0
+
+=== B) OHNE Diagnose (Gegenprobe, dieselbe TU ohne Meldung) ===
+still.cpp
+TRACKER_EXIT=0
+
+=== C) MIT Diagnose UND /utf-8 /bigobj (Kern-AdditionalOptions) ===
+probe.cpp
+Nakama-Diagnoseprobe: cl.exe formatiert hier eine Meldung
+probe.cpp(8): warning C4189: "nichtBenutzt": Lokale Variable ist initialisiert aber nicht referenziert
+TRACKER_EXIT=0
+```
+
+Und die Leseprotokolle roh — Datei, sha256, Zeilenzahl und **jede** Zeile unter
+`%SystemRoot%` mit ihrer Zeilennummer:
+
+```text
+=== A  MIT Diagnose (#pragma message + C4189) ===
+  Datei : C:\Users\phili\AppData\Local\Temp\nakama-diagnoseprobe\diag\cl.read.1.tlog
+  sha256: E58495C0B75AAFD201070F37DC9080415B7835DFD8A826705DE2CAA0CFFA758C
+  Zeilen: 125
+  Zeilen unter %SystemRoot% (roh, wortgleich):
+    [  3] C:\WINDOWS\GLOBALIZATION\SORTING\SORTDEFAULT.NLS
+    [  5] C:\WINDOWS\SYSTEM32\TZRES.DLL
+
+=== B  OHNE jede Diagnose (Gegenprobe) ===
+  Datei : C:\Users\phili\AppData\Local\Temp\nakama-diagnoseprobe\still\cl.read.1.tlog
+  sha256: F839F7760F037D705A5C3BA09F72CB0EA0904AC28408A6867BE62DD02F9C9396
+  Zeilen: 125
+  Zeilen unter %SystemRoot% (roh, wortgleich):
+    [  3] C:\WINDOWS\GLOBALIZATION\SORTING\SORTDEFAULT.NLS
+    [  5] C:\WINDOWS\SYSTEM32\TZRES.DLL
+
+=== C  MIT Diagnose UND /utf-8 /bigobj ===
+  Datei : C:\Users\phili\AppData\Local\Temp\nakama-diagnoseprobe\utf8\cl.read.1.tlog
+  sha256: B2430A52DF0EB6C1B80CDC02845BDB22576CAE48202D8A4B4090E4832E73ACA5
+  Zeilen: 125
+  Zeilen unter %SystemRoot% (roh, wortgleich):
+    [  3] C:\WINDOWS\GLOBALIZATION\SORTING\SORTDEFAULT.NLS
+    [  5] C:\WINDOWS\SYSTEM32\TZRES.DLL
+
+=== D  Leseprotokoll des KERNS aus dem heutigen Bau ===
+  Datei : C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\NakamaKern.dir\Release\NakamaKern.tlog\CL.read.1.tlog
+  Zeilen: 2358   unter %SystemRoot%: 0
+```
+
+**Was daraus folgt und was nicht.** Beide Namen der Liste stehen roh in einem
+`CL.read.1.tlog`, und es sind dort genau diese zwei — die Liste bleibt
+unverändert. Die frühere Formulierung „beim Formatieren einer Diagnose" sagte
+allerdings zu eng: dieselben zwei Dateien stehen auch im Protokoll der TU **ohne**
+Diagnose und mit `/utf-8 /bigobj`. Der Kommentar über `SYSTEMDATEIEN` sagt das
+jetzt so und nennt zusätzlich den Nachtrag-Weg (Tlog-Zeile messen → Rohausgabe
+ins Manifest → dann erst den Namen in die Liste). Das Leseprotokoll des **Kerns**
+nennt weiterhin keine Datei unter `%SystemRoot%` (`Windows-System 0`); die Liste
+deckt einen Fall ab, den der Kanon heute nicht erreicht, und bleibt genau deshalb
+eng. Fail-closed bleibt: jede andere Datei unter `%SystemRoot%` ist ROT
+(`R7-1a`), die beiden erlaubten werden roh nach dem Token durchsucht (`R7-3b`).
+
+**Nicht behauptet:** warum der Kernbau diese beiden Dateien nicht protokolliert.
+Gemessen ist nur, dass er es nicht tut.
+
+---
+
+### Bruch und Rücknahme — jede neue Wache einmal fallen gesehen
+
+Fünf Brüche, je als exakte Textersetzung gesetzt, gefahren, byteweise
+zurückgenommen und wieder grün gefahren. Beim Setzen von `B-C` fiel `R8-2`
+zunächst **nicht**: die erste Fassung verglich auf den nackten Text `return 3`
+und ging an `return 3  # Kommentar` vorbei. Die Wache sucht seither mit Muster —
+der Bruch unten ist der gehärtete Lauf.
+
+```text
+### B-A1  R6-3a ohne Warnung auf stderr - Schweigen ist kein Ja (fail-closed)
+  Bruch gesetzt in tools/eq-copilot/pruefe_kern_identitaetsfrei.py
+  -- ROT --
+   FEHLER  R6-3a: bei Exit 0 traegt nur stdout Daten; die git-Warnung steht getrennt auf stderr (Befund B3)  [Exit 0 | stderr: -]
+   FEHLER  R6-3b: der frueher gemischte Strom haette die Warnzeile als Statuscode gelesen; der getrennte tut es nicht  [gemischt: keine Klage || getrennt: keine Klage]
+   Exit 2
+  Bruch zurueckgenommen (Bytes identisch)
+  -- GRUEN --
+   ok      R6-3a: bei Exit 0 traegt nur stdout Daten; die git-Warnung steht getrennt auf stderr (Befund B3)  [Exit 0 | stderr: warning: Negative patterns are ignored in git attributes]
+   ok      R6-3b: der frueher gemischte Strom haette die Warnzeile als Statuscode gelesen; der getrennte tut es nicht  [gemischt: unbekannter git-Status 'wa' fuer ning: Negative patterns are ignored in git attributes || getrennt: keine Klage]
+   Exit 0
+
+### B-A2  R6-3a/b bei gemischtem Strom (Regression aus Befund B3)
+  Bruch gesetzt in tools/eq-copilot/pruefe_kern_identitaetsfrei.py
+  -- ROT --
+   FEHLER  R6-3a: bei Exit 0 traegt nur stdout Daten; die git-Warnung steht getrennt auf stderr (Befund B3)  [Exit 0 | stderr: -]
+   FEHLER  R6-3b: der frueher gemischte Strom haette die Warnzeile als Statuscode gelesen; der getrennte tut es nicht  [gemischt: unbekannter git-Status 'wa' fuer ning: Negative patterns are ignored in git attributes || getrennt: unbekannter git-Status 'wa' fuer ning: Negative patterns are ignored in git attributes | geaendert, steht aber nicht im Nakama-Patch: '\!' for literal leading exclamation.]
+   Exit 2
+  Bruch zurueckgenommen (Bytes identisch)
+  -- GRUEN --
+   ok      R6-3a: bei Exit 0 traegt nur stdout Daten; die git-Warnung steht getrennt auf stderr (Befund B3)  [Exit 0 | stderr: warning: Negative patterns are ignored in git attributes]
+   ok      R6-3b: der frueher gemischte Strom haette die Warnzeile als Statuscode gelesen; der getrennte tut es nicht  [gemischt: unbekannter git-Status 'wa' fuer ning: Negative patterns are ignored in git attributes || getrennt: keine Klage]
+   Exit 0
+
+### B-B   R8-1 wenn der Voraussetzungs-Ausgang den Befund wieder verschluckt
+  Bruch gesetzt in tools/eq-copilot/pruefe_kern_identitaetsfrei.py
+  -- ROT --
+   FEHLER  R8-1: ein Voraussetzungs-Ausgang gibt 2, sobald ein Befund registriert ist, sonst 3 - und nennt den Befund im Klartext (Matrix F14/F15)  [ohne Befund 3, mit Befund 3]
+   Exit 2
+  Bruch zurueckgenommen (Bytes identisch)
+  -- GRUEN --
+   ok      R8-1: ein Voraussetzungs-Ausgang gibt 2, sobald ein Befund registriert ist, sonst 3 - und nennt den Befund im Klartext (Matrix F14/F15)  [ohne Befund 3, mit Befund 2]
+   Exit 0
+
+### B-C   R8-2 wenn ein neuer nackter `return 3` in main() steht
+  Bruch gesetzt in tools/eq-copilot/pruefe_kern_identitaetsfrei.py
+  -- ROT --
+   FEHLER  R8-2: in main() gibt es keinen nackten `return 3` mehr - jeder Voraussetzungs-Ausgang geht durch voraussetzung_exit()  [1 nackte return 3 in main(): return 3  # BRUCH: neuer nackter Voraussetzungs-Ausgang]
+   Exit 2
+  Bruch zurueckgenommen (Bytes identisch)
+  -- GRUEN --
+   ok      R8-2: in main() gibt es keinen nackten `return 3` mehr - jeder Voraussetzungs-Ausgang geht durch voraussetzung_exit()
+   Exit 0
+
+### B-D   NAK-94 [3b] wenn die Eintragsliste wieder vor der Statussperre steht
+  Bruch gesetzt in tools/eq-copilot/pruefe_installer_manifest.py
+  -- ROT --
+   FEHLER  P2/3: die ECHTE Writer-Form des Rueckwegs (ohne eintraege) meldet artefaktweise 'Journalstatus RUECKWEG' - nicht 'keine Liste'  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
+   ok      P2/3: die ECHTE Writer-Form des begonnenen Rueckwegs (mit eintraege) endet ebenfalls ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
+   ok      P2/3: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
+   - P2/3: die ECHTE Writer-Form des Rueckwegs (ohne eintraege) meldet artefaktweise 'Journalstatus RUECKWEG' - nicht 'keine Liste'  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
+   Exit 2
+  Bruch zurueckgenommen (Bytes identisch)
+  -- GRUEN --
+   ok      P2/3: die ECHTE Writer-Form des Rueckwegs (ohne eintraege) meldet artefaktweise 'Journalstatus RUECKWEG' - nicht 'keine Liste'  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG)]
+   ok      P2/3: die ECHTE Writer-Form des begonnenen Rueckwegs (mit eintraege) endet ebenfalls ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
+   ok      P2/3: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
+   Exit 0
+
+### git status --short
+ M tools/beweise.ps1
+ M tools/eq-copilot/pruefe_installer_manifest.py
+ M tools/eq-copilot/pruefe_kern_identitaetsfrei.py
+```
+
+---
+
+### Prüfliste (`tools/dirigent/pruefliste.md`) — wo in dieser Runde gemessen
+
+| Zeile | wo gemessen |
+|---|---|
+| **D** — „ein Riegel ist fail-closed ohne Rohtextheuristik" | `R6-3a` ist ROT, wenn die Warnung ausbleibt (Bruch `B-A1`); `SYSTEMDATEIEN` bleibt namentlich, jede andere Datei unter `%SystemRoot%` ROT (`R7-1a`) |
+| **D** — „meldet Voraussetzung-fehlt (Exit 3) statt grün" | unverändert; ergänzt um die Gegenrichtung: ein registrierter Befund macht daraus **2**, nie 0 (`R8-1`, `P8-F15` beide Richtungen) |
+| **E** — „Behauptung ≤ Messung" | die A14-Behauptung nennt den Ausgang F14/F15 und stützt die Systemdateien-Liste auf `P8-SYS`; die Liste selbst steht jetzt auf eingefügter Rohausgabe statt auf einem Verweis |
+| **E** — „Positionen als Symbol oder `Datei:Zeile @ sha7`" | dieser Abschnitt trägt **Stand dieses Abschnitts** `5dfe3a3`; im Fließtext stehen Symbole (`voraussetzung_exit()`, `_r6_3_warnlauf()`, `SYSTEMDATEIEN`, `_installierter_stand()`) |
+| **E** — „jede neue Prüfung wurde einmal absichtlich gebrochen" | fünf Brüche oben, jeder mit Rohausgabe rot **und** grün; `B-C` deckte zusätzlich eine zu schwache erste Fassung von `R8-2` auf |
+| **F** — „Änderungssatz" | Wache, gemessener Beleg und Behauptung je Befund im selben Commit; die Matrixzeile F15 und die Riegelkarte im Manifestcommit derselben Runde |

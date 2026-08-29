@@ -1,5 +1,32 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ✅ NACHTRAG — 29.08.2026, S14–15 `SONDE-010` T2-Nacharbeit Runde 1
+>
+> Der frische T2-Prüfer (Codex `gpt-5.6-sol`/xhigh, Thread `01a04bd4`, Stand
+> `5144669`) urteilte **NEEDS_WORK** mit zehn Befunden — sechs P1, vier P2.
+> Alle zehn sind an der Quelle geschlossen, jeder mit einer Prüfung, die ohne
+> den Fix rot ist; alle zehn Bruchproben wurden gefahren und stehen roh im
+> Manifest, Abschnitt 7. Die drei tragenden Umbauten: **drei Threads je
+> Verbindung** im v3-Listener (Leser → bounded Ingress → Verbraucher → bounded
+> Writerqueue → Schreiber) auf `FILE_FLAG_OVERLAPPED`, weil ein synchrones
+> Pipe-Handle alle I/O serialisiert; **ein Besitzer je Slot** in der
+> `P2Schleuse` (CAS statt nachträglicher Sequenzprüfung — die Bruchprobe zeigt
+> 78 203 zerrissene Frames ohne den Riegel); und die **Familienzuordnung des
+> Vertrags** wird durchgesetzt (Control trägt P0/P1, Telemetry trägt P2).
+> Dazu: Control-Ende beendet die Telemetrie wirklich, `ERROR_PIPE_BUSY` an der
+> 96er-Grenze ist ein Warten statt des Acceptor-Endes, fertige
+> Verbindungsthreads werden geerntet, entnommene P0/P1-Einträge gehen bei
+> Schreibfehler zurück, Audiofelder werden vor der Wandlung verriegelt, das
+> Telemetrie-Welcome wird voll validiert, und beide Probeprogramme lassen nur
+> noch den Namensraum `…nakama.v3.probe.` zu.
+>
+> Kanon **GRÜN 32/32** auf `d137fa0`, Arbeitsbaum sauber, Exitcode 0. Marke
+> bleibt `T1 PASS 2026-08-29`; **keine T2-Marke** — die setzt der frische
+> Prüfer. Ehrliche Grenze: auf dieser Maschine gibt es keinen Race Detector
+> (kein TSan für MSVC), die Nebenläufigkeit der `P2Schleuse` ist deshalb
+> strukturell bewiesen und äußerlich vermessen, nicht werkzeugbestätigt.
+> Details: `docs/beweise/SONDE-010.md` §7.
+
 > ## ✅ NACHTRAG — 29.08.2026, S9b `SONDE-007c` T2-Nacharbeit (Dirigentenrunde 03:20–05:10)
 >
 > Die Marke von `SONDE-007c` steht auf **`T2 NEEDS_WORK 2026-08-29

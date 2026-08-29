@@ -14,6 +14,7 @@ pub mod framing;
 pub mod generiert;
 pub mod protokoll;
 pub mod telemetrie;
+pub mod transport;
 pub mod vertrag;
 #[cfg(windows)]
 mod server;

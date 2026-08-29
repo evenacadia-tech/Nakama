@@ -567,3 +567,93 @@ fn dto_korpus_klassifiziert_wie_das_manifest() {
     assert!(nein >= 15, "nur {nein} ungueltige DTOs - Korpus geschrumpft?");
     println!("DTO: {ja} gueltige, {nein} ungueltige wie im Manifest klassifiziert");
 }
+
+/// SONDE-010 — der Envelope-Korpus. Dieselbe Form wie die beiden aelteren
+/// Korpora: Urteil UND vollstaendige Verstossmenge gegen das handgeschriebene
+/// Manifest. Die C++-Haelfte misst denselben Korpus im Bein B10.
+#[test]
+fn envelope_korpus_klassifiziert_wie_das_manifest() {
+    use eqcop_broker::transport::v3::{envelope_pruefen, Verstoss, ALLE_VERSTOESSE};
+
+    let w = wurzel();
+    let fixtures = w.join("eq-copilot/fixtures/v3/envelope");
+    let manifest = lies(&fixtures.join("MANIFEST.json"));
+
+    // Die Regelliste des Manifests muss die geschlossene Menge des Lesers
+    // sein — nicht eine Teilmenge davon. Sonst koennte eine Regel im Code
+    // stehen, die kein Fixture je ausloest.
+    let regeln: Vec<&str> = manifest["regeln"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap())
+        .collect();
+    let leser: Vec<&str> = ALLE_VERSTOESSE.iter().map(|v| v.name()).collect();
+    assert_eq!(regeln, leser, "Regelmenge von Manifest und Leser weichen ab");
+
+    let mut geprueft = 0usize;
+    let mut gedeckt: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
+    let mut abweichungen: Vec<String> = Vec::new();
+
+    for eintrag in manifest["fixtures"].as_array().unwrap() {
+        let name = eintrag["datei"].as_str().unwrap();
+        let roh = std::fs::read(fixtures.join(name)).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let soll_gueltig = eintrag["urteil"].as_str().unwrap() == "gueltig";
+        let soll: Vec<Verstoss> = eintrag["verstoesse"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| {
+                let n = v.as_str().unwrap();
+                Verstoss::aus_name(n).unwrap_or_else(|| panic!("{name}: unbekannte Regel {n}"))
+            })
+            .collect();
+        for v in &soll {
+            gedeckt.insert(v.name());
+        }
+
+        match envelope_pruefen(&roh) {
+            Ok(rahmen) => {
+                if !soll_gueltig {
+                    abweichungen.push(format!("{name}: Leser sagt gueltig, soll {soll:?}"));
+                } else if rahmen.drahtlaenge != roh.len() {
+                    abweichungen.push(format!(
+                        "{name}: Drahtlaenge {} != Dateigroesse {}",
+                        rahmen.drahtlaenge,
+                        roh.len()
+                    ));
+                }
+            }
+            Err(ist) => {
+                if soll_gueltig {
+                    abweichungen.push(format!("{name}: Leser sagt {ist:?}, soll gueltig"));
+                } else if ist != soll {
+                    abweichungen.push(format!(
+                        "{name}: Verstossmenge weicht ab\n  soll {soll:?}\n  ist  {ist:?}"
+                    ));
+                }
+            }
+        }
+        geprueft += 1;
+    }
+
+    assert!(
+        abweichungen.is_empty(),
+        "{} von {geprueft} Envelope-Fixtures weichen ab:\n{}",
+        abweichungen.len(),
+        abweichungen.join("\n")
+    );
+    assert_eq!(
+        geprueft,
+        manifest["anzahl_gueltig"].as_u64().unwrap() as usize
+            + manifest["anzahl_ungueltig"].as_u64().unwrap() as usize,
+        "Manifestzahlen passen nicht zur Fixtureliste"
+    );
+    // Jede Regel des Lesers hat mindestens ein Negativfixture — sonst stuende
+    // sie nur im Code (Lehre aus SONDE-005a).
+    let fehlend: Vec<&str> = leser.iter().copied().filter(|r| !gedeckt.contains(r)).collect();
+    assert!(fehlend.is_empty(), "Regeln ohne Negativfixture: {fehlend:?}");
+    // Substanzriegel: mit geleerter Liste ginge der Test sonst gruen durch.
+    assert!(geprueft >= 30, "Envelopekorpus zu klein: {geprueft}");
+    println!("{geprueft} Envelope-Fixtures gegen das Manifest geprueft");
+}

@@ -15,6 +15,11 @@ path = "src/lib.rs"
 # Inkompatibilitaet. pruefe_flatc_drift.py haelt beide gegeneinander.
 flatbuffers = "25.12.19"
 serde = { version = "1", features = ["derive"] }
+# SONDE-010: SHA-256 fuer den v3-Pipetoken (Entwurf §48.3). Er ist ab hier
+# PRODUKTIONSCODE (transport::pipetoken) und keine Testbeigabe mehr - deshalb
+# wandert die Crate aus [dev-dependencies] hierher. Der RFC-8785-state_hash
+# nutzt dieselbe Crate weiter, jetzt ohne zweiten Eintrag.
+sha2 = "0.10"
 serde_json = "1"
 uuid = { version = "1", features = ["v4"] }
 
@@ -35,5 +40,3 @@ windows-sys = { version = "0.60", features = [
 # [dependencies]. Bis dahin bleibt sie dev-only, damit die Binaries ehrlich
 # sagen, was sie koennen.
 serde_json_canonicalizer = "0.3"
-# SHA-256 fuer den Vergleich des state_hash mit dem Manifest (RustCrypto).
-sha2 = "0.10"

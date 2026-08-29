@@ -57,8 +57,8 @@ const ANTWORT_FLUSH_TIMEOUT: std::time::Duration = std::time::Duration::from_mil
 
 /// Sicherheitsbeschreibung „nur der aktuelle Windows-User" (SDDL `D:P(A;;GA;;;<SID>)`).
 /// Hält den LocalAlloc-Deskriptor am Leben, solange der Server läuft.
-struct Sicherheit {
-    deskriptor: *mut core::ffi::c_void,
+pub(crate) struct Sicherheit {
+    pub(crate) deskriptor: *mut core::ffi::c_void,
 }
 // SAFETY: `deskriptor` ist ein exklusiv besessener LocalAlloc-Block ohne
 // Thread-Affinität; nach dem Bau wird er nur noch gelesen (CreateNamedPipeW)
@@ -105,7 +105,7 @@ unsafe impl Send for HandleGuard {}
 // darf kein strengeres Alignment verlangen, als u64-Elemente garantieren.
 const _: () = assert!(std::mem::align_of::<TOKEN_USER>() <= std::mem::align_of::<u64>());
 
-fn aktueller_user_sid() -> Result<String, String> {
+pub(crate) fn aktueller_user_sid() -> Result<String, String> {
     let mut token: HANDLE = std::ptr::null_mut();
     // SAFETY: GetCurrentProcess liefert ein Pseudo-Handle (nicht zu schließen);
     // OpenProcessToken schreibt nur bei Erfolg ein gültiges Token nach `token`.
@@ -178,7 +178,7 @@ fn aktueller_user_sid() -> Result<String, String> {
     Ok(sid)
 }
 
-fn sicherheit_nur_user() -> Result<Sicherheit, String> {
+pub(crate) fn sicherheit_nur_user() -> Result<Sicherheit, String> {
     let sid = aktueller_user_sid()?;
     let sddl = format!("D:P(A;;GA;;;{sid})");
     let mut sddl_w: Vec<u16> = sddl.encode_utf16().collect();

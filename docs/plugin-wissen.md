@@ -356,12 +356,29 @@ JUCE-frei wie der übrige `core/`-Baum, fünf Dateien:
   **Jeder Slot der `P2Schleuse` hat einen Besitzer** (T2-Runde 1): ein
   `compare_exchange` mit den Zuständen frei / Verbraucher / Erzeuger. Ein
   beanspruchter Platz ist bis zur Freigabe unveränderlich; ein Schreibversuch
-  darauf findet nicht statt, sondern fällt gezählt aus
-  (`beanspruchtVerworfen()`). Die frühere Sequenzprüfung erkannte die
+  darauf findet nicht statt. Die frühere Sequenzprüfung erkannte die
   Überschneidung erst NACH dem konkurrierenden Zugriff — sie verhinderte den
   zerrissenen Frame auf dem Draht, nicht das Datenrennen. Die Sequenz je Slot
   bleibt, jetzt in ihrer zweiten Rolle: sie sagt, welche Folgenummer im Platz
   liegt.
+  **Die Kollision kostet den ÄLTESTEN Frame, nie den neuesten** (T2-Runde 3,
+  29.08.): die erste Fassung des Besitzmodells ließ den Erzeuger bei einer
+  Kollision `false` liefern — der gerade erzeugte Frame fiel, also die Umkehrung
+  von „ältesten ungesendeten ersetzen" (§53.9). Jetzt bleibt die kollidierende
+  Position ein **Loch** und der Frame geht in den nächsten Platz; der
+  Verbraucher überspringt das Loch an der nicht passenden Folgenummer. Der
+  zweite Platz ist immer frei, weil es genau einen Verbraucher gibt.
+  `beanspruchtVerworfen()` ist damit strukturell 0 und nur noch Wache;
+  `kollisionsLoecher()` belegt, dass der Fall eintritt (B10 unter Flut:
+  ~12 000 mal). Auch das Lastbein A22 zählt jetzt die Rückgabe von
+  `veroeffentlichen()` und rechnet sie gegen `zuGross + beanspruchtVerworfen`
+  auf — vorher warf es sie weg und konnte den Verlust nicht sehen.
+  **Ein voller Wiederholpuffer weist den NEUZUGANG ab** (T2-Runde 3, 29.08.):
+  vorher machte `pop_front()` Platz und löschte damit ein bereits angenommenes
+  P1-Ereignis (`P1Ergebnis::abgewiesen`, Zähler `abgewiesene()`). Kein
+  erzwungener Reconnect: P1 teilt sich die Control-Verbindung mit P0, ein
+  Reconnect wegen P1 risse die Steuerleitung mit — das Gate lautet „ohne
+  P0-Starvation".
 - `IpcVerbindung` — `CreateFileW` mit `SECURITY_SQOS_PRESENT |
   SECURITY_IDENTIFICATION`, `ERROR_PIPE_BUSY` über `WaitNamedPipe` statt
   Backoff, absolute Frist über den ganzen Schreibvorgang, Lese-Zeitlimit als
@@ -566,8 +583,33 @@ Frist (`SENKE_FRIST` = 2000 ms) und lösen den Thread danach **ab**, statt ihn z
 joinen (`senke_abgeloest`, `schreiber_abgeloest`). Weder Queue-Schließung noch
 `CancelIoEx` lösen einen Thread, der in fremdem Code steht.
 
+**Auch die Lebenszyklusaufrufe haben eine Frist** (T2-Runde 3, 29.08.): eine
+Frist an zwei von drei Threads ist keine Frist. `control_verbunden`,
+`telemetrie_gekoppelt`, `*_getrennt` und `abgewiesen` liefen unbegrenzt auf dem
+**Verbindungsthread** — und genau auf den wartet `stoppen()`. Sie laufen jetzt
+über `Senkenruf`: eigener kurzlebiger Thread, Join mit `SENKE_FRIST`, danach
+abgelöst und gezählt (`lebenszyklus_abgeloest`). Nach einem abgelösten Aufruf
+schweigt die Verbindung gegenüber ihrer Senke (`lebenszyklus_uebersprungen`),
+statt neben dem hängenden in falscher Reihenfolge weiterzureden; hängt
+`control_verbunden`, endet die Verbindung samt Kopplung, statt einen Platz bis
+zum Stop zu halten.
+
+**Die Kopplung fällt mit dem Leserende, nicht nach den Joins** (T2-Runde 3):
+`trennen()` lief früher erst hinter den fristbegrenzten Joins — bei langsamer
+Senke blieb die Kopplung bis zu zweimal `SENKE_FRIST` registriert, und P2-Frames
+passierten in dieser Zeit weiter `telemetrie_lebt`. Register und Abbruch der
+Telemetrie-I/O sitzen jetzt in `kopplung_loesen()` unmittelbar nach dem
+Leserende; die Senkenmeldung folgt getrennt in `melden_getrennt()` nach den
+Joins, weil währenddessen noch ein `p0/p1/p2` derselben Verbindung laufen kann.
+Dazu: eine **geschlossene** Ingressqueue liefert nichts mehr — `entnehmen`
+prüft das Schließflag VOR dem Inhalt, sonst rief ein abgelöster Verbraucher
+P0/P1 für eine bereits abgemeldete Verbindung.
+
 **`transport/` (SONDE-010, 29.08.):** `v3` (Envelope, Stromleser, CRC32C,
-Ratengrenze) · `bootstrap` (Hello ≤ 16 KiB, Protokollteilung v2/v3, Kopplung
+Ratengrenze) · `bootstrap` (Hello ≤ 16 KiB, Protokollteilung v2/v3, Feldgrenzen
+des Vertrags am Eingang — `logon_sid` 1..184, `plugin_version` 1..64,
+`host.name` ≤ 120 und `host.version` ≤ 64, jeweils in ZEICHEN wie `maxLength`
+im Schema, die beiden `host`-Grenzen seit T2-Runde 3 —, Kopplung
 Control↔Telemetry mit Gegenpfad) · `warteschlange` (die vier Politiken aus
 §53.9) · `pipetoken` (SID → v3-Pipename, Golden aus §48.3) · `legacy_v2` (kein
 Umbau, sondern der Beweis der Isolation: v3-Binärframes fallen im v2-Leser,

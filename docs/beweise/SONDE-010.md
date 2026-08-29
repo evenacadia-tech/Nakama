@@ -8,7 +8,7 @@
 | Ticket | `SONDE-010` |
 | Phase / Session | P2 / S14–15 |
 | Gate-Text (Quelle) | `docs/FL-Nakama-Sonden-Design-Entwurf.md` §65, Zeile `SONDE-010`: **„v3-Control-/Telemetry-Clients und Rust-Envelopeparser — fertig, wenn: CRC/Fuzz/Backpressure/Reconnect ohne P0-Starvation"** |
-| Commits | `cdff93b` · `2ac23d0` · `1b19cd1` · `10a4806` · `97c956d` (Basis `a7b0740`) · **Nacharbeit Runde 1:** `4500785` · `602e105` · `6fc3224` · **Nacharbeit Runde 2:** `65d46a0` · `e5f5c27` · `a0053e4` |
+| Commits | `cdff93b` · `2ac23d0` · `1b19cd1` · `10a4806` · `97c956d` (Basis `a7b0740`) · **Nacharbeit Runde 1:** `4500785` · `602e105` · `6fc3224` · **Nacharbeit Runde 2:** `65d46a0` · `e5f5c27` · `a0053e4` · **Nacharbeit Runde 3:** `1bdb93d` · `c444ca3` · `66e4a09` |
 | Datum | 2026-08-29 |
 | Prüfstufen | T1 ☑ · T2 ☐ · T3 ☐ (kein Gate) |
 
@@ -1386,6 +1386,395 @@ Paketgrenze an der Tür ab.** Das ist kein Zusatzwunsch, sondern die notwendige
 Kehrseite von 8.1 — ohne sie hätte die Reservierung eine unsendbare Nachricht
 für immer vorn in der Queue gehalten und jede neue Verbindung an derselben
 Stelle scheitern lassen.
+
+---
+
+## 9. Nacharbeit Runde 3 — 2026-08-29 (User-Freigabe; Prüfer-Thread 01a04c83-5fb5-73b2-b76d-50c30011607d, Stand 225cc26)
+
+Der dritte frische T2-Prüfer (Codex `gpt-5.6-sol`, Effort `xhigh`) urteilte nach
+der Nacharbeit Runde 2 erneut **NEEDS_WORK** und nannte sechs Befunde (5 P1,
+1 P2). Der Dirigent hatte danach gestoppt; der **User hat am 29.08. eine dritte
+Runde ausdrücklich freigegeben** (`docs/beweise/G1.md` §12, Nachtrag). Alle
+sechs wurden an der Quelle nachgemessen, geschlossen und je mit einer Prüfung
+belegt, die **ohne** den Fix rot ist; die Rohausgabe jeder Bruchprobe steht
+unten bei ihrem Befund.
+
+Commits dieser Runde: `1bdb93d` (Befunde 1 und 2, C++-Queues) · `c444ca3`
+(Befunde 3–6, Rust-Transport) · `66e4a09` (A22-Hälfte von Befund 2, plus die
+beiden Zähler im Telemetrie-Snapshot).
+
+**Die Zeilennummern des Prüfers galten für `225cc26` und wurden heute am
+Basisstand `e9ae2e9` nachgemessen — alle sechs stimmen unverändert:**
+
+| # | Fundstelle des Prüfers | Nachgemessen an `e9ae2e9` |
+|---|---|---|
+| 1 | `IpcQueues.h:161-166` | `wiederholung.pop_front()` steht auf **163** |
+| 2 | `IpcQueues.h:323-330` | `beanspruchtVerworfenZaehler.fetch_add` auf **329**, `return false` auf **330** |
+| 3 | `server_v3.rs:1393` | `trennen(&kopplungen, …)` steht auf **1393**, hinter beiden Joins |
+| 4 | `server_v3.rs:381-385` | `if g.1 {` steht auf **384**, nach `entnehmen()` |
+| 5 | `server_v3.rs:1169` | `senke.control_verbunden(&link, &h);` steht auf **1169** |
+| 6 | `bootstrap.rs:239-240` | `adresse_pruefen` auf **239**, danach sofort die Audiofelder |
+
+Gemessene Stände nach der Runde: Bein **B10** wuchs von 159 auf **161**
+Prüfungen (grün), die Rust-Testsuite von 150 auf **154** (grün), `clippy`
+unverändert bei den drei Altwarnungen, und das Lastbein **A22** ist grün mit
+zwei neuen Sätzen.
+
+---
+
+### 9.1 [P1] Ein voller Wiederholpuffer weist den NEUZUGANG ab, statt Angenommenes zu löschen
+
+| | |
+|---|---|
+| **Quelle** | `eq-copilot/plugin/core/ipc/IpcQueues.h`, `P1Warteschlange::einreihen` |
+| **Fix** | `1bdb93d` |
+| **Prüfung** | Bein **B10**, Abschnitt **E** |
+
+`pop_front()` machte im vollen Wiederholpuffer Platz — und löschte dabei ein
+Ereignis, das die Queue vorher **angenommen** hatte. Bei Kapazität 2/2 und den
+Ereignissen 1…5 verschwand genau die Nr. 3. §53.9 sagt für P1 „nicht
+koaleszierbare Events bei Überlauf über Reconnect/Outbox **wiederholen**" —
+wiederholen, nicht verdrängen. Eine Annahme, die später still zurückgenommen
+wird, ist keine Annahme.
+
+Jetzt fällt der **Neuzugang**: `P1Ergebnis::abgewiesen`, gezählt in
+`abgewiesene()` und dem Aufrufer gemeldet. Der Enumwert
+`wiederholungVerdraengt` und der Zähler `verdraengte()` sind damit
+verschwunden — sie benannten ein Verhalten, das es nicht mehr gibt.
+
+**Die technische Entscheidung, die der Auftrag offenließ.** Der Prüfer nannte
+zwei Wege: „neues Ereignis abweisen **bzw.** Reconnect auslösen". Gewählt ist
+**abweisen**. Ein erzwungener Reconnect würde die vorgehaltenen Ereignisse zwar
+sofort wieder rausgehen lassen — aber P1 teilt sich die Control-Verbindung mit
+**P0**, dessen Zusage „nichts verwerfen" lautet. Ein Verbindungsabbruch wegen
+P1-Rückstau risse die Steuerleitung mit; genau das verbietet der Gate-Satz
+dieses Tickets, „ohne P0-Starvation". Der Rückstau bleibt deshalb lokal und
+sichtbar, statt die Steuerleitung mitzunehmen.
+
+**Bruchprobe** — `pop_front()` wieder eingesetzt:
+
+```text
+  ok      nicht koaleszierbare Ereignisse gehen in den Wiederholpuffer
+  ok      ein voller Wiederholpuffer weist das NEUE Ereignis ab, gezaehlt, nie still  [2 vorgehalten, 1 abgewiesen]
+  ok      Reconnect holt beide zurueck
+  FEHLER  und zwar JEDES angenommene Ereignis, in der urspruenglichen Reihenfolge  [4,5]
+
+FEHLER — 161 Pruefungen, 1 Fehler
+```
+
+`[4,5]` ist der Befund im Klartext: nach dem Reconnect kommen **4 und 5**
+zurück — das angenommene Ereignis **3** ist weg.
+
+---
+
+### 9.2 [P1] Bei einer P2-Slotkollision fällt der älteste, nie der neueste Frame
+
+| | |
+|---|---|
+| **Quelle** | `eq-copilot/plugin/core/ipc/IpcQueues.h`, `P2Schleuse::veroeffentlichen` |
+| **Fix** | `1bdb93d` |
+| **Prüfung** | Bein **B10**, Abschnitt **E2** |
+
+Kopierte der Verbraucher gerade aus dem Platz, den der Erzeuger als nächsten
+brauchte, lieferte der `compare_exchange`-Fehlschlag schlicht `false`: der
+gerade erzeugte, **neueste** Frame fiel. Das ist die Umkehrung der Politik.
+§53.9 sagt für P2 „ältesten ungesendeten Frame ersetzen" — der neueste ist der
+einzige, der nie fallen darf, denn er trägt den aktuellen Messwert.
+
+**Die technische Entscheidung zur Slotwahl.** Die Positionen sind an die Slots
+gebunden (`p % kSlots`); einen belegten Platz zu umgehen heißt deshalb, die
+Position zu überspringen. Der Erzeuger lässt die kollidierende Position jetzt
+als **Loch** stehen und schreibt in den nächsten Platz. Der Verbraucher erkennt
+das Loch an der nicht passenden Folgenummer — an genau der Prüfung
+(`folge == c + 1`), die es ohnehin schon gab — und geht weiter. Der zweite
+Platz ist dabei **immer** frei: es gibt genau einen Verbraucher, er hält
+höchstens einen Platz, und das war der erste. Das war der kleinste Eingriff,
+der die Politik wiederherstellt, ohne die bewiesene Besitz- und
+Folgenummernmechanik aus Runde 1 anzufassen.
+
+Folge für die Zähler: `beanspruchtVerworfen()` ist damit **strukturell 0** und
+wird von der Messgröße zur **Wache** — die Prüfung verlangt jetzt `== 0`. Dass
+der Fall überhaupt eintritt, belegt der neue Zähler `kollisionsLoecher()`.
+
+Zusätzlich trägt der große Flutlauf jetzt eine **Folgenummer in den ersten vier
+Bytes** jedes Frames. Ohne sie sagte er nur „nicht zerrissen" und nichts
+darüber, ob die übersprungenen Positionen die Reihenfolge brechen oder einen
+Frame doppelt liefern.
+
+**Bruchprobe** — Kollision liefert wieder `false`:
+
+```text
+  ok      300 000 grosse Frames (8000 B) ebenso: kein zerrissener Frame  [18894 geholt, 0 zerrissen]
+  ok      und keine ruecklaeufige oder doppelte Folgenummer — die Loecher der Kollision brechen die Reihenfolge nicht  [0 ruecklaeufig]
+  ok      der Erzeuger traf den beanspruchten Slot WIRKLICH — und hat ihn nicht beschrieben  [11244 uebersprungene Positionen]
+  FEHLER  der NEUESTE Frame faellt dabei NIE — es weicht der aelteste wartende (replace-oldest, §53.9)  [11244 neueste wegen fremden Anspruchs verworfen]
+
+FEHLER — 161 Pruefungen, 1 Fehler
+```
+
+Der Fall ist also nicht theoretisch: **11 244** Kollisionen in einem Lauf, und
+im alten Stand fiel jedes Mal der neueste Frame.
+
+**Ehrlich zur Beweisform.** Eine Kollision lässt sich auf dieser Maschine nicht
+deterministisch stellen: `abholen()` beansprucht und gibt seinen Platz innerhalb
+eines Aufrufs frei, ein Einzelthread kann den Zustand „Verbraucher hält Platz"
+also nicht herbeiführen, und ein Test-Hintertürchen dafür wäre ein Element im
+Produktcode ohne Handgriff. Der Beweis ist deshalb derselbe wie schon für das
+Besitzmodell aus Runde 1: der Fall tritt unter Flut messbar ein
+(`kollisionsLoecher() > 0`), und er endet jedes Mal ohne Verlust des neuesten
+Frames (`beanspruchtVerworfen() == 0`), bei null zerrissenen und null
+rückläufigen Frames.
+
+---
+
+### 9.3 [P1] Das Lastbein A22 zählt die Rückgabe und die Kollisionszähler
+
+| | |
+|---|---|
+| **Quelle** | `eq-copilot/plugin/tests/IpcLastMain.cpp`, `core/ipc/TelemetryClient.{h,cpp}`, `tools/eq-copilot/pruefe_ipc_last.py` |
+| **Fix** | `66e4a09` |
+| **Prüfung** | Bein **A22** |
+
+Die zweite Hälfte von Befund 2 lautete: „A22 ignoriert `false`-Rückgabe und
+Zähler." Das stimmte — das Lastbein warf den Rückgabewert von
+`veroeffentlichen()` weg und las weder `kollisionsLoecher` noch
+`beanspruchtVerworfen`. Ein Verlust auf der echten Pipe war damit strukturell
+unsichtbar, und genau deshalb konnte die umgekehrte Politik im Lastlauf nicht
+auffallen.
+
+`TelemetryClient::Snapshot` trägt die beiden Zähler jetzt; A22 zählt jede
+abgelehnte Veröffentlichung, meldet `p2_abgelehnt`, `p2_zu_gross`,
+`p2_kollisionsloecher` und `p2_neueste_verworfen` im JSON und prüft zwei Sätze:
+
+* der neueste Frame fällt nie (`p2_neueste_verworfen == 0`);
+* jede Ablehnung hat einen **gezählten Grund**
+  (`abgelehnt == zu_gross + neueste_verworfen`).
+
+`pruefe_ipc_last.py` prüft dieselben zwei Sätze auf der Clientseite.
+
+**Gemessen (grün):**
+
+```text
+{"sonden":32,"sekunden":8,"p2_veroeffentlicht":174272,"p2_gesendet":94620,"p2_ersetzt":79658,"p2_abgelehnt":0,"p2_zu_gross":0,"p2_kollisionsloecher":0,"p2_neueste_verworfen":0,"p0_gesendet":9984,"p0_beantwortet":9984,"p0_latenz_max_ms":21,"p0_latenz_p99_ms":20,"p0_ueberlaeufe":0,"envelope_abweisungen":0}
+  ok      es lag WIRKLICH Rueckstau an (Cap 2 hat ersetzt)  [79658 ersetzte P2-Frames]
+  ok      und dabei faellt NIE der neueste Frame (replace-oldest)  [0 neueste verworfen, 0 Positionen uebersprungen]
+  ok      jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund  [0 abgelehnt = 0 zu gross + 0 ohne Platz]
+LASTBEIN GRUEN
+```
+
+**Was diese Zahl NICHT sagt.** `p2_kollisionsloecher` ist **0** — der
+Kollisionsfall trat in diesem Lastlauf gar nicht ein (A22 flutet mit 512-Byte-
+Frames und 1 ms Pause; das Zeitfenster des Verbrauchers ist zu kurz). Die Zeile
+„und dabei fällt NIE der neueste Frame" ist hier also eine **Wache**, keine
+Messung des Kollisionsfalls; dessen diskriminierender Beweis liegt in B10
+(9.2). Was A22 beweist, ist die **Buchführung**: jede Ablehnung ist gezählt und
+aufgeklärt.
+
+**Bruchprobe** — Rückgabe wieder ignoriert, und damit überhaupt ein `false`
+entsteht, mit Frames über der Slotgröße geflutet:
+
+```text
+{"sonden":32,"sekunden":3,"p2_veroeffentlicht":64960,"p2_gesendet":0,"p2_ersetzt":0,"p2_abgelehnt":0,"p2_zu_gross":64960,"p2_kollisionsloecher":0,"p2_neueste_verworfen":0,…}
+  FEHLER  es lag WIRKLICH Rueckstau an (Cap 2 hat ersetzt)  [0 ersetzte P2-Frames]
+  FEHLER  jede abgelehnte Veroeffentlichung hat einen gezaehlten Grund  [0 abgelehnt = 64960 zu gross + 0 ohne Platz]
+LASTBEIN ROT
+```
+
+64 960 Frames wurden abgelehnt und das Bein meldete **0** — genau die
+Blindheit, die der Befund benannte. Beide Bruchänderungen sind zurückgenommen.
+
+---
+
+### 9.4 [P1] Die Kopplung fällt mit dem Leserende, nicht erst nach den Joins
+
+| | |
+|---|---|
+| **Quelle** | `broker/src/transport/server_v3.rs`, `verbindung_bedienen` / `trennen` |
+| **Fix** | `c444ca3` |
+| **Prüfung** | `cargo test`, `kopplung_faellt_mit_dem_leserende_nicht_erst_nach_den_joins` |
+
+`trennen()` stand hinter **beiden** fristbegrenzten Joins. Bei langsamer Senke
+blieb die Kopplung damit bis zu zweimal `SENKE_FRIST` im Register — und ein
+Telemetrieframe passierte in dieser Zeit weiter `telemetrie_lebt`, obwohl die
+Control-Verbindung, der die Kopplung gehört, längst fort war.
+
+`trennen()` ist in zwei Schritte geteilt, die verschiedene Dinge tun und
+deshalb verschiedene Zeitpunkte haben:
+
+* **`kopplung_loesen()`** — Registereintrag entfernen und die I/O der
+  mitfallenden Telemetrieverbindung abbrechen. Läuft **unmittelbar nach dem
+  Leserende**, vor `eingang.schliessen()` und vor den Joins. Register und
+  Abbruch gehören zusammen: ohne den Abbruch stünde der Telemetriearbeiter noch
+  in seinem Read.
+* **`melden_getrennt()`** — die Senkenmeldung. Läuft **nach** den Joins, denn
+  während der Joins kann noch ein `p0`/`p1`/`p2` derselben Verbindung laufen;
+  ein `*_getrennt` davor wäre eine Lüge über die Reihenfolge.
+
+Der Test misst an der Telemetriepipe: der Verbraucher der Control-Verbindung
+steht nachweislich in der Senke, dann fällt die Control-Pipe, und die
+Telemetriepipe muss **weit vor** `SENKE_FRIST` zu sein.
+
+**Bruchprobe** — `kopplung_loesen()` wieder hinter die Joins geschoben:
+
+```text
+test transport::server_v3::tests::kopplung_faellt_mit_dem_leserende_nicht_erst_nach_den_joins ... FAILED
+panicked at src/transport/server_v3.rs:2327:9:
+sie faellt erst nach 2.007044s — die Kopplung haengt an den Joins statt am Leserende (SENKE_FRIST 2s)
+```
+
+---
+
+### 9.5 [P1] Eine geschlossene Ingressqueue liefert nichts mehr
+
+| | |
+|---|---|
+| **Quelle** | `broker/src/transport/server_v3.rs`, `Eingang::entnehmen` |
+| **Fix** | `c444ca3` |
+| **Prüfung** | `cargo test`, `geschlossener_eingang_liefert_nichts_mehr` |
+
+`entnehmen()` prüfte das Schließflag **nach** dem Inhalt. Der Verbraucher lief
+nach `schliessen()` also noch durch den Restbestand — und rief `p0`/`p1` für
+eine Verbindung, deren Kopplung in demselben Zug schon abgemeldet worden war
+(9.4 verschärft das sogar: die Abmeldung liegt jetzt noch früher). Die
+verbliebenen Frames gehören zu einer Sitzung, die es nicht mehr gibt; sie
+fallen mit ihr. Das Schließflag steht deshalb jetzt **vor** dem Inhaltstest.
+
+**Bruchprobe** — Reihenfolge zurückgedreht:
+
+```text
+test transport::server_v3::tests::geschlossener_eingang_liefert_nichts_mehr ... FAILED
+panicked at src/transport/server_v3.rs:2165:9:
+nach dem Schliessen darf kein Eintrag mehr kommen — er gehoert zu einer Sitzung, die es nicht mehr gibt
+```
+
+---
+
+### 9.6 [P1] Auch die Lebenszyklusaufrufe der Senke haben eine Frist
+
+| | |
+|---|---|
+| **Quelle** | `broker/src/transport/server_v3.rs`, neuer Typ `Senkenruf` |
+| **Fix** | `c444ca3` |
+| **Prüfung** | `cargo test`, `stoppen_endet_auch_bei_haengendem_lebenszyklusaufruf` |
+
+Runde 2 gab `p0`/`p1`/`p2` eine Frist, weil sie Fremdaufrufe sind. Sie laufen
+auf dem **Ingressthread**, und der wird beim Verbindungsende mit
+`SENKE_FRIST` gejoint und danach abgelöst. `control_verbunden`,
+`telemetrie_gekoppelt`, `control_getrennt`, `telemetrie_getrennt` und
+`abgewiesen` laufen aber auf dem **Verbindungsthread** — und genau auf den
+wartet `stoppen()` in seiner `while !j.is_finished()`-Schleife, ohne Frist.
+Eine Frist an zwei von drei Threads ist keine Frist; der Hängertest aus Runde 2
+konnte das nicht sehen, weil er nur `p0/p1/p2` blockierte.
+
+Jeder dieser Aufrufe läuft jetzt über `Senkenruf`: eigener kurzlebiger Thread,
+Join mit `SENKE_FRIST`, danach **abgelöst** und gezählt
+(`lebenszyklus_abgeloest`). Ein Thread je Lebenszyklusereignis ist bezahlbar —
+es sind wenige je Verbindung, und die Verbindung kostet ohnehin drei.
+
+Zwei Folgeentscheidungen stehen im Code und gehören hierher:
+
+* **Nach einem abgelösten Aufruf schweigt die Verbindung** gegenüber ihrer
+  Senke (`lebenszyklus_uebersprungen`). Ein zweiter Aufruf liefe neben dem
+  hängenden ersten und erreichte die Senke in falscher Reihenfolge. Preis: eine
+  Senke, die in `control_verbunden` hängt, sieht ihren Verbindungsbeginn ohne
+  Ende — sichtbar an `lebenszyklus_abgeloest`, nicht still.
+* **Hängt `control_verbunden`, endet die Verbindung**, statt bedient zu werden:
+  eine Senke, die den Verbindungsbeginn nicht annehmen kann, wird auch ihre
+  Frames nicht annehmen, und der Verbindungsplatz wird sofort frei statt bis
+  zum Stop belegt zu bleiben. Der Abbau läuft über `kopplung_loesen()`, nicht
+  über ein bloßes `control_abmelden()` — der Peer hat sein `welcome` schon und
+  kann in den bis zu zwei Sekunden bereits die Telemetrieverbindung gekoppelt
+  haben; sie fällt mit, sonst bliebe genau die halb offene Kopplung stehen, die
+  Runde 1 geschlossen hat.
+
+**Bruchprobe** — `control_verbunden` wieder direkt auf dem Verbindungsthread:
+
+```text
+test transport::server_v3::tests::stoppen_endet_auch_bei_haengender_senke ... ok
+test transport::server_v3::tests::stoppen_endet_auch_bei_haengendem_lebenszyklusaufruf ... FAILED
+panicked at src/transport/server_v3.rs:2251:9:
+stoppen() haengt im Lebenszyklusaufruf der Senke
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 134 filtered out; finished in 10.02s
+```
+
+Die erste Zeile gehört mit zum Beweis: der **alte** Hängertest bleibt grün. Er
+misst einen anderen Thread und konnte diese Lücke nie sehen. Und wie in Runde 2
+misst der neue Test, statt zu hängen: `stoppen()` läuft in einem eigenen Thread
+mit `recv_timeout`, die blockierende Senke gibt nach spätestens 20 s von selbst
+frei — ein rotes Ergebnis bleibt rot und wird kein Hang.
+
+---
+
+### 9.7 [P2] Die Längen der optionalen Hostfelder werden geprüft
+
+| | |
+|---|---|
+| **Quelle** | `broker/src/transport/bootstrap.rs`, neue Funktion `host_pruefen` |
+| **Fix** | `c444ca3` |
+| **Prüfung** | `cargo test`, `host_haelt_die_laengen_des_vertrags` |
+
+Nach `adresse_pruefen` folgten sofort die Audiofelder; `host.name` und
+`host.version` gingen ungeprüft durch. Das Schema
+(`eq-ipc-v3.schema.json`, `host_angabe`) erlaubt 120 bzw. 64 Zeichen — ohne
+Prüfung trug ein sonst gültiges Hello beliebige Texte bis an die
+16-KiB-Bootstrapgrenze in den Broker, also rund das Hundertfache des Vertrags.
+Ein Vertrag, der nur im Schema steht und nicht am Eingang geprüft wird, ist
+kein Vertrag.
+
+`host_pruefen` zählt **Zeichen**, nicht Bytes — wie `maxLength` im Schema und
+wie die bestehende `logon_sid`-Prüfung. Der Test fährt beides: die Grenze
+(120/64 gehen durch) und den ersten Schritt darüber, jeweils einzeln, plus den
+Umlautfall (120 Zeichen = 240 Bytes bleiben gültig, 121 fallen). Ohne die
+Grenzfälle wäre „wird abgewiesen" auch mit einer viel zu strengen Regel grün.
+
+**Bruchprobe** — `host_pruefen`-Aufruf wieder entfernt:
+
+```text
+test transport::bootstrap::tests::host_haelt_die_laengen_des_vertrags ... FAILED
+panicked at src/transport/bootstrap.rs:526:23:
+121-Zeichen-Hostname wurde angenommen: Ok((V3Control(HelloControl { … host: Some(HostAngabe { pid: 4242, name: Some("hhhh… 121 Zeichen"), version: Some("1.0") }) … }), 594))
+```
+
+---
+
+### 9.8 Was über den Wortlaut der sechs Befunde hinausging
+
+Drei Dinge stehen im Diff, die keiner der sechs Punkte wörtlich verlangt hat:
+
+1. **`docs/plugin-wissen.md` nachgezogen.** Zwei Absätze dort waren durch die
+   Fixes unwahr geworden — „ein Schreibversuch darauf … fällt gezählt aus
+   (`beanspruchtVerworfen()`)" beschrieb genau die Politikumkehr aus 9.2, und
+   „`Senke::p0/p1/p2` sind Fremdaufrufe: beide Joins … haben eine Frist" ließ
+   offen, dass die Lebenszyklusaufrufe keine hatten. Beides ist berichtigt, die
+   `host`-Grenzen sind bei `bootstrap` ergänzt.
+2. **Eine Auswertungsreihenfolge im Test berichtigt.** Die erste Fassung der
+   neuen P1-Prüfung stand mit `einreihen(…)` im Bedingungsargument und mit den
+   Zählern im Detailtext von `pruefe`. Die Auswertungsreihenfolge von
+   Funktionsargumenten ist in C++ unbestimmt: der Lauf meldete grün, druckte
+   aber `[2 vorgehalten, 0 abgewiesen]` — den Stand **vor** dem geprüften
+   Aufruf. Ein Detailtext, der etwas anderes zeigt als das Geprüfte, ist eine
+   Falle für den nächsten Leser; die Werte werden jetzt vorher in Locals
+   gerechnet.
+3. **Fünf überflüssige `&` an `abweisen(&format!(…))`** entfernt, weil sie
+   `clippy` neue Warnungen eingetragen hätten. Der Warnungsstand ist damit
+   unverändert bei den drei Altwarnungen, die schon vor dieser Runde da waren.
+
+**Was NICHT angefasst wurde:** v2-Produktpfad (`eq-copilot/plugin/src`,
+`broker/src/protokoll.rs`, `broker/src/framing.rs`), `eq-copilot/identity/`,
+andere Ticketmanifeste, `docs/PLAN-STAND.md`, die Urteilsmarken im Kopf dieses
+Manifests. Der Broker-Ingress (`broker/src/transport/warteschlange.rs`) trägt
+eine eigene, andere Politik (P2 zuerst droppen) und war nicht Gegenstand eines
+der sechs Befunde — er bleibt unverändert.
+
+**Ein Punkt bleibt offen und wird hier nicht verschleiert:** hängt ein
+Lebenszyklusaufruf, sieht die Senke ein `control_verbunden` ohne passendes
+`control_getrennt` (9.6, erste Folgeentscheidung). Das ist bewusst so gewählt —
+die Alternative wäre ein Gegenstück in falscher Reihenfolge —, es ist gezählt
+(`lebenszyklus_abgeloest`, `lebenszyklus_uebersprungen`), und es betrifft nur
+den Fall einer Senke, die den Vertrag „zügig zurückkehren" bricht. Der
+`Coordinator` aus `SONDE-011` ist die erste echte Senke; dort ist zu
+entscheiden, ob er eine eigene Wiederherstellung dafür braucht.
+
 
 ---
 
@@ -13104,3 +13493,5 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 **Zwischenfall dieses Laufs (kein Ticketbefund):** Während der Nacharbeit Runde 1 lief C: voll (0 Byte frei; Shell-Werkzeuge des Dirigenten fielen aus, der Kanon-Bau lief weiter). Ursache außerhalb des Repos: der Codex-Desktop-App-Server legt unter `~/.codex/.tmp/marketplaces/.staging/marketplace-upgrade-*` minütlich einen ~185-MB-Klon ab und räumt nie auf (572 Ordner, 96 GB seit 26.08.). 514 Ordner älter als 10 Minuten wurden gelöscht (95 GB frei); die Ursache läuft weiter, solange die Codex-App offen ist. Zwei DaVinci-Installer-Reste (2×3 GB) im Temp blieben liegen — Löschung außerhalb des Projekts vom Auto-Klassifikator geblockt.
 
 **Nächster Schritt an diesem Ticket:** eine dritte Nacharbeit nur auf ausdrückliche User-Freigabe (Dirigent stoppt nach zwei Runden), sonst bleibt S14–15 „gebaut, nachgearbeitet, frisches Urteil fehlt". Für `SONDE-011` (Coordinator) gilt: NAK-92 ist eine Vorbedingung, weil der Coordinator genau die Senke ist, deren Lebenszyklus- und Rückstaupolitik hier offen ist.
+
+**Nachtrag 2026-08-29, später am Tag — die dritte Runde ist gelaufen.** Der User hat die dritte Nacharbeitsrunde ausdrücklich freigegeben (`docs/beweise/G1.md` §12, „Nachtrag 29.08., später am Tag": „Der User hat auf die Haltfrage ‚Dritte Nacharbeitsrunde' und ‚FL-Termin jetzt' freigegeben."). Alle **sechs** Restbefunde sind an der Quelle nachgemessen, geschlossen und je mit einer diskriminierenden, einmal gebrochenen Prüfung belegt — **§9** dieses Manifests, Commits `1bdb93d` · `c444ca3` · `66e4a09`. Der Satz oben, „eine dritte Nacharbeit nur auf ausdrückliche User-Freigabe", bleibt als Stand seines Datums stehen; die Freigabe kam danach. **Das Urteil bleibt offen:** über den Ticketbereich `git diff a7b0740...HEAD` urteilt ein frischer Prüfer, nicht der bauende Worker. NAK-92 ist deshalb in `docs/offene-punkte.md` nicht geschlossen, sondern datiert nachgetragen.

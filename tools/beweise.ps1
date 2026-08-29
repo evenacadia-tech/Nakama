@@ -1076,9 +1076,10 @@ if ($bauProtokoll.Count -gt 0) {
 # die es nicht gibt, falls das Schreiben danach scheitert.
 #
 # Geschrieben wird in GENAU das oben reservierte Handle - kein zweites Oeffnen,
-# also auch kein zweites Zeitfenster. UTF-8 ohne BOM und LF wie zuvor; das
-# abschliessende CRLF, das `Set-Content` frueher anhaengte, faellt weg (es war
-# das einzige CR der Datei und machte sie fuer git zu `w/mixed`).
+# also auch kein zweites Zeitfenster. UTF-8 ohne BOM. Die stdout/stderr-Texte
+# der Beine behalten ihre CRLF aus den Windows-Werkzeugen; der Runner trennt
+# seine eigenen Zeilen mit LF. Die Roh-Datei bleibt damit wie frueher fuer git
+# `w/mixed`. Gegenueber `Set-Content` fehlt nur dessen abschliessendes CR.
 $rohSchreiber = [IO.StreamWriter]::new($rohReservat.Strom, [Text.UTF8Encoding]::new($false))
 try {
     $rohSchreiber.Write((($roh -join "`n") + "`n"))

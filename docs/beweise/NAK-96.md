@@ -1164,8 +1164,9 @@ entschiedener Regel):
 > `docs/beweise/NAK-96.md` §5.3 nennt 793 Zeilen als „endgültigen Stand"; nach
 > §8 sind es 1131, und mit deinem Abschnitt werden es mehr.
 
-**Kommentarrest aus §8.8:** `tools/beweise.ps1` um Zeile 907 nannte
-„(KANON, Zeile 66)"; `KANON` steht seit NAK-97 auf Zeile 85.
+**Kommentarrest aus §8.8:** Der Kommentar in `tools/beweise.ps1` über der
+Kanon-Liste verwies per nackter Positionszahl auf die Regex `KANON` in
+`tools/plan/planstand.py`; die Regex war seit NAK-97 verschoben.
 
 Beide Befunde sind zutreffend.
 
@@ -1198,8 +1199,8 @@ Eigene technische Entscheidungen innerhalb dieser Regel:
 | A | **Eigene Datei `tools/beweise-roh.ps1`**, vom Runner per Dot-Sourcing geladen | Der Auftrag ließ die Wahl. Ein Guard im Runner („nur laden, nicht laufen") hätte eine zweite Betriebsart in ein 1000-Zeilen-Skript eingebaut, die man beim Ändern übersieht. Die eigene Datei definiert eine Funktion und tut sonst nichts — ein Testprozess lädt sie in Millisekunden, ohne den 25-Minuten-Kanon anzufassen. Die Rennprobe (§9.4) fährt deshalb gegen die **Produktionsdatei**, nicht gegen eine Kopie. |
 | B | **Obergrenze 1000, danach Abbruch mit Exitcode 5** | Der Auftrag verlangt eine Grenze; ein neuer Exitcode statt einer Wiederverwendung von 3 („Voraussetzung fehlt") oder 2 („Kanon rot"), weil hier weder eine Voraussetzung fehlt noch ein Bein rot ist — der Lauf ist gefahren, nur das Schreiben ist unmöglich. Code 5 ist im `.NOTES`-Block dokumentiert. |
 | C | **Fail-loud statt Notausgang:** bei erschöpfter Grenze wird weder Rohausgabe noch Manifest geschrieben | Der Alternativweg wäre ein Ausweichname (Zeitstempel). Er würde die Zusage „ein Name je Stand" aufweichen und einen stillen Sonderfall schaffen. Prüfliste D: Unbekanntes ist ROT, nicht „irgendwie geschrieben". |
-| D | **Abschließendes CRLF fällt weg** | `Set-Content` hängte an den LF-verbundenen Text eine plattformübliche Zeilenendemarke an; die Roh-Dateien endeten deshalb gemischt und waren für git `w/mixed` (gemessen: `git ls-files --eol docs/beweise/roh/NAK-96-d993894.md` → `i/lf w/mixed`). Der `StreamWriter` schreibt jetzt durchgehend LF. Nur das Dateiende ändert sich, kein Inhalt. |
-| E | **Gegenrichtung mitgezogen:** `tools/plan/planstand.py` nennt die Runner-Urteilstexte jetzt über das Symbol `$urteil = ...` statt über Zeilennummern | Derselbe Fehler wie der Kommentarrest, nur andersherum — und **von dieser Änderung verursacht**: die zitierten Zeilen 845/849/853/856 sind durch den Dot-Source-Aufruf und den `.NOTES`-Eintrag auf 853/857/861/864 gewandert. Ein Zeiger, den mein eigener Commit falsch macht, gehört in denselben Commit (Prüfliste F). |
+| D | **Nur das abschließende CR fällt weg** | Die stdout/stderr-Texte der Beine behalten ihre CRLF aus den Windows-Werkzeugen; der Runner trennt seine eigenen Zeilen mit LF. Die Roh-Datei bleibt deshalb für git `w/mixed` wie frühere Roh-Dateien. Wiederholte Messung auf `34491e0`: `NAK-96-f124746.md` hat 2138 CR bei 199559 Bytes, der Vorgänger `NAK-96-d993894.md` 2139 CR bei 199579 Bytes; `git ls-files --eol` meldet für beide `i/lf w/mixed`. Gegenüber dem alten `Set-Content` fehlt nur dessen abschließendes CR. |
+| E | **Gegenrichtung mitgezogen:** `tools/plan/planstand.py` nennt die Runner-Urteilstexte jetzt über das Symbol `$urteil = ...` statt über Zeilennummern | Derselbe Fehler wie der Kommentarrest, nur andersherum — und **von dieser Änderung verursacht**: die zitierten vier `$urteil = ...`-Zuweisungen waren durch den Dot-Source-Aufruf und den `.NOTES`-Eintrag verschoben. Ein Zeiger, den mein eigener Commit falsch macht, gehört in denselben Commit (Prüfliste F). |
 
 <a id="b93"></a>
 ### 9.3 · Probe (a): Existenzprobe — bestehende Rohausgabe bleibt bytegleich
@@ -1418,24 +1419,25 @@ Name zuerst. Sie steht deshalb im Funktionskopf und ist in §9.3 sichtbar
 <a id="b98"></a>
 ### 9.8 · Kommentarrest und die Gegenrichtung
 
-`tools/beweise.ps1`:
+Der entfernte Kommentar in `tools/beweise.ps1` verwies mit einer nackten
+Positionszahl auf die Regex `KANON` in `tools/plan/planstand.py`. Der neue
+Kommentar verwendet den Symbolanker:
 
-```diff
--# Wortgleich in beiden Dateien. `tools/plan/planstand.py` (KANON, Zeile 66)
-+# Wortgleich in beiden Dateien. Die Regex `KANON` in `tools/plan/planstand.py`
- # liest die Kanon-Zahl aus GENAU diesem Wortlaut zurueck - der Verweis wird
- # deshalb nur angehaengt, nie in die Zeile hineingeschrieben.
+```powershell
+# Wortgleich in beiden Dateien. Die Regex `KANON` in `tools/plan/planstand.py`
+# liest die Kanon-Zahl aus GENAU diesem Wortlaut zurueck - der Verweis wird
+# deshalb nur angehaengt, nie in die Zeile hineingeschrieben.
 ```
 
 `tools/plan/planstand.py` zeigte in die **Gegenrichtung** und wäre durch diesen
-Commit falsch geworden — die dort zitierten Runner-Zeilen 845/849/853/856 sind
-auf 853/857/861/864 gewandert (gemessen mit `grep -n` auf die
-`$urteil`-Zuweisungen). Auch dort steht jetzt das Symbol statt der Zahl. Die
-Regex selbst ist **unverändert**; §8.3 und §8.4 bleiben gültig.
+Commit falsch geworden. Auch dort steht jetzt das Symbol statt der Zahl. Die
+vier `$urteil = ...`-Zuweisungen liegen, gemessen auf `34491e0`, bei
+858/862/866/869. Die Regex selbst ist **unverändert**; §8.3 und §8.4 bleiben
+gültig.
 
-Die Angaben „Zeile 66" in §3 und §5.1 dieses Manifests bleiben stehen: sie
-beschreiben datiert den Stand, an dem NAK-96 gemessen hat (so in §8.8
-entschieden).
+Die historischen Positionsangaben in §3 und §5.1 dieses Manifests bleiben
+stehen: sie beschreiben datiert den Stand, an dem NAK-96 gemessen hat (so in
+§8.8 entschieden).
 
 <a id="b99"></a>
 ### 9.9 · Befund P2: §5.3 korrigiert
@@ -1453,7 +1455,7 @@ Roh-Datei, Faktor rund 45.
 
 | Zeile der Prüfliste | Wo in dieser Runde |
 |---|---|
-| **D** · Riegel ist fail-closed, Unbekanntes ist ROT | Erschöpfte Suffixgrenze schreibt **nichts** und endet mit Exitcode 5 (§9.2 C, gemessen §9.6 Zeile 1); kein Ausweichname, kein stiller Sonderfall |
+| **D** · Riegel ist fail-closed, Unbekanntes ist ROT | Erschöpfte Suffixgrenze schreibt **nichts** und endet mit Exitcode 5 (§9.2 C, gemessen §9.6 Messpunkt „Obergrenze"); kein Ausweichname, kein stiller Sonderfall |
 | **D** · was der Kanon nicht baut, bezeugt er nicht | unverändert; diese Runde ändert nur den Schreibweg der Rohausgabe, keine Beglaubigungslogik — belegt durch den vollen Kanon in §9.11 |
 | **E** · Behauptung ≤ Messung | §9.7 (drei Texte auf das Gemessene begrenzt), §9.6 (jede Zusage der Funktion hat ihre eigene Probe, inklusive der beiden Ausnahmetypen und `FileShare::None`) |
 | **E** · Zahlen sind gemessen, nicht abgeschrieben | §9.9 (§5.3 datiert statt „endgültig"), Zeilenzahl in §9.12 frisch mit `wc -l` |
@@ -1486,9 +1488,9 @@ Was dieser Lauf für die Nacharbeit belegt:
 | Läuft der Runner mit der Reservierung durch? | ja — Reservierung, 32 Beine, Schreiben, Exitcode 0 |
 | Bleibt die Kanonzahl unberührt? | 32 von 32, wie in Abschlusslauf 2 (§5.5) — die Änderung betrifft nur den Schreibweg |
 | Wie heißt die Roh-Datei? | `docs/beweise/roh/NAK-96-f124746.md` — erster Versuch, kein Suffix, kein `-dirty` |
-| Ist sie vollständig? | 2944 Zeilen, 199 559 Bytes; der angehängte Kanon-Abschnitt im Manifest misst 63 Zeilen (1538–1600) und liegt damit in derselben Spanne wie die vier früheren — die Kennzahl aus §5.3 hält |
+| Ist sie vollständig? | 2944 Zeilen, 199 559 Bytes; der angehängte Kanon-Abschnitt von der Überschrift `## Kanon-Lauf - NAK-96 Abschlusslauf 3 (Nacharbeit Runde 1)` bis zum Ende seiner Übersichtstabelle misst 63 Zeilen und liegt damit in derselben Spanne wie die vier früheren — die Kennzahl aus §5.3 hält |
 | Bleibt eine 0-Byte-Leiche zurück? | nein — `find docs/beweise/roh -type f -size 0` findet nichts |
-| Greift Entscheidung D (Zeilenenden)? | die neue Datei enthält **kein** CR (`grep -c` = 0); die alte war für git `w/mixed` (`git ls-files --eol docs/beweise/roh/NAK-96-d993894.md` → `i/lf w/mixed`) |
+| Greift Entscheidung D (Zeilenenden)? | Ja, in der tatsächlich begrenzten Form: stdout/stderr der Beine behalten CRLF, Runner-Zeilen sind mit LF getrennt, und beide Dateien bleiben für git `w/mixed`. Bytezählung auf `34491e0`: neu `NAK-96-f124746.md` CR=2138 und Bytes=199559, Vorgänger `NAK-96-d993894.md` CR=2139 und Bytes=199579. Der einzige Unterschied zum alten `Set-Content` ist das fehlende abschließende CR. |
 
 Dauer: Beginn 15:12:42, Roh-Datei geschrieben 15:15:07 — **2 min 25 s**, davon
 31,4 s Bau. Der Bau war inkrementell: diese Runde ändert PowerShell, Python und
@@ -1524,8 +1526,9 @@ uncommittete Dateien gab es in dieser Sitzung nicht.
   Nebenläufigkeitstest im Kanon wäre ein eigenes Ticket — er bräuchte eine
   verlässliche Zeitsteuerung und würde bei Last flackern, genau wie B10
   (NAK-98).
-- **Bestehende Roh-Dateien bleiben `w/mixed`.** Die Zeilenenden ändern sich erst
-  ab diesem Lauf; nichts wird rückwirkend umgeschrieben.
+- **Roh-Dateien bleiben `w/mixed`.** stdout/stderr der Windows-Werkzeuge
+  behalten CRLF, die eigenen Runner-Zeilen LF; nur das von `Set-Content`
+  zusätzlich angehängte abschließende CR entfällt im neuen Schreibweg.
 - **NAK-93, NAK-94, NAK-98** sind unverändert außerhalb der Grenze.
 
 **Umfang dieser Datei nach der Nacharbeit** (frisch gemessen, und wie in §9.9
@@ -1604,4 +1607,89 @@ gegen die 2944 Zeilen seiner Roh-Datei, Faktor rund 45.
 | B7 | Apply/Revert ist transaktional - kein halber Zustand ueberlebt. | `eq-copilot\build\plugin\EqCopTransactionTest_artefacts\Release\EqCopTransactionTest.exe` | [GEPLANT] geplant (ab P6) | - | - |
 | B10 | v3-Envelope in C++ klassifiziert den Envelope-Korpus wie das Manifest (Urteil UND Verstossmenge, alle 14 Regeln mit Negativfixture); CRC32C trifft die RFC-3720-Vektoren, P0/P1 tragen CRC exakt 0, P2 die Pflichtsumme ueber genau die Payloadbytes; 40 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und 7671 angenommene EINBIT-Mutanten gueltiger Frames halten jede Kopfregel (reiner Zufall wird praktisch immer abgewiesen - die Invariante braucht deshalb die Mutanten, sonst spraeche sie ueber eine leere Menge), 3000 gekippte P2-Bits fallen einzeln, byteweise Zustellung liefert dieselben 40 Frames und ein kaputter Frame beendet den Strom; Pipetoken trifft das Golden aus §48.3 samt SHA-256- und RFC-4648-Vektoren; P0 verwirft nichts und meldet den 65. Eintrag, P1 koalesziert an der Position und haelt Ereignisse fuer den Reconnect vor, die P2-Schleuse ersetzt den aeltesten ungesendeten Frame, uebergibt 100 000 Frames mit 0 Allokationen (mit Gegenprobe am selben Zaehler) und liefert unter Flut keinen zerrissenen Frame; verdrahtet: Control koppelt Telemetry ueber link_id + challenge, ein ungekoppelter Telemetry-Connect wird geschlossen, der Client verbindet nach Serverneustart von selbst wieder, ein kaputter Envelope vom Server schliesst die Verbindung, und ein P0-Ueberlauf WAEHREND einer stehenden Verbindung schliesst sie ebenfalls statt still zu kuerzen. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 32,37 s | [B10](roh/NAK-96-f124746.md#b10) |
 | B8 | Lifecycle-Klassifikation §53.5: unclassified beim Laden und audio-neutral; Schema-1 sensor\|pre\|post -> legacy (immer passiv), hub bzw. bestaetigter Schema-2-Main-State -> main; ein Scannerlauf klassifiziert nicht; read-only nimmt die Klassifikation zurueck; Brokerstart nur fuer main mit offenem Editor; die Sondenbundles bleiben bis gueltigem State neutral und werden nie main. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,08 s | [B8](roh/NAK-96-f124746.md#b8) |
+
+## 10. Nacharbeit Runde 2 — 2026-08-29 (Prüfer-Thread 01a04dae-6270-7ce1-b759-4c0d756af57a)
+
+### 10.1 · Die beiden Befunde, wörtlich
+
+Die Positionsangaben aus dem Review sind nach der neuen Regel ausschließlich um
+den Ziel-Commit `@ 34491e0` ergänzt; der Befundtext ist ansonsten wörtlich.
+
+**P2 — Bewahre die bisherigen Zeilenenden der Rohdatei —
+`tools/beweise.ps1:1079-1084 @ 34491e0`**
+
+> Defekt, medium — bei normalen Windows-Läufen enthalten die übernommenen
+> stdout/stderr-Texte weiterhin CRLF; der neue Writer entfernt lediglich das
+> abschließende CR von `Set-Content`. Eine Bytezählung ergibt für
+> `NAK-96-f124746.md` 2138 CR statt behaupteter 0 und für den Vorgänger 2139,
+> während `git ls-files --eol` beide als `w/mixed` meldet. Damit sind die
+> Zeilenenden weder unverändert noch LF-only, entgegen Kommentar und Manifest
+> §9.11; siehe `tools/dirigent/pruefliste.md:58-64 @ 34491e0`.
+
+**P2 — Aktualisiere die nachgemessenen Zeilenangaben —
+`docs/beweise/NAK-96.md:1430-1433 @ 34491e0`**
+
+> Defekt, medium — die als gemessen ausgewiesenen Runner-Zeilen stimmen am
+> Ziel-SHA nicht: `Select-String '\$urteil = '` liefert
+> `858/862/866/869 @ 34491e0` statt `853/857/861/864 @ 34491e0`. Zusätzlich
+> liegt der in §9.11 genannte 63-Zeilen-Block inzwischen auf
+> `1545–1607 @ 34491e0` statt `1538–1600 @ 34491e0`. Diese erneut veralteten
+> Zahlen verletzen die Belegregel aus
+> `tools/dirigent/pruefliste.md:58-64 @ 34491e0`.
+
+Beide Befunde sind zutreffend.
+
+### 10.2 · Korrekturen
+
+- Der StreamWriter-Kommentar in `tools/beweise.ps1` und die Zusagen in §9.2,
+  §9.11 und §9.12 beschreiben jetzt dieselbe begrenzte Semantik: stdout/stderr
+  der Beine behalten ihre CRLF aus Windows-Werkzeugen; der Runner trennt seine
+  eigenen Zeilen mit LF; die Roh-Datei bleibt für git `w/mixed`. Gegenüber dem
+  alten `Set-Content` fehlt nur dessen abschließendes CR. Eine Zusage LF-only
+  oder ohne CR bleibt nicht stehen.
+- §9.8 bindet die aktuelle Position der vier `$urteil = ...`-Zuweisungen an
+  `34491e0`; die übrigen nackten Repo-Positionsangaben in §9 wurden durch
+  Symbol- oder Überschriftsanker ersetzt.
+- §9.11 identifiziert den 63-Zeilen-Block über seine Überschrift
+  `## Kanon-Lauf - NAK-96 Abschlusslauf 3 (Nacharbeit Runde 1)` bis zum Ende
+  seiner Übersichtstabelle, nicht mehr über eine alternde Zahlenposition.
+
+### 10.3 · Wiederholte Messungen mit Rohausgabe
+
+Bytezählung von `0x0D` und Dateigröße, ausgeführt auf `34491e0`:
+
+```text
+docs/beweise/roh/NAK-96-f124746.md: CR=2138, Bytes=199559
+docs/beweise/roh/NAK-96-d993894.md: CR=2139, Bytes=199579
+```
+
+Rohausgabe von `git ls-files --eol -- docs/beweise/roh/NAK-96-f124746.md docs/beweise/roh/NAK-96-d993894.md`:
+
+```text
+i/lf    w/mixed attr/                  docs/beweise/roh/NAK-96-d993894.md
+i/lf    w/mixed attr/                  docs/beweise/roh/NAK-96-f124746.md
+```
+
+Rohausgabe von
+`Select-String -Path tools/beweise.ps1 -Pattern '^\s*\$urteil = '`, gemessen auf
+`34491e0`:
+
+```text
+tools/beweise.ps1:858 @ 34491e0: $urteil = "ROT - $rot von $($gelaufen.Count) Kanon-Laeufen fehlgeschlagen$nachsatz"
+tools/beweise.ps1:862 @ 34491e0: $urteil = "UNVOLLSTAENDIG - $($gruen.Count) gruen, $fehlendeVoraussetzung Voraussetzung(en) fehlen$nachsatz"
+tools/beweise.ps1:866 @ 34491e0: $urteil = "NICHT BEGLAUBIGT - $($gruen.Count)/$($gelaufen.Count) gruen, aber Pruefbinaries sind aelter als die Quellen$nachsatz"
+tools/beweise.ps1:869 @ 34491e0: $urteil = "GRUEN - $($gruen.Count)/$($gelaufen.Count) Kanon-Laeufe bestanden$nachsatz"
+```
+
+### 10.4 · Neue Prüflistenregel und Prüfgrenze
+
+Prüfliste E trägt ab dieser Nacharbeit die Regel: Positionen im Repo stehen im
+Manifest als Symbol/Anker oder als Zahl mit Commit (`Datei:Zeile @ sha7`); eine
+nackte Zeilennummer altert mit dem nächsten Edit und ist ein Befund (NAK-96
+Nacharbeit 2, 29.08.2026).
+
+Kein Kanon: Die ausführungswirksame Änderung an `tools/beweise.ps1` ist nur ein
+Kommentar; daneben ändern sich ausschließlich Manifest und Prüflistentext.
+`tools/beweise.ps1` ist keine Quelle der Prüfbinaries. Es wurde weder gebaut
+noch ein Kanon-Lauf gestartet.
 

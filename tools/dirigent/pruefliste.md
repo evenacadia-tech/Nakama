@@ -62,6 +62,9 @@ dann erst frei.
   gemessen" braucht die isolierte Probe).
 - Zahlen im Manifest (Beinanzahl, Verbraucher, Fixtures) sind gemessen, nicht
   aus einer anderen Datei abgeschrieben.
+- Positionen im Repo stehen im Manifest als Symbol/Anker oder als Zahl mit
+  Commit (`Datei:Zeile @ sha7`); eine nackte Zeilennummer altert mit dem
+  nächsten Edit und ist ein Befund (NAK-96 Nacharbeit 2, 29.08.2026).
 - Jede neue Prüfung wurde einmal absichtlich gebrochen; Rohausgabe des Rots
   liegt bei. Eine Probe, die auch ohne den Fix rot ist, heißt Regressionswache,
   nicht Beleg.

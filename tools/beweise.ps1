@@ -344,7 +344,11 @@ $kanon = @(
     # das ARTEFAKT misst - und der einzige, der ein Stringliteral faende, das
     # kein Makro ist. Er traegt seine eigene Gegenprobe: derselbe Scanner muss
     # die Werte im gebauten Bundle FINDEN, sonst ist sein Schweigen wertlos.
-    [pscustomobject]@{ Kuerzel='A14'; Name='pruefe_kern_identitaetsfrei.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Der gemeinsame Kern traegt keine Bundle-Identitaet: NakamaKern.lib enthaelt keinen eingefrorenen Identitaetswert (Namen, Viercodes, CIDs roh und COM-vertauscht) und genau seine eigenen Uebersetzungseinheiten, kein JUCE-Modulobjekt; die Gegenprobe findet dieselben Werte im gebauten EQ-Copilot-Bundle.' }
+    # A14 misst ein Artefakt, also traegt es seine eigene Frischewache: Lib
+    # gegen Quellen, gebaute Schalter gegen die Projektdatei und - seit NAK-85 -
+    # die Projektdatei gegen den heutigen CMake-Stand. Ist Letzteres verletzt,
+    # meldet das Bein Exit 3 (Voraussetzung fehlt) statt gruen.
+    [pscustomobject]@{ Kuerzel='A14'; Name='pruefe_kern_identitaetsfrei.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Der gemeinsame Kern traegt keine Bundle-Identitaet: NakamaKern.lib enthaelt keinen eingefrorenen Identitaetswert (Namen, Viercodes, CIDs roh und COM-vertauscht) und genau seine eigenen Uebersetzungseinheiten, kein JUCE-Modulobjekt; die Gegenprobe findet dieselben Werte im gebauten EQ-Copilot-Bundle. Gemessen wird nie ein veraltetes Artefakt: die Lib ist nicht aelter als ihre Quellen, jede gebaute Uebersetzungseinheit traegt exakt die Definemenge der Projektdatei, und das Configure selbst ist juenger als jede CMake-Eingabe, die der Generator dafuer verbraucht hat.' }
 
     # S9/SONDE-007b: das Grundgesetz gilt fuer JEDES Bundle, das Audio traegt.
     # Zwei Beine, weil die Produktklasse ein Uebersetzungsschalter ist - ein

@@ -29,24 +29,36 @@ Mitgliedsnamen im Klartext fuehrt. Waere die Fassade kaputt, laege hier
 juce_core.obj neben NakamaState.obj - und der Kern haette zwei Wahrheiten
 ueber denselben Code.
 
+FRISCHE - die Zusage lautet "misst nie ein veraltetes Artefakt", und sie wird
+an drei Stellen gehalten, weil ein Artefakt auf drei Arten veralten kann:
+Abschnitt [0] haelt die Lib gegen ihre Quellen (Zeitstempel) und die gebauten
+Uebersetzungsschalter gegen die heutige Projektdatei (Tlog gegen .vcxproj);
+davor prueft `configure_frische`, ob die Projektdatei selbst noch dem heutigen
+CMake-Stand entspricht - sonst waeren beide Seiten des Vergleichs gemeinsam
+veraltet und ihre Uebereinstimmung wertlos (NAK-85, siehe dort).
+
 Aufruf:
     py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py [bauverzeichnis]
     py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py --selbsttest
 
-Exitcodes: 0 gruen · 2 rot · 3 Voraussetzung fehlt (nicht gebaut).
+Exitcodes: 0 gruen · 2 rot · 3 Voraussetzung fehlt (nicht gebaut oder
+Configure veraltet - dann ist nichts gemessen und nichts behauptet).
 """
 
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import re
 import sys
+import tempfile
 
 WURZEL = pathlib.Path(__file__).resolve().parents[2]
 IDENTITAET = WURZEL / "eq-copilot" / "identity" / "plugin-identities-v1.json"
 KERNQUELLEN = WURZEL / "eq-copilot" / "plugin"
 KERN_CMAKE = KERNQUELLEN / "CMakeLists.txt"
+KERN_FASSADE = WURZEL / "eq-copilot" / "cmake" / "NakamaKern.cmake"
 
 # T2-Befund 23.08.: Die Uebersetzung des Kerns haengt nicht nur an seinen
 # Quellen, sondern auch an der Baubeschreibung - die Definemenge der
@@ -75,6 +87,12 @@ KERN_CMAKE = KERNQUELLEN / "CMakeLists.txt"
 #    Definemenge halten, die die Projektdatei heute vorschreibt. Weicht sie
 #    ab, wurde die Lib mit anderen Schaltern gebaut - genau die Frage aus B8.
 #    Und es heilt sich selbst, weil ein Bau die .tlog neu schreibt.
+#
+# ⚠️ Anlauf 3 war noetig (NAK-85, 28.08.2026): dieser Vergleich traegt die
+#    Zusage nur, solange die .vcxproj SELBST aktuell ist. Wer CMake aendert und
+#    dieses Bein ohne Configure startet, haelt eine alte Projektdatei gegen ein
+#    altes Tlog - sie stimmen ueberein. Die Ergaenzung steht bei
+#    `configure_frische` weiter unten und laeuft VOR jeder Messung.
 
 
 def _defines_aus_vcxproj(datei: pathlib.Path, konfig: str = "Release|x64") -> set[str]:
@@ -136,6 +154,123 @@ def _normiere(define: str) -> str:
 def _define_abweichungen(soll: set[str], ist: set[str]) -> tuple[list[str], list[str]]:
     """Fehlende und veraltete zusaetzliche Defines, also beide Richtungen."""
     return sorted(soll - ist), sorted(ist - soll)
+
+
+# ── NAK-85 (dritter T3-Pruefer zu S8, 28.08.2026) ───────────────────────────
+#
+# Der Definevergleich oben haelt die ERZEUGTE Projektdatei gegen das Tlog. Beide
+# koennen eintraechtig veraltet sein: wer cmake/NakamaKern.cmake oder
+# plugin/CMakeLists.txt aendert und dieses Bein direkt startet, vergleicht die
+# ALTE .vcxproj mit dem ALTEN Tlog. Sie stimmen ueberein, das Bein meldet gruen -
+# und Behauptung 14 ("A14 misst nie ein veraltetes Artefakt") ist gebrochen.
+#
+# Ein dritter mtime-Stellvertreter waere derselbe Fehler wie Anlauf 1 und 2 im
+# Kopf dieser Datei. Am 29.08. gemessen: NakamaKern.vcxproj trug 06:08, der
+# generate.stamp desselben Bauverzeichnisses 15:12 - CMake schreibt eine
+# Projektdatei nur bei INHALTLICHER Aenderung neu (copy-if-different), beruehrt
+# den Stamp aber bei JEDEM Configure. Der Stamp ist damit der einzige ehrliche
+# Zeitanker; die .vcxproj ist genau der Stellvertreter, an dem Anlauf 2 scheiterte.
+#
+# Gefragt wird deshalb wieder die Stelle, die es weiss: der VS-Generator schreibt
+# je Bauverzeichnis CMakeFiles/generate.stamp.depend - die Liste der CMake-
+# Eingaben, die er dort verbraucht hat. Ist eine gelistete Eingabe juenger als
+# der zugehoerige generate.stamp, steht das Configure aus.
+#
+# WELCHE Verzeichnisse zaehlen, sagt der Generator ebenfalls selbst:
+# <bau>/CMakeFiles/generate.stamp.list nennt genau die Verzeichnisse DIESES
+# Configures. Am 29.08. waren das 7, waehrend ein blindes Glob ueber das
+# Bauverzeichnis 13 gefunden haette - die sechs zusaetzlichen sind
+# FetchContent-Subbuilds (eigene CMake-Projekte) und Reste eines frueheren
+# JUCE-Layouts. Sie koennten diesen Riegel mit fremden Ursachen faerben, ohne
+# ueber den Kern etwas auszusagen. Keine handgepflegte Eingabeliste.
+#
+# Die beiden Dateien, die der Befund nennt, liegen in VERSCHIEDENEN Listen:
+# plugin/CMakeLists.txt im Verzeichnis <bau>/plugin, cmake/NakamaKern.cmake im
+# Wurzelverzeichnis (es kommt per include() aus eq-copilot/CMakeLists.txt).
+# Wer nur das Plugin-Verzeichnis prueft, uebersieht genau die Datei aus NAK-85.
+KONFIG_PFLICHTEINGABEN = (KERN_CMAKE, KERN_FASSADE)
+
+
+def _norm_schluessel(p: pathlib.Path) -> str:
+    """Vergleichbare Form eines Pfades.
+
+    CMake schreibt Eingaben teils unnormiert (`cmake/../identity/x.json`), und
+    Windows unterscheidet Gross-/Kleinschreibung nicht. Ohne beides zu
+    vereinheitlichen wuerde die Abdeckungskontrolle unten falsch klagen.
+    """
+    try:
+        aufgeloest = p.resolve()
+    except OSError:
+        aufgeloest = pathlib.Path(os.path.normpath(str(p)))
+    return os.path.normcase(str(aufgeloest))
+
+
+def _kurz(p: pathlib.Path) -> str:
+    """Repo-relativ, wo moeglich - CMake-Module liegen ausserhalb."""
+    try:
+        return p.resolve().relative_to(WURZEL).as_posix()
+    except (ValueError, OSError):
+        return str(p)
+
+
+def _zeilen_ohne_kommentar(datei: pathlib.Path) -> list[str]:
+    return [z.strip() for z in datei.read_text(encoding="utf-8", errors="replace").splitlines()
+            if z.strip() and not z.lstrip().startswith("#")]
+
+
+def configure_frische(bau: pathlib.Path) -> list[str]:
+    """Ist das Configure juenger als jede CMake-Eingabe, die es verbraucht hat?
+
+    Gibt die Klagen zurueck; eine leere Liste heisst "Configure ist aktuell".
+    Prueflistenregel D: jede Unklarheit ist eine Klage, nie ein stilles Ja -
+    fehlende Stampliste, fehlender Stamp, fehlende Eingabeliste, verschwundene
+    Eingabe und blinde Wache faerben genauso wie ein zu junger Zeitstempel.
+    """
+    liste = bau / "CMakeFiles" / "generate.stamp.list"
+    if not liste.is_file():
+        return [f"{_kurz(liste)} fehlt - Bauverzeichnis nicht konfiguriert"]
+
+    stamps = []
+    for zeile in _zeilen_ohne_kommentar(liste):
+        p = pathlib.Path(zeile)
+        stamps.append(p if p.is_absolute() else bau / zeile)
+    if not stamps:
+        return [f"{_kurz(liste)} nennt kein Bauverzeichnis - Configure unvollstaendig"]
+
+    klagen: list[str] = []
+    gesehen: set[str] = set()
+    for stamp in stamps:
+        depend = stamp.with_name("generate.stamp.depend")
+        if not stamp.is_file():
+            klagen.append(f"{_kurz(stamp)} fehlt - Verzeichnis nicht konfiguriert")
+            continue
+        if not depend.is_file():
+            klagen.append(f"{_kurz(depend)} fehlt - Eingabeliste des Generators nicht lesbar")
+            continue
+        stampzeit = stamp.stat().st_mtime
+        for zeile in _zeilen_ohne_kommentar(depend):
+            eingabe = pathlib.Path(zeile)
+            if not eingabe.is_absolute():
+                eingabe = depend.parent / zeile
+            gesehen.add(_norm_schluessel(eingabe))
+            if not eingabe.is_file():
+                klagen.append(f"{_kurz(eingabe)} ist als CMake-Eingabe gelistet, "
+                              f"existiert aber nicht mehr")
+                continue
+            if eingabe.stat().st_mtime > stampzeit:
+                klagen.append(f"{_kurz(eingabe)} juenger als {_kurz(stamp)}")
+
+    # Fail-closed gegen das Blindwerden der Wache selbst. Das ist keine
+    # Ersatz-Eingabeliste - die bleibt generatorgepflegt -, sondern dieselbe
+    # Vorsicht wie bei ERWARTETE_OBJEKTE: aendert CMake sein Layout oder faellt
+    # eine dieser Dateien aus der Generatorliste, soll dieses Bein SPRECHEN
+    # statt still durchzurutschen.
+    for pflicht in KONFIG_PFLICHTEINGABEN:
+        if _norm_schluessel(pflicht) not in gesehen:
+            klagen.append(f"{_kurz(pflicht)} steht in keiner generate.stamp.depend - "
+                          f"die Frischewache ist an dieser Datei blind")
+    return klagen
+
 
 # Die erwarteten Archivmitglieder bleiben absichtlich unabhaengig von CMake:
 # ein neues Kernobjekt soll dieses Bein zum Sprechen bringen, nicht still
@@ -357,8 +492,81 @@ def selbsttest() -> int:
     pruefe("vertrag/NakamaUtf8.h" in abhaengigkeiten,
            "rekursive Kern-Includehuelle enthaelt NakamaUtf8.h")
 
+    _selbsttest_configure_frische()
+
     print(f"\n{ok} ok, {len(fehler)} Fehler")
     return 2 if fehler else 0
+
+
+def _selbsttest_configure_frische() -> None:
+    """NAK-85 baulos: die vier Faelle der Configure-Frischewache.
+
+    Ein kuenstliches Bauverzeichnis genuegt, weil die Wache nur Stamps,
+    Eingabelisten und Zeitstempel liest. Die echten Pflichteingaben stehen mit
+    in der kuenstlichen Liste - so laeuft die Abdeckungskontrolle mit.
+    """
+    print("\nNAK-85-Selbsttest: Configure-Frischewache (kuenstliches Bauverzeichnis)")
+    with tempfile.TemporaryDirectory() as roh:
+        bau = pathlib.Path(roh)
+        cmf = bau / "CMakeFiles"
+        cmf.mkdir()
+        stamp = cmf / "generate.stamp"
+        depend = cmf / "generate.stamp.depend"
+        liste = cmf / "generate.stamp.list"
+        eingabe = bau / "Kuenstlich.cmake"
+
+        eingabe.write_text("# Platzhalter\n", encoding="utf-8")
+        stamp.write_text("# stamp\n", encoding="utf-8")
+        liste.write_text(str(stamp) + "\n", encoding="utf-8")
+
+        def schreibe_depend(mit_pflicht: bool) -> None:
+            zeilen = ["# CMake generation dependency list for this directory.",
+                      str(eingabe)]
+            if mit_pflicht:
+                # bewusst unnormiert, wie CMake es selbst schreibt
+                zeilen += [str(p.parent / ".." / p.parent.name / p.name).replace("\\", "/")
+                           for p in KONFIG_PFLICHTEINGABEN]
+            depend.write_text("\n".join(zeilen) + "\n", encoding="utf-8")
+
+        # Der Stamp muss juenger sein als die echten Pflichtdateien, sonst
+        # klagte Fall A zu Recht ueber sie statt ueber die kuenstliche Eingabe.
+        spaet = max(p.stat().st_mtime for p in KONFIG_PFLICHTEINGABEN) + 1000.0
+        os.utime(stamp, (spaet, spaet))
+
+        schreibe_depend(mit_pflicht=True)
+        os.utime(eingabe, (spaet - 100.0, spaet - 100.0))
+        klagen = configure_frische(bau)
+        pruefe(klagen == [],
+               "A: aktuelles Configure bleibt klaglos",
+               " | ".join(klagen))
+
+        os.utime(eingabe, (spaet + 100.0, spaet + 100.0))
+        klagen = configure_frische(bau)
+        pruefe(len(klagen) == 1 and "Kuenstlich.cmake" in klagen[0]
+               and "juenger als" in klagen[0],
+               "B: geaenderte CMake-Eingabe ohne Configure wird benannt",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        os.utime(eingabe, (spaet - 100.0, spaet - 100.0))
+        schreibe_depend(mit_pflicht=False)
+        klagen = configure_frische(bau)
+        pruefe(len(klagen) == len(KONFIG_PFLICHTEINGABEN)
+               and all("blind" in k for k in klagen),
+               "C: eine ungelistete Pflichteingabe macht die Wache nicht still",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        schreibe_depend(mit_pflicht=True)
+        eingabe.unlink()
+        klagen = configure_frische(bau)
+        pruefe(any("existiert aber nicht mehr" in k for k in klagen),
+               "C2: verschwundene CMake-Eingabe ist eine Klage, kein stilles Ja",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        liste.unlink()
+        klagen = configure_frische(bau)
+        pruefe(len(klagen) == 1 and "nicht konfiguriert" in klagen[0],
+               "D: ohne generate.stamp.list gibt es kein gruenes Urteil",
+               " | ".join(klagen) if klagen else "keine Klage")
 
 
 def archivmitglieder(inhalt: bytes) -> list[str] | None:
@@ -444,6 +652,20 @@ def main() -> int:
     bau = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else WURZEL / "eq-copilot" / "build"
     if not bau.is_absolute():
         bau = (WURZEL / bau).resolve()
+
+    # NAK-85: bevor irgendetwas gemessen wird - beschreibt das Bauverzeichnis
+    # ueberhaupt noch den heutigen CMake-Stand? Ist es das nicht, sind .vcxproj
+    # UND Tlog gemeinsam veraltet und ihre Uebereinstimmung sagt nichts. Kein
+    # Urteil ueber den Kern, sondern eine fehlende Voraussetzung: Exit 3.
+    klagen = configure_frische(bau)
+    if klagen:
+        print(f"VORAUSSETZUNG: Configure veraltet - {klagen[0]}; "
+              f"neu konfigurieren/bauen", file=sys.stderr)
+        for weitere in klagen[1:]:
+            print(f"  auch: {weitere}", file=sys.stderr)
+        print("  Erst konfigurieren und bauen: "
+              "pwsh -File tools/beweise.ps1 -Bauen -Ziel <manifest>", file=sys.stderr)
+        return 3
 
     kern_kandidaten = sorted(bau.glob("plugin/**/NakamaKern.lib"))
     if not kern_kandidaten:

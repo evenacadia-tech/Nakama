@@ -63,7 +63,32 @@ MARKE_ROH = re.compile(r"<!--[^>]*NAKAMA-URTEIL[^>]*-->")
 # Die Bilanzzeile, die tools/beweise.ps1 selbst schreibt — eine gemessene Zahl,
 # keine abgeschriebene. Die Trennzeichen wechseln ueber die Manifeste hinweg
 # (·, |, -, —), deshalb bewusst lose gefasst.
-KANON = re.compile(r"Urteil:\*\*\s*(GRUEN|ROT)\s*[-—]+\s*(\d+)/(\d+)\s*Kanon")
+#
+# 🔑 ZWEI Wortlaute, denn der Runner formuliert gruen und rot verschieden.
+# Woertlich aus tools/beweise.ps1, Zeile 856 bzw. 845:
+#
+#     $urteil = "GRUEN - $($gruen.Count)/$($gelaufen.Count) Kanon-Laeufe bestanden$nachsatz"
+#     $urteil = "ROT - $rot von $($gelaufen.Count) Kanon-Laeufen fehlgeschlagen$nachsatz"
+#
+# Die alte Fassung verlangte in BEIDEN Faellen `n/m` und konnte ihre eigene
+# ROT-Alternative deshalb nie treffen: bei rotem Kanon zeigte der Planstand
+# gar keine Zahl statt einer roten (NAK-97, gefunden 29.08.2026 an
+# docs/beweise/NAK-96.md §5.1). Erweitert wird die Regex, nicht der Runner —
+# bestehende Manifeste tragen den ROT-Wortlaut bereits.
+#
+# Die beiden uebrigen Urteilstexte bleiben ABSICHTLICH ohne Treffer
+# (`UNVOLLSTAENDIG - ... Voraussetzung(en) fehlen`, Zeile 849, und
+# `NICHT BEGLAUBIGT - n/m gruen, aber Pruefbinaries sind aelter als die
+# Quellen`, Zeile 853): dort hat der Runner die Beglaubigung gerade
+# VERWEIGERT. Eine Zeile "Kanon n/m grün" wuerde dort ein bestandenes
+# Ergebnis behaupten, das es nicht gibt — fail-closed lieber keine Zahl.
+KANON = re.compile(
+    r"Urteil:\*\*\s*(?:"
+    r"GRUEN\s*[-—]+\s*(?P<gruen_gut>\d+)/(?P<gruen_ges>\d+)\s*Kanon"
+    r"|"
+    r"ROT\s*[-—]+\s*(?P<rot_fehl>\d+)\s+von\s+(?P<rot_ges>\d+)\s*Kanon"
+    r")"
+)
 
 RANG = {"T1": 1, "T2": 2, "T3": 3}
 
@@ -91,8 +116,18 @@ def leitungsnamen_pruefen(plan: dict) -> list[str]:
 
 
 def git(*args: str) -> str:
+    """Nur lesende Abfragen (`log`, `status --porcelain`).
+
+    `--no-optional-locks` steht VOR `-C`, weil git globale Schalter vor dem
+    Unterbefehl erwartet. Ohne den Schalter frischt `git status` den Index auf
+    und legt dafuer `.git/index.lock` an; laeuft der Aufruf in das `timeout`
+    unten, toetet subprocess das Kind mitten im Refresh und die Sperre bleibt
+    liegen — sie blockiert dann jedes spaetere git. Genau das ist am 29.08.2026
+    unter Baulast dreimal passiert (NAK-96); dieses Skript laeuft ueber
+    `tools/hooks/planstand.sh` auf denselben Lastpfaden (NAK-97).
+    """
     try:
-        return subprocess.run(["git", "-C", str(WURZEL), *args],
+        return subprocess.run(["git", "--no-optional-locks", "-C", str(WURZEL), *args],
                               capture_output=True, text=True, timeout=20).stdout.strip()
     except (OSError, subprocess.SubprocessError):
         return ""
@@ -124,15 +159,29 @@ def marken_lesen(pfad: pathlib.Path, warnungen: list[str]) -> list[dict]:
 
 
 def kanon_lesen(pfad: pathlib.Path) -> str:
+    """Die juengste Kanon-Bilanz eines Manifests, immer als `bestanden/gesamt`.
+
+    Beide Urteilstexte werden auf DIESELBE Semantik gebracht: gruen meldet
+    `bestanden/gesamt` schon so, rot meldet `fehlgeschlagen von gesamt` —
+    daraus wird `gesamt - fehlgeschlagen`. Sonst stuenden im selben Blatt zwei
+    verschiedene Bedeutungen hinter derselben Bruchzahl.
+    """
     try:
         text = pfad.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return ""
-    treffer = KANON.findall(text)
+    treffer = list(KANON.finditer(text))
     if not treffer:
         return ""
-    farbe, n, ges = treffer[-1]           # der juengste Lauf im Manifest
-    return f"Kanon {n}/{ges} {'grün' if farbe == 'GRUEN' else 'ROT'}"
+    m = treffer[-1]                       # der juengste Lauf im Manifest
+    if m.group("gruen_gut") is not None:
+        return f"Kanon {m.group('gruen_gut')}/{m.group('gruen_ges')} grün"
+    ges = int(m.group("rot_ges"))
+    bestanden = ges - int(m.group("rot_fehl"))
+    # Mehr Fehlschlaege als Laeufe kann der Runner nicht schreiben; steht es
+    # trotzdem da, ist das Manifest verdorben — dann lieber "?" als eine
+    # erfundene negative Zahl.
+    return f"Kanon {bestanden if bestanden >= 0 else '?'}/{ges} ROT"
 
 
 def messen(schritt: dict, warnungen: list[str]) -> dict:

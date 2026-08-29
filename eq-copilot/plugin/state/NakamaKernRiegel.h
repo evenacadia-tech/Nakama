@@ -5,8 +5,9 @@
     Die zweite Auswertung sieht damit auch JucePlugin_*-Makros, die erst ein
     eigener oder generierter, danach eingebundener Header definiert und bis
     zum TU-Ende definiert laesst. Ein `#pragma once` wuerde genau diese
-    Endpruefung still ausschalten; bereits in Bytes umgesetzte, danach wieder
-    entfernte Makros bleiben Aufgabe von K3.
+    Endpruefung still ausschalten. Ein Makro, das vor dem TU-Ende wieder
+    entfernt wird, sieht dieser Riegel dagegen NICHT: dafuer K1b (Quelltext-
+    Token) und, sofern Bytes entstehen, K3 (gebautes Artefakt).
 
     WOGEGEN DAS SCHUETZT (Entwurf §53.4, Static-Lib-Randbedingung):
 
@@ -26,12 +27,35 @@
     wuerde, traegt "Eqcp" fuer alle drei Apps in seinem Objektcode - und der
     Identitaets-Golden aus S2 faellt, sobald Probeeq oder Suna gebaut werden.
 
-    FUENF RIEGEL, ARBEITSTEILUNG (Manifest docs/beweise/SONDE-007a.md):
+    ACHT RIEGEL, ARBEITSTEILUNG (Manifest docs/beweise/SONDE-007a.md):
 
       K1 - dieser hier. Namentlich, im Uebersetzer, VOR dem Linken; ausgewertet
            am Anfang und Ende jeder Kern-Uebersetzungseinheit. Schnell und mit
            klarer Fehlermeldung, aber nur fuer die Makros, die unten stehen:
-           der Praeprozessor kann nicht auf ein Praefix pruefen.
+           der Praeprozessor kann nicht auf ein Praefix pruefen - und er sieht
+           NICHT, was vor dem TU-Ende wieder entfernt wurde. Dafuer K1b.
+      K1b - der Quelltext-Riegel in tools/eq-copilot/pruefe_kern_identitaetsfrei.py
+           (S8/SONDE-007a Runde 5, 29.08.2026). Er scannt die TATSAECHLICHEN
+           Compiler-Eingaben unter plugin/ - alle Dateien aus dem frisch
+           geschriebenen CL.read.1.tlog, also auch erzwungene Includes und
+           vorkompilierte Koepfe - plus die literale Include-Huelle als
+           Gegenprobe. Verboten ist das Token JucePlugin_ im Quelltext,
+           unabhaengig von #define/#undef; Kommentare werden vorher entfernt,
+           Stringliterale nicht. Einzige Ausnahme: diese Datei hier, gemessen
+           und namentlich. K1b sieht nicht, was ausserhalb plugin/ liegt -
+           dafuer der Tlog-Riegel und der JUCE-Baum-Riegel.
+      Tlog-Riegel - im selben Skript: aus welchen Orten der Compiler wirklich
+           gelesen hat. Erlaubt sind plugin/, juce-src/modules/ OHNE
+           juce_audio_plugin_client (dort liegen alle `#define JucePlugin_` der
+           JUCE-Module) und die aus dem Bau abgeleiteten MSVC-/SDK-Wurzeln;
+           alles andere ist ROT. Er sieht den INHALT der gelesenen Dateien
+           nicht.
+      JUCE-Baum-Riegel - im selben Skript: juce-src ist der gepinnte Tag plus
+           genau der eine Nakama-VST3-Patch. Damit ist auch eine manipulierte
+           Kopie eines JUCE-Modulheaders abgedeckt, die definiert, benutzt und
+           wieder entfernt. Er sieht Loeschungen ausserhalb modules/ als
+           benannte Duldung und die Toolchain-/SDK-Header ausserhalb des Repos
+           gar nicht (ausdrueckliche Nichtzusage).
       K2 - der Konfigurier-Riegel in cmake/NakamaKern.cmake. Laeuft die
            rekursive Linkhuelle je Konfiguration ab und faellt auf jedes
            compilerwirksame `JucePlugin_` aus Definitions- oder /D-/D-
@@ -41,10 +65,12 @@
            Verbraucher je Konfiguration als echte Mengengleichheit zusammen.
       K2c - haelt die rekursive Quelle der JUCE-Empfehlungsschalter je
            Konfiguration zusammen.
-      K3 - tools/eq-copilot/pruefe_kern_identitaetsfrei.py misst das GEBAUTE
-           NakamaKern.lib gegen Text-, Viercode-Integer- und CID-Bytes der
-           eingefrorenen Identitaetswerte und prueft vorher die Frische. Erst
-           das ist eine Aussage ueber das Artefakt statt die Baubeschreibung.
+      K3 - dasselbe Skript misst das GEBAUTE NakamaKern.lib gegen Text-,
+           Viercode-Integer- und CID-Bytes der eingefrorenen Identitaetswerte.
+           Erst das ist eine Aussage ueber das Artefakt statt die
+           Baubeschreibung. Seit Runde 5 laesst es die Lib dafuer im selben
+           Lauf vollstaendig neu erzeugen, statt die Frische einer vorhandenen
+           nachzurechnen.
 
     Der Riegel gilt nur beim Uebersetzen der Kern-Uebersetzungseinheiten
     (NAKAMA_KERN_UEBERSETZUNG, gesetzt von cmake/NakamaKern.cmake). Dieselben

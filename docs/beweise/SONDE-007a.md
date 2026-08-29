@@ -4,6 +4,10 @@
 <!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-24 nachgearbeitet -->
 <!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-28 nachgearbeitet -->
 
+Der folgende Prueferblock ist **woertlich** und bezieht sich auf den Stand
+`@ 3353fb6` (24.08.2026); seine Zeilenangaben gelten fuer jenen Stand, nicht
+fuer den heutigen. Die heutigen Symbolverweise stehen unter dem Zitat.
+
 > **T3 / Gate G1, 24.08.2026 — NEEDS_WORK.** Der Riegel **K2b**
 > (`cmake/NakamaKern.cmake:218 ff.`, tragende Schleife `:234`) laeuft nur ueber
 > die Referenz und fragt „fehlt das im Kern?" — nie umgekehrt. Ein kern-eigenes
@@ -12,6 +16,15 @@
 > MENGENGLEICHHEIT, die einseitige Enthaltung nicht leistet. Ein Riegel, der
 > weniger kann als er behauptet, beweist mit seinem Schweigen nichts.
 > Vollstaendig: `docs/beweise/G1.md` §4.4, §7.1.
+
+Heute (ausserhalb des Zitats, gemessen am Stand dieses Abschnitts): der
+Riegel steht als `nakama_kern_konfig_pruefen()` in
+`eq-copilot/cmake/NakamaKern.cmake`; die tragende Schleife ist die Schleife
+ueber die Konfigurationen in derselben Funktion, und die zitierte Kopfzusage
+ist der Kopfkommentar desselben Riegels. Die drei Zeilennummern des Zitats
+zeigen am heutigen Stand alle drei auf den Generatorausdruck-Parser
+(`_nakama_kern_genex_ende` bzw. `_nakama_kern_genex_kopf`) — genau darum
+traegt der einleitende Satz den Stand.
 
 
 > **Die eine harte Regel** (`docs/bauaufteilung-sonden.md` §2): *Eine Behauptung
@@ -45,15 +58,18 @@
 - `tools/beweise.ps1` — Kanon-Bein **A14**; `NakamaKern` als *gemessenes Ziel*
   (wird gebaut, läuft aber nicht selbst).
 
-**Arbeitsteilung der fünf Riegel** — der Punkt des Tickets, nicht Redundanz.
+**Arbeitsteilung der acht Riegel** — der Punkt des Tickets, nicht Redundanz.
 Diese Übersicht beschreibt den heutigen Arbeitsbaum; ältere Rohausgaben weiter
 unten bleiben datierte Belege ihres damaligen Quellstands:
 
 | | misst | sieht | sieht **nicht** |
 |---|---|---|---|
-| **K1** Präprozessor | Quelltext | 46 bekannte Makros namentlich, am Anfang **und Ende** jeder der fünf Kern-Übersetzungseinheiten; damit auch bis zum TU-Ende definierte Makros aus später eingebundenen eigenen/generierten Headern | Makronamen außerhalb der Liste und vor dem TU-Ende wieder entfernte Makros (der Präprozessor kann kein Präfix aufzählen; resultierende Identitätsbytes misst K3) |
+| **K1** Präprozessor | Quelltext | 46 bekannte Makros namentlich, am Anfang **und Ende** jeder Kern-Übersetzungseinheit (gemessen aus `NAKAMA_KERN_QUELLEN`; die aktuelle Anzahl gibt der Messlauf aus); damit auch bis zum TU-Ende definierte Makros aus später eingebundenen eigenen/generierten Headern | Makronamen außerhalb der Liste und vor dem TU-Ende wieder entfernte Makros (der Präprozessor kann kein Präfix aufzählen; resultierende Identitätsbytes misst K3, den Quelltext selbst **K1b**) |
+| **K1b** Quelltext-Token | die tatsächlichen Compiler-Eingaben unter `plugin/**`: alle Dateien aus dem frisch geschriebenen `CL.read.1.tlog` — also auch `/FI` und vorkompilierte Köpfe — plus die literale Include-Hülle als Gegenprobe | jedes `JucePlugin_`-Token im Quelltext, unabhängig von `#define`/`#undef`; Kommentare werden vorher entfernt, Stringliterale nicht; einzige Ausnahme ist `NakamaKernRiegel.h`, gemessen und namentlich | Dateien außerhalb `plugin/**` (dafür der Tlog-Riegel und der JUCE-Baum-Riegel); Makronamen, die erst durch Tokenverkettung entstehen |
 | **K2** CMake-Konfigurierzeit | Kernziel plus dessen compilerwirksame Usage-Requirements-Hülle; Verbraucher nur bei einer echten fehlerhaften Rückkante; Ausführung verzögert bis zum Ende von `plugin/` nach allen Zieländerungen | jedes compilerwirksame `JucePlugin_` aus eigenen und transitiven `*_COMPILE_DEFINITIONS` sowie `-D`/`/D` in `*_COMPILE_OPTIONS`; direkte Zielnamen, `debug`/`optimized`/`general`-Kanten und die unten inventarisierten bedingten bzw. zielbezogenen Generatorausdrücke | Makros, die erst im C++-Quelltext entstehen (dafür K1/K3); String-Transformationen in Linkkanten und `MAP_IMPORTED_CONFIG_*` werden nicht ausgewertet, sondern ausdrücklich **ROT** gemeldet |
-| **K3/A14** Artefakt + Frische | gebaute `.lib`, `.vcxproj`, `.tlog` und echte Kern-Includehülle | jeden eingefrorenen Text als ASCII/UTF-16LE, Viercodes zusätzlich als 4-Byte-Integer in **beiden** Byteordnungen, CIDs roh/COM-vertauscht; rekursive lokale Includes aus den tatsächlichen `NAKAMA_KERN_QUELLEN`; heutige Definemenge exakt in beide Richtungen gegen **jede** gebaute Kern-TU | Baubeschreibung ohne resultierende Artefaktbytes (dafür K1/K2/K2b/K2c) |
+| **K3/A14** Artefakt + Neubau | die `.lib`, die das Bein im selben Lauf selbst hat neu erzeugen lassen, dazu `.vcxproj`, `.tlog` und `lastbuildstate` | jeden eingefrorenen Text als ASCII/UTF-16LE, Viercodes zusätzlich als 4-Byte-Integer in **beiden** Byteordnungen, CIDs roh/COM-vertauscht; dass Objekte, Tlogs und Lib vor der Messung gelöscht und vollständig neu erzeugt wurden (Zeitanker, Bauausgabe, Objektzahl) — damit ist „veraltetes Artefakt" keine Frage mehr; die früheren Frischewachen bleiben als Diagnose „womit wurde gebaut" | Baubeschreibung ohne resultierende Artefaktbytes (dafür K1/K1b/K2/K2b/K2c); ein Compilerwechsel innerhalb derselben `lastbuildstate`-Kennung (benannte Nichtzusage) |
+| **Tlog-Riegel** Leseorte | das frisch geschriebene `CL.read.1.tlog` des Kerns | aus welchen Orten der Compiler wirklich gelesen hat: erlaubt sind `plugin/**`, `juce-src/modules/**` ohne `juce_audio_plugin_client` und die **aus dem Bau abgeleiteten** MSVC- und Windows-SDK-Wurzeln; alles andere — auch `<ziel>_artefacts/JuceLibraryCode/**` — ist ROT und wird namentlich genannt. Fehlt eine heutige Kernquelle als Marker, ist auch das ROT | den **Inhalt** der gelesenen Dateien (dafür K1b innerhalb `plugin/**` und der JUCE-Baum-Riegel außerhalb); Dateien ohne Übersetzungsstoff (`.dll`, `.nls` und die anderen des Compilerlaufs) werden gezählt und benannt, nicht am Ort gemessen |
+| **JUCE-Baum-Riegel** Herkunft | der ganze FetchContent-Baum `build/_deps/juce-src` gegen `git status` und den Nakama-Patch | dass juce-src der gepinnte Tag plus **genau** `third_party/patches/juce-8.0.9-nakama-vst3-bridge.patch` ist: jede Inhaltsänderung außerhalb der Patchdateien und jede unverfolgte Datei sind ROT, und `git apply --check --reverse` muss gelingen | Löschungen außerhalb `modules/**` (gezählt und benannt, nicht ROT — eine gelöschte Datei kann keine Compiler-Eingabe werden); Toolchain- und SDK-Header außerhalb des Repos (benannte Nichtzusage, kein Fingerprint) |
 | **K2b** CMake-Konfigurierzeit | Kern und je ein registrierter Verbraucher als **getrennte** Wurzeln mit ihrer jeweiligen compilerwirksamen Usage-Requirements-Hülle | Mengengleichheit und Wertwidersprüche der `JUCE_`-Defines beider Zielmengen, je Konfiguration, rekursiv und inklusive `-D`/`/D`; `JucePlugin_*` des Verbrauchers gehört nicht zur Vergleichsmenge | bewusst ausgenommene Hüllendefines (`JUCE_MODULE_AVAILABLE_*` als Familie; exakt die Makronamen `JUCE_SHARED_CODE`, `JUCE_STANDALONE_APPLICATION`, `JUCE_VST3_CAN_REPLACE_VST2`, jeweils ohne Wert oder mit `=…`) · Nicht-Define-Schalter (dafür K2c) |
 | **K2c** CMake-Konfigurierzeit | volle Linkhülle des Kerns und volle Linkhülle je eines registrierten Verbrauchers, **getrennt** je Konfiguration | ob jedes transitiv und bedingt erreichbare `juce_recommended_*`-Ziel der Referenz in derselben Konfiguration auch am Kern hängt — Quelle der Schalter, nicht einzelne Flags | `lto_flags` (begründet ausgenommen: `/GL` ohne `-LTCG` im Verbraucher) · alles, was kein Empfehlungsziel ist; String-Transformationen und importierte Konfigurationsabbildungen sind nicht unterstützt und deshalb ROT |
 
@@ -12711,3 +12727,558 @@ belegen nur noch, **womit** gebaut wurde.
 **Ausdrücklich nicht behauptet:** der Inhalt der Toolchain- und SDK-Header
 außerhalb des Repos (kein Fingerprint, nur die Herkunft aus den abgeleiteten
 Wurzeln), und ein Compilerwechsel innerhalb derselben `lastbuildstate`-Kennung.
+
+## Nacharbeit Runde 5 — Implementierung 2026-08-29
+
+**Stand dieses Abschnitts:** `3353301` — Positionen ohne eigene Angabe sind an
+diesen Commit gebunden. Die Referenz ist der Unterabschnitt
+„Matrix, korrigiert nach der lesenden Prüfung (Thread 01a04e5d…)" oben, nicht
+die überholte erste Fassung darüber.
+
+Geändert wurden `tools/eq-copilot/pruefe_kern_identitaetsfrei.py` und
+`tools/beweise.ps1` (Commit `3353301`) sowie die Textkorrekturen R6 in diesem
+Manifest und in `eq-copilot/plugin/state/NakamaKernRiegel.h`.
+`eq-copilot/plugin/CMakeLists.txt`, `eq-copilot/plugin/state/NakamaKanon.cpp`
+und der JUCE-Baum wurden **nur für Proben** angefasst und jedes Mal vollständig
+zurückgenommen (Nachweis am Ende dieses Abschnitts).
+
+### Der Wegwechsel, gemessen statt angenommen
+
+**Der Neubau kostet 4,3–4,6 Sekunden.** Neun Übersetzungseinheiten, ein Relink,
+gemessen über sieben Läufe an diesem Tag. Zum Vergleich: der frühere No-op-Bau
+derselben Zeile kostete 1,6–1,8 s (Probe P5-1 im Spezifikationsabschnitt). Der
+Preis für „Frische herstellen statt nachbauen" ist also unter drei Sekunden pro
+Kanonlauf.
+
+**`--clean-first` ist der falsche Weg — gemessen, nicht vermutet.** Die
+Spezifikation ließ zwei Wege offen. Der erste wurde am echten Baum gefahren:
+
+```text
+cmake --build eq-copilot/build --config Release --target NakamaKern --clean-first
+
+MSBuild-Version 17.14.40+3e7442088 für .NET Framework      <- Clean-Durchgang
+MSBuild-Version 17.14.40+3e7442088 für .NET Framework      <- Build-Durchgang
+  Checking File Globs
+  1>Checking Build System
+  NakamaKanon.cpp … TelemetryClient.cpp            (alle 9 TUs)
+  NakamaKern.vcxproj -> …\Release\NakamaKern.lib
+EXIT=0
+
+Zustandsvergleich vorher/nachher (61 erfasste Artefakte):
+  kern   25 geaendert
+  lib     1 geaendert
+  bundle 29 GEAENDERT  <- alle .vst3, alle Testbinaries, flatc.exe,
+                          die vier vst3_helper.exe
+```
+
+`--clean-first` cleant die **ganze Solution**, nicht das genannte Ziel: alle 29
+Bundle-Artefakte waren danach gelöscht. Ein Kanonlauf wäre an jedem anderen
+Bein gescheitert. Der zweite Weg — gezieltes Löschen von
+`NakamaKern.dir/<konfig>/*` und der `NakamaKern.lib` derselben Konfiguration,
+dann `--target NakamaKern` — ist deshalb der implementierte. Der Baum wurde nach
+dieser Messung vollständig wiederhergestellt (`cmake --build … --config Release`,
+Exit 0).
+
+**Drei Defekte, die erst die Proben und der Selbsttest sichtbar gemacht haben**
+— alle behoben und im Code begründet:
+
+| gefunden von | Defekt | Fix |
+|---|---|---|
+| Selbsttest `R5-3a` | `kern_neubau` prüfte einen **ausdrücklich übergebenen** cmake-Pfad nicht; die Artefakte wurden gelöscht und erst danach fiel der Start um | Pfad wird vor jedem Löschen geprüft (`kern_neubau`, Kommentar „Selbsttest R5-3a") |
+| Probe `P5-W5b` | `NakamaKern.dir/<konfig>/` enthält nicht nur Ausgaben, sondern auch **generierte Eingaben** (`cmake_pch.hxx`, geschrieben vom Generate-Schritt). Pauschales Löschen machte den Baum unbaubar: `error C1083: cmake_pch.hxx: No such file or directory` | Gelöscht wird nach Endung (`_NEUBAU_AUSGABEN`) plus alles im `*.tlog`-Verzeichnis; was weder Ausgabe noch bekannte Eingabe ist, ist eine **Klage** |
+| Probe `P5-W5b` | `cl.exe` nennt im Leseprotokoll gelegentlich `C:\Windows\System32\tzres.dll` und `Globalization\Sorting\sortdefault.nls` — der Ortsriegel wäre sporadisch rot geworden | Endungen ohne Übersetzungsstoff (`.dll`, `.nls`, …) werden ortsfrei **gezählt und benannt**; `.pch` bleibt ausdrücklich ortsgeprüft, weil ein vorkompilierter Kopf Makros trägt |
+
+### Frischematrix, Zeile für Zeile
+
+| # | Test | Ergebnis |
+|---|---|---|
+| **F1** CMake-Eingabe geändert, nicht konfiguriert | P5-2 (im Spezifikationsabschnitt gefahren) + der Neubau löst `ZERO_CHECK` aus | **grün.** Jeder Neubau dieses Tages zeigt `1>Checking Build System` in der Bauausgabe; `configure_frische()` bleibt danach klaglos (Zeile in `[0c]` jedes Laufs unten) |
+| **F-N** Neubau | `P5-N1` (Lib und ein Objekt gelöscht), `P5-N2` (Token aus `plugin/CMakeLists.txt` entfernt, nur konfiguriert) | **grün, beide.** Rohausgaben unten |
+| **F10** TU hinzugefügt/entfernt | `Selbsttest-Schalter/TU H, J, K, L` | **grün**, unverändert |
+| **F11** veralteter Tlog-Eintrag | `Selbsttest-Schalter/TU I` | **grün**, unverändert |
+| **F13** Bau nicht möglich | `R5-3a` (kein cmake) und `R5-3b` (Bau bricht ab) | **grün.** `R5-3a` hat dabei einen echten Defekt gefunden (Tabelle oben) |
+| **F14** `--nur-messen` | echter Lauf am Baum | **grün: Exit 3**, Identitätsprüfung lief, „ohne Neubau kein Frische-Urteil" |
+
+### Riegelmatrix, Zeile für Zeile
+
+| # | Test | Ergebnis |
+|---|---|---|
+| **W1** PUBLIC-Define über die Linkkante | K2 (beim Fallen vorgeführt, §2), `schalter_abgleich` Klasse `defines` | **grün.** Der Tlog-Riegel steht in dieser Zeile jetzt auf „–" |
+| **W2** `/D JucePlugin_…` aus `COMPILE_OPTIONS` | wie W1 | **grün**, unverändert |
+| **W3** Generatorausdruck | die drei benannten `pruefe_nakama_kern_genex.cmake`-Läufe inkl. ROT-Fall | **grün.** Rohausgaben stehen in §„NAK-84" dieses Manifests: `26/26 Ausdruecke korrekt.` Exit 0 in beiden Konfigurationen, `-DNAKAMA_TEST_UNBEKANNT_ROT=ON` Exit 1 |
+| **W4** Header definiert und lässt definiert | K1 (beim Fallen vorgeführt, §2), `R5-6b` | **grün** |
+| **W5** Header definiert–nutzt–entfernt | `R5-7` (baulos) und `P5-W5` (echter Baum) | **grün: K1b ROT, K1 grün.** Der Bau lief durch — K1 hätte sonst `#error` geworfen. Genau der Fall aus Befund 3 |
+| **W5a** derselbe Header über `/FI` | `P5-W5a` | **grün: K1b ROT über `CL.read`.** Der diskriminierende Beleg: die literale Hülle blieb bei **21** (sieht den Header nicht), die Tlog-Menge stieg auf **13** (sieht ihn) |
+| **W5b** derselbe Header als PCH | `P5-W5b` | **grün: drei Rots**, alle korrekt — K1b (der PCH-Header ist Compiler-Eingabe), Tlog-Riegel (`cmake_pch.hxx`/`.pch` aus dem Bauverzeichnis) und der Neubau-Beleg (10 Objekte statt 9) |
+| **W6** `juce_audio_plugin_client`-Header | `R5-8b` (baulos) und `P5-W6` (echter Baum) | **grün: Tlog-Riegel ROT**, alles andere grün |
+| **W7** generierter `JuceLibraryCode`-Header | `R5-9` (baulos); am echten Baum durch `P5-W5b` mitbelegt (`cmake_pch.hxx` liegt im Bauverzeichnis und war ROT) | **grün** |
+| **W8** manipulierte Kopie an erlaubtem JUCE-Ort | `R5-11b` (baulos) und `P5-W8` (echter Baum) | **grün: JUCE-Baum-Riegel ROT.** Der Weg, den die erste Matrixfassung ausdrücklich offen ließ |
+
+**Der `grep`, auf den sich der Tlog-Riegel stützt** (eigene Nachprüfung, wie in
+R3 verlangt): alle `#define JucePlugin_` der JUCE-Module liegen in genau drei
+Dateien, alle drei unter `juce_audio_plugin_client/`:
+
+```text
+$ grep -rn "^[[:space:]]*#[[:space:]]*define[[:space:]]\+JucePlugin_" modules/
+      4 modules/juce_audio_plugin_client/VST3/juce_VST3ModuleInfo.h
+      1 modules/juce_audio_plugin_client/juce_audio_plugin_client_AAX.cpp
+      1 modules/juce_audio_plugin_client/detail/juce_CheckSettingMacros.h
+```
+
+Der Ausschluss dieses einen Modulordners deckt sie damit vollständig ab;
+`detail/` und `VST3/` liegen darunter und brauchen keine eigene Regel.
+### Rohausgaben der Proben
+
+Jede Probe wurde einzeln gesetzt, gefahren und vollständig zurückgenommen. Die
+Blöcke sind auf Kopf, Abschnitt `[0]`/`[0b]` und Urteilszeile gekürzt; der
+Abschnitt `[0c]` (Diagnose) und die Abschnitte `[1]`–`[3]` liefen in jedem Lauf
+mit und stehen im grünen Referenzlauf am Ende vollständig.
+
+**P5-N1 — Lib und ein Objekt gelöscht, dann A14.** Deckt die Klasse „gelöschte
+`.obj`/`.lib`" aus Punkt 5 der Prüfung ab.
+
+```text
+$ rm eq-copilot/build/plugin/Release/NakamaKern.lib \
+     eq-copilot/build/plugin/NakamaKern.dir/Release/NakamaState.obj
+$ py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - der Kern wurde fuer diese Messung neu gebaut
+  ok      Kernartefakte geloescht und in 5.0s neu erzeugt (20 Dateien entfernt, 9 Uebersetzungseinheiten uebersetzt, 9 Objekte, Lib neu gelinkt)
+
+[0b] Riegel - Quelltext, Leseorte, JUCE-Baum
+  ok      CL.read.1.tlog stammt aus diesem Neubau
+  ok      alle 460 vom Compiler gelesenen Dateien stammen aus erlaubten Orten (plugin 12, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, ohne Uebersetzungsstoff 0)
+  ok      keine der 20 Compiler-Eingaben unter plugin/** traegt ein JucePlugin_-Token im Quelltext (Tlog 12, Huelle 21; Ausnahme NakamaKernRiegel.h mit 56 Treffern)
+  ok      juce-src ist 8.0.9-dirty plus genau der Nakama-VST3-Patch (1 Patchdatei(en); 5 benannte Loeschung(en) ausserhalb modules/**)  [examples/DemoRunner/Builds/Android/app/src/debug/res/raw/accessibilitynotificationicon.png, examples/DemoRunner/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPerformanceTest/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPluginHost/Builds/Android/app/src/debug/res/values/string.xml, extras/NetworkGraphicsDemo/Builds/Android/app/src/debug/res/values/string.xml]
+...
+34 ok, 0 Fehler
+EXIT=0
+```
+
+**P5-N2 — Token aus `plugin/CMakeLists.txt` entfernt, NUR konfiguriert.**
+`NakamaKern` wurde aus der `foreach`-Liste genommen, die `/utf-8` setzt; danach
+`cmake -S eq-copilot -B eq-copilot/build` ohne Bau. Das ist genau die Lage aus
+Befund 1: die Projektdatei kennt den Token nicht mehr, das alte Tlog schon.
+
+```text
+$ # nach dem Configure, VOR A14:
+/utf-8 im Tlog: 9
+AdditionalOptions der Projektdatei: ['%(AdditionalOptions) /bigobj',
+                                    '%(AdditionalOptions) /machine:x64']
+
+$ py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - der Kern wurde fuer diese Messung neu gebaut
+  ok      Kernartefakte geloescht und in 4.3s neu erzeugt (22 Dateien entfernt, 9 Uebersetzungseinheiten uebersetzt, 9 Objekte, Lib neu gelinkt)
+
+[0b] Riegel - Quelltext, Leseorte, JUCE-Baum
+  ok      CL.read.1.tlog stammt aus diesem Neubau
+  ok      alle 460 vom Compiler gelesenen Dateien stammen aus erlaubten Orten (plugin 12, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, ohne Uebersetzungsstoff 0)
+  ok      keine der 20 Compiler-Eingaben unter plugin/** traegt ein JucePlugin_-Token im Quelltext (Tlog 12, Huelle 21; Ausnahme NakamaKernRiegel.h mit 56 Treffern)
+  ok      juce-src ist 8.0.9-dirty plus genau der Nakama-VST3-Patch (1 Patchdatei(en); 5 benannte Loeschung(en) ausserhalb modules/**)  [examples/DemoRunner/Builds/Android/app/src/debug/res/raw/accessibilitynotificationicon.png, examples/DemoRunner/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPerformanceTest/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPluginHost/Builds/Android/app/src/debug/res/values/string.xml, extras/NetworkGraphicsDemo/Builds/Android/app/src/debug/res/values/string.xml]
+...
+34 ok, 0 Fehler
+EXIT=0
+
+$ # nach A14:
+/utf-8 im Tlog jetzt: 0
+```
+
+Vor Runde 5 wäre A14 hier grün auf der **alten** Lib gewesen — der Enthaltensein-
+Vergleich sieht ein entferntes Token nicht. Jetzt wird die Lib neu erzeugt, und
+das Tlog trägt den Token danach nicht mehr.
+
+**P5-W5 — Header unter `plugin/**` definiert–nutzt–entfernt.**
+`state/NakamaProbeW5.h` mit `#define JucePlugin_IsSynth 0` / `#if` / `#undef`,
+eingebunden von `state/NakamaKanon.cpp`.
+
+```text
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - der Kern wurde fuer diese Messung neu gebaut
+  ok      Kernartefakte geloescht und in 22.9s neu erzeugt (22 Dateien entfernt, 9 Uebersetzungseinheiten uebersetzt, 9 Objekte, Lib neu gelinkt)
+
+[0b] Riegel - Quelltext, Leseorte, JUCE-Baum
+  ok      CL.read.1.tlog stammt aus diesem Neubau
+  ok      alle 461 vom Compiler gelesenen Dateien stammen aus erlaubten Orten (plugin 13, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, ohne Uebersetzungsstoff 0)
+  FEHLER  keine der 21 Compiler-Eingaben unter plugin/** traegt ein JucePlugin_-Token im Quelltext (Tlog 13, Huelle 22; Ausnahme NakamaKernRiegel.h mit 56 Treffern)  [eq-copilot/plugin/state/NakamaProbeW5.h: JucePlugin_-Token im Quelltext, Zeile(n) 2, 3, 6]
+  ok      juce-src ist 8.0.9-dirty plus genau der Nakama-VST3-Patch (1 Patchdatei(en); 5 benannte Loeschung(en) ausserhalb modules/**)  [examples/DemoRunner/Builds/Android/app/src/debug/res/raw/accessibilitynotificationicon.png, examples/DemoRunner/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPerformanceTest/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPluginHost/Builds/Android/app/src/debug/res/values/string.xml, extras/NetworkGraphicsDemo/Builds/Android/app/src/debug/res/values/string.xml]
+...
+33 ok, 1 Fehler
+FEHLGESCHLAGEN:
+  - keine der 21 Compiler-Eingaben unter plugin/** traegt ein JucePlugin_-Token im Quelltext (Tlog 13, Huelle 22; Ausnahme NakamaKernRiegel.h mit 56 Treffern)  [eq-copilot/plugin/state/NakamaProbeW5.h: JucePlugin_-Token im Quelltext, Zeile(n) 2, 3, 6]
+EXIT=2
+```
+
+K1 blieb grün — der Bau lief durch, sonst hätte der `#error` gegriffen. Genau
+der Beleg, dass K1b nötig und nicht doppelt ist.
+
+**P5-W5a — derselbe Header nur über `/FI`, ohne `#include`.**
+`target_compile_options(NakamaKern PRIVATE "/FI…/state/NakamaProbeW5.h")`,
+konfiguriert, dann A14.
+
+```text
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - der Kern wurde fuer diese Messung neu gebaut
+  ok      Kernartefakte geloescht und in 4.2s neu erzeugt (22 Dateien entfernt, 9 Uebersetzungseinheiten uebersetzt, 9 Objekte, Lib neu gelinkt)
+
+[0b] Riegel - Quelltext, Leseorte, JUCE-Baum
+  ok      CL.read.1.tlog stammt aus diesem Neubau
+  ok      alle 461 vom Compiler gelesenen Dateien stammen aus erlaubten Orten (plugin 13, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, ohne Uebersetzungsstoff 0)
+  FEHLER  keine der 21 Compiler-Eingaben unter plugin/** traegt ein JucePlugin_-Token im Quelltext (Tlog 13, Huelle 21; Ausnahme NakamaKernRiegel.h mit 56 Treffern)  [eq-copilot/plugin/state/NakamaProbeW5.h: JucePlugin_-Token im Quelltext, Zeile(n) 2, 3, 6]
+  ok      juce-src ist 8.0.9-dirty plus genau der Nakama-VST3-Patch (1 Patchdatei(en); 5 benannte Loeschung(en) ausserhalb modules/**)  [examples/DemoRunner/Builds/Android/app/src/debug/res/raw/accessibilitynotificationicon.png, examples/DemoRunner/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPerformanceTest/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPluginHost/Builds/Android/app/src/debug/res/values/string.xml, extras/NetworkGraphicsDemo/Builds/Android/app/src/debug/res/values/string.xml]
+...
+33 ok, 1 Fehler
+FEHLGESCHLAGEN:
+  - keine der 21 Compiler-Eingaben unter plugin/** traegt ein JucePlugin_-Token im Quelltext (Tlog 13, Huelle 21; Ausnahme NakamaKernRiegel.h mit 56 Treffern)  [eq-copilot/plugin/state/NakamaProbeW5.h: JucePlugin_-Token im Quelltext, Zeile(n) 2, 3, 6]
+EXIT=2
+```
+
+Der entscheidende Vergleich steht in der Klammer: **Hülle 21** (unverändert —
+die literale Include-Hülle sieht den Header nicht) gegen **Tlog 13** (die
+tatsächlichen Compiler-Eingaben sehen ihn). Genau der Fall, den Punkt 4 der
+Prüfung nannte.
+
+**P5-W5b — derselbe Header als vorkompilierter Kopf.**
+`target_precompile_headers(NakamaKern PRIVATE …/state/NakamaProbeW5.h)`.
+
+```text
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1220880 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - der Kern wurde fuer diese Messung neu gebaut
+  FEHLER  Kernartefakte geloescht und in 4.6s neu erzeugt (22 Dateien entfernt, 9 Uebersetzungseinheiten uebersetzt, 10 Objekte, Lib neu gelinkt)  [10 Objekte, aber 9 Kernquellen]
+
+[0b] Riegel - Quelltext, Leseorte, JUCE-Baum
+  ok      CL.read.1.tlog stammt aus diesem Neubau
+  FEHLER  alle 466 vom Compiler gelesenen Dateien stammen aus erlaubten Orten (plugin 13, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, ohne Uebersetzungsstoff 3)  [gelesen aus unbekanntem Ort: C:\USERS\PHILI\PROJEKTE\NAKAMA\EQ-COPILOT\BUILD\PLUGIN\CMAKEFILES\NAKAMAKERN.DIR\RELEASE\CMAKE_PCH.HXX | gelesen aus unbekanntem Ort: C:\USERS\PHILI\PROJEKTE\NAKAMA\EQ-COPILOT\BUILD\PLUGIN\NAKAMAKERN.DIR\RELEASE\CMAKE_PCH.PCH]
+  FEHLER  keine der 21 Compiler-Eingaben unter plugin/** traegt ein JucePlugin_-Token im Quelltext (Tlog 13, Huelle 21; Ausnahme NakamaKernRiegel.h mit 56 Treffern)  [eq-copilot/plugin/state/NakamaProbeW5.h: JucePlugin_-Token im Quelltext, Zeile(n) 2, 3, 6]
+  ok      juce-src ist 8.0.9-dirty plus genau der Nakama-VST3-Patch (1 Patchdatei(en); 5 benannte Loeschung(en) ausserhalb modules/**)  [examples/DemoRunner/Builds/Android/app/src/debug/res/raw/accessibilitynotificationicon.png, examples/DemoRunner/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPerformanceTest/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPluginHost/Builds/Android/app/src/debug/res/values/string.xml, extras/NetworkGraphicsDemo/Builds/Android/app/src/debug/res/values/string.xml]
+...
+28 ok, 6 Fehler
+FEHLGESCHLAGEN:
+  - Kernartefakte geloescht und in 4.6s neu erzeugt (22 Dateien entfernt, 9 Uebersetzungseinheiten uebersetzt, 10 Objekte, Lib neu gelinkt)  [10 Objekte, aber 9 Kernquellen]
+  - alle 466 vom Compiler gelesenen Dateien stammen aus erlaubten Orten (plugin 13, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, ohne Uebersetzungsstoff 3)  [gelesen aus unbekanntem Ort: C:\USERS\PHILI\PROJEKTE\NAKAMA\EQ-COPILOT\BUILD\PLUGIN\CMAKEFILES\NAKAMAKERN.DIR\RELEASE\CMAKE_PCH.HXX | gelesen aus unbekanntem Ort: C:\USERS\PHILI\PROJEKTE\NAKAMA\EQ-COPILOT\BUILD\PLUGIN\NAKAMAKERN.DIR\RELEASE\CMAKE_PCH.PCH]
+  - keine der 21 Compiler-Eingaben unter plugin/** traegt ein JucePlugin_-Token im Quelltext (Tlog 13, Huelle 21; Ausnahme NakamaKernRiegel.h mit 56 Treffern)  [eq-copilot/plugin/state/NakamaProbeW5.h: JucePlugin_-Token im Quelltext, Zeile(n) 2, 3, 6]
+  - Tlog, NAKAMA_KERN_QUELLEN und Archiv nennen dieselben 9 Uebersetzungseinheiten  [cmake_pch.obj: im Archiv, aber nicht in NAKAMA_KERN_QUELLEN | 1 veralteter Tlog-Eintrag: cmake_pch.cxx]
+  - womit gebaut: jede der 9 TUs traegt die heutigen Schalter der Projektdatei (Defines 16, Includepfade 4, erzwungene Includes 0, Sprachstandard 1; 2 AdditionalOptions-Token auf Enthaltensein)  [NakamaKanon.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\build\plugin\cmakefiles\nakamakern.dir\release\cmake_pch.hxx | NakamaLebenslauf.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\build\plugin\cmakefiles\nakamakern.dir\release\cmake_pch.hxx | NakamaParameter.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\build\plugin\cmakefiles\nakamakern.dir\release\cmake_pch.hxx | NakamaState.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\build\plugin\cmakefiles\nakamakern.dir\release\cmake_pch.hxx | NakamaVertrag.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\build\plugin\cmakefiles\nakamakern.dir\release\cmake_pch.hxx | WireEnvelope.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\build\plugin\cmakefiles\nakamakern.dir\release\cmake_pch.hxx | IpcVerbindung.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\build\plugin\cmakefiles\nakamakern.dir\release\cmake_pch.hxx | ControlClient.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\build\plugin\cmakefiles\nakamakern.dir\release\cmake_pch.hxx | TelemetryClient.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\build\plugin\cmakefiles\nakamakern.dir\release\cmake_pch.hxx]
+  - Archivmitglieder sind genau die 9 Kernobjekte  [ControlClient.obj, IpcVerbindung.obj, NakamaKanon.obj, NakamaLebenslauf.obj, NakamaParameter.obj, NakamaState.obj, NakamaVertrag.obj, TelemetryClient.obj, WireEnvelope.obj, cmake_pch.obj]
+EXIT=2
+```
+
+Drei Rots, alle richtig: K1b sieht den PCH-Header (Tlog 13), der Ortsriegel
+sieht `cmake_pch.hxx` und `cmake_pch.pch` aus dem Bauverzeichnis, und der
+Neubau-Beleg sieht 10 Objekte statt 9. Diese Probe hat außerdem die beiden
+Robustheitsdefekte aus der Tabelle oben aufgedeckt.
+
+**P5-W6 — `#include <juce_audio_plugin_client/detail/juce_LinuxMessageThread.h>`
+in einer Kernquelle.** Der Header ist auf Windows leer, der Bau läuft durch —
+gelesen wird er trotzdem.
+
+```text
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - der Kern wurde fuer diese Messung neu gebaut
+  ok      Kernartefakte geloescht und in 4.6s neu erzeugt (22 Dateien entfernt, 9 Uebersetzungseinheiten uebersetzt, 9 Objekte, Lib neu gelinkt)
+
+[0b] Riegel - Quelltext, Leseorte, JUCE-Baum
+  ok      CL.read.1.tlog stammt aus diesem Neubau
+  FEHLER  alle 461 vom Compiler gelesenen Dateien stammen aus erlaubten Orten (plugin 12, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, ohne Uebersetzungsstoff 0)  [gelesen aus verbotenem Ort (juce_audio_plugin_client): C:\USERS\PHILI\PROJEKTE\NAKAMA\EQ-COPILOT\BUILD\_DEPS\JUCE-SRC\MODULES\JUCE_AUDIO_PLUGIN_CLIENT\DETAIL\JUCE_LINUXMESSAGETHREAD.H]
+  ok      keine der 20 Compiler-Eingaben unter plugin/** traegt ein JucePlugin_-Token im Quelltext (Tlog 12, Huelle 21; Ausnahme NakamaKernRiegel.h mit 56 Treffern)
+  ok      juce-src ist 8.0.9-dirty plus genau der Nakama-VST3-Patch (1 Patchdatei(en); 5 benannte Loeschung(en) ausserhalb modules/**)  [examples/DemoRunner/Builds/Android/app/src/debug/res/raw/accessibilitynotificationicon.png, examples/DemoRunner/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPerformanceTest/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPluginHost/Builds/Android/app/src/debug/res/values/string.xml, extras/NetworkGraphicsDemo/Builds/Android/app/src/debug/res/values/string.xml]
+...
+33 ok, 1 Fehler
+FEHLGESCHLAGEN:
+  - alle 461 vom Compiler gelesenen Dateien stammen aus erlaubten Orten (plugin 12, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, ohne Uebersetzungsstoff 0)  [gelesen aus verbotenem Ort (juce_audio_plugin_client): C:\USERS\PHILI\PROJEKTE\NAKAMA\EQ-COPILOT\BUILD\_DEPS\JUCE-SRC\MODULES\JUCE_AUDIO_PLUGIN_CLIENT\DETAIL\JUCE_LINUXMESSAGETHREAD.H]
+EXIT=2
+```
+
+**P5-W8 — eine Datei unter `modules/juce_core/` geändert.** Eine Kommentarzeile
+an `juce_core.h` angehängt; zurückgenommen mit
+`git -C juce-src checkout -- modules/juce_core/juce_core.h`.
+
+```text
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - der Kern wurde fuer diese Messung neu gebaut
+  ok      Kernartefakte geloescht und in 4.2s neu erzeugt (22 Dateien entfernt, 9 Uebersetzungseinheiten uebersetzt, 9 Objekte, Lib neu gelinkt)
+
+[0b] Riegel - Quelltext, Leseorte, JUCE-Baum
+  ok      CL.read.1.tlog stammt aus diesem Neubau
+  ok      alle 460 vom Compiler gelesenen Dateien stammen aus erlaubten Orten (plugin 12, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, ohne Uebersetzungsstoff 0)
+  ok      keine der 20 Compiler-Eingaben unter plugin/** traegt ein JucePlugin_-Token im Quelltext (Tlog 12, Huelle 21; Ausnahme NakamaKernRiegel.h mit 56 Treffern)
+  FEHLER  juce-src ist 8.0.9-dirty plus genau der Nakama-VST3-Patch (1 Patchdatei(en); 5 benannte Loeschung(en) ausserhalb modules/**)  [geaendert, steht aber nicht im Nakama-Patch: modules/juce_core/juce_core.h]
+...
+33 ok, 1 Fehler
+FEHLGESCHLAGEN:
+  - juce-src ist 8.0.9-dirty plus genau der Nakama-VST3-Patch (1 Patchdatei(en); 5 benannte Loeschung(en) ausserhalb modules/**)  [geaendert, steht aber nicht im Nakama-Patch: modules/juce_core/juce_core.h]
+EXIT=2
+```
+
+**F14 — `--nur-messen`.**
+
+```text
+$ py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py --nur-messen
+HINWEIS: --nur-messen - es wird NICHT gebaut.
+         Ohne Neubau kein Frische-Urteil; dieser Lauf endet in jedem
+         Fall mit Exit 3. Die Identitaetspruefung laeuft trotzdem.
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - der Kern wurde fuer diese Messung neu gebaut
+  --      nicht gebaut (--nur-messen); ueber die Frische des gemessenen
+          Artefakts behauptet dieser Lauf nichts
+
+[0b] Riegel - Quelltext, Leseorte, JUCE-Baum
+  --      CL.read.1.tlog stammt NICHT aus diesem Lauf (--nur-messen); die Orte darunter sind Diagnose
+  ok      alle 460 vom Compiler gelesenen Dateien stammen aus erlaubten Orten (plugin 12, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, ohne Uebersetzungsstoff 0)
+  ok      keine der 20 Compiler-Eingaben unter plugin/** traegt ein JucePlugin_-Token im Quelltext (Tlog 12, Huelle 21; Ausnahme NakamaKernRiegel.h mit 56 Treffern)
+  ok      juce-src ist 8.0.9-dirty plus genau der Nakama-VST3-Patch (1 Patchdatei(en); 5 benannte Loeschung(en) ausserhalb modules/**)  [examples/DemoRunner/Builds/Android/app/src/debug/res/raw/accessibilitynotificationicon.png, examples/DemoRunner/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPerformanceTest/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPluginHost/Builds/Android/app/src/debug/res/values/string.xml, extras/NetworkGraphicsDemo/Builds/Android/app/src/debug/res/values/string.xml]
+...
+32 ok, 0 Fehler
+VORAUSSETZUNG: ohne Neubau kein Frische-Urteil (--nur-messen).
+  Die Identitaetspruefung oben ist gelaufen; ueber die Frische des
+  gemessenen Artefakts behauptet dieser Lauf nichts.
+EXIT=3
+```
+
+Kein einziger Fehler, und trotzdem Exit 3: die Identitätsprüfung ist gelaufen
+und steht oben, über die Frische behauptet der Lauf nichts. Ein `pruefe()` an
+dieser Stelle wäre Exit 2 und damit ein Urteil über den Kern gewesen — das wurde
+bewusst nicht so gebaut.
+
+**Ungeplanter Zusatzbeleg: `--nur-messen` auf einem wirklich veralteten Baum.**
+Ein `--nur-messen`-Lauf unmittelbar nach der zurückgenommenen `/FI`-Probe — die
+Quellen waren schon wieder sauber, das Bauverzeichnis noch nicht — endete mit
+Exit 2 statt 3, und zwar zu Recht:
+
+```text
+HINWEIS: --nur-messen - es wird NICHT gebaut.
+         Ohne Neubau kein Frische-Urteil; dieser Lauf endet in jedem
+         Fall mit Exit 3. Die Identitaetspruefung laeuft trotzdem.
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - der Kern wurde fuer diese Messung neu gebaut
+  --      nicht gebaut (--nur-messen); ueber die Frische des gemessenen
+          Artefakts behauptet dieser Lauf nichts
+
+[0b] Riegel - Quelltext, Leseorte, JUCE-Baum
+  --      CL.read.1.tlog stammt NICHT aus diesem Lauf (--nur-messen); die Orte darunter sind Diagnose
+  ok      alle 461 vom Compiler gelesenen Dateien stammen aus erlaubten Orten (plugin 13, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, ohne Uebersetzungsstoff 0)
+  FEHLER  keine der 20 Compiler-Eingaben unter plugin/** traegt ein JucePlugin_-Token im Quelltext (Tlog 13, Huelle 21; Ausnahme NakamaKernRiegel.h mit 56 Treffern)  [eq-copilot/plugin/state/NAKAMAPROBEW5.H: nicht lesbar ([Errno 2] No such file or directory: 'C:\\USERS\\PHILI\\PROJEKTE\\NAKAMA\\EQ-COPILOT\\PLUGIN\\STATE\\NAKAMAPROBEW5.H')]
+  ok      juce-src ist 8.0.9-dirty plus genau der Nakama-VST3-Patch (1 Patchdatei(en); 5 benannte Loeschung(en) ausserhalb modules/**)  [examples/DemoRunner/Builds/Android/app/src/debug/res/raw/accessibilitynotificationicon.png, examples/DemoRunner/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPerformanceTest/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPluginHost/Builds/Android/app/src/debug/res/values/string.xml, extras/NetworkGraphicsDemo/Builds/Android/app/src/debug/res/values/string.xml]
+...
+30 ok, 2 Fehler
+FEHLGESCHLAGEN:
+  - keine der 20 Compiler-Eingaben unter plugin/** traegt ein JucePlugin_-Token im Quelltext (Tlog 13, Huelle 21; Ausnahme NakamaKernRiegel.h mit 56 Treffern)  [eq-copilot/plugin/state/NAKAMAPROBEW5.H: nicht lesbar ([Errno 2] No such file or directory: 'C:\\USERS\\PHILI\\PROJEKTE\\NAKAMA\\EQ-COPILOT\\PLUGIN\\STATE\\NAKAMAPROBEW5.H')]
+  - womit gebaut: jede der 9 TUs traegt die heutigen Schalter der Projektdatei (Defines 16, Includepfade 4, erzwungene Includes 0, Sprachstandard 1; 2 AdditionalOptions-Token auf Enthaltensein)  [NakamaKanon.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\plugin\state\nakamaprobew5.h | NakamaLebenslauf.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\plugin\state\nakamaprobew5.h | NakamaParameter.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\plugin\state\nakamaprobew5.h | NakamaState.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\plugin\state\nakamaprobew5.h | NakamaVertrag.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\plugin\state\nakamaprobew5.h | WireEnvelope.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\plugin\state\nakamaprobew5.h | IpcVerbindung.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\plugin\state\nakamaprobew5.h | ControlClient.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\plugin\state\nakamaprobew5.h | TelemetryClient.cpp: erzwungene Includes nur gebaut: c:\users\phili\projekte\nakama\eq-copilot\plugin\state\nakamaprobew5.h]
+EXIT=2
+```
+
+Beide Klagen sind wahr: der Compiler hat eine Datei gelesen, die es nicht mehr
+gibt, und jede der neun TUs trägt einen erzwungenen Include, den die heutige
+Projektdatei nicht kennt. Das ist die Lage, in der ein Bein ohne Neubau grün
+gemeldet hätte. Die Regel „ein echter Befund gewinnt und macht aus Exit 3 eine
+2" ist damit nicht nur spezifiziert, sondern gefahren.
+
+### Selbsttest — jede neue bauloses Prüfung einmal gebrochen
+
+```text
+$ py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py --selbsttest
+Runde-5-Selbsttest: Neubau, Leseorte, K1b, JUCE-Baum
+  ok      R5-2a: fehlender lastbuildstate ist eine Klage, kein stilles Ja  [C:\Users\phili\AppData\Local\Temp\tmpp2jkp9ls\NakamaKern.lastbuildstate fehlt - womit gebaut wurde ist nicht ablesbar]
+  ok      R5-2b: Toolset, VCToolsVersion und SDK-Version werden gelesen  [PlatformToolSet=v143:VCToolArchitecture=Native64Bit:VCToolsVersion=14.44.35207:TargetPlatformVersion=10.0.26100.0:]
+  ok      R5-2c: eine unvollstaendige State-Zeile wird benannt  [C:\Users\phili\AppData\Local\Temp\tmpp2jkp9ls\NakamaKern.lastbuildstate nennt VCToolsVersion, TargetPlatformVersion nicht]
+  ok      R5-3a: unauffindbares cmake bricht ab, BEVOR etwas geloescht wird  [cmake nicht ausfuehrbar: C:\Users\phili\AppData\Local\Temp\tmpqzggwezz\gibtesnicht.exe; ohne Neubau gibt es kein Frische-Urteil]
+  ok      R5-3b: ein fehlschlagender Bau ist eine fehlende Voraussetzung  [Neubau des Kerns fehlgeschlagen (Exit 1)]
+  ok      R5-5a: vollstaendiger Neubau bleibt klaglos
+  ok      R5-5b: eine nicht uebersetzte TU faellt auf  [Bauausgabe nennt diese Uebersetzungseinheiten nicht: Eins.cpp]
+  ok      R5-5c: ein Objekt aus einem frueheren Lauf faellt auf  [Objekt aelter als der Neubau (nicht neu uebersetzt): Eins.obj]
+  ok      R5-5d: fehlende Objekte und fehlende Lib sind ROT  [nach dem Neubau liegt kein einziges Objekt im Kernverzeichnis | 0 Objekte, aber 1 Kernquellen | NakamaKern.lib fehlt nach dem Neubau]
+  ok      R5-6a: Kommentare mit JucePlugin_ bleiben gruen, die Ausnahme wird gezaehlt  [Treffer in der Ausnahme: 1]
+  ok      R5-6b: ein Header, der JucePlugin_Name definiert, ist ROT  [C:\Users\phili\AppData\Local\Temp\tmpinyiak0i\Offen.h: JucePlugin_-Token im Quelltext, Zeile(n) 1]
+  ok      R5-7: definiert-genutzt-entfernt (die Luecke aus Befund 3) ist ROT  [C:\Users\phili\AppData\Local\Temp\tmpinyiak0i\Verdeckt.h: JucePlugin_-Token im Quelltext, Zeile(n) 1, 2, 4]
+  ok      R5-7b: unlesbarer Quelltext ist ROT, nicht uebersprungen  [nicht abgeschlossener Blockkommentar in C:\Users\phili\AppData\Local\Temp\tmpinyiak0i\Kaputt.h]
+  ok      R5-8a: ein juce_core-Header ist erlaubt und wird gezaehlt
+  ok      R5-8b: ein juce_audio_plugin_client-Header ist ROT  [gelesen aus verbotenem Ort (juce_audio_plugin_client): C:\USERS\PHILI\APPDATA\LOCAL\TEMP\TMPOHMVKT35\JUCE-SRC\MODULES\JUCE_AUDIO_PLUGIN_CLIENT\DETAIL\JUCE_CHECKSETTINGMACROS.H]
+  ok      R5-9: ein generierter JuceLibraryCode-Header ist ROT  [gelesen aus unbekanntem Ort: C:\USERS\PHILI\APPDATA\LOCAL\TEMP\TMPOHMVKT35\EQCOPILOT_ARTEFACTS\JUCELIBRARYCODE\JUCEHEADER.H]
+  ok      R5-13: eine Kernquelle ohne Marker im Leseprotokoll ist ROT  [Kernquelle fehlt als Marker im Leseprotokoll: Eins.cpp]
+  ok      R5-11a: die Patchdatei selbst darf geaendert sein
+  ok      R5-11b: eine geaenderte juce_core-Datei ist ROT (Weg W8)  [geaendert, steht aber nicht im Nakama-Patch: modules/juce_core/juce_core.h]
+  ok      R5-11c: eine unverfolgte Datei im JUCE-Baum ist ROT  [unverfolgte Datei im JUCE-Baum: modules/juce_core/Fremd.h]
+  ok      R5-11d: eine geloeschte Moduldatei ist ROT  [geloeschte Moduldatei im JUCE-Baum: modules/juce_core/juce_core.h]
+  ok      R5-11e: eine Loeschung ausserhalb modules/** wird benannt, nicht verschwiegen  [examples/DemoRunner/Builds/Android/app/src/debug/res/values/string.xml]
+  ok      R5-11f: ein unbekannter Statuscode ist ROT, kein stilles Ja  [unbekannter git-Status 'XY' fuer irgendwas]
+
+58 ok, 0 Fehler
+EXIT=0
+```
+
+Die 22 neuen Fälle `R5-2a` bis `R5-11f` prüfen jeden neuen bauslosen Riegel in
+beiden Richtungen: der grüne Fall bleibt klaglos, der gebrochene wird namentlich
+rot. `R5-3a` hat dabei einen echten Defekt im gerade geschriebenen Code gefunden
+(Tabelle oben) — der Fall war zuerst `FEHLER`, danach `ok`.
+
+Zwei Kennungen der Matrix laufen nicht als Selbsttest, sondern als Messung am
+echten Baum, und das ist Absicht: **R5-1** (`configure_frische()` bleibt nach dem
+Bau klaglos) steht als Zeile in `[0c]` jedes Laufs, und **R5-10** (die
+AdditionalOptions-Klasse nennt sich in der Ausgabe „Enthaltensein") ist in
+derselben Ausgabe direkt ablesbar:
+
+```text
+  ok      womit gebaut: jede der 9 TUs traegt die heutigen Schalter der Projektdatei
+          (Defines 16, Includepfade 4, erzwungene Includes 0, Sprachstandard 1;
+           2 AdditionalOptions-Token auf Enthaltensein)
+```
+
+Der frühere Text sagte „traegt exakt die heutigen Schalter … und traegt deren
+AdditionalOptions-Tokens" und behauptete damit auf der letzten Klasse mehr, als
+er misst (Prüflistenregel E).
+
+### Grüner Referenzlauf auf dem Endstand
+
+```text
+$ py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - der Kern wurde fuer diese Messung neu gebaut
+  ok      Kernartefakte geloescht und in 4.6s neu erzeugt (24 Dateien entfernt, 9 Uebersetzungseinheiten uebersetzt, 9 Objekte, Lib neu gelinkt)
+
+[0b] Riegel - Quelltext, Leseorte, JUCE-Baum
+  ok      CL.read.1.tlog stammt aus diesem Neubau
+  ok      alle 460 vom Compiler gelesenen Dateien stammen aus erlaubten Orten (plugin 12, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, ohne Uebersetzungsstoff 0)
+  ok      keine der 20 Compiler-Eingaben unter plugin/** traegt ein JucePlugin_-Token im Quelltext (Tlog 12, Huelle 21; Ausnahme NakamaKernRiegel.h mit 56 Treffern)
+  ok      juce-src ist 8.0.9-dirty plus genau der Nakama-VST3-Patch (1 Patchdatei(en); 5 benannte Loeschung(en) ausserhalb modules/**)  [examples/DemoRunner/Builds/Android/app/src/debug/res/raw/accessibilitynotificationicon.png, examples/DemoRunner/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPerformanceTest/Builds/Android/app/src/debug/res/values/string.xml, extras/AudioPluginHost/Builds/Android/app/src/debug/res/values/string.xml, extras/NetworkGraphicsDemo/Builds/Android/app/src/debug/res/values/string.xml]
+
+[0c] Diagnose - womit wurde gebaut (kein Frische-Urteil)
+  ok      lastbuildstate nennt Toolset, VCToolsVersion und TargetPlatformVersion  [PlatformToolSet=v143:VCToolArchitecture=Native64Bit:VCToolsVersion=14.44.35207:TargetPlatformVersion=10.0.26100.0:]
+  ok      Configure ist juenger als jede CMake-Eingabe, die der Generator verbraucht hat
+  ok      Tlog, NAKAMA_KERN_QUELLEN und Archiv nennen dieselben 9 Uebersetzungseinheiten
+  ok      womit gebaut: jede der 9 TUs traegt die heutigen Schalter der Projektdatei (Defines 16, Includepfade 4, erzwungene Includes 0, Sprachstandard 1; 2 AdditionalOptions-Token auf Enthaltensein)
+  ok      NakamaKern.lib ist nicht aelter als die 9 Objekte ihres Bauverzeichnisses und nicht aelter als ihr Tlog
+
+[1] Gegenprobe - findet der Scanner die Werte dort, wo sie stehen muessen?
+  ok      Gegenprobe findet hersteller.name = 'evenacadia' im gebauten Bundle  [ascii,utf-16le]
+  ok      Gegenprobe findet main.produktname = 'EQ-Copilot' im gebauten Bundle  [ascii,utf-16le]
+  ok      Gegenprobe findet main.plugin_code = 'Eqcp' im gebauten Bundle  [ascii,fourcc-int-be]
+  ok      Gegenprobe findet main.component_cid = 'ABCDEF019182FAEB45766E6145716370' im gebauten Bundle  [roh16-com]
+  ok      Gegenprobe findet main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' im gebauten Bundle  [roh16-com]
+
+[2] Kern - keine dieser Nadeln darf im Objektcode des Kerns liegen
+  ok      NakamaKern.lib traegt active-probe.bundle = 'Nakama Probeeq.vst3' NICHT
+  ok      NakamaKern.lib traegt active-probe.component_cid = 'ABCDEF019182FAEB45766E614E6B4163' NICHT
+  ok      NakamaKern.lib traegt active-probe.controller_cid = 'ABCDEF011234ABCD45766E614E6B4163' NICHT
+  ok      NakamaKern.lib traegt active-probe.plugin_code = 'NkAc' NICHT
+  ok      NakamaKern.lib traegt active-probe.produktname = 'Nakama Probeeq' NICHT
+  ok      NakamaKern.lib traegt hersteller.code = 'Evna' NICHT
+  ok      NakamaKern.lib traegt hersteller.name = 'evenacadia' NICHT
+  ok      NakamaKern.lib traegt main.bundle = 'EQ-Copilot.vst3' NICHT
+  ok      NakamaKern.lib traegt main.component_cid = 'ABCDEF019182FAEB45766E6145716370' NICHT
+  ok      NakamaKern.lib traegt main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' NICHT
+  ok      NakamaKern.lib traegt main.plugin_code = 'Eqcp' NICHT
+  ok      NakamaKern.lib traegt main.produktname = 'EQ-Copilot' NICHT
+  ok      NakamaKern.lib traegt passive-probe.bundle = 'Nakama Suna.vst3' NICHT
+  ok      NakamaKern.lib traegt passive-probe.component_cid = 'ABCDEF019182FAEB45766E614E6B5072' NICHT
+  ok      NakamaKern.lib traegt passive-probe.controller_cid = 'ABCDEF011234ABCD45766E614E6B5072' NICHT
+  ok      NakamaKern.lib traegt passive-probe.plugin_code = 'NkPr' NICHT
+  ok      NakamaKern.lib traegt passive-probe.produktname = 'Nakama Suna' NICHT
+
+[3] Bauform - der Kern enthaelt genau seine eigenen Objekte
+  ok      Archivmitglieder sind genau die 9 Kernobjekte
+  ok      kein JUCE-Modulobjekt im Kern (die Kopf-Fassade haelt)
+
+34 ok, 0 Fehler
+EXIT=0
+```
+### Nachweis, dass jede Probe zurückgenommen ist
+
+Nach der letzten Probe, vor dem Kanonlauf:
+
+```text
+$ git --no-optional-locks status --short
+ M docs/beweise/SONDE-007a.md
+ M eq-copilot/plugin/state/NakamaKernRiegel.h
+
+$ git --no-optional-locks diff --stat eq-copilot/plugin/ eq-copilot/cmake/
+ eq-copilot/plugin/state/NakamaKernRiegel.h | 42 ++++++++++++++++++++++++------
+ 1 file changed, 34 insertions(+), 8 deletions(-)
+
+$ git --no-optional-locks -C eq-copilot/build/_deps/juce-src status --porcelain -uall
+ D examples/DemoRunner/Builds/Android/app/src/debug/res/raw/accessibilitynotificationicon.png
+ D examples/DemoRunner/Builds/Android/app/src/debug/res/values/string.xml
+ D extras/AudioPerformanceTest/Builds/Android/app/src/debug/res/values/string.xml
+ D extras/AudioPluginHost/Builds/Android/app/src/debug/res/values/string.xml
+ D extras/NetworkGraphicsDemo/Builds/Android/app/src/debug/res/values/string.xml
+ M modules/juce_audio_plugin_client/juce_audio_plugin_client_VST3.cpp
+```
+
+`plugin/CMakeLists.txt`, `plugin/state/NakamaKanon.cpp` und
+`plugin/state/NakamaProbeW5.h` sind vollständig zurückgenommen; die einzige
+verbleibende Änderung unter `eq-copilot/` ist die Textkorrektur R6 im
+Kopfkommentar von `NakamaKernRiegel.h`. Der JUCE-Baum steht wieder auf seinem
+Ausgangszustand: die eine Patchdatei plus die fünf Löschungen, die schon vor
+dieser Runde da waren.
+
+**Zu diesen fünf Löschungen, gemessen und benannt.** `git status` im
+FetchContent-Baum meldet sie seit dem ersten Auschecken; die Verzeichnisse
+`app/src/debug/` existieren dort schlicht nicht (nur `main` und `release`). Es
+sind Android-Ressourcen aus `examples/` und `extras/`, keine
+Übersetzungseingabe und keine Moduldatei. Der JUCE-Baum-Riegel behandelt sie
+deshalb als geduldet, zählt sie und nennt sie in **jeder** Ausgabezeile — eine
+gelöschte Datei kann nicht zur Compiler-Eingabe werden, eine geänderte oder eine
+unverfolgte sehr wohl, und beide sind ROT.
+
+### Prüfliste D / E / F
+
+| Regel | Fundstelle in dieser Nacharbeit |
+|---|---|
+| **D** — „Ein Riegel ist fail-closed ohne Rohtextheuristik: Unbekanntes ist ROT." | Tlog-Ortsriegel: Erlaubnisliste statt Verbotsliste, jeder unbekannte Ort namentlich ROT (`R5-9`, `P5-W5b`). Nicht ableitbare Toolchainwurzel → ROT (`erlaubte_leseorte`). K1b: unlesbarer Quelltext → ROT (`R5-7b`). JUCE-Baum: unbekannter git-Statuscode → ROT (`R5-11f`). Fehlender TU-Marker im Leseprotokoll → ROT (`R5-13`). |
+| **D** — „Ein Bein, das ‚misst nie ein veraltetes Artefakt' behauptet, prüft die Frische seiner Eingaben und meldet Voraussetzung-fehlt (Exit 3) statt grün." | Das Bein behauptet das nicht mehr, sondern stellt die Frische her. Wo es nicht bauen kann, meldet es Exit 3: `R5-3a`, `R5-3b`, und `--nur-messen` in jedem Fall (F14-Rohausgabe). |
+| **D** — „Was der Kanon nicht baut, darf er nicht als frisch bezeugen (NAK-93)." | A14 baut das gemessene Artefakt in jedem Lauf selbst — auch ohne `-Bauen`. Das Zeugnis eines Dritten (`--frisch-gebaut`) wurde ersatzlos gestrichen, statt es abzusichern. |
+| **E** — „Jede Behauptung sagt nicht mehr, als der Test misst." | Runner-Behauptung `A14` neu geschrieben; die AdditionalOptions-Klasse heißt in der Ausgabe „auf Enthaltensein"; die zwei verbleibenden Nichtzusagen (Toolchain-/SDK-Inhalt, Compilerwechsel innerhalb derselben `lastbuildstate`-Kennung) stehen ausdrücklich in der Behauptung, im Skriptkopf und in der Riegeltabelle. |
+| **E** — „Zahlen im Manifest sind gemessen, nicht abgeschrieben." | Die TU-Zahl in Zeile K1 der Riegeltabelle ist ersatzlos entfallen; dort steht jetzt die Quelle (`NAKAMA_KERN_QUELLEN`) und der Hinweis, dass der Messlauf die Anzahl ausgibt. Jede Zahl in diesem Abschnitt stammt aus einer eingefügten Rohausgabe. |
+| **E** — „Positionen als Symbol/Anker oder `Datei:Zeile @ sha7`." | Dieser Abschnitt nennt nur Symbole (`kern_neubau`, `erlaubte_leseorte`, `juce_baum_status_pruefen`, `_NEUBAU_AUSGABEN`) und Kennungen; sein Kopf trägt den Stand. Der historische Zitatblock im Manifestkopf bleibt wörtlich, sein einleitender Satz trägt jetzt `@ 3353fb6`, die heutigen Symbolverweise stehen darunter außerhalb des Zitats. |
+| **F** — „Eine Behauptung ohne eingefügte Rohausgabe ist ein gescheitertes Ticket." | Neun Rohausgaben oben: sieben Proben am echten Baum, der Selbsttest und der grüne Referenzlauf, dazu der Kanon-Anhang unten. |
+
+### Was jetzt gilt — und was ausdrücklich nicht
+
+Die Zusage steht wörtlich im Skriptkopf
+(`tools/eq-copilot/pruefe_kern_identitaetsfrei.py`) und in der
+Runner-Behauptung `A14` (`tools/beweise.ps1`). Kurzfassung:
+
+A14 misst kein vorhandenes Artefakt, sondern eines, das es im selben Lauf hat
+erzeugen lassen. Ob eine frühere Lib veraltet war, ist damit keine Frage mehr —
+und genau deshalb ist auch die Frage nach der *nächsten* unbekannten
+Eingabeklasse keine mehr. Dazu: kein `JucePlugin_`-Token im Quelltext der
+tatsächlichen Compiler-Eingaben unter `plugin/**`, jede gelesene Datei aus einem
+abgeleiteten erlaubten Ort, und der JUCE-Baum als gepinnter Tag plus genau ein
+benannter Patch.
+
+**Nicht behauptet, namentlich:** der *Inhalt* der Toolchain- und SDK-Header
+außerhalb des Repos — geprüft wird nur ihre Herkunft aus den aus dem Bau
+abgeleiteten Wurzeln, es gibt keinen Fingerprint; und ein Compilerwechsel
+innerhalb derselben `lastbuildstate`-Kennung (gleiches Toolset, gleiche
+`VCToolsVersion`, gleiche `TargetPlatformVersion`, ausgetauschte Binaries).
+Beide Lücken sind kleiner als das frühere W8 und stehen in der Behauptung, im
+Skriptkopf und in der Riegeltabelle.

@@ -110,6 +110,12 @@ STATE_CPP = WURZEL / "eq-copilot" / "plugin" / "state" / "NakamaState.cpp"
 
 SCHEMA = "nakama.installer/v1"
 ERGEBNIS_SCHEMA = "nakama.install-ergebnis/v1"
+# Der EINZIGE Journalstatus, unter dem der gespeicherte sha256 den Stand
+# beschreibt, der wirklich liegt. Install-Nakama.ps1 kennt daneben
+# VORBEREITET, KOMPENSATION, ERROR_TEILSTAND, ERROR_RUECKGEROLLT,
+# RUECKWEG_AKTIV und RUECKWEG - jeder davon steht fuer ein Ziel, das bereits
+# ganz oder halb wiederhergestellt sein kann (NAK-94 Nacharbeit 2).
+ERGEBNIS_STATUS_OK = "OK"
 HEX64 = re.compile(r"^[0-9A-F]{64}$")
 THUMBPRINT = re.compile(r"^(?:[0-9A-F]{40}|[0-9A-F]{64})$")
 ARTEN = ("vst3", "broker")
@@ -987,6 +993,60 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
                    "Hinweis - [4b] toetet keinen Kanonlauf",
                    next((z.strip() for z in ausgabe.splitlines()
                          if "nicht auswertbar" in z), "keine solche Zeile"))
+
+            # -- P2 (Nacharbeit 2): ok NUR bei Journalstatus OK -------------
+            #
+            # Derselbe Eintrag, nur ein anderer Journalkopf. Genau das war der
+            # Befund: der Hash stimmte, das Ziel aber konnte halb
+            # wiederhergestellt sein.
+            name = _artefakt_name(manifest["artefakte"][0])
+            eintrag = {
+                "ziel_id": manifest["artefakte"][0].get("ziel_id"),
+                "quelle": manifest["artefakte"][0].get("quelle"),
+                "mutation_begonnen": True, "mutation_abgeschlossen": True,
+                "rollback_abgeschlossen": False,
+                "sha256": "0" * 64, "ziel": "irgendwo",
+            }
+            mit_hash = copy.deepcopy(manifest)
+            mit_hash["artefakte"] = [copy.deepcopy(manifest["artefakte"][0])]
+            mit_hash["artefakte"][0]["sha256"] = "0" * 64
+
+            def journal_lauf(kopf: dict) -> str:
+                journal.write_text(json.dumps(kopf), encoding="utf-8")
+                text, offen = _probelauf(lambda: installierter_stand(mit_hash))
+                return text if not offen else text + " KLAGEN " + " | ".join(offen)
+
+            grund = {"schema": ERGEBNIS_SCHEMA, "zeit": "2026-08-29T00:00:00Z",
+                     "eintraege": [eintrag]}
+            ausgabe = journal_lauf({**grund, "status": ERGEBNIS_STATUS_OK})
+            pruefe(f"ok      {name}: installierter Stand = Manifest" in ausgabe,
+                   "P2: bei Journalstatus OK und abgeschlossenem, nicht "
+                   "zurueckgerolltem Eintrag bleibt der Hashvergleich und sein ok",
+                   next((z.strip() for z in ausgabe.splitlines()
+                         if name in z), "keine Zeile zum Artefakt"))
+
+            # Jeder andere Statuswert aus Install-Nakama.ps1, dazu ein
+            # unbekannter und ein fehlender - abgelesen, nicht geraten.
+            for status in ("VORBEREITET", "KOMPENSATION", "ERROR_TEILSTAND",
+                           "ERROR_RUECKGEROLLT", "RUECKWEG_AKTIV", "RUECKWEG",
+                           "NEUER_STATUS_2099"):
+                ausgabe = journal_lauf({**grund, "status": status})
+                pruefe(f"hinweis {name}: installierter Stand unbekannt "
+                       f"(Journalstatus {status})" in ausgabe
+                       and "installierter Stand = Manifest" not in ausgabe,
+                       f"P2: Journalstatus {status} meldet den installierten "
+                       f"Stand als unbekannt - ohne Hashvergleich",
+                       next((z.strip() for z in ausgabe.splitlines()
+                             if name in z), "keine Zeile zum Artefakt"))
+
+            ausgabe = journal_lauf(grund)
+            pruefe(f"hinweis {name}: installierter Stand unbekannt "
+                   "(Journalstatus fehlt)" in ausgabe
+                   and "installierter Stand = Manifest" not in ausgabe,
+                   "P2: ein Journal OHNE status meldet den installierten Stand "
+                   "als unbekannt - Schweigen ist kein OK",
+                   next((z.strip() for z in ausgabe.splitlines()
+                         if name in z), "keine Zeile zum Artefakt"))
         finally:
             INSTALL_ERGEBNIS = merk
 
@@ -1258,6 +1318,34 @@ def _installierter_stand(manifest: dict) -> None:
         print("  hinweis install-ergebnis.json fuehrt keine Liste 'eintraege'")
         return
     print(f"  Journal: status={journal.get('status')!r}  zeit={journal.get('zeit')!r}")
+
+    # BEFUND P2, NAK-94 Nacharbeit 2 (29.08.2026): der Journalstatus wurde nur
+    # GEDRUCKT, nie ausgewertet. Ein Journal mit status="KOMPENSATION" oder
+    # "ERROR_TEILSTAND" und einem Eintrag mit mutation_abgeschlossen=true,
+    # rollback_abgeschlossen=false erreichte den Hashvergleich und meldete
+    # "ok ... installierter Stand = Manifest".
+    #
+    # Install-Nakama.ps1 setzt genau diese Werte, WAEHREND es das Ziel wieder
+    # in den Vorzustand zurueckkopiert: der gespeicherte sha256 beweist dann
+    # nur den Stand VOR dem fehlgeschlagenen Gegenakt, nicht das, was liegt.
+    # Dasselbe gilt fuer VORBEREITET (Fenster vor der Mutation), RUECKWEG_AKTIV
+    # und RUECKWEG (Deinstallation) und ERROR_RUECKGEROLLT (vollstaendig
+    # zurueckgerollt) - die Statuswerte stehen in Install-Nakama.ps1, sie sind
+    # hier abgelesen und nicht geraten.
+    #
+    # Regel seither: `ok` gibt es NUR bei status == "OK". Jeder andere Status,
+    # ein unbekannter und ein fehlender melden "installierter Stand unbekannt"
+    # OHNE Hashvergleich - ein Hash, der nichts beweist, wird gar nicht erst
+    # gezeigt. Die Eintragsmarken (abgeschlossen, nicht zurueckgerollt) prueft
+    # die Schleife unten weiterhin einzeln; beide Haelften gelten zusammen.
+    status = journal.get("status")
+    if status != ERGEBNIS_STATUS_OK:
+        wie = status if isinstance(status, str) else (
+            "fehlt" if status is None else repr(status))
+        for a in manifest["artefakte"]:
+            print(f"  hinweis {_artefakt_name(a)}: installierter Stand unbekannt "
+                  f"(Journalstatus {wie})")
+        return
 
     # Die Kennung MUSS eine Zeichenkette sein: `_artefakt_name` reicht
     # durch, was im Journal steht, und `{"ziel_id": ["main"]}` waere als

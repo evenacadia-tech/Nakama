@@ -1,0 +1,74 @@
+{
+  "schema": "nakama.install-ergebnis/v1",
+  "status": "OK",
+  "transaktions_id": "35eedadd0d3b414e88a57efa4b592067",
+  "manifest": "eq-copilot/install/nakama-installer-v1.json",
+  "zeit": "2026-08-29T23:13:24.0123798Z",
+  "bekannte_staende": [
+    {
+      "sha256": "74D86BD5A5F92B1135EC066AD65770BE5744F04E12D7D4C9F95BE0CD6656E0F8",
+      "hash_art": "datei-innen",
+      "ziel_id": "main",
+      "state_schema": 1,
+      "beschreibung": "Bau vom 16.08.2026 mit Hoer-Markierung - der HEUTE installierte Stand. Vor SONDE-006, schreibt und liest nur EqCopilotState schema=1."
+    },
+    {
+      "sha256": "B87AB70EAA9E96D7F93C39C66D690E2FECDF3E983E55A5FC31E21AA9AFBC8EF1",
+      "hash_art": "datei-innen",
+      "ziel_id": "main",
+      "state_schema": 1,
+      "beschreibung": "Bau vor der Hoer-Markierung (Rollback-Bundle rollback-B87AB70E-before-hoermarkierung.vst3). Ebenfalls Schema 1."
+    },
+    {
+      "sha256": "029EDDFF4223E6AD68E66EB5F84CFD32B5AB19FC44F4FBA3D8B078BC819B90F8",
+      "hash_art": "datei-innen",
+      "ziel_id": "main",
+      "state_schema": 2,
+      "beschreibung": "Sandbox-Vorstand, gegen die Binaerdatei eingefroren"
+    }
+  ],
+  "eintraege": [
+    {
+      "ziel_id": "main",
+      "art": "vst3",
+      "name": "EQ-Copilot",
+      "ziel": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-journale-aqjf0cvw\\ziel\\VST3\\EQ-Copilot.vst3",
+      "sha256": "BD691D40EAFB7BB566BD4B095A184B2410D074DDA888EF81CADF084CABB376DF",
+      "vorher_sha256": "BD691D40EAFB7BB566BD4B095A184B2410D074DDA888EF81CADF084CABB376DF",
+      "vorher_sha256_innen": "98BE75C8B427D0B3913ADA3E9D7687F1EB836EA9314843FB4DE6DA407B1BA377",
+      "gesichert": "backups/35eedadd0d3b414e88a57efa4b592067/backup-0.bundle",
+      "erzeugte_ordner": [],
+      "mutation_begonnen": true,
+      "mutation_abgeschlossen": true,
+      "rollback_abgeschlossen": false
+    },
+    {
+      "ziel_id": "active-probe",
+      "art": "vst3",
+      "name": "Nakama Probeeq",
+      "ziel": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-journale-aqjf0cvw\\ziel\\VST3\\Nakama Probeeq.vst3",
+      "sha256": "8E3F0761E8C88E9F50E0C8D305B03C848EC2C919C289FE816065756965C56ECA",
+      "vorher_sha256": "8E3F0761E8C88E9F50E0C8D305B03C848EC2C919C289FE816065756965C56ECA",
+      "vorher_sha256_innen": "23FA7A93597E7165C65BE86D9D0393E65B7BE52D5DB4CB8C42C72B1F09FF0E1D",
+      "gesichert": "backups/35eedadd0d3b414e88a57efa4b592067/backup-1.bundle",
+      "erzeugte_ordner": [],
+      "mutation_begonnen": true,
+      "mutation_abgeschlossen": true,
+      "rollback_abgeschlossen": false
+    },
+    {
+      "ziel_id": null,
+      "art": "broker",
+      "name": "eqcop-broker.exe",
+      "ziel": "C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-journale-aqjf0cvw\\ziel\\programme\\evenacadia\\Nakama\\eqcop-broker.exe",
+      "sha256": "5D2E43F2E98C5D3101BD376D2F29EBE79646B7468726012A623F3F2BEDBD9368",
+      "vorher_sha256": "5D2E43F2E98C5D3101BD376D2F29EBE79646B7468726012A623F3F2BEDBD9368",
+      "vorher_sha256_innen": null,
+      "gesichert": "backups/35eedadd0d3b414e88a57efa4b592067/backup-2.bak",
+      "erzeugte_ordner": [],
+      "mutation_begonnen": true,
+      "mutation_abgeschlossen": true,
+      "rollback_abgeschlossen": false
+    }
+  ]
+}

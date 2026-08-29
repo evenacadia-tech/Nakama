@@ -1,0 +1,14 @@
+{
+  "schema": "nakama.install-ergebnis/v1",
+  "status": "RUECKWEG",
+  "transaktions_id": "f7e6cf96074d4f2baf04efb141e6fbde",
+  "erzwungen": false,
+  "warnungen": [],
+  "getan": [
+    "entfernt: C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-journale-aqjf0cvw\\ziel\\programme\\evenacadia\\Nakama\\eqcop-broker.exe",
+    "Ordner entfernt: C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-journale-aqjf0cvw\\ziel\\programme\\evenacadia\\Nakama",
+    "entfernt: C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-journale-aqjf0cvw\\ziel\\VST3\\Nakama Probeeq.vst3",
+    "wiederhergestellt: C:\\Users\\phili\\AppData\\Local\\Temp\\nakama-journale-aqjf0cvw\\ziel\\VST3\\EQ-Copilot.vst3"
+  ],
+  "zeit": "2026-08-29T23:13:21.8923065Z"
+}

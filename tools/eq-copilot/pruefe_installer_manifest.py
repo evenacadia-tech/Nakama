@@ -84,6 +84,28 @@ DREI HAERTEGRADE FUER DENSELBEN HASH (NAK-94, 29.08.2026)
   [3b] laesst beide Kanten einmal fallen - eine Wache, die niemand hat fallen
   sehen, ist keine.
 
+  ZWEI SORTEN PROBE-JOURNALE, seit NAK-94 Nacharbeit 5 (30.08.2026):
+
+    Writer-Fixtur   von Install-Nakama.ps1 SELBST in der A18-Sandbox erzeugt
+                    und byteweise eingefroren
+                    (eq-copilot/fixtures/installer/journale/, MANIFEST.json
+                    mit Fall, Stand, Befehl und SHA-256; Erzeuger
+                    tools/eq-copilot/erzeuge_installer_journale.py). [3b]
+                    rechnet die Hashes vor der Benutzung nach - eine von Hand
+                    angefasste Fixtur ist ROT, nicht stillschweigend anders.
+
+    Mutant          im Skript aus GENAU EINER Writer-Fixtur abgeleitet, mit
+                    benannter Abweichung (`mutant_von`, `abweichung`). Fuer
+                    Staende, die ein abgeschlossener Lauf nicht hinterlaesst
+                    (VORBEREITET, KOMPENSATION, ERROR_TEILSTAND,
+                    RUECKWEG_AKTIV), fuer erfundene und fehlende Statuswerte
+                    und fuer verstuemmelte Journale.
+
+  Jede Probe nennt ihre Sorte in der Ausgabezeile. Von Hand geschriebene
+  "Writer-Formen" gibt es nicht mehr: drei Pruefrunden hintereinander fanden
+  daran je ein weiteres abweichendes Feld (`quelle`, gestrichelte
+  Transaktions-ID, `vorher_sha256_innen` null bei gesetztem Vorzustand).
+
 Aufrufe:
   py -3.13 tools/eq-copilot/pruefe_installer_manifest.py            # Kanon
   py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --release  # Auslieferung
@@ -124,22 +146,23 @@ ERGEBNIS_SCHEMA = "nakama.install-ergebnis/v1"
 # RUECKWEG_AKTIV und RUECKWEG - jeder davon steht fuer ein Ziel, das bereits
 # ganz oder halb wiederhergestellt sein kann (NAK-94 Nacharbeit 2).
 ERGEBNIS_STATUS_OK = "OK"
-# Die Journal-Fixturen der Gegenproben [3b] stehen in der Form, die
-# Install-Nakama.ps1 WIRKLICH schreibt - abgelesen, nicht erfunden
-# (NAK-94 Nacharbeit 4, 30.08.2026):
-#   * die Transaktions-ID entsteht als `[Guid]::NewGuid().ToString('N')`
-#     und wird von `Ist-TransaktionsId` gegen `^[0-9a-f]{32}$` geprueft:
-#     32 Hexziffern, KEINE Bindestriche. Eine gestrichelte UUID haette
-#     der Rueckweg selbst abgewiesen.
-#   * `zeit` ist `[DateTime]::UtcNow.ToString('o')`. Der
-#     Sekundenbruch ist absichtlich nicht null: nur dann ueberlebt der
-#     Wert den ConvertFrom-Json/ConvertTo-Json-Umlauf des Rueckwegs
-#     unveraendert (gemessen).
-#   * `name` und `ziel` rechnet der Block selbst so aus, wie `Artefakt-Name`
-#     und `Ziel-Pfad` es im Writer tun (Identitaetsdatei + Zielverzeichnis des
-#     Manifests) - kein Platzhalter und nichts Abgeschriebenes.
-PROBE_TRANSAKTIONS_ID = "a1b2c3d4e5f60718293a4b5c6d7e8f90"
-PROBE_ZEIT = "2026-08-29T00:00:00.1234567Z"
+# Die Journal-Fixturen der Gegenproben [3b] werden nicht mehr nachgeschrieben,
+# sondern vom WRITER erzeugt und byteweise eingefroren (NAK-94 Nacharbeit 5,
+# 30.08.2026 - Wegwechsel W1 des Dirigenten). Erzeuger und Sandbox:
+# tools/eq-copilot/erzeuge_installer_journale.py.
+#
+# Die drei Runden davor sind der Grund: eine handgeschriebene "Writer-Form"
+# fiel jedes Mal an genau einem weiteren Feld auf, weil Install-Nakama.ps1
+# mehr aneinander gebundene Invarianten traegt, als ein Leser aufzaehlen kann
+# (`quelle` gibt es dort nicht; die Transaktions-ID hat keine Bindestriche;
+# `vorher_sha256_innen` darf bei gesetztem `vorher_sha256` und art=vst3 nicht
+# null sein - Install-Nakama.ps1 bricht sonst ab, bevor es schreibt).
+JOURNAL_FIXTUREN = (WURZEL / "eq-copilot" / "fixtures" / "installer" / "journale")
+JOURNAL_FIXTUR_MANIFEST = JOURNAL_FIXTUREN / "MANIFEST.json"
+# Ohne diese drei Faelle misst [3b] die Writer-Form nicht mehr vollstaendig.
+# Fehlt einer, bricht der Block laut ab, statt still weniger zu pruefen.
+JOURNAL_PFLICHTFAELLE = ("ok-erstinstallation.json", "ok-nach-tausch.json",
+                         "rueckweg-nach-gegenpfad.json")
 HEX64 = re.compile(r"^[0-9A-F]{64}$")
 THUMBPRINT = re.compile(r"^(?:[0-9A-F]{40}|[0-9A-F]{64})$")
 ARTEN = ("vst3", "broker")
@@ -938,12 +961,74 @@ def _probelauf(arbeit) -> tuple[str, list[str]]:
     return puffer.getvalue(), gefunden
 
 
+def _writer_fixturen() -> dict[str, tuple[bytes, dict, dict]]:
+    """Die eingefrorenen Writer-Journale laden - fail-closed.
+
+    Gibt je Fall `(rohe Bytes, gelesener Kopf, MANIFEST-Eintrag)` zurueck. Die
+    Bytes werden VOR der Benutzung gegen den SHA-256 aus MANIFEST.json
+    nachgerechnet: eine von Hand angefasste Fixtur ist damit ROT und nicht
+    still eine andere Probe. Fehlt der Korpus oder ein Pflichtfall, bricht der
+    Block laut ab - eine stillschweigend ausgelassene Gegenprobe ist schlimmer
+    als keine (dieselbe Regel wie in adversariale_strukturproben).
+    """
+    if not JOURNAL_FIXTUR_MANIFEST.is_file():
+        raise SystemExit(
+            "Gegenprobe unmoeglich: der Writer-Journalkorpus fehlt "
+            f"({JOURNAL_FIXTUR_MANIFEST.relative_to(WURZEL).as_posix()}). "
+            "Erzeugen mit: py -3.13 tools/eq-copilot/erzeuge_installer_journale.py")
+    korpus = json.loads(JOURNAL_FIXTUR_MANIFEST.read_text(encoding="utf-8"))
+    geladen: dict[str, tuple[bytes, dict, dict]] = {}
+    for fall in korpus["faelle"]:
+        weg = JOURNAL_FIXTUREN / fall["datei"]
+        if not weg.is_file():
+            raise SystemExit(f"Writer-Fixtur fehlt: {fall['datei']}")
+        rohe = weg.read_bytes()
+        ist = hashlib.sha256(rohe).hexdigest().upper()
+        if ist != fall["sha256"]:
+            raise SystemExit(
+                f"Writer-Fixtur {fall['datei']} ist nicht die eingefrorene: "
+                f"SHA-256 {ist} statt {fall['sha256']}. Von Hand geaendert? "
+                "Dann ist sie keine Writer-Form mehr.")
+        geladen[fall["datei"]] = (rohe, json.loads(rohe.decode("utf-8-sig")), fall)
+    fehlend = [f for f in JOURNAL_PFLICHTFAELLE if f not in geladen]
+    if fehlend:
+        raise SystemExit(
+            "Gegenprobe unmoeglich: der Writer-Journalkorpus fuehrt die "
+            f"Pflichtfaelle {fehlend} nicht - ohne sie misst [3b] die "
+            "Writer-Form nicht vollstaendig.")
+    return geladen
+
+
+def _manifest_zum_journal(manifest: dict, journal: dict) -> dict:
+    """Manifestkopie, deren Artefakt-Hashes zu diesem Journal passen.
+
+    Die Fixtur ist die Wahrheit - sie stammt vom Writer. Angepasst wird die
+    andere Seite: jedes Manifestartefakt bekommt den `sha256` des Eintrags mit
+    derselben Kennung. Damit misst die Probe den heutigen LESER an einem echten
+    Writer-Journal, statt eine Zahl in die Fixtur zu schreiben, die dort nie
+    stuende. Ein Artefakt ohne passenden Eintrag bleibt unveraendert - die
+    Probe faellt dann sichtbar, statt still weniger zu messen.
+    """
+    nach_kennung = {_artefakt_name(e): e
+                    for e in journal.get("eintraege") or [] if isinstance(e, dict)}
+    kopie = copy.deepcopy(manifest)
+    for a in kopie["artefakte"]:
+        e = nach_kennung.get(_artefakt_name(a))
+        if e is not None and isinstance(e.get("sha256"), str):
+            a["sha256"] = e["sha256"]
+    return kopie
+
+
 def gegenproben_nacharbeit(manifest: dict) -> None:
     """[3b] Die beiden Kanten aus NAK-94 Nacharbeit 1, einzeln gebrochen.
 
     Beide Befunde waren stille Ausfaelle: C1 liess ein fehlendes Bundle im
     Kanon gruen, C2 toetete den Lauf mit einem TypeError. Eine Wache, die
     niemand hat fallen sehen, ist keine - also faellt sie hier.
+
+    Seit NAK-94 Nacharbeit 5 (30.08.2026) faehrt dieser Block ZWEI Sorten
+    Probe-Journale und nennt sie in jeder Zeile: eingefrorene Writer-Fixturen
+    und daraus abgeleitete, benannte Mutanten. Handschrift gibt es nicht mehr.
     """
     global INSTALL_ERGEBNIS
     print("\n[3b] Gegenproben zu [4] Auslieferungsstand und [4b] installiertem Stand")
@@ -982,269 +1067,205 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
            "und das fehlende Artefakt",
            " | ".join(hart_klagen[:2]) if hart_klagen else "keine Klage")
 
-    # -- C2: [4b] bricht nie ab ---------------------------------------------
+    # -- C2 und die Writer-Formen: zwei Sorten Probe-Journal ----------------
+    #
+    # BEFUND P2, NAK-94 Nacharbeit 5 (30.08.2026): bis hierher wurden die
+    # Journale von Hand geschrieben. Der Wegwechsel W1 des Dirigenten beendet
+    # das. Sorte 1 sind eingefrorene Writer-Fixturen, Sorte 2 daraus
+    # abgeleitete Mutanten mit benannter Abweichung - nichts dazwischen.
+    fixturen = _writer_fixturen()
+
+    def mutant(quelle: str, abweichung: str, wandel) -> tuple[dict, str]:
+        """Genau EINE Writer-Fixtur, genau EINE benannte Abweichung.
+
+        Der Mutant entsteht aus den gelesenen Fixturbytes, nie aus einem
+        selbst gebauten Kopf: alles ausser der genannten Abweichung bleibt
+        damit Writer-Form.
+        """
+        kopf = copy.deepcopy(fixturen[quelle][1])
+        wandel(kopf)
+        return kopf, f"Mutant von {quelle}: {abweichung}"
+
     with tempfile.TemporaryDirectory(prefix="nakama-journal-") as tmp:
         journal = pathlib.Path(tmp) / "install-ergebnis.json"
         merk = INSTALL_ERGEBNIS
         INSTALL_ERGEBNIS = journal
         try:
+            def fixtur_lauf(datei: str, gegen: dict | None = None) -> str:
+                """Die eingefrorenen BYTES fahren, nicht ein neu serialisiertes
+                Abbild - sonst misst die Probe json.dumps und nicht den Writer."""
+                journal.write_bytes(fixturen[datei][0])
+                ziel = gegen if gegen is not None else _manifest_zum_journal(
+                    manifest, fixturen[datei][1])
+                text, offen = _probelauf(lambda: installierter_stand(ziel))
+                return text if not offen else text + " KLAGEN " + " | ".join(offen)
+
+            def mutant_lauf(kopf: dict, gegen: dict | None = None) -> str:
+                journal.write_text(json.dumps(kopf), encoding="utf-8")
+                ziel = gegen if gegen is not None else _manifest_zum_journal(
+                    manifest, kopf)
+                text, offen = _probelauf(lambda: installierter_stand(ziel))
+                return text if not offen else text + " KLAGEN " + " | ".join(offen)
+
+            def ohne_hinweis(ausgabe: str, muster: str) -> list[str]:
+                """Welche Artefakte fehlen in der erwarteten Zeilenmenge?
+
+                Der Bericht ist artefaktweise; eine Probe, die nur `in ausgabe`
+                fragt, waere schon zufrieden, wenn EIN Artefakt die Zeile
+                traegt. Gefordert wird sie fuer jedes.
+                """
+                return [_artefakt_name(a) for a in manifest["artefakte"]
+                        if muster.format(name=_artefakt_name(a)) not in ausgabe]
+
             # (a) unbrauchbare Kennung IM JOURNAL - Hinweis, kein Absturz.
-            journal.write_text(json.dumps({
-                "schema": ERGEBNIS_SCHEMA, "status": "OK",
-                "zeit": "2026-08-29T00:00:00Z",
-                "eintraege": [{"ziel_id": ["main"]}, "keine Abbildung"],
-            }), encoding="utf-8")
-            ausgabe, klagen = _probelauf(lambda: installierter_stand(manifest))
-            pruefe("ohne lesbare Kennung" in ausgabe
-                   and "kein Objekt" in ausgabe and not klagen,
-                   "C2: ein Journaleintrag mit ziel_id als Liste ist ein Hinweis, "
-                   "kein TypeError - und [4b] faellt kein Urteil",
+            kopf, sorte = mutant(
+                "ok-erstinstallation.json",
+                "eintraege -> [Eintrag mit ziel_id als Liste, Nicht-Objekt]",
+                lambda k: k.update(eintraege=[
+                    {**k["eintraege"][0], "ziel_id": ["main"]}, "keine Abbildung"]))
+            ausgabe = mutant_lauf(kopf, manifest)
+            pruefe("ohne lesbare Kennung" in ausgabe and "kein Objekt" in ausgabe,
+                   f"C2 [{sorte}]: ein Journaleintrag mit ziel_id als Liste ist "
+                   "ein Hinweis, kein TypeError - und [4b] faellt kein Urteil",
                    " / ".join(z.strip() for z in ausgabe.splitlines()
                               if "hinweis 0" in z or "hinweis 1" in z))
 
             # (b) unbrauchbare Kennung IM MANIFEST - die Huelle faengt sie.
-            kaputt = copy.deepcopy(manifest)
+            #     Das Journal ist hier die unveraenderte Writer-Fixtur: der
+            #     Fehler sitzt auf der anderen Seite.
+            kaputt = _manifest_zum_journal(
+                manifest, fixturen["ok-erstinstallation.json"][1])
             kaputt["artefakte"][0]["ziel_id"] = ["main"]
-            journal.write_text(json.dumps({
-                "schema": ERGEBNIS_SCHEMA, "status": "OK",
-                "zeit": "2026-08-29T00:00:00Z",
-                "eintraege": [{"ziel_id": "main", "mutation_abgeschlossen": True,
-                               "sha256": "0" * 64, "ziel": "irgendwo"}],
-            }), encoding="utf-8")
-            ausgabe, klagen = _probelauf(lambda: installierter_stand(kaputt))
-            pruefe("nicht auswertbar" in ausgabe and not klagen,
-                   "C2: auch ein Fehler auf der MANIFEST-Seite bleibt ein "
-                   "Hinweis - [4b] toetet keinen Kanonlauf",
+            ausgabe = fixtur_lauf("ok-erstinstallation.json", kaputt)
+            pruefe("nicht auswertbar" in ausgabe,
+                   "C2 [Writer-Fixtur ok-erstinstallation.json]: auch ein Fehler "
+                   "auf der MANIFEST-Seite bleibt ein Hinweis - [4b] toetet "
+                   "keinen Kanonlauf",
                    next((z.strip() for z in ausgabe.splitlines()
                          if "nicht auswertbar" in z), "keine solche Zeile"))
 
-            # -- P2 (Nacharbeit 2): ok NUR bei Journalstatus OK -------------
+            # -- Sorte 1: die eingefrorenen Writer-Journale ------------------
             #
-            # Derselbe Eintrag, nur ein anderer Journalkopf. Genau das war der
-            # Befund: der Hash stimmte, das Ziel aber konnte halb
-            # wiederhergestellt sein.
-            artefakt = manifest["artefakte"][0]
-            name = _artefakt_name(artefakt)
-            # `Artefakt-Name` im Writer: bei art=vst3 der `produktname` aus der
-            # Identitaetsdatei, sonst das Manifestfeld `name`. Abgelesen, damit
-            # im Journal kein `null` steht, wo der Writer eine Zeichenkette
-            # schreibt.
-            _ziele = json.loads(IDENTITAET.read_text(encoding="utf-8"))["ziele"]
-            _ident = next((z for z in _ziele
-                           if z.get("id") == artefakt.get("ziel_id")), None)
-            if artefakt.get("art") == "vst3":
-                # Ein vst3 ohne Identitaetseintrag ist in [1] schon ROT
-                # (r_quellpfade_nachgerechnet). Hier trotzdem laut abbrechen
-                # statt still auf den Broker-Zweig zu fallen - eine Fixtur, die
-                # sich heimlich eine andere Form baut, misst nichts.
-                if _ident is None:
-                    raise SystemExit(
-                        "Gegenprobe unmoeglich: vst3-Artefakt "
-                        f"{artefakt.get('ziel_id')!r} hat keinen Eintrag in "
-                        "der Identitaetsdatei - die Writer-Form von `name` "
-                        "und `ziel` waere nicht ableitbar.")
-                writer_name = _ident.get("produktname")
-                # `Ziel-Pfad`: Zielverzeichnis des Manifests + Bundlename der
-                # Identitaet, Schraegstriche wie im Writer gedreht.
-                writer_ziel = ntpath.join(
-                    manifest["ziele"]["vst3_verzeichnis"].replace("/", ntpath.sep),
-                    _ident["bundle"])
-            else:
-                writer_name = artefakt.get("name")
-                writer_ziel = ntpath.join(
-                    manifest["ziele"]["broker_verzeichnis"].replace("/", ntpath.sep),
-                    str(artefakt.get("name")))
-            # Der Eintrag traegt die zwoelf Felder des Installations-Writers in
-            # SEINER Reihenfolge (Install-Nakama.ps1, `$eintraege += [pscustom-
-            # object]@{ ziel_id ... rollback_abgeschlossen }`), gefuellt mit den
-            # Werten einer abgeschlossenen, NICHT zurueckgerollten Installation.
-            # Bis einschliesslich Nacharbeit 3 stand hier ein `quelle`-Feld, das kein
-            # Writer schreibt - eine Probe, die eine Form erfindet, misst den
-            # Leser nicht am Erzeugbaren (Pruefliste E).
-            eintrag = {
-                "ziel_id": artefakt.get("ziel_id"),
-                "art": artefakt.get("art"),
-                "name": writer_name,
-                "ziel": writer_ziel,
-                "sha256": "0" * 64,
-                "vorher_sha256": "1" * 64,
-                "vorher_sha256_innen": None,
-                # `backup-<planIndex><endung>` unter der geschuetzten
-                # Transaktionswurzel; `.bundle` fuer vst3, `.bak` sonst.
-                "gesichert": (f"backups/{PROBE_TRANSAKTIONS_ID}/backup-0"
-                              + (".bundle" if artefakt.get("art") == "vst3"
-                                 else ".bak")),
-                "erzeugte_ordner": [],
-                "mutation_begonnen": True,
-                "mutation_abgeschlossen": True,
-                "rollback_abgeschlossen": False,
-            }
-            mit_hash = copy.deepcopy(manifest)
-            mit_hash["artefakte"] = [copy.deepcopy(manifest["artefakte"][0])]
-            mit_hash["artefakte"][0]["sha256"] = "0" * 64
+            # Jedes stammt aus einem echten Install-Nakama.ps1-Lauf in der
+            # A18-Sandbox (Erzeuger, Stand, Befehl und SHA-256:
+            # eq-copilot/fixtures/installer/journale/MANIFEST.json). Ihre
+            # volatilen Werte - zeit, transaktions_id, Pfade, Hashes - bleiben
+            # so, wie der Writer sie schrieb; verglichen werden Struktur und
+            # Status.
+            for datei, wie in (("ok-erstinstallation.json",
+                                "Vorzustand nur beim Main-Bundle"),
+                               ("ok-nach-tausch.json",
+                                "Vorzustand bei jedem Ziel")):
+                ausgabe = fixtur_lauf(datei)
+                fehlend = ohne_hinweis(
+                    ausgabe, "ok      {name}: installierter Stand = Manifest")
+                pruefe(not fehlend,
+                       f"P2/5 [Writer-Fixtur {datei}]: bei Journalstatus OK und "
+                       "abgeschlossenen, nicht zurueckgerollten Eintraegen "
+                       f"bleibt der Hashvergleich und sein ok ({wie})",
+                       ("ohne ok: " + ", ".join(fehlend)) if fehlend
+                       else "alle Artefakte ok")
 
-            def journal_lauf(kopf: dict) -> str:
-                journal.write_text(json.dumps(kopf), encoding="utf-8")
-                text, offen = _probelauf(lambda: installierter_stand(mit_hash))
-                return text if not offen else text + " KLAGEN " + " | ".join(offen)
+            # Der Rueckweg schreibt sieben Felder OHNE `eintraege`. Genau daran
+            # ging der Befund aus Nacharbeit 3 vorbei; bis Nacharbeit 4 stand
+            # diese Form hier nachgeschrieben, jetzt liegt sie als Bytes vor.
+            for datei, status in (("rueckweg-nach-gegenpfad.json", "RUECKWEG"),
+                                  ("error-rueckgerollt.json", "ERROR_RUECKGEROLLT")):
+                if datei not in fixturen:
+                    continue
+                ausgabe = fixtur_lauf(datei)
+                fehlend = ohne_hinweis(
+                    ausgabe, "hinweis {name}: installierter Stand unbekannt "
+                             f"(Journalstatus {status})")
+                pruefe(not fehlend
+                       and "keine Liste 'eintraege'" not in ausgabe
+                       and "installierter Stand = Manifest" not in ausgabe,
+                       f"P2/5 [Writer-Fixtur {datei}]: Journalstatus {status} "
+                       "meldet artefaktweise 'unbekannt' - ohne Hashvergleich "
+                       "und ohne 'keine Liste'",
+                       ("ohne Hinweis: " + ", ".join(fehlend)) if fehlend
+                       else next((z.strip() for z in ausgabe.splitlines()
+                                  if "Journal:" in z), "keine Journalzeile"))
 
-            # ACHTUNG, zwei verschiedene Achsen. Dieser Kopf ist absichtlich
-            # MINIMAL und KEINE Writer-Form: die Schleife darunter fragt, ob
-            # die Sperre am STATUS haengt - auch an einem erfundenen
-            # (`NEUER_STATUS_2099`) und an einem fehlenden, die kein Writer je
-            # schreibt. Die drei Proben (a)/(b)/(c) weiter unten fragen das
-            # Gegenstueck: gilt dasselbe fuer die Koepfe, die
-            # Install-Nakama.ps1 WIRKLICH schreibt. Erst beide zusammen decken
-            # Status und Form ab.
-            grund = {"schema": ERGEBNIS_SCHEMA, "zeit": "2026-08-29T00:00:00Z",
-                     "eintraege": [eintrag]}
-            ausgabe = journal_lauf({**grund, "status": ERGEBNIS_STATUS_OK})
-            pruefe(f"ok      {name}: installierter Stand = Manifest" in ausgabe,
-                   "P2: bei Journalstatus OK und abgeschlossenem, nicht "
-                   "zurueckgerolltem Eintrag bleibt der Hashvergleich und sein ok",
-                   next((z.strip() for z in ausgabe.splitlines()
-                         if name in z), "keine Zeile zum Artefakt"))
-
-            # Jeder andere Statuswert aus Install-Nakama.ps1, dazu ein
-            # unbekannter und ein fehlender - abgelesen, nicht geraten.
+            # -- Sorte 2: deklarierte Mutanten ------------------------------
+            #
+            # Die Statusachse fragt, ob die Sperre am STATUS haengt - auch an
+            # Staenden, die ein abgeschlossener Lauf nie hinterlaesst
+            # (VORBEREITET, KOMPENSATION, ERROR_TEILSTAND und RUECKWEG_AKTIV
+            # schreibt der Writer und ueberschreibt sie im selben Lauf wieder),
+            # an einem erfundenen und an einem fehlenden. Alle entstehen aus
+            # DERSELBEN Writer-Fixtur, damit nur der Status abweicht.
             for status in ("VORBEREITET", "KOMPENSATION", "ERROR_TEILSTAND",
                            "ERROR_RUECKGEROLLT", "RUECKWEG_AKTIV", "RUECKWEG",
                            "NEUER_STATUS_2099"):
-                ausgabe = journal_lauf({**grund, "status": status})
-                pruefe(f"hinweis {name}: installierter Stand unbekannt "
-                       f"(Journalstatus {status})" in ausgabe
-                       and "installierter Stand = Manifest" not in ausgabe,
-                       f"P2: Journalstatus {status} meldet den installierten "
-                       f"Stand als unbekannt - ohne Hashvergleich",
-                       next((z.strip() for z in ausgabe.splitlines()
-                             if name in z), "keine Zeile zum Artefakt"))
+                kopf, sorte = mutant("ok-erstinstallation.json",
+                                     f"status -> {status}",
+                                     lambda k, s=status: k.update(status=s))
+                ausgabe = mutant_lauf(kopf)
+                fehlend = ohne_hinweis(
+                    ausgabe, "hinweis {name}: installierter Stand unbekannt "
+                             f"(Journalstatus {status})")
+                pruefe(not fehlend and "installierter Stand = Manifest" not in ausgabe,
+                       f"P2 [{sorte}]: meldet den installierten Stand als "
+                       "unbekannt - ohne Hashvergleich",
+                       ("ohne Hinweis: " + ", ".join(fehlend)) if fehlend
+                       else "alle Artefakte als unbekannt gemeldet")
 
-            ausgabe = journal_lauf(grund)
-            pruefe(f"hinweis {name}: installierter Stand unbekannt "
-                   "(Journalstatus fehlt)" in ausgabe
-                   and "installierter Stand = Manifest" not in ausgabe,
-                   "P2: ein Journal OHNE status meldet den installierten Stand "
-                   "als unbekannt - Schweigen ist kein OK",
+            kopf, sorte = mutant("ok-erstinstallation.json", "status entfernt",
+                                 lambda k: k.pop("status", None))
+            ausgabe = mutant_lauf(kopf)
+            fehlend = ohne_hinweis(
+                ausgabe, "hinweis {name}: installierter Stand unbekannt "
+                         "(Journalstatus fehlt)")
+            pruefe(not fehlend and "installierter Stand = Manifest" not in ausgabe,
+                   f"P2 [{sorte}]: ein Journal OHNE status meldet den "
+                   "installierten Stand als unbekannt - Schweigen ist kein OK",
+                   ("ohne Hinweis: " + ", ".join(fehlend)) if fehlend
+                   else next((z.strip() for z in ausgabe.splitlines()
+                              if "Journalstatus fehlt" in z), "keine solche Zeile"))
+
+            # Der fruehere Fall (c). Bis Nacharbeit 4 zaehlte er als
+            # Writer-Form-Probe und behauptete damit, der Writer koenne ein
+            # OK-Journal ohne `eintraege` schreiben - er kann es nicht
+            # (Install-Nakama.ps1 legt die Liste immer an, der OK-Pfad setzt
+            # danach nur `status` und `zeit`). Als benannter Mutant sagt die
+            # Probe dasselbe ueber den LESER, ohne etwas Falsches ueber den
+            # Writer zu behaupten.
+            kopf, sorte = mutant("ok-erstinstallation.json", "eintraege entfernt",
+                                 lambda k: k.pop("eintraege", None))
+            ausgabe = mutant_lauf(kopf, manifest)
+            pruefe("keine Liste 'eintraege'" in ausgabe
+                   and "installierter Stand = Manifest" not in ausgabe
+                   and "installierter Stand unbekannt" not in ausgabe,
+                   f"P2/3 [{sorte}]: bei Status OK ohne Eintragsliste bleibt es "
+                   "bei 'fuehrt keine Liste eintraege' - die Statussperre "
+                   "verschluckt sie nicht",
                    next((z.strip() for z in ausgabe.splitlines()
-                         if name in z), "keine Zeile zum Artefakt"))
+                         if "keine Liste" in z), "keine solche Zeile"))
 
-            # -- P2/4: die Fixtur-ID gegen die Regex des WRITERS -----------
+            # -- P2/4: die Fixtur-ID gegen die Regex des WRITERS -------------
             #
             # Nicht abgeschrieben: das Muster wird aus Install-Nakama.ps1
-            # gelesen. Aendert der Writer seine ID-Form, faellt diese Zeile -
-            # und nicht erst der naechste Pruefer.
+            # gelesen, die IDs kommen aus den eingefrorenen Writer-Fixturen.
+            # Aendert der Writer seine ID-Form, faellt diese Zeile - und nicht
+            # erst der naechste Pruefer.
             #
             # PowerShells `-match` ist von Haus aus ohne Ruecksicht auf
             # Gross-/Kleinschreibung, `re.match` nicht. Diese Wache ist damit
             # STRENGER als der Writer: was hier besteht, besteht dort auch.
-            # Umgekehrt gilt es nicht - fail-closed, und das ist gewollt.
             writer_text = INSTALLER.read_text(encoding="utf-8")
             muster = re.search(r"function Ist-TransaktionsId.*?-match\s*'([^']+)'",
                                writer_text, re.S)
-            pruefe(muster is not None
-                   and re.match(muster.group(1), PROBE_TRANSAKTIONS_ID) is not None,
-                   "P2/4: die Transaktions-ID der Journal-Fixturen besteht die "
-                   "Ist-TransaktionsId-Regex aus Install-Nakama.ps1 - eine "
-                   "gestrichelte UUID taete es nicht",
-                   f"Muster {muster.group(1)!r} gegen {PROBE_TRANSAKTIONS_ID!r}"
+            ids = {d: k.get("transaktions_id") for d, (_r, k, _f) in fixturen.items()}
+            passt = muster is not None and bool(ids) and all(
+                isinstance(i, str) and re.match(muster.group(1), i) is not None
+                for i in ids.values())
+            pruefe(passt,
+                   "P2/4 [Writer-Fixturen]: jede eingefrorene Transaktions-ID "
+                   "besteht die Ist-TransaktionsId-Regex aus Install-Nakama.ps1 "
+                   "- eine gestrichelte UUID taete es nicht",
+                   f"Muster {muster.group(1)!r} gegen {sorted(ids.values())}"
                    if muster else "Ist-TransaktionsId im Writer nicht gefunden")
-
-            # -- P2 (Nacharbeit 3/4): die ECHTEN Writer-Formen --------------
-            #
-            # Die Schleife oben laesst `eintraege` in jedem Kopf stehen. Genau
-            # daran ging der Befund vorbei: ein regulaer abgeschlossener
-            # Rueckweg schreibt diese Liste nicht, und die Sperre stand
-            # dahinter. Die drei Proben hier fahren deshalb die Formen, die
-            # Install-Nakama.ps1 wirklich schreibt - abgelesen, nicht geraten.
-            #
-            # BEFUND P2, Nacharbeit 4 (30.08.2026): "exakte Writer-Form" war
-            # dabei zu viel gesagt. Die Journale trugen eine UUID MIT
-            # Bindestrichen, waehrend Install-Nakama.ps1 seine Transaktions-ID
-            # mit `[Guid]::NewGuid().ToString('N')` erzeugt und sie mit
-            # `Ist-TransaktionsId` gegen `^[0-9a-f]{32}$` prueft - eine
-            # gestrichelte ID haette der Rueckweg selbst abgewiesen (gemessen:
-            # Ist-TransaktionsId auf die alte Probe-ID gibt False). Seither
-            # gilt: PROBE_TRANSAKTIONS_ID sind 32 Hex ohne Bindestriche, jedes
-            # `zeit` steht im ToString('o')-Format, und Feldmenge samt
-            # Reihenfolge sind am jeweiligen Writer abgelesen. Jede der drei
-            # Proben wird ausserdem EINZELN gebrochen (Nacharbeit 4).
-
-            # (a) Ende des Gegenpfads (Writer: das abschliessende
-            #     `Schreibe-Ergebnis` des RUECKWEG-Zweigs) - genau sieben
-            #     Felder in dieser Reihenfolge, OHNE eintraege.
-            rueckweg = {
-                "schema": ERGEBNIS_SCHEMA,
-                "status": "RUECKWEG",
-                "transaktions_id": PROBE_TRANSAKTIONS_ID,
-                "erzwungen": False,
-                "warnungen": [],
-                "getan": ["entfernt: " + writer_ziel],
-                "zeit": PROBE_ZEIT,
-            }
-            ausgabe = journal_lauf(rueckweg)
-            pruefe(f"hinweis {name}: installierter Stand unbekannt "
-                   "(Journalstatus RUECKWEG)" in ausgabe
-                   and "keine Liste 'eintraege'" not in ausgabe
-                   and "installierter Stand = Manifest" not in ausgabe,
-                   "P2/3: die ECHTE Writer-Form des Rueckwegs (ohne eintraege) "
-                   "meldet artefaktweise 'Journalstatus RUECKWEG' - nicht "
-                   "'keine Liste'",
-                   next((z.strip() for z in ausgabe.splitlines()
-                         if name in z or "keine Liste" in z),
-                        "keine Zeile zum Artefakt"))
-
-            # (b) Beginn des Gegenpfads: Install-Nakama.ps1 setzt nur den
-            #     Status im ZURUECKGELESENEN Journal (`$letzte.status =
-            #     'RUECKWEG_AKTIV'; Schreibe-Ergebnis $letzte`) - diese Form
-            #     traegt eintraege sehr wohl. Der Kopf ist deshalb der des
-            #     Installations-Writers: dieselben sieben Felder in derselben
-            #     Reihenfolge, nur `status` ersetzt. Gemessen wurde ausserdem,
-            #     dass `zeit` den ConvertFrom-Json/ConvertTo-Json-Umlauf des
-            #     Rueckwegs nur unveraendert ueberlebt, solange der
-            #     Sekundenbruch nicht null ist - PROBE_ZEIT traegt deshalb
-            #     einen.
-            rueckweg_aktiv = {
-                "schema": ERGEBNIS_SCHEMA,
-                "status": "RUECKWEG_AKTIV",
-                "transaktions_id": PROBE_TRANSAKTIONS_ID,
-                "manifest": "eq-copilot/install/nakama-installer-v1.json",
-                "zeit": PROBE_ZEIT,
-                "bekannte_staende": [],
-                "eintraege": [eintrag],
-            }
-            ausgabe = journal_lauf(rueckweg_aktiv)
-            pruefe(f"hinweis {name}: installierter Stand unbekannt "
-                   "(Journalstatus RUECKWEG_AKTIV)" in ausgabe
-                   and "installierter Stand = Manifest" not in ausgabe,
-                   "P2/3: die ECHTE Writer-Form des begonnenen Rueckwegs (mit "
-                   "eintraege) endet ebenfalls ohne Hashvergleich",
-                   next((z.strip() for z in ausgabe.splitlines()
-                         if name in z), "keine Zeile zum Artefakt"))
-
-            # (c) Gegenprobe: OHNE eintraege ist "keine Liste" die RICHTIGE
-            #     Aussage - aber nur im Status-OK-Pfad.
-            #
-            #     Ausdruecklich KEINE Writer-Form, und genau das ist der Punkt:
-            #     der OK-Pfad setzt am fertigen Installations-Journal nur
-            #     `status` und `zeit` neu, `eintraege` bleibt stehen. Ein
-            #     OK-Journal ohne Liste kann also nur ein fremdes oder
-            #     abgeschnittenes sein. Gefahren wird der Installations-Kopf
-            #     MINUS `eintraege`, alles Uebrige in Writer-Form - damit ist
-            #     die fehlende Liste die einzige Abweichung.
-            ausgabe = journal_lauf({"schema": ERGEBNIS_SCHEMA,
-                                    "status": ERGEBNIS_STATUS_OK,
-                                    "transaktions_id": PROBE_TRANSAKTIONS_ID,
-                                    "manifest": "eq-copilot/install/nakama-installer-v1.json",
-                                    "zeit": PROBE_ZEIT,
-                                    "bekannte_staende": []})
-            pruefe("keine Liste 'eintraege'" in ausgabe
-                   and "installierter Stand = Manifest" not in ausgabe
-                   and "installierter Stand unbekannt" not in ausgabe,
-                   "P2/3: bei Status OK ohne Eintragsliste bleibt es bei "
-                   "'fuehrt keine Liste eintraege' - die Statussperre "
-                   "verschluckt sie nicht",
-                   next((z.strip() for z in ausgabe.splitlines()
-                         if "keine Liste" in z), "keine solche Zeile"))
         finally:
             INSTALL_ERGEBNIS = merk
 

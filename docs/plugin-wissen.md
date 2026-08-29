@@ -340,10 +340,19 @@ JUCE-frei wie der übrige `core/`-Baum, fünf Dateien:
   **Entnehmen ist eine Übergabe, kein Verlust** (T2-Runde 1, 29.08.): P0 und P1
   legen einen entnommenen, aber nicht geschriebenen Eintrag zurück
   (`zuruecklegen`); ein zurückgelegter Snapshot weicht einem inzwischen
-  eingetroffenen neueren desselben Objekts, ein Ereignis geht an seinen Platz
-  oder in den Wiederholpuffer. Ohne diesen Weg verschwand ein nicht
+  eingetroffenen neueren desselben Objekts. Ohne diesen Weg verschwand ein nicht
   koaleszierbares P1-Ereignis endgültig, wenn der Broker zwischen Entnahme und
   Write schloss.
+  **Und der Platz bleibt bis zum Write-Commit RESERVIERT** (T2-Runde 2, 29.08.):
+  der entnommene Eintrag zählt weiter gegen die Kapazität, bis `bestaetigen()`
+  (auf dem Draht) oder `zuruecklegen()` (nicht auf dem Draht) ihn freigibt —
+  Invariante `groesse + reserviert <= kapazitaet`. Vorher konnte die Queue
+  während eines blockierten Writes wieder volllaufen; `zuruecklegen` fand dann
+  keinen Platz, sein `false` wurde ignoriert, und der Befehl war weg, ohne dass
+  es der öffentliche Überlaufzähler meldete. Jetzt **kann** das Zurücklegen
+  nicht scheitern. Kehrseite: `sendeP0`/`sendeP1` weisen Nachrichten über der
+  Paketgrenze an der Tür ab (`zuGross`) — eine unsendbare Nachricht bliebe sonst
+  für immer vorn.
   **Jeder Slot der `P2Schleuse` hat einen Besitzer** (T2-Runde 1): ein
   `compare_exchange` mit den Zuständen frei / Verbraucher / Erzeuger. Ein
   beanspruchter Platz ist bis zur Freigabe unveränderlich; ein Schreibversuch
@@ -359,7 +368,12 @@ JUCE-frei wie der übrige `core/`-Baum, fünf Dateien:
   eigener Ausgang, Schließen und `CancelIoEx` unter demselben Mutex. Dazu ein
   bewusst fast nichtskönnender JSON-Leser: flaches Objekt, keine
   Verschachtelung, keine Escapes, kein doppelter Schlüssel — alles andere wird
-  abgelehnt statt geraten.
+  abgelehnt statt geraten. Er ist **typbewahrend** (T2-Runde 2, 29.08.):
+  `JsonFeld{name, wert, istString}`, dazu `jsonText` (nur Strings),
+  `jsonLiteral` (nur Zahlen und `true`/`false`/`null`) und `feldmengeGenau` als
+  C++-Hälfte von `additionalProperties:false`. Vorher kam jeder Wert als roher
+  Text zurück — `"broker_version":null` bestand damit die Prüfung „nicht leer",
+  und ein Zusatzfeld fiel gar nicht auf.
 - `ControlClient` (P0/P1) und `TelemetryClient` (P2) — eigene Threads, Backoff
   500 → 8000 ms. Ablauf: Control sendet ein `u32`-längenpräfigiertes
   Bootstrap-Hello (≤ 16 KiB, `protocol: 3`), bekommt ein **v3-gerahmtes**
@@ -367,12 +381,27 @@ JUCE-frei wie der übrige `core/`-Baum, fünf Dateien:
   Telemetrieverbindung (link_id **und** challenge **und** dieselbe
   `runtime_nonce`). Ab dem Bootstrap trägt jede Nachricht den 16-Byte-Kopf.
   Kein Prozessstart auf irgendeinem Pfad (§48.3).
-  **Beide Clients prüfen ihr `welcome` gleich streng** (T2-Runde 1, 29.08.):
-  P0-Familie, `protocol == 3`, die EIGENEN Kopplungswerte (`link_id`,
-  `challenge`), `broker_epoch` als hex32 und eine nicht leere
-  `broker_version`. Der TelemetryClient verlangte vorher nur flaches JSON mit
-  `type == "welcome"` — ein P2-Envelope mit diesem Payload hätte ihn als
-  gekoppelt gelten lassen.
+  **Beide Clients prüfen ihr `welcome` gegen denselben Vertragsprüfer**
+  (`welcomeHaeltVertrag`, T2-Runde 1 + 2, 29.08.): P0-Familie, exakte Feldmenge,
+  `type`, `protocol` als **Zahl** 3, `broker_version` als String der Länge
+  1..64, `broker_epoch`/`link_id`/`challenge` als hex32 — der Telemetriepfad
+  vergleicht die beiden Kopplungswerte zusätzlich mit den eigenen. Der
+  TelemetryClient verlangte vor Runde 1 nur flaches JSON mit
+  `type == "welcome"`; bis Runde 2 waren **beide** typblind und ignorierten
+  Zusatzfelder.
+  **Die Familienzuordnung gilt in beide Richtungen** (T2-Runde 2): Control
+  weist P2 und Nicht-JSON vor dem Callback ab, Telemetry weist P0/P1 ab —
+  vorher reichte ein korrekt gerahmter P2-Frame seine Binärpayload an
+  `beiAntwort` weiter, das JSON erwartet.
+  **Die Nachrichtenratengrenze läuft im Client mit** (T2-Runde 2): je
+  Verbindung, mit denselben Zahlen wie der Broker (`kRateProSekunde = 4000` je
+  `kRateFensterMs = 1000` in `WireEnvelope.h`). Sie existierte vorher, wurde
+  aber nur im Test benutzt — §33.1 verlangt sie auf jeder Parserseite.
+  **Der Telemetrie-Leerlauf LIEST, statt zu schlafen** (T2-Runde 2): dieselbe
+  Frist als fristbegrenzter Lesevorgang, dazu ein Vergleich der Kopplungswerte
+  des Providers in jeder Runde. Vorher blieb der Client bei leerer P2-Schleuse
+  unbegrenzt als `verbunden` sichtbar, wenn der Broker seine Pipe schloss oder
+  die Control-Verbindung neue Credentials bekam.
   **Audiofelder werden vor der Serialisierung verriegelt** (`audioGueltig`):
   NaN, ±Inf und alles außerhalb von `audio_lage` verhindern den
   Verbindungsaufbau mit ehrlichem `letzterFehler`. Die Wandlung nach `long
@@ -527,6 +556,15 @@ T2-Runde 1 nur noch den Probe-Namensraum `\\.\pipe\evenacadia.nakama.v3.probe.`
 zu — eine Erlaubnis statt einer Sperrliste, die vorher nur den v1-Namen kannte
 und ausgerechnet den produktiven v3-Namensraum durchließ. `EqCopIpcLast`
 trägt denselben Riegel, und `pruefe_ipc_last.py` fährt ihn vor jedem Lauf).
+
+**Senkenvertrag und Stop** (`server_v3.rs`, T2-Runde 2, 29.08.): der Acceptor
+registriert das Verbindungshandle **vor** dem Spawn und `stoppen()` bricht
+wiederholt ab statt einmal — sonst sah ein Stop im Fenster zwischen Spawn und
+Registrierung ein leeres Register und wartete danach ewig im `join`. Und
+`Senke::p0/p1/p2` sind Fremdaufrufe: beide Joins am Verbindungsende haben eine
+Frist (`SENKE_FRIST` = 2000 ms) und lösen den Thread danach **ab**, statt ihn zu
+joinen (`senke_abgeloest`, `schreiber_abgeloest`). Weder Queue-Schließung noch
+`CancelIoEx` lösen einen Thread, der in fremdem Code steht.
 
 **`transport/` (SONDE-010, 29.08.):** `v3` (Envelope, Stromleser, CRC32C,
 Ratengrenze) · `bootstrap` (Hello ≤ 16 KiB, Protokollteilung v2/v3, Kopplung

@@ -7,7 +7,7 @@
 | Ticket | `SONDE-010` |
 | Phase / Session | P2 / S14–15 |
 | Gate-Text (Quelle) | `docs/FL-Nakama-Sonden-Design-Entwurf.md` §65, Zeile `SONDE-010`: **„v3-Control-/Telemetry-Clients und Rust-Envelopeparser — fertig, wenn: CRC/Fuzz/Backpressure/Reconnect ohne P0-Starvation"** |
-| Commits | `cdff93b` · `2ac23d0` · `1b19cd1` · `10a4806` · `97c956d` (Basis `a7b0740`) · **Nacharbeit Runde 1:** `4500785` · `602e105` · `6fc3224` |
+| Commits | `cdff93b` · `2ac23d0` · `1b19cd1` · `10a4806` · `97c956d` (Basis `a7b0740`) · **Nacharbeit Runde 1:** `4500785` · `602e105` · `6fc3224` · **Nacharbeit Runde 2:** `65d46a0` · `e5f5c27` |
 | Datum | 2026-08-29 |
 | Prüfstufen | T1 ☑ · T2 ☐ · T3 ☐ (kein Gate) |
 
@@ -677,6 +677,11 @@ error: test failed, to rerun pass `--lib`
 
 ### 7.4 [P1] P1-Ereignisse nach Schreibfehlern zurückstellen
 
+> **Ergänzt am 2026-08-29 (Runde 2, §8.1).** Der unten beschriebene Umweg
+> „oder, wenn dort kein Platz mehr ist, in den Wiederholpuffer" kann seit
+> `65d46a0` beim Zurücklegen nicht mehr eintreten: der Platz bleibt bis zum
+> Write-Commit reserviert.
+
 | | |
 |---|---|
 | **Quelle** | `eq-copilot/plugin/core/ipc/ControlClient.cpp`, Sendeschleife; `IpcQueues.h` |
@@ -892,6 +897,11 @@ FEHLER — 115 Pruefungen, 4 Fehler
 
 ### 7.10 [P2] Telemetrie-Welcome vollständig validieren
 
+> **Berichtigt am 2026-08-29 (Runde 2, §8.3).** „Vollständig" war zu weit
+> gefasst: beide Clients lasen jeden JSON-Wert als rohen Text und ignorierten
+> Zusatzfelder. Die unten aufgezählten Einzelprüfungen stimmen; die
+> Vollständigkeit gegenüber dem Vertrag gilt erst seit `65d46a0`.
+
 | | |
 |---|---|
 | **Quelle** | `eq-copilot/plugin/core/ipc/TelemetryClient.cpp` |
@@ -917,6 +927,396 @@ sehr wohl koppelt — die Strenge sperrt nicht einfach alles aus.
 
 FEHLER — 115 Pruefungen, 3 Fehler
 ```
+
+---
+
+## 8. Nacharbeit Runde 2 — 2026-08-29 (Prüfer-Thread 01a04c3d-7ec0-75b3-ac52-e6427c03c706, Stand dff8503)
+
+Der zweite frische T2-Prüfer (Codex `gpt-5.6-sol`, Effort `xhigh`) urteilte nach
+der Nacharbeit Runde 1 erneut **NEEDS_WORK** und nannte sieben Befunde. Alle
+sieben wurden an der Quelle bestätigt und geschlossen. Jeder Fix trägt eine
+Prüfung, die **ohne** ihn rot ist; die Rohausgabe jeder Bruchprobe steht unten
+bei ihrem Befund.
+
+Commits dieser Runde: `65d46a0` (die sieben Fixes samt Prüfungen) · `e5f5c27`
+(Stopfenster-Test meldet rot statt zu hängen).
+
+Das Bein **B10** wuchs von 115 auf **153** Prüfungen.
+
+> Auch dieser zweite Commit ist selbst ein Befund aus dieser Runde: die erste
+> Fassung des Stopfenster-Tests hätte ohne den Fix **gehangen** statt rot zu
+> melden — sie prüfte die Registrierung, bevor der Stop überhaupt lief, und der
+> Panik-Rückweg wartete dann auf genau den Thread, der ohne den Fix nie endet.
+> Derselbe Fehlertyp wie in Runde 1: ein Test, dessen Bruchprobe schweigt, ist
+> kein Beweis. Der Test misst jetzt erst alle drei Größen und urteilt danach.
+
+### Zwei Berichtigungen an Runde 1
+
+**§7.10 behauptete zu viel.** Dort steht, der TelemetryClient prüfe sein
+`welcome` „vollständig" und „so streng wie der ControlClient". Beides war zu
+weit gefasst: **beide** Clients lasen jeden JSON-Wert als rohen Text und
+ignorierten Zusatzfelder. `"broker_version":null` kam als nichtleerer Text
+`null` durch, und `additionalProperties:false` aus dem Vertrag war in C++ gar
+nicht abgebildet. Richtig an §7.10 bleibt, was dort im einzelnen aufgezählt ist
+(P0-Familie, `protocol == 3`, eigene Kopplungswerte, `broker_epoch` als hex32).
+Das Wort „vollständig" trifft erst seit `65d46a0` zu — siehe **8.3**.
+
+**§7.4 beschreibt eine Mechanik, die es so nicht mehr gibt.** Der Satz „Ein
+Ereignis geht an seinen Platz zurück oder, wenn dort kein Platz mehr ist, in den
+Wiederholpuffer" war für den Stand von Runde 1 wahr. Seit `65d46a0` **kann** der
+zweite Fall nicht mehr eintreten: der Platz bleibt bis zum Write-Commit
+reserviert. Der Umweg über den Wiederholpuffer entfällt beim Zurücklegen; er
+bleibt nur dort, wo er hingehört — beim regulären `einreihen` in eine volle
+Queue. Siehe **8.1**.
+
+---
+
+### 8.1 [P1] Den P0-Eintrag bis zum Write-Commit reservieren
+
+| | |
+|---|---|
+| **Quelle** | `eq-copilot/plugin/core/ipc/IpcQueues.h`, `P0Warteschlange`/`P1Warteschlange`; `ControlClient.cpp` Sendeschleife |
+| **Fix** | `65d46a0` |
+| **Prüfung** | Bein **B10**, Abschnitte **E** (Queue) und **G9** (echter blockierter Write) |
+
+`entnehmen` nahm den Eintrag bisher restlos aus der Kapazitätsrechnung.
+Blockierte danach der Write und liefen 64 neue Befehle ein, war die Queue wieder
+voll — und `zuruecklegen` fand keinen Platz mehr. Sein `false` wurde im Client
+**ignoriert**, der Befehl war weg, und der öffentliche Überlaufzähler meldete
+den Verlust nicht. Das ist der Bruch der P0-Zusage „nichts verwerfen" (§53.9).
+
+Der entnommene Eintrag **zählt jetzt weiter gegen die Kapazität**, bis
+`bestaetigen()` (auf dem Draht) oder `zuruecklegen()` (nicht auf dem Draht) ihn
+freigibt. Die Invariante lautet `inhalt.size() + reserviert <= kap`; damit hat
+das Zurücklegen immer Platz und **kann nicht scheitern** — der Rückgabewert
+entfällt ersatzlos, statt weiter ignoriert zu werden. Dasselbe gilt für P1.
+
+Der Preis ist ein Platz weniger während eines laufenden Writes. Genau dieser
+Platz war es, der vorher still verlorenging.
+
+**Ein Folgefehler, den erst die Reservierung sichtbar macht.** Eine Nachricht
+über der Paketgrenze bliebe jetzt für immer vorn in der Queue und ließe jede
+neue Verbindung an derselben Stelle scheitern — vorher verschwand sie
+unbemerkt beim vollen Zurücklegen. `sendeP0`/`sendeP1` weisen sie deshalb an der
+**Tür** ab (`Snapshot::zuGross`, `P1Ergebnis::zuGross`), wo der Aufrufer es
+erfährt, statt am Draht, wo es niemandem mehr hilft.
+
+**Bruchprobe** — Reservierung entfernt und `zuruecklegen` wieder still
+scheitern lassen:
+
+```text
+== E · Backpressure: P0 · P1 · P2 ==
+  ok      P0 nimmt 64 Nachrichten
+  ok      die 65. meldet Ueberlauf (nichts verwerfen ⇒ Verbindung schliessen)
+  ok      alle 64 kommen unveraendert und in Reihenfolge zurueck
+  ok      der Sender entnimmt den ersten Befehl und reserviert seinen Platz
+  FEHLER  64 neue Befehle waehrend des Writes finden KEINEN Platz — ehrlich gezaehlt  [1 angenommen, 63 Ueberlaeufe]
+  FEHLER  der gescheiterte Write legt ihn zurueck; die Queue traegt wieder genau 64  [64 Eintraege]
+  FEHLER  und zwar VORN — kein P0-Befehl ist verlorengegangen
+== G9 · ein P0-Befehl ueberlebt einen gescheiterten Write bei voller Queue ==
+  ok      Verbindung steht (der Server liest nur nicht mehr)
+  ok      der erste, grosse Befehl wird eingereiht
+  FEHLER  genau 64 passen — der unterwegs befindliche belegt seinen Platz weiter  [65 angenommen]
+  ok      und der Ueberlauf ist oeffentlich gezaehlt  [1]
+  ok      die Verbindung wird deswegen geschlossen
+  FEHLER  nach dem Reconnect kommt JEDER angenommene Befehl an — auch der, dessen Write scheiterte  [erster fehlender: id 0]
+
+FEHLER — 153 Pruefungen, 5 Fehler
+```
+
+Die letzte Zeile ist der Befund im Klartext: **`id 0` fehlt** — der Befehl,
+dessen Write scheiterte, kommt nach dem Reconnect nicht an. Die Queue trug in
+diesem Lauf 65 statt 64 Einträge und verlor deshalb genau einen.
+
+---
+
+### 8.2 [P1] Telemetrie bei neuen Control-Credentials neu koppeln
+
+| | |
+|---|---|
+| **Quelle** | `eq-copilot/plugin/core/ipc/TelemetryClient.cpp`, Sendeschleife und `leerlaufLesen` |
+| **Fix** | `65d46a0` |
+| **Prüfung** | Bein **B10**, Abschnitt **G13** |
+
+Bei leerer P2-Schleuse schlief der Leerlaufzweig 5 ms auf einer Condvar — er
+las **nicht** von der Pipe und verglich **nicht** die aktuellen `link_id`-/
+Challenge-Werte des Providers. Wurde die Control-Verbindung getrennt oder neu
+gekoppelt, schloss der Broker zwar die alte Telemetriepipe, aber der Client
+blieb unbegrenzt als `verbunden` sichtbar und koppelte sich erst nach einer
+späteren Veröffentlichung und deren fehlgeschlagenem Write neu.
+
+Beide Hälften sind geschlossen:
+
+1. **Der Leerlauf liest, statt zu schlafen.** `leerlaufLesen` wartet dieselbe
+   Frist mit einem fristbegrenzten Lesevorgang — gleiche Wartezeit, gleiche
+   Größenordnung an Syscalls, aber ein Schlaf kann keinen Pipe-Abschluss sehen
+   und ein Read schon. `stop` und `reconnect` brechen ihn über `ioAbbrechen`
+   sofort ab, genau wie sie vorher die Condvar weckten.
+2. **Die Kopplungswerte werden in jeder Runde verglichen.** Weichen die des
+   Providers von denen ab, mit denen diese Verbindung aufgebaut wurde, endet
+   sie (`Snapshot::kopplungswechsel`). Steht die Control-Verbindung dabei
+   gerade nicht, meldet der Snapshot ehrlich `wartetAufKopplung` statt
+   `verbunden`.
+
+G13 fährt beide Fälle **ohne einen einzigen P2-Frame**; die Gegenprobe am Ende
+zeigt `gesendet == 0`, damit die Aussage nicht heimlich über den Sendeweg
+zustandekommt.
+
+**Bruchprobe** — Leerlauf schläft wieder und vergleicht nichts:
+
+```text
+== G13 · die Telemetrie merkt im Leerlauf, dass ihre Kopplung fort ist ==
+  ok      Control steht
+  ok      Telemetry koppelt
+  FEHLER  ohne eine einzige Veroeffentlichung bemerkt der Client den Pipe-Abschluss
+  ok      und koppelt binnen Frist wieder
+  ok      Control koppelt neu und traegt eine frische link_id
+  FEHLER  die Telemetrie bemerkt die neuen Kopplungswerte im Leerlauf
+  ok      und koppelt sich mit ihnen neu — ohne dass je ein P2-Frame floss
+  ok      Gegenprobe: es wurde in diesem Abschnitt wirklich nichts veroeffentlicht  [0 gesendet]
+
+FEHLER — 153 Pruefungen, 2 Fehler
+```
+
+Die beiden „ok" dazwischen sind kein Widerspruch, sondern die Diagnose: der
+Client koppelt in der kaputten Fassung **irgendwann doch** wieder — nur nicht,
+weil er etwas bemerkt hätte, sondern weil der Testserver die Verbindung
+schließt und der nächste Verbindungsversuch ohnehin ansteht. Die zwei roten
+Zeilen sind genau die beiden Wege, auf denen er es **bemerken** müsste.
+
+---
+
+### 8.3 [P2] Welcome gegen den vollständigen Vertrag validieren
+
+| | |
+|---|---|
+| **Quelle** | `eq-copilot/plugin/core/ipc/IpcVerbindung.{h,cpp}` (JSON-Leser); `ControlClient.{h,cpp}` (`welcomeHaeltVertrag`, `rejectHaeltVertrag`); `TelemetryClient.cpp` |
+| **Fix** | `65d46a0` |
+| **Prüfung** | Bein **B10**, Abschnitte **G10** (beide Clients) und **H** (der Leser selbst) |
+
+`flachesJsonObjekt` **hatte** die Typinformation und warf sie am Rückgabewert
+weg: jeder Wert kam als roher Text. `"broker_version":null` lieferte damit den
+nichtleeren Text `null` und bestand die Prüfung „nicht leer". Zusatzfelder fielen
+gar nicht auf, obwohl `eq-ipc-v3.schema.json` für `welcome`
+`additionalProperties:false` sagt.
+
+Drei Änderungen:
+
+- **Typbewahrender Leser.** `JsonFeld { name, wert, istString }`; `jsonText`
+  liefert nur JSON-Strings, `jsonLiteral` nur Zahlen und `true`/`false`/`null`.
+  Der STRING `"null"` und das LITERAL `null` sind wieder unterscheidbar.
+- **Exakte Feldmenge.** `feldmengeGenau` ist die C++-Hälfte von
+  `additionalProperties:false`. Eine Prüfung, die nur Pflichtfelder liest, ist
+  per Konstruktion blind für ein Zusatzfeld — sie liest, was sie kennt.
+- **Ein Vertragsprüfer für beide Clients.** `welcomeHaeltVertrag` prüft
+  Feldmenge, `type`, `protocol` als **Zahl** 3 (nicht als String `"3"`),
+  `broker_version` als String der Länge 1..64 und die drei hex32-Felder.
+  `rejectHaeltVertrag` tut dasselbe für `reject`. Zwei getrennte Fassungen
+  waren die Ursache dafür, dass die Strenge überhaupt auseinanderlaufen konnte;
+  der Telemetriepfad prüft die Kopplungswerte **zusätzlich**, der Vertrag ist
+  derselbe.
+
+**Bruchprobe** — der Leser wirft den Typ wieder weg und die Feldmenge zählt
+nicht mehr:
+
+```text
+== G10 · beide Clients pruefen das welcome gegen den VOLLSTAENDIGEN Vertrag ==
+  FEHLER  Telemetry: `broker_version` als `null` ist kein gueltiges welcome
+  FEHLER  Telemetry: ein Zusatzfeld verletzt additionalProperties:false
+  ok      Telemetry: `broker_version` ueber 64 Zeichen faellt an der Laenge  [unerwartete Antwort auf das Telemetry-Hello]
+  FEHLER  Control: dieselbe Strenge — `null` statt String verbindet nicht
+  FEHLER  Control: ein Zusatzfeld verbindet nicht
+  ok      Control: eine zu lange `broker_version` verbindet nicht  [unerwartete Antwort auf hello]
+== H · Bootstrapgrenze und JSON-Riegel ==
+  ok      ein String kommt als String
+  FEHLER  eine Zahl ist KEIN String
+  ok      und ein String ist kein Literal
+  FEHLER  `null` ist ein Literal und wird nie als Text `null` durchgereicht
+  ok      der STRING "null" dagegen ist einer — beide sind unterscheidbar
+  ok      die exakte Feldmenge wird erkannt
+  FEHLER  ein Zusatzfeld faellt auf (additionalProperties:false)
+  ok      und ein fehlendes Pflichtfeld ebenso
+
+FEHLER — 153 Pruefungen, 7 Fehler
+```
+
+Die Längenprüfung bleibt grün, weil die Bruchprobe nur den **Typ** und die
+**Feldmenge** zurücknimmt — sie zeigt damit zugleich, dass die drei Riegel
+getrennt greifen und nicht einer für alle drei einsteht.
+
+---
+
+### 8.4 [P2] P2-Frames auf der Control-Verbindung abweisen
+
+| | |
+|---|---|
+| **Quelle** | `eq-copilot/plugin/core/ipc/ControlClient.cpp`, Leseschleife; `TelemetryClient.cpp`, `leerlaufLesen` |
+| **Fix** | `65d46a0` |
+| **Prüfung** | Bein **B10**, Abschnitt **G11** |
+
+Sendete der Peer nach einem gültigen Welcome einen korrekt gerahmten P2-Frame
+über die Control-Pipe, zählte dieser Pfad ihn als empfangen und reichte die
+**Binärpayload** an `beiAntwort` weiter — an einen Rückruf, der JSON erwartet.
+Control trägt ausschließlich P0/P1 (§33.1).
+
+Die Familienzuordnung des Vertrags gilt jetzt in **beide** Richtungen. Der
+Broker weist P2 auf Control und P0/P1 auf Telemetry schon seit Runde 1 ab
+(`geschlossen_familie`); die Clients tun dasselbe: der ControlClient vor dem
+Callback (`Snapshot::familieAbweisungen`), der TelemetryClient in
+`leerlaufLesen`. Broker→Main-Liveupdates sind auf der Telemetrieverbindung
+vertragsgemäß und werden gezählt (`Snapshot::empfangen`) und verworfen — sie
+haben in diesem Ticket noch keinen Verbraucher, und die Zahl macht das sichtbar,
+statt es zu verschweigen.
+
+**Bruchprobe** — Familienprüfung im ControlClient entfernt:
+
+```text
+== G11 · ein P2-Frame auf der Control-Verbindung wird abgewiesen ==
+  FEHLER  der Client weist den P2-Frame ab und schliesst die Verbindung
+  FEHLER  und er hat die Binaerpayload NIE an den Aufrufer weitergereicht  [1 Rueckrufe]
+
+FEHLER — 153 Pruefungen, 2 Fehler
+```
+
+`[1 Rueckrufe]` ist der Befund als Zahl: die Binärpayload **war** beim Aufrufer.
+
+---
+
+### 8.5 [P2] Die Nachrichtenratengrenze im Client anwenden
+
+| | |
+|---|---|
+| **Quelle** | `eq-copilot/plugin/core/ipc/WireEnvelope.h` (`kRateProSekunde`, `kRateFensterMs`); `ControlClient.cpp`; `TelemetryClient.cpp` |
+| **Fix** | `65d46a0` |
+| **Prüfung** | Bein **B10**, Abschnitt **G12** |
+
+Die C++-`Ratengrenze` existierte seit dem ersten Lauf — benutzt wurde sie
+ausschließlich im Test. Pipelinete ein Peer nach dem Welcome mehr Frames als
+vereinbart, verarbeitete die Schleife jeden einzelnen und rief für jeden den
+Callback. §33.1 verlangt das Ratenlimit auf **jeder** Parserseite.
+
+Beide Clients führen jetzt einen Limiter je Verbindung mit denselben Zahlen wie
+der Broker (`RATE_PRO_SEKUNDE = 4000` je 1000 ms). Die Zahlen stehen in
+`WireEnvelope.h` neben der Paketgrenze: das Limit ist eine Eigenschaft des
+Vertrags, nicht der Sprache. Bei Überschreitung wird die Verbindung geschlossen
+und der Vorgang gezählt (`Snapshot::rateAbweisungen`).
+
+**Bruchprobe** — Ratenprüfung entfernt, der Testserver schickt 8000 Frames:
+
+```text
+== G12 · die Nachrichtenratengrenze gilt auch im Client ==
+  FEHLER  ein Peer, der schneller pipelined als die Rate erlaubt, wird getrennt
+  FEHLER  und hoechstens die erlaubte Zahl Frames hat den Aufrufer erreicht  [8000 von 8000]
+
+FEHLER — 153 Pruefungen, 2 Fehler
+```
+
+`[8000 von 8000]` — ohne den Limiter erreichte **jeder** Frame den Aufrufer.
+
+---
+
+### 8.6 [P1] Das Fenster zwischen Stop und Registrierung schließen
+
+| | |
+|---|---|
+| **Quelle** | `broker/src/transport/server_v3.rs`, Acceptor · `verbindung_bedienen` · `V3Griff::stoppen` |
+| **Fix** | `65d46a0`, Testhärtung `e5f5c27` |
+| **Prüfung** | `cargo test` — `transport::server_v3::tests::stop_im_fenster_vor_der_bedienung_haengt_nicht` |
+
+Lief `stoppen()` nach dem Spawn des Verbindungsthreads, aber vor dessen
+Registrierung, sahen **beide** `alle_io_abbrechen`-Aufrufe ein leeres Register
+und warteten anschließend in `join`. Startete der Thread danach, trug er sein
+Handle ein und blockierte im Bootstrap-Read — ohne verbliebenen Wachhund, denn
+der war zu diesem Zeitpunkt längst gejoint.
+
+Drei Riegel, jeder für sich prüfbar:
+
+1. **Registrierung vor dem Spawn.** Der Acceptor trägt das Handle ein, bevor
+   der Thread existiert; der Thread bekommt den `HandleEintrag` übergeben.
+   Scheitert `spawn`, fällt die Closure samt Eintrag und trägt ihn wieder aus.
+2. **`stop`-Prüfung direkt nach der Registrierung.** Kam der Stop im Fenster,
+   endet der Thread dort — statt sich in einen Read zu legen.
+3. **`stoppen()` bricht wiederholt ab.** Ein einzelnes `CancelIoEx` verpufft,
+   wenn der Thread seinen Read erst danach absetzt.
+
+Der Test trifft das Fenster **deterministisch** über eine Testnaht
+(`v3_server_starten_intern` mit `probe_verzoegerung_ms`), die den frisch
+angenommenen Thread vor seiner ersten Arbeit warten lässt. In Produktion steht
+dort 0. Jede der drei Zusicherungen gehört zu einem der drei Riegel.
+
+**Bruchprobe** — Registrierung zurück in den Thread, `stop`-Prüfung entfernt,
+einmaliger Abbruch:
+
+```text
+running 1 test
+test transport::server_v3::tests::stop_im_fenster_vor_der_bedienung_haengt_nicht ... FAILED
+
+thread 'transport::server_v3::tests::stop_im_fenster_vor_der_bedienung_haengt_nicht' panicked at src\transport\server_v3.rs:1946:9:
+das Handle muss VOR der ersten Arbeit des Threads im Register stehen
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 131 filtered out; finished in 10.22s
+```
+
+Die 10,22 s sind mitzulesen: der Test wartet 200 ms auf die Registrierung, sie
+kommt nicht — und die anschließenden zehn Sekunden sind der `stoppen()`-Aufruf,
+der in der kaputten Fassung **nicht zurückkehrt**. Der Test meldet trotzdem
+rot, weil er erst misst und danach urteilt (`e5f5c27`).
+
+---
+
+### 8.7 [P1] Den Senken-Join abbrechbar machen
+
+| | |
+|---|---|
+| **Quelle** | `broker/src/transport/server_v3.rs`, `Senke`-Trait · `SENKE_FRIST` · `join_mit_frist` · `verbindung_bedienen` |
+| **Fix** | `65d46a0` |
+| **Prüfung** | `cargo test` — `transport::server_v3::tests::stoppen_endet_auch_bei_haengender_senke` |
+
+Blockierte `Senke::p0`, `p1` oder `p2`, blieb der Verbraucher im **Fremdaufruf**
+hängen. Weder das Schließen der Queue noch `CancelIoEx` lösen einen Thread, der
+in fremdem Code steht; `stoppen()` wartete unbegrenzt.
+
+Beide Joins am Verbindungsende haben jetzt eine Frist (`SENKE_FRIST` = 2000 ms).
+Läuft sie ab, wird der Thread **abgelöst statt gejoint**: das `JoinHandle`
+fällt, der Thread hält nur noch seine `Arc`s und endet von selbst, sobald der
+Fremdaufruf zurückkommt. Gezählt wird das in `senke_abgeloest` beziehungsweise
+`schreiber_abgeloest` — der sichtbare Preis dafür, dass `stoppen()` trotzdem
+endet. Der Senkenvertrag steht seitdem im Trait-Doc: `p0`/`p1`/`p2` dürfen
+blockieren, aber nicht unbegrenzt.
+
+Der vorhandene Blocktest gab vor dem Ende frei und prüfte diesen Gegenpfad
+deshalb **nicht**. Der neue hält die Senke über den ganzen Stop blockiert und
+wartet vorher, bis der Verbraucher nachweislich *in* ihr steht
+(`BlockSenke::in_senke`) — sonst maß der Test nur seine eigene Hoffnung.
+
+**Bruchprobe** — beide Joins wieder unbegrenzt:
+
+```text
+running 1 test
+test transport::server_v3::tests::stoppen_endet_auch_bei_haengender_senke ... FAILED
+
+thread 'transport::server_v3::tests::stoppen_endet_auch_bei_haengender_senke' panicked at src\transport\server_v3.rs:1999:9:
+stoppen() haengt im Senkenaufruf
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 131 filtered out; finished in 10.02s
+```
+
+---
+
+### Was diese Runde **nicht** angefasst hat
+
+Die Ticketgrenze aus §0 steht unverändert: kein Coordinator, kein Store, keine
+Outbox, kein Produktumbau von Gen oder Probeeq auf v3, kein produktives Öffnen
+des v3-Endpunkts, kein Prozessstart, Identität unangetastet, v2-Pfad
+unverändert. Die zehn Schließungen aus Runde 1 sind nicht regressiert — ihre
+Prüfungen laufen im selben Bein weiter grün.
+
+Eine Änderung geht über den Wortlaut der sieben Befunde hinaus und steht
+deshalb hier ausdrücklich: **`sendeP0`/`sendeP1` weisen Nachrichten über der
+Paketgrenze an der Tür ab.** Das ist kein Zusatzwunsch, sondern die notwendige
+Kehrseite von 8.1 — ohne sie hätte die Reservierung eine unsendbare Nachricht
+für immer vorn in der Queue gehalten und jede neue Verbindung an derselben
+Stelle scheitern lassen.
 
 ---
 

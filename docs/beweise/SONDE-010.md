@@ -72,8 +72,8 @@ Ebene unter der Oberfläche. Stattdessen:
 | 5 | **Backpressure** — P0 64 / nichts verwerfen, P1 128 / koaleszieren + Wiederholpuffer, P2 je Sonde 2 / replace-oldest, Ingress 256 / P2 zuerst. Übergabe zur Telemetrie vorallokiert und ohne Allokation. Seit der Nacharbeit (§7.3) sind die Ingresspfade auch **im echten Listener** erreichbar: Leser, Verbraucher und Schreiber sind getrennte Threads. | `EqCopIpcTest` · `cargo test --lib transport::` | ✅ | [↓ B1](#b1), [↓ B2](#b2) |
 | 6 | **Reconnect** — nach Broker-Neustart verbindet der Client von selbst wieder; ein kaputter Envelope und ein P0-Überlauf schließen die Verbindung, statt still zu kürzen. | `EqCopIpcTest` | ✅ | [↓ B1](#b1) |
 | 7 | **Pipe-Token** — `S-1-5-21-111111111-222222222-333333333-1001 → BNSM62JZZCCXIDV3PJZAEHMZPA` in C++ **und** Rust. | `EqCopIpcTest` · `cargo test --lib transport::` | ✅ | [↓ B1](#b1), [↓ B2](#b2) |
-| 8 | **„ohne P0-Starvation" als Zahl** — 32 Sonden fluten P2 über eine Probe-Pipe gegen den echten Rust-Listener; im Kanon-Lauf der Nacharbeit **10 016 von 10 016** P0-Frames beantwortet, max. **21 ms**, p99 **20 ms**, bei **44 164** ersetzten P2-Frames und einem Ingress-Höchststand von **3** (vor §7.3 strukturell nie über 1). | `py -3.13 tools/eq-copilot/pruefe_ipc_last.py` | ✅ | [↓ B5](#b5) |
-| 9 | **Jedes neue Bein schlägt an** — A20, A21, A22 und B10 einmal absichtlich gebrochen; dazu **jede** der zehn Prüfungen aus der Nacharbeit. | siehe unten | ✅ | [↓ B6](#b6), [↓ §7](#7-nacharbeit-runde-1--2026-08-29-prüfer-thread-01a04bd4-231a-7fc1-b3fd-0d9fac768a91-stand-5144669) |
+| 8 | **„ohne P0-Starvation" als Zahl** — 32 Sonden fluten P2 über eine Probe-Pipe gegen den echten Rust-Listener; im Kanon-Lauf der Nacharbeit (`d137fa0`, Arbeitsbaum sauber) **10 016 von 10 016** P0-Frames beantwortet, max. **21 ms**, p99 **20 ms**, bei **43 133** ersetzten P2-Frames und einem Ingress-Höchststand von **3** (vor §7.3 strukturell nie über 1). | `py -3.13 tools/eq-copilot/pruefe_ipc_last.py` | ✅ | [↓ B5](#b5) |
+| 9 | **Jedes neue Bein schlägt an** — A20, A21, A22 und B10 einmal absichtlich gebrochen; dazu **jede** der zehn Prüfungen aus der Nacharbeit — die Rohausgaben stehen bei ihrem Befund in §7. | siehe unten | ✅ | [↓ B6](#b6) |
 
 ---
 
@@ -469,7 +469,7 @@ Feste Liste aus `docs/bauaufteilung-sonden.md` §2, nie abgekürzt.
 | 3 | Behauptungs-Integrität: existiert jede genannte Datei / Funktion / Zeile wirklich? | Jede in diesem Manifest genannte Datei wurde in dieser Session geschrieben oder gelesen. Die Regelmenge wird nicht behauptet, sondern **gemessen**: `contract_cross_language` vergleicht die Regelliste des Manifests elementweise mit `ALLE_VERSTOESSE` des Lesers, das C++-Bein tut dasselbe — eine Regel im Code ohne Zeile im Manifest fällt sofort auf. Der Envelope-Erzeuger bricht ab, wenn eine Regel ohne Negativfixture bleibt. |
 | 4 | Lügt der UI-Text? | Keine UI in diesem Ticket. Die entsprechende Ebene ist die Zählerwahrheit, und dort wurde **eine Lüge gefunden und behoben**: `P2Schleuse::ersetzteFrames()` zählte anfangs jede Veröffentlichung nach den ersten beiden als Ersetzung, auch wenn der Verbraucher längst leergeräumt hatte (133 056 „Ersetzungen" bei 133 120 Veröffentlichungen und 92 857 gesendeten Frames — die Zahlen widersprachen einander). Der Erzeuger kennt jetzt den Fortschritt des Verbrauchers. Was bleibt, steht als Schranke im Header: die Zahl ist eine **obere** Grenze, nie eine kleinere als der eingetretene Verlust. |
 | 5 | Anzeige-Pflichten (nur bei UI-Diff) | Nicht betroffen — kein UI-Diff. Die Zustände, die eine spätere Oberfläche zeigen muss, liegen als ehrliche Felder bereit: `ControlClient::Snapshot` trägt Status, `letzterFehler`, Versuche, P0-Überläufe, P1-Wiederholungen und Envelope-Abweisungen; `TelemetryClient::Snapshot` zusätzlich `wartetAufKopplung` als **eigenen** Zustand — „noch nicht gekoppelt" ist etwas anderes als „getrennt". |
-| 6 | Audiothread: nachweislich keine Allokation, kein Lock, kein I/O, kein Logging? | Der Audiothread wird in diesem Ticket **nicht angefasst**; kein Sample geht durch neuen Code. Die Grenze dorthin ist die `P2Schleuse`: vorallokiert, lockfrei, wartefrei, und mit dem thread-lokalen Allokationszähler gemessen — **100 000 Übergaben mit 0 Allokationen**, mit Gegenprobe am selben Zähler (er sieht eine echte Allokation, also schweigt er nicht bloß). Nebenläufigkeit **neu vermessen (§7.1):** 2 000 000 kleine plus 300 000 große Frames, kein zerrissener Frame und keine falsche Länge — und dabei traf der Erzeuger den vom Verbraucher beanspruchten Platz **9 782-mal**, ohne ihn zu beschreiben. Ein Race Detector steht auf dieser Maschine nicht zur Verfügung (ThreadSanitizer gibt es für MSVC nicht, `/fsanitize=address` findet keine Datenrennen); der Beweis ist deshalb strukturell: ein einziges Atomic entscheidet den Besitz je Slot. Beide Clients führen ihre I/O ausschließlich auf eigenen Threads; `sendeP0`/`sendeP1`/`veroeffentlichen` reihen nur ein. |
+| 6 | Audiothread: nachweislich keine Allokation, kein Lock, kein I/O, kein Logging? | Der Audiothread wird in diesem Ticket **nicht angefasst**; kein Sample geht durch neuen Code. Die Grenze dorthin ist die `P2Schleuse`: vorallokiert, lockfrei, wartefrei, und mit dem thread-lokalen Allokationszähler gemessen — **100 000 Übergaben mit 0 Allokationen**, mit Gegenprobe am selben Zähler (er sieht eine echte Allokation, also schweigt er nicht bloß). Nebenläufigkeit **neu vermessen (§7.1):** 2 000 000 kleine plus 300 000 große Frames, kein zerrissener Frame und keine falsche Länge — und dabei traf der Erzeuger den vom Verbraucher beanspruchten Platz **12 210-mal**, ohne ihn zu beschreiben. Ein Race Detector steht auf dieser Maschine nicht zur Verfügung (ThreadSanitizer gibt es für MSVC nicht, `/fsanitize=address` findet keine Datenrennen); der Beweis ist deshalb strukturell: ein einziges Atomic entscheidet den Besitz je Slot. Beide Clients führen ihre I/O ausschließlich auf eigenen Threads; `sendeP0`/`sendeP1`/`veroeffentlichen` reihen nur ein. |
 
 ---
 
@@ -521,9 +521,16 @@ bestätigt und geschlossen. Jeder Fix trägt eine Prüfung, die **ohne** ihn rot
 ist; die Rohausgabe jeder Bruchprobe steht unten bei ihrem Befund.
 
 Commits dieser Runde: `4500785` (die zehn Fixes) · `602e105` (Testsenke mit
-Frist) · `6fc3224` (Grenztest misst die Grenze wirklich).
+Frist) · `6fc3224` (Grenztest misst die Grenze wirklich) · `d137fa0` (dieses
+Manifest, `plugin-wissen.md`, Plantext).
 
-> Zwei der drei Commits sind selbst Befunde aus dieser Runde: die erste
+Der maßgebliche Kanon-Lauf steht unten als **„Kanon-Lauf - SONDE-010
+Nacharbeit 1"**: `d137fa0`, Arbeitsbaum sauber, **GRUEN 32/32**, Exitcode 0.
+Ein erster Lauf um 08:20 lief mit einer noch unbestätigten Dokudatei im Baum
+und ist deshalb nicht angehängt — er bewies denselben Code, aber nicht den
+Commit.
+
+> Zwei dieser Commits sind selbst Befunde aus dieser Runde: die erste
 > Fassung des Ingress-Tests konnte bei einer roten Zusicherung hängen statt
 > rot zu melden, und die erste Fassung des Grenztests ließ die Verbindungen
 > wieder los, bevor der Acceptor die Grenze überhaupt gesehen hatte — die
@@ -3850,18 +3857,18 @@ C:\Users\phili\Projekte\Nakama\eq-copilot\build\_deps\juce-src\modules\juce_gui_
 
 ## Kanon-Lauf - SONDE-010 Nacharbeit 1
 
-**Lauf:** 2026-08-29 08:20 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0
+**Lauf:** 2026-08-29 08:30 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0
 
 ### Kopf - woran gemessen wurde
 
 | Feld | Wert |
 |---|---|
-| Zeitpunkt | 2026-08-29 08:20:22 +02:00 |
+| Zeitpunkt | 2026-08-29 08:30:16 +02:00 |
 | Rechner | SCHUBBINATOR200 \| Windows 10.0.26200.0 |
 | Zweig | master |
-| Commit | 6fc3224 S14-15 SONDE-010: Nacharbeit Runde 1 - Grenztest misst die Grenze wirklich |
-| Commit (voll) | 6fc3224a0275696e753b3ec05b84282da6c5f4aa |
-| Arbeitsbaum | 1 unbestaetigte Datei(en) - dieser Lauf beweist NICHT allein den Commit |
+| Commit | d137fa0 S14-15 SONDE-010: Nacharbeit Runde 1 - Manifest, plugin-wissen und Plantext |
+| Commit (voll) | d137fa0f73ea7008eedd942dcd7db1cf2cf2ad8d |
+| Arbeitsbaum | sauber |
 | JUCE gepinnt | 8.0.9 |
 | JUCE auf Platte | 8.0.9-dirty |
 | FL Studio | FL Studio 2025 25.2.5.5319 \| FL Studio 2026 26.1.4.5589 |
@@ -3869,14 +3876,6 @@ C:\Users\phili\Projekte\Nakama\eq-copilot\build\_deps\juce-src\modules\juce_gui_
 | rustc | rustc 1.93.1 (01f6ddf75 2026-02-11) |
 | PowerShell | 7.6.5 |
 | cmake | cmake version 3.31.6-msvc6 |
-
-<details><summary>Unbestaetigte Dateien im Arbeitsbaum</summary>
-
-```text
-M docs/plugin-wissen.md
-```
-
-</details>
 
 ### Baustand der Pruefbinaries
 
@@ -3906,48 +3905,48 @@ Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar v
 
 | # | Behauptung | Befehl | Ergebnis | Dauer | Rohausgabe |
 |---|---|---|---|---|---|
-| A1 | Passthrough ist bitgleich; 0 Samples Latenz, 0 Tail; NaN/Inf werden gezaehlt, aber nicht veraendert. | `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | [OK] Exit 0 | 0,21 s | [↓ A1](#a1) |
-| A2 | AnalyseEngine deckt sich mit der eingefrorenen Offline-Referenz (Fixture-SHA-256 als Determinismus-Riegel). | `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | [OK] Exit 0 | 10,94 s | [↓ A2](#a2) |
-| A3 | Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung, und der U10-Term ist gedeckt - OHNE Playhead faerbt bei sonst voller Erlaubnis kein Sample (T11, mit Gegenprobe bei laufendem Transport). | `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | [OK] Exit 0 | 6,65 s | [↓ A3](#a3) |
-| A4 | Broker-Vertragstests gruen (Framing, Protokoll, Bindung, Aggregat, Server). | `cargo test --manifest-path broker/Cargo.toml --color never` | [OK] Exit 0 | 15,36 s | [↓ A4](#a4) |
-| A4b | C++-PipeClient: stop/reconnect und ganze Frames sind zeitlich begrenzt, SQOS ist Identification, Peerbytes sind UTF-8/NUL-sauber, ACK-Sequenzen streng und u64-Zaehler wire-sicher. | `eq-copilot\build\plugin\EqCopPipeClientTest_artefacts\Release\EqCopPipeClientTest.exe` | [OK] Exit 0 | 1,16 s | [↓ A4b](#a4b) |
-| A5 | Referenzbein (jsonschema, draft 2020-12): Schema haelt die Engine-Teilmenge ein, Textriegel deckt jede gemessene Kante, jedes Fixture wird wie im Manifest klassifiziert, jede Definition hat ein Negativfixture. | `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | [OK] Exit 0 | 3,45 s | [↓ A5](#a5) |
-| A6 | Beide Bandgitter sind bytegleich zur Neuerzeugung; 221 Baender, 64 Gruppen als exakte Partition. | `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | [OK] Exit 0 | 0,32 s | [↓ A6](#a6) |
-| A7 | Quantisierungsvertrag bytegleich zur Neuerzeugung; Rundung, Saettigung und Nichtendliches als Testvektoren. | `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | [OK] Exit 0 | 0,18 s | [↓ A7](#a7) |
-| A8 | Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_v3_fixtures.py --pruefen` | [OK] Exit 0 | 0,25 s | [↓ A8](#a8) |
-| A9 | Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID. | `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | [OK] Exit 0 | 2,41 s | [↓ A9](#a9) |
-| A10 | Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | [OK] Exit 0 | 1,83 s | [↓ A10](#a10) |
-| A11 | Die fuenf v2-Vertraege (ipc v2, measurement v1, report v1, snapshot v3, aggregat v1) sind gueltiges JSON und gueltige JSON-Schemas; ihre $id-Familie ist eingefroren. | `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | [OK] Exit 0 | 0,40 s | [↓ A11](#a11) |
-| A12 | Parameterbestand (109 IDs, §53.8) haelt den Vertrag; RFC-8785-Zahlenvektoren tragen den RFC-Text und werden von rfc8785 bestaetigt; State-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung. | `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | [OK] Exit 0 | 0,46 s | [↓ A12](#a12) |
-| A13 | Capabilityreport FL: die zehn Bits aus §53.6 entsprechen der v3-Vertragsform und stehen so, wie die Rohdaten der Termine A und B sie tragen; jedes supported hat einen Termin, jedes unsupported seinen festen Fallback. | `py -3.13 tools\eq-copilot\pruefe_host_capabilities.py` | [OK] Exit 0 | 0,39 s | [↓ A13](#a13) |
-| A14 | Der gemeinsame Kern traegt keine Bundle-Identitaet: NakamaKern.lib enthaelt keinen eingefrorenen Identitaetswert (Namen, Viercodes, CIDs roh und COM-vertauscht) und genau seine eigenen Uebersetzungseinheiten, kein JUCE-Modulobjekt; die Gegenprobe findet dieselben Werte im gebauten EQ-Copilot-Bundle. | `py -3.13 tools\eq-copilot\pruefe_kern_identitaetsfrei.py` | [OK] Exit 0 | 1,90 s | [↓ A14](#a14) |
-| A17 | Installer-Manifest: keine zweite Identitaet (kein Viercode, keine Class-ID), jeder Quellpfad ist der aus Ziel + Identitaetsdatei nachgerechnete BUNDLE-ORDNER, `art` ist eine geschlossene Menge, jedes Ziel genau einmal, Broker aus dem Crate-Namen, Zielverzeichnisse geschuetzt, Signaturzeile behauptet keine Pruefung ohne Mittel, Rueckweg samt NAK-41-Riegel und hash_art vollstaendig; jede Regel faellt an einem verdorbenen Manifest; Ordner-Hash v1 bytegleich in Python und PowerShell, Nicht-ASCII bricht beide Haelften ab. | `py -3.13 tools\eq-copilot\pruefe_installer_manifest.py` | [OK] Exit 0 | 1,07 s | [↓ A17](#a17) |
-| A18 | Gegenpfad installieren<->Rueckweg gefahren (Sandbox, nichts installiert): Erstinstallation traegt moduleinfo.json, ein Tausch ersetzt statt zu mischen, -Pruefen sieht den ganzen Ordner, der Rueckweg stellt den Vorzustand bytegleich her und laesst KEIN leeres .vst3-Gehaeuse stehen, selbst angelegte Ordner verschwinden nur leer, der NAK-41-Riegel greift und zerstoert seine eigene Wiederholungsquelle nicht, eine dritte Artefaktsorte bricht ab. | `py -3.13 tools\eq-copilot\pruefe_installer_gegenpfad.py` | [OK] Exit 0 | 57,04 s | [↓ A18](#a18) |
-| A19 | BandGridZahlen.h ist bytegleich aus den zwei eingefrorenen Gitterfixturen erzeugt; die 64 Live-Gruppen partitionieren die 221 Feinbaender lueckenlos und ueberschneidungsfrei, und die groben Kanten sind bitgleiche Kopien feiner Kanten (kein zweites Filterbank-Gitter). | `py -3.13 tools\eq-copilot\erzeuge_bandgitter_header.py --pruefen` | [OK] Exit 0 | 0,22 s | [↓ A19](#a19) |
-| A20 | Envelope-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; jede der 14 Envelope-Regeln hat mindestens ein Negativfixture. | `py -3.13 tools\eq-copilot\erzeuge_envelope_fixtures.py --pruefen` | [OK] Exit 0 | 0,55 s | [↓ A20](#a20) |
-| A21 | v3-Envelope unter Zufall: 20 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und JEDER angenommene Frame erfuellt jede Kopfregel; 3000 gekippte P2-Payloadbits fallen einzeln an der CRC; feindliche Laengen (0, 15, >Grenze, 0xFFFFFFFF) und die u32-Grenze von 16+payload_len loesen keine Allokation aus; 300 Runden Fragmentierung (byteweise und in Zufallshaeppchen) liefern exakt dieselben Frames; ein kaputter Frame beendet den Strom statt zu resynchronisieren; die Ratengrenze haelt unter Flut. | `cargo test --manifest-path broker/Cargo.toml --test transport_fuzz --color never` | [OK] Exit 0 | 0,96 s | [↓ A21](#a21) |
-| A22 | Ende-zu-Ende ueber die PROBE-Pipe, zwei Sprachen ein Draht: 32 echte C++-Sondenpaare koppeln sich am echten Rust-Listener (32 Control + 32 Telemetry, jede Telemetrieverbindung ueber link_id + challenge + gleiche runtime_nonce), fluten P2 bis die Schleuse mit Cap 2 nachweislich ersetzt, und WAEHRENDDESSEN geht kein einziger P0-Frame verloren; die P0-Antwortlatenz bleibt unter der Schranke. Keine Verbindung wird wegen Envelope, Rate oder P0-Ueberlauf geschlossen. | `py -3.13 tools\eq-copilot\pruefe_ipc_last.py` | [OK] Exit 0 | 10,42 s | [↓ A22](#a22) |
+| A1 | Passthrough ist bitgleich; 0 Samples Latenz, 0 Tail; NaN/Inf werden gezaehlt, aber nicht veraendert. | `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | [OK] Exit 0 | 0,06 s | [↓ A1](#a1) |
+| A2 | AnalyseEngine deckt sich mit der eingefrorenen Offline-Referenz (Fixture-SHA-256 als Determinismus-Riegel). | `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | [OK] Exit 0 | 11,19 s | [↓ A2](#a2) |
+| A3 | Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung, und der U10-Term ist gedeckt - OHNE Playhead faerbt bei sonst voller Erlaubnis kein Sample (T11, mit Gegenprobe bei laufendem Transport). | `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | [OK] Exit 0 | 6,63 s | [↓ A3](#a3) |
+| A4 | Broker-Vertragstests gruen (Framing, Protokoll, Bindung, Aggregat, Server). | `cargo test --manifest-path broker/Cargo.toml --color never` | [OK] Exit 0 | 7,45 s | [↓ A4](#a4) |
+| A4b | C++-PipeClient: stop/reconnect und ganze Frames sind zeitlich begrenzt, SQOS ist Identification, Peerbytes sind UTF-8/NUL-sauber, ACK-Sequenzen streng und u64-Zaehler wire-sicher. | `eq-copilot\build\plugin\EqCopPipeClientTest_artefacts\Release\EqCopPipeClientTest.exe` | [OK] Exit 0 | 1,19 s | [↓ A4b](#a4b) |
+| A5 | Referenzbein (jsonschema, draft 2020-12): Schema haelt die Engine-Teilmenge ein, Textriegel deckt jede gemessene Kante, jedes Fixture wird wie im Manifest klassifiziert, jede Definition hat ein Negativfixture. | `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | [OK] Exit 0 | 1,89 s | [↓ A5](#a5) |
+| A6 | Beide Bandgitter sind bytegleich zur Neuerzeugung; 221 Baender, 64 Gruppen als exakte Partition. | `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | [OK] Exit 0 | 0,18 s | [↓ A6](#a6) |
+| A7 | Quantisierungsvertrag bytegleich zur Neuerzeugung; Rundung, Saettigung und Nichtendliches als Testvektoren. | `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | [OK] Exit 0 | 0,87 s | [↓ A7](#a7) |
+| A8 | Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_v3_fixtures.py --pruefen` | [OK] Exit 0 | 1,10 s | [↓ A8](#a8) |
+| A9 | Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID. | `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | [OK] Exit 0 | 0,35 s | [↓ A9](#a9) |
+| A10 | Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | [OK] Exit 0 | 1,51 s | [↓ A10](#a10) |
+| A11 | Die fuenf v2-Vertraege (ipc v2, measurement v1, report v1, snapshot v3, aggregat v1) sind gueltiges JSON und gueltige JSON-Schemas; ihre $id-Familie ist eingefroren. | `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | [OK] Exit 0 | 0,31 s | [↓ A11](#a11) |
+| A12 | Parameterbestand (109 IDs, §53.8) haelt den Vertrag; RFC-8785-Zahlenvektoren tragen den RFC-Text und werden von rfc8785 bestaetigt; State-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung. | `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | [OK] Exit 0 | 0,30 s | [↓ A12](#a12) |
+| A13 | Capabilityreport FL: die zehn Bits aus §53.6 entsprechen der v3-Vertragsform und stehen so, wie die Rohdaten der Termine A und B sie tragen; jedes supported hat einen Termin, jedes unsupported seinen festen Fallback. | `py -3.13 tools\eq-copilot\pruefe_host_capabilities.py` | [OK] Exit 0 | 0,25 s | [↓ A13](#a13) |
+| A14 | Der gemeinsame Kern traegt keine Bundle-Identitaet: NakamaKern.lib enthaelt keinen eingefrorenen Identitaetswert (Namen, Viercodes, CIDs roh und COM-vertauscht) und genau seine eigenen Uebersetzungseinheiten, kein JUCE-Modulobjekt; die Gegenprobe findet dieselben Werte im gebauten EQ-Copilot-Bundle. | `py -3.13 tools\eq-copilot\pruefe_kern_identitaetsfrei.py` | [OK] Exit 0 | 0,64 s | [↓ A14](#a14) |
+| A17 | Installer-Manifest: keine zweite Identitaet (kein Viercode, keine Class-ID), jeder Quellpfad ist der aus Ziel + Identitaetsdatei nachgerechnete BUNDLE-ORDNER, `art` ist eine geschlossene Menge, jedes Ziel genau einmal, Broker aus dem Crate-Namen, Zielverzeichnisse geschuetzt, Signaturzeile behauptet keine Pruefung ohne Mittel, Rueckweg samt NAK-41-Riegel und hash_art vollstaendig; jede Regel faellt an einem verdorbenen Manifest; Ordner-Hash v1 bytegleich in Python und PowerShell, Nicht-ASCII bricht beide Haelften ab. | `py -3.13 tools\eq-copilot\pruefe_installer_manifest.py` | [OK] Exit 0 | 0,92 s | [↓ A17](#a17) |
+| A18 | Gegenpfad installieren<->Rueckweg gefahren (Sandbox, nichts installiert): Erstinstallation traegt moduleinfo.json, ein Tausch ersetzt statt zu mischen, -Pruefen sieht den ganzen Ordner, der Rueckweg stellt den Vorzustand bytegleich her und laesst KEIN leeres .vst3-Gehaeuse stehen, selbst angelegte Ordner verschwinden nur leer, der NAK-41-Riegel greift und zerstoert seine eigene Wiederholungsquelle nicht, eine dritte Artefaktsorte bricht ab. | `py -3.13 tools\eq-copilot\pruefe_installer_gegenpfad.py` | [OK] Exit 0 | 46,57 s | [↓ A18](#a18) |
+| A19 | BandGridZahlen.h ist bytegleich aus den zwei eingefrorenen Gitterfixturen erzeugt; die 64 Live-Gruppen partitionieren die 221 Feinbaender lueckenlos und ueberschneidungsfrei, und die groben Kanten sind bitgleiche Kopien feiner Kanten (kein zweites Filterbank-Gitter). | `py -3.13 tools\eq-copilot\erzeuge_bandgitter_header.py --pruefen` | [OK] Exit 0 | 0,16 s | [↓ A19](#a19) |
+| A20 | Envelope-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; jede der 14 Envelope-Regeln hat mindestens ein Negativfixture. | `py -3.13 tools\eq-copilot\erzeuge_envelope_fixtures.py --pruefen` | [OK] Exit 0 | 0,33 s | [↓ A20](#a20) |
+| A21 | v3-Envelope unter Zufall: 20 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und JEDER angenommene Frame erfuellt jede Kopfregel; 3000 gekippte P2-Payloadbits fallen einzeln an der CRC; feindliche Laengen (0, 15, >Grenze, 0xFFFFFFFF) und die u32-Grenze von 16+payload_len loesen keine Allokation aus; 300 Runden Fragmentierung (byteweise und in Zufallshaeppchen) liefern exakt dieselben Frames; ein kaputter Frame beendet den Strom statt zu resynchronisieren; die Ratengrenze haelt unter Flut. | `cargo test --manifest-path broker/Cargo.toml --test transport_fuzz --color never` | [OK] Exit 0 | 1,10 s | [↓ A21](#a21) |
+| A22 | Ende-zu-Ende ueber die PROBE-Pipe, zwei Sprachen ein Draht: 32 echte C++-Sondenpaare koppeln sich am echten Rust-Listener (32 Control + 32 Telemetry, jede Telemetrieverbindung ueber link_id + challenge + gleiche runtime_nonce), fluten P2 bis die Schleuse mit Cap 2 nachweislich ersetzt, und WAEHRENDDESSEN geht kein einziger P0-Frame verloren; die P0-Antwortlatenz bleibt unter der Schranke. Keine Verbindung wird wegen Envelope, Rate oder P0-Ueberlauf geschlossen. | `py -3.13 tools\eq-copilot\pruefe_ipc_last.py` | [OK] Exit 0 | 9,98 s | [↓ A22](#a22) |
 | A15 | STILLGELEGT - mass bis 28.08.2026 Nakama Suna (NkPr): Passthrough bitgleich ueber drei Samplerates und fuenf Blockgroessen, 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur passive_probe zu; speichern-laden-speichern bytegleich. | `(nicht gefahren)` | [STILLGELEGT] seit 2026-08-28 (S9b/SONDE-007c): das Ziel NakamaSuna ist stillgelegt - Suna ist in Nakama Probeeq aufgegangen (design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md). Weder gebaut noch gefahren; die Zeile bleibt sichtbar, damit die Kanonzahl nicht still sinkt. | - | - |
-| A16 | Nakama Probeeq (NkAc): heute ebenfalls Passthrough bitgleich (die EQ-DSP kommt in P6), 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur active_probe zu; speichern-laden-speichern bytegleich. Seit der T3-Nacharbeit 29.08.2026 (G1 §4.2) faehrt dasselbe Bein die Gate-7-Kette AM GEBAUTEN BUNDLE Nakama Probeeq - Klasse active_probe, denn die Sondenschale traegt genau EINE Klasse je Uebersetzung: ein sonst gueltiger Stand mit measurement_position=post_fader_contribution kommt ueber setStateInformation read-only zurueck, die Instanz bleibt neutral, die Originalbytes gehen unveraendert an den Host zurueck und ein erneutes Laden waescht nichts; auch eine bereits klassifizierte Instanz faellt beim Nachreichen desselben Standes auf neutral zurueck; Gegenprobe mit insert laedt normal. Nachtrag Runde 2 (Prueferbefund P1): dass Riegel 1 KLASSENUNABHAENGIG sperrt, misst dasselbe Bein zusaetzlich direkt an der oeffentlichen positionErlaubt fuer alle vier Klassen - ohne diese vier Zeilen bliebe die urspruengliche passive_probe-Regression hier unbemerkt, weil kein Ziel mehr NAKAMA_SONDE_PASSIV baut (S9b/SONDE-007c). Die vollstaendige 16er-Matrix samt Bundlevertraegen misst B2. | `eq-copilot\build\plugin\EqCopProbeeqNullTest_artefacts\Release\EqCopProbeeqNullTest.exe` | [OK] Exit 0 | 0,09 s | [↓ A16](#a16) |
-| B1 | Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren. | `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | [OK] Exit 0 | 0,14 s | [↓ B1](#b1) |
-| B2 | State-Schema 2: Roundtrip bytegleich, Schema-1-Migration rein und golden, unbekanntes Major read-only mit Originalbytes, Duplicate erkennbar (gleiche instance_id, verschiedene runtime_nonce) und aufloesbar, Host-Dirty; Parametertabelle deckungsgleich mit dem Vertrag; RFC-8785-state_hash bytegleich zu Python und Rust. | `eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe` | [OK] Exit 0 | 0,45 s | [↓ B2](#b2) |
-| B3 | Hostkontext (Anwesenheit, Parameterpunkte, Buslatenz) wird gemessen, nicht geraten; Quellhash-Gate des JUCE-Patches gruen. | `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | [OK] Exit 0 | 0,09 s | [↓ B3](#b3) |
-| B3b | Termin-B-Messgeraet: Passthrough bitgleich, Sprung-/Automations-/Latenzmessung inkl. Fehlalarm-Riegel, Bericht-Rueckweg, 0 Allokationen. | `eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe` | [OK] Exit 0 | 0,12 s | [↓ B3b](#b3b) |
-| B3c | v3-Vertrag: C++ klassifiziert den Fixture-Korpus wie das Manifest (Urteil UND Verletzungsmenge), Bandgitter und Quantisierung bitgleich. | `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | [OK] Exit 0 | 0,22 s | [↓ B3c](#b3c) |
-| B4 | StampedAudioQueue und Ein-Block-Quarantaene: Ganzblockaufnahme bitgleich ueber jeden Ringumlauf, Ueberlauf BEIDER Ringe verwirft den ganzen Block und nie eine Teilmenge, Oversize ueber der Slotkapazitaet faellt fuer die Analyse und laesst Audio unberuehrt, Flush (numSamples 0) ist kein Verlust, Mono dupliziert L, Mehrfach-Tap-Layout traegt; Quarantaene versiegelt erst mit bewiesener Fortsetzung, Seek und Transportkante verwerfen genau EINEN Block, stehende Projektzeit (FL-Teilpuffer) ist kein Bruch, Projektzeit-Ueberlauf und negative Zeit sind behandelt; Worker-Publikation folgt monotonen 50-/250-ms-Deadlines statt Batchzahl, holt nach Pausen nicht auf und laesst wartende Reset-/Frame-Aufrufer vor; verdrahtet: Passthrough bitgleich ueber 18 Blockgroessen von 1 bis 16384, 0 Samples Latenz, kein Tail, 0 Allokationen im Audiothread ueber 4000 Bloecke wechselnder Groesse mit Transportkanten, und die Engine bekommt den Strom bis auf den Block in Quarantaene. | `eq-copilot\build\plugin\EqCopQueueStressTest_artefacts\Release\EqCopQueueStressTest.exe` | [OK] Exit 0 | 3,44 s | [↓ B4](#b4) |
-| B9 | Fixed-memory Loudness (§48.1): der LoudnessAccumulator deckt sich mit der ausgebauten Vektorrechnung innerhalb ±0,1 LU (Entwurf §49) ueber konstante, rampende, zufaellige und einstuendige Korpora sowie ueber Stille unter dem absoluten Gate; Kurz-LUFS ist BITGLEICH; ein adversarialer Sweep legt 1000 Bloecke in den Grenzbin des relativen Gates und die selbstgemeldete Schranke unsicherheitLu() deckt jeden Lauf; eine Million Zellen laufen mit 0 Allokationen durch, waehrend die Gegenprobe (alte Rechnung) allozert; NaN/Inf-Zellen sind gezaehlt statt still als 0 verbucht und l_j == -70,0 exakt bleibt wertgleich; ueber dem Feingitter traegt ein OBERBAND aus Bins von 1 LU bis ueber lautheit(DBL_MAX) - mit ZWEI Pegeln darin (Korpus des T2-Pruefers), einem adversarialen Sweep im Oberband-Grenzbin, beiden Richtungen der Naht zwischen den Aufloesungen und der Gegenprobe, dass kein Block durch das Raster faellt. | `eq-copilot\build\plugin\EqCopLoudnessGoldenTest_artefacts\Release\EqCopLoudnessGoldenTest.exe` | [OK] Exit 0 | 0,17 s | [↓ B9](#b9) |
-| B5 | FeatureEngine v2 haelt Zeit-, Validity-, Event- und Bandvertraege: Bandgitter und alle 61 Quantisierungsvektoren bitgleich zum v3-Vertrag, Bitmap LSB-first mit Fuellbits 0, FFT gegen Parseval und einen Sinus auf der Binmitte, K-Gewichtung ueber 20 Hz..20 kHz unter 0,1 dB an der BS.1770-Referenzkette; Drop/Seek(laufend UND gestoppt)/Loop-Wrap/moeglicher Straddle/Transportkante/Sampleratewechsel/Neuanlauf/Beweislagewechsel trennen JEDES offene Fenster - auch den K-Filterzustand, bitgleich gemessen - waehrend FL-Teilstuecke mit stehender Projektzeit lokal weiterlaufen, aber kein unbewiesenes Projektintervall oder FFT-Event erzeugen; Frame-Stempel umfassen den echten ueberlappenden FFT-Support und bleiben an int64/u32-Grenzen darstellbar; Drop zaehlt als Segment, alles andere als Epoche; alle sieben Erzeuger-Stempelregeln fallen einzeln und mit eigener Nummer; kein spektraler Fluss ueberbrueckt eine Grenze, der Ereignisring ist fest gedeckelt; LUFS-S trifft die analytisch gerechnete Erwartung unter 0,1 LU; die Nyquist-Kappe greift bei 22,05 kHz wirklich; verdrahtet: alle sieben Gueltigkeitsbits kommen ueber die Hostbruecke durch, der Playhead-Rueckfallweg nachweislich nur zwei. | `eq-copilot\build\plugin\EqCopAnalysisGoldenTest_artefacts\Release\EqCopAnalysisGoldenTest.exe` | [OK] Exit 0 | 2,49 s | [↓ B5](#b5) |
+| A16 | Nakama Probeeq (NkAc): heute ebenfalls Passthrough bitgleich (die EQ-DSP kommt in P6), 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur active_probe zu; speichern-laden-speichern bytegleich. Seit der T3-Nacharbeit 29.08.2026 (G1 §4.2) faehrt dasselbe Bein die Gate-7-Kette AM GEBAUTEN BUNDLE Nakama Probeeq - Klasse active_probe, denn die Sondenschale traegt genau EINE Klasse je Uebersetzung: ein sonst gueltiger Stand mit measurement_position=post_fader_contribution kommt ueber setStateInformation read-only zurueck, die Instanz bleibt neutral, die Originalbytes gehen unveraendert an den Host zurueck und ein erneutes Laden waescht nichts; auch eine bereits klassifizierte Instanz faellt beim Nachreichen desselben Standes auf neutral zurueck; Gegenprobe mit insert laedt normal. Nachtrag Runde 2 (Prueferbefund P1): dass Riegel 1 KLASSENUNABHAENGIG sperrt, misst dasselbe Bein zusaetzlich direkt an der oeffentlichen positionErlaubt fuer alle vier Klassen - ohne diese vier Zeilen bliebe die urspruengliche passive_probe-Regression hier unbemerkt, weil kein Ziel mehr NAKAMA_SONDE_PASSIV baut (S9b/SONDE-007c). Die vollstaendige 16er-Matrix samt Bundlevertraegen misst B2. | `eq-copilot\build\plugin\EqCopProbeeqNullTest_artefacts\Release\EqCopProbeeqNullTest.exe` | [OK] Exit 0 | 0,07 s | [↓ A16](#a16) |
+| B1 | Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren. | `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | [OK] Exit 0 | 0,10 s | [↓ B1](#b1) |
+| B2 | State-Schema 2: Roundtrip bytegleich, Schema-1-Migration rein und golden, unbekanntes Major read-only mit Originalbytes, Duplicate erkennbar (gleiche instance_id, verschiedene runtime_nonce) und aufloesbar, Host-Dirty; Parametertabelle deckungsgleich mit dem Vertrag; RFC-8785-state_hash bytegleich zu Python und Rust. | `eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe` | [OK] Exit 0 | 0,44 s | [↓ B2](#b2) |
+| B3 | Hostkontext (Anwesenheit, Parameterpunkte, Buslatenz) wird gemessen, nicht geraten; Quellhash-Gate des JUCE-Patches gruen. | `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | [OK] Exit 0 | 0,05 s | [↓ B3](#b3) |
+| B3b | Termin-B-Messgeraet: Passthrough bitgleich, Sprung-/Automations-/Latenzmessung inkl. Fehlalarm-Riegel, Bericht-Rueckweg, 0 Allokationen. | `eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe` | [OK] Exit 0 | 0,08 s | [↓ B3b](#b3b) |
+| B3c | v3-Vertrag: C++ klassifiziert den Fixture-Korpus wie das Manifest (Urteil UND Verletzungsmenge), Bandgitter und Quantisierung bitgleich. | `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | [OK] Exit 0 | 0,21 s | [↓ B3c](#b3c) |
+| B4 | StampedAudioQueue und Ein-Block-Quarantaene: Ganzblockaufnahme bitgleich ueber jeden Ringumlauf, Ueberlauf BEIDER Ringe verwirft den ganzen Block und nie eine Teilmenge, Oversize ueber der Slotkapazitaet faellt fuer die Analyse und laesst Audio unberuehrt, Flush (numSamples 0) ist kein Verlust, Mono dupliziert L, Mehrfach-Tap-Layout traegt; Quarantaene versiegelt erst mit bewiesener Fortsetzung, Seek und Transportkante verwerfen genau EINEN Block, stehende Projektzeit (FL-Teilpuffer) ist kein Bruch, Projektzeit-Ueberlauf und negative Zeit sind behandelt; Worker-Publikation folgt monotonen 50-/250-ms-Deadlines statt Batchzahl, holt nach Pausen nicht auf und laesst wartende Reset-/Frame-Aufrufer vor; verdrahtet: Passthrough bitgleich ueber 18 Blockgroessen von 1 bis 16384, 0 Samples Latenz, kein Tail, 0 Allokationen im Audiothread ueber 4000 Bloecke wechselnder Groesse mit Transportkanten, und die Engine bekommt den Strom bis auf den Block in Quarantaene. | `eq-copilot\build\plugin\EqCopQueueStressTest_artefacts\Release\EqCopQueueStressTest.exe` | [OK] Exit 0 | 3,40 s | [↓ B4](#b4) |
+| B9 | Fixed-memory Loudness (§48.1): der LoudnessAccumulator deckt sich mit der ausgebauten Vektorrechnung innerhalb ±0,1 LU (Entwurf §49) ueber konstante, rampende, zufaellige und einstuendige Korpora sowie ueber Stille unter dem absoluten Gate; Kurz-LUFS ist BITGLEICH; ein adversarialer Sweep legt 1000 Bloecke in den Grenzbin des relativen Gates und die selbstgemeldete Schranke unsicherheitLu() deckt jeden Lauf; eine Million Zellen laufen mit 0 Allokationen durch, waehrend die Gegenprobe (alte Rechnung) allozert; NaN/Inf-Zellen sind gezaehlt statt still als 0 verbucht und l_j == -70,0 exakt bleibt wertgleich; ueber dem Feingitter traegt ein OBERBAND aus Bins von 1 LU bis ueber lautheit(DBL_MAX) - mit ZWEI Pegeln darin (Korpus des T2-Pruefers), einem adversarialen Sweep im Oberband-Grenzbin, beiden Richtungen der Naht zwischen den Aufloesungen und der Gegenprobe, dass kein Block durch das Raster faellt. | `eq-copilot\build\plugin\EqCopLoudnessGoldenTest_artefacts\Release\EqCopLoudnessGoldenTest.exe` | [OK] Exit 0 | 0,50 s | [↓ B9](#b9) |
+| B5 | FeatureEngine v2 haelt Zeit-, Validity-, Event- und Bandvertraege: Bandgitter und alle 61 Quantisierungsvektoren bitgleich zum v3-Vertrag, Bitmap LSB-first mit Fuellbits 0, FFT gegen Parseval und einen Sinus auf der Binmitte, K-Gewichtung ueber 20 Hz..20 kHz unter 0,1 dB an der BS.1770-Referenzkette; Drop/Seek(laufend UND gestoppt)/Loop-Wrap/moeglicher Straddle/Transportkante/Sampleratewechsel/Neuanlauf/Beweislagewechsel trennen JEDES offene Fenster - auch den K-Filterzustand, bitgleich gemessen - waehrend FL-Teilstuecke mit stehender Projektzeit lokal weiterlaufen, aber kein unbewiesenes Projektintervall oder FFT-Event erzeugen; Frame-Stempel umfassen den echten ueberlappenden FFT-Support und bleiben an int64/u32-Grenzen darstellbar; Drop zaehlt als Segment, alles andere als Epoche; alle sieben Erzeuger-Stempelregeln fallen einzeln und mit eigener Nummer; kein spektraler Fluss ueberbrueckt eine Grenze, der Ereignisring ist fest gedeckelt; LUFS-S trifft die analytisch gerechnete Erwartung unter 0,1 LU; die Nyquist-Kappe greift bei 22,05 kHz wirklich; verdrahtet: alle sieben Gueltigkeitsbits kommen ueber die Hostbruecke durch, der Playhead-Rueckfallweg nachweislich nur zwei. | `eq-copilot\build\plugin\EqCopAnalysisGoldenTest_artefacts\Release\EqCopAnalysisGoldenTest.exe` | [OK] Exit 0 | 2,48 s | [↓ B5](#b5) |
 | B6 | Aktiver DSP-Kern liefert die eingefrorene Referenzantwort. | `eq-copilot\build\plugin\EqCopDspGoldenTest_artefacts\Release\EqCopDspGoldenTest.exe` | [GEPLANT] geplant (ab P6) | - | - |
 | B7 | Apply/Revert ist transaktional - kein halber Zustand ueberlebt. | `eq-copilot\build\plugin\EqCopTransactionTest_artefacts\Release\EqCopTransactionTest.exe` | [GEPLANT] geplant (ab P6) | - | - |
-| B10 | v3-Envelope in C++ klassifiziert den Envelope-Korpus wie das Manifest (Urteil UND Verstossmenge, alle 14 Regeln mit Negativfixture); CRC32C trifft die RFC-3720-Vektoren, P0/P1 tragen CRC exakt 0, P2 die Pflichtsumme ueber genau die Payloadbytes; 40 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und 7671 angenommene EINBIT-Mutanten gueltiger Frames halten jede Kopfregel (reiner Zufall wird praktisch immer abgewiesen - die Invariante braucht deshalb die Mutanten, sonst spraeche sie ueber eine leere Menge), 3000 gekippte P2-Bits fallen einzeln, byteweise Zustellung liefert dieselben 40 Frames und ein kaputter Frame beendet den Strom; Pipetoken trifft das Golden aus §48.3 samt SHA-256- und RFC-4648-Vektoren; P0 verwirft nichts und meldet den 65. Eintrag, P1 koalesziert an der Position und haelt Ereignisse fuer den Reconnect vor, die P2-Schleuse ersetzt den aeltesten ungesendeten Frame, uebergibt 100 000 Frames mit 0 Allokationen (mit Gegenprobe am selben Zaehler) und liefert unter Flut keinen zerrissenen Frame; verdrahtet: Control koppelt Telemetry ueber link_id + challenge, ein ungekoppelter Telemetry-Connect wird geschlossen, der Client verbindet nach Serverneustart von selbst wieder, ein kaputter Envelope vom Server schliesst die Verbindung, und ein P0-Ueberlauf WAEHREND einer stehenden Verbindung schliesst sie ebenfalls statt still zu kuerzen. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 13,84 s | [↓ B10](#b10) |
-| B8 | Lifecycle-Klassifikation §53.5: unclassified beim Laden und audio-neutral; Schema-1 sensor\|pre\|post -> legacy (immer passiv), hub bzw. bestaetigter Schema-2-Main-State -> main; ein Scannerlauf klassifiziert nicht; read-only nimmt die Klassifikation zurueck; Brokerstart nur fuer main mit offenem Editor; die Sondenbundles bleiben bis gueltigem State neutral und werden nie main. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,13 s | [↓ B8](#b8) |
+| B10 | v3-Envelope in C++ klassifiziert den Envelope-Korpus wie das Manifest (Urteil UND Verstossmenge, alle 14 Regeln mit Negativfixture); CRC32C trifft die RFC-3720-Vektoren, P0/P1 tragen CRC exakt 0, P2 die Pflichtsumme ueber genau die Payloadbytes; 40 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und 7671 angenommene EINBIT-Mutanten gueltiger Frames halten jede Kopfregel (reiner Zufall wird praktisch immer abgewiesen - die Invariante braucht deshalb die Mutanten, sonst spraeche sie ueber eine leere Menge), 3000 gekippte P2-Bits fallen einzeln, byteweise Zustellung liefert dieselben 40 Frames und ein kaputter Frame beendet den Strom; Pipetoken trifft das Golden aus §48.3 samt SHA-256- und RFC-4648-Vektoren; P0 verwirft nichts und meldet den 65. Eintrag, P1 koalesziert an der Position und haelt Ereignisse fuer den Reconnect vor, die P2-Schleuse ersetzt den aeltesten ungesendeten Frame, uebergibt 100 000 Frames mit 0 Allokationen (mit Gegenprobe am selben Zaehler) und liefert unter Flut keinen zerrissenen Frame; verdrahtet: Control koppelt Telemetry ueber link_id + challenge, ein ungekoppelter Telemetry-Connect wird geschlossen, der Client verbindet nach Serverneustart von selbst wieder, ein kaputter Envelope vom Server schliesst die Verbindung, und ein P0-Ueberlauf WAEHREND einer stehenden Verbindung schliesst sie ebenfalls statt still zu kuerzen. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 14,19 s | [↓ B10](#b10) |
+| B8 | Lifecycle-Klassifikation §53.5: unclassified beim Laden und audio-neutral; Schema-1 sensor\|pre\|post -> legacy (immer passiv), hub bzw. bestaetigter Schema-2-Main-State -> main; ein Scannerlauf klassifiziert nicht; read-only nimmt die Klassifikation zurueck; Brokerstart nur fuer main mit offenem Editor; die Sondenbundles bleiben bis gueltigem State neutral und werden nie main. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,09 s | [↓ B8](#b8) |
 
 ### Rohe Ausgaben
 
 <a id="a1"></a>
 #### A1 | EqCopNullTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | **Exitcode:** 0 | **Dauer:** 0,21 s
+**Befehl:** `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | **Exitcode:** 0 | **Dauer:** 0,06 s
 
 stdout:
 
@@ -3972,7 +3971,7 @@ _(leer)_
 <a id="a2"></a>
 #### A2 | EqCopGoldenTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | **Exitcode:** 0 | **Dauer:** 10,94 s
+**Befehl:** `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | **Exitcode:** 0 | **Dauer:** 11,19 s
 
 stdout:
 
@@ -4005,7 +4004,7 @@ _(leer)_
 <a id="a3"></a>
 #### A3 | EqCopMarkierungTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | **Exitcode:** 0 | **Dauer:** 6,65 s
+**Befehl:** `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | **Exitcode:** 0 | **Dauer:** 6,63 s
 
 stdout:
 
@@ -4063,7 +4062,7 @@ _(leer)_
 <a id="a4"></a>
 #### A4 | broker
 
-**Befehl:** `cargo test --manifest-path broker/Cargo.toml --color never` | **Exitcode:** 0 | **Dauer:** 15,36 s
+**Befehl:** `cargo test --manifest-path broker/Cargo.toml --color never` | **Exitcode:** 0 | **Dauer:** 7,45 s
 
 stdout:
 
@@ -4071,19 +4070,19 @@ stdout:
 
 running 130 tests
 test aggregat::tests::profilfilter_laesst_fremde_sensoren_nie_still_hinein ... ok
-test aggregat::tests::schnittfenster_und_paare_im_dokument ... ok
 test aggregat::tests::filter_trennt_prozesse_und_v1_bekommt_warnung ... ok
+test aggregat::tests::schnittfenster_und_paare_im_dokument ... ok
 test dto::tests::as_f64_liefert_fuer_jede_number_einen_wert ... ok
-test bindung::tests::beschaedigte_datei_ist_sichtbarer_fehler ... ok
 test dto::tests::bestand_kommt_aus_dem_vertrag_und_hat_109_eintraege ... ok
-test dto::tests::doppelter_schluessel_wird_nicht_still_ueberschrieben ... ok
-test aggregat::tests::schreiben_erzeugt_haltbare_datei ... ok
-test dto::tests::geschachtelter_doppelter_schluessel_faellt_ebenfalls ... ok
 test bindung::tests::runde_laden_schreiben_laden ... ok
-test framing::tests::abbruch_mitten_im_frame ... ok
+test aggregat::tests::schreiben_erzeugt_haltbare_datei ... ok
+test dto::tests::doppelter_schluessel_wird_nicht_still_ueberschrieben ... ok
+test bindung::tests::beschaedigte_datei_ist_sichtbarer_fehler ... ok
+test dto::tests::geschachtelter_doppelter_schluessel_faellt_ebenfalls ... ok
 test bindung::tests::fremde_temp_restdatei_wird_weder_benutzt_noch_ueberschrieben ... ok
-test framing::tests::hin_und_zurueck ... ok
 test aggregat::tests::alte_temp_restdatei_blockiert_snapshot_nicht ... ok
+test framing::tests::abbruch_mitten_im_frame ... ok
+test framing::tests::hin_und_zurueck ... ok
 test framing::tests::kein_utf8_wird_verworfen ... ok
 test framing::tests::laengengrenze_beidseitig ... ok
 test aggregat::tests::gleicher_zeitstempel_ueberschreibt_keinen_snapshot ... ok
@@ -4105,7 +4104,6 @@ test protokoll::tests::v2_hello_mit_nonce_wird_angenommen ... ok
 test protokoll::tests::version_3_bekommt_reject_mit_spanne ... ok
 test register_tests::hoermarkierung_sperrt_fremde_evidenz_bis_reset_nach_beobachtetem_false ... ok
 test register_tests::konflikt_kommt_und_geht_mit_der_zweiten_verbindung ... ok
-test bindung::tests::wiederholtes_schreiben_ersetzt_den_vollstaendigen_stand ... ok
 test register_tests::marker_disconnect_bleibt_fail_closed_bis_reconnect_false_und_neuem_reset ... ok
 test register_tests::owner_wechsel_stellt_die_vollstaendigen_hello_metadaten_und_rechte_wieder_her ... ok
 test register_tests::paar_ausgerichtet_bei_deckungsgleichen_fenstern ... ok
@@ -4118,33 +4116,43 @@ test register_tests::paarfenster_an_i64_raendern_bleiben_unklar_statt_ueberzulau
 test register_tests::profilbindung_haelt_ueber_reconnect ... ok
 test register_tests::sechzehn_sensoren_werden_korrekt_benannt ... ok
 test register_tests::snapshot_sortiert_gleiche_labels_stabil_nach_sensor_id ... ok
-test bindung::tests::parallele_schreiber_hinterlassen_genau_einen_intakten_stand ... ok
 test register_tests::stale_nutzt_monotone_zeit_und_ignoriert_wallclock_spruenge ... ok
-test register_tests::zwei_fl_prozesse_bleiben_getrennte_sessions ... ok
 test register_tests::unbestaetigte_marker_nonces_wachsen_nicht_unbegrenzt ... ok
-test aggregat::tests::parallele_snapshots_gleicher_millisekunde_bleiben_alle_erhalten ... ok
+test register_tests::zwei_fl_prozesse_bleiben_getrennte_sessions ... ok
 test server::tests::falsche_protokollversion_bekommt_reject ... ok
-test server::tests::stoppen_bricht_stille_connection_ohne_client_weckhilfe_ab ... ok
-test server::tests::fremdes_session_token_beendet_established_statt_acklos_zu_haengen ... ok
 test server::tests::handshake_heartbeat_und_geordneter_abschied ... ok
-test server::tests::user_sid_ist_wohlgeformt ... ok
-test server::tests::doppelte_sensor_id_wird_als_konflikt_sichtbar ... ok
-test server::tests::feindliches_laengenpraefix_beendet_nur_diese_verbindung ... ok
+test server::tests::fremdes_session_token_beendet_established_statt_acklos_zu_haengen ... ok
+test server::tests::sensor_register_hat_harte_grenze_aber_bekannte_id_darf_reconnecten ... ok
+test server::tests::sequenzruecklauf_und_duplikat_beenden_jeweils_die_verbindung ... ok
+test server::tests::bye_braucht_exakt_das_ausgegebene_session_token ... ok
 test server::tests::ungelesenes_welcome_blockiert_connection_ende_nicht ... ok
-test server::tests::zweiter_broker_auf_demselben_namen_scheitert_sichtbar ... ok
+test server::tests::user_sid_ist_wohlgeformt ... ok
+test server::tests::v1_heartbeat_mit_measurement_ist_protokollbruch ... ok
 test server::tests::vorhandene_leere_instance_nonce_wird_nicht_als_uuid_umgedeutet ... ok
+test server::tests::ungueltige_messstaende_beenden_ohne_ack_und_entwerten_alte_evidenz ... ok
+test server::tests::zweiter_broker_auf_demselben_namen_scheitert_sichtbar ... ok
+test server::tests::connection_und_pipe_instanzzahl_bleiben_hart_begrenzt ... ok
 test transport::bootstrap::tests::binaerframe_statt_hello_wird_abgelehnt ... ok
 test transport::bootstrap::tests::hello_ueber_16_kib_faellt_vor_dem_parser ... ok
 test transport::bootstrap::tests::hex32_riegel ... ok
+test server::tests::zweite_lebende_gleiche_nonce_wird_abgelehnt_ohne_die_erste_zu_trennen ... ok
+test server::tests::zweites_hello_kann_die_established_bindung_nicht_umschreiben ... ok
 test transport::bootstrap::tests::koppeln_und_entkoppeln_sind_symmetrisch ... ok
-test server::tests::v2_heartbeat_bekommt_ack_und_messstand_landet_im_register ... ok
 test transport::bootstrap::tests::kopplung_verlangt_alle_drei_merkmale ... ok
+test server::tests::stoppen_bricht_stille_connection_ohne_client_weckhilfe_ab ... ok
+test server::tests::feindliches_laengenpraefix_beendet_nur_diese_verbindung ... ok
+test server::tests::doppelte_sensor_id_wird_als_konflikt_sichtbar ... ok
+test server::tests::v2_heartbeat_bekommt_ack_und_messstand_landet_im_register ... ok
+test server::tests::ungelesenes_reject_haelt_den_flush_nur_bis_zur_harten_frist ... ok
 test transport::bootstrap::tests::offene_kopplungen_sind_gedeckelt ... ok
+test bindung::tests::wiederholtes_schreiben_ersetzt_den_vollstaendigen_stand ... ok
 test transport::bootstrap::tests::unbekanntes_feld_im_hello_faellt ... ok
 test transport::bootstrap::tests::v2_hello_bleibt_v2 ... ok
 test transport::bootstrap::tests::v3_control_wird_vollstaendig_validiert ... ok
 test transport::legacy_v2::tests::echtes_v2_json_geht_weiterhin_durch ... ok
+test server::tests::acceptor_stop_und_sofortiger_neustart_verlieren_keinen_wakeup ... ok
 test transport::legacy_v2::tests::v2_json_ist_kein_gueltiger_v3_envelope ... ok
+test bindung::tests::parallele_schreiber_hinterlassen_genau_einen_intakten_stand ... ok
 test transport::legacy_v2::tests::v3_binaerframe_wird_nie_als_v2_json_gedeutet ... ok
 test transport::pipetoken::tests::base32_gegen_rfc_4648 ... ok
 test transport::pipetoken::tests::golden_aus_dem_entwurf ... ok
@@ -4152,56 +4160,47 @@ test transport::pipetoken::tests::probe_namensraum_laesst_nur_probe_namen_durch 
 test transport::pipetoken::tests::schreibweise_der_sid_ist_egal ... ok
 test transport::pipetoken::tests::tokenform_ist_stabil ... ok
 test transport::pipetoken::tests::verschiedene_sids_verschiedene_token ... ok
-test server::tests::sequenzruecklauf_und_duplikat_beenden_jeweils_die_verbindung ... ok
-test server::tests::sensor_register_hat_harte_grenze_aber_bekannte_id_darf_reconnecten ... ok
-test server::tests::v1_heartbeat_mit_measurement_ist_protokollbruch ... ok
-test server::tests::zweite_lebende_gleiche_nonce_wird_abgelehnt_ohne_die_erste_zu_trennen ... ok
-test server::tests::zweites_hello_kann_die_established_bindung_nicht_umschreiben ... ok
-test server::tests::bye_braucht_exakt_das_ausgegebene_session_token ... ok
+test aggregat::tests::parallele_snapshots_gleicher_millisekunde_bleiben_alle_erhalten ... ok
 test transport::v3::tests::crc32c_gegen_bekannte_vektoren ... ok
-test transport::v3::tests::grenzen_des_rahmens ... ok
 test transport::v3::tests::jeder_regelname_ist_rueckuebersetzbar ... ok
 test transport::v3::tests::json_rundlauf ... ok
-test transport::v3::tests::p2_traegt_pflicht_crc ... ok
 test transport::v3::tests::ratengrenze_haelt_das_fenster ... ok
-test transport::v3::tests::stromleser_vertraegt_byteweise_zustellung ... ok
-test transport::v3::tests::stufe_drei_sammelt_und_sortiert ... ok
+test transport::v3::tests::p2_traegt_pflicht_crc ... ok
 test transport::v3::tests::u32_ueberlauf_wird_nicht_akzeptiert ... ok
 test transport::warteschlange::tests::ingress_droppt_p2_zuerst_und_trennt_bei_p0 ... ok
+test transport::v3::tests::grenzen_des_rahmens ... ok
 test transport::warteschlange::tests::p0_verwirft_nie_und_meldet_ueberlauf ... ok
-test transport::warteschlange::tests::p1_haelt_ereignisse_fuer_den_reconnect_vor ... ok
-test transport::warteschlange::tests::p1_koalesziert_snapshots_an_ihrer_position ... ok
+test transport::v3::tests::stromleser_vertraegt_byteweise_zustellung ... ok
+test transport::v3::tests::stufe_drei_sammelt_und_sortiert ... ok
 test transport::warteschlange::tests::p2_ersetzt_den_aeltesten_ungesendeten ... ok
-test transport::warteschlange::tests::p2_flut_hungert_p0_nicht_aus ... ok
+test transport::warteschlange::tests::p1_koalesziert_snapshots_an_ihrer_position ... ok
+test transport::warteschlange::tests::p1_haelt_ereignisse_fuer_den_reconnect_vor ... ok
 test vertrag::tests::additiv_ohne_maxproperties_bricht_das_laden ... ok
+test transport::warteschlange::tests::p2_flut_hungert_p0_nicht_aus ... ok
 test vertrag::tests::discriminator_als_zahl_bricht_das_laden ... ok
-test server::tests::ungueltige_messstaende_beenden_ohne_ack_und_entwerten_alte_evidenz ... ok
 test vertrag::tests::fehlendes_pflichtfeld_zeigt_auf_das_elternobjekt ... ok
+test vertrag::tests::maxlength_als_gleitkommazahl_bricht_das_laden ... ok
+test vertrag::tests::laenge_zaehlt_codepunkte_nicht_bytes ... ok
+test vertrag::tests::required_mit_nicht_string_bricht_das_laden ... ok
 test vertrag::tests::haengende_referenz_bricht_das_laden ... ok
 test vertrag::tests::integer_akzeptiert_1punkt0 ... ok
-test vertrag::tests::laenge_zaehlt_codepunkte_nicht_bytes ... ok
-test vertrag::tests::maxlength_als_gleitkommazahl_bricht_das_laden ... ok
-test vertrag::tests::oneof_ohne_discriminator_bricht_das_laden ... ok
-test vertrag::tests::required_mit_nicht_string_bricht_das_laden ... ok
 test vertrag::tests::type_als_zahl_bricht_das_laden ... ok
+test vertrag::tests::oneof_ohne_discriminator_bricht_das_laden ... ok
 test vertrag::tests::typfehler_erzeugt_keine_lawine ... ok
 test vertrag::tests::unbekannter_discriminator_wird_abgelehnt ... ok
-test vertrag::tests::unbekanntes_schluesselwort_bricht_das_laden ... ok
-test vertrag::tests::verletzungen_sind_kanonisch_sortiert_und_doppelfrei ... ok
-test vertrag::tests::zahlengleichheit_ist_numerisch ... ok
 test vertrag::tests::textriegel_hat_dieselbe_dokumentgrenze_wie_cpp_und_python ... ok
-test server::tests::connection_und_pipe_instanzzahl_bleiben_hart_begrenzt ... ok
-test server::tests::ungelesenes_reject_haelt_den_flush_nur_bis_zur_harten_frist ... ok
+test vertrag::tests::zahlengleichheit_ist_numerisch ... ok
+test vertrag::tests::verletzungen_sind_kanonisch_sortiert_und_doppelfrei ... ok
+test vertrag::tests::unbekanntes_schluesselwort_bricht_das_laden ... ok
 test transport::server_v3::tests::beendete_verbindungen_werden_geerntet ... ok
 test transport::server_v3::tests::blockierende_senke_haelt_den_leser_nicht_auf ... ok
 test transport::server_v3::tests::p0_auf_der_telemetriepipe_wird_abgewiesen ... ok
 test transport::server_v3::tests::p0_ueberlauf_trennt_die_verbindung ... ok
 test transport::server_v3::tests::p2_auf_der_controlpipe_wird_abgewiesen ... ok
-test server::tests::acceptor_stop_und_sofortiger_neustart_verlieren_keinen_wakeup ... ok
 test transport::server_v3::tests::control_ende_beendet_die_telemetrie ... ok
 test transport::server_v3::tests::acceptor_ueberlebt_die_verbindungsgrenze ... ok
 
-test result: ok. 130 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.33s
+test result: ok. 130 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.13s
 
 
 running 0 tests
@@ -4211,26 +4210,26 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
 running 0 tests
 
-test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
 
 running 0 tests
 
-test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
 
 running 9 tests
 test quantisierung_stimmt_mit_den_testvektoren ... ok
+test bandgitter_ist_lesbar_und_in_sich_stimmig ... ok
 test textriegel_deckt_die_gemeinsame_falltabelle ... ok
 test bandwertgrenzen_stimmen_mit_dem_vertrag ... ok
-test bandgitter_ist_lesbar_und_in_sich_stimmig ... ok
-test envelope_korpus_klassifiziert_wie_das_manifest ... ok
 test jcs_fixtures_stimmen_mit_manifest ... ok
-test dto_korpus_klassifiziert_wie_das_manifest ... ok
 test fb_korpus_klassifiziert_wie_das_manifest ... ok
+test dto_korpus_klassifiziert_wie_das_manifest ... ok
+test envelope_korpus_klassifiziert_wie_das_manifest ... ok
 test korpus_klassifiziert_wie_das_manifest ... ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.22s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
 
 
 running 9 tests
@@ -4244,19 +4243,19 @@ test schreiben_und_pruefen_sind_zueinander_invers ... ok
 test fragmentierung_aendert_das_ergebnis_nie ... ok
 test einzelne_gekippte_bytes_werden_nie_still_angenommen ... ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s
 
 
 running 0 tests
 
-test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 ```
 
 stderr:
 
 ```text
    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.18s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.49s
      Running unittests src\lib.rs (broker\target\debug\deps\eqcop_broker-3bd50970b42ce1c0.exe)
      Running unittests src\main.rs (broker\target\debug\deps\eqcop_broker-95fc09d40727420b.exe)
      Running unittests src\bin\eqcop-broker-probe.rs (broker\target\debug\deps\eqcop_broker_probe-af1d3f20e690c9d6.exe)
@@ -4269,7 +4268,7 @@ stderr:
 <a id="a4b"></a>
 #### A4b | EqCopPipeClientTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopPipeClientTest_artefacts\Release\EqCopPipeClientTest.exe` | **Exitcode:** 0 | **Dauer:** 1,16 s
+**Befehl:** `eq-copilot\build\plugin\EqCopPipeClientTest_artefacts\Release\EqCopPipeClientTest.exe` | **Exitcode:** 0 | **Dauer:** 1,19 s
 
 stdout:
 
@@ -4287,7 +4286,7 @@ PIPECLIENT-LIFECYCLE-TEST
   ok      ACK mit falscher Sequenz wird nicht als Bestaetigung gezaehlt
   ok      Welcome mit schemafremdem Zusatzfeld wird abgelehnt
   ok      ACK mit schemafremdem Zusatzfeld wird abgelehnt
-  ok      ein absolutes Zeitbudget gilt fuer Kopf, Body und Teiltransfers  [321 ms]
+  ok      ein absolutes Zeitbudget gilt fuer Kopf, Body und Teiltransfers  [328 ms]
   ok      u64-Dropzaehler saettigt auf die gemeinsame i64-Wire-Grenze
   ok      200 konkurrierende start/stop-Paare ohne joinable-Leak
 PIPECLIENT-LIFECYCLE-TEST OK - 0 Fehler
@@ -4300,7 +4299,7 @@ _(leer)_
 <a id="a5"></a>
 #### A5 | pruefe_v3_vertrag.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | **Exitcode:** 0 | **Dauer:** 3,45 s
+**Befehl:** `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | **Exitcode:** 0 | **Dauer:** 1,89 s
 
 stdout:
 
@@ -4343,7 +4342,7 @@ C:\Users\phili\Projekte\Nakama\tools\eq-copilot\pruefe_v3_vertrag.py:933: Deprec
 <a id="a6"></a>
 #### A6 | erzeuge_bandgitter.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,32 s
+**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,18 s
 
 stdout:
 
@@ -4365,7 +4364,7 @@ _(leer)_
 <a id="a7"></a>
 #### A7 | erzeuge_quantisierung.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,18 s
+**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,87 s
 
 stdout:
 
@@ -4382,7 +4381,7 @@ _(leer)_
 <a id="a8"></a>
 #### A8 | erzeuge_v3_fixtures.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_v3_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,25 s
+**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_v3_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 1,10 s
 
 stdout:
 
@@ -4398,7 +4397,7 @@ _(leer)_
 <a id="a9"></a>
 #### A9 | pruefe_flatc_drift.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | **Exitcode:** 0 | **Dauer:** 2,41 s
+**Befehl:** `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | **Exitcode:** 0 | **Dauer:** 0,35 s
 
 stdout:
 
@@ -4423,7 +4422,7 @@ _(leer)_
 <a id="a10"></a>
 #### A10 | erzeuge_fb_fixtures.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 1,83 s
+**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 1,51 s
 
 stdout:
 
@@ -4439,7 +4438,7 @@ _(leer)_
 <a id="a11"></a>
 #### A11 | pruefe_v2_schemas.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | **Exitcode:** 0 | **Dauer:** 0,40 s
+**Befehl:** `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | **Exitcode:** 0 | **Dauer:** 0,31 s
 
 stdout:
 
@@ -4461,7 +4460,7 @@ _(leer)_
 <a id="a12"></a>
 #### A12 | erzeuge_state_fixtures.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,46 s
+**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,30 s
 
 stdout:
 
@@ -4480,7 +4479,7 @@ _(leer)_
 <a id="a13"></a>
 #### A13 | pruefe_host_capabilities.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\pruefe_host_capabilities.py` | **Exitcode:** 0 | **Dauer:** 0,39 s
+**Befehl:** `py -3.13 tools\eq-copilot\pruefe_host_capabilities.py` | **Exitcode:** 0 | **Dauer:** 0,25 s
 
 stdout:
 
@@ -4557,7 +4556,7 @@ _(leer)_
 <a id="a14"></a>
 #### A14 | pruefe_kern_identitaetsfrei.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\pruefe_kern_identitaetsfrei.py` | **Exitcode:** 0 | **Dauer:** 1,90 s
+**Befehl:** `py -3.13 tools\eq-copilot\pruefe_kern_identitaetsfrei.py` | **Exitcode:** 0 | **Dauer:** 0,64 s
 
 stdout:
 
@@ -4610,7 +4609,7 @@ _(leer)_
 <a id="a17"></a>
 #### A17 | pruefe_installer_manifest.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\pruefe_installer_manifest.py` | **Exitcode:** 0 | **Dauer:** 1,07 s
+**Befehl:** `py -3.13 tools\eq-copilot\pruefe_installer_manifest.py` | **Exitcode:** 0 | **Dauer:** 0,92 s
 
 stdout:
 
@@ -4731,7 +4730,7 @@ _(leer)_
 <a id="a18"></a>
 #### A18 | pruefe_installer_gegenpfad.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\pruefe_installer_gegenpfad.py` | **Exitcode:** 0 | **Dauer:** 57,04 s
+**Befehl:** `py -3.13 tools\eq-copilot\pruefe_installer_gegenpfad.py` | **Exitcode:** 0 | **Dauer:** 46,57 s
 
 stdout:
 
@@ -4743,9 +4742,9 @@ stdout:
       - $null -ne (Get-Process -Name 'FL64', 'FL', 'FL Studio' -ErrorAction SilentlyContinue)
       + $false   # SANDBOX-PROBE (Kanon-Bein A18): kein Host haelt hier ein Bundle
       - $erlaubteVst3Basis = Kanonischer-Pfad (Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::CommonProgramFiles)) 'VST3')
-      + $erlaubteVst3Basis = Kanonischer-Pfad 'C:\Users\phili\AppData\Local\Temp\nakama-gegenpfad-io24y5be\ziel\VST3'
+      + $erlaubteVst3Basis = Kanonischer-Pfad 'C:\Users\phili\AppData\Local\Temp\nakama-gegenpfad-e8dn3a1x\ziel\VST3'
       - $erlaubteBrokerBasis = Kanonischer-Pfad (Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFiles)) 'evenacadia\Nakama')
-      + $erlaubteBrokerBasis = Kanonischer-Pfad 'C:\Users\phili\AppData\Local\Temp\nakama-gegenpfad-io24y5be\ziel\programme\evenacadia\Nakama'
+      + $erlaubteBrokerBasis = Kanonischer-Pfad 'C:\Users\phili\AppData\Local\Temp\nakama-gegenpfad-e8dn3a1x\ziel\programme\evenacadia\Nakama'
 
 [0b] Nicht rueckwegfaehiges Fremdbundle faellt vor der Installation
   ok      Bundle ohne erwartete innere Payload wird fail-closed verweigert  [Exit 1]
@@ -4754,9 +4753,9 @@ stdout:
 [1] Installieren
   ok      Installationslauf endet mit Exit 0  [Exit 0: m_null).
   ok      Nakama Suna : stillgelegt seit 2026-08-28, nicht installiert
-  ok      EQ-Copilot installiert  [C:\Users\phili\AppData\Local\Temp\nakama-gegenpfad-io24y5be\ziel\VST3\EQ-Copilot.vst3]
-  ok      Nakama Probeeq installiert  [C:\Users\phili\AppData\Local\Temp\nakama-gegenpfad-io24y5be\ziel\VST3\Nakama Probeeq.vst3]
-  ok      eqcop-broker.exe installiert  [C:\Users\phili\AppData\Local\Temp\nakama-gegenpfad-io24y5be\ziel\programme\evenacadia\Nakama\eqcop-broker.exe]
+  ok      EQ-Copilot installiert  [C:\Users\phili\AppData\Local\Temp\nakama-gegenpfad-e8dn3a1x\ziel\VST3\EQ-Copilot.vst3]
+  ok      Nakama Probeeq installiert  [C:\Users\phili\AppData\Local\Temp\nakama-gegenpfad-e8dn3a1x\ziel\VST3\Nakama Probeeq.vst3]
+  ok      eqcop-broker.exe installiert  [C:\Users\phili\AppData\Local\Temp\nakama-gegenpfad-e8dn3a1x\ziel\programme\evenacadia\Nakama\eqcop-broker.exe]
 INSTALLATION OK
 ]
   ok      geschuetzter Anker liegt getrennt von Repo-Diagnose und Repo-rueckweg
@@ -4925,7 +4924,7 @@ _(leer)_
 <a id="a19"></a>
 #### A19 | erzeuge_bandgitter_header.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_bandgitter_header.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,22 s
+**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_bandgitter_header.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,16 s
 
 stdout:
 
@@ -4942,7 +4941,7 @@ _(leer)_
 <a id="a20"></a>
 #### A20 | erzeuge_envelope_fixtures.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_envelope_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,55 s
+**Befehl:** `py -3.13 tools\eq-copilot\erzeuge_envelope_fixtures.py --pruefen` | **Exitcode:** 0 | **Dauer:** 0,33 s
 
 stdout:
 
@@ -4958,7 +4957,7 @@ _(leer)_
 <a id="a21"></a>
 #### A21 | transport_fuzz
 
-**Befehl:** `cargo test --manifest-path broker/Cargo.toml --test transport_fuzz --color never` | **Exitcode:** 0 | **Dauer:** 0,96 s
+**Befehl:** `cargo test --manifest-path broker/Cargo.toml --test transport_fuzz --color never` | **Exitcode:** 0 | **Dauer:** 1,10 s
 
 stdout:
 
@@ -4970,52 +4969,52 @@ test feindliche_laengen_loesen_keine_allokation_aus ... ok
 test ratengrenze_haelt_unter_flut ... ok
 test zufallsbytes_bringen_den_pruefer_nie_aus_dem_tritt ... ok
 test jedes_gekippte_payloadbit_eines_p2_frames_faellt_an_der_crc ... ok
-test payload_an_der_paketgrenze_wird_angenommen_darueber_nicht ... ok
 test schreiben_und_pruefen_sind_zueinander_invers ... ok
+test payload_an_der_paketgrenze_wird_angenommen_darueber_nicht ... ok
 test fragmentierung_aendert_das_ergebnis_nie ... ok
 test einzelne_gekippte_bytes_werden_nie_still_angenommen ... ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
 ```
 
 stderr:
 
 ```text
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.70s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.81s
      Running tests\transport_fuzz.rs (broker\target\debug\deps\transport_fuzz-c05695697064a160.exe)
 ```
 
 <a id="a22"></a>
 #### A22 | pruefe_ipc_last.py
 
-**Befehl:** `py -3.13 tools\eq-copilot\pruefe_ipc_last.py` | **Exitcode:** 0 | **Dauer:** 10,42 s
+**Befehl:** `py -3.13 tools\eq-copilot\pruefe_ipc_last.py` | **Exitcode:** 0 | **Dauer:** 9,98 s
 
 stdout:
 
 ```text
   ok      beide Probeprogramme verweigern Golden- und v1-Pipename
-Probe-Pipe: \\.\pipe\evenacadia.nakama.v3.probe.last.21680.1787984668
-  BEREIT \\.\pipe\evenacadia.nakama.v3.probe.last.21680.1787984668
-SONDE-010 | Lastbein: 32 Sonden, 8 s, Pipe \\.\pipe\evenacadia.nakama.v3.probe.last.21680.1787984668
+Probe-Pipe: \\.\pipe\evenacadia.nakama.v3.probe.last.1436.1787985146
+  BEREIT \\.\pipe\evenacadia.nakama.v3.probe.last.1436.1787985146
+SONDE-010 | Lastbein: 32 Sonden, 8 s, Pipe \\.\pipe\evenacadia.nakama.v3.probe.last.1436.1787985146
   verbunden: 32 Control, 32 Telemetrie
-{"sonden":32,"sekunden":8,"p2_veroeffentlicht":133024,"p2_gesendet":88946,"p2_ersetzt":44164,"p0_gesendet":10016,"p0_beantwortet":10016,"p0_latenz_max_ms":21,"p0_latenz_p99_ms":20,"p0_ueberlaeufe":0,"envelope_abweisungen":0}
+{"sonden":32,"sekunden":8,"p2_veroeffentlicht":132640,"p2_gesendet":89616,"p2_ersetzt":43133,"p0_gesendet":10016,"p0_beantwortet":10016,"p0_latenz_max_ms":21,"p0_latenz_p99_ms":20,"p0_ueberlaeufe":0,"envelope_abweisungen":0}
   ok      P0-Befehle wurden ueberhaupt gesendet  [10016]
   ok      KEIN P0-Frame geht verloren  [10016/10016]
   ok      P0-Antwortlatenz bleibt beschraenkt  [max 21 ms, p99 20 ms, Schranke 1000 ms]
-  ok      es lag WIRKLICH Rueckstau an (Cap 2 hat ersetzt)  [44164 ersetzte P2-Frames]
+  ok      es lag WIRKLICH Rueckstau an (Cap 2 hat ersetzt)  [43133 ersetzte P2-Frames]
   ok      kein Envelope wurde abgewiesen  [0]
   ok      keine P0-Queue lief ueber  [0]
 LASTBEIN GRUEN
-Brokerbericht: {"abweisungen": 0, "acceptor_wartet_auf_instanz": 0, "angenommen": 64, "control_getrennt": 32, "control_verbindungen": 32, "geschlossen_bootstrap": 0, "geschlossen_envelope": 0, "geschlossen_familie": 0, "geschlossen_kopplung": 0, "geschlossen_p0_ueberlauf": 0, "geschlossen_rate": 0, "geschlossen_writer": 0, "ingress_hoechststand": 3, "ingress_p1_verworfen": 0, "ingress_p2_verworfen": 0, "letzter_grund": "", "p0": 10016, "p0_beantwortet": 10016, "p1": 0, "p2": 88946, "pipe": "\\\\.\\pipe\\evenacadia.nakama.v3.probe.last.21680.1787984668", "telemetrie_getrennt": 32, "telemetrie_verbindungen": 32}
+Brokerbericht: {"abweisungen": 0, "acceptor_wartet_auf_instanz": 0, "angenommen": 64, "control_getrennt": 32, "control_verbindungen": 32, "geschlossen_bootstrap": 0, "geschlossen_envelope": 0, "geschlossen_familie": 0, "geschlossen_kopplung": 0, "geschlossen_p0_ueberlauf": 0, "geschlossen_rate": 0, "geschlossen_writer": 0, "ingress_hoechststand": 3, "ingress_p1_verworfen": 0, "ingress_p2_verworfen": 0, "letzter_grund": "", "p0": 10016, "p0_beantwortet": 10016, "p1": 0, "p2": 89616, "pipe": "\\\\.\\pipe\\evenacadia.nakama.v3.probe.last.1436.1787985146", "telemetrie_getrennt": 32, "telemetrie_verbindungen": 32}
   ok      das C++-Lastbein selbst ist gruen  [Exit 0]
   ok      der Rust-Broker hat einen Bericht geliefert  [23 Felder]
   ok      32 Control-Verbindungen im Broker angekommen  [32]
   ok      32 Telemetrieverbindungen GEKOPPELT (nicht nur verbunden)  [32]
   ok      der Broker hat P0 gesehen und beantwortet  [10016 empfangen / 10016 beantwortet]
-  ok      und P2 ueber die zweiten Verbindungen  [88946]
+  ok      und P2 ueber die zweiten Verbindungen  [89616]
   ok      keine Verbindung wegen Envelope, Rate oder P0-Ueberlauf geschlossen  [envelope=0 rate=0 p0=0]
   ok      kein P0-Frame geht verloren (Clientseite)  [10016/10016]
-  ok      es lag wirklich Rueckstau an  [44164 ersetzte P2-Frames]
+  ok      es lag wirklich Rueckstau an  [43133 ersetzte P2-Frames]
 GRUEN
 ```
 
@@ -5026,7 +5025,7 @@ _(leer)_
 <a id="a16"></a>
 #### A16 | EqCopProbeeqNullTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopProbeeqNullTest_artefacts\Release\EqCopProbeeqNullTest.exe` | **Exitcode:** 0 | **Dauer:** 0,09 s
+**Befehl:** `eq-copilot\build\plugin\EqCopProbeeqNullTest_artefacts\Release\EqCopProbeeqNullTest.exe` | **Exitcode:** 0 | **Dauer:** 0,07 s
 
 stdout:
 
@@ -5125,7 +5124,7 @@ _(leer)_
 <a id="b1"></a>
 #### B1 | EqCopIdentityTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | **Exitcode:** 0 | **Dauer:** 0,14 s
+**Befehl:** `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | **Exitcode:** 0 | **Dauer:** 0,10 s
 
 stdout:
 
@@ -5181,7 +5180,7 @@ stdout:
   ok      NakamaSuna: stillgelegt - auch kein eigener juce_add_plugin-Block
   ok      NakamaSuna: das Bauskript erklaert die Stilllegung an Ort und Stelle
   ok      main: moduleinfo.json des gebauten Bundles gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\Resources\moduleinfo.json]
-  ok      main: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [29 Aug 2026 8:21:37am vs 29 Aug 2026 6:07:18am]
+  ok      main: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [29 Aug 2026 8:30:48am vs 29 Aug 2026 6:07:18am]
   ok      main: moduleinfo.json ist nach dem Kommaputz parsebar
   ok      main: Produktname wie im Manifest  [EQ-Copilot]
   ok      main: Vendor wie im Manifest  [evenacadia]
@@ -5191,7 +5190,7 @@ stdout:
   ok      main: Unterkategorien wie im Manifest
   ok      main: keine fremde Ziel-CID im Bundle
   ok      active-probe: moduleinfo.json des gebauten Bundles gefunden  [C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\NakamaProbeeq_artefacts\Release\VST3\Nakama Probeeq.vst3\Contents\Resources\moduleinfo.json]
-  ok      active-probe: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [29 Aug 2026 8:22:28am vs 29 Aug 2026 6:07:18am]
+  ok      active-probe: moduleinfo.json ist nicht aelter als plugin/CMakeLists.txt  [29 Aug 2026 8:30:55am vs 29 Aug 2026 6:07:18am]
   ok      active-probe: moduleinfo.json ist nach dem Kommaputz parsebar
   ok      active-probe: Produktname wie im Manifest  [Nakama Probeeq]
   ok      active-probe: Vendor wie im Manifest  [evenacadia]
@@ -5257,7 +5256,7 @@ _(leer)_
 <a id="b2"></a>
 #### B2 | EqCopStateMigrationTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe` | **Exitcode:** 0 | **Dauer:** 0,45 s
+**Befehl:** `eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe` | **Exitcode:** 0 | **Dauer:** 0,44 s
 
 stdout:
 
@@ -5409,7 +5408,7 @@ Fixtures: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state
   ok      Duplikat: gleiche instance_id (der State IST der Messpunkt)  [11111111-2222-3333-4444-555555555555]
   ok      Duplikat: verschiedene runtime_nonce
   ok      neueSensorId loest auf
-  ok      neue instance_id: 32 Hex, verschieden von beiden  [28dcdbdd693c48c68ebbd132fbd10ba6]
+  ok      neue instance_id: 32 Hex, verschieden von beiden  [b4a2bffd9a744dbbad33ab19c497f34d]
   ok      Label und Rolle bleiben bei der Aufloesung
   ok      Aufloesung meldet genau einmal Host-Dirty  [1]
   ok      neue instance_id wird gespeichert und geladen
@@ -5429,7 +5428,7 @@ Fixtures: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state
   ok      == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
   ok      nie restauriert: Herkunft frisch
   ok      frisch: legacy+insert = v2 'sensor', leeres Label
-  ok      frisch: instance_id ist hex32  [a96951cb39154276b74f6065efb5a6dd]
+  ok      frisch: instance_id ist hex32  [e359542dadf34dfbb00cf2892618c0aa]
   ok      frisch speichert NakamaState schema 2, legacy
   ok      Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
   ok      Recall: Save nach Recall ist bytegleich zum Golden
@@ -5445,7 +5444,7 @@ _(leer)_
 <a id="b3"></a>
 #### B3 | EqCopHostContextTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | **Exitcode:** 0 | **Dauer:** 0,09 s
+**Befehl:** `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | **Exitcode:** 0 | **Dauer:** 0,05 s
 
 stdout:
 
@@ -5557,7 +5556,7 @@ _(leer)_
 <a id="b3b"></a>
 #### B3b | EqCopHostProbeTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe` | **Exitcode:** 0 | **Dauer:** 0,12 s
+**Befehl:** `eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe` | **Exitcode:** 0 | **Dauer:** 0,08 s
 
 stdout:
 
@@ -5630,7 +5629,7 @@ stdout:
   ok      die Blockzahl im Bericht deckt sich mit der Messung
   ok      das Ereignisprotokoll liegt im Bericht
   ok      die Gueltigkeitsmaske steht im Bericht
-  ok      Bericht wurde als Datei geschrieben: C:\Users\phili\AppData\Roaming\evenacadia\nakama\spike\host-probe-20260829-082440.json
+  ok      Bericht wurde als Datei geschrieben: C:\Users\phili\AppData\Roaming\evenacadia\nakama\spike\host-probe-20260829-083237.json
   ok      die geschriebene Datei laesst sich wieder einlesen und traegt dieselbe Messung
 == I - Zuruecksetzen und Ringueberlauf ==
   ok      Zuruecksetzen leert die Messung - und erzeugt dabei keinen Scheinsprung
@@ -5649,7 +5648,7 @@ stdout:
 == J - Audiothread: keine Allokation ==
   ok      500 Bloecke mit Kontext, Transportwechseln und je 8 Automationspunkten: 0 Allokationen
 == J2 - Nebenlaeufig lesen, waehrend der Audiothread schreibt ==
-  ok      der zweite Thread hat waehrenddessen wirklich geschrieben (45757 Bloecke)
+  ok      der zweite Thread hat waehrenddessen wirklich geschrieben (69678 Bloecke)
   ok      200 nebenlaeufige Lesevorgaenge liefern durchweg plausible Eintraege und Zaehler
   ok      der letzte Lesevorgang hat Eintraege geliefert
   hinweis   Grenze: Rauchtest, kein Beweis der Tearing-Freiheit (der Wiederholpfad wird selten bis nie betreten)
@@ -5672,7 +5671,7 @@ _(leer)_
 <a id="b3c"></a>
 #### B3c | EqCopSchemaTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | **Exitcode:** 0 | **Dauer:** 0,22 s
+**Befehl:** `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | **Exitcode:** 0 | **Dauer:** 0,21 s
 
 stdout:
 
@@ -5753,7 +5752,7 @@ _(leer)_
 <a id="b4"></a>
 #### B4 | EqCopQueueStressTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopQueueStressTest_artefacts\Release\EqCopQueueStressTest.exe` | **Exitcode:** 0 | **Dauer:** 3,44 s
+**Befehl:** `eq-copilot\build\plugin\EqCopQueueStressTest_artefacts\Release\EqCopQueueStressTest.exe` | **Exitcode:** 0 | **Dauer:** 3,40 s
 
 stdout:
 
@@ -5842,7 +5841,7 @@ Produktionsstrom GenStrom: 1 Tap(s), 131072 Frames Ring, 2048 Deskriptoren, max 
 == L - verdrahtet: der Audiothread alloziert nicht ==
   ok      als Main klassifiziert (§53.5)
   ok      4 000 Bloecke wechselnder Groesse mit Transportkanten: 0 Allokationen  [0]
-  dabei Ueberlauf-Drops 3843 (der Worker kommt bei 4 000 Bloecken ohne Pause nicht nach - genau dafuer ist der Ganzblockdrop da)
+  dabei Ueberlauf-Drops 3847 (der Worker kommt bei 4 000 Bloecken ohne Pause nicht nach - genau dafuer ist der Ganzblockdrop da)
 == M - verdrahtet: die Messung bekommt den Strom wirklich ==
   eingespeist 287744, analysiert 287232, Drops 0, versiegelt 561, Quarantaene-Verwuerfe 0, Brueche 0
   ok      bei Normallast kein einziger Drop
@@ -5913,7 +5912,7 @@ _(leer)_
 <a id="b9"></a>
 #### B9 | EqCopLoudnessGoldenTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopLoudnessGoldenTest_artefacts\Release\EqCopLoudnessGoldenTest.exe` | **Exitcode:** 0 | **Dauer:** 0,17 s
+**Befehl:** `eq-copilot\build\plugin\EqCopLoudnessGoldenTest_artefacts\Release\EqCopLoudnessGoldenTest.exe` | **Exitcode:** 0 | **Dauer:** 0,50 s
 
 stdout:
 
@@ -6064,7 +6063,7 @@ _(leer)_
 <a id="b5"></a>
 #### B5 | EqCopAnalysisGoldenTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopAnalysisGoldenTest_artefacts\Release\EqCopAnalysisGoldenTest.exe` | **Exitcode:** 0 | **Dauer:** 2,49 s
+**Befehl:** `eq-copilot\build\plugin\EqCopAnalysisGoldenTest_artefacts\Release\EqCopAnalysisGoldenTest.exe` | **Exitcode:** 0 | **Dauer:** 2,48 s
 
 stdout:
 
@@ -6301,8 +6300,8 @@ Stufen: Bass 16384 (Hop 8192), Haupt 4096 (Hop 2048), Trennung bei 200 Hz.
 [ok]   und das unterste Band (30 Hz) ist es NICHT - dort ist kein Signal
 
 == K - NAK-56 Werkbankhaelfte: nakamaBlockEmpfangen am echten Prozessor ==
-[ok]   die FeatureEngine hat Bloecke aus dem echten Prozessorweg gesehen  [32 Bloecke]
-[ok]   und mindestens einen Frame gebaut  [3 Frames]
+[ok]   die FeatureEngine hat Bloecke aus dem echten Prozessorweg gesehen  [41 Bloecke]
+[ok]   und mindestens einen Frame gebaut  [4 Frames]
 [ok]   process_context_present kommt aus der BRUECKE durch (Â§32.3)
 [ok]   recording: Bit gesetzt, Wert false - die Bruecke kann beides sagen
 [ok]   continuous_time_samples kommt durch
@@ -6347,7 +6346,7 @@ _(leer)_
 <a id="b10"></a>
 #### B10 | EqCopIpcTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | **Exitcode:** 0 | **Dauer:** 13,84 s
+**Befehl:** `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | **Exitcode:** 0 | **Dauer:** 14,19 s
 
 stdout:
 
@@ -6426,9 +6425,9 @@ SONDE-010 | v3-Envelope, Pipetoken, Backpressure und die zwei Clients
   ok      ein Frame ueber der Slotgroesse wird gezaehlt verworfen, nie halb geschrieben
   ok      100 000 Uebergaben mit 0 Allokationen  [0]
   ok      Gegenprobe: derselbe Zaehler sieht eine echte Allokation  [1]
-  ok      2 000 000 kleine Frames unter Flut: kein zerrissener Frame  [177577 geholt, 0 zerrissen, 1657887 ersetzt]
-  ok      300 000 grosse Frames (8000 B) ebenso: kein zerrissener Frame  [16551 geholt, 0 zerrissen]
-  ok      der Erzeuger traf den beanspruchten Slot WIRKLICH — und hat ihn nicht beschrieben  [9782 Frames wegen fremden Anspruchs verworfen]
+  ok      2 000 000 kleine Frames unter Flut: kein zerrissener Frame  [185090 geholt, 0 zerrissen, 1418448 ersetzt]
+  ok      300 000 grosse Frames (8000 B) ebenso: kein zerrissener Frame  [21514 geholt, 0 zerrissen]
+  ok      der Erzeuger traf den beanspruchten Slot WIRKLICH — und hat ihn nicht beschrieben  [12210 Frames wegen fremden Anspruchs verworfen]
 
 == F · Ratengrenze ==
   ok      5000 Nachrichten in derselben Millisekunde: 1000 gehen durch  [1000]
@@ -6511,7 +6510,7 @@ _(leer)_
 <a id="b8"></a>
 #### B8 | EqCopLebenslaufTest
 
-**Befehl:** `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | **Exitcode:** 0 | **Dauer:** 0,13 s
+**Befehl:** `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | **Exitcode:** 0 | **Dauer:** 0,09 s
 
 stdout:
 
@@ -6592,7 +6591,7 @@ _(leer)_
 
 ### Bau vor dem Lauf (`-Bauen`)
 
-**build** | Exit 0 | 126,37 s
+**build** | Exit 0 | 39,19 s
 
 <details><summary>Rohe Ausgabe</summary>
 
@@ -6676,8 +6675,6 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
   Checking File Globs
   EqCopIpcTest_rc_lib.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopIpcTest_rc_lib.dir\Release\EqCopIpcTest_rc_lib.lib
   NakamaKern.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\Release\NakamaKern.lib
-  PipeToken.cpp
-  IpcTestMain.cpp
   EqCopIpcTest.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe
 MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
@@ -6692,9 +6689,6 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
   NakamaKern.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\Release\NakamaKern.lib
   EqCopilot.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot_artefacts\Release\EQ-Copilot_SharedCode.lib
   EqCopilot_vst3_helper.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\Release\EqCopilot_vst3_helper.exe
-     Bibliothek "C:/Users/phili/Projekte/Nakama/eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.lib" und Objekt "C:/Users/phili/Projekte/Nakama/eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.exp" werden erstellt.
-  Code wird generiert.
-  Codegenerierung ist abgeschlossen.
   EqCopilot_VST3.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3
   removing moduleinfo.json
   creating C:/Users/phili/Projekte/Nakama/eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3
@@ -6707,7 +6701,6 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
   Checking File Globs
   EqCopIpcLast_rc_lib.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopIpcLast_rc_lib.dir\Release\EqCopIpcLast_rc_lib.lib
   NakamaKern.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\Release\NakamaKern.lib
-  IpcLastMain.cpp
   EqCopIpcLast.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\EqCopIpcLast_artefacts\Release\EqCopIpcLast.exe
 MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
@@ -6716,9 +6709,6 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
   NakamaKern.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\Release\NakamaKern.lib
   NakamaProbeeq.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\NakamaProbeeq_artefacts\Release\Nakama Probeeq_SharedCode.lib
   NakamaProbeeq_vst3_helper.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\Release\NakamaProbeeq_vst3_helper.exe
-     Bibliothek "C:/Users/phili/Projekte/Nakama/eq-copilot/build/plugin/NakamaProbeeq_artefacts/Release/VST3/Nakama Probeeq.lib" und Objekt "C:/Users/phili/Projekte/Nakama/eq-copilot/build/plugin/NakamaProbeeq_artefacts/Release/VST3/Nakama Probeeq.exp" werden erstellt.
-  Code wird generiert.
-  Codegenerierung ist abgeschlossen.
   NakamaProbeeq_VST3.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\NakamaProbeeq_artefacts\Release\VST3\Nakama Probeeq.vst3\Contents\x86_64-win\Nakama Probeeq.vst3
   removing moduleinfo.json
   creating C:/Users/phili/Projekte/Nakama/eq-copilot/build/plugin/NakamaProbeeq_artefacts/Release/VST3/Nakama Probeeq.vst3
@@ -6726,14 +6716,14 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
 </details>
 
-**cargo-release** | Exit 0 | 10,03 s
+**cargo-release** | Exit 0 | 6,99 s
 
 <details><summary>Rohe Ausgabe</summary>
 
 ```text
 
    Compiling eqcop-broker v0.1.0 (C:\Users\phili\Projekte\Nakama\broker)
-    Finished `release` profile [optimized] target(s) in 9.90s
+    Finished `release` profile [optimized] target(s) in 6.92s
 ```
 
 </details>

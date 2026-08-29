@@ -111,6 +111,7 @@ WURZEL = pathlib.Path(__file__).resolve().parents[2]
 MANIFEST = WURZEL / "eq-copilot" / "install" / "nakama-installer-v1.json"
 INSTALL_ERGEBNIS = WURZEL / "eq-copilot" / "install" / "install-ergebnis.json"
 IDENTITAET = WURZEL / "eq-copilot" / "identity" / "plugin-identities-v1.json"
+INSTALLER = WURZEL / "eq-copilot" / "install" / "Install-Nakama.ps1"
 BROKER_CARGO = WURZEL / "broker" / "Cargo.toml"
 PS_ORDNERHASH = WURZEL / "eq-copilot" / "install" / "NakamaOrdnerHash.ps1"
 STATE_CPP = WURZEL / "eq-copilot" / "plugin" / "state" / "NakamaState.cpp"
@@ -123,6 +124,22 @@ ERGEBNIS_SCHEMA = "nakama.install-ergebnis/v1"
 # RUECKWEG_AKTIV und RUECKWEG - jeder davon steht fuer ein Ziel, das bereits
 # ganz oder halb wiederhergestellt sein kann (NAK-94 Nacharbeit 2).
 ERGEBNIS_STATUS_OK = "OK"
+# Die Journal-Fixturen der Gegenproben [3b] stehen in der Form, die
+# Install-Nakama.ps1 WIRKLICH schreibt - abgelesen, nicht erfunden
+# (NAK-94 Nacharbeit 4, 30.08.2026):
+#   * die Transaktions-ID entsteht als `[Guid]::NewGuid().ToString('N')`
+#     und wird von `Ist-TransaktionsId` gegen `^[0-9a-f]{32}$` geprueft:
+#     32 Hexziffern, KEINE Bindestriche. Eine gestrichelte UUID haette
+#     der Rueckweg selbst abgewiesen.
+#   * `zeit` ist `[DateTime]::UtcNow.ToString('o')`. Der
+#     Sekundenbruch ist absichtlich nicht null: nur dann ueberlebt der
+#     Wert den ConvertFrom-Json/ConvertTo-Json-Umlauf des Rueckwegs
+#     unveraendert (gemessen).
+#   * `name` und `ziel` rechnet der Block selbst so aus, wie `Artefakt-Name`
+#     und `Ziel-Pfad` es im Writer tun (Identitaetsdatei + Zielverzeichnis des
+#     Manifests) - kein Platzhalter und nichts Abgeschriebenes.
+PROBE_TRANSAKTIONS_ID = "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+PROBE_ZEIT = "2026-08-29T00:00:00.1234567Z"
 HEX64 = re.compile(r"^[0-9A-F]{64}$")
 THUMBPRINT = re.compile(r"^(?:[0-9A-F]{40}|[0-9A-F]{64})$")
 ARTEN = ("vst3", "broker")
@@ -1006,13 +1023,51 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
             # Derselbe Eintrag, nur ein anderer Journalkopf. Genau das war der
             # Befund: der Hash stimmte, das Ziel aber konnte halb
             # wiederhergestellt sein.
-            name = _artefakt_name(manifest["artefakte"][0])
+            artefakt = manifest["artefakte"][0]
+            name = _artefakt_name(artefakt)
+            # `Artefakt-Name` im Writer: bei art=vst3 der `produktname` aus der
+            # Identitaetsdatei, sonst das Manifestfeld `name`. Abgelesen, damit
+            # im Journal kein `null` steht, wo der Writer eine Zeichenkette
+            # schreibt.
+            _ziele = json.loads(IDENTITAET.read_text(encoding="utf-8"))["ziele"]
+            _ident = next((z for z in _ziele
+                           if z.get("id") == artefakt.get("ziel_id")), None)
+            if artefakt.get("art") == "vst3" and _ident is not None:
+                writer_name = _ident.get("produktname")
+                # `Ziel-Pfad`: Zielverzeichnis des Manifests + Bundlename der
+                # Identitaet, Schraegstriche wie im Writer gedreht.
+                writer_ziel = ntpath.join(
+                    manifest["ziele"]["vst3_verzeichnis"].replace("/", ntpath.sep),
+                    _ident["bundle"])
+            else:
+                writer_name = artefakt.get("name")
+                writer_ziel = ntpath.join(
+                    manifest["ziele"]["broker_verzeichnis"].replace("/", ntpath.sep),
+                    str(artefakt.get("name")))
+            # Der Eintrag traegt die zwoelf Felder des Installations-Writers in
+            # SEINER Reihenfolge (Install-Nakama.ps1, `$eintraege += [pscustom-
+            # object]@{ ziel_id ... rollback_abgeschlossen }`), gefuellt mit den
+            # Werten einer abgeschlossenen, NICHT zurueckgerollten Installation.
+            # Bis einschliesslich Nacharbeit 3 stand hier ein `quelle`-Feld, das kein
+            # Writer schreibt - eine Probe, die eine Form erfindet, misst den
+            # Leser nicht am Erzeugbaren (Pruefliste E).
             eintrag = {
-                "ziel_id": manifest["artefakte"][0].get("ziel_id"),
-                "quelle": manifest["artefakte"][0].get("quelle"),
-                "mutation_begonnen": True, "mutation_abgeschlossen": True,
+                "ziel_id": artefakt.get("ziel_id"),
+                "art": artefakt.get("art"),
+                "name": writer_name,
+                "ziel": writer_ziel,
+                "sha256": "0" * 64,
+                "vorher_sha256": "1" * 64,
+                "vorher_sha256_innen": None,
+                # `backup-<planIndex><endung>` unter der geschuetzten
+                # Transaktionswurzel; `.bundle` fuer vst3, `.bak` sonst.
+                "gesichert": (f"backups/{PROBE_TRANSAKTIONS_ID}/backup-0"
+                              + (".bundle" if artefakt.get("art") == "vst3"
+                                 else ".bak")),
+                "erzeugte_ordner": [],
+                "mutation_begonnen": True,
+                "mutation_abgeschlossen": True,
                 "rollback_abgeschlossen": False,
-                "sha256": "0" * 64, "ziel": "irgendwo",
             }
             mit_hash = copy.deepcopy(manifest)
             mit_hash["artefakte"] = [copy.deepcopy(manifest["artefakte"][0])]
@@ -1023,6 +1078,14 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
                 text, offen = _probelauf(lambda: installierter_stand(mit_hash))
                 return text if not offen else text + " KLAGEN " + " | ".join(offen)
 
+            # ACHTUNG, zwei verschiedene Achsen. Dieser Kopf ist absichtlich
+            # MINIMAL und KEINE Writer-Form: die Schleife darunter fragt, ob
+            # die Sperre am STATUS haengt - auch an einem erfundenen
+            # (`NEUER_STATUS_2099`) und an einem fehlenden, die kein Writer je
+            # schreibt. Die drei Proben (a)/(b)/(c) weiter unten fragen das
+            # Gegenstueck: gilt dasselbe fuer die Koepfe, die
+            # Install-Nakama.ps1 WIRKLICH schreibt. Erst beide zusammen decken
+            # Status und Form ab.
             grund = {"schema": ERGEBNIS_SCHEMA, "zeit": "2026-08-29T00:00:00Z",
                      "eintraege": [eintrag]}
             ausgabe = journal_lauf({**grund, "status": ERGEBNIS_STATUS_OK})
@@ -1055,23 +1118,53 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
                    next((z.strip() for z in ausgabe.splitlines()
                          if name in z), "keine Zeile zum Artefakt"))
 
-            # -- P2 (Nacharbeit 3): die ECHTEN Writer-Formen ----------------
+            # -- P2/4: die Fixtur-ID gegen die Regex des WRITERS -----------
+            #
+            # Nicht abgeschrieben: das Muster wird aus Install-Nakama.ps1
+            # gelesen. Aendert der Writer seine ID-Form, faellt diese Zeile -
+            # und nicht erst der naechste Pruefer.
+            writer_text = INSTALLER.read_text(encoding="utf-8")
+            muster = re.search(r"function Ist-TransaktionsId.*?-match\s*'([^']+)'",
+                               writer_text, re.S)
+            pruefe(muster is not None
+                   and re.match(muster.group(1), PROBE_TRANSAKTIONS_ID) is not None,
+                   "P2/4: die Transaktions-ID der Journal-Fixturen besteht die "
+                   "Ist-TransaktionsId-Regex aus Install-Nakama.ps1 - eine "
+                   "gestrichelte UUID taete es nicht",
+                   f"Muster {muster.group(1)!r} gegen {PROBE_TRANSAKTIONS_ID!r}"
+                   if muster else "Ist-TransaktionsId im Writer nicht gefunden")
+
+            # -- P2 (Nacharbeit 3/4): die ECHTEN Writer-Formen --------------
             #
             # Die Schleife oben laesst `eintraege` in jedem Kopf stehen. Genau
             # daran ging der Befund vorbei: ein regulaer abgeschlossener
             # Rueckweg schreibt diese Liste nicht, und die Sperre stand
             # dahinter. Die drei Proben hier fahren deshalb die Formen, die
             # Install-Nakama.ps1 wirklich schreibt - abgelesen, nicht geraten.
+            #
+            # BEFUND P2, Nacharbeit 4 (30.08.2026): "exakte Writer-Form" war
+            # dabei zu viel gesagt. Die Journale trugen eine UUID MIT
+            # Bindestrichen, waehrend Install-Nakama.ps1 seine Transaktions-ID
+            # mit `[Guid]::NewGuid().ToString('N')` erzeugt und sie mit
+            # `Ist-TransaktionsId` gegen `^[0-9a-f]{32}$` prueft - eine
+            # gestrichelte ID haette der Rueckweg selbst abgewiesen (gemessen:
+            # Ist-TransaktionsId auf die alte Probe-ID gibt False). Seither
+            # gilt: PROBE_TRANSAKTIONS_ID sind 32 Hex ohne Bindestriche, jedes
+            # `zeit` steht im ToString('o')-Format, und Feldmenge samt
+            # Reihenfolge sind am jeweiligen Writer abgelesen. Jede der drei
+            # Proben wird ausserdem EINZELN gebrochen (Nacharbeit 4).
 
-            # (a) Ende des Gegenpfads: genau sieben Felder, OHNE eintraege.
+            # (a) Ende des Gegenpfads (Writer: das abschliessende
+            #     `Schreibe-Ergebnis` des RUECKWEG-Zweigs) - genau sieben
+            #     Felder in dieser Reihenfolge, OHNE eintraege.
             rueckweg = {
                 "schema": ERGEBNIS_SCHEMA,
                 "status": "RUECKWEG",
-                "transaktions_id": "11111111-2222-3333-4444-555555555555",
+                "transaktions_id": PROBE_TRANSAKTIONS_ID,
                 "erzwungen": False,
                 "warnungen": [],
-                "getan": ["entfernt: C:\\Programme\\Nakama\\EQ-Copilot.vst3"],
-                "zeit": "2026-08-29T00:00:00.0000000Z",
+                "getan": ["entfernt: " + writer_ziel],
+                "zeit": PROBE_ZEIT,
             }
             ausgabe = journal_lauf(rueckweg)
             pruefe(f"hinweis {name}: installierter Stand unbekannt "
@@ -1087,13 +1180,20 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
 
             # (b) Beginn des Gegenpfads: Install-Nakama.ps1 setzt nur den
             #     Status im ZURUECKGELESENEN Journal (`$letzte.status =
-            #     'RUECKWEG_AKTIV'`) - diese Form traegt eintraege sehr wohl.
+            #     'RUECKWEG_AKTIV'; Schreibe-Ergebnis $letzte`) - diese Form
+            #     traegt eintraege sehr wohl. Der Kopf ist deshalb der des
+            #     Installations-Writers: dieselben sieben Felder in derselben
+            #     Reihenfolge, nur `status` ersetzt. Gemessen wurde ausserdem,
+            #     dass `zeit` den ConvertFrom-Json/ConvertTo-Json-Umlauf des
+            #     Rueckwegs nur unveraendert ueberlebt, solange der
+            #     Sekundenbruch nicht null ist - PROBE_ZEIT traegt deshalb
+            #     einen.
             rueckweg_aktiv = {
                 "schema": ERGEBNIS_SCHEMA,
                 "status": "RUECKWEG_AKTIV",
-                "transaktions_id": "11111111-2222-3333-4444-555555555555",
+                "transaktions_id": PROBE_TRANSAKTIONS_ID,
                 "manifest": "eq-copilot/install/nakama-installer-v1.json",
-                "zeit": "2026-08-29T00:00:00.0000000Z",
+                "zeit": PROBE_ZEIT,
                 "bekannte_staende": [],
                 "eintraege": [eintrag],
             }
@@ -1108,9 +1208,20 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
 
             # (c) Gegenprobe: OHNE eintraege ist "keine Liste" die RICHTIGE
             #     Aussage - aber nur im Status-OK-Pfad.
+            #
+            #     Ausdruecklich KEINE Writer-Form, und genau das ist der Punkt:
+            #     der OK-Pfad setzt am fertigen Installations-Journal nur
+            #     `status` und `zeit` neu, `eintraege` bleibt stehen. Ein
+            #     OK-Journal ohne Liste kann also nur ein fremdes oder
+            #     abgeschnittenes sein. Gefahren wird der Installations-Kopf
+            #     MINUS `eintraege`, alles Uebrige in Writer-Form - damit ist
+            #     die fehlende Liste die einzige Abweichung.
             ausgabe = journal_lauf({"schema": ERGEBNIS_SCHEMA,
                                     "status": ERGEBNIS_STATUS_OK,
-                                    "zeit": "2026-08-29T00:00:00.0000000Z"})
+                                    "transaktions_id": PROBE_TRANSAKTIONS_ID,
+                                    "manifest": "eq-copilot/install/nakama-installer-v1.json",
+                                    "zeit": PROBE_ZEIT,
+                                    "bekannte_staende": []})
             pruefe("keine Liste 'eintraege'" in ausgabe
                    and "installierter Stand = Manifest" not in ausgabe
                    and "installierter Stand unbekannt" not in ausgabe,

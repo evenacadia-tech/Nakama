@@ -70,6 +70,14 @@ dann erst frei.
   wörtliche Zitate (`>`-Blöcke): dort bleibt die Zahl, wie das Werkzeug oder
   die Quelle sie schrieb, und der **einleitende Satz** davor trägt den Commit
   (NAK-96 Nacharbeit 3, 29.08.2026).
+- Ein Abschnitt, der in seinem Kopf seinen Stand (Commit) nennt, ist eine
+  Momentaufnahme @ diesem Stand; nackte Zeilennummern darunter gelten als
+  daran gebunden. Abschnitte ohne Standangabe binden jede Position einzeln
+  (`@ sha7` oder Symbol). Wer ein altes Manifest nachzieht, setzt deshalb
+  eine Zeile **Stand dieses Abschnitts:** `<sha7>` unter jede
+  Überschrift ohne Standangabe, statt hunderte Einzelpositionen zu
+  annotieren — und prüft, dass die genannten Positionen **an diesem
+  Commit** stimmen (NAK-85 Runde 4, 29.08.2026).
 - Jede neue Prüfung wurde einmal absichtlich gebrochen; Rohausgabe des Rots
   liegt bei. Eine Probe, die auch ohne den Fix rot ist, heißt Regressionswache,
   nicht Beleg.

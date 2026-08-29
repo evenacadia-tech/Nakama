@@ -68,6 +68,8 @@ Rohausgaben in §2 stammen von vor K2c: dort steht die Linkhülle noch mit
 
 ### Riegel-Nacharbeit S8 vom 28.08.2026 — acht übergebene P1
 
+**Stand dieses Abschnitts:** `374eea7` — Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 Alle acht Fälle werden gemessen; keine Zusage wurde auf eine unbenannte Lücke
 verengt. Die kontrollierten roten Fälle bleiben als manuelle Repro-Blöcke
 erhalten. Jeweils **eine** Probe an der angegebenen Stelle in
@@ -179,6 +181,8 @@ gleich sein.
 
 ### Letzte Nacharbeit S8 vom 28.08.2026 — vier frische Prüferfälle
 
+**Stand dieses Abschnitts:** `068c9ce` — Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 Die ersten beiden Fälle erweitern die Messung. Die letzten beiden werten die
 jeweilige CMake-Semantik bewusst **nicht** nach, sondern fassen die Zusage enger
 und machen die nicht unterstützte Form fail-closed ROT.
@@ -263,6 +267,8 @@ und machen die nicht unterstützte Form fail-closed ROT.
    ausgewertet.**
 
 ### Runde 2/3 — JUCE-Generatorausdrücke und Listen-Eigenschaften
+
+**Stand dieses Abschnitts:** `374eea7` — Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 Die Inventur vom 28.08.2026 umfasst alle `$<`-Vorkommen in
 `extras/Build/CMake/*.cmake`, `eq-copilot/cmake/*.cmake` und den beiden
@@ -360,6 +366,8 @@ die Zielreferenz expandiert werden muss und dabei Defines tragen könnte.
 
 ## 1. Ticket-Behauptungen
 
+**Stand dieses Abschnitts:** `5d0e9fd` — Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 | # | Behauptung | Befehl | Ergebnis | Rohausgabe | Datum |
 |---|---|---|---|---|---|
 | 1 | **Der gemeinsame Kern ist eine echte Static-Lib**: `NakamaKern.lib` entsteht aus genau vier Übersetzungseinheiten. Vorher übersetzten **sieben** Ziele alle vier Quellen selbst (`nakama_state_anbinden`) und ein achtes (`EqCopSchemaTest`) eine davon — 29 Übersetzungen derselben vier Dateien, jetzt 4 | `cmake --build … --target NakamaKern` | ☑ | [↓ B1](#s8b1) | 2026-08-22 |
@@ -396,6 +404,8 @@ die Zielreferenz expandiert werden muss und dabei Defines tragen könnte.
 ---
 
 ## 2. Rohe Ausgaben
+
+**Stand dieses Abschnitts:** `5d0e9fd` — Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 <a id="s8b1"></a>
 ### B1 · Der Kern baut aus vier Einheiten (Behauptung 1)
@@ -757,6 +767,8 @@ Bein, das etwas anderes misst, muss seine Frische selbst belegen.
 ---
 
 ## 3. T1 — Selbstprüfung
+
+**Stand dieses Abschnitts:** `5d0e9fd` — Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 | Frage | Antwort | Beleg |
 |---|---|---|
@@ -2102,6 +2114,8 @@ geändert, keine `.cpp` berührt — lässt A14 heute grün auf einer veralteten
 ---
 
 ## 6. Nacharbeit zu den T2-Befunden
+
+**Stand dieses Abschnitts:** `26b94c5` — Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 Alle fünf am selben Tag geschlossen, jeder gegen die **Quelldatei** verifiziert
 (T3-Regel, `docs/bauaufteilung-sonden.md` §2). Rohausgabe des Kanon-Laufs danach
@@ -3458,6 +3472,8 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 ---
 
 ## Nacharbeit zum Gate G1 — 24.08.2026
+
+**Stand dieses Abschnitts:** `906e932` — Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Marke:** `T3 NEEDS_WORK 2026-08-24 nachgearbeitet`. Der G1-Befund §4.4 ist
 geschlossen (`fac67f4`); das Urteil bleibt NEEDS_WORK, weil wer repariert, sich
@@ -11179,6 +11195,8 @@ fail-closed ohne Rohtextheuristik".
 
 ## Nacharbeit Runde 3 — Fortsetzung 2026-08-29: NAK-85
 
+**Stand dieses Abschnitts:** `b6003c1` — Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 Fortsetzung der am selben Tag unterbrochenen Runde. NAK-84 war dort an der
 Quelle geschlossen (`a728fba`), aber ohne Kanon; NAK-85 war nicht begonnen.
 Beides wird hier nachgeholt — dieser Abschnitt löst den Punkt „**NAK-85** ist
@@ -11480,3 +11498,484 @@ bei veraltetem Configure".
 | B10 | v3-Envelope in C++ klassifiziert den Envelope-Korpus wie das Manifest (Urteil UND Verstossmenge, alle 14 Regeln mit Negativfixture); CRC32C trifft die RFC-3720-Vektoren, P0/P1 tragen CRC exakt 0, P2 die Pflichtsumme ueber genau die Payloadbytes; 40 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und 7671 angenommene EINBIT-Mutanten gueltiger Frames halten jede Kopfregel (reiner Zufall wird praktisch immer abgewiesen - die Invariante braucht deshalb die Mutanten, sonst spraeche sie ueber eine leere Menge), 3000 gekippte P2-Bits fallen einzeln, byteweise Zustellung liefert dieselben 40 Frames und ein kaputter Frame beendet den Strom; Pipetoken trifft das Golden aus §48.3 samt SHA-256- und RFC-4648-Vektoren; P0 verwirft nichts und meldet den 65. Eintrag, P1 koalesziert an der Position und haelt Ereignisse fuer den Reconnect vor, die P2-Schleuse ersetzt den aeltesten ungesendeten Frame, uebergibt 100 000 Frames mit 0 Allokationen (mit Gegenprobe am selben Zaehler) und liefert unter Flut keinen zerrissenen Frame; verdrahtet: Control koppelt Telemetry ueber link_id + challenge, ein ungekoppelter Telemetry-Connect wird geschlossen, der Client verbindet nach Serverneustart von selbst wieder, ein kaputter Envelope vom Server schliesst die Verbindung, und ein P0-Ueberlauf WAEHREND einer stehenden Verbindung schliesst sie ebenfalls statt still zu kuerzen. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 32,87 s | [B10](roh/SONDE-007a-b6003c1.md#b10) |
 | B8 | Lifecycle-Klassifikation §53.5: unclassified beim Laden und audio-neutral; Schema-1 sensor\|pre\|post -> legacy (immer passiv), hub bzw. bestaetigter Schema-2-Main-State -> main; ein Scannerlauf klassifiziert nicht; read-only nimmt die Klassifikation zurueck; Brokerstart nur fuer main mit offenem Editor; die Sondenbundles bleiben bis gueltigem State neutral und werden nie main. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,13 s | [B8](roh/SONDE-007a-b6003c1.md#b8) |
 
+
+## Nacharbeit Runde 4 — 2026-08-29 (Prüfer-Thread `01a04dff-72de-7871-a74c-76665535a809`)
+
+**Stand dieses Abschnitts:** `facea2d` — Basis-SHA dieser Runde; die drei
+Befunde und jede Position in ihren Zitaten beziehen sich darauf. Positionen der
+Nacharbeit selbst stehen als **Symbol**, nicht als Zeilennummer.
+
+Vierter frischer T3-Prüfer (Codex `gpt-5.6-sol`, Effort `xhigh`, lesend über
+`git diff dafa5a5...facea2d`): **NEEDS_WORK**, drei Befunde. Alle drei sind hier
+geschlossen und einzeln gemessen; das Urteil bleibt offen, weil wer repariert,
+sich nicht selbst freispricht.
+
+### Die drei Befunde, wörtlich
+
+> **1 (P1, Defekt hoch) — A14 akzeptiert nach Configure ohne Neubau ein altes
+> Artefakt.** Wenn eine kernrelevante CMake-Änderung bereits konfiguriert,
+> `NakamaKern` aber noch nicht neu gebaut wurde, ist `configure_frische()`
+> zufrieden. Danach vergleicht A14 die Lib nur mit lokalen Quellen und aus dem
+> Tlog ausschließlich Defines; etwa ein geänderter Nicht-Define-Schalter oder
+> `/FI`-Include lässt alte Lib und altes Tlog grün.
+
+> **2 (P2, Defekt mittel) — Tlog-TU-Menge nicht gegen Kernquellen/Archiv
+> abgeglichen.** Visual Studios inkrementelles Tlog behält Einträge entfernter
+> Quellen; die Schleife prüft lediglich die vorhandenen Datensätze und verlangt
+> nicht die exakte aktuelle TU-Menge. Aktuell nennt das Tlog zehn Quellen
+> einschließlich des entfernten `PipeToken.cpp`, während `NAKAMA_KERN_QUELLEN`
+> und das Archiv neun Objekte enthalten; A14 meldet trotzdem „10 TUs" und
+> Exit 0.
+
+> **3 (P2) — historische Zeilenverweise im Manifest.** Der Verweis
+> `tools/beweise.ps1:484` zeigt am Ziel-SHA auf den `EqCopIpcLast`-Eintrag statt
+> auf den behaupteten Frische-Läufer; weitere ungebundene Positionen stehen
+> u. a. in der Inventurtabelle.
+
+### Befunde 1 und 2 in einer Rohausgabe reproduziert — vor jeder Änderung
+
+Probe: `target_compile_options(NakamaKern PRIVATE /Zc:__cplusplus)` in
+`plugin/CMakeLists.txt` hinter der `NAKAMA_KERN_UEBERSETZUNG`-Zeile, danach
+**nur konfiguriert** (`cmake -S eq-copilot -B eq-copilot/build`, kein Bau). Die
+Projektdatei trug den Schalter danach als
+`<AdditionalOptions>%(AdditionalOptions) /Zc:__cplusplus /utf-8 /bigobj</AdditionalOptions>`,
+das Tlog nicht. Gelaufen mit dem A14 **des Basis-SHA** `facea2d`:
+
+Der Befund verlangt die Probe in `cmake/NakamaKern.cmake`; dort existiert das
+Ziel `NakamaKern` noch nicht — die Datei trägt nur die Fassaden-Funktion, das
+Ziel entsteht in `plugin/CMakeLists.txt`. Beide Dateien sind
+`KONFIG_PFLICHTEINGABEN` derselben Frischewache; die Probe liegt deshalb in der
+zweiten.
+
+```text
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - misst dieses Bein den aktuellen Quellstand?
+  ok      NakamaKern.lib ist nicht aelter als die Kernquellen
+  ok      jede gebaute TU hat exakt die heutige Definemenge (10 TUs, 16 Defines)
+
+[1] Gegenprobe - findet der Scanner die Werte dort, wo sie stehen muessen?
+  ok      Gegenprobe findet hersteller.name = 'evenacadia' im gebauten Bundle  [ascii,utf-16le]
+  ok      Gegenprobe findet main.produktname = 'EQ-Copilot' im gebauten Bundle  [ascii,utf-16le]
+  ok      Gegenprobe findet main.plugin_code = 'Eqcp' im gebauten Bundle  [ascii,fourcc-int-be]
+  ok      Gegenprobe findet main.component_cid = 'ABCDEF019182FAEB45766E6145716370' im gebauten Bundle  [roh16-com]
+  ok      Gegenprobe findet main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' im gebauten Bundle  [roh16-com]
+
+[2] Kern - keine dieser Nadeln darf im Objektcode des Kerns liegen
+  ok      NakamaKern.lib traegt active-probe.bundle = 'Nakama Probeeq.vst3' NICHT
+  ok      NakamaKern.lib traegt active-probe.component_cid = 'ABCDEF019182FAEB45766E614E6B4163' NICHT
+  ok      NakamaKern.lib traegt active-probe.controller_cid = 'ABCDEF011234ABCD45766E614E6B4163' NICHT
+  ok      NakamaKern.lib traegt active-probe.plugin_code = 'NkAc' NICHT
+  ok      NakamaKern.lib traegt active-probe.produktname = 'Nakama Probeeq' NICHT
+  ok      NakamaKern.lib traegt hersteller.code = 'Evna' NICHT
+  ok      NakamaKern.lib traegt hersteller.name = 'evenacadia' NICHT
+  ok      NakamaKern.lib traegt main.bundle = 'EQ-Copilot.vst3' NICHT
+  ok      NakamaKern.lib traegt main.component_cid = 'ABCDEF019182FAEB45766E6145716370' NICHT
+  ok      NakamaKern.lib traegt main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' NICHT
+  ok      NakamaKern.lib traegt main.plugin_code = 'Eqcp' NICHT
+  ok      NakamaKern.lib traegt main.produktname = 'EQ-Copilot' NICHT
+  ok      NakamaKern.lib traegt passive-probe.bundle = 'Nakama Suna.vst3' NICHT
+  ok      NakamaKern.lib traegt passive-probe.component_cid = 'ABCDEF019182FAEB45766E614E6B5072' NICHT
+  ok      NakamaKern.lib traegt passive-probe.controller_cid = 'ABCDEF011234ABCD45766E614E6B5072' NICHT
+  ok      NakamaKern.lib traegt passive-probe.plugin_code = 'NkPr' NICHT
+  ok      NakamaKern.lib traegt passive-probe.produktname = 'Nakama Suna' NICHT
+
+[3] Bauform - der Kern enthaelt genau seine eigenen Objekte
+  ok      Archivmitglieder sind genau die 9 Kernobjekte
+  ok      kein JUCE-Modulobjekt im Kern (die Kopf-Fassade haelt)
+
+26 ok, 0 Fehler
+```
+
+Exitcode 0 (grün).
+
+Zwei Befunde in einem Lauf: `/Zc:__cplusplus` steht in der Projektdatei und
+nicht im Tlog — trotzdem grün; und „10 TUs" bei neun Kernquellen und neun
+Archivobjekten.
+
+### Befund 1 — Regel und Umsetzung
+
+**Regel.** Die Frische wird an der Stelle gemessen, die MSBuild selbst
+verbraucht — dem Tlog —, und zwar für **alle** compile-relevanten
+Schalterklassen, nicht nur Defines. Zusätzlich muss die Lib nach der letzten
+Übersetzung auch gelinkt worden sein.
+
+**Umsetzung**, alle Symbole in `tools/eq-copilot/pruefe_kern_identitaetsfrei.py`:
+
+| Symbol | was es tut |
+|---|---|
+| `SCHALTERKLASSEN`, `KLASSEN_PRAEFIXE` | die vier beidseitig verglichenen Klassen: Defines (`/D`), Includepfade (`/I`, `/external:I`), erzwungene Includes (`/FI`), Sprachstandard (`/std:`) |
+| `_klassen_aus_tokens` | **eine** Zuordnung für **beide** Seiten — Tlog-Kommandozeile und `AdditionalOptions` der Projektdatei. Ein Schalter, den CMake über `AdditionalOptions` durchreicht, landet damit in derselben Klasse wie einer aus dem eigenen ClCompile-Element; ohne das hätte der Tlog-Vergleich ihn als „nur gebaut" gemeldet |
+| `_zerlege_kommandozeile` | Tokenisierung mit Quoting: ein Anführungszeichen hinter ungerader Backslash-Zahl ist ein Zeichen, keine Klammer |
+| `_pfad_schluessel` | `os.path.normcase` + `normpath`, Anführungszeichen und Escapes weg — das Tlog schreibt Pfade in Großschreibung |
+| `_xml_text` | XML-Entitäten der Projektdatei auflösen |
+| `_clcompile_block` | engt auf `<ClCompile>` ein; `<ResourceCompile>` und `<Midl>` derselben Gruppe übersetzen keine Kernquelle |
+| `_sprachstandard_soll` | `<LanguageStandard>`/`<LanguageStandard_C>` → cl-Schalter nach der Werkzeugbeschreibung des installierten Toolsets (`cl.xml`, VS 2022 v170); **unbekannter Wert ist ROT**, kein stilles „kein `/std:`" |
+| `schalter_abgleich` | vier Klassen in **beide** Richtungen; die übrigen `AdditionalOptions`-Tokens nur auf Enthaltensein |
+| `linkfrische` | Lib nicht älter als jedes `.obj` ihres Bauverzeichnisses und nicht älter als `CL.command.1.tlog` |
+
+**Was ausdrücklich NICHT abgebildet ist** — es steht so im Kopf der Datei und
+begrenzt die Runner-Behauptung: die übrigen ClCompile-Elemente
+`AssemblerListingLocation`, `BasicRuntimeChecks`, `DebugInformationFormat`,
+`ExceptionHandling`, `InlineFunctionExpansion`, `MinimalRebuild`,
+`MultiProcessorCompilation`, `ObjectFileName`, `Optimization`,
+`PrecompiledHeader`, `RuntimeLibrary`, `ScanSourceForModuleDependencies`,
+`SupportJustMyCode`, `UseFullPaths`, `WarningLevel` sowie Übersteuerungen an
+einzelnen `<ClCompile Include=…>`-Einträgen (heute gibt es keine). Ebenso wird
+die **Reihenfolge** der Includepfade nicht verglichen, nur die Menge; und die
+`AdditionalOptions`-Klasse kann nur Enthaltensein prüfen, weil die
+Kommandozeile zusätzlich jeden Schalter trägt, den MSBuild selbst aus den
+übrigen Elementen erzeugt.
+
+### Probe zu Befund 1 — dieselbe Änderung, dieses A14
+
+Dieselbe `/Zc:__cplusplus`-Probe, dieselbe Reihenfolge (nur konfiguriert), mit
+dem A14 dieses Commits:
+
+```text
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - misst dieses Bein den aktuellen Quellstand?
+  ok      NakamaKern.lib ist nicht aelter als die Kernquellen
+  ok      Tlog, NAKAMA_KERN_QUELLEN und Archiv nennen dieselben 9 Uebersetzungseinheiten  [1 veralteter Tlog-Eintrag: PipeToken.cpp]
+  FEHLER  jede der 9 gebauten TUs traegt exakt die heutigen Schalter der Projektdatei (Defines 16, Includepfade 4, erzwungene Includes 0, Sprachstandard 1; 3 AdditionalOptions-Token enthalten)  [NakamaKanon.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus | NakamaLebenslauf.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus | NakamaParameter.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus | NakamaState.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus | NakamaVertrag.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus | WireEnvelope.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus | IpcVerbindung.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus | ControlClient.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus | TelemetryClient.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus]
+  ok      NakamaKern.lib ist nicht aelter als die 10 Objekte ihres Bauverzeichnisses und nicht aelter als ihr Tlog
+
+[1] Gegenprobe - findet der Scanner die Werte dort, wo sie stehen muessen?
+  ok      Gegenprobe findet hersteller.name = 'evenacadia' im gebauten Bundle  [ascii,utf-16le]
+  ok      Gegenprobe findet main.produktname = 'EQ-Copilot' im gebauten Bundle  [ascii,utf-16le]
+  ok      Gegenprobe findet main.plugin_code = 'Eqcp' im gebauten Bundle  [ascii,fourcc-int-be]
+  ok      Gegenprobe findet main.component_cid = 'ABCDEF019182FAEB45766E6145716370' im gebauten Bundle  [roh16-com]
+  ok      Gegenprobe findet main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' im gebauten Bundle  [roh16-com]
+
+[2] Kern - keine dieser Nadeln darf im Objektcode des Kerns liegen
+  ok      NakamaKern.lib traegt active-probe.bundle = 'Nakama Probeeq.vst3' NICHT
+  ok      NakamaKern.lib traegt active-probe.component_cid = 'ABCDEF019182FAEB45766E614E6B4163' NICHT
+  ok      NakamaKern.lib traegt active-probe.controller_cid = 'ABCDEF011234ABCD45766E614E6B4163' NICHT
+  ok      NakamaKern.lib traegt active-probe.plugin_code = 'NkAc' NICHT
+  ok      NakamaKern.lib traegt active-probe.produktname = 'Nakama Probeeq' NICHT
+  ok      NakamaKern.lib traegt hersteller.code = 'Evna' NICHT
+  ok      NakamaKern.lib traegt hersteller.name = 'evenacadia' NICHT
+  ok      NakamaKern.lib traegt main.bundle = 'EQ-Copilot.vst3' NICHT
+  ok      NakamaKern.lib traegt main.component_cid = 'ABCDEF019182FAEB45766E6145716370' NICHT
+  ok      NakamaKern.lib traegt main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' NICHT
+  ok      NakamaKern.lib traegt main.plugin_code = 'Eqcp' NICHT
+  ok      NakamaKern.lib traegt main.produktname = 'EQ-Copilot' NICHT
+  ok      NakamaKern.lib traegt passive-probe.bundle = 'Nakama Suna.vst3' NICHT
+  ok      NakamaKern.lib traegt passive-probe.component_cid = 'ABCDEF019182FAEB45766E614E6B5072' NICHT
+  ok      NakamaKern.lib traegt passive-probe.controller_cid = 'ABCDEF011234ABCD45766E614E6B5072' NICHT
+  ok      NakamaKern.lib traegt passive-probe.plugin_code = 'NkPr' NICHT
+  ok      NakamaKern.lib traegt passive-probe.produktname = 'Nakama Suna' NICHT
+
+[3] Bauform - der Kern enthaelt genau seine eigenen Objekte
+  ok      Archivmitglieder sind genau die 9 Kernobjekte
+  ok      kein JUCE-Modulobjekt im Kern (die Kopf-Fassade haelt)
+
+27 ok, 1 Fehler
+
+FEHLGESCHLAGEN:
+  - jede der 9 gebauten TUs traegt exakt die heutigen Schalter der Projektdatei (Defines 16, Includepfade 4, erzwungene Includes 0, Sprachstandard 1; 3 AdditionalOptions-Token enthalten)  [NakamaKanon.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus | NakamaLebenslauf.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus | NakamaParameter.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus | NakamaState.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus | NakamaVertrag.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus | WireEnvelope.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus | IpcVerbindung.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus | ControlClient.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus | TelemetryClient.cpp: AdditionalOptions nicht gebaut: /Zc:__cplusplus]
+```
+
+Exitcode 2 (ROT).
+
+### Befund 2 — Regel und Umsetzung
+
+**Regel.** Die Menge der Tlog-Einträge für **existierende** Kernquellen muss
+exakt der Menge aus `NAKAMA_KERN_QUELLEN` und der Objektmenge im Archiv
+entsprechen — drei Mengen, paarweise gleich. Veraltete Tlog-Einträge werden
+nicht gezählt, aber ehrlich benannt; der Ausgabetext nennt nur die gemessene
+Zahl.
+
+**Umsetzung.** `tu_mengen_abgleich` in derselben Datei. Verglichen wird über den
+**normierten Pfad**, nicht über den Dateinamen: MSBuild legt die Quellzeile des
+Tlogs in Großschreibung ab. Genau daran fiel die erste Fassung im Selbsttest
+(Fälle H/I) — ein Namensvergleich hätte auf dem echten Baum **jede** TU als
+fehlend gemeldet. Angezeigt wird der Name aus CMake; ein veralteter Eintrag
+wird, solange seine Datei noch existiert, in der Schreibweise des Dateisystems
+genannt.
+
+Im grünen Lauf steht dadurch heute:
+
+```text
+  ok      Tlog, NAKAMA_KERN_QUELLEN und Archiv nennen dieselben 9 Uebersetzungseinheiten  [1 veralteter Tlog-Eintrag: PipeToken.cpp]
+```
+
+### Probe zu Befund 2 — TU-Menge auf dem echten Baum gebrochen
+
+Probe: `vertrag/ProbeRunde4.cpp` (leere Datei) in `NAKAMA_KERN_QUELLEN`
+aufgenommen, **nur konfiguriert**. Damit kennt CMake eine Übersetzungseinheit,
+die weder im Tlog noch im Archiv steht:
+
+```text
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - misst dieses Bein den aktuellen Quellstand?
+  FEHLER  NakamaKern.lib ist nicht aelter als die Kernquellen  [vertrag/ProbeRunde4.cpp]
+  FEHLER  Tlog, NAKAMA_KERN_QUELLEN und Archiv nennen dieselben 9 Uebersetzungseinheiten  [ProbeRunde4.cpp: in NAKAMA_KERN_QUELLEN, aber ohne Tlog-Eintrag | ProbeRunde4.cpp: in NAKAMA_KERN_QUELLEN, aber ohne Objekt im Archiv | 1 veralteter Tlog-Eintrag: PipeToken.cpp]
+  ok      jede der 9 gebauten TUs traegt exakt die heutigen Schalter der Projektdatei (Defines 16, Includepfade 4, erzwungene Includes 0, Sprachstandard 1; 2 AdditionalOptions-Token enthalten)
+  ok      NakamaKern.lib ist nicht aelter als die 10 Objekte ihres Bauverzeichnisses und nicht aelter als ihr Tlog
+
+[1] Gegenprobe - findet der Scanner die Werte dort, wo sie stehen muessen?
+  ok      Gegenprobe findet hersteller.name = 'evenacadia' im gebauten Bundle  [ascii,utf-16le]
+  ok      Gegenprobe findet main.produktname = 'EQ-Copilot' im gebauten Bundle  [ascii,utf-16le]
+  ok      Gegenprobe findet main.plugin_code = 'Eqcp' im gebauten Bundle  [ascii,fourcc-int-be]
+  ok      Gegenprobe findet main.component_cid = 'ABCDEF019182FAEB45766E6145716370' im gebauten Bundle  [roh16-com]
+  ok      Gegenprobe findet main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' im gebauten Bundle  [roh16-com]
+
+[2] Kern - keine dieser Nadeln darf im Objektcode des Kerns liegen
+  ok      NakamaKern.lib traegt active-probe.bundle = 'Nakama Probeeq.vst3' NICHT
+  ok      NakamaKern.lib traegt active-probe.component_cid = 'ABCDEF019182FAEB45766E614E6B4163' NICHT
+  ok      NakamaKern.lib traegt active-probe.controller_cid = 'ABCDEF011234ABCD45766E614E6B4163' NICHT
+  ok      NakamaKern.lib traegt active-probe.plugin_code = 'NkAc' NICHT
+  ok      NakamaKern.lib traegt active-probe.produktname = 'Nakama Probeeq' NICHT
+  ok      NakamaKern.lib traegt hersteller.code = 'Evna' NICHT
+  ok      NakamaKern.lib traegt hersteller.name = 'evenacadia' NICHT
+  ok      NakamaKern.lib traegt main.bundle = 'EQ-Copilot.vst3' NICHT
+  ok      NakamaKern.lib traegt main.component_cid = 'ABCDEF019182FAEB45766E6145716370' NICHT
+  ok      NakamaKern.lib traegt main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' NICHT
+  ok      NakamaKern.lib traegt main.plugin_code = 'Eqcp' NICHT
+  ok      NakamaKern.lib traegt main.produktname = 'EQ-Copilot' NICHT
+  ok      NakamaKern.lib traegt passive-probe.bundle = 'Nakama Suna.vst3' NICHT
+  ok      NakamaKern.lib traegt passive-probe.component_cid = 'ABCDEF019182FAEB45766E614E6B5072' NICHT
+  ok      NakamaKern.lib traegt passive-probe.controller_cid = 'ABCDEF011234ABCD45766E614E6B5072' NICHT
+  ok      NakamaKern.lib traegt passive-probe.plugin_code = 'NkPr' NICHT
+  ok      NakamaKern.lib traegt passive-probe.produktname = 'Nakama Suna' NICHT
+
+[3] Bauform - der Kern enthaelt genau seine eigenen Objekte
+  ok      Archivmitglieder sind genau die 9 Kernobjekte
+  ok      kein JUCE-Modulobjekt im Kern (die Kopf-Fassade haelt)
+
+26 ok, 2 Fehler
+
+FEHLGESCHLAGEN:
+  - NakamaKern.lib ist nicht aelter als die Kernquellen  [vertrag/ProbeRunde4.cpp]
+  - Tlog, NAKAMA_KERN_QUELLEN und Archiv nennen dieselben 9 Uebersetzungseinheiten  [ProbeRunde4.cpp: in NAKAMA_KERN_QUELLEN, aber ohne Tlog-Eintrag | ProbeRunde4.cpp: in NAKAMA_KERN_QUELLEN, aber ohne Objekt im Archiv | 1 veralteter Tlog-Eintrag: PipeToken.cpp]
+```
+
+Exitcode 2 (ROT).
+
+### Befund 3 — Regel (Lücke → Regel) und Umsetzung
+
+**Neue Regel in `tools/dirigent/pruefliste.md` §E:** „Ein Abschnitt, der in
+seinem Kopf seinen Stand (Commit) nennt, ist eine Momentaufnahme @ diesem
+Stand; nackte Zeilennummern darunter gelten als daran gebunden. Abschnitte ohne
+Standangabe binden jede Position einzeln (`@ sha7` oder Symbol)."
+
+**Kriterium der Umsetzung**, mechanisch, damit es nachprüfbar ist: ein
+Abschnitt gilt als gebunden, wenn in seinem Kopf — den Zeilen zwischen
+Überschrift und erster Unterüberschrift — entweder `### Kopf - woran gemessen
+wurde` steht (die Kanon-Läufe; ihr Kopfblock nennt den Commit) oder eine Zeile
+das Wort „Stand" zusammen mit einem Commit in Backticks trägt. Betrachtet
+wurden alle `##`-Überschriften **und** die drei `###`-Abschnitte des
+Dateikopfes, die überhaupt keine `##`-Eltern haben — dort liegt die
+Inventurtabelle, die der Befund ausdrücklich nennt.
+
+Der Befund nennt für die Commitsuche
+`git log --format=%h --diff-filter=A -S'<Überschrift>'`. Gemessen: mit
+`--diff-filter=A` trifft die Suche **nur** den Commit, der die Datei anlegte
+(`5d0e9fd`), weil der Filter auf den Dateistatus wirkt und jeder spätere Commit
+`M` ist — für alle später ergänzten Abschnitte kam nichts zurück. Benutzt wurde
+deshalb dieselbe Pickaxe **ohne** `--diff-filter`, ältester Treffer.
+
+**Trefferliste vorher/nachher** (Rohausgabe des dafür geschriebenen Werkzeugs;
+„Positionen" zählt nackte `Datei.endung:Zahl`-Verweise außerhalb von
+Codeblöcken und `>`-Zitaten):
+
+```text
+vorher (Stand facea2d)
+  Z69     UNGEBUNDEN   0 Positionen  ### (Dateikopf) ### Riegel-Nacharbeit S8 vom 28.08.2026 — acht übergebene P1
+  Z180    UNGEBUNDEN   0 Positionen  ### (Dateikopf) ### Letzte Nacharbeit S8 vom 28.08.2026 — vier frische Prüferf
+  Z265    UNGEBUNDEN   6 Positionen  ### (Dateikopf) ### Runde 2/3 — JUCE-Generatorausdrücke und Listen-Eigenschaft
+  Z361    UNGEBUNDEN   1 Positionen  ##              ## 1. Ticket-Behauptungen
+  Z398    UNGEBUNDEN   1 Positionen  ##              ## 2. Rohe Ausgaben
+  Z759    UNGEBUNDEN   0 Positionen  ##              ## 3. T1 — Selbstprüfung
+  Z782    gebunden     0 Positionen  ##              ## 4. Kanon-Lauf (roh, vom Runner erzeugt)
+  Z1986   gebunden     5 Positionen  ##              ## 5. T2 — Frischkontext-Prüfer
+  Z2104   UNGEBUNDEN   6 Positionen  ##              ## 6. Nacharbeit zu den T2-Befunden
+  Z2222   gebunden     0 Positionen  ##              ## Kanon-Lauf - SONDE-007a T2-Nacharbeit
+  Z3460   UNGEBUNDEN   0 Positionen  ##              ## Nacharbeit zum Gate G1 — 24.08.2026
+  Z3496   gebunden     0 Positionen  ##              ## Kanon-Lauf - S8 Dirigent 2026-08-28 - Kanon auf 3353fb6 vor
+  Z5994   gebunden     0 Positionen  ##              ## Kanon-Lauf - S8 Dirigent 2026-08-28 - Kanon auf 374eea7 nac
+  Z8500   gebunden     0 Positionen  ##              ## Kanon-Lauf - S8 Dirigent 2026-08-28 - Kanon auf 068c9ce nac
+  Z11006  gebunden     0 Positionen  ##              ## Abschluss der Dirigentenrunde — 2026-08-28: NEEDS_WORK, nac
+  Z11022  gebunden     0 Positionen  ##              ## Nacharbeit Runde 3 — 2026-08-29: vom User unterbrochen
+  Z11180  UNGEBUNDEN   0 Positionen  ##              ## Nacharbeit Runde 3 — Fortsetzung 2026-08-29: NAK-85
+  Z11421  gebunden     0 Positionen  ##              ## Kanon-Lauf - SONDE-007a Nacharbeit Runde 3 - Abschluss
+
+nachher (dieser Commit)
+  Z69     gebunden     0 Positionen  ### (Dateikopf) ### Riegel-Nacharbeit S8 vom 28.08.2026 — acht übergebene P1
+  Z182    gebunden     0 Positionen  ### (Dateikopf) ### Letzte Nacharbeit S8 vom 28.08.2026 — vier frische Prüferf
+  Z269    gebunden     6 Positionen  ### (Dateikopf) ### Runde 2/3 — JUCE-Generatorausdrücke und Listen-Eigenschaft
+  Z367    gebunden     1 Positionen  ##              ## 1. Ticket-Behauptungen
+  Z406    gebunden     1 Positionen  ##              ## 2. Rohe Ausgaben
+  Z769    gebunden     0 Positionen  ##              ## 3. T1 — Selbstprüfung
+  Z794    gebunden     0 Positionen  ##              ## 4. Kanon-Lauf (roh, vom Runner erzeugt)
+  Z1998   gebunden     5 Positionen  ##              ## 5. T2 — Frischkontext-Prüfer
+  Z2116   gebunden     6 Positionen  ##              ## 6. Nacharbeit zu den T2-Befunden
+  Z2236   gebunden     0 Positionen  ##              ## Kanon-Lauf - SONDE-007a T2-Nacharbeit
+  Z3474   gebunden     0 Positionen  ##              ## Nacharbeit zum Gate G1 — 24.08.2026
+  Z3512   gebunden     0 Positionen  ##              ## Kanon-Lauf - S8 Dirigent 2026-08-28 - Kanon auf 3353fb6 vor
+  Z6010   gebunden     0 Positionen  ##              ## Kanon-Lauf - S8 Dirigent 2026-08-28 - Kanon auf 374eea7 nac
+  Z8516   gebunden     0 Positionen  ##              ## Kanon-Lauf - S8 Dirigent 2026-08-28 - Kanon auf 068c9ce nac
+  Z11022  gebunden     0 Positionen  ##              ## Abschluss der Dirigentenrunde — 2026-08-28: NEEDS_WORK, nac
+  Z11038  gebunden     0 Positionen  ##              ## Nacharbeit Runde 3 — 2026-08-29: vom User unterbrochen
+  Z11196  gebunden     0 Positionen  ##              ## Nacharbeit Runde 3 — Fortsetzung 2026-08-29: NAK-85
+  Z11439  gebunden     0 Positionen  ##              ## Kanon-Lauf - SONDE-007a Nacharbeit Runde 3 - Abschluss
+  Z11502  gebunden     1 Positionen  ##              ## Nacharbeit Runde 4 — 2026-08-29 (Prüfer-Thread `01a04dff-72
+```
+
+Neun Abschnitte haben eine Zeile **Stand dieses Abschnitts:** `<sha7>`
+bekommen; der Diff des Manifests ist an dieser Stelle **rein additiv** — 18
+Zeilen zugefügt, 0 entfernt. Rohausgaben und Zitate stehen wortgleich.
+
+Gegenprobe zum konkret genannten Verweis: `## 1. Ticket-Behauptungen` ist jetzt
+an `5d0e9fd` gebunden, und dort trägt `tools/beweise.ps1:484` genau die
+behauptete Zeile:
+
+```text
+$ git show 5d0e9fd:tools/beweise.ps1 | sed -n '482,486p'
+$baustand = @()
+$veraltet = $false
+foreach ($eintrag in ($kanon | Where-Object { $_.Art -eq 'plugin' })) {
+    $exe = Pruefbinaer $eintrag.Name
+    if (-not (Test-Path -LiteralPath $exe)) { continue }
+```
+
+### Selbsttest, baulos — jede neue Prüfung einmal gebrochen
+
+`py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py --selbsttest`. Die
+Fälle A–G decken die Schalterklassen (jede einzeln gebrochen, fehlend **und**
+zusätzlich, dazu der unbekannte `LanguageStandard`-Wert), R/S das Durchreichen
+über `AdditionalOptions`, H–M die drei TU-Mengen samt veraltetem Eintrag und
+unlesbarem Archiv, N–Q die Linkfrische:
+
+```text
+A14-Selbsttest: Viercode-Integer und CID-Bytefolgen
+  ok      little-endian Immediate 0x45716370 wird gefunden  [fourcc-int-le]
+  ok      big-endian Integerfolge 0x45716370 wird gefunden  [ascii,fourcc-int-be]
+  ok      16-Byte-CID-Suche bleibt erhalten  [roh16]
+  ok      Frische-Defines erkennen fehlende gebaute Werte  [NUR_HEUTE=1]
+  ok      Frische-Defines erkennen veraltete zusaetzliche Werte  [NUR_GEBAUT=1]
+  ok      rekursive Kern-Includehuelle enthaelt NakamaUtf8.h
+
+NAK-85-Selbsttest: Configure-Frischewache (kuenstliches Bauverzeichnis)
+  ok      A: aktuelles Configure bleibt klaglos
+  ok      B: geaenderte CMake-Eingabe ohne Configure wird benannt  [C:\Users\phili\AppData\Local\Temp\tmpevj6ykbc\Kuenstlich.cmake juenger als C:\Users\phili\AppData\Local\Temp\tmpevj6ykbc\CMakeFiles\generate.stamp]
+  ok      C: eine ungelistete Pflichteingabe macht die Wache nicht still  [eq-copilot/plugin/CMakeLists.txt steht in keiner generate.stamp.depend - die Frischewache ist an dieser Datei blind | eq-copilot/cmake/NakamaKern.cmake steht in keiner generate.stamp.depend - die Frischewache ist an dieser Datei blind]
+  ok      C2: verschwundene CMake-Eingabe ist eine Klage, kein stilles Ja  [C:\Users\phili\AppData\Local\Temp\tmpevj6ykbc\Kuenstlich.cmake ist als CMake-Eingabe gelistet, existiert aber nicht mehr]
+  ok      D: ohne generate.stamp.list gibt es kein gruenes Urteil  [C:\Users\phili\AppData\Local\Temp\tmpevj6ykbc\CMakeFiles\generate.stamp.list fehlt - Bauverzeichnis nicht konfiguriert]
+
+NAK-85-Runde-4-Selbsttest: Schalterklassen, TU-Menge, Linkfrische
+  ok      A: Projektdatei liefert genau die ClCompile-Defines plus CharacterSet  [CMAKE_INTDIR=Release, HEUTE=1, _MBCS]
+  ok      B: ResourceCompile faellt nicht in die ClCompile-Klassen  [c:\kuenstlich\ein, c:\kuenstlich\zwei]
+  ok      C: Sprachstandard, erzwungenes Include und AdditionalOptions gelesen  [['/std:c++20'] | ['/bigobj', '/utf-8']]
+  ok      R: /external:I aus AdditionalOptions landet in der Includeklasse  [['c:\\kuenstlich\\ein', 'c:\\kuenstlich\\fremd', 'c:\\kuenstlich\\zwei'] | Rest ['/bigobj', '/utf-8']]
+  ok      S: derselbe Pfad im Tlog ist damit kein Includebefund mehr
+  ok      D: passende Kommandozeile bleibt klaglos
+  ok      E: gebrochene Klasse Includepfade wird benannt  [C:\KUENSTLICH\EINS.CPP: Includepfade nicht gebaut: c:\kuenstlich\zwei]
+  ok      E: gebrochene Klasse erzwungene Includes wird benannt  [C:\KUENSTLICH\EINS.CPP: erzwungene Includes nicht gebaut: c:\kuenstlich\vorspann.h]
+  ok      E: gebrochene Klasse Sprachstandard wird benannt  [C:\KUENSTLICH\EINS.CPP: Sprachstandard nicht gebaut: /std:c++20 | C:\KUENSTLICH\EINS.CPP: Sprachstandard nur gebaut: /std:c++17]
+  ok      E: gebrochene Klasse AdditionalOptions wird benannt  [C:\KUENSTLICH\EINS.CPP: AdditionalOptions nicht gebaut: /bigobj]
+  ok      E: gebrochene Klasse Defines fehlend wird benannt  [C:\KUENSTLICH\EINS.CPP: Defines nicht gebaut: HEUTE=1]
+  ok      E: gebrochene Klasse Defines zusaetzlich wird benannt  [C:\KUENSTLICH\EINS.CPP: Defines nur gebaut: NUR_GEBAUT=1]
+  ok      F: ein /std: ohne Entsprechung in der Projektdatei ist ebenfalls eine Klage
+  ok      G: unbekannter LanguageStandard-Wert ist ROT, kein stilles Ja  [unbekannter <LanguageStandard>-Wert 'stdcpp99' in der Projektdatei - dieses Bein kennt den zugehoerigen cl-Schalter nicht und raet nicht]
+  ok      H: deckungsgleiche TU-Mengen bleiben klaglos
+  ok      I: veralteter Tlog-Eintrag wird nicht gezaehlt, aber benannt  [2 aktuell, veraltet: ENTFERNT.CPP]
+  ok      J: eine Kernquelle ohne Tlog-Eintrag ist ROT  [Zwei.cpp: in NAKAMA_KERN_QUELLEN, aber ohne Tlog-Eintrag]
+  ok      K: eine Kernquelle ohne Objekt im Archiv ist ROT  [Zwei.cpp: in NAKAMA_KERN_QUELLEN, aber ohne Objekt im Archiv]
+  ok      L: ein Objekt ohne Kernquelle ist ROT  [Fremd.obj: im Archiv, aber nicht in NAKAMA_KERN_QUELLEN]
+  ok      M: ein unlesbares Archiv ist eine Klage, kein stilles Ja  [Archivmitglieder nicht lesbar - TU-Menge nicht gegen das Archiv abgleichbar]
+  ok      N: frisch gelinkte Lib bleibt klaglos
+  ok      O: Objekt juenger als die Lib ist ROT  [Lib nicht neu gelinkt nach letzter Uebersetzung: Eins.obj]
+  ok      P: Tlog juenger als die Lib ist ROT  [Lib nicht neu gelinkt nach letzter Uebersetzung: C:\Users\phili\AppData\Local\Temp\tmp1r9tb604\CL.command.1.tlog ist juenger]
+  ok      Q: ohne Objekte gibt es kein gruenes Linkurteil
+
+35 ok, 0 Fehler
+```
+
+Exitcode 0 (grün).
+
+### Grün danach — Proben zurückgenommen, konfiguriert, gebaut
+
+```text
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - misst dieses Bein den aktuellen Quellstand?
+  ok      NakamaKern.lib ist nicht aelter als die Kernquellen
+  ok      Tlog, NAKAMA_KERN_QUELLEN und Archiv nennen dieselben 9 Uebersetzungseinheiten  [1 veralteter Tlog-Eintrag: PipeToken.cpp]
+  ok      jede der 9 gebauten TUs traegt exakt die heutigen Schalter der Projektdatei (Defines 16, Includepfade 4, erzwungene Includes 0, Sprachstandard 1; 2 AdditionalOptions-Token enthalten)
+  ok      NakamaKern.lib ist nicht aelter als die 10 Objekte ihres Bauverzeichnisses und nicht aelter als ihr Tlog
+
+[1] Gegenprobe - findet der Scanner die Werte dort, wo sie stehen muessen?
+  ok      Gegenprobe findet hersteller.name = 'evenacadia' im gebauten Bundle  [ascii,utf-16le]
+  ok      Gegenprobe findet main.produktname = 'EQ-Copilot' im gebauten Bundle  [ascii,utf-16le]
+  ok      Gegenprobe findet main.plugin_code = 'Eqcp' im gebauten Bundle  [ascii,fourcc-int-be]
+  ok      Gegenprobe findet main.component_cid = 'ABCDEF019182FAEB45766E6145716370' im gebauten Bundle  [roh16-com]
+  ok      Gegenprobe findet main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' im gebauten Bundle  [roh16-com]
+
+[2] Kern - keine dieser Nadeln darf im Objektcode des Kerns liegen
+  ok      NakamaKern.lib traegt active-probe.bundle = 'Nakama Probeeq.vst3' NICHT
+  ok      NakamaKern.lib traegt active-probe.component_cid = 'ABCDEF019182FAEB45766E614E6B4163' NICHT
+  ok      NakamaKern.lib traegt active-probe.controller_cid = 'ABCDEF011234ABCD45766E614E6B4163' NICHT
+  ok      NakamaKern.lib traegt active-probe.plugin_code = 'NkAc' NICHT
+  ok      NakamaKern.lib traegt active-probe.produktname = 'Nakama Probeeq' NICHT
+  ok      NakamaKern.lib traegt hersteller.code = 'Evna' NICHT
+  ok      NakamaKern.lib traegt hersteller.name = 'evenacadia' NICHT
+  ok      NakamaKern.lib traegt main.bundle = 'EQ-Copilot.vst3' NICHT
+  ok      NakamaKern.lib traegt main.component_cid = 'ABCDEF019182FAEB45766E6145716370' NICHT
+  ok      NakamaKern.lib traegt main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' NICHT
+  ok      NakamaKern.lib traegt main.plugin_code = 'Eqcp' NICHT
+  ok      NakamaKern.lib traegt main.produktname = 'EQ-Copilot' NICHT
+  ok      NakamaKern.lib traegt passive-probe.bundle = 'Nakama Suna.vst3' NICHT
+  ok      NakamaKern.lib traegt passive-probe.component_cid = 'ABCDEF019182FAEB45766E614E6B5072' NICHT
+  ok      NakamaKern.lib traegt passive-probe.controller_cid = 'ABCDEF011234ABCD45766E614E6B5072' NICHT
+  ok      NakamaKern.lib traegt passive-probe.plugin_code = 'NkPr' NICHT
+  ok      NakamaKern.lib traegt passive-probe.produktname = 'Nakama Suna' NICHT
+
+[3] Bauform - der Kern enthaelt genau seine eigenen Objekte
+  ok      Archivmitglieder sind genau die 9 Kernobjekte
+  ok      kein JUCE-Modulobjekt im Kern (die Kopf-Fassade haelt)
+
+28 ok, 0 Fehler
+```
+
+Exitcode 0 (grün).
+
+Beide Proben sind vollständig zurückgenommen: `eq-copilot/plugin/CMakeLists.txt`
+ist byte-identisch zu `facea2d`, `vertrag/ProbeRunde4.cpp` gelöscht.
+
+### Behauptung ≤ Messung
+
+Die Runner-Behauptung `Kuerzel='A14'` in `tools/beweise.ps1` lautet jetzt
+wörtlich:
+
+```text
+Der gemeinsame Kern traegt keine Bundle-Identitaet: NakamaKern.lib enthaelt keinen eingefrorenen Identitaetswert (Namen, Viercodes, CIDs roh und COM-vertauscht) und genau seine eigenen Uebersetzungseinheiten, kein JUCE-Modulobjekt; die Gegenprobe findet dieselben Werte im gebauten EQ-Copilot-Bundle. Gemessen wird nie ein veraltetes Artefakt: das Configure ist juenger als jede CMake-Eingabe, die der Generator verbraucht hat; die Lib ist nicht aelter als ihre Quellen, nicht aelter als ihre Objekte und nicht aelter als ihr Tlog; Tlog, NAKAMA_KERN_QUELLEN und Archiv nennen dieselbe Menge Uebersetzungseinheiten (veraltete Tlog-Eintraege werden benannt, nicht gezaehlt); und jede dieser Einheiten wurde mit exakt den Defines, Includepfaden, erzwungenen Includes und dem Sprachstandard der heutigen Projektdatei uebersetzt - beide Richtungen - und traegt deren AdditionalOptions-Tokens. Weitere ClCompile-Elemente der Projektdatei (Warnstufe, Optimierung, Laufzeitbibliothek und die uebrigen) bildet dieses Bein nicht ab und behauptet ueber sie nichts.
+```
+
+Sie nennt die vier beidseitigen Klassen, die `AdditionalOptions` nur als
+„trägt deren Tokens" und sagt ausdrücklich, dass die übrigen ClCompile-Elemente
+nicht abgebildet sind. Der Kopf des Skripts trägt dieselbe Grenze samt
+vollständiger Liste der nicht abgebildeten Elemente.
+
+### Prüfliste abgehakt
+
+| Regel | wo gemessen |
+|---|---|
+| **D** fail-closed, Unbekanntes ist ROT | unbekannter `<LanguageStandard>`-Wert wirft (`_sprachstandard_soll`), Selbsttest G; unlesbares Archiv, fehlende Objekte, leeres Tlog und fehlende Objektdateien sind Klagen (`tu_mengen_abgleich`, `linkfrische`), Selbsttest M/Q |
+| **D** „misst nie ein veraltetes Artefakt" prüft die Frische seiner Eingaben | fünf Wachen, im Kopf der Datei aufgezählt; die beiden Proben oben brechen zwei davon einzeln am echten Baum |
+| **E** Behauptung ≤ Messung | Runner-Behauptung und Skriptkopf nennen genau die vier Klassen plus Enthaltensein und listen die **nicht** abgebildeten ClCompile-Elemente |
+| **E** Zahlen gemessen, nicht abgeschrieben | „9 Uebersetzungseinheiten", „Defines 16, Includepfade 4, …" und „10 Objekte" stammen aus dem Lauf; die Trefferliste oben ist Werkzeugausgabe |
+| **E** Positionen als Symbol oder mit Commit | dieser Abschnitt nennt ausschließlich Symbole; neun Altabschnitte haben ihren Stand bekommen (Liste oben) |
+| **E** jede neue Prüfung einmal gebrochen | Selbsttest A–S baulos, dazu zwei Proben am echten Baum; Rohausgaben oben |
+| **F** Änderungssatz zusammen | Messung (`pruefe_kern_identitaetsfrei.py`), Behauptung (`tools/beweise.ps1`), Regel (`tools/dirigent/pruefliste.md`) und Beleg (dieses Manifest) im selben Commit |

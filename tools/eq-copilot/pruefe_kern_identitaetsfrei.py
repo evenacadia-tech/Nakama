@@ -30,12 +30,25 @@ juce_core.obj neben NakamaState.obj - und der Kern haette zwei Wahrheiten
 ueber denselben Code.
 
 FRISCHE - die Zusage lautet "misst nie ein veraltetes Artefakt", und sie wird
-an drei Stellen gehalten, weil ein Artefakt auf drei Arten veralten kann:
-Abschnitt [0] haelt die Lib gegen ihre Quellen (Zeitstempel) und die gebauten
-Uebersetzungsschalter gegen die heutige Projektdatei (Tlog gegen .vcxproj);
-davor prueft `configure_frische`, ob die Projektdatei selbst noch dem heutigen
-CMake-Stand entspricht - sonst waeren beide Seiten des Vergleichs gemeinsam
-veraltet und ihre Uebereinstimmung wertlos (NAK-85, siehe dort).
+an fuenf Stellen gehalten, weil ein Artefakt auf fuenf Arten veralten kann.
+Vor allem anderen prueft `configure_frische`, ob die erzeugte Projektdatei
+ueberhaupt noch dem heutigen CMake-Stand entspricht - sonst waeren beide Seiten
+jedes folgenden Vergleichs gemeinsam veraltet (NAK-85). Abschnitt [0] haelt
+danach
+
+  1. die Lib gegen die Zeitstempel ihrer Quellen,
+  2. die Uebersetzungseinheiten des Tlogs gegen NAKAMA_KERN_QUELLEN und gegen
+     die Objekte im Archiv - drei Mengen, paarweise gleich; ein veralteter
+     Tlog-Eintrag wird benannt, aber nicht mitgezaehlt,
+  3. die gebauten Schalter gegen die heutige Projektdatei, und zwar in vier
+     Klassen beidseitig (Defines, Includepfade, erzwungene Includes,
+     Sprachstandard) plus den AdditionalOptions-Tokens auf Enthaltensein -
+     welche ClCompile-Elemente NICHT abgebildet sind, steht im Kommentarkopf
+     "NAK-85 Runde 4" weiter unten,
+  4. die Lib gegen ihre eigenen Objekte und ihr Tlog (wurde nach der letzten
+     Uebersetzung ueberhaupt gelinkt?).
+
+Punkte 2 bis 4 kamen mit der vierten T3-Runde zu NAK-85 dazu (29.08.2026).
 
 Aufruf:
     py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py [bauverzeichnis]
@@ -95,25 +108,254 @@ KERN_FASSADE = WURZEL / "eq-copilot" / "cmake" / "NakamaKern.cmake"
 #    `configure_frische` weiter unten und laeuft VOR jeder Messung.
 
 
-def _defines_aus_vcxproj(datei: pathlib.Path, konfig: str = "Release|x64") -> set[str]:
+# ── NAK-85 Runde 4 (vierter T3-Pruefer zu S8, 29.08.2026) ───────────────────
+#
+# Anlauf 3 (unten bei `configure_frische`) schloss die Luecke "alte .vcxproj
+# gegen altes Tlog". Der vierte Pruefer fand die naechste: der Vergleich sah nur
+# DEFINES. Wer eine kernrelevante CMake-Aenderung konfiguriert, die einen
+# NICHT-Define-Schalter dreht - ein `/FI`, ein `/std:`, ein Token aus
+# AdditionalOptions - und dann NICHT baut, hat eine frische Projektdatei
+# (`configure_frische` ist zufrieden), ein altes Tlog und trotzdem gleiche
+# Definemengen: gruen auf einer Lib, die mit anderen Schaltern entstand.
+# Am 29.08. gemessen (Rohausgabe im Manifest): `/Zc:__cplusplus` stand in der
+# Projektdatei, nicht im Tlog - Exit 0.
+#
+# Gemessen wird deshalb weiter an der Stelle, die MSBuild VERBRAUCHT (dem
+# Tlog), aber in fuenf Schalterklassen statt einer:
+#
+#   defines             /D, -D                 beide Richtungen
+#   includepfade        /I, -I, /external:I    beide Richtungen
+#   erzwungene_includes /FI, -FI               beide Richtungen
+#   sprachstandard      /std:...               beide Richtungen
+#   AdditionalOptions   uebrige Tokens der Projektdatei -> muessen im Tlog STEHEN
+#
+# Ein Token, das CMake ueber AdditionalOptions durchreicht und das zu einer der
+# vier Klassen gehoert (`/external:I`, ein durchgereichtes `/std:` oder `/FI`),
+# wird dort einsortiert statt in die letzte Klasse - beide Seiten benutzen
+# dieselbe Zuordnung `_klassen_aus_tokens`.
+#
+# ⚠️ Die letzte Klasse kann nur Enthaltensein pruefen, nicht Mengengleichheit:
+#    die Kommandozeile traegt ausserdem jeden Schalter, den MSBuild selbst aus
+#    den uebrigen ClCompile-Elementen erzeugt (/nologo, /W4, /Ox, /MD, ...).
+#    "Kein zusaetzliches Token" waere hier also eine Behauptung ohne Messung.
+#    Der Tokenvergleich laeuft ausserdem case-insensitiv, weil MSBuild Pfade im
+#    Tlog in Grossschreibung ablegt.
+#
+# ⚠️ NICHT abgebildet und damit ausdruecklich nicht behauptet sind die uebrigen
+#    ClCompile-Elemente der Projektdatei - heute: AssemblerListingLocation,
+#    BasicRuntimeChecks, DebugInformationFormat, ExceptionHandling,
+#    InlineFunctionExpansion, MinimalRebuild, MultiProcessorCompilation,
+#    ObjectFileName, Optimization, PrecompiledHeader, RuntimeLibrary,
+#    ScanSourceForModuleDependencies, SupportJustMyCode, UseFullPaths,
+#    WarningLevel - sowie Uebersteuerungen an einzelnen <ClCompile Include=...>
+#    Eintraegen (heute gibt es keine). Sie brauchten je eine eigene
+#    Enum->Schalter-Tabelle; wer sie ergaenzt, ergaenzt auch die Behauptung in
+#    tools/beweise.ps1 und den Selbsttest.
+#
+# ⚠️ Die Reihenfolge der Includepfade wird NICHT verglichen, nur die Menge.
+
+# Enum-Werte der Projektdatei -> cl-Schalter. Quelle ist die Werkzeug-
+# beschreibung des installierten Toolsets (MSBuild cl.xml, EnumProperty
+# LanguageStandard / LanguageStandard_C, VS 2022 v170), nicht das Gedaechtnis.
+# Ein unbekannter Wert ist ROT (Prueflistenregel D), nie ein stilles "kein
+# /std:" - genau so entstuende sonst wieder ein einseitig blinder Vergleich.
+_STD_CXX_AUS_VCXPROJ = {
+    "": None,
+    "default": None,
+    "stdcpp14": "/std:c++14",
+    "stdcpp17": "/std:c++17",
+    "stdcpp20": "/std:c++20",
+    "stdcpp23": "/std:c++23preview",
+    "stdcpplatest": "/std:c++latest",
+}
+_STD_C_AUS_VCXPROJ = {
+    "": None,
+    "default": None,
+    "stdc11": "/std:c11",
+    "stdc17": "/std:c17",
+    "stdclatest": "/std:clatest",
+}
+
+# Anzeigenamen der beidseitig verglichenen Klassen. Die Reihenfolge ist die der
+# Ausgabe; `SCHALTERKLASSEN` ist zugleich die Menge, ueber die verglichen wird.
+SCHALTERKLASSEN = ("defines", "includepfade", "erzwungene_includes", "sprachstandard")
+KLASSENNAME = {
+    "defines": "Defines",
+    "includepfade": "Includepfade",
+    "erzwungene_includes": "erzwungene Includes",
+    "sprachstandard": "Sprachstandard",
+}
+
+
+def _zerlege_kommandozeile(zeile: str) -> list[str]:
+    """Zerlegt eine cl-Kommandozeile in Tokens und achtet dabei auf Quoting.
+
+    Ein Anfuehrungszeichen hinter einer UNGERADEN Zahl Backslashes ist ein
+    Zeichen, keine Klammer - so schreibt MSBuild die Defines mit Stringwert und
+    das Ausgabeverzeichnis mit verdoppeltem Schlussbackslash. Ein naiver Split
+    an Leerzeichen risse beide auseinander, und der Vergleich klagte dann ueber
+    selbst erzeugten Schrott.
+    """
+    tokens: list[str] = []
+    akt: list[str] = []
+    in_klammer = False
+    backslashes = 0
+    for zeichen in zeile:
+        if zeichen == "\\":
+            backslashes += 1
+            akt.append(zeichen)
+            continue
+        if zeichen == '"':
+            if backslashes % 2 == 0:
+                in_klammer = not in_klammer
+            akt.append(zeichen)
+            backslashes = 0
+            continue
+        backslashes = 0
+        if zeichen.isspace() and not in_klammer:
+            if akt:
+                tokens.append("".join(akt))
+                akt = []
+        else:
+            akt.append(zeichen)
+    if akt:
+        tokens.append("".join(akt))
+    return tokens
+
+
+# Praefixe je Klasse. Dieselbe Tabelle bedient BEIDE Seiten - das Tlog und die
+# AdditionalOptions der Projektdatei -, damit ein Schalter, den CMake ueber
+# AdditionalOptions durchreicht, in DERSELBEN Klasse landet wie einer aus dem
+# eigenen ClCompile-Element. Ohne das faende der Vergleich ihn im Tlog als
+# "nur gebaut" und faerbte grundlos rot; genau so waere `/external:I`
+# ausgegangen, fuer das das installierte Toolset gar keine eigene
+# ClCompile-Eigenschaft kennt (cl.xml: nur /I und /external:env:).
+KLASSEN_PRAEFIXE = {
+    "defines": ("/D", "-D"),
+    "includepfade": ("/external:I", "/I", "-I"),
+    "erzwungene_includes": ("/FI", "-FI"),
+}
+# Laengster Praefix zuerst, damit `/external:I` nicht an einem kuerzeren
+# haengenbleibt.
+_PRAEFIX_ZU_KLASSE = tuple(sorted(
+    ((praefix, klasse) for klasse, praefixe in KLASSEN_PRAEFIXE.items()
+     for praefix in praefixe),
+    key=lambda eintrag: len(eintrag[0]), reverse=True))
+
+
+def _klassen_aus_tokens(tokens: list[str]) -> tuple[dict[str, set[str]], list[str]]:
+    """Ordnet Tokens einer cl-Kommandozeile den Schalterklassen zu.
+
+    Gibt (Klassen, uebrige Tokens). cl erlaubt beide Schreibweisen: `/Ipfad`
+    und `/I pfad`; der Sprachstandard steht immer als ganzes Token.
+    """
+    klassen: dict[str, set[str]] = {klasse: set() for klasse in SCHALTERKLASSEN}
+    rest: list[str] = []
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+        if token.startswith("/std:") or token.startswith("-std:"):
+            klassen["sprachstandard"].add(token)
+            i += 1
+            continue
+        treffer = next(((p, k) for p, k in _PRAEFIX_ZU_KLASSE if token.startswith(p)), None)
+        if treffer is None:
+            rest.append(token)
+            i += 1
+            continue
+        praefix, klasse = treffer
+        wert = token[len(praefix):]
+        if not wert and i + 1 < len(tokens):
+            i += 1
+            wert = tokens[i]
+        if wert:
+            klassen[klasse].add(_normiere(wert) if klasse == "defines"
+                                else _pfad_schluessel(wert))
+        i += 1
+    return klassen, rest
+
+
+def _pfad_schluessel(wert: str) -> str:
+    """Vergleichbare Form eines Pfadarguments.
+
+    Die Projektdatei schreibt den Pfad in Originalschreibung, das Tlog dieselbe
+    Stelle in Grossschreibung und in Anfuehrungszeichen. Ohne Klammern, ohne
+    Escapes und ueber normcase/normpath sind beide dasselbe.
+    """
+    w = wert.strip()
+    if len(w) >= 2 and w.startswith('"') and w.endswith('"'):
+        w = w[1:-1]
+    w = w.replace('\\"', '"')
+    if w.endswith("\\\\"):
+        w = w[:-1]
+    if not w:
+        return ""
+    return os.path.normcase(os.path.normpath(w))
+
+
+def _xml_text(roh: str) -> str:
+    """XML-Entitaeten aufloesen.
+
+    Die Projektdatei schreibt Anfuehrungszeichen und kaufmaennisches Und als
+    Entitaet (im heutigen NakamaKern.vcxproj vier `&amp;` in den
+    CustomBuild-Zeilen). Unaufgeloest verglichen wir spaeter
+    `&quot;Pfad&quot;` gegen den Pfad aus dem Tlog und faerbten grundlos rot.
+    `&amp;` zuletzt, damit `&amp;quot;` nicht zweimal aufgeloest wird.
+    """
+    for entitaet, zeichen in (("&lt;", "<"), ("&gt;", ">"), ("&quot;", '"'),
+                              ("&apos;", "'"), ("&#39;", "'"), ("&amp;", "&")):
+        roh = roh.replace(entitaet, zeichen)
+    return roh
+
+
+def _element_text(block: str, name: str) -> str:
+    treffer = re.search(rf"<{name}>(.*?)</{name}>", block, re.S)
+    return _xml_text(treffer.group(1)).strip() if treffer else ""
+
+
+def _element_liste(block: str, name: str) -> list[str]:
+    """Semikolonliste eines ClCompile-Elements ohne die MSBuild-Rueckverweise."""
+    werte: list[str] = []
+    for treffer in re.finditer(rf"<{name}>(.*?)</{name}>", block, re.S):
+        for teil in _xml_text(treffer.group(1)).split(";"):
+            teil = teil.strip()
+            if teil and not teil.startswith("%"):
+                werte.append(teil)
+    return werte
+
+
+def _clcompile_block(datei: pathlib.Path, konfig: str) -> str:
+    """Nur die <ClCompile>-Teile der passenden ItemDefinitionGroup.
+
+    Die Einengung auf ClCompile ist noetig: dieselbe Gruppe traegt
+    <PreprocessorDefinitions> und <AdditionalIncludeDirectories> auch unter
+    <ResourceCompile> und <Midl>, und die uebersetzen keine Kernquelle.
+    """
     text = datei.read_text(encoding="utf-8", errors="replace")
     bedingung = (r"'\$\(Configuration\)\|\$\(Platform\)'=='"
                  + re.escape(konfig) + r"'")
-    muster = r'<ItemDefinitionGroup Condition="' + bedingung + r'">(.*?)</ItemDefinitionGroup>'
-    gefunden: set[str] = set()
+    muster = (r'<ItemDefinitionGroup Condition="' + bedingung
+              + r'">(.*?)</ItemDefinitionGroup>')
+    stuecke: list[str] = []
     for gruppe in re.finditer(muster, text, re.S):
-        treffer = re.search(r"<PreprocessorDefinitions>(.*?)</PreprocessorDefinitions>",
-                            gruppe.group(1), re.S)
-        if treffer:
-            gefunden.update(_normiere(d) for d in treffer.group(1).split(";")
-                             if d and not d.startswith("%"))
+        for cl in re.finditer(r"<ClCompile>(.*?)</ClCompile>", gruppe.group(1), re.S):
+            stuecke.append(cl.group(1))
+    return "\n".join(stuecke)
 
-    # Visual Studio erzeugt aus CharacterSet weitere compilerwirksame Defines,
-    # die nicht in <PreprocessorDefinitions> stehen. Sie pauschal als erlaubte
-    # Extras auszunehmen waere wieder ein einseitiger Vergleich: aendert sich
-    # CharacterSet, muss genau diese Sollmenge mitwandern.
+
+def _zeichensatz_defines(datei: pathlib.Path, konfig: str) -> set[str]:
+    """Visual Studio erzeugt aus CharacterSet weitere compilerwirksame Defines.
+
+    Sie stehen nicht in <PreprocessorDefinitions>. Sie pauschal als erlaubte
+    Extras auszunehmen waere wieder ein einseitiger Vergleich: aendert sich
+    CharacterSet, muss genau diese Sollmenge mitwandern.
+    """
+    text = datei.read_text(encoding="utf-8", errors="replace")
+    bedingung = (r"'\$\(Configuration\)\|\$\(Platform\)'=='"
+                 + re.escape(konfig) + r"'")
     eigenschaften = (r'<PropertyGroup Condition="' + bedingung
                      + r'"[^>]*>(.*?)</PropertyGroup>')
+    gefunden: set[str] = set()
     for gruppe in re.finditer(eigenschaften, text, re.S):
         zeichensatz = re.search(r"<CharacterSet>(.*?)</CharacterSet>", gruppe.group(1), re.S)
         if not zeichensatz:
@@ -123,37 +365,212 @@ def _defines_aus_vcxproj(datei: pathlib.Path, konfig: str = "Release|x64") -> se
             gefunden.add("_MBCS")
         elif wert == "Unicode":
             gefunden.update({"UNICODE", "_UNICODE"})
-
     return gefunden
 
 
-def _defines_aus_tlog(datei: pathlib.Path) -> list[tuple[str, set[str]]]:
-    # MSBuild schreibt die .tlog als UTF-16LE mit BOM.
+def _sprachstandard_soll(block: str) -> set[str]:
+    werte: set[str] = set()
+    for element, tabelle in (("LanguageStandard", _STD_CXX_AUS_VCXPROJ),
+                             ("LanguageStandard_C", _STD_C_AUS_VCXPROJ)):
+        roh = _element_text(block, element)
+        schluessel = roh.lower()
+        if schluessel not in tabelle:
+            raise RuntimeError(
+                f"unbekannter <{element}>-Wert {roh!r} in der Projektdatei - "
+                f"dieses Bein kennt den zugehoerigen cl-Schalter nicht und raet nicht")
+        schalter = tabelle[schluessel]
+        if schalter:
+            werte.add(schalter)
+    return werte
+
+
+def schalter_aus_vcxproj(datei: pathlib.Path,
+                         konfig: str = "Release|x64",
+                         ) -> tuple[dict[str, set[str]], set[str]]:
+    """Sollschalter der Projektdatei: (die vier Vergleichsklassen, AdditionalOptions)."""
+    block = _clcompile_block(datei, konfig)
+    optionen = [token for token
+                in _zerlege_kommandozeile(_element_text(block, "AdditionalOptions"))
+                if not token.startswith("%")]
+    aus_optionen, zusatz = _klassen_aus_tokens(optionen)
+    klassen = {
+        "defines": ({_normiere(d) for d in _element_liste(block, "PreprocessorDefinitions")}
+                    | _zeichensatz_defines(datei, konfig)
+                    | aus_optionen["defines"]),
+        "includepfade": ({_pfad_schluessel(p)
+                          for p in _element_liste(block, "AdditionalIncludeDirectories")}
+                         | aus_optionen["includepfade"]),
+        "erzwungene_includes": ({_pfad_schluessel(p)
+                                 for p in _element_liste(block, "ForcedIncludeFiles")}
+                                | aus_optionen["erzwungene_includes"]),
+        "sprachstandard": _sprachstandard_soll(block) | aus_optionen["sprachstandard"],
+    }
+    return klassen, set(zusatz)
+
+
+def schalter_aus_tlog(datei: pathlib.Path) -> list[tuple[str, dict[str, set[str]], set[str]]]:
+    """Je Uebersetzungseinheit: (Quellpfad, Schalterklassen, alle Tokens normiert).
+
+    MSBuild schreibt die .tlog als UTF-16LE mit BOM.
+    """
     text = datei.read_bytes().decode("utf-16-le", errors="replace").lstrip("﻿")
-    einheiten: list[tuple[str, set[str]]] = []
+    einheiten: list[tuple[str, dict[str, set[str]], set[str]]] = []
     quelle = "<unbekannte Kernquelle>"
     for zeile in text.splitlines():
         if not zeile.strip():
             continue
         if zeile.startswith("^"):
-            quelle = pathlib.PureWindowsPath(zeile[1:].strip()).name
+            quelle = zeile[1:].strip()
             continue
-        gefunden = {
-            _normiere(d)
-            for d in re.findall(r'(?<!\S)(?:/D|-D)\s*("(?:[^"\\]|\\.)*"|\S+)', zeile)
-        }
-        einheiten.append((quelle, gefunden))
+        tokens = _zerlege_kommandozeile(zeile)
+        klassen, _ = _klassen_aus_tokens(tokens)
+        einheiten.append((quelle, klassen,
+                          {os.path.normcase(token) for token in tokens}))
     return einheiten
 
 
 def _normiere(define: str) -> str:
-    """`"CMAKE_INTDIR=\\"Release\\""` und `CMAKE_INTDIR="Release"` sind dasselbe."""
+    """Ein Define mit Stringwert liest sich in Projektdatei und Tlog verschieden.
+
+    Die Projektdatei schreibt ihn mit einfachen Anfuehrungszeichen, das Tlog
+    zusaetzlich mit Backslash-Escapes. Beide meinen denselben Wert.
+    """
     return define.replace("\\", "").replace('"', "").strip()
 
 
-def _define_abweichungen(soll: set[str], ist: set[str]) -> tuple[list[str], list[str]]:
-    """Fehlende und veraltete zusaetzliche Defines, also beide Richtungen."""
+def _mengen_abweichungen(soll: set[str], ist: set[str]) -> tuple[list[str], list[str]]:
+    """Fehlende und veraltete zusaetzliche Werte, also beide Richtungen."""
     return sorted(soll - ist), sorted(ist - soll)
+
+
+def tu_mengen_abgleich(tlog_einheiten: list[tuple[str, dict[str, set[str]], set[str]]],
+                       kernquellen: list[pathlib.Path],
+                       archivnamen: list[str] | None,
+                       ) -> tuple[list[str],
+                                  list[tuple[str, dict[str, set[str]], set[str]]],
+                                  list[str]]:
+    """Drei Mengen, paarweise gleich - Tlog, NAKAMA_KERN_QUELLEN und Archiv.
+
+    NAK-85 Runde 4, zweiter Befund: Visual Studios inkrementelles Tlog BEHAELT
+    den Eintrag einer entfernten Quelle. Wer nur ueber die vorhandenen
+    Datensaetze laeuft, verlangt nie die heutige TU-Menge - am 29.08. nannte das
+    Tlog zehn Quellen einschliesslich des laengst aus dem Kern genommenen
+    PipeToken.cpp, waehrend CMake-Liste und Archiv neun trugen, und A14 meldete
+    trotzdem "10 TUs" und Exit 0.
+
+    Ein veralteter Eintrag ist kein Fehler des Baus - er ist Buchhaltung von
+    MSBuild. Er wird deshalb nicht gezaehlt, aber auch nicht verschwiegen.
+    Fehlt dagegen eine heutige Kernquelle im Tlog oder im Archiv, ist das ROT:
+    dann sagt das Bauprotokoll nichts ueber eine Uebersetzungseinheit, die in
+    der gemessenen Lib steckt.
+
+    Gibt (Klagen, die aktuellen Tlog-Einheiten, die veralteten Eintraege).
+    """
+    # Verglichen wird ueber den NORMIERTEN PFAD, nicht ueber den Dateinamen:
+    # MSBuild legt die Quellzeile des Tlogs in Grossschreibung ab, CMake nennt
+    # dieselbe Datei in ihrer echten Schreibweise. Ein Vergleich der rohen
+    # Namen faende deshalb nie einen Treffer - im Selbsttest H/I gemessen.
+    nach_schluessel = {_norm_schluessel(p): p for p in kernquellen}
+
+    aktuell: list[tuple[str, dict[str, set[str]], set[str]]] = []
+    veraltet: list[str] = []
+    gesehen: set[str] = set()
+    doppelt: list[str] = []
+    for quelle, klassen, tokens in tlog_einheiten:
+        schluessel = _norm_schluessel(pathlib.Path(quelle))
+        echte = nach_schluessel.get(schluessel)
+        if echte is None:
+            # Existiert die Datei noch (sie ist nur nicht mehr Kern), nennt
+            # resolve() sie in der Schreibweise des Dateisystems; sonst bleibt
+            # die Schreibweise stehen, die das Tlog selbst traegt.
+            alt = pathlib.Path(quelle)
+            veraltet.append(alt.resolve().name if alt.is_file()
+                            else pathlib.PureWindowsPath(quelle).name)
+            continue
+        if schluessel in gesehen:
+            doppelt.append(echte.name)
+        gesehen.add(schluessel)
+        # Der Name aus CMake, nicht der aus dem Tlog: so liest sich die Ausgabe
+        # in der Schreibweise des Quellbaums.
+        aktuell.append((echte.name, klassen, tokens))
+
+    klagen: list[str] = []
+    if not tlog_einheiten:
+        klagen.append("Tlog nennt keine Uebersetzungseinheit")
+    for name in sorted(doppelt):
+        klagen.append(f"{name}: mehrfach im Tlog")
+
+    for schluessel in sorted(set(nach_schluessel) - gesehen):
+        klagen.append(f"{nach_schluessel[schluessel].name}: in NAKAMA_KERN_QUELLEN, "
+                      f"aber ohne Tlog-Eintrag")
+
+    if archivnamen is None:
+        klagen.append("Archivmitglieder nicht lesbar - TU-Menge nicht gegen das "
+                      "Archiv abgleichbar")
+    else:
+        # Objekt- und Quellname teilen sich den Stamm; verglichen wird
+        # unabhaengig von der Schreibweise, angezeigt wird der echte Name.
+        objekte = {os.path.normcase(pathlib.PurePath(m).stem): pathlib.PurePath(m).name
+                   for m in archivnamen}
+        quellen_nach_stamm = {os.path.normcase(p.stem): p for p in kernquellen}
+        for stamm in sorted(set(quellen_nach_stamm) - set(objekte)):
+            klagen.append(f"{quellen_nach_stamm[stamm].name}: in NAKAMA_KERN_QUELLEN, "
+                          f"aber ohne Objekt im Archiv")
+        for stamm in sorted(set(objekte) - set(quellen_nach_stamm)):
+            klagen.append(f"{objekte[stamm]}: im Archiv, aber nicht in NAKAMA_KERN_QUELLEN")
+
+    return klagen, aktuell, sorted(veraltet)
+
+
+def schalter_abgleich(soll: dict[str, set[str]], soll_zusatz: set[str],
+                      einheiten: list[tuple[str, dict[str, set[str]], set[str]]],
+                      ) -> list[str]:
+    """Jede gebaute TU gegen die heutigen Schalter der Projektdatei.
+
+    Vier Klassen in BEIDE Richtungen, AdditionalOptions nur auf Enthaltensein -
+    warum das so ist, steht im Kopf dieses Abschnitts.
+    """
+    klagen: list[str] = []
+    if not soll["defines"]:
+        klagen.append("Projektdatei nennt keine Defines")
+    for quelle, klassen, tokens in einheiten:
+        for klasse in SCHALTERKLASSEN:
+            fehlend, zusaetzlich = _mengen_abweichungen(soll[klasse], klassen[klasse])
+            if fehlend:
+                klagen.append(f"{quelle}: {KLASSENNAME[klasse]} nicht gebaut: "
+                              + ", ".join(fehlend))
+            if zusaetzlich:
+                klagen.append(f"{quelle}: {KLASSENNAME[klasse]} nur gebaut: "
+                              + ", ".join(zusaetzlich))
+        offen = sorted(t for t in soll_zusatz if os.path.normcase(t) not in tokens)
+        if offen:
+            klagen.append(f"{quelle}: AdditionalOptions nicht gebaut: " + ", ".join(offen))
+    return klagen
+
+
+def linkfrische(lib: pathlib.Path, objekte: list[pathlib.Path],
+                tlog: pathlib.Path) -> list[str]:
+    """Ist die Lib nach der letzten Uebersetzung auch neu gelinkt worden?
+
+    NAK-85 Runde 4, erster Befund, zweite Haelfte: der Schaltervergleich haelt
+    Projektdatei und Tlog zusammen, sagt aber nichts darueber, ob die .lib
+    dieses Tlog ueberhaupt gesehen hat. Wird uebersetzt und nicht gelinkt -
+    Einzeldatei-Bau, abgebrochener Lauf -, misst dieses Bein ein Archiv, das
+    aelter ist als seine eigenen Objekte.
+    """
+    if not objekte:
+        return [f"keine .obj neben {_kurz(tlog)} - ohne sie ist der Linkstand "
+                f"nicht feststellbar"]
+    libzeit = lib.stat().st_mtime
+    juenger = sorted(o.name for o in objekte if o.stat().st_mtime > libzeit)
+    klagen: list[str] = []
+    if juenger:
+        klagen.append("Lib nicht neu gelinkt nach letzter Uebersetzung: "
+                      + ", ".join(juenger))
+    if tlog.stat().st_mtime > libzeit:
+        klagen.append("Lib nicht neu gelinkt nach letzter Uebersetzung: "
+                      f"{_kurz(tlog)} ist juenger")
+    return klagen
 
 
 # ── NAK-85 (dritter T3-Pruefer zu S8, 28.08.2026) ───────────────────────────
@@ -476,7 +893,7 @@ def selbsttest() -> int:
            "16-Byte-CID-Suche bleibt erhalten",
            ",".join(cid_formen))
 
-    fehlend, zusaetzlich = _define_abweichungen(
+    fehlend, zusaetzlich = _mengen_abweichungen(
         {"HEUTE=1", "NUR_HEUTE=1"}, {"HEUTE=1", "NUR_GEBAUT=1"}
     )
     pruefe(fehlend == ["NUR_HEUTE=1"],
@@ -493,9 +910,218 @@ def selbsttest() -> int:
            "rekursive Kern-Includehuelle enthaelt NakamaUtf8.h")
 
     _selbsttest_configure_frische()
+    _selbsttest_schalter_und_tu()
 
     print(f"\n{ok} ok, {len(fehler)} Fehler")
     return 2 if fehler else 0
+
+
+def _selbsttest_schalter_und_tu() -> None:
+    """NAK-85 Runde 4 baulos: Schalterklassen, TU-Menge und Linkfrische.
+
+    Kuenstliche Projektdatei und kuenstliches Tlog genuegen, weil beide Seiten
+    reine Textquellen sind. Jede neue Pruefung wird hier einmal absichtlich
+    gebrochen - eine Wache, die niemand hat fallen sehen, ist keine.
+    """
+    print("\nNAK-85-Runde-4-Selbsttest: Schalterklassen, TU-Menge, Linkfrische")
+
+    vcxproj_text = (
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        '<Project>\n'
+        '  <PropertyGroup Condition="\'$(Configuration)|$(Platform)\'==\'Release|x64\'"'
+        ' Label="Configuration">\n'
+        '    <CharacterSet>MultiByte</CharacterSet>\n'
+        '  </PropertyGroup>\n'
+        '  <ItemDefinitionGroup Condition="\'$(Configuration)|$(Platform)\'==\'Release|x64\'">\n'
+        '    <ClCompile>\n'
+        '      <AdditionalIncludeDirectories>C:\\Kuenstlich\\Ein;C:\\Kuenstlich\\Zwei;'
+        '%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>\n'
+        '      <AdditionalOptions>%(AdditionalOptions) /utf-8 /bigobj</AdditionalOptions>\n'
+        '      <ForcedIncludeFiles>C:\\Kuenstlich\\Vorspann.h</ForcedIncludeFiles>\n'
+        '      <LanguageStandard>stdcpp20</LanguageStandard>\n'
+        '      <PreprocessorDefinitions>%(PreprocessorDefinitions);HEUTE=1;'
+        'CMAKE_INTDIR="Release"</PreprocessorDefinitions>\n'
+        '    </ClCompile>\n'
+        '    <ResourceCompile>\n'
+        '      <PreprocessorDefinitions>%(PreprocessorDefinitions);NUR_RESSOURCE=1'
+        '</PreprocessorDefinitions>\n'
+        '      <AdditionalIncludeDirectories>C:\\Kuenstlich\\NurRessource'
+        '</AdditionalIncludeDirectories>\n'
+        '    </ResourceCompile>\n'
+        '  </ItemDefinitionGroup>\n'
+        '</Project>\n'
+    )
+
+    # So schreibt MSBuild die Zeile: Pfade in Grossschreibung und in
+    # Anfuehrungszeichen, der Stringwert des Defines zusaetzlich escaped.
+    VOLL = ('/c /I"C:\\KUENSTLICH\\EIN" /I"C:\\KUENSTLICH\\ZWEI" /nologo /W4 /Ox'
+            ' /D _MBCS /D HEUTE=1 /D "CMAKE_INTDIR=\\"Release\\""'
+            ' /FI"C:\\KUENSTLICH\\VORSPANN.H" /std:c++20 /Fo"KUENSTLICH.DIR\\RELEASE\\\\"'
+            ' /utf-8 /bigobj C:\\KUENSTLICH\\EINS.CPP')
+
+    with tempfile.TemporaryDirectory() as roh:
+        heim = pathlib.Path(roh)
+        projekt = heim / "Kuenstlich.vcxproj"
+        projekt.write_text(vcxproj_text, encoding="utf-8")
+
+        def tlog_schreiben(*saetze: tuple[str, str]) -> pathlib.Path:
+            datei = heim / "CL.command.1.tlog"
+            text = "".join(f"^{quelle}\n{zeile}\n" for quelle, zeile in saetze)
+            datei.write_bytes("\ufeff".encode("utf-16-le") + text.encode("utf-16-le"))
+            return datei
+
+        soll, soll_zusatz = schalter_aus_vcxproj(projekt)
+        pruefe(soll["defines"] == {"_MBCS", "HEUTE=1", "CMAKE_INTDIR=Release"},
+               "A: Projektdatei liefert genau die ClCompile-Defines plus CharacterSet",
+               ", ".join(sorted(soll["defines"])))
+        pruefe(all("nurressource" not in p for p in soll["includepfade"]),
+               "B: ResourceCompile faellt nicht in die ClCompile-Klassen",
+               ", ".join(sorted(soll["includepfade"])))
+        pruefe(soll["sprachstandard"] == {"/std:c++20"} and len(soll["erzwungene_includes"]) == 1
+               and soll_zusatz == {"/utf-8", "/bigobj"},
+               "C: Sprachstandard, erzwungenes Include und AdditionalOptions gelesen",
+               f"{sorted(soll['sprachstandard'])} | {sorted(soll_zusatz)}")
+
+        # AdditionalOptions ist der Weg, auf dem CMake Schalter durchreicht, fuer
+        # die MSBuild keine eigene ClCompile-Eigenschaft hat. Landen sie nicht
+        # in ihrer Klasse, meldet der Tlog-Vergleich sie als "nur gebaut".
+        durchgereicht = vcxproj_text.replace(
+            "<AdditionalOptions>%(AdditionalOptions) /utf-8 /bigobj</AdditionalOptions>",
+            "<AdditionalOptions>%(AdditionalOptions) /utf-8 /bigobj"
+            " /external:I &quot;C:\\Kuenstlich\\Fremd&quot;</AdditionalOptions>")
+        projekt.write_text(durchgereicht.replace(
+            "<LanguageStandard>stdcpp20</LanguageStandard>", ""), encoding="utf-8")
+        soll_d, zusatz_d = schalter_aus_vcxproj(projekt)
+        pruefe(any("fremd" in p for p in soll_d["includepfade"])
+               and soll_d["sprachstandard"] == set()
+               and not any("external" in z for z in zusatz_d),
+               "R: /external:I aus AdditionalOptions landet in der Includeklasse",
+               f"{sorted(soll_d['includepfade'])} | Rest {sorted(zusatz_d)}")
+        mit_fremd = VOLL.replace(' /utf-8', ' /external:I"C:\\KUENSTLICH\\FREMD" /utf-8')
+        pruefe(any("Sprachstandard nur gebaut" in k for k in schalter_abgleich(
+                   soll_d, zusatz_d,
+                   schalter_aus_tlog(tlog_schreiben(("C:\\KUENSTLICH\\EINS.CPP", mit_fremd)))))
+               and not any("Includepfade" in k for k in schalter_abgleich(
+                   soll_d, zusatz_d,
+                   schalter_aus_tlog(tlog_schreiben(("C:\\KUENSTLICH\\EINS.CPP", mit_fremd))))),
+               "S: derselbe Pfad im Tlog ist damit kein Includebefund mehr")
+        projekt.write_text(vcxproj_text, encoding="utf-8")
+
+        einheit = schalter_aus_tlog(tlog_schreiben(("C:\\KUENSTLICH\\EINS.CPP", VOLL)))
+        pruefe(schalter_abgleich(soll, soll_zusatz, [(n, k, t) for n, k, t in einheit]) == [],
+               "D: passende Kommandozeile bleibt klaglos")
+
+        # Jede Klasse einmal absichtlich gebrochen - fehlend und zusaetzlich.
+        brueche = (
+            ("Includepfade", VOLL.replace(' /I"C:\\KUENSTLICH\\ZWEI"', ""),
+             "Includepfade nicht gebaut"),
+            ("erzwungene Includes", VOLL.replace(' /FI"C:\\KUENSTLICH\\VORSPANN.H"', ""),
+             "erzwungene Includes nicht gebaut"),
+            ("Sprachstandard", VOLL.replace(" /std:c++20", " /std:c++17"),
+             "Sprachstandard nicht gebaut"),
+            ("AdditionalOptions", VOLL.replace(" /bigobj", ""),
+             "AdditionalOptions nicht gebaut"),
+            ("Defines fehlend", VOLL.replace(" /D HEUTE=1", ""),
+             "Defines nicht gebaut"),
+            ("Defines zusaetzlich", VOLL.replace(" /nologo", " /nologo /D NUR_GEBAUT=1"),
+             "Defines nur gebaut"),
+        )
+        for name, zeile, erwartet in brueche:
+            klagen = schalter_abgleich(
+                soll, soll_zusatz,
+                schalter_aus_tlog(tlog_schreiben(("C:\\KUENSTLICH\\EINS.CPP", zeile))))
+            pruefe(any(erwartet in k for k in klagen),
+                   f"E: gebrochene Klasse {name} wird benannt",
+                   " | ".join(klagen) if klagen else "keine Klage")
+
+        pruefe(any("Sprachstandard nur gebaut" in k for k in schalter_abgleich(
+                   {**soll, "sprachstandard": set()}, soll_zusatz,
+                   schalter_aus_tlog(tlog_schreiben(("C:\\KUENSTLICH\\EINS.CPP", VOLL))))),
+               "F: ein /std: ohne Entsprechung in der Projektdatei ist ebenfalls eine Klage")
+
+        projekt.write_text(
+            vcxproj_text.replace("<LanguageStandard>stdcpp20", "<LanguageStandard>stdcpp99"),
+            encoding="utf-8")
+        try:
+            schalter_aus_vcxproj(projekt)
+            pruefe(False, "G: unbekannter LanguageStandard-Wert ist ROT, kein stilles Ja")
+        except RuntimeError as exc:
+            pruefe("stdcpp99" in str(exc),
+                   "G: unbekannter LanguageStandard-Wert ist ROT, kein stilles Ja", str(exc))
+        projekt.write_text(vcxproj_text, encoding="utf-8")
+
+        # ── TU-Menge: Tlog, NAKAMA_KERN_QUELLEN und Archiv ──────────────────
+        quelle_a = heim / "Eins.cpp"
+        quelle_b = heim / "Zwei.cpp"
+        for q in (quelle_a, quelle_b):
+            q.write_text("// kuenstlich\n", encoding="utf-8")
+        kernquellen = [quelle_a, quelle_b]
+        archiv = ["Eins.obj", "Zwei.obj"]
+
+        beide = schalter_aus_tlog(tlog_schreiben((str(quelle_a).upper(), VOLL),
+                                                 (str(quelle_b).upper(), VOLL)))
+        klagen, aktuell, veraltet = tu_mengen_abgleich(beide, kernquellen, archiv)
+        pruefe(klagen == [] and len(aktuell) == 2 and veraltet == [],
+               "H: deckungsgleiche TU-Mengen bleiben klaglos",
+               " | ".join(klagen))
+
+        mit_altem = schalter_aus_tlog(tlog_schreiben(
+            (str(quelle_a).upper(), VOLL), (str(quelle_b).upper(), VOLL),
+            ("C:\\KUENSTLICH\\ENTFERNT.CPP", VOLL)))
+        klagen, aktuell, veraltet = tu_mengen_abgleich(mit_altem, kernquellen, archiv)
+        pruefe(klagen == [] and len(aktuell) == 2 and veraltet == ["ENTFERNT.CPP"],
+               "I: veralteter Tlog-Eintrag wird nicht gezaehlt, aber benannt",
+               f"{len(aktuell)} aktuell, veraltet: {', '.join(veraltet)}")
+
+        nur_eine = schalter_aus_tlog(tlog_schreiben((str(quelle_a).upper(), VOLL)))
+        klagen, aktuell, veraltet = tu_mengen_abgleich(nur_eine, kernquellen, archiv)
+        pruefe(any("Zwei.cpp" in k and "ohne Tlog-Eintrag" in k for k in klagen),
+               "J: eine Kernquelle ohne Tlog-Eintrag ist ROT",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        klagen, _, _ = tu_mengen_abgleich(beide, kernquellen, ["Eins.obj"])
+        pruefe(any("Zwei.cpp" in k and "ohne Objekt im Archiv" in k for k in klagen),
+               "K: eine Kernquelle ohne Objekt im Archiv ist ROT",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        klagen, _, _ = tu_mengen_abgleich(beide, kernquellen, archiv + ["Fremd.obj"])
+        pruefe(any("Fremd.obj" in k and "nicht in NAKAMA_KERN_QUELLEN" in k for k in klagen),
+               "L: ein Objekt ohne Kernquelle ist ROT",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        klagen, _, _ = tu_mengen_abgleich(beide, kernquellen, None)
+        pruefe(any("nicht lesbar" in k for k in klagen),
+               "M: ein unlesbares Archiv ist eine Klage, kein stilles Ja",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        # ── Linkfrische: Lib gegen ihre Objekte und ihr Tlog ─────────────────
+        lib = heim / "Kuenstlich.lib"
+        objekt = heim / "Eins.obj"
+        tlogdatei = tlog_schreiben((str(quelle_a).upper(), VOLL))
+        lib.write_text("# lib\n", encoding="utf-8")
+        objekt.write_text("# obj\n", encoding="utf-8")
+
+        spaet = objekt.stat().st_mtime + 1000.0
+        os.utime(lib, (spaet, spaet))
+        os.utime(tlogdatei, (spaet - 100.0, spaet - 100.0))
+        pruefe(linkfrische(lib, [objekt], tlogdatei) == [],
+               "N: frisch gelinkte Lib bleibt klaglos")
+
+        os.utime(objekt, (spaet + 100.0, spaet + 100.0))
+        klagen = linkfrische(lib, [objekt], tlogdatei)
+        pruefe(any("nicht neu gelinkt" in k and "Eins.obj" in k for k in klagen),
+               "O: Objekt juenger als die Lib ist ROT",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        os.utime(objekt, (spaet - 100.0, spaet - 100.0))
+        os.utime(tlogdatei, (spaet + 100.0, spaet + 100.0))
+        klagen = linkfrische(lib, [objekt], tlogdatei)
+        pruefe(any("nicht neu gelinkt" in k for k in klagen),
+               "P: Tlog juenger als die Lib ist ROT",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        pruefe(linkfrische(lib, [], tlogdatei) != [],
+               "Q: ohne Objekte gibt es kein gruenes Linkurteil")
 
 
 def _selbsttest_configure_frische() -> None:
@@ -699,6 +1325,10 @@ def main() -> int:
     # Frische. Die Huelle wird aus NAKAMA_KERN_QUELLEN und allen rekursiven,
     # lokalen Includes unter plugin/** berechnet; eine handgepflegte
     # Headerliste waere selbst wieder eine stille Luecke.
+    # Die Archivmitglieder werden schon hier gelesen: die TU-Mengenpruefung in
+    # [0] gleicht gegen sie ab, [3] nutzt dieselbe Liste weiter unten.
+    mitglieder = archivmitglieder(kern_bytes)
+
     print("\n[0] Frische - misst dieses Bein den aktuellen Quellstand?")
     lib_zeit = kern.stat().st_mtime
     try:
@@ -711,34 +1341,61 @@ def main() -> int:
            "NakamaKern.lib ist nicht aelter als die Kernquellen",
            ", ".join(q.relative_to(KERNQUELLEN).as_posix() for q in juenger) if juenger else "")
 
-    # Zweite Haelfte: mit WELCHEN Schaltern wurde sie gebaut? Siehe Kopf.
+    # Zweite Haelfte: WELCHE Einheiten, mit WELCHEN Schaltern - und ist die Lib
+    # danach ueberhaupt neu gelinkt worden? Siehe Kopf (NAK-85 Runde 4).
     projekt_kandidaten = sorted(bau.glob("**/NakamaKern.vcxproj"))
     tlog_kandidaten = sorted(bau.glob("**/NakamaKern.tlog/CL.command.1.tlog"))
     projekt = (projekt_kandidaten[0] if len(projekt_kandidaten) == 1
                else waehle_release(projekt_kandidaten, "NakamaKern.vcxproj"))
     tlog = waehle_release(tlog_kandidaten, "CL.command.1.tlog")
-    if projekt is not None and tlog is not None:
-        soll = _defines_aus_vcxproj(projekt)
-        ist_je_einheit = _defines_aus_tlog(tlog)
-        abweichung = []
-        for quelle, ist in ist_je_einheit:
-            fehlend, zusaetzlich = _define_abweichungen(soll, ist)
-            if fehlend:
-                abweichung.append(f"{quelle}: nicht gebaut: " + ", ".join(fehlend))
-            if zusaetzlich:
-                abweichung.append(f"{quelle}: nur gebaut: " + ", ".join(zusaetzlich))
-        if not soll:
-            abweichung.append("Projektdatei nennt keine Defines")
-        if not ist_je_einheit:
-            abweichung.append("Tlog nennt keine Uebersetzungseinheit")
-        pruefe(bool(soll) and bool(ist_je_einheit) and not abweichung,
-               f"jede gebaute TU hat exakt die heutige Definemenge "
-               f"({len(ist_je_einheit)} TUs, {len(soll)} Defines)",
-               " | ".join(abweichung))
-    else:
+    if projekt is None or tlog is None:
         pruefe(False,
                "Bau-Protokoll des Kerns gefunden (CL.command.1.tlog + NakamaKern.vcxproj)",
                "ohne sie ist nicht feststellbar, mit welchen Schaltern die Lib entstand")
+    else:
+        soll: dict[str, set[str]] | None
+        try:
+            soll, soll_zusatz = schalter_aus_vcxproj(projekt)
+        except RuntimeError as exc:
+            soll, soll_zusatz = None, set()
+            pruefe(False, "Schalter der Projektdatei sind eindeutig lesbar", str(exc))
+        einheiten = schalter_aus_tlog(tlog)
+        try:
+            quellen = _kernquellen_aus_cmake()
+        except RuntimeError as exc:
+            quellen = []
+            pruefe(False, "NAKAMA_KERN_QUELLEN ist lesbar", str(exc))
+
+        # (1) Die TU-Menge selbst - drei Mengen, paarweise gleich.
+        klagen, aktuell, veraltet = tu_mengen_abgleich(einheiten, quellen, mitglieder)
+        hinweise = list(klagen)
+        if veraltet:
+            hinweise.append(
+                (f"{len(veraltet)} veralteter Tlog-Eintrag: " if len(veraltet) == 1
+                 else f"{len(veraltet)} veraltete Tlog-Eintraege: ") + ", ".join(veraltet))
+        pruefe(bool(quellen) and not klagen,
+               f"Tlog, NAKAMA_KERN_QUELLEN und Archiv nennen dieselben "
+               f"{len(aktuell)} Uebersetzungseinheiten",
+               " | ".join(hinweise))
+
+        # (2) Die Schalter, mit denen genau diese Einheiten uebersetzt wurden.
+        if soll is not None:
+            schalterklagen = schalter_abgleich(soll, soll_zusatz, aktuell)
+            umfang = ", ".join(f"{KLASSENNAME[k]} {len(soll[k])}" for k in SCHALTERKLASSEN)
+            pruefe(bool(aktuell) and not schalterklagen,
+                   f"jede der {len(aktuell)} gebauten TUs traegt exakt die heutigen "
+                   f"Schalter der Projektdatei ({umfang}; "
+                   f"{len(soll_zusatz)} AdditionalOptions-Token enthalten)",
+                   " | ".join(schalterklagen) if schalterklagen
+                   else ("keine gebaute Uebersetzungseinheit" if not aktuell else ""))
+
+        # (3) Und wurde nach der letzten Uebersetzung auch gelinkt?
+        objekte = sorted(p for p in tlog.parent.parent.rglob("*.obj") if p.is_file())
+        linkklagen = linkfrische(kern, objekte, tlog)
+        pruefe(not linkklagen,
+               f"NakamaKern.lib ist nicht aelter als die {len(objekte)} Objekte "
+               f"ihres Bauverzeichnisses und nicht aelter als ihr Tlog",
+               " | ".join(linkklagen))
 
     # ── 1. Die Gegenprobe zuerst: taugt der Scanner ueberhaupt? ──────────────
     # Nur Werte, die im gebauten Main-Bundle stehen MUESSEN. Die reservierten
@@ -763,7 +1420,6 @@ def main() -> int:
 
     # ── 3. Bauform: nur die Kernobjekte, keine JUCE-Modulquelle ─────────────
     print("\n[3] Bauform - der Kern enthaelt genau seine eigenen Objekte")
-    mitglieder = archivmitglieder(kern_bytes)
     if mitglieder is None:
         pruefe(False, "NakamaKern.lib ist ein lesbares COFF-Archiv")
     else:

@@ -345,10 +345,15 @@ $kanon = @(
     # kein Makro ist. Er traegt seine eigene Gegenprobe: derselbe Scanner muss
     # die Werte im gebauten Bundle FINDEN, sonst ist sein Schweigen wertlos.
     # A14 misst ein Artefakt, also traegt es seine eigene Frischewache: Lib
-    # gegen Quellen, gebaute Schalter gegen die Projektdatei und - seit NAK-85 -
-    # die Projektdatei gegen den heutigen CMake-Stand. Ist Letzteres verletzt,
-    # meldet das Bein Exit 3 (Voraussetzung fehlt) statt gruen.
-    [pscustomobject]@{ Kuerzel='A14'; Name='pruefe_kern_identitaetsfrei.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Der gemeinsame Kern traegt keine Bundle-Identitaet: NakamaKern.lib enthaelt keinen eingefrorenen Identitaetswert (Namen, Viercodes, CIDs roh und COM-vertauscht) und genau seine eigenen Uebersetzungseinheiten, kein JUCE-Modulobjekt; die Gegenprobe findet dieselben Werte im gebauten EQ-Copilot-Bundle. Gemessen wird nie ein veraltetes Artefakt: die Lib ist nicht aelter als ihre Quellen, jede gebaute Uebersetzungseinheit traegt exakt die Definemenge der Projektdatei, und das Configure selbst ist juenger als jede CMake-Eingabe, die der Generator dafuer verbraucht hat.' }
+    # gegen Quellen, die TU-Menge des Tlogs gegen CMake-Liste und Archiv, die
+    # gebauten Schalter gegen die Projektdatei, die Lib gegen ihre Objekte -
+    # und, seit NAK-85, die Projektdatei gegen den heutigen CMake-Stand. Ist
+    # Letzteres verletzt, meldet das Bein Exit 3 (Voraussetzung fehlt) statt
+    # gruen. Die Schalterklassen und der TU-Mengenabgleich kamen in der vierten
+    # T3-Runde zu NAK-85 dazu (29.08.2026): der Vergleich sah bis dahin nur
+    # Defines und zaehlte die Tlog-Eintraege, statt die heutige TU-Menge zu
+    # verlangen.
+    [pscustomobject]@{ Kuerzel='A14'; Name='pruefe_kern_identitaetsfrei.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Der gemeinsame Kern traegt keine Bundle-Identitaet: NakamaKern.lib enthaelt keinen eingefrorenen Identitaetswert (Namen, Viercodes, CIDs roh und COM-vertauscht) und genau seine eigenen Uebersetzungseinheiten, kein JUCE-Modulobjekt; die Gegenprobe findet dieselben Werte im gebauten EQ-Copilot-Bundle. Gemessen wird nie ein veraltetes Artefakt: das Configure ist juenger als jede CMake-Eingabe, die der Generator verbraucht hat; die Lib ist nicht aelter als ihre Quellen, nicht aelter als ihre Objekte und nicht aelter als ihr Tlog; Tlog, NAKAMA_KERN_QUELLEN und Archiv nennen dieselbe Menge Uebersetzungseinheiten (veraltete Tlog-Eintraege werden benannt, nicht gezaehlt); und jede dieser Einheiten wurde mit exakt den Defines, Includepfaden, erzwungenen Includes und dem Sprachstandard der heutigen Projektdatei uebersetzt - beide Richtungen - und traegt deren AdditionalOptions-Tokens. Weitere ClCompile-Elemente der Projektdatei (Warnstufe, Optimierung, Laufzeitbibliothek und die uebrigen) bildet dieses Bein nicht ab und behauptet ueber sie nichts.' }
 
     # S9/SONDE-007b: das Grundgesetz gilt fuer JEDES Bundle, das Audio traegt.
     # Zwei Beine, weil die Produktklasse ein Uebersetzungsschalter ist - ein

@@ -1,5 +1,14 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ✅ NACHTRAG — 29.08.2026, Dirigentenrunde 13:40–22:00 (Sitzung 0fc7441c)
+>
+> **Erledigt:** NAK-96/NAK-97 abgeschlossen (Prüfer 4 PASS): Kanon-Rohausgaben unter `docs/beweise/roh/`, `--no-optional-locks` überall, atomare Roh-Reservierung, Planstand liest alle vier Runner-Urteile. S8 `SONDE-007a`: NAK-85 in Runden 3–6 gebaut, Wegwechsel nach Skill §3.4 — A14 baut den Kern vor jeder Messung neu, drei neue Riegel (K1b über echte Compiler-Eingaben, Tlog-Ortsriegel, JUCE-Baum = 8.0.9 + exakt Patch); NAK-94 vorgezogen (A17 im Kanon weich). Kanon GRÜN 32/32 auf `370e513`. Neue Registerpunkte NAK-98 (B10 unter Last, gehört zu S14–15) und NAK-99 (Beobachter-Timeout).
+>
+> **Offen (technisch, kein Halt):** S8 Prüfer 7 NEEDS_WORK (3) und NAK-94 Prüfer 2 NEEDS_WORK (1) — Befunde wörtlich mit Regeln in `docs/beweise/SONDE-007a.md` („Dirigentenstand 21:55") und `docs/beweise/SONDE-007c.md` („Dirigentenstand NAK-94").
+>
+> **Als Nächstes (Reihenfolge des Dirigenten):** ein Nacharbeits-Worker für S8 Runde 7 + NAK-94 Nacharbeit 2 → gemeinsamer Kanon → Prüfer 8 (xhigh) / Prüfer 3 (high) → S9 (NAK-88) → S9b (NAK-89) → SONDE-010 mit Verhaltensmatrix (NAK-95, NAK-98) → G1-Gate-Lauf → PR1 → SONDE-011.
+
+
 > ## ✅ NACHTRAG — 29.08.2026, Dirigentenrunde 10:15–13:45 (Sitzung fd74ef87)
 >
 > **Erledigt:** G1 §55 Klausel 1 gemessen — Installation 0.3.0 (Transaktion

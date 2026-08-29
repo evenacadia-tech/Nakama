@@ -13853,3 +13853,44 @@ dieser Runde gehört.
 | B10 | v3-Envelope in C++ klassifiziert den Envelope-Korpus wie das Manifest (Urteil UND Verstossmenge, alle 14 Regeln mit Negativfixture); CRC32C trifft die RFC-3720-Vektoren, P0/P1 tragen CRC exakt 0, P2 die Pflichtsumme ueber genau die Payloadbytes; 40 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und 7671 angenommene EINBIT-Mutanten gueltiger Frames halten jede Kopfregel (reiner Zufall wird praktisch immer abgewiesen - die Invariante braucht deshalb die Mutanten, sonst spraeche sie ueber eine leere Menge), 3000 gekippte P2-Bits fallen einzeln, byteweise Zustellung liefert dieselben 40 Frames und ein kaputter Frame beendet den Strom; Pipetoken trifft das Golden aus §48.3 samt SHA-256- und RFC-4648-Vektoren; P0 verwirft nichts und meldet den 65. Eintrag, P1 koalesziert an der Position und haelt Ereignisse fuer den Reconnect vor, die P2-Schleuse ersetzt den aeltesten ungesendeten Frame, uebergibt 100 000 Frames mit 0 Allokationen (mit Gegenprobe am selben Zaehler) und liefert unter Flut keinen zerrissenen Frame; verdrahtet: Control koppelt Telemetry ueber link_id + challenge, ein ungekoppelter Telemetry-Connect wird geschlossen, der Client verbindet nach Serverneustart von selbst wieder, ein kaputter Envelope vom Server schliesst die Verbindung, und ein P0-Ueberlauf WAEHREND einer stehenden Verbindung schliesst sie ebenfalls statt still zu kuerzen. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 33,92 s | [B10](roh/SONDE-007a-370e513.md#b10) |
 | B8 | Lifecycle-Klassifikation §53.5: unclassified beim Laden und audio-neutral; Schema-1 sensor\|pre\|post -> legacy (immer passiv), hub bzw. bestaetigter Schema-2-Main-State -> main; ein Scannerlauf klassifiziert nicht; read-only nimmt die Klassifikation zurueck; Brokerstart nur fuer main mit offenem Editor; die Sondenbundles bleiben bis gueltigem State neutral und werden nie main. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,12 s | [B8](roh/SONDE-007a-370e513.md#b8) |
 
+
+---
+
+## Dirigentenstand — 2026-08-29 21:55 (Sitzung 0fc7441c): Runde 7 NEEDS_WORK, offen — Übergabe
+
+**Stand dieses Abschnitts:** `b80fdce`
+
+**Marke unverändert** (`T3 NEEDS_WORK 2026-08-28 nachgearbeitet`). Ticketbasis `dafa5a5`; Stand `b80fdce` (= origin/master); Kanon GRÜN 32/32 auf `370e513` (Abschluss von Runde 6 + NAK-94 Nacharbeit 1, Roh-Datei `docs/beweise/roh/SONDE-007a-370e513.md`).
+
+**Verlauf dieser Sitzung (Fable/xhigh, Auto-Modus):**
+
+| Schritt | Worker / Prüfer | Stand | Ergebnis |
+|---|---|---|---|
+| Runde 3 (Fortsetzung) | Opus/max `nakama-s8-c82d8ce-bau`, ENG | `d3c741c`…`facea2d` | NAK-85: `configure_frische()`; Kanon GRÜN auf `b6003c1` |
+| Prüfer 4 | Codex xhigh `01a04dff-72de-7871-a74c-76665535a809` | `facea2d` | NEEDS_WORK (3) |
+| Runde 4 | Opus/max `nakama-s8-fix4-facea2d-bau`, ENG | `5acf7f7`…`5538fb0` | Schalterklassen, TU-Mengen, Linkfrische; Kanon GRÜN auf `0ea62e4` |
+| Prüfer 5 | Codex xhigh `01a04e39-c786-7911-b4f8-d14b30f221a3` | `5538fb0` | NEEDS_WORK (5) |
+| Wegwechsel (Skill §3.4) | Opus/max `nakama-s8-matrix-5538fb0-bau`, NORMAL | `a3bce3c` | Frische- und Riegelmatrix als Spezifikation |
+| Matrixprüfung | Codex high `01a04e5d-5c1a-7131-9c67-814c7c04f5be`, lesend | `a3bce3c` | NEEDS_WORK (11) → Regeln R1–R6 des Dirigenten |
+| Runde 5 | Opus/max `nakama-s8-fix5-a3bce3c-bau`, ENG | `cd346e1`…`da62dec` | A14 baut den Kern vor jeder Messung neu; K1b, Tlog-Ortsriegel, JUCE-Baum-Riegel; Kanon ROT nur A17 (NAK-94) |
+| NAK-94 vorgezogen | Opus/max `nakama-nak94-da62dec-bau`, ENG | `2ed7caa`…`25b57ec` | A17 [4] im Kanon Hinweis; Kanon GRÜN auf `9b4bb4d` (`SONDE-007c.md`) |
+| Prüfer 6 | Codex xhigh `01a04ecb-4966-7813-a418-d47479affd25` | `25b57ec` | NEEDS_WORK (4) |
+| Runde 6 (+ NAK-94 Nacharbeit 1) | Opus/max `nakama-s8r6-nak94r1-25b57ec-bau`, ENG | `ccb98cd`…`b80fdce` | Ortsriegel ohne Endungsausnahme, JUCE-Baum in drei Zeilen (Commit = `8.0.9^{commit}`, `--ignored -uall`, Sollindex), stdout/stderr getrennt, Kopfkarte; Kanon GRÜN 32/32 auf `370e513` |
+| Prüfer 7 | Codex xhigh `01a04f0a-8ed1-7af1-ad4c-a39076da62ec`, lesend über `git diff dafa5a5...b80fdce`, HEAD vor/nach identisch | `b80fdce` | **NEEDS_WORK (3)** — unten wörtlich |
+
+**Befunde des siebten Prüfers, wörtlich (Positionen `@ b80fdce`):**
+
+> **[P1] Beschränke die Windows-System-Erlaubnisliste** — `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:1213`. Defekt, hoch (R3/W5a/W5b). Wenn `/FI` auf eine Datei unter `%SystemRoot%` zeigt, akzeptiert der Ortsriegel sie vollständig, während K1b nur Eingaben unter `plugin/**` übernimmt. Der lesende Funktionsrepro mit `C:\Windows\Temp\forced.dat` ergab `klagen=[]` und eine leere K1b-Menge; ein Header, der `JucePlugin_*` definiert, nutzt und wieder entfernt, passiert damit K1, K1b, K2 und K3.
+>
+> **[P2] Gib ohne schreibbares Temp-Verzeichnis Exit 3 zurück** — `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:1532`. Defekt, mittel (F14). Wenn kein Kandidat für ein temporäres Verzeichnis schreibbar ist, wirft `TemporaryDirectory()` ungefangen `FileNotFoundError`; `--nur-messen` endete mit Traceback und Exit 1 statt Exit 3.
+>
+> **[P2] Ziehe die aktuelle Riegelkarte auf Runde 6 nach** — `docs/beweise/SONDE-007a.md:74-79`. Defekt, mittel (R6/E). Die Karte enthält weiterhin die volatile Zahl „46", beschreibt in der Tlog-Zeile noch die entfernte Endungsausnahme und nennt beim JUCE-Riegel `apply --check --reverse` statt des temporären Sollindex-Vergleichs.
+
+**Einordnung und Regeln des Dirigenten (alle drei Defekt, Nacharbeit Runde 7):**
+1. Systemdateien werden **namentlich** erlaubt (die am echten Baum gemessenen `tzres.dll`, `sortdefault.nls` und was `CL.read.1.tlog` sonst unter `%SystemRoot%` nennt — Liste aus der Messung, nicht pauschal), nicht per Verzeichnis; jede sonstige Datei unter `%SystemRoot%` ist ROT. K1b scannt **jede** Tlog-Datei, die nicht aus JUCE-Modulen oder Toolchain-/SDK-Includes stammt (also `plugin/**` und alles Übrige) — Probe: `/FI C:\Windows\Temp\forced.h` → Ortsriegel ROT und K1b-Menge enthält die Datei.
+2. `--nur-messen`: `TemporaryDirectory()` in `try/except OSError` → Exit 3 mit Klartext; Probe mit `TMP`/`TEMP` auf ein nicht existierendes Verzeichnis.
+3. Riegelkarte: „46" → `NakamaKernRiegel.h` (Makroliste, gemessen), Tlog-Zeile und JUCE-Zeile auf den Stand von Runde 6; `**Stand dieser Karte:** \`<sha7>\``.
+
+**Nächster Schritt (frische Dirigenten-Session):** ein Nacharbeits-Worker für S8 Runde 7 **und** NAK-94 Nacharbeit 2 (siehe `docs/beweise/SONDE-007c.md`, Dirigentenstand), ein gemeinsamer Kanon auf dem Endstand, dann Prüfer 8 (xhigh) für S8 und Prüfer 3 (high) für NAK-94 — je frischer Thread über den vollen Ticketbereich. Kein Halt: technische Befunde, keine Produktfrage.
+
+**Offen außerhalb der Grenze:** NAK-93, NAK-98, NAK-99.

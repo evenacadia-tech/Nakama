@@ -16916,3 +16916,18 @@ Die beiden gebauten Kurz-Hashes sind andere als in den Läufen weiter oben:
 A14 baut `NakamaKern` vor jeder Messung neu, der nächste Linklauf ändert die
 Bundlebytes. Genau dafür ist der Hinweis da. Das Manifest wurde **nicht**
 neu gehasht.
+
+---
+
+## Dirigentenstand NAK-94 — 2026-08-29 21:47 (Sitzung 0fc7441c): Prüfer 2 NEEDS_WORK, offen — Übergabe
+
+**Stand dieses Abschnitts:** `b80fdce`
+
+**Prüfer 1:** Codex high `01a04ecb-50f0-7870-876f-b08c5b9b9d6e` auf `25b57ec` — NEEDS_WORK (2: `return` nach Null-Hash übersprang den Artefaktcheck; `[4b]` stürzte bei nicht-skalarer Kennung ab), beide in Nacharbeit 1 (`f94d56e`) geschlossen; Kanon GRÜN 32/32 auf `370e513` (Roh-Datei `docs/beweise/roh/SONDE-007a-370e513.md`).
+**Prüfer 2:** Codex high `01a04f0a-98d6-7a82-88f2-5bf0f5f9ddc4`, lesend über `git diff da62dec...b80fdce`, HEAD vor/nach identisch — **NEEDS_WORK (1)**, wörtlich (`@ b80fdce`):
+
+> **[P2] Melde Kompensations-Teilstände als unbekannt** — `tools/eq-copilot/pruefe_installer_manifest.py:1289-1295`. Bei einem Journal mit `status="KOMPENSATION"` oder `status="ERROR_TEILSTAND"`, `mutation_abgeschlossen=true` und `rollback_abgeschlossen=false` erreicht der Eintrag den Hashvergleich und meldet fälschlich `ok ... installierter Stand = Manifest`. Der Installer setzt diese Statuswerte gerade dann, wenn das Ziel bereits halb wiederhergestellt sein kann; der gespeicherte Hash beweist daher nur den Stand vor dem fehlgeschlagenen Gegenakt.
+
+**Einordnung:** Defekt mittel (Behauptung > Messung, Prüfliste E). **Regel des Dirigenten:** `[4b]` gibt `ok` nur bei Journal-`status == "OK"` und abgeschlossenem, nicht zurückgerolltem Eintrag; jeder andere Status (`VORBEREITET`, `KOMPENSATION`, `ERROR_TEILSTAND`, `RUECKWEG_AKTIV`, `RUECKWEG`, unbekannt, fehlend — Werte aus `Install-Nakama.ps1`) → `hinweis <name>: installierter Stand unbekannt (Journalstatus <status>)`, ohne Hashvergleich. Proben: OK → ok; KOMPENSATION/ERROR_TEILSTAND mit `mutation_abgeschlossen=true`, `rollback_abgeschlossen=false` → Hinweis, kein ok; einmal gebrochen, zurückgenommen.
+
+**Nächster Schritt:** Nacharbeit 2 im selben Worker wie S8 Runde 7 (siehe `docs/beweise/SONDE-007a.md`, Dirigentenstand 21:55), gemeinsamer Kanon, danach Prüfer 3 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.

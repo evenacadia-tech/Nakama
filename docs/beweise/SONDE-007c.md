@@ -17915,6 +17915,9 @@ Lebende Stelle ohne Nachzug: **keine**.
 | **D** — „ein Riegel ist fail-closed ohne Rohtextheuristik" | fehlender Korpus, fehlender Pflichtfall und abweichender Hash sind ROT (`B5-1`, `B5-2`); der Erzeuger bricht ab, wenn eine der drei Originalzeilen nicht genau einmal steht |
 | **F** — „installieren↔Rückweg im selben Änderungssatz" | Erzeuger, Fixturen, `MANIFEST.json`, `.gitattributes`, Leser-Proben und Runner-Behauptung liegen im selben Commit-Paar; A18 (der Gegenpfad selbst) ist unverändert und grün |
 
-**Kanon-Abschlusslauf:** siehe `docs/beweise/SONDE-007a.md`, Abschnitt
-„Kanon-Lauf - SONDE-007a Runde 10 + NAK-94 Nacharbeit 5 - Abschluss"; die
-Rohausgabe liegt unter `docs/beweise/roh/`.
+**Kanon-Abschlusslauf:** **GRÜN — 32/32** auf `00d2796`, Exitcode 0,
+Arbeitsbaum sauber, Beglaubigung nicht verweigert. Vollständiger Block:
+`docs/beweise/SONDE-007a.md`, Abschnitt „Kanon-Lauf - SONDE-007a Runde 10 +
+NAK-94 Nacharbeit 5 - Abschluss"; Rohausgabe:
+`docs/beweise/roh/SONDE-007a-00d2796.md` (Bein A17 dort unter dem Anker
+`#a17`, A18 unter `#a18`).

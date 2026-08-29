@@ -97,8 +97,12 @@ nichts gemessen und nichts behauptet).
 
 Ein bereits registrierter Befund GEWINNT gegen jede fehlende Voraussetzung:
 war vor dem Abbruch schon etwas rot, endet der Lauf mit 2 statt 3, und die
-Klartextzeile "VORAUSSETZUNG: ..." bleibt zusaetzlich stehen (Matrix F14/F15,
-Runde 8). Jeder Voraussetzungs-Rueckweg des Beins geht dafuer durch
+Klartextzeile "VORAUSSETZUNG: ..." bleibt zusaetzlich stehen. Fuer JEDEN
+dieser Ausgaenge - den unmoeglichen oder fehlgeschlagenen Bau (F13)
+eingeschlossen - gilt derselbe Satz: OHNE registrierten Befund 3, MIT
+registriertem Befund 2, NIE 0 (Matrix F13/F14/F15, Runde 8/9). Die Zusage
+gilt fuer jeden Aufruf von main(), nicht nur fuer einen frischen Prozess.
+Jeder Voraussetzungs-Rueckweg des Beins geht dafuer durch
 `voraussetzung_exit()`; ein Ausgang, der daran vorbeikaeme, waere ein Befund.
 """
 
@@ -896,23 +900,25 @@ _WINKITS_SCHLUESSEL = os.sep.join(
 # ihren Ort.
 #
 # BEFUND P2, Runde 8 (29.08.2026): bis dahin berief sich diese Liste auf die
-# Probe P5-W5b, deren eingefuegte Rohausgabe die beiden Namen gar nicht zeigt -
-# eine Behauptung ohne Rohausgabe (Manifest §2). Die Liste steht seither auf
-# einer eingefuegten Messung. Gemessen mit dem MSBuild-FileTracker ueber eine
-# Wegwerf-Uebersetzungseinheit unter %TEMP% (Befehl, Stand und vollstaendige
-# Rohausgabe: Manifest SONDE-007a, Abschnitt "Nacharbeit Runde 8", Probe
-# P8-SYS):
+# Probe P5-W5b, deren eingefuegte Rohausgabe die Namen dieser Liste gar nicht
+# zeigt - eine Behauptung ohne Rohausgabe (Manifest §2). Die Liste steht
+# seither auf einer eingefuegten Messung. Gemessen mit dem MSBuild-FileTracker
+# ueber eine Wegwerf-Uebersetzungseinheit unter %TEMP% (Befehl, Stand und
+# vollstaendige Rohausgabe: Manifest SONDE-007a, Abschnitt "Nacharbeit
+# Runde 8", Probe P8-SYS):
 #
 #     Tracker.exe /if diag /r probe.cpp /c cl.exe /c /W4 /nologo /Foprobe.obj probe.cpp
 #     -> cl.read.1.tlog, 125 Zeilen, davon unter %SystemRoot%:
 #        C:\WINDOWS\GLOBALIZATION\SORTING\SORTDEFAULT.NLS
 #        C:\WINDOWS\SYSTEM32\TZRES.DLL
 #
-# Beide Namen erscheinen dort, und NUR diese beiden. Gemessen wurde ausserdem,
-# was die Zeile "Diagnosefall" frueher zu eng sagte: dieselben zwei Dateien
-# stehen auch im Protokoll einer TU OHNE jede Diagnose und mit /utf-8 /bigobj -
-# ausgeloest wird der Zugriff also nicht von der Meldung selbst. Das
-# Leseprotokoll des KERNS nennt dagegen keine Datei unter %SystemRoot%
+# Die Namen dieser Liste erscheinen dort, und KEIN weiterer unter %SystemRoot%.
+# Gemessen wurde ausserdem, was die Zeile "Diagnosefall" frueher zu eng sagte:
+# dieselben Dateien stehen auch im Protokoll einer TU OHNE jede Diagnose und
+# mit /utf-8 /bigobj. WOVON der Zugriff ausgeloest wird, ist damit NICHT
+# gemessen und wird hier nicht behauptet - P8-SYS zeigt dieselben Dateien mit
+# und ohne Diagnose, nicht ihre Ursache. Das Leseprotokoll des KERNS nennt
+# dagegen keine Datei unter %SystemRoot%
 # (`Windows-System 0`); die Liste deckt damit einen Fall ab, den der Kanon
 # heute nicht erreicht, und ist genau deshalb eng zu halten.
 #
@@ -934,14 +940,21 @@ K1B_AUSSCHLUSS_WURZELN = ("juce-src/modules", "MSVC-Toolset", "Windows-SDK")
 
 
 class VoraussetzungFehlt(RuntimeError):
-    """Eine Voraussetzung des Beins fehlt - Exit 3, nie ein Urteil ueber den Kern.
+    """Eine Voraussetzung des Beins fehlt - nie ein gruenes Urteil ueber den Kern.
 
     BEFUND P2, Runde 7 (29.08.2026): der Sollindex-Vergleich des
     JUCE-Baum-Riegels braucht ein schreibbares temporaeres Verzeichnis. War
     keines da, flog `FileNotFoundError` aus `TemporaryDirectory()` bis nach
     oben durch: Traceback und Exit 1 - ein Ausgang, den weder der Runner noch
     ein Leser als "Voraussetzung fehlt" erkennen konnte. Ein Bein, das seine
-    Eingaben nicht bekommt, sagt das (Exit 3) und behauptet nichts.
+    Eingaben nicht bekommt, sagt das und behauptet nichts.
+
+    Der Exitcode dafuer kommt ausschliesslich aus `voraussetzung_exit()`:
+    OHNE registrierten Befund 3, MIT registriertem Befund 2, NIE 0 - fuer
+    JEDEN Voraussetzungs-Ausgang, den unmoeglichen oder fehlgeschlagenen Bau
+    eingeschlossen (Matrix F13/F14/F15, Runde 8/9). Diese Zeile sagte bis
+    Runde 10 nur "Exit 3" und war damit an derselben Stelle zu eng wie der
+    Skriptkopf.
     """
 
 
@@ -2594,8 +2607,10 @@ def _selbsttest_runde7() -> None:
     finally:
         tempfile.tempdir = merk
 
-    # -- P2 Runde 8: ein registrierter Befund gewinnt gegen jede fehlende
-    #    Voraussetzung (Matrix F14/F15) ------------------------------------
+    # -- P2 Runde 8/9: ein registrierter Befund gewinnt gegen jede fehlende
+    #    Voraussetzung - ohne Befund 3, mit Befund 2, nie 0, und das an
+    #    JEDEM Ausgang, den unmoeglichen Bau eingeschlossen
+    #    (Matrix F13/F14/F15) ------------------------------------------
     #
     # Gemessen am Stand a94c33e: derselbe Sollindex-Temp-Ausgang gab 3, obwohl
     # eine rote K1b-Eingabe schon `FEHLER` gedruckt hatte. Die Zusage der

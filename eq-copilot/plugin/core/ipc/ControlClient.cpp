@@ -8,6 +8,7 @@
 #include "WireEnvelope.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace nakama::ipc
 {
@@ -31,13 +32,32 @@ std::string jsonString (const std::string& roh)
     return aus;
 }
 
+/// Zahl aus einem Audiofeld. Sie wird NUR gerufen, nachdem `audioGueltig`
+/// zugestimmt hat — der Riegel steht trotzdem hier: eine Wandlung nach
+/// `long long` ist fuer NaN, ±Inf und alles ausserhalb des darstellbaren
+/// Bereichs undefiniertes Verhalten, und undefiniertes Verhalten passiert VOR
+/// jeder Pruefung, die danach kaeme (T2-Befund 9 vom 2026-08-29).
 std::string zahl (double w)
 {
-    if (w == static_cast<double> (static_cast<long long> (w)))
+    if (! std::isfinite (w))
+        return "null";
+    if (w >= -9.007199254740992e15 && w <= 9.007199254740992e15
+        && w == static_cast<double> (static_cast<long long> (w)))
         return std::to_string (static_cast<long long> (w));
     return std::to_string (w);
 }
 } // namespace
+
+bool audioGueltig (double samplerate, int blockSize, int channels) noexcept
+{
+    // Dieselben Grenzen wie im Broker (`bootstrap.rs`, audio ausserhalb des
+    // Vertrags) und im Schema `audio_lage`. Ein Client, der wissentlich
+    // Nicht-Zahlen sendet, verschleiert nur die Ursache — er verbindet gar
+    // nicht erst (CLAUDE.md, NaN-Ehrlichkeit).
+    return std::isfinite (samplerate) && samplerate > 0.0 && samplerate <= 768000.0
+        && blockSize >= 1 && blockSize <= 65536
+        && channels >= 0 && channels <= 64;
+}
 
 bool istHex32 (const std::string& s) noexcept
 {
@@ -212,6 +232,18 @@ bool ControlClient::eineVerbindung (std::uint64_t generation)
         zustand.letzterFehler = "Adresse haelt den v3-Vertrag nicht (hex32/SID)";
         return false;
     }
+    // Audiofelder VOR der Serialisierung verriegeln — und vor dem Oeffnen der
+    // Pipe: ein Hello mit NaN-Samplerate haette der Broker ohnehin abgelehnt,
+    // aber die Wandlung dorthin waere schon vorher undefiniertes Verhalten
+    // gewesen (T2-Befund 9 vom 2026-08-29).
+    if (! audioGueltig (hello.samplerate, hello.blockSize, hello.channels))
+    {
+        std::lock_guard<std::mutex> l (zustandMutex);
+        zustand.status = Status::getrennt;
+        zustand.letzterFehler =
+            "Audiolage haelt den v3-Vertrag nicht (samplerate/block_size/channels)";
+        return false;
+    }
 
     std::string fehler;
     if (! verbindung.oeffnen (pipeName, fehler))
@@ -371,12 +403,12 @@ bool ControlClient::eineVerbindung (std::uint64_t generation)
         // 1) Steuerung zuerst, immer. P1 kommt erst dran, wenn P0 leer ist —
         //    das ist die Client-Haelfte von "kein P0 wartet hinter Daten".
         bool etwasGesendet = false;
-        std::string nachricht;
+        std::string nachricht, schluessel;
         bool istP0 = false;
         {
             std::lock_guard<std::mutex> l (sendeMutex);
             istP0 = p0.entnehmen (nachricht);
-            etwasGesendet = istP0 || p1.entnehmen (nachricht);
+            etwasGesendet = istP0 || p1.entnehmen (schluessel, nachricht);
         }
         if (etwasGesendet)
         {
@@ -387,6 +419,20 @@ bool ControlClient::eineVerbindung (std::uint64_t generation)
                 || ! verbindung.schreibenGenau (ausgang.data(), ausgang.size(),
                                                 IpcVerbindung::fristIn (kIoFristMs), fehler))
             {
+                // Entnommen, aber NICHT auf dem Draht: der Eintrag geht
+                // zurueck. Ohne das verschwand ein nicht koaleszierbares
+                // P1-Ereignis endgueltig, wenn der Broker zwischen Entnahme und
+                // Write schloss — trotz Reconnect-Vertrag (§53.9). Fuer P0 gilt
+                // dieselbe Zusage noch strenger: "nichts verwerfen".
+                {
+                    std::lock_guard<std::mutex> l (sendeMutex);
+                    if (istP0)
+                        p0.zuruecklegen (std::move (nachricht));
+                    else
+                        p1.zuruecklegen (schluessel, std::move (nachricht));
+                    std::lock_guard<std::mutex> z (zustandMutex);
+                    zustand.p1Wiederholungen = p1.wiederholungen();
+                }
                 if (! sollAbbrechen (generation))
                 {
                     std::lock_guard<std::mutex> l (zustandMutex);

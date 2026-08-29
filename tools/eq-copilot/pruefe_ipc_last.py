@@ -45,10 +45,15 @@ WURZEL = pathlib.Path(__file__).resolve().parents[2]
 BROKER = WURZEL / "broker/target/release/eqcop-broker-v3probe.exe"
 LAST = WURZEL / "eq-copilot/build/plugin/EqCopIpcLast_artefacts/Release/EqCopIpcLast.exe"
 PRODUKTIONS_PIPE = r"\\.\pipe\evenacadia.eq-copilot.v1"
+GOLDEN_PIPE = r"\\.\pipe\evenacadia.nakama.v3.BNSM62JZZCCXIDV3PJZAEHMZPA"
+# Der EINE Probe-Namensraum. Beide Programme des Lastbeins lassen nur ihn zu;
+# eine Sperrliste kannte nur den v1-Namen und liess ausgerechnet den
+# produktiven v3-Namensraum aus §48.3 durch (T2-Befund 7 vom 2026-08-29).
+PROBE_PRAEFIX = r"\\.\pipe\evenacadia.nakama.v3.probe."
 
 
 def probe_pipename() -> str:
-    return (r"\\.\pipe\evenacadia.nakama.v3.last." f"{os.getpid()}.{int(time.time())}")
+    return f"{PROBE_PRAEFIX}last.{os.getpid()}.{int(time.time())}"
 
 
 def main(argv: list[str]) -> int:
@@ -66,7 +71,23 @@ def main(argv: list[str]) -> int:
             return 3
 
     pipe = probe_pipename()
-    assert PRODUKTIONS_PIPE not in pipe
+    assert pipe.startswith(PROBE_PRAEFIX) and len(pipe) > len(PROBE_PRAEFIX)
+    assert PRODUKTIONS_PIPE not in pipe and pipe != GOLDEN_PIPE
+
+    # Der Riegel selbst wird gefahren, nicht behauptet: beide Programme muessen
+    # den Golden- UND den v1-Namen verweigern, bevor der eigentliche Lauf
+    # beginnt. Sonst stuende die Regel nur im Kommentar.
+    for name, hinweis in ((GOLDEN_PIPE, "Golden-Pipename aus §48.3"),
+                          (PRODUKTIONS_PIPE, "v1-Produktions-Pipe")):
+        for programm in (BROKER, LAST):
+            lauf = subprocess.run([str(programm), name, "1", "1"],
+                                  capture_output=True, text=True, encoding="utf-8",
+                                  errors="replace", cwd=WURZEL, timeout=60)
+            if lauf.returncode != 3:
+                print(f"ROT: {programm.name} nimmt den {hinweis} an "
+                      f"(Exit {lauf.returncode})")
+                return 2
+    print(f"  ok      beide Probeprogramme verweigern Golden- und v1-Pipename")
 
     print(f"Probe-Pipe: {pipe}")
     broker = subprocess.Popen(

@@ -40,6 +40,29 @@ inline constexpr const char* kPipeDomaene = "evenacadia.nakama|v3|";
 /// Namensraum der v3-Pipes.
 inline constexpr const char* kPipePraefixV3 = "\\\\.\\pipe\\evenacadia.nakama.v3.";
 
+/// Namensraum der PROBE-Pipes. Alles darunter gehoert Tests und
+/// Beweislaeufen; ein produktiver v3-Name kann nie darin liegen, weil ein
+/// SID-Token ein 26-stelliges Base32-Wort ist und nie mit `probe.` beginnt.
+inline constexpr const char* kPipePraefixProbe =
+    "\\\\.\\pipe\\evenacadia.nakama.v3.probe.";
+
+/// Darf ein Probeprogramm diesen Pipenamen oeffnen?
+///
+/// Die Frage ist bewusst als ERLAUBNIS gestellt und nicht als Sperrliste: eine
+/// Sperrliste kennt nur die Namen, an die jemand gedacht hat — sie liess den
+/// produktiven v3-Namensraum aus §48.3 durch (T2-Befund 7 vom 2026-08-29).
+///
+/// Sie steht `inline` im Header, weil das Lastbein sie braucht, ohne die
+/// SID-Maschinerie aus `PipeToken.cpp` mitzunehmen: es ist eine reine Aussage
+/// ueber eine Zeichenkette.
+inline bool istProbePipename (const std::string& name) noexcept
+{
+    const std::string praefix (kPipePraefixProbe);
+    // Der Rest hinter dem Praefix darf nicht leer sein, damit `probe.` allein
+    // keine Sammelpipe wird.
+    return name.size() > praefix.size() && name.compare (0, praefix.size(), praefix) == 0;
+}
+
 /// SHA-256 ueber beliebige Bytes; schreibt 32 Bytes nach `digest`.
 void sha256 (const std::uint8_t* daten, std::size_t laenge, std::uint8_t digest[32]) noexcept;
 

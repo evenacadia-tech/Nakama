@@ -16,6 +16,7 @@
 // Rust-Probe-Broker und fuehrt danach dieses Programm.
 #include "ControlClient.h"
 #include "IpcVerbindung.h"
+#include "PipeToken.h"
 #include "TelemetryClient.h"
 
 #include <algorithm>
@@ -71,9 +72,13 @@ int main (int argc, char** argv)
         return 2;
     }
     const std::string pipe = argv[1];
-    if (pipe.find ("evenacadia.eq-copilot.v1") != std::string::npos)
+    // ERLAUBNIS statt Sperrliste: die alte Fassung kannte nur den v1-Namen und
+    // liess damit ausgerechnet den produktiven v3-Namensraum aus §48.3 durch
+    // (T2-Befund 7 vom 2026-08-29).
+    if (! istProbePipename (pipe))
     {
-        std::cerr << "VERWEIGERT: " << pipe << " ist die Produktions-Pipe." << std::endl;
+        std::cerr << "VERWEIGERT: " << pipe << " liegt nicht im Probe-Namensraum "
+                  << kPipePraefixProbe << std::endl;
         return 3;
     }
     const int sonden   = argc > 2 ? std::atoi (argv[2]) : 32;

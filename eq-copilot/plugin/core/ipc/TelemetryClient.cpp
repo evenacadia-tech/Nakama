@@ -203,11 +203,44 @@ bool TelemetryClient::eineVerbindung (std::uint64_t generation, const TelemetryH
         }
         if (e.art == StromLeser::Art::frame)
         {
+            // Dieselbe Strenge wie im ControlClient. Die alte Fassung verlangte
+            // nur flaches JSON mit `type == "welcome"` — damit haette ein
+            // Testserver die Kopplung mit einem P2-Envelope und dem Payload
+            // {"type":"welcome"} bestaetigen koennen, ohne link_id, challenge,
+            // protocol oder Broker-Epoch je zu nennen (T2-Befund 10 vom
+            // 2026-08-29). Das `welcome` ist per Vertrag ein P0-Frame
+            // (§53.9, `eq-ipc-v3.schema.json`).
+            if (e.kopf.familie != Familie::p0)
+            {
+                std::lock_guard<std::mutex> l (zustandMutex);
+                zustand.letzterFehler = "welcome kam nicht als P0";
+                break;
+            }
             const std::string text (reinterpret_cast<const char*> (e.payload), e.payloadLaenge);
             std::vector<std::pair<std::string, std::string>> felder;
-            std::string typ;
-            if (! flachesJsonObjekt (text, felder) || ! jsonFeld (felder, "type", typ)
-                || typ != "welcome")
+            std::string typ, protokoll, linkId, challenge, brokerEpoch, brokerVersion;
+            if (! flachesJsonObjekt (text, felder) || ! jsonFeld (felder, "type", typ))
+            {
+                std::lock_guard<std::mutex> l (zustandMutex);
+                zustand.letzterFehler = "welcome: kein flaches JSON-Objekt";
+                break;
+            }
+            if (typ == "reject")
+            {
+                std::string grund;
+                jsonFeld (felder, "reason", grund);
+                std::lock_guard<std::mutex> l (zustandMutex);
+                zustand.letzterFehler = "Broker lehnt ab: " + grund;
+                break;
+            }
+            // Die KOPPLUNGSWERTE muessen die eigenen sein: ein welcome mit
+            // fremder link_id bestaetigt die Kopplung einer anderen Instanz.
+            if (typ != "welcome"
+                || ! jsonFeld (felder, "protocol", protokoll) || protokoll != "3"
+                || ! jsonFeld (felder, "link_id", linkId) || linkId != hello.linkId
+                || ! jsonFeld (felder, "challenge", challenge) || challenge != hello.challenge
+                || ! jsonFeld (felder, "broker_epoch", brokerEpoch) || ! istHex32 (brokerEpoch)
+                || ! jsonFeld (felder, "broker_version", brokerVersion) || brokerVersion.empty())
             {
                 std::lock_guard<std::mutex> l (zustandMutex);
                 zustand.letzterFehler = "unerwartete Antwort auf das Telemetry-Hello";

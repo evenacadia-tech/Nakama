@@ -5,6 +5,32 @@
 //! an eine schmale `Senke`. Session, Eviction, Store und Outbox — also der
 //! `Coordinator` — sind SONDE-011 und stehen hier bewusst nicht.
 //!
+//! ── Drei Threads je Verbindung, und warum ──────────────────────────────────
+//!
+//! §53.9 verlangt woertlich: "Antworten gehen ueber getrennte bounded
+//! Writerqueues zurueck; ein blockierender Pipe-Write haelt weder Coordinator
+//! noch Storelock." Die erste Fassung dieses Listeners leerte den Ingress nach
+//! JEDEM Frame vollstaendig und schrieb die Antwort im Leserthread. Damit
+//! konnte die Ingressqueue nie ueber Groesse 1 wachsen, und eine langsame
+//! Senke oder ein Peer, der Antworten nicht abholt, hielt den Leser am ersten
+//! Frame fest — die Cap-256-, P2-Drop- und P0-Ueberlaufpfade waren im echten
+//! Listener unerreichbar (T2-Befund 3 vom 2026-08-29).
+//!
+//! Deshalb hat jede Verbindung jetzt drei Threads mit genau einer Aufgabe:
+//!
+//! ```text
+//!   Leser      Bytes -> Envelope -> Ingress (bounded 256)   nie Senke, nie write
+//!   Verbraucher Ingress -> Senke -> Antwort in die Writerqueue (bounded 256)
+//!   Schreiber  Writerqueue -> ein einziger write_all auf der Pipe
+//! ```
+//!
+//! Der Leser blockiert dadurch nie hinter der Senke, und ein blockierender
+//! Write blockiert nur den Schreiber. Damit Lesen und Schreiben auf DEMSELBEN
+//! Pipe-Handle wirklich nebenlaeufig sind, laufen die Instanzen als
+//! `FILE_FLAG_OVERLAPPED`: bei einem synchronen Handle serialisiert der
+//! I/O-Manager alle Operationen, ein haengender Read wuerde also einen Write
+//! blockieren — genau das, was die Trennung verhindern soll.
+//!
 //! ── Warum dieser Listener heute nur ueber einen PROBE-Namen laeuft ─────────
 //!
 //! Der Broker oeffnet in Produktion weiterhin ausschliesslich die v2-Pipe.
@@ -22,23 +48,27 @@
 //! `FILE_FLAG_FIRST_PIPE_INSTANCE` wie beim v2-Server — die Helfer kommen aus
 //! `server.rs`, damit es nur EINE Wahrheit ueber die Pipe-Sicherheit gibt.
 
-use std::fs::File;
-use std::io::{Read, Write};
-use std::os::windows::io::{AsRawHandle, FromRawHandle};
+use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 use windows_sys::Win32::Foundation::{
-    CloseHandle, GetLastError, ERROR_PIPE_CONNECTED, HANDLE, INVALID_HANDLE_VALUE,
+    CloseHandle, GetLastError, ERROR_BROKEN_PIPE, ERROR_IO_PENDING, ERROR_NO_DATA,
+    ERROR_OPERATION_ABORTED, ERROR_PIPE_BUSY, ERROR_PIPE_CONNECTED, ERROR_PIPE_NOT_CONNECTED,
+    HANDLE, INVALID_HANDLE_VALUE, WAIT_OBJECT_0,
 };
 use windows_sys::Win32::Security::SECURITY_ATTRIBUTES;
-use windows_sys::Win32::Storage::FileSystem::{FILE_FLAG_FIRST_PIPE_INSTANCE, PIPE_ACCESS_DUPLEX};
+use windows_sys::Win32::Storage::FileSystem::{
+    ReadFile, WriteFile, FILE_FLAG_FIRST_PIPE_INSTANCE, FILE_FLAG_OVERLAPPED, PIPE_ACCESS_DUPLEX,
+};
 use windows_sys::Win32::System::Pipes::{
     ConnectNamedPipe, CreateNamedPipeW, DisconnectNamedPipe, PIPE_READMODE_BYTE,
     PIPE_REJECT_REMOTE_CLIENTS, PIPE_TYPE_BYTE, PIPE_WAIT,
 };
+use windows_sys::Win32::System::Threading::{CreateEventW, ResetEvent, WaitForSingleObject, INFINITE};
+use windows_sys::Win32::System::IO::{CancelIoEx, GetOverlappedResult, OVERLAPPED};
 
 use crate::transport::bootstrap::{
     bootstrap_lesen, neue_kennung, Bootstrap, BootstrapFehler, HelloControl, Kopplungen, Welcome,
@@ -60,6 +90,11 @@ pub const BOOTSTRAP_FRIST: Duration = Duration::from_millis(5000);
 /// Nachrichtenratengrenze je Verbindung: 4000 Frames pro Sekunde. 32 Sonden
 /// bei 10 Hz sind 320 — die Grenze faengt eine Flut, nicht den Betrieb.
 pub const RATE_PRO_SEKUNDE: u32 = 4000;
+
+/// Getrennte, begrenzte Writerqueue je Verbindung (§53.9). Laeuft sie ueber,
+/// holt der Peer seine Antworten nicht ab — dann faellt die Verbindung, nicht
+/// die Antwort still unter den Tisch.
+pub const CAP_WRITER: usize = 256;
 
 /// Was der I/O-Worker nach oben gibt. Bewusst byteorientiert: die Bedeutung
 /// des Payloads kennt erst der Coordinator.
@@ -83,6 +118,8 @@ pub trait Senke: Send + Sync {
 pub struct ZaehlSenke {
     pub control_verbindungen: AtomicU64,
     pub telemetrie_verbindungen: AtomicU64,
+    pub control_getrennt: AtomicU64,
+    pub telemetrie_getrennt: AtomicU64,
     pub p0: AtomicU64,
     pub p0_beantwortet: AtomicU64,
     pub p1: AtomicU64,
@@ -95,11 +132,15 @@ impl Senke for ZaehlSenke {
     fn control_verbunden(&self, _link_id: &str, _hello: &HelloControl) {
         self.control_verbindungen.fetch_add(1, Ordering::SeqCst);
     }
-    fn control_getrennt(&self, _link_id: &str) {}
+    fn control_getrennt(&self, _link_id: &str) {
+        self.control_getrennt.fetch_add(1, Ordering::SeqCst);
+    }
     fn telemetrie_gekoppelt(&self, _link_id: &str) {
         self.telemetrie_verbindungen.fetch_add(1, Ordering::SeqCst);
     }
-    fn telemetrie_getrennt(&self, _link_id: &str) {}
+    fn telemetrie_getrennt(&self, _link_id: &str) {
+        self.telemetrie_getrennt.fetch_add(1, Ordering::SeqCst);
+    }
 
     fn p0(&self, _link_id: &str, payload: &[u8]) -> Option<Vec<u8>> {
         self.p0.fetch_add(1, Ordering::SeqCst);
@@ -133,6 +174,283 @@ impl Senke for ZaehlSenke {
     }
 }
 
+//==============================================================================
+// Overlapped-I/O: die kleinste Menge Win32, die drei Threads auf einem Handle
+// erlaubt.
+
+/// Ein Ereignisobjekt fuer overlapped I/O. JEDER Thread haelt sein eigenes —
+/// zwei Threads an einem Event waere genau das Rennen, das die Trennung
+/// vermeiden soll.
+struct Ereignis(HANDLE);
+
+// SAFETY: ein Event-HANDLE ist eine prozessweite Kernel-Referenz ohne
+// Thread-Affinitaet; dieser Typ gibt es nie zwei Threads gleichzeitig weiter.
+unsafe impl Send for Ereignis {}
+
+impl Ereignis {
+    fn neu() -> Option<Self> {
+        // SAFETY: alle Zeiger sind null bzw. gueltig; das Handle wird im Drop
+        // genau einmal geschlossen.
+        let h = unsafe { CreateEventW(std::ptr::null(), 1, 0, std::ptr::null()) };
+        if h.is_null() {
+            None
+        } else {
+            Some(Ereignis(h))
+        }
+    }
+    fn roh(&self) -> HANDLE {
+        self.0
+    }
+}
+
+impl Drop for Ereignis {
+    fn drop(&mut self) {
+        // SAFETY: exklusiver Besitz, genau einmal geschlossen.
+        unsafe { CloseHandle(self.0) };
+    }
+}
+
+fn leeres_overlapped(e: HANDLE) -> OVERLAPPED {
+    // SAFETY: OVERLAPPED ist ein reines POD-Feld ohne Invarianten; genullt ist
+    // der von Win32 verlangte Startzustand.
+    let mut ov: OVERLAPPED = unsafe { std::mem::zeroed() };
+    ov.hEvent = e;
+    ov
+}
+
+/// Ausgang eines overlapped Lesevorgangs.
+enum IoAusgang {
+    Bytes(usize),
+    /// Der Peer hat geschlossen.
+    Ende,
+    /// `CancelIoEx` — Stop, Bootstrapfrist oder Verbindungsende.
+    Abgebrochen,
+    Fehler(u32),
+}
+
+fn io_fehler_deuten(f: u32) -> IoAusgang {
+    match f {
+        ERROR_BROKEN_PIPE | ERROR_PIPE_NOT_CONNECTED | ERROR_NO_DATA => IoAusgang::Ende,
+        ERROR_OPERATION_ABORTED => IoAusgang::Abgebrochen,
+        andere => IoAusgang::Fehler(andere),
+    }
+}
+
+/// Ein Lesevorgang. Er wartet unbegrenzt; beendet wird er durch `CancelIoEx`
+/// (Stop, Bootstrapfrist, Verbindungsende) — nicht durch einen Timeout, denn
+/// eine stille Sekunde ist kein Fehler.
+fn ov_lesen(h: HANDLE, e: HANDLE, ziel: &mut [u8]) -> IoAusgang {
+    // SAFETY: `h` ist ein gueltiges, overlapped geoeffnetes Pipe-Handle, `e`
+    // gehoert allein diesem Thread, `ov` lebt bis GetOverlappedResult zurueck
+    // ist, und `ziel` bleibt fuer die Dauer des Aufrufs gueltig.
+    unsafe {
+        ResetEvent(e);
+        let mut ov = leeres_overlapped(e);
+        let mut n: u32 = 0;
+        let ok = ReadFile(
+            h,
+            ziel.as_mut_ptr(),
+            ziel.len() as u32,
+            std::ptr::null_mut(),
+            &mut ov,
+        );
+        if ok == 0 {
+            let f = GetLastError();
+            if f != ERROR_IO_PENDING {
+                return io_fehler_deuten(f);
+            }
+            if WaitForSingleObject(e, INFINITE) != WAIT_OBJECT_0 {
+                CancelIoEx(h, &ov);
+                let _ = GetOverlappedResult(h, &ov, &mut n, 1);
+                return IoAusgang::Abgebrochen;
+            }
+        }
+        if GetOverlappedResult(h, &ov, &mut n, 1) == 0 {
+            return io_fehler_deuten(GetLastError());
+        }
+        if n == 0 {
+            IoAusgang::Ende
+        } else {
+            IoAusgang::Bytes(n as usize)
+        }
+    }
+}
+
+/// Schreibt ALLE Bytes oder scheitert. Blockiert, solange der Peer nicht
+/// abholt — genau deshalb sitzt der Aufruf auf einem eigenen Thread.
+fn ov_schreiben(h: HANDLE, e: HANDLE, daten: &[u8]) -> bool {
+    let mut ab = 0usize;
+    while ab < daten.len() {
+        // SAFETY: wie in `ov_lesen`.
+        unsafe {
+            ResetEvent(e);
+            let mut ov = leeres_overlapped(e);
+            let mut n: u32 = 0;
+            let rest = &daten[ab..];
+            let ok = WriteFile(
+                h,
+                rest.as_ptr(),
+                rest.len() as u32,
+                std::ptr::null_mut(),
+                &mut ov,
+            );
+            if ok == 0 {
+                let f = GetLastError();
+                if f != ERROR_IO_PENDING {
+                    return false;
+                }
+                if WaitForSingleObject(e, INFINITE) != WAIT_OBJECT_0 {
+                    CancelIoEx(h, &ov);
+                    let _ = GetOverlappedResult(h, &ov, &mut n, 1);
+                    return false;
+                }
+            }
+            if GetOverlappedResult(h, &ov, &mut n, 1) == 0 || n == 0 {
+                return false;
+            }
+            ab += n as usize;
+        }
+    }
+    true
+}
+
+/// Besitzt genau ein Verbindungshandle. Alle drei Threads halten einen `Arc`
+/// darauf; geschlossen wird es, wenn der letzte geht.
+struct Verbindungsgriff {
+    h: HANDLE,
+}
+
+// SAFETY: Win32-HANDLEs sind prozessweite Kernel-Referenzen ohne
+// Thread-Affinitaet; overlapped I/O erlaubt gleichzeitige Operationen.
+unsafe impl Send for Verbindungsgriff {}
+unsafe impl Sync for Verbindungsgriff {}
+
+impl Drop for Verbindungsgriff {
+    fn drop(&mut self) {
+        // SAFETY: exklusiver Besitz ueber den Arc, genau einmal geschlossen.
+        unsafe { CloseHandle(self.h) };
+    }
+}
+
+//==============================================================================
+// Die zwei bounded Queues zwischen den drei Threads.
+
+/// Ingress je Verbindung (Cap 256, §53.9). Der Leser reiht ein, der
+/// Verbraucher entnimmt — die Politik selbst liegt in `warteschlange.rs`.
+struct Eingang {
+    inhalt: Mutex<(IngressWarteschlange<(Familie, Vec<u8>)>, bool)>,
+    signal: Condvar,
+}
+
+impl Eingang {
+    fn neu() -> Self {
+        Self {
+            inhalt: Mutex::new((IngressWarteschlange::neu(), false)),
+            signal: Condvar::new(),
+        }
+    }
+
+    fn einreihen(&self, familie: Familie, payload: Vec<u8>) -> IngressErgebnis {
+        let e = {
+            let mut g = self.inhalt.lock().unwrap_or_else(|x| x.into_inner());
+            g.0.einreihen(familie, (familie, payload))
+        };
+        self.signal.notify_one();
+        e
+    }
+
+    /// Blockiert, bis ein Eintrag da ist oder die Queue geschlossen wurde.
+    fn entnehmen(&self) -> Option<(Familie, Vec<u8>)> {
+        let mut g = self.inhalt.lock().unwrap_or_else(|x| x.into_inner());
+        loop {
+            if let Some((_, wert)) = g.0.entnehmen() {
+                return Some(wert);
+            }
+            if g.1 {
+                return None;
+            }
+            let (neu, _) = self
+                .signal
+                .wait_timeout(g, Duration::from_millis(50))
+                .unwrap_or_else(|x| x.into_inner());
+            g = neu;
+        }
+    }
+
+    fn laenge(&self) -> usize {
+        self.inhalt.lock().unwrap_or_else(|x| x.into_inner()).0.len()
+    }
+
+    fn schliessen(&self) {
+        {
+            let mut g = self.inhalt.lock().unwrap_or_else(|x| x.into_inner());
+            g.1 = true;
+        }
+        self.signal.notify_all();
+    }
+}
+
+/// Writerqueue je Verbindung (Cap `CAP_WRITER`). Nur der Verbraucher reiht
+/// ein, nur der Schreiber entnimmt.
+struct Ausgang {
+    inhalt: Mutex<(VecDeque<Vec<u8>>, bool)>,
+    signal: Condvar,
+}
+
+impl Ausgang {
+    fn neu() -> Self {
+        Self {
+            inhalt: Mutex::new((VecDeque::with_capacity(16), false)),
+            signal: Condvar::new(),
+        }
+    }
+
+    /// `false` = die Queue ist voll oder geschlossen. Voll heisst: der Peer
+    /// holt seine Antworten nicht ab.
+    fn einreihen(&self, frame: Vec<u8>) -> bool {
+        let ok = {
+            let mut g = self.inhalt.lock().unwrap_or_else(|x| x.into_inner());
+            if g.1 || g.0.len() >= CAP_WRITER {
+                false
+            } else {
+                g.0.push_back(frame);
+                true
+            }
+        };
+        if ok {
+            self.signal.notify_one();
+        }
+        ok
+    }
+
+    fn entnehmen(&self) -> Option<Vec<u8>> {
+        let mut g = self.inhalt.lock().unwrap_or_else(|x| x.into_inner());
+        loop {
+            if let Some(f) = g.0.pop_front() {
+                return Some(f);
+            }
+            if g.1 {
+                return None;
+            }
+            let (neu, _) = self
+                .signal
+                .wait_timeout(g, Duration::from_millis(50))
+                .unwrap_or_else(|x| x.into_inner());
+            g = neu;
+        }
+    }
+
+    fn schliessen(&self) {
+        {
+            let mut g = self.inhalt.lock().unwrap_or_else(|x| x.into_inner());
+            g.1 = true;
+        }
+        self.signal.notify_all();
+    }
+}
+
+//==============================================================================
+
 /// Handles der lebenden Verbindungen — nur, damit `stoppen()` blockierende
 /// Reads wirklich loesen kann. Ein Stop, der auf einen stillen Peer wartet,
 /// ist kein Stop (wissen/engineering 2026-08-27: "Cancel als Abschluss
@@ -143,9 +461,9 @@ struct HandleRegister {
 }
 
 // SAFETY: Win32-HANDLEs sind prozessweite Kernel-Referenzen ohne Thread-
-// Affinitaet. Das Register haelt sie nur, solange der besitzende Thread sein
-// `File` noch nicht fallen gelassen hat; Eintragen und Austragen laufen unter
-// demselben Mutex wie das Abbrechen.
+// Affinitaet. Das Register haelt sie nur, solange der besitzende Thread seinen
+// `Verbindungsgriff` noch nicht fallen gelassen hat; Eintragen und Austragen
+// laufen unter demselben Mutex wie das Abbrechen.
 unsafe impl Send for HandleRegister {}
 
 pub struct V3Griff {
@@ -168,13 +486,48 @@ pub struct V3Statistik {
     pub geschlossen_envelope: AtomicU64,
     pub geschlossen_rate: AtomicU64,
     pub geschlossen_p0_ueberlauf: AtomicU64,
+    /// Familie auf der falschen Verbindungsart (Control traegt P0/P1,
+    /// Telemetry traegt P2 — `eq-ipc-v3.schema.json`).
+    pub geschlossen_familie: AtomicU64,
+    /// Telemetrieframe, dessen Control-Verbindung nicht mehr lebt.
+    pub geschlossen_kopplung: AtomicU64,
+    /// Der Peer holt seine Antworten nicht ab; die Writerqueue lief ueber.
+    pub geschlossen_writer: AtomicU64,
     pub ingress_p2_verworfen: AtomicU64,
     pub ingress_p1_verworfen: AtomicU64,
+    /// Hoechststand der Ingressqueue ueber alle Verbindungen. Er ist der
+    /// Beleg, dass der Leser nicht am ersten Frame haengt.
+    pub ingress_hoechststand: AtomicU64,
+}
+
+impl V3Statistik {
+    fn hoechststand_melden(&self, stand: usize) {
+        let stand = stand as u64;
+        let mut alt = self.ingress_hoechststand.load(Ordering::Relaxed);
+        while stand > alt {
+            match self.ingress_hoechststand.compare_exchange_weak(
+                alt,
+                stand,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => break,
+                Err(a) => alt = a,
+            }
+        }
+    }
 }
 
 impl V3Griff {
     pub fn pipe_name(&self) -> &str {
         &self.pipe_name
+    }
+
+    /// Wie viele Verbindungs-Threadhandles der Listener gerade haelt. Sie
+    /// werden laufend geerntet; die Zahl darf ueber viele Verbindungszyklen
+    /// nicht wachsen (T2-Befund 8 vom 2026-08-29).
+    pub fn gehaltene_verbindungen(&self) -> usize {
+        self.verbindungen.lock().unwrap_or_else(|e| e.into_inner()).len()
     }
 
     /// Gegenpfad zu `v3_server_starten`. Setzt Stop, weckt den parkenden
@@ -217,11 +570,46 @@ fn alle_io_abbrechen(handles: &Arc<Mutex<HandleRegister>>) {
     if let Ok(reg) = handles.lock() {
         for (_, h) in reg.offen.iter() {
             // SAFETY: der Eintrag lebt nur, solange der besitzende Thread sein
-            // File haelt; Austragen und Abbrechen laufen unter diesem Mutex.
+            // Handle haelt; Austragen und Abbrechen laufen unter diesem Mutex.
             unsafe {
-                windows_sys::Win32::System::IO::CancelIoEx(*h as HANDLE, std::ptr::null_mut());
+                CancelIoEx(*h as HANDLE, std::ptr::null_mut());
             }
         }
+    }
+}
+
+fn io_abbrechen(handles: &Arc<Mutex<HandleRegister>>, id: u64) {
+    if let Ok(reg) = handles.lock() {
+        for (i, h) in reg.offen.iter() {
+            if *i == id {
+                // SAFETY: siehe alle_io_abbrechen.
+                unsafe {
+                    CancelIoEx(*h as HANDLE, std::ptr::null_mut());
+                }
+            }
+        }
+    }
+}
+
+/// Beendete Verbindungsthreads joinen und aus der Liste nehmen. Ohne das
+/// waechst der Vektor — und mit ihm die nativen Threadhandles — bei jedem
+/// Verbinden/Trennen unbegrenzt (T2-Befund 8 vom 2026-08-29).
+fn fertige_ernten(verbindungen: &Arc<Mutex<Vec<JoinHandle<()>>>>) {
+    let fertig: Vec<JoinHandle<()>> = {
+        let mut v = verbindungen.lock().unwrap_or_else(|e| e.into_inner());
+        let mut raus = Vec::new();
+        let mut i = 0;
+        while i < v.len() {
+            if v[i].is_finished() {
+                raus.push(v.remove(i));
+            } else {
+                i += 1;
+            }
+        }
+        raus
+    };
+    for j in fertig {
+        let _ = j.join();
     }
 }
 
@@ -245,6 +633,58 @@ fn wecken(pipe_name: &str) {
         if h != INVALID_HANDLE_VALUE {
             CloseHandle(h);
         }
+    }
+}
+
+/// Legt die naechste Pipe-Instanz an — und gibt NICHT auf, wenn gerade alle
+/// belegt sind.
+///
+/// Die alte Fassung brach die Acceptorschleife bei jedem Fehlschlag ab. An der
+/// Verbindungsgrenze (`nMaxInstances`) heisst das: ein Peer oeffnet
+/// `MAX_VERBINDUNGEN` Verbindungen, laesst sie wieder los — und danach horcht
+/// niemand mehr, obwohl alle Plaetze frei sind (T2-Befund 6 vom 2026-08-29).
+/// `ERROR_PIPE_BUSY` ist deshalb kein Ende, sondern ein Warten.
+fn naechste_instanz(
+    name_w: &[u16],
+    attrs: &SECURITY_ATTRIBUTES,
+    stop: &AtomicBool,
+    verbindungen: &Arc<Mutex<Vec<JoinHandle<()>>>>,
+) -> Option<HANDLE> {
+    let mut fremde_fehler = 0u32;
+    loop {
+        if stop.load(Ordering::SeqCst) {
+            return None;
+        }
+        // SAFETY: `name_w` ist nullterminiert, `attrs` lebt ueber den Aufruf.
+        let h = unsafe {
+            CreateNamedPipeW(
+                name_w.as_ptr(),
+                PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
+                PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
+                MAX_VERBINDUNGEN as u32,
+                65536,
+                65536,
+                0,
+                attrs,
+            )
+        };
+        if h != INVALID_HANDLE_VALUE {
+            return Some(h);
+        }
+        // SAFETY: GetLastError liest nur den threadlokalen Fehlercode.
+        let f = unsafe { GetLastError() };
+        if f != ERROR_PIPE_BUSY {
+            // Nicht die Verbindungsgrenze, sondern etwas anderes. Ein paar
+            // Versuche sind billig; endlos zu drehen waere ein stiller Hang.
+            fremde_fehler += 1;
+            if fremde_fehler > 200 {
+                return None;
+            }
+        }
+        // Ein beendeter Nachbar gibt seinen Platz erst frei, wenn sein Handle
+        // wirklich zu ist — also hier ernten, nicht nur schlafen.
+        fertige_ernten(verbindungen);
+        std::thread::sleep(Duration::from_millis(25));
     }
 }
 
@@ -281,7 +721,7 @@ pub fn v3_server_starten(
     let erstes = unsafe {
         CreateNamedPipeW(
             name_w.as_ptr(),
-            PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE,
+            PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE | FILE_FLAG_OVERLAPPED,
             PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
             MAX_VERBINDUNGEN as u32,
             65536,
@@ -299,11 +739,14 @@ pub fn v3_server_starten(
     let stop_w = stop.clone();
     let handles_w = handles.clone();
     let bootstraps_w = bootstraps.clone();
+    let verbindungen_w = verbindungen.clone();
     let wachhund = std::thread::Builder::new()
         .name("eqcop-v3-wachhund".into())
         .spawn(move || {
             while !stop_w.load(Ordering::SeqCst) {
                 std::thread::sleep(Duration::from_millis(100));
+                // Auch ohne neue Verbindung muessen fertige Threads fallen.
+                fertige_ernten(&verbindungen_w);
                 let jetzt = Instant::now();
                 let faellig: Vec<u64> = {
                     let b = bootstraps_w.lock().unwrap_or_else(|e| e.into_inner());
@@ -317,10 +760,7 @@ pub fn v3_server_starten(
                         if faellig.contains(id) {
                             // SAFETY: siehe alle_io_abbrechen.
                             unsafe {
-                                windows_sys::Win32::System::IO::CancelIoEx(
-                                    *h as HANDLE,
-                                    std::ptr::null_mut(),
-                                );
+                                CancelIoEx(*h as HANDLE, std::ptr::null_mut());
                             }
                         }
                     }
@@ -338,7 +778,6 @@ pub fn v3_server_starten(
     let handles2 = handles.clone();
     let bootstraps2 = bootstraps.clone();
     let statistik2 = statistik.clone();
-    let name2 = pipe_name.to_string();
     let acceptor = std::thread::Builder::new()
         .name("eqcop-v3-acceptor".into())
         .spawn(move || {
@@ -349,6 +788,10 @@ pub fn v3_server_starten(
                 lpSecurityDescriptor: sicherheit.deskriptor,
                 bInheritHandle: 0,
             };
+            let ereignis = match Ereignis::neu() {
+                Some(e) => e,
+                None => return,
+            };
             let mut naechstes: HANDLE = erstes_isize as HANDLE;
             let mut folge: u64 = 0;
             loop {
@@ -358,36 +801,20 @@ pub fn v3_server_starten(
                     unsafe { CloseHandle(naechstes) };
                     break;
                 }
-                // SAFETY: `naechstes` ist die eben angelegte Pipe-Instanz.
-                let verbunden = unsafe { ConnectNamedPipe(naechstes, std::ptr::null_mut()) };
-                // SAFETY: GetLastError direkt nach ConnectNamedPipe.
-                let fehler = if verbunden == 0 { unsafe { GetLastError() } } else { 0 };
-                if verbunden == 0 && fehler != ERROR_PIPE_CONNECTED {
+                let verbunden = warten_auf_verbindung(naechstes, ereignis.roh());
+                if !verbunden {
                     // SAFETY: exklusives Handle, genau einmal geschlossen.
                     unsafe { CloseHandle(naechstes) };
                     if stop2.load(Ordering::SeqCst) {
                         break;
                     }
-                    // SAFETY: wie oben — dieselbe Vorschrift, neue Instanz.
-                    naechstes = unsafe {
-                        CreateNamedPipeW(
-                            name_w.as_ptr(),
-                            PIPE_ACCESS_DUPLEX,
-                            PIPE_TYPE_BYTE
-                                | PIPE_READMODE_BYTE
-                                | PIPE_WAIT
-                                | PIPE_REJECT_REMOTE_CLIENTS,
-                            MAX_VERBINDUNGEN as u32,
-                            65536,
-                            65536,
-                            0,
-                            &attrs,
-                        )
-                    };
-                    if naechstes == INVALID_HANDLE_VALUE {
-                        break;
+                    match naechste_instanz(&name_w, &attrs, &stop2, &verbindungen2) {
+                        Some(h) => {
+                            naechstes = h;
+                            continue;
+                        }
+                        None => break,
                     }
-                    continue;
                 }
                 if stop2.load(Ordering::SeqCst) {
                     // SAFETY: exklusives Handle.
@@ -400,9 +827,7 @@ pub fn v3_server_starten(
 
                 folge += 1;
                 let id = folge;
-                // SAFETY: das Handle geht exklusiv an das File ueber; ab hier
-                // schliesst dessen Drop genau einmal.
-                let datei = unsafe { File::from_raw_handle(naechstes as _) };
+                let griff = Arc::new(Verbindungsgriff { h: naechstes });
                 statistik2.angenommen.fetch_add(1, Ordering::SeqCst);
 
                 let senke = senke.clone();
@@ -417,7 +842,7 @@ pub fn v3_server_starten(
                     .name("eqcop-v3-conn".into())
                     .spawn(move || {
                         verbindung_bedienen(
-                            id, datei, senke, kopplungen, handles, bootstraps, statistik, bv, be,
+                            id, griff, senke, kopplungen, handles, bootstraps, statistik, bv, be,
                             conn_stop,
                         );
                     }) {
@@ -425,25 +850,14 @@ pub fn v3_server_starten(
                     Err(_) => break,
                 }
 
-                // Naechste Instanz vorbereiten.
-                // SAFETY: dieselbe Vorschrift wie oben.
-                naechstes = unsafe {
-                    CreateNamedPipeW(
-                        name_w.as_ptr(),
-                        PIPE_ACCESS_DUPLEX,
-                        PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
-                        MAX_VERBINDUNGEN as u32,
-                        65536,
-                        65536,
-                        0,
-                        &attrs,
-                    )
-                };
-                if naechstes == INVALID_HANDLE_VALUE {
-                    break;
+                // Beendete Nachbarn ernten, DANN die naechste Instanz holen —
+                // sonst zaehlt ein laengst toter Thread noch gegen die Grenze.
+                fertige_ernten(&verbindungen2);
+                match naechste_instanz(&name_w, &attrs, &stop2, &verbindungen2) {
+                    Some(h) => naechstes = h,
+                    None => break,
                 }
             }
-            let _ = &name2;
         })
         .map_err(|e| format!("v3-Acceptorthread: {e}"))?;
 
@@ -457,6 +871,34 @@ pub fn v3_server_starten(
         wachhund: Some(wachhund),
         statistik,
     })
+}
+
+/// `ConnectNamedPipe` auf einem overlapped Handle. `lpOverlapped` DARF hier
+/// nicht null sein — sonst meldet Win32 den Verbindungsaufbau falsch fertig.
+fn warten_auf_verbindung(h: HANDLE, e: HANDLE) -> bool {
+    // SAFETY: `h` ist die eben angelegte Pipe-Instanz, `e` gehoert dem
+    // Acceptor allein, `ov` lebt bis GetOverlappedResult zurueck ist.
+    unsafe {
+        ResetEvent(e);
+        let mut ov = leeres_overlapped(e);
+        let ok = ConnectNamedPipe(h, &mut ov);
+        if ok != 0 {
+            return true;
+        }
+        let f = GetLastError();
+        if f == ERROR_PIPE_CONNECTED {
+            return true;
+        }
+        if f != ERROR_IO_PENDING {
+            return false;
+        }
+        if WaitForSingleObject(e, INFINITE) != WAIT_OBJECT_0 {
+            CancelIoEx(h, &ov);
+            return false;
+        }
+        let mut n: u32 = 0;
+        GetOverlappedResult(h, &ov, &mut n, 1) != 0
+    }
 }
 
 struct HandleEintrag {
@@ -492,7 +934,7 @@ impl Drop for BootstrapFrist {
 #[allow(clippy::too_many_arguments)]
 fn verbindung_bedienen(
     id: u64,
-    mut datei: File,
+    griff: Arc<Verbindungsgriff>,
     senke: Arc<dyn Senke>,
     kopplungen: Arc<Mutex<Kopplungen>>,
     handles: Arc<Mutex<HandleRegister>>,
@@ -502,11 +944,16 @@ fn verbindung_bedienen(
     broker_epoch: String,
     stop: Arc<AtomicBool>,
 ) {
-    let roh_handle = datei.as_raw_handle() as isize;
+    let roh_handle = griff.h as isize;
     if let Ok(mut r) = handles.lock() {
         r.offen.push((id, roh_handle));
     }
     let _handle_eintrag = HandleEintrag { id, register: handles.clone() };
+
+    let leseereignis = match Ereignis::neu() {
+        Some(e) => e,
+        None => return,
+    };
 
     // Bootstrap-Frist: der Wachhund bricht die I/O ab, wenn das Hello nicht
     // rechtzeitig ganz da ist.
@@ -529,12 +976,12 @@ fn verbindung_bedienen(
                 return;
             }
         }
-        match datei.read(&mut puffer) {
-            Ok(0) => {
+        match ov_lesen(griff.h, leseereignis.roh(), &mut puffer) {
+            IoAusgang::Ende => {
                 senke.abgewiesen("bootstrap: Verbindung vor dem Hello beendet");
                 return;
             }
-            Ok(n) => {
+            IoAusgang::Bytes(n) => {
                 roh.extend_from_slice(&puffer[..n]);
                 // Die Laengengrenze des Hellos selbst prueft `bootstrap_lesen`
                 // (ZuGross) — schon ab dem vierten Byte, also vor jeder
@@ -552,7 +999,7 @@ fn verbindung_bedienen(
                     return;
                 }
             }
-            Err(_) => {
+            IoAusgang::Abgebrochen | IoAusgang::Fehler(_) => {
                 statistik.geschlossen_bootstrap.fetch_add(1, Ordering::SeqCst);
                 senke.abgewiesen("bootstrap: Lesefehler oder Frist abgelaufen");
                 return;
@@ -569,7 +1016,9 @@ fn verbindung_bedienen(
             // spricht ja noch v2-Framing (§33.3 "klarer Kompatibilitaetsfehler").
             let json = "{\"type\":\"reject\",\"code\":\"protocol_mismatch\",\
                         \"reason\":\"dieser Endpunkt spricht nur v3\"}";
-            let _ = crate::framing::frame_schreiben(&mut datei, json);
+            let mut rahmen = (json.len() as u32).to_le_bytes().to_vec();
+            rahmen.extend_from_slice(json.as_bytes());
+            let _ = ov_schreiben(griff.h, leseereignis.roh(), &rahmen);
             statistik.geschlossen_bootstrap.fetch_add(1, Ordering::SeqCst);
             senke.abgewiesen("bootstrap: v2-Hello am v3-Endpunkt");
             return;
@@ -601,7 +1050,7 @@ fn verbindung_bedienen(
             };
             match envelope_schreiben(Familie::P0, 0, &payload) {
                 Ok(frame) => {
-                    if datei.write_all(&frame).is_err() {
+                    if !ov_schreiben(griff.h, leseereignis.roh(), &frame) {
                         let mut k = kopplungen.lock().unwrap_or_else(|e| e.into_inner());
                         k.control_abmelden(&link);
                         return;
@@ -615,7 +1064,7 @@ fn verbindung_bedienen(
         Bootstrap::V3Telemetry(h) => {
             let ok = {
                 let mut k = kopplungen.lock().unwrap_or_else(|e| e.into_inner());
-                k.telemetrie_koppeln(&h)
+                k.telemetrie_koppeln(&h, id)
             };
             if let Err(e) = ok {
                 statistik.geschlossen_bootstrap.fetch_add(1, Ordering::SeqCst);
@@ -635,7 +1084,7 @@ fn verbindung_bedienen(
                 Err(_) => return,
             };
             if let Ok(frame) = envelope_schreiben(Familie::P0, 0, &payload) {
-                if datei.write_all(&frame).is_err() {
+                if !ov_schreiben(griff.h, leseereignis.roh(), &frame) {
                     let mut k = kopplungen.lock().unwrap_or_else(|e| e.into_inner());
                     k.telemetrie_entkoppeln(&h.link_id);
                     return;
@@ -646,14 +1095,75 @@ fn verbindung_bedienen(
         }
     };
 
-    // ── Ab hier ausschliesslich v3-Frames ─────────────────────────────────
+    // ── Ab hier ausschliesslich v3-Frames, auf drei Threads ───────────────
+    let ende = Arc::new(AtomicBool::new(false));
+    let eingang = Arc::new(Eingang::neu());
+    let ausgang = Arc::new(Ausgang::neu());
+
+    let schreiber = {
+        let griff = griff.clone();
+        let ausgang = ausgang.clone();
+        std::thread::Builder::new()
+            .name("eqcop-v3-writer".into())
+            .spawn(move || {
+                let ereignis = match Ereignis::neu() {
+                    Some(e) => e,
+                    None => return,
+                };
+                while let Some(frame) = ausgang.entnehmen() {
+                    if !ov_schreiben(griff.h, ereignis.roh(), &frame) {
+                        break;
+                    }
+                }
+            })
+            .ok()
+    };
+
+    let verbraucher = {
+        let senke = senke.clone();
+        let eingang = eingang.clone();
+        let ausgang = ausgang.clone();
+        let statistik = statistik.clone();
+        let handles = handles.clone();
+        let ende = ende.clone();
+        let link = link_id.clone();
+        std::thread::Builder::new()
+            .name("eqcop-v3-ingress".into())
+            .spawn(move || {
+                while let Some((familie, payload)) = eingang.entnehmen() {
+                    match familie {
+                        Familie::P0 => {
+                            if let Some(antwort) = senke.p0(&link, &payload) {
+                                if let Ok(frame) = envelope_schreiben(Familie::P0, 0, &antwort) {
+                                    if !ausgang.einreihen(frame) {
+                                        // Der Peer holt seine Antworten nicht
+                                        // ab. Still weiterzaehlen waere eine
+                                        // Luege ueber "nichts verwerfen".
+                                        statistik
+                                            .geschlossen_writer
+                                            .fetch_add(1, Ordering::SeqCst);
+                                        senke.abgewiesen("writer: Antwortqueue laeuft ueber");
+                                        ende.store(true, Ordering::SeqCst);
+                                        io_abbrechen(&handles, id);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        Familie::P1 => senke.p1(&link, &payload),
+                        Familie::P2 => senke.p2(&link, &payload),
+                    }
+                }
+            })
+            .ok()
+    };
+
     let mut leser = StromLeser::neu();
     leser.fuettern(&roh);
-    let mut ingress: IngressWarteschlange<(Familie, Vec<u8>)> = IngressWarteschlange::neu();
     let mut rate = Ratengrenze::neu(RATE_PRO_SEKUNDE, 1000);
     let beginn = Instant::now();
 
-    loop {
+    'lesen: loop {
         loop {
             match leser.naechster() {
                 LeseErgebnis::Unvollstaendig => break,
@@ -661,19 +1171,52 @@ fn verbindung_bedienen(
                     statistik.geschlossen_envelope.fetch_add(1, Ordering::SeqCst);
                     let namen: Vec<&str> = v.iter().map(|x| x.name()).collect();
                     senke.abgewiesen(&format!("envelope: {}", namen.join(",")));
-                    trennen(&kopplungen, &link_id, ist_control, &senke);
-                    return;
+                    break 'lesen;
                 }
                 LeseErgebnis::Frame(r) => {
                     let jetzt_ms = beginn.elapsed().as_millis() as u64;
                     if !rate.erlaubt(jetzt_ms) {
                         statistik.geschlossen_rate.fetch_add(1, Ordering::SeqCst);
                         senke.abgewiesen("rate: Nachrichtenratengrenze ueberschritten");
-                        trennen(&kopplungen, &link_id, ist_control, &senke);
-                        return;
+                        break 'lesen;
                     }
                     let familie = r.kopf.familie;
-                    match ingress.einreihen(familie, (familie, r.payload.clone())) {
+
+                    // Familienzuordnung des Vertrags: die Control-Verbindung
+                    // traegt P0/P1, die Telemetrieverbindung traegt P2
+                    // (`eq-ipc-v3.schema.json`, hello_control/hello_telemetry).
+                    // Ohne diese Sperre koennte eine Telemetriepipe einen
+                    // gueltigen P0-Heartbeat setzen und umgekehrt ein
+                    // Featureframe ueber die Steuerleitung laufen.
+                    let erlaubt = if ist_control {
+                        familie != Familie::P2
+                    } else {
+                        familie == Familie::P2
+                    };
+                    if !erlaubt {
+                        statistik.geschlossen_familie.fetch_add(1, Ordering::SeqCst);
+                        senke.abgewiesen(&format!(
+                            "familie: {familie:?} auf einer {}-Verbindung",
+                            if ist_control { "control" } else { "telemetry" }
+                        ));
+                        break 'lesen;
+                    }
+
+                    // Die Control-Verbindung BESITZT die Kopplung. Endet sie,
+                    // gehoert dieser Telemetrieframe zu keiner Sitzung mehr.
+                    if !ist_control {
+                        let lebt = {
+                            let k = kopplungen.lock().unwrap_or_else(|e| e.into_inner());
+                            k.telemetrie_lebt(&link_id, id)
+                        };
+                        if !lebt {
+                            statistik.geschlossen_kopplung.fetch_add(1, Ordering::SeqCst);
+                            senke.abgewiesen("kopplung: Control-Verbindung ist fort");
+                            break 'lesen;
+                        }
+                    }
+
+                    match eingang.einreihen(familie, r.payload) {
                         IngressErgebnis::Eingereiht => {}
                         IngressErgebnis::P2Verworfen => {
                             statistik.ingress_p2_verworfen.fetch_add(1, Ordering::SeqCst);
@@ -681,8 +1224,7 @@ fn verbindung_bedienen(
                         IngressErgebnis::ClientTrennen => {
                             statistik.geschlossen_p0_ueberlauf.fetch_add(1, Ordering::SeqCst);
                             senke.abgewiesen("ingress: P0-Ueberlauf");
-                            trennen(&kopplungen, &link_id, ist_control, &senke);
-                            return;
+                            break 'lesen;
                         }
                         IngressErgebnis::Verworfen => {
                             if familie == Familie::P1 {
@@ -692,29 +1234,12 @@ fn verbindung_bedienen(
                             }
                         }
                     }
-                    // Ingress sofort leeren: der Coordinator kommt erst in
-                    // SONDE-011, hier ist die Senke der Abnehmer.
-                    while let Some((_, (f, payload))) = ingress.entnehmen() {
-                        match f {
-                            Familie::P0 => {
-                                if let Some(antwort) = senke.p0(&link_id, &payload) {
-                                    if let Ok(frame) = envelope_schreiben(Familie::P0, 0, &antwort) {
-                                        if datei.write_all(&frame).is_err() {
-                                            trennen(&kopplungen, &link_id, ist_control, &senke);
-                                            return;
-                                        }
-                                    }
-                                }
-                            }
-                            Familie::P1 => senke.p1(&link_id, &payload),
-                            Familie::P2 => senke.p2(&link_id, &payload),
-                        }
-                    }
+                    statistik.hoechststand_melden(eingang.laenge());
                 }
             }
         }
 
-        if stop.load(Ordering::SeqCst) {
+        if stop.load(Ordering::SeqCst) || ende.load(Ordering::SeqCst) {
             break;
         }
         // Harte Obergrenze fuer den Lesepuffer: ein Peer darf nicht beliebig
@@ -724,31 +1249,528 @@ fn verbindung_bedienen(
             senke.abgewiesen("envelope: Teilframe ueber der Paketgrenze");
             break;
         }
-        match datei.read(&mut puffer) {
-            Ok(0) => break,
-            Ok(n) => leser.fuettern(&puffer[..n]),
-            Err(_) => break,
+        match ov_lesen(griff.h, leseereignis.roh(), &mut puffer) {
+            IoAusgang::Bytes(n) => leser.fuettern(&puffer[..n]),
+            IoAusgang::Ende | IoAusgang::Abgebrochen => break,
+            IoAusgang::Fehler(f) => {
+                senke.abgewiesen(&format!("lesen: Win32 {f}"));
+                break;
+            }
         }
     }
 
-    trennen(&kopplungen, &link_id, ist_control, &senke);
+    // Gegenpfad zu den drei Threads: erst die Queues schliessen, dann die
+    // haengende I/O aufloesen, dann joinen. Ein Schreiber, der auf einen
+    // stillen Peer wartet, muss abgebrochen werden — sonst waere `join` ein
+    // Hang.
+    ende.store(true, Ordering::SeqCst);
+    eingang.schliessen();
+    ausgang.schliessen();
+    io_abbrechen(&handles, id);
+    if let Some(j) = verbraucher {
+        let _ = j.join();
+    }
+    if let Some(j) = schreiber {
+        let _ = j.join();
+    }
+
+    trennen(&kopplungen, &handles, &link_id, ist_control, &senke);
 }
 
 fn trennen(
     kopplungen: &Arc<Mutex<Kopplungen>>,
+    handles: &Arc<Mutex<HandleRegister>>,
     link_id: &str,
     ist_control: bool,
     senke: &Arc<dyn Senke>,
 ) {
-    let mut k = kopplungen.lock().unwrap_or_else(|e| e.into_inner());
     if ist_control {
         // Die Control-Verbindung besitzt die Kopplung: geht sie, geht auch
         // der Telemetrieplatz. Sonst bliebe eine halb offene Kopplung stehen
-        // (Fehlerlexikon: "zwei Pipes halb verbunden").
-        if k.control_abmelden(link_id) {
-            senke.control_getrennt(link_id);
+        // (Fehlerlexikon: "zwei Pipes halb verbunden"). Den Registereintrag zu
+        // entfernen genuegt nicht — der Telemetriearbeiter laeuft weiter und
+        // liefert P2 zu einer Sitzung, die es nicht mehr gibt. Er wird deshalb
+        // hier ABGEBROCHEN (T2-Befund 2 vom 2026-08-29).
+        let ab = {
+            let mut k = kopplungen.lock().unwrap_or_else(|e| e.into_inner());
+            k.control_abmelden(link_id)
+        };
+        if let Some(v) = ab.telemetrie_verbindung {
+            io_abbrechen(handles, v);
         }
-    } else if k.telemetrie_entkoppeln(link_id) {
+        senke.control_getrennt(link_id);
+    } else {
+        {
+            let mut k = kopplungen.lock().unwrap_or_else(|e| e.into_inner());
+            k.telemetrie_entkoppeln(link_id);
+        }
+        // Unbedingt melden: die Senke hat ein `telemetrie_gekoppelt` bekommen
+        // und braucht sein Gegenstueck auch dann, wenn die Control-Verbindung
+        // die Kopplung schon aus dem Register genommen hat.
         senke.telemetrie_getrennt(link_id);
+    }
+}
+
+//==============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::transport::pipetoken::PROBE_PRAEFIX;
+    use std::sync::atomic::AtomicUsize;
+
+    static FOLGE: AtomicUsize = AtomicUsize::new(0);
+
+    fn probe_pipe(fall: &str) -> String {
+        format!(
+            "{PROBE_PRAEFIX}srv.{}.{}.{fall}",
+            std::process::id(),
+            FOLGE.fetch_add(1, Ordering::SeqCst)
+        )
+    }
+
+    /// Ein roher Testclient. Synchron, weil der Test seine Schritte ohnehin
+    /// nacheinander geht.
+    struct Testclient {
+        h: HANDLE,
+    }
+
+    // SAFETY: wie beim Verbindungsgriff — ein Pipe-HANDLE hat keine
+    // Threadaffinitaet.
+    unsafe impl Send for Testclient {}
+
+    impl Testclient {
+        fn neu(pipe: &str) -> Option<Self> {
+            Self::mit_geduld(pipe, 10_000)
+        }
+
+        fn mit_geduld(pipe: &str, millis: u64) -> Option<Self> {
+            let mut w: Vec<u16> = pipe.encode_utf16().collect();
+            w.push(0);
+            let frist = Instant::now() + Duration::from_millis(millis);
+            loop {
+                // SAFETY: `w` ist nullterminiert; das Handle geht in den Typ
+                // ueber und wird im Drop genau einmal geschlossen.
+                let h = unsafe {
+                    windows_sys::Win32::Storage::FileSystem::CreateFileW(
+                        w.as_ptr(),
+                        windows_sys::Win32::Foundation::GENERIC_READ
+                            | windows_sys::Win32::Foundation::GENERIC_WRITE,
+                        0,
+                        std::ptr::null(),
+                        windows_sys::Win32::Storage::FileSystem::OPEN_EXISTING,
+                        windows_sys::Win32::Storage::FileSystem::SECURITY_SQOS_PRESENT
+                            | windows_sys::Win32::Storage::FileSystem::SECURITY_IDENTIFICATION,
+                        std::ptr::null_mut(),
+                    )
+                };
+                if h != INVALID_HANDLE_VALUE {
+                    return Some(Testclient { h });
+                }
+                if Instant::now() >= frist {
+                    return None;
+                }
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        }
+
+        fn schreiben(&self, daten: &[u8]) -> bool {
+            let mut ab = 0usize;
+            while ab < daten.len() {
+                let mut n: u32 = 0;
+                // SAFETY: synchrones Handle, gueltiger Puffer.
+                let ok = unsafe {
+                    WriteFile(
+                        self.h,
+                        daten[ab..].as_ptr(),
+                        (daten.len() - ab) as u32,
+                        &mut n,
+                        std::ptr::null_mut(),
+                    )
+                };
+                if ok == 0 || n == 0 {
+                    return false;
+                }
+                ab += n as usize;
+            }
+            true
+        }
+
+        fn lesen(&self, ziel: &mut [u8]) -> usize {
+            let mut n: u32 = 0;
+            // SAFETY: synchrones Handle, gueltiger Puffer.
+            let ok = unsafe {
+                ReadFile(
+                    self.h,
+                    ziel.as_mut_ptr(),
+                    ziel.len() as u32,
+                    &mut n,
+                    std::ptr::null_mut(),
+                )
+            };
+            if ok == 0 {
+                0
+            } else {
+                n as usize
+            }
+        }
+    }
+
+    impl Drop for Testclient {
+        fn drop(&mut self) {
+            // SAFETY: exklusiver Besitz, genau einmal geschlossen.
+            unsafe { CloseHandle(self.h) };
+        }
+    }
+
+    fn praefix(json: &str) -> Vec<u8> {
+        let mut aus = (json.len() as u32).to_le_bytes().to_vec();
+        aus.extend_from_slice(json.as_bytes());
+        aus
+    }
+
+    fn adresse_json(nonce: &str) -> String {
+        format!(
+            "{{\"logon_sid\":\"S-1-5-21-1-2-3-1001\",\"project_binding_id\":\"{p}\",\
+             \"session_epoch\":\"{p}\",\"instance_id\":\"{p}\",\"runtime_nonce\":\"{nonce}\"}}",
+            p = "0".repeat(32)
+        )
+    }
+
+    fn control_hello(nonce: &str) -> Vec<u8> {
+        praefix(&format!(
+            "{{\"type\":\"hello\",\"connection_kind\":\"control\",\"protocol\":3,\
+             \"plugin_version\":\"0.3.0\",\"plugin_kind\":\"active_probe\",\"adresse\":{a},\
+             \"audio\":{{\"samplerate\":48000,\"block_size\":512,\"channels\":2}}}}",
+            a = adresse_json(nonce)
+        ))
+    }
+
+    fn telemetry_hello(nonce: &str, link: &str, challenge: &str) -> Vec<u8> {
+        praefix(&format!(
+            "{{\"type\":\"hello\",\"connection_kind\":\"telemetry\",\"protocol\":3,\
+             \"plugin_version\":\"0.3.0\",\"adresse\":{a},\"link_id\":\"{link}\",\
+             \"challenge\":\"{challenge}\"}}",
+            a = adresse_json(nonce)
+        ))
+    }
+
+    /// Liest das v3-gerahmte `welcome` und gibt (link_id, challenge).
+    fn welcome_lesen(c: &Testclient) -> Option<(String, String)> {
+        let mut puffer = [0u8; 4096];
+        let mut roh: Vec<u8> = Vec::new();
+        for _ in 0..50 {
+            let n = c.lesen(&mut puffer);
+            if n == 0 {
+                return None;
+            }
+            roh.extend_from_slice(&puffer[..n]);
+            if let Ok(r) = crate::transport::v3::envelope_pruefen(&roh) {
+                let wert: serde_json::Value = serde_json::from_slice(&r.payload).ok()?;
+                let link = wert.get("link_id")?.as_str()?.to_string();
+                let ch = wert.get("challenge")?.as_str()?.to_string();
+                return Some((link, ch));
+            }
+        }
+        None
+    }
+
+    fn p0(json: &str) -> Vec<u8> {
+        envelope_schreiben(Familie::P0, 0, json.as_bytes()).unwrap()
+    }
+    fn p1(json: &str) -> Vec<u8> {
+        envelope_schreiben(Familie::P1, 0, json.as_bytes()).unwrap()
+    }
+    fn p2(bytes: &[u8]) -> Vec<u8> {
+        envelope_schreiben(Familie::P2, 0, bytes).unwrap()
+    }
+
+    fn warte_auf(millis: u64, mut bedingung: impl FnMut() -> bool) -> bool {
+        let frist = Instant::now() + Duration::from_millis(millis);
+        while Instant::now() < frist {
+            if bedingung() {
+                return true;
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        bedingung()
+    }
+
+    /// Eine Senke, die in `p1`/`p2` blockiert — der Gegenspieler, ohne den
+    /// "der Leser haengt nicht an der Senke" keine pruefbare Aussage ist.
+    #[derive(Default)]
+    struct BlockSenke {
+        zaehl: ZaehlSenke,
+        blockiert: AtomicBool,
+    }
+
+    impl BlockSenke {
+        fn warten(&self) {
+            while self.blockiert.load(Ordering::SeqCst) {
+                std::thread::sleep(Duration::from_millis(5));
+            }
+        }
+    }
+
+    impl Senke for BlockSenke {
+        fn control_verbunden(&self, l: &str, h: &HelloControl) {
+            self.zaehl.control_verbunden(l, h);
+        }
+        fn control_getrennt(&self, l: &str) {
+            self.zaehl.control_getrennt(l);
+        }
+        fn telemetrie_gekoppelt(&self, l: &str) {
+            self.zaehl.telemetrie_gekoppelt(l);
+        }
+        fn telemetrie_getrennt(&self, l: &str) {
+            self.zaehl.telemetrie_getrennt(l);
+        }
+        fn p0(&self, l: &str, p: &[u8]) -> Option<Vec<u8>> {
+            self.warten();
+            self.zaehl.p0(l, p)
+        }
+        fn p1(&self, l: &str, p: &[u8]) {
+            self.warten();
+            self.zaehl.p1(l, p);
+        }
+        fn p2(&self, l: &str, p: &[u8]) {
+            self.warten();
+            self.zaehl.p2(l, p);
+        }
+        fn abgewiesen(&self, g: &str) {
+            self.zaehl.abgewiesen(g);
+        }
+    }
+
+    /// T2-Befund 3: mit blockierender Senke muss der LESER weiterlaufen. Der
+    /// Beweis ist die Ingressqueue: sie wird voll (Hoechststand 256), P2
+    /// faellt zuerst — beides war in der alten Fassung unerreichbar, weil der
+    /// Ingress nach jedem einzelnen Frame geleert wurde.
+    #[test]
+    fn blockierende_senke_haelt_den_leser_nicht_auf() {
+        let pipe = probe_pipe("blocksenke");
+        let senke = Arc::new(BlockSenke::default());
+        senke.blockiert.store(true, Ordering::SeqCst);
+        let griff = v3_server_starten(&pipe, senke.clone(), "test".into()).unwrap();
+
+        let steuer = Testclient::neu(&pipe).unwrap();
+        assert!(steuer.schreiben(&control_hello(&"a".repeat(32))));
+        let (link, challenge) = welcome_lesen(&steuer).expect("welcome");
+
+        let tele = Testclient::neu(&pipe).unwrap();
+        assert!(tele.schreiben(&telemetry_hello(&"a".repeat(32), &link, &challenge)));
+        assert!(welcome_lesen(&tele).is_some());
+
+        // 600 P2-Frames gegen eine Senke, die nichts abholt.
+        let frame = p2(&[0x5Au8; 64]);
+        for _ in 0..600 {
+            if !tele.schreiben(&frame) {
+                break;
+            }
+        }
+
+        let stat = griff.statistik.clone();
+        assert!(
+            warte_auf(5000, || stat.ingress_p2_verworfen.load(Ordering::SeqCst) > 0),
+            "der Ingress muss ueberlaufen, sonst hat der Leser am ersten Frame gewartet"
+        );
+        assert!(
+            stat.ingress_hoechststand.load(Ordering::SeqCst) > 1,
+            "Hoechststand {} — eine Queue, die nie ueber 1 waechst, ist keine Queue",
+            stat.ingress_hoechststand.load(Ordering::SeqCst)
+        );
+        senke.blockiert.store(false, Ordering::SeqCst);
+    }
+
+    /// T2-Befund 3, zweite Haelfte: laeuft der Ingress mit P0 ueber und liegt
+    /// kein P2 zum Verwerfen darin, wird die Verbindung getrennt.
+    #[test]
+    fn p0_ueberlauf_trennt_die_verbindung() {
+        let pipe = probe_pipe("p0ueberlauf");
+        let senke = Arc::new(BlockSenke::default());
+        senke.blockiert.store(true, Ordering::SeqCst);
+        let griff = v3_server_starten(&pipe, senke.clone(), "test".into()).unwrap();
+
+        let steuer = Testclient::neu(&pipe).unwrap();
+        assert!(steuer.schreiben(&control_hello(&"b".repeat(32))));
+        assert!(welcome_lesen(&steuer).is_some());
+
+        // Erst den Ingress mit P1 fuellen (Cap 256), dann P0 nachlegen: es
+        // gibt kein P2 zum Verwerfen, also trennt der Broker.
+        let eins = p1("{\"type\":\"state_report\"}");
+        for _ in 0..300 {
+            if !steuer.schreiben(&eins) {
+                break;
+            }
+        }
+        let herz = p0("{\"type\":\"heartbeat\",\"sequence\":1}");
+        for _ in 0..40 {
+            if !steuer.schreiben(&herz) {
+                break;
+            }
+        }
+
+        let stat = griff.statistik.clone();
+        assert!(
+            warte_auf(6000, || stat.geschlossen_p0_ueberlauf.load(Ordering::SeqCst) > 0),
+            "P0-Ueberlauf muss die Verbindung trennen (p1_verworfen={}, hoechststand={})",
+            stat.ingress_p1_verworfen.load(Ordering::SeqCst),
+            stat.ingress_hoechststand.load(Ordering::SeqCst)
+        );
+        senke.blockiert.store(false, Ordering::SeqCst);
+    }
+
+    /// T2-Befund 5: der Vertrag ordnet die Familien den Verbindungsarten zu.
+    #[test]
+    fn p0_auf_der_telemetriepipe_wird_abgewiesen() {
+        let pipe = probe_pipe("familie-tele");
+        let senke = Arc::new(ZaehlSenke::default());
+        let griff = v3_server_starten(&pipe, senke.clone(), "test".into()).unwrap();
+
+        let steuer = Testclient::neu(&pipe).unwrap();
+        assert!(steuer.schreiben(&control_hello(&"c".repeat(32))));
+        let (link, challenge) = welcome_lesen(&steuer).expect("welcome");
+
+        let tele = Testclient::neu(&pipe).unwrap();
+        assert!(tele.schreiben(&telemetry_hello(&"c".repeat(32), &link, &challenge)));
+        assert!(welcome_lesen(&tele).is_some());
+
+        assert!(tele.schreiben(&p0("{\"type\":\"heartbeat\",\"sequence\":1}")));
+
+        let stat = griff.statistik.clone();
+        assert!(
+            warte_auf(4000, || stat.geschlossen_familie.load(Ordering::SeqCst) == 1),
+            "ein P0 auf der Telemetriepipe muss die Verbindung schliessen"
+        );
+        assert_eq!(
+            senke.p0.load(Ordering::SeqCst),
+            0,
+            "und er darf die Senke nie erreichen"
+        );
+    }
+
+    /// T2-Befund 5, Gegenrichtung.
+    #[test]
+    fn p2_auf_der_controlpipe_wird_abgewiesen() {
+        let pipe = probe_pipe("familie-control");
+        let senke = Arc::new(ZaehlSenke::default());
+        let griff = v3_server_starten(&pipe, senke.clone(), "test".into()).unwrap();
+
+        let steuer = Testclient::neu(&pipe).unwrap();
+        assert!(steuer.schreiben(&control_hello(&"d".repeat(32))));
+        assert!(welcome_lesen(&steuer).is_some());
+        assert!(steuer.schreiben(&p2(&[1u8; 32])));
+
+        let stat = griff.statistik.clone();
+        assert!(
+            warte_auf(4000, || stat.geschlossen_familie.load(Ordering::SeqCst) == 1),
+            "ein P2 auf der Controlpipe muss die Verbindung schliessen"
+        );
+        assert_eq!(senke.p2.load(Ordering::SeqCst), 0);
+    }
+
+    /// T2-Befund 2: endet die Control-Verbindung, endet die Telemetrie mit —
+    /// nicht nur ihr Registereintrag.
+    #[test]
+    fn control_ende_beendet_die_telemetrie() {
+        let pipe = probe_pipe("kopplungsende");
+        let senke = Arc::new(ZaehlSenke::default());
+        let griff = v3_server_starten(&pipe, senke.clone(), "test".into()).unwrap();
+
+        let steuer = Testclient::neu(&pipe).unwrap();
+        assert!(steuer.schreiben(&control_hello(&"e".repeat(32))));
+        let (link, challenge) = welcome_lesen(&steuer).expect("welcome");
+
+        let tele = Testclient::neu(&pipe).unwrap();
+        assert!(tele.schreiben(&telemetry_hello(&"e".repeat(32), &link, &challenge)));
+        assert!(welcome_lesen(&tele).is_some());
+
+        let frame = p2(&[7u8; 32]);
+        assert!(tele.schreiben(&frame));
+        assert!(warte_auf(3000, || senke.p2.load(Ordering::SeqCst) >= 1));
+
+        // Nur die Control-Pipe schliessen.
+        drop(steuer);
+        assert!(
+            warte_auf(4000, || senke.telemetrie_getrennt.load(Ordering::SeqCst) > 0),
+            "das Abmelden muss den Telemetriearbeiter WIRKLICH beenden, nicht nur              seinen Registereintrag entfernen (control_getrennt={}, p2={})",
+            senke.control_getrennt.load(Ordering::SeqCst),
+            senke.p2.load(Ordering::SeqCst)
+        );
+        let _ = &griff;
+
+        let vorher = senke.p2.load(Ordering::SeqCst);
+        for _ in 0..20 {
+            if !tele.schreiben(&frame) {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        std::thread::sleep(Duration::from_millis(300));
+        assert_eq!(
+            senke.p2.load(Ordering::SeqCst),
+            vorher,
+            "nach dem Ende der Control-Verbindung darf kein P2 mehr durchkommen"
+        );
+    }
+
+    /// T2-Befund 6: die Verbindungsgrenze darf den Acceptor nicht toeten.
+    #[test]
+    fn acceptor_ueberlebt_die_verbindungsgrenze() {
+        let pipe = probe_pipe("grenze");
+        let senke = Arc::new(ZaehlSenke::default());
+        let griff = v3_server_starten(&pipe, senke.clone(), "test".into()).unwrap();
+
+        // Bis an die Grenze verbinden, ohne je ein Hello zu senden.
+        let mut offen: Vec<Testclient> = Vec::new();
+        for _ in 0..MAX_VERBINDUNGEN {
+            // Kurze Geduld: an der Grenze horcht per Vertrag NIEMAND mehr, und
+            // genau dieses Nein soll der Test schnell bekommen.
+            match Testclient::mit_geduld(&pipe, 400) {
+                Some(c) => offen.push(c),
+                None => break,
+            }
+        }
+        assert!(
+            offen.len() >= MAX_VERBINDUNGEN - 1,
+            "nur {} Verbindungen erreicht",
+            offen.len()
+        );
+
+        // Alles wieder loslassen — danach MUSS wieder jemand horchen.
+        offen.clear();
+
+        let neu = Testclient::neu(&pipe);
+        assert!(
+            neu.is_some(),
+            "nach der Grenze horcht niemand mehr: der Acceptor hat sich beendet"
+        );
+        let neu = neu.unwrap();
+        assert!(neu.schreiben(&control_hello(&"f".repeat(32))));
+        assert!(
+            welcome_lesen(&neu).is_some(),
+            "die neue Verbindung muss ein welcome bekommen"
+        );
+        drop(griff);
+    }
+
+    /// T2-Befund 8: die Threadhandles duerfen nicht unbegrenzt wachsen.
+    #[test]
+    fn beendete_verbindungen_werden_geerntet() {
+        let pipe = probe_pipe("ernte");
+        let senke = Arc::new(ZaehlSenke::default());
+        let griff = v3_server_starten(&pipe, senke.clone(), "test".into()).unwrap();
+
+        for _ in 0..40 {
+            let c = Testclient::neu(&pipe).expect("verbinden");
+            assert!(c.schreiben(&control_hello(&"9".repeat(32))));
+            assert!(welcome_lesen(&c).is_some());
+            drop(c);
+        }
+        assert!(
+            warte_auf(8000, || griff.gehaltene_verbindungen() <= 4),
+            "nach 40 Zyklen haelt der Listener noch {} Threadhandles",
+            griff.gehaltene_verbindungen()
+        );
     }
 }

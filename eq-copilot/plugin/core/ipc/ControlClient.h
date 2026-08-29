@@ -53,6 +53,11 @@ std::string adresseAlsJson (const Adresse& a);
 /// Muell sendet, verschleiert nur die Ursache.
 bool adresseGueltig (const Adresse& a);
 
+/// Halten die Audiofelder den v3-Vertrag (`audio_lage` im Schema)? NaN, ±Inf
+/// und alles ausserhalb der Grenzen wird verriegelt, BEVOR irgendetwas davon
+/// in eine Ganzzahl gewandelt oder gesendet wird.
+bool audioGueltig (double samplerate, int blockSize, int channels) noexcept;
+
 struct ControlHello
 {
     Adresse      adresse;

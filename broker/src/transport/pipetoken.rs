@@ -22,6 +22,26 @@ pub const DOMAENE: &str = "evenacadia.nakama|v3|";
 /// Namensraum der v3-Pipes.
 pub const PIPE_PRAEFIX: &str = r"\\.\pipe\evenacadia.nakama.v3.";
 
+/// Namensraum der PROBE-Pipes. Alles darunter gehoert Tests und Beweislaeufen;
+/// nichts darunter kann je ein produktiver v3-Endpunkt sein, weil ein
+/// SID-Token ein 26-stelliges Base32-Wort ist und nie mit `probe.` beginnt.
+pub const PROBE_PRAEFIX: &str = r"\\.\pipe\evenacadia.nakama.v3.probe.";
+
+/// Darf ein Probeprogramm diesen Pipenamen oeffnen?
+///
+/// Die Frage ist bewusst als ERLAUBNIS gestellt und nicht als Sperrliste: eine
+/// Sperrliste kennt nur die Namen, an die jemand gedacht hat — sie liess den
+/// produktiven v3-Namensraum aus §48.3 durch (T2-Befund 7 vom 2026-08-29).
+/// Erlaubt ist genau `\\.\pipe\evenacadia.nakama.v3.probe.<etwas>`; der Rest
+/// hinter dem Praefix darf nicht leer sein, damit `probe.` allein keine
+/// Sammelpipe wird.
+pub fn ist_probe_pipename(name: &str) -> bool {
+    match name.strip_prefix(PROBE_PRAEFIX) {
+        Some(rest) => !rest.is_empty(),
+        None => false,
+    }
+}
+
 const ALPHABET: &[u8; 32] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
 /// RFC-4648-Base32 ohne Padding, Grossbuchstaben.
@@ -74,6 +94,24 @@ mod tests {
             pipe_name_v3("S-1-5-21-111111111-222222222-333333333-1001"),
             r"\\.\pipe\evenacadia.nakama.v3.BNSM62JZZCCXIDV3PJZAEHMZPA"
         );
+    }
+
+    /// Der Riegel der Probeprogramme. Er muss den GOLDEN-Namen abweisen —
+    /// genau den hat die alte, nur auf v1 gerichtete Sperre durchgelassen.
+    #[test]
+    fn probe_namensraum_laesst_nur_probe_namen_durch() {
+        assert!(!ist_probe_pipename(&pipe_name_v3(
+            "S-1-5-21-111111111-222222222-333333333-1001"
+        )));
+        assert!(!ist_probe_pipename(
+            r"\\.\pipe\evenacadia.nakama.v3.BNSM62JZZCCXIDV3PJZAEHMZPA"
+        ));
+        assert!(!ist_probe_pipename(r"\\.\pipe\evenacadia.eq-copilot.v1"));
+        assert!(!ist_probe_pipename(r"\\.\pipe\evenacadia.nakama.v3.last.4711"));
+        assert!(!ist_probe_pipename(PROBE_PRAEFIX), "`probe.` allein ist keine Pipe");
+        assert!(ist_probe_pipename(
+            r"\\.\pipe\evenacadia.nakama.v3.probe.last.4711.1756400000"
+        ));
     }
 
     /// Die SID wird VOR dem Hashen grossgeschrieben — sonst haetten zwei

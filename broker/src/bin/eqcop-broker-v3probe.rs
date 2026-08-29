@@ -18,6 +18,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use eqcop_broker::transport::pipetoken::{ist_probe_pipename, PROBE_PRAEFIX};
 use eqcop_broker::transport::server_v3::{v3_server_starten, ZaehlSenke};
 
 fn main() {
@@ -27,10 +28,13 @@ fn main() {
         std::process::exit(2);
     }
     let pipe = args[1].clone();
-    if pipe.contains("evenacadia.eq-copilot.v1") {
+    // ERLAUBNIS statt Sperrliste: die alte Fassung kannte nur den v1-Namen und
+    // liess damit ausgerechnet den produktiven v3-Namensraum aus §48.3 durch
+    // (T2-Befund 7 vom 2026-08-29).
+    if !ist_probe_pipename(&pipe) {
         eprintln!(
-            "VERWEIGERT: {pipe} ist die Produktions-Pipe. Der Probe-Broker faehrt nur \
-             ueber einen Probe-Namen."
+            "VERWEIGERT: {pipe} liegt nicht im Probe-Namensraum. Der Probe-Broker faehrt \
+             ausschliesslich ueber {PROBE_PRAEFIX}<etwas>."
         );
         std::process::exit(3);
     }
@@ -75,6 +79,8 @@ fn main() {
         "angenommen": s.angenommen.load(Ordering::SeqCst),
         "control_verbindungen": senke.control_verbindungen.load(Ordering::SeqCst),
         "telemetrie_verbindungen": senke.telemetrie_verbindungen.load(Ordering::SeqCst),
+        "control_getrennt": senke.control_getrennt.load(Ordering::SeqCst),
+        "telemetrie_getrennt": senke.telemetrie_getrennt.load(Ordering::SeqCst),
         "p0": senke.p0.load(Ordering::SeqCst),
         "p0_beantwortet": senke.p0_beantwortet.load(Ordering::SeqCst),
         "p1": senke.p1.load(Ordering::SeqCst),
@@ -85,8 +91,12 @@ fn main() {
         "geschlossen_envelope": s.geschlossen_envelope.load(Ordering::SeqCst),
         "geschlossen_rate": s.geschlossen_rate.load(Ordering::SeqCst),
         "geschlossen_p0_ueberlauf": s.geschlossen_p0_ueberlauf.load(Ordering::SeqCst),
+        "geschlossen_familie": s.geschlossen_familie.load(Ordering::SeqCst),
+        "geschlossen_kopplung": s.geschlossen_kopplung.load(Ordering::SeqCst),
+        "geschlossen_writer": s.geschlossen_writer.load(Ordering::SeqCst),
         "ingress_p2_verworfen": s.ingress_p2_verworfen.load(Ordering::SeqCst),
         "ingress_p1_verworfen": s.ingress_p1_verworfen.load(Ordering::SeqCst),
+        "ingress_hoechststand": s.ingress_hoechststand.load(Ordering::SeqCst),
     });
     println!("{}", serde_json::to_string(&bericht).unwrap_or_default());
     let _ = std::io::stdout().flush();

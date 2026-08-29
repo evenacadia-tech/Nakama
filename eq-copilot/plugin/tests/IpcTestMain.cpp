@@ -25,6 +25,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -156,8 +157,17 @@ public:
     /// nie wieder. So laeuft der Sendeweg des Clients garantiert voll — ohne
     /// diesen Gegenspieler waere ein P0-Ueberlauf im Betrieb ein Rennen.
     std::atomic<bool> nichtLesen { false };
+    /// Welcome-Varianten fuer die Strenge des TelemetryClient (T2-Befund 10):
+    /// als P2-Familie statt P0, mit fremder link_id, ohne `protocol`.
+    std::atomic<bool> welcomeAlsP2 { false };
+    std::atomic<bool> welcomeFremdeLinkId { false };
+    std::atomic<bool> welcomeOhneProtokoll { false };
     std::mutex textMutex;
     std::string letztesControlHello, letztesTelemetryHello, letzterAbweisungsgrund;
+    /// Jeder empfangene P1-Payload, woertlich. Damit laesst sich pruefen, ob
+    /// ein bestimmtes Ereignis WIRKLICH angekommen ist — eine Zahl allein
+    /// sagt nichts darueber, WELCHES fehlt.
+    std::vector<std::string> p1Texte;
     std::string linkId = hex32 ('a'), challenge = hex32 ('b');
 
     explicit TestServer (std::string pipeName) : name (std::move (pipeName)) {}
@@ -351,12 +361,16 @@ private:
         }
 
         // ── welcome, bereits v3-gerahmt ───────────────────────────────────
-        const std::string welcome =
-            std::string ("{\"type\":\"welcome\",\"protocol\":3,\"broker_version\":\"test\",")
-            + "\"broker_epoch\":\"" + hex32 ('c') + "\",\"link_id\":\"" + linkId
-            + "\",\"challenge\":\"" + challenge + "\"}";
+        const std::string ausgegebeneLink =
+            welcomeFremdeLinkId.load() ? hex32 ('9') : linkId;
+        std::string welcome = std::string ("{\"type\":\"welcome\"");
+        if (! welcomeOhneProtokoll.load())
+            welcome += ",\"protocol\":3";
+        welcome += std::string (",\"broker_version\":\"test\",\"broker_epoch\":\"")
+                 + hex32 ('c') + "\",\"link_id\":\"" + ausgegebeneLink
+                 + "\",\"challenge\":\"" + challenge + "\"}";
         std::vector<std::uint8_t> aus;
-        envelopeSchreiben (Familie::p0, 0,
+        envelopeSchreiben (welcomeAlsP2.load() ? Familie::p2 : Familie::p0, 0,
                            reinterpret_cast<const std::uint8_t*> (welcome.data()),
                            welcome.size(), aus);
         if (sendeKaputtenFrame.load())
@@ -412,7 +426,13 @@ private:
                         }
                     }
                 }
-                else if (e.kopf.familie == Familie::p1) ++p1;
+                else if (e.kopf.familie == Familie::p1)
+                {
+                    ++p1;
+                    std::lock_guard<std::mutex> l (textMutex);
+                    p1Texte.emplace_back (reinterpret_cast<const char*> (e.payload),
+                                          e.payloadLaenge);
+                }
                 else                                    ++p2;
             }
 
@@ -443,7 +463,9 @@ std::atomic<unsigned> namensFolge { 0 };
 
 std::string testPipeName (const char* fall)
 {
-    return "\\\\.\\pipe\\evenacadia.nakama.v3.test."
+    // Im PROBE-Namensraum, demselben, den die beiden Probeprogramme als
+    // einzigen zulassen (§48.3 / T2-Befund 7 vom 2026-08-29).
+    return std::string (kPipePraefixProbe) + "test."
          + std::to_string ((int) GetCurrentProcessId()) + "."
          + std::to_string ((int) namensFolge.fetch_add (1)) + "." + fall;
 }
@@ -763,6 +785,20 @@ int main()
         pruefe (pipeToken ("S-1-5-21-1-2-3-1001") != pipeToken ("S-1-5-21-1-2-3-1002"),
                 "verschiedene SIDs, verschiedene Token");
 
+        // Der Riegel der Probeprogramme. Er ist eine ERLAUBNIS, keine
+        // Sperrliste — die alte Sperrliste kannte nur den v1-Namen und liess
+        // ausgerechnet den GOLDEN-Namen aus §48.3 durch.
+        pruefe (! istProbePipename (pipeNameV3 ("S-1-5-21-111111111-222222222-333333333-1001")),
+                "der Golden-Pipename wird als Probe-Name VERWEIGERT");
+        pruefe (! istProbePipename ("\\\\.\\pipe\\evenacadia.eq-copilot.v1"),
+                "die v1-Produktions-Pipe ebenso");
+        pruefe (! istProbePipename ("\\\\.\\pipe\\evenacadia.nakama.v3.last.4711"),
+                "und ein v3-Name ausserhalb des Probe-Namensraums");
+        pruefe (! istProbePipename (kPipePraefixProbe),
+                "`probe.` allein ist keine Pipe, sondern nur der Namensraum");
+        pruefe (istProbePipename (testPipeName ("riegel")),
+                "der eigene Testname liegt im Probe-Namensraum");
+
         // SHA-256 gegen zwei bekannte Vektoren (FIPS 180-4 Anhang B).
         auto hexDigest = [] (const std::string& s) {
             std::uint8_t d[32];
@@ -837,6 +873,56 @@ int main()
         p1b.entnehmen (s1); p1b.entnehmen (s2);
         pruefe (s1 == "4" && s2 == "5" && p1b.wiederholungen() == 0,
                 "und zwar in der urspruenglichen Reihenfolge");
+
+        // Entnommen, aber nicht geschrieben: der Eintrag muss zurueck. Ohne
+        // diesen Weg verschwand ein P1-Ereignis endgueltig, wenn der Write
+        // nach der Entnahme scheiterte (T2-Befund 4).
+        P1Warteschlange p1c (4, 4);
+        p1c.einreihen ("", "e1");
+        p1c.einreihen ("k", "s1");
+        std::string sk, sn;
+        pruefe (p1c.entnehmen (sk, sn) && sk.empty() && sn == "e1",
+                "entnehmen liefert Objektschluessel UND Nachricht");
+        pruefe (p1c.zuruecklegen (sk, sn) == P1Ergebnis::eingereiht && p1c.groesse() == 2,
+                "ein gescheiterter Write legt das Ereignis an seinen Platz zurueck");
+        std::string wieder;
+        pruefe (p1c.entnehmen (wieder) && wieder == "e1",
+                "und es steht wieder VORN, nicht hinten");
+
+        // Ein Snapshot dagegen darf nicht zurueckkehren, wenn schon ein
+        // neuerer desselben Objekts wartet — der neuere ist die Wahrheit.
+        P1Warteschlange p1d (4, 4);
+        p1d.einreihen ("k", "alt");
+        std::string dk, dn;
+        p1d.entnehmen (dk, dn);
+        p1d.einreihen ("k", "neu");
+        pruefe (p1d.zuruecklegen (dk, dn) == P1Ergebnis::koalesziert && p1d.groesse() == 1,
+                "ein zurueckgelegter Snapshot weicht dem neueren, statt ihn zu verdraengen");
+        std::string dz;
+        p1d.entnehmen (dz);
+        pruefe (dz == "neu", "und der neuere geht raus");
+
+        // Voller Platz: das Ereignis geht in den Wiederholpuffer statt ins
+        // Nichts.
+        P1Warteschlange p1e (1, 2);
+        p1e.einreihen ("", "erst");
+        std::string ek, en;
+        p1e.entnehmen (ek, en);
+        p1e.einreihen ("", "zweit");
+        pruefe (p1e.zuruecklegen (ek, en) == P1Ergebnis::zurWiederholung
+                    && p1e.wiederholungen() == 1,
+                "ist kein Platz mehr, wartet es auf den naechsten Reconnect");
+
+        // P0 kennt dieselbe Zusage, nur strenger: nichts verwerfen.
+        P0Warteschlange p0b (2);
+        p0b.einreihen ("a"); p0b.einreihen ("b");
+        std::string p0raus;
+        p0b.entnehmen (p0raus);
+        pruefe (p0b.zuruecklegen (p0raus) && p0b.groesse() == 2,
+                "ein nicht geschriebener P0-Befehl geht ebenfalls zurueck");
+        std::string p0wieder;
+        pruefe (p0b.entnehmen (p0wieder) && p0wieder == "a",
+                "und behaelt seine Reihenfolge");
     }
 
     abschnitt ("E2 · P2-Schleuse: vorallokiert, ohne Allokation, replace-oldest");
@@ -887,38 +973,96 @@ int main()
         pruefe (gegen > 0, "Gegenprobe: derselbe Zaehler sieht eine echte Allokation",
                 std::to_string (gegen));
 
-        // Nebenlaeufig: ein Erzeuger flutet, ein Verbraucher holt ab. Kein
-        // abgeholter Frame darf zerrissen sein.
-        auto s2 = std::make_unique<P2Schleuse<256>>();
-        std::atomic<bool> stopp { false };
-        std::atomic<int> zerrissen { 0 }, geholt { 0 };
-        std::thread erzeuger ([&] {
-            std::uint8_t f[128];
-            for (int i = 0; i < 200000 && ! stopp.load(); ++i)
-            {
-                std::memset (f, static_cast<int> (i & 0xFF), sizeof (f));
-                s2->veroeffentlichen (f, sizeof (f));
-            }
-        });
-        std::thread verbraucher ([&] {
-            std::uint8_t z[256];
-            while (! stopp.load())
-            {
-                const auto n = s2->abholen (z, sizeof (z));
-                if (n == 0) continue;
-                ++geholt;
-                for (std::size_t i = 1; i < n; ++i)
-                    if (z[i] != z[0]) { ++zerrissen; break; }
-            }
-        });
-        erzeuger.join();
-        stopp.store (true);
-        verbraucher.join();
-        pruefe (zerrissen.load() == 0 && geholt.load() > 0,
-                "unter Flut ist kein abgeholter Frame zerrissen",
-                std::to_string (geholt.load()) + " geholt, "
-                    + std::to_string (zerrissen.load()) + " zerrissen, "
-                    + std::to_string (s2->ersetzteFrames()) + " ersetzt");
+        // ── Das Rennen selbst ─────────────────────────────────────────────
+        //
+        // EHRLICH VORWEG: auf dieser Maschine gibt es keinen Race Detector.
+        // ThreadSanitizer unterstuetzt Windows/MSVC nicht, und /fsanitize=
+        // address findet keine Datenrennen. Der Beweis kann deshalb nicht
+        // lauten "ein Werkzeug hat kein Rennen gesehen". Er lautet:
+        //
+        //   1. der Kollisionsfall TRITT EIN — der Erzeuger laeuft unter Flut
+        //      wirklich auf den Platz, den der Verbraucher gerade beansprucht
+        //      hat (`beanspruchtVerworfen() > 0`);
+        //   2. und er endet jedes Mal OHNE Schreibzugriff, weil ein einziges
+        //      Atomic den Besitz entscheidet. Der beanspruchte Slot ist damit
+        //      strukturell nie das Ziel eines Schreibvorgangs;
+        //   3. dazu, als aeussere Probe, ueber Millionen Frames kein einziger
+        //      zerrissener Frame und keine falsche Laenge.
+        //
+        // Die grossen Frames sind Absicht: ein 8000-Byte-memcpy haelt das
+        // Zeitfenster des Verbrauchers lange genug offen, dass der
+        // Kollisionsfall nicht vom Zufall der Taktung abhaengt.
+        {
+            auto s2 = std::make_unique<P2Schleuse<256>>();
+            std::atomic<bool> stopp { false };
+            std::atomic<long long> zerrissen { 0 }, geholt { 0 };
+            std::thread erzeuger ([&] {
+                std::uint8_t f[128];
+                for (int i = 0; i < 2000000 && ! stopp.load(); ++i)
+                {
+                    std::memset (f, static_cast<int> (i & 0xFF), sizeof (f));
+                    s2->veroeffentlichen (f, sizeof (f));
+                }
+            });
+            std::thread verbraucher ([&] {
+                std::uint8_t z[256];
+                while (! stopp.load())
+                {
+                    const auto n = s2->abholen (z, sizeof (z));
+                    if (n == 0) continue;
+                    ++geholt;
+                    if (n != 128) { ++zerrissen; continue; }
+                    for (std::size_t i = 1; i < n; ++i)
+                        if (z[i] != z[0]) { ++zerrissen; break; }
+                }
+            });
+            erzeuger.join();
+            stopp.store (true);
+            verbraucher.join();
+            pruefe (zerrissen.load() == 0 && geholt.load() > 0,
+                    "2 000 000 kleine Frames unter Flut: kein zerrissener Frame",
+                    std::to_string (geholt.load()) + " geholt, "
+                        + std::to_string (zerrissen.load()) + " zerrissen, "
+                        + std::to_string (s2->ersetzteFrames()) + " ersetzt");
+        }
+        {
+            auto s3 = std::make_unique<P2Schleuse<8192>>();
+            constexpr std::size_t kGross = 8000;
+            std::atomic<bool> stopp { false };
+            std::atomic<long long> zerrissen { 0 }, geholt { 0 };
+            std::thread erzeuger ([&] {
+                std::vector<std::uint8_t> f (kGross);
+                for (int i = 0; i < 300000 && ! stopp.load(); ++i)
+                {
+                    std::memset (f.data(), static_cast<int> (i & 0xFF), f.size());
+                    s3->veroeffentlichen (f.data(), f.size());
+                }
+            });
+            std::thread verbraucher ([&] {
+                std::vector<std::uint8_t> z (8192);
+                while (! stopp.load())
+                {
+                    const auto n = s3->abholen (z.data(), z.size());
+                    if (n == 0) continue;
+                    ++geholt;
+                    if (n != kGross) { ++zerrissen; continue; }
+                    for (std::size_t i = 1; i < n; ++i)
+                        if (z[i] != z[0]) { ++zerrissen; break; }
+                }
+            });
+            erzeuger.join();
+            stopp.store (true);
+            verbraucher.join();
+            pruefe (zerrissen.load() == 0 && geholt.load() > 0,
+                    "300 000 grosse Frames (8000 B) ebenso: kein zerrissener Frame",
+                    std::to_string (geholt.load()) + " geholt, "
+                        + std::to_string (zerrissen.load()) + " zerrissen");
+            pruefe (s3->beanspruchtVerworfen() > 0,
+                    "der Erzeuger traf den beanspruchten Slot WIRKLICH — und hat ihn "
+                    "nicht beschrieben",
+                    std::to_string (s3->beanspruchtVerworfen())
+                        + " Frames wegen fremden Anspruchs verworfen");
+        }
     }
 
     abschnitt ("F · Ratengrenze");
@@ -1156,6 +1300,170 @@ int main()
                 }),
                 "die Verbindung wird deswegen geschlossen, nicht stillschweigend gekuerzt",
                 control.snapshot().letzterFehler);
+        control.stop();
+        server.stoppen();
+    }
+
+    abschnitt ("G6 · ein P1-Ereignis ueberlebt einen gescheiterten Write");
+    {
+        // Der Aufbau erzwingt genau den Fall aus T2-Befund 4: der Sender hat
+        // den Eintrag ENTNOMMEN, und dann bricht der Write. Dafuer liest der
+        // Server nach dem Bootstrap nicht mehr (der 64-KiB-Pipepuffer laeuft
+        // voll, der Schreibvorgang blockiert) und wird dann beendet — der
+        // blockierte Write faellt sofort.
+        const auto name = testPipeName ("p1verlust");
+        auto server1 = std::make_unique<TestServer> (name);
+        server1->nichtLesen.store (true);
+        server1->starten();
+
+        const auto adresse = testAdresse (hex32 ('6'));
+        ControlClient control ([&] { ControlHello h; h.adresse = adresse; return h; }, name);
+        control.start();
+        pruefe (warteAuf (5000, [&] {
+                    return control.snapshot().status == ControlClient::Status::verbunden;
+                }),
+                "Verbindung steht (der Server liest nur nicht mehr)",
+                control.snapshot().letzterFehler);
+
+        auto ereignis = [] (int i) {
+            return "{\"type\":\"probe_event\",\"id\":" + std::to_string (i)
+                 + ",\"fuell\":\"" + std::string (800, 'x') + "\"}";
+        };
+        for (int i = 0; i < 200; ++i)
+            control.sendeP1 ("", ereignis (i));   // leerer Schluessel = Ereignis
+
+        std::this_thread::sleep_for (std::chrono::milliseconds (400));
+        server1->stoppen();
+        server1.reset();
+        pruefe (warteAuf (8000, [&] {
+                    return control.snapshot().status != ControlClient::Status::verbunden;
+                }),
+                "der Write bricht, sobald der Server weg ist");
+
+        // Ohne Server kann der Client nicht weitersenden — der Stand ist
+        // damit stabil und `p1Gesendet` nennt genau den Eintrag, der unterwegs
+        // war.
+        const auto unterwegs = static_cast<int> (control.snapshot().p1Gesendet);
+        pruefe (unterwegs > 0 && unterwegs < 128,
+                "einige Ereignisse gingen raus, eines blieb im Sender haengen",
+                "p1Gesendet = " + std::to_string (unterwegs));
+
+        auto server2 = std::make_unique<TestServer> (name);
+        server2->starten();
+        const std::string gesucht = "\"id\":" + std::to_string (unterwegs) + ",";
+        const bool kam = warteAuf (20000, [&] {
+            std::lock_guard<std::mutex> l (server2->textMutex);
+            for (const auto& t : server2->p1Texte)
+                if (t.find (gesucht) != std::string::npos)
+                    return true;
+            return false;
+        });
+        std::size_t angekommen = 0;
+        {
+            std::lock_guard<std::mutex> l (server2->textMutex);
+            angekommen = server2->p1Texte.size();
+        }
+        pruefe (kam,
+                "das Ereignis, dessen Write scheiterte, kommt nach dem Reconnect an",
+                "gesucht " + gesucht + " · " + std::to_string (angekommen)
+                    + " P1 nach dem Reconnect empfangen");
+
+        control.stop();
+        server2->stoppen();
+    }
+
+    abschnitt ("G7 · der TelemetryClient prueft sein welcome vollstaendig");
+    {
+        auto lauf = [&] (const char* fall, bool alsP2, bool fremdeLink,
+                         bool ohneProtokoll, const char* was) {
+            TestServer server (testPipeName (fall));
+            server.welcomeAlsP2.store (alsP2);
+            server.welcomeFremdeLinkId.store (fremdeLink);
+            server.welcomeOhneProtokoll.store (ohneProtokoll);
+            server.starten();
+            TelemetryClient telemetrie ([&] {
+                TelemetryHello t;
+                t.adresse = testAdresse (hex32 ('7'));
+                t.linkId = hex32 ('a');       // dieselben Werte wie im Server
+                t.challenge = hex32 ('b');
+                return t;
+            }, server.pipeName());
+            telemetrie.start();
+            const bool nieVerbunden = ! warteAuf (2500, [&] {
+                return telemetrie.snapshot().status == TelemetryClient::Status::verbunden;
+            });
+            const auto fehlerText = telemetrie.snapshot().letzterFehler;
+            telemetrie.stop();
+            server.stoppen();
+            pruefe (nieVerbunden, was, fehlerText);
+        };
+
+        lauf ("welcome-p2", true, false, false,
+              "ein welcome in der P2-Familie gilt NICHT als Kopplung");
+        lauf ("welcome-fremd", false, true, false,
+              "ein welcome mit fremder link_id gilt nicht als Kopplung");
+        lauf ("welcome-ohne-protokoll", false, false, true,
+              "ein welcome ohne `protocol` gilt nicht als Kopplung");
+
+        // Gegenprobe: dasselbe Geruest mit korrektem welcome koppelt sehr wohl.
+        TestServer gut (testPipeName ("welcome-gut"));
+        gut.starten();
+        TelemetryClient telemetrie ([&] {
+            TelemetryHello t;
+            t.adresse = testAdresse (hex32 ('7'));
+            t.linkId = hex32 ('a');
+            t.challenge = hex32 ('b');
+            return t;
+        }, gut.pipeName());
+        telemetrie.start();
+        pruefe (warteAuf (4000, [&] {
+                    return telemetrie.snapshot().status == TelemetryClient::Status::verbunden;
+                }),
+                "Gegenprobe: mit vollstaendigem welcome koppelt derselbe Client",
+                telemetrie.snapshot().letzterFehler);
+        telemetrie.stop();
+        gut.stoppen();
+    }
+
+    abschnitt ("G8 · nicht endliche Audiofelder werden VOR der Wandlung verriegelt");
+    {
+        pruefe (audioGueltig (48000.0, 512, 2), "48 kHz / 512 / 2 halten den Vertrag");
+        pruefe (! audioGueltig (std::numeric_limits<double>::quiet_NaN(), 512, 2)
+                    && ! audioGueltig (std::numeric_limits<double>::infinity(), 512, 2)
+                    && ! audioGueltig (-std::numeric_limits<double>::infinity(), 512, 2)
+                    && ! audioGueltig (1e300, 512, 2)
+                    && ! audioGueltig (48000.0, 0, 2)
+                    && ! audioGueltig (48000.0, 512, 65),
+                "NaN, ±Inf, 1e300 und Grenzverstoesse fallen");
+
+        TestServer server (testPipeName ("nanrate"));
+        server.starten();
+        std::atomic<int> welche { 0 };
+        const double raten[4] = { std::numeric_limits<double>::quiet_NaN(),
+                                  std::numeric_limits<double>::infinity(),
+                                  -std::numeric_limits<double>::infinity(),
+                                  1e300 };
+        ControlClient control ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('2'));
+            h.samplerate = raten[welche.load() & 3];
+            return h;
+        }, server.pipeName());
+        control.start();
+        const bool nieVerbunden = ! warteAuf (2500, [&] {
+            welche.fetch_add (1);
+            return control.snapshot().status == ControlClient::Status::verbunden;
+        });
+        pruefe (nieVerbunden, "mit NaN/±Inf/1e300 verbindet der Client gar nicht erst",
+                control.snapshot().letzterFehler);
+        pruefe (control.snapshot().letzterFehler.find ("Audiolage") != std::string::npos,
+                "und nennt den Grund ehrlich beim Namen",
+                control.snapshot().letzterFehler);
+        {
+            std::lock_guard<std::mutex> l (server.textMutex);
+            pruefe (server.letztesControlHello.empty(),
+                    "kein Hello mit einer Nicht-Zahl hat den Server je erreicht");
+        }
         control.stop();
         server.stoppen();
     }

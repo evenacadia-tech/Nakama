@@ -271,6 +271,19 @@ pub struct Kopplung {
     pub challenge: String,
     pub runtime_nonce: String,
     pub telemetrie_verbunden: bool,
+    /// Kennung der gekoppelten Telemetrieverbindung, solange eine haengt.
+    /// Sie steht hier, damit das Abmelden der Control-Verbindung den
+    /// Telemetriearbeiter WIRKLICH erreicht und nicht nur den Registereintrag
+    /// entfernt (T2-Befund 2 vom 2026-08-29).
+    pub telemetrie_verbindung: Option<u64>,
+}
+
+/// Ergebnis von `control_abmelden`: ob es die Kopplung gab und welche
+/// Telemetrieverbindung mit ihr faellt.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Abmeldung {
+    pub war_da: bool,
+    pub telemetrie_verbindung: Option<u64>,
 }
 
 /// Register der offenen Kopplungen. Absichtlich schmal: es kennt keine
@@ -319,14 +332,21 @@ impl Kopplungen {
             challenge,
             runtime_nonce: runtime_nonce.to_string(),
             telemetrie_verbunden: false,
+            telemetrie_verbindung: None,
         };
         self.nach_link.insert(link_id, k.clone());
         Ok(k)
     }
 
     /// Koppelt eine Telemetrieverbindung. Alle drei Merkmale muessen passen —
-    /// `link_id` allein waere ein Namensraum, kein Nachweis.
-    pub fn telemetrie_koppeln(&mut self, h: &HelloTelemetry) -> Result<(), BootstrapFehler> {
+    /// `link_id` allein waere ein Namensraum, kein Nachweis. `verbindung` ist
+    /// die Kennung des Telemetriearbeiters; ueber sie erreicht das Abmelden
+    /// der Control-Verbindung ihn spaeter wirklich.
+    pub fn telemetrie_koppeln(
+        &mut self,
+        h: &HelloTelemetry,
+        verbindung: u64,
+    ) -> Result<(), BootstrapFehler> {
         let k = self
             .nach_link
             .get_mut(&h.link_id)
@@ -338,14 +358,31 @@ impl Kopplungen {
             return Err(BootstrapFehler::KopplungSchonBelegt);
         }
         k.telemetrie_verbunden = true;
+        k.telemetrie_verbindung = Some(verbindung);
         Ok(())
+    }
+
+    /// Lebt die Kopplung noch, und haengt genau DIESE Telemetrieverbindung
+    /// daran? Der Telemetriearbeiter fragt das vor jedem Frame: eine
+    /// abgemeldete Control-Verbindung nimmt ihren Telemetrieplatz mit, und
+    /// ein Frame nach dem Abmelden gehoert zu keiner Sitzung mehr.
+    pub fn telemetrie_lebt(&self, link_id: &str, verbindung: u64) -> bool {
+        match self.nach_link.get(link_id) {
+            Some(k) => k.telemetrie_verbunden && k.telemetrie_verbindung == Some(verbindung),
+            None => false,
+        }
     }
 
     /// Gegenpfad zu `control_anmelden` — gehoert in denselben Aenderungssatz
     /// (Arbeitsregel "verbinden<->trennen"). Ohne ihn waere jede getrennte
-    /// Control-Verbindung ein dauerhaft belegter Kopplungsplatz.
-    pub fn control_abmelden(&mut self, link_id: &str) -> bool {
-        self.nach_link.remove(link_id).is_some()
+    /// Control-Verbindung ein dauerhaft belegter Kopplungsplatz. Das Ergebnis
+    /// nennt die Telemetrieverbindung, die mit dieser Kopplung faellt; der
+    /// Aufrufer bricht ihre I/O ab, sonst liefe sie als Waise weiter.
+    pub fn control_abmelden(&mut self, link_id: &str) -> Abmeldung {
+        match self.nach_link.remove(link_id) {
+            Some(k) => Abmeldung { war_da: true, telemetrie_verbindung: k.telemetrie_verbindung },
+            None => Abmeldung::default(),
+        }
     }
 
     /// Gegenpfad zu `telemetrie_koppeln`: die Kopplung bleibt bestehen (die
@@ -354,6 +391,7 @@ impl Kopplungen {
         match self.nach_link.get_mut(link_id) {
             Some(k) if k.telemetrie_verbunden => {
                 k.telemetrie_verbunden = false;
+                k.telemetrie_verbindung = None;
                 true
             }
             _ => false,
@@ -479,24 +517,24 @@ mod tests {
         // falsche Challenge
         let (b, _) = bootstrap_lesen(&praefix(&telemetry_json(&nonce, &link, &neue_kennung()))).unwrap();
         let Bootstrap::V3Telemetry(h) = b else { panic!() };
-        assert_eq!(k.telemetrie_koppeln(&h), Err(BootstrapFehler::KopplungPasstNicht));
+        assert_eq!(k.telemetrie_koppeln(&h, 1), Err(BootstrapFehler::KopplungPasstNicht));
 
         // falsche Nonce
         let (b, _) = bootstrap_lesen(&praefix(&telemetry_json(&"c".repeat(32), &link, &challenge))).unwrap();
         let Bootstrap::V3Telemetry(h) = b else { panic!() };
-        assert_eq!(k.telemetrie_koppeln(&h), Err(BootstrapFehler::KopplungPasstNicht));
+        assert_eq!(k.telemetrie_koppeln(&h, 1), Err(BootstrapFehler::KopplungPasstNicht));
 
         // unbekannte link_id
         let (b, _) = bootstrap_lesen(&praefix(&telemetry_json(&nonce, &neue_kennung(), &challenge))).unwrap();
         let Bootstrap::V3Telemetry(h) = b else { panic!() };
-        assert_eq!(k.telemetrie_koppeln(&h), Err(BootstrapFehler::KopplungUnbekannt));
+        assert_eq!(k.telemetrie_koppeln(&h, 1), Err(BootstrapFehler::KopplungUnbekannt));
 
         // alles richtig
         let (b, _) = bootstrap_lesen(&praefix(&telemetry_json(&nonce, &link, &challenge))).unwrap();
         let Bootstrap::V3Telemetry(h) = b else { panic!() };
-        assert_eq!(k.telemetrie_koppeln(&h), Ok(()));
+        assert_eq!(k.telemetrie_koppeln(&h, 7), Ok(()));
         // und genau EINMAL
-        assert_eq!(k.telemetrie_koppeln(&h), Err(BootstrapFehler::KopplungSchonBelegt));
+        assert_eq!(k.telemetrie_koppeln(&h, 1), Err(BootstrapFehler::KopplungSchonBelegt));
     }
 
     #[test]
@@ -508,18 +546,24 @@ mod tests {
         k.control_anmelden(&nonce, link.clone(), challenge.clone()).unwrap();
         let (b, _) = bootstrap_lesen(&praefix(&telemetry_json(&nonce, &link, &challenge))).unwrap();
         let Bootstrap::V3Telemetry(h) = b else { panic!() };
-        assert_eq!(k.telemetrie_koppeln(&h), Ok(()));
+        assert_eq!(k.telemetrie_koppeln(&h, 7), Ok(()));
         assert!(k.nachschlagen(&link).unwrap().telemetrie_verbunden);
 
         assert!(k.telemetrie_entkoppeln(&link));
         assert!(!k.nachschlagen(&link).unwrap().telemetrie_verbunden);
         // Nach dem Entkoppeln darf dieselbe Kopplung wieder benutzt werden.
-        assert_eq!(k.telemetrie_koppeln(&h), Ok(()));
+        assert_eq!(k.telemetrie_koppeln(&h, 7), Ok(()));
 
-        assert!(k.control_abmelden(&link));
+        let ab = k.control_abmelden(&link);
+        assert!(ab.war_da);
+        assert_eq!(
+            ab.telemetrie_verbindung,
+            Some(7),
+            "das Abmelden muss die haengende Telemetrieverbindung NENNEN, sonst laeuft sie als Waise weiter"
+        );
         assert_eq!(k.len(), 0);
-        assert!(!k.control_abmelden(&link), "zweimal abmelden ist kein Erfolg");
-        assert_eq!(k.telemetrie_koppeln(&h), Err(BootstrapFehler::KopplungUnbekannt));
+        assert!(!k.control_abmelden(&link).war_da, "zweimal abmelden ist kein Erfolg");
+        assert_eq!(k.telemetrie_koppeln(&h, 1), Err(BootstrapFehler::KopplungUnbekannt));
     }
 
     #[test]

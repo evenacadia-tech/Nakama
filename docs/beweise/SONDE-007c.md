@@ -16931,3 +16931,118 @@ neu gehasht.
 **Einordnung:** Defekt mittel (Behauptung > Messung, Prüfliste E). **Regel des Dirigenten:** `[4b]` gibt `ok` nur bei Journal-`status == "OK"` und abgeschlossenem, nicht zurückgerolltem Eintrag; jeder andere Status (`VORBEREITET`, `KOMPENSATION`, `ERROR_TEILSTAND`, `RUECKWEG_AKTIV`, `RUECKWEG`, unbekannt, fehlend — Werte aus `Install-Nakama.ps1`) → `hinweis <name>: installierter Stand unbekannt (Journalstatus <status>)`, ohne Hashvergleich. Proben: OK → ok; KOMPENSATION/ERROR_TEILSTAND mit `mutation_abgeschlossen=true`, `rollback_abgeschlossen=false` → Hinweis, kein ok; einmal gebrochen, zurückgenommen.
 
 **Nächster Schritt:** Nacharbeit 2 im selben Worker wie S8 Runde 7 (siehe `docs/beweise/SONDE-007a.md`, Dirigentenstand 21:55), gemeinsamer Kanon, danach Prüfer 3 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.
+
+## NAK-94 Nacharbeit Runde 2 — 2026-08-29 (Prüfer-Thread 01a04f0a-98d6…)
+
+**Stand dieses Abschnitts:** `60717c5` — Positionen ohne eigene Angabe sind an
+diesen Commit gebunden. Ticketbasis `fbbe9bf`; der Befund von Prüfer 2 steht
+wörtlich im Dirigentenstand 21:47 darüber.
+
+> **[P2] Melde Kompensations-Teilstände als unbekannt** — `tools/eq-copilot/pruefe_installer_manifest.py:1289-1295`. Bei einem Journal mit `status="KOMPENSATION"` oder `status="ERROR_TEILSTAND"`, `mutation_abgeschlossen=true` und `rollback_abgeschlossen=false` erreicht der Eintrag den Hashvergleich und meldet fälschlich `ok ... installierter Stand = Manifest`. Der Installer setzt diese Statuswerte gerade dann, wenn das Ziel bereits halb wiederhergestellt sein kann; der gespeicherte Hash beweist daher nur den Stand vor dem fehlgeschlagenen Gegenakt.
+
+### Reproduktion am Stand `fbbe9bf`
+
+`installierter_stand()` mit einem Wegwerf-Journal, das für dasselbe Artefakt
+denselben Eintrag trägt und sich nur im Journalkopf unterscheidet
+(`mutation_begonnen=true`, `mutation_abgeschlossen=true`,
+`rollback_abgeschlossen=false`, `sha256` = der Manifesthash):
+
+```
+### Journalstatus KOMPENSATION (Artefakt main)
+[4b] Installierter Stand  - Bericht, kein Urteil
+  Journal: status='KOMPENSATION'  zeit='2026-08-29T00:00:00Z'
+  ok      main: installierter Stand = Manifest  [AC8102F23EDC7D7C]  C:/irgendwo
+
+### Journalstatus ERROR_TEILSTAND (Artefakt main)
+[4b] Installierter Stand  - Bericht, kein Urteil
+  Journal: status='ERROR_TEILSTAND'  zeit='2026-08-29T00:00:00Z'
+  ok      main: installierter Stand = Manifest  [AC8102F23EDC7D7C]  C:/irgendwo
+```
+
+Der Status wurde gedruckt und sonst nirgends gelesen.
+
+### Regel des Dirigenten und die Statuswerte aus dem Installer
+
+`ok` nur bei Journal-`status == "OK"` und abgeschlossenem, nicht
+zurückgerolltem Eintrag; jeder andere Status meldet
+`hinweis <name>: installierter Stand unbekannt (Journalstatus <status>)` ohne
+Hashvergleich. Die Werte sind aus `eq-copilot/install/Install-Nakama.ps1`
+abgelesen, nicht geraten — das Skript setzt dort:
+
+| Status | wann ihn `Install-Nakama.ps1` setzt |
+|---|---|
+| `VORBEREITET` | vor jeder Mutation; autorisiert nur das Fenster zwischen `mutation_begonnen` und `mutation_abgeschlossen` |
+| `OK` | nach erfolgreichem Zug; verlangt `mutation_begonnen` **und** `mutation_abgeschlossen` **und** nicht `rollback_abgeschlossen` |
+| `KOMPENSATION` | während das Ziel in den Vorzustand zurückkopiert wird |
+| `ERROR_RUECKGEROLLT` | Gegenakt vollständig |
+| `ERROR_TEILSTAND` | Gegenakt mit Fehlern, also nur teilweise |
+| `RUECKWEG_AKTIV` | Deinstallation begonnen, geschützter Anker |
+| `RUECKWEG` | Deinstallation abgeschlossen |
+
+Unter jedem dieser Werte außer `OK` kann liegen, was der gespeicherte `sha256`
+gerade **nicht** beschreibt.
+
+### Fix
+
+`ERGEBNIS_STATUS_OK = "OK"` als benannte Konstante; `_installierter_stand()`
+prüft den Journalkopf, sobald `eintraege` als Liste feststeht, und meldet bei
+jedem anderen Wert — einschließlich eines unbekannten und eines fehlenden —
+für jedes Manifestartefakt den installierten Stand als unbekannt, **ohne** den
+Hash überhaupt zu zeigen. Die Marken des einzelnen Eintrags
+(`rollback_abgeschlossen`, `mutation_abgeschlossen`) prüft die Schleife
+darunter weiterhin; beide Hälften gelten zusammen. Die A17-Beschreibung in
+`tools/beweise.ps1` ist mitgezogen.
+
+### Proben — jeder Statuswert einzeln
+
+`py tools/eq-copilot/pruefe_installer_manifest.py` @ `60717c5`, Abschnitt
+`[3b]`, mit identischem Eintrag und wechselndem Journalkopf:
+
+```
+  ok      P2: bei Journalstatus OK und abgeschlossenem, nicht zurueckgerolltem Eintrag bleibt der Hashvergleich und sein ok  [ok      main: installierter Stand = Manifest  [0000000000000000]  irgendwo]
+  ok      P2: Journalstatus VORBEREITET meldet den installierten Stand als unbekannt - ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus VORBEREITET)]
+  ok      P2: Journalstatus KOMPENSATION meldet den installierten Stand als unbekannt - ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus KOMPENSATION)]
+  ok      P2: Journalstatus ERROR_TEILSTAND meldet den installierten Stand als unbekannt - ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus ERROR_TEILSTAND)]
+  ok      P2: Journalstatus ERROR_RUECKGEROLLT meldet den installierten Stand als unbekannt - ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus ERROR_RUECKGEROLLT)]
+  ok      P2: Journalstatus RUECKWEG_AKTIV meldet den installierten Stand als unbekannt - ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
+  ok      P2: Journalstatus RUECKWEG meldet den installierten Stand als unbekannt - ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG)]
+  ok      P2: Journalstatus NEUER_STATUS_2099 meldet den installierten Stand als unbekannt - ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus NEUER_STATUS_2099)]
+  ok      P2: ein Journal OHNE status meldet den installierten Stand als unbekannt - Schweigen ist kein OK  [hinweis main: installierter Stand unbekannt (Journalstatus fehlt)]
+```
+
+`NEUER_STATUS_2099` steht für einen Wert, den der Installer heute nicht kennt:
+auch er ist kein `ok`. Die beiden Kanten aus Nacharbeit 1 (`C1`, `C2`) laufen
+unverändert grün mit.
+
+### Bruchprobe und Rücknahme
+
+Der Statusriegel wird durch `if False:` ersetzt, sonst nichts:
+
+```
+### Bruchprobe B94-1: Statusriegel entfernt -> Exit 2
+  FEHLER  P2: Journalstatus VORBEREITET meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ok      main: installierter Stand = Manifest  [0000000000000000]  irgendwo]
+  FEHLER  P2: Journalstatus KOMPENSATION meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ok      main: installierter Stand = Manifest  [0000000000000000]  irgendwo]
+  FEHLER  P2: Journalstatus ERROR_TEILSTAND meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ok      main: installierter Stand = Manifest  [0000000000000000]  irgendwo]
+  FEHLER  P2: Journalstatus ERROR_RUECKGEROLLT meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ok      main: installierter Stand = Manifest  [0000000000000000]  irgendwo]
+  FEHLER  P2: Journalstatus RUECKWEG_AKTIV meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ok      main: installierter Stand = Manifest  [0000000000000000]  irgendwo]
+  FEHLER  P2: Journalstatus RUECKWEG meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ok      main: installierter Stand = Manifest  [0000000000000000]  irgendwo]
+  FEHLER  P2: Journalstatus NEUER_STATUS_2099 meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ok      main: installierter Stand = Manifest  [0000000000000000]  irgendwo]
+  FEHLER  P2: ein Journal OHNE status meldet den installierten Stand als unbekannt - Schweigen ist kein OK  [ok      main: installierter Stand = Manifest  [0000000000000000]  irgendwo]
+### Ruecknahme: Exit 0 | 109 ok, 0 Fehler
+```
+
+Die Bruchprobe ist nicht committet.
+
+### Prüfliste vor dem Commit (`tools/dirigent/pruefliste.md`)
+
+| Zeile | wo gemessen |
+|---|---|
+| **D** — ein Riegel ist fail-closed | ein unbekannter und ein fehlender Journalstatus sind kein `ok`, sondern ein Hinweis (Proben `NEUER_STATUS_2099` und „ohne status") |
+| **E** — Behauptung ≤ Messung | `[4b]` zeigt den Hash nur noch, wenn er den liegenden Stand beschreibt; die A17-Beschreibung in `tools/beweise.ps1` nennt die Bedingung wörtlich |
+| **E** — Werte gemessen, nicht geraten | die Statustabelle oben ist aus `eq-copilot/install/Install-Nakama.ps1` abgelesen; `ERROR_RUECKGEROLLT` kam so dazu, obwohl die Regel des Dirigenten ihn nicht aufzählte |
+| **E** — jede neue Prüfung einmal gebrochen | `B94-1` oben, mit Rohausgabe des Rots und der Rücknahme |
+| **F** — installieren ↔ Rückweg im selben Änderungssatz | beide Richtungen des Journals sind abgedeckt: die Installationsstände (`VORBEREITET`, `KOMPENSATION`, `ERROR_*`) und die Rückwegstände (`RUECKWEG_AKTIV`, `RUECKWEG`); Wache und Proben liegen in demselben Commit (`cb99ba0`) |
+
+Der gemeinsame Kanonlauf dieser Runde steht in `docs/beweise/SONDE-007a.md`
+unter „SONDE-007a Runde 7 + NAK-94 Nacharbeit 2 - Abschluss"; die Rohausgabe
+liegt unter `docs/beweise/roh/`.

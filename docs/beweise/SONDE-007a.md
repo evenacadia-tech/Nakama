@@ -41,7 +41,7 @@ traegt der einleitende Satz den Stand.
 
 **Was gebaut wurde (Karte, keine Behauptung — Behauptungen stehen in §1):**
 
-**Stand dieser Karte:** `25b57ec` — an diesem Stand sind ihre Anker geprüft.
+**Stand dieser Karte:** `60717c5` — an diesem Stand sind ihre Anker geprüft.
 Sie nennt bewusst **keine** Anzahlen (Befund B4, Runde 6): Quellen, Verbraucher
 und Makros stehen als Quellenanker da, weil jede abgeschriebene Zahl still
 falsch wird, sobald jemand eine Datei oder ein Ziel ergänzt.
@@ -71,12 +71,12 @@ unten bleiben datierte Belege ihres damaligen Quellstands:
 
 | | misst | sieht | sieht **nicht** |
 |---|---|---|---|
-| **K1** Präprozessor | Quelltext | 46 bekannte Makros namentlich, am Anfang **und Ende** jeder Kern-Übersetzungseinheit (gemessen aus `NAKAMA_KERN_QUELLEN`; die aktuelle Anzahl gibt der Messlauf aus); damit auch bis zum TU-Ende definierte Makros aus später eingebundenen eigenen/generierten Headern | Makronamen außerhalb der Liste und vor dem TU-Ende wieder entfernte Makros (der Präprozessor kann kein Präfix aufzählen; resultierende Identitätsbytes misst K3, den Quelltext selbst **K1b**) |
-| **K1b** Quelltext-Token | die tatsächlichen Compiler-Eingaben unter `plugin/**`: alle Dateien aus dem frisch geschriebenen `CL.read.1.tlog` — also auch `/FI` und vorkompilierte Köpfe — plus die literale Include-Hülle als Gegenprobe | jedes `JucePlugin_`-Token im Quelltext, unabhängig von `#define`/`#undef`; Kommentare werden vorher entfernt, Stringliterale nicht; einzige Ausnahme ist `NakamaKernRiegel.h`, gemessen und namentlich | Dateien außerhalb `plugin/**` (dafür der Tlog-Riegel und der JUCE-Baum-Riegel); Makronamen, die erst durch Tokenverkettung entstehen |
+| **K1** Präprozessor | Quelltext | die in `eq-copilot/plugin/state/NakamaKernRiegel.h` namentlich geführten `JucePlugin_*`-Makros — die Liste dort ist die Quelle, nicht diese Karte —, am Anfang **und Ende** jeder Kern-Übersetzungseinheit (gemessen aus `NAKAMA_KERN_QUELLEN`; die aktuelle Anzahl gibt der Messlauf aus); damit auch bis zum TU-Ende definierte Makros aus später eingebundenen eigenen/generierten Headern | Makronamen außerhalb der Liste und vor dem TU-Ende wieder entfernte Makros (der Präprozessor kann kein Präfix aufzählen; resultierende Identitätsbytes misst K3, den Quelltext selbst **K1b**) |
+| **K1b** Quelltext-Token | die tatsächlichen Compiler-Eingaben: jede Datei aus dem frisch geschriebenen `CL.read.1.tlog`, die **nicht** aus den JUCE-Modulen und nicht aus den Toolchain-/SDK-Wurzeln stammt — also `plugin/**` **und alles Übrige**, `/FI` und vorkompilierte Köpfe eingeschlossen —, plus die literale Include-Hülle als Gegenprobe; die namentlich erlaubten Systemdateien werden dabei roh in ASCII und UTF-16LE durchsucht statt als C++ geparst | jedes `JucePlugin_`-Token im Quelltext, unabhängig von `#define`/`#undef`; Kommentare werden vorher entfernt, Stringliterale nicht; einzige Ausnahme ist `NakamaKernRiegel.h`, gemessen und namentlich | den Inhalt der JUCE-Module (dafür der JUCE-Baum-Riegel) und der Toolchain-/SDK-Header außerhalb des Repos (benannte Nichtzusage, kein Fingerprint); Makronamen, die erst durch Tokenverkettung entstehen. Lässt sich eine der drei Ausschlusswurzeln nicht ableiten, bildet K1b **keine** Menge, sondern klagt |
 | **K2** CMake-Konfigurierzeit | Kernziel plus dessen compilerwirksame Usage-Requirements-Hülle; Verbraucher nur bei einer echten fehlerhaften Rückkante; Ausführung verzögert bis zum Ende von `plugin/` nach allen Zieländerungen | jedes compilerwirksame `JucePlugin_` aus eigenen und transitiven `*_COMPILE_DEFINITIONS` sowie `-D`/`/D` in `*_COMPILE_OPTIONS`; direkte Zielnamen, `debug`/`optimized`/`general`-Kanten und die unten inventarisierten bedingten bzw. zielbezogenen Generatorausdrücke | Makros, die erst im C++-Quelltext entstehen (dafür K1/K3); String-Transformationen in Linkkanten und `MAP_IMPORTED_CONFIG_*` werden nicht ausgewertet, sondern ausdrücklich **ROT** gemeldet |
 | **K3/A14** Artefakt + Neubau | die `.lib`, die das Bein im selben Lauf selbst hat neu erzeugen lassen, dazu `.vcxproj`, `.tlog` und `lastbuildstate` | jeden eingefrorenen Text als ASCII/UTF-16LE, Viercodes zusätzlich als 4-Byte-Integer in **beiden** Byteordnungen, CIDs roh/COM-vertauscht; dass Objekte, Tlogs und Lib vor der Messung gelöscht und vollständig neu erzeugt wurden (Zeitanker, Bauausgabe, Objektzahl) — damit ist „veraltetes Artefakt" keine Frage mehr; die früheren Frischewachen bleiben als Diagnose „womit wurde gebaut" | Baubeschreibung ohne resultierende Artefaktbytes (dafür K1/K1b/K2/K2b/K2c); ein Compilerwechsel innerhalb derselben `lastbuildstate`-Kennung (benannte Nichtzusage) |
-| **Tlog-Riegel** Leseorte | das frisch geschriebene `CL.read.1.tlog` des Kerns | aus welchen Orten der Compiler wirklich gelesen hat: erlaubt sind `plugin/**`, `juce-src/modules/**` ohne `juce_audio_plugin_client` und die **aus dem Bau abgeleiteten** MSVC- und Windows-SDK-Wurzeln; alles andere — auch `<ziel>_artefacts/JuceLibraryCode/**` — ist ROT und wird namentlich genannt. Fehlt eine heutige Kernquelle als Marker, ist auch das ROT | den **Inhalt** der gelesenen Dateien (dafür K1b innerhalb `plugin/**` und der JUCE-Baum-Riegel außerhalb); Dateien ohne Übersetzungsstoff (`.dll`, `.nls` und die anderen des Compilerlaufs) werden gezählt und benannt, nicht am Ort gemessen |
-| **JUCE-Baum-Riegel** Herkunft | der ganze FetchContent-Baum `build/_deps/juce-src` gegen `git status` und den Nakama-Patch | dass juce-src der gepinnte Tag plus **genau** `third_party/patches/juce-8.0.9-nakama-vst3-bridge.patch` ist: jede Inhaltsänderung außerhalb der Patchdateien und jede unverfolgte Datei sind ROT, und `git apply --check --reverse` muss gelingen | Löschungen außerhalb `modules/**` (gezählt und benannt, nicht ROT — eine gelöschte Datei kann keine Compiler-Eingabe werden); Toolchain- und SDK-Header außerhalb des Repos (benannte Nichtzusage, kein Fingerprint) |
+| **Tlog-Riegel** Leseorte | das frisch geschriebene `CL.read.1.tlog` des Kerns | aus welchen Orten der Compiler wirklich gelesen hat: erlaubt sind `plugin/**`, `juce-src/modules/**` ohne `juce_audio_plugin_client`, die **aus dem Bau abgeleiteten** MSVC- und Windows-SDK-Wurzeln und — **namentlich, nicht über ihr Verzeichnis** — die gemessenen Systemdateien unter `%SystemRoot%` (Liste `SYSTEMDATEIEN` im Skript). Es gibt weder eine Endungsausnahme noch eine Ortserlaubnis für `%SystemRoot%`: jede andere Datei darunter, `<ziel>_artefacts/JuceLibraryCode/**` und alles Unbekannte sind ROT und werden namentlich genannt. Fehlt eine heutige Kernquelle als Marker, ist auch das ROT | den **Inhalt** der gelesenen Dateien (dafür K1b und der JUCE-Baum-Riegel) |
+| **JUCE-Baum-Riegel** Herkunft | der ganze FetchContent-Baum `build/_deps/juce-src` gegen `git status` und den Nakama-Patch | dass juce-src der gepinnte Tag plus **genau** `third_party/patches/juce-8.0.9-nakama-vst3-bridge.patch` ist, gemessen in drei Zeilen: (i) `HEAD` **ist** der Commit des Tags (`8.0.9^{commit}`, verglichen statt nur beschrieben); (ii) `git status --porcelain --ignored -uall` — die geänderte Menge ist genau die Patchdateimenge, **ignorierte** Fremddateien eingeschlossen; (iii) die Patchdateien tragen genau den Patch, gemessen als Inhalt gegen den in einem temporären Index gerechneten Sollzustand „Tag + Patch" (`read-tree` → `apply --cached` → `diff-files`). `git apply --check --reverse` ist dafür **ersetzt**, nicht ergänzt: es prüft nur rückwärts passende Hunks und schwieg zu einer zusätzlichen Zeile | Löschungen außerhalb `modules/**` (gezählt und benannt, nicht ROT — eine gelöschte Datei kann keine Compiler-Eingabe werden); Toolchain- und SDK-Header außerhalb des Repos (benannte Nichtzusage, kein Fingerprint) |
 | **K2b** CMake-Konfigurierzeit | Kern und je ein registrierter Verbraucher als **getrennte** Wurzeln mit ihrer jeweiligen compilerwirksamen Usage-Requirements-Hülle | Mengengleichheit und Wertwidersprüche der `JUCE_`-Defines beider Zielmengen, je Konfiguration, rekursiv und inklusive `-D`/`/D`; `JucePlugin_*` des Verbrauchers gehört nicht zur Vergleichsmenge | bewusst ausgenommene Hüllendefines (`JUCE_MODULE_AVAILABLE_*` als Familie; exakt die Makronamen `JUCE_SHARED_CODE`, `JUCE_STANDALONE_APPLICATION`, `JUCE_VST3_CAN_REPLACE_VST2`, jeweils ohne Wert oder mit `=…`) · Nicht-Define-Schalter (dafür K2c) |
 | **K2c** CMake-Konfigurierzeit | volle Linkhülle des Kerns und volle Linkhülle je eines registrierten Verbrauchers, **getrennt** je Konfiguration | ob jedes transitiv und bedingt erreichbare `juce_recommended_*`-Ziel der Referenz in derselben Konfiguration auch am Kern hängt — Quelle der Schalter, nicht einzelne Flags | `lto_flags` (begründet ausgenommen: `/GL` ohne `-LTCG` im Verbraucher) · alles, was kein Empfehlungsziel ist; String-Transformationen und importierte Konfigurationsabbildungen sind nicht unterstützt und deshalb ROT |
 
@@ -13894,3 +13894,297 @@ dieser Runde gehört.
 **Nächster Schritt (frische Dirigenten-Session):** ein Nacharbeits-Worker für S8 Runde 7 **und** NAK-94 Nacharbeit 2 (siehe `docs/beweise/SONDE-007c.md`, Dirigentenstand), ein gemeinsamer Kanon auf dem Endstand, dann Prüfer 8 (xhigh) für S8 und Prüfer 3 (high) für NAK-94 — je frischer Thread über den vollen Ticketbereich. Kein Halt: technische Befunde, keine Produktfrage.
 
 **Offen außerhalb der Grenze:** NAK-93, NAK-98, NAK-99.
+
+## Nacharbeit Runde 7 — 2026-08-29 (Prüfer-Thread 01a04f0a-8ed1…)
+
+**Stand dieses Abschnitts:** `60717c5` — Positionen ohne eigene Angabe sind an
+diesen Commit gebunden. Ticketbasis `fbbe9bf`; die drei Befunde von Prüfer 7
+stehen wörtlich im Dirigentenstand 21:55 darüber.
+
+Drei Befunde, alle Klasse Defekt, jeder zuerst am Stand `fbbe9bf`
+reproduziert, dann behoben, dann einmal absichtlich gebrochen und
+zurückgenommen. Dazu ein Nebenbefund, der beim Brechen auffiel und in
+derselben Datei liegt.
+
+### P1 — Ortsriegel und K1b: der erzwungene Kopf unter `%SystemRoot%`
+
+> **[P1] Beschränke die Windows-System-Erlaubnisliste** — `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:1213`. Defekt, hoch (R3/W5a/W5b). Wenn `/FI` auf eine Datei unter `%SystemRoot%` zeigt, akzeptiert der Ortsriegel sie vollständig, während K1b nur Eingaben unter `plugin/**` übernimmt. Der lesende Funktionsrepro mit `C:\Windows\Temp\forced.dat` ergab `klagen=[]` und eine leere K1b-Menge; ein Header, der `JucePlugin_*` definiert, nutzt und wieder entfernt, passiert damit K1, K1b, K2 und K3.
+
+**Reproduktion 1 — lesend über die Funktionen, Stand `fbbe9bf`.** Derselbe
+Weg wie beim Prüfer: `_systemwurzel()`, dann `tlog_ortsriegel()` mit einer
+einzigen gelesenen Datei unter `%SystemRoot%`, danach die K1b-Menge, wie
+`main()` sie damals bildete (`_unter(pfad, KERNQUELLEN)`).
+
+```
+Systemwurzel: C:\WINDOWS | Klage: -
+Ortsriegel klagen = []
+Ortsriegel zaehlung = {'plugin': 0, 'Windows-System': 1}
+K1b-Menge aus Tlog = []
+```
+
+**Reproduktion 2 — am echten Baum.** Die lesende Probe sagt noch nichts
+darüber, ob der Compiler eine solche Datei überhaupt liest. Deshalb wurde der
+Weg wirklich gegangen: `C:\Windows\Tracing\nakama-forced.h` mit
+
+```c
+#define JucePlugin_IsSynth 0
+#define JucePlugin_IsSynth 1
+#undef JucePlugin_IsSynth
+```
+
+und ein voller A14-Lauf mit `CL=/FIC:\Windows\Tracing\nakama-forced.h`
+(die Umgebungsvariable `CL` reicht cl.exe zusätzliche Schalter an — keine
+Repodatei wird dafür angefasst). Beide P1-Hälften standen dabei auf dem Stand
+von Runde 6, der Rest auf `60717c5`; deshalb tragen die Zeilen schon den neuen
+Behauptungstext, das Urteil aber das alte Verhalten:
+
+```
+[0b] Riegel - Quelltext, Leseorte, JUCE-Baum
+  ok      CL.read.1.tlog stammt aus diesem Neubau
+  ok      alle 461 vom Compiler gelesenen Dateien stammen aus erlaubten Wurzeln oder sind eine der 0 namentlich erlaubten Systemdateien (plugin 12, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, Windows-System 1)
+  ok      keine der 20 Compiler-Eingaben ausserhalb der JUCE-Module und der Toolchain-/SDK-Wurzeln traegt ein JucePlugin_-Token (Tlog 12, Huelle 21, davon 0 benannte Systemdatei(en) roh durchsucht; Ausnahme NakamaKernRiegel.h mit 56 Treffern)
+  ok      juce-src ist Tag 8.0.9 (f72bad64d297) plus genau der Nakama-VST3-Patch (HEAD = Tag; nichts Geaendertes, Unverfolgtes oder Ignoriertes ausserhalb der 1 Patchdatei(en); diese tragen genau den Patch; 5 benannte Loeschung(en) ausserhalb modules/**)
+
+Exit 0
+```
+
+Der Kopf **wurde gelesen** (`Windows-System 1`), trug ein `JucePlugin_`-Makro
+in jede der neun Übersetzungseinheiten — und der Lauf war grün. Genau das ist
+der Befund.
+
+**Nebenmessung zur Erlaubnisliste.** Ein grüner Lauf ohne diesen Kopf nennt
+**keine** Datei unter `%SystemRoot%`; im Leseprotokoll des Kerns steht dort
+nichts. Die beiden Namen der Erlaubnisliste stammen deshalb aus der Messung
+`P5-W5b` (29.08.2026, weiter oben in diesem Manifest): `System32\tzres.dll`
+und `Globalization\Sorting\sortdefault.nls`, gelesen, während cl.exe eine
+Diagnose formatierte. Nicht reproduzierbar war dieser Diagnosefall heute: eine
+erzwungene Makroneudefinition (C4005) und ein fehlgeschlagener Bau brachten
+beide keine Systemdatei ins Protokoll — bei einem fehlgeschlagenen Bau
+schreibt der FileTracker gar kein `CL.read.1.tlog`. Die Liste ist damit
+gemessen, aber aus einer früheren Runde; sie wird erweitert, wenn eine weitere
+Systemdatei auffällt, und bis dahin ist jede unbekannte Datei dort ROT.
+
+**Regel des Dirigenten.** Systemdateien werden namentlich erlaubt, nicht per
+Verzeichnis; jede sonstige Datei unter `%SystemRoot%` ist ROT. K1b scannt jede
+Tlog-Datei, die nicht aus JUCE-Modulen oder Toolchain-/SDK-Includes stammt.
+
+**Fix** (`tools/eq-copilot/pruefe_kern_identitaetsfrei.py`, alles @ `60717c5`):
+
+- `SYSTEMDATEIEN` — die gemessenen Einzelpfade relativ zu `%SystemRoot%`.
+  `erlaubte_leseorte()` gibt sie als vierten Wert zurück (normalisierter Pfad →
+  Anzeigename) und trägt **keine** Wurzel mehr unter `%SystemRoot%` ein.
+  `tlog_ortsriegel()` prüft diese Namensliste **vor** den Wurzeln; sie ist die
+  engere Aussage.
+- `k1b_eingaben_aus_tlog()` — die K1b-Menge ist das Komplement aus
+  `juce-src/modules`, `MSVC-Toolset` und `Windows-SDK`
+  (`K1B_AUSSCHLUSS_WURZELN`). Lässt sich eine dieser Wurzeln nicht ableiten,
+  wird **keine** Menge gebildet, sondern geklagt — sonst stünden plötzlich
+  zehntausend SDK-Köpfe darin und ein ROT daran wäre kein Befund über den Kern.
+- `k1b_riegel()` — die benannten Systemdateien sind Binärstoff und werden roh
+  in ASCII und UTF-16LE durchsucht statt durch den C++-Kommentarparser
+  geschickt; ein unpaariges Anführungszeichen in einer `.dll` wäre sonst
+  fail-closed ROT. Der Lauf zählt, wie viele davon **wirklich** gemessen
+  wurden, nicht wie lang die Erlaubnisliste ist.
+
+**Probe am echten Baum, nach dem Fix — ROT.** Derselbe Lauf wie Reproduktion 2:
+
+```
+[0b] Riegel - Quelltext, Leseorte, JUCE-Baum
+  ok      CL.read.1.tlog stammt aus diesem Neubau
+  FEHLER  alle 461 vom Compiler gelesenen Dateien stammen aus erlaubten Wurzeln oder sind eine der 2 namentlich erlaubten Systemdateien (plugin 12, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, Windows-System 0)  [gelesen aus unbekanntem Ort: C:\WINDOWS\TRACING\NAKAMA-FORCED.H]
+  FEHLER  keine der 21 Compiler-Eingaben ausserhalb der JUCE-Module und der Toolchain-/SDK-Wurzeln traegt ein JucePlugin_-Token (Tlog 13, Huelle 21, davon 0 benannte Systemdatei(en) roh durchsucht; Ausnahme NakamaKernRiegel.h mit 56 Treffern)  [C:\WINDOWS\TRACING\NAKAMA-FORCED.H: JucePlugin_-Token im Quelltext, Zeile(n) 1, 2, 3]
+```
+
+Exit 2. Beide Hälften greifen **einzeln**: der Ortsriegel nennt die fremde
+Datei, K1b liest ihren Inhalt und nennt die Zeilen.
+
+**Rücknahme — GRÜN.** Derselbe Lauf ohne `/FI`:
+
+```
+[0b] Riegel - Quelltext, Leseorte, JUCE-Baum
+  ok      CL.read.1.tlog stammt aus diesem Neubau
+  ok      alle 460 vom Compiler gelesenen Dateien stammen aus erlaubten Wurzeln oder sind eine der 2 namentlich erlaubten Systemdateien (plugin 12, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, Windows-System 0)
+  ok      keine der 20 Compiler-Eingaben ausserhalb der JUCE-Module und der Toolchain-/SDK-Wurzeln traegt ein JucePlugin_-Token (Tlog 12, Huelle 21, davon 0 benannte Systemdatei(en) roh durchsucht; Ausnahme NakamaKernRiegel.h mit 56 Treffern)
+```
+
+Exit 0, `34 ok, 0 Fehler`.
+
+### P2 — `--nur-messen` ohne schreibbares Temp
+
+> **[P2] Gib ohne schreibbares Temp-Verzeichnis Exit 3 zurück** — `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:1532`. Defekt, mittel (F14). Wenn kein Kandidat für ein temporäres Verzeichnis schreibbar ist, wirft `TemporaryDirectory()` ungefangen `FileNotFoundError`; `--nur-messen` endete mit Traceback und Exit 1 statt Exit 3.
+
+**Reproduktion, Stand `fbbe9bf`.** Der reine Umgebungsweg genügt auf diesem
+Rechner nicht: mit `TMP`/`TEMP`/`TMPDIR` auf ein nicht existierendes
+Verzeichnis fällt Python auf `%USERPROFILE%\AppData\Local\Temp` zurück
+(`gettempdir()` gab dort `C:\Users\phili\AppData\Local\Temp` aus), und der Lauf
+endete regulär mit Exit 3. Der Zustand „kein Kandidat ist schreibbar" wurde
+deshalb an derselben Stelle hergestellt, an der er auftritt — `tempfile.tempdir`
+zeigt fest auf ein nicht existierendes Verzeichnis, dann `--nur-messen`:
+
+```
+  File "tools/eq-copilot/pruefe_kern_identitaetsfrei.py", line 2700, in main
+    baumklagen, loeschungen, bauminfo = juce_baum_riegel(bau)
+  File "tools/eq-copilot/pruefe_kern_identitaetsfrei.py", line 1657, in juce_baum_riegel
+    sollklagen, sollhinweise = _patch_soll_vergleich(juce, JUCE_PATCH, patchdateien)
+  File "tools/eq-copilot/pruefe_kern_identitaetsfrei.py", line 1532, in _patch_soll_vergleich
+    with tempfile.TemporaryDirectory() as roh:
+  File "C:\Python314\Lib\tempfile.py", line 907, in __init__
+    self.name = mkdtemp(suffix, prefix, dir)
+  File "C:\Python314\Lib\tempfile.py", line 385, in mkdtemp
+    _os.mkdir(file, 0o700)
+FileNotFoundError: [WinError 3] Das System kann den angegebenen Pfad nicht finden: 'C:\\Nakama-kein-temp-xyz\\tmph7gnu_hd'
+EXIT=1
+```
+
+Die Zeilennummern des Blocks gelten für `fbbe9bf`.
+
+**Fix.** `VoraussetzungFehlt(RuntimeError)` als eigene Klasse;
+`_patch_soll_vergleich()` fängt `OSError` genau am Konstruktor von
+`TemporaryDirectory()` und wirft sie mit Klartext; `main()` fängt sie um den
+Aufruf von `juce_baum_riegel()` und endet mit Exit 3. Der Lauf sagt damit, was
+fehlt, statt ein Urteil über den JUCE-Baum zu fällen. Der Kopf des Skripts und
+die A14-Beschreibung in `tools/beweise.ps1` nennen diesen Exit-3-Fall jetzt mit.
+
+**Probe nach dem Fix.**
+
+```
+[0b] Riegel - Quelltext, Leseorte, JUCE-Baum
+  --      CL.read.1.tlog stammt NICHT aus diesem Lauf (--nur-messen); die Orte darunter sind Diagnose
+  ok      alle 460 vom Compiler gelesenen Dateien stammen aus erlaubten Wurzeln oder sind eine der 2 namentlich erlaubten Systemdateien (plugin 12, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, Windows-System 0)
+  ok      keine der 20 Compiler-Eingaben ausserhalb der JUCE-Module und der Toolchain-/SDK-Wurzeln traegt ein JucePlugin_-Token (Tlog 12, Huelle 21, davon 0 benannte Systemdatei(en) roh durchsucht; Ausnahme NakamaKernRiegel.h mit 56 Treffern)
+
+VORAUSSETZUNG: kein schreibbares temporaeres Verzeichnis fuer den Sollindex des JUCE-Baums (FileNotFoundError: [WinError 3] Das System kann den angegebenen Pfad nicht finden: 'C:\\Nakama-kein-temp-xyz\\tmp9hl_kbvh') - ohne ihn ist '8.0.9 + Patch' nicht rechenbar. TMPDIR, TEMP und TMP pruefen.
+EXIT=3
+```
+
+### P3 — Riegelkarte auf den Stand von Runde 6 und 7
+
+> **[P2] Ziehe die aktuelle Riegelkarte auf Runde 6 nach** — `docs/beweise/SONDE-007a.md:74-79`. Defekt, mittel (R6/E). Die Karte enthält weiterhin die volatile Zahl „46", beschreibt in der Tlog-Zeile noch die entfernte Endungsausnahme und nennt beim JUCE-Riegel `apply --check --reverse` statt des temporären Sollindex-Vergleichs.
+
+Vier Zeilen der Tabelle „Arbeitsteilung der acht Riegel" sind neu geschrieben,
+alle gegen die Quelle geprüft @ `60717c5`:
+
+| Zeile | vorher | jetzt |
+|---|---|---|
+| **K1** | „46 bekannte Makros namentlich" | Verweis auf die Makroliste in `eq-copilot/plugin/state/NakamaKernRiegel.h` — die Liste dort ist die Quelle, nicht die Karte; die Anzahl gibt der Messlauf aus |
+| **K1b** | „Compiler-Eingaben unter `plugin/**`" · „sieht nicht: Dateien außerhalb `plugin/**`" | jede Tlog-Datei außerhalb der JUCE-Module und der Toolchain-/SDK-Wurzeln; benannte Systemdateien roh durchsucht; ohne ableitbare Ausschlusswurzeln **keine** Menge, sondern eine Klage |
+| **Tlog-Riegel** | „Dateien ohne Übersetzungsstoff (`.dll`, `.nls` …) werden gezählt und benannt, nicht am Ort gemessen" | weder Endungsausnahme noch Ortserlaubnis für `%SystemRoot%`; dort gilt nur die namentliche Liste `SYSTEMDATEIEN` |
+| **JUCE-Baum-Riegel** | „`git apply --check --reverse` muss gelingen" | die drei Zeilen aus Runde 6: `HEAD` **ist** der Commit des Tags (`8.0.9^{commit}`), `git status --porcelain --ignored -uall`, und Inhalt gegen den in einem temporären Index gerechneten Sollzustand (`read-tree` → `apply --cached` → `diff-files`); `apply --check --reverse` ist **ersetzt**, nicht ergänzt |
+
+Die Kopfzeile der Karte trägt jetzt den Stand dieser Runde. Eine Anzahl nennt
+die Karte weiterhin nirgends.
+
+### Nebenbefund — die Wache R6-3a war sporadisch ROT
+
+Beim Brechen von P1 und P2 fielen zweimal Proben, die mit dem Bruch nichts zu
+tun hatten: `R6-3a` und `R6-3b`. Nachgemessen mit 20 Läufen derselben Probe
+(frisches Wegwerf-Repo, `git status --porcelain --ignored -uall`):
+
+```
+  Lauf 3: Exit 0 stderr=''
+  Lauf 11: Exit 0 stderr=''
+20 Laeufe, ohne Warnung auf stderr: 2
+```
+
+git schreibt die Warnung „Negative patterns are ignored in git attributes" nur,
+wenn es für **diesen** Lauf wirklich Attribute braucht. Weitere Messungen mit
+je 20 Läufen: geänderte Datei nach dem Commit 4/20 ohne Warnung,
+`core.autocrlf=input` 3/20, `core.safecrlf=warn` 2/20, `core.excludesFile` auf
+ein Verzeichnis 5/20 — kein Auslöser war deterministisch. Der Kanon fährt A14
+**ohne** `--selbsttest`, der Kanonlauf war also nie betroffen; die Wache selbst
+war es.
+
+Behoben in derselben Datei und eng begrenzt: wiederholt wird die
+**Voraussetzung** der Probe (bis zu zwölf Anläufe, jeder mit frischem Repo),
+nie ihre Behauptung. Sobald git einmal gewarnt hat, wird genau dieser eine Lauf
+ausgewertet; warnt es in keinem Anlauf, bleibt die Probe ROT — eine Probe ohne
+ihre Voraussetzung belegt nichts. Sechs Läufe des vollen Selbsttests danach:
+`80 ok, 0 Fehler` in allen sechs.
+
+### Selbsttest Runde 7 — die neuen Wachen
+
+`py tools/eq-copilot/pruefe_kern_identitaetsfrei.py --selbsttest` @ `60717c5`:
+
+```
+A14-Selbsttest, Runde 7: Systemdateien namentlich, K1b ueber alle Eingaben, Exit 3 ohne Temp
+  ok      R7-1a: eine nicht namentlich gefuehrte Datei unter %SystemRoot% ist ROT (Befund P1) - der Ort allein erlaubt nichts mehr
+  ok      R7-1b: die 2 gemessenen Systemdateien sind namentlich erlaubt und werden gezaehlt  [Windows-System 2]
+  ok      R7-1c: erlaubte_leseorte() fuehrt unter %SystemRoot% KEINE Wurzel mehr, sondern genau die gemessenen Dateinamen (Befund P1)
+  ok      R7-2a: die K1b-Menge ist das Komplement der drei Ausschlusswurzeln - der erzwungene Kopf ist DRIN, JUCE, Toolchain und SDK sind draussen  [Eins.cpp, nakama-forced.h]
+  ok      R7-2b: ohne die Ausschlusswurzel juce-src/modules bildet K1b KEINE Menge, sondern klagt (fail-closed)
+  ok      R7-2b: ohne die Ausschlusswurzel MSVC-Toolset bildet K1b KEINE Menge, sondern klagt (fail-closed)
+  ok      R7-2b: ohne die Ausschlusswurzel Windows-SDK bildet K1b KEINE Menge, sondern klagt (fail-closed)
+  ok      R7-2c: K1b liest den erzwungenen Kopf und nennt sein JucePlugin_-Token - K1 und K3 sehen davon nichts
+  ok      R7-3a: eine benannte Systemdatei wird roh gemessen, nicht als C++ geparst - unpaarige Zeichen sind kein ROT  [geprueft 1, davon roh 1]
+  ok      R7-3b: ein JucePlugin_-Token in den Rohbytes (ascii) einer benannten Systemdatei ist ROT
+  ok      R7-3b: ein JucePlugin_-Token in den Rohbytes (utf-16-le) einer benannten Systemdatei ist ROT
+  ok      R7-4: ohne schreibbares Temp meldet der Sollindex-Vergleich eine fehlende Voraussetzung im Klartext statt eines Tracebacks (Befund P2)
+
+80 ok, 0 Fehler
+```
+
+`R7-1c` ist selbst ein Ergebnis der Bruchprobe: die ersten beiden Proben
+bekommen ihre Erlaubnisliste als Argument und blieben grün, als der Bruch
+`%SystemRoot%` in `erlaubte_leseorte()` wieder als Wurzel eintrug. Eine Wache,
+die den Rücksprung nicht sieht, ist keine — deshalb misst `R7-1c` die
+Entscheidung selbst.
+
+### Bruchproben — jede neue Hälfte einmal gebrochen und zurückgenommen
+
+Jede Bruchprobe setzt genau einen Teil des Fixes auf den Stand von Runde 6
+zurück und fährt den Selbsttest; danach wird das Skript wortgleich
+wiederhergestellt. Nichts davon ist committet.
+
+```
+### B7-1 Ortsriegel: %SystemRoot% wieder als WURZEL erlauben (Stand Runde 6)
+  Exit 2
+  FEHLER  R7-1c: erlaubte_leseorte() fuehrt unter %SystemRoot% KEINE Wurzel mehr, sondern genau die gemessenen Dateinamen (Befund P1)  [Wurzel(n) unter %SystemRoot%: Windows-System]
+  79 ok, 1 Fehler
+
+### B7-2 K1b: Menge wieder auf plugin/** verengen (Stand Runde 6)
+  Exit 2
+  FEHLER  R7-2a: die K1b-Menge ist das Komplement der drei Ausschlusswurzeln - der erzwungene Kopf ist DRIN, JUCE, Toolchain und SDK sind draussen
+  FEHLER  R7-2c: K1b liest den erzwungenen Kopf und nennt sein JucePlugin_-Token - K1 und K3 sehen davon nichts  [keine Klage]
+  78 ok, 2 Fehler
+
+### B7-3 K1b: benannte Systemdateien wieder durch den C++-Parser schicken
+  Exit 2
+  FEHLER  R7-3a: eine benannte Systemdatei wird roh gemessen, nicht als C++ geparst - unpaarige Zeichen sind kein ROT  [nicht abgeschlossenes Literal in ...\Windows\System32\tzres.dll]
+  FEHLER  R7-3b: ein JucePlugin_-Token in den Rohbytes (ascii) einer benannten Systemdatei ist ROT  [...\tzres.dll: JucePlugin_-Token im Quelltext, Zeile(n) 1]
+  FEHLER  R7-3b: ein JucePlugin_-Token in den Rohbytes (utf-16-le) einer benannten Systemdatei ist ROT  [keine Klage]
+  75 ok, 5 Fehler
+
+### B7-4 Sollindex: TemporaryDirectory() wieder ohne try/except
+  Exit 2
+  FEHLER  R7-4: ohne schreibbares Temp meldet der Sollindex-Vergleich eine fehlende Voraussetzung im Klartext statt eines Tracebacks (Befund P2)  [UNGEFANGEN FileNotFoundError(2, 'Das System kann den angegebenen Pfad nicht finden')]
+  79 ok, 1 Fehler
+
+### Ruecknahme: unveraendertes Skript
+  Exit 0 | 80 ok, 0 Fehler
+```
+
+Der Lauf von B7-3 zeigt zusätzlich zwei rote `R6-3`-Zeilen; sie sind der
+Nebenbefund oben und nicht Folge des Bruchs. In der Zeile B7-3 sind die beiden
+langen Temp-Pfade gekürzt (`...`), sonst ist der Block wortgleich.
+
+### Probe-Dateien unter `%SystemRoot%` — angelegt und wieder entfernt
+
+Für die Realbaum-Proben wurden vier Dateien unter `%SystemRoot%` angelegt und
+am Ende der Arbeit mit `[System.IO.File]::Delete()` entfernt; der Nachweis
+steht im Abschlussblock dieses Manifests. Andere Dateien unter `%SystemRoot%`
+wurden nicht angefasst. `C:\Windows\Temp` schied als Probeort aus: der
+Ordner verweigert dieser Sitzung den Lesezugriff (`icacls C:\Windows\Temp` →
+`Zugriff verweigert`), und cl.exe meldete für eine dort liegende, von der
+Sitzung selbst geschriebene Datei `C1083 ... No such file or directory`.
+
+### Prüfliste vor dem Commit (`tools/dirigent/pruefliste.md`)
+
+| Zeile | wo gemessen |
+|---|---|
+| **D** — ein Riegel ist fail-closed, Unbekanntes ist ROT | `R7-1a` (fremde Datei unter `%SystemRoot%`), `R7-2b` (fehlende Ausschlusswurzel → keine Menge, sondern Klage), Realbaum-Probe ROT |
+| **D** — fehlende Voraussetzung ist Exit 3, nicht grün | `R7-4` und die Realbaum-Probe mit festgesetztem `tempfile.tempdir` (Exit 3, Klartext) |
+| **E** — Behauptung ≤ Messung | A14-Zeilen für Ortsriegel und K1b neu formuliert; `k1b_riegel()` gibt die Zahl der **wirklich** roh gemessenen Systemdateien zurück (grüner Lauf: „davon 0"), nicht die Länge der Erlaubnisliste; A14-Beschreibung in `tools/beweise.ps1` nachgezogen |
+| **E** — Zahlen gemessen, nicht abgeschrieben | Riegelkarte ohne „46"; die Makroliste steht als Anker auf `NakamaKernRiegel.h` |
+| **E** — Positionen als Symbol oder Zahl mit Commit | dieser Abschnitt trägt `**Stand dieses Abschnitts:** 60717c5`; die Zeilennummern im P2-Traceback sind wörtliche Rohausgabe und im einleitenden Satz auf `fbbe9bf` bezogen |
+| **E** — jede neue Prüfung einmal gebrochen | `B7-1` bis `B7-4` oben, mit Rohausgabe des Rots und der Rücknahme |
+| **F** — Änderungssatz | Wache und ihre Proben liegen in demselben Commit (`69b4d20`); die Behauptungstexte des Runners folgen in `60717c5`, weil sie beide Beine betreffen |

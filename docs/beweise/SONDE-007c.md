@@ -17526,3 +17526,23 @@ Arbeitsbaum, Exitcode 0, Bein `A17` mit Exit 0. Die Roh-Datei ist
 [`docs/beweise/roh/SONDE-007a-d4f7ed3.md`](roh/SONDE-007a-d4f7ed3.md); der
 A17-Abschnitt darin trägt den Anker `#a17` und zeigt die vier Zeilen dieser
 Runde (`P2/4` plus die drei `P2/3`-Proben) grün.
+
+## Dirigentenstand NAK-94 — 2026-08-30 01:01 (Sitzung 054eedac): Prüfer 5 NEEDS_WORK, offen — Wegwechsel, Nacharbeit 5
+
+**Stand dieses Abschnitts:** `32d86d9`
+
+**Nacharbeit 4:** Opus/max `nakama-s8r9-nak94r4-898b28b-bau` (gemeinsam mit S8 Runde 9), Commit `53c10a3`; Kanon GRÜN 32/32 auf `d4f7ed3` (Roh-Datei `docs/beweise/roh/SONDE-007a-d4f7ed3.md`, Bein A17).
+**Prüfer 5:** Codex high `01a04fb9-b683-7623-b834-c8c92d5eeafb`, lesend über `git diff da62dec...32d86d9`, HEAD vor/nach identisch — **NEEDS_WORK (2)**, wörtlich (`@ 32d86d9`):
+
+> **[P2] Verwende einen erzeugbaren VST3-Vorzustand** — `tools/eq-copilot/pruefe_installer_manifest.py:1071`. Beim aktuellen ersten Artefakt (`main`, `vst3`) setzt die Fixture `vorher_sha256` und `gesichert`, lässt aber `vorher_sha256_innen` null. Dieser Eintrag kann nicht vom Writer stammen: Bei vorhandenem VST3 berechnet `Install-Nakama.ps1:1063-1069` zwingend den inneren SHA und bricht bei null vor dem Journalschreiben ab. Damit ist die verlangte Writer-Form nicht belegt. Reproduktion: diese drei Fixture-Werte mit dem Writer-Zweig vergleichen; als Fix einen gültigen inneren SHA setzen oder Vorzustand, Sicherung und inneren SHA gemeinsam auf null stellen.
+>
+> **[P2] Entferne Probe (c) aus den Writer-Form-Proben** — `tools/eq-copilot/pruefe_installer_manifest.py:1234-1239`. Probe (c) erzeugt absichtlich ein `OK`-Journal ohne `eintraege`; der Installations-Writer legt dieses Feld jedoch immer an (`Install-Nakama.ps1:1106-1114`), und der OK-Pfad ändert anschließend nur `status` und `zeit` (`:1154-1156`). Die ausdrückliche Umdeklaration als „KEINE Writer-Form" widerspricht daher der bindenden Vorgabe „Jedes Probe-Journal … in der Form des Writers". Reproduktion: die Schlüssel aus Zeilen 1234–1239 mit dem Writer-Kopf vergleichen; als Fix diesen Fall als separates Malformed-Journal-Negativfixture führen statt ihn als Probe (c) der Writer-Form-Abnahme zu zählen.
+
+**Einordnung:** beide Defekt, mittel, an der Quelle bestätigt (`Install-Nakama.ps1` Z. 1063–1069 und 1106–1114 @ `32d86d9`). Zugleich ist es die dritte Runde derselben Frage („ist das handgeschriebene Journal wirklich Writer-Form?") — nach Skill §3.4 wechselt der Dirigent den Weg statt weiter zu patchen.
+
+**Wegwechsel W1 (Regel des Dirigenten):** Probe-Journale werden **nicht mehr von Hand geschrieben**. Es gibt zwei zulässige Sorten:
+1. **Writer-Fixtures** — von `Install-Nakama.ps1` selbst erzeugt, in derselben `%TEMP%`-Sandbox, die A18 (`pruefe_installer_gegenpfad.py`) für Erstinstallation, Tausch und Rückweg benutzt (nichts wird installiert). Der Worker fährt dort die Fälle, die der Writer deterministisch erzeugt (mindestens: OK nach Erstinstallation, OK nach Tausch, RUECKWEG nach Gegenpfad; wo A18 einen Abbruch mitten in der Mutation bereits simuliert, auch KOMPENSATION/ERROR_TEILSTAND bzw. RUECKWEG_AKTIV), und friert die Journale byteweise als Fixtures unter `eq-copilot/fixtures/installer/journale/<fall>.json` ein — mit `MANIFEST.json` (Fall, Stand, Installer-Befehl, SHA-256) und der Rohausgabe des Erzeugungslaufs im Manifest. Volatile Felder (`zeit`, `transaktions_id`, Pfade, Hashes) bleiben, wie der Writer sie schrieb; die Proben vergleichen Struktur und Status, nicht diese Werte.
+2. **Deklarierte Mutanten** — aus genau einem Writer-Fixture abgeleitet, mit benannter Abweichung (`"mutant_von": "<fall>.json", "abweichung": "status → KOMPENSATION"` bzw. `"eintraege entfernt"`), erzeugt im Skript aus dem Fixture, nie von Hand als Ganzes. Probe (c) wird so zum Mutanten „OK ohne `eintraege`" (malformed) und zählt nicht mehr als Writer-Form.
+A17 `[3b]` fährt beide Sorten; jede Probe nennt ihre Sorte in der Ausgabezeile. Die Behauptung in `tools/beweise.ps1` und im Skriptkopf sagt genau das: „Writer-Journale aus der A18-Sandbox eingefroren; synthetische Fälle als deklarierte Mutanten". Je Probe weiterhin ein eigener Bruch mit ROT und Rücknahme. Ein Fixture-Korpus ohne Erzeugungsbeleg (Rohausgabe + Stand + Befehl) ist nicht abgenommen.
+
+**Nächster Schritt:** Nacharbeit 5 im selben Worker wie S8 Runde 10 (falls Prüfer 10 Befunde hat; sonst allein), gemeinsamer Kanon, danach Prüfer 6 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.

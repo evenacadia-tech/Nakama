@@ -82,6 +82,22 @@ dann erst frei.
   liegt bei. Eine Probe, die auch ohne den Fix rot ist, heißt Regressionswache,
   nicht Beleg.
 
+- **Aussagen-Inventar (30.08.2026, S8 Runde 10 / NAK-94 Nacharbeit 5):** jede
+  geänderte Zusage wird vor dem Commit per grep an **allen** Stellen gesucht —
+  Skript- und Runnerköpfe, Kommentare, Docstrings, `tools/beweise.ps1`, Matrix,
+  Riegelkarte, lebende Manifestabschnitte — und als Tabelle „Stelle @ sha7 | alt
+  | neu | nachgezogen / historisch @ Stand" im Rundenabschnitt geführt. Eine
+  Stelle ohne Standangabe ist lebend und muss nachgezogen werden; historische
+  Abschnitte bekommen ihre Standangabe, statt umgeschrieben zu werden. Drei
+  Prüferrunden (S8 Prüfer 8–10) fanden ausschließlich nicht nachgezogene
+  Zweitstellen — das ist die häufigste Befundklasse überhaupt.
+- **Writer-Fixtures statt Handschrift (30.08.2026, NAK-94 Nacharbeit 5):** ein
+  Probe-Datensatz, der „in der Form des Writers" sein soll, wird vom Writer
+  erzeugt (Sandbox, Rohausgabe, Stand, Befehl) und eingefroren; synthetische
+  Fälle sind deklarierte Mutanten genau eines Writer-Fixtures mit benannter
+  Abweichung. Handgeschriebene „Writer-Formen" fielen in drei Runden an je
+  einem weiteren Feld.
+
 ## F. Änderungssatz
 
 - speichern↔laden, starten↔stoppen, öffnen↔schließen, verbinden↔trennen,

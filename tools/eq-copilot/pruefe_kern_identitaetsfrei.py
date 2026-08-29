@@ -54,17 +54,20 @@ ZWEI NEUE RIEGEL kamen in derselben Runde dazu, weil K1 nur Anfang und Ende
 einer TU sieht:
 
   K1b - kein JucePlugin_-Token im Quelltext der TATSAECHLICHEN
-        Compiler-Eingaben unter plugin/** (aus dem frisch geschriebenen
-        CL.read.1.tlog, also inklusive /FI und vorkompilierter Koepfe) plus der
-        literalen Include-Huelle als Gegenprobe. Einzige Ausnahme:
+        Compiler-Eingaben (aus dem frisch geschriebenen CL.read.1.tlog, also
+        inklusive /FI und vorkompilierter Koepfe) plus der literalen
+        Include-Huelle als Gegenprobe. Gescannt wird seit Runde 7 JEDE gelesene
+        Datei ausser denen aus den JUCE-Modulen und den Toolchain-/SDK-Wurzeln
+        - also plugin/** und alles Uebrige. Einzige Ausnahme:
         NakamaKernRiegel.h, gemessen und benannt.
   Tlog-Ortsriegel - JEDE vom Compiler gelesene Datei stammt aus einer
-        erlaubten, aus dem Bau ABGELEITETEN Wurzel; juce_audio_plugin_client
-        (dort liegen alle `#define JucePlugin_` der JUCE-Module), generierte
+        erlaubten, aus dem Bau ABGELEITETEN Wurzel oder ist eine namentlich
+        erlaubte Systemdatei; juce_audio_plugin_client (dort liegen alle
+        `#define JucePlugin_` der JUCE-Module), generierte
         JuceLibraryCode-Header und alles Unbekannte sind ROT. Ohne
-        Endungsausnahme (Runde 6): die Systemdateien, die cl.exe beim
-        Formatieren einer Diagnose liest, sind ueber die aus %SystemRoot%
-        abgeleitete Wurzel erlaubt, nicht ueber ihren Namen.
+        Endungsausnahme (Runde 6). Seit Runde 7 ist %SystemRoot% KEINE
+        erlaubte Wurzel mehr: erlaubt sind dort nur die gemessenen Dateinamen
+        (SYSTEMDATEIEN), jede andere Datei darunter ist ROT.
   JUCE-Baum-Riegel - juce-src ist der gepinnte Tag plus genau der eine
         Nakama-VST3-Patch. Seit Runde 6 drei Zeilen: HEAD IST der Commit des
         Tags (verglichen, nicht nur beschrieben); ausser den Patchdateien ist
@@ -74,9 +77,10 @@ einer TU sieht:
         modules/** bleiben geduldet und werden benannt. Das schliesst den
         zuvor bewusst offen gelassenen Weg W8.
 
-AUSDRUECKLICH NICHT BEHAUPTET: der Inhalt der Toolchain-, SDK- und
-Windows-System-Header ausserhalb des Repos (nur ihre Herkunft aus den
-abgeleiteten Wurzeln wird geprueft, kein Fingerprint), ein Compilerwechsel
+AUSDRUECKLICH NICHT BEHAUPTET: der Inhalt der Toolchain- und SDK-Header
+ausserhalb des Repos (nur ihre Herkunft aus den abgeleiteten Wurzeln wird
+geprueft, kein Fingerprint) - die namentlich erlaubten Systemdateien dagegen
+durchsucht K1b seit Runde 7 roh nach dem Token -, ein Compilerwechsel
 innerhalb derselben lastbuildstate-Kennung, und der Inhalt von Dateien, die
 im JUCE-Baum ausserhalb modules/** GELOESCHT sind (sie werden benannt; eine
 geloeschte Datei kann keine Compiler-Eingabe werden).
@@ -87,8 +91,9 @@ Aufruf:
     py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py --selbsttest
 
 Exitcodes: 0 gruen · 2 rot · 3 Voraussetzung fehlt (Neubau nicht moeglich,
-Configure veraltet, oder --nur-messen - dann ist ueber die Frische nichts
-gemessen und nichts behauptet).
+Configure veraltet, kein schreibbares temporaeres Verzeichnis fuer den
+Sollindex des JUCE-Baums, oder --nur-messen - dann ist ueber die Frische
+nichts gemessen und nichts behauptet).
 """
 
 from __future__ import annotations
@@ -870,6 +875,49 @@ _K1B_TOKEN = "JucePlugin_"
 _WINKITS_SCHLUESSEL = os.sep.join(
     ["SOFTWARE", "Microsoft", "Windows Kits", "Installed Roots"])
 
+# BEFUND P1, Runde 7 (29.08.2026): bis Runde 6 war das GANZE Windows-System-
+# verzeichnis eine erlaubte WURZEL. Gemessen am echten Baum ergab ein
+# `/FI C:\Windows\Tracing\nakama-forced.h` - ein Kopf, der JucePlugin_IsSynth
+# definiert und wieder entfernt - einen vollstaendig GRUENEN Lauf: der
+# Ortsriegel zaehlte ihn unter "Windows-System", und K1b sah ihn nicht, weil
+# K1b nur plugin/** uebernahm. Ein Verzeichnis unter %SystemRoot%, in das ein
+# normaler Benutzer schreiben darf, war damit ein offener Weg an K1, K1b, K2
+# und K3 vorbei.
+#
+# Deshalb sind Systemdateien seit Runde 7 NAMENTLICH erlaubt, nicht ueber
+# ihren Ort. Die Liste ist gemessen, nicht geraten: Probe P5-W5b (29.08.2026,
+# Manifest SONDE-007a) sah cl.exe beim Formatieren einer Diagnose
+# C:\Windows\System32\tzres.dll und
+# C:\Windows\Globalization\Sorting\sortdefault.nls lesen. Ein gruener Lauf
+# nennt heute KEINE Datei unter %SystemRoot% (Messung Runde 7); die beiden
+# Namen stehen hier fuer genau den Diagnosefall, in dem sie auftauchen.
+#
+# Jede andere Datei unter %SystemRoot% ist ROT und wird namentlich genannt.
+# Faellt hier je eine weitere Systemdatei auf, wird sie GEMESSEN nachgetragen
+# - eine Wurzel oder ein Praefix kaeme nie wieder zurueck.
+SYSTEMDATEIEN = (
+    os.path.join("System32", "tzres.dll"),
+    os.path.join("Globalization", "Sorting", "sortdefault.nls"),
+)
+
+# K1b nimmt seit Runde 7 JEDE Datei aus dem Leseprotokoll ausser denen aus
+# diesen drei Wurzeln - also plugin/** UND alles Uebrige. Die Namen sind die
+# Schluessel aus erlaubte_leseorte(); fehlt einer, bildet K1b seine Menge
+# nicht, sondern klagt (fail-closed).
+K1B_AUSSCHLUSS_WURZELN = ("juce-src/modules", "MSVC-Toolset", "Windows-SDK")
+
+
+class VoraussetzungFehlt(RuntimeError):
+    """Eine Voraussetzung des Beins fehlt - Exit 3, nie ein Urteil ueber den Kern.
+
+    BEFUND P2, Runde 7 (29.08.2026): der Sollindex-Vergleich des
+    JUCE-Baum-Riegels braucht ein schreibbares temporaeres Verzeichnis. War
+    keines da, flog `FileNotFoundError` aus `TemporaryDirectory()` bis nach
+    oben durch: Traceback und Exit 1 - ein Ausgang, den weder der Runner noch
+    ein Leser als "Voraussetzung fehlt" erkennen konnte. Ein Bein, das seine
+    Eingaben nicht bekommt, sagt das (Exit 3) und behauptet nichts.
+    """
+
 
 def finde_cmake() -> pathlib.Path | None:
     """Dieselbe Suche wie tools/beweise.ps1 - PATH zuerst, dann VS 2022."""
@@ -1145,9 +1193,11 @@ def _systemwurzel() -> tuple[pathlib.Path | None, str]:
 
     Der Compiler liest beim Formatieren einer Diagnose Systemdateien -
     gemessen: System32/tzres.dll und Globalization/Sorting/sortdefault.nls
-    (Probe P5-W5b). Seit Befund B1 (Runde 6) sind sie ueber diesen ORT
-    erlaubt und nicht mehr ueber ihre Endung; damit laeuft auch ein per /FI
-    erzwungenes `.dat` durch die Erlaubnisliste.
+    (Probe P5-W5b). Seit Befund B1 (Runde 6) laufen sie durch die
+    Erlaubnisliste statt an ihr vorbei; seit Befund P1 (Runde 7) ist diese
+    Wurzel aber KEINE Erlaubnis mehr, sondern nur noch der Anker, an dem die
+    NAMENTLICH erlaubten Dateien aus SYSTEMDATEIEN haengen. Alles andere
+    darunter ist ROT.
 
     Nicht abgeschrieben: der Pfad kommt aus der Umgebung. Fehlt er, ist das
     eine Klage und kein stiller Verzicht - sonst waere jede Systemdatei
@@ -1165,13 +1215,17 @@ def _systemwurzel() -> tuple[pathlib.Path | None, str]:
 
 def erlaubte_leseorte(bau: pathlib.Path, zustand: dict,
                       ) -> tuple[list[tuple[str, pathlib.Path]],
-                                 list[tuple[str, pathlib.Path]], list[str]]:
+                                 list[tuple[str, pathlib.Path]],
+                                 dict[str, str], list[str]]:
     """Die Erlaubnisliste des Ortsriegels - vollstaendig aus dem Bau abgeleitet.
 
-    Rueckgabe: (erlaubte Wurzeln, verbotene Unterwurzeln, Klagen). Laesst sich
-    eine Wurzel nicht ableiten, ist das eine Klage und kein stiller Verzicht -
-    sonst waere eine unbekannte Herkunft plotzlich "erlaubt", weil niemand
-    hinsah.
+    Rueckgabe: (erlaubte Wurzeln, verbotene Unterwurzeln, namentlich erlaubte
+    EINZELDATEIEN, Klagen). Laesst sich eine Wurzel nicht ableiten, ist das
+    eine Klage und kein stiller Verzicht - sonst waere eine unbekannte
+    Herkunft plotzlich "erlaubt", weil niemand hinsah.
+
+    Die Einzeldateien sind seit Befund P1 (Runde 7) der einzige Weg, auf dem
+    etwas unter %SystemRoot% erlaubt ist: normalisierter Pfad -> Anzeigename.
     """
     klagen: list[str] = []
     erlaubt: list[tuple[str, pathlib.Path]] = [("plugin", KERNQUELLEN)]
@@ -1203,15 +1257,18 @@ def erlaubte_leseorte(bau: pathlib.Path, zustand: dict,
     else:
         erlaubt.append(("Windows-SDK", sdk))
 
-    # Befund B1 (Runde 6): der Ort der Systemdateien, die cl.exe beim
-    # Formatieren einer Diagnose liest. Frueher waren sie ueber eine
-    # Endungsliste ortsFREI - das uebersprang die Erlaubnisliste vollstaendig.
+    # Befund B1 (Runde 6): die Systemdateien laufen durch die Erlaubnisliste
+    # statt an ihr vorbei. Befund P1 (Runde 7): sie sind NAMENTLICH erlaubt,
+    # nicht ueber ihr Verzeichnis - %SystemRoot% ist nur noch der Anker, an
+    # dem die gemessenen Namen aus SYSTEMDATEIEN haengen.
+    systemdateien: dict[str, str] = {}
     system, klage = _systemwurzel()
     if system is None:
         klagen.append(klage)
     else:
-        erlaubt.append(("Windows-System", system))
-    return erlaubt, verboten, klagen
+        for rel in SYSTEMDATEIEN:
+            systemdateien[_normpfad(system / rel)] = "Windows-System"
+    return erlaubt, verboten, systemdateien, klagen
 
 
 def tlog_gelesene_dateien(tlog: pathlib.Path) -> tuple[list[str], list[str]]:
@@ -1245,35 +1302,50 @@ def tlog_gelesene_dateien(tlog: pathlib.Path) -> tuple[list[str], list[str]]:
 #    sagt nichts darueber, ob der Compiler die Datei als Quelltext gelesen hat.
 #
 #    Deshalb gilt jetzt ohne Ausnahme: JEDE Datei aus dem CL.read.1.tlog laeuft
-#    durch die Erlaubnisliste der ORTE. Die beiden Systemdateien oben sind
-#    erlaubt, weil sie unter dem aus der Umgebung abgeleiteten
-#    Windows-Systemverzeichnis liegen (%SystemRoot%, siehe _systemwurzel()) -
-#    ueber ihren ORT, nicht ueber ihren Namen. Damit ist der Riegel wieder
-#    fail-closed: was in keine Wurzel faellt, wird namentlich genannt.
+#    durch die Erlaubnisliste. Damit ist der Riegel fail-closed: was weder in
+#    eine Wurzel faellt noch namentlich erlaubt ist, wird genannt.
+#
+# BEFUND P1, Runde 7 (29.08.2026): das Windows-Systemverzeichnis war dabei
+#    eine WURZEL - und damit erlaubt war alles darunter, auch die Verzeichnisse,
+#    in die ein normaler Benutzer schreiben darf. Gemessen am echten Baum:
+#    `/FI C:\Windows\Tracing\nakama-forced.h` mit `#define JucePlugin_IsSynth`
+#    und `#undef` lief GRUEN durch (Windows-System 1), weil der Ortsriegel den
+#    Ort erlaubte und K1b nur plugin/** uebernahm.
+#
+#    Seither sind die Systemdateien NAMENTLICH erlaubt (SYSTEMDATEIEN, aus der
+#    Messung), und K1b nimmt jede Datei des Leseprotokolls ausser JUCE-Modulen
+#    und Toolchain/SDK. Beide Haelften greifen unabhaengig: der Ortsriegel
+#    nennt die fremde Datei, K1b liest ihren Inhalt.
 
 
 def tlog_ortsriegel(gelesen: list[str], marker: list[str],
                     quellen: list[pathlib.Path],
                     erlaubt: list[tuple[str, pathlib.Path]],
                     verboten: list[tuple[str, pathlib.Path]],
+                    systemdateien: dict[str, str] | None = None,
                     ) -> tuple[list[str], dict[str, int]]:
-    """Stammt jede gelesene Datei aus einem erlaubten Ort?
+    """Stammt jede gelesene Datei aus einem erlaubten Ort oder ist sie benannt?
 
-    Erlaubnisliste, fail-closed: was in keine Wurzel faellt, ist ROT und wird
-    namentlich genannt. `verboten` sind Ausnahmen INNERHALB einer erlaubten
-    Wurzel (heute: juce_audio_plugin_client unter juce-src/modules) - dort
-    liegen alle `#define JucePlugin_` der JUCE-Module.
+    Erlaubnisliste, fail-closed: was in keine Wurzel faellt und in keiner
+    Namensliste steht, ist ROT und wird namentlich genannt. `verboten` sind
+    Ausnahmen INNERHALB einer erlaubten Wurzel (heute: juce_audio_plugin_client
+    unter juce-src/modules) - dort liegen alle `#define JucePlugin_` der
+    JUCE-Module.
 
     Es gibt KEINE Endungsausnahme (Befund B1, Runde 6): auch .dll, .nls, .dat
-    oder eine Datei ohne Endung wird am Ort gemessen. Systemdateien, die der
-    Compiler beim Formatieren einer Diagnose liest, fallen unter die erlaubte
-    Wurzel "Windows-System".
+    oder eine Datei ohne Endung wird gemessen. Und es gibt seit Befund P1
+    (Runde 7) keine Ortserlaubnis mehr fuer %SystemRoot%: `systemdateien`
+    bildet genau die gemessenen EINZELPFADE ab (normalisiert -> Anzeigename);
+    jede andere Datei darunter faellt in keine Wurzel und ist damit ROT.
 
     Fehlt eine heutige Kernquelle als Marker, ist auch das ROT: Schweigen
     duerfte nie ein Ja sein.
     """
+    systemdateien = systemdateien or {}
     klagen: list[str] = []
     zaehlung: dict[str, int] = {name: 0 for name, _ in erlaubt}
+    for name in systemdateien.values():
+        zaehlung.setdefault(name, 0)
 
     markernamen = {pathlib.PurePath(m).name.upper() for m in marker}
     fehlende = sorted(q.name for q in quellen if q.name.upper() not in markernamen)
@@ -1294,6 +1366,12 @@ def tlog_ortsriegel(gelesen: list[str], marker: list[str],
                 break
         if treffer is not None:
             continue
+        # Namentliche Erlaubnis VOR den Wurzeln: sie ist die engere Aussage
+        # und die einzige, die unter %SystemRoot% noch gilt (Befund P1).
+        name = systemdateien.get(pfad)
+        if name is not None:
+            zaehlung[name] += 1
+            continue
         for name, wurzel in erlaubt_norm:
             if _unter(pfad, wurzel):
                 zaehlung[name] += 1
@@ -1312,17 +1390,33 @@ def tlog_ortsriegel(gelesen: list[str], marker: list[str],
 # Identitaetsbytes hinterlaesst. K1b schliesst genau diese Luecke im Quelltext.
 #
 # Gescannt wird die VEREINIGUNG aus zwei Mengen, beide werden benannt:
-#   1. die Dateien unter plugin/**, die im frisch geschriebenen CL.read.1.tlog
-#      stehen - das sind die tatsaechlichen Compiler-Eingaben, also auch /FI
-#      und vorkompilierte Koepfe, die in keiner literalen Huelle auftauchen;
+#   1. die Dateien aus dem frisch geschriebenen CL.read.1.tlog, die NICHT aus
+#      den JUCE-Modulen und nicht aus den Toolchain-/SDK-Wurzeln stammen - das
+#      sind die tatsaechlichen Compiler-Eingaben, also auch /FI und
+#      vorkompilierte Koepfe, die in keiner literalen Huelle auftauchen;
 #   2. die literale Include-Huelle aus kern_quellabhaengigkeiten() als
 #      Gegenprobe (sie faellt fail-closed auf nicht literal aufloesbare oder
 #      mehrdeutige Includes).
+#
+# BEFUND P1, Runde 7 (29.08.2026): Menge 1 war auf plugin/** beschraenkt. Ein
+# per /FI erzwungener Kopf ausserhalb - gemessen unter %SystemRoot% - lief
+# damit an K1b vorbei, waehrend der Ortsriegel ihn ueber seine Wurzel erlaubte.
+# Seither ist die Menge das KOMPLEMENT der drei Ausschlusswurzeln: plugin/**
+# und alles Uebrige. Der Ausschluss ist begruendet, nicht bequem - der Inhalt
+# der JUCE-Module ist Sache des JUCE-Baum-Riegels, und ueber Toolchain- und
+# SDK-Koepfe ausserhalb des Repos behauptet dieses Bein ausdruecklich nichts
+# (dort wird nur die Herkunft geprueft). Laesst sich eine dieser drei Wurzeln
+# nicht ableiten, bildet K1b seine Menge NICHT, sondern klagt.
 #
 # Kommentare werden vor dem Scan entfernt, sonst fiele der Riegel an den
 # Hinweiszeilen der Kernquellen selbst ("// K1 - keine JucePlugin_*-Konstante
 # im Kern"). Stringliterale bleiben im Scan - ein Token darin kostet nichts und
 # ein Ueberspringen waere eine Luecke.
+#
+# Die namentlich erlaubten Systemdateien (SYSTEMDATEIEN) sind Binaerdateien:
+# ein C++-Parser ueber sie ist sinnlos und faellt an einem unpaarigen
+# Anfuehrungszeichen fail-closed ROT. Sie werden deshalb ROH nach dem Token
+# durchsucht - ASCII und UTF-16LE -, nicht uebersprungen.
 
 
 def ohne_kommentare(text: str, wo: str) -> str:
@@ -1372,17 +1466,62 @@ def ohne_kommentare(text: str, wo: str) -> str:
     return "".join(aus)
 
 
+def k1b_eingaben_aus_tlog(gelesen: list[str],
+                          erlaubt: list[tuple[str, pathlib.Path]],
+                          ) -> tuple[list[pathlib.Path], list[str]]:
+    """Die K1b-Menge aus dem Leseprotokoll: alles ausser JUCE, Toolchain, SDK.
+
+    Fail-closed (Befund P1, Runde 7): fehlt eine der drei Ausschlusswurzeln in
+    `erlaubt`, weil sie sich nicht ableiten liess, wird KEINE Menge gebildet.
+    Sonst faenden sich hier ploetzlich zehntausend SDK-Koepfe wieder - und ein
+    ROT daran waere kein Befund ueber den Kern, sondern Rauschen.
+    """
+    vorhanden = {name for name, _ in erlaubt}
+    fehlend = [n for n in K1B_AUSSCHLUSS_WURZELN if n not in vorhanden]
+    if fehlend:
+        return [], [f"K1b-Menge nicht bildbar: die Ausschlusswurzel(n) "
+                    f"{', '.join(fehlend)} sind nicht abgeleitet"]
+    wurzeln = [_normpfad(pfad) for name, pfad in erlaubt
+               if name in K1B_AUSSCHLUSS_WURZELN]
+    return ([pathlib.Path(p) for p in gelesen
+             if not any(_unter(_normpfad(p), w) for w in wurzeln)], [])
+
+
 def k1b_riegel(dateien: list[pathlib.Path],
-               ausnahme: pathlib.Path) -> tuple[list[str], int, int]:
+               ausnahme: pathlib.Path,
+               roh_scannen: dict[str, str] | None = None,
+               ) -> tuple[list[str], int, int, int]:
     """Kein JucePlugin_-Token im Quelltext der Compiler-Eingaben.
 
-    Rueckgabe: (Klagen, geprueft, Treffer in der benannten Ausnahme).
+    `roh_scannen` sind die namentlich erlaubten Systemdateien (normalisierter
+    Pfad -> Anzeigename): Binaerstoff, der roh nach dem Token durchsucht wird,
+    statt durch den C++-Kommentarparser zu laufen.
+
+    Rueckgabe: (Klagen, geprueft, Treffer in der benannten Ausnahme, davon roh
+    durchsucht). Der letzte Wert zaehlt, was WIRKLICH roh gemessen wurde - die
+    Laenge der Erlaubnisliste waere eine groessere Zahl als die Messung
+    (Prueflistenregel E).
     """
+    roh_scannen = roh_scannen or {}
     klagen: list[str] = []
     ausnahme_norm = _normpfad(ausnahme)
     geprueft = 0
     in_ausnahme = 0
+    roh_geprueft = 0
     for datei in sorted(set(dateien)):
+        if _normpfad(datei) in roh_scannen:
+            try:
+                bytes_ = datei.read_bytes()
+            except OSError as exc:
+                klagen.append(f"{_kurz(datei)}: nicht lesbar ({exc})")
+                continue
+            geprueft += 1
+            roh_geprueft += 1
+            for kodierung in ("ascii", "utf-16-le"):
+                if _K1B_TOKEN.encode(kodierung) in bytes_:
+                    klagen.append(f"{_kurz(datei)}: {_K1B_TOKEN}-Token in den "
+                                  f"Rohbytes ({kodierung})")
+            continue
         try:
             roh = datei.read_text(encoding="utf-8", errors="replace")
         except OSError as exc:
@@ -1402,7 +1541,7 @@ def k1b_riegel(dateien: list[pathlib.Path],
         if zeilen:
             klagen.append(f"{_kurz(datei)}: {_K1B_TOKEN}-Token im Quelltext, "
                           f"Zeile(n) {', '.join(zeilen[:8])}")
-    return klagen, geprueft, in_ausnahme
+    return klagen, geprueft, in_ausnahme, roh_geprueft
 
 
 # ── JUCE-Baum-Riegel (W8) ───────────────────────────────────────────────────
@@ -1529,7 +1668,18 @@ def _patch_soll_vergleich(juce: pathlib.Path, patch: pathlib.Path,
     """
     klagen: list[str] = []
     hinweise: list[str] = []
-    with tempfile.TemporaryDirectory() as roh:
+    # Befund P2, Runde 7: ohne schreibbares Temp gibt es keinen Sollindex und
+    # damit keinen Vergleich - das ist eine fehlende Voraussetzung (Exit 3),
+    # kein Traceback und erst recht kein Urteil ueber den JUCE-Baum.
+    try:
+        verzeichnis = tempfile.TemporaryDirectory()
+    except OSError as exc:
+        raise VoraussetzungFehlt(
+            "kein schreibbares temporaeres Verzeichnis fuer den Sollindex des "
+            f"JUCE-Baums ({exc.__class__.__name__}: {exc}) - ohne ihn ist "
+            f"'{JUCE_TAG} + Patch' nicht rechenbar. TMPDIR, TEMP und TMP "
+            "pruefen.") from exc
+    with verzeichnis as roh:
         umgebung = {"GIT_INDEX_FILE": str(pathlib.Path(roh) / "nakama-soll.index")}
         code, _, err = _git("-C", str(juce), "read-tree", "HEAD", umgebung=umgebung)
         if code != 0:
@@ -1785,6 +1935,7 @@ def selbsttest() -> int:
     _selbsttest_schalter_und_tu()
     _selbsttest_runde5()
     _selbsttest_runde6()
+    _selbsttest_runde7()
 
     print(f"\n{ok} ok, {len(fehler)} Fehler")
     return 2 if fehler else 0
@@ -1891,14 +2042,14 @@ def _selbsttest_runde5() -> None:
             "// S8: dieser Kern sieht keine JucePlugin_*-Konstante\n"
             "/* auch im Blockkommentar steht JucePlugin_IsSynth nur als Wort */\n"
             "inline int wert() { return 1; }\n", encoding="utf-8")
-        klagen, geprueft, treffer = k1b_riegel([sauber, ausnahme], ausnahme)
+        klagen, geprueft, treffer, _ = k1b_riegel([sauber, ausnahme], ausnahme)
         pruefe(klagen == [] and geprueft == 1 and treffer > 0,
                "R5-6a: Kommentare mit JucePlugin_ bleiben gruen, die Ausnahme wird gezaehlt",
                f"Treffer in der Ausnahme: {treffer}" + (" | " + " | ".join(klagen) if klagen else ""))
 
         offen = basis / "Offen.h"
         offen.write_text("#define JucePlugin_Name \"X\"\n", encoding="utf-8")
-        klagen, _, _ = k1b_riegel([offen, ausnahme], ausnahme)
+        klagen, _, _, _ = k1b_riegel([offen, ausnahme], ausnahme)
         pruefe(any("Offen.h" in k and "JucePlugin_" in k for k in klagen),
                "R5-6b: ein Header, der JucePlugin_Name definiert, ist ROT",
                " | ".join(klagen) if klagen else "keine Klage")
@@ -1908,14 +2059,14 @@ def _selbsttest_runde5() -> None:
             "#define JucePlugin_IsSynth 0\n"
             "#if JucePlugin_IsSynth\n#endif\n"
             "#undef JucePlugin_IsSynth\n", encoding="utf-8")
-        klagen, _, _ = k1b_riegel([verdeckt, ausnahme], ausnahme)
+        klagen, _, _, _ = k1b_riegel([verdeckt, ausnahme], ausnahme)
         pruefe(any("Verdeckt.h" in k for k in klagen),
                "R5-7: definiert-genutzt-entfernt (die Luecke aus Befund 3) ist ROT",
                " | ".join(klagen) if klagen else "keine Klage")
 
         kaputt = basis / "Kaputt.h"
         kaputt.write_text("/* nie geschlossen\nint x;\n", encoding="utf-8")
-        klagen, _, _ = k1b_riegel([kaputt, ausnahme], ausnahme)
+        klagen, _, _, _ = k1b_riegel([kaputt, ausnahme], ausnahme)
         pruefe(any("nicht abgeschlossener Blockkommentar" in k for k in klagen),
                "R5-7b: unlesbarer Quelltext ist ROT, nicht uebersprungen",
                " | ".join(klagen) if klagen else "keine Klage")
@@ -2039,8 +2190,11 @@ def _selbsttest_runde6() -> None:
         system = basis / "Windows"
         for pfad in (plugin, apc, module / "juce_core", system / "System32"):
             pfad.mkdir(parents=True, exist_ok=True)
-        erlaubt = [("plugin", plugin), ("juce-src/modules", module),
-                   ("Windows-System", system)]
+        erlaubt = [("plugin", plugin), ("juce-src/modules", module)]
+        # Seit Befund P1 (Runde 7) ist %SystemRoot% keine Wurzel mehr: die
+        # gemessenen Systemdateien haengen NAMENTLICH an ihr.
+        systemdateien = {_normpfad(system / rel): "Windows-System"
+                         for rel in SYSTEMDATEIEN}
         verboten = [("juce_audio_plugin_client", apc)]
         quelle = plugin / "Eins.cpp"
         quelle.write_text("", encoding="utf-8")
@@ -2049,7 +2203,8 @@ def _selbsttest_runde6() -> None:
         gebrochen = []
         for endung in (".dat", ".dll", ".nls", ".exe", ".mui", ".bin"):
             klagen, _ = tlog_ortsriegel([str(basis / "OUTSIDE" / ("forced" + endung))],
-                                        marker, [quelle], erlaubt, verboten)
+                                        marker, [quelle], erlaubt, verboten,
+                                        systemdateien)
             if not any("unbekanntem Ort" in k for k in klagen):
                 gebrochen.append(endung)
         pruefe(not gebrochen,
@@ -2059,11 +2214,11 @@ def _selbsttest_runde6() -> None:
                else "geprueft: .dat .dll .nls .exe .mui .bin")
 
         klagen, zaehlung = tlog_ortsriegel(
-            [str(system / "System32" / "tzres.dll")], marker, [quelle],
-            erlaubt, verboten)
+            [str(system / SYSTEMDATEIEN[0])], marker, [quelle],
+            erlaubt, verboten, systemdateien)
         pruefe(klagen == [] and zaehlung.get("Windows-System") == 1,
-               "R6-1b: eine Systemdatei ist ueber ihren ORT erlaubt und wird "
-               "gezaehlt, nicht ueber ihre Endung",
+               "R6-1b: eine NAMENTLICH gefuehrte Systemdatei ist erlaubt und wird "
+               "gezaehlt, nicht ueber ihre Endung (Runde 7: auch nicht ueber ihren Ort)",
                " | ".join(klagen) if klagen else f"Windows-System "
                f"{zaehlung.get('Windows-System')}")
 
@@ -2073,35 +2228,50 @@ def _selbsttest_runde6() -> None:
                ", ".join(zaehlung))
 
     # -- B3: git schreibt Warnungen auf stderr und endet mit 0 --------------
-    with tempfile.TemporaryDirectory() as roh:
-        repo = pathlib.Path(roh) / "warnrepo"
-        _probe_repo(repo, "0.0.1", {
-            "datei.txt": "eins\n",
-            # Ein negatives Muster in .gitattributes ist der portable Ausloeser:
-            # git warnt zweimal auf stderr und endet trotzdem mit 0.
-            ".gitattributes": "* -text\n!*.foo bar\n",
-        })
-        code, aus, err = _git("-c", "core.quotepath=false", "-C", str(repo),
-                              "status", "--porcelain", "--ignored", "-uall")
-        pruefe(code == 0 and "warning:" in err and "warning:" not in aus,
-               "R6-3a: bei Exit 0 traegt nur stdout Daten; die git-Warnung steht "
-               "getrennt auf stderr (Befund B3)",
-               f"Exit {code} | stderr: {err.splitlines()[0] if err.splitlines() else '-'}")
+    #
+    # NEBENBEFUND, Runde 7 (29.08.2026): der Ausloeser ist nicht deterministisch.
+    # git liest .gitattributes nur, wenn es fuer DIESEN Lauf Attribute braucht;
+    # gemessen blieben 2-5 von je 20 Laeufen ohne Warnzeile (Exit 0, stderr
+    # leer), auch mit geaenderter Datei, autocrlf und safecrlf. Die Probe war
+    # damit sporadisch ROT, ohne dass sich am Kern etwas geaendert haette.
+    #
+    # Wiederholt wird deshalb die VORAUSSETZUNG der Probe, nie ihre Behauptung:
+    # sobald git einmal gewarnt hat, wird genau dieser eine Lauf ausgewertet.
+    # Warnt es in keinem Versuch, ist die Probe ROT - eine Probe ohne ihre
+    # Voraussetzung belegt nichts, und Schweigen ist hier kein Ja.
+    code, aus, err = 1, "", ""
+    for _versuch in range(12):
+        with tempfile.TemporaryDirectory() as roh:
+            repo = pathlib.Path(roh) / "warnrepo"
+            _probe_repo(repo, "0.0.1", {
+                "datei.txt": "eins\n",
+                # Ein negatives Muster in .gitattributes ist der portable
+                # Ausloeser: git warnt auf stderr und endet trotzdem mit 0.
+                ".gitattributes": "* -text\n!*.foo bar\n",
+            })
+            code, aus, err = _git("-c", "core.quotepath=false", "-C", str(repo),
+                                  "status", "--porcelain", "--ignored", "-uall")
+        if code == 0 and "warning:" in err:
+            break
+    pruefe(code == 0 and "warning:" in err and "warning:" not in aus,
+           "R6-3a: bei Exit 0 traegt nur stdout Daten; die git-Warnung steht "
+           "getrennt auf stderr (Befund B3)",
+           f"Exit {code} | stderr: {err.splitlines()[0] if err.splitlines() else '-'}")
 
-        # Was der frueher gemischte Strom angerichtet haette - wortgleich
-        # nachgestellt, damit der Befund nicht nur behauptet ist.
-        gemischt = [(z[:2], z[3:].strip()) for z in (aus + err).splitlines()
-                    if len(z) >= 4]
-        alt_klagen, _ = juce_baum_status_pruefen(gemischt, {"datei.txt"})
-        sauber = [(z[:2], z[3:].strip()) for z in aus.splitlines() if len(z) >= 4]
-        neu_klagen, _ = juce_baum_status_pruefen(sauber, {"datei.txt"})
-        pruefe(any("unbekannter git-Status" in k for k in alt_klagen)
-               and neu_klagen == [],
-               "R6-3b: der frueher gemischte Strom haette die Warnzeile als "
-               "Statuscode gelesen; der getrennte tut es nicht",
-               "gemischt: " + (alt_klagen[0] if alt_klagen else "keine Klage")
-               + " || getrennt: " + (" | ".join(neu_klagen) if neu_klagen
-                                     else "keine Klage"))
+    # Was der frueher gemischte Strom angerichtet haette - wortgleich
+    # nachgestellt, damit der Befund nicht nur behauptet ist.
+    gemischt = [(z[:2], z[3:].strip()) for z in (aus + err).splitlines()
+                if len(z) >= 4]
+    alt_klagen, _ = juce_baum_status_pruefen(gemischt, {"datei.txt"})
+    sauber = [(z[:2], z[3:].strip()) for z in aus.splitlines() if len(z) >= 4]
+    neu_klagen, _ = juce_baum_status_pruefen(sauber, {"datei.txt"})
+    pruefe(any("unbekannter git-Status" in k for k in alt_klagen)
+           and neu_klagen == [],
+           "R6-3b: der frueher gemischte Strom haette die Warnzeile als "
+           "Statuscode gelesen; der getrennte tut es nicht",
+           "gemischt: " + (alt_klagen[0] if alt_klagen else "keine Klage")
+           + " || getrennt: " + (" | ".join(neu_klagen) if neu_klagen
+                                 else "keine Klage"))
 
     # -- B2: HEAD, ignorierte Dateien und Patchinhalt -----------------------
     global JUCE_PATCH, JUCE_TAG
@@ -2176,6 +2346,150 @@ def _selbsttest_runde6() -> None:
                    " | ".join(klagen) if klagen else "")
     finally:
         JUCE_PATCH, JUCE_TAG = merk_patch, merk_tag
+
+
+def _selbsttest_runde7() -> None:
+    """Runde 7 baulos: die beiden Codebefunde P1 und P2, jeder einmal gebrochen.
+
+    P1 hat zwei Haelften, und beide muessen einzeln greifen: der Ortsriegel
+    nennt eine fremde Datei unter %SystemRoot%, und K1b LIEST sie. Faellt eine
+    Haelfte weg, ist der Weg wieder offen - deshalb wird jede fuer sich
+    gemessen. P2 ist die fehlende Voraussetzung statt Traceback.
+    """
+    print("\nA14-Selbsttest, Runde 7: Systemdateien namentlich, K1b ueber alle "
+          "Eingaben, Exit 3 ohne Temp")
+
+    # -- P1a: unter %SystemRoot% ist nur der gemessene NAME erlaubt ---------
+    with tempfile.TemporaryDirectory() as roh:
+        basis = pathlib.Path(roh)
+        plugin = basis / "plugin"
+        module = basis / "juce-src" / "modules"
+        msvc = basis / "MSVC" / "14.44"
+        sdk = basis / "SDK" / "10.0"
+        system = basis / "Windows"
+        for pfad in (plugin, module / "juce_core", msvc, sdk,
+                     system / "System32", system / "Tracing"):
+            pfad.mkdir(parents=True, exist_ok=True)
+        erlaubt = [("plugin", plugin), ("juce-src/modules", module),
+                   ("MSVC-Toolset", msvc), ("Windows-SDK", sdk)]
+        systemdateien = {_normpfad(system / rel): "Windows-System"
+                         for rel in SYSTEMDATEIEN}
+        quelle = plugin / "Eins.cpp"
+        quelle.write_text("", encoding="utf-8")
+        marker = [str(quelle).upper()]
+
+        # Genau der gemessene Fall: ein per /FI erzwungener Kopf in einem
+        # Unterverzeichnis von %SystemRoot%, in das ein normaler Benutzer
+        # schreiben darf.
+        fremd = system / "Tracing" / "nakama-forced.h"
+        klagen, zaehlung = tlog_ortsriegel([str(fremd)], marker, [quelle],
+                                           erlaubt, [], systemdateien)
+        pruefe(any("unbekanntem Ort" in k for k in klagen)
+               and zaehlung.get("Windows-System") == 0,
+               "R7-1a: eine nicht namentlich gefuehrte Datei unter %SystemRoot% "
+               "ist ROT (Befund P1) - der Ort allein erlaubt nichts mehr",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        klagen, zaehlung = tlog_ortsriegel(
+            [str(system / rel) for rel in SYSTEMDATEIEN], marker, [quelle],
+            erlaubt, [], systemdateien)
+        pruefe(klagen == [] and zaehlung.get("Windows-System") == len(SYSTEMDATEIEN),
+               f"R7-1b: die {len(SYSTEMDATEIEN)} gemessenen Systemdateien sind "
+               f"namentlich erlaubt und werden gezaehlt",
+               " | ".join(klagen) if klagen
+               else f"Windows-System {zaehlung.get('Windows-System')}")
+
+        # R7-1c misst die ENTSCHEIDUNG selbst, nicht nur ihre Wirkung: die
+        # beiden Proben oben bekommen ihre Erlaubnisliste als Argument und
+        # blieben deshalb gruen, als die Bruchprobe %SystemRoot% in
+        # erlaubte_leseorte() wieder als WURZEL eintrug (gemessen, Runde 7).
+        # Eine Wache, die den Ruecksprung nicht sieht, ist keine.
+        echt_erlaubt, _, echt_systemdateien, _ = erlaubte_leseorte(
+            basis / "kein-bauverzeichnis", {})
+        echt_system, systemklage = _systemwurzel()
+        unter_system = ([name for name, pfad in echt_erlaubt
+                         if _unter(_normpfad(pfad), _normpfad(echt_system))]
+                        if echt_system is not None else [])
+        erwartet = ({_normpfad(echt_system / rel) for rel in SYSTEMDATEIEN}
+                    if echt_system is not None else set())
+        pruefe(echt_system is not None and not unter_system
+               and set(echt_systemdateien) == erwartet,
+               "R7-1c: erlaubte_leseorte() fuehrt unter %SystemRoot% KEINE Wurzel "
+               "mehr, sondern genau die gemessenen Dateinamen (Befund P1)",
+               systemklage or (f"Wurzel(n) unter %SystemRoot%: "
+                               f"{', '.join(unter_system)}" if unter_system
+                               else ", ".join(sorted(echt_systemdateien))))
+
+        # -- P1b: K1b nimmt jede Eingabe ausser JUCE, Toolchain und SDK -----
+        gelesen = [str(quelle), str(fremd),
+                   str(module / "juce_core" / "juce_core.h"),
+                   str(msvc / "include" / "vector"),
+                   str(sdk / "um" / "windows.h")]
+        menge, mengenklagen = k1b_eingaben_aus_tlog(gelesen, erlaubt)
+        namen = sorted(p.name for p in menge)
+        pruefe(mengenklagen == [] and namen == ["Eins.cpp", "nakama-forced.h"],
+               "R7-2a: die K1b-Menge ist das Komplement der drei "
+               "Ausschlusswurzeln - der erzwungene Kopf ist DRIN, JUCE, "
+               "Toolchain und SDK sind draussen",
+               ", ".join(namen) if not mengenklagen else " | ".join(mengenklagen))
+
+        for weg in K1B_AUSSCHLUSS_WURZELN:
+            rest = [(n, p) for n, p in erlaubt if n != weg]
+            _, mengenklagen = k1b_eingaben_aus_tlog(gelesen, rest)
+            pruefe(any(weg in k for k in mengenklagen),
+                   f"R7-2b: ohne die Ausschlusswurzel {weg} bildet K1b KEINE "
+                   f"Menge, sondern klagt (fail-closed)",
+                   " | ".join(mengenklagen) if mengenklagen else "keine Klage")
+
+        # Der Inhalt, um den es geht: definieren, benutzen, wieder entfernen.
+        fremd.write_text("#define JucePlugin_IsSynth 0\n"
+                         "#if JucePlugin_IsSynth\n#endif\n"
+                         "#undef JucePlugin_IsSynth\n", encoding="utf-8")
+        klagen, geprueft, _, _ = k1b_riegel(menge, K1B_AUSNAHME)
+        pruefe(any("nakama-forced.h" in k for k in klagen) and geprueft == 2,
+               "R7-2c: K1b liest den erzwungenen Kopf und nennt sein "
+               "JucePlugin_-Token - K1 und K3 sehen davon nichts",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        # -- P1c: die benannten Systemdateien werden ROH durchsucht ---------
+        binaer = system / SYSTEMDATEIEN[0]
+        binaer.parent.mkdir(parents=True, exist_ok=True)
+        binaer.write_bytes(b"\x00\x01' unpaariges Zeichen \"\x02\x03")
+        klagen, geprueft, _, roh_geprueft = k1b_riegel([binaer], K1B_AUSNAHME,
+                                                     systemdateien)
+        pruefe(klagen == [] and geprueft == 1 and roh_geprueft == 1,
+               "R7-3a: eine benannte Systemdatei wird roh gemessen, nicht als "
+               "C++ geparst - unpaarige Zeichen sind kein ROT",
+               " | ".join(klagen) if klagen
+               else f"geprueft {geprueft}, davon roh {roh_geprueft}")
+
+        for kodierung in ("ascii", "utf-16-le"):
+            binaer.write_bytes(b"\x00" + _K1B_TOKEN.encode(kodierung) + b"\x00")
+            klagen, _, _, _ = k1b_riegel([binaer], K1B_AUSNAHME, systemdateien)
+            pruefe(any(kodierung in k for k in klagen),
+                   f"R7-3b: ein JucePlugin_-Token in den Rohbytes ({kodierung}) "
+                   f"einer benannten Systemdatei ist ROT",
+                   " | ".join(klagen) if klagen else "keine Klage")
+
+    # -- P2: ohne schreibbares Temp gibt es Exit 3, keinen Traceback --------
+    merk = tempfile.tempdir
+    try:
+        tempfile.tempdir = str(pathlib.Path(tempfile.gettempdir())
+                               / "nakama-gibt-es-nicht-r7")
+        gefangen = ""
+        try:
+            _patch_soll_vergleich(WURZEL, JUCE_PATCH, {"egal"})
+        except VoraussetzungFehlt as exc:
+            gefangen = str(exc)
+        except OSError as exc:            # genau das, was vorher hochflog
+            gefangen = f"UNGEFANGEN {exc!r}"
+        pruefe(gefangen.startswith("kein schreibbares temporaeres Verzeichnis"),
+               "R7-4: ohne schreibbares Temp meldet der Sollindex-Vergleich eine "
+               "fehlende Voraussetzung im Klartext statt eines Tracebacks "
+               "(Befund P2)",
+               gefangen or "keine Ausnahme")
+    finally:
+        tempfile.tempdir = merk
 
 
 def _selbsttest_schalter_und_tu() -> None:
@@ -2647,6 +2961,11 @@ def main() -> int:
     tlog_read = tlogdir / "CL.read.1.tlog" if tlogdir is not None else None
     gelesen: list[str] = []
     marker: list[str] = []
+    # Fail-closed vorbelegt: ohne ableitbare Wurzeln bildet K1b unten KEINE
+    # Menge, sondern klagt - eine leere Erlaubnisliste darf nie "alles erlaubt"
+    # oder "nichts zu pruefen" bedeuten.
+    erlaubt: list[tuple[str, pathlib.Path]] = []
+    systemdateien: dict[str, str] = {}
     if tlog_read is None or not tlog_read.is_file():
         pruefe(False, "das Leseprotokoll des Compilers (CL.read.1.tlog) liegt vor",
                "ohne es ist nicht feststellbar, was der Compiler wirklich gelesen hat")
@@ -2665,23 +2984,24 @@ def main() -> int:
                    "das Leseprotokoll ist aelter als der Bau dieses Laufs")
         marker, gelesen = tlog_gelesene_dateien(tlog_read)
 
-        erlaubt, verboten, wurzelklagen = erlaubte_leseorte(bau, zustand)
+        erlaubt, verboten, systemdateien, wurzelklagen = erlaubte_leseorte(bau, zustand)
         if wurzelklagen:
             pruefe(False, "die erlaubten Leseorte sind aus dem Bau ableitbar",
                    " | ".join(wurzelklagen))
         else:
             ortsklagen, zaehlung = tlog_ortsriegel(gelesen, marker, quellen,
-                                                   erlaubt, verboten)
+                                                   erlaubt, verboten, systemdateien)
             umfang = ", ".join(f"{name} {anzahl}" for name, anzahl in zaehlung.items())
             pruefe(not ortsklagen,
                    f"alle {len(gelesen)} vom Compiler gelesenen Dateien stammen aus "
-                   f"erlaubten Orten ({umfang})",
+                   f"erlaubten Wurzeln oder sind eine der {len(systemdateien)} "
+                   f"namentlich erlaubten Systemdateien ({umfang})",
                    " | ".join(ortsklagen[:6]))
 
-    # K1b: die tatsaechlichen Compiler-Eingaben unter plugin/** plus die
-    # literale Huelle als Gegenprobe. Beide Mengen werden benannt.
-    kernwurzel = _normpfad(KERNQUELLEN)
-    aus_tlog = [pathlib.Path(p) for p in gelesen if _unter(_normpfad(p), kernwurzel)]
+    # K1b: jede Compiler-Eingabe ausser JUCE-Modulen und Toolchain/SDK - also
+    # plugin/** UND alles Uebrige (Befund P1, Runde 7) - plus die literale
+    # Huelle als Gegenprobe. Beide Mengen werden benannt.
+    aus_tlog, mengenklagen = k1b_eingaben_aus_tlog(gelesen, erlaubt)
     try:
         huelle = kern_quellabhaengigkeiten()
     except RuntimeError as exc:
@@ -2689,15 +3009,27 @@ def main() -> int:
         pruefe(False, "lokale Include-Huelle der Kernquellen ist eindeutig ableitbar",
                str(exc))
     eingaben = list(aus_tlog) + list(huelle)
-    k1b_klagen, k1b_geprueft, in_ausnahme = k1b_riegel(eingaben, K1B_AUSNAHME)
+    k1b_klagen, k1b_geprueft, in_ausnahme, k1b_roh = k1b_riegel(
+        eingaben, K1B_AUSNAHME, systemdateien)
+    k1b_klagen = mengenklagen + k1b_klagen
     pruefe(bool(eingaben) and not k1b_klagen,
-           f"keine der {k1b_geprueft} Compiler-Eingaben unter plugin/** traegt ein "
-           f"JucePlugin_-Token im Quelltext (Tlog {len(set(aus_tlog))}, Huelle "
-           f"{len(set(huelle))}; Ausnahme NakamaKernRiegel.h mit {in_ausnahme} Treffern)",
+           f"keine der {k1b_geprueft} Compiler-Eingaben ausserhalb der JUCE-Module "
+           f"und der Toolchain-/SDK-Wurzeln traegt ein JucePlugin_-Token (Tlog "
+           f"{len(set(aus_tlog))}, Huelle {len(set(huelle))}, davon {k1b_roh} "
+           f"benannte Systemdatei(en) roh durchsucht; Ausnahme "
+           f"NakamaKernRiegel.h mit {in_ausnahme} Treffern)",
            " | ".join(k1b_klagen[:6]) if k1b_klagen else
            ("keine Compiler-Eingabe gefunden" if not eingaben else ""))
 
-    baumklagen, loeschungen, bauminfo = juce_baum_riegel(bau)
+    try:
+        baumklagen, loeschungen, bauminfo = juce_baum_riegel(bau)
+    except VoraussetzungFehlt as exc:
+        # Befund P2, Runde 7: kein Traceback, kein Exit 1 - eine benannte
+        # fehlende Voraussetzung. Der Lauf hat bis hier gemessen und behauptet
+        # ueber den JUCE-Baum ausdruecklich nichts.
+        print("\nVORAUSSETZUNG: " + str(exc))
+        print("VORAUSSETZUNG: " + str(exc), file=sys.stderr)
+        return 3
     pruefe(not baumklagen,
            f"juce-src ist {bauminfo['beschreibung']} plus genau der Nakama-VST3-Patch "
            f"(HEAD = Tag; nichts Geaendertes, Unverfolgtes oder Ignoriertes "

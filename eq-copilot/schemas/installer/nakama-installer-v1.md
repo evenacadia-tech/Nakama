@@ -88,10 +88,20 @@ Einzeln wäre jede Hälfte löchrig; zusammen ist die Aussage dicht.
 | `hashes_erzeugt_am` | UTC-Zeitpunkt des `--hashen`-Laufs |
 | `rueckweg.*` | siehe §5 |
 
-**Jedes Ziel der Identitätsdatei hat genau einen `vst3`-Eintrag.** A17 zählt
-`3 vs 3`. Ein viertes Ziel im Identitätsmanifest ohne Installer-Eintrag bringt
-das Bein zum Sprechen, statt still ungemessen zu bleiben — dieselbe Zeile wie
-in `EqCopIdentityTest`.
+**Jedes *aktive* Ziel der Identitätsdatei hat genau einen `vst3`-Eintrag, jedes
+stillgelegte keinen.** „Aktiv" heißt: ohne das Feld `stillgelegt` (§2.3). A17
+meldet den Vergleich als `<Artefakte> vs <aktive> aktiv (<Kennungen> gesamt)`
+und misst die Stilllegung in **beide** Richtungen — keine feste Zahl, sondern
+die Beziehung. Ein neues Ziel im Identitätsmanifest ohne Installer-Eintrag
+bringt das Bein deshalb zum Sprechen, statt still ungemessen zu bleiben —
+dieselbe Zeile wie in `EqCopIdentityTest`.
+
+> **Warum hier keine Zahl mehr steht** (Nacharbeit Runde 1, 29.08.2026,
+> T2-Befund P1 Nr. 3): Bis dahin stand an dieser Stelle „A17 zählt `3 vs 3`".
+> Das war seit der Stilllegung von `passive-probe` (S9b/SONDE-007c) falsch —
+> A17 misst `2 vs 2 aktiv (3 Kennungen gesamt)` — und widersprach §2.3
+> derselben Datei. Eine Zahl im Vertrag veraltet bei jeder Änderung des
+> Lieferumfangs; die Beziehung nicht.
 
 ### 2.1 Die Auslieferungseinheit ist der Bundle-ORDNER
 

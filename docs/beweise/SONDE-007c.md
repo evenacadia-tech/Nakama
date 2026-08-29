@@ -1,5 +1,6 @@
 # Beweismanifest — SONDE-007c «Suna-Ziel stilllegen»
 <!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-28 offen -->
+<!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-29 nachgearbeitet -->
 
 > **Die eine harte Regel** (`docs/bauaufteilung-sonden.md` §2): *Eine Behauptung
 > ohne eingefügte Rohausgabe ist ein **gescheitertes** Ticket, kein fast
@@ -50,6 +51,33 @@
 - `eq-copilot/plugin/sonde/SondeProcessor.h`, `docs/plugin-wissen.md` —
   Texte, die noch drei Bundles behaupteten.
 
+**Zusätzlich geändert in der Nacharbeit Runde 1 (29.08.2026)** — Einzelheiten in
+[§6](#nacharbeit-1):
+
+- `eq-copilot/cmake/NakamaIdentitaet.cmake` — der Riegel fällt jetzt wirklich
+  auf die *Anwesenheit* der Marke (`stillgelegt-NOTFOUND` als einziger
+  Durchlass-Fall); zweite Meldung für eine vorhandene, aber unlesbare Marke;
+  leere `am`/`entscheid` erscheinen nicht mehr als `…-NOTFOUND` im Text.
+- `eq-copilot/install/Install-Nakama.ps1` — `$null -ne $_.stillgelegt` durch
+  die Anwesenheitsfrage ersetzt; eine vorhandene, nicht objektförmige Marke
+  bricht ab, statt das Ziel als aktiv zu zählen.
+- `eq-copilot/plugin/tests/IdentityTestMain.cpp` — neue Hilfsfunktion
+  `hatStilllegungsmarke()` (`DynamicObject::hasProperty`, weil JUCE JSON-`null`
+  und „Schlüssel fehlt" auf dasselbe leere `var` abbildet); neue Prüfung
+  „jede vorhandene Stilllegungsmarke ist ein lesbares Objekt".
+- `eq-copilot/schemas/installer/nakama-installer-v1.md` — der Absatz nach der
+  Feldtabelle sagt statt `3 vs 3` die Beziehung *aktiv ↔ Artefakt*.
+- `tools/eq-copilot/pruefe_installer_manifest.py` — neue Hilfsfunktion
+  `_brauchbare_ids()`; `r_stillgelegte_benannt` validiert IDs vor `sorted`/`set`;
+  sieben neue Gegenproben.
+- `tools/eq-copilot/pruefe_installer_gegenpfad.py` — neuer Block `[3d]`: eine
+  unlesbare Marke sperrt den Installer, auch mit geschmuggeltem
+  Artefakteintrag.
+
+`eq-copilot/identity/plugin-identities-v1.json` ist in dieser Runde **nicht**
+angefasst worden (`git diff` leer); alle Gegenproben liefen gegen Kopien unter
+`%TEMP%`.
+
 ---
 
 ## 1. Ticket-Behauptungen
@@ -57,10 +85,10 @@
 | # | Behauptung | Befehl | Ergebnis | Rohausgabe |
 |---|---|---|---|---|
 | 1 | **`NakamaSuna_VST3` entsteht nicht mehr.** Der Configure kennt das Ziel nicht; die Solution enthält keinen Suna-Eintrag; der Runner baut es nicht | `cmake -S eq-copilot -B eq-copilot/build` · `grep -ci suna EqCopilotSuite.sln` | ☑ 0 Treffer | [↓ C1](#c1) |
-| 2 | **Der Identitätsleser ist fail-closed.** Wer den Aufruf wieder einsetzt, bekommt keinen stillen Bau, sondern einen FATAL_ERROR mit Datum und Entscheid — der Riegel hängt am Manifest, nicht an der gelöschten Zeile | Probe: `nakama_identitaet_lesen(passive-probe …)` | ☑ **gefallen** | [↓ C2](#c2) |
+| 2 | **Der Identitätsleser ist fail-closed.** Wer den Aufruf wieder einsetzt, bekommt keinen stillen Bau, sondern einen FATAL_ERROR mit Datum und Entscheid — der Riegel hängt am Manifest, nicht an der gelöschten Zeile. **Runde 1:** jetzt mit dem **echten** Aufruf gemessen (Probe-Configure gegen die echte Identitätsdatei), nicht mehr nur mit einer Typ-Mikroprobe | `cmake -S <probe> -B <probe>/build` mit `nakama_identitaet_lesen(passive-probe PROBE)` | ☑ **gefallen**, Exit 1 | [↓ C2a](#c2a) |
 | 3 | **Die Stilllegung ist am Bauskript gemessen, nicht behauptet.** `EqCopIdentityTest` misst: kein `nakama_sonde_ziel(NakamaSuna`, kein eigener `juce_add_plugin(NakamaSuna`, und der Grund steht an Ort und Stelle | `EqCopIdentityTest.exe` | ☑ 115/115 | Kanon-Lauf, B1 |
 | 4 | **Die Kennung ist NICHT gelöscht.** Derselbe Test misst, dass `plugin_code`, `bundle`, `produktname` und beide CIDs von `passive-probe` vollständig dastehen und die Stilllegung Datum und Entscheid nennt | `EqCopIdentityTest.exe` | ☑ | Kanon-Lauf, B1 |
-| 5 | **Die harte Drei ist weg — überall.** Der Test misst die Beziehung „aktive Kennungen ↔ gebaute Ziele" und „stillgelegte ↔ nicht gebaute", nicht eine Zahl | `EqCopIdentityTest.exe` | ☑ `2 aktiv, 1 stillgelegt` · `2 vs 2` · `1 vs 1` | Kanon-Lauf, B1 |
+| 5 | **Die harte Drei ist weg — überall.** Der Test misst die Beziehung „aktive Kennungen ↔ gebaute Ziele" und „stillgelegte ↔ nicht gebaute", nicht eine Zahl. **Runde 1:** der Satz war unwahr, solange `nakama-installer-v1.md:91-94` weiter „A17 zählt `3 vs 3`" behauptete — dieser Absatz trägt jetzt dieselbe Beziehung wie §2.3 | `EqCopIdentityTest.exe` · `py -3.13 tools/eq-copilot/pruefe_installer_manifest.py` | ☑ `2 aktiv, 1 stillgelegt` · `2 vs 2` · `1 vs 1` · A17 meldet `2 vs 2 aktiv (3 Kennungen gesamt)` | Kanon-Lauf, B1 · [↓ C2b](#c2b) |
 | 6 | **Kein Bundle trägt eine fremde CID** — auch nicht die freigewordene `NkPr`. Der Riegel läuft über *alle* Manifestziele, das stillgelegte eingeschlossen | `EqCopIdentityTest.exe` | ☑ `main: keine fremde Ziel-CID` · `active-probe: keine fremde Ziel-CID` | Kanon-Lauf, B1 |
 | 7 | **A15 verabschiedet sich DEKLARIERT.** Der Runner meldet `28/28 grün` **plus** den Nachsatz „1 stillgelegte(s) Bein(e)"; die A15-Zeile steht mit Datum und Grund in der Übersichtstabelle | `pwsh -File tools/beweise.ps1 -Bauen …` | ☑ `GRUEN - 28/28` | [↓ Kanon-Lauf](#kanon-lauf---sonde-007c) |
 | 8 | **Der Runner verliert die Zeile nicht still.** `[STILLGELEGT]` ist ein eigener Zustand — weder grün noch rot noch „geplant": ein geplantes Bein kommt, ein stillgelegtes kommt nicht wieder | derselbe Lauf | ☑ | [↓ Kanon-Lauf](#kanon-lauf---sonde-007c) |
@@ -73,7 +101,16 @@
 | 15 | **Auf dieser Maschine liegt keine Suna-Altlast.** `C:\Program Files\Common Files\VST3` enthält kein „Nakama Suna.vst3" — die Stilllegung trifft einen leeren Fall | `ls "C:/Program Files/Common Files/VST3"` | ☑ nicht vorhanden | [↓ C5](#c5) |
 | 16 | **Kein stiller Rest im Baumverzeichnis.** Die vom letzten Bau übrig gebliebenen `NakamaSuna*`- und `EqCopSunaNullTest*`-Artefakte sind entfernt; CMake räumt entfallene Ziele nicht selbst weg | `find eq-copilot/build -iname "*Suna*"` | ☑ leer | [↓ C1](#c1) |
 | 17 | **Der Tag, an dem das letzte stillgelegte Ziel verschwindet, bricht den Installer nicht.** Im Selbstaudit gelesen, dann gefahren: `@() \| Sort-Object` liefert `$null`, und `Compare-Object $null $null` bricht ab — unter `$ErrorActionPreference='Stop'` ein harter Fehler. Behoben und als Bein `[3c]` gefahren; **ohne** den Fix fällt genau dieses Bein (vorgeführt) | `pruefe_installer_gegenpfad.py`, Block `[3c]` | ☑ mit Fix `Exit 0` · ☑ **gefallen** ohne Fix (`Exit 1`) | [↓ C6](#c6) |
-| 18 | **Die „keine zweite Identität"-Regel misst jetzt, was sie seit dem 23.08. behauptet.** Der Manifestkopf sagt „WEDER Produktnamen NOCH Viercodes NOCH Class-IDs" — gemessen wurden bis heute nur zwei der drei Hälften. Beim Verschärfen fiel **sofort ein Treffer**: mein eigener Stilllegungstext hatte „Nakama Probeeq" beiläufig festgeschrieben. Entfernt; zwei eigene Gegenproben brechen die neue Hälfte einzeln | `py -3.13 tools/eq-copilot/pruefe_installer_manifest.py` | ☑ 45/45 · ☑ **gefallen** an Produkt- und Bundlename einzeln | [↓ C7](#c7) |
+| 18 | **Die „keine zweite Identität"-Regel misst jetzt, was sie seit dem 23.08. behauptet.** Der Manifestkopf sagt „WEDER Produktnamen NOCH Viercodes NOCH Class-IDs" — gemessen wurden bis heute nur zwei der drei Hälften. Beim Verschärfen fiel **sofort ein Treffer**: mein eigener Stilllegungstext hatte „Nakama Probeeq" beiläufig festgeschrieben. Entfernt; zwei eigene Gegenproben brechen die neue Hälfte einzeln | `py -3.13 tools/eq-copilot/pruefe_installer_manifest.py` | ☑ 45/45 (Runde 1: 52/52) · ☑ **gefallen** an Produkt- und Bundlename einzeln | [↓ C7](#c7) |
+
+**Neu in der Nacharbeit Runde 1 (29.08.2026):**
+
+| # | Behauptung | Befehl | Ergebnis | Rohausgabe |
+|---|---|---|---|---|
+| 19 | **Jede vorhandene Stilllegungsmarke sperrt — unabhängig von ihrem Inhalt.** Der Riegel fällt auf die *Anwesenheit*: `OBJECT` ergibt die Meldung mit Datum und Entscheid, jeder andere Typ die Meldung „unlesbar"; **kein** Typ lässt weiterbauen. Der Kommentar behauptete das seit dem 28.08., der Code maß es nicht | 6 Probe-Configures, je ein `stillgelegt`-Typ | ☑ NULL · STRING · ARRAY · NUMBER · BOOLEAN je `Exit 1` „unlesbar" · OBJECT `Exit 1` „STILLGELEGT" | [↓ C2c](#c2c) |
+| 20 | **Ohne den Fix war das Loch fünf von sechs Typen groß — vorgeführt.** Dieselben sechs Läufe gegen das Modul von `043b48f`: NULL, STRING, ARRAY, NUMBER und BOOLEAN kamen mit `Exit 0` durch und lieferten die Identität des stillgelegten Ziels aus | dieselben Probe-Configures, Modul aus `git show 043b48f:` | ☑ **5× DURCHGELASSEN** (`Exit 0`), nur OBJECT gesperrt | [↓ C2c](#c2c) |
+| 21 | **Alle vier Leser der Marke geben jetzt dieselbe Antwort.** Identitätsleser (CMake), Installer, `EqCopIdentityTest` und A17 klassifizieren nach Anwesenheit; ein kaputter Inhalt ist überall ein harter Fehler, nie „aktiv". Vor der Runde gab es drei verschiedene Antworten | A18 Block `[3d]` · `EqCopIdentityTest.exe` gegen eine gespiegelte `null`-Marke | ☑ A18 `87 ok, 0 Fehler` (5 neue Prüfungen in `[3d]`) · ☑ Test wird rot: `[1 unlesbar]`, Zählung bleibt korrekt `2 aktiv, 1 stillgelegt` | [↓ C2d](#c2d) · [↓ C2e](#c2e) |
+| 22 | **A17 lehnt eine kaputte Stilllegungs-ID ab, statt am eigenen `set()` zu sterben.** Sechs neue Gegenproben plus der Fall gemischter Typen; **ohne** den Fix stirbt dieselbe Mutation an `TypeError` — vorgeführt gegen den Stand `043b48f` | `py -3.13 tools/eq-copilot/pruefe_installer_manifest.py` | ☑ `52 ok, 0 Fehler` · ☑ **ohne Fix** `TypeError: unhashable type: 'list'` bzw. `'<' not supported between instances of 'int' and 'str'` | [↓ C2b](#c2b) |
 
 ---
 
@@ -243,6 +280,273 @@ if(_stilltyp STREQUAL "OBJECT")
         "Entscheid: ${_stillwarum}\n"
         ...)
 endif()
+```
+
+> ⚠️ **Nacharbeit Runde 1 (29.08.2026):** Dieser Block C2 ist **Vorarbeit**, kein
+> Beweis für Behauptung 2. Der T2-Prüfer hat das zu Recht beanstandet: er
+> enthält eine `string(JSON … TYPE)`-Mikroprobe und einen kopierten
+> Quellausschnitt, aber **keinen einzigen Aufruf** von
+> `nakama_identitaet_lesen`. Was dort behauptet wurde, misst er nicht. Der
+> echte Aufruf steht jetzt in [C2a](#c2a); der abgedruckte Quellausschnitt
+> zeigt außerdem den **alten**, inzwischen ersetzten Vergleich gegen `OBJECT`.
+
+<a id="c2a"></a>
+### C2a · Der echte Aufruf fällt (Behauptung 2)
+
+Ein Probe-Configure bindet **das Modul aus dem Repo** ein und ruft die echte
+Funktion mit der echten Identitätsdatei auf — kein Nachbau, keine Mikroprobe.
+Das Probeprojekt (`<probe>/CMakeLists.txt`):
+
+```cmake
+cmake_minimum_required(VERSION 3.22)
+project(NakamaRiegelProbe NONE)
+include("C:/Users/phili/Projekte/Nakama/eq-copilot/cmake/NakamaIdentitaet.cmake")
+nakama_identitaet_lesen(passive-probe PROBE)
+message(STATUS "DURCHGELASSEN: PROBE_PRODUKTNAME=${PROBE_PRODUKTNAME}")
+```
+
+**Befehl:** `cmake -S <probe> -B <probe>/build`
+
+```
+-- Building for: Visual Studio 17 2022
+-- Selecting Windows SDK version 10.0.26100.0 to target Windows 10.0.26200.
+-- Configuring incomplete, errors occurred!
+CMake Error at C:/Users/phili/Projekte/Nakama/eq-copilot/cmake/NakamaIdentitaet.cmake:168 (message):
+  S9b/SONDE-007c: Ziel 'passive-probe' ist seit 2026-08-28 STILLGELEGT und
+  wird nicht gebaut.
+
+  Entscheid: design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md
+
+  Seine Kennung bleibt im Identitaetsmanifest reserviert und gesperrt
+  (NAK-30) -
+
+  das ist kein Freibrief, sie wieder zu bauen.  Soll das Ziel zurueckkommen,
+  gehoert
+
+  der Weg dorthin in ein eigenes Ticket samt Abnahme, nicht in diese Zeile.
+Call Stack (most recent call first):
+  CMakeLists.txt:4 (nakama_identitaet_lesen)
+
+
+EXITCODE: 1
+```
+
+Die Zeile `DURCHGELASSEN` erscheint nicht — der Aufruf kommt nicht zurück.
+
+<a id="c2b"></a>
+### C2b · A17: Typprüfung der Stilllegungs-IDs (Behauptungen 5, 22)
+
+**Befehl:** `py -3.13 tools/eq-copilot/pruefe_installer_manifest.py`
+
+```
+  ok      Identitaet ist kollisionsfrei, schema=2 und jedes AKTIVE Ziel hat genau einen VST3-Eintrag  [2 vs 2 aktiv (3 Kennungen gesamt); identity=ok]
+  ok      jedes stillgelegte Ziel ist benannt (Datum, Grund, Umgang) und steht in keinem Artefakt
+  ok      faellt am verdorbenen Manifest: Identitaet ist kollisionsfrei, schema=2 und jedes AKTIVE Ziel hat genau einen VST3-Eintrag
+  ok      faellt am verdorbenen Manifest: jedes stillgelegte Ziel ist benannt (Datum, Grund, Umgang) und steht in keinem Artefakt
+  ok      faellt, wenn ein stillgelegtes Ziel doch ausgeliefert wird
+  ok      faellt, wenn ein stillgelegtes Ziel nirgends benannt ist
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id ist eine leere Liste
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id ist ein Objekt
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id ist eine leere Zeichenkette
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id ist nur Leerraum
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id ist eine Zahl
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id fehlt ganz
+  ok      faellt kontrolliert bei gemischten ziel_id-Typen in einer Liste
+  ok      faellt, wenn ein aktives Ziel still aus der Auslieferung faellt
+…
+52 ok, 0 Fehler
+exit=0
+```
+
+Der gemeldete Vergleich lautet `2 vs 2 aktiv (3 Kennungen gesamt)` — genau das,
+was der Vertrag nach der Korrektur von `nakama-installer-v1.md:91-94` sagt.
+Vorher stand dort „A17 zählt `3 vs 3`".
+
+**Gegenprobe — dieselben Mutationen gegen den Stand `043b48f`.** Beide Regeln
+werden aus derselben Datei geladen, einmal aus `git show 043b48f:…`, einmal aus
+dem Arbeitsstand:
+
+**Befehl:** `py -3.13 <gegenprobe>.py <a17_vor_fix.py> tools/eq-copilot/pruefe_installer_manifest.py .`
+
+```
+=== Mutation: ziel_id = [] ==============================
+  VOR  dem Fix (043b48f): ABSTURZ TypeError: unhashable type: 'list'
+        if len(benannt) != len(set(benannt)):
+                               ~~~^^^^^^^^^
+    TypeError: unhashable type: 'list'
+
+  NACH dem Fix: (False, "stillgelegte_ziele[0]: ziel_id ist keine nichtleere Zeichenkette (list: []); benannt [] != stillgelegt ['passive-probe']")
+=== Mutation: gemischte Typen (str + int) ==============================
+  VOR  dem Fix (043b48f): ABSTURZ TypeError: '<' not supported between instances of 'int' and 'str'
+        if sorted(x for x in benannt if x is not None) != stillgelegt_ids:
+           ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    TypeError: '<' not supported between instances of 'int' and 'str'
+
+  NACH dem Fix: (False, 'stillgelegte_ziele[1]: ziel_id ist keine nichtleere Zeichenkette (int: 7)')
+```
+
+Beide vom Prüfer genannten Absturzstellen sind reproduziert: `set()` bei einer
+Liste und `sorted()` bei gemischten Typen. Nach dem Fix ist beides ein
+Regelbefund im Klartext.
+
+<a id="c2c"></a>
+### C2c · Jede vorhandene Marke sperrt — und wie groß das Loch war (Behauptungen 19, 20)
+
+Sechs Probe-Configures, je einer pro `stillgelegt`-Typ, jeweils gegen eine
+**Kopie** der Identitätsdatei unter `%TEMP%` (die echte Datei bleibt
+unverändert; ihr `git diff` ist leer). Das Modul ist bytegleich kopiert,
+einmal vom Arbeitsstand (`nach`), einmal aus `git show 043b48f:` (`vor`).
+
+**Befehl:** je `cmake -S <probe> -B <probe>/build`
+
+```
+  Modul nach  stillgelegt-Typ NULL         Exit=1  FATAL - unlesbare Marke, Typ NULL, erwartet OBJECT
+  Modul nach  stillgelegt-Typ STRING       Exit=1  FATAL - unlesbare Marke, Typ STRING, erwartet OBJECT
+  Modul nach  stillgelegt-Typ ARRAY        Exit=1  FATAL - unlesbare Marke, Typ ARRAY, erwartet OBJECT
+  Modul nach  stillgelegt-Typ NUMBER       Exit=1  FATAL - unlesbare Marke, Typ NUMBER, erwartet OBJECT
+  Modul nach  stillgelegt-Typ BOOLEAN      Exit=1  FATAL - unlesbare Marke, Typ BOOLEAN, erwartet OBJECT
+  Modul nach  stillgelegt-Typ OBJECT-leer  Exit=1  FATAL - STILLGELEGT-Meldung
+  Modul vor   stillgelegt-Typ NULL         Exit=0  DURCHGELASSEN - Ziel waere gebaut worden
+  Modul vor   stillgelegt-Typ STRING       Exit=0  DURCHGELASSEN - Ziel waere gebaut worden
+  Modul vor   stillgelegt-Typ ARRAY        Exit=0  DURCHGELASSEN - Ziel waere gebaut worden
+  Modul vor   stillgelegt-Typ NUMBER       Exit=0  DURCHGELASSEN - Ziel waere gebaut worden
+  Modul vor   stillgelegt-Typ BOOLEAN      Exit=0  DURCHGELASSEN - Ziel waere gebaut worden
+  Modul vor   stillgelegt-Typ OBJECT-leer  Exit=1  FATAL - STILLGELEGT-Meldung
+```
+
+Der `vor`-Block ist der Befund P1 Nr. 1 in Zahlen: **fünf von sechs Typen kamen
+durch**, und der Configure gab dabei die Identität des stillgelegten Ziels aus
+(`DURCHGELASSEN: PROBE_PRODUKTNAME=Nakama Suna PROBE_PLUGINCODE=NkPr`).
+
+**Was das `cmake -P`-Verhalten dahinter ist** (gemessen, nicht angenommen):
+
+```
+-- a: TYPE=[OBJECT] ERR=[NOTFOUND]
+-- b: TYPE=[NULL] ERR=[NOTFOUND]
+-- c: TYPE=[STRING] ERR=[NOTFOUND]
+-- d: TYPE=[ARRAY] ERR=[NOTFOUND]
+-- e: TYPE=[NUMBER] ERR=[NOTFOUND]
+-- f: TYPE=[BOOLEAN] ERR=[NOTFOUND]
+-- g: TYPE=[g-NOTFOUND] ERR=[member 'g' not found]
+```
+
+Ein **vorhandener** Schlüssel liefert nie `-NOTFOUND`. Deshalb ist
+`stillgelegt-NOTFOUND` der eine benennbare Durchlass-Fall, und der Riegel prüft
+seither auf ihn statt auf `OBJECT`.
+
+**Nachtrag aus dem T1-Selbstaudit derselben Runde:** bei einem *leeren*
+Marken-Objekt lautete die Meldung „ist seit `stillgelegt-am-NOTFOUND`
+STILLGELEGT" — fail-closed, aber ein Text, der eine CMake-Interna als Datum
+ausgibt. Behoben; jetzt:
+
+```
+S9b/SONDE-007c: Ziel 'passive-probe' ist seit <im Manifest nicht angegeben>
+Entscheid: <im Manifest nicht angegeben>
+EXITCODE: 1
+```
+
+Der echte Fall bleibt unverändert (`ist seit 2026-08-28 … Entscheid:
+design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md`). Dass die Marke
+Datum **und** Entscheid trägt, misst weiterhin `EqCopIdentityTest`.
+
+<a id="c2d"></a>
+### C2d · Der Installer klassifiziert wie alle anderen (Behauptung 21)
+
+Neuer Block `[3d]` in A18 — gegen den **echten** Installer in der Sandbox:
+
+**Befehl:** `py -3.13 tools/eq-copilot/pruefe_installer_gegenpfad.py`
+
+```
+[3d] Eine unlesbare Stilllegungsmarke sperrt, statt 'aktiv' zu heissen
+  ok      Marke vom Typ null bricht ab und benennt sich  [Exit 1]
+  ok      Marke vom Typ String bricht ab und benennt sich  [Exit 1]
+  ok      Marke vom Typ Array bricht ab und benennt sich  [Exit 1]
+  ok      Marke vom Typ Zahl bricht ab und benennt sich  [Exit 1]
+  ok      auch MIT geschmuggeltem Artefakteintrag sperrt die Marke zuerst  [Exit 1]
+…
+87 ok, 0 Fehler
+exit=0
+```
+
+**Gegenprobe:** dasselbe Bein, derselbe Sandbox-Aufbau, nur der Installer auf
+den Stand `043b48f` zurückgedreht (Repo-Spiegel unter `%TEMP%`, in dem
+ausschließlich `Install-Nakama.ps1` aus `git show` stammt):
+
+```
+[3d] Eine unlesbare Stilllegungsmarke sperrt, statt 'aktiv' zu heissen
+  FEHLER  Marke vom Typ null bricht ab und benennt sich  [Exit 1]
+  FEHLER  Marke vom Typ String bricht ab und benennt sich  [Exit 0]
+  FEHLER  Marke vom Typ Array bricht ab und benennt sich  [Exit 0]
+  FEHLER  Marke vom Typ Zahl bricht ab und benennt sich  [Exit 0]
+  FEHLER  auch MIT geschmuggeltem Artefakteintrag sperrt die Marke zuerst  [Exit 1]
+EXITCODE: 2
+```
+
+Drei der fünf Fälle liefen **grün durch**; die zwei, die abbrachen, benannten
+die Marke nicht. In einer Sandbox ohne festgeschriebene Hashes zeigt derselbe
+Vorstand, *welche* falsche Erklärung er stattdessen gab:
+
+```
+  Marke=null    Exit=1  ABBRUCH: Das Manifest muss jedes NICHT stillgelegte Identitaetsziel genau einmal als VST3-Artefakt enthalten.
+```
+
+Das ist die Klassifikation aus dem Befund: `"stillgelegt": null` galt als
+**aktiv**. Der Grund liegt in der Sprache und ist gemessen:
+
+```
+a: anwesend=False altTest=False typ=<null> isPSCustomObject=False
+b: anwesend=True altTest=False typ=<null> isPSCustomObject=False
+c: anwesend=True altTest=True typ=String isPSCustomObject=False
+d: anwesend=True altTest=True typ=Object[] isPSCustomObject=False
+e: anwesend=True altTest=True typ=PSCustomObject isPSCustomObject=True
+```
+
+(`a` = keine Marke, `b` = `null`, `c` = String, `d` = Array, `e` = Objekt.)
+
+Zeile `b` ist der Fall: die Property **ist da**, aber `$null -ne $_.stillgelegt`
+(`altTest`) sagt „nein" — genau wie bei der fehlenden Property in Zeile `a`.
+
+<a id="c2e"></a>
+### C2e · `EqCopIdentityTest` sperrt dieselbe Marke (Behauptung 21)
+
+`finde()` sucht zuerst relativ zum Arbeitsverzeichnis. Der Test läuft deshalb
+zweimal gegen einen CWD-Spiegel unter `%TEMP%`, der **nur** den Identitätsordner
+enthält — einmal unverändert, einmal mit `stillgelegt: null`. Alles andere
+findet er über den Pfad der Programmdatei im echten Repo. Der Spiegel erzeugt
+in beiden Läufen dieselben fünf sachfremden Fehler (die Goldens liegen neben der
+gespiegelten Datei); der **Unterschied** ist der Beweis:
+
+```
+=== CWD-Spiegel 'echt' : Exit=1 ===
+   ok      mindestens ein Ziel ist nicht stillgelegt  [2 aktiv, 1 stillgelegt]
+   ok      jede vorhandene Stilllegungsmarke ist ein lesbares Objekt  [0 unlesbar]
+   ok      passive-probe: und ist dort als stillgelegt markiert
+   IDENTITY-TEST FEHLGESCHLAGEN - 99 Pruefungen ok, 5 Fehler
+=== CWD-Spiegel 'null' : Exit=1 ===
+   ok      mindestens ein Ziel ist nicht stillgelegt  [2 aktiv, 1 stillgelegt]
+   FEHLER  jede vorhandene Stilllegungsmarke ist ein lesbares Objekt  [1 unlesbar]
+   FEHLER  passive-probe: und ist dort als stillgelegt markiert
+   IDENTITY-TEST FEHLGESCHLAGEN - 96 Pruefungen ok, 8 Fehler
+```
+
+Zwei Dinge stehen darin: die neue Prüfung wird rot, **und** die Zählung bleibt
+`2 aktiv, 1 stillgelegt`. Genau das war vorher unmöglich — mit
+`ziele[i]["stillgelegt"].isObject()` hätte dieselbe Datei `3 aktiv, 0
+stillgelegt` ergeben, weil JUCE JSON-`null` auf dasselbe leere `var` abbildet
+wie einen fehlenden Schlüssel (`juce_JSON.cpp`, `case 'n': … return {};`).
+Diese letzte Aussage ist an der JUCE-Quelle **gelesen**, nicht gefahren — die
+gemessene Hälfte ist die korrekte Zählung oben.
+
+Auf dem echten Repo-Stand (ohne Spiegel) läuft der Test vollständig grün:
+
+```
+  ok      mindestens ein Ziel ist nicht stillgelegt  [2 aktiv, 1 stillgelegt]
+  ok      jede vorhandene Stilllegungsmarke ist ein lesbares Objekt  [0 unlesbar]
+  ok      jedes AKTIVE Ziel im Manifest hat hier eine Zeile  [2 vs 2]
+  ok      jedes STILLGELEGTE Ziel im Manifest hat hier eine Zeile  [1 vs 1]
+
+IDENTITY-TEST OK - 116 Pruefungen ok, 0 Fehler
+EXITCODE: 0
 ```
 
 <a id="c5"></a>
@@ -630,6 +934,166 @@ SUCCESS
 > Kanon-Lauf unten beglaubigt. `pluginval` prüft das VST3-Protokoll — es
 > sagt **nicht**, dass die Stilllegung richtig ist; das messen A17, A18 und
 > der `EqCopIdentityTest`.
+
+---
+
+<a id="nacharbeit-1"></a>
+## 6. Nacharbeit Runde 1 — 2026-08-29
+
+> **Prüfer:** Codex `gpt-5.6-sol`, Stufe `xhigh`, Thread
+> `01a04b1e-cb90-7da2-bc16-3faccdb40bc5`, geprüft auf Stand `043b48f`.
+> Alle vier Befunde wurden vom Dirigenten an der Quelle bestätigt.
+> Die Marke im Kopf steht danach auf `T2 NEEDS_WORK … nachgearbeitet` —
+> **kein PASS**: das Urteil fällt ein frischer Prüfer, nicht diese Runde.
+
+### 6.1 [P1] Sperre jede vorhandene Stilllegungsmarke
+
+> **Wörtlich:** „Sperre jede vorhandene Stilllegungsmarke —
+> eq-copilot/cmake/NakamaIdentitaet.cmake:133-134. Wenn `stillgelegt` als
+> `null`, String oder Array vorliegt, liefert `TYPE` nicht `OBJECT`, sodass der
+> Leser fortfährt und ein wieder eingetragenes Suna-Ziel bauen kann. A17 wertet
+> dagegen bereits die bloße Feldanwesenheit als stillgelegt, während Installer
+> und `EqCopIdentityTest` Fehltypen nochmals anders klassifizieren. Repro:
+> `stillgelegt` auf `null` setzen, den Suna-Aufruf wieder einsetzen und
+> konfigurieren. Jede vorhandene Marke muss sperren; ihren Objektinhalt
+> anschließend separat validieren."
+
+**Ursache an der Quelle.** Der Kommentar über dem Riegel behauptete seit dem
+28.08. „er fällt auf die ANWESENHEIT des Feldes, nicht auf seinen Inhalt" —
+der Code darunter verglich `TYPE` gegen `OBJECT`, also gegen den Inhalt.
+Behauptung und Verhalten widersprachen sich in derselben Bildschirmseite. Der
+zweite Teil des Befunds stimmte ebenfalls: dieselbe Frage bekam **drei**
+verschiedene Antworten — A17 (`_aktive`) fragte nach Anwesenheit, CMake und
+`EqCopIdentityTest` nach `OBJECT`/`isObject()`, der Installer nach
+`$null -ne`.
+
+**Änderung.**
+
+| Datei | Was |
+|---|---|
+| `eq-copilot/cmake/NakamaIdentitaet.cmake:150-183` | Durchlass nur noch bei `stillgelegt-NOTFOUND`; `OBJECT` → heutige Meldung, jeder andere Typ → eigene Meldung „unlesbar (Typ X) … Marke reparieren, nicht entfernen"; Kommentar auf das Gemessene zurückgezogen |
+| `eq-copilot/install/Install-Nakama.ps1:304-325` | `$null -ne $_.stillgelegt` → `PSObject.Properties.Name -contains 'stillgelegt'`; eine vorhandene, nicht objektförmige Marke bricht ab |
+| `eq-copilot/plugin/tests/IdentityTestMain.cpp:137-153, 293-312, 372, 379` | neue `hatStilllegungsmarke()` über `DynamicObject::hasProperty`; neue Prüfung „jede vorhandene Stilllegungsmarke ist ein lesbares Objekt" |
+| `tools/eq-copilot/pruefe_installer_gegenpfad.py` | neuer Block `[3d]` fährt den Fall |
+
+**Beleg.** [C2c](#c2c) (sechs Typen vor und nach dem Fix — vorher fünf von
+sechs `Exit 0`), [C2d](#c2d) (Installer, A18 `[3d]`, mit Gegenprobe gegen
+`043b48f`), [C2e](#c2e) (`EqCopIdentityTest`).
+
+**Geschlossen:** ja. Zielbild erreicht — Anwesenheit = stillgelegt, kaputter
+Inhalt = harter Fehler, an allen vier Lesern gleich.
+
+### 6.2 [P1] Belege den Fail-closed-Aufruf mit einer echten Probe
+
+> **Wörtlich:** „Belege den Fail-closed-Aufruf mit einer echten Probe —
+> docs/beweise/SONDE-007c.md:60. Behauptung 2 markiert die Probe als
+> „gefallen", aber C2 enthält nur eine separate `string(JSON … TYPE)`-Mikroprobe
+> und einen kopierten Quellausschnitt; weder C2 noch der Kanon-Configure ruft
+> `nakama_identitaet_lesen(passive-probe …)` auf. Damit misst die Rohausgabe den
+> behaupteten `FATAL_ERROR` nicht. Kleinster Fix: den echten Aufruf fahren und
+> Befehl, Nichtnull-Exitcode sowie Fataltext roh anhängen."
+
+**Ursache an der Quelle.** Zutreffend: in C2 stand kein Aufruf von
+`nakama_identitaet_lesen`. Der Kanon-Configure ruft ihn für `passive-probe`
+ebenfalls nicht auf — genau das ist ja der Punkt der Stilllegung. Damit war
+Behauptung 2 eine Behauptung ohne Rohausgabe, also nach §2 des Gate-Texts ein
+gescheitertes Ticket.
+
+**Änderung.** Kein Code. Ein Probe-Configure bindet das Modul aus dem Repo ein
+und ruft die Funktion mit der echten Identitätsdatei auf; der alte C2-Block
+bleibt als **Vorarbeit** stehen und ist als solche gekennzeichnet.
+
+**Beleg.** [C2a](#c2a) — Befehl, voller Fataltext, `EXITCODE: 1`. Behauptung 2
+in [§1](#1-ticket-behauptungen) verweist jetzt dorthin.
+
+**Geschlossen:** ja.
+
+### 6.3 [P1] Entferne die veraltete 3-zu-3-Vertragsregel
+
+> **Wörtlich:** „Entferne die veraltete 3-zu-3-Vertragsregel —
+> eq-copilot/schemas/installer/nakama-installer-v1.md:190-191. Die neue
+> Aktiv↔Artefakt-Regel widerspricht dem weiterhin normativen Absatz in Zeilen
+> 91–94, wonach jedes Identitätsziel einen VST3-Eintrag habe und A17 `3 vs 3`
+> zähle. Das ist nun falsch — A17 misst `2 vs 2 aktiv` — und macht Behauptung 5
+> („harte Drei … überall") unwahr. Den alten Absatz auf aktive Ziele umstellen,
+> damit der v1-Vertrag eindeutig mit Manifest und Prüfer übereinstimmt."
+
+**Ursache an der Quelle.** Der Vertrag trug zwei sich widersprechende Regeln:
+§2.3 die Beziehung, der Absatz nach der Feldtabelle die Zahl `3 vs 3`. Beide
+normativ, eine davon falsch.
+
+**Änderung.** `eq-copilot/schemas/installer/nakama-installer-v1.md:91-104` —
+der Absatz sagt jetzt „jedes *aktive* Ziel hat genau einen `vst3`-Eintrag,
+jedes stillgelegte keinen", nennt das gemessene Ausgabeformat
+`<Artefakte> vs <aktive> aktiv (<Kennungen> gesamt)` und trägt einen kurzen
+Grund, warum dort keine Zahl mehr steht.
+
+`git grep -n -i -E '3 vs 3|drei (Ziele|Bundles|Programme)|== 3|== 4'` über
+`eq-copilot/install`, `eq-copilot/schemas/installer`, `tools/eq-copilot`,
+`docs/plugin-wissen.md` und dieses Manifest findet danach keine offene
+Drei-Behauptung mehr. Was stehen bleibt und stehen bleiben muss:
+
+- `nakama-installer-v1.md:11,16` — das **Zitat** aus Entwurf §55 („alle drei
+  Bundles") mit dem aktuellen Stand direkt darunter. Ein Zitat wird nicht
+  umgeschrieben.
+- `pruefe_installer_manifest.py:212` — ein Kommentar, der die *entfernte* Zahl
+  historisch nennt.
+- `erzeuge_quantisierung.py:294`, `pruefe_host_capabilities.py:93` — `== 3` bzw.
+  `== 4096` in ganz anderer Sache (Quantisierung, Blockgrößen). Kein
+  Ticketbezug, nicht angefasst.
+
+**Beleg.** [C2b](#c2b) — A17 meldet `2 vs 2 aktiv (3 Kennungen gesamt)`, genau
+den Wortlaut, den der Vertrag jetzt beschreibt.
+
+**Geschlossen:** ja.
+
+### 6.4 [P2] Validiere Stilllegungs-IDs vor Mengenoperationen
+
+> **Wörtlich:** „Validiere Stilllegungs-IDs vor Mengenoperationen —
+> tools/eq-copilot/pruefe_installer_manifest.py:272-275. Bei einer unbekannten
+> oder leeren ID vom Typ Array/Objekt, etwa `stillgelegte_ziele[0].ziel_id = []`,
+> erreicht die Regel `set(benannt)` und wirft `TypeError: unhashable type`,
+> statt das Manifest kontrolliert abzulehnen; gemischte Typen können bereits
+> beim `sorted()` abstürzen. A17s normaler Regelpfad fängt diese Ausnahme nicht.
+> IDs zuerst als nichtleere Strings validieren und Typfehler als Regelbefund
+> zurückgeben."
+
+**Ursache an der Quelle.** `r_stillgelegte_benannt` ließ ungeprüfte
+Manifestwerte in `sorted()` und `set()` laufen. Ein Absturz ist kein
+Regelbefund: er bricht das ganze Bein ab und sagt gerade **nicht**, was am
+Manifest falsch ist.
+
+**Änderung.**
+
+| Datei | Was |
+|---|---|
+| `tools/eq-copilot/pruefe_installer_manifest.py:255-273` | neue `_brauchbare_ids()` — trennt nichtleere Strings von allem anderen und gibt Typfehler als Klartextbefund zurück |
+| `…:276-322` | beide Seiten validiert (Identitätsdatei **und** Manifest); `aus_artefakten` filtert ebenfalls auf Strings, damit die Menge nicht an einer Artefakt-`ziel_id` zerbricht |
+| `…:637-673` | sieben neue Gegenproben: `[]`, `{}`, `""`, `"   "`, `7`, fehlendes Feld, gemischte Typen |
+
+**Beleg.** [C2b](#c2b) — `52 ok, 0 Fehler` mit den neuen Gegenproben; und die
+Vorführung gegen `043b48f`, in der dieselben zwei Mutationen mit
+`TypeError: unhashable type: 'list'` (bei `set()`) und
+`TypeError: '<' not supported between instances of 'int' and 'str'` (bei
+`sorted()`) sterben. Beide vom Prüfer genannten Stellen sind reproduziert.
+
+**Geschlossen:** ja.
+
+### 6.5 Was diese Runde nicht behauptet
+
+- **Kein T2-Urteil.** Die Kopfmarke bleibt `NEEDS_WORK`; über diese Nacharbeit
+  urteilt ein frischer Prüfer.
+- **Der Vorzustand des C++-Tests ist gelesen, nicht gefahren.** Dass
+  `ziele[i]["stillgelegt"].isObject()` eine `null`-Marke als *aktiv* gezählt
+  hätte, folgt aus der JUCE-Quelle (`juce_JSON.cpp`, `case 'n': … return {};`)
+  und aus dem alten Code. Gemessen ist die andere Hälfte: nach dem Fix zählt
+  derselbe Fall korrekt als stillgelegt und die neue Prüfung wird rot
+  ([C2e](#c2e)).
+- **Die Identitätsdatei ist unverändert.** `eq-copilot/identity/plugin-identities-v1.json`
+  hat in dieser Runde einen leeren `git diff`; jede Mutation lief gegen eine
+  Kopie unter `%TEMP%`.
+- **Nichts an NAK-30 angefasst.** Keine Kennung von Gen oder Probeeq wurde
+  gelesen, geschrieben oder verschoben.
 
 ---
 

@@ -134,6 +134,24 @@ juce::var zielMitId (const juce::var& ziele, const juce::String& id)
     return {};
 }
 
+/** Traegt dieses Ziel ueberhaupt eine Stilllegungsmarke - unabhaengig davon,
+    ob ihr Inhalt lesbar ist?
+
+    S9b/SONDE-007c, Nacharbeit Runde 1 (29.08.2026, T2-Befund P1 Nr. 1):
+    hier stand `ziel["stillgelegt"].isObject()`, und das war fail-OPEN. JUCE
+    bildet JSON-`null` auf ein leeres `var` ab (juce_JSON.cpp, "case 'n'" ->
+    `return {};`) - genau dasselbe, was `DynamicObject::getProperty` fuer einen
+    FEHLENDEN Schluessel liefert. Ueber `operator[]` sind "Marke ist null" und
+    "keine Marke" damit prinzipiell ununterscheidbar, und ein stillgelegtes
+    Ziel mit `"stillgelegt": null` zaehlte als AKTIV. Nur `hasProperty` kann
+    die Frage beantworten, die hier wirklich gestellt wird. */
+bool hatStilllegungsmarke (const juce::var& ziel)
+{
+    if (auto* o = ziel.getDynamicObject())
+        return o->hasProperty ("stillgelegt");
+    return false;
+}
+
 juce::String alsHex (const juce::VST3Interface::Id& id)
 {
     juce::String s;
@@ -270,11 +288,28 @@ int main (int argc, char* argv[])
     pruefe (ziele.isArray() && ziele.size() >= 1, "Manifest kennt mindestens ein Ziel",
             juce::String (ziele.isArray() ? ziele.size() : -1));
 
-    int aktiveZiele = 0, stillgelegteZiele = 0;
+    // Nacharbeit Runde 1 (29.08.2026): gezaehlt wird die ANWESENHEIT der
+    // Marke, nicht ihr Typ - dieselbe Frage wie im Identitaetsleser
+    // (cmake/NakamaIdentitaet.cmake), im Installer und in A17.
+    int aktiveZiele = 0, stillgelegteZiele = 0, unlesbareMarken = 0;
     for (int i = 0; i < ziele.size(); ++i)
-        (ziele[i]["stillgelegt"].isObject() ? stillgelegteZiele : aktiveZiele) += 1;
+    {
+        if (! hatStilllegungsmarke (ziele[i]))
+        {
+            aktiveZiele += 1;
+            continue;
+        }
+        stillgelegteZiele += 1;
+        if (! ziele[i]["stillgelegt"].isObject())
+            unlesbareMarken += 1;
+    }
     pruefe (aktiveZiele >= 1, "mindestens ein Ziel ist nicht stillgelegt",
             juce::String (aktiveZiele) + " aktiv, " + juce::String (stillgelegteZiele) + " stillgelegt");
+    // Der kaputte Inhalt ist ein HARTER Fehler, kein Ruecksprung nach "aktiv":
+    // eine Marke, die niemand lesen kann, sperrt trotzdem.
+    pruefe (unlesbareMarken == 0,
+            "jede vorhandene Stilllegungsmarke ist ein lesbares Objekt",
+            juce::String (unlesbareMarken) + " unlesbar");
 
     juce::var mainZiel;
     for (int i = 0; i < ziele.size(); ++i)
@@ -334,14 +369,14 @@ int main (int argc, char* argv[])
     for (const auto& g : gebaute)
     {
         const auto e = zielMitId (ziele, juce::String (g.id));
-        pruefe (e.isObject() && ! e["stillgelegt"].isObject(),
+        pruefe (e.isObject() && ! hatStilllegungsmarke (e),
                 juce::String (g.id) + ": steht als AKTIVES Ziel im Manifest");
     }
     for (const auto& s : stillgelegte)
     {
         const auto e = zielMitId (ziele, juce::String (s.id));
         pruefe (e.isObject(), juce::String (s.id) + ": die Kennung steht weiter im Manifest");
-        pruefe (e["stillgelegt"].isObject(),
+        pruefe (hatStilllegungsmarke (e) && e["stillgelegt"].isObject(),
                 juce::String (s.id) + ": und ist dort als stillgelegt markiert");
         // Die Kennung bleibt VOLLSTAENDIG - genau das unterscheidet eine
         // Stilllegung von einem Loeschen. Waere sie halb weg, koennte ein

@@ -301,9 +301,28 @@ foreach ($a in $manifest.artefakte) {
 # Ziel muss im Manifest ausdruecklich BENANNT sein. Ohne sie koennte ein Ziel
 # still aus der Auslieferung fallen, indem jemand nur seinen Artefakteintrag
 # loescht - der Zaehlvergleich bliebe gruen, weil beide Seiten schrumpfen.
-$stillgelegteIds = @($identitaet.ziele | Where-Object { $null -ne $_.stillgelegt } | ForEach-Object { [string]$_.id })
+# Nacharbeit Runde 1 (29.08.2026, T2-Befund P1 Nr. 1): die Trennung faellt auf
+# die ANWESENHEIT der Marke, nicht auf ihren Inhalt. Hier stand
+# `$null -ne $_.stillgelegt`, und gemessen (Manifest SONDE-007c C2d) liefert
+# eine Property mit JSON-`null` denselben `$null` wie eine FEHLENDE Property:
+# ein Ziel mit `"stillgelegt": null` zaehlte als AKTIV, und der Lauf brach mit
+# einer Meldung ab, die das falsche Problem benannte ("Manifest muss jedes
+# NICHT stillgelegte Identitaetsziel ... enthalten"). Und in einer
+# auslieferungsreifen Sandbox (Bein A18 [3d], gegen die Fassung vor dieser
+# Runde gefahren) lief eine Marke vom Typ String, Array oder Zahl mit Exit 0
+# durch - eine unlesbare Stilllegung, ueber die niemand etwas sagte.
+# Die Anwesenheit fragt in PowerShell nur `PSObject.Properties` ab; ein
+# kaputter Inhalt ist danach ein harter Fehler, nie ein Ruecksprung nach
+# "aktiv". Gefahren wird der Fall im Kanon-Bein A18, Block [3d].
+foreach ($z in @($identitaet.ziele | Where-Object { $null -ne $_ })) {
+    if (($z.PSObject.Properties.Name -contains 'stillgelegt') -and
+        ($z.stillgelegt -isnot [System.Management.Automation.PSCustomObject])) {
+        Abbruch "Ziel '$($z.id)' traegt eine unlesbare Stilllegungsmarke - erwartet wird ein Objekt mit Datum und Entscheid. Eine kaputte Marke bedeutet weiter 'stillgelegt': repariere sie in der Identitaetsdatei, entferne sie nicht."
+    }
+}
+$stillgelegteIds = @($identitaet.ziele | Where-Object { $_.PSObject.Properties.Name -contains 'stillgelegt' } | ForEach-Object { [string]$_.id })
 $vst3Ids = @($manifest.artefakte | Where-Object { $_.art -eq 'vst3' } | ForEach-Object { [string]$_.ziel_id })
-$sollIds = @($identitaet.ziele | Where-Object { $null -eq $_.stillgelegt } | ForEach-Object { [string]$_.id })
+$sollIds = @($identitaet.ziele | Where-Object { $_.PSObject.Properties.Name -notcontains 'stillgelegt' } | ForEach-Object { [string]$_.id })
 if ($sollIds.Count -eq 0) {
     Abbruch 'Kein einziges aktives Identitaetsziel - eine Auslieferung ohne Bundle waere keine.'
 }

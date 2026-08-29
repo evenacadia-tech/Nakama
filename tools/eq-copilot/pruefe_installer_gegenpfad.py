@@ -365,6 +365,64 @@ def main() -> int:
                 identWeg.write_bytes(identAlt)
                 (inst / "nakama-installer-v1.json").write_bytes(manifestAlt)
 
+        # ── Nacharbeit Runde 1 (29.08.2026, T2-Befund P1 Nr. 1) ───────────
+        # Eine Stilllegungsmarke, die vorhanden, aber kein Objekt ist. Bis
+        # dahin fragte der Installer `$null -ne $_.stillgelegt` - und eine
+        # Property mit JSON-`null` liefert denselben `$null` wie eine
+        # FEHLENDE Property. Das Ziel zaehlte damit als AKTIV: fail-OPEN an
+        # der Stelle, die fail-closed heisst. Gemessen wird hier die neue
+        # Zusage: Marke vorhanden = stillgelegt, kaputter Inhalt = harter
+        # Abbruch mit eigener Meldung - nie ein Ruecksprung nach "aktiv".
+        # Der zweite Teil ist der gefaehrliche Fall: Marke unlesbar UND ein
+        # Artefakteintrag da. Genau diese Kombination haette ein
+        # stillgelegtes Bundle wieder ausgeliefert.
+        if stillgelegte:
+            print("\n[3d] Eine unlesbare Stilllegungsmarke sperrt, statt 'aktiv' zu heissen")
+            identWeg = sand / "eq-copilot" / "identity" / IDENTITAET.name
+            identAlt = identWeg.read_bytes()
+            manifestAlt = (inst / "nakama-installer-v1.json").read_bytes()
+            try:
+                for marke, name in ((None, "null"), ("weg", "String"),
+                                    ([], "Array"), (7, "Zahl")):
+                    kaputt = json.loads(identAlt.decode("utf-8"))
+                    for z in kaputt["ziele"]:
+                        if z["id"] == stillgelegte[0]["id"]:
+                            z["stillgelegt"] = marke
+                    identWeg.write_text(json.dumps(kaputt, ensure_ascii=False, indent=2) + "\n",
+                                        encoding="utf-8")
+                    code, aus = lauf(skript, "-Pruefen")
+                    pruefe(code == 1 and "unlesbare Stilllegungsmarke" in aus,
+                           f"Marke vom Typ {name} bricht ab und benennt sich",
+                           f"Exit {code}")
+
+                # Und derselbe Fall MIT geschmuggeltem Artefakteintrag: die
+                # Marke muss immer noch sperren, bevor irgendetwas kopiert
+                # wird. Die Kennung ist eingefroren - der Bundlename kommt
+                # deshalb aus der Identitaetsdatei, nicht aus diesem Skript.
+                kaputt = json.loads(identAlt.decode("utf-8"))
+                for z in kaputt["ziele"]:
+                    if z["id"] == stillgelegte[0]["id"]:
+                        z["stillgelegt"] = None
+                identWeg.write_text(json.dumps(kaputt, ensure_ascii=False, indent=2) + "\n",
+                                    encoding="utf-8")
+                geschmuggelt = json.loads(manifestAlt.decode("utf-8"))
+                vorlage = next(a for a in geschmuggelt["artefakte"] if a.get("art") == "vst3")
+                schmuggel = dict(vorlage)
+                schmuggel["ziel_id"] = stillgelegte[0]["id"]
+                schmuggel["sha256"] = None
+                geschmuggelt["artefakte"].append(schmuggel)
+                geschmuggelt.pop("stillgelegte_ziele", None)
+                (inst / "nakama-installer-v1.json").write_text(
+                    json.dumps(geschmuggelt, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8")
+                code, aus = lauf(skript, "-Pruefen")
+                pruefe(code == 1 and "unlesbare Stilllegungsmarke" in aus,
+                       "auch MIT geschmuggeltem Artefakteintrag sperrt die Marke zuerst",
+                       f"Exit {code}")
+            finally:
+                identWeg.write_bytes(identAlt)
+                (inst / "nakama-installer-v1.json").write_bytes(manifestAlt)
+
         print("\n[4] NAK-41: unbekannter Vorstand verweigert den Rueckweg")
         vorzustand()
         code, _ = lauf(skript)

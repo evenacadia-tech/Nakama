@@ -124,22 +124,62 @@ function(nakama_identitaet_lesen ziel_id praefix)
     # Bundle. Das waere die stillste Art, eine Stilllegung rueckgaengig zu
     # machen: ein einzelner wieder eingefuegter Aufruf, und die Auslieferung
     # traegt wieder ein Produkt, das es nicht gibt. Der Riegel ist
-    # fail-closed - er faellt auf die ANWESENHEIT des Feldes, nicht auf
-    # seinen Inhalt.
-    # Gemessen (cmake -P, 28.08.2026): `string(JSON … TYPE)` liefert bei
-    # vorhandenem Objekt "OBJECT" und bei fehlendem Schluessel
-    # "<membername>-NOTFOUND" - deshalb der Vergleich gegen OBJECT und nicht
-    # gegen NOTFOUND.
+    # fail-closed und faellt auf die ANWESENHEIT der Marke; ihr INHALT
+    # entscheidet danach nur noch ueber den WORTLAUT der Meldung, nie darueber,
+    # OB abgebrochen wird.
+    #
+    # ── Nacharbeit Runde 1 (29.08.2026, T2-Befund P1 Nr. 1) ────────────────
+    # Der Absatz darueber stand hier schon und war falsch: der Code verglich
+    # gegen "OBJECT", also gegen den INHALT. Gemessen (Manifest SONDE-007c
+    # C2c): eine Marke vom Typ NULL, STRING, ARRAY, NUMBER oder BOOLEAN lief
+    # durch - der Configure endete mit Exit 0 und lieferte die Identitaet des
+    # stillgelegten Ziels aus, der Aufrufer haette es also gebaut. Fail-OPEN
+    # an genau der Stelle, die fail-closed heisst.
+    # Dieselbe Frage bekam ausserdem drei verschiedene Antworten: A17
+    # (`_aktive`) wertete die blosse Anwesenheit, dieser Leser und
+    # EqCopIdentityTest den Typ OBJECT, der Installer `$null -ne`. Seit dieser
+    # Runde gilt an allen vier Stellen dasselbe: Marke vorhanden =
+    # stillgelegt, kaputter Inhalt = harter Fehler, niemals "aktiv".
+    #
+    # Gemessen (cmake -P, 29.08.2026, Manifest SONDE-007c C2a): `string(JSON …
+    # TYPE)` liefert fuer einen vorhandenen Schluessel genau einen von
+    # OBJECT | ARRAY | STRING | NUMBER | BOOLEAN | NULL und fuer einen
+    # FEHLENDEN "<membername>-NOTFOUND", hier also "stillgelegt-NOTFOUND".
+    # Die Abwesenheit ist damit der EINE benennbare Fall - und nur er laesst
+    # weiterbauen.
     string(JSON _stilltyp ERROR_VARIABLE _e6 TYPE "${_eintrag}" stillgelegt)
-    if(_stilltyp STREQUAL "OBJECT")
-        string(JSON _stillam    ERROR_VARIABLE _e7 GET "${_eintrag}" stillgelegt am)
-        string(JSON _stillwarum ERROR_VARIABLE _e8 GET "${_eintrag}" stillgelegt entscheid)
-        message(FATAL_ERROR
-            "S9b/SONDE-007c: Ziel '${ziel_id}' ist seit ${_stillam} STILLGELEGT und wird nicht gebaut.\n"
-            "Entscheid: ${_stillwarum}\n"
-            "Seine Kennung bleibt im Identitaetsmanifest reserviert und gesperrt (NAK-30) -\n"
-            "das ist kein Freibrief, sie wieder zu bauen. Soll das Ziel zurueckkommen, gehoert\n"
-            "der Weg dorthin in ein eigenes Ticket samt Abnahme, nicht in diese Zeile.")
+    if(NOT _stilltyp STREQUAL "stillgelegt-NOTFOUND")
+        if(_stilltyp STREQUAL "OBJECT")
+            string(JSON _stillam    ERROR_VARIABLE _e7 GET "${_eintrag}" stillgelegt am)
+            string(JSON _stillwarum ERROR_VARIABLE _e8 GET "${_eintrag}" stillgelegt entscheid)
+            # Ein leeres Marken-Objekt sperrt genauso - aber die Meldung darf
+            # dann nicht "seit stillgelegt-am-NOTFOUND" behaupten. Gemessen
+            # (T1-Selbstaudit 29.08.2026): genau dieser Text kam heraus. Ein
+            # Text, der eine CMake-Interna als Datum ausgibt, ist eine
+            # irrefuehrende Meldung, kein Datum. Die VOLLSTAENDIGKEIT der
+            # Marke misst EqCopIdentityTest ("Datum und Entscheid").
+            foreach(_paar "_stillam:${_stillam}" "_stillwarum:${_stillwarum}")
+                string(REGEX REPLACE "^([^:]+):(.*)$" "\\1" _feld "${_paar}")
+                string(REGEX REPLACE "^([^:]+):(.*)$" "\\2" _wert "${_paar}")
+                if(_wert STREQUAL "" OR _wert MATCHES "-NOTFOUND$")
+                    set(${_feld} "<im Manifest nicht angegeben>")
+                endif()
+            endforeach()
+            message(FATAL_ERROR
+                "S9b/SONDE-007c: Ziel '${ziel_id}' ist seit ${_stillam} STILLGELEGT und wird nicht gebaut.\n"
+                "Entscheid: ${_stillwarum}\n"
+                "Seine Kennung bleibt im Identitaetsmanifest reserviert und gesperrt (NAK-30) -\n"
+                "das ist kein Freibrief, sie wieder zu bauen. Soll das Ziel zurueckkommen, gehoert\n"
+                "der Weg dorthin in ein eigenes Ticket samt Abnahme, nicht in diese Zeile.")
+        else()
+            message(FATAL_ERROR
+                "S9b/SONDE-007c: Ziel '${ziel_id}' traegt eine Stilllegungsmarke, die unlesbar ist\n"
+                "(Typ ${_stilltyp}, erwartet OBJECT) - das Ziel wird nicht gebaut.\n"
+                "Eine kaputte Marke ist kein Freibrief: sie bedeutet weiter 'stillgelegt', nur ohne\n"
+                "Datum und Entscheid. Repariere die Marke in\n"
+                "  ${NAKAMA_IDENTITAET_DATEI}\n"
+                "auf ein Objekt mit 'am' und 'entscheid' - entferne sie NICHT, um weiterzubauen.")
+        endif()
     endif()
 
     string(JSON _plugincode GET "${_eintrag}" plugin_code)

@@ -252,6 +252,27 @@ def r_jedes_ziel_genau_einmal(m: dict, i: dict):
                    f"identity={'ok' if identity_ok else 'ungueltig'}")
 
 
+def _brauchbare_ids(werte: list, wo: str) -> tuple[list[str], list[str]]:
+    """Trennt nichtleere String-IDs von allem anderen - VOR jeder Mengen- oder
+    Sortieroperation.
+
+    Nacharbeit Runde 1 (29.08.2026, T2-Befund P2): `sorted()` und `set()`
+    setzen voraus, dass ihre Elemente vergleichbar bzw. hashbar sind. Eine ID
+    vom Typ Liste oder Objekt - `"ziel_id": []` genuegt - liess die Regel
+    darunter mit `TypeError: unhashable type: 'list'` sterben, statt das
+    Manifest kontrolliert abzulehnen. Ein Absturz ist kein Regelbefund: er
+    bricht das ganze Bein ab, statt zu sagen, WAS am Manifest falsch ist.
+    Deshalb wird hier zuerst validiert und erst danach verglichen."""
+    gut, fehler = [], []
+    for index, wert in enumerate(werte):
+        if isinstance(wert, str) and wert.strip():
+            gut.append(wert)
+        else:
+            fehler.append(f"{wo}[{index}]: ziel_id ist keine nichtleere "
+                          f"Zeichenkette ({type(wert).__name__}: {wert!r})")
+    return gut, fehler
+
+
 def r_stillgelegte_benannt(m: dict, i: dict):
     """Die zweite Haelfte: ein Ziel darf nicht STILL aus der Auslieferung fallen.
 
@@ -261,17 +282,26 @@ def r_stillgelegte_benannt(m: dict, i: dict):
     steht im Manifest namentlich, mit Datum, Grund und Umgang, und nur die
     stillgelegten" macht das Verschwinden sichtbar. Gefordert wird ausserdem,
     dass ein stillgelegtes Ziel NICHT als Artefakt auftaucht."""
-    stillgelegt_ids = sorted(z.get("id") for z in _stillgelegte(i))
+    fehler = []
+    # Beide Seiten werden validiert, nicht nur die Manifestseite: die
+    # Identitaetsdatei ist eingefroren, aber diese Regel misst sie - und eine
+    # Regel, die an ihrer eigenen Eingabe abstuerzt, misst nichts.
+    stillgelegt_roh = [z.get("id") for z in _stillgelegte(i)]
+    stillgelegt_gut, stillgelegt_fehler = _brauchbare_ids(stillgelegt_roh, "identitaet.stillgelegt")
+    fehler += stillgelegt_fehler
+    stillgelegt_ids = sorted(stillgelegt_gut)
+
     eintraege = m.get("stillgelegte_ziele")
     if not isinstance(eintraege, list):
-        return not stillgelegt_ids, "kein `stillgelegte_ziele`-Block"
-    benannt = [e.get("ziel_id") for e in eintraege if isinstance(e, dict)]
-    fehler = []
-    if len(benannt) != len(eintraege):
+        return (not stillgelegt_roh) and not fehler, \
+            "; ".join(fehler + ["kein `stillgelegte_ziele`-Block"])
+    benannt_roh = [e.get("ziel_id") for e in eintraege if isinstance(e, dict)]
+    benannt, benannt_fehler = _brauchbare_ids(benannt_roh, "stillgelegte_ziele")
+    fehler += benannt_fehler
+    if len(benannt_roh) != len(eintraege):
         fehler.append("ein Eintrag ist kein Objekt")
-    if sorted(x for x in benannt if x is not None) != stillgelegt_ids:
-        fehler.append(f"benannt {sorted(x for x in benannt if x is not None)} "
-                      f"!= stillgelegt {stillgelegt_ids}")
+    if sorted(benannt) != stillgelegt_ids:
+        fehler.append(f"benannt {sorted(benannt)} != stillgelegt {stillgelegt_ids}")
     if len(benannt) != len(set(benannt)):
         fehler.append("ein Ziel ist doppelt benannt")
     for e in eintraege:
@@ -279,8 +309,13 @@ def r_stillgelegte_benannt(m: dict, i: dict):
             continue
         for feld in ("seit", "warum", "umgang_mit_altbestand", "kennung_bleibt"):
             if not str(e.get(feld, "")).strip():
-                fehler.append(f"{e.get('ziel_id')}: {feld} fehlt")
-    aus_artefakten = {a.get("ziel_id") for a in _vst3(m)}
+                fehler.append(f"{e.get('ziel_id')!r}: {feld} fehlt")
+    # Auch diese Menge wird aus ungeprueften Manifestwerten gebaut: eine
+    # `ziel_id` vom Typ Liste in `artefakte` wuerde sie sonst genauso
+    # sprengen. Nicht-Strings koennen ohnehin kein stillgelegtes Ziel
+    # bezeichnen; die Artefaktseite selbst prueft `r_jedes_ziel_genau_einmal`.
+    aus_artefakten = {a.get("ziel_id") for a in _vst3(m)
+                      if isinstance(a.get("ziel_id"), str)}
     for zid in stillgelegt_ids:
         if zid in aus_artefakten:
             fehler.append(f"{zid}: stillgelegt, steht aber in `artefakte`")
@@ -598,6 +633,44 @@ def adversariale_strukturproben(m: dict, i: dict) -> None:
         manifest["stillgelegte_ziele"] = []
         pruefe(not r_stillgelegte_benannt(manifest, i)[0],
                "faellt, wenn ein stillgelegtes Ziel nirgends benannt ist")
+
+        # Nacharbeit Runde 1 (29.08.2026, T2-Befund P2): eine ID, die keine
+        # nichtleere Zeichenkette ist. Bis heute starb die Regel hier an
+        # `TypeError: unhashable type: 'list'` bzw. an `sorted()` ueber
+        # gemischte Typen - ein Absturz, der das ganze Bein abbricht, statt
+        # das Manifest kontrolliert abzulehnen. Jede dieser Proben muss ROT
+        # werden und dabei am Leben bleiben; genau das misst `pruefe`, denn
+        # eine geworfene Ausnahme kaeme hier gar nicht mehr an.
+        #
+        # Und wie bei der Bundle-Zielkollision weiter unten gilt: eine
+        # Gegenprobe, die an der Datenlage haengt, ist keine. Fehlt die
+        # Grundlage, sagt das Bein das laut, statt die Proben zu ueberspringen.
+        if not (m.get("stillgelegte_ziele") or []):
+            pruefe(False,
+                   "Gegenprobe unmoeglich: die Identitaetsdatei kennt ein stillgelegtes "
+                   "Ziel, `stillgelegte_ziele` im Manifest ist aber leer")
+        else:
+            for name, mutation in (
+                ("ziel_id ist eine leere Liste",   lambda e: e.update(ziel_id=[])),
+                ("ziel_id ist ein Objekt",         lambda e: e.update(ziel_id={"a": 1})),
+                ("ziel_id ist eine leere Zeichenkette", lambda e: e.update(ziel_id="")),
+                ("ziel_id ist nur Leerraum",       lambda e: e.update(ziel_id="   ")),
+                ("ziel_id ist eine Zahl",          lambda e: e.update(ziel_id=7)),
+                ("ziel_id fehlt ganz",             lambda e: e.pop("ziel_id", None)),
+            ):
+                manifest = copy.deepcopy(m)
+                mutation(manifest["stillgelegte_ziele"][0])
+                pruefe(not r_stillgelegte_benannt(manifest, i)[0],
+                       f"faellt kontrolliert (ohne Absturz), wenn {name}")
+
+            # Gemischte Typen in DERSELBEN Liste - der Fall, an dem schon
+            # `sorted()` stirbt, nicht erst `set()`.
+            manifest = copy.deepcopy(m)
+            zweiter = copy.deepcopy(manifest["stillgelegte_ziele"][0])
+            zweiter["ziel_id"] = []
+            manifest["stillgelegte_ziele"].append(zweiter)
+            pruefe(not r_stillgelegte_benannt(manifest, i)[0],
+                   "faellt kontrolliert bei gemischten ziel_id-Typen in einer Liste")
 
     manifest = copy.deepcopy(m)
     entfernt = next(a for a in manifest["artefakte"] if a.get("art") == "vst3")

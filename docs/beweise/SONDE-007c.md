@@ -17518,3 +17518,11 @@ Bruch. Der Treiber übersetzt die Quelle deshalb direkt statt zu importieren.
 | **E** — „jede neue Prüfung wurde einmal absichtlich gebrochen" | vier Brüche `B-R9a`…`B-R9d`, je rot und grün mit Rohausgabe, jeder byteweise zurückgenommen |
 | **E** — Positionen | Writer-Stellen als `Datei:Zeile` mit Commit (`@ 898b28b`, `Install-Nakama.ps1` seither unverändert: `git diff --quiet 898b28b HEAD -- eq-copilot/install/Install-Nakama.ps1` → Exit 0); dieser Abschnitt trägt seinen Stand im Kopf |
 | **F** — „installieren↔Rückweg im selben Änderungssatz" | Fixturen, neue Wache und die A17-Behauptung in einem Commit (`53c10a3`), die Selbstaudit-Korrekturen in `f131090`; an `Install-Nakama.ps1` wurde nichts geändert |
+
+Der gemeinsame Kanon-Abschlusslauf dieser Runde steht in
+`docs/beweise/SONDE-007a.md` („Kanon-Lauf - SONDE-007a Runde 9 + NAK-94
+Nacharbeit 4 - Abschluss"): **GRUEN, 32/32** auf `d4f7ed3` bei sauberem
+Arbeitsbaum, Exitcode 0, Bein `A17` mit Exit 0. Die Roh-Datei ist
+[`docs/beweise/roh/SONDE-007a-d4f7ed3.md`](roh/SONDE-007a-d4f7ed3.md); der
+A17-Abschnitt darin trägt den Anker `#a17` und zeigt die vier Zeilen dieser
+Runde (`P2/4` plus die drei `P2/3`-Proben) grün.

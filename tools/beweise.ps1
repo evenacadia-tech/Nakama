@@ -1,8 +1,9 @@
 #Requires -Version 7.0
 <#
 .SYNOPSIS
-    Nakama-Beweis-Runner - faehrt den kompletten Beweis-Kanon und schreibt die
-    ROHE Ausgabe in ein Manifest unter docs/beweise/.
+    Nakama-Beweis-Runner - faehrt den kompletten Beweis-Kanon, schreibt Urteil
+    und Uebersicht in ein Manifest unter docs/beweise/ und die ROHE Ausgabe
+    daneben nach docs/beweise/roh/.
 
 .DESCRIPTION
     Ersatz fuer die bewusst nicht gebaute CI (docs/bauaufteilung-sonden.md Abschnitt 1.1):
@@ -11,9 +12,30 @@
     Beweisvorsatz.
 
     Der Runner fasst NICHTS zusammen: stdout und stderr jedes Laufs landen
-    unveraendert im Manifest. Er misst ausserdem den BAUSTAND - sind die
-    Pruefbinaries aelter als die Quellen, verweigert er die Beglaubigung
-    (Exitcode 4), statt eine veraltete Messung als Basislinie auszugeben.
+    unveraendert auf der Platte. Seit NAK-96 in ZWEI Dateien (vorher wuchs jedes
+    Manifest um ~3000 Zeilen Rohtext je Lauf und wurde unlesbar):
+
+      Manifest (-Ziel)  Ueberschrift, die Zeile "**Lauf:** ... **Urteil:** ...
+                        **Exitcode:** ... **Rohausgabe:** <Verweis>", der Kopf
+                        "woran gemessen wurde" und die Uebersichtstabelle. Die
+                        Uebersicht verlinkt je Bein in die Rohausgabe.
+      Rohausgabe        docs/beweise/roh/<TICKET>-<sha7>.md - derselbe Kopf plus
+                        Baustand, vollstaendige stdout/stderr jedes Beins und
+                        das Bauprotokoll. Bei unbestaetigtem Arbeitsbaum traegt
+                        der Name zusaetzlich `-dirty`, bei einem zweiten Lauf
+                        auf demselben Stand ein Zaehlsuffix. Bestehende
+                        Rohausgaben werden NIE ueberschrieben.
+
+    Der Wortlaut der Lauf-Zeile ist fest: tools/plan/planstand.py liest daraus
+    die Kanon-Zahl zurueck (Regex KANON). Nur anhaengen, nie umformulieren.
+
+    Er misst ausserdem den BAUSTAND - sind die Pruefbinaries aelter als die
+    Quellen, verweigert er die Beglaubigung (Exitcode 4), statt eine veraltete
+    Messung als Basislinie auszugeben.
+
+    Lesende git-Aufrufe laufen mit --no-optional-locks (NAK-96): sonst frischt
+    git den Index auf, legt .git/index.lock an, und ein unter Last
+    abgeschossener Aufruf laesst die Sperre liegen.
 
     Der Kanon waechst mit dem Plan: geplante Pruefbinaries (ab P0/P1/P2/P6)
     stehen bereits in der Tabelle. Solange sie fehlen, sind sie eine neutrale
@@ -21,10 +43,13 @@
     sind ab dann Pflicht.
 
 .PARAMETER Ziel
-    Zieldatei des Manifests. Vorgabe: docs/beweise/lauf-<zeit>.md
+    Zieldatei des Manifests (Lesetext). Vorgabe: docs/beweise/lauf-<zeit>.md
+    Die Rohausgabe geht immer nach docs/beweise/roh/ und wird aus dem
+    Dateinamen des Ziels abgeleitet.
 
 .PARAMETER Anhaengen
-    Haengt den Lauf an ein bestehendes Ticket-Manifest an, statt es zu ersetzen.
+    Haengt den Lesetext des Laufs an ein bestehendes Ticket-Manifest an, statt
+    es zu ersetzen. Die Rohausgabe ist in jedem Fall eine eigene neue Datei.
 
 .PARAMETER Bauen
     Baut die Kanon-Ziele vorher neu (Release), damit der Lauf den aktuellen
@@ -148,8 +173,13 @@ function Einzeilig {
 }
 
 function Git-Wert {
+    <# Nur lesende Abfragen. `--no-optional-locks` steht VOR `-C`, weil git
+       globale Schalter vor dem Unterbefehl erwartet; ohne ihn frischt
+       `git status` den Index auf und legt dafuer `.git/index.lock` an -
+       wird der Aufruf unter Last abgeschossen, bleibt die Sperre liegen
+       und blockiert jedes spaetere git (NAK-96, dreimal am 29.08.). #>
     param([string[]] $Argumente)
-    $r = Fuehre-Aus -Datei 'git' -Argumente (@('-C', $Wurzel) + $Argumente)
+    $r = Fuehre-Aus -Datei 'git' -Argumente (@('--no-optional-locks', '-C', $Wurzel) + $Argumente)
     if ($r.ExitCode -ne 0) { return 'nicht ermittelbar' }
     return $r.StdOut.Trim()
 }
@@ -542,7 +572,7 @@ if (Test-Path -LiteralPath $cmakeWurzelDatei) {
 $juceQuelle = Join-Path $Wurzel 'eq-copilot\build\_deps\juce-src'
 $jucePlatte = 'nicht gebaut'
 if (Test-Path -LiteralPath $juceQuelle) {
-    $r = Fuehre-Aus -Datei 'git' -Argumente @('-C', $juceQuelle, 'describe', '--tags', '--always', '--dirty')
+    $r = Fuehre-Aus -Datei 'git' -Argumente @('--no-optional-locks', '-C', $juceQuelle, 'describe', '--tags', '--always', '--dirty')
     $jucePlatte = if ($r.ExitCode -eq 0 -and $r.StdOut.Trim()) { $r.StdOut.Trim() } else { 'vorhanden, Version nicht ermittelbar' }
 }
 
@@ -837,6 +867,50 @@ elseif (-not [IO.Path]::IsPathRooted($Ziel)) {
 $zielVerzeichnis = Split-Path -Parent $Ziel
 if (-not (Test-Path -LiteralPath $zielVerzeichnis)) { New-Item -ItemType Directory -Path $zielVerzeichnis -Force | Out-Null }
 
+# --- Rohausgabe-Datei bestimmen (NAK-96) ------------------------------------
+# Vor dem Umbau hing jeder Lauf ~3000 Zeilen Rohtext an das Manifest; nach
+# wenigen Laeufen war das Manifest fuer Prueferin und Dirigent nicht mehr
+# lesbar. Der Lesetext (Kopf, Urteil, Uebersicht) bleibt im Manifest, die
+# rohen stdout/stderr wandern in eine eigene Datei je Lauf.
+#
+# Der Name traegt den Stand, den der Lauf beweist: TICKET-<sha7>, bei
+# unbestaetigtem Arbeitsbaum zusaetzlich `-dirty` - ein Lauf auf schmutzigem
+# Baum beweist eben NICHT allein den Commit. Existiert die Datei schon
+# (zweiter Lauf auf demselben Stand), zaehlt ein Suffix hoch. Es wird nie
+# eine bestehende Rohausgabe ueberschrieben: ein Beweis, den ein spaeterer
+# Lauf still ersetzt, ist kein Beweis.
+$rohVerzeichnis = Join-Path $Wurzel 'docs\beweise\roh'
+if (-not (Test-Path -LiteralPath $rohVerzeichnis)) { New-Item -ItemType Directory -Path $rohVerzeichnis -Force | Out-Null }
+
+$rohStand = $kopf['Commit (voll)']
+if ($rohStand -and $rohStand -ne 'nicht ermittelbar' -and $rohStand.Length -ge 7) {
+    $rohStand = $rohStand.Substring(0, 7)
+}
+else {
+    $rohStand = 'ohne-sha'
+}
+if ($schmutzigeDateien.Count -gt 0) { $rohStand = "$rohStand-dirty" }
+
+$rohBasis = '{0}-{1}' -f ([IO.Path]::GetFileNameWithoutExtension($Ziel)), $rohStand
+$rohDatei = Join-Path $rohVerzeichnis ($rohBasis + '.md')
+$rohZaehler = 2
+while (Test-Path -LiteralPath $rohDatei) {
+    $rohDatei = Join-Path $rohVerzeichnis ('{0}-{1}.md' -f $rohBasis, $rohZaehler)
+    $rohZaehler++
+}
+
+# Relativ gerechnet statt zusammengeklebt: ein Manifest darf auch in einem
+# Unterordner von docs/beweise/ liegen, dann zeigt der Verweis nach oben.
+$rohVerweis      = ([IO.Path]::GetRelativePath($zielVerzeichnis, $rohDatei)) -replace '\\', '/'
+$manifestVerweis = ([IO.Path]::GetRelativePath($rohVerzeichnis, $Ziel)) -replace '\\', '/'
+
+# Wortgleich in beiden Dateien. `tools/plan/planstand.py` (KANON, Zeile 66)
+# liest die Kanon-Zahl aus GENAU diesem Wortlaut zurueck - der Verweis wird
+# deshalb nur angehaengt, nie in die Zeile hineingeschrieben.
+$laufZeile = "**Lauf:** $($Beginn.ToString('yyyy-MM-dd HH:mm')) | **Runner:** ``tools/beweise.ps1`` | **Urteil:** $urteil | **Exitcode:** $exitcode"
+
+# --- Manifest: Lesetext ------------------------------------------------------
+
 $z = [Collections.Generic.List[string]]::new()
 
 if ($Anhaengen -and (Test-Path -LiteralPath $Ziel)) {
@@ -849,7 +923,7 @@ else {
     $z.Add("# Beweismanifest - $Titel")
 }
 $z.Add('')
-$z.Add("**Lauf:** $($Beginn.ToString('yyyy-MM-dd HH:mm')) | **Runner:** ``tools/beweise.ps1`` | **Urteil:** $urteil | **Exitcode:** $exitcode")
+$z.Add("$laufZeile | **Rohausgabe:** [$rohVerweis]($rohVerweis)")
 $z.Add('')
 $z.Add('### Kopf - woran gemessen wurde')
 $z.Add('')
@@ -858,36 +932,6 @@ $z.Add('|---|---|')
 foreach ($schluessel in $kopf.Keys) { $z.Add("| $schluessel | $(Zellentext $kopf[$schluessel]) |") }
 $z.Add('')
 
-if ($schmutzigeDateien.Count -gt 0) {
-    $z.Add('<details><summary>Unbestaetigte Dateien im Arbeitsbaum</summary>')
-    $z.Add('')
-    $z.Add((Block ($schmutzigeDateien -join "`n")))
-    $z.Add('')
-    $z.Add('</details>')
-    $z.Add('')
-}
-
-$z.Add('### Baustand der Pruefbinaries')
-$z.Add('')
-if ($baustand.Count -eq 0) {
-    $z.Add('_Keine Pruefbinaries vorhanden._')
-}
-else {
-    $z.Add('| Binaerdatei | gebaut am | SHA-256 (16) | Stand |')
-    $z.Add('|---|---|---|---|')
-    foreach ($b in $baustand) { $z.Add("| ``$($b.Name)`` | $($b.Gebaut) | ``$($b.Hash)`` | $($b.Stand) |") }
-    $z.Add('')
-    # Die Liste kommt aus $quellOrte selbst, statt danebengeschrieben zu werden:
-    # eine abgeschriebene Aufzaehlung altert genau dann, wenn ein Ort dazukommt -
-    # also in dem Moment, in dem sie wichtig waere (Selbstaudit 23.08.).
-    $orteText = (($quellOrte | ForEach-Object { '`' + (RelativZurWurzel $_).Replace('\', '/').Replace('eq-copilot/', '') + '`' }) -join ', ')
-    $z.Add("Neueste Quelldatei ($orteText): **$(if ($neuesteQuelle) { $neuesteQuelle.ToString('yyyy-MM-dd HH:mm:ss') } else { 'nicht ermittelbar' })**. ``cargo test`` uebersetzt selbst und ist damit immer frisch.")
-    if ($bauBestaetigt) {
-        $z.Add('')
-        $z.Add('Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar vor diesem Lauf erfolgreich gebaut, das Buildsystem hat die Abhaengigkeiten also selbst geprueft.')
-    }
-}
-$z.Add('')
 if ($veraltet) {
     $z.Add('> **VERALTET - dieser Lauf beweist NICHT den aktuellen Quellstand.**')
     $z.Add('> Mindestens eine Pruefbinaerdatei ist aelter als die Quellen. Neu fahren mit `-Bauen`.')
@@ -900,43 +944,111 @@ $z.Add('| # | Behauptung | Befehl | Ergebnis | Dauer | Rohausgabe |')
 $z.Add('|---|---|---|---|---|---|')
 foreach ($e in $ergebnisse) {
     $dauer = if ($null -ne $e.Sekunden) { Dauertext $e.Sekunden } else { '-' }
-    $link = if ($e.Gelaufen) { "[↓ $($e.Kuerzel)](#$($e.Kuerzel.ToLower()))" } else { '-' }
+    $link = if ($e.Gelaufen) { "[$($e.Kuerzel)]($rohVerweis#$($e.Kuerzel.ToLower()))" } else { '-' }
     $z.Add("| $($e.Kuerzel) | $(Zellentext $e.Behauptung) | ``$(Zellentext $e.Befehl)`` | $($e.Symbol) $(Zellentext $e.Status) | $dauer | $link |")
 }
 $z.Add('')
 
-$z.Add('### Rohe Ausgaben')
-$z.Add('')
+# --- Rohausgabe: alles, was der Lauf gesehen hat -----------------------------
+
+$roh = [Collections.Generic.List[string]]::new()
+
+$roh.Add("# Rohausgabe - $Titel")
+$roh.Add('')
+$roh.Add($laufZeile)
+$roh.Add('')
+$roh.Add("**Manifest:** [$manifestVerweis]($manifestVerweis)")
+$roh.Add('')
+$roh.Add('### Kopf - woran gemessen wurde')
+$roh.Add('')
+$roh.Add('| Feld | Wert |')
+$roh.Add('|---|---|')
+foreach ($schluessel in $kopf.Keys) { $roh.Add("| $schluessel | $(Zellentext $kopf[$schluessel]) |") }
+$roh.Add('')
+
+if ($schmutzigeDateien.Count -gt 0) {
+    $roh.Add('<details><summary>Unbestaetigte Dateien im Arbeitsbaum</summary>')
+    $roh.Add('')
+    $roh.Add((Block ($schmutzigeDateien -join "`n")))
+    $roh.Add('')
+    $roh.Add('</details>')
+    $roh.Add('')
+}
+
+$roh.Add('### Baustand der Pruefbinaries')
+$roh.Add('')
+if ($baustand.Count -eq 0) {
+    $roh.Add('_Keine Pruefbinaries vorhanden._')
+}
+else {
+    $roh.Add('| Binaerdatei | gebaut am | SHA-256 (16) | Stand |')
+    $roh.Add('|---|---|---|---|')
+    foreach ($b in $baustand) { $roh.Add("| ``$($b.Name)`` | $($b.Gebaut) | ``$($b.Hash)`` | $($b.Stand) |") }
+    $roh.Add('')
+    # Die Liste kommt aus $quellOrte selbst, statt danebengeschrieben zu werden:
+    # eine abgeschriebene Aufzaehlung altert genau dann, wenn ein Ort dazukommt -
+    # also in dem Moment, in dem sie wichtig waere (Selbstaudit 23.08.).
+    $orteText = (($quellOrte | ForEach-Object { '`' + (RelativZurWurzel $_).Replace('\', '/').Replace('eq-copilot/', '') + '`' }) -join ', ')
+    $roh.Add("Neueste Quelldatei ($orteText): **$(if ($neuesteQuelle) { $neuesteQuelle.ToString('yyyy-MM-dd HH:mm:ss') } else { 'nicht ermittelbar' })**. ``cargo test`` uebersetzt selbst und ist damit immer frisch.")
+    if ($bauBestaetigt) {
+        $roh.Add('')
+        $roh.Add('Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar vor diesem Lauf erfolgreich gebaut, das Buildsystem hat die Abhaengigkeiten also selbst geprueft.')
+    }
+}
+$roh.Add('')
+if ($veraltet) {
+    $roh.Add('> **VERALTET - dieser Lauf beweist NICHT den aktuellen Quellstand.**')
+    $roh.Add('> Mindestens eine Pruefbinaerdatei ist aelter als die Quellen. Neu fahren mit `-Bauen`.')
+    $roh.Add('')
+}
+
+$roh.Add('### Uebersicht')
+$roh.Add('')
+$roh.Add('| # | Behauptung | Befehl | Ergebnis | Dauer | Rohausgabe |')
+$roh.Add('|---|---|---|---|---|---|')
+foreach ($e in $ergebnisse) {
+    $dauer = if ($null -ne $e.Sekunden) { Dauertext $e.Sekunden } else { '-' }
+    $link = if ($e.Gelaufen) { "[↓ $($e.Kuerzel)](#$($e.Kuerzel.ToLower()))" } else { '-' }
+    $roh.Add("| $($e.Kuerzel) | $(Zellentext $e.Behauptung) | ``$(Zellentext $e.Befehl)`` | $($e.Symbol) $(Zellentext $e.Status) | $dauer | $link |")
+}
+$roh.Add('')
+
+$roh.Add('### Rohe Ausgaben')
+$roh.Add('')
 foreach ($e in ($ergebnisse | Where-Object { $_.Gelaufen })) {
-    $z.Add("<a id=`"$($e.Kuerzel.ToLower())`"></a>")
-    $z.Add("#### $($e.Kuerzel) | $($e.Name)")
-    $z.Add('')
-    $z.Add("**Befehl:** ``$(Zellentext $e.Befehl)`` | **Exitcode:** $($e.ExitCode) | **Dauer:** $(Dauertext $e.Sekunden)")
-    $z.Add('')
-    $z.Add('stdout:')
-    $z.Add('')
-    $z.Add((Block $e.StdOut))
-    $z.Add('')
-    $z.Add('stderr:')
-    $z.Add('')
-    $z.Add((Block $e.StdErr))
-    $z.Add('')
+    $roh.Add("<a id=`"$($e.Kuerzel.ToLower())`"></a>")
+    $roh.Add("#### $($e.Kuerzel) | $($e.Name)")
+    $roh.Add('')
+    $roh.Add("**Befehl:** ``$(Zellentext $e.Befehl)`` | **Exitcode:** $($e.ExitCode) | **Dauer:** $(Dauertext $e.Sekunden)")
+    $roh.Add('')
+    $roh.Add('stdout:')
+    $roh.Add('')
+    $roh.Add((Block $e.StdOut))
+    $roh.Add('')
+    $roh.Add('stderr:')
+    $roh.Add('')
+    $roh.Add((Block $e.StdErr))
+    $roh.Add('')
 }
 
 if ($bauProtokoll.Count -gt 0) {
-    $z.Add('### Bau vor dem Lauf (`-Bauen`)')
-    $z.Add('')
+    $roh.Add('### Bau vor dem Lauf (`-Bauen`)')
+    $roh.Add('')
     foreach ($b in $bauProtokoll) {
-        $z.Add("**$($b.Schritt)** | Exit $($b.ExitCode) | $(Dauertext $b.Sekunden)")
-        $z.Add('')
-        $z.Add('<details><summary>Rohe Ausgabe</summary>')
-        $z.Add('')
-        $z.Add((Block ($b.StdOut + "`n" + $b.StdErr)))
-        $z.Add('')
-        $z.Add('</details>')
-        $z.Add('')
+        $roh.Add("**$($b.Schritt)** | Exit $($b.ExitCode) | $(Dauertext $b.Sekunden)")
+        $roh.Add('')
+        $roh.Add('<details><summary>Rohe Ausgabe</summary>')
+        $roh.Add('')
+        $roh.Add((Block ($b.StdOut + "`n" + $b.StdErr)))
+        $roh.Add('')
+        $roh.Add('</details>')
+        $roh.Add('')
     }
 }
+
+# Rohausgabe zuerst: sonst verweist ein geschriebenes Manifest auf eine Datei,
+# die es nicht gibt, falls das Schreiben danach scheitert.
+Set-Content -LiteralPath $rohDatei -Value ($roh -join "`n") -Encoding utf8
 
 $inhalt = ($z -join "`n")
 if ($Anhaengen -and (Test-Path -LiteralPath $Ziel)) {
@@ -948,5 +1060,6 @@ else {
 
 Write-Host ''
 Write-Host $urteil
-Write-Host ('Manifest: {0}' -f (RelativZurWurzel $Ziel))
+Write-Host ('Manifest:   {0}' -f (RelativZurWurzel $Ziel))
+Write-Host ('Rohausgabe: {0}' -f (RelativZurWurzel $rohDatei))
 exit $exitcode

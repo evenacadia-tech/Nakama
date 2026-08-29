@@ -16253,3 +16253,31 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
 </details>
 
+
+---
+
+## Abschluss der Dirigentenrunde — 2026-08-29: NEEDS_WORK, zweimal nachgearbeitet, Urteil offen
+
+**Marke:** `T2 NEEDS_WORK 2026-08-29 nachgearbeitet` (unverändert). Stand `cbb4239`; Ticketbasis `9bb75ad`; Stand vor dieser Runde `043b48f`. Prüfer: Codex `gpt-5.6-sol`, Effort `xhigh`, drei frische Threads, jeder über den vollständigen Ticketbereich `git diff 9bb75ad...<Stand>`. Nacharbeit in zwei Runden durch je einen frischen Opus-Worker (`max`) im sichtbaren Checkout — die Codex-Sandbox fährt keinen Bau und keinen Kanonlauf (S8/S9-Präzedenz 28./29.08.); jede Runde hat auf dem committeten Stand den Kanon gefahren und angehängt.
+
+| Runde | Thread | Stand | Urteil | Befunde |
+|---|---|---|---|---|
+| 1 | `01a04b1e-cb90-7da2-bc16-3faccdb40bc5` | `043b48f` | NEEDS_WORK | 4: (P1) Riegel im Identitätsleser hing am Typ `OBJECT`, nicht an der Anwesenheit der Marke; (P1) Behauptung 2 ohne echten `nakama_identitaet_lesen`-Aufruf belegt; (P1) Vertrag §2 sagte noch „3 vs 3"; (P2) A17 starb mit `TypeError` an nicht-hashbaren `ziel_id`-Typen. → `85ad037`/`05dbbb1` (§6; Kanon GRÜN 28/28 auf `85ad037`). |
+| 2 | `01a04b48-7130-7630-a094-04868a2205e0` | `05dbbb1` | NEEDS_WORK | 2: (P1) A17 prüfte den Wert der Marke nicht — Exit 0 bei `null`/String/Array/Zahl/Boolean, während die drei anderen Leser hart ablehnen; (P2) Pflichtfelder über `str(x).strip()` — `null`/`[]`/`{}` gingen als „None"/„[]" durch, Installer prüfte vor der Ausgabe nicht. → `b635c43`/`cbb4239` (§7; Kanon GRÜN 28/28 auf `b635c43`). |
+| 3 | `01a04b72-2ec1-71a2-9f62-fb9e23cd4420` | `cbb4239` | NEEDS_WORK | 3, alle offen — siehe unten. Geprüft laut Prüfer: exakter Diff `9bb75ad...cbb4239`, aktuelle Quellen, §1 samt Rohausgaben und beide Nacharbeitsschließungen, Identitätsinvarianten, Rückwegquelle und A18-Beleg. Nicht geprüft: Bau, Kanon, Laufzeitproben (per Auftrag ausgeschlossen). |
+
+**Restbefund (Runde 3), wörtlich:**
+
+> [P1] Erzwinge dieselbe Markenlesbarkeit in allen vier Lesern — tools/eq-copilot/pruefe_installer_manifest.py:384-387. **Schwere: high.** Repro: Setze in einer Identitätskopie `stillgelegt.am` auf `7` oder Leerraum. Diese A17-Regel lehnt den Wert ab, `EqCopIdentityTest` akzeptiert ihn wegen `toString().isNotEmpty()`, der Installer prüft nur das äußere `PSCustomObject`, und CMake behandelt ihn als normales Datum; damit sind Behauptungen 21/23 und die Vier-Leser-Symmetrie weiterhin falsch. Kleinster Fix: `am` und `entscheid` überall typstreng als nichtleere Strings prüfen und dieselben Mutationen in B1/A18/CMake-Proben fahren.
+
+> [P1] Dokumentiere den erzwungenen Typ im v1-Vertrag — eq-copilot/schemas/installer/nakama-installer-v1.md:87. **Schwere: high.** Der v1-Vertrag fordert hier nur die Anwesenheit der vier Felder, während A17 und Installer sie nun zwingend als nichtleere Strings interpretieren. Repro: Ein nach diesem Vertrag plausibles `kennung_bleibt: true` wird von beiden Lesern abgelehnt, obwohl die Schemadokumentation diesen Typ nicht verbietet. Kleinster Fix: Den String-/Nichtleer-Vertrag in §2.3 festschreiben oder die zusätzliche Leserrestriktion entfernen; persistente Formate und Leser müssen gemeinsam geändert werden.
+
+> [P2] Aktualisiere auch die kanonische A17-Behauptung — eq-copilot/schemas/installer/nakama-installer-v1.md:91-93. **Schwere: medium.** Nach dieser Aktivziel-Regel behauptet `tools/beweise.ps1` für A17 weiterhin „jedes Ziel genau einmal". Das letzte Beweismanifest wiederholt dies in der Übersicht, während die zugehörige Rohausgabe korrekt `2 vs 2 aktiv (3 Kennungen gesamt)` misst; Behauptung und Messung widersprechen sich daher im kanonischen Beleg. Kleinster Fix: Die A17-Behauptung im Runner auf aktive beziehungsweise stillgelegte Ziele und die neue Lesbarkeitsregel umstellen.
+
+Vom Dirigenten an der Quelle bestätigt: alle drei. `IdentityTestMain.cpp` misst `am`/`entscheid` über `toString().isNotEmpty()` (eine Zahl `7` wird „7"), der CMake-Leser setzt den Wert ungeprüft in die Abbruchmeldung, `Install-Nakama.ps1` prüft nur, dass die Marke ein Objekt ist — alle vier sperren weiterhin fail-closed, aber nicht mit derselben Strenge am Inhalt; Behauptung 21 sagt mehr, als gemessen ist. `nakama-installer-v1.md` Zeile 87 nennt für die vier Pflichtfelder keinen Typ. `tools/beweise.ps1` Zeile 317 trägt in der A17-Behauptung noch „jedes Ziel genau einmal". Der Kanon selbst ist davon nicht berührt: kein Bein rot, kein Bundle mit fremder Kennung, Identitätsdatei gegenüber `20f7107` unverändert (gemessen: `git diff --quiet 20f7107 cbb4239 -- eq-copilot/identity/plugin-identities-v1.json` → 0).
+
+**Warum hier gestoppt:** Zwei Nacharbeitsrunden sind die Grenze des Dirigentenlaufs. Beide haben ihre Befunde an der Quelle geschlossen; jede Runde brachte eine weitere Schicht derselben Frage — wie streng die vier Leser den *Inhalt* der Stilllegungsmarke prüfen und ob Vertrag, Runner-Behauptung und Manifest genau das sagen, was gemessen ist. Der Restbefund ist reproduzierbar, klein und in einem Zug schließbar (typstrenge `am`/`entscheid`-Prüfung in `IdentityTestMain.cpp`, `NakamaIdentitaet.cmake`, `Install-Nakama.ps1`; Typangabe in Vertrag §2.3; A17-Behauptungstext in `tools/beweise.ps1`; Behauptung 21/23 auf das Gemessene begrenzen; danach Kanon auf committetem Stand und ein frischer Prüfer). Datiert als **NAK-89** in `docs/offene-punkte.md`.
+
+**Tatsächlich gelaufene Beweise** (Worker auf dem echten Rechner, vom Dirigenten am Repo gemessen): Kanon `tools/beweise.ps1 -Bauen` GRÜN 28/28 mit Nachsatz „1 stillgelegte(s) Bein(e)" zweimal — auf `85ad037` (04:05) und auf `b635c43` (04:52), beide auf sauberem committetem Stand (Anhänge oben). Drei Codex-Läufe read-only, HEAD vor und nach jedem Lauf identisch (`043b48f`, `05dbbb1`, `cbb4239`). Tabu-Pfade (S9/SONDE-007b, `SondeNullTestMain.cpp`, `NEXT-SESSION.md`, `PLAN-STAND.md`) in beiden Runden unberührt; jeder Worker-Commit mit explizitem Pathspec, jeder Stand auf `origin/master`.
+
+**Nächster Schritt an diesem Ticket:** eine dritte Nacharbeit nur auf ausdrückliche User-Freigabe (Dirigent stoppt nach zwei Runden), sonst bleibt S9b „gebaut, nachgearbeitet, frisches Urteil fehlt" und der FL-Schritt (§55 Klausel 1, NAK-87) wartet weiter auf den User.

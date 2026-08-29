@@ -1,5 +1,21 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ✅ NACHTRAG — 29.08.2026, S9b `SONDE-007c` T2-Nacharbeit (Dirigentenrunde 03:20–05:10)
+>
+> Die Marke von `SONDE-007c` steht auf **`T2 NEEDS_WORK 2026-08-29
+> nachgearbeitet`**. Drei frische Codex-Prüfer (`gpt-5.6-sol`/xhigh) über den
+> vollen Ticketbereich `9bb75ad…`; zwei Nacharbeitsrunden durch Opus-Worker
+> haben sechs Befunde an der Quelle geschlossen (Riegel im Identitätsleser auf
+> Anwesenheit der Marke statt Typ `OBJECT`, echte Fail-closed-Probe, Vertrag
+> ohne „3 vs 3", A17 ohne `TypeError` und mit Lesbarkeitsregel, Pflichtfelder
+> typstreng in A17 und Installer). Kanon GRÜN 28/28 auf `85ad037` und
+> `b635c43`. Der dritte Prüfer ließ drei kleine, zusammenhängende Befunde
+> offen — datiert als **`NAK-89`** (Inhaltsstrenge von `am`/`entscheid` in
+> allen vier Lesern angleichen, Typ in Vertrag §2.3, A17-Behauptungstext im
+> Runner). Der Dirigent stoppt nach zwei Runden; eine dritte Nacharbeit nur
+> auf User-Freigabe. Stand `cbb4239`. Details: Manifest, Abschnitt
+> „Abschluss der Dirigentenrunde".
+
 > ## ✅ NACHTRAG — 29.08.2026, S9 `SONDE-007b` T3-Nacharbeit
 >
 > Die Marke von `SONDE-007b` ist nicht mehr `offen`, sondern

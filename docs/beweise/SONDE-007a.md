@@ -11167,7 +11167,251 @@ fail-closed ohne Rohtextheuristik".
   je Verzeichnis `CMakeFiles/generate.stamp.depend` gegen den zugehörigen
   `generate.stamp` halten und Exit 3 melden, statt eine handgepflegte
   Dateiliste zu führen —, gebaut wurde er nicht.
+  **Nachtrag 29.08.2026:** in der Fortsetzung derselben Runde geschlossen,
+  Commit `d3c741c` — siehe den folgenden Abschnitt „Nacharbeit Runde 3 —
+  Fortsetzung 2026-08-29: NAK-85".
 - **Kein Kanon-Lauf.** `tools/beweise.ps1` wurde in dieser Runde nicht
   gefahren; für den Endstand `a728fba` liegt damit keine Beglaubigung vor.
+  **Nachtrag 29.08.2026:** in der Fortsetzung nachgeholt; der Kanon-Anhang
+  unter dieser Zeile beglaubigt `a728fba` und `d3c741c` gemeinsam.
 - Die übrigen manuellen Configure-Bruchproben aus den Repro-Blöcken der
   Runden 1 und 2 sind weiterhin nicht gefahren.
+
+## Nacharbeit Runde 3 — Fortsetzung 2026-08-29: NAK-85
+
+Fortsetzung der am selben Tag unterbrochenen Runde. NAK-84 war dort an der
+Quelle geschlossen (`a728fba`), aber ohne Kanon; NAK-85 war nicht begonnen.
+Beides wird hier nachgeholt — dieser Abschnitt löst den Punkt „**NAK-85** ist
+unberührt" aus dem vorangehenden Abschnitt ab.
+
+### Der Befund, wörtlich
+
+> **A14 misst bei geändertem CMake ohne Configure gegen die alte `.vcxproj`**
+> (derselbe Prüfer): wird `plugin/CMakeLists.txt` oder `NakamaKern.cmake`
+> geändert und `pruefe_kern_identitaetsfrei.py` direkt gestartet, vergleicht es
+> alte Soll-Defines mit dem alten Tlog und akzeptiert die alte Lib; Behauptung
+> 14 „misst nie ein veraltetes Artefakt" hält so nicht. Fix: A14 prüft die mtime
+> der CMake-Quellen gegen die erzeugte `.vcxproj`/`CMakeCache.txt` und meldet
+> Exit 3 (Voraussetzung fehlt) statt grün. Nächste S8-Nacharbeit.
+
+Quelle: `docs/offene-punkte.md`, Zeile `| NAK-85 |`, Stand `c82d8ce`.
+
+### Der Befund reproduziert, bevor irgendetwas gebaut wurde
+
+Prüfliste E verlangt, dass eine neue Prüfung einmal gebrochen wurde **und** dass
+die Probe ohne den Fix nicht schon rot ist. Beides ist hier gemessen. Der
+Zeitstempel von `cmake/NakamaKern.cmake` wurde per
+`[IO.File]::SetLastWriteTime` auf „jetzt" gesetzt, ohne Configure — der
+Dateiinhalt bleibt unberührt, `git status` zeigt die Datei nicht. Dann lief der
+**alte** Skriptstand, wörtlich aus `c82d8ce` geholt
+(`git show HEAD:tools/eq-copilot/pruefe_kern_identitaetsfrei.py`):
+
+```
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - misst dieses Bein den aktuellen Quellstand?
+  ok      NakamaKern.lib ist nicht aelter als die Kernquellen
+  ok      jede gebaute TU hat exakt die heutige Definemenge (10 TUs, 16 Defines)
+...
+26 ok, 0 Fehler
+EXITCODE=0
+```
+
+Die CMake-Fassade des Kerns ist geändert, kein Configure gelaufen — und
+Abschnitt `[0]`, der Abschnitt mit der Überschrift „misst dieses Bein den
+aktuellen Quellstand?", meldet zweimal `ok`. Das ist NAK-85 am echten
+Bauverzeichnis, nicht im Modell.
+
+### Warum die vom Befund vorgeschlagenen Anker nicht taugen
+
+Der Befundtext schlägt `.vcxproj`/`CMakeCache.txt` als Wache vor. Die Messung
+am echten Bauverzeichnis widerlegt beide, und zwar aus demselben Grund, an dem
+im Kopf dieser Datei schon „Anlauf 2" gescheitert ist:
+
+| Datei | mtime am 29.08. | taugt als Anker? |
+|---|---|---|
+| `eq-copilot/build/plugin/NakamaKern.vcxproj` | 06:08 | **nein** — CMake schreibt eine Projektdatei nur bei *inhaltlicher* Änderung neu (copy-if-different) |
+| `eq-copilot/build/CMakeCache.txt` | 28.08. 18:46 | **nein** — nach dem Configure vom 29.08. um 16:36 unverändert bei 28.08. 18:46: ein Reconfigure ohne Cache-Änderung fasst sie nicht an |
+| `eq-copilot/build/CMakeFiles/generate.stamp` | 15:12 | **ja** — der Generator berührt ihn bei *jedem* Configure |
+
+Ein Configure am 29.08. um 15:12 hinterließ eine Projektdatei von 06:08. Wer
+gegen die `.vcxproj` misst, hält ein aktuelles Configure für veraltet und
+umgekehrt. Der Stamp ist der einzige ehrliche Zeitanker.
+
+### Umsetzung
+
+`configure_frische()` in `tools/eq-copilot/pruefe_kern_identitaetsfrei.py`
+läuft **vor** jeder Messung in `main()` — vor dem Suchen der Lib, vor dem
+Definevergleich. Es fragt nicht einen weiteren Stellvertreter, sondern den
+Generator selbst:
+
+- `<bau>/CMakeFiles/generate.stamp.list` nennt die Bauverzeichnisse **dieses**
+  Configures.
+- Je Verzeichnis nennt `CMakeFiles/generate.stamp.depend` die CMake-Eingaben,
+  die der Generator dort verbraucht hat.
+- `CMakeFiles/generate.stamp` trägt den Zeitpunkt.
+
+Ist eine gelistete Eingabe jünger als ihr Stamp, ist das Configure veraltet →
+Exit 3, mit Nennung der Datei. Keine handgepflegte Eingabeliste.
+
+**Zwei Verzeichnisse, nicht eines.** Die beiden Dateien aus dem Befund stehen
+in **verschiedenen** Listen, gemessen am echten Bauverzeichnis:
+
+| Datei aus dem Befund | steht in | weil |
+|---|---|---|
+| `eq-copilot/plugin/CMakeLists.txt` | `build/plugin/CMakeFiles/generate.stamp.depend` (4 Einträge) | `add_subdirectory(plugin)` |
+| `eq-copilot/cmake/NakamaKern.cmake` | `build/CMakeFiles/generate.stamp.depend` (41 Einträge) | `include()` aus `eq-copilot/CMakeLists.txt` |
+
+Eine Wache nur über `<bau>/plugin` hätte genau die Datei aus dem Befundtitel
+übersehen. Die beiden Bruchproben unten treffen deshalb jeweils einen anderen
+Stamp — das ist der Beleg, dass wirklich beide Verzeichnisse geprüft werden.
+
+**Warum die Generatorliste und nicht ein Glob** (technische Entscheidung
+innerhalb der Auftragsgrenze). Ein Glob `**/CMakeFiles/generate.stamp.depend`
+über das Bauverzeichnis findet am 29.08. **13** Dateien, `generate.stamp.list`
+nennt **7**. Die sechs zusätzlichen sind FetchContent-Subbuilds
+(`juce-subbuild`, `flatbuffers-subbuild` — eigene CMake-Projekte mit eigenem
+Top-Level) und Reste eines früheren JUCE-Layouts (`_deps/juce-build/tools/…`).
+Sie könnten diesen Riegel mit Ursachen färben, die über den Kern nichts
+aussagen. Die Liste beschreibt genau das heutige Configure und ist
+generatorgeschrieben, also selbst nicht handpflegbar. Über alle 7 Stamps
+zusammen werden **73** CMake-Eingaben bewacht.
+
+**Fail-closed nach Prüfliste D.** Klage — und damit Exit 3 — gibt es bei:
+fehlender `generate.stamp.list`, leerer Liste, fehlendem `generate.stamp`,
+fehlender `generate.stamp.depend`, einer gelisteten Eingabe, die nicht mehr
+existiert, und einer Eingabe, die jünger als ihr Stamp ist.
+
+**Abdeckungskontrolle gegen das Blindwerden der Wache** (`KONFIG_PFLICHTEINGABEN`).
+Stehen `plugin/CMakeLists.txt` oder `cmake/NakamaKern.cmake` in **keiner**
+Generatorliste, ist die Wache an genau der Datei blind, um die es im Befund
+geht — dann klagt sie darüber, statt still grün zu bleiben. Das ist keine
+Ersatz-Eingabeliste (die bleibt generatorgepflegt), sondern dieselbe Vorsicht
+wie bei `ERWARTETE_OBJEKTE` im selben Skript: ändert CMake sein Layout, soll
+dieses Bein sprechen. Pfade werden dafür normiert verglichen — CMake schreibt
+Eingaben teils unnormiert (`cmake/../identity/plugin-identities-v1.json`), und
+Windows unterscheidet Groß-/Kleinschreibung nicht.
+
+### Probe (a) — Normalfall
+
+`py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py` nach einem Bau:
+
+```
+[0] Frische - misst dieses Bein den aktuellen Quellstand?
+  ok      NakamaKern.lib ist nicht aelter als die Kernquellen
+  ok      jede gebaute TU hat exakt die heutige Definemenge (10 TUs, 16 Defines)
+...
+26 ok, 0 Fehler
+EXIT=0
+```
+
+Kein falsches Rot: die neue Wache schlägt am realen Bauverzeichnis nicht zu.
+Insbesondere `CMakeFiles/cmake.verify_globs` — eine erzeugte Datei, die in den
+depend-Listen steht — löst keinen Fehlalarm aus. Gemessen nach dem Bau:
+`cmake.verify_globs` 16:36:20.69, `generate.stamp` 16:36:21.43. CMake schreibt
+sie *während* des Configure, der Stamp folgt danach; die Reihenfolge ist
+konstruktiv sicher.
+
+### Probe (b) — Bruchprobe, beide Stamp-Verzeichnisse
+
+**b1, Wurzelverzeichnis.** `cmake/NakamaKern.cmake` per
+`[IO.File]::SetLastWriteTime` auf „jetzt", kein Configure:
+
+```
+VORAUSSETZUNG: Configure veraltet - eq-copilot/cmake/NakamaKern.cmake juenger als eq-copilot/build/CMakeFiles/generate.stamp; neu konfigurieren/bauen
+  Erst konfigurieren und bauen: pwsh -File tools/beweise.ps1 -Bauen -Ziel <manifest>
+EXITCODE=3
+```
+
+**b2, Plugin-Verzeichnis.** Dasselbe mit `plugin/CMakeLists.txt`:
+
+```
+VORAUSSETZUNG: Configure veraltet - eq-copilot/plugin/CMakeLists.txt juenger als eq-copilot/build/plugin/CMakeFiles/generate.stamp; neu konfigurieren/bauen
+  Erst konfigurieren und bauen: pwsh -File tools/beweise.ps1 -Bauen -Ziel <manifest>
+EXITCODE=3
+```
+
+Zwei verschiedene Stamps in der Meldung, je nach betroffener Datei.
+
+**Heilung über den vorgeschriebenen Weg.** Nach
+`cmake --build eq-copilot/build --config Release --target NakamaKern`:
+
+```
+-- Nakama-Kern: K2 gruen — 4 Ziele in der Usage-Requirements-Huelle von 'NakamaKern', keine compilerwirksame JucePlugin_-Konstante aus Defines oder -D-/D-Optionen (Debug, Release, MinSizeRel, RelWithDebInfo).
+-- Configuring done (19.0s)
+-- Generating done (2.8s)
+-- Build files have been written to: C:/Users/phili/Projekte/Nakama/eq-copilot/build
+  Checking File Globs
+  NakamaKern.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\Release\NakamaKern.lib
+BAU-EXITCODE=0
+```
+
+Danach meldet A14 wieder `26 ok, 0 Fehler`, Exit 0. Der Riegel heilt sich
+selbst, weil ein Bau das Configure nachzieht — dieselbe Eigenschaft, die schon
+den Tlog-Vergleich trägt.
+
+**Rücknahme.** Der Zeitstempel von `plugin/CMakeLists.txt` wurde auf sein
+Original zurückgesetzt (`2026-08-29T13:30:46.0689665+02:00`);
+`cmake/NakamaKern.cmake` trägt den Zeitpunkt der Bruchprobe und liegt vor dem
+darauf folgenden Configure. Kein Dateiinhalt wurde für die Proben verändert,
+`git status` blieb durchgehend ohne Eintrag für beide Dateien.
+
+### Probe (c) — Selbsttest, baulos
+
+`--selbsttest` deckte Frische-Fälle bisher nur für den Definevergleich ab. Fünf
+Fälle für die Configure-Wache sind ergänzt (`_selbsttest_configure_frische()`,
+künstliches Bauverzeichnis in `tempfile`, kein Bau nötig):
+
+```
+NAK-85-Selbsttest: Configure-Frischewache (kuenstliches Bauverzeichnis)
+  ok      A: aktuelles Configure bleibt klaglos
+  ok      B: geaenderte CMake-Eingabe ohne Configure wird benannt  [...Kuenstlich.cmake juenger als ...CMakeFiles\generate.stamp]
+  ok      C: eine ungelistete Pflichteingabe macht die Wache nicht still  [eq-copilot/plugin/CMakeLists.txt steht in keiner generate.stamp.depend - die Frischewache ist an dieser Datei blind | eq-copilot/cmake/NakamaKern.cmake steht in keiner generate.stamp.depend - die Frischewache ist an dieser Datei blind]
+  ok      C2: verschwundene CMake-Eingabe ist eine Klage, kein stilles Ja  [...Kuenstlich.cmake ist als CMake-Eingabe gelistet, existiert aber nicht mehr]
+  ok      D: ohne generate.stamp.list gibt es kein gruenes Urteil  [...CMakeFiles\generate.stamp.list fehlt - Bauverzeichnis nicht konfiguriert]
+
+11 ok, 0 Fehler
+```
+
+Fall C prüft die Abdeckungskontrolle gegen die **echten** Pflichtpfade: die
+künstliche `generate.stamp.depend` führt sie einmal mit und einmal ohne.
+
+### Probe (d) — Behauptung ≤ Messung
+
+Der Behauptungstext von A14 sagte nichts über Frische, obwohl Behauptung 14 im
+Kopf dieses Manifests „misst nie ein veraltetes Artefakt" zusagt. Beide Texte
+sind auf das Gemessene gezogen:
+
+- `tools/beweise.ps1`, Eintrag `Kuerzel='A14'`: ergänzt um „Gemessen wird nie
+  ein veraltetes Artefakt: die Lib ist nicht älter als ihre Quellen, jede
+  gebaute Übersetzungseinheit trägt exakt die Definemenge der Projektdatei, und
+  das Configure selbst ist jünger als jede CMake-Eingabe, die der Generator
+  dafür verbraucht hat." Drei Sätze für drei Arten zu veralten — mehr sagt der
+  Text nicht.
+- Kopf von `pruefe_kern_identitaetsfrei.py`: neuer Absatz `FRISCHE` benennt
+  dieselben drei Stellen; die Exitcode-Zeile nennt „Configure veraltet" als
+  zweiten Fall von Exit 3.
+- Der Kommentarblock über `_defines_aus_vcxproj` trug „Anlauf 1/Anlauf 2".
+  Ergänzt um „Anlauf 3 war nötig (NAK-85)", damit kein Leser den
+  Tlog-Vergleich für die ganze Zusage hält.
+
+**Exit 3 rutscht im Runner nicht durch.** `tools/beweise.ps1` behandelt Exit 3
+als `[FEHLT] Voraussetzung fehlt (Exit 3)`, zählt `$fehlendeVoraussetzung` hoch
+und setzt das Urteil auf `UNVOLLSTAENDIG` — nie auf grün.
+
+### Prüfliste abgehakt
+
+| Regel | wo gemessen |
+|---|---|
+| **D** — fail-closed ohne Heuristik, Unbekanntes ist ROT | `configure_frische()`: fehlende Liste/Stamp/Depend, verschwundene Eingabe und blinde Wache sind Klagen; Selbsttest C, C2, D |
+| **D** — „misst nie ein veraltetes Artefakt" prüft Frische und meldet Exit 3 | `configure_frische()` läuft vor jeder Messung in `main()`; Proben (b1)/(b2) mit Exit 3 |
+| **E** — Behauptung ≤ Messung | Probe (d): Runner-Eintrag `Kuerzel='A14'`, Skriptkopf `FRISCHE`, Kommentar „Anlauf 3" |
+| **E** — Zahlen gemessen, nicht abgeschrieben | 7 Stamps / 13 Globtreffer / 73 Eingaben / 41 bzw. 4 Einträge je Liste — alle am Bauverzeichnis gezählt, nicht aus einer Datei übernommen |
+| **E** — Positionen als Symbol/Anker | dieser Abschnitt nennt `configure_frische()`, `KONFIG_PFLICHTEINGABEN`, `_selbsttest_configure_frische()`, `Kuerzel='A14'` — keine nackten Zeilennummern |
+| **E** — jede neue Prüfung einmal gebrochen, Rohausgabe liegt bei | Proben (b1)/(b2); zusätzlich der Altstand aus `c82d8ce`, der bei **derselben** Lage `26 ok, 0 Fehler` meldet — die Probe ist also kein Regressionsartefakt |
+| **F** — Änderungssatz | Wache und ihr Heilweg im selben Commit: `configure_frische()` klagt, ein Bau nimmt die Klage zurück (Probe b). Skript, Runner-Behauptung, Skriptkopf und Selbsttest liegen in `d3c741c` zusammen |
+
+**Commit:** `d3c741c` — „SONDE-007a Runde 3: NAK-85 - A14 verweigert das Urteil
+bei veraltetem Configure".

@@ -335,8 +335,24 @@ JUCE-frei wie der übrige `core/`-Baum, fünf Dateien:
 - `IpcQueues` — P0 (Cap 64, nichts verwerfen ⇒ Verbindung schließen), P1
   (Cap 128, Snapshots nach Objektschlüssel koaleszieren, nicht koaleszierbare
   Ereignisse im Wiederholpuffer über den Reconnect) und `P2Schleuse`
-  (vorallokiert, lockfrei, Cap 2, replace-oldest, Sequenz je Slot gegen
-  zerrissene Frames). Der Broker-Ingress (256, P2 zuerst) sitzt im Broker.
+  (vorallokiert, lockfrei, Cap 2, replace-oldest). Der Broker-Ingress
+  (256, P2 zuerst) sitzt im Broker.
+  **Entnehmen ist eine Übergabe, kein Verlust** (T2-Runde 1, 29.08.): P0 und P1
+  legen einen entnommenen, aber nicht geschriebenen Eintrag zurück
+  (`zuruecklegen`); ein zurückgelegter Snapshot weicht einem inzwischen
+  eingetroffenen neueren desselben Objekts, ein Ereignis geht an seinen Platz
+  oder in den Wiederholpuffer. Ohne diesen Weg verschwand ein nicht
+  koaleszierbares P1-Ereignis endgültig, wenn der Broker zwischen Entnahme und
+  Write schloss.
+  **Jeder Slot der `P2Schleuse` hat einen Besitzer** (T2-Runde 1): ein
+  `compare_exchange` mit den Zuständen frei / Verbraucher / Erzeuger. Ein
+  beanspruchter Platz ist bis zur Freigabe unveränderlich; ein Schreibversuch
+  darauf findet nicht statt, sondern fällt gezählt aus
+  (`beanspruchtVerworfen()`). Die frühere Sequenzprüfung erkannte die
+  Überschneidung erst NACH dem konkurrierenden Zugriff — sie verhinderte den
+  zerrissenen Frame auf dem Draht, nicht das Datenrennen. Die Sequenz je Slot
+  bleibt, jetzt in ihrer zweiten Rolle: sie sagt, welche Folgenummer im Platz
+  liegt.
 - `IpcVerbindung` — `CreateFileW` mit `SECURITY_SQOS_PRESENT |
   SECURITY_IDENTIFICATION`, `ERROR_PIPE_BUSY` über `WaitNamedPipe` statt
   Backoff, absolute Frist über den ganzen Schreibvorgang, Lese-Zeitlimit als
@@ -351,6 +367,17 @@ JUCE-frei wie der übrige `core/`-Baum, fünf Dateien:
   Telemetrieverbindung (link_id **und** challenge **und** dieselbe
   `runtime_nonce`). Ab dem Bootstrap trägt jede Nachricht den 16-Byte-Kopf.
   Kein Prozessstart auf irgendeinem Pfad (§48.3).
+  **Beide Clients prüfen ihr `welcome` gleich streng** (T2-Runde 1, 29.08.):
+  P0-Familie, `protocol == 3`, die EIGENEN Kopplungswerte (`link_id`,
+  `challenge`), `broker_epoch` als hex32 und eine nicht leere
+  `broker_version`. Der TelemetryClient verlangte vorher nur flaches JSON mit
+  `type == "welcome"` — ein P2-Envelope mit diesem Payload hätte ihn als
+  gekoppelt gelten lassen.
+  **Audiofelder werden vor der Serialisierung verriegelt** (`audioGueltig`):
+  NaN, ±Inf und alles außerhalb von `audio_lage` verhindern den
+  Verbindungsaufbau mit ehrlichem `letzterFehler`. Die Wandlung nach `long
+  long` lief vorher VOR jeder Prüfung und war für diese Werte undefiniertes
+  Verhalten.
 
 `PipeToken` liegt bewusst **nicht** in `NakamaKern`: der Namensraum
 `evenacadia.nakama|v3|` trägt den eingefrorenen Herstellernamen, und A14 hat
@@ -495,8 +522,11 @@ Crate `eqcop-broker` 0.1.0 (lib `eqcop_broker`). Module: `aggregat` ·
 Binaries `eqcop-broker.exe [--bindungen <pfad>]` (Standard
 `%APPDATA%\evenacadia\nakama\eq-copilot-bindungen.json`),
 `eqcop-broker-probe.exe [sekunden] [pipe-name]` (Default `…m2probe`) und
-`eqcop-broker-v3probe.exe <pipe-name> [sekunden]` (SONDE-010; verweigert die
-Produktions-Pipe).
+`eqcop-broker-v3probe.exe <pipe-name> [sekunden]` (SONDE-010; lässt seit
+T2-Runde 1 nur noch den Probe-Namensraum `\\.\pipe\evenacadia.nakama.v3.probe.`
+zu — eine Erlaubnis statt einer Sperrliste, die vorher nur den v1-Namen kannte
+und ausgerechnet den produktiven v3-Namensraum durchließ. `EqCopIpcLast`
+trägt denselben Riegel, und `pruefe_ipc_last.py` fährt ihn vor jedem Lauf).
 
 **`transport/` (SONDE-010, 29.08.):** `v3` (Envelope, Stromleser, CRC32C,
 Ratengrenze) · `bootstrap` (Hello ≤ 16 KiB, Protokollteilung v2/v3, Kopplung
@@ -506,6 +536,21 @@ Umbau, sondern der Beweis der Isolation: v3-Binärframes fallen im v2-Leser,
 v2-JSON passiert den v3-Envelopeprüfer nie) · `server_v3` (Listener und
 I/O-Worker; er entscheidet **nur** Envelope, Grenzen und Authentisierung und
 gibt typisierte Ereignisse an eine schmale `Senke`).
+
+**Drei Threads je Verbindung** (T2-Runde 1, 29.08.): Leser → bounded Ingress
+(256) → Verbraucher → bounded Writerqueue (256) → Schreiber. Die Pipe-Instanzen
+laufen dafür als `FILE_FLAG_OVERLAPPED`; bei einem synchronen Handle
+serialisiert der I/O-Manager alle Operationen, ein hängender Read würde also
+einen Write blockieren und die Trennung wäre nur auf dem Papier. Die erste
+Fassung leerte den Ingress nach jedem einzelnen Frame im Leserthread — die
+Queue konnte nie über Größe 1 wachsen, und Cap 256, P2-Drop und P0-Überlauf
+waren im echten Listener unerreichbar. Weiter aus derselben Runde:
+`ERROR_PIPE_BUSY` an der Verbindungsgrenze ist ein Warten und kein Ende des
+Acceptors; fertige Verbindungsthreads werden laufend geerntet; die
+Familienzuordnung des Vertrags wird durchgesetzt (**Control trägt P0/P1,
+Telemetry trägt P2**, unzulässige Familie schließt die Verbindung vor dem
+Ingress); und das Abmelden der Control-Verbindung bricht die hängende
+Telemetrieverbindung wirklich ab, statt nur ihren Registereintrag zu entfernen.
 
 **Der Broker öffnet in Produktion weiterhin nur die v2-Pipe.** Der
 SID-gebundene v3-Endpunkt bleibt zu, bis SONDE-011 den Coordinator bringt —

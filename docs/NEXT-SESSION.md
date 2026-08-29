@@ -3,11 +3,17 @@
 > ## ✅ NACHTRAG — 29.08.2026, S9 `SONDE-007b` T3-Nacharbeit
 >
 > Die Marke von `SONDE-007b` ist nicht mehr `offen`, sondern
-> **`T3 NEEDS_WORK 2026-08-29 nachgearbeitet`** (`1ca5fdb`). Von den zwei
-> G1-Befunden ist **§4.2 geschlossen** — die State-Hälfte des Gate-7-Bruchs
-> wird jetzt **am Bundle** gemessen statt nur auf `lade()`-Ebene: neuer Block
-> 5b im `EqCopProbeeqNullTest` (16 Prüfungen), Riegel per Mutationsprobe rot
-> vorgeführt (8 von 16 fallen). Kanon zweimal GRÜN 28/28.
+> **`T3 NEEDS_WORK 2026-08-29 nachgearbeitet`**. Von den zwei G1-Befunden ist
+> **§4.2 geschlossen**. Was das genau heißt — und nicht mehr: der Riegel gegen
+> `post_fader_contribution` sperrt **klassenunabhängig**, gemessen auf
+> `lade()`-Ebene für alle vier Klassen inklusive `passive_probe` mit
+> Bundlevertrag `nkpr` (Bein `B2`); der **Durchgriff durch die Sondenschale**
+> (`setStateInformation` → `lade` → `positionErlaubt`) ist am **einzigen
+> gebauten Sondenbundle** Nakama Probeeq gemessen, Klasse `active_probe`
+> (Block 5b im `EqCopProbeeqNullTest`); und der ursprüngliche G1-Träger — eine
+> passive Sonde als Produkt — existiert seit S9b/`SONDE-007c` nicht mehr.
+> Beide Riegelhälften sind per Mutationsprobe rot vorgeführt. Kanon GRÜN;
+> Läufe und Zahlen stehen im Manifest.
 >
 > **Der Satz weiter unten gilt weiter**, nur genauer: **§55 Klausel 1** ist
 > weiterhin ungemessen und damit der einzige offene Punkt an diesem Ticket.

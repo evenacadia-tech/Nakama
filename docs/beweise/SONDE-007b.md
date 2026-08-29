@@ -11,13 +11,22 @@
 > Vollstaendig: `docs/beweise/G1.md` §4.2, §5, §7.1.
 
 > **Nachtrag 29.08.2026 — Marke jetzt `T3 NEEDS_WORK 2026-08-29 nachgearbeitet`.**
-> Von den zwei Gruenden ist **Grund (1) geschlossen**: die Gate-7-Kette aus
-> G1 §4.2 wird seit dieser Runde **am Bundle** gemessen (neuer Block 5b im
-> `EqCopProbeeqNullTest`, 16 Pruefungen, Riegel per Mutationsprobe rot
-> vorgefuehrt) — nicht mehr nur auf `lade()`-Ebene. **Grund (2) bleibt offen
-> und ist ein User-Schritt** (Installation + FL-Scan, Register `NAK-87`); seit
-> S9b/`SONDE-007c` betrifft er **zwei** Ziele, nicht drei. Der Abschnitt am
-> Ende dieses Manifests fuehrt beides mit Rohausgabe.
+> Von den zwei Gruenden ist **Grund (1) geschlossen**. Was das heisst, genau
+> und nicht weiter (in Runde 2 nach Prueferbefund P1 praezisiert): (a) Riegel 1
+> in `positionErlaubt` sperrt `post_fader_contribution` **klassenunabhaengig**
+> (`a2fe0f5`) — gemessen auf `lade()`-Ebene fuer **alle vier Klassen inklusive
+> `passive_probe` mit Bundlevertrag `nkpr`** durch B2 `EqCopStateMigrationTest`;
+> (b) den **Durchgriff dieser Sperre durch die Sondenschale**
+> (`setStateInformation` → `lade` → `positionErlaubt`) misst Block 5b im
+> `EqCopProbeeqNullTest` am **einzigen gebauten Sondenbundle**, Klasse
+> `active_probe` — die Schale traegt genau eine Klasse je Uebersetzung; (c) der
+> urspruengliche G1-Traeger — eine **passive** Sonde als Produkt — existiert
+> seit S9b/`SONDE-007c` nicht mehr. „Am Bundle" heisst in diesem Manifest ab
+> hier **am gebauten Bundle Nakama Probeeq**. Riegelhaelften und
+> Klassenunabhaengigkeit sind per Mutationsprobe rot vorgefuehrt. **Grund (2)
+> bleibt offen und ist ein User-Schritt** (Installation + FL-Scan, Register
+> `NAK-87`); seit S9b/`SONDE-007c` betrifft er **zwei** Ziele, nicht drei. Der
+> Abschnitt am Ende dieses Manifests fuehrt beides mit Rohausgabe.
 
 
 > **Die eine harte Regel** (`docs/bauaufteilung-sonden.md` §2): *Eine Behauptung
@@ -8821,7 +8830,7 @@ Sperrstellen; jede einzelne ist nachgezogen:
 | **`--hashen` ist weiterhin nie gefahren** | §5.9 nannte das; es gilt unverändert. Der committete Stand trägt bewusst `sha256: null`. Ab dem ersten committeten `--hashen`-Lauf ist die Pfadformel versioniert (Vertrag §5.2) |
 | **`Install-Nakama.ps1` im echten Vollzug** | A18 fährt es in einer Sandbox. Eine Installation nach `Program Files` bleibt ein Klick des Users (NAK-32/NAK-41) — hier wurde nichts installiert |
 | **Verhalten eines Hosts gegenüber einem Bundle ohne `moduleinfo.json`** | Weiterhin ungemessen. Der Punkt ist durch den Umzug auf den Ordner **gegenstandslos geworden**, nicht beantwortet |
-| **T3 / Gate G1** | Unverändert: erst am Gate. **Nachtrag 29.08.:** G1 §4.2 (State-Hälfte des Gate-7-Bruchs) ist am Bundle gemessen und geschlossen; G1 §5 Klausel 1 (Scan und Laden in FL) bleibt **offen als `NAK-87`** — Installation und FL-Lauf sind ein User-Schritt. Marke jetzt `T3 NEEDS_WORK 2026-08-29 nachgearbeitet` |
+| **T3 / Gate G1** | Unverändert: erst am Gate. **Nachtrag 29.08.:** G1 §4.2 (State-Hälfte des Gate-7-Bruchs) ist geschlossen — Riegel 1 klassenunabhängig über alle vier Klassen auf `lade()`-Ebene (B2), Durchgriff durch die Sondenschale am **gebauten** Bundle Nakama Probeeq (Klasse `active_probe`, Block 5b), und der ursprüngliche passive Träger existiert als Produkt seit S9b/`SONDE-007c` nicht mehr; G1 §5 Klausel 1 (Scan und Laden in FL) bleibt **offen als `NAK-87`** — Installation und FL-Lauf sind ein User-Schritt. Marke jetzt `T3 NEEDS_WORK 2026-08-29 nachgearbeitet` |
 | **`CLAUDE.md`: „12 Verbraucher", „23 Beine"** | Beide Zahlen sind gemessen falsch (13 bzw. 24). Nicht berichtigt — fremde uncommittete Änderungen. Nachliste in NAK-55 |
 
 ---
@@ -10551,7 +10560,7 @@ geschlossen und einer weiterhin offen — der offene ist **kein Claude-Schritt**
 
 | G1-Befund | Stand 24.08. | Stand 29.08. |
 |---|---|---|
-| §4.2 Gate 7, State-Ebene | Riegel gesetzt (`a2fe0f5`), aber **nur auf `lade()`-Ebene** und für die Host-Hälfte am Eqcp-Bundle gemessen | **geschlossen am Artefakt**: neuer Block 5b im `EqCopProbeeqNullTest` fährt die ganze Kette durch die echte Sondenschale, 16 Prüfungen grün, Riegel per Mutationsprobe rot vorgeführt |
+| §4.2 Gate 7, State-Ebene | Riegel gesetzt (`a2fe0f5`), aber **nur auf `lade()`-Ebene** und für die Host-Hälfte am Eqcp-Bundle gemessen | **geschlossen**, dreiteilig (Fassung nach Prüferrunde 2): die volle Klassenmatrix inklusive `passive_probe` mit Bundlevertrag `nkpr` misst B2 auf `lade()`-Ebene; den **Durchgriff durch die echte Sondenschale** misst der neue Block 5b im `EqCopProbeeqNullTest` am **gebauten** Bundle, Klasse `active_probe` — seit Runde 2 samt vier Zeilen, die Riegel 1 direkt an `positionErlaubt` als klassenunabhängig messen; der passive Träger existiert als Produkt seit S9b nicht mehr. Block 5b 20 Prüfungen grün, beide Mutationsproben rot vorgeführt |
 | §5 Klausel 1: „Alle drei Ziele scannen und laden in FL" | offen | **weiterhin offen, jetzt datiert als `NAK-87`.** Braucht Installation (Admin-Klick des Users, NAK-41 gilt davor) und einen echten FL-Lauf. Hier wurde **nichts installiert und FL nicht gestartet.** Seit S9b/`SONDE-007c` betrifft die Klausel **zwei** Ziele (Nakama Gen, Nakama Probeeq) |
 
 ### Befund 1 — warum `a2fe0f5` allein das Urteil nicht trägt
@@ -10610,9 +10619,12 @@ ihn über `setStateInformation` ein:
 | 4 | Der Rückweg **wäscht nichts**: eine dritte frische Instanz, die genau diese herausgegebenen Bytes lädt, kommt wieder read-only und neutral | schließt den Umweg „einmal durchs Bundle, danach gilt es" |
 | 5 | **Gegenprobe** mit `insert`: derselbe Stand lädt normal, `Common` ist feldgleich, der Lebenslauf trägt die Produktklasse | ohne sie wüsste niemand, ob oben die **Position** abgewiesen wurde oder irgendetwas anderes am Bastelstand |
 | 6 | **Nachreichen an eine laufende Instanz**: die bereits klassifizierte Gegenprobe bekommt den verbotenen Stand nachgereicht → read-only, Klassifikation fällt zurück auf `unclassified`, und der Host bekommt genau die Bytes zurück, die er gab | Punkt 1–5 messen nur **frische** Instanzen. Der Weg, den FL wirklich geht — Preset-Browser, Copy/Paste, geöffnetes Altprojekt — ist dieser; eine Lücke hier wäre die einzige im Betrieb erreichbare |
+| 7 | **Riegel 1 gilt klassenunabhängig**: `positionErlaubt(k, post_fader_contribution)` ist für **alle vier** Klassen `false` — gemessen direkt an der öffentlichen Funktion, an der Punkt 0–6 über `lade()` abbiegen | Punkt 0–6 fahren nur **eine** Klasse durch die Schale (`active_probe`; seit S9b/`SONDE-007c` baut kein Ziel mehr `NAKAMA_SONDE_PASSIV`). Der ursprüngliche G1-§4.2-Träger war aber `passive_probe` — ohne diese vier Zeilen bliebe genau die Regression, gegen die dieses Bein antritt, hier unbemerkt. Vorgeführt unter „Prüferbefunde Runde 2" |
 
-Punkt 6 ist in dieser Runde dazugekommen; Punkte 0–5 stammen aus dem begonnenen
-Stand und wurden gegen die Quelle nachgeprüft.
+Punkt 6 ist in **Runde 1** dazugekommen; Punkte 0–5 stammen aus dem begonnenen
+Stand und wurden gegen die Quelle nachgeprüft. **Punkt 7 ist in Runde 2
+dazugekommen** (Prüferbefund P1, unten): Block 5b misst damit **20** Prüfungen,
+das Bein `A16` insgesamt **82**.
 
 ### Vorgeführt: der Riegel wird rot, wenn man ihn öffnet
 
@@ -10966,6 +10978,570 @@ exit-fähig.
 **Was diese Runde NICHT ist: ein Urteil.** Wer nacharbeitet, spricht sich nicht
 selbst frei — ein `PASS` auf T3 darf nur ein frischer Prüfer geben, der weder
 gebaut noch nachgearbeitet hat. Deshalb `nachgearbeitet` und nicht `PASS`.
+
+### Prüferbefunde Runde 2 (Codex-Thread `01a04ae3-8ecd-7e00-bc51-9ea11e9a9f07`, Stand `72146c1`) — P1 und P2 geschlossen
+
+Ein frischer Prüfer (Codex `gpt-5.6-sol`, xhigh) hat den committeten Stand
+`72146c1` gelesen und zwei Befunde gestellt. Beide treffen zu; beide sind hier
+geschlossen — P1 mit zwei gefahrenen Mutationsläufen und einer Ergänzung an
+Block 5b, P2 mit einer Textänderung. Die Zeilennummern der Befunde zeigen auf
+`72146c1`; dieser Nachtrag verschiebt sie.
+
+**P1, wörtlich:**
+
+> [P1] Prüfe den betroffenen passive_probe-Pfad am Bundle — eq-copilot/plugin/tests/SondeNullTestMain.cpp:205-210. Unter dem einzigen gebauten Testziel ist `kProduktklasse` hier stets `active_probe` (`eq-copilot/plugin/CMakeLists.txt:281` setzt `NAKAMA_SONDE_AKTIV`), während der verbindliche G1-Pfad gerade `passive_probe` betraf (`docs/beweise/G1.md:167-181`). Repro: Die relevante Logik auf den Stand vor `a2fe0f5` zurücksetzen — Capability-Vorprüfung entfernen und nur `passive_probe` wieder freigeben, `active_probe` unverändert lassen — und A16 neu bauen; alle 16 Prüfungen bleiben grün, weil dieser Block weiterhin an der aktiven Klassenmatrix abgewiesen wird. Erwartet wäre ROT für die ursprüngliche Regression; damit ist „G1 §4.2 am Bundle geschlossen" ohne einen test-only passiven `SondeProcessor`-Pfad durch `setStateInformation` nicht belegt.
+
+**P2, wörtlich:**
+
+> [P2] Aktualisiere die Übergabe auf drei Kanon-Läufe — docs/NEXT-SESSION.md:10. Der Nachtrag behauptet weiterhin „Kanon zweimal GRÜN", obwohl das Manifest jetzt drei Läufe enthält, jeweils 28/28. Solche volatilen Zahlen sollen zudem nicht in Kontextdateien kopiert werden (AGENTS.md:58-60).
+
+#### 0. Warum ein Opus-Worker nacharbeitet und nicht der Codex-Thread
+
+Die Codex-Sandbox kann keinen Bau und keinen Kanonlauf fahren — CMake und
+MSBuild stehen ihr nicht zur Verfügung (S8-Präzedenz 28.08.2026,
+`docs/beweise/SONDE-007a.md`, Nacharbeit in sechs Runden „weil die
+Codex-Sandbox kein CMake fahren konnte"). P1 verlangt genau das: zwei
+Mutationsläufe mit Neubau. Der Prüfer konnte den Befund stellen, nicht
+schließen.
+
+#### 1. Die Entscheidung zu P1 — verbindlich
+
+Der Befund nennt als fehlendes Stück einen „test-only passiven
+`SondeProcessor`-Pfad durch `setStateInformation`". **Der wird nicht gebaut,
+und zwar nicht aus Bequemlichkeit:**
+
+- Der User-Entscheid vom 28.08.2026 — *„suna gibt es nichtmehr"*
+  (`design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md`) — und
+  S9b/`SONDE-007c` haben das passive Ziel **stillgelegt**.
+  `sonde/SondeProcessor.h:5-12` hält ausdrücklich fest, dass **kein Bauziel
+  mehr `NAKAMA_SONDE_PASSIV` setzt**; das Kanon-Bein `A15` steht sichtbar als
+  STILLGELEGT. Ein neues Bau- oder Testziel mit diesem Define nähme ein
+  anderes, noch nicht abgenommenes Ticket zurück.
+- Eine Testhintertür im Produktcode ist in diesem Baum ohnehin ausgeschlossen —
+  Block 5b baut seinen Stand seit Runde 1 bewusst über den **öffentlichen**
+  State-Weg (`state::frisch` + `state::speichere`).
+
+**In der Sache trifft der Befund trotzdem:** „G1 §4.2 am Bundle geschlossen"
+war weiter als das, was Block 5b misst. Die Beweislage ist dreiteilig, und so
+steht sie ab jetzt überall in diesem Manifest:
+
+| | Was belegt ist | Wodurch |
+|---|---|---|
+| **(a)** | Riegel 1 in `positionErlaubt` sperrt `post_fader_contribution` **klassenunabhängig** (`a2fe0f5`) — gemessen auf `lade()`-Ebene für **alle vier Klassen inklusive `passive_probe` mit Bundlevertrag `nkpr`** | B2 `EqCopStateMigrationTest`, Block G8b (`tests/StateMigrationTestMain.cpp` ~781–905; Bundlewahl je Klasse ~808, Kind-Matrix ~819) |
+| **(b)** | Der **Durchgriff dieser Sperre durch die Sondenschale** — `setStateInformation` → `lade` → `positionErlaubt`, read-only, neutral, Originalbytes, kein Waschweg, Nachreichen | Block 5b im `EqCopProbeeqNullTest`, am **einzigen gebauten Sondenbundle** Nakama Probeeq, Klasse `active_probe` |
+| **(c)** | Der ursprüngliche G1-Träger — eine **passive Sonde als Produkt** — existiert seit S9b/`SONDE-007c` nicht mehr | User-Entscheid 28.08.2026; `SondeProcessor.h:5-12`; Kanon-Bein `A15` stillgelegt |
+
+Der Satz „Grund (1) geschlossen" bleibt — mit dieser Begründung. **„Am Bundle"
+heißt in diesem Manifest ab hier „am gebauten Bundle Nakama Probeeq".**
+Zusätzlich bekommt Block 5b die Prüfung, die die ursprüngliche Regression
+fängt, **ohne** ein passives Bundle zu brauchen (Punkt 3 unten).
+
+#### 2. Die Repro des Prüfers — gefahren, nicht angenommen
+
+`state/NakamaState.cpp` wurde **temporär** auf den Stand vor `a2fe0f5`
+zurückgesetzt: Riegel-1-Vorprüfung entfernt, `passive_probe` wieder frei,
+`active_probe` unverändert.
+
+```diff
+-    if (p == Messposition::post_fader_contribution && ! kContributionAuxVerfuegbar)
+-        return false;
++    // MUTATIONSPROBE (temporaer, Stand vor a2fe0f5): Riegel 1 entfernt.
+-        case Klasse::passive_probe: return p != Messposition::post_fader_contribution;
++        case Klasse::passive_probe: return true;  // MUTATIONSPROBE (Stand vor a2fe0f5)
+```
+
+SHA-256 der Datei: unverändert
+`7f6574bd4bbe10e4aca6d9d91fe9ca95539b84784416535a475b1a7ec26f6cd6`, mutiert
+`9ce001ce2457268c0fc098257cb078501e34958cbec4fc4554f47ff281d53cb3`.
+
+`EqCopStateMigrationTest` und `EqCopProbeeqNullTest` wurden mit dieser Mutation
+neu gebaut (`cmake --build eq-copilot/build --config Release --target …`,
+Exit 0) und gefahren. **Gemessen, nicht angenommen — und das Ergebnis ist genau
+das, was der Prüfer vorhergesagt hat:**
+
+| Bein | Exitcode | Ergebnis |
+|---|---|---|
+| **B2** `EqCopStateMigrationTest` | **1** | **ROT** — 166 ok, **3 Fehler**; der tragende ist die Matrixzeile `passive_probe / post_fader_contribution` |
+| **A16** `EqCopProbeeqNullTest`, Block 5b in der Fassung von Runde 1 | **0** | **GRÜN — 78 Prüfungen ok, 0 Fehler.** Alle 16 Prüfungen des Blocks 5b bleiben grün |
+
+Das ist die Lücke, die P1 benennt: der Riegel war offen, und das Bein, das
+laut Manifest „G1 §4.2 am Bundle" schließt, hat es nicht gemerkt.
+
+**Rohausgabe B2 MIT Mutation** (`EqCopStateMigrationTest.exe`, stdout+stderr
+wortgleich, Exitcode 1):
+
+```text
+Vertrag:  C:\Users\phili\Projekte\Nakama\eq-copilot\schemas\state\nakama-parameter-v1.json
+Fixtures: C:\Users\phili\Projekte\Nakama\eq-copilot\fixtures\state
+
+  ok      nakama-parameter-v1.json ist gueltiges JSON
+  ok      anzahl_parameter == 109  [109]
+  ok      slot_anzahl == 8
+  ok      dsp_schema_version == 1
+  ok      ids-Liste hat 109 Eintraege
+  ok      alle 109 IDs in Vertragsreihenfolge identisch  [109]
+  ok      109 Beschreibungen (Typ, Grenzen, Default, Enumwoerter, Wechsel, topologisch) deckungsgleich  [109]
+  ok      indexVonId: erste, letzte, nicht vorhandene ID
+  ok      == Parametertabelle deckungsgleich mit nakama-parameter-v1.json
+  ok      fixtures/state/MANIFEST.json gelesen
+  ok      jcs/zahlen.json gelesen
+  ok      Zahlenvektoren: 52 bytegleich, 2 abgelehnt (NaN/Inf)  [54 gesamt]
+  ok      NaN, +Inf, -Inf werden abgelehnt
+  ok      -0 wird zu 0
+  ok      JCS-Dokumente bytegleich + SHA-256 gleich  [13/13]
+  ok      doppelter Schluessel erkannt  [doppelter Schluessel: a]
+  ok      doppelter Schluessel nach Escape-Aufloesung erkannt  [doppelter Schluessel: A]
+  ok      gleicher Schluessel in verschiedenen Objekten ist erlaubt
+  ok      leerer Schluessel ist erlaubt (RFC 8785)
+  ok      Subnormale werden gelesen, nicht geflusht
+  ok      Ueberlauf ist ein Fehler, kein inf  [Zahl nicht darstellbar: 1e999]
+  ok      hohes Surrogat ohne Paar ist ein Fehler  [hohes Surrogat ohne Paar]
+  ok      rohes Steuerzeichen in Zeichenkette ist ein Fehler  [rohes Steuerzeichen in Zeichenkette]
+  ok      Grammatikfehler werden abgewiesen
+  ok      Leser nimmt Whitespace, Vorzeichen, Exponenten, Escapes
+  ok      == JCS: alle Zahlenvektoren und Dokumente bytegleich zum Manifest
+  ok      gueltige DTOs: state_hash wie im Manifest  [6/6]
+  ok      standardSatz() hasht wie dto/gueltig/default.json  [0701d0f24ee7e438464aa7d15604cfc5a034a85ad9a7fac9ca85c2caf9cbc1bb]
+  ok      ungueltige DTOs mit dem erwarteten Grund abgelehnt  [15/15]
+  ok      NaN im Satz faellt vor dem Hash  [nichtendlich]
+  ok      Inf im Satz faellt vor dem Hash  [nichtendlich]
+  ok      Bereich im Satz faellt vor dem Hash  [bereich]
+  ok      Enumindex im Satz faellt vor dem Hash  [enum]
+  ok      == DTO: 6 gueltige gehasht, 15 ungueltige vor dem Hash abgelehnt
+  ok      Schema-1 'sensor' migriert
+  ok      'sensor': Herkunft schema1Migriert
+  ok      'sensor' -> legacy+insert  [legacy+insert]
+  ok      'sensor': sensor_id bytegleich als instance_id
+  ok      'sensor': label und pair_id bytegleich
+  ok      'sensor': project_binding_id NICHT erfunden
+  ok      'sensor': v2-Rolle rueckwaerts identisch  [sensor]
+  ok      'sensor': MainProject genau fuer main
+  ok      'sensor': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'sensor': Migration deterministisch
+  ok      'sensor': Migration der Migration ist Identitaet
+  ok      Golden 'sensor' gelesen  [aus-schema1-sensor.bin]
+  ok      Schema-1 'hub' migriert
+  ok      'hub': Herkunft schema1Migriert
+  ok      'hub' -> main+insert  [main+insert]
+  ok      'hub': sensor_id bytegleich als instance_id
+  ok      'hub': label und pair_id bytegleich
+  ok      'hub': project_binding_id NICHT erfunden
+  ok      'hub': v2-Rolle rueckwaerts identisch  [hub]
+  ok      'hub': MainProject genau fuer main
+  ok      'hub': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'hub': Migration deterministisch
+  ok      'hub': Migration der Migration ist Identitaet
+  ok      Golden 'hub' gelesen  [aus-schema1-hub.bin]
+  ok      Schema-1 'pre' migriert
+  ok      'pre': Herkunft schema1Migriert
+  ok      'pre' -> legacy+pre  [legacy+pre]
+  ok      'pre': sensor_id bytegleich als instance_id
+  ok      'pre': label und pair_id bytegleich
+  ok      'pre': project_binding_id NICHT erfunden
+  ok      'pre': v2-Rolle rueckwaerts identisch  [pre]
+  ok      'pre': MainProject genau fuer main
+  ok      'pre': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'pre': Migration deterministisch
+  ok      'pre': Migration der Migration ist Identitaet
+  ok      Golden 'pre' gelesen  [aus-schema1-pre.bin]
+  ok      Schema-1 'post' migriert
+  ok      'post': Herkunft schema1Migriert
+  ok      'post' -> legacy+post  [legacy+post]
+  ok      'post': sensor_id bytegleich als instance_id
+  ok      'post': label und pair_id bytegleich
+  ok      'post': project_binding_id NICHT erfunden
+  ok      'post': v2-Rolle rueckwaerts identisch  [post]
+  ok      'post': MainProject genau fuer main
+  ok      'post': pair_id-Eigenschaft nur wenn nicht leer
+  ok      'post': Migration deterministisch
+  ok      'post': Migration der Migration ist Identitaet
+  ok      Golden 'post' gelesen  [aus-schema1-post.bin]
+  ok      4 Rollen bytegleich zum Schema-2-Golden  [4]
+  ok      read-only-Fixture fremdes-major-3.bin bytegleich
+  ok      unbekannte Schema-1-Rolle ist nicht migrierbar  [schema-1 role unknown: dirigent]
+  ok      EqCopilotState schema 2 ist kein Schema 1  [EqCopilotState schema 2 is not schema 1]
+  ok      == Migration: 4 Rollen bytegleich zum Golden, idempotent
+  ok      Schema 2 laedt
+  ok      speichern->laden->speichern bytegleich  [209 Bytes]
+  ok      Common feldgleich nach Roundtrip (inkl. Nicht-ASCII-Label)
+  ok      Stand mit unbekannter additiver Eigenschaft laedt
+  ok      unbekannte Eigenschaften ueberleben den Roundtrip, die Aenderung kommt an
+  ok      active_probe mit Parameters laedt (Bundle NkAc)
+  ok      109 Parameterwerte bit-exakt durch den Roundtrip  [109]
+  ok      Parameters-Roundtrip bytegleich
+  ok      state_hash ueberlebt den Roundtrip  [eea230574ce175deb6def340f8a858d762d49b6c213935e5ffbc1c1f8a833452]
+  ok      == Roundtrip: bytegleich, additive Eigenschaft erhalten, 109 Werte bit-exakt
+  ok      Matrix Klasse=main, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=main, Position=pre: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position pre is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=main, Position=post: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=main, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for main', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=legacy, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=legacy, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for legacy', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=passive_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=passive_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  FEHLER  Matrix Klasse=passive_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  ok      Matrix Klasse=active_probe, Position=insert: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=pre: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post: erwartet LadeErgebnis::geladen, tatsaechlich LadeErgebnis::geladen  [nurLesen=false, Grund='', Rueckweg=nicht gefordert, Host-read-only=nicht gefordert, Host-Dirty=nicht gefordert]
+  ok      Matrix Klasse=active_probe, Position=post_fader_contribution: erwartet LadeErgebnis::nurLesen, tatsaechlich LadeErgebnis::nurLesen  [nurLesen=true, Grund='measurement_position post_fader_contribution is not allowed for active_probe', Rueckweg=bytegleich, Host-read-only=true, Host-Dirty=nein]
+  FEHLER  16 Kombinationen aus Klasse x Messposition wie §2.2 - post_fader_contribution fuer KEINE Klasse (contribution_aux unsupported)  [15]
+  FEHLER  == Positionsmatrix vollstaendig, jede Klasse in ihrem Bundle
+  ok      21 Faelle read-only, Bytes unveraendert, Aenderungen verweigert  [21]
+  ok      fremder Baumtyp wird ignoriert, Zustand bleibt
+  ok      Muellbytes werden ignoriert
+  ok      ungueltiges UTF-8 im ValueTree faellt vor JUCEs tolerantem Stringleser
+  ok      gueltiger Praefix mit Suffix wird vollstaendig ignoriert
+  ok      abgeschnittener spaeter Kindbaum wird nicht als Teilstate uebernommen
+  ok      deklarierte Riesenvariante wird vor JUCE-Allokation verworfen
+  ok      zu tiefer ValueTree wird begrenzt und ignoriert
+  ok      zu tief geschachteltes Variantenarray wird begrenzt und ignoriert
+  ok      State oberhalb 16 MiB wird vor dem ersten Bytezugriff verworfen
+  ok      ValueTree-Tiefe 64 inklusive Wurzel passiert den Byte-Riegel
+  ok      63 verschachtelte Arrays plus Blatt passieren und laden
+  ok      65.536 Eintraege in einer Sammlung passieren den Byte-Riegel
+  ok      65.537 Eintraege in einer Sammlung werden verworfen
+  ok      262.144 Eintraege ueber mehrere Sammlungen passieren den Byte-Riegel
+  ok      262.145 Eintraege ueber mehrere Sammlungen werden verworfen
+  ok      Teststate trifft die schreibbare Bytegrenze exakt  [16773120]
+  ok      Writer bleibt mit maximalen bekannten Userfeldern innerhalb seiner Lesergrenze  [16773848]
+  ok      State ohne konkreten Writer-Headroom bleibt read-only bytegleich
+  ok      vollstaendiger bekannter State exakt bei 16 MiB bleibt read-only bytegleich
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [9]
+  ok      nicht verlustfrei lesbarer Variantenmarker bleibt read-only bytegleich  [10]
+  ok      additive Binaer- und Array-Properties bleiben bytegleich lesbar
+  ok      read-only gesetzt
+  ok      gueltiger Stand hebt read-only wieder auf
+  ok      == Unbekanntes Major: 21 Faelle read-only, Originalbytes bytegleich zurueck
+  ok      Duplikat: gleiche instance_id (der State IST der Messpunkt)  [11111111-2222-3333-4444-555555555555]
+  ok      Duplikat: verschiedene runtime_nonce
+  ok      neueSensorId loest auf
+  ok      neue instance_id: 32 Hex, verschieden von beiden  [66e6a7d2fc8d4f79ae26a8c9b4f7c2d3]
+  ok      Label und Rolle bleiben bei der Aufloesung
+  ok      Aufloesung meldet genau einmal Host-Dirty  [1]
+  ok      neue instance_id wird gespeichert und geladen
+  ok      == Duplicate: gleiche instance_id, verschiedene runtime_nonce, Aufloesung mit Host-Dirty
+  ok      Laden + Migration melden NICHT dirty  [0]
+  ok      Herkunft schema1Migriert
+  ok      setzeBindung ohne Aenderung: keine Meldung
+  ok      setzeBindung mit Aenderung: genau eine Meldung  [0]
+  ok      Aenderung kam an
+  ok      Rollenwechsel zu hub: zweite Meldung
+  ok      hub speichert MainProject und kein pair_id
+  ok      getStateInformation meldet nichts
+  ok      unbekannte v2-Rolle wird verweigert, keine Meldung
+  ok      Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation
+  ok      read-only mit fremdem Major 9  [9]
+  ok      read-only verweigert setzeBindung und neueSensorId ohne Meldung
+  ok      == Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert
+  ok      nie restauriert: Herkunft frisch
+  ok      frisch: legacy+insert = v2 'sensor', leeres Label
+  ok      frisch: instance_id ist hex32  [dc30fa31b54a4a8bbcac319ce861cf66]
+  ok      frisch speichert NakamaState schema 2, legacy
+  ok      Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz
+  ok      Recall: Save nach Recall ist bytegleich zum Golden
+  ok      == Frisch/Recall: Herkunft frisch, Recall in frische Instanz feldgleich
+
+STATE-MIGRATION-TEST FEHLGESCHLAGEN - 166 Pruefungen ok, 3 Fehler
+```
+
+**Rohausgabe A16 MIT Mutation, Block 5b in der Fassung von Runde 1**
+(`EqCopProbeeqNullTest.exe`, stdout+stderr wortgleich, Exitcode 0):
+
+```text
+SONDE-NULLTEST — nakama-sonde-testschale (Produktklasse active_probe)
+  ok      frischer Zustand traegt die Produktklasse des Bundles  [active_probe]
+  ok      der Bundlevertrag laesst die eigene Produktklasse zu
+  ok      der Bundlevertrag laesst 'main' NICHT zu
+  ok      der Bundlevertrag laesst 'legacy' NICHT zu
+  ok      das Bundle meldet dem Host keinen Parameter  [0]
+  ok      keine erfundene Oberflaeche (Gestaltung kommt aus Figma)
+  ok      frische Instanz ist neutral, trotz fester Produktklasse  [unclassified]
+  ok      eine Sonde darf den Broker nie starten
+  ok      bitgleich bei 44100 Hz, Block 1
+  ok      0 Samples Latenz bei 44100 Hz, Block 1  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 44100 Hz, Block 16
+  ok      0 Samples Latenz bei 44100 Hz, Block 16  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 44100 Hz, Block 64
+  ok      0 Samples Latenz bei 44100 Hz, Block 64  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 44100 Hz, Block 512
+  ok      0 Samples Latenz bei 44100 Hz, Block 512  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 44100 Hz, Block 4096
+  ok      0 Samples Latenz bei 44100 Hz, Block 4096  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 1
+  ok      0 Samples Latenz bei 48000 Hz, Block 1  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 16
+  ok      0 Samples Latenz bei 48000 Hz, Block 16  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 64
+  ok      0 Samples Latenz bei 48000 Hz, Block 64  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 512
+  ok      0 Samples Latenz bei 48000 Hz, Block 512  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 4096
+  ok      0 Samples Latenz bei 48000 Hz, Block 4096  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 1
+  ok      0 Samples Latenz bei 96000 Hz, Block 1  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 16
+  ok      0 Samples Latenz bei 96000 Hz, Block 16  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 64
+  ok      0 Samples Latenz bei 96000 Hz, Block 64  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 512
+  ok      0 Samples Latenz bei 96000 Hz, Block 512  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 4096
+  ok      0 Samples Latenz bei 96000 Hz, Block 4096  [0]
+  ok      kein MIDI erzeugt
+  ok      kein Tail  [0]
+  ok      Stille bleibt bitgenau still
+  ok      Zustand laesst sich speichern  [3439 Bytes]
+  ok      geladener Zustand ist derselbe (Instanz-ID, Klasse, Position, Label)
+  ok      der eigene Stand kommt NICHT als read-only zurueck
+  ok      nach gueltigem State traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      speichern -> laden -> speichern ist bytegleich  [3439 Bytes]
+  ok      die Probebytes tragen wirklich measurement_position=post_fader_contribution  [post_fader_contribution]
+  ok      der Stand kommt als read-only zurueck, nicht als eigener  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      read-only nennt seinen Grund
+  ok      das Bundle FUEHRT die verbotene Position nicht  [insert]
+  ok      die Instanz klassifiziert NICHT auf die Produktklasse, sie bleibt neutral  [unclassified]
+  ok      eine read-only-Sonde darf den Broker nicht starten
+  ok      Vertrag 53.8: dieselben Originalbytes gehen unveraendert an den Host zurueck  [3456 Bytes]
+  ok      der Rueckweg waescht nichts: erneut geladen bleibt read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      und erneut geladen bleibt die Instanz neutral  [unclassified]
+  ok      Gegenprobe: derselbe Stand mit erlaubter Position laedt normal
+  ok      Gegenprobe: der geladene Common ist derselbe (Position insert)  [insert]
+  ok      Gegenprobe: nach gueltigem Stand traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      Nachreichen: die Instanz ist VOR dem verbotenen Stand klassifiziert  [active_probe]
+  ok      Nachreichen: der verbotene Stand kommt auch bei einer laufenden Instanz read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      Nachreichen: die Klassifikation faellt zurueck auf neutral, alte Rechte bleiben nicht  [unclassified]
+  ok      Nachreichen: der Host bekommt genau die Bytes zurueck, die er gab - kein stiller Tausch  [3456 Bytes]
+  ok      Muellbytes lassen den gehaltenen Zustand unveraendert
+  ok      Nullzeiger/Laenge 0 lassen den gehaltenen Zustand unveraendert
+
+SONDE-NULLTEST OK - 78 Pruefungen ok, 0 Fehler
+```
+
+⚠️ **Eine Landmine, die dabei aufgefallen ist und die eine Messung fast
+verdorben hätte.** Die Rücknahme der Mutation erfolgte durch Zurückkopieren
+einer Sicherung mit `shutil.copy2` — das **erhält die alte `mtime`**. MSBuild
+entscheidet inkrementell über Zeitstempel und hat die Quelle deshalb *nicht*
+neu übersetzt; der erste Lauf nach der Rücknahme maß noch das mutierte
+Objektfile und blieb rot. Sichtbar wurde es nur daran, dass B2 rot blieb,
+obwohl `git diff` auf die Datei leer war. Behoben durch Setzen der `mtime` auf
+jetzt und Neuübersetzen — die Bauausgabe führt `NakamaState.cpp` dann wieder
+auf. Wer eine Mutationsprobe fährt, muss die Rücknahme **am Testergebnis**
+prüfen, nicht am Kopiervorgang.
+
+#### 3. Was Block 5b jetzt zusätzlich misst — Punkt 7
+
+Vier Zeilen, die Riegel 1 **direkt an der öffentlichen `positionErlaubt`** für
+alle vier Klassen messen — an derselben Funktion, an der Punkt 0–6 über
+`lade()` abbiegen:
+
+```cpp
+for (const auto klasse : { nakama::state::Klasse::main,
+                           nakama::state::Klasse::passive_probe,
+                           nakama::state::Klasse::active_probe,
+                           nakama::state::Klasse::legacy })
+    pruefe (! nakama::state::positionErlaubt (
+                klasse, nakama::state::Messposition::post_fader_contribution),
+            juce::String ("Riegel 1 klassenunabhaengig: post_fader_contribution ist fuer '")
+                + nakama::state::wort (klasse) + "' gesperrt");
+```
+
+Der Kommentar darüber benennt im Quelltext, **was diese Prüfung ist und was
+nicht**: der `passive_probe`-Fall hat kein gebautes Bundle mehr, die Schale
+kann nur `active_probe` bauen, deshalb wird die Klassenunabhängigkeit des
+Riegels hier an der Funktion gemessen, die die Schale aufruft — die
+vollständige 16er-Matrix samt Bundleverträgen misst B2, nicht dieses Bein.
+Kein passives Bauziel, keine Testhintertür im Produktcode.
+
+Der Kopfkommentar von Block 5b sagt jetzt zusätzlich ausdrücklich, **wie weit
+der Durchgriff trägt**: genau eine Klasse je Übersetzung, gebaut wird nur
+`active_probe`.
+
+Block 5b: **16 → 20** Prüfungen. Bein `A16`: **78 → 82**.
+
+#### 4. Dieselbe Mutation gegen den ergänzten Block: A16 wird ROT
+
+Mutation aus Punkt 2 **erneut** eingesetzt, `EqCopProbeeqNullTest` neu gebaut
+(Exit 0) und gefahren:
+
+| Bein | Exitcode | Ergebnis |
+|---|---|---|
+| **A16** `EqCopProbeeqNullTest`, Block 5b mit Punkt 7 | **1** | **ROT** — 81 ok, **1 Fehler**: `Riegel 1 klassenunabhaengig: post_fader_contribution ist fuer 'passive_probe' gesperrt` |
+
+Damit fängt A16 künftig selbst, was es vorher nicht gefangen hat. Dass genau
+**eine** Prüfung fällt und nicht mehr, ist kein Mangel, sondern die Aussage:
+die Mutation trifft ausschließlich die Klasse, die dieses Bundle nicht bauen
+kann — deshalb bleiben die 19 anderen Prüfungen des Blocks zu Recht grün, und
+deshalb brauchte es diese vier Zeilen.
+
+**Rohausgabe A16 MIT Mutation, Block 5b mit Punkt 7**
+(`EqCopProbeeqNullTest.exe`, stdout+stderr wortgleich, Exitcode 1):
+
+```text
+SONDE-NULLTEST — nakama-sonde-testschale (Produktklasse active_probe)
+  ok      frischer Zustand traegt die Produktklasse des Bundles  [active_probe]
+  ok      der Bundlevertrag laesst die eigene Produktklasse zu
+  ok      der Bundlevertrag laesst 'main' NICHT zu
+  ok      der Bundlevertrag laesst 'legacy' NICHT zu
+  ok      das Bundle meldet dem Host keinen Parameter  [0]
+  ok      keine erfundene Oberflaeche (Gestaltung kommt aus Figma)
+  ok      frische Instanz ist neutral, trotz fester Produktklasse  [unclassified]
+  ok      eine Sonde darf den Broker nie starten
+  ok      bitgleich bei 44100 Hz, Block 1
+  ok      0 Samples Latenz bei 44100 Hz, Block 1  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 44100 Hz, Block 16
+  ok      0 Samples Latenz bei 44100 Hz, Block 16  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 44100 Hz, Block 64
+  ok      0 Samples Latenz bei 44100 Hz, Block 64  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 44100 Hz, Block 512
+  ok      0 Samples Latenz bei 44100 Hz, Block 512  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 44100 Hz, Block 4096
+  ok      0 Samples Latenz bei 44100 Hz, Block 4096  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 1
+  ok      0 Samples Latenz bei 48000 Hz, Block 1  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 16
+  ok      0 Samples Latenz bei 48000 Hz, Block 16  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 64
+  ok      0 Samples Latenz bei 48000 Hz, Block 64  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 512
+  ok      0 Samples Latenz bei 48000 Hz, Block 512  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 48000 Hz, Block 4096
+  ok      0 Samples Latenz bei 48000 Hz, Block 4096  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 1
+  ok      0 Samples Latenz bei 96000 Hz, Block 1  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 16
+  ok      0 Samples Latenz bei 96000 Hz, Block 16  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 64
+  ok      0 Samples Latenz bei 96000 Hz, Block 64  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 512
+  ok      0 Samples Latenz bei 96000 Hz, Block 512  [0]
+  ok      kein MIDI erzeugt
+  ok      bitgleich bei 96000 Hz, Block 4096
+  ok      0 Samples Latenz bei 96000 Hz, Block 4096  [0]
+  ok      kein MIDI erzeugt
+  ok      kein Tail  [0]
+  ok      Stille bleibt bitgenau still
+  ok      Zustand laesst sich speichern  [3439 Bytes]
+  ok      geladener Zustand ist derselbe (Instanz-ID, Klasse, Position, Label)
+  ok      der eigene Stand kommt NICHT als read-only zurueck
+  ok      nach gueltigem State traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      speichern -> laden -> speichern ist bytegleich  [3439 Bytes]
+  ok      die Probebytes tragen wirklich measurement_position=post_fader_contribution  [post_fader_contribution]
+  ok      der Stand kommt als read-only zurueck, nicht als eigener  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      read-only nennt seinen Grund
+  ok      das Bundle FUEHRT die verbotene Position nicht  [insert]
+  ok      die Instanz klassifiziert NICHT auf die Produktklasse, sie bleibt neutral  [unclassified]
+  ok      eine read-only-Sonde darf den Broker nicht starten
+  ok      Vertrag 53.8: dieselben Originalbytes gehen unveraendert an den Host zurueck  [3456 Bytes]
+  ok      der Rueckweg waescht nichts: erneut geladen bleibt read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      und erneut geladen bleibt die Instanz neutral  [unclassified]
+  ok      Gegenprobe: derselbe Stand mit erlaubter Position laedt normal
+  ok      Gegenprobe: der geladene Common ist derselbe (Position insert)  [insert]
+  ok      Gegenprobe: nach gueltigem Stand traegt der Lebenslauf die Produktklasse  [active_probe]
+  ok      Nachreichen: die Instanz ist VOR dem verbotenen Stand klassifiziert  [active_probe]
+  ok      Nachreichen: der verbotene Stand kommt auch bei einer laufenden Instanz read-only  [measurement_position post_fader_contribution is not allowed for active_probe]
+  ok      Nachreichen: die Klassifikation faellt zurueck auf neutral, alte Rechte bleiben nicht  [unclassified]
+  ok      Nachreichen: der Host bekommt genau die Bytes zurueck, die er gab - kein stiller Tausch  [3456 Bytes]
+  ok      Riegel 1 klassenunabhaengig: post_fader_contribution ist fuer 'main' gesperrt
+  FEHLER  Riegel 1 klassenunabhaengig: post_fader_contribution ist fuer 'passive_probe' gesperrt
+  ok      Riegel 1 klassenunabhaengig: post_fader_contribution ist fuer 'active_probe' gesperrt
+  ok      Riegel 1 klassenunabhaengig: post_fader_contribution ist fuer 'legacy' gesperrt
+  ok      Muellbytes lassen den gehaltenen Zustand unveraendert
+  ok      Nullzeiger/Laenge 0 lassen den gehaltenen Zustand unveraendert
+
+SONDE-NULLTEST FEHLGESCHLAGEN - 81 Pruefungen ok, 1 Fehler
+```
+
+#### 5. Mutation vollständig zurückgenommen
+
+Die Sicherung wurde zurückgespielt, die `mtime` gesetzt, beide Ziele neu gebaut
+und gefahren: **B2 Exit 0 — 169 Prüfungen ok, 0 Fehler**; **A16 Exit 0 — 82
+Prüfungen ok, 0 Fehler**. Die SHA-256 der Arbeitsdatei steht wieder auf
+`7f6574bd4bbe10e4aca6d9d91fe9ca95539b84784416535a475b1a7ec26f6cd6`.
+
+```text
+$ git diff --stat -- eq-copilot/plugin/state/NakamaState.cpp
+(keine Ausgabe - kein Unterschied)
+
+$ git hash-object eq-copilot/plugin/state/NakamaState.cpp
+42c6da7e9c00510328219c91315218b13f146fc0
+
+$ git rev-parse HEAD:eq-copilot/plugin/state/NakamaState.cpp
+42c6da7e9c00510328219c91315218b13f146fc0
+
+$ git status --short
+ M docs/NEXT-SESSION.md
+ M docs/beweise/SONDE-007b.md
+ M docs/offene-punkte.md
+ M eq-copilot/plugin/tests/SondeNullTestMain.cpp
+ M tools/beweise.ps1
+```
+
+`NakamaState.cpp` erscheint in dieser Runde **nicht** in `git status --short`:
+Inhalt und Blob sind identisch mit `HEAD`, und diesmal stimmt auch die
+Statusanzeige, weil die zurückgespielte Datei byteweise wieder das ist, was
+schon vor der Probe auf der Platte lag (zum ` M` der Vorrunde siehe
+„Prüferbefund P2" weiter oben).
+
+#### 6. P2 — der Laufzähler ist aus der Übergabe raus
+
+`docs/NEXT-SESSION.md` behauptete im Nachtrag vom 29.08. weiterhin „Kanon
+zweimal GRÜN", obwohl das Manifest drei Läufe führt. Der Befund trifft doppelt:
+die Zahl war falsch, **und** sie gehört nach `AGENTS.md:58-60` überhaupt nicht
+in eine Kontextdatei. Der Nachtrag sagt jetzt „Kanon GRÜN; Läufe und Zahlen
+stehen im Manifest" und trägt zusätzlich die dreiteilige Formulierung aus
+Punkt 1 — die alte Kurzfassung („wird jetzt am Bundle gemessen … 16
+Prüfungen") war dieselbe Überdehnung, die P1 anspricht, plus zwei weitere
+volatile Zahlen. Auch die Commit-Kennung `1ca5fdb` ist dort entfallen: eine
+Übergabe, die auf einen Commit zeigt, ist ab dem nächsten Commit falsch.
+
+#### Diff dieser Runde (Runde 2)
+
+| Datei | Änderung |
+|---|---|
+| `eq-copilot/plugin/tests/SondeNullTestMain.cpp` | **Nur Zuwachs**: Punkt 7 in Block 5b (vier Prüfungen plus Begründungskommentar); der Kopfkommentar von Block 5b sagt jetzt ausdrücklich, wie weit der Durchgriff trägt — eine Klasse je Übersetzung — und wer die volle Matrix misst. Keine bestehende Prüfung geändert. Bein `A16` 78 → **82** |
+| `tools/beweise.ps1` | Behauptung des Beins `A16`: „AM BUNDLE" → „AM GEBAUTEN BUNDLE Nakama Probeeq, Klasse `active_probe`", plus der Nachtrag zu Punkt 7 und der Verweis auf B2 für die volle Matrix. Eine Behauptung, die mehr sagt als das Bein misst, ist derselbe Fehler wie eine, die weniger sagt |
+| `docs/beweise/SONDE-007b.md` | Kopf-Nachtrag, §6.7-Zeile T3 und Befundtabelle auf die dreiteilige Beweislage präzisiert; Zeile 7 in „Was neu gemessen wird"; dieser Abschnitt mit beiden Befunden wörtlich, drei Rohausgaben und der Rücknahme; ein weiterer Kanon-Lauf |
+| `docs/NEXT-SESSION.md` | Nachtrag ohne volatile Zahlen und ohne Commit-Kennung, Formulierung auf die dreiteilige Beweislage gebracht (P2) |
+| `docs/offene-punkte.md` | `NAK-87`: der Nebensatz über Befund 1 nennt jetzt das gebaute Bundle und beide Messstellen |
+| `eq-copilot/plugin/state/NakamaState.cpp` | **unverändert** — zweimal mutiert, zweimal zurückgenommen; `git diff` leer, Blob `42c6da7e9c00510328219c91315218b13f146fc0` wie an der Ticketbasis `eef0cbb`, SHA-256 der Arbeitsdatei wieder die ursprüngliche |
+
+#### Was sich an der Marke nicht ändert
+
+Die Marke bleibt `T3 NEEDS_WORK 2026-08-29 nachgearbeitet`. **Wer nacharbeitet,
+urteilt nicht** — auch nicht über den eigenen Nachschlag; ein `PASS` auf T3
+darf nur ein frischer Prüfer geben, der weder gebaut noch nachgearbeitet hat.
+Befund 2 des Gates (`NAK-87`: Installation und FL-Scan) bleibt unverändert
+offen, und damit bleibt **P1 nicht exit-fähig**.
 
 ---
 

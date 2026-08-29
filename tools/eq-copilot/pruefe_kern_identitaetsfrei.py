@@ -1217,9 +1217,15 @@ def _sdk_wurzel(sdk_version: str) -> tuple[pathlib.Path | None, str]:
 def _systemwurzel() -> tuple[pathlib.Path | None, str]:
     """Windows-Systemverzeichnis aus der UMGEBUNG (%SystemRoot%).
 
-    Der Compiler liest beim Formatieren einer Diagnose Systemdateien -
-    gemessen: System32/tzres.dll und Globalization/Sorting/sortdefault.nls
-    (Probe P5-W5b). Seit Befund B1 (Runde 6) laufen sie durch die
+    Der Compiler liest Systemdateien, die kein Uebersetzungsstoff sind -
+    GEMESSEN (Probe P8-SYS, Runde 8, 29.08.2026): System32/tzres.dll und
+    Globalization/Sorting/sortdefault.nls stehen roh in einem CL.read.1.tlog,
+    das ueber den MSBuild-FileTracker an einer Wegwerf-TU unter %TEMP%
+    entstand - in der TU MIT Diagnose ebenso wie in der Gegenprobe OHNE jede
+    Diagnose. WOVON der Zugriff ausgeloest wird, ist nicht gemessen und wird
+    hier nicht behauptet. Befehl, Stand und vollstaendige Rohausgabe: Manifest
+    SONDE-007a, Abschnitt "Nacharbeit Runde 8", Befund 3.
+    Seit Befund B1 (Runde 6) laufen sie durch die
     Erlaubnisliste statt an ihr vorbei; seit Befund P1 (Runde 7) ist diese
     Wurzel aber KEINE Erlaubnis mehr, sondern nur noch der Anker, an dem die
     NAMENTLICH erlaubten Dateien aus SYSTEMDATEIEN haengen. Alles andere
@@ -1313,12 +1319,16 @@ def tlog_gelesene_dateien(tlog: pathlib.Path) -> tuple[list[str], list[str]]:
     return marker, sorted(set(gelesen))
 
 
-# ⚠️ GEMESSEN (Probe P5-W5b, 29.08.2026): cl.exe nennt im Leseprotokoll
-#    gelegentlich auch Dateien, die KEIN Uebersetzungsstoff sind -
+# ⚠️ GEMESSEN (Probe P8-SYS, Runde 8, 29.08.2026): cl.exe nennt im
+#    Leseprotokoll auch Dateien, die KEIN Uebersetzungsstoff sind -
 #    C:\Windows\System32\tzres.dll und Globalization\Sorting\sortdefault.nls
-#    tauchten auf, sobald der Compiler eine Diagnose formatierte. Eine .dll
-#    oder .nls kann keinen Praeprozessorzustand in eine TU tragen; sie am Ort
-#    zu messen faerbte den Kanon sporadisch rot, ohne etwas zu bewachen.
+#    stehen roh im CL.read.1.tlog einer Wegwerf-TU unter %TEMP% - in der TU
+#    MIT Diagnose und in der Gegenprobe OHNE jede Diagnose gleichermassen.
+#    Wodurch der Zugriff ausgeloest wird, ist NICHT gemessen; die Rohzeilen
+#    stehen im Manifest SONDE-007a, Abschnitt "Nacharbeit Runde 8", Befund 3.
+#    Eine .dll oder .nls kann keinen Praeprozessorzustand in eine TU tragen;
+#    sie am Ort zu messen faerbte den Kanon sporadisch rot, ohne etwas zu
+#    bewachen.
 #
 # BEFUND B1, Runde 6 (29.08.2026): dagegen half frueher eine Liste ORTSFREIER
 #    ENDUNGEN (.dll/.nls/.exe/.mui/.dat/.bin), die VOR der Erlaubnisliste
@@ -1861,7 +1871,7 @@ def fehlerbericht() -> None:
 
 
 def voraussetzung_exit() -> int:
-    """Exitcode fuer jeden Ausgang "Voraussetzung fehlt" (Matrix F14/F15).
+    """Exitcode fuer jeden Ausgang "Voraussetzung fehlt" (Matrix F13/F14/F15).
 
     BEFUND P2, Runde 8 (29.08.2026): der Sollindex-Temp-Ausgang gab 3 zurueck,
     obwohl `fehler` bereits einen Identitaetsbefund trug - gemessen mit einer
@@ -1872,7 +1882,9 @@ def voraussetzung_exit() -> int:
     Die Matrix sagt fuer F14 (`--nur-messen`) seit Runde 5: ein echter
     Identitaetsbefund gewinnt und macht aus der 3 eine 2 - eine fehlende
     Voraussetzung verschweigt nie, was schon gemessen WURDE. Fuer den
-    Sollindex-Temp (F15) gilt dieselbe Zeile.
+    Sollindex-Temp (F15) gilt dieselbe Zeile - und seit Runde 9 (30.08.2026)
+    sagt F13 (Bau nicht moeglich) sie ausdruecklich mit: die Zeile gilt fuer
+    JEDEN Aufruf von main(), nicht nur fuer einen frischen Prozess.
 
     Deshalb gibt es genau EINEN Ausgang: jeder Voraussetzungs-Rueckweg des
     Beins geht durch diese Funktion. Der Klartext "VORAUSSETZUNG: ..." steht
@@ -1882,7 +1894,7 @@ def voraussetzung_exit() -> int:
     fehlerbericht()
     if fehler:
         print("\nEin registrierter Befund gewinnt gegen die fehlende "
-              "Voraussetzung (Matrix F14/F15): Exit 2.")
+              "Voraussetzung (Matrix F13/F14/F15): Exit 2.")
         return 2
     return 3
 
@@ -2606,7 +2618,7 @@ def _selbsttest_runde7() -> None:
     pruefe(ohne == 3 and mit == 2 and "kuenstlicher Befund fuer R8-1" in text,
            "R8-1: ein Voraussetzungs-Ausgang gibt 2, sobald ein Befund "
            "registriert ist, sonst 3 - und nennt den Befund im Klartext "
-           "(Matrix F14/F15)",
+           "(Matrix F13/F14/F15)",
            f"ohne Befund {ohne}, mit Befund {mit}")
 
     # Dieselbe Zusage strukturell: KEIN Ausgang von main() darf an

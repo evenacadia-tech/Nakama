@@ -1,0 +1,317 @@
+{
+  "$id": "evenacadia.nakama.fixtures.v3.envelope",
+  "titel": "Envelope-Fixture-Korpus (SONDE-010)",
+  "vertrag": "docs/FL-Nakama-Sonden-Design-Entwurf.md §33.1 (16-Byte-Kopf)",
+  "zweck": "Die dritte Partei zwischen C++ (plugin/core/ipc/WireEnvelope) und Rust (broker/src/transport/v3.rs). Beide Leser messen gegen DIESES Manifest; stimmen beide mit ihm ueberein, stimmen sie transitiv miteinander ueberein. Die Erwartungen sind von Hand geschrieben, nicht aus einem Leser erzeugt — sonst waere der Vergleich zirkulaer.",
+  "kopf": "u32 frame_len (LE) | u8 encoding | u8 message_family | u8 schema_major | u8 schema_minor | u32 flags | u32 payload_len | u32 crc32c. Es gilt exakt frame_len == 16 + payload_len, gerechnet in u64.",
+  "stufen": "Die Pruefung laeuft in drei Stufen, weil die Fragen voneinander abhaengen: (1) Rahmen — ohne gueltiges frame_len ist der Payload nicht auffindbar; (2) Kopfkonsistenz — ohne frame_len == 16 + payload_len ist die Payloadgrenze nicht bestimmt; (3) Feldwerte — hier wird ALLES gesammelt und kanonisch nach dem Regelnamen sortiert. Stufe 1 und 2 liefern deshalb immer genau einen Verstoss, Stufe 3 kann mehrere liefern. Innerhalb von Stufe 3 gilt eine einzige Abhaengigkeit: die CRC-Regeln greifen nur bei BEKANNTEM Encoding, die Familienregel nur bei bekanntem Encoding UND bekannter Familie.",
+  "regeln": [
+    "praefix_unvollstaendig",
+    "frame_len_null",
+    "frame_len_unter_kopf",
+    "frame_len_ueber_grenze",
+    "frame_unvollstaendig",
+    "ueberlaenge",
+    "unterlaenge",
+    "crc_bei_json_nicht_null",
+    "crc_falsch",
+    "encoding_passt_nicht_zur_familie",
+    "encoding_unbekannt",
+    "flags_reserviert",
+    "message_family_unbekannt",
+    "schema_major_unbekannt"
+  ],
+  "anzahl_gueltig": 8,
+  "anzahl_ungueltig": 29,
+  "fixtures": [
+    {
+      "datei": "gueltig/p0-json-leeres-objekt.bin",
+      "urteil": "gueltig",
+      "warum": "Grundform P0: JSON, CRC per Vertrag exakt 0",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/p0-json-welcome.bin",
+      "urteil": "gueltig",
+      "warum": "die erste Antwort des Brokers, so wie sie wirklich gerahmt wird (§53.9)",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/p0-payload-laenge-null.bin",
+      "urteil": "gueltig",
+      "warum": "payload_len 0 und frame_len 16 sind envelopeseitig gueltig — ob der leere Payload eine gueltige NACHRICHT ist, entscheidet erst der Payloadparser. Der Envelope urteilt nie ueber Inhalt",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/p0-schema-minor-unbekannt.bin",
+      "urteil": "gueltig",
+      "warum": "unbekannte MINOR-Version ist additiv und wird angenommen (§33.1); nur unbekannte Major-Versionen werden abgelehnt",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/p1-json-state-report.bin",
+      "urteil": "gueltig",
+      "warum": "P1 traegt wie P0 JSON; die Familie unterscheidet nur die Prioritaet",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/p2-flatbuffers-echter-batch.bin",
+      "urteil": "gueltig",
+      "warum": "P2 mit dem echten live-64-band-Puffer aus dem SONDE-005b-Korpus und der darueber gerechneten CRC32C",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/p2-flatbuffers-kurz.bin",
+      "urteil": "gueltig",
+      "warum": "kurzer P2-Frame: die CRC deckt genau die 32 Payloadbytes, nicht Praefix und nicht Kopf",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/p2-payload-an-der-paketgrenze.bin",
+      "urteil": "gueltig",
+      "warum": "frame_len == 262144 ist die GRENZE und noch erlaubt; erst darueber faellt der Frame",
+      "verstoesse": []
+    },
+    {
+      "datei": "ungueltig/alles-falsch-ausser-dem-rahmen.bin",
+      "urteil": "ungueltig",
+      "warum": "Extremfall: jeder Feldwert ausserhalb, aber der Rahmen stimmt. Genau vier Regeln greifen — die CRC-Regeln nicht, weil das Encoding unbekannt ist, und die Familienregel nicht, weil beide unbekannt sind",
+      "verstoesse": [
+        "encoding_unbekannt",
+        "flags_reserviert",
+        "message_family_unbekannt",
+        "schema_major_unbekannt"
+      ]
+    },
+    {
+      "datei": "ungueltig/crc-bei-json-nicht-null.bin",
+      "urteil": "ungueltig",
+      "warum": "bei JSON ist die CRC per Vertrag EXAKT 0 — nicht 'egal'",
+      "verstoesse": [
+        "crc_bei_json_nicht_null"
+      ]
+    },
+    {
+      "datei": "ungueltig/crc-p2-ein-bit-im-payload-gekippt.bin",
+      "urteil": "ungueltig",
+      "warum": "ein einziges gekipptes Payloadbit faellt an der Pflicht-CRC von P2",
+      "verstoesse": [
+        "crc_falsch"
+      ]
+    },
+    {
+      "datei": "ungueltig/crc-p2-null-statt-summe.bin",
+      "urteil": "ungueltig",
+      "warum": "0 ist bei FlatBuffers keine Ausnahme, sondern eine falsche Summe",
+      "verstoesse": [
+        "crc_falsch"
+      ]
+    },
+    {
+      "datei": "ungueltig/crc-p2-summe-ueber-kopf-statt-payload.bin",
+      "urteil": "ungueltig",
+      "warum": "die CRC deckt GENAU die payload_len Payloadbytes; Praefix und Kopf gehoeren nicht in den Digest (§33.1)",
+      "verstoesse": [
+        "crc_falsch"
+      ]
+    },
+    {
+      "datei": "ungueltig/encoding-255.bin",
+      "urteil": "ungueltig",
+      "warum": "oberer Rand des Bytes",
+      "verstoesse": [
+        "encoding_unbekannt"
+      ]
+    },
+    {
+      "datei": "ungueltig/encoding-unbekannt-mit-flags.bin",
+      "urteil": "ungueltig",
+      "warum": "der Vorrang-Beweis: bei UNBEKANNTEM Encoding faellt keine CRC-Regel, obwohl die CRC hier weder 0 noch die Summe ist. Ohne diese Regel haetten beide Leser die freie Wahl zwischen zwei Antworten",
+      "verstoesse": [
+        "encoding_unbekannt",
+        "flags_reserviert"
+      ]
+    },
+    {
+      "datei": "ungueltig/encoding-zwei.bin",
+      "urteil": "ungueltig",
+      "warum": "2 ist kein Encoding; 0 = JSON, 1 = FlatBuffers",
+      "verstoesse": [
+        "encoding_unbekannt"
+      ]
+    },
+    {
+      "datei": "ungueltig/familie-255.bin",
+      "urteil": "ungueltig",
+      "warum": "oberer Rand des Bytes",
+      "verstoesse": [
+        "message_family_unbekannt"
+      ]
+    },
+    {
+      "datei": "ungueltig/familie-drei.bin",
+      "urteil": "ungueltig",
+      "warum": "3 ist keine Familie; 0 = P0, 1 = P1, 2 = P2",
+      "verstoesse": [
+        "message_family_unbekannt"
+      ]
+    },
+    {
+      "datei": "ungueltig/familie-p0-mit-flatbuffers.bin",
+      "urteil": "ungueltig",
+      "warum": "P0 verwendet JSON (§33.1); ein binaerer P0-Frame ist kein Steuerpaket",
+      "verstoesse": [
+        "encoding_passt_nicht_zur_familie"
+      ]
+    },
+    {
+      "datei": "ungueltig/familie-p2-mit-json-und-crc.bin",
+      "urteil": "ungueltig",
+      "warum": "zwei Regeln greifen gleichzeitig — das Encoding IST bekannt, also gilt auch die CRC-Regel dieses Encodings",
+      "verstoesse": [
+        "crc_bei_json_nicht_null",
+        "encoding_passt_nicht_zur_familie"
+      ]
+    },
+    {
+      "datei": "ungueltig/familie-p2-mit-json.bin",
+      "urteil": "ungueltig",
+      "warum": "P2 verweist auf ein FeatureBatch; JSON dort waere die Zahlenexpansion, die der Binaerpfad gerade vermeidet",
+      "verstoesse": [
+        "encoding_passt_nicht_zur_familie"
+      ]
+    },
+    {
+      "datei": "ungueltig/flags-bit-null.bin",
+      "urteil": "ungueltig",
+      "warum": "alle 32 Flagbits sind heute reserviert; ein gesetztes Bit bedeutet eine Semantik, die dieser Leser nicht kennt",
+      "verstoesse": [
+        "flags_reserviert"
+      ]
+    },
+    {
+      "datei": "ungueltig/flags-hoechstes-bit.bin",
+      "urteil": "ungueltig",
+      "warum": "oberes Ende des Flagworts",
+      "verstoesse": [
+        "flags_reserviert"
+      ]
+    },
+    {
+      "datei": "ungueltig/kopf-payload-len-u32-ueberlauf.bin",
+      "urteil": "ungueltig",
+      "warum": "payload_len 0xFFFFFFFF: in u32 gerechnet waere 16 + payload_len == 15 und der Frame hiesse 'ueberlaenge'. Der Regelname unterscheidet die richtige u64-Rechnung von der naiven — deshalb ist das Fixture hier",
+      "verstoesse": [
+        "unterlaenge"
+      ]
+    },
+    {
+      "datei": "ungueltig/kopf-ueberlaenge.bin",
+      "urteil": "ungueltig",
+      "warum": "frame_len ist um eins groesser als 16 + payload_len",
+      "verstoesse": [
+        "ueberlaenge"
+      ]
+    },
+    {
+      "datei": "ungueltig/kopf-unterlaenge.bin",
+      "urteil": "ungueltig",
+      "warum": "frame_len ist um eins kleiner als 16 + payload_len",
+      "verstoesse": [
+        "unterlaenge"
+      ]
+    },
+    {
+      "datei": "ungueltig/kopf-vier-feldfehler.bin",
+      "urteil": "ungueltig",
+      "warum": "vier unabhaengige Feldfehler; die Menge ist kanonisch nach dem Regelnamen sortiert, damit sie nicht von der Auswertungsreihenfolge abhaengt",
+      "verstoesse": [
+        "encoding_unbekannt",
+        "flags_reserviert",
+        "message_family_unbekannt",
+        "schema_major_unbekannt"
+      ]
+    },
+    {
+      "datei": "ungueltig/major-null.bin",
+      "urteil": "ungueltig",
+      "warum": "Major 0 ist keine v3-Version",
+      "verstoesse": [
+        "schema_major_unbekannt"
+      ]
+    },
+    {
+      "datei": "ungueltig/major-unbekannt-und-crc-falsch.bin",
+      "urteil": "ungueltig",
+      "warum": "unbekannte Major-Version hindert die CRC-Pruefung nicht: der Kopf ist in JEDER Major-Version derselbe, nur der Payload nicht",
+      "verstoesse": [
+        "crc_falsch",
+        "schema_major_unbekannt"
+      ]
+    },
+    {
+      "datei": "ungueltig/major-vier.bin",
+      "urteil": "ungueltig",
+      "warum": "eine ZUKUENFTIGE Major-Version wird abgelehnt, nicht geraten (§33.1)",
+      "verstoesse": [
+        "schema_major_unbekannt"
+      ]
+    },
+    {
+      "datei": "ungueltig/major-zwei.bin",
+      "urteil": "ungueltig",
+      "warum": "v2 kennt diesen Kopf gar nicht; als Major im v3-Kopf ist 2 unbekannt",
+      "verstoesse": [
+        "schema_major_unbekannt"
+      ]
+    },
+    {
+      "datei": "ungueltig/rahmen-frame-len-fuenfzehn.bin",
+      "urteil": "ungueltig",
+      "warum": "15 Bytes koennen den 16-Byte-Kopf nicht tragen",
+      "verstoesse": [
+        "frame_len_unter_kopf"
+      ]
+    },
+    {
+      "datei": "ungueltig/rahmen-frame-len-null.bin",
+      "urteil": "ungueltig",
+      "warum": "frame_len 0 ist wie in v2 verboten — sonst gaebe es einen Frame ohne Ende",
+      "verstoesse": [
+        "frame_len_null"
+      ]
+    },
+    {
+      "datei": "ungueltig/rahmen-frame-len-ueber-grenze.bin",
+      "urteil": "ungueltig",
+      "warum": "ein Byte ueber der Paketgrenze; die Ablehnung faellt VOR jeder Allokation der angekuendigten Groesse",
+      "verstoesse": [
+        "frame_len_ueber_grenze"
+      ]
+    },
+    {
+      "datei": "ungueltig/rahmen-payload-fehlt-ein-byte.bin",
+      "urteil": "ungueltig",
+      "warum": "der Frame ist angekuendigt, aber ein Byte fehlt — im Strom heisst das 'weiterlesen', als ganzer Puffer heisst es 'unvollstaendig'",
+      "verstoesse": [
+        "frame_unvollstaendig"
+      ]
+    },
+    {
+      "datei": "ungueltig/rahmen-praefix-drei-bytes.bin",
+      "urteil": "ungueltig",
+      "warum": "drei Bytes sind noch kein Laengenpraefix",
+      "verstoesse": [
+        "praefix_unvollstaendig"
+      ]
+    },
+    {
+      "datei": "ungueltig/v2-frame-im-v3-pruefer.bin",
+      "urteil": "ungueltig",
+      "warum": "die Gegenrichtung der v2-Isolation: ein echter v2-Frame ist fuer den v3-Pruefer kein gueltiger Envelope. Von Hand nachgerechnet (siehe Kommentar im Erzeuger)",
+      "verstoesse": [
+        "unterlaenge"
+      ]
+    }
+  ]
+}

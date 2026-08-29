@@ -94,10 +94,18 @@ Exitcodes: 0 gruen · 2 rot · 3 Voraussetzung fehlt (Neubau nicht moeglich,
 Configure veraltet, kein schreibbares temporaeres Verzeichnis fuer den
 Sollindex des JUCE-Baums, oder --nur-messen - dann ist ueber die Frische
 nichts gemessen und nichts behauptet).
+
+Ein bereits registrierter Befund GEWINNT gegen jede fehlende Voraussetzung:
+war vor dem Abbruch schon etwas rot, endet der Lauf mit 2 statt 3, und die
+Klartextzeile "VORAUSSETZUNG: ..." bleibt zusaetzlich stehen (Matrix F14/F15,
+Runde 8). Jeder Voraussetzungs-Rueckweg des Beins geht dafuer durch
+`voraussetzung_exit()`; ein Ausgang, der daran vorbeikaeme, waere ein Befund.
 """
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import os
 import pathlib
@@ -885,16 +893,34 @@ _WINKITS_SCHLUESSEL = os.sep.join(
 # und K3 vorbei.
 #
 # Deshalb sind Systemdateien seit Runde 7 NAMENTLICH erlaubt, nicht ueber
-# ihren Ort. Die Liste ist gemessen, nicht geraten: Probe P5-W5b (29.08.2026,
-# Manifest SONDE-007a) sah cl.exe beim Formatieren einer Diagnose
-# C:\Windows\System32\tzres.dll und
-# C:\Windows\Globalization\Sorting\sortdefault.nls lesen. Ein gruener Lauf
-# nennt heute KEINE Datei unter %SystemRoot% (Messung Runde 7); die beiden
-# Namen stehen hier fuer genau den Diagnosefall, in dem sie auftauchen.
+# ihren Ort.
+#
+# BEFUND P2, Runde 8 (29.08.2026): bis dahin berief sich diese Liste auf die
+# Probe P5-W5b, deren eingefuegte Rohausgabe die beiden Namen gar nicht zeigt -
+# eine Behauptung ohne Rohausgabe (Manifest §2). Die Liste steht seither auf
+# einer eingefuegten Messung. Gemessen mit dem MSBuild-FileTracker ueber eine
+# Wegwerf-Uebersetzungseinheit unter %TEMP% (Befehl, Stand und vollstaendige
+# Rohausgabe: Manifest SONDE-007a, Abschnitt "Nacharbeit Runde 8", Probe
+# P8-SYS):
+#
+#     Tracker.exe /if diag /r probe.cpp /c cl.exe /c /W4 /nologo /Foprobe.obj probe.cpp
+#     -> cl.read.1.tlog, 125 Zeilen, davon unter %SystemRoot%:
+#        C:\WINDOWS\GLOBALIZATION\SORTING\SORTDEFAULT.NLS
+#        C:\WINDOWS\SYSTEM32\TZRES.DLL
+#
+# Beide Namen erscheinen dort, und NUR diese beiden. Gemessen wurde ausserdem,
+# was die Zeile "Diagnosefall" frueher zu eng sagte: dieselben zwei Dateien
+# stehen auch im Protokoll einer TU OHNE jede Diagnose und mit /utf-8 /bigobj -
+# ausgeloest wird der Zugriff also nicht von der Meldung selbst. Das
+# Leseprotokoll des KERNS nennt dagegen keine Datei unter %SystemRoot%
+# (`Windows-System 0`); die Liste deckt damit einen Fall ab, den der Kanon
+# heute nicht erreicht, und ist genau deshalb eng zu halten.
 #
 # Jede andere Datei unter %SystemRoot% ist ROT und wird namentlich genannt.
-# Faellt hier je eine weitere Systemdatei auf, wird sie GEMESSEN nachgetragen
-# - eine Wurzel oder ein Praefix kaeme nie wieder zurueck.
+# Faellt hier je eine weitere Systemdatei auf, ist der Weg: die Tlog-Zeile
+# MESSEN, ihre Rohausgabe ins Manifest einfuegen, dann den Namen hier
+# nachtragen - in dieser Reihenfolge. Eine Wurzel oder ein Praefix kaeme nie
+# wieder zurueck.
 SYSTEMDATEIEN = (
     os.path.join("System32", "tzres.dll"),
     os.path.join("Globalization", "Sorting", "sortdefault.nls"),
@@ -1825,6 +1851,42 @@ def pruefe(bedingung: bool, text: str, zusatz: str = "") -> None:
         print("  FEHLER  " + zeile)
 
 
+def fehlerbericht() -> None:
+    """Die gesammelten Befunde als Klartext - wortgleich an JEDEM Ausgang."""
+    print(f"\n{ok} ok, {len(fehler)} Fehler")
+    if fehler:
+        print("\nFEHLGESCHLAGEN:")
+        for f in fehler:
+            print("  - " + f)
+
+
+def voraussetzung_exit() -> int:
+    """Exitcode fuer jeden Ausgang "Voraussetzung fehlt" (Matrix F14/F15).
+
+    BEFUND P2, Runde 8 (29.08.2026): der Sollindex-Temp-Ausgang gab 3 zurueck,
+    obwohl `fehler` bereits einen Identitaetsbefund trug - gemessen mit einer
+    zusaetzlichen roten K1b-Eingabe: `FEHLER` gedruckt, `AUDIT_RETURN=3`.
+    `fehler` wird global gesammelt und stand nur am ENDE von main() zur
+    Auswertung; jeder `return 3` davor sprang daran vorbei.
+
+    Die Matrix sagt fuer F14 (`--nur-messen`) seit Runde 5: ein echter
+    Identitaetsbefund gewinnt und macht aus der 3 eine 2 - eine fehlende
+    Voraussetzung verschweigt nie, was schon gemessen WURDE. Fuer den
+    Sollindex-Temp (F15) gilt dieselbe Zeile.
+
+    Deshalb gibt es genau EINEN Ausgang: jeder Voraussetzungs-Rueckweg des
+    Beins geht durch diese Funktion. Der Klartext "VORAUSSETZUNG: ..." steht
+    davor und bleibt in beiden Faellen stehen; ein neuer `return 3`, der hier
+    vorbeikaeme, waere derselbe Befund noch einmal.
+    """
+    fehlerbericht()
+    if fehler:
+        print("\nEin registrierter Befund gewinnt gegen die fehlende "
+              "Voraussetzung (Matrix F14/F15): Exit 2.")
+        return 2
+    return 3
+
+
 def nadeln_aus_identitaet() -> dict[str, tuple[str, str]]:
     """Jeder eingefrorene Identitaetswert als benannte Nadel (art, wert).
 
@@ -2171,6 +2233,50 @@ def _probe_repo(wurzel: pathlib.Path, tag: str,
     _git("-C", str(wurzel), "tag", tag)
 
 
+def _r6_3_warnlauf() -> tuple[int, str, str]:
+    """Ein git-Lauf, der DETERMINISTISCH mit 0 endet und auf stderr warnt.
+
+    BEFUND P2, Runde 8 (29.08.2026): die Vorfassung hoffte auf die Warnung und
+    wiederholte den Versuch bis zu zwoelfmal. Gemessen (20 Laeufe je Variante,
+    git 2.54.0.windows.1): der blosse `status` traf die Voraussetzung nur
+    16/20, mit unlesbarer excludesFile 17/20, mit vorherigem
+    `update-index --really-refresh` 15/20. Eine Wiederholung senkt die
+    Flackerwahrscheinlichkeit, sie beseitigt sie nicht - und eine Wache, deren
+    Voraussetzung nur probabilistisch eintritt, ist kein Beleg.
+
+    🔑 Der Grund ist NICHT die Warnung, sondern der STAT-CACHE. `git status`
+       vergleicht zuerst Groesse und mtime des Indexeintrags. Weicht die
+       GROESSE ab, weiss git ohne Lesen, dass die Datei geaendert ist - der
+       Konvertierungspfad wird nie betreten, `.gitattributes` nie gelesen, und
+       genau deshalb bleibt die Warnung aus. Erst wenn die Groesse GLEICH
+       bleibt und nur die mtime abweicht, MUSS git den Inhalt neu hashen und
+       konsultiert dabei die Attribute.
+
+    Deshalb steht hier "eins\\n" im Commit und "zwei\\n" im Arbeitsbaum: fuenf
+    Bytes gegen fuenf Bytes. Gemessen 20/20 (Rohausgabe im Manifest,
+    Abschnitt "Nacharbeit Runde 8").
+
+    Der Rueckgabewert ist der ganze Lauf (Exit, stdout, stderr) - die Wache
+    misst die STROMTRENNUNG des `_git`-Wrappers, nicht eine bestimmte
+    git-Warnung; deren Wortlaut darf sich mit der git-Version aendern, ohne
+    dass sich an der gemessenen Zusage etwas aendert.
+    """
+    with tempfile.TemporaryDirectory() as roh:
+        repo = pathlib.Path(roh) / "warnrepo"
+        _probe_repo(repo, "0.0.1", {
+            "datei.txt": "eins\n",
+            # Ein negatives Muster in .gitattributes ist der portable
+            # Ausloeser: git warnt auf stderr und endet trotzdem mit 0.
+            ".gitattributes": "* -text\n!*.foo bar\n",
+        })
+        # GLEICHE Groesse, anderer Inhalt - siehe oben. Die Zeile ist der
+        # ganze Determinismus dieser Wache; wer sie entfernt, bekommt die
+        # Flackerprobe von Runde 7 zurueck.
+        (repo / "datei.txt").write_text("zwei\n", encoding="utf-8", newline="\n")
+        return _git("-c", "core.quotepath=false", "-C", str(repo),
+                    "status", "--porcelain", "--ignored", "-uall")
+
+
 def _selbsttest_runde6() -> None:
     """Runde 6 baulos: die vier Befunde B1-B4 als Wache, jede einmal gebrochen.
 
@@ -2229,30 +2335,11 @@ def _selbsttest_runde6() -> None:
 
     # -- B3: git schreibt Warnungen auf stderr und endet mit 0 --------------
     #
-    # NEBENBEFUND, Runde 7 (29.08.2026): der Ausloeser ist nicht deterministisch.
-    # git liest .gitattributes nur, wenn es fuer DIESEN Lauf Attribute braucht;
-    # gemessen blieben 2-5 von je 20 Laeufen ohne Warnzeile (Exit 0, stderr
-    # leer), auch mit geaenderter Datei, autocrlf und safecrlf. Die Probe war
-    # damit sporadisch ROT, ohne dass sich am Kern etwas geaendert haette.
-    #
-    # Wiederholt wird deshalb die VORAUSSETZUNG der Probe, nie ihre Behauptung:
-    # sobald git einmal gewarnt hat, wird genau dieser eine Lauf ausgewertet.
-    # Warnt es in keinem Versuch, ist die Probe ROT - eine Probe ohne ihre
-    # Voraussetzung belegt nichts, und Schweigen ist hier kein Ja.
-    code, aus, err = 1, "", ""
-    for _versuch in range(12):
-        with tempfile.TemporaryDirectory() as roh:
-            repo = pathlib.Path(roh) / "warnrepo"
-            _probe_repo(repo, "0.0.1", {
-                "datei.txt": "eins\n",
-                # Ein negatives Muster in .gitattributes ist der portable
-                # Ausloeser: git warnt auf stderr und endet trotzdem mit 0.
-                ".gitattributes": "* -text\n!*.foo bar\n",
-            })
-            code, aus, err = _git("-c", "core.quotepath=false", "-C", str(repo),
-                                  "status", "--porcelain", "--ignored", "-uall")
-        if code == 0 and "warning:" in err:
-            break
+    # Die Voraussetzung wird seit Runde 8 HERGESTELLT, nicht abgewartet:
+    # `_r6_3_warnlauf()` erzwingt den Attributlesevorgang ueber den
+    # Stat-Cache. Warnt git trotzdem nicht, ist die Probe ROT - eine Wache
+    # ohne ihre Voraussetzung belegt nichts, und Schweigen ist hier kein Ja.
+    code, aus, err = _r6_3_warnlauf()
     pruefe(code == 0 and "warning:" in err and "warning:" not in aus,
            "R6-3a: bei Exit 0 traegt nur stdout Daten; die git-Warnung steht "
            "getrennt auf stderr (Befund B3)",
@@ -2355,7 +2442,11 @@ def _selbsttest_runde7() -> None:
     nennt eine fremde Datei unter %SystemRoot%, und K1b LIEST sie. Faellt eine
     Haelfte weg, ist der Weg wieder offen - deshalb wird jede fuer sich
     gemessen. P2 ist die fehlende Voraussetzung statt Traceback.
+
+    Runde 8 haengt an denselben Ausgang die Zeile F15 an: der Exitcode dieser
+    fehlenden Voraussetzung (R8-1) und die Struktur, die ihn erzwingt (R8-2).
     """
+    global ok
     print("\nA14-Selbsttest, Runde 7: Systemdateien namentlich, K1b ueber alle "
           "Eingaben, Exit 3 ohne Temp")
 
@@ -2490,6 +2581,52 @@ def _selbsttest_runde7() -> None:
                gefangen or "keine Ausnahme")
     finally:
         tempfile.tempdir = merk
+
+    # -- P2 Runde 8: ein registrierter Befund gewinnt gegen jede fehlende
+    #    Voraussetzung (Matrix F14/F15) ------------------------------------
+    #
+    # Gemessen am Stand a94c33e: derselbe Sollindex-Temp-Ausgang gab 3, obwohl
+    # eine rote K1b-Eingabe schon `FEHLER` gedruckt hatte. Die Zusage der
+    # Matrix ist aber "Fehler gesammelt -> 2, sonst 3, nie 0" - und genau die
+    # misst diese Wache, an der Stelle, an der sie faellt.
+    merk_fehler = list(fehler)
+    merk_ok = ok
+    try:
+        fehler.clear()
+        with contextlib.redirect_stdout(io.StringIO()):
+            ohne = voraussetzung_exit()
+        fehler.append("kuenstlicher Befund fuer R8-1")
+        with contextlib.redirect_stdout(io.StringIO()) as gesagt:
+            mit = voraussetzung_exit()
+        text = gesagt.getvalue()
+    finally:
+        fehler.clear()
+        fehler.extend(merk_fehler)
+        ok = merk_ok
+    pruefe(ohne == 3 and mit == 2 and "kuenstlicher Befund fuer R8-1" in text,
+           "R8-1: ein Voraussetzungs-Ausgang gibt 2, sobald ein Befund "
+           "registriert ist, sonst 3 - und nennt den Befund im Klartext "
+           "(Matrix F14/F15)",
+           f"ohne Befund {ohne}, mit Befund {mit}")
+
+    # Dieselbe Zusage strukturell: KEIN Ausgang von main() darf an
+    # `voraussetzung_exit()` vorbei eine 3 zurueckgeben. Ein neuer `return 3`
+    # waere genau der Befund aus Runde 8 noch einmal - hier faellt er auf.
+    #
+    # ⚠️ Beim Brechen gemessen (29.08.2026): ein Vergleich auf den nackten Text
+    #    "return 3" ging an `return 3  # Kommentar` vorbei - die erste Fassung
+    #    dieser Wache fiel nicht. Gesucht wird deshalb mit Muster, samt
+    #    optionalem Zeilenkommentar.
+    quelle = pathlib.Path(__file__).read_text(encoding="utf-8")
+    rumpf = quelle.split("\ndef main() -> int:\n", 1)
+    nackte = ([z.strip() for z in rumpf[1].splitlines()
+               if re.match(r"^\s*return\s+3\s*(#.*)?$", z)]
+              if len(rumpf) == 2 else ["main() nicht gefunden"])
+    pruefe(not nackte,
+           "R8-2: in main() gibt es keinen nackten `return 3` mehr - jeder "
+           "Voraussetzungs-Ausgang geht durch voraussetzung_exit()",
+           (f"{len(nackte)} nackte return 3 in main(): "
+            + " | ".join(nackte[:3])) if nackte else "")
 
 
 def _selbsttest_schalter_und_tu() -> None:
@@ -2856,7 +2993,7 @@ def main() -> int:
             nur_messen = True
         elif argument.startswith("-"):
             print(f"Unbekannte Option: {argument}", file=sys.stderr)
-            return 3
+            return voraussetzung_exit()
         else:
             rest.append(argument)
 
@@ -2882,7 +3019,7 @@ def main() -> int:
                     print("  | " + zeile, file=sys.stderr)
             print("  Ohne Neubau des Kerns wird nichts gemessen und nichts behauptet.",
                   file=sys.stderr)
-            return 3
+            return voraussetzung_exit()
 
     # NAK-85: der Bau loest ueber ZERO_CHECK das Configure selbst aus. Diese
     # Wache prueft danach nur noch nach, dass das auch geschehen ist - sie ist
@@ -2893,23 +3030,23 @@ def main() -> int:
               file=sys.stderr)
         for weitere in klagen[1:]:
             print(f"  auch: {weitere}", file=sys.stderr)
-        return 3
+        return voraussetzung_exit()
 
     kern_kandidaten = sorted(bau.glob("plugin/**/NakamaKern.lib"))
     if not kern_kandidaten:
         print(f"VORAUSSETZUNG: NakamaKern.lib nicht gefunden unter {bau}.", file=sys.stderr)
         print("  Erst bauen: cmake --build <bau> --config Release --target NakamaKern",
               file=sys.stderr)
-        return 3
+        return voraussetzung_exit()
     kern = waehle_release(kern_kandidaten, "NakamaKern.lib")
     if kern is None:
-        return 3
+        return voraussetzung_exit()
 
     kontrolle = finde_bundle_binary(bau)
     if kontrolle is None:
         print(f"VORAUSSETZUNG: gebautes EQ-Copilot-Bundle nicht gefunden unter {bau}.", file=sys.stderr)
         print("  Ohne Gegenprobe ist ein leeres Suchergebnis im Kern nicht aussagekraeftig.", file=sys.stderr)
-        return 3
+        return voraussetzung_exit()
 
     kern_bytes = kern.read_bytes()
     kontroll_bytes = kontrolle.read_bytes()
@@ -3029,7 +3166,7 @@ def main() -> int:
         # ueber den JUCE-Baum ausdruecklich nichts.
         print("\nVORAUSSETZUNG: " + str(exc))
         print("VORAUSSETZUNG: " + str(exc), file=sys.stderr)
-        return 3
+        return voraussetzung_exit()
     pruefe(not baumklagen,
            f"juce-src ist {bauminfo['beschreibung']} plus genau der Nakama-VST3-Patch "
            f"(HEAD = Tag; nichts Geaendertes, Unverfolgtes oder Ignoriertes "
@@ -3144,21 +3281,18 @@ def main() -> int:
                "kein JUCE-Modulobjekt im Kern (die Kopf-Fassade haelt)",
                ", ".join(juce) if juce else "")
 
-    print(f"\n{ok} ok, {len(fehler)} Fehler")
-    if fehler:
-        print("\nFEHLGESCHLAGEN:")
-        for f in fehler:
-            print("  - " + f)
-        return 2
     if nur_messen:
         # F14: die Identitaetspruefung ist gelaufen und steht oben - ueber die
         # Frische ist damit trotzdem nichts gemessen. Ein gruenes Urteil waere
-        # eine Behauptung ohne Messung, also Exit 3 statt 0.
+        # eine Behauptung ohne Messung, also Exit 3 statt 0. Ein registrierter
+        # Befund gewinnt auch hier und macht daraus 2 - dieselbe Entscheidung
+        # wie an jedem anderen Voraussetzungs-Ausgang (Runde 8).
         print("\nVORAUSSETZUNG: ohne Neubau kein Frische-Urteil (--nur-messen).")
         print("  Die Identitaetspruefung oben ist gelaufen; ueber die Frische des")
         print("  gemessenen Artefakts behauptet dieser Lauf nichts.")
-        return 3
-    return 0
+        return voraussetzung_exit()
+    fehlerbericht()
+    return 2 if fehler else 0
 
 
 if __name__ == "__main__":

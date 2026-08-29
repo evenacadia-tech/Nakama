@@ -17877,9 +17877,26 @@ grep an **allen** Stellen gesucht. **Lebend** ist alles ohne Standangabe;
 | A17-Behauptung in `tools/beweise.ps1` (Symbol `Kuerzel='A17'`) | „[3b] faehrt dafuer die Koepfe, die Install-Nakama.ps1 wirklich schreibt … Die dritte Probe … ist ausdruecklich KEINE Writer-Form … Jede der drei Proben ist einzeln gebrochen worden (NAK-94 Nacharbeit 3/4)." | „[3b] faehrt dafuer zwei Sorten Probe-Journal und nennt die Sorte in jeder Zeile: WRITER-FIXTUREN … und daraus abgeleitete deklarierte MUTANTEN … Vor der Benutzung rechnet [3b] jede Fixtur gegen ihren SHA-256 nach und verlangt die drei Pflichtfaelle … Jede Probe ist einzeln gebrochen worden (NAK-94 Nacharbeit 3/4/5)." | **nachgezogen** (`Kuerzel='A17'` @ `2f1f89b`) |
 | Kommentarblock über der A17-Zeile in `tools/beweise.ps1` (Symbol) | nur NAK-94-Härtegrade | Absatz zum Wegwechsel W1 ergänzt | **nachgezogen** |
 | `tools/eq-copilot/erzeuge_installer_journale.py` (neu) | — | Docstring nennt die drei Runden, die Sandbox, die volatilen Felder und was hier **nicht** entsteht | neu |
+| **Statusliste** des Journals — Writer, Kommentar über `ERGEBNIS_STATUS_OK`, `[3b]`-Mutantenschleife, A17-Behauptung | vier getrennte Aufzählungen | unverändert, aber gegeneinander **gemessen** (Rohausgabe unten) | **deckungsgleich** — kein fehlender, kein zusätzlicher Wert |
 | Abschnitte „NAK-94 Nacharbeit Runde 3" und „… Runde 4" in diesem Manifest | „exakte Writer-Form", „Probe (c) ist ausdrücklich keine Writer-Form" | unverändert | **historisch @ `5dfe3a3`** bzw. **`f131090`** (Standangabe im Abschnittskopf) |
 | Dirigentenstände „Prüfer 3" und „Prüfer 4" | Befundzitate mit „Writer-Form" | unverändert | **historisch @ `a94c33e`** bzw. **`401d036`** |
 | Kanon-Übersichten, A17-Zeile | Runnertext des jeweiligen Laufs | unverändert | **historisch** (Commit in der Kopftabelle des Blocks) |
+
+**Die Statusliste gegeneinander gemessen.** Sie steht an vier Stellen, und eine Aufzählung, die an einer davon altert, ist genau die Befundklasse dieser Runde. Ein lesender Treiber holt jede der vier Mengen aus ihrer Quelle (`Install-Nakama.ps1`, der Kommentar über `ERGEBNIS_STATUS_OK`, die Mutantenschleife in `[3b]`, die A17-Behauptung) und vergleicht sie:
+
+```text
+  Writer Install-Nakama.ps1      ['ERROR_RUECKGEROLLT', 'ERROR_TEILSTAND', 'KOMPENSATION', 'OK', 'RUECKWEG', 'RUECKWEG_AKTIV', 'VORBEREITET']
+  Kommentar ERGEBNIS_STATUS_OK   ['ERROR_RUECKGEROLLT', 'ERROR_TEILSTAND', 'KOMPENSATION', 'RUECKWEG', 'RUECKWEG_AKTIV', 'VORBEREITET']
+  [3b] Mutantenschleife          ['ERROR_RUECKGEROLLT', 'ERROR_TEILSTAND', 'KOMPENSATION', 'RUECKWEG', 'RUECKWEG_AKTIV', 'VORBEREITET']
+  A17-Behauptung beweise.ps1     ['ERROR_RUECKGEROLLT', 'ERROR_TEILSTAND', 'KOMPENSATION', 'OK', 'RUECKWEG', 'RUECKWEG_AKTIV', 'VORBEREITET']
+
+  Writer ohne OK: ['ERROR_RUECKGEROLLT', 'ERROR_TEILSTAND', 'KOMPENSATION', 'RUECKWEG', 'RUECKWEG_AKTIV', 'VORBEREITET']
+  Kommentar        fehlt: -   zusaetzlich: -
+  [3b]             fehlt: -   zusaetzlich: -
+  A17-Behauptung   fehlt: -   zusaetzlich: -
+```
+
+Alle vier nennen dieselben sechs Nicht-OK-Stände. `OK` steht bei Writer und Runner-Behauptung zusätzlich, weil beide auch den grünen Fall benennen — im Kommentar und in der Mutantenschleife wäre er fehl am Platz, denn dort geht es um „alles außer OK".
 
 Lebende Stelle ohne Nachzug: **keine**.
 

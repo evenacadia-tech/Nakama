@@ -15237,6 +15237,7 @@ steht `@ 308947d`.
 | `docs/beweise/SONDE-007a.md:12807` @ `a010d64` — Defekttabelle der Runde 5 | schreibt die Systemdateien `P5-W5b` zu und erklärt sie aus einer Diagnosemeldung | Text unverändert | **historisch @ `3353301`** — Standangabe **ergänzt**, samt Satz, was daran überholt ist |
 | `docs/beweise/SONDE-007a.md:13634` @ `a010d64` — Regeltabelle der Runde 6, Zeile `R3` | „die Systemdateien, die `cl.exe` **beim Formatieren einer Diagnose** liest (…, Probe P5-W5b), sind über die Wurzel **Windows-System** erlaubt" | Text unverändert | **historisch @ `370e513`** — Standangabe **ergänzt**; beide Aussagen sind seit Runde 7 bzw. 8 überholt |
 | Abschnitte „Nacharbeit Runde 7 / 8 / 9" | P5-W5b → P8-SYS, Verlauf des Befunds | unverändert | **historisch @ `60717c5` / `5dfe3a3` / `f131090`** (Standangabe im Abschnittskopf) |
+| `docs/offene-punkte.md`, Registerzeile **NAK-85** — Nachtrag zu Runde 6 | „die Systemdateien aus Probe **P5-W5b** sind **jetzt** über die aus `%SystemRoot%` abgeleitete Wurzel **Windows-System** erlaubt, also über ihren **ORT**" | Text unverändert; ein datierter Korrekturnachtrag (30.08.2026) sagt, dass beide Hälften seit Runde 7 bzw. 8 überholt sind, und nennt den geltenden Stand | **historisch** (datierter Nachtrag), Korrektur **ergänzt** — **zweiter Fund des Inventars außerhalb des Manifests** |
 
 #### Z3 — keine Anzahl der Liste `SYSTEMDATEIEN`
 
@@ -15248,6 +15249,7 @@ steht `@ 308947d`.
 | A14-Behauptung in `tools/beweise.ps1` (Symbol) | bereits „ihre Anzahl gibt der Messlauf aus" | unverändert | nachgezogen @ Runde 8 |
 | `R7-1b` — Text der Wache (Symbol) | `f"die {len(SYSTEMDATEIEN)} gemessenen Systemdateien …"` | unverändert | **gerechnet, nicht abgeschrieben** — die Zahl kommt aus der Liste selbst |
 | Abschnitte „Nacharbeit Runde 7 / 8" („die beiden Namen der Erlaubnisliste", „dieselben zwei Dateien") | Verlauf des Befunds | unverändert | **historisch @ `60717c5` / `5dfe3a3`** |
+| `docs/offene-punkte.md`, Registerzeile **NAK-85** | „über die … Wurzel **Windows-System** erlaubt, also über ihren **ORT**" — seit Runde 7 falsch, denn erlaubt wird **namentlich** | Text unverändert, datierter Korrekturnachtrag ergänzt | **historisch**, Korrektur **ergänzt** |
 
 #### Z4 — A17: „Writer-Form" (NAK-94 Nacharbeit 5)
 
@@ -15269,6 +15271,15 @@ dort in Runde 11 wieder den alten Stand gefunden. Genau diese Klasse — die nic
 nachgezogene Zweitstelle — war in drei Runden hintereinander der einzige
 Befundtyp; das Inventar ist die Antwort darauf und hat beim ersten Einsatz
 geliefert.
+
+**Zweiter Fund, außerhalb des Manifests.** Der grep lief bewusst über das ganze
+Repo, nicht nur über `docs/beweise/SONDE-007a.md`. In `docs/offene-punkte.md`
+trägt die Zeile `| NAK-85 |` im Nachtrag zu Runde 6 den Satz, die Systemdateien
+aus Probe `P5-W5b` seien „**jetzt** … über ihren ORT" erlaubt. Beide Hälften
+sind seit Runde 7 (namentlich statt über den Ort) und Runde 8 (`P8-SYS` statt
+`P5-W5b`) überholt — ein „jetzt" in einem datierten Block, das niemand mehr
+nachgezogen hat. Der Nachtrag bleibt als Beleg seines Standes stehen und hat
+einen datierten Korrekturnachtrag bekommen, der den geltenden Stand nennt.
 
 ---
 

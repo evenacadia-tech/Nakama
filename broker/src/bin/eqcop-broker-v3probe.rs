@@ -94,6 +94,7 @@ fn main() {
         "geschlossen_familie": s.geschlossen_familie.load(Ordering::SeqCst),
         "geschlossen_kopplung": s.geschlossen_kopplung.load(Ordering::SeqCst),
         "geschlossen_writer": s.geschlossen_writer.load(Ordering::SeqCst),
+        "acceptor_wartet_auf_instanz": s.acceptor_wartet_auf_instanz.load(Ordering::SeqCst),
         "ingress_p2_verworfen": s.ingress_p2_verworfen.load(Ordering::SeqCst),
         "ingress_p1_verworfen": s.ingress_p1_verworfen.load(Ordering::SeqCst),
         "ingress_hoechststand": s.ingress_hoechststand.load(Ordering::SeqCst),

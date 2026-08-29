@@ -493,6 +493,10 @@ pub struct V3Statistik {
     pub geschlossen_kopplung: AtomicU64,
     /// Der Peer holt seine Antworten nicht ab; die Writerqueue lief ueber.
     pub geschlossen_writer: AtomicU64,
+    /// Wie oft der Acceptor an der Verbindungsgrenze auf einen freien Platz
+    /// warten musste. Ist die Zahl 0, WAR die Grenze nie erreicht — ein Test
+    /// darueber spraeche dann ueber nichts.
+    pub acceptor_wartet_auf_instanz: AtomicU64,
     pub ingress_p2_verworfen: AtomicU64,
     pub ingress_p1_verworfen: AtomicU64,
     /// Hoechststand der Ingressqueue ueber alle Verbindungen. Er ist der
@@ -649,6 +653,7 @@ fn naechste_instanz(
     attrs: &SECURITY_ATTRIBUTES,
     stop: &AtomicBool,
     verbindungen: &Arc<Mutex<Vec<JoinHandle<()>>>>,
+    statistik: &Arc<V3Statistik>,
 ) -> Option<HANDLE> {
     let mut fremde_fehler = 0u32;
     loop {
@@ -673,7 +678,9 @@ fn naechste_instanz(
         }
         // SAFETY: GetLastError liest nur den threadlokalen Fehlercode.
         let f = unsafe { GetLastError() };
-        if f != ERROR_PIPE_BUSY {
+        if f == ERROR_PIPE_BUSY {
+            statistik.acceptor_wartet_auf_instanz.fetch_add(1, Ordering::SeqCst);
+        } else {
             // Nicht die Verbindungsgrenze, sondern etwas anderes. Ein paar
             // Versuche sind billig; endlos zu drehen waere ein stiller Hang.
             fremde_fehler += 1;
@@ -808,7 +815,7 @@ pub fn v3_server_starten(
                     if stop2.load(Ordering::SeqCst) {
                         break;
                     }
-                    match naechste_instanz(&name_w, &attrs, &stop2, &verbindungen2) {
+                    match naechste_instanz(&name_w, &attrs, &stop2, &verbindungen2, &statistik2) {
                         Some(h) => {
                             naechstes = h;
                             continue;
@@ -853,7 +860,7 @@ pub fn v3_server_starten(
                 // Beendete Nachbarn ernten, DANN die naechste Instanz holen —
                 // sonst zaehlt ein laengst toter Thread noch gegen die Grenze.
                 fertige_ernten(&verbindungen2);
-                match naechste_instanz(&name_w, &attrs, &stop2, &verbindungen2) {
+                match naechste_instanz(&name_w, &attrs, &stop2, &verbindungen2, &statistik2) {
                     Some(h) => naechstes = h,
                     None => break,
                 }
@@ -1739,6 +1746,18 @@ mod tests {
         assert!(
             offen.len() >= MAX_VERBINDUNGEN - 1,
             "nur {} Verbindungen erreicht",
+            offen.len()
+        );
+
+        // Erst wenn der Acceptor an der Grenze WIRKLICH auf einen freien Platz
+        // wartet, ist die Lage hergestellt, ueber die dieser Test spricht. Ohne
+        // diesen Halt liesse der Test die Verbindungen womoeglich schon wieder
+        // los, bevor der Acceptor die Grenze ueberhaupt gesehen hat — und
+        // bewiese dann nichts.
+        let stat = griff.statistik.clone();
+        assert!(
+            warte_auf(8000, || stat.acceptor_wartet_auf_instanz.load(Ordering::SeqCst) > 0),
+            "der Acceptor hat die Verbindungsgrenze nie erreicht ({} Verbindungen offen) —              entweder ist er schon beendet, oder der Test misst die falsche Lage",
             offen.len()
         );
 

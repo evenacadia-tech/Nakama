@@ -243,17 +243,6 @@
    "status": "offen"
   },
   {
-   "id": "U8",
-   "dringlichkeit": "wissen",
-   "art": "Wissen vor dem Klick",
-   "titel": "Installation des neuen Plugin-Stands (0.3.0) — vertagt, dein Wort 21.08.",
-   "was": "Installiert ist noch das Bundle vom 16.08. Der neue Stand (Hostbrücke, State-Schema 2) ist gebaut, aber nicht installiert („Version 0.3.0 angleichen, noch nicht installieren“). Installation bleibt dein Admin-Klick.",
-   "warum": "Vorher wissen: ein FL-Projekt, das du mit dem neuen Stand speicherst, verliert im alten Bundle still seine Messpunkt-Identität (kein Absturz, aber ein Rückweg zum 16.08.-Stand mit so einem Projekt ist verlustig). Das ist kein Fehler, den Code beheben kann — nur Wissen vor dem Klick.",
-   "wo": "docs/offene-punkte.md, NAK-41 und NAK-32",
-   "seit": "22.08.",
-   "status": "offen"
-  },
-  {
    "id": "U9",
    "dringlichkeit": "wenn du dazu kommst",
    "art": "Entscheid (wenn das Ticket dran ist)",
@@ -653,6 +642,13 @@
    "datum": "2026-08-24 13:26",
    "status": "eingearbeitet",
    "ergebnis": "Entschieden: die alte Plugin-Kopie wird geloescht. Ausfuehrung vertagt, bis der User am PC ist -- der fertige Loeschbefehl liegt bereit in docs/NEXT-SESSION.md, Morgen zuerst Punkt 3."
+  },
+  "U8": {
+   "wahl": "FL-Termin jetzt",
+   "text": "weg damit · ich hab kein admin fesnter bekommen, mach nochmal",
+   "datum": "2026-08-29 11:46",
+   "status": "eingearbeitet",
+   "ergebnis": "Installation 0.3.0 nach Wissen vor dem Klick (NAK-41) gefahren; alter 16.08.-Stand gesichert (Transaktion 32b8c7e9…); FL-Scan und Laden beider Bundles belegt; NAK-87 geschlossen. [docs/beweise/SONDE-007b.md, Abschnitt \"FL-Termin — 2026-08-29\"]"
   }
  }
 }

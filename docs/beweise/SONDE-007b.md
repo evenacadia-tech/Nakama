@@ -24678,3 +24678,119 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
 </details>
 
+
+---
+
+## FL-Termin — 2026-08-29: §55 Klausel 1 gemessen (Dirigent; Installation und FL-Lauf durch den User)
+
+**Freigabe des Users, wörtlich (Chat 29.08.):** Wahl „FL-Termin jetzt" und
+„Dritte Nacharbeitsrunde" auf die Haltfrage des Dirigenten (G1 §12); „weg damit"
+zum Streuner-Bauordner unter Common Files\VST3; „ich hab kein admin fesnter
+bekommen, mach nochmal" zum Installationsstart. Wissen vor dem Klick (U8/NAK-41)
+war zuvor im Chat gegeben.
+
+**Kein Urteil.** Dieser Abschnitt misst Scan und Laden im echten Host; die Marke
+`NAKAMA-URTEIL` am Dateikopf bleibt unverändert.
+
+### 1. Installation (Admin-Klick des Users, erhöhter Prozess, 11:46 Ortszeit)
+
+Starter: Scratchpad-Skript `install-start.ps1` → `install-elevated.ps1`
+(UAC-Dialog), das genau zwei Dinge tat: Streuner-Ordner entfernen und
+`eq-copilot/install/Install-Nakama.ps1` fahren. Protokoll wörtlich:
+
+```
+Exit erhoehter Prozess: 0
+STREUNER geloescht: C:\Program Files\Common Files\VST3\eq-copilot (4806 Dateien, 833.2 MB)
+--- Install-Nakama.ps1 ---
+  ok      EQ-Copilot : Quelle echt  [4E0BED966D834BC1]
+  ok      Nakama Probeeq : Quelle echt  [AD7678B7C34A64FE]
+  ok      eqcop-broker.exe : Quelle echt  [53808359C59B5D09]
+  hinweis Authenticode wird NICHT geprueft - es gibt kein Zertifikat (siehe signatur.warum_null).
+  ok      Nakama Suna : stillgelegt seit 2026-08-28, nicht installiert
+  ok      EQ-Copilot installiert  [C:\Program Files\Common Files\VST3\EQ-Copilot.vst3]
+  ok      Nakama Probeeq installiert  [C:\Program Files\Common Files\VST3\Nakama Probeeq.vst3]
+  ok      eqcop-broker.exe installiert  [C:\Program Files\evenacadia\Nakama\eqcop-broker.exe]
+INSTALLATION OK
+INSTALL_EXIT=0
+```
+
+Der Streuner war vorher gemessen: echter Ordner (kein Link), Kopie des
+Repo-Ordners `eq-copilot/` vom 13.08. samt Bauverzeichnis mit zwei weiteren
+`EQ-Copilot.vst3`-Binärdateien — dieselbe Kennung dreimal im Scanpfad.
+
+`eq-copilot/install/install-ergebnis.json` (Maschinenartefakt, gitignoriert):
+`status OK`, Transaktion `32b8c7e96f2947f99ef44a38648316cc`, Zeit
+`2026-08-29T09:46:53Z`; für `main` `vorher_sha256_innen
+74D86BD5A5F92B1135EC066AD65770BE5744F04E12D7D4C9F95BE0CD6656E0F8` (der
+16.08.-Stand, Schema 1, dem Rückweg bekannt), gesichert unter
+`backups/32b8c7e96f2947f99ef44a38648316cc/backup-0.bundle`.
+
+Nachmessung ohne Rechte, `Install-Nakama.ps1 -Pruefen`:
+
+```
+Installierter Stand gegen das Manifest:
+  aktuell          C:\Program Files\Common Files\VST3\EQ-Copilot.vst3
+  aktuell          C:\Program Files\Common Files\VST3\Nakama Probeeq.vst3
+  aktuell          C:\Program Files\evenacadia\Nakama\eqcop-broker.exe
+```
+
+`moduleinfo.json` der installierten Bundles: `EQ-Copilot` Version `0.3.0`,
+`Nakama Probeeq` Version `0.3.0`. Broker-Binärdatei 11:11, 506368 Byte.
+
+### 2. FL-Scan (User: „Find plugins" mit „Rescan previously verified plugins" und „Verify plugins")
+
+FL hat um **11:52:51** die Plugin-Datenbank geschrieben
+(`%USERPROFILE%\OneDrive\Dokumente\Image-Line\FL Studio\Presets\Plugin database\Installed\Effects\VST3\`
+und `…\Installed\Effects\New\`): je `EQ-Copilot.fst`/`.nfo` und
+`Nakama Probeeq.fst`/`.nfo`. Schlüsselzeilen der `.nfo`-Dateien wörtlich:
+
+```
+ps_name=EQ-Copilot
+ps_file_filename_0=C:\Program Files\Common Files\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3
+ps_file_plugclass_0=7
+ps_file_bitsize_0=64
+ps_file_guid_0={ABCDEF01-9182-FAEB-4576-6E6145716370}
+ps_file_size_0=7105024
+
+ps_name=Nakama Probeeq
+ps_file_filename_0=C:\Program Files\Common Files\VST3\Nakama Probeeq.vst3\Contents\x86_64-win\Nakama Probeeq.vst3
+ps_file_plugclass_0=7
+ps_file_bitsize_0=64
+ps_file_guid_0={ABCDEF01-9182-FAEB-4576-6E614E6B4163}
+ps_file_size_0=5605888
+```
+
+Abgleich mit `eq-copilot/identity/plugin-identities-v1.json`: GUID
+`ABCDEF01-9182-FAEB-4576-6E6145716370` = `component_cid` von `main`
+(`ABCDEF019182FAEB45766E6145716370`); `…6E614E6B4163` = `component_cid` von
+`active-probe`. Die Dateigrößen 7105024 / 5605888 sind die der gebauten
+Binärdateien (Bau 09:48:57 / 09:49:25). FL sieht also genau die eingefrorenen
+Kennungen am installierten Pfad — kein Duplikat mehr (`EQ-Copilot_3.fst` vom
+13.08. blieb als alter Datenbankeintrag ohne Datei zurück).
+
+### 3. Laden im Host
+
+`FL64.exe` PID 21508 lief; der User lud beide Bundles in den Master. Über die
+FL-Anbindung (MIDI-Scripting via loopMIDI, MCP `fl-studio`) ausgelesen:
+
+```
+fl_get_mixer_track_info(0)   → {"index":0,"name":"Master", ...}
+fl_get_plugin_name(0, slot 0) → "EQ-Copilot"
+fl_get_plugin_name(0, slot 1) → "Nakama Probeeq"
+fl_get_plugin_name(0, slot 2) → "Slot 3"   (leer)
+fl_get_plugin_name(0, slot 3) → "Slot 4"   (leer)
+```
+
+### 4. Was das misst — und was nicht
+
+Gemessen: §55 Klausel 1 „scannen und laden in FL" für die **zwei** aktiven
+Ziele (`Nakama Suna` ist seit 28.08. stillgelegt, `SONDE-007c`) — Scan trägt
+beide mit den eingefrorenen Kennungen ein, beide Instanzen sind im Mixer des
+laufenden Hosts geladen. Nicht gemessen: Audio im Host (Nulltest läuft im
+Kanon, nicht in FL), Speichern/Laden eines FL-Projekts mit `NakamaState
+schema=2` im Host, Sichtprüfung der Oberflächen, Verhalten beim Rückweg. Kein
+Bildschirmfoto — die Datenbank- und Scripting-Ausgaben oben sind der Beleg.
+
+Folge für G1: alle vier §55-Klauseln sind jetzt gemessen (§5), die fünf
+Befunde seit 24.08. geschlossen (§10). Was G1 noch fehlt, ist ein frischer
+T3-Gate-Lauf; Reihenfolge steht in `docs/beweise/G1.md` §12.

@@ -16281,3 +16281,376 @@ Vom Dirigenten an der Quelle bestätigt: alle drei. `IdentityTestMain.cpp` misst
 **Tatsächlich gelaufene Beweise** (Worker auf dem echten Rechner, vom Dirigenten am Repo gemessen): Kanon `tools/beweise.ps1 -Bauen` GRÜN 28/28 mit Nachsatz „1 stillgelegte(s) Bein(e)" zweimal — auf `85ad037` (04:05) und auf `b635c43` (04:52), beide auf sauberem committetem Stand (Anhänge oben). Drei Codex-Läufe read-only, HEAD vor und nach jedem Lauf identisch (`043b48f`, `05dbbb1`, `cbb4239`). Tabu-Pfade (S9/SONDE-007b, `SondeNullTestMain.cpp`, `NEXT-SESSION.md`, `PLAN-STAND.md`) in beiden Runden unberührt; jeder Worker-Commit mit explizitem Pathspec, jeder Stand auf `origin/master`.
 
 **Nächster Schritt an diesem Ticket:** eine dritte Nacharbeit nur auf ausdrückliche User-Freigabe (Dirigent stoppt nach zwei Runden), sonst bleibt S9b „gebaut, nachgearbeitet, frisches Urteil fehlt" und der FL-Schritt (§55 Klausel 1, NAK-87) wartet weiter auf den User.
+
+## NAK-94 vorgezogen — 2026-08-29 (Dirigent-Entscheid, gemeinsame Ursache mit S8 Runde 5)
+
+**Stand dieses Abschnitts:** `2ed7caa`
+
+Diese Arbeit gehört nicht zum ursprünglichen Gate von S9b. Sie ist aus Runde 3
+**vorgezogen**, weil derselbe Defekt jeden Kanonlauf des Projekts rot färbte —
+zuletzt gemessen in `docs/beweise/SONDE-007a.md`, Kanon-Lauf auf `dd15bbb`:
+ROT 31 von 32, einziges rotes Bein A17. Das Urteil über S9b bleibt unberührt;
+die Marke am Dateikopf steht weiter auf `T2 NEEDS_WORK 2026-08-29
+nachgearbeitet`. **NAK-89** (Strenge der Stilllegungsmarke in allen vier
+Lesern) und **NAK-93** (der Kanon baut den Broker nicht) sind ausdrücklich
+**nicht** Teil dieser Arbeit.
+
+### N94.1 Der Entscheid, wörtlich
+
+Quelle: `docs/offene-punkte.md`, Zeile `| NAK-94 |`.
+
+> **Entscheid des Dirigenten (Technik):** A17 [4] vergleicht im Kanon nicht mehr
+> hart gegen den festgeschriebenen Hash, sondern meldet eine Abweichung als
+> `hinweis` mit Klartext („Bau weicht vom festgeschriebenen Paket ab — nach
+> Relink erwartet; vor einer Auslieferung `--hashen`"); hart bleibt der
+> Vergleich nur mit `--release` (Auslieferungsschritt) und im Installer selbst
+> (Riegel 2 „Echtheit" prüft jede Quelle gegen das Manifest, bevor kopiert
+> wird). Zusätzlich vergleicht A17 gegen `install/install-ergebnis.json`, falls
+> vorhanden, und sagt, ob der installierte Stand dem Manifest entspricht.
+
+### N94.2 Die Ursache — eine Zahl, drei Fragen
+
+Seit S8 Runde 5 baut A14 den Kern vor jeder Messung vollständig neu. Der
+nächste `-Bauen`-Lauf linkt danach beide Bundles neu; ihre Bytes ändern sich
+**ohne jede Quelltextänderung**. Der harte Hash-Vergleich in `[4]` fiel damit
+bei jedem Kanonlauf — und ein Riegel, der immer fällt, unterscheidet nichts
+mehr.
+
+Am heutigen Stand gemessen (Probe a): `main` trägt im Manifest
+`AC8102F23EDC7D7C…`, gebaut liegt `523D7E8163C19226…`; `active-probe`
+`1DDC92E3B8525F1F…` gegen `4FA6DC446B494653…`. Der **Broker** stimmt dagegen
+exakt (`21C7A8DC985BCA16…`) — genau deshalb, weil der Kanon ihn nicht baut
+(NAK-93). Der Hinweis ist also kein Pauschalurteil: er erscheint an dem, was
+neu gelinkt wurde, und nur dort.
+
+Dieselbe Zahl beantwortet je nach Aufrufer eine andere Frage, und darum darf
+eine Abweichung nicht überall dasselbe bedeuten:
+
+| Aufrufer | Frage | Abweichung | belegt in |
+|---|---|---|---|
+| A17 im Kanon (ohne Flag) | welcher Bau liegt gerade da? | `hinweis` mit beiden Kurz-Hashes, Exit 0 | [Probe a](#n94-a) |
+| A17 `--release` | frieren wir genau diesen Stand ein? | **Fehler**, Exit 2 | [Probe b](#n94-b) |
+| `Install-Nakama.ps1` Riegel 2 | darf das kopiert werden? | **Abbruch**, bevor irgendetwas kopiert wird | [Probe e](#n94-e) |
+
+Fail-closed bleibt, was ein Relink **nicht** verursachen kann: ein
+festgeschriebenes Artefakt, das gar nicht vorliegt, und ein Ordner-Hash, der
+sich nicht bilden lässt. Beides ist in **beiden** Modi ein Fehler
+([Probe d](#n94-d)).
+
+### N94.3 Umsetzung
+
+Änderungsumfang `da62dec…2ed7caa`, gemessen mit `git diff --stat`: drei
+Dateien, 218 Einfügungen, 29 Löschungen.
+
+- `tools/eq-copilot/pruefe_installer_manifest.py` — der `[4]`-Block wandert aus
+  `main()` in die Funktion `auslieferungsstand(manifest, hart)`; `hart` kommt
+  ausschließlich vom neuen Flag `--release`. Neu daneben:
+  `installierter_stand(manifest)` für `[4b]`, der Helfer `_artefakt_name()`
+  (dieselbe Identität auf beiden Seiten: Ziel-ID, sonst Name — der Broker hat
+  keine Ziel-ID, und das Journal schreibt für ihn `ziel_id: null`), die
+  Konstanten `INSTALL_ERGEBNIS` und `ERGEBNIS_SCHEMA` sowie der
+  Docstring-Abschnitt „DREI HAERTEGRADE FUER DENSELBEN HASH". `--hashen` ist
+  unverändert und mit `--release` gegenseitig ausgeschlossen (argparse-Gruppe).
+- **Über den Auftrag hinaus, aus der Ehrlichkeit des neuen Flags:** unter
+  `--release` ist auch `sha256: null` ein Fehler. Ohne das würde
+  `--release` ein Manifest ohne Hashes mit Exit 0 quittieren — also eine
+  Auslieferung bescheinigen, die `Install-Nakama.ps1` sofort abweist. Im Kanon
+  bleibt derselbe Zustand ein Hinweis.
+- `tools/beweise.ps1`, Eintrag `Kuerzel='A17'` — die Behauptung sagt jetzt, was
+  der **Kanon** misst: dass jedes festgeschriebene Artefakt überhaupt vorliegt
+  und sein Ordner-Hash bildbar ist, dass eine Hash-Abweichung als Hinweis
+  erscheint und dass `[4b]` ohne Urteil berichtet. Hart verglichen wird laut
+  Text nur mit `--release` und in Riegel 2. Die Aufrufargumente sind
+  unverändert `@()` — der Kanon ruft **kein** `--release`.
+- `eq-copilot/schemas/installer/nakama-installer-v1.md` — die Rollenzeile zu
+  `pruefe_installer_manifest.py` nennt `--release`; neuer Abschnitt `### 3.1`
+  trägt die Tabelle der drei Härtegrade, und §3 sagt jetzt, dass `sha256: null`
+  im Kanon ein Hinweis und unter `--release` ein Fehler ist.
+- `eq-copilot/install/Install-Nakama.ps1` — **nicht angefasst**. Gemessen:
+  `git diff --quiet da62dec 2ed7caa -- eq-copilot/install/Install-Nakama.ps1`
+  → Exit 0.
+
+`[4b]` liest `eq-copilot/install/install-ergebnis.json`. Diese Datei ist ein
+Maschinenartefakt und laut `eq-copilot/.gitignore` (Regel `install/*`) **nicht
+versioniert** — auf einem frischen Rechner fehlt sie. Genau darum ist `[4b]`
+ein Bericht und nie ein Fehler: ein Rechner ohne Installation ist kein
+defekter Rechner. Der Wert `eintraege[].sha256` ist dabei mehr als eine
+Absicht: `Install-Nakama.ps1` prüft nach dem Kopieren den Zielstand gegen
+genau diesen Wert und bricht sonst ab.
+
+### N94.4 Proben
+
+<a id="n94-a"></a>
+
+#### (a) Kanon, ohne Flag — Abweichung ist ein Hinweis, Exit 0
+
+```text
+[1] Struktur - eine Identitaet, ein Ort
+  ok      Manifest traegt das Vertragsschema nakama.installer/v1  [nakama.installer/v1]
+  ok      es zeigt auf die eingefrorene Identitaetsdatei  [eq-copilot/identity/plugin-identities-v1.json]
+  ok      jede `art` ist vst3 oder broker - eine geschlossene Menge
+  ok      Identitaet ist kollisionsfrei, schema=2 und jedes AKTIVE Ziel hat genau einen VST3-Eintrag  [2 vs 2 aktiv (3 Kennungen gesamt); identity=ok]
+  ok      jedes stillgelegte Ziel ist benannt (Datum, Grund, Umgang) und steht in keinem Artefakt
+  ok      jede Stilllegungsmarke ist lesbar - Objekt mit `am` und `entscheid`
+  ok      jeder Quellpfad ist der Bundle-ORDNER aus Ziel + Identitaet
+  ok      kein Viercode, keine Class-ID, kein Produkt- oder Bundlename im Installer-Manifest (ausser im Pfad)
+  ok      genau ein Broker-Artefakt, aus dem Release-Pfad der Crate  [broker/target/release/eqcop-broker.exe]
+  ok      der Broker-Binaername kommt aus broker/Cargo.toml  [eqcop-broker]
+  ok      VST3 nach Common Files, Broker geschuetzt unter Program Files  [C:/Program Files/Common Files/VST3 | C:/Program Files/evenacadia/Nakama]
+  ok      die Signaturzeile behauptet keine Pruefung ohne Mittel  [kein Zertifikat, Grund steht da]
+  ok      jedes sha256 ist null oder ein SHA-256 in Grossbuchstaben
+  ok      jeder bekannte Stand traegt Hash, hash_art, Ziel und state_schema
+  ok      der Rueckweg ist vollstaendig beschrieben (NAK-41 benannt)
+
+[2] Gegenprobe - dieselben Regeln an verdorbener Eingabe
+  ok      faellt an verdorbener Eingabe: Manifest traegt das Vertragsschema nakama.installer/v1
+  ok      faellt an verdorbener Eingabe: es zeigt auf die eingefrorene Identitaetsdatei
+  ok      faellt an verdorbener Eingabe: jede `art` ist vst3 oder broker - eine geschlossene Menge
+  ok      faellt an verdorbener Eingabe: Identitaet ist kollisionsfrei, schema=2 und jedes AKTIVE Ziel hat genau einen VST3-Eintrag
+  ok      faellt an verdorbener Eingabe: jedes stillgelegte Ziel ist benannt (Datum, Grund, Umgang) und steht in keinem Artefakt
+  ok      faellt an verdorbener Eingabe: jede Stilllegungsmarke ist lesbar - Objekt mit `am` und `entscheid`
+  ok      faellt an verdorbener Eingabe: jeder Quellpfad ist der Bundle-ORDNER aus Ziel + Identitaet
+  ok      faellt an verdorbener Eingabe: kein Viercode, keine Class-ID, kein Produkt- oder Bundlename im Installer-Manifest (ausser im Pfad)
+  ok      faellt an verdorbener Eingabe: genau ein Broker-Artefakt, aus dem Release-Pfad der Crate
+  ok      faellt an verdorbener Eingabe: der Broker-Binaername kommt aus broker/Cargo.toml
+  ok      faellt an verdorbener Eingabe: VST3 nach Common Files, Broker geschuetzt unter Program Files
+  ok      faellt an verdorbener Eingabe: die Signaturzeile behauptet keine Pruefung ohne Mittel
+  ok      faellt an verdorbener Eingabe: jedes sha256 ist null oder ein SHA-256 in Grossbuchstaben
+  ok      faellt an verdorbener Eingabe: jeder bekannte Stand traegt Hash, hash_art, Ziel und state_schema
+  ok      faellt an verdorbener Eingabe: der Rueckweg ist vollstaendig beschrieben (NAK-41 benannt)
+
+[3] Adversariale Pfad- und Identitaetsgegenproben
+  ok      faellt an einer Bundle-Zielkollision
+  ok      faellt an Identity-state_schema 1
+  ok      faellt an Identity-state_schema Text
+  ok      faellt an Identity-state_schema fehlend
+  ok      faellt, wenn ein stillgelegtes Ziel doch ausgeliefert wird
+  ok      faellt, wenn ein stillgelegtes Ziel nirgends benannt ist
+  ok      faellt, wenn die Stilllegungsmarke null ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke null ist
+  ok      faellt, wenn die Stilllegungsmarke eine Zeichenkette ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke eine Zeichenkette ist
+  ok      faellt, wenn die Stilllegungsmarke ein leeres Array ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke ein leeres Array ist
+  ok      faellt, wenn die Stilllegungsmarke eine Zahl ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke eine Zahl ist
+  ok      faellt, wenn die Stilllegungsmarke ein Boolean ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke ein Boolean ist
+  ok      faellt, wenn die Stilllegungsmarke ein leeres Objekt ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke ein leeres Objekt ist
+  ok      faellt, wenn die Stilllegungsmarke ein Objekt mit leerem `am` ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke ein Objekt mit leerem `am` ist
+  ok      faellt, wenn die Stilllegungsmarke ein Objekt ohne `entscheid` ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke ein Objekt ohne `entscheid` ist
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id ist eine leere Liste
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id ist ein Objekt
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id ist eine leere Zeichenkette
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id ist nur Leerraum
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id ist eine Zahl
+  ok      faellt kontrolliert (ohne Absturz), wenn ziel_id fehlt ganz
+  ok      faellt kontrolliert bei gemischten ziel_id-Typen in einer Liste
+  ok      faellt, wenn `seit` null ist
+  ok      faellt, wenn `seit` ein leeres Array ist
+  ok      faellt, wenn `seit` ein leeres Objekt ist
+  ok      faellt, wenn `seit` leer ist
+  ok      faellt, wenn `seit` nur Leerraum ist
+  ok      faellt, wenn `seit` eine Zahl ist
+  ok      faellt, wenn `warum` null ist
+  ok      faellt, wenn `warum` ein leeres Array ist
+  ok      faellt, wenn `warum` ein leeres Objekt ist
+  ok      faellt, wenn `warum` leer ist
+  ok      faellt, wenn `warum` nur Leerraum ist
+  ok      faellt, wenn `warum` eine Zahl ist
+  ok      faellt, wenn `umgang_mit_altbestand` null ist
+  ok      faellt, wenn `umgang_mit_altbestand` ein leeres Array ist
+  ok      faellt, wenn `umgang_mit_altbestand` ein leeres Objekt ist
+  ok      faellt, wenn `umgang_mit_altbestand` leer ist
+  ok      faellt, wenn `umgang_mit_altbestand` nur Leerraum ist
+  ok      faellt, wenn `umgang_mit_altbestand` eine Zahl ist
+  ok      faellt, wenn `kennung_bleibt` null ist
+  ok      faellt, wenn `kennung_bleibt` ein leeres Array ist
+  ok      faellt, wenn `kennung_bleibt` ein leeres Objekt ist
+  ok      faellt, wenn `kennung_bleibt` leer ist
+  ok      faellt, wenn `kennung_bleibt` nur Leerraum ist
+  ok      faellt, wenn `kennung_bleibt` eine Zahl ist
+  ok      faellt, wenn ein aktives Ziel still aus der Auslieferung faellt
+  ok      faellt an einem Produktnamen ausserhalb der Pfade
+  ok      faellt an einem Bundlenamen ausserhalb der Pfade
+  ok      faellt an kanonischem Broker-Zieltraversal
+  ok      faellt an cmake_ziel-Quelltraversal
+  ok      faellt an benutzerbeschreibbaren Rueckweg-Backups
+
+[4] Auslieferungsstand  - Kanon: eine Abweichung ist ein Hinweis, kein Fehler
+  hinweis main: Bau weicht vom festgeschriebenen Paket ab (nach Relink erwartet; vor einer Auslieferung --hashen)  [Manifest AC8102F23EDC7D7C | gebaut 523D7E8163C19226]
+  hinweis active-probe: Bau weicht vom festgeschriebenen Paket ab (nach Relink erwartet; vor einer Auslieferung --hashen)  [Manifest 1DDC92E3B8525F1F | gebaut 4FA6DC446B494653]
+  ok      eqcop-broker.exe: gebautes Artefakt stimmt mit dem festgeschriebenen Hash  [21C7A8DC985BCA16]
+
+[4b] Installierter Stand  - Bericht, kein Urteil
+  Journal: status='OK'  zeit='2026-08-29T09:46:53.0057417Z'
+  hinweis main: installierter Stand ist ein anderer als der im Manifest festgeschriebene  [installiert 4E0BED966D834BC1 | Manifest AC8102F23EDC7D7C]  C:\Program Files\Common Files\VST3\EQ-Copilot.vst3
+  hinweis active-probe: installierter Stand ist ein anderer als der im Manifest festgeschriebene  [installiert AD7678B7C34A64FE | Manifest 1DDC92E3B8525F1F]  C:\Program Files\Common Files\VST3\Nakama Probeeq.vst3
+  hinweis eqcop-broker.exe: installierter Stand ist ein anderer als der im Manifest festgeschriebene  [installiert 53808359C59B5D09 | Manifest 21C7A8DC985BCA16]  C:\Program Files\evenacadia\Nakama\eqcop-broker.exe
+
+[5] Ordner-Hash v1 - Python gegen PowerShell
+  ok      die PowerShell-Haelfte laeuft durch
+  ok      Python liefert einen SHA-256  [9DF0E95A3747AFBA]
+  ok      beide Sprachen bilden BYTEGLEICH denselben Ordner-Hash  [py 9DF0E95A3747AFBA | ps 9DF0E95A3747AFBA]
+  ok      Nicht-ASCII im Pfad bricht ab (Python)
+  ok      Nicht-ASCII im Pfad bricht ab (PowerShell)  [Exit 1]
+
+95 ok, 0 Fehler
+EXIT=0
+```
+
+<a id="n94-b"></a>
+
+#### (b) `--release` — dieselben Abweichungen, jetzt Exit 2
+
+Das diskriminierende Paar zu (a): gleicher Baum, gleiche Bytes, gleiche zwei
+Abweichungen — nur der Härtegrad unterscheidet sich. Die Blöcke `[1]`–`[3]`
+sind gegenüber (a) **bytegleich** (gemessen: `diff` über die ersten 95 Zeilen
+beider Läufe, keine Ausgabe) und darum hier nicht wiederholt; abgedruckt ist
+alles ab `[4]`.
+
+```text
+[4] Auslieferungsstand  - HART (--release: das hier ist die Auslieferung)
+  FEHLER  main: gebautes Artefakt stimmt mit dem festgeschriebenen Hash  [Manifest AC8102F23EDC7D7C | gebaut 523D7E8163C19226]
+  FEHLER  active-probe: gebautes Artefakt stimmt mit dem festgeschriebenen Hash  [Manifest 1DDC92E3B8525F1F | gebaut 4FA6DC446B494653]
+  ok      eqcop-broker.exe: gebautes Artefakt stimmt mit dem festgeschriebenen Hash  [21C7A8DC985BCA16]
+
+[4b] Installierter Stand  - Bericht, kein Urteil
+  Journal: status='OK'  zeit='2026-08-29T09:46:53.0057417Z'
+  hinweis main: installierter Stand ist ein anderer als der im Manifest festgeschriebene  [installiert 4E0BED966D834BC1 | Manifest AC8102F23EDC7D7C]  C:\Program Files\Common Files\VST3\EQ-Copilot.vst3
+  hinweis active-probe: installierter Stand ist ein anderer als der im Manifest festgeschriebene  [installiert AD7678B7C34A64FE | Manifest 1DDC92E3B8525F1F]  C:\Program Files\Common Files\VST3\Nakama Probeeq.vst3
+  hinweis eqcop-broker.exe: installierter Stand ist ein anderer als der im Manifest festgeschriebene  [installiert 53808359C59B5D09 | Manifest 21C7A8DC985BCA16]  C:\Program Files\evenacadia\Nakama\eqcop-broker.exe
+
+[5] Ordner-Hash v1 - Python gegen PowerShell
+  ok      die PowerShell-Haelfte laeuft durch
+  ok      Python liefert einen SHA-256  [9DF0E95A3747AFBA]
+  ok      beide Sprachen bilden BYTEGLEICH denselben Ordner-Hash  [py 9DF0E95A3747AFBA | ps 9DF0E95A3747AFBA]
+  ok      Nicht-ASCII im Pfad bricht ab (Python)
+  ok      Nicht-ASCII im Pfad bricht ab (PowerShell)  [Exit 1]
+
+95 ok, 2 Fehler
+
+FEHLGESCHLAGEN:
+  - main: gebautes Artefakt stimmt mit dem festgeschriebenen Hash  [Manifest AC8102F23EDC7D7C | gebaut 523D7E8163C19226]
+  - active-probe: gebautes Artefakt stimmt mit dem festgeschriebenen Hash  [Manifest 1DDC92E3B8525F1F | gebaut 4FA6DC446B494653]
+EXIT=2
+```
+
+<a id="n94-c"></a>
+
+#### (c) `[4b]` Installierter Stand
+
+**c1 — der echte Rechner.** Enthalten in (a) oben. Gemessen wird: das Journal
+steht auf `status='OK'`, `zeit='2026-08-29T09:46:53.0057417Z'`, und **alle
+drei** Artefakte weichen vom Manifest ab. Der Grund steht in den Daten selbst:
+`hashes_erzeugt_am` im Manifest ist `2026-08-29T10:50:02Z`, also **eine gute
+Stunde nach** der Installation — das Manifest wurde nach dem Installieren neu
+festgeschrieben. Die Erwartung „ok für die am 29.08. installierten Bundles"
+trifft deshalb heute nicht zu; berichtet wird, was gemessen ist.
+
+**c2/c3 — die Zweige, die dieser Rechner nicht zeigt.** Beide laufen gegen ein
+anderes Journal; die echte `install-ergebnis.json` wird weder gelesen noch
+angefasst. c3 lässt einen Artefakteintrag absichtlich weg. Zusätzlich gemessen:
+Fehler- und ok-Zähler bleiben danach **0** — `[4b]` urteilt nicht und behauptet
+nichts.
+
+```text
+### c2 - kein Journal (frischer Rechner; install-ergebnis.json ist gitignored)
+
+[4b] Installierter Stand  - Bericht, kein Urteil
+  hinweis nichts installiert - install-ergebnis.json liegt nicht vor (eq-copilot/install/dieses-journal-gibt-es-nicht.json)
+
+### c3 - Journal deckt sich mit dem Manifest (ok-Zweig), ein Artefakt fehlt darin
+
+[4b] Installierter Stand  - Bericht, kein Urteil
+  Journal: status='OK'  zeit='2026-08-29T00:00:00.0000000Z'
+  ok      main: installierter Stand = Manifest  [AC8102F23EDC7D7C]  C:/synthetisch/main
+  ok      active-probe: installierter Stand = Manifest  [1DDC92E3B8525F1F]  C:/synthetisch/active-probe
+  hinweis eqcop-broker.exe: nicht installiert - kein Eintrag im Journal
+
+Fehlerzaehler nach beiden Laeufen: 0  (muss 0 sein - [4b] urteilt nie)
+ok-Zaehler nach beiden Laeufen:    0  (muss 0 sein - [4b] behauptet nichts)
+EXIT=0
+```
+
+<a id="n94-d"></a>
+
+#### (d) Bruchprobe — fehlendes Artefakt ist auch ohne `--release` ein Fehler
+
+Der Bundle-Ordner `EQ-Copilot.vst3` wurde nur **umbenannt** (nicht gelöscht)
+und in einem `finally` zurückgenommen; die letzte Zeile belegt die Rücknahme.
+Wie in (b) sind `[1]`–`[3]` bytegleich zu (a) und darum nicht wiederholt.
+
+```text
+[4] Auslieferungsstand  - Kanon: eine Abweichung ist ein Hinweis, kein Fehler
+  FEHLER  main: das festgeschriebene Artefakt liegt nicht vor  [eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3]
+  hinweis active-probe: Bau weicht vom festgeschriebenen Paket ab (nach Relink erwartet; vor einer Auslieferung --hashen)  [Manifest 1DDC92E3B8525F1F | gebaut 4FA6DC446B494653]
+  ok      eqcop-broker.exe: gebautes Artefakt stimmt mit dem festgeschriebenen Hash  [21C7A8DC985BCA16]
+
+[4b] Installierter Stand  - Bericht, kein Urteil
+  Journal: status='OK'  zeit='2026-08-29T09:46:53.0057417Z'
+  hinweis main: installierter Stand ist ein anderer als der im Manifest festgeschriebene  [installiert 4E0BED966D834BC1 | Manifest AC8102F23EDC7D7C]  C:\Program Files\Common Files\VST3\EQ-Copilot.vst3
+  hinweis active-probe: installierter Stand ist ein anderer als der im Manifest festgeschriebene  [installiert AD7678B7C34A64FE | Manifest 1DDC92E3B8525F1F]  C:\Program Files\Common Files\VST3\Nakama Probeeq.vst3
+  hinweis eqcop-broker.exe: installierter Stand ist ein anderer als der im Manifest festgeschriebene  [installiert 53808359C59B5D09 | Manifest 21C7A8DC985BCA16]  C:\Program Files\evenacadia\Nakama\eqcop-broker.exe
+
+[5] Ordner-Hash v1 - Python gegen PowerShell
+  ok      die PowerShell-Haelfte laeuft durch
+  ok      Python liefert einen SHA-256  [9DF0E95A3747AFBA]
+  ok      beide Sprachen bilden BYTEGLEICH denselben Ordner-Hash  [py 9DF0E95A3747AFBA | ps 9DF0E95A3747AFBA]
+  ok      Nicht-ASCII im Pfad bricht ab (Python)
+  ok      Nicht-ASCII im Pfad bricht ab (PowerShell)  [Exit 1]
+
+95 ok, 1 Fehler
+
+FEHLGESCHLAGEN:
+  - main: das festgeschriebene Artefakt liegt nicht vor  [eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3]
+
+EXIT=2
+zurueckgenommen: BUNDLE.is_dir()=True BEISEITE.exists()=False
+```
+
+Damit ist die neue Weichheit belastbar: sie greift **nur** am Hash-Vergleich.
+Der Riegel gegen ein fehlendes Artefakt fällt weiter, im selben Lauf, ohne
+Flag.
+
+<a id="n94-e"></a>
+
+#### (e) `Install-Nakama.ps1 -Pruefen` — Riegel 2 ist unverändert hart
+
+```text
+ABBRUCH: EQ-Copilot : Quell-Hash weicht ab. Manifest AC8102F23EDC7D7C8E5579CB191894AF8EEC7365C3BC9B1E1AEACF70547A065B, gebaut 523D7E8163C19226451C197FD1CFFEE8A4C88E61CC65623C2D0C53C619571984. Entweder ist der Bau neuer als das Manifest oder der Stand ist nicht der, der eingefroren wurde.
+EXIT=1
+```
+
+Riegel 2 „Echtheit" bricht ab, **bevor** der `-Pruefen`-Bericht über den
+installierten Stand überhaupt erreicht wird — der harte Vergleich sitzt vor
+jedem Lesen des Ziels. Das ist keine Änderung dieses Tickets, sondern der
+Beleg, dass die Härte dort geblieben ist, wo sie hingehört. Der abgedruckte
+Hash ist derselbe, den (a) als Hinweis und (b) als Fehler zeigt
+(`AC8102F2…` gegen `523D7E81…`).
+
+### N94.5 Prüfliste `tools/dirigent/pruefliste.md`
+
+| Zeile | Wo gemessen |
+|---|---|
+| **D** — „Ein Riegel ist fail-closed ohne Rohtextheuristik: Unbekanntes ist ROT." | [Probe d](#n94-d): fehlendes Artefakt → Fehler und Exit 2 **ohne** `--release`. Ebenso bleibt ein nicht bildbarer Ordner-Hash in beiden Modi Fehler (`auslieferungsstand()`, Zweig `OrdnerHashFehler`). |
+| **D** — „Nach einem Relink ändern sich Bundlebytes; festgeschriebene Hashes gelten für eine Auslieferung, nicht für den Kanon (NAK-94)." | Genau das ist der Änderungsgegenstand; belegt durch das Paar (a)/(b). |
+| **D** — „Was der Kanon nicht baut, darf er nicht als frisch bezeugen (NAK-93)." | Unberührt; in (a) sichtbar daran, dass der Broker als einziger passt, weil er nicht neu gebaut wurde. NAK-93 bleibt offen. |
+| **E** — „Jede Behauptung … sagt nicht mehr, als der Test misst." | Die A17-Behauptung in `tools/beweise.ps1` nennt jetzt ausdrücklich, was der Kanon **nicht** zusagt; die drei Härtegrade stehen im Skript-Docstring und im Vertrag `### 3.1`. |
+| **E** — „Zahlen im Manifest … sind gemessen, nicht abgeschrieben." | 95 ok / 0 Fehler (a), 95 ok / 2 Fehler (b), 95 ok / 1 Fehler (d) stehen als Rohausgabe im jeweiligen Codeblock; 218/29 aus `git diff --stat da62dec 2ed7caa`. |
+| **E** — „Positionen … als Symbol/Anker oder als Zahl mit Commit." | Dieser Abschnitt nennt ausschließlich Symbole (`auslieferungsstand()`, `installierter_stand()`, `_artefakt_name()`, `Kuerzel='A17'`, `### 3.1`) und trägt oben `Stand dieses Abschnitts: 2ed7caa`. |
+| **E** — „Jede neue Prüfung wurde einmal absichtlich gebrochen." | (d) bricht den verbliebenen harten Riegel; (b) zeigt das rote Gegenstück zu (a); c2/c3 fahren die beiden `[4b]`-Zweige, die dieser Rechner heute nicht erzeugt. |
+
+### N94.6 Was dieser Abschnitt nicht behauptet
+
+- **Nicht**, dass das Paket ausliefer-bar ist. `--release` ist am heutigen
+  Stand rot (Probe b), und das ist korrekt: vor einer Auslieferung gehört
+  `--hashen` gefahren. Das Manifest wurde in diesem Ticket **nicht** neu
+  gehasht — es bleibt auf dem Stand, gegen den zuletzt festgeschrieben wurde.
+- **Nicht**, dass die Installation aktuell ist. `[4b]` sagt gemessen das
+  Gegenteil (Probe c1).
+- **Nicht**, dass NAK-89, NAK-93 oder NAK-98 berührt sind. Keiner dieser drei
+  Punkte war im Auftrag.

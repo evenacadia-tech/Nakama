@@ -423,6 +423,56 @@ def main() -> int:
                 identWeg.write_bytes(identAlt)
                 (inst / "nakama-installer-v1.json").write_bytes(manifestAlt)
 
+        # -- Nacharbeit Runde 2 (29.08.2026, T2-Befund P2) ----------------
+        # Ein Manifest, das ein stillgelegtes Ziel zwar BENENNT, dessen
+        # Pflichtfelder aber nichts sagen. Bis 05dbbb1 pruefte der Installer
+        # `seit`, `warum` und `umgang_mit_altbestand` vor der Ausgabe gar
+        # nicht - und `"$($s.seit)"` macht aus JSON-`null` die leere
+        # Zeichenkette. Die Altlastzeile lautete dann "stillgelegt seit ":
+        # eine Meldung mit einer Luecke da, wo das Datum steht. Gemessen wird
+        # hier die neue Zusage: unbrauchbares Pflichtfeld = harter Abbruch,
+        # bevor irgendeine Zeile darueber gedruckt wird.
+        if stillgelegte:
+            print("\n[3e] Ein unbrauchbares Pflichtfeld bricht ab, statt Luecken zu drucken")
+            manifestAlt = (inst / "nakama-installer-v1.json").read_bytes()
+            try:
+                for feld in ("seit", "warum", "umgang_mit_altbestand", "kennung_bleibt"):
+                    for wert, name in ((None, "null"), ([], "Array"),
+                                       ({}, "Objekt"), ("", "leer"), ("   ", "Leerraum")):
+                        kaputt = json.loads(manifestAlt.decode("utf-8"))
+                        kaputt["stillgelegte_ziele"][0][feld] = wert
+                        (inst / "nakama-installer-v1.json").write_text(
+                            json.dumps(kaputt, ensure_ascii=False, indent=2) + chr(10),
+                            encoding="utf-8")
+                        code, aus = lauf(skript, "-Pruefen")
+                        # Die Konsole bricht lange Zeilen um; deshalb wird der
+                        # Text flachgezogen, bevor er verglichen wird - sonst
+                        # misst die Probe die Fensterbreite statt die Meldung.
+                        flach = " ".join(aus.split())
+                        pruefe(code == 1
+                               and "ist keine nichtleere Zeichenkette" in flach
+                               and f"Pflichtfeld '{feld}'" in flach
+                               # Auch das ENDE der Meldung: ein Backtick in
+                               # einer PowerShell-Doppelquote ist ein Escape,
+                               # und `n waere ein Zeilenumbruch mitten im Satz.
+                               # Genau das stand hier im ersten Wurf (T1-
+                               # Selbstaudit 29.08.2026) - der Riegel griff,
+                               # aber sein Text war zerhackt. Wer nur den
+                               # Anfang prueft, misst den Schaden nicht.
+                               and "entferne ihn nicht." in flach,
+                               f"`{feld}` als {name} bricht ab und benennt Feld und Typ",
+                               f"Exit {code}")
+                        # Und die Zusage, um die es geht: der Abbruch kommt
+                        # VOR jeder Zeile ueber das stillgelegte Ziel. Ohne
+                        # den Riegel stuende hier "stillgelegt seit " mit
+                        # einer Luecke da, wo das Datum gehoert - gedruckt
+                        # von Melde-StillgelegteAltlasten, das im Abbruchfall
+                        # gar nicht mehr erreicht wird.
+                        pruefe("stillgelegt seit" not in flach and "ALTLAST" not in flach,
+                               f"und keine Altlastzeile mit leerem Datum ({feld} = {name})")
+            finally:
+                (inst / "nakama-installer-v1.json").write_bytes(manifestAlt)
+
         print("\n[4] NAK-41: unbekannter Vorstand verweigert den Rueckweg")
         vorzustand()
         code, _ = lauf(skript)

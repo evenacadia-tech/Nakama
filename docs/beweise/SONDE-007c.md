@@ -109,8 +109,17 @@ angefasst worden (`git diff` leer); alle Gegenproben liefen gegen Kopien unter
 |---|---|---|---|---|
 | 19 | **Jede vorhandene Stilllegungsmarke sperrt — unabhängig von ihrem Inhalt.** Der Riegel fällt auf die *Anwesenheit*: `OBJECT` ergibt die Meldung mit Datum und Entscheid, jeder andere Typ die Meldung „unlesbar"; **kein** Typ lässt weiterbauen. Der Kommentar behauptete das seit dem 28.08., der Code maß es nicht | 6 Probe-Configures, je ein `stillgelegt`-Typ | ☑ NULL · STRING · ARRAY · NUMBER · BOOLEAN je `Exit 1` „unlesbar" · OBJECT `Exit 1` „STILLGELEGT" | [↓ C2c](#c2c) |
 | 20 | **Ohne den Fix war das Loch fünf von sechs Typen groß — vorgeführt.** Dieselben sechs Läufe gegen das Modul von `043b48f`: NULL, STRING, ARRAY, NUMBER und BOOLEAN kamen mit `Exit 0` durch und lieferten die Identität des stillgelegten Ziels aus | dieselben Probe-Configures, Modul aus `git show 043b48f:` | ☑ **5× DURCHGELASSEN** (`Exit 0`), nur OBJECT gesperrt | [↓ C2c](#c2c) |
-| 21 | **Alle vier Leser der Marke geben jetzt dieselbe Antwort.** Identitätsleser (CMake), Installer, `EqCopIdentityTest` und A17 klassifizieren nach Anwesenheit; ein kaputter Inhalt ist überall ein harter Fehler, nie „aktiv". Vor der Runde gab es drei verschiedene Antworten | A18 Block `[3d]` · `EqCopIdentityTest.exe` gegen eine gespiegelte `null`-Marke | ☑ A18 `87 ok, 0 Fehler` (5 neue Prüfungen in `[3d]`) · ☑ Test wird rot: `[1 unlesbar]`, Zählung bleibt korrekt `2 aktiv, 1 stillgelegt` | [↓ C2d](#c2d) · [↓ C2e](#c2e) |
+| 21 | **Alle vier Leser der Marke geben dieselbe Antwort** — *für A17 erst seit Runde 2 gemessen.* Identitätsleser (CMake), Installer, `EqCopIdentityTest` und A17 klassifizieren nach Anwesenheit; ein kaputter Inhalt ist überall ein harter Fehler, nie „aktiv". Vor Runde 1 gab es drei verschiedene Antworten. **Berichtigt am 29.08.2026 (Runde 2, Befund P1):** der Beleg dieser Zeile maß nur den Installer (A18 `[3d]`) und `EqCopIdentityTest` — für A17 stand die Aussage ohne Rohausgabe da, **und sie war falsch**; siehe Behauptung 23 | A18 Block `[3d]` · `EqCopIdentityTest.exe` gegen eine gespiegelte `null`-Marke · **Runde 2:** `py -3.13 tools/eq-copilot/pruefe_installer_manifest.py` | ☑ A18 `87 ok, 0 Fehler` (5 neue Prüfungen in `[3d]`) · ☑ Test wird rot: `[1 unlesbar]`, Zählung bleibt korrekt `2 aktiv, 1 stillgelegt` · ☑ **A17 seit Runde 2** `94 ok, 0 Fehler`, Regel `r_stilllegungsmarke_lesbar` | [↓ C2d](#c2d) · [↓ C2e](#c2e) · [↓ C2f](#c2f) |
 | 22 | **A17 lehnt eine kaputte Stilllegungs-ID ab, statt am eigenen `set()` zu sterben.** Sechs neue Gegenproben plus der Fall gemischter Typen; **ohne** den Fix stirbt dieselbe Mutation an `TypeError` — vorgeführt gegen den Stand `043b48f` | `py -3.13 tools/eq-copilot/pruefe_installer_manifest.py` | ☑ `52 ok, 0 Fehler` · ☑ **ohne Fix** `TypeError: unhashable type: 'list'` bzw. `'<' not supported between instances of 'int' and 'str'` | [↓ C2b](#c2b) |
+
+**Neu in der Nacharbeit Runde 2 (29.08.2026):**
+
+| # | Behauptung | Befehl | Ergebnis | Rohausgabe |
+|---|---|---|---|---|
+| 23 | **A17 weist eine unlesbare Stilllegungsmarke jetzt ab — vorher ließ A17 sie mit `Exit 0` durch.** Neue Regel `r_stilllegungsmarke_lesbar`: der Wert von `stillgelegt` muss ein Objekt mit `am` und `entscheid` als nichtleere Zeichenketten sein. Die beiden Feldnamen sind an den anderen Lesern gemessen, nicht erfunden (`NakamaIdentitaet.cmake:153-154`, `IdentityTestMain.cpp:388-391`) | `py -3.13 tools/eq-copilot/pruefe_installer_manifest.py` · dieselben Marken-Varianten gegen `git show 05dbbb1:…` | ☑ `94 ok, 0 Fehler`, jede Variante rot · ☑ **ohne Fix**: `null`, String, Array, Zahl, Boolean, `{}` und leeres `am` — **alle sieben grün**, alle 14 Regeln bestanden | [↓ C2f](#c2f) |
+| 24 | **Eine kaputte Marke macht ein Ziel trotzdem nie wieder „aktiv".** Die Mengeneinteilung fällt weiter auf die *Anwesenheit* — das ist die gemeinsame Regel aller vier Leser; die *Lesbarkeit* misst seit dieser Runde die eigene Regel daneben. Acht Varianten messen beide Hälften einzeln | dieselbe A17-Rohausgabe, Block `[3]` | ☑ je Variante zwei Zeilen: „fällt, wenn die Stilllegungsmarke … ist" **und** „und das Ziel bleibt trotzdem stillgelegt" | [↓ C2f](#c2f) |
+| 25 | **Die vier Pflichtfelder je Stilllegungseintrag werden typstreng geprüft.** `seit`, `warum`, `umgang_mit_altbestand` und `kennung_bleibt` müssen nichtleere Zeichenketten sein. Der Typ ist am echten Manifest gemessen, weil Vertrag §2.3 die Felder fordert, aber keinen Typ nennt. Vorher stand dort `str(e.get(feld, "")).strip()` — und `str(None)` sind vier nichtleere Zeichen | `py -3.13 tools/eq-copilot/pruefe_installer_manifest.py` · 4 Felder × 6 Werte, dieselben gegen `05dbbb1` | ☑ 24 neue Gegenproben, alle rot · ☑ **ohne Fix**: `null`, `[]` und `{}` in **jedem** der vier Felder grün — nur `""` und `"   "` fielen | [↓ C2g](#c2g) |
+| 26 | **Der Installer bricht bei unbrauchbarem Pflichtfeld ab, statt eine Zeile mit leerem Datum zu drucken.** Der Riegel steht vor `Melde-StillgelegteAltlasten` und gilt in allen drei Betriebsarten; A18 fährt ihn im neuen Block `[3e]` | `py -3.13 tools/eq-copilot/pruefe_installer_gegenpfad.py` | ☑ `127 ok, 0 Fehler`, 40 neue Prüfungen · ☑ **ohne Fix** (dasselbe Bein gegen `git show 05dbbb1:…Install-Nakama.ps1`): `87 ok, 40 Fehler`, **alle 40 aus `[3e]`**, jeder Lauf `Exit 0` — und die Meldung lautete wörtlich `ok      Nakama Suna : stillgelegt seit , nicht installiert` | [↓ C2h](#c2h) |
 
 ---
 
@@ -937,6 +946,225 @@ SUCCESS
 
 ---
 
+<a id="c2f"></a>
+### C2f · A17 ließ eine unlesbare Stilllegungsmarke durch (Behauptungen 21, 23, 24)
+
+Die Probe ruft **alle** Strukturregeln des jeweiligen Moduls gegen eine tiefe
+Kopie der echten Identitätsdatei auf und mutiert nur den Wert von
+`stillgelegt`. Die Datei auf Platte bleibt unberührt — `git diff` auf
+`eq-copilot/identity/plugin-identities-v1.json` ist in dieser Runde leer.
+
+**Vorher** — `git show 05dbbb1:tools/eq-copilot/pruefe_installer_manifest.py`:
+
+```
+== P1: unlesbare Stilllegungsmarke in der IDENTITAET ==
+  stillgelegt = null           -> GRUEN (Exit 0)
+  stillgelegt = String         -> GRUEN (Exit 0)
+  stillgelegt = Array          -> GRUEN (Exit 0)
+  stillgelegt = Zahl           -> GRUEN (Exit 0)
+  stillgelegt = Boolean        -> GRUEN (Exit 0)
+  stillgelegt = leeres Objekt  -> GRUEN (Exit 0)
+  stillgelegt = am leer        -> GRUEN (Exit 0)
+```
+
+Vierzehn Regeln, sieben kaputte Marken, kein einziger Befund. A17 hätte in
+jedem dieser Fälle mit `Exit 0` beglaubigt, was CMake-Leser,
+`EqCopIdentityTest` und Installer hart ablehnen.
+
+**Nachher** — Arbeitsstand:
+
+```
+== P1: unlesbare Stilllegungsmarke in der IDENTITAET ==
+  stillgelegt = null           -> ROT  ["r_stilllegungsmarke_lesbar: 'passive-probe': Stilllegungsmarke ist kein Objekt (NoneType: None)"]
+  stillgelegt = String         -> ROT  ["r_stilllegungsmarke_lesbar: 'passive-probe': Stilllegungsmarke ist kein Objekt (str: 'x')"]
+  stillgelegt = Array          -> ROT  ["r_stilllegungsmarke_lesbar: 'passive-probe': Stilllegungsmarke ist kein Objekt (list: [])"]
+  stillgelegt = Zahl           -> ROT  ["r_stilllegungsmarke_lesbar: 'passive-probe': Stilllegungsmarke ist kein Objekt (int: 7)"]
+  stillgelegt = Boolean        -> ROT  ["r_stilllegungsmarke_lesbar: 'passive-probe': Stilllegungsmarke ist kein Objekt (bool: True)"]
+  stillgelegt = leeres Objekt  -> ROT  ["r_stilllegungsmarke_lesbar: 'passive-probe': `stillgelegt.am` ist keine nichtleere Zeichenkette (NoneType: None); 'passive-probe': `stillgelegt.entscheid` ist keine nichtleere Zeichenkette (NoneType: None)"]
+  stillgelegt = am leer        -> ROT  ["r_stilllegungsmarke_lesbar: 'passive-probe': `stillgelegt.am` ist keine nichtleere Zeichenkette (str: ''); 'passive-probe': `stillgelegt.entscheid` ist keine nichtleere Zeichenkette (NoneType: None)"]
+```
+
+Dasselbe im Kanon-Bein selbst, gekürzt auf die neuen Zeilen:
+
+```
+[1] Struktur - eine Identitaet, ein Ort
+
+  ok      jede Stilllegungsmarke ist lesbar - Objekt mit `am` und `entscheid`
+
+[2] Gegenprobe - dieselben Regeln an verdorbener Eingabe
+  ok      faellt an verdorbener Eingabe: jede Stilllegungsmarke ist lesbar - Objekt mit `am` und `entscheid`
+
+[3] Adversariale Pfad- und Identitaetsgegenproben
+  ok      faellt, wenn die Stilllegungsmarke null ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke null ist
+  ok      faellt, wenn die Stilllegungsmarke eine Zeichenkette ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke eine Zeichenkette ist
+  ok      faellt, wenn die Stilllegungsmarke ein leeres Array ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke ein leeres Array ist
+  ok      faellt, wenn die Stilllegungsmarke eine Zahl ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke eine Zahl ist
+  ok      faellt, wenn die Stilllegungsmarke ein Boolean ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke ein Boolean ist
+  ok      faellt, wenn die Stilllegungsmarke ein leeres Objekt ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke ein leeres Objekt ist
+  ok      faellt, wenn die Stilllegungsmarke ein Objekt mit leerem `am` ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke ein Objekt mit leerem `am` ist
+  ok      faellt, wenn die Stilllegungsmarke ein Objekt ohne `entscheid` ist
+  ok      und das Ziel bleibt trotzdem stillgelegt, wenn die Marke ein Objekt ohne `entscheid` ist
+
+94 ok, 0 Fehler
+```
+
+<a id="c2g"></a>
+### C2g · `str(None)` ist `"None"` — die Pflichtfelder waren ungeprüft (Behauptung 25)
+
+Dieselbe Probe, andere Seite: mutiert wird der Manifesteintrag unter
+`stillgelegte_ziele`, nicht die Identität.
+
+**Vorher** — `git show 05dbbb1:…`:
+
+```
+== P2: Pflichtfelder im MANIFEST-Block stillgelegte_ziele ==
+  seit                   = null   -> GRUEN (Exit 0)
+  seit                   = []     -> GRUEN (Exit 0)
+  seit                   = {}     -> GRUEN (Exit 0)
+  seit                   = ""     -> ROT  ['passive-probe': seit fehlt]
+  seit                   = "   "  -> ROT  ['passive-probe': seit fehlt]
+  warum                  = null   -> GRUEN (Exit 0)
+  warum                  = []     -> GRUEN (Exit 0)
+  warum                  = {}     -> GRUEN (Exit 0)
+  warum                  = ""     -> ROT  ['passive-probe': warum fehlt]
+  warum                  = "   "  -> ROT  ['passive-probe': warum fehlt]
+  umgang_mit_altbestand  = null   -> GRUEN (Exit 0)
+  umgang_mit_altbestand  = []     -> GRUEN (Exit 0)
+  umgang_mit_altbestand  = {}     -> GRUEN (Exit 0)
+  umgang_mit_altbestand  = ""     -> ROT  ['passive-probe': umgang_mit_altbestand fehlt]
+  umgang_mit_altbestand  = "   "  -> ROT  ['passive-probe': umgang_mit_altbestand fehlt]
+  kennung_bleibt         = null   -> GRUEN (Exit 0)
+  kennung_bleibt         = []     -> GRUEN (Exit 0)
+  kennung_bleibt         = {}     -> GRUEN (Exit 0)
+  kennung_bleibt         = ""     -> ROT  ['passive-probe': kennung_bleibt fehlt]
+  kennung_bleibt         = "   "  -> ROT  ['passive-probe': kennung_bleibt fehlt]
+```
+
+Drei von fünf Werten je Feld bestanden. Der Grund steht in einer einzigen
+Zeile: `str(e.get(feld, "")).strip()` konvertiert **vor** der Prüfung, und
+`str(None)` sind vier nichtleere Zeichen — `str([])` und `str({})` je zwei.
+
+**Nachher** — Arbeitsstand:
+
+```
+== P2: Pflichtfelder im MANIFEST-Block stillgelegte_ziele ==
+  seit                   = null   -> ROT  ['passive-probe': seit ist keine nichtleere Zeichenkette (NoneType: None)]
+  seit                   = []     -> ROT  ['passive-probe': seit ist keine nichtleere Zeichenkette (list: [])]
+  seit                   = {}     -> ROT  ['passive-probe': seit ist keine nichtleere Zeichenkette (dict: {})]
+  seit                   = ""     -> ROT  ['passive-probe': seit ist keine nichtleere Zeichenkette (str: '')]
+  seit                   = "   "  -> ROT  ['passive-probe': seit ist keine nichtleere Zeichenkette (str: '   ')]
+  warum                  = null   -> ROT  ['passive-probe': warum ist keine nichtleere Zeichenkette (NoneType: None)]
+  warum                  = []     -> ROT  ['passive-probe': warum ist keine nichtleere Zeichenkette (list: [])]
+  warum                  = {}     -> ROT  ['passive-probe': warum ist keine nichtleere Zeichenkette (dict: {})]
+  warum                  = ""     -> ROT  ['passive-probe': warum ist keine nichtleere Zeichenkette (str: '')]
+  warum                  = "   "  -> ROT  ['passive-probe': warum ist keine nichtleere Zeichenkette (str: '   ')]
+  umgang_mit_altbestand  = null   -> ROT  ['passive-probe': umgang_mit_altbestand ist keine nichtleere Zeichenkette (NoneType: None)]
+  umgang_mit_altbestand  = []     -> ROT  ['passive-probe': umgang_mit_altbestand ist keine nichtleere Zeichenkette (list: [])]
+  umgang_mit_altbestand  = {}     -> ROT  ['passive-probe': umgang_mit_altbestand ist keine nichtleere Zeichenkette (dict: {})]
+  umgang_mit_altbestand  = ""     -> ROT  ['passive-probe': umgang_mit_altbestand ist keine nichtleere Zeichenkette (str: '')]
+  umgang_mit_altbestand  = "   "  -> ROT  ['passive-probe': umgang_mit_altbestand ist keine nichtleere Zeichenkette (str: '   ')]
+  kennung_bleibt         = null   -> ROT  ['passive-probe': kennung_bleibt ist keine nichtleere Zeichenkette (NoneType: None)]
+  kennung_bleibt         = []     -> ROT  ['passive-probe': kennung_bleibt ist keine nichtleere Zeichenkette (list: [])]
+  kennung_bleibt         = {}     -> ROT  ['passive-probe': kennung_bleibt ist keine nichtleere Zeichenkette (dict: {})]
+  kennung_bleibt         = ""     -> ROT  ['passive-probe': kennung_bleibt ist keine nichtleere Zeichenkette (str: '')]
+  kennung_bleibt         = "   "  -> ROT  ['passive-probe': kennung_bleibt ist keine nichtleere Zeichenkette (str: '   ')]
+```
+
+Im Kanon-Bein, Block `[3]`:
+
+```
+  ok      faellt, wenn `seit` null ist
+  ok      faellt, wenn `seit` ein leeres Array ist
+  ok      faellt, wenn `seit` ein leeres Objekt ist
+  ok      faellt, wenn `seit` leer ist
+  ok      faellt, wenn `seit` nur Leerraum ist
+  ok      faellt, wenn `seit` eine Zahl ist
+  ok      faellt, wenn `warum` null ist
+  ok      faellt, wenn `warum` ein leeres Array ist
+  ok      faellt, wenn `warum` ein leeres Objekt ist
+  ok      faellt, wenn `warum` leer ist
+  ok      faellt, wenn `warum` nur Leerraum ist
+  ok      faellt, wenn `warum` eine Zahl ist
+  ok      faellt, wenn `umgang_mit_altbestand` null ist
+  ok      faellt, wenn `umgang_mit_altbestand` ein leeres Array ist
+  ok      faellt, wenn `umgang_mit_altbestand` ein leeres Objekt ist
+  ok      faellt, wenn `umgang_mit_altbestand` leer ist
+  ok      faellt, wenn `umgang_mit_altbestand` nur Leerraum ist
+  ok      faellt, wenn `umgang_mit_altbestand` eine Zahl ist
+  ok      faellt, wenn `kennung_bleibt` null ist
+  ok      faellt, wenn `kennung_bleibt` ein leeres Array ist
+  ok      faellt, wenn `kennung_bleibt` ein leeres Objekt ist
+  ok      faellt, wenn `kennung_bleibt` leer ist
+  ok      faellt, wenn `kennung_bleibt` nur Leerraum ist
+  ok      faellt, wenn `kennung_bleibt` eine Zahl ist
+
+94 ok, 0 Fehler
+```
+
+<a id="c2h"></a>
+### C2h · Der Installer druckte „stillgelegt seit " ohne Datum (Behauptung 26)
+
+Gefahren wird das **neue** Kanon-Bein A18 zweimal: einmal in einem
+Scratch-Baum, in dem nur `eq-copilot/install/Install-Nakama.ps1` durch
+`git show 05dbbb1:…` ersetzt ist (bytegleich geprüft), einmal mit dem
+Arbeitsstand. Beide Scratch-Läufe tragen eine zusätzliche Diagnosezeile
+`ROHZEILE:`, die nur dort im Skript steht und die betroffene Ausgabezeile des
+Installers zeigt; im Repo steht sie nicht.
+
+**Vorher** — alter Installer, neues Bein:
+
+```
+[3e] Ein unbrauchbares Pflichtfeld bricht ab, statt Luecken zu drucken
+    ROHZEILE: ['  ok      Nakama Suna : stillgelegt seit , nicht installiert']
+  FEHLER  `seit` als null bricht ab und benennt Feld und Typ  [Exit 0]
+  FEHLER  und keine Altlastzeile mit leerem Datum (seit = null)
+  FEHLER  `seit` als Array bricht ab und benennt Feld und Typ  [Exit 0]
+  FEHLER  und keine Altlastzeile mit leerem Datum (seit = Array)
+  FEHLER  `seit` als Objekt bricht ab und benennt Feld und Typ  [Exit 0]
+  FEHLER  und keine Altlastzeile mit leerem Datum (seit = Objekt)
+  ... (40 Pruefungen = 4 Pflichtfelder x 5 Werte x 2 Zusagen)
+
+87 ok, 40 Fehler
+```
+
+Die Zeile `ok      Nakama Suna : stillgelegt seit , nicht installiert` ist der
+Schaden in einem Satz: eine `ok`-Meldung, die ein Datum ankündigt und dann
+eine Lücke zeigt. Alle 40 Fehler dieses Laufs stammen aus `[3e]`, die übrigen
+Blöcke bleiben grün.
+
+**Nachher** — Arbeitsstand:
+
+```
+[3e] Ein unbrauchbares Pflichtfeld bricht ab, statt Luecken zu drucken
+    ROHZEILE: ["ABBRUCH: Stillgelegtes Ziel 'passive-probe': Pflichtfeld 'seit' ist keine nichtleere Zeichenkette (Typ null). Eine Stilllegung ohne brauchbares Datum, ohne Grund oder ohne Umgang mit dem Altbestand ist keine - repariere den Eintrag in eq-copilot/install/nakama-installer-v1.json (Vertrag nakama-installer-v1.md, Abschnitt 2.3), entferne ihn nicht."]
+  ok      `seit` als null bricht ab und benennt Feld und Typ  [Exit 1]
+  ok      und keine Altlastzeile mit leerem Datum (seit = null)
+  ok      `seit` als Array bricht ab und benennt Feld und Typ  [Exit 1]
+  ok      und keine Altlastzeile mit leerem Datum (seit = Array)
+  ok      `seit` als Objekt bricht ab und benennt Feld und Typ  [Exit 1]
+  ok      und keine Altlastzeile mit leerem Datum (seit = Objekt)
+  ... (40 Pruefungen = 4 Pflichtfelder x 5 Werte x 2 Zusagen)
+
+127 ok, 0 Fehler
+```
+
+Das Bein zieht die Ausgabe vor dem Vergleich flach und prüft seit dem
+T1-Selbstaudit auch das **Ende** der Meldung. Grund: im ersten Wurf stand im
+Abbruchtext ein Backtick vor `nakama-installer-v1.md` — in einer
+PowerShell-Doppelquote ist der Backtick das Escape-Zeichen, Backtick plus `n`
+also ein Zeilenumbruch. Der Riegel griff, aber sein Satz war ab „(Vertrag"
+zerhackt. Eine Prüfung, die nur den Anfang einer Meldung liest, sieht genau
+diesen Schaden nicht.
+
+---
+
 <a id="nacharbeit-1"></a>
 ## 6. Nacharbeit Runde 1 — 2026-08-29
 
@@ -1094,6 +1322,157 @@ Vorführung gegen `043b48f`, in der dieselben zwei Mutationen mit
   Kopie unter `%TEMP%`.
 - **Nichts an NAK-30 angefasst.** Keine Kennung von Gen oder Probeeq wurde
   gelesen, geschrieben oder verschoben.
+
+---
+
+<a id="nacharbeit-2"></a>
+## 7. Nacharbeit Runde 2 — 2026-08-29 (T2-Prüfer Codex gpt-5.6-sol/xhigh, Thread 01a04b48-7130-7630-a094-04868a2205e0, Stand 05dbbb1)
+
+> **Prüfer:** Codex `gpt-5.6-sol`, Stufe `xhigh`, Thread
+> `01a04b48-7130-7630-a094-04868a2205e0`, geprüft auf Stand `05dbbb1`.
+> Beide Befunde wurden vom Dirigenten an der Quelle bestätigt und sind hier
+> geschlossen. Die Marke im Kopf bleibt `T2 NEEDS_WORK … nachgearbeitet` —
+> **kein PASS**: das Urteil fällt ein frischer Prüfer, nicht diese Runde.
+
+### 7.1 [P1] Weise unlesbare Stilllegungsmarken auch in A17 ab
+
+> **Wörtlich:** „Weise unlesbare Stilllegungsmarken auch in A17 ab —
+> tools/eq-copilot/pruefe_installer_manifest.py:177-181. Wenn
+> `passive-probe.stillgelegt` auf `null`, String, Array, Zahl oder Boolean
+> gesetzt wird, klassifizieren diese Helfer das Ziel nur anhand der
+> Schlüsselanwesenheit; keine der 14 `REGELN` validiert den Wert. Damit bleiben
+> alle Strukturregeln grün und A17 endet weiterhin mit Exit 0, während
+> CMake-Leser, Installer und `EqCopIdentityTest` denselben Eingang hart
+> ablehnen. Behauptung 21 und die Vier-Leser-Symmetrie sind daher nicht
+> geschlossen; ergänze eine A17-Regel samt Typ-Gegenproben."
+
+**Ursache an der Quelle.** Zutreffend. `_aktive` und `_stillgelegte`
+(`pruefe_installer_manifest.py`, Zeilen 169–181 auf Stand `05dbbb1`) trennen
+allein nach `"stillgelegt" in z`. Das ist als *Klassifikation* richtig und
+fail-closed — nur folgte danach keine *Validierung*: keine der 14 Regeln
+sah den Wert je an. Gemessen ([C2f](#c2f)): sieben kaputte Markenvarianten,
+14 Regeln, null Befunde.
+
+Der zweite Halbsatz stimmt ebenfalls. Behauptung 21 in [§1](#1-ticket-behauptungen)
+sagte „alle vier Leser", ihr Beleg maß aber nur zwei — A18 `[3d]` den
+Installer und `EqCopIdentityTest` sich selbst. Für A17 stand die Aussage ohne
+Rohausgabe da und war zudem falsch.
+
+**Änderung.**
+
+| Datei | Was |
+|---|---|
+| `tools/eq-copilot/pruefe_installer_manifest.py:349-391` | neue Regel `r_stilllegungsmarke_lesbar` samt `MARKEN_PFLICHTFELDER = ("am", "entscheid")`; die beiden Feldnamen sind aus `NakamaIdentitaet.cmake:153-154` und `IdentityTestMain.cpp:388-391` gemessen, nicht gesetzt |
+| `tools/eq-copilot/pruefe_installer_manifest.py:577` | Regel in `REGELN` aufgenommen |
+| `tools/eq-copilot/pruefe_installer_manifest.py:169-184` | Docstring von `_aktive` zurückgezogen: er sagt jetzt, dass die Funktion nur die Mengenzugehörigkeit beantwortet, und benennt die Regel, die die Lesbarkeit misst |
+| `tools/eq-copilot/pruefe_installer_manifest.py:642-658, 1008-1024` | `verdirb_identitaet()` — Block `[2]` verdirbt jetzt auch die Identität. Ohne das bliebe die neue Regel dort grün, weil sie als einzige allein die Identität liest; verdorben wird nur der **Wert** der Marke, damit sich für die übrigen 13 Regeln keine Datenlage verschiebt |
+| `tools/eq-copilot/pruefe_installer_manifest.py:724-751` | acht Gegenproben je Markentyp, jeweils doppelt: die Regel fällt **und** das Ziel bleibt stillgelegt |
+
+**Beleg.** [C2f](#c2f) — sieben Varianten vor dem Fix alle grün, nach dem Fix
+alle rot; dazu die Zeilen aus dem Kanon-Bein selbst.
+
+**Geschlossen:** ja. Behauptung 21 ist in [§1](#1-ticket-behauptungen)
+berichtigt und trägt den A17-Beleg jetzt bei.
+
+### 7.2 [P2] Validiere Pflichtmetadaten vor der String-Konvertierung
+
+> **Wörtlich:** „Validiere Pflichtmetadaten vor der String-Konvertierung —
+> tools/eq-copilot/pruefe_installer_manifest.py:310-312. Bei `seit: null` oder
+> einem anderen Pflichtfeld mit JSON-`null` wird `str(None).strip()` zu
+> `"None"`, sodass `r_stillgelegte_benannt` fälschlich `(True, "")` liefert;
+> Arrays und Objekte bestehen aus demselben Grund ebenfalls. A17 akzeptiert
+> damit entgegen `eq-copilot/schemas/installer/nakama-installer-v1.md:87,203-208`
+> eine Stilllegung ohne brauchbares Datum, Grund oder Umgang, und der Installer
+> validiert diese Felder vor der Ausgabe ebenfalls nicht. Prüfe typstreng auf
+> nichtleere Strings und ergänze Gegenproben für `null`, Array und Objekt."
+
+**Ursache an der Quelle.** Zutreffend, und die Zeile ist wörtlich die
+genannte: `if not str(e.get(feld, "")).strip():`. Sie konvertiert **vor** der
+Prüfung. `str(None)` ist `"None"` — vier nichtleere Zeichen; `str([])` und
+`str({})` je zwei. Gemessen ([C2g](#c2g)): in jedem der vier Pflichtfelder
+bestanden `null`, `[]` und `{}`; nur `""` und `"   "` fielen.
+
+Die zweite Hälfte stimmt ebenfalls: `Install-Nakama.ps1` gab `seit`, `warum`
+und `umgang_mit_altbestand` in `Melde-StillgelegteAltlasten` ungeprüft aus.
+`"$($s.seit)"` macht aus JSON-`null` die leere Zeichenkette, und die Meldung
+lautete dann wörtlich `ok      Nakama Suna : stillgelegt seit , nicht
+installiert` ([C2h](#c2h)) — eine `ok`-Zeile mit einer Lücke da, wo das Datum
+steht.
+
+**Der Typ ist gemessen, nicht gewählt.** Vertrag §2.3
+(`nakama-installer-v1.md:87` und `:208`) nennt die vier Felder als Pflicht,
+aber **keinen Typ**. Maßgeblich ist deshalb das echte Manifest
+`eq-copilot/install/nakama-installer-v1.json`: dort ist jedes der vier eine
+nichtleere Zeichenkette — `kennung_bleibt` eingeschlossen, dort ein Satz über
+die gesperrte Kennung, kein Boolean. Genau dieser Typ wird geprüft.
+
+**Änderung.**
+
+| Datei | Was |
+|---|---|
+| `tools/eq-copilot/pruefe_installer_manifest.py:281-288` | `EINTRAG_PFLICHTFELDER` mit dem Vermerk, woher der Typ stammt |
+| `tools/eq-copilot/pruefe_installer_manifest.py:325-336` | `str(...).strip()` → `isinstance(wert, str) and wert.strip()`; der Befund nennt Feldname **und** Typ |
+| `tools/eq-copilot/pruefe_installer_manifest.py:791-799` | 24 Gegenproben: 4 Felder × `null`, `[]`, `{}`, `""`, `"   "`, Zahl |
+| `eq-copilot/install/Install-Nakama.ps1:348-368` | neuer Riegel: jedes der vier Felder typstreng als nichtleere Zeichenkette, sonst `Abbruch` mit Feldname und Typ. Er steht oben im unbedingten Ladeteil und läuft damit vor jeder Ausgabe und in allen drei Betriebsarten (`-Pruefen`, `-Rueckweg`, normaler Lauf) |
+| `eq-copilot/install/Install-Nakama.ps1:385-392` | Zeiger in `Melde-StillgelegteAltlasten`: die Rohausgabe ist zulässig, **weil** der Riegel oben sie erzwingt. Eine zweite Prüfung an der Ausgabestelle wäre eine zweite Wahrheit über denselben Vertrag |
+| `tools/eq-copilot/pruefe_installer_gegenpfad.py:426-475` | neuer Block `[3e]` nach dem Muster von `[3d]`: fährt den Installer in der Sandbox mit 4 × 5 unbrauchbaren Pflichtfeldern und misst Abbruch **und** das Ausbleiben jeder Altlastzeile |
+
+**Beleg.** [C2g](#c2g) (A17, vorher/nachher), [C2h](#c2h) (Installer und A18
+`[3e]`, gefahren gegen `05dbbb1` und gegen den Arbeitsstand).
+
+**Geschlossen:** ja.
+
+### 7.3 Karte der geänderten Dateien (Runde 2)
+
+| Datei | Zeilen | Was |
+|---|---|---|
+| `tools/eq-copilot/pruefe_installer_manifest.py` | 169-184, 281-288, 325-336, 349-391, 577, 642-658, 724-751, 791-799, 1008-1024 | Regel `r_stilllegungsmarke_lesbar`; typstrenge Pflichtfelder; `verdirb_identitaet()` samt erweitertem Block `[2]`; 8 + 24 neue Gegenproben; Docstring von `_aktive` zurückgezogen |
+| `eq-copilot/install/Install-Nakama.ps1` | 348-368, 385-392 | typstrenger Riegel auf die vier Pflichtfelder vor jeder Ausgabe; Zeiger in `Melde-StillgelegteAltlasten` |
+| `tools/eq-copilot/pruefe_installer_gegenpfad.py` | 426-475 | Block `[3e]` fährt den Fall in der Sandbox |
+| `docs/beweise/SONDE-007c.md` | §1, §5, §7 | Behauptung 21 berichtigt; Behauptungen 23-26; Rohbelege C2f-C2h; dieser Abschnitt |
+
+**Nicht angefasst:** `eq-copilot/identity/plugin-identities-v1.json` (`git diff`
+leer, NAK-30 unberührt), `eq-copilot/install/nakama-installer-v1.json`,
+`eq-copilot/cmake/NakamaIdentitaet.cmake`,
+`eq-copilot/plugin/tests/IdentityTestMain.cpp`, der Vertrag
+`nakama-installer-v1.md` sowie alles aus S9/`SONDE-007b` und NAK-88.
+
+> **Zahlen früherer Runden bleiben an ihre Läufe gebunden.** Diese Runde hebt
+> die Prüfungszahl von A17 (`52 → 94`) und A18 (`87 → 127`). Die
+> Ergebnisspalten der Behauptungen 9, 21 und 22 nennen weiter die Zahl **ihres
+> eigenen** Laufs und verweisen auf dessen Rohausgabe; maßgeblich für den
+> heutigen Stand ist der Kanon-Lauf unten.
+
+### 7.4 T1 — Selbstaudit dieser Runde
+
+| # | Frage | Befund |
+|---|---|---|
+| 1 | **Zahlenränder / harte Zahlen** | Keine neue Zahl festgeschrieben. Die Gegenproben leiten Menge und Ziel-ID aus der Identitätsdatei ab; die Pflichtfeldliste steht einmal als `EINTRAG_PFLICHTFELDER` und wird von Regel und Gegenprobe geteilt. |
+| 2 | **Gegenpfad im selben Änderungssatz** | Riegel ↔ Beweis: jeder der beiden neuen Riegel wird im selben Satz gefahren (A17 Block `[3]`, A18 Block `[3e]`) **und** gegen den Stand ohne ihn vorgeführt. |
+| 3 | **Fail-closed statt fail-open** | Die neue Regel darf die Mengeneinteilung nicht verschieben — genau das messen die acht Zeilen „und das Ziel bleibt trotzdem stillgelegt". `verdirb_identitaet()` verdirbt aus demselben Grund nur den *Wert* der Marke. |
+| 4 | **Gegenprobe der Gegenprobe** | Der Block `[2]` hätte die neue Regel stillschweigend grün gelassen, weil er nur das Manifest verdarb. Behoben durch `verdirb_identitaet()`; fehlt eines Tages jedes stillgelegte Ziel, sagt der Block das als `hinweis`, statt eine Gegenprobe zu behaupten, die es nicht gab. |
+| 5 | **Irreführende Texte — auch meine eigenen** | **Zwei Funde in meinem eigenen Diff.** (a) Der Abbruchtext des Installers enthielt einen Backtick vor `nakama-installer-v1.md`; in einer PowerShell-Doppelquote ist das ein Escape, der Satz war ab „(Vertrag" abgeschnitten. Der Riegel griff, seine Meldung log. Behoben, und A18 prüft seither auch das **Ende** der Meldung. (b) Ein Kommentar in A18 begründete das Flachziehen der Ausgabe mit Konsolen-Umbruch — gemessen war es der Backtick. Der Kommentar sagt jetzt, was gemessen wurde. |
+| 6 | **Doppelte Wahrheiten** | `Melde-StillgelegteAltlasten` bekam **keine** zweite Prüfung, sondern einen Zeiger auf den Riegel oben. Zwei Stellen, die denselben Vertrag prüfen, laufen sonst auseinander. |
+
+### 7.5 Was diese Runde nicht behauptet
+
+- **Kein T2-Urteil.** Die Kopfmarke bleibt `NEEDS_WORK … nachgearbeitet`; über
+  diese Runde urteilt ein frischer Prüfer.
+- **Der Vertrag ist nicht geändert.** `nakama-installer-v1.md` §2.3 nennt die
+  vier Pflichtfelder weiter ohne Typ. Geprüft wird der Typ, den das echte
+  Manifest führt; wer den Vertrag später um eine Typzeile ergänzen will,
+  braucht dafür ein eigenes Ticket.
+- **Die Marken-Pflichtfelder sind `am` und `entscheid` — nicht mehr.** Die
+  übrigen Schlüssel der Marke (`ticket`, `warum`, `folge`, `nie_installiert`)
+  bleiben ungeprüft, weil kein Leser sie liest. Eine Regel, die mehr fordert
+  als irgendein Leser braucht, wäre eine erfundene Vertragswahrheit.
+- **Der Installer ist nicht installiert worden.** Gefahren wurde
+  ausschließlich die Sandbox-Kopie in Kanon-Bein A18; das echte
+  VST3-Verzeichnis ist unberührt.
+- **Der Vorzustand ist gefahren, nicht gelesen.** Beide „ohne Fix"-Zahlen
+  stammen aus echten Läufen gegen `git show 05dbbb1:…` — für A17 über eine
+  Modulkopie im Scratch-Baum, für den Installer über dasselbe neue A18-Bein
+  gegen den alten `Install-Nakama.ps1`.
 
 ---
 

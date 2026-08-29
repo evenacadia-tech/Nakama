@@ -345,6 +345,27 @@ if ($benannteStillgelegte.Count -ne $stillgelegteIds.Count -or
      (Compare-Object ($benannteStillgelegte | Sort-Object) ($stillgelegteIds | Sort-Object)))) {
     Abbruch 'Jedes stillgelegte Identitaetsziel muss im Manifest unter `stillgelegte_ziele` genau einmal benannt sein - und nur die stillgelegten.'
 }
+# Nacharbeit Runde 2 (29.08.2026, T2-Befund P2): benannt sein reicht nicht -
+# die Benennung muss auch etwas SAGEN. Vertrag §2.3 fordert je Eintrag `seit`,
+# `warum`, `umgang_mit_altbestand` und `kennung_bleibt`; im echten Manifest
+# (install/nakama-installer-v1.json) ist jedes davon eine nichtleere
+# Zeichenkette, `kennung_bleibt` eingeschlossen. Geprueft wird genau dieser
+# Vertragstyp, denn `[string]$null` ist "" und `"$($s.seit)"` machte daraus in
+# Melde-StillgelegteAltlasten die Zeile "stillgelegt seit " - eine Meldung mit
+# einer Luecke da, wo das Datum stehen muss. Der Riegel steht hier oben, weil
+# er damit VOR jeder Ausgabe und in allen drei Betriebsarten laeuft
+# (-Pruefen, -Rueckweg, normaler Lauf); gefahren wird er im Kanon-Bein A18,
+# Block [3e].
+foreach ($s in @($manifest.stillgelegte_ziele | Where-Object { $null -ne $_ })) {
+    foreach ($feld in @('seit', 'warum', 'umgang_mit_altbestand', 'kennung_bleibt')) {
+        $wert = $s.$feld
+        if (($wert -isnot [string]) -or [string]::IsNullOrWhiteSpace($wert)) {
+            $typ = 'null'
+            if ($null -ne $wert) { $typ = $wert.GetType().Name }
+            Abbruch "Stillgelegtes Ziel '$($s.ziel_id)': Pflichtfeld '$feld' ist keine nichtleere Zeichenkette (Typ $typ). Eine Stilllegung ohne brauchbares Datum, ohne Grund oder ohne Umgang mit dem Altbestand ist keine - repariere den Eintrag in eq-copilot/install/nakama-installer-v1.json (Vertrag nakama-installer-v1.md, Abschnitt 2.3), entferne ihn nicht."
+        }
+    }
+}
 $brokerArtefakte = @($manifest.artefakte | Where-Object { $_.art -eq 'broker' })
 if ($brokerArtefakte.Count -ne 1) { Abbruch 'Das Manifest muss genau ein Broker-Artefakt enthalten.' }
 
@@ -362,6 +383,12 @@ if ($brokerArtefakte.Count -ne 1) { Abbruch 'Das Manifest muss genau ein Broker-
    Was NICHT passiert: stillschweigen. Die Meldung laeuft im normalen
    Installationslauf UND in -Pruefen, mit vollem Pfad und dem Handgriff. #>
 function Melde-StillgelegteAltlasten {
+    # `seit`, `warum` und `umgang_mit_altbestand` werden hier ROH ausgegeben.
+    # Das darf diese Funktion, weil der Riegel oben (Nacharbeit Runde 2) sie
+    # bereits typstreng als nichtleere Zeichenketten erzwungen hat und
+    # unbedingt laeuft, bevor irgendein Aufruf hier ankommt. Eine zweite
+    # Pruefung an dieser Stelle waere eine zweite Wahrheit ueber denselben
+    # Vertrag; faellt der Riegel oben weg, luegen die Zeilen hier wieder.
     foreach ($s in @($manifest.stillgelegte_ziele | Where-Object { $null -ne $_ })) {
         $ident = Ident-Von ([string]$s.ziel_id)
         if ($null -eq $ident) {

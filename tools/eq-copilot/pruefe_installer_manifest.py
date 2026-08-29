@@ -173,6 +173,11 @@ def _aktive(identitaet: dict) -> list[dict]:
     der Identitaetsdatei stehen - seine Kennung ist gesperrt, nicht frei -,
     gehoert aber nicht mehr in die Auslieferung. Die Trennung faellt auf die
     ANWESENHEIT des Feldes, nicht auf seinen Inhalt: fail-closed.
+
+    Damit sagt diese Funktion, WELCHER Menge ein Ziel angehoert - und sonst
+    nichts. Ueber die Lesbarkeit der Marke sagte bis zur Nacharbeit Runde 2
+    (29.08.2026) auch keine andere Regel etwas; seither misst sie
+    `r_stilllegungsmarke_lesbar`.
     """
     return [z for z in identitaet.get("ziele", []) if "stillgelegt" not in z]
 
@@ -273,6 +278,16 @@ def _brauchbare_ids(werte: list, wo: str) -> tuple[list[str], list[str]]:
     return gut, fehler
 
 
+# Vertrag §2.3 (eq-copilot/schemas/installer/nakama-installer-v1.md, Zeile 87
+# und 208) nennt diese vier Felder als Pflicht - aber KEINEN Typ. Gemessen
+# wird deshalb der Typ, den das echte Manifest fuehrt: in
+# eq-copilot/install/nakama-installer-v1.json ist jedes der vier eine
+# nichtleere Zeichenkette, `kennung_bleibt` eingeschlossen (dort ein Satz
+# ueber die gesperrte Kennung, kein Boolean). Ein hier erfundener Typ waere
+# eine zweite Vertragswahrheit.
+EINTRAG_PFLICHTFELDER = ("seit", "warum", "umgang_mit_altbestand", "kennung_bleibt")
+
+
 def r_stillgelegte_benannt(m: dict, i: dict):
     """Die zweite Haelfte: ein Ziel darf nicht STILL aus der Auslieferung fallen.
 
@@ -307,9 +322,18 @@ def r_stillgelegte_benannt(m: dict, i: dict):
     for e in eintraege:
         if not isinstance(e, dict):
             continue
-        for feld in ("seit", "warum", "umgang_mit_altbestand", "kennung_bleibt"):
-            if not str(e.get(feld, "")).strip():
-                fehler.append(f"{e.get('ziel_id')!r}: {feld} fehlt")
+        # Nacharbeit Runde 2 (29.08.2026, T2-Befund P2): typstreng VOR der
+        # Konvertierung. Hier stand `str(e.get(feld, "")).strip()` - und
+        # `str(None)` ist "None", also vier nichtleere Zeichen. Gemessen am
+        # Stand 05dbbb1 (Manifest SONDE-007c, Rohbeleg C2g): `null`, `[]`
+        # und `{}` bestanden diese Zeile in JEDEM der vier Felder; nur "" und
+        # "   " fielen. A17 nahm damit eine Stilllegung ohne brauchbares
+        # Datum, ohne Grund und ohne Umgang an - gegen Vertrag §2.3.
+        for feld in EINTRAG_PFLICHTFELDER:
+            wert = e.get(feld)
+            if not (isinstance(wert, str) and wert.strip()):
+                fehler.append(f"{e.get('ziel_id')!r}: {feld} ist keine nichtleere "
+                              f"Zeichenkette ({type(wert).__name__}: {wert!r})")
     # Auch diese Menge wird aus ungeprueften Manifestwerten gebaut: eine
     # `ziel_id` vom Typ Liste in `artefakte` wuerde sie sonst genauso
     # sprengen. Nicht-Strings koennen ohnehin kein stillgelegtes Ziel
@@ -319,6 +343,49 @@ def r_stillgelegte_benannt(m: dict, i: dict):
     for zid in stillgelegt_ids:
         if zid in aus_artefakten:
             fehler.append(f"{zid}: stillgelegt, steht aber in `artefakte`")
+    return not fehler, "; ".join(fehler)
+
+
+# Die Felder, die eine Stilllegungsmarke lesbar machen. Sie sind nicht hier
+# erfunden, sondern an den anderen drei Lesern gemessen:
+# eq-copilot/cmake/NakamaIdentitaet.cmake holt sich `stillgelegt am` und
+# `stillgelegt entscheid` fuer seine Abbruchmeldung, und IdentityTestMain.cpp
+# fordert fuer genau dieselben beiden `toString().isNotEmpty()` ("die
+# Stilllegung nennt Datum und Entscheid"). A17 misst ab hier dasselbe Paar.
+MARKEN_PFLICHTFELDER = ("am", "entscheid")
+
+
+def r_stilllegungsmarke_lesbar(_m: dict, i: dict):
+    """Nacharbeit Runde 2 (29.08.2026, T2-Befund P1): eine Marke, die DA ist,
+    aber nichts sagt.
+
+    `_aktive`/`_stillgelegte` fallen auf die ANWESENHEIT des Feldes. Das ist
+    richtig und bleibt so - nur die Anwesenheit ist fail-closed. Danach sah
+    aber keine der vierzehn Regeln mehr auf den WERT. Gemessen am Stand
+    05dbbb1 (Rohbeleg C2f im Manifest SONDE-007c): `stillgelegt` als null,
+    String, Array, Zahl, Boolean, leeres Objekt oder `{"am": ""}` liess ALLE
+    vierzehn Regeln gruen, A17 endete mit Exit 0 - waehrend der CMake-Leser,
+    EqCopIdentityTest und Install-Nakama.ps1 denselben Eingang hart ablehnen.
+    Ein Bein, das als einziges der vier Leser schweigt, macht die
+    Vier-Leser-Symmetrie zu einer Behauptung statt zu einer Messung.
+
+    Die Marke ist deshalb ein eigener Riegel: Objekt mit `am` und `entscheid`
+    als nichtleere Zeichenketten, sonst Regelbefund. Was diese Regel NICHT
+    tut: ein Ziel wieder aktiv machen. Eine kaputte Marke bedeutet weiter
+    "stillgelegt", nur unbrauchbar beschrieben."""
+    fehler = []
+    for z in _stillgelegte(i):
+        zid = z.get("id")
+        marke = z.get("stillgelegt")
+        if not isinstance(marke, dict):
+            fehler.append(f"{zid!r}: Stilllegungsmarke ist kein Objekt "
+                          f"({type(marke).__name__}: {marke!r})")
+            continue
+        for feld in MARKEN_PFLICHTFELDER:
+            wert = marke.get(feld)
+            if not (isinstance(wert, str) and wert.strip()):
+                fehler.append(f"{zid!r}: `stillgelegt.{feld}` ist keine nichtleere "
+                              f"Zeichenkette ({type(wert).__name__}: {wert!r})")
     return not fehler, "; ".join(fehler)
 
 
@@ -507,6 +574,7 @@ REGELN = [
     (r_art_bekannt, "jede `art` ist vst3 oder broker - eine geschlossene Menge"),
     (r_jedes_ziel_genau_einmal, "Identitaet ist kollisionsfrei, schema=2 und jedes AKTIVE Ziel hat genau einen VST3-Eintrag"),
     (r_stillgelegte_benannt, "jedes stillgelegte Ziel ist benannt (Datum, Grund, Umgang) und steht in keinem Artefakt"),
+    (r_stilllegungsmarke_lesbar, "jede Stilllegungsmarke ist lesbar - Objekt mit `am` und `entscheid`"),
     (r_quellpfade_nachgerechnet, "jeder Quellpfad ist der Bundle-ORDNER aus Ziel + Identitaet"),
     (r_keine_identitaetsliterale, "kein Viercode, keine Class-ID, kein Produkt- oder Bundlename im Installer-Manifest (ausser im Pfad)"),
     (r_broker, "genau ein Broker-Artefakt, aus dem Release-Pfad der Crate"),
@@ -568,6 +636,25 @@ def verdirb(m: dict, i: dict) -> dict:
     k["signatur"] = {"verfahren": "sha256-manifest", "authenticode_thumbprint": None, "warum_null": ""}
     k["rueckweg"] = {"strategie": "", "bekannte_staende": [
         {"sha256": "xx", "ziel_id": "?", "state_schema": "eins", "hash_art": "erfunden"}]}
+    return k
+
+
+def verdirb_identitaet(i: dict) -> dict:
+    """Die Identitaetsseite derselben Gegenprobe (Nacharbeit Runde 2).
+
+    `verdirb` verdirbt nur das Manifest. `r_stilllegungsmarke_lesbar` liest
+    als einzige Regel allein die Identitaet - an einem nur manifestseitig
+    verdorbenen Stand bliebe sie gruen, und der Block [2] behauptete dann
+    eine Gegenprobe, die es fuer sie nie gab.
+
+    Verdorben wird genau der WERT der Marke, nicht ihre ANWESENHEIT: die
+    Mengen aus `_aktive`/`_stillgelegte` bleiben danach Zeichen fuer Zeichen
+    dieselben. Eine Gegenprobe, die nebenbei die Mengen verschoebe, bewiese
+    fuer die uebrigen dreizehn Regeln etwas anderes, als ihre Zeile sagt."""
+    k = copy.deepcopy(i)
+    for z in k.get("ziele", []):
+        if "stillgelegt" in z:
+            z["stillgelegt"] = None
     return k
 
 
@@ -634,6 +721,35 @@ def adversariale_strukturproben(m: dict, i: dict) -> None:
         pruefe(not r_stillgelegte_benannt(manifest, i)[0],
                "faellt, wenn ein stillgelegtes Ziel nirgends benannt ist")
 
+        # -- Nacharbeit Runde 2 (29.08.2026, T2-Befund P1) ------------------
+        # Die Marke selbst. Gemessen am Stand 05dbbb1 (Rohbeleg C2f) lief
+        # JEDE dieser Varianten durch alle vierzehn Regeln - A17 sagte Exit 0,
+        # waehrend CMake-Leser, EqCopIdentityTest und Installer denselben
+        # Eingang hart ablehnen. Die Identitaetsdatei ist eingefroren (NAK-30);
+        # mutiert wird ausschliesslich eine TIEFE KOPIE im Speicher.
+        for marke, name in (
+            (None,                  "null"),
+            ("stillgelegt",         "eine Zeichenkette"),
+            ([],                    "ein leeres Array"),
+            (7,                     "eine Zahl"),
+            (True,                  "ein Boolean"),
+            ({},                    "ein leeres Objekt"),
+            ({"am": ""},            "ein Objekt mit leerem `am`"),
+            ({"am": "2026-08-28"},  "ein Objekt ohne `entscheid`"),
+        ):
+            ident = copy.deepcopy(i)
+            for z in ident["ziele"]:
+                if z["id"] == stillgelegte[0]["id"]:
+                    z["stillgelegt"] = marke
+            pruefe(not r_stilllegungsmarke_lesbar(m, ident)[0],
+                   f"faellt, wenn die Stilllegungsmarke {name} ist")
+            # Und die zweite Haelfte derselben Zusage: eine kaputte Marke ist
+            # nie ein Ruecksprung nach "aktiv". Ohne diese Zeile bewiese die
+            # obige nur, dass jemand meckert - nicht, dass der Riegel haelt.
+            pruefe(len(_aktive(ident)) == len(_aktive(i))
+                   and len(_stillgelegte(ident)) == len(_stillgelegte(i)),
+                   f"und das Ziel bleibt trotzdem stillgelegt, wenn die Marke {name} ist")
+
         # Nacharbeit Runde 1 (29.08.2026, T2-Befund P2): eine ID, die keine
         # nichtleere Zeichenkette ist. Bis heute starb die Regel hier an
         # `TypeError: unhashable type: 'list'` bzw. an `sorted()` ueber
@@ -671,6 +787,20 @@ def adversariale_strukturproben(m: dict, i: dict) -> None:
             manifest["stillgelegte_ziele"].append(zweiter)
             pruefe(not r_stillgelegte_benannt(manifest, i)[0],
                    "faellt kontrolliert bei gemischten ziel_id-Typen in einer Liste")
+
+            # -- Nacharbeit Runde 2 (29.08.2026, T2-Befund P2) --------------
+            # Die Pflichtfelder je Manifesteintrag. Bis 05dbbb1 stand hier
+            # `str(e.get(feld, "")).strip()`: aus JSON-`null` wurde "None", aus
+            # `[]` wurde "[]". Gemessen (Rohbeleg C2g): drei der fuenf Varianten
+            # je Feld blieben gruen - nur "" und "   " fielen.
+            for feld in EINTRAG_PFLICHTFELDER:
+                for wert, name in ((None, "null"), ([], "ein leeres Array"),
+                                   ({}, "ein leeres Objekt"), ("", "leer"),
+                                   ("   ", "nur Leerraum"), (7, "eine Zahl")):
+                    manifest = copy.deepcopy(m)
+                    manifest["stillgelegte_ziele"][0][feld] = wert
+                    pruefe(not r_stillgelegte_benannt(manifest, i)[0],
+                           f"faellt, wenn `{feld}` {name} ist")
 
     manifest = copy.deepcopy(m)
     entfernt = next(a for a in manifest["artefakte"] if a.get("art") == "vst3")
@@ -875,15 +1005,22 @@ def main() -> int:
         bedingung, zusatz = regel(manifest, identitaet)
         pruefe(bedingung, text, zusatz)
 
-    print("\n[2] Gegenprobe - dieselben Regeln an einem verdorbenen Manifest")
+    print("\n[2] Gegenprobe - dieselben Regeln an verdorbener Eingabe")
     kaputt = verdirb(manifest, identitaet)
+    kaputte_identitaet = verdirb_identitaet(identitaet)
     for regel, text in REGELN:
+        if regel is r_stilllegungsmarke_lesbar and not _stillgelegte(identitaet):
+            # Ehrlicher als eine gruene Zeile: ohne stillgelegtes Ziel gibt es
+            # keine Marke zu verderben - dann hat diese Regel aber auch nichts
+            # mehr zu schuetzen. Gesagt wird das, nicht verschwiegen.
+            print("  hinweis kein stillgelegtes Ziel - gegenstandslos: " + text)
+            continue
         try:
-            bedingung, _ = regel(kaputt, identitaet)
+            bedingung, _ = regel(kaputt, kaputte_identitaet)
         except Exception as e:            # eine Regel, die stolpert, hat gesehen
             bedingung = False             # dass etwas nicht stimmt - das zaehlt
             _ = e
-        pruefe(not bedingung, "faellt am verdorbenen Manifest: " + text)
+        pruefe(not bedingung, "faellt an verdorbener Eingabe: " + text)
 
     adversariale_strukturproben(manifest, identitaet)
 

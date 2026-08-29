@@ -2,26 +2,20 @@
   "schema": "nakama.installer/v1",
   "ticket": "SONDE-007b",
   "angelegt_am": "2026-08-23",
-
   "was_das_ist": "Das Installer-Manifest der Sondenfamilie (Entwurf §55 P1: 'Installer-Manifest fuer alle Bundles plus Broker mit Hash-/Signaturpruefung, Repair/Uninstall' - seit S9b/SONDE-007c sind es ZWEI Bundles statt drei; welche, sagt die Identitaetsdatei). Es beschreibt eine AUSLIEFERUNG - welche Artefakte zusammengehoeren, wohin sie kommen und wie ihre Echtheit geprueft wird. Der Vertrag dazu steht in eq-copilot/schemas/installer/nakama-installer-v1.md; das Installationsskript Install-Nakama.ps1 liest ausschliesslich diese Datei.",
-
   "keine_zweite_identitaet": "Diese Datei traegt WEDER Produktnamen NOCH Viercodes NOCH Class-IDs. Sie nennt nur die Ziel-IDs aus identity/plugin-identities-v1.json; Skript und Pruefbein schlagen alles Uebrige dort nach. Das ist dieselbe Regel wie im Bauskript (NAK-52): eine Identitaet, ein Ort. Ein Installer, der Bundlenamen selbst fuehrte, koennte eine Datei ausliefern, deren Name nirgends eingefroren ist.",
-
   "identitaetsquelle": "eq-copilot/identity/plugin-identities-v1.json",
-
   "ziele": {
     "vst3_verzeichnis": "C:/Program Files/Common Files/VST3",
     "vst3_verzeichnis_warum": "FL Studio scannt VST3 ausschliesslich unter Common Files\\VST3 (gemessen an den Terminen A und B, 22.08.2026). Ein zweiter Pfad waere ein Bundle, das niemand findet.",
     "broker_verzeichnis": "C:/Program Files/evenacadia/Nakama",
     "broker_verzeichnis_warum": "Der Broker ist ein Prozess, den ein Plugin spaeter STARTET (§53.5, ab SONDE-010). Ein per-User-Pfad (LOCALAPPDATA) waere ohne Rechteerhoehung beschreibbar - ein Spawn-Ziel, das jeder Nutzerprozess austauschen kann. Deshalb dieselbe geschuetzte Ebene wie die Bundles; §53.9 nennt Installationspfad und Betriebssystemschutz ausdruecklich als massgeblich."
   },
-
   "signatur": {
     "verfahren": "sha256-manifest",
     "authenticode_thumbprint": null,
     "warum_null": "Es gibt kein Codesigning-Zertifikat fuer evenacadia. Der SHA-256-Riegel dieses Manifests ist damit HEUTE die ganze Pruefung - und genau so steht es hier, statt eine Signaturpruefung zu behaupten, die es nicht gibt. Traegt das Feld einmal einen Thumbprint, prueft das Skript zusaetzlich Authenticode und verweigert bei Abweichung."
   },
-
   "stillgelegte_ziele": [
     {
       "ziel_id": "passive-probe",
@@ -35,37 +29,32 @@
       "kennung_bleibt": "Die Kennung des Ziels bleibt in identity/plugin-identities-v1.json eingefroren und gesperrt (NAK-30). Stillgelegt heisst 'nicht mehr ausgeliefert', nicht 'wieder frei'."
     }
   ],
-
   "stillgelegte_ziele_regel": "Jedes Ziel der Identitaetsdatei mit dem Feld `stillgelegt` MUSS hier genau einmal stehen und darf in `artefakte` NICHT vorkommen; jedes Ziel OHNE dieses Feld muss genau ein VST3-Artefakt haben und darf hier nicht stehen. A17 misst beide Richtungen. Ohne die zweite Haelfte koennte ein Ziel still aus der Auslieferung fallen, indem jemand nur seinen Artefakteintrag entfernt.",
-
   "artefakte": [
     {
       "art": "vst3",
       "ziel_id": "main",
       "cmake_ziel": "EqCopilot",
       "quelle": "eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3",
-      "sha256": null
+      "sha256": "4E0BED966D834BC1A8AC30DF85931DC9A439FAC78B994C3F733656D47859EE29"
     },
     {
       "art": "vst3",
       "ziel_id": "active-probe",
       "cmake_ziel": "NakamaProbeeq",
       "quelle": "eq-copilot/build/plugin/NakamaProbeeq_artefacts/Release/VST3/Nakama Probeeq.vst3",
-      "sha256": null
+      "sha256": "AD7678B7C34A64FEC39F004878B88930888A515DECFF928D60F80F5253BFE727"
     },
     {
       "art": "broker",
       "name": "eqcop-broker.exe",
       "quelle": "broker/target/release/eqcop-broker.exe",
-      "sha256": null,
+      "sha256": "53808359C59B5D093A5AE0072ECECED67D488796B23B6488DB1DA75D41A9BCF2",
       "hinweis": "Der Broker wird heute von KEINEM Bundle gestartet - eine Suche ueber plugin/src findet keinen Spawn-Pfad (Befund SONDE-007b §1). Er gehoert trotzdem in dieses Manifest: die Auslieferung ist ein Paket, und ein Broker, der erst mit SONDE-010 spawnbar wird, muss VORHER an einem verifizierten Pfad liegen. Bis dahin ist er ein Programm, das der User von Hand starten kann."
     }
   ],
-
-  "hashes_erzeugt_am": null,
-
+  "hashes_erzeugt_am": "2026-08-29T09:19:28Z",
   "hashes_null_bedeutet": "NICHT AUSLIEFERBAR. `sha256: null` heisst 'dieses Artefakt wurde nie gegen einen Bau festgeschrieben'. Install-Nakama.ps1 bricht dann ab, statt irgendetwas zu kopieren - dieselbe Regel wie im Identitaetsleser (cmake/NakamaIdentitaet.cmake): ein Vorgabewert waere eine Auslieferung, die nirgends eingefroren ist. Gefuellt wird per `py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --hashen` unmittelbar nach einem gruenen Kanon-Lauf.",
-
   "rueckweg": {
     "strategie": "vor-dem-tausch-sichern",
     "warum": "Ein Installer, der seinen Rueckweg aus einer Liste historischer Bundles zieht, kann nur die Staende zurueckgeben, die jemand vorher aufgeschrieben hat. Das Skript sichert stattdessen den tatsaechlich vorgefundenen Stand pro Transaktion unter dem geschuetzten Program-Files-Transaktionsordner. Sicherungsbytes und Erwartungshash liegen damit in derselben geschuetzten Autoritaetsgrenze; install/install-ergebnis.json bleibt reine lesbare Diagnose und kann weder Restore noch Zielpfad autorisieren. Gegenpfad-Invariante des Hauses: installieren <-> Rollback, beide Haelften im selben Aenderungssatz.",
@@ -73,16 +62,13 @@
     "ergebnisdatei": "eq-copilot/install/install-ergebnis.json",
     "transaktionsanker": "C:/Program Files/evenacadia/.nakama-installer/aktive-transaktion.json",
     "transaktionsanker_warum": "Dieser Pfad wird vom Ausfuehrer aus der fest verdrahteten Broker-Produktpolicy abgeleitet, nicht aus diesem Datenfeld. Er liegt als Geschwister des Broker-Ziels unter Program Files, erbt dessen Schreibschutz und bindet jede relative Sicherungsreferenz an den geschuetzten backups/<transaktions-id>-Unterordner. Unfertige Anker werden nie superseded; abgeschlossene Staende haben eine explizite Cleanup-Regel.",
-
     "nak_41": {
       "gefahr": "Ein FL-Projekt, das dieser Bau als NakamaState schema=2 gespeichert hat, verliert im 16.08.-Build STILL seine Messpunkt-Identitaet: jener Build kennt nur EqCopilotState schema=1, sieht einen fremden Baumtyp und ignoriert ihn - ohne Fehlermeldung.",
       "riegel": "Der Rueckweg-Lauf schlaegt den Hash der gesicherten Datei in `bekannte_staende` nach. Ist ihr `state_schema` kleiner als das des Manifest-Ziels (identity/plugin-identities-v1.json, Feld `state_schema`), verweigert er - oder verlangt -Erzwingen samt sichtbarer Warnung. Ein unbekannter Hash gilt als moeglicherweise aelter und faellt in dieselbe Verweigerung: Schweigen ist hier kein Freibrief.",
       "punkt": "NAK-41",
       "wo": "docs/offene-punkte.md"
     },
-
     "hash_art_erklaerung": "Seit dem Umzug auf den Bundle-ORDNER (S9-Nacharbeit 23.08.2026, Vertrag §2.1/§5.1) sagt jeder Eintrag, WOGEGEN sein sha256 gebildet wurde: `ordner` = Ordner-Hash v1 ueber das ganze Bundle, `datei-innen` = Hash NUR der inneren Binaerdatei Contents/x86_64-win/<bundle>. Die beiden Eintraege unten wurden gegen die Binaerdatei eingefroren, lange bevor der Ordner die Einheit war - sie bleiben damit gueltig und benennen weiter dieselben Builds. Der Rueckweg bildet von einem gesicherten vst3-Stand BEIDE Hashes und schlaegt beide nach; faellt ein Stand durch beide, gilt er als unbekannt, also als aelter.",
-
     "bekannte_staende": [
       {
         "sha256": "74D86BD5A5F92B1135EC066AD65770BE5744F04E12D7D4C9F95BE0CD6656E0F8",
@@ -100,7 +86,6 @@
       }
     ]
   },
-
   "nicht_teil_dieses_manifests": [
     "Repair ueber die Diagnose hinaus: `-Pruefen` vergleicht den installierten Stand gegen das Manifest und benennt aktuell / ABWEICHEND / nicht installiert. Ein eigener Reparaturdienst ist P9.",
     "Update-Kanal, atomarer Austausch und Signatur-Kette: Distribution, P9 (§57 ff.).",

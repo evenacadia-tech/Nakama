@@ -344,16 +344,20 @@ $kanon = @(
     # das ARTEFAKT misst - und der einzige, der ein Stringliteral faende, das
     # kein Makro ist. Er traegt seine eigene Gegenprobe: derselbe Scanner muss
     # die Werte im gebauten Bundle FINDEN, sonst ist sein Schweigen wertlos.
-    # A14 misst ein Artefakt, also traegt es seine eigene Frischewache: Lib
-    # gegen Quellen, die TU-Menge des Tlogs gegen CMake-Liste und Archiv, die
-    # gebauten Schalter gegen die Projektdatei, die Lib gegen ihre Objekte -
-    # und, seit NAK-85, die Projektdatei gegen den heutigen CMake-Stand. Ist
-    # Letzteres verletzt, meldet das Bein Exit 3 (Voraussetzung fehlt) statt
-    # gruen. Die Schalterklassen und der TU-Mengenabgleich kamen in der vierten
-    # T3-Runde zu NAK-85 dazu (29.08.2026): der Vergleich sah bis dahin nur
-    # Defines und zaehlte die Tlog-Eintraege, statt die heutige TU-Menge zu
-    # verlangen.
-    [pscustomobject]@{ Kuerzel='A14'; Name='pruefe_kern_identitaetsfrei.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Der gemeinsame Kern traegt keine Bundle-Identitaet: NakamaKern.lib enthaelt keinen eingefrorenen Identitaetswert (Namen, Viercodes, CIDs roh und COM-vertauscht) und genau seine eigenen Uebersetzungseinheiten, kein JUCE-Modulobjekt; die Gegenprobe findet dieselben Werte im gebauten EQ-Copilot-Bundle. Gemessen wird nie ein veraltetes Artefakt: das Configure ist juenger als jede CMake-Eingabe, die der Generator verbraucht hat; die Lib ist nicht aelter als ihre Quellen, nicht aelter als ihre Objekte und nicht aelter als ihr Tlog; Tlog, NAKAMA_KERN_QUELLEN und Archiv nennen dieselbe Menge Uebersetzungseinheiten (veraltete Tlog-Eintraege werden benannt, nicht gezaehlt); und jede dieser Einheiten wurde mit exakt den Defines, Includepfaden, erzwungenen Includes und dem Sprachstandard der heutigen Projektdatei uebersetzt - beide Richtungen - und traegt deren AdditionalOptions-Tokens. Weitere ClCompile-Elemente der Projektdatei (Warnstufe, Optimierung, Laufzeitbibliothek und die uebrigen) bildet dieses Bein nicht ab und behauptet ueber sie nichts.' }
+    #
+    # FRISCHE, Runde 5 (29.08.2026): A14 baut den Kern SELBST vollstaendig neu,
+    # bevor es irgendetwas misst - Objekte, Tlogs und Lib des Kernverzeichnisses
+    # werden geloescht und von MSBuild aus der heutigen Projektdatei neu
+    # erzeugt. Das kostet rund vier Sekunden und gilt auch nach -Bauen, weil das
+    # Bein sonst wieder MSBuilds Frischeentscheidung NACHBAUEN muesste; vier
+    # Runden lang hat genau dieser Nachbau jedes Mal eine weitere Eingabeklasse
+    # uebersehen. Ohne moeglichen Neubau gibt es Exit 3, nie ein gruenes Urteil.
+    # Die frueheren Frischewachen bleiben als Diagnose ("womit wurde gebaut").
+    # Dazu kamen in derselben Runde K1b (kein JucePlugin_-Token im Quelltext der
+    # tatsaechlichen Compiler-Eingaben), der Tlog-Ortsriegel (jede gelesene
+    # Datei aus einer aus dem Bau abgeleiteten Wurzel) und der JUCE-Baum-Riegel
+    # (juce-src = gepinnter Tag plus genau der eine Nakama-Patch).
+    [pscustomobject]@{ Kuerzel='A14'; Name='pruefe_kern_identitaetsfrei.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Der gemeinsame Kern traegt keine Bundle-Identitaet: NakamaKern.lib enthaelt keinen eingefrorenen Identitaetswert (Namen, Viercodes, CIDs roh und COM-vertauscht) und genau seine eigenen Uebersetzungseinheiten, kein JUCE-Modulobjekt; die Gegenprobe findet dieselben Werte im gebauten EQ-Copilot-Bundle. Gemessen wird kein vorhandenes Artefakt: das Bein loescht vor jeder Messung Objekte, Tlogs und Lib des Kernverzeichnisses und laesst NakamaKern vollstaendig neu uebersetzen und linken (dabei laeuft ueber ZERO_CHECK auch das Configure samt K2/K2b/K2c mit); ob eine fruehere Lib veraltet war, ist damit keine Frage mehr. Ist der Neubau nicht moeglich oder schlaegt er fehl, ist das Exit 3 und kein Urteil; ohne Neubau (--nur-messen) gibt es kein gruenes Frische-Urteil. Zusaetzlich gemessen: keine Datei aus plugin/**, die der Compiler tatsaechlich gelesen hat - erzwungene Includes und vorkompilierte Koepfe eingeschlossen -, traegt das Token JucePlugin_ ausserhalb von NakamaKernRiegel.h; jede vom Compiler gelesene Datei stammt aus einem erlaubten, aus dem Bau abgeleiteten Ort, wobei juce_audio_plugin_client, generierte JuceLibraryCode-Header und alles Unbekannte ROT sind; und der JUCE-Baum ist der gepinnte Tag plus genau der benannte Nakama-VST3-Patch, ohne fremde Aenderung und ohne unverfolgte Datei. Die eigenen Wachen des Beins (Configure-Stamps, vier Schalterklassen beidseitig, TU-Mengen, Linkfrische, lastbuildstate) belegen nur noch, WOMIT gebaut wurde; die AdditionalOptions-Klasse prueft dabei ausdruecklich nur Enthaltensein. Ausdruecklich nicht behauptet: der Inhalt der Toolchain- und SDK-Header ausserhalb des Repos (nur ihre Herkunft aus den abgeleiteten Wurzeln wird geprueft, kein Fingerprint), ein Compilerwechsel innerhalb derselben lastbuildstate-Kennung, und die uebrigen ClCompile-Elemente der Projektdatei (Warnstufe, Optimierung, Laufzeitbibliothek und die anderen) - sie sind durch den Neubau gegenstandslos, aber nicht einzeln nachgebildet.' }
 
     # S9/SONDE-007b: das Grundgesetz gilt fuer JEDES Bundle, das Audio traegt.
     # Zwei Beine, weil die Produktklasse ein Uebersetzungsschalter ist - ein

@@ -29,33 +29,55 @@ Mitgliedsnamen im Klartext fuehrt. Waere die Fassade kaputt, laege hier
 juce_core.obj neben NakamaState.obj - und der Kern haette zwei Wahrheiten
 ueber denselben Code.
 
-FRISCHE - die Zusage lautet "misst nie ein veraltetes Artefakt", und sie wird
-an fuenf Stellen gehalten, weil ein Artefakt auf fuenf Arten veralten kann.
-Vor allem anderen prueft `configure_frische`, ob die erzeugte Projektdatei
-ueberhaupt noch dem heutigen CMake-Stand entspricht - sonst waeren beide Seiten
-jedes folgenden Vergleichs gemeinsam veraltet (NAK-85). Abschnitt [0] haelt
-danach
+FRISCHE - seit Runde 5 (29.08.2026) wird sie nicht mehr NACHGEBAUT, sondern
+HERGESTELLT. Vier Runden lang hat dieses Bein MSBuilds Frischeentscheidung
+nachgebildet, und jede Runde fand eine weitere Eingabeklasse, die der Nachbau
+nicht sah - zuletzt ein ENTFERNTES AdditionalOptions-Token und die 448 externen
+Header, die keine lokale mtime-Wache je erreicht. Solange dieses Bein die
+Entscheidung nachbaut, ist die naechste Klasse nur noch nicht gefunden.
 
-  1. die Lib gegen die Zeitstempel ihrer Quellen,
-  2. die Uebersetzungseinheiten des Tlogs gegen NAKAMA_KERN_QUELLEN und gegen
-     die Objekte im Archiv - drei Mengen, paarweise gleich; ein veralteter
-     Tlog-Eintrag wird benannt, aber nicht mitgezaehlt,
-  3. die gebauten Schalter gegen die heutige Projektdatei, und zwar in vier
-     Klassen beidseitig (Defines, Includepfade, erzwungene Includes,
-     Sprachstandard) plus den AdditionalOptions-Tokens auf Enthaltensein -
-     welche ClCompile-Elemente NICHT abgebildet sind, steht im Kommentarkopf
-     "NAK-85 Runde 4" weiter unten,
-  4. die Lib gegen ihre eigenen Objekte und ihr Tlog (wurde nach der letzten
-     Uebersetzung ueberhaupt gelinkt?).
+Stattdessen loescht Abschnitt [0] vor jeder Messung die Objekte, die Tlogs und
+die Lib des Kernverzeichnisses und laesst MSBuild sie aus der heutigen
+Projektdatei neu erzeugen (`cmake --build <bau> --config Release --target
+NakamaKern`, dabei laeuft ueber ZERO_CHECK auch das Configure samt K2/K2b/K2c
+mit). Gemessen wird danach das Artefakt, das gerade entstanden ist - eine
+"veraltete Lib" gibt es nicht mehr zu erkennen. Ohne Neubau (`--nur-messen`)
+gibt es kein gruenes Frische-Urteil, sondern Exit 3.
 
-Punkte 2 bis 4 kamen mit der vierten T3-Runde zu NAK-85 dazu (29.08.2026).
+Die frueheren Frischewachen bleiben als DIAGNOSE erhalten und beantworten ab
+jetzt die Frage "WOMIT wurde gebaut": configure_frische, die vier
+Schalterklassen beidseitig (AdditionalOptions ausdruecklich nur auf
+Enthaltensein), tu_mengen_abgleich und linkfrische.
+
+ZWEI NEUE RIEGEL kamen in derselben Runde dazu, weil K1 nur Anfang und Ende
+einer TU sieht:
+
+  K1b - kein JucePlugin_-Token im Quelltext der TATSAECHLICHEN
+        Compiler-Eingaben unter plugin/** (aus dem frisch geschriebenen
+        CL.read.1.tlog, also inklusive /FI und vorkompilierter Koepfe) plus der
+        literalen Include-Huelle als Gegenprobe. Einzige Ausnahme:
+        NakamaKernRiegel.h, gemessen und benannt.
+  Tlog-Ortsriegel - jede vom Compiler gelesene Datei stammt aus einer
+        erlaubten, aus dem Bau ABGELEITETEN Wurzel; juce_audio_plugin_client
+        (dort liegen alle `#define JucePlugin_` der JUCE-Module), generierte
+        JuceLibraryCode-Header und alles Unbekannte sind ROT.
+  JUCE-Baum-Riegel - juce-src ist der gepinnte Tag plus genau der eine
+        Nakama-VST3-Patch; jede fremde Aenderung und jede unverfolgte Datei
+        sind ROT. Das schliesst den zuvor bewusst offen gelassenen Weg W8.
+
+AUSDRUECKLICH NICHT BEHAUPTET: der Inhalt der Toolchain- und SDK-Header
+ausserhalb des Repos (nur ihre Herkunft aus den abgeleiteten Wurzeln wird
+geprueft, kein Fingerprint), und ein Compilerwechsel innerhalb derselben
+lastbuildstate-Kennung.
 
 Aufruf:
     py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py [bauverzeichnis]
+    py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py --nur-messen
     py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py --selbsttest
 
-Exitcodes: 0 gruen · 2 rot · 3 Voraussetzung fehlt (nicht gebaut oder
-Configure veraltet - dann ist nichts gemessen und nichts behauptet).
+Exitcodes: 0 gruen · 2 rot · 3 Voraussetzung fehlt (Neubau nicht moeglich,
+Configure veraltet, oder --nur-messen - dann ist ueber die Frische nichts
+gemessen und nichts behauptet).
 """
 
 from __future__ import annotations
@@ -64,8 +86,11 @@ import json
 import os
 import pathlib
 import re
+import shutil
+import subprocess
 import sys
 import tempfile
+import time
 
 WURZEL = pathlib.Path(__file__).resolve().parents[2]
 IDENTITAET = WURZEL / "eq-copilot" / "identity" / "plugin-identities-v1.json"
@@ -788,6 +813,647 @@ def kern_quellabhaengigkeiten() -> list[pathlib.Path]:
 
     return sorted(gesehen)
 
+# ── SONDE-007a Runde 5 (sechster Pruefer zu S8, 29.08.2026) ─────────────────
+#
+# Runde 4 hat den Nachbau der MSBuild-Frischeentscheidung um vier
+# Schalterklassen erweitert. Runde 5 fand die naechste Klasse (ein ENTFERNTES
+# AdditionalOptions-Token, das im alten Tlog stehen bleibt) und die
+# uebernaechste (externe Header: 460 gelesene Dateien, 12 lokal bewacht). Das
+# ist die dritte Schicht derselben Frage - und solange dieses Bein MSBuilds
+# Entscheidung NACHBAUT, ist die naechste Eingabeklasse nur noch nicht
+# gefunden.
+#
+# 🔑 Der Weg wechselt deshalb: Frische wird nicht mehr nachgebaut, sondern
+#    HERGESTELLT. Vor jeder Messung loescht dieses Bein die Objekte, die Tlogs
+#    und die Lib des Kernverzeichnisses und laesst MSBuild sie aus der heutigen
+#    Projektdatei neu erzeugen. Danach gibt es keine "veraltete Lib" mehr, die
+#    man erkennen muesste - es gibt nur die, die gerade entstanden ist.
+#    Gegenstandslos werden damit auf einen Schlag: Defines, Includepfade, /FI,
+#    /std:, AdditionalOptions in BEIDE Richtungen, lokale und externe Header,
+#    geloeschte oder juengere .obj/.lib, jede weitere ClCompile-Eigenschaft
+#    (Optimization, RuntimeLibrary, PrecompiledHeader, ... und TU-Overrides),
+#    manipulierte oder unvollstaendige Tlogs und der Toolchainwechsel.
+#
+# ⚠️ GEMESSEN, nicht angenommen (29.08.2026): `cmake --build <bau> --config
+#    Release --target NakamaKern --clean-first` ist der FALSCHE Weg.
+#    --clean-first cleant die GANZE Solution, nicht das genannte Ziel: nach
+#    einem einzigen Lauf waren 29 Bundle-Artefakte geloescht - alle .vst3, alle
+#    Testbinaries, flatc.exe, die vier vst3_helper.exe. Ein Beweislauf haette
+#    danach an jedem anderen Bein gehangen. Deshalb loescht dieses Bein GEZIELT
+#    NakamaKern.dir/<konfig>/* und die NakamaKern.lib derselben Konfiguration
+#    und baut danach `--target NakamaKern`.
+#
+# Was von den alten Wachen bleibt, bleibt als DIAGNOSE: configure_frische, die
+# vier Schalterklassen, tu_mengen_abgleich und linkfrische beantworten ab jetzt
+# die Frage "WOMIT wurde gebaut", nicht mehr "ist es frisch". Ihre Ausgabetexte
+# sagen das; die AdditionalOptions-Klasse nennt sich ausdruecklich
+# "Enthaltensein", weil sie nur das prueft (Prueflistenregel E).
+
+JUCE_PATCH = WURZEL / "third_party" / "patches" / "juce-8.0.9-nakama-vst3-bridge.patch"
+K1B_AUSNAHME = KERNQUELLEN / "state" / "NakamaKernRiegel.h"
+_K1B_TOKEN = "JucePlugin_"
+_WINKITS_SCHLUESSEL = os.sep.join(
+    ["SOFTWARE", "Microsoft", "Windows Kits", "Installed Roots"])
+
+
+def finde_cmake() -> pathlib.Path | None:
+    """Dieselbe Suche wie tools/beweise.ps1 - PATH zuerst, dann VS 2022."""
+    aus_pfad = shutil.which("cmake")
+    if aus_pfad:
+        return pathlib.Path(aus_pfad)
+    kandidaten: list[pathlib.Path] = []
+    for stamm in (os.environ.get("ProgramFiles(x86)"), os.environ.get("ProgramFiles")):
+        if not stamm:
+            continue
+        for ausgabe in ("BuildTools", "Community", "Professional", "Enterprise"):
+            kandidaten.append(pathlib.Path(stamm) / "Microsoft Visual Studio" / "2022"
+                              / ausgabe / "Common7" / "IDE" / "CommonExtensions"
+                              / "Microsoft" / "CMake" / "CMake" / "bin" / "cmake.exe")
+        kandidaten.append(pathlib.Path(stamm) / "CMake" / "bin" / "cmake.exe")
+    for kandidat in kandidaten:
+        if kandidat.is_file():
+            return kandidat
+    return None
+
+
+# ⚠️ GEMESSEN (Probe P5-W5b, 29.08.2026): NakamaKern.dir/<konfig>/ enthaelt
+#    nicht nur AUSGABEN. CMake legt dort auch GENERIERTE EINGABEN ab - bei
+#    aktivem target_precompile_headers etwa cmake_pch.hxx, geschrieben vom
+#    Generate-Schritt, nicht vom Bau. Ein pauschales "alles loeschen" machte
+#    den Baum unbaubar (error C1083: cmake_pch.hxx not found). Geloescht wird
+#    deshalb nach Endung, und was weder als Ausgabe noch als bekannte Eingabe
+#    erkannt wird, ist eine KLAGE - nicht stillschweigend behalten.
+_NEUBAU_AUSGABEN = frozenset({
+    ".obj", ".lib", ".pdb", ".idb", ".ilk", ".pch", ".res", ".exp", ".tlog",
+    ".lastbuildstate", ".log", ".recipe", ".iobj", ".ipdb", ".metagen",
+})
+_NEUBAU_EINGABEN = frozenset({
+    ".hxx", ".hpp", ".h", ".cxx", ".cpp", ".c", ".rsp", ".txt", ".props", ".rc",
+})
+
+
+def _kernartefakte(bau: pathlib.Path, konfig: str) -> tuple[list[pathlib.Path], list[pathlib.Path]]:
+    """Die Verzeichnisse und Libs, die der Neubau vorher entfernt."""
+    kerndirs = sorted(p for p in bau.glob("**/NakamaKern.dir/" + konfig) if p.is_dir())
+    libs = sorted(p for p in bau.glob("plugin/**/NakamaKern.lib")
+                  if p.is_file() and p.parent.name.lower() == konfig.lower())
+    return kerndirs, libs
+
+
+def kern_neubau(bau: pathlib.Path, konfig: str = "Release",
+                cmake: pathlib.Path | None = None) -> dict:
+    """Loescht die Kernartefakte und laesst MSBuild sie vollstaendig neu erzeugen.
+
+    Gibt ein Protokoll zurueck. `ok` ist nur dann True, wenn wirklich gebaut
+    wurde; jeder andere Ausgang ist eine fehlende Voraussetzung (Exit 3), nie
+    ein Urteil ueber den Kern.
+
+    Die Reihenfolge ist Absicht: erst wird geprueft, ob ueberhaupt gebaut
+    werden KANN, dann erst geloescht. Ein Bein, das die Artefakte entfernt und
+    danach feststellt, dass es kein cmake gibt, haette den Baum kaputt gemacht,
+    um nichts zu messen.
+    """
+    protokoll = {"ok": False, "grund": "", "ausgabe": "", "sekunden": 0.0,
+                 "marke_ns": 0, "geloescht": 0, "befehl": "",
+                 "behalten": [], "unbekannt": []}
+
+    if cmake is None:
+        cmake = finde_cmake()
+    if cmake is None:
+        protokoll["grund"] = ("cmake nicht gefunden - weder im PATH noch unter Visual "
+                              "Studio 2022; ohne Neubau gibt es kein Frische-Urteil")
+        return protokoll
+    # Auch ein AUSDRUECKLICH uebergebener Pfad wird geprueft, nicht nur der
+    # selbst gesuchte: sonst loescht dieses Bein die Artefakte und stellt erst
+    # danach fest, dass es sie nicht wieder erzeugen kann (Selbsttest R5-3a).
+    if not cmake.is_file():
+        protokoll["grund"] = (f"cmake nicht ausfuehrbar: {cmake}; ohne Neubau gibt es "
+                              f"kein Frische-Urteil")
+        return protokoll
+    if not bau.is_dir():
+        protokoll["grund"] = f"{_kurz(bau)} ist kein Verzeichnis - nicht konfiguriert"
+        return protokoll
+
+    # Zeitanker auf DEMSELBEN Dateisystem wie die Bauartefakte. Ein
+    # time.time() waere eine Annahme ueber Uhr und Dateisystem; eine Datei ist
+    # eine Messung.
+    marke = bau / ".nakama-neubau-marke"
+    try:
+        marke.write_bytes(b"")
+        protokoll["marke_ns"] = marke.stat().st_mtime_ns
+    except OSError as exc:
+        protokoll["grund"] = f"Zeitanker im Bauverzeichnis nicht schreibbar: {exc}"
+        return protokoll
+    finally:
+        try:
+            marke.unlink()
+        except OSError:
+            pass
+
+    kerndirs, libs = _kernartefakte(bau, konfig)
+    geloescht = 0
+    behalten: list[str] = []
+    unbekannt: list[str] = []
+    try:
+        for kerndir in kerndirs:
+            for pfad in sorted(kerndir.rglob("*"), reverse=True):
+                if not pfad.is_file():
+                    continue
+                endung = pfad.suffix.lower()
+                # Alles IM .tlog-Verzeichnis ist MSBuilds eigene Buchhaltung -
+                # auch die endungslose Marke `unsuccessfulbuild`, die ein
+                # abgebrochener Bau hinterlaesst (gemessen bei P5-W5b).
+                if pfad.parent.suffix.lower() == ".tlog" or endung in _NEUBAU_AUSGABEN:
+                    pfad.unlink()
+                    geloescht += 1
+                    continue
+                behalten.append(pfad.name)
+                if endung not in _NEUBAU_EINGABEN:
+                    unbekannt.append(str(pfad.relative_to(kerndir)))
+        for lib in libs:
+            lib.unlink()
+            geloescht += 1
+    except OSError as exc:
+        protokoll["grund"] = f"Kernartefakt nicht loeschbar: {exc}"
+        return protokoll
+    protokoll["geloescht"] = geloescht
+    protokoll["behalten"] = sorted(behalten)
+    protokoll["unbekannt"] = sorted(unbekannt)
+
+    argumente = [str(cmake), "--build", str(bau), "--config", konfig,
+                 "--target", "NakamaKern"]
+    protokoll["befehl"] = " ".join(argumente)
+    beginn = time.perf_counter()
+    try:
+        lauf = subprocess.run(argumente, capture_output=True, text=True,
+                              errors="replace", check=False)
+    except OSError as exc:
+        protokoll["sekunden"] = time.perf_counter() - beginn
+        protokoll["grund"] = f"Neubau nicht startbar: {exc}"
+        return protokoll
+    protokoll["sekunden"] = time.perf_counter() - beginn
+    protokoll["ausgabe"] = (lauf.stdout + lauf.stderr).strip()
+    if lauf.returncode != 0:
+        protokoll["grund"] = f"Neubau des Kerns fehlgeschlagen (Exit {lauf.returncode})"
+        return protokoll
+    protokoll["ok"] = True
+    return protokoll
+
+
+def neubau_belegt(protokoll: dict, quellen: list[pathlib.Path],
+                  objekte: list[pathlib.Path], lib: pathlib.Path) -> list[str]:
+    """Hat der Neubau wirklich jede Kern-TU uebersetzt und neu gelinkt?
+
+    Drei Belege, alle fail-closed: die Bauausgabe nennt jede Quelle, jedes
+    erwartete Objekt und die Lib sind juenger als der Zeitanker, und die Anzahl
+    der Objekte stimmt mit der Quellmenge ueberein. Ein Bau, der nichts zu tun
+    fand, faellt hier auf - genau das darf nach dem Loeschen nicht vorkommen.
+    """
+    klagen: list[str] = []
+    marke = protokoll.get("marke_ns", 0)
+    ausgabe = protokoll.get("ausgabe", "")
+
+    unbekannt = protokoll.get("unbekannt") or []
+    if unbekannt:
+        klagen.append("Datei im Kernverzeichnis, die weder als Bauausgabe noch als "
+                      "bekannte Eingabe erkannt wird: " + ", ".join(unbekannt))
+
+    fehlend = [q.name for q in quellen if q.name not in ausgabe]
+    if fehlend:
+        klagen.append("Bauausgabe nennt diese Uebersetzungseinheiten nicht: "
+                      + ", ".join(sorted(fehlend)))
+
+    if not objekte:
+        klagen.append("nach dem Neubau liegt kein einziges Objekt im Kernverzeichnis")
+    alt = sorted(o.name for o in objekte if o.stat().st_mtime_ns < marke)
+    if alt:
+        klagen.append("Objekt aelter als der Neubau (nicht neu uebersetzt): "
+                      + ", ".join(alt))
+    if len(objekte) != len(quellen):
+        klagen.append(f"{len(objekte)} Objekte, aber {len(quellen)} Kernquellen")
+
+    if not lib.is_file():
+        klagen.append("NakamaKern.lib fehlt nach dem Neubau")
+    elif lib.stat().st_mtime_ns < marke:
+        klagen.append("NakamaKern.lib ist aelter als der Neubau - nicht neu gelinkt")
+    return klagen
+
+
+# ── Der Tlog-Ortsriegel (W6/W7) ─────────────────────────────────────────────
+#
+# Das frisch geschriebene CL.read.1.tlog ist die einzige Stelle, die sagt,
+# welche Dateien der Compiler in diesem Lauf WIRKLICH gelesen hat - inklusive
+# der Header aus /FI und aus vorkompilierten Koepfen, die in keiner literalen
+# Include-Huelle stehen. Geprueft wird eine ERLAUBNISLISTE, keine
+# Verbotsliste: "kein juce_audio_plugin_client" waere wieder der Nachbau der
+# Frage nach der naechsten unbekannten Klasse.
+#
+# Die Toolchainwurzeln werden ABGELEITET, nicht eingetragen: die MSVC-Wurzel
+# aus dem Compilerpfad DIESES Bauverzeichnisses, die SDK-Wurzel aus KitsRoot10
+# plus der TargetPlatformVersion aus NakamaKern.lastbuildstate. Laesst sich
+# eine Wurzel nicht ableiten, ist das ROT - ein hart eingetragener Pfad waere
+# an einem anderen Rechner still falsch.
+
+
+def _normpfad(pfad) -> str:
+    return os.path.normcase(os.path.normpath(str(pfad)))
+
+
+def _unter(pfad: str, wurzel: str) -> bool:
+    return pfad == wurzel or pfad.startswith(wurzel + os.sep)
+
+
+def lastbuildstate_lesen(tlogdir: pathlib.Path) -> tuple[dict, str, list[str]]:
+    """Toolset, VCToolsVersion und TargetPlatformVersion - reine Diagnose.
+
+    Sie sagt, WOMIT gebaut wurde. Ein Urteil ueber Frische leitet dieses Bein
+    daraus nicht mehr ab (das erledigt der Neubau); eine fehlende oder
+    unlesbare Datei ist trotzdem eine Klage und kein stilles Ja.
+    """
+    datei = tlogdir / "NakamaKern.lastbuildstate"
+    if not datei.is_file():
+        return {}, "", [f"{_kurz(datei)} fehlt - womit gebaut wurde ist nicht ablesbar"]
+    roh = datei.read_text(encoding="utf-8", errors="replace").strip()
+    erste = roh.splitlines()[0] if roh.splitlines() else ""
+    werte = {}
+    for stueck in erste.split(":"):
+        if "=" in stueck:
+            schluessel, _, wert = stueck.partition("=")
+            werte[schluessel.strip()] = wert.strip()
+    fehlend = [s for s in ("PlatformToolSet", "VCToolsVersion", "TargetPlatformVersion")
+               if s not in werte]
+    klagen = ([f"{_kurz(datei)} nennt {', '.join(fehlend)} nicht"] if fehlend else [])
+    return werte, roh, klagen
+
+
+def _msvc_wurzel(bau: pathlib.Path) -> tuple[pathlib.Path | None, str]:
+    """Toolsetwurzel aus dem Compilerpfad DIESES Bauverzeichnisses."""
+    treffer = sorted(bau.glob("CMakeFiles/*/CMakeCXXCompiler.cmake"))
+    if not treffer:
+        return None, ("CMakeFiles/*/CMakeCXXCompiler.cmake fehlt - der Compilerpfad "
+                      "dieses Bauverzeichnisses ist nicht ableitbar")
+    text = treffer[-1].read_text(encoding="utf-8", errors="replace")
+    passung = re.search(r'set\(CMAKE_CXX_COMPILER\s+"([^"]+)"', text)
+    if not passung:
+        return None, f"{_kurz(treffer[-1])} nennt CMAKE_CXX_COMPILER nicht"
+    cl = pathlib.Path(passung.group(1))
+    # <...>/VC/Tools/MSVC/<version>/bin/Host<arch>/<arch>/cl.exe
+    if len(cl.parents) < 4:
+        return None, f"Compilerpfad zu kurz fuer eine Toolsetwurzel: {cl}"
+    wurzel = cl.parents[3]
+    if not wurzel.is_dir():
+        return None, f"abgeleitete MSVC-Wurzel existiert nicht: {wurzel}"
+    return wurzel, ""
+
+
+def _sdk_wurzel(sdk_version: str) -> tuple[pathlib.Path | None, str]:
+    """Windows-SDK-Includewurzel aus KitsRoot10 plus TargetPlatformVersion."""
+    if not sdk_version:
+        return None, "TargetPlatformVersion unbekannt - SDK-Wurzel nicht ableitbar"
+    try:
+        import winreg
+    except ImportError:
+        return None, "winreg nicht verfuegbar - SDK-Wurzel nicht ableitbar"
+    try:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, _WINKITS_SCHLUESSEL) as schluessel:
+            stamm = pathlib.Path(winreg.QueryValueEx(schluessel, "KitsRoot10")[0])
+    except OSError as exc:
+        return None, f"KitsRoot10 nicht lesbar: {exc}"
+    wurzel = stamm / "Include" / sdk_version
+    if not wurzel.is_dir():
+        return None, f"abgeleitete SDK-Wurzel existiert nicht: {wurzel}"
+    return wurzel, ""
+
+
+def erlaubte_leseorte(bau: pathlib.Path, zustand: dict,
+                      ) -> tuple[list[tuple[str, pathlib.Path]],
+                                 list[tuple[str, pathlib.Path]], list[str]]:
+    """Die Erlaubnisliste des Ortsriegels - vollstaendig aus dem Bau abgeleitet.
+
+    Rueckgabe: (erlaubte Wurzeln, verbotene Unterwurzeln, Klagen). Laesst sich
+    eine Wurzel nicht ableiten, ist das eine Klage und kein stiller Verzicht -
+    sonst waere eine unbekannte Herkunft plotzlich "erlaubt", weil niemand
+    hinsah.
+    """
+    klagen: list[str] = []
+    erlaubt: list[tuple[str, pathlib.Path]] = [("plugin", KERNQUELLEN)]
+
+    juce_module = bau / "_deps" / "juce-src" / "modules"
+    if juce_module.is_dir():
+        erlaubt.append(("juce-src/modules", juce_module))
+    else:
+        klagen.append(f"{_kurz(juce_module)} fehlt - die JUCE-Modulwurzel ist nicht "
+                      f"ableitbar")
+    # Dort liegen (gemessen per grep ueber alle Module) ALLE `#define
+    # JucePlugin_` von JUCE: detail/juce_CheckSettingMacros.h,
+    # VST3/juce_VST3ModuleInfo.h und juce_audio_plugin_client_AAX.cpp.
+    verboten = [("juce_audio_plugin_client", juce_module / "juce_audio_plugin_client")]
+
+    msvc, klage = _msvc_wurzel(bau)
+    if msvc is None:
+        klagen.append(klage)
+    else:
+        erwartet = zustand.get("VCToolsVersion", "")
+        if erwartet and msvc.name != erwartet:
+            klagen.append(f"abgeleitete MSVC-Wurzel {msvc.name} passt nicht zur "
+                          f"VCToolsVersion {erwartet} des lastbuildstate")
+        erlaubt.append(("MSVC-Toolset", msvc))
+
+    sdk, klage = _sdk_wurzel(zustand.get("TargetPlatformVersion", ""))
+    if sdk is None:
+        klagen.append(klage)
+    else:
+        erlaubt.append(("Windows-SDK", sdk))
+    return erlaubt, verboten, klagen
+
+
+def tlog_gelesene_dateien(tlog: pathlib.Path) -> tuple[list[str], list[str]]:
+    """(Marker, gelesene Dateien) aus einem CL.read.1.tlog - beide roh."""
+    text = tlog.read_bytes().decode("utf-16-le", errors="replace").lstrip("﻿")
+    marker: list[str] = []
+    gelesen: list[str] = []
+    for zeile in text.splitlines():
+        zeile = zeile.strip()
+        if not zeile:
+            continue
+        if zeile.startswith("^"):
+            marker.extend(t for t in zeile[1:].split("|") if t.strip())
+        else:
+            gelesen.append(zeile)
+    return marker, sorted(set(gelesen))
+
+
+# ⚠️ GEMESSEN (Probe P5-W5b, 29.08.2026): cl.exe nennt im Leseprotokoll
+#    gelegentlich auch Dateien, die KEIN Uebersetzungsstoff sind -
+#    C:\Windows\System32\tzres.dll und Globalization\Sorting\sortdefault.nls
+#    tauchten auf, sobald der Compiler eine Diagnose formatierte. Eine .dll
+#    oder .nls kann keinen Praeprozessorzustand in eine TU tragen; sie am Ort
+#    zu messen faerbte den Kanon sporadisch rot, ohne etwas zu bewachen.
+#    Diese Endungen werden deshalb ortsfrei GEZAEHLT UND BENANNT, nicht
+#    uebersprungen. Alles andere - auch eine Datei OHNE Endung - gilt als
+#    moeglicher Uebersetzungsstoff und wird am Ort gemessen; .pch bleibt
+#    ausdruecklich drin, denn ein vorkompilierter Kopf traegt Makros.
+_ORTSFREI = frozenset({".dll", ".nls", ".exe", ".mui", ".dat", ".bin"})
+
+
+def tlog_ortsriegel(gelesen: list[str], marker: list[str],
+                    quellen: list[pathlib.Path],
+                    erlaubt: list[tuple[str, pathlib.Path]],
+                    verboten: list[tuple[str, pathlib.Path]],
+                    ) -> tuple[list[str], dict[str, int]]:
+    """Stammt jede gelesene Datei aus einem erlaubten Ort?
+
+    Erlaubnisliste, fail-closed: was in keine Wurzel faellt, ist ROT und wird
+    namentlich genannt. `verboten` sind Ausnahmen INNERHALB einer erlaubten
+    Wurzel (heute: juce_audio_plugin_client unter juce-src/modules) - dort
+    liegen alle `#define JucePlugin_` der JUCE-Module.
+
+    Fehlt eine heutige Kernquelle als Marker, ist auch das ROT: Schweigen
+    duerfte nie ein Ja sein.
+    """
+    klagen: list[str] = []
+    zaehlung: dict[str, int] = {name: 0 for name, _ in erlaubt}
+    zaehlung["ohne Uebersetzungsstoff"] = 0
+
+    markernamen = {pathlib.PurePath(m).name.upper() for m in marker}
+    fehlende = sorted(q.name for q in quellen if q.name.upper() not in markernamen)
+    if fehlende:
+        klagen.append("Kernquelle fehlt als Marker im Leseprotokoll: "
+                      + ", ".join(fehlende))
+
+    verboten_norm = [(name, _normpfad(pfad)) for name, pfad in verboten]
+    erlaubt_norm = [(name, _normpfad(pfad)) for name, pfad in erlaubt]
+
+    for roh in gelesen:
+        if pathlib.PurePath(roh).suffix.lower() in _ORTSFREI:
+            zaehlung["ohne Uebersetzungsstoff"] += 1
+            continue
+        pfad = _normpfad(roh)
+        treffer = None
+        for name, wurzel in verboten_norm:
+            if _unter(pfad, wurzel):
+                klagen.append(f"gelesen aus verbotenem Ort ({name}): {roh}")
+                treffer = name
+                break
+        if treffer is not None:
+            continue
+        for name, wurzel in erlaubt_norm:
+            if _unter(pfad, wurzel):
+                zaehlung[name] += 1
+                treffer = name
+                break
+        if treffer is None:
+            klagen.append(f"gelesen aus unbekanntem Ort: {roh}")
+    return klagen, zaehlung
+
+
+# ── K1b: Quelltext-Token ueber die tatsaechlichen Compiler-Eingaben ─────────
+#
+# K1 sieht nur, was am ANFANG und am ENDE einer TU definiert ist. Ein Header,
+# der JucePlugin_IsSynth definiert, in #if benutzt und vor dem TU-Ende wieder
+# entfernt, entgeht ihm - und K3 findet nichts, weil ein #if keine
+# Identitaetsbytes hinterlaesst. K1b schliesst genau diese Luecke im Quelltext.
+#
+# Gescannt wird die VEREINIGUNG aus zwei Mengen, beide werden benannt:
+#   1. die Dateien unter plugin/**, die im frisch geschriebenen CL.read.1.tlog
+#      stehen - das sind die tatsaechlichen Compiler-Eingaben, also auch /FI
+#      und vorkompilierte Koepfe, die in keiner literalen Huelle auftauchen;
+#   2. die literale Include-Huelle aus kern_quellabhaengigkeiten() als
+#      Gegenprobe (sie faellt fail-closed auf nicht literal aufloesbare oder
+#      mehrdeutige Includes).
+#
+# Kommentare werden vor dem Scan entfernt, sonst fiele der Riegel an den
+# Hinweiszeilen der Kernquellen selbst ("// K1 - keine JucePlugin_*-Konstante
+# im Kern"). Stringliterale bleiben im Scan - ein Token darin kostet nichts und
+# ein Ueberspringen waere eine Luecke.
+
+
+def ohne_kommentare(text: str, wo: str) -> str:
+    """Entfernt // und /* */ und laesst Stringliterale stehen.
+
+    Fail-closed: ein nicht abgeschlossener Blockkommentar ist ROT, nicht
+    "Rest ignorieren". Zeilenumbrueche bleiben erhalten, damit die gemeldeten
+    Zeilennummern die des Originals sind.
+    """
+    aus: list[str] = []
+    i = 0
+    laenge = len(text)
+    while i < laenge:
+        zeichen = text[i]
+        if zeichen in ('"', "'"):
+            grenze = zeichen
+            aus.append(zeichen)
+            i += 1
+            geschlossen = False
+            while i < laenge:
+                if text[i] == "\\" and i + 1 < laenge:
+                    aus.append(text[i:i + 2])
+                    i += 2
+                    continue
+                aus.append(text[i])
+                if text[i] == grenze:
+                    i += 1
+                    geschlossen = True
+                    break
+                i += 1
+            if not geschlossen:
+                raise RuntimeError(f"nicht abgeschlossenes Literal in {wo}")
+            continue
+        if text.startswith("//", i):
+            while i < laenge and text[i] != "\n":
+                i += 1
+            continue
+        if text.startswith("/*", i):
+            ende = text.find("*/", i + 2)
+            if ende < 0:
+                raise RuntimeError(f"nicht abgeschlossener Blockkommentar in {wo}")
+            aus.append("\n" * text.count("\n", i, ende + 2))
+            i = ende + 2
+            continue
+        aus.append(zeichen)
+        i += 1
+    return "".join(aus)
+
+
+def k1b_riegel(dateien: list[pathlib.Path],
+               ausnahme: pathlib.Path) -> tuple[list[str], int, int]:
+    """Kein JucePlugin_-Token im Quelltext der Compiler-Eingaben.
+
+    Rueckgabe: (Klagen, geprueft, Treffer in der benannten Ausnahme).
+    """
+    klagen: list[str] = []
+    ausnahme_norm = _normpfad(ausnahme)
+    geprueft = 0
+    in_ausnahme = 0
+    for datei in sorted(set(dateien)):
+        try:
+            roh = datei.read_text(encoding="utf-8", errors="replace")
+        except OSError as exc:
+            klagen.append(f"{_kurz(datei)}: nicht lesbar ({exc})")
+            continue
+        if _normpfad(datei) == ausnahme_norm:
+            in_ausnahme = roh.count(_K1B_TOKEN)
+            continue
+        geprueft += 1
+        try:
+            text = ohne_kommentare(roh, _kurz(datei))
+        except RuntimeError as exc:
+            klagen.append(str(exc))
+            continue
+        zeilen = [str(nr) for nr, zeile in enumerate(text.splitlines(), 1)
+                  if _K1B_TOKEN in zeile]
+        if zeilen:
+            klagen.append(f"{_kurz(datei)}: {_K1B_TOKEN}-Token im Quelltext, "
+                          f"Zeile(n) {', '.join(zeilen[:8])}")
+    return klagen, geprueft, in_ausnahme
+
+
+# ── JUCE-Baum-Riegel (W8) ───────────────────────────────────────────────────
+#
+# Der einzige Weg, der nach K1b und dem Ortsriegel offen blieb: eine
+# MANIPULIERTE Kopie eines JUCE-Modulheaders an einem erlaubten Ort, die eine
+# Konstante definiert, benutzt und wieder entfernt. Dagegen half der frueher
+# angefuehrte Wrapper-Riegel nicht - der hasht eine einzelne VST3-Datei
+# (cmake/NakamaBruecke.cmake), nicht juce_core.
+#
+# Der Riegel ist deshalb ein Herkunftsnachweis ueber den ganzen Baum: juce-src
+# ist der gepinnte Tag plus genau der eine benannte Nakama-Patch. Inhalt und
+# Abwesenheit werden unterschieden - eine geloeschte Datei kann keine
+# Compiler-Eingabe werden, eine geaenderte oder eine unverfolgte sehr wohl.
+
+
+def juce_baum_status_pruefen(kennungen: list[tuple[str, str]],
+                             patchdateien: set[str]) -> tuple[list[str], list[str]]:
+    """Klassifiziert `git status --porcelain`-Zeilen. (Klagen, geduldete Loeschungen)
+
+    ROT ist alles, was Inhalt in den Baum bringen kann: unverfolgte Dateien und
+    jede Aenderung ausserhalb der Patchdateien. Reine Loeschungen koennen keine
+    Compiler-Eingabe werden; unter modules/** sind sie trotzdem ROT (dort
+    stuende sonst ein anderer Header zur Aufloesung bereit), ausserhalb werden
+    sie gezaehlt und benannt - nie verschwiegen.
+    """
+    klagen: list[str] = []
+    loeschungen: list[str] = []
+    for kennung, pfad in kennungen:
+        buchstaben = set(kennung.replace(" ", ""))
+        if kennung == "??":
+            klagen.append(f"unverfolgte Datei im JUCE-Baum: {pfad}")
+        elif buchstaben & set("MARCTU"):
+            if pfad not in patchdateien:
+                klagen.append(f"geaendert, steht aber nicht im Nakama-Patch: {pfad}")
+        elif "D" in buchstaben:
+            if pfad.startswith("modules/"):
+                klagen.append(f"geloeschte Moduldatei im JUCE-Baum: {pfad}")
+            else:
+                loeschungen.append(pfad)
+        else:
+            klagen.append(f"unbekannter git-Status {kennung!r} fuer {pfad}")
+    return klagen, sorted(loeschungen)
+
+
+def _patchdateien(patch: pathlib.Path) -> set[str]:
+    namen: set[str] = set()
+    for zeile in patch.read_text(encoding="utf-8", errors="replace").splitlines():
+        passung = re.match(r"^diff --git a/(\S+) b/(\S+)\s*$", zeile)
+        if passung:
+            namen.add(passung.group(2))
+    return namen
+
+
+def _git(*argumente: str) -> tuple[int, str]:
+    try:
+        lauf = subprocess.run(["git", "--no-optional-locks", *argumente],
+                              capture_output=True, text=True, errors="replace",
+                              check=False)
+    except OSError as exc:
+        return 127, str(exc)
+    return lauf.returncode, (lauf.stdout + lauf.stderr)
+
+
+def juce_baum_riegel(bau: pathlib.Path) -> tuple[list[str], list[str], dict]:
+    """Ist juce-src der gepinnte Tag plus genau der eine Nakama-Patch?"""
+    info: dict = {"beschreibung": "", "patchdateien": 0, "loeschungen": []}
+    juce = bau / "_deps" / "juce-src"
+    if not juce.is_dir():
+        return ([f"{_kurz(juce)} fehlt - der JUCE-Baum ist nicht pruefbar"], [], info)
+    if not JUCE_PATCH.is_file():
+        return ([f"{_kurz(JUCE_PATCH)} fehlt - ohne den Patch ist der erlaubte "
+                 f"Baumzustand nicht definiert"], [], info)
+
+    patchdateien = _patchdateien(JUCE_PATCH)
+    info["patchdateien"] = len(patchdateien)
+    if not patchdateien:
+        return ([f"{_kurz(JUCE_PATCH)} nennt keine Datei - kein pruefbarer Patch"],
+                [], info)
+
+    code, beschreibung = _git("-C", str(juce), "describe", "--tags", "--always", "--dirty")
+    info["beschreibung"] = beschreibung.strip() if code == 0 else "nicht ermittelbar"
+
+    code, ausgabe = _git("-c", "core.quotepath=false", "-C", str(juce),
+                         "status", "--porcelain", "-uall")
+    if code != 0:
+        return ([f"git status im JUCE-Baum fehlgeschlagen: {ausgabe.strip()[:200]}"],
+                [], info)
+
+    kennungen: list[tuple[str, str]] = []
+    for zeile in ausgabe.splitlines():
+        if len(zeile) < 4:
+            continue
+        pfad = zeile[3:].strip().strip('"')
+        if " -> " in pfad:
+            pfad = pfad.split(" -> ")[-1]
+        kennungen.append((zeile[:2], pfad.replace(os.sep, "/")))
+
+    klagen, loeschungen = juce_baum_status_pruefen(kennungen, patchdateien)
+    info["loeschungen"] = loeschungen
+
+    code, ausgabe = _git("-C", str(juce), "apply", "--check", "--reverse", str(JUCE_PATCH))
+    if code != 0:
+        klagen.append("der Nakama-Patch ist nicht sauber angewandt "
+                      f"(apply --check --reverse Exit {code}): {ausgabe.strip()[:200]}")
+    return klagen, loeschungen, info
+
+
 fehler: list[str] = []
 ok = 0
 
@@ -911,9 +1577,217 @@ def selbsttest() -> int:
 
     _selbsttest_configure_frische()
     _selbsttest_schalter_und_tu()
+    _selbsttest_runde5()
 
     print(f"\n{ok} ok, {len(fehler)} Fehler")
     return 2 if fehler else 0
+
+
+def _selbsttest_runde5() -> None:
+    """Runde 5 baulos: Neubau-Beleg, Ortsriegel, K1b und JUCE-Baum-Riegel.
+
+    Jede neue Pruefung wird hier einmal absichtlich gebrochen - eine Wache, die
+    niemand hat fallen sehen, ist keine. Kuenstliche Eingaben genuegen, weil
+    alle vier reine Funktionen ueber Text, Pfadlisten und Statuszeilen sind;
+    der echte git-Aufruf und der echte Bau werden am echten Baum vorgefuehrt
+    (Proben P5-* im Manifest).
+    """
+    print("\nRunde-5-Selbsttest: Neubau, Leseorte, K1b, JUCE-Baum")
+
+    # ── R5-2: lastbuildstate ist Diagnose, aber keine stille ────────────────
+    with tempfile.TemporaryDirectory() as roh:
+        tlogdir = pathlib.Path(roh)
+        werte, _, klagen = lastbuildstate_lesen(tlogdir)
+        pruefe(werte == {} and any("fehlt" in k for k in klagen),
+               "R5-2a: fehlender lastbuildstate ist eine Klage, kein stilles Ja",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        (tlogdir / "NakamaKern.lastbuildstate").write_text(
+            "PlatformToolSet=v143:VCToolArchitecture=Native64Bit:"
+            "VCToolsVersion=14.44.35207:TargetPlatformVersion=10.0.26100.0:\n"
+            "Release|x64|C:|\n", encoding="utf-8")
+        werte, rohtext, klagen = lastbuildstate_lesen(tlogdir)
+        pruefe(not klagen and werte.get("VCToolsVersion") == "14.44.35207"
+               and werte.get("TargetPlatformVersion") == "10.0.26100.0",
+               "R5-2b: Toolset, VCToolsVersion und SDK-Version werden gelesen",
+               rohtext.splitlines()[0] if rohtext else "leer")
+
+        (tlogdir / "NakamaKern.lastbuildstate").write_text(
+            "PlatformToolSet=v143:\n", encoding="utf-8")
+        _, _, klagen = lastbuildstate_lesen(tlogdir)
+        pruefe(any("VCToolsVersion" in k for k in klagen),
+               "R5-2c: eine unvollstaendige State-Zeile wird benannt",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+    # ── R5-3: ohne moeglichen Bau wird NICHTS geloescht und nichts gemessen ─
+    with tempfile.TemporaryDirectory() as roh:
+        leer = pathlib.Path(roh)
+        opfer = leer / "plugin" / "Release"
+        opfer.mkdir(parents=True)
+        (opfer / "NakamaKern.lib").write_bytes(b"nicht anfassen")
+
+        protokoll = kern_neubau(leer, cmake=leer / "gibtesnicht.exe")
+        pruefe(not protokoll["ok"] and protokoll["geloescht"] == 0
+               and (opfer / "NakamaKern.lib").is_file(),
+               "R5-3a: unauffindbares cmake bricht ab, BEVOR etwas geloescht wird",
+               protokoll["grund"] or "kein Grund genannt")
+
+        protokoll = kern_neubau(leer)
+        pruefe(not protokoll["ok"] and "fehlgeschlagen" in protokoll["grund"],
+               "R5-3b: ein fehlschlagender Bau ist eine fehlende Voraussetzung",
+               protokoll["grund"] or "kein Grund genannt")
+
+    # ── R5-5: der Neubau-Beleg selbst ───────────────────────────────────────
+    with tempfile.TemporaryDirectory() as roh:
+        basis = pathlib.Path(roh)
+        quelle = basis / "Eins.cpp"
+        quelle.write_text("// leer\n", encoding="utf-8")
+        objekt = basis / "Eins.obj"
+        lib = basis / "NakamaKern.lib"
+        objekt.write_bytes(b"o")
+        lib.write_bytes(b"l")
+        marke = min(objekt.stat().st_mtime_ns, lib.stat().st_mtime_ns) - 1
+
+        gut = {"marke_ns": marke, "ausgabe": "  Eins.cpp\n  NakamaKern.vcxproj -> ...lib"}
+        pruefe(neubau_belegt(gut, [quelle], [objekt], lib) == [],
+               "R5-5a: vollstaendiger Neubau bleibt klaglos")
+
+        ohne_zeile = {"marke_ns": marke, "ausgabe": "  nichts zu tun"}
+        klagen = neubau_belegt(ohne_zeile, [quelle], [objekt], lib)
+        pruefe(any("nennt diese Uebersetzungseinheiten nicht" in k for k in klagen),
+               "R5-5b: eine nicht uebersetzte TU faellt auf",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        os.utime(objekt, ns=(marke - 10_000_000_000, marke - 10_000_000_000))
+        klagen = neubau_belegt(gut, [quelle], [objekt], lib)
+        pruefe(any("aelter als der Neubau" in k for k in klagen),
+               "R5-5c: ein Objekt aus einem frueheren Lauf faellt auf",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        objekt.unlink()
+        lib.unlink()
+        klagen = neubau_belegt(gut, [quelle], [], lib)
+        pruefe(any("kein einziges Objekt" in k for k in klagen)
+               and any("fehlt nach dem Neubau" in k for k in klagen),
+               "R5-5d: fehlende Objekte und fehlende Lib sind ROT",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+    # ── R5-6/R5-7: K1b ueber Quelltext ──────────────────────────────────────
+    with tempfile.TemporaryDirectory() as roh:
+        basis = pathlib.Path(roh)
+        ausnahme = basis / "NakamaKernRiegel.h"
+        ausnahme.write_text("#if defined (JucePlugin_Name)\n#error nein\n#endif\n",
+                            encoding="utf-8")
+
+        sauber = basis / "Sauber.h"
+        sauber.write_text(
+            "// S8: dieser Kern sieht keine JucePlugin_*-Konstante\n"
+            "/* auch im Blockkommentar steht JucePlugin_IsSynth nur als Wort */\n"
+            "inline int wert() { return 1; }\n", encoding="utf-8")
+        klagen, geprueft, treffer = k1b_riegel([sauber, ausnahme], ausnahme)
+        pruefe(klagen == [] and geprueft == 1 and treffer > 0,
+               "R5-6a: Kommentare mit JucePlugin_ bleiben gruen, die Ausnahme wird gezaehlt",
+               f"Treffer in der Ausnahme: {treffer}" + (" | " + " | ".join(klagen) if klagen else ""))
+
+        offen = basis / "Offen.h"
+        offen.write_text("#define JucePlugin_Name \"X\"\n", encoding="utf-8")
+        klagen, _, _ = k1b_riegel([offen, ausnahme], ausnahme)
+        pruefe(any("Offen.h" in k and "JucePlugin_" in k for k in klagen),
+               "R5-6b: ein Header, der JucePlugin_Name definiert, ist ROT",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        verdeckt = basis / "Verdeckt.h"
+        verdeckt.write_text(
+            "#define JucePlugin_IsSynth 0\n"
+            "#if JucePlugin_IsSynth\n#endif\n"
+            "#undef JucePlugin_IsSynth\n", encoding="utf-8")
+        klagen, _, _ = k1b_riegel([verdeckt, ausnahme], ausnahme)
+        pruefe(any("Verdeckt.h" in k for k in klagen),
+               "R5-7: definiert-genutzt-entfernt (die Luecke aus Befund 3) ist ROT",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        kaputt = basis / "Kaputt.h"
+        kaputt.write_text("/* nie geschlossen\nint x;\n", encoding="utf-8")
+        klagen, _, _ = k1b_riegel([kaputt, ausnahme], ausnahme)
+        pruefe(any("nicht abgeschlossener Blockkommentar" in k for k in klagen),
+               "R5-7b: unlesbarer Quelltext ist ROT, nicht uebersprungen",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+    # ── R5-8/R5-9/R5-13: der Tlog-Ortsriegel ────────────────────────────────
+    with tempfile.TemporaryDirectory() as roh:
+        basis = pathlib.Path(roh)
+        plugin = basis / "plugin"
+        module = basis / "juce-src" / "modules"
+        apc = module / "juce_audio_plugin_client"
+        for pfad in (plugin, apc, module / "juce_core"):
+            pfad.mkdir(parents=True, exist_ok=True)
+        erlaubt = [("plugin", plugin), ("juce-src/modules", module)]
+        verboten = [("juce_audio_plugin_client", apc)]
+        quelle = plugin / "Eins.cpp"
+        quelle.write_text("", encoding="utf-8")
+        marker = [str(quelle).upper()]
+
+        klagen, zaehlung = tlog_ortsriegel(
+            [str(module / "juce_core" / "juce_core.h").upper()],
+            marker, [quelle], erlaubt, verboten)
+        pruefe(klagen == [] and zaehlung["juce-src/modules"] == 1,
+               "R5-8a: ein juce_core-Header ist erlaubt und wird gezaehlt",
+               " | ".join(klagen))
+
+        klagen, _ = tlog_ortsriegel(
+            [str(apc / "detail" / "juce_CheckSettingMacros.h").upper()],
+            marker, [quelle], erlaubt, verboten)
+        pruefe(any("verbotenem Ort" in k for k in klagen),
+               "R5-8b: ein juce_audio_plugin_client-Header ist ROT",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        klagen, _ = tlog_ortsriegel(
+            [str(basis / "EqCopilot_artefacts" / "JuceLibraryCode" / "JuceHeader.h").upper()],
+            marker, [quelle], erlaubt, verboten)
+        pruefe(any("unbekanntem Ort" in k for k in klagen),
+               "R5-9: ein generierter JuceLibraryCode-Header ist ROT",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+        klagen, _ = tlog_ortsriegel([], [], [quelle], erlaubt, verboten)
+        pruefe(any("fehlt als Marker" in k for k in klagen),
+               "R5-13: eine Kernquelle ohne Marker im Leseprotokoll ist ROT",
+               " | ".join(klagen) if klagen else "keine Klage")
+
+    # ── R5-11: die Klassifizierung des JUCE-Baum-Riegels ────────────────────
+    patch = {"modules/juce_audio_plugin_client/juce_audio_plugin_client_VST3.cpp"}
+    klagen, loeschungen = juce_baum_status_pruefen(
+        [(" M", "modules/juce_audio_plugin_client/juce_audio_plugin_client_VST3.cpp")],
+        patch)
+    pruefe(klagen == [] and loeschungen == [],
+           "R5-11a: die Patchdatei selbst darf geaendert sein")
+
+    klagen, _ = juce_baum_status_pruefen(
+        [(" M", "modules/juce_core/juce_core.h")], patch)
+    pruefe(any("nicht im Nakama-Patch" in k for k in klagen),
+           "R5-11b: eine geaenderte juce_core-Datei ist ROT (Weg W8)",
+           " | ".join(klagen) if klagen else "keine Klage")
+
+    klagen, _ = juce_baum_status_pruefen([("??", "modules/juce_core/Fremd.h")], patch)
+    pruefe(any("unverfolgte Datei" in k for k in klagen),
+           "R5-11c: eine unverfolgte Datei im JUCE-Baum ist ROT",
+           " | ".join(klagen) if klagen else "keine Klage")
+
+    klagen, _ = juce_baum_status_pruefen([(" D", "modules/juce_core/juce_core.h")], patch)
+    pruefe(any("geloeschte Moduldatei" in k for k in klagen),
+           "R5-11d: eine geloeschte Moduldatei ist ROT",
+           " | ".join(klagen) if klagen else "keine Klage")
+
+    klagen, loeschungen = juce_baum_status_pruefen(
+        [(" D", "examples/DemoRunner/Builds/Android/app/src/debug/res/values/string.xml")],
+        patch)
+    pruefe(klagen == [] and loeschungen and "string.xml" in loeschungen[0],
+           "R5-11e: eine Loeschung ausserhalb modules/** wird benannt, nicht verschwiegen",
+           ", ".join(loeschungen))
+
+    klagen, _ = juce_baum_status_pruefen([("XY", "irgendwas")], patch)
+    pruefe(any("unbekannter git-Status" in k for k in klagen),
+           "R5-11f: ein unbekannter Statuscode ist ROT, kein stilles Ja",
+           " | ".join(klagen) if klagen else "keine Klage")
 
 
 def _selbsttest_schalter_und_tu() -> None:
@@ -1269,34 +2143,60 @@ def finde_bundle_binary(bau: pathlib.Path) -> pathlib.Path | None:
 
 
 def main() -> int:
-    if len(sys.argv) == 2 and sys.argv[1] == "--selbsttest":
+    argumente = sys.argv[1:]
+    if argumente and argumente[0] == "--selbsttest":
         return selbsttest()
-    if len(sys.argv) > 1 and sys.argv[1].startswith("-"):
-        print(f"Unbekannte Option: {sys.argv[1]}", file=sys.stderr)
-        return 3
 
-    bau = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else WURZEL / "eq-copilot" / "build"
+    nur_messen = False
+    rest: list[str] = []
+    for argument in argumente:
+        if argument == "--nur-messen":
+            nur_messen = True
+        elif argument.startswith("-"):
+            print(f"Unbekannte Option: {argument}", file=sys.stderr)
+            return 3
+        else:
+            rest.append(argument)
+
+    bau = pathlib.Path(rest[0]) if rest else WURZEL / "eq-copilot" / "build"
     if not bau.is_absolute():
         bau = (WURZEL / bau).resolve()
 
-    # NAK-85: bevor irgendetwas gemessen wird - beschreibt das Bauverzeichnis
-    # ueberhaupt noch den heutigen CMake-Stand? Ist es das nicht, sind .vcxproj
-    # UND Tlog gemeinsam veraltet und ihre Uebereinstimmung sagt nichts. Kein
-    # Urteil ueber den Kern, sondern eine fehlende Voraussetzung: Exit 3.
+    # ── Runde 5: Frische wird HERGESTELLT, nicht nachgebaut ─────────────────
+    # Erst bauen, dann messen. Ein fehlgeschlagener oder unmoeglicher Bau ist
+    # eine fehlende Voraussetzung (Exit 3), nie ein Urteil ueber den Kern.
+    neubau: dict = {}
+    if nur_messen:
+        print("HINWEIS: --nur-messen - es wird NICHT gebaut.")
+        print("         Ohne Neubau kein Frische-Urteil; dieser Lauf endet in jedem")
+        print("         Fall mit Exit 3. Die Identitaetspruefung laeuft trotzdem.")
+    else:
+        neubau = kern_neubau(bau)
+        if not neubau["ok"]:
+            print("VORAUSSETZUNG: " + neubau["grund"], file=sys.stderr)
+            if neubau.get("ausgabe"):
+                for zeile in neubau["ausgabe"].splitlines()[-15:]:
+                    print("  | " + zeile, file=sys.stderr)
+            print("  Ohne Neubau des Kerns wird nichts gemessen und nichts behauptet.",
+                  file=sys.stderr)
+            return 3
+
+    # NAK-85: der Bau loest ueber ZERO_CHECK das Configure selbst aus. Diese
+    # Wache prueft danach nur noch nach, dass das auch geschehen ist - sie ist
+    # Diagnose, keine eigene Frischequelle mehr.
     klagen = configure_frische(bau)
-    if klagen:
-        print(f"VORAUSSETZUNG: Configure veraltet - {klagen[0]}; "
-              f"neu konfigurieren/bauen", file=sys.stderr)
+    if klagen and not nur_messen:
+        print(f"VORAUSSETZUNG: Configure veraltet trotz Neubau - {klagen[0]}",
+              file=sys.stderr)
         for weitere in klagen[1:]:
             print(f"  auch: {weitere}", file=sys.stderr)
-        print("  Erst konfigurieren und bauen: "
-              "pwsh -File tools/beweise.ps1 -Bauen -Ziel <manifest>", file=sys.stderr)
         return 3
 
     kern_kandidaten = sorted(bau.glob("plugin/**/NakamaKern.lib"))
     if not kern_kandidaten:
-        print(f"VORAUSSETZUNG: NakamaKern.lib nicht gefunden unter {bau}\\plugin.", file=sys.stderr)
-        print("  Erst bauen: cmake --build <bau> --config Release --target NakamaKern", file=sys.stderr)
+        print(f"VORAUSSETZUNG: NakamaKern.lib nicht gefunden unter {bau}.", file=sys.stderr)
+        print("  Erst bauen: cmake --build <bau> --config Release --target NakamaKern",
+              file=sys.stderr)
         return 3
     kern = waehle_release(kern_kandidaten, "NakamaKern.lib")
     if kern is None:
@@ -1316,33 +2216,115 @@ def main() -> int:
     print(f"Gegenprobe: {kontrolle.relative_to(WURZEL)}  ({len(kontroll_bytes)} Byte)")
     print(f"Nadeln    : {len(nadeln)} aus {IDENTITAET.relative_to(WURZEL)}")
 
-    # ── 0. Misst dieses Bein ueberhaupt den aktuellen Stand? ────────────────
-    # Der Baustand-Riegel des Runners (tools/beweise.ps1) laeuft nur ueber die
-    # .exe-Beine ('Art -eq plugin'). NakamaKern.lib ist eine neue ART von
-    # gemessenem Artefakt und faellt durch dieses Raster: ohne -Bauen koennte
-    # dieses Bein eine veraltete Lib messen und gruen melden, waehrend die
-    # Quelle laengst etwas anderes sagt. Also bewacht das Bein seine eigene
-    # Frische. Die Huelle wird aus NAKAMA_KERN_QUELLEN und allen rekursiven,
-    # lokalen Includes unter plugin/** berechnet; eine handgepflegte
-    # Headerliste waere selbst wieder eine stille Luecke.
     # Die Archivmitglieder werden schon hier gelesen: die TU-Mengenpruefung in
-    # [0] gleicht gegen sie ab, [3] nutzt dieselbe Liste weiter unten.
+    # [0c] gleicht gegen sie ab, [3] nutzt dieselbe Liste weiter unten.
     mitglieder = archivmitglieder(kern_bytes)
 
-    print("\n[0] Frische - misst dieses Bein den aktuellen Quellstand?")
-    lib_zeit = kern.stat().st_mtime
     try:
-        bewacht = kern_quellabhaengigkeiten()
+        quellen = _kernquellen_aus_cmake()
     except RuntimeError as exc:
-        bewacht = []
-        pruefe(False, "lokale Include-Huelle der Kernquellen ist eindeutig ableitbar", str(exc))
-    juenger = [q for q in bewacht if q.is_file() and q.stat().st_mtime > lib_zeit]
-    pruefe(not juenger,
-           "NakamaKern.lib ist nicht aelter als die Kernquellen",
-           ", ".join(q.relative_to(KERNQUELLEN).as_posix() for q in juenger) if juenger else "")
+        quellen = []
+        pruefe(False, "NAKAMA_KERN_QUELLEN ist lesbar", str(exc))
 
-    # Zweite Haelfte: WELCHE Einheiten, mit WELCHEN Schaltern - und ist die Lib
-    # danach ueberhaupt neu gelinkt worden? Siehe Kopf (NAK-85 Runde 4).
+    tlogdir_kandidaten = sorted(p for p in bau.glob("**/NakamaKern.tlog") if p.is_dir())
+    tlogdir = (tlogdir_kandidaten[0] if len(tlogdir_kandidaten) == 1
+               else waehle_release(tlogdir_kandidaten, "NakamaKern.tlog"))
+    kerndir = tlogdir.parent if tlogdir is not None else None
+    objekte = (sorted(p for p in kerndir.rglob("*.obj") if p.is_file())
+               if kerndir is not None else [])
+
+    # ── 0. Der Neubau selbst ────────────────────────────────────────────────
+    print("\n[0] Frische - der Kern wurde fuer diese Messung neu gebaut")
+    if nur_messen:
+        # KEIN pruefe(): ein Fehlschlag hier waere Exit 2 und damit ein Urteil
+        # ueber den Kern. Gemessen wurde aber gar nichts - das ist eine
+        # fehlende Voraussetzung, und die endet unten als Exit 3.
+        print("  --      nicht gebaut (--nur-messen); ueber die Frische des gemessenen")
+        print("          Artefakts behauptet dieser Lauf nichts")
+    else:
+        neubauklagen = neubau_belegt(neubau, quellen, objekte, kern)
+        pruefe(not neubauklagen,
+               f"Kernartefakte geloescht und in {neubau['sekunden']:.1f}s neu erzeugt "
+               f"({neubau['geloescht']} Dateien entfernt, {len(quellen)} "
+               f"Uebersetzungseinheiten uebersetzt, {len(objekte)} Objekte, Lib neu gelinkt)",
+               " | ".join(neubauklagen))
+
+    # ── 0b. Die Riegel ueber die tatsaechlichen Compiler-Eingaben ───────────
+    print("\n[0b] Riegel - Quelltext, Leseorte, JUCE-Baum")
+    zustand, roh_lbs, lbs_klagen = ({}, "", ["NakamaKern.tlog nicht gefunden"])
+    if tlogdir is not None:
+        zustand, roh_lbs, lbs_klagen = lastbuildstate_lesen(tlogdir)
+
+    tlog_read = tlogdir / "CL.read.1.tlog" if tlogdir is not None else None
+    gelesen: list[str] = []
+    marker: list[str] = []
+    if tlog_read is None or not tlog_read.is_file():
+        pruefe(False, "das Leseprotokoll des Compilers (CL.read.1.tlog) liegt vor",
+               "ohne es ist nicht feststellbar, was der Compiler wirklich gelesen hat")
+    else:
+        if nur_messen:
+            # Ohne Neubau ist das Leseprotokoll irgendein aelteres - der
+            # Ortsriegel darunter bleibt aussagekraeftig, die HERKUNFT des
+            # Protokolls aber nicht. Das wird gesagt, nicht behauptet.
+            print("  --      CL.read.1.tlog stammt NICHT aus diesem Lauf "
+                  "(--nur-messen); die Orte darunter sind Diagnose")
+        else:
+            frisch = tlog_read.stat().st_mtime_ns >= neubau.get("marke_ns", 0)
+            pruefe(frisch,
+                   "CL.read.1.tlog stammt aus diesem Neubau",
+                   "" if frisch else
+                   "das Leseprotokoll ist aelter als der Bau dieses Laufs")
+        marker, gelesen = tlog_gelesene_dateien(tlog_read)
+
+        erlaubt, verboten, wurzelklagen = erlaubte_leseorte(bau, zustand)
+        if wurzelklagen:
+            pruefe(False, "die erlaubten Leseorte sind aus dem Bau ableitbar",
+                   " | ".join(wurzelklagen))
+        else:
+            ortsklagen, zaehlung = tlog_ortsriegel(gelesen, marker, quellen,
+                                                   erlaubt, verboten)
+            umfang = ", ".join(f"{name} {anzahl}" for name, anzahl in zaehlung.items())
+            pruefe(not ortsklagen,
+                   f"alle {len(gelesen)} vom Compiler gelesenen Dateien stammen aus "
+                   f"erlaubten Orten ({umfang})",
+                   " | ".join(ortsklagen[:6]))
+
+    # K1b: die tatsaechlichen Compiler-Eingaben unter plugin/** plus die
+    # literale Huelle als Gegenprobe. Beide Mengen werden benannt.
+    kernwurzel = _normpfad(KERNQUELLEN)
+    aus_tlog = [pathlib.Path(p) for p in gelesen if _unter(_normpfad(p), kernwurzel)]
+    try:
+        huelle = kern_quellabhaengigkeiten()
+    except RuntimeError as exc:
+        huelle = []
+        pruefe(False, "lokale Include-Huelle der Kernquellen ist eindeutig ableitbar",
+               str(exc))
+    eingaben = list(aus_tlog) + list(huelle)
+    k1b_klagen, k1b_geprueft, in_ausnahme = k1b_riegel(eingaben, K1B_AUSNAHME)
+    pruefe(bool(eingaben) and not k1b_klagen,
+           f"keine der {k1b_geprueft} Compiler-Eingaben unter plugin/** traegt ein "
+           f"JucePlugin_-Token im Quelltext (Tlog {len(set(aus_tlog))}, Huelle "
+           f"{len(set(huelle))}; Ausnahme NakamaKernRiegel.h mit {in_ausnahme} Treffern)",
+           " | ".join(k1b_klagen[:6]) if k1b_klagen else
+           ("keine Compiler-Eingabe gefunden" if not eingaben else ""))
+
+    baumklagen, loeschungen, bauminfo = juce_baum_riegel(bau)
+    pruefe(not baumklagen,
+           f"juce-src ist {bauminfo['beschreibung']} plus genau der Nakama-VST3-Patch "
+           f"({bauminfo['patchdateien']} Patchdatei(en); {len(loeschungen)} benannte "
+           f"Loeschung(en) ausserhalb modules/**)",
+           " | ".join(baumklagen[:6]) if baumklagen else
+           (", ".join(loeschungen[:5]) if loeschungen else ""))
+
+    # ── 0c. Diagnose: womit wurde gebaut ───────────────────────────────────
+    print("\n[0c] Diagnose - womit wurde gebaut (kein Frische-Urteil)")
+    pruefe(not lbs_klagen,
+           "lastbuildstate nennt Toolset, VCToolsVersion und TargetPlatformVersion",
+           " | ".join(lbs_klagen) if lbs_klagen else roh_lbs.splitlines()[0])
+    pruefe(not klagen,
+           "Configure ist juenger als jede CMake-Eingabe, die der Generator verbraucht hat",
+           " | ".join(klagen))
+
     projekt_kandidaten = sorted(bau.glob("**/NakamaKern.vcxproj"))
     tlog_kandidaten = sorted(bau.glob("**/NakamaKern.tlog/CL.command.1.tlog"))
     projekt = (projekt_kandidaten[0] if len(projekt_kandidaten) == 1
@@ -1360,20 +2342,16 @@ def main() -> int:
             soll, soll_zusatz = None, set()
             pruefe(False, "Schalter der Projektdatei sind eindeutig lesbar", str(exc))
         einheiten = schalter_aus_tlog(tlog)
-        try:
-            quellen = _kernquellen_aus_cmake()
-        except RuntimeError as exc:
-            quellen = []
-            pruefe(False, "NAKAMA_KERN_QUELLEN ist lesbar", str(exc))
 
-        # (1) Die TU-Menge selbst - drei Mengen, paarweise gleich.
-        klagen, aktuell, veraltet = tu_mengen_abgleich(einheiten, quellen, mitglieder)
-        hinweise = list(klagen)
+        # (1) Die TU-Menge - keine Frischefrage, sondern "ist der Kern still
+        #     gewachsen?". Genau diese Frage hat beim IPC-Zuwachs gesprochen.
+        tuklagen, aktuell, veraltet = tu_mengen_abgleich(einheiten, quellen, mitglieder)
+        hinweise = list(tuklagen)
         if veraltet:
             hinweise.append(
                 (f"{len(veraltet)} veralteter Tlog-Eintrag: " if len(veraltet) == 1
                  else f"{len(veraltet)} veraltete Tlog-Eintraege: ") + ", ".join(veraltet))
-        pruefe(bool(quellen) and not klagen,
+        pruefe(bool(quellen) and not tuklagen,
                f"Tlog, NAKAMA_KERN_QUELLEN und Archiv nennen dieselben "
                f"{len(aktuell)} Uebersetzungseinheiten",
                " | ".join(hinweise))
@@ -1383,14 +2361,13 @@ def main() -> int:
             schalterklagen = schalter_abgleich(soll, soll_zusatz, aktuell)
             umfang = ", ".join(f"{KLASSENNAME[k]} {len(soll[k])}" for k in SCHALTERKLASSEN)
             pruefe(bool(aktuell) and not schalterklagen,
-                   f"jede der {len(aktuell)} gebauten TUs traegt exakt die heutigen "
+                   f"womit gebaut: jede der {len(aktuell)} TUs traegt die heutigen "
                    f"Schalter der Projektdatei ({umfang}; "
-                   f"{len(soll_zusatz)} AdditionalOptions-Token enthalten)",
+                   f"{len(soll_zusatz)} AdditionalOptions-Token auf Enthaltensein)",
                    " | ".join(schalterklagen) if schalterklagen
                    else ("keine gebaute Uebersetzungseinheit" if not aktuell else ""))
 
         # (3) Und wurde nach der letzten Uebersetzung auch gelinkt?
-        objekte = sorted(p for p in tlog.parent.parent.rglob("*.obj") if p.is_file())
         linkklagen = linkfrische(kern, objekte, tlog)
         pruefe(not linkklagen,
                f"NakamaKern.lib ist nicht aelter als die {len(objekte)} Objekte "
@@ -1438,6 +2415,14 @@ def main() -> int:
         for f in fehler:
             print("  - " + f)
         return 2
+    if nur_messen:
+        # F14: die Identitaetspruefung ist gelaufen und steht oben - ueber die
+        # Frische ist damit trotzdem nichts gemessen. Ein gruenes Urteil waere
+        # eine Behauptung ohne Messung, also Exit 3 statt 0.
+        print("\nVORAUSSETZUNG: ohne Neubau kein Frische-Urteil (--nur-messen).")
+        print("  Die Identitaetspruefung oben ist gelaufen; ueber die Frische des")
+        print("  gemessenen Artefakts behauptet dieser Lauf nichts.")
+        return 3
     return 0
 
 

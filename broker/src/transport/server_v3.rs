@@ -1941,27 +1941,31 @@ mod tests {
             "der Acceptor muss die Verbindung angenommen haben"
         );
 
-        assert!(
-            warte_auf(200, || griff.gehaltene_handles() >= 1),
-            "das Handle muss VOR der ersten Arbeit des Threads im Register stehen"
-        );
+        // Erst MESSEN, dann urteilen: ohne den Fix haengt der Stop, und ein
+        // Test, der vorher panickt, verwandelt sein Rot in einen Hang.
+        let registriert = warte_auf(200, || griff.gehaltene_handles() >= 1);
 
         let (tx, rx) = std::sync::mpsc::channel();
-        let t = std::thread::spawn(move || {
+        std::thread::spawn(move || {
             griff.stoppen();
             let _ = tx.send(());
         });
+        let beendet = rx.recv_timeout(Duration::from_secs(10)).is_ok();
+        let am_stop_geendet = stat.geschlossen_bootstrap.load(Ordering::SeqCst);
+        drop(c);
+
         assert!(
-            rx.recv_timeout(Duration::from_secs(10)).is_ok(),
+            registriert,
+            "das Handle muss VOR der ersten Arbeit des Threads im Register stehen"
+        );
+        assert!(
+            beendet,
             "stoppen() darf im Fenster vor der Registrierung nicht haengen"
         );
-        t.join().unwrap();
         assert_eq!(
-            stat.geschlossen_bootstrap.load(Ordering::SeqCst),
-            0,
+            am_stop_geendet, 0,
             "der Thread muss am Stop enden, nicht erst an einem abgebrochenen Read"
         );
-        drop(c);
     }
 
     /// T2-Befund 7 vom 2026-08-29: `stoppen()` endet binnen Frist, auch wenn

@@ -174,6 +174,12 @@ public:
     /// So viele P0-Frames nach dem welcome so schnell wie moeglich
     /// hinterherschicken (T2-Befund 5).
     std::atomic<int> frameFlut { 0 };
+    /// Dasselbe auf der TELEMETRIE-Verbindung, aber mit P2-Frames: dort ist
+    /// P2 die vertragsgemaesse Familie, und geprueft wird die Rate.
+    std::atomic<int> frameFlutTelemetrieP2 { 0 };
+    /// Ein einzelner P0-Frame auf der Telemetrieverbindung — dort
+    /// vertragswidrig (§33.1), der Client muss schliessen.
+    std::atomic<bool> sendeP0AufTelemetrie { false };
     /// Die naechste Telemetrieverbindung einmalig schliessen — der Fall, den
     /// der Leerlauf ohne Lesen nie bemerkte (T2-Befund 2).
     std::atomic<bool> telemetrieSchliessen { false };
@@ -443,6 +449,38 @@ private:
                 schliessen (h);
                 return;
             }
+        }
+
+        // Ein P0-Frame auf der Telemetrieverbindung: dort traegt der Vertrag
+        // ausschliesslich P2 (T2-Befund 4, Telemetrie-Haelfte).
+        if (sendeP0AufTelemetrie.load() && istTelemetry)
+        {
+            const std::string beliebig = "{\"type\":\"heartbeat_ack\"}";
+            std::vector<std::uint8_t> p0rahmen;
+            envelopeSchreiben (Familie::p0, 0,
+                               reinterpret_cast<const std::uint8_t*> (beliebig.data()),
+                               beliebig.size(), p0rahmen);
+            if (! schreiben (h, p0rahmen.data(), p0rahmen.size()))
+            {
+                schliessen (h);
+                return;
+            }
+        }
+
+        // P2-Flut auf der Telemetrieverbindung: vertragsgemaesse Familie,
+        // aber ueber der Rate (T2-Befund 5, Telemetrie-Haelfte).
+        if (const int flutT = frameFlutTelemetrieP2.load(); flutT > 0 && istTelemetry)
+        {
+            std::uint8_t nutz[16];
+            std::memset (nutz, 0x33, sizeof (nutz));
+            std::vector<std::uint8_t> einer;
+            envelopeSchreiben (Familie::p2, 0, nutz, sizeof (nutz), einer);
+            std::vector<std::uint8_t> haeppchen;
+            for (int i = 0; i < 64; ++i)
+                haeppchen.insert (haeppchen.end(), einer.begin(), einer.end());
+            for (int gesendet = 0; gesendet < flutT && laeuft.load(); gesendet += 64)
+                if (! schreiben (h, haeppchen.data(), haeppchen.size()))
+                    break;
         }
 
         // Mehr Frames, als die Nachrichtenrate erlaubt (T2-Befund 5). In
@@ -1879,6 +1917,82 @@ int main()
         telemetrie.stop();
         control.stop();
         server.stoppen();
+    }
+
+    abschnitt ("G14 · was der TelemetryClient auf SEINER Verbindung annimmt");
+    {
+        // Die Gegenstuecke zu G11 und G12 auf der zweiten Verbindung. Ohne sie
+        // waeren die Familien- und Ratensperre dort behauptet, nicht belegt.
+        auto koppeln = [] (TestServer& server) {
+            return [&server] {
+                TelemetryHello t;
+                t.adresse = testAdresse (hex32 ('7'));
+                t.linkId = hex32 ('a');
+                t.challenge = hex32 ('b');
+                return t;
+            };
+        };
+
+        {
+            TestServer server (testPipeName ("p0auftele"));
+            server.sendeP0AufTelemetrie.store (true);
+            server.starten();
+            TelemetryClient telemetrie (koppeln (server), server.pipeName());
+            telemetrie.start();
+            pruefe (warteAuf (5000, [&] {
+                        return telemetrie.snapshot().familieAbweisungen >= 1;
+                    }),
+                    "ein P0-Frame auf der Telemetrieverbindung schliesst sie",
+                    telemetrie.snapshot().letzterFehler);
+            telemetrie.stop();
+            server.stoppen();
+        }
+
+        {
+            TestServer server (testPipeName ("p2flut"));
+            server.frameFlutTelemetrieP2.store (8000);
+            server.starten();
+            TelemetryClient telemetrie (koppeln (server), server.pipeName());
+            telemetrie.start();
+            pruefe (warteAuf (10000, [&] {
+                        return telemetrie.snapshot().rateAbweisungen >= 1;
+                    }),
+                    "auch hier gilt die Nachrichtenratengrenze",
+                    telemetrie.snapshot().letzterFehler);
+            const auto s = telemetrie.snapshot();
+            pruefe (s.empfangen > 0 && s.empfangen <= kRateProSekunde,
+                    "die vertragsgemaessen P2-Frames sind gezaehlt, nicht still verworfen",
+                    std::to_string (s.empfangen) + " von 8000 gezaehlt");
+            telemetrie.stop();
+            server.stoppen();
+        }
+    }
+
+    abschnitt ("G15 · zu grosse Nachrichten werden an der TUER abgewiesen");
+    {
+        // Kehrseite der Reservierung (T2-Befund 1): eine Nachricht ueber der
+        // Paketgrenze bliebe sonst fuer immer vorn in der Queue und liesse
+        // jede neue Verbindung an derselben Stelle scheitern.
+        TestServer leer (testPipeName ("zugross"));
+        ControlClient control ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('1'));
+            return h;
+        }, leer.pipeName());
+
+        const std::string riesig (kMaxPayloadBytes + 1, 'x');
+        pruefe (! control.sendeP0 (riesig) && control.snapshot().zuGross == 1,
+                "ein P0 ueber der Paketgrenze wird gar nicht erst eingereiht",
+                std::to_string (control.snapshot().zuGross));
+        pruefe (control.sendeP1 ("", riesig) == P1Ergebnis::zuGross
+                    && control.snapshot().zuGross == 2,
+                "und ein P1 ebenso — der Aufrufer erfaehrt es sofort");
+
+        // Gegenprobe: genau auf der Grenze geht es durch. Sonst spraeche der
+        // Riegel ueber eine falsche Zahl.
+        const std::string genauNoch (kMaxPayloadBytes, 'x');
+        pruefe (control.sendeP0 (genauNoch) && control.snapshot().zuGross == 2,
+                "genau auf der Grenze wird eingereiht, nicht abgewiesen");
     }
 
     // ── H · Bootstrapgrenze und der strenge kleine JSON-Leser ─────────────

@@ -1996,6 +1996,10 @@ mod tests {
         // Grosszuegig, aber ENDLICH: gemessen wird "endet", nicht "ist schnell".
         let rechtzeitig = rx.recv_timeout(SENKE_FRIST + Duration::from_secs(8)).is_ok();
         let abgeloest = stat.senke_abgeloest.load(Ordering::SeqCst);
+        // Der SCHREIBER haengt nicht: ihn loest `CancelIoEx` sehr wohl. Die
+        // Zahl trennt die beiden Faelle — sonst waere "abgeloest" ein
+        // Sammelbegriff, der nichts mehr unterscheidet.
+        let schreiber = stat.schreiber_abgeloest.load(Ordering::SeqCst);
         // Erst JETZT freigeben — vorher waere der Gegenpfad nicht gemessen.
         senke.blockiert.store(false, Ordering::SeqCst);
         t.join().unwrap();
@@ -2004,6 +2008,10 @@ mod tests {
         assert!(
             abgeloest >= 1,
             "der haengende Verbraucher muss abgeloest und gezaehlt sein (war {abgeloest})"
+        );
+        assert_eq!(
+            schreiber, 0,
+            "nur die Senke haengt — der Schreiber wird abgebrochen, nicht abgeloest"
         );
     }
 }

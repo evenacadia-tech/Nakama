@@ -942,10 +942,8 @@ Commits dieser Runde: `65d46a0` (die sieben Fixes samt Prüfungen) · `e5f5c27`
 (Stopfenster-Test meldet rot statt zu hängen) · `51d3f90` (dieses Manifest,
 `plugin-wissen.md`, Plantext).
 
-Das Bein **B10** wuchs von 115 auf **153** Prüfungen.
-
-Der maßgebliche Kanon-Lauf steht unten als **„Kanon-Lauf - SONDE-010
-Nacharbeit 2"**: `51d3f90`, Arbeitsbaum sauber, **GRUEN 32/32**, Exitcode 0.
+Das Bein **B10** wuchs von 115 auf **159** Prüfungen — 153 durch die sieben
+Befunde, sechs weitere durch den Nachtrag aus dem Selbstaudit (**8.8**).
 
 > Auch dieser zweite Commit ist selbst ein Befund aus dieser Runde: die erste
 > Fassung des Stopfenster-Tests hätte ohne den Fix **gehangen** statt rot zu
@@ -1304,6 +1302,63 @@ stoppen() haengt im Senkenaufruf
 
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 131 filtered out; finished in 10.02s
 ```
+
+---
+
+### 8.8 Nachtrag aus dem Selbstaudit: drei Pfade ohne Beleg
+
+Das Selbstaudit des Diffs fand drei Stellen, die diese Runde **eingebaut und
+oben behauptet**, aber nicht geprüft hatte. Nach der Projektregel „Fortschritt
+erst nach einem Beleg" ist eine behauptete, ungeprüfte Zeile genau das, was eine
+Nacharbeitsrunde beseitigen soll — deshalb stehen sie hier und nicht in
+`docs/offene-punkte.md`.
+
+| Pfad | wo behauptet | Prüfung |
+|---|---|---|
+| Familiensperre im **TelemetryClient** (P0/P1 abweisen) | 8.4 | **G14** |
+| Ratengrenze im **TelemetryClient** und der Zähler `empfangen` | 8.5 · 8.4 | **G14** |
+| Türprüfung `zuGross` in `sendeP0`/`sendeP1` | 8.1 | **G15** |
+
+Dazu eine vierte, kleinere Lücke auf der Rust-Seite: `schreiber_abgeloest` war
+ein Zähler ohne Zusicherung. Der Senkentest hält jetzt fest, dass er **0**
+bleibt — nur die Senke hängt, den Schreiber löst `CancelIoEx` sehr wohl. Ohne
+diese Trennung wäre „abgelöst" ein Sammelbegriff, der die beiden Fälle nicht
+mehr unterscheidet.
+
+Das Bein **B10** trägt damit **159** Prüfungen. Die Rohausgaben der Bruchproben
+8.1–8.7 oben nennen 153, weil sie auf dem Stand `65d46a0`/`e5f5c27` gefahren
+wurden; die dort gezeigten roten Zeilen sind davon unberührt.
+
+**Bruchprobe G14** — Familien- und Ratensperre im TelemetryClient entfernt:
+
+```text
+== G14 · was der TelemetryClient auf SEINER Verbindung annimmt ==
+  FEHLER  ein P0-Frame auf der Telemetrieverbindung schliesst sie
+  FEHLER  auch hier gilt die Nachrichtenratengrenze
+  FEHLER  die vertragsgemaessen P2-Frames sind gezaehlt, nicht still verworfen  [8000 von 8000 gezaehlt]
+
+FEHLER — 159 Pruefungen, 3 Fehler
+```
+
+`[8000 von 8000 gezaehlt]` ist dieselbe Aussage wie in 8.5, nur auf der zweiten
+Verbindung: ohne Limiter kommt **jeder** Frame durch.
+
+**Bruchprobe G15** — die Türprüfung entfernt:
+
+```text
+== G15 · zu grosse Nachrichten werden an der TUER abgewiesen ==
+  FEHLER  ein P0 ueber der Paketgrenze wird gar nicht erst eingereiht  [0]
+  FEHLER  und ein P1 ebenso — der Aufrufer erfaehrt es sofort
+  FEHLER  genau auf der Grenze wird eingereiht, nicht abgewiesen
+
+FEHLER — 159 Pruefungen, 3 Fehler
+```
+
+Die dritte rote Zeile ist die **Gegenprobe**: sie fällt mit, weil ohne die Tür
+schon die erste Nachricht eingereiht wurde und der Zähler danach nicht mehr
+stimmt. Sie hält fest, dass der Riegel exakt auf `kMaxPayloadBytes` sitzt und
+nicht daneben — ein Riegel, der eine Nachricht *auf* der Grenze abwiese, wäre
+genauso falsch wie gar keiner.
 
 ---
 

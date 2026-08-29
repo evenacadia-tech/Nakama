@@ -11016,3 +11016,158 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 **Warum hier gestoppt:** Jede Runde bringt eine weitere CMake-Konstruktion; die acht ursprünglichen Befunde und die vier der zweiten Runde sind an der Quelle geschlossen bzw. ehrlich begrenzt. Die beiden Restbefunde sind reproduzierbar und betreffen die Zusage „fail-closed" (K2/K2b) und „misst nie ein veraltetes Artefakt" (A14); sie sind im Register datiert und gehören in die nächste Nacharbeit, bevor ein frischer Prüfer erneut urteilt. Wer repariert, spricht sich nicht selbst frei.
 
 **Tatsächlich gelaufene Beweise** (Dirigent, echter Rechner): Kanon `tools/beweise.ps1 -Bauen` GRÜN 29/29 auf `3353fb6`, `374eea7` und `068c9ce` (Anhänge oben); echter Configure GRÜN mit K2b/K2c an allen Verbrauchern; Genex-Selbsttest `cmake -P eq-copilot/cmake/pruefe_nakama_kern_genex.cmake` 26/26 und ROT-Fall Exit 1; A14 im Kanon grün. Nicht ausgeführt: die manuellen Configure-Bruchproben aus dem Repro-Block (Einfügen und Zurückstellen von Probe-Snippets) — sie stehen dokumentiert und sind Teil der nächsten Nacharbeit.
+
+---
+
+## Nacharbeit Runde 3 — 2026-08-29: vom User unterbrochen
+
+**Stand.** HEAD `a728fba`, Basis war `e0a20dc`. Von den zwei Restbefunden der
+dritten T3-Runde (Codex `gpt-5.6-sol/xhigh`, Thread
+`01a04a4d-d02e-7830-a600-2bf1cf9b2069`, Stand `068c9ce`) ist **NAK-84
+nachgearbeitet und belegt**, **NAK-85 nicht angefasst**. Der Lauf wurde vom
+User unterbrochen, bevor NAK-85 begonnen war; es ist **kein Kanon gefahren**.
+Das Urteil über NAK-84 steht aus — es gehört einem frischen Prüfer, nicht
+diesem Worker.
+
+| Befund | Stand | Wo |
+|---|---|---|
+| NAK-84 — Rohtextheuristik in K2/K2b | Quelle gefixt, diskriminierende Prüfung ergänzt, Bruchprobe gefahren und zurückgenommen | Commit `a728fba`, `cmake/NakamaKern.cmake`, `cmake/pruefe_nakama_kern_genex.cmake` |
+| NAK-85 — A14 misst gegen veraltete `.vcxproj` | **offen, nicht begonnen** | `tools/eq-copilot/pruefe_kern_identitaetsfrei.py` unverändert |
+
+### NAK-84 — was gemessen wurde
+
+**Nachmessung des Befunds.** Der Prüfer hat recht: `_nakama_kern_wert_relevant`
+entschied am ROHTEXT, ob ein nicht auflösbarer Generatorausdruck rot wird. Ein
+zusammengesetzter Definename zeigt sein Präfix per Konstruktion nie
+zusammenhängend, also kann keine Textprobe ihn finden.
+
+**Fix.** Für die vier Define-/Options-Arten (`IDENTITAET`, `JUCE`,
+`IDENTITAET_OPTION`, `JUCE_OPTION`) fällt die Heuristik ersatzlos weg: jeder
+unbekannte oder nicht auswertbare Operator ist dort ROT. Für Linkkanten
+(`LINK`, `COMPILE_LINK`) bleibt sie, weil sie dort über Zielnamen und nicht
+über Definetext entscheidet und der Stringoperator-Riegel zusätzlich hält.
+Neue Funktion `_nakama_kern_art_ist_definemenge()` als eine Quelle dieser
+Einteilung.
+
+**Prüfung (grün, mit Fix).** Genex-Selbsttest, beide Konfigurationen:
+
+```
+& $cmake -DNAKAMA_TEST_CONFIG=Debug -DNAKAMA_TEST_IS_SYNTH=FALSE -P eq-copilot/cmake/pruefe_nakama_kern_genex.cmake
+& $cmake -DNAKAMA_TEST_CONFIG=Release -DNAKAMA_TEST_IS_SYNTH=TRUE -P eq-copilot/cmake/pruefe_nakama_kern_genex.cmake
+```
+
+```
+-- PASS Arteinteilung: vier Define-/Options-Arten fail-closed, zwei Linkarten heuristisch
+-- PASS Abgrenzung: Linkkante ohne Zielreferenz bleibt irrelevant
+-- PASS Sensitivitaet: unbekannter Operator ohne Rohtextspur bleibt ROT
+-- PASS NAK-84: JOIN direkt in einer Define-Eigenschaft bleibt ROT
+-- PASS NAK-84: JOIN in einer Huellen-Define-Property bleibt ROT
+-- PASS K2b-Ausnahmen: drei Einzelmakros exakt, *_EXTRA bleibt sichtbar
+-- PASS Linkkanten-Abgrenzung: bekannte String-/Listenoperatoren werden erkannt
+-- PASS Sensitivitaet: LOWER_CASE-Linkkante bleibt kontrolliert ROT
+-- Nakama-Kern-Genex-Selbsttest: 26/26 Ausdruecke korrekt.
+EXIT=0
+```
+
+(Release wortgleich, `EXIT=0`.) Die alte Zusage „ohne `JUCE_`-Define und ohne
+Ziel irrelevant" gilt jetzt **nur noch für Linkkanten**; in einer
+Define-Eigenschaft ist genau derselbe Ausdruck ROT. Der frühere grüne Testfall
+dafür wurde deshalb in eine ROT-Unterprobe umgedreht, nicht gelöscht.
+
+**Bruchprobe 1 — Fix entfernt, Selbsttest fällt.** Der `if`-Block, der die vier
+Define-Arten fail-closed schaltet, wurde temporär durch einen Kommentar ersetzt:
+
+```
+-- PASS Arteinteilung: vier Define-/Options-Arten fail-closed, zwei Linkarten heuristisch
+-- PASS Abgrenzung: Linkkante ohne Zielreferenz bleibt irrelevant
+CMake Error at eq-copilot/cmake/pruefe_nakama_kern_genex.cmake:148 (message):
+  unbekannter Operator in Define-Eigenschaft: Diagnose nennt 'unbekannter
+  Operator NAKAMA_UNBEKANNTER_OPERATOR' nicht.  Ausgabe= CMake Error at
+  eq-copilot/cmake/pruefe_nakama_kern_genex.cmake:110 (message): Unbekannter
+  Operator in Define-Eigenschaft blieb unerwartet gruen: ''
+Call Stack (most recent call first):
+  eq-copilot/cmake/pruefe_nakama_kern_genex.cmake:503 (_nakama_genex_rotprobe)
+
+EXIT=1
+```
+
+Und derselbe Zustand für den Prüferfall selbst:
+
+```
+=== OHNE Fix: JOIN direkt in Define-Eigenschaft ===
+CMake Error at eq-copilot/cmake/pruefe_nakama_kern_genex.cmake:88 (message):
+  Zusammengesetzter Definename blieb unerwartet gruen: ''
+
+EXIT=1
+```
+
+**Ehrlicher Nebenbefund:** die zweite neue Probe (JOIN über
+`$<TARGET_PROPERTY:JoinDefine,INTERFACE_COMPILE_DEFINITIONS>`) ist **auch ohne
+den Fix rot** — die Zielreferenz `JoinDefine` machte den Ausdruck schon vorher
+„relevant". Sie ist damit keine diskriminierende Probe, sondern eine
+Regressionswache für den transitiven Pfad. Diskriminierend ist die **direkte**
+Form — und genau die ist die reale: K2 liest jede Define-Eigenschaft
+elementweise, ohne umschließendes `$<TARGET_PROPERTY:…>`.
+
+**Bruchprobe 2 — echter Configure, Prüferschnipsel, Fix entfernt.** Unmittelbar
+vor `get_property(NAKAMA_KERN_VERBRAUCHER GLOBAL PROPERTY …)` in
+`plugin/CMakeLists.txt` eingesetzt:
+
+```cmake
+target_compile_definitions(NakamaKern PRIVATE "$<JOIN:JUCE$<SEMICOLON>_USE_CURL=1,>")
+```
+
+Konfiguriert in ein eigenes, frisches Bauverzeichnis; die beiden
+`FETCHCONTENT_SOURCE_DIR_*`-Zeiger sparen nur das erneute Klonen von JUCE und
+FlatBuffers und ändern an den Riegeln nichts:
+
+```powershell
+& $cmake -S eq-copilot -B eq-copilot/build-riegelprobe-join-ohne-fix -G "Visual Studio 17 2022" -A x64 -DFETCHCONTENT_SOURCE_DIR_JUCE=<repo>/eq-copilot/build/_deps/juce-src -DFETCHCONTENT_SOURCE_DIR_FLATBUFFERS=<repo>/eq-copilot/build/_deps/flatbuffers-src
+```
+
+Ergebnis roh — **Exit 0, alles grün, der Widerspruch unsichtbar**:
+
+```
+-- Nakama-Kern: K2b gruen — Mengen von 'NakamaKern' und 'EqCopilot' GLEICH (beide Richtungen, keine Wertwidersprueche, rekursive Defines plus -D-/D-Optionen); Debug: 4 [JUCE_DISPLAY_SPLASH_SCREEN=0, JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1, JUCE_USE_CURL=0, JUCE_WEB_BROWSER=0] | Release: 4 [JUCE_DISPLAY_SPLASH_SCREEN=0, JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1, JUCE_USE_CURL=0, JUCE_WEB_BROWSER=0] | MinSizeRel: 4 [JUCE_DISPLAY_SPLASH_SCREEN=0, JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1, JUCE_USE_CURL=0, JUCE_WEB_BROWSER=0] | RelWithDebInfo: 4 [JUCE_DISPLAY_SPLASH_SCREEN=0, JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1, JUCE_USE_CURL=0, JUCE_WEB_BROWSER=0]
+-- Nakama-Kern: K2b/K2c gegen alle 15 Verbraucher gemessen.
+-- Nakama-Kern: K2 gruen — 4 Ziele in der Usage-Requirements-Huelle von 'NakamaKern', keine compilerwirksame JucePlugin_-Konstante aus Defines oder -D-/D-Optionen (Debug, Release, MinSizeRel, RelWithDebInfo).
+-- Configuring done (61.1s)
+-- Generating done (0.7s)
+-- Build files have been written to: C:/Users/phili/Projekte/Nakama/eq-copilot/build-riegelprobe-join-ohne-fix
+EXIT=0
+```
+
+Der Kern trägt hier `JUCE_USE_CURL=1`, K2b meldet für ihn `JUCE_USE_CURL=0` und
+nennt beide Mengen GLEICH. Das ist der Befund NAK-84 end-to-end, am echten
+Projekt, nicht nur im baulosen Test.
+
+**Rücknahme und Gegenprobe.** Beide Brüche wurden vollständig zurückgenommen —
+`plugin/CMakeLists.txt` ist gegen `e0a20dc` unverändert, das Probe-Bauverzeichnis
+ist gelöscht. Derselbe echte Configure **mit** Fix und **ohne** Schnipsel:
+
+```
+-- Nakama-Kern: K2b/K2c gegen alle 15 Verbraucher gemessen.
+-- Nakama-Kern: K2 gruen — 4 Ziele in der Usage-Requirements-Huelle von 'NakamaKern', keine compilerwirksame JucePlugin_-Konstante aus Defines oder -D-/D-Optionen (Debug, Release, MinSizeRel, RelWithDebInfo).
+-- Configuring done (14.1s)
+-- Generating done (3.1s)
+EXIT=0
+```
+
+15 Verbraucher, kein falsches Rot: die fail-closed-Verschärfung schlägt am
+realen JUCE-Baum nicht zu.
+
+**Commit:** `a728fba` — „SONDE-007a Runde 3: NAK-84 - Define-Eigenschaften
+fail-closed ohne Rohtextheuristik".
+
+### Was in dieser Runde ausdrücklich NICHT geschehen ist
+
+- **NAK-85** ist unberührt. `pruefe_kern_identitaetsfrei.py` prüft weiterhin
+  nicht, ob die erzeugte `.vcxproj` jünger als die CMake-Quellen ist; die vom
+  Prüfer benannte Lücke besteht unverändert. Der vorbereitete Weg lag fest —
+  je Verzeichnis `CMakeFiles/generate.stamp.depend` gegen den zugehörigen
+  `generate.stamp` halten und Exit 3 melden, statt eine handgepflegte
+  Dateiliste zu führen —, gebaut wurde er nicht.
+- **Kein Kanon-Lauf.** `tools/beweise.ps1` wurde in dieser Runde nicht
+  gefahren; für den Endstand `a728fba` liegt damit keine Beglaubigung vor.
+- Die übrigen manuellen Configure-Bruchproben aus den Repro-Blöcken der
+  Runden 1 und 2 sind weiterhin nicht gefahren.

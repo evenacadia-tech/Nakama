@@ -153,7 +153,9 @@ pwsh -File tools/beweise.ps1 -Bauen -Ziel docs/beweise/SONDE-0NN.md -Anhaengen -
 
 Der Runner baut die benötigten Ziele, fährt die deklarierten Beine, speichert
 rohe Ausgabe und verweigert eine Beglaubigung, wenn Prüfbinaries älter als ihre
-Quellen sind. Einzelbefehle und aktuelle Zielnamen stehen im Skript; nicht aus
+Quellen sind. Die Rohausgaben liegen seit NAK-96 unter `docs/beweise/roh/`; das
+Manifest trägt nur Kopf, Urteilszeile und Übersicht mit Verweis dorthin.
+Einzelbefehle und aktuelle Zielnamen stehen im Skript; nicht aus
 dieser Datei rekonstruieren. Editor-Sichtprüfung ohne FL läuft über
 `EqCopShot.exe`. Installation ist ein bewusster Admin-Schritt des Users und
 nicht Teil eines normalen Beweislaufs.

@@ -72,6 +72,21 @@ pwsh -File tools/beweise.ps1 -Bauen -Ziel docs/beweise/SONDE-0NN.md -Anhaengen -
 Quellstand, und der Runner verweigert dann die Beglaubigung (Exitcode 4).
 Vergleichspunkt ist `docs/beweise/S0-basislinie.md`.
 
+Der Lauf schreibt in **zwei** Dateien (NAK-96, 29.08.2026):
+
+| Datei | Inhalt |
+|---|---|
+| dieses Manifest | Überschrift, die Zeile `**Lauf:** … **Urteil:** … **Exitcode:** … **Rohausgabe:** …`, der Kopf „woran gemessen wurde" und die Übersichtstabelle. Jede Zeile der Übersicht verlinkt in die Rohausgabe. |
+| `docs/beweise/roh/<TICKET>-<sha7>.md` | derselbe Kopf plus Baustand der Prüfbinaries, vollständige stdout/stderr jedes Beins und das Bauprotokoll. |
+
+Die Rohausgabe trägt den Stand, den sie beweist: `-dirty` bei unbestätigtem
+Arbeitsbaum, ein Zählsuffix beim zweiten Lauf auf demselben Commit. Bestehende
+Rohausgaben werden nie überschrieben.
+
+> ⚠️ Die Lauf-Zeile ist wortgleich festgelegt: `tools/plan/planstand.py` liest
+> die Kanon-Zahl per Regex `KANON` daraus zurück. Verweise werden angehängt,
+> die Zeile selbst nie umformuliert.
+
 _(Der angehängte Abschnitt erscheint unter dieser Zeile.)_
 
 ---

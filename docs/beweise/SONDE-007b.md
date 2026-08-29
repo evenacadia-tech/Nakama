@@ -21354,3 +21354,22 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
 </details>
 
+
+---
+
+## Abschluss der Dirigentenrunde — 2026-08-29: NEEDS_WORK, nachgearbeitet, Urteil offen
+
+**Marke:** `T3 NEEDS_WORK 2026-08-29 nachgearbeitet` (unverändert). Stand `d211431`; Basis-SHA des Tickets `eef0cbb`. Prüfer: Codex `gpt-5.6-sol`, Effort `xhigh`, drei frische Threads; Nacharbeit in zwei Runden durch je einen frischen Opus-Worker (die Codex-Sandbox fährt keinen Bau und keinen Kanonlauf — S8-Präzedenz 28.08.; Begründung in den Abschnitten oben).
+
+| Runde | Thread | Stand | Urteil | Befunde |
+|---|---|---|---|---|
+| 1 | `01a04ace-1f2b-7f03-8a28-eca22d9b1ce4` | `79e337c` | NEEDS_WORK | 1 (P2): der „Abschlusslauf nach Mutationsprobe" führte `state/NakamaState.cpp` als unbestätigt — Zeilenenden nach Rücknahme der Mutation (Index LF, Arbeitsbaum CRLF, `core.autocrlf=true`; Blob `42c6da7e…` an `eef0cbb` und `79e337c` identisch, 31700 + 850 CR = 32550 Bytes). → `11fd362`/`72146c1`: dritter Kanonlauf auf sauberem Arbeitsbaum, Absatz berichtigt. |
+| 2 | `01a04ae3-8ecd-7e00-bc51-9ea11e9a9f07` | `72146c1` | NEEDS_WORK | 2: (P1) Block 5b fährt nur `active_probe` — das einzige gebaute Sondenziel —, der G1-Träger war `passive_probe`; die Prüfer-Repro (Riegel 1 weg, `passive_probe` frei) ließe A16 grün. (P2) `NEXT-SESSION.md` trug einen veralteten Laufzähler. → `2da1ce8`/`2528ff1`/`d211431`: Behauptung dreiteilig präzisiert (B2-Matrix inkl. `passive_probe`/`nkpr`; Schalen-Durchgriff am gebauten Bundle; passiver Träger seit S9b stillgelegt), Repro gefahren (B2 ROT 166/3, A16 GRÜN 78), Punkt 7 ergänzt (A16 82; dieselbe Mutation macht A16 jetzt ROT), Laufzähler entfernt, vierter Kanonlauf sauber. Kein passives Bau- oder Testziel — User-Entscheid 28.08., S9b. |
+| 3 | `01a04b0e-c1e1-77c2-b5ce-ce52f4fb5442` | `d211431` | NEEDS_WORK | 1 (P1): Punkt 7 misst das **kombinierte** Ergebnis von `positionErlaubt` (Riegel 1 **und** Klassenmatrix), nicht Riegel 1 isoliert — wird nur die Capability-Vorprüfung entfernt, bleibt der Loop grün, weil `NakamaState.cpp:410-413` dieselbe Position für alle vier Klassen ablehnt; die Behauptung „Riegel 1 klassenunabhängig" geht damit über die Messung hinaus. **Offen als NAK-88.** |
+
+**Warum hier gestoppt:** Zwei Nacharbeitsrunden sind die Grenze des Dirigentenlaufs. Beide haben ihre Befunde an der Quelle geschlossen; jede Runde brachte einen neuen Befund an der **Formulierung** der Beweisaussage, nicht am Verhalten des Bundles. Der Restbefund ist reproduzierbar und klein: entweder die Aussage zu Punkt 7 (Testkommentar, `pruefe`-Text, A16-Behauptung in `tools/beweise.ps1`, Kopf-Nachtrag und Runde-2-Abschnitt dieses Manifests) auf das kombinierte Ergebnis von `positionErlaubt` begrenzen, oder Riegel 1 separat falsifizierbar machen (eine exportierte Abfrage der Capability-Konstante im Kern — Produktcode). Beides braucht danach einen Beglaubigungslauf auf dem committeten Stand und einen frischen Prüfer. Wer repariert, spricht sich nicht selbst frei.
+
+**Tatsächlich gelaufene Beweise** (Worker auf dem echten Rechner, vom Dirigenten am Repo gemessen): Kanon `tools/beweise.ps1 -Bauen` GRÜN 28/28 viermal — auf dem Arbeitsbaum zu `1ca5fdb` (Runde-1-Bau), auf `79e337c` mit zeilenenden-normalisierter Quelle, auf `79e337c` sauber, auf `2da1ce8` sauber (Anhänge oben). A16 `EqCopProbeeqNullTest` 62 → 78 → 82 Prüfungen; B2 `EqCopStateMigrationTest` 169. Mutationsläufe: Runde 1 (Riegel 1 und `active_probe` geöffnet) 8 von 16 rot; Runde 2 (Prüfer-Repro: Riegel 1 weg, `passive_probe` frei) B2 ROT mit 3 Fehlern, A16 vorher GRÜN, mit Punkt 7 ROT — jede Mutation vollständig zurückgenommen (Blob `42c6da7e…` an `d211431` unverändert). **Nicht gelaufen:** Scan und Laden von Nakama Gen und Nakama Probeeq in FL (§55 Klausel 1) — User-Schritt, `NAK-87`.
+
+**Umgebung dieser Runde, offen protokolliert:** Laufwerk C: war zu Beginn zu 100 % voll (ENOSPC). Der erste Bau-Worker wurde vom Dirigenten gestoppt, weil er in einem Freigabedialog für ein rekursives Löschkommando auf Temp-Ausgaben stand — ticketfremd, nicht freigegeben; ein Fortsetzungs-Worker übernahm den Arbeitsbaum samt Rücknahme der Mutationsprobe. Freigegeben wurde vom Dirigenten nur `broker/target` per `cargo clean` (1 GB); der übrige Platz wurde außerhalb dieses Laufs frei. Während des vierten Kanonlaufs blieb der Bau einmal an `vctip.exe` hängen (NAK-72); der Dirigent hat genau diesen Prozess beendet, der Lauf lief unverändert weiter und endete GRÜN.
+

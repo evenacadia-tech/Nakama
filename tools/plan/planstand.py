@@ -26,7 +26,10 @@ Erbauers) oder NEEDS_WORK heissen „gebaut, Urteil offen". Vergessen
 untertreibt damit, statt zu uebertreiben. Zweitens wird eine Marke, die
 NAKAMA-URTEIL sagt aber nicht parst, NICHT still uebergangen, sondern als
 Warnung ins Blatt geschrieben: ein Tippfehler darf keinen Schritt unsichtbar
-herabstufen.
+herabstufen. Drittens spiegelt die Kanon-Zeile immer den JUENGSTEN Lauf des
+Manifests: hat der Runner zuletzt die Beglaubigung verweigert
+(`NICHT BEGLAUBIGT`, `UNVOLLSTAENDIG`), steht das da — und nicht die gruene
+Zahl eines aelteren Laufs (NAK-96 Nacharbeit 3, siehe Kommentar an `KANON`).
 
 Aufruf vom Repo-Root:  py -3.13 tools/plan/planstand.py
 Exit 0 = geschrieben · 3 = Quelle fehlt, unlesbar oder strukturell ungültig
@@ -64,31 +67,47 @@ MARKE_ROH = re.compile(r"<!--[^>]*NAKAMA-URTEIL[^>]*-->")
 # keine abgeschriebene. Die Trennzeichen wechseln ueber die Manifeste hinweg
 # (·, |, -, —), deshalb bewusst lose gefasst.
 #
-# 🔑 ZWEI Wortlaute, denn der Runner formuliert gruen und rot verschieden.
-# Woertlich aus den `$urteil = ...`-Zuweisungen in tools/beweise.ps1 (Symbol
-# statt Zeilennummer: die Zahl wandert bei jeder Runner-Aenderung, das Symbol
-# nicht — NAK-96 Nacharbeit 1, 29.08.2026):
+# 🔑 ALLE VIER Wortlaute, denn der Runner kennt vier Urteile. Woertlich aus den
+# vier `$urteil = ...`-Zuweisungen in tools/beweise.ps1 (Symbol statt
+# Zeilennummer: die Zahl wandert bei jeder Runner-Aenderung, das Symbol nicht —
+# NAK-96 Nacharbeit 1, 29.08.2026; Stand heute
+# `tools/beweise.ps1:858/862/866/869 @ a9c6450`):
 #
-#     $urteil = "GRUEN - $($gruen.Count)/$($gelaufen.Count) Kanon-Laeufe bestanden$nachsatz"
 #     $urteil = "ROT - $rot von $($gelaufen.Count) Kanon-Laeufen fehlgeschlagen$nachsatz"
+#     $urteil = "UNVOLLSTAENDIG - $($gruen.Count) gruen, $fehlendeVoraussetzung Voraussetzung(en) fehlen$nachsatz"
+#     $urteil = "NICHT BEGLAUBIGT - $($gruen.Count)/$($gelaufen.Count) gruen, aber Pruefbinaries sind aelter als die Quellen$nachsatz"
+#     $urteil = "GRUEN - $($gruen.Count)/$($gelaufen.Count) Kanon-Laeufe bestanden$nachsatz"
 #
-# Die alte Fassung verlangte in BEIDEN Faellen `n/m` und konnte ihre eigene
-# ROT-Alternative deshalb nie treffen: bei rotem Kanon zeigte der Planstand
-# gar keine Zahl statt einer roten (NAK-97, gefunden 29.08.2026 an
-# docs/beweise/NAK-96.md §5.1). Erweitert wird die Regex, nicht der Runner —
-# bestehende Manifeste tragen den ROT-Wortlaut bereits.
+# Zwei Stufen Fehler liegen hinter dieser Regex, beide am 29.08.2026 gefunden:
 #
-# Die beiden uebrigen Urteilstexte bleiben ABSICHTLICH ohne Treffer
-# (`UNVOLLSTAENDIG - ... Voraussetzung(en) fehlen` und
-# `NICHT BEGLAUBIGT - n/m gruen, aber Pruefbinaries sind aelter als die
-# Quellen`, dieselben Zuweisungen): dort hat der Runner die Beglaubigung gerade
-# VERWEIGERT. Eine Zeile "Kanon n/m grün" wuerde dort ein bestandenes
-# Ergebnis behaupten, das es nicht gibt — fail-closed lieber keine Zahl.
+# (1) Die aelteste Fassung verlangte in BEIDEN damals gefassten Faellen `n/m`
+#     und konnte ihre eigene ROT-Alternative deshalb nie treffen: bei rotem
+#     Kanon zeigte der Planstand gar keine Zahl statt einer roten (NAK-97, an
+#     docs/beweise/NAK-96.md §5.1).
+# (2) Danach trafen GRUEN und ROT, die beiden VERWEIGERNDEN Urteile aber
+#     absichtlich nicht — mit der Begruendung, ein nicht beglaubigter Lauf
+#     duerfe keine Zahl bekommen. Das stimmt, greift aber zu kurz:
+#     `kanon_lesen()` nimmt den LETZTEN Treffer, und ohne Treffer bleibt der
+#     letzte gruene Lauf stehen. Folgt auf einen gruenen Lauf ein
+#     `NICHT BEGLAUBIGT` oder `UNVOLLSTAENDIG`, meldete der Planstand weiter
+#     `Kanon n/m grün` und behauptete damit genau das bestandene Ergebnis, das
+#     der Runner gerade VERWEIGERT hatte (NAK-96 Nacharbeit 3).
+#
+# Fail-closed heisst hier deshalb: jedes der vier Urteile trifft, und der
+# juengste Treffer gilt. Die verweigernden Urteile bekommen weiterhin KEINE
+# Zahl — aber sie verdraengen die aeltere gruene.
+#
+# Erweitert wird die Regex, nicht der Runner: bestehende Manifeste tragen alle
+# vier Wortlaute bereits.
 KANON = re.compile(
     r"Urteil:\*\*\s*(?:"
     r"GRUEN\s*[-—]+\s*(?P<gruen_gut>\d+)/(?P<gruen_ges>\d+)\s*Kanon"
     r"|"
     r"ROT\s*[-—]+\s*(?P<rot_fehl>\d+)\s+von\s+(?P<rot_ges>\d+)\s*Kanon"
+    r"|"
+    r"(?P<unvollstaendig>UNVOLLSTAENDIG)\s*[-—]+\s*\d+\s+gruen"
+    r"|"
+    r"(?P<nicht_beglaubigt>NICHT\s+BEGLAUBIGT)\s*[-—]+\s*\d+/\d+\s+gruen"
     r")"
 )
 
@@ -161,12 +180,17 @@ def marken_lesen(pfad: pathlib.Path, warnungen: list[str]) -> list[dict]:
 
 
 def kanon_lesen(pfad: pathlib.Path) -> str:
-    """Die juengste Kanon-Bilanz eines Manifests, immer als `bestanden/gesamt`.
+    """Die Bilanz des JUENGSTEN Kanon-Laufs eines Manifests.
 
-    Beide Urteilstexte werden auf DIESELBE Semantik gebracht: gruen meldet
-    `bestanden/gesamt` schon so, rot meldet `fehlgeschlagen von gesamt` —
-    daraus wird `gesamt - fehlgeschlagen`. Sonst stuenden im selben Blatt zwei
-    verschiedene Bedeutungen hinter derselben Bruchzahl.
+    Die beiden zaehlenden Urteilstexte werden auf DIESELBE Semantik gebracht:
+    gruen meldet `bestanden/gesamt` schon so, rot meldet `fehlgeschlagen von
+    gesamt` — daraus wird `gesamt - fehlgeschlagen`. Sonst stuenden im selben
+    Blatt zwei verschiedene Bedeutungen hinter derselben Bruchzahl.
+
+    🔑 Die beiden verweigernden Urteile bekommen KEINE Zahl, aber sehr wohl
+    einen Treffer (siehe Kommentar an `KANON`): nur so kann der juengste Lauf
+    einen aelteren gruenen ueberschreiben. Was der Runner nicht beglaubigt hat,
+    bekommt keine Zahl — und darf auch keine geerbte tragen.
     """
     try:
         text = pfad.read_text(encoding="utf-8", errors="replace")
@@ -176,6 +200,10 @@ def kanon_lesen(pfad: pathlib.Path) -> str:
     if not treffer:
         return ""
     m = treffer[-1]                       # der juengste Lauf im Manifest
+    if m.group("nicht_beglaubigt") is not None:
+        return "Kanon zuletzt nicht beglaubigt"
+    if m.group("unvollstaendig") is not None:
+        return "Kanon zuletzt unvollständig"
     if m.group("gruen_gut") is not None:
         return f"Kanon {m.group('gruen_gut')}/{m.group('gruen_ges')} grün"
     ges = int(m.group("rot_ges"))

@@ -228,7 +228,14 @@ $fixPrompt | codex -a never exec --ignore-user-config `
 Codex stagt, committet und pusht **nie**. Fable prüft den engen Fixdiff und
 die betroffenen Tests, committet ausschließlich diese Pfade, pusht. Danach
 prüft ein **neuer** frischer Thread den ganzen Bereich vom ursprünglichen
-Basis-SHA bis zum neuen HEAD. Nach zwei erfolglosen Nacharbeitsrunden → Halt.
+Basis-SHA bis zum neuen HEAD. Es gibt keine feste Rundenzahl und keine
+Freigabefrage an den User (User-Wort 29.08.2026: „offene technische probleme
+MÜSSEN gelöst werden und da gibt es keine notwendigkeit mich zu fragen. du
+musst die beste möglichtkeit finden WIE wir diese probleme lösen"). Legt
+jede Runde eine neue Schicht derselben Frage frei, wechselt der Dirigent den
+Weg statt blind weiterzupatchen: erst die Politik- oder Zustandsmatrix als
+Spezifikation mit Tests, dann eine Implementierung in allen betroffenen
+Sprachen, dann ein frischer Prüfer. Der Rest bleibt im Manifest datiert.
 
 ### 3.5 Abschluss
 
@@ -246,7 +253,8 @@ mit 3.1.
 - ein User-, Figma-, FL- oder Installationsschritt,
 - ein Produktentscheid (Technik entscheidet der Dirigent, Produkt der User),
 - überlappende fremde Änderungen,
-- ein materieller, zweimal nicht geschlossener Befund,
+- ein Befund, der nur durch einen Produktentscheid oder einen User-Handgriff
+  zu schließen ist (technische Befunde sind nie Haltgrund, User-Wort 29.08.),
 - eine fehlende native Fähigkeit, deren Ersatz neue Infrastruktur erfordert,
 - erschöpftes Kontingent oder wiederholte API-Fehler bei Fable, Opus oder
   Codex — Worker stoppen, Loop löschen, dann Halt statt blindem Wiederholen,

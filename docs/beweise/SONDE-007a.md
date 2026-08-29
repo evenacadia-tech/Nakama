@@ -14851,3 +14851,181 @@ Beides sind Textkorrekturen ohne Verhaltensänderung; Proben: `--selbsttest` gr�
 **Nächster Schritt:** ein Nacharbeits-Worker für S8 Runde 9 **und** NAK-94 Nacharbeit 4 (siehe `docs/beweise/SONDE-007c.md`, „Dirigentenstand NAK-94 … Prüfer 4"), gemeinsamer Kanon auf dem Endstand, dann Prüfer 10 (xhigh) für S8 und Prüfer 5 (high) für NAK-94 — je frischer Thread über den vollen Ticketbereich. Kein Halt.
 
 **Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99.
+
+## Nacharbeit Runde 9 — 2026-08-30 (Prüfer-Thread `01a04f8b-9fb2…`)
+
+**Stand dieses Abschnitts:** `f808ad0`
+
+Zwei bestätigte Befunde des neunten Prüfers (Codex xhigh, lesend über
+`git diff dafa5a5...401d036`), Regeln des Dirigenten im Abschnitt
+„Dirigentenstand — 2026-08-30 00:14 (Sitzung 054eedac)". Beide sind
+geschlossen. Beide sind Textkorrekturen: an der Messlogik von A14 wurde nichts
+geändert, nur an dem, was sie über sich behauptet.
+
+**Werkzeugregel dieser Runde:** keine Datei unter `%SystemRoot%` angelegt, keine
+löschenden Aufrufe. Die Reproduktionen liefen als lesende Treiber unter
+`$env:TEMP`; `git status --short` war vor und nach jeder Reproduktion leer.
+
+---
+
+### Befund 1 — Gleiche F13 an den Voraussetzungs-Ausgang an (Defekt, Prüfliste E)
+
+Wortlaut des Prüfers (Positionen `@ 401d036`):
+
+> **[P2] Gleiche F13 an den Voraussetzungs-Ausgang an** — `docs/beweise/SONDE-007a.md:12630`. Bei einem Funktionsaufruf von `main()` mit bereits registriertem `fehler` und nicht vorhandenem Bauverzeichnis liefert `voraussetzung_exit()` beobachtet Exit 2 samt Fehlerbericht; F13 verspricht hier dagegen weiterhin „3 … nie 2". Das widerspricht sowohl der neuen zentralen Exitlogik als auch der Runde-8-Regel, dass vor jedem Voraussetzungs-Ausgang gesammelte Befunde gewinnen. Passe F13 auf „ohne Befund 3, mit Befund 2, nie 0" an oder begrenze die Zeile ausdrücklich auf einen frischen Prozess ohne vorherige Messung.
+
+**Ursache, an der Quelle nachgelesen.** `fehler` ist eine Modulliste. Der
+F13-Fall (`kern_neubau()` schlägt fehl oder findet kein cmake) endet in
+`main()` mit `return voraussetzung_exit()` — genau derselben Funktion wie F14
+und F15. Sie wertet `fehler` aus und gibt 2, sobald etwas registriert ist. Die
+Zentralisierung aus Runde 8 hat F13 also mitgenommen; nur die Matrixzeile hat
+das nicht mitbekommen.
+
+**Reproduktion am Basis-Stand `898b28b`.** Ein lesender Treiber lädt das Skript,
+setzt `sys.argv` auf ein nicht vorhandenes Bauverzeichnis und ruft `main()`
+zweimal — einmal mit leerer, einmal mit vorbelegter `fehler`-Liste:
+
+```text
+F13 ohne registrierten Befund -> Exit 3
+F13 mit registriertem Befund  -> Exit 2
+--- Ausgabe des zweiten Laufs (letzte Zeilen) ---
+    Ohne Neubau des Kerns wird nichts gemessen und nichts behauptet.
+
+  0 ok, 1 Fehler
+
+  FEHLGESCHLAGEN:
+    - kuenstlicher Identitaetsbefund vor dem Bau
+
+  Ein registrierter Befund gewinnt gegen die fehlende Voraussetzung (Matrix F14/F15): Exit 2.
+```
+
+Die Zeile sagte „nie 2"; gemessen wird 2. Dass der Klartext dabei nur F14/F15
+nannte, ist derselbe Befund von der anderen Seite.
+
+**Regel des Dirigenten.** F13 lautet ab jetzt: „Bau nicht möglich → ohne
+registrierten Befund **3**, mit registriertem Befund **2**, nie 0" —
+gleichlautend mit F14/F15, messende Tests `R8-1` (zentraler
+Voraussetzungs-Ausgang) plus `R5-3`. Keine Ausnahme „frischer Prozess": die
+Zusage gilt für jeden Aufruf von `main()`.
+
+**Fix.** Die F13-Zeile der korrigierten Frischematrix trägt jetzt den Ausgang
+F13/F14/F15 samt der ausdrücklichen Geltung für jeden `main()`-Aufruf. Als
+messende Tests stehen dort `R5-3` (ohne möglichen Bau wird nichts gelöscht und
+nichts gemessen — die Zeile behauptet keinen Exitcode mehr, denn `R5-3a` und
+`R5-3b` messen `kern_neubau()`, nicht `main()`), `R8-1` und die neue Probe
+`P9-F13` (oben, beide Richtungen). Gleichlautend nachgezogen, damit Quelle und
+Matrix dasselbe sagen: Docstring und Klartext von `voraussetzung_exit()`, der
+Text von `R8-1` und die A14-Behauptung in `tools/beweise.ps1`.
+
+**Beim Nachlesen mitgefunden und in derselben Runde markiert.** Derselbe
+Abschnitt trägt weiter oben noch die **erste** Fassung der Frischematrix
+(Überschrift „Frischematrix", vor „Frischematrix, korrigiert"). Sie führt das
+zurückgezogene `--frisch-gebaut`-Zeugnis als F15, nennt für F14 die nicht
+existierende Kennung `R5-4` und sagt für F13 ebenfalls „nie 2". Sie ist
+Entwurf, nicht geltende Matrix; darüber steht das jetzt als Blockzitat, damit
+ein Leser nicht zwei widersprechende F13-Zeilen für gleichrangig hält.
+
+**Probe `P9-F13` am Endstand `f808ad0`** — derselbe Treiber, beide Richtungen:
+
+```text
+F13 ohne registrierten Befund -> Exit 3
+F13 mit registriertem Befund  -> Exit 2
+--- Ausgabe des zweiten Laufs (letzte Zeilen) ---
+    Ohne Neubau des Kerns wird nichts gemessen und nichts behauptet.
+
+  0 ok, 1 Fehler
+
+  FEHLGESCHLAGEN:
+    - kuenstlicher Identitaetsbefund vor dem Bau
+
+  Ein registrierter Befund gewinnt gegen die fehlende Voraussetzung (Matrix F13/F14/F15): Exit 2.
+```
+
+---
+
+### Befund 2 — Binde die Systemdatei-Doku an P8-SYS (Defekt, Prüfliste E)
+
+Wortlaut des Prüfers (Positionen `@ 401d036`):
+
+> **[P2] Binde die Systemdatei-Doku an P8-SYS** — `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:1220-1222`. Beim Nachvollziehen von `SYSTEMDATEIEN` behauptet diese aktuelle Docstring weiterhin, die beiden Namen seien beim Formatieren einer Diagnose in P5-W5b gemessen worden. P8-SYS zeigt sie jedoch auch in der TU ohne Diagnose, während die eingefügte P5-W5b-Ausgabe die Namen gerade nicht enthielt; damit bleibt Befund 3 in einer lebenden Quellenbehauptung offen. Ersetze die Attribution hier und im gleichlautenden Kommentar vor `tlog_ortsriegel()` durch P8-SYS und entferne die Diagnose-Kausalität.
+
+**Reproduktion am Basis-Stand `898b28b`** — die beiden Fundstellen der Liste
+wörtlich, gefunden über `grep -n` nach `P5-W5b` und `Diagnose`:
+
+```text
+1220:    Der Compiler liest beim Formatieren einer Diagnose Systemdateien -
+1221:    gemessen: System32/tzres.dll und Globalization/Sorting/sortdefault.nls
+1222:    (Probe P5-W5b). Seit Befund B1 (Runde 6) laufen sie durch die
+...
+1316:# ⚠️ GEMESSEN (Probe P5-W5b, 29.08.2026): cl.exe nennt im Leseprotokoll
+1317:#    gelegentlich auch Dateien, die KEIN Uebersetzungsstoff sind -
+1318:#    C:\Windows\System32\tzres.dll und Globalization\Sorting\sortdefault.nls
+1319:#    tauchten auf, sobald der Compiler eine Diagnose formatierte. Eine .dll
+```
+
+Beides sagt mehr, als gemessen wurde: die eingefügte P5-W5b-Rohausgabe zeigt
+die Namen nicht (Befund 3 der Runde 8), und die Messung, die sie zeigt —
+`P8-SYS` — hat sie **auch ohne jede Diagnose** gesehen (Lauf `B` dort). Eine
+Kausalität „weil eine Diagnose formatiert wurde" ist damit nicht belegt.
+
+**Regel des Dirigenten.** Docstring und Kommentar vor `tlog_ortsriegel()` — und
+jede weitere Stelle im Skript, die P5-W5b oder eine Diagnose als Ursprung der
+Liste nennt — attribuieren auf `P8-SYS` (Runde 8, Stand und Befehl im Manifest)
+und sagen nur das Gemessene: die beiden Dateien wurden auch in einer
+Übersetzungseinheit **ohne** Diagnose gelesen; eine Kausalität wird nicht
+behauptet.
+
+**Fix am Endstand `f808ad0`.** Beide Stellen tragen jetzt `P8-SYS`, nennen
+FileTracker und Wegwerf-TU unter `%TEMP%` als Herkunft, verweisen für Befehl und
+vollständige Rohausgabe auf „Nacharbeit Runde 8", Befund 3 — und sagen
+ausdrücklich, dass **nicht** gemessen ist, wodurch der Zugriff ausgelöst wird:
+
+```text
+    Der Compiler liest Systemdateien, die kein Uebersetzungsstoff sind -
+    GEMESSEN (Probe P8-SYS, Runde 8, 29.08.2026): System32/tzres.dll und
+    Globalization/Sorting/sortdefault.nls stehen roh in einem CL.read.1.tlog,
+    das ueber den MSBuild-FileTracker an einer Wegwerf-TU unter %TEMP%
+    entstand - in der TU MIT Diagnose ebenso wie in der Gegenprobe OHNE jede
+    Diagnose. WOVON der Zugriff ausgeloest wird, ist nicht gemessen und wird
+    hier nicht behauptet. Befehl, Stand und vollstaendige Rohausgabe: Manifest
+    SONDE-007a, Abschnitt "Nacharbeit Runde 8", Befund 3.
+```
+
+Und der Kommentar vor `tlog_ortsriegel()`:
+
+```text
+# ⚠️ GEMESSEN (Probe P8-SYS, Runde 8, 29.08.2026): cl.exe nennt im
+#    Leseprotokoll auch Dateien, die KEIN Uebersetzungsstoff sind -
+#    C:\Windows\System32\tzres.dll und Globalization\Sorting\sortdefault.nls
+#    stehen roh im CL.read.1.tlog einer Wegwerf-TU unter %TEMP% - in der TU
+#    MIT Diagnose und in der Gegenprobe OHNE jede Diagnose gleichermassen.
+#    Wodurch der Zugriff ausgeloest wird, ist NICHT gemessen; die Rohzeilen
+#    stehen im Manifest SONDE-007a, Abschnitt "Nacharbeit Runde 8", Befund 3.
+#    Eine .dll oder .nls kann keinen Praeprozessorzustand in eine TU tragen;
+#    sie am Ort zu messen faerbte den Kanon sporadisch rot, ohne etwas zu
+#    bewachen.
+```
+
+Die beiden übrigen P5-W5b-Nennungen im Skript (`_NEUBAU_AUSGABEN` und die
+`unsuccessfulbuild`-Marke im Neubau) bleiben stehen: sie betreffen den Inhalt
+von `NakamaKern.dir/<konfig>/`, den P5-W5b tatsächlich gemessen hat (Zeile
+„Probe `P5-W5b`" in der Übersicht weiter oben in diesem Manifest), nicht die
+Systemdateiliste.
+
+**Proben.** Für eine Kommentarkorrektur gibt es keine eigene Wache; gemessen
+wird, dass die Messlogik unverändert ist. `--selbsttest` am Endstand `f808ad0`:
+**82 ok, 0 Fehler**, darin `R7-1a` und `R7-3b` (jede andere Systemdatei ROT, die
+zwei erlaubten roh in ASCII und UTF-16LE durchsucht) sowie `R8-1` und `R8-2`
+(zentraler Ausgang) unverändert grün. Die A14-Behauptung in `tools/beweise.ps1`
+ist exakt nachgezogen und sonst unverändert.
+
+---
+
+### Prüfliste (`tools/dirigent/pruefliste.md`) — wo gemessen
+
+| Zeile | wo gemessen |
+|---|---|
+| **D** — fail-closed ohne Rohtextheuristik | unverändert: jede Datei unter `%SystemRoot%` außer den zwei namentlich erlaubten ist ROT (`R7-1a`), die zwei erlaubten werden roh durchsucht (`R7-3b`) |
+| **E** — „Behauptung ≤ Messung" | F13 sagt jetzt, was `voraussetzung_exit()` tut — beide Richtungen mit `P9-F13` gemessen; die Zeile behauptet für `R5-3` keinen Exitcode mehr, den dieser Test nicht misst; Docstring und Kommentar attribuieren auf die Messung, die die Namen wirklich zeigt, und verneinen die Kausalität ausdrücklich |
+| **E** — Positionen | die neuen Positionen stehen als Symbol (`voraussetzung_exit()`, `_systemwurzel()`, Kommentar vor `tlog_ortsriegel()`); dieser Abschnitt trägt seinen Stand im Kopf, die zitierten Rohblöcke behalten ihre Zeilennummern am genannten Commit |
+| **F** — Änderungssatz | Matrixzeile, Quelltext-Attribution, `R8-1`-Text und die A14-Behauptung in `tools/beweise.ps1` liegen in einem Commit (`f808ad0`) |

@@ -17216,3 +17216,299 @@ A17-Abschnitt darin traegt den Anker `#a17`.
 **Regeln des Dirigenten (Nacharbeit 4):** (1) Jedes Probe-Journal ist byteweise in der Form, die der jeweilige Writer in `Install-Nakama.ps1` schreibt: `transaktions_id` = 32 Hex ohne Bindestriche, Feldmenge und -reihenfolge des Writers (Rückweg Z. 856–864, RUECKWEG_AKTIV an seiner Writer-Stelle, Installation Z. 1109 — ablesen), `zeit` im `ToString('o')`-Format; im Manifest steht je Probe die Writer-Zeile, aus der sie abgelesen ist. (2) Je Probe genau ein Bruch, der **diese** Probe rot macht und die anderen grün lässt — z. B. (b): Statussperre behandelt `RUECKWEG_AKTIV` wie OK; (c): der OK-Pfad ersetzt eine fehlende Liste still durch `[]` — mit ROT- und Rücknahme-Rohausgabe je Probe. Lässt sich eine Probe durch keinen realistischen Einzeilen-Bruch rot machen, ist sie keine Wache und wird als Beschreibung ins Manifest verschoben, nicht als `pruefe(...)` geführt.
 
 **Nächster Schritt:** Nacharbeit 4 im selben Worker wie S8 Runde 9 (siehe `docs/beweise/SONDE-007a.md`, „Dirigentenstand … Prüfer 9"), gemeinsamer Kanon, danach Prüfer 5 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.
+
+## NAK-94 Nacharbeit Runde 4 — 2026-08-30 (Prüfer-Thread `01a04f8b-aa9d…`)
+
+**Stand dieses Abschnitts:** `53c10a3`
+
+Zwei bestätigte Befunde des vierten Prüfers (Codex high, lesend über
+`git diff da62dec...401d036`), Regeln des Dirigenten im Abschnitt
+„Dirigentenstand NAK-94 — 2026-08-30 00:14 (Sitzung 054eedac)". Beide sind
+geschlossen. An `Install-Nakama.ps1` wurde nichts geändert; das Manifest wurde
+weiterhin **nicht** neu gehasht.
+
+**Werkzeugregel dieser Runde:** keine Datei unter `%SystemRoot%` angelegt, keine
+löschenden Aufrufe. Die Brüche wurden als exakte Textersetzung im Runner
+gesetzt und byteweise zurückgenommen (sha256 vor und nach jedem Bruch gleich,
+Rohausgabe unten); `git status --short` nannte danach nur die beabsichtigten
+Dateien.
+
+---
+
+### Befund 3 — Verwende die echte Transaktions-ID-Form in den Writer-Proben (Defekt, Prüfliste E)
+
+Wortlaut des Prüfers (Positionen `@ 401d036`):
+
+> **[P2] Verwende die echte Transaktions-ID-Form in den Writer-Proben** — `tools/eq-copilot/pruefe_installer_manifest.py:1070`. [Defekt, mittel] Die als „exakte Writer-Form" bezeichnete Probe ist so nicht erzeugbar: `Install-Nakama.ps1` schreibt und akzeptiert ausschließlich 32-stellige IDs ohne Bindestriche (`ToString('N')`, Regex `^[0-9a-f]{32}$`), während diese und die `RUECKWEG_AKTIV`-Probe eine UUID mit Bindestrichen verwenden; damit überschreitet die Behauptung die Messung (Prüfliste E), weshalb die Fixtures mit tatsächlich writer-gültigen IDs und Feldern erneut gefahren werden sollten.
+
+**Reproduktion am Basis-Stand `898b28b`** — die Prüffunktion des Writers wörtlich
+nachgebildet und auf beide IDs angewandt:
+
+```text
+=== Ist-TransaktionsId aus Install-Nakama.ps1 (Z. 546-548 @ 898b28b) ===
+  Probe-ID der Nacharbeit 3 : '11111111-2222-3333-4444-555555555555' -> Ist-TransaktionsId = False
+  Writer-ID (ToString('N')) : '60f5b3db31a643d1823347e47c70b4ec' -> Ist-TransaktionsId = True
+  Laenge alt 36, Laenge Writer 32
+```
+
+Die Fixtur der Nacharbeit 3 hätte der Rückweg selbst abgewiesen — ein Journal,
+das nie entsteht, misst den Leser nicht am Erzeugbaren.
+
+**Die Writer-Formen, am Writer abgelesen.** Drei Stellen in
+`Install-Nakama.ps1`, alle `@ 898b28b`:
+
+| Probe | Writer-Stelle | Feldmenge und -reihenfolge |
+|---|---|---|
+| (a) `RUECKWEG` | das abschließende `Schreibe-Ergebnis` des Rückweg-Zweigs (Z. 856–864) | `schema`, `status`, `transaktions_id`, `erzwungen`, `warnungen`, `getan`, `zeit` — **ohne** `eintraege` |
+| (b) `RUECKWEG_AKTIV` | `$letzte.status = 'RUECKWEG_AKTIV'` mit anschließendem `Schreibe-Ergebnis $letzte` (Z. 823–824) — geschrieben wird das **zurückgelesene** Journal des Installations-Writers | wie (c) unten, nur `status` ersetzt: `schema`, `status`, `transaktions_id`, `manifest`, `zeit`, `bekannte_staende`, `eintraege` |
+| Installations-Journal | `$journal = [pscustomobject]@{…}` vor `Schreibe-Ergebnis $journal` (Z. 1106–1114) | `schema`, `status`, `transaktions_id`, `manifest`, `zeit`, `bekannte_staende`, `eintraege` |
+| Eintrag darin | `$eintraege += [pscustomobject]@{…}` (Z. 1087–1103) | `ziel_id`, `art`, `name`, `ziel`, `sha256`, `vorher_sha256`, `vorher_sha256_innen`, `gesichert`, `erzeugte_ordner`, `mutation_begonnen`, `mutation_abgeschlossen`, `rollback_abgeschlossen` |
+
+Zwei Werteformen sind dabei gemessen, nicht angenommen:
+
+```text
+=== zeit-Format: [DateTime]::UtcNow.ToString('o') ===
+  2026-08-29T22:23:52.9225757Z
+
+=== Writer-Form B: RUECKWEG_AKTIV - zurueckgelesenes Journal, nur status ersetzt ===
+  Feldreihenfolge: schema, status, transaktions_id, manifest, zeit, bekannte_staende, eintraege
+```
+
+`ConvertFrom-Json` macht aus dem `zeit`-String ein `System.DateTime`; beim
+Zurückschreiben überlebt der Wert nur dann unverändert, wenn der Sekundenbruch
+nicht null ist (`…T00:00:00.0000000Z` wird zu `…T00:00:00Z`). Die Fixtur trägt
+deshalb `2026-08-29T00:00:00.1234567Z`.
+
+**Gegenprobe am echten Artefakt.** Auf diesem Rechner liegt ein von
+`Install-Nakama.ps1` wirklich geschriebenes `eq-copilot/install/install-ergebnis.json`.
+Es bestätigt die abgelesene Form Feld für Feld:
+
+```text
+Kopf-Felder in Reihenfolge: ['schema', 'status', 'transaktions_id', 'manifest', 'zeit', 'bekannte_staende', 'eintraege']
+transaktions_id: 32b8c7e96f2947f99ef44a38648316cc | Laenge 32
+zeit: 2026-08-29T09:46:53.0057417Z
+Eintrag-Felder in Reihenfolge: ['ziel_id', 'art', 'name', 'ziel', 'sha256', 'vorher_sha256', 'vorher_sha256_innen', 'gesichert', 'erzeugte_ordner', 'mutation_begonnen', 'mutation_abgeschlossen', 'rollback_abgeschlossen']
+```
+
+**Fix.** Der Runner führt die Fixturwerte jetzt als benannte Konstanten
+(`PROBE_TRANSAKTIONS_ID`, `PROBE_ZEIT`) und rechnet `name` und `ziel` so aus,
+wie `Artefakt-Name` und `Ziel-Pfad` es im Writer tun (Produktname aus der
+Identitätsdatei, Zielverzeichnis aus dem Installer-Manifest); `gesichert` folgt
+`backup-<index>.bundle`. Das erfundene Feld `quelle` ist aus dem Eintrag
+verschwunden — kein Writer schreibt es.
+
+**Neue Wache `P2/4`.** Das ID-Muster wird nicht abgeschrieben, sondern **live**
+aus `Install-Nakama.ps1` gelesen und gegen die Fixtur gehalten. Ändert der
+Writer seine ID-Form, fällt diese Zeile — nicht erst der nächste Prüfer.
+
+**Zwei Achsen, ausdrücklich getrennt.** Der Kopf der Statusschleife darüber ist
+absichtlich **minimal und keine Writer-Form**: sie fragt, ob die Sperre am
+Status hängt — auch an einem erfundenen (`NEUER_STATUS_2099`) und an einem
+fehlenden, die kein Writer je schreibt. Die drei Proben (a)/(b)/(c) fragen das
+Gegenstück: gilt dasselbe für die Köpfe, die `Install-Nakama.ps1` wirklich
+schreibt. Beides steht jetzt so im Quelltext, damit die Trennung nicht wie ein
+Versehen aussieht.
+
+**Probe (c) ist ausdrücklich keine Writer-Form.** Der OK-Pfad
+(`$journal.status = 'OK'`) setzt am fertigen Installations-Journal nur `status`
+und `zeit` neu; `eintraege` bleibt immer stehen. Ein OK-Journal ohne Liste kann
+also nur ein fremdes oder abgeschnittenes sein — gefahren wird der
+Installations-Kopf **minus genau dieser Liste**, alles Übrige in Writer-Form,
+damit die fehlende Liste die einzige Abweichung ist. Das steht so im Kommentar
+der Probe und in der A17-Behauptung.
+
+**Am Endstand `53c10a3` gefahren** — die Journale, die `[3b]` wirklich schreibt,
+aus der Datei zurückgelesen, samt dem, was `[4b]` darauf sagt:
+
+```text
+--- Journal (a) RUECKWEG - Writer: abschliessendes Schreibe-Ergebnis des RUECKWEG-Zweigs ---
+{
+  "schema": "nakama.install-ergebnis/v1",
+  "status": "RUECKWEG",
+  "transaktions_id": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+  "erzwungen": false,
+  "warnungen": [],
+  "getan": [
+    "entfernt: C:\\Program Files\\Common Files\\VST3\\EQ-Copilot.vst3"
+  ],
+  "zeit": "2026-08-29T00:00:00.1234567Z"
+}
+--- [4b] darauf ---
+
+[4b] Installierter Stand  - Bericht, kein Urteil
+  Journal: status='RUECKWEG'  zeit='2026-08-29T00:00:00.1234567Z'
+  hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG)
+
+--- Journal (b) RUECKWEG_AKTIV - Writer: Kopf des Installations-Writers, nur status ersetzt ---
+{
+  "schema": "nakama.install-ergebnis/v1",
+  "status": "RUECKWEG_AKTIV",
+  "transaktions_id": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+  "manifest": "eq-copilot/install/nakama-installer-v1.json",
+  "zeit": "2026-08-29T00:00:00.1234567Z",
+  "bekannte_staende": [],
+  "eintraege": [
+    {
+      "ziel_id": "main",
+      "art": "vst3",
+      "name": "EQ-Copilot",
+      "ziel": "C:\\Program Files\\Common Files\\VST3\\EQ-Copilot.vst3",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "vorher_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "vorher_sha256_innen": null,
+      "gesichert": "backups/a1b2c3d4e5f60718293a4b5c6d7e8f90/backup-0.bundle",
+      "erzeugte_ordner": [],
+      "mutation_begonnen": true,
+      "mutation_abgeschlossen": true,
+      "rollback_abgeschlossen": false
+    }
+  ]
+}
+--- [4b] darauf ---
+
+[4b] Installierter Stand  - Bericht, kein Urteil
+  Journal: status='RUECKWEG_AKTIV'  zeit='2026-08-29T00:00:00.1234567Z'
+  hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)
+
+--- Journal (c) OK OHNE eintraege - KEINE Writer-Form: Installations-Kopf minus der Liste ---
+{
+  "schema": "nakama.install-ergebnis/v1",
+  "status": "OK",
+  "transaktions_id": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+  "manifest": "eq-copilot/install/nakama-installer-v1.json",
+  "zeit": "2026-08-29T00:00:00.1234567Z",
+  "bekannte_staende": []
+}
+--- [4b] darauf ---
+
+[4b] Installierter Stand  - Bericht, kein Urteil
+  Journal: status='OK'  zeit='2026-08-29T00:00:00.1234567Z'
+  hinweis install-ergebnis.json fuehrt keine Liste 'eintraege'
+```
+
+---
+
+### Befund 4 — Belege jede neue Probe mit einem eigenen roten Bruchlauf (Defekt, Prüfliste E)
+
+Wortlaut des Prüfers (Positionen `@ 401d036`):
+
+> **[P2] Belege jede neue Probe mit einem eigenen roten Bruchlauf** — `docs/beweise/SONDE-007c.md:17175-17176`. [Defekt, mittel] Die dokumentierte Bruchreproduktion lässt die neuen Proben für `RUECKWEG_AKTIV` und `OK` ohne `eintraege` ausdrücklich grün und belegt daher nur Probe (a), obwohl die Dirigentenregel jede neue Probe einmal gebrochen und zurückgenommen verlangt; das verletzt die Beweisregel (Prüfliste E), daher sollten (b) und (c) separat zum Fallen gebracht und jeweils mit ROT- und Rücknahmeausgabe dokumentiert werden.
+
+**Reproduktion am Basis-Stand `898b28b`** — der einzige Bruch der Nacharbeit 3
+noch einmal gefahren; (b) und (c) bleiben grün, sind also nicht belegt:
+
+```text
+### B-D (Nacharbeit 3, einziger dokumentierter Bruch): Statussperre hinter die Eintragsliste
+  Bruch gesetzt in tools/eq-copilot/pruefe_installer_manifest.py
+  -- ROT --
+   FEHLER  P2/3: die ECHTE Writer-Form des Rueckwegs (ohne eintraege) meldet artefaktweise 'Journalstatus RUECKWEG' - nicht 'keine Liste'  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
+   ok      P2/3: die ECHTE Writer-Form des begonnenen Rueckwegs (mit eintraege) endet ebenfalls ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
+   ok      P2/3: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
+   1 Fehler im Block
+```
+
+**Regel des Dirigenten.** Je Probe genau ein Bruch, der **diese** Probe rot macht
+und die anderen grün lässt; ROT- und Rücknahme-Rohausgabe je Probe. Lässt sich
+eine Probe durch keinen realistischen Einzeilen-Bruch rot machen, ist sie keine
+Wache und wird als Beschreibung ins Manifest verschoben.
+
+**Vier Brüche, jeder eine andere Kante.** Alle als exakte Textersetzung gesetzt,
+gefahren und byteweise zurückgenommen (sha256 der Datei vor und nach jedem
+Bruch identisch). Keine Probe musste als Beschreibung ausgelagert werden — jede
+lässt sich einzeln fällen:
+
+| Bruch | was er tut | wer fällt |
+|---|---|---|
+| `B-R9a` | Statussperre wieder **hinter** den `eintraege`-Test (die Regression aus Nacharbeit 3) | nur (a) |
+| `B-R9b` | Statussperre behandelt `RUECKWEG_AKTIV` wie `OK` | (b) — und die gleichnamige Zeile der Statusschleife, die dieselbe Kante von der Status-Achse her misst |
+| `B-R9c` | der OK-Pfad ersetzt eine fehlende Liste still durch `[]` | nur (c) |
+| `B-R9d` | die gestrichelte Fixtur-ID der Nacharbeit 3 wieder eingesetzt | nur die neue Wache `P2/4` |
+
+Ein technischer Hinweis für den nächsten Bruchtreiber: Bruch und Rücknahme sind
+gleich **groß** und fallen in dieselbe Sekunde, weshalb CPython den `.pyc` des
+gebrochenen Standes für gültig hält — der Grün-Lauf mäße sonst noch einmal den
+Bruch. Der Treiber übersetzt die Quelle deshalb direkt statt zu importieren.
+
+```text
+### B-R9a  Statussperre wieder HINTER die Eintragsliste (Regression aus Nacharbeit 3)
+  Bruch gesetzt in tools/eq-copilot/pruefe_installer_manifest.py
+  -- ROT --
+   ok      P2: Journalstatus RUECKWEG_AKTIV meldet den installierten Stand als unbekannt - ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
+   ok      P2/4: die Transaktions-ID der Journal-Fixturen besteht die Ist-TransaktionsId-Regex aus Install-Nakama.ps1 - eine gestrichelte UUID taete es nicht  [Muster '^[0-9a-f]{32}$' gegen 'a1b2c3d4e5f60718293a4b5c6d7e8f90']
+   FEHLER  P2/3: die ECHTE Writer-Form des Rueckwegs (ohne eintraege) meldet artefaktweise 'Journalstatus RUECKWEG' - nicht 'keine Liste'  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
+   ok      P2/3: die ECHTE Writer-Form des begonnenen Rueckwegs (mit eintraege) endet ebenfalls ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
+   ok      P2/3: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
+   1 Fehler im Block
+  Bruch zurueckgenommen (Bytes identisch, sha256 c358b1f669a0734b)
+  -- GRUEN --
+   ok      P2: Journalstatus RUECKWEG_AKTIV meldet den installierten Stand als unbekannt - ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
+   ok      P2/4: die Transaktions-ID der Journal-Fixturen besteht die Ist-TransaktionsId-Regex aus Install-Nakama.ps1 - eine gestrichelte UUID taete es nicht  [Muster '^[0-9a-f]{32}$' gegen 'a1b2c3d4e5f60718293a4b5c6d7e8f90']
+   ok      P2/3: die ECHTE Writer-Form des Rueckwegs (ohne eintraege) meldet artefaktweise 'Journalstatus RUECKWEG' - nicht 'keine Liste'  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG)]
+   ok      P2/3: die ECHTE Writer-Form des begonnenen Rueckwegs (mit eintraege) endet ebenfalls ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
+   ok      P2/3: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
+   0 Fehler im Block
+
+### B-R9b  Statussperre behandelt RUECKWEG_AKTIV wie OK
+  Bruch gesetzt in tools/eq-copilot/pruefe_installer_manifest.py
+  -- ROT --
+   FEHLER  P2: Journalstatus RUECKWEG_AKTIV meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ok      main: installierter Stand = Manifest  [0000000000000000]  C:\Program Files\Common Files\VST3\EQ-Copilot.vst3]
+   ok      P2/4: die Transaktions-ID der Journal-Fixturen besteht die Ist-TransaktionsId-Regex aus Install-Nakama.ps1 - eine gestrichelte UUID taete es nicht  [Muster '^[0-9a-f]{32}$' gegen 'a1b2c3d4e5f60718293a4b5c6d7e8f90']
+   ok      P2/3: die ECHTE Writer-Form des Rueckwegs (ohne eintraege) meldet artefaktweise 'Journalstatus RUECKWEG' - nicht 'keine Liste'  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG)]
+   FEHLER  P2/3: die ECHTE Writer-Form des begonnenen Rueckwegs (mit eintraege) endet ebenfalls ohne Hashvergleich  [ok      main: installierter Stand = Manifest  [0000000000000000]  C:\Program Files\Common Files\VST3\EQ-Copilot.vst3]
+   ok      P2/3: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
+   2 Fehler im Block
+  Bruch zurueckgenommen (Bytes identisch, sha256 c358b1f669a0734b)
+  -- GRUEN --
+   ok      P2: Journalstatus RUECKWEG_AKTIV meldet den installierten Stand als unbekannt - ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
+   ok      P2/4: die Transaktions-ID der Journal-Fixturen besteht die Ist-TransaktionsId-Regex aus Install-Nakama.ps1 - eine gestrichelte UUID taete es nicht  [Muster '^[0-9a-f]{32}$' gegen 'a1b2c3d4e5f60718293a4b5c6d7e8f90']
+   ok      P2/3: die ECHTE Writer-Form des Rueckwegs (ohne eintraege) meldet artefaktweise 'Journalstatus RUECKWEG' - nicht 'keine Liste'  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG)]
+   ok      P2/3: die ECHTE Writer-Form des begonnenen Rueckwegs (mit eintraege) endet ebenfalls ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
+   ok      P2/3: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
+   0 Fehler im Block
+
+### B-R9c  der OK-Pfad ersetzt eine fehlende Eintragsliste still durch []
+  Bruch gesetzt in tools/eq-copilot/pruefe_installer_manifest.py
+  -- ROT --
+   ok      P2: Journalstatus RUECKWEG_AKTIV meldet den installierten Stand als unbekannt - ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
+   ok      P2/4: die Transaktions-ID der Journal-Fixturen besteht die Ist-TransaktionsId-Regex aus Install-Nakama.ps1 - eine gestrichelte UUID taete es nicht  [Muster '^[0-9a-f]{32}$' gegen 'a1b2c3d4e5f60718293a4b5c6d7e8f90']
+   ok      P2/3: die ECHTE Writer-Form des Rueckwegs (ohne eintraege) meldet artefaktweise 'Journalstatus RUECKWEG' - nicht 'keine Liste'  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG)]
+   ok      P2/3: die ECHTE Writer-Form des begonnenen Rueckwegs (mit eintraege) endet ebenfalls ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
+   FEHLER  P2/3: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [keine solche Zeile]
+   1 Fehler im Block
+  Bruch zurueckgenommen (Bytes identisch, sha256 c358b1f669a0734b)
+  -- GRUEN --
+   ok      P2: Journalstatus RUECKWEG_AKTIV meldet den installierten Stand als unbekannt - ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
+   ok      P2/4: die Transaktions-ID der Journal-Fixturen besteht die Ist-TransaktionsId-Regex aus Install-Nakama.ps1 - eine gestrichelte UUID taete es nicht  [Muster '^[0-9a-f]{32}$' gegen 'a1b2c3d4e5f60718293a4b5c6d7e8f90']
+   ok      P2/3: die ECHTE Writer-Form des Rueckwegs (ohne eintraege) meldet artefaktweise 'Journalstatus RUECKWEG' - nicht 'keine Liste'  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG)]
+   ok      P2/3: die ECHTE Writer-Form des begonnenen Rueckwegs (mit eintraege) endet ebenfalls ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
+   ok      P2/3: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
+   0 Fehler im Block
+
+### B-R9d  die gestrichelte Fixtur-ID aus Nacharbeit 3 wieder eingesetzt (Befund 3 des Pruefers)
+  Bruch gesetzt in tools/eq-copilot/pruefe_installer_manifest.py
+  -- ROT --
+   FEHLER  P2/4: die Transaktions-ID der Journal-Fixturen besteht die Ist-TransaktionsId-Regex aus Install-Nakama.ps1 - eine gestrichelte UUID taete es nicht  [Muster '^[0-9a-f]{32}$' gegen '11111111-2222-3333-4444-555555555555']
+   ok      P2/3: die ECHTE Writer-Form des Rueckwegs (ohne eintraege) meldet artefaktweise 'Journalstatus RUECKWEG' - nicht 'keine Liste'  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG)]
+   ok      P2/3: die ECHTE Writer-Form des begonnenen Rueckwegs (mit eintraege) endet ebenfalls ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
+   ok      P2/3: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
+   1 Fehler im Block
+  Bruch zurueckgenommen (Bytes identisch, sha256 c358b1f669a0734b)
+  -- GRUEN --
+   ok      P2/4: die Transaktions-ID der Journal-Fixturen besteht die Ist-TransaktionsId-Regex aus Install-Nakama.ps1 - eine gestrichelte UUID taete es nicht  [Muster '^[0-9a-f]{32}$' gegen 'a1b2c3d4e5f60718293a4b5c6d7e8f90']
+   ok      P2/3: die ECHTE Writer-Form des Rueckwegs (ohne eintraege) meldet artefaktweise 'Journalstatus RUECKWEG' - nicht 'keine Liste'  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG)]
+   ok      P2/3: die ECHTE Writer-Form des begonnenen Rueckwegs (mit eintraege) endet ebenfalls ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
+   ok      P2/3: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
+   0 Fehler im Block
+```
+
+---
+
+### Prüfliste (`tools/dirigent/pruefliste.md`) — wo gemessen
+
+| Zeile | wo gemessen |
+|---|---|
+| **D** — fail-closed ohne Rohtextheuristik | unverändert: `[4b]` bleibt Bericht ohne Urteil, jeder Status ≠ `OK` endet ohne Hashvergleich, und im OK-Pfad ist eine fehlende Eintragsliste eine benannte Aussage statt eines stillen `[]` (`B-R9c` zeigt, was ein stilles `[]` kostet) |
+| **E** — „Behauptung ≤ Messung" | die Fixturen sind erzeugbar: ID gegen die Regex des Writers (`P2/4`, Muster live gelesen), `zeit` im gemessenen `ToString('o')`-Format, Feldmengen aus den drei benannten Writer-Stellen, gegengeprüft am echten `install-ergebnis.json` dieses Rechners. Die A17-Behauptung sagt jetzt zusätzlich, dass Probe (c) **keine** Writer-Form ist |
+| **E** — „jede neue Prüfung wurde einmal absichtlich gebrochen" | vier Brüche `B-R9a`…`B-R9d`, je rot und grün mit Rohausgabe, jeder byteweise zurückgenommen |
+| **E** — Positionen | Writer-Stellen als `Datei:Zeile` mit Commit (`@ 898b28b`, `Install-Nakama.ps1` seither unverändert: `git diff --quiet 898b28b HEAD -- eq-copilot/install/Install-Nakama.ps1` → Exit 0); dieser Abschnitt trägt seinen Stand im Kopf |
+| **F** — „installieren↔Rückweg im selben Änderungssatz" | Fixturen, neue Wache und die A17-Behauptung in einem Commit (`53c10a3`); an `Install-Nakama.ps1` wurde nichts geändert |

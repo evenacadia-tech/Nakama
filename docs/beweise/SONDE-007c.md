@@ -17199,3 +17199,20 @@ Nacharbeit 3 - Abschluss"): **GRUEN, 32/32** auf `93e8a7c` bei sauberem
 Arbeitsbaum, Bein `A17` mit Exit 0. Die Roh-Datei ist
 [`docs/beweise/roh/SONDE-007a-93e8a7c.md`](roh/SONDE-007a-93e8a7c.md); der
 A17-Abschnitt darin traegt den Anker `#a17`.
+
+## Dirigentenstand NAK-94 — 2026-08-30 00:14 (Sitzung 054eedac): Prüfer 4 NEEDS_WORK, offen — Nacharbeit 4
+
+**Stand dieses Abschnitts:** `401d036`
+
+**Nacharbeit 3:** Opus/max `nakama-s8r8-nak94r3-9f1333c-bau` (gemeinsam mit S8 Runde 8), Commit `5dfe3a3`; Kanon GRÜN 32/32 auf `93e8a7c` (Roh-Datei `docs/beweise/roh/SONDE-007a-93e8a7c.md`, Bein A17).
+**Prüfer 4:** Codex high `01a04f8b-aa9d-7371-8555-03d975ef4896`, lesend über `git diff da62dec...401d036`, HEAD vor/nach identisch — **NEEDS_WORK (2)**, wörtlich (`@ 401d036`):
+
+> **[P2] Verwende die echte Transaktions-ID-Form in den Writer-Proben** — `tools/eq-copilot/pruefe_installer_manifest.py:1070`. [Defekt, mittel] Die als „exakte Writer-Form" bezeichnete Probe ist so nicht erzeugbar: `Install-Nakama.ps1` schreibt und akzeptiert ausschließlich 32-stellige IDs ohne Bindestriche (`ToString('N')`, Regex `^[0-9a-f]{32}$`), während diese und die `RUECKWEG_AKTIV`-Probe eine UUID mit Bindestrichen verwenden; damit überschreitet die Behauptung die Messung (Prüfliste E), weshalb die Fixtures mit tatsächlich writer-gültigen IDs und Feldern erneut gefahren werden sollten.
+>
+> **[P2] Belege jede neue Probe mit einem eigenen roten Bruchlauf** — `docs/beweise/SONDE-007c.md:17175-17176`. [Defekt, mittel] Die dokumentierte Bruchreproduktion lässt die neuen Proben für `RUECKWEG_AKTIV` und `OK` ohne `eintraege` ausdrücklich grün und belegt daher nur Probe (a), obwohl die Dirigentenregel jede neue Probe einmal gebrochen und zurückgenommen verlangt; das verletzt die Beweisregel (Prüfliste E), daher sollten (b) und (c) separat zum Fallen gebracht und jeweils mit ROT- und Rücknahmeausgabe dokumentiert werden.
+
+**Einordnung:** beide Defekt, mittel — an der Quelle bestätigt: `Install-Nakama.ps1` erzeugt IDs mit `[Guid]::NewGuid().ToString('N')` (Z. 1047 @ `401d036`) und prüft `^[0-9a-f]{32}$` (Z. 547), die Probe trägt `11111111-2222-…` (Z. 1070); Bruch `B-D` zeigt (b) und (c) als `ok`.
+
+**Regeln des Dirigenten (Nacharbeit 4):** (1) Jedes Probe-Journal ist byteweise in der Form, die der jeweilige Writer in `Install-Nakama.ps1` schreibt: `transaktions_id` = 32 Hex ohne Bindestriche, Feldmenge und -reihenfolge des Writers (Rückweg Z. 856–864, RUECKWEG_AKTIV an seiner Writer-Stelle, Installation Z. 1109 — ablesen), `zeit` im `ToString('o')`-Format; im Manifest steht je Probe die Writer-Zeile, aus der sie abgelesen ist. (2) Je Probe genau ein Bruch, der **diese** Probe rot macht und die anderen grün lässt — z. B. (b): Statussperre behandelt `RUECKWEG_AKTIV` wie OK; (c): der OK-Pfad ersetzt eine fehlende Liste still durch `[]` — mit ROT- und Rücknahme-Rohausgabe je Probe. Lässt sich eine Probe durch keinen realistischen Einzeilen-Bruch rot machen, ist sie keine Wache und wird als Beschreibung ins Manifest verschoben, nicht als `pruefe(...)` geführt.
+
+**Nächster Schritt:** Nacharbeit 4 im selben Worker wie S8 Runde 9 (siehe `docs/beweise/SONDE-007a.md`, „Dirigentenstand … Prüfer 9"), gemeinsamer Kanon, danach Prüfer 5 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.

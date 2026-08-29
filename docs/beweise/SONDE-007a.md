@@ -14816,3 +14816,31 @@ der Bruch unten ist der gehärtete Lauf.
 | B10 | v3-Envelope in C++ klassifiziert den Envelope-Korpus wie das Manifest (Urteil UND Verstossmenge, alle 14 Regeln mit Negativfixture); CRC32C trifft die RFC-3720-Vektoren, P0/P1 tragen CRC exakt 0, P2 die Pflichtsumme ueber genau die Payloadbytes; 40 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und 7671 angenommene EINBIT-Mutanten gueltiger Frames halten jede Kopfregel (reiner Zufall wird praktisch immer abgewiesen - die Invariante braucht deshalb die Mutanten, sonst spraeche sie ueber eine leere Menge), 3000 gekippte P2-Bits fallen einzeln, byteweise Zustellung liefert dieselben 40 Frames und ein kaputter Frame beendet den Strom; Pipetoken trifft das Golden aus §48.3 samt SHA-256- und RFC-4648-Vektoren; P0 verwirft nichts und meldet den 65. Eintrag, P1 koalesziert an der Position und haelt Ereignisse fuer den Reconnect vor, die P2-Schleuse ersetzt den aeltesten ungesendeten Frame, uebergibt 100 000 Frames mit 0 Allokationen (mit Gegenprobe am selben Zaehler) und liefert unter Flut keinen zerrissenen Frame; verdrahtet: Control koppelt Telemetry ueber link_id + challenge, ein ungekoppelter Telemetry-Connect wird geschlossen, der Client verbindet nach Serverneustart von selbst wieder, ein kaputter Envelope vom Server schliesst die Verbindung, und ein P0-Ueberlauf WAEHREND einer stehenden Verbindung schliesst sie ebenfalls statt still zu kuerzen. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 32,71 s | [B10](roh/SONDE-007a-93e8a7c.md#b10) |
 | B8 | Lifecycle-Klassifikation §53.5: unclassified beim Laden und audio-neutral; Schema-1 sensor\|pre\|post -> legacy (immer passiv), hub bzw. bestaetigter Schema-2-Main-State -> main; ein Scannerlauf klassifiziert nicht; read-only nimmt die Klassifikation zurueck; Brokerstart nur fuer main mit offenem Editor; die Sondenbundles bleiben bis gueltigem State neutral und werden nie main. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,11 s | [B8](roh/SONDE-007a-93e8a7c.md#b8) |
 
+
+## Dirigentenstand — 2026-08-30 00:14 (Sitzung 054eedac): Prüfer 9 NEEDS_WORK, offen — Runde 9
+
+**Stand dieses Abschnitts:** `401d036`
+
+**Marke unverändert** (`T3 NEEDS_WORK 2026-08-28 nachgearbeitet`). Ticketbasis `dafa5a5`; Stand `401d036` (= origin/master); Kanon GRÜN 32/32 auf `93e8a7c` (Roh-Datei `docs/beweise/roh/SONDE-007a-93e8a7c.md`).
+
+| Schritt | Worker / Prüfer | Stand | Ergebnis |
+|---|---|---|---|
+| Runde 8 (+ NAK-94 Nacharbeit 3) | Opus/max `nakama-s8r8-nak94r3-9f1333c-bau`, ENG | `3a20064`…`401d036` | zentraler Voraussetzungs-Ausgang (F15), R6-3 kontrolliert 20/20, Systemdateien aus `P8-SYS` gemessen; Kanon GRÜN 32/32 auf `93e8a7c` |
+| Prüfer 9 | Codex xhigh `01a04f8b-9fb2-7e20-9e6a-d5bb260f8b5a`, lesend über `git diff dafa5a5...401d036`, HEAD vor/nach identisch | `401d036` | **NEEDS_WORK (2)** — unten wörtlich |
+
+**Befunde des neunten Prüfers, wörtlich (Positionen `@ 401d036`):**
+
+> **[P2] Gleiche F13 an den Voraussetzungs-Ausgang an** — `docs/beweise/SONDE-007a.md:12630`. Bei einem Funktionsaufruf von `main()` mit bereits registriertem `fehler` und nicht vorhandenem Bauverzeichnis liefert `voraussetzung_exit()` beobachtet Exit 2 samt Fehlerbericht; F13 verspricht hier dagegen weiterhin „3 … nie 2". Das widerspricht sowohl der neuen zentralen Exitlogik als auch der Runde-8-Regel, dass vor jedem Voraussetzungs-Ausgang gesammelte Befunde gewinnen. Passe F13 auf „ohne Befund 3, mit Befund 2, nie 0" an oder begrenze die Zeile ausdrücklich auf einen frischen Prozess ohne vorherige Messung.
+>
+> **[P2] Binde die Systemdatei-Doku an P8-SYS** — `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:1220-1222`. Beim Nachvollziehen von `SYSTEMDATEIEN` behauptet diese aktuelle Docstring weiterhin, die beiden Namen seien beim Formatieren einer Diagnose in P5-W5b gemessen worden. P8-SYS zeigt sie jedoch auch in der TU ohne Diagnose, während die eingefügte P5-W5b-Ausgabe die Namen gerade nicht enthielt; damit bleibt Befund 3 in einer lebenden Quellenbehauptung offen. Ersetze die Attribution hier und im gleichlautenden Kommentar vor `tlog_ortsriegel()` durch P8-SYS und entferne die Diagnose-Kausalität.
+
+**Einordnung und Regeln des Dirigenten** (beide an der Quelle nachgelesen: Matrixzeile F13 „**3** mit Klartext, nie 0, nie 2" @ `401d036`; Docstring und Kommentar nennen P5-W5b/Diagnose):
+
+1. **Defekt, mittel (Prüfliste E: Behauptung ≠ Messung).** F13 lautet ab jetzt: „Bau nicht möglich → ohne registrierten Befund **3**, mit registriertem Befund **2**, nie 0" — gleichlautend mit F14/F15, Test `R8-1` (zentraler Voraussetzungs-Ausgang) plus `R5-3`. Keine Ausnahme „frischer Prozess": die Zusage gilt für jeden Aufruf von `main()`.
+2. **Defekt, mittel (Prüfliste E: lebende Quellenbehauptung).** Docstring und Kommentar vor `tlog_ortsriegel()` (und jede weitere Stelle im Skript, die P5-W5b oder eine Diagnose als Ursprung der Liste nennt — `grep P5-W5b|Diagnose`) attribuieren die Liste auf `P8-SYS` (Runde 8, Stand + Befehl im Manifest) und sagen nur das Gemessene: die beiden Dateien wurden auch in einer Übersetzungseinheit **ohne** Diagnose gelesen; eine Kausalität wird nicht behauptet.
+
+Beides sind Textkorrekturen ohne Verhaltensänderung; Proben: `--selbsttest` grün und die A14-Behauptung in `tools/beweise.ps1` unverändert oder exakt nachgezogen.
+
+**Nächster Schritt:** ein Nacharbeits-Worker für S8 Runde 9 **und** NAK-94 Nacharbeit 4 (siehe `docs/beweise/SONDE-007c.md`, „Dirigentenstand NAK-94 … Prüfer 4"), gemeinsamer Kanon auf dem Endstand, dann Prüfer 10 (xhigh) für S8 und Prüfer 5 (high) für NAK-94 — je frischer Thread über den vollen Ticketbereich. Kein Halt.
+
+**Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99.

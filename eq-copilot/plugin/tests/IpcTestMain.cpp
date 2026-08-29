@@ -641,6 +641,45 @@ int main()
                 std::to_string (angenommen) + " angenommen / "
                     + std::to_string (abgelehnt) + " abgelehnt");
 
+        // Reine Zufallsbytes werden praktisch immer abgelehnt (gemessen: 0 von
+        // 40 000 angenommen) - die Invariante liefe damit ins Leere. Deshalb
+        // dieselbe Pruefung noch einmal an EINEM gekippten Bit eines GUELTIGEN
+        // Frames: dort kommen genug durch, um die Aussage zu tragen. Ohne
+        // diesen zweiten Lauf waere der Satz oben eine Behauptung ueber eine
+        // leere Menge.
+        std::size_t angenommenMutiert = 0, abgelehntMutiert = 0;
+        bool invarianteMutiert = true;
+        for (int runde = 0; runde < 20000; ++runde)
+        {
+            std::vector<std::uint8_t> gut2;
+            const auto fam = static_cast<Familie> (z.bis (3));
+            const std::size_t n = static_cast<std::size_t> (z.bis (60));
+            std::vector<std::uint8_t> nutz (n, static_cast<std::uint8_t> ('a'));
+            envelopeSchreiben (fam, static_cast<std::uint8_t> (z.bis (256)),
+                               nutz.data(), n, gut2);
+            const std::size_t pos = static_cast<std::size_t> (z.bis (gut2.size()));
+            gut2[pos] ^= static_cast<std::uint8_t> (1u << z.bis (8));
+            const auto u = envelopePruefen (gut2.data(), gut2.size());
+            if (! u.gueltig) { ++abgelehntMutiert; continue; }
+            ++angenommenMutiert;
+            const std::uint32_t frameLen = static_cast<std::uint32_t> (gut2[0])
+                                         | (static_cast<std::uint32_t> (gut2[1]) << 8)
+                                         | (static_cast<std::uint32_t> (gut2[2]) << 16)
+                                         | (static_cast<std::uint32_t> (gut2[3]) << 24);
+            if (! (frameLen >= kKopfBytes && frameLen <= kMaxFrameBytes
+                   && static_cast<std::uint64_t> (frameLen)
+                          == static_cast<std::uint64_t> (kKopfBytes) + u.kopf.payloadLen
+                   && u.kopf.flags == 0 && u.kopf.schemaMajor == kSchemaMajor
+                   && u.kopf.encoding == erwarteteKodierung (u.kopf.familie)
+                   && u.drahtlaenge == 4u + frameLen))
+                invarianteMutiert = false;
+        }
+        pruefe (invarianteMutiert && angenommenMutiert > 0 && abgelehntMutiert > 0,
+                "ein gekipptes Bit in einem GUELTIGEN Frame: was durchkommt, "
+                "haelt jede Kopfregel",
+                std::to_string (angenommenMutiert) + " angenommen / "
+                    + std::to_string (abgelehntMutiert) + " abgelehnt");
+
         // Ein gekipptes Bit im P2-Payload faellt IMMER.
         bool immerGefangen = true;
         for (int runde = 0; runde < 3000; ++runde)

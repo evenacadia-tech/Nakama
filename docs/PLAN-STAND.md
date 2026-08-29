@@ -1,6 +1,6 @@
 # Planstand Nakama
 
-<!-- quellstand: 0211602 -->
+<!-- quellstand: d8700e5 -->
 
 > **Gerechnet, nicht gepflegt.** Dieses Blatt entsteht aus dem Repo:
 > `py -3.13 tools/plan/planstand.py`. Es wird **nie** von Hand editiert —
@@ -9,9 +9,9 @@
 > *abgenommen* erst, wenn dort eine Urteilsmarke der geforderten Prüfstufe
 > mit **PASS** steht. Fehlt sie, gilt der Schritt als nicht abgenommen.
 
-**Stand:** 2026-08-29 · Quellstand `0211602` · **14 von 37 abgenommen** · 4 gebaut · 19 offen
+**Stand:** 2026-08-29 · Quellstand `d8700e5` · **14 von 37 abgenommen** · 5 gebaut · 18 offen
 
-`███████████████▓▓▓▓░░░░░░░░░░░░░░░░░░░░░` 38 % abgenommen · 49 % gebaut
+`███████████████▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░` 38 % abgenommen · 51 % gebaut
 
 **Als Nächstes:** **Nacharbeit an G1** — der Prüfer hat einen Befund offen gelassen (docs/beweise/G1.md).
 
@@ -26,7 +26,7 @@
 | **Vorlauf** — Beweisen statt behaupten | `████████████████████████` | 1 | 0 | 0 |
 | **P0** — Bestand einfrieren, Hostgrenzen beweisen | `████████████████████████` | 8 | 0 | 0 |
 | **P1** — Verträge, gespeicherter Zustand, neutrale Hüllen | `██████████▓▓▓▓▓▓▓▓▓▓▓▓▓▓` | 3 | 4 | 0 |
-| **P2** — Messkern, Nachrichtenweg, Speicher | `██████████░░░░░░░░░░░░░░` | 2 | 0 | 3 |
+| **P2** — Messkern, Nachrichtenweg, Speicher | `██████████▓▓▓▓░░░░░░░░░░` | 2 | 1 | 2 |
 | **P3** — Passive Landkarte | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 2 |
 | **P4–P5** — Vergleichsevidenz und Ursachen | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 4 |
 | **P6–P7** — Aktiver Kern: EQ in Sonde und Gen | `░░░░░░░░░░░░░░░░░░░░░░░░` | 0 | 0 | 6 |
@@ -41,7 +41,7 @@ flowchart LR
   P0 --> P1
   P2["P1<br/>3/7 abgenommen<br/>+4 gebaut"]:::laeuft
   P1 --> P2
-  P3["P2<br/>2/5 abgenommen"]:::laeuft
+  P3["P2<br/>2/5 abgenommen<br/>+1 gebaut"]:::laeuft
   P2 --> P3
   P4["P3<br/>0/2 abgenommen"]:::offen
   P3 --> P4
@@ -89,13 +89,13 @@ flowchart LR
 - ▣ **S9b** `SONDE-007c` — Suna ist seit dem 23.08. in Probeeq aufgegangen; Bau, Installer-Manifest und Identitätsdatei sind aber noch dreispurig. Vorgezogen aus S28b am 28.08.2026 (User: „ja stell das einfach richtig“, design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md), damit der FL-Schritt von S9 das Produkt misst, das es gibt. Das Ziel NakamaSuna_VST3 wird stillgelegt; sein Prüfbein A15 verabschiedet sich deklariert aus dem Kanon (tools/beweise.ps1-Tabelle), nicht still; das Installer-Manifest liefert zwei Bundles plus Broker; der Suna-Eintrag in plugin-identities-v1.json wird als stillgelegt markiert, ohne eine eingefrorene Kennung von Gen oder Probeeq anzufassen (NAK-30 gilt weiter); der Rückweg bleibt vollständig. Gate: Kanon grün ohne A15, Installer-Manifestprüfung A17 grün mit zwei Bundles, pluginval SUCCESS an beiden Bundles, kein Bundle trägt eine fremde CID. Danach lautet §55 Klausel 1: beide Ziele scannen und laden in FL. (gebaut · T2 NEEDS_WORK 2026-08-29 · nachgearbeitet, frisches Urteil fehlt · Kanon 28/28 grün)
 - ▣ **G1** `Gate` — Prüfrunde über P1 (C++- und Rust-Review + Codex) — gefahren 24.08., Urteil NEEDS_WORK: Gate 1 hielt (beide Modelle „kein Pfad gefunden“), Gate 7 fiel — von Claude über das v3-Schema (insert + beitrag validiert) und unabhängig davon von Codex über den gespeicherten Zustand (eine Sonde ohne Aux-Bus darf sich post_fader_contribution nennen). Dazu zwei offene §55-Exit-Klauseln: die drei Bundles sind nie in FL gescannt worden, und Rust klassifiziert die 15 ungültigen State-DTOs nicht (NAK-42). Kanon 28/28 grün und beglaubigt. Manifest docs/beweise/G1.md. (gebaut · T3 NEEDS_WORK 2026-08-24 · Befund offen · Kanon 28/28 grün)
 
-### P2 — Messkern, Nachrichtenweg, Speicher  (2/5 abgenommen)
+### P2 — Messkern, Nachrichtenweg, Speicher  (2/5 abgenommen, 1 gebaut)
 
 *Die größte Phase: Audio wird zeitgestempelt gemessen, über den Broker verteilt und gespeichert — ohne je den Audiothread zu blockieren. Danach: Release R0 (Vertrag steht, intern).*
 
 - ■ **S10–11** `SONDE-008` — Zeitgestempelte Audio-Warteschlange, Quarantaene fuer kaputte Bloecke, Lautheitsmessung mit festem Speicher. GEBAUT 23.08. — der gefaehrlichste Eingriff der ganzen Phase, weil er mitten im Audiothread sitzt. Bisher gab die Weitergabe an die Messung bei Platzmangel einen HALBEN Block weiter und zaehlte den Rest; die Messung sah danach einen lueckenlosen Strom, dem in der Mitte Zeit fehlte, und konnte das nicht mehr merken. Jetzt gilt ganz oder gar nicht: passt ein Block nicht, faellt er komplett, wird gezaehlt, und der naechste traegt die Markierung 'hier fehlt etwas'. Dazu haelt die Messung jeden Block einen Moment zurueck, bis der naechste beweist, dass er lueckenlos anschliesst — sonst koennte ein erst nachtraeglich sichtbarer Schleifensprung eine schon veroeffentlichte Auswertung verderben. Und die Lautheitsmessung sammelt nicht mehr endlos: sie braucht ab jetzt immer gleich viel Speicher, egal ob fuenf Minuten oder fuenf Stunden laufen — eine Million Messzellen ohne eine einzige Speicheranforderung, vorgefuehrt. Zwei neue Pruefungen (Kanon 24 → 26), alle 26 gruen und beglaubigt, Fremdpruefer pluginval auf hoechster Stufe an allen drei Plugins bestanden. Kein Sample Audio hat sich geaendert. NACHGEPRUEFT UND NACHGEBESSERT 23.08. abends: ein frischer Pruefer hat vier Sachen gefunden, alle vier haben sich bestaetigt, alle vier sind geschlossen - die Lautheitsmessung ist jetzt auch bei absurd lautem Material genau (statt nur ehrlich darueber), ihre eingebaute Pruefung kann den Fall ueberhaupt erst sehen, deine Entscheidung vom 22.08. hat eine Sicherung, und zwei Raender an der Zeitrechnung stimmen. Jede neue Pruefung wurde einmal absichtlich kaputtgemacht und schlug an. Alle 26 gruen und beglaubigt. Steht weiterhin auf 'gebaut' und nicht auf 'erledigt': wer repariert, spricht sich nicht selbst frei - das bestaetigt ein frischer Pruefer. (abgenommen · T2 PASS 2026-08-24 · Kanon 28/28 grün)
 - ■ **S12–13** `SONDE-009` — Messkern v2: Zeit-, Gueltigkeits-, Ereignis- und Bandvertraege. GEBAUT 23.08. — die Schicht, die aus gemessenem Audio ehrliche Zahlen macht. Der Auftrag stand in einem einzigen Satz: 'Drop/Seek/Loop trennt jedes offene Fenster.' Was das heisst: die Messung sammelt staendig ueber laengere Abschnitte (bis zu einer Drittelsekunde), um ueberhaupt etwas ueber tiefe Toene sagen zu koennen. Springt der Abspielzeiger mittendrin an eine andere Stelle, oder wiederholt sich eine Schleife, oder faellt ein Stueck Audio weg, dann liegen in so einem angefangenen Abschnitt ZWEI verschiedene Stellen der Musik. Die daraus gerechnete Zahl sieht aus wie eine Messung und ist keine. Jetzt wird an jeder solchen Stelle alles Angefangene weggeworfen und neu begonnen — und zwar an NEUN verschiedenen Ereignissen, jedes einzeln nachgewiesen. Dazu die Bandaufteilung des Vertrags als eingefrorene Zahlen im Programm (mit zwei unabhaengigen Waechtern) und der eine Weg, ueber den das Plugin im echten FL seine Zeitinformation bekommt, ist ERSTMALS wirklich gefahren worden statt nur gelesen. T2-GEPRUEFT 23.08.: Urteil NEEDS_WORK. Der schwierige Teil haelt - alles, was waehrend eines angefangenen Abschnitts Klang sammelt, wird wirklich weggeworfen, auch der unsichtbare Nachklang des Filters. Gefunden wurde ein Fehler eine Ebene darueber: die fertigen Messwerte (die 64 Balken, der feine Schnappschuss, die Angabe wieviel Klang da war) werden beim Sprung NICHT mit weggeworfen, so dass eine Meldung mit 'neue Stelle' beschriftet sein und ausschliesslich den Klang der alten enthalten kann - gemessen an 80 von 120 durchprobierten Zeitpunkten. Nicht abgenommen; Nacharbeit ist der naechste Schritt. (abgenommen · T2 PASS 2026-08-24 · Kanon 28/28 grün)
-- □ **S14–15** `SONDE-010` — Nachrichten-Clients in den Plugins und der Parser im Broker. (offen)
+- ▣ **S14–15** `SONDE-010` — Nachrichten-Clients in den Plugins und der Parser im Broker. GEBAUT 29.08. — die Leitung, über die Sonden und Vermittler künftig miteinander reden. Bisher gab es dafür nur den alten, einspurigen Weg: ein Plugin, eine Verbindung, alles hintereinander. Das Problem daran hört man nicht, aber es wäre da: fließen viele Messdaten, dann steht ein Befehl ("stell den EQ um") hinter tausend Spektren in der Schlange. Jetzt gibt es ZWEI getrennte Leitungen je Sonde — eine für Befehle, eine für Messdaten — und sie gehören nachweislich zusammen: die zweite wird nur angenommen, wenn sie drei Merkmale der ersten zitieren kann. GEMESSEN, nicht behauptet: 32 Sonden fluten gleichzeitig Messdaten, so stark, dass 40 800 Messframes bewusst verworfen werden — und in derselben Zeit kommen 10 048 von 10 048 Befehlen an, die langsamste Antwort nach 21 Millisekunden. Dazu ein Briefumschlag mit Prüfsumme vor jedem Paket: 37 Testdateien werden von C++ und Rust BUCHSTABENGLEICH beurteilt, jede der 14 Ablehnungsregeln hat ihren eigenen Fehlerfall, und ein einziges gekipptes Bit fällt in 3000 von 3000 Versuchen auf. Kanon 28 → 32 Prüfungen; jede neue wurde einmal absichtlich kaputtgemacht und hat angeschlagen. WAS BEWUSST NICHT PASSIERT IST: die beiden Apps sprechen noch den alten Weg. Der neue ist gebaut, gelinkt und über eine echte Leitung bewiesen, aber erst der nächste Schritt (S16–17) schaltet ihn ein — vorher gäbe es niemanden, der die Daten entgegennimmt und aufhebt. Ein Anschluss, der nichts tut, wäre genau die Art totes Element, die hier nicht gebaut wird. STATUS 'gebaut', nicht 'erledigt': wer repariert, spricht sich nicht selbst frei — das bestätigt ein frischer Prüfer. (gebaut · T1 PASS 2026-08-29 · nur T1 belegt, T2 verlangt · Kanon 32/32 grün)
 - □ **S16–17** `SONDE-011` — Koordinator im Broker, Datenbank-Migration, Ausgangspuffer. (offen)
 - □ **G2** `Gate` — Volles Programm: C++-, Rust- und Sicherheits-Review + Codex. (offen)
 

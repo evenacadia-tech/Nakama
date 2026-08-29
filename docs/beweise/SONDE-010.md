@@ -1,6 +1,7 @@
 # Beweismanifest — SONDE-010 «v3-Control-/Telemetry-Clients und Rust-Envelopeparser»
 
 <!-- NAKAMA-URTEIL: T1 PASS 2026-08-29 -->
+<!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-29 nachgearbeitet -->
 
 | Feld | Wert |
 |---|---|
@@ -13073,3 +13074,33 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
 </details>
 
+
+
+## Abschluss der Dirigentenrunde — 2026-08-29: NEEDS_WORK, zweimal nachgearbeitet, Urteil offen
+
+**Marke:** `T2 NEEDS_WORK 2026-08-29 nachgearbeitet` (neu unter der T1-Marke; die letzte Marke gilt). Stand `225cc26`; Ticketbasis `a7b0740`; Gesamtdiff 75 Dateien, 24 248+/30−. Prüfer: Codex `gpt-5.6-sol`, Effort `xhigh` (IPC-Vertrag, Nebenläufigkeit, Audio-nahe SPSC-Übergabe — Standard, nie gesenkt), drei frische Threads, jeder über den vollständigen Ticketbereich `git diff a7b0740...<Stand>`; HEAD vor und nach jedem Lauf gleich dem geprüften Stand. Bau durch einen frischen Opus-Worker (`max`) im sichtbaren Checkout (`cdff93b`…`5144669`); Nacharbeit in zwei Runden durch je einen frischen Opus-Worker (`max`) — die Codex-Sandbox fährt keinen Bau und keinen Kanonlauf (S8/S9/S9b-Präzedenz 28./29.08.); jede Runde hat auf dem committeten Stand den Kanon gefahren und angehängt.
+
+| Runde | Thread | Stand | Urteil | Befunde |
+|---|---|---|---|---|
+| 1 | `01a04bd4-231a-7fc1-b3fd-0d9fac768a91` | `5144669` | NEEDS_WORK | 10 (6 P1, 4 P2): P2-Schleuse-Datenrennen, Telemetrie lebt nach Control-Abmeldung, Ingress/Writer synchron im Leser, P1-Verlust bei Schreibfehler, keine Familienprüfung je Verbindungsart, Acceptor-`break` an der Instanzgrenze, Probe-Sperre nur v1, JoinHandles ohne Reaping, NaN/Inf-Cast im Hello, Telemetrie-Welcome nur per `type`. → §7, `4500785`…`dff8503`; Kanon GRÜN 32/32 auf `6fc3224` und `d137fa0`. |
+| 2 | `01a04c3d-7ec0-75b3-ac52-e6427c03c706` | `dff8503` | NEEDS_WORK | 7 (4 P1, 3 P2): P0-`zuruecklegen` bei vollem Refill ignoriert, Telemetrie-Leerlauf liest die Pipe nicht (stale Kopplung), Welcome typ-/feldmengenblind, P2 auf Control clientseitig angenommen, keine Ratengrenze im Client, Stop-vor-Registrierung-Fenster, Senken-Join nicht abbrechbar. → §8, `65d46a0`…`225cc26`; Kanon GRÜN 32/32 auf `e5f5c27` und `a0053e4`. |
+| 3 | `01a04c83-5fb5-73b2-b76d-50c30011607d` | `225cc26` | NEEDS_WORK | 6 (5 P1, 1 P2), alle offen — siehe unten. Geprüft laut Prüfer: gesamter Diff, aktuelle Quellen, Verträge, Fixtures, Tests, Manifest-Rohausgaben. Nicht geprüft: Bau, Kanon, Laufzeit (per Auftrag ausgeschlossen). |
+
+**Restbefund (Runde 3), wörtlich gekürzt auf Kern und Fundstelle:**
+
+> 1. [P1] Behalte akzeptierte P1-Ereignisse im Wiederholpuffer — `eq-copilot/plugin/core/ipc/IpcQueues.h:161-166`. Sind aktive Queue und Wiederholpuffer voll, entfernt `pop_front()` ein bereits akzeptiertes, nicht koaleszierbares Ereignis (Kapazität 2/2, Ereignisse 1–5: Ereignis 3 geht verloren; `IpcTestMain.cpp:1025-1040` bestätigt, dass nur 4 und 5 wiederholt werden). Verletzt die P1-Zusage aus §53.9; bei vollem Puffer neues Ereignis abweisen bzw. Reconnect auslösen, nie ältere akzeptierte Ereignisse löschen.
+> 2. [P1] Ersetze bei P2-Kollision weiterhin den ältesten Frame — `IpcQueues.h:323-330`. Kopiert der Verbraucher gerade den zyklisch nächsten Slot, verwirft der CAS-Fehler den NEUESTEN Frame, obwohl bis zu zwei ältere ungesendete warten; der Stresstest verlangt sogar `beanspruchtVerworfen() > 0`, A22 ignoriert `false`-Rückgabe und Zähler. Replace-oldest muss bei In-flight-Kollision einen wartenden ältesten Frame ersetzen.
+> 3. [P1] Melde Control vor den Join-Fristen ab — `broker/src/transport/server_v3.rs:1393`. Ist `Senke::p1` vorübergehend langsam und schließt der Peer die Control-Pipe, bleibt die Kopplung bis nach dem Verbraucher-Join registriert; P2 auf der Telemetrieverbindung besteht `telemetrie_lebt` bis zu `SENKE_FRIST` weiter. Kopplung unmittelbar nach Reader-Ende entfernen und Telemetrie-I/O abbrechen, bevor auf Verbraucher/Writer gewartet wird.
+> 4. [P1] Stoppe den Ingressverbraucher beim Queue-Schluss — `server_v3.rs:381-385`. `entnehmen()` liefert nach dem Schließen zuerst den nächsten Eintrag und prüft erst danach das Schließflag; abgelöste Verbraucher können P0/P1-Callbacks nach der Abmeldung ausführen. Bei geschlossener Queue vor dem Inhaltstest enden bzw. vor jedem Callback den Abbruchstatus prüfen.
+> 5. [P1] Begrenze auch Lifecycle-Aufrufe der Senke — `server_v3.rs:1169`. `senke.control_verbunden` (und weitere Lifecycle-/Diagnosecallbacks) laufen direkt auf dem Verbindungsthread, unbegrenzt; `stoppen()` wartet dann unbegrenzt. Der Hängertest blockiert nur `p0/p1/p2`. Auch diese Aufrufe über den begrenzten, ablösbaren Pfad führen.
+> 6. [P2] Prüfe die Längen der optionalen Hostfelder — `broker/src/transport/bootstrap.rs:239-240`. `host.name` (121 Zeichen) bzw. `host.version` (65) werden angenommen; das Schema erlaubt 120 bzw. 64. Längengrenzen und Bootstrap-Negativtests ergänzen.
+
+**Vom Dirigenten an der Quelle bestätigt: alle sechs.** `IpcQueues.h:161-166` verdrängt gezählt, aber endgültig; `:323-330` gibt bei `compare_exchange`-Fehlschlag `false` zurück und zählt `beanspruchtVerworfen`, ersetzt also nicht den ältesten wartenden Frame; `server_v3.rs:1375-1393` ruft `trennen()` erst nach den beiden fristbegrenzten Joins; `:378-386` prüft `g.1` (geschlossen) erst nach `entnehmen()`; `:1169` ruft `senke.control_verbunden` direkt; `bootstrap.rs:230-248` validiert nach `adresse_pruefen` nur die Audiofelder.
+
+**Was trägt und gemessen ist:** Kanon GRÜN 32/32 auf vier committeten Ständen (06:31, 08:30, 09:38, 09:48); A20–A22 und B10 deklariert und je einmal gebrochen (§2 B6, §7, §8); kein Bein rot; Identitätsdatei gegenüber der Ticketbasis unverändert (gemessen: `git diff --quiet a7b0740 225cc26 -- eq-copilot/identity/plugin-identities-v1.json` → 0); v2-Produktpfad unberührt (`git diff --stat a7b0740..225cc26 -- eq-copilot/plugin/src broker/src/protokoll.rs broker/src/framing.rs` → leer); Lastbein A22: 32 Sondenpaare, P0 vollständig beantwortet mit beschränkter Latenz (Rohausgabe §2 B5 und Kanon-Anhänge). Der Gate-Satz „ohne P0-Starvation" ist damit unter Last belegt; die offenen Punkte betreffen die Verlust- und Lebenszyklus-Politiken unter Rückstau- und Stop-Randbedingungen (P1-Wiederholpuffer, P2-Slotkollision, Entkopplungs-Reihenfolge, Verbraucher-Nachlauf, unbegrenzte Lifecycle-Callbacks) sowie eine Vertragslücke im Bootstrap.
+
+**Warum hier gestoppt:** Zwei Nacharbeitsrunden sind die Grenze des Dirigentenlaufs. Beide haben ihre Befunde an der Quelle geschlossen und belegt; jede Runde legte eine weitere Schicht derselben Frage frei — wie streng Queue-Politiken und Thread-Lebenszyklus unter Rückstau, Stop und Fehlerpfaden sind. Der Restbefund ist reproduzierbar, klein umrissen und in einem Zug schließbar (Wiederholpuffer ohne Verdrängung akzeptierter Ereignisse bzw. Reconnect-Auslösung; Slotwahl bei Kollision; `trennen()` vor den Joins plus Telemetrie-Abbruch; `entnehmen()` prüft das Schließflag zuerst; Lifecycle-Callbacks über den fristbegrenzten Pfad; Hostfeld-Längen im Bootstrap; je Punkt eine diskriminierende Prüfung, danach Kanon auf committetem Stand und ein frischer Prüfer). Datiert als **NAK-92** in `docs/offene-punkte.md`.
+
+**Zwischenfall dieses Laufs (kein Ticketbefund):** Während der Nacharbeit Runde 1 lief C: voll (0 Byte frei; Shell-Werkzeuge des Dirigenten fielen aus, der Kanon-Bau lief weiter). Ursache außerhalb des Repos: der Codex-Desktop-App-Server legt unter `~/.codex/.tmp/marketplaces/.staging/marketplace-upgrade-*` minütlich einen ~185-MB-Klon ab und räumt nie auf (572 Ordner, 96 GB seit 26.08.). 514 Ordner älter als 10 Minuten wurden gelöscht (95 GB frei); die Ursache läuft weiter, solange die Codex-App offen ist. Zwei DaVinci-Installer-Reste (2×3 GB) im Temp blieben liegen — Löschung außerhalb des Projekts vom Auto-Klassifikator geblockt.
+
+**Nächster Schritt an diesem Ticket:** eine dritte Nacharbeit nur auf ausdrückliche User-Freigabe (Dirigent stoppt nach zwei Runden), sonst bleibt S14–15 „gebaut, nachgearbeitet, frisches Urteil fehlt". Für `SONDE-011` (Coordinator) gilt: NAK-92 ist eine Vorbedingung, weil der Coordinator genau die Senke ist, deren Lebenszyklus- und Rückstaupolitik hier offen ist.

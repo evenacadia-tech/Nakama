@@ -14854,7 +14854,7 @@ Beides sind Textkorrekturen ohne Verhaltensänderung; Proben: `--selbsttest` gr�
 
 ## Nacharbeit Runde 9 — 2026-08-30 (Prüfer-Thread `01a04f8b-9fb2…`)
 
-**Stand dieses Abschnitts:** `f808ad0`
+**Stand dieses Abschnitts:** `f131090`
 
 Zwei bestätigte Befunde des neunten Prüfers (Codex xhigh, lesend über
 `git diff dafa5a5...401d036`), Regeln des Dirigenten im Abschnitt
@@ -14925,7 +14925,7 @@ existierende Kennung `R5-4` und sagt für F13 ebenfalls „nie 2". Sie ist
 Entwurf, nicht geltende Matrix; darüber steht das jetzt als Blockzitat, damit
 ein Leser nicht zwei widersprechende F13-Zeilen für gleichrangig hält.
 
-**Probe `P9-F13` am Endstand `f808ad0`** — derselbe Treiber, beide Richtungen:
+**Probe `P9-F13` am Endstand `f808ad0`** — derselbe Treiber, beide Richtungen (gegen ein **nicht vorhandenes** Bauverzeichnis; einen echten Baum braucht dieser Fall gerade nicht):
 
 ```text
 F13 ohne registrierten Befund -> Exit 3
@@ -15028,4 +15028,4 @@ ist exakt nachgezogen und sonst unverändert.
 | **D** — fail-closed ohne Rohtextheuristik | unverändert: jede Datei unter `%SystemRoot%` außer den zwei namentlich erlaubten ist ROT (`R7-1a`), die zwei erlaubten werden roh durchsucht (`R7-3b`) |
 | **E** — „Behauptung ≤ Messung" | F13 sagt jetzt, was `voraussetzung_exit()` tut — beide Richtungen mit `P9-F13` gemessen; die Zeile behauptet für `R5-3` keinen Exitcode mehr, den dieser Test nicht misst; Docstring und Kommentar attribuieren auf die Messung, die die Namen wirklich zeigt, und verneinen die Kausalität ausdrücklich |
 | **E** — Positionen | die neuen Positionen stehen als Symbol (`voraussetzung_exit()`, `_systemwurzel()`, Kommentar vor `tlog_ortsriegel()`); dieser Abschnitt trägt seinen Stand im Kopf, die zitierten Rohblöcke behalten ihre Zeilennummern am genannten Commit |
-| **F** — Änderungssatz | Matrixzeile, Quelltext-Attribution, `R8-1`-Text und die A14-Behauptung in `tools/beweise.ps1` liegen in einem Commit (`f808ad0`) |
+| **F** — Änderungssatz | Matrixzeile, Quelltext-Attribution, `R8-1`-Text und die A14-Behauptung in `tools/beweise.ps1` liegen in einem Commit (`f808ad0`); die Selbstaudit-Korrektur der Probenbeschreibung in `f131090` |

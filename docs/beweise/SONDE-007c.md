@@ -17219,7 +17219,7 @@ A17-Abschnitt darin traegt den Anker `#a17`.
 
 ## NAK-94 Nacharbeit Runde 4 — 2026-08-30 (Prüfer-Thread `01a04f8b-aa9d…`)
 
-**Stand dieses Abschnitts:** `53c10a3`
+**Stand dieses Abschnitts:** `f131090`
 
 Zwei bestätigte Befunde des vierten Prüfers (Codex high, lesend über
 `git diff da62dec...401d036`), Regeln des Dirigenten im Abschnitt
@@ -17299,7 +17299,13 @@ verschwunden — kein Writer schreibt es.
 
 **Neue Wache `P2/4`.** Das ID-Muster wird nicht abgeschrieben, sondern **live**
 aus `Install-Nakama.ps1` gelesen und gegen die Fixtur gehalten. Ändert der
-Writer seine ID-Form, fällt diese Zeile — nicht erst der nächste Prüfer.
+Writer seine ID-Form, fällt diese Zeile — nicht erst der nächste Prüfer. Zwei
+Feinheiten stehen dazu im Quelltext, damit die Wache nicht mehr behauptet, als
+sie vergleicht: PowerShells `-match` achtet nicht auf Groß- und Kleinschreibung,
+`re.match` schon — die Wache ist damit **strenger** als der Writer (was hier
+besteht, besteht dort auch; umgekehrt nicht). Und ein `vst3`-Artefakt ohne
+Identitätseintrag bricht die Fixturableitung jetzt laut ab, statt still auf den
+Broker-Zweig zu fallen; in `[1]` ist derselbe Fall ohnehin schon ROT.
 
 **Zwei Achsen, ausdrücklich getrennt.** Der Kopf der Statusschleife darüber ist
 absichtlich **minimal und keine Writer-Form**: sie fragt, ob die Sperre am
@@ -17317,7 +17323,7 @@ Installations-Kopf **minus genau dieser Liste**, alles Übrige in Writer-Form,
 damit die fehlende Liste die einzige Abweichung ist. Das steht so im Kommentar
 der Probe und in der A17-Behauptung.
 
-**Am Endstand `53c10a3` gefahren** — die Journale, die `[3b]` wirklich schreibt,
+**Am Endstand `f131090` gefahren** — die Journale, die `[3b]` wirklich schreibt,
 aus der Datei zurückgelesen, samt dem, was `[4b]` darauf sagt:
 
 ```text
@@ -17439,7 +17445,7 @@ Bruch. Der Treiber übersetzt die Quelle deshalb direkt statt zu importieren.
    ok      P2/3: die ECHTE Writer-Form des begonnenen Rueckwegs (mit eintraege) endet ebenfalls ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
    ok      P2/3: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
    1 Fehler im Block
-  Bruch zurueckgenommen (Bytes identisch, sha256 c358b1f669a0734b)
+  Bruch zurueckgenommen (Bytes identisch, sha256 3777bfb2081e8ce3)
   -- GRUEN --
    ok      P2: Journalstatus RUECKWEG_AKTIV meldet den installierten Stand als unbekannt - ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
    ok      P2/4: die Transaktions-ID der Journal-Fixturen besteht die Ist-TransaktionsId-Regex aus Install-Nakama.ps1 - eine gestrichelte UUID taete es nicht  [Muster '^[0-9a-f]{32}$' gegen 'a1b2c3d4e5f60718293a4b5c6d7e8f90']
@@ -17457,7 +17463,7 @@ Bruch. Der Treiber übersetzt die Quelle deshalb direkt statt zu importieren.
    FEHLER  P2/3: die ECHTE Writer-Form des begonnenen Rueckwegs (mit eintraege) endet ebenfalls ohne Hashvergleich  [ok      main: installierter Stand = Manifest  [0000000000000000]  C:\Program Files\Common Files\VST3\EQ-Copilot.vst3]
    ok      P2/3: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
    2 Fehler im Block
-  Bruch zurueckgenommen (Bytes identisch, sha256 c358b1f669a0734b)
+  Bruch zurueckgenommen (Bytes identisch, sha256 3777bfb2081e8ce3)
   -- GRUEN --
    ok      P2: Journalstatus RUECKWEG_AKTIV meldet den installierten Stand als unbekannt - ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
    ok      P2/4: die Transaktions-ID der Journal-Fixturen besteht die Ist-TransaktionsId-Regex aus Install-Nakama.ps1 - eine gestrichelte UUID taete es nicht  [Muster '^[0-9a-f]{32}$' gegen 'a1b2c3d4e5f60718293a4b5c6d7e8f90']
@@ -17475,7 +17481,7 @@ Bruch. Der Treiber übersetzt die Quelle deshalb direkt statt zu importieren.
    ok      P2/3: die ECHTE Writer-Form des begonnenen Rueckwegs (mit eintraege) endet ebenfalls ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
    FEHLER  P2/3: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [keine solche Zeile]
    1 Fehler im Block
-  Bruch zurueckgenommen (Bytes identisch, sha256 c358b1f669a0734b)
+  Bruch zurueckgenommen (Bytes identisch, sha256 3777bfb2081e8ce3)
   -- GRUEN --
    ok      P2: Journalstatus RUECKWEG_AKTIV meldet den installierten Stand als unbekannt - ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
    ok      P2/4: die Transaktions-ID der Journal-Fixturen besteht die Ist-TransaktionsId-Regex aus Install-Nakama.ps1 - eine gestrichelte UUID taete es nicht  [Muster '^[0-9a-f]{32}$' gegen 'a1b2c3d4e5f60718293a4b5c6d7e8f90']
@@ -17492,7 +17498,7 @@ Bruch. Der Treiber übersetzt die Quelle deshalb direkt statt zu importieren.
    ok      P2/3: die ECHTE Writer-Form des begonnenen Rueckwegs (mit eintraege) endet ebenfalls ohne Hashvergleich  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG_AKTIV)]
    ok      P2/3: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
    1 Fehler im Block
-  Bruch zurueckgenommen (Bytes identisch, sha256 c358b1f669a0734b)
+  Bruch zurueckgenommen (Bytes identisch, sha256 3777bfb2081e8ce3)
   -- GRUEN --
    ok      P2/4: die Transaktions-ID der Journal-Fixturen besteht die Ist-TransaktionsId-Regex aus Install-Nakama.ps1 - eine gestrichelte UUID taete es nicht  [Muster '^[0-9a-f]{32}$' gegen 'a1b2c3d4e5f60718293a4b5c6d7e8f90']
    ok      P2/3: die ECHTE Writer-Form des Rueckwegs (ohne eintraege) meldet artefaktweise 'Journalstatus RUECKWEG' - nicht 'keine Liste'  [hinweis main: installierter Stand unbekannt (Journalstatus RUECKWEG)]
@@ -17511,4 +17517,4 @@ Bruch. Der Treiber übersetzt die Quelle deshalb direkt statt zu importieren.
 | **E** — „Behauptung ≤ Messung" | die Fixturen sind erzeugbar: ID gegen die Regex des Writers (`P2/4`, Muster live gelesen), `zeit` im gemessenen `ToString('o')`-Format, Feldmengen aus den drei benannten Writer-Stellen, gegengeprüft am echten `install-ergebnis.json` dieses Rechners. Die A17-Behauptung sagt jetzt zusätzlich, dass Probe (c) **keine** Writer-Form ist |
 | **E** — „jede neue Prüfung wurde einmal absichtlich gebrochen" | vier Brüche `B-R9a`…`B-R9d`, je rot und grün mit Rohausgabe, jeder byteweise zurückgenommen |
 | **E** — Positionen | Writer-Stellen als `Datei:Zeile` mit Commit (`@ 898b28b`, `Install-Nakama.ps1` seither unverändert: `git diff --quiet 898b28b HEAD -- eq-copilot/install/Install-Nakama.ps1` → Exit 0); dieser Abschnitt trägt seinen Stand im Kopf |
-| **F** — „installieren↔Rückweg im selben Änderungssatz" | Fixturen, neue Wache und die A17-Behauptung in einem Commit (`53c10a3`); an `Install-Nakama.ps1` wurde nichts geändert |
+| **F** — „installieren↔Rückweg im selben Änderungssatz" | Fixturen, neue Wache und die A17-Behauptung in einem Commit (`53c10a3`), die Selbstaudit-Korrekturen in `f131090`; an `Install-Nakama.ps1` wurde nichts geändert |

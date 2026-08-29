@@ -11,13 +11,16 @@
 
 **Stand:** 2026-08-29 · Quellstand `f2d3d4a` · **14 von 37 abgenommen** · 5 gebaut · 18 offen
 
+> ⚠️ Gerechnet aus dem Arbeitsbaum: unter `docs/plan/`, `docs/beweise/`
+> oder `tools/plan/` liegen Änderungen, die noch nicht in `f2d3d4a` sind.
+
 `███████████████▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░` 38 % abgenommen · 51 % gebaut
 
 **Als Nächstes:** **Nacharbeit an G1** — der Prüfer hat einen Befund offen gelassen (docs/beweise/G1.md).
 
 **Wartet auf ein Urteil** (gebaut, nachgemessen, aber ohne PASS eines frischen Prüfers): `S8` · `S9` · `S9b` · `S14–15`
 
-**Bei dir liegen 7 Fragen** — `U2, U6, U9, U10, U11, U12, U13`. Sie werden im Chat gestellt: Skill `/fragen`.
+**Bei dir liegen 2 Fragen** — `U11, U13`. Sie werden im Chat gestellt: Skill `/fragen`.
 
 ## Phasen auf einen Blick
 

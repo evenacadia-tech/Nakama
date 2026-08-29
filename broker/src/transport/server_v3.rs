@@ -1505,8 +1505,13 @@ mod tests {
     }
 
     impl BlockSenke {
+        /// Blockiert hoechstens `kBlockFrist`. Eine Senke, die WIRKLICH ewig
+        /// haengt, wuerde einen roten Test in einen Hang verwandeln — und ein
+        /// Hang sagt nichts. Die Frist ist um Groessenordnungen laenger als
+        /// jede Wartezeit im Test.
         fn warten(&self) {
-            while self.blockiert.load(Ordering::SeqCst) {
+            let bis = Instant::now() + Duration::from_secs(20);
+            while self.blockiert.load(Ordering::SeqCst) && Instant::now() < bis {
                 std::thread::sleep(Duration::from_millis(5));
             }
         }

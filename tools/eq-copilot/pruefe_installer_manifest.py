@@ -74,6 +74,13 @@ DREI HAERTEGRADE FUER DENSELBEN HASH (NAK-94, 29.08.2026)
   Hinweis, nicht zum TypeError. Installieren ist ein bewusster Admin-Handgriff
   des Users und keine Zusage des Kanons.
 
+  Die Reihenfolge in [4b] ist STATUS VOR LISTE (Nacharbeit 3, 29.08.2026):
+  Schema, dann Journalstatus, dann erst `eintraege`. Ein regulaer
+  abgeschlossener Rueckweg schreibt gar keine Eintragsliste; stuende die
+  Statussperre dahinter, meldete [4b] fuer ihn "fuehrt keine Liste" statt des
+  artefaktweisen "installierter Stand unbekannt (Journalstatus RUECKWEG)".
+  Die Liste wird deshalb nur noch im Status-OK-Pfad verlangt.
+
   [3b] laesst beide Kanten einmal fallen - eine Wache, die niemand hat fallen
   sehen, ist keine.
 
@@ -1047,6 +1054,71 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
                    "als unbekannt - Schweigen ist kein OK",
                    next((z.strip() for z in ausgabe.splitlines()
                          if name in z), "keine Zeile zum Artefakt"))
+
+            # -- P2 (Nacharbeit 3): die ECHTEN Writer-Formen ----------------
+            #
+            # Die Schleife oben laesst `eintraege` in jedem Kopf stehen. Genau
+            # daran ging der Befund vorbei: ein regulaer abgeschlossener
+            # Rueckweg schreibt diese Liste nicht, und die Sperre stand
+            # dahinter. Die drei Proben hier fahren deshalb die Formen, die
+            # Install-Nakama.ps1 wirklich schreibt - abgelesen, nicht geraten.
+
+            # (a) Ende des Gegenpfads: genau sieben Felder, OHNE eintraege.
+            rueckweg = {
+                "schema": ERGEBNIS_SCHEMA,
+                "status": "RUECKWEG",
+                "transaktions_id": "11111111-2222-3333-4444-555555555555",
+                "erzwungen": False,
+                "warnungen": [],
+                "getan": ["entfernt: C:\\Programme\\Nakama\\EQ-Copilot.vst3"],
+                "zeit": "2026-08-29T00:00:00.0000000Z",
+            }
+            ausgabe = journal_lauf(rueckweg)
+            pruefe(f"hinweis {name}: installierter Stand unbekannt "
+                   "(Journalstatus RUECKWEG)" in ausgabe
+                   and "keine Liste 'eintraege'" not in ausgabe
+                   and "installierter Stand = Manifest" not in ausgabe,
+                   "P2/3: die ECHTE Writer-Form des Rueckwegs (ohne eintraege) "
+                   "meldet artefaktweise 'Journalstatus RUECKWEG' - nicht "
+                   "'keine Liste'",
+                   next((z.strip() for z in ausgabe.splitlines()
+                         if name in z or "keine Liste" in z),
+                        "keine Zeile zum Artefakt"))
+
+            # (b) Beginn des Gegenpfads: Install-Nakama.ps1 setzt nur den
+            #     Status im ZURUECKGELESENEN Journal (`$letzte.status =
+            #     'RUECKWEG_AKTIV'`) - diese Form traegt eintraege sehr wohl.
+            rueckweg_aktiv = {
+                "schema": ERGEBNIS_SCHEMA,
+                "status": "RUECKWEG_AKTIV",
+                "transaktions_id": "11111111-2222-3333-4444-555555555555",
+                "manifest": "eq-copilot/install/nakama-installer-v1.json",
+                "zeit": "2026-08-29T00:00:00.0000000Z",
+                "bekannte_staende": [],
+                "eintraege": [eintrag],
+            }
+            ausgabe = journal_lauf(rueckweg_aktiv)
+            pruefe(f"hinweis {name}: installierter Stand unbekannt "
+                   "(Journalstatus RUECKWEG_AKTIV)" in ausgabe
+                   and "installierter Stand = Manifest" not in ausgabe,
+                   "P2/3: die ECHTE Writer-Form des begonnenen Rueckwegs (mit "
+                   "eintraege) endet ebenfalls ohne Hashvergleich",
+                   next((z.strip() for z in ausgabe.splitlines()
+                         if name in z), "keine Zeile zum Artefakt"))
+
+            # (c) Gegenprobe: OHNE eintraege ist "keine Liste" die RICHTIGE
+            #     Aussage - aber nur im Status-OK-Pfad.
+            ausgabe = journal_lauf({"schema": ERGEBNIS_SCHEMA,
+                                    "status": ERGEBNIS_STATUS_OK,
+                                    "zeit": "2026-08-29T00:00:00.0000000Z"})
+            pruefe("keine Liste 'eintraege'" in ausgabe
+                   and "installierter Stand = Manifest" not in ausgabe
+                   and "installierter Stand unbekannt" not in ausgabe,
+                   "P2/3: bei Status OK ohne Eintragsliste bleibt es bei "
+                   "'fuehrt keine Liste eintraege' - die Statussperre "
+                   "verschluckt sie nicht",
+                   next((z.strip() for z in ausgabe.splitlines()
+                         if "keine Liste" in z), "keine solche Zeile"))
         finally:
             INSTALL_ERGEBNIS = merk
 
@@ -1313,10 +1385,6 @@ def _installierter_stand(manifest: dict) -> None:
               f"(gelesen: {journal.get('schema') if isinstance(journal, dict) else type(journal).__name__!r})")
         return
 
-    eintraege = journal.get("eintraege")
-    if not isinstance(eintraege, list):
-        print("  hinweis install-ergebnis.json fuehrt keine Liste 'eintraege'")
-        return
     print(f"  Journal: status={journal.get('status')!r}  zeit={journal.get('zeit')!r}")
 
     # BEFUND P2, NAK-94 Nacharbeit 2 (29.08.2026): der Journalstatus wurde nur
@@ -1338,6 +1406,22 @@ def _installierter_stand(manifest: dict) -> None:
     # OHNE Hashvergleich - ein Hash, der nichts beweist, wird gar nicht erst
     # gezeigt. Die Eintragsmarken (abgeschlossen, nicht zurueckgerollt) prueft
     # die Schleife unten weiterhin einzeln; beide Haelften gelten zusammen.
+    #
+    # BEFUND P2, NAK-94 Nacharbeit 3 (29.08.2026): diese Sperre stand HINTER
+    # der Eintragsliste - und ein regulaer abgeschlossener Rueckweg schreibt
+    # gar keine. Install-Nakama.ps1 legt am Ende des Gegenpfads ein Journal aus
+    # genau sieben Feldern ab (schema, status='RUECKWEG', transaktions_id,
+    # erzwungen, warnungen, getan, zeit); `eintraege` ist keines davon.
+    # Gemessen am Stand a94c33e meldete [4b] dafuer
+    # "install-ergebnis.json fuehrt keine Liste 'eintraege'" statt des
+    # zugesagten artefaktweisen "Journalstatus RUECKWEG" - die Zusage des
+    # Runners galt also fuer das reale Rueckweg-Journal nicht.
+    #
+    # Regel seither: die Statussperre steht unmittelbar nach der Schema-
+    # Pruefung und VOR jeder Verwendung von `eintraege`. Bei jedem Status != OK
+    # endet die Funktion ohne Hashvergleich; ob eine Eintragsliste vorliegt,
+    # ist dann unerheblich. `eintraege` wird nur noch im OK-Pfad verlangt -
+    # dort ist ihr Fehlen die richtige Aussage.
     status = journal.get("status")
     if status != ERGEBNIS_STATUS_OK:
         wie = status if isinstance(status, str) else (
@@ -1345,6 +1429,11 @@ def _installierter_stand(manifest: dict) -> None:
         for a in manifest["artefakte"]:
             print(f"  hinweis {_artefakt_name(a)}: installierter Stand unbekannt "
                   f"(Journalstatus {wie})")
+        return
+
+    eintraege = journal.get("eintraege")
+    if not isinstance(eintraege, list):
+        print("  hinweis install-ergebnis.json fuehrt keine Liste 'eintraege'")
         return
 
     # Die Kennung MUSS eine Zeichenkette sein: `_artefakt_name` reicht

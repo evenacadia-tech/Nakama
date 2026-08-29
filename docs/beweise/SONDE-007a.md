@@ -41,7 +41,10 @@ traegt der einleitende Satz den Stand.
 
 **Was gebaut wurde (Karte, keine Behauptung — Behauptungen stehen in §1):**
 
-**Stand dieser Karte:** `5dfe3a3` — an diesem Stand sind ihre Anker geprüft.
+**Stand dieser Karte:** `308947d` — an diesem Stand sind ihre Anker geprüft
+(Runde 10: Zeile **K3/A14** trägt den Ausgang F13/F14/F15, Zeile
+**Tlog-Riegel** nennt keine Anzahl mehr; die übrigen Anker sind an diesem
+Commit einzeln nachgeschlagen).
 Sie nennt bewusst **keine** Anzahlen (Befund B4, Runde 6): Quellen, Verbraucher
 und Makros stehen als Quellenanker da, weil jede abgeschriebene Zahl still
 falsch wird, sobald jemand eine Datei oder ein Ziel ergänzt.
@@ -74,8 +77,8 @@ unten bleiben datierte Belege ihres damaligen Quellstands:
 | **K1** Präprozessor | Quelltext | die in `eq-copilot/plugin/state/NakamaKernRiegel.h` namentlich geführten `JucePlugin_*`-Makros — die Liste dort ist die Quelle, nicht diese Karte —, am Anfang **und Ende** jeder Kern-Übersetzungseinheit (gemessen aus `NAKAMA_KERN_QUELLEN`; die aktuelle Anzahl gibt der Messlauf aus); damit auch bis zum TU-Ende definierte Makros aus später eingebundenen eigenen/generierten Headern | Makronamen außerhalb der Liste und vor dem TU-Ende wieder entfernte Makros (der Präprozessor kann kein Präfix aufzählen; resultierende Identitätsbytes misst K3, den Quelltext selbst **K1b**) |
 | **K1b** Quelltext-Token | die tatsächlichen Compiler-Eingaben: jede Datei aus dem frisch geschriebenen `CL.read.1.tlog`, die **nicht** aus den JUCE-Modulen und nicht aus den Toolchain-/SDK-Wurzeln stammt — also `plugin/**` **und alles Übrige**, `/FI` und vorkompilierte Köpfe eingeschlossen —, plus die literale Include-Hülle als Gegenprobe; die namentlich erlaubten Systemdateien werden dabei roh in ASCII und UTF-16LE durchsucht statt als C++ geparst | jedes `JucePlugin_`-Token im Quelltext, unabhängig von `#define`/`#undef`; Kommentare werden vorher entfernt, Stringliterale nicht; einzige Ausnahme ist `NakamaKernRiegel.h`, gemessen und namentlich | den Inhalt der JUCE-Module (dafür der JUCE-Baum-Riegel) und der Toolchain-/SDK-Header außerhalb des Repos (benannte Nichtzusage, kein Fingerprint); Makronamen, die erst durch Tokenverkettung entstehen. Lässt sich eine der drei Ausschlusswurzeln nicht ableiten, bildet K1b **keine** Menge, sondern klagt |
 | **K2** CMake-Konfigurierzeit | Kernziel plus dessen compilerwirksame Usage-Requirements-Hülle; Verbraucher nur bei einer echten fehlerhaften Rückkante; Ausführung verzögert bis zum Ende von `plugin/` nach allen Zieländerungen | jedes compilerwirksame `JucePlugin_` aus eigenen und transitiven `*_COMPILE_DEFINITIONS` sowie `-D`/`/D` in `*_COMPILE_OPTIONS`; direkte Zielnamen, `debug`/`optimized`/`general`-Kanten und die unten inventarisierten bedingten bzw. zielbezogenen Generatorausdrücke | Makros, die erst im C++-Quelltext entstehen (dafür K1/K3); String-Transformationen in Linkkanten und `MAP_IMPORTED_CONFIG_*` werden nicht ausgewertet, sondern ausdrücklich **ROT** gemeldet |
-| **K3/A14** Artefakt + Neubau | die `.lib`, die das Bein im selben Lauf selbst hat neu erzeugen lassen, dazu `.vcxproj`, `.tlog` und `lastbuildstate`; fehlt eine Voraussetzung, endet der Lauf über `voraussetzung_exit()` — ein bereits registrierter Befund gewinnt und macht aus der 3 eine 2 (Matrix F14/F15, Runde 8) | jeden eingefrorenen Text als ASCII/UTF-16LE, Viercodes zusätzlich als 4-Byte-Integer in **beiden** Byteordnungen, CIDs roh/COM-vertauscht; dass Objekte, Tlogs und Lib vor der Messung gelöscht und vollständig neu erzeugt wurden (Zeitanker, Bauausgabe, Objektzahl) — damit ist „veraltetes Artefakt" keine Frage mehr; die früheren Frischewachen bleiben als Diagnose „womit wurde gebaut" | Baubeschreibung ohne resultierende Artefaktbytes (dafür K1/K1b/K2/K2b/K2c); ein Compilerwechsel innerhalb derselben `lastbuildstate`-Kennung (benannte Nichtzusage) |
-| **Tlog-Riegel** Leseorte | das frisch geschriebene `CL.read.1.tlog` des Kerns | aus welchen Orten der Compiler wirklich gelesen hat: erlaubt sind `plugin/**`, `juce-src/modules/**` ohne `juce_audio_plugin_client`, die **aus dem Bau abgeleiteten** MSVC- und Windows-SDK-Wurzeln und — **namentlich, nicht über ihr Verzeichnis** — die gemessenen Systemdateien unter `%SystemRoot%` (Liste `SYSTEMDATEIEN` im Skript; ihre beiden Namen stehen seit Runde 8 als eingefügte `CL.read.1.tlog`-Rohausgabe im Abschnitt „Nacharbeit Runde 8", Probe `P8-SYS` — vorher war die Liste eine Behauptung ohne Rohausgabe). Es gibt weder eine Endungsausnahme noch eine Ortserlaubnis für `%SystemRoot%`: jede andere Datei darunter, `<ziel>_artefacts/JuceLibraryCode/**` und alles Unbekannte sind ROT und werden namentlich genannt. Fehlt eine heutige Kernquelle als Marker, ist auch das ROT | den **Inhalt** der gelesenen Dateien (dafür K1b und der JUCE-Baum-Riegel) |
+| **K3/A14** Artefakt + Neubau | die `.lib`, die das Bein im selben Lauf selbst hat neu erzeugen lassen, dazu `.vcxproj`, `.tlog` und `lastbuildstate`; fehlt eine Voraussetzung, endet der Lauf über `voraussetzung_exit()` — ohne registrierten Befund **3**, mit registriertem Befund **2**, **nie 0**, und das an jedem Ausgang, den unmöglichen oder fehlgeschlagenen Bau eingeschlossen (Matrix F13/F14/F15, Runde 8/9; Proben `R8-1` und `P9-F13`) | jeden eingefrorenen Text als ASCII/UTF-16LE, Viercodes zusätzlich als 4-Byte-Integer in **beiden** Byteordnungen, CIDs roh/COM-vertauscht; dass Objekte, Tlogs und Lib vor der Messung gelöscht und vollständig neu erzeugt wurden (Zeitanker, Bauausgabe, Objektzahl) — damit ist „veraltetes Artefakt" keine Frage mehr; die früheren Frischewachen bleiben als Diagnose „womit wurde gebaut" | Baubeschreibung ohne resultierende Artefaktbytes (dafür K1/K1b/K2/K2b/K2c); ein Compilerwechsel innerhalb derselben `lastbuildstate`-Kennung (benannte Nichtzusage) |
+| **Tlog-Riegel** Leseorte | das frisch geschriebene `CL.read.1.tlog` des Kerns | aus welchen Orten der Compiler wirklich gelesen hat: erlaubt sind `plugin/**`, `juce-src/modules/**` ohne `juce_audio_plugin_client`, die **aus dem Bau abgeleiteten** MSVC- und Windows-SDK-Wurzeln und — **namentlich, nicht über ihr Verzeichnis** — die gemessenen Systemdateien unter `%SystemRoot%` (Liste `SYSTEMDATEIEN` im Skript — sie ist die Quelle, nicht diese Karte; ihre Namen stehen seit Runde 8 als eingefügte `CL.read.1.tlog`-Rohausgabe im Abschnitt „Nacharbeit Runde 8", Probe `P8-SYS`, ihre Anzahl gibt der Messlauf aus — vorher war die Liste eine Behauptung ohne Rohausgabe). Es gibt weder eine Endungsausnahme noch eine Ortserlaubnis für `%SystemRoot%`: jede andere Datei darunter, `<ziel>_artefacts/JuceLibraryCode/**` und alles Unbekannte sind ROT und werden namentlich genannt. Fehlt eine heutige Kernquelle als Marker, ist auch das ROT | den **Inhalt** der gelesenen Dateien (dafür K1b und der JUCE-Baum-Riegel) |
 | **JUCE-Baum-Riegel** Herkunft | der ganze FetchContent-Baum `build/_deps/juce-src` gegen `git status` und den Nakama-Patch | dass juce-src der gepinnte Tag plus **genau** `third_party/patches/juce-8.0.9-nakama-vst3-bridge.patch` ist, gemessen in drei Zeilen: (i) `HEAD` **ist** der Commit des Tags (`8.0.9^{commit}`, verglichen statt nur beschrieben); (ii) `git status --porcelain --ignored -uall` — die geänderte Menge ist genau die Patchdateimenge, **ignorierte** Fremddateien eingeschlossen; (iii) die Patchdateien tragen genau den Patch, gemessen als Inhalt gegen den in einem temporären Index gerechneten Sollzustand „Tag + Patch" (`read-tree` → `apply --cached` → `diff-files`). `git apply --check --reverse` ist dafür **ersetzt**, nicht ergänzt: es prüft nur rückwärts passende Hunks und schwieg zu einer zusätzlichen Zeile | Löschungen außerhalb `modules/**` (gezählt und benannt, nicht ROT — eine gelöschte Datei kann keine Compiler-Eingabe werden); Toolchain- und SDK-Header außerhalb des Repos (benannte Nichtzusage, kein Fingerprint) |
 | **K2b** CMake-Konfigurierzeit | Kern und je ein registrierter Verbraucher als **getrennte** Wurzeln mit ihrer jeweiligen compilerwirksamen Usage-Requirements-Hülle | Mengengleichheit und Wertwidersprüche der `JUCE_`-Defines beider Zielmengen, je Konfiguration, rekursiv und inklusive `-D`/`/D`; `JucePlugin_*` des Verbrauchers gehört nicht zur Vergleichsmenge | bewusst ausgenommene Hüllendefines (`JUCE_MODULE_AVAILABLE_*` als Familie; exakt die Makronamen `JUCE_SHARED_CODE`, `JUCE_STANDALONE_APPLICATION`, `JUCE_VST3_CAN_REPLACE_VST2`, jeweils ohne Wert oder mit `=…`) · Nicht-Define-Schalter (dafür K2c) |
 | **K2c** CMake-Konfigurierzeit | volle Linkhülle des Kerns und volle Linkhülle je eines registrierten Verbrauchers, **getrennt** je Konfiguration | ob jedes transitiv und bedingt erreichbare `juce_recommended_*`-Ziel der Referenz in derselben Konfiguration auch am Kern hängt — Quelle der Schalter, nicht einzelne Flags | `lto_flags` (begründet ausgenommen: `/GL` ohne `-LTCG` im Verbraucher) · alles, was kein Empfehlungsziel ist; String-Transformationen und importierte Konfigurationsabbildungen sind nicht unterstützt und deshalb ROT |
@@ -12800,6 +12803,16 @@ Exit 0).
 **Drei Defekte, die erst die Proben und der Selbsttest sichtbar gemacht haben**
 — alle behoben und im Code begründet:
 
+**Stand dieser Tabelle:** `3353301` — historische Momentaufnahme der Runde 5.
+Die dritte Zeile schreibt die Systemdateien der Probe `P5-W5b` zu und erklärt
+sie aus einer Diagnosemeldung. **Beides ist überholt:** die Namen der Liste
+`SYSTEMDATEIEN` stehen seit Runde 8 auf der eingefügten Rohausgabe der Probe
+`P8-SYS` (Abschnitt „Nacharbeit Runde 8“), und wovon der Zugriff ausgelöst
+wird, ist nicht gemessen — `P8-SYS` zeigt dieselben Dateien mit und ohne
+Diagnose, nicht ihre Ursache. Die ortsfreie Endungsliste dieser Zeile ist seit
+Runde 6 ersatzlos entfallen. Der Text bleibt als Beleg seines Standes stehen
+und wird nicht umgeschrieben (Prüfliste E, NAK-85 Runde 4).
+
 | gefunden von | Defekt | Fix |
 |---|---|---|
 | Selbsttest `R5-3a` | `kern_neubau` prüfte einen **ausdrücklich übergebenen** cmake-Pfad nicht; die Artefakte wurden gelöscht und erst danach fiel der Start um | Pfad wird vor jedem Löschen geprüft (`kern_neubau`, Kommentar „Selbsttest R5-3a") |
@@ -13628,6 +13641,17 @@ alte Wache apply --check --reverse: Exit 0 (stumm)
 ```
 
 ### Was jetzt gilt — Regel für Regel
+
+**Stand dieser Tabelle:** `370e513` — historische Momentaufnahme der Runde 6;
+die Spalte „Jetzt“ meint den Stand **dieser** Runde, nicht den heutigen. Zwei
+Aussagen der Zeile `R3` sind seither überholt: `%SystemRoot%` ist seit Runde 7
+**keine erlaubte Wurzel** mehr, sondern nur noch der Anker der namentlich
+erlaubten Dateien aus `SYSTEMDATEIEN`; und deren Namen stammen seit Runde 8 aus
+der eingefügten Rohausgabe der Probe `P8-SYS`, nicht aus `P5-W5b`, wobei die
+Ursache des Zugriffs — anders als „beim Formatieren einer Diagnose“ nahelegt —
+nicht gemessen ist. Der Text bleibt als Beleg seines Standes stehen (Prüfliste
+E, NAK-85 Runde 4); der geltende Stand steht in der Riegelkarte oben und im
+Skript.
 
 | Regel | Vorher `@ 25b57ec` | Jetzt |
 |---|---|---|
@@ -15121,3 +15145,171 @@ ist exakt nachgezogen und sonst unverändert.
 **Nächster Schritt:** ein Nacharbeits-Worker für S8 Runde 10 **und** NAK-94 Nacharbeit 5 (Wegwechsel W1, siehe `docs/beweise/SONDE-007c.md`, „Dirigentenstand NAK-94 … Prüfer 5"), gemeinsamer Kanon, dann Prüfer 11 (xhigh) für S8 und Prüfer 6 (high) für NAK-94 — je frischer Thread. Kein Halt.
 
 **Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99; neu NAK-100 (Aufteilung von `pruefe_kern_identitaetsfrei.py` und `pruefe_installer_manifest.py` in Pakete, nach dem S8-PASS, bytegleiche Ausgabe als Abnahme — User-Frage 30.08.).
+
+---
+
+## Nacharbeit Runde 10 — 2026-08-30 (Prüfer-Thread `01a04fb9-addf…`)
+
+**Stand dieses Abschnitts:** `2f1f89b`
+
+Drei bestätigte Befunde des zehnten Prüfers (Codex xhigh, lesend über
+`git diff dafa5a5...32d86d9`), Regel des Dirigenten im Abschnitt
+„Dirigentenstand — 2026-08-30 01:01 (Sitzung 054eedac)". Alle drei sind
+geschlossen. Alle drei sind Textkorrekturen: an der Messlogik von A14 wurde
+nichts geändert — `--selbsttest` bleibt bei **82 ok, 0 Fehler**, die
+A14-Behauptung im Runner ist unverändert.
+
+Es war die dritte Runde derselben Frage („sind alle Stellen, die eine geänderte
+Zusage tragen, nachgezogen?"). Der Dirigent hat deshalb den Weg gewechselt:
+statt einer vierten punktuellen Korrektur steht am Anfang dieser Runde ein
+**Aussagen-Inventar** — je Zusage ein grep über Skript, `tools/beweise.ps1`,
+Matrix, Riegelkarte, Köpfe und Manifestabschnitte, mit einer Zeile pro
+Fundstelle. Das Inventar hat eine Stelle gefunden, die **kein Prüfer benannt
+hat** (unten, Z1 Zeile 2); genau dafür ist es da.
+
+**Werkzeugregel dieser Runde:** keine Datei unter `%SystemRoot%` angelegt, keine
+löschenden Aufrufe. Reproduktion und Inventar liefen als lesende Treiber unter
+`$env:TEMP`; `git status --short` war vor der Arbeit leer.
+
+---
+
+### Reproduktion am Basis-Stand `a010d64` — vor jeder Änderung
+
+Der Ausgang, den die vier Texte falsch beschrieben, wurde zuerst gemessen. Ein
+lesender Treiber lädt das Skript, setzt `sys.argv` auf ein **nicht vorhandenes**
+Bauverzeichnis und ruft `main()` zweimal — einmal mit leerer, einmal mit
+vorbelegter `fehler`-Liste:
+
+```text
+F13 ohne registrierten Befund -> Exit 3
+F13 mit registriertem Befund  -> Exit 2
+--- Ausgabe des zweiten Laufs (letzte Zeilen) ---
+
+0 ok, 1 Fehler
+
+FEHLGESCHLAGEN:
+  - kuenstlicher Identitaetsbefund vor dem Bau
+
+Ein registrierter Befund gewinnt gegen die fehlende Voraussetzung (Matrix F13/F14/F15): Exit 2.
+```
+
+Gemessen wird also „ohne Befund 3, mit Befund 2". Der Klartext des Beins sagt
+das seit Runde 9 auch. Der Skriptkopf, der Runner-Kommentar, der Kommentar vor
+`R8-1` und die Riegelkarte sagten es nicht.
+
+---
+
+### Aussagen-Inventar
+
+**Lesart.** **Lebend** ist eine Stelle ohne Standangabe über sich; **historisch**
+ist ein Abschnitt oder eine Tabelle mit `**Stand dieses Abschnitts:**`,
+`**Stand dieser Tabelle:**`, `**Stand dieser Karte:**` — oder ein vom Runner
+geschriebener Kanon-Block, dessen Kopftabelle den Commit trägt. Lebende Stellen
+werden nachgezogen; historische bekommen ihre Standangabe, statt umgeschrieben
+zu werden (Prüfliste E, NAK-85 Runde 4). Positionen der Spalte *Stelle* stehen
+`@ a010d64` (Basis dieser Runde) oder als Symbol; die nachgezogene Fassung
+steht `@ 308947d`.
+
+#### Z1 — Voraussetzungs-Ausgang: „ohne Befund **3**, mit Befund **2**, nie **0**"
+
+| Stelle | alt | neu | Status |
+|---|---|---|---|
+| `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:100` @ `a010d64` — Skriptkopf | „bleibt zusaetzlich stehen (Matrix **F14/F15**, Runde 8)" — F13 fehlt | „Fuer JEDEN dieser Ausgaenge — den unmoeglichen oder fehlgeschlagenen Bau (F13) eingeschlossen — gilt derselbe Satz: OHNE registrierten Befund 3, MIT registriertem Befund 2, NIE 0 … gilt fuer jeden Aufruf von `main()`" | **nachgezogen** (`:98-106` @ `308947d`) |
+| `…/pruefe_kern_identitaetsfrei.py:937` und `:944` @ `a010d64` — Docstring von `VoraussetzungFehlt` | „Eine Voraussetzung des Beins fehlt - **Exit 3**, nie ein Urteil"; „sagt das (**Exit 3**) und behauptet nichts" | „nie ein gruenes Urteil"; der Exitcode kommt ausschliesslich aus `voraussetzung_exit()`: ohne Befund 3, mit Befund 2, nie 0 | **nachgezogen** (`:943-957` @ `308947d`) — **diese Stelle hat kein Prüfer benannt**, das Inventar hat sie gefunden |
+| `…/pruefe_kern_identitaetsfrei.py:2598` @ `a010d64` — Kommentar vor `R8-1` | „ein registrierter Befund gewinnt gegen jede fehlende Voraussetzung (Matrix **F14/F15**)" | „… — ohne Befund 3, mit Befund 2, nie 0, und das an JEDEM Ausgang, den unmoeglichen Bau eingeschlossen (Matrix F13/F14/F15)" | **nachgezogen** (`:2604-2613` @ `308947d`) |
+| `tools/beweise.ps1:354` @ `a010d64` — A14-Kommentar | „Ohne moeglichen Neubau gibt es **Exit 3**, nie ein gruenes Urteil." | „… kein gruenes Urteil: der Lauf endet ueber `voraussetzung_exit()` — OHNE registrierten Befund mit 3, MIT registriertem Befund mit 2, NIE mit 0 (Matrix F13/F14/F15, Runde 8/9)." | **nachgezogen** (`:354-356` @ `308947d`) |
+| `docs/beweise/SONDE-007a.md:77` @ `a010d64` — Riegelkarte, Zeile **K3/A14** | „ein bereits registrierter Befund gewinnt und macht aus der 3 eine 2 (Matrix **F14/F15**, Runde 8)" | „ohne registrierten Befund **3**, mit registriertem Befund **2**, **nie 0**, und das an jedem Ausgang, den unmöglichen oder fehlgeschlagenen Bau eingeschlossen (Matrix F13/F14/F15, Runde 8/9; Proben `R8-1` und `P9-F13`)" | **nachgezogen**; Kopf der Karte trägt jetzt `308947d` |
+| `voraussetzung_exit()` — Docstring und Klartextzeile (Symbol) | bereits „Matrix F13/F14/F15" | unverändert | nachgezogen @ Runde 9 |
+| `R8-1` — Text der Wache (Symbol) | bereits „Matrix F13/F14/F15" | unverändert | nachgezogen @ Runde 9 |
+| A14-Behauptung in `tools/beweise.ps1` (Symbol `Kuerzel='A14'`) | bereits „… der unmoegliche oder fehlgeschlagene Bau eingeschlossen (Matrix F13/F14/F15, Runde 8/9)" | unverändert | nachgezogen @ Runde 9 |
+| Korrigierte Frischematrix, Zeile **F13** | bereits „ohne registrierten Befund **3**, mit registriertem Befund **2**, **nie 0**" | unverändert | lebende Referenz mit eigenem Stand, nachgezogen @ Runde 9 |
+| Erste Fassung der Frischematrix, Zeile **F13** | „**3** mit Klartext, nie 0, nie 2" | unverändert | **historisch @ `5538fb0`** — schon in Runde 9 ausdrücklich als überholter Entwurf markiert |
+| Kanon-Übersichten Runde 8 und 9, A14-Zeile | Runnertext des jeweiligen Laufs | unverändert | **historisch @ `93e8a7c`** bzw. **`d4f7ed3`** (Commit in der Kopftabelle des Blocks; Rohausgabe wird nicht umgeschrieben) |
+
+#### Z2 — Herkunft der Systemdatei-Namen; keine Aussage über die Ursache
+
+| Stelle | alt | neu | Status |
+|---|---|---|---|
+| `…/pruefe_kern_identitaetsfrei.py:912-914` @ `a010d64` — Herleitung von `SYSTEMDATEIEN` | „dieselben zwei Dateien stehen auch im Protokoll einer TU OHNE jede Diagnose … — **ausgeloest wird der Zugriff also nicht von der Meldung selbst**" | „… — WOVON der Zugriff ausgeloest wird, ist damit NICHT gemessen und wird hier nicht behauptet: P8-SYS zeigt dieselben Dateien mit und ohne Diagnose, nicht ihre Ursache" | **nachgezogen** (`:915-921` @ `308947d`) |
+| `_systemwurzel()` — Docstring (Symbol) | bereits „WOVON der Zugriff ausgeloest wird, ist nicht gemessen … (Probe P8-SYS)" | unverändert | nachgezogen @ Runde 9 |
+| Kommentar über der Ortsprüfung, `⚠️ GEMESSEN (Probe P8-SYS …)` (Symbol) | bereits „Wodurch der Zugriff ausgeloest wird, ist NICHT gemessen" | unverändert | nachgezogen @ Runde 9 |
+| `_NEUBAU_AUSGABEN`-Kommentar und „abgebrochener Bau … (gemessen bei P5-W5b)" (Symbole) | `P5-W5b` | unverändert | **richtig so**: diese beiden meinen die Messung an `NakamaKern.dir/<konfig>/`, die `P5-W5b` wirklich gefahren hat (Runde 9) |
+| `docs/beweise/SONDE-007a.md:12807` @ `a010d64` — Defekttabelle der Runde 5 | schreibt die Systemdateien `P5-W5b` zu und erklärt sie aus einer Diagnosemeldung | Text unverändert | **historisch @ `3353301`** — Standangabe **ergänzt**, samt Satz, was daran überholt ist |
+| `docs/beweise/SONDE-007a.md:13634` @ `a010d64` — Regeltabelle der Runde 6, Zeile `R3` | „die Systemdateien, die `cl.exe` **beim Formatieren einer Diagnose** liest (…, Probe P5-W5b), sind über die Wurzel **Windows-System** erlaubt" | Text unverändert | **historisch @ `370e513`** — Standangabe **ergänzt**; beide Aussagen sind seit Runde 7 bzw. 8 überholt |
+| Abschnitte „Nacharbeit Runde 7 / 8 / 9" | P5-W5b → P8-SYS, Verlauf des Befunds | unverändert | **historisch @ `60717c5` / `5dfe3a3` / `f131090`** (Standangabe im Abschnittskopf) |
+
+#### Z3 — keine Anzahl der Liste `SYSTEMDATEIEN`
+
+| Stelle | alt | neu | Status |
+|---|---|---|---|
+| `docs/beweise/SONDE-007a.md:78` @ `a010d64` — Riegelkarte, Zeile **Tlog-Riegel** | „(Liste `SYSTEMDATEIEN` im Skript; **ihre beiden Namen** stehen seit Runde 8 als eingefügte Rohausgabe …)" | „(Liste `SYSTEMDATEIEN` im Skript — sie ist die Quelle, nicht diese Karte; **ihre Namen** stehen seit Runde 8 als eingefügte Rohausgabe …, **ihre Anzahl gibt der Messlauf aus**)" | **nachgezogen** |
+| `…/pruefe_kern_identitaetsfrei.py:899` @ `a010d64` | „deren eingefuegte Rohausgabe **die beiden Namen** gar nicht zeigt" | „… **die Namen dieser Liste** gar nicht zeigt" | **nachgezogen** (`:903` @ `308947d`) |
+| `…/pruefe_kern_identitaetsfrei.py:911-912` @ `a010d64` | „**Beide Namen** erscheinen dort, und NUR **diese beiden**"; „**dieselben zwei Dateien**" | „**Die Namen dieser Liste** erscheinen dort, und KEIN weiterer unter %SystemRoot%"; „**dieselben Dateien**" | **nachgezogen** (`:915-917` @ `308947d`) |
+| A14-Behauptung in `tools/beweise.ps1` (Symbol) | bereits „ihre Anzahl gibt der Messlauf aus" | unverändert | nachgezogen @ Runde 8 |
+| `R7-1b` — Text der Wache (Symbol) | `f"die {len(SYSTEMDATEIEN)} gemessenen Systemdateien …"` | unverändert | **gerechnet, nicht abgeschrieben** — die Zahl kommt aus der Liste selbst |
+| Abschnitte „Nacharbeit Runde 7 / 8" („die beiden Namen der Erlaubnisliste", „dieselben zwei Dateien") | Verlauf des Befunds | unverändert | **historisch @ `60717c5` / `5dfe3a3`** |
+
+#### Z4 — A17: „Writer-Form" (NAK-94 Nacharbeit 5)
+
+Die vierte geänderte Zusage dieser Doppelrunde gehört zu NAK-94; ihr Inventar
+steht in `docs/beweise/SONDE-007c.md`, Abschnitt „NAK-94 Nacharbeit Runde 5".
+Betroffen sind `tools/eq-copilot/pruefe_installer_manifest.py` (Kopf,
+Konstanten, `[3b]`), die A17-Behauptung samt Kommentar in `tools/beweise.ps1`
+und der neue Erzeuger `tools/eq-copilot/erzeuge_installer_journale.py`.
+
+---
+
+### Was das Inventar zusätzlich gefunden hat
+
+`VoraussetzungFehlt.__doc__` sagte „Eine Voraussetzung des Beins fehlt — Exit 3,
+nie ein Urteil" und weiter unten „sagt das (Exit 3) und behauptet nichts". Das
+ist derselbe zu enge Satz wie im Skriptkopf, an einer Stelle, die weder Prüfer 8
+noch 9 noch 10 genannt hat. Ein Leser, der bei der Ausnahme nachschlägt, hätte
+dort in Runde 11 wieder den alten Stand gefunden. Genau diese Klasse — die nicht
+nachgezogene Zweitstelle — war in drei Runden hintereinander der einzige
+Befundtyp; das Inventar ist die Antwort darauf und hat beim ersten Einsatz
+geliefert.
+
+---
+
+### Probe `P10-F13` am Endstand `308947d` — Verhalten unverändert
+
+Derselbe Treiber, beide Richtungen, gegen ein **nicht vorhandenes**
+Bauverzeichnis (einen echten Baum braucht dieser Fall gerade nicht):
+
+```text
+F13 ohne registrierten Befund -> Exit 3
+F13 mit registriertem Befund  -> Exit 2
+--- Ausgabe des zweiten Laufs (letzte Zeilen) ---
+
+0 ok, 1 Fehler
+
+FEHLGESCHLAGEN:
+  - kuenstlicher Identitaetsbefund vor dem Bau
+
+Ein registrierter Befund gewinnt gegen die fehlende Voraussetzung (Matrix F13/F14/F15): Exit 2.
+```
+
+Baulose Selbstprüfung am selben Stand:
+
+```text
+82 ok, 0 Fehler
+```
+
+Es wurde keine neue Wache gebaut — die drei Befunde waren Text. Die Wachen, die
+das gemessene Verhalten festhalten, existieren seit Runde 8/9 (`R8-1`, `R8-2`)
+und sind dort einzeln gebrochen worden.
+
+---
+
+### Prüfliste (`tools/dirigent/pruefliste.md`) — wo in dieser Runde gemessen
+
+| Zeile | wo gemessen |
+|---|---|
+| **E** — „Jede Behauptung sagt nicht mehr, als der Test misst" | die vier lebenden F13-Texte sagen jetzt, was `voraussetzung_exit()` tut (Reproduktion oben, Probe `P10-F13`); die Herleitung von `SYSTEMDATEIEN` behauptet keine Ursache mehr, die `P8-SYS` nicht misst |
+| **E** — „Zahlen im Manifest sind gemessen, nicht abgeschrieben" | die Riegelkarte nennt keine Anzahl der Liste `SYSTEMDATEIEN` mehr; die einzige Zahl dazu steht als `len(SYSTEMDATEIEN)` im Text der Wache `R7-1b` und in der Messlaufausgabe |
+| **E** — „Positionen als Symbol oder `Datei:Zeile @ sha7`" | jede Position dieses Abschnitts trägt `@ a010d64` (alt) oder `@ 308947d` (neu) oder steht als Symbol; die zwei zitierten Rohausgaben bleiben, wie der Treiber sie schrieb, und der einleitende Satz trägt den Stand |
+| **E** — „Abschnitt ohne Standangabe bindet jede Position einzeln" | die zwei vom Prüfer genannten Tabellen (`:12807`, `:13634` @ `a010d64`) haben ihre Standangabe bekommen (`3353301`, `370e513`) statt einer Umschrift; die Riegelkarte trägt jetzt `308947d` |
+| **E** — **Aussagen-Inventar** (neue Zeile, 30.08.2026) | drei Tabellen oben, gespeist aus grep über Skript, `tools/beweise.ps1`, Matrix, Riegelkarte, Köpfe und alle Manifestabschnitte; jede Fundstelle als lebend oder historisch klassifiziert |
+| **E** — „Jede neue Prüfung wurde einmal gebrochen" | in dieser Runde keine neue Prüfung — die Befunde waren Text; die messenden Wachen `R8-1`/`R8-2` sind in Runde 8 gebrochen worden. Für NAK-94 Nacharbeit 5 stehen sieben Brüche in `docs/beweise/SONDE-007c.md` |
+| **F** — „Änderungssatz" | Skript, Runner-Kommentar, Riegelkarte und Manifest gehen zusammen; die A17-Hälfte liegt im selben Commit-Paar |

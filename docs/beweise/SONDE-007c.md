@@ -17546,3 +17546,358 @@ Runde (`P2/4` plus die drei `P2/3`-Proben) grün.
 A17 `[3b]` fährt beide Sorten; jede Probe nennt ihre Sorte in der Ausgabezeile. Die Behauptung in `tools/beweise.ps1` und im Skriptkopf sagt genau das: „Writer-Journale aus der A18-Sandbox eingefroren; synthetische Fälle als deklarierte Mutanten". Je Probe weiterhin ein eigener Bruch mit ROT und Rücknahme. Ein Fixture-Korpus ohne Erzeugungsbeleg (Rohausgabe + Stand + Befehl) ist nicht abgenommen.
 
 **Nächster Schritt:** Nacharbeit 5 im selben Worker wie S8 Runde 10 (falls Prüfer 10 Befunde hat; sonst allein), gemeinsamer Kanon, danach Prüfer 6 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.
+
+---
+
+## NAK-94 Nacharbeit Runde 5 — 2026-08-30 (Prüfer-Thread `01a04fb9-b683…`)
+
+**Stand dieses Abschnitts:** `2f1f89b`
+
+Zwei bestätigte Befunde des fünften Prüfers (Codex high, lesend über
+`git diff da62dec...32d86d9`), Regel des Dirigenten im Abschnitt
+„Dirigentenstand NAK-94 — 2026-08-30 01:01 (Sitzung 054eedac)". Beide sind
+geschlossen — nicht durch eine vierte Korrektur am handgeschriebenen Journal,
+sondern durch den **Wegwechsel W1**: Probe-Journale werden vom Writer erzeugt.
+
+**Werkzeugregel dieser Runde:** nichts installiert, keine Rechteerhöhung, kein
+Program Files. Der Erzeugungslauf fährt das echte `Install-Nakama.ps1` in einer
+`%TEMP%`-Sandbox mit genau drei ersetzten Zeilen — derselben Mechanik, die
+Kanon-Bein A18 seit dem 23.08. benutzt. `Install-Nakama.ps1` selbst ist
+**unverändert**; A18 ist unverändert und bleibt grün (127 ok).
+
+---
+
+### Die zwei Befunde, wörtlich (Positionen `@ 32d86d9`)
+
+> **[P2] Verwende einen erzeugbaren VST3-Vorzustand** — `tools/eq-copilot/pruefe_installer_manifest.py:1071`. Beim aktuellen ersten Artefakt (`main`, `vst3`) setzt die Fixture `vorher_sha256` und `gesichert`, lässt aber `vorher_sha256_innen` null. Dieser Eintrag kann nicht vom Writer stammen: Bei vorhandenem VST3 berechnet `Install-Nakama.ps1:1063-1069` zwingend den inneren SHA und bricht bei null vor dem Journalschreiben ab. Damit ist die verlangte Writer-Form nicht belegt. Reproduktion: diese drei Fixture-Werte mit dem Writer-Zweig vergleichen; als Fix einen gültigen inneren SHA setzen oder Vorzustand, Sicherung und inneren SHA gemeinsam auf null stellen.
+>
+> **[P2] Entferne Probe (c) aus den Writer-Form-Proben** — `tools/eq-copilot/pruefe_installer_manifest.py:1234-1239`. Probe (c) erzeugt absichtlich ein `OK`-Journal ohne `eintraege`; der Installations-Writer legt dieses Feld jedoch immer an (`Install-Nakama.ps1:1106-1114`), und der OK-Pfad ändert anschließend nur `status` und `zeit` (`:1154-1156`). Die ausdrückliche Umdeklaration als „KEINE Writer-Form" widerspricht daher der bindenden Vorgabe „Jedes Probe-Journal … in der Form des Writers". Reproduktion: die Schlüssel aus Zeilen 1234–1239 mit dem Writer-Kopf vergleichen; als Fix diesen Fall als separates Malformed-Journal-Negativfixture führen statt ihn als Probe (c) der Writer-Form-Abnahme zu zählen.
+
+---
+
+### Beide Befunde reproduziert am Basis-Stand `a010d64` — vor jeder Änderung
+
+Ein lesender Treiber vergleicht die drei Fixturwerte mit dem Eintragsbau des
+Writers und die Schlüsselmenge der Probe (c) mit dem Journalkopf des Writers:
+
+```text
+== Befund 1: Vorzustand der Fixtur ist vom Writer nicht erzeugbar ==
+  Fixtur  "vorher_sha256": "1" * 64,
+  Fixtur  "vorher_sha256_innen": None,
+  Fixtur  "gesichert": (f"backups/{PROBE_TRANSAKTIONS_ID}/backup-0"
+  Writer-Zweig Install-Nakama.ps1 (Eintragsbau):
+    1056:     $vorher = Hash-Von $p.Ziel $art
+    1060:     $vorherInnen = $null
+    1061:     $gesichert   = $null
+    1063:     if ($null -ne $vorher) {
+    1064:         if ($art -eq 'vst3') {
+    1065:             $vorherInnen = Datei-Hash (Innen-Pfad $p.Artefakt $p.Ziel)
+    1068:             if (-not (Ist-Sha256 $vorherInnen)) {
+    1069:                 Abbruch "$($p.Name): VST3-Payload ist vor der Sicherung verschwunden; Installation bleibt ohne Zielmutation."
+  -> vorher_sha256 != null UND art == vst3 erzwingt Datei-Hash;
+     Ist-Sha256(null) == False -> Abbruch VOR jedem Journalschreiben.
+     Die Fixtur traegt trotzdem vorher_sha256 + gesichert bei innen = None.
+
+== Befund 2: Probe (c) ist als Writer-Form deklariert, ist aber keine ==
+  Probe (c) Schluessel : ['schema', 'status', 'transaktions_id', 'manifest', 'zeit', 'bekannte_staende']
+  Writer-Kopf          : ['schema', 'status', 'transaktions_id', 'manifest', 'zeit', 'bekannte_staende', 'eintraege']
+  fehlend gegen Writer : ['eintraege']
+  OK-Pfad des Writers (setzt nur status und zeit neu):
+    $journal.status = 'OK'
+    $journal.zeit = [DateTime]::UtcNow.ToString('o')
+    Schreibe-Ergebnis $journal
+    Write-Host 'INSTALLATION OK' -ForegroundColor Green
+  -> `eintraege` legt der Writer immer an; ein OK-Journal ohne die Liste
+     kann er nicht schreiben. Die Probe zaehlt trotzdem im Writer-Form-Block.
+```
+
+Beide Befunde bestehen an der Quelle. Sie sind auch **dieselbe** Ursache aus
+zwei Richtungen: eine Form, die man aufzählt, statt sie zu erzeugen, weicht an
+der Invariante ab, die man beim Aufzählen nicht gesehen hat.
+
+---
+
+### Der Wegwechsel W1 — Journale werden erzeugt, nicht geschrieben
+
+Neu: `tools/eq-copilot/erzeuge_installer_journale.py`. Es baut dieselbe Sandbox
+wie A18 — Kopie des echten Installers unter `%TEMP%`, genau drei ersetzte Zeilen
+(Host-Riegel, VST3-Produktpolicy, Broker-Produktpolicy), Manifestziele in die
+Sandbox gebogen, Artefakt-Attrappen an den Pfaden, die das Manifest nachrechnet.
+Die drei Ersetzungszeilen und die Bundle-Attrappe werden aus
+`pruefe_installer_gegenpfad.py` **importiert**, nicht abgeschrieben: ändert A18
+seine Sandbox, folgt der Erzeuger. Findet sich eine Originalzeile nicht genau
+einmal, wird nichts erzeugt (fail-closed, dieselbe Vorbedingung wie in A18).
+
+Gefahren werden vier Läufe des echten Writers; jedes entstandene
+`install-ergebnis.json` wird **byteweise** eingefroren.
+
+**Rohausgabe des Erzeugungslaufs** (Befehl
+`py -3.13 tools/eq-copilot/erzeuge_installer_journale.py`, Stand `a010d64`; die
+Sandboxpfade sind die des Laufs):
+
+```text
+[0] Sandbox-Kopie des ECHTEN Skripts, genau drei Zeilen ersetzt
+      - $null -ne (Get-Process -Name 'FL64', 'FL', 'FL Studio' -ErrorAction SilentlyContinue)
+      + $false   # SANDBOX-PROBE (Kanon-Bein A18): kein Host haelt hier ein Bundle
+      - $erlaubteVst3Basis = Kanonischer-Pfad (Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::CommonProgramFiles)) 'VST3')
+      + $erlaubteVst3Basis = Kanonischer-Pfad 'C:\Users\phili\AppData\Local\Temp\nakama-journale-aqjf0cvw\ziel\VST3'
+      - $erlaubteBrokerBasis = Kanonischer-Pfad (Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFiles)) 'evenacadia\Nakama')
+      + $erlaubteBrokerBasis = Kanonischer-Pfad 'C:\Users\phili\AppData\Local\Temp\nakama-journale-aqjf0cvw\ziel\programme\evenacadia\Nakama'
+
+[1] OK nach Erstinstallation ueber einen vorgefundenen Stand
+  ok      OK nach Erstinstallation  ->  ok-erstinstallation.json  (3130 B, 438D8DB5B5550E53)
+
+[2] RUECKWEG nach dem Gegenpfad
+  ok      RUECKWEG nach Gegenpfad  ->  rueckweg-nach-gegenpfad.json  (738 B, 5B99904AB9B6B80A)
+
+[3] OK nach Tausch (zweiter Lauf ueber den installierten Stand)
+  ok      OK nach Tausch  ->  ok-nach-tausch.json  (3300 B, 1CB23A231AD96F14)
+
+[4] ERROR_RUECKGEROLLT nach spaetem Abbruch mit voller Kompensation
+  ok      ERROR_RUECKGEROLLT nach voller Kompensation  ->  error-rueckgerollt.json  (3226 B, 5769F5ADDD2025BA)
+
+4 Writer-Journale eingefroren unter eq-copilot/fixtures/installer/journale (Stand a010d64).
+```
+
+**Der eingefrorene Korpus** — `eq-copilot/fixtures/installer/journale/`, mit
+`MANIFEST.json` (Fall, Stand, Installer-Befehl, SHA-256 je Datei):
+
+| Fall | Datei | Status | wie er entsteht |
+|---|---|---|---|
+| OK nach Erstinstallation | `ok-erstinstallation.json` | `OK` | Vorgefunden war **nur** das Main-Bundle (älterer Stand). `main` trägt deshalb `vorher_sha256`, `vorher_sha256_innen` **und** `gesichert`; die übrigen Ziele lagen nicht vor und tragen dort `null` |
+| RUECKWEG nach Gegenpfad | `rueckweg-nach-gegenpfad.json` | `RUECKWEG` | Abschließendes `Schreibe-Ergebnis` des RUECKWEG-Zweigs: sieben Felder, **keine** Liste `eintraege` |
+| OK nach Tausch | `ok-nach-tausch.json` | `OK` | Zweiter Lauf über den installierten Stand: **jedes** Ziel hat einen Vorzustand samt Sicherung, die vst3-Einträge zusätzlich `vorher_sha256_innen` |
+| ERROR_RUECKGEROLLT nach voller Kompensation | `error-rueckgerollt.json` | `ERROR_RUECKGEROLLT` | Eine Datei liegt dort, wo das Broker-Verzeichnis entstehen müsste; der Fehler fällt nach dem dritten Tauschakt, der Writer kompensiert rückwärts |
+
+Damit ist **Befund 1 gegenstandslos**: `ok-erstinstallation.json` trägt genau
+die Kopplung, die der Prüfer benannt hat — `vorher_sha256`,
+`vorher_sha256_innen` und `gesichert` gemeinsam gesetzt beim vst3-Ziel mit
+vorgefundenem Stand, alle drei `null` bei den Zielen ohne. Diese Kopplung kann
+eine Handschrift nur zufällig treffen; der Writer kann sie nicht verletzen.
+
+**Was hier bewusst NICHT entsteht.** `VORBEREITET`, `KOMPENSATION`,
+`ERROR_TEILSTAND` und `RUECKWEG_AKTIV` sind Durchgangsstände: der Writer
+schreibt sie und überschreibt sie im selben Lauf wieder. Ein abgeschlossener
+Lauf hinterlässt sie nicht, und A18 simuliert ihren Abbruch nicht — es **setzt**
+sie von Hand in den Anker. Sie sind darum keine Writer-Fixturen, sondern
+deklarierte Mutanten.
+
+**Volatile Felder** (`zeit`, `transaktions_id`, `ziel`, `gesichert`, Hashes,
+`erzeugte_ordner`, `getan`, `bekannte_staende`) bleiben, wie der Writer sie
+schrieb. Die Proben vergleichen Struktur und Status, nie diese Werte. Der
+Manifest-Eintrag `volatile_felder` sagt das ausdrücklich.
+
+**`.gitattributes`** bekommt `eq-copilot/fixtures/installer/** -text`. Der
+Writer schreibt UTF-8 ohne BOM mit CRLF (`Schreibe-JsonAtomar`:
+`ConvertTo-Json` plus `[Environment]::NewLine`); die SHA-256 im `MANIFEST.json`
+sind über genau diese Bytes gebildet. Mit `core.autocrlf=true` — auf diesem
+Rechner gesetzt — hätte eine frische Klonung die Zeilenenden umgeschrieben und
+**jeden** dieser Hashes gebrochen. Gemessen nach dem Commit, über den Blob im
+Index:
+
+```text
+Blob im Index gegen den MANIFEST-Hash (Rundreise ueber git):
+  ok  ok-erstinstallation.json           438D8DB5B5550E53  3130 B
+  ok  rueckweg-nach-gegenpfad.json       5B99904AB9B6B80A  738 B
+  ok  ok-nach-tausch.json                1CB23A231AD96F14  3300 B
+  ok  error-rueckgerollt.json            5769F5ADDD2025BA  3226 B
+```
+
+---
+
+### `[3b]` fährt zwei Sorten und nennt sie in jeder Zeile
+
+**Writer-Fixtur** — die eingefrorenen Bytes, vor der Benutzung gegen ihren
+SHA-256 im `MANIFEST.json` nachgerechnet; fehlt der Korpus oder einer der drei
+Pflichtfälle, bricht `[3b]` laut ab, statt still weniger zu prüfen.
+**Mutant** — im Skript aus **genau einer** Fixtur abgeleitet, mit benannter
+Abweichung; der Kopf entsteht aus den gelesenen Fixturbytes, damit alles außer
+der genannten Abweichung Writer-Form bleibt.
+
+Damit ist **Befund 2 geschlossen**: der frühere Fall (c) zählt nicht mehr als
+Writer-Form, sondern als `Mutant von ok-erstinstallation.json: eintraege
+entfernt`. Die Probe misst weiterhin denselben Leserpfad, behauptet aber nichts
+Falsches mehr über den Writer.
+
+Zwei Verschärfungen sind dabei mitgekommen, beide gemessen:
+
+- Die Manifestseite zieht jetzt nach, nicht die Fixtur: `_manifest_zum_journal()`
+  setzt die Artefakt-Hashes der Manifestkopie auf die des Journals. Die
+  volatile Zahl steht damit auf der Seite, die man ändern darf.
+- Jede erwartete Zeile wird für **jedes** Artefakt verlangt (`ohne_hinweis()`).
+  Vorher genügte die Zeile des ersten Artefakts — eine Sperre, die nur beim
+  ersten greift, wäre grün geblieben (Bruch `B5-3`).
+
+**Im Selbstaudit des eigenen Diffs gefunden** (`2f1f89b`): `_manifest_zum_journal()`
+baute seine Zuordnung zuerst als `{_artefakt_name(e): e …}`. Ein Journaleintrag
+mit `ziel_id: ["main"]` wäre dort ein nicht hashbarer dict-Schlüssel gewesen —
+also genau der `TypeError`, gegen den Befund C2 den ganzen `[4b]`-Block
+abgeschirmt hat. Er fiel heute nicht, weil die zwei Proben mit verstümmelten
+Einträgen ihre Manifestseite ausdrücklich mitgeben; eine Hilfsfunktion, die den
+Kanonlauf töten kann, sobald jemand das Argument wegläßt, bleibt trotzdem eine
+Falle. Sie überspringt jetzt jeden Eintrag ohne String-Kennung.
+
+**`[3b]` am Stand `2f1f89b`, Rohausgabe:**
+
+```text
+[3b] Gegenproben zu [4] Auslieferungsstand und [4b] installiertem Stand
+  ok      C1: ein fehlendes Artefakt ist auch im Kanon ROT, wenn ein anderes keinen festgeschriebenen Hash traegt  [eqcop-broker.exe: das festgeschriebene Artefakt liegt nicht vor  [broker/target/release/eqcop-broker.exe-GIBT-ES-NICHT]]
+  ok      C1: das Artefakt ohne Hash wird trotzdem gemessen (liegt vor, Ordner-Hash bildbar) statt uebersprungen  [ok      main: Artefakt liegt vor, Ordner-Hash bildbar  [gebaut FBB729A76C660904; kein festgeschriebener Hash zum Vergleich]]
+  ok      C1: unter --release sind BEIDE Befunde Fehler - der fehlende Hash und das fehlende Artefakt  [nicht ausgeliefert - 1 Artefakt(e) ohne Hash: main | active-probe: gebautes Artefakt stimmt mit dem festgeschriebenen Hash  [Manifest 1DDC92E3B8525F1F | gebaut D98AC7C4ED922D08]]
+  ok      C2 [Mutant von ok-erstinstallation.json: eintraege -> [Eintrag mit ziel_id als Liste, Nicht-Objekt]]: ein Journaleintrag mit ziel_id als Liste ist ein Hinweis, kein TypeError - und [4b] faellt kein Urteil  [hinweis 0: Journaleintrag ohne lesbare Kennung (['main']) / hinweis 1: Journaleintrag ist kein Objekt (str)]
+  ok      C2 [Writer-Fixtur ok-erstinstallation.json]: auch ein Fehler auf der MANIFEST-Seite bleibt ein Hinweis - [4b] toetet keinen Kanonlauf  [hinweis install-ergebnis.json nicht auswertbar: TypeError("unhashable type: 'list'")]
+  ok      P2/5 [Writer-Fixtur ok-erstinstallation.json]: bei Journalstatus OK und abgeschlossenen, nicht zurueckgerollten Eintraegen bleibt der Hashvergleich und sein ok (Vorzustand nur beim Main-Bundle)  [alle Artefakte ok]
+  ok      P2/5 [Writer-Fixtur ok-nach-tausch.json]: bei Journalstatus OK und abgeschlossenen, nicht zurueckgerollten Eintraegen bleibt der Hashvergleich und sein ok (Vorzustand bei jedem Ziel)  [alle Artefakte ok]
+  ok      P2/5 [Writer-Fixtur rueckweg-nach-gegenpfad.json]: Journalstatus RUECKWEG meldet artefaktweise 'unbekannt' - ohne Hashvergleich und ohne 'keine Liste'  [Journal: status='RUECKWEG'  zeit='2026-08-29T23:13:21.8923065Z']
+  ok      P2/5 [Writer-Fixtur error-rueckgerollt.json]: Journalstatus ERROR_RUECKGEROLLT meldet artefaktweise 'unbekannt' - ohne Hashvergleich und ohne 'keine Liste'  [Journal: status='ERROR_RUECKGEROLLT'  zeit='2026-08-29T23:13:25.0824342Z']
+  ok      P2 [Mutant von ok-erstinstallation.json: status -> VORBEREITET]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [alle Artefakte als unbekannt gemeldet]
+  ok      P2 [Mutant von ok-erstinstallation.json: status -> KOMPENSATION]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [alle Artefakte als unbekannt gemeldet]
+  ok      P2 [Mutant von ok-erstinstallation.json: status -> ERROR_TEILSTAND]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [alle Artefakte als unbekannt gemeldet]
+  ok      P2 [Mutant von ok-erstinstallation.json: status -> ERROR_RUECKGEROLLT]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [alle Artefakte als unbekannt gemeldet]
+  ok      P2 [Mutant von ok-erstinstallation.json: status -> RUECKWEG_AKTIV]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [alle Artefakte als unbekannt gemeldet]
+  ok      P2 [Mutant von ok-erstinstallation.json: status -> RUECKWEG]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [alle Artefakte als unbekannt gemeldet]
+  ok      P2 [Mutant von ok-erstinstallation.json: status -> NEUER_STATUS_2099]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [alle Artefakte als unbekannt gemeldet]
+  ok      P2 [Mutant von ok-erstinstallation.json: status entfernt]: ein Journal OHNE status meldet den installierten Stand als unbekannt - Schweigen ist kein OK  [hinweis main: installierter Stand unbekannt (Journalstatus fehlt)]
+  ok      P2/3 [Mutant von ok-erstinstallation.json: eintraege entfernt]: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
+  ok      P2/4 [Writer-Fixturen]: jede eingefrorene Transaktions-ID besteht die Ist-TransaktionsId-Regex aus Install-Nakama.ps1 - eine gestrichelte UUID taete es nicht  [Muster '^[0-9a-f]{32}$' gegen ['35eedadd0d3b414e88a57efa4b592067', 'f7e6cf96074d4f2baf04efb141e6fbde', 'f7e6cf96074d4f2baf04efb141e6fbde', 'faa9dbe2c40e4d5f9ca3d7a4d9bf1cc1']]
+
+```
+
+---
+
+### Bruch und Rücknahme — jede neue Wache einmal fallen gesehen
+
+Sieben Brüche, je als exakte Byteersetzung gesetzt, gefahren, byteweise
+zurückgenommen und wieder grün gefahren. `B5-1` und `B5-7` greifen an den
+Fixturen selbst, `B5-2` am Fixtur-Manifest, die übrigen am Leser. Die
+GRÜN-Blöcke unten zeigen nur den Exitcode; die vollständigen grünen Zeilen
+stehen im `[3b]`-Block darüber.
+
+```text
+### B5-1  eine Writer-Fixtur von Hand angefasst
+  Bruch gesetzt in eq-copilot/fixtures/installer/journale/ok-nach-tausch.json
+  -- ROT --
+   Writer-Fixtur ok-nach-tausch.json ist nicht die eingefrorene: SHA-256 3EED95D860DB7799473D0AE9B4E539C57CE47B5BAE43B660569DD0234733CCCB statt 1CB23A231AD96F140AE47615BD999163009C8B7F1691766492A301991B414F2A. Von Hand geaendert? Dann ist sie keine Writer-Form mehr.
+   Writer-Fixtur ok-nach-tausch.json ist nicht die eingefrorene: SHA-256 3EED95D860DB7799473D0AE9B4E539C57CE47B5BAE43B660569DD0234733CCCB statt 1CB23A231AD96F140AE47615BD999163009C8B7F1691766492A301991B414F2A. Von Hand geaendert? Dann ist sie keine Writer-Form mehr.
+   Exit 1
+   erzeuge_installer_journale.py --pruefen -> Exit 2
+   FEHLGESCHLAGEN:
+     - ok-nach-tausch.json: SHA-256 3EED95D860DB7799473D0AE9B4E539C57CE47B5BAE43B660569DD0234733CCCB != 1CB23A231AD96F140AE47615BD999163009C8B7F1691766492A301991B414F2A
+  Bruch zurueckgenommen (Bytes identisch: True)
+  -- GRUEN --
+   Exit 0
+
+### B5-2  ein Pflichtfall fehlt im Fixtur-MANIFEST
+  Bruch gesetzt in eq-copilot/fixtures/installer/journale/MANIFEST.json
+  -- ROT --
+   Gegenprobe unmoeglich: der Writer-Journalkorpus fuehrt die Pflichtfaelle ['rueckweg-nach-gegenpfad.json'] nicht - ohne sie misst [3b] die Writer-Form nicht vollstaendig.
+   Gegenprobe unmoeglich: der Writer-Journalkorpus fuehrt die Pflichtfaelle ['rueckweg-nach-gegenpfad.json'] nicht - ohne sie misst [3b] die Writer-Form nicht vollstaendig.
+   Exit 1
+   erzeuge_installer_journale.py --pruefen -> Exit 2
+   FEHLGESCHLAGEN:
+     - rueckweg-nach-gegenpfad.json: liegt da, steht aber in keinem MANIFEST-Fall
+  Bruch zurueckgenommen (Bytes identisch: True)
+  -- GRUEN --
+   Exit 0
+
+### B5-3  [4b] berichtet nur noch das erste Artefakt
+  Bruch gesetzt in tools/eq-copilot/pruefe_installer_manifest.py
+  -- ROT --
+     ok      C2 [Writer-Fixtur ok-erstinstallation.json]: auch ein Fehler auf der MANIFEST-Seite bleibt ein Hinweis - [4b] toetet keinen Kanonlauf  [hinweis install-ergebnis.json nicht auswertbar: TypeError("unhashable type: 'list'")]
+     FEHLER  P2/5 [Writer-Fixtur ok-erstinstallation.json]: bei Journalstatus OK und abgeschlossenen, nicht zurueckgerollten Eintraegen bleibt der Hashvergleich und sein ok (Vorzustand nur beim Main-Bundle)  [ohne ok: active-probe, eqcop-broker.exe]
+     FEHLER  P2/5 [Writer-Fixtur ok-nach-tausch.json]: bei Journalstatus OK und abgeschlossenen, nicht zurueckgerollten Eintraegen bleibt der Hashvergleich und sein ok (Vorzustand bei jedem Ziel)  [ohne ok: active-probe, eqcop-broker.exe]
+   Exit 2
+  Bruch zurueckgenommen (Bytes identisch: True)
+  -- GRUEN --
+   Exit 0
+
+### B5-4  die Statussperre steht wieder hinter der Eintragsliste (Regression Nacharbeit 3)
+  Bruch gesetzt in tools/eq-copilot/pruefe_installer_manifest.py
+  -- ROT --
+     FEHLER  P2/5 [Writer-Fixtur rueckweg-nach-gegenpfad.json]: Journalstatus RUECKWEG meldet artefaktweise 'unbekannt' - ohne Hashvergleich und ohne 'keine Liste'  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+     ok      P2/5 [Writer-Fixtur error-rueckgerollt.json]: Journalstatus ERROR_RUECKGEROLLT meldet artefaktweise 'unbekannt' - ohne Hashvergleich und ohne 'keine Liste'  [Journal: status='ERROR_RUECKGEROLLT'  zeit='2026-08-29T23:13:25.0824342Z']
+   Exit 2
+  Bruch zurueckgenommen (Bytes identisch: True)
+  -- GRUEN --
+   Exit 0
+
+### B5-5  die Statussperre laesst jeden Status durch
+  Bruch gesetzt in tools/eq-copilot/pruefe_installer_manifest.py
+  -- ROT --
+     ok      C2 [Mutant von ok-erstinstallation.json: eintraege -> [Eintrag mit ziel_id als Liste, Nicht-Objekt]]: ein Journaleintrag mit ziel_id als Liste ist ein Hinweis, kein TypeError - und [4b] faellt kein Urteil  [hinweis 0: Journaleintrag ohne lesbare Kennung (['main']) / hinweis 1: Journaleintrag ist kein Objekt (str)]
+     FEHLER  P2 [Mutant von ok-erstinstallation.json: status -> VORBEREITET]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+     FEHLER  P2 [Mutant von ok-erstinstallation.json: status -> KOMPENSATION]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+     FEHLER  P2 [Mutant von ok-erstinstallation.json: status -> ERROR_TEILSTAND]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+     FEHLER  P2 [Mutant von ok-erstinstallation.json: status -> ERROR_RUECKGEROLLT]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+     FEHLER  P2 [Mutant von ok-erstinstallation.json: status -> RUECKWEG_AKTIV]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+     FEHLER  P2 [Mutant von ok-erstinstallation.json: status -> RUECKWEG]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+     FEHLER  P2 [Mutant von ok-erstinstallation.json: status -> NEUER_STATUS_2099]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+     FEHLER  P2 [Mutant von ok-erstinstallation.json: status entfernt]: ein Journal OHNE status meldet den installierten Stand als unbekannt - Schweigen ist kein OK  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+     ok      P2/3 [Mutant von ok-erstinstallation.json: eintraege entfernt]: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [hinweis install-ergebnis.json fuehrt keine Liste 'eintraege']
+   Exit 2
+  Bruch zurueckgenommen (Bytes identisch: True)
+  -- GRUEN --
+   Exit 0
+
+### B5-6  ein OK-Journal ohne Eintragsliste wird als 'unbekannt' gemeldet
+  Bruch gesetzt in tools/eq-copilot/pruefe_installer_manifest.py
+  -- ROT --
+     FEHLER  P2/3 [Mutant von ok-erstinstallation.json: eintraege entfernt]: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [keine solche Zeile]
+   Exit 2
+  Bruch zurueckgenommen (Bytes identisch: True)
+  -- GRUEN --
+   Exit 0
+
+### B5-7  eine Fixtur traegt eine gestrichelte Transaktions-ID (MANIFEST-Hash mitgezogen)
+  Bruch gesetzt in eq-copilot/fixtures/installer/journale/ok-erstinstallation.json + MANIFEST.json
+  -- ROT --
+     FEHLER  P2/4 [Writer-Fixturen]: jede eingefrorene Transaktions-ID besteht die Ist-TransaktionsId-Regex aus Install-Nakama.ps1 - eine gestrichelte UUID taete es nicht  [Muster '^[0-9a-f]{32}$' gegen ['35eedadd0d3b414e88a57efa4b592067', 'f7e6cf96-074d-4f2b-af04-efb141e6fbde', 'f7e6cf96074d4f2baf04efb141e6fbde', 'faa9dbe2c40e4d5f9ca3d7a4d9bf1cc1']]
+   Exit 2
+  Bruch zurueckgenommen (Bytes identisch: True)
+  -- GRUEN --
+   Exit 0
+
+```
+
+`git status --short` war nach dem letzten Bruch leer.
+
+---
+
+### Aussagen-Inventar zur Zusage „Writer-Form"
+
+Dieselbe Regel wie in S8 Runde 10 (Wegwechsel W2): die geänderte Zusage wird per
+grep an **allen** Stellen gesucht. **Lebend** ist alles ohne Standangabe;
+**historisch** ist ein Abschnitt mit `**Stand dieses Abschnitts:**`.
+
+| Stelle | alt | neu | Status |
+|---|---|---|---|
+| `tools/eq-copilot/pruefe_installer_manifest.py:127-142` @ `a010d64` — Kommentar über `PROBE_TRANSAKTIONS_ID`/`PROBE_ZEIT` | „Die Journal-Fixturen der Gegenproben [3b] stehen in der Form, die Install-Nakama.ps1 WIRKLICH schreibt — abgelesen, nicht erfunden" | Fixturen werden vom Writer erzeugt und eingefroren; die beiden Konstanten sind **entfallen** (sie existierten nur für die Handschrift) | **nachgezogen** (`:155-170` @ `2f1f89b`) |
+| `…/pruefe_installer_manifest.py:84-85` @ `a010d64` — Skriptkopf | „[3b] laesst beide Kanten einmal fallen" | dazu: „ZWEI SORTEN PROBE-JOURNALE … Writer-Fixtur … Mutant … Jede Probe nennt ihre Sorte in der Ausgabezeile" | **nachgezogen** (`:84-107` @ `2f1f89b`) |
+| `…/pruefe_installer_manifest.py:1152-1247` @ `a010d64` — die drei Proben (a)/(b)/(c) | „die ECHTEN Writer-Formen"; „(c) … ausdruecklich KEINE Writer-Form" | vier Writer-Fixtur-Proben plus neun Mutanten-Proben, jede mit Sorte in der Zeile | **nachgezogen** (`:1075-1275` @ `2f1f89b`) |
+| A17-Behauptung in `tools/beweise.ps1` (Symbol `Kuerzel='A17'`) | „[3b] faehrt dafuer die Koepfe, die Install-Nakama.ps1 wirklich schreibt … Die dritte Probe … ist ausdruecklich KEINE Writer-Form … Jede der drei Proben ist einzeln gebrochen worden (NAK-94 Nacharbeit 3/4)." | „[3b] faehrt dafuer zwei Sorten Probe-Journal und nennt die Sorte in jeder Zeile: WRITER-FIXTUREN … und daraus abgeleitete deklarierte MUTANTEN … Vor der Benutzung rechnet [3b] jede Fixtur gegen ihren SHA-256 nach und verlangt die drei Pflichtfaelle … Jede Probe ist einzeln gebrochen worden (NAK-94 Nacharbeit 3/4/5)." | **nachgezogen** (`Kuerzel='A17'` @ `2f1f89b`) |
+| Kommentarblock über der A17-Zeile in `tools/beweise.ps1` (Symbol) | nur NAK-94-Härtegrade | Absatz zum Wegwechsel W1 ergänzt | **nachgezogen** |
+| `tools/eq-copilot/erzeuge_installer_journale.py` (neu) | — | Docstring nennt die drei Runden, die Sandbox, die volatilen Felder und was hier **nicht** entsteht | neu |
+| Abschnitte „NAK-94 Nacharbeit Runde 3" und „… Runde 4" in diesem Manifest | „exakte Writer-Form", „Probe (c) ist ausdrücklich keine Writer-Form" | unverändert | **historisch @ `5dfe3a3`** bzw. **`f131090`** (Standangabe im Abschnittskopf) |
+| Dirigentenstände „Prüfer 3" und „Prüfer 4" | Befundzitate mit „Writer-Form" | unverändert | **historisch @ `a94c33e`** bzw. **`401d036`** |
+| Kanon-Übersichten, A17-Zeile | Runnertext des jeweiligen Laufs | unverändert | **historisch** (Commit in der Kopftabelle des Blocks) |
+
+Lebende Stelle ohne Nachzug: **keine**.
+
+---
+
+### Prüfliste (`tools/dirigent/pruefliste.md`) — wo in dieser Runde gemessen
+
+| Zeile | wo gemessen |
+|---|---|
+| **E** — „Jede Behauptung sagt nicht mehr, als der Test misst" | die A17-Behauptung nennt jetzt die zwei Sorten, die Hash-Vorprüfung und die Pflichtfälle; die Zusage „Writer-Form" wird nicht mehr behauptet, sondern durch die eingefrorenen Bytes belegt |
+| **E** — „Zahlen sind gemessen, nicht abgeschrieben" | die SHA-256 im Fixtur-`MANIFEST.json` kommen aus dem Erzeugungslauf; `[3b]` rechnet sie vor jeder Benutzung nach (Bruch `B5-1`) |
+| **E** — „Positionen als Symbol oder `Datei:Zeile @ sha7`" | die Positionen dieses Abschnitts tragen `@ a010d64` (alt), `@ 2f1f89b` (neu) oder stehen als Symbol; die zitierten Rohausgaben bleiben, wie Erzeuger, Prüfbein und Bruchtreiber sie schrieben |
+| **E** — „Jede neue Prüfung wurde einmal gebrochen" | sieben Brüche oben, je mit ROT-Rohausgabe und byteweiser Rücknahme |
+| **E** — **Aussagen-Inventar** (neue Zeile, 30.08.2026) | Tabelle oben; die S8-Hälfte steht in `docs/beweise/SONDE-007a.md`, Abschnitt „Nacharbeit Runde 10" |
+| **E** — **Writer-Fixturen statt Handschrift** (neue Zeile, 30.08.2026) | genau diese Runde: Erzeuger, Sandbox, Rohausgabe, Stand, Befehl, SHA-256; synthetische Fälle als deklarierte Mutanten mit `mutant_von`/`abweichung` |
+| **D** — „ein Riegel ist fail-closed ohne Rohtextheuristik" | fehlender Korpus, fehlender Pflichtfall und abweichender Hash sind ROT (`B5-1`, `B5-2`); der Erzeuger bricht ab, wenn eine der drei Originalzeilen nicht genau einmal steht |
+| **F** — „installieren↔Rückweg im selben Änderungssatz" | Erzeuger, Fixturen, `MANIFEST.json`, `.gitattributes`, Leser-Proben und Runner-Behauptung liegen im selben Commit-Paar; A18 (der Gegenpfad selbst) ist unverändert und grün |
+
+**Kanon-Abschlusslauf:** siehe `docs/beweise/SONDE-007a.md`, Abschnitt
+„Kanon-Lauf - SONDE-007a Runde 10 + NAK-94 Nacharbeit 5 - Abschluss"; die
+Rohausgabe liegt unter `docs/beweise/roh/`.

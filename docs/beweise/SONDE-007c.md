@@ -17195,4 +17195,7 @@ gesetzt — Probe (a) fällt, (b) und (c) bleiben grün (sie messen andere Kante
 
 Der gemeinsame Kanon-Abschlusslauf dieser Runde steht in
 `docs/beweise/SONDE-007a.md` („Kanon-Lauf - SONDE-007a Runde 8 + NAK-94
-Nacharbeit 3 - Abschluss"); die Roh-Datei liegt unter `docs/beweise/roh/`.
+Nacharbeit 3 - Abschluss"): **GRUEN, 32/32** auf `93e8a7c` bei sauberem
+Arbeitsbaum, Bein `A17` mit Exit 0. Die Roh-Datei ist
+[`docs/beweise/roh/SONDE-007a-93e8a7c.md`](roh/SONDE-007a-93e8a7c.md); der
+A17-Abschnitt darin traegt den Anker `#a17`.

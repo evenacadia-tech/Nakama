@@ -22,9 +22,19 @@
 > `tools/dirigent/pruefliste.md`; Kanon nur bei Bau und Abschluss; Rohausgaben
 > raus aus den Manifesten (NAK-96, erster Worker der nächsten Sitzung).
 >
-> **Als Nächstes (Reihenfolge des Dirigenten):** NAK-96 (Runner/Cockpit) → S8
-> NAK-85 → S9 (NAK-88) → S9b (NAK-89, NAK-94) → SONDE-010 mit Verhaltensmatrix
+> **Als Nächstes (Reihenfolge des Dirigenten):** ~~NAK-96 (Runner/Cockpit)~~ → ~~S8
+> NAK-85~~ → S9 (NAK-88) → S9b (NAK-89, NAK-94) → SONDE-010 mit Verhaltensmatrix
 > statt Runde 4 (NAK-95) → G1-Gate-Lauf → PR1 → SONDE-011.
+>
+> **Nachtrag Bau-Worker 29.08. (Fortsetzung derselben Runde, `329ea06`):** S8
+> `SONDE-007a` NAK-85 ist geschlossen — `configure_frische()` in
+> `pruefe_kern_identitaetsfrei.py` verweigert das Urteil (Exit 3), wenn eine
+> CMake-Eingabe jünger ist als der `generate.stamp` ihres Bauverzeichnisses
+> (`d3c741c`). Kanon auf `b6003c1` gefahren: **GRUEN, 32/32** — damit sind
+> `a728fba` (NAK-84) und `d3c741c` gemeinsam beglaubigt. Beide Registerzeilen
+> tragen „geschlossen — Urteil offen"; ein frischer Prüfer hat noch nicht
+> geurteilt, die Urteilsmarke am Manifestkopf ist unverändert. Nächster Schritt
+> der Reihenfolge ist damit S9 (NAK-88).
 
 > ## ✅ NACHTRAG — 29.08.2026, S14–15 `SONDE-010` T2-Nacharbeit Runde 1
 >

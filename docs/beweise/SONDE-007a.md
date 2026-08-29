@@ -13966,6 +13966,12 @@ schreibt der FileTracker gar kein `CL.read.1.tlog`. Die Liste ist damit
 gemessen, aber aus einer früheren Runde; sie wird erweitert, wenn eine weitere
 Systemdatei auffällt, und bis dahin ist jede unbekannte Datei dort ROT.
 
+> **Überholt durch Runde 8 (29.08.2026).** Der achte Prüfer hat genau diesen
+> Verweis beanstandet: `P5-W5b` zeigt die beiden Namen in seiner eingefügten
+> Ausgabe nicht. Der Fall ist inzwischen gemessen — beide Namen stehen roh in
+> einem `CL.read.1.tlog` im Abschnitt „Nacharbeit Runde 8“ (Probe `P8-SYS`), und
+> die Zuschreibung „nur beim Formatieren einer Diagnose“ ist dort korrigiert.
+
 **Regel des Dirigenten.** Systemdateien werden namentlich erlaubt, nicht per
 Verzeichnis; jede sonstige Datei unter `%SystemRoot%` ist ROT. K1b scannt jede
 Tlog-Datei, die nicht aus JUCE-Modulen oder Toolchain-/SDK-Includes stammt.
@@ -14568,14 +14574,16 @@ reproduziert: erscheinen die Namen → Rohzeilen ins Manifest, Liste bleibt;
 erscheint nichts → Liste ist leer und die Behauptungen werden umformuliert.
 Fail-closed geht vor Bequemlichkeit.
 
-**Der Diagnosefall ist reproduziert — die Liste bleibt.** Warum Runde 7 daran
-scheiterte, steht jetzt fest: ein **fehlgeschlagener** Bau schreibt gar kein
-`CL.read.1.tlog` (der FileTracker legt sein Protokoll erst bei Exit 0 ab), und
-eine erzwungene Makroneudefinition unter `/WX` lässt den Bau fehlschlagen.
-Gemessen wurde deshalb ohne den Kernbau: zwei Wegwerf-Übersetzungseinheiten
-unter `$env:TEMP`, übersetzt unter demselben MSBuild-FileTracker, mit dem
-Toolset aus `NakamaKern.lastbuildstate`
-(`VCToolsVersion=14.44.35207`, VS 2022 BuildTools).
+**Der Diagnosefall ist reproduziert — die Liste bleibt.** Runde 7 hatte es über
+den Kernbau versucht und dabei notiert, dass ein **fehlgeschlagener** Bau gar kein
+`CL.read.1.tlog` hinterlässt. Diese Runde geht deshalb am Kernbau vorbei und misst
+den Compilerlauf direkt: zwei Wegwerf-Übersetzungseinheiten unter `$env:TEMP`,
+übersetzt unter demselben MSBuild-FileTracker, den MSBuild auch für den Kern
+benutzt, mit dem Toolset aus `NakamaKern.lastbuildstate`
+(`VCToolsVersion=14.44.35207`, VS 2022 BuildTools). Gemessen wurde ausserdem, dass
+die Kern-Projektdatei **kein** `TreatWarningAsError` trägt — eine Warnung lässt den
+Bau dort also nicht fallen; warum Runde 7 trotzdem keinen Tlog bekam, ist nicht
+gemessen und wird hier nicht behauptet.
 
 Befehl (`%P%` = `%TEMP%\nakama-diagnoseprobe`, `%TB%` =
 `…\BuildTools\MSBuild\Current\Bin\amd64`, vorher `vcvars64.bat`):
@@ -14586,8 +14594,7 @@ Befehl (`%P%` = `%TEMP%\nakama-diagnoseprobe`, `%TB%` =
 "%TB%\Tracker.exe" /if utf8  /r probe.cpp /c cl.exe /c /W4 /nologo /utf-8 /bigobj /Foprobe_utf8.obj probe.cpp
 ```
 
-`probe.cpp` trägt ein `#pragma message` und eine C4189-Warnung (keine
-`/WX`-Einstellung im Kernprojekt, der Bau fällt also nicht); `still.cpp` ist
+`probe.cpp` trägt ein `#pragma message` und eine C4189-Warnung; `still.cpp` ist
 dieselbe TU **ohne** jede Diagnose. Ausgabe des Übersetzens:
 
 ```text

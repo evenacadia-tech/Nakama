@@ -17082,7 +17082,7 @@ Wortlaut des Prüfers (Positionen `@ a94c33e`):
 **Regel des Dirigenten (Nacharbeit 3).** Die Statussperre steht unmittelbar nach
 der Schema-Prüfung und **vor** jeder Verwendung von `eintraege`; bei jedem Status
 ≠ `OK` wird je Manifest-Artefakt der Hinweis „installierter Stand unbekannt
-(Journalstatus &lt;status&gt;)" ausgegeben und die Funktion endet ohne
+(Journalstatus `<status>`)" ausgegeben und die Funktion endet ohne
 Hashvergleich. Die Liste `eintraege` wird nur im Status-OK-Pfad verlangt. Proben
 in `[3b]`: (a) Journal in der exakten Writer-Form des Rückwegs, (b) dieselbe Form
 mit `RUECKWEG_AKTIV`, (c) Status OK ohne `eintraege`.
@@ -17105,7 +17105,7 @@ die alte `[3b]`-Schleife vorbei, die für jeden Status denselben Kopf **mit**
 `git show` und speist ein Journal in der exakten `RUECKWEG`-Writer-Form):
 
 ```text
-Basisfassung geholt: git show 9f1333c:tools/eq-copilot/pruefe_kern_identitaetsfrei.py -> zz-basis-9f1333c-pruefe_kern_identitaetsfrei.py (154777 Byte)
+Basisfassung geholt: git show 9f1333c:tools/eq-copilot/pruefe_installer_manifest.py -> zz-basis-9f1333c-pruefe_installer_manifest.py (72087 Byte)
 
 ================ BEFUND 4 @ 9f1333c: RUECKWEG-Journal in der echten Writer-Form ================
 Journal (exakte Writer-Form aus Install-Nakama.ps1):

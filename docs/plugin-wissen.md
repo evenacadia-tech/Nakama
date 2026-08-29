@@ -315,6 +315,51 @@ Auflösung: neue UUID + Reconnect) → `bye`. Backoff 500 ms, verdoppelt bis
 8000 ms (`EqCopilotIds.h:18-25`). Framing u32-LE + UTF-8-JSON, max. 262 144
 Byte.
 
+### 1.5b v3-IPC (`plugin/core/ipc/`, SONDE-010, 29.08.)
+
+**Der v2-PipeClient oben bleibt der Produktpfad.** Gen und Probeeq sprechen
+weiterhin v2; der v3-Weg liegt daneben, gebaut und bewiesen, aber noch nicht
+verdrahtet — das folgt mit Coordinator und Landkarte (SONDE-011/012).
+
+JUCE-frei wie der übrige `core/`-Baum, fünf Dateien:
+
+- `WireEnvelope` — der 16-Byte-Kopf nach dem `u32 frame_len` (§33.1):
+  `encoding | message_family | schema_major | schema_minor | flags |
+  payload_len | crc32c`. Es gilt exakt `frame_len == 16 + payload_len`,
+  gerechnet in **64 Bit** (in 32 liefe `16 + 0xFFFFFFFF` auf 15 um). Die
+  Prüfung läuft in drei Stufen (Rahmen → Kopfkonsistenz → Feldwerte); die
+  geschlossene Regelmenge hat **14** Namen, identisch mit
+  `broker/src/transport/v3.rs`. Keine Allokation im Prüfpfad: Verstoßmenge als
+  Bitmaske, Payload als Zeiger in den Eingabepuffer. CRC32C ist für P2 Pflicht
+  und bei JSON exakt 0; P0/P1 sind JSON, P2 ist FlatBuffers.
+- `IpcQueues` — P0 (Cap 64, nichts verwerfen ⇒ Verbindung schließen), P1
+  (Cap 128, Snapshots nach Objektschlüssel koaleszieren, nicht koaleszierbare
+  Ereignisse im Wiederholpuffer über den Reconnect) und `P2Schleuse`
+  (vorallokiert, lockfrei, Cap 2, replace-oldest, Sequenz je Slot gegen
+  zerrissene Frames). Der Broker-Ingress (256, P2 zuerst) sitzt im Broker.
+- `IpcVerbindung` — `CreateFileW` mit `SECURITY_SQOS_PRESENT |
+  SECURITY_IDENTIFICATION`, `ERROR_PIPE_BUSY` über `WaitNamedPipe` statt
+  Backoff, absolute Frist über den ganzen Schreibvorgang, Lese-Zeitlimit als
+  eigener Ausgang, Schließen und `CancelIoEx` unter demselben Mutex. Dazu ein
+  bewusst fast nichtskönnender JSON-Leser: flaches Objekt, keine
+  Verschachtelung, keine Escapes, kein doppelter Schlüssel — alles andere wird
+  abgelehnt statt geraten.
+- `ControlClient` (P0/P1) und `TelemetryClient` (P2) — eigene Threads, Backoff
+  500 → 8000 ms. Ablauf: Control sendet ein `u32`-längenpräfigiertes
+  Bootstrap-Hello (≤ 16 KiB, `protocol: 3`), bekommt ein **v3-gerahmtes**
+  `welcome{link_id, challenge, broker_epoch}`; erst damit koppelt sich die
+  Telemetrieverbindung (link_id **und** challenge **und** dieselbe
+  `runtime_nonce`). Ab dem Bootstrap trägt jede Nachricht den 16-Byte-Kopf.
+  Kein Prozessstart auf irgendeinem Pfad (§48.3).
+
+`PipeToken` liegt bewusst **nicht** in `NakamaKern`: der Namensraum
+`evenacadia.nakama|v3|` trägt den eingefrorenen Herstellernamen, und A14 hat
+ihn dort gefunden. Welche Pipe eine Instanz wählt, gehört wie ihre Identität in
+die dünne Zielschicht; der Kern bekommt den Pipenamen als Zeichenkette.
+`base32(first_128_bits(SHA-256("evenacadia.nakama|v3|" + SID)))`, Golden
+`S-1-5-21-111111111-222222222-333333333-1001 → BNSM62JZZCCXIDV3PJZAEHMZPA` —
+in C++ und Rust.
+
 ### 1.6 Editor — Material-Kit-Front (Provisorium)
 
 `PluginEditor.cpp` + `EqCopilotAssetKit.h` (`skin::`, Tokens aus
@@ -445,10 +490,31 @@ State-Goldens.
 Crate `eqcop-broker` 0.1.0 (lib `eqcop_broker`). Module: `aggregat` ·
 `bindung` · `framing` (`MAX_FRAME_BYTES 262144`) · `generiert` (flatc-Code) ·
 `protokoll` (`PROTOKOLL_VERSION 2`, `MIN_PROTOKOLL 1`) · `telemetrie`
-(FlatBuffers-Leser) · `vertrag` (JSON-Schema-Engine) · `server` (privat).
+(FlatBuffers-Leser) · `vertrag` (JSON-Schema-Engine) · **`transport`**
+(SONDE-010) · `server` (privat).
 Binaries `eqcop-broker.exe [--bindungen <pfad>]` (Standard
-`%APPDATA%\evenacadia\nakama\eq-copilot-bindungen.json`) und
-`eqcop-broker-probe.exe [sekunden] [pipe-name]` (Default `…m2probe`).
+`%APPDATA%\evenacadia\nakama\eq-copilot-bindungen.json`),
+`eqcop-broker-probe.exe [sekunden] [pipe-name]` (Default `…m2probe`) und
+`eqcop-broker-v3probe.exe <pipe-name> [sekunden]` (SONDE-010; verweigert die
+Produktions-Pipe).
+
+**`transport/` (SONDE-010, 29.08.):** `v3` (Envelope, Stromleser, CRC32C,
+Ratengrenze) · `bootstrap` (Hello ≤ 16 KiB, Protokollteilung v2/v3, Kopplung
+Control↔Telemetry mit Gegenpfad) · `warteschlange` (die vier Politiken aus
+§53.9) · `pipetoken` (SID → v3-Pipename, Golden aus §48.3) · `legacy_v2` (kein
+Umbau, sondern der Beweis der Isolation: v3-Binärframes fallen im v2-Leser,
+v2-JSON passiert den v3-Envelopeprüfer nie) · `server_v3` (Listener und
+I/O-Worker; er entscheidet **nur** Envelope, Grenzen und Authentisierung und
+gibt typisierte Ereignisse an eine schmale `Senke`).
+
+**Der Broker öffnet in Produktion weiterhin nur die v2-Pipe.** Der
+SID-gebundene v3-Endpunkt bleibt zu, bis SONDE-011 den Coordinator bringt —
+ein Endpunkt, der annimmt und danach nichts tun kann, wäre ein totes Element.
+Der Listener wird deshalb über Probe-Namen gefahren; er benutzt dieselben
+Sicherheitshelfer (`sicherheit_nur_user`, SDDL nur aktueller User,
+`PIPE_REJECT_REMOTE_CLIENTS`, `FILE_FLAG_FIRST_PIPE_INSTANCE`) wie der
+v2-Server. Was ihm noch fehlt, steht als NAK-90 im Offen-Set: die
+Impersonation-Kette aus §48.4.
 
 - Pipes: Produktion `\\.\pipe\evenacadia.eq-copilot.v1` (`lib.rs:29` ==
   `EqCopilotIds.h:18`), Probe `…m2probe`. Erste Instanz mit
@@ -463,9 +529,10 @@ Binaries `eqcop-broker.exe [--bindungen <pfad>]` (Standard
   Überlappung < 80 %, fremde `host_pid`, Aktivzeit-Differenz > 10 %) /
   `ausgerichtet`, `grund` nie leer. Aggregat atomisch nach
   `%LOCALAPPDATA%\evenacadia\EQ-Copilot\snapshots\aggregat-<ms>.json`.
-- Tests: **57** (`cargo test`, Stand `4f7182b`) — 51 Unit (davon `vertrag.rs` 15)
-  + 6 Integration in `tests/contract_cross_language.rs`; `telemetrie.rs` hat keine
-  eigenen `#[test]`, sein Beweis ist der Integrationstest.
+- Tests: **140** (`cargo test`, Lauf vom 29.08.2026 auf `f62b4fb`) — 122 Unit
+  (davon `transport::*` 32) + 9 Integration in `tests/contract_cross_language.rs`
+  + 9 in `tests/transport_fuzz.rs`; `telemetrie.rs` hat keine eigenen `#[test]`,
+  sein Beweis ist der Integrationstest.
 - Betriebsstand 21.08.: kein Broker läuft, keine `evenacadia`-Pipe offen,
   Bindungsdatei nie angelegt, letzte Snapshots vom 16.08.;
   `target/release/*.exe` (18.08. 11:43) älter als `lib.rs`/`vertrag.rs`/
@@ -474,9 +541,10 @@ Binaries `eqcop-broker.exe [--bindungen <pfad>]` (Standard
 
 ## 5 · Bauen und Beweisen
 
-**22 Programm-Ziele + 1 Bibliothek** (`plugin/CMakeLists.txt`; gezählt am
-23.08.: 18 benannte `juce_add_*`-Aufrufe plus 4 aus den beiden Zielfunktionen.
-Bis dahin stand hier 19 — die Zahl war schon vor SONDE-008 um eins zu klein).
+**24 Programm-Ziele + 1 Bibliothek** (`plugin/CMakeLists.txt`; gezählt am
+29.08.: 22 benannte `juce_add_*`-Aufrufe plus 2 aus den beiden Zielfunktionen —
+seit S9b wird nur noch **ein** Sondenbundle instanziiert. SONDE-010 bringt
+`EqCopIpcTest` und `EqCopIpcLast` dazu).
 Seit S9
 (SONDE-007b, 23.08.) waren es drei Produkt-Bundles; seit **S9b (SONDE-007c,
 28.08.)** sind es **zwei**: `EqCopilot` (`Eqcp`, „EQ-Copilot.vst3") und
@@ -502,11 +570,14 @@ Zahl nicht still sinkt. Weiter: `EqCopilot` (VST3-Produkt) ·
 Static-Lib **`NakamaKern`** (SONDE-007a). Sie trägt die vier geteilten Quellen
 (`state/NakamaKanon`, `state/NakamaParameter`, `state/NakamaState`,
 `vertrag/NakamaVertrag`), wird **einmal** übersetzt und über
-`nakama_kern_anbinden(<ziel>)` an **13** Verbraucher gehängt (Zahl aus der
-Configure-Ausgabe vom 28.08.2026, nicht abgeschrieben — sie folgt der Zahl der
+`nakama_kern_anbinden(<ziel>)` an **15** Verbraucher gehängt (Zahl aus der
+Configure-Ausgabe vom 29.08.2026, nicht abgeschrieben — sie folgt der Zahl der
 Ziele, seit S9b/`SONDE-007c` also zwei weniger). Vorher übersetzten
 sieben Ziele alle vier Quellen selbst (`nakama_state_anbinden()`) und
 `EqCopSchemaTest` eine davon — 29 Übersetzungen derselben vier Dateien, jetzt 4.
+Seit SONDE-010 trägt sie **neun** Übersetzungseinheiten: die vier alten plus
+`WireEnvelope`, `IpcVerbindung`, `ControlClient`, `TelemetryClient` und
+`NakamaLebenslauf`. `PipeToken.cpp` gehört ausdrücklich NICHT dazu (§1.5b).
 Ihre Übersetzungsschalter hängen seit dem T2-Lauf (23.08.) ausdrücklich am Kern
 (`juce_recommended_config_flags` + `_warning_flags`, **kein** `_lto_flags`):
 als eigene Lib erbt er die PUBLIC-Schalter seiner Verbraucher nicht mehr und
@@ -515,8 +586,16 @@ als eigene Lib erbt er die PUBLIC-Schalter seiner Verbraucher nicht mehr und
 Binaries unter `eq-copilot/build/plugin/<Ziel>_artefacts/Release/`, die Lib
 unter `eq-copilot/build/plugin/Release/NakamaKern.lib`.
 
-**Kanon, 31 Einträge (`tools/beweise.ps1`, Tabelle `$kanon`) — Lauf vom
-29.08.2026 00:20: 28 gefahren und grün, 2 geplant, 1 stillgelegt:** A1 NullTest · A2
+**Kanon, 35 Einträge (`tools/beweise.ps1`, Tabelle `$kanon`) — Lauf vom
+29.08.2026 auf `f62b4fb`: 32 gefahren und grün, 2 geplant, 1 stillgelegt.**
+Neu mit SONDE-010: **A20** `erzeuge_envelope_fixtures.py --pruefen` · **A21**
+`cargo test --test transport_fuzz` (eigener Eintrag, obwohl A4 ihn mitfährt —
+§65 nennt Fuzz namentlich) · **A22** `pruefe_ipc_last.py` (startet den
+Rust-Probe-Broker und fährt `EqCopIpcLast` dagegen: 32 echte C++-Sondenpaare,
+zwei Sprachen ein Draht) · **B10** `EqCopIpcTest`. `-Bauen` baut seit SONDE-010
+zusätzlich `eqcop-broker-v3probe` im Release-Profil; `cargo test` erzeugt nur
+Debug-Testbinaries, A22 hätte sonst ein altes Artefakt gemessen. Die
+bestehenden Beine: A1 NullTest · A2
 GoldenTest · A3 MarkierungTest · A4 `cargo test` (inkl. JCS-Bein) · A5
 `pruefe_v3_vertrag.py --abdeckung` · A6 `erzeuge_bandgitter.py --pruefen` · A7
 `erzeuge_quantisierung.py --pruefen` · A8 `erzeuge_v3_fixtures.py --pruefen` ·

@@ -29,6 +29,7 @@ if (-not (Test-Path -LiteralPath $logoPath -PathType Leaf)) {
 }
 
 $claudeArguments = @(
+    '--remote-control', 'nakama-dirigent',
     '--model', 'fable',
     '--effort', 'xhigh',
     '--permission-mode', 'auto',
@@ -173,7 +174,7 @@ if ($ValidateOnly) {
         TerminalFont = if ($null -ne $profile) { [string]$profile.font.face } else { '' }
         TerminalColorScheme = if ($null -ne $profile) { [string]$profile.colorScheme } else { '' }
         ClaudeArguments = $claudeArguments
-        RemoteControl = $false
+        RemoteControl = $true
         PreviewStartsClaude = $false
         FallbackAvailable = $true
     }

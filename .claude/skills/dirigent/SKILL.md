@@ -17,11 +17,14 @@ Der Starter öffnet das lokale Windows-Terminal-Profil
 `Nakama · Champagne Night`, zeigt `tools/dirigent/logo.ps1` und ruft Claude mit
 Fable/xhigh, Auto-Modus und `/dirigent` auf. Fehlt das Profil oder scheitert die
 Terminal-Aktivierung, öffnet er ein normales lokales PowerShell-Fenster. Remote
-Control bleibt aus; das lokale Terminal ist der einzige Bedien- und Meldekanal.
-Der direkte Ersatzaufruf lautet:
+Control ist seit 30.08.2026 Teil jedes Starts (User-Wort: „remote immer mit
+neuer Dirigentensession automatisch starten"): der Starter übergibt
+`--remote-control nakama-dirigent`, damit der User die Sitzung von claude.ai/code
+oder dem Handy aus sieht. Ein Text an den User bleibt trotzdem die Ausnahme
+(§5: nur eine Design-/Produktfrage). Der direkte Ersatzaufruf lautet:
 
 ```powershell
-claude --model fable --effort xhigh --permission-mode auto --name nakama-dirigent /dirigent
+claude --remote-control nakama-dirigent --model fable --effort xhigh --permission-mode auto --name nakama-dirigent /dirigent
 ```
 
 Die projektweite native `statusLine` startet
@@ -157,10 +160,20 @@ Der Monitor ist der schnelle Weg, der Loop das zeitliche Sicherheitsnetz. Bei
 Worker-Ende oder Halt: Beobachter beenden, `CronDelete` auf genau diese Task
 und mit `CronList` belegen, dass beides weg ist.
 
-Meldet Agent View `needs input`: zuerst `claude logs <worker-id>`. Eine
-erwartete, nicht destruktive Ticketaktion darf der User auf konkrete Empfehlung
-einmalig freigeben. Ein Produktentscheid → Halt. Destruktives, Ticketfremdes
-oder Unerklärliches → nicht freigeben, Worker stoppen.
+Meldet Agent View `needs input`: zuerst `claude logs <worker-id>`. Der User
+wird nicht gefragt — es gibt keine Berechtigungsfragen, außer es geht
+technisch nicht anders (User-Wort 30.08.2026: „keine berechtigungsfragen
+generell ebenfalls, außer es geht nicht anders. notfalls werden andere
+Aufgaben vorgezogen. voranschreiten ist das wichtigste"). Eine erwartete,
+nicht destruktive Ticketaktion gibt der Dirigent selbst frei: Worker stoppen,
+volle Session-ID aus `claude agents --json --all` lesen und mit Zusatzauftrag
+fortsetzen (`claude "<Zusatz>" --resume <session-id> --model opus --effort max
+--permission-mode auto --name <gleicher Name> --allowed-tools … --bg`); die
+Ask-Regel in `.claude/settings.json` bleibt, der Zusatz nennt den zulässigen
+Ersatzweg (z. B. `[System.IO.File]::Delete` auf exakte, selbst angelegte
+Pfade). Ein Produktentscheid → Frage an den User stellen und sofort ein
+anderes Ticket ohne Haltgrund vorziehen. Destruktives, Ticketfremdes oder
+Unerklärliches → Worker stoppen, Ersatzworker mit engerer Grenze.
 
 ### 3.3 Messen
 
@@ -287,6 +300,13 @@ mit 3.1.
 
 ## 4. Haltgründe
 
+Ein Haltgrund stoppt nur das betroffene Ticket, nie den Lauf: Der Dirigent
+stellt die Frage (ausschließlich bei Design-/Produktfragen oder einem
+User-Handgriff) und zieht sofort das nächste Ticket ohne Haltgrund vor
+(User-Wort 30.08.2026: „notfalls werden andere Aufgaben vorgezogen.
+voranschreiten ist das wichtigste"). Erst wenn kein Ticket ohne Haltgrund
+übrig ist, wartet die Sitzung.
+
 - ein User-, Figma-, FL- oder Installationsschritt,
 - ein Produktentscheid (Technik entscheidet der Dirigent, Produkt der User),
 - überlappende fremde Änderungen,
@@ -307,15 +327,23 @@ verboten.
 
 Vor jedem Halt: Worker gestoppt, Loop gelöscht, Stand ins Manifest. Jeder Halt
 endet als klare, wartende Frage oder Statusmeldung in der Sitzung selbst — so
-erreicht er den User im lokalen Terminal. Einen zweiten Kanal gibt es nicht.
+erreicht er den User im lokalen Terminal und über Remote Control unterwegs.
 
 ## 5. Kontexthaushalt
 
 Der Dirigentenkontext ist das Einzige, was zwischen den Tickets lebt — und er
 ist endlich. Der Lauf endet planmäßig an dieser Grenze, nicht an einem Fehler:
 
-- Unter 70 % Kontextverbrauch normal arbeiten; 70 bis unter 85 % enger lesen
-  und die Ticketgrenze vorbereiten; ab 85 % kein neues Ticket beginnen.
+- Die Grenze ist absolut: bei **600k Kontext-Tokens** startet der Dirigent
+  eine frische Session (User-Wort 30.08.2026: „achte darauf bei 600k context
+  einen frischen Dirigenten Session zu starten"). Ab 500k kein neues Ticket
+  und keine neue Prüfrunde; im nächsten sauberen Abschlussfenster (Worker
+  beendet, Urteil im Manifest, Planstand gepusht, Loop/Beobachter/Worker
+  abgeräumt) `tools/dirigent/start-dirigent.ps1` abgekoppelt starten, in
+  `claude agents --json` prüfen, dass die neue Session läuft, dann die eigene
+  PID hart beenden. Messung: die native Statuszeile (`cockpit.ps1
+  -StatusLine`); Notbehelf ist die Größe des Session-Transkripts unter
+  `~/.claude/projects/<projekt>/<session-id>.jsonl`.
   Nach einer Compaction bleibt der Arbeitsanker unbestätigt, bis Planstand,
   Ticketquelle und HEAD erneut gelesen und abgeglichen sind.
 - Für Claude- und Codex-Kontingente gilt: ab 85 % warnen, ab 95 % keine neue
@@ -326,6 +354,13 @@ ist endlich. Der Lauf endet planmäßig an dieser Grenze, nicht an einem Fehler:
   vom Codex-JSONL nur Thread-ID und Schlussurteil; vom Worker-Log nur den
   Blockadegrund. Rohausgaben bleiben in ihren Temp-Dateien. Ein Loop-Tick ohne
   Befund bleibt ein Einzeiler.
+- Keine Meldungen an den User (User-Wort 29.08.2026: „ich brauch keine
+  meldungen, ich will dass du kontext sparst. wenn du keine designfrage hast
+  dann interessiert mich die meldung nicht. das betrifft auch künftige
+  dirigenten sessions"): keine Spurlage-, Fortschritts-, Runden- oder
+  Abschlusstexte; Loop-Ticks und Beobachter-Ereignisse mit höchstens einer
+  Zeile beantworten; der einzige Text an den User ist eine
+  Design-/Produktfrage oder die Bitte um einen User-Handgriff.
 - Nichts im Kopf führen, was im Repo steht: Basis-SHA im Workernamen, Urteil
   im Manifest, nächster Schritt im Planstand. Nach jedem Ticketabschluss ist
   der Kontext verzichtbar — eine frische Dirigenten-Session übernimmt ohne

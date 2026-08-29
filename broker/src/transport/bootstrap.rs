@@ -163,6 +163,30 @@ fn adresse_pruefen(a: &Adresse) -> Result<(), String> {
     Ok(())
 }
 
+/// Grenzen der `host_angabe` aus `eq-ipc-v3.schema.json`: `name` bis 120,
+/// `version` bis 64 Zeichen. `pid` deckt `u32` bereits ab (`minimum: 0`, und
+/// serde weist alles ab, was nicht in `u32` passt).
+///
+/// Ohne diese Pruefung trug ein sonst gueltiges Hello beliebig lange Texte in
+/// den Broker — bis an die 16-KiB-Bootstrapgrenze, also rund das
+/// Hundertfache des Vertrags (T2-Befund 6 Runde 3 vom 2026-08-29). Ein
+/// Vertrag, der nur im Schema steht und nicht am Eingang geprueft wird, ist
+/// kein Vertrag.
+fn host_pruefen(h: Option<&HostAngabe>) -> Result<(), String> {
+    let Some(h) = h else { return Ok(()) };
+    if let Some(n) = h.name.as_deref() {
+        if n.chars().count() > 120 {
+            return Err("host.name ueber 120 Zeichen".into());
+        }
+    }
+    if let Some(v) = h.version.as_deref() {
+        if v.chars().count() > 64 {
+            return Err("host.version ueber 64 Zeichen".into());
+        }
+    }
+    Ok(())
+}
+
 fn plugin_version_pruefen(v: &str) -> Result<(), String> {
     let n = v.chars().count();
     if n == 0 || n > 64 {
@@ -237,6 +261,7 @@ pub fn bootstrap_lesen(daten: &[u8]) -> Result<(Bootstrap, usize), BootstrapFehl
                 )));
             }
             adresse_pruefen(&h.adresse).map_err(BootstrapFehler::KeinHello)?;
+            host_pruefen(h.host.as_ref()).map_err(BootstrapFehler::KeinHello)?;
             if !(h.audio.samplerate.is_finite()
                 && h.audio.samplerate > 0.0
                 && h.audio.samplerate <= 768_000.0
@@ -437,6 +462,19 @@ mod tests {
         )
     }
 
+    /// Dasselbe Control-Hello, aber MIT `host`. Alles andere bleibt gueltig,
+    /// damit ein Rot eindeutig an `host` liegt.
+    fn control_json_mit_host(nonce: &str, name: &str, version: &str) -> String {
+        format!(
+            "{{\"type\":\"hello\",\"connection_kind\":\"control\",\"protocol\":3,\
+             \"plugin_version\":\"0.3.0\",\"plugin_kind\":\"active_probe\",\
+             \"adresse\":{a},\"host\":{{\"pid\":4242,\"name\":\"{name}\",\
+             \"version\":\"{version}\"}},\
+             \"audio\":{{\"samplerate\":48000,\"block_size\":512,\"channels\":2}}}}",
+            a = adresse_json(nonce)
+        )
+    }
+
     fn telemetry_json(nonce: &str, link: &str, challenge: &str) -> String {
         format!(
             "{{\"type\":\"hello\",\"connection_kind\":\"telemetry\",\"protocol\":3,\
@@ -444,6 +482,86 @@ mod tests {
              \"link_id\":\"{link}\",\"challenge\":\"{challenge}\"}}",
             a = adresse_json(nonce)
         )
+    }
+
+    /// T2-Befund 6 Runde 3: `host.name`/`host.version` liefen ohne
+    /// Laengenpruefung durch — das Schema sagt 120 bzw. 64. Geprueft wird
+    /// jeweils die GRENZE und der erste Schritt darueber; ohne die Grenze
+    /// waere "wird abgewiesen" auch mit einer viel zu strengen Regel gruen.
+    #[test]
+    fn host_haelt_die_laengen_des_vertrags() {
+        let n = "a".repeat(32);
+
+        // Ohne `host` bleibt alles, wie es war: das Feld ist optional.
+        assert!(
+            matches!(
+                bootstrap_lesen(&praefix(&control_json(&n))),
+                Ok((Bootstrap::V3Control(_), _))
+            ),
+            "ohne host bleibt das Hello gueltig"
+        );
+
+        // Auf der Grenze: gueltig.
+        assert!(
+            matches!(
+                bootstrap_lesen(&praefix(&control_json_mit_host(
+                    &n,
+                    &"h".repeat(120),
+                    &"v".repeat(64)
+                ))),
+                Ok((Bootstrap::V3Control(_), _))
+            ),
+            "120/64 sind die Grenze und muessen noch durchgehen"
+        );
+
+        // Ein Zeichen darueber: jeweils abgewiesen, und zwar einzeln.
+        match bootstrap_lesen(&praefix(&control_json_mit_host(
+            &n,
+            &"h".repeat(121),
+            "1.0",
+        ))) {
+            Err(BootstrapFehler::KeinHello(g)) => assert!(
+                g.contains("host.name"),
+                "der Grund muss host.name nennen, nicht irgendetwas ({g})"
+            ),
+            andere => panic!("121-Zeichen-Hostname wurde angenommen: {andere:?}"),
+        }
+        match bootstrap_lesen(&praefix(&control_json_mit_host(
+            &n,
+            "FL Studio",
+            &"v".repeat(65),
+        ))) {
+            Err(BootstrapFehler::KeinHello(g)) => assert!(
+                g.contains("host.version"),
+                "der Grund muss host.version nennen ({g})"
+            ),
+            andere => panic!("65-Zeichen-Hostversion wurde angenommen: {andere:?}"),
+        }
+
+        // Die Grenze zaehlt ZEICHEN, nicht Bytes — genau wie `maxLength` im
+        // Schema. 120 Umlaute sind 240 Bytes und trotzdem gueltig.
+        assert!(
+            matches!(
+                bootstrap_lesen(&praefix(&control_json_mit_host(
+                    &n,
+                    &"ä".repeat(120),
+                    "1.0"
+                ))),
+                Ok((Bootstrap::V3Control(_), _))
+            ),
+            "120 Zeichen bleiben 120 Zeichen, auch wenn sie 240 Bytes wiegen"
+        );
+        assert!(
+            matches!(
+                bootstrap_lesen(&praefix(&control_json_mit_host(
+                    &n,
+                    &"ä".repeat(121),
+                    "1.0"
+                ))),
+                Err(BootstrapFehler::KeinHello(_))
+            ),
+            "121 Zeichen fallen auch als Umlaute"
+        );
     }
 
     #[test]

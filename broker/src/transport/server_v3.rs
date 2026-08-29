@@ -375,14 +375,20 @@ impl Eingang {
     }
 
     /// Blockiert, bis ein Eintrag da ist oder die Queue geschlossen wurde.
+    ///
+    /// Das SCHLIESSFLAG steht VOR dem Inhaltstest. Vorher lief der Verbraucher
+    /// nach dem Schliessen noch durch den Restbestand — und rief P0/P1 fuer
+    /// eine Verbindung, deren Kopplung schon abgemeldet war. Die Frames
+    /// gehoeren zu einer Sitzung, die es nicht mehr gibt; sie fallen mit ihr
+    /// (T2-Befund 4 Runde 3 vom 2026-08-29).
     fn entnehmen(&self) -> Option<(Familie, Vec<u8>)> {
         let mut g = self.inhalt.lock().unwrap_or_else(|x| x.into_inner());
         loop {
-            if let Some((_, wert)) = g.0.entnehmen() {
-                return Some(wert);
-            }
             if g.1 {
                 return None;
+            }
+            if let Some((_, wert)) = g.0.entnehmen() {
+                return Some(wert);
             }
             let (neu, _) = self
                 .signal
@@ -524,6 +530,16 @@ pub struct V3Statistik {
     /// Dasselbe fuer den Schreiberthread, dessen `ov_schreiben` trotz
     /// wiederholtem `CancelIoEx` nicht zurueckkam.
     pub schreiber_abgeloest: AtomicU64,
+    /// Wie oft ein LEBENSZYKLUS-Aufruf der Senke (`control_verbunden`,
+    /// `telemetrie_gekoppelt`, `*_getrennt`, `abgewiesen`) laenger als
+    /// `SENKE_FRIST` stand und deshalb abgeloest wurde. Diese Aufrufe liefen
+    /// frueher unbegrenzt auf dem Verbindungsthread — und genau auf den
+    /// wartet `stoppen()` (T2-Befund 5 Runde 3 vom 2026-08-29).
+    pub lebenszyklus_abgeloest: AtomicU64,
+    /// Wie viele weitere Lebenszyklusaufrufe DESHALB unterblieben. Nach einem
+    /// abgeloesten Aufruf schweigt die Verbindung gegenueber ihrer Senke,
+    /// statt neben dem haengenden Aufruf in falscher Reihenfolge weiterzureden.
+    pub lebenszyklus_uebersprungen: AtomicU64,
 }
 
 impl V3Statistik {
@@ -651,6 +667,71 @@ fn join_mit_frist(
     }
     let _ = j.join();
     true
+}
+
+/// Fuehrt die Lebenszyklus- und Diagnoseaufrufe EINER Verbindung mit Frist
+/// aus.
+///
+/// `p0`/`p1`/`p2` laufen auf dem Ingressthread und sind ueber dessen
+/// fristbegrenzten Join abgesichert. `control_verbunden`,
+/// `telemetrie_gekoppelt`, `control_getrennt`, `telemetrie_getrennt` und
+/// `abgewiesen` liefen dagegen unbegrenzt direkt auf dem VERBINDUNGSthread —
+/// und `stoppen()` wartet auf genau diesen Thread, bis er fertig ist. Eine
+/// Senke, die dort haengt, hielt den Stop unbegrenzt auf; der Haengertest
+/// deckte nur `p0/p1/p2` (T2-Befund 5 Runde 3 vom 2026-08-29).
+///
+/// Jeder Aufruf laeuft deshalb auf einem eigenen, kurzlebigen Thread und wird
+/// mit `SENKE_FRIST` gejoint. Laeuft sie ab, wird er ABGELOEST — und die
+/// Verbindung sagt ihrer Senke danach nichts mehr: ein zweiter Aufruf liefe
+/// neben dem haengenden ersten und erreichte die Senke in falscher
+/// Reihenfolge. Ein Thread je Lebenszyklusereignis ist bezahlbar: es sind
+/// wenige je Verbindung, und die Verbindung selbst kostet ohnehin drei.
+struct Senkenruf {
+    senke: Arc<dyn Senke>,
+    statistik: Arc<V3Statistik>,
+    stumm: bool,
+}
+
+impl Senkenruf {
+    fn neu(senke: Arc<dyn Senke>, statistik: Arc<V3Statistik>) -> Self {
+        Self { senke, statistik, stumm: false }
+    }
+
+    /// `false` = der Aufruf kam nicht binnen Frist zurueck, oder er unterblieb,
+    /// weil ein frueherer noch haengt.
+    fn rufen(&mut self, f: impl FnOnce(&dyn Senke) + Send + 'static) -> bool {
+        if self.stumm {
+            self.statistik
+                .lebenszyklus_uebersprungen
+                .fetch_add(1, Ordering::SeqCst);
+            return false;
+        }
+        let s = self.senke.clone();
+        let j = match std::thread::Builder::new()
+            .name("eqcop-v3-senkenruf".into())
+            .spawn(move || f(s.as_ref()))
+        {
+            Ok(j) => j,
+            Err(_) => {
+                self.stumm = true;
+                return false;
+            }
+        };
+        if join_mit_frist(j, SENKE_FRIST, || {}) {
+            return true;
+        }
+        self.stumm = true;
+        self.statistik
+            .lebenszyklus_abgeloest
+            .fetch_add(1, Ordering::SeqCst);
+        false
+    }
+
+    /// Kurzform fuer den haeufigsten Fall.
+    fn abweisen(&mut self, grund: impl Into<String>) {
+        let g = grund.into();
+        self.rufen(move |s| s.abgewiesen(&g));
+    }
 }
 
 /// Beendete Verbindungsthreads joinen und aus der Liste nehmen. Ohne das
@@ -1058,6 +1139,11 @@ fn verbindung_bedienen(
         return;
     }
 
+    // Jeder Lebenszyklus- und Diagnoseaufruf dieser Verbindung geht ueber den
+    // fristbegrenzten, abloesbaren Pfad — direkt auf diesem Thread waeren sie
+    // ein unbegrenztes `stoppen()` (T2-Befund 5 Runde 3).
+    let mut senkenruf = Senkenruf::neu(senke.clone(), statistik.clone());
+
     let leseereignis = match Ereignis::neu() {
         Some(e) => e,
         None => return,
@@ -1080,13 +1166,13 @@ fn verbindung_bedienen(
             Err(BootstrapFehler::PraefixUnvollstaendig) | Err(BootstrapFehler::Unvollstaendig) => {}
             Err(e) => {
                 statistik.geschlossen_bootstrap.fetch_add(1, Ordering::SeqCst);
-                senke.abgewiesen(&format!("bootstrap: {e:?}"));
+                senkenruf.abweisen(format!("bootstrap: {e:?}"));
                 return;
             }
         }
         match ov_lesen(griff.h, leseereignis.roh(), &mut puffer) {
             IoAusgang::Ende => {
-                senke.abgewiesen("bootstrap: Verbindung vor dem Hello beendet");
+                senkenruf.abweisen("bootstrap: Verbindung vor dem Hello beendet");
                 return;
             }
             IoAusgang::Bytes(n) => {
@@ -1103,13 +1189,13 @@ fn verbindung_bedienen(
                 // abgewiesen.
                 if roh.len() > (crate::transport::v3::MAX_BOOTSTRAP_BYTES as usize) + 4 + 4096 {
                     statistik.geschlossen_bootstrap.fetch_add(1, Ordering::SeqCst);
-                    senke.abgewiesen("bootstrap: mehr Bytes als ein Hello tragen darf");
+                    senkenruf.abweisen("bootstrap: mehr Bytes als ein Hello tragen darf");
                     return;
                 }
             }
             IoAusgang::Abgebrochen | IoAusgang::Fehler(_) => {
                 statistik.geschlossen_bootstrap.fetch_add(1, Ordering::SeqCst);
-                senke.abgewiesen("bootstrap: Lesefehler oder Frist abgelaufen");
+                senkenruf.abweisen("bootstrap: Lesefehler oder Frist abgelaufen");
                 return;
             }
         }
@@ -1128,7 +1214,7 @@ fn verbindung_bedienen(
             rahmen.extend_from_slice(json.as_bytes());
             let _ = ov_schreiben(griff.h, leseereignis.roh(), &rahmen);
             statistik.geschlossen_bootstrap.fetch_add(1, Ordering::SeqCst);
-            senke.abgewiesen("bootstrap: v2-Hello am v3-Endpunkt");
+            senkenruf.abweisen("bootstrap: v2-Hello am v3-Endpunkt");
             return;
         }
         Bootstrap::V3Control(h) => {
@@ -1140,7 +1226,7 @@ fn verbindung_bedienen(
                     .is_err()
                 {
                     statistik.geschlossen_bootstrap.fetch_add(1, Ordering::SeqCst);
-                    senke.abgewiesen("bootstrap: zu viele offene Kopplungen");
+                    senkenruf.abweisen("bootstrap: zu viele offene Kopplungen");
                     return;
                 }
             }
@@ -1166,7 +1252,30 @@ fn verbindung_bedienen(
                 }
                 Err(_) => return,
             }
-            senke.control_verbunden(&link, &h);
+            // Kommt die Senke hier nicht binnen Frist zurueck, wird der
+            // Aufruf abgeloest — und diese Verbindung endet, statt bedient zu
+            // werden: eine Senke, die den Verbindungsbeginn nicht annehmen
+            // kann, wird auch ihre Frames nicht annehmen. Der Platz wird
+            // sofort frei, statt bis zum Stop belegt zu bleiben.
+            //
+            // Der Abbau laeuft ueber `kopplung_loesen`, nicht ueber ein blosses
+            // `control_abmelden`: der Peer hat sein `welcome` schon, und in den
+            // bis zu `SENKE_FRIST` kann er die Telemetrieverbindung bereits
+            // gekoppelt haben. Sie faellt mit — sonst bliebe genau die halb
+            // offene Kopplung stehen, die Runde 1 geschlossen hat.
+            //
+            // Ein `control_getrennt` folgt hier bewusst NICHT: der abgeloeste
+            // `control_verbunden` steht noch; ein Gegenstueck davor waere eine
+            // Luege ueber die Reihenfolge. Die Senke sieht ihren Verbindungs-
+            // beginn also ohne Ende — sichtbar an `lebenszyklus_abgeloest`.
+            let link_fuer_senke = link.clone();
+            let hello_fuer_senke = (*h).clone();
+            if !senkenruf.rufen(move |s| {
+                s.control_verbunden(&link_fuer_senke, &hello_fuer_senke)
+            }) {
+                kopplung_loesen(&kopplungen, &handles, &link, true);
+                return;
+            }
             (link, true)
         }
         Bootstrap::V3Telemetry(h) => {
@@ -1176,7 +1285,7 @@ fn verbindung_bedienen(
             };
             if let Err(e) = ok {
                 statistik.geschlossen_bootstrap.fetch_add(1, Ordering::SeqCst);
-                senke.abgewiesen(&format!("telemetry ungekoppelt: {e:?}"));
+                senkenruf.abweisen(format!("telemetry ungekoppelt: {e:?}"));
                 return;
             }
             let welcome = Welcome {
@@ -1198,7 +1307,11 @@ fn verbindung_bedienen(
                     return;
                 }
             }
-            senke.telemetrie_gekoppelt(&h.link_id);
+            let link_fuer_senke = h.link_id.clone();
+            if !senkenruf.rufen(move |s| s.telemetrie_gekoppelt(&link_fuer_senke)) {
+                kopplung_loesen(&kopplungen, &handles, &h.link_id, false);
+                return;
+            }
             (h.link_id.clone(), false)
         }
     };
@@ -1278,14 +1391,14 @@ fn verbindung_bedienen(
                 LeseErgebnis::Verstoesse(v) => {
                     statistik.geschlossen_envelope.fetch_add(1, Ordering::SeqCst);
                     let namen: Vec<&str> = v.iter().map(|x| x.name()).collect();
-                    senke.abgewiesen(&format!("envelope: {}", namen.join(",")));
+                    senkenruf.abweisen(format!("envelope: {}", namen.join(",")));
                     break 'lesen;
                 }
                 LeseErgebnis::Frame(r) => {
                     let jetzt_ms = beginn.elapsed().as_millis() as u64;
                     if !rate.erlaubt(jetzt_ms) {
                         statistik.geschlossen_rate.fetch_add(1, Ordering::SeqCst);
-                        senke.abgewiesen("rate: Nachrichtenratengrenze ueberschritten");
+                        senkenruf.abweisen("rate: Nachrichtenratengrenze ueberschritten");
                         break 'lesen;
                     }
                     let familie = r.kopf.familie;
@@ -1303,7 +1416,7 @@ fn verbindung_bedienen(
                     };
                     if !erlaubt {
                         statistik.geschlossen_familie.fetch_add(1, Ordering::SeqCst);
-                        senke.abgewiesen(&format!(
+                        senkenruf.abweisen(format!(
                             "familie: {familie:?} auf einer {}-Verbindung",
                             if ist_control { "control" } else { "telemetry" }
                         ));
@@ -1319,7 +1432,7 @@ fn verbindung_bedienen(
                         };
                         if !lebt {
                             statistik.geschlossen_kopplung.fetch_add(1, Ordering::SeqCst);
-                            senke.abgewiesen("kopplung: Control-Verbindung ist fort");
+                            senkenruf.abweisen("kopplung: Control-Verbindung ist fort");
                             break 'lesen;
                         }
                     }
@@ -1331,7 +1444,7 @@ fn verbindung_bedienen(
                         }
                         IngressErgebnis::ClientTrennen => {
                             statistik.geschlossen_p0_ueberlauf.fetch_add(1, Ordering::SeqCst);
-                            senke.abgewiesen("ingress: P0-Ueberlauf");
+                            senkenruf.abweisen("ingress: P0-Ueberlauf");
                             break 'lesen;
                         }
                         IngressErgebnis::Verworfen => {
@@ -1354,14 +1467,14 @@ fn verbindung_bedienen(
         // viele Teilbytes anhaeufen, ohne je einen Frame zu vollenden.
         if leser.offen() > MAX_FRAME_BYTES as usize + 4 {
             statistik.geschlossen_envelope.fetch_add(1, Ordering::SeqCst);
-            senke.abgewiesen("envelope: Teilframe ueber der Paketgrenze");
+            senkenruf.abweisen("envelope: Teilframe ueber der Paketgrenze");
             break;
         }
         match ov_lesen(griff.h, leseereignis.roh(), &mut puffer) {
             IoAusgang::Bytes(n) => leser.fuettern(&puffer[..n]),
             IoAusgang::Ende | IoAusgang::Abgebrochen => break,
             IoAusgang::Fehler(f) => {
-                senke.abgewiesen(&format!("lesen: Win32 {f}"));
+                senkenruf.abweisen(format!("lesen: Win32 {f}"));
                 break;
             }
         }
@@ -1372,6 +1485,14 @@ fn verbindung_bedienen(
     // stillen Peer wartet, muss abgebrochen werden — sonst waere `join` ein
     // Hang.
     ende.store(true, Ordering::SeqCst);
+    // Die KOPPLUNG faellt zuerst — vor den fristbegrenzten Joins, nicht nach
+    // ihnen. Sonst blieb sie bei langsamer Senke bis zu zweimal `SENKE_FRIST`
+    // im Register, und ein Telemetrieframe passierte in dieser Zeit weiter
+    // `telemetrie_lebt`, obwohl die Control-Verbindung schon fort war
+    // (T2-Befund 3 Runde 3 vom 2026-08-29). Der Registereintrag und der
+    // Abbruch der Telemetrie-I/O gehoeren dabei zusammen: ohne den Abbruch
+    // stuende der Telemetriearbeiter noch in seinem Read.
+    kopplung_loesen(&kopplungen, &handles, &link_id, ist_control);
     eingang.schliessen();
     ausgang.schliessen();
     io_abbrechen(&handles, id);
@@ -1390,15 +1511,20 @@ fn verbindung_bedienen(
         }
     }
 
-    trennen(&kopplungen, &handles, &link_id, ist_control, &senke);
+    // Erst JETZT die Senke benachrichtigen: waehrend der Joins konnte noch ein
+    // `p0`/`p1`/`p2` derselben Verbindung laufen, und ein `*_getrennt` davor
+    // waere eine Luege ueber die Reihenfolge.
+    melden_getrennt(&mut senkenruf, &link_id, ist_control);
 }
 
-fn trennen(
+/// Nimmt die Kopplung aus dem Register und bricht die I/O der mitfallenden
+/// Telemetrieverbindung ab. Beruehrt die Senke NICHT — die Meldung folgt
+/// getrennt, nach den Joins (`melden_getrennt`).
+fn kopplung_loesen(
     kopplungen: &Arc<Mutex<Kopplungen>>,
     handles: &Arc<Mutex<HandleRegister>>,
     link_id: &str,
     ist_control: bool,
-    senke: &Arc<dyn Senke>,
 ) {
     if ist_control {
         // Die Control-Verbindung besitzt die Kopplung: geht sie, geht auch
@@ -1414,16 +1540,27 @@ fn trennen(
         if let Some(v) = ab.telemetrie_verbindung {
             io_abbrechen(handles, v);
         }
-        senke.control_getrennt(link_id);
     } else {
-        {
-            let mut k = kopplungen.lock().unwrap_or_else(|e| e.into_inner());
-            k.telemetrie_entkoppeln(link_id);
-        }
-        // Unbedingt melden: die Senke hat ein `telemetrie_gekoppelt` bekommen
-        // und braucht sein Gegenstueck auch dann, wenn die Control-Verbindung
-        // die Kopplung schon aus dem Register genommen hat.
-        senke.telemetrie_getrennt(link_id);
+        let mut k = kopplungen.lock().unwrap_or_else(|e| e.into_inner());
+        k.telemetrie_entkoppeln(link_id);
+    }
+}
+
+/// Das Gegenstueck der Verbindungsmeldung, ueber den fristbegrenzten Pfad.
+///
+/// Unbedingt melden: die Senke hat ein `control_verbunden` bzw.
+/// `telemetrie_gekoppelt` bekommen und braucht sein Gegenstueck auch dann,
+/// wenn die Control-Verbindung die Kopplung schon aus dem Register genommen
+/// hat. Nur ein frueher ABGELOESTER Aufruf laesst diesen hier ausfallen — dann
+/// steht die Senke ohnehin noch im vorigen und wuerde ihn in falscher
+/// Reihenfolge sehen; der Ausfall ist als `lebenszyklus_uebersprungen`
+/// sichtbar.
+fn melden_getrennt(senkenruf: &mut Senkenruf, link_id: &str, ist_control: bool) {
+    let l = link_id.to_string();
+    if ist_control {
+        senkenruf.rufen(move |s| s.control_getrennt(&l));
+    } else {
+        senkenruf.rufen(move |s| s.telemetrie_getrennt(&l));
     }
 }
 
@@ -2012,6 +2149,193 @@ mod tests {
         assert_eq!(
             schreiber, 0,
             "nur die Senke haengt — der Schreiber wird abgebrochen, nicht abgeloest"
+        );
+    }
+
+    /// T2-Befund 4 Runde 3: eine GESCHLOSSENE Ingressqueue liefert nichts
+    /// mehr. Vorher pruefte `entnehmen` das Schliessflag erst NACH dem
+    /// Inhalt — der Verbraucher lief nach dem Schliessen noch durch den
+    /// Restbestand und rief P0/P1 fuer eine Verbindung, deren Kopplung schon
+    /// abgemeldet war.
+    #[test]
+    fn geschlossener_eingang_liefert_nichts_mehr() {
+        let e = Eingang::neu();
+        assert!(matches!(
+            e.einreihen(Familie::P0, b"a".to_vec()),
+            IngressErgebnis::Eingereiht
+        ));
+        assert!(matches!(
+            e.einreihen(Familie::P1, b"b".to_vec()),
+            IngressErgebnis::Eingereiht
+        ));
+        assert_eq!(e.laenge(), 2, "die Vorbedingung muss wirklich gefuellt sein");
+
+        e.schliessen();
+        assert!(
+            e.entnehmen().is_none(),
+            "nach dem Schliessen darf kein Eintrag mehr kommen — er gehoert zu \
+             einer Sitzung, die es nicht mehr gibt"
+        );
+    }
+
+    /// Eine Senke, die im LEBENSZYKLUS blockiert statt in `p0`/`p1`/`p2` —
+    /// genau die Luecke, die `stoppen_endet_auch_bei_haengender_senke`
+    /// offenliess (T2-Befund 5 Runde 3).
+    #[derive(Debug, Default)]
+    struct LebenszyklusBlockSenke {
+        zaehl: ZaehlSenke,
+        blockiert: AtomicBool,
+        in_senke: AtomicBool,
+    }
+
+    impl LebenszyklusBlockSenke {
+        /// Wie `BlockSenke::warten`: endlich, damit ein rotes Ergebnis rot
+        /// bleibt statt zum Hang zu werden.
+        fn warten(&self) {
+            self.in_senke.store(true, Ordering::SeqCst);
+            let bis = Instant::now() + Duration::from_secs(20);
+            while self.blockiert.load(Ordering::SeqCst) && Instant::now() < bis {
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            self.in_senke.store(false, Ordering::SeqCst);
+        }
+    }
+
+    impl Senke for LebenszyklusBlockSenke {
+        fn control_verbunden(&self, l: &str, h: &HelloControl) {
+            self.warten();
+            self.zaehl.control_verbunden(l, h);
+        }
+        fn control_getrennt(&self, l: &str) {
+            self.zaehl.control_getrennt(l);
+        }
+        fn telemetrie_gekoppelt(&self, l: &str) {
+            self.zaehl.telemetrie_gekoppelt(l);
+        }
+        fn telemetrie_getrennt(&self, l: &str) {
+            self.zaehl.telemetrie_getrennt(l);
+        }
+        fn p0(&self, l: &str, p: &[u8]) -> Option<Vec<u8>> {
+            self.zaehl.p0(l, p)
+        }
+        fn p1(&self, l: &str, p: &[u8]) {
+            self.zaehl.p1(l, p);
+        }
+        fn p2(&self, l: &str, p: &[u8]) {
+            self.zaehl.p2(l, p);
+        }
+        fn abgewiesen(&self, g: &str) {
+            self.zaehl.abgewiesen(g);
+        }
+    }
+
+    /// T2-Befund 5 Runde 3: `stoppen()` endet auch dann, wenn die Senke im
+    /// LEBENSZYKLUSaufruf haengt. Der bestehende Haengertest deckt nur
+    /// `p0`/`p1`/`p2` — die laufen auf dem Ingressthread, der schon eine Frist
+    /// hatte. `control_verbunden` lief unbegrenzt auf dem Verbindungsthread,
+    /// und genau auf den wartet `stoppen()`.
+    #[test]
+    fn stoppen_endet_auch_bei_haengendem_lebenszyklusaufruf() {
+        let pipe = probe_pipe("lebenszyklushang");
+        let senke = Arc::new(LebenszyklusBlockSenke::default());
+        senke.blockiert.store(true, Ordering::SeqCst);
+        let mut griff = v3_server_starten(&pipe, senke.clone(), "test".into()).unwrap();
+
+        let steuer = Testclient::neu(&pipe).unwrap();
+        assert!(steuer.schreiben(&control_hello(&"c".repeat(32))));
+        assert!(
+            warte_auf(5000, || senke.in_senke.load(Ordering::SeqCst)),
+            "die Senke muss WIRKLICH im control_verbunden stehen, sonst misst \
+             der Test nichts"
+        );
+
+        let stat = griff.statistik.clone();
+        let (tx, rx) = std::sync::mpsc::channel();
+        let t = std::thread::spawn(move || {
+            griff.stoppen();
+            let _ = tx.send(());
+        });
+        // Grosszuegig, aber ENDLICH: gemessen wird "endet", nicht "ist schnell".
+        let rechtzeitig = rx.recv_timeout(SENKE_FRIST + Duration::from_secs(8)).is_ok();
+        let abgeloest = stat.lebenszyklus_abgeloest.load(Ordering::SeqCst);
+        let verbraucher = stat.senke_abgeloest.load(Ordering::SeqCst);
+        // Erst JETZT freigeben — vorher waere der Gegenpfad nicht gemessen.
+        senke.blockiert.store(false, Ordering::SeqCst);
+        t.join().unwrap();
+        drop(steuer);
+
+        assert!(
+            rechtzeitig,
+            "stoppen() haengt im Lebenszyklusaufruf der Senke"
+        );
+        assert!(
+            abgeloest >= 1,
+            "der haengende Lebenszyklusaufruf muss abgeloest und gezaehlt sein \
+             (war {abgeloest})"
+        );
+        assert_eq!(
+            verbraucher, 0,
+            "nur der Lebenszyklusaufruf haengt — der Verbraucherthread nicht"
+        );
+    }
+
+    /// T2-Befund 3 Runde 3: die Kopplung faellt mit dem LESERENDE, nicht erst
+    /// nach den fristbegrenzten Joins. Gemessen an der Telemetriepipe: sie
+    /// muss lange vor `SENKE_FRIST` zu sein, obwohl der Verbraucher der
+    /// Control-Verbindung noch in der Senke steht.
+    #[test]
+    fn kopplung_faellt_mit_dem_leserende_nicht_erst_nach_den_joins() {
+        let pipe = probe_pipe("kopplungsofort");
+        let senke = Arc::new(BlockSenke::default());
+        let mut griff = v3_server_starten(&pipe, senke.clone(), "test".into()).unwrap();
+
+        let nonce = "d".repeat(32);
+        let steuer = Testclient::neu(&pipe).unwrap();
+        assert!(steuer.schreiben(&control_hello(&nonce)));
+        let (link, challenge) = welcome_lesen(&steuer).expect("welcome der Control-Verbindung");
+        let tele = Testclient::neu(&pipe).unwrap();
+        assert!(tele.schreiben(&telemetry_hello(&nonce, &link, &challenge)));
+        assert!(
+            welcome_lesen(&tele).is_some(),
+            "die Telemetrieverbindung muss gekoppelt sein, sonst misst der Test nichts"
+        );
+
+        // Der Verbraucher der CONTROL-Verbindung soll in der Senke stehen,
+        // wenn ihr Leser endet — sonst laufen die Joins durch und der Test
+        // spraeche ueber nichts.
+        senke.blockiert.store(true, Ordering::SeqCst);
+        assert!(steuer.schreiben(&p1("{\"type\":\"state_report\"}")));
+        assert!(
+            warte_auf(5000, || senke.in_senke.load(Ordering::SeqCst)),
+            "der Verbraucher muss WIRKLICH in der Senke stehen"
+        );
+
+        // Ein Leser auf der Telemetriepipe: er kehrt zurueck, sobald der
+        // Broker sie schliesst.
+        let (tx, rx) = std::sync::mpsc::channel();
+        let leser = std::thread::spawn(move || {
+            let mut z = [0u8; 64];
+            let _ = tele.lesen(&mut z);
+            let _ = tx.send(());
+            tele
+        });
+
+        let beginn = Instant::now();
+        drop(steuer); // Control-Pipe zu ⇒ Leserende ⇒ Abbau
+        let zu = rx.recv_timeout(SENKE_FRIST * 4).is_ok();
+        let dauer = beginn.elapsed();
+        senke.blockiert.store(false, Ordering::SeqCst);
+        let _ = leser.join();
+        griff.stoppen();
+
+        assert!(
+            zu,
+            "die Telemetrieverbindung muss mit ihrer Control-Verbindung fallen"
+        );
+        assert!(
+            dauer < SENKE_FRIST / 2,
+            "sie faellt erst nach {dauer:?} — die Kopplung haengt an den Joins \
+             statt am Leserende (SENKE_FRIST {SENKE_FRIST:?})"
         );
     }
 }

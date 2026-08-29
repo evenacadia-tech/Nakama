@@ -29,6 +29,10 @@ set(NAKAMA_KERN_TEST_PROPERTY_juce_module_exact_INTERFACE_COMPILE_DEFINITIONS
     "JUCE_MODULE_AVAILABLE_juce_module_exact=1")
 set(NAKAMA_KERN_TEST_PROPERTY_BrokenInner_INTERFACE_COMPILE_DEFINITIONS
     "$<$<NAKAMA_UNBEKANNTER_INNERER_OPERATOR:1>:JUCE_NIE_GRUEN=1>")
+# NAK-84: Der Prueferfall. JOIN erzeugt JUCE_USE_CURL=1, ohne dass der Rohtext
+# je "JUCE_" zusammenhaengend zeigt oder ein Ziel nennt.
+set(NAKAMA_KERN_TEST_PROPERTY_JoinDefine_INTERFACE_COMPILE_DEFINITIONS
+    "$<JOIN:JUCE$<SEMICOLON>_USE_CURL=1,>")
 set(NAKAMA_KERN_TEST_PROPERTY_CycleA_INTERFACE_COMPILE_DEFINITIONS
     "$<TARGET_PROPERTY:CycleB,INTERFACE_COMPILE_DEFINITIONS>")
 set(NAKAMA_KERN_TEST_PROPERTY_CycleB_INTERFACE_COMPILE_DEFINITIONS
@@ -46,7 +50,8 @@ set(NAKAMA_KERN_TEST_PROPERTY_ListLiteral_INTERFACE_COMPILE_DEFINITIONS
 set(NAKAMA_KERN_TEST_ALIAS_JuceCoreAlias juce_core)
 set(NAKAMA_KERN_TEST_TARGETS
     EqCopilot juce_core juce_vst3_headers juce_module_exact BrokenInner
-    CycleA CycleB DiamondLeaf DiamondLeft DiamondRight DiamondRoot ListLiteral)
+    CycleA CycleB DiamondLeaf DiamondLeft DiamondRight DiamondRoot ListLiteral
+    JoinDefine)
 set(NAKAMA_KERN_TEST_COMPILE_LANGUAGE CXX)
 set(NAKAMA_KERN_TEST_CXX_COMPILER_ID MSVC)
 
@@ -73,6 +78,39 @@ if(NAKAMA_TEST_INNERER_OPERATOR_ROT)
     message(FATAL_ERROR "Unbekannter innerer Operator blieb unerwartet gruen: ${_darf_nie_gruen}")
 endif()
 
+# NAK-84 (T3-Runde 3): Zusammengesetzter Definename direkt in einer
+# Define-Eigenschaft. Ohne den Fix ist dieser Aufruf GRUEN und liefert "".
+if(NAKAMA_TEST_JOIN_DEFINE_ROT)
+    _nakama_kern_wert_auswerten(
+        "$<JOIN:JUCE$<SEMICOLON>_USE_CURL=1,>"
+        "${NAKAMA_TEST_CONFIG}" JUCE "Selbsttest zusammengesetzter Definename"
+        _darf_nie_gruen)
+    message(FATAL_ERROR
+        "Zusammengesetzter Definename blieb unerwartet gruen: '${_darf_nie_gruen}'")
+endif()
+
+# Derselbe Fall ueber die Huelle, genau in der Form des Pruefers:
+# target_compile_definitions(NakamaKern PRIVATE "$<JOIN:...>").
+if(NAKAMA_TEST_JOIN_PROPERTY_ROT)
+    _nakama_kern_wert_auswerten(
+        "$<TARGET_PROPERTY:JoinDefine,INTERFACE_COMPILE_DEFINITIONS>"
+        "${NAKAMA_TEST_CONFIG}" JUCE "Selbsttest JOIN in Huellen-Property"
+        _darf_nie_gruen)
+    message(FATAL_ERROR
+        "JOIN in einer Huellen-Define-Property blieb unerwartet gruen: '${_darf_nie_gruen}'")
+endif()
+
+# NAK-84: In einer Define-Eigenschaft darf der Rohtext gar nicht mehr
+# mitreden. Frueher war genau dieser Ausdruck "irrelevant" und still leer.
+if(NAKAMA_TEST_IRRELEVANT_DEFINE_ROT)
+    _nakama_kern_wert_auswerten(
+        "NAKAMA_TEST=$<NAKAMA_UNBEKANNTER_OPERATOR:ohne_ziel>"
+        "${NAKAMA_TEST_CONFIG}" JUCE "Selbsttest unbekannter Operator ohne Rohtextspur"
+        _darf_nie_gruen)
+    message(FATAL_ERROR
+        "Unbekannter Operator in Define-Eigenschaft blieb unerwartet gruen: '${_darf_nie_gruen}'")
+endif()
+
 if(NAKAMA_TEST_STRINGOPERATOR_ROT)
     _nakama_kern_wert_auswerten(
         "$<LOWER_CASE:NakamaIdentitaetsIface>"
@@ -82,6 +120,35 @@ if(NAKAMA_TEST_STRINGOPERATOR_ROT)
 endif()
 
 set(_nakama_test_anzahl 0)
+
+# Faehrt dieses Skript als Unterprozess mit dem genannten ROT-Schalter und
+# verlangt: Exitcode ungleich 0 UND jedes uebergebene Diagnosefragment in der
+# Ausgabe. Ein roter Riegel, dessen Meldung den Ausdruck nicht nennt, hilft
+# niemandem beim Aufraeumen - deshalb sind die Fragmente Teil der Zusage.
+function(_nakama_genex_rotprobe schalter was pass_text)
+    execute_process(
+        COMMAND "${CMAKE_COMMAND}"
+            "-DNAKAMA_TEST_CONFIG=${NAKAMA_TEST_CONFIG}"
+            "-DNAKAMA_TEST_IS_SYNTH=${NAKAMA_TEST_IS_SYNTH}"
+            "-D${schalter}=ON"
+            -P "${CMAKE_CURRENT_LIST_FILE}"
+        RESULT_VARIABLE _exit
+        OUTPUT_VARIABLE _stdout
+        ERROR_VARIABLE _stderr)
+    set(_ausgabe "${_stdout}\n${_stderr}")
+    string(REGEX REPLACE "[ \r\n\t]+" " " _einzeilig "${_ausgabe}")
+    if(_exit EQUAL 0)
+        message(FATAL_ERROR "${was} blieb unerwartet gruen. Ausgabe=${_einzeilig}")
+    endif()
+    foreach(_fragment IN LISTS ARGN)
+        string(FIND "${_einzeilig}" "${_fragment}" _position)
+        if(_position EQUAL -1)
+            message(FATAL_ERROR
+                "${was}: Diagnose nennt '${_fragment}' nicht. Ausgabe=${_einzeilig}")
+        endif()
+    endforeach()
+    message(STATUS "PASS ${pass_text}")
+endfunction()
 
 function(_nakama_genex_erwarte name ausdruck erwartung)
     _nakama_kern_text_auswerten(
@@ -401,13 +468,57 @@ if(NOT _zielreferenz_relevant)
     message(FATAL_ERROR "Zielreferenz ohne sichtbares JUCE_-Define wurde unerwartet ignoriert.")
 endif()
 message(STATUS "PASS Sensitivitaet: jede Zielreferenz muss expandieren")
+# NAK-84 (T3-Runde 3, 29.08.2026): Die Relevanzheuristik entscheidet nur noch
+# ueber Linkkanten. In einer Define-/Options-Eigenschaft ist jeder unbekannte
+# Operator ROT - dort waere jede Textprobe erschleichbar (JOIN).
+foreach(_definemengen_art IN ITEMS IDENTITAET JUCE IDENTITAET_OPTION JUCE_OPTION)
+    _nakama_kern_art_ist_definemenge("${_definemengen_art}" _ist_definemenge)
+    if(NOT _ist_definemenge)
+        message(FATAL_ERROR
+            "Define-/Options-Art wurde nicht als Definemenge erkannt: ${_definemengen_art}")
+    endif()
+endforeach()
+foreach(_linkart IN ITEMS LINK COMPILE_LINK)
+    _nakama_kern_art_ist_definemenge("${_linkart}" _ist_definemenge)
+    if(_ist_definemenge)
+        message(FATAL_ERROR "Linkkanten-Art wurde faelschlich als Definemenge erkannt: ${_linkart}")
+    endif()
+endforeach()
+message(STATUS
+    "PASS Arteinteilung: vier Define-/Options-Arten fail-closed, zwei Linkarten heuristisch")
+
+# Die verbliebene Abgrenzung gilt nur noch fuer Linkkanten: ein Ausdruck ohne
+# Zielreferenz kann dort kein Ziel verbergen. Ein Define kann er nicht tragen.
 _nakama_kern_wert_auswerten(
     "NAKAMA_TEST=$<NAKAMA_UNBEKANNTER_OPERATOR:ohne_ziel>"
-    "${NAKAMA_TEST_CONFIG}" JUCE "Selbsttest irrelevant ohne Ziel" _fremdes_define)
-if(NOT _fremdes_define STREQUAL "")
-    message(FATAL_ERROR "Ausdruck ohne JUCE_-Define und ohne Ziel wurde unerwartet beansprucht.")
+    "${NAKAMA_TEST_CONFIG}" LINK "Selbsttest irrelevante Linkkante ohne Ziel" _fremde_kante)
+if(NOT _fremde_kante STREQUAL "")
+    message(FATAL_ERROR "Linkkante ohne Zielreferenz wurde unerwartet beansprucht.")
 endif()
-message(STATUS "PASS Abgrenzung: ohne JUCE_-Define und ohne Ziel irrelevant")
+message(STATUS "PASS Abgrenzung: Linkkante ohne Zielreferenz bleibt irrelevant")
+
+# Derselbe Ausdruck in einer Define-Eigenschaft muss dagegen ROT sein.
+_nakama_genex_rotprobe(
+    NAKAMA_TEST_IRRELEVANT_DEFINE_ROT
+    "unbekannter Operator in Define-Eigenschaft"
+    "Sensitivitaet: unbekannter Operator ohne Rohtextspur bleibt ROT"
+    "unbekannter Operator NAKAMA_UNBEKANNTER_OPERATOR"
+    "$<NAKAMA_UNBEKANNTER_OPERATOR:ohne_ziel>")
+
+# NAK-84, der Prueferfall selbst: JOIN baut JUCE_USE_CURL=1 zusammen, ohne dass
+# der Rohtext "JUCE_" oder ein Ziel zeigt. Vor dem Fix war beides gruen.
+_nakama_genex_rotprobe(
+    NAKAMA_TEST_JOIN_DEFINE_ROT
+    "zusammengesetzter Definename per JOIN"
+    "NAK-84: JOIN direkt in einer Define-Eigenschaft bleibt ROT"
+    "unbekannter Operator JOIN"
+    "$<JOIN:JUCE$<SEMICOLON>_USE_CURL=1,>")
+_nakama_genex_rotprobe(
+    NAKAMA_TEST_JOIN_PROPERTY_ROT
+    "zusammengesetzter Definename per JOIN in der Huelle"
+    "NAK-84: JOIN in einer Huellen-Define-Property bleibt ROT"
+    "unbekannter Operator JOIN"
+    "$<TARGET_PROPERTY:JoinDefine,INTERFACE_COMPILE_DEFINITIONS>")
 
 foreach(_define IN ITEMS
         JUCE_SHARED_CODE JUCE_SHARED_CODE=1

@@ -58,7 +58,9 @@
 # Zielnamen, debug/optimized/general-Kanten und den unten benannten bedingten
 # bzw. zielbezogenen Generatorausdruecken aufgeloest. String-transformierende
 # Generatorausdruecke (LOWER_CASE, UPPER_CASE, MAKE_C_IDENTIFIER, JOIN, ...)
-# werden in Linkkanten nicht aufgeloest und sind dort ROT. Dasselbe gilt fuer
+# werden in Linkkanten nicht aufgeloest und sind dort ROT; in einer
+# Define-/Options-Eigenschaft ist seit NAK-84 jeder unbekannte Operator ROT,
+# auch wenn sein Rohtext kein JUCE_/JucePlugin_ zeigt. Dasselbe gilt fuer
 # importierte Ziele mit gesetztem MAP_IMPORTED_CONFIG_* in der Linkhuelle: Die
 # Konfigurationsabbildung wird nicht nachgebildet, sondern fail-closed abgewiesen.
 
@@ -176,9 +178,18 @@ endfunction()
 # Rekursionsstapel aus Ziel und Eigenschaft stoppt nur echte Zyklen im aktuellen
 # Abstieg; ein spaeterer legitimer Wiederbesuch wird erneut ausgewertet. Aliase
 # werden vor dem Lesen aufgeloest, importierte Ziele sind fuer CMake normale
-# TARGETs. Ein fehlendes Ziel, ein Zyklus oder ein unbekannter Ausdruck mit
-# relevantem Define ODER irgendeiner Zielreferenz ist ROT. Nur ein Ausdruck ohne
-# JUCE_/JucePlugin_-Define und ohne Zielreferenz ist irrelevant.
+# TARGETs. Ein fehlendes Ziel und ein Zyklus sind immer ROT. Fuer einen
+# unbekannten oder nicht auswertbaren Ausdruck gilt seit NAK-84 (29.08.2026)
+# nach ART der gelesenen Eigenschaft:
+#   * Define-/Options-Eigenschaft (IDENTITAET, JUCE, *_OPTION): IMMER ROT, ohne
+#     jede Ruecksicht auf den Rohtext. Ein zusammengesetzter Definename wie
+#     "$<JOIN:JUCE$<SEMICOLON>_USE_CURL=1,>" zeigt sein Praefix im Rohtext nie
+#     zusammenhaengend; eine Textheuristik kann ihn deshalb prinzipiell nicht
+#     erkennen und wurde hier ersatzlos gestrichen.
+#   * Linkkante (LINK, COMPILE_LINK): ROT bei relevantem Define ODER
+#     irgendeiner Zielreferenz. Nur dort darf ein Ausdruck ohne beides
+#     irrelevant bleiben - er kann kein Define tragen, sondern hoechstens ein
+#     Ziel verbergen, und dafuer haelt zusaetzlich der Stringoperator-Riegel.
 
 function(_nakama_kern_genex_ende text anfang ausgabe bekannt)
     string(LENGTH "${text}" _laenge)
@@ -1018,6 +1029,21 @@ function(_nakama_kern_wert_relevant wert art ausgabe)
     set(${ausgabe} ${_relevant} PARENT_SCOPE)
 endfunction()
 
+# NAK-84 (T3-Runde 3, 29.08.2026): Diese vier Arten bezeichnen
+# Define-/Options-Eigenschaften. Ihr Inhalt IST die Definemenge des Kerns bzw.
+# seiner Huelle - deshalb darf dort kein Rohtext mehr darueber entscheiden, ob
+# ein nicht aufloesbarer Ausdruck rot wird. LINK/COMPILE_LINK bezeichnen
+# dagegen Linkkanten; dort entscheidet die Heuristik ueber Zielnamen, nicht
+# ueber Definetext, und der Stringoperator-Riegel darunter haelt zusaetzlich.
+function(_nakama_kern_art_ist_definemenge art ausgabe)
+    if(art STREQUAL "IDENTITAET" OR art STREQUAL "JUCE"
+       OR art STREQUAL "IDENTITAET_OPTION" OR art STREQUAL "JUCE_OPTION")
+        set(${ausgabe} TRUE PARENT_SCOPE)
+    else()
+        set(${ausgabe} FALSE PARENT_SCOPE)
+    endif()
+endfunction()
+
 function(_nakama_kern_linkkante_stringoperator wert ausgabe)
     set(_operator "")
     string(REGEX MATCH
@@ -1043,6 +1069,17 @@ function(_nakama_kern_wert_auswerten wert konfiguration art kontext ausgabe)
         endif()
     endif()
     _nakama_kern_wert_relevant("${wert}" "${art}" _relevant)
+    # NAK-84: In einer Define-/Options-Eigenschaft ist JEDER unbekannte oder
+    # nicht auswertbare Operator ROT - unabhaengig vom Rohtext. Der Prueferfall
+    # war "$<JOIN:JUCE$<SEMICOLON>_USE_CURL=1,>": das erzeugt JUCE_USE_CURL=1,
+    # der Rohtext enthaelt aber weder "JUCE_" noch ein Ziel. Die Heuristik hielt
+    # ihn fuer irrelevant und verwarf ihn still; K2b blieb trotz Wertwiderspruch
+    # gruen. Ein zusammengesetzter Name kann per Konstruktion nicht am Rohtext
+    # erkannt werden - also faellt die Heuristik hier ersatzlos weg.
+    _nakama_kern_art_ist_definemenge("${art}" _art_ist_definemenge)
+    if(_art_ist_definemenge)
+        set(_relevant TRUE)
+    endif()
     # Diese beiden Variablen sind absichtlich read-only und an den Scope genau
     # dieses Auswertungsaufrufs gebunden. Verschachtelte Funktionen erben sie,
     # ohne globalen Zustand oder PARENT_SCOPE-Schreibzugriffe zu benutzen.
@@ -1294,8 +1331,10 @@ endfunction()
 # rekursive, konfigurationsgenau ausgewertete Usage-Requirements-Huelle des
 # Kernziels. Die registrierten Pluginziele werden hier nicht als Verbraucher
 # hineingerechnet; nur eine echte Rueckkante vom Kern zu einem Pluginziel macht
-# dessen PUBLIC-Defines compilerwirksam und damit sichtbar. Ein relevanter
-# unbekannter Generatorausdruck ist ein Configure-Fehler, keine Messluecke.
+# dessen PUBLIC-Defines compilerwirksam und damit sichtbar. Ein unbekannter
+# Generatorausdruck in einer Define-/Options-Eigenschaft ist ein
+# Configure-Fehler, keine Messluecke - seit NAK-84 fail-closed ohne
+# Rohtextheuristik.
 function(nakama_kern_riegel_pruefen ziel)
     _nakama_kern_konfigurationen(_konfigurationen)
     set(_funde "")

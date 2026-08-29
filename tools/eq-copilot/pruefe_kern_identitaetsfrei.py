@@ -147,6 +147,19 @@ ERWARTETE_OBJEKTE = {
     "NakamaParameter.obj",
     "NakamaState.obj",
     "NakamaVertrag.obj",
+    # S14-15/SONDE-010 (29.08.2026): der v3-IPC-Weg ist Teil des geteilten
+    # Bodens. Diese vier Zeilen sind der Grund, warum die Liste von Hand
+    # gefuehrt wird - beim ersten Lauf nach dem Zuwachs hat A14 gesprochen,
+    # statt still durchzurutschen. Beim selben Lauf fiel ausserdem [2] auf:
+    # core/ipc/PipeToken.cpp traegt den Pipe-Namensraum `evenacadia.nakama|v3|`
+    # und damit den eingefrorenen HERSTELLERNAMEN. Nicht der Riegel wurde
+    # aufgeweicht, sondern die Datei aus dem Kern genommen - sie gehoert in die
+    # duenne Zielschicht (plugin/CMakeLists.txt sagt, warum). Deshalb steht
+    # hier KEIN PipeToken.obj.
+    "WireEnvelope.obj",
+    "IpcVerbindung.obj",
+    "ControlClient.obj",
+    "TelemetryClient.obj",
 }
 
 _INCLUDE_ZEILE = re.compile(r'^\s*#\s*include\s+(.+?)\s*$', re.MULTILINE)

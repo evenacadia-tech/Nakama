@@ -86,12 +86,33 @@ target_include_directories(EqCopilot PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/hostbri
 # gilt fuer jedes Bundle. Sie gehoert damit genau in die Menge, die Gen und
 # Probeeq teilen duerfen; das Kanon-Bein A14 fuehrt die Objektliste
 # handgeschrieben und hat den Zuwachs beim ersten Lauf gemeldet.
+# S14-15/SONDE-010: der v3-IPC-Weg kommt dazu. Envelope, Pipe-Mechanik und die
+# beiden Clients gelten fuer JEDES Bundle, das spaeter mit dem Broker spricht -
+# sie gehoeren damit in dieselbe Menge wie State und Vertrag. Die Quellen sind
+# JUCE-frei (wie core/StampedAudioQueue.h); sie ziehen nur <windows.h> und die
+# C++-Standardbibliothek. A14 hat den Zuwachs beim ersten Lauf gemeldet - genau
+# dafuer ist seine Objektliste unabhaengig von dieser hier gefuehrt.
+#
+# NICHT im Kern: core/ipc/PipeToken.cpp. Es traegt den v3-Pipe-Namensraum
+# `evenacadia.nakama|v3|` - und `evenacadia` ist der eingefrorene
+# Herstellername aus plugin-identities-v1.json. A14 hat genau das beim ersten
+# Lauf gefunden. Die Antwort ist nicht, den Riegel weicher zu machen, sondern
+# die Schichtung ernst zu nehmen: WELCHE Pipe eine Instanz waehlt, ist dieselbe
+# Art Aussage wie WELCHE Identitaet sie traegt - sie gehoert in die duenne
+# Zielschicht, nicht in den geteilten Boden. Der Kern nimmt den Pipenamen
+# deshalb als Zeichenkette entgegen und rechnet ihn nie selbst aus. Die Quelle
+# bleibt EINE Datei; sie wird von den Zielen uebersetzt, die sie brauchen -
+# dieselbe Form wie src/PipeClient.cpp.
 set(NAKAMA_KERN_QUELLEN
     state/NakamaKanon.cpp
     state/NakamaLebenslauf.cpp
     state/NakamaParameter.cpp
     state/NakamaState.cpp
     vertrag/NakamaVertrag.cpp
+    core/ipc/WireEnvelope.cpp
+    core/ipc/IpcVerbindung.cpp
+    core/ipc/ControlClient.cpp
+    core/ipc/TelemetryClient.cpp
 )
 
 # Kopf-Fassade: JUCE-Koepfe ohne die JUCE-Modulquellen. Warum das noetig ist
@@ -114,7 +135,8 @@ target_compile_definitions(NakamaKernJuce INTERFACE
 
 add_library(NakamaKern STATIC ${NAKAMA_KERN_QUELLEN})
 target_include_directories(NakamaKern PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/state" "${CMAKE_CURRENT_SOURCE_DIR}/vertrag")
+    "${CMAKE_CURRENT_SOURCE_DIR}/state" "${CMAKE_CURRENT_SOURCE_DIR}/vertrag"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ipc")
 target_link_libraries(NakamaKern PRIVATE NakamaKernJuce)
 # T2-Befund 23.08.: Diese beiden hingen bis dahin NICHT am Kern. Vor S8 lagen
 # die vier Quellen per target_sources() IN den Verbraucherzielen und erbten
@@ -513,6 +535,38 @@ target_link_libraries(EqCopQueueStressTest PRIVATE juce::juce_audio_utils juce::
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 nakama_kern_anbinden(EqCopQueueStressTest)
 
+# ── S14-15/SONDE-010: v3-Envelope, Pipetoken, Backpressure und die Clients ─
+# Kanon B10. Zwei Ebenen in EINEM Ziel, wie bei B4 und B8:
+#   1. Envelope, Pipetoken und die drei client-seitigen Backpressure-Politiken
+#      PUR - dort sind Grenzen, CRC-Fehler und Ueberlauf deterministisch
+#      herbeifuehrbar, und dort liegt der Fixture-Korpus.
+#   2. Die ECHTEN Clients aus NakamaKern gegen einen selbst gehosteten
+#      v3-Server auf einer Testpipe (PID + Zaehler im Namen): Bootstrap,
+#      Kopplung, Reconnect nach Serverneustart, Envelopeverstoss, P0-Ueberlauf.
+# Ohne Ebene 2 waere es ein huebscher Parser, der im Produkt nichts verbindet.
+# juce_core nur fuer das LESEN des Fixture-Manifests (juce::JSON, juce::File) -
+# die gemessenen Quellen selbst sind JUCE-frei.
+juce_add_console_app(EqCopIpcTest PRODUCT_NAME "eqcop-ipctest")
+target_sources(EqCopIpcTest PRIVATE tests/IpcTestMain.cpp core/ipc/PipeToken.cpp)
+target_compile_definitions(EqCopIpcTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopIpcTest PRIVATE juce::juce_core Advapi32
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopIpcTest)
+
+# ── S14-15/SONDE-010: die C++-Haelfte des Ende-zu-Ende-Lastbeins ──────────
+# Kein Kanon-Bein fuer sich: es wird von tools/eq-copilot/pruefe_ipc_last.py
+# GEGEN den Rust-Probe-Broker gefahren (Kanon A22). Getrenntes Ziel, weil es
+# einen externen Prozess braucht - EqCopIpcTest bleibt dadurch in sich
+# geschlossen und schnell.
+juce_add_console_app(EqCopIpcLast PRODUCT_NAME "eqcop-ipclast")
+target_sources(EqCopIpcLast PRIVATE tests/IpcLastMain.cpp)
+target_compile_definitions(EqCopIpcLast PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopIpcLast PRIVATE juce::juce_core Advapi32
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopIpcLast)
+
 # ── S10-11/SONDE-008: EBU-Golden der fixed-memory Loudness ─────────────────
 # Kanon B9. Misst den `LoudnessAccumulator` gegen die AUSGEBAUTE Rechnung:
 # den unbegrenzten Vektor mit Zweitdurchgang, den dieses Ticket ersetzt. Das
@@ -688,6 +742,7 @@ endforeach()
 # Codepage — Literale wie „Klavier-Bus“ hingen dann an der Systemlocale.
 foreach(ziel NakamaKern
              EqCopilot EqCopPipeProbe EqCopPipeClientTest EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
+             EqCopIpcTest EqCopIpcLast
              EqCopIdentityTest EqCopAuxSpike EqCopAuxSpikeTest EqCopHostContextTest
              EqCopSchemaTest EqCopStateMigrationTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopLoudnessGoldenTest EqCopAnalysisGoldenTest

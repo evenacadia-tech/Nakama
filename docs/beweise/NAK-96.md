@@ -791,3 +791,341 @@ exit=0
 | B10 | v3-Envelope in C++ klassifiziert den Envelope-Korpus wie das Manifest (Urteil UND Verstossmenge, alle 14 Regeln mit Negativfixture); CRC32C trifft die RFC-3720-Vektoren, P0/P1 tragen CRC exakt 0, P2 die Pflichtsumme ueber genau die Payloadbytes; 40 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und 7671 angenommene EINBIT-Mutanten gueltiger Frames halten jede Kopfregel (reiner Zufall wird praktisch immer abgewiesen - die Invariante braucht deshalb die Mutanten, sonst spraeche sie ueber eine leere Menge), 3000 gekippte P2-Bits fallen einzeln, byteweise Zustellung liefert dieselben 40 Frames und ein kaputter Frame beendet den Strom; Pipetoken trifft das Golden aus §48.3 samt SHA-256- und RFC-4648-Vektoren; P0 verwirft nichts und meldet den 65. Eintrag, P1 koalesziert an der Position und haelt Ereignisse fuer den Reconnect vor, die P2-Schleuse ersetzt den aeltesten ungesendeten Frame, uebergibt 100 000 Frames mit 0 Allokationen (mit Gegenprobe am selben Zaehler) und liefert unter Flut keinen zerrissenen Frame; verdrahtet: Control koppelt Telemetry ueber link_id + challenge, ein ungekoppelter Telemetry-Connect wird geschlossen, der Client verbindet nach Serverneustart von selbst wieder, ein kaputter Envelope vom Server schliesst die Verbindung, und ein P0-Ueberlauf WAEHREND einer stehenden Verbindung schliesst sie ebenfalls statt still zu kuerzen. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 32,55 s | [B10](roh/NAK-96-d993894.md#b10) |
 | B8 | Lifecycle-Klassifikation §53.5: unclassified beim Laden und audio-neutral; Schema-1 sensor\|pre\|post -> legacy (immer passiv), hub bzw. bestaetigter Schema-2-Main-State -> main; ein Scannerlauf klassifiziert nicht; read-only nimmt die Klassifikation zurueck; Brokerstart nur fuer main mit offenem Editor; die Sondenbundles bleiben bis gueltigem State neutral und werden nie main. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,09 s | [B8](roh/NAK-96-d993894.md#b8) |
 
+---
+
+## 8. NAK-97 — planstand.py (Folge-Worker, Basis f501704)
+
+| Feld | Wert |
+|---|---|
+| Ticket | `NAK-97` (beide Punkte) |
+| Quelle | `docs/offene-punkte.md`, Zeile `| NAK-97 |` — **wörtlich**, nicht meine Zusammenfassung |
+| Basis-SHA | `f50170486603566cfbbd59a8b7ad95e59e6b87a1` (Zweig `master`) |
+| Datum | 2026-08-29 |
+| Werkzeugeingriff | ausschließlich `tools/plan/planstand.py` |
+| Commit | `da1b04e9562a37d60de5e6a12ac393c3c9292085` |
+
+NAK-97 ist der Rest von NAK-96 in einer Datei, die der NAK-96-Auftrag nicht
+abdeckte — beide Punkte sind dieselben zwei Klassen (lesender git-Aufruf ohne
+`--no-optional-locks`; ein Urteilstext des Runners, den die Gegenseite nicht
+liest). Es wird zusammen mit NAK-96 geprüft.
+
+**Diese Datei bleibt lesbar:** Abschnitt 8 hängt hinter den Kanon-Abschnitten,
+zitiert aber **keine** `**Lauf:**`-Zeile im Klartext — genau die Falle aus
+**§5.1**. Gemessen in §8.4: `kanon_lesen()` liefert für diese Datei unverändert
+`Kanon 32/32 grün`. (`docs/beweise/NAK-96.md` ist selbst kein Beleg eines
+Planschritts; die Regel gilt trotzdem.)
+
+<a id="b81"></a>
+### 8.1 · Auftrag, wörtlich aus `docs/offene-punkte.md`
+
+> **Zwei Reste derselben Klassen wie NAK-96, in einer Datei, die der Auftrag
+> nicht abdeckte: `tools/plan/planstand.py`.** (1) `planstand.py:95` startet git
+> ohne `--no-optional-locks`; die Aufrufer sind `git log -1` und
+> **`git status --porcelain`** (Zeilen 247–254) — genau der Index-Refresh,
+> dessen liegengebliebene `.git/index.lock` NAK-96 (2) ausgelöst hat. Das
+> Skript läuft aus `tools/hooks/planstand.sh` und damit auf denselben
+> Lastpfaden wie das Cockpit. Fix: derselbe Schalter als erstes Argument vor
+> `-C`. (2) Die Regex `KANON` (`planstand.py:66`) verlangt `(\d+)/(\d+)\s*Kanon`;
+> der Runner schreibt diese Form nur im GRÜN-Fall
+> (`GRUEN - 30/32 Kanon-Laeufe bestanden`). Im ROT-Fall lautet der Text
+> `ROT - 1 von 32 Kanon-Laeufen fehlgeschlagen` — **ohne Schrägstrich**, die
+> Regex greift nicht, und der Planstand zeigt gar keine Kanon-Zahl statt einer
+> roten. […] Die Regex nennt `ROT` als Alternative, kann sie aber nie treffen;
+> entweder der Runner schreibt im ROT-Fall dieselbe `n/m`-Form, oder die Regex
+> fängt beide Wortlaute.
+
+<a id="b82"></a>
+### 8.2 · Umgesetzte Entscheidungen und die eigenen dazu
+
+| # | Entscheidung | Umsetzung |
+|---|---|---|
+| A | Beide Wortlaute liefern **dieselbe** Semantik `bestanden/gesamt`: GRÜN `n/m` → `Kanon n/m grün`; ROT `k von m fehlgeschlagen` → `Kanon (m−k)/m ROT`. Letzter Treffer in der Datei gewinnt. | `KANON` ist eine Alternation mit benannten Gruppen (`gruen_gut`/`gruen_ges` bzw. `rot_fehl`/`rot_ges`); `kanon_lesen()` nimmt den letzten Treffer aus `finditer` und rechnet im ROT-Zweig `ges − fehl`. Gemessen (a)–(c2) in §8.3. |
+| B | Kommentar über `KANON` nennt beide Wortlaute wörtlich samt Quelle. | Der Kommentar zitiert die beiden `$urteil`-Zeilen aus `tools/beweise.ps1` **Zeile 856** (GRÜN) und **845** (ROT); die Zeilennummern sind am heutigen Skript nachgeschlagen, nicht aus dem Gedächtnis. |
+| C | Kein Kanon-Lauf. | Kein Kanon-Bein fährt `tools/plan/planstand.py` — der Kanon prüft Plugin, Broker und Schemata. Ein Lauf hätte über diese Änderung nichts ausgesagt; der Beweis sind die Proben §8.3–§8.6. |
+
+**Eigene technische Entscheidungen innerhalb der Grenze**
+
+1. **Die beiden übrigen Urteilstexte bleiben ohne Treffer.** `tools/beweise.ps1`
+   schreibt vier Urteile, nicht zwei: neben GRÜN (856) und ROT (845) auch
+   `UNVOLLSTAENDIG - n gruen, k Voraussetzung(en) fehlen` (849) und
+   `NICHT BEGLAUBIGT - n/m gruen, aber Pruefbinaries sind aelter als die
+   Quellen` (853). Beide bleiben absichtlich unerfasst: dort hat der Runner die
+   Beglaubigung gerade **verweigert**, und eine Zeile `Kanon n/m grün` würde ein
+   bestandenes Ergebnis behaupten, das es nicht gibt. Fail-closed lieber keine
+   Zahl — dieselbe Regel, nach der der Kopf des Skripts eine fehlende
+   Urteilsmarke lieber untertreibt. Gemessen als (f1)/(f2) in §8.3.
+2. **`?` statt einer negativen Zahl.** Steht in einem Manifest mehr
+   Fehlschläge als Läufe, ist die Datei verdorben; `ges − fehl` wäre negativ.
+   `kanon_lesen()` schreibt dann `Kanon ?/m ROT` statt einer erfundenen Zahl.
+   Der Runner kann das nicht schreiben — deshalb steht die Behauptung nur so
+   weit, wie Probe (g) in §8.3 sie misst.
+3. **Die ROT-Alternative in `n/m`-Form fällt weg.** Die alte Regex hätte auch
+   ein `ROT - 3/5 Kanon` getroffen; die neue verlangt im ROT-Zweig `k von m`.
+   Gemessen, dass der Korpus keine solche Zeile enthält (§8.4), und der Runner
+   schreibt sie nicht. Eine dritte Alternative wäre eine Behauptung ohne
+   Messung.
+
+<a id="b83"></a>
+### 8.3 · Regex-Probe: beide Wortlaute, echte Manifeste, Grenzfälle
+
+Die Probe **importiert** `KANON` und `kanon_lesen` aus `tools/plan/planstand.py`
+und bildet sie nicht nach — eine nachgebaute Regex würde sich selbst prüfen.
+Die Zeilennummer im Kopf ist gemessen, nicht abgeschrieben.
+
+**Befehl:** `py -3.13 -c "$CODE" <tmp>`, `$CODE` = das Probenskript (lädt
+`tools/plan/planstand.py` über `importlib`) · **Datum:** 2026-08-29
+
+```text
+Regex KANON aus tools/plan/planstand.py, Zeile 85 (gemessen):
+    Urteil:\*\*\s*(?:GRUEN\s*[-—]+\s*(?P<gruen_gut>\d+)/(?P<gruen_ges>\d+)\s*Kanon|ROT\s*[-—]+\s*(?P<rot_fehl>\d+)\s+von\s+(?P<rot_ges>\d+)\s*Kanon)
+
+(a) GRUEN-Wortlaut des Runners (beweise.ps1 Zeile 856)
+    Urteilstext: GRUEN - 30/32 Kanon-Laeufe bestanden
+    kanon_lesen: 'Kanon 30/32 grün'
+    erwartet   : 'Kanon 30/32 grün'   OK
+(b) ROT-Wortlaut des Runners (beweise.ps1 Zeile 845)
+    Urteilstext: ROT - 1 von 32 Kanon-Laeufen fehlgeschlagen
+    kanon_lesen: 'Kanon 31/32 ROT'
+    erwartet   : 'Kanon 31/32 ROT'   OK
+(c) ROT nach GRUEN in derselben Datei - juengster Lauf gewinnt
+    kanon_lesen: 'Kanon 28/32 ROT'
+    erwartet   : 'Kanon 28/32 ROT'   OK
+(c2) GRUEN nach ROT - Gegenrichtung
+    kanon_lesen: 'Kanon 32/32 grün'
+    erwartet   : 'Kanon 32/32 grün'   OK
+(d) echtes Manifest docs/beweise/NAK-96.md
+    kanon_lesen: 'Kanon 32/32 grün'
+    erwartet   : 'Kanon 32/32 grün'   OK
+(e) echtes Manifest docs/beweise/lauf-2026-08-27-0322.md
+    kanon_lesen: 'Kanon 28/29 ROT'
+    erwartet   : 'Kanon 28/29 ROT'   OK
+(f1) UNVOLLSTAENDIG (beweise.ps1 Zeile 849) - absichtlich kein Treffer
+    Urteilstext: UNVOLLSTAENDIG - 30 gruen, 2 Voraussetzung(en) fehlen
+    kanon_lesen: ''
+    erwartet   : ''   OK
+(f2) NICHT BEGLAUBIGT (beweise.ps1 Zeile 853) - absichtlich kein Treffer
+    Urteilstext: NICHT BEGLAUBIGT - 32/32 gruen, aber Pruefbinaries sind aelter als die Quellen
+    kanon_lesen: ''
+    erwartet   : ''   OK
+(g) verdorbenes Manifest (mehr Fehlschlaege als Laeufe)
+    Urteilstext: ROT - 5 von 2 Kanon-Laeufen fehlgeschlagen
+    kanon_lesen: 'Kanon ?/2 ROT'
+    erwartet   : 'Kanon ?/2 ROT'   OK
+
+9 von 9 Proben OK
+```
+
+**Gemessen:** (a) GRÜN unverändert · (b) ROT wird jetzt gelesen · (c) ein ROT
+**nach** einem GRÜN gewinnt, (c2) ein GRÜN **nach** einem ROT ebenfalls — damit
+ist „letzter Treffer gewinnt" gemessen und nicht „ROT gewinnt immer" ·
+(d) das echte Manifest dieses Tickets bleibt bei `Kanon 32/32 grün` ·
+(e) `docs/beweise/lauf-2026-08-27-0322.md` ist das bestehende Manifest mit
+rotem Lauf (gesucht mit `grep -l` über `docs/beweise/*.md`) und liefert jetzt
+`Kanon 28/29 ROT` statt gar nichts · (f1)/(f2) die nicht beglaubigenden
+Urteilstexte bleiben ohne Zahl · (g) ein verdorbenes Manifest liefert `?`,
+keine negative Zahl.
+
+<a id="b84"></a>
+### 8.4 · Korpusprobe: alter gegen neuen Leser über alle Manifeste
+
+Beide Fassungen von `kanon_lesen()` laufen im selben Prozess über
+`docs/beweise/**/*.md` — der alte Leser kommt aus `git show HEAD:...`, nicht aus
+einer Kopie von Hand.
+
+**Befehl:** `py -3.13 -c "$CODE" <tmp>/planstand_alt.py` · **Datum:** 2026-08-29
+
+```text
+docs/beweise/G1.md                             alt='Kanon 28/28 grün'   neu='Kanon 28/28 grün'     
+docs/beweise/KONTEXT-INVENTUR-2026-08-21.md    alt='Kanon 15/15 grün'   neu='Kanon 15/15 grün'     
+docs/beweise/lauf-2026-08-27-0012.md           alt='Kanon 28/28 grün'   neu='Kanon 28/28 grün'     
+docs/beweise/lauf-2026-08-27-0322.md           alt=''                   neu='Kanon 28/29 ROT'     <-- GEAENDERT
+docs/beweise/lauf-2026-08-27-0326.md           alt='Kanon 29/29 grün'   neu='Kanon 29/29 grün'     
+docs/beweise/NAK-96.md                         alt='Kanon 32/32 grün'   neu='Kanon 32/32 grün'     
+docs/beweise/roh/NAK-96-2271df5-dirty-2.md     alt=''                   neu='Kanon 31/32 ROT'     <-- GEAENDERT
+docs/beweise/roh/NAK-96-2271df5-dirty.md       alt=''                   neu='Kanon 31/32 ROT'     <-- GEAENDERT
+docs/beweise/roh/NAK-96-8a1ea8a.md             alt=''                   neu='Kanon 31/32 ROT'     <-- GEAENDERT
+docs/beweise/roh/NAK-96-bruchprobe-2271df5-dirty.md alt=''                   neu='Kanon 31/32 ROT'     <-- GEAENDERT
+docs/beweise/roh/NAK-96-bruchprobe.md          alt=''                   neu='Kanon 31/32 ROT'     <-- GEAENDERT
+docs/beweise/roh/NAK-96-d993894.md             alt='Kanon 32/32 grün'   neu='Kanon 32/32 grün'     
+docs/beweise/S0-basislinie.md                  alt='Kanon 4/4 grün'     neu='Kanon 4/4 grün'       
+docs/beweise/SONDE-001-002.md                  alt='Kanon 5/5 grün'     neu='Kanon 5/5 grün'       
+docs/beweise/SONDE-003.md                      alt='Kanon 6/6 grün'     neu='Kanon 6/6 grün'       
+docs/beweise/SONDE-003b.md                     alt='Kanon 7/7 grün'     neu='Kanon 7/7 grün'       
+docs/beweise/SONDE-004.md                      alt='Kanon 18/18 grün'   neu='Kanon 18/18 grün'     
+docs/beweise/SONDE-004a.md                     alt='Kanon 5/5 grün'     neu='Kanon 5/5 grün'       
+docs/beweise/SONDE-005a.md                     alt='Kanon 29/29 grün'   neu='Kanon 29/29 grün'     
+docs/beweise/SONDE-005b.md                     alt='Kanon 29/29 grün'   neu='Kanon 29/29 grün'     
+docs/beweise/SONDE-006.md                      alt='Kanon 29/29 grün'   neu='Kanon 29/29 grün'     
+docs/beweise/SONDE-007a.md                     alt='Kanon 29/29 grün'   neu='Kanon 29/29 grün'     
+docs/beweise/SONDE-007b.md                     alt='Kanon 32/32 grün'   neu='Kanon 32/32 grün'     
+docs/beweise/SONDE-007c.md                     alt='Kanon 28/28 grün'   neu='Kanon 28/28 grün'     
+docs/beweise/SONDE-008.md                      alt='Kanon 28/28 grün'   neu='Kanon 28/28 grün'     
+docs/beweise/SONDE-009.md                      alt='Kanon 28/28 grün'   neu='Kanon 28/28 grün'     
+docs/beweise/SONDE-010.md                      alt='Kanon 32/32 grün'   neu='Kanon 32/32 grün'     
+
+27 Manifeste mit Kanon-Zahl, davon 6 geaendert
+```
+
+**Gemessen:** 27 Manifeste tragen eine Kanon-Zahl. Sechs ändern sich, und
+**jede** dieser sechs Änderungen geht von „gar keine Zahl" zu einer roten Zahl.
+Keine einzige grüne Zahl bewegt sich, keine Zahl verschwindet. Keines der sechs
+ist Beleg eines Planschritts (`lauf-*` und `roh/*`) — deshalb steht das
+erzeugte `docs/PLAN-STAND.md` unverändert (§8.6).
+
+<a id="b85"></a>
+### 8.5 · Bruchprobe (Prüfliste E): der Fix einmal zurückgenommen
+
+`tools/plan/planstand.py` wurde per `git show HEAD:tools/plan/planstand.py` auf
+den Stand `f501704` zurückgesetzt — der echte alte Stand, kein nachgebauter —,
+dieselbe Probe gefahren, danach aus der Sicherung zurückgeholt.
+
+**Rohausgabe des Rots:**
+
+```text
+Regex KANON aus tools/plan/planstand.py, Zeile 66 (gemessen):
+    Urteil:\*\*\s*(GRUEN|ROT)\s*[-—]+\s*(\d+)/(\d+)\s*Kanon
+
+(a) GRUEN-Wortlaut des Runners (beweise.ps1 Zeile 856)
+    Urteilstext: GRUEN - 30/32 Kanon-Laeufe bestanden
+    kanon_lesen: 'Kanon 30/32 grün'
+    erwartet   : 'Kanon 30/32 grün'   OK
+(b) ROT-Wortlaut des Runners (beweise.ps1 Zeile 845)
+    Urteilstext: ROT - 1 von 32 Kanon-Laeufen fehlgeschlagen
+    kanon_lesen: ''
+    erwartet   : 'Kanon 31/32 ROT'   FEHLER
+(c) ROT nach GRUEN in derselben Datei - juengster Lauf gewinnt
+    kanon_lesen: 'Kanon 32/32 grün'
+    erwartet   : 'Kanon 28/32 ROT'   FEHLER
+(c2) GRUEN nach ROT - Gegenrichtung
+    kanon_lesen: 'Kanon 32/32 grün'
+    erwartet   : 'Kanon 32/32 grün'   OK
+(d) echtes Manifest docs/beweise/NAK-96.md
+    kanon_lesen: 'Kanon 32/32 grün'
+    erwartet   : 'Kanon 32/32 grün'   OK
+(e) echtes Manifest docs/beweise/lauf-2026-08-27-0322.md
+    kanon_lesen: ''
+    erwartet   : 'Kanon 28/29 ROT'   FEHLER
+(f1) UNVOLLSTAENDIG (beweise.ps1 Zeile 849) - absichtlich kein Treffer
+    Urteilstext: UNVOLLSTAENDIG - 30 gruen, 2 Voraussetzung(en) fehlen
+    kanon_lesen: ''
+    erwartet   : ''   OK
+(f2) NICHT BEGLAUBIGT (beweise.ps1 Zeile 853) - absichtlich kein Treffer
+    Urteilstext: NICHT BEGLAUBIGT - 32/32 gruen, aber Pruefbinaries sind aelter als die Quellen
+    kanon_lesen: ''
+    erwartet   : ''   OK
+(g) verdorbenes Manifest (mehr Fehlschlaege als Laeufe)
+    Urteilstext: ROT - 5 von 2 Kanon-Laeufen fehlgeschlagen
+    kanon_lesen: ''
+    erwartet   : 'Kanon ?/2 ROT'   FEHLER
+
+5 von 9 Proben OK
+```
+
+**Gemessen:** ohne den Fix fallen genau (b), (c), (e) und (g). Der schärfste
+Fall ist **(c)**: eine Datei, deren jüngster Lauf ROT ist, meldet dem Planstand
+`Kanon 32/32 grün` — die alte Regex überspringt den roten Lauf und findet den
+älteren grünen. Nicht „keine Zahl", sondern eine **falsche grüne**. (a), (c2),
+(d), (f1) und (f2) bleiben auch gebrochen grün; sie sind Regressionswachen für
+das unveränderte GRÜN-Verhalten, kein Beleg für den Fix.
+
+Rücknahme des Bruchs gemessen: derselbe Probelauf steht in §8.3 wieder auf
+9/9, und der Umfang des committeten Fixes ist genau der, der vor dem Bruch
+gesichert wurde — keine Zeile mehr, keine weniger:
+
+```text
+$ git --no-optional-locks show --stat --oneline da1b04e -- tools/plan/planstand.py
+da1b04e NAK-97: planstand.py liest beide Kanon-Wortlaute, git-Aufruf mit --no-optional-locks
+
+ tools/plan/planstand.py | 59 ++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 54 insertions(+), 5 deletions(-)
+```
+
+<a id="b86"></a>
+### 8.6 · git-Probe: der Schalter steht im Aufruf, das Blatt bleibt gleich
+
+**Befehl und Rohausgabe** · **Datum:** 2026-08-29
+
+```text
+$ grep -n "subprocess.run" tools/plan/planstand.py     # einziger git-Aufruf des Skripts
+130:        return subprocess.run(["git", "--no-optional-locks", "-C", str(WURZEL), *args],
+
+$ grep -n "no-optional-locks" tools/plan/planstand.py tools/beweise.ps1 tools/dirigent/cockpit.ps1 | grep -v "#"     # nur echte Aufrufstellen
+tools/plan/planstand.py:121:    `--no-optional-locks` steht VOR `-C`, weil git globale Schalter vor dem
+tools/plan/planstand.py:130:        return subprocess.run(["git", "--no-optional-locks", "-C", str(WURZEL), *args],
+tools/beweise.ps1:36:    Lesende git-Aufrufe laufen mit --no-optional-locks (NAK-96): sonst frischt
+tools/beweise.ps1:182:    $r = Fuehre-Aus -Datei 'git' -Argumente (@('--no-optional-locks', '-C', $Wurzel) + $Argumente)
+tools/beweise.ps1:575:    $r = Fuehre-Aus -Datei 'git' -Argumente @('--no-optional-locks', '-C', $juceQuelle, 'describe', '--tags', '--always', '--dirty')
+tools/dirigent/cockpit.ps1:180:        return Invoke-TextProcess $gitPath "--no-optional-locks -C $(Quote-ProcessArgument $script:RepoRoot) $Arguments" $TimeoutSeconds
+
+$ py -3.13 tools/plan/planstand.py
+geschrieben: docs\PLAN-STAND.md (14 abgenommen, 5 gebaut, 38 gesamt, aus f501704)
+exit=0
+
+$ git --no-optional-locks diff --stat -- docs/PLAN-STAND.md
+ docs/PLAN-STAND.md | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+```
+
+`planstand.py` hat **genau einen** git-Aufruf (`subprocess.run`, Zeile 130); er
+bedient beide Aufrufer aus §8.1 (`git log -1` und `git status --porcelain`).
+Der Schalter steht als erstes Argument vor `-C`, wortgleich zu
+`tools/beweise.ps1:182` (`Git-Wert`) und `tools/dirigent/cockpit.ps1:180`
+(`Invoke-GitText`).
+
+Vergleich des **erzeugten** Blattes vor und nach dem Umbau — beide Läufe auf
+demselben Quellstand `f501704`:
+
+```text
+$ diff -u plan-stand-vorher.md plan-stand-nachher.md   # erzeugt vor / nach dem Umbau
+--- C:/Users/phili/.claude/jobs/7b187706/tmp/plan-stand-vorher.md	2026-08-29 14:28:05.165154300 +0200
++++ C:/Users/phili/.claude/jobs/7b187706/tmp/plan-stand-nachher.md	2026-08-29 14:32:36.734564900 +0200
+@@ -11,6 +11,9 @@
+ 
+ **Stand:** 2026-08-29 · Quellstand `f501704` · **14 von 38 abgenommen** · 5 gebaut · 19 offen
+ 
++> ⚠️ Gerechnet aus dem Arbeitsbaum: unter `docs/plan/`, `docs/beweise/`
++> oder `tools/plan/` liegen Änderungen, die noch nicht in `f501704` sind.
++
+ `███████████████▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░` 37 % abgenommen · 50 % gebaut
+ 
+ **Als Nächstes:** **Nacharbeit an G1** — der Prüfer hat einen Befund offen gelassen (docs/beweise/G1.md).
+diff-exit=1
+```
+
+**Gemessen:** identisch bis auf die Arbeitsbaum-Warnung, die genau deshalb
+erscheint, weil `tools/plan/` beim zweiten Lauf uncommittet geändert war —
+also der Beweis, dass die Warnung greift, und keine Abweichung im Inhalt. Der
+`quellstand` ist in beiden Läufen `f501704`. Keine neue Warnung auf stderr,
+Exit 0.
+
+**Was hier NICHT behauptet wird:** dass es keine liegengebliebene
+`.git/index.lock` mehr gibt — das ist an einem einzelnen Lauf nicht messbar
+(dieselbe Grenze wie NAK-96 §5.4). Behauptet und gemessen ist nur: der einzige
+lesende git-Aufruf dieses Skripts trägt den Schalter an der Stelle, an der git
+ihn liest.
+
+<a id="b87"></a>
+### 8.7 · Prüfliste `tools/dirigent/pruefliste.md` — wo gemessen
+
+| Klasse | Zutreffend? | Wo gemessen / warum nicht |
+|---|---|---|
+| **A** Rückstau und Prioritätsklassen | nein | Kein Puffer, keine Queue, keine Prioritätsklasse; geändert sind eine Regex, eine Lesefunktion und ein Argumentvektor. |
+| **B** Lebenszyklus | nein | Kein Verbinden/Trennen, kein Start/Stop, kein Thread. |
+| **C** Verträge und Längen | teilweise | Der Vertrag ist der Wortlaut der `**Lauf:**`-Zeile. Beide Formen sind gegen die **Quelle** geprüft (`tools/beweise.ps1` Zeile 845/856), nicht gegen eine Kopie; Grenzfälle (verdorbene Zahl, nicht beglaubigende Urteile) in **§8.3** (f1)(f2)(g). |
+| **D** Bau- und Prüfriegel | ja | Der Leser bleibt fail-closed: was der Runner nicht beglaubigt hat, bekommt weiterhin **keine** Zahl (§8.3 f1/f2) — er wird durch den Fix nicht redseliger, sondern nur an der einen Stelle ehrlich, wo bisher ein rotes Urteil unsichtbar war. Kein Kanon-Bein fährt diese Datei (§8.2 C), deshalb kein Lauf; die Beglaubigungslogik in `tools/beweise.ps1` ist unangetastet. |
+| **E** Behauptung ≤ Messung | ja | Jede Behauptung steht neben ihrer Rohausgabe (§8.3–§8.6). Der Fix wurde einmal absichtlich zurückgenommen, Rohausgabe des Rots liegt bei (**§8.5**). Über den Index-Lock wird nichts behauptet, was ein Lauf nicht zeigt (**§8.6**). Die Zeilennummer der Regex misst die Probe selbst; die Kanon-Zahlen kommen aus dem Korpus, nicht aus einer anderen Datei (**§8.4**). |
+| **F** Änderungssatz | ja | lesen↔schreiben im selben Commit: der Runner **schreibt** beide Urteilstexte, `planstand.py` **liest** ab jetzt beide — vorher war das Paar halb. Regex, Lesefunktion und der Kommentar, der die Quelle benennt, liegen in einem Commit (`da1b04e`); Manifest und Register folgen im zweiten. |
+
+<a id="b88"></a>
+### 8.8 · Was nicht erledigt ist
+
+- **Kein Kanon-Lauf gefahren** — begründet in §8.2 C. Die Urteilsmarke für
+  NAK-96 und NAK-97 setzt der Prüfer.
+- **Befund außerhalb der Ticketgrenze:** `KANON` steht durch den geforderten
+  Kommentar (Entscheid B) nicht mehr auf Zeile 66, sondern auf **Zeile 85**.
+  Der Kommentar in `tools/beweise.ps1:907` nennt „`tools/plan/planstand.py`
+  (KANON, Zeile 66)"; das Symbol `KANON` stimmt weiter, die Zahl nicht mehr.
+  `tools/beweise.ps1` ist ausdrücklich außerhalb dieses Auftrags, deshalb
+  unangetastet und als Nachtrag im Register festgehalten. Die „Zeile 66" in
+  **§3** und **§5.1** dieses Manifests bleibt richtig: sie beschreibt den Stand,
+  an dem NAK-96 gemessen hat.

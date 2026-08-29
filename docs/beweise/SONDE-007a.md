@@ -14283,3 +14283,32 @@ und dann gelöscht; kein anderer Pfad unter `%SystemRoot%` wurde angefasst.
 Nicht geschlossen: nichts aus diesem Auftrag. Außerhalb der Ticketgrenze
 bleiben NAK-89, NAK-93, NAK-98 und NAK-99 offen; die Urteilsmarken oben sind
 unverändert — sie setzt der Dirigent nach dem Prüfer.
+
+## Dirigentenstand — 2026-08-29 23:04 (Sitzung 054eedac): Prüfer 8 NEEDS_WORK, offen — Runde 8
+
+**Stand dieses Abschnitts:** `a94c33e`
+
+**Marke unverändert** (`T3 NEEDS_WORK 2026-08-28 nachgearbeitet`). Ticketbasis `dafa5a5`; Stand `a94c33e` (= origin/master); Kanon GRÜN 32/32 auf `5df7497` (Roh-Datei `docs/beweise/roh/SONDE-007a-5df7497.md`).
+
+| Schritt | Worker / Prüfer | Stand | Ergebnis |
+|---|---|---|---|
+| Runde 7 (+ NAK-94 Nacharbeit 2) | Opus/max `nakama-s8r7-nak94r2-fbbe9bf-bau`, ENG (Sitzung `5e3e0289…`, nach Halt an der Projekt-Ask-Regel `PowerShell(Remove-Item:*)` mit Kontext fortgesetzt; Probe-Dateien unter `%SystemRoot%` per `[System.IO.File]::Delete` entfernt, Test-Path = False belegt) | `69b4d20`…`a94c33e` | Systemdateien namentlich, K1b über alle Compiler-Eingaben, Exit 3 ohne Temp, Riegelkarte; Kanon GRÜN 32/32 auf `5df7497` |
+| Prüfer 8 | Codex xhigh `01a04f48-d1a8-75f2-9402-cd1c790d7c25`, lesend über `git diff dafa5a5...a94c33e`, HEAD vor/nach identisch | `a94c33e` | **NEEDS_WORK (3)** — unten wörtlich |
+
+**Befunde des achten Prüfers, wörtlich (Positionen `@ a94c33e`):**
+
+> **[P2] Bewahre rote Befunde vor dem Temp-Exit** — `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:3030-3032`. Wenn kein schreibbares Temp-Verzeichnis verfügbar ist und zuvor bereits ein Identitätsbefund registriert wurde, gibt dieser frühe Rückweg trotzdem 3 zurück; ein lesender Repro mit einer zusätzlichen roten K1b-Eingabe druckte `FEHLER`, endete aber mit `AUDIT_RETURN=3`. Das widerspricht F14, wonach ein echter Identitätsbefund gewinnen und Exit 2 ergeben muss (`docs/beweise/SONDE-007a.md:12631`); werte daher vor dem Voraussetzung-Exit die bereits gesammelten Fehler aus.
+>
+> **[P2] Erzeuge die R6-3-Warnung deterministisch** — `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:2243-2244`. Wenn Git in allen zwölf Wegwerf-Repos keine Attributwarnung ausgibt, bleibt `err` leer und R6-3a/R6-3b fallen trotz korrekter Streamtrennung; der Nacharbeitsbeleg bestätigt bereits warnungsfreie identische Läufe (`docs/beweise/SONDE-007a.md:14089-14101`). Die Wiederholung reduziert somit nur die Flackerwahrscheinlichkeit und erfüllt die verlangte deterministische Behebung nicht; erzeuge den Exit-0/stderr-Fall kontrolliert statt ihn probabilistisch abzuwarten.
+>
+> **[P2] Belege die Namen der System-Erlaubnisliste roh** — `docs/beweise/SONDE-007a.md:13958-13959`. Für die Freischaltung dieser beiden Pfade verweist der Abschnitt auf P5-W5b, dessen eingefügte Ausgabe aber nur `ohne Uebersetzungsstoff 3` und keinen der beiden Dateinamen zeigt (`docs/beweise/SONDE-007a.md:12975`); der aktuelle Kanon misst sogar `Windows-System 0`. Damit ist die verlangte Ableitung der Namensliste aus einer Messung nicht durch Rohausgabe nachvollziehbar und verletzt die harte Beweisregel im Manifest (`docs/beweise/SONDE-007a.md:30-32`); füge die betreffenden Tlog-Zeilen samt Stand und Befehl ein oder miss die Liste erneut.
+
+**Einordnung und Regeln des Dirigenten** (jeder Befund an der Quelle nachgelesen: `return 3` ohne Auswertung gesammelter Fehler @ `a94c33e` Z. 3024–3032; zwölf Versuche @ Z. 2242–2255; `SYSTEMDATEIEN` mit zwei Namen, Kanon `Windows-System 0`, W5b-Ausgabe ohne Dateinamen):
+
+1. **Defekt, mittel (Matrix F14).** Der Sollindex-Temp-Fall ist eine Voraussetzung wie `--nur-messen`; für ihn gilt dieselbe Zeile: ein bereits registrierter Identitätsbefund gewinnt → **Exit 2**, der Klartext „VORAUSSETZUNG: …" bleibt zusätzlich stehen. Jeder `return 3` im Bein wertet vorher die gesammelten Fehler aus. Probe: rote K1b-Eingabe **und** `tempfile.tempdir` auf ein nicht existierendes Verzeichnis → Exit 2 mit FEHLER- und VORAUSSETZUNG-Zeile; einmal gebrochen, zurückgenommen. Die Matrix bekommt eine Zeile **F15** (Sollindex-Temp fehlt) mit genau dieser Zusage.
+2. **Lücke → Regel.** Weder Matrix noch Prüfliste verlangen Determinismus einer Selbsttest-Wache; ab jetzt gilt: eine Wache, deren Voraussetzung nur probabilistisch eintritt, ist kein Beleg. Der Fall „Exit 0 und Warnung auf stderr" wird **kontrolliert erzeugt** (Technik wählt der Worker: ein git-Aufruf, der die Attribute nachweislich in jedem Lauf liest — z. B. `check-attr`, `add --renormalize -n`, `diff` nach `update-index --really-refresh` — oder ein anderer deterministischer stderr-Erzeuger bei Exit 0; die Wache misst die Streamtrennung des `_git`-Wrappers, nicht eine bestimmte git-Warnung) und gilt erst als Wache, wenn **20/20** Läufe die Voraussetzung treffen — Rohausgabe der 20 Läufe im Manifest. Die Schleife über zwölf Versuche entfällt.
+3. **Defekt, mittel (Manifest §2 „Behauptung ohne eingefügte Rohausgabe ist ein gescheitertes Ticket", Prüfliste E).** `SYSTEMDATEIEN` enthält ausschließlich Namen, die in einer **im Manifest eingefügten** `CL.read.1.tlog`-Rohausgabe (Stand + Befehl) unter `%SystemRoot%` stehen. Der Worker versucht den Diagnosefall einmal ernsthaft zu reproduzieren (Wegwerf-Übersetzungseinheit mit `#pragma message` bzw. einer Warnung, die nicht unter `/WX` fällt — nur als Probe, nie committet): erscheinen `tzres.dll`/`sortdefault.nls` im Tlog → Rohzeilen ins Manifest, Liste bleibt; erscheint nichts → Liste ist **leer** (die gemessene Menge), der Kommentar beschreibt den Nachtrag-Weg (gemessene Tlog-Zeile ins Manifest, dann Name in die Liste), und die Behauptung in `tools/beweise.ps1` und im Skriptkopf sagt dann: keine namentlich erlaubte Systemdatei, jede Datei unter `%SystemRoot%` ist ROT. Fail-closed geht vor Bequemlichkeit (Prüfliste D).
+
+**Nächster Schritt:** ein Nacharbeits-Worker für S8 Runde 8 **und** NAK-94 Nacharbeit 3 (siehe `docs/beweise/SONDE-007c.md`, „Dirigentenstand NAK-94 — Prüfer 3"), gemeinsamer Kanon auf dem Endstand, dann Prüfer 9 (xhigh) für S8 und Prüfer 4 (high) für NAK-94 — je frischer Thread über den vollen Ticketbereich. Kein Halt: technische Befunde, keine Produktfrage.
+
+**Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99.

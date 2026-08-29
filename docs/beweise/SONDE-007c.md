@@ -17047,3 +17047,18 @@ Der gemeinsame Kanonlauf dieser Runde steht in `docs/beweise/SONDE-007a.md`
 unter „SONDE-007a Runde 7 + NAK-94 Nacharbeit 2 - Abschluss": **GRÜN, 32/32**,
 Exit 0 auf dem Stand `5df7497`, Rohausgabe
 `docs/beweise/roh/SONDE-007a-5df7497.md` (Bein `A17`).
+
+## Dirigentenstand NAK-94 — 2026-08-29 23:04 (Sitzung 054eedac): Prüfer 3 NEEDS_WORK, offen — Nacharbeit 3
+
+**Stand dieses Abschnitts:** `a94c33e`
+
+**Nacharbeit 2:** Opus/max `nakama-s8r7-nak94r2-fbbe9bf-bau` (gemeinsam mit S8 Runde 7), Commit `cb99ba0`; Kanon GRÜN 32/32 auf `5df7497` (Roh-Datei `docs/beweise/roh/SONDE-007a-5df7497.md`, Bein A17).
+**Prüfer 3:** Codex high `01a04f48-dacb-7f02-8aaf-f7daff67d620`, lesend über `git diff da62dec...a94c33e`, HEAD vor/nach identisch — **NEEDS_WORK (1)**, wörtlich (`@ a94c33e`):
+
+> **[P2] Werte RUECKWEG vor der Eintragsliste aus** — `tools/eq-copilot/pruefe_installer_manifest.py:1316-1319`. Bei einem regulär abgeschlossenen `Install-Nakama.ps1 -Rueckweg` schreibt der Installer den Status `RUECKWEG` ohne `eintraege` (`Install-Nakama.ps1:856-864`). Hier wird jedoch zuerst die Liste verlangt, sodass `[4b]` nur `install-ergebnis.json fuehrt keine Liste 'eintraege'` meldet statt des zugesagten artefaktweisen Hinweises `Journalstatus RUECKWEG`; die `[3b]`-Probe übersieht das, weil sie für `RUECKWEG` künstlich eine Eintragsliste beibehält. Das widerspricht der Runner-Behauptung und Prüfliste E; prüfe Nicht-OK-Status vor der Eintragsliste und ergänze eine Probe in der tatsächlichen Writer-Form.
+
+**Einordnung:** Defekt, mittel — an der Quelle bestätigt: `_installierter_stand()` verlangt `eintraege` (Z. 1316–1319 @ `a94c33e`) **vor** der Statussperre (`if status != ERGEBNIS_STATUS_OK`), und `Install-Nakama.ps1` schreibt beim Rückweg `status = 'RUECKWEG'` ohne `eintraege` (Z. 856–864 @ `a94c33e`). Kein falsches `ok`, aber die Regel aus Nacharbeit 2 („jeder andere Status → `hinweis <name>: installierter Stand unbekannt (Journalstatus <status>)`") und die A17-Behauptung gelten damit für das reale Rückweg-Journal nicht (Prüfliste E: Behauptung > Messung).
+
+**Regel des Dirigenten (Nacharbeit 3):** Die Statussperre steht unmittelbar nach der Schema-Prüfung und **vor** jeder Verwendung von `eintraege`; bei jedem Status ≠ `OK` wird je Manifest-Artefakt der Hinweis „installierter Stand unbekannt (Journalstatus <status>)" ausgegeben und die Funktion endet ohne Hashvergleich — ob eine Eintragsliste vorliegt, ist dann unerheblich. Die Liste `eintraege` wird nur im Status-OK-Pfad verlangt. Proben in `[3b]`: (a) Journal in der **exakten Writer-Form** des Rückwegs aus `Install-Nakama.ps1` (`status = 'RUECKWEG'`, `transaktions_id`, `erzwungen`, `warnungen`, `getan`, `zeit`, **ohne** `eintraege`) → Hinweis „Journalstatus RUECKWEG", kein `ok`, keine „keine Liste"-Zeile; (b) dieselbe Form mit `RUECKWEG_AKTIV` (Writer-Form aus dem Skript ablesen); (c) Status OK ohne `eintraege` → weiterhin die „keine Liste"-Zeile (das ist dort die richtige Aussage). Jede neue Probe einmal gebrochen und zurückgenommen, mit Rohausgabe. Die A17-Behauptung in `tools/beweise.ps1` und der Skriptkopf nennen die Reihenfolge „Status vor Liste".
+
+**Nächster Schritt:** Nacharbeit 3 im selben Worker wie S8 Runde 8 (siehe `docs/beweise/SONDE-007a.md`, „Dirigentenstand … Prüfer 8"), gemeinsamer Kanon, danach Prüfer 4 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.

@@ -370,7 +370,16 @@ $kanon = @(
     # NACHGERECHNET, Viercodes und CIDs duerfen nirgends stehen. Das Bein
     # traegt seine Gegenprobe im Lauf: jede Regel muss an einem absichtlich
     # verdorbenen Manifest FALLEN, sonst prueft sie nichts (S8-Lehre).
-    [pscustomobject]@{ Kuerzel='A17'; Name='pruefe_installer_manifest.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Installer-Manifest: keine zweite Identitaet (kein Viercode, keine Class-ID), jeder Quellpfad ist der aus Ziel + Identitaetsdatei nachgerechnete BUNDLE-ORDNER, `art` ist eine geschlossene Menge, jedes Ziel genau einmal, Broker aus dem Crate-Namen, Zielverzeichnisse geschuetzt, Signaturzeile behauptet keine Pruefung ohne Mittel, Rueckweg samt NAK-41-Riegel und hash_art vollstaendig; jede Regel faellt an einem verdorbenen Manifest; Ordner-Hash v1 bytegleich in Python und PowerShell, Nicht-ASCII bricht beide Haelften ab.' }
+    #
+    # NAK-94 (29.08.2026): der Hash-Vergleich in [4] ist im KANON kein Riegel
+    # mehr. Seit A14 den Kern vor jeder Messung neu baut, linkt der naechste
+    # -Bauen-Lauf beide Bundles neu; ihre Bytes aendern sich ohne jede
+    # Quelltextaenderung, und A17 waere von da an dauerhaft rot. Ein Riegel,
+    # der immer faellt, unterscheidet nichts. Hart bleibt der Vergleich dort,
+    # wo der Hash wirklich eine Auslieferung bezeugt: mit --release und im
+    # Installer (Riegel 2 'Echtheit'). Der Kanon ruft A17 deshalb OHNE
+    # --release; was er misst, sagt die Behauptung unten - nicht mehr.
+    [pscustomobject]@{ Kuerzel='A17'; Name='pruefe_installer_manifest.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Installer-Manifest: keine zweite Identitaet (kein Viercode, keine Class-ID), jeder Quellpfad ist der aus Ziel + Identitaetsdatei nachgerechnete BUNDLE-ORDNER, `art` ist eine geschlossene Menge, jedes Ziel genau einmal, Broker aus dem Crate-Namen, Zielverzeichnisse geschuetzt, Signaturzeile behauptet keine Pruefung ohne Mittel, Rueckweg samt NAK-41-Riegel und hash_art vollstaendig; jede Regel faellt an einem verdorbenen Manifest; Ordner-Hash v1 bytegleich in Python und PowerShell, Nicht-ASCII bricht beide Haelften ab. Zum Auslieferungsstand sagt dieser Kanon-Lauf NICHT, dass der Bau dem festgeschriebenen Paket gleicht (nach einem Relink tut er das erwartungsgemaess nicht) - hart gemessen wird hier nur, dass jedes festgeschriebene Artefakt UEBERHAUPT vorliegt und sein Ordner-Hash bildbar ist; eine Hash-Abweichung erscheint als Hinweis mit beiden Kurz-Hashes, und [4b] berichtet ohne Urteil, ob der installierte Stand aus install-ergebnis.json dem Manifest entspricht. Hart verglichen wird der Hash nur mit --release (Auslieferungsschritt, hier nicht aufgerufen) und in Install-Nakama.ps1 Riegel 2 (NAK-94).' }
 
     # S9-Nacharbeit 23.08.2026: die ZWEITE Haelfte des Gegenpfades. S9 hatte
     # sie geschrieben, aber nie ausgefuehrt (T2 §5.9: "Weder installiert noch

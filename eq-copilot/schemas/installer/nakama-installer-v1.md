@@ -26,7 +26,7 @@
 | `eq-copilot/install/nakama-installer-v1.json` | die Auslieferung selbst (versioniert) |
 | `eq-copilot/install/Install-Nakama.ps1` | der einzige Ausführende (versioniert) |
 | `eq-copilot/install/NakamaOrdnerHash.ps1` | der Ordner-Hash für PowerShell — **eine** Funktion, zwei Aufrufer (versioniert) |
-| `tools/eq-copilot/pruefe_installer_manifest.py` | Kanon-Bein **A17** + Release-Schritt `--hashen` + die Python-Hälfte des Ordner-Hashes |
+| `tools/eq-copilot/pruefe_installer_manifest.py` | Kanon-Bein **A17** + Auslieferungsprüfung `--release` + Release-Schritt `--hashen` + die Python-Hälfte des Ordner-Hashes |
 | `tools/eq-copilot/pruefe_installer_gegenpfad.py` | Kanon-Bein **A18** — fährt den Gegenpfad in einer Sandbox (§5, installiert nichts) |
 | `eq-copilot/install/install-ergebnis.json` | Ergebnis des letzten Laufs (Maschinenartefakt, nicht versioniert) |
 | `eq-copilot/install/rueckweg/` | die gesicherten Vorgängerstände (Maschinenartefakt) |
@@ -248,14 +248,38 @@ Identitätsleser (`cmake/NakamaIdentitaet.cmake`), aus demselben Grund: eine
 Auslieferung, die nirgends eingefroren ist, kann niemand nachprüfen.
 
 `null` ist deshalb kein Mangel, sondern der ehrliche Normalfall **zwischen**
-zwei Releases. A17 meldet ihn als Hinweis, nicht als Fehler, und sagt dazu, dass
-das Paket in diesem Zustand nicht installierbar ist.
+zwei Releases. A17 meldet ihn im Kanon als Hinweis, nicht als Fehler, und sagt
+dazu, dass das Paket in diesem Zustand nicht installierbar ist; unter
+`--release` ist derselbe Zustand ein Fehler, denn dort wird ausgeliefert.
 
 Gefüllt wird ausschließlich per
 `py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --hashen`, unmittelbar
 nach einem grünen Kanon-Lauf. Fehlt dabei auch nur ein Artefakt, schreibt der
 Schritt gar nichts: ein halb gefülltes Manifest wäre eine Auslieferung, die nur
 zur Hälfte eingefroren ist.
+
+### 3.1 Drei Härtegrade für denselben Hash (NAK-94, 29.08.2026)
+
+Ein grüner Kanon-Lauf sagt seit NAK-94 **nicht** mehr, dass der gebaute Stand
+dem festgeschriebenen gleicht. Der Grund ist mechanisch: der Kanon baut den
+Kern vor jeder Messung neu, der Linker erzeugt dabei andere Bundlebytes auch
+ohne jede Quelltextänderung — ein Riegel, der danach immer fällt, unterscheidet
+nichts mehr. Dieselbe Zahl beantwortet je nach Aufrufer eine andere Frage:
+
+| Aufrufer | Frage | Abweichung |
+|---|---|---|
+| A17 im Kanon (ohne Flag) | welcher Bau liegt gerade da? | Hinweis mit beiden Kurz-Hashes |
+| A17 `--release` | frieren wir genau diesen Stand ein? | **Fehler**, Exit 2 |
+| `Install-Nakama.ps1` Riegel 2 | darf das kopiert werden? | **Abbruch**, bevor irgendetwas kopiert wird |
+
+Nicht weich wird in **keinem** Modus: ein festgeschriebenes Artefakt, das gar
+nicht vorliegt, und ein Ordner-Hash, der sich nicht bilden lässt. Beides kann
+ein Relink nicht verursachen.
+
+Zusätzlich berichtet A17 in `[4b]`, ob der **installierte** Stand aus
+`install-ergebnis.json` dem heutigen Manifest entspricht. Dieser Block urteilt
+nie: Installieren ist ein bewusster Admin-Handgriff des Users, kein Bestandteil
+eines Kanonlaufs.
 
 ## 4. Warum der Broker unter `Program Files` liegt
 

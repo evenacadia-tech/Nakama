@@ -37,9 +37,41 @@ DIE GEGENPROBE (S8-Lehre, Manifest SONDE-007a):
   ein zweites Mal gegen ein ABSICHTLICH verdorbenes Manifest im Speicher. Wer
   dort gruen bliebe, prueft nichts.
 
+DREI HAERTEGRADE FUER DENSELBEN HASH (NAK-94, 29.08.2026)
+
+  Der `sha256` eines Artefakts beantwortet je nach Aufrufer eine ANDERE Frage,
+  und darum darf eine Abweichung nicht ueberall dasselbe bedeuten:
+
+    Kanon (ohne Flag)   "welcher Bau liegt gerade da?"
+                        Eine Abweichung ist ein HINWEIS. Ein Relink aendert
+                        die Bundlebytes auch ohne Quelltextaenderung - seit
+                        A14 den Kern vor jeder Messung neu baut, ist das der
+                        Normalfall. Rot waere hier eine Dauerwarnung, die
+                        nichts mehr unterscheidet.
+
+    --release           "frieren wir genau diesen Stand ein?"
+                        HART. Abweichung, fehlende Hashes oder ein fehlendes
+                        Artefakt = Exit 2. Das ist der Auslieferungsschritt;
+                        wer hier gruen ist, darf `--hashen` und danach
+                        installieren.
+
+    Install-Nakama.ps1  "darf das kopiert werden?"
+                        HART und unveraendert (Riegel 2 'Echtheit'): jede
+                        Quelle wird gegen den Manifest-Hash geprueft, bevor
+                        irgendetwas das Zielverzeichnis anfasst.
+
+  Was in KEINEM Modus weich wird: ein fehlendes Artefakt und ein nicht
+  bildbarer Ordner-Hash. Beides kann ein Relink nicht verursachen - dort bleibt
+  der Riegel fail-closed (Pruefliste D).
+
+  [4b] berichtet zusaetzlich, ob der INSTALLIERTE Stand (install-ergebnis.json)
+  dem heutigen Manifest entspricht. Dieser Block urteilt nie: installieren ist
+  ein bewusster Admin-Handgriff des Users und keine Zusage des Kanons.
+
 Aufrufe:
   py -3.13 tools/eq-copilot/pruefe_installer_manifest.py            # Kanon
-  py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --hashen   # Release
+  py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --release  # Auslieferung
+  py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --hashen   # festschreiben
 """
 
 from __future__ import annotations
@@ -59,12 +91,14 @@ from datetime import datetime, timezone
 
 WURZEL = pathlib.Path(__file__).resolve().parents[2]
 MANIFEST = WURZEL / "eq-copilot" / "install" / "nakama-installer-v1.json"
+INSTALL_ERGEBNIS = WURZEL / "eq-copilot" / "install" / "install-ergebnis.json"
 IDENTITAET = WURZEL / "eq-copilot" / "identity" / "plugin-identities-v1.json"
 BROKER_CARGO = WURZEL / "broker" / "Cargo.toml"
 PS_ORDNERHASH = WURZEL / "eq-copilot" / "install" / "NakamaOrdnerHash.ps1"
 STATE_CPP = WURZEL / "eq-copilot" / "plugin" / "state" / "NakamaState.cpp"
 
 SCHEMA = "nakama.installer/v1"
+ERGEBNIS_SCHEMA = "nakama.install-ergebnis/v1"
 HEX64 = re.compile(r"^[0-9A-F]{64}$")
 THUMBPRINT = re.compile(r"^(?:[0-9A-F]{40}|[0-9A-F]{64})$")
 ARTEN = ("vst3", "broker")
@@ -974,10 +1008,153 @@ def kreuzprobe() -> None:
                f"Exit {nicht_ascii.returncode}")
 
 
+# ── [4] Auslieferungsstand und [4b] installierter Stand (NAK-94) ───────────
+
+
+def _artefakt_name(eintrag: dict) -> str:
+    """Dieselbe Identitaet auf beiden Seiten: die Ziel-ID, wo es eine gibt,
+    sonst der Name. Der Broker hat keine Ziel-ID (er ist kein Plugin-Ziel der
+    Identitaetsdatei), und das Installationsjournal schreibt fuer ihn
+    `ziel_id: null` - beide Seiten landen darum auf `eqcop-broker.exe`."""
+    return eintrag.get("ziel_id") or eintrag.get("name") or "<ohne Kennung>"
+
+
+def auslieferungsstand(manifest: dict, hart: bool) -> None:
+    """Gebautes Artefakt gegen den festgeschriebenen Hash.
+
+    `hart` (nur bei --release) macht aus einer Abweichung einen Fehler. Im
+    Kanon ist sie ein Hinweis: nach einem Relink MUSS sie auftreten, und ein
+    Riegel, der immer rot ist, unterscheidet nichts mehr (NAK-94)."""
+    print("\n[4] Auslieferungsstand"
+          + ("  - HART (--release: das hier ist die Auslieferung)" if hart
+             else "  - Kanon: eine Abweichung ist ein Hinweis, kein Fehler"))
+    offen = [_artefakt_name(a) for a in manifest["artefakte"] if a.get("sha256") is None]
+    if offen:
+        text = f"nicht ausgeliefert - {len(offen)} Artefakt(e) ohne Hash: {', '.join(offen)}"
+        if hart:
+            # Unter --release ist ein Manifest ohne Hashes kein Zwischenstand,
+            # sondern ein Paket, das der Installer sofort abweisen wuerde. Gruen
+            # zu melden hiesse, eine Auslieferung zu bescheinigen, die es nicht
+            # gibt.
+            pruefe(False, text)
+        else:
+            # KEIN Fehler: ein Manifest ohne Hashes ist der ehrliche Normalfall
+            # zwischen zwei Releases. Es ist nur nicht ausliefer-BAR, und genau
+            # das steht hier - statt still gruen zu sein.
+            print("  hinweis " + text)
+        print("          Install-Nakama.ps1 bricht in diesem Zustand ab (hashes_null_bedeutet).")
+        return
+
+    for a in manifest["artefakte"]:
+        pfad = WURZEL / a["quelle"]
+        art = a.get("art")
+        name = _artefakt_name(a)
+        # Fehlendes Artefakt und nicht bildbarer Ordner-Hash bleiben in BEIDEN
+        # Modi Fehler: ein Relink aendert Bytes, er laesst kein Bundle
+        # verschwinden. Was der Relink nicht verursachen kann, bleibt
+        # fail-closed (Pruefliste D).
+        if art not in ARTEN or not artefakt_liegt_vor(pfad, art):
+            pruefe(False, f"{name}: das festgeschriebene Artefakt liegt nicht vor", a["quelle"])
+            continue
+        try:
+            ist = artefakt_hash(pfad, art)
+        except OrdnerHashFehler as e:
+            pruefe(False, f"{name}: Ordner-Hash nicht bildbar", str(e))
+            continue
+        if ist == a["sha256"]:
+            pruefe(True, f"{name}: gebautes Artefakt stimmt mit dem festgeschriebenen Hash",
+                   a["sha256"][:16])
+        elif hart:
+            pruefe(False, f"{name}: gebautes Artefakt stimmt mit dem festgeschriebenen Hash",
+                   f"Manifest {a['sha256'][:16]} | gebaut {ist[:16]}")
+        else:
+            print(f"  hinweis {name}: Bau weicht vom festgeschriebenen Paket ab "
+                  f"(nach Relink erwartet; vor einer Auslieferung --hashen)"
+                  f"  [Manifest {a['sha256'][:16]} | gebaut {ist[:16]}]")
+
+
+def installierter_stand(manifest: dict) -> None:
+    """Entspricht der INSTALLIERTE Stand dem heutigen Manifest?
+
+    Reiner Bericht. Dieser Block erzeugt nie einen Fehler: Installieren ist ein
+    bewusster Admin-Handgriff des Users, kein Bestandteil eines Kanonlaufs. Ein
+    Rechner ohne Installation ist kein defekter Rechner - er hat nur nicht
+    installiert, und genau das steht dann hier.
+
+    Gelesen wird `install-ergebnis.json`, das Install-Nakama.ps1 nach jedem
+    Zug schreibt. Sein `eintraege[].sha256` ist nicht bloss eine Absicht: das
+    Skript prueft nach dem Kopieren den Zielstand gegen genau diesen Wert und
+    bricht sonst ab. Der Eintrag sagt also, was WIRKLICH liegt."""
+    print("\n[4b] Installierter Stand  - Bericht, kein Urteil")
+
+    if not INSTALL_ERGEBNIS.is_file():
+        print("  hinweis nichts installiert - install-ergebnis.json liegt nicht vor "
+              f"({INSTALL_ERGEBNIS.relative_to(WURZEL).as_posix()})")
+        return
+    try:
+        journal = json.loads(INSTALL_ERGEBNIS.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        print(f"  hinweis install-ergebnis.json nicht lesbar: {e}")
+        return
+    if not isinstance(journal, dict) or journal.get("schema") != ERGEBNIS_SCHEMA:
+        print(f"  hinweis install-ergebnis.json traegt nicht {ERGEBNIS_SCHEMA} "
+              f"(gelesen: {journal.get('schema') if isinstance(journal, dict) else type(journal).__name__!r})")
+        return
+
+    eintraege = journal.get("eintraege")
+    if not isinstance(eintraege, list):
+        print("  hinweis install-ergebnis.json fuehrt keine Liste 'eintraege'")
+        return
+    print(f"  Journal: status={journal.get('status')!r}  zeit={journal.get('zeit')!r}")
+
+    nach_kennung: dict[str, list[dict]] = {}
+    for e in eintraege:
+        if isinstance(e, dict):
+            nach_kennung.setdefault(_artefakt_name(e), []).append(e)
+
+    for a in manifest["artefakte"]:
+        name = _artefakt_name(a)
+        soll = a.get("sha256")
+        treffer = nach_kennung.get(name, [])
+        if not treffer:
+            print(f"  hinweis {name}: nicht installiert - kein Eintrag im Journal")
+            continue
+        if len(treffer) > 1:
+            print(f"  hinweis {name}: {len(treffer)} Journaleintraege mit derselben Kennung "
+                  "- der erste wird berichtet")
+        e = treffer[0]
+        if e.get("rollback_abgeschlossen") is True:
+            print(f"  hinweis {name}: zurueckgerollt - der Vorzustand liegt, nicht dieses Paket")
+            continue
+        if e.get("mutation_abgeschlossen") is not True:
+            print(f"  hinweis {name}: Installation nicht abgeschlossen "
+                  f"(mutation_begonnen={e.get('mutation_begonnen')!r})")
+            continue
+        ist = str(e.get("sha256") or "").upper()
+        if not HEX64.match(ist):
+            print(f"  hinweis {name}: Journaleintrag traegt keinen SHA-256 ({e.get('sha256')!r})")
+            continue
+        if not isinstance(soll, str) or not HEX64.match(soll):
+            print(f"  hinweis {name}: das Manifest hat keinen Hash - der installierte Stand "
+                  f"({ist[:16]}) laesst sich mit nichts vergleichen")
+            continue
+        ziel = e.get("ziel") or "?"
+        if ist == soll:
+            print(f"  ok      {name}: installierter Stand = Manifest  [{soll[:16]}]  {ziel}")
+        else:
+            print(f"  hinweis {name}: installierter Stand ist ein anderer als der im Manifest "
+                  f"festgeschriebene  [installiert {ist[:16]} | Manifest {soll[:16]}]  {ziel}")
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--hashen", action="store_true",
+    g = p.add_mutually_exclusive_group()
+    g.add_argument("--hashen", action="store_true",
                    help="Release-Schritt: sha256 aus den gebauten Artefakten festschreiben")
+    g.add_argument("--release", action="store_true",
+                   help="Auslieferungsschritt: [4] vergleicht HART gegen die festgeschriebenen "
+                        "Hashes (Exit 2 bei Abweichung). Ohne dieses Flag ist eine Abweichung "
+                        "ein Hinweis - nach einem Relink ist sie der Normalfall (NAK-94).")
     args = p.parse_args()
 
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
@@ -1024,29 +1201,8 @@ def main() -> int:
 
     adversariale_strukturproben(manifest, identitaet)
 
-    print("\n[4] Auslieferungsstand")
-    offen = [a.get("ziel_id") or a.get("name") for a in manifest["artefakte"] if a.get("sha256") is None]
-    if offen:
-        # KEIN Fehler: ein Manifest ohne Hashes ist der ehrliche Normalfall
-        # zwischen zwei Releases. Es ist nur nicht ausliefer-BAR, und genau
-        # das steht hier - statt still gruen zu sein.
-        print(f"  hinweis nicht ausgeliefert - {len(offen)} Artefakt(e) ohne Hash: {', '.join(offen)}")
-        print("          Install-Nakama.ps1 bricht in diesem Zustand ab (hashes_null_bedeutet).")
-    else:
-        for a in manifest["artefakte"]:
-            pfad = WURZEL / a["quelle"]
-            art = a.get("art")
-            name = a.get("ziel_id") or a.get("name")
-            if art not in ARTEN or not artefakt_liegt_vor(pfad, art):
-                pruefe(False, f"{name}: das festgeschriebene Artefakt liegt nicht vor", a["quelle"])
-                continue
-            try:
-                ist = artefakt_hash(pfad, art)
-            except OrdnerHashFehler as e:
-                pruefe(False, f"{name}: Ordner-Hash nicht bildbar", str(e))
-                continue
-            pruefe(ist == a["sha256"],
-                   f"{name}: gebautes Artefakt stimmt mit dem festgeschriebenen Hash", a["sha256"][:16])
+    auslieferungsstand(manifest, hart=args.release)
+    installierter_stand(manifest)
 
     kreuzprobe()
 

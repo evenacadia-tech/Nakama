@@ -120,6 +120,18 @@ fällt Auto still auf Manual zurück, gilt das als fehlende Fähigkeit → Halt.
 Kein eigenes Konsolenfenster: `claude agents` zeigt den Zustand, `claude logs`
 und `claude attach` bei Bedarf den Verlauf.
 
+**Spezifikation vor Code (seit 29.08.2026).** Berührt das Ticket
+Nebenläufigkeit, Verträge, Lebenszyklen oder Rückstau, schreibt der Worker
+zuerst eine **Verhaltensmatrix** ins Ticketmanifest — Zustände × Ereignisse ×
+Zusage, Callback-Reihenfolge, Fristen, je Zeile der Test, der sie misst — und
+ein lesender Codex-Thread (`high`) prüft nur diese Matrix gegen Entwurf und
+Gate-Text. Erst danach wird gebaut; die Matrix ist ab dann die Referenz für
+Worker und Prüfer. Der Auftrag verweist außerdem auf
+`tools/dirigent/pruefliste.md`; der Worker hakt sie vor jedem Commit ab und
+nennt im Manifest, wo er jede Zeile gemessen hat. Der Ticketauftrag darf den
+Worker nicht auf Punktkorrekturen beschränken, wenn die Befunde eine
+gemeinsame Ursache haben; dann ist die Ursache der Auftrag.
+
 Direkt nach dem Start den Zustandsbeobachter als Hintergrundkommando derselben
 Fable-Sitzung starten und mit Claudes nativem `Monitor` beobachten:
 
@@ -212,6 +224,22 @@ high: Vertrag/Gate/normaler Pfad gebrochen; medium: konkreter Funktionsfehler,
 der die Abnahme verhindert). Kosmetik, Stil, optionale Härtung, theoretische
 Randfälle und Ticketfremdes: nein. Jeden Befund an der Quelle validieren.
 
+**Befundklassen (seit 29.08.2026).** Der Prüfer ordnet jeden Befund ein und
+der Dirigent prüft die Einordnung an der Quelle:
+
+- **Defekt** — verletzt Verhaltensmatrix, Gate-Text, Entwurf oder eine
+  Invariante aus `CLAUDE.md`: geht in die Nacharbeit.
+- **Lücke** — Matrix und Entwurf sagen zu dem Fall nichts: der Dirigent
+  entscheidet die Regel in derselben Runde (Technik), trägt sie in Matrix
+  und Manifest ein; erst die entschiedene Regel darf Nacharbeit auslösen.
+- **Härtung** — wünschenswert, aber von keiner Zusage verlangt: datiert ins
+  Register, keine Nacharbeit.
+
+Der Prüfer erfindet keine Anforderung: was in Matrix, Gate, Entwurf und
+Invarianten nicht steht, ist Lücke, nicht Defekt. Ein Lauf ohne Defekt ist
+`PASS`, auch mit Lücken und Härtungen im Register. Der Review-Prompt nennt
+diese drei Klassen und die Matrix ausdrücklich.
+
 Bestätigte Befunde behebt **derselbe** Thread:
 
 ```powershell
@@ -225,7 +253,12 @@ $fixPrompt | codex -a never exec --ignore-user-config `
   Tee-Object -FilePath $fixJsonl
 ```
 
-Codex stagt, committet und pusht **nie**. Fable prüft den engen Fixdiff und
+Codex stagt, committet und pusht **nie**. Die Codex-Sandbox fährt auf diesem
+Rechner weder Bau noch Kanon (Präzedenz S8/S9/S9b/S14–15); bestätigte
+Defekte behebt deshalb ein **frischer Opus-Worker** mit der Befundliste, der
+Matrix und der Prüfliste — der Codex-Thread bleibt Prüfer. Nacharbeitsrunden
+fahren nur die betroffenen Beine; der volle Kanon läuft beim ersten Bau und
+beim Abschluss des Tickets. Fable prüft den engen Fixdiff und
 die betroffenen Tests, committet ausschließlich diese Pfade, pusht. Danach
 prüft ein **neuer** frischer Thread den ganzen Bereich vom ursprünglichen
 Basis-SHA bis zum neuen HEAD. Es gibt keine feste Rundenzahl und keine
@@ -239,6 +272,10 @@ Sprachen, dann ein frischer Prüfer. Der Rest bleibt im Manifest datiert.
 
 ### 3.5 Abschluss
 
+Kanon auf dem End-Stand. Rohausgaben von Kanonläufen gehören nicht in den
+Lesetext des Manifests: sie liegen unter `docs/beweise/roh/<TICKET>-<sha>.md`,
+im Manifest steht die Kopfzeile mit Verweis (Runner-Umbau NAK-96; bis dahin
+nur der Abschlusslauf angehängt, keine Zwischenläufe).
 Urteil, Modell, Effort, Basis- und End-SHA sowie die tatsächlich gelaufenen
 Beweise ins **vorhandene** Manifest; Planstand neu rechnen; nur diese
 Abschlussdateien mit explizitem Pathspec committen und pushen. Dann: temporäre

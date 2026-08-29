@@ -11,6 +11,9 @@
 
 **Stand:** 2026-08-29 · Quellstand `1ca5fdb` · **14 von 37 abgenommen** · 4 gebaut · 19 offen
 
+> ⚠️ Gerechnet aus dem Arbeitsbaum: unter `docs/plan/`, `docs/beweise/`
+> oder `tools/plan/` liegen Änderungen, die noch nicht in `1ca5fdb` sind.
+
 `███████████████▓▓▓▓░░░░░░░░░░░░░░░░░░░░░` 38 % abgenommen · 49 % gebaut
 
 **Als Nächstes:** **Nacharbeit an S9b** — der Prüfer hat einen Befund offen gelassen (docs/beweise/SONDE-007c.md).

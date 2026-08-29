@@ -1,5 +1,31 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ✅ NACHTRAG — 29.08.2026, Dirigentenrunde 10:15–13:45 (Sitzung fd74ef87)
+>
+> **Erledigt:** G1 §55 Klausel 1 gemessen — Installation 0.3.0 (Transaktion
+> `32b8c7e9…`, 16.08.-Stand gesichert), FL-Scan 11:52:51 mit beiden
+> eingefrorenen Kennungen, beide Bundles im Master geladen
+> (`docs/beweise/SONDE-007b.md`, „FL-Termin — 2026-08-29"; NAK-87 zu, U8
+> beantwortet). Fragenrunde: U2/U6/U9 als überholt geschlossen, U10 zu, U12
+> ausgeführt (alter Design-Ordner weg, GitHub-Repo archiviert), U11 vertagt,
+> U13 hängt an NAK-57. NAK-30 (Umbenennung Nakama Studio/Gen/Probeeq) ist
+> verbindlich, spätestens SONDE-019. Neuer Planschritt **PR1** (Planprüfung
+> gegen Entscheide und Marktstandard) nach G1-PASS, vor SONDE-011.
+> S14–15 `SONDE-010` Runde 3: alle sechs NAK-92-Befunde geschlossen, Kanon
+> 32/32; Prüfer 4 NEEDS_WORK mit sieben neuen Befunden → **NAK-95**. S8
+> `SONDE-007a` Runde 3: NAK-84 geschlossen (`a728fba`), NAK-85 nicht begonnen —
+> vom User unterbrochen.
+>
+> **Prozess geändert (User-Wort 29.08., im Skill):** keine Freigabefragen mehr
+> für Nacharbeitsrunden; Verhaltensmatrix vor Code bei Nebenläufigkeit/Vertrag/
+> Lebenszyklus; Befundklassen Defekt/Lücke/Härtung; Prüfliste
+> `tools/dirigent/pruefliste.md`; Kanon nur bei Bau und Abschluss; Rohausgaben
+> raus aus den Manifesten (NAK-96, erster Worker der nächsten Sitzung).
+>
+> **Als Nächstes (Reihenfolge des Dirigenten):** NAK-96 (Runner/Cockpit) → S8
+> NAK-85 → S9 (NAK-88) → S9b (NAK-89, NAK-94) → SONDE-010 mit Verhaltensmatrix
+> statt Runde 4 (NAK-95) → G1-Gate-Lauf → PR1 → SONDE-011.
+
 > ## ✅ NACHTRAG — 29.08.2026, S14–15 `SONDE-010` T2-Nacharbeit Runde 1
 >
 > Der frische T2-Prüfer (Codex `gpt-5.6-sol`/xhigh, Thread `01a04bd4`, Stand

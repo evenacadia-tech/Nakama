@@ -1677,6 +1677,13 @@ Join mit `SENKE_FRIST`, danach **abgelöst** und gezählt
 (`lebenszyklus_abgeloest`). Ein Thread je Lebenszyklusereignis ist bezahlbar —
 es sind wenige je Verbindung, und die Verbindung kostet ohnehin drei.
 
+**Ein `senke.abgewiesen` bleibt absichtlich direkt** — der im Verbraucherthread,
+wenn die Writerqueue überläuft. Er steht schon auf dem Thread, den Runde 2
+fristbegrenzt joint und ablöst; ihn zusätzlich über `Senkenruf` zu führen,
+kostete einen weiteren Thread und änderte an der Schranke nichts. Alle Aufrufe
+auf dem **Verbindungs**thread sind umgestellt — das sind die, auf die
+`stoppen()` wartet.
+
 Zwei Folgeentscheidungen stehen im Code und gehören hierher:
 
 * **Nach einem abgelösten Aufruf schweigt die Verbindung** gegenüber ihrer

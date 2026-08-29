@@ -17044,5 +17044,6 @@ Die Bruchprobe ist nicht committet.
 | **F** — installieren ↔ Rückweg im selben Änderungssatz | beide Richtungen des Journals sind abgedeckt: die Installationsstände (`VORBEREITET`, `KOMPENSATION`, `ERROR_*`) und die Rückwegstände (`RUECKWEG_AKTIV`, `RUECKWEG`); Wache und Proben liegen in demselben Commit (`cb99ba0`) |
 
 Der gemeinsame Kanonlauf dieser Runde steht in `docs/beweise/SONDE-007a.md`
-unter „SONDE-007a Runde 7 + NAK-94 Nacharbeit 2 - Abschluss"; die Rohausgabe
-liegt unter `docs/beweise/roh/`.
+unter „SONDE-007a Runde 7 + NAK-94 Nacharbeit 2 - Abschluss": **GRÜN, 32/32**,
+Exit 0 auf dem Stand `5df7497`, Rohausgabe
+`docs/beweise/roh/SONDE-007a-5df7497.md` (Bein `A17`).

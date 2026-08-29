@@ -1503,7 +1503,14 @@ einen Lauf nach C++-Änderungen; hier war nichts neu zu übersetzen.
 | 1 | `b4b1e29` | `tools/beweise-roh.ps1` (neu), Runner (Reservierung, Schreiben ins Handle, Exitcode 5, Behauptungstexte, KANON-Zeiger), `planstand.py` (Gegenrichtung), Manifest §5.3-Korrektur und §9.1–§9.10 |
 | 2 | `ad2a940` | Registernachträge NAK-96 und NAK-97 in `docs/offene-punkte.md` |
 | 3 | `f124746` | Planstand auf `b4b1e29` neu gerechnet (sauberer Baum für den Abschlusslauf) |
-| 4 | dieser Commit | Abschlusslauf 3 samt Roh-Datei, §9.11 und §9.12 |
+| 4 | `81481d2` | Abschlusslauf 3 samt Roh-Datei, §9.11 und §9.12 |
+| 5 | `3acc912` | Planstand auf `81481d2` neu gerechnet |
+| 6 | dieser Commit | diese Tabellenzeilen — der Nachtrag, der Commit 4 und 5 beim Namen nennt |
+
+Danach folgt genau ein weiterer Commit: der Planstand auf den Endstand. Er
+berührt nur `docs/PLAN-STAND.md`, weil dessen Kopfzeile den jüngsten Commit
+nennt. Weiter zurück lässt sich die Kette nicht auflösen — ein Manifest, das
+seinen eigenen letzten Commit-SHA trägt, gibt es nicht.
 
 Jeder Commit mit explizitem Pathspec; kein `git add -A`, kein `--amend`, kein
 `reset`, kein `stash`. `git status --short` vor jedem Commit gelesen; fremde
@@ -1526,7 +1533,7 @@ gesagt eine Momentaufnahme, kein Endstand):
 
 ```text
 $ wc -l docs/beweise/NAK-96.md
-1600 docs/beweise/NAK-96.md
+1607 docs/beweise/NAK-96.md
 ```
 
 Davon entfallen 318 Zeilen auf die fünf angehängten Kanon-Abschnitte (gemessen

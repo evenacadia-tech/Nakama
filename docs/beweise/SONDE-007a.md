@@ -41,18 +41,25 @@ traegt der einleitende Satz den Stand.
 
 **Was gebaut wurde (Karte, keine Behauptung — Behauptungen stehen in §1):**
 
+**Stand dieser Karte:** `25b57ec` — an diesem Stand sind ihre Anker geprüft.
+Sie nennt bewusst **keine** Anzahlen (Befund B4, Runde 6): Quellen, Verbraucher
+und Makros stehen als Quellenanker da, weil jede abgeschriebene Zahl still
+falsch wird, sobald jemand eine Datei oder ein Ziel ergänzt.
+
 - `eq-copilot/cmake/NakamaKern.cmake` — Linkhüllen-Läufer (einmal geschrieben,
   zweimal benutzt), **Kopf-Fassade** `nakama_kern_juce_fassade()`, der
   Konfigurier-Riegel **K2** `nakama_kern_riegel_pruefen()` und der
   Konfigurationsgleichheits-Riegel **K2b** `nakama_kern_konfig_pruefen()`.
-- `eq-copilot/plugin/state/NakamaKernRiegel.h` — Kompilier-Riegel **K1**, 46
-  `JucePlugin_*`-Makros namentlich, scharf nur unter `NAKAMA_KERN_UEBERSETZUNG`.
+- `eq-copilot/plugin/state/NakamaKernRiegel.h` — Kompilier-Riegel **K1**, die
+  dort namentlich geführten `JucePlugin_*`-Makros, scharf nur unter
+  `NAKAMA_KERN_UEBERSETZUNG`. Die aktuelle Anzahl gibt der Messlauf aus.
 - `eq-copilot/plugin/CMakeLists.txt` — `NakamaKern` als `add_library(… STATIC)`
-  mit den vier geteilten Quellen (`state/NakamaKanon.cpp`,
-  `state/NakamaParameter.cpp`, `state/NakamaState.cpp`,
-  `vertrag/NakamaVertrag.cpp`); `nakama_state_anbinden()` → `nakama_kern_anbinden()`
-  bei acht Zielen. Der Kopfkommentar, der bis heute die Static-Lib begründet
-  ablehnte, trägt jetzt den abgelösten Satz samt Grund der Ablösung.
+  über die Liste `NAKAMA_KERN_QUELLEN` ebendort (sie ist die Quelle, nicht diese
+  Karte; `pruefe_kern_identitaetsfrei.py` liest sie mit `_kernquellen_aus_cmake()`);
+  `nakama_state_anbinden()` → `nakama_kern_anbinden()` bei jedem Ziel, das die
+  Funktion in derselben Datei ruft. Der Kopfkommentar, der bis heute die
+  Static-Lib begründet ablehnte, trägt jetzt den abgelösten Satz samt Grund
+  der Ablösung.
 - `tools/eq-copilot/pruefe_kern_identitaetsfrei.py` — Artefakt-Riegel **K3**
   mit eigener Gegenprobe und COFF-Archivleser.
 - `tools/beweise.ps1` — Kanon-Bein **A14**; `NakamaKern` als *gemessenes Ziel*
@@ -13522,3 +13529,262 @@ Bereich dieser Runde, und die sind in allen drei Läufen grün.
 | B10 | v3-Envelope in C++ klassifiziert den Envelope-Korpus wie das Manifest (Urteil UND Verstossmenge, alle 14 Regeln mit Negativfixture); CRC32C trifft die RFC-3720-Vektoren, P0/P1 tragen CRC exakt 0, P2 die Pflichtsumme ueber genau die Payloadbytes; 40 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und 7671 angenommene EINBIT-Mutanten gueltiger Frames halten jede Kopfregel (reiner Zufall wird praktisch immer abgewiesen - die Invariante braucht deshalb die Mutanten, sonst spraeche sie ueber eine leere Menge), 3000 gekippte P2-Bits fallen einzeln, byteweise Zustellung liefert dieselben 40 Frames und ein kaputter Frame beendet den Strom; Pipetoken trifft das Golden aus §48.3 samt SHA-256- und RFC-4648-Vektoren; P0 verwirft nichts und meldet den 65. Eintrag, P1 koalesziert an der Position und haelt Ereignisse fuer den Reconnect vor, die P2-Schleuse ersetzt den aeltesten ungesendeten Frame, uebergibt 100 000 Frames mit 0 Allokationen (mit Gegenprobe am selben Zaehler) und liefert unter Flut keinen zerrissenen Frame; verdrahtet: Control koppelt Telemetry ueber link_id + challenge, ein ungekoppelter Telemetry-Connect wird geschlossen, der Client verbindet nach Serverneustart von selbst wieder, ein kaputter Envelope vom Server schliesst die Verbindung, und ein P0-Ueberlauf WAEHREND einer stehenden Verbindung schliesst sie ebenfalls statt still zu kuerzen. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 32,74 s | [B10](roh/SONDE-007a-70ca7f0.md#b10) |
 | B8 | Lifecycle-Klassifikation §53.5: unclassified beim Laden und audio-neutral; Schema-1 sensor\|pre\|post -> legacy (immer passiv), hub bzw. bestaetigter Schema-2-Main-State -> main; ein Scannerlauf klassifiziert nicht; read-only nimmt die Klassifikation zurueck; Brokerstart nur fuer main mit offenem Editor; die Sondenbundles bleiben bis gueltigem State neutral und werden nie main. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,12 s | [B8](roh/SONDE-007a-70ca7f0.md#b8) |
 
+
+## Nacharbeit Runde 6 — 2026-08-29 (Prüfer-Thread 01a04ecb-4966…)
+
+**Stand dieses Abschnitts:** `25b57ec` — Basis-SHA dieser Runde; die vier
+Befunde stehen wörtlich unten und wurden an genau diesem Stand reproduziert.
+Positionen sind Symbole oder tragen ihren eigenen Commit.
+
+Ein frischer Prüfer (xhigh) hat den Stand `25b57ec` gelesen und vier Befunde
+gemeldet. Zwei davon sind Löcher in Riegeln, die Runde 5 erst gebaut hat: der
+Tlog-Ortsriegel hatte eine Endungsausnahme, die die Erlaubnisliste komplett
+übersprang, und der JUCE-Baum-Riegel verglich drei Dinge nicht, die er zu
+vergleichen behauptete. B3 ist umgekehrt eine falsche Rotfärbung, B4 eine Zahl
+im Manifestkopf, die nie gestimmt hat.
+
+### Die vier Befunde, wörtlich
+
+**B1 [P1, Defekt hoch]** — `tools/eq-copilot/pruefe_kern_identitaetsfrei.py`,
+Tlog-Ortsriegel (`tlog_ortsriegel`, Endungsliste `_ORTSFREI`) `@ 25b57ec`:
+
+> Bei einer per `/FI` gelesenen Textdatei mit einer Endung aus `_ORTSFREI`
+> überspringt dieses `continue` die Erlaubnisliste vollständig:
+> `C:/OUTSIDE/forced.dat` ergab keine Klage, derselbe Pfad als `.h` wurde ROT.
+> `/FI` ist nicht an Header-Endungen gebunden.
+
+**B2 [P1, Defekt hoch]** — JUCE-Baum-Riegel (`juce_baum_riegel`) `@ 25b57ec`:
+
+> `git describe` wird nur als Text gespeichert und nie mit 8.0.9 verglichen
+> (`8.1.0-dirty` → keine Klage); `status --porcelain -uall` lässt ignorierte
+> Fremddateien aus (`modules/juce_core/NakamaProbe.pch` trifft `*.pch`);
+> zusätzliche Änderungen in Patchdateien bleiben erlaubt, solange die Hunks
+> rückwärts anwendbar sind.
+
+**B3 [P2, Defekt mittel]** — `_git`-Hülle `@ 25b57ec`:
+
+> stderr wird in `status --porcelain` geparst; die Warnung zum unlesbaren
+> globalen Ignore erzeugte den Statuscode `wa`, `--nur-messen` endete mit
+> Exit 2 statt 3 (F14), im normalen Lauf wäre der gültige JUCE-Baum falsch ROT.
+
+**B4 [P2, Defekt mittel]** — Kopfkarte dieses Manifests `@ 25b57ec`:
+
+> nennt vier Kernquellen und acht Verbraucher; `NAKAMA_KERN_QUELLEN` enthält
+> neun, Verbraucher sind mehr.
+
+### Reproduktion am Stand `25b57ec`
+
+Der alte Skriptstand wurde nach `<tmp>/alt/tools/eq-copilot/` ausgecheckt
+(dort stimmt seine `parents[2]`-Rechnung) und importiert; der Arbeitsbaum
+blieb unberührt.
+
+```text
+=== B1 @ 25b57ec: Endungsausnahme im Tlog-Ortsriegel ===
+  C:\OUTSIDE\forced.dat      -> klagen=[]
+  C:\OUTSIDE\forced.txt      -> klagen=['gelesen aus unbekanntem Ort: C:\\OUTSIDE\\forced.txt']
+  C:\OUTSIDE\forced.h        -> klagen=['gelesen aus unbekanntem Ort: C:\\OUTSIDE\\forced.h']
+  C:\OUTSIDE\forced.dll      -> klagen=[]
+  C:\OUTSIDE\forced.bin      -> klagen=[]
+
+=== B2 @ 25b57ec: was der JUCE-Baum-Riegel NICHT vergleicht ===
+  info["patchdateien"] = len(patchdateien)
+  code, beschreibung = _git("-C", str(juce), "describe", "--tags", "--always", "--dirty")
+  info["beschreibung"] = beschreibung.strip() if code == 0 else "nicht ermittelbar"
+  code, ausgabe = _git("-c", "core.quotepath=false", "-C", str(juce),
+  info["loeschungen"] = loeschungen
+  code, ausgabe = _git("-C", str(juce), "apply", "--check", "--reverse", str(JUCE_PATCH))
+
+=== B3 @ 25b57ec: _git mischt stdout und stderr ===
+  Exit 0, ein einziger Strom:
+     D examples/DemoRunner/Builds/Android/app/src/debug/res/raw/accessibilitynotificationicon.png
+     D examples/DemoRunner/Builds/Android/app/src/debug/res/values/string.xml
+     D extras/AudioPerformanceTest/Builds/Android/app/src/debug/res/values/string.xml
+     D extras/AudioPluginHost/Builds/Android/app/src/debug/res/values/string.xml
+  daraus:
+    unbekannter git-Status 'wa' fuer ning: unable to access 'C:/pagefile.sys': Permission denied
+    unbekannter git-Status 'wa' fuer ning: unable to access 'C:/pagefile.sys': Permission denied
+```
+
+`beschreibung` ist im zweiten Block die einzige Verwendung von `describe`: sie
+wandert in die Ausgabezeile und wird mit nichts verglichen. Der `status`-Aufruf
+trägt kein `--ignored`, und der einzige Inhaltsvergleich ist
+`apply --check --reverse`.
+
+Die zweite Hälfte von B2 (iii) ist am **echten** Baum reproduziert — eine
+zusätzliche Zeile am Dateiende der Patchdatei, also weit außerhalb der
+Hunk-Kontexte:
+
+```text
+alte Wache apply --check --reverse: Exit 0 (stumm)
+```
+
+### Was jetzt gilt — Regel für Regel
+
+| Regel | Vorher `@ 25b57ec` | Jetzt |
+|---|---|---|
+| **R3** — jede Datei aus `CL.read.1.tlog` läuft durch die Erlaubnisliste der Orte | `_ORTSFREI` übersprang sechs Endungen **vor** der Liste | keine Endungsausnahme; `_ORTSFREI` ist ersatzlos entfallen. Die Systemdateien, die `cl.exe` beim Formatieren einer Diagnose liest (`System32/tzres.dll`, `Globalization/Sorting/sortdefault.nls`, Probe P5-W5b), sind über die Wurzel **Windows-System** erlaubt — abgeleitet aus `%SystemRoot%` (`_systemwurzel()`), fail-closed, wenn die Variable fehlt oder ins Leere zeigt. Die Sammelspalte „ohne Uebersetzungsstoff" ist weg; jede Datei zählt unter ihrem Ort |
+| **R4 (i)** — HEAD ist der Commit des gepinnten Tags | `describe` als Text, kein Vergleich | `git rev-parse HEAD` gegen `git rev-parse 8.0.9^{commit}`; Ungleichheit ist ROT. `JUCE_TAG` steht neben `JUCE_PATCH` und muss im Patchnamen vorkommen — sonst würde ein fremder Patch gegen diesen Commit gemessen |
+| **R4 (ii)** — die geänderte Menge ist genau die Patchdateimenge | `status --porcelain -uall` | `status --porcelain --ignored -uall`; der Statuscode `!!` wird wie `??` behandelt und namentlich ROT gemeldet |
+| **R4 (iii)** — die Patchdateien tragen genau den Patch | `apply --check --reverse` | Inhaltsvergleich gegen den gerechneten Sollzustand „Tag + Patch" in einem **temporären Index** (`_patch_soll_vergleich()`): `read-tree HEAD` → `apply --cached <patch>` → `update-index --refresh` → `diff-files -- <patchdateien>`. `apply --check --reverse` ist damit **ersetzt**, nicht ergänzt |
+| **R6** — keine volatilen Zahlen in der Kopfkarte | „vier geteilte Quellen", „acht Ziele", „46 Makros" | Quellenanker: `NAKAMA_KERN_QUELLEN` in `plugin/CMakeLists.txt`, die `nakama_kern_anbinden()`-Aufrufe ebendort, die Makroliste in `NakamaKernRiegel.h`. Die Karte trägt jetzt **Stand dieser Karte** |
+| **B3** — bei Exit 0 ist nur stdout Datenstrom | `return lauf.returncode, (lauf.stdout + lauf.stderr)` | `_git` liefert `(Exit, stdout, stderr)` getrennt; stderr wird als `hinweis git im JUCE-Baum: …` ausgegeben und nie geparst |
+
+**Bewusst nicht verschärft** (Entscheidung dieser Runde, innerhalb der Regel):
+eine **Löschung außerhalb `modules/**`** bleibt geduldet und wird benannt.
+Der Befund nennt sie nicht, die fünf betroffenen Dateien liegen seit dem
+FetchContent-Auschecken so da, und die Begründung von Runde 5 trägt weiter —
+eine gelöschte Datei kann keine Compiler-Eingabe werden. Die drei neuen Zeilen
+(i)–(iii) schließen jeden Weg, auf dem *Inhalt* in den Baum kommt; genau das
+steht so im Docstring von `juce_baum_riegel` und in der Runner-Behauptung.
+
+### Fix — was geändert wurde
+
+- `tlog_ortsriegel()`: die Endungsausnahme ist raus, der Docstring sagt das.
+  `_systemwurzel()` neu; `erlaubte_leseorte()` hängt die Wurzel
+  **Windows-System** an und klagt, wenn sie nicht ableitbar ist.
+- `_git()`: drei Rückgabewerte statt zwei, optionale `umgebung` für
+  `GIT_INDEX_FILE`. Der Docstring trägt die gemessene Warnung wörtlich.
+- `_patch_soll_vergleich()` neu; `juce_baum_riegel()` in drei benannte Zeilen
+  zerlegt und um `info["hinweise"]` erweitert.
+- `juce_baum_status_pruefen()`: `!!` zählt wie `??`.
+- Kopfkarte dieses Manifests (B4) auf Anker statt Zahlen umgestellt.
+- Skriptkopf und Runner-Behauptung `A14` auf das Gemessene abgeglichen.
+
+### Proben — baulos, jede neue Wache einmal gebrochen
+
+`py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py --selbsttest`
+
+```text
+A14-Selbsttest, Runde 6: Ortsriegel ohne Endungsausnahme, JUCE-Baum ueber HEAD/ignoriert/Inhalt, getrennte git-Stroeme
+  ok      R6-1a: eine per /FI gelesene Datei ausserhalb der erlaubten Orte ist ROT - unabhaengig von der Endung (Befund B1)  [geprueft: .dat .dll .nls .exe .mui .bin]
+  ok      R6-1b: eine Systemdatei ist ueber ihren ORT erlaubt und wird gezaehlt, nicht ueber ihre Endung  [Windows-System 1]
+  ok      R6-1c: die ortsfreie Sammelspalte ist weg - jede Datei zaehlt unter ihrem Ort  [plugin, juce-src/modules, Windows-System]
+  ok      R6-3a: bei Exit 0 traegt nur stdout Daten; die git-Warnung steht getrennt auf stderr (Befund B3)  [Exit 0 | stderr: warning: Negative patterns are ignored in git attributes]
+  ok      R6-3b: der frueher gemischte Strom haette die Warnzeile als Statuscode gelesen; der getrennte tut es nicht  [gemischt: unbekannter git-Status 'wa' fuer ning: Negative patterns are ignored in git attributes || getrennt: keine Klage]
+  ok      R6-2a: Tag plus genau der Patch ist gruen (Grundstellung der drei neuen Zeilen)  [Tag 1.0.0 (596ed85a469e)]
+  ok      R6-2b: HEAD neben dem gepinnten Tag ist ROT, obwohl der Arbeitsbaum unveraendert ist (Befund B2 i)  [HEAD 9a0e1768a1cb ist NICHT der Commit des Tags 1.0.0 (596ed85a469e)]
+  ok      R6-2c: eine ignorierte Fremddatei ist ROT - ohne --ignored war sie unsichtbar (Befund B2 ii)  [ignorierte Datei im JUCE-Baum: modules/juce_core/NakamaProbe.pch]
+  ok      R6-2d: eine zusaetzliche Zeile in der Patchdatei ist ROT, waehrend apply --check --reverse dazu schweigt (Befund B2 iii)  [apply --check --reverse Exit 0 | Patchdatei traegt nicht genau den Patch (zusaetzliche Aenderung gegenueber '1.0.0 + Patch'): datei.txt]
+  ok      R6-2e: zurueckgenommen ist der Baum wieder gruen
+
+68 ok, 0 Fehler
+```
+
+`R6-2a` bis `R6-2e` laufen gegen ein **echtes Wegwerf-Repo** (`_probe_repo()`:
+ein Commit, ein Tag, eigene `user.`/`gpgsign`-Einstellungen), in dessen
+`_deps/juce-src` der Riegel unverändert läuft; `JUCE_PATCH`/`JUCE_TAG` sind für
+die Dauer der Probe umgebogen und werden im `finally` zurückgesetzt. Nur so ist
+Zeile (i) baulos prüfbar: der HEAD des echten Baums darf dafür nicht wandern.
+
+`R6-3a` erzwingt die git-Warnung portabel über ein negatives Muster in
+`.gitattributes` — zwei Warnzeilen auf stderr, Exit 0, keine
+Rechner- oder Rechteabhängigkeit.
+
+### Proben am echten Baum
+
+**B1 — eine per `/FI` gelesene Datei außerhalb `plugin/**`.** Die Zeile wurde
+in das echte `CL.read.1.tlog` geschrieben (UTF-16LE, wie MSBuild es schreibt):
+
+```text
+=== Tlog traegt C:\OUTSIDE\forced.dat ===
+  FEHLER  alle 461 vom Compiler gelesenen Dateien stammen aus erlaubten Orten (plugin 12, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, Windows-System 0)  [gelesen aus unbekanntem Ort: C:\OUTSIDE\forced.dat]
+Exit 2
+zurueckgenommen: bytegleich = True
+
+=== Tlog traegt C:\OUTSIDE\forced.txt ===
+  FEHLER  alle 461 vom Compiler gelesenen Dateien stammen aus erlaubten Orten (plugin 12, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, Windows-System 0)  [gelesen aus unbekanntem Ort: C:\OUTSIDE\forced.txt]
+Exit 2
+zurueckgenommen: bytegleich = True
+```
+
+**B2 (ii) und (iii) — am echten JUCE-Baum**, beide bytegleich zurückgenommen:
+
+```text
+Ausgangsstand:
+ D examples/DemoRunner/Builds/Android/app/src/debug/res/raw/accessibilitynotificationicon.png
+ D examples/DemoRunner/Builds/Android/app/src/debug/res/values/string.xml
+ D extras/AudioPerformanceTest/Builds/Android/app/src/debug/res/values/string.xml
+ D extras/AudioPluginHost/Builds/Android/app/src/debug/res/values/string.xml
+ D extras/NetworkGraphicsDemo/Builds/Android/app/src/debug/res/values/string.xml
+ M modules/juce_audio_plugin_client/juce_audio_plugin_client_VST3.cpp
+
+ohne --ignored sichtbar: False
+mit  --ignored sichtbar: True
+=== (ii) modules/juce_core/NakamaProbe.pch liegt im Baum ===
+  FEHLER  juce-src ist Tag 8.0.9 (f72bad64d297) plus genau der Nakama-VST3-Patch (…)  [ignorierte Datei im JUCE-Baum: modules/juce_core/NakamaProbe.pch]
+Exit 2
+alte Wache apply --check --reverse: Exit 0 (stumm)
+=== (iii) Patchdatei traegt eine Zeile mehr ===
+  FEHLER  juce-src ist Tag 8.0.9 (f72bad64d297) plus genau der Nakama-VST3-Patch (…)  [Patchdatei traegt nicht genau den Patch (zusaetzliche Aenderung gegenueber '8.0.9 + Patch'): modules/juce_audio_plugin_client/juce_audio_plugin
+Exit 2
+zurueckgenommen: bytegleich = True
+Endstand:
+ D examples/DemoRunner/Builds/Android/app/src/debug/res/raw/accessibilitynotificationicon.png
+ D examples/DemoRunner/Builds/Android/app/src/debug/res/values/string.xml
+ D extras/AudioPerformanceTest/Builds/Android/app/src/debug/res/values/string.xml
+ D extras/AudioPluginHost/Builds/Android/app/src/debug/res/values/string.xml
+ D extras/NetworkGraphicsDemo/Builds/Android/app/src/debug/res/values/string.xml
+ M modules/juce_audio_plugin_client/juce_audio_plugin_client_VST3.cpp
+```
+
+Zeile (i) ist am echten Baum **nicht** gebrochen worden: dafür müsste der HEAD
+von `juce-src` wandern. Sie ist baulos gemessen (`R6-2b`).
+
+**B3 — Warnung erzwungen, Baum bleibt grün, F14 hält.** Die Warnung kommt über
+`GIT_CONFIG_COUNT`/`GIT_CONFIG_KEY_0`/`GIT_CONFIG_VALUE_0` in *jeden*
+git-Aufruf des Beins, ohne den Baum oder die globale Konfiguration anzufassen:
+
+```text
+  ok      juce-src ist Tag 8.0.9 (f72bad64d297) plus genau der Nakama-VST3-Patch (HEAD = Tag; nichts Geaendertes, Unverfolgtes oder Ignoriertes ausserhalb der 1 Patchdatei(en); diese tragen genau den Patch; 5 benannte Loeschung(en) ausserhalb modules/**)  [examples/…]
+  hinweis git im JUCE-Baum: warning: unable to access 'C:/pagefile.sys': Permission denied
+  hinweis git im JUCE-Baum: warning: unable to access 'C:/pagefile.sys': Permission denied
+32 ok, 0 Fehler
+VORAUSSETZUNG: ohne Neubau kein Frische-Urteil (--nur-messen).
+EXIT=3
+```
+
+Das ist genau die Lage, die `@ 25b57ec` Exit 2 ergab: derselbe Baum, dieselbe
+Warnung, aber die Warnzeile ist jetzt Hinweis statt Statuscode — und F14 fällt
+wieder auf Exit 3.
+
+### Grüner Referenzlauf auf dem Endstand (ohne Warnung)
+
+```text
+  ok      alle 460 vom Compiler gelesenen Dateien stammen aus erlaubten Orten (plugin 12, juce-src/modules 181, MSVC-Toolset 151, Windows-SDK 116, Windows-System 0)
+  ok      juce-src ist Tag 8.0.9 (f72bad64d297) plus genau der Nakama-VST3-Patch (HEAD = Tag; nichts Geaendertes, Unverfolgtes oder Ignoriertes ausserhalb der 1 Patchdatei(en); diese tragen genau den Patch; 5 benannte Loeschung(en) ausserhalb modules/**)  [examples/…]
+32 ok, 0 Fehler
+VORAUSSETZUNG: ohne Neubau kein Frische-Urteil (--nur-messen).
+EXIT=3
+```
+
+`Windows-System 0` ist ehrlich und kein Fehler: in *diesem* Leseprotokoll hat
+`cl.exe` keine Diagnose formatiert, also keine Systemdatei gelesen. Die Wurzel
+ist trotzdem abgeleitet und würde, wenn sie fehlte, klagen.
+
+### Nachweis, dass jede Probe zurückgenommen ist
+
+- `CL.read.1.tlog`: `zurueckgenommen: bytegleich = True` (beide B1-Läufe).
+- `juce_audio_plugin_client_VST3.cpp`: `zurueckgenommen: bytegleich = True`.
+- `modules/juce_core/NakamaProbe.pch`: gelöscht; Endstand oben ist mit dem
+  Ausgangsstand Zeile für Zeile identisch.
+- Wegwerf-Repos und temporäre Indizes liegen ausschließlich unter
+  `tempfile.TemporaryDirectory()`.
+
+Während dieser Runde ist der Nakama-Patch **einmal versehentlich** aus dem
+Arbeitsbaum verschwunden: ein `git checkout -- <datei>` als Rücknahme stellt
+aus dem **Index** wieder her, und der Index hielt den ungepatchten HEAD-Stand.
+Aufgefallen ist das nicht durch Nachdenken, sondern durch die neue Zeile (iii),
+die den Baum sofort ROT meldete; zurückgelegt wurde er mit `git apply`. Das ist
+der erste echte Fang des neuen Riegels und steht hier, weil er zur Wahrheit
+dieser Runde gehört.
+
+### Prüfliste D / E / F
+
+| Regel | Fundstelle in dieser Nacharbeit |
+|---|---|
+| **D** — „Ein Riegel ist fail-closed ohne Rohtextheuristik: Unbekanntes ist ROT." | Ortsriegel ohne Endungsausnahme (`R6-1a`, sechs Endungen); nicht ableitbares `%SystemRoot%` → Klage (`_systemwurzel()`); `!!` zählt wie `??` (`R6-2c`); Patchdatei mit Zusatzinhalt → ROT (`R6-2d`); `JUCE_TAG` muss im Patchnamen vorkommen, sonst ROT. |
+| **D** — „Was nur beschrieben, nicht verglichen wird, ist keine Wache." | `describe` ist ersetzt durch `rev-parse HEAD` gegen `rev-parse 8.0.9^{commit}` (`R6-2b`), `apply --check --reverse` durch den Sollvergleich im temporären Index (`R6-2d`). |
+| **E** — „Jede Behauptung sagt nicht mehr, als der Test misst." | Runner-Behauptung `A14` und Skriptkopf nennen jetzt die drei Zeilen des Baumriegels einzeln, die Wurzel **Windows-System** und die geduldete Löschung außerhalb `modules/**` als ausdrückliche Nichtzusage. |
+| **E** — „Zahlen im Manifest sind gemessen, nicht abgeschrieben." | Befund B4: die Kopfkarte nennt keine Quell-, Verbraucher- oder Makrozahlen mehr, sondern `NAKAMA_KERN_QUELLEN`, die `nakama_kern_anbinden()`-Aufrufe und die Makroliste in `NakamaKernRiegel.h` als Anker; sie trägt **Stand dieser Karte**. |
+| **E** — „Positionen als Symbol/Anker oder `Datei:Zeile @ sha7`." | Dieser Abschnitt nennt Symbole (`tlog_ortsriegel`, `_ORTSFREI`, `_systemwurzel`, `erlaubte_leseorte`, `_git`, `_patch_soll_vergleich`, `juce_baum_riegel`, `juce_baum_status_pruefen`, `_probe_repo`) und Kennungen (`R6-…`); die Befunde tragen `@ 25b57ec`, der Kopf trägt den Stand. |
+| **F** — „Eine Behauptung ohne eingefügte Rohausgabe ist ein gescheitertes Ticket." | Eingefügt sind: die Reproduktion aller drei Codebefunde am Stand `25b57ec`, der Selbsttest, die zwei B1-Läufe am echten Tlog, die B2-Läufe am echten Baum samt Ausgangs- und Endstand, der erzwungene B3-Lauf und der grüne Referenzlauf — dazu der Kanon-Anhang unten. |

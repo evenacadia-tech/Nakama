@@ -58,18 +58,28 @@ einer TU sieht:
         CL.read.1.tlog, also inklusive /FI und vorkompilierter Koepfe) plus der
         literalen Include-Huelle als Gegenprobe. Einzige Ausnahme:
         NakamaKernRiegel.h, gemessen und benannt.
-  Tlog-Ortsriegel - jede vom Compiler gelesene Datei stammt aus einer
+  Tlog-Ortsriegel - JEDE vom Compiler gelesene Datei stammt aus einer
         erlaubten, aus dem Bau ABGELEITETEN Wurzel; juce_audio_plugin_client
         (dort liegen alle `#define JucePlugin_` der JUCE-Module), generierte
-        JuceLibraryCode-Header und alles Unbekannte sind ROT.
+        JuceLibraryCode-Header und alles Unbekannte sind ROT. Ohne
+        Endungsausnahme (Runde 6): die Systemdateien, die cl.exe beim
+        Formatieren einer Diagnose liest, sind ueber die aus %SystemRoot%
+        abgeleitete Wurzel erlaubt, nicht ueber ihren Namen.
   JUCE-Baum-Riegel - juce-src ist der gepinnte Tag plus genau der eine
-        Nakama-VST3-Patch; jede fremde Aenderung und jede unverfolgte Datei
-        sind ROT. Das schliesst den zuvor bewusst offen gelassenen Weg W8.
+        Nakama-VST3-Patch. Seit Runde 6 drei Zeilen: HEAD IST der Commit des
+        Tags (verglichen, nicht nur beschrieben); ausser den Patchdateien ist
+        nichts geaendert, unverfolgt oder IGNORIERT; und die Patchdateien
+        tragen genau den Patch - Inhalt gegen den in einem temporaeren Index
+        gerechneten Sollzustand "Tag + Patch". Reine Loeschungen ausserhalb
+        modules/** bleiben geduldet und werden benannt. Das schliesst den
+        zuvor bewusst offen gelassenen Weg W8.
 
-AUSDRUECKLICH NICHT BEHAUPTET: der Inhalt der Toolchain- und SDK-Header
-ausserhalb des Repos (nur ihre Herkunft aus den abgeleiteten Wurzeln wird
-geprueft, kein Fingerprint), und ein Compilerwechsel innerhalb derselben
-lastbuildstate-Kennung.
+AUSDRUECKLICH NICHT BEHAUPTET: der Inhalt der Toolchain-, SDK- und
+Windows-System-Header ausserhalb des Repos (nur ihre Herkunft aus den
+abgeleiteten Wurzeln wird geprueft, kein Fingerprint), ein Compilerwechsel
+innerhalb derselben lastbuildstate-Kennung, und der Inhalt von Dateien, die
+im JUCE-Baum ausserhalb modules/** GELOESCHT sind (sie werden benannt; eine
+geloeschte Datei kann keine Compiler-Eingabe werden).
 
 Aufruf:
     py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py [bauverzeichnis]
@@ -851,6 +861,10 @@ def kern_quellabhaengigkeiten() -> list[pathlib.Path]:
 # "Enthaltensein", weil sie nur das prueft (Prueflistenregel E).
 
 JUCE_PATCH = WURZEL / "third_party" / "patches" / "juce-8.0.9-nakama-vst3-bridge.patch"
+# Der gepinnte JUCE-Tag. Er steht hier NEBEN dem Patchnamen und wird gegen ihn
+# geprueft (Runde 6): ein Patch fuer einen anderen Tag darf nicht still gegen
+# diesen Commit gemessen werden.
+JUCE_TAG = "8.0.9"
 K1B_AUSNAHME = KERNQUELLEN / "state" / "NakamaKernRiegel.h"
 _K1B_TOKEN = "JucePlugin_"
 _WINKITS_SCHLUESSEL = os.sep.join(
@@ -1126,6 +1140,29 @@ def _sdk_wurzel(sdk_version: str) -> tuple[pathlib.Path | None, str]:
     return wurzel, ""
 
 
+def _systemwurzel() -> tuple[pathlib.Path | None, str]:
+    """Windows-Systemverzeichnis aus der UMGEBUNG (%SystemRoot%).
+
+    Der Compiler liest beim Formatieren einer Diagnose Systemdateien -
+    gemessen: System32/tzres.dll und Globalization/Sorting/sortdefault.nls
+    (Probe P5-W5b). Seit Befund B1 (Runde 6) sind sie ueber diesen ORT
+    erlaubt und nicht mehr ueber ihre Endung; damit laeuft auch ein per /FI
+    erzwungenes `.dat` durch die Erlaubnisliste.
+
+    Nicht abgeschrieben: der Pfad kommt aus der Umgebung. Fehlt er, ist das
+    eine Klage und kein stiller Verzicht - sonst waere jede Systemdatei
+    ploetzlich "unbekannter Ort", oder schlimmer: die Wurzel raten.
+    """
+    roh = os.environ.get("SystemRoot") or os.environ.get("windir") or ""
+    if not roh:
+        return None, ("weder %SystemRoot% noch %windir% gesetzt - das "
+                      "Windows-Systemverzeichnis ist nicht ableitbar")
+    wurzel = pathlib.Path(roh)
+    if not wurzel.is_dir():
+        return None, f"abgeleitetes Windows-Systemverzeichnis existiert nicht: {wurzel}"
+    return wurzel, ""
+
+
 def erlaubte_leseorte(bau: pathlib.Path, zustand: dict,
                       ) -> tuple[list[tuple[str, pathlib.Path]],
                                  list[tuple[str, pathlib.Path]], list[str]]:
@@ -1165,6 +1202,15 @@ def erlaubte_leseorte(bau: pathlib.Path, zustand: dict,
         klagen.append(klage)
     else:
         erlaubt.append(("Windows-SDK", sdk))
+
+    # Befund B1 (Runde 6): der Ort der Systemdateien, die cl.exe beim
+    # Formatieren einer Diagnose liest. Frueher waren sie ueber eine
+    # Endungsliste ortsFREI - das uebersprang die Erlaubnisliste vollstaendig.
+    system, klage = _systemwurzel()
+    if system is None:
+        klagen.append(klage)
+    else:
+        erlaubt.append(("Windows-System", system))
     return erlaubt, verboten, klagen
 
 
@@ -1190,11 +1236,20 @@ def tlog_gelesene_dateien(tlog: pathlib.Path) -> tuple[list[str], list[str]]:
 #    tauchten auf, sobald der Compiler eine Diagnose formatierte. Eine .dll
 #    oder .nls kann keinen Praeprozessorzustand in eine TU tragen; sie am Ort
 #    zu messen faerbte den Kanon sporadisch rot, ohne etwas zu bewachen.
-#    Diese Endungen werden deshalb ortsfrei GEZAEHLT UND BENANNT, nicht
-#    uebersprungen. Alles andere - auch eine Datei OHNE Endung - gilt als
-#    moeglicher Uebersetzungsstoff und wird am Ort gemessen; .pch bleibt
-#    ausdruecklich drin, denn ein vorkompilierter Kopf traegt Makros.
-_ORTSFREI = frozenset({".dll", ".nls", ".exe", ".mui", ".dat", ".bin"})
+#
+# BEFUND B1, Runde 6 (29.08.2026): dagegen half frueher eine Liste ORTSFREIER
+#    ENDUNGEN (.dll/.nls/.exe/.mui/.dat/.bin), die VOR der Erlaubnisliste
+#    uebersprungen wurde. Das war ein Loch, kein Filter: /FI ist an keine
+#    Endung gebunden, und gemessen wurde, dass `C:\OUTSIDE\forced.dat` deshalb
+#    KEINE Klage ergab, waehrend derselbe Pfad als `.h` ROT war. Eine Endung
+#    sagt nichts darueber, ob der Compiler die Datei als Quelltext gelesen hat.
+#
+#    Deshalb gilt jetzt ohne Ausnahme: JEDE Datei aus dem CL.read.1.tlog laeuft
+#    durch die Erlaubnisliste der ORTE. Die beiden Systemdateien oben sind
+#    erlaubt, weil sie unter dem aus der Umgebung abgeleiteten
+#    Windows-Systemverzeichnis liegen (%SystemRoot%, siehe _systemwurzel()) -
+#    ueber ihren ORT, nicht ueber ihren Namen. Damit ist der Riegel wieder
+#    fail-closed: was in keine Wurzel faellt, wird namentlich genannt.
 
 
 def tlog_ortsriegel(gelesen: list[str], marker: list[str],
@@ -1209,12 +1264,16 @@ def tlog_ortsriegel(gelesen: list[str], marker: list[str],
     Wurzel (heute: juce_audio_plugin_client unter juce-src/modules) - dort
     liegen alle `#define JucePlugin_` der JUCE-Module.
 
+    Es gibt KEINE Endungsausnahme (Befund B1, Runde 6): auch .dll, .nls, .dat
+    oder eine Datei ohne Endung wird am Ort gemessen. Systemdateien, die der
+    Compiler beim Formatieren einer Diagnose liest, fallen unter die erlaubte
+    Wurzel "Windows-System".
+
     Fehlt eine heutige Kernquelle als Marker, ist auch das ROT: Schweigen
     duerfte nie ein Ja sein.
     """
     klagen: list[str] = []
     zaehlung: dict[str, int] = {name: 0 for name, _ in erlaubt}
-    zaehlung["ohne Uebersetzungsstoff"] = 0
 
     markernamen = {pathlib.PurePath(m).name.upper() for m in marker}
     fehlende = sorted(q.name for q in quellen if q.name.upper() not in markernamen)
@@ -1226,9 +1285,6 @@ def tlog_ortsriegel(gelesen: list[str], marker: list[str],
     erlaubt_norm = [(name, _normpfad(pfad)) for name, pfad in erlaubt]
 
     for roh in gelesen:
-        if pathlib.PurePath(roh).suffix.lower() in _ORTSFREI:
-            zaehlung["ohne Uebersetzungsstoff"] += 1
-            continue
         pfad = _normpfad(roh)
         treffer = None
         for name, wurzel in verboten_norm:
@@ -1372,13 +1428,21 @@ def juce_baum_status_pruefen(kennungen: list[tuple[str, str]],
     Compiler-Eingabe werden; unter modules/** sind sie trotzdem ROT (dort
     stuende sonst ein anderer Header zur Aufloesung bereit), ausserhalb werden
     sie gezaehlt und benannt - nie verschwiegen.
+
+    BEFUND B2 (ii), Runde 6: IGNORIERTE Dateien - Statuscode "!!", nur mit
+    `status --ignored` ueberhaupt sichtbar - zaehlen genau wie unverfolgte.
+    JUCEs eigene .gitignore deckt u. a. `*.pch` ab; gemessen wurde, dass eine
+    untergeschobene `modules/juce_core/NakamaProbe.pch` in `--porcelain -uall`
+    gar nicht erschien und erst in `--porcelain --ignored -uall` als "!!". Ein
+    vorkompilierter Kopf traegt Makros - ignoriert heisst nicht harmlos.
     """
     klagen: list[str] = []
     loeschungen: list[str] = []
     for kennung, pfad in kennungen:
         buchstaben = set(kennung.replace(" ", ""))
-        if kennung == "??":
-            klagen.append(f"unverfolgte Datei im JUCE-Baum: {pfad}")
+        if kennung in ("??", "!!"):
+            art = "unverfolgte" if kennung == "??" else "ignorierte"
+            klagen.append(f"{art} Datei im JUCE-Baum: {pfad}")
         elif buchstaben & set("MARCTU"):
             if pfad not in patchdateien:
                 klagen.append(f"geaendert, steht aber nicht im Nakama-Patch: {pfad}")
@@ -1401,19 +1465,126 @@ def _patchdateien(patch: pathlib.Path) -> set[str]:
     return namen
 
 
-def _git(*argumente: str) -> tuple[int, str]:
+def _git(*argumente: str,
+         umgebung: dict[str, str] | None = None) -> tuple[int, str, str]:
+    """(Exit, stdout, stderr) - GETRENNT.
+
+    BEFUND B3, Runde 6 (29.08.2026): frueher lieferte diese Huelle
+    `stdout + stderr` als EINEN Strom. Git schreibt Warnungen aber auf stderr
+    und endet trotzdem mit 0 - gemessen mit einem unlesbaren globalen Ignore:
+
+        $ git -c core.excludesFile=C:/pagefile.sys status --porcelain -uall
+        warning: unable to access 'C:/pagefile.sys': Permission denied
+        warning: unable to access 'C:/pagefile.sys': Permission denied
+        ?? .claude/settings.local.json
+        exit=0
+
+    Die Warnzeile geriet damit in den Porcelain-Parser, ergab den
+    "Statuscode" `wa` und haette einen gueltigen JUCE-Baum ROT gefaerbt (im
+    Probelauf: `--nur-messen` endete mit Exit 2 statt 3, also F14 verdeckt).
+
+    Regel seither: bei Exit 0 ist AUSSCHLIESSLICH stdout Datenstrom. stderr
+    wird gesondert erfasst und als `hinweis` ausgegeben - nicht verschwiegen,
+    aber auch nie als Daten gelesen. Bei Exit != 0 traegt stderr die
+    Fehlermeldung und wird dort zitiert.
+
+    `umgebung` ergaenzt die Prozessumgebung (fuer GIT_INDEX_FILE beim
+    Sollvergleich); ohne sie wird die eigene unveraendert weitergereicht.
+    """
     try:
         lauf = subprocess.run(["git", "--no-optional-locks", *argumente],
                               capture_output=True, text=True, errors="replace",
-                              check=False)
+                              check=False,
+                              env=({**os.environ, **umgebung} if umgebung else None))
     except OSError as exc:
-        return 127, str(exc)
-    return lauf.returncode, (lauf.stdout + lauf.stderr)
+        return 127, "", str(exc)
+    return lauf.returncode, lauf.stdout, lauf.stderr
+
+
+def _patch_soll_vergleich(juce: pathlib.Path, patch: pathlib.Path,
+                          patchdateien: set[str]) -> tuple[list[str], list[str]]:
+    """Tragen die Patchdateien GENAU den Patch? (Klagen, stderr-Hinweise)
+
+    BEFUND B2 (iii), Runde 6: `git apply --check --reverse` prueft nur, ob die
+    Hunks rueckwaerts PASSEN - nicht, ob die Datei nur sie traegt. Gemessen am
+    echten Baum: eine zusaetzliche Zeile am Dateiende von
+    juce_audio_plugin_client_VST3.cpp liess `apply --check --reverse` mit
+    Exit 0 schweigen.
+
+    Der dichte Weg vergleicht nicht Hunk-Muster, sondern INHALT gegen den
+    gerechneten Sollzustand "Tag + Patch":
+
+        read-tree HEAD          temporaerer Index := gepinnter Commit
+        apply --cached <patch>  temporaerer Index := Commit + genau der Patch
+        update-index --refresh  Statdaten angleichen (hasht dabei jede Datei,
+                                deren Stat unbekannt ist)
+        diff-files -- <patchdateien>   nennt jede Abweichung des Arbeitsbaums
+
+    Der Arbeitsindex des JUCE-Baums wird dabei nicht angefasst: GIT_INDEX_FILE
+    zeigt auf eine Wegwerfdatei in einem temporaeren Verzeichnis.
+
+    Der Vergleich ist auf die Patchdateien beschraenkt - fuer alles andere ist
+    Zeile (ii) zustaendig, die jede Aenderung ausserhalb dieser Menge ohnehin
+    ROT meldet.
+    """
+    klagen: list[str] = []
+    hinweise: list[str] = []
+    with tempfile.TemporaryDirectory() as roh:
+        umgebung = {"GIT_INDEX_FILE": str(pathlib.Path(roh) / "nakama-soll.index")}
+        code, _, err = _git("-C", str(juce), "read-tree", "HEAD", umgebung=umgebung)
+        if code != 0:
+            return ([f"Sollzustand nicht rechenbar (read-tree Exit {code}): "
+                     f"{err.strip()[:200]}"], hinweise)
+        code, _, err = _git("-C", str(juce), "apply", "--cached", str(patch),
+                            umgebung=umgebung)
+        if code != 0:
+            return ([f"der Nakama-Patch laesst sich nicht auf den gepinnten Commit "
+                     f"legen (apply --cached Exit {code}): {err.strip()[:200]}"],
+                    hinweise)
+        # Exit und Ausgabe von --refresh sind hier kein Urteil: "needs update"
+        # steht auch fuer die geduldeten Loeschungen ausserhalb modules/**.
+        # Geurteilt wird ueber diff-files, und zwar nur ueber die Patchdateien.
+        _git("-C", str(juce), "update-index", "--refresh", umgebung=umgebung)
+        code, ausgabe, err = _git("-c", "core.quotepath=false", "-C", str(juce),
+                                  "diff-files", "--name-only",
+                                  "--", *sorted(patchdateien), umgebung=umgebung)
+        if code != 0:
+            return ([f"Sollvergleich fehlgeschlagen (diff-files Exit {code}): "
+                     f"{err.strip()[:200]}"], hinweise)
+        hinweise.extend(z.strip() for z in err.splitlines() if z.strip())
+        for pfad in ausgabe.splitlines():
+            if pfad.strip():
+                klagen.append("Patchdatei traegt nicht genau den Patch (zusaetzliche "
+                              f"Aenderung gegenueber '{JUCE_TAG} + Patch'): {pfad.strip()}")
+    return klagen, hinweise
 
 
 def juce_baum_riegel(bau: pathlib.Path) -> tuple[list[str], list[str], dict]:
-    """Ist juce-src der gepinnte Tag plus genau der eine Nakama-Patch?"""
-    info: dict = {"beschreibung": "", "patchdateien": 0, "loeschungen": []}
+    """Ist juce-src der gepinnte Tag plus genau der eine Nakama-Patch?
+
+    Drei Zeilen, seit Befund B2 (Runde 6) alle drei notwendig:
+
+      (i)   HEAD IST der Commit des gepinnten Tags. Frueher wurde nur die
+            Ausgabe von `git describe` als Text abgelegt und mit nichts
+            verglichen - ein Baum auf einem anderen Tag waere durchgelaufen.
+      (ii)  `status --porcelain --ignored -uall`: die geaenderte Menge ist
+            genau die Patchdateimenge. Ohne `--ignored` blieb eine von JUCEs
+            eigener .gitignore gedeckte Fremddatei unsichtbar.
+      (iii) Die Patchdateien tragen GENAU den Patch - Inhalt gegen den
+            gerechneten Sollzustand, siehe _patch_soll_vergleich().
+            `apply --check --reverse` genuegte dafuer nicht: es prueft nur,
+            ob die Hunks rueckwaerts passen, und schwieg zu einer
+            zusaetzlichen Zeile ausserhalb ihrer Kontexte. Es ist deshalb
+            ERSETZT, nicht ergaenzt - eine schwaechere Doppelwache laedt nur
+            dazu ein, ihr zu glauben.
+
+    Bewusst NICHT verschaerft: eine Loeschung ausserhalb modules/** bleibt
+    geduldet und benannt (siehe juce_baum_status_pruefen). Eine geloeschte
+    Datei kann keine Compiler-Eingabe werden, und die drei Zeilen oben
+    schliessen jeden Weg, auf dem INHALT in den Baum kommt.
+    """
+    info: dict = {"beschreibung": "", "patchdateien": 0, "loeschungen": [],
+                  "hinweise": []}
     juce = bau / "_deps" / "juce-src"
     if not juce.is_dir():
         return ([f"{_kurz(juce)} fehlt - der JUCE-Baum ist nicht pruefbar"], [], info)
@@ -1427,14 +1598,47 @@ def juce_baum_riegel(bau: pathlib.Path) -> tuple[list[str], list[str], dict]:
         return ([f"{_kurz(JUCE_PATCH)} nennt keine Datei - kein pruefbarer Patch"],
                 [], info)
 
-    code, beschreibung = _git("-C", str(juce), "describe", "--tags", "--always", "--dirty")
-    info["beschreibung"] = beschreibung.strip() if code == 0 else "nicht ermittelbar"
+    klagen: list[str] = []
 
-    code, ausgabe = _git("-c", "core.quotepath=false", "-C", str(juce),
-                         "status", "--porcelain", "-uall")
+    def hinweis(text: str) -> None:
+        """stderr wird gesagt, nie als Daten gelesen (Befund B3)."""
+        info["hinweise"].extend(z.strip() for z in text.splitlines() if z.strip())
+
+    # Der gepinnte Tag muss zum Patchnamen passen - sonst messen wir einen
+    # fremden Patch gegen diesen Commit.
+    if JUCE_TAG not in JUCE_PATCH.name:
+        klagen.append(f"gepinnter Tag {JUCE_TAG} kommt im Patchnamen "
+                      f"{JUCE_PATCH.name} nicht vor")
+
+    # -- (i) HEAD ist der Commit des gepinnten Tags -------------------------
+    code_kopf, kopf, err_kopf = _git("-C", str(juce), "rev-parse", "HEAD")
+    hinweis(err_kopf)
+    code_tag, tag, err_tag = _git("-C", str(juce), "rev-parse", JUCE_TAG + "^{commit}")
+    hinweis(err_tag)
+    kopf, tag = kopf.strip(), tag.strip()
+    if code_kopf != 0:
+        klagen.append("HEAD des JUCE-Baums nicht lesbar "
+                      f"(rev-parse Exit {code_kopf}): {err_kopf.strip()[:200]}")
+        info["beschreibung"] = "HEAD nicht ermittelbar"
+    elif code_tag != 0:
+        klagen.append(f"der gepinnte Tag {JUCE_TAG} fehlt im JUCE-Baum "
+                      f"(rev-parse Exit {code_tag}): {err_tag.strip()[:200]}")
+        info["beschreibung"] = f"HEAD {kopf[:12]}, Tag {JUCE_TAG} fehlt"
+    elif kopf != tag:
+        klagen.append(f"HEAD {kopf[:12]} ist NICHT der Commit des Tags "
+                      f"{JUCE_TAG} ({tag[:12]})")
+        info["beschreibung"] = f"HEAD {kopf[:12]}, nicht Tag {JUCE_TAG}"
+    else:
+        info["beschreibung"] = f"Tag {JUCE_TAG} ({kopf[:12]})"
+
+    # -- (ii) genau die Patchdateimenge ist geaendert -----------------------
+    code, ausgabe, err = _git("-c", "core.quotepath=false", "-C", str(juce),
+                              "status", "--porcelain", "--ignored", "-uall")
     if code != 0:
-        return ([f"git status im JUCE-Baum fehlgeschlagen: {ausgabe.strip()[:200]}"],
-                [], info)
+        klagen.append("git status im JUCE-Baum fehlgeschlagen: "
+                      + (err.strip() or ausgabe.strip())[:200])
+        return (klagen, [], info)
+    hinweis(err)
 
     kennungen: list[tuple[str, str]] = []
     for zeile in ausgabe.splitlines():
@@ -1445,13 +1649,14 @@ def juce_baum_riegel(bau: pathlib.Path) -> tuple[list[str], list[str], dict]:
             pfad = pfad.split(" -> ")[-1]
         kennungen.append((zeile[:2], pfad.replace(os.sep, "/")))
 
-    klagen, loeschungen = juce_baum_status_pruefen(kennungen, patchdateien)
+    statusklagen, loeschungen = juce_baum_status_pruefen(kennungen, patchdateien)
+    klagen.extend(statusklagen)
     info["loeschungen"] = loeschungen
 
-    code, ausgabe = _git("-C", str(juce), "apply", "--check", "--reverse", str(JUCE_PATCH))
-    if code != 0:
-        klagen.append("der Nakama-Patch ist nicht sauber angewandt "
-                      f"(apply --check --reverse Exit {code}): {ausgabe.strip()[:200]}")
+    # -- (iii) die Patchdateien tragen genau den Patch ----------------------
+    sollklagen, sollhinweise = _patch_soll_vergleich(juce, JUCE_PATCH, patchdateien)
+    klagen.extend(sollklagen)
+    info["hinweise"].extend(sollhinweise)
     return klagen, loeschungen, info
 
 
@@ -1579,6 +1784,7 @@ def selbsttest() -> int:
     _selbsttest_configure_frische()
     _selbsttest_schalter_und_tu()
     _selbsttest_runde5()
+    _selbsttest_runde6()
 
     print(f"\n{ok} ok, {len(fehler)} Fehler")
     return 2 if fehler else 0
@@ -1789,6 +1995,187 @@ def _selbsttest_runde5() -> None:
     pruefe(any("unbekannter git-Status" in k for k in klagen),
            "R5-11f: ein unbekannter Statuscode ist ROT, kein stilles Ja",
            " | ".join(klagen) if klagen else "keine Klage")
+
+
+def _probe_repo(wurzel: pathlib.Path, tag: str,
+                dateien: dict[str, str]) -> None:
+    """Kleines Wegwerf-Repo: ein Commit, ein Tag, sonst nichts.
+
+    Eigene user-/gpg-Einstellungen, damit die Probe nicht von der Umgebung
+    des Rechners abhaengt, auf dem sie laeuft.
+    """
+    wurzel.mkdir(parents=True, exist_ok=True)
+    for name, inhalt in dateien.items():
+        ziel = wurzel / name
+        ziel.parent.mkdir(parents=True, exist_ok=True)
+        ziel.write_text(inhalt, encoding="utf-8", newline="\n")
+    _git("init", "-q", "-b", "master", str(wurzel))
+    for schluessel, wert in (("user.email", "probe@nakama.invalid"),
+                             ("user.name", "Nakama-Probe"),
+                             ("commit.gpgsign", "false"),
+                             ("core.autocrlf", "false")):
+        _git("-C", str(wurzel), "config", schluessel, wert)
+    _git("-C", str(wurzel), "add", "--", *sorted(dateien))
+    _git("-C", str(wurzel), "commit", "-q", "-m", "Basis")
+    _git("-C", str(wurzel), "tag", tag)
+
+
+def _selbsttest_runde6() -> None:
+    """Runde 6 baulos: die vier Befunde B1-B4 als Wache, jede einmal gebrochen.
+
+    B1 Ortsriegel ohne Endungsausnahme, B2 der JUCE-Baum-Riegel ueber HEAD,
+    ignorierte Dateien und Patchinhalt, B3 getrennte git-Stroeme. B4 ist ein
+    Manifestbefund und hat hier nichts zu pruefen.
+    """
+    print("\nA14-Selbsttest, Runde 6: Ortsriegel ohne Endungsausnahme, "
+          "JUCE-Baum ueber HEAD/ignoriert/Inhalt, getrennte git-Stroeme")
+
+    # -- B1: keine Endung entkommt der Erlaubnisliste -----------------------
+    with tempfile.TemporaryDirectory() as roh:
+        basis = pathlib.Path(roh)
+        plugin = basis / "plugin"
+        module = basis / "juce-src" / "modules"
+        apc = module / "juce_audio_plugin_client"
+        system = basis / "Windows"
+        for pfad in (plugin, apc, module / "juce_core", system / "System32"):
+            pfad.mkdir(parents=True, exist_ok=True)
+        erlaubt = [("plugin", plugin), ("juce-src/modules", module),
+                   ("Windows-System", system)]
+        verboten = [("juce_audio_plugin_client", apc)]
+        quelle = plugin / "Eins.cpp"
+        quelle.write_text("", encoding="utf-8")
+        marker = [str(quelle).upper()]
+
+        gebrochen = []
+        for endung in (".dat", ".dll", ".nls", ".exe", ".mui", ".bin"):
+            klagen, _ = tlog_ortsriegel([str(basis / "OUTSIDE" / ("forced" + endung))],
+                                        marker, [quelle], erlaubt, verboten)
+            if not any("unbekanntem Ort" in k for k in klagen):
+                gebrochen.append(endung)
+        pruefe(not gebrochen,
+               "R6-1a: eine per /FI gelesene Datei ausserhalb der erlaubten Orte ist "
+               "ROT - unabhaengig von der Endung (Befund B1)",
+               "stumm geblieben bei: " + ", ".join(gebrochen) if gebrochen
+               else "geprueft: .dat .dll .nls .exe .mui .bin")
+
+        klagen, zaehlung = tlog_ortsriegel(
+            [str(system / "System32" / "tzres.dll")], marker, [quelle],
+            erlaubt, verboten)
+        pruefe(klagen == [] and zaehlung.get("Windows-System") == 1,
+               "R6-1b: eine Systemdatei ist ueber ihren ORT erlaubt und wird "
+               "gezaehlt, nicht ueber ihre Endung",
+               " | ".join(klagen) if klagen else f"Windows-System "
+               f"{zaehlung.get('Windows-System')}")
+
+        pruefe("ohne Uebersetzungsstoff" not in zaehlung,
+               "R6-1c: die ortsfreie Sammelspalte ist weg - jede Datei zaehlt "
+               "unter ihrem Ort",
+               ", ".join(zaehlung))
+
+    # -- B3: git schreibt Warnungen auf stderr und endet mit 0 --------------
+    with tempfile.TemporaryDirectory() as roh:
+        repo = pathlib.Path(roh) / "warnrepo"
+        _probe_repo(repo, "0.0.1", {
+            "datei.txt": "eins\n",
+            # Ein negatives Muster in .gitattributes ist der portable Ausloeser:
+            # git warnt zweimal auf stderr und endet trotzdem mit 0.
+            ".gitattributes": "* -text\n!*.foo bar\n",
+        })
+        code, aus, err = _git("-c", "core.quotepath=false", "-C", str(repo),
+                              "status", "--porcelain", "--ignored", "-uall")
+        pruefe(code == 0 and "warning:" in err and "warning:" not in aus,
+               "R6-3a: bei Exit 0 traegt nur stdout Daten; die git-Warnung steht "
+               "getrennt auf stderr (Befund B3)",
+               f"Exit {code} | stderr: {err.splitlines()[0] if err.splitlines() else '-'}")
+
+        # Was der frueher gemischte Strom angerichtet haette - wortgleich
+        # nachgestellt, damit der Befund nicht nur behauptet ist.
+        gemischt = [(z[:2], z[3:].strip()) for z in (aus + err).splitlines()
+                    if len(z) >= 4]
+        alt_klagen, _ = juce_baum_status_pruefen(gemischt, {"datei.txt"})
+        sauber = [(z[:2], z[3:].strip()) for z in aus.splitlines() if len(z) >= 4]
+        neu_klagen, _ = juce_baum_status_pruefen(sauber, {"datei.txt"})
+        pruefe(any("unbekannter git-Status" in k for k in alt_klagen)
+               and neu_klagen == [],
+               "R6-3b: der frueher gemischte Strom haette die Warnzeile als "
+               "Statuscode gelesen; der getrennte tut es nicht",
+               "gemischt: " + (alt_klagen[0] if alt_klagen else "keine Klage")
+               + " || getrennt: " + (" | ".join(neu_klagen) if neu_klagen
+                                     else "keine Klage"))
+
+    # -- B2: HEAD, ignorierte Dateien und Patchinhalt -----------------------
+    global JUCE_PATCH, JUCE_TAG
+    merk_patch, merk_tag = JUCE_PATCH, JUCE_TAG
+    try:
+        with tempfile.TemporaryDirectory() as roh:
+            basis = pathlib.Path(roh)
+            bau = basis / "build"
+            juce = bau / "_deps" / "juce-src"
+            grund = [f"z{nr:02d}" for nr in range(1, 31)]
+            _probe_repo(juce, "1.0.0", {
+                "datei.txt": "\n".join(grund) + "\n",
+                ".gitignore": "*.pch\n",
+            })
+            # Arbeitsbaum := Tag + Patch; der Patch ist genau diese Aenderung.
+            gepatcht = list(grund)
+            gepatcht[1] = "z02 vom Nakama-Patch"
+            (juce / "datei.txt").write_text("\n".join(gepatcht) + "\n",
+                                            encoding="utf-8", newline="\n")
+            _, diff, _ = _git("-C", str(juce), "diff")
+            JUCE_PATCH = basis / "probe-1.0.0-nakama.patch"
+            JUCE_PATCH.write_text(diff, encoding="utf-8", newline="\n")
+            JUCE_TAG = "1.0.0"
+
+            klagen, loeschungen, info = juce_baum_riegel(bau)
+            pruefe(klagen == [] and info["beschreibung"].startswith("Tag 1.0.0"),
+                   "R6-2a: Tag plus genau der Patch ist gruen (Grundstellung der "
+                   "drei neuen Zeilen)",
+                   " | ".join(klagen) if klagen else info["beschreibung"])
+
+            # (i) HEAD wandert weiter, der Baum bleibt bytegleich.
+            _git("-C", str(juce), "commit", "-q", "--allow-empty", "-m", "danach")
+            klagen, _, info = juce_baum_riegel(bau)
+            pruefe(any("NICHT der Commit des Tags" in k for k in klagen),
+                   "R6-2b: HEAD neben dem gepinnten Tag ist ROT, obwohl der "
+                   "Arbeitsbaum unveraendert ist (Befund B2 i)",
+                   " | ".join(klagen) if klagen else "keine Klage")
+            _git("-C", str(juce), "tag", "-f", "1.0.0", "HEAD")
+
+            # (ii) eine von .gitignore gedeckte Fremddatei im Modulbaum.
+            fremd = juce / "modules" / "juce_core" / "NakamaProbe.pch"
+            fremd.parent.mkdir(parents=True, exist_ok=True)
+            fremd.write_text("#define JucePlugin_Name \"X\"\n", encoding="utf-8")
+            _, ohne, _ = _git("-C", str(juce), "status", "--porcelain", "-uall")
+            klagen, _, _ = juce_baum_riegel(bau)
+            pruefe(any("ignorierte Datei" in k and "NakamaProbe.pch" in k
+                       for k in klagen) and "NakamaProbe" not in ohne,
+                   "R6-2c: eine ignorierte Fremddatei ist ROT - ohne --ignored "
+                   "war sie unsichtbar (Befund B2 ii)",
+                   " | ".join(klagen) if klagen else "keine Klage")
+            fremd.unlink()
+
+            # (iii) eine zusaetzliche Zeile IN der Patchdatei - und zwar am
+            # Dateiende, also weit ausserhalb der Hunk-Kontexte. Genau so hat
+            # sie am echten Baum apply --check --reverse ueberlebt.
+            (juce / "datei.txt").write_text(
+                "\n".join(gepatcht + ["z31 heimlich dazugekommen"]) + "\n",
+                encoding="utf-8", newline="\n")
+            rueck, _, _ = _git("-C", str(juce), "apply", "--check", "--reverse",
+                               str(JUCE_PATCH))
+            klagen, _, _ = juce_baum_riegel(bau)
+            pruefe(any("nicht genau den Patch" in k for k in klagen) and rueck == 0,
+                   "R6-2d: eine zusaetzliche Zeile in der Patchdatei ist ROT, "
+                   "waehrend apply --check --reverse dazu schweigt (Befund B2 iii)",
+                   f"apply --check --reverse Exit {rueck} | "
+                   + (" | ".join(klagen) if klagen else "keine Klage"))
+            (juce / "datei.txt").write_text("\n".join(gepatcht) + "\n",
+                                            encoding="utf-8", newline="\n")
+            klagen, _, _ = juce_baum_riegel(bau)
+            pruefe(klagen == [],
+                   "R6-2e: zurueckgenommen ist der Baum wieder gruen",
+                   " | ".join(klagen) if klagen else "")
+    finally:
+        JUCE_PATCH, JUCE_TAG = merk_patch, merk_tag
 
 
 def _selbsttest_schalter_und_tu() -> None:
@@ -2313,10 +2700,16 @@ def main() -> int:
     baumklagen, loeschungen, bauminfo = juce_baum_riegel(bau)
     pruefe(not baumklagen,
            f"juce-src ist {bauminfo['beschreibung']} plus genau der Nakama-VST3-Patch "
-           f"({bauminfo['patchdateien']} Patchdatei(en); {len(loeschungen)} benannte "
-           f"Loeschung(en) ausserhalb modules/**)",
+           f"(HEAD = Tag; nichts Geaendertes, Unverfolgtes oder Ignoriertes "
+           f"ausserhalb der {bauminfo['patchdateien']} Patchdatei(en); diese tragen "
+           f"genau den Patch; {len(loeschungen)} benannte Loeschung(en) ausserhalb "
+           f"modules/**)",
            " | ".join(baumklagen[:6]) if baumklagen else
            (", ".join(loeschungen[:5]) if loeschungen else ""))
+    # Befund B3: git schreibt Warnungen auf stderr und endet trotzdem mit 0.
+    # Sie sind Hinweis, nie Datenstrom - gesagt wird beides.
+    for zeile in bauminfo.get("hinweise", [])[:6]:
+        print("  hinweis git im JUCE-Baum: " + zeile)
 
     # ── 0c. Diagnose: womit wurde gebaut ───────────────────────────────────
     print("\n[0c] Diagnose - womit wurde gebaut (kein Frische-Urteil)")

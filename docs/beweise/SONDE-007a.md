@@ -12744,8 +12744,8 @@ zurückgenommen (Nachweis am Ende dieses Abschnitts).
 
 ### Der Wegwechsel, gemessen statt angenommen
 
-**Der Neubau kostet 4,3–4,6 Sekunden.** Neun Übersetzungseinheiten, ein Relink,
-gemessen über sieben Läufe an diesem Tag. Zum Vergleich: der frühere No-op-Bau
+**Der Neubau kostet 4,3–4,6 Sekunden.** Neun Übersetzungseinheiten, ein Relink;
+die Spanne ist die aller Läufe, deren Rohausgabe unten steht. Zum Vergleich: der frühere No-op-Bau
 derselben Zeile kostete 1,6–1,8 s (Probe P5-1 im Spezifikationsabschnitt). Der
 Preis für „Frische herstellen statt nachbauen" ist also unter drei Sekunden pro
 Kanonlauf.
@@ -12773,9 +12773,11 @@ Zustandsvergleich vorher/nachher (61 erfasste Artefakte):
 
 `--clean-first` cleant die **ganze Solution**, nicht das genannte Ziel: alle 29
 Bundle-Artefakte waren danach gelöscht. Ein Kanonlauf wäre an jedem anderen
-Bein gescheitert. Der zweite Weg — gezieltes Löschen von
-`NakamaKern.dir/<konfig>/*` und der `NakamaKern.lib` derselben Konfiguration,
-dann `--target NakamaKern` — ist deshalb der implementierte. Der Baum wurde nach
+Bein gescheitert. Der zweite Weg — gezieltes Löschen der Bauausgaben in
+`NakamaKern.dir/<konfig>/` und der `NakamaKern.lib` derselben Konfiguration,
+dann `--target NakamaKern` — ist deshalb der implementierte. Dass dabei nach
+Endung gelöscht wird und generierte Eingaben stehen bleiben, ist das Ergebnis
+der PCH-Probe (nächste Tabelle). Der Baum wurde nach
 dieser Messung vollständig wiederhergestellt (`cmake --build … --config Release`,
 Exit 0).
 
@@ -12811,7 +12813,7 @@ Exit 0).
 | **W5a** derselbe Header über `/FI` | `P5-W5a` | **grün: K1b ROT über `CL.read`.** Der diskriminierende Beleg: die literale Hülle blieb bei **21** (sieht den Header nicht), die Tlog-Menge stieg auf **13** (sieht ihn) |
 | **W5b** derselbe Header als PCH | `P5-W5b` | **grün: drei Rots**, alle korrekt — K1b (der PCH-Header ist Compiler-Eingabe), Tlog-Riegel (`cmake_pch.hxx`/`.pch` aus dem Bauverzeichnis) und der Neubau-Beleg (10 Objekte statt 9) |
 | **W6** `juce_audio_plugin_client`-Header | `R5-8b` (baulos) und `P5-W6` (echter Baum) | **grün: Tlog-Riegel ROT**, alles andere grün |
-| **W7** generierter `JuceLibraryCode`-Header | `R5-9` (baulos); am echten Baum durch `P5-W5b` mitbelegt (`cmake_pch.hxx` liegt im Bauverzeichnis und war ROT) | **grün** |
+| **W7** generierter `JuceLibraryCode`-Header | `R5-9` (baulos); am echten Baum durch `P5-W5b` mitbelegt — dort war mit `cmake_pch.hxx` ein **generierter Header aus dem Bauverzeichnis** ROT; der Pfad `JuceLibraryCode` selbst entsteht heute nicht, weil der Kern kein JUCE-Bundle-Ziel ist, und wird deshalb baulos geprüft | **grün** |
 | **W8** manipulierte Kopie an erlaubtem JUCE-Ort | `R5-11b` (baulos) und `P5-W8` (echter Baum) | **grün: JUCE-Baum-Riegel ROT.** Der Weg, den die erste Matrixfassung ausdrücklich offen ließ |
 
 **Der `grep`, auf den sich der Tlog-Riegel stützt** (eigene Nachprüfung, wie in
@@ -13036,8 +13038,9 @@ EXIT=2
 ```text
 $ py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py --nur-messen
 HINWEIS: --nur-messen - es wird NICHT gebaut.
-         Ohne Neubau kein Frische-Urteil; dieser Lauf endet in jedem
-         Fall mit Exit 3. Die Identitaetspruefung laeuft trotzdem.
+         Ohne Neubau kein Frische-Urteil; dieser Lauf endet nie mit 0,
+         ohne weiteren Befund mit Exit 3. Die Identitaetspruefung und
+         die Riegel laufen trotzdem und koennen fuer sich rot sein.
 Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
 Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
 Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
@@ -13064,10 +13067,21 @@ und steht oben, über die Frische behauptet der Lauf nichts. Ein `pruefe()` an
 dieser Stelle wäre Exit 2 und damit ein Urteil über den Kern gewesen — das wurde
 bewusst nicht so gebaut.
 
+**Selbstaudit, danach nachgezogen (Prüflistenregel E).** Der erste Wortlaut
+sagte „dieser Lauf endet in jedem Fall mit Exit 3" — das stimmt nicht, sobald
+ein Riegel für sich rot ist (siehe den Zusatzbeleg gleich darunter). Der Text
+im Skriptkopf und der Hinweis im Lauf sagen jetzt „endet nie mit 0, ohne
+weiteren Befund mit Exit 3". Außerdem wurde ein veraltetes Configure in
+`--nur-messen` bisher als `pruefe()` geführt und damit als Urteil (Exit 2),
+im Normalmodus dagegen als fehlende Voraussetzung — dieselbe Lage, zwei
+Einordnungen. Jetzt ist es in beiden Modi eine Voraussetzung.
+
 **Ungeplanter Zusatzbeleg: `--nur-messen` auf einem wirklich veralteten Baum.**
 Ein `--nur-messen`-Lauf unmittelbar nach der zurückgenommenen `/FI`-Probe — die
 Quellen waren schon wieder sauber, das Bauverzeichnis noch nicht — endete mit
-Exit 2 statt 3, und zwar zu Recht:
+Exit 2 statt 3, und zwar zu Recht. Der Lauf stammt von **vor** der
+Regel-E-Korrektur oben; sein Hinweistext ist deshalb der alte und bleibt hier
+unverändert stehen, weil eine zitierte Rohausgabe wörtlich ist:
 
 ```text
 HINWEIS: --nur-messen - es wird NICHT gebaut.
@@ -13259,7 +13273,7 @@ unverfolgte sehr wohl, und beide sind ROT.
 | **E** — „Jede Behauptung sagt nicht mehr, als der Test misst." | Runner-Behauptung `A14` neu geschrieben; die AdditionalOptions-Klasse heißt in der Ausgabe „auf Enthaltensein"; die zwei verbleibenden Nichtzusagen (Toolchain-/SDK-Inhalt, Compilerwechsel innerhalb derselben `lastbuildstate`-Kennung) stehen ausdrücklich in der Behauptung, im Skriptkopf und in der Riegeltabelle. |
 | **E** — „Zahlen im Manifest sind gemessen, nicht abgeschrieben." | Die TU-Zahl in Zeile K1 der Riegeltabelle ist ersatzlos entfallen; dort steht jetzt die Quelle (`NAKAMA_KERN_QUELLEN`) und der Hinweis, dass der Messlauf die Anzahl ausgibt. Jede Zahl in diesem Abschnitt stammt aus einer eingefügten Rohausgabe. |
 | **E** — „Positionen als Symbol/Anker oder `Datei:Zeile @ sha7`." | Dieser Abschnitt nennt nur Symbole (`kern_neubau`, `erlaubte_leseorte`, `juce_baum_status_pruefen`, `_NEUBAU_AUSGABEN`) und Kennungen; sein Kopf trägt den Stand. Der historische Zitatblock im Manifestkopf bleibt wörtlich, sein einleitender Satz trägt jetzt `@ 3353fb6`, die heutigen Symbolverweise stehen darunter außerhalb des Zitats. |
-| **F** — „Eine Behauptung ohne eingefügte Rohausgabe ist ein gescheitertes Ticket." | Neun Rohausgaben oben: sieben Proben am echten Baum, der Selbsttest und der grüne Referenzlauf, dazu der Kanon-Anhang unten. |
+| **F** — „Eine Behauptung ohne eingefügte Rohausgabe ist ein gescheitertes Ticket." | Eingefügt sind: die Messung zu `--clean-first`, der `grep` über die JUCE-Module, sieben Proben am echten Baum, zwei `--nur-messen`-Läufe, der Selbsttest, die Ausgabezeile zu „Enthaltensein", der grüne Referenzlauf — und die Kanon-Anhänge unten. |
 
 ### Was jetzt gilt — und was ausdrücklich nicht
 

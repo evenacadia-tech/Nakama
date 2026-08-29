@@ -42,7 +42,8 @@ Projektdatei neu erzeugen (`cmake --build <bau> --config Release --target
 NakamaKern`, dabei laeuft ueber ZERO_CHECK auch das Configure samt K2/K2b/K2c
 mit). Gemessen wird danach das Artefakt, das gerade entstanden ist - eine
 "veraltete Lib" gibt es nicht mehr zu erkennen. Ohne Neubau (`--nur-messen`)
-gibt es kein gruenes Frische-Urteil, sondern Exit 3.
+gibt es kein gruenes Frische-Urteil: der Lauf endet nie mit 0, ohne
+weiteren Befund mit Exit 3.
 
 Die frueheren Frischewachen bleiben als DIAGNOSE erhalten und beantworten ab
 jetzt die Frage "WOMIT wurde gebaut": configure_frische, die vier
@@ -2168,8 +2169,9 @@ def main() -> int:
     neubau: dict = {}
     if nur_messen:
         print("HINWEIS: --nur-messen - es wird NICHT gebaut.")
-        print("         Ohne Neubau kein Frische-Urteil; dieser Lauf endet in jedem")
-        print("         Fall mit Exit 3. Die Identitaetspruefung laeuft trotzdem.")
+        print("         Ohne Neubau kein Frische-Urteil; dieser Lauf endet nie mit 0,")
+        print("         ohne weiteren Befund mit Exit 3. Die Identitaetspruefung und")
+        print("         die Riegel laufen trotzdem und koennen fuer sich rot sein.")
     else:
         neubau = kern_neubau(bau)
         if not neubau["ok"]:
@@ -2321,9 +2323,17 @@ def main() -> int:
     pruefe(not lbs_klagen,
            "lastbuildstate nennt Toolset, VCToolsVersion und TargetPlatformVersion",
            " | ".join(lbs_klagen) if lbs_klagen else roh_lbs.splitlines()[0])
-    pruefe(not klagen,
-           "Configure ist juenger als jede CMake-Eingabe, die der Generator verbraucht hat",
-           " | ".join(klagen))
+    if nur_messen and klagen:
+        # Dieselbe Einordnung wie im Normalmodus: ein veraltetes Configure ist
+        # eine fehlende Voraussetzung, kein Urteil ueber den Kern. Der Lauf
+        # endet ohnehin mit Exit 3.
+        print("  --      Configure veraltet (Voraussetzung, kein Urteil): "
+              + " | ".join(klagen))
+    else:
+        pruefe(not klagen,
+               "Configure ist juenger als jede CMake-Eingabe, die der Generator "
+               "verbraucht hat",
+               " | ".join(klagen))
 
     projekt_kandidaten = sorted(bau.glob("**/NakamaKern.vcxproj"))
     tlog_kandidaten = sorted(bau.glob("**/NakamaKern.tlog/CL.command.1.tlog"))

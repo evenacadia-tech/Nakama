@@ -123,9 +123,9 @@ enum class P1Ergebnis
     /// Kein Platz und nicht koaleszierbar: liegt jetzt im Wiederholpuffer und
     /// geht nach dem naechsten Reconnect erneut raus.
     zurWiederholung,
-    /// Auch der Wiederholpuffer ist voll — die aelteste Wiederholung faellt,
-    /// gezaehlt, nie still.
-    wiederholungVerdraengt,
+    /// Auch der Wiederholpuffer ist voll: die NEUE Nachricht wird abgewiesen,
+    /// gezaehlt, nie still. Was einmal angenommen wurde, bleibt angenommen.
+    abgewiesen,
     /// Groesser, als ein v3-Frame tragen kann. Sie wird an der TUER abgewiesen
     /// statt eingereiht: eine Nachricht, die nie auf den Draht passt, wuerde
     /// den Sender sonst bei jedem Verbindungsaufbau erneut scheitern lassen.
@@ -135,6 +135,29 @@ enum class P1Ergebnis
 /// P1-Queue: Snapshots koaleszieren nach Objektschluessel, Ereignisse nicht.
 /// Der Wiederholpuffer ist die CLIENT-Haelfte des Outbox-Gedankens aus §53.9;
 /// die Outbox im Broker ist SONDE-011.
+///
+/// ── Warum ein voller Wiederholpuffer das NEUE Ereignis abweist ─────────────
+///
+/// Die erste Fassung machte im vollen Wiederholpuffer Platz, indem sie mit
+/// `pop_front()` die AELTESTE Wiederholung wegwarf. Damit verschwand ein
+/// bereits angenommenes, nicht koaleszierbares Ereignis — bei Kapazitaet 2/2
+/// und den Ereignissen 1…5 genau die Nr. 3 (T2-Befund 1 Runde 3 vom
+/// 2026-08-29). §53.9 sagt fuer P1 aber „nicht koaleszierbare Events bei
+/// Ueberlauf ueber Reconnect/Outbox WIEDERHOLEN" — wiederholen, nicht
+/// verdraengen. Eine Annahme, die spaeter still zurueckgenommen wird, ist
+/// keine Annahme.
+///
+/// Deshalb faellt jetzt der NEUZUGANG (`P1Ergebnis::abgewiesen`, gezaehlt und
+/// dem Aufrufer gemeldet), und alles, was schon angenommen ist, ueberlebt bis
+/// zum Reconnect.
+///
+/// **Warum kein erzwungener Reconnect.** Naheliegend waere, den vollen
+/// Wiederholpuffer als Verbindungsende zu behandeln — dann gingen die
+/// vorgehaltenen Ereignisse sofort wieder raus. P1 teilt sich die
+/// Control-Verbindung aber mit P0. Ein Reconnect wegen P1 risse damit die
+/// P0-Steuerung mit, deren Zusage „nichts verwerfen" heisst; das Gate dieses
+/// Tickets lautet ausdruecklich „ohne P0-Starvation". Der Rueckstau bleibt
+/// deshalb lokal und sichtbar, statt die Steuerleitung mitzureissen.
 class P1Warteschlange
 {
 public:
@@ -160,10 +183,10 @@ public:
         }
         if (wiederholung.size() >= wkap)
         {
-            wiederholung.pop_front();
-            wiederholung.push_back (std::move (nachricht));
-            ++verdraengt;
-            return P1Ergebnis::wiederholungVerdraengt;
+            // Voll heisst: abweisen. Kein `pop_front()` — das loeschte ein
+            // bereits angenommenes Ereignis (T2-Befund 1 Runde 3).
+            ++abgewiesenZaehler;
+            return P1Ergebnis::abgewiesen;
         }
         wiederholung.push_back (std::move (nachricht));
         return P1Ergebnis::zurWiederholung;
@@ -243,7 +266,10 @@ public:
     /// Wie viele Eintraege gerade zwischen Queue und Pipe unterwegs sind.
     std::size_t inFlug()         const noexcept { return reserviert; }
     std::size_t wiederholungen() const noexcept { return wiederholung.size(); }
-    std::uint64_t verdraengte()  const noexcept { return verdraengt; }
+    /// Wie viele NEUE Nachrichten abgewiesen wurden, weil Queue UND
+    /// Wiederholpuffer voll waren. Angenommenes wird nie mitgezaehlt, weil
+    /// Angenommenes nie faellt.
+    std::uint64_t abgewiesene()  const noexcept { return abgewiesenZaehler; }
 
 private:
     struct Eintrag { std::string schluessel; std::string nachricht; };
@@ -252,7 +278,7 @@ private:
     std::size_t reserviert = 0;
     std::deque<Eintrag> inhalt;
     std::deque<std::string> wiederholung;
-    std::uint64_t verdraengt = 0;
+    std::uint64_t abgewiesenZaehler = 0;
 };
 
 /// P2-Schleuse: vorallokierte SPSC-Struktur zwischen dem erzeugenden Worker
@@ -287,6 +313,24 @@ private:
 /// Die Sequenz je Slot bleibt, aber in ihrer zweiten Rolle: sie sagt, WELCHE
 /// Folgenummer im Platz liegt. Der Verbraucher nimmt den Inhalt nur an, wenn
 /// es die ist, die er erwartet.
+///
+/// ── Und warum die Kollision ein LOCH erzeugt, statt den Frame zu opfern ───
+///
+/// Die erste Fassung dieses Besitzmodells liess den Erzeuger bei einer
+/// Kollision einfach `false` liefern: der gerade erzeugte, NEUESTE Frame fiel.
+/// Das ist die Umkehrung der Politik. §53.9 sagt fuer P2 „aeltesten
+/// ungesendeten Frame ersetzen" — der neueste ist der einzige, der niemals
+/// fallen darf, denn er traegt den aktuellen Messwert (T2-Befund 2 Runde 3 vom
+/// 2026-08-29).
+///
+/// Der Erzeuger ueberspringt die kollidierende Position deshalb: sie bleibt
+/// ein LOCH, das nie beschrieben wird, und der Frame geht in den naechsten
+/// Platz. Der Verbraucher erkennt das Loch daran, dass die Folgenummer im
+/// Platz nicht die erwartete ist — genau die Pruefung, die es ohnehin schon
+/// gibt —, und geht weiter. Der zweite Platz ist immer frei: es gibt genau
+/// EINEN Verbraucher, er haelt hoechstens einen Platz, und das war der erste.
+/// Der Verlust liegt damit wieder dort, wo die Politik ihn haben will, beim
+/// aeltesten wartenden Frame.
 template <std::size_t SlotBytes = 8192>
 class P2Schleuse
 {
@@ -313,21 +357,37 @@ public:
             zuGross.fetch_add (1, std::memory_order_relaxed);
             return false;
         }
-        const std::uint64_t p = schreib.load (std::memory_order_relaxed);
-        Slot& s = slots[static_cast<std::size_t> (p % kSlots)];
+        std::uint64_t p = schreib.load (std::memory_order_relaxed);
+        Slot* s = &slots[static_cast<std::size_t> (p % kSlots)];
 
         // Zuerst den Platz holen — VOR jeder Buchfuehrung. Wer den Boden
         // schon angehoben haette und dann nicht schreiben kann, haette einen
         // Frame zweimal verloren.
         std::uint32_t erwartet = kFrei;
-        if (! s.beansprucht.compare_exchange_strong (erwartet, kErzeuger,
-                                                     std::memory_order_acq_rel,
-                                                     std::memory_order_relaxed))
+        if (! s->beansprucht.compare_exchange_strong (erwartet, kErzeuger,
+                                                      std::memory_order_acq_rel,
+                                                      std::memory_order_relaxed))
         {
-            // Der Verbraucher kopiert gerade daraus. Ein beanspruchter Slot ist
-            // unveraenderlich; dieser Frame faellt, sichtbar gezaehlt.
-            beanspruchtVerworfenZaehler.fetch_add (1, std::memory_order_relaxed);
-            return false;
+            // Der Verbraucher kopiert gerade daraus. Ein beanspruchter Slot
+            // ist unveraenderlich — aber der NEUESTE Frame ist nicht der, der
+            // dafuer faellt (§53.9 "aeltesten ungesendeten Frame ersetzen").
+            // Position `p` wird deshalb zum Loch und der Frame geht in den
+            // naechsten Platz; der Verbraucher ueberspringt das Loch an der
+            // nicht passenden Folgenummer.
+            kollisionsLoecherZaehler.fetch_add (1, std::memory_order_relaxed);
+            ++p;
+            s = &slots[static_cast<std::size_t> (p % kSlots)];
+            erwartet = kFrei;
+            if (! s->beansprucht.compare_exchange_strong (erwartet, kErzeuger,
+                                                          std::memory_order_acq_rel,
+                                                          std::memory_order_relaxed))
+            {
+                // Unerreichbar, solange es genau EINEN Verbraucher gibt: er
+                // haelt hoechstens einen Platz, und das war der vorige. Die
+                // Zahl ist der laufende Beleg dafuer — sie muss 0 bleiben.
+                beanspruchtVerworfenZaehler.fetch_add (1, std::memory_order_relaxed);
+                return false;
+            }
         }
 
         // Der aelteste NOCH WARTENDE Frame ist der spaetere von "was der
@@ -346,10 +406,10 @@ public:
             boden.store (c + 1, std::memory_order_release);
             ersetzt.fetch_add (1, std::memory_order_relaxed);
         }
-        std::memcpy (s.bytes, daten, laenge);
-        s.laenge = laenge;
-        s.folge.store (p + 1, std::memory_order_release);  // 0 = nie beschrieben
-        s.beansprucht.store (kFrei, std::memory_order_release);
+        std::memcpy (s->bytes, daten, laenge);
+        s->laenge = laenge;
+        s->folge.store (p + 1, std::memory_order_release);  // 0 = nie beschrieben
+        s->beansprucht.store (kFrei, std::memory_order_release);
         schreib.store (p + 1, std::memory_order_release);
         return true;
     }
@@ -413,9 +473,18 @@ public:
     std::uint64_t zuGrosseFrames() const noexcept { return zuGross.load (std::memory_order_relaxed); }
 
     /// Wie oft der Erzeuger einen Platz vorfand, den der Verbraucher gerade
-    /// beansprucht hatte — und ihn deshalb NICHT beschrieben hat. Die Zahl ist
-    /// der laufende Beleg fuer die Invariante: der Fall tritt unter Flut ein,
-    /// und er endet jedes Mal ohne Schreibzugriff.
+    /// beansprucht hatte — und die Position deshalb als LOCH uebersprungen
+    /// hat. Die Zahl ist der laufende Beleg dafuer, dass der Fall unter Flut
+    /// wirklich eintritt; ohne sie spraeche die Aussage unten ueber nichts.
+    std::uint64_t kollisionsLoecher() const noexcept
+    {
+        return kollisionsLoecherZaehler.load (std::memory_order_relaxed);
+    }
+
+    /// Wie oft der Erzeuger GAR KEINEN Platz beanspruchen konnte und den
+    /// neuen Frame verwerfen musste. Bei einem Verbraucher ist das
+    /// unerreichbar; die Zahl muss 0 bleiben und ist damit die Wache ueber
+    /// „der neueste Frame faellt nie wegen einer Kollision".
     std::uint64_t beanspruchtVerworfen() const noexcept
     {
         return beanspruchtVerworfenZaehler.load (std::memory_order_relaxed);
@@ -442,6 +511,7 @@ private:
     std::atomic<std::uint64_t> verbraucht { 0 };
     std::atomic<std::uint64_t> ersetzt { 0 };
     std::atomic<std::uint64_t> zuGross { 0 };
+    std::atomic<std::uint64_t> kollisionsLoecherZaehler { 0 };
     std::atomic<std::uint64_t> beanspruchtVerworfenZaehler { 0 };
     std::uint64_t lese = 0;   // gehoert allein dem Verbraucher
 };

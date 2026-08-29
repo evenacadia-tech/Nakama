@@ -1027,17 +1027,31 @@ int main()
         pruefe (p1b.einreihen ("", "3") == P1Ergebnis::zurWiederholung
                     && p1b.einreihen ("", "4") == P1Ergebnis::zurWiederholung,
                 "nicht koaleszierbare Ereignisse gehen in den Wiederholpuffer");
-        pruefe (p1b.einreihen ("", "5") == P1Ergebnis::wiederholungVerdraengt
-                    && p1b.verdraengte() == 1,
-                "ein voller Wiederholpuffer verdraengt gezaehlt, nie still");
+        // Der volle Wiederholpuffer weist den NEUZUGANG ab. Die alte Fassung
+        // machte mit `pop_front()` Platz und loeschte damit ein bereits
+        // ANGENOMMENES Ereignis: bei 2/2 und den Ereignissen 1…5 verschwand
+        // genau die Nr. 3 (T2-Befund 1 Runde 3). §53.9 verlangt Wiederholung,
+        // nicht Verdraengung.
+        // Erst rechnen, dann pruefen: die Auswertungsreihenfolge der
+        // Argumente von `pruefe` ist unbestimmt — stuende der Aufruf im
+        // Bedingungsargument, koennte der Detailtext den Stand VOR ihm zeigen.
+        const auto fuenfte = p1b.einreihen ("", "5");
+        const auto abgewiesen5 = p1b.abgewiesene();
+        const auto vorgehalten5 = p1b.wiederholungen();
+        pruefe (fuenfte == P1Ergebnis::abgewiesen
+                    && abgewiesen5 == 1 && vorgehalten5 == 2,
+                "ein voller Wiederholpuffer weist das NEUE Ereignis ab, gezaehlt, nie still",
+                std::to_string (vorgehalten5) + " vorgehalten, "
+                    + std::to_string (abgewiesen5) + " abgewiesen");
         std::string x;
         p1b.entnehmen (x); p1b.bestaetigen();
         p1b.entnehmen (x); p1b.bestaetigen();
         pruefe (p1b.nachReconnectWiederholen() == 2, "Reconnect holt beide zurueck");
         p1b.entnehmen (s1); p1b.bestaetigen();
         p1b.entnehmen (s2); p1b.bestaetigen();
-        pruefe (s1 == "4" && s2 == "5" && p1b.wiederholungen() == 0,
-                "und zwar in der urspruenglichen Reihenfolge");
+        pruefe (s1 == "3" && s2 == "4" && p1b.wiederholungen() == 0,
+                "und zwar JEDES angenommene Ereignis, in der urspruenglichen Reihenfolge",
+                s1 + "," + s2);
 
         // Entnommen, aber nicht geschrieben: der Eintrag muss zurueck. Ohne
         // diesen Weg verschwand ein P1-Ereignis endgueltig, wenn der Write
@@ -1154,12 +1168,14 @@ int main()
         //
         //   1. der Kollisionsfall TRITT EIN — der Erzeuger laeuft unter Flut
         //      wirklich auf den Platz, den der Verbraucher gerade beansprucht
-        //      hat (`beanspruchtVerworfen() > 0`);
-        //   2. und er endet jedes Mal OHNE Schreibzugriff, weil ein einziges
-        //      Atomic den Besitz entscheidet. Der beanspruchte Slot ist damit
-        //      strukturell nie das Ziel eines Schreibvorgangs;
+        //      hat (`kollisionsLoecher() > 0`);
+        //   2. und er endet jedes Mal OHNE Schreibzugriff auf DIESEN Platz,
+        //      weil ein einziges Atomic den Besitz entscheidet — der Frame
+        //      selbst faellt dabei NICHT, er geht in den naechsten Platz
+        //      (`beanspruchtVerworfen() == 0`, T2-Befund 2 Runde 3);
         //   3. dazu, als aeussere Probe, ueber Millionen Frames kein einziger
-        //      zerrissener Frame und keine falsche Laenge.
+        //      zerrissener Frame, keine falsche Laenge und keine ruecklaeufige
+        //      Folgenummer — die Loecher brechen die Reihenfolge nicht.
         //
         // Die grossen Frames sind Absicht: ein 8000-Byte-memcpy haelt das
         // Zeitfenster des Verbrauchers lange genug offen, dass der
@@ -1201,25 +1217,36 @@ int main()
             auto s3 = std::make_unique<P2Schleuse<8192>>();
             constexpr std::size_t kGross = 8000;
             std::atomic<bool> stopp { false };
-            std::atomic<long long> zerrissen { 0 }, geholt { 0 };
+            std::atomic<long long> zerrissen { 0 }, geholt { 0 }, ruecklaeufig { 0 };
+            // Die ersten vier Bytes tragen die Folgenummer im Klartext. Ohne
+            // sie sagt der Test nur "nicht zerrissen" — nichts darueber, ob
+            // die uebersprungenen Positionen (die Loecher der Kollision) die
+            // Reihenfolge zerreissen oder einen Frame doppelt liefern.
             std::thread erzeuger ([&] {
                 std::vector<std::uint8_t> f (kGross);
-                for (int i = 0; i < 300000 && ! stopp.load(); ++i)
+                for (std::uint32_t i = 0; i < 300000 && ! stopp.load(); ++i)
                 {
-                    std::memset (f.data(), static_cast<int> (i & 0xFF), f.size());
+                    std::memset (f.data() + 4, static_cast<int> (i & 0xFF), f.size() - 4);
+                    std::memcpy (f.data(), &i, sizeof (i));
                     s3->veroeffentlichen (f.data(), f.size());
                 }
             });
             std::thread verbraucher ([&] {
                 std::vector<std::uint8_t> z (8192);
+                long long letzte = -1;
                 while (! stopp.load())
                 {
                     const auto n = s3->abholen (z.data(), z.size());
                     if (n == 0) continue;
                     ++geholt;
                     if (n != kGross) { ++zerrissen; continue; }
-                    for (std::size_t i = 1; i < n; ++i)
-                        if (z[i] != z[0]) { ++zerrissen; break; }
+                    std::uint32_t folge = 0;
+                    std::memcpy (&folge, z.data(), sizeof (folge));
+                    const auto fuellung = static_cast<std::uint8_t> (folge & 0xFF);
+                    for (std::size_t i = 4; i < n; ++i)
+                        if (z[i] != fuellung) { ++zerrissen; break; }
+                    if (static_cast<long long> (folge) <= letzte) ++ruecklaeufig;
+                    letzte = static_cast<long long> (folge);
                 }
             });
             erzeuger.join();
@@ -1229,11 +1256,20 @@ int main()
                     "300 000 grosse Frames (8000 B) ebenso: kein zerrissener Frame",
                     std::to_string (geholt.load()) + " geholt, "
                         + std::to_string (zerrissen.load()) + " zerrissen");
-            pruefe (s3->beanspruchtVerworfen() > 0,
+            pruefe (ruecklaeufig.load() == 0,
+                    "und keine ruecklaeufige oder doppelte Folgenummer — die Loecher "
+                    "der Kollision brechen die Reihenfolge nicht",
+                    std::to_string (ruecklaeufig.load()) + " ruecklaeufig");
+            pruefe (s3->kollisionsLoecher() > 0,
                     "der Erzeuger traf den beanspruchten Slot WIRKLICH — und hat ihn "
                     "nicht beschrieben",
+                    std::to_string (s3->kollisionsLoecher())
+                        + " uebersprungene Positionen");
+            pruefe (s3->beanspruchtVerworfen() == 0,
+                    "der NEUESTE Frame faellt dabei NIE — es weicht der aelteste "
+                    "wartende (replace-oldest, §53.9)",
                     std::to_string (s3->beanspruchtVerworfen())
-                        + " Frames wegen fremden Anspruchs verworfen");
+                        + " neueste wegen fremden Anspruchs verworfen");
         }
     }
 

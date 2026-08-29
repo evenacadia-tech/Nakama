@@ -65,7 +65,9 @@ MARKE_ROH = re.compile(r"<!--[^>]*NAKAMA-URTEIL[^>]*-->")
 # (·, |, -, —), deshalb bewusst lose gefasst.
 #
 # 🔑 ZWEI Wortlaute, denn der Runner formuliert gruen und rot verschieden.
-# Woertlich aus tools/beweise.ps1, Zeile 856 bzw. 845:
+# Woertlich aus den `$urteil = ...`-Zuweisungen in tools/beweise.ps1 (Symbol
+# statt Zeilennummer: die Zahl wandert bei jeder Runner-Aenderung, das Symbol
+# nicht — NAK-96 Nacharbeit 1, 29.08.2026):
 #
 #     $urteil = "GRUEN - $($gruen.Count)/$($gelaufen.Count) Kanon-Laeufe bestanden$nachsatz"
 #     $urteil = "ROT - $rot von $($gelaufen.Count) Kanon-Laeufen fehlgeschlagen$nachsatz"
@@ -77,9 +79,9 @@ MARKE_ROH = re.compile(r"<!--[^>]*NAKAMA-URTEIL[^>]*-->")
 # bestehende Manifeste tragen den ROT-Wortlaut bereits.
 #
 # Die beiden uebrigen Urteilstexte bleiben ABSICHTLICH ohne Treffer
-# (`UNVOLLSTAENDIG - ... Voraussetzung(en) fehlen`, Zeile 849, und
+# (`UNVOLLSTAENDIG - ... Voraussetzung(en) fehlen` und
 # `NICHT BEGLAUBIGT - n/m gruen, aber Pruefbinaries sind aelter als die
-# Quellen`, Zeile 853): dort hat der Runner die Beglaubigung gerade
+# Quellen`, dieselben Zuweisungen): dort hat der Runner die Beglaubigung gerade
 # VERWEIGERT. Eine Zeile "Kanon n/m grün" wuerde dort ein bestandenes
 # Ergebnis behaupten, das es nicht gibt — fail-closed lieber keine Zahl.
 KANON = re.compile(

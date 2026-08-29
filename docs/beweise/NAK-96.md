@@ -225,7 +225,9 @@ docs/beweise/SONDE-007b.md                     24796 Zeilen    1581024 Bytes
 ```
 
 Die 602 Zeilen sind der Stand unmittelbar nach dem Abschlusslauf, also vor dem
-Nachtragen von §5.1, §5.5 und §7. Der endgültige Stand dieser Datei:
+Nachtragen von §5.1, §5.5 und §7. **Momentaufnahme, kein Endstand:** die
+Gesamtzahl dieser Datei wächst mit jedem Nachtrag — jeder weitere Kanon-Lauf
+und jeder Folgeabschnitt hängt an. Gemessen auf Commit `f501704` (29.08.2026):
 
 ```text
 $ wc -l < docs/beweise/NAK-96.md
@@ -237,13 +239,18 @@ $ grep -n '^## Kanon-Lauf' docs/beweise/NAK-96.md
 732:## Kanon-Lauf - NAK-96 Abschlusslauf 2
 ```
 
+Nach §8 (NAK-97) waren es 1131 Zeilen; die jeweils aktuelle Zahl steht am Ende
+des jüngsten Abschnitts (zuletzt §9). Die **maßgebliche** Kennzahl des Auftrags
+ist davon unberührt, denn sie misst nicht die Datei, sondern den einzelnen
+Kanon-Abschnitt:
+
 **Das ist die Zahl, um die es dem Auftrag geht:** ein Kanon-Abschnitt im
 Manifest ist **62 bis 67 Zeilen** lang (die vier Abschnitte oben: 67, 67, 65,
 62 — die längeren tragen zusätzlich den VERALTET-Hinweis der Läufe ohne
 `-Bauen`). Vorher war derselbe Abschnitt die vollen **2944 Zeilen**, die jetzt
-in der Roh-Datei liegen — Faktor rund **45**. Die übrigen 532 Zeilen dieser
-Datei sind der Lesetext des Tickets selbst (§1–§7 samt den Rohausgaben der
-Proben), nicht Kanon-Ausgabe.
+in der Roh-Datei liegen — Faktor rund **45**. Die übrigen 532 Zeilen (793 − 261,
+Stand `f501704`) sind der Lesetext des Tickets selbst (§1–§7 samt den
+Rohausgaben der Proben), nicht Kanon-Ausgabe.
 
 Zum Vergleich die beiden Manifeste, die der Auftrag als unlesbar nennt:
 `SONDE-010.md` mit 19 505 und `SONDE-007b.md` mit 24 796 Zeilen. Sie bleiben
@@ -1129,3 +1136,326 @@ ihn liest.
   unangetastet und als Nachtrag im Register festgehalten. Die „Zeile 66" in
   **§3** und **§5.1** dieses Manifests bleibt richtig: sie beschreibt den Stand,
   an dem NAK-96 gemessen hat.
+
+---
+
+<a id="b9"></a>
+
+## 9. Nacharbeit Runde 1 — 2026-08-29 (Prüfer-Thread `01a04d8b-1e7b-79f2-bc9a-821a986283f3`)
+
+Der Prüfer (Codex `gpt-5.6-sol`, high, lesend über `git diff 2271df5...afc0978`)
+hat NEEDS_WORK geurteilt. Zwei Befunde plus ein Kommentarrest aus §8.8; Basis
+dieser Runde ist `afc0978`.
+
+<a id="b91"></a>
+### 9.1 · Die Befunde, wörtlich
+
+**P1 — Reservierung der Roh-Datei ist nicht atomar** (Dirigent: Lücke mit
+entschiedener Regel):
+
+> Heute: `while (Test-Path $rohDatei) { Suffix++ }` und später `Set-Content`.
+> Zwischen Prüfung und Schreiben kann ein zweiter Runner denselben Namen
+> wählen; `Set-Content` ersetzt dann still. Runner-Kommentar („Es wird nie eine
+> bestehende Rohausgabe ueberschrieben") und Manifest behaupten mehr, als die
+> Implementierung hält.
+
+**P2 — falsche Manifestzahl** (Defekt medium):
+
+> `docs/beweise/NAK-96.md` §5.3 nennt 793 Zeilen als „endgültigen Stand"; nach
+> §8 sind es 1131, und mit deinem Abschnitt werden es mehr.
+
+**Kommentarrest aus §8.8:** `tools/beweise.ps1` um Zeile 907 nannte
+„(KANON, Zeile 66)"; `KANON` steht seit NAK-97 auf Zeile 85.
+
+Beide Befunde sind zutreffend.
+
+**Wie groß das Fenster wirklich ist** — die Zahl gehört zum Befund, und eine zu
+große wäre derselbe Fehler wie der, der hier behoben wird: Namenswahl und
+Schreiben liegen beide **hinter** dem Lauf (die Reservierung braucht `$kopf`
+und das Urteil). Dazwischen liegt nur der Aufbau von Lesetext und Rohausgabe im
+Speicher, also Millisekunden bis wenige Sekunden — nicht die 25 Minuten des
+Kanons. Real ist es trotzdem: im Dirigentenbetrieb laufen Worker parallel, zwei
+Läufe auf demselben Stand fahren denselben Kanon und enden deshalb zeitnah, und
+ein Fenster von Millisekunden ist kein Fenster von null. Was in dieses Fenster
+fällt, ist ein vollständiger 25-Minuten-Beweis, der ohne Fehlermeldung
+verschwindet. Der Kommentar sagte „NIE ueberschrieben"; die Implementierung
+konnte das nicht halten.
+
+<a id="b92"></a>
+### 9.2 · Umgesetzte Regel und die eigenen Entscheidungen dazu
+
+Die Regel des Dirigenten ist unverändert umgesetzt: `[IO.File]::Open(...,
+CreateNew, Write, FileShare::None)` in einer Schleife, Reservierung **zum
+Zeitpunkt der Namensbestimmung** (vor `$rohVerweis`/`$manifestVerweis`),
+Schreiben später in genau dieses Handle, Namensschema
+`<TICKET>-<sha7>[-dirty][-N].md` unverändert, Roh-Datei weiterhin vor dem
+Manifest fertig, Schleife nach oben begrenzt.
+
+Eigene technische Entscheidungen innerhalb dieser Regel:
+
+| # | Entscheidung | Begründung |
+|---|---|---|
+| A | **Eigene Datei `tools/beweise-roh.ps1`**, vom Runner per Dot-Sourcing geladen | Der Auftrag ließ die Wahl. Ein Guard im Runner („nur laden, nicht laufen") hätte eine zweite Betriebsart in ein 1000-Zeilen-Skript eingebaut, die man beim Ändern übersieht. Die eigene Datei definiert eine Funktion und tut sonst nichts — ein Testprozess lädt sie in Millisekunden, ohne den 25-Minuten-Kanon anzufassen. Die Rennprobe (§9.4) fährt deshalb gegen die **Produktionsdatei**, nicht gegen eine Kopie. |
+| B | **Obergrenze 1000, danach Abbruch mit Exitcode 5** | Der Auftrag verlangt eine Grenze; ein neuer Exitcode statt einer Wiederverwendung von 3 („Voraussetzung fehlt") oder 2 („Kanon rot"), weil hier weder eine Voraussetzung fehlt noch ein Bein rot ist — der Lauf ist gefahren, nur das Schreiben ist unmöglich. Code 5 ist im `.NOTES`-Block dokumentiert. |
+| C | **Fail-loud statt Notausgang:** bei erschöpfter Grenze wird weder Rohausgabe noch Manifest geschrieben | Der Alternativweg wäre ein Ausweichname (Zeitstempel). Er würde die Zusage „ein Name je Stand" aufweichen und einen stillen Sonderfall schaffen. Prüfliste D: Unbekanntes ist ROT, nicht „irgendwie geschrieben". |
+| D | **Abschließendes CRLF fällt weg** | `Set-Content` hängte an den LF-verbundenen Text eine plattformübliche Zeilenendemarke an; die Roh-Dateien endeten deshalb gemischt und waren für git `w/mixed` (gemessen: `git ls-files --eol docs/beweise/roh/NAK-96-d993894.md` → `i/lf w/mixed`). Der `StreamWriter` schreibt jetzt durchgehend LF. Nur das Dateiende ändert sich, kein Inhalt. |
+| E | **Gegenrichtung mitgezogen:** `tools/plan/planstand.py` nennt die Runner-Urteilstexte jetzt über das Symbol `$urteil = ...` statt über Zeilennummern | Derselbe Fehler wie der Kommentarrest, nur andersherum — und **von dieser Änderung verursacht**: die zitierten Zeilen 845/849/853/856 sind durch den Dot-Source-Aufruf und den `.NOTES`-Eintrag auf 853/857/861/864 gewandert. Ein Zeiger, den mein eigener Commit falsch macht, gehört in denselben Commit (Prüfliste F). |
+
+<a id="b93"></a>
+### 9.3 · Probe (a): Existenzprobe — bestehende Rohausgabe bleibt bytegleich
+
+Eine Roh-Datei wird vorher angelegt, dann reserviert die Produktionsfunktion auf
+denselben Basisnamen.
+
+```text
+=== Existenzprobe (a) ===
+vorhandene Datei : NAK-96-abc1234.md (45 Bytes)
+SHA-256 vorher   : 66B78DBBE27F841ED7D1C2F89D1E5380B81E59BA32740E38BFB5B84B83FE5054
+gewaehlter Pfad  : NAK-96-abc1234-2.md  (Versuch 2)
+SHA-256 nachher  : 66B78DBBE27F841ED7D1C2F89D1E5380B81E59BA32740E38BFB5B84B83FE5054
+bytegleich       : True
+Inhalt vorhanden : BESTEHENDER BEWEIS - darf nicht verschwinden
+dritter Lauf     : NAK-96-abc1234-3.md  (Versuch 3)
+
+Dateien:
+  NAK-96-abc1234-2.md          11 Bytes
+  NAK-96-abc1234-3.md           0 Bytes
+  NAK-96-abc1234.md            45 Bytes
+```
+
+**Gemessen:** die Suffixfolge `-2`, `-3` ist unverändert, und der SHA-256 der
+bestehenden Datei ist vor und nach der Reservierung derselbe. Die 0 Bytes der
+dritten Datei sind der Beleg für die Reservierung selbst: der Name ist belegt,
+bevor Inhalt existiert — genau das war vorher nicht der Fall.
+
+<a id="b94"></a>
+### 9.4 · Probe (b): Rennprobe — zwei gleichzeitige Prozesse, 20 Runden
+
+Zwei `pwsh`-Prozesse laden `tools/beweise-roh.ps1` (über einen Shim, der die
+echte Datei dot-sourced) und reservieren 20-mal denselben Basisnamen. Beide
+spinnen auf **dieselbe absolute UTC-Marke**, damit das Rennen gefahren und
+nicht erhofft wird. Danach arbeiten sie **versetzt lang** (A 150 ms, B 350 ms)
+und schreiben erst dann — das ist der Zeitablauf des Runners im Kleinen:
+Namenswahl früh, Schreiben spät.
+
+Treiber (`rennprobe.ps1`) und Teilnehmer (`renner.ps1`) sind Wegwerf-Skripte
+außerhalb des Repos; ihr Kern je Runde:
+
+```powershell
+$marke = $T0.AddMilliseconds($i * $AbstandMs)
+while ([datetime]::UtcNow -lt $marke) { }               # gemeinsame Startmarke
+$r = Reserviere-Rohdatei -Verzeichnis $Verzeichnis -Basisname ('renn-{0:d2}' -f $i)
+Start-Sleep -Milliseconds $ArbeitMs                     # der Kanon-Lauf
+if ($null -ne $r.Strom) {                               # atomare Fassung
+    $w = [IO.StreamWriter]::new($r.Strom, [Text.UTF8Encoding]::new($false))
+    try { $w.Write("Teilnehmer $Id, Runde $i") } finally { $w.Dispose() }
+} else {                                                # gebrochene Fassung
+    [IO.File]::WriteAllText($r.Pfad, "Teilnehmer $Id, Runde $i", [Text.UTF8Encoding]::new($false))
+}
+```
+
+Ergebnis mit der atomaren Reservierung:
+
+```text
+Prozess A Exit=0 | Prozess B Exit=0
+
+Runde | A waehlt      | B waehlt      | Pfade    | Inhalt danach          | verlorener Beweis
+------|---------------|---------------|----------|------------------------|------------------
+    1 | renn-01.md    | renn-01-2.md  | zwei     | Teilnehmer A, Runde 1  | -
+    2 | renn-02-2.md  | renn-02.md    | zwei     | Teilnehmer A, Runde 2  | -
+    3 | renn-03-2.md  | renn-03.md    | zwei     | Teilnehmer A, Runde 3  | -
+    4 | renn-04.md    | renn-04-2.md  | zwei     | Teilnehmer A, Runde 4  | -
+    5 | renn-05.md    | renn-05-2.md  | zwei     | Teilnehmer A, Runde 5  | -
+    6 | renn-06.md    | renn-06-2.md  | zwei     | Teilnehmer A, Runde 6  | -
+    7 | renn-07-2.md  | renn-07.md    | zwei     | Teilnehmer A, Runde 7  | -
+    8 | renn-08.md    | renn-08-2.md  | zwei     | Teilnehmer A, Runde 8  | -
+    9 | renn-09-2.md  | renn-09.md    | zwei     | Teilnehmer A, Runde 9  | -
+   10 | renn-10.md    | renn-10-2.md  | zwei     | Teilnehmer A, Runde 10 | -
+   11 | renn-11-2.md  | renn-11.md    | zwei     | Teilnehmer A, Runde 11 | -
+   12 | renn-12-2.md  | renn-12.md    | zwei     | Teilnehmer A, Runde 12 | -
+   13 | renn-13.md    | renn-13-2.md  | zwei     | Teilnehmer A, Runde 13 | -
+   14 | renn-14-2.md  | renn-14.md    | zwei     | Teilnehmer A, Runde 14 | -
+   15 | renn-15-2.md  | renn-15.md    | zwei     | Teilnehmer A, Runde 15 | -
+   16 | renn-16-2.md  | renn-16.md    | zwei     | Teilnehmer A, Runde 16 | -
+   17 | renn-17-2.md  | renn-17.md    | zwei     | Teilnehmer A, Runde 17 | -
+   18 | renn-18-2.md  | renn-18.md    | zwei     | Teilnehmer A, Runde 18 | -
+   19 | renn-19-2.md  | renn-19.md    | zwei     | Teilnehmer A, Runde 19 | -
+   20 | renn-20-2.md  | renn-20.md    | zwei     | Teilnehmer A, Runde 20 | -
+
+Runden: 20 | Paare mit GLEICHEM Pfad: 0 | ueberschriebene Beweise: 0
+Dateien im Verzeichnis: 40 (erwartet 40) | Schreibfehler: 0
+ERGEBNIS: GRUEN - kein Paar teilt sich einen Pfad, kein Beweis ueberschrieben
+```
+
+**Gemessen:** 20 Paare, 20-mal zwei verschiedene Pfade, 40 Dateien, kein
+Schreibfehler. Dass der Gewinner des Grundnamens zwischen A und B **wechselt**
+(Runde 1 A, Runde 2 B, Runde 3 B, Runde 4 A …), ist der Beleg, dass hier ein
+echtes Rennen läuft und nicht eine feste Reihenfolge gemessen wird.
+
+<a id="b95"></a>
+### 9.5 · Probe (c): Bruchprobe (Prüfliste E) — Reservierung zurück auf `Test-Path`
+
+`tools/beweise-roh.ps1` wurde auf den Stand **vor** dieser Nacharbeit
+zurückgebaut: der Name wird nur geprüft, nicht belegt; das Öffnen kommt später
+beim Aufrufer, wie zuvor `Set-Content`.
+
+```powershell
+# BRUCHPROBE - zurueckgenommen:
+$pfad = Join-Path $Verzeichnis ($Basisname + '.md')
+$n = 2
+while (Test-Path -LiteralPath $pfad) {
+    $pfad = Join-Path $Verzeichnis ('{0}-{1}.md' -f $Basisname, $n)
+    $n++
+}
+return [pscustomobject]@{ Pfad = $pfad; Strom = $null; Versuche = $n - 1 }
+```
+
+Dieselbe Rennprobe, unveränderter Treiber:
+
+```text
+Prozess A Exit=0 | Prozess B Exit=0
+
+Runde | A waehlt      | B waehlt      | Pfade    | Inhalt danach          | verlorener Beweis
+------|---------------|---------------|----------|------------------------|------------------
+    1 | renn-01.md    | renn-01.md    | GLEICH   | Teilnehmer B, Runde 1  | A ueberschrieben
+    2 | renn-02.md    | renn-02.md    | GLEICH   | Teilnehmer B, Runde 2  | A ueberschrieben
+    3 | renn-03.md    | renn-03.md    | GLEICH   | Teilnehmer B, Runde 3  | A ueberschrieben
+    4 | renn-04.md    | renn-04.md    | GLEICH   | Teilnehmer B, Runde 4  | A ueberschrieben
+    5 | renn-05.md    | renn-05.md    | GLEICH   | Teilnehmer B, Runde 5  | A ueberschrieben
+    6 | renn-06.md    | renn-06.md    | GLEICH   | Teilnehmer B, Runde 6  | A ueberschrieben
+    7 | renn-07.md    | renn-07.md    | GLEICH   | Teilnehmer B, Runde 7  | A ueberschrieben
+    8 | renn-08.md    | renn-08.md    | GLEICH   | Teilnehmer B, Runde 8  | A ueberschrieben
+    9 | renn-09.md    | renn-09.md    | GLEICH   | Teilnehmer B, Runde 9  | A ueberschrieben
+   10 | renn-10.md    | renn-10.md    | GLEICH   | Teilnehmer B, Runde 10 | A ueberschrieben
+   11 | renn-11.md    | renn-11.md    | GLEICH   | Teilnehmer B, Runde 11 | A ueberschrieben
+   12 | renn-12.md    | renn-12.md    | GLEICH   | Teilnehmer B, Runde 12 | A ueberschrieben
+   13 | renn-13.md    | renn-13.md    | GLEICH   | Teilnehmer B, Runde 13 | A ueberschrieben
+   14 | renn-14.md    | renn-14.md    | GLEICH   | Teilnehmer B, Runde 14 | A ueberschrieben
+   15 | renn-15.md    | renn-15.md    | GLEICH   | Teilnehmer B, Runde 15 | A ueberschrieben
+   16 | renn-16.md    | renn-16.md    | GLEICH   | Teilnehmer B, Runde 16 | A ueberschrieben
+   17 | renn-17.md    | renn-17.md    | GLEICH   | Teilnehmer B, Runde 17 | A ueberschrieben
+   18 | renn-18.md    | renn-18.md    | GLEICH   | Teilnehmer B, Runde 18 | A ueberschrieben
+   19 | renn-19.md    | renn-19.md    | GLEICH   | Teilnehmer B, Runde 19 | A ueberschrieben
+   20 | renn-20.md    | renn-20.md    | GLEICH   | Teilnehmer B, Runde 20 | A ueberschrieben
+
+Runden: 20 | Paare mit GLEICHEM Pfad: 20 | ueberschriebene Beweise: 20
+Dateien im Verzeichnis: 20 (erwartet 40) | Schreibfehler: 0
+ERGEBNIS: ROT - Pfade geteilt, Beweise ueberschrieben oder Dateien verloren
+```
+
+**Das ist das Rot:** 20 von 20 Paaren wählen denselben Pfad, in jeder Datei
+steht am Ende die Zeile von B, A's Beweis ist in allen 20 Runden verschwunden,
+und im Verzeichnis liegt nur die Hälfte der Dateien. Derselbe Aufbau, dieselben
+Zeiten, einmal ohne und einmal mit dem Fix — der Vergleich ist diskriminierend
+und misst genau das, was P1 beschreibt: **der zweite ersetzt den ersten still**,
+ohne Fehlermeldung.
+
+**Ein Zwischenbefund zum Aufbau selbst:** der erste Bruchlauf lief mit
+gleichlangen Arbeitszeiten (beide 150 ms). Er war ebenfalls rot, aber aus dem
+falschen Grund — beide schrieben *gleichzeitig* in dieselbe Datei, der zweite
+Prozess starb an einer Sharing-Violation von `WriteAllText`. Das belegt nur,
+dass irgendetwas kaputt ist, nicht den beschriebenen Ausfall. Erst die
+versetzten Zeiten (150/350 ms) trennen Namenswahl und Schreibzeitpunkt so, wie
+der echte Runner es tut. Die Probe ist danach neu gefahren worden — beide
+Fassungen mit dem geschärften Aufbau, §9.4 und §9.5 stammen aus demselben
+Treiber und demselben Lauf-Paar.
+
+Der Bruch ist unmittelbar zurückgenommen; die Datei ist bytegleich zum Stand
+davor:
+
+```text
+SHA-256 Original vor dem Bruch: effc12804130d43641f3295099e9ea3f0a629ae0f78f37f642aaa24a6dea1cc1
+SHA-256 nach Ruecknahme:        effc12804130d43641f3295099e9ea3f0a629ae0f78f37f642aaa24a6dea1cc1
+Bruch zurueckgenommen: bytegleich
+```
+
+<a id="b96"></a>
+### 9.6 · Die Wachen der Reservierung, einzeln gemessen
+
+Jede Zusage der neuen Funktion hat ihre eigene Probe (Prüfliste E: Behauptung ≤
+Messung):
+
+```text
+=== Wachen der Reservierung (nach Fix des Formatstrings) ===
+1. Obergrenze  : Abbruch wie gefordert
+   Meldung     : Rohausgabe nicht reservierbar: 'voll' in 'C:\Users\phili\.claude\jobs\e9bc2869\tmp\grenze' ist auch nach 3 Versuchen belegt. Kein Beweis wird ueberschrieben - der Lauf bricht ab.
+2. Verzeichnis : sofort geworfen nach 1 ms, MaxVersuche war 1000
+   Ausnahme    : System.IO.DirectoryNotFoundException
+3. Vergleich   : 200 belegte Namen -> v-201.md nach 201 Versuchen, 332 ms
+                 (200 Fehlversuche kosten messbar Zeit; die 1 ms oben belegen den Sofortabbruch)
+4. CreateNew   : IOException wie erwartet auf bestehende Datei
+5. FileShare   : zweiter Oeffner abgewiesen, solange das Handle lebt
+```
+
+Zeile 2 und 3 gehören zusammen: `DirectoryNotFoundException` und
+`PathTooLongException` **erben von `IOException`** und würden von einem
+generischen `catch [IO.IOException]` als „Name belegt" gelesen — ein fehlendes
+Verzeichnis wäre dann 1000 stille Fehlversuche statt eines Fehlers. Die
+spezifischen `catch`-Blöcke stehen deshalb zuerst; die 1 ms gegen 332 ms für
+201 Versuche sind der Beleg, dass sie greifen.
+
+**Ein Fehler im eigenen Code, von dieser Probe gefunden:** die Abbruchmeldung
+kam beim ersten Lauf roh heraus, mit unersetzten Platzhaltern. In PowerShell
+bindet `-f` **stärker** als `+`, also formatierte die Zeile den zweiten
+Teilstring (ohne Platzhalter) und ließ den ersten stehen. Behoben durch Klammern
+um die Verkettung; der Kommentar an der Stelle nennt den Grund. Ein Fehlerpfad,
+der nur behauptet und nie gefahren wird, ist kein Riegel.
+
+<a id="b97"></a>
+### 9.7 · Probe (d): die Behauptungstexte auf das Gemessene begrenzt
+
+| Ort | vorher | jetzt |
+|---|---|---|
+| `tools/beweise.ps1` `.DESCRIPTION` | „Bestehende Rohausgaben werden NIE ueberschrieben." | nennt das Mittel (`CreateNew`, gehaltenes Handle), die Reichweite („auch nicht, wenn ein zweiter Runner gleichzeitig laeuft") und die Grenze (Exitcode 5 nach 1000 belegten Namen) |
+| `tools/beweise.ps1`, Block „Rohausgabe-Datei bestimmen" | „Es wird nie eine bestehende Rohausgabe ueberschrieben: ein Beweis, den ein spaeterer Lauf still ersetzt, ist kein Beweis." | benennt zuerst den Befund (Zeitfenster zwischen `Test-Path` und `Set-Content`, Prüfer-Befund P1) und sagt dann, was der Runner **hält**: solange dieser Prozess läuft, gehört ihm der reservierte Name |
+| `tools/beweise-roh.ps1` `.DESCRIPTION` | — (neu) | beschreibt das alte Verhalten, den Befund und die Zusage; nennt ausdrücklich den Preis: bricht der Aufrufer zwischen Reservierung und Schreiben ab, bleibt eine **0-Byte-Datei** liegen |
+
+Die 0-Byte-Leiche ist kein Nebensatz, sondern die einzige Zusage, die schwächer
+geworden ist: vorher entstand eine Datei erst mit Inhalt, jetzt entsteht der
+Name zuerst. Sie steht deshalb im Funktionskopf und ist in §9.3 sichtbar
+(`NAK-96-abc1234-3.md`, 0 Bytes).
+
+<a id="b98"></a>
+### 9.8 · Kommentarrest und die Gegenrichtung
+
+`tools/beweise.ps1`:
+
+```diff
+-# Wortgleich in beiden Dateien. `tools/plan/planstand.py` (KANON, Zeile 66)
++# Wortgleich in beiden Dateien. Die Regex `KANON` in `tools/plan/planstand.py`
+ # liest die Kanon-Zahl aus GENAU diesem Wortlaut zurueck - der Verweis wird
+ # deshalb nur angehaengt, nie in die Zeile hineingeschrieben.
+```
+
+`tools/plan/planstand.py` zeigte in die **Gegenrichtung** und wäre durch diesen
+Commit falsch geworden — die dort zitierten Runner-Zeilen 845/849/853/856 sind
+auf 853/857/861/864 gewandert (gemessen mit `grep -n` auf die
+`$urteil`-Zuweisungen). Auch dort steht jetzt das Symbol statt der Zahl. Die
+Regex selbst ist **unverändert**; §8.3 und §8.4 bleiben gültig.
+
+Die Angaben „Zeile 66" in §3 und §5.1 dieses Manifests bleiben stehen: sie
+beschreiben datiert den Stand, an dem NAK-96 gemessen hat (so in §8.8
+entschieden).
+
+<a id="b99"></a>
+### 9.9 · Befund P2: §5.3 korrigiert
+
+§5.3 nannte 793 Zeilen als „endgültigen Stand". Der Absatz weist die Zahl jetzt
+als Momentaufnahme mit Commit und Datum aus (`f501704`, 29.08.2026), nennt den
+Stand nach §8 (1131 Zeilen) und sagt, dass die Zahl mit jedem Nachtrag wächst.
+Die 532 Zeilen Lesetext sind als Rechnung (793 − 261) an denselben Stand
+gebunden. Die **maßgebliche** Kennzahl des Auftrags ist unverändert: ein
+Kanon-Abschnitt im Manifest ist 62 bis 67 Zeilen lang gegenüber 2944 Zeilen
+Roh-Datei, Faktor rund 45.
+
+<a id="b910"></a>
+### 9.10 · Prüfliste `tools/dirigent/pruefliste.md` — wo gemessen
+
+| Zeile der Prüfliste | Wo in dieser Runde |
+|---|---|
+| **D** · Riegel ist fail-closed, Unbekanntes ist ROT | Erschöpfte Suffixgrenze schreibt **nichts** und endet mit Exitcode 5 (§9.2 C, gemessen §9.6 Zeile 1); kein Ausweichname, kein stiller Sonderfall |
+| **D** · was der Kanon nicht baut, bezeugt er nicht | unverändert; diese Runde ändert nur den Schreibweg der Rohausgabe, keine Beglaubigungslogik — belegt durch den vollen Kanon in §9.11 |
+| **E** · Behauptung ≤ Messung | §9.7 (drei Texte auf das Gemessene begrenzt), §9.6 (jede Zusage der Funktion hat ihre eigene Probe, inklusive der beiden Ausnahmetypen und `FileShare::None`) |
+| **E** · Zahlen sind gemessen, nicht abgeschrieben | §9.9 (§5.3 datiert statt „endgültig"), Zeilenzahl in §9.12 frisch mit `wc -l` |
+| **E** · jede neue Prüfung einmal absichtlich gebrochen, Rohausgabe des Rots liegt bei | §9.5 — inklusive der Feststellung, dass der **erste** Bruchaufbau aus dem falschen Grund rot war und deshalb geschärft wurde |
+| **F** · Änderungssatz zusammenhalten | Reservierung (`beweise-roh.ps1`), Aufrufer und Schreibstelle (`beweise.ps1`) und beide Zeiger-Kommentare (`beweise.ps1` → `planstand.py` und zurück) liegen im selben Commit; §9.8 |

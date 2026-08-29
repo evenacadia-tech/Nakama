@@ -23,8 +23,13 @@
                         Baustand, vollstaendige stdout/stderr jedes Beins und
                         das Bauprotokoll. Bei unbestaetigtem Arbeitsbaum traegt
                         der Name zusaetzlich `-dirty`, bei einem zweiten Lauf
-                        auf demselben Stand ein Zaehlsuffix. Bestehende
-                        Rohausgaben werden NIE ueberschrieben.
+                        auf demselben Stand ein Zaehlsuffix. Der Name wird
+                        atomar belegt (CreateNew, siehe tools/beweise-roh.ps1)
+                        und das Handle bis zum Schreiben gehalten: der Runner
+                        oeffnet keine bestehende Rohausgabe und ueberschreibt
+                        keine - auch nicht, wenn ein zweiter Runner gleichzeitig
+                        laeuft. Findet er 1000 Namen belegt, bricht er mit
+                        Exitcode 5 ab, statt zu ersetzen.
 
     Der Wortlaut der Lauf-Zeile ist fest: tools/plan/planstand.py liest daraus
     die Kanon-Zahl zurueck (Regex KANON). Nur anhaengen, nie umformulieren.
@@ -70,7 +75,10 @@
       2  mindestens ein Kanon-Lauf rot
       3  Voraussetzung fehlt (nicht gebaut, keine Fixtures, kein cargo)
       4  Laeufe gruen, aber Binaries aelter als die Quellen (nicht beglaubigt)
-    Reihenfolge der Beurteilung: 2 vor 3 vor 4.
+      5  Rohausgabe nicht reservierbar (Namen belegt) - nichts geschrieben
+    Reihenfolge der Beurteilung: 2 vor 3 vor 4. Code 5 entsteht erst nach dem
+    Lauf, beim Schreiben, und ueberschreibt das Urteil - ohne Rohausgabe gibt
+    es keine Beglaubigung.
 #>
 
 [CmdletBinding()]
@@ -89,6 +97,11 @@ $PSNativeCommandUseErrorActionPreference = $false
 
 $Wurzel = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $Beginn = Get-Date
+
+# Atomare Reservierung der Rohausgabe-Datei. Eigene Datei, damit die Rennprobe
+# `Reserviere-Rohdatei` in einem Testprozess laden kann, ohne den Kanon zu
+# starten (NAK-96 Nacharbeit 1).
+. (Join-Path $PSScriptRoot 'beweise-roh.ps1')
 
 # ---------------------------------------------------------------- Hilfsmittel
 
@@ -876,9 +889,16 @@ if (-not (Test-Path -LiteralPath $zielVerzeichnis)) { New-Item -ItemType Directo
 # Der Name traegt den Stand, den der Lauf beweist: TICKET-<sha7>, bei
 # unbestaetigtem Arbeitsbaum zusaetzlich `-dirty` - ein Lauf auf schmutzigem
 # Baum beweist eben NICHT allein den Commit. Existiert die Datei schon
-# (zweiter Lauf auf demselben Stand), zaehlt ein Suffix hoch. Es wird nie
-# eine bestehende Rohausgabe ueberschrieben: ein Beweis, den ein spaeterer
-# Lauf still ersetzt, ist kein Beweis.
+# (zweiter Lauf auf demselben Stand), zaehlt ein Suffix hoch.
+#
+# Der Name wird ATOMAR belegt, nicht nur geprueft: `Reserviere-Rohdatei` legt
+# die Datei mit CreateNew an und haelt das Handle bis zum Schreiben (unten).
+# Die frueheren `while (Test-Path)`-Runden liessen zwischen Pruefung und
+# `Set-Content` Minuten verstreichen - ein zweiter Runner konnte denselben
+# Namen waehlen und die fertige Rohausgabe still ersetzen (Pruefer-Befund P1,
+# 29.08.2026). Was der Runner jetzt haelt: solange dieser Prozess laeuft,
+# gehoert der reservierte Name ihm; eine bestehende Rohausgabe wird nicht
+# ueberschrieben.
 $rohVerzeichnis = Join-Path $Wurzel 'docs\beweise\roh'
 if (-not (Test-Path -LiteralPath $rohVerzeichnis)) { New-Item -ItemType Directory -Path $rohVerzeichnis -Force | Out-Null }
 
@@ -892,19 +912,25 @@ else {
 if ($schmutzigeDateien.Count -gt 0) { $rohStand = "$rohStand-dirty" }
 
 $rohBasis = '{0}-{1}' -f ([IO.Path]::GetFileNameWithoutExtension($Ziel)), $rohStand
-$rohDatei = Join-Path $rohVerzeichnis ($rohBasis + '.md')
-$rohZaehler = 2
-while (Test-Path -LiteralPath $rohDatei) {
-    $rohDatei = Join-Path $rohVerzeichnis ('{0}-{1}.md' -f $rohBasis, $rohZaehler)
-    $rohZaehler++
+try {
+    $rohReservat = Reserviere-Rohdatei -Verzeichnis $rohVerzeichnis -Basisname $rohBasis
 }
+catch {
+    # Fail-loud statt fail-silent: lieber ein sichtbarer Abbruch mit
+    # Exitcode 5 als eine ueberschriebene oder gar keine Rohausgabe.
+    Write-Host ''
+    Write-Host ('ABBRUCH - Rohausgabe konnte nicht reserviert werden: {0}' -f $_.Exception.Message)
+    Write-Host 'Der Lauf ist gefahren, aber weder Rohausgabe noch Manifest wurden geschrieben.'
+    exit 5
+}
+$rohDatei = $rohReservat.Pfad
 
 # Relativ gerechnet statt zusammengeklebt: ein Manifest darf auch in einem
 # Unterordner von docs/beweise/ liegen, dann zeigt der Verweis nach oben.
 $rohVerweis      = ([IO.Path]::GetRelativePath($zielVerzeichnis, $rohDatei)) -replace '\\', '/'
 $manifestVerweis = ([IO.Path]::GetRelativePath($rohVerzeichnis, $Ziel)) -replace '\\', '/'
 
-# Wortgleich in beiden Dateien. `tools/plan/planstand.py` (KANON, Zeile 66)
+# Wortgleich in beiden Dateien. Die Regex `KANON` in `tools/plan/planstand.py`
 # liest die Kanon-Zahl aus GENAU diesem Wortlaut zurueck - der Verweis wird
 # deshalb nur angehaengt, nie in die Zeile hineingeschrieben.
 $laufZeile = "**Lauf:** $($Beginn.ToString('yyyy-MM-dd HH:mm')) | **Runner:** ``tools/beweise.ps1`` | **Urteil:** $urteil | **Exitcode:** $exitcode"
@@ -1048,7 +1074,18 @@ if ($bauProtokoll.Count -gt 0) {
 
 # Rohausgabe zuerst: sonst verweist ein geschriebenes Manifest auf eine Datei,
 # die es nicht gibt, falls das Schreiben danach scheitert.
-Set-Content -LiteralPath $rohDatei -Value ($roh -join "`n") -Encoding utf8
+#
+# Geschrieben wird in GENAU das oben reservierte Handle - kein zweites Oeffnen,
+# also auch kein zweites Zeitfenster. UTF-8 ohne BOM und LF wie zuvor; das
+# abschliessende CRLF, das `Set-Content` frueher anhaengte, faellt weg (es war
+# das einzige CR der Datei und machte sie fuer git zu `w/mixed`).
+$rohSchreiber = [IO.StreamWriter]::new($rohReservat.Strom, [Text.UTF8Encoding]::new($false))
+try {
+    $rohSchreiber.Write((($roh -join "`n") + "`n"))
+}
+finally {
+    $rohSchreiber.Dispose()   # schliesst auch den FileStream und gibt den Namen frei
+}
 
 $inhalt = ($z -join "`n")
 if ($Anhaengen -and (Test-Path -LiteralPath $Ziel)) {

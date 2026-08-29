@@ -333,6 +333,18 @@ $kanon = @(
     # naechste Generatorlauf ueberschreibt die Handarbeit still.
     [pscustomobject]@{ Kuerzel='A19'; Name='erzeuge_bandgitter_header.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='BandGridZahlen.h ist bytegleich aus den zwei eingefrorenen Gitterfixturen erzeugt; die 64 Live-Gruppen partitionieren die 221 Feinbaender lueckenlos und ueberschneidungsfrei, und die groben Kanten sind bitgleiche Kopien feiner Kanten (kein zweites Filterbank-Gitter).' }
 
+    # --- S14-15/SONDE-010: der v3-Nachrichtenweg -----------------------------
+    #
+    # Drei neue A-Beine plus B10. Warum `transport_fuzz` ein EIGENER Eintrag
+    # ist, obwohl A4 (`cargo test`) es ohnehin mitfaehrt: der Gate-Text von
+    # §65 nennt Fuzz namentlich, und ein namentlich geforderter Beweis, der
+    # nur in einer Sammelzeile steckt, ist von aussen nicht als gefahren zu
+    # erkennen. Die paar Sekunden Doppellauf sind der Preis fuer eine eigene
+    # gruene Zeile im Manifest.
+    [pscustomobject]@{ Kuerzel='A20'; Name='erzeuge_envelope_fixtures.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='Envelope-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; jede der 14 Envelope-Regeln hat mindestens ein Negativfixture.' }
+    [pscustomobject]@{ Kuerzel='A21'; Name='transport_fuzz'; Art='cargo'; Argumente=@('test', '--manifest-path', 'broker/Cargo.toml', '--test', 'transport_fuzz', '--color', 'never'); AbPhase='jetzt'; Behauptung='v3-Envelope unter Zufall: 20 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und JEDER angenommene Frame erfuellt jede Kopfregel; 3000 gekippte P2-Payloadbits fallen einzeln an der CRC; feindliche Laengen (0, 15, >Grenze, 0xFFFFFFFF) und die u32-Grenze von 16+payload_len loesen keine Allokation aus; 300 Runden Fragmentierung (byteweise und in Zufallshaeppchen) liefern exakt dieselben Frames; ein kaputter Frame beendet den Strom statt zu resynchronisieren; die Ratengrenze haelt unter Flut.' }
+    [pscustomobject]@{ Kuerzel='A22'; Name='pruefe_ipc_last.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Ende-zu-Ende ueber die PROBE-Pipe, zwei Sprachen ein Draht: 32 echte C++-Sondenpaare koppeln sich am echten Rust-Listener (32 Control + 32 Telemetry, jede Telemetrieverbindung ueber link_id + challenge + gleiche runtime_nonce), fluten P2 bis die Schleuse mit Cap 2 nachweislich ersetzt, und WAEHRENDDESSEN geht kein einziger P0-Frame verloren; die P0-Antwortlatenz bleibt unter der Schranke. Keine Verbindung wird wegen Envelope, Rate oder P0-Ueberlauf geschlossen.' }
+
     # ── STILLGELEGT 28.08.2026 (S9b/SONDE-007c) ────────────────────────────
     # Die Zeile bleibt STEHEN. Ein Runner, der ein Bein einfach loescht, meldet
     # eine kleinere Zahl und sagt nicht, warum - und "28 statt 29" ist von
@@ -385,6 +397,12 @@ $kanon = @(
     # Ebenen in einem Bein - der Automat pur UND derselbe Automat verdrahtet im
     # echten Prozessor, dort an AUDIO gemessen: dieselbe Markierung, die A3
     # faerben laesst, bleibt hier stumm, solange nicht klassifiziert ist.
+    # S14-15/SONDE-010: das C++-Bein des v3-Nachrichtenwegs. Zwei Ebenen in
+    # EINEM Ziel, wie B4 und B8: Envelope/Pipetoken/Backpressure pur UND die
+    # ECHTEN Clients gegen einen selbst gehosteten v3-Server auf einer
+    # Testpipe. Ohne die zweite Ebene waere es ein huebscher Parser, der im
+    # Produkt nichts verbindet.
+    [pscustomobject]@{ Kuerzel='B10'; Name='EqCopIpcTest'; Art='plugin'; Argumente=@(); AbPhase='P2'; Behauptung='v3-Envelope in C++ klassifiziert den Envelope-Korpus wie das Manifest (Urteil UND Verstossmenge, alle 14 Regeln mit Negativfixture); CRC32C trifft die RFC-3720-Vektoren, P0/P1 tragen CRC exakt 0, P2 die Pflichtsumme ueber genau die Payloadbytes; 40 000 Zufallspuffer verletzen keine Kopfregel, 3000 gekippte P2-Bits fallen einzeln, byteweise Zustellung liefert dieselben 40 Frames und ein kaputter Frame beendet den Strom; Pipetoken trifft das Golden aus §48.3 samt SHA-256- und RFC-4648-Vektoren; P0 verwirft nichts und meldet den 65. Eintrag, P1 koalesziert an der Position und haelt Ereignisse fuer den Reconnect vor, die P2-Schleuse ersetzt den aeltesten ungesendeten Frame, uebergibt 100 000 Frames mit 0 Allokationen (mit Gegenprobe am selben Zaehler) und liefert unter Flut keinen zerrissenen Frame; verdrahtet: Control koppelt Telemetry ueber link_id + challenge, ein ungekoppelter Telemetry-Connect wird geschlossen, der Client verbindet nach Serverneustart von selbst wieder, ein kaputter Envelope vom Server schliesst die Verbindung, und ein P0-Ueberlauf WAEHREND einer stehenden Verbindung schliesst sie ebenfalls statt still zu kuerzen.' }
     [pscustomobject]@{ Kuerzel='B8'; Name='EqCopLebenslaufTest';     Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='Lifecycle-Klassifikation §53.5: unclassified beim Laden und audio-neutral; Schema-1 sensor|pre|post -> legacy (immer passiv), hub bzw. bestaetigter Schema-2-Main-State -> main; ein Scannerlauf klassifiziert nicht; read-only nimmt die Klassifikation zurueck; Brokerstart nur fuer main mit offenem Editor; die Sondenbundles bleiben bis gueltigem State neutral und werden nie main.' }
 )
 
@@ -413,6 +431,14 @@ $gemesseneZiele = @(
     # einfach nicht mehr); ein Marker, der noch traefe, liesse den Runner ein
     # Ziel bauen, das es nicht gibt, und der Bau braeche ab. Beides waere
     # falsch - der Grund gehoert in den Text, nicht in eine tote Zeile.
+    # S14-15/SONDE-010: die C++-Haelfte des Lastbeins. Sie ist selbst KEIN
+    # Kanon-Bein - A22 startet sie gegen den Rust-Probe-Broker -, muss aber
+    # frisch gebaut sein, sonst misst A22 ein altes Artefakt.
+    [pscustomobject]@{
+        Ziel   = 'EqCopIpcLast'
+        Marker = 'juce_add_console_app(EqCopIpcLast'
+        Wegen  = 'A22 (pruefe_ipc_last.py) faehrt dieses Programm gegen den Rust-Listener'
+    }
     [pscustomobject]@{
         Ziel   = 'NakamaProbeeq_VST3'
         Marker = 'nakama_sonde_ziel(NakamaProbeeq'
@@ -491,6 +517,17 @@ if ($Bauen) {
     $b = Fuehre-Aus -Datei $cmakeBefehl -Argumente (@('--build', 'eq-copilot/build', '--config', 'Release', '--target') + $zuBauen)
     $bauProtokoll += [pscustomobject]@{ Schritt = 'build'; ExitCode = $b.ExitCode; StdOut = $b.StdOut; StdErr = $b.StdErr; Sekunden = $b.Sekunden }
     if ($b.ExitCode -ne 0) { Bau-Abbruch -Schritt 'build' -Lauf $b }
+
+    # S14-15/SONDE-010: das Lastbein A22 faehrt die C++-Clients gegen den
+    # ECHTEN Rust-Listener. Dessen Probe-Binary entsteht nicht beim `cargo
+    # test` von A4 (das baut nur Debug-Testbinaries), also wird es hier
+    # ausdruecklich mitgebaut. Ohne diese Zeile pruefte A22 gegen ein altes
+    # Release-Artefakt oder gar nicht - beides waere ein stiller Verlust.
+    $cargoRelease = Fuehre-Aus -Datei 'cargo' -Argumente @(
+        'build', '--release', '--manifest-path', 'broker/Cargo.toml',
+        '--bin', 'eqcop-broker-v3probe', '--color', 'never')
+    $bauProtokoll += [pscustomobject]@{ Schritt = 'cargo-release'; ExitCode = $cargoRelease.ExitCode; StdOut = $cargoRelease.StdOut; StdErr = $cargoRelease.StdErr; Sekunden = $cargoRelease.Sekunden }
+    if ($cargoRelease.ExitCode -ne 0) { Bau-Abbruch -Schritt 'cargo-release' -Lauf $cargoRelease }
 }
 
 # ------------------------------------------------------------------ Kopfdaten

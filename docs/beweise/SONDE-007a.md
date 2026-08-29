@@ -12047,3 +12047,403 @@ vollständiger Liste der nicht abgebildeten Elemente.
 | B10 | v3-Envelope in C++ klassifiziert den Envelope-Korpus wie das Manifest (Urteil UND Verstossmenge, alle 14 Regeln mit Negativfixture); CRC32C trifft die RFC-3720-Vektoren, P0/P1 tragen CRC exakt 0, P2 die Pflichtsumme ueber genau die Payloadbytes; 40 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und 7671 angenommene EINBIT-Mutanten gueltiger Frames halten jede Kopfregel (reiner Zufall wird praktisch immer abgewiesen - die Invariante braucht deshalb die Mutanten, sonst spraeche sie ueber eine leere Menge), 3000 gekippte P2-Bits fallen einzeln, byteweise Zustellung liefert dieselben 40 Frames und ein kaputter Frame beendet den Strom; Pipetoken trifft das Golden aus §48.3 samt SHA-256- und RFC-4648-Vektoren; P0 verwirft nichts und meldet den 65. Eintrag, P1 koalesziert an der Position und haelt Ereignisse fuer den Reconnect vor, die P2-Schleuse ersetzt den aeltesten ungesendeten Frame, uebergibt 100 000 Frames mit 0 Allokationen (mit Gegenprobe am selben Zaehler) und liefert unter Flut keinen zerrissenen Frame; verdrahtet: Control koppelt Telemetry ueber link_id + challenge, ein ungekoppelter Telemetry-Connect wird geschlossen, der Client verbindet nach Serverneustart von selbst wieder, ein kaputter Envelope vom Server schliesst die Verbindung, und ein P0-Ueberlauf WAEHREND einer stehenden Verbindung schliesst sie ebenfalls statt still zu kuerzen. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 33,50 s | [B10](roh/SONDE-007a-0ea62e4.md#b10) |
 | B8 | Lifecycle-Klassifikation §53.5: unclassified beim Laden und audio-neutral; Schema-1 sensor\|pre\|post -> legacy (immer passiv), hub bzw. bestaetigter Schema-2-Main-State -> main; ein Scannerlauf klassifiziert nicht; read-only nimmt die Klassifikation zurueck; Brokerstart nur fuer main mit offenem Editor; die Sondenbundles bleiben bis gueltigem State neutral und werden nie main. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,11 s | [B8](roh/SONDE-007a-0ea62e4.md#b8) |
 
+
+## Nacharbeit Runde 5 — 2026-08-29: Frische- und Riegelmatrix (Spezifikation vor Code)
+
+**Stand dieses Abschnitts:** `5538fb0` — Basis-SHA dieser Runde; die fünf Befunde
+und jede Position in ihren Zitaten beziehen sich darauf.
+
+Fünfter frischer T3-Prüfer (Codex `gpt-5.6-sol`, Effort `xhigh`, Thread
+`01a04e39-c786-7911-b4f8-d14b30f221a3`, lesend über `git diff dafa5a5...5538fb0`):
+**NEEDS_WORK**, fünf Befunde.
+
+Dieser Abschnitt ist **keine** Nacharbeit. Er ist die Spezifikation, die vor der
+Nacharbeit steht: zwei Matrizen, die jede Eingabeklasse und jeden Riegelweg
+benennen, jeder Zeile eine testbare Zusage geben und die Lücken ehrlich als
+Lücken ausweisen. Kein Prüfskript, kein Runner und kein CMake wurde in dieser
+Phase geändert. Gemessen wurde ausschließlich am echten Bauverzeichnis, um die
+tragenden Annahmen der Matrizen nicht zu erraten (§ „Was diese Phase gemessen
+hat"). Der zweite Worker baut danach.
+
+### Die fünf Befunde, wörtlich
+
+> **1 (P1) — `schalter_abgleich` prüft AdditionalOptions nur auf
+> Enthaltensein.** Ein aus der Projektdatei ENTFERNTES Token (z. B. `/utf-8`)
+> bleibt im alten Tlog stehen und A14 meldet grün.
+
+Position: `schalter_abgleich` → `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:545-547
+@ 5538fb0`; die Einschränkung ist im Kopf derselben Datei ausdrücklich notiert
+(`:137 @ 5538fb0`, „Die letzte Klasse kann nur Enthaltensein pruefen, nicht
+Mengengleichheit"). **Einordnung: Defekt.** Die Zusage des Beins lautet „misst
+nie ein veraltetes Artefakt" — die hält hier nicht. Dass die Einschränkung
+dokumentiert ist, macht sie zur bewussten Lücke, nicht zur erfüllten Zusage;
+Prüflistenregel E („Behauptung ≤ Messung") ist damit auf der Behauptungsseite
+gebrochen, nicht auf der Kommentarseite.
+
+> **2 (P1) —** `kern_quellabhaengigkeiten` **bewacht nur** `plugin/**`**.** Ein
+> geänderter JUCE- oder generierter Header außerhalb dieses Baums lässt A14 die
+> alte Lib akzeptieren (Repro: 469 Dateien in `CL.read.1.tlog`, 21 lokal
+> bewacht).
+
+Position: `kern_quellabhaengigkeiten` → `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:766
+@ 5538fb0`; der Zaun steht in `_kernquellen_aus_cmake` (`:736 @ 5538fb0`) und
+`_lokales_include_aufloesen` (`:752 @ 5538fb0`), beide verlangen
+`is_relative_to(KERNQUELLEN)`. **Einordnung: Defekt**, dieselbe gebrochene
+Zusage wie 1. Eigene Messung dieser Phase (P5-4, Zahlen unten): `CL.read.1.tlog`
+nennt **460** eindeutige gelesene Dateien; A14s lokale Hülle deckt davon **12**
+ab. Die übrigen **448** — 181 JUCE-Header, 267 Toolchain-/SDK-Header — sind
+unbewacht. Die Zahlen des Befunds (469 / 21) und die hier gemessenen (460 / 12)
+beschreiben denselben Sachverhalt in zwei Zählweisen: die 460 sind die
+**eindeutigen** gelesenen Dateien ohne die neun Quell-Marker des Tlogs, und von
+A14s 21 bewachten Dateien sind neun die `.cpp` selbst, die im Tlog als Marker
+und nicht als gelesene Datei stehen. Der Befund gilt unverändert; der Anteil,
+den A14 heute bewacht, beträgt **2,6 %**.
+
+> **3 (P1) — K1 wertet die 46 Makros am Anfang und Ende jeder TU aus.** Ein
+> Header, der `JucePlugin_IsSynth` definiert, in `#if` nutzt und vor TU-Ende
+> wieder entfernt, entgeht K1, K2 (kein Quelltext) und K3 (nur
+> Identitätsbytes). Der Kern „sieht" damit eine Konstante — der verbotene Fall
+> aus dem Gate-Text.
+
+Position: `eq-copilot/plugin/state/NakamaKernRiegel.h`, Riegelblock unter
+`#if defined (NAKAMA_KERN_UEBERSETZUNG)`; der Kopfkommentar derselben Datei
+benennt die Lücke bereits („bereits in Bytes umgesetzte, danach wieder entfernte
+Makros bleiben Aufgabe von K3"), und die Riegeltabelle in §0 dieses Manifests
+schreibt sie als „sieht nicht" fest. **Einordnung: Lücke, keine Falschaussage** —
+alle vier Riegel beschreiben ihre Blindheit korrekt, aber zusammen decken sie den
+Fall nicht ab, und der Gate-Text erlaubt keinen unabgedeckten Weg. **Regel des
+Dirigenten:** ein Quelltext-Riegel **K1b** über die lokale Include-Hülle (Token
+`JucePlugin_` verboten, fail-closed bei nicht literal auflösbaren Includes) plus
+ein **Tlog-Riegel**, der prüft, aus welchen Orten die TUs überhaupt gelesen haben.
+
+> **4 (P2) — Manifest: die Tabelle „heutiger Arbeitsbaum" (Zeile K1) sagt
+> „fünf Kern-Übersetzungseinheiten", gemessen sind neun.**
+
+Position: `docs/beweise/SONDE-007a.md:54 @ 5538fb0` (Zeile **K1** der
+Riegeltabelle). **Einordnung: Defekt E** — Prüflistenregel E, zweiter Punkt:
+„Zahlen im Manifest sind gemessen, nicht aus einer anderen Datei abgeschrieben."
+Die Fünf stammt aus dem Baustand vom 22.08.; `NAKAMA_KERN_QUELLEN` trägt seit dem
+IPC-Zuwachs neun, und A14 misst neun (Rohausgabe unten).
+
+> **5 (P2) — Manifest: der Zitatblock im Kopf (unter den Urteilsmarken) nennt
+> nackte Positionen (`NakamaKern.cmake:218`, `:234`, `:202`) ohne Stand.**
+
+Position: `docs/beweise/SONDE-007a.md:6-14 @ 5538fb0`. **Einordnung: Defekt E.**
+Am heutigen Stand gemessen zeigen alle drei Zeilen auf den Generatorausdruck-Parser,
+nicht auf K2b: `:202` → `string(SUBSTRING ...)` in `_nakama_kern_genex_ende`,
+`:218` → `endif()`, `:234` → `if(_folgezeichen STREQUAL "<")` in
+`_nakama_kern_genex_kopf`. K2b steht heute bei `nakama_kern_konfig_pruefen`
+(`eq-copilot/cmake/NakamaKern.cmake:1533 @ 5538fb0`). Eine Position ohne Stand
+ist keine Position.
+
+### Warum ein Wegwechsel und nicht ein sechster Vergleich
+
+Befunde 1 und 2 sind die dritte Schicht derselben Frage. Der Verlauf steht im
+Kopf des Prüfskripts und in den Runden 3 und 4 dieses Manifests:
+
+| Runde | Was nachgebaut wurde | Was die nächste Runde fand |
+|---|---|---|
+| 23.08. (Anläufe 1–3) | mtime der handgeschriebenen CMake-Dateien, dann der `.vcxproj`, dann die **Defines** aus `CL.command.1.tlog` | eine alte `.vcxproj` gegen ein altes Tlog stimmt überein |
+| 28.08. (NAK-85) | zusätzlich die **Configure-Frische** über `generate.stamp.depend` | der Vergleich sah nur Defines, kein `/FI`, `/std:`, kein AdditionalOptions-Token |
+| 29.08. (Runde 4) | zusätzlich **vier Schalterklassen beidseitig**, TU-Mengen, Linkfrische | ein **entferntes** Token bleibt unsichtbar; **externe Header** sind unbewacht |
+
+Jede Runde hat den Nachbau korrekt erweitert und dabei eine weitere Eingabeklasse
+gefunden. Die Klassenliste ist aber nicht die Liste, nach der MSBuild entscheidet
+— und solange A14 diese Entscheidung nachbaut, ist die nächste Klasse nur noch
+nicht gefunden. **Skill §3.4** (neue Schicht derselben Frage → Weg wechseln)
+greift.
+
+**Entscheid des Dirigenten:** Frische wird nicht mehr nachgebaut, sondern an
+MSBuild **delegiert**. A14 baut den Kern vor der Messung inkrementell
+(`cmake --build <bau> --config Release --target NakamaKern`); MSBuild entscheidet
+über `CL.command`-, `CL.read`-, `Lib`-Tlogs und `.lastbuildstate`, ob etwas
+veraltet ist, und A14 misst danach das Artefakt, das der Bau gerade als aktuell
+bestätigt hat. Die bisherigen Wachen bleiben als **Diagnose**: sie beweisen,
+**womit** gebaut wurde, nicht mehr **ob** es frisch ist. In einer lesenden
+Umgebung (`--nur-messen`) gibt es kein grünes Frische-Urteil: Exit 3 mit
+Klartext, es sei denn der Aufrufer bezeugt ausdrücklich einen unmittelbar
+vorausgegangenen Bau (`--frisch-gebaut`, gesetzt vom Runner nach erfolgreichem
+`-Bauen`).
+
+### Was diese Phase gemessen hat
+
+Vier Proben am echten Bauverzeichnis, alle am 29.08.2026 auf `5538fb0`. Sie
+belegen die tragenden Annahmen der Matrix unten, statt sie zu behaupten.
+cmake 3.31.6-msvc6, Generator „Visual Studio 17 2022", MSBuild 17.14.40.
+
+**P5-4 — Tlog-Inventur.** Alle für die Delegation nötigen Protokolle existieren:
+`CL.command.1.tlog`, `CL.read.1.tlog`, `CL.write.1.tlog`, `Cl.items.tlog`,
+`Lib.command.1.tlog`, `Lib-link.read.1.tlog`, `Lib-link.write.1.tlog`,
+`NakamaKern.lastbuildstate` — alle unter
+`eq-copilot/build/plugin/NakamaKern.dir/Release/NakamaKern.tlog/`.
+
+```text
+CL.read.1.tlog: 2358 Zeilen, 9 Quell-Marker, 460 eindeutige gelesene Dateien
+Marker (Quellen):
+   NAKAMAKANON.CPP  NAKAMAPARAMETER.CPP  NAKAMASTATE.CPP  NAKAMALEBENSLAUF.CPP
+   NAKAMAVERTRAG.CPP  WIREENVELOPE.CPP  IPCVERBINDUNG.CPP  TELEMETRYCLIENT.CPP
+   CONTROLCLIENT.CPP
+
+davon unter plugin/**            : 12
+davon unter build/_deps/juce-src : 181
+davon sonst im Bauverzeichnis    : 0
+davon ausserhalb des Repos       : 267
+Summe                            : 460
+
+juce_audio_plugin_client-Header  : 0
+
+A14 kern_quellabhaengigkeiten()  : 21 Dateien (nur plugin/**)
+  davon in CL.read genannt       : 12
+  gelesen, aber nicht bewacht    : []
+Anteil bewacht an allen gelesenen: 12 von 460 = 2.6 %
+
+CL.command.1.tlog: 10 Quell-Marker
+   NAKAMAKANON.CPP  NAKAMALEBENSLAUF.CPP  NAKAMAPARAMETER.CPP  NAKAMASTATE.CPP
+   NAKAMAVERTRAG.CPP  PIPETOKEN.CPP  WIREENVELOPE.CPP  IPCVERBINDUNG.CPP
+   CONTROLCLIENT.CPP  TELEMETRYCLIENT.CPP
+
+NAKAMA_KERN_QUELLEN: 9
+```
+
+Drei Feststellungen daraus, die die Matrix trägt. **Erstens** altern die beiden
+Tlogs unterschiedlich: `CL.command` führt den entfernten `PipeToken.cpp` weiter
+(der veraltete Eintrag, den Runde 4 sichtbar gemacht hat), `CL.read` nennt genau
+die neun heutigen Quellen. Ein Riegel auf `CL.read` muss deshalb fail-closed
+sein — fehlt dort eine heutige TU, ist das ROT, keine stille Null. **Zweitens**
+liest der Kern heute **keine** Datei aus dem Bauverzeichnis außer JUCE-Quellen,
+insbesondere keinen generierten `JuceHeader.h`/`JucePluginDefines.h`. **Drittens**
+sind die gelesenen JUCE-Module namentlich eng:
+
+```text
+JUCE-Modulordner, die der Kern liest:
+  JUCE_CORE                    139
+  JUCE_CRYPTOGRAPHY            7
+  JUCE_DATA_STRUCTURES         10
+  JUCE_EVENTS                  25
+Orte ausserhalb des Repos:
+  MSVC-Toolset                 151
+  Windows-SDK                  116
+```
+
+Kein `juce_audio_plugin_client`, kein `juce_audio_processors`. Die
+Erlaubnisliste des Tlog-Riegels kann deshalb heute exakt diese sechs Orte nennen
+und alles andere rot färben.
+
+**P5-1 — ist der Bau auf dem heutigen Stand ein No-op?** Ja, zweimal gefahren:
+
+```text
+MSBuild-Version 17.14.40+3e7442088 für .NET Framework
+  Checking File Globs
+  NakamaKern.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\Release\NakamaKern.lib
+EXITCODE=0
+DAUER_SEKUNDEN=1,75      (erster Lauf)
+
+MSBuild-Version 17.14.40+3e7442088 für .NET Framework
+  Checking File Globs
+  NakamaKern.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\Release\NakamaKern.lib
+EXITCODE=0
+DAUER_SEKUNDEN=1,58      (zweiter Lauf)
+lib   vor=12:48:33.263 nach=12:48:33.263 geaendert=False
+cmd   vor=12:48:33.187 nach=12:48:33.187 geaendert=False
+read  vor=12:48:33.186 nach=12:48:33.186 geaendert=False
+lbs   vor=18:16:40.586 nach=18:16:55.901 geaendert=True
+```
+
+**1,6–1,8 s**, keine Übersetzung, kein Relink; Lib und beide CL-Tlogs bleiben
+byte- und zeitgleich. Berührt wird nur `NakamaKern.lastbuildstate` — MSBuilds
+eigene Marke „hier lief ein Bau". Der Bau vor jeder Messung kostet den Kanon
+also weniger als zwei Sekunden, wenn nichts zu tun ist. Der Inhalt derselben
+Datei ist zugleich MSBuilds Toolchain-Anker:
+
+```text
+PlatformToolSet=v143:VCToolArchitecture=Native64Bit:VCToolsVersion=14.44.35207:TargetPlatformVersion=10.0.26100.0:
+Release|x64|C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\|
+```
+
+**P5-2 — deckt der Bau auch die Configure-Zeile ab?** `eq-copilot/plugin/CMakeLists.txt`
+wurde nur **berührt** (Inhalt bytegleich, SHA-256 vorher/nachher identisch),
+danach derselbe Bau-Befehl:
+
+```text
+CMake is re-running because C:/Users/phili/Projekte/Nakama/eq-copilot/build/plugin/CMakeFiles/generate.stamp is out-of-date.
+  the file 'C:/Users/phili/Projekte/Nakama/eq-copilot/plugin/CMakeLists.txt'
+  is newer than 'C:/Users/phili/Projekte/Nakama/eq-copilot/build/plugin/CMakeFiles/generate.stamp.depend'
+  result='-1'
+...
+-- Nakama-Kern: K2b/K2c gegen alle 15 Verbraucher gemessen.
+-- Nakama-Kern: K2 gruen — 4 Ziele in der Usage-Requirements-Huelle von 'NakamaKern', keine compilerwirksame JucePlugin_-Konstante aus Defines oder -D-/D-Optionen (Debug, Release, MinSizeRel, RelWithDebInfo).
+-- Configuring done (19.7s)
+-- Generating done (3.9s)
+  Checking File Globs
+  NakamaKern.vcxproj -> ...\Release\NakamaKern.lib
+EXITCODE=0  DAUER=25,25s
+generate.stamp    : 18:16:54.422 -> 18:18:47.020
+NakamaKern.vcxproj: 17:38:56.790 -> 17:38:56.790   (unveraendert)
+NakamaKern.lib    : 12:48:33.263 -> 12:48:33.263   (unveraendert)
+```
+
+`NakamaKern.vcxproj` trägt eine `ProjectReference` auf `ZERO_CHECK.vcxproj`;
+`cmake --build --target NakamaKern` führt deshalb ZERO_CHECK zuerst aus, und das
+ruft CMake bei veraltetem `generate.stamp` selbst neu auf. Der Bau deckt damit
+genau die Frage ab, die `configure_frische()` heute nachbaut — **inklusive** der
+Konfigurierzeit-Riegel K2/K2b/K2c, die dabei mitlaufen. Dass `.vcxproj` und Lib
+unverändert blieben, ist korrekt: der Inhalt hatte sich nicht geändert
+(copy-if-different).
+
+**P5-3 — vergleicht MSBuild die volle Kommandozeile oder nur Enthaltensein?**
+Das ist die tragende Annahme für Befund 1. Gemessen ohne jede Repo-Änderung, an
+der anderen Seite desselben Vergleichs: aus dem **ersten** Datensatz von
+`CL.command.1.tlog` wurde das Token `/utf-8` entfernt (Sicherung vorher angelegt),
+danach derselbe Bau-Befehl:
+
+```text
+'/utf-8' aus dem ersten Datensatz entfernt (10 -> 9)
+--- Bau nach Tokenentfernung im Tlog ---
+MSBuild-Version 17.14.40+3e7442088 für .NET Framework
+  Checking File Globs
+  NakamaKanon.cpp
+  NakamaKern.vcxproj -> C:\Users\phili\Projekte\Nakama\eq-copilot\build\plugin\Release\NakamaKern.lib
+EXITCODE=0  DAUER=4,44s
+NakamaKern.lib      : 12:48:33.263 -> 18:20:31.899
+NakamaKanon.obj     : 05:57:06.817 -> 18:20:31.728
+'/utf-8' kommt 10x vor        (Tlog wieder vollstaendig)
+```
+
+MSBuild hat **genau die eine** manipulierte Übersetzungseinheit neu übersetzt und
+danach neu gelinkt — es vergleicht die vollständige Kommandozeile, nicht deren
+Enthaltensein. Genau der Fall, den `schalter_abgleich` nicht sehen kann, entgeht
+MSBuild nicht. Das Tlog schreibt sich beim Bau selbst wieder korrekt.
+
+**Zustand nach den Proben.** A14 läuft auf dem so hergestellten Baum grün, mit
+den neun gemessenen Übersetzungseinheiten aus Befund 4:
+
+```text
+[0] Frische - misst dieses Bein den aktuellen Quellstand?
+  ok      NakamaKern.lib ist nicht aelter als die Kernquellen
+  ok      Tlog, NAKAMA_KERN_QUELLEN und Archiv nennen dieselben 9 Uebersetzungseinheiten  [1 veralteter Tlog-Eintrag: PipeToken.cpp]
+  ok      jede der 9 gebauten TUs traegt exakt die heutigen Schalter der Projektdatei (Defines 16, Includepfade 4, erzwungene Includes 0, Sprachstandard 1; 2 AdditionalOptions-Token enthalten)
+  ok      NakamaKern.lib ist nicht aelter als die 10 Objekte ihres Bauverzeichnisses und nicht aelter als ihr Tlog
+...
+28 ok, 0 Fehler
+```
+
+### Frischematrix
+
+Zeilen sind die **Eingabeklassen des Kern-Artefakts** — alles, dessen Änderung
+`NakamaKern.lib` veralten lässt. „Wache in A14" nennt, was das Bein nach der
+Implementierung noch selbst tut; das ist in fast jeder Zeile **Diagnose**, nicht
+mehr das Frische-Urteil. Testkennungen: `P5-x` = Probe am echten Baum (`P5-1`
+bis `P5-4` sind oben bereits gefahren), `R5-x` = neuer bauloser Selbsttest,
+`Selbsttest-*` = bestehende Kennung im heutigen Skript.
+
+| # | Änderung nach letztem Bau | Wer erkennt es (Quelle der Wahrheit) | Wache in A14 | Verhalten (Exit) | Test, der die Zeile misst |
+|---|---|---|---|---|---|
+| F1 | **CMake-Eingabe geändert, nicht konfiguriert** | MSBuild: `ZERO_CHECK` vergleicht `generate.stamp` gegen `generate.stamp.depend` und ruft CMake neu auf | Bau selbst; `configure_frische()` bleibt als Diagnose und als Riegel für den `--frisch-gebaut`-Weg | Bau re-konfiguriert und baut; danach Messung → **0**. Bau ≠ 0 → **3** | **P5-2 (gefahren)**; zusätzlich `R5-1`: `configure_frische()` bleibt nach dem Bau klaglos |
+| F2 | CMake-Eingabe konfiguriert, **nicht gebaut — Define hinzu** | MSBuild: `CL.command.1.tlog` weicht von der erzeugten Kommandozeile ab | `schalter_abgleich`, Klasse `defines`, beidseitig | Neuübersetzung, dann Messung → **0** | `P5-5`: Define in `plugin/CMakeLists.txt`, nur konfigurieren, A14 starten; erwartet: neu übersetzt, grün. Diagnose beidseitig: `Selbsttest-Schalter/TU E` |
+| F3 | konfiguriert, nicht gebaut — **Define weg** | wie F2 (voller Zeilenvergleich, **P5-3** belegt die Symmetrie) | `schalter_abgleich`, Klasse `defines`, Richtung „nur gebaut" | Neuübersetzung, dann Messung → **0** | `P5-6`, Aufbau wie `P5-5` mit Entfernung. Diagnose: `Selbsttest-Schalter/TU E` (Richtung „nur gebaut") |
+| F4 | konfiguriert, nicht gebaut — **Include-/`/FI`-/`/std:`-Schalter geändert** | wie F2 | `schalter_abgleich`, Klassen `includepfade`, `erzwungene_includes`, `sprachstandard` | Neuübersetzung, dann Messung → **0** | `P5-7` (je einmal pro Klasse). Diagnose: `Selbsttest-Schalter/TU E` (bricht alle drei Klassen einzeln) und `F`; `G` sichert zusätzlich ab, dass ein unbekannter `LanguageStandard`-Enum ROT ist statt stillem „kein `/std:`" |
+| F5 | konfiguriert, nicht gebaut — **AdditionalOptions-Token hinzu** | wie F2 | `schalter_abgleich`, Enthaltensein-Prüfung | Neuübersetzung, dann Messung → **0** | Runde 4 hat den Ausgangsfall an `/Zc:__cplusplus` gemessen (§ Runde 4); `P5-8` wiederholt ihn nach der Delegation und erwartet jetzt Neuübersetzung statt Exit 0 auf alter Lib. Diagnose: `Selbsttest-Schalter/TU E`, Bruch „AdditionalOptions" |
+| F6 | konfiguriert, nicht gebaut — **AdditionalOptions-Token ENTFERNT** ← Befund 1 | MSBuild, **gemessen**: voller Kommandozeilenvergleich, kein Enthaltensein | keine — die Enthaltensein-Prüfung kann diese Zeile grundsätzlich nicht tragen und behauptet sie nach der Implementierung auch nicht mehr | Neuübersetzung, dann Messung → **0** | **P5-3 (gefahren)**; `P5-9` wiederholt ihn von der Projektdateiseite (Token aus `plugin/CMakeLists.txt` entfernen, nur konfigurieren, A14 starten). Dazu `R5-10`: der Diagnosetext dieser Klasse nennt sich ausdrücklich „Enthaltensein", damit die Ausgabe nicht mehr behauptet, hier werde gewacht (Prüflistenregel E) |
+| F7 | **lokale Quelle oder lokaler Header geändert** (`plugin/**`) | MSBuild: `CL.read.1.tlog` nennt jede gelesene Datei; Zeitstempel gegen `.obj` | `kern_quellabhaengigkeiten()` bleibt als Diagnose (heute 21 Dateien) | Neuübersetzung, dann Messung → **0** | `P5-10`: Header aus der Hülle berühren, bauen, prüfen dass die abhängige TU neu übersetzt wurde. Diagnose: `Selbsttest` „rekursive Kern-Includehuelle enthaelt NakamaUtf8.h" |
+| F8 | **externer Header geändert** (JUCE, Toolchain, generiert) ← Befund 2 | MSBuild: `CL.read.1.tlog` — **460** gelesene Dateien statt der 12 lokal bewachten | keine eigene mtime-Wache mehr; der neue **Tlog-Riegel** liest dieselbe Datei, prüft aber die **Orte**, nicht die Zeitstempel | Neuübersetzung, dann Messung → **0** | `P5-11`: JUCE-Header aus `build/_deps/juce-src/modules/juce_core/**` berühren, bauen; erwartet: Neuübersetzung. **P5-4 (gefahren)** beziffert die heutige Lücke |
+| F9 | **Objekt jünger als die Lib** (übersetzt, nicht gelinkt) | MSBuild: `Lib-link.read.1.tlog` / `Lib.command.1.tlog` | `linkfrische()` bleibt als Diagnose | Bau linkt nach, dann Messung → **0** | `Selbsttest-Schalter/TU N, O, P, Q` (bestehend, baulos); `P5-12` am echten Baum: `.obj` berühren, bauen, Lib muss jünger werden |
+| F10 | **TU hinzugefügt oder entfernt** | MSBuild über `Cl.items.tlog` + die erzeugte Projektdatei; `NAKAMA_KERN_QUELLEN` ist die Quelle der Soll-Menge | `tu_mengen_abgleich()` (drei Mengen paarweise gleich) und `ERWARTETE_OBJEKTE` bleiben — sie sind **keine** Frischewache, sondern der Riegel gegen ein stilles Wachsen des Kerns | fehlende TU in Tlog oder Archiv → **2**; sonst → **0** | `Selbsttest-Schalter/TU H, J, K, L` (bestehend) |
+| F11 | **veralteter Tlog-Eintrag** (entfernte Quelle bleibt in `CL.command`) | MSBuild schreibt ihn nicht fort — er ist Buchhaltung, kein Bauzustand | `tu_mengen_abgleich()` benennt ihn, zählt ihn nicht | benannt, → **0** | `Selbsttest-Schalter/TU I` (bestehend); am echten Baum heute sichtbar als `[1 veralteter Tlog-Eintrag: PipeToken.cpp]` |
+| F12 | **Toolchain-/Compilerwechsel** (Toolset, VC-Tools-Version, SDK) | MSBuild: `NakamaKern.lastbuildstate` trägt `PlatformToolSet`, `VCToolsVersion`, `TargetPlatformVersion`; Abweichung verwirft den ganzen Zielordner | neu: A14 liest dieselbe Zeile und **druckt** sie zum Bau-Ergebnis — Diagnose, kein eigenes Urteil | Vollneubau durch MSBuild, dann Messung → **0** | `R5-2` (baulos): künstliches `.lastbuildstate` wird gelesen und in der Ausgabe wiedergegeben; unlesbare/fehlende Datei ist eine Klage, kein stilles Ja |
+| F13 | **Bau nicht möglich** (kein cmake, kein Generator, kein Toolset) | der Bau selbst: Exitcode ≠ 0 oder cmake nicht auffindbar | A14 fängt beides ab, bevor irgendetwas gemessen wird | **3** mit Klartext („Voraussetzung fehlt"), nie 0, nie 2 | `R5-3` (baulos): erzwungen fehlschlagender Bau-Befehl → Exit 3, keine Messzeile in der Ausgabe |
+| F14 | **lesende Umgebung, `--nur-messen`, ohne `--frisch-gebaut`** | niemand — es ist niemand gefragt worden | keine; das Bein sagt genau das | **3** mit Klartext: gemessen wurde nichts über Frische, die Identitätsprüfung selbst wird nicht als grünes Frische-Urteil ausgegeben | `R5-4` (baulos): Aufruf ohne Zeugnis → Exit 3 und die Zeile „ohne Bau kein Frische-Urteil" |
+| F15 | **lesende Umgebung, `--nur-messen --frisch-gebaut`** | der Aufrufer bezeugt den Bau; `tools/beweise.ps1` setzt das Flag nur nach `-Bauen` mit Exit 0 | `configure_frische()` läuft weiterhin als Riegel gegen ein Zeugnis, das nicht zum heutigen CMake-Stand passt | Configure veraltet → **3**; sonst Messung → **0** | `R5-5` (baulos): Zeugnis bei veraltetem Configure → Exit 3; `P5-13`: Runner mit `-Bauen` setzt das Flag, ohne `-Bauen` nicht |
+
+Zwei Zeilen brauchen eine ausdrückliche Nichtzusage. **Zu F8:** der Tlog-Riegel
+prüft die **Orte** der gelesenen Dateien, nicht ihre Zeitstempel — die
+Zeitstempelfrage beantwortet MSBuild, und A14 wiederholt sie nicht. Wer das Bein
+in einer lesenden Umgebung ohne Zeugnis startet, bekommt deshalb F14, nicht ein
+schwächeres Ja. **Zu F10/F11:** `tu_mengen_abgleich` und `ERWARTETE_OBJEKTE`
+bleiben ausdrücklich erhalten, obwohl MSBuild die Frische entscheidet — sie
+beantworten eine andere Frage („ist der Kern still gewachsen?"), und genau diese
+Frage hat beim IPC-Zuwachs gesprochen, statt durchzurutschen.
+
+### Riegelmatrix (Befund 3)
+
+Zeilen sind die Wege, auf denen eine `JucePlugin_*`-Konstante in den Kern
+gelangen könnte. `K1b` und der `Tlog-Riegel` sind neu und in dieser Phase nur
+spezifiziert. Legende: **✓** deckt ab · **–** greift hier nicht · **(–)** greift
+nicht, ist aber auf diesem Weg auch nicht zuständig.
+
+| # | Weg | K1 | K2 / K2b / K2c | K1b (neu) | Tlog-Riegel (neu) | K3 / A14 | Test |
+|---|---|---|---|---|---|---|---|
+| W1 | **PUBLIC-Define vom Bundle-Ziel** über eine Linkkante (`juce_add_plugin` hängt sie PUBLIC an, `JUCEUtils.cmake:1543`) | ✓ namentlich, beim Übersetzen | ✓ K2 läuft die Usage-Requirements-Hülle ab und fällt auf jedes compilerwirksame `JucePlugin_` | (–) | ✓ nur mittelbar (der Kern läse dann `juce_audio_plugin_client`-Header) | ✓ Identitätsbytes in der Lib | K2 wurde beim Fallen vorgeführt (§2); `schalter_abgleich` Klasse `defines` bestätigt es je TU |
+| W2 | **`/D JucePlugin_…` aus `COMPILE_OPTIONS`** statt aus `COMPILE_DEFINITIONS` | ✓ | ✓ K2 liest ausdrücklich auch `-D`/`/D` aus `*_COMPILE_OPTIONS` | (–) | (–) | ✓ | wie W1; zusätzlich `schalter_abgleich`, weil das Token in der `defines`-Klasse landet |
+| W3 | **Generatorausdruck**, der ein `JucePlugin_`-Define bedingt einschaltet | ✓ wenn er greift | ✓ K2 wertet die inventarisierten Ausdrücke aus; **unbekannte relevante Ausdrücke sind ROT**, nicht unsichtbar | (–) | (–) | ✓ | K2s Genex-Parser (`_nakama_kern_genex_*`); Prüflistenregel D: Unbekanntes ist ROT |
+| W4 | **Header unter** `plugin/**`**, der definiert und bis TU-Ende definiert lässt** | ✓ genau dafür hat K1 keinen Include-Guard und wird am TU-Ende erneut ausgewertet | – kein Quelltext | ✓ zusätzlich, per Token | (–) | ✓ falls Bytes entstehen | K1 fiel beim Vorführen (§2); `R5-6`: künstlicher Header in der Hülle mit `JucePlugin_Name` → K1b ROT |
+| W5 | **Header unter** `plugin/**`**, der definiert, in** `#if` **nutzt und vor TU-Ende wieder entfernt** ← **Befund 3** | – Anfang: noch nicht definiert; Ende: schon `#undef` | – kein Quelltext | ✓ **schließt die Lücke**: Token `JucePlugin_` im Quelltext der Hülle ist verboten, unabhängig von `#define`/`#undef` | (–) der Header liegt in `plugin/**` | – ein `#if` erzeugt keine Identitätsbytes | `R5-7`: künstlicher Header, der `JucePlugin_IsSynth` definiert, nutzt und `#undef`t → K1b ROT, K1 grün (der Beleg, dass K1b nötig ist und nicht doppelt) |
+| W6 | **JUCE-Header `juce_audio_plugin_client` mit Default-Defines** | ✓ soweit die Defaults bis TU-Ende stehen | – die Linkkante existiert nicht, K2 sieht sie nicht | – liegt außerhalb `plugin/**` | ✓ **schließt die Lücke**: `CL.read.1.tlog` darf keine Datei aus `juce_audio_plugin_client` nennen | ✓ falls Bytes entstehen | `R5-8`: künstliches `CL.read.1.tlog` mit einem `juce_audio_plugin_client`-Pfad → ROT. Heute gemessen: **0 Treffer** (P5-4) |
+| W7 | **generierter Header außerhalb** `plugin/**` (`JuceHeader.h`, `JucePluginDefines.h` aus `<ziel>_artefacts/JuceLibraryCode/`) | ✓ soweit die Defines bis TU-Ende stehen | – | – liegt außerhalb `plugin/**` | ✓ die Erlaubnisliste nennt **nur** die sechs heute gemessenen Orte (`juce_core`, `juce_cryptography`, `juce_data_structures`, `juce_events`, MSVC-Toolset, Windows-SDK) plus `plugin/**`; jede andere gelesene Datei ist ROT | ✓ falls Bytes entstehen | `R5-9`: künstliches `CL.read.1.tlog` mit einem Pfad aus `JuceLibraryCode` → ROT. Heute gemessen: **0 Dateien** aus dem Bauverzeichnis außer juce-src (P5-4) |
+| W8 | **Header außerhalb** `plugin/**`**, der definiert-nutzt-entfernt, aus einem heute erlaubten Ort** (z. B. eine manipulierte Kopie in `juce_core`) | – | – | – | – der Ort ist erlaubt | – keine Bytes | **bewusst nicht abgedeckt.** Begründung: der Fall setzt voraus, dass jemand einen JUCE-Modulheader im FetchContent-Baum verändert. Dagegen steht nicht dieses Bein, sondern der Wrapper-Patchriegel des Configures („Nakama-Bruecke: JUCE-Wrapper ist bereits gepatcht (SHA-256 …)", Rohausgabe P5-2). Ein zweiter Hash über 181 Fremdheader wäre eine Wache ohne Träger. **Die Nichtzusage steht nach der Implementierung im Skriptkopf und in der Runner-Behauptung.** |
+
+Damit ist jede Zeile bis auf W8 von mindestens einem Riegel **mit Test**
+abgedeckt; W8 ist ehrlich als bewusst nicht abgedeckt ausgewiesen und nennt den
+Riegel, der stattdessen dort steht.
+
+**Zwei Festlegungen zur Bauform der neuen Riegel**, damit sie nicht dieselbe
+Blindheit erben wie ihre Vorgänger:
+
+1. **K1b ist fail-closed.** Die Include-Hülle wird wie heute aus
+   `NAKAMA_KERN_QUELLEN` und den rekursiven lokalen Includes gerechnet; ein nicht
+   literal auflösbares Include (`#include MAKRO`) oder ein mehrdeutiger Name ist
+   ROT, nicht „übersprungen" — `_lokales_include_aufloesen` wirft dafür heute
+   schon (`:752 @ 5538fb0`), und K1b erbt dieses Verhalten unverändert.
+2. **Der Tlog-Riegel prüft eine Erlaubnisliste, keine Verbotsliste.** „Kein
+   `juce_audio_plugin_client`" allein wäre wieder ein Nachbau der Frage nach der
+   nächsten unbekannten Klasse. Erlaubt sind die sechs oben gemessenen Orte plus
+   `plugin/**`; jede andere gelesene Datei ist ROT und wird namentlich genannt.
+   Fehlt eine heutige Kernquelle als Marker in `CL.read.1.tlog`, ist auch das ROT
+   — sonst wäre Schweigen wieder ein Ja.
+
+### Die Zusage nach der Implementierung
+
+Runner-Behauptung `A14` und Skriptkopf sagen danach genau dies und nicht mehr:
+**A14 misst `NakamaKern.lib` erst, nachdem MSBuild sie im selben Lauf als aktuell
+bestätigt hat** — der Bau `cmake --build <bau> --config Release --target NakamaKern`
+lief mit Exit 0, oder der Aufrufer bezeugt einen unmittelbar vorausgegangenen Bau
+mit `--frisch-gebaut`; **ob** das Artefakt frisch ist, entscheidet MSBuild über
+seine Tlogs und seinen `lastbuildstate`, nicht dieses Bein, dessen eigene Wachen
+(Configure-Stamps, vier Schalterklassen beidseitig, TU-Mengen, Linkfrische)
+nur noch belegen, **womit** gebaut wurde; ohne bezeugten Bau gibt es kein grünes
+Frische-Urteil, sondern Exit 3; und über eine Fremdquelle aus einem erlaubten
+Ort, die zwischen `#define` und `#undef` eine Identitätskonstante führt, ohne
+Bytes zu hinterlassen, behauptet das Bein nichts (W8).
+
+### Textkorrekturen zu Befund 4 und 5 (Zieltext, noch nicht ausgeführt)
+
+Diese Korrekturen gehören in den Änderungssatz der Implementierung, nicht in
+diese Spezifikation — sie berühren Text, den der Prüfer am Basis-SHA zitiert hat.
+
+1. **`docs/beweise/SONDE-007a.md:54 @ 5538fb0`, Zeile K1 der Riegeltabelle.**
+   „am Anfang **und Ende** jeder der fünf Kern-Übersetzungseinheiten" →
+   „am Anfang **und Ende** jeder Kern-Übersetzungseinheit (heute neun, gemessen
+   aus `NAKAMA_KERN_QUELLEN`)". Die nackte Zahl entfällt zugunsten der Quelle;
+   Arbeitsregel „volatile Zahlen nie festschreiben".
+2. **Dieselbe Zeile, Spalte „sieht nicht".** Nach der Implementierung von K1b
+   ergänzen: „vor dem TU-Ende wieder entfernte Makros — dafür **K1b**
+   (Quelltext-Token über die Include-Hülle)". Ohne diese Ergänzung behauptete die
+   Tabelle nach der Nacharbeit weiter eine Lücke, die dann geschlossen ist.
+3. **`docs/beweise/SONDE-007a.md:6-14 @ 5538fb0`, Zitatblock unter den
+   Urteilsmarken.** `cmake/NakamaKern.cmake:218 ff.` → `nakama_kern_konfig_pruefen()`;
+   „tragende Schleife `:234`" → „tragende Schleife über die Konfigurationen in
+   `nakama_kern_konfig_pruefen()`"; Kopfzusage `:202` → „der Kopfkommentar
+   desselben Riegels". Der zitierte Prüfertext bleibt wörtlich; ergänzt wird nur
+   der Stand, auf den er sich bezog (`@ 3353fb6`, der Stand vom 24.08.), damit
+   sichtbar bleibt, dass die Positionen historisch sind. Beleg für die
+   Notwendigkeit: am heutigen Stand zeigen `:202`, `:218` und `:234` alle drei
+   auf den Generatorausdruck-Parser (`_nakama_kern_genex_ende` bzw.
+   `_nakama_kern_genex_kopf`), nicht auf K2b.
+4. **`tools/eq-copilot/pruefe_kern_identitaetsfrei.py`, Kopf-Docstring.** Der
+   Abschnitt „FRISCHE — die Zusage lautet 'misst nie ein veraltetes Artefakt',
+   und sie wird an fuenf Stellen gehalten" wird ersetzt: die Zusage wird
+   delegiert, die fünf Stellen werden zu Diagnose. Der heutige Wortlaut wäre nach
+   der Implementierung eine Behauptung über eine Mechanik, die es nicht mehr gibt.
+5. **`tools/beweise.ps1`, Behauptung `A14`.** Der Satz „Gemessen wird nie ein
+   veraltetes Artefakt: das Configure ist juenger als jede CMake-Eingabe …" wird
+   auf den Wortlaut aus „Die Zusage nach der Implementierung" gebracht,
+   einschließlich der Nichtzusage zu W8.

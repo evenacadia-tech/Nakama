@@ -16882,4 +16882,37 @@ würde nichts messen.
 | **E** — „Jede Behauptung sagt nicht mehr, als der Test misst." | Runner-Behauptung `A17` und Skriptkopf nennen jetzt, dass die Existenzfrage **unabhängig von `sha256`** gestellt wird, dass `[3b]` beide Kanten fallen lässt und dass `[4b]` weder urteilt noch abbricht. |
 | **E** — „Zahlen sind gemessen, nicht abgeschrieben." | Jede Zahl in diesem Abschnitt (`100 ok`, `99 ok, 2 Fehler`, Kurz-Hashes) steht in einer eingefügten Rohausgabe. |
 | **E** — „Positionen als Symbol/Anker oder `Datei:Zeile @ sha7`." | Dieser Abschnitt nennt Symbole (`auslieferungsstand`, `installierter_stand`, `_installierter_stand`, `_artefakt_name`, `gegenproben_nacharbeit`, `_probelauf`) und trägt oben seinen Stand; die Befunde tragen `@ 25b57ec`. |
-| **F** — „Eine Behauptung ohne eingefügte Rohausgabe ist ein gescheitertes Ticket." | Eingefügt sind: die Reproduktion beider Befunde am Stand `25b57ec`, der `[3b]`-Block, Kanon- und `--release`-Lauf am Endstand, die Bruchprobe mit umbenanntem Bundle samt Rücknahme — dazu der gemeinsame Kanon-Anhang, auf den unten verwiesen wird.
+| **F** — „Eine Behauptung ohne eingefügte Rohausgabe ist ein gescheitertes Ticket." | Eingefügt sind: die Reproduktion beider Befunde am Stand `25b57ec`, der `[3b]`-Block, Kanon- und `--release`-Lauf am Endstand, die Bruchprobe mit umbenanntem Bundle samt Rücknahme — dazu der gemeinsame Kanon-Anhang, auf den unten verwiesen wird. |
+
+### Der gemeinsame Kanon-Abschlusslauf
+
+Diese Runde und `SONDE-007a` Runde 6 sind in EINEM Kanonlauf auf dem
+committeten Endstand `370e513` abgeschlossen worden — nicht zweimal
+gefahren und nicht zweimal angehängt. Der Lauf steht vollständig in
+`docs/beweise/SONDE-007a.md`, Abschnitt „Kanon-Lauf - SONDE-007a Runde 6 +
+NAK-94 Nacharbeit 1 - Abschluss“; seine Rohausgabe liegt in
+[`roh/SONDE-007a-370e513.md`](roh/SONDE-007a-370e513.md), das
+A17-Bein darin unter [A17](roh/SONDE-007a-370e513.md#a17).
+
+Abschlusszeilen des Runners, wörtlich:
+
+```text
+GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht
+Manifest:   docs\beweise\SONDE-007a.md
+Rohausgabe: docs\beweise\roh\SONDE-007a-370e513.md
+```
+
+A17 lief darin mit Exit 0 (1,03 s) und den erwarteten Hinweisen — der Bau
+weicht nach dem Relink dieses Laufs vom festgeschriebenen Paket ab, und genau
+das ist der Fall, den NAK-94 weich gestellt hat:
+
+```text
+[4] Auslieferungsstand  - Kanon: eine Abweichung ist ein Hinweis, kein Fehler
+  hinweis main: Bau weicht vom festgeschriebenen Paket ab (nach Relink erwartet; vor einer Auslieferung --hashen)  [Manifest AC8102F23EDC7D7C | gebaut 89100139949397FE]
+  hinweis active-probe: Bau weicht vom festgeschriebenen Paket ab (nach Relink erwartet; vor einer Auslieferung --hashen)  [Manifest 1DDC92E3B8525F1F | gebaut 97445A7931CAAC14]
+```
+
+Die beiden gebauten Kurz-Hashes sind andere als in den Läufen weiter oben:
+A14 baut `NakamaKern` vor jeder Messung neu, der nächste Linklauf ändert die
+Bundlebytes. Genau dafür ist der Hinweis da. Das Manifest wurde **nicht**
+neu gehasht.

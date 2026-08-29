@@ -5,9 +5,19 @@
 > Abschnitt 7.
 >
 > **Die eine harte Regel** (`docs/bauaufteilung-sonden.md` §2): *Eine Behauptung
-> ohne eingefügte Rohausgabe ist ein **gescheitertes** Ticket, kein fast
-> fertiges.* Nichts zusammenfassen — stdout und stderr wortgleich einfügen.
-> Ein Ticket ohne Manifest ist **offen**, auch wenn alles kompiliert.
+> ohne Rohausgabe ist ein **gescheitertes** Ticket, kein fast fertiges.* Nichts
+> zusammenfassen, nichts kürzen — stdout und stderr gehen wortgleich in den
+> Beweis. **Wo** sie liegen, hängt allein an der Art der Messung:
+>
+> | Art der Messung | Wohin die Rohausgabe gehört |
+> |---|---|
+> | **Eigene Ticketproben** — Handmessungen, Bruchproben, Grenzfälle; alles, was der Worker selbst fährt | wortgleich in **dieses Manifest**, Abschnitt 2 |
+> | **Kanon-Läufe** von `tools/beweise.ps1` | wortgleich nach `docs/beweise/roh/<TICKET>-<sha7>.md`; im Manifest bleiben Überschrift, die `**Lauf:** …`-Zeile mit Urteil und Exitcode, der Kopf „woran gemessen wurde“ und die Übersicht mit Verweis dorthin — Abschnitt 3 |
+>
+> Die Trennung verschiebt den **Ort** der Rohausgabe, nie ihren **Umfang**
+> (NAK-96, 29.08.2026). Zusammengefasst statt eingefügt wird in **keinem** der
+> beiden Fälle. Ein Ticket ohne Manifest ist **offen**, auch wenn alles
+> kompiliert.
 
 | Feld | Wert |
 |---|---|
@@ -37,7 +47,12 @@ Jede Zeile ist eine Behauptung aus dem **Gate-Text**, nicht aus meinem Kopf.
 
 ---
 
-## 2. Rohe Ausgaben
+## 2. Rohe Ausgaben der eigenen Ticketproben
+
+Wortgleich und ungekürzt: alles, was der Worker **selbst** gemessen hat —
+Handmessungen, Bruchproben, Grenzfälle. Die Rohausgaben der **Kanon-Läufe**
+stehen nicht hier, sondern unter `docs/beweise/roh/`; was davon im Manifest
+bleibt, sagt Abschnitt 3.
 
 <a id="b1"></a>
 ### B1 · «Behauptung 1»
@@ -82,6 +97,10 @@ Der Lauf schreibt in **zwei** Dateien (NAK-96, 29.08.2026):
 Die Rohausgabe trägt den Stand, den sie beweist: `-dirty` bei unbestätigtem
 Arbeitsbaum, ein Zählsuffix beim zweiten Lauf auf demselben Commit. Bestehende
 Rohausgaben werden nie überschrieben.
+
+Diese Aufteilung gilt **nur für Kanon-Läufe**. Abschnitt 2 ist davon nicht
+berührt: die Rohausgaben der eigenen Ticketproben bleiben wortgleich im
+Manifest.
 
 > ⚠️ Die Lauf-Zeile ist wortgleich festgelegt: `tools/plan/planstand.py` liest
 > die Kanon-Zahl per Regex `KANON` daraus zurück. Verweise werden angehängt,

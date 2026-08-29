@@ -64,7 +64,12 @@ dann erst frei.
   aus einer anderen Datei abgeschrieben.
 - Positionen im Repo stehen im Manifest als Symbol/Anker oder als Zahl mit
   Commit (`Datei:Zeile @ sha7`); eine nackte Zeilennummer altert mit dem
-  nächsten Edit und ist ein Befund (NAK-96 Nacharbeit 2, 29.08.2026).
+  nächsten Edit und ist ein Befund (NAK-96 Nacharbeit 2, 29.08.2026). Die
+  Regel gilt für das **ganze** Manifest, nicht nur für den neuen Abschnitt.
+  Ausgenommen sind allein wörtlich zitierte Rohausgaben (Codeblöcke) und
+  wörtliche Zitate (`>`-Blöcke): dort bleibt die Zahl, wie das Werkzeug oder
+  die Quelle sie schrieb, und der **einleitende Satz** davor trägt den Commit
+  (NAK-96 Nacharbeit 3, 29.08.2026).
 - Jede neue Prüfung wurde einmal absichtlich gebrochen; Rohausgabe des Rots
   liegt bei. Eine Probe, die auch ohne den Fix rot ist, heißt Regressionswache,
   nicht Beleg.

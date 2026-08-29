@@ -54,7 +54,7 @@ des Runners.
    geschriebenes Manifest auf eine Datei, die nie entstanden ist, falls das
    zweite Schreiben scheitert.
 3. **Listenvariable heißt `$roh`, nicht `$r`.** `$r` ist im Skript-Scope des
-   Runners schon für Prozessergebnisse belegt (Zeile 545); unter
+   Runners schon für Prozessergebnisse belegt (`tools/beweise.ps1:545 @ 2271df5`); unter
    `Set-StrictMode -Version Latest` wäre die Doppelbelegung zwar zulässig, aber
    eine Lesefalle.
 4. **Commit-Zuschnitt.** Der Auftrag schlug vier Commits vor, davon zwei
@@ -72,7 +72,7 @@ des Runners.
 |---|---|---|
 | **A** Rückstau und Prioritätsklassen | nein | Der Eingriff berührt keine IPC-Queue, keinen Puffer und keine Prioritätsklasse; geändert sind nur Dateiausgabe und git-Aufrufe. |
 | **B** Lebenszyklus | nein | Kein Verbinden/Trennen, kein Start/Stop, kein Thread. Der einzige Paarcharakter des Eingriffs ist schreiben↔verweisen und steht unter F. |
-| **C** Verträge und Längen | teilweise | Der einzige Vertrag im Eingriff ist der Wortlaut der Lauf-Zeile, aus dem `tools/plan/planstand.py` (Regex `KANON`, Zeile 66) die Kanon-Zahl zurückliest. Gemessen in **§5.1** mit genau dieser Regex gegen das erzeugte Manifest. |
+| **C** Verträge und Längen | teilweise | Der einzige Vertrag im Eingriff ist der Wortlaut der Lauf-Zeile, aus dem `tools/plan/planstand.py` (Regex `KANON`, `tools/plan/planstand.py:66 @ 2271df5`) die Kanon-Zahl zurückliest. Gemessen in **§5.1** mit genau dieser Regex gegen das erzeugte Manifest. |
 | **D** Bau- und Prüfriegel | ja | Beglaubigungslogik (`$veraltet`, Exit 4) ist unverändert — nachgewiesen in **§5.5**: der Abschlusslauf beglaubigt weiterhin und trägt denselben Urteilstext. Der Runner bezeugt weiterhin nur, was er gebaut hat; NAK-93/NAK-94 bleiben offen und wurden nicht angefasst. |
 | **E** Behauptung ≤ Messung | ja | Jede Behauptung in §5 steht neben ihrer Rohausgabe. Die Kollisionsprobe wurde einmal absichtlich gebrochen (**§6**), Rohausgabe des Rots liegt bei. Über den Index-Lock wird **nicht** behauptet „kein `index.lock` mehr" — das ist nicht messbar; behauptet und gemessen wird nur „jeder lesende git-Aufruf in Cockpit und Runner trägt den Schalter" (**§5.4**). |
 | **F** Änderungssatz | ja | schreiben↔verweisen im selben Commit: derselbe Codeblock erzeugt die Roh-Datei und den Verweis darauf, und beide Richtungen (Manifest→Roh, Roh→Manifest) entstehen aus denselben zwei gerechneten Pfaden. Doku (Runner-Kopf, VORLAGE §3, CLAUDE.md) liegt im selben Änderungssatz wie das Verhalten, das sie beschreibt. |
@@ -109,13 +109,13 @@ ihre Roh-Dateien liegen unter `docs/beweise/roh/`.
 <a id="b51"></a>
 ### 5.1 · Regex-Probe: die Kanon-Zahl bleibt im Manifest lesbar
 
-`tools/plan/planstand.py` liest die Kanon-Zahl mit `KANON` (Zeile 66) aus der
+`tools/plan/planstand.py` liest die Kanon-Zahl mit `KANON` (`tools/plan/planstand.py:66 @ 2271df5`) aus der
 Lauf-Zeile. Wandert diese Zeile mit der Rohausgabe aus dem Manifest, verliert
 der Planstand die Zahl still — deshalb ist sie im Manifest geblieben und der
 Verweis nur angehängt worden.
 
 **Befehl:** `py -3.13 <skript> docs/beweise/NAK-96.md` — das Skript übernimmt die
-Regex 1:1 aus `tools/plan/planstand.py` Zeile 66 und bildet `kanon_lesen()` nach.
+Regex 1:1 aus `tools/plan/planstand.py:66 @ 2271df5` und bildet `kanon_lesen()` nach.
 
 ```text
 Datei:   docs\beweise\NAK-96.md
@@ -245,10 +245,18 @@ ist davon unberührt, denn sie misst nicht die Datei, sondern den einzelnen
 Kanon-Abschnitt:
 
 **Das ist die Zahl, um die es dem Auftrag geht:** ein Kanon-Abschnitt im
-Manifest ist **62 bis 67 Zeilen** lang (die vier Abschnitte oben: 67, 67, 65,
-62 — die längeren tragen zusätzlich den VERALTET-Hinweis der Läufe ohne
-`-Bauen`). Vorher war derselbe Abschnitt die vollen **2944 Zeilen**, die jetzt
-in der Roh-Datei liegen — Faktor rund **45**. Die übrigen 532 Zeilen (793 − 261,
+Manifest ist **61 bis 63 Zeilen** lang (die vier Abschnitte oben: 63, 63, 61,
+61 @ `f501704` — die längeren tragen zusätzlich den VERALTET-Hinweis der Läufe
+ohne `-Bauen`). Gezählt wird nach der in **§11.4** ausgeschriebenen Regel:
+Überschriftszeile bis zur letzten Zeile, die noch zum Abschnitt selbst gehört
+— das ist die letzte Zeile seiner Übersichtstabelle —, beide eingeschlossen;
+die Leerzeilen danach und die von Hand gesetzte Trennlinie `---` zählen nicht
+mit. Die hier ursprünglich genannten **62 bis 67** und die Werte 67, 67, 65, 62
+waren der reine Überschrift-zu-Überschrift-Abstand, also eine andere Zählung;
+korrigiert in Nacharbeit 3 (**§11.4**).
+
+Vorher war derselbe Abschnitt die vollen **2944 Zeilen**, die jetzt in der
+Roh-Datei liegen — Faktor rund **45**. Die übrigen 545 Zeilen (793 − 248,
 Stand `f501704`) sind der Lesetext des Tickets selbst (§1–§7 samt den
 Rohausgaben der Proben), nicht Kanon-Ausgabe.
 
@@ -295,7 +303,7 @@ Manifest und die Roh-Dateien), also sind die Planquellen gegenüber dem letzten
 Commit nicht frisch. Genau diese Aussage kommt aus dem `git status --porcelain`,
 der jetzt mit dem Schalter läuft. Der Lauf nach den Commits steht in §7.
 
-**Beleg, dass jeder lesende git-Aufruf den Schalter trägt.** Beide Dateien
+**Beleg, dass jeder lesende git-Aufruf den Schalter trägt** — alle Zeilennummern im folgenden Block gemessen auf `d993894`. Beide Dateien
 starten git nur an zwei Stellen; alle übrigen Aufrufe gehen durch diese zwei
 Hüllen (`Invoke-GitText` im Cockpit, `Git-Wert` im Runner) plus den einen
 JUCE-`describe`:
@@ -825,6 +833,12 @@ Planschritts; die Regel gilt trotzdem.)
 <a id="b81"></a>
 ### 8.1 · Auftrag, wörtlich aus `docs/offene-punkte.md`
 
+Das Zitat bleibt wörtlich; seine Positionsangaben sind auf dem Basisstand von
+NAK-97 gemessen. Gebunden gelesen heißt das `tools/plan/planstand.py:95 @ f501704`
+(der einzige `subprocess.run`), `tools/plan/planstand.py:66 @ f501704` (die Regex
+`KANON`) und `tools/plan/planstand.py:247–254 @ f501704` (die beiden Aufrufer
+`git log -1` und `git status --porcelain`).
+
 > **Zwei Reste derselben Klassen wie NAK-96, in einer Datei, die der Auftrag
 > nicht abdeckte: `tools/plan/planstand.py`.** (1) `planstand.py:95` startet git
 > ohne `--no-optional-locks`; die Aufrufer sind `git log -1` und
@@ -847,20 +861,34 @@ Planschritts; die Regel gilt trotzdem.)
 | # | Entscheidung | Umsetzung |
 |---|---|---|
 | A | Beide Wortlaute liefern **dieselbe** Semantik `bestanden/gesamt`: GRÜN `n/m` → `Kanon n/m grün`; ROT `k von m fehlgeschlagen` → `Kanon (m−k)/m ROT`. Letzter Treffer in der Datei gewinnt. | `KANON` ist eine Alternation mit benannten Gruppen (`gruen_gut`/`gruen_ges` bzw. `rot_fehl`/`rot_ges`); `kanon_lesen()` nimmt den letzten Treffer aus `finditer` und rechnet im ROT-Zweig `ges − fehl`. Gemessen (a)–(c2) in §8.3. |
-| B | Kommentar über `KANON` nennt beide Wortlaute wörtlich samt Quelle. | Der Kommentar zitiert die beiden `$urteil`-Zeilen aus `tools/beweise.ps1` **Zeile 856** (GRÜN) und **845** (ROT); die Zeilennummern sind am heutigen Skript nachgeschlagen, nicht aus dem Gedächtnis. |
+| B | Kommentar über `KANON` nennt beide Wortlaute wörtlich samt Quelle. | Der Kommentar zitiert die beiden `$urteil`-Zeilen aus `tools/beweise.ps1:856 @ f501704` (GRÜN) und `tools/beweise.ps1:845 @ f501704` (ROT); die Zeilennummern waren am damaligen Skript nachgeschlagen, nicht aus dem Gedächtnis. Seit Nacharbeit 3 zeigt der Kommentar auf alle vier Zuweisungen (§11.2). |
 | C | Kein Kanon-Lauf. | Kein Kanon-Bein fährt `tools/plan/planstand.py` — der Kanon prüft Plugin, Broker und Schemata. Ein Lauf hätte über diese Änderung nichts ausgesagt; der Beweis sind die Proben §8.3–§8.6. |
 
 **Eigene technische Entscheidungen innerhalb der Grenze**
 
 1. **Die beiden übrigen Urteilstexte bleiben ohne Treffer.** `tools/beweise.ps1`
-   schreibt vier Urteile, nicht zwei: neben GRÜN (856) und ROT (845) auch
-   `UNVOLLSTAENDIG - n gruen, k Voraussetzung(en) fehlen` (849) und
+   schreibt vier Urteile, nicht zwei: neben GRÜN (`tools/beweise.ps1:856 @ f501704`)
+   und ROT (`tools/beweise.ps1:845 @ f501704`) auch
+   `UNVOLLSTAENDIG - n gruen, k Voraussetzung(en) fehlen`
+   (`tools/beweise.ps1:849 @ f501704`) und
    `NICHT BEGLAUBIGT - n/m gruen, aber Pruefbinaries sind aelter als die
-   Quellen` (853). Beide bleiben absichtlich unerfasst: dort hat der Runner die
-   Beglaubigung gerade **verweigert**, und eine Zeile `Kanon n/m grün` würde ein
-   bestandenes Ergebnis behaupten, das es nicht gibt. Fail-closed lieber keine
-   Zahl — dieselbe Regel, nach der der Kopf des Skripts eine fehlende
-   Urteilsmarke lieber untertreibt. Gemessen als (f1)/(f2) in §8.3.
+   Quellen` (`tools/beweise.ps1:853 @ f501704`). Beide bleiben absichtlich
+   unerfasst: dort hat der Runner die Beglaubigung gerade **verweigert**, und eine
+   Zeile `Kanon n/m grün` würde ein bestandenes Ergebnis behaupten, das es nicht
+   gibt. Fail-closed lieber keine Zahl — dieselbe Regel, nach der der Kopf des
+   Skripts eine fehlende Urteilsmarke lieber untertreibt. Gemessen als (f1)/(f2)
+   in §8.3.
+
+   > ⚠️ **Diese Entscheidung ist seit `7be6cd5` überholt** (Nacharbeit 3,
+   > 29.08.2026, **§11.2**). „Kein Treffer“ ist hier gerade **nicht**
+   > fail-closed: `kanon_lesen()` nimmt den LETZTEN Treffer. Folgte auf einen
+   > grünen Lauf ein verweigerter, blieb der ältere grüne der letzte Treffer und
+   > der Planstand meldete weiter `Kanon n/m grün` für einen Lauf, den der Runner
+   > gerade nicht beglaubigt hatte. Seit `7be6cd5` treffen alle vier Urteile; die
+   > verweigernden bekommen weiterhin **keine** Zahl, verdrängen aber die ältere
+   > grüne. Die Erwartungen (f1)/(f2) in §8.3 und §8.5 beschreiben damit den
+   > Stand bis `a9c6450`, nicht den heutigen.
+
 2. **`?` statt einer negativen Zahl.** Steht in einem Manifest mehr
    Fehlschläge als Läufe, ist die Datei verdorben; `ges − fehl` wäre negativ.
    `kanon_lesen()` schreibt dann `Kanon ?/m ROT` statt einer erfundenen Zahl.
@@ -877,7 +905,7 @@ Planschritts; die Regel gilt trotzdem.)
 
 Die Probe **importiert** `KANON` und `kanon_lesen` aus `tools/plan/planstand.py`
 und bildet sie nicht nach — eine nachgebaute Regex würde sich selbst prüfen.
-Die Zeilennummer im Kopf ist gemessen, nicht abgeschrieben.
+Die Zeilennummer im Kopf ist gemessen, nicht abgeschrieben. Die Rohausgabe unten nennt `tools/plan/planstand.py:85 @ da1b04e` und die vier Runner-Zeilen `tools/beweise.ps1:845/849/853/856 @ f501704`; sie steht wortgleich, wie das Werkzeug sie ausgab.
 
 **Befehl:** `py -3.13 -c "$CODE" <tmp>`, `$CODE` = das Probenskript (lädt
 `tools/plan/planstand.py` über `importlib`) · **Datum:** 2026-08-29
@@ -984,7 +1012,7 @@ erzeugte `docs/PLAN-STAND.md` unverändert (§8.6).
 
 `tools/plan/planstand.py` wurde per `git show HEAD:tools/plan/planstand.py` auf
 den Stand `f501704` zurückgesetzt — der echte alte Stand, kein nachgebauter —,
-dieselbe Probe gefahren, danach aus der Sicherung zurückgeholt.
+dieselbe Probe gefahren, danach aus der Sicherung zurückgeholt. Die Rohausgabe unten nennt deshalb `tools/plan/planstand.py:66 @ f501704` und die vier Runner-Zeilen `tools/beweise.ps1:845/849/853/856 @ f501704`; sie steht wortgleich, wie das Werkzeug sie ausgab.
 
 **Rohausgabe des Rots:**
 
@@ -1050,7 +1078,7 @@ da1b04e NAK-97: planstand.py liest beide Kanon-Wortlaute, git-Aufruf mit --no-op
 <a id="b86"></a>
 ### 8.6 · git-Probe: der Schalter steht im Aufruf, das Blatt bleibt gleich
 
-**Befehl und Rohausgabe** · **Datum:** 2026-08-29
+**Befehl und Rohausgabe** · **Datum:** 2026-08-29 · alle Zeilennummern im Block gemessen auf `da1b04e`
 
 ```text
 $ grep -n "subprocess.run" tools/plan/planstand.py     # einziger git-Aufruf des Skripts
@@ -1073,10 +1101,10 @@ $ git --no-optional-locks diff --stat -- docs/PLAN-STAND.md
  1 file changed, 3 insertions(+), 3 deletions(-)
 ```
 
-`planstand.py` hat **genau einen** git-Aufruf (`subprocess.run`, Zeile 130); er
+`planstand.py` hat **genau einen** git-Aufruf (`tools/plan/planstand.py:130 @ da1b04e`, `subprocess.run`); er
 bedient beide Aufrufer aus §8.1 (`git log -1` und `git status --porcelain`).
 Der Schalter steht als erstes Argument vor `-C`, wortgleich zu
-`tools/beweise.ps1:182` (`Git-Wert`) und `tools/dirigent/cockpit.ps1:180`
+`tools/beweise.ps1:182 @ da1b04e` (`Git-Wert`) und `tools/dirigent/cockpit.ps1:180 @ da1b04e`
 (`Invoke-GitText`).
 
 Vergleich des **erzeugten** Blattes vor und nach dem Umbau — beide Läufe auf
@@ -1118,7 +1146,7 @@ ihn liest.
 |---|---|---|
 | **A** Rückstau und Prioritätsklassen | nein | Kein Puffer, keine Queue, keine Prioritätsklasse; geändert sind eine Regex, eine Lesefunktion und ein Argumentvektor. |
 | **B** Lebenszyklus | nein | Kein Verbinden/Trennen, kein Start/Stop, kein Thread. |
-| **C** Verträge und Längen | teilweise | Der Vertrag ist der Wortlaut der `**Lauf:**`-Zeile. Beide Formen sind gegen die **Quelle** geprüft (`tools/beweise.ps1` Zeile 845/856), nicht gegen eine Kopie; Grenzfälle (verdorbene Zahl, nicht beglaubigende Urteile) in **§8.3** (f1)(f2)(g). |
+| **C** Verträge und Längen | teilweise | Der Vertrag ist der Wortlaut der `**Lauf:**`-Zeile. Beide Formen sind gegen die **Quelle** geprüft (`tools/beweise.ps1:845/856 @ f501704`), nicht gegen eine Kopie; Grenzfälle (verdorbene Zahl, nicht beglaubigende Urteile) in **§8.3** (f1)(f2)(g). |
 | **D** Bau- und Prüfriegel | ja | Der Leser bleibt fail-closed: was der Runner nicht beglaubigt hat, bekommt weiterhin **keine** Zahl (§8.3 f1/f2) — er wird durch den Fix nicht redseliger, sondern nur an der einen Stelle ehrlich, wo bisher ein rotes Urteil unsichtbar war. Kein Kanon-Bein fährt diese Datei (§8.2 C), deshalb kein Lauf; die Beglaubigungslogik in `tools/beweise.ps1` ist unangetastet. |
 | **E** Behauptung ≤ Messung | ja | Jede Behauptung steht neben ihrer Rohausgabe (§8.3–§8.6). Der Fix wurde einmal absichtlich zurückgenommen, Rohausgabe des Rots liegt bei (**§8.5**). Über den Index-Lock wird nichts behauptet, was ein Lauf nicht zeigt (**§8.6**). Die Zeilennummer der Regex misst die Probe selbst; die Kanon-Zahlen kommen aus dem Korpus, nicht aus einer anderen Datei (**§8.4**). |
 | **F** Änderungssatz | ja | lesen↔schreiben im selben Commit: der Runner **schreibt** beide Urteilstexte, `planstand.py` **liest** ab jetzt beide — vorher war das Paar halb. Regex, Lesefunktion und der Kommentar, der die Quelle benennt, liegen in einem Commit (`da1b04e`); Manifest und Register folgen im zweiten. |
@@ -1129,13 +1157,15 @@ ihn liest.
 - **Kein Kanon-Lauf gefahren** — begründet in §8.2 C. Die Urteilsmarke für
   NAK-96 und NAK-97 setzt der Prüfer.
 - **Befund außerhalb der Ticketgrenze:** `KANON` steht durch den geforderten
-  Kommentar (Entscheid B) nicht mehr auf Zeile 66, sondern auf **Zeile 85**.
-  Der Kommentar in `tools/beweise.ps1:907` nennt „`tools/plan/planstand.py`
-  (KANON, Zeile 66)"; das Symbol `KANON` stimmt weiter, die Zahl nicht mehr.
-  `tools/beweise.ps1` ist ausdrücklich außerhalb dieses Auftrags, deshalb
-  unangetastet und als Nachtrag im Register festgehalten. Die „Zeile 66" in
-  **§3** und **§5.1** dieses Manifests bleibt richtig: sie beschreibt den Stand,
-  an dem NAK-96 gemessen hat.
+  Kommentar (Entscheid B) nicht mehr auf `tools/plan/planstand.py:66 @ f501704`,
+  sondern auf `tools/plan/planstand.py:85 @ da1b04e`. Der Kommentar in
+  `tools/beweise.ps1:907 @ f501704` nennt als Zeiger „`tools/plan/planstand.py`
+  (KANON, Zeile 66)“ — Zitat aus der Quelle `@ f501704`; das Symbol `KANON`
+  stimmt weiter, die Zahl nicht mehr. `tools/beweise.ps1` ist ausdrücklich
+  außerhalb dieses Auftrags, deshalb unangetastet und als Nachtrag im Register
+  festgehalten. Die Angabe `tools/plan/planstand.py:66 @ 2271df5` in **§3** und
+  **§5.1** dieses Manifests bleibt richtig: sie beschreibt den Stand, an dem
+  NAK-96 gemessen hat.
 
 ---
 
@@ -1388,7 +1418,7 @@ Messung):
 5. FileShare   : zweiter Oeffner abgewiesen, solange das Handle lebt
 ```
 
-Zeile 2 und 3 gehören zusammen: `DirectoryNotFoundException` und
+Ausgabezeile 2 und 3 gehören zusammen: `DirectoryNotFoundException` und
 `PathTooLongException` **erben von `IOException`** und würden von einem
 generischen `catch [IO.IOException]` als „Name belegt" gelesen — ein fehlendes
 Verzeichnis wäre dann 1000 stille Fehlversuche statt eines Fehlers. Die
@@ -1488,7 +1518,7 @@ Was dieser Lauf für die Nacharbeit belegt:
 | Läuft der Runner mit der Reservierung durch? | ja — Reservierung, 32 Beine, Schreiben, Exitcode 0 |
 | Bleibt die Kanonzahl unberührt? | 32 von 32, wie in Abschlusslauf 2 (§5.5) — die Änderung betrifft nur den Schreibweg |
 | Wie heißt die Roh-Datei? | `docs/beweise/roh/NAK-96-f124746.md` — erster Versuch, kein Suffix, kein `-dirty` |
-| Ist sie vollständig? | 2944 Zeilen, 199 559 Bytes; der angehängte Kanon-Abschnitt von der Überschrift `## Kanon-Lauf - NAK-96 Abschlusslauf 3 (Nacharbeit Runde 1)` bis zum Ende seiner Übersichtstabelle misst 63 Zeilen und liegt damit in derselben Spanne wie die vier früheren — die Kennzahl aus §5.3 hält |
+| Ist sie vollständig? | 2944 Zeilen, 199 559 Bytes; der angehängte Kanon-Abschnitt von der Überschrift `## Kanon-Lauf - NAK-96 Abschlusslauf 3 (Nacharbeit Runde 1)` bis zur letzten Zeile seiner Übersichtstabelle misst **61 Zeilen** (`docs/beweise/NAK-96.md:1549–1609 @ a9c6450`, Zählregel in §11.4) und liegt damit in derselben Spanne 61 bis 63 wie die vier früheren — die Kennzahl aus §5.3 hält. Die hier zuvor genannten 63 Zeilen waren falsch gezählt; korrigiert in Nacharbeit 3 (§11.4) |
 | Bleibt eine 0-Byte-Leiche zurück? | nein — `find docs/beweise/roh -type f -size 0` findet nichts |
 | Greift Entscheidung D (Zeilenenden)? | Ja, in der tatsächlich begrenzten Form: stdout/stderr der Beine behalten CRLF, Runner-Zeilen sind mit LF getrennt, und beide Dateien bleiben für git `w/mixed`. Bytezählung auf `34491e0`: neu `NAK-96-f124746.md` CR=2138 und Bytes=199559, Vorgänger `NAK-96-d993894.md` CR=2139 und Bytes=199579. Der einzige Unterschied zum alten `Set-Content` ist das fehlende abschließende CR. |
 
@@ -1539,10 +1569,14 @@ $ wc -l docs/beweise/NAK-96.md
 1607 docs/beweise/NAK-96.md
 ```
 
-Davon entfallen 318 Zeilen auf die fünf angehängten Kanon-Abschnitte (gemessen
-65, 65, 63, 62, 63 — dieselbe Spanne wie in §5.3); der Rest ist Lesetext der
-Abschnitte §1–§9. Die maßgebliche Kennzahl bleibt der einzelne Kanon-Abschnitt
-gegen die 2944 Zeilen seiner Roh-Datei, Faktor rund 45.
+Die 1607 Zeilen sind der Stand `bf0fa7d`; @ `a9c6450` sind es 1695, und die Zahl
+wächst mit jedem Nachtrag. Auf die fünf angehängten Kanon-Abschnitte entfallen
+davon 309 Zeilen (gemessen 63, 63, 61, 61, 61 @ `a9c6450`, Zählregel in §11.4 —
+Spanne 61 bis 63 wie in §5.3); der Rest ist Lesetext der Abschnitte §1–§9. Die
+hier zuvor genannten 318 Zeilen und die Werte 65, 65, 63, 62, 63 folgten keiner
+einheitlichen Zählregel; korrigiert in Nacharbeit 3 (§11.4). Die maßgebliche
+Kennzahl bleibt der einzelne Kanon-Abschnitt gegen die 2944 Zeilen seiner
+Roh-Datei, Faktor rund 45.
 
 ---
 
@@ -1693,3 +1727,630 @@ Kommentar; daneben ändern sich ausschließlich Manifest und Prüflistentext.
 `tools/beweise.ps1` ist keine Quelle der Prüfbinaries. Es wurde weder gebaut
 noch ein Kanon-Lauf gestartet.
 
+
+---
+
+<a id="b11"></a>
+
+## 11. Nacharbeit Runde 3 — 2026-08-29 (Prüfer-Thread 01a04dbd-51d2-7a71-956d-6a46d5f2439d)
+
+Dritter frischer Prüfer (Codex `gpt-5.6-sol`, hoher Aufwand), lesend über
+`git diff 2271df5...a9c6450`. Vier P2-Befunde, alle vier vom Dirigenten bestätigt
+und hier behoben. Basisstand dieser Runde ist `a9c6450`; jede Positionsangabe
+unten ist an den Commit gebunden, an dem sie gemessen wurde.
+
+### 11.1 · Die vier Befunde, wörtlich
+
+Der Befundtext steht wörtlich, wie er übergeben wurde; ergänzt sind nach der
+Regel aus Runde 2 ausschließlich die Commits, an denen die Positionen gemessen
+sind.
+
+**Befund 1 (Defekt, Code) — `kanon_lesen()` ist nicht fail-closed** ·
+`tools/plan/planstand.py`, Symbole `KANON` und `kanon_lesen` `@ a9c6450`
+
+> `KANON` trifft nur GRUEN und ROT; `kanon_lesen()` nimmt den letzten Treffer.
+> Folgt auf einen GRÜN-Lauf ein Lauf mit `NICHT BEGLAUBIGT - …` oder
+> `UNVOLLSTAENDIG - …`, bleibt der ältere GRÜN-Lauf der letzte Treffer und der
+> Planstand zeigt `Kanon n/m grün`, obwohl der jüngste Lauf nicht beglaubigt
+> ist. Das widerspricht §8.2 („was der Runner nicht beglaubigt hat, bekommt
+> keine Zahl“).
+
+**Befund 2 (Defekt E) — falsche Zeilenzahl in §9.11** ·
+`docs/beweise/NAK-96.md` §9.11 `@ a9c6450`
+
+> §9.11 nennt für den Abschnitt `## Kanon-Lauf - NAK-96 Abschlusslauf 3
+> (Nacharbeit Runde 1)` 63 Zeilen; von der Überschrift bis zur letzten
+> Tabellenzeile sind es 61 (Dirigent gemessen auf a9c6450).
+
+**Befund 3 (Defekt E) — nackte Positionsangaben in §1–§8** ·
+`docs/beweise/NAK-96.md` §3, §5.1 und §8 `@ a9c6450`
+
+> Trotz der Regel aus Runde 2 stehen in §3, §5.1 und §8 noch nackte
+> Zeilennummern („Zeile 66“, `planstand.py:95`, `beweise.ps1:907` u. ä.). Regel
+> gilt für das GANZE Manifest: jede Positionsangabe erhält den Commit, an dem
+> sie gemessen wurde, oder wird durch einen Symbolanker ersetzt.
+
+**Befund 4 (Defekt Doku) — `VORLAGE.md` widerspricht sich** ·
+`docs/beweise/VORLAGE.md`, Regelblock am Anfang gegen die Tabelle in
+Abschnitt 3 `@ a9c6450`
+
+> Der harte Regelblock am Anfang verlangt stdout/stderr wortgleich im Manifest;
+> die neue Tabelle in Abschnitt 3 sagt, der Kanon legt die Rohausgabe unter
+> `docs/beweise/roh/` ab und das Manifest trägt nur den Verweis.
+
+Alle vier Befunde sind an der Quelle geprüft und zutreffend.
+
+<a id="b112"></a>
+### 11.2 · Befund 1: die Regel und ihre Umsetzung
+
+**Regel des Dirigenten.** Der Planstand spiegelt den **jüngsten** Kanon-Lauf des
+Manifests. `KANON` bekommt zwei weitere Alternativen für die Wortlaute
+`UNVOLLSTAENDIG - …` und `NICHT BEGLAUBIGT - …`, wörtlich aus den vier
+`$urteil = …`-Zuweisungen in `tools/beweise.ps1`. `kanon_lesen()` liefert für den
+jüngsten Treffer: GRUEN → `Kanon n/m grün`; ROT → `Kanon (m−k)/m ROT`;
+NICHT BEGLAUBIGT → `Kanon zuletzt nicht beglaubigt`; UNVOLLSTAENDIG →
+`Kanon zuletzt unvollständig`. Nie eine grüne Zahl aus einem älteren Lauf.
+
+**Warum das der eigentliche Defekt ist.** §8.2 hatte die beiden verweigernden
+Urteile *absichtlich* nicht erfasst, mit dem Argument „fail-closed lieber keine
+Zahl“. Das Argument stimmt für die Ausgabe, nicht für den Treffer:
+`kanon_lesen()` nimmt `finditer(...)[-1]`. Ohne Treffer bleibt der letzte
+**grüne** Lauf der jüngste, und der Planstand behauptet genau das bestandene
+Ergebnis, das der Runner gerade verweigert hat. Fail-closed heißt hier deshalb:
+jedes der vier Urteile trifft, und nur die **Ausgabe** unterscheidet sich — die
+verweigernden bekommen weiterhin keine Zahl, verdrängen aber die ältere grüne.
+Die Gegenrichtung bleibt unverändert: ein GRÜN nach einem verweigerten Lauf
+liefert wieder die Zahl (Probe (a3)).
+
+**Umsetzung** in `tools/plan/planstand.py` (Commit `7be6cd5`):
+
+| Ort | Änderung |
+|---|---|
+| Symbol `KANON` | zwei weitere Alternativen mit den benannten Gruppen `unvollstaendig` und `nicht_beglaubigt`; die bestehenden GRUEN- und ROT-Zweige samt Gruppennamen sind unverändert |
+| Symbol `kanon_lesen` | prüft am jüngsten Treffer zuerst die beiden verweigernden Gruppen und gibt den jeweiligen Satz ohne Zahl zurück; danach unverändert GRÜN bzw. `ges − fehl` für ROT |
+| Kommentar über `KANON` | zitiert jetzt **alle vier** `$urteil = …`-Zuweisungen wörtlich und nennt sie als `tools/beweise.ps1:858/862/866/869 @ a9c6450`; er hält beide Fehlerstufen fest (NAK-97 und diese Runde) |
+| Modul-Docstring | „Fail-closed an zwei Stellen“ ist auf drei erweitert; die dritte ist genau diese Regel |
+
+Die vier Wortlaute sind an der Quelle nachgeschlagen, nicht aus dem Gedächtnis:
+
+
+```text
+$ grep -n '\$urteil = ' tools/beweise.ps1        # gemessen auf a9c6450
+858:    $urteil = "ROT - $rot von $($gelaufen.Count) Kanon-Laeufen fehlgeschlagen$nachsatz"
+862:    $urteil = "UNVOLLSTAENDIG - $($gruen.Count) gruen, $fehlendeVoraussetzung Voraussetzung(en) fehlen$nachsatz"
+866:    $urteil = "NICHT BEGLAUBIGT - $($gruen.Count)/$($gelaufen.Count) gruen, aber Pruefbinaries sind aelter als die Quellen$nachsatz"
+869:    $urteil = "GRUEN - $($gruen.Count)/$($gelaufen.Count) Kanon-Laeufe bestanden$nachsatz"
+```
+
+`tools/beweise.ps1` selbst bleibt unangetastet — geändert wird der Leser, nicht
+der Schreiber; bestehende Manifeste tragen alle vier Wortlaute bereits.
+
+<a id="b113"></a>
+### 11.3 · Proben (a)–(d) zu Befund 1
+
+**(a) Isolierte Probe über vier Zweizeiler.** Das Probenskript **importiert**
+`KANON` und `kanon_lesen` aus `tools/plan/planstand.py` (Symbole, keine
+nachgebaute Regex) und legt vier Manifeste aus je zwei Lauf-Zeilen an. Gedruckt
+wird nur der **Urteilstext** der beiden Zeilen, nie die vollständige
+`**Lauf:** …`-Zeile: sonst trüge dieses Manifest am Dateiende einen neuen,
+jüngeren Treffer und läse sich selbst als nicht beglaubigt — dieselbe Falle wie
+in §5.1, hier eine Stufe schärfer.
+
+**Befehl:** `py -3.13 -c "$CODE" <wurzel> <tmp>`, `$CODE` = das Probenskript ·
+**Datum:** 2026-08-29 · **Stand:** `7be6cd5`
+
+```text
+Regex KANON, importiert aus tools/plan/planstand.py (Symbol KANON, nicht nachgebaut):
+    Urteil:\*\*\s*(?:GRUEN\s*[-—]+\s*(?P<gruen_gut>\d+)/(?P<gruen_ges>\d+)\s*Kanon|ROT\s*[-—]+\s*(?P<rot_fehl>\d+)\s+von\s+(?P<rot_ges>\d+)\s*Kanon|(?P<unvollstaendig>UNVOLLSTAENDIG)\s*[-—]+\s*\d+\s+gruen|(?P<nicht_beglaubigt>NICHT\s+BEGLAUBIGT)\s*[-—]+\s*\d+/\d+\s+gruen)
+
+(a1) GRUEN, dann NICHT BEGLAUBIGT
+    Lauf 1 (aelter) : GRUEN - 32/32 Kanon-Laeufe bestanden
+    Lauf 2 (juenger): NICHT BEGLAUBIGT - 32/32 gruen, aber Pruefbinaries sind aelter als die Quellen
+    kanon_lesen     : 'Kanon zuletzt nicht beglaubigt'
+    erwartet        : 'Kanon zuletzt nicht beglaubigt'   OK
+(a2) GRUEN, dann UNVOLLSTAENDIG
+    Lauf 1 (aelter) : GRUEN - 32/32 Kanon-Laeufe bestanden
+    Lauf 2 (juenger): UNVOLLSTAENDIG - 30 gruen, 2 Voraussetzung(en) fehlen
+    kanon_lesen     : 'Kanon zuletzt unvollständig'
+    erwartet        : 'Kanon zuletzt unvollständig'   OK
+(a3) NICHT BEGLAUBIGT, dann GRUEN
+    Lauf 1 (aelter) : NICHT BEGLAUBIGT - 32/32 gruen, aber Pruefbinaries sind aelter als die Quellen
+    Lauf 2 (juenger): GRUEN - 32/32 Kanon-Laeufe bestanden
+    kanon_lesen     : 'Kanon 32/32 grün'
+    erwartet        : 'Kanon 32/32 grün'   OK
+(a4) ROT, dann UNVOLLSTAENDIG
+    Lauf 1 (aelter) : ROT - 1 von 32 Kanon-Laeufen fehlgeschlagen
+    Lauf 2 (juenger): UNVOLLSTAENDIG - 30 gruen, 2 Voraussetzung(en) fehlen
+    kanon_lesen     : 'Kanon zuletzt unvollständig'
+    erwartet        : 'Kanon zuletzt unvollständig'   OK
+
+4 von 4 Proben OK
+exit=0
+```
+
+**Gemessen:** (a1) und (a2) sind der Befund selbst — ein verweigerter Lauf nach
+einem grünen liefert jetzt den Satz ohne Zahl statt der geerbten grünen Zahl.
+(a3) ist die Gegenrichtung und zugleich Regressionswache: ein GRÜN nach einem
+verweigerten Lauf liefert weiter `Kanon 32/32 grün`. (a4) zeigt, dass auch ein
+ROT verdrängt wird, wenn ein verweigerter Lauf jünger ist.
+
+**(b) Korpusprobe: alter gegen neuen Leser über alle Manifeste.** Beide Fassungen
+von `kanon_lesen()` laufen im selben Prozess über `docs/beweise/**/*.md`; der
+alte Leser kommt aus `git show a9c6450:tools/plan/planstand.py`, nicht aus einer
+Kopie von Hand.
+
+**Befehl:** `py -3.13 -c "$CODE" <wurzel> <tmp>/planstand_alt.py` ·
+**Datum:** 2026-08-29
+
+```text
+docs/beweise/G1.md                             alt='Kanon 28/28 grün'       neu='Kanon 28/28 grün'              
+docs/beweise/KONTEXT-INVENTUR-2026-08-21.md    alt='Kanon 15/15 grün'       neu='Kanon 15/15 grün'              
+docs/beweise/lauf-2026-08-27-0012.md           alt='Kanon 28/28 grün'       neu='Kanon 28/28 grün'              
+docs/beweise/lauf-2026-08-27-0322.md           alt='Kanon 28/29 ROT'        neu='Kanon 28/29 ROT'               
+docs/beweise/lauf-2026-08-27-0326.md           alt='Kanon 29/29 grün'       neu='Kanon 29/29 grün'              
+docs/beweise/NAK-96.md                         alt='Kanon 32/32 grün'       neu='Kanon 32/32 grün'              
+docs/beweise/roh/NAK-96-2271df5-dirty-2.md     alt='Kanon 31/32 ROT'        neu='Kanon 31/32 ROT'               
+docs/beweise/roh/NAK-96-2271df5-dirty.md       alt='Kanon 31/32 ROT'        neu='Kanon 31/32 ROT'               
+docs/beweise/roh/NAK-96-8a1ea8a.md             alt='Kanon 31/32 ROT'        neu='Kanon 31/32 ROT'               
+docs/beweise/roh/NAK-96-bruchprobe-2271df5-dirty.md alt='Kanon 31/32 ROT'        neu='Kanon 31/32 ROT'               
+docs/beweise/roh/NAK-96-bruchprobe.md          alt='Kanon 31/32 ROT'        neu='Kanon 31/32 ROT'               
+docs/beweise/roh/NAK-96-d993894.md             alt='Kanon 32/32 grün'       neu='Kanon 32/32 grün'              
+docs/beweise/roh/NAK-96-f124746.md             alt='Kanon 32/32 grün'       neu='Kanon 32/32 grün'              
+docs/beweise/S0-basislinie.md                  alt='Kanon 4/4 grün'         neu='Kanon 4/4 grün'                
+docs/beweise/SONDE-001-002.md                  alt='Kanon 5/5 grün'         neu='Kanon 5/5 grün'                
+docs/beweise/SONDE-003.md                      alt='Kanon 6/6 grün'         neu='Kanon 6/6 grün'                
+docs/beweise/SONDE-003b.md                     alt='Kanon 7/7 grün'         neu='Kanon 7/7 grün'                
+docs/beweise/SONDE-004.md                      alt='Kanon 18/18 grün'       neu='Kanon 18/18 grün'              
+docs/beweise/SONDE-004a.md                     alt='Kanon 5/5 grün'         neu='Kanon 5/5 grün'                
+docs/beweise/SONDE-005a.md                     alt='Kanon 29/29 grün'       neu='Kanon 29/29 grün'              
+docs/beweise/SONDE-005b.md                     alt='Kanon 29/29 grün'       neu='Kanon 29/29 grün'              
+docs/beweise/SONDE-006.md                      alt='Kanon 29/29 grün'       neu='Kanon 29/29 grün'              
+docs/beweise/SONDE-007a.md                     alt='Kanon 29/29 grün'       neu='Kanon 29/29 grün'              
+docs/beweise/SONDE-007b.md                     alt='Kanon 32/32 grün'       neu='Kanon 32/32 grün'              
+docs/beweise/SONDE-007c.md                     alt='Kanon 28/28 grün'       neu='Kanon 28/28 grün'              
+docs/beweise/SONDE-008.md                      alt='Kanon 28/28 grün'       neu='Kanon 28/28 grün'              
+docs/beweise/SONDE-009.md                      alt='Kanon 28/28 grün'       neu='Kanon 28/28 grün'              
+docs/beweise/SONDE-010.md                      alt='Kanon 32/32 grün'       neu='Kanon 32/32 grün'              
+
+28 Manifeste mit Kanon-Aussage, davon 0 geaendert
+exit=0
+```
+
+**Gemessen: kein einziges Manifest ändert sich.** Das ist das ehrliche Ergebnis,
+kein Versehen — und es hat einen messbaren Grund: keine Lauf-Zeile im ganzen
+Korpus trägt heute eines der beiden verweigernden Urteile.
+
+```text
+$ grep -rc 'Urteil:\*\* NICHT BEGLAUBIGT' docs/beweise --include='*.md' | grep -v ':0$'
+(keine Ausgabe = kein Manifest traegt dieses Urteil in einer Lauf-Zeile)
+
+$ grep -rc 'Urteil:\*\* UNVOLLSTAENDIG' docs/beweise --include='*.md' | grep -v ':0$'
+(keine Ausgabe = ebenso)
+```
+
+Der Fix schließt also eine **latente** Lücke: er ändert heute nichts und
+verhindert ab dem ersten verweigerten Lauf eine falsche grüne Zahl. Sichtbar
+wird er deshalb nur an den Zweizeilern aus (a) — genau dafür gibt es sie.
+(`docs/beweise/NAK-96.md` liest sich weiterhin als `Kanon 32/32 grün`; die
+Wortlaute `UNVOLLSTAENDIG - …` und `NICHT BEGLAUBIGT - …` stehen in dieser Datei
+nur als `Urteilstext:`-Zeilen in zitierten Rohausgaben und treffen die Regex
+nicht, weil ihr das Präfix `**Urteil:**` fehlt.)
+
+**(c) Planstand neu gerechnet.** Unmittelbar nach Commit 1, auf sauberem
+Arbeitsbaum. Die `$`-Zeilen sind die Befehle, darunter steht ihre unveränderte
+Ausgabe.
+
+```diff
+$ git --no-optional-locks status --short          # unmittelbar nach Commit 1
+(keine Ausgabe - sauberer Arbeitsbaum auf 7be6cd5)
+
+$ py -3.13 tools/plan/planstand.py
+geschrieben: docs\PLAN-STAND.md (14 abgenommen, 5 gebaut, 38 gesamt, aus 7be6cd5)
+exit=0
+
+$ git --no-optional-locks diff -- docs/PLAN-STAND.md
+diff --git a/docs/PLAN-STAND.md b/docs/PLAN-STAND.md
+index fc2776e..18a2bde 100644
+--- a/docs/PLAN-STAND.md
++++ b/docs/PLAN-STAND.md
+@@ -1,6 +1,6 @@
+ # Planstand Nakama
+ 
+-<!-- quellstand: 631ac34 -->
++<!-- quellstand: 7be6cd5 -->
+ 
+ > **Gerechnet, nicht gepflegt.** Dieses Blatt entsteht aus dem Repo:
+ > `py -3.13 tools/plan/planstand.py`. Es wird **nie** von Hand editiert —
+@@ -9,7 +9,7 @@
+ > *abgenommen* erst, wenn dort eine Urteilsmarke der geforderten Prüfstufe
+ > mit **PASS** steht. Fehlt sie, gilt der Schritt als nicht abgenommen.
+ 
+-**Stand:** 2026-08-29 · Quellstand `631ac34` · **14 von 38 abgenommen** · 5 gebaut · 19 offen
++**Stand:** 2026-08-29 · Quellstand `7be6cd5` · **14 von 38 abgenommen** · 5 gebaut · 19 offen
+ 
+ `███████████████▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░` 37 % abgenommen · 50 % gebaut
+ 
+```
+
+**Gemessen und nicht kaschiert:** kein Plan-Schritt ändert seinen Status. Der
+einzige Unterschied ist der Quellstand-Stempel, weil `tools/plan/` zu den
+Planquellen zählt und Commit 1 ihn bewegt. Das deckt sich mit (b): kein
+Manifest, das Beleg eines Schrittes ist, ändert seine Kanon-Aussage. Hätte sich
+ein Status bewegt, stünde er hier — der Planstand ist gerechnet, nicht gepflegt.
+
+**(d) Bruchprobe (Prüfliste E): der Fix einmal zurückgenommen.**
+`tools/plan/planstand.py` wurde byteweise auf den Stand `a9c6450` zurückgesetzt
+(die gesicherte Arbeitskopie, damit die CRLF-Zeilenenden der Arbeitskopie nicht
+mitverändert werden), dieselbe Probe (a) gefahren und der Bruch zurückgenommen.
+
+**Befehl und Rohausgabe** · **Datum:** 2026-08-29
+
+```text
+$ cp <Sicherung des Standes a9c6450> tools/plan/planstand.py    # BRUCH
+$ git --no-optional-locks diff --stat -- tools/plan/planstand.py   # gegen HEAD 7be6cd5
+ tools/plan/planstand.py | 72 +++++++++++++++----------------------------------
+ 1 file changed, 22 insertions(+), 50 deletions(-)
+-> der Fix ist heraus: genau die 50 Zeilen, die 7be6cd5 hinzugefuegt hat, fehlen wieder.
+
+$ git --no-optional-locks show a9c6450:tools/plan/planstand.py | cmp - <(LF-Fassung der Datei)
+bytegleich mit a9c6450 (nach Normalisierung CRLF->LF der Arbeitskopie): True
+
+$ py -3.13 -c "$CODE" <wurzel> <tmp>          # dieselbe Probe (a) wie oben
+Regex KANON, importiert aus tools/plan/planstand.py (Symbol KANON, nicht nachgebaut):
+    Urteil:\*\*\s*(?:GRUEN\s*[-—]+\s*(?P<gruen_gut>\d+)/(?P<gruen_ges>\d+)\s*Kanon|ROT\s*[-—]+\s*(?P<rot_fehl>\d+)\s+von\s+(?P<rot_ges>\d+)\s*Kanon)
+
+(a1) GRUEN, dann NICHT BEGLAUBIGT
+    Lauf 1 (aelter) : GRUEN - 32/32 Kanon-Laeufe bestanden
+    Lauf 2 (juenger): NICHT BEGLAUBIGT - 32/32 gruen, aber Pruefbinaries sind aelter als die Quellen
+    kanon_lesen     : 'Kanon 32/32 grün'
+    erwartet        : 'Kanon zuletzt nicht beglaubigt'   FEHLER
+(a2) GRUEN, dann UNVOLLSTAENDIG
+    Lauf 1 (aelter) : GRUEN - 32/32 Kanon-Laeufe bestanden
+    Lauf 2 (juenger): UNVOLLSTAENDIG - 30 gruen, 2 Voraussetzung(en) fehlen
+    kanon_lesen     : 'Kanon 32/32 grün'
+    erwartet        : 'Kanon zuletzt unvollständig'   FEHLER
+(a3) NICHT BEGLAUBIGT, dann GRUEN
+    Lauf 1 (aelter) : NICHT BEGLAUBIGT - 32/32 gruen, aber Pruefbinaries sind aelter als die Quellen
+    Lauf 2 (juenger): GRUEN - 32/32 Kanon-Laeufe bestanden
+    kanon_lesen     : 'Kanon 32/32 grün'
+    erwartet        : 'Kanon 32/32 grün'   OK
+(a4) ROT, dann UNVOLLSTAENDIG
+    Lauf 1 (aelter) : ROT - 1 von 32 Kanon-Laeufen fehlgeschlagen
+    Lauf 2 (juenger): UNVOLLSTAENDIG - 30 gruen, 2 Voraussetzung(en) fehlen
+    kanon_lesen     : 'Kanon 31/32 ROT'
+    erwartet        : 'Kanon zuletzt unvollständig'   FEHLER
+
+1 von 4 Proben OK
+exit=1
+
+$ cp <Sicherung des Fixes> tools/plan/planstand.py              # Bruch zurueckgenommen
+$ git --no-optional-locks diff --stat -- tools/plan/planstand.py
+-> leere Ausgabe: planstand.py steht wieder bytegleich auf dem committeten Fix 7be6cd5.
+```
+
+**Gemessen:** ohne den Fix fallen (a1), (a2) und (a4) — in (a1) und (a2) mit
+genau dem Schaden aus dem Befund: `Kanon 32/32 grün` für einen Lauf, den der
+Runner nicht beglaubigt hat. (a3) bleibt auch gebrochen grün und ist damit
+Regressionswache, kein Beleg für den Fix. Die Rücknahme ist gemessen: derselbe
+Probelauf steht in (a) wieder auf 4/4, und `git diff --stat` ist danach leer.
+
+<a id="b114"></a>
+### 11.4 · Befund 2: die Zählregel, ausgeschrieben und gemessen
+
+Die alten Angaben waren nicht nur falsch, sie folgten **verschiedenen** Regeln:
+§5.3 zählte Überschrift zu Überschrift, §9.12 zählte den Abschnittsinhalt, und
+§9.11 traf keine von beiden. Deshalb steht die Regel ab jetzt ausgeschrieben:
+
+> **Zählregel für einen Kanon-Abschnitt.** Er reicht von seiner
+> Überschriftszeile `## Kanon-Lauf …` bis zur letzten Zeile, die noch zu **ihm**
+> gehört — der letzten Zeile seiner Übersichtstabelle. Überschrift und letzte
+> Tabellenzeile sind **eingeschlossen**. Nicht mitgezählt werden die Leerzeilen
+> danach und die von Hand gesetzte Trennlinie `---` vor dem nächsten Abschnitt:
+> sie gehört zum Lesetext, nicht zum Lauf. Jede genannte Zahl trägt den Commit,
+> auf dem sie gemessen ist.
+
+Gemessen an `git show a9c6450:docs/beweise/NAK-96.md`; zur Kontrolle steht der
+reine Überschrift-zu-Überschrift-Abstand daneben, damit beide früheren
+Zählungen nachvollziehbar bleiben:
+
+```text
+ZAEHLREGEL
+  Ein Kanon-Abschnitt reicht von seiner Ueberschriftszeile `## Kanon-Lauf ...`
+  bis zur letzten Zeile, die noch zu IHM gehoert - der letzten Zeile seiner
+  Uebersichtstabelle. Ueberschrift und letzte Tabellenzeile sind
+  EINGESCHLOSSEN. Nicht mitgezaehlt werden die Leerzeilen danach und die
+  Trennlinie `---`, die spaeter von Hand vor den naechsten Abschnitt gesetzt
+  wurde: sie gehoert zum Lesetext, nicht zum Lauf.
+  Zur Kontrolle steht daneben der reine Ueberschrift-zu-Ueberschrift-Abstand.
+
+Gemessen an `git show a9c6450:docs/beweise/NAK-96.md`, Datei gesamt 1695 Zeilen.
+
+## Kanon-Lauf - NAK-96 Kollisionsprobe Lauf 1 (ohne -Bauen)
+  Ueberschrift        : Zeile 540 @ a9c6450
+  letzte eigene Zeile : Zeile 602 @ a9c6450   -> | B8 | Lifecycle-Klassifikation §53.5: unclassified ...
+  Laenge (Regel)      : 63 Zeilen
+  Kopf-zu-Kopf        : 67 Zeilen  (naechste Ueberschrift Zeile 607 @ a9c6450)
+
+## Kanon-Lauf - NAK-96 Kollisionsprobe Lauf 2 (ohne -Bauen)
+  Ueberschrift        : Zeile 607 @ a9c6450
+  letzte eigene Zeile : Zeile 669 @ a9c6450   -> | B8 | Lifecycle-Klassifikation §53.5: unclassified ...
+  Laenge (Regel)      : 63 Zeilen
+  Kopf-zu-Kopf        : 67 Zeilen  (naechste Ueberschrift Zeile 674 @ a9c6450)
+
+## Kanon-Lauf - NAK-96
+  Ueberschrift        : Zeile 674 @ a9c6450
+  letzte eigene Zeile : Zeile 734 @ a9c6450   -> | B8 | Lifecycle-Klassifikation §53.5: unclassified ...
+  Laenge (Regel)      : 61 Zeilen
+  Kopf-zu-Kopf        : 65 Zeilen  (naechste Ueberschrift Zeile 739 @ a9c6450)
+
+## Kanon-Lauf - NAK-96 Abschlusslauf 2
+  Ueberschrift        : Zeile 739 @ a9c6450
+  letzte eigene Zeile : Zeile 799 @ a9c6450   -> | B8 | Lifecycle-Klassifikation §53.5: unclassified ...
+  Laenge (Regel)      : 61 Zeilen
+  Kopf-zu-Kopf        : 64 Zeilen  (naechste Ueberschrift Zeile 803 @ a9c6450)
+
+## Kanon-Lauf - NAK-96 Abschlusslauf 3 (Nacharbeit Runde 1)
+  Ueberschrift        : Zeile 1549 @ a9c6450
+  letzte eigene Zeile : Zeile 1609 @ a9c6450   -> | B8 | Lifecycle-Klassifikation §53.5: unclassified ...
+  Laenge (Regel)      : 61 Zeilen
+  Kopf-zu-Kopf        : 62 Zeilen  (naechste Ueberschrift Zeile 1611 @ a9c6450)
+
+5 Kanon-Abschnitte
+  Laenge nach Regel : 63, 63, 61, 61, 61   Summe 309   Spanne 61 bis 63
+  Kopf-zu-Kopf      : 67, 67, 65, 64, 62   Summe 325
+```
+
+**Gemessen `@ a9c6450`:** die fünf Abschnitte sind **63, 63, 61, 61, 61** Zeilen
+lang, Summe **309**, Spanne **61 bis 63**. Der Abschnitt aus dem Befund
+(`## Kanon-Lauf - NAK-96 Abschlusslauf 3 (Nacharbeit Runde 1)`,
+`docs/beweise/NAK-96.md:1549–1609 @ a9c6450`) misst **61** Zeilen, nicht 63 —
+der Befund trifft zu.
+
+Nachgezogen wurden alle Stellen, die aus derselben Messung leben:
+
+| Stelle | vorher | jetzt |
+|---|---|---|
+| §5.3, Spanne | „62 bis 67 Zeilen“ | **61 bis 63 Zeilen** |
+| §5.3, die vier Abschnitte | 67, 67, 65, 62 (Kopf-zu-Kopf) | **63, 63, 61, 61 `@ f501704`** |
+| §5.3, Lesetext-Rest | 532 Zeilen (793 − 261) | **545 Zeilen (793 − 248), Stand `f501704`** |
+| §9.11, der neue Abschnitt | 63 Zeilen | **61 Zeilen `@ a9c6450`** |
+| §9.12, Summe der fünf | 318 Zeilen (65, 65, 63, 62, 63) | **309 Zeilen (63, 63, 61, 61, 61) `@ a9c6450`** |
+| §9.12, Dateiumfang | „1607“ ohne Commit | **1607 `@ bf0fa7d`, 1695 `@ a9c6450`** |
+
+Die Kernaussage des Auftrags bleibt unberührt: ein Kanon-Abschnitt im Manifest
+steht gegen die **2944 Zeilen** seiner Roh-Datei, Faktor rund **45**.
+
+<a id="b115"></a>
+### 11.5 · Befund 3: Positionsangaben im ganzen Manifest
+
+**Regel, wie sie ab jetzt gilt.** Jede Positionsangabe im Fließtext, in Tabellen
+und in Überschriften trägt den Commit, an dem sie gemessen wurde
+(`Datei:Zeile @ sha7`), oder wird durch einen Symbolanker ersetzt. Zwei Sorten
+Text sind davon ausgenommen, weil sie wörtlich bleiben müssen:
+
+- **Zitierte Rohausgabe** in Codeblöcken: dort steht die Zahl, wie das Werkzeug
+  sie ausgab. Gebunden wird sie über den **einleitenden Satz** davor, der den
+  Commit nennt.
+- **Wörtliche Zitate** in `>`-Blöcken (Auftrag aus dem Register, Prüferbefund):
+  ebenso über den einleitenden Satz. `docs/offene-punkte.md` selbst bleibt
+  unangetastet — es ist datierter Verlauf.
+
+**Suche.** Muster `Zeile \d+` bzw. `.(py|ps1|md):\d+` ohne `@ [0-9a-f]{7}` in
+derselben Zeile, getrennt nach Fließtext, Codeblock und `>`-Zitatblock.
+
+Diese Präzisierung steht ab jetzt auch in der Quelle der Regel:
+`tools/dirigent/pruefliste.md`, Klasse **E**, trägt den Zusatz, dass die Regel
+für das ganze Manifest gilt und nur wörtlich zitierte Rohausgaben und Zitate
+ausgenommen sind, gebunden durch den einleitenden Satz davor. Ohne diesen
+Zusatz hätte der nächste Prüfer dieselbe Grenze erneut ziehen müssen.
+
+**Vorher**, gemessen an `git show a9c6450:docs/beweise/NAK-96.md`:
+
+```text
+Datei    : C:/Users/phili/.claude/jobs/cb5e1a6b/tmp/NAK-96-a9c6450.md  (a9c6450)
+Muster   : Zeile \d+ | .(py|ps1|md):\d+   ohne `@ <sha7>` in derselben Zeile
+
+A) FLIESSTEXT, TABELLEN, UEBERSCHRIFTEN - hier gilt die Regel: 13 Treffer
+   57: Runners schon für Prozessergebnisse belegt (Zeile 545); unter
+   75: | **C** Verträge und Längen | teilweise | Der einzige Vertrag im Eingriff ist der Wortlaut der Lauf-Zeile, a
+   112: `tools/plan/planstand.py` liest die Kanon-Zahl mit `KANON` (Zeile 66) aus der
+   118: Regex 1:1 aus `tools/plan/planstand.py` Zeile 66 und bildet `kanon_lesen()` nach.
+   850: | B | Kommentar über `KANON` nennt beide Wortlaute wörtlich samt Quelle. | Der Kommentar zitiert die beiden 
+   1076: `planstand.py` hat **genau einen** git-Aufruf (`subprocess.run`, Zeile 130); er
+   1079: `tools/beweise.ps1:182` (`Git-Wert`) und `tools/dirigent/cockpit.ps1:180`
+   1121: | **C** Verträge und Längen | teilweise | Der Vertrag ist der Wortlaut der `**Lauf:**`-Zeile. Beide Formen s
+   1132: Kommentar (Entscheid B) nicht mehr auf Zeile 66, sondern auf **Zeile 85**.
+   1133: Der Kommentar in `tools/beweise.ps1:907` nennt „`tools/plan/planstand.py`
+   1134: (KANON, Zeile 66)"; das Symbol `KANON` stimmt weiter, die Zahl nicht mehr.
+   1136: unangetastet und als Nachtrag im Register festgehalten. Die „Zeile 66" in
+   1391: Zeile 2 und 3 gehören zusammen: `DirectoryNotFoundException` und
+
+B) ZITIERTE ROHAUSGABE (```-Block) - bleibt wortgleich: 20 Treffer
+   305: tools/dirigent/cockpit.ps1:179:        $gitPath = (Get-Command git -ErrorAction Stop).Source
+   306: tools/dirigent/cockpit.ps1:180:        return Invoke-TextProcess $gitPath "--no-optional-locks -C $(Quote-Pr
+   307: tools/beweise.ps1:182:    $r = Fuehre-Aus -Datei 'git' -Argumente (@('--no-optional-locks', '-C', $Wurzel) +
+   308: tools/beweise.ps1:575:    $r = Fuehre-Aus -Datei 'git' -Argumente @('--no-optional-locks', '-C', $juceQuelle
+   886: Regex KANON aus tools/plan/planstand.py, Zeile 85 (gemessen):
+   889: (a) GRUEN-Wortlaut des Runners (beweise.ps1 Zeile 856)
+   893: (b) ROT-Wortlaut des Runners (beweise.ps1 Zeile 845)
+   909: (f1) UNVOLLSTAENDIG (beweise.ps1 Zeile 849) - absichtlich kein Treffer
+   913: (f2) NICHT BEGLAUBIGT (beweise.ps1 Zeile 853) - absichtlich kein Treffer
+   992: Regex KANON aus tools/plan/planstand.py, Zeile 66 (gemessen):
+   995: (a) GRUEN-Wortlaut des Runners (beweise.ps1 Zeile 856)
+   999: (b) ROT-Wortlaut des Runners (beweise.ps1 Zeile 845)
+   1015: (f1) UNVOLLSTAENDIG (beweise.ps1 Zeile 849) - absichtlich kein Treffer
+   1019: (f2) NICHT BEGLAUBIGT (beweise.ps1 Zeile 853) - absichtlich kein Treffer
+   1060: tools/plan/planstand.py:121:    `--no-optional-locks` steht VOR `-C`, weil git globale Schalter vor dem
+   1061: tools/plan/planstand.py:130:        return subprocess.run(["git", "--no-optional-locks", "-C", str(WURZEL), 
+   1062: tools/beweise.ps1:36:    Lesende git-Aufrufe laufen mit --no-optional-locks (NAK-96): sonst frischt
+   1063: tools/beweise.ps1:182:    $r = Fuehre-Aus -Datei 'git' -Argumente (@('--no-optional-locks', '-C', $Wurzel) +
+   1064: tools/beweise.ps1:575:    $r = Fuehre-Aus -Datei 'git' -Argumente @('--no-optional-locks', '-C', $juceQuelle
+   1065: tools/dirigent/cockpit.ps1:180:        return Invoke-TextProcess $gitPath "--no-optional-locks -C $(Quote-Pr
+
+C) WOERTLICHES ZITAT (>-Block) - gebunden durch den Satz davor: 2 Treffer
+   829: > nicht abdeckte: `tools/plan/planstand.py`.** (1) `planstand.py:95` startet git
+   835: > `-C`. (2) Die Regex `KANON` (`planstand.py:66`) verlangt `(\d+)/(\d+)\s*Kanon`;
+
+URTEIL: 13 ungebundene Fliesstext-Treffer
+```
+
+**Nachher**, gemessen am Arbeitsbaum nach den Korrekturen und **vor** dem
+Anhängen dieses Abschnitts §11:
+
+```text
+Datei    : docs/beweise/NAK-96.md  (Arbeitsbaum, Korrekturen gesetzt, vor dem Anhaengen von 11)
+Muster   : Zeile \d+ | .(py|ps1|md):\d+   ohne `@ <sha7>` in derselben Zeile
+
+A) FLIESSTEXT, TABELLEN, UEBERSCHRIFTEN - hier gilt die Regel: 0 Treffer
+   (keine)
+
+B) ZITIERTE ROHAUSGABE (```-Block) - bleibt wortgleich: 20 Treffer
+   313: tools/dirigent/cockpit.ps1:179:        $gitPath = (Get-Command git -ErrorAction Stop).Source
+   314: tools/dirigent/cockpit.ps1:180:        return Invoke-TextProcess $gitPath "--no-optional-locks -C $(Quote-Pr
+   315: tools/beweise.ps1:182:    $r = Fuehre-Aus -Datei 'git' -Argumente (@('--no-optional-locks', '-C', $Wurzel) +
+   316: tools/beweise.ps1:575:    $r = Fuehre-Aus -Datei 'git' -Argumente @('--no-optional-locks', '-C', $juceQuelle
+   913: Regex KANON aus tools/plan/planstand.py, Zeile 85 (gemessen):
+   916: (a) GRUEN-Wortlaut des Runners (beweise.ps1 Zeile 856)
+   920: (b) ROT-Wortlaut des Runners (beweise.ps1 Zeile 845)
+   936: (f1) UNVOLLSTAENDIG (beweise.ps1 Zeile 849) - absichtlich kein Treffer
+   940: (f2) NICHT BEGLAUBIGT (beweise.ps1 Zeile 853) - absichtlich kein Treffer
+   1019: Regex KANON aus tools/plan/planstand.py, Zeile 66 (gemessen):
+   1022: (a) GRUEN-Wortlaut des Runners (beweise.ps1 Zeile 856)
+   1026: (b) ROT-Wortlaut des Runners (beweise.ps1 Zeile 845)
+   1042: (f1) UNVOLLSTAENDIG (beweise.ps1 Zeile 849) - absichtlich kein Treffer
+   1046: (f2) NICHT BEGLAUBIGT (beweise.ps1 Zeile 853) - absichtlich kein Treffer
+   1087: tools/plan/planstand.py:121:    `--no-optional-locks` steht VOR `-C`, weil git globale Schalter vor dem
+   1088: tools/plan/planstand.py:130:        return subprocess.run(["git", "--no-optional-locks", "-C", str(WURZEL), 
+   1089: tools/beweise.ps1:36:    Lesende git-Aufrufe laufen mit --no-optional-locks (NAK-96): sonst frischt
+   1090: tools/beweise.ps1:182:    $r = Fuehre-Aus -Datei 'git' -Argumente (@('--no-optional-locks', '-C', $Wurzel) +
+   1091: tools/beweise.ps1:575:    $r = Fuehre-Aus -Datei 'git' -Argumente @('--no-optional-locks', '-C', $juceQuelle
+   1092: tools/dirigent/cockpit.ps1:180:        return Invoke-TextProcess $gitPath "--no-optional-locks -C $(Quote-Pr
+
+C) WOERTLICHES ZITAT (>-Block) - gebunden durch den Satz davor: 2 Treffer
+   843: > nicht abdeckte: `tools/plan/planstand.py`.** (1) `planstand.py:95` startet git
+   849: > `-C`. (2) Die Regex `KANON` (`planstand.py:66`) verlangt `(\d+)/(\d+)\s*Kanon`;
+
+URTEIL: REGEL EINGEHALTEN - kein ungebundener Fliesstext-Treffer
+```
+
+**Gemessen:** 13 ungebundene Fließtext-Treffer vorher, **0** nachher. Die 20
+Treffer in Codeblöcken sind zitierte Rohausgaben und bleiben wortgleich; ihre
+einleitenden Sätze in §5.4, §8.3, §8.5 und §8.6 nennen jetzt den Commit, auf dem
+sie gemessen wurden (`d993894`, `da1b04e` bzw. `f501704`). Die 2 Treffer im
+`>`-Block sind das wörtliche Registerzitat in §8.1; der neue Satz davor bindet
+sie an `f501704` und nennt jede der drei Positionen einzeln.
+
+Die Angaben in §3 und §5.1 sind **nicht** auf den heutigen Stand gezogen worden,
+sondern an `2271df5` gebunden: sie beschreiben den Stand, an dem NAK-96 gemessen
+hat, und wären auf einem anderen Commit schlicht falsch. Dasselbe gilt für §8
+gegen `f501704`/`da1b04e` und für §9/§10 gegen `34491e0`.
+
+Eine Stelle war ein Fehlalarm des Musters und ist trotzdem geändert worden:
+§9.6 sagte „Zeile 2 und 3 gehören zusammen“ (`docs/beweise/NAK-96.md:1391 @ a9c6450`)
+über die Zeilen einer **zitierten Ausgabe**, nicht über eine Repo-Position. Sie
+heißt jetzt „Ausgabezeile 2 und 3“ — damit die Prüfung mechanisch bleibt und der
+nächste Prüfer keinen Falschtreffer abarbeiten muss.
+
+**Abschlussprüfung auf der fertigen Datei.** Nach dem Anhängen dieses
+Abschnitts wurde dieselbe Suche noch einmal über `docs/beweise/NAK-96.md`
+gefahren, unmittelbar vor Commit 2. Ergebnis: **A) 0** ungebundene
+Fließtext-Treffer, **B) 74** Treffer in Codeblöcken (die 20 alten plus die
+beiden hier eingefügten Trefferlisten selbst), **C) 3** Treffer in
+`>`-Blöcken (die zwei aus §8.1 und das Befundzitat in §11.1, alle drei durch
+den Satz davor gebunden). Die Zahlen stehen hier als Text und nicht als
+weiterer Codeblock, weil eine Datei, die ihre eigene Prüfausgabe einbettet,
+die Ausgabe im selben Zug wieder verändern würde.
+
+<a id="b116"></a>
+### 11.6 · Befund 4: `docs/beweise/VORLAGE.md`
+
+Der Widerspruch war echt: der Regelblock am Anfang verlangte stdout und stderr
+„wortgleich einfügen“ — gemeint war: in dieses Manifest —, während die seit
+NAK-96 gültige Tabelle in Abschnitt 3 die Kanon-Rohausgabe nach
+`docs/beweise/roh/` schickt. Ein Worker, der nur den Regelblock liest, hängt
+wieder 3000 Zeilen ans Manifest; einer, der nur die Tabelle liest, könnte auch
+seine **eigenen** Proben auslagern.
+
+**Korrektur.** Der Regelblock trennt jetzt beides ausdrücklich und sagt, dass
+die Trennung den **Ort** verschiebt, nie den **Umfang**:
+
+| Art der Messung | Wohin die Rohausgabe gehört |
+|---|---|
+| Eigene Ticketproben (Handmessungen, Bruchproben, Grenzfälle) | wortgleich ins Manifest, Abschnitt 2 |
+| Kanon-Läufe von `tools/beweise.ps1` | wortgleich nach `docs/beweise/roh/<TICKET>-<sha7>.md`; im Manifest Überschrift, `**Lauf:** …`-Zeile mit Urteil und Exitcode, Kopf „woran gemessen wurde“ und Übersicht mit Verweis |
+
+Abschnitt 2 heißt jetzt **„Rohe Ausgaben der eigenen Ticketproben“** und sagt in
+einem Satz, dass die Kanon-Rohausgaben nicht dort stehen. Abschnitt 3 sagt
+umgekehrt, dass die Aufteilung **nur** für Kanon-Läufe gilt und Abschnitt 2
+unberührt lässt. Damit sagen Regelblock, Abschnitt 2 und Abschnitt 3 dasselbe.
+Dieses Manifest hält sich an die geklärte Regel: die Rohausgaben aus §11.3
+stehen wortgleich hier, die fünf Kanon-Läufe liegen unter `docs/beweise/roh/`.
+
+<a id="b117"></a>
+### 11.7 · Prüfliste `tools/dirigent/pruefliste.md` — wo gemessen
+
+| Klasse | Zutreffend? | Wo gemessen / warum nicht |
+|---|---|---|
+| **A** Rückstau und Prioritätsklassen | nein | Kein Puffer, keine Queue, keine Prioritätsklasse. Geändert sind eine Regex, eine Lesefunktion und Doku. |
+| **B** Lebenszyklus | nein | Kein Verbinden/Trennen, kein Start/Stop, kein Thread. |
+| **C** Verträge und Längen | teilweise | Der Vertrag ist der Wortlaut der `**Lauf:**`-Zeile. Alle vier Urteilstexte sind gegen die **Quelle** geprüft (`tools/beweise.ps1:858/862/866/869 @ a9c6450`, Rohausgabe in §11.2), nicht gegen eine Kopie. Grenzfälle: Reihenfolge in beide Richtungen (§11.3 a1–a4), verdorbene Zahl unverändert aus §8.3 (g). |
+| **D** Bau- und Prüfriegel | ja | Der Leser bleibt fail-closed und wird dabei strenger, nicht redseliger: die verweigernden Urteile bekommen weiterhin **keine** Zahl, verdrängen aber die ältere grüne (§11.2, §11.3 a1/a2). Kein Kanon-Bein fährt `tools/plan/planstand.py` oder `docs/beweise/VORLAGE.md`, deshalb kein Lauf — begründet in §11.8; die Beglaubigungslogik in `tools/beweise.ps1` ist unangetastet. |
+| **E** Behauptung ≤ Messung | ja | Jede Behauptung steht neben ihrer Rohausgabe (§11.3, §11.4, §11.5). Der Fix wurde einmal absichtlich zurückgenommen, die Rohausgabe des Rots liegt bei und die Rücknahme ist gemessen (§11.3 d). Die Korpusprobe behauptet **nicht** mehr, als sie zeigt: sie ändert nichts, und der Grund dafür ist mitgemessen (§11.3 b). Positionen stehen als Symbol/Anker oder mit Commit; die Suche danach ist vorher und nachher belegt (§11.5). Zeilenzahlen sind neu gemessen, die Zählregel steht ausgeschrieben (§11.4). |
+| **F** Änderungssatz | ja | lesen↔schreiben im selben Änderungssatz: `tools/beweise.ps1` **schreibt** vier Urteile, `planstand.py` **liest** ab jetzt alle vier — vorher war das Paar dreiviertel. Regex, Lesefunktion, der Kommentar mit der Quelle und der Modul-Docstring liegen in einem Commit (`7be6cd5`); Manifest und Vorlage folgen im zweiten, der gerechnete Planstand im dritten. |
+
+<a id="b118"></a>
+### 11.8 · Kein Kanon-Lauf — begründet
+
+Diese Runde ändert `tools/plan/planstand.py`, `docs/beweise/NAK-96.md` und
+`docs/beweise/VORLAGE.md`. **Kein Bein des Kanons fährt eine dieser Dateien:**
+der Kanon baut und prüft Plugin, Broker und Schemata; `planstand.py` ist ein
+Auswertungsskript neben dem Kanon, die beiden Markdown-Dateien sind Lesetext.
+Keine Quelle einer Prüfbinary ist berührt, die Beglaubigungslogik in
+`tools/beweise.ps1` ist unangetastet. Ein Lauf hätte über diese Änderung nichts
+ausgesagt und nur einen sechsten Kanon-Abschnitt angehängt; der Beweis sind die
+Proben §11.3–§11.5. Dieselbe Begründung wie in §8.2 C und §10.4.
+
+Der jüngste tatsächliche Kanon-Lauf dieses Tickets bleibt damit Abschlusslauf 3
+(§9.11, Stand `f124746`); an ihm liest `kanon_lesen()` diese Datei weiterhin als
+grün.
+
+<a id="b119"></a>
+### 11.9 · Commits und was nicht erledigt ist
+
+| # | SHA | Inhalt |
+|---|---|---|
+| 1 | `7be6cd5` | `tools/plan/planstand.py`: `KANON` um beide verweigernden Urteile erweitert, `kanon_lesen()` fail-closed, Kommentar und Modul-Docstring nachgezogen |
+| 2 | dieser Commit | `docs/beweise/NAK-96.md` (§5.3, §8.1, §8.2, §8.3, §8.5, §8.6, §8.7, §8.8, §9.6, §9.11, §9.12 korrigiert; §11 neu), `docs/beweise/VORLAGE.md` (Befund 4) und `tools/dirigent/pruefliste.md` (Regel E präzisiert, §11.5) |
+| 3 | folgt | `docs/PLAN-STAND.md`, neu gerechnet auf Commit 2 |
+
+Jeder Commit mit explizitem Pathspec; kein `git add -A`, kein `--amend`, kein
+`reset`, kein `stash`. `git --no-optional-locks status --short` vor jedem
+Commit gelesen; fremde uncommittete Dateien gab es in dieser Sitzung nicht.
+
+**Was nicht erledigt ist**
+
+- **Kein Kanon-Lauf** — begründet in §11.8.
+- **Die Probenskripte liegen nicht im Repo.** (a), (b), (d) und die beiden
+  Prüfskripte aus §11.4 und §11.5 sind Wegwerf-Skripte im Arbeitsverzeichnis
+  der Sitzung; ihre Ausgaben stehen wortgleich hier, ihre Regeln stehen
+  ausgeschrieben in §11.4 und §11.5. Eine dauerhafte Wache für `kanon_lesen()`
+  wäre ein eigenes Ticket: unter `tools/plan/` liegen nur `planstand.py` und
+  `antworten_blatt.py`, es gibt dort keine Testablage, und kein Skript im Repo
+  prüft `planstand.py` — die vier Fundstellen außerhalb sind Aufrufer,
+  gemessen auf `7be6cd5`:
+
+  ```text
+  $ grep -rln planstand --include='*.py' --include='*.ps1' --include='*.sh' --include='CMakeLists.txt' . | grep -v '^./docs'
+  ./tools/beweise.ps1
+  ./tools/dirigent/cockpit.ps1
+  ./tools/hooks/plan-primer.sh
+  ./tools/hooks/planstand.sh
+  ./tools/plan/planstand.py
+  ```
+- **§8.2, §8.3 und §8.5 bleiben als Verlauf stehen.** Die dort dokumentierte
+  Entscheidung „beide verweigernden Urteile bleiben ohne Treffer“ ist mit einem
+  datierten Hinweis auf §11.2 als überholt gekennzeichnet, nicht umgeschrieben;
+  die Erwartungen (f1)/(f2) in den Rohausgaben beschreiben den Stand bis
+  `a9c6450`.
+- **NAK-93, NAK-94, NAK-98** sind unverändert außerhalb der Grenze.
+- **`docs/offene-punkte.md`** ist nicht angefasst: datierter Verlauf.

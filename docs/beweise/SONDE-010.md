@@ -7,7 +7,7 @@
 | Ticket | `SONDE-010` |
 | Phase / Session | P2 / S14–15 |
 | Gate-Text (Quelle) | `docs/FL-Nakama-Sonden-Design-Entwurf.md` §65, Zeile `SONDE-010`: **„v3-Control-/Telemetry-Clients und Rust-Envelopeparser — fertig, wenn: CRC/Fuzz/Backpressure/Reconnect ohne P0-Starvation"** |
-| Commits | `cdff93b` · `2ac23d0` · `1b19cd1` · `10a4806` · `97c956d` (Basis `a7b0740`) · **Nacharbeit Runde 1:** `4500785` · `602e105` · `6fc3224` · **Nacharbeit Runde 2:** `65d46a0` · `e5f5c27` |
+| Commits | `cdff93b` · `2ac23d0` · `1b19cd1` · `10a4806` · `97c956d` (Basis `a7b0740`) · **Nacharbeit Runde 1:** `4500785` · `602e105` · `6fc3224` · **Nacharbeit Runde 2:** `65d46a0` · `e5f5c27` · `a0053e4` |
 | Datum | 2026-08-29 |
 | Prüfstufen | T1 ☑ · T2 ☐ · T3 ☐ (kein Gate) |
 
@@ -940,7 +940,11 @@ bei ihrem Befund.
 
 Commits dieser Runde: `65d46a0` (die sieben Fixes samt Prüfungen) · `e5f5c27`
 (Stopfenster-Test meldet rot statt zu hängen) · `51d3f90` (dieses Manifest,
-`plugin-wissen.md`, Plantext).
+`plugin-wissen.md`, Plantext) · `a0053e4` (Selbstaudit: drei Lücken geschlossen,
+**8.8**) · `7d34a0d` (Kanon-Anhang und Planstand).
+
+Nur die ersten drei tragen Code; `7d34a0d` ist reine Dokumentation und liegt
+deshalb hinter dem maßgeblichen Kanon-Lauf.
 
 Das Bein **B10** wuchs von 115 auf **159** Prüfungen — 153 durch die sieben
 Befunde, sechs weitere durch den Nachtrag aus dem Selbstaudit (**8.8**).

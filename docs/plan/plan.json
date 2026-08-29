@@ -181,6 +181,14 @@
      "stufe": "T2"
     },
     {
+     "id": "PR1",
+     "leitungsname": "Implementierung anhalten und den Gesamtplan gegen Entscheide und Marktstandard prüfen",
+     "ticket": "Planprüfung",
+     "text": "Zwischenhalt der Implementierung. User-Wort 29.08.2026: „ich möchte dass du einen guten zeitpunkt im plan raussuchst, an dem wir dne implement temporär auf halt machen und eine ausführliche überprüfung des Gesamtplans machen. die muss besonders darauf abzielen ob änderungen die wir im verlauf beschlossen haben nicht an einer anderen stell iwas brechen. zudem müssen wir sichergehen keine standard features vergessen zu haben, die vergleichbare plugins von anderen herstellern haben. mögliche anpassungen müssen dann direkt sauber in den plan eingearbeitet werden\" Zeitpunkt (Wahl des Dirigenten, 29.08.): nach dem PASS von G1 und den dritten Nacharbeitsrunden von S8, S9, S9b und S14–15, VOR S16–17 — weil SONDE-011 mit Koordinator, Datenbank-Migration und Ausgangspuffer die Datenformen festschreibt, die eine nachgeholte Standardfunktion am ehesten ändern würde, und G2 den Vertrag danach als R0 einfriert. Inhalt: (1) jeden Entscheid seit Projektstart (design/abnahmen/, beantwortete Fragen in docs/plan/fragen.json, Nachträge in docs/offene-punkte.md, Wahrheitskern in CLAUDE.md) gegen Entwurf, Bauaufteilung, Verträge (v3, State, Installer) und die gebauten Tickets auf Widersprüche und Folgebrüche prüfen — jeder Treffer mit Fundstelle; (2) Funktionsvergleich mit vergleichbaren Produkten anderer Hersteller (Mix-Analyse mit Sonden, Spektrum-/Maskierungs-Werkzeuge, EQ-Fernsteuerung) anhand aktueller Herstellerdokumentation: Standardfunktionen, die Nakama fehlen oder anders löst, benennen und je Punkt sagen, ob Vertrag, State oder Oberfläche betroffen wären; (3) jede Anpassung sauber einarbeiten — plan.json, bauaufteilung-sonden.md, Entwurf, betroffene Ticketquellen; Produktentscheide gehen als Fragenkarten an den User, Technik entscheidet der Dirigent. Prüfung: frischer Codex-Thread über Plan und Änderungssatz, Recherche mit Belegen; Ergebnis in docs/beweise/PR1.md mit Urteilsmarke. Bis zu diesem Punkt läuft die Implementierung weiter.",
+     "beleg": "docs/beweise/PR1.md",
+     "stufe": "T3"
+    },
+    {
      "id": "S16–17",
      "leitungsname": "Messdaten verteilen, speichern und zuverlässig ausgeben",
      "ticket": "SONDE-011",

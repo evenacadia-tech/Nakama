@@ -1009,8 +1009,13 @@ def _manifest_zum_journal(manifest: dict, journal: dict) -> dict:
     stuende. Ein Artefakt ohne passenden Eintrag bleibt unveraendert - die
     Probe faellt dann sichtbar, statt still weniger zu messen.
     """
-    nach_kennung = {_artefakt_name(e): e
-                    for e in journal.get("eintraege") or [] if isinstance(e, dict)}
+    # Nur STRING-Kennungen: `{"ziel_id": ["main"]}` waere als dict-Schluessel
+    # nicht hashbar. Genau dieser TypeError war Befund C2 - eine Hilfsfunktion
+    # der Proben darf ihn nicht durch die Hintertuer wieder einfuehren.
+    nach_kennung = {}
+    for e in journal.get("eintraege") or []:
+        if isinstance(e, dict) and isinstance(_artefakt_name(e), str):
+            nach_kennung[_artefakt_name(e)] = e
     kopie = copy.deepcopy(manifest)
     for a in kopie["artefakte"]:
         e = nach_kennung.get(_artefakt_name(a))

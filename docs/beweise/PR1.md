@@ -74,14 +74,26 @@ mitgeführt.
 | Registerzeilen `docs/offene-punkte.md` (`NAK-*`, alle drei Tabellen) | **90** | `grep -c '^\| NAK-'` |
 | Höchste vergebene Registernummer vor diesem Ticket | **NAK-104** | `grep -o 'NAK-[0-9]+' \| sort -n \| tail -1` |
 | Planschritte in `docs/plan/plan.json` | **38** in **8** Phasen | `sum(len(p["schritte"]))` |
-| Geprüfte Herstellerprodukte mit abgerufener Herstellerdoku | **8** von 8 Herstellern (Pro-Q 4, Neutron 5, smart:EQ 4, MMultiAnalyzer, SPAN Plus, Trackspacer, Smooth Operator Pro, Gullfoss) | §5, Quellenliste §2.2 |
+| Geprüfte Herstellerprodukte mit abgerufener Herstellerdoku | **9** von 9 Herstellern (Pro-Q 4, Neutron 5 / Ozone, smart:EQ 4, MMultiAnalyzer, SPAN Plus, Trackspacer, Smooth Operator Pro, Gullfoss, TDR Nova) — nach Runde 1 | §5, Quellenliste §2.2 |
+| Einzeln abgerufene Herstellerseiten (H1–H14) | **14** | `grep -c '^\| H[0-9]' docs/beweise/PR1.md` |
 | **Befunde: Defekt im Plan** | **6** | §4 |
 | **Befunde: Lücke** | **4** | §4 |
 | **Befunde: Härtung** | **3** | §4 |
 | Neue Fragenkarten an den User (U15–U20) | **6** | §6.2 |
-| Neue Registerzeilen (NAK-105 bis NAK-109) | **5** | §6.1 |
-| Direkte Edits an Planquellen (E-1 bis E-17, über 3 Dateien) | **17** | §6.1 |
-| Vorschläge an den Dirigenten (nicht eingearbeitet) | **3** | §6.3 |
+| Neue Registerzeilen (NAK-105 bis **NAK-111**) | **7** | §6.1 und §9 |
+| Direkte Edits an Planquellen (E-1 bis E-17, dazu R1-1 bis R1-11 aus Runde 1) | **17 + 11** | §6.1 und §9.3 |
+| Vorschläge an den Dirigenten | **3**, davon **1 entschieden** (V-1, 30.08. Runde 1) | §6.3 |
+| Registerzeilen `docs/offene-punkte.md` nach Runde 1 | **97**, höchste **NAK-111** | `grep -c '^\| NAK-'` |
+| Offene Fragenkarten nach Runde 1 | **8** (U11, U13, U15–U20; U17 trägt fünf getrennt beantwortbare Einzelentscheide U17.1–U17.5) | `len(d["offen"])` |
+
+### 1.4 Runden dieses Tickets
+
+| Runde | Was | Prüfer / Stufe | Urteil | Offen danach |
+|---|---|---|---|---|
+| **0** | Erstdurchgang: Entscheidregister, Funktionsvergleich, Änderungssatz E-1 bis E-17, Karten U15–U20, Register NAK-105 bis NAK-109 (§1–§8) | Codex `gpt-5.6-sol`, Effort **xhigh**, lesend, Thread `01a053a7-d1dc-7441-8554-44d0fa14cc8f` (30.08.2026) | **NEEDS_WORK** | **7** Befunde, alle [P1] |
+| **1** | Nacharbeit: genau diese sieben Befunde geschlossen — Planedits, Register, Karten, zwei nachgereichte Herstellerquellen, Einordnung Visual Mixer (§9) | Worker, Selbstaudit (T1); der Dirigent hat alle sieben vorab an der Quelle als **Defekt** bestätigt | offen — das T3-Urteil setzt der Dirigent | **0** der sieben |
+
+Der lebende Kopf endet hier. §2 bis §8 sind der Verlauf des Erstdurchgangs und werden nicht umgeschrieben; Korrekturen daran stehen als datierte Nachträge an Ort und Stelle. §9 ist der append-only Rundenabschnitt.
 
 ---
 
@@ -129,7 +141,11 @@ Händler-, Test- und Forenseiten sind **nicht** als Beleg verwendet.
 | H9 | Wavesfactory Trackspacer | https://www.wavesfactory.com/audio-plugins/trackspacer/ | 32-Band-Sidechain-Entmaskierung, L/R und M/S, Attack/Release, Low-/High-Cut des Wirkbereichs |
 | H10 | Baby Audio Smooth Operator Pro | https://babyaud.io/smooth-operator-plugin | Spektrale Resonanzdämpfung, FOCUS (Detail/Isolation), Knoten mit eigenem Dynamikprofil, SC-Sektion — die vom User genannte zweite Referenz |
 | H11 | Soundtheory Gullfoss — Operation Manual (PDF, 21 Seiten) | https://www.soundtheory.com/static/Gullfoss%20Operation%20Manual.pdf | Recover/Tame/Bias/Brighten/Boost als vollautomatischer, wahrnehmungsmodellbasierter EQ; Kurve „updated internally more than 300 times per second"; Lautheitskompensation eingebaut („preserves the original dynamics and perceived loudness … without being mislead by a slightly different perceived loudness"); Frequenzbereichs-Begrenzer im Graph; Sidechain-Eingang seit 1.9.0 |
+| H13 | Tokyo Dawn Records TDR Nova | https://www.tokyodawn.net/tdr-nova/ | „With its four dynamic EQ bands and additional high-pass and low-pass filter sections, NOVA can meet the most exotic demand"; „each band also includes a full featured dynamics section" — Beleg für die Zuordnung „dynamische Bänder" in §5.3 (abgerufen 30.08.2026, Runde 1) |
+| H14 | iZotope Ozone — Features (Match EQ) | https://www.izotope.com/en/products/ozone/features.html | „Match to any reference track with over 8,000 separate bands to get the most precise snapshot possible" — Beleg für die Zuordnung „iZotope hat EQ-Matching" in §5.4 und Karte U19 (abgerufen 30.08.2026, Runde 1) |
 | H12 | Steinberg VST 3 — `ChannelContext::IInfoListener` | https://steinbergmedia.github.io/vst3_doc/vstinterfaces/classSteinberg_1_1Vst_1_1ChannelContext_1_1IInfoListener.html | Der Weg, über den ein Host Spurname, Farbe und Index an ein Plugin gibt — Grundlage von Befund D-2 |
+
+**Nachtrag 30.08.2026 (Runde 1, Codex-Befund B6).** Der Satz oben („alle zwölf Seiten") gilt für den ersten Durchgang. In Runde 1 sind **zwei weitere Herstellerseiten am 2026-08-30 einzeln abgerufen** worden — **H13** (TDR Nova) und **H14** (iZotope Ozone) —, weil vier Marktzuordnungen über die damalige Quellenliste hinausreichten. Stand jetzt: **vierzehn** Quellen, davon zwölf aus dem ersten Durchgang. Zwei Zuordnungen sind dabei nicht belegt worden, sondern **gestrichen** (§5.1, Zeile Instanzliste). Für H13 und H14 gilt dieselbe Grenze wie unten für H1–H11.
 
 **Ehrliche Grenze der Recherche:** H1–H11 belegen, **dass** eine Funktion
 existiert und wie der Hersteller sie beschreibt. Sie belegen nicht, wie sie
@@ -223,6 +239,18 @@ ob ein offener Registerpunkt einen Entscheid trägt, der im Plan fehlt.
 | **NAK-13** (18.08.) — Broker-Autostart fehlt | keine Planzeile besitzt ihn; `darfBrokerStarten()` existiert seit S9 als Haken. → **L-2** |
 | **NAK-10** (17.08.) — Broker liest `hoermarkierung` nicht | Entwurf §56 führt es im P2-Lieferumfang; plan.json S16–17 („Koordinator, Datenbank-Migration, Ausgangspuffer") nennt es nicht. → **D-6 (b)** |
 | übrige 84 Zeilen | Befunde ohne Entscheidcharakter oder bereits geschlossen; kein Planfund. |
+
+**Nachtrag 30.08.2026 (Runde 1, Codex-Befund B2) — die Sammelbewertung „übrige 84 Zeilen" war zu grob.** Fünf davon sind offene **Vertragsriegel**, die der nächste Datenweg verbraucht; ihr bisheriges Eigentümerticket ist abgeschlossen oder S16–17 nimmt die Daten als Nächstes. Ohne neue Zuordnung friert G2 sie als R0 ein. Gemessen mit `rg -n '^\| NAK-(10|28|29|40|59) ' docs/offene-punkte.md`:
+
+| Zeile | Was offen ist | Bisheriger Eigentümer | Neu |
+|---|---|---|---|
+| **NAK-10** (17.08.) | Broker liest das `hoermarkierung`-Flag nicht; Entwurf §31.2/§56 führen es als offenen P2-Vertrag | „Zielphase P2", kein Ticket | **S16–17, v3-Vertragsrunde** |
+| **NAK-28** (21.08.) | `subscribe_session` hat keinen Gegenpfad; die 25er-Liste aus §33.3 ist geschlossen, ein Nachtrag ist deshalb **nicht** additiv | offen seit SONDE-005a | **S16–17, v3-Vertragsrunde** |
+| **NAK-29** (21.08.) | im **Erzeuger** seit SONDE-009 geschlossen, der **v3-Schema-Schnitt** (diskriminierte Union) ausdrücklich nicht — die Zeile nennt `SONDE-010` als Ort | `SONDE-010` (abgeschlossen) | **S16–17, v3-Vertragsrunde** |
+| **NAK-40** (22.08.) | Abbildung einer nicht-hex32-`instance_id` auf die v3-Adresse. `SONDE-010` sollte es festlegen; gemessen: `grep -c 'NAK-40' docs/beweise/SONDE-010.md` = **0** — es ist nie entschieden worden | `SONDE-010` (abgeschlossen, ohne Entscheid) | **S16–17, v3-Vertragsrunde** |
+| **NAK-59** (23.08.) | Band-Stereo hat keinen Platz im FlatBuffers-Frame; die Zeile nennt `SONDE-010` als Ort | `SONDE-010` (abgeschlossen) | **S16–17, v3-Vertragsrunde** |
+
+Alle fünf tragen seit dem 30.08.2026 einen datierten Nachtrag im Register; eingearbeitet sind sie in `docs/plan/plan.json` S16–17 und in die S16–17-Zeile von `docs/bauaufteilung-sonden.md` §3. Der Vorschlag V-1 aus §6.3 ist damit **entschieden**.
 
 ### 3.4 `CLAUDE.md` Wahrheitskern
 
@@ -431,6 +459,12 @@ EQ-Zustand im Descriptor; die Dateien selbst liegen außerhalb der Ticketgrenze)
 Edit E-11 (plan.json S18–19 nennt den EQ-Zustand als anzuzeigende Wahrheit),
 Vorschlag V-1 (dasselbe v3-Fenster wie D-2).
 
+**Nachtrag 30.08.2026 (Runde 1) — zwei Berichtigungen an D-5.**
+
+**(1) Codex-Befund B4: der EQ-Punkt gehört nicht auf Gens Landkarte.** Der Absatz oben leitet aus dem Interview vom 23.08. ab, Gens Landkarte (S18–19) müsse den EQ-Zustand je Sonde zeigen. Das ist falsch: `design/abnahmen/2026-08-23-interview-struktur.md` bindet den roten/grünen EQ-Punkt in **Frage 13** und **Festlegung 16** an Probeeqs *lokale Rückfallfläche* („Rückfallfläche präzisiert: Connected/Disconnected · Bypass · bei EQ on die Werte + der Mode der Probe"). Eine Anzeige auf der passiven Landkarte ist dort nicht entschieden; sie zu planen hieße, eine sichtbare Funktion zu erfinden und dafür den strikten `probe_descriptor` unnötig zu versionieren. **Edit E-11 ist deshalb zurückgenommen**: der Satz in `plan.json` S18–19 und der entsprechende Teil der Bauaufteilungszeile sind gestrichen. Was bleibt, ist Technik ohne Anzeigezusage — Gen muss den Betriebszustand für die **Fernsteuerung** (S29–31) kennen; der Feldname wird in der v3-Vertragsrunde von S16–17 reserviert, Eigentümer S29–31. NAK-107 trägt den Nachtrag.
+
+**(2) Codex-Befund B3: der Vertragsbruch ist größer als ein EQ-An/Aus-Feld.** D-5 hat nur den Betriebszustand gesehen. Gemessen am 30.08.2026 fehlt der **gesamte DSP-Zustandsrückweg**: `state_report` (`eq-copilot/schemas/v3/eq-ipc-v3.schema.json`, `additionalProperties: false`) trägt nur `dsp_schema_version`, `state_revision`, `state_hash`, `record_state` und `undo_tiefe`; alle fünf `command_ack`-Zweige tragen nur `command_id`, `ergebnis`, `state_revision`, `state_hash` und `code`. Der Entwurf verlangt beides ausdrücklich — §33.5 (`:1898`) „bestätigter DSP samt Schutzgrenzen … Broker/Main lesen per `state_report`, überschreiben nie blind" und §33.4 (`:1881`) „bestätigt `state_hash` plus tatsächlich angewandte Werte". **Folge:** nach Project-Reload oder Reconnect kann Main den autoritativen Probeeq-Zustand nicht rekonstruieren; ein Hash kann Bänder, Bypass, Mix und Schutzbereiche weder anzeigen noch konfliktfrei wiederherstellen. In `reservierte-nachrichten-v1.json` ist dafür nichts reserviert — das DSP-DTO ist dort nur `apply_transaction` (`SONDE-016`) zugeordnet. **Neue Registerzeile NAK-110**; eingearbeitet in `plan.json` S16–17 (Name `state_report.dsp` reserviert), S26–28 (Nutzlast mit dem DSP-DTO) und S29–31 (Bestätigung der angewandten Werte) sowie in die drei zugehörigen Zeilen der Bauaufteilung.
+
 ---
 
 #### D-6 — Zwei nachweisbar falsche Statusaussagen in Planquellen
@@ -492,7 +526,7 @@ ist.
 
 | # | Lücke | Fundstelle | Was getan |
 |---|---|---|---|
-| **L-1** | **Wer darf `post_fader_contribution` führen, wenn es den Bus gibt?** Heute ist die Position für **keine** Klasse erlaubt (`nakama-state-v2.md:54`, fail-closed seit der G1-Nacharbeit). Der Entwurf beantwortet die Frage nicht (§32.2 ordnet Positionen Aussageklassen zu, nennt aber keine Produktklasse). Eigentümer laut Vertrag: `SONDE-011`. | `nakama-state-v2.md:54-90`; NAK-79; `plan.json:195` (S16–17) nennt es nicht | Edit **E-15** (S16–17 trägt die Frage als Lieferumfang); die Produktseite ist **Fragenkarte U19** nicht wert — sie ist eine Vertragszuordnung, nicht sichtbare Funktion, und liegt beim Dirigenten. Registerzeile bleibt NAK-79. |
+| **L-1** | **Wer darf `post_fader_contribution` führen, wenn es den Bus gibt?** Heute ist die Position für **keine** Klasse erlaubt (`nakama-state-v2.md:54`, fail-closed seit der G1-Nacharbeit). Der Entwurf beantwortet die Frage nicht (§32.2 ordnet Positionen Aussageklassen zu, nennt aber keine Produktklasse). Eigentümer laut Vertrag: `SONDE-011`. | `nakama-state-v2.md:54-90`; NAK-79; `plan.json:195` (S16–17) nennt es nicht | Edit **E-15** (S16–17 trägt die Frage als Lieferumfang); die Produktseite ist **Fragenkarte U19** nicht wert — sie ist eine Vertragszuordnung, nicht sichtbare Funktion, und liegt beim Dirigenten. Registerzeile bleibt NAK-79. **Nachtrag 30.08.2026 (Runde 1, Codex-Befund B1): die Lücke war falsch gestellt.** Die Produktfrage ist seit dem **24.08.2026** entschieden — der NAK-79-Nachtrag hält den User-Wortlaut fest („das prinzip ist doch jeweils eine sonde auf ein bus -> Gen, wieso sollte eine sonde als empfänger genutzt werden?" · „EINE Sonde kann nur dort messen wo sie steckt … das ist kein prinzip das ist die einzige realität") und schließt daraus: **keine Sondenklasse trägt die Position, Empfänger ist Gen.** Nach `CLAUDE.md` ist dieses datierte Registerzitat bindend; ein Edit, der die Frage in S16–17 erneut stellt, widerspricht einem Entscheid. **Edit E-15 ist entsprechend umgeschrieben**: S16–17 trägt nur noch die **Technikfrage** aus demselben Nachtrag — die Vertragsform des Beitrags („aus welchem Gen-Eingang stammt die Messung", ein Deskriptor je Gen-Eingang statt eines Wertes im Instanzfeld). Entscheid des Dirigenten 30.08.2026: der **Name** wird in der v3-Vertragsrunde von S16–17 reserviert, das Instanzfeld bleibt fail-closed, die **Nutzlast** entsteht mit dem Aux-Bus in `SONDE-018`. |
 | **L-2** | **Broker-Autostart hat keine Planzeile.** NAK-13 (18.08.) offen; `state::Lebenslauf::darfBrokerStarten()` existiert seit S9 als Haken, aber kein Schritt baut den Start. Ohne ihn misst ein frisch installiertes Nakama nur lokal. | NAK-13; `plan.json` — `grep -c 'Autostart'` = 0 | Edit **E-16**: S16–17 bekommt den Brokerstart als benannten Lieferumfang (er gehört zum Koordinator-Ticket, weil vorher niemand da ist, der etwas entgegennimmt). |
 | **L-3** | **Keine Voreinstellungen (Presets) im ganzen Plan.** Weder Parameterbestand, State-Kind-Matrix, v3-Familienliste noch die SQLite-Tabellen aus §53.9 kennen ein Preset-Objekt. Vergleichbare Produkte führen einen Preset-Browser als Grundausstattung (H3, H8). | `grep -nic 'preset' docs/FL-Nakama-Sonden-Design-Entwurf.md` = **1** Treffer, und der ist keine Produktfunktion (`:2576`: ein vom User bereitgestellter Preset-**Hash** als Experimentmerkmal) | **Fragenkarte U18** (Produktumfang) |
 | **L-4** | **Die offenen Punkte aus `2026-08-25-offen-bausteine.md` (Akzentfarbe je App u. a.) stehen in keiner Fragenkarte.** Der Entscheid liegt beim User am Blatt, aber `fragen.json` `offen[]` führt nur U11 und U13. | `design/abnahmen/2026-08-25-offen-bausteine.md`; `fragen.json` | Vorschlag **V-2** an den Dirigenten: eigene Fragenrunde, nicht in PR1 hineinziehen (es ist Gestaltung, kein Planbruch) |
@@ -522,13 +556,14 @@ Legende **betroffen**: `V` = v3-Nachrichtenvertrag · `S` = State/Parameter ·
 
 | Standardfunktion | Wer hat sie (Beleg) | Nakama | betroffen | Ticket | Folge |
 |---|---|---|---|---|---|
-| Alle Instanzen der Sitzung in einer Liste sehen | Pro-Q 4 (H1), smart:EQ 4 bis 10 pro Gruppe (H6), MMultiAnalyzer (H7), SPAN Plus (H8) | **hat** — Gen Seite 1, Sonden bis 16 sichtbar / 32 im Vertrag | — | S18–19 | — |
+| Alle Instanzen der Sitzung in einer Liste sehen | Pro-Q 4 (H1), smart:EQ 4 bis 10 pro Gruppe (H6) · ~~MMultiAnalyzer (H7)~~ ~~SPAN Plus (H8)~~ **gestrichen 30.08.2026 (Runde 1, Befund B6):** H8 führt keine Instanzliste (die Feature-Seite nennt „Multi-track spectrum import/export", keine Liste), und H7 belegt nur, dass Instanzen sich finden und Analysen tauschen — beides steht in den passenden Zeilen weiter unten | **hat** — Gen Seite 1, Sonden bis 16 sichtbar / 32 im Vertrag | — | S18–19 | — |
 | Fremde Instanz **fernbedienen** | Pro-Q 4: „add and change curves just like you are used to" (H1); smart:EQ 4: „remotely controlled from any other instance" (H6) | **hat** — und macht es zum Hauptbedienweg (Gen Seite 2) | — | S29–31, S31b | Der Markt-Befund aus dem 23.08.-Blatt bestätigt sich: die Fernsteuerung selbst ist **nicht** die Neuheit; der Hub mit Advisor ist es. |
 | **Reihenfolge = DAW-Spurreihenfolge** | Pro-Q 4: „matching the track order in your DAW … Instances will order themselves according to how they are inserted" (H1) | **entschieden, aber ohne Datenweg** | **V, C** | S18–19 | **D-2** |
 | Spurname am Eintrag | Pro-Q 4 (H1, per Track gruppiert); smart:EQ 4 Gruppenliste (H6) | **entschieden, aber ohne Datenweg** | **V, C** | S18–19 | **D-2**, Karte **U20** |
 | Prioritäts-/Rangfolge zwischen Instanzen | smart:EQ 4: „drag and drop them into an order that decides the precedence" (H6) | **löst anders** — musikalische Rollen (führt/trägt/begleitet/geschützt/verschmolzen), Entwurf §9/§37 | — | S23–25 | — |
 | Instanzen finden sich selbst | MMultiAnalyzer: „they automatically find each other and exchange their respective analyses" (H7); iZotope Relay als Inter-Plugin-Communication (H5) | **hat** — Broker + Discovery, `session_snapshot` | — | S16–17, S18–19 | Autostart des Brokers fehlt: **L-2** |
-| Spektrum einer anderen Spur im eigenen Graph | Pro-Q 4 External/SC-Spektrum (H2); SPAN Plus „Export To" (H8); smart:EQ 4 Gruppen-Analyzer (H6) | **hat** (Datenweg) — Gen Seite 2 zeigt zwei EQ-Spuren in einem Graph (Entscheid 23.08.) | — | S31b | Live-Spektrum bei zwei Spuren nur für die bearbeitete Spur (Festlegung 14) |
+| **Pegel und Panorama aller Spuren aus einem Fenster** (Mehrinstanz-Mixworkflow) | Neutron 5 Visual Mixer (H5) | **außerhalb des Produktumfangs** — Nakama regelt Klang über EQ (Wahrheitskern: Quellen, Befunde, Advisor, EQ-Zentrale); Pegel und Pan fremder Spuren zu setzen ist kein Nakama-Versprechen und **nicht** mit dem EQ-Dry/Wet-Regler gleichzusetzen | — (weder Vertrag noch State noch Oberfläche betroffen) | — | **Eingeordnet 30.08.2026 (Runde 1, Befund B7)**, Register **NAK-111**. Keine Fragenkarte: es ist kein Planbruch, sondern eine Grenze. Ein späteres Ja wäre ein Produktentscheid mit eigener v3-Nachrichtenfamilie (schreibender Eingriff außerhalb des EQ, mit Lease und Rückweg) |
+| Spektrum einer anderen Spur im eigenen Graph | Pro-Q 4 External/SC-Spektrum (H2); SPAN Plus „Multi-track spectrum import/export" (H8; das frühere Zitat „Export To" steht so nicht auf der Herstellerseite — berichtigt 30.08.2026, Runde 1); smart:EQ 4 Gruppen-Analyzer (H6) | **hat** (Datenweg) — Gen Seite 2 zeigt zwei EQ-Spuren in einem Graph (Entscheid 23.08.) | — | S31b | Live-Spektrum bei zwei Spuren nur für die bearbeitete Spur (Festlegung 14) |
 
 ### 5.2 Maskierung und Entmaskierung
 
@@ -545,7 +580,7 @@ Legende **betroffen**: `V` = v3-Nachrichtenvertrag · `S` = State/Parameter ·
 | Standardfunktion | Wer hat sie (Beleg) | Nakama | betroffen | Ticket | Folge |
 |---|---|---|---|---|---|
 | Minimalphasige Filter, Bells/Shelves/Cuts/Notch | Pro-Q 4 (H3) | **hat** — §30.1, §44.2, acht Slots × 13 Parameter | — | S26–28 | — |
-| Dynamische Bänder | Pro-Q 4 (H3); TDR/Neutron | **hat** — `dynamic_enabled`, Threshold/Range/Attack/Hold/Release | — | S26–28 | — |
+| Dynamische Bänder | Pro-Q 4 (H3); TDR Nova (**H13**, nachgereicht 30.08.2026 in Runde 1: „four dynamic EQ bands", „each band also includes a full featured dynamics section"); Neutron 5 (H5) | **hat** — `dynamic_enabled`, Threshold/Range/Attack/Hold/Release | — | S26–28 | — |
 | Externer Sidechain je Band | Pro-Q 4 (H3); Neutron „band-specific internal or external sidechain" (H5) | **hat im Vertrag** (`sidechain_source`), im ersten Release **unsichtbar** (U5, 24.08.) | — | S26–28 | bewusster Entscheid |
 | M/S und L/R je Band | Pro-Q 4 (H3); Trackspacer (H9) | **hat** — `channel_mode` | — | S26–28 | — |
 | **Phasenmodi: Natural Phase / Linear Phase** | Pro-Q 4: „zero-latency mode, Natural Phase mode or in linear-phase mode with variable processing resolution" (H3) | **bewusst nicht im ersten Kern** — §30.1 schließt lineare Phase aus, §44.2 fordert konstant 0 Samples Latenz, kein Lookahead | **C** (Latenzmeldung), **S** (neuer Parameter), **O** (Umschalter) | S26–28 / S28b, G6 | **Fragenkarte U15** — der User nannte Pro-Q als Vorbild und „alle gängigen filter die es gibt" |
@@ -569,7 +604,7 @@ Legende **betroffen**: `V` = v3-Nachrichtenvertrag · `S` = State/Parameter ·
 | **Noten-/Klaviaturanzeige** | Pro-Q 4 (H2) | **fehlt** — und hat eine Landmine: „FL zeigt MIDI 60 als C5" (CLAUDE.md) | **O** | S31b | **U17** |
 | Lautheits- und True-Peak-Anzeige | SPAN Plus EBU R128 LUFS/LU, True Peak (H8) | **hat gemessen** (`LoudnessAccumulator`, S10–11), **Anzeige nicht entschieden** — NAK-57: „auslesbar, aber nirgends sichtbar" | **O** | S18–19 | in **U17** mitgeführt |
 | Korrelations-/Stereoanzeige | SPAN Plus (H8); MMultiAnalyzer Stereoanalyse (H7) | **hat geplant** — Kernfunktion 10, §40 | — | S20–22 | — |
-| Referenz-/Zielkurve übernehmen (EQ Match) | Pro-Q 4 EQ Match gegen andere Instanz oder Datei (H1, H3); smart:EQ 4 „load up a reference track to create a custom profile" (H6) | **löst später** — Roadmap 11 (§47.5), **nach R4** | **V** (neue Familie), S, O | nach R4 | **Fragenkarte U19** |
+| Referenz-/Zielkurve übernehmen (EQ Match) | Pro-Q 4 EQ Match gegen andere Instanz oder Datei (H1, H3); smart:EQ 4 „load up a reference track to create a custom profile" (H6); iZotope Ozone Match EQ (**H14**, nachgereicht 30.08.2026 in Runde 1: „Match to any reference track with over 8,000 separate bands") | **löst später** — Roadmap 11 (§47.5), **nach R4** | **V** (neue Familie), S, O | nach R4 | **Fragenkarte U19** |
 | Assistent, der eine Kette vorschlägt | Neutron 5 Mix Assistant (H5); smart:EQ Profile (H6) | **hat, regelbasiert** — Kernfunktion 18, §46; ausdrücklich **ohne** KI-Schicht (Errata (e)) | — | S23–25 | ausdrücklicher Entscheid |
 
 ### 5.5 Was der Vergleich **nicht** gefunden hat
@@ -630,7 +665,7 @@ Alle in `docs/plan/fragen.json` `offen[]`, `seit: "2026-08-30"`, `status: "offen
 
 ### 6.3 Vorschläge an den Dirigenten (nicht eingearbeitet)
 
-1. **V-1 — Ein v3-Fenster vor S16–17.** D-2 und D-5 brauchen beide ein Feld im
+1. **V-1 — Ein v3-Fenster vor S16–17.** ✅ **ENTSCHIEDEN am 30.08.2026 (Runde 1, Dirigent, Technik): die v3-Vertragsrunde wird als erster Lieferumfang von `SONDE-011` vor R0 gefahren.** Umfang, Registerzuordnung und Reservierungen stehen in §9, Befund B2. Der Vorschlagstext darunter bleibt als Verlauf stehen. D-2 und D-5 brauchen beide ein Feld im
    `probe_descriptor`, der ausdrücklich „NICHT additiv" ist. Entweder wird eine
    v3-Erweiterung **vor** `SONDE-011` entschieden (dann trägt sie R0), oder sie
    wird ausdrücklich auf eine v3.1 nach G2 vertagt. Beides ist vertretbar; still
@@ -752,3 +787,472 @@ Dieser Änderungssatz berührt ausschließlich `docs/**` (Beleg: der
 `git diff --stat` in §8, Lauf D). Ein Kanon-Lauf würde denselben Stand messen wie der
 letzte Lauf zu `SONDE-010` und keine Aussage über dieses Ticket treffen. Er wird
 deshalb bewusst **nicht** gefahren und auch nicht als Beleg zitiert.
+
+---
+
+## 9. Runde 1 — Nacharbeit nach Codex-Erstprüfung (30.08.2026)
+
+**Append-only.** Dieser Abschnitt schreibt §1–§8 nicht um; Korrekturen dort stehen
+als datierte Nachträge an ihrer Stelle. Der lebende Kopf (§1.3, §1.4) ist nachgezogen.
+
+### 9.1 Die Erstprüfung
+
+| Feld | Wert |
+|---|---|
+| Prüfer | Codex `gpt-5.6-sol`, Effort **xhigh**, **lesend** |
+| Thread | `01a053a7-d1dc-7441-8554-44d0fa14cc8f` |
+| Datum | 30.08.2026 |
+| Stand vor der Runde | `0e3908ee7a342e8d3d4c88f811e8f2ec011ae926` (Ticketbasis `6f40eed5e5e3969df2ac08232011247ff377e89c`, Branch `master`) |
+| Prüfbereich | `git diff 6f40eed...0e3908e -- docs/beweise/PR1.md docs/plan/plan.json docs/plan/fragen.json docs/bauaufteilung-sonden.md docs/FL-Nakama-Sonden-Design-Entwurf.md docs/offene-punkte.md docs/PLAN-STAND.md docs/ANTWORTEN-OFFEN.md` |
+| Urteil | **NEEDS_WORK**, sieben Befunde, alle **[P1]** |
+| Nachmessung | Der Dirigent hat alle sieben an der Quelle nachgemessen und als **Defekt** bestätigt |
+
+Diese Runde schließt genau diese sieben Befunde — nichts sonst. Die Ticketgrenze ist
+unverändert: schreibend nur `docs/beweise/PR1.md`, `docs/plan/plan.json`,
+`docs/plan/fragen.json` (nur `offen[]`), `docs/bauaufteilung-sonden.md`,
+`docs/FL-Nakama-Sonden-Design-Entwurf.md` (nur Errata/Nachträge),
+`docs/offene-punkte.md`, sowie `docs/PLAN-STAND.md` und `docs/ANTWORTEN-OFFEN.md`
+über ihre Generatoren. Kein Produktcode, kein Schema, kein Test, kein Fixture,
+nichts unter `tools/**`, `design/abnahmen/` oder `.claude/**`.
+
+---
+
+### 9.2 Die sieben Befunde — Urteilstext, Regel und Ausführung
+
+---
+
+#### B1 — [P1] Übernimm den bindenden NAK-79-Entscheid — `docs/plan/plan.json:195`
+
+**Urteilstext der Erstprüfung, wörtlich:**
+
+> Wenn SONDE-011 nach diesem Text gebaut wird, wird erneut entschieden, welche Produktklasse `post_fader_contribution` tragen darf. `rg -n '^\| NAK-79' docs/offene-punkte.md` zeigt jedoch den datierten User-Wortlaut und das bindende Ergebnis: Keine Sondenklasse trägt die Position; der Beitrag ist eine Gen-Eingangsachse, nur ihre Vertragsform bleibt Technikentscheidung. Der Edit widerspricht damit einem Entscheid und verletzt den Gate-Satz, alle Entscheide sauber einzuarbeiten; nach `CLAUDE.md:54-55` ist dieses datierte Registerzitat bindend.
+
+**Nachmessung.** `docs/offene-punkte.md`, Zeile NAK-79, trägt den User-Nachtrag vom
+24.08.2026 im Wortlaut: „das prinzip ist doch jeweils eine sonde auf ein bus -> Gen,
+wieso sollte eine sonde als empfänger genutzt werden?" und „EINE Sonde kann nur dort
+messen wo sie steckt. und sie kann nur dort EQ anwenden durch GEN wo sie steckt. das
+ist kein prinzip das ist die einzige realität." Ergebnis der Zeile: **keine
+Sondenklasse trägt die Position, Empfänger ist Gen.** Derselbe Nachtrag benennt, was
+offen bleibt: „eine reine Vertragsfrage und meine Entscheidung … Vorschlag: ein
+Deskriptor je Gen-Eingang statt eines Wertes im Instanzfeld." Der Befund ist **Defekt**.
+
+**Regel des Dirigenten.** S16–17 und die Bauaufteilungszeile S16–17 so umschreiben,
+dass die Produktfrage nicht erneut gestellt wird; S16–17 trägt nur die Technikfrage aus
+dem NAK-79-Nachtrag. Die Lücke L-1 in §4.2 bekommt einen datierten Nachtrag. **Entscheid
+des Dirigenten (Technik):** der Deskriptorname je Gen-Eingang wird in der v3-Vertragsrunde
+von S16–17 reserviert, die Nutzlast entsteht mit `SONDE-018`.
+
+**Ausgeführt.**
+
+| Stelle | Vorher | Nachher |
+|---|---|---|
+| `docs/plan/plan.json`, Schritt `S16–17` (Edit **R1-1**) | „(1) NAK-79 — welche Produktklasse die Messposition post_fader_contribution führen darf, wenn es den Aux-Bus gibt. Heute ist sie seit der G1-Nacharbeit für keine Klasse erlaubt (fail-closed), und der Zustandsvertrag nennt SONDE-011 als Eigentümer der Antwort." | Reservierung (a) der v3-Vertragsrunde: „Der Entscheid vom 24.08.2026 im NAK-79-Nachtrag ist bindend und wird NICHT erneut gestellt: keine Sondenklasse trägt die Position, eine Sonde misst an ihrem Slot, Empfänger ist Gen. Offen ist allein die Vertragsform — der Beitrag ist eine Achse „aus welchem Gen-Eingang stammt die Messung" und kein Instanzattribut; das Instanzfeld bleibt fail-closed (beide Riegel in positionErlaubt bleiben zu), und die Nutzlast entsteht mit dem diskreten Aux-Bus in SONDE-018." |
+| `docs/bauaufteilung-sonden.md` §3, Zeile `S16–17` (Edit **R1-5**) | Zeile nannte NAK-79 nicht | „ein Deskriptor je Gen-Eingang für `post_fader_contribution` (NAK-79 ist am 24.08. entschieden — keine Sondenklasse trägt die Position, Empfänger ist Gen; das Instanzfeld bleibt fail-closed, Nutzlast mit dem Aux-Bus in `SONDE-018`)" |
+| `docs/offene-punkte.md`, Zeile NAK-79 | ohne Runde-1-Nachtrag | datierter Nachtrag: Produktfrage entschieden und wird nicht wieder gestellt; Technikentscheid des Dirigenten benannt |
+| `docs/beweise/PR1.md` §4.2, Lücke **L-1** | „Edit E-15 (S16–17 trägt die Frage als Lieferumfang)" | datierter Nachtrag: „die Lücke war falsch gestellt"; E-15 umgeschrieben auf die Vertragsform |
+
+**Geschlossen.** Die Produktfrage steht in keiner Planquelle mehr:
+`grep -c 'welche Produktklasse' docs/plan/plan.json` = **0**.
+
+---
+
+#### B2 — [P1] Plane die offenen Vertragsriegel vor G2 ein — `docs/beweise/PR1.md:225`
+
+**Urteilstext der Erstprüfung, wörtlich:**
+
+> Diese Sammelbewertung lässt mehrere weiterhin offene, für den nächsten Datenweg relevante Registerpunkte aus: `rg -n '^\| NAK-(10|28|29|40|59) ' docs/offene-punkte.md` zeigt den fehlenden Hörmarker-Verbrauch, den Gegenpfad zu `subscribe_session`, unvollständige Transportstempel-Validierung, die nicht abbildbare Legacy-UUID und fehlendes Band-Stereo im Binärvertrag. Ihre bisherigen Eigentümertickets sind abgeschlossen oder S16–17 verbraucht die Daten als Nächstes; ohne neue Zuordnung friert G2 bekannte Vertragsbrüche ein. Das verletzt den Gate-Auftrag zur Prüfung der gebauten Tickets und Verträge sowie die Lebenszyklusregel `AGENTS.md:48-51`.
+
+**Nachmessung.** Alle fünf stehen in der Tabelle **Offen** von `docs/offene-punkte.md`.
+NAK-40 nennt `SONDE-010` als Entscheider; gemessen: `grep -c 'NAK-40'
+docs/beweise/SONDE-010.md` = **0** — das Ticket hat die Frage nie entschieden.
+NAK-29 ist im **Erzeuger** mit SONDE-009 geschlossen worden, der v3-Schema-Schnitt
+ausdrücklich nicht. Der Befund ist **Defekt**.
+
+**Regel des Dirigenten (Technik, entschieden 30.08.2026).** `SONDE-011` beginnt mit einer
+**v3-Vertragsrunde vor R0** als erstem benannten Lieferumfang — das ist Vorschlag V-1 aus
+§6.3, jetzt entschieden. Sie umfasst NAK-28, NAK-29, NAK-40, NAK-59 und NAK-10, dazu die
+Reservierungen aus B1, B3 und B4 und die optionalen hostgelieferten Felder aus D-2. Jede
+der fünf Registerzeilen bekommt einen datierten Nachtrag, angehängt statt umgeschrieben.
+
+**Ausgeführt.**
+
+| Stelle | Was |
+|---|---|
+| `docs/plan/plan.json` `S16–17` (**R1-1**) | Die v3-Vertragsrunde ist Punkt (1) und damit der erste benannte Lieferumfang; alle fünf Registerpunkte stehen mit ihrem konkreten Schnitt im Text, dazu die vier reservierten Namen |
+| `docs/bauaufteilung-sonden.md` §3, `S16–17` (**R1-5**) | dieselbe Zeile nachgezogen, mit allen fünf Registernummern und den vier Reservierungen |
+| `docs/offene-punkte.md`, NAK-10 / NAK-28 / NAK-29 / NAK-40 / NAK-59 | je ein datierter Nachtrag „Eigentümer S16–17 v3-Vertragsrunde (PR1 Runde 1)", angehängt; NAK-40 zusätzlich mit der gemessenen Trefferzahl 0 aus `SONDE-010.md` |
+| `docs/beweise/PR1.md` §3.3 | datierter Nachtrag mit allen fünf Fundstellen als eigene Tabelle: was offen ist, bisheriger Eigentümer, neuer Eigentümer |
+| `docs/beweise/PR1.md` §6.3 | V-1 als **entschieden am 30.08.2026** markiert; der Vorschlagstext bleibt als Verlauf |
+
+**Reservierte Namen der Runde (ohne Nutzlast).** Nach der Regel aus
+`eq-copilot/schemas/v3/reservierte-nachrichten-v1.json`: „der Vertragsanteil, der später
+bricht, ist der NAME — nicht die Nutzlast."
+
+| # | Name | Woher | Eigentümer der Nutzlast |
+|---|---|---|---|
+| a | Deskriptor je Gen-Eingang für `post_fader_contribution` | B1 / NAK-79 | `SONDE-018` (Aux-Bus) |
+| b | `state_report.dsp` und die Bestätigung der angewandten Werte | B3 / NAK-110 | S26–28 (DTO), S29–31 (Bestätigung) |
+| c | Betriebszustand des Sonden-EQ | B4 / NAK-107 | S29–31, **ohne Anzeigezusage** |
+| d | optionale hostgelieferte Felder für Bus-Name und Mixer-Index im `probe_descriptor` | D-2 / NAK-106 | S18–19 misst, ob FL sie füllt |
+
+---
+
+#### B3 — [P1] Plane den DSP-Zustandsrückweg vor G2 — `docs/beweise/PR1.md:419-423`
+
+**Urteilstext der Erstprüfung, wörtlich:**
+
+> Nach Project-Reload oder Reconnect kann Main den autoritativen Probeeq-Zustand nicht rekonstruieren: `state_report` in `eq-ipc-v3.schema.json:993-1015` überträgt nur Version, Revision, Hash, Record-State und Undo-Tiefe, und erfolgreiche `command_ack`-Antworten ebenfalls keine tatsächlich angewandten Werte. Das widerspricht Entwurf §33.4/§33.5, wonach Main den bestätigten DSP per `state_report` liest und Apply die tatsächlichen Werte bestätigt; ein Hash kann Bänder, Bypass, Mix und Schutzbereiche weder anzeigen noch konfliktfrei wiederherstellen. D-5 plant nur ein EQ-An/Aus-Feld und lässt diesen umfassenderen Vertragsbruch vor G2 unerfasst (`CLAUDE.md:122-123,139-140`).
+
+**Nachmessung.** `eq-copilot/schemas/v3/eq-ipc-v3.schema.json`: `state_report` ist
+`additionalProperties: false` und führt genau `type`, `adresse`, `dsp_schema_version`,
+`state_revision`, `state_hash`, `record_state`, `undo_tiefe` — keine DSP-Nutzlast. Alle
+fünf `command_ack`-Zweige (`angewandt`, `abgelehnt`, `konflikt`, `abgelaufen`,
+`idempotent_wiederholt`) tragen nur `command_id`, `ergebnis`, `state_revision`,
+`state_hash` und `code`. Der Entwurf verlangt beides: §33.5 (`:1898`) „bestätigter DSP
+samt Schutzgrenzen … Broker/Main lesen per `state_report`, überschreiben nie blind" und
+§33.4 (`:1881`) „bestätigt `state_hash` plus tatsächlich angewandte Werte". In
+`reservierte-nachrichten-v1.json` ist dafür nichts reserviert — das DSP-DTO ist dort nur
+`apply_transaction` (`SONDE-016`) zugeordnet, und `reservierte_felder` enthält genau
+einen Eintrag (`evidence_snapshot.ereignisse`). Der Befund ist **Defekt**.
+
+**Regel des Dirigenten.** Neue Registerzeile (Defektklasse **Vertrag**); in der
+v3-Vertragsrunde von S16–17 wird `state_report.dsp` reserviert und die Bestätigung der
+angewandten Werte für `apply_transaction`/`command_ack` benannt; die Nutzlast entsteht mit
+dem DSP-DTO in S26–28, die Bestätigung in S29–31. D-5 bekommt einen datierten Nachtrag;
+§4.1 wird nicht umgeschrieben.
+
+**Ausgeführt.**
+
+| Stelle | Was |
+|---|---|
+| `docs/plan/plan.json` `S16–17` (**R1-1**, Reservierung b) | Name `state_report.dsp` reserviert, dazu der Name für die Bestätigung der tatsächlich angewandten Werte in `apply_transaction`/`command_ack` |
+| `docs/plan/plan.json` `S26–28` (**R1-3**) | neuer Nachtrag: die **Nutzlast** entsteht hier mit dem DSP-DTO, mit der gemessenen Feldliste von `state_report` als Begründung |
+| `docs/plan/plan.json` `S29–31` (**R1-4**) | neuer Nachtrag: Apply bestätigt die tatsächlich angewandten Werte, nicht nur den Hash — mit dem §33.4-Zitat und der gemessenen Zweigliste von `command_ack` |
+| `docs/bauaufteilung-sonden.md` §3, Zeilen `S16–17`, `S26–28`, `S29–31` (**R1-5**, **R1-7**, **R1-8**) | dieselben drei Zeilen nachgezogen |
+| `docs/offene-punkte.md` | **neue Zeile NAK-110** mit Fundstellen, Folge und Technikentscheid |
+| `docs/beweise/PR1.md` §4.1, Befund **D-5** | datierter Nachtrag (2): „der Vertragsbruch ist größer als ein EQ-An/Aus-Feld"; §4.1 selbst unverändert |
+
+---
+
+#### B4 — [P1] Beschränke den EQ-Punkt auf die Rückfallfläche — `docs/plan/plan.json:218`
+
+**Urteilstext der Erstprüfung, wörtlich:**
+
+> Bei Umsetzung von S18–19 würde diese Zeile einen EQ-An/Aus-Status in Gens passiver Landkarte verlangen. Der zitierte Entscheid in `design/abnahmen/2026-08-23-interview-struktur.md:139-142,223-226` bindet den roten/grünen EQ-Punkt jedoch ausdrücklich an Probeeqs lokale Rückfallfläche; er verlangt keine solche Anzeige auf Gens Landkarte. Die Erweiterung erfindet damit eine sichtbare Funktion und erzwingt dafür unnötig eine Versionierung des strikten Descriptors, statt den Entscheid an seiner tatsächlichen UI-Stelle umzusetzen (`CLAUDE.md:54-55`).
+
+**Nachmessung.** `design/abnahmen/2026-08-23-interview-struktur.md`, **Frage 13**
+(„Runde 4 — die letzten Buttons", Überschrift „BYPASS ↔ EQ-Mode-Punkt") und
+**Festlegung 16** („Rückfallfläche präzisiert: Connected/Disconnected · Bypass · bei EQ
+on die Werte + der Mode der Probe") betreffen beide die **Rückfallfläche der Sonde**.
+Eine Anzeige auf Gens passiver Landkarte steht dort nicht. Der Befund ist **Defekt** —
+und er trifft zugleich das Gesetz „keine toten UI-Elemente" von der anderen Seite: eine
+Anzeige ohne Entscheid ist eine Zusage, die niemand verlangt hat.
+
+**Regel des Dirigenten.** Satz (2) aus `plan.json:218` (Edit E-11) und den entsprechenden
+Teil der Bauaufteilungszeile S18–19 entfernen; keine sichtbare Landkartenfunktion. Was
+bleibt, ist Technik: für die Kopplung in S29–31 muss Gen den Betriebszustand kennen —
+dieses Vertragsfeld gehört als Reservierung in die v3-Vertragsrunde mit Eigentümer S29–31,
+ohne Anzeigezusage. NAK-107 datiert nachtragen.
+
+**Ausgeführt.**
+
+| Stelle | Vorher | Nachher |
+|---|---|---|
+| `docs/plan/plan.json` `S18–19` (**R1-2**) | „(2) Die Landkarte zeigt je Sonde, ob ihr EQ zugeschaltet ist (Entscheid 23.08., Rückfallfläche: EQ-Punkt grün oder rot); heute kann kein Vertragsfeld das ausdrücken …" | Satz gestrichen; an seiner Stelle die datierte Berichtigung, warum, und der Verweis auf die Reservierung mit Eigentümer S29–31. Der Zählsatz „fehlen zwei Wahrheiten" ist im selben Zug auf „fehlten nach dem ersten Durchgang zwei; nach der Berichtigung bleibt eine" berichtigt, damit die Zahl nicht gegen den Inhalt steht |
+| `docs/bauaufteilung-sonden.md` §3, `S18–19` (**R1-6**) | „…; dazu der EQ-Zustand je Sonde als anzeigbare Wahrheit." | Teilsatz gestrichen, datierte Berichtigung angehängt, Feld als Reservierung mit Eigentümer S29–31 benannt |
+| `docs/plan/plan.json` `S29–31` (**R1-4**) | — | der Betriebszustand wird hier geführt, ausdrücklich „Technik ohne Anzeigezusage" |
+| `docs/offene-punkte.md`, NAK-107 | „Eingearbeitet 30.08.2026: der EQ-Zustand je Sonde steht als anzuzeigende Wahrheit in plan.json S18–19." | datierter Nachtrag: Landkarten-Anzeige gestrichen, Feld bleibt Technik. Der alte Satz bleibt als Verlauf stehen |
+| `docs/beweise/PR1.md` §4.1, **D-5** | — | datierter Nachtrag (1) mit der Fundstelle des Entscheids |
+
+**Geschlossen.** Kein Planquellentext verlangt die Anzeige mehr:
+`grep -c 'dazu der EQ-Zustand je Sonde als anzeigbare Wahrheit'
+docs/bauaufteilung-sonden.md` = **0**; der Begriff kommt dort nur noch im Zitat der
+Berichtigung selbst vor. In `plan.json` steht der gestrichene Satz nicht mehr.
+
+---
+
+#### B5 — [P1] Teile U17 in einzelne Button-Entscheide auf — `docs/plan/fragen.json:57-60`
+
+**Urteilstext der Erstprüfung, wörtlich:**
+
+> U17 erklärt fünf unabhängige Funktionen ausdrücklich zu einem Entscheid und fragt sie gemeinsam ab. Der zitierte User-Entscheid in `design/abnahmen/2026-08-23-interview-struktur.md:92-96,210-211` verlangt dagegen eine Klärung „button für button" und verwirft „so halb halb"; eine Sammelantwort kann daher nicht festlegen, welche einzelnen Funktionen gewollt sind. Die Karte muss getrennte Antworten ermöglichen, sonst bricht der Edit genau den Entscheid, den seine Begründung zitiert.
+
+**Nachmessung.** Die Karte trug `art: "Produktentscheid (mehrere kleine Handgriffe, ein
+Entscheid)"` und im `warum` den Satz „vier fehlende Handgriffe auf einmal statt vier
+Einzelfragen". Der zitierte Entscheid sagt das Gegenteil: Interview 23.08., Frage 7 —
+„das müssen wir gesondert button für button machen … so halb halb bringt das nix",
+Festlegung 10 — „Die Überladen-Grenze wird Button für Button geklärt". Der Befund ist
+**Defekt**.
+
+**Regel des Dirigenten.** U17 bleibt **eine** Karte — der Skill `/fragen` kennt
+Folgefragen je Karte, Vorbild U2/U6 (`.claude/skills/fragen/SKILL.md`: „Mehrere
+Folgefragen einer Karte (U2, U6) → ein `AskUserQuestion`-Aufruf mit bis zu vier Fragen;
+sind es mehr, in derselben Runde aufteilen. Das ist die eine erlaubte Ausnahme von ‚eine
+Frage je Runde': es ist eine Karte."). Sie wird zu fünf getrennt beantwortbaren
+Einzelentscheiden U17.1–U17.5 umgebaut. Die Lautheitsanzeige ist U17.5.
+
+**Ausgeführt** (Edit **R1-9**, `docs/plan/fragen.json`, Karte `U17`):
+
+| Feld | Vorher | Nachher |
+|---|---|---|
+| `art` | „Produktentscheid (mehrere kleine Handgriffe, **ein Entscheid**)" | „**fünf Einzelentscheide, Button für Button**" |
+| `titel` | „Was soll das Kurvenbild außer der Kurve können?" | „Fünf einzelne Handgriffe fürs Kurvenbild — jeder für sich Ja oder Nein" |
+| `was` | Fließtext „Vier Handgriffe … Dazu eine fünfte Frage" | nummerierte Liste **U17.1** Spektrum greifen · **U17.2** Bild festhalten · **U17.3** Anzeige einstellbar · **U17.4** Tonnamen · **U17.5** Lautheit sichtbar. Je Punkt eine eigene Ja/Nein-Frage und ein Satz Folge mit Oberfläche und Ticket |
+| `warum` | „vier fehlende Handgriffe auf einmal statt vier Einzelfragen" | „Deshalb steht hier jeder Punkt für sich mit einer eigenen Ja/Nein-Frage; eine Sammelantwort gibt es bewusst nicht." Dazu: wenn ein Punkt abgelehnt wird, bleibt er draußen |
+| `wo` | Tickets | zusätzlich: „Beim Festhalten wird jede der fünf Antworten als eigener Eintrag U17.1 bis U17.5 abgelegt — Vorbild U2 und U6; eine Sammelantwort wird nicht geschrieben." Dazu die datierte Notiz, warum umgebaut wurde |
+
+Kein Satz erklärt die fünf mehr zu einem Entscheid; Wortlaut durchgehend Klartext ohne
+unübersetztes Fachwort. Die Ticketzuordnung ist getrennt: U17.1–U17.4 → S31b,
+U17.5 → S18–19.
+
+---
+
+#### B6 — [P1] Belege jede Marktzuordnung mit einer Quelle — `docs/beweise/PR1.md:548`
+
+**Urteilstext der Erstprüfung, wörtlich:**
+
+> Mehrere Herstelleraussagen reichen über die eigene Quellenliste hinaus: Für TDR wird hier gar keine Quelle geführt; H8 belegt laut §2.2 Spektrum-Export, aber nicht die Instanzliste aus §5.1; U18 behauptet Presets und Kopieren bei jedem Vergleichsprodukt, obwohl §5.3 nur H3/H8 nennt; und U19 schreibt iZotope EQ-Matching zu, während §5.4 dafür nur H1/H6 anführt. Vor einer Produktentscheidung anhand dieser Karten müssen die Aussagen durch konkrete Herstellerquellen gedeckt oder entsprechend eingegrenzt werden; andernfalls ist der Gate-Satz „Funktionsvergleich anhand aktueller Herstellerdokumentation" verletzt.
+
+**Nachmessung.** Alle vier Stellen bestätigt. Der Befund ist **Defekt**.
+
+**Zwei Herstellerseiten am 2026-08-30 einzeln abgerufen** — nur Herstellerseiten, keine
+Händler-, Test- oder Forenseiten:
+
+| # | Quelle | URL | Wörtlicher Beleg |
+|---|---|---|---|
+| **H13** | Tokyo Dawn Records — TDR Nova | `https://www.tokyodawn.net/tdr-nova/` | „With its four dynamic EQ bands and additional high-pass and low-pass filter sections, NOVA can meet the most exotic demand"; „each band also includes a full featured dynamics section" |
+| **H14** | iZotope Ozone — Features (Match EQ) | `https://www.izotope.com/en/products/ozone/features.html` | „Match to any reference track with over 8,000 separate bands to get the most precise snapshot possible" |
+
+**Ausgeführt, Stelle für Stelle.**
+
+| Stelle | Urteil | Vorher | Nachher |
+|---|---|---|---|
+| **(a)** §5.3, Zeile „Dynamische Bänder" | belegt | „Pro-Q 4 (H3); TDR/Neutron" — TDR ohne Quelle, Neutron ohne Nummer | „Pro-Q 4 (H3); TDR Nova (**H13**, nachgereicht 30.08.2026 …); Neutron 5 (H5)" |
+| **(b)** §5.1, Zeile „Alle Instanzen der Sitzung in einer Liste sehen" | **gestrichen** | „Pro-Q 4 (H1), smart:EQ 4 bis 10 pro Gruppe (H6), MMultiAnalyzer (H7), SPAN Plus (H8)" | „Pro-Q 4 (H1), smart:EQ 4 bis 10 pro Gruppe (H6) · ~~MMultiAnalyzer (H7)~~ ~~SPAN Plus (H8)~~ gestrichen" — die Voxengo-Feature-Seite führt keine Instanzliste (sie nennt „Multi-track spectrum import/export"), und H7 belegt nur, dass Instanzen sich finden und Analysen tauschen |
+| **(c)** Karte **U18**, `warum` | eingegrenzt | „Voreinstellungen und Kopieren gehören bei **jedem** verglichenen Produkt zur Grundausstattung." | „Bei den beiden verglichenen Produkten, deren Herstellerseiten das ausdrücklich führen — FabFilter Pro-Q 4 („Undo, Redo, A/B and Copy" und der Preset-Browser) und Voxengo SPAN Plus („Preset manager", „Undo/redo history", „A/B comparisons") — … für die übrigen sechs Hersteller haben wir dazu keine Herstellerseite gelesen und behaupten es deshalb nicht." |
+| **(d)** Karte **U19**, `warum` | belegt | „iZotope hat es ebenfalls." | „iZotope führt es in Ozone als Match EQ („Match to any reference track with over 8,000 separate bands", Herstellerseite abgerufen 30.08.2026)" |
+
+**Drei Stellen derselben Klasse ohne eigenen Codex-Befund, im selben Zug behoben** —
+weil sie sonst als dieselbe Klasse stehen geblieben wären:
+
+1. §5.1, Zeile „Spektrum einer anderen Spur im eigenen Graph": das Zitat `SPAN Plus
+   „Export To" (H8)` steht so **nicht** auf der Herstellerseite. Berichtigt auf den
+   tatsächlichen Wortlaut „Multi-track spectrum import/export", mit Datum.
+2. §5.4, Zeile „Referenz-/Zielkurve übernehmen (EQ Match)": um H14 ergänzt, damit die
+   Karte U19 und die Tabelle dieselbe Quelle nennen.
+3. Karte **U19**, `warum`: der Satz „Es ist die **einzige** verbreitete Funktion, bei der
+   Nakama deutlich später dran ist als der Markt" wird von der eigenen Tabelle widerlegt
+   (§5.3 „Voreinstellungen … fehlt als eigene Funktion", §5.4 vier fehlende Handgriffe).
+   Berichtigt auf „die Funktion, bei der Nakama am weitesten hinter dem Markt liegt —
+   nicht die einzige fehlende", mit Verweis auf U18 und U17.
+
+§2.2 trägt beide neuen Quellen und einen datierten Nachtragssatz: der alte Satz „alle
+zwölf Seiten" bleibt als Verlauf stehen, der Nachtrag schreibt ihn auf **vierzehn** fort
+und benennt, welche zwei Zuordnungen nicht belegt, sondern gestrichen wurden.
+
+---
+
+#### B7 — [P1] Ordne den Visual-Mixer-Workflow ein — `docs/beweise/PR1.md:125`
+
+**Urteilstext der Erstprüfung, wörtlich:**
+
+> H5 führt den Neutron Visual Mixer selbst als belegte Funktion auf, aber der gesamte Vergleich §5 enthält dafür weder Registerzeile noch Fragenkarte noch eine Aussage, wie Nakama den zentralen Mehrinstanz-Mixworkflow löst. Dieser Workflow ist nicht mit dem EQ-Dry/Wet-Regler gleichzusetzen und fällt in die ausdrücklich geprüfte Kategorie „Mix-Analyse mit Sonden". Der Gate-Auftrag verlangt mindestens eine Einordnung als vorhanden, anders gelöst, außerhalb des Umfangs oder fehlend samt Auswirkung auf Vertrag, State und Oberfläche.
+
+**Nachmessung.** §5.1 hat keine Zeile dazu; H5 in §2.2 nennt den Visual Mixer
+ausdrücklich als belegte Funktion. Der Befund ist **Defekt**.
+
+**Einordnung des Dirigenten (30.08.2026): außerhalb des Produktumfangs.** Nakama regelt
+Klang über EQ — der Wahrheitskern in `CLAUDE.md` nennt Quellen, Befunde, Advisor und die
+EQ-Zentrale. Pegel und Pan aller Spuren aus einem Fenster zu stellen ist kein
+Nakama-Versprechen; Vertrag, State und Oberfläche sind nicht betroffen. Keine Fragenkarte,
+weil es kein Planbruch ist, sondern eine Grenze.
+
+**Ausgeführt.**
+
+| Stelle | Was |
+|---|---|
+| `docs/beweise/PR1.md` §5.1 | neue Zeile „Pegel und Panorama aller Spuren aus einem Fenster (Mehrinstanz-Mixworkflow)", Beleg H5, Einordnung „außerhalb des Produktumfangs", Spalte *betroffen* ausdrücklich leer mit Begründung |
+| `docs/offene-punkte.md` | **neue Zeile NAK-111** (Klasse Lücke): falls der User Pegel-/Pan-Steuerung will, ist das ein Produktentscheid mit eigener v3-Nachrichtenfamilie samt Lease, Rückweg und Schutzregeln — nach G2 eine Versionierung, keine Ergänzung |
+
+---
+
+### 9.3 Änderungssatz der Runde
+
+**Edits an Planquellen (R1-1 bis R1-11).**
+
+| # | Datei | Stelle | Befund |
+|---|---|---|---|
+| R1-1 | `docs/plan/plan.json` | `S16–17` | B1, B2, B3, B4 |
+| R1-2 | `docs/plan/plan.json` | `S18–19` | B4 |
+| R1-3 | `docs/plan/plan.json` | `S26–28` | B3 |
+| R1-4 | `docs/plan/plan.json` | `S29–31` | B3, B4 |
+| R1-5 | `docs/bauaufteilung-sonden.md` | §3, Zeile `S16–17` | B1, B2, B3, B4 |
+| R1-6 | `docs/bauaufteilung-sonden.md` | §3, Zeile `S18–19` | B4 |
+| R1-7 | `docs/bauaufteilung-sonden.md` | §3, Zeile `S26–28` | B3 |
+| R1-8 | `docs/bauaufteilung-sonden.md` | §3, Zeile `S29–31` | B3, B4 |
+| R1-9 | `docs/plan/fragen.json` | `offen[]`, Karte `U17` | B5 |
+| R1-10 | `docs/plan/fragen.json` | `offen[]`, Karte `U18` (`warum`) | B6 |
+| R1-11 | `docs/plan/fragen.json` | `offen[]`, Karte `U19` (`warum`) | B6 |
+
+**Neue Registerzeilen.** **NAK-110** (B3, Klasse Vertrag) und **NAK-111** (B7, Klasse
+Lücke). Fortlaufend nach der höchsten vorhandenen Nummer NAK-109.
+
+**Datierte Nachträge an vorhandenen Registerzeilen** (angehängt, nie umgeschrieben):
+NAK-10, NAK-28, NAK-29, NAK-40 (zwei Nachträge), NAK-59, NAK-79, NAK-107 — sieben Zeilen.
+
+**Karten.** Eine umgebaut (U17 → fünf Einzelentscheide U17.1–U17.5), zwei im `warum`
+berichtigt (U18, U19). Keine neue Karte, keine geschlossene Karte; `beantwortet{}`
+unangetastet.
+
+**Nicht angefasst.** `docs/FL-Nakama-Sonden-Design-Entwurf.md` — keiner der sieben
+Befunde verlangt einen Errata-Eintrag; die Entwurfsstellen §33.4/§33.5 sind die
+**Anforderung**, gegen die der Vertrag gemessen wurde, und bleiben unverändert richtig.
+
+---
+
+### 9.4 Beweislauf
+
+Gefahren am 2026-08-30 vom Workspace-Root `C:/Users/phili/Projekte/Nakama` auf dem Stand
+`2397790` (Planedits + Register + Karten committet, Manifest noch offen). Rohausgabe
+ungekürzt:
+
+```text
+### A) py -3.13 tools/plan/planstand.py
+geschrieben: docs\PLAN-STAND.md (18 abgenommen, 2 gebaut, 38 gesamt, aus 2397790)
+EXITCODE=0
+
+### B) py -3.13 tools/plan/antworten_blatt.py
+geschrieben: docs\ANTWORTEN-OFFEN.md (42 Antworten, 0 offen, 42 eingearbeitet, 13 mit eigenem Text)
+EXITCODE=0
+
+### C) JSON-Gueltigkeit
+docs/plan/plan.json -> gueltiges JSON 39714 Zeichen
+docs/plan/fragen.json -> gueltiges JSON 28485 Zeichen
+EXITCODE=0
+
+### D) git diff --stat 0e3908e..HEAD
+ docs/bauaufteilung-sonden.md |  8 ++++----
+ docs/offene-punkte.md        | 16 +++++++++-------
+ docs/plan/fragen.json        | 14 +++++++-------
+ docs/plan/plan.json          |  8 ++++----
+ 4 files changed, 24 insertions(+), 22 deletions(-)
+EXITCODE=0
+
+### E) Zaehlungen
+fragen.json offen: 8
+fragen.json beantwortet: 42
+U17 art: fünf Einzelentscheide, Button für Button
+U17 Einzelentscheide im was: 5
+Registerzeilen NAK-: 97
+hoechste Registernummer: NAK-111
+Herstellerquellen H1-Hn: 14
+
+### F) Tabellenriegel (jede Markdown-Tabelle durchgehend gleich viele Spalten)
+docs/offene-punkte.md:13 TABELLE UNEINHEITLICH: Zeile 22 NAK-74 (5), Zeile 26 NAK-78 (4),
+   Zeile 57 NAK-38 (4), Zeile 58 NAK-39 (4), Zeile 101 NAK-101 (5) - Bestand
+docs/beweise/PR1.md: sauber
+docs/bauaufteilung-sonden.md: sauber
+Tabellenriegel: 1 uneinheitliche Tabelle(n)
+EXITCODE=1
+```
+
+**Was die Läufe zeigen.**
+
+- **A** endet mit **Exitcode 0**. Das Blatt trug in diesem Lauf einen Hinweis, dass unter
+  `docs/beweise/` noch uncommittete Änderungen liegen — das war dieses Manifest selbst.
+  Der Lauf nach dem Manifest-Commit steht unten in §9.6 und ist ohne diesen Hinweis.
+- **B** `beantwortet{}` ist unverändert bei 42 Antworten, 0 offen — die Ticketgrenze hält.
+- **C** Beide Planquellen sind nach den Edits gültiges JSON. Zusätzlich hat jedes
+  Edit-Skript **vor** dem Schreiben geprüft, dass `json.dumps(…, indent=1,
+  ensure_ascii=False)` plus Schluss-Newline mit CRLF **bytegleich** zur Ausgangsdatei ist;
+  die Edits ändern damit nur Text, keine Formatierung. Beleg dafür ist der Diff: vier
+  geänderte Zeilen in `plan.json` bei vier geänderten Schritten, sieben in `fragen.json`
+  bei drei geänderten Karten.
+- **D** Der Änderungssatz berührt ausschließlich `docs/**` — vier Dateien, keine
+  Zeile Produktcode, Schema, Test, Fixture oder Runner.
+- **E** `offen[]` bleibt bei **8** Karten (keine geschlossen, keine neue), `beantwortet{}`
+  bei **42**, das Register wächst von 95 auf **97** Zeilen, höchste Nummer **NAK-111**,
+  die Quellenliste von 12 auf **14**.
+- **F** Ein zusätzlicher Riegel dieser Runde: er prüft, dass jede Markdown-Tabelle in
+  den drei geänderten Markdown-Dateien durchgehend gleich viele Spalten trägt — die
+  Klasse Fehler, die ein Zellen-Edit mit einem ungeschützten `|` erzeugt. **PR1.md und
+  `bauaufteilung-sonden.md` sind sauber.** In `docs/offene-punkte.md` meldet er fünf
+  Zeilen: NAK-74, NAK-78, NAK-38, NAK-39 und NAK-101. **Keine davon ist in dieser Runde
+  angefasst worden** — sie tragen seit ihrer Entstehung ungeschützte Pipes im Fließtext.
+  Alle **neun** in dieser Runde geschriebenen oder ergänzten Registerzeilen (NAK-10, -28,
+  -29, -40, -59, -79, -107, -110, -111) haben die korrekten drei Spalten. Der Riegel ist
+  bewusst mit Exitcode 1 stehen gelassen und nicht auf grün gedreht: er meldet einen
+  echten, vorbestehenden Darstellungsfehler, und ihn hier zu beheben wäre ein
+  Neben-Refactor an fremden Registerzeilen.
+
+**Riegel absichtlich gebrochen (Prüfliste E).** Die vier ausführbaren Riegel dieser Runde
+sitzen in den Edit-Skripten. Jeder ist einmal gegen einen absichtlich herbeigeführten
+Verstoß gefahren worden; Rohausgabe:
+
+```text
+--- Riegel 1: Roundtrip-Riegel gegen eine manipulierte Ausgangsdatei ---
+ABBRUCH: Roundtrip der Ausgangsdatei ist nicht bytegleich.
+EXITCODE=1
+
+--- Riegel 2: beantwortet{}-Riegel gegen eine absichtliche Aenderung ---
+ABBRUCH: beantwortet{} wurde veraendert.
+EXITCODE=1
+
+--- Riegel 3: Trefferzahl-Riegel der Markdown-Edits gegen einen nicht vorhandenen Anker ---
+ABBRUCH: 0 Treffer fuer '| Dynamische Baender | Pro-Q 4 (H3); TDR/Neutron |'
+EXITCODE=1
+
+--- Riegel 4: offen[]-Mengenriegel gegen eine geschlossene Karte ---
+ABBRUCH: offen[] hat sich in Menge oder Reihenfolge geaendert.
+EXITCODE=1
+```
+
+Alle vier sind rot geworden, keiner hat den Verstoß durchgelassen. Riegel 2 und 4 sind
+genau die Ticketgrenze („`beantwortet{}` nie anfassen, keine Karte schließen"); Riegel 3
+verhindert, dass ein Markdown-Edit an einer Stelle landet, die es gar nicht gibt, oder
+mehrfach zuschlägt.
+
+**Warum der Kanon nicht läuft.** Unverändert der Grund aus §8: `tools/beweise.ps1` baut
+und misst Produktcode, Tests, Schemas und Fixtures. Diese Runde berührt ausschließlich
+`docs/**` (Lauf D). Ein Kanon-Lauf würde denselben Stand messen wie der letzte Lauf zu
+`SONDE-010` und über diese Runde nichts aussagen.
+
+---
+
+### 9.5 Prüfliste — E und F, je Zeile mit Messort
+
+**A–D sind für ein Dokumentticket weiterhin nicht anwendbar**: kein Rückstauverhalten,
+kein Lebenszyklus, kein Längen- oder Alphabetvertrag, kein Bau- oder Prüfriegel im
+Änderungssatz (Beleg: Lauf D).
+
+#### E. Behauptung ≤ Messung
+
+| Zeile der Prüfliste | Wo in dieser Runde gemessen |
+|---|---|
+| „Jede Behauptung … sagt nicht mehr, als der Test misst — und nicht mehr, als das Gate verlangt" | Jede Nachmessung in §9.2 nennt Datei und Fundstelle und wurde an der Quelle gelesen. Negativaussagen tragen ihren Befehl mit Trefferzahl: `grep -c 'NAK-40' docs/beweise/SONDE-010.md` = 0 (B2), `grep -c 'welche Produktklasse' docs/plan/plan.json` = 0 (B1), `grep -c 'dazu der EQ-Zustand je Sonde als anzeigbare Wahrheit' docs/bauaufteilung-sonden.md` = 0 (B4; der Begriff kommt dort nur noch im Zitat der Berichtigung vor). Die zwei neuen Herstellerquellen tragen den wörtlichen Satz, den sie belegen — nicht eine Zusammenfassung davon (B6). |
+| „Zahlen im Manifest sind gemessen, nicht abgeschrieben" | §1.3 und §9.4, Lauf E: 8 offene Karten, 42 Antworten, 97 Registerzeilen, NAK-111, 14 Quellen — jede Zahl aus dem danebenstehenden Befehl. Die Zahlen des Erstdurchgangs (90 Registerzeilen, NAK-104, „2 offen vor diesem Ticket") bleiben unverändert stehen: sie sind mit ihrem Stichtag beschriftet. |
+| „Positionen im lebenden Kopf stehen als Symbol/Anker; im Verlauf gilt die Zeilennummer zum Stand ihres Abschnitts" | Der lebende Kopf (§1.3/§1.4) nennt keine Zeilennummern, nur Schritt-IDs, Kartenkennungen und Registernummern. Die Zeilennummern in §9.2 sind Zitate aus dem Codex-Urteil und stehen zum Stand `0e3908e`, ausdrücklich so bezeichnet; die stabilen Anker daneben sind Schritt-ID (`S16–17`), Abschnittsnummer (§33.4, §33.5) und Feldname (`state_report`, `command_ack`). |
+| „Der lebende Kopf wird beim Abschluss nachgezogen; alles darunter ist append-only" | §1.3 ist auf die Zahlen nach Runde 1 nachgezogen, §1.4 (Rundentabelle) neu. §2–§8 sind unverändert bis auf **datierte Nachträge an Ort und Stelle**; wo eine Aussage falsch war, steht sie durchgestrichen mit der Berichtigung daneben (§5.1) statt still ersetzt. Kein Absatz des Erstdurchgangs ist umgeschrieben worden. |
+| „Jede neue Prüfung wurde einmal absichtlich gebrochen; Rohausgabe des Rots liegt bei" | §9.4, Abschnitt „Riegel absichtlich gebrochen": vier Riegel, vier rote Läufe, Rohausgabe im Manifest. |
+| „Geänderte Zusage — drei Stellen, kein Inventar" | Drei Zusagen sind geändert worden, alle drei sind in **Plan und Bauaufteilung** nachgezogen: der EQ-Punkt auf der Landkarte (gestrichen, R1-2 + R1-6), die v3-Vertragsrunde (neu, R1-1 + R1-5), der DSP-Rückweg (neu, R1-1/R1-3/R1-4 + R1-5/R1-7/R1-8). Die dritte Stelle — der Runnerkopf in `tools/beweise.ps1` — ist nicht betroffen: keine Runner-Behauptung berührt eine dieser Zusagen (`grep -c 'state_report' tools/beweise.ps1` = 0). |
+| „Writer-Fixtures statt Handschrift" | greift nicht — kein Fixture im Änderungssatz. |
+
+#### F. Änderungssatz
+
+| Zeile der Prüfliste | Wo in dieser Runde gemessen |
+|---|---|
+| „speichern↔laden, starten↔stoppen, öffnen↔schließen, verbinden↔trennen, aktivieren↔abklingen, installieren↔Rückweg im selben Commit" | Zwei Gegenpaare sind berührt, beide beidseitig. **starten↔stoppen des Brokers:** unverändert aus dem Erstdurchgang in derselben Schrittzeile S16–17 („Starten und Beenden gehören in denselben Änderungssatz, ebenso der Rückweg über den vorhandenen Installer") — der Umbau der Zeile hat den Satz mitgenommen, nicht verloren. **verbinden↔trennen:** NAK-28 kommt in dieser Runde als `unsubscribe_session` in die v3-Vertragsrunde; der Gegenpfad ist damit erstmals einem Ticket zugeordnet und nicht nur benannt. Dazu **speichern↔laden** auf der Vertragsebene: NAK-110 verlangt den DSP-Rückweg (`state_report.dsp`) im selben Ticketzug wie das DSP-DTO, das ihn schreibt — S26–28 baut beides. |
+| „Writer, Reader, Migration, Fixtures und Cross-Language-Verbraucher eines Vertrags im selben Änderungssatz" | **Greift als Befund, nicht als Pflicht:** diese Runde ändert keinen Vertrag, sie plant ihn. Genau deshalb ist die v3-Vertragsrunde als **ein** Lieferumfang in S16–17 eingetragen und nicht auf mehrere Tickets verteilt: NAK-29 (Schema mit C++- und Rust-Leser), NAK-59 (`.fbs` mit `flatc`-Codegen, Drift-Test und beiden handgeschriebenen Lesern) und NAK-40 (Adressableitung mit State-Migration) tragen jeweils beide Sprachhälften und ihre Fixtures — sie in getrennten Tickets zu fahren wäre genau der Bruch, den diese Zeile verbietet. Die vier Reservierungen sind bewusst **Namen ohne Nutzlast**: ein Name bricht nichts, eine halbe Nutzlast schon. |
+
+---
+
+### 9.6 Nachlauf nach dem Beweislauf
+
+Auf `2397790` folgen der Manifest-Commit dieser Runde und der gerechnete Planstand, beide
+wieder ausschließlich unter `docs/**`. Der Planstand-Lauf auf dem finalen Stand:
+
+<!-- RUNDE1-NACHLAUF -->
+
+**Keine Urteilsmarke.** Diese Runde setzt keine `NAKAMA-URTEIL`-Zeile; PR1 bleibt im
+gerechneten Planstand *gebaut, nicht abgenommen*, bis der Dirigent nach einer frischen
+Prüfung urteilt.

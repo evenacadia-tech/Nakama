@@ -2,6 +2,7 @@
 
 <!-- NAKAMA-URTEIL: T1 PASS 2026-08-29 -->
 <!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-29 nachgearbeitet -->
+<!-- NAKAMA-URTEIL: T2 PASS 2026-08-30 -->
 
 | Feld | Wert |
 |---|---|
@@ -1554,3 +1555,19 @@ SONDE-010 NAK-104 Runde 2" direkt oberhalb).
   Der in Runde 1 nachgetragene Test blockiert erst im TRENN-Callback und
   betritt das Kopplungsfenster nie; genau deshalb hat er diesen Fall nicht
   gefunden.
+
+---
+
+## Dirigentenstand — 2026-08-30 (Sitzung 3e24ab41): S14–15 `SONDE-010` **T2 PASS** — NAK-95, NAK-98 und NAK-104 geschlossen
+
+**Stand dieses Abschnitts:** `83f7d7e`. NAK-104 Runde 1 `7f29dc5..cab288b` durch Opus/max `nakama-nak104-7f29dc5-bau` (0d444bd0), Aufsicht ENG: Fix `b4fe522`, Kanon GRÜN 32/32 auf `b4fe522`, B10 207 Prüfungen, je Defekt eine Bruchprobe (`roh/SONDE-010-bruchproben-nak104.md`); Wiederprüfung Codex xhigh Thread `01a0535a-5ae6-7460-8d95-9d447495ba6d` (546 s): die vier Befunde geschlossen, ein neuer P1 — Trennpflicht der Telemetrieseite erst nach Rückkehr von `telemetrie_gekoppelt` gesetzt (`C-LS-06`-Fenster), vom Dirigenten an der Quelle bestätigt. NAK-104 Runde 2 `cab288b..83f7d7e` durch `nakama-nak104r2-cab288b-bau` (c5714a76): Fix `e517165` (`erwartet` steht ab Kopplung), Test für genau das Fenster, zwei Bruchproben (`roh/SONDE-010-bruchproben-nak104-r2.md`), Kanon GRÜN 32/32 auf `53f517b` (`roh/SONDE-010-53f517b.md`). Basis der Ursachenrunde `05235cf`; Ticketbasis `a7b0740`.
+
+**Ursachenrunde nach Konvergenzentscheid (§3.4, Wegwechsel):** Phase 1 Verhaltensmatrix `d31ae1c` (Opus/max `nakama-s1415-05235cf-bau`, 7bf24d7d); Matrixprüfung Codex high Thread `01a052bf-3248-7cc3-a18e-28db63762563` — elf Punkte, vom Dirigenten je mit Regel entschieden; Phase 1b Nachtrag `7deff2e` (9a7e132c); Wiederprüfung der Matrix Thread `01a052cf-fc76-7d83-9966-c571295f84cf` — acht umgesetzt, drei Restwidersprüche (`C-LS-06` Fristfall, `B-TC-07` rückstauend, `C-LS-07` gegen `A-IN-03`) vom Dirigenten entschieden und in Phase 2 als datierter Nachtrag in die Matrix gezogen; Phase 2 Implementierung nach Matrix in C++ und Rust (6cc62362, Aufsicht ENG): `7457684`, `f821f9d`, `c98bdf9` (Selbstaudit: Laufnummer je Clientlauf), `c72d51e`. Kanon GRÜN 32/32 auf `7457684` und auf dem End-Stand `c98bdf9` (`docs/beweise/roh/SONDE-010-7457684.md`, `SONDE-010-c98bdf9.md`); B10 `EqCopIpcTest` 161 → 192 Prüfungen, Rust 146 Lib-Tests + 9 + 9; A22 10 016/10 016 P0 beantwortet (max 22 ms); jede Matrixzeile mit Bruchprobe (`SONDE-010-bruchproben-phase2.md`).
+
+**Wiederprüfung der Ursachenrunde** (Vorlage B, `05235cf...c72d51e`, Thread `01a05313-2d88-7ce1-becc-3ca4cd50fc42`, xhigh): NEEDS_WORK mit vier Restdefekten → NAK-104 (Abschnitt darüber). **Wiederprüfung NAK-104 Runde 2** (Vorlage B, Fixdiff `cab288b...83f7d7e` über `broker/src/transport broker/tests`, Matrix als Referenz): Codex `gpt-5.6-sol`, Effort `xhigh`, frischer Thread `01a0537a-4477-7f90-aaad-be51a9ace634`, HEAD vor/nach `83f7d7e`, 157 s — wörtlich (der Review-Modus gab keine „URTEIL:"-Kopfzeile aus; beide Fragen der Vorlage B sind beantwortet — Befund geschlossen, nichts gebrochen —, der Dirigent wertet das als PASS; die Testzahlen im Zitat stammen aus dem Lesen der Rohausgaben, nicht aus einem eigenen `cargo test`):
+
+> Geprüft: `verbindung_bedienen` setzt `erwartet` vor `telemetrie_gekoppelt`; der exakte Callback-Fenstertest ist grün und ohne Fix nachweislich rot. Der Fixdiff bricht keine geprüfte Matrix-, Gate- oder CLAUDE-Invariante; 59 Transport-, 9 Vertrags- und 9 Fuzz-Tests bestanden. Nicht geprüft: `cargo test` war wegen der schreibgeschützten Cargo-Lockdatei blockiert; HEAD blieb 83f7d7e.
+
+**Urteil des Dirigenten:** Die Marke `T2 PASS 2026-08-30` steht im Kopf. Prüferkette dieses Tickets: T2 Runde 1–4 (29.08., vier frische Threads, 30 Befunde geschlossen), Konvergenzentscheid 30.08. (NAK-95: vier Defekte, vier Lücken mit Regel; NAK-98: Defekt), Matrixprüfung und -wiederprüfung, Wiederprüfung der Ursachenrunde PASS. Das Gate „CRC/Fuzz/Backpressure/Reconnect ohne P0-Starvation" ist gemessen: CRC und Fuzz (B10, A21, A20), Backpressure in allen vier Politiken beider Sprachen (Matrix A), Reconnect (A-P1-11, B-CC-14/15, B-TC-10), P0 ohne Starvation clientseitig (B-CC-06/07) und brokerseitig (C-LS-07, A22). Die Vorbedingung von `SONDE-011` (NAK-92 → NAK-95) ist damit erfüllt; die Matrix bleibt Referenz für den Coordinator.
+
+**Rundenbilanz** (`tools/dirigent/rundenbilanz.py`, S14–15-eigene Runden): Bau `a7b0740..97c956d` Produkt +5593/−7, Tests +1867/−0, Prüfwerkzeug +671/−0; R1 `97c956d..6fc3224` Produkt +1534/−163, Tests +354/−41; R2 `6fc3224..a0053e4` Produkt +662/−93, Tests +576/−25; R3 `a0053e4..444e125` Produkt +581/−75, Tests +83/−19; Ursachenrunde `05235cf..c72d51e` Produkt +1341/−329, Tests +391/−2, Prüfwerkzeug +1/−1, Doku +6650/−0; NAK-104 R1 `7f29dc5..cab288b` Produkt +437/−66, Tests +318/−0, Doku +3386/−0; NAK-104 R2 `cab288b..83f7d7e` Produkt +201/−10, Doku +3361/−0. Keine Runde ohne Produktfortschritt; Befunde je Prüfrunde 10 → 7 → 6 → 7 → 4 → 1 → 0.

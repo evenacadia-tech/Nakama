@@ -1,5 +1,13 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ✅ NACHTRAG — 30.08.2026, Fable-Sitzung 3e24ab41 (Dirigent), Abschluss — S9 und S9b abgenommen, S14–15 T2 PASS; nächster Schritt G1-Gate
+>
+> **User-Wort 30.08.:** „bedenke langsam neuen dirigenten session zu starten, aber erst alles sauber zu ende"
+>
+> **Erledigt (alles gepusht):** (1) **S9 `SONDE-007b` T3 PASS** — Konvergenzentscheid NAK-88 = Lücke, Runde 4 Textbegrenzung (`1bfc8b0`), Kanon 32/32, Prüfer Codex high `01a05286` PASS. (2) **S9b `SONDE-007c` T2 PASS** — NAK-89 = Lücke in drei Teilen, Runde 4 (`aadca53`) + Nachtrag Leerraum (`977bf48`), Prüfer `01a05299` (ein P2, geschlossen) und `01a052a1` PASS. (3) **S14–15 `SONDE-010`** — Konvergenzentscheid NAK-95/NAK-98 (vier Defekte, vier Lücken mit Regel) → Ursachenrunde mit **Verhaltensmatrix** im lebenden Kopf (`d31ae1c`, Nachtrag `7deff2e`; Matrixprüfer `01a052bf` elf Punkte, `01a052cf` drei Restpunkte, je vom Dirigenten entschieden) → Implementierung C++/Rust nach Matrix (`7457684`, `c98bdf9`, `c72d51e`; B10 161 → 192) → Wiederprüfung `01a05313` xhigh NEEDS_WORK mit vier Restdefekten → nach §3.4 als **NAK-104** ausgegliedert und sofort als eigene Runde gefahren (`b4fe522`, B10 207, vier Bruchproben) → Wiederprüfung `01a0537a-4477-7f90-aaad-be51a9ace634` **PASS**. Planstand 18 von 38 abgenommen · 1 gebaut · 19 offen. Rundenbilanzen stehen in den Dirigentenständen der Manifeste.
+>
+> **Als Nächstes (Reihenfolge, `docs/beweise/G1.md` §13):** **G1-Gate-Lauf** — T3 mit `/c-review`, `/rust-review`, Codex und den Bruchaufträgen Gate 1 und Gate 7 (G1 §2); ein Phasengate ist Haltgrund §4 des Dirigentenvertrags, der Dirigent legt es dem User als Frage vor. Danach PR1 (Planprüfung), dann `SONDE-011` (die Matrix in `SONDE-010.md` bleibt Referenz für den Coordinator). Ein frischer Dirigent startet per `tools/dirigent/start-dirigent.ps1`.
+>
 > ## ✅ NACHTRAG — 30.08.2026, Fable-Sitzung 9f06075a, Abschluss (NAK-100 erledigt, Manifeste diätiert) — nächster Dirigent startet auf User-Wort
 >
 > **User-Wort 30.08.:** „wenn du mit allem fertig bist, mache ich eine neue dirigent session auf, das alles weiter automatisch läuft" · „schaue dort auch nach ob es noch verbesserungen gibt um den ablauf zu verbessern".

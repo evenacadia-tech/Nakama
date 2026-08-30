@@ -180,7 +180,15 @@ Unerklärliches → Worker stoppen, Ersatzworker mit engerer Grenze.
 Kein Selbstbericht zählt; gemessen wird am Repo:
 
 - Diff vom Basis-SHA bis HEAD (zuerst `--stat`, dann nur relevante Hunks),
-- das Ticketmanifest, die gezielten Tests, unberührte fremde Pfade.
+- das Ticketmanifest, die gezielten Tests, unberührte fremde Pfade,
+- die **Rundenbilanz** (seit 30.08.2026): `py -3.13
+  tools/dirigent/rundenbilanz.py <vorher>..HEAD` je Runde und
+  `--runden <basis> <r1> <r2> …` kumuliert. Sie zählt Produkt-, Test-,
+  Prüfwerkzeug- und Doku-Zeilen getrennt. Ihre Ausgabezeile steht in jedem
+  Dirigentenstand. Zwei Runden in Folge **ohne Produktfortschritt**
+  (Produkt + Tests = 0 Zeilen) lösen den Konvergenzentscheid aus (§3.4) —
+  auch vor dem Rundenbudget. S8 hatte zwölf solche Runden in Folge, und
+  niemand hat sie gezählt.
 
 Beendet heißt: Arbeitsbaum sauber, Basis-SHA ist Vorfahr des gemessenen HEAD,
 und genau dieser HEAD liegt auf `origin/master`. Fremde Commits → Halt.
@@ -203,8 +211,11 @@ $solEffort = 'xhigh' # oder 'high', Regel unten
 $reviewJsonl = Join-Path $env:TEMP "nakama-$headSha-review.jsonl"
 $reviewLast = Join-Path $env:TEMP "nakama-$headSha-review-last.txt"
 
-# $reviewPrompt ist das einzige Review-Ziel. Er nennt Basis- und Ziel-SHA,
-# unveränderten Gate-Text, Manifest und den vollständigen Ticketbereich.
+# $reviewPrompt ist das einzige Review-Ziel. Er entsteht aus
+# tools/dirigent/pruefauftrag-vorlage.md (Variante A für Erst-/Abschluss-
+# prüfung, Variante B für Wiederprüfungen) mit ausgefüllten Platzhaltern:
+# Basis- und Ziel-SHA, die Ticketpfade (nie `.`), Gate-Text wörtlich,
+# Matrix, Ausschlüsse. Freie Prompts sind nicht zulässig.
 $reviewPrompt | codex -a never exec --ignore-user-config `
   -m gpt-5.6-sol -c "model_reasoning_effort=`"$solEffort`"" `
   -c 'windows.sandbox="elevated"' `
@@ -257,6 +268,15 @@ datierten Härtungen als erklärten Ausschluss und stellt klar, dass
 `tools/dirigent/pruefliste.md` eine Arbeitsliste des Workers ist, keine
 Anforderungsquelle, und dass §2.4 des Codex-Skills `sondenplan-audit`
 („Wiederholung bis lückenlos") für Gate-Audits gilt, nicht für Ticketreviews.
+
+**Der Nacharbeitsauftrag enthält nur die Defekte.** Der Dirigent gibt dem
+Worker die bestätigten Defekte wörtlich, je Defekt die Regel, die ihn
+schließt, und die Prüfliste — sonst nichts. Er erweitert keinen Befund um
+eigene Wünsche (Inventare, Klassifizierer, zusätzliche Wachen, Muster,
+Trefferzahlen): S8 Runde 10–19 zeigte, dass genau solche „Regeln des
+Dirigenten" die nächste Runde erzeugen. Was der Prüfer nicht als Defekt
+erhoben hat, kommt nicht in den Auftrag; Ideen des Dirigenten gehen datiert
+ins Register.
 
 Bestätigte Befunde behebt **derselbe** Thread:
 
@@ -345,7 +365,8 @@ Zeilen, wandert der Rundenverlauf unverändert nach
 `docs/beweise/<TICKET>-verlauf.md` (append-only, kein Prüfgegenstand), der
 jüngste Kanon-Abschnitt bleibt im Manifest, weil `planstand.py` seine
 Bilanz dort liest.
-Urteil, Modell, Effort, Basis- und End-SHA sowie die tatsächlich gelaufenen
+Urteil, Modell, Effort, Basis- und End-SHA, die kumulierte Rundenbilanz
+(`rundenbilanz.py --runden …`) sowie die tatsächlich gelaufenen
 Beweise ins **vorhandene** Manifest; Planstand neu rechnen; nur diese
 Abschlussdateien mit explizitem Pathspec committen und pushen. Dann: temporäre
 Codex-Dateien und alle exakt zur Dirigenten-Session gehörenden
@@ -454,3 +475,6 @@ Recovery-Datei bauen.
 - Ein Manifest zum Prüfgegenstand machen, eine Wiederprüfung über den ganzen
   Ticketbereich fahren oder eine vierte Nacharbeitsrunde ohne
   Konvergenzentscheid starten.
+- Einen Prüfauftrag frei formulieren statt aus der Vorlage, eine Runde ohne
+  Rundenbilanz abschließen oder einem Worker mehr auftragen, als der Prüfer
+  als Defekt erhoben hat.

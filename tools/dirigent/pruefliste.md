@@ -61,7 +61,11 @@ kein Prüfgegenstand.
 
 - Jede Behauptung im Runner, Manifest oder Kommentar sagt nicht mehr, als der
   Test misst („keine Allokation" braucht einen Allokationszähler; „isoliert
-  gemessen" braucht die isolierte Probe).
+  gemessen" braucht die isolierte Probe) — und **nicht mehr, als das Gate
+  verlangt**: eine Runner-Behauptung nennt das Gate-Maß in wenigen Sätzen;
+  Wachen, Vorstufen und Ausnahmen gehören in den Skriptkopf, nicht in die
+  Behauptung. Die A14-Behauptung war am 30.08. 6 000 Zeichen lang und selbst
+  Befundquelle (30.08.2026).
 - Zahlen im Manifest (Beinanzahl, Verbraucher, Fixtures) sind gemessen, nicht
   aus einer anderen Datei abgeschrieben.
 - Positionen im **lebenden Kopf** eines Manifests stehen als Symbol/Anker;

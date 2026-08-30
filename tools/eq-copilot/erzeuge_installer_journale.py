@@ -62,7 +62,9 @@ Aufrufe:
   py -3.13 tools/eq-copilot/erzeuge_installer_journale.py            # erzeugen
   py -3.13 tools/eq-copilot/erzeuge_installer_journale.py --pruefen  # Hashes nachrechnen
 
-Exitcodes: 0 gruen · 2 rot (Erzeugung fehlgeschlagen oder Hash weicht ab).
+Exitcodes: 0 gruen · 2 rot (Erzeugung fehlgeschlagen, Hash weicht ab, eine im
+MANIFEST gefuehrte Datei fehlt, eine verwaiste Datei liegt daneben oder eine
+Statusklasse aus JOURNAL_PFLICHTSTATUS fehlt im Korpus).
 """
 
 from __future__ import annotations
@@ -83,7 +85,9 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from pruefe_installer_gegenpfad import (  # noqa: E402
     BROKER_POLICY_ALT, RUHE_ALT, RUHE_NEU, VST_POLICY_ALT, bundle_bauen,
 )
-from pruefe_installer_manifest import datei_hash, ordner_hash  # noqa: E402
+from pruefe_installer_manifest import (  # noqa: E402
+    JOURNAL_PFLICHTSTATUS, datei_hash, ordner_hash,
+)
 
 INSTALL = WURZEL / "eq-copilot" / "install"
 IDENTITAET = WURZEL / "eq-copilot" / "identity" / "plugin-identities-v1.json"
@@ -110,6 +114,15 @@ def pruefen() -> int:
     auch dort, wo kein Installerlauf moeglich ist. Sie beantwortet die Frage
     "hat jemand eine Fixtur von Hand angefasst?", nicht "ist die Mechanik
     noch dieselbe".
+
+    BEFUND NAK-94, Pruefer 6 (30.08.2026): eine im MANIFEST gefuehrte, aber
+    fehlende Datei war hier schon rot - eine Fixtur, die ZUSAMMEN mit ihrer
+    MANIFEST-Zeile verschwindet, dagegen nicht. Am Stand `165d9ae` gemessen:
+    ohne `error-rueckgerollt.json` und ohne ihren Eintrag lief `--pruefen` mit
+    Exit 0 durch und meldete drei Fixturen als vollstaendig. Deshalb haengt
+    diese Haelfte jetzt an derselben Statusachse wie [3b]
+    (`JOURNAL_PFLICHTSTATUS`, importiert statt abgeschrieben): sie steht
+    ausserhalb des Korpus und laesst sich nicht mit ihm loeschen.
     """
     if not MANIFEST_WEG.is_file():
         print(f"FEHLER  kein MANIFEST: {MANIFEST_WEG}")
@@ -138,6 +151,13 @@ def pruefen() -> int:
     for weg in sorted(JOURNALE.glob("*.json")):
         if weg.name != "MANIFEST.json" and weg.name not in genannt:
             klagen.append(f"{weg.name}: liegt da, steht aber in keinem MANIFEST-Fall")
+    # Derselbe Anker wie in [3b]: eine ganze Statusklasse darf nicht samt
+    # ihrer MANIFEST-Zeile verschwinden, ohne dass es jemand sagt.
+    vorhanden = {fall.get("status") for fall in manifest["faelle"]}
+    for pflicht in JOURNAL_PFLICHTSTATUS:
+        if pflicht not in vorhanden:
+            klagen.append(f"kein Fall mit Journalstatus {pflicht} - der Korpus "
+                          "traegt die Zusagen von [3b] nicht mehr")
     if klagen:
         print("\nFEHLGESCHLAGEN:")
         for k in klagen:

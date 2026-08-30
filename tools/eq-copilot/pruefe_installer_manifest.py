@@ -81,8 +81,13 @@ DREI HAERTEGRADE FUER DENSELBEN HASH (NAK-94, 29.08.2026)
   artefaktweisen "installierter Stand unbekannt (Journalstatus RUECKWEG)".
   Die Liste wird deshalb nur noch im Status-OK-Pfad verlangt.
 
-  [3b] laesst beide Kanten einmal fallen - eine Wache, die niemand hat fallen
-  sehen, ist keine.
+  [3b] ist nach ZUSAGEN gegliedert (Z1..Z7) und laesst JE ZUSAGE genau EINEN
+  eigenen Bruch fallen - eine Wache, die niemand hat fallen sehen, ist keine.
+  Eine Zusage, die ueber mehrere Werte parametrisiert ist (das OK-Urteil ueber
+  jede OK-Fixtur, die Statussperre ueber jeden Nicht-OK-Status), ist EINE
+  Zusage mit EINEM Bruch; ihre Werte zaehlt die Ausgabe, nicht dieser Text.
+  Die Brueche B6-Z1..B6-Z7 stehen mit ROT und Ruecknahme in
+  docs/beweise/SONDE-007c.md (NAK-94 Nacharbeit 6, 30.08.2026).
 
   ZWEI SORTEN PROBE-JOURNALE, seit NAK-94 Nacharbeit 5 (30.08.2026):
 
@@ -93,6 +98,12 @@ DREI HAERTEGRADE FUER DENSELBEN HASH (NAK-94, 29.08.2026)
                     tools/eq-copilot/erzeuge_installer_journale.py). [3b]
                     rechnet die Hashes vor der Benutzung nach - eine von Hand
                     angefasste Fixtur ist ROT, nicht stillschweigend anders.
+                    PFLICHT ist JEDER im MANIFEST gefuehrte Fall; daneben muss
+                    die Statusachse JOURNAL_PFLICHTSTATUS vertreten sein, die
+                    ausserhalb des Korpus steht und sich deshalb nicht mit ihm
+                    loeschen laesst. Welche Fixtur welche Achse traegt, liest
+                    [3b] aus dem MANIFEST - eine fuenfte faehrt automatisch
+                    mit.
 
     Mutant          im Skript aus GENAU EINER Writer-Fixtur abgeleitet, mit
                     benannter Abweichung (`mutant_von`, `abweichung`). Fuer
@@ -159,10 +170,17 @@ ERGEBNIS_STATUS_OK = "OK"
 # null sein - Install-Nakama.ps1 bricht sonst ab, bevor es schreibt).
 JOURNAL_FIXTUREN = (WURZEL / "eq-copilot" / "fixtures" / "installer" / "journale")
 JOURNAL_FIXTUR_MANIFEST = JOURNAL_FIXTUREN / "MANIFEST.json"
-# Ohne diese drei Faelle misst [3b] die Writer-Form nicht mehr vollstaendig.
-# Fehlt einer, bricht der Block laut ab, statt still weniger zu pruefen.
-JOURNAL_PFLICHTFAELLE = ("ok-erstinstallation.json", "ok-nach-tausch.json",
-                         "rueckweg-nach-gegenpfad.json")
+# Pflichtmenge sind ALLE Faelle aus MANIFEST.json - keine handgepflegte
+# Teilmenge mehr. Fehlt einer, bricht [3b] laut ab, statt still weniger zu
+# pruefen (Befund NAK-94, Pruefer 6, 30.08.2026: die alte Namensliste nannte
+# drei von vier Dateien, und die vierte Probe uebersprang sich selbst).
+#
+# Ein zweiter Anker haelt den Fall, dass eine Fixtur ZUSAMMEN mit ihrer
+# MANIFEST-Zeile verschwindet: die Statusachse, ueber die [3b] etwas
+# behauptet. Sie steht hier - ausserhalb des Korpus -, damit ein Loeschen im
+# Korpus sie nicht mitnimmt. Wer eine Statusklasse aus dem Korpus nimmt, muss
+# die Zusage hier mit derselben Hand streichen.
+JOURNAL_PFLICHTSTATUS = ("OK", "RUECKWEG", "ERROR_RUECKGEROLLT")
 HEX64 = re.compile(r"^[0-9A-F]{64}$")
 THUMBPRINT = re.compile(r"^(?:[0-9A-F]{40}|[0-9A-F]{64})$")
 ARTEN = ("vst3", "broker")
@@ -961,42 +979,65 @@ def _probelauf(arbeit) -> tuple[str, list[str]]:
     return puffer.getvalue(), gefunden
 
 
-def _writer_fixturen() -> dict[str, tuple[bytes, dict, dict]]:
-    """Die eingefrorenen Writer-Journale laden - fail-closed.
+def _writer_fixturen() -> tuple[dict[str, tuple[bytes, dict, dict]], list[str]]:
+    """[3b] Z1: die eingefrorenen Writer-Journale laden - fail-closed.
 
-    Gibt je Fall `(rohe Bytes, gelesener Kopf, MANIFEST-Eintrag)` zurueck. Die
-    Bytes werden VOR der Benutzung gegen den SHA-256 aus MANIFEST.json
-    nachgerechnet: eine von Hand angefasste Fixtur ist damit ROT und nicht
-    still eine andere Probe. Fehlt der Korpus oder ein Pflichtfall, bricht der
-    Block laut ab - eine stillschweigend ausgelassene Gegenprobe ist schlimmer
-    als keine (dieselbe Regel wie in adversariale_strukturproben).
+    Gibt `(korpus, klagen)` zurueck; `korpus` bildet je Fall auf
+    `(rohe Bytes, gelesener Kopf, MANIFEST-Eintrag)` ab. Eine nicht leere
+    Klagenliste heisst: der Korpus traegt [3b] nicht mehr. Der Aufrufer macht
+    daraus eine ROTE Zeile UND bricht den Block ab - eine stillschweigend
+    ausgelassene Gegenprobe ist schlimmer als keine (dieselbe Regel wie in
+    adversariale_strukturproben).
+
+    Pflicht ist JEDER in MANIFEST.json gefuehrte Fall; die Bytes werden vor
+    der Benutzung gegen den dort festgeschriebenen SHA-256 nachgerechnet, und
+    eine verwaiste Datei im Korpusverzeichnis ist derselbe Befund wie eine
+    fehlende. Dazu muss die Statusachse JOURNAL_PFLICHTSTATUS vertreten sein.
+
+    BEFUND NAK-94, Pruefer 6 (30.08.2026): bis hierher war die Pflichtmenge
+    ein Namenstupel mit DREI der vier Dateien, und die vierte Probe uebersprang
+    sich weiter unten ausdruecklich selbst. Fiel `error-rueckgerollt.json`
+    samt MANIFEST-Zeile weg, blieben A17 und
+    `erzeuge_installer_journale.py --pruefen` gruen - am Stand `165d9ae`
+    gemessen als 113 statt 114 ok, ohne eine einzige Zeile darueber. Zwei
+    Anker schliessen das: die Pflichtmenge IST jetzt das MANIFEST, und die
+    Statusachse liegt ausserhalb des Korpus.
     """
+    klagen: list[str] = []
     if not JOURNAL_FIXTUR_MANIFEST.is_file():
-        raise SystemExit(
-            "Gegenprobe unmoeglich: der Writer-Journalkorpus fehlt "
-            f"({JOURNAL_FIXTUR_MANIFEST.relative_to(WURZEL).as_posix()}). "
-            "Erzeugen mit: py -3.13 tools/eq-copilot/erzeuge_installer_journale.py")
+        return {}, [
+            "der Writer-Journalkorpus fehlt "
+            f"({JOURNAL_FIXTUR_MANIFEST.relative_to(WURZEL).as_posix()}) - "
+            "erzeugen mit: py -3.13 tools/eq-copilot/erzeuge_installer_journale.py"]
     korpus = json.loads(JOURNAL_FIXTUR_MANIFEST.read_text(encoding="utf-8"))
     geladen: dict[str, tuple[bytes, dict, dict]] = {}
     for fall in korpus["faelle"]:
         weg = JOURNAL_FIXTUREN / fall["datei"]
         if not weg.is_file():
-            raise SystemExit(f"Writer-Fixtur fehlt: {fall['datei']}")
+            klagen.append(f"{fall['datei']}: im MANIFEST gefuehrt, liegt aber nicht vor")
+            continue
         rohe = weg.read_bytes()
         ist = hashlib.sha256(rohe).hexdigest().upper()
         if ist != fall["sha256"]:
-            raise SystemExit(
-                f"Writer-Fixtur {fall['datei']} ist nicht die eingefrorene: "
-                f"SHA-256 {ist} statt {fall['sha256']}. Von Hand geaendert? "
-                "Dann ist sie keine Writer-Form mehr.")
+            klagen.append(
+                f"{fall['datei']}: SHA-256 {ist} statt {fall['sha256']} - von Hand "
+                "geaendert? Dann ist sie keine Writer-Form mehr")
+            continue
         geladen[fall["datei"]] = (rohe, json.loads(rohe.decode("utf-8-sig")), fall)
-    fehlend = [f for f in JOURNAL_PFLICHTFAELLE if f not in geladen]
-    if fehlend:
-        raise SystemExit(
-            "Gegenprobe unmoeglich: der Writer-Journalkorpus fuehrt die "
-            f"Pflichtfaelle {fehlend} nicht - ohne sie misst [3b] die "
-            "Writer-Form nicht vollstaendig.")
-    return geladen
+    # Eine verwaiste Datei ist derselbe Befund wie eine fehlende: sie koennte
+    # von Hand danebengelegt werden und saehe wie eine Writer-Fixtur aus.
+    genannt = {fall["datei"] for fall in korpus["faelle"]}
+    for weg in sorted(JOURNAL_FIXTUREN.glob("*.json")):
+        if weg.name != "MANIFEST.json" and weg.name not in genannt:
+            klagen.append(f"{weg.name}: liegt im Korpus, steht in keinem MANIFEST-Fall")
+    # Der Anker, den ein Loeschen im Korpus NICHT mitnimmt.
+    vorhanden = {fall.get("status") for fall in korpus["faelle"]}
+    fehlt = [s for s in JOURNAL_PFLICHTSTATUS if s not in vorhanden]
+    if fehlt:
+        klagen.append(
+            f"kein Fall mit Journalstatus {', '.join(fehlt)} - [3b] behauptet "
+            "sonst etwas ueber eine Statusklasse, die es nicht mehr misst")
+    return geladen, klagen
 
 
 def _manifest_zum_journal(manifest: dict, journal: dict) -> dict:
@@ -1025,28 +1066,64 @@ def _manifest_zum_journal(manifest: dict, journal: dict) -> dict:
 
 
 def gegenproben_nacharbeit(manifest: dict) -> None:
-    """[3b] Die beiden Kanten aus NAK-94 Nacharbeit 1, einzeln gebrochen.
+    """[3b] Die Gegenproben zu [4] und [4b] - gegliedert nach ZUSAGEN.
 
-    Beide Befunde waren stille Ausfaelle: C1 liess ein fehlendes Bundle im
-    Kanon gruen, C2 toetete den Lauf mit einem TypeError. Eine Wache, die
-    niemand hat fallen sehen, ist keine - also faellt sie hier.
+    Beide Ursprungsbefunde waren stille Ausfaelle: C1 liess ein fehlendes
+    Bundle im Kanon gruen, C2 toetete den Lauf mit einem TypeError. Eine
+    Wache, die niemand hat fallen sehen, ist keine - also faellt sie hier.
 
-    Seit NAK-94 Nacharbeit 5 (30.08.2026) faehrt dieser Block ZWEI Sorten
+    Seit NAK-94 Nacharbeit 5 (30.08.2026) faehrt der Block ZWEI Sorten
     Probe-Journale und nennt sie in jeder Zeile: eingefrorene Writer-Fixturen
     und daraus abgeleitete, benannte Mutanten. Handschrift gibt es nicht mehr.
+
+    NAK-94 Nacharbeit 6 (30.08.2026), Regel des Dirigenten nach dem Befund des
+    sechsten Pruefers: der Block ist nach ZUSAGEN gegliedert (Z1..Z7), und JE
+    ZUSAGE gibt es genau EINEN diskriminierenden Bruch (B6-Z1..B6-Z7, belegt
+    mit ROT und Ruecknahme in docs/beweise/SONDE-007c.md). Eine Zusage, die
+    ueber mehrere Werte parametrisiert ist - das OK-Urteil ueber jede
+    OK-Fixtur, die Statussperre ueber jeden Nicht-OK-Status -, ist EINE
+    Zusage; ihre Werte zaehlt die Ausgabe, nicht dieser Text.
     """
     global INSTALL_ERGEBNIS
     print("\n[3b] Gegenproben zu [4] Auslieferungsstand und [4b] installiertem Stand")
+    print("     Gegliedert nach Zusagen Z1..Z7 - je Zusage ein eigener Bruch (B6-Zx).")
 
-    # -- C1: ein `sha256: null` darf den Artefaktcheck nicht beenden --------
+    # -- Z1: der Writer-Korpus ist vollstaendig und bytegleich --------------
+    #
+    # Diese Zusage traegt alle anderen: ohne den Korpus misst [3b] die
+    # Writer-Form nicht. Sie steht deshalb VORN - ihr Bruch haelt den Block
+    # an, bevor eine andere Zusage ueberhaupt geprueft wird.
+    fixturen, korpusklagen = _writer_fixturen()
+    stati = sorted({e["status"] for _r, _k, e in fixturen.values()})
+    pruefe(not korpusklagen,
+           "Z1 [Writer-Korpus]: jeder in MANIFEST.json gefuehrte Fall liegt vor "
+           "und ist bytegleich, keine verwaiste Datei daneben, und die "
+           f"Statusachse {', '.join(JOURNAL_PFLICHTSTATUS)} ist vertreten",
+           " | ".join(korpusklagen) if korpusklagen
+           else f"{len(fixturen)} Faelle, Status {', '.join(stati)}")
+    if korpusklagen:
+        print("     [3b] bricht hier ab: ohne vollstaendigen Korpus misst der "
+              "Block die Writer-Form nicht mehr, und eine stillschweigend "
+              "ausgelassene Gegenprobe ist schlimmer als keine.")
+        return
+
+    # Die Fixturen der beiden Achsen kommen aus dem KORPUS, nicht aus einer
+    # Namensliste im Skript: kommt eine fuenfte Fixtur dazu, faehrt [3b] sie
+    # mit, ohne dass jemand hier etwas nachtraegt.
+    ok_dateien = [d for d, (_r, _k, e) in sorted(fixturen.items())
+                  if e["status"] == ERGEBNIS_STATUS_OK]
+    nicht_ok_dateien = [d for d, (_r, _k, e) in sorted(fixturen.items())
+                        if e["status"] != ERGEBNIS_STATUS_OK]
+    mutant_quelle = ok_dateien[0]
+
+    # -- Z2: ein `sha256: null` beendet den Artefaktcheck nicht -------------
     #
     # Die Probe braucht ZWEI Artefakte: eines ohne Hash und ein anderes, das
     # fehlt. Faellt das Manifest je auf eines zusammen, misst sie nichts mehr -
-    # und eine stillschweigend ausgelassene Gegenprobe ist schlimmer als keine
-    # (dieselbe Regel wie in adversariale_strukturproben).
+    # und eine stillschweigend ausgelassene Gegenprobe ist schlimmer als keine.
     if len(manifest["artefakte"]) < 2:
         raise SystemExit(
-            "Gegenprobe unmoeglich: die C1-Probe braucht ZWEI Artefakte - eines "
+            "Gegenprobe unmoeglich: die Z2-Probe braucht ZWEI Artefakte - eines "
             "ohne festgeschriebenen Hash und ein anderes, das fehlt. Mit nur "
             "einem laesst sich nicht zeigen, dass der Artefaktcheck WEITERLAEUFT."
         )
@@ -1056,46 +1133,38 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
     fehlt["quelle"] = fehlt["quelle"] + "-GIBT-ES-NICHT"
     ausgabe, klagen = _probelauf(lambda: auslieferungsstand(probe, hart=False))
     pruefe(any("liegt nicht vor" in k for k in klagen),
-           "C1: ein fehlendes Artefakt ist auch im Kanon ROT, wenn ein anderes "
-           "keinen festgeschriebenen Hash traegt",
+           "Z2 [Kanon]: ein fehlendes Artefakt ist auch im Kanon ROT, wenn ein "
+           "anderes keinen festgeschriebenen Hash traegt (Befund C1)",
            " | ".join(klagen[:2]) if klagen else "keine Klage")
     pruefe("Ordner-Hash bildbar" in ausgabe,
-           "C1: das Artefakt ohne Hash wird trotzdem gemessen (liegt vor, "
-           "Ordner-Hash bildbar) statt uebersprungen",
+           "Z2 [Kanon]: das Artefakt ohne Hash wird trotzdem gemessen (liegt "
+           "vor, Ordner-Hash bildbar) statt uebersprungen",
            next((z.strip() for z in ausgabe.splitlines()
                  if "Ordner-Hash bildbar" in z), "keine solche Zeile"))
     _, hart_klagen = _probelauf(lambda: auslieferungsstand(
         copy.deepcopy(probe), hart=True))
     pruefe(any("liegt nicht vor" in k for k in hart_klagen)
            and any("ohne Hash" in k for k in hart_klagen),
-           "C1: unter --release sind BEIDE Befunde Fehler - der fehlende Hash "
-           "und das fehlende Artefakt",
+           "Z2 [--release]: dieselbe Lage macht unter --release BEIDE Befunde "
+           "zu Fehlern - den fehlenden Hash und das fehlende Artefakt",
            " | ".join(hart_klagen[:2]) if hart_klagen else "keine Klage")
-
-    # -- C2 und die Writer-Formen: zwei Sorten Probe-Journal ----------------
-    #
-    # BEFUND P2, NAK-94 Nacharbeit 5 (30.08.2026): bis hierher wurden die
-    # Journale von Hand geschrieben. Der Wegwechsel W1 des Dirigenten beendet
-    # das. Sorte 1 sind eingefrorene Writer-Fixturen, Sorte 2 daraus
-    # abgeleitete Mutanten mit benannter Abweichung - nichts dazwischen.
-    fixturen = _writer_fixturen()
-
-    def mutant(quelle: str, abweichung: str, wandel) -> tuple[dict, str]:
-        """Genau EINE Writer-Fixtur, genau EINE benannte Abweichung.
-
-        Der Mutant entsteht aus den gelesenen Fixturbytes, nie aus einem
-        selbst gebauten Kopf: alles ausser der genannten Abweichung bleibt
-        damit Writer-Form.
-        """
-        kopf = copy.deepcopy(fixturen[quelle][1])
-        wandel(kopf)
-        return kopf, f"Mutant von {quelle}: {abweichung}"
 
     with tempfile.TemporaryDirectory(prefix="nakama-journal-") as tmp:
         journal = pathlib.Path(tmp) / "install-ergebnis.json"
         merk = INSTALL_ERGEBNIS
         INSTALL_ERGEBNIS = journal
         try:
+            def mutant(quelle: str, abweichung: str, wandel) -> tuple[dict, str]:
+                """Genau EINE Writer-Fixtur, genau EINE benannte Abweichung.
+
+                Der Mutant entsteht aus den gelesenen Fixturbytes, nie aus
+                einem selbst gebauten Kopf: alles ausser der genannten
+                Abweichung bleibt damit Writer-Form.
+                """
+                kopf = copy.deepcopy(fixturen[quelle][1])
+                wandel(kopf)
+                return kopf, f"Mutant von {quelle}: {abweichung}"
+
             def fixtur_lauf(datei: str, gegen: dict | None = None) -> str:
                 """Die eingefrorenen BYTES fahren, nicht ein neu serialisiertes
                 Abbild - sonst misst die Probe json.dumps und nicht den Writer."""
@@ -1122,62 +1191,63 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
                 return [_artefakt_name(a) for a in manifest["artefakte"]
                         if muster.format(name=_artefakt_name(a)) not in ausgabe]
 
-            # (a) unbrauchbare Kennung IM JOURNAL - Hinweis, kein Absturz.
+            # -- Z3: eine unbrauchbare Kennung ist ein Hinweis, kein Abbruch -
+            #
+            # Beide Seiten tragen dieselbe Zusage: der Fehler darf im JOURNAL
+            # stehen oder im MANIFEST - [4b] faellt in keinem Fall ein Urteil
+            # und toetet in keinem Fall den Kanonlauf (Befund C2).
             kopf, sorte = mutant(
-                "ok-erstinstallation.json",
+                mutant_quelle,
                 "eintraege -> [Eintrag mit ziel_id als Liste, Nicht-Objekt]",
                 lambda k: k.update(eintraege=[
                     {**k["eintraege"][0], "ziel_id": ["main"]}, "keine Abbildung"]))
             ausgabe = mutant_lauf(kopf, manifest)
             pruefe("ohne lesbare Kennung" in ausgabe and "kein Objekt" in ausgabe,
-                   f"C2 [{sorte}]: ein Journaleintrag mit ziel_id als Liste ist "
-                   "ein Hinweis, kein TypeError - und [4b] faellt kein Urteil",
+                   f"Z3 [{sorte}]: eine unbrauchbare Kennung IM JOURNAL ist ein "
+                   "Hinweis, kein TypeError - und [4b] faellt kein Urteil",
                    " / ".join(z.strip() for z in ausgabe.splitlines()
                               if "hinweis 0" in z or "hinweis 1" in z))
 
-            # (b) unbrauchbare Kennung IM MANIFEST - die Huelle faengt sie.
-            #     Das Journal ist hier die unveraenderte Writer-Fixtur: der
-            #     Fehler sitzt auf der anderen Seite.
-            kaputt = _manifest_zum_journal(
-                manifest, fixturen["ok-erstinstallation.json"][1])
+            kaputt = _manifest_zum_journal(manifest, fixturen[mutant_quelle][1])
             kaputt["artefakte"][0]["ziel_id"] = ["main"]
-            ausgabe = fixtur_lauf("ok-erstinstallation.json", kaputt)
+            ausgabe = fixtur_lauf(mutant_quelle, kaputt)
             pruefe("nicht auswertbar" in ausgabe,
-                   "C2 [Writer-Fixtur ok-erstinstallation.json]: auch ein Fehler "
-                   "auf der MANIFEST-Seite bleibt ein Hinweis - [4b] toetet "
-                   "keinen Kanonlauf",
+                   f"Z3 [Writer-Fixtur {mutant_quelle}]: dieselbe Zusage von der "
+                   "anderen Seite - ein Fehler IM MANIFEST bleibt ebenfalls ein "
+                   "Hinweis, [4b] toetet keinen Kanonlauf",
                    next((z.strip() for z in ausgabe.splitlines()
                          if "nicht auswertbar" in z), "keine solche Zeile"))
 
-            # -- Sorte 1: die eingefrorenen Writer-Journale ------------------
+            # -- Z4: OK-Journal -> Hashvergleich und sein `ok` --------------
             #
-            # Jedes stammt aus einem echten Install-Nakama.ps1-Lauf in der
-            # A18-Sandbox (Erzeuger, Stand, Befehl und SHA-256:
-            # eq-copilot/fixtures/installer/journale/MANIFEST.json). Ihre
-            # volatilen Werte - zeit, transaktions_id, Pfade, Hashes - bleiben
-            # so, wie der Writer sie schrieb; verglichen werden Struktur und
-            # Status.
-            for datei, wie in (("ok-erstinstallation.json",
-                                "Vorzustand nur beim Main-Bundle"),
-                               ("ok-nach-tausch.json",
-                                "Vorzustand bei jedem Ziel")):
+            # EINE Zusage ueber JEDE OK-Fixtur des Korpus. Die Fixturen kommen
+            # aus MANIFEST.json; ihre Zahl steht in der Ausgabe, nicht hier.
+            # Jede stammt aus einem echten Install-Nakama.ps1-Lauf in der
+            # A18-Sandbox; ihre volatilen Werte - zeit, transaktions_id, Pfade,
+            # Hashes - bleiben, wie der Writer sie schrieb.
+            for datei in ok_dateien:
+                fall = fixturen[datei][2]
                 ausgabe = fixtur_lauf(datei)
                 fehlend = ohne_hinweis(
                     ausgabe, "ok      {name}: installierter Stand = Manifest")
                 pruefe(not fehlend,
-                       f"P2/5 [Writer-Fixtur {datei}]: bei Journalstatus OK und "
+                       f"Z4 [Writer-Fixtur {datei}]: bei Journalstatus OK und "
                        "abgeschlossenen, nicht zurueckgerollten Eintraegen "
-                       f"bleibt der Hashvergleich und sein ok ({wie})",
+                       f"bleibt der Hashvergleich und sein ok ({fall['fall']})",
                        ("ohne ok: " + ", ".join(fehlend)) if fehlend
                        else "alle Artefakte ok")
 
-            # Der Rueckweg schreibt sieben Felder OHNE `eintraege`. Genau daran
-            # ging der Befund aus Nacharbeit 3 vorbei; bis Nacharbeit 4 stand
-            # diese Form hier nachgeschrieben, jetzt liegt sie als Bytes vor.
-            for datei, status in (("rueckweg-nach-gegenpfad.json", "RUECKWEG"),
-                                  ("error-rueckgerollt.json", "ERROR_RUECKGEROLLT")):
-                if datei not in fixturen:
-                    continue
+            # -- Z5: alles ausser OK -> artefaktweise "unbekannt" -----------
+            #
+            # EINE Zusage, ueber drei Wertemengen parametrisiert: die
+            # Nicht-OK-Fixturen des Korpus (echte Writer-Form), die Durchgangs-
+            # und erfundenen Statuswerte als Mutanten aus DERSELBEN OK-Fixtur
+            # (damit nur der Status abweicht) und ein Journal ganz ohne
+            # `status`. Alle drei sagen dasselbe: ohne Journalstatus OK gibt es
+            # keinen Hashvergleich, weil der gespeicherte Hash dann nur den
+            # Stand vor dem Gegenakt beweist.
+            for datei in nicht_ok_dateien:
+                status = fixturen[datei][2]["status"]
                 ausgabe = fixtur_lauf(datei)
                 fehlend = ohne_hinweis(
                     ausgabe, "hinweis {name}: installierter Stand unbekannt "
@@ -1185,50 +1255,43 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
                 pruefe(not fehlend
                        and "keine Liste 'eintraege'" not in ausgabe
                        and "installierter Stand = Manifest" not in ausgabe,
-                       f"P2/5 [Writer-Fixtur {datei}]: Journalstatus {status} "
+                       f"Z5 [Writer-Fixtur {datei}]: Journalstatus {status} "
                        "meldet artefaktweise 'unbekannt' - ohne Hashvergleich "
                        "und ohne 'keine Liste'",
                        ("ohne Hinweis: " + ", ".join(fehlend)) if fehlend
                        else next((z.strip() for z in ausgabe.splitlines()
                                   if "Journal:" in z), "keine Journalzeile"))
 
-            # -- Sorte 2: deklarierte Mutanten ------------------------------
-            #
-            # Die Statusachse fragt, ob die Sperre am STATUS haengt - auch an
-            # Staenden, die ein abgeschlossener Lauf nie hinterlaesst
-            # (VORBEREITET, KOMPENSATION, ERROR_TEILSTAND und RUECKWEG_AKTIV
-            # schreibt der Writer und ueberschreibt sie im selben Lauf wieder),
-            # an einem erfundenen und an einem fehlenden. Alle entstehen aus
-            # DERSELBEN Writer-Fixtur, damit nur der Status abweicht.
             for status in ("VORBEREITET", "KOMPENSATION", "ERROR_TEILSTAND",
                            "ERROR_RUECKGEROLLT", "RUECKWEG_AKTIV", "RUECKWEG",
                            "NEUER_STATUS_2099"):
-                kopf, sorte = mutant("ok-erstinstallation.json",
-                                     f"status -> {status}",
+                kopf, sorte = mutant(mutant_quelle, f"status -> {status}",
                                      lambda k, s=status: k.update(status=s))
                 ausgabe = mutant_lauf(kopf)
                 fehlend = ohne_hinweis(
                     ausgabe, "hinweis {name}: installierter Stand unbekannt "
                              f"(Journalstatus {status})")
                 pruefe(not fehlend and "installierter Stand = Manifest" not in ausgabe,
-                       f"P2 [{sorte}]: meldet den installierten Stand als "
+                       f"Z5 [{sorte}]: meldet den installierten Stand als "
                        "unbekannt - ohne Hashvergleich",
                        ("ohne Hinweis: " + ", ".join(fehlend)) if fehlend
                        else "alle Artefakte als unbekannt gemeldet")
 
-            kopf, sorte = mutant("ok-erstinstallation.json", "status entfernt",
+            kopf, sorte = mutant(mutant_quelle, "status entfernt",
                                  lambda k: k.pop("status", None))
             ausgabe = mutant_lauf(kopf)
             fehlend = ohne_hinweis(
                 ausgabe, "hinweis {name}: installierter Stand unbekannt "
                          "(Journalstatus fehlt)")
             pruefe(not fehlend and "installierter Stand = Manifest" not in ausgabe,
-                   f"P2 [{sorte}]: ein Journal OHNE status meldet den "
+                   f"Z5 [{sorte}]: ein Journal OHNE status meldet den "
                    "installierten Stand als unbekannt - Schweigen ist kein OK",
                    ("ohne Hinweis: " + ", ".join(fehlend)) if fehlend
                    else next((z.strip() for z in ausgabe.splitlines()
                               if "Journalstatus fehlt" in z), "keine solche Zeile"))
 
+            # -- Z6: Status OK ohne Eintragsliste ---------------------------
+            #
             # Der fruehere Fall (c). Bis Nacharbeit 4 zaehlte er als
             # Writer-Form-Probe und behauptete damit, der Writer koenne ein
             # OK-Journal ohne `eintraege` schreiben - er kann es nicht
@@ -1236,19 +1299,19 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
             # danach nur `status` und `zeit`). Als benannter Mutant sagt die
             # Probe dasselbe ueber den LESER, ohne etwas Falsches ueber den
             # Writer zu behaupten.
-            kopf, sorte = mutant("ok-erstinstallation.json", "eintraege entfernt",
+            kopf, sorte = mutant(mutant_quelle, "eintraege entfernt",
                                  lambda k: k.pop("eintraege", None))
             ausgabe = mutant_lauf(kopf, manifest)
             pruefe("keine Liste 'eintraege'" in ausgabe
                    and "installierter Stand = Manifest" not in ausgabe
                    and "installierter Stand unbekannt" not in ausgabe,
-                   f"P2/3 [{sorte}]: bei Status OK ohne Eintragsliste bleibt es "
+                   f"Z6 [{sorte}]: bei Status OK ohne Eintragsliste bleibt es "
                    "bei 'fuehrt keine Liste eintraege' - die Statussperre "
                    "verschluckt sie nicht",
                    next((z.strip() for z in ausgabe.splitlines()
                          if "keine Liste" in z), "keine solche Zeile"))
 
-            # -- P2/4: die Fixtur-ID gegen die Regex des WRITERS -------------
+            # -- Z7: die Fixtur-IDs gegen die Regex des WRITERS -------------
             #
             # Nicht abgeschrieben: das Muster wird aus Install-Nakama.ps1
             # gelesen, die IDs kommen aus den eingefrorenen Writer-Fixturen.
@@ -1266,7 +1329,7 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
                 isinstance(i, str) and re.match(muster.group(1), i) is not None
                 for i in ids.values())
             pruefe(passt,
-                   "P2/4 [Writer-Fixturen]: jede eingefrorene Transaktions-ID "
+                   "Z7 [Writer-Fixturen]: jede eingefrorene Transaktions-ID "
                    "besteht die Ist-TransaktionsId-Regex aus Install-Nakama.ps1 "
                    "- eine gestrichelte UUID taete es nicht",
                    f"Muster {muster.group(1)!r} gegen {sorted(ids.values())}"

@@ -18862,3 +18862,233 @@ der Grenze: NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.
 **Einordnung:** Defekt, mittel (Prüfliste D). **Regel des Dirigenten (Nacharbeit 9):** Dieselbe Strukturprüfung wie für die Journale gilt für `journale/MANIFEST.json`: Wurzel ist ein Objekt, `faelle` eine Liste, jeder Fall trägt die gelesenen Felder (`datei`, `sha256` als HEX64, `status`, Herkunftsfelder) mit richtigem Typ — geprüft **vor** dem ersten Zugriff; jeder Verstoß ist ein kontrollierter Abbruch mit Klartext (`haltend()`), nie Traceback. Probe: `"faelle"` → `"xaelle"` (und ein Fall ohne `sha256`) → kontrollierter Abbruch, Exit ≠ 0, kein Traceback; Rücknahme per Hash. Zusätzlich gilt ab jetzt für A17 insgesamt: jeder Lesezugriff auf eine Fixture-, Manifest- oder Journaldatei geht durch eine Strukturprüfung — der Worker grept `json.loads`/`json.load` im Skript und belegt für jede Stelle, welche Prüfung davor steht (Aussagen-Inventar). Behauptung in `tools/beweise.ps1` und Skriptkopf: „jede gelesene JSON-Datei wird vor dem Zugriff strukturell geprüft; Verstoß = kontrollierter Abbruch".
 
 **Nächster Schritt:** Nacharbeit 9 im selben Worker wie die nächste S8-Runde (falls Prüfer 14 Befunde hat; sonst allein), gemeinsamer Kanon, danach Prüfer 10 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.
+
+## NAK-94 Nacharbeit Runde 9 — 2026-08-30 (Prüfer-Thread `01a05093-ae62…`)
+
+**Stand dieses Abschnitts:** `3bcfe48` — der Commit dieser Nacharbeit.
+Positionen ohne eigene Angabe sind an diesem Stand gemessen; Zahlen und
+Rohausgaben nennen ihren Stand jeweils selbst.
+
+Ein bestätigter Befund des neunten Prüfers (Codex high, lesend über
+`git diff da62dec...e63a53f`), Regel des Dirigenten im Abschnitt
+„Dirigentenstand NAK-94 — 2026-08-30 04:58 (Sitzung 054eedac)". Er ist
+geschlossen. An `Install-Nakama.ps1`, an A18, an den Fixturbytes, am
+Installer-Manifest und an der Identitätsdatei wurde nichts geändert; das
+Manifest wurde nicht neu gehasht.
+
+---
+
+### Was Nacharbeit 8 offen ließ
+
+Nacharbeit 8 hat die **Journale** vor dem Zugriff geprüft. Das
+**Korpusmanifest**, das sagt, welche Journale es überhaupt gibt, ging weiter
+ungeprüft in den ersten Zugriff.
+
+> **[P2] Fange strukturwidrige Korpus-Manifeste kontrolliert ab** —
+> `tools/eq-copilot/pruefe_installer_manifest.py:1141`. [Defekt, mittel] Eine
+> einzelne Byteänderung von `"faelle"` zu `"xaelle"` in
+> `journale/MANIFEST.json` lässt ein weiterhin lesbares JSON-Objekt beim
+> direkten Aufruf von `_writer_fixturen()` mit `KeyError: 'faelle'`
+> abbrechen, bevor Z1 ein rotes Urteil oder den vorgesehenen
+> Klartext-Abbruch ausgeben kann. Das verletzt die Fail-closed-Regel
+> „Unbekanntes ist ROT"; validiere daher Wurzelobjekt, `faelle`-Liste und die
+> gelesenen Fallfelder vor diesem Zugriff und überführe Strukturfehler in
+> `haltend()`.
+
+**Am Basis-Stand `b8dcbe1` reproduziert** — im vollen A17-Lauf, nicht nur im
+Direktaufruf:
+
+```text
+[3b] Gegenproben zu [4] Auslieferungsstand und [4b] installiertem Stand
+     Gegliedert nach Zusagen Z1..Z7 - je Zusage ein eigener Bruch (B6-Zx).
+Traceback (most recent call last):
+  …
+  File "…\tools\eq-copilot\pruefe_installer_manifest.py", line 1141, in _writer_fixturen
+    for fall in korpus["faelle"]:
+                ~~~~~~^^^^^^^^^^
+KeyError: 'faelle'
+
+EXITCODE = 1     TRACEBACK = JA
+```
+
+Die zweite vom Dirigenten verlangte Probe, ein Fall **ohne** `sha256`
+(`"sha256"` → `"xha256"`, ein Byte), traf dieselbe Klasse eine Zeile weiter:
+
+```text
+  File "…\tools\eq-copilot\pruefe_installer_manifest.py", line 1148, in _writer_fixturen
+    if ist != fall["sha256"]:
+              ~~~~^^^^^^^^^^
+KeyError: 'sha256'
+
+EXITCODE = 1     TRACEBACK = JA
+```
+
+**Und dieselbe Tür stand an zwei weiteren Dateien offen.** Die Regel des
+Dirigenten für diese Nacharbeit gilt A17 **insgesamt** — jeder Lesezugriff
+auf eine Fixture-, Manifest- oder Journaldatei geht durch eine
+Strukturprüfung. Der Grep nach `json.loads` fand am Basis-Stand fünf Stellen;
+zwei davon, beide in `main()`, waren ungeschützt. Gemessen, nicht vermutet:
+
+```text
+"artefakte" -> "xrtefakte" in eq-copilot/install/nakama-installer-v1.json
+  File "…\pruefe_installer_manifest.py", line 1917, in main
+    bedingung, zusatz = regel(manifest, identitaet)
+  File "…\pruefe_installer_manifest.py", line 557, in r_art_bekannt
+    fremd = [str(a.get("art")) for a in m["artefakte"] if a.get("art") not in ARTEN]
+KeyError: 'artefakte'                        EXITCODE = 1   TRACEBACK = JA
+
+"ziele" -> "xiele" in eq-copilot/identity/plugin-identities-v1.json
+  File "…\pruefe_installer_manifest.py", line 566, in r_quellpfade_nachgerechnet
+    ziele = _ziele(i)
+  File "…\pruefe_installer_manifest.py", line 320, in _ziele
+    return {z["id"]: z for z in identitaet["ziele"]}
+KeyError: 'ziele'                            EXITCODE = 1   TRACEBACK = JA
+```
+
+Jede dieser vier Mutationen wurde sofort aus der Kopie der Originalbytes
+zurückgenommen, die Rücknahme über SHA-256 belegt.
+
+---
+
+### Der Fix — ein Strukturvertrag je gelesener JSON-Datei
+
+`_lies_geprueft(weg, pruefung)` (`…/pruefe_installer_manifest.py:299 @
+3bcfe48`) liest eine JSON-Datei in drei Stufen und gibt sie **nur**
+strukturgeprüft heraus: lesbar → gültiges JSON → die von diesem Bein gelesene
+Grobform. Jede Stufe wirft `Strukturhalt` (`:294`) mit Klartext; der Aufrufer
+macht daraus ein rotes Urteil oder einen Abbruch, nie einen Traceback.
+
+| gelesene Datei | Vertrag | wo geprüft | Verstoß |
+|---|---|---|---|
+| `eq-copilot/install/nakama-installer-v1.json` | `_installermanifest_struktur` (`:323`) — Wurzel Objekt, `artefakte` nicht leere Liste von Objekten mit Zeichenkette `quelle`, `ziele` Objekt, `rueckweg.bekannte_staende` Liste | `main()` `:2121`, **vor** `[1]` | `ABGEBROCHEN - …` + Exit 2 |
+| `eq-copilot/identity/plugin-identities-v1.json` | `_identitaet_struktur` (`:359`) — Wurzel Objekt, `ziele` nicht leere Liste von Objekten mit `id`, je **aktivem** Ziel `produktname` und `bundle`, `hersteller.code` Zeichenkette | `main()` `:2122`, **vor** `[1]` | `ABGEBROCHEN - …` + Exit 2 |
+| `eq-copilot/fixtures/installer/journale/MANIFEST.json` | `_journalkorpus_struktur` (`:399`) — Wurzel Objekt, `stand` Zeichenkette, `faelle` nicht leere Liste; je Fall `datei`, `status`, `fall`, `befehl` als nicht leere Zeichenketten (`JOURNAL_FALLFELDER`, `:267`) und `sha256` als HEX64 in Großbuchstaben | `_writer_fixturen()` `:1358`, **vor** `korpus["faelle"]` | Z1 **rot** und `abbruch` — [3b] hält fail-closed an |
+| `eq-copilot/fixtures/installer/journale/<fall>.json` | `_writer_struktur` (`:1231`, Nacharbeit 8) | `_writer_fixturen()` `:1395`, vor `geladen[…]` | Z1 rot und `abbruch` |
+| `eq-copilot/install/install-ergebnis.json` | Schema-, dann Statussperre vor `eintraege` (`:1999`, `:2041`) | `_installierter_stand()` | kontrollierter **Hinweis** + `return` |
+
+**Warum die Felder genau diese sind.** Der Vertrag verlangt, was A17 **hart**
+liest (`m["…"]`, nicht `.get`) — dieselbe Regel wie in Nacharbeit 8: geprüft
+werden SCHLÜSSEL und Grobform, nie Werte, denn über die Werte urteilen die
+Regeln in `[1]`/`[2]` und die Zusagen Z1..Z7. Eine Prüfung, die ihnen
+vorgriffe, verschluckte genau die Brüche, die sie belegen sollen. `sha256`
+steht als einziges mit einer Wertform (HEX64, Großbuchstaben) darin: das ist
+die Form, gegen die `_writer_fixturen()` die Fixturbytes vergleicht — ohne
+sie wäre der Vergleich selbst unbestimmt. `stillgelegte_ziele` steht
+**nicht** im Vertrag: jeder Zugriff darauf läuft schon über `.get` samt
+Typprüfung.
+
+**Warum [4b] die eine Ausnahme bleibt.** Dieser Block urteilt nie und bricht
+nie ab — das ist Befund C2 aus Nacharbeit 1/2, und Installieren ist ein
+bewusster Admin-Handgriff, keine Zusage des Kanons. Die Prüfung steht auch
+dort **vor** dem Zugriff; nur ihr Ausgang ist ein kontrollierter Hinweis mit
+`return` statt eines Abbruchs. Behauptet wird genau das, nicht mehr.
+
+---
+
+### Aussagen-Inventar — jede `json.load`-Stelle mit ihrer Prüfung davor
+
+```bash
+git grep -n -E 'json\.loads|json\.load\(' b8dcbe1 -- tools/eq-copilot/pruefe_installer_manifest.py
+git grep -n -E 'json\.loads|json\.load\(' 3bcfe48 -- tools/eq-copilot/pruefe_installer_manifest.py
+```
+
+Am Basis-Stand fünf Stellen, am Endstand drei — die drei ungeschützten
+Ladevorgänge sind zu **einem** geprüften Leser zusammengefallen:
+
+| Stand | Stelle | gelesene Datei | Strukturprüfung davor |
+|---|---|---|---|
+| `b8dcbe1` | `:1139` `_writer_fixturen` | `journale/MANIFEST.json` | **keine** — Befund |
+| `b8dcbe1` | `:1157` `_writer_fixturen` | `journale/<fall>.json` | `try/except`, `isinstance(kopf, dict)`, `_writer_struktur` |
+| `b8dcbe1` | `:1774` `_installierter_stand` | `install-ergebnis.json` | `is_file`, `try/except`, `isinstance` + Schema, Statussperre |
+| `b8dcbe1` | `:1895` `main` | `nakama-installer-v1.json` | **keine** — dieselbe Klasse, gemessen |
+| `b8dcbe1` | `:1896` `main` | `plugin-identities-v1.json` | **keine** — dieselbe Klasse, gemessen |
+| `3bcfe48` | `:313` `_lies_geprueft` | alle drei Manifeste | die übergebene `pruefung` läuft `:316`, **vor** der Rückgabe `:320`; `JSONDecodeError` → `Strukturhalt` `:315` |
+| `3bcfe48` | `:1378` `_writer_fixturen` | `journale/<fall>.json` | unverändert: `try/except` `:1378-1379`, `isinstance(kopf, dict)` `:1387`, `_writer_struktur` `:1395` — alle **vor** `geladen[…]` `:1406` |
+| `3bcfe48` | `:1995` `_installierter_stand` | `install-ergebnis.json` | unverändert: `is_file` `:1990`, `try/except` `:1995-1996`, `isinstance` + Schema `:1999`, Statussperre `:2041` vor `eintraege` `:2050` |
+
+Es gibt keine vierte gelesene JSON-Datei: `Install-Nakama.ps1`,
+`broker/Cargo.toml`, `NakamaOrdnerHash.ps1` und `NakamaState.cpp` werden als
+**Text** gelesen (Regex), nicht als JSON.
+
+**Die Zusage an ihren beiden Stellen:**
+
+| Stelle | alt | neu | Status |
+|---|---|---|---|
+| `…/pruefe_installer_manifest.py`, Modul-Docstring, neuer Absatz `JEDE GELESENE JSON-DATEI WIRD VOR DEM ZUGRIFF STRUKTURELL GEPRUEFT` (`:122 @ 3bcfe48`) | fehlte | ganzer Absatz mit Befund, Tabelle der fünf Verträge, Ausgang und Verweis auf `P9-a..P9-f` | **nachgezogen** |
+| `tools/beweise.ps1`, A17-`Behauptung` (`:404 @ 3bcfe48`) | endete nach „…nie mit einem Traceback (NAK-94 Nacharbeit 8)." | dasselbe **plus** „JEDE von diesem Bein gelesene JSON-Datei wird vor dem Zugriff strukturell geprueft; Verstoss = kontrollierter Abbruch mit Klartext und Exit ungleich 0, nie ein Traceback …" samt den drei Verträgen und der [4b]-Ausnahme | **nachgezogen** |
+| `…/pruefe_installer_manifest.py`, Absatz `NACH ROTEM Z1 …` (Nacharbeit 8, Symbol) | Journal-Strukturprüfung | unverändert — sagte über die Journale schon das Richtige | **stimmte bereits** |
+| `docs/beweise/*.md`, `## Kanon-Lauf`-Blöcke mit der alten A17-Behauptung | alter Wortlaut | unverändert | **historisch** (Blöcke tragen ihren Commit in der Kopftabelle) |
+| `docs/beweise/SONDE-007c.md`, Abschnitte der Nacharbeiten 2–8 | alter Wortlaut | unverändert | **historisch** (jeder trägt `**Stand dieses Abschnitts:**`) |
+
+---
+
+### `P9-a` … `P9-f` — sechs Brüche, jeder zurückgenommen
+
+Alle sechs am Stand `3bcfe48` gefahren, jeder sofort zurückgenommen, die
+Rücknahme über SHA-256 gegen die Kopie der Originalbytes belegt. **Kein
+löschender Aufruf**: die Originalbytes liegen unter
+`%TEMP%\nakama-fixtur-sicherung\`, zurückgeschrieben wird aus dieser Kopie;
+keine Datei unter `%SystemRoot%` angefasst.
+
+| Probe | Datei | Mutation (ein Byte, wo möglich) | Ausgang | Exit | Traceback | Bilanz |
+|---|---|---|---|---|---|---|
+| **P9-a** | `journale/MANIFEST.json` | `"faelle"` → `"xaelle"` | Z1 rot **und** Abbruch von [3b], Klartext „keine nicht leere Liste 'faelle' (NoneType)" | 2 | nein | 95 ok / 1 Fehler |
+| **P9-b** | `journale/MANIFEST.json` | `"sha256"` → `"xha256"` (ein Fall ohne Hash) | Z1 rot und Abbruch, „faelle[0] ohne SHA-256 in Grossbuchstaben 'sha256' (None)" | 2 | nein | 95 ok / 1 Fehler |
+| **P9-c** | `nakama-installer-v1.json` | `"artefakte"` → `"xrtefakte"` | `ABGEBROCHEN - …: keine nicht leere Liste 'artefakte' (NoneType)`, vor `[1]` | 2 | nein | Abbruch vor `[1]`, keine Zählung |
+| **P9-d** | `plugin-identities-v1.json` | `"ziele"` → `"xiele"` | `ABGEBROCHEN - …: keine nicht leere Liste 'ziele' (NoneType)`, vor `[1]` | 2 | nein | Abbruch vor `[1]`, keine Zählung |
+| **P9-e** | `journale/MANIFEST.json` | Doppelpunkt hinter `"schema"` entfernt → kein gültiges JSON | Z1 rot und Abbruch, „kein gueltiges JSON (Expecting ':' delimiter: line 2 column 12 (char 13))" | 2 | nein | 95 ok / 1 Fehler |
+| **P9-f** | `journale/MANIFEST.json` | `sha256`-**Wert** um ein Zeichen geändert (`…DE03` → `…DE00`), Struktur bleibt gültig | Z1 rot, **kein** Abbruch — Z2..Z7 laufen grün weiter | 2 | nein | 114 ok / 1 Fehler |
+
+`P9-f` ist die Gegenprobe zur Grenze und der Grund, warum die Prüfung
+Schlüssel und Grobform misst statt Werte: eine WERT-Änderung im
+Korpusmanifest lässt die Struktur gültig, färbt genau **eine** Zusagenzeile
+und kassiert den unterscheidenden Bruch aus Nacharbeit 7/8 nicht. `P9-a`,
+`P9-b` und `P9-e` sind der Befund selbst — derselbe Lauf, der am Basis-Stand
+mit `KeyError` starb, endet jetzt kontrolliert; die 95 ok sind dieselben, die
+Nacharbeit 7 und 8 für den fail-closed Abbruch gemessen haben. `P9-c` und
+`P9-d` schließen die beiden Stellen in `main()`.
+
+Rohausgabe von `P9-a`, gekürzt auf die Urteilszeilen:
+
+```text
+  FEHLER  Z1 [Writer-Korpus]: jeder in MANIFEST.json gefuehrte Fall liegt vor und ist
+          bytegleich, keine verwaiste Datei daneben, und die Statusachse OK, RUECKWEG,
+          ERROR_RUECKGEROLLT ist vertreten  [eq-copilot/fixtures/installer/journale/
+          MANIFEST.json: traegt nicht die von diesem Bein gelesene Struktur: keine
+          nicht leere Liste 'faelle' (NoneType)]
+     [3b] bricht hier ab: ohne vollstaendigen Korpus misst der Block die Writer-Form
+     nicht mehr, und eine stillschweigend ausgelassene Gegenprobe ist schlimmer als
+     keine.  Grund: … keine nicht leere Liste 'faelle' (NoneType)
+
+95 ok, 1 Fehler
+EXITCODE = 2     TRACEBACK = nein
+Ruecknahme 6F00DD6F... == 6F00DD6F...: JA
+```
+
+Nach jeder Rücknahme: `git status` für `eq-copilot/fixtures/`,
+`eq-copilot/install/` und `eq-copilot/identity/` leer, A17 wieder
+**115 ok, 0 Fehler**, Exit 0.
+
+---
+
+### Prüfliste
+
+| Punkt | Erfüllt |
+|---|---|
+| **D** — ein Riegel ist fail-closed, Unbekanntes ist ROT | ja: eine strukturwidrige JSON-Datei ist jetzt an **jeder** Lesestelle ein Urteil, nie ein Traceback. Der Klartext nennt Datei und Verstoß. Die eine Ausnahme vom Abbruch ([4b], Hinweis statt Urteil) ist eine ältere, benannte Zusage und steht in Skriptkopf und Behauptung. |
+| **E** — Behauptung ≤ Messung | ja: die Zusage steht in Skriptkopf und A17-Behauptung, ist mit `P9-a`…`P9-f` gebrochen und zurückgenommen, und das Inventar oben führt **jede** `json.load`-Stelle mit ihrer Prüfung und Position. Keine Zahl im Skriptkopf: die Fallfelder stehen als benannte Konstante `JOURNAL_FALLFELDER` (`:267 @ 3bcfe48`). |
+| **F** — Änderungssatz | ja: Prüfungen, Aufrufstellen, beide Behauptungen und die Proben liegen in `3bcfe48`. Writer, Fixturen, Erzeuger, Installer-Manifest und Identitätsdatei sind unberührt — am Vertrag der Dateien hat sich nichts geändert, nur an dem, was A17 vor dem Lesen prüft. |
+
+---
+
+### Kanon
+
+<!-- kanon14:zeile:anfang -->
+*Das Urteil des gemeinsamen Abschlusslaufs mit S8 Runde 14 trägt der
+Abschluss-Commit hier ein.*
+<!-- kanon14:zeile:ende -->
+
+**Nicht berührt:** `Install-Nakama.ps1`, A18, die Fixturbytes, das
+Installer-Manifest (nicht neu gehasht), die Identitätsdatei,
+`tools/dirigent/**`. Offen außerhalb der Grenze: NAK-89, NAK-93, NAK-98,
+NAK-99, NAK-100, NAK-101.

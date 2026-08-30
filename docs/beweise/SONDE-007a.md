@@ -16589,3 +16589,384 @@ Offen außerhalb der Grenze: NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.
 **Nächster Schritt:** Nacharbeits-Worker für S8 Runde 14 **und** NAK-94 Nacharbeit 9 (siehe `docs/beweise/SONDE-007c.md`, „Dirigentenstand NAK-94 … Prüfer 9"), gemeinsamer Kanon, dann Prüfer 15 (xhigh) für S8 und Prüfer 10 (high) für NAK-94 — je frischer Thread. Kein Halt.
 
 **Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.
+
+## Nacharbeit Runde 14 — 2026-08-30 (Prüfer-Thread `01a05093-a4e3…`)
+
+**Stand dieses Abschnitts:** `4287839` — der Commit der Textarbeit dieser
+Runde. Positionen ohne eigene Angabe sind an diesem Stand gemessen; die
+Belegzahlen unten nennen ihren Stand jeweils selbst.
+
+Ein bestätigter Befund des vierzehnten Prüfers (Codex xhigh, lesend über
+`git diff dafa5a5...e63a53f`), Regel des Dirigenten im Abschnitt
+„Dirigentenstand — 2026-08-30 04:58 (Sitzung 054eedac)". Er ist geschlossen.
+Es ist **reine Textarbeit**: an der Messlogik von A14 wurde nichts geändert,
+kein Produktcode angefasst. Der zweite Befund derselben Runde (NAK-94,
+Prüfer 9) steht in `docs/beweise/SONDE-007c.md`, Abschnitt „NAK-94
+Nacharbeit Runde 9".
+
+**Werkzeugregel dieser Runde:** kein löschender Aufruf, keine Datei unter
+`%SystemRoot%`. Der Beleg unten liest ausschließlich das bereits gebaute
+Bundle und die Identitätsdatei; er baut nichts und schreibt nichts.
+
+---
+
+### Der Befund — wörtlich
+
+> **[P2] Erfasse auch den lebenden A14-Kommentar im Inventar** —
+> `docs/beweise/SONDE-007a.md:16459`. Dieses exakte Muster übersieht die
+> weiterhin lebende Aussage `derselbe Scanner muss die Werte im gebauten
+> Bundle FINDEN` in `tools/beweise.ps1:345-346`: Abschnitt [1] prüft nur die
+> benannte Main-/Herstellerteilmenge, während die Sondenwerte dort nicht
+> vorkommen sollen. Damit bleibt dieselbe Überbehauptung in einem
+> Runner-Kommentar bestehen; erweitere den Grep und begrenze auch diesen
+> Kommentar auf die Pflichtmenge.
+
+**Reproduziert am Basis-Stand `b8dcbe1`.** Der Satz stand dort wörtlich:
+
+```text
+b8dcbe1:tools/beweise.ps1:345:    # kein Makro ist. Er traegt seine eigene Gegenprobe: derselbe Scanner muss
+b8dcbe1:tools/beweise.ps1:346:    # die Werte im gebauten Bundle FINDEN, sonst ist sein Schweigen wertlos.
+```
+
+Und die Messung zeigt, was die Gegenprobe wirklich verlangt. Der Beleg fährt
+`nadeln_aus_identitaet()` und `suche()` aus A14 (**importiert**, nicht
+abgeschrieben) gegen dasselbe gebaute Main-Bundle, das die Gegenprobe
+benutzt; die Pflichtliste liest er per Regex aus demselben Quelltext, damit
+sie nicht von Hand nachgepflegt wird:
+
+```text
+Skript : tools/eq-copilot/pruefe_kern_identitaetsfrei.py
+Bundle : eq-copilot/build/plugin/EqCopilot_artefacts/Release/VST3/EQ-Copilot.vst3/Contents/x86_64-win/EQ-Copilot.vst3  (7105024 Byte)
+Nadeln : 17 aus eq-copilot/identity/plugin-identities-v1.json
+Pflicht: 5 -> hersteller.name, main.produktname, main.plugin_code, main.component_cid, main.controller_cid
+
+Nadel                       Pflicht  im Bundle gefunden als
+active-probe.bundle         nein     -
+active-probe.component_cid  nein     -
+active-probe.controller_cid nein     -
+active-probe.plugin_code    nein     -
+active-probe.produktname    nein     -
+hersteller.code             nein     ascii,fourcc-int-be
+hersteller.name             JA       ascii,utf-16le
+main.bundle                 nein     ascii
+main.component_cid          JA       roh16-com
+main.controller_cid         JA       roh16-com
+main.plugin_code            JA       ascii,fourcc-int-be
+main.produktname            JA       ascii,utf-16le
+passive-probe.bundle        nein     -
+passive-probe.component_cid nein     -
+passive-probe.controller_cidnein     -
+passive-probe.plugin_code   nein     -
+passive-probe.produktname   nein     -
+
+geprueft im Bundle: 5 von 17 Nadeln; ungeprueft: 12
+stehen NICHT im Bundle (10): active-probe.bundle, active-probe.component_cid, active-probe.controller_cid, active-probe.plugin_code, active-probe.produktname, passive-probe.bundle, passive-probe.component_cid, passive-probe.controller_cid, passive-probe.plugin_code, passive-probe.produktname
+```
+
+Dieselbe Zahlenlage wie in Runde 13 — nur trug der Runner-Kommentar den alten
+Wortlaut noch. `die Werte` heißt dort alle siebzehn; gemessen werden fünf,
+und zehn dürfen im EQ-Copilot-Bundle gerade **nicht** stehen.
+
+---
+
+### Der Fix — derselbe Wortlaut wie Skriptkopf und A14-Behauptung
+
+`tools/beweise.ps1:345-351 @ 4287839`:
+
+```powershell
+    # kein Makro ist. Er traegt seine eigene Gegenprobe: derselbe Scanner muss
+    # im gebauten EQ-Copilot-Bundle die PFLICHT-TEILMENGE der Nadeln FINDEN -
+    # hersteller.name, main.produktname, main.plugin_code, main.component_cid
+    # und main.controller_cid -, sonst ist sein Schweigen wertlos. Die Werte
+    # der Sonden-Ziele (Suna/Probeeq) werden dort ausdruecklich NICHT erwartet,
+    # und hersteller.code sowie main.bundle gehoeren nicht zur Pflichtmenge;
+    # gegen den KERN laeuft dagegen JEDE Nadel (Runde 14, 30.08.2026).
+```
+
+Damit sagen alle drei lebenden Stellen dasselbe: der Skriptkopf
+(`…/pruefe_kern_identitaetsfrei.py:19-31`), die A14-`Behauptung`
+(`tools/beweise.ps1:404 @ 4287839`) und dieser Kommentar. **Keine
+Verhaltensänderung:** `pflicht` in `[1]` und die Schleife über
+`sorted(nadeln.items())` in `[2]` sind unangetastet; die Nadelzahl steht
+weiterhin nur in der Laufausgabe (`Nadeln    :`), nicht im Text.
+
+---
+
+### Die erweiterten Inventar-Muster — Trefferzahlen vor und nach
+
+Die Regel des Dirigenten für diese Runde: ein Inventar-Muster für eine Zusage
+deckt **alle Wortformen** ab, nicht nur den zitierten Satz. Für die
+A14-Gegenprobe sind das mindestens `Nadeln`, `Scanner`, `FINDEN`,
+`Gegenprobe` und `im gebauten`. Gezählt werden **Zeilen mit Treffer**
+(`git grep -c -F`), gesucht über den A14-Skriptkopf, `tools/beweise.ps1` und
+die beiden Manifeste dieses Ticketpaars; für die Manifeste steht zusätzlich
+die **lebende** Zahl (Klassifizierer, Quelltext unten).
+
+```bash
+git grep -c -F 'Nadeln'      <stand> -- tools/eq-copilot/pruefe_kern_identitaetsfrei.py
+git grep -c -F 'Nadeln'      <stand> -- tools/beweise.ps1
+git grep -c -F 'Nadeln'      <stand> -- docs/beweise/SONDE-007a.md
+git grep -c -F 'Nadeln'      <stand> -- docs/beweise/SONDE-007c.md
+# ebenso fuer Scanner, FINDEN, Gegenprobe, im gebauten
+```
+
+<!-- inventar14:tabelle:anfang -->
+| Muster (`-F`) | Datei | `e63a53f` Prüferstand R13 | `b8dcbe1` Basis R14 | vor dem Kanon | **Endstand R14** |
+|---|---|---:|---:|---:|---:|
+| `Nadeln` | `…/pruefe_kern_identitaetsfrei.py` | 4 | 4 | — | **—** |
+| `Nadeln` | `tools/beweise.ps1` | 1 | 1 | — | **—** |
+| `Nadeln` | `SONDE-007a.md` (lebend/gesamt) | 3/51 | 3/52 | — | **—** |
+| `Nadeln` | `SONDE-007c.md` (lebend/gesamt) | 0/12 | 0/12 | — | **—** |
+| `Scanner` | `…/pruefe_kern_identitaetsfrei.py` | 5 | 5 | — | **—** |
+| `Scanner` | `tools/beweise.ps1` | 2 | 2 | — | **—** |
+| `Scanner` | `SONDE-007a.md` (lebend/gesamt) | 1/42 | 1/44 | — | **—** |
+| `Scanner` | `SONDE-007c.md` (lebend/gesamt) | 0/37 | 0/37 | — | **—** |
+| `FINDEN` | `…/pruefe_kern_identitaetsfrei.py` | 0 | 0 | — | **—** |
+| `FINDEN` | `tools/beweise.ps1` | 1 | 1 | — | **—** |
+| `FINDEN` | `SONDE-007a.md` (lebend/gesamt) | 0/0 | 0/2 | — | **—** |
+| `FINDEN` | `SONDE-007c.md` (lebend/gesamt) | 0/0 | 0/0 | — | **—** |
+| `Gegenprobe` | `…/pruefe_kern_identitaetsfrei.py` | 10 | 10 | — | **—** |
+| `Gegenprobe` | `tools/beweise.ps1` | 8 | 8 | — | **—** |
+| `Gegenprobe` | `SONDE-007a.md` (lebend/gesamt) | 9/238 | 9/239 | — | **—** |
+| `Gegenprobe` | `SONDE-007c.md` (lebend/gesamt) | 24/203 | 24/203 | — | **—** |
+| `im gebauten` | `…/pruefe_kern_identitaetsfrei.py` | 2 | 2 | — | **—** |
+| `im gebauten` | `tools/beweise.ps1` | 2 | 2 | — | **—** |
+| `im gebauten` | `SONDE-007a.md` (lebend/gesamt) | 6/81 | 6/83 | — | **—** |
+| `im gebauten` | `SONDE-007c.md` (lebend/gesamt) | 0/37 | 0/37 | — | **—** |
+<!-- inventar14:tabelle:ende -->
+
+Was die Zahlen sagen (die beiden rechten Spalten trägt der
+Abschluss-Commit dieser Runde nach — bis dahin stehen sie als `—`):
+
+1. **`tools/beweise.ps1`, `Nadeln` 1 → 2.** Der Runner-Kommentar nennt die
+   Nadeln jetzt selbst; die zweite Zeile ist der Fix. `FINDEN` bleibt bei 1 —
+   dasselbe Wort, nur nicht mehr über alle Werte.
+2. **`SONDE-007a.md`, lebend 3/1/0/9/6 → 0/0/0/0/0.** Die lebenden Treffer
+   standen nicht im Text dieser Runden, sondern in **zwei Altabschnitten**,
+   die der Klassifizierer aus Runde 12 nicht als historisch erkannte (siehe
+   unten). Beide tragen jetzt eine Standangabe.
+3. **`SONDE-007c.md`, `Gegenprobe` 24 lebend — unverändert und richtig so.**
+   Die vier unterscheidenden Muster (`Nadeln`, `Scanner`, `FINDEN`,
+   `im gebauten`) sind dort **null** lebend. Das Wort `Gegenprobe` allein ist
+   kein Treffer auf diese Zusage: alle 24 Zeilen sprechen über die
+   *A17-eigenen* Gegenproben (verdorbenes Installer-Manifest, Z1..Z7), die
+   diese Runde nicht anfasst. Ein Muster ist ein **Suchnetz**, keine Aussage —
+   was es fängt, wird einzeln entschieden.
+
+---
+
+### Die zwei Altabschnitte, die als lebend zählten
+
+Der Klassifizierer nennt einen Abschnitt historisch, wenn er eine Standangabe
+trägt **oder** seine Überschrift mit `## Kanon-Lauf` beginnt. Zwei Abschnitte
+dieser Datei erfüllten beides nicht, obwohl sie abgeschlossene Vergangenheit
+festhalten:
+
+| Abschnitt | lebende Treffer am Basis-Stand | was dort steht | jetzt |
+|---|---|---|---|
+| `## 4. Kanon-Lauf (roh, vom Runner erzeugt)` (`:820`) | 10 | rohe Runnerausgabe vom 23.08.2026, darin die **alte** A14-Behauptung („die Gegenprobe findet dieselben Werte im gebauten EQ-Copilot-Bundle", `:895`) und der Lauf mit `Nadeln : 13` | `**Stand dieses Abschnitts:** f96c95a` — der Commit aus seiner **eigenen** Kopftabelle |
+| `## 5. T2 — Frischkontext-Prüfer` (`:2024`) | 2 | das abgeschlossene T2-Urteil vom 23.08.2026, darin die Zählzeile `13 Nadeln ☑` und ein Befund über die Zeilennummern `:175`/`:187` | `**Stand dieses Abschnitts:** 75afae2` — der Stand, der dem Prüfer laut Zeile `Vorgelegt` vorlag |
+
+Gerechnet wird nichts um: beide Abschnitte bleiben Wort für Wort stehen. Die
+Standangabe sagt nur, wozu sie gehören — dieselbe Behandlung, mit der
+Runde 11 ihren einen lebenden Treffer geschlossen hat.
+
+**Der Klassifizierer, Muster und Datei als Argument** (dieselbe Regel wie in
+Runde 12, nur nicht mehr fest verdrahtet):
+
+<!-- klassifizierer14:anfang -->
+```python
+"""Klassifizierer lebend/historisch, Runde 14 - Muster und Datei frei waehlbar.
+
+Aufruf:  py -3.13 klassifiziere14.py <sha>|--datei <pfad> <manifestpfad> <muster...>
+
+  * Die Datei wird an jeder Zeile geteilt, die mit "## " beginnt; der Text
+    davor ist der Kopfabschnitt.
+  * Ein Abschnitt gilt als HISTORISCH, wenn er eine Standangabe traegt -
+    "**Stand dieses Abschnitts:**", "**Stand dieser Tabelle:**", "**Stand
+    dieser Karte:**" oder "**Stand dieses Unterabschnitts:**" - ODER wenn
+    seine Ueberschrift mit "## Kanon-Lauf" beginnt.
+  * Jeder andere Abschnitt ist LEBEND.
+
+Gezaehlt werden ZEILEN mit Treffer je Muster - dieselbe Zaehlweise wie
+`git grep -c -F`, damit lebend + historisch = die Zahl aus git grep.
+"""
+import re
+import subprocess
+import sys
+
+STAND = re.compile(r"^\*\*Stand (dieses Abschnitts|dieser Tabelle|dieser Karte|"
+                   r"dieses Unterabschnitts):\*\*")
+
+
+def abschnitte(zeilen):
+    grenzen = [i for i, z in enumerate(zeilen) if z.startswith("## ")]
+    schnitte = [0] + grenzen + [len(zeilen)]
+    raus = []
+    for a, b in zip(schnitte, schnitte[1:]):
+        if a == b:
+            continue
+        kopf = zeilen[a] if zeilen[a].startswith("## ") else "(Kopf der Datei)"
+        raus.append((kopf, a, zeilen[a:b]))
+    return raus
+
+
+def historisch(kopf, block):
+    if kopf.startswith("## Kanon-Lauf"):
+        return True
+    return any(STAND.match(z) for z in block)
+
+
+def lauf(text, marke, muster):
+    zeilen = text.split("\n")
+    je_muster = {m: [0, 0] for m in muster}
+    lebende_zeilen = []
+    for kopf, start, block in abschnitte(zeilen):
+        alt = historisch(kopf, block)
+        for i, z in enumerate(block):
+            treffer = [m for m in muster if m in z]
+            if not treffer:
+                continue
+            for m in treffer:
+                je_muster[m][1 if alt else 0] += 1
+            if not alt:
+                lebende_zeilen.append((start + i + 1, kopf, z.strip(), treffer))
+    print(f"== {marke} ==")
+    print(f"{'Muster':<15}{'lebend':>8}{'historisch':>12}{'gesamt':>8}")
+    gl = gh = 0
+    for m in muster:
+        le, hi = je_muster[m]
+        gl += le
+        gh += hi
+        print(f"{m:<15}{le:>8}{hi:>12}{le + hi:>8}")
+    print(f"{'SUMME':<15}{gl:>8}{gh:>12}{gl + gh:>8}")
+    print(f"lebende Treffer (Abschnitt ohne Stand, kein Kanon-Block): "
+          f"{len(lebende_zeilen)}")
+    for nr, kopf, z, treffer in lebende_zeilen:
+        print(f"  :{nr}  [{kopf.strip()}]  <- {','.join(treffer)}")
+        print(f"        {z[:150]}")
+    return je_muster
+
+
+if __name__ == "__main__":
+    if sys.argv[1] == "--datei":
+        datei = sys.argv[2]
+        muster = sys.argv[3:]
+        text = open(datei, encoding="utf-8").read()
+        lauf(text, datei, muster)
+    else:
+        sha, datei = sys.argv[1], sys.argv[2]
+        muster = sys.argv[3:]
+        text = subprocess.run(["git", "show", f"{sha}:{datei}"],
+                              capture_output=True, check=True).stdout.decode("utf-8")
+        lauf(text, f"{sha}:{datei}", muster)
+```
+<!-- klassifizierer14:ende -->
+
+Herausschneiden und fahren:
+
+```powershell
+py -3.13 -c "import pathlib,os; z=pathlib.Path('docs/beweise/SONDE-007a.md').read_text(encoding='utf-8').splitlines(); a=z.index('<!-- klassifizierer14:anfang -->')+2; b=z.index('<!-- klassifizierer14:ende -->')-1; pathlib.Path(os.environ['TEMP'],'klassifiziere14.py').write_text(chr(10).join(z[a:b]), encoding='utf-8')"
+py -3.13 "$env:TEMP\klassifiziere14.py" b8dcbe1 docs/beweise/SONDE-007a.md Nadeln Scanner FINDEN Gegenprobe "im gebauten"
+```
+
+Am Basis-Stand meldet er die zwölf lebenden Treffer, am Endstand null:
+
+```text
+== b8dcbe1:docs/beweise/SONDE-007a.md ==
+Muster           lebend  historisch  gesamt
+Nadeln                3          49      52
+Scanner               1          43      44
+FINDEN                0           2       2
+Gegenprobe            9         230     239
+im gebauten           6          77      83
+SUMME                19         401     420
+lebende Treffer (Abschnitt ohne Stand, kein Kanon-Block): 12
+```
+
+---
+
+### Aussagen-Inventar — die geänderte Zusage an allen Stellen
+
+```bash
+git grep -n -F 'die Werte im gebauten Bundle FINDEN'   b8dcbe1 -- ':!docs/beweise/roh'
+git grep -n -F 'dieselben Werte im gebauten'           b8dcbe1 -- ':!docs/beweise/roh'
+git grep -n -F 'denselben Nadeln'                      b8dcbe1 -- ':!docs/beweise/roh'
+git grep -c -F 'Nadeln'                                b8dcbe1 -- ':!docs/beweise/roh'
+```
+
+| Stelle | alt | neu | Status |
+|---|---|---|---|
+| `tools/beweise.ps1`, A14-Kommentar (`:345-346 @ b8dcbe1` → `:345-351 @ 4287839`) | „derselbe Scanner muss die Werte im gebauten Bundle FINDEN" | Pflicht-Teilmenge mit den fünf Namen, Nichterwartung der Sonden-Werte, `hersteller.code`/`main.bundle` ausserhalb der Pflichtmenge, jede Nadel gegen den Kern | **nachgezogen** |
+| `tools/beweise.ps1`, A14-`Behauptung` (`:404 @ 4287839`) | seit Runde 13 richtig | unverändert | **stimmte bereits** |
+| `…/pruefe_kern_identitaetsfrei.py`, Modul-Docstring `DIE GEGENPROBE IST DER EIGENTLICHE PUNKT` (`:19-31`) | seit Runde 13 richtig | unverändert | **stimmte bereits** |
+| `…/pruefe_kern_identitaetsfrei.py`, Kommentar über `pflicht` in `[1]` (Symbol) | „Nur Werte, die im gebauten Main-Bundle stehen MUESSEN." | unverändert | **stimmte bereits** |
+| `…/pruefe_kern_identitaetsfrei.py:3305`, Ausgabezeile `[1] Gegenprobe - findet der Scanner die Werte dort, wo sie stehen muessen?` (Symbol) | — | unverändert | **stimmte bereits** — „dort, wo sie stehen muessen" *ist* die Teilmenge, und die fünf Zeilen darunter nennen sie einzeln |
+| `docs/beweise/SONDE-007a.md`, `## 4. Kanon-Lauf (roh, vom Runner erzeugt)` | alte A14-Behauptung, `Nadeln : 13` | Wortlaut unverändert, Abschnitt trägt jetzt `**Stand dieses Abschnitts:** f96c95a` | **als historisch markiert** |
+| `docs/beweise/SONDE-007a.md`, `## 5. T2 — Frischkontext-Prüfer` | `13 Nadeln ☑` | Wortlaut unverändert, Abschnitt trägt jetzt `**Stand dieses Abschnitts:** 75afae2` | **als historisch markiert** |
+| `docs/beweise/*.md`, `## Kanon-Lauf`-Blöcke mit der alten A14-Behauptung | alter Wortlaut | unverändert | **historisch** (Regel 2 des Klassifizierers) |
+| `docs/beweise/SONDE-007a.md`, Prüferzitate der Runden 13/14 | wörtlich zitierter Befund | unverändert | **wörtliches Zitat**, bleibt wie geschrieben |
+
+---
+
+### Außerhalb der Ticketgrenze — dieselbe Klasse in fremden Ticketmanifesten
+
+Die erweiterten Muster fangen dieselbe Lage auch in **anderen**
+Ticketmanifesten: rohe Kanonblöcke, die ihren Commit in der eigenen
+Kopftabelle tragen, aber unter einer Überschrift stehen, die der
+Klassifizierer nicht erkennt. Gemessen am Stand `b8dcbe1` mit den drei
+unterscheidenden Mustern (`Nadeln`, `FINDEN`, `im gebauten`):
+
+```text
+docs/beweise/G1.md                   -> 8 lebende Treffer   [## 10.6 §5 Klausel 4 / NAK-42 …]
+docs/beweise/SONDE-009.md            -> 8                   [## 3. Kanon-Läufe (roh, unverändert vom Runner angehängt)]
+docs/beweise/lauf-2026-08-27-0012.md -> 8                   [(Kopf der Datei)]
+docs/beweise/lauf-2026-08-27-0322.md -> 8                   [(Kopf der Datei)]
+docs/beweise/lauf-2026-08-27-0326.md -> 8                   [(Kopf der Datei)]
+docs/beweise/SONDE-007b.md           -> 2                   (kein A14-Bezug: `moduleinfo.json`)
+docs/beweise/SONDE-010.md            -> 1                   (kein A14-Bezug)
+```
+
+Das sind fremde Ticketmanifeste; diese Runde fasst sie **nicht** an. Der Punkt
+steht datiert als **NAK-101** in `docs/offene-punkte.md`.
+
+---
+
+### Prüfliste
+
+| Punkt | Erfüllt |
+|---|---|
+| **D** — fail-closed, Unbekanntes ist ROT | nicht berührt: an A14s Riegeln, Ausgängen und `voraussetzung_exit()` wurde nichts geändert. Der Befund derselben Runde, der D betrifft, liegt bei NAK-94 (`SONDE-007c.md`, Nacharbeit 9). |
+| **E** — Behauptung ≤ Messung | ja: der letzte lebende Satz, der über alle 17 Nadeln sprach, nennt jetzt die fünf gemessenen. Belegt mit der Import-Messung oben (5 von 17, 10 dürfen dort nicht stehen). Positionen als `Datei:Zeile @ sha7` oder Symbol; die volatile Nadelzahl steht weiter nur in der Laufausgabe. |
+| **E — Aussagen-Inventar** | ja: fünf Muster statt eines, Trefferzahlen je Muster und Stand in der Tabelle oben, lebend/historisch getrennt, jede lebende Stelle nachgezogen oder als historisch markiert. |
+| **F** — Änderungssatz | ja: Kommentar und die beiden Standangaben liegen zusammen in `4287839`. Ein Gegenstück (speichern↔laden, starten↔stoppen …) gibt es nicht — es wurde kein Verhalten geändert. |
+
+**Nicht berührt:** A14-Messlogik, `Install-Nakama.ps1`, Identitäts- und
+Installer-Manifeste, `NakamaKern.cmake`, Plugin-Code, `tools/dirigent/**`.
+Offen außerhalb der Grenze: NAK-89, NAK-93, NAK-98, NAK-99, NAK-100, NAK-101.
+
+<!-- inventar14:endstand:anfang -->
+**Die beiden rechten Spalten hat der Abschluss-Commit dieser Runde
+nachgetragen** — die Regel aus Runde 13, Befund 1: die Endstandzahl gehört
+zum tatsächlichen Endstand und wird **nach** dem Kanon gemessen.
+Der Stand **vor** dem Kanon ist der Commit der Manifestabschnitte samt
+Register; auf ihm lief der Kanon und hängte seinen Block an diese Datei an.
+Beide Spalten stehen bis dahin als `—`.
+
+Die Spalte **Endstand R14** ist ein **Fixpunkt**: sie zählt die Datei, in der
+sie steht. Gemessen mit `git grep -c -F '<Muster>' -- <datei>` (ohne Commit =
+Arbeitskopie) auf genau den Bytes, die der Abschluss-Commit trägt; danach
+erneut, bis sich nichts mehr änderte.
+
+<!-- endstand14:diff:anfang -->
+*Die Bilanz zwischen den beiden rechten Spalten trägt der Abschluss-Commit
+hier ein.*
+<!-- endstand14:diff:ende -->
+
+Nachgerechnet wird an einer festen Marke:
+
+```bash
+E=$(git log -1 --format=%H --grep='Runde 14 + NAK-94 Nacharbeit 9 - Abschluss')
+git grep -c -F 'im gebauten' $E -- docs/beweise/SONDE-007a.md
+```
+<!-- inventar14:endstand:ende -->

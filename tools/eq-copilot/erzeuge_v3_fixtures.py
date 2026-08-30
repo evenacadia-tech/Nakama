@@ -900,6 +900,15 @@ UNGUELTIG: list[tuple] = [
         f"{S}/probe_descriptor_post/properties/aussageklasse/const", "const")],
      "die POST-Haelfte eines Paares ist beobachtend (§32.2)"),
 
+    ("beitrag-ohne-contribution-aux", "session_snapshot",
+     [setze("mitglieder", 0, "measurement_position", "post_fader_contribution"),
+      setze("mitglieder", 0, "aussageklasse", "beitrag"),
+      setze("mitglieder", 0, "capabilities", "contribution_aux", "unsupported")],
+     [v("/mitglieder/0/capabilities/contribution_aux",
+        f"{S}/capabilities_beitrag/properties/contribution_aux/const", "const")],
+     "eine Beitragsaussage setzt den diskreten Contribution-Aux-Bus nachweislich "
+     "voraus; bei unsupported gilt nur Assoziation statt exakter Attribution (§53.6)"),
+
     # Die Gegenrichtung. Sie ist kein Gate-7-Bruch — eine Beitragsposition, die
     # sich schwaecher nennt, behauptet zu wenig statt zu viel —, aber sie macht
     # das Feld mehrdeutig: zwei Sender beschrieben dieselbe Topologie mit

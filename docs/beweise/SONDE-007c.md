@@ -1,6 +1,7 @@
 # Beweismanifest — SONDE-007c «Suna-Ziel stilllegen»
 <!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-28 offen -->
 <!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-29 nachgearbeitet -->
+<!-- NAKAMA-URTEIL: T2 PASS 2026-08-30 -->
 
 > **Die eine harte Regel** (`docs/bauaufteilung-sonden.md` §2): *Eine Behauptung
 > ohne eingefügte Rohausgabe ist ein **gescheitertes** Ticket, kein fast
@@ -1518,3 +1519,19 @@ unverändert; die zweite geänderte Datei ist dieses Beweismanifest selbst.
 
 **Urteil bleibt offen.** Dieser Nachtrag ist Worker-Arbeit; die Urteilsmarken
 und die Prüfstufen-Zeile im Kopf sind unberührt.
+
+---
+
+## Dirigentenstand — 2026-08-30 (Sitzung 3e24ab41): S9b `SONDE-007c` **T2 PASS** — NAK-89 geschlossen
+
+**Stand dieses Abschnitts:** `977bf48` (Basis der Konvergenzrunde 4: `36560b0`; Ticketbasis `9bb75ad`).
+
+**Runde 4 (Konvergenzrunde, Regeln des Dirigenten):** Opus/max `nakama-s9b-36560b0-bau` (9ee31f47), Aufsicht ENG; Commits `aadca53` (Behauptung 21 begrenzt, Vertrag §2.3 nennt den Feldtyp) und `fff9e09` (Kanon-Kopf, Roh-Datei, Rundenabschnitt). Kanon GRÜN 32/32 auf `aadca53`, A17 95 ok (`docs/beweise/roh/SONDE-007c-aadca53.md`). **Abschlussprüfer** Codex `gpt-5.6-sol` high, Thread `01a05299-1227-7c42-ae75-87791ef82bba`, Vorlage A über `git diff 36560b0...fff9e09 -- eq-copilot/schemas/installer/nakama-installer-v1.md`, HEAD vor/nach `fff9e09`, 136 s: kein Defekt; ein P2 — „nichtleere Zeichenkette" ließ formal reinen Leerraum zu, den A17 (`wert.strip()`) ablehnt; Vertrag laxer als Leser. Vom Dirigenten an der Quelle bestätigt (`pruefe_installer_manifest.py:476`, `:520-524`) und als Verstoß gegen die eigene Regel „nicht laxer" in die Fortsetzung gegeben. **Fortsetzung** `nakama-s9b-36560b0-fort` (e0161614): `977bf48` — Typ als „Zeichenkette mit mindestens einem Nicht-Leerraumzeichen" definiert, alle vier Zeilen und beide Tabellen tragen ihn; kein Kanonlauf, weil kein Bein die Vertragsdatei liest (`git grep` zeigt nur Kommentar- und Meldungstexte).
+
+**Wiederprüfung (Vorlage B, Fixdiff `fff9e09...977bf48`):** Codex `gpt-5.6-sol` high, frischer Thread `01a052a1-ee31-71e2-899d-cbed65559393`, HEAD vor/nach `977bf48`, 64 s — wörtlich (der Review-Modus gab keine „URTEIL:"-Kopfzeile aus; beide Fragen der Vorlage B sind mit ja/nein beantwortet, der Dirigent wertet das als PASS):
+
+> Der Befund ist geschlossen: Alle vier Felder verlangen ausdrücklich eine Zeichenkette mit mindestens einem Nicht-Leerraumzeichen, deckungsgleich mit A17s `isinstance(wert, str) and wert.strip()`. Der Fixdiff ändert nur den Vertrag; `git grep` bestätigt, dass kein Kanon-Bein ihn einliest. A17s relevante Gegenproben bestanden, der vollständige Lauf war wegen des schreibgeschützten temporären Verzeichnisses nicht ausführbar.
+
+**Urteil des Dirigenten:** Die Marke `T2 PASS 2026-08-30` steht im Kopf. Prüferkette dieses Tickets: T2 Runde 1–3 (28./29.08., drei frische Threads), NAK-94 (14 Prüfer, PASS 30.08.), Konvergenzentscheid 30.08. (NAK-89 = Lücke in drei Teilen), Abschlussprüfer Runde 4 (ein P2, geschlossen), Wiederprüfung PASS. Das Gate der Bauaufteilungszeile ist gemessen: Kanon grün ohne A15 (32/32), A17 mit zwei Bundles (95 ok), `pluginval` SUCCESS an beiden (C3/C4), keine fremde CID (B1); §55 Klausel 1 für beide Ziele seit 29.08. gemessen (`SONDE-007b.md`, „FL-Termin — 2026-08-29").
+
+**Rundenbilanz** (`tools/dirigent/rundenbilanz.py`): R4 `36560b0..fff9e09` Produkt (Vertragstext) +13/−2, Doku +3170/−1; Nachtrag `fff9e09..977bf48` Produkt (Vertragstext) +11/−8, Doku +51/−0. Kein Plugin-, Installer- oder Prüfcode geändert; die Runde schloss Beweisaussagen und den Vertragstext.

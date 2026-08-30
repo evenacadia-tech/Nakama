@@ -19999,7 +19999,7 @@ bleibt unverändert; NAK-89 bleibt offen.
 
 ## NAK-94 Nacharbeit Runde 13 — 2026-08-30 (Prüfer-Thread `01a051bf-4fca…`)
 
-**Stand dieses Abschnitts:** `STAND-PLATZHALTER` — der letzte Commit dieser
+**Stand dieses Abschnitts:** `0e7a60e` — der letzte Commit dieser
 Runde vor dem Kanon-Abschlusslauf; Positionen ohne eigene Angabe sind an diesen
 Commit gebunden. Der Messcode steht darin auf `d045ed3`.
 
@@ -20148,19 +20148,31 @@ Gerechnet mit demselben Skript und derselben Quellenmenge wie im Abschnitt
 statt einzelner `$standRang`-Variablen, Befund P2-4 derselben Runde). Gezählt
 werden Vorkommen, nicht Zeilen; beide Seiten werden vorher normalisiert.
 
-**Zahlen**, gemessen am Stand `STAND-PLATZHALTER`, Messcode darin `d045ed3`, die
+**Zahlen**, gemessen am Stand `0e7a60e`, Messcode darin `d045ed3`, die
 historische Spalte einschließlich dieses Abschnitts.
+
+> **Diese Zahlen standen zunächst falsch da, und der Fehler ist lehrreich.** Sie
+> waren gemessen, *bevor* die Tabelle selbst im Manifest stand — und jede Zeile
+> trägt ihr Muster in der ersten Spalte, die „was die Zahl sagt"-Spalte oft ein
+> zweites Mal. Die Tabelle zählte sich also nicht mit. Korrigiert sind die Werte
+> gegen `git show 0e7a60e:<datei>`, den Stand, den die Überschrift nennt; er ist
+> unveränderlich, also gilt die Korrektur dauerhaft. Dieselbe Klasse hatte Runde
+> 17 an zwei Zeilen — eine Zahl, die ein späterer Schreibvorgang derselben Runde
+> überholt. Für die **Endstandtabelle** unten ist der Fall deshalb ausdrücklich
+> anders gelöst: dort wird zuerst das Gerüst mit den Musternamen eingesetzt,
+> dann gemessen, dann werden nur noch **Ziffern** in die leeren Zellen
+> geschrieben — und Ziffern enthalten kein Muster.
 
 | Muster | Code | Man. lebend | Man. historisch | was die Zahl sagt |
 |---|---|---|---|---|
-| `FUZZ_PFLICHT` | 5 | 0 | 2 | der neue Bezeichner; nur Code — Kommentarkopf, Definition, zwei Leser in `fuzz_deckung` und `[3c/0b]`, plus `[3c/2]`. Er steht bewusst in keiner lebenden Manifestzeile: die Zusage gehört in die `Behauptung`, nicht in eine zweite Liste |
-| `FUZZ_GEFAHREN` | 7 | 0 | 1 | der Laufzähler, den `[3c/2]` liest; ebenfalls nur Code |
-| `Pflichtmenge` | 19 | 0 | 38 | der Begriff **in allen drei Bedeutungen** — A14-Identitätsnadeln, `[3b]`-Probe und die neue Fuzz-Menge. Genau deshalb trägt die neue überall den Zusatz „der Fuzz-Verbraucher": eine Zählung über den nackten Begriff könnte die drei nicht auseinanderhalten |
-| `FUZZ_VERBRAUCHER` | 11 | 0 | 18 | die Liste, um die der Befund ging; +1 gegenüber dem Basis-Stand durch die A17-`Behauptung`, die sie jetzt nennt |
-| `fuzz_deckung` | 4 | 0 | 13 | unverändert vier Stellen: Definition, zwei Aufrufe (`[3c/0b]` vor dem Lauf, `[3c/2]` danach) und der Kommentarkopf |
-| `[3c/0b]` | 2 | 0 | 8 | die neue Quelltextwache: ihre Zeile im Skript und ihre Nennung in der A17-`Behauptung` |
-| `[3c/2]` | 3 | 0 | 8 | die neue Laufwache: ihre Zeile, der Docstring-Verweis in `_fuzz_einmal` und die A17-`Behauptung` |
-| `korpus_nachrechnen` | 4 | 0 | 8 | der Pflichtaufruf der dritten Zusage: Import, Aufruf, `FUZZ_PFLICHT`-Eintrag und die A17-`Behauptung` |
+| `FUZZ_PFLICHT` | 5 | 0 | 4 | der neue Bezeichner; nur Code — Kommentarkopf, Definition, zwei Leser in `fuzz_deckung` und `[3c/0b]`, plus `[3c/2]`. Er steht bewusst in keiner lebenden Manifestzeile: die Zusage gehört in die `Behauptung`, nicht in eine zweite Liste |
+| `FUZZ_GEFAHREN` | 7 | 0 | 2 | der Laufzähler, den `[3c/2]` liest; ebenfalls nur Code |
+| `Pflichtmenge` | 19 | 0 | 39 | der Begriff **in allen drei Bedeutungen** — A14-Identitätsnadeln, `[3b]`-Probe und die neue Fuzz-Menge. Genau deshalb trägt die neue überall den Zusatz „der Fuzz-Verbraucher": eine Zählung über den nackten Begriff könnte die drei nicht auseinanderhalten |
+| `FUZZ_VERBRAUCHER` | 11 | 0 | 19 | die Liste, um die der Befund ging; +1 gegenüber dem Basis-Stand durch die A17-`Behauptung`, die sie jetzt nennt |
+| `fuzz_deckung` | 4 | 0 | 15 | unverändert vier Stellen: Definition, zwei Aufrufe (`[3c/0b]` vor dem Lauf, `[3c/2]` danach) und der Kommentarkopf |
+| `[3c/0b]` | 2 | 0 | 12 | die neue Quelltextwache: ihre Zeile im Skript und ihre Nennung in der A17-`Behauptung` |
+| `[3c/2]` | 3 | 0 | 12 | die neue Laufwache: ihre Zeile, der Docstring-Verweis in `_fuzz_einmal` und die A17-`Behauptung` |
+| `korpus_nachrechnen` | 4 | 0 | 9 | der Pflichtaufruf der dritten Zusage: Import, Aufruf, `FUZZ_PFLICHT`-Eintrag und die A17-`Behauptung` |
 
 | Stelle | alt | neu | Art |
 |---|---|---|---|
@@ -20169,6 +20181,38 @@ historische Spalte einschließlich dieses Abschnitts.
 | Abschnitte „NAK-94 Nacharbeit Runde 12" und früher | „die Fuzz-Deckung nimmt den Erzeuger-Leser als Verbraucher auf" | unverändert | historisch @ eigenem Stand |
 
 ---
+
+
+### Endstand nach dem Kanon-Abschlusslauf
+
+Der gemeinsame Kanon lief auf dem committeten Endstand `0e7a60e`: **GRÜN —
+32/32 Kanon-Läufe bestanden**, 2 geplante Prüfungen noch nicht gebaut, 1
+stillgelegtes Bein, Exitcode 0, Beglaubigung **nicht** verweigert. Bein A17
+(`pruefe_installer_manifest.py`) Exit 0 in 52,35 s, mit `[3c/0b]` und `[3c/2]`
+grün. Rohausgabe: `docs/beweise/roh/SONDE-007a-0e7a60e.md`; der Manifestkopf
+des Laufs steht in `docs/beweise/SONDE-007a.md`, Abschnitt „Kanon-Lauf —
+SONDE-007a Runde 18 + NAK-94 Nacharbeit 13 — Abschluss".
+
+Dieselbe Zählweise wie oben, gemessen **nach** dem Kanon-Abschlusslauf auf dem
+Arbeitsbaum unmittelbar vor dem Abschluss-Commit — also auf genau dem Inhalt,
+der committet wird, einschließlich dieser Tabelle selbst. Danach sind nur noch
+Ziffern eingesetzt worden; die Wiederholungsmessung ergab dieselben Werte.
+
+| Muster | Code | Man. lebend | Man. historisch | Δ historisch zur Tabelle oben |
+|---|---|---|---|---|
+| `FUZZ_PFLICHT` | 5 | 0 | 5 | +1 |
+| `FUZZ_GEFAHREN` | 7 | 0 | 3 | +1 |
+| `Pflichtmenge` | 19 | 0 | 40 | +1 |
+| `FUZZ_VERBRAUCHER` | 11 | 0 | 20 | +1 |
+| `fuzz_deckung` | 4 | 0 | 16 | +1 |
+| `[3c/0b]` | 2 | 0 | 14 | +2 |
+| `[3c/2]` | 3 | 0 | 14 | +2 |
+| `korpus_nachrechnen` | 4 | 0 | 10 | +1 |
+
+Die **Code**-Spalte ist unverändert — der Kanonlauf schreibt keinen Code. Die
+lebende Spalte bleibt durchgehend bei **0**: keine dieser Zusagen steht in
+einem Abschnitt ohne Standangabe, sie leben im Code und in der
+A17-`Behauptung`.
 
 ### Prüfliste — was diese Runde abhakt
 

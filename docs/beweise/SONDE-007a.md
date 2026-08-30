@@ -15389,3 +15389,24 @@ und sind dort einzeln gebrochen worden.
 | B10 | v3-Envelope in C++ klassifiziert den Envelope-Korpus wie das Manifest (Urteil UND Verstossmenge, alle 14 Regeln mit Negativfixture); CRC32C trifft die RFC-3720-Vektoren, P0/P1 tragen CRC exakt 0, P2 die Pflichtsumme ueber genau die Payloadbytes; 40 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und 7671 angenommene EINBIT-Mutanten gueltiger Frames halten jede Kopfregel (reiner Zufall wird praktisch immer abgewiesen - die Invariante braucht deshalb die Mutanten, sonst spraeche sie ueber eine leere Menge), 3000 gekippte P2-Bits fallen einzeln, byteweise Zustellung liefert dieselben 40 Frames und ein kaputter Frame beendet den Strom; Pipetoken trifft das Golden aus §48.3 samt SHA-256- und RFC-4648-Vektoren; P0 verwirft nichts und meldet den 65. Eintrag, P1 koalesziert an der Position und haelt Ereignisse fuer den Reconnect vor, die P2-Schleuse ersetzt den aeltesten ungesendeten Frame, uebergibt 100 000 Frames mit 0 Allokationen (mit Gegenprobe am selben Zaehler) und liefert unter Flut keinen zerrissenen Frame; verdrahtet: Control koppelt Telemetry ueber link_id + challenge, ein ungekoppelter Telemetry-Connect wird geschlossen, der Client verbindet nach Serverneustart von selbst wieder, ein kaputter Envelope vom Server schliesst die Verbindung, und ein P0-Ueberlauf WAEHREND einer stehenden Verbindung schliesst sie ebenfalls statt still zu kuerzen. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 32,85 s | [B10](roh/SONDE-007a-00d2796.md#b10) |
 | B8 | Lifecycle-Klassifikation §53.5: unclassified beim Laden und audio-neutral; Schema-1 sensor\|pre\|post -> legacy (immer passiv), hub bzw. bestaetigter Schema-2-Main-State -> main; ein Scannerlauf klassifiziert nicht; read-only nimmt die Klassifikation zurueck; Brokerstart nur fuer main mit offenem Editor; die Sondenbundles bleiben bis gueltigem State neutral und werden nie main. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,13 s | [B8](roh/SONDE-007a-00d2796.md#b8) |
 
+
+## Dirigentenstand — 2026-08-30 01:59 (Sitzung 054eedac): Prüfer 11 NEEDS_WORK, offen — Runde 11
+
+**Stand dieses Abschnitts:** `e9ea54b`
+
+**Marke unverändert** (`T3 NEEDS_WORK 2026-08-28 nachgearbeitet`). Ticketbasis `dafa5a5`; Stand `e9ea54b` (= origin/master); Kanon GRÜN 32/32 auf `00d2796` (Roh-Datei `docs/beweise/roh/SONDE-007a-00d2796.md`).
+
+| Schritt | Worker / Prüfer | Stand | Ergebnis |
+|---|---|---|---|
+| Runde 10 (W2, + NAK-94 Nacharbeit 5) | Opus/max `nakama-s8r10-nak94r5-a010d64-bau`, ENG | `70f5bad`…`e9ea54b` | Aussagen-Inventar, Riegelkarte, Standangaben; Kanon GRÜN 32/32 auf `00d2796` |
+| Prüfer 11 | Codex xhigh `01a04ff0-720b-79a0-a35f-6793f556b70b`, lesend über `git diff dafa5a5...e9ea54b`, HEAD vor/nach identisch | `e9ea54b` | **NEEDS_WORK (1)** — unten wörtlich; A14-Logik seit `32d86d9` unverändert, Voraussetzungs-Ausgänge 3 ohne / 2 mit Befund bestätigt |
+
+**Befund des elften Prüfers, wörtlich (`@ e9ea54b`):**
+
+> **[P2] [Defekt, mittel] Ziehe übrige Exit-3-Aussagen nach** — `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:3216-3218`. Bei `--nur-messen`, veraltetem Configure und bereits registriertem Befund erreicht dieser Pfad `voraussetzung_exit()` und liefert 2 statt der pauschal behaupteten 3; derselbe unqualifizierte Wortlaut fehlt im Z1-Inventar auch bei `kern_neubau` (:1010), `_patch_soll_vergleich` (:1721), vor dem Neubau (:3033) und im ersten `--nur-messen`-Block (:3108), entgegen `tools/dirigent/pruefliste.md` (Aussagen-Inventar). Ziehe diese Stellen auf „ohne Befund 3, mit Befund 2, nie 0" nach und erfasse sie im Inventar.
+
+**Einordnung:** Defekt, mittel (Prüfliste E, Aussagen-Inventar unvollständig). **Regel des Dirigenten (Präzisierung W2):** Das Inventar einer Zusage über Exit-Codes wird mit **allen** Schreibweisen gesucht — `Exit 3`, `exit 3`, `return 3`, `-> 3`, `→ 3`, `**3**`, `nie 2`, `nie 0`, „Voraussetzung" — in Skript, `tools/beweise.ps1` und den lebenden Manifestteilen; die grep-Kommandos und ihre Trefferzahlen (vor und nach dem Nachziehen) stehen im Inventar als Vollständigkeitsbeleg. Jede Kommentarstelle, die einen Voraussetzungs-Ausgang beschreibt, sagt „ohne Befund 3, mit Befund 2, nie 0" oder verweist auf `voraussetzung_exit()`. Keine Verhaltensänderung.
+
+**Nächster Schritt:** Nacharbeits-Worker für S8 Runde 11 **und** NAK-94 Nacharbeit 6 (siehe `docs/beweise/SONDE-007c.md`, „Dirigentenstand NAK-94 … Prüfer 6"), gemeinsamer Kanon, dann Prüfer 12 (xhigh) für S8 und Prüfer 7 (high) für NAK-94 — je frischer Thread. Kein Halt.
+
+**Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.

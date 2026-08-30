@@ -17921,3 +17921,20 @@ Arbeitsbaum sauber, Beglaubigung nicht verweigert. Vollständiger Block:
 NAK-94 Nacharbeit 5 - Abschluss"; Rohausgabe:
 `docs/beweise/roh/SONDE-007a-00d2796.md` (Bein A17 dort unter dem Anker
 `#a17`, A18 unter `#a18`).
+
+## Dirigentenstand NAK-94 — 2026-08-30 01:59 (Sitzung 054eedac): Prüfer 6 NEEDS_WORK, offen — Nacharbeit 6
+
+**Stand dieses Abschnitts:** `e9ea54b`
+
+**Nacharbeit 5 (W1):** Opus/max `nakama-s8r10-nak94r5-a010d64-bau`, Commits `70f5bad`, `2f1f89b`; vier Writer-Journale aus der A18-Sandbox eingefroren (`eq-copilot/fixtures/installer/journale/`), Mutanten deklariert; Kanon GRÜN 32/32 auf `00d2796` (Roh-Datei `docs/beweise/roh/SONDE-007a-00d2796.md`, Bein A17).
+**Prüfer 6:** Codex high `01a04ff0-7d0f-7b41-bbde-cb8311df51ae`, lesend über `git diff da62dec...e9ea54b`, HEAD vor/nach identisch — **NEEDS_WORK (2)**, wörtlich (`@ e9ea54b`); Writer-Bytes und SHA-256 bestätigt konsistent:
+
+> **[P2] Fordere auch das vierte Writer-Fixture** — `tools/eq-copilot/pruefe_installer_manifest.py:164-165`. Wenn `error-rueckgerollt.json` samt MANIFEST-Eintrag entfällt, bleiben A17 und `erzeuge_installer_journale.py --pruefen` grün: Die Pflichtmenge enthält nur drei Dateien und die Probe überspringt das fehlende vierte Fixture später ausdrücklich. Damit kann die zugesagte ERROR_RUECKGEROLLT-Writer-Probe unbemerkt verschwinden; ergänze sie zur Pflichtmenge und entferne den optionalen Skip.
+>
+> **[P2] Belege jede Probe mit einem eigenen Bruch** — `docs/beweise/SONDE-007c.md:17828-17835`. Der dokumentierte Bruch B5-5 macht gleichzeitig acht Statusproben rot; B5-3 lässt ebenfalls beide OK-Fixture-Proben zusammen fallen. Damit ist die verbindliche Forderung „je Probe ein eigener Bruch, der genau diese Probe rot macht" nicht erfüllt, obwohl der Abschluss das behauptet; führe getrennte, diskriminierende Brüche mit ROT- und Rücknahmeausgabe aus oder fasse die Prüfungen tatsächlich zu einer Probe zusammen.
+
+**Einordnung:** (1) Defekt, mittel — `JOURNAL_PFLICHTFAELLE` @ `e9ea54b` Z. 164–165 nennt drei Dateien, `error-rueckgerollt.json` wird bei Z. 1178 optional gefahren; W1 verbietet still ausgelassene Proben. (2) Defekt, mittel, mit **Präzisierung der Regel**: gefordert ist ein eigener Bruch je **Zusage**, nicht je Ausgabezeile. Proben, die dieselbe Zusage über mehrere Werte parametrisieren (die Statussperre über acht Statuswerte; „OK-Journal → ok" über beide OK-Fixtures), sind **eine** Probe mit einer Zusage-Zeile, die die Werte zählt — und genau ein Bruch. Proben mit verschiedener Zusage bekommen je einen eigenen, diskriminierenden Bruch.
+
+**Regeln des Dirigenten (Nacharbeit 6):** (1) Pflichtmenge = alle Fälle aus `MANIFEST.json` (heute vier); fehlt einer, bricht `[3b]` laut ab — kein Skip; `erzeuge_installer_journale.py --pruefen` fällt ebenfalls, wenn eine im MANIFEST geführte Datei fehlt. Probe: Fixture umbenannt → A17 ROT und `--pruefen` ROT, zurückgenommen. (2) `[3b]` wird nach Zusagen gegliedert (z. B. Z1 „Writer-Fixtures vollständig und bytegleich", Z2 „OK-Journal → ok", Z3 „Status ≠ OK → Hinweis ohne Hashvergleich", Z4 „Mutant ohne `eintraege` → ‚keine Liste'", Z5 „unbrauchbare Kennung → Hinweis"); jede Zusage hat eine Zeile im Manifest, eine `pruefe(...)`-Gruppe und **einen** Bruch mit ROT/Rücknahme, der nur diese Zusage rot macht (B6-Zx). Die Behauptung in `tools/beweise.ps1` und im Skriptkopf sagt „je Zusage ein Bruch".
+
+**Nächster Schritt:** Nacharbeit 6 im selben Worker wie S8 Runde 11 (siehe `docs/beweise/SONDE-007a.md`, „Dirigentenstand … Prüfer 11"), gemeinsamer Kanon, danach Prüfer 7 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.

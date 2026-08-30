@@ -2401,6 +2401,44 @@ def _fuzz_erzeuger() -> None:
 FUZZ_VERBRAUCHER = (_fuzz_verbraucher, _fuzz_erzeuger)
 
 
+# DIE PFLICHTMENGE DER FUZZ-VERBRAUCHER - BEFUND DES DREIZEHNTEN PRUEFERS
+# (NAK-94 Nacharbeit 13). Der Zusatz "der Fuzz-Verbraucher" gehoert zum Namen:
+# "Pflichtmenge" heisst in A14 die Teilmenge der Identitaetsnadeln, die im
+# Bundle stehen MUSS, und in [3b] die Probe fuer den fail-closed Abbruch. Drei
+# verschiedene Dinge, drei verschiedene Namen.
+#
+# Die Deckungsrechnung unten ist eine DIFFERENZ ueber `_lauf()`. Eine Differenz
+# kann nur bemerken, was im Minuenden steht - und der Erzeuger-Leser ist gar
+# kein Block von `_lauf()`. Gemessen @ e27974c: `_fuzz_erzeuger` aus
+# `FUZZ_VERBRAUCHER` genommen und `fuzz_deckung()` blieb leer, [3c/0] also
+# gruen. Die Zusage der Nacharbeit 12 konnte damit spurlos verschwinden; der
+# dort dokumentierte "Bruch 2" fiel nur von `strukturhalt` auf `befund`, und
+# beide zaehlt [3c] als gruen, weil nur `unkontrolliert` rot ist.
+#
+# Deshalb steht hier eine eigene, FALLENDE Wache: drei Zusagen, jede an ihren
+# Verbraucher und an den Aufruf gebunden, ohne den sie nichts mehr bedeutet.
+# Fehlt der Verbraucher in `FUZZ_VERBRAUCHER`, ruft er seinen Pflichtaufruf
+# nicht mehr, oder wurde er im Lauf kein einziges Mal gefahren, ist [3c] ROT
+# MIT NAMEN - nicht still gruen.
+#
+# KEINE ANZAHL, NAMEN: die Behauptung nennt die Zusagen, nicht ihre Zahl. Eine
+# Zahl waere wieder das, was sie hier immer war - still falsch, sobald jemand
+# einen Eintrag ergaenzt.
+#
+#   (Zusage, Verbraucher, Aufruf ohne den die Zusage leer ist)
+FUZZ_PFLICHT = (
+    ("A17-Kanonpfad", "_fuzz_verbraucher", "_lies_geprueft"),
+    ("--hashen", "_fuzz_verbraucher", "hashen"),
+    ("Erzeuger-pruefen()", "_fuzz_erzeuger", "korpus_nachrechnen"),
+)
+
+
+# Wie oft `_fuzz_einmal()` jeden Verbraucher WIRKLICH gefahren hat. Die Liste
+# oben sagt, was gefahren werden soll; dieser Zaehler sagt, was gefahren wurde
+# - ein Eintrag, den eine Vorbedingung still ueberspringt, faellt sonst durch.
+FUZZ_GEFAHREN: dict[str, int] = {}
+
+
 # Bloecke, die `_lauf()` faehrt und die `_fuzz_verbraucher()` NICHT faehrt,
 # weil sie keine der gelesenen JSON-Dateien anfassen. Jede ANDERE Abweichung
 # ist ROT: sonst waechst `_lauf` still um einen Leser, den [3c] nie sieht -
@@ -2438,16 +2476,44 @@ def _aufgerufene(funktionsname: str) -> set[str]:
     return set()
 
 
-def fuzz_deckung() -> set[str]:
-    """Bloecke aus `_lauf`, die der Fuzz nicht faehrt und nicht fahren darf.
+def fuzz_deckung(gefahren: dict[str, int] | None = None
+                 ) -> tuple[set[str], list[str]]:
+    """Deckung UND Pflichtmenge. (offene Bloecke, Klagen der Pflichtmenge)
 
-    Gerechnet wird ueber die VEREINIGUNG aller Verbraucher (Nacharbeit 12) -
-    seit der Erzeuger-Leser dazugehoert, ist es nicht mehr nur einer.
+    Erstens die Deckung: Bloecke aus `_lauf`, die der Fuzz nicht faehrt und
+    nicht fahren darf. Gerechnet wird ueber die VEREINIGUNG aller Verbraucher
+    (Nacharbeit 12) - seit der Erzeuger-Leser dazugehoert, ist es nicht mehr
+    nur einer.
+
+    Zweitens die PFLICHTMENGE DER FUZZ-VERBRAUCHER (Nacharbeit 13): jede
+    Zusage aus `FUZZ_PFLICHT`
+    braucht ihren Verbraucher in `FUZZ_VERBRAUCHER` UND den Aufruf, an dem sie
+    haengt. Das ist bewusst KEINE Deckungsrechnung - eine Differenz ueber
+    `_lauf()` kann einen Verbraucher, der in `_lauf()` gar nicht vorkommt,
+    niemals vermissen.
+
+    `gefahren` ist der Zaehler aus `_fuzz_einmal()`. Ohne ihn (vor dem Lauf)
+    wird nur geprueft, was im Quelltext steht; mit ihm (nach dem Lauf) auch,
+    dass jeder Pflichtverbraucher wirklich gefahren wurde. Beides ist noetig:
+    das erste faellt, wenn jemand den Eintrag entfernt, das zweite, wenn er
+    stehen bleibt und trotzdem nichts tut.
     """
-    gefahren: set[str] = set()
+    aktiv = {fn.__name__ for fn in FUZZ_VERBRAUCHER}
+    vereinigt: set[str] = set()
     for fn in FUZZ_VERBRAUCHER:
-        gefahren |= _aufgerufene(fn.__name__)
-    return _aufgerufene("_lauf") - gefahren - FUZZ_OHNE_JSON
+        vereinigt |= _aufgerufene(fn.__name__)
+
+    klagen: list[str] = []
+    for zusage, verbraucher, aufruf in FUZZ_PFLICHT:
+        if verbraucher not in aktiv:
+            klagen.append(f"{zusage}: {verbraucher} steht nicht in "
+                          f"FUZZ_VERBRAUCHER")
+        elif aufruf not in _aufgerufene(verbraucher):
+            klagen.append(f"{zusage}: {verbraucher} ruft {aufruf} nicht mehr")
+        elif gefahren is not None and not gefahren.get(verbraucher):
+            klagen.append(f"{zusage}: {verbraucher} wurde im Lauf kein "
+                          f"einziges Mal gefahren")
+    return _aufgerufene("_lauf") - vereinigt - FUZZ_OHNE_JSON, klagen
 
 
 # Von der schwersten zur leichtesten: faehrt ein Fall mehrere Verbraucher,
@@ -2471,6 +2537,10 @@ def _fuzz_einmal(ersatz: dict) -> tuple[str, str]:
     in seiner eigenen Huelle und unabhaengig davon, ob ein frueherer abgebrochen
     ist: sonst haette der Erzeuger-Leser fuer genau die Mutationen, um die es
     bei ihm geht, nie eine Zeile gesehen.
+
+    Jeder Aufruf wird in `FUZZ_GEFAHREN` gezaehlt (Nacharbeit 13). Erst dieser
+    Zaehler macht aus "steht in der Liste" ein "wurde gefahren" - `[3c/2]`
+    liest ihn nach dem Lauf gegen dieselbe Pflichtmenge.
     """
     global ok
     merk_ok, merk_fehler = ok, list(fehler)
@@ -2479,7 +2549,14 @@ def _fuzz_einmal(ersatz: dict) -> tuple[str, str]:
         with contextlib.redirect_stdout(io.StringIO()), \
                 contextlib.redirect_stderr(io.StringIO()), \
                 _dateien_ersetzt(ersatz):
-            ergebnisse = [_geschuetzt(fn) for fn in FUZZ_VERBRAUCHER]
+            ergebnisse = []
+            for verbraucher in FUZZ_VERBRAUCHER:
+                # VOR dem Aufruf gezaehlt: gezaehlt wird, dass gefahren
+                # WURDE, nicht wie es ausging - ein Strukturhalt ist ein
+                # Ergebnis, kein ausgefallener Lauf.
+                name = verbraucher.__name__
+                FUZZ_GEFAHREN[name] = FUZZ_GEFAHREN.get(name, 0) + 1
+                ergebnisse.append(_geschuetzt(verbraucher))
         for rang in _FUZZ_RANG:
             for klasse, text, _ in ergebnisse:
                 if klasse == rang:
@@ -2512,13 +2589,24 @@ def byte_kipp_fuzz(schritt: int) -> None:
     # Bevor gezaehlt wird: faehrt der Fuzz ueberhaupt dieselben Bloecke wie der
     # echte Lauf? Sonst sagte eine gruene Zahl nur, dass ein VERALTETER
     # Ausschnitt keine Ausnahme wirft.
-    offen = fuzz_deckung()
+    offen, pflicht_klagen = fuzz_deckung()
     pruefe(not offen,
            "[3c/0] der Fuzz faehrt jeden Block aus _lauf(), der eine gelesene "
            "JSON-Datei anfassen kann - die uebrigen stehen namentlich in "
            f"FUZZ_OHNE_JSON ({len(FUZZ_OHNE_JSON)}); Verbraucher: "
            + ", ".join(fn.__name__ for fn in FUZZ_VERBRAUCHER),
            "nicht gefahren: " + ", ".join(sorted(offen)) if offen else "")
+
+    # Und die Pflichtmenge der Fuzz-Verbraucher, die die Deckung NICHT
+    # sehen kann (Nacharbeit 13):
+    # jede Zusage namentlich, mit dem Verbraucher, der sie traegt.
+    pruefe(not pflicht_klagen,
+           "[3c/0b] die Pflichtmenge der Fuzz-Verbraucher steht: "
+           + "; ".join(f"{zusage} in {verbraucher} ueber {aufruf}()"
+                       for zusage, verbraucher, aufruf in FUZZ_PFLICHT),
+           "; ".join(pflicht_klagen) if pflicht_klagen else "")
+
+    FUZZ_GEFAHREN.clear()
 
     # Der gefuzzte `--hashen`-Zweig SCHREIBT. Gemessen wird deshalb nicht nur,
     # dass er kontrolliert bleibt, sondern auch, dass er das Manifest im Repo
@@ -2570,6 +2658,19 @@ def byte_kipp_fuzz(schritt: int) -> None:
     finally:
         globals()["artefakt_hash"] = echter_hash
     dauer = time.perf_counter() - beginn
+
+    # Dieselbe Pflichtmenge der Fuzz-Verbraucher ein zweites Mal, jetzt
+    # gegen den ZAEHLER: die
+    # Wache oben liest den Quelltext, diese hier den Lauf. Ein Verbraucher,
+    # der in der Liste steht und trotzdem nie drankam - weil eine Vorbedingung
+    # ihn ueberspringt -, faellt nur hier auf.
+    _, pflicht_nachher = fuzz_deckung(FUZZ_GEFAHREN)
+    pruefe(not pflicht_nachher,
+           "[3c/2] jeder Pflichtverbraucher wurde im Lauf wirklich gefahren: "
+           + ", ".join(f"{name} {FUZZ_GEFAHREN.get(name, 0)}x"
+                       for name in dict.fromkeys(
+                           v for _z, v, _a in FUZZ_PFLICHT)),
+           "; ".join(pflicht_nachher) if pflicht_nachher else "")
 
     manifest_nachher = hashlib.sha256(MANIFEST.read_bytes()).hexdigest()
     pruefe(manifest_vorher == manifest_nachher,

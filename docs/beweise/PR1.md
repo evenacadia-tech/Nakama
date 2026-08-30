@@ -74,14 +74,14 @@ mitgeführt.
 | Registerzeilen `docs/offene-punkte.md` (`NAK-*`, alle drei Tabellen) | **90** | `grep -c '^\| NAK-'` |
 | Höchste vergebene Registernummer vor diesem Ticket | **NAK-104** | `grep -o 'NAK-[0-9]+' \| sort -n \| tail -1` |
 | Planschritte in `docs/plan/plan.json` | **38** in **8** Phasen | `sum(len(p["schritte"]))` |
-| Geprüfte Herstellerprodukte mit abgerufener Herstellerdoku | **9** von 9 Herstellern (Pro-Q 4, Neutron 5 / Ozone, smart:EQ 4, MMultiAnalyzer, SPAN Plus, Trackspacer, Smooth Operator Pro, Gullfoss, TDR Nova) — nach Runde 1 | §5, Quellenliste §2.2 |
-| Einzeln abgerufene Herstellerseiten (H1–H14) | **14** | `grep -c '^\| H[0-9]' docs/beweise/PR1.md` |
+| Geprüfte Herstellerprodukte mit abgerufener Herstellerdoku | **9** von 9 Herstellern (Pro-Q 4, Neutron 5 / Ozone, smart:EQ 4, MMultiAnalyzer, SPAN Plus, Trackspacer, Smooth Operator Pro, Gullfoss, TDR Nova) — unverändert nach Runde 2: H15 ist eine weitere Seite eines schon geführten Herstellers | §5, Quellenliste §2.2 |
+| Einzeln abgerufene Herstellerseiten (H1–H15) | **15** | `grep -c '^\| H[0-9]' docs/beweise/PR1.md` |
 | **Befunde: Defekt im Plan** | **6** | §4 |
 | **Befunde: Lücke** | **4** | §4 |
 | **Befunde: Härtung** | **3** | §4 |
 | Neue Fragenkarten an den User (U15–U20) | **6** | §6.2 |
 | Neue Registerzeilen (NAK-105 bis **NAK-111**) | **7** | §6.1 und §9 |
-| Direkte Edits an Planquellen (E-1 bis E-17, dazu R1-1 bis R1-11 aus Runde 1) | **17 + 11** | §6.1 und §9.3 |
+| Direkte Edits an Planquellen (E-1 bis E-17, dazu R1-1 bis R1-11 aus Runde 1 und R2-1 aus Runde 2) | **17 + 11 + 1** | §6.1, §9.3 und §10.3 |
 | Vorschläge an den Dirigenten | **3**, davon **1 entschieden** (V-1, 30.08. Runde 1) | §6.3 |
 | Registerzeilen `docs/offene-punkte.md` nach Runde 1 | **97**, höchste **NAK-111** | `grep -c '^\| NAK-'` |
 | Offene Fragenkarten nach Runde 1 | **8** (U11, U13, U15–U20; U17 trägt fünf getrennt beantwortbare Einzelentscheide U17.1–U17.5) | `len(d["offen"])` |
@@ -91,9 +91,11 @@ mitgeführt.
 | Runde | Was | Prüfer / Stufe | Urteil | Offen danach |
 |---|---|---|---|---|
 | **0** | Erstdurchgang: Entscheidregister, Funktionsvergleich, Änderungssatz E-1 bis E-17, Karten U15–U20, Register NAK-105 bis NAK-109 (§1–§8) | Codex `gpt-5.6-sol`, Effort **xhigh**, lesend, Thread `01a053a7-d1dc-7441-8554-44d0fa14cc8f` (30.08.2026) | **NEEDS_WORK** | **7** Befunde, alle [P1] |
-| **1** | Nacharbeit: genau diese sieben Befunde geschlossen — Planedits, Register, Karten, zwei nachgereichte Herstellerquellen, Einordnung Visual Mixer (§9) | Worker, Selbstaudit (T1); der Dirigent hat alle sieben vorab an der Quelle als **Defekt** bestätigt | offen — das T3-Urteil setzt der Dirigent | **0** der sieben |
+| **1** | Nacharbeit: genau diese sieben Befunde bearbeitet — Planedits, Register, Karten, zwei nachgereichte Herstellerquellen, Einordnung Visual Mixer (§9) | Worker, Selbstaudit (T1); der Dirigent hat alle sieben vorab an der Quelle als **Defekt** bestätigt | **NEEDS_WORK** — durch die Wiederprüfung in der Zeile darunter | **1** der sieben: **B6** blieb offen, sechs sind geschlossen |
+| **1-P** | Wiederprüfung der Runde 1, Prüfbereich `git diff 0e3908e...b54a575 -- <Ticketpfade>`; `beantwortet{}` unverändert, beide Plan-JSON laden | Codex `gpt-5.6-sol`, Effort **xhigh**, lesend, Thread `01a053cf-9992-7910-b526-a7712881d9a3` (30.08.2026) | **NEEDS_WORK** | **1** Restbefund [P1] — B6, `docs/plan/fragen.json:72` |
+| **2** | Nacharbeit: nur dieser eine Restbefund — U18 auf das Belegte eingegrenzt, Herstellerquelle **H15** nachgereicht, §5.3 mit datiertem Zusatz (§10). Keine andere Karte, kein anderer Plansatz angefasst | Worker, Selbstaudit (T1); der Dirigent hat den Restbefund vorab an der Quelle als **Defekt** bestätigt | offen — das T3-Urteil setzt der Dirigent | **0** |
 
-Der lebende Kopf endet hier. §2 bis §8 sind der Verlauf des Erstdurchgangs und werden nicht umgeschrieben; Korrekturen daran stehen als datierte Nachträge an Ort und Stelle. §9 ist der append-only Rundenabschnitt.
+Der lebende Kopf endet hier. §2 bis §8 sind der Verlauf des Erstdurchgangs und werden nicht umgeschrieben; Korrekturen daran stehen als datierte Nachträge an Ort und Stelle. §9 und §10 sind die append-only Rundenabschnitte.
 
 ---
 
@@ -143,9 +145,12 @@ Händler-, Test- und Forenseiten sind **nicht** als Beleg verwendet.
 | H11 | Soundtheory Gullfoss — Operation Manual (PDF, 21 Seiten) | https://www.soundtheory.com/static/Gullfoss%20Operation%20Manual.pdf | Recover/Tame/Bias/Brighten/Boost als vollautomatischer, wahrnehmungsmodellbasierter EQ; Kurve „updated internally more than 300 times per second"; Lautheitskompensation eingebaut („preserves the original dynamics and perceived loudness … without being mislead by a slightly different perceived loudness"); Frequenzbereichs-Begrenzer im Graph; Sidechain-Eingang seit 1.9.0 |
 | H13 | Tokyo Dawn Records TDR Nova | https://www.tokyodawn.net/tdr-nova/ | „With its four dynamic EQ bands and additional high-pass and low-pass filter sections, NOVA can meet the most exotic demand"; „each band also includes a full featured dynamics section" — Beleg für die Zuordnung „dynamische Bänder" in §5.3 (abgerufen 30.08.2026, Runde 1) |
 | H14 | iZotope Ozone — Features (Match EQ) | https://www.izotope.com/en/products/ozone/features.html | „Match to any reference track with over 8,000 separate bands to get the most precise snapshot possible" — Beleg für die Zuordnung „iZotope hat EQ-Matching" in §5.4 und Karte U19 (abgerufen 30.08.2026, Runde 1) |
+| H15 | FabFilter Pro-Q 4 — Undo, redo, A/B switch | https://www.fabfilter.com/help/pro-q/using/undoredo | „The Copy button copies the active state to the inactive state. This marks the current state of the plug-in and allows you to go back to it easily with the A/B button." — Pro-Q 4s „Copy" ist damit die A/B-Zustandskopie **innerhalb derselben Instanz**, kein Übertragen in eine andere. Grundlage der Eingrenzung von Karte U18 und der §5.3-Zeile „Undo/Redo, A/B, Kopieren" (abgerufen 30.08.2026, Runde 2) |
 | H12 | Steinberg VST 3 — `ChannelContext::IInfoListener` | https://steinbergmedia.github.io/vst3_doc/vstinterfaces/classSteinberg_1_1Vst_1_1ChannelContext_1_1IInfoListener.html | Der Weg, über den ein Host Spurname, Farbe und Index an ein Plugin gibt — Grundlage von Befund D-2 |
 
 **Nachtrag 30.08.2026 (Runde 1, Codex-Befund B6).** Der Satz oben („alle zwölf Seiten") gilt für den ersten Durchgang. In Runde 1 sind **zwei weitere Herstellerseiten am 2026-08-30 einzeln abgerufen** worden — **H13** (TDR Nova) und **H14** (iZotope Ozone) —, weil vier Marktzuordnungen über die damalige Quellenliste hinausreichten. Stand jetzt: **vierzehn** Quellen, davon zwölf aus dem ersten Durchgang. Zwei Zuordnungen sind dabei nicht belegt worden, sondern **gestrichen** (§5.1, Zeile Instanzliste). Für H13 und H14 gilt dieselbe Grenze wie unten für H1–H11.
+
+**Nachtrag 30.08.2026 (Runde 2, Restbefund zu B6).** Eine **weitere Herstellerseite ist am 2026-08-30 einzeln abgerufen** worden — **H15**, die FabFilter-Hilfeseite „Undo, redo, A/B switch" —, weil die Zuordnung „Kopieren zwischen Instanzen" aus dem blossen Wort „Copy" in H3 abgeleitet worden war und H3 nicht sagt, was diese Taste tut. H15 sagt es: sie kopiert den aktiven A/B-Zustand auf den inaktiven, innerhalb derselben Instanz. Die Zuordnung ist damit nicht belegt, sondern **widerlegt**; Karte U18 und die §5.3-Zeile sind entsprechend eingegrenzt (§10). Stand jetzt: **fünfzehn** Quellen — zwölf aus dem Erstdurchgang, zwei aus Runde 1, eine aus Runde 2. Für H15 gilt dieselbe Grenze wie unten für H1–H11.
 
 **Ehrliche Grenze der Recherche:** H1–H11 belegen, **dass** eine Funktion
 existiert und wie der Hersteller sie beschreibt. Sie belegen nicht, wie sie
@@ -589,7 +594,7 @@ Legende **betroffen**: `V` = v3-Nachrichtenvertrag · `S` = State/Parameter ·
 | Delta-Abhören (nur die Änderung) | Neutron 5 Delta-Buttons (H5) | **hat** — Hörmodus `DELTA` (§41.1) | — | S20–22 | — |
 | Ausgangs-Trim, Width, Mono-Maker | Pro-Q 4 Output (H4) | **hat** — `input_trim_db`, `output_trim_db`, `width`, `mono_bass_hz` | — | S26–28 | — |
 | **Voreinstellungen (Preset-Browser)** | Pro-Q 4 (H3); SPAN Plus Preset-Manager (H8) | **fehlt als eigene Funktion** — Projekt-State reist über den Host, aber es gibt kein Preset-Objekt, keinen Browser, keine Werksvoreinstellungen | **S**, O | offen | **Fragenkarte U18**, Lücke **L-3** |
-| Undo/Redo, A/B, Kopieren | Pro-Q 4 „Undo, Redo, A/B and Copy" (H3); SPAN Plus (H8) | **teilweise** — eigener Undo-Ring je Sonde (Entscheid 23.08., Festlegung 21), A/B als Experiment (§43). **Kopieren einer Kurve zwischen Sonden fehlt**; `nakama-state-v2.md:94` behandelt Copy/Paste nur als Gefahr (Fremdklasse ⇒ read-only) | **S**, O | S26–28 / S31b | in **U18** mitgeführt |
+| Undo/Redo, A/B, Kopieren | Pro-Q 4 „Undo, Redo, A/B and Copy" (H3); SPAN Plus (H8). **Nachtrag 30.08.2026 (Runde 2, Restbefund zu B6):** für **Undo/Redo und A/B** tragen H3 und H8 die Zuordnung. Für **Kopieren** tragen sie sie nicht: Pro-Q 4s „Copy" ist laut Herstellerhilfe „The Copy button copies the active state to the inactive state" (**H15**) — die A/B-Zustandskopie innerhalb derselben Instanz —, und die SPAN-Plus-Feature-Seite nennt kein Kopieren. **Das Übertragen einer Kurve zwischen Instanzen ist damit keine belegte Marktstandardfunktion**, sondern ein Nakama-eigener Wunsch; die Zelle rechts und Karte U18 führen ihn weiter, jetzt ohne Marktbehauptung | **teilweise** — eigener Undo-Ring je Sonde (Entscheid 23.08., Festlegung 21), A/B als Experiment (§43). **Kopieren einer Kurve zwischen Sonden fehlt**; `nakama-state-v2.md:94` behandelt Copy/Paste nur als Gefahr (Fremdklasse ⇒ read-only) | **S**, O | S26–28 / S31b | in **U18** mitgeführt |
 | MIDI Learn | Pro-Q 4 (H3) | **löst anders** — FL bindet Hostparameter selbst; für die Sonde gehen 109 Parameter an den Host, **für Gens Master-EQ heute null** | S | S28b | Folge von **D-1** |
 | Fenstergröße frei / Vollbild | Pro-Q 4 „Full Screen mode and resizable interface" (H3) | **bewusst nicht** — festes Verhältnis, Stufen 100/125/150/200 % (U2.17; Entscheid 25.08.: „lassen wir es erstmal dabei") | — | — | ausdrücklicher Entscheid, kein Fund |
 
@@ -1295,3 +1300,141 @@ seinen eigenen Planstand-Lauf berichten kann.
 **Keine Urteilsmarke.** Diese Runde setzt keine `NAKAMA-URTEIL`-Zeile; PR1 bleibt im
 gerechneten Planstand *gebaut, nicht abgenommen*, bis der Dirigent nach einer frischen
 Prüfung urteilt.
+
+---
+
+## 10. Runde 2 — Nacharbeit nach Wiederprüfung (30.08.2026)
+
+Diese Runde schließt **genau einen** Befund: den Restbefund der Codex-Wiederprüfung zu B6.
+Keine andere Fragenkarte, keine Planzeile, keine Registerzeile und kein Absatz aus §1–§9 ist
+umgeschrieben worden; Korrekturen in §2.2 und §5.3 stehen als **datierte Nachträge an Ort und
+Stelle**. `beantwortet{}` in `docs/plan/fragen.json` ist unangetastet.
+
+### 10.1 Die Wiederprüfung
+
+| Feld | Wert |
+|---|---|
+| Prüfer | Codex `gpt-5.6-sol`, Effort **xhigh**, **lesend** |
+| Thread | `01a053cf-9992-7910-b526-a7712881d9a3` |
+| Datum | 30.08.2026 |
+| Prüfbereich | `git diff 0e3908e...b54a575 -- <Ticketpfade>` |
+| Stand vor dieser Runde | `b54a575d92635e2e6f184cd81c12c023e1d395d5` (Branch `master`) |
+| Ticketbasis | `6f40eed5e5e3969df2ac08232011247ff377e89c` |
+| Urteil | **NEEDS_WORK** — ein Restbefund, [P1] |
+
+**Urteilstext, wörtlich:**
+
+> B1 ja (`plan.json:195`), B2 ja (`plan.json:195`), B3 ja (`plan.json:195,280,304`), B4 ja
+> (`plan.json:218`), B5 ja (`fragen.json:55-61`), B6 nein (`fragen.json:72`), B7 ja
+> (`PR1.md:565`). Weitere Entscheid- oder CLAUDE-Brüche wurden nicht gefunden; `beantwortet{}`
+> ist unverändert und beide JSON-Dateien laden.
+>
+> - [P1] Belege das Kopieren zwischen Instanzen — docs/plan/fragen.json:72
+>   Wenn U18 als Grundlage für die Produktentscheidung über sondenübergreifendes Kopieren dient,
+>   bleibt B6 offen: Die neue Formulierung sagt, bei beiden Produkten seien „Voreinstellungen und
+>   Kopieren" Grundausstattung, aber H8 führt für SPAN Plus nur Preset-Manager, Undo/Redo und A/B
+>   (`docs/beweise/PR1.md:140`) und belegt kein Kopieren; auch H3s generisches A/B/Copy (`:135`)
+>   belegt nicht den in U18 beschriebenen Transfer zwischen Instanzen. Damit ist die Aussage
+>   weiterhin nicht durch aktuelle Herstellerdokumentation gedeckt und bricht den PR1-Gate-Satz in
+>   `docs/plan/plan.json:187`; bitte die Kopierzuordnung eingrenzen oder eine passende
+>   Herstellerquelle ergänzen.
+
+*Zum Zitat:* wörtlich übernommen. Die im Transport ASCII-ersetzten Umlaute (`ae`, `oe`, `ue`) sind
+wiederhergestellt; kein Wort, keine Fundstelle und keine Zahl ist geändert.
+
+**Der Dirigent hat den Befund vorab an der Quelle nachgemessen und als Defekt bestätigt.**
+
+### 10.2 Nachmessung, gewählter Weg und Grund
+
+**Eigene Nachmessung vor der Änderung** — jede Zeile an der Quelle gelesen, Stand `b54a575`:
+
+| Was gemessen | Befehl / Ort | Ergebnis |
+|---|---|---|
+| Behauptung der Karte | `docs/plan/fragen.json:72` | „… gehören Voreinstellungen und Kopieren zur Grundausstattung" — für **beide** Produkte |
+| Was H8 im Manifest trägt | `docs/beweise/PR1.md:140` | „Spektrum-Export an andere Instanzen, Kanalgruppen, Korrelation, EBU R128 LUFS, Preset-Manager, Undo/Redo, A/B" — `grep -oi 'copy\|kopier'` auf dieser Zeile: **0** Treffer |
+| Was die H8-Herstellerseite trägt | `https://www.voxengo.com/product/spanplus/features/`, erneut abgerufen 30.08.2026 | im Seitentext **0** Treffer für `cop(y\|ies\|ied)`; die Feature-Liste nennt „Preset manager", „Undo/redo history", „A/B comparisons" |
+| Was H3 trägt | `docs/beweise/PR1.md:135` | „Undo/Redo/A/B/Copy" — ein Tastenname. H3 sagt nicht, was die Taste tut, und nennt keine zweite Instanz |
+
+Der Befund ist damit **Defekt**: die Karte behauptete mehr, als ihre beiden Quellen tragen.
+
+**Weg 1 zuerst geprüft (Beleg nachreichen).** Die FabFilter-Hilfeseite zu Undo/Redo/A/B/Copy ist
+am 30.08.2026 einzeln abgerufen worden — `https://www.fabfilter.com/help/pro-q/using/undoredo`,
+verlinkt aus dem Inhaltsverzeichnis von H3. Sie belegt das Kopieren zwischen Instanzen **nicht**;
+sie widerlegt es:
+
+> „The Copy button copies the active state to the inactive state. This marks the current state of
+> the plug-in and allows you to go back to it easily with the A/B button. After clicking Copy, the
+> button disables itself to show that both states are equal, so there is nothing to copy anymore."
+>
+> — FabFilter Pro-Q 4 online help, „Undo, redo, A/B switch", abgerufen 30.08.2026
+
+Gemessen am Artikelrumpf derselben Seite: **4** Treffer für `cop(y|ies)`, **0** für `instance`,
+**0** für `paste`. Pro-Q 4s „Copy" ist die A/B-Zustandskopie innerhalb einer Instanz.
+
+**Gewählt ist deshalb Weg 2 (Eingrenzen).** Die Karte behauptet jetzt nur noch das Gemessene.
+
+**Eine Abweichung vom Vorlagentext, mit Grund.** Die Vorlage des Dirigenten sah für Weg 2 vor:
+«„Copy" nennt Pro-Q 4 (H3), ohne zu sagen, ob damit die Übertragung in eine andere Instanz gemeint
+ist.» Nach dem Abruf wäre dieser Satz selbst eine Untertreibung: die Herstellerhilfe **sagt** es,
+und sie sagt das Gegenteil. Prüfliste E („Behauptung ≤ Messung") verlangt Deckung mit der Messung,
+nicht nur eine Obergrenze — die Karte trägt deshalb den gemessenen Sachverhalt. Aus demselben Grund
+ist die Seite als **H15** in §2.2 eingetragen, obwohl der Dirigent H15 für den positiven Fall
+vorgesehen hatte: die eingegrenzte Aussage stützt sich auf diese Seite, und eine Aussage ohne ihre
+Quelle zu führen wäre genau der Fehler, den B6 rügt.
+
+**Die Frage an den User bleibt unverändert.** Titel und `was` von U18 sind nicht angefasst; gefragt
+wird weiterhin beides — Voreinstellungen ja/nein und Kopieren zwischen Sonden ja/nein. Geändert ist
+nur die Begründung: sie sagt jetzt, dass hinter dem Kopieren zwischen Sonden **kein belegter
+Marktstandard** steht, sondern ein Nakama-eigener Wunsch. Für die Entscheidung ist das eher mehr
+Information als vorher, nicht weniger.
+
+### 10.3 Änderung — vorher/nachher, Datei:Stelle
+
+**Edit an einer Planquelle (R2-1).**
+
+| # | Datei:Stelle | Feld | Befund |
+|---|---|---|---|
+| R2-1 | `docs/plan/fragen.json`, `offen[]`, Karte `U18` | `warum` und `wo` | B6 (Restbefund) |
+
+| Stelle | Vorher (Stand `b54a575`) | Nachher |
+|---|---|---|
+| `fragen.json:72`, `U18.warum` | „Bei den beiden verglichenen Produkten, deren Herstellerseiten das ausdrücklich führen — FabFilter Pro-Q 4 … und Voxengo SPAN Plus … —, **gehören Voreinstellungen und Kopieren zur Grundausstattung**" | „Voreinstellungen sind bei zwei der verglichenen Produkte durch die Herstellerseite belegt … **Das Kopieren zwischen zwei Instanzen ist bei keinem der beiden belegt.** FabFilters „Copy"-Taste … ist laut Herstellerhilfe etwas anderes: „The Copy button copies the active state to the inactive state" — also die A/B-Zustandskopie innerhalb derselben Instanz … Für SPAN Plus nennt die Herstellerseite überhaupt kein Kopieren" |
+| `fragen.json:73`, `U18.wo` | „Beleg: docs/beweise/PR1.md Abschnitt 5.3 und Lücke L-3." | dieselben Belege, aufgeschlüsselt auf **H3 / H8 / H15**, dazu der datierte Satz „Eingegrenzt am 30.08.2026 in PR1 Runde 2 (Codex-Befund B6) …" |
+
+**Änderungen am Manifest (M2-1 bis M2-4).**
+
+| # | Stelle | Was |
+|---|---|---|
+| M2-1 | §2.2, Quellentabelle | neue Zeile **H15** — URL, Abrufdatum 30.08.2026, wörtliches Zitat, wofür sie belegt |
+| M2-2 | §2.2, unter dem Runde-1-Nachtrag | **neuer datierter Nachtrag** (Runde 2): warum H15 nachgereicht ist, dass die Zuordnung nicht belegt, sondern widerlegt wurde, Fortschreibung zwölf → vierzehn → **fünfzehn** Quellen. Der Runde-1-Nachtrag bleibt wörtlich stehen |
+| M2-3 | §5.3, Zeile „Undo/Redo, A/B, Kopieren", Zelle „Wer hat sie (Beleg)" | **datierter Zusatz in der Zelle**: Undo/Redo und A/B tragen H3/H8, das Kopieren tragen sie nicht; „Das Übertragen einer Kurve zwischen Instanzen ist damit keine belegte Marktstandardfunktion". Die anderen Zellen dieser Zeile und alle anderen Zeilen sind unberührt |
+| M2-4 | §1.3 und §1.4 (lebender Kopf) | Seitenzahl 14 → **15** (H1–H15), Editzahl `17 + 11` → `17 + 11 + 1`, Produktzeile als „unverändert nach Runde 2" beschriftet; Rundentabelle um **1-P** (Wiederprüfung) und **2** (diese Runde) ergänzt und Zeile **1** auf das tatsächliche Ergebnis berichtigt (**NEEDS_WORK**, einer der sieben Befunde blieb offen) |
+
+**Nicht angefasst.** `docs/plan/plan.json`, `docs/bauaufteilung-sonden.md`,
+`docs/offene-punkte.md`, `docs/FL-Nakama-Sonden-Design-Entwurf.md`, die Karten U11, U13, U15–U17,
+U19, U20 und `beantwortet{}`. Keine neue Registerzeile: der Restbefund ist eine Belegkorrektur an
+einer bestehenden Karte, kein neuer Produkt- oder Vertragspunkt.
+
+### 10.4 Prüfliste — E und F, je Zeile mit Messort
+
+**A–D sind für ein Dokumentticket weiterhin nicht anwendbar**: kein Rückstauverhalten, kein
+Lebenszyklus, kein Längen- oder Alphabetvertrag, kein Bau- oder Prüfriegel im Änderungssatz.
+
+#### E. Behauptung ≤ Messung
+
+| Zeile der Prüfliste | Wo in dieser Runde gemessen |
+|---|---|
+| „Jede Behauptung … sagt nicht mehr, als der Test misst — und nicht mehr, als das Gate verlangt" | §10.2, Tabelle „Eigene Nachmessung": vier Messungen mit Befehl und Trefferzahl — `grep -oi 'copy\|kopier'` auf `PR1.md:140` = 0, `cop(y\|ies\|ied)` auf der Voxengo-Feature-Seite = 0, `cop(y\|ies)` im H15-Artikelrumpf = 4, `instance` im H15-Artikelrumpf = 0. Die eingegrenzte Karte behauptet genau diese Messungen und nichts darüber hinaus; die Negativaussage „für SPAN Plus ist Kopieren nicht belegt" trägt ihren Befehl mit Trefferzahl |
+| „Zahlen im Manifest sind gemessen, nicht abgeschrieben" | §1.3: die einzige geänderte Zahl ist die Seitenzahl **15**, gemessen mit dem daneben stehenden Befehl `grep -c '^\| H[0-9]' docs/beweise/PR1.md`. Die Editzahl `17 + 11 + 1` zählt die Zeilen der Tabellen in §6.1, §9.3 und §10.3. Alle mit Stichtag beschrifteten Zahlen der Runden 0 und 1 bleiben unverändert stehen |
+| „Positionen im lebenden Kopf stehen als Symbol/Anker; im Verlauf gilt die Zeilennummer zum Stand ihres Abschnitts" | Der lebende Kopf nennt keine Zeilennummern, nur Quellen-ID (H15), Kartenkennung (U18) und Befund (B6). Die Zeilennummern in §10.1 und §10.3 sind Zitate bzw. Messorte **zum Stand `b54a575`** und ausdrücklich so bezeichnet; die stabilen Anker daneben sind Quellen-ID, Feldname (`warum`, `wo`) und Abschnittsnummer (§2.2, §5.3) |
+| „Der lebende Kopf wird beim Abschluss nachgezogen; alles darunter ist append-only" | §1.3 und §1.4 sind nachgezogen (M2-4). §2–§9 sind unverändert bis auf die zwei **datierten Nachträge an Ort und Stelle** (M2-2, M2-3); keine Zeile und keine Tabellenzelle aus Runde 0 oder 1 ist umgeschrieben oder entfernt. Auch der in Runde 1 als geschlossen gemeldete B6-Block (§9.2) bleibt wörtlich stehen — was daran zu kurz griff, steht hier in §10 und nicht dort korrigiert |
+| „Jede neue Prüfung wurde einmal absichtlich gebrochen; Rohausgabe des Rots liegt bei" | greift nicht — diese Runde führt keine neue Prüfung ein. Die vier Riegel aus Runde 1 laufen unverändert mit; ihr Ergebnis auf dem Endstand steht in §10.5 |
+| „Geänderte Zusage — drei Stellen, kein Inventar" | **Keine Zusage geändert.** Diese Runde ändert keinen Plansatz, keinen Vertrag und keinen Lieferumfang; sie grenzt eine Marktbehauptung in einer noch offenen Fragenkarte ein. Belegt in §10.5, Lauf D: der Diff berührt weder `docs/plan/plan.json` noch `docs/bauaufteilung-sonden.md` noch `tools/beweise.ps1` |
+| „Writer-Fixtures statt Handschrift" | greift nicht — kein Fixture im Änderungssatz |
+
+#### F. Änderungssatz
+
+| Zeile der Prüfliste | Wo in dieser Runde gemessen |
+|---|---|
+| „speichern↔laden, starten↔stoppen, öffnen↔schließen, verbinden↔trennen, aktivieren↔abklingen, installieren↔Rückweg im selben Commit" | **Kein Gegenpaar berührt.** Der Änderungssatz besteht aus einem Begründungstext in einer offenen Fragenkarte und vier Manifestnachträgen; er legt keinen Lebenszyklus, keinen Speicherweg und keinen Installationsschritt fest. Belegt durch §10.5, Lauf D: der Diff berührt ausschließlich `docs/plan/fragen.json`, `docs/beweise/PR1.md` und `docs/PLAN-STAND.md` |
+| „Writer, Reader, Migration, Fixtures und Cross-Language-Verbraucher eines Vertrags im selben Änderungssatz" | greift nicht — kein Vertrag geändert. Was U18 später auslösen kann (ein Preset-Objekt im gespeicherten Zustand), bleibt genau das, was es vorher war: eine **offene** Karte mit Ticketzuordnung S26–28 und S31b. Die v3-Vertragsrunde aus Runde 1 ist unberührt |

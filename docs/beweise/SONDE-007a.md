@@ -16206,3 +16206,261 @@ Die Änderung dieser Runde an `tools/beweise.ps1` gehört zu NAK-94 Nacharbeit 7
 **Nächster Schritt:** Nacharbeits-Worker für S8 Runde 13 **und** NAK-94 Nacharbeit 8 (siehe `docs/beweise/SONDE-007c.md`, „Dirigentenstand NAK-94 … Prüfer 8"), gemeinsamer Kanon, dann Prüfer 14 (xhigh) für S8 und Prüfer 9 (high) für NAK-94 — je frischer Thread. Kein Halt.
 
 **Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.
+
+## Nacharbeit Runde 13 — 2026-08-30 (Prüfer-Thread `01a0505f-ce97…`)
+
+**Stand dieses Abschnitts:** `88255d8` — der Commit der beiden Textbefunde
+dieser Runde. Positionen ohne eigene Angabe sind an diesem Stand gemessen;
+die Belegzahlen unten nennen ihren Stand jeweils selbst.
+
+Drei bestätigte Befunde des dreizehnten Prüfers (Codex xhigh, lesend über
+`git diff dafa5a5...d084296`), Regeln des Dirigenten im Abschnitt
+„Dirigentenstand — 2026-08-30 04:02 (Sitzung 054eedac)". Alle drei sind
+geschlossen. Es ist **reine Textarbeit**: an der Messlogik von A14 wurde
+nichts geändert, kein Produktcode angefasst. Der vierte Befund derselben
+Runde (NAK-94, Prüfer 8) steht in `docs/beweise/SONDE-007c.md`, Abschnitt
+„NAK-94 Nacharbeit Runde 8".
+
+**Werkzeugregel dieser Runde:** kein löschender Aufruf, keine Datei unter
+`%SystemRoot%`. Der Beleg zu Befund 2 liest ausschließlich das bereits
+gebaute Bundle und die Identitätsdatei; er baut nichts und schreibt nichts.
+
+---
+
+### Befund 1 — die Endstandzahl gehört zum tatsächlichen Endstand
+
+> **[P2] Zähle den Kanonblock im tatsächlichen Endstand mit** —
+> `docs/beweise/SONDE-007a.md:15802`. Am Zielstand `d084296` liefert
+> `git grep -c -E 'Voraussetzung' d084296 -- docs/beweise/SONDE-007a.md` 122
+> Zeilen, während die Spalte „Endstand R12" 121 nennt; 121 gehört zum
+> Zwischencommit `d11be90` vor dem angehängten Kanonblock.
+
+**Reproduziert.** Dieselben neun Suchen wie in Runde 12, gefahren gegen
+beide Stände:
+
+```text
+Muster            d11be90  d084296
+Exit 3                 95       95
+exit 3                 13       13
+return 3               23       23
+\-> 3                  14       14
+→ 3                    11       11
+\*\*3\*\*              22       22
+nie 2                  21       21
+nie 0                  40       40
+Voraussetzung         121      122
+```
+
+Der Befund trifft genau eine Zeile: der Kanon-Anhang der Runde 12 bringt eine
+weitere `Voraussetzung`-Zeile mit, und die Spalte „Endstand R12" hat sie nicht
+mitgezählt, weil sie am Zwischencommit `d11be90` gemessen wurde. Die acht
+übrigen Muster sind unverändert — der Kanonblock enthält sie nicht.
+
+**Regel des Dirigenten, hier umgesetzt.** Das Inventar nennt die Trefferzahl
+des **tatsächlichen** Endstands, also des letzten Commits der Runde vor dem
+Prüfer. Weil der Kanon-Anhang erst nach dem Inventar-Commit entsteht, gilt:
+
+1. Der Kanon-Abschnitt ist per Regel 2 des Klassifizierers **historisch** —
+   `## Kanon-Lauf` trägt seinen Commit in der eigenen Kopftabelle. Er erhöht
+   also nur die Gesamtzahl, nie die lebende.
+2. Die Zahl des Zwischenstands darf zusätzlich stehen, **benannt als solche**.
+3. Die Endstandzahl wird **nach** dem Kanon gemessen und im Abschluss-Commit
+   derselben Runde nachgetragen.
+
+Die Tabelle unter „Der Manifest-Grep" führt diese Runde deshalb vier Spalten:
+Prüferstand, Basis, Stand vor dem Kanon und Endstand.
+
+---
+
+### Befund 2 — die Gegenprobe nennt ihre geprüfte Teilmenge
+
+> **[P2] Begrenze die Gegenprobe auf die geprüften Nadeln** —
+> `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:21-22`. Als
+> A14-Abnahmebehauptung ist „mit denselben Nadeln" zu weit:
+> `nadeln_aus_identitaet()` erzeugt 17 Nadeln, aber `pflicht` prüft nur fünf
+> Main-/Herstellerwerte […]; die zwölf Suna-/Probeeq-Werte dürfen im
+> EQ-Copilot-Bundle gerade nicht stehen.
+
+**Reproduziert und ausgemessen.** Der Beleg fährt `nadeln_aus_identitaet()`
+und `suche()` aus A14 (importiert, nicht abgeschrieben) gegen dasselbe
+gebaute Main-Bundle, das die Gegenprobe benutzt:
+
+```text
+Bundle : …\eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln : 17 aus …\eq-copilot\identity\plugin-identities-v1.json
+Pflicht: 5 -> hersteller.name, main.produktname, main.plugin_code, main.component_cid, main.controller_cid
+
+Nadel                       Pflicht  im Bundle gefunden als
+active-probe.bundle         nein     -
+active-probe.component_cid  nein     -
+active-probe.controller_cid nein     -
+active-probe.plugin_code    nein     -
+active-probe.produktname    nein     -
+hersteller.code             nein     ascii,fourcc-int-be
+hersteller.name             JA       ascii,utf-16le
+main.bundle                 nein     ascii
+main.component_cid          JA       roh16-com
+main.controller_cid         JA       roh16-com
+main.plugin_code            JA       ascii,fourcc-int-be
+main.produktname            JA       ascii,utf-16le
+passive-probe.bundle        nein     -
+passive-probe.component_cid nein     -
+passive-probe.controller_cidnein     -
+passive-probe.plugin_code   nein     -
+passive-probe.produktname   nein     -
+```
+
+Die Messung bestätigt den Befund und schärft ihn an einer Stelle. **Zehn**
+Nadeln — die fünf `active-probe.*` und die fünf `passive-probe.*` — stehen
+tatsächlich nicht im EQ-Copilot-Bundle; sie gehören in die Bundles der
+Sonden. Die übrigen zwei der zwölf ungeprüften, `hersteller.code` und
+`main.bundle`, stehen sehr wohl dort, sind aber nicht in der Pflichtmenge.
+Der neue Text nennt deshalb **die fünf Nadeln namentlich** und sagt beides
+ausdrücklich: die Sonden-Werte werden dort nicht erwartet, und
+`hersteller.code` sowie `main.bundle` gehören nicht zur Pflichtmenge.
+
+Gegen den KERN läuft weiter **jede** Nadel — daran hat sich nichts geändert
+(Abschnitt `[2]`, Schleife über `sorted(nadeln.items())`). Die Anzahl steht
+nicht im Skriptkopf: der Lauf gibt sie in der Zeile `Nadeln    :` aus.
+
+---
+
+### Befund 3 — keine Riegelanzahl im Skriptkopf
+
+> **[P2] Entferne die falsche Riegelanzahl aus dem Skriptkopf** —
+> `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:54-55`. Der lebende
+> Skriptkopf kündigt zwei neue Riegel an, führt unmittelbar danach aber K1b,
+> Tlog-Ortsriegel und JUCE-Baum-Riegel auf.
+
+**Reproduziert** am Basis-Stand:
+
+```text
+bdb7842:tools/eq-copilot/pruefe_kern_identitaetsfrei.py:54:ZWEI NEUE RIEGEL kamen in derselben Runde dazu, weil K1 nur Anfang und Ende
+```
+
+Darunter folgen drei Einträge. Die Anzahl ist ersatzlos weg; die Riegel
+stehen namentlich in der Ankündigung, so wie sie danach aufgeführt werden:
+
+```text
+88255d8:tools/eq-copilot/pruefe_kern_identitaetsfrei.py:62:K1b, DER TLOG-ORTSRIEGEL UND DER JUCE-BAUM-RIEGEL kamen in derselben Runde
+```
+
+Der Zeitpunkt („in derselben Runde") bleibt wörtlich stehen — er war nicht
+Gegenstand des Befunds, und jeder der drei Einträge trägt seine eigene
+Rundenangabe. `eq-copilot/plugin/state/NakamaKernRiegel.h` nennt dieselben
+Riegel schon vorher einzeln und ohne Anzahl; dort war nichts nachzuziehen.
+
+---
+
+### Der Manifest-Grep — Befehl und Trefferzahlen je Schreibweise
+
+Gezählt werden **Zeilen mit Treffer** (`-c`), nicht Treffer. Die neun Suchen
+ausgeschrieben, hier für den Prüferstand:
+
+```bash
+git grep -c -E 'Exit 3'        d084296 -- docs/beweise/SONDE-007a.md
+git grep -c -E 'exit 3'        d084296 -- docs/beweise/SONDE-007a.md
+git grep -c -E 'return 3'      d084296 -- docs/beweise/SONDE-007a.md
+git grep -c -E '\-> 3'         d084296 -- docs/beweise/SONDE-007a.md
+git grep -c -E '→ 3'           d084296 -- docs/beweise/SONDE-007a.md
+git grep -c -E '\*\*3\*\*'     d084296 -- docs/beweise/SONDE-007a.md
+git grep -c -E 'nie 2'         d084296 -- docs/beweise/SONDE-007a.md
+git grep -c -E 'nie 0'         d084296 -- docs/beweise/SONDE-007a.md
+git grep -c -E 'Voraussetzung' d084296 -- docs/beweise/SONDE-007a.md
+```
+
+Dieselben neun Suchen mit den übrigen Ständen ergeben die weiteren Spalten.
+
+<!-- inventar:tabelle:anfang -->
+| Muster (`-E`) | `d084296` Prüferstand R12 | `bdb7842` Basis R13 |
+|---|---:|---:|
+| `Exit 3` | 95 | 95 |
+| `exit 3` | 13 | 13 |
+| `return 3` | 23 | 23 |
+| `\-> 3` | 14 | 14 |
+| `→ 3` | 11 | 11 |
+| `\*\*3\*\*` | 22 | 22 |
+| `nie 2` | 21 | 21 |
+| `nie 0` | 40 | 40 |
+| `Voraussetzung` | 122 | 123 |
+<!-- inventar:tabelle:ende -->
+
+`bdb7842` ist der Commit, mit dem der Dirigent die Befunde dieser Runde in
+dieses Manifest geschrieben hat; die eine zusätzliche `Voraussetzung`-Zeile
+stammt aus dem wörtlichen Prüferzitat darin.
+
+**Der Abschluss-Commit dieser Runde trägt zwei weitere Spalten nach** —
+„vor dem Kanon" (der Commit dieses Abschnitts samt Register) und „Endstand
+R13" (nach dem angehängten Kanon-Block), dazu die Zahl der historischen
+Treffer, die der Kanon-Anhang beisteuert. Vorher sind sie nicht messbar:
+beide Stände existieren zum Zeitpunkt dieses Commits noch nicht. Das ist
+Befund 1, in der Reihenfolge umgesetzt, die er verlangt.
+
+**Lebend gegen historisch.** Der Klassifizierer aus Runde 12 (Quelltext
+unverändert im Abschnitt „Nacharbeit Runde 12", Blockmarken
+`<!-- klassifizierer:anfang -->` / `:ende`), gefahren gegen den Stand der
+beiden Code-Commits dieser Runde:
+
+```text
+== bce6af8:docs/beweise/SONDE-007a.md ==
+Muster           lebend  historisch  gesamt
+Exit 3                0          95      95
+exit 3                0          13      13
+return 3              0          23      23
+-> 3                  0          14      14
+→ 3                   0          11      11
+\*\*3\*\*             0          22      22
+nie 2                 0          21      21
+nie 0                 0          40      40
+Voraussetzung         0         123     123
+SUMME                 0         362     362
+lebende Treffer (Abschnitt ohne Stand, kein Kanon-Block): 0
+```
+
+Null lebende Treffer, und `lebend + historisch` geht Zeile für Zeile mit dem
+Grep oben auf. Die Zahl, die fallen muss, ist die lebende — sie ist seit
+Runde 11 null und bleibt es.
+
+---
+
+### Aussagen-Inventar — die geänderten Zusagen an allen Stellen
+
+Gesucht über das ganze Repo ohne `docs/beweise/roh/` (Rohausgaben sind
+wörtliche Werkzeugausgabe und werden nicht nachgezogen):
+
+```bash
+git grep -n -F 'denselben Nadeln'          bdb7842 -- ':!docs/beweise/roh'
+git grep -n -F 'dieselben Werte im gebauten' bdb7842 -- ':!docs/beweise/roh'
+git grep -n -F 'ZWEI NEUE RIEGEL'          bdb7842 -- ':!docs/beweise/roh'
+git grep -ln -E 'Tlog-Ortsriegel|JUCE-Baum-Riegel' bdb7842 -- ':!docs/beweise/roh'
+```
+
+| Stelle | alt | neu | Status |
+|---|---|---|---|
+| `…/pruefe_kern_identitaetsfrei.py`, Modul-Docstring, Absatz `DIE GEGENPROBE IST DER EIGENTLICHE PUNKT` (`:21 @ 88255d8`) | „mit denselben Nadeln zusaetzlich ueber das GEBAUTE EQ-Copilot-Bundle" | „zusaetzlich … dort aber nur mit der TEILMENGE der Nadeln, die in genau diesem Bundle stehen MUSS" + die fünf Namen + Nichterwartung der Sonden-Werte + `hersteller.code`/`main.bundle` | **nachgezogen** |
+| `tools/beweise.ps1`, A14-`Behauptung` (`:362 @ 88255d8`) | „die Gegenprobe findet dieselben Werte im gebauten EQ-Copilot-Bundle." | „die Gegenprobe findet im gebauten EQ-Copilot-Bundle die Teilmenge der Nadeln, die dort stehen MUSS - …" mit denselben fünf Namen | **nachgezogen** |
+| `…/pruefe_kern_identitaetsfrei.py`, Modul-Docstring, Ankündigung der Riegel (`:62 @ 88255d8`) | „ZWEI NEUE RIEGEL kamen in derselben Runde dazu" | „K1b, DER TLOG-ORTSRIEGEL UND DER JUCE-BAUM-RIEGEL kamen in derselben Runde dazu" | **nachgezogen** |
+| `…/pruefe_kern_identitaetsfrei.py`, Kommentar über `pflicht` in `[1]` (Symbol) | „Nur Werte, die im gebauten Main-Bundle stehen MUESSEN." | unverändert — sagte die Teilmenge schon richtig | **stimmte bereits** |
+| `eq-copilot/plugin/state/NakamaKernRiegel.h`, Riegelkarte (Symbol) | nennt K1b, Tlog-Riegel und JUCE-Baum-Riegel einzeln, ohne Anzahl | unverändert | **stimmte bereits** |
+| `docs/beweise/*.md`, Kanon-Lauf-Tabellen mit der alten A14-Behauptung | alter Wortlaut | unverändert | **historisch** (`## Kanon-Lauf`-Blöcke tragen ihren Commit in der Kopftabelle) |
+| `docs/beweise/SONDE-007a.md:16200,16202` (Prüferzitat) | wörtlich zitierter Befund | unverändert | **wörtliches Zitat**, bleibt wie geschrieben |
+
+Am Stand `bdb7842` traf `dieselben Werte im gebauten` ausschließlich
+Kanon-Lauf-Tabellen in `docs/beweise/` plus die eine lebende Stelle
+`tools/beweise.ps1:362`; `denselben Nadeln` traf den Skriptkopf und das
+Prüferzitat; `ZWEI NEUE RIEGEL` traf allein den Skriptkopf.
+
+---
+
+### Prüfliste
+
+| Punkt | Erfüllt |
+|---|---|
+| **D** — fail-closed, Unbekanntes ist ROT | nicht berührt: an A14s Riegeln, Ausgängen und `voraussetzung_exit()` wurde nichts geändert. Der Befund derselben Runde, der D betrifft, liegt bei NAK-94 (`SONDE-007c.md`, Nacharbeit 8). |
+| **E** — Behauptung ≤ Messung | ja, und das ist der Kern dieser Runde: die Gegenprobe behauptet jetzt genau die Teilmenge, die sie misst (Beleg oben mit importiertem `suche()`), und der Skriptkopf nennt keine Riegelanzahl mehr, sondern die Riegel. Positionen stehen als `Datei:Zeile @ sha7` oder Symbol; die volatile Nadelzahl steht im Lauf, nicht im Kopf. |
+| **E — Aussagen-Inventar** | ja, Tabelle oben mit den vier `git grep`-Befehlen; jede lebende Stelle nachgezogen, historische Abschnitte unangetastet. |
+| **F** — Änderungssatz | ja: Skriptkopf und A14-Behauptung liegen zusammen in `88255d8`. Ein Gegenstück (speichern↔laden, starten↔stoppen …) gibt es nicht — es wurde kein Verhalten geändert. |
+
+**Nicht berührt:** A14-Messlogik, `Install-Nakama.ps1`, Identitäts- und
+Installer-Manifeste, `NakamaKern.cmake`, Plugin-Code, `tools/dirigent/**`.
+Offen außerhalb der Grenze: NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.

@@ -18648,3 +18648,192 @@ offen. Ein Eingriff in `Fuehre-Aus` liegt außerhalb dieser Ticketgrenze.
 **Einordnung:** Defekt, mittel (Prüfliste D: Unbekanntes ist ROT, nie ein Traceback). **Regel des Dirigenten (Nacharbeit 8):** Nach rotem Z1 (Hash-Abweichung) läuft `[3b]` nur weiter, wenn das geladene Objekt die von Z2–Z7 benötigte Writer-Struktur trägt — Strukturprüfung vorab (`schema`, `status`, `eintraege` als Liste mit den in Z2–Z7 gelesenen Feldern); fehlt etwas, endet `[3b]` mit kontrolliertem `abbruch` und Klartext („Fixture geändert und strukturell unbrauchbar"), nie mit Traceback. Proben: (a) semantikneutrale Byteänderung (z. B. Whitespace/Zeitstempel) → Z1 ROT, Z2–Z7 grün; (b) strukturverändernde Byteänderung (`eintraege` → `xntraege`) → Z1 ROT, kontrollierter Abbruch mit Klartext, Exit ≠ 0, kein Traceback; beide zurückgenommen, Hash belegt. Behauptung in `tools/beweise.ps1` und Skriptkopf: „nach rotem Z1 laufen Z2–Z7 nur auf strukturell gültigem Objekt weiter; sonst Abbruch".
 
 **Nächster Schritt:** Nacharbeit 8 im selben Worker wie die nächste S8-Runde (falls Prüfer 13 Befunde hat; sonst allein), gemeinsamer Kanon, danach Prüfer 9 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.
+
+## NAK-94 Nacharbeit Runde 8 — 2026-08-30 (Prüfer-Thread `01a0505f-d981…`)
+
+**Stand dieses Abschnitts:** `bce6af8` — der Commit dieser Nacharbeit.
+Positionen ohne eigene Angabe sind an diesem Stand gemessen; Zahlen und
+Rohausgaben nennen ihren Stand jeweils selbst.
+
+Ein bestätigter Befund des achten Prüfers (Codex high, lesend über
+`git diff da62dec...d084296`), Regel des Dirigenten im Abschnitt
+„Dirigentenstand NAK-94 — 2026-08-30 04:02 (Sitzung 054eedac)". Er ist
+geschlossen. An `Install-Nakama.ps1`, an A18 und an den Fixturbytes wurde
+nichts geändert; das Manifest wurde nicht neu gehasht.
+
+---
+
+### Was Nacharbeit 7 offen ließ
+
+Nacharbeit 7 hat den Schnitt zwischen „nur Z1 rot" und „Abbruch" an der
+FRAGE festgemacht, ob die Datei **vorliegt und lesbar** ist. Der achte Prüfer
+zeigt, dass das eine Klasse zu grob ist: eine einzelne Byteänderung kann die
+STRUKTUR treffen, ohne dass der Kopf aufhört, ein JSON-Objekt zu sein.
+
+> **[P2] Sperre semantisch veränderte Fixtures vor dem Weiterlauf** —
+> `tools/eq-copilot/pruefe_installer_manifest.py:1058-1065`. Wenn eine
+> vorhandene Fixture durch eine einzelne Byteänderung weiterhin ein
+> JSON-Objekt bleibt, aber etwa `eintraege` zu `xntraege` wird, meldet dieser
+> Zweig nur Z1 und lädt das Objekt trotzdem; anschließend endet `[3b]` bei
+> `k["eintraege"]` mit `KeyError`, statt Z2–Z7 grün auszuführen oder
+> kontrolliert abzubrechen.
+
+**Am Basis-Stand `bdb7842` reproduziert.** `"eintraege"` → `"xntraege"` in
+`ok-erstinstallation.json` (ein Byte weniger, JSON bleibt gültig), dann A17:
+
+```text
+  FEHLER  Z1 [Writer-Korpus]: … [ok-erstinstallation.json: SHA-256 F244048C…
+          statt 438D8DB5… - von Hand geaendert? Dann ist sie keine Writer-Form mehr]
+     [3b] laeuft weiter: die beanstandete(n) Datei(en) liegen vor und sind lesbar, …
+  ok      Z2 [Kanon]: …
+Traceback (most recent call last):
+  File "…\tools\eq-copilot\pruefe_installer_manifest.py", line 1278, in gegenproben_nacharbeit
+    kopf, sorte = mutant(
+            {**k["eintraege"][0], "ziel_id": ["main"]}, "keine Abbildung"]))
+       ~^^^^^^^^^^^^^
+KeyError: 'eintraege'
+```
+
+Genau das, was der Prüfer beschreibt: Z1 rot, `[3b]` läuft weiter, und Z3
+stirbt an der ersten Benutzung. Ein Traceback ist kein Urteil — Prüfliste D
+verlangt ROT, nicht laut.
+
+---
+
+### Der Fix — Strukturprüfung vorab, Schlüssel statt Werte
+
+`_writer_struktur(kopf, fall)` (Symbol, `…/pruefe_installer_manifest.py:1020
+@ bce6af8`) läuft in `_writer_fixturen()` **vor** jeder Benutzung
+(`…:1174 @ bce6af8`), unmittelbar nach der Prüfung „ist ein `dict`". Sie
+antwortet auf eine einzige Frage: trägt dieser Kopf die von Z2–Z7 **gelesene**
+Form?
+
+| geprüft | für welchen Fall | warum |
+|---|---|---|
+| `schema` == `ERGEBNIS_SCHEMA` | jeden | `_installierter_stand()` steigt sonst mit „trägt nicht …" aus, und Z4/Z5 messen nichts mehr |
+| `status` ist Zeichenkette | jeden | die Statussperre in `_installierter_stand()` und die Z5-Mutanten (`k.update(status=…)`) hängen daran |
+| `transaktions_id` ist Zeichenkette | jeden | Z7 fährt sie gegen die `Ist-TransaktionsId`-Regex des Writers |
+| `eintraege` ist nicht leere Liste von Objekten, jedes mit Kennung (`ziel_id` oder `name`) und `sha256`, `mutation_abgeschlossen`, `rollback_abgeschlossen` | **nur** MANIFEST-Status `OK` | Z3 greift `k["eintraege"][0]` an, Z4 verlangt je Artefakt ein `ok` aus genau diesen Feldern |
+
+Zwei Entscheidungen tragen den Fix:
+
+**Der Schnitt läuft am MANIFEST-Status, nicht am Status im Kopf.** Der
+MANIFEST-Eintrag entscheidet, ob ein Fall unten in Z4 (OK) oder Z5 (alles
+andere) landet — `ok_dateien` / `nicht_ok_dateien` lesen `e["status"]` aus dem
+MANIFEST. Prüfte die Struktur den Status IM Kopf, könnte eine
+statusverändernde Byteänderung einen Fall aus dem Zweig schieben, der
+`eintraege` braucht, und dieselbe Tür wieder öffnen.
+
+**Für Nicht-OK wird `eintraege` NICHT verlangt.** Das ist keine Nachlässigkeit,
+sondern die Regel aus Nacharbeit 3 (STATUS VOR LISTE): der regulär
+abgeschlossene Rückweg schreibt gar keine Eintragsliste —
+`rueckweg-nach-gegenpfad.json` hat sieben Felder und keine. Eine Struktur, die
+sie überall verlangte, machte die eingefrorene Writer-Form selbst ungültig.
+
+**Geprüft werden SCHLÜSSEL und Grobform, nie Werte.** Über die Werte urteilen
+weiter Z4 (Hashvergleich) und Z5 (Statussperre). Eine Strukturprüfung, die
+ihnen vorgriffe, verschluckte genau die Brüche, die diese Zusagen belegen.
+
+Fehlt etwas, geht die Klage durch `haltend()`: sie macht `Z1` rot **und**
+setzt `abbruch`. `[3b]` endet dann über den seit Nacharbeit 7 vorhandenen
+Ausgang mit Klartext und ohne Traceback:
+
+```text
+  FEHLER  Z1 [Writer-Korpus]: … | ok-erstinstallation.json: Fixtur geaendert und
+          strukturell unbrauchbar - liegt vor und ist ein Objekt, traegt aber nicht
+          die von Z2..Z7 gelesene Writer-Struktur: keine nicht leere Liste
+          'eintraege' (NoneType)
+     [3b] bricht hier ab: ohne vollstaendigen Korpus misst der Block die Writer-Form
+     nicht mehr, und eine stillschweigend ausgelassene Gegenprobe ist schlimmer als
+     keine.  Grund: ok-erstinstallation.json: Fixtur geaendert und strukturell
+     unbrauchbar - …
+```
+
+---
+
+### `B8-Z1` — drei Stufen, ROT und Rücknahme
+
+Alle drei am Stand `bce6af8` gefahren, jede sofort zurückgenommen, die
+Rücknahme über SHA-256 gegen `MANIFEST.json` belegt. Kein löschender Aufruf:
+die Originalbytes liegen als Kopie unter `%TEMP%\nakama-fixtur-sicherung\`,
+und zurückgeschrieben wird aus dieser Kopie.
+
+```text
+Stufe a: Exit 2  Traceback nein  Ruecknahme 438D8DB5… == 438D8DB5…: JA
+Stufe b: Exit 2  Traceback nein  Ruecknahme 438D8DB5… == 438D8DB5…: JA
+Stufe c: Exit 2  Traceback nein  Ruecknahme 5B99904A… == 5B99904A…: JA
+nach Ruecknahme: Exit 0  115 ok, 0 Fehler
+```
+
+| Stufe | Mutation | Datei | rot | grün | Abbruch | Traceback | Bilanz |
+|---|---|---|---|---|---|---|---|
+| a | ein Byte im volatilen `zeit` (`21.1337169Z` → `21.1337160Z`) | `ok-erstinstallation.json` | Z1 | Z2,Z3,Z4,Z5,Z6,Z7 | nein | nein | Exit 2, 114 ok / 1 Fehler |
+| b | `"eintraege"` → `"xntraege"` | `ok-erstinstallation.json` | Z1 | — | **ja**, Klartext | nein | Exit 2, 95 ok / 1 Fehler |
+| c | `schema` `…ergebnis/v1` → `…/v2` | `rueckweg-nach-gegenpfad.json` | Z1 | — | **ja**, Klartext | nein | Exit 2, 95 ok / 1 Fehler |
+
+Stufe **a** ist die Gegenprobe zur Grenze: sie belegt, dass die neue Prüfung
+den Weiterlauf aus Nacharbeit 7 nicht kassiert — eine semantikneutrale
+Byteänderung färbt weiterhin genau eine Zusagenzeile. Stufe **b** ist der
+Bruch des Prüferbefunds: derselbe Lauf, der am Basis-Stand mit `KeyError`
+starb, endet jetzt kontrolliert. Stufe **c** trifft den anderen Zweig der
+Prüfung (`schema`, gemessen für JEDEN Fall) an einer Fixtur ohne
+`eintraege` — ohne sie wäre der Nicht-OK-Pfad ungebrochen geblieben.
+
+Die Zahlenlage ist selbst ein Beleg: 114 ok bei Stufe a (der Block läuft
+durch, eine Zusage fällt), 95 ok bei b und c (der Block bricht nach Z1 ab,
+Z2–Z7 werden nicht mehr gezählt) — dieselben 95, die Nacharbeit 7 für den
+fail-closed Abbruch gemessen hat.
+
+Nach der Rücknahme: `git status` für `eq-copilot/fixtures/` leer, A17 wieder
+**115 ok, 0 Fehler**, Exit 0.
+
+---
+
+### Aussagen-Inventar — die geänderte Zusage an allen Stellen
+
+Gesucht mit `git grep -n -F '<Text>' <sha> -- <pfad>` über das ganze Repo
+ohne `docs/beweise/roh/` (Rohausgaben sind wörtliche Werkzeugausgabe und
+werden nicht nachgezogen).
+
+| Stelle | alt | neu | Status |
+|---|---|---|---|
+| `…/pruefe_installer_manifest.py`, Modul-Docstring, Absatz `Z1 BRICHT AN EINEM GEAENDERTEN BYTE` (Symbol) | „liegt die Datei vor und ist lesbar, weicht nur ihr SHA-256 ab" | „liegt die Datei vor, **ist lesbar und traegt die von Z2..Z7 gelesene Writer-Struktur**, weicht nur ihr SHA-256 ab" | **nachgezogen** |
+| `…/pruefe_installer_manifest.py`, Modul-Docstring, neuer Absatz `NACH ROTEM Z1 LAUFEN Z2..Z7 …` (`:104 @ bce6af8`) | fehlte | ganzer Absatz mit Prüfung, Klartext-Ausgang und Verweis auf `B8-Z1` a/b/c | **nachgezogen** |
+| `_writer_fixturen()` Docstring, Zeilen `ABBRUCH` / `NUR ROT` (Symbol) | Abbruch ohne Strukturfall; „NUR ROT: die Datei LIEGT VOR und ist lesbar" | Abbruch nennt den Strukturfall; „NUR ROT: … **UND traegt die Writer-Struktur**" | **nachgezogen** |
+| `tools/beweise.ps1`, A17-`Behauptung` (`:399 @ bce6af8`) | „liegt die Datei vor und ist lesbar, weicht aber ihr SHA-256 vom MANIFEST ab …" | dasselbe **plus** „und traegt die von Z2..Z7 gelesene Writer-Struktur" **plus** Satz „Nach rotem Z1 laufen Z2..Z7 nur auf strukturell gueltigem Objekt weiter; sonst Abbruch …" | **nachgezogen** |
+| `docs/beweise/SONDE-007a.md`, Kanon-Lauf-Tabellen mit der alten A17-Behauptung | alter Wortlaut | unverändert | **historisch** (`## Kanon-Lauf`-Blöcke tragen ihren Stand im Kopf) |
+| `docs/beweise/SONDE-007c.md`, Nacharbeit-7-Tabelle mit `B7-Z1` | alter Wortlaut | unverändert | **historisch** (Abschnitt trägt `**Stand dieses Abschnitts:**`) |
+
+Die Suchen, mit denen das Inventar gefüllt wurde:
+
+```bash
+git grep -n -F 'liegt die Datei vor und ist lesbar'   bdb7842 -- ':!docs/beweise/roh'
+git grep -n -F 'Datei LIEGT VOR und ist lesbar'       bdb7842 -- ':!docs/beweise/roh'
+git grep -n -F 'Z1 BRICHT AN EINEM GEAENDERTEN BYTE'  bdb7842 -- ':!docs/beweise/roh'
+git grep -ln -F 'B7-Z1'                               bdb7842 -- ':!docs/beweise/roh'
+```
+
+Am Stand `bdb7842` traf das fünf Dateien: die beiden lebenden Quellen
+(`…/pruefe_installer_manifest.py`, `tools/beweise.ps1`) und drei
+Manifest-/Registerdateien (`docs/beweise/SONDE-007a.md`,
+`docs/beweise/SONDE-007c.md`, `docs/offene-punkte.md`). Deren Treffer stehen
+sämtlich in Abschnitten, die ihren Stand tragen: der `## Kanon-Lauf`-Block in
+`SONDE-007a.md` (Regel 2 des Klassifizierers — der Block trägt seinen Commit
+in der Kopftabelle), der Abschnitt zu Nacharbeit 7 in `SONDE-007c.md` mit
+seiner Zeile `**Stand dieses Abschnitts:**`, und in `docs/offene-punkte.md`
+der datierte Nachtrag zu Nacharbeit 7 mit Commit `4c3fbf8`. Nach dem Fix
+tragen beide lebenden Quellen den neuen Wortlaut.
+
+---
+
+### Prüfliste
+
+| Punkt | Erfüllt |
+|---|---|
+| **D** — ein Riegel ist fail-closed, Unbekanntes ist ROT | ja: ein strukturell unbrauchbares Objekt ist jetzt ROT **und** Abbruch, nie ein Traceback. Der Klartext nennt die Datei und was fehlt. |
+| **E** — Behauptung ≤ Messung | ja: die neue Zusage steht in Skriptkopf und A17-Behauptung, ist mit `B8-Z1` a/b/c gebrochen und zurückgenommen, und das Aussagen-Inventar oben führt jede Stelle mit `Datei:Zeile @ sha7` oder Symbol. Keine Zahl im Skriptkopf: die Felder stehen als benannte Konstante `JOURNAL_EINTRAGSFELDER` (`:220 @ bce6af8`), der Lauf zählt. |
+| **F** — Änderungssatz | ja: Prüfung, Aufrufstelle, beide Behauptungen und die Proben liegen in `bce6af8`; Writer, Fixturen und Erzeuger sind unberührt, weil sich am Vertrag nichts geändert hat. |
+
+**Nicht berührt:** `Install-Nakama.ps1`, A18, die Fixturbytes, das
+Installer-Manifest (nicht neu gehasht), `tools/dirigent/**`. Offen außerhalb
+der Grenze: NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.

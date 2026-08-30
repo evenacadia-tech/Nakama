@@ -18977,6 +18977,16 @@ sie wäre der Vergleich selbst unbestimmt. `stillgelegte_ziele` steht
 **nicht** im Vertrag: jeder Zugriff darauf läuft schon über `.get` samt
 Typprüfung.
 
+**Erzeugen ↔ Prüfen bleibt symmetrisch.** Der Vertrag verlangt genau die
+Felder, die `tools/eq-copilot/erzeuge_installer_journale.py` schreibt: je Fall
+`datei`, `fall`, `befehl`, `status`, `beschreibung`, `sha256` und `bytes`
+(`:281-285`), wobei `sha256` aus `_sha256()` kommt und dort ausdrücklich
+`.hexdigest().upper()` ist (`:101`) — deshalb steht HEX64 in Großbuchstaben im
+Vertrag und nicht bloß „irgendein Hash". Der Wurzelstand `stand` wird bei
+`:359` geschrieben. Eine Neuerzeugung des Korpus kann A17 also nicht rot
+machen; und wer ein Feld aus dem Erzeuger nimmt, sieht es hier sofort statt
+später an einem `KeyError`.
+
 **Warum [4b] die eine Ausnahme bleibt.** Dieser Block urteilt nie und bricht
 nie ab — das ist Befund C2 aus Nacharbeit 1/2, und Installieren ist ein
 bewusster Admin-Handgriff, keine Zusage des Kanons. Die Prüfung steht auch
@@ -19006,9 +19016,11 @@ Ladevorgänge sind zu **einem** geprüften Leser zusammengefallen:
 | `3bcfe48` | `:1378` `_writer_fixturen` | `journale/<fall>.json` | unverändert: `try/except` `:1378-1379`, `isinstance(kopf, dict)` `:1387`, `_writer_struktur` `:1395` — alle **vor** `geladen[…]` `:1406` |
 | `3bcfe48` | `:1995` `_installierter_stand` | `install-ergebnis.json` | unverändert: `is_file` `:1990`, `try/except` `:1995-1996`, `isinstance` + Schema `:1999`, Statussperre `:2041` vor `eintraege` `:2050` |
 
-Es gibt keine vierte gelesene JSON-Datei: `Install-Nakama.ps1`,
+Mehr JSON liest A17 nicht — drei Lesestellen, fünf Dateien. Alles andere,
+was das Bein öffnet, ist kein JSON: `Install-Nakama.ps1`,
 `broker/Cargo.toml`, `NakamaOrdnerHash.ps1` und `NakamaState.cpp` werden als
-**Text** gelesen (Regex), nicht als JSON.
+**Text** gelesen (Regex), die Fixturbytes und die Bundle-Artefakte als
+**Bytes** (SHA-256, Ordner-Hash).
 
 **Die Zusage an ihren beiden Stellen:**
 
@@ -19084,8 +19096,23 @@ Nach jeder Rücknahme: `git status` für `eq-copilot/fixtures/`,
 ### Kanon
 
 <!-- kanon14:zeile:anfang -->
-*Das Urteil des gemeinsamen Abschlusslaufs mit S8 Runde 14 trägt der
-Abschluss-Commit hier ein.*
+Gemeinsamer Abschlusslauf mit S8 Runde 14 auf dem committeten Stand
+`1991ff8`: **GRÜN — 32/32 Kanon-Läufe bestanden**, Exitcode 0, Arbeitsbaum
+laut Kopftabelle **sauber**, Beglaubigung nicht verweigert. Roh-Datei
+`docs/beweise/roh/SONDE-007a-1991ff8.md`; das Bein dieses Tickets ist dort
+**A17** (`pruefe_installer_manifest.py`, Exit 0, 0,94 s) — seine erste
+Ausgabezeile ist seit dieser Nacharbeit der Strukturvertrag. Der Kanon-Block
+selbst hängt an `docs/beweise/SONDE-007a.md` („Kanon-Lauf - SONDE-007a
+Runde 14 + NAK-94 Nacharbeit 9 - Abschluss").
+
+**Eine Abweichung im Aufruf, benannt:** der Lauf startete mit
+`VSCMD_SKIP_SENDTELEMETRY=1` in der Umgebung — eine der beiden in **NAK-72**
+selbst vorgeschlagenen Abhilfen gegen den VCTIP-Hänger, der die letzten
+beiden Abschlussläufe 13 bzw. 15 Minuten stillstehen ließ. Die Variable
+verhindert nur den Start von Microsofts Telemetrie-Uploader; am Bau, an den
+Beinen und an dem, was gemessen wird, ändert sie nichts. Dieser Lauf lief
+ohne Hänger durch. NAK-72 bleibt offen — der Runner setzt die Variable nicht
+selbst.
 <!-- kanon14:zeile:ende -->
 
 **Nicht berührt:** `Install-Nakama.ps1`, A18, die Fixturbytes, das

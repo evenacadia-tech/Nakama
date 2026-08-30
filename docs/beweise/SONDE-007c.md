@@ -20224,3 +20224,14 @@ A17-`Behauptung`.
 | **E** — „Zahlen sind gemessen, nicht abgeschrieben" | Die Laufzahlen (`_fuzz_verbraucher 3354x`, `_fuzz_erzeuger 3354x`) kommen aus dem Zähler des Laufs; die Pflichtmenge selbst nennt **keine** Anzahl |
 | **D** — „fail-closed: Unbekanntes ist ROT" | Fehlt ein Verbraucher, ruft er seinen Pflichtaufruf nicht mehr oder lief er nicht, ist der Block rot **mit Namen** — nicht still grün, wie zuvor |
 | **F** — „Änderungssatz" | Code, beide Wachen, drei Brüche, die A17-`Behauptung` und dieser Abschnitt liegen in derselben Runde; die Begriffskollision mit den zwei älteren „Pflichtmengen" ist im selben Satz aufgelöst |
+
+## Dirigentenstand NAK-94 — 2026-08-30 11:17 (Sitzung 054eedac): Prüfer 14 PASS — NAK-94 geschlossen
+
+**Stand dieses Abschnitts:** `6cd244d`
+
+**Nacharbeit 13:** Opus/max `nakama-s8r18-nak94r13-e27974c-bau` (gemeinsam mit S8 Runde 18); Pflichtmenge der Fuzz-Verbraucher als fallende Wache; Kanon GRÜN 32/32 auf `0e7a60e` (Roh-Datei `docs/beweise/roh/SONDE-007a-0e7a60e.md`, Bein A17: 120 ok / 0 Fehler).
+**Prüfer 14:** Codex high `01a051f2-0ce6-7771-ba00-efd937b10420`, lesend über `git diff da62dec...6cd244d`, HEAD vor/nach identisch — **PASS** (kein Defekt, keine Lücke, keine Härtung), wörtlich (`@ 6cd244d`):
+
+> Der Vorprüferbefund ist geschlossen: Das Entfernen von `_fuzz_erzeuger` wird namentlich erkannt, Fixture-Bytes und Installer-Pfade blieben unverändert, und zusätzliche Einzelbyteproben endeten kontrolliert ohne Traceback. Der vollständige A17-Lauf war in der aktuellen Sandbox mangels beschreibbarem TEMP nicht erneut ausführbar; die eingecheckte Rohausgabe belegt jedoch den unveränderten Messcode mit 120 ok und 0 Fehlern.
+
+**Urteil des Dirigenten:** NAK-94 ist **geschlossen** — Bereich `da62dec...6cd244d`, Prüfer 1–14 (Codex `gpt-5.6-sol`, high), Nacharbeiten 1–13, Wegwechsel W1 (Writer-Fixtures aus der A18-Sandbox), W3 (zentraler Fänger + Byte-Kipp-Fuzz `[3c]`). Zusagen, die seither für A17 gelten: `[4]` im Kanon weich, hart nur `--release` und Installer-Riegel 2; fehlendes Artefakt / nicht bildbarer Ordner-Hash beidseitig Fehler; `[4b]` ohne Urteil und ohne Abbruch, Statussperre vor der Eintragsliste; Writer-Fixtures und deklarierte Mutanten, Pflichtmenge aus `MANIFEST.json`; je Zusage genau ein diskriminierender Bruch; jede gelesene JSON-Datei strukturell geprüft, jede unerwartete Ausnahme kontrolliert — gemessen durch den Fuzz über die Pflichtverbraucher (A17-Kanonpfad, `--hashen`, Erzeuger-`pruefen()`). Das Installer-Manifest wurde **nie** neu gehasht (`git diff --stat da62dec 6cd244d -- eq-copilot/install/` leer). Die Urteilsmarke von S9b `SONDE-007c` bleibt unverändert (`T2 NEEDS_WORK 2026-08-29 nachgearbeitet`): NAK-89 ist weiter offen und Gegenstand der S9b-Nacharbeit.

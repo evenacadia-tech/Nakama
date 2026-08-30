@@ -18849,3 +18849,16 @@ Nacharbeit 8 - Abschluss").
 **Nicht berührt:** `Install-Nakama.ps1`, A18, die Fixturbytes, das
 Installer-Manifest (nicht neu gehasht), `tools/dirigent/**`. Offen außerhalb
 der Grenze: NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.
+
+## Dirigentenstand NAK-94 — 2026-08-30 04:58 (Sitzung 054eedac): Prüfer 9 NEEDS_WORK, offen — Nacharbeit 9
+
+**Stand dieses Abschnitts:** `e63a53f`
+
+**Nacharbeit 8:** Opus/max `nakama-s8r13-nak94r8-bdb7842-bau` (gemeinsam mit S8 Runde 13); Strukturprüfung der Journale nach rotem Z1; Kanon GRÜN 32/32 auf `f423527` (Roh-Datei `docs/beweise/roh/SONDE-007a-f423527.md`, Bein A17).
+**Prüfer 9:** Codex high `01a05093-ae62-7e01-90e5-83e9620f0125`, lesend über `git diff da62dec...e63a53f`, HEAD vor/nach identisch — **NEEDS_WORK (1)**, wörtlich (`@ e63a53f`); die Journal-Strukturprüfung bestätigt vollständig für Z2–Z7:
+
+> **[P2] Fange strukturwidrige Korpus-Manifeste kontrolliert ab** — `tools/eq-copilot/pruefe_installer_manifest.py:1141`. [Defekt, mittel] Eine einzelne Byteänderung von `"faelle"` zu `"xaelle"` in `journale/MANIFEST.json` lässt ein weiterhin lesbares JSON-Objekt beim direkten Aufruf von `_writer_fixturen()` mit `KeyError: 'faelle'` abbrechen, bevor Z1 ein rotes Urteil oder den vorgesehenen Klartext-Abbruch ausgeben kann. Das verletzt die Fail-closed-Regel „Unbekanntes ist ROT"; validiere daher Wurzelobjekt, `faelle`-Liste und die gelesenen Fallfelder vor diesem Zugriff und überführe Strukturfehler in `haltend()`.
+
+**Einordnung:** Defekt, mittel (Prüfliste D). **Regel des Dirigenten (Nacharbeit 9):** Dieselbe Strukturprüfung wie für die Journale gilt für `journale/MANIFEST.json`: Wurzel ist ein Objekt, `faelle` eine Liste, jeder Fall trägt die gelesenen Felder (`datei`, `sha256` als HEX64, `status`, Herkunftsfelder) mit richtigem Typ — geprüft **vor** dem ersten Zugriff; jeder Verstoß ist ein kontrollierter Abbruch mit Klartext (`haltend()`), nie Traceback. Probe: `"faelle"` → `"xaelle"` (und ein Fall ohne `sha256`) → kontrollierter Abbruch, Exit ≠ 0, kein Traceback; Rücknahme per Hash. Zusätzlich gilt ab jetzt für A17 insgesamt: jeder Lesezugriff auf eine Fixture-, Manifest- oder Journaldatei geht durch eine Strukturprüfung — der Worker grept `json.loads`/`json.load` im Skript und belegt für jede Stelle, welche Prüfung davor steht (Aussagen-Inventar). Behauptung in `tools/beweise.ps1` und Skriptkopf: „jede gelesene JSON-Datei wird vor dem Zugriff strukturell geprüft; Verstoß = kontrollierter Abbruch".
+
+**Nächster Schritt:** Nacharbeit 9 im selben Worker wie die nächste S8-Runde (falls Prüfer 14 Befunde hat; sonst allein), gemeinsamer Kanon, danach Prüfer 10 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.

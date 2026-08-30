@@ -16555,3 +16555,24 @@ Offen außerhalb der Grenze: NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.
 | B10 | v3-Envelope in C++ klassifiziert den Envelope-Korpus wie das Manifest (Urteil UND Verstossmenge, alle 14 Regeln mit Negativfixture); CRC32C trifft die RFC-3720-Vektoren, P0/P1 tragen CRC exakt 0, P2 die Pflichtsumme ueber genau die Payloadbytes; 40 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und 7671 angenommene EINBIT-Mutanten gueltiger Frames halten jede Kopfregel (reiner Zufall wird praktisch immer abgewiesen - die Invariante braucht deshalb die Mutanten, sonst spraeche sie ueber eine leere Menge), 3000 gekippte P2-Bits fallen einzeln, byteweise Zustellung liefert dieselben 40 Frames und ein kaputter Frame beendet den Strom; Pipetoken trifft das Golden aus §48.3 samt SHA-256- und RFC-4648-Vektoren; P0 verwirft nichts und meldet den 65. Eintrag, P1 koalesziert an der Position und haelt Ereignisse fuer den Reconnect vor, die P2-Schleuse ersetzt den aeltesten ungesendeten Frame, uebergibt 100 000 Frames mit 0 Allokationen (mit Gegenprobe am selben Zaehler) und liefert unter Flut keinen zerrissenen Frame; verdrahtet: Control koppelt Telemetry ueber link_id + challenge, ein ungekoppelter Telemetry-Connect wird geschlossen, der Client verbindet nach Serverneustart von selbst wieder, ein kaputter Envelope vom Server schliesst die Verbindung, und ein P0-Ueberlauf WAEHREND einer stehenden Verbindung schliesst sie ebenfalls statt still zu kuerzen. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 33,47 s | [B10](roh/SONDE-007a-f423527.md#b10) |
 | B8 | Lifecycle-Klassifikation §53.5: unclassified beim Laden und audio-neutral; Schema-1 sensor\|pre\|post -> legacy (immer passiv), hub bzw. bestaetigter Schema-2-Main-State -> main; ein Scannerlauf klassifiziert nicht; read-only nimmt die Klassifikation zurueck; Brokerstart nur fuer main mit offenem Editor; die Sondenbundles bleiben bis gueltigem State neutral und werden nie main. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,12 s | [B8](roh/SONDE-007a-f423527.md#b8) |
 
+
+## Dirigentenstand — 2026-08-30 04:58 (Sitzung 054eedac): Prüfer 14 NEEDS_WORK, offen — Runde 14
+
+**Stand dieses Abschnitts:** `e63a53f`
+
+**Marke unverändert** (`T3 NEEDS_WORK 2026-08-28 nachgearbeitet`). Ticketbasis `dafa5a5`; Stand `e63a53f` (= origin/master); Kanon GRÜN 32/32 auf `f423527` (Roh-Datei `docs/beweise/roh/SONDE-007a-f423527.md`).
+
+| Schritt | Worker / Prüfer | Stand | Ergebnis |
+|---|---|---|---|
+| Runde 13 (+ NAK-94 Nacharbeit 8) | Opus/max `nakama-s8r13-nak94r8-bdb7842-bau`, ENG | `88255d8`…`e63a53f` | Endstandzahlen nach dem Kanon, Nadel-Teilmenge, Riegel namentlich; Kanon GRÜN 32/32 auf `f423527` |
+| Prüfer 14 | Codex xhigh `01a05093-a4e3-7ca3-be36-f305562a489c`, lesend über `git diff dafa5a5...e63a53f`, HEAD vor/nach identisch | `e63a53f` | **NEEDS_WORK (1)** — unten wörtlich; neun Endstandzahlen und A14-Verhalten bestätigt |
+
+**Befund des vierzehnten Prüfers, wörtlich (`@ e63a53f`):**
+
+> **[P2] Erfasse auch den lebenden A14-Kommentar im Inventar** — `docs/beweise/SONDE-007a.md:16459`. Dieses exakte Muster übersieht die weiterhin lebende Aussage `derselbe Scanner muss die Werte im gebauten Bundle FINDEN` in `tools/beweise.ps1:345-346`: Abschnitt [1] prüft nur die benannte Main-/Hersteller-Teilmenge, während die Sondenwerte dort nicht vorkommen sollen. Damit bleibt dieselbe Überbehauptung in einem Runner-Kommentar bestehen; erweitere den Grep und begrenze auch diesen Kommentar auf die Pflichtmenge.
+
+**Einordnung:** Defekt, mittel (Prüfliste E, Inventar unvollständig — das grep-Muster war zu eng). **Regel des Dirigenten (Runde 14):** Inventar-Muster für eine Zusage decken alle Wortformen ab, nicht nur den zitierten Satz — hier mindestens `Nadeln`, `Scanner`, `FINDEN`, `Gegenprobe`, `im gebauten`; der Runner-Kommentar `tools/beweise.ps1:345-346` @ `e63a53f` wird auf die Pflicht-Teilmenge begrenzt; Trefferzahlen vor/nach je Muster. Keine Verhaltensänderung.
+
+**Nächster Schritt:** Nacharbeits-Worker für S8 Runde 14 **und** NAK-94 Nacharbeit 9 (siehe `docs/beweise/SONDE-007c.md`, „Dirigentenstand NAK-94 … Prüfer 9"), gemeinsamer Kanon, dann Prüfer 15 (xhigh) für S8 und Prüfer 10 (high) für NAK-94 — je frischer Thread. Kein Halt.
+
+**Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.

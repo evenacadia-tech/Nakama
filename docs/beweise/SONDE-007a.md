@@ -17267,14 +17267,14 @@ Endstand der Quelle: sha256 b23776b68dffbf8a8a4e5fd1ac879398594bc67bd2592b17c57e
 
 ### Die nachgezogenen Aussagen
 
-| Stelle | vorher | jetzt |
-|---|---|---|
-| `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:3460-3468 @ c212280` (A14-`pruefe`-Text) | „Ausnahme NakamaKernRiegel.h mit `{n}` Treffern" | „Ausnahme NakamaKernRiegel.h: `{code}` Token im kommentarfreien Quelltext, alle namentlich gegen die `{len(makros)}` Makros der K1-Liste DERSELBEN Datei abgeglichen und nur in Riegelkontexten (`{roh}` Token im Rohtext inkl. Kommentaren)"; war die Datei nicht in der Eingabemenge, sagt der Lauf ausdrücklich, dass er über sie nichts behauptet |
-| `…/pruefe_kern_identitaetsfrei.py:70-79` (Skriptkopf) | „Einzige Ausnahme: NakamaKernRiegel.h, gemessen und benannt." | nennt Abgleich, Makroliste, die drei erlaubten Kontexte und dass ein `#undef` ROT ist |
-| `tools/beweise.ps1:364-366` (Kommentar über A14) | „K1b (kein JucePlugin_-Token im Quelltext der tatsächlichen Compiler-Eingaben)" | dazu: „die einzige Ausnahme NakamaKernRiegel.h wird seit Runde 15 nicht gezählt, sondern namentlich gegen die K1-Makroliste DERSELBEN Datei abgeglichen" |
-| `tools/beweise.ps1:370` (A14-`Behauptung`) | „…trägt das Token JucePlugin_ ausserhalb von NakamaKernRiegel.h" | dazu der ganze Abgleich mit Kontextliste, `#undef`-Klausel und der fail-closed-Kante |
-| Riegelkarte, Zeile **K1b** (`docs/beweise/SONDE-007a.md:78`) | „einzige Ausnahme ist `NakamaKernRiegel.h`, gemessen und namentlich" | derselbe Satz, jetzt aufgelöst: Abgleich gegen die K1-Liste derselben Datei, drei erlaubte Kontexte, ROT mit Namen |
-| `eq-copilot/plugin/state/NakamaKernRiegel.h:44-45` | „Einzige Ausnahme: diese Datei hier, gemessen und namentlich." | **unverändert** — der Satz war die Absicht und ist seit dieser Runde die Messung. Die Datei wurde nicht angefasst (`R15-1g`) |
+| Stelle | vorher | jetzt | Stand |
+|---|---|---|---|
+| `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:3460-3468 @ c212280` (A14-`pruefe`-Text) | „Ausnahme NakamaKernRiegel.h mit `{n}` Treffern" | „Ausnahme NakamaKernRiegel.h: `{code}` Token im kommentarfreien Quelltext, alle namentlich gegen die `{len(makros)}` Makros der K1-Liste DERSELBEN Datei abgeglichen und nur in Riegelkontexten (`{roh}` Token im Rohtext inkl. Kommentaren)"; war die Datei nicht in der Eingabemenge, sagt der Lauf ausdrücklich, dass er über sie nichts behauptet | nachgezogen @ `50615f7` |
+| `…/pruefe_kern_identitaetsfrei.py:70-79` (Skriptkopf) | „Einzige Ausnahme: NakamaKernRiegel.h, gemessen und benannt." | nennt Abgleich, Makroliste, die drei erlaubten Kontexte und dass ein `#undef` ROT ist | nachgezogen @ `50615f7` |
+| `tools/beweise.ps1:364-366` (Kommentar über A14) | „K1b (kein JucePlugin_-Token im Quelltext der tatsächlichen Compiler-Eingaben)" | dazu: „die einzige Ausnahme NakamaKernRiegel.h wird seit Runde 15 nicht gezählt, sondern namentlich gegen die K1-Makroliste DERSELBEN Datei abgeglichen" | nachgezogen @ `50615f7` |
+| `tools/beweise.ps1:370` (A14-`Behauptung`) | „…trägt das Token JucePlugin_ ausserhalb von NakamaKernRiegel.h" | dazu der ganze Abgleich mit Kontextliste, `#undef`-Klausel und der fail-closed-Kante | nachgezogen @ `50615f7` |
+| Riegelkarte, Zeile **K1b** (`docs/beweise/SONDE-007a.md:78`) | „einzige Ausnahme ist `NakamaKernRiegel.h`, gemessen und namentlich" | derselbe Satz, jetzt aufgelöst: Abgleich gegen die K1-Liste derselben Datei, drei erlaubte Kontexte, ROT mit Namen | nachgezogen; Karte trägt jetzt `50615f7` |
+| `eq-copilot/plugin/state/NakamaKernRiegel.h:44-45` | „Einzige Ausnahme: diese Datei hier, gemessen und namentlich." | **unverändert** — der Satz war die Absicht und ist seit dieser Runde die Messung. Die Datei wurde nicht angefasst (`R15-1g`) | **unverändert** — die Aussage stimmt jetzt |
 
 ---
 

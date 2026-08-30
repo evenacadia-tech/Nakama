@@ -19459,11 +19459,11 @@ Endstand der Quelle: sha256 f923b10b6ed78099f52de168fe89672f65bbac79396512559a72
 
 ### (4) Die nachgezogenen Aussagen
 
-| Stelle | jetzt |
-|---|---|
-| `tools/beweise.ps1:407` (A17-`Behauptung`) | nennt `ziel_id` im Strukturvertrag, den **zentralen Fänger** (Klartextzeile mit Typ, Meldung, Datei, Zeile; Exit 2; kein Traceback ohne `--debug`) und dass beides durch `[3c]` **gemessen** ist, mit Sample-Regel und `--fuzz-voll` |
-| `…/pruefe_installer_manifest.py:158-183` (Skriptkopf) | Abschnitt „WEGWECHSEL W3" mit den drei Ebenen erste Verteidigung / zentraler Fänger / Messung |
-| `_installermanifest_struktur:361` (Docstring) | nennt `ziel_id` und `cmake_ziel` und sagt, dass der zweite Fall aus dem Fuzz kam, nicht aus dem Befund |
+| Stelle | jetzt | Stand |
+|---|---|---|
+| `tools/beweise.ps1:407` (A17-`Behauptung`) | nennt `ziel_id` **und** `cmake_ziel` im Strukturvertrag, den **zentralen Fänger** (Klartextzeile mit Typ, Meldung, Datei, Zeile; Exit 2; kein Traceback ohne `--debug`) und dass beides durch `[3c]` **gemessen** ist, mit Sample-Regel und `--fuzz-voll` | nachgezogen @ `805d51f`; `cmake_ziel` ergänzt @ `2f50a91` |
+| `…/pruefe_installer_manifest.py:158-183` (Skriptkopf) | Abschnitt „WEGWECHSEL W3" mit den drei Ebenen erste Verteidigung / zentraler Fänger / Messung | nachgezogen @ `805d51f` |
+| `_installermanifest_struktur:361` (Docstring) | nennt `ziel_id` und `cmake_ziel` und sagt, dass der zweite Fall aus dem Fuzz kam, nicht aus dem Befund | nachgezogen @ `805d51f` |
 
 Inventar (whitespace-normalisiert über `tools/beweise.ps1` und die beiden
 Prüfskripte, Stand `805d51f`): `Byte-Kipp-Fuzz` 6×, `Gegenprobe unmoeglich`

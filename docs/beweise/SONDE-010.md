@@ -894,3 +894,161 @@ Der Zeitstempelvergleich ist hier nicht der Massstab: `-Bauen` hat unmittelbar v
 4. Kanon auf dem committeten Stand; Wiederprüfung nach Vorlage B (Fixdiff der Runde, die acht Befunde, Matrix als Referenz).
 
 Bleibt danach ein Defekt, wird seine Ursache als eigener Registerpunkt mit Matrix ausgegliedert, das Ticket bleibt `gebaut`, und der Dirigent zieht das nächste Ticket vor (User-Wort 30.08.2026: „voranschreiten ist das wichtigste"). **Aufsicht:** ENG.
+
+---
+
+## Kanon-Lauf - SONDE-010 Ursachenrunde Phase 2
+
+**Lauf:** 2026-08-30 16:02 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/SONDE-010-7457684.md](roh/SONDE-010-7457684.md)
+
+### Kopf - woran gemessen wurde
+
+| Feld | Wert |
+|---|---|
+| Zeitpunkt | 2026-08-30 16:02:37 +02:00 |
+| Rechner | SCHUBBINATOR200 \| Windows 10.0.26200.0 |
+| Zweig | master |
+| Commit | 7457684 SONDE-010 Ursachenrunde: Implementierung nach Verhaltensmatrix (Regel 1-8) |
+| Commit (voll) | 74576849c1b09094dbfa5e98b61df93193d2ef1d |
+| Arbeitsbaum | sauber |
+| JUCE gepinnt | 8.0.9 |
+| JUCE auf Platte | 8.0.9-dirty |
+| FL Studio | FL Studio 2025 25.2.5.5319 \| FL Studio 2026 26.1.4.5589 |
+| cargo | cargo 1.93.1 (083ac5135 2025-12-15) |
+| rustc | rustc 1.93.1 (01f6ddf75 2026-02-11) |
+| PowerShell | 7.6.5 |
+| cmake | cmake version 3.31.6-msvc6 |
+
+### Uebersicht
+
+| # | Behauptung | Befehl | Ergebnis | Dauer | Rohausgabe |
+|---|---|---|---|---|---|
+| A1 | Passthrough ist bitgleich; 0 Samples Latenz, 0 Tail; NaN/Inf werden gezaehlt, aber nicht veraendert. | `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | [OK] Exit 0 | 0,14 s | [A1](roh/SONDE-010-7457684.md#a1) |
+| A2 | AnalyseEngine deckt sich mit der eingefrorenen Offline-Referenz (Fixture-SHA-256 als Determinismus-Riegel). | `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | [OK] Exit 0 | 10,01 s | [A2](roh/SONDE-010-7457684.md#a2) |
+| A3 | Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung, und der U10-Term ist gedeckt - OHNE Playhead faerbt bei sonst voller Erlaubnis kein Sample (T11, mit Gegenprobe bei laufendem Transport). | `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | [OK] Exit 0 | 6,37 s | [A3](roh/SONDE-010-7457684.md#a3) |
+| A4 | Broker-Vertragstests gruen (Framing, Protokoll, Bindung, Aggregat, Server). | `cargo test --manifest-path broker/Cargo.toml --color never` | [OK] Exit 0 | 3,08 s | [A4](roh/SONDE-010-7457684.md#a4) |
+| A4b | C++-PipeClient: stop/reconnect und ganze Frames sind zeitlich begrenzt, SQOS ist Identification, Peerbytes sind UTF-8/NUL-sauber, ACK-Sequenzen streng und u64-Zaehler wire-sicher. | `eq-copilot\build\plugin\EqCopPipeClientTest_artefacts\Release\EqCopPipeClientTest.exe` | [OK] Exit 0 | 1,06 s | [A4b](roh/SONDE-010-7457684.md#a4b) |
+| A5 | Referenzbein (jsonschema, draft 2020-12): Schema haelt die Engine-Teilmenge ein, Textriegel deckt jede gemessene Kante, jedes Fixture wird wie im Manifest klassifiziert, jede Definition hat ein Negativfixture. | `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | [OK] Exit 0 | 1,49 s | [A5](roh/SONDE-010-7457684.md#a5) |
+| A6 | Beide Bandgitter sind bytegleich zur Neuerzeugung; 221 Baender, 64 Gruppen als exakte Partition. | `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | [OK] Exit 0 | 0,13 s | [A6](roh/SONDE-010-7457684.md#a6) |
+| A7 | Quantisierungsvertrag bytegleich zur Neuerzeugung; Rundung, Saettigung und Nichtendliches als Testvektoren. | `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | [OK] Exit 0 | 0,14 s | [A7](roh/SONDE-010-7457684.md#a7) |
+| A8 | Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_v3_fixtures.py --pruefen` | [OK] Exit 0 | 0,19 s | [A8](roh/SONDE-010-7457684.md#a8) |
+| A9 | Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID. | `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | [OK] Exit 0 | 0,29 s | [A9](roh/SONDE-010-7457684.md#a9) |
+| A10 | Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | [OK] Exit 0 | 1,47 s | [A10](roh/SONDE-010-7457684.md#a10) |
+| A11 | Die fuenf v2-Vertraege (ipc v2, measurement v1, report v1, snapshot v3, aggregat v1) sind gueltiges JSON und gueltige JSON-Schemas; ihre $id-Familie ist eingefroren. | `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | [OK] Exit 0 | 0,27 s | [A11](roh/SONDE-010-7457684.md#a11) |
+| A12 | Parameterbestand (109 IDs, §53.8) haelt den Vertrag; RFC-8785-Zahlenvektoren tragen den RFC-Text und werden von rfc8785 bestaetigt; State-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung. | `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | [OK] Exit 0 | 0,26 s | [A12](roh/SONDE-010-7457684.md#a12) |
+| A13 | Capabilityreport FL: die zehn Bits aus §53.6 entsprechen der v3-Vertragsform und stehen so, wie die Rohdaten der Termine A und B sie tragen; jedes supported hat einen Termin, jedes unsupported seinen festen Fallback. | `py -3.13 tools\eq-copilot\pruefe_host_capabilities.py` | [OK] Exit 0 | 0,21 s | [A13](roh/SONDE-010-7457684.md#a13) |
+| A14 | Der gemeinsame Kern traegt keine Bundle-Identitaet (Entwurf §53.4): NakamaKern.lib wird vor der Messung geloescht und von MSBuild neu erzeugt (jede Kernquelle uebersetzt, Objekte und Lib juenger als der Zeitanker, Objektzahl = Quellzahl), enthaelt danach keinen eingefrorenen Identitaetswert aus plugin-identities-v1.json (Text in ASCII/UTF-16LE, Viercodes als Integer beider Byteordnungen, CIDs roh und COM-vertauscht) und genau die erwarteten Kernobjekte ohne JUCE-Modulobjekt; die Gegenprobe findet die Pflichtnadeln im gebauten Gen-Bundle, sonst waere das Schweigen ueber den Kern wertlos. Fehlende Voraussetzung (kein Neubau, Artefakt nicht auffindbar, --nur-messen) endet mit Exit 3, mit registriertem Befund mit 2, nie mit 0. Seit NAK-100 (30.08.2026) ohne K1b-Textscan, Ortsriegel, JUCE-Baum-Riegel und Frischewachen (Haertung NAK-103). | `py -3.13 tools\eq-copilot\pruefe_kern_identitaetsfrei.py` | [OK] Exit 0 | 5,67 s | [A14](roh/SONDE-010-7457684.md#a14) |
+| A17 | Installer-Manifest: keine zweite Identitaet (kein Viercode, keine Class-ID, kein Produkt- oder Bundlename ausser im Pfad), jeder Quellpfad ist der aus Ziel + Identitaetsdatei nachgerechnete Bundle-Ordner, `art` ist eine geschlossene Menge, jedes aktive Ziel genau einmal und jedes stillgelegte benannt mit lesbarer Marke, Broker aus dem Crate-Namen, Zielverzeichnisse geschuetzt, Signaturzeile ehrlich, Rueckweg samt NAK-41-Riegel und hash_art vollstaendig; jede der 15 Regeln faellt an einem verdorbenen Manifest, die konkreten Umgehungen (Zielkollision, state_schema-Drift, Stilllegung umgangen, Marke unlesbar, ungueltige ziel_id-Typen, Pfadtraversal) fallen einzeln. [4] vergleicht im Kanon weich (Abweichung nach Relink = Hinweis, fehlendes Artefakt oder nicht bildbarer Ordner-Hash = Fehler), hart nur mit --release; [4b] berichtet den installierten Stand ohne Urteil, ok nur bei Journalstatus OK; [5] Ordner-Hash v1 bytegleich in Python und PowerShell, Nicht-ASCII bricht beide ab. Jede gelesene JSON-Datei wird vor dem Zugriff strukturell geprueft, jede unerwartete Ausnahme endet als Klartext mit Exit 2 statt als Traceback. | `py -3.13 tools\eq-copilot\pruefe_installer_manifest.py` | [OK] Exit 0 | 1,00 s | [A17](roh/SONDE-010-7457684.md#a17) |
+| A18 | Gegenpfad installieren<->Rueckweg gefahren (Sandbox, nichts installiert): Erstinstallation traegt moduleinfo.json, ein Tausch ersetzt statt zu mischen, -Pruefen sieht den ganzen Ordner, der Rueckweg stellt den Vorzustand bytegleich her und laesst KEIN leeres .vst3-Gehaeuse stehen, selbst angelegte Ordner verschwinden nur leer, der NAK-41-Riegel greift und zerstoert seine eigene Wiederholungsquelle nicht, eine dritte Artefaktsorte bricht ab. | `py -3.13 tools\eq-copilot\pruefe_installer_gegenpfad.py` | [OK] Exit 0 | 37,05 s | [A18](roh/SONDE-010-7457684.md#a18) |
+| A19 | BandGridZahlen.h ist bytegleich aus den zwei eingefrorenen Gitterfixturen erzeugt; die 64 Live-Gruppen partitionieren die 221 Feinbaender lueckenlos und ueberschneidungsfrei, und die groben Kanten sind bitgleiche Kopien feiner Kanten (kein zweites Filterbank-Gitter). | `py -3.13 tools\eq-copilot\erzeuge_bandgitter_header.py --pruefen` | [OK] Exit 0 | 0,15 s | [A19](roh/SONDE-010-7457684.md#a19) |
+| A20 | Envelope-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; jede der 14 Envelope-Regeln hat mindestens ein Negativfixture. | `py -3.13 tools\eq-copilot\erzeuge_envelope_fixtures.py --pruefen` | [OK] Exit 0 | 0,31 s | [A20](roh/SONDE-010-7457684.md#a20) |
+| A21 | v3-Envelope unter Zufall: 20 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und JEDER angenommene Frame erfuellt jede Kopfregel; 3000 gekippte P2-Payloadbits fallen einzeln an der CRC; feindliche Laengen (0, 15, ueber der Grenze, 0xFFFFFFFF) und die u32-Grenze von 16+payload_len enden in der erwarteten Fehlerklasse, ohne Absturz und ohne Eingabeallokation in Groesse der behaupteten Laenge; 300 Runden Fragmentierung (byteweise und in Zufallshaeppchen) liefern exakt dieselben Frames; ein kaputter Frame beendet den Strom statt zu resynchronisieren; die Ratengrenze haelt unter Flut. | `cargo test --manifest-path broker/Cargo.toml --test transport_fuzz --color never` | [OK] Exit 0 | 0,36 s | [A21](roh/SONDE-010-7457684.md#a21) |
+| A22 | Ende-zu-Ende ueber die PROBE-Pipe, zwei Sprachen ein Draht: 32 echte C++-Sondenpaare koppeln sich am echten Rust-Listener (32 Control + 32 Telemetry, jede Telemetrieverbindung ueber link_id + challenge + gleiche runtime_nonce), fluten P2 bis die Schleuse mit Cap 2 nachweislich ersetzt, und WAEHRENDDESSEN geht kein einziger P0-Frame verloren; die P0-Antwortlatenz bleibt unter der Schranke. Keine Verbindung wird wegen Envelope, Rate oder P0-Ueberlauf geschlossen. | `py -3.13 tools\eq-copilot\pruefe_ipc_last.py` | [OK] Exit 0 | 10,51 s | [A22](roh/SONDE-010-7457684.md#a22) |
+| A15 | STILLGELEGT - mass bis 28.08.2026 Nakama Suna (NkPr): Passthrough bitgleich ueber drei Samplerates und fuenf Blockgroessen, 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur passive_probe zu; speichern-laden-speichern bytegleich. | `(nicht gefahren)` | [STILLGELEGT] seit 2026-08-28 (S9b/SONDE-007c): das Ziel NakamaSuna ist stillgelegt - Suna ist in Nakama Probeeq aufgegangen (design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md). Weder gebaut noch gefahren; die Zeile bleibt sichtbar, damit die Kanonzahl nicht still sinkt. | - | - |
+| A16 | Nakama Probeeq (NkAc): heute ebenfalls Passthrough bitgleich (die EQ-DSP kommt in P6), 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur active_probe zu; speichern-laden-speichern bytegleich. Seit der T3-Nacharbeit 29.08.2026 (G1 §4.2) faehrt dasselbe Bein die Gate-7-Kette AM GEBAUTEN BUNDLE Nakama Probeeq - Klasse active_probe, denn die Sondenschale traegt genau EINE Klasse je Uebersetzung: ein sonst gueltiger Stand mit measurement_position=post_fader_contribution kommt ueber setStateInformation read-only zurueck, die Instanz bleibt neutral, die Originalbytes gehen unveraendert an den Host zurueck und ein erneutes Laden waescht nichts; auch eine bereits klassifizierte Instanz faellt beim Nachreichen desselben Standes auf neutral zurueck; Gegenprobe mit insert laedt normal. Zusaetzlich misst dasselbe Bein direkt an der oeffentlichen positionErlaubt, dass post_fader_contribution fuer alle vier Klassen abgelehnt wird - das gemeinsame Ergebnis von Capability-Vorpruefung und Klassenmatrix, ohne die beiden Haelften zu trennen. Die vollstaendige 16er-Matrix samt Bundlevertraegen misst B2. | `eq-copilot\build\plugin\EqCopProbeeqNullTest_artefacts\Release\EqCopProbeeqNullTest.exe` | [OK] Exit 0 | 0,10 s | [A16](roh/SONDE-010-7457684.md#a16) |
+| B1 | Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren. | `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | [OK] Exit 0 | 0,10 s | [B1](roh/SONDE-010-7457684.md#b1) |
+| B2 | State-Schema 2: Roundtrip bytegleich, Schema-1-Migration rein und golden, unbekanntes Major read-only mit Originalbytes, Duplicate erkennbar (gleiche instance_id, verschiedene runtime_nonce) und aufloesbar, Host-Dirty; Parametertabelle deckungsgleich mit dem Vertrag; RFC-8785-state_hash bytegleich zu Python und Rust. | `eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe` | [OK] Exit 0 | 0,35 s | [B2](roh/SONDE-010-7457684.md#b2) |
+| B3 | Hostkontext (Anwesenheit, Parameterpunkte, Buslatenz) wird gemessen, nicht geraten; Quellhash-Gate des JUCE-Patches gruen. | `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | [OK] Exit 0 | 0,05 s | [B3](roh/SONDE-010-7457684.md#b3) |
+| B3b | Termin-B-Messgeraet: Passthrough bitgleich, Sprung-/Automations-/Latenzmessung inkl. Fehlalarm-Riegel, Bericht-Rueckweg, 0 Allokationen. | `eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe` | [OK] Exit 0 | 0,11 s | [B3b](roh/SONDE-010-7457684.md#b3b) |
+| B3c | v3-Vertrag: C++ klassifiziert den Fixture-Korpus wie das Manifest (Urteil UND Verletzungsmenge), Bandgitter und Quantisierung bitgleich. | `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | [OK] Exit 0 | 0,20 s | [B3c](roh/SONDE-010-7457684.md#b3c) |
+| B4 | StampedAudioQueue und Ein-Block-Quarantaene: Ganzblockaufnahme bitgleich ueber jeden Ringumlauf, Ueberlauf BEIDER Ringe verwirft den ganzen Block und nie eine Teilmenge, Oversize ueber der Slotkapazitaet faellt fuer die Analyse und laesst Audio unberuehrt, Flush (numSamples 0) ist kein Verlust, Mono dupliziert L, Mehrfach-Tap-Layout traegt; Quarantaene versiegelt erst mit bewiesener Fortsetzung, Seek und Transportkante verwerfen genau EINEN Block, stehende Projektzeit (FL-Teilpuffer) ist kein Bruch, Projektzeit-Ueberlauf und negative Zeit sind behandelt; Worker-Publikation folgt monotonen 50-/250-ms-Deadlines statt Batchzahl, holt nach Pausen nicht auf und laesst wartende Reset-/Frame-Aufrufer vor; verdrahtet: Passthrough bitgleich ueber 18 Blockgroessen von 1 bis 16384, 0 Samples Latenz, kein Tail, 0 Allokationen im Audiothread ueber 4000 Bloecke wechselnder Groesse mit Transportkanten, und die Engine bekommt den Strom bis auf den Block in Quarantaene. | `eq-copilot\build\plugin\EqCopQueueStressTest_artefacts\Release\EqCopQueueStressTest.exe` | [OK] Exit 0 | 3,40 s | [B4](roh/SONDE-010-7457684.md#b4) |
+| B9 | Fixed-memory Loudness (§48.1): der LoudnessAccumulator deckt sich mit der ausgebauten Vektorrechnung innerhalb ±0,1 LU (Entwurf §49) ueber konstante, rampende, zufaellige und einstuendige Korpora sowie ueber Stille unter dem absoluten Gate; Kurz-LUFS ist BITGLEICH; ein adversarialer Sweep legt 1000 Bloecke in den Grenzbin des relativen Gates und die selbstgemeldete Schranke unsicherheitLu() deckt jeden Lauf; eine Million Zellen laufen mit 0 Allokationen durch, waehrend die Gegenprobe (alte Rechnung) allozert; NaN/Inf-Zellen sind gezaehlt statt still als 0 verbucht und l_j == -70,0 exakt bleibt wertgleich; ueber dem Feingitter traegt ein OBERBAND aus Bins von 1 LU bis ueber lautheit(DBL_MAX) - mit ZWEI Pegeln darin (Korpus des T2-Pruefers), einem adversarialen Sweep im Oberband-Grenzbin, beiden Richtungen der Naht zwischen den Aufloesungen und der Gegenprobe, dass kein Block durch das Raster faellt. | `eq-copilot\build\plugin\EqCopLoudnessGoldenTest_artefacts\Release\EqCopLoudnessGoldenTest.exe` | [OK] Exit 0 | 0,14 s | [B9](roh/SONDE-010-7457684.md#b9) |
+| B5 | FeatureEngine v2 haelt Zeit-, Validity-, Event- und Bandvertraege: Bandgitter und alle 61 Quantisierungsvektoren bitgleich zum v3-Vertrag, Bitmap LSB-first mit Fuellbits 0, FFT gegen Parseval und einen Sinus auf der Binmitte, K-Gewichtung ueber 20 Hz..20 kHz unter 0,1 dB an der BS.1770-Referenzkette; Drop/Seek(laufend UND gestoppt)/Loop-Wrap/moeglicher Straddle/Transportkante/Sampleratewechsel/Neuanlauf/Beweislagewechsel trennen JEDES offene Fenster - auch den K-Filterzustand, bitgleich gemessen - waehrend FL-Teilstuecke mit stehender Projektzeit lokal weiterlaufen, aber kein unbewiesenes Projektintervall oder FFT-Event erzeugen; Frame-Stempel umfassen den echten ueberlappenden FFT-Support und bleiben an int64/u32-Grenzen darstellbar; Drop zaehlt als Segment, alles andere als Epoche; alle sieben Erzeuger-Stempelregeln fallen einzeln und mit eigener Nummer; kein spektraler Fluss ueberbrueckt eine Grenze, der Ereignisring ist fest gedeckelt; LUFS-S trifft die analytisch gerechnete Erwartung unter 0,1 LU; die Nyquist-Kappe greift bei 22,05 kHz wirklich; verdrahtet: alle sieben Gueltigkeitsbits kommen ueber die Hostbruecke durch, der Playhead-Rueckfallweg nachweislich nur zwei. | `eq-copilot\build\plugin\EqCopAnalysisGoldenTest_artefacts\Release\EqCopAnalysisGoldenTest.exe` | [OK] Exit 0 | 2,26 s | [B5](roh/SONDE-010-7457684.md#b5) |
+| B6 | Aktiver DSP-Kern liefert die eingefrorene Referenzantwort. | `eq-copilot\build\plugin\EqCopDspGoldenTest_artefacts\Release\EqCopDspGoldenTest.exe` | [GEPLANT] geplant (ab P6) | - | - |
+| B7 | Apply/Revert ist transaktional - kein halber Zustand ueberlebt. | `eq-copilot\build\plugin\EqCopTransactionTest_artefacts\Release\EqCopTransactionTest.exe` | [GEPLANT] geplant (ab P6) | - | - |
+| B10 | v3-Envelope in C++ klassifiziert den Envelope-Korpus wie das Manifest (Urteil UND Verstossmenge, alle 14 Regeln mit Negativfixture); CRC32C trifft die RFC-3720-Vektoren, P0/P1 tragen CRC exakt 0, P2 die Pflichtsumme ueber genau die Payloadbytes; 40 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und 7671 angenommene EINBIT-Mutanten gueltiger Frames halten jede Kopfregel (reiner Zufall wird praktisch immer abgewiesen - die Invariante braucht deshalb die Mutanten, sonst spraeche sie ueber eine leere Menge), 3000 gekippte P2-Bits fallen einzeln, byteweise Zustellung liefert dieselben 40 Frames und ein kaputter Frame beendet den Strom; Pipetoken trifft das Golden aus §48.3 samt SHA-256- und RFC-4648-Vektoren; P0 verwirft nichts und meldet den 65. Eintrag, P1 koalesziert an der Position und haelt Ereignisse fuer den Reconnect vor, die P2-Schleuse ersetzt den aeltesten ungesendeten Frame, uebergibt 100 000 Frames mit 0 Allokationen (mit Gegenprobe am selben Zaehler) und liefert unter Flut keinen zerrissenen Frame; verdrahtet: Control koppelt Telemetry ueber link_id + challenge, ein ungekoppelter Telemetry-Connect wird geschlossen, der Client verbindet nach Serverneustart von selbst wieder, ein kaputter Envelope vom Server schliesst die Verbindung, und ein P0-Ueberlauf WAEHREND einer stehenden Verbindung schliesst sie ebenfalls statt still zu kuerzen. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 35,72 s | [B10](roh/SONDE-010-7457684.md#b10) |
+| B8 | Lifecycle-Klassifikation §53.5: unclassified beim Laden und audio-neutral; Schema-1 sensor\|pre\|post -> legacy (immer passiv), hub bzw. bestaetigter Schema-2-Main-State -> main; ein Scannerlauf klassifiziert nicht; read-only nimmt die Klassifikation zurueck; Brokerstart nur fuer main mit offenem Editor; die Sondenbundles bleiben bis gueltigem State neutral und werden nie main. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,12 s | [B8](roh/SONDE-010-7457684.md#b8) |
+
+
+---
+
+## Ursachenrunde Phase 2 — 2026-08-30 (Worker, hat nicht geurteilt)
+
+**Stand.** Basis `7deff2e` (Matrix nach Wiederprüfung), Implementierung
+`7457684`, Kanon auf genau diesem committeten Stand **GRÜN 32/32**
+(`docs/beweise/roh/SONDE-010-7457684.md`). Referenz für jede Zeile unten ist
+die Verhaltensmatrix im lebenden Kopf dieses Manifests; die drei
+Restwidersprüche der Wiederprüfung (Thread `01a052cf`) stehen dort als
+„(Nachtrag 30.08., Wiederprüfung)" in `C-LS-06`, `B-TC-07` und `C-LS-07`.
+
+**Zahlen dieser Runde.** B10 `EqCopIpcTest` 161 → **188 Prüfungen, 0 Fehler**;
+Rust **146** Lib-Tests (vorher 140) plus 9 `contract_cross_language` und 9
+`transport_fuzz`; A22 unverändert grün (32 Sonden, **10 016/10 016** P0
+beantwortet, max 22 ms, p99 20 ms, 40 756 ersetzte P2-Frames).
+
+### Was je Matrixzeile gebaut wurde
+
+| Zeile | Datei · Symbol | Test (grün) | Bruchprobe (rot) |
+|---|---|---|---|
+| `A-P1-03` (Regel 2) | `IpcQueues.h` · `P1Warteschlange::einreihen`, `zuruecklegen`, `Eintrag` im Wiederholpuffer · `warteschlange.rs` · `P1Warteschlange::einreihen` | B10 E · „ein Snapshot im Wiederholpuffer behaelt seinen Schluessel und koalesziert dort"; `warteschlange::p1_wiederholpuffer_haelt_den_schluessel` | C2 / R3 — Schlüsselsuche entfernt: beide rot ([↓ Bruchproben](roh/SONDE-010-bruchproben-phase2.md)) |
+| `A-P1-06` (Regel 1) | `IpcQueues.h` · `P1Warteschlange::abfliessen`, gerufen aus `bestaetigen`/`zuruecklegen`/`einreihen` · `warteschlange.rs` · `P1Warteschlange::abfliessen` aus `entnehmen`/`einreihen` | B10 E · „ein einziges Senden zieht eine Wiederholung nach — ohne Reconnect"; `p1_wiederholpuffer_fliesst_ohne_reconnect_ab` | C1 / R2 — Abfluss nur beim Reconnect: rot |
+| `A-P1-07` (Regel 1) | dieselbe Stelle, `abfliessen()` VOR dem Urteil über den Neuzugang | B10 E · „und er ueberholt sie nicht — Annahmereihenfolge ueber beide Puffer"; `p1_neuzugang_ueberholt_keine_wiederholung` | C1 (dieselbe Wurzel) |
+| `A-P1-05` (Regel 3) | `warteschlange.rs` · `P1Ergebnis::Abgewiesen` statt `WiederholungVerdraengt`, Zähler `abgewiesene()` | `p1_haelt_ereignisse_fuer_den_reconnect_vor` — auf die Zusage berichtigt | R1 — `pop_front()` zurück: rot |
+| `A-IN-04` | `warteschlange.rs` · `IngressWarteschlange::einreihen` (P1 → `ClientTrennen`), `p1_ueberlauf_trennt`; `server_v3.rs` · `V3Statistik::ingress_p1_ueberlauf_trennt` | `ingress_voll_ohne_p2_trennt_auch_bei_p1` | R4 — P1 fällt wieder still: rot |
+| `B-CC-06` (Regel 4) | `ControlClient.cpp` · `Laufzeit::eineVerbindung`, Lambda `empfangenes` ersetzt das `continue` | B10 G16 · „der ACK erreicht beiAntwort, obwohl P1 rueckstaut" | C4 — `continue` zurück: rot (`0 ACKs`) |
+| `B-CC-07` (Regel 4) | dieselbe Stelle, `empfangenes (0)` vor dem Verbindungsende | dieselbe Probe (der ACK trifft vor dem Ende ein) | C4 |
+| `C-LS-07` (Regel 4, Rust) | `server_v3.rs` · `verbraucher_p0` / `verbraucher_rest`, `Eingang::entnehmen_p0`/`entnehmen_ohne_p0`, `IngressWarteschlange::entnehmen_p0` | `p0_wird_beantwortet_waehrend_p1_die_senke_blockiert` (beide Fälle: Antwort bei blockierter `p1`-Senke; 257. Frame trennt nach `A-IN-04`) | — der Test war vor der Trennung der Verbraucher nicht formulierbar; er misst die neue Zusage |
+| `C-LS-02`, `C-LS-04` (Regel 5) | `server_v3.rs` · `verbindung_bedienen`, `control_verbunden` VOR dem Welcome; `trennmelder_anlegen` | `welcome_folgt_dem_abgeschlossenen_control_verbunden`, `connect_callbacks_je_kopplung_genau_einmal` | R5 — Welcome wieder zuerst: rot (`Welcome kam schon nach 440.9µs`) |
+| `C-LS-06` (Regel 5) | `server_v3.rs` · `TrennMelder`, `auf_telemetrie_getrennt_warten`, `telemetrie_getrennt_gemeldet`, `kopplung_loesen` liefert jetzt `bool` | `trennreihenfolge_je_callback_genau_einmal`, `abgeloestes_telemetrie_getrennt_haelt_control_getrennt_nicht_auf` | R6 — kein Wartepunkt: rot (`control_getrennt kam vor telemetrie_getrennt`) |
+| `B-CC-10`…`B-CC-12`, `B-CC-16`, `B-CC-17`, `B-TC-07`, `B-TC-09` (Regel 6) | `ControlClient.{h,cpp}` und `TelemetryClient.{h,cpp}` · `struct Laufzeit` hinter `shared_ptr`, `stop()` mit Reentranzprüfung über `threadId`, Frist `kStopFristMs`, `Snapshot::stopFristUeberschritten` | B10 G17 (drei Fälle: `stop()` aus `beiAntwort`; blockierender Callback binnen Frist; Telemetrie vor der Kopplung und im blockierenden P2-Write) | C5 — `kStopFristMs` 60 000: rot (`20000 ms`, Zähler 0) |
+| `B-TC-10` | `TelemetryClient.cpp` · `Laufzeit::eineVerbindung`, Abbruch über `ioAbbrechen` | B10 G18 · Verbindungsverlust mitten im Write, neuer Versuch, Schleuse nimmt weiter an | — |
+| `A-P2-03`, `A-P2-04` (Regel 8) | `IpcQueues.h` · `P2Schleuse::veroeffentlichen` geht den Ring ab (`kSlots * 2` Versuche); Testhaken `testSlotBeanspruchen`/`testSlotFreigeben`/`testSchreibstand` | B10 E2 · „erzwungene Slot-Kollision: der neueste Frame findet immer einen Platz" (deterministisch, ohne Zeitfensterzufall) plus die bestehende Lastwache | C3 — wieder zwei Versuche: rot (`1 verworfen, 2 Loecher`) |
+| `D-A21-01` (Regel 7) | `tools/beweise.ps1` · A21-Behauptung; `transport_fuzz.rs` · `feindliche_laengen_enden_in_der_erwarteten_fehlerklasse` | Kanon A21 grün mit der begrenzten Behauptung (Kopfzeile unten) | — Behauptung und Testname tragen jetzt dasselbe Maß; kein Allokationszähler |
+
+### Technische Entscheidungen innerhalb der Matrix
+
+* **Die geteilte Laufzeit.** Regel 6 erlaubt `stop()`, einen Thread nach
+  `kStopFristMs` ABZULÖSEN. Ein abgelöster Thread, der danach noch Member des
+  Clients läse, wäre undefiniertes Verhalten, sobald das Objekt zerstört wird.
+  Deshalb liegt alles, was der Clientthread anfasst, in `struct Laufzeit`
+  hinter einem `shared_ptr`, von dem der Thread eine eigene Referenz hält —
+  dasselbe Muster wie `Senkenruf`/`join_mit_frist` im Rust-Listener. Die
+  öffentliche API beider Clients ist unverändert.
+* **Zwei Verbraucher im Listener.** `C-LS-07` verlangt, dass P0 beantwortet
+  wird, während die Senke in `p1` steht. Mit EINEM Ingressthread ist das nicht
+  erreichbar, gleich wie schnell der Leser ist. Die Ingressqueue bleibt EINE
+  Queue mit Cap 256 und der Politik aus §53.9; getrennt ist nur die Sicht
+  darauf (`entnehmen_p0` / `entnehmen_ohne_p0`).
+* **Abflussrichtung des Wiederholpuffers.** Die älteste Wiederholung wandert
+  ans ENDE der Hauptqueue, nicht an den Anfang: alles dort wurde vor ihr
+  angenommen, und wegen `A-P1-07` kann nichts Späteres dort stehen. Damit gilt
+  die Annahmereihenfolge über beide Puffer, ohne Sonderfall.
+* **`p0_ueberlauf_trennt_die_verbindung` musste getaktet werden.** Seit
+  `A-IN-04` trennt schon der 257. P1; der Test füllt deshalb bis zum
+  Höchststand und legt erst dann P0 nach — sonst spräche er über den falschen
+  Pfad.
+* **Testhaken statt Last für NAK-98.** `testSlotBeanspruchen` benutzt dasselbe
+  Besitz-Atomic wie beide echten Seiten und kann an der Politik nichts ändern;
+  er macht den Kollisionsfall nur reproduzierbar. Die alte Lastprobe bleibt als
+  Wache daneben stehen.
+
+### Kanon
+
+```text
+GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e)
+Manifest:   docs\beweise\SONDE-010.md
+Rohausgabe: docs\beweise\roh\SONDE-010-7457684.md
+```
+
+**NAK-98 gilt damit als geschlossen:** `EqCopIpcTest` läuft im Kanon direkt
+nach dem Release-Bau (35,72 s, Exit 0) und trägt den Kollisionsfall jetzt
+deterministisch statt unter Baulast.
+
+### Prüfliste abgehakt (`tools/dirigent/pruefliste.md`)
+
+| Abschnitt | Wo gemessen |
+|---|---|
+| **A** Rückstau und Prioritätsklassen | Politik bei *voll* je Klasse ausdrücklich (`A-P0-03`, `A-P1-05`, `A-P2-02`); Abflussweg OHNE Reconnect (`A-P1-06`); Schlüssel überlebt den Zwischenpuffer (`A-P1-03`); höhere Klasse wird weiter gelesen und beantwortet (`B-CC-06`, `C-LS-07`); die Zähler wertet A22 aus (`p2_neueste_verworfen`, `p2_kollisionsloecher`), `beanspruchtVerworfen` ist die Wache mit Test; dieselbe Regel in beiden Sprachen, beidseitiger Test, beidseitig einmal gebrochen (R1–R4, C1–C3). |
+| **B** Lebenszyklus | Reihenfolge beim Verbinden gemessen (`C-LS-02`); beim Trennen erst entkoppeln, dann Fristen und Joins (`C-LS-06`); jeder Join hat eine Frist, und `stop()` von innen ist erlaubt UND getestet (`B-CC-11`, G17 Fall 1); nach dem Schließen liefert der Eingang nichts mehr, Schließflag vor Inhalt (`A-P0-09`, jetzt für beide Sichten); Stopp-Fenster bleibt eigener Test. |
+| **E** Behauptung ≤ Messung | A21 auf das Gemessene begrenzt, Testname mit (`D-A21-01`); alle Zahlen hier sind gemessen (188, 146/9/9, 32/32, 10 016/10 016) und nicht abgeschrieben; Matrixzeilen werden als Kennung zitiert, nicht als Zeilennummer; der lebende Kopf ist nachgezogen, dieser Abschnitt hängt unten an; jede neue Prüfung wurde einmal absichtlich gebrochen, die roten Rohausgaben liegen in `roh/SONDE-010-bruchproben-phase2.md`. |
+| **F** Änderungssatz | `verbinden↔trennen` im selben Commit (`trennmelder_anlegen` ↔ `auf_telemetrie_getrennt_warten` + Entfernen aus dem Register; `kopplung_loesen` liefert das Gegenstück selbst); `starten↔stoppen` beidseitig (`start`/`stop` beider Clients samt Reentranz und Frist); Writer, Reader und Cross-Language-Verbraucher der P1-Politik im selben Änderungssatz (C++ `IpcQueues.h`, Rust `warteschlange.rs`, beide Testseiten, Runnerbehauptung A21). |
+
+### Was diese Runde NICHT getan hat
+
+* **Kein Urteil.** Diese Runde ist Arbeit des Workers; die Wiederprüfung nach
+  Vorlage B sieht Matrix und Code gemeinsam.
+* **Keine Produktverdrahtung.** Gen und Probeeq sprechen weiterhin v2 über
+  `plugin/src/PipeClient`; der SID-gebundene v3-Endpunkt bleibt `SONDE-011`.
+* **Kein FL, kein Race Detector** — unverändert zu §6.
+* **Keine P1-Last** (NAK-91): A22 fährt P0 und P2. Die P1-Zeilen sind Unittest-
+  und Bein-Zusagen.

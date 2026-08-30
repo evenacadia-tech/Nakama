@@ -1,5 +1,15 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ✅ NACHTRAG — 30.08.2026, Fable-Sitzung 9f06075a, Abschluss (NAK-100 erledigt, Manifeste diätiert) — nächster Dirigent startet auf User-Wort
+>
+> **User-Wort 30.08.:** „wenn du mit allem fertig bist, mache ich eine neue dirigent session auf, das alles weiter automatisch läuft" · „schaue dort auch nach ob es noch verbesserungen gibt um den ablauf zu verbessern".
+>
+> **Erledigt seit dem Nachtrag darüber:** (1) **NAK-100 geschlossen** — A14 `pruefe_kern_identitaetsfrei.py` 4 197 → 746 Zeilen (Neubau, Binärscan, Gegenprobe, Bauform; Selbsttest 28/28 mit Bruch je Riegel, drei Bruchproben am echten Artefakt), A17 `pruefe_installer_manifest.py` 2 884 → 1 587 Zeilen (chirurgischer Schnitt: [3b] Journal-Fixturen + Erzeuger + Korpus und [3c] Byte-Kipp-Fuzz entfernt, 95 ok in 1 s statt 53 s); Kanon GRÜN 32/32 auf `26811a0`; gebundener Prüfer (Codex high): **PASS** (Thread `01a05263`, 284 s, @ `dc7ce7d`). (2) **Ablauf-Werkzeuge:** `tools/dirigent/rundenbilanz.py` (Produkt/Tests/Prüfwerkzeug/Doku je Runde; Konvergenz-Signal bei zwei Runden ohne Produktfortschritt — rückwirkend über S8: 12 von 14 Runden ohne Produktdiff) und `tools/dirigent/pruefauftrag-vorlage.md` (Variante A Erst-/Abschluss, Variante B Wiederprüfung; freie Prompts unzulässig). Skill §3.3/§3.4/§3.5/§6 entsprechend; Nacharbeitsauftrag nur aus Defekten. (3) **Manifest-Diät** für `SONDE-007a.md` (19 316 → 1 366), `SONDE-007c.md` (20 237 → 1 249) und `SONDE-010.md` (19 505 → 636); Verläufe in `*-verlauf.md`, alte Roh-Kanons unter `docs/beweise/roh/`. Planstand liest weiter die jüngste Kanon-Bilanz.
+>
+> **Für die nächste Dirigenten-Session gilt (Skill §3.3–§3.5, seit 30.08.):** Prüfauftrag nur aus der Vorlage; Wiederprüfung sieht nur den Fixdiff; `docs/**` ist keine Befundfläche; nach jeder Runde `rundenbilanz.py`; drei Nacharbeitsrunden Budget, dann Konvergenzentscheid; Befunde gegen Prüfwerkzeuge mit Sabotage-Szenario = Härtung (NAK-103); ein Ticket je Worker; Runner-Behauptungen kurz.
+>
+> **Als Nächstes (Reihenfolge):** G1-Nacharbeit (Planstand „Als Nächstes") → S9 `SONDE-007b` (NAK-88) und S9b `SONDE-007c` (NAK-89) je **eine** gebundene Abschlussprüfung (Variante A, Pfade des Tickets) → S14–15 `SONDE-010` (NAK-95, NAK-98) ebenso → PR1 → SONDE-011. Offene Register-Punkte außerhalb: NAK-89, NAK-93, NAK-98, NAK-99, NAK-103 (geparkt).
+
 > ## ✅ NACHTRAG — 30.08.2026, Fable-Sitzung 9f06075a (ab 12:00) — S8 abgenommen, Prüfregeln umgebaut, NAK-100 als Rückbau
 >
 > **User-Wort 30.08.:** „wir hängen seit 19 wiederholungen bei phase 14/38, weil scheinbar jedes mal ein neues problem gefunden wird und es dann einzeln gefixt wird" · „ich erwarte dass du … ALLES so anpasst wie es gehört" · „macht der prüfskript überhaupt sinn? codex ist bekannt maximal zu übertreiben was tests angeht".

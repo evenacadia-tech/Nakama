@@ -1713,7 +1713,7 @@ def k1b_ausnahme_abgleich(datei: pathlib.Path,
 def k1b_riegel(dateien: list[pathlib.Path],
                ausnahme: pathlib.Path,
                roh_scannen: dict[str, str] | None = None,
-               ) -> tuple[list[str], int, int, int]:
+               ) -> tuple[list[str], int, dict, int]:
     """Kein JucePlugin_-Token im Quelltext der Compiler-Eingaben.
 
     `roh_scannen` sind die namentlich erlaubten Systemdateien (normalisierter

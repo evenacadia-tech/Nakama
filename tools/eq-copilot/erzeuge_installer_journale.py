@@ -58,13 +58,26 @@ WAS HIER NICHT ENTSTEHT
   Mutanten (`mutant_von`/`abweichung`) und werden in [3b] aus genau einer
   Writer-Fixtur abgeleitet.
 
+EIN STRUKTURVERTRAG, ZWEI LESER (Nacharbeit 12, 30.08.2026)
+
+  journale/MANIFEST.json wird von zwei Stellen gelesen: von A17s Zusage [3b]
+  und von `pruefen()` hier. Beide gehen durch DIESELBE Pruefung -
+  `_lies_geprueft` mit `_journalkorpus_struktur`, aus
+  pruefe_installer_manifest.py IMPORTIERT, nicht kopiert. Jeder Struktur- und
+  Dekodierfehler endet dadurch in Klartext mit Exit 2, nie in einem
+  Traceback; den zentralen Faenger `_geschuetzt` legt `main()` um den ganzen
+  Lauf. A17s Byte-Kipp-Fuzz [3c] faehrt `pruefen()` als zweiten Verbraucher
+  mit, damit die Klasse hier gemessen ist und nicht nur behauptet.
+
 Aufrufe:
   py -3.13 tools/eq-copilot/erzeuge_installer_journale.py            # erzeugen
   py -3.13 tools/eq-copilot/erzeuge_installer_journale.py --pruefen  # Hashes nachrechnen
+  py -3.13 tools/eq-copilot/erzeuge_installer_journale.py --pruefen --debug
 
 Exitcodes: 0 gruen · 2 rot (Erzeugung fehlgeschlagen, Hash weicht ab, eine im
-MANIFEST gefuehrte Datei fehlt, eine verwaiste Datei liegt daneben oder eine
-Statusklasse aus JOURNAL_PFLICHTSTATUS fehlt im Korpus).
+MANIFEST gefuehrte Datei fehlt, eine verwaiste Datei liegt daneben, eine
+Statusklasse aus JOURNAL_PFLICHTSTATUS fehlt im Korpus, oder das
+Korpusmanifest traegt die gelesene Struktur nicht bzw. ist nicht dekodierbar).
 """
 
 from __future__ import annotations
@@ -85,8 +98,16 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from pruefe_installer_gegenpfad import (  # noqa: E402
     BROKER_POLICY_ALT, RUHE_ALT, RUHE_NEU, VST_POLICY_ALT, bundle_bauen,
 )
+# EIN Strukturvertrag, ZWEI LESER (NAK-94 Nacharbeit 12, Befund des zwoelften
+# Pruefers): dieses Skript ist der zweite Leser von journale/MANIFEST.json.
+# Bis dahin griff `pruefen()` direkt zu und starb bei einer einzelnen
+# Byteaenderung ("faelle" -> "xaelle") mit `KeyError: 'faelle'` samt Traceback,
+# waehrend A17 an derselben Datei einen Klartext-Abbruch lieferte. Die Regeln
+# werden deshalb IMPORTIERT, nicht kopiert - eine zweite Kopie liefe frueher
+# oder spaeter auseinander, und dann sagte "dieselbe Pruefung" nichts mehr.
 from pruefe_installer_manifest import (  # noqa: E402
-    JOURNAL_PFLICHTSTATUS, datei_hash, ordner_hash,
+    JOURNAL_PFLICHTSTATUS, _geschuetzt, _journalkorpus_struktur,
+    _lies_geprueft, datei_hash, ordner_hash,
 )
 
 INSTALL = WURZEL / "eq-copilot" / "install"
@@ -123,11 +144,19 @@ def pruefen() -> int:
     diese Haelfte jetzt an derselben Statusachse wie [3b]
     (`JOURNAL_PFLICHTSTATUS`, importiert statt abgeschrieben): sie steht
     ausserhalb des Korpus und laesst sich nicht mit ihm loeschen.
+
+    BEFUND NAK-94, Pruefer 12 (30.08.2026): das Korpusmanifest wurde hier ohne
+    Strukturpruefung benutzt. Gemessen @ 75466c0 ueber eine In-Memory-
+    Ueberlagerung - "faelle" -> "xaelle" gab `KeyError: 'faelle'`, ein
+    gekipptes Byte `UnicodeDecodeError`, eine Wurzel als Liste `TypeError`,
+    jeweils mit Traceback statt Exit 2. Seither geht diese Datei durch
+    `_lies_geprueft`/`_journalkorpus_struktur` - DIESELBE Pruefung, mit der
+    A17 sie liest -, und `main()` liegt im gemeinsamen Faenger `_geschuetzt`.
     """
     if not MANIFEST_WEG.is_file():
         print(f"FEHLER  kein MANIFEST: {MANIFEST_WEG}")
         return 2
-    manifest = json.loads(MANIFEST_WEG.read_text(encoding="utf-8"))
+    manifest = _lies_geprueft(MANIFEST_WEG, _journalkorpus_struktur)
     klagen: list[str] = []
     genannt = set()
     for fall in manifest["faelle"]:
@@ -380,11 +409,39 @@ def erzeugen() -> int:
     return 0
 
 
-def main() -> int:
+def _lauf() -> int:
     if "--pruefen" in sys.argv[1:]:
         print("[pruefen] eingefrorene Writer-Journale gegen ihr MANIFEST")
         return pruefen()
     return erzeugen()
+
+
+def main() -> int:
+    """Zentraler Faenger - DIESELBE Huelle wie in A17 (Nacharbeit 12).
+
+    `_geschuetzt()` ist importiert, nicht nachgebaut: wer sie dort auf
+    Durchreichen stellt, macht damit auch diesen Erzeuger laut - und der
+    Byte-Kipp-Fuzz [3c] von A17 faehrt `pruefen()` als zweiten Verbraucher
+    genau deshalb mit.
+
+    Ein Strukturbruch des Korpusmanifests endet hier als Klartextzeile mit
+    Exit 2, jede andere unerwartete Ausnahme ebenso - mit Ausnahmetyp,
+    Meldung, Datei und Zeile des Ausloesers. Den Traceback gibt es nur mit
+    `--debug`.
+    """
+    debug = "--debug" in sys.argv[1:]
+    klasse, text, wert = _geschuetzt(_lauf, debug)
+    if klasse == "gruen":
+        return wert
+    if klasse == "gegenprobe_unmoeglich":
+        raise wert
+    zeile = (f"ABGEBROCHEN - {text}" if klasse == "strukturhalt" else
+             "ABGEBROCHEN - unerwartete Ausnahme, kontrolliert beendet: "
+             + text + ("" if debug else "  (Traceback mit --debug)"))
+    print("")
+    print(zeile)
+    print(zeile, file=sys.stderr)
+    return 2
 
 
 if __name__ == "__main__":

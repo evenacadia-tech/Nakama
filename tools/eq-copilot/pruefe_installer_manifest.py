@@ -2368,6 +2368,39 @@ def _fuzz_verbraucher() -> None:
     hashen(copy.deepcopy(manifest), _fuzz_hashziel())
 
 
+def _fuzz_erzeuger() -> None:
+    """Der ZWEITE Leser desselben Korpusmanifests: `pruefen()` des Erzeugers.
+
+    BEFUND DES ZWOELFTEN PRUEFERS (NAK-94 Nacharbeit 12): der Erzeuger griff
+    ohne Strukturpruefung auf `journale/MANIFEST.json` zu und starb bei einer
+    einzelnen Byteaenderung mit einem Traceback, waehrend dieses Bein an
+    derselben Datei laengst einen Klartext-Abbruch lieferte. Er liest sie jetzt
+    ueber `_lies_geprueft`/`_journalkorpus_struktur` - und wird hier
+    MITGEFUZZT, damit das gemessen ist und nicht behauptet.
+
+    EIGENER VERBRAUCHER, NICHT ANGEHAENGT: `_fuzz_verbraucher()` bricht bei
+    einem Strukturhalt ab, und zwar an genau der Datei, um die es hier geht -
+    ein Aufruf am Ende jener Funktion waere fuer jede Mutation des
+    Korpusmanifests unerreichbar und damit eine Wache, die nichts misst.
+    `_fuzz_einmal()` faehrt deshalb BEIDE Verbraucher, jeden in derselben
+    Huelle `_geschuetzt()`, und nimmt die schwerste Klasse.
+
+    EIN MODUL, EINE Strukturhalt-KLASSE: laeuft dieses Bein als `__main__`,
+    legte der Import des Erzeugers eine ZWEITE Kopie dieses Moduls an - deren
+    `Strukturhalt` waere eine andere Klasse, `_geschuetzt()` fienge sie nicht,
+    und jeder Fuzz-Fall waere falsch "unkontrolliert". Der Eintrag unten haengt
+    das laufende Modul deshalb unter seinen Dateinamen, BEVOR importiert wird.
+    """
+    sys.modules.setdefault("pruefe_installer_manifest", sys.modules[__name__])
+    from erzeuge_installer_journale import pruefen as korpus_nachrechnen
+    korpus_nachrechnen()
+
+
+# Beide Verbraucher der gefuzzten JSON-Dateien, in dieser Reihenfolge gefahren.
+# Die Deckungspruefung [3c/0] rechnet ueber ihre Vereinigung.
+FUZZ_VERBRAUCHER = (_fuzz_verbraucher, _fuzz_erzeuger)
+
+
 # Bloecke, die `_lauf()` faehrt und die `_fuzz_verbraucher()` NICHT faehrt,
 # weil sie keine der gelesenen JSON-Dateien anfassen. Jede ANDERE Abweichung
 # ist ROT: sonst waechst `_lauf` still um einen Leser, den [3c] nie sieht -
@@ -2406,9 +2439,21 @@ def _aufgerufene(funktionsname: str) -> set[str]:
 
 
 def fuzz_deckung() -> set[str]:
-    """Bloecke aus `_lauf`, die der Fuzz nicht faehrt und nicht fahren darf."""
-    return (_aufgerufene("_lauf") - _aufgerufene("_fuzz_verbraucher")
-            - FUZZ_OHNE_JSON)
+    """Bloecke aus `_lauf`, die der Fuzz nicht faehrt und nicht fahren darf.
+
+    Gerechnet wird ueber die VEREINIGUNG aller Verbraucher (Nacharbeit 12) -
+    seit der Erzeuger-Leser dazugehoert, ist es nicht mehr nur einer.
+    """
+    gefahren: set[str] = set()
+    for fn in FUZZ_VERBRAUCHER:
+        gefahren |= _aufgerufene(fn.__name__)
+    return _aufgerufene("_lauf") - gefahren - FUZZ_OHNE_JSON
+
+
+# Von der schwersten zur leichtesten: faehrt ein Fall mehrere Verbraucher,
+# entscheidet die schwerste Klasse ueber das Urteil. `unkontrolliert` ist der
+# einzige Bruch der Zusage und steht deshalb vorn.
+_FUZZ_RANG = ("unkontrolliert", "gegenprobe_unmoeglich", "strukturhalt")
 
 
 def _fuzz_einmal(ersatz: dict) -> tuple[str, str]:
@@ -2421,6 +2466,11 @@ def _fuzz_einmal(ersatz: dict) -> tuple[str, str]:
     DERSELBEN Funktion, die `main()` um den ganzen Lauf legt. Hier steht keine
     zweite Ausnahmebehandlung mehr; wird die gemeinsame auf Durchreichen
     gestellt, faellt [3c] beim ersten Strukturhalt aus.
+
+    Seit Nacharbeit 12 laufen ALLE Verbraucher aus `FUZZ_VERBRAUCHER`, jeder
+    in seiner eigenen Huelle und unabhaengig davon, ob ein frueherer abgebrochen
+    ist: sonst haette der Erzeuger-Leser fuer genau die Mutationen, um die es
+    bei ihm geht, nie eine Zeile gesehen.
     """
     global ok
     merk_ok, merk_fehler = ok, list(fehler)
@@ -2429,9 +2479,11 @@ def _fuzz_einmal(ersatz: dict) -> tuple[str, str]:
         with contextlib.redirect_stdout(io.StringIO()), \
                 contextlib.redirect_stderr(io.StringIO()), \
                 _dateien_ersetzt(ersatz):
-            klasse, text, _ = _geschuetzt(_fuzz_verbraucher)
-        if klasse != "gruen":
-            return klasse, text
+            ergebnisse = [_geschuetzt(fn) for fn in FUZZ_VERBRAUCHER]
+        for rang in _FUZZ_RANG:
+            for klasse, text, _ in ergebnisse:
+                if klasse == rang:
+                    return klasse, text
         return ("befund", "; ".join(fehler[:2])) if fehler else ("gruen", "")
     finally:
         fehler.clear()
@@ -2452,6 +2504,11 @@ def byte_kipp_fuzz(schritt: int) -> None:
         pruefe(False, "[3c] es gibt gelesene JSON-Dateien zum Kippen")
         return
 
+    # Den Erzeuger-Verbraucher EINMAL vorher anfassen, damit sein Import nicht
+    # im ersten Fall unter der Dateiueberlagerung stattfindet. Gemessen wird
+    # das Lesen, nicht das Importieren.
+    _geschuetzt(_fuzz_erzeuger)
+
     # Bevor gezaehlt wird: faehrt der Fuzz ueberhaupt dieselben Bloecke wie der
     # echte Lauf? Sonst sagte eine gruene Zahl nur, dass ein VERALTETER
     # Ausschnitt keine Ausnahme wirft.
@@ -2459,7 +2516,8 @@ def byte_kipp_fuzz(schritt: int) -> None:
     pruefe(not offen,
            "[3c/0] der Fuzz faehrt jeden Block aus _lauf(), der eine gelesene "
            "JSON-Datei anfassen kann - die uebrigen stehen namentlich in "
-           f"FUZZ_OHNE_JSON ({len(FUZZ_OHNE_JSON)})",
+           f"FUZZ_OHNE_JSON ({len(FUZZ_OHNE_JSON)}); Verbraucher: "
+           + ", ".join(fn.__name__ for fn in FUZZ_VERBRAUCHER),
            "nicht gefahren: " + ", ".join(sorted(offen)) if offen else "")
 
     # Der gefuzzte `--hashen`-Zweig SCHREIBT. Gemessen wird deshalb nicht nur,

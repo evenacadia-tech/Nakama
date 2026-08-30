@@ -18289,3 +18289,322 @@ Ein Eingriff in `Fuehre-Aus` liegt ausserhalb dieser Ticketgrenze.
 **Einordnung:** Defekt, mittel — die Regel aus Nacharbeit 6 verlangt je Zusage einen Bruch, der **nur** diese Zusage rot macht; ein Bruch durch Fehlen der Datei kann das für Z1 strukturell nicht leisten. **Regel des Dirigenten (Nacharbeit 7):** B6-Z1 bricht Z1 über eine **Byteänderung** eines vorhandenen Writer-Fixtures (SHA-256-Abweichung gegen `MANIFEST.json`) — Z1 ROT, Z2–Z7 laufen auf dem vollständigen Korpus grün durch, danach Rücknahme (Bytes identisch, belegt mit Hash). Der fail-closed Abbruch bei **fehlender** Datei bleibt und wird als eigene Probe „Pflichtmenge" (Umbenennen → Abbruch → Rücknahme) geführt, nicht als Zusage-Bruch. Manifest- und Runner-Behauptung entsprechend („Z1 bricht an einem geänderten Byte; eine fehlende Pflichtdatei bricht den Block ab").
 
 **Nächster Schritt:** Nacharbeit 7 im selben Worker wie die nächste S8-Runde (falls Prüfer 12 Befunde hat; sonst allein), gemeinsamer Kanon, danach Prüfer 8 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.
+
+## NAK-94 Nacharbeit Runde 7 — 2026-08-30 (Prüfer-Thread `01a05029-53d4…`)
+
+**Stand dieses Abschnitts:** `4c3fbf8`
+
+Ein bestätigter Befund des siebten Prüfers (Codex high, lesend über
+`git diff da62dec...4a379bb`), Regel des Dirigenten im Abschnitt
+„Dirigentenstand NAK-94 — 2026-08-30 03:04 (Sitzung 054eedac)". Er ist
+geschlossen. A17 steht danach unverändert bei **115 ok, 0 Fehler**: es ist
+keine Zusage dazugekommen, sondern der Weg nach einer roten `Z1` hat sich
+geteilt.
+
+**Werkzeugregel dieser Runde:** kein löschender Aufruf, keine Datei unter
+`%SystemRoot%`. Die Fixturbytes sind am Ende unverändert — jede Byteänderung
+lief über eine Kopie der Originalbytes unter `%TEMP%`, die Rücknahme ist mit
+Bytevergleich **und** SHA-256 gegen `MANIFEST.json` belegt; die Probe
+„Pflichtmenge" benennt nur mit `os.replace` um und zurück.
+
+---
+
+### Der Befund, wörtlich (`@ 4a379bb`)
+
+> **[P2] Führe beim Z1-Bruch die übrigen Zusagen grün aus** —
+> `docs/beweise/SONDE-007c.md:18064-18067`. Beim B6-Z1-Lauf bricht `[3b]` nach
+> dem roten Z1 ab, sodass Z2–Z7 nicht grün bleiben, sondern überhaupt nicht
+> ausgeführt werden. Damit erfüllt der Beleg nicht die verlangte
+> Diskriminierung „nur diese Zusage rot, alle anderen grün". Behalte den
+> fail-closed Produktabbruch bei, aber verwende für B6-Z1 einen isolierten
+> Bruchtreiber, der Z1 fällt und Z2–Z7 auf dem vollständigen Korpus grün
+> protokolliert, anschließend mit Rücknahmelauf.
+
+Er hat recht, und die Ursache liegt nicht im Treiber, sondern im Fluss: bis
+`c915197` hielt **jede** `Z1`-Klage den Block an
+(`tools/eq-copilot/pruefe_installer_manifest.py:1104-1108 @ c915197`), auch
+die an einem geänderten Byte. Ein „isolierter Bruchtreiber" hätte das nur
+verdeckt — er hätte Z2–Z7 in einem zweiten Lauf ohne Bruch grün gezeigt und
+damit etwas anderes gemessen als die Zusage. Die Regel des Dirigenten sagt
+deshalb: **den Fluss** ändern, und zwar nur diesen.
+
+---
+
+### Reproduktion am Basis-Stand `c915197`
+
+Derselbe Treiber wie unten, vor der Änderung gefahren (Stufen c und d gab es
+da noch nicht). Erwartet und gemessen: eine Byteänderung, ein Leerzeichen und
+eine fehlende Datei sind für `[3b]` **dasselbe** — Abbruch, Z2–Z7 laufen nie.
+
+```text
+Ausgangslage: A17 Exit 0  115 ok, 0 Fehler
+
+### B7-Z1  ein geaendertes Byte in einer vorhandenen Writer-Fixtur
+
+  Stufe a: ein Byte im volatilen Feld `zeit` von ok-erstinstallation.json
+   Bytes 3130 -> 3130;  SHA-256 E49DD66832738D0A… statt 438D8DB5B5550E53… (MANIFEST)
+  -- ROT --
+   FEHLER  Z1 [Writer-Korpus]: jeder in MANIFEST.json gefuehrte Fall liegt vor und ist bytegleich, keine verwaiste Datei daneben, und die Statusachse OK, RUECKWEG, ERROR_RUECKGEROLLT ist vertreten  [ok-erstinstallation.json: SHA-256 E49DD66832738D0A036839D793E54A8D99AC212589E12F2B21591DEF0D552F5B statt 438D8DB5B5550E53B3192483F04189952D69C176362C9EB9A7CDF8FC9F98DE03 - von Hand geaendert? Dann ist sie keine Writer-Form mehr]
+   [3b] bricht hier ab: ohne vollstaendigen Korpus misst der Block die Writer-Form nicht mehr, und eine stillschweigend ausgelassene Gegenprobe ist schlimmer als keine.
+   Zusagen im Lauf: Z1:0gruen/1rot  Z2:-  Z3:-  Z4:-  Z5:-  Z6:-  Z7:-
+   Exit 2
+   95 ok, 1 Fehler
+   erzeuge_installer_journale.py --pruefen: Exit 2
+   Bruch zurueckgenommen (Bytes identisch: True; SHA-256 = MANIFEST: True)
+  -- GRUEN --
+   Zusagen im Lauf: Z1:1gruen/0rot  Z2:3gruen/0rot  Z3:2gruen/0rot  Z4:2gruen/0rot  Z5:10gruen/0rot  Z6:1gruen/0rot  Z7:1gruen/0rot
+   Exit 0
+   115 ok, 0 Fehler
+
+  Stufe b: ein zusaetzliches Leerzeichen in der Einrueckung von ok-nach-tausch.json
+   Bytes 3300 -> 3301;  SHA-256 543A4E853E557E8C… statt 1CB23A231AD96F14… (MANIFEST)
+  -- ROT --
+   FEHLER  Z1 [Writer-Korpus]: jeder in MANIFEST.json gefuehrte Fall liegt vor und ist bytegleich, keine verwaiste Datei daneben, und die Statusachse OK, RUECKWEG, ERROR_RUECKGEROLLT ist vertreten  [ok-nach-tausch.json: SHA-256 543A4E853E557E8C0CC66AEB544A0C79DCAD938890AD6A56A292FF05B507CEED statt 1CB23A231AD96F140AE47615BD999163009C8B7F1691766492A301991B414F2A - von Hand geaendert? Dann ist sie keine Writer-Form mehr]
+   [3b] bricht hier ab: ohne vollstaendigen Korpus misst der Block die Writer-Form nicht mehr, und eine stillschweigend ausgelassene Gegenprobe ist schlimmer als keine.
+   Zusagen im Lauf: Z1:0gruen/1rot  Z2:-  Z3:-  Z4:-  Z5:-  Z6:-  Z7:-
+   Exit 2
+   95 ok, 1 Fehler
+   erzeuge_installer_journale.py --pruefen: Exit 2
+   Bruch zurueckgenommen (Bytes identisch: True; SHA-256 = MANIFEST: True)
+  -- GRUEN --
+   Zusagen im Lauf: Z1:1gruen/0rot  Z2:3gruen/0rot  Z3:2gruen/0rot  Z4:2gruen/0rot  Z5:10gruen/0rot  Z6:1gruen/0rot  Z7:1gruen/0rot
+   Exit 0
+   115 ok, 0 Fehler
+
+### Probe Pflichtmenge  eine im MANIFEST gefuehrte Datei fehlt
+
+  Pflichtmenge: error-rueckgerollt.json umbenannt (Bytes unveraendert, os.replace aus dem Korpusverzeichnis heraus)
+   liegt noch: False;  beiseite: True
+  -- ROT --
+   FEHLER  Z1 [Writer-Korpus]: jeder in MANIFEST.json gefuehrte Fall liegt vor und ist bytegleich, keine verwaiste Datei daneben, und die Statusachse OK, RUECKWEG, ERROR_RUECKGEROLLT ist vertreten  [error-rueckgerollt.json: im MANIFEST gefuehrt, liegt aber nicht vor]
+   [3b] bricht hier ab: ohne vollstaendigen Korpus misst der Block die Writer-Form nicht mehr, und eine stillschweigend ausgelassene Gegenprobe ist schlimmer als keine.
+   Zusagen im Lauf: Z1:0gruen/1rot  Z2:-  Z3:-  Z4:-  Z5:-  Z6:-  Z7:-
+   Exit 2
+   95 ok, 1 Fehler
+   erzeuge_installer_journale.py --pruefen: Exit 2
+   Rueckname (Bytes identisch: True; SHA-256 = MANIFEST: True; Beiseite-Datei weg: True)
+  -- GRUEN --
+   Zusagen im Lauf: Z1:1gruen/0rot  Z2:3gruen/0rot  Z3:2gruen/0rot  Z4:2gruen/0rot  Z5:10gruen/0rot  Z6:1gruen/0rot  Z7:1gruen/0rot
+   Exit 0
+   115 ok, 0 Fehler
+
+git status --short eq-copilot/fixtures/:
+  [leer]
+```
+
+Die Zeile `Zusagen im Lauf: Z1:0gruen/1rot  Z2:-  Z3:-  …` ist der Befund in
+einer Zeile: sechs Zusagen ohne Ergebnis.
+
+---
+
+### Was jetzt gilt — der Schnitt zwischen ROT und Abbruch
+
+`_writer_fixturen()` gibt seit `4c3fbf8` **drei** Werte zurück:
+`(korpus, klagen, abbruch)`. Jede Klage macht `Z1` rot; nur die Teilmenge
+`abbruch` hält den Block an. Der Schnitt (Symbol `haltend()` im selben
+Rumpf):
+
+| Lage der Pflichtdatei | `Z1` | `[3b]` danach | warum |
+|---|---|---|---|
+| liegt vor, lesbar, Journalobjekt, **SHA-256 weicht ab** | ROT | **läuft weiter**, Z2–Z7 auf dem vollständigen Korpus | die Datei ist keine eingefrorene Writer-Form mehr — mehr sagt `Z1` nicht, und die anderen Zusagen haben alles, was sie messen |
+| **fehlt** | ROT | Abbruch | der Korpus ist unvollständig; Z2–Z7 hätten nichts Vollständiges zu messen |
+| liegt vor, aber **nicht lesbar** | ROT | Abbruch | ohne Kopf kann keine andere Zusage etwas über den Fall sagen |
+| lesbar, aber **kein Journalobjekt** | ROT | Abbruch | sonst liefe `[3b]` mit einem Nicht-Journal weiter und stürbe unten mit einem `TypeError` — Unbekanntes ist ROT, nicht laut (Prüfliste D) |
+| **verwaiste** Datei daneben | ROT | Abbruch | unverändert seit Nacharbeit 6 |
+| Statusklasse aus `JOURNAL_PFLICHTSTATUS` weg | ROT | Abbruch | unverändert seit Nacharbeit 6 |
+
+Der Abbruch **nennt jetzt seinen Grund** im Klartext, statt nur „ohne
+vollständigen Korpus" zu sagen; und der Weiterlauf sagt ebenfalls eine Zeile
+dazu, damit ein rotes `Z1` mit grünen Nachbarn nicht wie ein still
+übersprungener Block aussieht.
+
+Die dritte und die vierte Zeile der Tabelle sind **neu und nötig**: die
+Byteänderung öffnet den Weg, dass eine geänderte Datei überhaupt in den Korpus
+kommt. Ohne den Riegel gegen ein lesbares Nicht-Objekt wäre aus dem Befund des
+Prüfers ein Traceback geworden.
+
+Behauptung nachgezogen, in `tools/eq-copilot/pruefe_installer_manifest.py`
+(Skriptkopf und beide Docstrings) und in der A17-Behauptung in
+`tools/beweise.ps1`: „**Z1 bricht an einem geänderten Byte; eine fehlende
+Pflichtdatei bricht den Block ab.**"
+
+---
+
+### `B7-Z1` und die Probe „Pflichtmenge" — ROT und Rücknahme
+
+Ein Treiber setzt je Stufe **eine** Änderung, fährt A17, zeigt die Zusagenzeilen,
+nimmt zurück, belegt Bytegleichheit und fährt A17 noch einmal grün. Stufen a
+und b sind der Bruch der Zusage `Z1` (`B7-Z1`); c und d sind Gegenproben zur
+**Grenze** des Weiterlaufs; die Probe „Pflichtmenge" ist der eigene Bruch des
+fail-closed Abbruchs. Rohausgabe:
+
+```text
+Ausgangslage: A17 Exit 0  115 ok, 0 Fehler
+
+### B7-Z1  ein geaendertes Byte in einer vorhandenen Writer-Fixtur
+
+  Stufe a: ein Byte im volatilen Feld `zeit` von ok-erstinstallation.json
+   Bytes 3130 -> 3130;  SHA-256 E49DD66832738D0A… statt 438D8DB5B5550E53… (MANIFEST)
+  -- ROT --
+   FEHLER  Z1 [Writer-Korpus]: jeder in MANIFEST.json gefuehrte Fall liegt vor und ist bytegleich, keine verwaiste Datei daneben, und die Statusachse OK, RUECKWEG, ERROR_RUECKGEROLLT ist vertreten  [ok-erstinstallation.json: SHA-256 E49DD66832738D0A036839D793E54A8D99AC212589E12F2B21591DEF0D552F5B statt 438D8DB5B5550E53B3192483F04189952D69C176362C9EB9A7CDF8FC9F98DE03 - von Hand geaendert? Dann ist sie keine Writer-Form mehr]
+   [3b] laeuft weiter: die beanstandete(n) Datei(en) liegen vor und sind lesbar, der Korpus ist also vollstaendig. Z2..Z7 messen auf ihm weiter - rot ist damit genau eine Zusage: Z1.
+   Zusagen im Lauf: Z1:0gruen/1rot  Z2:3gruen/0rot  Z3:2gruen/0rot  Z4:2gruen/0rot  Z5:10gruen/0rot  Z6:1gruen/0rot  Z7:1gruen/0rot
+   Exit 2
+   114 ok, 1 Fehler
+   erzeuge_installer_journale.py --pruefen: Exit 2
+   Bruch zurueckgenommen (Bytes identisch: True; SHA-256 = MANIFEST: True)
+  -- GRUEN --
+   Zusagen im Lauf: Z1:1gruen/0rot  Z2:3gruen/0rot  Z3:2gruen/0rot  Z4:2gruen/0rot  Z5:10gruen/0rot  Z6:1gruen/0rot  Z7:1gruen/0rot
+   Exit 0
+   115 ok, 0 Fehler
+
+  Stufe b: ein zusaetzliches Leerzeichen in der Einrueckung von ok-nach-tausch.json
+   Bytes 3300 -> 3301;  SHA-256 543A4E853E557E8C… statt 1CB23A231AD96F14… (MANIFEST)
+  -- ROT --
+   FEHLER  Z1 [Writer-Korpus]: jeder in MANIFEST.json gefuehrte Fall liegt vor und ist bytegleich, keine verwaiste Datei daneben, und die Statusachse OK, RUECKWEG, ERROR_RUECKGEROLLT ist vertreten  [ok-nach-tausch.json: SHA-256 543A4E853E557E8C0CC66AEB544A0C79DCAD938890AD6A56A292FF05B507CEED statt 1CB23A231AD96F140AE47615BD999163009C8B7F1691766492A301991B414F2A - von Hand geaendert? Dann ist sie keine Writer-Form mehr]
+   [3b] laeuft weiter: die beanstandete(n) Datei(en) liegen vor und sind lesbar, der Korpus ist also vollstaendig. Z2..Z7 messen auf ihm weiter - rot ist damit genau eine Zusage: Z1.
+   Zusagen im Lauf: Z1:0gruen/1rot  Z2:3gruen/0rot  Z3:2gruen/0rot  Z4:2gruen/0rot  Z5:10gruen/0rot  Z6:1gruen/0rot  Z7:1gruen/0rot
+   Exit 2
+   114 ok, 1 Fehler
+   erzeuge_installer_journale.py --pruefen: Exit 2
+   Bruch zurueckgenommen (Bytes identisch: True; SHA-256 = MANIFEST: True)
+  -- GRUEN --
+   Zusagen im Lauf: Z1:1gruen/0rot  Z2:3gruen/0rot  Z3:2gruen/0rot  Z4:2gruen/0rot  Z5:10gruen/0rot  Z6:1gruen/0rot  Z7:1gruen/0rot
+   Exit 0
+   115 ok, 0 Fehler
+
+  Stufe c (Gegenprobe zur Grenze): EIN Byte macht rueckweg-nach-gegenpfad.json unlesbar - hier muss der Block wieder abbrechen
+   Bytes 738 -> 738;  SHA-256 4BB72EE73EFD9732… statt 5B99904AB9B6B80A… (MANIFEST)
+  -- ROT --
+   FEHLER  Z1 [Writer-Korpus]: jeder in MANIFEST.json gefuehrte Fall liegt vor und ist bytegleich, keine verwaiste Datei daneben, und die Statusachse OK, RUECKWEG, ERROR_RUECKGEROLLT ist vertreten  [rueckweg-nach-gegenpfad.json: SHA-256 4BB72EE73EFD9732FAA16343BD49A9DDF6D6AA67D6CBC92B6EB7B54F56D4A409 statt 5B99904AB9B6B80A0373A5A0353B22EF3FD9F3016EB9B5F19676828EDE8E70C4 - von Hand geaendert? Dann ist sie keine Writer-Form mehr | rueckweg-nach-gegenpfad.json: liegt vor, ist aber nicht lesbar (JSONDecodeError) - ohne Kopf misst [3b] den Fall nicht mehr]
+   [3b] bricht hier ab: ohne vollstaendigen Korpus misst der Block die Writer-Form nicht mehr, und eine stillschweigend ausgelassene Gegenprobe ist schlimmer als keine.  Grund: rueckweg-nach-gegenpfad.json: liegt vor, ist aber nicht lesbar (JSONDecodeError) - ohne Kopf misst [3b] den Fall nicht mehr
+   Zusagen im Lauf: Z1:0gruen/1rot  Z2:-  Z3:-  Z4:-  Z5:-  Z6:-  Z7:-
+   Exit 2
+   95 ok, 1 Fehler
+   erzeuge_installer_journale.py --pruefen: Exit 2
+   Bruch zurueckgenommen (Bytes identisch: True; SHA-256 = MANIFEST: True)
+  -- GRUEN --
+   Zusagen im Lauf: Z1:1gruen/0rot  Z2:3gruen/0rot  Z3:2gruen/0rot  Z4:2gruen/0rot  Z5:10gruen/0rot  Z6:1gruen/0rot  Z7:1gruen/0rot
+   Exit 0
+   115 ok, 0 Fehler
+
+  Stufe d (zweite Gegenprobe zur Grenze): rueckweg-nach-gegenpfad.json wird gueltiges JSON, aber kein Journalobjekt - auch hier muss der Block abbrechen
+   Bytes 738 -> 30;  SHA-256 BAF720682F2AA234… statt 5B99904AB9B6B80A… (MANIFEST)
+  -- ROT --
+   FEHLER  Z1 [Writer-Korpus]: jeder in MANIFEST.json gefuehrte Fall liegt vor und ist bytegleich, keine verwaiste Datei daneben, und die Statusachse OK, RUECKWEG, ERROR_RUECKGEROLLT ist vertreten  [rueckweg-nach-gegenpfad.json: SHA-256 BAF720682F2AA234B207BA95FEE844256A14B68415F39CCC578758C27BDB2A28 statt 5B99904AB9B6B80A0373A5A0353B22EF3FD9F3016EB9B5F19676828EDE8E70C4 - von Hand geaendert? Dann ist sie keine Writer-Form mehr | rueckweg-nach-gegenpfad.json: liegt vor und ist lesbar, ist aber kein Journalobjekt (list) - [3b] kann daran keine Zusage messen]
+   [3b] bricht hier ab: ohne vollstaendigen Korpus misst der Block die Writer-Form nicht mehr, und eine stillschweigend ausgelassene Gegenprobe ist schlimmer als keine.  Grund: rueckweg-nach-gegenpfad.json: liegt vor und ist lesbar, ist aber kein Journalobjekt (list) - [3b] kann daran keine Zusage messen
+   Zusagen im Lauf: Z1:0gruen/1rot  Z2:-  Z3:-  Z4:-  Z5:-  Z6:-  Z7:-
+   Exit 2
+   95 ok, 1 Fehler
+   erzeuge_installer_journale.py --pruefen: Exit 2
+   Bruch zurueckgenommen (Bytes identisch: True; SHA-256 = MANIFEST: True)
+  -- GRUEN --
+   Zusagen im Lauf: Z1:1gruen/0rot  Z2:3gruen/0rot  Z3:2gruen/0rot  Z4:2gruen/0rot  Z5:10gruen/0rot  Z6:1gruen/0rot  Z7:1gruen/0rot
+   Exit 0
+   115 ok, 0 Fehler
+
+### Probe Pflichtmenge  eine im MANIFEST gefuehrte Datei fehlt
+
+  Pflichtmenge: error-rueckgerollt.json umbenannt (Bytes unveraendert, os.replace aus dem Korpusverzeichnis heraus)
+   liegt noch: False;  beiseite: True
+  -- ROT --
+   FEHLER  Z1 [Writer-Korpus]: jeder in MANIFEST.json gefuehrte Fall liegt vor und ist bytegleich, keine verwaiste Datei daneben, und die Statusachse OK, RUECKWEG, ERROR_RUECKGEROLLT ist vertreten  [error-rueckgerollt.json: im MANIFEST gefuehrt, liegt aber nicht vor]
+   [3b] bricht hier ab: ohne vollstaendigen Korpus misst der Block die Writer-Form nicht mehr, und eine stillschweigend ausgelassene Gegenprobe ist schlimmer als keine.  Grund: error-rueckgerollt.json: im MANIFEST gefuehrt, liegt aber nicht vor
+   Zusagen im Lauf: Z1:0gruen/1rot  Z2:-  Z3:-  Z4:-  Z5:-  Z6:-  Z7:-
+   Exit 2
+   95 ok, 1 Fehler
+   erzeuge_installer_journale.py --pruefen: Exit 2
+   Rueckname (Bytes identisch: True; SHA-256 = MANIFEST: True; Beiseite-Datei weg: True)
+  -- GRUEN --
+   Zusagen im Lauf: Z1:1gruen/0rot  Z2:3gruen/0rot  Z3:2gruen/0rot  Z4:2gruen/0rot  Z5:10gruen/0rot  Z6:1gruen/0rot  Z7:1gruen/0rot
+   Exit 0
+   115 ok, 0 Fehler
+
+git status --short eq-copilot/fixtures/:
+  [leer]
+```
+
+`B7-Z1` löst `B6-Z1` aus Nacharbeit 6 ab: derselbe Gegenstand, aber ein Bruch,
+der unterscheidet. Der Fall „Datei samt MANIFEST-Zeile weg" (Stufe b von
+`B6-Z1`) bleibt durch die Statusachse gedeckt und ist dort belegt; er ist ein
+Abbruchfall und gehört jetzt zur Probe „Pflichtmenge".
+
+#### Diskriminierend — maschinell nachgerechnet
+
+Ein Zähler über die Rohausgabe oben, der je Bruchblock die roten `Zx`-Zeilen,
+die grün gelaufenen Zusagen und den Abbruch zählt:
+
+```text
+Bruch                                  rote Zeilen  rote Zusage   gruene Zusagen      Blockabbruch
+B7-Z1 Stufe a  (ein Byte in `zeit`)              1           Z1   Z2,Z3,Z4,Z5,Z6,Z7   nein
+B7-Z1 Stufe b  (ein Leerzeichen)                 1           Z1   Z2,Z3,Z4,Z5,Z6,Z7   nein
+Grenze c  (unlesbar)                             1           Z1   -                   ja
+Grenze d  (kein Journalobjekt)                   1           Z1   -                   ja
+Probe Pflichtmenge  (Datei fehlt)                1           Z1   -                   ja
+
+Jeder Bruch faerbt genau EINE Zusage: True
+Z2..Z7 laufen genau dann gruen durch, wenn der Korpus vollstaendig UND
+lesbar ist - also bei der Byteaenderung, nicht bei der fehlenden Datei.
+```
+
+Das ist genau die Diskriminierung, die der Prüfer verlangt hat: bei `B7-Z1`
+ist **eine** Zusage rot und **alle anderen** sind grün gelaufen — auf dem
+vollständigen Korpus, im selben Lauf, nicht in einem zweiten ohne Bruch.
+
+#### Bewusst so, und warum
+
+- **Zwei Stufen, zwei Sorten Byte.** Stufe a ändert ein Byte in `zeit` — ein
+  Feld, das `MANIFEST.json` selbst als volatil führt und das keine Zusage
+  vergleicht. Stufe b fügt ein Leerzeichen in die Einrückung: nach
+  `json.loads` ist die Datei dieselbe, **kein Leser könnte es bemerken**. Dass
+  auch das rot wird, ist der eigentliche Wert von `Z1`.
+- **Die Grenze wird gemessen, nicht behauptet.** Stufen c und d zeigen, dass
+  der Weiterlauf nicht an „Byteänderung" hängt, sondern an „vorhanden **und**
+  lesbar **und** ein Journalobjekt". Ohne sie stünde hier die Behauptung, der
+  fail-closed Abbruch sei erhalten geblieben, ohne dass ihn jemand hat fallen
+  sehen.
+- **`erzeuge_installer_journale.py --pruefen` bleibt bei jedem Bruch rot**
+  (`Exit 2`). Das ist Absicht und keine Doppelung: `--pruefen` ist die Hälfte,
+  die ohne `pwsh` und ohne Sandbox überall läuft; sie sagt „der eingefrorene
+  Korpus stimmt nicht mehr" und fällt kein Urteil über `[3b]`s Zusagen.
+- **Fixturbytes unverändert.** Nach jeder Rücknahme sind Bytes und SHA-256
+  nachgerechnet; `git status --short eq-copilot/fixtures/` ist am Ende des
+  Laufs leer (letzte Zeile der Rohausgabe).
+
+---
+
+### Aussagen-Inventar — wo die geänderte Zusage steht
+
+Gesucht mit `grep -n -F` über Skript, Erzeuger, `tools/beweise.ps1` und die
+lebenden Manifestteile; Stellen als Symbol oder `Datei:Zeile @ sha7`.
+
+| Stelle | alt (`@ c915197`) | neu (`@ 4c3fbf8`) | Status |
+|---|---|---|---|
+| `…/pruefe_installer_manifest.py`, Skriptkopf, Absatz über `[3b]` (Symbol) | sagte nur „je Zusage genau EINEN eigenen Bruch" | zusätzlicher Absatz „Z1 BRICHT AN EINEM GEAENDERTEN BYTE; EINE FEHLENDE PFLICHTDATEI BRICHT DEN BLOCK AB" mit beiden Fällen und dem Verweis auf `B7-Z1` und die Probe „Pflichtmenge" | **nachgezogen** |
+| `_writer_fixturen()`, Docstring (Symbol) | „Eine nicht leere Klagenliste heisst: der Korpus traegt [3b] nicht mehr. Der Aufrufer macht daraus eine ROTE Zeile UND bricht den Block ab" | Rückgabe `(korpus, klagen, abbruch)`, dazu der ausgeschriebene Schnitt ABBRUCH / NUR ROT | **nachgezogen** |
+| `…:1022-1025 @ c915197` — SHA-Abweichung im Ladeweg | Klage **und** `continue` (die Fixtur landete nicht im Korpus) | Klage ohne `continue`; die Datei wird geladen, damit Z2–Z7 den vollständigen Korpus sehen | **nachgezogen** (Symbol `_writer_fixturen()`) |
+| `…:1104-1108 @ c915197` — `if korpusklagen: … return` | jede Klage brach ab | `if korpusabbruch:` bricht ab und nennt den Grund; `if korpusklagen:` sagt den Weiterlauf an | **nachgezogen** (Symbol `gegenproben_nacharbeit()`) |
+| `gegenproben_nacharbeit()`, Docstring (Symbol) | Absatz zu Nacharbeit 6 | zusätzlicher Absatz zu Nacharbeit 7 mit dem Befund und dem Schnitt | **nachgezogen** |
+| A17-Behauptung in `tools/beweise.ps1` (Symbol `Kuerzel='A17'`) | „Eine von Hand angefasste, fehlende oder verwaiste Fixtur ist ROT, nicht still eine andere Probe." | derselbe Satz, ergänzt um den Schnitt: geändertes Byte → nur `Z1` rot, Z2–Z7 grün auf dem vollständigen Korpus; fehlend / unlesbar / kein Journalobjekt / verwaist / Statusklasse weg → fail-closed Abbruch | **nachgezogen** |
+| A17-Behauptung, Klammer hinter „je Zusage ein Bruch" | „(B6-Z1..B6-Z7, NAK-94 Nacharbeit 6; …)" | „(B6-Z1..B6-Z7 aus NAK-94 Nacharbeit 6, fuer Z1 abgeloest durch B7-Z1 aus Nacharbeit 7 - dazu die eigene Probe Pflichtmenge …)" | **nachgezogen** |
+| `tools/eq-copilot/erzeuge_installer_journale.py`, `--pruefen` (Symbol) | fällt bei fehlender, geänderter, verwaister Datei und fehlender Statusklasse | unverändert | **richtig so** — andere Zusage: `--pruefen` misst den eingefrorenen Korpus, nicht die Zusagen von `[3b]` |
+| `docs/beweise/SONDE-007c.md`, „NAK-94 Nacharbeit Runde 6" | „`B6-Z1` bricht den Block ab" | unverändert | **historisch** — der Abschnitt trägt `**Stand dieses Abschnitts:** 30fb0b8` und beschreibt richtig, was an jenem Stand galt |
+| `docs/offene-punkte.md`, Registerzeile `NAK-94` | Nachtrag zu Nacharbeit 6 | datierter Nachtrag zu Nacharbeit 7 ergänzt | **nachgezogen** |
+
+Keine Anzahl als Zusage: nirgends steht „vier Fixturen" oder „sieben Zusagen"
+als Messgröße — die Werte zählt die Laufausgabe.
+
+---
+
+### Prüfliste (`tools/dirigent/pruefliste.md`) — wo in dieser Runde gemessen
+
+| Zeile | wo gemessen |
+|---|---|
+| **D** — „fail-closed ohne Rohtextheuristik: Unbekanntes ist ROT" | der Abbruch bleibt für jede Lage, in der `[3b]` nichts Vollständiges mehr messen kann, und nennt jetzt seinen Grund; der neue Riegel gegen ein lesbares Nicht-Journalobjekt ist genau diese Regel an der Stelle, die die Byteänderung neu erreichbar macht — gebrochen in Stufe d |
+| **E** — „Jede Behauptung sagt nicht mehr, als der Test misst" | Skriptkopf und A17-Behauptung sagen jetzt beide Hälften des Schnitts; die Tabelle „Was jetzt gilt" nennt je Lage, was gemessen wird, und die Diskriminierung ist gerechnet, nicht behauptet |
+| **E** — „Zahlen im Manifest sind gemessen, nicht abgeschrieben" | jede Zahl dieses Abschnitts (115 / 114 / 95 ok, rote Zeilen je Bruch, grüne Zusagen je Bruch) steht in der Rohausgabe oder im Zähler darüber |
+| **E** — „Positionen als Symbol oder `Datei:Zeile @ sha7`" | die abgelösten Stellen als `:1022-1025 @ c915197` und `:1104-1108 @ c915197`, die neuen als Symbole (`_writer_fixturen()`, `haltend()`, `gegenproben_nacharbeit()`) |
+| **E** — **Aussagen-Inventar** | Tabelle oben, zehn Fundstellen, jede als nachgezogen / richtig so / historisch klassifiziert |
+| **E** — „Jede neue Prüfung wurde einmal gebrochen" | `B7-Z1` in zwei Stufen, die Grenze in zwei weiteren, die Probe „Pflichtmenge" einmal — jeweils mit ROT, Rücknahme und grünem Nachlauf in der Rohausgabe |
+| **E** — Writer-Fixturen | Bytes am Ende unverändert: jede Änderung über eine `%TEMP%`-Kopie der Originalbytes, Rücknahme mit Bytevergleich und SHA-256 gegen `MANIFEST.json`, `git status` für `eq-copilot/fixtures/` leer |
+| **F** — „Änderungssatz" | Skript und A17-Behauptung im Runner liegen zusammen in `4c3fbf8`; Manifest und Register folgen im selben Commit-Paar |

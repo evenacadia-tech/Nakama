@@ -19466,9 +19466,12 @@ Endstand der Quelle: sha256 f923b10b6ed78099f52de168fe89672f65bbac79396512559a72
 | `_installermanifest_struktur:361` (Docstring) | nennt `ziel_id` und `cmake_ziel` und sagt, dass der zweite Fall aus dem Fuzz kam, nicht aus dem Befund | nachgezogen @ `805d51f` |
 
 Inventar (whitespace-normalisiert über `tools/beweise.ps1` und die beiden
-Prüfskripte, Stand `805d51f`): `Byte-Kipp-Fuzz` 6×, `Gegenprobe unmoeglich`
-10×, `unkontrolliert` 8×, `ZENTRALER FAENGER`/`Zentraler Faenger` 1×/2×,
-`cmake_ziel` 16×, `--fuzz-voll` 5×, `--debug` 5×. Die alte Wortform
+Prüfskripte, **Endstand nach dem Kanon**): `Byte-Kipp-Fuzz` 7×,
+`Gegenprobe unmoeglich` 10×, `unkontrolliert` 8×,
+`ZENTRALER FAENGER`/`Zentraler Faenger` 1×/2×, `ziel_id` 61×,
+`cmake_ziel` 17×, `UnicodeDecodeError` 6×, `--fuzz-voll` 5×, `--debug` 5×.
+(Am Abschnittsstand `805d51f` waren es 6× bzw. 16× — die A17-Behauptung hat
+`cmake_ziel` erst mit `2f50a91` bekommen.) Die alte Wortform
 „nie ein Traceback" steht weiterhin 2× (Runner, Skriptkopf) und
 „NIE ein Traceback" 1× — zeilenweises grep hätte die letzte übersehen, sie
 läuft über einen Umbruch.
@@ -19483,3 +19486,19 @@ läuft über einen Umbruch.
 | **E** — „Zahlen im Manifest sind gemessen" | jede Zahl in diesem Abschnitt stammt aus einer Rohausgabe; die Dateiliste des Fuzz kommt aus dem Verzeichnis, nicht aus einer Liste im Skript |
 | **E** — Aussagen-Inventar | AST-Tabelle der Schlüsselzugriffe plus whitespace-normalisiertes Muster-Inventar |
 | **F** — „Änderungssatz" | Skript, A17-Behauptung, Skriptkopf und dieser Abschnitt gehen zusammen; die S8-Hälfte liegt im Commit-Paar daneben |
+
+---
+
+### Der gemeinsame Kanon-Abschlusslauf
+
+Beide Hälften dieser Runde laufen im selben Kanon. Er steht als eigener
+Abschnitt „Kanon-Lauf - SONDE-007a Runde 15 + NAK-94 Nacharbeit 10 -
+Abschluss" in `docs/beweise/SONDE-007a.md`; die Rohausgabe liegt unter
+[`docs/beweise/roh/SONDE-007a-12fcdab.md`](roh/SONDE-007a-12fcdab.md).
+Urteil: **GRUEN — 32/32**, Exitcode 0. A17 lief dabei in 41,41 s (Exit 0),
+und `[3c]` fuhr im Kanon sein Sample:
+
+```text
+  ok      [3c/0] der Fuzz faehrt jeden Block aus _lauf(), der eine gelesene JSON-Datei anfassen kann - die uebrigen stehen namentlich in FUZZ_OHNE_JSON (9)
+  ok      [3c] 8 gelesene JSON-Datei(en), 1780 gekippte Byte-Stellen, 3354 Laeufe: KEINE Ausnahme ausser Strukturhalt (907) und dem eigenen 'Gegenprobe unmoeglich' (3); Befund 1383, gruen 1061; Sample jedes 24. Byte plus jedes erste Schluesselnamensbyte  [40.4s]
+```

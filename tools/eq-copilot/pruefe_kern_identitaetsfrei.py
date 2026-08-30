@@ -67,7 +67,15 @@ dazu, weil K1 nur Anfang und Ende einer TU sieht:
         inklusive /FI und vorkompilierter Koepfe) plus der literalen
         Include-Huelle als Gegenprobe. Gescannt wird seit Runde 7 JEDE gelesene
         Datei ausser denen aus den JUCE-Modulen und den Toolchain-/SDK-Wurzeln
-        - also plugin/** und alles Uebrige. Einzige Ausnahme:
+        - also plugin/** und alles Uebrige. Gelesen wird seit Runde 17
+        FAIL-CLOSED: eine BOM entscheidet die Kodierung (UTF-8, UTF-16LE,
+        UTF-16BE), ohne BOM gilt strikt UTF-8, und eine Eingabe, deren Text
+        nicht feststeht, ist eine namentliche Klage - nie mehr ein stilles
+        errors="replace". Danach faltet der Scan Praeprozessor-Phase 2
+        (Backslash + Zeilenende, auch CRLF und mit Leerraum davor) VOR
+        Kommentarentfernung und Tokenpruefung: `JucePlug\\` + Zeilenende +
+        `in_Name` ist fuer den Uebersetzer JucePlugin_Name und ist es hier
+        seither auch. Einzige Ausnahme:
         NakamaKernRiegel.h - und die ist seit Runde 15 keine Freistellung,
         sondern ein ABGLEICH: jedes JucePlugin_-Token dieser Datei muss
         namentlich in der Makroliste stehen, die der Praeprozessor in
@@ -128,6 +136,7 @@ Jeder Voraussetzungs-Rueckweg des Beins geht dafuer durch
 
 from __future__ import annotations
 
+import codecs
 import contextlib
 import hashlib
 import io
@@ -1507,6 +1516,61 @@ def tlog_ortsriegel(gelesen: list[str], marker: list[str],
 # ein C++-Parser ueber sie ist sinnlos und faellt an einem unpaarigen
 # Anfuehrungszeichen fail-closed ROT. Sie werden deshalb ROH nach dem Token
 # durchsucht - ASCII und UTF-16LE -, nicht uebersprungen.
+#
+# BEFUND P1 DES SIEBZEHNTEN PRUEFERS (Runde 17, 30.08.2026): der Scan begann
+# frueher bei der Kommentarentfernung. Der Uebersetzer beginnt aber eine Phase
+# frueher - Phase 2 faltet Backslash + Zeilenende, BEVOR ueberhaupt ein
+# Kommentar erkannt wird. Ein Kopf, der
+#
+#     #define JucePlug\
+#     in_Name "Fremd"
+#
+# schreibt, ihn in `#if` benutzt und vor dem TU-Ende wieder entfernt, ist fuer
+# MSVC JucePlugin_Name - fuer diesen zeilenweisen Scan war er es nicht.
+# Gemessen @ 75466c0: eine Datei mit genau diesen Bytes (5c 0d 0a mitten im
+# Bezeichner) lief mit `klagen=[]` durch, dieselbe Datei ohne Spaltung war ROT.
+# Damit lief W5 an K1, K1b, K2 und K3 vorbei. Seit Runde 17 faltet
+# `falte_zeilenfortsetzungen()` deshalb VOR `ohne_kommentare()` - was auch fuer
+# Kommentare die richtige Reihenfolge ist: ein `// ...\` zieht die naechste
+# Zeile in den Kommentar, und wer erst Kommentare entfernt, sieht sie noch.
+
+
+# Leerraum zwischen Backslash und Zeilenende: MSVC (und gcc/clang) falten auch
+# das - mit Warnung, aber sie falten. Wer es hier nicht faltete, haette genau
+# dort wieder eine Luecke, die ein Uebersetzer schliesst.
+_K1B_FORTSETZUNG = re.compile(r"\\[ \t\v\f]*(?:\r\n|\r|\n)\Z")
+
+
+def falte_zeilenfortsetzungen(text: str) -> str:
+    """Praeprozessor-Phase 2: Backslash + Zeilenende verschwinden.
+
+    ZEILENZAHL BLEIBT ERHALTEN, damit die gemeldeten Nummern die des Originals
+    sind: der Inhalt einer logischen Zeile steht danach vollstaendig auf der
+    PHYSISCHEN Zeile, an der sie BEGINNT, und die gefalteten Umbrueche werden
+    hinter ihr als Leerzeilen nachgetragen. Eine Klage nennt damit den Anfang
+    der logischen Zeile - genau die Stelle, an der auch ein Mensch sucht.
+
+    Gefaltet wird `\\` gefolgt von optionalem Leerraum und einem Zeilenende in
+    allen drei Formen (LF, CRLF, CR). Endet die Datei mit einer offenen
+    Fortsetzung, verschwindet sie ebenso - so macht es der Uebersetzer auch.
+    """
+    aus: list[str] = []
+    puffer: list[str] = []
+    gefaltet = 0
+    for zeile in text.splitlines(keepends=True):
+        treffer = _K1B_FORTSETZUNG.search(zeile)
+        if treffer is not None:
+            puffer.append(zeile[:treffer.start()])
+            gefaltet += 1
+            continue
+        aus.append("".join(puffer))
+        aus.append(zeile)
+        aus.append("\n" * gefaltet)
+        puffer, gefaltet = [], 0
+    if puffer or gefaltet:
+        aus.append("".join(puffer))
+        aus.append("\n" * gefaltet)
+    return "".join(aus)
 
 
 def ohne_kommentare(text: str, wo: str) -> str:
@@ -1618,6 +1682,12 @@ def k1b_eingaben_aus_tlog(gelesen: list[str],
 # einem Kommentar steht, ist fuer den Uebersetzer kein Token. Die rohe Zahl
 # bleibt trotzdem in der Ausgabe stehen - sie ist Diagnose, kein Urteil.
 #
+# Und wie bei jeder anderen Datei laufen davor die zwei Vorstufen der Runde 17:
+# fail-closed dekodieren (`lies_compiler_eingabe`) und Praeprozessor-Phase 2
+# falten (`falte_zeilenfortsetzungen`). Der Kranz dieser Datei steht danach auf
+# EINER physischen Zeile; die gemeldeten Nummern bleiben die des Originals,
+# weil die Faltung die Zeilenzahl erhaelt.
+#
 # AUSDRUECKLICHE NICHTZUSAGE, in die sichere Richtung: erkannt wird die
 # Klammerform `defined (Name)`. Ein `defined Name` ohne Klammern - in C
 # ebenfalls gueltig - traegt sich NICHT in die Liste ein; sein Vorkommen ist
@@ -1640,10 +1710,17 @@ def _logische_direktiven(zeilen: list[str]) -> list[tuple[int, int, str]]:
     """Logische Direktiven als (erste, letzte physische Zeile, Art), 0-basiert.
 
     Backslash-Fortsetzungen gehoeren zur SELBEN logischen Zeile: der
-    Riegelkranz in NakamaKernRiegel.h ist EINE `#if`-Zeile ueber 47 physische,
-    die `#error`-Meldung eine ueber sechs. Ohne diese Abbildung saehe eine
+    Riegelkranz in NakamaKernRiegel.h ist EINE `#if`-Zeile ueber mehrere
+    physische, die `#error`-Meldung ebenso. Ohne diese Abbildung saehe eine
     zeilenweise Pruefung `|| defined (...)` als gewoehnlichen Text. "" als Art
     heisst: keine Direktive.
+
+    Seit Runde 17 ist der K1b-Text beim Aufruf schon GEFALTET; die Abbildung
+    ist dort also identisch (jede Zeile auf sich selbst) und damit
+    idempotent. Sie bleibt trotzdem stehen und ist nicht tot: die Gegenprobe
+    `R16-1c` fuehrt den frueheren, UNGEFALTETEN Weg vor, und eine Funktion,
+    die nur auf gefaltetem Text richtig rechnet, waere genau dort still
+    falsch. Sie ist der Guertel zur Hosentraeger-Faltung, keine zweite Regel.
     """
     aus: list[tuple[int, int, str]] = []
     i = 0
@@ -1745,8 +1822,12 @@ def k1b_ausnahme_abgleich(datei: pathlib.Path,
                           roh: str) -> tuple[list[str], dict]:
     """Gleicht JEDES JucePlugin_-Token der Riegeldatei namentlich ab.
 
-    Rueckgabe: (Klagen, Angaben). `Angaben` traegt `roh` (Token im Rohtext,
-    Diagnose), `code` (Token im kommentarfreien Quelltext), `makros` (die aus
+    `roh` ist der GEFALTETE Text (Praeprozessor-Phase 2 ist vor dem Aufruf
+    gelaufen, Runde 17): der Kranz steht danach auf EINER physischen Zeile,
+    und `_logische_direktiven` bildet sie unveraendert auf sich selbst ab.
+
+    Rueckgabe: (Klagen, Angaben). `Angaben` traegt `roh` (Token im gefalteten
+    Text, Diagnose), `code` (Token im kommentarfreien Quelltext), `makros` (die aus
     DEM K1-FEHLERKRANZ derselben Datei gelesene Liste) und `abgeglichen`
     (Vorkommen, die namentlich und im erlaubten Kontext standen). Fail-closed:
     unlesbarer Quelltext und eine nicht ableitbare Makroliste sind ROT.
@@ -1824,15 +1905,73 @@ def k1b_ausnahme_abgleich(datei: pathlib.Path,
     return klagen, angaben
 
 
+# BEFUND P1 DES SIEBZEHNTEN PRUEFERS (Runde 17, 30.08.2026), zweiter Teil:
+# gelesen wurde mit errors="replace". Ein von MSVC akzeptierter UTF-16-Kopf
+# (BOM ff fe bzw. fe ff) zerfiel damit still in Buchstabe-NUL-Buchstabe-NUL,
+# und `JucePlugin_Name` stand nirgends zusammenhaengend im Text - gemessen
+# @ 75466c0: `klagen=[]` fuer eine UTF-16LE-Datei, die den Namen definiert,
+# in `#if` benutzt und wieder entfernt. Dasselbe galt fuer jede Datei mit
+# nicht dekodierbaren Bytes: das Ersatzzeichen machte sie still harmlos.
+#
+# Regel seither, fail-closed (Prueflistenregel D): die BOM entscheidet die
+# Kodierung - UTF-8, UTF-16LE, UTF-16BE, genau die drei, die MSVC ohne
+# /source-charset erkennt -, ohne BOM gilt strikt UTF-8, und was sich so nicht
+# dekodieren laesst, ist eine NAMENTLICHE Klage, kein ersetztes Zeichen. Eine
+# Compiler-Eingabe, deren Text nicht feststeht, ist ROT: sie kann alles
+# enthalten, und Raten waere hier genau die Rohtextheuristik, die Regel D
+# verbietet.
+#
+# AUSDRUECKLICHE NICHTZUSAGE, in die sichere Richtung: UTF-32-BOMs sind hier
+# keine eigene Kodierung. `ff fe 00 00` beginnt wie die UTF-16LE-BOM und wird
+# wie von MSVC als UTF-16LE gelesen; eine echte UTF-32-Datei faellt damit
+# entweder als UTF-16LE auf oder wird nicht dekodierbar und damit ROT - in
+# beiden Faellen nicht still gruen. Die namentlich erlaubten SYSTEMDATEIEN
+# gehen weiter roh durch (ASCII und UTF-16LE), nicht durch diesen Leser: sie
+# sind Binaerstoff ohne Textzusage.
+_K1B_KODIERUNGEN = (("utf-8", codecs.BOM_UTF8),
+                    ("utf-16-le", codecs.BOM_UTF16_LE),
+                    ("utf-16-be", codecs.BOM_UTF16_BE))
+
+
+def lies_compiler_eingabe(datei: pathlib.Path) -> tuple[str | None, str]:
+    """Eine Compiler-Eingabe als Text - oder eine Klage. (Text, Klage)
+
+    Fail-closed: `None` plus Klagetext heisst ROT. Es gibt keinen dritten
+    Ausgang und kein `errors="replace"` mehr.
+    """
+    try:
+        rohbytes = datei.read_bytes()
+    except OSError as exc:
+        return None, f"{_kurz(datei)}: nicht lesbar ({exc})"
+    kodierung, nutzlast, woher = "utf-8", rohbytes, "ohne BOM, strikt UTF-8"
+    for name, bom in _K1B_KODIERUNGEN:
+        if rohbytes.startswith(bom):
+            kodierung, nutzlast, woher = name, rohbytes[len(bom):], f"BOM {name}"
+            break
+    try:
+        return nutzlast.decode(kodierung, errors="strict"), ""
+    except UnicodeDecodeError as exc:
+        return None, (f"{_kurz(datei)}: nicht als {kodierung} dekodierbar "
+                      f"({woher}: {exc}) - eine Compiler-Eingabe, deren Text "
+                      f"nicht feststeht, ist ROT")
+
+
 def k1b_riegel(dateien: list[pathlib.Path],
                ausnahme: pathlib.Path,
                roh_scannen: dict[str, str] | None = None,
                ) -> tuple[list[str], int, dict, int]:
     """Kein JucePlugin_-Token im Quelltext der Compiler-Eingaben.
 
+    Jede Eingabe geht seit Runde 17 durch dieselben zwei Vorstufen wie beim
+    Uebersetzer, in dieser Reihenfolge: `lies_compiler_eingabe()` (BOM
+    entscheidet, sonst strikt UTF-8, nicht dekodierbar = Klage) und
+    `falte_zeilenfortsetzungen()` (Phase 2). Erst danach laufen
+    Kommentarentfernung und Tokenpruefung.
+
     `roh_scannen` sind die namentlich erlaubten Systemdateien (normalisierter
     Pfad -> Anzeigename): Binaerstoff, der roh nach dem Token durchsucht wird,
-    statt durch den C++-Kommentarparser zu laufen.
+    statt durch den C++-Kommentarparser zu laufen - und deshalb auch an den
+    beiden Vorstufen vorbei.
 
     Rueckgabe: (Klagen, geprueft, Angaben zur benannten Ausnahme, davon roh
     durchsucht). Der letzte Wert zaehlt, was WIRKLICH roh gemessen wurde - die
@@ -1863,11 +2002,13 @@ def k1b_riegel(dateien: list[pathlib.Path],
                     klagen.append(f"{_kurz(datei)}: {_K1B_TOKEN}-Token in den "
                                   f"Rohbytes ({kodierung})")
             continue
-        try:
-            roh = datei.read_text(encoding="utf-8", errors="replace")
-        except OSError as exc:
-            klagen.append(f"{_kurz(datei)}: nicht lesbar ({exc})")
+        gelesen, klage = lies_compiler_eingabe(datei)
+        if gelesen is None:
+            klagen.append(klage)
             continue
+        # Praeprozessor-Phase 2 VOR allem anderen (Runde 17): erst danach
+        # stehen Kommentargrenzen und Token so, wie der Uebersetzer sie sieht.
+        roh = falte_zeilenfortsetzungen(gelesen)
         if _normpfad(datei) == ausnahme_norm:
             ausnahmeklagen, angaben = k1b_ausnahme_abgleich(datei, roh)
             klagen.extend(ausnahmeklagen)
@@ -2628,6 +2769,97 @@ def _selbsttest_runde5() -> None:
                    "R15-1g: die Riegeldatei im Baum ist unveraendert - "
                    f"sha256 {vorher[:16]}",
                    f"{vorher[:16]} -> {nachher[:16]}")
+
+    # ── R17-1/R17-2: die zwei Vorstufen des Uebersetzers ─────────────────────
+    #
+    # Befund P1 des siebzehnten Pruefers (Runde 17), beide Haelften. Alle
+    # Sonderbytes werden aus bytes([...]) gebaut, damit kein Werkzeug auf dem
+    # Weg hierher ein Backslash-Literal umdeutet.
+    with tempfile.TemporaryDirectory() as roh:
+        basis = pathlib.Path(roh)
+        keine = basis / "gibt-es-nicht.h"      # Ausnahme, die nie vorkommt
+        BS, CR, LF, TAB = (bytes([0x5C]), bytes([0x0D]),
+                           bytes([0x0A]), bytes([0x09]))
+
+        def k1b_probe(name: str, inhalt: bytes) -> list[str]:
+            weg = basis / name
+            weg.write_bytes(inhalt)
+            return k1b_riegel([weg], keine)[0]
+
+        # Genau der Weg aus dem Befund: der Bezeichner ist ueber ein
+        # Backslash-Zeilenende geteilt, wird in `#if` benutzt und wieder
+        # entfernt. Fuer MSVC ist das JucePlugin_Name.
+        gespalten = k1b_probe(
+            "GespaltenCrlf.h",
+            b"#define JucePlug" + BS + CR + LF + b'in_Name "Fremd"' + CR + LF
+            + b"#if defined (JucePlug" + BS + CR + LF + b"in_Name)" + CR + LF
+            + b"#endif" + CR + LF
+            + b"#undef JucePlug" + BS + CR + LF + b"in_Name" + CR + LF)
+        pruefe(any(_K1B_TOKEN in k and "im Quelltext" in k for k in gespalten),
+               "R17-1a: ein ueber Backslash + CRLF geteiltes JucePlugin_Name "
+               "ist ROT - Praeprozessor-Phase 2 laeuft vor dem Scan",
+               " | ".join(gespalten) if gespalten else "keine Klage")
+
+        # Leerraum zwischen Backslash und Zeilenende: MSVC faltet auch das.
+        locker = k1b_probe(
+            "GespaltenLeerraum.h",
+            b"#define JucePlug" + BS + b"  " + TAB + LF + b'in_Name "x"' + LF)
+        pruefe(any(_K1B_TOKEN in k for k in locker),
+               "R17-1b: auch mit Leerraum zwischen Backslash und Zeilenende "
+               "wird gefaltet - dieselbe Toleranz wie im Uebersetzer",
+               " | ".join(locker) if locker else "keine Klage")
+
+        # Die REIHENFOLGE, nicht nur die Faltung: eine `//`-Zeile mit
+        # Fortsetzung zieht die naechste Zeile IN den Kommentar. Wer erst
+        # Kommentare entfernte und dann faltete, saehe dort ein Token, das
+        # der Uebersetzer nie sieht - und wer gar nicht faltet, erst recht.
+        im_kommentar = k1b_probe(
+            "FortsetzungImKommentar.h",
+            b"// harmloser Hinweis" + BS + LF + b"#define JucePlugin_Name 1"
+            + LF + b"int x = 0;" + LF)
+        pruefe(im_kommentar == [],
+               "R17-1c: eine `//`-Zeile mit Fortsetzung verschluckt die "
+               "Folgezeile - gefaltet WIRD vor dem Kommentarparser, nicht "
+               "danach",
+               " | ".join(im_kommentar) if im_kommentar else "keine Klage")
+
+        # Die Zeilenzahl ueberlebt die Faltung - sonst zeigten alle Klagen
+        # dieser Datei ab hier auf die falsche Stelle.
+        vor_faltung = "a" + BS.decode() + "\nb\nc\n"
+        pruefe(len(falte_zeilenfortsetzungen(vor_faltung).splitlines())
+               == len(vor_faltung.splitlines()) == 3
+               and falte_zeilenfortsetzungen(vor_faltung).splitlines()[0] == "ab",
+               "R17-1d: die Faltung erhaelt die Zeilenzahl und legt den "
+               "Inhalt auf die physische Zeile, an der die logische BEGINNT",
+               repr(falte_zeilenfortsetzungen(vor_faltung)))
+
+        # Kodierung, fail-closed: eine BOM entscheidet, sonst strikt UTF-8.
+        for name, bom, kodierung in (("Utf16Le.h", b"\xff\xfe", "utf-16-le"),
+                                     ("Utf16Be.h", b"\xfe\xff", "utf-16-be")):
+            klagen = k1b_probe(name, bom + (
+                '#define JucePlugin_Name "Fremd"\n#if defined (JucePlugin_Name)'
+                '\n#endif\n#undef JucePlugin_Name\n').encode(kodierung))
+            pruefe(any(_K1B_TOKEN in k and "im Quelltext" in k for k in klagen),
+                   f"R17-2a: ein {kodierung.upper()}-Kopf mit BOM wird passend "
+                   f"dekodiert - sein JucePlugin_Name ist ROT, nicht "
+                   f"unsichtbar",
+                   " | ".join(klagen) if klagen else "keine Klage")
+
+        nicht_text = k1b_probe("KeinUtf8.h",
+                               b"// harmlos" + LF + b"\x80\x81\xfe" + LF)
+        pruefe(any("nicht als utf-8 dekodierbar" in k for k in nicht_text),
+               "R17-2b: eine Eingabe, deren Text nicht feststeht, ist eine "
+               "namentliche KLAGE - kein still ersetztes Zeichen",
+               " | ".join(nicht_text) if nicht_text else "keine Klage")
+
+        # Fail-closed heisst nicht fail-laut: eine gueltige UTF-8-Datei MIT
+        # BOM ist gruen, und die BOM selbst wird kein Token.
+        mit_bom = k1b_probe("Utf8Bom.h",
+                            codecs.BOM_UTF8 + b"int x = 0; // ok" + LF)
+        pruefe(mit_bom == [],
+               "R17-2c: eine gueltige UTF-8-Datei mit BOM bleibt gruen - die "
+               "BOM wird abgezogen, nicht zu Text",
+               " | ".join(mit_bom) if mit_bom else "keine Klage")
 
     # ── R5-8/R5-9/R5-13: der Tlog-Ortsriegel ────────────────────────────────
     with tempfile.TemporaryDirectory() as roh:

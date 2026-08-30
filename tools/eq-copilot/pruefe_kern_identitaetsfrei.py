@@ -1544,11 +1544,16 @@ _K1B_FORTSETZUNG = re.compile(r"\\[ \t\v\f]*(?:\r\n|\r|\n)\Z")
 def falte_zeilenfortsetzungen(text: str) -> str:
     """Praeprozessor-Phase 2: Backslash + Zeilenende verschwinden.
 
-    ZEILENZAHL BLEIBT ERHALTEN, damit die gemeldeten Nummern die des Originals
-    sind: der Inhalt einer logischen Zeile steht danach vollstaendig auf der
-    PHYSISCHEN Zeile, an der sie BEGINNT, und die gefalteten Umbrueche werden
-    hinter ihr als Leerzeilen nachgetragen. Eine Klage nennt damit den Anfang
-    der logischen Zeile - genau die Stelle, an der auch ein Mensch sucht.
+    DIE ZEILENNUMMERN BLEIBEN DIE DES ORIGINALS: der Inhalt einer logischen
+    Zeile steht danach vollstaendig auf der PHYSISCHEN Zeile, an der sie
+    BEGINNT, und die gefalteten Umbrueche werden hinter ihr als Leerzeilen
+    nachgetragen. Eine Klage nennt damit den Anfang der logischen Zeile -
+    genau die Stelle, an der auch ein Mensch sucht.
+
+    GENAU GESAGT: erhalten bleibt die Nummer JEDER Zeile bis zur letzten, die
+    Inhalt traegt. Nur wenn die Datei ohne abschliessenden Umbruch endet UND
+    ihre letzte Zeile eine Faltung abschliesst, fehlen danach die leeren
+    Nachtragszeilen. Sie benennen nichts, und es folgt nichts mehr auf sie.
 
     Gefaltet wird `\\` gefolgt von optionalem Leerraum und einem Zeilenende in
     allen drei Formen (LF, CRLF, CR). Endet die Datei mit einer offenen
@@ -1921,13 +1926,32 @@ def k1b_ausnahme_abgleich(datei: pathlib.Path,
 # enthalten, und Raten waere hier genau die Rohtextheuristik, die Regel D
 # verbietet.
 #
+# DASS ES GENAU DIESE DREI SIND, steht in der Werkzeugdoku und in der
+# Baubeschreibung dieses Projekts, nicht in einer Annahme:
+#   * MSVC, /source-charset (learn.microsoft.com, Stand 2022-01-31, abgerufen
+#     30.08.2026): "By default, Visual Studio detects a byte-order mark to
+#     determine if the source file is in an encoded Unicode format, for
+#     example, UTF-16 or UTF-8. If no byte-order mark is found, it assumes
+#     that the source file is encoded in the current user code page, unless
+#     you use the /source-charset or /utf-8 option".
+#   * Der Kern wird MIT /utf-8 uebersetzt (eq-copilot/plugin/CMakeLists.txt,
+#     `target_compile_options(... /utf-8)`), und /utf-8 IST
+#     /source-charset:utf-8 /execution-charset:utf-8. Ohne BOM ist die Quelle
+#     fuer diesen Uebersetzer also ebenfalls UTF-8 - der Riegel liest, was der
+#     Compiler liest.
+# Faellt dieser Schalter je weg, liest MSVC ohne BOM nach Codepage; dieser
+# Riegel bliebe bei striktem UTF-8 und waere dann STRENGER, nie lockerer.
+#
 # AUSDRUECKLICHE NICHTZUSAGE, in die sichere Richtung: UTF-32-BOMs sind hier
 # keine eigene Kodierung. `ff fe 00 00` beginnt wie die UTF-16LE-BOM und wird
 # wie von MSVC als UTF-16LE gelesen; eine echte UTF-32-Datei faellt damit
 # entweder als UTF-16LE auf oder wird nicht dekodierbar und damit ROT - in
-# beiden Faellen nicht still gruen. Die namentlich erlaubten SYSTEMDATEIEN
-# gehen weiter roh durch (ASCII und UTF-16LE), nicht durch diesen Leser: sie
-# sind Binaerstoff ohne Textzusage.
+# beiden Faellen nicht still gruen. Ebenso wenig wird eine UTF-16-Datei OHNE
+# BOM erraten: sie zerfaellt hier in Buchstabe-NUL-Buchstabe-NUL, aber genau
+# so zerfaellt sie auch fuer den Praeprozessor, der daraus keinen Bezeichner
+# bilden kann - Riegel und Uebersetzer sehen dasselbe Nichts.
+# Die namentlich erlaubten SYSTEMDATEIEN gehen weiter roh durch (ASCII und
+# UTF-16LE), nicht durch diesen Leser: sie sind Binaerstoff ohne Textzusage.
 _K1B_KODIERUNGEN = (("utf-8", codecs.BOM_UTF8),
                     ("utf-16-le", codecs.BOM_UTF16_LE),
                     ("utf-16-be", codecs.BOM_UTF16_BE))
@@ -2823,13 +2847,15 @@ def _selbsttest_runde5() -> None:
                "danach",
                " | ".join(im_kommentar) if im_kommentar else "keine Klage")
 
-        # Die Zeilenzahl ueberlebt die Faltung - sonst zeigten alle Klagen
-        # dieser Datei ab hier auf die falsche Stelle.
-        vor_faltung = "a" + BS.decode() + "\nb\nc\n"
-        pruefe(len(falte_zeilenfortsetzungen(vor_faltung).splitlines())
-               == len(vor_faltung.splitlines()) == 3
-               and falte_zeilenfortsetzungen(vor_faltung).splitlines()[0] == "ab",
-               "R17-1d: die Faltung erhaelt die Zeilenzahl und legt den "
+        # Die Zeilennummern ueberleben die Faltung - sonst zeigten alle Klagen
+        # dieser Datei ab hier auf die falsche Stelle. Gemessen wird beides:
+        # der Inhalt liegt auf der ERSTEN physischen Zeile der logischen, und
+        # was danach kommt, behaelt seine Nummer.
+        vor_faltung = "a" + BS.decode() + "\nb\nc\nJucePlugin_Name\n"
+        gefaltet = falte_zeilenfortsetzungen(vor_faltung).splitlines()
+        pruefe(len(gefaltet) == len(vor_faltung.splitlines()) == 4
+               and gefaltet[0] == "ab" and gefaltet[3] == "JucePlugin_Name",
+               "R17-1d: die Faltung erhaelt die Zeilennummern und legt den "
                "Inhalt auf die physische Zeile, an der die logische BEGINNT",
                repr(falte_zeilenfortsetzungen(vor_faltung)))
 

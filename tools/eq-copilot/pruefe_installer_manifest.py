@@ -168,19 +168,30 @@ DREI HAERTEGRADE FUER DENSELBEN HASH (NAK-94, 29.08.2026)
                         Installer-Manifest: `ziel_id` als Zeichenkette an
                         jedem VST3-Artefakt (adversariale_strukturproben()
                         liest es hart).
-    Zentraler Faenger   main() ueberfuehrt JEDE Ausnahme, die kein
+    Zentraler Faenger   `_geschuetzt()` ueberfuehrt JEDE Ausnahme, die kein
                         Strukturhalt ist, in eine Klartextzeile mit Typ,
                         Meldung, Datei und Zeile des Ausloesers, Exit 2 und
                         ohne Traceback (nur mit --debug). Der eigene
                         SystemExit "Gegenprobe unmoeglich" laeuft absichtlich
                         durch - er ist schon kontrolliert.
+                        EINMAL geschrieben, ZWEIMAL benutzt (Nacharbeit 11):
+                        dieselbe Funktion legt main() um den ganzen Lauf und
+                        [3c] um jeden einzelnen Fuzz-Fall. Der Fuzz hat keine
+                        zweite Ausnahmebehandlung mehr - wer die Funktion
+                        entwaffnet, macht damit den Fuzz rot.
     Messung             [3c] Byte-Kipp-Fuzz: jede gelesene JSON-Datei, jedes
                         Byte einzeln auf 0xFF und 0x20, in-process durch
                         Lesen, Strukturpruefung und jeden verbrauchenden
-                        Block. Zugesagt und gezaehlt: keine Ausnahme ausser
-                        Strukturhalt und "Gegenprobe unmoeglich". Im Kanon
-                        laeuft ein deterministisches Sample (jedes n-te Byte,
-                        n in der Ausgabe), vollstaendig mit --fuzz-voll.
+                        Block - seit Nacharbeit 11 auch den mutierenden
+                        Zweig --hashen, mit Schreibziel unter %TEMP% statt im
+                        Repo; [3c/0] kommt damit ohne Handausnahme aus und
+                        [3c/1] haelt den sha256 des Manifests im Repo vor und
+                        nach dem Fuzz dagegen. Zugesagt und gezaehlt: keine
+                        Ausnahme ausser Strukturhalt und "Gegenprobe
+                        unmoeglich". Im Kanon laeuft ein deterministisches
+                        Sample (jedes n-te Byte, n in der Ausgabe),
+                        vollstaendig mit --fuzz-voll; der vollstaendige Lauf
+                        liegt als eigene Roh-Datei unter docs/beweise/roh/.
 
   ZWEI SORTEN PROBE-JOURNALE, seit NAK-94 Nacharbeit 5 (30.08.2026):
 

@@ -150,7 +150,7 @@ Händler-, Test- und Forenseiten sind **nicht** als Beleg verwendet.
 
 **Nachtrag 30.08.2026 (Runde 1, Codex-Befund B6).** Der Satz oben („alle zwölf Seiten") gilt für den ersten Durchgang. In Runde 1 sind **zwei weitere Herstellerseiten am 2026-08-30 einzeln abgerufen** worden — **H13** (TDR Nova) und **H14** (iZotope Ozone) —, weil vier Marktzuordnungen über die damalige Quellenliste hinausreichten. Stand jetzt: **vierzehn** Quellen, davon zwölf aus dem ersten Durchgang. Zwei Zuordnungen sind dabei nicht belegt worden, sondern **gestrichen** (§5.1, Zeile Instanzliste). Für H13 und H14 gilt dieselbe Grenze wie unten für H1–H11.
 
-**Nachtrag 30.08.2026 (Runde 2, Restbefund zu B6).** Eine **weitere Herstellerseite ist am 2026-08-30 einzeln abgerufen** worden — **H15**, die FabFilter-Hilfeseite „Undo, redo, A/B switch" —, weil die Zuordnung „Kopieren zwischen Instanzen" aus dem blossen Wort „Copy" in H3 abgeleitet worden war und H3 nicht sagt, was diese Taste tut. H15 sagt es: sie kopiert den aktiven A/B-Zustand auf den inaktiven, innerhalb derselben Instanz. Die Zuordnung ist damit nicht belegt, sondern **widerlegt**; Karte U18 und die §5.3-Zeile sind entsprechend eingegrenzt (§10). Stand jetzt: **fünfzehn** Quellen — zwölf aus dem Erstdurchgang, zwei aus Runde 1, eine aus Runde 2. Für H15 gilt dieselbe Grenze wie unten für H1–H11.
+**Nachtrag 30.08.2026 (Runde 2, Restbefund zu B6).** Eine **weitere Herstellerseite ist am 2026-08-30 einzeln abgerufen** worden — **H15**, die FabFilter-Hilfeseite „Undo, redo, A/B switch" —, weil die Zuordnung „Kopieren zwischen Instanzen" aus dem bloßen Wort „Copy" in H3 abgeleitet worden war und H3 nicht sagt, was diese Taste tut. H15 sagt es: sie kopiert den aktiven A/B-Zustand auf den inaktiven, innerhalb derselben Instanz. Die Zuordnung ist damit nicht belegt, sondern **widerlegt**; Karte U18 und die §5.3-Zeile sind entsprechend eingegrenzt (§10). Stand jetzt: **fünfzehn** Quellen — zwölf aus dem Erstdurchgang, zwei aus Runde 1, eine aus Runde 2. Für H15 gilt dieselbe Grenze wie unten für H1–H11.
 
 **Ehrliche Grenze der Recherche:** H1–H11 belegen, **dass** eine Funktion
 existiert und wie der Hersteller sie beschreibt. Sie belegen nicht, wie sie
@@ -1438,3 +1438,94 @@ Lebenszyklus, kein Längen- oder Alphabetvertrag, kein Bau- oder Prüfriegel im 
 |---|---|
 | „speichern↔laden, starten↔stoppen, öffnen↔schließen, verbinden↔trennen, aktivieren↔abklingen, installieren↔Rückweg im selben Commit" | **Kein Gegenpaar berührt.** Der Änderungssatz besteht aus einem Begründungstext in einer offenen Fragenkarte und vier Manifestnachträgen; er legt keinen Lebenszyklus, keinen Speicherweg und keinen Installationsschritt fest. Belegt durch §10.5, Lauf D: der Diff berührt ausschließlich `docs/plan/fragen.json`, `docs/beweise/PR1.md` und `docs/PLAN-STAND.md` |
 | „Writer, Reader, Migration, Fixtures und Cross-Language-Verbraucher eines Vertrags im selben Änderungssatz" | greift nicht — kein Vertrag geändert. Was U18 später auslösen kann (ein Preset-Objekt im gespeicherten Zustand), bleibt genau das, was es vorher war: eine **offene** Karte mit Ticketzuordnung S26–28 und S31b. Die v3-Vertragsrunde aus Runde 1 ist unberührt |
+
+### 10.5 Beweislauf
+
+Gefahren am 2026-08-30 vom Workspace-Root `C:/Users/phili/Projekte/Nakama` auf dem Stand
+`12fed91` — Karte und Manifest committet, **Arbeitsbaum sauber**. Diese Reihenfolge ist
+notwendig, nicht bequem: `planstand.py` setzt seine Arbeitsbaum-Warnung, solange unter
+`docs/plan/`, `docs/beweise/` oder `tools/plan/` etwas uncommittet liegt, und dieses Manifest
+liegt genau dort. Ein warnungsfreies Blatt ist deshalb nur nach dem Manifest-Commit messbar.
+Runde 1 brauchte dafür zwei Läufe und einen Extra-Commit (§9.6); hier wird stattdessen **einmal**
+gerechnet und dieser Abschnitt zusammen mit dem Blatt committet. Danach wird der Planstand
+**nicht erneut gerechnet** — jeder weitere Lauf würde nur den Quellstand fortschreiben.
+Rohausgabe ungekürzt:
+
+```text
+### A) py -3.13 tools/plan/planstand.py
+geschrieben: docs\PLAN-STAND.md (18 abgenommen, 2 gebaut, 38 gesamt, aus 12fed91)
+EXITCODE=0
+
+### B) py -3.13 tools/plan/antworten_blatt.py
+geschrieben: docs\ANTWORTEN-OFFEN.md (42 Antworten, 0 offen, 42 eingearbeitet, 13 mit eigenem Text)
+EXITCODE=0
+
+### Blatt-Warnung "Gerechnet aus dem Arbeitsbaum"
+grep -c aus docs/PLAN-STAND.md: 0
+
+### C) JSON-Gueltigkeit
+docs/plan/plan.json -> gueltiges JSON 39714 Zeichen
+docs/plan/fragen.json -> gueltiges JSON 29483 Zeichen
+EXITCODE=0
+
+### D) git diff --stat b54a575..HEAD
+ docs/beweise/PR1.md   | 155 ++++++++++++++++++++++++++++++++++++++++++++++++--
+ docs/plan/fragen.json |   4 +-
+ 2 files changed, 151 insertions(+), 8 deletions(-)
+EXITCODE=0
+
+### E) Zaehlungen
+fragen.json offen: 8
+fragen.json beantwortet: 42
+U18 status: offen | titel unveraendert: True
+U18 warum nennt H15-Zitat: True
+U18 warum ohne Altbehauptung: True
+Registerzeilen NAK-: 97
+hoechste Registernummer: NAK-111
+Herstellerquellen H1-Hn: 15
+H8-Zeile, Treffer copy/kopier: 0
+EXITCODE=0
+
+### F) Tabellenriegel (nur die in dieser Runde geaenderte Markdown-Datei)
+docs/beweise/PR1.md: sauber
+Tabellenriegel: 0 uneinheitliche Tabelle(n)
+EXITCODE=0
+```
+
+**Was die Läufe zeigen.**
+
+- **A** Exitcode 0 **und keine Arbeitsbaum-Warnung im Blatt** — der Zähler steht auf 0. Das
+  gerechnete Blatt bleibt bei 18 von 38 abgenommen; diese Runde ändert keinen Belegstand und
+  setzt keine Urteilsmarke, sie schreibt nur den Quellstand `058c8b5` → `12fed91` fort.
+- **B** `beantwortet{}` unverändert bei 42 Antworten, 0 offen. `docs/ANTWORTEN-OFFEN.md` ist
+  **bytegleich** geblieben — der Lauf hat die Datei neu geschrieben, `git status` meldet sie
+  nicht. Die Ticketgrenze hält.
+- **C** Beide Planquellen laden. `fragen.json` wächst um 998 Zeichen (28485 → 29483) — der
+  längere Begründungstext von U18, nichts sonst.
+- **D** Der Änderungssatz berührt **zwei** Dateien, beide unter `docs/**`: die Karte mit
+  **4** geänderten Zeilen (zwei Felder, vorher/nachher) und das Manifest. Keine Zeile
+  Produktcode, Schema, Test, Fixture, Runner, `plan.json`, `bauaufteilung-sonden.md` oder
+  `offene-punkte.md` — das ist zugleich der Beleg für die Prüflisten-Zeile „Geänderte Zusage".
+- **E** `offen[]` bleibt bei **8** Karten, `beantwortet{}` bei **42**, das Register unverändert
+  bei **97** Zeilen und **NAK-111**. Die Quellenliste wächst von 14 auf **15**. Die drei
+  Riegelzeilen zu U18 prüfen genau die Ticketgrenze: Titel unverändert, das H15-Zitat steht in
+  der Begründung, die alte Behauptung steht nicht mehr darin.
+- **F** Der Tabellenriegel aus Runde 1 läuft auf der einzigen in dieser Runde geänderten
+  Markdown-Datei und meldet sie sauber — die Klasse Fehler, die ein Zellen-Edit mit einem
+  ungeschützten `|` erzeugt, ist ausgeschlossen. `docs/offene-punkte.md` ist in dieser Runde
+  nicht angefasst worden; sein vorbestehender Befund aus §9.4 bleibt unverändert stehen.
+
+**Der Kanon läuft nicht** — unverändert der Grund aus §8 und §9.4: `tools/beweise.ps1` baut und
+misst Produktcode, Tests, Schemas und Fixtures; diese Runde berührt ausschließlich `docs/**`
+(Lauf D).
+
+**Commits der Runde** (beide mit explizitem Pathspec, kein `git add -A`, kein `--amend`):
+
+| SHA | Was | Dateien |
+|---|---|---|
+| `12fed91` | Karte und Manifest — B6 geschlossen, H15 nachgereicht, §5.3-Zusatz, §10.1–§10.4, lebender Kopf | `docs/plan/fragen.json`, `docs/beweise/PR1.md` |
+| dieser | gerechneter Planstand und dieser Abschnitt §10.5 | `docs/PLAN-STAND.md`, `docs/beweise/PR1.md` |
+
+**Keine Urteilsmarke.** Auch diese Runde setzt keine `NAKAMA-URTEIL`-Zeile; PR1 bleibt im
+gerechneten Planstand *gebaut, nicht abgenommen*, bis der Dirigent nach einer frischen Prüfung
+urteilt.

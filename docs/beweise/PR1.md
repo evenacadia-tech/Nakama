@@ -1,7 +1,8 @@
 # Beweismanifest — PR1 «Planprüfung: Entscheide gegen Plan, Nakama gegen Marktstandard»
 
-> **Ohne Urteilsmarke.** Die Marke setzt der Dirigent nach der Codex-Prüfung; bis dahin
-> führt der gerechnete Planstand PR1 bewusst als *gebaut, nicht abgenommen*.
+<!-- NAKAMA-URTEIL: T3 PASS 2026-08-30 -->
+
+> **Urteil T3 PASS, gesetzt vom Dirigenten am 30.08.2026 (§11).** Drei frische Codex-Threads (Effort xhigh); nach Runde 2 ist kein Defekt offen.
 
 | Feld | Wert |
 |---|---|
@@ -10,7 +11,7 @@
 | Gate-Text (Quelle) | `docs/plan/plan.json`, Schritt `PR1` — wörtlich unten |
 | Basis-SHA | `6f40eed5e5e3969df2ac08232011247ff377e89c` (Branch `master`) |
 | Datum | 2026-08-30 |
-| Prüfstufen | T1 ☑ (Selbstaudit) · T2 ☐ · T3 ☐ — die geforderte Stufe ist **T3** |
+| Prüfstufen | T1 ☑ (Selbstaudit) · T3 ☑ **PASS 2026-08-30** (frische Codex-Threads, Effort xhigh; §11) — die geforderte Stufe ist **T3** |
 | Kanon | **läuft nicht** — kein Produktcode, kein Test, kein Schema angefasst (Begründung §8) |
 
 ---
@@ -93,7 +94,8 @@ mitgeführt.
 | **0** | Erstdurchgang: Entscheidregister, Funktionsvergleich, Änderungssatz E-1 bis E-17, Karten U15–U20, Register NAK-105 bis NAK-109 (§1–§8) | Codex `gpt-5.6-sol`, Effort **xhigh**, lesend, Thread `01a053a7-d1dc-7441-8554-44d0fa14cc8f` (30.08.2026) | **NEEDS_WORK** | **7** Befunde, alle [P1] |
 | **1** | Nacharbeit: genau diese sieben Befunde bearbeitet — Planedits, Register, Karten, zwei nachgereichte Herstellerquellen, Einordnung Visual Mixer (§9) | Worker, Selbstaudit (T1); der Dirigent hat alle sieben vorab an der Quelle als **Defekt** bestätigt | **NEEDS_WORK** — durch die Wiederprüfung in der Zeile darunter | **1** der sieben: **B6** blieb offen, sechs sind geschlossen |
 | **1-P** | Wiederprüfung der Runde 1, Prüfbereich `git diff 0e3908e...b54a575 -- <Ticketpfade>`; `beantwortet{}` unverändert, beide Plan-JSON laden | Codex `gpt-5.6-sol`, Effort **xhigh**, lesend, Thread `01a053cf-9992-7910-b526-a7712881d9a3` (30.08.2026) | **NEEDS_WORK** | **1** Restbefund [P1] — B6, `docs/plan/fragen.json:72` |
-| **2** | Nacharbeit: nur dieser eine Restbefund — U18 auf das Belegte eingegrenzt, Herstellerquelle **H15** nachgereicht, §5.3 mit datiertem Zusatz (§10). Keine andere Karte, kein anderer Plansatz angefasst | Worker, Selbstaudit (T1); der Dirigent hat den Restbefund vorab an der Quelle als **Defekt** bestätigt | offen — das T3-Urteil setzt der Dirigent | **0** |
+| **2** | Nacharbeit: nur dieser eine Restbefund — U18 auf das Belegte eingegrenzt, Herstellerquelle **H15** nachgereicht, §5.3 mit datiertem Zusatz (§10). Keine andere Karte, kein anderer Plansatz angefasst | Worker, Selbstaudit (T1); der Dirigent hat den Restbefund vorab an der Quelle als **Defekt** bestätigt | geschlossen — Wiederprüfung in der Zeile darunter | **0** |
+| **2-P** | Wiederprüfung der Runde 2, Prüfbereich `git diff b54a575...6127595 -- <Ticketpfade>` | Codex `gpt-5.6-sol`, Effort **xhigh**, lesend, Thread `01a053e5-ba8a-7c83-a77a-48656dd6dccc` (30.08.2026) | **B6 geschlossen**; ein Restpunkt gegen den Planstand-Stempel (`docs/PLAN-STAND.md:3`), vom Dirigenten als Prozesspunkt eingeordnet und im Abschluss-Commit nachgezogen (§11) | **0** Defekte → **T3 PASS** |
 
 Der lebende Kopf endet hier. §2 bis §8 sind der Verlauf des Erstdurchgangs und werden nicht umgeschrieben; Korrekturen daran stehen als datierte Nachträge an Ort und Stelle. §9 und §10 sind die append-only Rundenabschnitte.
 
@@ -1529,3 +1531,52 @@ misst Produktcode, Tests, Schemas und Fixtures; diese Runde berührt ausschließ
 **Keine Urteilsmarke.** Auch diese Runde setzt keine `NAKAMA-URTEIL`-Zeile; PR1 bleibt im
 gerechneten Planstand *gebaut, nicht abgenommen*, bis der Dirigent nach einer frischen Prüfung
 urteilt.
+
+---
+
+## 11. Abschluss des Dirigenten (30.08.2026, Sitzung `bf17b676`)
+
+**Urteil: T3 PASS** — Marke oben gesetzt. Basis-SHA `6f40eed`, Stand vor diesem Abschluss `6127595`.
+
+**Prüfkette (alle Prüfer frisch, lesend, `gpt-5.6-sol`, Effort xhigh; alle Worker Opus/max):**
+
+| Schritt | Wer | Bereich | Ergebnis |
+|---|---|---|---|
+| Bau | Worker `6cb4d59c` (`6f40eed` → `0e3908e`) | Ticket | §1–§8 |
+| Erstprüfung | Codex `01a053a7-d1dc-7441-8554-44d0fa14cc8f` | `6f40eed...0e3908e`, Ticketpfade | NEEDS_WORK, 7 Befunde — alle vom Dirigenten an der Quelle als Defekt bestätigt |
+| Runde 1 | Worker `99afeaa2` (`0e3908e` → `b54a575`) | nur B1–B7 | §9 |
+| Wiederprüfung 1 | Codex `01a053cf-9992-7910-b526-a7712881d9a3` | nur Fixdiff `0e3908e...b54a575` | B1–B5, B7 geschlossen; B6 offen |
+| Runde 2 | Worker `fd4f7dbb` (`b54a575` → `6127595`) | nur B6 | §10 |
+| Wiederprüfung 2 | Codex `01a053e5-ba8a-7c83-a77a-48656dd6dccc` | nur Fixdiff `b54a575...6127595` | B6 geschlossen; ein Restpunkt, siehe unten |
+
+**Urteilstext der Wiederprüfung 2, wörtlich:**
+
+> B6 ist geschlossen: U18 grenzt das Kopieren zwischen Instanzen als unbelegt ein (`fragen.json:72`), gestützt durch H15 (`PR1.md:148`) und die korrigierte Marktzeile (`PR1.md:597`). Der Fixdiff bricht jedoch die Generator-Schließung. Beide JSON-Dateien laden und `beantwortet{}` blieb unverändert; der exakte Python-3.13-Lauf war in der Prüfumgebung durch den Launcher blockiert (Exit 101), während eine schreibfreie Simulation des Skripts Exit 0 ohne Warnung und den beschriebenen Diff ergab.
+>
+> Review comment:
+>
+> - [P1] Regeneriere den Planstand nach dem letzten Manifest-Commit — C:/Users/phili/Projekte/Nakama/docs/PLAN-STAND.md:3-3
+>   Wenn `planstand.py` am Zielstand läuft, ist dieser Stempel veraltet: Der abschließende Commit `6127595` ändert mit `docs/beweise/PR1.md` eine Generatorquelle, während das Blatt noch `12fed91` trägt. Die Regeneration erzeugt deshalb `6127595` in Zeile 3 und 12 und hinterlässt `docs/PLAN-STAND.md` geändert; damit scheitert der verlangte saubere Status und der Generatorvertrag aus `docs/plan/LIES-MICH.md:29-34`.
+
+**Einordnung des Restpunkts (Dirigent, an der Quelle):** kein Defekt. Der Gate-Text sagt nichts über den Quellstand-Stempel; `docs/PLAN-STAND.md` ist ein erzeugtes Blatt und im Prüfauftrag als Ausschluss benannt. Der Stempel kann strukturell nie gleich HEAD sein, sobald der letzte Commit eine Generatorquelle berührt — genau dafür sieht `docs/plan/LIES-MICH.md` vor, dass das Blatt aus bereits committeten Quellen nachgerechnet und allein committet wird. Das geschieht in diesem Abschluss-Commit (Dirigent §3.4: Textinkonsistenzen zieht der Abschluss nach, nie als NEEDS_WORK).
+
+**Konvergenz.** Rundenbilanz kumuliert (`tools/dirigent/rundenbilanz.py --runden 6f40eed 0e3908e b54a575 6127595`):
+
+```
+6f40eed..0e3908e: Doku 8 Datei(en) +934/-55
+    -> OHNE PRODUKTFORTSCHRITT (Produkt+Tests = 0 Zeilen)
+0e3908e..b54a575: Doku 6 Datei(en) +583/-38
+    -> OHNE PRODUKTFORTSCHRITT (Produkt+Tests = 0 Zeilen)
+b54a575..6127595: Doku 3 Datei(en) +244/-10
+    -> OHNE PRODUKTFORTSCHRITT (Produkt+Tests = 0 Zeilen)
+
+KONVERGENZ-SIGNAL: 3 Runden in Folge ohne Produktfortschritt - Konvergenzentscheid nach Skill §3.4, keine weitere Punktkorrektur-Runde.
+```
+
+PR1 ist ein Planticket ohne Produktcode; das Produktdiff-Maß des Konvergenzsignals greift hier nicht. Das Maß dieses Tickets sind die offenen Defekte je Runde: **7 → 1 → 0**. Kein Konvergenzentscheid nötig, keine vierte Runde.
+
+**Beweise, die gelaufen sind:** `py -3.13 tools/plan/planstand.py` (Exit 0, ohne Warnung), `py -3.13 tools/plan/antworten_blatt.py`, JSON-Gültigkeit von `plan.json` und `fragen.json` (§8, §9.4, §10.5). Der Kanon lief nicht: kein Produktcode, kein Test, kein Schema angefasst.
+
+**Entscheide des Dirigenten zu den Vorschlägen (§6.3):** V-1 entschieden in Runde 1 (v3-Vertragsrunde vor R0 als erster Lieferumfang von S16–17). V-2 vertagt: die offenen Bausteine aus `design/abnahmen/2026-08-25-offen-bausteine.md` werden als Karten erst mit der Vorbereitung von S31b gestellt — heute liegen bereits acht Karten beim User. V-3 angenommen: NAK-82 (Seitenverhältnis) bekommt den Eigentümer S31b (Registernachtrag 30.08.2026).
+
+**Was bleibt:** der G1-Vorbehalt aus §1.2. G1 ist das nächste Ticket (User 30.08.2026 auf die Erklärung der T3-Reviews: „ok dann mach das so“). Beim User liegen U11, U13, U15–U20 (`/fragen`).

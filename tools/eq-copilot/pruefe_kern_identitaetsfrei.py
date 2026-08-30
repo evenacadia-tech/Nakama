@@ -71,11 +71,13 @@ dazu, weil K1 nur Anfang und Ende einer TU sieht:
         NakamaKernRiegel.h - und die ist seit Runde 15 keine Freistellung,
         sondern ein ABGLEICH: jedes JucePlugin_-Token dieser Datei muss
         namentlich in der Makroliste stehen, die der Praeprozessor in
-        DERSELBEN Datei abfragt, und in einem der Riegelkontexte
-        (`defined (...)` im `#if`-Kranz, `#ifdef`/`#ifndef`, das blosse
-        Praefix im `#error`-Fliesstext). Jeder andere Name und jeder
-        bekannte Name im falschen Kontext - auch ein `#undef` - ist ROT und
-        wird beim Namen genannt.
+        DERSELBEN Datei abfragt, und in einem der Riegelkontexte. Die Liste
+        kommt seit Runde 16 ausschliesslich aus dem einen `#if`-Kranz, der in
+        den K1-`#error` muendet; erlaubt sind nur `defined (...)` IN diesem
+        Kranz und das blosse Praefix in SEINER Fehlermeldung. Jeder andere
+        Name, jeder bekannte Name ausserhalb des Kranzes - auch in einem
+        eigenen `#if defined (...)`-Block - und jedes `#undef` sind ROT und
+        werden beim Namen genannt.
   Tlog-Ortsriegel - JEDE vom Compiler gelesene Datei stammt aus einer
         erlaubten, aus dem Bau ABGELEITETEN Wurzel oder ist eine namentlich
         erlaubte Systemdatei; juce_audio_plugin_client (dort liegen alle
@@ -913,6 +915,14 @@ _K1B_FREMDPROBE = (b"\n#define JucePlugin_Fremd 1\n"
 # Dieselbe Frage in der Kurzform: eine BENUTZUNG darf keinen Namen
 # legitimieren, sonst traegt sich jedes Makro selbst in die Liste ein.
 _K1B_KURZPROBE = b"\n#ifdef JucePlugin_Fremd\n#endif\n"
+# Die Probe des SECHZEHNTEN Pruefers (Runde 16), woertlich: ein separater,
+# voellig LEERER `#if defined (...)`-Block. Er definiert nichts und benutzt
+# nichts - er stellt nur eine Abfrage. Bis Runde 15 genuegte genau das, um den
+# Namen in die erlaubte Makroliste zu heben.
+_K1B_SEPARATPROBE = b"\n#if defined (JucePlugin_Fremd)\n#endif\n"
+# Dieselbe Stelle mit einem BEKANNTEN Namen: auch er ist ausserhalb des
+# Kranzes ROT - die Liste ist an den Ort gebunden, nicht nur an den Namen.
+_K1B_SEPARATPROBE_BEKANNT = b"\n#if defined (JucePlugin_Name)\n#endif\n"
 _WINKITS_SCHLUESSEL = os.sep.join(
     ["SOFTWARE", "Microsoft", "Windows Kits", "Installed Roots"])
 
@@ -1578,24 +1588,31 @@ def k1b_eingaben_aus_tlog(gelesen: list[str],
 # Praeprozessor-Nutzung leer bleiben - gemessen als Reproduktion @ 0d5b7d5.
 #
 # EINE QUELLE, ZWEI VERBRAUCHER: die Makroliste, gegen die abgeglichen wird,
-# ist genau die, die der Praeprozessor in dieser Datei abfragt. Sie wird aus
-# den `defined (JucePlugin_*)`-Abfragen der `#if`/`#elif`-Zeilen derselben
-# Datei gelesen - nicht im Skript nachgepflegt. Damit koennen K1 und K1b nicht
-# auseinanderlaufen.
+# ist genau die, die der Praeprozessor in dieser Datei abfragt. Seit Runde 16
+# (Befund P1 des sechzehnten Pruefers) ist das NICHT mehr "jede `#if`/`#elif`-
+# Zeile", sondern AUSSCHLIESSLICH der eine `#if defined (...)`-Kranz, der in
+# den K1-`#error` muendet - dieselbe Quelle, aus der K1 seine Wirkung bezieht.
+# Vorher trug ein angehaengter, leerer `#if defined (JucePlugin_Fremd)`-Block
+# seinen Namen selbst in die Liste ein und war sein eigener Freibrief
+# (gemessen @ 4fcb4a8: 0 Klagen, 49/49 abgeglichen). Nicht im Skript
+# nachgepflegt - damit koennen K1 und K1b nicht auseinanderlaufen.
 #
-# ERLAUBTE KONTEXTE (Riegelmuster dieser Datei):
-#   1. `defined (Name)` in einer `#if`/`#elif`-Zeile - die Abfrage selbst.
-#      NUR diese Zeilen bilden die Liste; die Kurzform traegt sich NICHT
-#      selbst ein, sonst waere jeder Name durch seine eigene Benutzung
-#      legitimiert.
-#   2. `#ifdef Name` / `#ifndef Name` - dieselbe Abfrage in kurzer Form, aber
-#      nur fuer einen Namen, den der `#if`-Kranz schon fuehrt.
-#   3. das blosse Praefix `JucePlugin_` ohne folgendes Namenszeichen in einer
-#      `#error`-Zeile - der Fliesstext der Riegelmeldung ("JucePlugin_*").
+# ERLAUBTE KONTEXTE (Riegelmuster dieser Datei), beide IM Kranz bzw. in SEINER
+# Fehlermeldung - ausserhalb ist jedes Token ROT, auch ein bekannter Name:
+#   1. `defined (Name)` in den physischen Zeilen des K1-Fehlerkranzes - die
+#      Abfrage selbst. Nur sie bildet die Liste; eine Benutzung legitimiert
+#      keinen Namen, sonst traegt sich jedes Makro selbst ein. Die Kurzform
+#      `#ifdef`/`#ifndef` ist deshalb KEIN erlaubter Kontext mehr: sie ist
+#      immer eine eigene Direktive und liegt damit stets ausserhalb des
+#      Kranzes.
+#   2. das blosse Praefix `JucePlugin_` ohne folgendes Namenszeichen in der
+#      vom Kranz gesteuerten `#error`-Meldung - ihr Fliesstext
+#      ("JucePlugin_*").
 # ROT ist alles andere, NAMENTLICH: ein unbekannter Name (steht nicht in der
-# K1-Liste) und jeder bekannte Name im falschen Kontext. `#define` und `#undef`
-# sind auch fuer bekannte Namen ROT - ein `#undef JucePlugin_Name` vor dem
-# Kranz wuerde K1 fuer genau dieses Makro still entwaffnen.
+# K1-Liste), jeder bekannte Name ausserhalb des Kranzes und jedes Token im
+# Kranz, das keine `defined (...)`-Abfrage ist. `#define` und `#undef` sind
+# auch fuer bekannte Namen ROT - ein `#undef JucePlugin_Name` vor dem Kranz
+# wuerde K1 fuer genau dieses Makro still entwaffnen.
 #
 # Kommentare werden vorher entfernt, wie bei jeder anderen Datei auch: was in
 # einem Kommentar steht, ist fuer den Uebersetzer kein Token. Die rohe Zahl
@@ -1610,31 +1627,118 @@ def k1b_eingaben_aus_tlog(gelesen: list[str],
 
 _K1B_NAME = re.compile(r"JucePlugin_[A-Za-z0-9_]*")
 _K1B_ABFRAGE = re.compile(r"\bdefined\s*\(\s*(JucePlugin_[A-Za-z0-9_]+)\s*\)")
-_K1B_KURZABFRAGE = re.compile(r"^#\s*ifn?def\s+(JucePlugin_[A-Za-z0-9_]+)\b")
 _K1B_DIREKTIVE = re.compile(r"^#\s*([A-Za-z_]+)")
 
+# Praeprozessor-Bedingungen, die einen Block OEFFNEN, WEITERFUEHREN bzw.
+# SCHLIESSEN. `elifdef`/`elifndef` sind C23/C++23 und stehen hier, damit ein
+# kuenftiger Riegel nicht still an ihnen vorbeilaeuft.
+_K1B_OEFFNET = ("if", "ifdef", "ifndef")
+_K1B_FUEHRT_FORT = ("elif", "elifdef", "elifndef")
 
-def _logische_zeilenarten(zeilen: list[str]) -> list[str]:
-    """Direktivenart je PHYSISCHER Zeile, Backslash-Fortsetzungen mitgezaehlt.
 
-    Der Riegelkranz in NakamaKernRiegel.h ist EINE logische `#if`-Zeile ueber
-    46 physische; die `#error`-Meldung ebenso ueber sechs. Ohne diese Abbildung
-    saehe eine Zeilenweise-Pruefung `|| defined (...)` als gewoehnlichen Text.
-    Rueckgabe ist 0-basiert und so lang wie `zeilen`; "" heisst: keine
-    Direktive.
+def _logische_direktiven(zeilen: list[str]) -> list[tuple[int, int, str]]:
+    """Logische Direktiven als (erste, letzte physische Zeile, Art), 0-basiert.
+
+    Backslash-Fortsetzungen gehoeren zur SELBEN logischen Zeile: der
+    Riegelkranz in NakamaKernRiegel.h ist EINE `#if`-Zeile ueber 47 physische,
+    die `#error`-Meldung eine ueber sechs. Ohne diese Abbildung saehe eine
+    zeilenweise Pruefung `|| defined (...)` als gewoehnlichen Text. "" als Art
+    heisst: keine Direktive.
     """
-    arten = [""] * len(zeilen)
+    aus: list[tuple[int, int, str]] = []
     i = 0
     while i < len(zeilen):
         start = i
         while i < len(zeilen) and zeilen[i].rstrip().endswith("\\"):
             i += 1
         treffer = _K1B_DIREKTIVE.match(zeilen[start].lstrip())
-        art = treffer.group(1) if treffer else ""
-        for n in range(start, min(i, len(zeilen) - 1) + 1):
-            arten[n] = art
+        aus.append((start, min(i, len(zeilen) - 1),
+                    treffer.group(1) if treffer else ""))
         i += 1
+    return aus
+
+
+def _logische_zeilenarten(zeilen: list[str]) -> list[str]:
+    """Direktivenart je PHYSISCHER Zeile - die Sicht fuer die Klagetexte."""
+    arten = [""] * len(zeilen)
+    for start, ende, art in _logische_direktiven(zeilen):
+        for n in range(start, ende + 1):
+            arten[n] = art
     return arten
+
+
+def _k1_fehlerkranz(zeilen: list[str],
+                    direktiven: list[tuple[int, int, str]],
+                    ) -> tuple[tuple[int, int] | None, list[tuple[int, int]], str]:
+    """Der EINE `#if`-Kranz, der den K1-`#error` steuert.
+
+    BEFUND P1 DES SECHZEHNTEN PRUEFERS (Runde 16): vorher wurde die erlaubte
+    Makroliste aus JEDER `#if`/`#elif`-Zeile der Datei gelesen. Ein an die
+    Riegeldatei angehaengter, voellig leerer Block
+
+        #if defined (JucePlugin_Fremd)
+        #endif
+
+    trug seinen Namen damit selbst in die Liste ein und war anschliessend sein
+    eigener Freibrief - gemessen @ 4fcb4a8: 0 Klagen bei 49/49 abgeglichenen
+    Token. K1 sieht diesen Namen nicht (sein Kranz ist namentlich), also sah
+    ihn niemand.
+
+    Die Liste kommt deshalb NUR aus dem Block, der den `#error` traegt - genau
+    die Quelle, aus der auch K1 seine Wirkung bezieht. Alles ausserhalb dieses
+    Kranzes ist ROT, auch in einem eigenen Block.
+
+    Rueckgabe: (Kranz als (erste, letzte physische Zeile), die vom Kranz
+    gesteuerten `#error`-Zeilenbereiche, Grund bei Misserfolg).
+
+    FAIL-CLOSED an drei Kanten, jede mit eigenem Grund:
+      * unpaarige Bedingungsstruktur (`#endif` ohne `#if`, offener Block) -
+        dann ist keine Zuordnung vertrauenswuerdig,
+      * kein `#error` unter einem Kranz mit `defined (JucePlugin_*)`,
+      * MEHR als ein solcher Kranz - eine zweite Fehlermeldung koennte sonst
+        eine zweite Makroliste mitbringen.
+    """
+    stapel: list[tuple[int, int] | None] = []
+    kraenze: list[tuple[int, int]] = []
+    fehlerzeilen: dict[tuple[int, int], list[tuple[int, int]]] = {}
+    for start, ende, art in direktiven:
+        if art in _K1B_OEFFNET:
+            stapel.append((start, ende))
+        elif art in _K1B_FUEHRT_FORT:
+            if not stapel:
+                return None, [], (f"Zeile {start + 1}: #{art} ohne offenen "
+                                  f"#if - die Bedingungsstruktur ist unpaarig")
+            stapel[-1] = (start, ende)
+        elif art == "else":
+            if not stapel:
+                return None, [], (f"Zeile {start + 1}: #else ohne offenen #if "
+                                  f"- die Bedingungsstruktur ist unpaarig")
+            stapel[-1] = None
+        elif art == "endif":
+            if not stapel:
+                return None, [], (f"Zeile {start + 1}: #endif ohne offenen "
+                                  f"#if - die Bedingungsstruktur ist unpaarig")
+            stapel.pop()
+        elif art == "error" and stapel and stapel[-1] is not None:
+            kranz = stapel[-1]
+            if any(_K1B_ABFRAGE.search(zeilen[n])
+                   for n in range(kranz[0], kranz[1] + 1)):
+                if kranz not in kraenze:
+                    kraenze.append(kranz)
+                fehlerzeilen.setdefault(kranz, []).append((start, ende))
+    if stapel:
+        return None, [], ("die Bedingungsstruktur ist unpaarig - "
+                          f"{len(stapel)} offene(r) #if-Block")
+    if not kraenze:
+        return None, [], ("kein #error unter einem #if-Kranz mit "
+                          "`defined (JucePlugin_*)` - ohne ihn ist die "
+                          "K1-Makroliste aus dieser Datei nicht ableitbar")
+    if len(kraenze) > 1:
+        orte = ", ".join(f"Zeile {k[0] + 1}" for k in kraenze)
+        return None, [], (f"{len(kraenze)} #if-Kraenze muenden in einen "
+                          f"#error ({orte}) - welcher die K1-Makroliste ist, "
+                          f"steht damit nicht fest")
+    return kraenze[0], fehlerzeilen[kraenze[0]], ""
 
 
 def k1b_ausnahme_abgleich(datei: pathlib.Path,
@@ -1643,9 +1747,9 @@ def k1b_ausnahme_abgleich(datei: pathlib.Path,
 
     Rueckgabe: (Klagen, Angaben). `Angaben` traegt `roh` (Token im Rohtext,
     Diagnose), `code` (Token im kommentarfreien Quelltext), `makros` (die aus
-    DERSELBEN Datei gelesene K1-Liste) und `abgeglichen` (Vorkommen, die
-    namentlich und im erlaubten Kontext standen). Fail-closed: unlesbarer
-    Quelltext und eine nicht ableitbare Makroliste sind ROT.
+    DEM K1-FEHLERKRANZ derselben Datei gelesene Liste) und `abgeglichen`
+    (Vorkommen, die namentlich und im erlaubten Kontext standen). Fail-closed:
+    unlesbarer Quelltext und eine nicht ableitbare Makroliste sind ROT.
     """
     kurz = _kurz(datei)
     angaben = {"roh": roh.count(_K1B_TOKEN), "code": 0,
@@ -1656,45 +1760,55 @@ def k1b_ausnahme_abgleich(datei: pathlib.Path,
         return [str(exc)], angaben
 
     zeilen = text.splitlines()
+    direktiven = _logische_direktiven(zeilen)
     arten = _logische_zeilenarten(zeilen)
     angaben["code"] = text.count(_K1B_TOKEN)
 
-    # Schritt 1: die Liste, die K1 in DIESER Datei abfragt.
+    # Schritt 1: der EINE Kranz, der den K1-`#error` steuert - und nur er.
+    kranz, fehlerbereiche, grund = _k1_fehlerkranz(zeilen, direktiven)
+    if kranz is None:
+        return ([f"{kurz}: die K1-Makroliste ist aus dieser Datei nicht "
+                 f"ableitbar ({grund}) - ohne sie ist die K1b-Ausnahme kein "
+                 f"Abgleich"], angaben)
+    kranzzeilen = set(range(kranz[0], kranz[1] + 1))
+    fehlerzeilen = {n for a, b in fehlerbereiche for n in range(a, b + 1)}
     makros: set[str] = set()
-    for nr, zeile in enumerate(zeilen):
-        if arten[nr] in ("if", "elif"):
-            makros.update(_K1B_ABFRAGE.findall(zeile))
+    for nr in sorted(kranzzeilen):
+        makros.update(_K1B_ABFRAGE.findall(zeilen[nr]))
     angaben["makros"] = sorted(makros)
     if not makros:
         return ([f"{kurz}: die K1-Makroliste ist aus dieser Datei nicht "
                  f"ableitbar - ohne sie ist die K1b-Ausnahme kein Abgleich"],
                 angaben)
 
-    # Schritt 2: jedes Vorkommen gegen Liste UND Kontext.
+    # Schritt 2: jedes Vorkommen gegen Liste UND Ort. Ausserhalb des Kranzes
+    # und seiner `#error`-Meldung ist JEDES Token ROT - auch ein bekannter
+    # Name, auch in einem eigenen `#if defined (...)`-Block: sonst waere die
+    # Erlaubnisliste wieder ihre eigene Quelle (Befund P1, Runde 16).
     klagen: list[str] = []
     for nr, zeile in enumerate(zeilen):
         if _K1B_TOKEN not in zeile:
             continue
         art = arten[nr]
-        erlaubt = {t.span(1) for t in _K1B_ABFRAGE.finditer(zeile)
-                   if art in ("if", "elif") and t.group(1) in makros}
-        kurzform = _K1B_KURZABFRAGE.match(zeile.lstrip())
-        if kurzform and kurzform.group(1) in makros:
-            versatz = len(zeile) - len(zeile.lstrip())
-            erlaubt.add((kurzform.start(1) + versatz,
-                         kurzform.end(1) + versatz))
+        erlaubt = ({t.span(1) for t in _K1B_ABFRAGE.finditer(zeile)
+                    if t.group(1) in makros} if nr in kranzzeilen else set())
         for treffer in _K1B_NAME.finditer(zeile):
             name = treffer.group(0)
             if treffer.span() in erlaubt:
                 angaben["abgeglichen"] += 1
                 continue
-            if name == _K1B_TOKEN and art == "error":
+            if name == _K1B_TOKEN and nr in fehlerzeilen:
                 angaben["abgeglichen"] += 1     # Fliesstext der Riegelmeldung
                 continue
             wo = f"#{art}" if art else "Quelltext ausserhalb einer Direktive"
-            grund = ("steht nicht in der K1-Makroliste dieser Datei"
-                     if name not in makros
-                     else f"steht in der K1-Makroliste, aber in {wo}")
+            if name not in makros:
+                grund = "steht nicht in der K1-Makroliste dieser Datei"
+            elif nr not in kranzzeilen:
+                grund = (f"steht in der K1-Makroliste, aber ausserhalb des "
+                         f"K1-Fehlerkranzes (in {wo})")
+            else:
+                grund = ("steht im K1-Fehlerkranz, aber nicht als "
+                         "`defined (...)`-Abfrage")
             klagen.append(f"{kurz}: Zeile {nr + 1}: {name!r} {grund} - die "
                           f"K1b-Ausnahme ist ein Abgleich, keine Freistellung")
 
@@ -2432,6 +2546,81 @@ def _selbsttest_runde5() -> None:
                    and "JucePlugin_Fremd" not in angaben["makros"],
                    "R15-1f: auch die Kurzform `#ifdef JucePlugin_Fremd` ist "
                    "ROT - eine Benutzung legitimiert keinen Namen",
+                   " | ".join(klagen) if klagen else "keine Klage")
+
+            # ── R16-1: die Liste kommt NUR aus dem K1-Fehlerkranz ───────────
+            #
+            # Befund P1 des sechzehnten Pruefers. Ein separater, leerer
+            # `#if defined (...)`-Block ist keine Definition und keine
+            # Benutzung - und hob den Namen trotzdem in die Erlaubnisliste.
+            separat = basis / "SeparaterBlock.h"
+            separat.write_bytes(riegelbytes + _K1B_SEPARATPROBE)
+            klagen, _, angaben, _ = k1b_riegel([separat], separat)
+            angaben_separat = angaben
+            pruefe(any("JucePlugin_Fremd" in k
+                       and "steht nicht in der K1-Makroliste" in k
+                       for k in klagen)
+                   and "JucePlugin_Fremd" not in angaben["makros"],
+                   "R16-1a: ein separater leerer `#if defined "
+                   "(JucePlugin_Fremd)`-Block ist ROT und benennt den Namen - "
+                   "die Makroliste kommt nur aus dem K1-Fehlerkranz",
+                   " | ".join(klagen) if klagen else
+                   f"keine Klage, makros {len(angaben['makros'])}, "
+                   f"abgeglichen {angaben['abgeglichen']}/{angaben['code']}")
+
+            # Der Ort zaehlt, nicht nur der Name: derselbe Block mit einem
+            # Namen, den die K1-Liste FUEHRT, ist ebenfalls ROT.
+            bekannt = basis / "SeparatBekannt.h"
+            bekannt.write_bytes(riegelbytes + _K1B_SEPARATPROBE_BEKANNT)
+            klagen, _, angaben, _ = k1b_riegel([bekannt], bekannt)
+            pruefe(any("JucePlugin_Name" in k
+                       and "ausserhalb des K1-Fehlerkranzes" in k
+                       for k in klagen),
+                   "R16-1b: auch ein BEKANNTER Name in einem eigenen "
+                   "`#if defined (...)`-Block ausserhalb des Kranzes ist ROT",
+                   " | ".join(klagen) if klagen else "keine Klage")
+
+            # Gegenprobe zum Befund: die fruehere Ableitung "aus JEDER
+            # #if/#elif-Zeile" an derselben Kopie - sie ist gruen und meldet
+            # den fremden Namen als vollstaendig abgeglichen.
+            frueher_text = ohne_kommentare(
+                separat.read_text(encoding="utf-8", errors="replace"),
+                "R16-1c")
+            frueher_zeilen = frueher_text.splitlines()
+            frueher_arten = _logische_zeilenarten(frueher_zeilen)
+            frueher: set[str] = set()
+            for nr, zeile in enumerate(frueher_zeilen):
+                if frueher_arten[nr] in ("if", "elif"):
+                    frueher.update(_K1B_ABFRAGE.findall(zeile))
+            pruefe("JucePlugin_Fremd" in frueher,
+                   "R16-1c: Gegenprobe zum Befund - die fruehere Ableitung aus "
+                   f"JEDER #if/#elif-Zeile nimmt den fremden Namen in ihre "
+                   f"{len(frueher)} Makros auf; der Kranz-Abgleich fuehrt "
+                   f"{len(angaben_separat['makros'])}",
+                   f"frueher {len(frueher)} Makros mit JucePlugin_Fremd: "
+                   f"{'JucePlugin_Fremd' in frueher}")
+
+            # Fail-closed bei Mehrdeutigkeit: ein ZWEITER Kranz mit eigenem
+            # `#error` macht die Liste unbestimmt - dann gibt es keine.
+            zweiter = basis / "ZweiKraenze.h"
+            zweiter.write_bytes(riegelbytes + b"\n#if defined (JucePlugin_Fremd)\n"
+                                + b' #error "zweiter Kranz"\n#endif\n')
+            klagen, _, angaben, _ = k1b_riegel([zweiter], zweiter)
+            pruefe(any("nicht ableitbar" in k and "muenden in einen" in k
+                       for k in klagen) and angaben["makros"] == [],
+                   "R16-1d: zwei #if-Kraenze mit eigenem #error sind ROT "
+                   "(fail-closed) - welcher die K1-Liste ist, steht nicht fest",
+                   " | ".join(klagen) if klagen else "keine Klage")
+
+            # Unpaarige Bedingungsstruktur ist ebenfalls ROT, nicht "so gut es
+            # geht": ohne verlaesslichen Stapel ist keine Zuordnung belastbar.
+            unpaarig = basis / "Unpaarig.h"
+            unpaarig.write_bytes(riegelbytes + b"\n#endif\n")
+            klagen, _, angaben, _ = k1b_riegel([unpaarig], unpaarig)
+            pruefe(any("nicht ableitbar" in k and "unpaarig" in k
+                       for k in klagen) and angaben["makros"] == [],
+                   "R16-1e: eine unpaarige Bedingungsstruktur ist ROT - der "
+                   "Kranz wird nicht geraten",
                    " | ".join(klagen) if klagen else "keine Klage")
 
             nachher = hashlib.sha256(K1B_AUSNAHME.read_bytes()).hexdigest()
@@ -3467,9 +3656,10 @@ def main() -> int:
     ausnahmetext = (
         f"Ausnahme NakamaKernRiegel.h: {in_ausnahme['code']} Token im "
         f"kommentarfreien Quelltext, alle namentlich gegen die "
-        f"{len(in_ausnahme['makros'])} Makros der K1-Liste DERSELBEN Datei "
-        f"abgeglichen und nur in Riegelkontexten ({in_ausnahme['roh']} Token "
-        f"im Rohtext inkl. Kommentaren)"
+        f"{len(in_ausnahme['makros'])} Makros des K1-FEHLERKRANZES DERSELBEN "
+        f"Datei abgeglichen und nur in diesem Kranz bzw. seiner "
+        f"#error-Meldung ({in_ausnahme['roh']} Token im Rohtext inkl. "
+        f"Kommentaren)"
         if in_ausnahme["gesehen"] else
         "NakamaKernRiegel.h war in dieser Eingabemenge nicht dabei - ueber sie "
         "sagt dieser Lauf nichts")

@@ -24794,3 +24794,11 @@ Bildschirmfoto — die Datenbank- und Scripting-Ausgaben oben sind der Beleg.
 Folge für G1: alle vier §55-Klauseln sind jetzt gemessen (§5), die fünf
 Befunde seit 24.08. geschlossen (§10). Was G1 noch fehlt, ist ein frischer
 T3-Gate-Lauf; Reihenfolge steht in `docs/beweise/G1.md` §12.
+
+---
+
+## Konvergenzentscheid des Dirigenten — 2026-08-30 (Sitzung 3e24ab41): NAK-88 ist Lücke, nicht Defekt
+
+**Stand:** `ab09f71`. Dirigentenvertrag §3.4: nach der dritten Wiederprüfung ohne PASS wird jeder offene Befund am wörtlichen Gate-Text und an der Quelle eingeordnet. Gate-Text S9 (Entwurf §53.4 „Identität kommt ausschließlich aus `plugin-identities-v1.json` über die dünnen Target-Schichten." · §53.5 Klassifikationsregeln) und der Beweis zu G1 §4.2 verlangen, dass `positionErlaubt` `post_fader_contribution` für jede Klasse ablehnt — nicht, dass Riegel 1 isoliert falsifizierbar ist. Kein Test bricht: A16 82 ok und B2 169 ok auf `d211431`; die Quelle (`state/NakamaState.cpp`, `positionErlaubt`) ist seit `d211431` unverändert (`git log d211431..ab09f71 -- eq-copilot/plugin/state` leer). Der Befund trifft die **Formulierung** der Beweisaussage (Testkommentar und `pruefe`-Text zu Punkt 7 in `tests/SondeNullTestMain.cpp`, A16-Behauptung in `tools/beweise.ps1`, Kopf-Nachtrag dieses Manifests): „Riegel 1 klassenunabhängig" sagt mehr, als Punkt 7 misst.
+
+**Einordnung: LÜCKE.** **Regel (Technik, Dirigent):** Die Aussage wird auf das Gemessene begrenzt — Punkt 7 misst, dass `positionErlaubt` `post_fader_contribution` für alle vier Klassen ablehnt (kombiniertes Ergebnis von Riegel 1 und Klassenmatrix); welche Hälfte sperrt, misst Punkt 7 nicht. Kein Produktcode wird angefasst; die Alternative (exportierte Capability-Abfrage im Kern) ist von keiner Zusage verlangt. Runde 4 ist genau diese Textbegrenzung an den drei Stellen (Prüfliste E „Behauptung ≤ Messung", Nachweis per `git grep`), Kanon auf dem committeten Stand, danach ein frischer Prüfer nach Vorlage A.

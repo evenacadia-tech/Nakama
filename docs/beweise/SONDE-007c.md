@@ -1467,3 +1467,54 @@ Nicht berührt und daher nicht abgehakt: **A** (Rückstau/Queues), **B**
 (Lebenszyklus), **D** (Bau- und Prüfriegel) und **F** (Änderungssatz) — diese
 Runde ändert ausschließlich Text in zwei Dokumenten, keinen Code, kein Schema
 und keinen Riegel.
+
+### Runde 4, Nachtrag (Worker, hat nicht geurteilt): Leerraum ausgeschlossen
+
+**Stand:** `fff9e09` (Rundenbasis `36560b0`, Kanonstand `aadca53`).
+**Befund:** Abschlussprüfer P2 (Codex high, Thread 01a05299) — der Vertrag
+sagte für `seit`, `warum`, `umgang_mit_altbestand` und `kennung_bleibt` nur
+„nichtleere Zeichenkette"; ein Wert aus reinem Leerraum wie `"   "` erfüllt das
+formal, wird von A17 aber verworfen, weil
+`tools/eq-copilot/pruefe_installer_manifest.py:520-524` `isinstance(wert, str)
+and wert.strip()` misst. Der Vertrag war damit laxer als sein Leser — genau die
+Richtung, die der Konvergenzentscheid ausschließt.
+
+**Geändert — nur `eq-copilot/schemas/installer/nakama-installer-v1.md`:**
+
+| Stelle | vorher | nachher |
+|---|---|---|
+| Feldtabelle, Zeile 87 | „(Typ je Feld in §2.3)" | „(Definition in §2.3: mindestens ein Nicht-Leerraumzeichen)" |
+| Regeltabelle §2.3, Zeile 208 | „je eine nichtleere Zeichenkette" | dieselbe Angabe plus „(Definition unten: mindestens ein Nicht-Leerraumzeichen)" |
+| §2.3 „Typ je Pflichtfeld", Einleitung | ein Satz ohne Typdefinition | nennt den Typ einmal ausdrücklich: **Zeichenkette mit mindestens einem Nicht-Leerraumzeichen** (A17: `isinstance(wert, str) and wert.strip()`), reiner Leerraum erfüllt ihn nicht |
+| Typtabelle, vier Zeilen | je „nichtleere Zeichenkette" | je „Zeichenkette, mindestens ein Nicht-Leerraumzeichen" (selbsttragend, kein Verweis nötig) |
+| Nachtrag 30.08. unter der Tabelle | endete bei der Gegenprobe | plus ein Satz, dass reiner Leerraum ausdrücklich ausgeschlossen ist |
+
+Zeile 87 und 208 behalten ihre Nummern — beide Ersetzungen sind zeilenintern,
+der einzige wachsende Block liegt darunter. Der Kommentarverweis
+„Vertrag §2.3 …, Zeile 87 und 208" in
+`tools/eq-copilot/pruefe_installer_manifest.py:469` bleibt dadurch richtig.
+Kein Versionsschritt: Feldbedeutung, Riegel und gemessenes Verhalten sind
+unverändert; der Vertrag benennt jetzt denselben Typ, den A17 seit Runde 2
+misst und den `eq-copilot/install/nakama-installer-v1.json` schon führt.
+
+**Warum kein neuer Kanonlauf:** Kein Kanon-Bein liest diese Vertragsdatei.
+
+```
+$ git grep -n "nakama-installer-v1.md" -- tools eq-copilot/plugin/tests eq-copilot/install eq-copilot/cmake
+eq-copilot/install/Install-Nakama.ps1:365:            Abbruch "Stillgelegtes Ziel '$($s.ziel_id)': Pflichtfeld '$feld' ist keine nichtleere Zeichenkette (Typ $typ). Eine Stilllegung ohne brauchbares Datum, ohne Grund oder ohne Umgang mit dem Altbestand ist keine - repariere den Eintrag in eq-copilot/install/nakama-installer-v1.json (Vertrag nakama-installer-v1.md, Abschnitt 2.3), entferne ihn nicht."
+eq-copilot/install/NakamaOrdnerHash.ps1:4:    eq-copilot/schemas/installer/nakama-installer-v1.md §2.1.
+eq-copilot/install/nakama-installer-v1.json:5:  "was_das_ist": "Das Installer-Manifest der Sondenfamilie (Entwurf §55 P1: 'Installer-Manifest fuer alle Bundles plus Broker mit Hash-/Signaturpruefung, Repair/Uninstall' - seit S9b/SONDE-007c sind es ZWEI Bundles statt drei; welche, sagt die Identitaetsdatei). Es beschreibt eine AUSLIEFERUNG - welche Artefakte zusammengehoeren, wohin sie kommen und wie ihre Echtheit geprueft wird. Der Vertrag dazu steht in eq-copilot/schemas/installer/nakama-installer-v1.md; das Installationsskript Install-Nakama.ps1 liest ausschliesslich diese Datei.",
+tools/eq-copilot/pruefe_installer_manifest.py:469:# Vertrag §2.3 (eq-copilot/schemas/installer/nakama-installer-v1.md, Zeile 87
+```
+
+Alle vier Treffer sind Kommentar- oder Meldungstext; keine Stelle öffnet,
+parst oder vergleicht die `.md`-Datei. Die betroffene Regel
+`r_stillgelegte_benannt(m, i)` misst gegen
+`eq-copilot/install/nakama-installer-v1.json` (`MANIFEST`, Zeile 87) und
+`eq-copilot/identity/plugin-identities-v1.json` (`IDENTITAET`, Zeile 89) —
+beide sind in dieser Runde nicht angefasst.
+Der Kanon **GRÜN 32/32 auf `aadca53`** gilt für alle gemessenen Beine
+unverändert; die zweite geänderte Datei ist dieses Beweismanifest selbst.
+
+**Urteil bleibt offen.** Dieser Nachtrag ist Worker-Arbeit; die Urteilsmarken
+und die Prüfstufen-Zeile im Kopf sind unberührt.

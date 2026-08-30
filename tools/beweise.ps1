@@ -343,7 +343,12 @@ $kanon = @(
     # BAUBESCHREIBUNG und laufen beim Bauen mit. A14 ist der einzige Riegel, der
     # das ARTEFAKT misst - und der einzige, der ein Stringliteral faende, das
     # kein Makro ist. Er traegt seine eigene Gegenprobe: derselbe Scanner muss
-    # die Werte im gebauten Bundle FINDEN, sonst ist sein Schweigen wertlos.
+    # im gebauten EQ-Copilot-Bundle die PFLICHT-TEILMENGE der Nadeln FINDEN -
+    # hersteller.name, main.produktname, main.plugin_code, main.component_cid
+    # und main.controller_cid -, sonst ist sein Schweigen wertlos. Die Werte
+    # der Sonden-Ziele (Suna/Probeeq) werden dort ausdruecklich NICHT erwartet,
+    # und hersteller.code sowie main.bundle gehoeren nicht zur Pflichtmenge;
+    # gegen den KERN laeuft dagegen JEDE Nadel (Runde 14, 30.08.2026).
     #
     # FRISCHE, Runde 5 (29.08.2026): A14 baut den Kern SELBST vollstaendig neu,
     # bevor es irgendetwas misst - Objekte, Tlogs und Lib des Kernverzeichnisses

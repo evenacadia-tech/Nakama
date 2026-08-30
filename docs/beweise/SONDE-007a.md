@@ -819,6 +819,12 @@ Bein, das etwas anderes misst, muss seine Frische selbst belegen.
 
 ## 4. Kanon-Lauf (roh, vom Runner erzeugt)
 
+**Stand dieses Abschnitts:** `f96c95a` - der Commit aus der Kopftabelle
+dieses Laufs. Der Block ist rohe Runnerausgabe vom 23.08.2026 und wird
+nicht nachgezogen; die Standangabe macht das fuer den Klassifizierer
+sichtbar (S8 Runde 14, 30.08.2026 - die erweiterten Inventar-Muster haben
+hier die alte A14-Behauptung und die Nadelzahl 13 als lebend gezaehlt).
+
 **Lauf:** 2026-08-23 00:09 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 19/19 Kanon-Laeufe bestanden | 4 geplante Pruefung(en) noch nicht gebaut | **Exitcode:** 0
 
 ### Kopf - woran gemessen wurde
@@ -2022,6 +2028,13 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 ---
 
 ## 5. T2 — Frischkontext-Prüfer
+
+**Stand dieses Abschnitts:** `75afae2` - der Stand, der dem Prüfer am
+23.08.2026 vorgelegt wurde (Zeile `Vorgelegt` unten). Der Abschnitt hält
+ein abgeschlossenes Prüfurteil fest und wird nicht nachgezogen; seine
+Zahlen und Zeilennummern gehören zu jenem Stand (S8 Runde 14,
+30.08.2026 - die erweiterten Inventar-Muster haben hier `13 Nadeln` als
+lebend gezählt; heute sind es 17).
 
 | Feld | Wert |
 |---|---|

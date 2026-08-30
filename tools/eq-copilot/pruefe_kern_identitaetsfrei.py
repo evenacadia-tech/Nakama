@@ -68,7 +68,14 @@ dazu, weil K1 nur Anfang und Ende einer TU sieht:
         Include-Huelle als Gegenprobe. Gescannt wird seit Runde 7 JEDE gelesene
         Datei ausser denen aus den JUCE-Modulen und den Toolchain-/SDK-Wurzeln
         - also plugin/** und alles Uebrige. Einzige Ausnahme:
-        NakamaKernRiegel.h, gemessen und benannt.
+        NakamaKernRiegel.h - und die ist seit Runde 15 keine Freistellung,
+        sondern ein ABGLEICH: jedes JucePlugin_-Token dieser Datei muss
+        namentlich in der Makroliste stehen, die der Praeprozessor in
+        DERSELBEN Datei abfragt, und in einem der Riegelkontexte
+        (`defined (...)` im `#if`-Kranz, `#ifdef`/`#ifndef`, das blosse
+        Praefix im `#error`-Fliesstext). Jeder andere Name und jeder
+        bekannte Name im falschen Kontext - auch ein `#undef` - ist ROT und
+        wird beim Namen genannt.
   Tlog-Ortsriegel - JEDE vom Compiler gelesene Datei stammt aus einer
         erlaubten, aus dem Bau ABGELEITETEN Wurzel oder ist eine namentlich
         erlaubte Systemdatei; juce_audio_plugin_client (dort liegen alle
@@ -120,6 +127,7 @@ Jeder Voraussetzungs-Rueckweg des Beins geht dafuer durch
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import io
 import json
 import os
@@ -895,6 +903,16 @@ JUCE_PATCH = WURZEL / "third_party" / "patches" / "juce-8.0.9-nakama-vst3-bridge
 JUCE_TAG = "8.0.9"
 K1B_AUSNAHME = KERNQUELLEN / "state" / "NakamaKernRiegel.h"
 _K1B_TOKEN = "JucePlugin_"
+# Die Probe des fuenfzehnten Pruefers, woertlich: definieren, benutzen,
+# wieder entfernen - unter einem Namen, den K1 nicht kennt. Sie steht hier
+# neben der Ausnahme, damit Selbsttest und Bruchtreiber DIESELBEN Bytes
+# anhaengen (Runde 15).
+_K1B_FREMDPROBE = (b"\n#define JucePlugin_Fremd 1\n"
+                   b"#if JucePlugin_Fremd\n#endif\n"
+                   b"#undef JucePlugin_Fremd\n")
+# Dieselbe Frage in der Kurzform: eine BENUTZUNG darf keinen Namen
+# legitimieren, sonst traegt sich jedes Makro selbst in die Liste ein.
+_K1B_KURZPROBE = b"\n#ifdef JucePlugin_Fremd\n#endif\n"
 _WINKITS_SCHLUESSEL = os.sep.join(
     ["SOFTWARE", "Microsoft", "Windows Kits", "Installed Roots"])
 
@@ -1549,6 +1567,142 @@ def k1b_eingaben_aus_tlog(gelesen: list[str],
              if not any(_unter(_normpfad(p), w) for w in wurzeln)], [])
 
 
+# Die Ausnahme fuer NakamaKernRiegel.h ist seit Runde 15 (Befund P1 des
+# fuenfzehnten Pruefers) KEINE Freistellung mehr, sondern ein ABGLEICH.
+#
+# Vorher zaehlte der Zweig nur `roh.count("JucePlugin_")` und uebersprang die
+# Datei. Eine Zaehlung sagt nichts ueber Namen: ein zusaetzlicher, unbekannter
+# `#define JucePlugin_Fremd` / benutzen / `#undef` in genau dieser Datei blieb
+# gruen. K1 kennt den Namen nicht (sein `#if defined`-Kranz ist namentlich),
+# K2 sieht keine interne Definition, und K3 kann bei reiner
+# Praeprozessor-Nutzung leer bleiben - gemessen als Reproduktion @ 0d5b7d5.
+#
+# EINE QUELLE, ZWEI VERBRAUCHER: die Makroliste, gegen die abgeglichen wird,
+# ist genau die, die der Praeprozessor in dieser Datei abfragt. Sie wird aus
+# den `defined (JucePlugin_*)`-Abfragen der `#if`/`#elif`-Zeilen derselben
+# Datei gelesen - nicht im Skript nachgepflegt. Damit koennen K1 und K1b nicht
+# auseinanderlaufen.
+#
+# ERLAUBTE KONTEXTE (Riegelmuster dieser Datei):
+#   1. `defined (Name)` in einer `#if`/`#elif`-Zeile - die Abfrage selbst.
+#      NUR diese Zeilen bilden die Liste; die Kurzform traegt sich NICHT
+#      selbst ein, sonst waere jeder Name durch seine eigene Benutzung
+#      legitimiert.
+#   2. `#ifdef Name` / `#ifndef Name` - dieselbe Abfrage in kurzer Form, aber
+#      nur fuer einen Namen, den der `#if`-Kranz schon fuehrt.
+#   3. das blosse Praefix `JucePlugin_` ohne folgendes Namenszeichen in einer
+#      `#error`-Zeile - der Fliesstext der Riegelmeldung ("JucePlugin_*").
+# ROT ist alles andere, NAMENTLICH: ein unbekannter Name (steht nicht in der
+# K1-Liste) und jeder bekannte Name im falschen Kontext. `#define` und `#undef`
+# sind auch fuer bekannte Namen ROT - ein `#undef JucePlugin_Name` vor dem
+# Kranz wuerde K1 fuer genau dieses Makro still entwaffnen.
+#
+# Kommentare werden vorher entfernt, wie bei jeder anderen Datei auch: was in
+# einem Kommentar steht, ist fuer den Uebersetzer kein Token. Die rohe Zahl
+# bleibt trotzdem in der Ausgabe stehen - sie ist Diagnose, kein Urteil.
+
+_K1B_NAME = re.compile(r"JucePlugin_[A-Za-z0-9_]*")
+_K1B_ABFRAGE = re.compile(r"\bdefined\s*\(\s*(JucePlugin_[A-Za-z0-9_]+)\s*\)")
+_K1B_KURZABFRAGE = re.compile(r"^#\s*ifn?def\s+(JucePlugin_[A-Za-z0-9_]+)\b")
+_K1B_DIREKTIVE = re.compile(r"^#\s*([A-Za-z_]+)")
+
+
+def _logische_zeilenarten(zeilen: list[str]) -> list[str]:
+    """Direktivenart je PHYSISCHER Zeile, Backslash-Fortsetzungen mitgezaehlt.
+
+    Der Riegelkranz in NakamaKernRiegel.h ist EINE logische `#if`-Zeile ueber
+    46 physische; die `#error`-Meldung ebenso ueber sechs. Ohne diese Abbildung
+    saehe eine Zeilenweise-Pruefung `|| defined (...)` als gewoehnlichen Text.
+    Rueckgabe ist 0-basiert und so lang wie `zeilen`; "" heisst: keine
+    Direktive.
+    """
+    arten = [""] * len(zeilen)
+    i = 0
+    while i < len(zeilen):
+        start = i
+        while i < len(zeilen) and zeilen[i].rstrip().endswith("\\"):
+            i += 1
+        treffer = _K1B_DIREKTIVE.match(zeilen[start].lstrip())
+        art = treffer.group(1) if treffer else ""
+        for n in range(start, min(i, len(zeilen) - 1) + 1):
+            arten[n] = art
+        i += 1
+    return arten
+
+
+def k1b_ausnahme_abgleich(datei: pathlib.Path,
+                          roh: str) -> tuple[list[str], dict]:
+    """Gleicht JEDES JucePlugin_-Token der Riegeldatei namentlich ab.
+
+    Rueckgabe: (Klagen, Angaben). `Angaben` traegt `roh` (Token im Rohtext,
+    Diagnose), `code` (Token im kommentarfreien Quelltext), `makros` (die aus
+    DERSELBEN Datei gelesene K1-Liste) und `abgeglichen` (Vorkommen, die
+    namentlich und im erlaubten Kontext standen). Fail-closed: unlesbarer
+    Quelltext und eine nicht ableitbare Makroliste sind ROT.
+    """
+    kurz = _kurz(datei)
+    angaben = {"roh": roh.count(_K1B_TOKEN), "code": 0,
+               "makros": [], "abgeglichen": 0}
+    try:
+        text = ohne_kommentare(roh, kurz)
+    except RuntimeError as exc:
+        return [str(exc)], angaben
+
+    zeilen = text.splitlines()
+    arten = _logische_zeilenarten(zeilen)
+    angaben["code"] = text.count(_K1B_TOKEN)
+
+    # Schritt 1: die Liste, die K1 in DIESER Datei abfragt.
+    makros: set[str] = set()
+    for nr, zeile in enumerate(zeilen):
+        if arten[nr] in ("if", "elif"):
+            makros.update(_K1B_ABFRAGE.findall(zeile))
+    angaben["makros"] = sorted(makros)
+    if not makros:
+        return ([f"{kurz}: die K1-Makroliste ist aus dieser Datei nicht "
+                 f"ableitbar - ohne sie ist die K1b-Ausnahme kein Abgleich"],
+                angaben)
+
+    # Schritt 2: jedes Vorkommen gegen Liste UND Kontext.
+    klagen: list[str] = []
+    for nr, zeile in enumerate(zeilen):
+        if _K1B_TOKEN not in zeile:
+            continue
+        art = arten[nr]
+        erlaubt = {t.span(1) for t in _K1B_ABFRAGE.finditer(zeile)
+                   if art in ("if", "elif") and t.group(1) in makros}
+        kurzform = _K1B_KURZABFRAGE.match(zeile.lstrip())
+        if kurzform and kurzform.group(1) in makros:
+            versatz = len(zeile) - len(zeile.lstrip())
+            erlaubt.add((kurzform.start(1) + versatz,
+                         kurzform.end(1) + versatz))
+        for treffer in _K1B_NAME.finditer(zeile):
+            name = treffer.group(0)
+            if treffer.span() in erlaubt:
+                angaben["abgeglichen"] += 1
+                continue
+            if name == _K1B_TOKEN and art == "error":
+                angaben["abgeglichen"] += 1     # Fliesstext der Riegelmeldung
+                continue
+            wo = f"#{art}" if art else "Quelltext ausserhalb einer Direktive"
+            grund = ("steht nicht in der K1-Makroliste dieser Datei"
+                     if name not in makros
+                     else f"steht in der K1-Makroliste, aber in {wo}")
+            klagen.append(f"{kurz}: Zeile {nr + 1}: {name!r} {grund} - die "
+                          f"K1b-Ausnahme ist ein Abgleich, keine Freistellung")
+
+    # Die eigene Rechnung muss aufgehen: JEDES Vorkommen des Tokens ist
+    # entweder abgeglichen oder beklagt. Geht sie nicht auf, hat der Abgleich
+    # etwas uebersehen (etwa ineinander geschachtelte Praefixe) - dann ist die
+    # Ausnahme ROT, nicht still gruen.
+    if not klagen and angaben["abgeglichen"] != angaben["code"]:
+        klagen.append(f"{kurz}: {angaben['code']} JucePlugin_-Token im "
+                      f"kommentarfreien Quelltext, aber nur "
+                      f"{angaben['abgeglichen']} einzeln abgeglichen - der "
+                      f"Abgleich deckt die Datei nicht vollstaendig ab")
+    return klagen, angaben
+
+
 def k1b_riegel(dateien: list[pathlib.Path],
                ausnahme: pathlib.Path,
                roh_scannen: dict[str, str] | None = None,
@@ -1559,16 +1713,20 @@ def k1b_riegel(dateien: list[pathlib.Path],
     Pfad -> Anzeigename): Binaerstoff, der roh nach dem Token durchsucht wird,
     statt durch den C++-Kommentarparser zu laufen.
 
-    Rueckgabe: (Klagen, geprueft, Treffer in der benannten Ausnahme, davon roh
+    Rueckgabe: (Klagen, geprueft, Angaben zur benannten Ausnahme, davon roh
     durchsucht). Der letzte Wert zaehlt, was WIRKLICH roh gemessen wurde - die
     Laenge der Erlaubnisliste waere eine groessere Zahl als die Messung
-    (Prueflistenregel E).
+    (Prueflistenregel E). Die Ausnahme wird seit Runde 15 nicht mehr gezaehlt
+    und uebersprungen, sondern durch `k1b_ausnahme_abgleich` namentlich gegen
+    die K1-Makroliste derselben Datei geprueft; `gesehen` sagt, ob sie in
+    dieser Eingabemenge ueberhaupt vorkam.
     """
     roh_scannen = roh_scannen or {}
     klagen: list[str] = []
     ausnahme_norm = _normpfad(ausnahme)
     geprueft = 0
-    in_ausnahme = 0
+    in_ausnahme = {"gesehen": False, "roh": 0, "code": 0,
+                   "makros": [], "abgeglichen": 0}
     roh_geprueft = 0
     for datei in sorted(set(dateien)):
         if _normpfad(datei) in roh_scannen:
@@ -1590,7 +1748,9 @@ def k1b_riegel(dateien: list[pathlib.Path],
             klagen.append(f"{_kurz(datei)}: nicht lesbar ({exc})")
             continue
         if _normpfad(datei) == ausnahme_norm:
-            in_ausnahme = roh.count(_K1B_TOKEN)
+            ausnahmeklagen, angaben = k1b_ausnahme_abgleich(datei, roh)
+            klagen.extend(ausnahmeklagen)
+            in_ausnahme = {"gesehen": True, **angaben}
             continue
         geprueft += 1
         try:
@@ -2145,9 +2305,14 @@ def _selbsttest_runde5() -> None:
             "/* auch im Blockkommentar steht JucePlugin_IsSynth nur als Wort */\n"
             "inline int wert() { return 1; }\n", encoding="utf-8")
         klagen, geprueft, treffer, _ = k1b_riegel([sauber, ausnahme], ausnahme)
-        pruefe(klagen == [] and geprueft == 1 and treffer > 0,
-               "R5-6a: Kommentare mit JucePlugin_ bleiben gruen, die Ausnahme wird gezaehlt",
-               f"Treffer in der Ausnahme: {treffer}" + (" | " + " | ".join(klagen) if klagen else ""))
+        pruefe(klagen == [] and geprueft == 1 and treffer["gesehen"]
+               and treffer["makros"] == ["JucePlugin_Name"]
+               and treffer["abgeglichen"] == treffer["code"] == 1,
+               "R5-6a: Kommentare mit JucePlugin_ bleiben gruen, die Ausnahme "
+               "wird namentlich abgeglichen",
+               f"Ausnahme: {treffer['code']} Token, {treffer['abgeglichen']} "
+               f"abgeglichen, Makroliste {treffer['makros']}"
+               + (" | " + " | ".join(klagen) if klagen else ""))
 
         offen = basis / "Offen.h"
         offen.write_text("#define JucePlugin_Name \"X\"\n", encoding="utf-8")
@@ -2172,6 +2337,101 @@ def _selbsttest_runde5() -> None:
         pruefe(any("nicht abgeschlossener Blockkommentar" in k for k in klagen),
                "R5-7b: unlesbarer Quelltext ist ROT, nicht uebersprungen",
                " | ".join(klagen) if klagen else "keine Klage")
+
+    # ── R15-1: die K1b-AUSNAHME ist ein Abgleich, keine Freistellung ─────────
+    #
+    # Befund P1 des fuenfzehnten Pruefers (Runde 15). Gearbeitet wird auf
+    # KOPIEN der echten Riegeldatei in einem Temp-Verzeichnis; die Datei im
+    # Baum wird nie angefasst - R15-1f haelt ihren sha256 vorher und nachher
+    # dagegen.
+    with tempfile.TemporaryDirectory() as roh:
+        basis = pathlib.Path(roh)
+        try:
+            riegelbytes = K1B_AUSNAHME.read_bytes()
+        except OSError as exc:
+            riegelbytes = None
+            pruefe(False, "R15-1: die Riegeldatei ist lesbar", str(exc))
+        if riegelbytes is not None:
+            vorher = hashlib.sha256(riegelbytes).hexdigest()
+
+            echt = basis / "Echt.h"
+            echt.write_bytes(riegelbytes)
+            klagen, _, angaben, _ = k1b_riegel([echt], echt)
+            pruefe(klagen == [] and angaben["gesehen"]
+                   and len(angaben["makros"]) > 10
+                   and angaben["abgeglichen"] == angaben["code"] > 0,
+                   f"R15-1a: die echte Riegeldatei besteht den Abgleich - "
+                   f"{angaben['code']} Token im kommentarfreien Quelltext, "
+                   f"alle gegen die {len(angaben['makros'])} Makros der "
+                   f"K1-Liste DERSELBEN Datei",
+                   " | ".join(klagen) if klagen else
+                   f"roh {angaben['roh']}, code {angaben['code']}, "
+                   f"abgeglichen {angaben['abgeglichen']}")
+
+            # Genau der Weg aus dem Befund: definieren, benutzen, entfernen.
+            fremd = basis / "Fremd.h"
+            fremd.write_bytes(riegelbytes + _K1B_FREMDPROBE)
+            klagen, _, angaben, _ = k1b_riegel([fremd], fremd)
+            pruefe(len(klagen) >= 3
+                   and all("JucePlugin_Fremd" in k for k in klagen)
+                   and all("steht nicht in der K1-Makroliste" in k
+                           for k in klagen),
+                   "R15-1b: ein unbekanntes JucePlugin_Fremd in der Kopie der "
+                   "Riegeldatei ist ROT - namentlich, an jeder Fundstelle",
+                   " | ".join(klagen) if klagen else "keine Klage")
+
+            # Ein BEKANNTER Name im falschen Kontext: `#undef` vor dem Kranz
+            # wuerde K1 fuer genau dieses Makro still entwaffnen.
+            entwaffnet = basis / "Entwaffnet.h"
+            entwaffnet.write_bytes(b"#undef JucePlugin_Name\n" + riegelbytes)
+            klagen, _, _, _ = k1b_riegel([entwaffnet], entwaffnet)
+            pruefe(any("JucePlugin_Name" in k and "#undef" in k
+                       for k in klagen),
+                   "R15-1c: ein BEKANNTER Name im falschen Kontext (#undef vor "
+                   "dem Kranz) ist ROT - die Liste allein genuegt nicht",
+                   " | ".join(klagen) if klagen else "keine Klage")
+
+            # Fail-closed: ohne ableitbare Makroliste gibt es keinen Abgleich.
+            ohne = basis / "OhneKranz.h"
+            ohne.write_text("/* nur ein Kommentar mit JucePlugin_Name */\n",
+                            encoding="utf-8")
+            klagen, _, angaben, _ = k1b_riegel([ohne], ohne)
+            pruefe(any("K1-Makroliste" in k and "nicht ableitbar" in k
+                       for k in klagen) and angaben["makros"] == [],
+                   "R15-1d: ohne ableitbare K1-Makroliste ist die Ausnahme ROT "
+                   "(fail-closed), nicht still gruen",
+                   " | ".join(klagen) if klagen else "keine Klage")
+
+            # Die stehende Gegenprobe zum Befund: die fruehere ZAEHLUNG an
+            # derselben Kopie. Sie waechst nur, klagt nie - erst der Abgleich
+            # nennt den Namen.
+            gezaehlt = fremd.read_text(encoding="utf-8",
+                                       errors="replace").count(_K1B_TOKEN)
+            abgleichklagen = k1b_riegel([fremd], fremd)[0]
+            pruefe(gezaehlt > 0 and abgleichklagen != [],
+                   "R15-1e: Gegenprobe zum Befund - die fruehere Zaehlung "
+                   f"liefert an derselben Kopie {gezaehlt} Treffer und keine "
+                   f"einzige Klage, der Abgleich {len(abgleichklagen)}",
+                   f"Zaehlung {gezaehlt} Treffer / 0 Klagen, Abgleich "
+                   f"{len(abgleichklagen)} Klagen")
+
+            # Die Kurzform traegt sich nicht selbst in die Liste ein.
+            kurz_fremd = basis / "KurzFremd.h"
+            kurz_fremd.write_bytes(riegelbytes + _K1B_KURZPROBE)
+            klagen, _, angaben, _ = k1b_riegel([kurz_fremd], kurz_fremd)
+            pruefe(any("JucePlugin_Fremd" in k
+                       and "steht nicht in der K1-Makroliste" in k
+                       for k in klagen)
+                   and "JucePlugin_Fremd" not in angaben["makros"],
+                   "R15-1f: auch die Kurzform `#ifdef JucePlugin_Fremd` ist "
+                   "ROT - eine Benutzung legitimiert keinen Namen",
+                   " | ".join(klagen) if klagen else "keine Klage")
+
+            nachher = hashlib.sha256(K1B_AUSNAHME.read_bytes()).hexdigest()
+            pruefe(vorher == nachher,
+                   "R15-1g: die Riegeldatei im Baum ist unveraendert - "
+                   f"sha256 {vorher[:16]}",
+                   f"{vorher[:16]} -> {nachher[:16]}")
 
     # ── R5-8/R5-9/R5-13: der Tlog-Ortsriegel ────────────────────────────────
     with tempfile.TemporaryDirectory() as roh:
@@ -3197,12 +3457,20 @@ def main() -> int:
     k1b_klagen, k1b_geprueft, in_ausnahme, k1b_roh = k1b_riegel(
         eingaben, K1B_AUSNAHME, systemdateien)
     k1b_klagen = mengenklagen + k1b_klagen
+    ausnahmetext = (
+        f"Ausnahme NakamaKernRiegel.h: {in_ausnahme['code']} Token im "
+        f"kommentarfreien Quelltext, alle namentlich gegen die "
+        f"{len(in_ausnahme['makros'])} Makros der K1-Liste DERSELBEN Datei "
+        f"abgeglichen und nur in Riegelkontexten ({in_ausnahme['roh']} Token "
+        f"im Rohtext inkl. Kommentaren)"
+        if in_ausnahme["gesehen"] else
+        "NakamaKernRiegel.h war in dieser Eingabemenge nicht dabei - ueber sie "
+        "sagt dieser Lauf nichts")
     pruefe(bool(eingaben) and not k1b_klagen,
            f"keine der {k1b_geprueft} Compiler-Eingaben ausserhalb der JUCE-Module "
            f"und der Toolchain-/SDK-Wurzeln traegt ein JucePlugin_-Token (Tlog "
            f"{len(set(aus_tlog))}, Huelle {len(set(huelle))}, davon {k1b_roh} "
-           f"benannte Systemdatei(en) roh durchsucht; Ausnahme "
-           f"NakamaKernRiegel.h mit {in_ausnahme} Treffern)",
+           f"benannte Systemdatei(en) roh durchsucht; {ausnahmetext})",
            " | ".join(k1b_klagen[:6]) if k1b_klagen else
            ("keine Compiler-Eingabe gefunden" if not eingaben else ""))
 

@@ -74,7 +74,7 @@ mitgeführt.
 | Registerzeilen `docs/offene-punkte.md` (`NAK-*`, alle drei Tabellen) | **90** | `grep -c '^\| NAK-'` |
 | Höchste vergebene Registernummer vor diesem Ticket | **NAK-104** | `grep -o 'NAK-[0-9]+' \| sort -n \| tail -1` |
 | Planschritte in `docs/plan/plan.json` | **38** in **8** Phasen | `sum(len(p["schritte"]))` |
-| Geprüfte Herstellerprodukte mit abgerufener Herstellerdoku | **7** | §5, Quellenliste §2.2 |
+| Geprüfte Herstellerprodukte mit abgerufener Herstellerdoku | **8** von 8 Herstellern (Pro-Q 4, Neutron 5, smart:EQ 4, MMultiAnalyzer, SPAN Plus, Trackspacer, Smooth Operator Pro, Gullfoss) | §5, Quellenliste §2.2 |
 | **Befunde: Defekt im Plan** | **6** | §4 |
 | **Befunde: Lücke** | **4** | §4 |
 | **Befunde: Härtung** | **3** | §4 |
@@ -111,8 +111,10 @@ mitgeführt.
 
 ### 2.2 Herstellerquellen für den Funktionsvergleich
 
-Alle am **2026-08-30** abgerufen. Nur Herstellerseiten und Herstellerhandbücher;
-Händler-, Test- und Forenseiten sind nicht als Beleg verwendet.
+**Alle zwölf Seiten sind am 2026-08-30 einzeln abgerufen worden**, nicht nur aus einer
+Trefferliste zitiert; H11 liegt als PDF vor und ist mit `pdftotext` in Text gewandelt
+worden. Nur Herstellerseiten, Herstellerhandbücher und die Formatspezifikation;
+Händler-, Test- und Forenseiten sind **nicht** als Beleg verwendet.
 
 | # | Hersteller / Produkt | URL | Wofür belegt |
 |---|---|---|---|
@@ -126,7 +128,7 @@ Händler-, Test- und Forenseiten sind nicht als Beleg verwendet.
 | H8 | Voxengo SPAN Plus — Features | https://www.voxengo.com/product/spanplus/features/ | Spektrum-Export an andere Instanzen, Kanalgruppen, Korrelation, EBU R128 LUFS, Preset-Manager, Undo/Redo, A/B |
 | H9 | Wavesfactory Trackspacer | https://www.wavesfactory.com/audio-plugins/trackspacer/ | 32-Band-Sidechain-Entmaskierung, L/R und M/S, Attack/Release, Low-/High-Cut des Wirkbereichs |
 | H10 | Baby Audio Smooth Operator Pro | https://babyaud.io/smooth-operator-plugin | Spektrale Resonanzdämpfung, FOCUS (Detail/Isolation), Knoten mit eigenem Dynamikprofil, SC-Sektion — die vom User genannte zweite Referenz |
-| H11 | Soundtheory Gullfoss — Operation Manual | https://www.soundtheory.com/static/Gullfoss%20Operation%20Manual.pdf | Recover/Tame/Bias/Brighten/Boost als vollautomatischer, wahrnehmungsmodellbasierter Live-EQ |
+| H11 | Soundtheory Gullfoss — Operation Manual (PDF, 21 Seiten) | https://www.soundtheory.com/static/Gullfoss%20Operation%20Manual.pdf | Recover/Tame/Bias/Brighten/Boost als vollautomatischer, wahrnehmungsmodellbasierter EQ; Kurve „updated internally more than 300 times per second"; Lautheitskompensation eingebaut („preserves the original dynamics and perceived loudness … without being mislead by a slightly different perceived loudness"); Frequenzbereichs-Begrenzer im Graph; Sidechain-Eingang seit 1.9.0 |
 | H12 | Steinberg VST 3 — `ChannelContext::IInfoListener` | https://steinbergmedia.github.io/vst3_doc/vstinterfaces/classSteinberg_1_1Vst_1_1ChannelContext_1_1IInfoListener.html | Der Weg, über den ein Host Spurname, Farbe und Index an ein Plugin gibt — Grundlage von Befund D-2 |
 
 **Ehrliche Grenze der Recherche:** H1–H11 belegen, **dass** eine Funktion
@@ -535,6 +537,7 @@ Legende **betroffen**: `V` = v3-Nachrichtenvertrag · `S` = State/Parameter ·
 | **Kollisions-/Maskierungsanzeige direkt im EQ-Graph** | Pro-Q 4 „Show Collisions … red glow" (H2); Neutron 5 Masking Meter (H5); MMultiAnalyzer Kollisionsdetektor (H7) | **löst anders und später** — Maskierung ist eine Ursachenklasse des Advisors (Entwurf §8) und wird als Text-Befund gezeigt; die vollständige Matrix ist Roadmap 3 (§47.1), also **nach R4** | **O** (Anzeige), V (nur wenn Live-Paarwerte in den Graph sollen) | S23–25 / S31b | **Fragenkarte U16** |
 | Automatische Entmaskierung über Sidechain | Trackspacer 32 Bänder (H9); Neutron Unmask (H5); smart:EQ 4 Group-Modus (H6) | **hat, geplant** — Kernfunktion 17, P8 (`SONDE-018`), aber ausdrücklich **kein** globaler Auto-Spectral-Ducker (§17) | — | S32–33 | Freigabe hängt an `aux_priority_sidechain`, heute `unsupported` bis Termin A2 (U11) |
 | Vollautomatischer wahrnehmungsbasierter Ausgleich | Gullfoss Recover/Tame (H11); smart:EQ smart:filter (H6) | **bewusst nicht** — CLAUDE.md: „Der Advisor schlägt nur vor"; Grundgesetz „nichts Ungefragtes" | — | — | kein Fund; ausdrücklicher Produktentscheid |
+| Lautheitskompensation, damit „lauter" nicht als „besser" gehört wird | Gullfoss: die Kurve kombiniert Anheben und Absenken und „preserves the original dynamics and perceived loudness" (H11); Pro-Q: Auto Gain als Schätzung aus der Kurve (H4) | **entschieden 24.08., nicht im Plan** — und im Vergleich der schwächere Weg: Nakamas Auto-Gain ist wie Pro-Q eine Funktion der Kurve, Gullfoss kompensiert durchgehend | S, O | S26–28 | **D-3 (a)**; Pro-Q ist das vom User genannte Vorbild, Gullfoss nur Vergleichspunkt |
 | Resonanzdämpfung mit einstellbarer Auflösung | Smooth Operator Pro FOCUS/Detail/Isolation (H10) | **teilweise** — dynamische Bänder je Slot, aber acht Slots statt Tausenden Knoten; der User nennt den Resonanzfokus selbst als „spätere Ausbaustufe" (Interview 23.08., Annahmen) | S, O | nach R4 | kein neuer Fund |
 
 ### 5.3 EQ-Grundausstattung
@@ -656,7 +659,7 @@ ausschließlich `docs/**`).
 |---|---|
 | „Jede Behauptung sagt nicht mehr, als der Test misst" | Jeder Befund in §4 nennt Datei und Zeile und wurde an der Quelle gelesen, nicht aus einem Manifest abgeschrieben. Wo ich eine Negativaussage mache („es gibt keinen Datenweg"), steht der `grep`-Befehl mit seiner Trefferzahl daneben (D-2, L-3). |
 | „Zahlen im Manifest sind gemessen, nicht abgeschrieben" | §1.3 nennt zu jeder Zahl den Befehl, mit dem sie gezählt wurde. Die Beinanzahl des Kanons wird hier **nicht** behauptet — der Kanon läuft nicht (§8). |
-| „Positionen im lebenden Kopf stehen als Symbol/Anker" | Fundstellen sind Datei plus Zeilennummer zum Stand `6f40eed`; wo eine Zeile wandern kann (`plan.json`-Texte), steht zusätzlich die Schritt-ID als Anker. |
+| „Positionen im lebenden Kopf stehen als Symbol/Anker" | Fundstellen sind Datei plus Zeilennummer **zum Stand `6f40eed`**; wo eine Zeile wandern kann (`plan.json`-Texte), steht zusätzlich die Schritt-ID als Anker. **Gemessener Versatz nach diesem Änderungssatz:** Erratum (q) fügt 25 Zeilen oberhalb von §0 in den Entwurf ein, alle zitierten Entwurfszeilen unterhalb des Errata-Blocks liegen auf `1a17221` deshalb **+25** (z. B. §44.2 `:2660` → `:2685`, §55 `:3827` → `:3852`). Abschnittsnummern (§30.1, §44.2, §55) sind der stabile Anker. |
 | „Der lebende Kopf wird beim Abschluss nachgezogen" | Dieses Manifest hat nur einen Kopf und keinen Verlauf — es ist die erste Runde. |
 | „Jede neue Prüfung wurde einmal absichtlich gebrochen" | **Greift hier nicht:** dieses Ticket baut keine Prüfung. Der einzige ausführbare Riegel im Änderungssatz ist die JSON-Gültigkeit von `plan.json`/`fragen.json`; sie ist in §8, Lauf C, nach dem Edit gefahren, und jedes Edit-Skript hat vor dem Schreiben zusätzlich den bytegleichen JSON-Roundtrip der Ausgangsdatei geprüft. |
 | „Geänderte Zusage — drei Stellen" | Zutreffend und ausgeführt: **D-3 (a)** und **D-4** ändern je eine Zusage; beide sind in `plan.json` **und** `bauaufteilung-sonden.md` nachgezogen (E-6/E-7, E-9/E-10), die dritte Stelle (`tools/beweise.ps1`-Runnerkopf) ist nicht betroffen, weil keine Runner-Behauptung berührt wird. |

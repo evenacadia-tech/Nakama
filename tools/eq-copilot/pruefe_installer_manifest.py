@@ -1842,7 +1842,17 @@ def datei_hash(pfad: pathlib.Path) -> str:
     return h.hexdigest().upper()
 
 
-def hashen(manifest: dict) -> int:
+def hashen(manifest: dict, ziel: pathlib.Path | None = None) -> int:
+    """Der mutierende Release-Zweig `--hashen`.
+
+    `ziel` ist das Schreibziel; ohne Angabe das Manifest im Repo. Der Byte-
+    Kipp-Fuzz [3c] setzt hier eine KOPIE unter %TEMP% ein: `--hashen` ist der
+    einzige Zweig, der das gelesene Manifest weiterverarbeitet und schreibt,
+    er gehoert deshalb in die Deckung - aber niemals mit Schreibwirkung ins
+    Repo (NAK-94 Nacharbeit 11). Vorher stand er als Handausnahme in
+    FUZZ_OHNE_JSON und war ungemessen.
+    """
+    ziel = ziel or MANIFEST
     print("[hashen] Artefakte gegen den gebauten Stand festschreiben")
     alle_da = True
     for a in manifest["artefakte"]:
@@ -1883,8 +1893,12 @@ def hashen(manifest: dict) -> int:
         )
         return 3
     manifest["hashes_erzeugt_am"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    MANIFEST.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"\ngeschrieben: {MANIFEST.relative_to(WURZEL)}")
+    ziel.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    try:
+        wo = ziel.relative_to(WURZEL).as_posix()
+    except ValueError:
+        wo = str(ziel)
+    print(f"\ngeschrieben: {wo}")
     return 0
 
 
@@ -2298,6 +2312,18 @@ def _dateien_ersetzt(ersatz: dict):
         pathlib.Path.read_bytes, pathlib.Path.read_text = alt_bytes, alt_text
 
 
+def _fuzz_hashziel() -> pathlib.Path:
+    """Das Schreibziel des gefuzzten `--hashen`-Zweigs: eine Manifest-KOPIE
+    unter %TEMP%, NIE das Manifest im Repo.
+
+    Fester Name statt `mkdtemp`: der Fuzz faehrt den Zweig zehntausendfach und
+    darf dabei nicht zehntausend Verzeichnisse hinterlassen. Die Datei wird
+    jedes Mal ueberschrieben; ihr Inhalt ist Wegwerfstoff, gemessen wird nur,
+    dass der Zweig kontrolliert bleibt.
+    """
+    return pathlib.Path(tempfile.gettempdir()) / "nakama-nak94-fuzz-manifest.json"
+
+
 def _fuzz_verbraucher() -> None:
     """Lesen, Strukturpruefung und JEDER Block, der eine gelesene Datei nutzt.
 
@@ -2306,6 +2332,12 @@ def _fuzz_verbraucher() -> None:
     Ausnahmebehandlung in [2] ist woertlich uebernommen: dort zaehlt eine
     stolpernde Regel als Fund, und der Fuzz darf das nicht strenger sehen als
     der echte Lauf.
+
+    Der `--hashen`-Zweig ist seit NAK-94 Nacharbeit 11 dabei (Befund des
+    elften Pruefers). Er ist im echten Lauf ein ALTERNATIVER Ausgang, laeuft
+    hier also zuletzt und auf einer tiefen Kopie - `hashen()` traegt sha256
+    und Zeitstempel in das Objekt ein, und die Blocke davor sollen den
+    unveraenderten Stand sehen. Geschrieben wird nach %TEMP%.
     """
     manifest = _lies_geprueft(MANIFEST, _installermanifest_struktur)
     identitaet = _lies_geprueft(IDENTITAET, _identitaet_struktur)
@@ -2322,19 +2354,25 @@ def _fuzz_verbraucher() -> None:
     gegenproben_nacharbeit(manifest)
     auslieferungsstand(manifest, hart=False)
     installierter_stand(manifest)
+    hashen(copy.deepcopy(manifest), _fuzz_hashziel())
 
 
 # Bloecke, die `_lauf()` faehrt und die `_fuzz_verbraucher()` NICHT faehrt,
 # weil sie keine der gelesenen JSON-Dateien anfassen. Jede ANDERE Abweichung
 # ist ROT: sonst waechst `_lauf` still um einen Leser, den [3c] nie sieht -
 # und die Zusage "jede gelesene JSON-Datei" waere wieder eine Behauptung.
+#
+# `hashen` stand hier bis NAK-94 Nacharbeit 11 als Handausnahme ("nur unter
+# --hashen, und der Pfad endet vor [3c]"). Genau daran hing die falsche
+# Vollstaendigkeitszusage von [3c/0]: der Zweig verarbeitet das gelesene
+# Manifest sehr wohl. Er ist jetzt gefuzzt - mit Schreibziel unter %TEMP% -
+# und steht deshalb NICHT mehr in dieser Liste.
 FUZZ_OHNE_JSON = {
     "print",             # Ausgabe
     "pruefe",            # Urteil, kein Leser
     "len", "max", "str",  # eingebaut
     "byte_kipp_fuzz",    # der Fuzz selbst - er darf sich nicht selbst fahren
     "kreuzprobe",        # hasht Ordner und faehrt PowerShell, liest kein JSON
-    "hashen",            # nur unter --hashen, und der Pfad endet vor [3c]
     "_stillgelegte",     # arbeitet auf dem schon gelesenen Objekt
 }
 
@@ -2367,6 +2405,11 @@ def _fuzz_einmal(ersatz: dict) -> tuple[str, str]:
 
     Klassen: `strukturhalt`, `gegenprobe_unmoeglich`, `befund`, `gruen` und
     `unkontrolliert` - die letzte ist der Bruch der Zusage.
+
+    Die Klassifikation kommt seit NAK-94 Nacharbeit 11 aus `_geschuetzt()` -
+    DERSELBEN Funktion, die `main()` um den ganzen Lauf legt. Hier steht keine
+    zweite Ausnahmebehandlung mehr; wird die gemeinsame auf Durchreichen
+    gestellt, faellt [3c] beim ersten Strukturhalt aus.
     """
     global ok
     merk_ok, merk_fehler = ok, list(fehler)
@@ -2375,14 +2418,10 @@ def _fuzz_einmal(ersatz: dict) -> tuple[str, str]:
         with contextlib.redirect_stdout(io.StringIO()), \
                 contextlib.redirect_stderr(io.StringIO()), \
                 _dateien_ersetzt(ersatz):
-            _fuzz_verbraucher()
+            klasse, text, _ = _geschuetzt(_fuzz_verbraucher)
+        if klasse != "gruen":
+            return klasse, text
         return ("befund", "; ".join(fehler[:2])) if fehler else ("gruen", "")
-    except Strukturhalt as halt:
-        return "strukturhalt", str(halt)
-    except SystemExit as aus:
-        return "gegenprobe_unmoeglich", str(aus)
-    except Exception as unerwartet:
-        return "unkontrolliert", _abbruch_klartext(unerwartet)
     finally:
         fehler.clear()
         fehler.extend(merk_fehler)
@@ -2411,6 +2450,12 @@ def byte_kipp_fuzz(schritt: int) -> None:
            "JSON-Datei anfassen kann - die uebrigen stehen namentlich in "
            f"FUZZ_OHNE_JSON ({len(FUZZ_OHNE_JSON)})",
            "nicht gefahren: " + ", ".join(sorted(offen)) if offen else "")
+
+    # Der gefuzzte `--hashen`-Zweig SCHREIBT. Gemessen wird deshalb nicht nur,
+    # dass er kontrolliert bleibt, sondern auch, dass er das Manifest im Repo
+    # nicht anfasst - vorher/nachher als sha256 ueber die echten Bytes, ausser-
+    # halb jeder Ueberlagerung gelesen (NAK-94 Nacharbeit 11).
+    manifest_vorher = hashlib.sha256(MANIFEST.read_bytes()).hexdigest()
 
     gemerkt: dict = {}
     echter_hash = artefakt_hash
@@ -2456,6 +2501,13 @@ def byte_kipp_fuzz(schritt: int) -> None:
     finally:
         globals()["artefakt_hash"] = echter_hash
     dauer = time.perf_counter() - beginn
+
+    manifest_nachher = hashlib.sha256(MANIFEST.read_bytes()).hexdigest()
+    pruefe(manifest_vorher == manifest_nachher,
+           "[3c/1] der gefuzzte --hashen-Zweig hat das Manifest im Repo nicht "
+           f"angefasst - sha256 {manifest_vorher[:16]}; sein Schreibziel ist "
+           f"die Kopie {_fuzz_hashziel()}",
+           f"{manifest_vorher[:16]} -> {manifest_nachher[:16]}")
 
     for zeile in brueche[:8]:
         print("      BRUCH " + zeile)
@@ -2515,6 +2567,45 @@ def _abbruch_klartext(fehler: BaseException) -> str:
     return f"{type(fehler).__name__}: {fehler}{ort}"
 
 
+def _geschuetzt(fn, debug: bool = False) -> tuple[str, str, object]:
+    """DIE eine kontrollierte Huelle - EINMAL geschrieben, ZWEIMAL benutzt.
+
+    BEFUND DES ELFTEN PRUEFERS (NAK-94 Nacharbeit 11): bis dahin hatte der
+    Fuzz seine EIGENE Ausnahmebehandlung. `_fuzz_einmal()` rief
+    `_fuzz_verbraucher()` direkt und fing selbst ab; `main()` lief im Fuzz nie.
+    Der zentrale Faenger liess sich also entfernen, ohne dass [3c] rot wurde -
+    gemessen @ 4fcb4a8: mit auf Durchreichen gestelltem `main()` blieb
+    derselbe Fuzz-Fall unveraendert 'gruen'. Eine Wache, die nur eine Kopie
+    ihrer selbst misst, beweist nichts ueber das Original.
+
+    Seitdem legt DIESE Funktion sich in `main()` um den ganzen Lauf und in
+    `[3c]` um jeden einzelnen Fuzz-Fall. Wer sie auf Durchreichen stellt,
+    macht damit zwangslaeufig den Fuzz rot.
+
+    Rueckgabe: (Klasse, Klartext, Wert). `Wert` ist bei "gruen" der Rueckgabe-
+    wert von `fn`, sonst die gefangene Ausnahme.
+
+      "gruen"                 - durchgelaufen, kein Abbruch
+      "strukturhalt"          - Vertragsbruch einer gelesenen JSON-Datei
+      "gegenprobe_unmoeglich" - SystemExit: der eigene, bereits kontrollierte
+                                Ausgang aus [3]/[3b]. Er traegt seinen
+                                Klartext selbst und ist KEINE unerwartete
+                                Ausnahme; `main()` reicht ihn deshalb weiter.
+      "unkontrolliert"        - jede andere Ausnahme. NUR sie ist der Bruch
+                                der Zusage.
+    """
+    try:
+        return "gruen", "", fn()
+    except Strukturhalt as halt:
+        return "strukturhalt", str(halt), halt
+    except SystemExit as aus:
+        return "gegenprobe_unmoeglich", str(aus), aus
+    except Exception as unerwartet:
+        if debug:
+            traceback.print_exc()
+        return "unkontrolliert", _abbruch_klartext(unerwartet), unerwartet
+
+
 def main(argv=None) -> int:
     """Zentraler Faenger (NAK-94 Nacharbeit 10, Wegwechsel W3).
 
@@ -2524,28 +2615,24 @@ def main(argv=None) -> int:
     Ausloesers, Exit 2, KEIN Traceback auf stdout oder stderr. Den Traceback
     gibt es nur mit `--debug`.
 
-    `SystemExit` laeuft absichtlich durch: das ist der eigene, bereits
-    kontrollierte Ausgang 'Gegenprobe unmoeglich' aus [3]/[3b] - er traegt
-    seinen Klartext selbst und darf nicht als unerwartete Ausnahme erscheinen.
+    Gefangen wird ueber `_geschuetzt()` - dieselbe Funktion, die [3c] um jeden
+    Fuzz-Fall legt (NAK-94 Nacharbeit 11). `SystemExit` laeuft absichtlich
+    durch: das ist der eigene, bereits kontrollierte Ausgang 'Gegenprobe
+    unmoeglich' aus [3]/[3b].
     """
     args = _argumente(argv)
-    try:
-        return _lauf(args)
-    except Strukturhalt as halt:
-        print("")
-        print(f"ABGEBROCHEN - {halt}")
-        print(f"ABGEBROCHEN - {halt}", file=sys.stderr)
-        return 2
-    except Exception as unerwartet:
-        if args.debug:
-            traceback.print_exc()
-        zeile = ("ABGEBROCHEN - unerwartete Ausnahme, kontrolliert beendet: "
-                 + _abbruch_klartext(unerwartet)
-                 + ("" if args.debug else "  (Traceback mit --debug)"))
-        print("")
-        print(zeile)
-        print(zeile, file=sys.stderr)
-        return 2
+    klasse, text, wert = _geschuetzt(lambda: _lauf(args), args.debug)
+    if klasse == "gruen":
+        return wert
+    if klasse == "gegenprobe_unmoeglich":
+        raise wert
+    zeile = (f"ABGEBROCHEN - {text}" if klasse == "strukturhalt" else
+             "ABGEBROCHEN - unerwartete Ausnahme, kontrolliert beendet: "
+             + text + ("" if args.debug else "  (Traceback mit --debug)"))
+    print("")
+    print(zeile)
+    print(zeile, file=sys.stderr)
+    return 2
 
 
 def _lauf(args) -> int:

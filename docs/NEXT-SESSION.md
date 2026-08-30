@@ -1,5 +1,16 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ⏸ NACHTRAG — 30.08.2026, Dirigentenrunde 29.08. 22:00 – 30.08. 12:31 (Sitzung 054eedac) — STOPP auf User-Wort
+>
+> **User-Wort 30.08.:** „wenn die nächste aufgabe erledigt ist, machen wir hier mal ein stopp. ich muss ein paar dinge extern anpassen." Der nächste Dirigentenlauf beginnt erst auf sein Wort.
+>
+> **Erledigt:** NAK-94 **geschlossen** (Prüfer 14 PASS, Nacharbeiten 1–13, Wegwechsel W1 Writer-Fixtures aus der A18-Sandbox, W3 zentraler Fänger + Byte-Kipp-Fuzz `[3c]`; Register + `SONDE-007c.md`). S8 `SONDE-007a` Runden 7–19 (Prüfer 7–19 Codex xhigh): fünf echte Riegel-Lücken geschlossen (K1b-Ausnahme als namentlicher Abgleich gegen den K1-`#error`-Kranz, Präprozessor-Phase 1/2 vor dem Scan, Kodierung fail-closed mit BOM), dazu Wegwechsel W2 Aussagen-Inventar; `tools/dirigent/pruefliste.md` E um Inventar und Writer-Fixtures ergänzt; Skill/Starter: 600k-Kontextgrenze, keine Meldungen außer Design-/Produktfragen, keine Berechtigungsfragen, Tickets vorziehen, `--remote-control` im Starter. Neu im Register: **NAK-100** (Aufteilung von `pruefe_kern_identitaetsfrei.py`/`pruefe_installer_manifest.py` in Pakete, nach S8-PASS, bytegleiche Ausgabe als Abnahme).
+>
+> **Stand S8:** Marke `T3 NEEDS_WORK 2026-08-28 nachgearbeitet` unverändert; Stand `22d3695` (= origin/master), Kanon GRÜN 32/32 auf `f68cd9a`; Prüfer 20 (Codex xhigh, Thread `01a0522d-6bfc-7bb0-9dc6-cd2b42802547`) NEEDS_WORK (2): P1 Raw-String-Literale im Kommentar-Entferner, P2 volatile Laufzeitangabe im Runnerkopf — wörtlich mit Regeln in `docs/beweise/SONDE-007a.md`, „Dirigentenstand — 2026-08-30 12:31 … Prüfer 20 NEEDS_WORK, offen — STOPP".
+>
+> **Als Nächstes (Reihenfolge des Dirigenten, wenn der User den Lauf wieder startet):** S8 Runde 20 (Auftrag = dieser Dirigentenstand) → Prüfer 21 (xhigh) → bei PASS Urteilsmarke S8, Planstand → NAK-100 (Aufteilung der Prüfskripte) → S9 (NAK-88) → S9b (NAK-89) → SONDE-010 mit Verhaltensmatrix (NAK-95, NAK-98) → G1-Gate-Lauf → PR1 → SONDE-011. Prüfer-Templates mit Platzhaltern liegen nur im Scratchpad der Sitzung 054eedac; eine neue Sitzung baut sie aus dem Skill neu.
+
+
 > ## ✅ NACHTRAG — 29.08.2026, Dirigentenrunde 13:40–22:00 (Sitzung 0fc7441c)
 >
 > **Erledigt:** NAK-96/NAK-97 abgeschlossen (Prüfer 4 PASS): Kanon-Rohausgaben unter `docs/beweise/roh/`, `--no-optional-locks` überall, atomare Roh-Reservierung, Planstand liest alle vier Runner-Urteile. S8 `SONDE-007a`: NAK-85 in Runden 3–6 gebaut, Wegwechsel nach Skill §3.4 — A14 baut den Kern vor jeder Messung neu, drei neue Riegel (K1b über echte Compiler-Eingaben, Tlog-Ortsriegel, JUCE-Baum = 8.0.9 + exakt Patch); NAK-94 vorgezogen (A17 im Kanon weich). Kanon GRÜN 32/32 auf `370e513`. Neue Registerpunkte NAK-98 (B10 unter Last, gehört zu S14–15) und NAK-99 (Beobachter-Timeout).

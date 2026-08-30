@@ -1251,7 +1251,34 @@ kein Lebenszyklus, kein Längen- oder Alphabetvertrag, kein Bau- oder Prüfriege
 Auf `2397790` folgen der Manifest-Commit dieser Runde und der gerechnete Planstand, beide
 wieder ausschließlich unter `docs/**`. Der Planstand-Lauf auf dem finalen Stand:
 
-<!-- RUNDE1-NACHLAUF -->
+```text
+### A) py -3.13 tools/plan/planstand.py   (Stand c9eece7, Manifest committet)
+geschrieben: docs\PLAN-STAND.md (18 abgenommen, 2 gebaut, 38 gesamt, aus c9eece7)
+EXITCODE=0
+
+### B) py -3.13 tools/plan/antworten_blatt.py
+geschrieben: docs\ANTWORTEN-OFFEN.md (42 Antworten, 0 offen, 42 eingearbeitet, 13 mit eigenem Text)
+EXITCODE=0
+
+### Blatt-Warnung "Gerechnet aus dem Arbeitsbaum"
+grep -c aus docs/PLAN-STAND.md: 0
+```
+
+Dieser Lauf ist **Exitcode 0 ohne Warnung im Blatt** — der Hinweis aus Lauf A in §9.4
+war dieses Manifest im uncommitteten Zustand und ist mit seinem Commit verschwunden.
+`docs/ANTWORTEN-OFFEN.md` bleibt byte-gleich: `beantwortet{}` ist unangetastet, wie die
+Ticketgrenze es verlangt. Der Umfang der Grenze ändert sich durch den Nachlauf nicht —
+kein Commit dieser Runde berührt etwas außerhalb von `docs/**`.
+
+**Commits der Runde** (alle mit explizitem Pathspec, kein `git add -A`, kein `--amend`):
+
+| SHA | Was | Dateien |
+|---|---|---|
+| `61228c4` | Planedits und Register — B1 bis B4, B7 | `plan.json`, `bauaufteilung-sonden.md`, `offene-punkte.md` |
+| `2397790` | Karten — B5, B6 | `fragen.json` |
+| `c9eece7` | Manifest — §9, zwei Herstellerquellen, lebender Kopf | `beweise/PR1.md` |
+| — | gerechneter Planstand | `PLAN-STAND.md` |
+
 
 **Keine Urteilsmarke.** Diese Runde setzt keine `NAKAMA-URTEIL`-Zeile; PR1 bleibt im
 gerechneten Planstand *gebaut, nicht abgenommen*, bis der Dirigent nach einer frischen

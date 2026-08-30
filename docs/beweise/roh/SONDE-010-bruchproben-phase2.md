@@ -94,3 +94,29 @@ test result: ok. 146 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 running 9 tests (contract_cross_language) ... ok
 running 9 tests (transport_fuzz) ... ok
 ```
+
+---
+
+## Nachtrag Selbstaudit: der Laufnummern-Riegel
+
+Nach dem Kanon fiel beim adversarialen Lesen auf, dass ein nach `kStopFristMs`
+ABGELOESTER Thread bei einem erneuten `start()` `laeuft == true` wiedersaehe und
+auf derselben `Laufzeit` weiterliefe — zwei Threads auf einer Pipe. Beide
+Clients tragen deshalb eine Laufnummer (`Laufzeit::lebenslauf`); jeder Lauf
+endet, sobald sie nicht mehr die aktuelle ist, und nur der aktuelle Lauf setzt
+`fertig`. Die Probe steht in B10 G17 Fall (2b).
+
+Bruch (Laufnummer aus der Schleifenbedingung entfernt):
+
+```text
+  FEHLER  und zwar GENAU EIN neuer Lauf — der abgeloeste Vorgaenger faehrt nicht daneben weiter  [3 Versuche, 1 Fristueberschreitungen]
+FEHLER — 192 Pruefungen, 1 Fehler
+```
+
+Nach der Ruecknahme:
+
+```text
+  ok      nach dem Abloesen verbindet ein neuer start() wieder  [2 Versuche]
+  ok      und zwar GENAU EIN neuer Lauf — der abgeloeste Vorgaenger faehrt nicht daneben weiter  [2 Versuche, 1 Fristueberschreitungen]
+ALLE PRUEFUNGEN GRUEN — 192 Pruefungen, 0 Fehler
+```

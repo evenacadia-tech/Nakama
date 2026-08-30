@@ -42,7 +42,7 @@ struct TelemetryClient::Laufzeit
     Laufzeit (std::function<TelemetryHello()> hp, std::string pn)
         : helloProvider (std::move (hp)), pipeName (std::move (pn)) {}
 
-    void threadLauf();
+    void threadLauf (std::uint64_t meinLauf);
     bool eineVerbindung (std::uint64_t generation, const TelemetryHello& hello);
     bool leerlaufLesen (StromLeser& leser, Ratengrenze& rate,
                         std::chrono::steady_clock::time_point rateBeginn,
@@ -59,6 +59,12 @@ struct TelemetryClient::Laufzeit
     std::atomic<bool> laeuft { false };
     std::atomic<bool> fertig { false };
     std::atomic<std::thread::id> threadId {};
+    /// Welcher Lauf ist das? Ein nach `kStopFristMs` ABGELOESTER Thread lebt
+    /// weiter, bis sein Callback zurueckkommt. Startet der Client bis dahin
+    /// erneut, saehe der alte Thread `laeuft == true` und liefe auf DERSELBEN
+    /// Laufzeit weiter — zwei Threads auf einer Pipe. Jeder Lauf traegt
+    /// deshalb seine Nummer und endet, sobald sie nicht mehr die aktuelle ist.
+    std::atomic<std::uint64_t> lebenslauf { 0 };
     std::atomic<std::uint64_t> verbindungsGeneration { 0 };
     std::mutex   wartemutex;
     std::condition_variable warte;
@@ -86,7 +92,8 @@ void TelemetryClient::start()
     k->laeuft.store (true);
     k->fertig.store (false);
     auto kern = k;
-    thread = std::thread ([kern] { kern->threadLauf(); });
+    const auto meinLauf = kern->lebenslauf.fetch_add (1) + 1;
+    thread = std::thread ([kern, meinLauf] { kern->threadLauf (meinLauf); });
 }
 
 void TelemetryClient::stop()
@@ -164,11 +171,11 @@ TelemetryClient::Snapshot TelemetryClient::Laufzeit::snapshotIntern() const
     return s;
 }
 
-void TelemetryClient::Laufzeit::threadLauf()
+void TelemetryClient::Laufzeit::threadLauf (std::uint64_t meinLauf)
 {
     threadId.store (std::this_thread::get_id());
     int backoffMs = kBackoffStartMs;
-    while (laeuft.load())
+    while (laeuft.load() && lebenslauf.load() == meinLauf)
     {
         const auto generation = verbindungsGeneration.load();
         const TelemetryHello hello = helloProvider ? helloProvider() : TelemetryHello();
@@ -210,7 +217,10 @@ void TelemetryClient::Laufzeit::threadLauf()
         }
         backoffMs = std::min (backoffMs * 2, kBackoffMaxMs);
     }
-    fertig.store (true);
+    // Nur der AKTUELLE Lauf meldet sich fertig: ein abgeloester Vorgaenger
+    // wuerde sonst den `join` des neuen Laufs freigeben.
+    if (lebenslauf.load() == meinLauf)
+        fertig.store (true);
 }
 
 bool TelemetryClient::Laufzeit::leerlaufLesen (StromLeser& leser, Ratengrenze& rate,

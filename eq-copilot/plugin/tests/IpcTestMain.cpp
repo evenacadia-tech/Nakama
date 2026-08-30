@@ -2256,6 +2256,61 @@ int main()
             server.stoppen();
         }
 
+        // (2b) Nach einem abgeloesten stop() darf ein neues start() NICHT auf
+        //      denselben Thread treffen. Der Vorgaenger lebt noch, bis sein
+        //      Callback zurueckkommt; ohne Laufnummer saehe er `laeuft` wieder
+        //      auf true und liefe auf derselben Pipe weiter — zwei Threads auf
+        //      einer Verbindung. (Selbstaudit dieser Runde, ausserhalb der
+        //      Matrixzeilen, aber Folge von `B-CC-12`.)
+        {
+            TestServer server (testPipeName ("stopneustart"));
+            server.starten();
+            auto blockiert = std::make_shared<std::atomic<bool>> (true);
+            auto imCallback = std::make_shared<std::atomic<bool>> (false);
+            auto rufe = std::make_shared<std::atomic<int>> (0);
+            ControlClient control ([&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('a'));
+                return h;
+            }, server.pipeName(),
+               [blockiert, imCallback, rufe] (const std::string&) {
+                   rufe->fetch_add (1);
+                   imCallback->store (true);
+                   const auto bis = Uhr::now() + std::chrono::seconds (20);
+                   while (blockiert->load() && Uhr::now() < bis)
+                       std::this_thread::sleep_for (std::chrono::milliseconds (5));
+               });
+            control.start();
+            pruefe (warteAuf (5000, [&] {
+                        return control.snapshot().status == ControlClient::Status::verbunden;
+                    }),
+                    "Verbindung steht");
+            control.sendeP0 ("{\"type\":\"heartbeat\",\"sequence\":1}");
+            pruefe (warteAuf (5000, [&] { return imCallback->load(); }),
+                    "der Callback blockiert wirklich");
+            control.stop();          // loest ab
+            const auto versucheNachStop = control.snapshot().verbindungsVersuche;
+
+            control.start();         // neuer Lauf auf derselben Laufzeit
+            const bool wiederDa = warteAuf (8000, [&] {
+                return control.snapshot().verbindungsVersuche > versucheNachStop;
+            });
+            blockiert->store (false);
+            std::this_thread::sleep_for (std::chrono::milliseconds (300));
+            const auto stand = control.snapshot();
+            control.stop();
+            pruefe (wiederDa, "nach dem Abloesen verbindet ein neuer start() wieder",
+                    std::to_string (stand.verbindungsVersuche) + " Versuche");
+            pruefe (stand.verbindungsVersuche == versucheNachStop + 1
+                        && stand.stopFristUeberschritten == 1,
+                    "und zwar GENAU EIN neuer Lauf — der abgeloeste Vorgaenger "
+                    "faehrt nicht daneben weiter",
+                    std::to_string (stand.verbindungsVersuche) + " Versuche, "
+                        + std::to_string (stand.stopFristUeberschritten)
+                        + " Fristueberschreitungen");
+            server.stoppen();
+        }
+
         // (3) TelemetryClient: stop() vor der Kopplung und waehrend eines
         //     blockierenden P2-Writes (`B-TC-07`, `B-TC-09`).
         {

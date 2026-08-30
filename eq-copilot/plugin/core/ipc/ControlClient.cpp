@@ -147,7 +147,7 @@ struct ControlClient::Laufzeit
         : helloProvider (std::move (hp)), beiAntwort (std::move (ba)),
           pipeName (std::move (pn)) {}
 
-    void threadLauf();
+    void threadLauf (std::uint64_t meinLauf);
     bool eineVerbindung (std::uint64_t generation);
     bool sollAbbrechen (std::uint64_t generation) const noexcept;
     bool sendeP0 (const std::string& json);
@@ -168,6 +168,12 @@ struct ControlClient::Laufzeit
     /// Wer ist der Clientthread? `stop()` aus einem Callback heraus liefe
     /// sonst in einen Self-Join (`B-CC-11`).
     std::atomic<std::thread::id> threadId {};
+    /// Welcher Lauf ist das? Ein nach `kStopFristMs` ABGELOESTER Thread lebt
+    /// weiter, bis sein Callback zurueckkommt. Startet der Client bis dahin
+    /// erneut, saehe der alte Thread `laeuft == true` und liefe auf DERSELBEN
+    /// Laufzeit weiter — zwei Threads auf einer Pipe. Jeder Lauf traegt
+    /// deshalb seine Nummer und endet, sobald sie nicht mehr die aktuelle ist.
+    std::atomic<std::uint64_t> lebenslauf { 0 };
     std::atomic<std::uint64_t> verbindungsGeneration { 0 };
     std::mutex   wartemutex;
     std::condition_variable warte;
@@ -208,7 +214,8 @@ void ControlClient::start()
     k->laeuft.store (true);
     k->fertig.store (false);
     auto kern = k;
-    thread = std::thread ([kern] { kern->threadLauf(); });
+    const auto meinLauf = kern->lebenslauf.fetch_add (1) + 1;
+    thread = std::thread ([kern, meinLauf] { kern->threadLauf (meinLauf); });
 }
 
 void ControlClient::stop()
@@ -354,11 +361,11 @@ bool ControlClient::Laufzeit::kopplung (std::string& linkId, std::string& challe
     return true;
 }
 
-void ControlClient::Laufzeit::threadLauf()
+void ControlClient::Laufzeit::threadLauf (std::uint64_t meinLauf)
 {
     threadId.store (std::this_thread::get_id());
     int backoffMs = kBackoffStartMs;
-    while (laeuft.load())
+    while (laeuft.load() && lebenslauf.load() == meinLauf)
     {
         const auto generation = verbindungsGeneration.load();
         const bool stand = eineVerbindung (generation);
@@ -382,7 +389,10 @@ void ControlClient::Laufzeit::threadLauf()
     }
     // Erst JETZT ist der Thread fertig — `stop()` wartet auf genau dieses
     // Zeichen und darf danach joinen (`B-CC-10`).
-    fertig.store (true);
+    // Nur der AKTUELLE Lauf meldet sich fertig: ein abgeloester Vorgaenger
+    // wuerde sonst den `join` des neuen Laufs freigeben.
+    if (lebenslauf.load() == meinLauf)
+        fertig.store (true);
 }
 
 bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation)

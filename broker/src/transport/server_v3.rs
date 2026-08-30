@@ -1353,14 +1353,27 @@ fn verbindung_bedienen(
                     return;
                 }
             }
+            // Die Trennpflicht steht VOR dem Kopplungs-Callback, nicht nach
+            // seiner Rueckkehr. Blockiert die Senke hier fristgerecht (etwa
+            // 800 ms) und enden beide Clients waehrend des Blocks, so fand die
+            // Control-Seite an ihrem Wartepunkt `erwartet == false`,
+            // uebersprang ihn und meldete `control_getrennt` VOR dem
+            // `telemetrie_getrennt`, das gleich danach folgte — die Kopplung
+            // war laengst gekoppelt, nur die Zusage fehlte noch (`C-LS-06`,
+            // NAK-104 Runde 2, Pruefbefund vom 2026-08-30).
+            //
+            // Ab hier ist ein `telemetrie_getrennt` zugesagt. Nur ein
+            // ABGELOESTES `telemetrie_gekoppelt` nimmt die Zusage zurueck: dann
+            // endet diese Verbindung ohne Gegenstueck (`C-LS-04`), und ohne die
+            // Ruecknahme wartete die Control-Seite die volle `SENKE_FRIST` auf
+            // ein Ereignis, das nie kommt.
+            trennmelder_telemetrie_erwartet(&trennmelder, &h.link_id);
             let link_fuer_senke = h.link_id.clone();
             if !senkenruf.rufen(move |s| s.telemetrie_gekoppelt(&link_fuer_senke)) {
+                trennmelder_telemetrie_abgesagt(&trennmelder, &h.link_id);
                 kopplung_loesen(&kopplungen, &handles, &h.link_id, false);
                 return;
             }
-            // Erst JETZT ist ein `telemetrie_getrennt` zugesagt — und erst
-            // jetzt darf die Control-Seite darauf warten (`C-LS-06`).
-            trennmelder_telemetrie_erwartet(&trennmelder, &h.link_id);
             (h.link_id.clone(), false)
         }
     };
@@ -1629,6 +1642,12 @@ struct TrennStand {
     /// keine Telemetrie mehr und uebersprang den Wartepunkt, obwohl deren
     /// Trenn-Callback noch lief — `control_getrennt` konnte vor
     /// `telemetrie_getrennt` laufen (NAK-104, Pruefbefund vom 2026-08-30).
+    ///
+    /// Sie gilt ab der KOPPLUNG, nicht erst ab der Rueckkehr von
+    /// `telemetrie_gekoppelt`: waehrend dieses Callbacks ist die Kopplung
+    /// bereits vollzogen, und beide Clients koennen in diesem Fenster enden
+    /// (NAK-104 Runde 2). Zurueckgenommen wird sie nur, wenn der Callback
+    /// ABGELOEST wurde — dann folgt kein Gegenstueck (`C-LS-04`).
     erwartet: bool,
     /// Ihr `telemetrie_getrennt` ist gemeldet — oder abgeloest, was nach
     /// `C-LS-06` als gelaufen zaehlt.
@@ -1656,8 +1675,9 @@ fn trennmelder_anlegen(reg: &TrennRegister, link_id: &str) {
 }
 
 /// Ab jetzt wartet die Control-Seite beim Abbau auf ein `telemetrie_getrennt`.
-/// Gesetzt wird das, sobald `telemetrie_gekoppelt` bei der Senke DURCH ist —
-/// vorher gibt es kein Gegenstueck zu erwarten (`C-LS-04`).
+/// Gesetzt wird das, sobald die Telemetrie gekoppelt ist und ihr
+/// `telemetrie_gekoppelt` laufen KANN — also VOR dem Callback, nicht nach
+/// seiner Rueckkehr (`C-LS-06`, NAK-104 Runde 2).
 fn trennmelder_telemetrie_erwartet(reg: &TrennRegister, link_id: &str) {
     let m = reg
         .lock()
@@ -1666,6 +1686,23 @@ fn trennmelder_telemetrie_erwartet(reg: &TrennRegister, link_id: &str) {
         .cloned();
     if let Some(m) = m {
         m.stand.lock().unwrap_or_else(|e| e.into_inner()).erwartet = true;
+        m.signal.notify_all();
+    }
+}
+
+/// Das Gegenstueck zu `trennmelder_telemetrie_erwartet`: das
+/// `telemetrie_gekoppelt` wurde ABGELOEST, diese Verbindung meldet deshalb kein
+/// `telemetrie_getrennt` (`C-LS-04`). Ohne die Ruecknahme haengt die
+/// Control-Seite die volle `SENKE_FRIST` und zaehlt eine Reihenfolge-
+/// verletzung, die keine ist.
+fn trennmelder_telemetrie_abgesagt(reg: &TrennRegister, link_id: &str) {
+    let m = reg
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .get(link_id)
+        .cloned();
+    if let Some(m) = m {
+        m.stand.lock().unwrap_or_else(|e| e.into_inner()).erwartet = false;
         m.signal.notify_all();
     }
 }
@@ -1700,11 +1737,12 @@ fn auf_telemetrie_getrennt_warten(
     };
     let bis = Instant::now() + frist;
     let mut g = m.stand.lock().unwrap_or_else(|e| e.into_inner());
-    // Nie eine Telemetrieverbindung gehabt: es gibt nichts zu erwarten.
-    if !g.erwartet {
-        return;
-    }
-    while !g.gemeldet {
+    // Nie eine Telemetrieverbindung gehabt — oder die Zusage faellt waehrend
+    // des Wartens zurueck, weil ihr `telemetrie_gekoppelt` abgeloest wurde:
+    // beides heisst "es kommt kein Gegenstueck", und beides ist KEINE
+    // Reihenfolgeverletzung. Die Bedingung gehoert deshalb in die Schleife und
+    // nicht nur davor.
+    while g.erwartet && !g.gemeldet {
         let rest = bis.saturating_duration_since(Instant::now());
         if rest.is_zero() {
             statistik
@@ -2939,6 +2977,159 @@ mod tests {
             0,
             "der fristgerechte Fall darf keine Reihenfolgeverletzung zaehlen"
         );
+        drop(griff);
+    }
+
+    /// Matrix `C-LS-06` (NAK-104 Runde 2): das FENSTER des Kopplungs-Callbacks.
+    ///
+    /// Die Telemetrie ist gekoppelt und ihr Welcome ist auf dem Draht, aber
+    /// `telemetrie_gekoppelt` steht noch bei der Senke. Enden beide Clients
+    /// genau jetzt, muss die Reihenfolge trotzdem halten. Vorher wurde die
+    /// Trennpflicht erst NACH Rueckkehr des Callbacks gesetzt: die
+    /// Control-Seite fand `erwartet == false`, uebersprang den Wartepunkt und
+    /// meldete `control_getrennt` VOR dem `telemetrie_getrennt`, das kurz
+    /// danach folgte.
+    ///
+    /// Der Vorgaengertest `telemetrie_endet_zuerst_...` blockiert erst im
+    /// TRENN-Callback und wartet bis `telemetrie_gekoppelt` durch ist — er
+    /// betritt dieses Fenster nie.
+    #[test]
+    fn trennreihenfolge_haelt_im_kopplungs_callback_fenster() {
+        let pipe = probe_pipe("trennkoppelfenster");
+        let senke = Arc::new(ReihenfolgeSenke::default());
+        *senke.blockiert_in.lock().unwrap() = "telemetrie_gekoppelt".into();
+        // FRISTGERECHT: unter `SENKE_FRIST`, sonst misst der Test den
+        // Abloesefall statt des Fensters.
+        senke.blockdauer_ms.store(800, Ordering::SeqCst);
+        assert!(
+            Duration::from_millis(800) < SENKE_FRIST,
+            "die Blockdauer muss unter SENKE_FRIST liegen, sonst misst der Test den Fristfall"
+        );
+        let griff = v3_server_starten(&pipe, senke.clone(), "test".into()).unwrap();
+
+        let steuer = Testclient::neu(&pipe).unwrap();
+        assert!(steuer.schreiben(&control_hello(&"2".repeat(32))));
+        let (link, challenge) = welcome_lesen(&steuer).expect("welcome");
+        let tele = Testclient::neu(&pipe).unwrap();
+        assert!(tele.schreiben(&telemetry_hello(&"2".repeat(32), &link, &challenge)));
+        // Das Welcome der Telemetrie geht VOR `telemetrie_gekoppelt` raus —
+        // der Client ist also schon bedient, waehrend die Senke noch haelt.
+        assert!(welcome_lesen(&tele).is_some());
+
+        // Vorbedingung messen, nicht hoffen: die Senke steht IM
+        // Kopplungs-Callback (`betreten` traegt den Eintritt, `log` erst den
+        // Austritt).
+        assert!(
+            warte_auf(4000, || senke.betreten_anzahl("telemetrie_gekoppelt") == 1),
+            "die Senke muss wirklich in telemetrie_gekoppelt stehen: {:?}",
+            senke.eintraege()
+        );
+        assert_eq!(
+            senke.anzahl("telemetrie_gekoppelt"),
+            0,
+            "der Callback darf hier noch NICHT zurueck sein — sonst ist das Fenster \
+             schon vorbei und der Test misst nichts"
+        );
+
+        // Beide Clients enden IM Fenster: erst die Telemetrie, dann Control.
+        drop(tele);
+        drop(steuer);
+        let beginn = Instant::now();
+        assert!(
+            warte_auf(8000, || senke.anzahl("control_getrennt") == 1),
+            "control_getrennt fehlt: {:?}",
+            senke.eintraege()
+        );
+        let dauer = beginn.elapsed();
+        std::thread::sleep(Duration::from_millis(300));
+        let log = senke.eintraege();
+        // Ausgepackt vergleichen: `Option::cmp` haelt `None` fuer kleiner als
+        // jedes `Some`, ein ganz fehlendes `telemetrie_getrennt` saehe sonst
+        // wie die richtige Reihenfolge aus.
+        let stelle_tele = senke.stelle("telemetrie_getrennt");
+        let stelle_ctrl = senke.stelle("control_getrennt");
+        assert!(
+            matches!((stelle_tele, stelle_ctrl), (Some(t), Some(c)) if t < c),
+            "control_getrennt lief vor telemetrie_getrennt (oder telemetrie_getrennt \
+             fehlt ganz), obwohl beide Clients im Kopplungs-Callback endeten: {log:?}"
+        );
+        assert_eq!(senke.anzahl("telemetrie_getrennt"), 1, "{log:?}");
+        assert_eq!(senke.anzahl("control_getrennt"), 1, "{log:?}");
+        // Das `telemetrie_getrennt` kann fruehestens nach dem 800-ms-Block
+        // laufen. Kommt `control_getrennt` schon vorher, hat die Control-Seite
+        // den Wartepunkt uebersprungen — genau der Defekt.
+        assert!(
+            dauer >= Duration::from_millis(500),
+            "control_getrennt kam schon nach {dauer:?} — die Control-Seite hat den \
+             Wartepunkt uebersprungen, statt das telemetrie_getrennt nach dem \
+             800-ms-Block abzuwarten: {log:?}"
+        );
+        assert_eq!(
+            griff
+                .statistik
+                .lebenszyklus_reihenfolge_verletzt
+                .load(Ordering::SeqCst),
+            0,
+            "der fristgerechte Fall darf keine Reihenfolgeverletzung zaehlen"
+        );
+        drop(griff);
+    }
+
+    /// Gegenstueck zum Fenster (`C-LS-04`/`C-LS-06`, NAK-104 Runde 2): wird das
+    /// `telemetrie_gekoppelt` ABGELOEST, kommt kein `telemetrie_getrennt` — die
+    /// vorgezogene Trennpflicht muss dann zurueckfallen. Sonst haengt die
+    /// Control-Seite die volle `SENKE_FRIST` und zaehlt eine
+    /// Reihenfolgeverletzung, die keine ist.
+    #[test]
+    fn abgeloestes_telemetrie_gekoppelt_laesst_control_getrennt_nicht_warten() {
+        let pipe = probe_pipe("koppelabloese");
+        let senke = Arc::new(ReihenfolgeSenke::default());
+        *senke.blockiert_in.lock().unwrap() = "telemetrie_gekoppelt".into();
+        senke
+            .blockdauer_ms
+            .store(SENKE_FRIST.as_millis() as u64 * 2, Ordering::SeqCst);
+        let griff = v3_server_starten(&pipe, senke.clone(), "test".into()).unwrap();
+
+        let steuer = Testclient::neu(&pipe).unwrap();
+        assert!(steuer.schreiben(&control_hello(&"3".repeat(32))));
+        let (link, challenge) = welcome_lesen(&steuer).expect("welcome");
+        let tele = Testclient::neu(&pipe).unwrap();
+        assert!(tele.schreiben(&telemetry_hello(&"3".repeat(32), &link, &challenge)));
+        assert!(welcome_lesen(&tele).is_some());
+        assert!(
+            warte_auf(SENKE_FRIST.as_millis() as u64 * 3, || griff
+                .statistik
+                .lebenszyklus_abgeloest
+                .load(Ordering::SeqCst)
+                >= 1),
+            "das telemetrie_gekoppelt muss wirklich abgeloest worden sein"
+        );
+
+        let beginn = Instant::now();
+        drop(steuer);
+        assert!(
+            warte_auf(SENKE_FRIST.as_millis() as u64 * 4, || senke
+                .anzahl("control_getrennt")
+                == 1),
+            "control_getrennt fehlt: {:?}",
+            senke.eintraege()
+        );
+        let dauer = beginn.elapsed();
+        assert!(
+            dauer < SENKE_FRIST / 2,
+            "control_getrennt kam erst nach {dauer:?} — es wartet auf ein \
+             telemetrie_getrennt, das nach der Abloesung nie kommt (SENKE_FRIST \
+             {SENKE_FRIST:?})"
+        );
+        assert_eq!(
+            griff
+                .statistik
+                .lebenszyklus_reihenfolge_verletzt
+                .load(Ordering::SeqCst),
+            0,
+            "ein abgesagtes Gegenstueck ist keine Reihenfolgeverletzung"
+        );
+        drop(tele);
         drop(griff);
     }
 

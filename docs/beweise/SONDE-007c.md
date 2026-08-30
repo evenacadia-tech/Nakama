@@ -19791,3 +19791,16 @@ Abschluss"; A17 dort **[OK] Exit 0, 48,59 s**).
 | `FUZZ_OHNE_JSON` | 5 | 0 | 10 | 1 |
 | `[3c/1]` | 3 | 0 | 8 | 2 |
 | `--fuzz-voll` | 5 | 0 | 9 | 2 |
+
+## Dirigentenstand NAK-94 — 2026-08-30 08:57 (Sitzung 054eedac): Prüfer 12 NEEDS_WORK, offen — Nacharbeit 12
+
+**Stand dieses Abschnitts:** `27865ca`
+
+**Nacharbeit 11:** Opus/max `nakama-s8r16-nak94r11-4fcb4a8-bau` (gemeinsam mit S8 Runde 16); gemeinsame Schutzfunktion, `--hashen` in der Fuzz-Deckung, Vollfuzz als `docs/beweise/roh/SONDE-007c-fuzz-01c9cd3.md`; Kanon GRÜN 32/32 auf `219424f` (Roh-Datei `docs/beweise/roh/SONDE-007a-219424f.md`, Bein A17).
+**Prüfer 12:** Codex high `01a0516a-8842-7ff3-b42d-fc9277c812e4`, lesend über `git diff da62dec...27865ca`, HEAD vor/nach identisch — **NEEDS_WORK (1)**, wörtlich (`@ 27865ca`); die drei Befunde des Vorprüfers im A17-Hauptpfad bestätigt geschlossen:
+
+> **[P2] Prüfe das Korpusmanifest vor dem Zugriff** — `tools/eq-copilot/erzeuge_installer_journale.py:130-133`. **Defekt, mittel.** Wird in `journale/MANIFEST.json` mit einer einzelnen Byteänderung `"faelle"` zu `"xaelle"`, wirft ein direkter `pruefen()`-Aufruf nach erfolgreichem `json.loads` einen ungefangenen `KeyError` samt Traceback statt des zugesagten Klartexts mit Exit 2. Das wurde ohne Repo-Schreibzugriff über eine In-Memory-Dateiüberlagerung reproduziert und verletzt die Fail-closed-Regel sowie den Writer/Reader-Vertrag; validiere das Korpusmanifest vor dem ersten Subskriptzugriff und mappe Struktur- und Dekodierfehler kontrolliert auf Rückgabecode 2.
+
+**Einordnung:** Defekt, mittel (Prüfliste D/F: der Erzeuger ist der zweite Leser desselben Korpusmanifests und gehört in denselben Änderungssatz). **Regel des Dirigenten (Nacharbeit 12):** Der Erzeuger liest `journale/MANIFEST.json` über **dieselbe** Strukturprüfung wie A17 (Import von `_lies_geprueft`/Strukturvertrag aus `pruefe_installer_manifest.py` — keine zweite Kopie der Regeln); jeder Struktur- oder Dekodierfehler endet in `--pruefen` und beim Erzeugen kontrolliert mit Klartext und Exit 2, nie Traceback; der zentrale Fänger (`_geschuetzt`) legt sich auch um `main()` des Erzeugers. Die Fuzz-Deckung `[3c]` nimmt den Erzeuger-Leser (`pruefen()`) als Verbraucher auf, damit die Klasse dort gemessen ist. Proben: `"faelle"` → `"xaelle"` und ein ungültiges UTF-8-Byte → `--pruefen` Exit 2 mit Klartext, kein Traceback; Bruch (Import durch direkten Zugriff ersetzt → Traceback im Fuzz) und Rücknahme.
+
+**Nächster Schritt:** Nacharbeit 12 im selben Worker wie die nächste S8-Runde (falls Prüfer 17 Befunde hat; sonst allein), gemeinsamer Kanon, danach Prüfer 13 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.

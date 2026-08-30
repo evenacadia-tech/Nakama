@@ -7,7 +7,7 @@
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
   "anzahl_gueltig": 42,
-  "anzahl_ungueltig": 146,
+  "anzahl_ungueltig": 147,
   "fixtures": [
     {
       "datei": "gueltig/audible_intervention_begin.json",
@@ -522,6 +522,18 @@
           "instanz": "/baender/werte",
           "schema": "#/$defs/bandwerte_grob/oneOf/0/properties/werte/maxItems",
           "schluessel": "maxItems"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/beitrag-ohne-contribution-aux.json",
+      "urteil": "ungueltig",
+      "warum": "eine Beitragsaussage setzt den diskreten Contribution-Aux-Bus nachweislich voraus; bei unsupported gilt nur Assoziation statt exakter Attribution (§53.6)",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/capabilities/contribution_aux",
+          "schema": "#/$defs/capabilities_beitrag/properties/contribution_aux/const",
+          "schluessel": "const"
         }
       ]
     },

@@ -524,8 +524,9 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict) -> None:
 
     Der Preis dieser Form sind vier fast gleiche Zweige. Dieser Riegel macht
     daraus eine GEMESSENE Invariante: er verlangt, dass sich die vier Zweige in
-    NICHTS unterscheiden ausser den beiden `const`. Ohne ihn waere jeder Zweig
-    eine eigene Stelle, an der eine spaetere Feldaenderung haengenbleiben kann.
+    NICHTS unterscheiden ausser den beiden `const` und `capabilities`. Ohne ihn
+    waere jeder Zweig eine eigene Stelle, an der eine spaetere Feldaenderung
+    haengenbleiben kann.
     """
     defs = schema["$defs"]
 
@@ -563,17 +564,29 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict) -> None:
                   {"measurement_position", "aussageklasse"} <= set(zweig.get("required", [])))
         lauf.wahr(f"{name} ist strikt", zweig.get("additionalProperties") is False)
 
+    beitrag_capabilities_ref = (defs["probe_descriptor_beitrag"]
+                                .get("properties", {}).get("capabilities"))
+    lauf.wahr("probe_descriptor_beitrag nutzt den eigenen Faehigkeitssatz",
+              beitrag_capabilities_ref == {"$ref": "#/$defs/capabilities_beitrag"},
+              repr(beitrag_capabilities_ref))
+    beitrag_contribution_aux = (defs.get("capabilities_beitrag", {})
+                                .get("properties", {}).get("contribution_aux"))
+    lauf.wahr("Beitragszweig bindet contribution_aux ausdruecklich an supported",
+              beitrag_contribution_aux == {"const": "supported"},
+              repr(beitrag_contribution_aux))
+
     # Der eigentliche Riegel: die vier Zweige duerfen sich NUR in den zwei
-    # const unterscheiden. `description` ist Anmerkung und darf abweichen.
+    # const und capabilities unterscheiden. `description` ist Anmerkung und
+    # darf abweichen.
     def rumpf(name: str) -> dict:
         z = {k: v for k, v in defs[name].items() if k != "description"}
         z["properties"] = {k: v for k, v in z["properties"].items()
-                           if k not in ("measurement_position", "aussageklasse")}
+                           if k not in ("measurement_position", "aussageklasse", "capabilities")}
         return z
 
     erster = rumpf(next(iter(KOPPLUNG)))
     abweichend = [n for n in KOPPLUNG if rumpf(n) != erster]
-    lauf.wahr("die vier Zweige unterscheiden sich NUR in den zwei const",
+    lauf.wahr("die vier Zweige unterscheiden sich NUR in den zwei const und capabilities",
               not abweichend, ", ".join(abweichend))
 
     # Und die Gegenprobe zum Riegel selbst: er muss ueberhaupt etwas finden

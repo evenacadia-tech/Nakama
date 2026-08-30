@@ -87,7 +87,7 @@
     },
 
     "capabilities": {
-      "description": "Der Faehigkeitssatz aus Entwurf §53.6 — WOERTLICH und vollstaendig, alle zehn. Jede dieser Capabilities hat dort ihren eigenen Beweis UND ihren eigenen Fallback; wer zwei davon zu einem Feld zusammenzieht, loescht genau die Unterscheidung, fuer die §53.6 existiert (die drei Aux-Capabilities haben drei verschiedene Fallbacks: 'kein lokales Audio-Delta', 'keine dynamische Aktuation', 'nur Assoziation statt exakter Attribution'). NICHT additiv: eine unbekannte Capability ist eine unbekannte Sicherheitsaussage. Weil das Objekt strikt ist und alle zehn Pflicht sind, ist ein spaeterer Nachtrag KEINE Minor-Erweiterung, sondern ein Major-Schritt — deshalb steht die Liste jetzt vollstaendig und nicht 'soweit heute gemessen'.",
+      "description": "Der Faehigkeitssatz aus Entwurf §53.6 — WOERTLICH und vollstaendig, alle zehn. Jede dieser Capabilities hat dort ihren eigenen Beweis UND ihren eigenen Fallback; wer zwei davon zu einem Feld zusammenzieht, loescht genau die Unterscheidung, fuer die §53.6 existiert (die drei Aux-Capabilities haben drei verschiedene Fallbacks: 'kein lokales Audio-Delta', 'keine dynamische Aktuation', 'nur Assoziation statt exakter Attribution'). NICHT additiv: eine unbekannte Capability ist eine unbekannte Sicherheitsaussage. Weil das Objekt strikt ist und alle zehn Pflicht sind, ist ein spaeterer Nachtrag KEINE Minor-Erweiterung, sondern ein Major-Schritt — deshalb steht die Liste jetzt vollstaendig und nicht 'soweit heute gemessen'. Der Beitragszweig verweist auf `capabilities_beitrag`; nur dort ist `contribution_aux` wegen der exakten Attribution auf `supported` festgelegt.",
       "type": "object",
       "required": [
         "host_context_presence",
@@ -110,6 +110,36 @@
         "aux_compare_pre": { "$ref": "#/$defs/capability_wert" },
         "aux_priority_sidechain": { "$ref": "#/$defs/capability_wert" },
         "contribution_aux": { "$ref": "#/$defs/capability_wert" },
+        "float64_processing": { "$ref": "#/$defs/capability_wert" },
+        "binary_telemetry": { "$ref": "#/$defs/capability_wert" },
+        "remote_control": { "$ref": "#/$defs/capability_wert" }
+      }
+    },
+
+    "capabilities_beitrag": {
+      "description": "Faehigkeitssatz fuer den Beitragszweig. Er traegt dieselben zehn Pflichtfelder wie `capabilities`, bindet aber die Voraussetzung fuer eine exakte Mastersummenattribution maschinenlesbar: `contribution_aux` ist fest `supported`. Bei `unsupported` gilt der Fallback aus §53.6, nur Assoziation statt exakter Attribution, und die Position `post_fader_contribution` ist unzulaessig.",
+      "type": "object",
+      "required": [
+        "host_context_presence",
+        "project_time_samples",
+        "sample_accurate_automation",
+        "presentation_latency",
+        "aux_compare_pre",
+        "aux_priority_sidechain",
+        "contribution_aux",
+        "float64_processing",
+        "binary_telemetry",
+        "remote_control"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "host_context_presence": { "$ref": "#/$defs/capability_wert" },
+        "project_time_samples": { "$ref": "#/$defs/capability_wert" },
+        "sample_accurate_automation": { "$ref": "#/$defs/capability_wert" },
+        "presentation_latency": { "$ref": "#/$defs/capability_wert" },
+        "aux_compare_pre": { "$ref": "#/$defs/capability_wert" },
+        "aux_priority_sidechain": { "$ref": "#/$defs/capability_wert" },
+        "contribution_aux": { "const": "supported" },
         "float64_processing": { "$ref": "#/$defs/capability_wert" },
         "binary_telemetry": { "$ref": "#/$defs/capability_wert" },
         "remote_control": { "$ref": "#/$defs/capability_wert" }
@@ -433,7 +463,7 @@
     },
 
     "probe_descriptor": {
-      "description": "Identitaet, Produktklasse, Messposition, Faehigkeiten und Frische einer Instanz (§34.1). NICHT additiv. DISKRIMINIERT UEBER `measurement_position`, weil die Aussageklasse aus der Position FOLGT und nicht frei ist: §32.2 ordnet `insert`, `pre` und `post` der Klasse `beobachtend` zu und `post_fader_contribution` der Klasse `beitrag`, und schliesst mit 'Beide Klassen duerfen in Text und Konfidenz nie vermischt werden.' Bis zum 24.08.2026 standen die beiden Felder nebeneinander OHNE Kopplung — damit validierte `insert` + `beitrag`, also eine gewoehnliche Insertmessung, die sich exakter Mastersummenbeitrag nennt. Das ist Gate 7 aus §49.2 im Wortlaut, gefunden vom Gate-Lauf G1. Ein gemeinsames Feldpaar ohne Kopplung haette genau das erlaubt, wie ein gemeinsames minItems ueber beide Bandgitter (siehe `bandwerte`). Die Klasse steht trotz Ableitbarkeit ausdruecklich im Vertrag: ein Verbraucher, der Text und Konfidenz erzeugt, liest die Aussageklasse und nicht die Positionstabelle — das oneOf garantiert, dass die beiden nie widersprechen.",
+      "description": "Identitaet, Produktklasse, Messposition, Faehigkeiten und Frische einer Instanz (§34.1). NICHT additiv. DISKRIMINIERT UEBER `measurement_position`, weil die Aussageklasse aus der Position FOLGT und nicht frei ist: §32.2 ordnet `insert`, `pre` und `post` der Klasse `beobachtend` zu und `post_fader_contribution` der Klasse `beitrag`, und schliesst mit 'Beide Klassen duerfen in Text und Konfidenz nie vermischt werden.' Bis zum 24.08.2026 standen die beiden Felder nebeneinander OHNE Kopplung — damit validierte `insert` + `beitrag`, also eine gewoehnliche Insertmessung, die sich exakter Mastersummenbeitrag nennt. Das ist Gate 7 aus §49.2 im Wortlaut, gefunden vom Gate-Lauf G1. Ein gemeinsames Feldpaar ohne Kopplung haette genau das erlaubt, wie ein gemeinsames minItems ueber beide Bandgitter (siehe `bandwerte`). Die Klasse steht trotz Ableitbarkeit ausdruecklich im Vertrag: ein Verbraucher, der Text und Konfidenz erzeugt, liest die Aussageklasse und nicht die Positionstabelle — das oneOf garantiert, dass Messposition und Aussageklasse nie widersprechen; im Beitragszweig bindet es zusaetzlich `contribution_aux` an `supported`.",
       "x-nakama-discriminator": "measurement_position",
       "oneOf": [
         { "$ref": "#/$defs/probe_descriptor_insert" },
@@ -519,7 +549,7 @@
     },
 
     "probe_descriptor_beitrag": {
-      "description": "Optionaler, vom User eingerichteter post-fader Sidechain-only-Send auf einen EIGENEN DISKRETEN Aux-Bus eines Contribution-Receivers (§32.2). Die EINZIGE Position mit der Klasse `beitrag`: nur sie erlaubt deutlich staerkere Beitragsaussagen, und nur sie setzt den diskreten Aux-Bus voraus. Ob eine Instanz diese Position tatsaechlich fuehren DARF, entscheidet nicht dieser Wortschatz, sondern die Capability `contribution_aux` (§53.6) am jeweiligen Bau — der Vertrag muss die Position ausdruecken koennen, bevor ein Wirt sie tragen kann.",
+      "description": "Optionaler, vom User eingerichteter post-fader Sidechain-only-Send auf einen EIGENEN DISKRETEN Aux-Bus eines Contribution-Receivers (§32.2). Die EINZIGE Position mit der Klasse `beitrag`: nur sie erlaubt deutlich staerkere Beitragsaussagen, und nur sie setzt den diskreten Aux-Bus voraus. Dieser Zweig bindet die Voraussetzung deshalb ueber `capabilities_beitrag` maschinenlesbar an `contribution_aux: supported`; bei `unsupported` gilt nur Assoziation statt exakter Attribution und die Position darf nicht gefuehrt werden.",
       "type": "object",
       "required": [
         "adresse",
@@ -538,7 +568,7 @@
         "aussageklasse": { "const": "beitrag" },
         "label": { "$ref": "#/$defs/probe_label" },
         "pair_id": { "$ref": "#/$defs/pair_id" },
-        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "capabilities": { "$ref": "#/$defs/capabilities_beitrag" },
         "frische": { "$ref": "#/$defs/frische" }
       }
     },

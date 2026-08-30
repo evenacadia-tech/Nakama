@@ -105,3 +105,29 @@ Konfidenz und Degradation in jeder UI-Fassung). Für diesen einen Wert ist die
 Anzeigefrage aus NAK-57 beantwortet; NAK-57 bleibt im Übrigen offen. Zeigt die
 Bildvorlage vom 25.08. einen der drei angenommenen Handgriffe nicht, wird das
 als Lücke einzeln vorgelegt und nicht erfunden.
+
+## U15 — zweite Betriebsart ohne Phasendrehung (linearphasig)
+
+**Frage:** Geplant ist heute ein einziger Filtertyp, der sofort reagiert und
+keine Verzögerung einbaut — die Bauart, die fast jeder EQ als Grundeinstellung
+hat. Pro-Q, dein genanntes Vorbild, bietet zusätzlich eine Betriebsart an, die
+beim Filtern nichts im Zeitverlauf verschiebt. Sie klingt beim harten
+Beschneiden sauberer, kostet aber eine feste Verzögerung (alles wird träger,
+Live-Vorhören ungenauer) und kann vor sehr steilen Eingriffen ein leises
+Vorecho erzeugen. Dass FL diese Verzögerung sauber herausrechnet, ist bei uns
+nie nachgemessen worden. Soll Nakama diese zweite Betriebsart bekommen?
+
+**Antwort (Auswahl):** „Nein, dauerhaft ohne" — Nakama bleibt bewusst
+minimalphasig.
+
+**Folge:** Kein zweiter Betriebsmodus — nicht in der ersten Fassung und nicht
+als späterer Ausbau. Es wird dafür auch kein Name reserviert; die Tür bleibt
+nicht angelehnt. Am Bau ändert sich dadurch nichts, und das ist der Punkt: die
+an FL gemeldete Verzögerung bleibt null, der gespeicherte Zustand bekommt
+keinen Phasenmodus-Wert, die Oberfläche keinen Umschalter. Die Karte hatte
+S26–28, S28b und das Prüftor G6 als betroffen genannt — alle drei bleiben
+unverändert. Der Abstand zum Vorbild ist damit bewusst und datiert: Pro-Q kann
+das, Nakama nicht, und niemand muss die Stelle später neu aufrollen. Die in der
+Karte genannte Abhängigkeit von der ungemessenen FL-Latenzverrechnung (Termin
+A2, Karte U11) entfällt für den EQ; ob U11 aus anderen Gründen offen bleibt,
+entscheidet U11 selbst.

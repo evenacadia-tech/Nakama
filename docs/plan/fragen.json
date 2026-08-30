@@ -28,18 +28,6 @@
    "blockiert_durch": "NAK-57 — der Zähler analyseKontinuitaetsbrueche() hat keine Anzeige; ohne sie ist der Kurztermin nicht ablesbar (Dirigent 29.08.)"
   },
   {
-   "id": "U15",
-   "dringlichkeit": "vor Phase P6 (der EQ selbst)",
-   "art": "Produktentscheid",
-   "titel": "Soll der EQ eine zweite Betriebsart bekommen, die den Klang nicht zeitlich verschiebt?",
-   "was": "Heute ist geplant: ein einziger Filtertyp, der sofort reagiert und keine Verzögerung einbaut. Das ist die Bauart, die fast jeder EQ als Grundeinstellung hat. Pro-Q — dein genanntes Vorbild — bietet zusätzlich zwei andere Betriebsarten an. Die interessante davon verschiebt beim Filtern nichts im Zeitverlauf, sondern behandelt alle Frequenzen gleich. Das klingt beim harten Beschneiden sauberer, kostet aber zwei Dinge: das Plugin braucht dann eine feste Verzögerung — alles wird ein Stück träger, und Live-Vorhören wird ungenauer —, und vor sehr steilen Eingriffen kann ein leises Vorecho entstehen. Wichtig dabei: dass FL diese Verzögerung sauber herausrechnet, ist in unserem Projekt **noch nicht nachgemessen** (das steht als Termin A2 bei dir, Karte U11). Ohne diesen Nachweis wäre die zweite Betriebsart eine Zusage ohne Beleg. Frage: soll Nakama diese zweite Betriebsart bekommen — als Umschalter, den du bewusst einschaltest?",
-   "warum": "Du hast am 23.08. gesagt: „er muss das rad nicht neu erfinden, aber vorbild ist auf jedenfall besagte eq\" und „alle gängigen filter die es gibt\". Der aktuelle Plan schließt diese Betriebsart ausdrücklich aus dem ersten Ausbau aus. Das ist kein Versehen, sondern eine bewusste Grenze — aber sie widerspricht deinem Vorbild an einer sichtbaren Stelle, deshalb legen wir sie dir vor, statt sie selbst zu entscheiden.",
-   "wo": "Betroffen: die Verzögerungsangabe an FL (Vertrag), ein neuer gespeicherter Wert (Zustand) und ein Umschalter (Oberfläche). Tickets S26–28, S28b und das Prüftor G6. Belege: docs/beweise/PR1.md Abschnitt 5.3; Entwurf §30.1 und §44.2.",
-   "seit": "2026-08-30",
-   "bilder": [],
-   "status": "offen"
-  },
-  {
    "id": "U18",
    "dringlichkeit": "vor Phase P6",
    "art": "Produktentscheid",
@@ -410,6 +398,14 @@
    "datum": "2026-08-30 23:51",
    "status": "eingearbeitet",
    "ergebnis": "Die bereits gemessene Lautheit wird sichtbar: je Quelle ein Wert auf Gens erster Seite (Uebersicht), nicht auf der EQ-Flaeche. Ticket S18-19. Beantwortet die Anzeigefrage aus NAK-57 fuer diesen einen Wert; NAK-57 bleibt im Uebrigen offen. [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md]"
+  },
+  "U15": {
+   "frage": "Soll der EQ eine zweite Betriebsart bekommen, die den Klang nicht zeitlich verschiebt (linearphasig)?",
+   "wahl": "Nein, dauerhaft ohne",
+   "text": "Nein, dauerhaft ohne — Nakama bleibt bewusst minimalphasig.",
+   "datum": "2026-08-30 23:51",
+   "status": "eingearbeitet",
+   "ergebnis": "Nakama bleibt dauerhaft minimalphasig: kein zweiter, linearphasiger Betriebsmodus - weder in der ersten Fassung noch als spaeterer Ausbau - und auch keine Namensreservierung. Am Bau aendert sich nichts; S26-28, S28b und Pruefttor G6 bleiben unveraendert. [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md]"
   }
  }
 }

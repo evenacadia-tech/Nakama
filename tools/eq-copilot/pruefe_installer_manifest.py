@@ -155,6 +155,33 @@ DREI HAERTEGRADE FUER DENSELBEN HASH (NAK-94, 29.08.2026)
   gruen weiterlaufen. Belegt als P9-a..P9-f in docs/beweise/SONDE-007c.md,
   jede Probe zurueckgenommen.
 
+  WEGWECHSEL W3 (NAK-94 Nacharbeit 10, 30.08.2026, Befund des zehnten
+  Pruefers). Drei Runden lang hat je ein Pruefer EIN weiteres Feld gefunden,
+  dessen Byteaenderung einen Traceback statt eines Strukturhalts ergab -
+  zuletzt `ziel_id` (KeyError in [3]) und ein ungueltiges UTF-8-Byte
+  (UnicodeDecodeError in `_lies_geprueft`, ein ValueError, den der OSError-
+  Zweig nicht fing). Feld fuer Feld nachzuziehen schliesst die Klasse nicht;
+  sie wird deshalb STRUKTURELL geschlossen und GEMESSEN:
+
+    Erste Verteidigung  die Strukturvertraege oben. Sie sagen im Klartext,
+                        WELCHE Datei welche Form nicht traegt. Neu am
+                        Installer-Manifest: `ziel_id` als Zeichenkette an
+                        jedem VST3-Artefakt (adversariale_strukturproben()
+                        liest es hart).
+    Zentraler Faenger   main() ueberfuehrt JEDE Ausnahme, die kein
+                        Strukturhalt ist, in eine Klartextzeile mit Typ,
+                        Meldung, Datei und Zeile des Ausloesers, Exit 2 und
+                        ohne Traceback (nur mit --debug). Der eigene
+                        SystemExit "Gegenprobe unmoeglich" laeuft absichtlich
+                        durch - er ist schon kontrolliert.
+    Messung             [3c] Byte-Kipp-Fuzz: jede gelesene JSON-Datei, jedes
+                        Byte einzeln auf 0xFF und 0x20, in-process durch
+                        Lesen, Strukturpruefung und jeden verbrauchenden
+                        Block. Zugesagt und gezaehlt: keine Ausnahme ausser
+                        Strukturhalt und "Gegenprobe unmoeglich". Im Kanon
+                        laeuft ein deterministisches Sample (jedes n-te Byte,
+                        n in der Ausgabe), vollstaendig mit --fuzz-voll.
+
   ZWEI SORTEN PROBE-JOURNALE, seit NAK-94 Nacharbeit 5 (30.08.2026):
 
     Writer-Fixtur   von Install-Nakama.ps1 SELBST in der A18-Sandbox erzeugt
@@ -192,18 +219,22 @@ Aufrufe:
 from __future__ import annotations
 
 import argparse
+import ast
 import contextlib
 import copy
 import hashlib
 import io
 import json
 import ntpath
+import os
 import pathlib
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
+import traceback
 from datetime import datetime, timezone
 
 WURZEL = pathlib.Path(__file__).resolve().parents[2]
@@ -309,6 +340,13 @@ def _lies_geprueft(weg: pathlib.Path, pruefung) -> dict:
     except OSError as fehler:
         raise Strukturhalt(f"{kurz}: nicht lesbar "
                            f"({type(fehler).__name__}: {fehler})") from None
+    except UnicodeDecodeError as fehler:
+        # NAK-94 Nacharbeit 10, Befund des zehnten Pruefers: ein einzelnes
+        # gekipptes Byte (0x7B -> 0xFF) machte hier einen Traceback statt
+        # eines Strukturhalts. UnicodeDecodeError ist ein ValueError, kein
+        # OSError - der Zweig darueber fing ihn nicht.
+        raise Strukturhalt(f"{kurz}: keine gueltige UTF-8-Datei "
+                           f"({type(fehler).__name__}: {fehler})") from None
     try:
         daten = json.loads(rohe)
     except json.JSONDecodeError as fehler:
@@ -328,7 +366,16 @@ def _installermanifest_struktur(m: object) -> list[str]:
     einer Zeichenkette `quelle` (der Pfad, den [4] und `hashen` zusammensetzen),
     `ziele` als Objekt und `rueckweg` als Objekt mit der Liste
     `bekannte_staende`. `stillgelegte_ziele` steht NICHT hier: jeder Zugriff
-    darauf laeuft schon ueber `.get` samt Typpruefung."""
+    darauf laeuft schon ueber `.get` samt Typpruefung.
+
+    NAK-94 Nacharbeit 10 (Befund des zehnten Pruefers): dazu `ziel_id` UND
+    `cmake_ziel` als Zeichenketten an jedem VST3-Artefakt.
+    `adversariale_strukturproben()` liest beide HART, und je eine einzelne
+    Byteaenderung ("ziel_id" -> "xiel_id" bzw. ein gekipptes `cmake_ziel`)
+    endete dort mit einem KeyError; den zweiten Fall hat erst der
+    Byte-Kipp-Fuzz [3c] gefunden, nicht der Pruefer. Die Auswahl
+    `art == "vst3"` steht hier genauso wie dort: eine Grobform-Regel darf nur
+    verlangen, was wirklich gelesen wird."""
     if not isinstance(m, dict):
         return [f"Wurzel ist kein Objekt ({type(m).__name__})"]
     fehlt: list[str] = []
@@ -341,9 +388,16 @@ def _installermanifest_struktur(m: object) -> list[str]:
             if not isinstance(a, dict):
                 fehlt.append(f"artefakte[{index}] ist kein Objekt "
                              f"({type(a).__name__})")
-            elif not isinstance(a.get("quelle"), str):
+                continue
+            if not isinstance(a.get("quelle"), str):
                 fehlt.append(f"artefakte[{index}] ohne Zeichenkette 'quelle' "
                              f"({type(a.get('quelle')).__name__})")
+            if a.get("art") == "vst3":
+                for feld in ("ziel_id", "cmake_ziel"):
+                    if not isinstance(a.get(feld), str):
+                        fehlt.append(f"artefakte[{index}] (vst3) ohne "
+                                     f"Zeichenkette {feld!r} "
+                                     f"({type(a.get(feld)).__name__})")
     ziele = m.get("ziele")
     if not isinstance(ziele, dict):
         fehlt.append(f"'ziele' ist kein Objekt ({type(ziele).__name__})")
@@ -1023,6 +1077,22 @@ def verdirb_identitaet(i: dict) -> dict:
     return k
 
 
+def _gegenprobe_braucht(wert, warum: str):
+    """Gibt `wert` zurueck - oder beendet die Gegenprobe KONTROLLIERT.
+
+    `next(...)` ohne Vorgabe stirbt mit `StopIteration`, ein Zugriff auf eine
+    fehlende Kennung mit `KeyError`; beides waere ein Traceback. Eine einzelne
+    Byteaenderung reicht dafuer aus - gemessen vom Byte-Kipp-Fuzz [3c]
+    (NAK-94 Nacharbeit 10). Traegt die Datenlage eine Gegenprobe nicht mehr,
+    endet sie deshalb wie die beiden aelteren Faelle: mit Klartext und Exit
+    ungleich 0. Eine stillschweigend ausgelassene Gegenprobe waere schlimmer
+    als keine.
+    """
+    if wert is None:
+        raise SystemExit("Gegenprobe unmoeglich: " + warum)
+    return wert
+
+
 def adversariale_strukturproben(m: dict, i: dict) -> None:
     """Die vier ehemals offenen Kanten einzeln brechen.
 
@@ -1050,7 +1120,11 @@ def adversariale_strukturproben(m: dict, i: dict) -> None:
     manifest = copy.deepcopy(m)
     ident["ziele"][a1]["bundle"] = ident["ziele"][a0]["bundle"]
     zid = ident["ziele"][a1]["id"]
-    artefakt = next(a for a in manifest["artefakte"] if a.get("ziel_id") == zid)
+    artefakt = _gegenprobe_braucht(
+        next((a for a in manifest["artefakte"]
+              if a.get("ziel_id") == zid), None),
+        f"zum aktiven Ziel {zid!r} fuehrt das Manifest kein Artefakt - genau "
+        "dieses braucht die Bundle-Zielkollision.")
     artefakt["quelle"] = (
         f"eq-copilot/build/plugin/{artefakt['cmake_ziel']}_artefacts/Release/VST3/"
         f"{ident['ziele'][a1]['bundle']}"
@@ -1074,7 +1148,11 @@ def adversariale_strukturproben(m: dict, i: dict) -> None:
     stillgelegte = _stillgelegte(i)
     if stillgelegte:
         manifest = copy.deepcopy(m)
-        vorlage = next(a for a in manifest["artefakte"] if a.get("art") == "vst3")
+        vorlage = _gegenprobe_braucht(
+            next((a for a in manifest["artefakte"]
+                  if a.get("art") == "vst3"), None),
+            "das Manifest fuehrt kein VST3-Artefakt, das als Vorlage fuer ein "
+            "heimlich wieder ausgeliefertes stillgelegtes Ziel dienen koennte.")
         heimlich = copy.deepcopy(vorlage)
         heimlich["ziel_id"] = stillgelegte[0]["id"]
         manifest["artefakte"].append(heimlich)
@@ -1168,7 +1246,11 @@ def adversariale_strukturproben(m: dict, i: dict) -> None:
                            f"faellt, wenn `{feld}` {name} ist")
 
     manifest = copy.deepcopy(m)
-    entfernt = next(a for a in manifest["artefakte"] if a.get("art") == "vst3")
+    entfernt = _gegenprobe_braucht(
+        next((a for a in manifest["artefakte"]
+              if a.get("art") == "vst3"), None),
+        "das Manifest fuehrt kein VST3-Artefakt mehr, das still aus der "
+        "Auslieferung fallen koennte.")
     manifest["artefakte"].remove(entfernt)
     pruefe(not r_jedes_ziel_genau_einmal(manifest, i)[0],
            "faellt, wenn ein aktives Ziel still aus der Auslieferung faellt")
@@ -1191,9 +1273,20 @@ def adversariale_strukturproben(m: dict, i: dict) -> None:
            "faellt an kanonischem Broker-Zieltraversal")
 
     manifest = copy.deepcopy(m)
-    artefakt = next(a for a in manifest["artefakte"] if a.get("art") == "vst3")
+    artefakt = _gegenprobe_braucht(
+        next((a for a in manifest["artefakte"]
+              if a.get("art") == "vst3"), None),
+        "das Manifest fuehrt kein VST3-Artefakt, an dem sich ein "
+        "cmake_ziel-Quelltraversal zeigen liesse.")
     artefakt["cmake_ziel"] = "../../../../outside"
-    bundle = _ziele(i)[artefakt["ziel_id"]]["bundle"]
+    ziel = _gegenprobe_braucht(
+        _ziele(i).get(artefakt["ziel_id"]),
+        f"die Identitaet kennt kein Ziel {artefakt['ziel_id']!r}, auf das das "
+        "VST3-Artefakt zeigt.")
+    bundle = _gegenprobe_braucht(
+        ziel.get("bundle"),
+        f"das Ziel {artefakt['ziel_id']!r} traegt keinen Bundlenamen, aus dem "
+        "sich ein Quellpfad rechnen liesse.")
     artefakt["quelle"] = (
         f"eq-copilot/build/plugin/{artefakt['cmake_ziel']}_artefacts/Release/VST3/{bundle}"
     )
@@ -1993,7 +2086,7 @@ def _installierter_stand(manifest: dict) -> None:
         return
     try:
         journal = json.loads(INSTALL_ERGEBNIS.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as e:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
         print(f"  hinweis install-ergebnis.json nicht lesbar: {e}")
         return
     if not isinstance(journal, dict) or journal.get("schema") != ERGEBNIS_SCHEMA:
@@ -2102,7 +2195,286 @@ def _installierter_stand(manifest: dict) -> None:
                   f"festgeschriebene  [installiert {ist[:16]} | Manifest {soll[:16]}]  {ziel}")
 
 
-def main() -> int:
+# ── [3c] Byte-Kipp-Fuzz ueber JEDE gelesene JSON-Datei ──────────────────────
+#
+# NAK-94 Nacharbeit 10, Wegwechsel W3 (30.08.2026). Drei Runden lang hat je ein
+# Pruefer EIN weiteres Feld gefunden, dessen Fehlen einen Traceback statt eines
+# Strukturhalts ergab: "faelle" (Nacharbeit 9), "artefakte"/"ziele" (ebenfalls
+# 9) und zuletzt "ziel_id" plus ein ungueltiges UTF-8-Byte (Nacharbeit 10).
+# Feld fuer Feld nachzuziehen schliesst die Klasse nicht - es verschiebt sie
+# auf das naechste Feld.
+#
+# Deshalb wird die Zusage jetzt GEMESSEN statt behauptet. Jede von diesem Bein
+# gelesene JSON-Datei wird Byte fuer Byte gekippt - auf 0xFF (ungueltiges UTF-8)
+# und auf 0x20 (gueltiges Zeichen, das Schluessel, Zahlen und Trennzeichen
+# zerlegt) - und in-process durch Lesen, Strukturpruefung und JEDEN Block
+# gefahren, der eine dieser Dateien verbraucht. Zugesagt ist: keine Ausnahme
+# ausser `Strukturhalt`. Alles andere waere ein Traceback und ist hier ROT,
+# benannt mit Datei, Byte, Kippwert, Ausnahmetyp und Ausloeserzeile.
+#
+# ZWEI AUSGAENGE ZAEHLEN NICHT ALS BRUCH, weil beide kontrolliert sind und
+# Klartext tragen: `Strukturhalt` (die erste Verteidigung) und der eigene
+# `SystemExit("Gegenprobe unmoeglich: ...")` aus [3]/[3b] - eine Byteaenderung
+# kann die Datenlage so verkleinern, dass eine Gegenprobe nichts mehr misst,
+# und dann ist der Abbruch die richtige Antwort. Beide werden getrennt
+# gezaehlt und ausgewiesen, nie verschwiegen.
+#
+# KEIN SUBPROZESS JE BYTE: das waeren zehntausende Prozessstarts. Der Inhalt
+# wird stattdessen fuer die Dauer EINES Laufs ueberlagert
+# (`_dateien_ersetzt`), und `artefakt_hash` wird waehrend des Fuzz gemerkt -
+# die gebauten Artefakte aendern sich dabei nicht, wohl aber die Frage, WELCHES
+# Artefakt gehasht wird.
+
+FUZZ_KIPPWERTE = (0xFF, 0x20)
+# Der Schritt des Kanon-Samples. Deterministisch (jedes n-te Byte, beginnend
+# bei 0), damit derselbe Stand dieselben Stellen prueft; der vollstaendige Lauf
+# ueber JEDES Byte laeuft mit --fuzz-voll und steht als Rohausgabe im Manifest.
+FUZZ_SCHRITT = 24
+_FUZZ_SCHLUESSEL = re.compile(rb'"([A-Za-z_][A-Za-z0-9_]*)"\s*:')
+
+
+def fuzz_stellen(roh: bytes, schritt: int) -> list[int]:
+    """Die Byte-Stellen eines Laufs - deterministisch, aus den Bytes gerechnet.
+
+    ZWEI HAELFTEN, weil ein reines Stride-Sample strukturell blind fuer kurze
+    Tokens ist: bei Schritt n kann jeder Schluessel, der kuerzer als n ist,
+    vollstaendig zwischen zwei Stichproben liegen - und genau an
+    SCHLUESSELNAMEN hingen die letzten drei Befunde ("faelle", "artefakte",
+    "ziel_id").
+
+      1. jedes n-te Byte, beginnend bei 0 (bei n = 1 also jedes Byte),
+      2. das ERSTE Namensbyte jedes JSON-Schluessels. Ein Kipp dort macht aus
+         `"ziel_id"` genau das `"xiel_id"` des zehnten Pruefers.
+
+    Beide Haelften haengen nur vom Dateiinhalt ab; derselbe Stand prueft
+    dieselben Stellen.
+    """
+    stellen = set(range(0, len(roh), max(1, schritt)))
+    stellen.update(treffer.start(1)
+                   for treffer in _FUZZ_SCHLUESSEL.finditer(roh))
+    return sorted(stellen)
+
+
+def fuzz_dateien() -> list[pathlib.Path]:
+    """Jede JSON-Datei, die dieses Bein liest - deterministisch sortiert.
+
+    Die Writer-Fixturen kommen aus dem Verzeichnis, nicht aus einer Liste im
+    Skript: eine neue Fixtur ist damit automatisch im Fuzz, statt hier
+    nachgepflegt werden zu muessen.
+    """
+    dateien = [MANIFEST, IDENTITAET, JOURNAL_FIXTUR_MANIFEST]
+    dateien += [p for p in sorted(JOURNAL_FIXTUREN.glob("*.json"))
+                if p.name != JOURNAL_FIXTUR_MANIFEST.name]
+    dateien.append(INSTALL_ERGEBNIS)
+    return [p for p in dateien if p.is_file()]
+
+
+@contextlib.contextmanager
+def _dateien_ersetzt(ersatz: dict):
+    """Ueberlagert den INHALT einzelner Dateien fuer die Dauer des Blocks.
+
+    `read_text` dekodiert dabei ECHT - ein ungueltiges Byte gibt denselben
+    `UnicodeDecodeError` wie von der Platte. `open()` bleibt unberuehrt: die
+    gebauten Artefakte werden weiter von der Platte gehasht.
+    """
+    norm = {os.path.normcase(os.path.normpath(str(p))): b
+            for p, b in ersatz.items()}
+    alt_bytes, alt_text = pathlib.Path.read_bytes, pathlib.Path.read_text
+
+    def neue_bytes(self, *a, **k):
+        roh = norm.get(os.path.normcase(os.path.normpath(str(self))))
+        return alt_bytes(self, *a, **k) if roh is None else roh
+
+    def neuer_text(self, encoding=None, errors=None, **k):
+        roh = norm.get(os.path.normcase(os.path.normpath(str(self))))
+        if roh is None:
+            return alt_text(self, encoding=encoding, errors=errors, **k)
+        return roh.decode(encoding or "utf-8", errors or "strict")
+
+    pathlib.Path.read_bytes, pathlib.Path.read_text = neue_bytes, neuer_text
+    try:
+        yield
+    finally:
+        pathlib.Path.read_bytes, pathlib.Path.read_text = alt_bytes, alt_text
+
+
+def _fuzz_verbraucher() -> None:
+    """Lesen, Strukturpruefung und JEDER Block, der eine gelesene Datei nutzt.
+
+    Dieselbe Reihenfolge und dieselben Aufrufe wie in `_lauf()` - nur ohne die
+    Kreuzprobe, die keine JSON-Datei liest, und ohne die Ausgabe. Die
+    Ausnahmebehandlung in [2] ist woertlich uebernommen: dort zaehlt eine
+    stolpernde Regel als Fund, und der Fuzz darf das nicht strenger sehen als
+    der echte Lauf.
+    """
+    manifest = _lies_geprueft(MANIFEST, _installermanifest_struktur)
+    identitaet = _lies_geprueft(IDENTITAET, _identitaet_struktur)
+    for regel, _text in REGELN:
+        regel(manifest, identitaet)
+    kaputt = verdirb(manifest, identitaet)
+    kaputte_identitaet = verdirb_identitaet(identitaet)
+    for regel, _text in REGELN:
+        try:
+            regel(kaputt, kaputte_identitaet)
+        except Exception:
+            pass
+    adversariale_strukturproben(manifest, identitaet)
+    gegenproben_nacharbeit(manifest)
+    auslieferungsstand(manifest, hart=False)
+    installierter_stand(manifest)
+
+
+# Bloecke, die `_lauf()` faehrt und die `_fuzz_verbraucher()` NICHT faehrt,
+# weil sie keine der gelesenen JSON-Dateien anfassen. Jede ANDERE Abweichung
+# ist ROT: sonst waechst `_lauf` still um einen Leser, den [3c] nie sieht -
+# und die Zusage "jede gelesene JSON-Datei" waere wieder eine Behauptung.
+FUZZ_OHNE_JSON = {
+    "print",             # Ausgabe
+    "pruefe",            # Urteil, kein Leser
+    "len", "max", "str",  # eingebaut
+    "byte_kipp_fuzz",    # der Fuzz selbst - er darf sich nicht selbst fahren
+    "kreuzprobe",        # hasht Ordner und faehrt PowerShell, liest kein JSON
+    "hashen",            # nur unter --hashen, und der Pfad endet vor [3c]
+    "_stillgelegte",     # arbeitet auf dem schon gelesenen Objekt
+}
+
+
+def _aufgerufene(funktionsname: str) -> set[str]:
+    """Die beim Namen aufgerufenen Funktionen EINER Funktion, aus dem AST.
+
+    Gelesen wird die eigene Quelle - kein Import, keine Ausfuehrung.
+    """
+    try:
+        baum = ast.parse(pathlib.Path(__file__).read_text(encoding="utf-8"))
+    except (OSError, SyntaxError, ValueError):
+        return set()
+    for knoten in ast.walk(baum):
+        if (isinstance(knoten, ast.FunctionDef)
+                and knoten.name == funktionsname):
+            return {k.func.id for k in ast.walk(knoten)
+                    if isinstance(k, ast.Call) and isinstance(k.func, ast.Name)}
+    return set()
+
+
+def fuzz_deckung() -> set[str]:
+    """Bloecke aus `_lauf`, die der Fuzz nicht faehrt und nicht fahren darf."""
+    return (_aufgerufene("_lauf") - _aufgerufene("_fuzz_verbraucher")
+            - FUZZ_OHNE_JSON)
+
+
+def _fuzz_einmal(ersatz: dict) -> tuple[str, str]:
+    """EIN Lauf mit ueberlagertem Inhalt. (Klasse, Klartext)
+
+    Klassen: `strukturhalt`, `gegenprobe_unmoeglich`, `befund`, `gruen` und
+    `unkontrolliert` - die letzte ist der Bruch der Zusage.
+    """
+    global ok
+    merk_ok, merk_fehler = ok, list(fehler)
+    fehler.clear()
+    try:
+        with contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()), \
+                _dateien_ersetzt(ersatz):
+            _fuzz_verbraucher()
+        return ("befund", "; ".join(fehler[:2])) if fehler else ("gruen", "")
+    except Strukturhalt as halt:
+        return "strukturhalt", str(halt)
+    except SystemExit as aus:
+        return "gegenprobe_unmoeglich", str(aus)
+    except Exception as unerwartet:
+        return "unkontrolliert", _abbruch_klartext(unerwartet)
+    finally:
+        fehler.clear()
+        fehler.extend(merk_fehler)
+        ok = merk_ok
+
+
+def byte_kipp_fuzz(schritt: int) -> None:
+    """[3c]: jede gelesene JSON-Datei ueberlebt jede Ein-Byte-Aenderung."""
+    voll = schritt <= 1
+    print("\n[3c] Byte-Kipp-Fuzz - jede gelesene JSON-Datei, jedes Byte auf "
+          "0xFF und 0x20" + ("" if voll else
+                             f"; Kanon-Sample: jedes {schritt}. Byte PLUS das "
+                             f"erste Namensbyte jedes JSON-Schluessels "
+                             f"(--fuzz-voll faehrt alle)"))
+    dateien = fuzz_dateien()
+    if not dateien:
+        pruefe(False, "[3c] es gibt gelesene JSON-Dateien zum Kippen")
+        return
+
+    # Bevor gezaehlt wird: faehrt der Fuzz ueberhaupt dieselben Bloecke wie der
+    # echte Lauf? Sonst sagte eine gruene Zahl nur, dass ein VERALTETER
+    # Ausschnitt keine Ausnahme wirft.
+    offen = fuzz_deckung()
+    pruefe(not offen,
+           "[3c/0] der Fuzz faehrt jeden Block aus _lauf(), der eine gelesene "
+           "JSON-Datei anfassen kann - die uebrigen stehen namentlich in "
+           f"FUZZ_OHNE_JSON ({len(FUZZ_OHNE_JSON)})",
+           "nicht gefahren: " + ", ".join(sorted(offen)) if offen else "")
+
+    gemerkt: dict = {}
+    echter_hash = artefakt_hash
+
+    def gemerkter_hash(pfad, art):
+        schluessel = (str(pfad), art)
+        if schluessel not in gemerkt:
+            gemerkt[schluessel] = echter_hash(pfad, art)
+        return gemerkt[schluessel]
+
+    zaehler = {"laeufe": 0, "strukturhalt": 0, "gegenprobe_unmoeglich": 0,
+               "befund": 0, "gruen": 0, "unkontrolliert": 0}
+    brueche: list[str] = []
+    bytes_gesamt = 0
+    beginn = time.perf_counter()
+    globals()["artefakt_hash"] = gemerkter_hash
+    try:
+        for weg in dateien:
+            roh = weg.read_bytes()
+            kurz = weg.relative_to(WURZEL).as_posix()
+            stellen = fuzz_stellen(roh, schritt)
+            bytes_gesamt += len(stellen)
+            fuer_datei = dict.fromkeys(zaehler, 0)
+            for stelle in stellen:
+                for wert in FUZZ_KIPPWERTE:
+                    if roh[stelle] == wert:
+                        continue          # kein Kipp - dasselbe Byte
+                    klasse, text = _fuzz_einmal(
+                        {weg: roh[:stelle] + bytes([wert]) + roh[stelle + 1:]})
+                    zaehler["laeufe"] += 1
+                    zaehler[klasse] += 1
+                    fuer_datei["laeufe"] += 1
+                    fuer_datei[klasse] += 1
+                    if klasse == "unkontrolliert":
+                        brueche.append(f"{kurz}: Byte {stelle} -> "
+                                       f"0x{wert:02X}: {text}")
+            print(f"      {kurz:52} {fuer_datei['laeufe']:6} Laeufe | "
+                  f"Strukturhalt {fuer_datei['strukturhalt']:6} | "
+                  f"Gegenprobe unmoeglich {fuer_datei['gegenprobe_unmoeglich']:5} | "
+                  f"Befund {fuer_datei['befund']:5} | "
+                  f"gruen {fuer_datei['gruen']:5} | "
+                  f"UNKONTROLLIERT {fuer_datei['unkontrolliert']}")
+    finally:
+        globals()["artefakt_hash"] = echter_hash
+    dauer = time.perf_counter() - beginn
+
+    for zeile in brueche[:8]:
+        print("      BRUCH " + zeile)
+    if len(brueche) > 8:
+        print(f"      ... und {len(brueche) - 8} weitere")
+    pruefe(zaehler["unkontrolliert"] == 0,
+           f"[3c] {len(dateien)} gelesene JSON-Datei(en), {bytes_gesamt} "
+           f"gekippte Byte-Stellen, {zaehler['laeufe']} Laeufe: KEINE Ausnahme "
+           f"ausser Strukturhalt "
+           f"({zaehler['strukturhalt']}) und dem eigenen 'Gegenprobe "
+           f"unmoeglich' ({zaehler['gegenprobe_unmoeglich']}); "
+           f"Befund {zaehler['befund']}, gruen {zaehler['gruen']}"
+           + ("" if voll else f"; Sample jedes {schritt}. Byte plus jedes "
+                              f"erste Schluesselnamensbyte"),
+           (f"{zaehler['unkontrolliert']} unkontrollierte Ausnahme(n)"
+            if brueche else f"{dauer:.1f}s"))
+
+
+def _argumente(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
     g = p.add_mutually_exclusive_group()
     g.add_argument("--hashen", action="store_true",
@@ -2111,8 +2483,72 @@ def main() -> int:
                    help="Auslieferungsschritt: [4] vergleicht HART gegen die festgeschriebenen "
                         "Hashes (Exit 2 bei Abweichung). Ohne dieses Flag ist eine Abweichung "
                         "ein Hinweis - nach einem Relink ist sie der Normalfall (NAK-94).")
-    args = p.parse_args()
+    p.add_argument("--fuzz-voll", action="store_true",
+                   help="[3c] ueber JEDES Byte jeder gelesenen JSON-Datei statt "
+                        "ueber das Kanon-Sample (Minuten statt Sekunden)")
+    p.add_argument("--fuzz-schritt", type=int, default=FUZZ_SCHRITT,
+                   metavar="N",
+                   help=f"Schrittweite des [3c]-Samples (Vorgabe {FUZZ_SCHRITT}); "
+                        "die Schluesselnamensbytes sind immer dabei")
+    p.add_argument("--debug", action="store_true",
+                   help="bei einer unerwarteten Ausnahme zusaetzlich den Traceback "
+                        "zeigen; ohne dieses Flag gibt es nur die Klartextzeile")
+    return p.parse_args(argv)
 
+
+def _abbruch_klartext(fehler: BaseException) -> str:
+    """Typ, Meldung und AUSLOESERZEILE in einer Zeile - alles, was von einem
+    Traceback gebraucht wird, ohne einen zu drucken.
+
+    Ohne den Ort waere die Meldung eines `KeyError` nur der Schluesselname und
+    damit fast nutzlos: 'ziel_id' sagt nicht, WO gelesen wurde."""
+    spur = traceback.extract_tb(fehler.__traceback__)
+    ort = ""
+    if spur:
+        rahmen = spur[-1]
+        try:
+            datei = (pathlib.Path(rahmen.filename).resolve()
+                     .relative_to(WURZEL).as_posix())
+        except (ValueError, OSError):
+            datei = rahmen.filename
+        ort = f" @ {datei}:{rahmen.lineno}"
+    return f"{type(fehler).__name__}: {fehler}{ort}"
+
+
+def main(argv=None) -> int:
+    """Zentraler Faenger (NAK-94 Nacharbeit 10, Wegwechsel W3).
+
+    Die Strukturpruefungen bleiben die erste Verteidigung; sie sagen im
+    Klartext, WELCHE Datei welche Form nicht traegt. Was ihnen entgeht, endet
+    hier: eine Klartextzeile mit Ausnahmetyp, Meldung, Datei und Zeile des
+    Ausloesers, Exit 2, KEIN Traceback auf stdout oder stderr. Den Traceback
+    gibt es nur mit `--debug`.
+
+    `SystemExit` laeuft absichtlich durch: das ist der eigene, bereits
+    kontrollierte Ausgang 'Gegenprobe unmoeglich' aus [3]/[3b] - er traegt
+    seinen Klartext selbst und darf nicht als unerwartete Ausnahme erscheinen.
+    """
+    args = _argumente(argv)
+    try:
+        return _lauf(args)
+    except Strukturhalt as halt:
+        print("")
+        print(f"ABGEBROCHEN - {halt}")
+        print(f"ABGEBROCHEN - {halt}", file=sys.stderr)
+        return 2
+    except Exception as unerwartet:
+        if args.debug:
+            traceback.print_exc()
+        zeile = ("ABGEBROCHEN - unerwartete Ausnahme, kontrolliert beendet: "
+                 + _abbruch_klartext(unerwartet)
+                 + ("" if args.debug else "  (Traceback mit --debug)"))
+        print("")
+        print(zeile)
+        print(zeile, file=sys.stderr)
+        return 2
+
+
+def _lauf(args) -> int:
     print("Strukturvertrag: jede von diesem Bein gelesene JSON-Datei wird VOR "
           "dem ersten Zugriff strukturell geprueft;")
     print("                 Verstoss = kontrollierter Abbruch mit Klartext, nie "
@@ -2170,6 +2606,8 @@ def main() -> int:
 
     adversariale_strukturproben(manifest, identitaet)
     gegenproben_nacharbeit(manifest)
+
+    byte_kipp_fuzz(1 if args.fuzz_voll else max(1, args.fuzz_schritt))
 
     auslieferungsstand(manifest, hart=args.release)
     installierter_stand(manifest)

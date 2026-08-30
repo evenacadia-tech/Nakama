@@ -18253,3 +18253,26 @@ Damit fallen beide Wege, die der Prüfer als grün gemessen hat.
 | **E** — Aussagen-Inventar | die geänderten Zusagen dieser Runde („Pflichtmenge", „je Zusage ein Bruch") sind an ihren drei lebenden Stellen nachgezogen: Skriptkopf von `pruefe_installer_manifest.py`, A17-Behauptung und A17-Kommentar in `tools/beweise.ps1`. Keine Anzahl als Zusage — nirgends steht „vier Fixturen", sondern „alle Fälle aus `MANIFEST.json`" |
 | **E** — Writer-Fixturen | Bytes unverändert; für die Proben nur `os.replace` hin und zurück, `MANIFEST.json` aus einer Speicherkopie wiederhergestellt, SHA-256 nachgerechnet |
 | **F** — „Änderungssatz" | Skript, Erzeuger und die A17-Behauptung samt Kommentar im Runner liegen in `30fb0b8`; Manifest und Register folgen im selben Commit-Paar |
+
+---
+
+### Kanon-Abschlusslauf
+
+Der gemeinsame Abschlusslauf steht in `docs/beweise/SONDE-007a.md`, Abschnitt
+„Kanon-Lauf - SONDE-007a Runde 11 + NAK-94 Nacharbeit 6 - Abschluss“;
+die Rohausgabe liegt unter `docs/beweise/roh/SONDE-007a-9602d6c.md`. Urteil:
+**GRUEN — 32/32 Kanon-Läufe bestanden**, Beglaubigung nicht verweigert; A17
+(`pruefe_installer_manifest.py`) und A18 (`pruefe_installer_gegenpfad.py`) beide
+Exit 0.
+
+**Bemerkung zum Lauf — bekannter Punkt „NAK-72“, nicht neu:** der Runner blieb nach dem Bau rund
+fünfzehn Minuten stehen, ohne Ausgabe. Ursache gemessen, nicht geraten:
+`Fuehre-Aus` startet mit `Start-Process -Wait`, und das wartet in PowerShell auf
+den **ganzen Prozessbaum**. MSVC hinterlässt `VCTIP.EXE` (Telemetrie-Uploader),
+der den Bau überlebt — Bauartefakte und die `Fuehre-Aus`-Tempdatei endeten
+beide um 02:36:14, `VCTIP` lief seit 02:35:00 weiter. Nach dem Beenden dieses
+einen Fremdprozesses lief der Runner ohne Neubau durch. Am Runner wurde nichts
+geändert — das Register führt den Punkt seit 24.08.2026 als **NAK-72**
+(`docs/offene-punkte.md`), samt derselben zwei Abhilfen; er hat dort einen
+datierten Nachtrag mit den Zeitstempeln dieses Laufs bekommen und bleibt offen.
+Ein Eingriff in `Fuehre-Aus` liegt ausserhalb dieser Ticketgrenze.

@@ -15725,3 +15725,394 @@ sind dort einzeln gebrochen worden.
 **Nächster Schritt:** Nacharbeits-Worker für S8 Runde 12 **und** NAK-94 Nacharbeit 7 (siehe `docs/beweise/SONDE-007c.md`, „Dirigentenstand NAK-94 … Prüfer 7"), gemeinsamer Kanon, dann Prüfer 13 (xhigh) für S8 und Prüfer 8 (high) für NAK-94 — je frischer Thread. Kein Halt.
 
 **Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.
+
+## Nacharbeit Runde 12 — 2026-08-30 (Prüfer-Thread `01a05029-4921…`)
+
+**Stand dieses Abschnitts:** `c915197` — Basis dieser Runde. Positionen ohne
+eigene Angabe sind an diesem Stand gemessen; die Belegzahlen unten nennen
+ihren Stand jeweils selbst.
+
+Ein bestätigter Befund des zwölften Prüfers (Codex xhigh, lesend über
+`git diff dafa5a5...4a379bb`), Regel des Dirigenten im Abschnitt
+„Dirigentenstand — 2026-08-30 03:04 (Sitzung 054eedac)". Er ist geschlossen.
+Es ist **reine Belegarbeit**: an der Messlogik von A14 wurde nichts geändert,
+kein Produktcode angefasst. Der Beleg, den Runde 11 für die **Codedateien**
+geführt hat, wird hier für das **Manifest** nachgeholt — mit Befehl, Zahlen
+und einem Klassifizierer, den man fahren kann.
+
+**Werkzeugregel dieser Runde:** kein löschender Aufruf, keine Datei unter
+`%SystemRoot%`. Der Klassifizierer liest ausschließlich `git show`-Blobs oder
+die Arbeitskopie; die Gegenprobe („Bruch") entfernt eine Zeile **im
+Speicher**, nie in einer Datei.
+
+---
+
+### Was Runde 11 offen ließ
+
+Der Prüfer zitiert `docs/beweise/SONDE-007a.md:15494-15498` @ `4a379bb` — den
+Absatz über der grep-Tabelle der Runde 11:
+
+> Das Manifest selbst steht bewusst nicht in dieser Tabelle: sein Text wächst
+> mit genau diesem Abschnitt, und für ihn zählt die Lebend/Historisch-Messung
+> darunter.
+
+Darunter stand dann nur `1 → 0` aus einem „Klassifizierer", dessen Regel im
+Fließtext beschrieben, aber nirgends als Befehl oder Quelltext angegeben war.
+Der Befund ist berechtigt: **eine Zahl ohne Befehl ist keine Messung, sondern
+eine Behauptung.** Diese Runde ersetzt beides — die Ausrede und die Zahl.
+
+Die Selbstbezüglichkeit, die Runde 11 als Grund genannt hat, ist echt: die
+Zahlen stehen in derselben Datei, die sie zählen. Sie ist aber kein Grund,
+nicht zu messen, sondern nur einer, den **Fixpunkt** auszuweisen — siehe
+„Endstand" unten.
+
+---
+
+### Der Manifest-Grep — Befehl und Trefferzahlen je Schreibweise
+
+Gezählt werden **Zeilen mit Treffer** (`-c`), nicht Treffer; `-n` derselben
+Suche listet dieselben Zeilen mit Nummer. Die neun Suchen für den Basis-Stand
+ausgeschrieben:
+
+```bash
+git grep -c -E 'Exit 3'        165d9ae -- docs/beweise/SONDE-007a.md
+git grep -c -E 'exit 3'        165d9ae -- docs/beweise/SONDE-007a.md
+git grep -c -E 'return 3'      165d9ae -- docs/beweise/SONDE-007a.md
+git grep -c -E '\-> 3'         165d9ae -- docs/beweise/SONDE-007a.md
+git grep -c -E '→ 3'           165d9ae -- docs/beweise/SONDE-007a.md
+git grep -c -E '\*\*3\*\*'     165d9ae -- docs/beweise/SONDE-007a.md
+git grep -c -E 'nie 2'         165d9ae -- docs/beweise/SONDE-007a.md
+git grep -c -E 'nie 0'         165d9ae -- docs/beweise/SONDE-007a.md
+git grep -c -E 'Voraussetzung' 165d9ae -- docs/beweise/SONDE-007a.md
+```
+
+Dieselben neun Suchen mit `4a379bb`, `c915197` und dem Endstand statt
+`165d9ae` ergeben die übrigen Spalten:
+
+| Muster (`-E`) | `165d9ae` Basis R11 | `4a379bb` Nachziehstand R11 | `c915197` Basis R12 | Endstand R12 |
+|---|---:|---:|---:|---:|
+| `Exit 3` | 58 | 82 | 82 | 95 |
+| `exit 3` | 1 | 4 | 4 | 13 |
+| `return 3` | 13 | 14 | 14 | 23 |
+| `\-> 3` | 4 | 5 | 5 | 14 |
+| `→ 3` | 1 | 2 | 2 | 11 |
+| `\*\*3\*\*` | 17 | 22 | 22 | 22 |
+| `nie 2` | 9 | 12 | 12 | 21 |
+| `nie 0` | 21 | 30 | 30 | 40 |
+| `Voraussetzung` | 87 | 109 | 110 | 121 |
+
+**Warum die Zahl steigt, statt zu fallen.** Anders als im Code ist ein Treffer
+im Manifest kein Mangel: das Manifest **zitiert** die alten Sätze, um zu
+belegen, was nachgezogen wurde. Jede Nacharbeitsrunde legt neue Zitate dazu.
+Die Zahl, die fallen muss, ist deshalb nicht die Gesamtzahl, sondern die Zahl
+der **lebenden** Treffer — der Treffer in Abschnitten, die keinen Stand über
+sich tragen und damit für den geltenden Stand sprechen.
+
+**Endstand.** Die Spalte ist ein **Fixpunkt**: sie zählt die Datei, in der sie
+steht. Gemessen wurde mit `git grep -c -E '<Muster>' -- docs/beweise/SONDE-007a.md`
+(ohne Commit = Arbeitskopie) auf genau den Bytes, die dieser Commit trägt;
+danach wurde erneut gemessen, bis sich nichts mehr änderte (Fixpunkt nach 3 Rendern erreicht).
+Nachrechnen an einer festen Marke:
+
+```bash
+E=$(git log -1 --format=%H --grep='SONDE-007a Runde 12: Aussagen-Inventar')
+git grep -c -E 'Exit 3' $E -- docs/beweise/SONDE-007a.md
+```
+
+Was **nach** diesem Commit noch in diese Datei kommt, ist der vom Runner
+geschriebene Kanon-Block; er ist nach Regel 2 des Klassifizierers historisch
+und erhöht nur die Gesamtzahlen, nie die lebende Zahl.
+
+---
+
+### Der Klassifizierer — Regel und Quelltext
+
+Die Regel in drei Sätzen, danach als Code:
+
+1. Die Datei wird an jeder Zeile geteilt, die mit `## ` beginnt; der Text
+   davor ist der Kopfabschnitt.
+2. Ein Abschnitt ist **historisch**, wenn er eine Standangabe trägt — eine
+   Zeile, die mit `**Stand dieses Abschnitts:**`, `**Stand dieser Tabelle:**`,
+   `**Stand dieser Karte:**` oder `**Stand dieses Unterabschnitts:**` beginnt
+   — oder wenn seine Überschrift mit `## Kanon-Lauf` beginnt (vom Runner
+   geschriebener Block, dessen Kopftabelle den Commit trägt).
+3. Jeder andere Abschnitt ist **lebend**; jeder Treffer darin ist eine lebende
+   Aussage.
+
+Gezählt wird je Muster wie `git grep -c` — Zeilen, nicht Treffer. Damit gilt
+**lebend + historisch = die Zahl aus der Tabelle oben**, Zeile für Zeile.
+
+<!-- klassifizierer:anfang -->
+```python
+"""Klassifizierer lebend/historisch fuer docs/beweise/SONDE-007a.md.
+
+Aufruf:  py -3.13 klassifiziere.py <sha>|--datei <pfad>
+
+Regel (Runde 10/11, hier als Code):
+  * Die Datei wird an jeder Zeile geteilt, die mit "## " beginnt; der Text
+    davor ist der Kopfabschnitt.
+  * Ein Abschnitt gilt als HISTORISCH, wenn er eine Standangabe traegt -
+    eine Zeile, die mit "**Stand dieses Abschnitts:**", "**Stand dieser
+    Tabelle:**", "**Stand dieser Karte:**" oder "**Stand dieses
+    Unterabschnitts:**" beginnt - ODER wenn seine Ueberschrift mit
+    "## Kanon-Lauf" beginnt (vom Runner geschriebener Block, dessen
+    Kopftabelle den Commit traegt).
+  * Jeder andere Abschnitt ist LEBEND; jeder Treffer darin ist eine lebende
+    Aussage.
+Gesucht werden die acht Schreibweisen der Zusage ueber den
+Voraussetzungs-Ausgang plus das Suchwort "Voraussetzung" als neunte Zeile.
+Gezaehlt werden ZEILEN mit Treffer, je Muster - dieselbe Zaehlweise wie
+`git grep -c -E`, damit die Zahlen gegeneinander aufgehen: lebend +
+historisch = die Zahl aus git grep.
+"""
+import re
+import subprocess
+import sys
+
+MUSTER = [r"Exit 3", r"exit 3", r"return 3", r"-> 3", r"→ 3", r"\*\*3\*\*",
+          r"nie 2", r"nie 0", r"Voraussetzung"]
+STAND = re.compile(r"^\*\*Stand (dieses Abschnitts|dieser Tabelle|dieser Karte|"
+                   r"dieses Unterabschnitts):\*\*")
+DATEI = "docs/beweise/SONDE-007a.md"
+
+
+def abschnitte(zeilen):
+    """(ueberschrift, startzeile, zeilen) je Abschnitt, Kopf zuerst."""
+    grenzen = [i for i, z in enumerate(zeilen) if z.startswith("## ")]
+    schnitte = [0] + grenzen + [len(zeilen)]
+    raus = []
+    for a, b in zip(schnitte, schnitte[1:]):
+        if a == b:
+            continue
+        kopf = zeilen[a] if zeilen[a].startswith("## ") else "(Kopf der Datei)"
+        raus.append((kopf, a, zeilen[a:b]))
+    return raus
+
+
+def historisch(kopf, block):
+    if kopf.startswith("## Kanon-Lauf"):
+        return True
+    return any(STAND.match(z) for z in block)
+
+
+def lauf(text, marke):
+    zeilen = text.split("\n")
+    je_muster = {m: [0, 0] for m in MUSTER}      # [lebend, historisch]
+    lebende_zeilen = []
+    for kopf, start, block in abschnitte(zeilen):
+        alt = historisch(kopf, block)
+        for i, z in enumerate(block):
+            treffer = [m for m in MUSTER if re.search(m, z)]
+            if not treffer:
+                continue
+            for m in treffer:
+                je_muster[m][1 if alt else 0] += 1
+            if not alt:
+                lebende_zeilen.append((start + i + 1, kopf, z.strip()))
+    print(f"== {marke} ==")
+    print(f"{'Muster':<15}{'lebend':>8}{'historisch':>12}{'gesamt':>8}")
+    gl = gh = 0
+    for m in MUSTER:
+        le, hi = je_muster[m]
+        gl += le
+        gh += hi
+        print(f"{m:<15}{le:>8}{hi:>12}{le + hi:>8}")
+    print(f"{'SUMME':<15}{gl:>8}{gh:>12}{gl + gh:>8}")
+    print(f"lebende Treffer (Abschnitt ohne Stand, kein Kanon-Block): "
+          f"{len(lebende_zeilen)}")
+    for nr, kopf, z in lebende_zeilen:
+        print(f"  :{nr}  [{kopf.strip()}]")
+        print(f"        {z}")
+    return je_muster
+
+
+if __name__ == "__main__":
+    if sys.argv[1] == "--datei":
+        text = open(sys.argv[2], encoding="utf-8").read()
+        lauf(text, sys.argv[2])
+    else:
+        sha = sys.argv[1]
+        text = subprocess.run(["git", "show", f"{sha}:{DATEI}"],
+                              capture_output=True, check=True).stdout.decode("utf-8")
+        lauf(text, f"{sha}:{DATEI}")
+```
+<!-- klassifizierer:ende -->
+
+Herausschneiden und fahren — der Quelltext oben ist vollständig:
+
+```powershell
+py -3.13 -c "import pathlib,os; z=pathlib.Path('docs/beweise/SONDE-007a.md').read_text(encoding='utf-8').splitlines(); a=z.index('<!-- klassifizierer:anfang -->')+2; b=z.index('<!-- klassifizierer:ende -->')-1; pathlib.Path(os.environ['TEMP'],'klassifiziere.py').write_text(chr(10).join(z[a:b]), encoding='utf-8')"
+py -3.13 "$env:TEMP\klassifiziere.py" 165d9ae
+```
+
+Gegengeprüft: der so aus **dieser Datei** herausgeschnittene Quelltext
+liefert für `165d9ae` Zeile für Zeile die Ausgabe des ersten Laufs unten.
+
+---
+
+### Die Läufe — und dass sie mit dem Grep aufgehen
+
+Basis-Stand der Runde 11, der eine lebende Treffer, den Runde 11 gefunden und
+mit einer Standangabe geschlossen hat:
+
+```text
+== 165d9ae:docs/beweise/SONDE-007a.md ==
+Muster           lebend  historisch  gesamt
+Exit 3                1          57      58
+exit 3                0           1       1
+return 3              0          13      13
+-> 3                  0           4       4
+→ 3                   0           1       1
+\*\*3\*\*             0          17      17
+nie 2                 0           9       9
+nie 0                 0          21      21
+Voraussetzung         0          87      87
+SUMME                 1         210     211
+lebende Treffer (Abschnitt ohne Stand, kein Kanon-Block): 1
+  :11210  [## Nacharbeit Runde 3 — 2026-08-29: vom User unterbrochen]
+        `generate.stamp` halten und Exit 3 melden, statt eine handgepflegte
+```
+
+Nachziehstand der Runde 11 — dieselbe Datei, dieselbe Suche, kein lebender
+Treffer mehr:
+
+```text
+== 4a379bb:docs/beweise/SONDE-007a.md ==
+Muster           lebend  historisch  gesamt
+Exit 3                0          82      82
+exit 3                0           4       4
+return 3              0          14      14
+-> 3                  0           5       5
+→ 3                   0           2       2
+\*\*3\*\*             0          22      22
+nie 2                 0          12      12
+nie 0                 0          30      30
+Voraussetzung         0         109     109
+SUMME                 0         280     280
+lebende Treffer (Abschnitt ohne Stand, kein Kanon-Block): 0
+```
+
+Basis dieser Runde (der Dirigentenstand von Prüfer 12 ist dazugekommen):
+
+```text
+== c915197:docs/beweise/SONDE-007a.md ==
+Muster           lebend  historisch  gesamt
+Exit 3                0          82      82
+exit 3                0           4       4
+return 3              0          14      14
+-> 3                  0           5       5
+→ 3                   0           2       2
+\*\*3\*\*             0          22      22
+nie 2                 0          12      12
+nie 0                 0          30      30
+Voraussetzung         0         110     110
+SUMME                 0         281     281
+lebende Treffer (Abschnitt ohne Stand, kein Kanon-Block): 0
+```
+
+Endstand dieser Runde — die Arbeitskopie, die dieser Commit trägt, also
+einschließlich dieses Abschnitts:
+
+```text
+== Arbeitskopie (= dieser Commit) ==
+Muster           lebend  historisch  gesamt
+Exit 3                0          95      95
+exit 3                0          13      13
+return 3              0          23      23
+-> 3                  0          14      14
+→ 3                   0          11      11
+\*\*3\*\*             0          22      22
+nie 2                 0          21      21
+nie 0                 0          40      40
+Voraussetzung         0         121     121
+SUMME                 0         360     360
+lebende Treffer (Abschnitt ohne Stand, kein Kanon-Block): 0
+```
+
+Die Spalte `gesamt` jedes Laufs ist Zeile für Zeile die Spalte der
+grep-Tabelle oben. Damit ist die Zahl `1 → 0` aus Runde 11 nicht mehr eine
+Behauptung neben dem Grep, sondern seine Aufteilung.
+
+---
+
+### Gegenprobe — der Klassifizierer einmal gebrochen und zurückgenommen
+
+Ein Klassifizierer, der die Standangabe gar nicht liest, würde dieselbe `0`
+melden. Also wird genau **eine** Standzeile entfernt — im Speicher, an einer
+`git show`-Kopie — und der Lauf wiederholt. Erwartet: derselbe Treffer, den
+Runde 11 gefunden hat, ist wieder lebend, die Gesamtzahlen bleiben gleich.
+
+```text
+-- ZURUECKGENOMMEN (unveraenderter Blob) --
+== c915197 unveraendert ==
+Muster           lebend  historisch  gesamt
+Exit 3                0          82      82
+exit 3                0           4       4
+return 3              0          14      14
+-> 3                  0           5       5
+→ 3                   0           2       2
+\*\*3\*\*             0          22      22
+nie 2                 0          12      12
+nie 0                 0          30      30
+Voraussetzung         0         110     110
+SUMME                 0         281     281
+lebende Treffer (Abschnitt ohne Stand, kein Kanon-Block): 0
+
+-- BRUCH: Zeile 11066 entfernt --> '**Stand dieses Abschnitts:** `a728fba` — Positionen ohne eigene Angabe sind an' --
+== c915197 ohne die Standzeile in Runde 3 ==
+Muster           lebend  historisch  gesamt
+Exit 3                1          81      82
+exit 3                0           4       4
+return 3              0          14      14
+-> 3                  0           5       5
+→ 3                   0           2       2
+\*\*3\*\*             0          22      22
+nie 2                 0          12      12
+nie 0                 0          30      30
+Voraussetzung         0         110     110
+SUMME                 1         280     281
+lebende Treffer (Abschnitt ohne Stand, kein Kanon-Block): 1
+  :11213  [## Nacharbeit Runde 3 — 2026-08-29: vom User unterbrochen]
+        `generate.stamp` halten und Exit 3 melden, statt eine handgepflegte
+```
+
+Die Summe bleibt gleich, ein Treffer wandert von `historisch` nach `lebend`
+und wird mit Zeilennummer und Abschnitt genannt. Die Rücknahme ist der obere
+Lauf: es wurde nie eine Datei angefasst.
+
+---
+
+### Keine Verhaltensänderung an A14
+
+Baulose Selbstprüfung am Endstand:
+
+```text
+82 ok, 0 Fehler
+```
+
+Die Codezahlen der Runde 11 (Tabelle „Vollständigkeitsbeleg: die grep-Zahlen
+vor und nach") gelten unverändert; nachgemessen an der Arbeitskopie mit
+`grep -c -F`:
+
+| `grep -c -F` | Skript `165d9ae` | Skript `30fb0b8` | Skript Arbeitskopie | `beweise.ps1` `165d9ae` | `beweise.ps1` `30fb0b8` | `beweise.ps1` Arbeitskopie |
+|---|---:|---:|---:|---:|---:|---:|
+| `Exit 3` | 11 | 3 | 3 | 3 | 2 | 2 |
+| `nie 0` | 2 | 8 | 8 | 0 | 0 | 0 |
+| `Voraussetzung` | 33 | 35 | 35 | 12 | 14 | 14 |
+
+Die Änderung dieser Runde an `tools/beweise.ps1` gehört zu NAK-94 Nacharbeit 7
+(A17-Behauptung) und berührt keine dieser Zahlen.
+
+---
+
+### Prüfliste (`tools/dirigent/pruefliste.md`) — wo in dieser Runde gemessen
+
+| Zeile | wo gemessen |
+|---|---|
+| **D** — „fail-closed ohne Rohtextheuristik" | in dieser Runde nicht berührt (reine Belegarbeit); die Regel D dieser Sitzung ist in `docs/beweise/SONDE-007c.md`, NAK-94 Nacharbeit 7 gemessen |
+| **E** — „Zahlen im Manifest sind gemessen, nicht abgeschrieben" | die grep-Tabelle ist ein Lauf über vier Stände; die Lebend/Historisch-Aufteilung kommt aus dem Klassifizierer, dessen Quelltext hier steht, und geht Zeile für Zeile mit dem Grep auf |
+| **E** — „Jede Behauptung sagt nicht mehr, als der Test misst" | die Endstand-Spalte sagt ausdrücklich, dass sie ein Fixpunkt ist und was nach diesem Commit noch dazukommt; als Mangel ausgegeben wird nicht die Gesamtzahl, sondern die lebende Zahl |
+| **E** — „Positionen als Symbol oder `Datei:Zeile @ sha7`" | die zitierte Stelle steht als `docs/beweise/SONDE-007a.md:15494-15498 @ 4a379bb`, der lebende Fund der Runde 11 als `:11210 @ 165d9ae` |
+| **E** — **Aussagen-Inventar** | vollständig für das Manifest: neun Schreibweisen, vier Stände, Befehl je Schreibweise, Klassifizierer als Quelltext, Aufteilung gegen den Grep gegengerechnet |
+| **E** — „Jede neue Prüfung wurde einmal gebrochen" | der Klassifizierer ist oben einmal gebrochen (eine Standzeile entfernt, ein lebender Treffer) und zurückgenommen; für NAK-94 Nacharbeit 7 stehen die Brüche in `docs/beweise/SONDE-007c.md` |
+| **F** — „Änderungssatz" | dieser Abschnitt ist der ganze Änderungssatz der S8-Runde: kein Code, keine Registerzeile, keine Marke |

@@ -3,6 +3,8 @@
 <!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-24 offen -->
 <!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-24 nachgearbeitet -->
 <!-- NAKAMA-URTEIL: T3 PASS 2026-08-28 -->
+<!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-30 nachgearbeitet -->
+<!-- NAKAMA-URTEIL: T3 PASS 2026-08-31 -->
 
 > **T3 / Gate G1, 24.08.2026 — NEEDS_WORK.** Der Bruchauftrag Gate 7 ist an
 > diesem Vertrag gelungen: `measurement_position: insert` + `aussageklasse:
@@ -9548,3 +9550,16 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 **Tatsächlich gelaufene Beweise** (Dirigent, echter Rechner, nicht die Codex-Sandbox): Kanon `tools/beweise.ps1 -Bauen` GRÜN 29/29 auf `31f2929`, `98d467c` und `875eabb` (Anhänge oben, Arbeitsbaum jeweils sauber); B3c `EqCopSchemaTest` klassifiziert 188 Fixtures wie das Manifest und fährt die 102 gemeinsamen Textriegel-Fälle; `pruefe_v3_vertrag.py` 284/284; `cargo test --test contract_cross_language` 8/8; `vorfuehrung_g1_vertrag.py` ohne Argument GRÜN; Repro des Runde-2-Befunds im Speicher: `NaN`, `Infinity`, `-Infinity`, `nan`, `inf` fallen am Python-Riegel und an `json_laden_strikt`, `NaN` innerhalb einer Zeichenkette passiert.
 
 **Nicht geprüft:** die FlatBuffers-Hälfte des Gates (S6 `SONDE-005b`, eigenes Urteil). Die Codex-Sandbox konnte `py -3.13` (Launcher ohne Anmeldesitzung) und den C++-Build (Path/PATH-Dublette) nicht fahren; diese Beine hat der Dirigent auf dem Rechner gemessen.
+
+---
+
+**Nachtrag 2026-08-31 (Dirigent):** Der Gate-Lauf vom 30.08. (G1 §14) brach
+Gate 7 erneut auf der Vertragsebene dieses Tickets (D1/NAK-112): der
+Beitragszweig ließ `contribution_aux` frei. Geschlossen in zwei Runden
+(`bdb9c07`: `$defs/capabilities_beitrag` mit `const: supported`, Zweigriegel,
+Negativfixture `ungueltig/beitrag-ohne-contribution-aux.json`, gleiche
+C++-/Rust-Klassifikation; `d3f14de`: Fixture im Erzeuger, A8 bytegleich).
+Wiederprüfung PASS durch frischen Codex-Thread, Gate-7-Falsifikation auf dem
+Endstand von zwei Modellen „kein Pfad gefunden", Kanon GRÜN 32/32 —
+vollständig in `docs/beweise/G1.md` §15. Die Marken oben (NEEDS_WORK
+2026-08-30 nachgearbeitet, PASS 2026-08-31) tragen diesen Verlauf.

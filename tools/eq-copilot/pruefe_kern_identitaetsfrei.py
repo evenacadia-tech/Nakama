@@ -18,9 +18,17 @@ WAS HIER GEMESSEN WIRD - und warum es die anderen Riegel braucht:
 DIE GEGENPROBE IST DER EIGENTLICHE PUNKT (Regel des Hauses: ein Riegel, den
 niemand hat fallen sehen, ist keiner). Ein Scanner, der nichts findet, sagt
 nichts aus - er koennte schlicht kaputt sein. Darum laeuft derselbe Scanner
-mit denselben Nadeln zusaetzlich ueber das GEBAUTE EQ-Copilot-Bundle, wo die
-Werte stehen MUESSEN. Findet er sie dort nicht, faellt dieses Bein - sein
-Schweigen ueber den Kern waere sonst wertlos.
+zusaetzlich ueber das GEBAUTE EQ-Copilot-Bundle - dort aber nur mit der
+TEILMENGE der Nadeln, die in genau diesem Bundle stehen MUSS: der
+Pflichtmenge aus Abschnitt [1], also hersteller.name, main.produktname,
+main.plugin_code, main.component_cid und main.controller_cid. Die Werte der
+Sonden-Ziele (Suna/Probeeq) werden dort ausdruecklich NICHT erwartet - sie
+gehoeren in deren eigene Bundles, und dieses Bein prueft sie dort nicht;
+hersteller.code und main.bundle stehen ebenfalls nicht in der Pflichtmenge.
+Findet der Scanner die Pflichtmenge dort nicht, faellt dieses Bein - sein
+Schweigen ueber den Kern waere sonst wertlos. Gegen den KERN dagegen laeuft
+in Abschnitt [2] JEDE Nadel aus der Identitaetsdatei; ihre Anzahl gibt der
+Lauf in der Zeile "Nadeln    :" aus, sie steht nicht in diesem Kopf.
 
 DRITTE PRUEFUNG - Bauform statt Inhalt: der Kern darf keine JUCE-Modulobjekte
 enthalten. Die Kopf-Fassade (cmake/NakamaKern.cmake) haelt die JUCE-.cpp
@@ -51,8 +59,8 @@ jetzt die Frage "WOMIT wurde gebaut": configure_frische, die vier
 Schalterklassen beidseitig (AdditionalOptions ausdruecklich nur auf
 Enthaltensein), tu_mengen_abgleich und linkfrische.
 
-ZWEI NEUE RIEGEL kamen in derselben Runde dazu, weil K1 nur Anfang und Ende
-einer TU sieht:
+K1b, DER TLOG-ORTSRIEGEL UND DER JUCE-BAUM-RIEGEL kamen in derselben Runde
+dazu, weil K1 nur Anfang und Ende einer TU sieht:
 
   K1b - kein JucePlugin_-Token im Quelltext der TATSAECHLICHEN
         Compiler-Eingaben (aus dem frisch geschriebenen CL.read.1.tlog, also

@@ -735,6 +735,16 @@ hoechste Registernummer: NAK-109
   (U15–U20 neu), `beantwortet{}` bleibt bei **42**, das Register wächst von 90 auf **95**
   Zeilen, höchste Nummer **NAK-109**.
 
+**Nachlauf nach dem Beweislauf (lebender Kopf nachgezogen, Prüfliste E).** Auf `805e108`
+folgten zwei weitere Commits an diesem Ticket, beide dokumentiert und beide wieder nur
+unter `docs/**`: `1663895` zieht §6 und §8 dieses Manifests nach, `c994381` ist das
+Selbstaudit (fünf Herstellerquellen erstmalig einzeln abgerufen statt aus einer
+Trefferliste zitiert, zwei Kartenaussagen ohne Beleg entschärft, Zeilenversatz benannt).
+Dazwischen und danach je ein gerechneter Planstand. Die Zahlen im Lauf D oben gelten
+deshalb für den Änderungssatz aus §6.1, nicht für den Stand von HEAD; der Umfang der
+Grenze ändert sich dadurch nicht — kein Commit dieses Tickets berührt etwas außerhalb
+von `docs/**`.
+
 ### Warum der Kanon nicht läuft
 
 `tools/beweise.ps1` baut und misst Produktcode, Tests, Schemas und Fixtures.

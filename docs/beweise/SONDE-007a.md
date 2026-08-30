@@ -37,7 +37,7 @@ traegt der einleitende Satz den Stand.
 | Phase / Session | P1 / S8 |
 | Gate-Text (Quelle) | `docs/FL-Nakama-Sonden-Design-Entwurf.md` §53.4 „Static-Lib-Randbedingung" — **wörtlich:** „Der Wechsel auf gemeinsame statische Bibliotheken ist für drei Ziele gerechtfertigt, aber nur unter einer harten Regel: Der gemeinsame Kern sieht **keine** `JucePlugin_*`-Konstanten; Identität kommt ausschließlich aus `plugin-identities-v1.json` über die dünnen Target-Schichten. Andernfalls erhalten zwei der drei Bundles die Identitätskonstanten des dritten — genau die Werte, die §44.1 einfriert. `SONDE-007` enthält dafür einen expliziten Prüfschritt." · `docs/bauaufteilung-sonden.md` S8-Zeile + Fließtext: „Wenn der geteilte Kern auch nur **eine** `JucePlugin_*`-Konstante sieht, bekommen zwei Bundles die Identität des dritten — und genau das Identitäts-Golden aus S2 fällt." |
 | Datum | 2026-08-22 |
-| Prüfstufen | T1 ☑ (§3) · T2 ☑ gefahren 23.08. — **NEEDS_WORK**, fünf Befunde, Urteil und Belege in [§5](#5-t2--frischkontext-prüfer), Nacharbeit in [§6](#6-nacharbeit-zu-den-t2-befunden) · T3 ☑ gefahren seit 24.08. (G1), **NEEDS_WORK**, Nacharbeit läuft — Runde 18, frisches Urteil offen |
+| Prüfstufen | T1 ☑ (§3) · T2 ☑ gefahren 23.08. — **NEEDS_WORK**, fünf Befunde, Urteil und Belege in [§5](#5-t2--frischkontext-prüfer), Nacharbeit in [§6](#6-nacharbeit-zu-den-t2-befunden) · T3 ☑ gefahren seit 24.08. (G1), **NEEDS_WORK**, Nacharbeit läuft — Runde 19, frisches Urteil offen |
 
 **Was gebaut wurde (Karte, keine Behauptung — Behauptungen stehen in §1):**
 
@@ -18104,28 +18104,18 @@ function Klassifiziere($pfad) {
   $lebend = [System.Text.StringBuilder]::new()
   $hist   = [System.Text.StringBuilder]::new()
   $block  = [System.Collections.Generic.List[string]]::new()
-  $rang = 0; $staende = [System.Collections.Generic.List[int]]::new()
-  $blockStand = $false; $imCode = $false
+  $rang = 0; $standRang = $null; $blockStand = $false; $imCode = $false
   function Fluss($ziel) { $ziel.AppendLine(($block -join "`n")) | Out-Null; $block.Clear() }
   foreach ($z in [System.IO.File]::ReadAllLines($pfad, [System.Text.Encoding]::UTF8)) {
     if ($z -match '^\s*```') { $imCode = -not $imCode; $block.Add($z); continue }
     if (-not $imCode -and $z -match '^(#{1,6}) ') {
       Fluss $(if ($blockStand) { $hist } else { $lebend })
       $r = $Matches[1].Length
-      # STAPEL nach Ueberschriftenrang: erst alles vom Rang der neuen
-      # Ueberschrift an abwaerts abraeumen, dann vom obersten VERBLIEBENEN
-      # Stand erben. Die frueher hier stehende Einzelvariable loeschte beim
-      # zweiten `###` den inneren Rang, ohne den aeusseren gemerkt zu haben.
-      while ($staende.Count -gt 0 -and $staende[$staende.Count - 1] -ge $r) {
-        $staende.RemoveAt($staende.Count - 1)
-      }
-      $rang = $r; $blockStand = ($staende.Count -gt 0)
+      if ($null -ne $standRang -and $r -le $standRang) { $standRang = $null }
+      $rang = $r; $blockStand = ($null -ne $standRang)
     }
     elseif (-not $imCode -and $z -match '^\*\*Stand dieses Abschnitts:\*\*') {
-      if ($rang -gt 0 -and ($staende.Count -eq 0 -or $staende[$staende.Count - 1] -lt $rang)) {
-        $staende.Add($rang)
-      }
-      $blockStand = $true
+      $standRang = $rang; $blockStand = $true
     }
     $block.Add($z)
   }
@@ -18664,6 +18654,71 @@ Aussage darf über eine Zeilengrenze laufen (Lehre aus Runde 14), und beide
 Seiten — Text wie Muster — werden vorher normalisiert (Backticks weg, Umlaute
 und `ß` auf ASCII, Leerraumfolgen auf ein Leerzeichen; Lehre aus Runde 17).
 
+**Nachtrag Runde 19 (2026-08-30) — hier steht ab jetzt der volle Klassifizierer.**
+Runde 18 hatte ihn nicht abgedruckt, sondern beschrieben („Runde-17-Skript, aber
+mit Stapel"), und dafür den abgedruckten Block im historischen Abschnitt
+„Aussagen-Inventar — Runde 17" überschrieben; genau das war Befund 2 des
+neunzehnten Prüfers. Der Runde-17-Block ist byteweise wiederhergestellt (Beleg im
+Abschnitt „Nacharbeit Runde 19"), und die Fassung, mit der **diese** Runde
+gemessen hat, steht deshalb hier vollständig. Sie ist Zeile für Zeile das
+Runde-17-Skript, nur mit dem Stand-**Stapel** aus Befund P2-4 statt der einzelnen
+`$standRang`-Variablen. Die Zahlen dieses Abschnitts ändert das nicht: beide
+Fassungen liefern an den echten Manifesten bytegleich dieselbe lebende Menge,
+gemessen oben in Befund P2-4.
+
+```powershell
+function Klassifiziere($pfad) {
+  $lebend = [System.Text.StringBuilder]::new()
+  $hist   = [System.Text.StringBuilder]::new()
+  $block  = [System.Collections.Generic.List[string]]::new()
+  $rang = 0; $staende = [System.Collections.Generic.List[int]]::new()
+  $blockStand = $false; $imCode = $false
+  function Fluss($ziel) { $ziel.AppendLine(($block -join "`n")) | Out-Null; $block.Clear() }
+  foreach ($z in [System.IO.File]::ReadAllLines($pfad, [System.Text.Encoding]::UTF8)) {
+    if ($z -match '^\s*```') { $imCode = -not $imCode; $block.Add($z); continue }
+    if (-not $imCode -and $z -match '^(#{1,6}) ') {
+      Fluss $(if ($blockStand) { $hist } else { $lebend })
+      $r = $Matches[1].Length
+      # STAPEL nach Ueberschriftenrang: erst alles vom Rang der neuen
+      # Ueberschrift an abwaerts abraeumen, dann vom obersten VERBLIEBENEN
+      # Stand erben. Die frueher hier stehende Einzelvariable loeschte beim
+      # zweiten `###` den inneren Rang, ohne den aeusseren gemerkt zu haben.
+      while ($staende.Count -gt 0 -and $staende[$staende.Count - 1] -ge $r) {
+        $staende.RemoveAt($staende.Count - 1)
+      }
+      $rang = $r; $blockStand = ($staende.Count -gt 0)
+    }
+    elseif (-not $imCode -and $z -match '^\*\*Stand dieses Abschnitts:\*\*') {
+      if ($rang -gt 0 -and ($staende.Count -eq 0 -or $staende[$staende.Count - 1] -lt $rang)) {
+        $staende.Add($rang)
+      }
+      $blockStand = $true
+    }
+    $block.Add($z)
+  }
+  Fluss $(if ($blockStand) { $hist } else { $lebend })
+  return @($lebend.ToString(), $hist.ToString())
+}
+function Norm($t) {
+  ($t -replace '`', '' -replace 'ä', 'ae' -replace 'ö', 'oe' -replace 'ü', 'ue' `
+      -replace 'Ä', 'Ae' -replace 'Ö', 'Oe' -replace 'Ü', 'Ue' `
+      -replace 'ß', 'ss') -replace '\s+', ' '
+}
+function Zaehl($t, $m) { ([regex]::Matches((Norm $t), [regex]::Escape((Norm $m)))).Count }
+
+$code = @('tools/beweise.ps1',
+          'tools/eq-copilot/pruefe_kern_identitaetsfrei.py',
+          'tools/eq-copilot/pruefe_installer_manifest.py',
+          'tools/eq-copilot/erzeuge_installer_journale.py',
+          'eq-copilot/plugin/state/NakamaKernRiegel.h',
+          'eq-copilot/cmake/NakamaKern.cmake')
+$k = Klassifiziere 'docs/beweise/SONDE-007a.md'
+$lebend, $hist = $k[0], $k[1]
+$muster = 'NakamaKernRiegel.h'
+$c = 0; foreach ($q in $code) { $c += Zaehl ([System.IO.File]::ReadAllText($q)) $muster }
+'{0,4} Code | {1,4} Man. lebend | {2,4} Man. historisch   {3}' -f $c, (Zaehl $lebend $muster), (Zaehl $hist $muster), $muster
+```
+
 **Zahlen**, gemessen am Stand `0e7a60e` — dem letzten Commit dieser
 Runde **vor** dem Kanon-Abschlusslauf; Messcode darin `d4900ce` (S8) bzw.
 `d045ed3` (NAK-94), und die historische Spalte **einschließlich** dieses
@@ -18841,3 +18896,286 @@ nachgezogen.
 **Nächster Schritt:** Nacharbeits-Worker für S8 Runde 19 (allein), Kanon, dann Prüfer 20 (xhigh, frischer Thread) über `dafa5a5...HEAD`. Kein Halt.
 
 **Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.
+
+## Nacharbeit Runde 19 — 2026-08-30 (Prüfer-Thread `01a051f2-0321…`)
+
+**Stand dieses Abschnitts:** `STAND-PLATZHALTER` — der letzte Commit dieser
+Runde vor dem Kanon-Abschlusslauf; Positionen ohne eigene Angabe sind an diesen
+Commit gebunden. Der Messcode steht darin auf `c117e40`.
+
+Basis-SHA der Runde `17b51e0`. Zwei Befunde, beide P2, beide Text, beide am
+Basis-Stand reproduziert. **A14 ändert sein Verhalten nicht:** geändert sind ein
+PowerShell-Kommentarblock, ein Docstring-Absatz und Manifesttext — keine
+Codezeile, kein Muster, keine Schwelle. Beleg vor dem Commit der Köpfe:
+`py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py --selbsttest` →
+**107 ok, 0 Fehler, Exit 0**.
+
+### Befund 1 am Basis-Stand reproduziert — die Köpfe erzählten Runde 17 weiter
+
+Die Suche des Prüfers, am Basis-Stand `17b51e0` nachgefahren. Gezeigt sind nur
+die **Treffer** (`grep -noE`) statt der ganzen Zeilen: eine der Fundstellen ist
+die A14-`Behauptung`, eine einzelne Zeile von rund sechs Kilobyte, und sie
+gehört nicht zum Befund — sie nennt Phase 1 seit Runde 18 korrekt. Der Befund
+sitzt in der Prosa **darüber**.
+
+```
+$ grep -noE 'in dieser Reihenfolge|Erstens|Zweitens|Drittens|Danach faltet|Praeprozessor-Phase 1|Praeprozessor-Phase 2' <beide Köpfe @17b51e0>
+
+tools/beweise.ps1:372:in dieser Reihenfolge
+tools/beweise.ps1:372:Erstens
+tools/beweise.ps1:375:Zweitens
+tools/beweise.ps1:375:Praeprozessor-Phase 2
+tools/beweise.ps1:384:in dieser Reihenfolge          <- Behauptung, bereits richtig
+tools/beweise.ps1:384:Praeprozessor-Phase 1          <- Behauptung, bereits richtig
+tools/beweise.ps1:384:Praeprozessor-Phase 2          <- Behauptung, bereits richtig
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:74:Danach faltet
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:74:Praeprozessor-Phase 2
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:976:in dieser Reihenfolge
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:1569:Praeprozessor-Phase 1
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:1595:Praeprozessor-Phase 2
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:1741:Praeprozessor-Phase 1
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:1742:Praeprozessor-Phase 2
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:2018:Praeprozessor-Phase 1
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:2092:Praeprozessor-Phase 2
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:2883:Praeprozessor-Phase 2
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:2949:Praeprozessor-Phase 1
+```
+
+**Der Befund stimmt.** Der Runnerkopf (`tools/beweise.ps1:371-380 @17b51e0`)
+zählte zwei Vorstufen auf — „Erstens fail-closed lesen", „Zweitens
+Praeprozessor-Phase 2 falten" — und der Skriptkopf
+(`tools/eq-copilot/pruefe_kern_identitaetsfrei.py:70-78 @17b51e0`) ließ auf das
+Dekodieren unmittelbar „Danach faltet der Scan Praeprozessor-Phase 2" folgen.
+Beide beschrieben damit den Stand **vor** Runde 18, obwohl Phase 1 seit Runde 18
+dazwischen läuft — nachlesbar an der Quelle, nicht an der Doku:
+`lies_compiler_eingabe()` gibt seinen Text durch `normalisiere_zeilenenden()`
+zurück, und erst `k1b_riegel()` ruft danach `falte_zeilenfortsetzungen()` auf.
+Die Behauptung der Runde 18, alle lebenden Zweitstellen seien nachgezogen, war
+deshalb falsch: nachgezogen waren die A14-`Behauptung`, die K1b-Matrixzeile und
+die Riegelkarte — die beiden Prosa-Köpfe nicht.
+
+**Nachgezogen.** Beide Köpfe nennen jetzt zuerst die vollständige Lesekette als
+Folge und beschreiben sie dann in genau dieser Reihenfolge:
+
+| Stufe | was passiert | seit |
+|---|---|---|
+| 1 Dekodierung | eine BOM entscheidet (UTF-8, UTF-16LE, UTF-16BE), ohne BOM gilt strikt UTF-8; nicht sicher dekodierbar = namentliche Klage | Runde 17 |
+| 2 Präprozessor-Phase 1 | CRLF und einzelnes CR werden LF, ohne dass sich die Zeilenzahl ändert | Runde 18 |
+| 3 Präprozessor-Phase 2 | Backslash + Zeilenende (auch CRLF, auch mit Leerraum davor) verschwindet | Runde 17 |
+| 4 Kommentarentfernung | `//` und `/* */` weg, Stringliterale bleiben | früher |
+| 5 Tokenprüfung | jedes `JucePlugin_`-Token wird gemeldet | früher |
+
+Dieselbe Suche auf dem Stand dieses Abschnitts — die alten Wortformen stehen
+jetzt an den richtigen Stellen, und die Reihenfolge ist in beiden Köpfen
+vollständig:
+
+```
+$ grep -noE 'in dieser Reihenfolge|Erstens|Zweitens|Drittens|Danach faltet|Praeprozessor-Phase 1|Praeprozessor-Phase 2' <beide Köpfe, dieser Stand>
+
+tools/beweise.ps1:372:in dieser Reihenfolge
+tools/beweise.ps1:373:Praeprozessor-Phase 1
+tools/beweise.ps1:373:Praeprozessor-Phase 2
+tools/beweise.ps1:374:Erstens
+tools/beweise.ps1:377:Zweitens
+tools/beweise.ps1:378:Praeprozessor-Phase 1
+tools/beweise.ps1:380:Drittens
+tools/beweise.ps1:380:Praeprozessor-Phase 2
+tools/beweise.ps1:392:in dieser Reihenfolge          <- Behauptung, unveraendert
+tools/beweise.ps1:392:Praeprozessor-Phase 1          <- Behauptung, unveraendert
+tools/beweise.ps1:392:Praeprozessor-Phase 2          <- Behauptung, unveraendert
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:72:Praeprozessor-Phase 1
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:72:Praeprozessor-Phase 2
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:73:Erstens
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:77:Zweitens
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:78:Praeprozessor-Phase 1
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:81:Danach faltet
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:81:Praeprozessor-Phase 2
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:986:in dieser Reihenfolge
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:1579:Praeprozessor-Phase 1
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:1605:Praeprozessor-Phase 2
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:1751:Praeprozessor-Phase 1
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:1752:Praeprozessor-Phase 2
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:2028:Praeprozessor-Phase 1
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:2102:Praeprozessor-Phase 2
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:2893:Praeprozessor-Phase 2
+tools/eq-copilot/pruefe_kern_identitaetsfrei.py:2959:Praeprozessor-Phase 1
+```
+
+**„Danach faltet" bleibt stehen** — und ist jetzt richtig: der Satz folgt auf
+„Zweitens normalisiert der Scan seit Runde 18 Praeprozessor-Phase 1", also
+faltet er danach. Die Wortform zu löschen wäre die bequemere, aber schwächere
+Lösung gewesen; sie steht hier weiter, weil sie im richtigen Kontext ein Beleg
+ist und im falschen ein Befund war.
+
+**Eine Fundstelle ist ausdrücklich NICHT nachgezogen:**
+`tools/eq-copilot/pruefe_kern_identitaetsfrei.py:986` (`in dieser Reihenfolge`)
+gehört nicht zur Lesekette. Sie steht im Kommentar über `SYSTEMDATEIEN` und
+beschreibt den Weg, auf dem eine weitere Systemdatei aufgenommen wird —
+Tlog-Zeile messen, Rohausgabe ins Manifest, dann den Namen nachtragen. Gleiche
+Wortform, andere Aussage; sie zu ändern wäre eine Verschlechterung.
+
+### Befund 2 — Runde 18 hatte einen historischen Abschnitt überschrieben
+
+Der Prüfer nannte `docs/beweise/SONDE-007a.md:18119-18120 @6cd244d`: den
+Stand-**Stapel** des Klassifizierers, abgedruckt **innerhalb** von „Nacharbeit
+Runde 17". Reproduziert und exakt eingegrenzt — genau **ein** Hunk einer
+späteren Runde hat den Runde-17-Abschnitt je berührt:
+
+```
+$ git log --oneline 3ef3efa..17b51e0 -- docs/beweise/SONDE-007a.md
+
+17b51e0 Dirigent: NAK-94 Pruefer 14 PASS - geschlossen (Register, Manifest); S8 Pruefer 19 NEEDS_WORK (2, Text) - Regeln fuer Runde 19
+6cd244d SONDE-007a Runde 18 + NAK-94 Nacharbeit 13: Kanon-Abschlusslauf auf 0e7a60e - GRUEN 32/32
+0e7a60e SONDE-007a Runde 18 + NAK-94 Nacharbeit 13: Manifestabschnitte, Inventare, Register
+ae32ea4 SONDE-007a Runde 18: Kopfzeile Pruefstufen lebend, Kartenstand mit Regel, Klassifizierer mit Stand-Stack
+e27974c Dirigent: S8 Pruefer 18 NEEDS_WORK (4, P1 CR-only) und NAK-94 Pruefer 13 NEEDS_WORK (1) - Regeln fuer Runde 18 / Nacharbeit 13
+eb84bec SONDE-007a Runde 17 + NAK-94 Nacharbeit 12: Kanon-Abschlusslauf auf 3ef3efa - GRUEN 32/32
+
+$ for c in eb84bec ae32ea4 e27974c 0e7a60e 6cd244d 17b51e0; do echo "--- $c ---";
+    git show $c -- docs/beweise/SONDE-007a.md | grep -E '^@@'; done
+
+(Anmerkung rechts: Hunkbereich gegen den Runde-17-Abschnitt IM ELTERN-Stand
+ des jeweiligen Commits - die Minus-Zeilennummern eines Hunks zaehlen dort.)
+
+--- eb84bec ---   (Runde-17-Abschnitt im Eltern-Stand 3ef3efa: Zeile 17850-18185)
+@@ -17849,8 +17849,9 @@           <- IM Runde-17-Abschnitt
+@@ -18136,20 +18137,27 @@         <- IM Runde-17-Abschnitt
+@@ -18183,3 +18191,110 @@         <- IM Runde-17-Abschnitt
+--- ae32ea4 ---   (Runde-17-Abschnitt im Eltern-Stand d4900ce: Zeile 17850-18236)
+@@ -37,18 +37,29 @@                  ausserhalb
+@@ -79,7 +90,7 @@                    ausserhalb
+@@ -18093,18 +18104,28 @@         <- IM Runde-17-Abschnitt
+--- e27974c ---   (Runde-17-Abschnitt im Eltern-Stand eb84bec: Zeile 17850-18236)
+@@ -18298,3 +18298,30 @@             ausserhalb
+--- 0e7a60e ---   (Runde-17-Abschnitt im Eltern-Stand d045ed3: Zeile 17861-18257)
+@@ -18346,3 +18346,328 @@            ausserhalb
+--- 6cd244d ---   (Runde-17-Abschnitt im Eltern-Stand 0e7a60e: Zeile 17861-18257)
+@@ -41,7 +41,7 @@                    ausserhalb
+@@ -18349,7 +18349,7 @@              ausserhalb
+@@ -18541,6 +18541,43 @@             ausserhalb
+@@ -18627,22 +18664,34 @@            ausserhalb
+@@ -18661,6 +18710,37 @@             ausserhalb
+@@ -18671,3 +18751,70 @@             ausserhalb
+--- 17b51e0 ---   (Runde-17-Abschnitt im Eltern-Stand 6cd244d: Zeile 17861-18257)
+@@ -18818,3 +18818,26 @@             ausserhalb
+
+```
+
+Der Runde-17-Abschnitt reichte am Stand `3ef3efa` von Zeile 17850 bis 18185 (Dateiende).
+`ae32ea4` — der erste Commit der **Runde 18** — liegt mit seinem dritten Hunk
+(`@@ -18093,18`) mitten darin. Das ist der Befund, und nur er.
+
+**Zurückgesetzt.** Der Stapelcode ist byteweise durch die Fassung ersetzt, die
+`git show 3ef3efa:docs/beweise/SONDE-007a.md` an dieser Stelle trägt: 22 Zeilen
+Stapel raus, die 12 Zeilen mit `$standRang` wieder rein. Kein `git checkout --`,
+kein `revert` — der Textblock wurde gelesen und eingesetzt. Beweis über den
+ausgeschnittenen Abschnitt, nicht über `git diff` (das normalisiert
+Zeilenenden nach `core.autocrlf` und zeigt nur Hunks; ein sha256 über die
+Rohbytes zeigt auch ein unsichtbares Zeichen):
+
+```
+Abschnitt "Nacharbeit Runde 17" (Ueberschrift bis vor "## Kanon-Lauf ... Runde 17"),
+je 387 Zeilen / 24147 Bytes:
+
+  aus git show eb84bec:docs/beweise/SONDE-007a.md   sha256 bfb753dbf8e56127d7a2a4d1583a238af9f466496d9a9ea1515e74f8ff5d1a54
+  Arbeitsbaum dieses Stands                         sha256 bfb753dbf8e56127d7a2a4d1583a238af9f466496d9a9ea1515e74f8ff5d1a54
+  bytegleich: True
+```
+
+**Warum der Anker `eb84bec` heißt und nicht `3ef3efa`.** Die Regel des
+Dirigenten nennt `3ef3efa` als Ziel des Rücksetzens. Am Stand `3ef3efa` trug der
+Abschnitt aber noch `**Stand dieses Abschnitts:** 65e5b77` und hatte weder seine
+Endstandtabelle noch das GRÜN-Urteil des Kanonlaufs — beides kam erst mit
+`eb84bec`, dem **Abschluss-Commit der Runde 17 selbst**, und genau so schreibt
+es der Ablauf jeder Runde vor („Endstandzahlen und Kartenstand im
+Abschluss-Commit"). Ein Rücksetzen auf `3ef3efa` hätte deshalb **gelöscht**, was
+Runde 17 selbst gemessen und eingetragen hat:
+
+| was `3ef3efa` als Ziel gelöscht hätte | Folge |
+|---|---|
+| `**Stand dieses Abschnitts:** 3ef3efa` → zurück auf `65e5b77` | die Standzeile widerspräche dem Kanon-Abschnitt direkt darunter, der `3ef3efa` nennt |
+| Absatz **Zahlen** und der Blockquote über die zwei überholten Zeilen | der Runde-18-Abschnitt verweist wörtlich darauf („Dieselbe Klasse hatte Runde 17 an zwei Zeilen") — der Verweis liefe ins Leere |
+| Korrekturen `falte_zeilenfortsetzungen` 8 → 7 und `BOM` 29 → 32 / 25 → 28 | gemessene Zahlen zurück auf ihre überholten Werte |
+| Unterabschnitt **Endstand nach dem Kanon-Abschlusslauf** (17 Zeilen Tabelle) | Runde 17 hätte im Manifest keine Zahlen nach ihrem Kanonlauf mehr |
+
+„Nachträglich geändert" heißt **durch eine spätere Runde**, nicht „nach dem
+Stand-Commit" — sonst wäre der eigene Abschluss-Commit jeder Runde ein Verstoß,
+auch der dieser Runde. Der Abschnitt steht deshalb byteweise auf `eb84bec`, dem
+Zustand, in dem Runde 17 ihn geschlossen hat, und trägt aus keiner späteren
+Runde ein einziges Byte. Der Prüferbefund selbst nennt exakt diesen Umfang: „den
+alten Block wiederherstellen".
+
+**Der korrigierte Klassifizierer steht jetzt vollständig im Runde-18-Abschnitt**
+(„Aussagen-Inventar — Runde 18", Nachtrag Runde 19). Runde 18 hatte ihn nicht
+abgedruckt, sondern beschrieben, und dafür den Abdruck in Runde 17 überschrieben
+— beides zusammen war der Befund. Der dort abgedruckte Block ist kein Zitat aus
+zweiter Hand: er ist wieder ausgeschnitten, als `.ps1` abgelegt, mit
+`[System.Management.Automation.Language.Parser]::ParseFile` gegengelesen und hat
+in genau dieser Form die Zahlen dieses Abschnitts erzeugt.
+
+### Aussagen-Inventar — Runde 19
+
+**Klassifizierer und Zählung**: das Skript aus „Aussagen-Inventar — Runde 18",
+unverändert, nur mit der Musterliste als Schleife statt eines einzelnen
+`$muster`. Quellenmenge `$code` unverändert (sechs Dateien) plus das Manifest
+über den Klassifizierer, getrennt in lebend und historisch.
+
+**Vorher** ist der Basis-Stand `17b51e0`, gemessen an einem Schattenbaum aus
+`git show 17b51e0:<datei>` mit denselben relativen Pfaden; **nachher** ist der
+Stand dieses Abschnitts, gemessen am Arbeitsbaum.
+
+> **Landmine beim Messen zweier Bäume, benannt statt verschwiegen:** die erste
+> Messung lieferte für alle zehn Muster in beiden Bäumen bytegleich dieselben
+> Zahlen — unmöglich, weil die Köpfe nachweislich anders lauten. Ursache:
+> `Set-Location` setzt nur PowerShells eigene Location, nicht
+> `[Environment]::CurrentDirectory` des Prozesses; der Klassifizierer liest aber
+> über `[System.IO.File]::ReadAllText/ReadAllLines` mit **relativen** Pfaden,
+> und die lösen gegen das Prozess-Arbeitsverzeichnis auf. Beide Läufe lasen
+> denselben Baum. Die Läufe unten setzen beides. Für die früheren Runden ändert
+> das nichts: sie liefen „aus dem Workspace-Root", dort sind Location und
+> Prozessverzeichnis dieselben. Eine Zahl, die zu stabil aussieht, ist hier das
+> Warnsignal gewesen.
+
+| Muster | Code v → n | Man. lebend v → n | Man. hist. v → n | was die Zahl sagt |
+|---|---|---|---|---|
+| `Erstens` | 2 → 3 | 0 → 0 | 4 → 12 | die Ordinalform der Lesekette; im Code beide Köpfe, im Manifest historisch |
+| `Zweitens` | 2 → 3 | 0 → 0 | 4 → 13 | ebenso — vorher stand hier Phase 2, jetzt Phase 1 |
+| `Danach faltet` | 1 → 1 | 0 → 0 | 2 → 10 | die vom Prüfer benannte Wortform; unverändert im Code, jetzt hinter Phase 1 |
+| `in dieser Reihenfolge` | 5 → 6 | 1 → 1 | 5 → 15 | die Zusage selbst; eine der Code-Fundstellen (`:986`, `SYSTEMDATEIEN`) gehört nicht dazu und bleibt |
+| `Praeprozessor-Phase 1` | 5 → 9 | 2 → 2 | 3 → 22 | die in Runde 18 dazugekommene Stufe — der Zuwachs im Code sind genau die zwei Köpfe |
+| `Praeprozessor-Phase 2` | 7 → 9 | 1 → 1 | 10 → 32 | die Stufe der Runde 17; sie hat sich nicht bewegt, nur eine Phase davor ist dazugekommen |
+| `Phase 1` | 16 → 20 | 2 → 2 | 25 → 54 | dasselbe ohne Präfix, also inklusive Fließtext |
+| `Phase 2` | 11 → 13 | 1 → 1 | 23 → 50 | ebenso |
+| `Lesekette` | 0 → 1 | 0 → 0 | 1 → 5 | der neue Begriff, mit dem beide Köpfe die Folge einleiten |
+| `Kommentarentfernung und Tokenpruefung` | 4 → 4 | 1 → 1 | 4 → 5 | das Ende der Kette — es muss in beiden Köpfen NACH Phase 2 stehen |
+
+Nachgezogen wurden in dieser Runde die beiden **lebenden Prosa-Köpfe** der
+Zusage „K1b läuft die Vorstufen des Übersetzers". Alle übrigen Träger derselben
+Zusage waren in Runde 18 bereits nachgezogen und sind unverändert. Dazu kommen
+die zwei **lebenden Zeilen, die den Rundenstand nennen**: die Kopfzeile
+„Prüfstufen" wandert mit dieser Runde weiter, der Kartenstand wird — nach der
+Regel, die Runde 18 neben die Zeile geschrieben hat — erst im Abschluss-Commit
+gesetzt, weil ein Commit sich nicht selbst nennen kann:
+
+| Stelle | Zustand vor dieser Runde | jetzt | Art |
+|---|---|---|---|
+| Kommentarblock `RUNDE 17` vor `A14` in `tools/beweise.ps1` | „Erstens … Zweitens Phase 2" — Phase 1 fehlt | `RUNDE 17/18`, volle Kette mit Rundenzuordnung | lebend, nachgezogen |
+| K1b-Absatz im Modul-Docstring von `pruefe_kern_identitaetsfrei.py` | „Danach faltet … Phase 2" direkt nach dem Dekodieren | volle Kette, Phase 1 dazwischen benannt | lebend, nachgezogen |
+| Kopfzeile „Prüfstufen" im Manifestkopf | „Nacharbeit läuft — **Runde 18**" | „… — **Runde 19**" | lebend, nachgezogen |
+| `**Stand dieser Karte:**` im Manifestkopf | `0e7a60e` (Runde 18) | Stand dieser Runde, gesetzt im Abschluss-Commit | lebend, im Abschluss nachgezogen |
+| A14-`Behauptung` in `tools/beweise.ps1` (Symbol `Kuerzel='A14'`) | nennt Phase 1 und die Folge | unverändert | lebend, war schon richtig |
+| K1b-Zeile der Riegelmatrix und `**Stand dieser Karte**` | nennen Phase 1 | unverändert | lebend, war schon richtig |
+| Docstrings von `lies_compiler_eingabe`, `k1b_riegel`, Kommentar vor `_K1B_FORTSETZUNG` | nennen Phase 1 | unverändert | lebend, war schon richtig |
+| `pruefe_kern_identitaetsfrei.py:986` (`SYSTEMDATEIEN`) | gleiche Wortform, andere Aussage | unverändert | **bewusst nicht** nachgezogen, Grund oben |
+| Abschnitte „Nacharbeit Runde 18" und früher | beschreiben ihren eigenen Stand | unverändert bis auf den angeordneten Abdruck des Klassifizierers in Runde 18 | historisch @ eigenem Stand |
+
+### Prüfliste — was diese Runde abhakt
+
+| Punkt | Beleg |
+|---|---|
+| **E** — „Behauptung ≤ Messung" | Beide Köpfe behaupten jetzt genau die fünf Stufen, die der Code fährt: `lies_compiler_eingabe()` (Dekodierung + `normalisiere_zeilenenden()`), dann `falte_zeilenfortsetzungen()`, dann `ohne_kommentare()`, dann die Tokenzeile in `k1b_riegel()`. Keine Stufe mehr, keine weniger |
+| **E** — „Zahlen sind gemessen, nicht abgeschrieben" | Inventartabelle oben, beide Spalten mit demselben Skript gemessen; die Vorher-Spalte an einem Schattenbaum aus `git show 17b51e0:`, nicht aus dem Gedächtnis. Der Messfehler beim ersten Versuch ist benannt statt geglättet |
+| **E** — „Abschnitt mit Standangabe = Momentaufnahme" | Genau das war Befund 2. Der Runde-17-Abschnitt steht byteweise auf `eb84bec` (sha256 oben), also auf dem Zustand, in dem seine eigene Runde ihn geschlossen hat, und trägt aus keiner späteren Runde ein Byte |
+| **E** — „eine Prüfung, die niemand hat laufen sehen, ist keine" | Der in Runde 18 abgedruckte Klassifizierer ist nicht nur Text: ausgeschnitten, `ParseFile`-geprüft und als das Skript gefahren, das die Zahlen dieses Abschnitts erzeugt hat |
+| **E** — keine Verhaltensänderung an A14 | `--selbsttest` vor dem Commit der Köpfe: 107 ok, 0 Fehler, Exit 0; der Diff der Köpfe enthält ausschließlich Kommentar- und Docstringzeilen |
+| **F** — „Änderungssatz" | Die beiden Köpfe gehören zusammen und stehen in einem Commit; Wiederherstellung des Runde-17-Abschnitts, Abdruck des Klassifizierers in Runde 18 und dieser Abschnitt gehen im nächsten gemeinsam raus, weil der Abdruck erst durch die Wiederherstellung nötig wird |

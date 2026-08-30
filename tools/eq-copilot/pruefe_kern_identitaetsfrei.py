@@ -1600,6 +1600,13 @@ def k1b_eingaben_aus_tlog(gelesen: list[str],
 # Kommentare werden vorher entfernt, wie bei jeder anderen Datei auch: was in
 # einem Kommentar steht, ist fuer den Uebersetzer kein Token. Die rohe Zahl
 # bleibt trotzdem in der Ausgabe stehen - sie ist Diagnose, kein Urteil.
+#
+# AUSDRUECKLICHE NICHTZUSAGE, in die sichere Richtung: erkannt wird die
+# Klammerform `defined (Name)`. Ein `defined Name` ohne Klammern - in C
+# ebenfalls gueltig - traegt sich NICHT in die Liste ein; sein Vorkommen ist
+# dann ROT ("steht nicht in der K1-Makroliste"), nicht still gruen. Wer die
+# Riegeldatei je auf die klammerlose Form umstellt, faellt hier auf und nicht
+# irgendwo spaeter.
 
 _K1B_NAME = re.compile(r"JucePlugin_[A-Za-z0-9_]*")
 _K1B_ABFRAGE = re.compile(r"\bdefined\s*\(\s*(JucePlugin_[A-Za-z0-9_]+)\s*\)")
@@ -2342,7 +2349,7 @@ def _selbsttest_runde5() -> None:
     #
     # Befund P1 des fuenfzehnten Pruefers (Runde 15). Gearbeitet wird auf
     # KOPIEN der echten Riegeldatei in einem Temp-Verzeichnis; die Datei im
-    # Baum wird nie angefasst - R15-1f haelt ihren sha256 vorher und nachher
+    # Baum wird nie angefasst - R15-1g haelt ihren sha256 vorher und nachher
     # dagegen.
     with tempfile.TemporaryDirectory() as roh:
         basis = pathlib.Path(roh)

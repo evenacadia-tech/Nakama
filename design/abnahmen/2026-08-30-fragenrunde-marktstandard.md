@@ -131,3 +131,38 @@ das, Nakama nicht, und niemand muss die Stelle später neu aufrollen. Die in der
 Karte genannte Abhängigkeit von der ungemessenen FL-Latenzverrechnung (Termin
 A2, Karte U11) entfällt für den EQ; ob U11 aus anderen Gründen offen bleibt,
 entscheidet U11 selbst.
+
+## U18 — Voreinstellungen und Kurve von Sonde zu Sonde
+
+**Frage:** Der Plan kennt heute keine Voreinstellungen. Dein Projekt speichert
+alles Eingestellte, und FL kann den Zustand eines Plugins selbst als Datei
+ablegen. Was fehlt, ist beides andere: eine Liste mit Startpunkten zum
+Anklicken (mitgelieferte und eigene) und ein Weg, eine fertige EQ-Kurve von
+einer Sonde auf eine andere zu übertragen. Soll Nakama das bekommen — beides
+oder nur das Kopieren? Dazu die Einordnung: Voreinstellungen sind bei Pro-Q 4
+und SPAN Plus durch die Herstellerseite belegt; das Kopieren zwischen zwei
+Instanzen bei keinem der verglichenen Produkte — dort hättest du keinen
+belegten Marktstandard hinter dir, es wäre ein Nakama-eigener Handgriff.
+
+**Antwort (Auswahl):** „Beides (Empfohlen)"
+
+**Folge:** Nakama bekommt die Preset-Liste und das Kopieren. Für den
+gespeicherten Zustand (S26–28) heißt das: Layout v2 bekommt ein eigenes
+Preset-Objekt. Eine Voreinstellung ist **nicht** der Projektzustand — sie lebt
+außerhalb des Projekts, wird ohne Projekt geladen und bekommt deshalb eigene
+Kennungen und eine eigene Version, die nie mit der Zustandsversion vermischt
+wird. Sie trägt den Klanginhalt: Bänder, Bypass, Mix, Schutz-Zonen, Auto-Gain.
+Sie trägt **keine** Identität: Zieladresse, Instanzkennung, Bus-Name und das
+selbst vergebene Label bleiben draußen — sonst würde das Laden einer
+Voreinstellung die Sonde umverdrahten, statt ihren Klang zu setzen. Genau
+dieselbe Grenze gilt beim Kopieren: die Kurve reist, die Identität bleibt, und
+der Weg ist die schon geplante Fernsteuerung über Gen (S29–31), kein neuer
+Kanal zwischen zwei Sonden — die vollständige EQ-Bedienung existiert nur in
+Gen. Für die Bedienung (S31b) heißt das: eine Liste zum Anklicken mit
+mitgelieferten und eigenen Einträgen, eigene sicher- und überschreibbar, und
+der Kopier-Handgriff dort, wo die Sonden ohnehin durchgeschaltet werden. Weil
+er den Klangzustand der Zielsonde überschreibt, muss er Quelle und Ziel
+benennen, bevor er wirkt. Das Kopieren hat keinen belegten Marktstandard
+(Lücke L-3) und damit auch keine Vorlage zum Abschauen; zeigt das Rework-Bild
+vom 25.08. weder die Preset-Liste noch diesen Handgriff, wird die fehlende
+Fläche einzeln vorgelegt und nicht erfunden.

@@ -26,18 +26,6 @@
    "bilder": [],
    "status": "offen",
    "blockiert_durch": "NAK-57 — der Zähler analyseKontinuitaetsbrueche() hat keine Anzeige; ohne sie ist der Kurztermin nicht ablesbar (Dirigent 29.08.)"
-  },
-  {
-   "id": "U18",
-   "dringlichkeit": "vor Phase P6",
-   "art": "Produktentscheid",
-   "titel": "Soll es gespeicherte Voreinstellungen geben — und darf man Einstellungen von einer Sonde auf eine andere kopieren?",
-   "was": "Der Plan kennt heute keine Voreinstellungen. Dein Projekt speichert natürlich alles, was eingestellt ist, und FL kann den Zustand eines Plugins auch selbst als Datei ablegen. Was fehlt, ist beides andere: eine Liste mit Startpunkten zum Anklicken (mitgelieferte und eigene) und ein Weg, eine fertige EQ-Kurve von einer Sonde auf eine andere zu übertragen. Frage: soll Nakama das bekommen — und wenn ja, beides oder nur das Kopieren?",
-   "warum": "Voreinstellungen sind bei zwei der verglichenen Produkte durch die Herstellerseite belegt: FabFilter Pro-Q 4 hat einen Preset-Browser, Voxengo SPAN Plus einen „Preset manager“ (beide Seiten abgerufen 30.08.2026). Das Kopieren zwischen zwei Instanzen ist bei keinem der beiden belegt. FabFilters „Copy“-Taste, die wir dafür angeführt hatten, ist laut Herstellerhilfe etwas anderes: „The Copy button copies the active state to the inactive state“ — also die A/B-Zustandskopie innerhalb derselben Instanz, kein Weg zu einer zweiten (FabFilter Pro-Q 4, Hilfeseite „Undo, redo, A/B switch“, abgerufen 30.08.2026). Für SPAN Plus nennt die Herstellerseite überhaupt kein Kopieren, und für die übrigen sechs Hersteller haben wir zu beidem keine Herstellerseite gelesen. Gefragt wird trotzdem beides: Für uns ist es kein reines Bedienthema — eine Voreinstellung ist etwas anderes als der Projektzustand und braucht einen eigenen Platz im gespeicherten Format, und eine fertige Kurve von einer Sonde auf eine andere zu übertragen ebenso. Das jetzt zu klären ist billig; später ist es eine Formatänderung. Zur Einordnung: Beim Kopieren zwischen Sonden hättest du keinen belegten Marktstandard hinter dir — es wäre ein Nakama-eigener Handgriff.",
-   "wo": "Betroffen: der gespeicherte Zustand und die Oberfläche. Tickets S26–28 (Format) und S31b (Bedienung). Belege: docs/beweise/PR1.md Abschnitt 2.2 — H3 (Preset-Browser), H8 (Preset-Manager), H15 (die Copy-Taste) — und Abschnitt 5.3, dort die Zeile „Undo/Redo, A/B, Kopieren“ mit dem Nachtrag vom 30.08.2026; Lücke L-3. Eingegrenzt am 30.08.2026 in PR1 Runde 2 (Codex-Befund B6): die Karte hatte „Voreinstellungen und Kopieren“ für beide Produkte als Grundausstattung geführt, obwohl für das Kopieren zwischen Instanzen bei keinem der beiden eine Herstellerquelle vorlag.",
-   "seit": "2026-08-30",
-   "bilder": [],
-   "status": "offen"
   }
  ],
  "beantwortet": {
@@ -406,6 +394,14 @@
    "datum": "2026-08-30 23:51",
    "status": "eingearbeitet",
    "ergebnis": "Nakama bleibt dauerhaft minimalphasig: kein zweiter, linearphasiger Betriebsmodus - weder in der ersten Fassung noch als spaeterer Ausbau - und auch keine Namensreservierung. Am Bau aendert sich nichts; S26-28, S28b und Pruefttor G6 bleiben unveraendert. [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md]"
+  },
+  "U18": {
+   "frage": "Soll es gespeicherte Voreinstellungen geben — und darf man Einstellungen von einer Sonde auf eine andere kopieren?",
+   "wahl": "Beides (Empfohlen)",
+   "text": "Beides (Empfohlen)",
+   "datum": "2026-08-30 23:51",
+   "status": "eingearbeitet",
+   "ergebnis": "Nakama bekommt beides: eine Liste gespeicherter Voreinstellungen (mitgelieferte und eigene) UND den Weg, eine fertige Kurve von einer Sonde auf eine andere zu uebertragen. Eine Voreinstellung ist nicht der Projektzustand und bekommt in Layout v2 einen eigenen Platz mit eigener Version (S26-28); sie traegt Klanginhalt, nie Identitaet. Bedienung S31b. Das Kopieren zwischen Instanzen hat keinen belegten Marktstandard - Luecke L-3, Nakama-eigener Handgriff. [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md]"
   }
  }
 }

@@ -3,7 +3,7 @@
 > **Erzeugt, nicht gepflegt.** Quelle ist `docs/plan/fragen.json`;
 > hier nur zum Lesen. Handarbeit geht beim naechsten Lauf verloren.
 
-**51 Antworten**, gegeben am 2026-08-22 bis 2026-08-30.
+**52 Antworten**, gegeben am 2026-08-22 bis 2026-08-30.
 
 Alle tragen Status `eingearbeitet` — jede ist mit Datum und Wortlaut uebernommen. Was daraus gilt, steht in der Spalte *Ergebnis*.
 
@@ -58,10 +58,11 @@ Alle tragen Status `eingearbeitet` — jede ist mit Datum und Wortlaut uebernomm
 | `U17.3` | Ja | Ja | 2026-08-30 23:51 | Die Anzeige ist einstellbar (Hoehe, Feinheit, Geschwindigkeit, Neigung). Ausschliesslich Darstellung: Messraster und Befunde bleiben unveraendert. Nur Oberflaeche, Ticket S31b. [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md] |
 | `U17.4` | Nein | Nein | 2026-08-30 23:51 | Tonnamen und Klaviatur werden NICHT gebaut. Damit entfaellt auch die FL-Oktavschreibweise als Anzeigefrage. [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md] |
 | `U17.5` | Ja, auf der Übersicht | Ja, auf der Übersicht — je Quelle ein Lautheitswert auf Gens erster Seite. | 2026-08-30 23:51 | Die bereits gemessene Lautheit wird sichtbar: je Quelle ein Wert auf Gens erster Seite (Uebersicht), nicht auf der EQ-Flaeche. Ticket S18-19. Beantwortet die Anzeigefrage aus NAK-57 fuer diesen einen Wert; NAK-57 bleibt im Uebrigen offen. [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md] |
+| `U18` | Beides (Empfohlen) | Beides (Empfohlen) | 2026-08-30 23:51 | Nakama bekommt beides: eine Liste gespeicherter Voreinstellungen (mitgelieferte und eigene) UND den Weg, eine fertige Kurve von einer Sonde auf eine andere zu uebertragen. Eine Voreinstellung ist nicht der Projektzustand und bekommt in Layout v2 einen eigenen Platz mit eigener Version (S26-28); sie traegt Klanginhalt, nie Identitaet. Bedienung S31b. Das Kopieren zwischen Instanzen hat keinen belegten Marktstandard - Luecke L-3, Nakama-eigener Handgriff. [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md] |
 | `U19` | Bleibt hinten (Empfohlen) | Bleibt hinten (Empfohlen) | 2026-08-30 23:02 | Referenz-Nachbilden (EQ-Match) bleibt Ausbau nach der vollen Fassung (Entwurf §47.5); die v3-Vertragsrunde von S16-17 reserviert nur den Familiennamen, Nutzlast erst mit dem Ausbau. |
 | `U20` | Eigener Name (Empfohlen) | Eigener Name (Empfohlen) — du vergibst je Sonde einen Namen (wie heute das Label); liefert FL den Bus-Namen doch, ersetzt er ihn automatisch. | 2026-08-30 23:02 | Gibt FL keinen Bus-Namen her, zeigt der Sonden-Durchschalter den vom User je Sonde vergebenen Namen (heutiges label-Feld, User-Wort, untrusted); ein vom Host gelieferter Bus-Name ersetzt ihn automatisch. Mixer-Nummer und Verbindungsreihenfolge werden nicht als Rueckfall gebaut. S18-19 (Messung, Capabilitybit, Vertragsort) und S31b (Anzeige). [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md] |
 
-## Die 22 Antworten mit eigenem Text
+## Die 23 Antworten mit eigenem Text
 
 Diese tragen mehr als eine Auswahl — hier steckt die eigentliche Aussage:
 
@@ -85,5 +86,6 @@ Diese tragen mehr als eine Auswahl — hier steckt die eigentliche Aussage:
 - **`U17.3`** — Wahl *Ja*: „Ja"
 - **`U17.4`** — Wahl *Nein*: „Nein"
 - **`U17.5`** — Wahl *Ja, auf der Übersicht*: „Ja, auf der Übersicht — je Quelle ein Lautheitswert auf Gens erster Seite."
+- **`U18`** — Wahl *Beides (Empfohlen)*: „Beides (Empfohlen)"
 - **`U19`** — Wahl *Bleibt hinten (Empfohlen)*: „Bleibt hinten (Empfohlen)"
 - **`U20`** — Wahl *Eigener Name (Empfohlen)*: „Eigener Name (Empfohlen) — du vergibst je Sonde einen Namen (wie heute das Label); liefert FL den Bus-Namen doch, ersetzt er ihn automatisch."

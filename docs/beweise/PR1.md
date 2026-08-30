@@ -1,6 +1,7 @@
 # Beweismanifest — PR1 «Planprüfung: Entscheide gegen Plan, Nakama gegen Marktstandard»
 
-<!-- Keine NAKAMA-URTEIL-Zeile: die setzt der Dirigent nach der Codex-Prüfung. -->
+> **Ohne Urteilsmarke.** Die Marke setzt der Dirigent nach der Codex-Prüfung; bis dahin
+> führt der gerechnete Planstand PR1 bewusst als *gebaut, nicht abgenommen*.
 
 | Feld | Wert |
 |---|---|
@@ -79,7 +80,7 @@ mitgeführt.
 | **Befunde: Härtung** | **3** | §4 |
 | Neue Fragenkarten an den User (U15–U20) | **6** | §6.2 |
 | Neue Registerzeilen (NAK-105 bis NAK-109) | **5** | §6.1 |
-| Direkte Edits an Planquellen | **14** | §6.1 |
+| Direkte Edits an Planquellen (E-1 bis E-17, über 3 Dateien) | **17** | §6.1 |
 | Vorschläge an den Dirigenten (nicht eingearbeitet) | **3** | §6.3 |
 
 ---
@@ -357,9 +358,13 @@ NAK-64 hatte die Streichung als Punkt 2 seines Umschnitts zugesagt und ist am
 Vorrang, aber §44.2 ist die Stelle, die ein Ticketprüfer als Gate-Text liest
 (`bauaufteilung` §2, T2-Regel „Gate-Text aus dem Entwurf").
 
-**Was getan.** Edit E-6 (plan.json S26–28), E-7 (Bauaufteilung §3 S26–28),
-E-8 (Entwurf §44.2 bekommt einen datierten Hinweis auf Erratum (n)/U14 — der
-Satz darunter bleibt stehen, wie die Entwurfsregel es verlangt).
+**Was getan.** Edit E-6 (plan.json S26–28), E-7 (Bauaufteilung §3 S26–28).
+Für (b) **kein** Edit an §44.2: der Text unter dem Errata-Block wird
+grundsätzlich nicht umgeschrieben, damit die T2-Regel „Gate-Text aus dem
+Entwurf" einen stabilen Bezug behält (`bauaufteilung-sonden.md` §6.4, berichtigt
+21.08.). Die Zusage in NAK-64, den Satz zu **streichen**, war damit selbst falsch.
+Stattdessen E-8: das neue **Erratum (q)** im Entwurf sagt ausdrücklich, dass der
+Satz als Verlauf stehen bleibt und seit U14 aufgehoben ist. Registerzeile NAK-108.
 
 ---
 
@@ -527,7 +532,7 @@ Legende **betroffen**: `V` = v3-Nachrichtenvertrag · `S` = State/Parameter ·
 
 | Standardfunktion | Wer hat sie (Beleg) | Nakama | betroffen | Ticket | Folge |
 |---|---|---|---|---|---|
-| **Kollisions-/Maskierungsanzeige direkt im EQ-Graph** | Pro-Q 4 „Show Collisions … red glow" (H2); Neutron 5 Masking Meter (H5); MMultiAnalyzer Kollisionsdetektor (H7) | **löst anders und später** — Maskierung ist eine Ursachenklasse des Advisors (§8) und wird als Text-Befund gezeigt; die vollständige Matrix ist Roadmap 3 (§47.1), also **nach R4** | **O** (Anzeige), V (nur wenn Live-Paarwerte in den Graph sollen) | S23–25 / S31b | **Fragenkarte U16** |
+| **Kollisions-/Maskierungsanzeige direkt im EQ-Graph** | Pro-Q 4 „Show Collisions … red glow" (H2); Neutron 5 Masking Meter (H5); MMultiAnalyzer Kollisionsdetektor (H7) | **löst anders und später** — Maskierung ist eine Ursachenklasse des Advisors (Entwurf §8) und wird als Text-Befund gezeigt; die vollständige Matrix ist Roadmap 3 (§47.1), also **nach R4** | **O** (Anzeige), V (nur wenn Live-Paarwerte in den Graph sollen) | S23–25 / S31b | **Fragenkarte U16** |
 | Automatische Entmaskierung über Sidechain | Trackspacer 32 Bänder (H9); Neutron Unmask (H5); smart:EQ 4 Group-Modus (H6) | **hat, geplant** — Kernfunktion 17, P8 (`SONDE-018`), aber ausdrücklich **kein** globaler Auto-Spectral-Ducker (§17) | — | S32–33 | Freigabe hängt an `aux_priority_sidechain`, heute `unsupported` bis Termin A2 (U11) |
 | Vollautomatischer wahrnehmungsbasierter Ausgleich | Gullfoss Recover/Tame (H11); smart:EQ smart:filter (H6) | **bewusst nicht** — CLAUDE.md: „Der Advisor schlägt nur vor"; Grundgesetz „nichts Ungefragtes" | — | — | kein Fund; ausdrücklicher Produktentscheid |
 | Resonanzdämpfung mit einstellbarer Auflösung | Smooth Operator Pro FOCUS/Detail/Isolation (H10) | **teilweise** — dynamische Bänder je Slot, aber acht Slots statt Tausenden Knoten; der User nennt den Resonanzfokus selbst als „spätere Ausbaustufe" (Interview 23.08., Annahmen) | S, O | nach R4 | kein neuer Fund |
@@ -568,7 +573,7 @@ Legende **betroffen**: `V` = v3-Nachrichtenvertrag · `S` = State/Parameter ·
 
 - Kein Hersteller im Vergleich liefert einen **Advisor mit belegter Ursache,
   Alternativen, Sicherheitsangabe und kleinstem Gegenversuch** in Nakamas Form
-  (§8, §36). Der 23.08.-Markt-Befund („die echte Innovation ist der dedizierte
+  (Entwurf §8, §36). Der 23.08.-Markt-Befund („die echte Innovation ist der dedizierte
   Hub mit Advisor") hält der Nachprüfung stand.
 - Kein Hersteller im Vergleich macht die **Messposition** (PRE/INSERT/POST) und
   die daraus folgende **Aussageklasse** zum Vertragsbestandteil. Das ist
@@ -586,12 +591,12 @@ Legende **betroffen**: `V` = v3-Nachrichtenvertrag · `S` = State/Parameter ·
 |---|---|---|---|
 | E-1 | `docs/plan/plan.json` S28b (`:288`) | Zustandsversionierung für `plugin_kind = main` als Lieferumfang benannt (Kind-Matrix, Parameterlayout, `state_hash`) | **D-1** |
 | E-2 | `docs/bauaufteilung-sonden.md` §3, Zeile S28b | dieselbe Zeile nachgezogen | **D-1** |
-| E-3 | `docs/FL-Nakama-Sonden-Design-Entwurf.md` Erratum (n) | datierter Nachtrag: der Satz „§53.8-State unverändert" gilt der Sonde, nicht Gen | **D-1** |
+| E-3 | `docs/FL-Nakama-Sonden-Design-Entwurf.md`, neues **Erratum (q)**, erster Punkt | stellt klar, dass „§53.8-State unverändert" aus Erratum (n) der Sonde gilt und nicht Gens Master-EQ; benennt die Versionierung und ihren Ort (S28b). Erratum (n) selbst bleibt unverändert stehen | **D-1** |
 | E-4 | `docs/plan/plan.json` S18–19 (`:218`) | Messung des Host-Kanalkontexts und Vertragsort für Bus-Name/Reihenfolge als Lieferumfang | **D-2** |
 | E-5 | `docs/bauaufteilung-sonden.md` §3, Zeile S18–19 | dieselbe Zeile nachgezogen | **D-2** |
 | E-6 | `docs/plan/plan.json` S26–28 (`:280`) | Auto-Gain als Layout-v2-Erweiterung ergänzt | **D-3 (a)** |
 | E-7 | `docs/bauaufteilung-sonden.md` §3, Zeile S26–28 | dieselbe Zeile nachgezogen | **D-3 (a)** |
-| E-8 | `docs/FL-Nakama-Sonden-Design-Entwurf.md` §44.2 (`:2660`) | datierter Hinweis, dass der ±3-dB-Satz durch U14/Erratum (n) aufgehoben ist; Satz bleibt stehen | **D-3 (b)** |
+| E-8 | `docs/FL-Nakama-Sonden-Design-Entwurf.md`, **Erratum (q)**, zweiter Punkt | hält fest, dass der ±3-dB-Satz in §44.2 (`:2660`) Verlauf ist und seit U14 aufgehoben — und dass NAK-64s Zusage, ihn zu streichen, gegen §6.4 der Bauaufteilung verstieß. **Kein Edit an §44.2 selbst** | **D-3 (b)** |
 | E-9 | `docs/plan/plan.json` S31b (`:320`) | Startbedingung auf die drei Rework-Bilder vom 25.08. umgestellt | **D-4** |
 | E-10 | `docs/bauaufteilung-sonden.md` §3, Zeile S31b | dieselbe Zeile nachgezogen | **D-4** |
 | E-11 | `docs/plan/plan.json` S18–19 (`:218`) | EQ-Zustand je Sonde (zugeschaltet/aus) als anzuzeigende Wahrheit | **D-5** |
@@ -642,7 +647,7 @@ Alle in `docs/plan/fragen.json` `offen[]`, `seit: "2026-08-30"`, `status: "offen
 **A–D sind für ein Dokumentticket nicht anwendbar** — hier wird kein
 Rückstauverhalten, kein Lebenszyklus, kein Längen- oder Alphabetvertrag und kein
 Bau-/Prüfriegel geändert. Es gibt keinen Produktcode, keinen Test und kein
-Schema in diesem Änderungssatz (Beleg: `git diff --stat` in §8.4 berührt
+Schema in diesem Änderungssatz (Beleg: `git diff --stat` in §8, Lauf D, berührt
 ausschließlich `docs/**`).
 
 ### E. Behauptung ≤ Messung
@@ -653,7 +658,7 @@ ausschließlich `docs/**`).
 | „Zahlen im Manifest sind gemessen, nicht abgeschrieben" | §1.3 nennt zu jeder Zahl den Befehl, mit dem sie gezählt wurde. Die Beinanzahl des Kanons wird hier **nicht** behauptet — der Kanon läuft nicht (§8). |
 | „Positionen im lebenden Kopf stehen als Symbol/Anker" | Fundstellen sind Datei plus Zeilennummer zum Stand `6f40eed`; wo eine Zeile wandern kann (`plan.json`-Texte), steht zusätzlich die Schritt-ID als Anker. |
 | „Der lebende Kopf wird beim Abschluss nachgezogen" | Dieses Manifest hat nur einen Kopf und keinen Verlauf — es ist die erste Runde. |
-| „Jede neue Prüfung wurde einmal absichtlich gebrochen" | **Greift hier nicht:** dieses Ticket baut keine Prüfung. Der einzige ausführbare Riegel im Änderungssatz ist die JSON-Gültigkeit von `plan.json`/`fragen.json`; sie ist in §8.3 vor **und** nach dem Edit gefahren. |
+| „Jede neue Prüfung wurde einmal absichtlich gebrochen" | **Greift hier nicht:** dieses Ticket baut keine Prüfung. Der einzige ausführbare Riegel im Änderungssatz ist die JSON-Gültigkeit von `plan.json`/`fragen.json`; sie ist in §8, Lauf C, nach dem Edit gefahren, und jedes Edit-Skript hat vor dem Schreiben zusätzlich den bytegleichen JSON-Roundtrip der Ausgangsdatei geprüft. |
 | „Geänderte Zusage — drei Stellen" | Zutreffend und ausgeführt: **D-3 (a)** und **D-4** ändern je eine Zusage; beide sind in `plan.json` **und** `bauaufteilung-sonden.md` nachgezogen (E-6/E-7, E-9/E-10), die dritte Stelle (`tools/beweise.ps1`-Runnerkopf) ist nicht betroffen, weil keine Runner-Behauptung berührt wird. |
 | „Writer-Fixtures statt Handschrift" | greift nicht — keine Fixtures im Änderungssatz. |
 
@@ -668,30 +673,69 @@ ausschließlich `docs/**`).
 
 ## 8. Beweislauf
 
-### 8.1 `py -3.13 tools/plan/planstand.py`
+**Befehle, Reihenfolge und Exitcodes.** Gefahren am 2026-08-30 vom Workspace-Root
+`C:/Users/phili/Projekte/Nakama` auf dem Stand `805e108` (dem Änderungssatz aus §6.1),
+wortgleich unten. Rohausgabe ungekürzt:
 
-siehe unten, Abschnitt 8.5 (nach den Edits gefahren).
+```text
+### A) py -3.13 tools/plan/planstand.py
+geschrieben: docs\PLAN-STAND.md (18 abgenommen, 2 gebaut, 38 gesamt, aus 805e108)
+EXITCODE=0
 
-### 8.2 `py -3.13 tools/plan/antworten_blatt.py`
+### B) py -3.13 tools/plan/antworten_blatt.py
+geschrieben: docs\ANTWORTEN-OFFEN.md (42 Antworten, 0 offen, 42 eingearbeitet, 13 mit eigenem Text)
+EXITCODE=0
 
-siehe unten, Abschnitt 8.5.
+### C) JSON-Gueltigkeit
+docs/plan/plan.json -> gueltiges JSON 34829 Zeichen
+docs/plan/fragen.json -> gueltiges JSON 26332 Zeichen
+EXITCODE=0
 
-### 8.3 JSON-Gültigkeit
+### D) git diff --stat 6f40eed..HEAD
+ docs/ANTWORTEN-OFFEN.md                 |  12 +-
+ docs/FL-Nakama-Sonden-Design-Entwurf.md |  32 +-
+ docs/bauaufteilung-sonden.md            |  42 +-
+ docs/beweise/PR1.md                     | 697 ++++++++++++++++++++++++++++++++
+ docs/offene-punkte.md                   |   7 +-
+ docs/plan/fragen.json                   |  72 ++++
+ docs/plan/plan.json                     |  26 +-
+ 7 files changed, 854 insertions(+), 34 deletions(-)
+EXITCODE=0
 
-siehe unten, Abschnitt 8.5.
+### E) Zaehlungen
+fragen.json offen: 8
+fragen.json beantwortet: 42
+Registerzeilen NAK-: 95
+hoechste Registernummer: NAK-109
+```
 
-### 8.4 `git diff --stat`
+**Was die Läufe zeigen.**
 
-siehe unten, Abschnitt 8.5.
+- **A** `planstand.py` endet mit **Exitcode 0 und ohne Warnung**. Der erste Lauf am
+  30.08. endete mit **Exitcode 4**: der Kopf dieses Manifests trug einen HTML-Kommentar,
+  in dem das Wort der Urteilsmarke vorkam; `MARKE_ROH` (`tools/plan/planstand.py:65`)
+  fängt jeden Kommentar mit diesem Wort ab und meldet ihn fail-closed als unlesbare
+  Marke. Der Riegel hat also genau das getan, wofür er gebaut ist. Der Kommentar ist
+  durch einen normalen Merksatz ersetzt; PR1 wird bis zum Urteil des Dirigenten
+  korrekt als *gebaut, nicht abgenommen* geführt.
+- **B** `antworten_blatt.py`: 42 Antworten, 0 offen, 42 eingearbeitet — `beantwortet{}`
+  ist unverändert, wie die Ticketgrenze es verlangt.
+- **C** Beide Planquellen sind nach den Edits gültiges JSON. Zusätzlich hat jedes
+  Edit-Skript vor dem Schreiben geprüft, dass `json.dumps(…, indent=1,
+  ensure_ascii=False)` mit CRLF **bytegleich** zur Ausgangsdatei ist — die Edits ändern
+  damit nur Text, keine Formatierung.
+- **D** Der Änderungssatz berührt **ausschließlich `docs/**`**: sieben Dateien,
+  854 Zeilen dazu, 34 weg. Kein Produktcode, kein Test, kein Schema, kein Fixture,
+  kein Runner. `docs/ANTWORTEN-OFFEN.md` und `docs/PLAN-STAND.md` sind erzeugt, nicht
+  von Hand editiert.
+- **E** Die Zählungen aus §1.3 nach dem Änderungssatz: `offen[]` wächst von 2 auf **8**
+  (U15–U20 neu), `beantwortet{}` bleibt bei **42**, das Register wächst von 90 auf **95**
+  Zeilen, höchste Nummer **NAK-109**.
 
-### 8.5 Rohausgaben
-
-wird beim Abschluss dieses Tickets eingetragen.
-
-### 8.6 Warum der Kanon nicht läuft
+### Warum der Kanon nicht läuft
 
 `tools/beweise.ps1` baut und misst Produktcode, Tests, Schemas und Fixtures.
 Dieser Änderungssatz berührt ausschließlich `docs/**` (Beleg: der
-`git diff --stat` in §8.5). Ein Kanon-Lauf würde denselben Stand messen wie der
+`git diff --stat` in §8, Lauf D). Ein Kanon-Lauf würde denselben Stand messen wie der
 letzte Lauf zu `SONDE-010` und keine Aussage über dieses Ticket treffen. Er wird
 deshalb bewusst **nicht** gefahren und auch nicht als Beleg zitiert.

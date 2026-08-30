@@ -19983,3 +19983,16 @@ Nacharbeit 12 - Abschluss".
 An `Install-Nakama.ps1`, den Fixturen und A18 wurde **nichts** geändert; das
 Installer-Manifest wurde weiterhin **nicht** neu gehasht. Die Marke von S9b
 bleibt unverändert; NAK-89 bleibt offen.
+
+## Dirigentenstand NAK-94 — 2026-08-30 10:31 (Sitzung 054eedac): Prüfer 13 NEEDS_WORK, offen — Nacharbeit 13
+
+**Stand dieses Abschnitts:** `eb84bec`
+
+**Nacharbeit 12:** Opus/max `nakama-s8r17-nak94r12-75466c0-bau` (gemeinsam mit S8 Runde 17); Erzeuger liest über die A17-Strukturprüfung, Fuzz-Deckung um `_fuzz_erzeuger`; Vollfuzz `docs/beweise/roh/SONDE-007c-fuzz-ed08ff8.md`; Kanon GRÜN 32/32 auf `3ef3efa` (Roh-Datei `docs/beweise/roh/SONDE-007a-3ef3efa.md`, Bein A17).
+**Prüfer 13:** Codex high `01a051bf-4fca-7361-ad2a-d5e96fe8ef95`, lesend über `git diff da62dec...eb84bec`, HEAD vor/nach identisch — **NEEDS_WORK (1)**, wörtlich (`@ eb84bec`); der Vorprüferbefund funktional bestätigt geschlossen (beide Pflichtmutationen Exit 2 ohne Traceback; 24 743 Byte-Kipp-Läufe des Prüfers ohne unkontrollierte Ausnahme):
+
+> **[P2] Sichere den zweiten Fuzz-Verbraucher mit einer fallenden Wache** — `tools/eq-copilot/pruefe_installer_manifest.py:2447-2450`. Wird `_fuzz_erzeuger` aus `FUZZ_VERBRAUCHER` entfernt, bleibt `fuzz_deckung()` leer; die Mutation `"faelle" → "xaelle"` wechselt lediglich von `strukturhalt` zu `befund`, was `[3c]` weiterhin als grün akzeptiert, da nur `unkontrolliert` rot zählt. Damit ist der dokumentierte „Bruch 2" kein fallender Bruch und die neue Zusage kann unbemerkt verschwinden; ergänze eine eigenständige Pflichtverbraucher-Wache samt roter Rohausgabe und Hash-Rücknahme.
+
+**Einordnung:** Defekt, mittel (Prüfliste E: Regressionswache ohne fallenden Bruch). **Regel des Dirigenten (Nacharbeit 13):** `fuzz_deckung()` führt eine **Pflichtmenge** von Verbrauchern (A17-Kanonpfad, `--hashen`, Erzeuger-`pruefen()`) als feste Zusage; fehlt einer in `FUZZ_VERBRAUCHER` oder wird er im Lauf nicht gefahren, ist `[3c]` ROT mit Namen. Bruch: `_fuzz_erzeuger` aus `FUZZ_VERBRAUCHER` entfernt → `[3c]` ROT (Rohausgabe); Rücknahme per Hash. Die Behauptung nennt die Pflichtmenge namentlich, ohne Anzahl.
+
+**Nächster Schritt:** Nacharbeit 13 im selben Worker wie die nächste S8-Runde (falls Prüfer 18 Befunde hat; sonst allein), gemeinsamer Kanon, danach Prüfer 14 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.

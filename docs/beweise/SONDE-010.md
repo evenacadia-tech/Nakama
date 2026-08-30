@@ -1358,3 +1358,199 @@ trägt jetzt eine überholte Begründung:
    stillsteht. Der Satz sollte durch das Fortschrittsargument ersetzt werden;
    die Aussage darunter (`beanspruchtVerworfen()` ist Wache,
    `kollisionsLoecher()` belegt den Fall) bleibt richtig.
+
+---
+
+## Kanon-Lauf - SONDE-010 NAK-104 Runde 2
+
+**Lauf:** 2026-08-30 18:11 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/SONDE-010-53f517b.md](roh/SONDE-010-53f517b.md)
+
+### Kopf - woran gemessen wurde
+
+| Feld | Wert |
+|---|---|
+| Zeitpunkt | 2026-08-30 18:11:03 +02:00 |
+| Rechner | SCHUBBINATOR200 \| Windows 10.0.26200.0 |
+| Zweig | master |
+| Commit | 53f517b SONDE-010 NAK-104 Runde 2: Rohausgabe der zwei Bruchproben |
+| Commit (voll) | 53f517bec5c198d0504f2ef01ac918f5665a922b |
+| Arbeitsbaum | sauber |
+| JUCE gepinnt | 8.0.9 |
+| JUCE auf Platte | 8.0.9-dirty |
+| FL Studio | FL Studio 2025 25.2.5.5319 \| FL Studio 2026 26.1.4.5589 |
+| cargo | cargo 1.93.1 (083ac5135 2025-12-15) |
+| rustc | rustc 1.93.1 (01f6ddf75 2026-02-11) |
+| PowerShell | 7.6.5 |
+| cmake | cmake version 3.31.6-msvc6 |
+
+### Uebersicht
+
+| # | Behauptung | Befehl | Ergebnis | Dauer | Rohausgabe |
+|---|---|---|---|---|---|
+| A1 | Passthrough ist bitgleich; 0 Samples Latenz, 0 Tail; NaN/Inf werden gezaehlt, aber nicht veraendert. | `eq-copilot\build\plugin\EqCopNullTest_artefacts\Release\EqCopNullTest.exe` | [OK] Exit 0 | 0,11 s | [A1](roh/SONDE-010-53f517b.md#a1) |
+| A2 | AnalyseEngine deckt sich mit der eingefrorenen Offline-Referenz (Fixture-SHA-256 als Determinismus-Riegel). | `eq-copilot\build\plugin\EqCopGoldenTest_artefacts\Release\EqCopGoldenTest.exe eq-copilot\fixtures` | [OK] Exit 0 | 10,93 s | [A2](roh/SONDE-010-53f517b.md#a2) |
+| A3 | Hoer-Markierung bleibt verriegelt: Render/Freilauf bitgleich, Analyse-Abgriff sitzt vor der Faerbung, und der U10-Term ist gedeckt - OHNE Playhead faerbt bei sonst voller Erlaubnis kein Sample (T11, mit Gegenprobe bei laufendem Transport). | `eq-copilot\build\plugin\EqCopMarkierungTest_artefacts\Release\EqCopMarkierungTest.exe` | [OK] Exit 0 | 6,50 s | [A3](roh/SONDE-010-53f517b.md#a3) |
+| A4 | Broker-Vertragstests gruen (Framing, Protokoll, Bindung, Aggregat, Server). | `cargo test --manifest-path broker/Cargo.toml --color never` | [OK] Exit 0 | 3,32 s | [A4](roh/SONDE-010-53f517b.md#a4) |
+| A4b | C++-PipeClient: stop/reconnect und ganze Frames sind zeitlich begrenzt, SQOS ist Identification, Peerbytes sind UTF-8/NUL-sauber, ACK-Sequenzen streng und u64-Zaehler wire-sicher. | `eq-copilot\build\plugin\EqCopPipeClientTest_artefacts\Release\EqCopPipeClientTest.exe` | [OK] Exit 0 | 1,08 s | [A4b](roh/SONDE-010-53f517b.md#a4b) |
+| A5 | Referenzbein (jsonschema, draft 2020-12): Schema haelt die Engine-Teilmenge ein, Textriegel deckt jede gemessene Kante, jedes Fixture wird wie im Manifest klassifiziert, jede Definition hat ein Negativfixture. | `py -3.13 tools\eq-copilot\pruefe_v3_vertrag.py --abdeckung` | [OK] Exit 0 | 1,78 s | [A5](roh/SONDE-010-53f517b.md#a5) |
+| A6 | Beide Bandgitter sind bytegleich zur Neuerzeugung; 221 Baender, 64 Gruppen als exakte Partition. | `py -3.13 tools\eq-copilot\erzeuge_bandgitter.py --pruefen` | [OK] Exit 0 | 0,16 s | [A6](roh/SONDE-010-53f517b.md#a6) |
+| A7 | Quantisierungsvertrag bytegleich zur Neuerzeugung; Rundung, Saettigung und Nichtendliches als Testvektoren. | `py -3.13 tools\eq-copilot\erzeuge_quantisierung.py --pruefen` | [OK] Exit 0 | 0,15 s | [A7](roh/SONDE-010-53f517b.md#a7) |
+| A8 | Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_v3_fixtures.py --pruefen` | [OK] Exit 0 | 0,21 s | [A8](roh/SONDE-010-53f517b.md#a8) |
+| A9 | Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID. | `py -3.13 tools\eq-copilot\pruefe_flatc_drift.py` | [OK] Exit 0 | 0,30 s | [A9](roh/SONDE-010-53f517b.md#a9) |
+| A10 | Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei. | `py -3.13 tools\eq-copilot\erzeuge_fb_fixtures.py --pruefen` | [OK] Exit 0 | 1,23 s | [A10](roh/SONDE-010-53f517b.md#a10) |
+| A11 | Die fuenf v2-Vertraege (ipc v2, measurement v1, report v1, snapshot v3, aggregat v1) sind gueltiges JSON und gueltige JSON-Schemas; ihre $id-Familie ist eingefroren. | `py -3.13 tools\eq-copilot\pruefe_v2_schemas.py` | [OK] Exit 0 | 0,30 s | [A11](roh/SONDE-010-53f517b.md#a11) |
+| A12 | Parameterbestand (109 IDs, §53.8) haelt den Vertrag; RFC-8785-Zahlenvektoren tragen den RFC-Text und werden von rfc8785 bestaetigt; State-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung. | `py -3.13 tools\eq-copilot\erzeuge_state_fixtures.py --pruefen` | [OK] Exit 0 | 0,30 s | [A12](roh/SONDE-010-53f517b.md#a12) |
+| A13 | Capabilityreport FL: die zehn Bits aus §53.6 entsprechen der v3-Vertragsform und stehen so, wie die Rohdaten der Termine A und B sie tragen; jedes supported hat einen Termin, jedes unsupported seinen festen Fallback. | `py -3.13 tools\eq-copilot\pruefe_host_capabilities.py` | [OK] Exit 0 | 0,24 s | [A13](roh/SONDE-010-53f517b.md#a13) |
+| A14 | Der gemeinsame Kern traegt keine Bundle-Identitaet (Entwurf §53.4): NakamaKern.lib wird vor der Messung geloescht und von MSBuild neu erzeugt (jede Kernquelle uebersetzt, Objekte und Lib juenger als der Zeitanker, Objektzahl = Quellzahl), enthaelt danach keinen eingefrorenen Identitaetswert aus plugin-identities-v1.json (Text in ASCII/UTF-16LE, Viercodes als Integer beider Byteordnungen, CIDs roh und COM-vertauscht) und genau die erwarteten Kernobjekte ohne JUCE-Modulobjekt; die Gegenprobe findet die Pflichtnadeln im gebauten Gen-Bundle, sonst waere das Schweigen ueber den Kern wertlos. Fehlende Voraussetzung (kein Neubau, Artefakt nicht auffindbar, --nur-messen) endet mit Exit 3, mit registriertem Befund mit 2, nie mit 0. Seit NAK-100 (30.08.2026) ohne K1b-Textscan, Ortsriegel, JUCE-Baum-Riegel und Frischewachen (Haertung NAK-103). | `py -3.13 tools\eq-copilot\pruefe_kern_identitaetsfrei.py` | [OK] Exit 0 | 5,94 s | [A14](roh/SONDE-010-53f517b.md#a14) |
+| A17 | Installer-Manifest: keine zweite Identitaet (kein Viercode, keine Class-ID, kein Produkt- oder Bundlename ausser im Pfad), jeder Quellpfad ist der aus Ziel + Identitaetsdatei nachgerechnete Bundle-Ordner, `art` ist eine geschlossene Menge, jedes aktive Ziel genau einmal und jedes stillgelegte benannt mit lesbarer Marke, Broker aus dem Crate-Namen, Zielverzeichnisse geschuetzt, Signaturzeile ehrlich, Rueckweg samt NAK-41-Riegel und hash_art vollstaendig; jede der 15 Regeln faellt an einem verdorbenen Manifest, die konkreten Umgehungen (Zielkollision, state_schema-Drift, Stilllegung umgangen, Marke unlesbar, ungueltige ziel_id-Typen, Pfadtraversal) fallen einzeln. [4] vergleicht im Kanon weich (Abweichung nach Relink = Hinweis, fehlendes Artefakt oder nicht bildbarer Ordner-Hash = Fehler), hart nur mit --release; [4b] berichtet den installierten Stand ohne Urteil, ok nur bei Journalstatus OK; [5] Ordner-Hash v1 bytegleich in Python und PowerShell, Nicht-ASCII bricht beide ab. Jede gelesene JSON-Datei wird vor dem Zugriff strukturell geprueft, jede unerwartete Ausnahme endet als Klartext mit Exit 2 statt als Traceback. | `py -3.13 tools\eq-copilot\pruefe_installer_manifest.py` | [OK] Exit 0 | 1,13 s | [A17](roh/SONDE-010-53f517b.md#a17) |
+| A18 | Gegenpfad installieren<->Rueckweg gefahren (Sandbox, nichts installiert): Erstinstallation traegt moduleinfo.json, ein Tausch ersetzt statt zu mischen, -Pruefen sieht den ganzen Ordner, der Rueckweg stellt den Vorzustand bytegleich her und laesst KEIN leeres .vst3-Gehaeuse stehen, selbst angelegte Ordner verschwinden nur leer, der NAK-41-Riegel greift und zerstoert seine eigene Wiederholungsquelle nicht, eine dritte Artefaktsorte bricht ab. | `py -3.13 tools\eq-copilot\pruefe_installer_gegenpfad.py` | [OK] Exit 0 | 43,61 s | [A18](roh/SONDE-010-53f517b.md#a18) |
+| A19 | BandGridZahlen.h ist bytegleich aus den zwei eingefrorenen Gitterfixturen erzeugt; die 64 Live-Gruppen partitionieren die 221 Feinbaender lueckenlos und ueberschneidungsfrei, und die groben Kanten sind bitgleiche Kopien feiner Kanten (kein zweites Filterbank-Gitter). | `py -3.13 tools\eq-copilot\erzeuge_bandgitter_header.py --pruefen` | [OK] Exit 0 | 0,17 s | [A19](roh/SONDE-010-53f517b.md#a19) |
+| A20 | Envelope-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; jede der 14 Envelope-Regeln hat mindestens ein Negativfixture. | `py -3.13 tools\eq-copilot\erzeuge_envelope_fixtures.py --pruefen` | [OK] Exit 0 | 0,37 s | [A20](roh/SONDE-010-53f517b.md#a20) |
+| A21 | v3-Envelope unter Zufall: 20 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und JEDER angenommene Frame erfuellt jede Kopfregel; 3000 gekippte P2-Payloadbits fallen einzeln an der CRC; feindliche Laengen (0, 15, ueber der Grenze, 0xFFFFFFFF) und die u32-Grenze von 16+payload_len enden in der erwarteten Fehlerklasse, ohne Absturz und ohne Eingabeallokation in Groesse der behaupteten Laenge; 300 Runden Fragmentierung (byteweise und in Zufallshaeppchen) liefern exakt dieselben Frames; ein kaputter Frame beendet den Strom statt zu resynchronisieren; die Ratengrenze haelt unter Flut. | `cargo test --manifest-path broker/Cargo.toml --test transport_fuzz --color never` | [OK] Exit 0 | 0,40 s | [A21](roh/SONDE-010-53f517b.md#a21) |
+| A22 | Ende-zu-Ende ueber die PROBE-Pipe, zwei Sprachen ein Draht: 32 echte C++-Sondenpaare koppeln sich am echten Rust-Listener (32 Control + 32 Telemetry, jede Telemetrieverbindung ueber link_id + challenge + gleiche runtime_nonce), fluten P2 bis die Schleuse mit Cap 2 nachweislich ersetzt, und WAEHRENDDESSEN geht kein einziger P0-Frame verloren; die P0-Antwortlatenz bleibt unter der Schranke. Keine Verbindung wird wegen Envelope, Rate oder P0-Ueberlauf geschlossen. | `py -3.13 tools\eq-copilot\pruefe_ipc_last.py` | [OK] Exit 0 | 10,01 s | [A22](roh/SONDE-010-53f517b.md#a22) |
+| A15 | STILLGELEGT - mass bis 28.08.2026 Nakama Suna (NkPr): Passthrough bitgleich ueber drei Samplerates und fuenf Blockgroessen, 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur passive_probe zu; speichern-laden-speichern bytegleich. | `(nicht gefahren)` | [STILLGELEGT] seit 2026-08-28 (S9b/SONDE-007c): das Ziel NakamaSuna ist stillgelegt - Suna ist in Nakama Probeeq aufgegangen (design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md). Weder gebaut noch gefahren; die Zeile bleibt sichtbar, damit die Kanonzahl nicht still sinkt. | - | - |
+| A16 | Nakama Probeeq (NkAc): heute ebenfalls Passthrough bitgleich (die EQ-DSP kommt in P6), 0 Samples Latenz, kein Tail, kein Hostparameter; Bundlevertrag laesst nur active_probe zu; speichern-laden-speichern bytegleich. Seit der T3-Nacharbeit 29.08.2026 (G1 §4.2) faehrt dasselbe Bein die Gate-7-Kette AM GEBAUTEN BUNDLE Nakama Probeeq - Klasse active_probe, denn die Sondenschale traegt genau EINE Klasse je Uebersetzung: ein sonst gueltiger Stand mit measurement_position=post_fader_contribution kommt ueber setStateInformation read-only zurueck, die Instanz bleibt neutral, die Originalbytes gehen unveraendert an den Host zurueck und ein erneutes Laden waescht nichts; auch eine bereits klassifizierte Instanz faellt beim Nachreichen desselben Standes auf neutral zurueck; Gegenprobe mit insert laedt normal. Zusaetzlich misst dasselbe Bein direkt an der oeffentlichen positionErlaubt, dass post_fader_contribution fuer alle vier Klassen abgelehnt wird - das gemeinsame Ergebnis von Capability-Vorpruefung und Klassenmatrix, ohne die beiden Haelften zu trennen. Die vollstaendige 16er-Matrix samt Bundlevertraegen misst B2. | `eq-copilot\build\plugin\EqCopProbeeqNullTest_artefacts\Release\EqCopProbeeqNullTest.exe` | [OK] Exit 0 | 0,10 s | [A16](roh/SONDE-010-53f517b.md#a16) |
+| B1 | Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren. | `eq-copilot\build\plugin\EqCopIdentityTest_artefacts\Release\EqCopIdentityTest.exe` | [OK] Exit 0 | 0,13 s | [B1](roh/SONDE-010-53f517b.md#b1) |
+| B2 | State-Schema 2: Roundtrip bytegleich, Schema-1-Migration rein und golden, unbekanntes Major read-only mit Originalbytes, Duplicate erkennbar (gleiche instance_id, verschiedene runtime_nonce) und aufloesbar, Host-Dirty; Parametertabelle deckungsgleich mit dem Vertrag; RFC-8785-state_hash bytegleich zu Python und Rust. | `eq-copilot\build\plugin\EqCopStateMigrationTest_artefacts\Release\EqCopStateMigrationTest.exe` | [OK] Exit 0 | 0,38 s | [B2](roh/SONDE-010-53f517b.md#b2) |
+| B3 | Hostkontext (Anwesenheit, Parameterpunkte, Buslatenz) wird gemessen, nicht geraten; Quellhash-Gate des JUCE-Patches gruen. | `eq-copilot\build\plugin\EqCopHostContextTest_artefacts\Release\EqCopHostContextTest.exe` | [OK] Exit 0 | 0,05 s | [B3](roh/SONDE-010-53f517b.md#b3) |
+| B3b | Termin-B-Messgeraet: Passthrough bitgleich, Sprung-/Automations-/Latenzmessung inkl. Fehlalarm-Riegel, Bericht-Rueckweg, 0 Allokationen. | `eq-copilot\build\plugin\EqCopHostProbeTest_artefacts\Release\EqCopHostProbeTest.exe` | [OK] Exit 0 | 0,08 s | [B3b](roh/SONDE-010-53f517b.md#b3b) |
+| B3c | v3-Vertrag: C++ klassifiziert den Fixture-Korpus wie das Manifest (Urteil UND Verletzungsmenge), Bandgitter und Quantisierung bitgleich. | `eq-copilot\build\plugin\EqCopSchemaTest_artefacts\Release\EqCopSchemaTest.exe` | [OK] Exit 0 | 0,22 s | [B3c](roh/SONDE-010-53f517b.md#b3c) |
+| B4 | StampedAudioQueue und Ein-Block-Quarantaene: Ganzblockaufnahme bitgleich ueber jeden Ringumlauf, Ueberlauf BEIDER Ringe verwirft den ganzen Block und nie eine Teilmenge, Oversize ueber der Slotkapazitaet faellt fuer die Analyse und laesst Audio unberuehrt, Flush (numSamples 0) ist kein Verlust, Mono dupliziert L, Mehrfach-Tap-Layout traegt; Quarantaene versiegelt erst mit bewiesener Fortsetzung, Seek und Transportkante verwerfen genau EINEN Block, stehende Projektzeit (FL-Teilpuffer) ist kein Bruch, Projektzeit-Ueberlauf und negative Zeit sind behandelt; Worker-Publikation folgt monotonen 50-/250-ms-Deadlines statt Batchzahl, holt nach Pausen nicht auf und laesst wartende Reset-/Frame-Aufrufer vor; verdrahtet: Passthrough bitgleich ueber 18 Blockgroessen von 1 bis 16384, 0 Samples Latenz, kein Tail, 0 Allokationen im Audiothread ueber 4000 Bloecke wechselnder Groesse mit Transportkanten, und die Engine bekommt den Strom bis auf den Block in Quarantaene. | `eq-copilot\build\plugin\EqCopQueueStressTest_artefacts\Release\EqCopQueueStressTest.exe` | [OK] Exit 0 | 3,39 s | [B4](roh/SONDE-010-53f517b.md#b4) |
+| B9 | Fixed-memory Loudness (§48.1): der LoudnessAccumulator deckt sich mit der ausgebauten Vektorrechnung innerhalb ±0,1 LU (Entwurf §49) ueber konstante, rampende, zufaellige und einstuendige Korpora sowie ueber Stille unter dem absoluten Gate; Kurz-LUFS ist BITGLEICH; ein adversarialer Sweep legt 1000 Bloecke in den Grenzbin des relativen Gates und die selbstgemeldete Schranke unsicherheitLu() deckt jeden Lauf; eine Million Zellen laufen mit 0 Allokationen durch, waehrend die Gegenprobe (alte Rechnung) allozert; NaN/Inf-Zellen sind gezaehlt statt still als 0 verbucht und l_j == -70,0 exakt bleibt wertgleich; ueber dem Feingitter traegt ein OBERBAND aus Bins von 1 LU bis ueber lautheit(DBL_MAX) - mit ZWEI Pegeln darin (Korpus des T2-Pruefers), einem adversarialen Sweep im Oberband-Grenzbin, beiden Richtungen der Naht zwischen den Aufloesungen und der Gegenprobe, dass kein Block durch das Raster faellt. | `eq-copilot\build\plugin\EqCopLoudnessGoldenTest_artefacts\Release\EqCopLoudnessGoldenTest.exe` | [OK] Exit 0 | 0,22 s | [B9](roh/SONDE-010-53f517b.md#b9) |
+| B5 | FeatureEngine v2 haelt Zeit-, Validity-, Event- und Bandvertraege: Bandgitter und alle 61 Quantisierungsvektoren bitgleich zum v3-Vertrag, Bitmap LSB-first mit Fuellbits 0, FFT gegen Parseval und einen Sinus auf der Binmitte, K-Gewichtung ueber 20 Hz..20 kHz unter 0,1 dB an der BS.1770-Referenzkette; Drop/Seek(laufend UND gestoppt)/Loop-Wrap/moeglicher Straddle/Transportkante/Sampleratewechsel/Neuanlauf/Beweislagewechsel trennen JEDES offene Fenster - auch den K-Filterzustand, bitgleich gemessen - waehrend FL-Teilstuecke mit stehender Projektzeit lokal weiterlaufen, aber kein unbewiesenes Projektintervall oder FFT-Event erzeugen; Frame-Stempel umfassen den echten ueberlappenden FFT-Support und bleiben an int64/u32-Grenzen darstellbar; Drop zaehlt als Segment, alles andere als Epoche; alle sieben Erzeuger-Stempelregeln fallen einzeln und mit eigener Nummer; kein spektraler Fluss ueberbrueckt eine Grenze, der Ereignisring ist fest gedeckelt; LUFS-S trifft die analytisch gerechnete Erwartung unter 0,1 LU; die Nyquist-Kappe greift bei 22,05 kHz wirklich; verdrahtet: alle sieben Gueltigkeitsbits kommen ueber die Hostbruecke durch, der Playhead-Rueckfallweg nachweislich nur zwei. | `eq-copilot\build\plugin\EqCopAnalysisGoldenTest_artefacts\Release\EqCopAnalysisGoldenTest.exe` | [OK] Exit 0 | 2,43 s | [B5](roh/SONDE-010-53f517b.md#b5) |
+| B6 | Aktiver DSP-Kern liefert die eingefrorene Referenzantwort. | `eq-copilot\build\plugin\EqCopDspGoldenTest_artefacts\Release\EqCopDspGoldenTest.exe` | [GEPLANT] geplant (ab P6) | - | - |
+| B7 | Apply/Revert ist transaktional - kein halber Zustand ueberlebt. | `eq-copilot\build\plugin\EqCopTransactionTest_artefacts\Release\EqCopTransactionTest.exe` | [GEPLANT] geplant (ab P6) | - | - |
+| B10 | v3-Envelope in C++ klassifiziert den Envelope-Korpus wie das Manifest (Urteil UND Verstossmenge, alle 14 Regeln mit Negativfixture); CRC32C trifft die RFC-3720-Vektoren, P0/P1 tragen CRC exakt 0, P2 die Pflichtsumme ueber genau die Payloadbytes; 40 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und 7671 angenommene EINBIT-Mutanten gueltiger Frames halten jede Kopfregel (reiner Zufall wird praktisch immer abgewiesen - die Invariante braucht deshalb die Mutanten, sonst spraeche sie ueber eine leere Menge), 3000 gekippte P2-Bits fallen einzeln, byteweise Zustellung liefert dieselben 40 Frames und ein kaputter Frame beendet den Strom; Pipetoken trifft das Golden aus §48.3 samt SHA-256- und RFC-4648-Vektoren; P0 verwirft nichts und meldet den 65. Eintrag, P1 koalesziert an der Position und haelt Ereignisse fuer den Reconnect vor, die P2-Schleuse ersetzt den aeltesten ungesendeten Frame, uebergibt 100 000 Frames mit 0 Allokationen (mit Gegenprobe am selben Zaehler) und liefert unter Flut keinen zerrissenen Frame; verdrahtet: Control koppelt Telemetry ueber link_id + challenge, ein ungekoppelter Telemetry-Connect wird geschlossen, der Client verbindet nach Serverneustart von selbst wieder, ein kaputter Envelope vom Server schliesst die Verbindung, und ein P0-Ueberlauf WAEHREND einer stehenden Verbindung schliesst sie ebenfalls statt still zu kuerzen. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 49,82 s | [B10](roh/SONDE-010-53f517b.md#b10) |
+| B8 | Lifecycle-Klassifikation §53.5: unclassified beim Laden und audio-neutral; Schema-1 sensor\|pre\|post -> legacy (immer passiv), hub bzw. bestaetigter Schema-2-Main-State -> main; ein Scannerlauf klassifiziert nicht; read-only nimmt die Klassifikation zurueck; Brokerstart nur fuer main mit offenem Editor; die Sondenbundles bleiben bis gueltigem State neutral und werden nie main. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,14 s | [B8](roh/SONDE-010-53f517b.md#b8) |
+
+
+### NAK-104 Runde 2 — 2026-08-30 (Worker, hat nicht geurteilt)
+
+**Stand:** der eine Restdefekt, den die Wiederprüfung (Codex xhigh, Thread
+`01a0535a`, Stand `cab288b`) gegen die Verhaltensmatrix gefunden hat und den der
+Dirigent an der Quelle bestätigt hat, ist behoben. Quelle, Test und zwei
+Bruchproben stehen unten. **Ein Urteil spricht dieser Abschnitt nicht** — er
+nennt, was gemessen wurde.
+
+**Basis:** `cab288b` · **Fix-Commit:** `e517165` (Rohausgabe der Bruchproben:
+`53f517b`) · Ticketgrenze eingehalten (`broker/src/transport/server_v3.rs`,
+dieser Rundenabschnitt, `docs/beweise/roh/`); kein C++, keine Matrixänderung,
+kein Neben-Refactor. Die Matrix im lebenden Kopf ist unverändert — `C-LS-06`
+sagte schon das Richtige, nur eingelöst war es nicht.
+
+**Der Befund in einem Satz:** die Trennpflicht der Telemetrieseite wurde erst
+NACH Rückkehr von `telemetrie_gekoppelt` gesetzt; blockiert die Senke dort
+fristgerecht und enden beide Clients während des Blocks, fand die Control-Seite
+`erwartet == false`, übersprang ihren Wartepunkt und meldete `control_getrennt`
+VOR dem `telemetrie_getrennt`, das kurz danach folgte.
+
+### Der Defekt — Quelle, Test, Bruchprobe
+
+| Matrixzeile | Quelle (Datei · Symbol) | Test (neu) | Bruchprobe rot | grün |
+|---|---|---|---|---|
+| `C-LS-06` | `server_v3.rs` · `verbindung_bedienen` (Zweig `Bootstrap::V3Telemetry`) — `trennmelder_telemetrie_erwartet` steht jetzt VOR dem `senkenruf.rufen(… telemetrie_gekoppelt …)` statt dahinter | `server_v3::trennreihenfolge_haelt_im_kopplungs_callback_fenster` | `["control_verbunden", "control_getrennt"]` — die Kopplung endet ohne Ende ihres Telemetrieteilnehmers ([B1](roh/SONDE-010-bruchproben-nak104-r2.md#b1--c-ls-06--die-trennpflicht-erst-nach-dem-kopplungs-callback)) | Reihenfolge `telemetrie_getrennt` → `control_getrennt`, je 1, `lebenszyklus_reihenfolge_verletzt` 0 |
+| `C-LS-04`/`C-LS-06` | `server_v3.rs` · `trennmelder_telemetrie_abgesagt` (neu) und `auf_telemetrie_getrennt_warten` (`while g.erwartet && !g.gemeldet` statt einmaliger Prüfung davor) — die vorgezogene Zusage fällt zurück, wenn das `telemetrie_gekoppelt` ABGELÖST wurde | `server_v3::abgeloestes_telemetrie_gekoppelt_laesst_control_getrennt_nicht_warten` | `control_getrennt kam erst nach 2.0068661s` — genau die volle `SENKE_FRIST` ([B2](roh/SONDE-010-bruchproben-nak104-r2.md#b2--c-ls-04c-ls-06--die-vorgezogene-zusage-bleibt-stehen)) | `control_getrennt` sofort, `lebenszyklus_reihenfolge_verletzt` 0 |
+
+**Beide Bruchproben laufen gegen denselben committeten Stand `e517165`**, je
+Probe genau ein zurückgenommener Teil. Deshalb trägt jede rote Ausgabe dieselbe
+Grundzahl (149 Rust-Lib-Prüfungen, davon 148 grün), und an jeder ist ablesbar,
+dass die ANDERE Probe grün bleibt — die zwei Tests treffen je ihre eigene Hälfte
+und nicht einen gemeinsamen Nebeneffekt. Rohausgabe:
+[`roh/SONDE-010-bruchproben-nak104-r2.md`](roh/SONDE-010-bruchproben-nak104-r2.md).
+
+### Warum die Zusage nach vorn musste — und was das erzwingt
+
+Der Prüfer hat nicht „der Wartepunkt fehlt" gesagt, sondern „der ausstehende
+Zustand fehlt schon WÄHREND des Kopplungs-Callbacks". Das ist der Unterschied
+zwischen einer Tatsache und ihrer Bekanntgabe: die Kopplung ist im Register
+vollzogen und das Welcome ist auf dem Draht, bevor `telemetrie_gekoppelt`
+überhaupt startet. Blockiert die Senke dort fristgerecht, steht die Kopplung
+mehrere hundert Millisekunden, ohne dass irgendjemand weiß, dass ihr
+Telemetrieteilnehmer noch ein Ende zu melden hat. Genau in dieses Fenster fällt
+der Fall des Prüfers.
+
+Der Setzpunkt liegt bewusst NACH dem Welcome-Schreiben: die zwei Fehlerpfade
+davor (`envelope_schreiben` scheitert, `ov_schreiben` scheitert) kehren zurück,
+ohne `telemetrie_gekoppelt` je gerufen zu haben — dort gibt es auch nichts zu
+versprechen. Der gewählte Punkt ist der früheste, ab dem der Callback laufen
+kann.
+
+Das Vorziehen erzeugt eine zweite Pflicht, und die ist der Grund für die zweite
+Bruchprobe: wird `telemetrie_gekoppelt` ABGELÖST, folgt nach `C-LS-04` kein
+`telemetrie_getrennt` — die Zusage muss dann zurückfallen
+(`trennmelder_telemetrie_abgesagt`, mit `notify_all`, weil die Control-Seite
+schon warten kann). Und weil sie mitten im Warten zurückfallen darf, prüft die
+Warteschleife `erwartet` laufend statt nur einmal davor. Ohne diese Hälfte
+hinge die Control-Seite die volle `SENKE_FRIST` und zählte eine
+Reihenfolgeverletzung, die keine ist — gemessen: `2.0068661s`. Zusage geben und
+Zusage zurücknehmen liegen deshalb in einem Commit.
+
+Was NICHT geändert wurde: die Frist selbst (`SENKE_FRIST`, höchstens einmal je
+Abbau), die Politik „ein abgelöster Trenn-Callback zählt als gelaufen", und der
+Zähler `lebenszyklus_reihenfolge_verletzt` — er bleibt die Wache für den
+echten Fristfall und wird für ein abgesagtes Gegenstück bewusst nicht mehr
+hochgezählt.
+
+### Kanon auf dem committeten Stand
+
+`GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht
+gebaut | 1 stillgelegte(s) Bein(e)` · Exitcode 0 · Commit `53f517b`,
+Arbeitsbaum sauber · Rohausgabe
+[`roh/SONDE-010-53f517b.md`](roh/SONDE-010-53f517b.md) (Abschnitt „Kanon-Lauf -
+SONDE-010 NAK-104 Runde 2" direkt oberhalb).
+
+* **Rust:** 149 + 9 + 9 (vorher 147 + 9 + 9 auf `cab288b`) — die zwei neuen
+  Prüfungen sind die ganze Differenz.
+* **B10 `EqCopIpcTest`:** 207 Prüfungen, 0 Fehler — unverändert gegenüber
+  `cab288b`. Der Fix ist reiner Rust; dass die C++-Seite exakt gleich bleibt,
+  ist hier die Aussage, nicht ein Nebenbefund.
+* **A22 Lastbein:** 10 016 / 10 016 P0 beantwortet, max 22 ms, p99 20 ms, bei
+  36 700 ersetzten P2-Frames; `p2_neueste_verworfen: 0`,
+  `p2_kollisionsloecher: 0`, `p0_ueberlaeufe: 0`, Ingress-Höchststand 3.
+  Brokerbericht `control_getrennt: 32`, `telemetrie_getrennt: 32` bei 32
+  Control- und 32 Telemetrieverbindungen — unter Last fällt kein Gegenstück
+  aus, und keines läuft doppelt.
+
+### Prüfliste (`tools/dirigent/pruefliste.md`) — B
+
+* **Reihenfolge beim Verbinden.** Unverändert und weiter gemessen: anmelden →
+  `control_verbunden` abgeschlossen → erst dann Welcome
+  (`welcome_folgt_dem_abgeschlossenen_control_verbunden`, grün). Neu ist nur,
+  dass auf der Telemetrieseite die Trennpflicht mit der Kopplung entsteht und
+  nicht erst mit der Rückkehr ihres Callbacks.
+* **Beim Trennen zuerst abmelden/entkoppeln, dann Fristen und Joins.**
+  Unverändert: `kopplung_loesen` steht weiter vor den fristbegrenzten Joins.
+  Der Wartepunkt hängt weiterhin am Trennstand statt am Register (Runde 1) —
+  Runde 2 schließt nur das Zeitfenster, in dem dieser Stand noch leer war.
+  Nichts bleibt registriert, während gewartet wird.
+* **Jeder Join hat eine Frist.** Unverändert; das Warten auf
+  `telemetrie_getrennt` bleibt auf `SENKE_FRIST` begrenzt und meldet danach in
+  jedem Fall weiter (`abgeloestes_telemetrie_getrennt_haelt_control_getrennt_nicht_auf`,
+  grün). Der neue Absagepfad verkürzt dieses Warten, er verlängert es nie.
+* **Verbinden↔trennen in einem Änderungssatz.** Zusage geben
+  (`trennmelder_telemetrie_erwartet`) und Zusage zurücknehmen
+  (`trennmelder_telemetrie_abgesagt`) liegen im selben Commit, mit je einer
+  eigenen roten Probe.
+* **Behauptung ≤ Messung.** Der neue Fenstertest misst seine Vorbedingung
+  zweifach, statt sie zu hoffen: `betreten_anzahl("telemetrie_gekoppelt") == 1`
+  (die Senke steht wirklich im Callback) UND `anzahl("telemetrie_gekoppelt")
+  == 0` (der Callback ist noch nicht zurück, das Fenster ist also offen). Die
+  Reihenfolge wird ausgepackt verglichen, weil `Option::cmp` ein ganz fehlendes
+  `telemetrie_getrennt` sonst wie die richtige Reihenfolge aussehen ließe;
+  zusätzlich belegt eine Zeitschranke (≥ 500 ms bei 800 ms Blockdauer), dass die
+  Control-Seite wirklich gewartet und den Wartepunkt nicht nur zufällig
+  getroffen hat. Alle Zahlen oben stammen aus dem Kanonlauf auf `53f517b`, keine
+  ist abgeschrieben.
+
+### Was diese Runde NICHT getan hat
+
+* Keine Matrixänderung. `C-LS-06` beschreibt das Sollverhalten korrekt; der
+  Defekt lag allein in der Umsetzung.
+* Kein C++, kein anderer Rust-Pfad, kein Neben-Refactor. Die vorbestehende
+  Warnung `unused import: CAP_INGRESS` (`server_v3.rs:79`) stammt nicht aus
+  dieser Runde und wurde nicht angefasst.
+* Ein Vorschlag an den Dirigenten, nicht ausgeführt: `C-LS-06`, Spalte Test —
+  `server_v3::trennreihenfolge_haelt_im_kopplungs_callback_fenster` ergänzen.
+  Der in Runde 1 nachgetragene Test blockiert erst im TRENN-Callback und
+  betritt das Kopplungsfenster nie; genau deshalb hat er diesen Fall nicht
+  gefunden.

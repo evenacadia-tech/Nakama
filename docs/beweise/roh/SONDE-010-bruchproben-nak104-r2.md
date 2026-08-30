@@ -58,7 +58,7 @@ der Defekt nach Runde 1 noch da.
 
 ---
 
-## B2 · `C-LS-04`/`C-LS-06` — die vorgezogene Zusage ohne Rücknahme
+## B2 · `C-LS-04`/`C-LS-06` — die vorgezogene Zusage bleibt stehen
 
 **Bruch:** dieselbe Stelle mit dem NEUEN Setzpunkt, aber ohne
 `trennmelder_telemetrie_abgesagt(&trennmelder, &h.link_id)` im Fehlerzweig eines

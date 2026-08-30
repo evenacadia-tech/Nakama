@@ -3,7 +3,7 @@
 > **Erzeugt, nicht gepflegt.** Quelle ist `docs/plan/fragen.json`;
 > hier nur zum Lesen. Handarbeit geht beim naechsten Lauf verloren.
 
-**42 Antworten**, gegeben am 2026-08-22 bis 2026-08-29.
+**43 Antworten**, gegeben am 2026-08-22 bis 2026-08-30.
 
 Alle tragen Status `eingearbeitet` — jede ist mit Datum und Wortlaut uebernommen. Was daraus gilt, steht in der Spalte *Ergebnis*.
 
@@ -51,8 +51,9 @@ Alle tragen Status `eingearbeitet` — jede ist mit Datum und Wortlaut uebernomm
 | `U10` | Ja, zu (Empfohlen) | — | 2026-08-29 12:30 | Es gilt das Wort vom 22.08. („Nein, nur mit Signal"); Code-Umsetzung (fail-open bei fehlender Transport-Information) prüft der Dirigent gegen PluginProcessor.cpp, NAK-35/NAK-24. [design/abnahmen/2026-08-29-fragenrunde-ueberholte-karten.md] |
 | `U12` | Ordner löschen, Repo archivieren (Empfohlen) | — | 2026-08-29 12:30 | Lokaler Ordner C:/Users/phili/Projekte/Nakama-Design gelöscht (vorher gemessen: sauber, nichts ungepusht, HEAD 5c2c4f6); GitHub-Repo evenacadia-tech/Nakama-Design archiviert (isArchived=true), nicht gelöscht. [design/abnahmen/2026-08-29-fragenrunde-ueberholte-karten.md] |
 | `U14` | Limit entfällt ganz | ja draft reicht, aber die limitangabe oder das limit selbst ist sinnlos geworden. das kann im eq dann ja angepasst werden von selbst | 2026-08-23 | Das ±3-dB-Remote-Limit entfaellt (Anzeige UND Grenze): Advisor-Drafts nutzen die manuellen Bereiche (±12 dB, Q 0,15-24) und sind im EQ frei nachjustierbar. Register 23.08.; Spielregeln Regeln 6/44; Erratum (n); NAK-64 Punkt 2 erledigt. [design/abnahmen/2026-08-23-interview-struktur.md] |
+| `U19` | Bleibt hinten (Empfohlen) | Bleibt hinten (Empfohlen) | 2026-08-30 23:02 | Referenz-Nachbilden (EQ-Match) bleibt Ausbau nach der vollen Fassung (Entwurf §47.5); die v3-Vertragsrunde von S16-17 reserviert nur den Familiennamen, Nutzlast erst mit dem Ausbau. |
 
-## Die 13 Antworten mit eigenem Text
+## Die 14 Antworten mit eigenem Text
 
 Diese tragen mehr als eine Auswahl — hier steckt die eigentliche Aussage:
 
@@ -69,3 +70,4 @@ Diese tragen mehr als eine Auswahl — hier steckt die eigentliche Aussage:
 - **`U9.3`** — Wahl *Später*: „frage nicht nachvollziehbar"
 - **`U9.4`** — Wahl *Später*: „verstehe frage nicht"
 - **`U14`** — Wahl *Limit entfällt ganz*: „ja draft reicht, aber die limitangabe oder das limit selbst ist sinnlos geworden. das kann im eq dann ja angepasst werden von selbst"
+- **`U19`** — Wahl *Bleibt hinten (Empfohlen)*: „Bleibt hinten (Empfohlen)"

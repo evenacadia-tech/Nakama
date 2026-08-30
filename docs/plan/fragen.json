@@ -76,18 +76,6 @@
    "status": "offen"
   },
   {
-   "id": "U19",
-   "dringlichkeit": "eilt nicht — betrifft den Ausbau nach der vollen Fassung",
-   "art": "Produktentscheid (Richtung, nicht Termin)",
-   "titel": "Soll Nakama den Klang eines anderen Busses oder einer Referenzaufnahme nachbilden können?",
-   "was": "Gemeint ist: du gibst Nakama eine Vorlage — eine andere Spur, einen fertigen Song, eine Datei — und Nakama baut daraus eine EQ-Kurve, die den gewählten Bus in diese Richtung bringt. Im Plan steht das heute weit hinten, nach der vollen Fassung. Frage: bleibt es dort, oder soll es früher kommen?",
-   "warum": "Bei FabFilter Pro-Q 4 (EQ Match gegen eine andere Instanz oder eine Datei) und bei sonible smart:EQ 4 („load up a reference track to create a custom profile“) ist das eine Grundfunktion und kein Ausbau; iZotope führt es in Ozone als Match EQ („Match to any reference track with over 8,000 separate bands“, Herstellerseite abgerufen 30.08.2026). Es ist damit die Funktion, bei der Nakama am weitesten hinter dem Markt liegt — nicht die einzige fehlende: Voreinstellungen (Karte U18) und die vier Handgriffe am Kurvenbild (Karte U17) fehlen ebenfalls. Wir fragen jetzt, weil eine frühere Einordnung den Nachrichtenvertrag betrifft, und der wird in den nächsten zwei Schritten festgeschrieben.",
-   "wo": "Betroffen: Nachrichtenvertrag, gespeicherter Zustand und Oberfläche. Heute eingeordnet als Ausbau nach der vollen Fassung (Entwurf §47.5). Beleg: docs/beweise/PR1.md Abschnitt 5.4.",
-   "seit": "2026-08-30",
-   "bilder": [],
-   "status": "offen"
-  },
-  {
    "id": "U20",
    "dringlichkeit": "vor Phase P3 (die Quellenübersicht)",
    "art": "Produktentscheid mit Messung davor",
@@ -394,6 +382,14 @@
    "datum": "2026-08-29 12:30",
    "status": "eingearbeitet",
    "ergebnis": "Lokaler Ordner C:/Users/phili/Projekte/Nakama-Design gelöscht (vorher gemessen: sauber, nichts ungepusht, HEAD 5c2c4f6); GitHub-Repo evenacadia-tech/Nakama-Design archiviert (isArchived=true), nicht gelöscht. [design/abnahmen/2026-08-29-fragenrunde-ueberholte-karten.md]"
+  },
+  "U19": {
+   "frage": "Soll Nakama den Klang eines anderen Busses oder einer Referenzaufnahme nachbilden können?",
+   "wahl": "Bleibt hinten (Empfohlen)",
+   "text": "Bleibt hinten (Empfohlen)",
+   "datum": "2026-08-30 23:02",
+   "status": "eingearbeitet",
+   "ergebnis": "Referenz-Nachbilden (EQ-Match) bleibt Ausbau nach der vollen Fassung (Entwurf §47.5); die v3-Vertragsrunde von S16-17 reserviert nur den Familiennamen, Nutzlast erst mit dem Ausbau."
   }
  }
 }

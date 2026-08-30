@@ -67,15 +67,25 @@ dazu, weil K1 nur Anfang und Ende einer TU sieht:
         inklusive /FI und vorkompilierter Koepfe) plus der literalen
         Include-Huelle als Gegenprobe. Gescannt wird seit Runde 7 JEDE gelesene
         Datei ausser denen aus den JUCE-Modulen und den Toolchain-/SDK-Wurzeln
-        - also plugin/** und alles Uebrige. Gelesen wird seit Runde 17
+        - also plugin/** und alles Uebrige. Jede so gescannte Eingabe geht
+        durch dieselben Vorstufen wie im Uebersetzer, und zwar in dieser
+        Reihenfolge: Dekodierung, Praeprozessor-Phase 1, Praeprozessor-Phase 2,
+        Kommentarentfernung, Tokenpruefung. Erstens wird gelesen, seit Runde 17
         FAIL-CLOSED: eine BOM entscheidet die Kodierung (UTF-8, UTF-16LE,
         UTF-16BE), ohne BOM gilt strikt UTF-8, und eine Eingabe, deren Text
         nicht feststeht, ist eine namentliche Klage - nie mehr ein stilles
-        errors="replace". Danach faltet der Scan Praeprozessor-Phase 2
-        (Backslash + Zeilenende, auch CRLF und mit Leerraum davor) VOR
-        Kommentarentfernung und Tokenpruefung: `JucePlug\\` + Zeilenende +
-        `in_Name` ist fuer den Uebersetzer JucePlugin_Name und ist es hier
-        seither auch. Einzige Ausnahme:
+        errors="replace". Zweitens normalisiert der Scan seit Runde 18
+        Praeprozessor-Phase 1 - CRLF und einzelnes CR werden LF, ohne dass sich
+        die Zeilenzahl aendert -, noch im selben Trichter
+        `lies_compiler_eingabe()`; danach kennt der ganze Riegelweg nur noch
+        ein Zeilenende. Danach faltet der Scan Praeprozessor-Phase 2
+        (Backslash + Zeilenende, auch CRLF und mit Leerraum davor). Erst
+        danach, als Viertes und Fuenftes, laufen Kommentarentfernung und
+        Tokenpruefung: `JucePlug\\` + Zeilenende + `in_Name` ist fuer den
+        Uebersetzer JucePlugin_Name und ist es hier seither auch, und ein
+        hinter // in einer CR-only-Datei verstecktes #define/#if/#undef ist ROT
+        statt unsichtbar - die Zeilenendform entscheidet nicht mehr ueber das
+        Urteil. Einzige Ausnahme:
         NakamaKernRiegel.h - und die ist seit Runde 15 keine Freistellung,
         sondern ein ABGLEICH: jedes JucePlugin_-Token dieser Datei muss
         namentlich in der Makroliste stehen, die der Praeprozessor in

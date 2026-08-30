@@ -368,16 +368,24 @@ $kanon = @(
     # #if-Kranz, der in den K1-#error muendet, nicht aus jedem #if-Block der
     # Datei),
     #
-    # RUNDE 17 (30.08.2026): K1b bereitet jede Eingabe vor wie der Uebersetzer,
-    # in dieser Reihenfolge. Erstens fail-closed lesen - eine BOM entscheidet
-    # die Kodierung (UTF-8, UTF-16LE, UTF-16BE), ohne BOM gilt strikt UTF-8,
-    # und was sich so nicht dekodieren laesst, ist eine namentliche Klage statt
-    # eines still ersetzten Zeichens. Zweitens Praeprozessor-Phase 2 falten:
-    # Backslash + Zeilenende (auch CRLF, auch mit Leerraum davor) verschwindet
-    # VOR Kommentarentfernung und Tokenpruefung. Beides schloss je einen Weg,
-    # auf dem ein Kopf ein Identitaetsmakro definieren, nur praeprozessor-
-    # gesteuert benutzen und wieder entfernen konnte, ohne K1, K1b, K2 oder K3
-    # auszuloesen (Proben R17-1a..1d und R17-2a..2c im --selbsttest),
+    # RUNDE 17/18 (30.08.2026): K1b bereitet jede Eingabe vor wie der
+    # Uebersetzer - die vollstaendige Lesekette, in dieser Reihenfolge:
+    # Dekodierung, Praeprozessor-Phase 1, Praeprozessor-Phase 2,
+    # Kommentarentfernung, Tokenpruefung. Erstens fail-closed lesen (Runde 17):
+    # eine BOM entscheidet die Kodierung (UTF-8, UTF-16LE, UTF-16BE), ohne BOM
+    # gilt strikt UTF-8, und was sich so nicht dekodieren laesst, ist eine
+    # namentliche Klage statt eines still ersetzten Zeichens. Zweitens
+    # Praeprozessor-Phase 1 normalisieren (Runde 18): CRLF und einzelnes CR
+    # werden LF, ohne dass sich die Zeilenzahl aendert - danach kennt der
+    # Riegelweg nur noch ein Zeilenende. Drittens Praeprozessor-Phase 2 falten
+    # (Runde 17): Backslash + Zeilenende (auch CRLF, auch mit Leerraum davor)
+    # verschwindet. Erst danach laufen Kommentarentfernung und Tokenpruefung -
+    # sie sehen damit dieselben Zeilengrenzen und dieselben Token wie der
+    # Uebersetzer, und die Zeilenendform entscheidet nicht mehr ueber das
+    # Urteil. Jede der drei Vorstufen schloss einen Weg, auf dem ein Kopf ein
+    # Identitaetsmakro definieren, nur praeprozessor-gesteuert benutzen und
+    # wieder entfernen konnte, ohne K1, K1b, K2 oder K3 auszuloesen (Proben
+    # R17-1a..1d, R17-2a..2c und R18-1a..1d im --selbsttest),
     # der Tlog-Ortsriegel (jede gelesene
     # Datei aus einer aus dem Bau abgeleiteten Wurzel) und der JUCE-Baum-Riegel
     # (juce-src = gepinnter Tag plus genau der eine Nakama-Patch).

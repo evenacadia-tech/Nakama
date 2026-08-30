@@ -32,3 +32,23 @@ automatisch; der eigene Name bleibt gespeichert und trägt wieder, sobald der
 Host nichts mehr liefert. Mixer-Nummer und Verbindungsreihenfolge werden
 ausdrücklich **nicht** als Rückfall gebaut. Messung, Capabilitybit und
 Vertragsort liegen bei S18–19, die Anzeige bei S31b.
+
+## U16 — Überdeckungen direkt im Kurvenbild
+
+**Frage:** Geplant ist heute, dass Nakama dir in Worten sagt, dass zwei Quellen
+sich im selben Bereich streiten, mit Ort, Beleg und dem kleinsten Gegentest.
+Nicht geplant ist, dass du beim Arbeiten am EQ direkt im Bild siehst, wo es
+sich zudeckt — etwa als farbige Zone auf der Kurve. Soll das in die erste
+nützliche Fassung, oder reicht dir der Befund in Worten?
+
+**Antwort (Auswahl):** „Ja, erste Fassung (Empfohlen)" — die farbige
+Überdeckungszone kommt mit der EQ-Fläche in die erste nützliche Fassung.
+
+**Folge:** Die Überdeckung wird nicht nur gemeldet, sondern gezeigt. Sie ist
+Lieferumfang der ersten nützlichen Fassung der EQ-Fläche, kein Ausbau. Der
+Datenweg liegt bei S23–25 (die Überdeckung als laufender, je Frequenzbereich
+auflösbarer Wert mit Anzeigekadenz — der Befundtext bleibt unverändert
+daneben), die farbige Zone selbst bei S31b. Die Zone zeigt nur, was der Befund
+belegt hat, und setzt keine eigene Schwelle: sie ist keine zweite Wahrheit
+neben dem Befundtext. Zeigt die Bildvorlage vom 25.08. keine solche Zone, wird
+das als Lücke einzeln vorgelegt und nicht erfunden.

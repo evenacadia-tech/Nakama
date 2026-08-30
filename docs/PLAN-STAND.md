@@ -1,6 +1,6 @@
 # Planstand Nakama
 
-<!-- quellstand: 1ef8c06 -->
+<!-- quellstand: 7b15eb6 -->
 
 > **Gerechnet, nicht gepflegt.** Dieses Blatt entsteht aus dem Repo:
 > `py -3.13 tools/plan/planstand.py`. Es wird **nie** von Hand editiert —
@@ -9,16 +9,16 @@
 > *abgenommen* erst, wenn dort eine Urteilsmarke der geforderten Prüfstufe
 > mit **PASS** steht. Fehlt sie, gilt der Schritt als nicht abgenommen.
 
-**Stand:** 2026-08-30 · Quellstand `1ef8c06` · **19 von 38 abgenommen** · 1 gebaut · 18 offen
+**Stand:** 2026-08-30 · Quellstand `7b15eb6` · **19 von 38 abgenommen** · 1 gebaut · 18 offen
 
 > ⚠️ Gerechnet aus dem Arbeitsbaum: unter `docs/plan/`, `docs/beweise/`
-> oder `tools/plan/` liegen Änderungen, die noch nicht in `1ef8c06` sind.
+> oder `tools/plan/` liegen Änderungen, die noch nicht in `7b15eb6` sind.
 
 `████████████████████▓░░░░░░░░░░░░░░░░░░░` 50 % abgenommen · 53 % gebaut
 
 **Als Nächstes:** **Nacharbeit an G1** — der Prüfer hat einen Befund offen gelassen (docs/beweise/G1.md).
 
-**Bei dir liegen 6 Fragen** — `U11, U13, U15, U16, U17, U18`. Sie werden im Chat gestellt: Skill `/fragen`.
+**Bei dir liegen 5 Fragen** — `U11, U13, U15, U17, U18`. Sie werden im Chat gestellt: Skill `/fragen`.
 
 ## Phasen auf einen Blick
 
@@ -114,7 +114,7 @@ flowchart LR
 
 - □ **S20–22** `SONDE-013` — Dynamik, Stereo, vor/nach der Kette, Passagen — und der manuelle Experimentkern. (offen)
 - □ **G4** `Gate` — C++-Review (DSP) + Codex. (offen)
-- □ **S23–25** `SONDE-014` — Absicht, Ursachenhypothese, Vorschlag, Assistentenschritt — mit Prüfkorpus. (offen)
+- □ **S23–25** `SONDE-014` — Absicht, Ursachenhypothese, Vorschlag, Assistentenschritt — mit Prüfkorpus. NACHTRAG 30.08.2026 (Antwort U16, Wahl „Ja, erste Fassung (Empfohlen)“): Der Befund über eine Überdeckung zweier Quellen bleibt nicht bei Worten — er wird zusätzlich im Kurvenbild gezeigt, und zwar in der ersten nützlichen Fassung, nicht als späterer Ausbau. Dieses Ticket liefert dafür den DATENWEG: die Überdeckung muss als laufender, je Frequenzbereich auflösbarer Wert aus dem Befund herausfallen und mit der Anzeigekadenz mithalten, nicht nur als fertiger Satz mit Ort und Beleg. Zwei Dinge sind dabei bewusst getrennt: der Befundtext (mit Ort, Beleg und kleinstem Gegentest) bleibt unverändert Lieferumfang dieses Tickets; die farbige Zone auf der Kurve ist Anzeige und gehört zu S31b. Ob der laufende Wert ein eigenes Feld im v3-Vertrag braucht, entscheidet der Datenweg an der Quelle — fällt die Entscheidung auf ja, gehört der NAME in die v3-Vertragsrunde von S16–17, weil die vor R0 liegt und der Vertragsanteil, der später bricht, der Name ist. Wortlaut: design/abnahmen/2026-08-30-fragenrunde-marktstandard.md. (offen)
 - □ **G5** `Gate` — Codex + Gegenbeispiele: der Prüfer soll eine falsche starke Ursachenbehauptung provozieren. (offen)
 
 ### P6–P7 — Aktiver Kern: EQ in Sonde und Gen  (0/6 abgenommen)
@@ -126,7 +126,7 @@ flowchart LR
 - □ **G6** `Gate` — Härtestes Gate des Plans: C++-Review auf höchster Stufe, Nebenläufigkeits-Prüfung, Worst-Case-CPU — deckt seit dem Umschnitt auch Gens Master-Pfad. (offen)
 - □ **S29–31** `SONDE-016/017` — Kopplung Gen↔Sonde als Hauptbedienweg: Pairing, Verschlüsselung, Lease, Anwenden/Zurücknehmen, aktiver Vergleich — dazu die Drei-Stufen-Geste (Halten = hören · 1. Klick = 10-Sekunden-Probe · 2. Klick = fest), volle Bereiche ohne Remote-Limit (Entscheid 23.08.), die harte Schutz-Zonen-Sperre und der zweistufige Mix (ganze App ↔ gewählte Spur). NACHTRAG 30.08.2026 (PR1 Runde 1, Codex-Befunde B3 und B4): Zwei Vertragsstücke werden hier eingelöst, deren Namen S16–17 reserviert. (1) Apply bestätigt die tatsächlich angewandten Werte und nicht nur einen Hash. Entwurf §33.4 verlangt es wörtlich („bestätigt state_hash plus tatsächlich angewandte Werte“), aber command_ack im v3-Schema trägt in allen fünf Zweigen nur command_id, ergebnis, state_revision, state_hash und code. (2) Der Betriebszustand des Sonden-EQ (zugeschaltet oder aus) wird hier geführt, weil Gen ihn für die Fernsteuerung braucht — capabilities trägt remote_control, nicht den Betriebszustand. Das ist Technik ohne Anzeigezusage; eine Darstellung auf Gens Landkarte ist am 30.08.2026 ausdrücklich gestrichen worden (siehe S18–19). Register NAK-110 und NAK-107. (offen)
 - □ **G7** `Gate` — Sicherheits- und Rust-Review + Codex + 10 000 Befehle Stress. (offen)
-- □ **S31b** `SONDE-020` — EQ-Zentrale-UI: Gen Seite 2 gegen deinen Figma-Stand gebaut (Prüfmaßstab: design/docs/ui-spielregeln-eq-zentrale.md), dazu die Minimal-Rückfallfläche der Sonde. Sichtbare Grundlage ist seit dem Entscheid vom 25.08.2026 das Bild design/assets/rework-basis-2026-08-25/gen-page-2-eq-center.png; die frühere Figma-Lieferung aus NAK-65 ist damit Verlauf und keine Startbedingung mehr (PR1, Befund D-4, 30.08.2026). Lücken der Bildvorlage werden einzeln vorgelegt, nicht erraten. (offen)
+- □ **S31b** `SONDE-020` — EQ-Zentrale-UI: Gen Seite 2 gegen deinen Figma-Stand gebaut (Prüfmaßstab: design/docs/ui-spielregeln-eq-zentrale.md), dazu die Minimal-Rückfallfläche der Sonde. Sichtbare Grundlage ist seit dem Entscheid vom 25.08.2026 das Bild design/assets/rework-basis-2026-08-25/gen-page-2-eq-center.png; die frühere Figma-Lieferung aus NAK-65 ist damit Verlauf und keine Startbedingung mehr (PR1, Befund D-4, 30.08.2026). Lücken der Bildvorlage werden einzeln vorgelegt, nicht erraten. LIEFERUMFANG ERWEITERT 30.08.2026 (Antwort U16, Wahl „Ja, erste Fassung (Empfohlen)“): Die EQ-Fläche zeigt die Überdeckung zweier Quellen als farbige Zone direkt im Kurvenbild — nicht nur als Befund in Worten. Sie ist Teil der ersten nützlichen Fassung dieser Fläche und kein Ausbau. Die Zone zeigt nur, was S23–25 belegt hat; sie erfindet keine eigene Schwelle und ist keine zweite, konkurrierende Wahrheit neben dem Befundtext. Zeigt die Bildvorlage aus design/assets/rework-basis-2026-08-25/ keine solche Zone, ist das eine Lücke der Vorlage und wird nach dem Satz oben einzeln vorgelegt, nicht erfunden. (offen)
 
 ### P8–P9 — Entmaskierung und Härtung  (0/4 abgenommen)
 

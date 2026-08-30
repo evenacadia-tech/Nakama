@@ -359,7 +359,7 @@ Ab hier: **R0 · Contract/Internal** erreicht.
 |---|---|---|---|
 | S20–22 | `SONDE-013` | Dynamik/Stereo/PRE-POST/Passage + manueller Experimentkern | T1+T2 |
 | **G4** | — | **Gate:** `/c-review` (DSP) + Codex. Falsifikation: Gate 5, 6 | **T3** |
-| S23–25 | `SONDE-014` | Intent, CauseHypothesis, Proposal, AssistantStep + Evaluationskorpus | T1+T2 |
+| S23–25 | `SONDE-014` | Intent, CauseHypothesis, Proposal, AssistantStep + Evaluationskorpus — **dazu seit Antwort U16 (30.08.2026, „Ja, erste Fassung")** der Datenweg für die Überdeckungsanzeige: die Überdeckung als laufender, je Frequenzbereich auflösbarer Wert mit Anzeigekadenz, nicht nur als Befundsatz. Braucht sie ein eigenes v3-Feld, gehört der Name in die Vertragsrunde von S16–17 (liegt vor R0). Die farbige Zone selbst ist S31b | T1+T2 |
 | **G5** | — | **Gate:** Codex + adversariale Gegenbeispiele. Falsifikation: Gate 6, 7, 8 | **T3** |
 
 G5 ist das ungewöhnlichste Gate: Der Prüfer soll **eine falsche starke
@@ -384,7 +384,7 @@ Nebenpfad; die EQ-Bedien-UI entsteht **einmal** (S31b) statt je App.
 | **G6** | — | **Gate:** `/c-review` **max effort** + Codex + ThreadSanitizer-Äquivalent + Worst-Case-CPU — deckt seit dem Umschnitt auch Gens Master-Pfad. Falsifikation: Gate 1, 2, 3 | **T3** |
 | S29–31 | `SONDE-016` + `017` | Pairing/HMAC (**mit NAK-21-Reihenfolge!**), Lease, Apply/Revert, Active-Compare — als Hauptbedienweg: **Drei-Stufen-Geste** (Preview per Halten · Apply mit 10-s-Lease-Startwert · Confirm), volle manuelle Bereiche **ohne ±3-Cap** (U14), Schutz-Zonen als Ablehnungsgrund + harte Sperre der Bedienwege, **zweistufiger Mix** (ganze App ↔ gewählte Spur) — **dazu seit PR1 Runde 1 (30.08.2026, Befunde B3/B4):** `command_ack` bestätigt die **tatsächlich angewandten Werte**, nicht nur `state_hash` (Entwurf §33.4 verlangt es wörtlich; alle fünf Zweige tragen heute nur `command_id`, `ergebnis`, `state_revision`, `state_hash`, `code`), und der Betriebszustand des Sonden-EQ wird hier geführt, weil Gen ihn für die Fernsteuerung braucht — Technik ohne Anzeigezusage | T1+T2 |
 | **G7** | — | **Gate:** `/security-review` + `/rust-review` + Codex + 10 000 Befehlsstress. Falsifikation: Gate 3, 4, 8 | **T3** |
-| S31b | `SONDE-020` | **EQ-Zentrale-UI:** Gen Seite 2, Prüfmaßstab `ui-spielregeln-eq-zentrale.md`; dazu die Minimal-Rückfallfläche der Sonde. **Sichtbare Grundlage ist seit dem Entscheid vom 25.08.2026 das Bild `design/assets/rework-basis-2026-08-25/gen-page-2-eq-center.png`** — die frühere Figma-Lieferung aus NAK-65 ist Verlauf und keine Startbedingung mehr (berichtigt mit PR1, 30.08.2026, Befund D-4). Lücken der Bildvorlage werden einzeln vorgelegt, nicht erraten | T1+T2 |
+| S31b | `SONDE-020` | **EQ-Zentrale-UI:** Gen Seite 2, Prüfmaßstab `ui-spielregeln-eq-zentrale.md`; dazu die Minimal-Rückfallfläche der Sonde. **Sichtbare Grundlage ist seit dem Entscheid vom 25.08.2026 das Bild `design/assets/rework-basis-2026-08-25/gen-page-2-eq-center.png`** — die frühere Figma-Lieferung aus NAK-65 ist Verlauf und keine Startbedingung mehr (berichtigt mit PR1, 30.08.2026, Befund D-4). Lücken der Bildvorlage werden einzeln vorgelegt, nicht erraten. **Antwort U16 (30.08.2026, „Ja, erste Fassung"):** die Überdeckung zweier Quellen erscheint als farbige Zone im Kurvenbild, Teil der ersten nützlichen Fassung; sie zeigt nur, was S23–25 belegt, und setzt keine eigene Schwelle | T1+T2 |
 
 G6 ist der härteste Gate des Plans. Vier vorallokierte Bänke mit lockfreiem
 Ownership-Protokoll, Reclaim-ACK über SPSC-Ring, atomarer Blockrandtausch —

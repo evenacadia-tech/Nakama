@@ -254,7 +254,7 @@
      "id": "S23–25",
      "leitungsname": "Aus Messungen belegte Befunde und kleinste Tests ableiten",
      "ticket": "SONDE-014",
-     "text": "Absicht, Ursachenhypothese, Vorschlag, Assistentenschritt — mit Prüfkorpus.",
+     "text": "Absicht, Ursachenhypothese, Vorschlag, Assistentenschritt — mit Prüfkorpus. NACHTRAG 30.08.2026 (Antwort U16, Wahl „Ja, erste Fassung (Empfohlen)“): Der Befund über eine Überdeckung zweier Quellen bleibt nicht bei Worten — er wird zusätzlich im Kurvenbild gezeigt, und zwar in der ersten nützlichen Fassung, nicht als späterer Ausbau. Dieses Ticket liefert dafür den DATENWEG: die Überdeckung muss als laufender, je Frequenzbereich auflösbarer Wert aus dem Befund herausfallen und mit der Anzeigekadenz mithalten, nicht nur als fertiger Satz mit Ort und Beleg. Zwei Dinge sind dabei bewusst getrennt: der Befundtext (mit Ort, Beleg und kleinstem Gegentest) bleibt unverändert Lieferumfang dieses Tickets; die farbige Zone auf der Kurve ist Anzeige und gehört zu S31b. Ob der laufende Wert ein eigenes Feld im v3-Vertrag braucht, entscheidet der Datenweg an der Quelle — fällt die Entscheidung auf ja, gehört der NAME in die v3-Vertragsrunde von S16–17, weil die vor R0 liegt und der Vertragsanteil, der später bricht, der Name ist. Wortlaut: design/abnahmen/2026-08-30-fragenrunde-marktstandard.md.",
      "beleg": "",
      "stufe": "T2"
     },
@@ -317,7 +317,7 @@
      "id": "S31b",
      "leitungsname": "Die zentrale Klangregelungsseite und Sonden-Rückfallfläche bauen",
      "ticket": "SONDE-020",
-     "text": "EQ-Zentrale-UI: Gen Seite 2 gegen deinen Figma-Stand gebaut (Prüfmaßstab: design/docs/ui-spielregeln-eq-zentrale.md), dazu die Minimal-Rückfallfläche der Sonde. Sichtbare Grundlage ist seit dem Entscheid vom 25.08.2026 das Bild design/assets/rework-basis-2026-08-25/gen-page-2-eq-center.png; die frühere Figma-Lieferung aus NAK-65 ist damit Verlauf und keine Startbedingung mehr (PR1, Befund D-4, 30.08.2026). Lücken der Bildvorlage werden einzeln vorgelegt, nicht erraten.",
+     "text": "EQ-Zentrale-UI: Gen Seite 2 gegen deinen Figma-Stand gebaut (Prüfmaßstab: design/docs/ui-spielregeln-eq-zentrale.md), dazu die Minimal-Rückfallfläche der Sonde. Sichtbare Grundlage ist seit dem Entscheid vom 25.08.2026 das Bild design/assets/rework-basis-2026-08-25/gen-page-2-eq-center.png; die frühere Figma-Lieferung aus NAK-65 ist damit Verlauf und keine Startbedingung mehr (PR1, Befund D-4, 30.08.2026). Lücken der Bildvorlage werden einzeln vorgelegt, nicht erraten. LIEFERUMFANG ERWEITERT 30.08.2026 (Antwort U16, Wahl „Ja, erste Fassung (Empfohlen)“): Die EQ-Fläche zeigt die Überdeckung zweier Quellen als farbige Zone direkt im Kurvenbild — nicht nur als Befund in Worten. Sie ist Teil der ersten nützlichen Fassung dieser Fläche und kein Ausbau. Die Zone zeigt nur, was S23–25 belegt hat; sie erfindet keine eigene Schwelle und ist keine zweite, konkurrierende Wahrheit neben dem Befundtext. Zeigt die Bildvorlage aus design/assets/rework-basis-2026-08-25/ keine solche Zone, ist das eine Lücke der Vorlage und wird nach dem Satz oben einzeln vorgelegt, nicht erfunden.",
      "beleg": "",
      "stufe": "T2"
     }

@@ -40,18 +40,6 @@
    "status": "offen"
   },
   {
-   "id": "U16",
-   "dringlichkeit": "vor Phase P5 (die Befunde)",
-   "art": "Produktentscheid",
-   "titel": "Soll Nakama zeigen, wo sich zwei Spuren im Frequenzbild gegenseitig zudecken — direkt im Kurvenbild?",
-   "was": "Geplant ist heute: Nakama sagt dir in Worten, dass zwei Quellen sich im selben Bereich streiten, mit Ort, Beleg und dem kleinsten Gegentest. Die vollständige Übersicht aller Paare ist als späterer Ausbau eingeplant. Was heute NICHT geplant ist: dass du beim Arbeiten am EQ direkt im Bild siehst, wo es sich zudeckt — etwa als farbige Zone auf der Kurve. Frage: soll das in die erste nützliche Fassung, oder reicht dir der Befund in Worten?",
-   "warum": "Drei der acht verglichenen Hersteller haben genau diese Anzeige als Grundausstattung und nicht als Zusatz: FabFilter malt die Kollision rot in sein Spektrum, iZotope hat ein eigenes Anzeigeinstrument dafür, MeldaProduction einen Kollisionsdetektor. Ein vierter (sonible) zeigt im Gruppenbild alle beteiligten Spuren übereinander. Nakama misst die Daten dafür ohnehin schon, es geht also um die Anzeige und darum, wann sie kommt.",
-   "wo": "Betroffen: vor allem die Oberfläche (Kurvenbild). Nur wenn die Anzeige laufend die Werte einer zweiten Sonde braucht, kommt der Nachrichtenvertrag dazu. Tickets S23–25 und S31b. Beleg: docs/beweise/PR1.md Abschnitt 5.2.",
-   "seit": "2026-08-30",
-   "bilder": [],
-   "status": "offen"
-  },
-  {
    "id": "U17",
    "dringlichkeit": "vor der Arbeit an der EQ-Fläche",
    "art": "fünf Einzelentscheide, Button für Button",
@@ -386,6 +374,14 @@
    "datum": "2026-08-30 23:02",
    "status": "eingearbeitet",
    "ergebnis": "Gibt FL keinen Bus-Namen her, zeigt der Sonden-Durchschalter den vom User je Sonde vergebenen Namen (heutiges label-Feld, User-Wort, untrusted); ein vom Host gelieferter Bus-Name ersetzt ihn automatisch. Mixer-Nummer und Verbindungsreihenfolge werden nicht als Rueckfall gebaut. S18-19 (Messung, Capabilitybit, Vertragsort) und S31b (Anzeige). [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md]"
+  },
+  "U16": {
+   "frage": "Soll Nakama zeigen, wo sich zwei Spuren im Frequenzbild gegenseitig zudecken — direkt im Kurvenbild?",
+   "wahl": "Ja, erste Fassung (Empfohlen)",
+   "text": "Ja, erste Fassung (Empfohlen) — die farbige Überdeckungszone kommt mit der EQ-Fläche in die erste nützliche Fassung.",
+   "datum": "2026-08-30 23:02",
+   "status": "eingearbeitet",
+   "ergebnis": "Die Ueberdeckung zweier Quellen wird nicht nur in Worten gemeldet, sondern als farbige Zone im Kurvenbild gezeigt - in der ersten nuetzlichen Fassung, nicht als spaeterer Ausbau. Datenweg S23-25, Anzeige S31b. [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md]"
   }
  }
 }

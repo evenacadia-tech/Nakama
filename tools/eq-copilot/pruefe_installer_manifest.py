@@ -119,6 +119,42 @@ DREI HAERTEGRADE FUER DENSELBEN HASH (NAK-94, 29.08.2026)
   `eintraege` -> `xntraege` -> Abbruch; c `schema` in der RUECKWEG-Fixtur ->
   Abbruch), jede zurueckgenommen, in docs/beweise/SONDE-007c.md.
 
+  JEDE GELESENE JSON-DATEI WIRD VOR DEM ZUGRIFF STRUKTURELL GEPRUEFT; VERSTOSS
+  = KONTROLLIERTER ABBRUCH (NAK-94 Nacharbeit 9, 30.08.2026, Befund des
+  neunten Pruefers). Die Pruefung aus Nacharbeit 8 galt nur den JOURNALEN -
+  das Korpusmanifest selbst ging ungeprueft in `korpus["faelle"]`, und eine
+  einzelne Byteaenderung ("faelle" -> "xaelle") toetete den Lauf mit
+  `KeyError: 'faelle'`, bevor Z1 urteilen konnte. Dieselbe Tuer stand an den
+  beiden Dateien offen, die main() liest ("artefakte" -> "xrtefakte" starb in
+  r_art_bekannt, "ziele" -> "xiele" in _ziele()). Jetzt hat JEDE gelesene
+  JSON-Datei ihren Strukturvertrag, geprueft VOR dem ersten Zugriff - die
+  ersten drei ueber _lies_geprueft(), die beiden anderen an ihrer Lesestelle:
+
+    nakama-installer-v1.json   _installermanifest_struktur - Wurzel Objekt,
+                               `artefakte` nicht leere Liste von Objekten mit
+                               Zeichenkette `quelle`, `ziele` Objekt,
+                               `rueckweg.bekannte_staende` Liste
+    plugin-identities-v1.json  _identitaet_struktur - Wurzel Objekt, `ziele`
+                               nicht leere Liste von Objekten mit `id`, je
+                               AKTIVEM Ziel `produktname` und `bundle`,
+                               `hersteller.code` Zeichenkette
+    journale/MANIFEST.json     _journalkorpus_struktur - Wurzel Objekt,
+                               `stand` Zeichenkette, `faelle` nicht leere
+                               Liste; je Fall `datei`, `status`, `fall` und
+                               `befehl` als nicht leere Zeichenketten und
+                               `sha256` als HEX64 in Grossbuchstaben
+    journale/<fall>.json       _writer_struktur (Nacharbeit 8, oben)
+    install-ergebnis.json      Schema- und Statussperre in [4b]
+
+  Verstoss = kontrollierter Abbruch mit Klartext und Exit ungleich 0, NIE ein
+  Traceback. Die einzige Ausnahme ist [4b]: dort ist derselbe Verstoss ein
+  kontrollierter HINWEIS mit Rueckkehr, weil dieser Block per Zusage nie
+  urteilt und nie abbricht (Befund C2). Geprueft werden auch hier SCHLUESSEL
+  und Grobform, nie Werte - ein GEAENDERTER sha256-Wert im Korpusmanifest
+  laesst die Struktur gueltig und faerbt weiterhin genau Z1, waehrend Z2..Z7
+  gruen weiterlaufen. Belegt als P9-a..P9-f in docs/beweise/SONDE-007c.md,
+  jede Probe zurueckgenommen.
+
   ZWEI SORTEN PROBE-JOURNALE, seit NAK-94 Nacharbeit 5 (30.08.2026):
 
     Writer-Fixtur   von Install-Nakama.ps1 SELBST in der A18-Sandbox erzeugt
@@ -223,6 +259,181 @@ HEX64 = re.compile(r"^[0-9A-F]{64}$")
 THUMBPRINT = re.compile(r"^(?:[0-9A-F]{40}|[0-9A-F]{64})$")
 ARTEN = ("vst3", "broker")
 CMAKE_ZIEL = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
+# Die Felder, die [3b] aus einem MANIFEST-Fall des Writer-Korpus LIEST oder als
+# Herkunft benennt: `datei` (Dateiname), `status` (Achse OK/RUECKWEG/...),
+# `fall` und `befehl` (Herkunft - welcher Lauf, welcher Installer-Befehl). Der
+# vierte gelesene Wert, `sha256`, steht getrennt, weil er zusaetzlich HEX64 in
+# Grossbuchstaben sein muss (NAK-94 Nacharbeit 9, 30.08.2026).
+JOURNAL_FALLFELDER = ("datei", "status", "fall", "befehl")
+
+
+# ─@@STRICH@ Strukturvertrag der gelesenen JSON-Dateien ──────────────────────────
+#
+# BEFUND NAK-94, Pruefer 9 (30.08.2026): eine einzelne Byteaenderung von
+# "faelle" zu "xaelle" in fixtures/installer/journale/MANIFEST.json liess den
+# Lauf mit `KeyError: 'faelle'` sterben, BEVOR Z1 ein rotes Urteil oder den
+# vorgesehenen Klartext-Abbruch ausgeben konnte. Dieselbe Tuer stand an den
+# beiden Dateien offen, die main() liest - gemessen am Basis-Stand b8dcbe1:
+# "artefakte" -> "xrtefakte" im Installer-Manifest starb in r_art_bekannt,
+# "ziele" -> "xiele" in der Identitaetsdatei in _ziele(). Ein Traceback ist
+# kein Urteil: Unbekanntes ist ROT, nicht laut (Pruefliste D).
+#
+# Regel seither: JEDE von diesem Bein gelesene JSON-Datei geht durch eine
+# Strukturpruefung, BEVOR irgendein Feld benutzt wird; ein Verstoss ist ein
+# kontrollierter Abbruch mit Klartext und Exit ungleich 0, nie ein Traceback.
+# Geprueft werden SCHLUESSEL und Grobform der GELESENEN Felder - ueber ihre
+# WERTE urteilen die Regeln in [1]/[2] und die Zusagen Z1..Z7, und eine
+# Pruefung, die ihnen vorgriffe, verschluckte genau die Brueche, die sie
+# belegen sollen. Die einzige Ausnahme ist der urteilsfreie Berichtsblock
+# [4b] (install-ergebnis.json): dort ist ein Verstoss ein kontrollierter
+# HINWEIS mit Rueckkehr, weil dieser Block per Zusage nie urteilt und nie
+# abbricht (Befund C2, NAK-94 Nacharbeit 2). Auch dort steht die Pruefung vor
+# dem Zugriff - nur ihr Ausgang ist ein anderer.
+
+
+class Strukturhalt(Exception):
+    """Kontrollierter Abbruch: eine gelesene JSON-Datei traegt nicht die Form,
+    die dieses Bein liest. Klartext statt Traceback."""
+
+
+def _lies_geprueft(weg: pathlib.Path, pruefung) -> dict:
+    """Liest eine JSON-Datei und gibt sie NUR strukturgeprueft heraus.
+
+    Drei Stufen, jede mit eigenem Klartext: lesbar, gueltiges JSON, und die
+    von diesem Bein gelesene Grobform. Jede Stufe wirft `Strukturhalt`; der
+    Aufrufer macht daraus ein rotes Urteil oder einen Abbruch - nie einen
+    Traceback."""
+    kurz = weg.relative_to(WURZEL).as_posix()
+    try:
+        rohe = weg.read_text(encoding="utf-8")
+    except OSError as fehler:
+        raise Strukturhalt(f"{kurz}: nicht lesbar "
+                           f"({type(fehler).__name__}: {fehler})") from None
+    try:
+        daten = json.loads(rohe)
+    except json.JSONDecodeError as fehler:
+        raise Strukturhalt(f"{kurz}: kein gueltiges JSON ({fehler})") from None
+    klagen = pruefung(daten)
+    if klagen:
+        raise Strukturhalt(f"{kurz}: traegt nicht die von diesem Bein gelesene "
+                           "Struktur: " + "; ".join(klagen))
+    return daten
+
+
+def _installermanifest_struktur(m: object) -> list[str]:
+    """Traegt das Installer-Manifest die von [1]..[4] GELESENE Grobform?
+
+    Verlangt wird nur, was dieses Bein HART liest (`m["..."]`, nicht `.get`):
+    die Wurzel als Objekt, `artefakte` als nicht leere Liste von Objekten mit
+    einer Zeichenkette `quelle` (der Pfad, den [4] und `hashen` zusammensetzen),
+    `ziele` als Objekt und `rueckweg` als Objekt mit der Liste
+    `bekannte_staende`. `stillgelegte_ziele` steht NICHT hier: jeder Zugriff
+    darauf laeuft schon ueber `.get` samt Typpruefung."""
+    if not isinstance(m, dict):
+        return [f"Wurzel ist kein Objekt ({type(m).__name__})"]
+    fehlt: list[str] = []
+    artefakte = m.get("artefakte")
+    if not isinstance(artefakte, list) or not artefakte:
+        fehlt.append("keine nicht leere Liste 'artefakte' "
+                     f"({type(artefakte).__name__})")
+    else:
+        for index, a in enumerate(artefakte):
+            if not isinstance(a, dict):
+                fehlt.append(f"artefakte[{index}] ist kein Objekt "
+                             f"({type(a).__name__})")
+            elif not isinstance(a.get("quelle"), str):
+                fehlt.append(f"artefakte[{index}] ohne Zeichenkette 'quelle' "
+                             f"({type(a.get('quelle')).__name__})")
+    ziele = m.get("ziele")
+    if not isinstance(ziele, dict):
+        fehlt.append(f"'ziele' ist kein Objekt ({type(ziele).__name__})")
+    rueckweg = m.get("rueckweg")
+    if not isinstance(rueckweg, dict):
+        fehlt.append(f"'rueckweg' ist kein Objekt ({type(rueckweg).__name__})")
+    elif not isinstance(rueckweg.get("bekannte_staende"), list):
+        fehlt.append("'rueckweg.bekannte_staende' ist keine Liste "
+                     f"({type(rueckweg.get('bekannte_staende')).__name__})")
+    return fehlt
+
+
+def _identitaet_struktur(i: object) -> list[str]:
+    """Traegt die Identitaetsdatei die von diesem Bein GELESENE Grobform?
+
+    Hart gelesen werden `i["ziele"]` (in `_ziele`, `_aktive` und den
+    Gegenproben), `z["id"]` je Ziel und `i["hersteller"]["code"]`; von einem
+    AKTIVEN Ziel zusaetzlich `produktname` und `bundle`, die
+    `adversariale_strukturproben` woertlich in ein Probemanifest schreibt.
+    Ueber die WERTE - Kollisionsfreiheit, schema=2, Bundlenamen - urteilt
+    weiter `r_jedes_ziel_genau_einmal`, nicht diese Pruefung."""
+    if not isinstance(i, dict):
+        return [f"Wurzel ist kein Objekt ({type(i).__name__})"]
+    fehlt: list[str] = []
+    ziele = i.get("ziele")
+    if not isinstance(ziele, list) or not ziele:
+        fehlt.append(f"keine nicht leere Liste 'ziele' ({type(ziele).__name__})")
+    else:
+        for index, z in enumerate(ziele):
+            if not isinstance(z, dict):
+                fehlt.append(f"ziele[{index}] ist kein Objekt "
+                             f"({type(z).__name__})")
+                continue
+            if not isinstance(z.get("id"), str):
+                fehlt.append(f"ziele[{index}] ohne Zeichenkette 'id' "
+                             f"({type(z.get('id')).__name__})")
+            if "stillgelegt" in z:
+                continue
+            for feld in ("produktname", "bundle"):
+                if not isinstance(z.get(feld), str):
+                    fehlt.append(f"ziele[{index}] (aktiv) ohne Zeichenkette "
+                                 f"{feld!r} ({type(z.get(feld)).__name__})")
+    hersteller = i.get("hersteller")
+    if not isinstance(hersteller, dict):
+        fehlt.append("'hersteller' ist kein Objekt "
+                     f"({type(hersteller).__name__})")
+    elif not isinstance(hersteller.get("code"), str):
+        fehlt.append("'hersteller.code' ist keine Zeichenkette "
+                     f"({type(hersteller.get('code')).__name__})")
+    return fehlt
+
+
+def _journalkorpus_struktur(korpus: object) -> list[str]:
+    """Traegt MANIFEST.json des Writer-Korpus die von [3b] GELESENE Form?
+
+    Die Pruefung, die der neunte Pruefer verlangt hat (NAK-94 Nacharbeit 9):
+    Wurzel ist ein Objekt, `faelle` eine nicht leere Liste, und JEDER Fall
+    traegt die gelesenen Felder mit dem richtigen Typ - `datei`, `status`,
+    `fall` und `befehl` als nicht leere Zeichenketten, `sha256` als HEX64 in
+    Grossbuchstaben (genau die Form, gegen die `_writer_fixturen` die
+    Fixturbytes nachrechnet). Der Herkunftsstand `stand` steht ebenfalls hier,
+    weil die A17-Behauptung ihn als Bestandteil dieses Korpusmanifests nennt.
+
+    Ueber die WERTE urteilt weiter Z1 (Bytegleichheit, Vollstaendigkeit,
+    Statusachse) - diese Pruefung sagt nur, ob Z1 ueberhaupt urteilen kann."""
+    if not isinstance(korpus, dict):
+        return [f"Wurzel ist kein Objekt ({type(korpus).__name__})"]
+    fehlt: list[str] = []
+    if not isinstance(korpus.get("stand"), str) or not korpus["stand"].strip():
+        fehlt.append("'stand' ist keine nicht leere Zeichenkette "
+                     f"({type(korpus.get('stand')).__name__})")
+    faelle = korpus.get("faelle")
+    if not isinstance(faelle, list) or not faelle:
+        fehlt.append(f"keine nicht leere Liste 'faelle' ({type(faelle).__name__})")
+        return fehlt
+    for index, fall in enumerate(faelle):
+        if not isinstance(fall, dict):
+            fehlt.append(f"faelle[{index}] ist kein Objekt "
+                         f"({type(fall).__name__})")
+            continue
+        for feld in JOURNAL_FALLFELDER:
+            wert = fall.get(feld)
+            if not isinstance(wert, str) or not wert.strip():
+                fehlt.append(f"faelle[{index}] ohne nicht leere Zeichenkette "
+                             f"{feld!r} ({type(wert).__name__})")
+        sha = fall.get("sha256")
+        if not isinstance(sha, str) or not HEX64.match(sha):
+            fehlt.append(f"faelle[{index}] ohne SHA-256 in Grossbuchstaben "
+                         f"'sha256' ({sha!r})")
+    return fehlt
 
 
 def _writer_state_schema() -> int:
@@ -1136,7 +1347,17 @@ def _writer_fixturen() -> tuple[dict[str, tuple[bytes, dict, dict]],
             f"({JOURNAL_FIXTUR_MANIFEST.relative_to(WURZEL).as_posix()}) - "
             "erzeugen mit: py -3.13 tools/eq-copilot/erzeuge_installer_journale.py")
         return {}, [fehlt_manifest], [fehlt_manifest]
-    korpus = json.loads(JOURNAL_FIXTUR_MANIFEST.read_text(encoding="utf-8"))
+    # Vor dem ersten Zugriff auf `faelle`: traegt das Korpusmanifest ueberhaupt
+    # die Form, die [3b] liest? Am Basis-Stand b8dcbe1 machte eine einzelne
+    # Byteaenderung ("faelle" -> "xaelle") daraus ein `KeyError: 'faelle'` in
+    # der naechsten Zeile - ein Traceback statt eines Urteils (NAK-94
+    # Nacharbeit 9, Befund des neunten Pruefers). Der Verstoss geht jetzt
+    # denselben Weg wie ein fehlendes MANIFEST: Z1 rot UND Abbruch, weil ohne
+    # bestimmten Korpus keine der uebrigen Zusagen etwas Vollstaendiges misst.
+    try:
+        korpus = _lies_geprueft(JOURNAL_FIXTUR_MANIFEST, _journalkorpus_struktur)
+    except Strukturhalt as halt:
+        return {}, [str(halt)], [str(halt)]
     geladen: dict[str, tuple[bytes, dict, dict]] = {}
     for fall in korpus["faelle"]:
         weg = JOURNAL_FIXTUREN / fall["datei"]
@@ -1892,8 +2113,21 @@ def main() -> int:
                         "ein Hinweis - nach einem Relink ist sie der Normalfall (NAK-94).")
     args = p.parse_args()
 
-    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    identitaet = json.loads(IDENTITAET.read_text(encoding="utf-8"))
+    print("Strukturvertrag: jede von diesem Bein gelesene JSON-Datei wird VOR "
+          "dem ersten Zugriff strukturell geprueft;")
+    print("                 Verstoss = kontrollierter Abbruch mit Klartext, nie "
+          "ein Traceback - im urteilsfreien [4b] ein Hinweis.")
+    try:
+        manifest = _lies_geprueft(MANIFEST, _installermanifest_struktur)
+        identitaet = _lies_geprueft(IDENTITAET, _identitaet_struktur)
+    except Strukturhalt as halt:
+        # Ohne diese beiden Dateien in gelesener Form misst KEIN Block etwas.
+        # Am Basis-Stand b8dcbe1 starben hier "artefakte" -> "xrtefakte"
+        # (in r_art_bekannt) und "ziele" -> "xiele" (in _ziele) mit einem
+        # Traceback; jetzt ist es ein Urteil (NAK-94 Nacharbeit 9).
+        print("")
+        print(f"ABGEBROCHEN - {halt}")
+        return 2
 
     if args.hashen:
         # Auch der mutierende Release-Aufruf muss erst denselben Strukturvertrag

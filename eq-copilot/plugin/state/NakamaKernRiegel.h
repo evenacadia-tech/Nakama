@@ -42,8 +42,21 @@
            Gegenprobe. Verboten ist das Token JucePlugin_ im Quelltext,
            unabhaengig von #define/#undef; Kommentare werden vorher entfernt,
            Stringliterale nicht. Einzige Ausnahme: diese Datei hier, gemessen
-           und namentlich. K1b sieht nicht, was ausserhalb plugin/ liegt -
-           dafuer der Tlog-Riegel und der JUCE-Baum-Riegel.
+           und namentlich - seit Runde 15 kein Ueberspringen mehr, sondern ein
+           Abgleich gegen die Makroliste, die K1 unten fuehrt.
+           NACHTRAG RUNDE 7 (29.08.2026), er korrigiert das "unter plugin/"
+           im Satz weiter oben: geprueft wird die KOMPLEMENTMENGE des
+           Leseprotokolls, nicht ein Verzeichnis - JEDE gelesene Datei AUSSER
+           denen aus den JUCE-Modulen, der abgeleiteten MSVC-Toolchain und dem
+           abgeleiteten Windows-SDK. Das ist plugin/ UND alles Uebrige; genau
+           ein per /FI erzwungener Kopf ausserhalb plugin/ war der Weg, den
+           Runde 7 geschlossen hat. Die namentlich erlaubten Systemdateien
+           unter %SystemRoot% werden dabei nicht als C++ geparst, sondern ROH
+           in ASCII und UTF-16LE durchsucht; laesst sich eine der drei
+           Ausschlusswurzeln nicht ableiten, bildet K1b gar keine Menge,
+           sondern klagt (fail-closed). Nicht gesehen wird nur der Inhalt
+           dieser drei Wurzeln - dafuer der Tlog-Riegel und der
+           JUCE-Baum-Riegel.
       Tlog-Riegel - im selben Skript: aus welchen Orten der Compiler wirklich
            gelesen hat. Erlaubt sind plugin/, juce-src/modules/ OHNE
            juce_audio_plugin_client (dort liegen alle `#define JucePlugin_` der

@@ -19502,3 +19502,20 @@ und `[3c]` fuhr im Kanon sein Sample:
   ok      [3c/0] der Fuzz faehrt jeden Block aus _lauf(), der eine gelesene JSON-Datei anfassen kann - die uebrigen stehen namentlich in FUZZ_OHNE_JSON (9)
   ok      [3c] 8 gelesene JSON-Datei(en), 1780 gekippte Byte-Stellen, 3354 Laeufe: KEINE Ausnahme ausser Strukturhalt (907) und dem eigenen 'Gegenprobe unmoeglich' (3); Befund 1383, gruen 1061; Sample jedes 24. Byte plus jedes erste Schluesselnamensbyte  [40.4s]
 ```
+
+## Dirigentenstand NAK-94 — 2026-08-30 07:27 (Sitzung 054eedac): Prüfer 11 NEEDS_WORK, offen — Nacharbeit 11
+
+**Stand dieses Abschnitts:** `4a2b8da`
+
+**Nacharbeit 10 (W3):** Opus/max `nakama-s8r15-nak94r10-0d5b7d5-bau` (gemeinsam mit S8 Runde 15); zentraler Fänger, Strukturvertrag um `ziel_id`/`cmake_ziel`, Byte-Kipp-Fuzz `[3c]`; Kanon GRÜN 32/32 auf `12fcdab` (Roh-Datei `docs/beweise/roh/SONDE-007a-12fcdab.md`, Bein A17).
+**Prüfer 11:** Codex high `01a05115-ad8c-7131-a0af-d8b83c5b6382`, lesend über `git diff da62dec...4a2b8da`, HEAD vor/nach identisch — **NEEDS_WORK (3)**, wörtlich (`@ 4a2b8da`); die UTF-8- und `ziel_id`-Defekte bestätigt geschlossen, ein zusätzlicher Schlüsselbyte-Scan des Prüfers ohne weiteren unkontrollierten Fehler:
+
+> **[P2] Führe den Fuzz durch den zentralen Fänger** — `tools/eq-copilot/pruefe_installer_manifest.py:2378`. Wenn der zentrale Fänger entfernt oder regressiert, bleibt `[3c]` unverändert, weil `_fuzz_einmal()` direkt `_fuzz_verbraucher()` aufruft und Ausnahmen selbst abfängt; `main()` wird nie ausgeführt. Damit kann der vorgeschriebene Bruch „Fänger entfernt → Fuzz ROT" nicht eintreten und A17 behauptet mehr, als der Kanon misst. Führe die Fuzz-Fälle durch den gemeinsamen Fänger oder ergänze eine kanonische, brechbare Fängerprobe.
+>
+> **[P2] Nimm den --hashen-Zweig in die Fuzz-Deckung auf** — `tools/eq-copilot/pruefe_installer_manifest.py:2337`. Beim Aufruf mit `--hashen` verarbeitet `hashen()` das gelesene Manifest direkt, wird hier aber manuell als nicht JSON-relevant aus der Deckungsprüfung entfernt. Deshalb meldet `[3c/0]` fälschlich vollständige Verbraucherabdeckung; entfernt man nur diesen Ausnahmeeintrag, liefert `fuzz_deckung()` reproduzierbar `{'hashen'}`. Fuzz den Zweig ohne Schreibwirkung oder begrenze die Zusage ausdrücklich auf den Kanonpfad.
+>
+> **[P2] Lege die vollständige Fuzz-Rohausgabe tatsächlich ab** — `docs/beweise/SONDE-007c.md:19382-19383`. Die behauptete Rohausgabe des vollständigen Laufs ist unter `docs/beweise/roh/` nicht vorhanden: eine Suche über alle dortigen Dateien nach `61797 Laeufe` beziehungsweise `33304 gekippte` liefert keinen Treffer; `SONDE-007a-12fcdab.md` enthält nur das Kanon-Sample. Damit ist der 724,9-s-Vollbeleg nicht unabhängig prüfbar und die Ortsangabe falsch. Erfasse den Lauf als Rohdatei und verlinke sie hier.
+
+**Einordnung:** alle drei Defekt, mittel (Prüfliste E). **Regeln des Dirigenten (Nacharbeit 11):** (1) Fänger und Fuzz teilen sich **eine** Funktion (`_geschuetzt(fn, …)` o. ä.), die `main()` um den Lauf legt und die `[3c]` je Fuzz-Fall um den Verbraucher legt; der Fuzz zählt nur, was diese Funktion als kontrolliert meldet — Bruch: Funktion auf Durchreichen gestellt → Fuzz ROT; Rücknahme. (2) `--hashen` gehört zur Deckung: der Fuzz fährt `hashen()` mit Schreibziel unter `$env:TEMP` (Manifest-Kopie), nie ins Repo; keine manuelle Ausnahme in `fuzz_deckung()`. (3) Der vollständige Fuzz-Lauf liegt als eigene Roh-Datei `docs/beweise/roh/SONDE-007c-fuzz-<sha7>.md` (Kopf: Stand, Befehl, Dauer, Zähler; Rohausgabe wörtlich) und wird im Manifest verlinkt; die Behauptung „vollständig gemessen" verweist nur auf diese Datei.
+
+**Nächster Schritt:** Nacharbeit 11 im selben Worker wie die nächste S8-Runde (falls Prüfer 16 Befunde hat; sonst allein), gemeinsamer Kanon, danach Prüfer 12 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.

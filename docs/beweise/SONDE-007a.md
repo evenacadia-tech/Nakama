@@ -15414,3 +15414,228 @@ und sind dort einzeln gebrochen worden.
 **Nächster Schritt:** Nacharbeits-Worker für S8 Runde 11 **und** NAK-94 Nacharbeit 6 (siehe `docs/beweise/SONDE-007c.md`, „Dirigentenstand NAK-94 … Prüfer 6"), gemeinsamer Kanon, dann Prüfer 12 (xhigh) für S8 und Prüfer 7 (high) für NAK-94 — je frischer Thread. Kein Halt.
 
 **Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.
+
+## Nacharbeit Runde 11 — 2026-08-30 (Prüfer-Thread `01a04ff0-720b…`)
+
+**Stand dieses Abschnitts:** `b9f7ee1`
+
+Ein bestätigter Befund des elften Prüfers (Codex xhigh, lesend über
+`git diff dafa5a5...e9ea54b`), Regel des Dirigenten im Abschnitt
+„Dirigentenstand — 2026-08-30 01:59 (Sitzung 054eedac)". Er ist geschlossen.
+Es ist eine Textkorrektur: an der Messlogik von A14 wurde nichts geändert —
+`--selbsttest` bleibt bei **82 ok, 0 Fehler**; in `tools/beweise.ps1` ist nur
+die eine unqualifizierte Exit-3-Halbzeile der A14-Behauptung nachgezogen.
+
+Es war die vierte Runde derselben Frage. Runde 10 hat dafür das
+**Aussagen-Inventar** eingeführt; Prüfer 11 hat gezeigt, dass es zu schmal
+gesucht hat — nur nach dem Kennwort `F13`, nicht nach jeder Schreibweise der
+Zusage. Die Präzisierung des Dirigenten für diese Runde ist genau das: **alle**
+Schreibweisen, mit grep-Kommandos und Trefferzahlen vor und nach dem
+Nachziehen als Vollständigkeitsbeleg.
+
+**Werkzeugregel dieser Runde:** keine Datei unter `%SystemRoot%` angelegt, kein
+löschender Aufruf. Die Reproduktion setzte allein die mtime eines
+**Bauartefakts** zurück (`eq-copilot/build/CMakeFiles/generate.stamp`) und
+stellte sie danach wieder her; git speichert keine mtimes, und
+`git status --porcelain` war vor der Arbeit leer.
+
+---
+
+### Reproduktion am Basis-Stand `165d9ae` — der `[0c]`-Zweig, den der Prüfer nennt
+
+Der Prüfer nennt `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:3216-3218`:
+den Zweig `if nur_messen and klagen:` in Abschnitt `[0c]`. Um ihn wirklich zu
+erreichen, braucht es ein **echtes** Bauverzeichnis mit **veraltetem**
+Configure — kein Monkeypatch der Messfunktion. Der Treiber lädt das Skript,
+ruft `main()` zweimal mit `--nur-messen <bau>` (einmal mit leerer, einmal mit
+vorbelegter `fehler`-Liste) und prüft zuerst, ob `configure_frische()`
+überhaupt klagt:
+
+```text
+configure_frische -> 41 Klage(n); erste: C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.31\Modules\CMakeCInformation.cmake juenger als eq-copilot/build/CMakeFiles/generate.stamp
+[0c]-Zweig erreicht: JA (ohne Befund), JA (mit Befund)
+F14 + veraltetes Configure, ohne registrierten Befund -> Exit 3
+F14 + veraltetes Configure, mit registriertem Befund  -> Exit 2
+--- letzte Zeilen des zweiten Laufs ---
+31 ok, 1 Fehler
+
+FEHLGESCHLAGEN:
+  - kuenstlicher Identitaetsbefund vor dem Lauf
+
+Ein registrierter Befund gewinnt gegen die fehlende Voraussetzung (Matrix F13/F14/F15): Exit 2.
+```
+
+Die Marke „Configure veraltet (Voraussetzung, kein Urteil)" — die Zeile
+unmittelbar unter dem beanstandeten Kommentar — steht in **beiden** Läufen: der
+genannte Zweig ist erreicht, nicht bloß angenommen. Gemessen wird „ohne Befund
+3, mit Befund 2". Der Kommentar sagte „Der Lauf endet ohnehin mit Exit 3".
+
+Rücknahme der mtime, gemessen:
+
+```text
+zurueckgesetzt auf: 2026-08-29T23:47:45.5772901Z
+configure_frische nach Ruecknahme -> 0 Klage(n)
+```
+
+---
+
+### Aussagen-Inventar — alle Schreibweisen
+
+**Lesart** wie in Runde 10: **lebend** ist eine Stelle ohne Standangabe über
+sich; **historisch** ist ein Abschnitt oder eine Tabelle mit
+`**Stand dieses Abschnitts:**`, `**Stand dieser Tabelle:**`,
+`**Stand dieser Karte:**`, `**Stand dieses Unterabschnitts:**` — oder ein vom
+Runner geschriebener Kanon-Block, dessen Kopftabelle den Commit trägt. Lebende
+Stellen werden nachgezogen; historische bekommen ihre Standangabe, statt
+umgeschrieben zu werden (Prüfliste E, NAK-85 Runde 4).
+
+#### Vollständigkeitsbeleg: die grep-Zahlen vor und nach
+
+Gezählt wird mit `grep -c -F` (Zeilen mit Treffer, nicht Treffer) über die
+**beiden Codedateien**, „vor" am Basis-Stand `165d9ae`, „nach" am Endstand der
+Codeänderung `30fb0b8`. Das Manifest selbst steht bewusst nicht in dieser
+Tabelle: sein Text wächst mit genau diesem Abschnitt, und für ihn zählt die
+Lebend/Historisch-Messung darunter.
+
+| grep-Kommando | Skript vor | nach | `beweise.ps1` vor | nach |
+|---|---:|---:|---:|---:|
+| `grep -c -F -- 'Exit 3'` | 11 | **3** | 3 | **2** |
+| `grep -c -F -- 'exit 3'` | 0 | 0 | 0 | 0 |
+| `grep -c -F -- 'return 3'` | 7 | 7 | 0 | 0 |
+| `grep -c -F -- '-> 3'` | 0 | 0 | 0 | 0 |
+| `grep -c -F -- '→ 3'` | 0 | 0 | 0 | 0 |
+| `grep -c -F -- '**3**'` | 0 | 0 | 0 | 0 |
+| `grep -c -F -- 'nie 2'` | 0 | 0 | 0 | 0 |
+| `grep -c -F -- 'nie 0'` | 2 | **8** | 0 | 0 |
+| `grep -c -F -- 'Voraussetzung'` | 33 | **35** | 12 | **14** |
+| `grep -c -iF -- 'exit 3'` | 11 | **3** | 3 | **2** |
+| `grep -c -iF -- 'nie 0'` | 4 | **11** | 0 | 0 |
+| `grep -c -iF -- 'nie 2'` | 0 | 0 | 0 | 0 |
+
+Die drei letzten Zeilen sind der Grund, warum das Inventar nicht bei den vom
+Prüfer genannten Schreibweisen aufhört: `NIE 0` in Großbuchstaben steht seit
+Runde 9 im Skriptkopf und wäre einer buchstabengetreuen Suche entgangen. Die
+case-insensitive Gegenprobe zeigt, dass es außer `Exit 3` keine
+Groß-/Kleinschreibungsvariante gibt (`grep -c -iF -- 'exit 3'` = `grep -c -F --
+'Exit 3'`) und dass die Wendung „nie 2" in keiner Schreibweise im Code steht.
+
+**Die verbliebenen drei `Exit 3` im Skript und zwei in `tools/beweise.ps1` sind
+geprüft und richtig** (Tabelle Z1 unten): eine historische Selbstauskunft, ein
+bereits qualifizierter Lauftext, ein bereits vollständiger Kommentar, sowie im
+Runner die Abbildung des Exitcodes 3 auf den Status „Voraussetzung fehlt" und
+dessen Statuszeile.
+
+#### Z1 — Voraussetzungs-Ausgang: „ohne Befund **3**, mit Befund **2**, nie **0**"
+
+Positionen der Spalte *Stelle* stehen `@ 165d9ae` (Basis dieser Runde) oder als
+Symbol; die nachgezogene Fassung steht `@ b9f7ee1`.
+
+| Stelle | alt | neu | Status |
+|---|---|---|---|
+| `…/pruefe_kern_identitaetsfrei.py:45-46` @ `165d9ae` — Skriptkopf, `--nur-messen` | „der Lauf endet nie mit 0, ohne weiteren Befund mit **Exit 3**." | „der Lauf endet über `voraussetzung_exit()` — OHNE registrierten Befund mit 3, MIT registriertem Befund mit 2, NIE mit 0." | **nachgezogen** (`:45-47` @ `b9f7ee1`) — **vom Inventar gefunden**, kein Prüfer hat sie benannt |
+| `…/pruefe_kern_identitaetsfrei.py:93-96` @ `165d9ae` — Exitcode-Legende des Kopfes | „Exitcodes: 0 gruen · 2 rot · **3** Voraussetzung fehlt (…)" — ohne die 2-Hälfte | „… — und zwar OHNE registrierten Befund; MIT registriertem Befund wird aus derselben 3 eine 2, siehe den Absatz darunter." | **nachgezogen** (`:93-99` @ `b9f7ee1`) — **vom Inventar gefunden** |
+| `…/pruefe_kern_identitaetsfrei.py:1009-1011` @ `165d9ae` — Docstring `kern_neubau` | „jeder andere Ausgang ist eine fehlende Voraussetzung (**Exit 3**), nie ein Urteil ueber den Kern." | „… eine fehlende Voraussetzung, nie ein Urteil ueber den Kern. Den Exitcode dafuer gibt ausschliesslich `voraussetzung_exit()`: OHNE registrierten Befund 3, MIT registriertem Befund 2, NIE 0 (Matrix F13/F14/F15, Runde 8/9)." | **nachgezogen** (`:1013-1016` @ `b9f7ee1`) — vom Prüfer benannt |
+| `…/pruefe_kern_identitaetsfrei.py:1720-1722` @ `165d9ae` — `_patch_soll_vergleich`, Temp-Kommentar | „das ist eine fehlende Voraussetzung (**Exit 3**), kein Traceback" | „… kein Traceback und erst recht kein Urteil ueber den JUCE-Baum. Den Exitcode gibt `voraussetzung_exit()`: ohne registrierten Befund 3, mit registriertem Befund 2, nie 0 (Matrix F13/F14/F15)." | **nachgezogen** (`:1725-1729` @ `b9f7ee1`) — vom Prüfer benannt |
+| `…/pruefe_kern_identitaetsfrei.py:2475-2476` @ `165d9ae` — gedruckte Überschrift des Runde-7-Selbsttests | „Systemdateien namentlich, K1b ueber alle Eingaben, **Exit 3 ohne Temp**" | „… benannte Voraussetzung statt Traceback ohne Temp" | **nachgezogen** (`:2482-2483` @ `b9f7ee1`) — **vom Inventar gefunden**; die Probe misst `VoraussetzungFehlt` statt eines Tracebacks, nicht den Exitcode (Prüfliste E) |
+| `…/pruefe_kern_identitaetsfrei.py:2590` @ `165d9ae` — Kommentar über der P2-Probe | „ohne schreibbares Temp gibt es **Exit 3**, keinen Traceback" | „… eine benannte Voraussetzung statt eines Tracebacks; den Exitcode gibt danach `voraussetzung_exit()` — ohne registrierten Befund 3, mit registriertem Befund 2, nie 0" | **nachgezogen** (`:2597-2599` @ `b9f7ee1`) — **vom Inventar gefunden** |
+| `…/pruefe_kern_identitaetsfrei.py:3032-3033` @ `165d9ae` — Kommentar vor dem Neubau in `main()` | „Ein fehlgeschlagener oder unmoeglicher Bau ist eine fehlende Voraussetzung (**Exit 3**), nie ein Urteil ueber den Kern." | „… nie ein Urteil ueber den Kern: der Lauf endet ueber `voraussetzung_exit()` — ohne registrierten Befund 3, mit registriertem Befund 2, nie 0 (Matrix F13/F14/F15, Runde 8/9)." | **nachgezogen** (`:3041-3044` @ `b9f7ee1`) — vom Prüfer benannt |
+| `…/pruefe_kern_identitaetsfrei.py:3106-3108` @ `165d9ae` — `[0]`, `--nur-messen`-Zweig | „das ist eine fehlende Voraussetzung, und die endet unten als **Exit 3**." | „… und die endet unten ueber `voraussetzung_exit()`: ohne registrierten Befund 3, mit registriertem Befund 2, nie 0 (Matrix F13/F14/F15)." | **nachgezogen** (`:3117-3121` @ `b9f7ee1`) — vom Prüfer benannt |
+| `…/pruefe_kern_identitaetsfrei.py:3190-3192` @ `165d9ae` — `except VoraussetzungFehlt` im JUCE-Baum-Riegel | „kein Traceback, kein **Exit 1** — eine benannte fehlende Voraussetzung." | „… ausdruecklich nichts; der Ausgang geht durch `voraussetzung_exit()` — ohne registrierten Befund 3, mit registriertem Befund 2, nie 0 (Matrix F13/F14/F15)." | **nachgezogen** (`:3204-3208` @ `b9f7ee1`) — **vom Inventar gefunden** |
+| `…/pruefe_kern_identitaetsfrei.py:3216-3218` @ `165d9ae` — `[0c]`, veraltetes Configure bei `--nur-messen` | „Der Lauf endet ohnehin mit **Exit 3**." | „Der Lauf endet unten ueber `voraussetzung_exit()` — ohne registrierten Befund 3, mit registriertem Befund 2, nie 0 (Matrix F13/F14/F15). Runde 11 hat genau diesen Zweig gemessen: mit einem vorher registrierten Befund endet er mit 2, nicht mit der frueher hier behaupteten 3." | **nachgezogen** (`:3230-3236` @ `b9f7ee1`) — **die vom Prüfer zitierte Stelle**, oben reproduziert |
+| `tools/beweise.ps1`, A14-Behauptung (Symbol `Kuerzel='A14'`) @ `165d9ae` | „Ist der Neubau nicht moeglich oder schlaegt er fehl, ist das **Exit 3** und kein Urteil;" — zwei Sätze später vollständig aufgelöst, in sich aber unqualifiziert | „… ist das ein Voraussetzungs-Ausgang ueber `voraussetzung_exit()` und kein Urteil;" — der auflösende Satz („An JEDEM dieser Ausgaenge gewinnt ein bereits registrierter Befund … Matrix F13/F14/F15, Runde 8/9") bleibt unverändert stehen | **nachgezogen** @ `b9f7ee1` |
+| `tools/beweise.ps1:802-804` @ `165d9ae` — Kommentar über der Exitcode-3-Abbildung | „**Exit 3** heisst in diesen Skripten ‚Voraussetzung fehlt' …, nicht ‚Behauptung widerlegt'." | Satz unverändert, ergänzt: „Die Umkehrung gilt NICHT: fehlt einem Bein eine Voraussetzung, waehrend schon ein Befund registriert ist, endet es mit 2 statt 3 und faellt hier bewusst als ROT durch — ein registrierter Befund gewinnt (Matrix F13/F14/F15 …)." | **nachgezogen** @ `b9f7ee1` — **vom Inventar gefunden**; die Aussage über den Exitcode 3 war richtig, ihr Gegenstück fehlte |
+| `tools/beweise.ps1:818` — `$zeile.Status = 'Voraussetzung fehlt (Exit 3)'` (Symbol) | Statuszeile des Runners für einen tatsächlich gemessenen Exitcode 3 | unverändert | **richtig so** — sie beschreibt den gelesenen Exitcode, nicht die Zusage eines Beins |
+| `…/pruefe_kern_identitaetsfrei.py:3049` — gedruckter `--nur-messen`-Hinweis (Symbol) | „dieser Lauf endet nie mit 0, ohne weiteren Befund mit Exit 3." | unverändert | **richtig so** — bereits qualifiziert („ohne weiteren Befund", „nie mit 0"); und ein gedruckter Lauftext ist keine Kommentarstelle, die Regel dieser Runde greift dort nicht |
+| `…/pruefe_kern_identitaetsfrei.py:3332` — Kommentar am F14-Ausgang (Symbol) | „also Exit 3 statt 0. Ein registrierter Befund gewinnt auch hier und macht daraus 2 …" | unverändert | **richtig so** — bereits vollständig, seit Runde 8 |
+| `…/pruefe_kern_identitaetsfrei.py:959` — Docstring `VoraussetzungFehlt` (Symbol) | „Diese Zeile sagte bis Runde 10 nur ‚Exit 3' und war damit … zu eng" | unverändert | **richtig so** — historische Selbstauskunft über den eigenen alten Stand |
+| `voraussetzung_exit()`, `R8-1`, `R8-2`, korrigierte Frischematrix Zeilen **F13/F14/F15**, Riegelkarte Zeile **K3/A14** (Symbole) | bereits „ohne Befund 3, mit Befund 2, nie 0" bzw. „Matrix F13/F14/F15" | unverändert | nachgezogen @ Runde 8/9/10; die Riegelkarte trägt `**Stand dieser Karte:** 308947d`, die korrigierte Matrix `**Stand dieses Unterabschnitts:** a3bce3c` |
+| `tools/dirigent/pruefliste.md:52` — Regel D („… meldet Voraussetzung-fehlt (Exit 3) statt grün") | — | unverändert | **außerhalb der Ticketgrenze** (der Auftrag schließt `tools/dirigent/**` aus) und als **Regel** richtig: sie fordert „nicht grün", und 2 ist so wenig grün wie 3 |
+| `docs/beweise/SONDE-005b.md:99`, `docs/beweise/SONDE-010.md:813`, `tools/eq-copilot/pruefe_flatc_drift.py:276-278` | Exitcode-Konvention bzw. andere Beine | unverändert | **andere Zusage** — sie sagen, was 3 und 2 im Runner bedeuten, nicht was A14 an seinen Ausgängen zurückgibt |
+
+#### Lebende Stellen im Manifest — gemessen, nicht behauptet
+
+Ein Klassifizierer liest `docs/beweise/SONDE-007a.md`, teilt sie an den
+`## `-Überschriften und sucht alle acht Schreibweisen; ein Abschnitt mit
+Standangabe (oder ein vom Runner geschriebener Kanon-Block) gilt als
+historisch:
+
+```text
+vor  dem Nachziehen: lebende Treffer (Abschnitt ohne Stand, kein Kanon-Block): 1
+  :11210  [## Nacharbeit Runde 3 — 2026-08-29: vom User unterbrochen]
+        `generate.stamp` halten und Exit 3 melden, statt eine handgepflegte
+nach dem Nachziehen: lebende Treffer nach dem Nachziehen: 0
+```
+
+Der Abschnitt „Nacharbeit Runde 3" trug seinen Stand als **`**Stand.** HEAD
+`a728fba`**, nicht in der kanonischen Schreibweise `**Stand dieses
+Abschnitts:**`. Er ist ein abgeschlossener Rundenbericht; nach der Regel aus
+Runde 10 bekommt er die Standangabe **ergänzt**, statt umgeschrieben zu werden.
+Der Text darunter ist unverändert.
+
+---
+
+### Was das Inventar zusätzlich gefunden hat
+
+**Fünf Stellen im Code, die kein Prüfer benannt hat** (in der Tabelle mit „vom
+Inventar gefunden" markiert): der `--nur-messen`-Satz des Skriptkopfs, die
+Exitcode-Legende darüber, die gedruckte Überschrift des Runde-7-Selbsttests,
+der Kommentar über der P2-Probe und der `except VoraussetzungFehlt`-Kommentar
+im JUCE-Baum-Riegel — dazu im Runner der Kommentar über der
+Exitcode-3-Abbildung. Prüfer 11 hatte fünf Stellen genannt; das Inventar hat
+sechs weitere gefunden. Genau deshalb ist die Suche über **alle** Schreibweisen
+und nicht über ein Kennwort die Regel dieser Runde.
+
+**Ein Fund außerhalb des Manifests.** `docs/offene-punkte.md`, Registerzeile
+`| NAK-85 |`, Nachtrag zu Runde 5 (29.08.2026): „`--nur-messen` läuft die
+Identitätsprüfung und endet **immer** mit Exit 3." Das ist seit Runde 8/9
+dieselbe zu enge Aussage. Der Nachtrag bleibt als datierter Beleg seines
+Standes stehen und hat einen datierten Korrekturnachtrag (30.08.2026)
+bekommen, der den geltenden Stand nennt — dieselbe Behandlung wie beim Fund
+der Runde 10 in derselben Zeile.
+
+**Eine Stelle, die bewusst nicht angefasst wurde:** `docs/NEXT-SESSION.md:40`
+(„`pruefe_kern_identitaetsfrei.py` verweigert das Urteil (Exit 3) …") steht in
+einem datierten Nachtrag, der seinen Commit selbst nennt (`329ea06`) — nach der
+Lesart also historisch. Der geltende Stand steht im Register und hier.
+
+---
+
+### Warum in dieser Runde keine neue Wache
+
+Die Regel des Dirigenten für Runde 11 sagt ausdrücklich „keine
+Verhaltensänderung". Der naheliegende nächste Schritt — eine Wache nach dem
+Muster von `R8-2`, die einen unqualifizierten Exit-3-Satz in einem Kommentar
+über einen Voraussetzungs-Ausgang selbst rot meldet — würde die Zahl der
+Selbsttestfälle ändern und ist deshalb hier nicht gebaut. Sie ist der
+Kandidat, falls dieselbe Klasse ein sechstes Mal auftritt; entschieden hat das
+der Dirigent, nicht dieser Worker.
+
+---
+
+### Probe `P11-F14C` am Endstand — Verhalten unverändert
+
+Derselbe Treiber, dieselbe mtime-Manipulation, gemessen nach dem Nachziehen:
+identische Exitcodes (3 ohne, 2 mit registriertem Befund), identische
+Klartextzeile. Baulose Selbstprüfung am Endstand:
+
+```text
+82 ok, 0 Fehler
+```
+
+Es wurde keine neue Wache gebaut — der Befund war Text. Die Wachen, die das
+gemessene Verhalten festhalten, existieren seit Runde 8/9 (`R8-1`, `R8-2`) und
+sind dort einzeln gebrochen worden.
+
+---
+
+### Prüfliste (`tools/dirigent/pruefliste.md`) — wo in dieser Runde gemessen
+
+| Zeile | wo gemessen |
+|---|---|
+| **E** — „Jede Behauptung sagt nicht mehr, als der Test misst" | die zehn lebenden Exit-Texte sagen jetzt, was `voraussetzung_exit()` tut (Reproduktion oben); die Selbsttest-Überschrift nennt, was `P2`/`R7-4` wirklich misst (Voraussetzung statt Traceback), nicht einen Exitcode, den sie gar nicht prüft |
+| **E** — „Zahlen im Manifest sind gemessen, nicht abgeschrieben" | die grep-Tabelle ist ein Lauf über `git show 165d9ae:<datei>` und die Arbeitskopie, mit `grep -c -F` gegengerechnet; die Lebend/Historisch-Zahlen (1 → 0) kommen aus dem Klassifizierer |
+| **E** — „Positionen als Symbol oder `Datei:Zeile @ sha7`" | jede Position dieses Abschnitts trägt `@ 165d9ae` (alt) oder `@ b9f7ee1` (neu) oder steht als Symbol; die zitierten Rohausgaben bleiben, wie die Treiber sie schrieben |
+| **E** — „Abschnitt ohne Standangabe bindet jede Position einzeln" | der einzige lebende Fund im Manifest (`:11210`, Abschnitt „Nacharbeit Runde 3") hat die kanonische Standangabe `a728fba` bekommen, sein Text ist unverändert |
+| **E** — **Aussagen-Inventar** | Tabelle Z1 oben, gespeist aus `grep -c -F` über acht Schreibweisen plus drei case-insensitive Gegenproben, über Skript, `tools/beweise.ps1` und das ganze Repo; jede Fundstelle als nachgezogen, richtig-so, historisch oder außerhalb der Grenze klassifiziert |
+| **E** — „Jede neue Prüfung wurde einmal gebrochen" | in dieser Runde keine neue Prüfung (Abschnitt darüber begründet, warum nicht); für NAK-94 Nacharbeit 6 stehen sieben Brüche in `docs/beweise/SONDE-007c.md` |
+| **F** — „Änderungssatz" | Skript, A14-Behauptung und A14-Kommentar im Runner, Registerzeile und Manifest liegen im selben Commit-Paar `b9f7ee1`/`30fb0b8` |

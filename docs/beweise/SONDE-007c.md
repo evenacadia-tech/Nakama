@@ -17938,3 +17938,318 @@ NAK-94 Nacharbeit 5 - Abschluss"; Rohausgabe:
 **Regeln des Dirigenten (Nacharbeit 6):** (1) Pflichtmenge = alle Fälle aus `MANIFEST.json` (heute vier); fehlt einer, bricht `[3b]` laut ab — kein Skip; `erzeuge_installer_journale.py --pruefen` fällt ebenfalls, wenn eine im MANIFEST geführte Datei fehlt. Probe: Fixture umbenannt → A17 ROT und `--pruefen` ROT, zurückgenommen. (2) `[3b]` wird nach Zusagen gegliedert (z. B. Z1 „Writer-Fixtures vollständig und bytegleich", Z2 „OK-Journal → ok", Z3 „Status ≠ OK → Hinweis ohne Hashvergleich", Z4 „Mutant ohne `eintraege` → ‚keine Liste'", Z5 „unbrauchbare Kennung → Hinweis"); jede Zusage hat eine Zeile im Manifest, eine `pruefe(...)`-Gruppe und **einen** Bruch mit ROT/Rücknahme, der nur diese Zusage rot macht (B6-Zx). Die Behauptung in `tools/beweise.ps1` und im Skriptkopf sagt „je Zusage ein Bruch".
 
 **Nächster Schritt:** Nacharbeit 6 im selben Worker wie S8 Runde 11 (siehe `docs/beweise/SONDE-007a.md`, „Dirigentenstand … Prüfer 11"), gemeinsamer Kanon, danach Prüfer 7 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.
+
+## NAK-94 Nacharbeit Runde 6 — 2026-08-30 (Prüfer-Thread `01a04ff0-7d0f…`)
+
+**Stand dieses Abschnitts:** `30fb0b8`
+
+Zwei bestätigte Befunde des sechsten Prüfers (Codex high, lesend über
+`git diff da62dec...e9ea54b`), Regeln des Dirigenten im Abschnitt
+„Dirigentenstand NAK-94 — 2026-08-30 01:59 (Sitzung 054eedac)". Beide sind
+geschlossen. A17 steht danach bei **115 ok, 0 Fehler** (vorher 114; die eine
+zusätzliche Zeile ist die neue Zusage Z1).
+
+**Werkzeugregel dieser Runde:** kein löschender Aufruf, keine Datei unter
+`%SystemRoot%`. Die Fixturbytes sind unverändert — für die Proben wurde nur
+mit `os.replace` umbenannt und zurückbenannt; `MANIFEST.json` wurde aus einer
+im Speicher gehaltenen Kopie bytegleich wiederhergestellt (unten belegt).
+
+---
+
+### Befund 1 — die Pflichtmenge ließ den vierten Fall still verschwinden
+
+**Wörtlich (`@ e9ea54b`):** „*Wenn `error-rueckgerollt.json` samt
+MANIFEST-Eintrag entfällt, bleiben A17 und `erzeuge_installer_journale.py
+--pruefen` grün: Die Pflichtmenge enthält nur drei Dateien und die Probe
+überspringt das fehlende vierte Fixture später ausdrücklich.*"
+
+#### Reproduktion am Basis-Stand `165d9ae`
+
+Ausgangslage: A17 grün mit **114 ok, 0 Fehler**. Dann wurde
+`error-rueckgerollt.json` umbenannt **und** ihr Eintrag aus
+`eq-copilot/fixtures/installer/journale/MANIFEST.json` entfernt:
+
+```text
+MANIFEST-Faelle jetzt: ['ok-erstinstallation.json', 'rueckweg-nach-gegenpfad.json', 'ok-nach-tausch.json']
+A17 EXIT=0
+
+113 ok, 0 Fehler
+--pruefen EXIT=0
+[pruefen] eingefrorene Writer-Journale gegen ihr MANIFEST
+  ok      ok-erstinstallation.json  status=OK  438D8DB5B5550E53
+  ok      rueckweg-nach-gegenpfad.json  status=RUECKWEG  5B99904AB9B6B80A
+  ok      ok-nach-tausch.json  status=OK  1CB23A231AD96F14
+
+3 Writer-Fixturen bytegleich zum MANIFEST (Stand der Erzeugung: a010d64).
+--- [3b]-Zeilen mit error-rueckgerollt ---
+(keine Zeile = die Probe ist still verschwunden)
+```
+
+Beide Beine grün, eine Probe weniger, keine Zeile darüber. Der Befund ist
+damit am Basis-Stand gemessen, nicht nur gelesen. Rücknahme:
+
+```text
+MANIFEST SHA256 = 6F00DD6FF869E77898970E58445B46D5E7EBB43E32A86DFEC692EDF49636B5F5
+Fixtur  SHA256 = 5769F5ADDD2025BAC3D0D510705E8CF8D241CF019E57E7C0CB33F05A5751B8CD
+Test-Path Probe-Datei: False
+(git status ohne Eintrag aus eq-copilot/fixtures/)
+```
+
+#### Was jetzt gilt
+
+**Die Pflichtmenge IST das MANIFEST.** `JOURNAL_PFLICHTFAELLE` — das
+Namenstupel mit drei von vier Dateien — ist ersatzlos weg. `_writer_fixturen()`
+verlangt jeden dort geführten Fall, rechnet jede Datei gegen ihren SHA-256 nach
+und klagt zusätzlich über jede **verwaiste** `.json` im Korpusverzeichnis, die
+in keinem MANIFEST-Fall steht. Der optionale Überspringer
+(`if datei not in fixturen: continue` @ `e9ea54b:1178-1179`) ist weg.
+
+**Ein zweiter Anker außerhalb des Korpus.** „Alle Fälle aus MANIFEST.json"
+allein schließt den vom Prüfer beschriebenen Fall nicht: verschwindet die
+MANIFEST-Zeile mit der Datei, ist die Bedingung wieder trivial erfüllt. Deshalb
+hängen `[3b]` **und** `erzeuge_installer_journale.py --pruefen` zusätzlich an
+der **Statusachse**, über die `[3b]` etwas behauptet:
+
+```python
+JOURNAL_PFLICHTSTATUS = ("OK", "RUECKWEG", "ERROR_RUECKGEROLLT")
+```
+
+Sie steht in `tools/eq-copilot/pruefe_installer_manifest.py`, also außerhalb des
+Korpus, und der Erzeuger **importiert** sie, statt sie abzuschreiben. Wer eine
+Statusklasse aus dem Korpus nimmt, muss die Zusage mit derselben Hand
+streichen — und das ist dann eine sichtbare Änderung an der Zusage, kein
+stilles Weniger. Die Wahl der Achse ist keine Anzahl: gefordert sind
+**Statusklassen**, nicht „vier Fixturen"; kommt eine fünfte dazu, fährt `[3b]`
+sie mit, ohne dass jemand etwas nachträgt, weil beide Achsen aus dem MANIFEST
+gelesen werden.
+
+Belegt in **B6-Z1** unten, Stufe a (nur die Datei) und Stufe b (Datei samt
+MANIFEST-Zeile — die Lage des Prüfers): beide Male A17 **Exit 2** und
+`--pruefen` **Exit 2**.
+
+---
+
+### Befund 2 — ein Bruch, der acht Proben gleichzeitig rot macht, unterscheidet nichts
+
+**Wörtlich (`@ e9ea54b`):** „*Der dokumentierte Bruch B5-5 macht gleichzeitig
+acht Statusproben rot; B5-3 lässt ebenfalls beide OK-Fixture-Proben zusammen
+fallen. Damit ist die verbindliche Forderung ‚je Probe ein eigener Bruch, der
+genau diese Probe rot macht' nicht erfüllt, obwohl der Abschluss das behauptet;
+führe getrennte, diskriminierende Brüche mit ROT- und Rücknahmeausgabe aus oder
+fasse die Prüfungen tatsächlich zu einer Probe zusammen.*"
+
+Der Dirigent hat die Regel präzisiert: gefordert ist ein eigener Bruch je
+**Zusage**, nicht je Ausgabezeile. `[3b]` ist deshalb nach Zusagen gegliedert
+und nimmt den zweiten der beiden vom Prüfer angebotenen Wege — die
+parametrisierten Prüfungen sind jetzt wirklich **eine** Probe mit **einer**
+Zusage-Zeile.
+
+#### Die sieben Zusagen von `[3b]`
+
+Jede Zusage hat eine `pruefe`-Gruppe im Code, eine Zeile in dieser Tabelle und
+genau einen Bruch unten. Die Spalte *Werte* sagt, worüber die Zusage
+parametrisiert ist; die Zahlen dahinter stehen in der Laufausgabe, nicht in
+dieser Tabelle.
+
+| Zusage | Was sie sagt | Werte | Bruch |
+|---|---|---|---|
+| **Z1** | Der Writer-Korpus ist vollständig und bytegleich: jeder in `MANIFEST.json` geführte Fall liegt vor, sein SHA-256 stimmt, keine verwaiste Datei liegt daneben, und die Statusachse `JOURNAL_PFLICHTSTATUS` ist vertreten | alle Fälle des MANIFEST | **B6-Z1** |
+| **Z2** | Ein `sha256: null` beendet den Artefaktcheck **nicht** — im Kanon bleibt ein anderes fehlendes Artefakt ROT und das hashlose wird trotzdem gemessen; unter `--release` sind beide Befunde Fehler (Befund C1) | die zwei Modi `hart=False` / `hart=True` | **B6-Z2** |
+| **Z3** | Eine unbrauchbare Kennung ist ein Hinweis, kein `TypeError` — im Journal wie im Manifest; `[4b]` fällt kein Urteil und tötet keinen Kanonlauf (Befund C2) | die zwei Seiten Journal / Manifest | **B6-Z3** |
+| **Z4** | Ein OK-Journal mit abgeschlossenen, nicht zurückgerollten Einträgen behält den Hashvergleich und sein `ok` | jede OK-Fixtur des Korpus | **B6-Z4** |
+| **Z5** | Alles, was **nicht** Journalstatus OK ist, meldet artefaktweise „installierter Stand unbekannt" ohne Hashvergleich | die Nicht-OK-Fixturen des Korpus, die Durchgangs- und erfundenen Statuswerte als Mutanten, und ein Journal ohne `status` | **B6-Z5** |
+| **Z6** | Bei Status OK **ohne** Eintragsliste bleibt es bei „führt keine Liste `eintraege`" — die Statussperre verschluckt sie nicht | ein Mutant | **B6-Z6** |
+| **Z7** | Jede eingefrorene Transaktions-ID besteht die `Ist-TransaktionsId`-Regex aus `Install-Nakama.ps1` — das Muster wird live aus dem Writer gelesen | alle Fixturen | **B6-Z7** |
+
+`Z1` steht bewusst vorn: sie trägt alle anderen, und ihr Bruch hält den Block
+an, bevor eine andere Zusage überhaupt geprüft wird. Deshalb kann bei einem
+roten `Z1` keine andere Zusage die Ursache sein — dieselbe Unterscheidbarkeit
+auf anderem Weg.
+
+Was **zusammengefasst** wurde, statt es weiter als getrennte Proben zu zählen:
+die acht Statuszeilen aus `B5-5` und die beiden OK-Fixturen aus `B5-3` sagen je
+**dieselbe** Zusage über verschiedene Werte. Sie sind jetzt `Z5` bzw. `Z4` —
+eine Zusage, ein Bruch, und die Werte zählt die Ausgabe.
+
+---
+
+### Die sieben Brüche — je Zusage einer, ROT und Rücknahme
+
+Ein Treiber setzt je Bruch **eine** Änderung, fährt A17, zeigt die roten
+Zeilen, nimmt zurück, belegt Bytegleichheit und fährt A17 noch einmal grün.
+Rohausgabe:
+
+```text
+Ausgangslage: A17 Exit 0  115 ok, 0 Fehler
+
+### B6-Z1  der Writer-Korpus verliert einen Fall
+  Bruch gesetzt in eq-copilot/fixtures/installer/journale/ (umbenannt, Bytes unveraendert)
+  Stufe a: nur die Fixtur umbenannt, MANIFEST unveraendert
+  -- ROT --
+   FEHLER  Z1 [Writer-Korpus]: jeder in MANIFEST.json gefuehrte Fall liegt vor und ist bytegleich, keine verwaiste Datei daneben, und die Statusachse OK, RUECKWEG, ERROR_RUECKGEROLLT ist vertreten  [error-rueckgerollt.json: im MANIFEST gefuehrt, liegt aber nicht vor]
+   [3b] bricht hier ab: ohne vollstaendigen Korpus misst der Block die Writer-Form nicht mehr, und eine stillschweigend ausgelassene Gegenprobe ist schlimmer als keine.
+   Exit 2
+   erzeuge_installer_journale.py --pruefen: Exit 2
+   FEHLGESCHLAGEN:
+   - error-rueckgerollt.json: fehlt
+  Stufe b: zusaetzlich die MANIFEST-Zeile entfernt (Lage des Pruefers)
+  -- ROT --
+   FEHLER  Z1 [Writer-Korpus]: jeder in MANIFEST.json gefuehrte Fall liegt vor und ist bytegleich, keine verwaiste Datei daneben, und die Statusachse OK, RUECKWEG, ERROR_RUECKGEROLLT ist vertreten  [kein Fall mit Journalstatus ERROR_RUECKGEROLLT - [3b] behauptet sonst etwas ueber eine Statusklasse, die es nicht mehr misst]
+   [3b] bricht hier ab: ohne vollstaendigen Korpus misst der Block die Writer-Form nicht mehr, und eine stillschweigend ausgelassene Gegenprobe ist schlimmer als keine.
+   Exit 2
+   erzeuge_installer_journale.py --pruefen: Exit 2
+   FEHLGESCHLAGEN:
+   - kein Fall mit Journalstatus ERROR_RUECKGEROLLT - der Korpus traegt die Zusagen von [3b] nicht mehr
+  Bruch zurueckgenommen (MANIFEST bytegleich: True; Fixtur-SHA-256 unveraendert: True; Probe-Datei weg: True)
+  -- GRUEN --
+   A17 Exit 0   115 ok, 0 Fehler   --pruefen Exit 0
+
+### B6-Z2  ein `sha256: null` beendet den Artefaktcheck wieder
+  Bruch gesetzt in tools/eq-copilot/pruefe_installer_manifest.py
+  -- ROT --
+   FEHLER  Z2 [Kanon]: ein fehlendes Artefakt ist auch im Kanon ROT, wenn ein anderes keinen festgeschriebenen Hash traegt (Befund C1)  [keine Klage]
+   FEHLER  Z2 [Kanon]: das Artefakt ohne Hash wird trotzdem gemessen (liegt vor, Ordner-Hash bildbar) statt uebersprungen  [keine solche Zeile]
+   FEHLER  Z2 [--release]: dieselbe Lage macht unter --release BEIDE Befunde zu Fehlern - den fehlenden Hash und das fehlende Artefakt  [nicht ausgeliefert - 1 Artefakt(e) ohne Hash: main]
+   Exit 2
+  Bruch zurueckgenommen (Bytes identisch: True)
+  -- GRUEN --
+   Exit 0   115 ok, 0 Fehler
+
+### B6-Z3  eine unbrauchbare Kennung wird stillschweigend zur Zeichenkette
+  Bruch gesetzt in tools/eq-copilot/pruefe_installer_manifest.py
+  -- ROT --
+   FEHLER  Z3 [Mutant von ok-erstinstallation.json: eintraege -> [Eintrag mit ziel_id als Liste, Nicht-Objekt]]: eine unbrauchbare Kennung IM JOURNAL ist ein Hinweis, kein TypeError - und [4b] faellt kein Urteil  [hinweis 1: Journaleintrag ist kein Objekt (str)]
+   FEHLER  Z3 [Writer-Fixtur ok-erstinstallation.json]: dieselbe Zusage von der anderen Seite - ein Fehler IM MANIFEST bleibt ebenfalls ein Hinweis, [4b] toetet keinen Kanonlauf  [keine solche Zeile]
+   Exit 2
+  Bruch zurueckgenommen (Bytes identisch: True)
+  -- GRUEN --
+   Exit 0   115 ok, 0 Fehler
+
+### B6-Z4  der OK-Pfad meldet keinen Hashvergleich mehr
+  Bruch gesetzt in tools/eq-copilot/pruefe_installer_manifest.py
+  -- ROT --
+   FEHLER  Z4 [Writer-Fixtur ok-erstinstallation.json]: bei Journalstatus OK und abgeschlossenen, nicht zurueckgerollten Eintraegen bleibt der Hashvergleich und sein ok (OK nach Erstinstallation)  [ohne ok: main, active-probe, eqcop-broker.exe]
+   FEHLER  Z4 [Writer-Fixtur ok-nach-tausch.json]: bei Journalstatus OK und abgeschlossenen, nicht zurueckgerollten Eintraegen bleibt der Hashvergleich und sein ok (OK nach Tausch)  [ohne ok: main, active-probe, eqcop-broker.exe]
+   Exit 2
+  Bruch zurueckgenommen (Bytes identisch: True)
+  -- GRUEN --
+   Exit 0   115 ok, 0 Fehler
+
+### B6-Z5  die Statussperre laesst jeden Status durch
+  Bruch gesetzt in tools/eq-copilot/pruefe_installer_manifest.py
+  -- ROT --
+   FEHLER  Z5 [Writer-Fixtur error-rueckgerollt.json]: Journalstatus ERROR_RUECKGEROLLT meldet artefaktweise 'unbekannt' - ohne Hashvergleich und ohne 'keine Liste'  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+   FEHLER  Z5 [Writer-Fixtur rueckweg-nach-gegenpfad.json]: Journalstatus RUECKWEG meldet artefaktweise 'unbekannt' - ohne Hashvergleich und ohne 'keine Liste'  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+   FEHLER  Z5 [Mutant von ok-erstinstallation.json: status -> VORBEREITET]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+   FEHLER  Z5 [Mutant von ok-erstinstallation.json: status -> KOMPENSATION]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+   FEHLER  Z5 [Mutant von ok-erstinstallation.json: status -> ERROR_TEILSTAND]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+   FEHLER  Z5 [Mutant von ok-erstinstallation.json: status -> ERROR_RUECKGEROLLT]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+   FEHLER  Z5 [Mutant von ok-erstinstallation.json: status -> RUECKWEG_AKTIV]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+   FEHLER  Z5 [Mutant von ok-erstinstallation.json: status -> RUECKWEG]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+   FEHLER  Z5 [Mutant von ok-erstinstallation.json: status -> NEUER_STATUS_2099]: meldet den installierten Stand als unbekannt - ohne Hashvergleich  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+   FEHLER  Z5 [Mutant von ok-erstinstallation.json: status entfernt]: ein Journal OHNE status meldet den installierten Stand als unbekannt - Schweigen ist kein OK  [ohne Hinweis: main, active-probe, eqcop-broker.exe]
+   Exit 2
+  Bruch zurueckgenommen (Bytes identisch: True)
+  -- GRUEN --
+   Exit 0   115 ok, 0 Fehler
+
+### B6-Z6  ein OK-Journal ohne Eintragsliste wird als 'unbekannt' gemeldet
+  Bruch gesetzt in tools/eq-copilot/pruefe_installer_manifest.py
+  -- ROT --
+   FEHLER  Z6 [Mutant von ok-erstinstallation.json: eintraege entfernt]: bei Status OK ohne Eintragsliste bleibt es bei 'fuehrt keine Liste eintraege' - die Statussperre verschluckt sie nicht  [keine solche Zeile]
+   Exit 2
+  Bruch zurueckgenommen (Bytes identisch: True)
+  -- GRUEN --
+   Exit 0   115 ok, 0 Fehler
+
+### B6-Z7  die Writer-Regex wird unter falschem Namen gesucht
+  Bruch gesetzt in tools/eq-copilot/pruefe_installer_manifest.py
+  -- ROT --
+   FEHLER  Z7 [Writer-Fixturen]: jede eingefrorene Transaktions-ID besteht die Ist-TransaktionsId-Regex aus Install-Nakama.ps1 - eine gestrichelte UUID taete es nicht  [Ist-TransaktionsId im Writer nicht gefunden]
+   Exit 2
+  Bruch zurueckgenommen (Bytes identisch: True)
+  -- GRUEN --
+   Exit 0   115 ok, 0 Fehler
+```
+
+#### Diskriminierend — maschinell nachgerechnet
+
+Jede rote Zeile eines Bruchblocks trägt dasselbe `Zx`-Präfix. Ein Zähler über
+die Rohausgabe oben:
+
+```text
+Bruch          rote Zeilen  betroffene Zusagen
+B6-Z1                    2  Z1
+B6-Z2                    3  Z2
+B6-Z3                    2  Z3
+B6-Z4                    2  Z4
+B6-Z5                   10  Z5
+B6-Z6                    1  Z6
+B6-Z7                    1  Z7
+
+Diskriminierend = True
+```
+
+Das ist der Unterschied zu Nacharbeit 5: dort machte **ein** Bruch acht Zeilen
+**verschiedener** Nummerierung rot, hier macht jeder Bruch nur die Zeilen
+**seiner** Zusage rot — und dass es so ist, ist gerechnet, nicht behauptet.
+
+`B6-Z5` färbt zehn Zeilen. Das ist kein Rückfall: es sind die zehn Werte
+**einer** Zusage (zwei Nicht-OK-Writer-Fixturen, sieben Mutantenstatus, ein
+Journal ohne `status`), und die Zusage steht als **eine** Zeile in der Tabelle
+oben. Genau diese Zusammenfassung war der zweite der beiden Wege, die der
+Prüfer angeboten hat.
+
+#### Bewusst so, und warum
+
+- **`B6-Z1` hat zwei Stufen.** Es bleibt ein Bruch **einer** Zusage, gemessen
+  an ihren zwei Eingängen: Stufe a nimmt nur die Datei (der Fall, den die
+  Regel des Dirigenten verlangt), Stufe b zusätzlich ihre MANIFEST-Zeile (der
+  Fall, den der Prüfer beschrieben hat). Ohne Stufe b bliebe unbewiesen, dass
+  der zweite Anker trägt; ohne Stufe a bliebe die Regel des Dirigenten
+  ungemessen.
+- **`B6-Z1` bricht den Block ab.** Nach der roten `Z1`-Zeile läuft `[3b]` nicht
+  weiter — mit Zeile im Klartext („`[3b]` bricht hier ab: ohne vollständigen
+  Korpus misst der Block die Writer-Form nicht mehr …"). Die anderen Zusagen
+  erscheinen dann gar nicht, statt mit einem halben Korpus scheinbar zu
+  bestehen.
+- **Fixturbytes unverändert.** `B5-7` aus Nacharbeit 5 hatte eine Fixtur samt
+  MANIFEST-Hash umgeschrieben. Diese Runde fasst keine Fixturbytes an: `B6-Z7`
+  bricht stattdessen die **Suche** nach der Writer-Regex, und `B6-Z1` benennt
+  nur um. Nach jedem Bruch ist der SHA-256 der Fixtur nachgerechnet.
+- **`B6-Z2` bleibt innerhalb von `[3b]`.** Der Bruch stellt den historischen
+  C1-Defekt wieder her (`return` nach dem „ohne Hash"-Hinweis). Das echte
+  `[4]` bleibt davon unberührt, weil im ausgelieferten
+  `nakama-installer-v1.json` alle drei Artefakte einen `sha256` tragen — der
+  frühe Rückweg wird dort nie erreicht.
+
+---
+
+### Was `--pruefen` jetzt zusätzlich fällt
+
+`erzeuge_installer_journale.py --pruefen` war schon vorher rot, wenn eine im
+MANIFEST geführte Datei fehlt oder eine verwaiste danebenliegt. Neu ist die
+Statusachse: verschwindet ein Fall **samt** seiner MANIFEST-Zeile, meldet die
+Hälfte, die überall läuft (ohne `pwsh`, ohne Sandbox):
+
+```text
+FEHLGESCHLAGEN:
+  - kein Fall mit Journalstatus ERROR_RUECKGEROLLT - der Korpus traegt die Zusagen von [3b] nicht mehr
+```
+
+Damit fallen beide Wege, die der Prüfer als grün gemessen hat.
+
+---
+
+### Prüfliste (`tools/dirigent/pruefliste.md`) — wo in dieser Runde gemessen
+
+| Zeile | wo gemessen |
+|---|---|
+| **D** — „fail-closed ohne Rohtextheuristik: Unbekanntes ist ROT" | `_writer_fixturen()` klagt über jede fehlende, veränderte und verwaiste Datei und über jede fehlende Statusklasse; `[3b]` bricht danach mit Klartextzeile ab, statt mit halbem Korpus weiterzulaufen |
+| **E** — „Jede Behauptung sagt nicht mehr, als der Test misst" | die A17-Behauptung im Runner sagt nicht mehr „die drei Pflichtfaelle", sondern „JEDEN in MANIFEST.json gefuehrten Fall" plus die Statusachse; die Zusagen-Tabelle oben nennt Werte, keine Anzahlen |
+| **E** — „Zahlen im Manifest sind gemessen, nicht abgeschrieben" | die Zahl der Fixturen und ihre Statusachse stehen in der `Z1`-Ausgabezeile des Laufs, nicht in dieser Datei; die Zahl der roten Zeilen je Bruch kommt aus dem Zähler über die Rohausgabe |
+| **E** — „Positionen als Symbol oder `Datei:Zeile @ sha7`" | `JOURNAL_PFLICHTFAELLE` @ `165d9ae:164-165`, der optionale Überspringer @ `165d9ae:1179`; die neuen Stellen stehen als Symbole (`_writer_fixturen()`, `JOURNAL_PFLICHTSTATUS`, `gegenproben_nacharbeit()`) |
+| **E** — „Jede neue Prüfung wurde einmal gebrochen" | sieben Brüche `B6-Z1`…`B6-Z7`, je Zusage einer, Rohausgabe oben, Diskriminierung gerechnet |
+| **E** — Aussagen-Inventar | die geänderten Zusagen dieser Runde („Pflichtmenge", „je Zusage ein Bruch") sind an ihren drei lebenden Stellen nachgezogen: Skriptkopf von `pruefe_installer_manifest.py`, A17-Behauptung und A17-Kommentar in `tools/beweise.ps1`. Keine Anzahl als Zusage — nirgends steht „vier Fixturen", sondern „alle Fälle aus `MANIFEST.json`" |
+| **E** — Writer-Fixturen | Bytes unverändert; für die Proben nur `os.replace` hin und zurück, `MANIFEST.json` aus einer Speicherkopie wiederhergestellt, SHA-256 nachgerechnet |
+| **F** — „Änderungssatz" | Skript, Erzeuger und die A17-Behauptung samt Kommentar im Runner liegen in `30fb0b8`; Manifest und Register folgen im selben Commit-Paar |

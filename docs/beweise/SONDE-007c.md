@@ -19968,6 +19968,18 @@ sah nur A17s Z1 diese Mutationen und meldete sie als Befund; seit Nacharbeit 12 
 `pruefen()` des Erzeugers dieselbe Datei über denselben Strukturvertrag und fällt vorher
 kontrolliert. Die Differenz ist damit kein Rauschen, sondern die Messung dieser Nacharbeit.
 
+### Kanon-Abschlusslauf, gemeinsam mit S8 Runde 17
+
+`pwsh -File tools/beweise.ps1 -Bauen -Ziel docs/beweise/SONDE-007a.md -Anhaengen -Titel
+'SONDE-007a Runde 17 + NAK-94 Nacharbeit 12 - Abschluss'` auf dem committeten Endstand
+`3ef3efa`: **GRÜN — 32/32 Kanon-Läufe bestanden**, 2 geplante Prüfungen noch nicht
+gebaut, 1 stillgelegtes Bein, **Exitcode 0**, Beglaubigung **nicht** verweigert.
+Rohausgabe: [roh/SONDE-007a-3ef3efa.md](roh/SONDE-007a-3ef3efa.md) — darin das Bein
+**A17** mit dem Sample-Fuzz; der vollständige Fuzz steht getrennt unter
+[roh/SONDE-007c-fuzz-ed08ff8.md](roh/SONDE-007c-fuzz-ed08ff8.md). Manifestabschnitt des
+Laufs: `docs/beweise/SONDE-007a.md`, „Kanon-Lauf - SONDE-007a Runde 17 + NAK-94
+Nacharbeit 12 - Abschluss".
+
 An `Install-Nakama.ps1`, den Fixturen und A18 wurde **nichts** geändert; das
 Installer-Manifest wurde weiterhin **nicht** neu gehasht. Die Marke von S9b
 bleibt unverändert; NAK-89 bleibt offen.

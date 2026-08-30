@@ -37,18 +37,29 @@ traegt der einleitende Satz den Stand.
 | Phase / Session | P1 / S8 |
 | Gate-Text (Quelle) | `docs/FL-Nakama-Sonden-Design-Entwurf.md` §53.4 „Static-Lib-Randbedingung" — **wörtlich:** „Der Wechsel auf gemeinsame statische Bibliotheken ist für drei Ziele gerechtfertigt, aber nur unter einer harten Regel: Der gemeinsame Kern sieht **keine** `JucePlugin_*`-Konstanten; Identität kommt ausschließlich aus `plugin-identities-v1.json` über die dünnen Target-Schichten. Andernfalls erhalten zwei der drei Bundles die Identitätskonstanten des dritten — genau die Werte, die §44.1 einfriert. `SONDE-007` enthält dafür einen expliziten Prüfschritt." · `docs/bauaufteilung-sonden.md` S8-Zeile + Fließtext: „Wenn der geteilte Kern auch nur **eine** `JucePlugin_*`-Konstante sieht, bekommen zwei Bundles die Identität des dritten — und genau das Identitäts-Golden aus S2 fällt." |
 | Datum | 2026-08-22 |
-| Prüfstufen | T1 ☑ (§3) · T2 ☑ gefahren 23.08. — **NEEDS_WORK**, fünf Befunde, Urteil und Belege in [§5](#5-t2--frischkontext-prüfer), Nacharbeit in [§6](#6-nacharbeit-zu-den-t2-befunden) · T3 ☐ (erst am Gate G1) |
+| Prüfstufen | T1 ☑ (§3) · T2 ☑ gefahren 23.08. — **NEEDS_WORK**, fünf Befunde, Urteil und Belege in [§5](#5-t2--frischkontext-prüfer), Nacharbeit in [§6](#6-nacharbeit-zu-den-t2-befunden) · T3 ☑ gefahren seit 24.08. (G1), **NEEDS_WORK**, Nacharbeit läuft — Runde 18, frisches Urteil offen |
 
 **Was gebaut wurde (Karte, keine Behauptung — Behauptungen stehen in §1):**
 
-**Stand dieser Karte:** `75466c0` — an diesem Stand sind ihre Anker geprüft
-(Runde 10: Zeile **K3/A14** trägt den Ausgang F13/F14/F15, Zeile
+**Stand dieser Karte:** `<wird im Abschluss-Commit dieser Runde gesetzt>` — an
+diesem Stand sind ihre Anker geprüft (Runde 10: Zeile **K3/A14** trägt den Ausgang F13/F14/F15, Zeile
 **Tlog-Riegel** nennt keine Anzahl mehr; Runde 16: Zeile **K1b** nennt den
 K1-Fehlerkranz als einzige Quelle der Makroliste und führt die Kurzform
 `#ifdef`/`#ifndef` nicht mehr als erlaubten Kontext; Runde 17: dieselbe Zeile
-**K1b** nennt die beiden Vorstufen — fail-closed Kodierung mit BOM-Erkennung
-und Präprozessor-Phase-2-Faltung vor Kommentarentfernung und Tokenprüfung; die
-übrigen Anker sind an diesem Commit einzeln nachgeschlagen).
+**K1b** nennt die Vorstufen — fail-closed Kodierung mit BOM-Erkennung und
+Präprozessor-Phase-2-Faltung vor Kommentarentfernung und Tokenprüfung;
+Runde 18: dieselbe Zeile **K1b** nennt zusätzlich die **Präprozessor-Phase 1**
+davor und die Folge, dass die Zeilenendform nicht mehr über das Urteil
+entscheidet; die übrigen Anker sind an diesem Commit einzeln nachgeschlagen).
+
+**Was der Stand dieser Zeile bedeutet** (Befund des achtzehnten Prüfers): der
+genannte Commit ist der **letzte Commit der Runde vor dem Kanon-Abschluss**,
+und sein Manifest trägt genau diese Kartenzeilen. Bis Runde 17 nannte sie
+jeweils den Stand der *vorigen* Runde: `git show 75466c0:docs/beweise/SONDE-007a.md`
+enthielt die Runde-17-Anker nicht, obwohl die Zeile sie dort als geprüft
+auswies. Der Kartenstand wird deshalb im Abschluss-Commit nachgezogen, und die
+Anker werden an genau diesem Stand nachgeschlagen — ein Stand, dessen Manifest
+die Kartenzeilen noch nicht enthält, ist ein Befund und kein Formfehler.
 Sie nennt bewusst **keine** Anzahlen (Befund B4, Runde 6): Quellen, Verbraucher
 und Makros stehen als Quellenanker da, weil jede abgeschriebene Zahl still
 falsch wird, sobald jemand eine Datei oder ein Ziel ergänzt.
@@ -79,7 +90,7 @@ unten bleiben datierte Belege ihres damaligen Quellstands:
 | | misst | sieht | sieht **nicht** |
 |---|---|---|---|
 | **K1** Präprozessor | Quelltext | die in `eq-copilot/plugin/state/NakamaKernRiegel.h` namentlich geführten `JucePlugin_*`-Makros — die Liste dort ist die Quelle, nicht diese Karte —, am Anfang **und Ende** jeder Kern-Übersetzungseinheit (gemessen aus `NAKAMA_KERN_QUELLEN`; die aktuelle Anzahl gibt der Messlauf aus); damit auch bis zum TU-Ende definierte Makros aus später eingebundenen eigenen/generierten Headern | Makronamen außerhalb der Liste und vor dem TU-Ende wieder entfernte Makros (der Präprozessor kann kein Präfix aufzählen; resultierende Identitätsbytes misst K3, den Quelltext selbst **K1b**) |
-| **K1b** Quelltext-Token | die tatsächlichen Compiler-Eingaben: jede Datei aus dem frisch geschriebenen `CL.read.1.tlog`, die **nicht** aus den JUCE-Modulen und nicht aus den Toolchain-/SDK-Wurzeln stammt — also `plugin/**` **und alles Übrige**, `/FI` und vorkompilierte Köpfe eingeschlossen —, plus die literale Include-Hülle als Gegenprobe; die namentlich erlaubten Systemdateien werden dabei roh in ASCII und UTF-16LE durchsucht statt als C++ geparst. Jede andere Eingabe geht seit Runde 17 durch dieselben zwei Vorstufen wie im Übersetzer, in dieser Reihenfolge: **fail-closed gelesen** — eine BOM entscheidet die Kodierung (UTF-8, UTF-16LE, UTF-16BE), ohne BOM gilt strikt UTF-8, und eine nicht sicher dekodierbare Eingabe ist eine **namentliche Klage** statt eines still ersetzten Zeichens —, danach **Präprozessor-Phase 2 gefaltet**: Backslash + Zeilenende (auch CRLF, auch mit Leerraum davor) verschwindet | jedes `JucePlugin_`-Token im Quelltext, unabhängig von `#define`/`#undef`; Kommentare werden vorher entfernt, Stringliterale nicht — und die Faltung läuft ihrerseits **vor** der Kommentarentfernung, wie im Übersetzer, so dass ein über ein Zeilenende geteiltes `JucePlugin_Name` und ein UTF-16-Kopf mit BOM ROT sind statt unsichtbar; einzige Ausnahme ist `NakamaKernRiegel.h`, gemessen und namentlich — und das heißt seit Runde 15 ein **Abgleich**, keine Freistellung: jedes ihrer Token muss in der Makroliste stehen, die K1 in **derselben** Datei abfragt (eine Quelle, zwei Verbraucher — die Liste dort ist die Quelle, nicht diese Karte), und in einem Riegelkontext. Diese Liste ist seit Runde 16 **ausschließlich** der eine `#if defined (…)`-Kranz, der in den K1-`#error` mündet — nicht mehr jede `#if`/`#elif`-Zeile der Datei; erlaubt sind nur `defined (…)` **in** diesem Kranz und das blosse Präfix in **seiner** `#error`-Meldung. Die Kurzform `#ifdef`/`#ifndef` ist damit kein erlaubter Kontext mehr: sie ist stets eine eigene Direktive und liegt außerhalb des Kranzes. Jeder andere Name, jedes Token außerhalb des Kranzes — auch ein **bekannter** Name in einem eigenen `#if defined (…)`-Block — und jedes `#undef` sind ROT und werden beim Namen genannt; ohne eindeutig ableitbare Makroliste ist die Ausnahme selbst ROT: kein Kranz mit `#error`, mehr als einer und eine unpaarige Bedingungsstruktur sind je für sich ROT. Die Zahlen (Token, abgeglichen, Makros) gibt der Messlauf aus | den Inhalt der JUCE-Module (dafür der JUCE-Baum-Riegel) und der Toolchain-/SDK-Header außerhalb des Repos (benannte Nichtzusage, kein Fingerprint); Makronamen, die erst durch Tokenverkettung entstehen. Lässt sich eine der drei Ausschlusswurzeln nicht ableiten, bildet K1b **keine** Menge, sondern klagt |
+| **K1b** Quelltext-Token | die tatsächlichen Compiler-Eingaben: jede Datei aus dem frisch geschriebenen `CL.read.1.tlog`, die **nicht** aus den JUCE-Modulen und nicht aus den Toolchain-/SDK-Wurzeln stammt — also `plugin/**` **und alles Übrige**, `/FI` und vorkompilierte Köpfe eingeschlossen —, plus die literale Include-Hülle als Gegenprobe; die namentlich erlaubten Systemdateien werden dabei roh in ASCII und UTF-16LE durchsucht statt als C++ geparst. Jede andere Eingabe geht durch dieselben Vorstufen wie im Übersetzer, in dieser Reihenfolge: **fail-closed gelesen** — eine BOM entscheidet die Kodierung (UTF-8, UTF-16LE, UTF-16BE), ohne BOM gilt strikt UTF-8, und eine nicht sicher dekodierbare Eingabe ist eine **namentliche Klage** statt eines still ersetzten Zeichens —, danach **Präprozessor-Phase 1 normalisiert** (CRLF und einzelnes CR werden LF, ohne dass sich die Zeilenzahl ändert) und erst dann **Präprozessor-Phase 2 gefaltet**: Backslash + Zeilenende (auch CRLF, auch mit Leerraum davor) verschwindet | jedes `JucePlugin_`-Token im Quelltext, unabhängig von `#define`/`#undef`; Kommentare werden vorher entfernt, Stringliterale nicht — und Normalisierung und Faltung laufen ihrerseits **vor** der Kommentarentfernung, wie im Übersetzer, so dass ein über ein Zeilenende geteiltes `JucePlugin_Name`, ein UTF-16-Kopf mit BOM und ein hinter `//` in einer CR-only-Datei verstecktes `#define`/`#if`/`#undef` ROT sind statt unsichtbar; die Zeilenendform entscheidet damit nicht mehr über das Urteil; einzige Ausnahme ist `NakamaKernRiegel.h`, gemessen und namentlich — und das heißt seit Runde 15 ein **Abgleich**, keine Freistellung: jedes ihrer Token muss in der Makroliste stehen, die K1 in **derselben** Datei abfragt (eine Quelle, zwei Verbraucher — die Liste dort ist die Quelle, nicht diese Karte), und in einem Riegelkontext. Diese Liste ist seit Runde 16 **ausschließlich** der eine `#if defined (…)`-Kranz, der in den K1-`#error` mündet — nicht mehr jede `#if`/`#elif`-Zeile der Datei; erlaubt sind nur `defined (…)` **in** diesem Kranz und das blosse Präfix in **seiner** `#error`-Meldung. Die Kurzform `#ifdef`/`#ifndef` ist damit kein erlaubter Kontext mehr: sie ist stets eine eigene Direktive und liegt außerhalb des Kranzes. Jeder andere Name, jedes Token außerhalb des Kranzes — auch ein **bekannter** Name in einem eigenen `#if defined (…)`-Block — und jedes `#undef` sind ROT und werden beim Namen genannt; ohne eindeutig ableitbare Makroliste ist die Ausnahme selbst ROT: kein Kranz mit `#error`, mehr als einer und eine unpaarige Bedingungsstruktur sind je für sich ROT. Die Zahlen (Token, abgeglichen, Makros) gibt der Messlauf aus | den Inhalt der JUCE-Module (dafür der JUCE-Baum-Riegel) und der Toolchain-/SDK-Header außerhalb des Repos (benannte Nichtzusage, kein Fingerprint); Makronamen, die erst durch Tokenverkettung entstehen. Lässt sich eine der drei Ausschlusswurzeln nicht ableiten, bildet K1b **keine** Menge, sondern klagt |
 | **K2** CMake-Konfigurierzeit | Kernziel plus dessen compilerwirksame Usage-Requirements-Hülle; Verbraucher nur bei einer echten fehlerhaften Rückkante; Ausführung verzögert bis zum Ende von `plugin/` nach allen Zieländerungen | jedes compilerwirksame `JucePlugin_` aus eigenen und transitiven `*_COMPILE_DEFINITIONS` sowie `-D`/`/D` in `*_COMPILE_OPTIONS`; direkte Zielnamen, `debug`/`optimized`/`general`-Kanten und die unten inventarisierten bedingten bzw. zielbezogenen Generatorausdrücke | Makros, die erst im C++-Quelltext entstehen (dafür K1/K3); String-Transformationen in Linkkanten und `MAP_IMPORTED_CONFIG_*` werden nicht ausgewertet, sondern ausdrücklich **ROT** gemeldet |
 | **K3/A14** Artefakt + Neubau | die `.lib`, die das Bein im selben Lauf selbst hat neu erzeugen lassen, dazu `.vcxproj`, `.tlog` und `lastbuildstate`; fehlt eine Voraussetzung, endet der Lauf über `voraussetzung_exit()` — ohne registrierten Befund **3**, mit registriertem Befund **2**, **nie 0**, und das an jedem Ausgang, den unmöglichen oder fehlgeschlagenen Bau eingeschlossen (Matrix F13/F14/F15, Runde 8/9; Proben `R8-1` und `P9-F13`) | jeden eingefrorenen Text als ASCII/UTF-16LE, Viercodes zusätzlich als 4-Byte-Integer in **beiden** Byteordnungen, CIDs roh/COM-vertauscht; dass Objekte, Tlogs und Lib vor der Messung gelöscht und vollständig neu erzeugt wurden (Zeitanker, Bauausgabe, Objektzahl) — damit ist „veraltetes Artefakt" keine Frage mehr; die früheren Frischewachen bleiben als Diagnose „womit wurde gebaut" | Baubeschreibung ohne resultierende Artefaktbytes (dafür K1/K1b/K2/K2b/K2c); ein Compilerwechsel innerhalb derselben `lastbuildstate`-Kennung (benannte Nichtzusage) |
 | **Tlog-Riegel** Leseorte | das frisch geschriebene `CL.read.1.tlog` des Kerns | aus welchen Orten der Compiler wirklich gelesen hat: erlaubt sind `plugin/**`, `juce-src/modules/**` ohne `juce_audio_plugin_client`, die **aus dem Bau abgeleiteten** MSVC- und Windows-SDK-Wurzeln und — **namentlich, nicht über ihr Verzeichnis** — die gemessenen Systemdateien unter `%SystemRoot%` (Liste `SYSTEMDATEIEN` im Skript — sie ist die Quelle, nicht diese Karte; ihre Namen stehen seit Runde 8 als eingefügte `CL.read.1.tlog`-Rohausgabe im Abschnitt „Nacharbeit Runde 8", Probe `P8-SYS`, ihre Anzahl gibt der Messlauf aus — vorher war die Liste eine Behauptung ohne Rohausgabe). Es gibt weder eine Endungsausnahme noch eine Ortserlaubnis für `%SystemRoot%`: jede andere Datei darunter, `<ziel>_artefacts/JuceLibraryCode/**` und alles Unbekannte sind ROT und werden namentlich genannt. Fehlt eine heutige Kernquelle als Marker, ist auch das ROT | den **Inhalt** der gelesenen Dateien (dafür K1b und der JUCE-Baum-Riegel) |
@@ -18093,18 +18104,28 @@ function Klassifiziere($pfad) {
   $lebend = [System.Text.StringBuilder]::new()
   $hist   = [System.Text.StringBuilder]::new()
   $block  = [System.Collections.Generic.List[string]]::new()
-  $rang = 0; $standRang = $null; $blockStand = $false; $imCode = $false
+  $rang = 0; $staende = [System.Collections.Generic.List[int]]::new()
+  $blockStand = $false; $imCode = $false
   function Fluss($ziel) { $ziel.AppendLine(($block -join "`n")) | Out-Null; $block.Clear() }
   foreach ($z in [System.IO.File]::ReadAllLines($pfad, [System.Text.Encoding]::UTF8)) {
     if ($z -match '^\s*```') { $imCode = -not $imCode; $block.Add($z); continue }
     if (-not $imCode -and $z -match '^(#{1,6}) ') {
       Fluss $(if ($blockStand) { $hist } else { $lebend })
       $r = $Matches[1].Length
-      if ($null -ne $standRang -and $r -le $standRang) { $standRang = $null }
-      $rang = $r; $blockStand = ($null -ne $standRang)
+      # STAPEL nach Ueberschriftenrang: erst alles vom Rang der neuen
+      # Ueberschrift an abwaerts abraeumen, dann vom obersten VERBLIEBENEN
+      # Stand erben. Die frueher hier stehende Einzelvariable loeschte beim
+      # zweiten `###` den inneren Rang, ohne den aeusseren gemerkt zu haben.
+      while ($staende.Count -gt 0 -and $staende[$staende.Count - 1] -ge $r) {
+        $staende.RemoveAt($staende.Count - 1)
+      }
+      $rang = $r; $blockStand = ($staende.Count -gt 0)
     }
     elseif (-not $imCode -and $z -match '^\*\*Stand dieses Abschnitts:\*\*') {
-      $standRang = $rang; $blockStand = $true
+      if ($rang -gt 0 -and ($staende.Count -eq 0 -or $staende[$staende.Count - 1] -lt $rang)) {
+        $staende.Add($rang)
+      }
+      $blockStand = $true
     }
     $block.Add($z)
   }

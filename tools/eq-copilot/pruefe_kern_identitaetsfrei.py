@@ -1533,11 +1533,61 @@ def tlog_ortsriegel(gelesen: list[str], marker: list[str],
 # `falte_zeilenfortsetzungen()` deshalb VOR `ohne_kommentare()` - was auch fuer
 # Kommentare die richtige Reihenfolge ist: ein `// ...\` zieht die naechste
 # Zeile in den Kommentar, und wer erst Kommentare entfernt, sieht sie noch.
+#
+# BEFUND P1 DES ACHTZEHNTEN PRUEFERS (Runde 18, 30.08.2026): Runde 17 zog
+# Phase 2 nach und uebersprang dabei Phase 1. Der Uebersetzer ersetzt ZUERST
+# jede Zeilenende-Kennung durch ein Newline und faltet erst DANN; erst danach
+# gibt es Kommentare. `ohne_kommentare()` sucht das Ende eines `//` hart an
+# "\n" - in einer CR-only-Datei kommt keins vor, und der Kommentar frisst
+# alles bis zum naechsten Umbruch, den die FALTUNG nachtraegt.
+#
+# Gemessen @ e27974c an genau denselben Bytes, nur mit anderem Zeilenende:
+#
+#     // c1<CR>#define JucePlug\<CR>in_Name "Fremd"<CR>
+#     // c2<CR>#if defined (JucePlug\<CR>in_Name)<CR>
+#     // c3<CR>#undef JucePlug\<CR>in_Name<CR>#endif<CR>
+#
+# lief mit `klagen=[]` durch (0 Token nach der Kommentarentfernung), waehrend
+# dieselbe Datei mit LF und mit CRLF je drei Token meldete. Die drei `//`
+# verschluckten `#define`, `#if` und `#undef` mitsamt dem gespaltenen
+# Bezeichner - K1b sah kein `JucePlugin_` mehr, und mit ihm liefen K1, K2 und
+# K3 leer, entgegen der harten Randbedingung in Entwurf §53.4.
+#
+# `normalisiere_zeilenenden()` laeuft deshalb als Phase 1 VOR der Faltung und
+# vor der Kommentarentfernung, und zwar in `lies_compiler_eingabe()` - dem
+# EINEN Trichter, durch den jede Compiler-Eingabe geht. Wer eine neue Stufe
+# anhaengt, bekommt normalisierten Text, ohne daran zu denken.
+#
+# IN DIE SICHERE RICHTUNG: normalisiert wird, weil ein CR, das der Uebersetzer
+# als Zeilenende liest, hier sonst keines waere. Liest eine Toolchain es NICHT
+# als Zeilenende, sieht dieser Riegel danach MEHR Zeilengrenzen als sie - ein
+# Kommentar endet frueher, eine Faltung greift frueher, es bleiben mehr Token
+# stehen. Der Irrtum faellt damit immer auf die rote Seite.
+
+
+def normalisiere_zeilenenden(text: str) -> str:
+    """Praeprozessor-Phase 1: CRLF und einzelnes CR werden LF.
+
+    Die ZEILENZAHL bleibt gleich - ersetzt wird eine Zeilenende-Kennung durch
+    eine andere, nie eine eingefuegt oder gestrichen. Die Reihenfolge der
+    beiden Ersetzungen ist Pflicht: erst CRLF, dann das einzelne CR, sonst
+    wuerde aus einem CRLF ein doppelter Umbruch.
+
+    Danach ist "\\n" das EINZIGE Zeilenende im Text - worauf sich
+    `falte_zeilenfortsetzungen()` und vor allem `ohne_kommentare()` verlassen,
+    das ein `//` an genau diesem Zeichen beendet.
+    """
+    return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
 # Leerraum zwischen Backslash und Zeilenende: MSVC (und gcc/clang) falten auch
 # das - mit Warnung, aber sie falten. Wer es hier nicht faltete, haette genau
 # dort wieder eine Luecke, die ein Uebersetzer schliesst.
+#
+# CR und CRLF stehen weiter im Muster, obwohl Phase 1 sie im Riegelweg schon
+# entfernt hat: die Funktion ist auch einzeln aufrufbar, und ein Muster, das
+# nur noch LF kennt, waere genau dann still, wenn jemand sie ohne Phase 1
+# benutzt.
 _K1B_FORTSETZUNG = re.compile(r"\\[ \t\v\f]*(?:\r\n|\r|\n)\Z")
 
 
@@ -1687,8 +1737,9 @@ def k1b_eingaben_aus_tlog(gelesen: list[str],
 # einem Kommentar steht, ist fuer den Uebersetzer kein Token. Die rohe Zahl
 # bleibt trotzdem in der Ausgabe stehen - sie ist Diagnose, kein Urteil.
 #
-# Und wie bei jeder anderen Datei laufen davor die zwei Vorstufen der Runde 17:
-# fail-closed dekodieren (`lies_compiler_eingabe`) und Praeprozessor-Phase 2
+# Und wie bei jeder anderen Datei laufen davor die Vorstufen des Uebersetzers:
+# fail-closed dekodieren und Praeprozessor-Phase 1 normalisieren (beides in
+# `lies_compiler_eingabe`), dann Praeprozessor-Phase 2
 # falten (`falte_zeilenfortsetzungen`). Der Kranz dieser Datei steht danach auf
 # EINER physischen Zeile; die gemeldeten Nummern bleiben die des Originals,
 # weil die Faltung die Zeilenzahl erhaelt.
@@ -1827,9 +1878,10 @@ def k1b_ausnahme_abgleich(datei: pathlib.Path,
                           roh: str) -> tuple[list[str], dict]:
     """Gleicht JEDES JucePlugin_-Token der Riegeldatei namentlich ab.
 
-    `roh` ist der GEFALTETE Text (Praeprozessor-Phase 2 ist vor dem Aufruf
-    gelaufen, Runde 17): der Kranz steht danach auf EINER physischen Zeile,
-    und `_logische_direktiven` bildet sie unveraendert auf sich selbst ab.
+    `roh` ist der NORMALISIERTE und GEFALTETE Text (Phase 1 und Phase 2 sind
+    vor dem Aufruf gelaufen): der Kranz steht danach auf EINER physischen
+    Zeile, und `_logische_direktiven` bildet sie unveraendert auf sich selbst
+    ab.
 
     Rueckgabe: (Klagen, Angaben). `Angaben` traegt `roh` (Token im gefalteten
     Text, Diagnose), `code` (Token im kommentarfreien Quelltext), `makros` (die aus
@@ -1962,6 +2014,11 @@ def lies_compiler_eingabe(datei: pathlib.Path) -> tuple[str | None, str]:
 
     Fail-closed: `None` plus Klagetext heisst ROT. Es gibt keinen dritten
     Ausgang und kein `errors="replace"` mehr.
+
+    Der zurueckgegebene Text ist bereits durch Praeprozessor-Phase 1 gelaufen
+    (`normalisiere_zeilenenden()`, Runde 18): dieser eine Trichter ist die
+    Stelle, an der jede Compiler-Eingabe vorbeikommt, und danach kennt der
+    ganze Riegelweg nur noch LF.
     """
     try:
         rohbytes = datei.read_bytes()
@@ -1973,7 +2030,8 @@ def lies_compiler_eingabe(datei: pathlib.Path) -> tuple[str | None, str]:
             kodierung, nutzlast, woher = name, rohbytes[len(bom):], f"BOM {name}"
             break
     try:
-        return nutzlast.decode(kodierung, errors="strict"), ""
+        return normalisiere_zeilenenden(
+            nutzlast.decode(kodierung, errors="strict")), ""
     except UnicodeDecodeError as exc:
         return None, (f"{_kurz(datei)}: nicht als {kodierung} dekodierbar "
                       f"({woher}: {exc}) - eine Compiler-Eingabe, deren Text "
@@ -1986,9 +2044,10 @@ def k1b_riegel(dateien: list[pathlib.Path],
                ) -> tuple[list[str], int, dict, int]:
     """Kein JucePlugin_-Token im Quelltext der Compiler-Eingaben.
 
-    Jede Eingabe geht seit Runde 17 durch dieselben zwei Vorstufen wie beim
-    Uebersetzer, in dieser Reihenfolge: `lies_compiler_eingabe()` (BOM
-    entscheidet, sonst strikt UTF-8, nicht dekodierbar = Klage) und
+    Jede Eingabe geht durch dieselben Vorstufen wie beim Uebersetzer, in
+    dieser Reihenfolge: `lies_compiler_eingabe()` (BOM entscheidet, sonst
+    strikt UTF-8, nicht dekodierbar = Klage; danach Phase 1
+    `normalisiere_zeilenenden()`, CRLF und CR-only werden LF - Runde 18) und
     `falte_zeilenfortsetzungen()` (Phase 2). Erst danach laufen
     Kommentarentfernung und Tokenpruefung.
 
@@ -2886,6 +2945,59 @@ def _selbsttest_runde5() -> None:
                "R17-2c: eine gueltige UTF-8-Datei mit BOM bleibt gruen - die "
                "BOM wird abgezogen, nicht zu Text",
                " | ".join(mit_bom) if mit_bom else "keine Klage")
+
+        # ── R18-1: Praeprozessor-Phase 1, die Zeilenenden ───────────────────
+        #
+        # Befund P1 des achtzehnten Pruefers. Der Kern der Probe ist, dass
+        # NUR die Zeilenendform wechselt: dieselben Bytes, dreimal.
+        def r18_bytes(ende: bytes) -> bytes:
+            return (b"// c1" + ende
+                    + b"#define JucePlug" + BS + ende + b'in_Name "Fremd"' + ende
+                    + b"// c2" + ende
+                    + b"#if defined (JucePlug" + BS + ende + b"in_Name)" + ende
+                    + b"// c3" + ende
+                    + b"#undef JucePlug" + BS + ende + b"in_Name" + ende
+                    + b"#endif" + ende)
+
+        cr_only = k1b_probe("VersteckCr.h", r18_bytes(CR))
+        pruefe(any(_K1B_TOKEN in k and "im Quelltext" in k for k in cr_only),
+               "R18-1a: hinter `//` versteckt und ueber Backslash + CR-only "
+               "geteilt - Phase 1 normalisiert vor Faltung und "
+               "Kommentarentfernung, das Token ist ROT",
+               " | ".join(cr_only) if cr_only else "keine Klage")
+
+        # Die zwei Gegenproben zur selben Datei: LF und CRLF waren schon vor
+        # Phase 1 ROT. Erst zusammen sagen die drei, dass die Zeilenendform
+        # KEINEN Unterschied mehr macht - genau das war der Befund.
+        for name, ende, wie in (("VersteckLf.h", LF, "LF"),
+                                ("VersteckCrlf.h", CR + LF, "CRLF")):
+            gegen = k1b_probe(name, r18_bytes(ende))
+            pruefe(any(_K1B_TOKEN in k and "im Quelltext" in k for k in gegen),
+                   f"R18-1b: dieselben Bytes mit {wie} sind ebenfalls ROT - "
+                   f"die Zeilenendform entscheidet nicht mehr ueber das Urteil",
+                   " | ".join(gegen) if gegen else "keine Klage")
+
+        # Phase 1 erfindet keine Zeile und verschluckt keine: die Zeilenzahl
+        # ist vor und nach der Normalisierung dieselbe, sonst zeigten alle
+        # Klagen dieser Datei ab hier auf die falsche Stelle.
+        vor_norm = "a\r\nb\rc\nJucePlugin_Name\r\n"
+        nach_norm = normalisiere_zeilenenden(vor_norm)
+        pruefe(nach_norm == "a\nb\nc\nJucePlugin_Name\n"
+               and len(nach_norm.splitlines()) == len(vor_norm.splitlines()) == 4,
+               "R18-1c: Phase 1 ersetzt Zeilenende durch Zeilenende - die "
+               "Zeilenzahl bleibt, gemischte Formen in EINER Datei "
+               "eingeschlossen",
+               repr(nach_norm))
+
+        # Kein falscher Alarm: eine CR-only-Datei, deren `//` wirklich nur
+        # einen Hinweis traegt, bleibt gruen. Ohne diese Probe hiesse "mehr
+        # ROT" auch "rot auf Verdacht".
+        harmlos = k1b_probe("HarmlosCr.h",
+                            b"// nur ein Hinweis" + CR + b"int x = 0;" + CR)
+        pruefe(harmlos == [],
+               "R18-1d: eine CR-only-Datei ohne Token bleibt gruen - Phase 1 "
+               "macht den Riegel genauer, nicht lauter",
+               " | ".join(harmlos) if harmlos else "keine Klage")
 
     # ── R5-8/R5-9/R5-13: der Tlog-Ortsriegel ────────────────────────────────
     with tempfile.TemporaryDirectory() as roh:

@@ -12,18 +12,23 @@
 
 > **Nachtrag 29.08.2026 — Marke jetzt `T3 NEEDS_WORK 2026-08-29 nachgearbeitet`.**
 > Von den zwei Gruenden ist **Grund (1) geschlossen**. Was das heisst, genau
-> und nicht weiter (in Runde 2 nach Prueferbefund P1 praezisiert): (a) Riegel 1
-> in `positionErlaubt` sperrt `post_fader_contribution` **klassenunabhaengig**
-> (`a2fe0f5`) — gemessen auf `lade()`-Ebene fuer **alle vier Klassen inklusive
-> `passive_probe` mit Bundlevertrag `nkpr`** durch B2 `EqCopStateMigrationTest`;
+> und nicht weiter (in Runde 2 nach Prueferbefund P1 praezisiert, in Runde 4
+> nach dem Konvergenzentscheid auf das Gemessene begrenzt): (a)
+> `positionErlaubt` lehnt `post_fader_contribution` seit `a2fe0f5` fuer **alle
+> vier Klassen** ab — gemessen auf `lade()`-Ebene inklusive **`passive_probe`
+> mit Bundlevertrag `nkpr`** durch B2 `EqCopStateMigrationTest`. Das ist das
+> gemeinsame Ergebnis der beiden Riegelhaelften (Capability-Vorpruefung
+> Riegel 1 und Klassenmatrix Riegel 2); **welche** Haelfte sperrt, wird nicht
+> gemessen;
 > (b) den **Durchgriff dieser Sperre durch die Sondenschale**
 > (`setStateInformation` → `lade` → `positionErlaubt`) misst Block 5b im
 > `EqCopProbeeqNullTest` am **einzigen gebauten Sondenbundle**, Klasse
 > `active_probe` — die Schale traegt genau eine Klasse je Uebersetzung; (c) der
 > urspruengliche G1-Traeger — eine **passive** Sonde als Produkt — existiert
 > seit S9b/`SONDE-007c` nicht mehr. „Am Bundle" heisst in diesem Manifest ab
-> hier **am gebauten Bundle Nakama Probeeq**. Riegelhaelften und
-> Klassenunabhaengigkeit sind per Mutationsprobe rot vorgefuehrt. **Grund (2)
+> hier **am gebauten Bundle Nakama Probeeq**. Die Ablehnung fuer alle vier
+> Klassen ist per Mutationsprobe rot vorgefuehrt (Runde 2: Riegel 1 entfernt
+> und `passive_probe` in der Matrix freigegeben — B2 rot, A16 rot). **Grund (2)
 > bleibt offen und ist ein User-Schritt** (Installation + FL-Scan, Register
 > `NAK-87`); seit S9b/`SONDE-007c` betrifft er **zwei** Ziele, nicht drei. Der
 > Abschnitt am Ende dieses Manifests fuehrt beides mit Rohausgabe.

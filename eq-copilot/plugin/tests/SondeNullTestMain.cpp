@@ -187,12 +187,14 @@ int main()
     // hat. Das ist Gate 7 aus §49.2 Nr. 7 im Wortlaut.
     //
     // Der Riegel dagegen sitzt seit a2fe0f5 in `positionErlaubt`
-    // (state/NakamaState.cpp): Riegel 1 sperrt die Position fuer JEDE Klasse,
-    // solange kein Bau den Aux-Bus hat (`kContributionAuxVerfuegbar`, gemessen
-    // unsupported), Riegel 2 ist die Klassenmatrix. Die VOLLSTAENDIGE Matrix -
-    // alle vier Klassen, jede in dem Bundle, das sie zulaesst, `passive_probe`
-    // also mit Bundlevertrag `nkpr()` - misst B2 `EqCopStateMigrationTest`
-    // (Block G8b) auf `lade()`-Ebene.
+    // (state/NakamaState.cpp) und hat zwei Haelften: Riegel 1 ist die
+    // CAPABILITY-Vorpruefung (`kContributionAuxVerfuegbar`, heute gemessen
+    // unsupported), Riegel 2 die Klassenmatrix. Beide lehnen
+    // `post_fader_contribution` heute fuer jede Klasse ab; von aussen ist nur
+    // das GEMEINSAME Ergebnis sichtbar, nicht welche Haelfte greift. Die
+    // VOLLSTAENDIGE Matrix - alle vier Klassen, jede in dem Bundle, das sie
+    // zulaesst, `passive_probe` also mit Bundlevertrag `nkpr()` - misst B2
+    // `EqCopStateMigrationTest` (Block G8b) auf `lade()`-Ebene.
     //
     // 🔑 Hier faehrt die GANZE Kette durch die echte Sondenschale. Das ist
     // keine Wiederholung: `SondeProcessor::setStateInformation` hat einen
@@ -203,11 +205,12 @@ int main()
     // ⚠️ WIE WEIT DAS TRAEGT - genau und nicht weiter: die Schale traegt
     // GENAU EINE Klasse je Uebersetzung (`kProduktklasse`), und gebaut wird
     // seit S9b/`SONDE-007c` nur noch `active_probe`. Der Durchgriff durch die
-    // Schale ist damit fuer DIESE EINE Klasse gemessen, nicht fuer vier. Die
-    // Klassenunabhaengigkeit von Riegel 1 haengt deshalb an Punkt 7 unten
-    // (direkt an `positionErlaubt`) und an B2. Der urspruengliche
-    // G1-§4.2-Traeger - eine passive Sonde als PRODUKT - existiert seit S9b
-    // nicht mehr.
+    // Schale ist damit fuer DIESE EINE Klasse gemessen, nicht fuer vier. Dass
+    // `positionErlaubt` die Position fuer ALLE VIER Klassen ablehnt, misst
+    // Punkt 7 unten (direkt an der Funktion) und B2 auf `lade()`-Ebene - beide
+    // messen das gemeinsame Ergebnis beider Riegelhaelften, keine von beiden
+    // trennt sie auf. Der urspruengliche G1-§4.2-Traeger - eine passive Sonde
+    // als PRODUKT - existiert seit S9b nicht mehr.
     {
         // Ein sonst GUELTIGER Stand dieses Bundles: eigene Produktklasse,
         // eigener Bundlevertrag, richtige Kind-Matrix (§2.1) - nur die
@@ -338,29 +341,38 @@ int main()
                 "Nachreichen: der Host bekommt genau die Bytes zurueck, die er gab - kein stiller Tausch",
                 juce::String ((int) nachReichen.getSize()) + " Bytes");
 
-        // 7) Riegel 1 gilt KLASSENUNABHAENGIG - gemessen an genau der
-        //    Funktion, an der Punkt 0-6 oben abbiegen.
+        // 7) `positionErlaubt` lehnt `post_fader_contribution` fuer ALLE VIER
+        //    Klassen ab - gemessen an genau der Funktion, an der Punkt 0-6
+        //    oben abbiegen.
         //
-        //    ⚠️ WAS DIESE PRUEFUNG IST UND WAS SIE NICHT IST. Punkt 0-6 fahren
-        //    die ganze Kette durch das echte Bundle, aber nur fuer EINE
-        //    Klasse: `kProduktklasse` ist ein Uebersetzungsschalter
+        //    ⚠️ WAS DIESE PRUEFUNG IST UND WAS SIE NICHT IST. Gemessen wird das
+        //    GEMEINSAME Ergebnis beider Riegelhaelften: Riegel 1 (die
+        //    Capability-Vorpruefung `kContributionAuxVerfuegbar`) und Riegel 2
+        //    (die Klassenmatrix) lehnen die Position heute beide ab. WELCHE
+        //    Haelfte im Einzelfall sperrt, sagt diese Pruefung NICHT -
+        //    `positionErlaubt` gibt nur `false` zurueck, und eine Abfrage, die
+        //    die Haelften trennt, gibt es im Kern nicht. Die Aussage bleibt
+        //    deshalb genau: abgelehnt fuer alle vier Klassen.
+        //
+        //    Punkt 0-6 fahren die ganze Kette durch das echte Bundle, aber nur
+        //    fuer EINE Klasse: `kProduktklasse` ist ein Uebersetzungsschalter
         //    (`plugin/CMakeLists.txt`, `nakama_sonde_nulltest`), und seit
         //    S9b/`SONDE-007c` setzt KEIN Bauziel mehr `NAKAMA_SONDE_PASSIV` -
         //    Nakama Suna ist stillgelegt (`SondeProcessor.h:5-12`). Diese
         //    Schale kann heute also nur `active_probe` bauen.
         //
         //    Der urspruengliche Traeger der G1-§4.2-Regression war aber
-        //    gerade `passive_probe`: bis `a2fe0f5` stand dort
-        //    `case Klasse::passive_probe: return true;`. Setzt man den Riegel
-        //    auf jenen Stand zurueck, bleiben Punkt 0-6 alle gruen - sie
-        //    werden weiter an der unveraenderten `active_probe`-Zeile
+        //    gerade `passive_probe`: vor `a2fe0f5` gab es Riegel 1 nicht und
+        //    die Matrix trug `case Klasse::passive_probe: return true;`. Setzt
+        //    man beides auf jenen Stand zurueck, bleiben Punkt 0-6 alle gruen
+        //    - sie werden weiter an der unveraenderten `active_probe`-Zeile
         //    abgewiesen. Ohne die vier Zeilen hier faenge dieses Bein die
-        //    Regression, gegen die es antritt, NICHT.
+        //    Regression, gegen die es antritt, NICHT; mit ihnen faellt genau
+        //    die `passive_probe`-Zeile (Mutationsprobe Runde 2, SONDE-007b).
         //
         //    Ein passives Bauziel wiederzubeleben ist der falsche Weg dagegen
         //    (es naehme `SONDE-007c` zurueck), eine Testhintertuer im
-        //    Produktcode ebenso. Also wird die klassenunabhaengige Haelfte des
-        //    Riegels - Riegel 1, die Capability-Frage - direkt an der
+        //    Produktcode ebenso. Also wird die Ablehnung direkt an der
         //    oeffentlichen `positionErlaubt` gemessen: derselben Funktion, die
         //    die Schale oben ueber `lade()` aufruft.
         //
@@ -375,8 +387,9 @@ int main()
                                    nakama::state::Klasse::legacy })
             pruefe (! nakama::state::positionErlaubt (
                         klasse, nakama::state::Messposition::post_fader_contribution),
-                    juce::String ("Riegel 1 klassenunabhaengig: post_fader_contribution ist fuer '")
-                        + nakama::state::wort (klasse) + "' gesperrt");
+                    juce::String ("positionErlaubt (Riegel 1 und Klassenmatrix gemeinsam) "
+                                  "lehnt post_fader_contribution ab fuer '")
+                        + nakama::state::wort (klasse) + "'");
     }
     // -- 6. Muell aendert nichts --------------------------------------------
     {

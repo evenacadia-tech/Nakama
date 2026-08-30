@@ -52,3 +52,56 @@ daneben), die farbige Zone selbst bei S31b. Die Zone zeigt nur, was der Befund
 belegt hat, und setzt keine eigene Schwelle: sie ist keine zweite Wahrheit
 neben dem Befundtext. Zeigt die Bildvorlage vom 25.08. keine solche Zone, wird
 das als Lücke einzeln vorgelegt und nicht erfunden.
+
+## U17 — fünf einzelne Handgriffe fürs Kurvenbild
+
+**Frage:** Fünf Dinge, die vergleichbare EQs können und Nakama heute nirgends
+vorsieht. Sie hängen nicht voneinander ab — jeder Punkt wurde einzeln gefragt
+und einzeln beantwortet; eine Sammelantwort gibt es bewusst nicht, weil dein
+Wort vom 23.08. die Überladen-Grenze „button für button" klären wollte.
+
+**U17.1 — Aus dem Spektrum greifen.** Auf einen Berg im Frequenzbild fahren,
+ihn herunterziehen, und daraus entsteht das Filterband.
+
+> **Antwort (erste Reaktion, wörtlich):** „VERSTEHE Die frage nicht"
+>
+> **Antwort nach erneuter Erklärung (Auswahl):** „Ja"
+
+Beide Schritte gehören zum Wortlaut: die Frage war beim ersten Mal nicht
+verständlich gestellt. Erst als derselbe Handgriff gegenständlich erklärt war —
+Berg anfahren, herunterziehen, Band entsteht daraus —, kam das Ja.
+
+**U17.2 — Das Bild festhalten.** Das Spektrum hört auf zu fallen und sammelt
+die Spitzenwerte.
+
+> **Antwort (Auswahl):** „Ja"
+
+**U17.3 — Die Anzeige einstellbar machen.** Wie hoch der Ausschlag geht, wie
+fein und wie schnell das Bild ist, und ob die Höhen optisch angehoben
+dargestellt werden.
+
+> **Antwort (Auswahl):** „Ja"
+
+**U17.4 — Tonnamen zeigen.** Eine Klaviatur unter dem Bild.
+
+> **Antwort (Auswahl):** „Nein"
+
+**U17.5 — Die Lautheit sichtbar machen.** Nakama misst sie bereits, angezeigt
+wird sie nirgends.
+
+> **Antwort (Auswahl):** „Ja, auf der Übersicht" — je Quelle ein Lautheitswert
+> auf Gens erster Seite.
+
+**Folge:** Die EQ-Fläche (S31b) liefert U17.1, U17.2 und U17.3. Bei U17.3 gilt
+ausdrücklich: das ist Darstellung und nichts sonst — die Frequenzraster und
+alles, was gemessen wird, bleiben unverändert, und keine Anzeigeeinstellung
+darf einen Befund, eine Schwelle oder eine Kurve verschieben. U17.4 ist
+abgelehnt: keine Tonnamen, keine Klaviatur — damit ist auch die
+FL-Oktavschreibweise (FL nennt MIDI 60 C5) keine Anzeigefrage mehr, sondern
+bleibt Innenwahrheit ohne sichtbare Fläche. U17.5 gehört nicht zur EQ-Fläche,
+sondern zu S18–19: je Quelle ein Lautheitswert auf Gens erster Seite, mit der
+Konfidenz, die derselbe Messer schon führt (Entwurf §0.4/§1.4 verlangt Frische,
+Konfidenz und Degradation in jeder UI-Fassung). Für diesen einen Wert ist die
+Anzeigefrage aus NAK-57 beantwortet; NAK-57 bleibt im Übrigen offen. Zeigt die
+Bildvorlage vom 25.08. einen der drei angenommenen Handgriffe nicht, wird das
+als Lücke einzeln vorgelegt und nicht erfunden.

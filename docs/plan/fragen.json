@@ -40,18 +40,6 @@
    "status": "offen"
   },
   {
-   "id": "U17",
-   "dringlichkeit": "vor der Arbeit an der EQ-Fläche",
-   "art": "fünf Einzelentscheide, Button für Button",
-   "titel": "Fünf einzelne Handgriffe fürs Kurvenbild — jeder für sich Ja oder Nein",
-   "was": "Fünf Dinge, die vergleichbare EQs können und Nakama heute nirgends vorsieht. Sie hängen nicht voneinander ab: du entscheidest jeden Punkt einzeln, Ja oder Nein.\n\n**U17.1 — Aus dem Spektrum greifen.** Du fährst auf einen Berg im Frequenzbild, ziehst ihn herunter, und daraus entsteht das Filterband — statt erst ein Band anzulegen und dann die Stelle zu suchen. Soll Nakama das können? Folge bei Ja: nur die Oberfläche, Ticket S31b.\n\n**U17.2 — Das Bild festhalten.** Das Spektrum hört auf zu fallen und sammelt die Spitzenwerte, damit du in Ruhe hinsehen kannst. Soll Nakama das können? Folge bei Ja: nur die Oberfläche, Ticket S31b.\n\n**U17.3 — Die Anzeige einstellbar machen.** Wie hoch der Ausschlag geht, wie fein und wie schnell das Bild ist, und ob die Höhen optisch angehoben dargestellt werden. Soll Nakama das können? Folge bei Ja: nur die Darstellung, die Frequenzraster selbst bleiben unverändert, Ticket S31b.\n\n**U17.4 — Tonnamen zeigen.** Eine Klaviatur unter dem Bild, damit du siehst, welcher Ton eine Frequenz ist. Soll Nakama das können? Folge bei Ja: nur die Oberfläche, Ticket S31b — mit der Besonderheit, dass FL denselben Ton eine Oktave anders benennt als der Standard; wir zeigen dann FLs Schreibweise.\n\n**U17.5 — Die Lautheit sichtbar machen.** Nakama misst sie bereits, angezeigt wird sie nirgends. Soll sie sichtbar werden? Folge bei Ja: nur die Oberfläche, Ticket S18–19 — sag dazu, wo sie stehen soll.",
-   "warum": "Du hast am 23.08. gesagt, die Überladen-Grenze werde „button für button“ geklärt, und „so halb halb bringt das nix“. Deshalb steht hier jeder Punkt für sich mit einer eigenen Ja/Nein-Frage; eine Sammelantwort gibt es bewusst nicht. Vier der fünf sind bei Pro-Q Grundausstattung (FabFilter Pro-Q 4, Spectrum analyzer, abgerufen 30.08.2026); keiner der fünf steht heute im Plan. Wenn du einen Punkt ablehnst, bleibt er einfach draußen — das kostet nichts.",
-   "wo": "Betroffen ist ausschließlich die Oberfläche. Tickets S31b (U17.1 bis U17.4) und S18–19 (U17.5). Beim Festhalten wird jede der fünf Antworten als eigener Eintrag U17.1 bis U17.5 abgelegt — Vorbild U2 und U6; eine Sammelantwort wird nicht geschrieben. Belege: docs/beweise/PR1.md Abschnitt 5.4; Register NAK-57. Umgebaut am 30.08.2026 in PR1 Runde 1 (Codex-Befund B5): die Karte hatte die fünf Punkte zuvor ausdrücklich zu einem Entscheid erklärt und damit genau den Entscheid gebrochen, den ihre Begründung zitiert.",
-   "seit": "2026-08-30",
-   "bilder": [],
-   "status": "offen"
-  },
-  {
    "id": "U18",
    "dringlichkeit": "vor Phase P6",
    "art": "Produktentscheid",
@@ -382,6 +370,46 @@
    "datum": "2026-08-30 23:02",
    "status": "eingearbeitet",
    "ergebnis": "Die Ueberdeckung zweier Quellen wird nicht nur in Worten gemeldet, sondern als farbige Zone im Kurvenbild gezeigt - in der ersten nuetzlichen Fassung, nicht als spaeterer Ausbau. Datenweg S23-25, Anzeige S31b. [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md]"
+  },
+  "U17.1": {
+   "frage": "Soll ein Filterband direkt aus dem Spektrum entstehen — auf einen Berg im Frequenzbild fahren und ihn herunterziehen?",
+   "wahl": "Ja",
+   "text": "„VERSTEHE Die frage nicht“ (erste Reaktion); nach erneuter Erklärung desselben Handgriffs: „Ja“",
+   "datum": "2026-08-30 23:51",
+   "status": "eingearbeitet",
+   "ergebnis": "Das Band entsteht direkt aus dem Spektrum (Berg anfahren, herunterziehen), statt erst ein Band anzulegen und dann die Stelle zu suchen. Nur Oberflaeche, Ticket S31b. [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md]"
+  },
+  "U17.2": {
+   "frage": "Soll sich das Spektrumbild festhalten lassen (Spitzenwerte sammeln statt fallen)?",
+   "wahl": "Ja",
+   "text": "Ja",
+   "datum": "2026-08-30 23:51",
+   "status": "eingearbeitet",
+   "ergebnis": "Das Kurvenbild laesst sich festhalten: das Spektrum faellt nicht weiter, sondern sammelt die Spitzenwerte. Nur Oberflaeche, Ticket S31b. [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md]"
+  },
+  "U17.3": {
+   "frage": "Soll die Anzeige einstellbar sein — Höhe des Ausschlags, Feinheit, Geschwindigkeit, optische Anhebung der Höhen?",
+   "wahl": "Ja",
+   "text": "Ja",
+   "datum": "2026-08-30 23:51",
+   "status": "eingearbeitet",
+   "ergebnis": "Die Anzeige ist einstellbar (Hoehe, Feinheit, Geschwindigkeit, Neigung). Ausschliesslich Darstellung: Messraster und Befunde bleiben unveraendert. Nur Oberflaeche, Ticket S31b. [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md]"
+  },
+  "U17.4": {
+   "frage": "Soll eine Klaviatur unter dem Bild die Tonnamen zu den Frequenzen zeigen?",
+   "wahl": "Nein",
+   "text": "Nein",
+   "datum": "2026-08-30 23:51",
+   "status": "eingearbeitet",
+   "ergebnis": "Tonnamen und Klaviatur werden NICHT gebaut. Damit entfaellt auch die FL-Oktavschreibweise als Anzeigefrage. [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md]"
+  },
+  "U17.5": {
+   "frage": "Soll die gemessene Lautheit sichtbar werden — und wenn ja, wo?",
+   "wahl": "Ja, auf der Übersicht",
+   "text": "Ja, auf der Übersicht — je Quelle ein Lautheitswert auf Gens erster Seite.",
+   "datum": "2026-08-30 23:51",
+   "status": "eingearbeitet",
+   "ergebnis": "Die bereits gemessene Lautheit wird sichtbar: je Quelle ein Wert auf Gens erster Seite (Uebersicht), nicht auf der EQ-Flaeche. Ticket S18-19. Beantwortet die Anzeigefrage aus NAK-57 fuer diesen einen Wert; NAK-57 bleibt im Uebrigen offen. [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md]"
   }
  }
 }

@@ -11063,6 +11063,10 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
 ## Nacharbeit Runde 3 — 2026-08-29: vom User unterbrochen
 
+**Stand dieses Abschnitts:** `a728fba` — Positionen ohne eigene Angabe sind an
+diesen Commit gebunden (Basis war `e0a20dc`); die kanonische Schreibweise hat
+das Aussagen-Inventar der Runde 11 ergänzt, der Text darunter ist unverändert.
+
 **Stand.** HEAD `a728fba`, Basis war `e0a20dc`. Von den zwei Restbefunden der
 dritten T3-Runde (Codex `gpt-5.6-sol/xhigh`, Thread
 `01a04a4d-d02e-7830-a600-2bf1cf9b2069`, Stand `068c9ce`) ist **NAK-84

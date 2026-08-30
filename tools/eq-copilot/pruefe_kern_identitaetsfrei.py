@@ -42,8 +42,9 @@ Projektdatei neu erzeugen (`cmake --build <bau> --config Release --target
 NakamaKern`, dabei laeuft ueber ZERO_CHECK auch das Configure samt K2/K2b/K2c
 mit). Gemessen wird danach das Artefakt, das gerade entstanden ist - eine
 "veraltete Lib" gibt es nicht mehr zu erkennen. Ohne Neubau (`--nur-messen`)
-gibt es kein gruenes Frische-Urteil: der Lauf endet nie mit 0, ohne
-weiteren Befund mit Exit 3.
+gibt es kein gruenes Frische-Urteil: der Lauf endet ueber
+`voraussetzung_exit()` - OHNE registrierten Befund mit 3, MIT registriertem
+Befund mit 2, NIE mit 0.
 
 Die frueheren Frischewachen bleiben als DIAGNOSE erhalten und beantworten ab
 jetzt die Frage "WOMIT wurde gebaut": configure_frische, die vier
@@ -93,7 +94,9 @@ Aufruf:
 Exitcodes: 0 gruen · 2 rot · 3 Voraussetzung fehlt (Neubau nicht moeglich,
 Configure veraltet, kein schreibbares temporaeres Verzeichnis fuer den
 Sollindex des JUCE-Baums, oder --nur-messen - dann ist ueber die Frische
-nichts gemessen und nichts behauptet).
+nichts gemessen und nichts behauptet) - und zwar OHNE registrierten Befund;
+MIT registriertem Befund wird aus derselben 3 eine 2, siehe den Absatz
+darunter.
 
 Ein bereits registrierter Befund GEWINNT gegen jede fehlende Voraussetzung:
 war vor dem Abbruch schon etwas rot, endet der Lauf mit 2 statt 3, und die
@@ -1007,8 +1010,10 @@ def kern_neubau(bau: pathlib.Path, konfig: str = "Release",
     """Loescht die Kernartefakte und laesst MSBuild sie vollstaendig neu erzeugen.
 
     Gibt ein Protokoll zurueck. `ok` ist nur dann True, wenn wirklich gebaut
-    wurde; jeder andere Ausgang ist eine fehlende Voraussetzung (Exit 3), nie
-    ein Urteil ueber den Kern.
+    wurde; jeder andere Ausgang ist eine fehlende Voraussetzung, nie ein
+    Urteil ueber den Kern. Den Exitcode dafuer gibt ausschliesslich
+    `voraussetzung_exit()`: OHNE registrierten Befund 3, MIT registriertem
+    Befund 2, NIE 0 (Matrix F13/F14/F15, Runde 8/9).
 
     Die Reihenfolge ist Absicht: erst wird geprueft, ob ueberhaupt gebaut
     werden KANN, dann erst geloescht. Ein Bein, das die Artefakte entfernt und
@@ -1718,8 +1723,10 @@ def _patch_soll_vergleich(juce: pathlib.Path, patch: pathlib.Path,
     klagen: list[str] = []
     hinweise: list[str] = []
     # Befund P2, Runde 7: ohne schreibbares Temp gibt es keinen Sollindex und
-    # damit keinen Vergleich - das ist eine fehlende Voraussetzung (Exit 3),
-    # kein Traceback und erst recht kein Urteil ueber den JUCE-Baum.
+    # damit keinen Vergleich - das ist eine fehlende Voraussetzung, kein
+    # Traceback und erst recht kein Urteil ueber den JUCE-Baum. Den Exitcode
+    # gibt `voraussetzung_exit()`: ohne registrierten Befund 3, mit
+    # registriertem Befund 2, nie 0 (Matrix F13/F14/F15).
     try:
         verzeichnis = tempfile.TemporaryDirectory()
     except OSError as exc:
@@ -2473,7 +2480,7 @@ def _selbsttest_runde7() -> None:
     """
     global ok
     print("\nA14-Selbsttest, Runde 7: Systemdateien namentlich, K1b ueber alle "
-          "Eingaben, Exit 3 ohne Temp")
+          "Eingaben, benannte Voraussetzung statt Traceback ohne Temp")
 
     # -- P1a: unter %SystemRoot% ist nur der gemessene NAME erlaubt ---------
     with tempfile.TemporaryDirectory() as roh:
@@ -2587,7 +2594,9 @@ def _selbsttest_runde7() -> None:
                    f"einer benannten Systemdatei ist ROT",
                    " | ".join(klagen) if klagen else "keine Klage")
 
-    # -- P2: ohne schreibbares Temp gibt es Exit 3, keinen Traceback --------
+    # -- P2: ohne schreibbares Temp gibt es eine benannte Voraussetzung statt
+    #    eines Tracebacks; den Exitcode gibt danach `voraussetzung_exit()` -
+    #    ohne registrierten Befund 3, mit registriertem Befund 2, nie 0 ------
     merk = tempfile.tempdir
     try:
         tempfile.tempdir = str(pathlib.Path(tempfile.gettempdir())
@@ -3030,7 +3039,9 @@ def main() -> int:
 
     # ── Runde 5: Frische wird HERGESTELLT, nicht nachgebaut ─────────────────
     # Erst bauen, dann messen. Ein fehlgeschlagener oder unmoeglicher Bau ist
-    # eine fehlende Voraussetzung (Exit 3), nie ein Urteil ueber den Kern.
+    # eine fehlende Voraussetzung, nie ein Urteil ueber den Kern: der Lauf
+    # endet ueber `voraussetzung_exit()` - ohne registrierten Befund 3, mit
+    # registriertem Befund 2, nie 0 (Matrix F13/F14/F15, Runde 8/9).
     neubau: dict = {}
     if nur_messen:
         print("HINWEIS: --nur-messen - es wird NICHT gebaut.")
@@ -3105,7 +3116,9 @@ def main() -> int:
     if nur_messen:
         # KEIN pruefe(): ein Fehlschlag hier waere Exit 2 und damit ein Urteil
         # ueber den Kern. Gemessen wurde aber gar nichts - das ist eine
-        # fehlende Voraussetzung, und die endet unten als Exit 3.
+        # fehlende Voraussetzung, und die endet unten ueber
+        # `voraussetzung_exit()`: ohne registrierten Befund 3, mit
+        # registriertem Befund 2, nie 0 (Matrix F13/F14/F15).
         print("  --      nicht gebaut (--nur-messen); ueber die Frische des gemessenen")
         print("          Artefakts behauptet dieser Lauf nichts")
     else:
@@ -3190,7 +3203,9 @@ def main() -> int:
     except VoraussetzungFehlt as exc:
         # Befund P2, Runde 7: kein Traceback, kein Exit 1 - eine benannte
         # fehlende Voraussetzung. Der Lauf hat bis hier gemessen und behauptet
-        # ueber den JUCE-Baum ausdruecklich nichts.
+        # ueber den JUCE-Baum ausdruecklich nichts; der Ausgang geht durch
+        # `voraussetzung_exit()` - ohne registrierten Befund 3, mit
+        # registriertem Befund 2, nie 0 (Matrix F13/F14/F15).
         print("\nVORAUSSETZUNG: " + str(exc))
         print("VORAUSSETZUNG: " + str(exc), file=sys.stderr)
         return voraussetzung_exit()
@@ -3215,7 +3230,10 @@ def main() -> int:
     if nur_messen and klagen:
         # Dieselbe Einordnung wie im Normalmodus: ein veraltetes Configure ist
         # eine fehlende Voraussetzung, kein Urteil ueber den Kern. Der Lauf
-        # endet ohnehin mit Exit 3.
+        # endet unten ueber `voraussetzung_exit()` - ohne registrierten Befund
+        # 3, mit registriertem Befund 2, nie 0 (Matrix F13/F14/F15). Runde 11
+        # hat genau diesen Zweig gemessen: mit einem vorher registrierten
+        # Befund endet er mit 2, nicht mit der frueher hier behaupteten 3.
         print("  --      Configure veraltet (Voraussetzung, kein Urteil): "
               + " | ".join(klagen))
     else:

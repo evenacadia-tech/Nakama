@@ -375,6 +375,22 @@ Codex-Dateien und alle exakt zur Dirigenten-Session gehörenden
 `claude agents --json` belegen, dass weder Loop noch Worker übrig sind. Weiter
 mit 3.1.
 
+## 3.6 Kontingentsparen — Codex baut (seit 30.08.2026)
+
+User-Wort 30.08.2026: „wir müssen wochennutzung sparen, schon bei 50 %.
+codex könnte nächste session das bauen übernehmen». Solange das
+Claude-Wochenfenster knapp ist (Richtwert: ab 50 %), gilt Codex-first:
+
+- Bau-Arbeit läuft primär als Codex-Thread `workspace-write` (Sol, Effort
+  nach §3.4-Regel; seit 30.08. gilt User-Wort «Sol auf max»: Sol-Effort durchgehend max, per Probelauf bestätigt). Codex stagt, committet und pusht nie; ein schlanker
+  Claude-Schritt (Fable misst den Diff, nötigenfalls ein minimaler
+  Opus-Worker) fährt Kanon, Commit und Push.
+- Opus-Worker nur, wo Codex nicht kann: Claude-Skills und Subagenten
+  (c-review/rust-review), User-Fragen-Flüsse, lange Orchestrierung.
+  Keine Opus-Fan-outs bei knappem Wochenfenster.
+- Der Prüfer bleibt ein frischer Codex-Thread; Bauer- und Prüfer-Thread
+  sind nie derselbe (§6).
+
 ## 4. Haltgründe
 
 Ein Haltgrund stoppt nur das betroffene Ticket, nie den Lauf: Der Dirigent

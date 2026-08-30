@@ -91,14 +91,33 @@ DREI HAERTEGRADE FUER DENSELBEN HASH (NAK-94, 29.08.2026)
 
   Z1 BRICHT AN EINEM GEAENDERTEN BYTE; EINE FEHLENDE PFLICHTDATEI BRICHT DEN
   BLOCK AB (NAK-94 Nacharbeit 7, 30.08.2026). Beides ist ROT, aber es ist
-  nicht dasselbe: liegt die Datei vor und ist lesbar, weicht nur ihr SHA-256
-  ab, so faerbt das genau EINE Zeile - Z1 - und Z2..Z7 laufen auf dem
-  vollstaendigen Korpus gruen weiter. Fehlt die Datei, ist sie unlesbar oder
-  kein Journalobjekt, liegt eine verwaiste daneben oder fehlt eine
-  Statusklasse, dann haelt [3b] an (fail-closed), weil die uebrigen Zusagen
-  nichts Vollstaendiges mehr messen koennten. Belegt als B7-Z1 (Byte, zwei Stufen) und als eigene Probe
+  nicht dasselbe: liegt die Datei vor, ist lesbar und traegt die von Z2..Z7
+  gelesene Writer-Struktur, weicht nur ihr SHA-256 ab, so faerbt das genau
+  EINE Zeile - Z1 - und Z2..Z7 laufen auf dem vollstaendigen Korpus gruen
+  weiter. Fehlt die Datei, ist sie unlesbar oder kein Journalobjekt, liegt
+  eine verwaiste daneben oder fehlt eine Statusklasse, dann haelt [3b] an
+  (fail-closed), weil die uebrigen Zusagen nichts Vollstaendiges mehr messen
+  koennten. Belegt als B7-Z1 (Byte, zwei Stufen) und als eigene Probe
   "Pflichtmenge" (Umbenennen -> Abbruch -> Ruecknahme) in
   docs/beweise/SONDE-007c.md.
+
+  NACH ROTEM Z1 LAUFEN Z2..Z7 NUR AUF EINEM STRUKTURELL GUELTIGEN OBJEKT
+  WEITER; SONST BRICHT [3b] KONTROLLIERT AB (NAK-94 Nacharbeit 8,
+  30.08.2026, Befund des achten Pruefers). Eine einzelne Byteaenderung kann
+  die STRUKTUR treffen: wird `eintraege` zu `xntraege`, bleibt der Kopf ein
+  JSON-Objekt, und Z3 stuerbe unten an `k["eintraege"][0]` mit einem
+  KeyError. _writer_struktur() prueft deshalb VOR jeder Benutzung, ob der
+  Kopf die von Z2..Z7 GELESENE Form traegt - `schema`, `status` und
+  `transaktions_id` fuer jeden Fall, dazu bei MANIFEST-Status OK eine nicht
+  leere Liste `eintraege` aus Objekten mit Kennung (ziel_id oder name) und
+  den Feldern aus JOURNAL_EINTRAGSFELDER. Fehlt etwas, endet [3b] mit
+  Klartext ("Fixtur geaendert und strukturell unbrauchbar") und Exit
+  ungleich 0, NIE mit einem Traceback: Unbekanntes ist ROT, nicht laut
+  (Pruefliste D). Geprueft werden SCHLUESSEL und Grobform, nie Werte - ueber
+  die urteilen weiter Z4 und Z5. Belegt als B8-Z1 in drei Stufen (a
+  semantikneutrale Byteaenderung in `zeit` -> Z1 rot, Z2..Z7 gruen; b
+  `eintraege` -> `xntraege` -> Abbruch; c `schema` in der RUECKWEG-Fixtur ->
+  Abbruch), jede zurueckgenommen, in docs/beweise/SONDE-007c.md.
 
   ZWEI SORTEN PROBE-JOURNALE, seit NAK-94 Nacharbeit 5 (30.08.2026):
 
@@ -192,6 +211,14 @@ JOURNAL_FIXTUR_MANIFEST = JOURNAL_FIXTUREN / "MANIFEST.json"
 # Korpus sie nicht mitnimmt. Wer eine Statusklasse aus dem Korpus nimmt, muss
 # die Zusage hier mit derselben Hand streichen.
 JOURNAL_PFLICHTSTATUS = ("OK", "RUECKWEG", "ERROR_RUECKGEROLLT")
+
+# Die Felder, die Z2..Z7 aus einem OK-Journaleintrag LESEN - nicht mehr und
+# nicht weniger (NAK-94 Nacharbeit 8, 30.08.2026). Die Strukturpruefung
+# _writer_struktur() verlangt sie als SCHLUESSEL; ueber ihre WERTE urteilen
+# weiter Z4/Z5, nicht die Pruefung. Die Kennung steht nicht in der Liste,
+# weil _artefakt_name() zwei Namen gelten laesst (ziel_id ODER name).
+JOURNAL_EINTRAGSFELDER = ("sha256", "mutation_abgeschlossen",
+                          "rollback_abgeschlossen")
 HEX64 = re.compile(r"^[0-9A-F]{64}$")
 THUMBPRINT = re.compile(r"^(?:[0-9A-F]{40}|[0-9A-F]{64})$")
 ARTEN = ("vst3", "broker")
@@ -990,6 +1017,63 @@ def _probelauf(arbeit) -> tuple[str, list[str]]:
     return puffer.getvalue(), gefunden
 
 
+def _writer_struktur(kopf: dict, fall: dict) -> list[str]:
+    """Traegt dieser Journalkopf die von Z2..Z7 GELESENE Writer-Struktur?
+
+    BEFUND NAK-94, Pruefer 8 (30.08.2026): seit Nacharbeit 7 laeuft [3b] nach
+    einem geaenderten BYTE weiter, weil die Datei ja vorliegt und ein
+    JSON-Objekt bleibt. Eine einzelne Byteaenderung kann aber die STRUKTUR
+    treffen - wird `eintraege` zu `xntraege`, ist der Kopf weiterhin ein
+    Objekt, und Z3 stirbt unten an `k["eintraege"][0]` mit einem KeyError.
+    Ein Traceback ist kein Urteil: Unbekanntes ist ROT, nie laut
+    (Pruefliste D). Diese Pruefung steht deshalb VOR jeder Benutzung.
+
+    Geprueft werden SCHLUESSEL und Grobform, nicht Werte - ueber die Werte
+    urteilen Z4 (Hashvergleich) und Z5 (Statussperre), und eine Pruefung, die
+    ihnen vorgreift, verschluckte genau den Bruch, den sie belegen sollen.
+
+    Der Schnitt laeuft am MANIFEST-Status des Falls entlang, nicht am Status
+    IM Kopf: der MANIFEST-Status entscheidet, ob dieser Fall unten in Z4 (OK)
+    oder in Z5 (alles andere) landet.
+
+      JEDER Fall   `schema` ist ERGEBNIS_SCHEMA, `status` und
+                   `transaktions_id` sind Zeichenketten - _installierter_stand()
+                   haengt an den ersten beiden, Z7 an der dritten.
+      NUR OK       zusaetzlich `eintraege` als NICHT LEERE Liste von Objekten,
+                   jedes mit einer Kennung (ziel_id oder name) und den Feldern
+                   aus JOURNAL_EINTRAGSFELDER. Fuer einen Nicht-OK-Fall wird
+                   sie NICHT verlangt: die Statussperre steht vor der Liste,
+                   und der regulaer abgeschlossene Rueckweg schreibt gar keine
+                   (Nacharbeit 3).
+    """
+    fehlt: list[str] = []
+    if kopf.get("schema") != ERGEBNIS_SCHEMA:
+        fehlt.append(f"schema ist {kopf.get('schema')!r} statt "
+                     f"{ERGEBNIS_SCHEMA!r}")
+    for feld in ("status", "transaktions_id"):
+        if not isinstance(kopf.get(feld), str):
+            fehlt.append(f"{feld} ist keine Zeichenkette "
+                         f"({type(kopf.get(feld)).__name__})")
+    if fall.get("status") != ERGEBNIS_STATUS_OK:
+        return fehlt
+    eintraege = kopf.get("eintraege")
+    if not isinstance(eintraege, list) or not eintraege:
+        fehlt.append("keine nicht leere Liste 'eintraege' "
+                     f"({type(eintraege).__name__})")
+        return fehlt
+    for index, e in enumerate(eintraege):
+        if not isinstance(e, dict):
+            fehlt.append(f"eintraege[{index}] ist kein Objekt "
+                         f"({type(e).__name__})")
+            continue
+        ohne = [f for f in JOURNAL_EINTRAGSFELDER if f not in e]
+        if "ziel_id" not in e and "name" not in e:
+            ohne.insert(0, "ziel_id/name")
+        if ohne:
+            fehlt.append(f"eintraege[{index}] ohne {', '.join(ohne)}")
+    return fehlt
+
+
 def _writer_fixturen() -> tuple[dict[str, tuple[bytes, dict, dict]],
                                list[str], list[str]]:
     """[3b] Z1: die eingefrorenen Writer-Journale laden - fail-closed.
@@ -1009,14 +1093,20 @@ def _writer_fixturen() -> tuple[dict[str, tuple[bytes, dict, dict]],
                Statusklasse aus JOURNAL_PFLICHTSTATUS ist nicht mehr
                vertreten; oder das MANIFEST selbst fehlt. Dann ist der Korpus
                unvollstaendig oder unbestimmt, und Z2..Z7 haetten nichts
-               Vollstaendiges zu messen.
+               Vollstaendiges zu messen. Seit NAK-94 Nacharbeit 8
+               (30.08.2026) gehoert dazu auch: die Datei liegt vor und ist
+               ein Objekt, traegt aber NICHT die von Z2..Z7 gelesene
+               Writer-Struktur (_writer_struktur). Eine einzelne
+               Byteaenderung kann `eintraege` zu `xntraege` machen - dann
+               waere Z3 unten ein KeyError statt eines Urteils.
 
-      NUR ROT  die Datei LIEGT VOR und ist lesbar, ihr SHA-256 weicht aber vom
-               MANIFEST ab: sie ist keine eingefrorene Writer-Form mehr. Das
+      NUR ROT  die Datei LIEGT VOR, ist lesbar UND traegt die Writer-Struktur,
+               ihr SHA-256 weicht aber vom MANIFEST ab: sie ist keine
+               eingefrorene Writer-Form mehr. Das
                sagt Z1 - und nur Z1. Der Korpus ist vollstaendig, also laufen
                Z2..Z7 auf ihm weiter und bleiben gruen. Genau das macht den
-               Bruch unterscheidbar: EIN geaendertes Byte faerbt eine einzige
-               Zusagenzeile.
+               Bruch unterscheidbar: EIN semantikneutral geaendertes Byte
+               faerbt eine einzige Zusagenzeile.
 
     Pflicht ist JEDER in MANIFEST.json gefuehrte Fall; die Bytes werden vor
     der Benutzung gegen den dort festgeschriebenen SHA-256 nachgerechnet, und
@@ -1080,6 +1170,17 @@ def _writer_fixturen() -> tuple[dict[str, tuple[bytes, dict, dict]],
             haltend(f"{fall['datei']}: liegt vor und ist lesbar, ist aber kein "
                     f"Journalobjekt ({type(kopf).__name__}) - [3b] kann daran "
                     "keine Zusage messen")
+            continue
+        strukturfehler = _writer_struktur(kopf, fall)
+        if strukturfehler:
+            # Lesbares Objekt, aber nicht die Form, die Z2..Z7 lesen. Ohne
+            # Abbruch liefe [3b] weiter und stuerbe unten im ersten Zugriff
+            # mit einem Traceback - Unbekanntes ist ROT, nicht laut
+            # (Pruefliste D, NAK-94 Nacharbeit 8).
+            haltend(f"{fall['datei']}: Fixtur geaendert und strukturell "
+                    "unbrauchbar - liegt vor und ist ein Objekt, traegt aber "
+                    "nicht die von Z2..Z7 gelesene Writer-Struktur: "
+                    + "; ".join(strukturfehler))
             continue
         geladen[fall["datei"]] = (rohe, kopf, fall)
     # Eine verwaiste Datei ist derselbe Befund wie eine fehlende: sie koennte

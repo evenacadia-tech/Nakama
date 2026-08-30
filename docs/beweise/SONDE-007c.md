@@ -19996,3 +19996,187 @@ bleibt unverändert; NAK-89 bleibt offen.
 **Einordnung:** Defekt, mittel (Prüfliste E: Regressionswache ohne fallenden Bruch). **Regel des Dirigenten (Nacharbeit 13):** `fuzz_deckung()` führt eine **Pflichtmenge** von Verbrauchern (A17-Kanonpfad, `--hashen`, Erzeuger-`pruefen()`) als feste Zusage; fehlt einer in `FUZZ_VERBRAUCHER` oder wird er im Lauf nicht gefahren, ist `[3c]` ROT mit Namen. Bruch: `_fuzz_erzeuger` aus `FUZZ_VERBRAUCHER` entfernt → `[3c]` ROT (Rohausgabe); Rücknahme per Hash. Die Behauptung nennt die Pflichtmenge namentlich, ohne Anzahl.
 
 **Nächster Schritt:** Nacharbeit 13 im selben Worker wie die nächste S8-Runde (falls Prüfer 18 Befunde hat; sonst allein), gemeinsamer Kanon, danach Prüfer 14 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.
+
+## NAK-94 Nacharbeit Runde 13 — 2026-08-30 (Prüfer-Thread `01a051bf-4fca…`)
+
+**Stand dieses Abschnitts:** `STAND-PLATZHALTER` — der letzte Commit dieser
+Runde vor dem Kanon-Abschlusslauf; Positionen ohne eigene Angabe sind an diesen
+Commit gebunden. Der Messcode steht darin auf `d045ed3`.
+
+Basis-SHA der Runde `e27974c`. Ein Befund, P2: die Zusage aus Nacharbeit 12 —
+„der Erzeuger-Leser ist ein Fuzz-Verbraucher" — hing an einer Wache, die sie
+**strukturell nicht sehen konnte**.
+
+---
+
+### Befund am Basis-Stand reproduziert
+
+`fuzz_deckung()` rechnet `_aufgerufene("_lauf") - <Vereinigung der Verbraucher>
+- FUZZ_OHNE_JSON`. Das ist eine **Differenz über `_lauf()`**, und eine Differenz
+kann nur bemerken, was im Minuenden steht. Der Erzeuger-Leser kommt in `_lauf()`
+gar nicht vor — sein Wegfall aus `FUZZ_VERBRAUCHER` verändert die Differenz
+deshalb per Konstruktion um nichts.
+
+Gefahren an der Fassung `e27974c`, in-process, ohne Änderung im Baum:
+
+```
+FUZZ_VERBRAUCHER      : ['_fuzz_verbraucher', '_fuzz_erzeuger']
+fuzz_deckung() heute  : leer -> [3c/0] GRUEN
+
+--- Befund: _fuzz_erzeuger aus FUZZ_VERBRAUCHER entfernt ---
+FUZZ_VERBRAUCHER      : ['_fuzz_verbraucher']
+fuzz_deckung() danach : leer -> [3c/0] WEITER GRUEN
+
+Grund: _aufgerufene('_fuzz_erzeuger') = ['korpus_nachrechnen']
+       davon in _lauf(): keine
+Die Deckung rechnet ueber _lauf(); der Erzeuger-Leser kommt in _lauf gar nicht vor,
+sein Wegfall aus FUZZ_VERBRAUCHER veraendert die Differenz also um nichts.
+```
+
+Der Prüfer hat die zweite Hälfte des Befunds schon benannt: die in Nacharbeit 12
+dokumentierte Mutation `"faelle"` → `"xaelle"` wechselt bei entferntem Verbraucher
+nur von `strukturhalt` zu `befund`, und **beide** zählt `[3c]` als grün, weil dort
+allein `unkontrolliert` rot ist. Damit war der dokumentierte „Bruch 2" kein
+fallender Bruch, und die Zusage konnte spurlos verschwinden.
+
+---
+
+### Die Pflichtmenge der Fuzz-Verbraucher
+
+Eine Deckungsrechnung kann diese Klasse nicht abdecken; sie braucht eine eigene,
+**fallende** Wache. `FUZZ_PFLICHT` (Symbol in
+`tools/eq-copilot/pruefe_installer_manifest.py`) führt drei Zusagen, jede an
+ihren Verbraucher **und** an den Aufruf gebunden, ohne den sie nichts mehr
+bedeutet:
+
+| Zusage | Verbraucher | Pflichtaufruf |
+|---|---|---|
+| A17-Kanonpfad | `_fuzz_verbraucher` | `_lies_geprueft` |
+| `--hashen` | `_fuzz_verbraucher` | `hashen` |
+| Erzeuger-`pruefen()` | `_fuzz_erzeuger` | `korpus_nachrechnen` |
+
+Zwei Wachen lesen dieselbe Menge aus zwei Richtungen, und beide melden **ROT mit
+Namen**:
+
+- `[3c/0b]`, **vor** dem Lauf, liest den Quelltext: steht der Verbraucher in
+  `FUZZ_VERBRAUCHER`, und ruft er seinen Pflichtaufruf noch?
+- `[3c/2]`, **nach** dem Lauf, liest den Zähler `FUZZ_GEFAHREN`, den
+  `_fuzz_einmal()` je Aufruf hochzählt: wurde er wirklich gefahren?
+
+Beides ist nötig. Die erste fällt, wenn jemand den Eintrag entfernt; die zweite,
+wenn er stehen bleibt und trotzdem nichts tut — etwa weil eine Vorbedingung ihn
+still überspringt. Gezählt wird **vor** dem Aufruf: gemessen wird, dass gefahren
+*wurde*, nicht wie es ausging. Ein `strukturhalt` ist ein Ergebnis, kein
+ausgefallener Lauf.
+
+Die Behauptung nennt die Pflichtmenge **namentlich und ohne Anzahl** — hier, in
+der A14/A17-`Behauptung` in `tools/beweise.ps1` und in der Laufausgabe selbst:
+
+```
+  ok      [3c/0b] die Pflichtmenge der Fuzz-Verbraucher steht: A17-Kanonpfad in _fuzz_verbraucher ueber _lies_geprueft(); --hashen in _fuzz_verbraucher ueber hashen(); Erzeuger-pruefen() in _fuzz_erzeuger ueber korpus_nachrechnen()
+  ok      [3c/2] jeder Pflichtverbraucher wurde im Lauf wirklich gefahren: _fuzz_verbraucher 3354x, _fuzz_erzeuger 3354x
+```
+
+**Begriffstrennung, ausdrücklich.** „Pflichtmenge" heißt in A14 die Teilmenge der
+Identitätsnadeln, die im gebauten Bundle stehen *muss*, und in `[3b]` die Probe
+für den fail-closed Abbruch. Drei verschiedene Dinge — die neue heißt deshalb
+überall **Pflichtmenge der Fuzz-Verbraucher**, ihr Bezeichner ist
+`FUZZ_PFLICHT`.
+
+---
+
+### Bruch und Rücknahme — drei Brüche, jeder trifft genau eine Zusage
+
+Jeder Bruch lief auf der Datei im Baum mit Sicherung unter `%TEMP%` und
+Rücknahme per sha256-Vergleich. Gefahren wurde mit `--fuzz-schritt 4000`; die
+beiden Wachen hängen nicht an der Schrittweite, nur die Laufzeit tut es.
+
+Gekürzt ist in der Rohausgabe **nur** der jedes Mal identische Zusagentext von
+`[3c/0b]` auf `...` — er steht wortgleich im Grünlauf weiter oben. Klagen,
+Zähler, Exitcodes und Hashes sind unverändert.
+
+```
+Ziel          : tools/eq-copilot/pruefe_installer_manifest.py
+Sicherung     : C:\Users\phili\AppData\Local\Temp\nakama-nak94r13-sicherung.py
+sha256 vorher : CD7BC922315125A133800C028998E470FB7AEB328E822C8BC3F4CDA94113D64D
+
+=== BRUCH A - _fuzz_erzeuger aus FUZZ_VERBRAUCHER entfernt (der Befund selbst) ===
+    FUZZ_VERBRAUCHER = (_fuzz_verbraucher, _fuzz_erzeuger)   ->   FUZZ_VERBRAUCHER = (_fuzz_verbraucher,)
+  FEHLER  [3c/0b] die Pflichtmenge der Fuzz-Verbraucher steht: ...  [Erzeuger-pruefen(): _fuzz_erzeuger steht nicht in FUZZ_VERBRAUCHER]
+  FEHLER  [3c/2] jeder Pflichtverbraucher wurde im Lauf wirklich gefahren: _fuzz_verbraucher 828x, _fuzz_erzeuger 0x  [Erzeuger-pruefen(): _fuzz_erzeuger steht nicht in FUZZ_VERBRAUCHER]
+  ok      [3c] 8 gelesene JSON-Datei(en), 415 gekippte Byte-Stellen, 828 Laeufe: KEINE Ausnahme ausser Strukturhalt (160) und dem eigenen 'Gegenprobe unmoeglich' (1); Befund 439, gruen 228; Sample jedes 4000. Byte plus jedes erste Schluesselnamensbyte  [11.6s]
+    Exit: 2
+
+=== BRUCH B - der Pflichtaufruf korpus_nachrechnen() faellt weg, Eintrag bleibt ===
+        korpus_nachrechnen()   ->       _ = korpus_nachrechnen
+  FEHLER  [3c/0b] die Pflichtmenge der Fuzz-Verbraucher steht: ...  [Erzeuger-pruefen(): _fuzz_erzeuger ruft korpus_nachrechnen nicht mehr]
+  FEHLER  [3c/2] jeder Pflichtverbraucher wurde im Lauf wirklich gefahren: _fuzz_verbraucher 828x, _fuzz_erzeuger 828x  [Erzeuger-pruefen(): _fuzz_erzeuger ruft korpus_nachrechnen nicht mehr]
+  ok      [3c] 8 gelesene JSON-Datei(en), 415 gekippte Byte-Stellen, 828 Laeufe: KEINE Ausnahme ausser Strukturhalt (160) und dem eigenen 'Gegenprobe unmoeglich' (1); Befund 439, gruen 228; Sample jedes 4000. Byte plus jedes erste Schluesselnamensbyte  [11.4s]
+    Exit: 2
+
+=== BRUCH C - Eintrag bleibt, wird aber nicht mehr gefahren ===
+    for verbraucher in FUZZ_VERBRAUCHER:   ->   for verbraucher in FUZZ_VERBRAUCHER[:1]:
+  ok      [3c/0b] die Pflichtmenge der Fuzz-Verbraucher steht: ...
+  FEHLER  [3c/2] jeder Pflichtverbraucher wurde im Lauf wirklich gefahren: _fuzz_verbraucher 828x, _fuzz_erzeuger 0x  [Erzeuger-pruefen(): _fuzz_erzeuger wurde im Lauf kein einziges Mal gefahren]
+  ok      [3c] 8 gelesene JSON-Datei(en), 415 gekippte Byte-Stellen, 828 Laeufe: KEINE Ausnahme ausser Strukturhalt (160) und dem eigenen 'Gegenprobe unmoeglich' (1); Befund 439, gruen 228; Sample jedes 4000. Byte plus jedes erste Schluesselnamensbyte  [11.2s]
+    Exit: 2
+
+RUECKNAHME    : sha256 nachher CD7BC922315125A133800C028998E470FB7AEB328E822C8BC3F4CDA94113D64D
+identisch     : True
+Sicherung weg : True
+```
+
+Drei Dinge stehen in dieser Rohausgabe, und alle drei sind der Punkt:
+
+1. **Bruch A ist der Befund selbst** — genau die Mutation, die am Basis-Stand
+   grün blieb, ist jetzt rot und nennt `_fuzz_erzeuger` beim Namen.
+2. **Bruch C trifft nur `[3c/2]`** und lässt `[3c/0b]` grün. Die zwei Wachen sind
+   damit nachweislich unabhängig: die eine liest Quelltext, die andere den Lauf.
+   Wäre eine von beiden redundant, fiele hier beides oder nichts.
+3. **Die Zählzeile `[3c]` bleibt in allen drei Brüchen `ok`.** Das ist kein
+   Widerspruch, sondern die gemessene Bestätigung des Befunds: `[3c]` zählt
+   ausschließlich `unkontrolliert`, und genau deshalb *konnte* die Zusage dort
+   nicht hängen. Rot ist der **Block**, über die eigenen Wachen und Exit 2 —
+   nicht die Zählzeile.
+
+---
+
+### Aussagen-Inventar — NAK-94 Nacharbeit 13
+
+Gerechnet mit demselben Skript und derselben Quellenmenge wie im Abschnitt
+„Aussagen-Inventar — Runde 18" in `docs/beweise/SONDE-007a.md` (Stand-Stapel
+statt einzelner `$standRang`-Variablen, Befund P2-4 derselben Runde). Gezählt
+werden Vorkommen, nicht Zeilen; beide Seiten werden vorher normalisiert.
+
+**Zahlen**, gemessen am Stand `STAND-PLATZHALTER`, Messcode darin `d045ed3`, die
+historische Spalte einschließlich dieses Abschnitts.
+
+| Muster | Code | Man. lebend | Man. historisch | was die Zahl sagt |
+|---|---|---|---|---|
+| `FUZZ_PFLICHT` | 5 | 0 | 2 | der neue Bezeichner; nur Code — Kommentarkopf, Definition, zwei Leser in `fuzz_deckung` und `[3c/0b]`, plus `[3c/2]`. Er steht bewusst in keiner lebenden Manifestzeile: die Zusage gehört in die `Behauptung`, nicht in eine zweite Liste |
+| `FUZZ_GEFAHREN` | 7 | 0 | 1 | der Laufzähler, den `[3c/2]` liest; ebenfalls nur Code |
+| `Pflichtmenge` | 19 | 0 | 38 | der Begriff **in allen drei Bedeutungen** — A14-Identitätsnadeln, `[3b]`-Probe und die neue Fuzz-Menge. Genau deshalb trägt die neue überall den Zusatz „der Fuzz-Verbraucher": eine Zählung über den nackten Begriff könnte die drei nicht auseinanderhalten |
+| `FUZZ_VERBRAUCHER` | 11 | 0 | 18 | die Liste, um die der Befund ging; +1 gegenüber dem Basis-Stand durch die A17-`Behauptung`, die sie jetzt nennt |
+| `fuzz_deckung` | 4 | 0 | 13 | unverändert vier Stellen: Definition, zwei Aufrufe (`[3c/0b]` vor dem Lauf, `[3c/2]` danach) und der Kommentarkopf |
+| `[3c/0b]` | 2 | 0 | 8 | die neue Quelltextwache: ihre Zeile im Skript und ihre Nennung in der A17-`Behauptung` |
+| `[3c/2]` | 3 | 0 | 8 | die neue Laufwache: ihre Zeile, der Docstring-Verweis in `_fuzz_einmal` und die A17-`Behauptung` |
+| `korpus_nachrechnen` | 4 | 0 | 8 | der Pflichtaufruf der dritten Zusage: Import, Aufruf, `FUZZ_PFLICHT`-Eintrag und die A17-`Behauptung` |
+
+| Stelle | alt | neu | Art |
+|---|---|---|---|
+| A17-`Behauptung` in `tools/beweise.ps1` (Symbol `Kuerzel='A17'`) | „beide Verbraucher laufen je Fall unabhängig voneinander … `[3c/1]` hält" | dazwischen die Pflichtmenge namentlich, mit `[3c/0b]` und `[3c/2]` und dem Grund, warum die Deckung sie nicht sehen kann | lebend, nachgezogen |
+| Kommentar über `FUZZ_VERBRAUCHER`, Docstrings von `fuzz_deckung` und `_fuzz_einmal` | „die Deckungsprüfung `[3c/0]` rechnet über ihre Vereinigung" | Pflichtmenge als eigener, ausdrücklich **nicht** deckungsbasierter Block daneben | lebend, nachgezogen |
+| Abschnitte „NAK-94 Nacharbeit Runde 12" und früher | „die Fuzz-Deckung nimmt den Erzeuger-Leser als Verbraucher auf" | unverändert | historisch @ eigenem Stand |
+
+---
+
+### Prüfliste — was diese Runde abhakt
+
+| Punkt | Beleg |
+|---|---|
+| **E** — „jede neue Prüfung wurde einmal absichtlich gebrochen; Rohausgabe des Rots liegt bei" | Drei Brüche oben, Rohausgabe wörtlich, Rücknahme per sha256 belegt |
+| **E** — „eine Probe, die auch ohne den Fix rot ist, heißt Regressionswache, nicht Beleg" | Genau das war der Befund: der frühere „Bruch 2" fiel gar nicht. `[3c/0b]` und `[3c/2]` fallen beide, und Bruch C zeigt, dass sie es unabhängig voneinander tun |
+| **E** — „Behauptung ≤ Messung" | Die A17-`Behauptung` nennt die Pflichtmenge namentlich und ohne Anzahl; was sie zusagt, steht als eigene Zeile in der Laufausgabe |
+| **E** — „Zahlen sind gemessen, nicht abgeschrieben" | Die Laufzahlen (`_fuzz_verbraucher 3354x`, `_fuzz_erzeuger 3354x`) kommen aus dem Zähler des Laufs; die Pflichtmenge selbst nennt **keine** Anzahl |
+| **D** — „fail-closed: Unbekanntes ist ROT" | Fehlt ein Verbraucher, ruft er seinen Pflichtaufruf nicht mehr oder lief er nicht, ist der Block rot **mit Namen** — nicht still grün, wie zuvor |
+| **F** — „Änderungssatz" | Code, beide Wachen, drei Brüche, die A17-`Behauptung` und dieser Abschnitt liegen in derselben Runde; die Begriffskollision mit den zwei älteren „Pflichtmengen" ist im selben Satz aufgelöst |

@@ -18346,3 +18346,328 @@ verweigert. Rohausgabe:
 **Nächster Schritt:** Nacharbeits-Worker für S8 Runde 18 **und** NAK-94 Nacharbeit 13 (siehe `docs/beweise/SONDE-007c.md`, „Dirigentenstand NAK-94 … Prüfer 13"), gemeinsamer Kanon, dann Prüfer 19 (xhigh) für S8 und Prüfer 14 (high) für NAK-94 — je frischer Thread. Kein Halt.
 
 **Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.
+
+## Nacharbeit Runde 18 — 2026-08-30 (Prüfer-Thread `01a051bf-4445…`)
+
+**Stand dieses Abschnitts:** `STAND-PLATZHALTER` — der letzte Commit dieser
+Runde vor dem Kanon-Abschlusslauf; Positionen ohne eigene Angabe sind an diesen
+Commit gebunden. Der Messcode steht darin auf `d4900ce` (S8) bzw. `d045ed3`
+(NAK-94).
+
+Basis-SHA der Runde `e27974c`. Vier Befunde, einer P1. Der P1 ist **dieselbe
+Lücke wie in Runde 17, eine Phase weiter oben**: K1b hatte Präprozessor-Phase 2
+nachgezogen und Phase 1 übersprungen. Der Übersetzer ersetzt zuerst jede
+Zeilenende-Kennung durch ein Newline (Phase 1), faltet dann Backslash +
+Zeilenende (Phase 2), und erst danach gibt es Kommentare und Token. Die drei
+P2 sind Manifestbefunde: ein Kartenstand, der auf einen Commit ohne seine
+Kartenzeilen zeigte, eine Kopfzeile, die einen längst gefahrenen Prüfschritt als
+ungefahren führte, und ein Klassifizierer, der beim Rücksprung den äußeren Stand
+verlor.
+
+---
+
+### Befund P1 am Basis-Stand reproduziert
+
+Gefahren wurde die Fassung `e27974c` des Prüfskripts, aus git in eine Kopie
+unter `%TEMP%` geholt — der Arbeitsbaum wurde dafür nicht zurückgedreht. Die
+Probe fährt **dieselben Bytes dreimal**, verändert wird ausschließlich die
+Zeilenendform; alle Sonderbytes stammen aus `bytes([...])`, und die Bytezeile
+zeigt jeweils, was wirklich auf der Platte stand (`5c 0d` = Backslash, CR).
+
+Der Inhalt ist der Weg aus dem Befund, dreifach: ein `//`-Kommentar, dahinter
+ein über Backslash + Zeilenende geteiltes `JucePlug\` + `in_Name`, einmal
+definiert, einmal in `#if defined` benutzt und vor dem TU-Ende wieder entfernt.
+
+```
+Skriptfassung : %TEMP%/basis-r18/... (git show e27974c:tools/eq-copilot/pruefe_kern_identitaetsfrei.py)
+sha256        : 61375b9b8297b448b9bfe408d9d182c0f0bee1d565d164c1f5a8e576f8c295e6
+
+[1a] dieselben Bytes, Zeilenende CR-only  (VersteckCr.h)
+    Bytes    : 2f 2f 20 63 31 0d 23 64 65 66 69 6e 65 20 4a 75 63 65 50 6c 75 67 5c 0d 69 6e 5f 4e 61 6d 65 20 22 46 72 65 6d 64 22 0d 2f 2f 20 63
+    Token nach Kommentarentfernung: 0
+    Klagen   : []
+    ERGEBNIS : GRUEN - BEFUND REPRODUZIERT
+
+[1b] dieselben Bytes, Zeilenende LF       (VersteckLf.h)
+    Bytes    : 2f 2f 20 63 31 0a 23 64 65 66 69 6e 65 20 4a 75 63 65 50 6c 75 67 5c 0a 69 6e 5f 4e 61 6d 65 20 22 46 72 65 6d 64 22 0a 2f 2f 20 63
+    Token nach Kommentarentfernung: 3
+    Klagen   : ['VersteckLf.h: JucePlugin_-Token im Quelltext, Zeile(n) 2, 5, 8']
+    ERGEBNIS : ROT
+
+[1c] dieselben Bytes, Zeilenende CRLF     (VersteckCrlf.h)
+    Bytes    : 2f 2f 20 63 31 0d 0a 23 64 65 66 69 6e 65 20 4a 75 63 65 50 6c 75 67 5c 0d 0a 69 6e 5f 4e 61 6d 65 20 22 46 72 65 6d 64 22 0d 0a 2f
+    Token nach Kommentarentfernung: 3
+    Klagen   : ['VersteckCrlf.h: JucePlugin_-Token im Quelltext, Zeile(n) 2, 5, 8']
+    ERGEBNIS : ROT
+
+Der Unterschied ist AUSSCHLIESSLICH die Zeilenendform. ohne_kommentare()
+beendet ein // hart am LF-Zeichen; in der CR-only-Datei kommt keines vor
+ausser den von der Faltung nachgetragenen. Jedes // verschluckt deshalb
+bis ueber die naechste gefaltete Zeile hinweg - #define, #if und #undef
+mitsamt dem ueber Backslash gespaltenen Bezeichner.
+```
+
+Die Zeile **Token nach Kommentarentfernung** ist der eigentliche Beleg: bei
+CR-only bleibt dem Riegel nach Phase 2 und Kommentarentfernung **nichts** mehr
+übrig, worüber er urteilen könnte. Damit lief W5 nicht nur an K1b vorbei,
+sondern an K1, K2 und K3 gleich mit — jeder von ihnen sieht `JucePlugin_Name`
+nur, wenn es der Übersetzer sieht, und der sah es hier sehr wohl.
+
+Nach dem Fix, dieselbe Probe an derselben Stelle (`tools/eq-copilot/pruefe_kern_identitaetsfrei.py`
+`@ d4900ce`, sha256 `2c4be90f…`):
+
+```
+[1a] dieselben Bytes, Zeilenende CR-only  (VersteckCr.h)
+    Bytes    : 2f 2f 20 63 31 0d 23 64 65 66 69 6e 65 20 4a 75 63 65 50 6c 75 67 5c 0d 69 6e 5f 4e 61 6d 65 20 22 46 72 65 6d 64 22 0d 2f 2f 20 63
+    Token nach Kommentarentfernung: 3
+    Klagen   : ['VersteckCr.h: JucePlugin_-Token im Quelltext, Zeile(n) 2, 5, 8']
+    ERGEBNIS : ROT
+```
+
+Gleiche Bytes, gleiche Zeilennummern (2, 5, 8) wie bei LF und CRLF — genau das
+ist die Zusage: **die Zeilenendform entscheidet nicht mehr über das Urteil.**
+
+---
+
+### Wo Phase 1 steht, und warum genau dort
+
+`normalisiere_zeilenenden()` (Symbol in `tools/eq-copilot/pruefe_kern_identitaetsfrei.py`)
+ersetzt CRLF und einzelnes CR durch LF. Die Reihenfolge der beiden Ersetzungen
+ist Pflicht — erst `\r\n`, dann `\r` —, sonst würde aus einem CRLF ein doppelter
+Umbruch und die Zeilenzahl änderte sich.
+
+Aufgerufen wird sie **in `lies_compiler_eingabe()`**, unmittelbar nach dem
+fail-closed Dekodieren. Das ist der eine Trichter, durch den jede
+Compiler-Eingabe geht: wer später eine weitere Stufe anhängt, bekommt
+normalisierten Text, ohne daran zu denken. Ein zweiter Schutz in
+`ohne_kommentare()` wurde bewusst **nicht** eingebaut — er hätte den
+vorgeschriebenen Bruch unsichtbar gemacht, und eine Wache, deren Bruch nicht
+fällt, ist keine.
+
+**In die sichere Richtung.** Normalisiert wird, weil ein CR, das ein Übersetzer
+als Zeilenende liest, hier sonst keines wäre. Liest eine Toolchain ein einzelnes
+CR *nicht* als Zeilenende, sieht dieser Riegel danach **mehr** Zeilengrenzen als
+sie: ein Kommentar endet früher, eine Faltung greift früher, es bleiben mehr
+Token stehen. Der Irrtum fällt damit immer auf die rote Seite, nie auf die
+stille.
+
+**Was Phase 1 an den echten Dateien ändert: nichts.** Die Quellen im Repo sind
+CRLF, und CRLF war über den nachgestellten `\n` schon vorher korrekt behandelt.
+Der A14-Vollauf liefert dieselben K1b-Zahlen wie am Basis-Stand — 20
+Compiler-Eingaben, 48 Token im kommentarfreien Quelltext, 46 Makros des
+K1-Fehlerkranzes, 0 roh durchsuchte Systemdateien (Rohbeleg des Vorstands:
+`docs/beweise/roh/SONDE-007a-3ef3efa.md`, Bein A14).
+
+Vier neue Proben stehen im Selbsttest: `R18-1a` (CR-only ROT), `R18-1b`
+(dieselben Bytes mit LF **und** mit CRLF ebenfalls ROT — erst zu dritt sagen sie,
+dass die Form nicht mehr zählt), `R18-1c` (Zeilenzahl bleibt, gemischte Formen in
+*einer* Datei eingeschlossen) und `R18-1d` (eine CR-only-Datei **ohne** Token
+bleibt grün — der Riegel wird genauer, nicht lauter).
+
+---
+
+### Bruch und Rücknahme — Phase 1 aus dem Trichter genommen
+
+Der Bruch lief auf der Datei im Baum, mit Sicherung unter `%TEMP%` und Rücknahme
+per sha256-Vergleich. Gebrochen wurde genau die Verdrahtung, nicht die Funktion:
+`return normalisiere_zeilenenden(` → `return (`.
+
+In der Rohausgabe unten sind **nur zwei Sorten Zeichen gekürzt**: die volatilen
+`%TEMP%`-Pfade der Probendateien auf `...\`, und die unveränderten Zeilen der
+übrigen Proben — der Lauf hat 107 Prüflinge (`106 ok, 1 Fehler`), sechs stehen
+unten. Urteil, Zähler, Hashes und jede gezeigte `R17`/`R18`-Zeile stehen
+wortgleich.
+
+```
+Ziel          : tools/eq-copilot/pruefe_kern_identitaetsfrei.py
+Sicherung     : C:\Users\phili\AppData\Local\Temp\nakama-r18-k1b-sicherung.py
+sha256 vorher : 2C4BE90F6DA5A0D9A54698E0816A1E7476CAD3AA06ED21089B3EF2DFAF6BA132
+
+BRUCH GESETZT : 'return normalisiere_zeilenenden(' -> 'return (' (Phase 1 aus dem Trichter lies_compiler_eingabe entfernt)
+sha256 gebroch: CCA35AC1DAF3A3C7F472697B7E080F9090792DC6B2401675AB8B7D5A114A6373
+
+--- Selbsttest MIT Bruch ---
+  ok      R17-1a: ein ueber Backslash + CRLF geteiltes JucePlugin_Name ist ROT - Praeprozessor-Phase 2 laeuft vor dem Scan  [...\GespaltenCrlf.h: JucePlugin_-Token im Quelltext, Zeile(n) 1, 3, 6]
+  FEHLER  R18-1a: hinter `//` versteckt und ueber Backslash + CR-only geteilt - Phase 1 normalisiert vor Faltung und Kommentarentfernung, das Token ist ROT  [keine Klage]
+  ok      R18-1b: dieselben Bytes mit LF sind ebenfalls ROT - die Zeilenendform entscheidet nicht mehr ueber das Urteil  [...\VersteckLf.h: JucePlugin_-Token im Quelltext, Zeile(n) 2, 5, 8]
+  ok      R18-1b: dieselben Bytes mit CRLF sind ebenfalls ROT - die Zeilenendform entscheidet nicht mehr ueber das Urteil  [...\VersteckCrlf.h: JucePlugin_-Token im Quelltext, Zeile(n) 2, 5, 8]
+  ok      R18-1c: Phase 1 ersetzt Zeilenende durch Zeilenende - die Zeilenzahl bleibt, gemischte Formen in EINER Datei eingeschlossen  ['a\nb\nc\nJucePlugin_Name\n']
+  ok      R18-1d: eine CR-only-Datei ohne Token bleibt gruen - Phase 1 macht den Riegel genauer, nicht lauter  [keine Klage]
+106 ok, 1 Fehler
+Exit          : 2
+
+RUECKNAHME    : sha256 nachher 2C4BE90F6DA5A0D9A54698E0816A1E7476CAD3AA06ED21089B3EF2DFAF6BA132
+identisch     : True
+Sicherung weg : True
+```
+
+Der Bruch fällt **punktgenau**: nur `R18-1a` wird rot, `R18-1b` bis `R18-1d`
+bleiben grün. Das ist der Unterschied zwischen einer Wache und einem
+Rundumschalter — wäre der ganze Block gefallen, wüsste man nicht, welche Zusage
+gerade nicht mehr gilt. `R18-1c` bleibt grün, weil es die Funktion selbst prüft
+und nicht ihre Verdrahtung; genau deshalb steht sie daneben.
+
+---
+
+### Befund P2-2 — der Kartenstand zeigte auf einen Commit ohne seine Kartenzeilen
+
+Bestätigt und am Basis-Stand nachgeschlagen. Die Zeile führte `75466c0`, aber:
+
+```
+$ git show 75466c0:docs/beweise/SONDE-007a.md | sed -n '44,49p'
+**Stand dieser Karte:** `01c9cd3` — an diesem Stand sind ihre Anker geprüft
+(Runde 10: Zeile **K3/A14** trägt den Ausgang F13/F14/F15, Zeile
+**Tlog-Riegel** nennt keine Anzahl mehr; Runde 16: Zeile **K1b** nennt den
+K1-Fehlerkranz als einzige Quelle der Makroliste und führt die Kurzform
+`#ifdef`/`#ifndef` nicht mehr als erlaubten Kontext; die übrigen Anker sind an
+diesem Commit einzeln nachgeschlagen).
+
+$ git show 75466c0:docs/beweise/SONDE-007a.md | grep -c 'Präprozessor-Phase-2-Faltung'
+0
+$ git show eb84bec:docs/beweise/SONDE-007a.md | grep -c 'Präprozessor-Phase-2-Faltung'
+1
+```
+
+Die Karte war also um **eine ganze Runde verschoben**, und zwar systematisch:
+an `75466c0` nannte sie `01c9cd3` und beschrieb Anker, die dort ebenfalls noch
+nicht standen. Ein Kartenstand, dessen Manifest die Kartenzeilen gar nicht
+enthält, belegt nichts.
+
+Die Regel steht ab jetzt **neben der Zeile** im Kopf des Manifests: der genannte
+Commit ist der letzte Commit der Runde **vor** dem Kanon-Abschluss, sein
+Manifest trägt genau diese Kartenzeilen, und die Anker werden an genau diesem
+Stand nachgeschlagen. Nachgezogen wird die Zeile im Abschluss-Commit — ein
+Commit kann sich nicht selbst nennen. Bis dahin steht dort ein **sichtbarer
+Platzhalter** statt eines falschen SHA; das ist die einzige ehrliche
+Zwischenform.
+
+---
+
+### Befund P2-3 — die Kopfzeile führte T3 als ungefahren
+
+Bestätigt. Der Kopf desselben Manifests trägt drei T3-Urteilsmarken, während
+die Zeile „Prüfstufen" `T3 ☐ (erst am Gate G1)` behauptete:
+
+```
+$ git show e27974c:docs/beweise/SONDE-007a.md | grep -n 'NAKAMA-URTEIL: T3'
+3:<!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-24 offen -->
+4:<!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-24 nachgearbeitet -->
+5:<!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-28 nachgearbeitet -->
+```
+
+Die Zeile ist lebend und wird lebend geführt: `T3 ☑ gefahren seit 24.08. (G1),
+NEEDS_WORK, Nacharbeit läuft — Runde 18, frisches Urteil offen`. Keine
+historische Ausflucht — eine Kopfzeile, die im selben Blickfeld wie die
+Urteilsmarken steht, ist keine Momentaufnahme. Die Urteilsmarken selbst sind
+unverändert.
+
+---
+
+### Befund P2-4 — der Klassifizierer verlor beim Rücksprung den äußeren Stand
+
+Bestätigt und an einer Probe unter `%TEMP%` reproduziert. Die alte Logik hielt
+**eine** Variable `$standRang`; beim zweiten gleichrangigen `###` löschte sie den
+inneren Rang, ohne den äußeren je gespeichert zu haben.
+
+Probe (`## mit Stand → ### A mit Stand → ### B`), gefahren mit der Fassung
+`eb84bec` des Klassifizierers:
+
+```
+--- LEBEND ---
+### B ohne eigenen Stand
+MARKE-B
+--- HISTORISCH ---
+## Aeusserer Abschnitt mit Stand
+**Stand dieses Abschnitts:** `aaaaaaa`
+MARKE-AUSSEN
+### A mit eigenem Stand
+**Stand dieses Abschnitts:** `bbbbbbb`
+MARKE-A
+
+MARKE-B lebend? True
+```
+
+Mit dem Stapel nach Überschriftenrang — erst alles vom Rang der neuen
+Überschrift an abwärts abräumen, dann vom obersten verbliebenen erben:
+
+```
+== Probe `## mit Stand -> ### A mit Stand -> ### B` ==
+  MARKE-AUSSEN historisch : True
+  MARKE-A     historisch : True
+  MARKE-B     historisch : True   (erbt den ##-Stand)
+  MARKE-B     lebend     : False
+```
+
+**Wirkung auf die echten Manifeste: keine.** Alte und neue Fassung liefern an
+denselben Dateien bytegleich dieselbe lebende Menge — das Muster kommt heute
+nirgends vor. Der Befund war latent, und alle früheren Inventarzahlen bleiben
+gültig:
+
+```
+Datei                       | alt lebend | neu lebend | Unterschied
+----------------------------|------------|------------|------------
+docs/beweise/SONDE-007a.md  |        111 |        111 | identisch
+docs/beweise/SONDE-007c.md  |       1170 |       1170 | identisch
+```
+
+Das ist die ehrliche Fassung des Ergebnisses: der Stapel repariert einen Fall,
+den dieses Repo heute nicht produziert, und er darf deshalb auch keine Zahl
+verschieben. Hätte er eine verschoben, wäre das ein zweiter Befund gewesen.
+
+---
+
+### Aussagen-Inventar — Runde 18
+
+**Klassifizierer und Zählung, ein Skript** (pwsh, aus dem Workspace-Root; nur
+`$muster` wechselt), unverändert aus dem Abschnitt „Aussagen-Inventar — Runde 17"
+übernommen, mit dem Stand-**Stapel** aus Befund P2-4 statt der einzelnen
+`$standRang`-Variablen. Es hat keinen Dateibezug und läuft unverändert auf
+`docs/beweise/SONDE-007c.md`. Gezählt werden **Vorkommen**, nicht Zeilen; eine
+Aussage darf über eine Zeilengrenze laufen (Lehre aus Runde 14), und beide
+Seiten — Text wie Muster — werden vorher normalisiert (Backticks weg, Umlaute
+und `ß` auf ASCII, Leerraumfolgen auf ein Leerzeichen; Lehre aus Runde 17).
+
+**Zahlen**, gemessen am Stand `STAND-PLATZHALTER` — dem letzten Commit dieser
+Runde **vor** dem Kanon-Abschlusslauf; Messcode darin `d4900ce` (S8) bzw.
+`d045ed3` (NAK-94), und die historische Spalte **einschließlich** dieses
+Abschnitts, der seinen Stand selbst trägt. Die Zahlen nach dem
+Kanon-Abschlusslauf stehen unten im Endstand.
+
+| Muster | Code | Man. lebend | Man. historisch | was die Zahl sagt |
+|---|---|---|---|---|
+| `normalisiere_zeilenenden` | 6 | 0 | 3 | das neue Symbol; nur Code — Kommentarblock, `def`, zwei Docstrings, der Aufruf im Trichter und `R18-1c`. Karte und Matrix nennen die Regel, nicht den Funktionsnamen (Befund B4, Runde 6) |
+| `Praeprozessor-Phase 1` | 5 | 2 | 0 | der neue Begriff: vier Stellen im Prüfskript (Docstring der Funktion, Kommentarblock der K1b-Ausnahme, Docstring von `lies_compiler_eingabe`, Kopf der `R18-1`-Proben) und die A14-`Behauptung`; lebend die K1b-Matrixzeile und die Riegelkarte. Die Umlautnormalisierung ist hier Voraussetzung — der Code schreibt ihn ohne, die Doku mit |
+| `CR-only` | 6 | 1 | 13 | die Form, um die es geht: fünf Stellen im Prüfskript (Befundblock, Docstring, `R18-1a`, `R18-1d` samt Kommentar) und die A14-`Behauptung`; lebend die K1b-Matrixzeile |
+| `Zeilenende` | 21 | 2 | 26 | der Oberbegriff, überwiegend aus Phase 1 und Phase 2 zusammen; die zwei lebenden Stellen sind Matrixzeile und Karte |
+| `lies_compiler_eingabe` | 5 | 0 | 7 | der Trichter, in dem Phase 1 sitzt; nur Code — die Karte nennt Funktionsnamen nicht |
+| `falte_zeilenfortsetzungen` | 8 | 0 | 6 | unverändert gegenüber Runde 17: Phase 2 hat sich nicht bewegt, nur eine Phase davor ist dazugekommen |
+| `Stand dieser Karte` | 0 | 1 | 14 | die Kartenzeile selbst — genau **einmal** lebend, wie es sein muss; alle übrigen Vorkommen stehen in Abschnitten mit eigenem Stand |
+| `Pruefstufen` | 0 | 1 | 3 | die Kopfzeile aus Befund P2-3, ebenfalls genau einmal lebend |
+
+Nachgezogen wurden in dieser Runde alle **lebenden** Zweitstellen der geänderten
+Zusage „K1b läuft die Vorstufen des Übersetzers": die K1b-Zeile der Riegelmatrix,
+die Riegelkarte und die A14-`Behauptung` in `tools/beweise.ps1`. Die
+historischen Abschnitte tragen ihre Standangabe und bleiben unverändert — sie
+beschreiben richtig, was an ihrem Commit galt.
+
+| Stelle | alt | neu | Art |
+|---|---|---|---|
+| Riegelmatrix, Zeile **K1b** (`docs/beweise/SONDE-007a.md`, Abschnitt „Was gebaut wurde") | „dieselben zwei Vorstufen … danach **Präprozessor-Phase 2 gefaltet**" | „dieselben Vorstufen … **Phase 1 normalisiert** … erst dann **Phase 2 gefaltet**", plus die CR-only-Folge | lebend, nachgezogen |
+| Riegelkarte, `**Stand dieser Karte:**` | `75466c0`, Anker bis Runde 17 | Platzhalter bis zum Abschluss-Commit, Anker bis Runde 18, plus die Regel daneben | lebend, nachgezogen |
+| Kopfzeile „Prüfstufen" | `T3 ☐ (erst am Gate G1)` | `T3 ☑ gefahren seit 24.08. (G1), NEEDS_WORK, Nacharbeit läuft — Runde 18` | lebend, nachgezogen |
+| A14-`Behauptung` in `tools/beweise.ps1` (Symbol `Kuerzel='A14'`) | „seit Runde 17 … zwei Vorstufen … Phase 2 gefaltet" | „… Phase 1 normalisiert … erst dann Phase 2 gefaltet … die Zeilenendform entscheidet nicht mehr über das Urteil" | lebend, nachgezogen |
+| Kommentarblock vor `_K1B_FORTSETZUNG` und Docstrings von `lies_compiler_eingabe`, `k1b_riegel`, `k1b_ausnahme_abgleich` | „die zwei Vorstufen der Runde 17" | Phase 1 mitgenannt | lebend, nachgezogen |
+| Abschnitte „Nacharbeit Runde 17" und früher | „zwei Vorstufen" | unverändert | historisch @ eigenem Stand |
+
+---
+
+### Prüfliste — was diese Runde abhakt
+
+| Punkt | Beleg |
+|---|---|
+| **D** — „fail-closed ohne Rohtextheuristik: Unbekanntes ist ROT" | Phase 1 verschiebt das Urteil ausschließlich in die rote Richtung: wird ein CR anderswo nicht als Zeilenende gelesen, sieht K1b **mehr** Zeilengrenzen und damit mehr Token, nie weniger. Die Gegenprobe `R18-1d` zeigt, dass das keine Dauerwarnung ist |
+| **E** — „jede neue Prüfung wurde einmal absichtlich gebrochen; Rohausgabe des Rots liegt bei" | Bruch oben, Rohausgabe wörtlich, Rücknahme per sha256 belegt; der Bruch fällt punktgenau auf `R18-1a` und lässt `R18-1b`–`R18-1d` grün |
+| **E** — „Behauptung ≤ Messung" | Die A14-`Behauptung`, die Riegelmatrix und die Riegelkarte nennen Phase 1 und ihre Folge; keine von ihnen behauptet eine Wirkung auf die Repo-Dateien — die ist gemessen **null** und steht so oben |
+| **E** — „Zahlen sind gemessen, nicht abgeschrieben" | Inventartabelle oben, mit dem Skript daneben; die K1b-Zahlen (20/48/46/0) stammen aus dem A14-Vollauf, nicht aus dem Vorabschnitt |
+| **E** — „Abschnitt mit Standangabe = Momentaufnahme; lebende Stellen werden nachgezogen" | Genau das war Befund P2-2/P2-3, und beide Zeilen sind nachgezogen; die Regel für den Kartenstand steht ab jetzt neben der Zeile, statt in einem Prüferbefund |
+| **E** — „eine Probe, die auch ohne den Fix rot ist, heißt Regressionswache, nicht Beleg" | `R18-1b` (LF/CRLF) ist genau das und wird auch so geführt: sie belegt nicht den Fix, sondern dass er nichts kaputt gemacht hat. Der Beleg ist `R18-1a` |

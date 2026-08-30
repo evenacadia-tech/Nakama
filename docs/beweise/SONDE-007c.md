@@ -19382,6 +19382,13 @@ keine.
 Einmalig gefahren mit `--fuzz-voll` auf dem Stand `805d51f`; Rohausgabe unter
 `docs/beweise/roh/`.
 
+> **Korrektur 30.08.2026 (NAK-94 Nacharbeit 11), Befund des elften Prüfers:**
+> Der Satz „Rohausgabe unter `docs/beweise/roh/`" war **falsch** — dort lag zu
+> keinem Zeitpunkt eine Datei mit diesen Zahlen. Was hier steht, ist der
+> eingefügte Auszug, nicht ein Verweis. Der vollständige Lauf liegt seit
+> Nacharbeit 11 als eigene Roh-Datei; sie ist im Abschnitt „NAK-94 Nacharbeit
+> Runde 11" verlinkt. Der Messwert dieses Abschnitts selbst bleibt unberührt.
+
 ```text
 [3c] Byte-Kipp-Fuzz - jede gelesene JSON-Datei, jedes Byte auf 0xFF und 0x20
   ok      [3c/0] der Fuzz faehrt jeden Block aus _lauf(), der eine gelesene JSON-Datei anfassen kann - die uebrigen stehen namentlich in FUZZ_OHNE_JSON (9)
@@ -19519,3 +19526,252 @@ und `[3c]` fuhr im Kanon sein Sample:
 **Einordnung:** alle drei Defekt, mittel (Prüfliste E). **Regeln des Dirigenten (Nacharbeit 11):** (1) Fänger und Fuzz teilen sich **eine** Funktion (`_geschuetzt(fn, …)` o. ä.), die `main()` um den Lauf legt und die `[3c]` je Fuzz-Fall um den Verbraucher legt; der Fuzz zählt nur, was diese Funktion als kontrolliert meldet — Bruch: Funktion auf Durchreichen gestellt → Fuzz ROT; Rücknahme. (2) `--hashen` gehört zur Deckung: der Fuzz fährt `hashen()` mit Schreibziel unter `$env:TEMP` (Manifest-Kopie), nie ins Repo; keine manuelle Ausnahme in `fuzz_deckung()`. (3) Der vollständige Fuzz-Lauf liegt als eigene Roh-Datei `docs/beweise/roh/SONDE-007c-fuzz-<sha7>.md` (Kopf: Stand, Befehl, Dauer, Zähler; Rohausgabe wörtlich) und wird im Manifest verlinkt; die Behauptung „vollständig gemessen" verweist nur auf diese Datei.
 
 **Nächster Schritt:** Nacharbeit 11 im selben Worker wie die nächste S8-Runde (falls Prüfer 16 Befunde hat; sonst allein), gemeinsamer Kanon, danach Prüfer 12 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.
+
+---
+
+## NAK-94 Nacharbeit Runde 11 — 2026-08-30 (Prüfer-Thread `01a05115-ad8c…`)
+
+**Stand dieses Abschnitts:** `01c9cd3` — der Endstand des Codes dieser Runde.
+Die Arbeit liegt in `d308058` (Schutzfunktion, `--hashen`-Deckung, `[3c/1]`) und
+`01c9cd3` (Skriptkopf und A17-Behauptung).
+Positionen ohne eigene Angabe sind an diesem Stand gemessen; Belegzahlen nennen
+ihren Stand jeweils selbst.
+
+Drei Befunde des elften Prüfers (Codex high, lesend über
+`git diff da62dec...4a2b8da`), Regel des Dirigenten im Abschnitt
+„Dirigentenstand NAK-94 — 2026-08-30 07:27 (Sitzung 054eedac)". Alle drei sind
+geschlossen. Der S8-Befundsatz derselben Runde (Prüfer 16) steht in
+`docs/beweise/SONDE-007a.md`, Abschnitt „Nacharbeit Runde 16".
+
+**Werkzeugregel dieser Runde:** kein löschender Aufruf, keine Datei unter
+`%SystemRoot%`. Jeder Bruch lief auf der Datei im Baum mit Sicherung unter
+`%TEMP%` und Rücknahme per sha256-Vergleich; für den Bruch, der absichtlich ins
+Repo schreibt, wurde zusätzlich `eq-copilot/install/nakama-installer-v1.json`
+byteweise gesichert und zurückgespielt. Kein Fixturbyte wurde angefasst.
+
+---
+
+### Die drei Befunde — wörtlich (`@ 4a2b8da`)
+
+> **[P2] Führe den Fuzz durch den zentralen Fänger** — `tools/eq-copilot/pruefe_installer_manifest.py:2378`. Wenn der zentrale Fänger entfernt oder regressiert, bleibt `[3c]` unverändert, weil `_fuzz_einmal()` direkt `_fuzz_verbraucher()` aufruft und Ausnahmen selbst abfängt; `main()` wird nie ausgeführt. Damit kann der vorgeschriebene Bruch „Fänger entfernt → Fuzz ROT" nicht eintreten und A17 behauptet mehr, als der Kanon misst. Führe die Fuzz-Fälle durch den gemeinsamen Fänger oder ergänze eine kanonische, brechbare Fängerprobe.
+>
+> **[P2] Nimm den --hashen-Zweig in die Fuzz-Deckung auf** — `tools/eq-copilot/pruefe_installer_manifest.py:2337`. Beim Aufruf mit `--hashen` verarbeitet `hashen()` das gelesene Manifest direkt, wird hier aber manuell als nicht JSON-relevant aus der Deckungsprüfung entfernt. Deshalb meldet `[3c/0]` fälschlich vollständige Verbraucherabdeckung; entfernt man nur diesen Ausnahmeeintrag, liefert `fuzz_deckung()` reproduzierbar `{'hashen'}`. Fuzz den Zweig ohne Schreibwirkung oder begrenze die Zusage ausdrücklich auf den Kanonpfad.
+>
+> **[P2] Lege die vollständige Fuzz-Rohausgabe tatsächlich ab** — `docs/beweise/SONDE-007c.md:19382-19383`. Die behauptete Rohausgabe des vollständigen Laufs ist unter `docs/beweise/roh/` nicht vorhanden: eine Suche über alle dortigen Dateien nach `61797 Laeufe` beziehungsweise `33304 gekippte` liefert keinen Treffer; `SONDE-007a-12fcdab.md` enthält nur das Kanon-Sample. Damit ist der 724,9-s-Vollbeleg nicht unabhängig prüfbar und die Ortsangabe falsch. Erfasse den Lauf als Rohdatei und verlinke sie hier.
+
+---
+
+### Befund 1 — reproduziert am Basis-Stand `4fcb4a8`
+
+`_fuzz_einmal()` trug seine **eigene** Ausnahmebehandlung: `try` um
+`_fuzz_verbraucher()`, `except Strukturhalt / SystemExit / Exception`. Der
+Fänger in `main()` lag damit auf keinem gemessenen Pfad. Gemessen:
+
+```text
+== [1] Fuzz laeuft NICHT durch den zentralen Faenger ==
+_fuzz_einmal ruft direkt auf : ['_abbruch_klartext', '_dateien_ersetzt', '_fuzz_verbraucher', 'list', 'str']
+main() im Fuzz-Aufrufpfad   : False
+Fuzz-Fall mit entwaffnetem main(): gruen |
+```
+
+`main()` war für die Reproduktion auf reines Durchreichen gestellt
+(`return _lauf(_argumente(argv))`) — der Fuzz-Fall blieb unverändert `gruen`.
+Der vorgeschriebene Bruch „Fänger entfernt → Fuzz ROT" konnte also gar nicht
+eintreten: `[3c]` maß eine **Kopie** der Ausnahmebehandlung, nie das Original.
+
+**Jetzt:** `_geschuetzt(fn, debug=False) -> (Klasse, Klartext, Wert)` ist die
+eine Hülle — einmal geschrieben, zweimal benutzt. `main()` legt sie um den
+ganzen Lauf, `[3c]` um jeden einzelnen Fuzz-Fall; `_fuzz_einmal()` hat keine
+eigene Ausnahmebehandlung mehr, nur noch das `finally`, das `ok`/`fehler`
+zurücksetzt. Die vier Klassen (`gruen`, `strukturhalt`,
+`gegenprobe_unmoeglich`, `unkontrolliert`) sind seither an genau einer Stelle
+definiert. `SystemExit` läuft in `main()` weiter absichtlich durch — die Hülle
+gibt die Ausnahme zurück, `main()` wirft sie erneut.
+
+Nach der Änderung, `@ 01c9cd3`:
+
+```text
+_fuzz_einmal ruft: ['_dateien_ersetzt', '_geschuetzt', 'list']
+main ruft: ['_argumente', '_geschuetzt', '_lauf', 'print']
+```
+
+**Bruch** (`_geschuetzt` auf Durchreichen, Sicherung unter `%TEMP%`, sha256
+vorher `B6E1E550DB393074AC6BFF723EA44E7732F5DBFD89BAFFC1F6E991C21FB90E13`):
+
+```text
+Bruch gesetzt: _geschuetzt() reicht durch
+--- A17 mit gebrochener Schutzfunktion ---
+EXIT=1
+[3c] Byte-Kipp-Fuzz - jede gelesene JSON-Datei, jedes Byte auf 0xFF und 0x20; Kanon-Sample: …
+  ok      [3c/0] der Fuzz faehrt jeden Block aus _lauf(), der eine gelesene JSON-Datei anfassen kann …
+Traceback (most recent call last):
+  …
+  File "…\pruefe_installer_manifest.py", line 2421, in _fuzz_einmal
+    klasse, text, _ = _geschuetzt(_fuzz_verbraucher)
+  File "…\pruefe_installer_manifest.py", line 2598, in _geschuetzt
+    return "gruen", "", fn()
+  File "…\pruefe_installer_manifest.py", line 2342, in _fuzz_verbraucher
+    manifest = _lies_geprueft(MANIFEST, _installermanifest_struktur)
+Strukturhalt: eq-copilot/install/nakama-installer-v1.json: keine gueltige UTF-8-Datei (UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte)
+```
+
+Der Bruch beißt beim **ersten** `Strukturhalt` — also sofort, nicht erst bei
+einer seltenen unkontrollierten Ausnahme. Rücknahme aus der Sicherung, sha256
+nachher identisch.
+
+---
+
+### Befund 2 — reproduziert am Basis-Stand `4fcb4a8`
+
+`--hashen` stand als Handausnahme in `FUZZ_OHNE_JSON` mit der Begründung „nur
+unter `--hashen`, und der Pfad endet vor `[3c]`". Das ist keine Aussage über den
+Datenfluss: `hashen()` liest das strukturgeprüfte Manifest, iteriert
+`manifest["artefakte"]`, greift `quelle`, `art`, `ziel_id`/`name` und schreibt
+es zurück. Gemessen:
+
+```text
+== [2] --hashen nur per Handausnahme gedeckt ==
+hashen in FUZZ_OHNE_JSON    : True
+fuzz_deckung() heute        : set()
+fuzz_deckung() ohne Ausnahme: {'hashen'}
+```
+
+**Jetzt:** `hashen(manifest, ziel=None)` bekommt ein Schreibziel;
+`_fuzz_verbraucher()` fährt den Zweig als letzten Block auf einer **tiefen
+Kopie** (er trägt `sha256` und `hashes_erzeugt_am` in das Objekt ein — die
+Blöcke davor sollen den unveränderten Stand sehen) mit Ziel
+`_fuzz_hashziel()` = `%TEMP%\nakama-nak94-fuzz-manifest.json`. Der Eintrag in
+`FUZZ_OHNE_JSON` ist weg; die Liste hat noch **8** Namen und `fuzz_deckung()`
+ist leer, **ohne** Handausnahme.
+
+Dass der Zweig dabei wirklich bis zum Schreiben durchläuft und nicht vorher
+abbricht, ist gemessen — nicht angenommen:
+
+```text
+Rueckgabe 0
+  ok      active-probe = 990C462A5848D6864140FFCB01E0FCED1CCE3D7BCC0DA57F3FF90A0DB820CBF8
+  ok      eqcop-broker.exe = 21C7A8DC985BCA16B7520DE11172ED5B0115BE25BE124EA30F11D5FB70850824
+geschrieben: C:\Users\phili\AppData\Local\Temp\nakama-nak94-fuzz-manifest.json
+```
+
+**Neue Wache `[3c/1]`:** sha256 des Manifests **im Repo** vor und nach dem
+ganzen Fuzz, beide Male außerhalb jeder Dateiüberlagerung von den echten Bytes
+gelesen. Eine Deckung, die schreibt, muss belegen, wohin sie schreibt.
+
+**Zwei Brüche, je einzeln:**
+
+```text
+Bruch A (hashen wieder aus dem Fuzz-Verbraucher):
+EXIT=2
+  FEHLER  [3c/0] der Fuzz faehrt jeden Block aus _lauf(), der eine gelesene JSON-Datei anfassen kann - die uebrigen stehen namentlich in FUZZ_OHNE_JSON (8)  [nicht gefahren: hashen]
+  ok      [3c/1] der gefuzzte --hashen-Zweig hat das Manifest im Repo nicht angefasst - sha256 a214b58f0741bb15 …
+
+Bruch B (hashen ohne Temp-Ziel, schreibt ins Repo):
+EXIT=2
+  ok      [3c/0] der Fuzz faehrt jeden Block aus _lauf(), der eine gelesene JSON-Datei anfassen kann …
+  FEHLER  [3c/1] der gefuzzte --hashen-Zweig hat das Manifest im Repo nicht angefasst - sha256 a214b58f0741bb15; sein Schreibziel ist die Kopie …  [a214b58f0741bb15 -> 95fcb2d991ecf965]
+```
+
+Jeder Bruch trifft genau **eine** Zusage und lässt die andere grün — sie
+unterscheiden also etwas. Rücknahme: Skript aus der Sicherung
+(sha256 `B6E1E550…0E13`) und
+`eq-copilot/install/nakama-installer-v1.json` aus seiner Sicherung
+(sha256 `A214B58F0741BB15A80B3588C05B2CB67E4EA4FB5AE3084A2E302C6F09D250FA`);
+`git status --porcelain` danach nur mit der beabsichtigten Skriptänderung.
+
+---
+
+### Befund 3 — die vollständige Fuzz-Rohausgabe
+
+Der Prüfer hat recht: unter `docs/beweise/roh/` gab es keine Datei mit
+`61797 Laeufe` oder `33304 gekippte`, und keine mit `fuzz` im Namen. Gemessen
+am Basis-Stand `4fcb4a8`:
+
+```text
+$ grep -rl "61797 Laeufe" docs/beweise/roh/ ; grep -rl "33304 gekippte" docs/beweise/roh/ ; ls docs/beweise/roh/ | grep -i fuzz
+(keine Ausgabe)
+```
+
+**Jetzt liegt der vollständige Lauf als eigene Roh-Datei:**
+[`docs/beweise/roh/SONDE-007c-fuzz-01c9cd3.md`](roh/SONDE-007c-fuzz-01c9cd3.md)
+— Kopf mit Stand, Befehl, Dauer und Zählern, darunter die Rohausgabe wörtlich
+(erst der `[3c]`-Block, dann der ganze Lauf). Die Aussage „vollständig
+gemessen" verweist ab jetzt **nur** auf diese Datei; das Kanon-Manifest trägt
+weiterhin das Sample.
+
+Gefahren auf dem committeten Endstand `01c9cd3` mit
+`py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --fuzz-voll`;
+`git status --porcelain -- tools/ eq-copilot/ broker/` war vor und nach dem
+Lauf leer, der Messcode also exakt der des Commits. Die Kennzahlen — sie stehen
+hier als Wegweiser, der Beleg ist die Datei:
+
+| Größe | Wert |
+|---|---|
+| gelesene JSON-Dateien | 8 |
+| gekippte Byte-Stellen | 33 304 |
+| Läufe (je Stelle bis zwei Kippwerte) | 61 797 |
+| `unkontrolliert` | **0** |
+| `strukturhalt` | 18 379 |
+| `gegenprobe_unmoeglich` | 43 |
+| `befund` / `gruen` | 23 263 / 20 112 |
+| Dauer `[3c]` | 870,0 s |
+| Dauer des ganzen Beins | 870,9 s |
+| Bein gesamt | 118 ok, 0 Fehler, Exit 0 |
+
+Der Vollauf ist damit **teurer** als vor dieser Runde (724,9 s auf `805d51f`):
+`--hashen` läuft jetzt in jedem der 61 797 Fälle mit und schreibt dabei die
+Manifest-Kopie unter `%TEMP%`. Das ist der Preis dafür, dass `[3c/0]` ohne
+Handausnahme auskommt.
+
+Dieselbe falsche Ortsangabe stand auch im Register
+(`docs/offene-punkte.md`, Zeile `| NAK-94 |`, Nachtrag Nacharbeit 10:
+„`--fuzz-voll` fährt jedes Byte (**einmalig als Rohausgabe im Manifest**)")
+und in `docs/beweise/SONDE-007c.md` im Abschnitt „NAK-94 Nacharbeit Runde 10"
+(„Rohausgabe unter `docs/beweise/roh/`"). Beide Stellen sind mit einer
+datierten Korrektur versehen — nicht umgeschrieben: der dort eingefügte Auszug
+bleibt der Messwert seines Standes, nur die Ortsangabe war falsch.
+
+---
+
+### Aussagen-Inventar — NAK-94 Nacharbeit 11
+
+**Zählweise, einmal festgelegt:** whitespace-normalisiert (jede Folge von
+Leerraum wird ein Leerzeichen), gezählt werden **Vorkommen**, nicht Zeilen,
+Groß-/Kleinschreibung beachtet. Befehl und Klassifizierer sind dieselben wie im
+S8-Abschnitt dieser Runde (`docs/beweise/SONDE-007a.md`, „Nacharbeit Runde 16",
+Unterabschnitt „Aussagen-Inventar"); nur die Quellenmenge unterscheidet sich.
+
+**Quellenmenge mit Klassifizierer:**
+
+| Gruppe | Umfang | Klassifikation |
+|---|---|---|
+| **Code** | `tools/beweise.ps1`, `tools/eq-copilot/pruefe_installer_manifest.py`, `tools/eq-copilot/erzeuge_installer_journale.py`, `eq-copilot/schemas/installer/nakama-installer-v1.md` | **lebend** |
+| **Manifest lebend** | `docs/beweise/SONDE-007c.md`, Dateianfang bis **vor** `## 5. Rohe Belege` | **lebend** |
+| **Manifest historisch** | `docs/beweise/SONDE-007c.md` ab `## 5. Rohe Belege` bis Dateiende | **historisch** |
+| **Register** | `docs/offene-punkte.md` (ganze Datei; die Zeile `\| NAK-94 \|` ist lebend) | **lebend** |
+
+**Zahlen**, gemessen am Arbeitsbaum **dieses** Commits — Codestand `01c9cd3`,
+die historische Spalte **einschließlich dieses Abschnitts**, der nach der
+Klassifizierer-Zeile liegt und seinen Stand selbst trägt. Die Zahlen nach dem
+Kanon-Abschlusslauf stehen im Abschluss-Commit dieser Runde.
+
+| Muster | Code | Man. lebend | Man. historisch | Register | was die Zahl sagt |
+|---|---|---|---|---|---|
+| `_geschuetzt` | 7 | 0 | 11 | 1 | die gemeinsame Hülle: Skript (6) und Runner (1). Die Register-Fundstelle ist der Nachtrag dieser Runde; die historischen sind die Regel des Dirigenten und dieser Abschnitt |
+| `FUZZ_OHNE_JSON` | 5 | 0 | 9 | 1 | Skript und Runner; die Liste hat noch **8** Namen, `hashen` ist keiner davon |
+| `[3c/1]` | 3 | 0 | 7 | 2 | die neue Wache — Skriptkopf, Runner-Behauptung, Ausgabetext; im Manifest nur in diesem Abschnitt und im verlinkten Rohbeleg-Verweis |
+| `--fuzz-voll` | 5 | 0 | 8 | 2 | die zwei Register-Fundstellen sind die falsche Nacharbeit-10-Zeile **und** ihre Korrektur; die lebenden Code-Stellen nennen jetzt die Roh-Datei |
+
+---
+
+### Prüfliste D/E dieser Runde
+
+| Regel | wie eingehalten |
+|---|---|
+| **D** — „fail-closed, Unbekanntes ist ROT" | `_geschuetzt()` klassifiziert vier Fälle; nur `unkontrolliert` ist der Bruch, und genau der zählt in `[3c]`. Ein Eingriff an der Hülle macht den Fuzz rot statt ihn stillzustellen |
+| **E** — „Behauptung ≤ Messung" | `[3c/0]` sagt „jeder Block aus `_lauf()`" und kommt jetzt **ohne** Handausnahme für `hashen` aus. `[3c/1]` sagt „nicht ins Repo geschrieben" und misst genau das (sha256 vorher/nachher) |
+| **E** — „Zahlen sind gemessen" | Läufe, gekippte Stellen und Zähler stehen im Ausgabetext des Beins; die Zahlen des vollständigen Laufs stehen in der verlinkten Roh-Datei, nicht abgeschrieben im Manifest |
+| **E** — Positionen | Symbole (`_geschuetzt`, `_fuzz_verbraucher`, `_fuzz_hashziel`, `hashen`) oder `Datei:Zeile @ sha7`; die wörtlichen Zitate behalten die Zeilenangaben des Prüfers `@ 4a2b8da` |
+| **E** — „jede neue Prüfung einmal gebrochen" | drei Brüche, jeder trifft genau eine Zusage: Hülle auf Durchreichen → Exit 1 im Fuzz; `hashen` aus der Deckung → `[3c/0]` rot; `hashen` ohne Temp-Ziel → `[3c/1]` rot. Alle drei per sha256 zurückgenommen |
+| **E** — „Rohausgabe liegt bei" | der vollständige Lauf liegt als eigene Datei unter `docs/beweise/roh/`, nicht als Behauptung — genau der dritte Befund |
+| **F** — „Änderungssatz" | Skript, Skriptkopf, A17-Behauptung, dieser Abschnitt, die zwei datierten Korrekturen und der Registereintrag gehen zusammen |

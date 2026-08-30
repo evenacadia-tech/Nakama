@@ -41,10 +41,12 @@ traegt der einleitende Satz den Stand.
 
 **Was gebaut wurde (Karte, keine Behauptung — Behauptungen stehen in §1):**
 
-**Stand dieser Karte:** `c212280` — an diesem Stand sind ihre Anker geprüft
+**Stand dieser Karte:** `01c9cd3` — an diesem Stand sind ihre Anker geprüft
 (Runde 10: Zeile **K3/A14** trägt den Ausgang F13/F14/F15, Zeile
-**Tlog-Riegel** nennt keine Anzahl mehr; die übrigen Anker sind an diesem
-Commit einzeln nachgeschlagen).
+**Tlog-Riegel** nennt keine Anzahl mehr; Runde 16: Zeile **K1b** nennt den
+K1-Fehlerkranz als einzige Quelle der Makroliste und führt die Kurzform
+`#ifdef`/`#ifndef` nicht mehr als erlaubten Kontext; die übrigen Anker sind an
+diesem Commit einzeln nachgeschlagen).
 Sie nennt bewusst **keine** Anzahlen (Befund B4, Runde 6): Quellen, Verbraucher
 und Makros stehen als Quellenanker da, weil jede abgeschriebene Zahl still
 falsch wird, sobald jemand eine Datei oder ein Ziel ergänzt.
@@ -75,7 +77,7 @@ unten bleiben datierte Belege ihres damaligen Quellstands:
 | | misst | sieht | sieht **nicht** |
 |---|---|---|---|
 | **K1** Präprozessor | Quelltext | die in `eq-copilot/plugin/state/NakamaKernRiegel.h` namentlich geführten `JucePlugin_*`-Makros — die Liste dort ist die Quelle, nicht diese Karte —, am Anfang **und Ende** jeder Kern-Übersetzungseinheit (gemessen aus `NAKAMA_KERN_QUELLEN`; die aktuelle Anzahl gibt der Messlauf aus); damit auch bis zum TU-Ende definierte Makros aus später eingebundenen eigenen/generierten Headern | Makronamen außerhalb der Liste und vor dem TU-Ende wieder entfernte Makros (der Präprozessor kann kein Präfix aufzählen; resultierende Identitätsbytes misst K3, den Quelltext selbst **K1b**) |
-| **K1b** Quelltext-Token | die tatsächlichen Compiler-Eingaben: jede Datei aus dem frisch geschriebenen `CL.read.1.tlog`, die **nicht** aus den JUCE-Modulen und nicht aus den Toolchain-/SDK-Wurzeln stammt — also `plugin/**` **und alles Übrige**, `/FI` und vorkompilierte Köpfe eingeschlossen —, plus die literale Include-Hülle als Gegenprobe; die namentlich erlaubten Systemdateien werden dabei roh in ASCII und UTF-16LE durchsucht statt als C++ geparst | jedes `JucePlugin_`-Token im Quelltext, unabhängig von `#define`/`#undef`; Kommentare werden vorher entfernt, Stringliterale nicht; einzige Ausnahme ist `NakamaKernRiegel.h`, gemessen und namentlich — und das heißt seit Runde 15 ein **Abgleich**, keine Freistellung: jedes ihrer Token muss in der Makroliste stehen, die K1 in **derselben** Datei abfragt (eine Quelle, zwei Verbraucher — die Liste dort ist die Quelle, nicht diese Karte), und in einem Riegelkontext (`defined (…)` im `#if`-Kranz, `#ifdef`/`#ifndef` für einen Namen, den der Kranz schon führt, das blosse Präfix im `#error`-Fließtext). Jeder andere Name und jeder bekannte Name im falschen Kontext — ein `#undef` eingeschlossen — ist ROT und wird beim Namen genannt; ohne ableitbare Makroliste ist die Ausnahme selbst ROT. Die Zahlen (Token, abgeglichen, Makros) gibt der Messlauf aus | den Inhalt der JUCE-Module (dafür der JUCE-Baum-Riegel) und der Toolchain-/SDK-Header außerhalb des Repos (benannte Nichtzusage, kein Fingerprint); Makronamen, die erst durch Tokenverkettung entstehen. Lässt sich eine der drei Ausschlusswurzeln nicht ableiten, bildet K1b **keine** Menge, sondern klagt |
+| **K1b** Quelltext-Token | die tatsächlichen Compiler-Eingaben: jede Datei aus dem frisch geschriebenen `CL.read.1.tlog`, die **nicht** aus den JUCE-Modulen und nicht aus den Toolchain-/SDK-Wurzeln stammt — also `plugin/**` **und alles Übrige**, `/FI` und vorkompilierte Köpfe eingeschlossen —, plus die literale Include-Hülle als Gegenprobe; die namentlich erlaubten Systemdateien werden dabei roh in ASCII und UTF-16LE durchsucht statt als C++ geparst | jedes `JucePlugin_`-Token im Quelltext, unabhängig von `#define`/`#undef`; Kommentare werden vorher entfernt, Stringliterale nicht; einzige Ausnahme ist `NakamaKernRiegel.h`, gemessen und namentlich — und das heißt seit Runde 15 ein **Abgleich**, keine Freistellung: jedes ihrer Token muss in der Makroliste stehen, die K1 in **derselben** Datei abfragt (eine Quelle, zwei Verbraucher — die Liste dort ist die Quelle, nicht diese Karte), und in einem Riegelkontext. Diese Liste ist seit Runde 16 **ausschließlich** der eine `#if defined (…)`-Kranz, der in den K1-`#error` mündet — nicht mehr jede `#if`/`#elif`-Zeile der Datei; erlaubt sind nur `defined (…)` **in** diesem Kranz und das blosse Präfix in **seiner** `#error`-Meldung. Die Kurzform `#ifdef`/`#ifndef` ist damit kein erlaubter Kontext mehr: sie ist stets eine eigene Direktive und liegt außerhalb des Kranzes. Jeder andere Name, jedes Token außerhalb des Kranzes — auch ein **bekannter** Name in einem eigenen `#if defined (…)`-Block — und jedes `#undef` sind ROT und werden beim Namen genannt; ohne eindeutig ableitbare Makroliste ist die Ausnahme selbst ROT: kein Kranz mit `#error`, mehr als einer und eine unpaarige Bedingungsstruktur sind je für sich ROT. Die Zahlen (Token, abgeglichen, Makros) gibt der Messlauf aus | den Inhalt der JUCE-Module (dafür der JUCE-Baum-Riegel) und der Toolchain-/SDK-Header außerhalb des Repos (benannte Nichtzusage, kein Fingerprint); Makronamen, die erst durch Tokenverkettung entstehen. Lässt sich eine der drei Ausschlusswurzeln nicht ableiten, bildet K1b **keine** Menge, sondern klagt |
 | **K2** CMake-Konfigurierzeit | Kernziel plus dessen compilerwirksame Usage-Requirements-Hülle; Verbraucher nur bei einer echten fehlerhaften Rückkante; Ausführung verzögert bis zum Ende von `plugin/` nach allen Zieländerungen | jedes compilerwirksame `JucePlugin_` aus eigenen und transitiven `*_COMPILE_DEFINITIONS` sowie `-D`/`/D` in `*_COMPILE_OPTIONS`; direkte Zielnamen, `debug`/`optimized`/`general`-Kanten und die unten inventarisierten bedingten bzw. zielbezogenen Generatorausdrücke | Makros, die erst im C++-Quelltext entstehen (dafür K1/K3); String-Transformationen in Linkkanten und `MAP_IMPORTED_CONFIG_*` werden nicht ausgewertet, sondern ausdrücklich **ROT** gemeldet |
 | **K3/A14** Artefakt + Neubau | die `.lib`, die das Bein im selben Lauf selbst hat neu erzeugen lassen, dazu `.vcxproj`, `.tlog` und `lastbuildstate`; fehlt eine Voraussetzung, endet der Lauf über `voraussetzung_exit()` — ohne registrierten Befund **3**, mit registriertem Befund **2**, **nie 0**, und das an jedem Ausgang, den unmöglichen oder fehlgeschlagenen Bau eingeschlossen (Matrix F13/F14/F15, Runde 8/9; Proben `R8-1` und `P9-F13`) | jeden eingefrorenen Text als ASCII/UTF-16LE, Viercodes zusätzlich als 4-Byte-Integer in **beiden** Byteordnungen, CIDs roh/COM-vertauscht; dass Objekte, Tlogs und Lib vor der Messung gelöscht und vollständig neu erzeugt wurden (Zeitanker, Bauausgabe, Objektzahl) — damit ist „veraltetes Artefakt" keine Frage mehr; die früheren Frischewachen bleiben als Diagnose „womit wurde gebaut" | Baubeschreibung ohne resultierende Artefaktbytes (dafür K1/K1b/K2/K2b/K2c); ein Compilerwechsel innerhalb derselben `lastbuildstate`-Kennung (benannte Nichtzusage) |
 | **Tlog-Riegel** Leseorte | das frisch geschriebene `CL.read.1.tlog` des Kerns | aus welchen Orten der Compiler wirklich gelesen hat: erlaubt sind `plugin/**`, `juce-src/modules/**` ohne `juce_audio_plugin_client`, die **aus dem Bau abgeleiteten** MSVC- und Windows-SDK-Wurzeln und — **namentlich, nicht über ihr Verzeichnis** — die gemessenen Systemdateien unter `%SystemRoot%` (Liste `SYSTEMDATEIEN` im Skript — sie ist die Quelle, nicht diese Karte; ihre Namen stehen seit Runde 8 als eingefügte `CL.read.1.tlog`-Rohausgabe im Abschnitt „Nacharbeit Runde 8", Probe `P8-SYS`, ihre Anzahl gibt der Messlauf aus — vorher war die Liste eine Behauptung ohne Rohausgabe). Es gibt weder eine Endungsausnahme noch eine Ortserlaubnis für `%SystemRoot%`: jede andere Datei darunter, `<ziel>_artefacts/JuceLibraryCode/**` und alles Unbekannte sind ROT und werden namentlich genannt. Fehlt eine heutige Kernquelle als Marker, ist auch das ROT | den **Inhalt** der gelesenen Dateien (dafür K1b und der JUCE-Baum-Riegel) |
@@ -17402,3 +17404,282 @@ Keine Fundstelle behauptet mehr eine Zählung; die alte Wortform
 **Nächster Schritt:** Nacharbeits-Worker für S8 Runde 16 **und** NAK-94 Nacharbeit 11 (siehe `docs/beweise/SONDE-007c.md`, „Dirigentenstand NAK-94 … Prüfer 11"), gemeinsamer Kanon, dann Prüfer 17 (xhigh) für S8 und Prüfer 12 (high) für NAK-94 — je frischer Thread. Kein Halt.
 
 **Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.
+
+---
+
+## Nacharbeit Runde 16 — 2026-08-30 (Prüfer-Thread `01a05115-a238…`)
+
+**Stand dieses Abschnitts:** `01c9cd3` — der Endstand des Codes dieser Runde.
+Die S8-Arbeit liegt in `3de3a13` (Kranz-Ableitung und Selbsttests) und
+`b6a79d2` (lebender K1b-Kopf); `01c9cd3` zieht daneben die NAK-94-Behauptungen
+in derselben Runner-Datei nach und ist deshalb der gemeinsame Messstand beider
+Hälften. Positionen ohne eigene Angabe sind an diesem Stand gemessen;
+Belegzahlen nennen ihren Stand jeweils selbst.
+
+Vier Befunde des sechzehnten Prüfers (Codex xhigh, lesend über
+`git diff dafa5a5...4a2b8da`), Regel des Dirigenten im Abschnitt
+„Dirigentenstand — 2026-08-30 07:27 (Sitzung 054eedac)". Alle vier sind
+geschlossen. Der P1 ist ein **Verhaltensbefund**: A14 misst danach anders, nicht
+nur genauer beschrieben. Der zweite Befundsatz derselben Runde (NAK-94,
+Prüfer 11) steht in `docs/beweise/SONDE-007c.md`, Abschnitt „NAK-94 Nacharbeit
+Runde 11".
+
+**Werkzeugregel dieser Runde:** kein löschender Aufruf, keine Datei unter
+`%SystemRoot%`. Jede Probe an der Riegeldatei arbeitet auf einer **Kopie** unter
+`%TEMP%`; die Wache `R15-1g` hält den sha256 der Datei im Baum vor und nach dem
+Selbsttest dagegen. Der Bruch am Prüfskript lief auf der Datei im Baum, mit
+Sicherung unter `%TEMP%` und Rücknahme per sha256-Vergleich.
+
+---
+
+### Die vier Befunde — wörtlich (`@ 4a2b8da`)
+
+> **[P1] Begrenze die Makroliste auf den echten K1-Fehlerkranz** — `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:1664-1666`. Wenn an die Riegeldatei ein separater leerer `#if defined (JucePlugin_Fremd) ... #endif`-Block angehängt wird, nimmt diese Schleife den fremden Namen selbst in `makros` auf; der anschließende Abgleich meldet reproduzierbar 0 Klagen bei 49/49 abgeglichenen Token. Damit legitimiert sich ein unbekannter Name außerhalb des tatsächlichen K1-Fehlerkranzes selbst, entgegen §53.4; leite die Liste nur aus dem Block ab, der den K1-`#error` steuert, und ergänze diesen Fall als roten Selbsttest.
+>
+> **[P2] Aktualisiere den lebenden K1b-Kopf auf Runde 7** — `eq-copilot/plugin/state/NakamaKernRiegel.h:44-46`. Bei einer Compiler-Eingabe außerhalb `plugin/**`, der JUCE-Module und der Toolchain-/SDK-Wurzeln nimmt `k1b_eingaben_aus_tlog()` die Datei seit Runde 7 gerade in die Prüfmenge auf, während dieser lebende Kopf weiterhin das Gegenteil behauptet. Beschreibe hier ebenfalls die Komplementmenge einschließlich der roh geprüften, namentlich erlaubten Systemdateien.
+>
+> **[P2] Inventarisiere auch die lebenden Manifeststellen** — `docs/beweise/SONDE-007a.md:17283-17287`. Wenn eine alte K1b-Aussage in Matrix, Riegelkarte oder einem lebenden Manifestabschnitt stehen bleibt, kann dieses Inventar sie nicht finden, weil seine deklarierte Quellenmenge `docs/beweise/SONDE-007a.md` ausschließt und der Abschnitt zudem keinen exakten grep-/Klassifizierer-Befehl nennt. Nimm das Manifest mit Lebend/Historisch-Klassifikation auf und dokumentiere die reproduzierbaren Befehle samt Zahlen.
+>
+> **[P2] Korrigiere die normalisierte Trefferzahl** — `docs/beweise/SONDE-007a.md:17298`. Die angekündigte whitespace-normalisierte, nicht zeilenweise Suche über die fünf genannten Quellen liefert für `NakamaKernRiegel.h` 12 Vorkommen, nicht 11: Runner 3, Prüfsystem 8 und CMake 1; der Header selbst nennt seinen Dateinamen nicht. Korrigiere Zahl und Ortsangabe und hinterlege den exakten Zählbefehl.
+
+---
+
+### P1 — reproduziert am Basis-Stand `4fcb4a8`
+
+Die Ableitung lautete dort (`k1b_ausnahme_abgleich`, Schritt 1):
+
+```python
+    makros: set[str] = set()
+    for nr, zeile in enumerate(zeilen):
+        if arten[nr] in ("if", "elif"):
+            makros.update(_K1B_ABFRAGE.findall(zeile))
+```
+
+Die erlaubte Liste kam damit aus **jeder** `#if`/`#elif`-Zeile der Datei — also
+aus genau der Fläche, die der Riegel bewacht. Ein angehängter, völlig **leerer**
+Block ist weder eine Definition noch eine Benutzung; er stellt nur eine Abfrage
+und trug seinen Namen trotzdem in die Erlaubnisliste ein. Gemessen mit der Probe
+aus dem Befund (Kopie der Riegeldatei unter `%TEMP%` plus
+`#if defined (JucePlugin_Fremd)` / `#endif`):
+
+```text
+Klagen           : 0
+makros enthaelt JucePlugin_Fremd: True
+makros           : 47
+code / abgeglichen: 49 / 49
+```
+
+K1 sieht diesen Namen nicht — sein Kranz ist namentlich —, K2 sieht keine
+interne Definition, und K3 kann bei reiner Präprozessor-Nutzung leer bleiben.
+Es sah ihn also niemand: §53.4 und W5 waren offen.
+
+---
+
+### P1 — was jetzt gilt
+
+Die Liste kommt **ausschließlich** aus dem einen `#if`-Kranz, der in den
+K1-`#error` mündet — dieselbe Quelle, aus der auch K1 seine Wirkung bezieht.
+Neu ist `_k1_fehlerkranz()` in
+`tools/eq-copilot/pruefe_kern_identitaetsfrei.py`: ein Stapellauf über die
+**logischen** Direktiven (Backslash-Fortsetzungen gefaltet — der Kranz ist eine
+logische Zeile über 47 physische), der zu jedem `#error` seine steuernde
+`#if`/`#elif`-Bedingung bestimmt.
+
+Erlaubt sind seither genau zwei Kontexte, beide **im** Kranz bzw. in **seiner**
+Fehlermeldung:
+
+1. `defined (Name)` in den physischen Zeilen des K1-Fehlerkranzes,
+2. das blosse Präfix `JucePlugin_` ohne folgendes Namenszeichen in der vom
+   Kranz gesteuerten `#error`-Meldung.
+
+Alles andere ist ROT und wird beim Namen genannt — ein unbekannter Name, ein
+**bekannter** Name außerhalb des Kranzes (auch in einem eigenen
+`#if defined (…)`-Block), jedes `#define`/`#undef`. Die Kurzform
+`#ifdef`/`#ifndef` ist damit **kein** erlaubter Kontext mehr: sie ist stets eine
+eigene Direktive und liegt deshalb immer außerhalb des Kranzes; der Zweig dafür
+ist entfernt statt als unerreichbarer Code stehen zu bleiben.
+
+Fail-closed an drei neuen Kanten, jede mit eigenem Grund im Klartext:
+
+| Kante | Meldung (gekürzt) |
+|---|---|
+| unpaarige Bedingungsstruktur | `#endif ohne offenen #if - die Bedingungsstruktur ist unpaarig` |
+| kein Kranz mit `#error` | `kein #error unter einem #if-Kranz mit defined (JucePlugin_*)` |
+| mehr als ein solcher Kranz | `2 #if-Kraenze muenden in einen #error (…) - welcher die K1-Makroliste ist, steht damit nicht fest` |
+
+Dieselbe Probe wie oben, am Stand `01c9cd3` (dem Endstand des Codes dieser
+Runde; die Zeilennummer 153 ist die des angehängten Blocks in der **Kopie**):
+
+```text
+Klagen           : 1
+   - C:\Users\phili\AppData\Local\Temp\tmpdqj1mt45\Separat.h: Zeile 153: 'JucePlugin_Fremd' steht nicht in der K1-Makroliste dieser Datei - die K1b-Ausnahme ist ein Abgleich, keine Freistellung
+makros enthaelt JucePlugin_Fremd: False
+makros           : 46
+code / abgeglichen: 49 / 48
+```
+
+---
+
+### P1 — die fünf neuen Selbsttests und ihr Bruch
+
+`A14 --selbsttest` @ `01c9cd3` — **94 ok, 0 Fehler**:
+
+```text
+  ok      R16-1a: ein separater leerer `#if defined (JucePlugin_Fremd)`-Block ist ROT und benennt den Namen - die Makroliste kommt nur aus dem K1-Fehlerkranz  [C:\Users\phili\AppData\Local\Temp\tmpnt0emvuq\SeparaterBlock.h: Zeile 153: 'JucePlugin_Fremd' steht nicht in der K1-Makroliste dieser Datei - die K1b-Ausnahme ist ein Abgleich, keine Freistellung]
+  ok      R16-1b: auch ein BEKANNTER Name in einem eigenen `#if defined (...)`-Block ausserhalb des Kranzes ist ROT  [C:\Users\phili\AppData\Local\Temp\tmpnt0emvuq\SeparatBekannt.h: Zeile 153: 'JucePlugin_Name' steht in der K1-Makroliste, aber ausserhalb des K1-Fehlerkranzes (in #if) - die K1b-Ausnahme ist ein Abgleich, keine Freistellung]
+  ok      R16-1c: Gegenprobe zum Befund - die fruehere Ableitung aus JEDER #if/#elif-Zeile nimmt den fremden Namen in ihre 47 Makros auf; der Kranz-Abgleich fuehrt 46  [frueher 47 Makros mit JucePlugin_Fremd: True]
+  ok      R16-1d: zwei #if-Kraenze mit eigenem #error sind ROT (fail-closed) - welcher die K1-Liste ist, steht nicht fest  [C:\Users\phili\AppData\Local\Temp\tmpnt0emvuq\ZweiKraenze.h: die K1-Makroliste ist aus dieser Datei nicht ableitbar (2 #if-Kraenze muenden in einen #error (Zeile 96, Zeile 153) - welcher die K1-Makroliste ist, steht damit nicht fest) - ohne sie ist die K1b-Ausnahme kein Abgleich]
+  ok      R16-1e: eine unpaarige Bedingungsstruktur ist ROT - der Kranz wird nicht geraten  [C:\Users\phili\AppData\Local\Temp\tmpnt0emvuq\Unpaarig.h: die K1-Makroliste ist aus dieser Datei nicht ableitbar (Zeile 153: #endif ohne offenen #if - die Bedingungsstruktur ist unpaarig) - ohne sie ist die K1b-Ausnahme kein Abgleich]
+  ok      R15-1g: die Riegeldatei im Baum ist unveraendert - sha256 0eb437ac98c43074  [0eb437ac98c43074 -> 0eb437ac98c43074]
+```
+
+Zeile **96** ist der Kranz der echten Riegeldatei, Zeile **153** der angehängte
+Block in der jeweiligen Kopie unter `%TEMP%`.
+
+**Bruch (genau der aus der Regel: „Liste wieder aus allen Blöcken").** In
+`k1b_ausnahme_abgleich` wurde `kranzzeilen` auf alle `#if`/`#elif`-Zeilen
+gestellt; Sicherung der Datei unter `%TEMP%`, sha256 vorher
+`FDC09462E5A24A3C26650040744470DAA1FDB035D7C14C15FA776ACB84B19513`:
+
+```text
+sha256 vorher: FDC09462E5A24A3C26650040744470DAA1FDB035D7C14C15FA776ACB84B19513
+Bruch gesetzt: kranzzeilen = {n for n, a in enumerate(arten) if a in ("if", "elif")}   # BRUCH R16
+EXIT=2
+  FEHLER  R16-1a: ein separater leerer `#if defined (JucePlugin_Fremd)`-Block ist ROT und benennt den Namen - die Makroliste kommt nur aus dem K1-Fehlerkranz  [keine Klage, makros 47, abgeglichen 49/49]
+  FEHLER  R16-1b: auch ein BEKANNTER Name in einem eigenen `#if defined (...)`-Block ausserhalb des Kranzes ist ROT  [keine Klage]
+  ok      R16-1c: Gegenprobe zum Befund - die fruehere Ableitung aus JEDER #if/#elif-Zeile nimmt den fremden Namen in ihre 47 Makros auf; der Kranz-Abgleich fuehrt 47  [frueher 47 Makros mit JucePlugin_Fremd: True]
+  ok      R16-1d: zwei #if-Kraenze mit eigenem #error sind ROT (fail-closed) - welcher die K1-Liste ist, steht nicht fest  [… (2 #if-Kraenze muenden in einen #error (Zeile 96, Zeile 153) …)]
+  ok      R16-1e: eine unpaarige Bedingungsstruktur ist ROT - der Kranz wird nicht geraten  [… (Zeile 153: #endif ohne offenen #if - die Bedingungsstruktur ist unpaarig) …]
+92 ok, 2 Fehler
+```
+
+`R16-1c` bleibt unter dem Bruch grün und sagt das auch — sie misst die **alte**
+Ableitung und ist die Gegenprobe zum Befund, nicht die Wache; unter dem Bruch
+meldet sie „der Kranz-Abgleich fuehrt 47" statt 46 und macht den Unterschied
+damit sichtbar. `R16-1d`/`R16-1e` bleiben grün, weil der Bruch die
+Kranz-**Auffindung** nicht anfasst, nur ihre Verwendung; jede der fünf Proben
+schneidet damit etwas anderes.
+
+**Rücknahme:** Datei aus der Sicherung zurückgespielt, sha256 nachher identisch
+(`FDC09462…9513`), `git status --porcelain -- tools/ eq-copilot/ broker/` leer,
+`A14 --selbsttest` wieder **94 ok, 0 Fehler**.
+
+---
+
+### P2 — der lebende K1b-Kopf in der Riegeldatei
+
+`eq-copilot/plugin/state/NakamaKernRiegel.h:44-46 @ 4a2b8da` sagte
+„K1b sieht nicht, was ausserhalb plugin/ liegt". Das ist seit Runde 7 die
+Umkehrung der Messung: `k1b_eingaben_aus_tlog()` bildet die **Komplementmenge**
+des Leseprotokolls — jede gelesene Datei außer denen aus `juce-src/modules`, der
+abgeleiteten MSVC-Toolchain und dem abgeleiteten Windows-SDK. Genau ein per
+`/FI` erzwungener Kopf **außerhalb** `plugin/` war der Weg, den Runde 7
+geschlossen hat; der Satz stellte ihn als gedeckt dar.
+
+Der Kopf trägt jetzt (`:44-59 @ b6a79d2`) die Komplementmenge, das rohe
+ASCII-/UTF-16LE-Durchsuchen der namentlich erlaubten Systemdateien unter
+`%SystemRoot%` und die fail-closed-Kante bei einer nicht ableitbaren
+Ausschlusswurzel — und benennt ausdrücklich, dass er damit das „unter plugin/"
+im Satz darüber korrigiert.
+
+**Nur Kommentar.** Geprüft, nicht behauptet:
+
+```text
+$ git diff -U0 -- eq-copilot/plugin/state/NakamaKernRiegel.h | grep -E "^[+-][^+-]" | grep -E "^\s*[+-]\s*#"
+(keine Ausgabe)
+```
+
+Kein Makro, kein `#error`, keine Direktive im Diff. Die gemessenen Zahlen der
+Riegeldatei sind unverändert: **46** Makros, **48** Token im kommentarfreien
+Quelltext, alle **48** abgeglichen, **56** im Rohtext (`R15-1a` @ `01c9cd3`).
+B1 und A14 bleiben grün — Beleg ist der Kanon-Abschlusslauf am Ende dieser
+Runde.
+
+---
+
+### Nachgezogene Stellen (Änderungssatz)
+
+| Stelle | vorher | jetzt | Stand |
+|---|---|---|---|
+| `k1b_ausnahme_abgleich`, Schritt 1 (`pruefe_kern_identitaetsfrei.py`) | Makros aus **jeder** `#if`/`#elif`-Zeile | Makros nur aus dem Kranz, den `_k1_fehlerkranz()` findet | nachgezogen @ `3de3a13` |
+| `k1b_ausnahme_abgleich`, Schritt 2 | erlaubt: `defined (…)` in jeder `#if`/`#elif`-Zeile + Kurzform + jede `#error`-Zeile | erlaubt: nur im Kranz und in **seiner** `#error`-Meldung; drei getrennte Klagegründe | nachgezogen @ `3de3a13` |
+| `_K1B_KURZABFRAGE` (Konstante) | trug die Kurzform als erlaubten Kontext | **entfernt** — unter der Kranzregel unerreichbar; kein toter Zweig im Riegel | nachgezogen @ `3de3a13` |
+| Skriptkopf `pruefe_kern_identitaetsfrei.py`, K1b-Absatz | „…in einem der Riegelkontexte (`defined (...)` im `#if`-Kranz, `#ifdef`/`#ifndef`, das blosse Präfix…)" | nennt den Kranz als einzige Quelle und die zwei verbliebenen Kontexte | nachgezogen @ `3de3a13` |
+| Kommentarblock „EINE QUELLE, ZWEI VERBRAUCHER" / „ERLAUBTE KONTEXTE" | drei Kontexte, Liste aus allen `#if`/`#elif`-Zeilen | zwei Kontexte, Liste aus dem Fehlerkranz, mit gemessener Reproduktion `@ 4fcb4a8` | nachgezogen @ `3de3a13` |
+| A14-`pruefe`-Text (`ausnahmetext`) | „…gegen die `{n}` Makros der K1-Liste DERSELBEN Datei… nur in Riegelkontexten" | „…Makros des K1-**FEHLERKRANZES** DERSELBEN Datei… nur in diesem Kranz bzw. seiner `#error`-Meldung" | nachgezogen @ `3de3a13` |
+| `tools/beweise.ps1`, Kommentar über A14 | „…namentlich gegen die K1-Makroliste DERSELBEN Datei abgeglichen" | dazu: „…und diese Liste kommt seit Runde 16 ausschliesslich aus dem einen `#if`-Kranz, der in den K1-`#error` muendet" | nachgezogen @ `3de3a13` |
+| `tools/beweise.ps1`, A14-`Behauptung` | Kontextliste mit `#ifdef`/`#ifndef`; „ohne ableitbare Makroliste ist die Ausnahme selbst ROT" | Kranz als einzige Quelle, Kurzform ausdrücklich ROT, die drei fail-closed-Kanten einzeln benannt | nachgezogen @ `3de3a13` |
+| `eq-copilot/plugin/state/NakamaKernRiegel.h`, K1b-Kopf | „K1b sieht nicht, was ausserhalb plugin/ liegt" | Komplementmenge, rohe Systemdateien, fail-closed-Kante; korrigiert das „unter plugin/" darüber | nachgezogen @ `b6a79d2` (`:44-59`) |
+| Riegelmatrix, Zeile **K1b** (`docs/beweise/SONDE-007a.md`, Kopf) | „…in einem Riegelkontext (`defined (…)` im `#if`-Kranz, `#ifdef`/`#ifndef` für einen Namen, den der Kranz schon führt, …)" | Kranz als einzige Quelle; Kurzform ausdrücklich **kein** Kontext mehr; die drei fail-closed-Kanten | nachgezogen in diesem Commit |
+| „**Stand dieser Karte**" (`docs/beweise/SONDE-007a.md`, Kopf) | `c212280` | `01c9cd3`, mit der Runde-16-Änderung an Zeile K1b benannt | nachgezogen in diesem Commit |
+| Aussagen-Inventar Runde 15, Zeile `NakamaKernRiegel.h` = 11 | „Runner (3), Skript (7), Header (1)" | **historisch** — der Abschnitt trägt seinen Stand `c212280`; die korrigierte Zahl steht im Inventar dieser Runde | historisch @ `c212280` |
+| Riegelkarte, Zeile `NakamaKernRiegel.h` (Bullet im Kopf) | „Kompilier-Riegel **K1**, die dort namentlich geführten `JucePlugin_*`-Makros" | **unverändert** — die Aussage betrifft K1, nicht die K1b-Ableitung, und stimmt weiter | unverändert |
+
+---
+
+### Aussagen-Inventar — Runde 16
+
+**Zählweise, einmal festgelegt (Regel 4 des Dirigenten):**
+whitespace-normalisiert — jede Folge von Leerraum wird ein Leerzeichen —, gezählt
+werden **Vorkommen**, nicht Zeilen. Das ist bewusst nicht `git grep -c`: eine
+Aussage darf über eine Zeilengrenze laufen (Lehre aus Runde 14), und zwei
+Vorkommen in einer Zeile sind zwei Aussagen. Alle Zahlen dieser Tabelle sind mit
+**genau dem Befehl unten** gerechnet.
+
+**Quellenmenge mit Klassifizierer (Regel 3 des Dirigenten):**
+
+| Gruppe | Umfang | Klassifikation |
+|---|---|---|
+| **Code** | `tools/beweise.ps1`, `tools/eq-copilot/pruefe_kern_identitaetsfrei.py`, `tools/eq-copilot/pruefe_installer_manifest.py`, `eq-copilot/plugin/state/NakamaKernRiegel.h`, `eq-copilot/cmake/NakamaKern.cmake` | **lebend** — jede Fundstelle muss stimmen |
+| **Manifest lebend** | `docs/beweise/SONDE-007a.md`, Dateianfang bis **vor** die Zeile `## 2. Rohe Ausgaben` — Kopf, Riegelmatrix, Riegelkarte, §1 Ticket-Behauptungen | **lebend** — jede Fundstelle muss stimmen |
+| **Manifest historisch** | `docs/beweise/SONDE-007a.md` ab `## 2. Rohe Ausgaben` bis Dateiende — Rohausgaben und datierte Rundenabschnitte | **historisch** — trägt den Stand seines Abschnitts, wird nicht umgeschrieben |
+
+Der Klassifizierer ist **eine** Zeile: die erste Rohausgabe-Überschrift trennt
+den lebenden Kopf vom datierten Verlauf. Dieselbe Regel gilt in
+`docs/beweise/SONDE-007c.md` mit der Zeile `## 5. Rohe Belege`.
+
+**Befehl** (pwsh, aus dem Workspace-Root; nur `$muster` wechselt):
+
+```powershell
+function Zaehl($t, $m) { ([regex]::Matches(($t -replace '\s+', ' '), [regex]::Escape($m))).Count }
+$code = @('tools/beweise.ps1','tools/eq-copilot/pruefe_kern_identitaetsfrei.py','tools/eq-copilot/pruefe_installer_manifest.py','eq-copilot/plugin/state/NakamaKernRiegel.h','eq-copilot/cmake/NakamaKern.cmake')
+$z = Get-Content -Encoding utf8 'docs/beweise/SONDE-007a.md'
+$g = ($z | Select-String -SimpleMatch '## 2. Rohe Ausgaben' | Select-Object -First 1).LineNumber - 1
+$lebend = ($z[0..($g-1)]) -join "`n"; $hist = ($z[$g..($z.Count-1)]) -join "`n"
+$muster = 'NakamaKernRiegel.h'
+$c = 0; foreach ($q in $code) { $c += Zaehl (Get-Content -Raw -Encoding utf8 $q) $muster }
+'{0,4} Code | {1,4} Man. lebend | {2,4} Man. historisch   {3}' -f $c, (Zaehl $lebend $muster), (Zaehl $hist $muster), $muster
+```
+
+**Zahlen**, gemessen am Arbeitsbaum **dieses** Commits — Codestand `01c9cd3`,
+Manifestkopf mit der neuen K1b-Zeile, und die historische Spalte **einschließlich
+dieses Abschnitts**, der nach der Klassifizierer-Zeile liegt und seinen Stand
+selbst trägt. Die Zahlen nach dem Kanon-Abschlusslauf stehen im
+Abschluss-Commit dieser Runde.
+
+| Muster | Code | Man. lebend | Man. historisch | was die Zahl sagt |
+|---|---|---|---|---|
+| `NakamaKernRiegel.h` | **12** | 3 | 92 | Befund P2 bestätigt: Runner 3, Prüfsystem 8, CMake 1, **Header 0** — er nennt seinen eigenen Dateinamen nicht. Die Runde-15-Zeile („11: Runner 3, Skript 7, Header 1") war doppelt falsch: sie zählte CMake nicht und schrieb dem Header eine Fundstelle zu |
+| `K1-Makroliste` | 14 | 0 | 19 | der Begriff steht nur im Prüfsystem und im Runner; die Matrix spricht von „Makroliste" ohne Präfix |
+| `K1-Fehlerkranz` | 6 | 1 | 9 | der neue Begriff — im Skript, im Runner und in der lebenden Matrixzeile |
+| `gemessen und namentlich` | 1 | 1 | 6 | Riegeldatei-Kopf und Matrixzeile; beide meinen jetzt denselben Abgleich |
+| `Einzige Ausnahme` | 2 | 0 | 5 | Skriptkopf und Riegeldatei-Kopf |
+| `keine Freistellung` | 4 | 1 | 10 | Runner, Skript (3×), Matrixzeile |
+| `Riegelkontext` | 2 | 1 | 7 | Skriptkopf und Matrixzeile — beide sagen jetzt *welche* zwei |
+| `namentlich gegen die` | 4 | 0 | 6 | Runner (2×) und Skript (2×) |
+| ``#ifdef`/`#ifndef`` | 1 | 2 | 6 | **alle drei lebenden Fundstellen verneinen** die Kurzform („kein erlaubter Kontext mehr"); die historischen stehen im Runde-15-Abschnitt und in diesem hier |
+| `für einen Namen, den der Kranz schon führt` | 0 | **0** | 3 | die alte Erlaubnis ist aus jeder lebenden Quelle verschwunden; die drei Fundstellen sind der datierte Runde-15-Abschnitt und die zwei Zitate in diesem Abschnitt |
+
+---
+
+### Prüfliste D/E dieser Runde
+
+| Regel | wie eingehalten |
+|---|---|
+| **D** — „Unbekanntes ist ROT, fail-closed ohne Heuristik" | drei neue rote Kanten, jede mit eigenem Grund: kein Kranz mit `#error`, mehr als ein solcher Kranz, unpaarige Bedingungsstruktur. Keine wird geraten, keine „so gut es geht" behandelt (`R16-1d`, `R16-1e`) |
+| **E** — „Behauptung ≤ Messung" | Runner-Behauptung, Skriptkopf, Kommentarblock, `pruefe`-Text und Matrixzeile sagen genau das, was `_k1_fehlerkranz()` tut — Kranz als einzige Quelle, zwei erlaubte Kontexte, Kurzform ausdrücklich ROT |
+| **E** — „Zahlen sind gemessen" | 46/48/56 kommen aus dem Ausgabetext von `R15-1a`; 12/3/81 aus dem oben abgedruckten Befehl. Keine Zahl ist abgeschrieben |
+| **E** — Positionen | Symbole (`_k1_fehlerkranz`, `k1b_ausnahme_abgleich`) oder `Datei:Zeile @ sha7`; die wörtlichen Zitate behalten die Zeilenangaben des Prüfers `@ 4a2b8da` |
+| **E** — „jede neue Prüfung einmal gebrochen" | `R16-1a`/`R16-1b` gebrochen (Liste wieder aus allen Blöcken → 92 ok / 2 Fehler, Exit 2) und per sha256 zurückgenommen. `R16-1c` ist ausdrücklich als Gegenprobe deklariert, nicht als Wache |
+| **E** — Aussagen-Inventar | Tabelle oben; Quellenmenge **inklusive** `docs/beweise/SONDE-007a.md` mit Lebend/Historisch-Klassifizierer und dem exakten Befehl (Befund P2-3) |
+| **F** — „Änderungssatz" | Skript, Runner-Kommentar, A14-Behauptung, Riegeldatei-Kopf, Riegelmatrix, Kartenstand und dieser Abschnitt gehen zusammen; die NAK-94-Hälfte liegt im Commit-Paar daneben |

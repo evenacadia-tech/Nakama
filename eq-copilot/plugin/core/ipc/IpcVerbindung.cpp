@@ -166,7 +166,27 @@ bool IpcVerbindung::schreibenGenau (const std::uint8_t* daten, std::size_t laeng
                 warte = INFINITE - 1;
             if (WaitForSingleObject (ov.hEvent, warte) != WAIT_OBJECT_0)
             {
-                ioAbbrechen();
+                // NUR DIESEN Schreibvorgang abbrechen, nicht die Verbindung.
+                //
+                // Hier stand `ioAbbrechen()`. Das setzt `abbruch` fuer die
+                // ganze Verbindung — und danach lieferte JEDER Lesevorgang
+                // sofort `LeseAusgang::fehler`. Genau der bereits vollstaendig
+                // empfangene P0-ACK, den `B-CC-07` noch melden will, bevor die
+                // Verbindung endet, war damit unerreichbar: das Zeitlimit des
+                // Schreibens sperrte den Lesepfad, den es gerade noch brauchte
+                // (NAK-104, Pruefbefund vom 2026-08-30).
+                //
+                // Der Lesepfad macht es seit jeher richtig und wird hier nur
+                // gespiegelt: `CancelIoEx` auf DIESES `OVERLAPPED`, unter
+                // demselben Mutex wie die Submission, damit kein
+                // Check-then-use auf einem wiederverwendeten HANDLE entsteht.
+                // Der Aufrufer schliesst die Verbindung ohnehin gleich — aber
+                // erst, nachdem er das Empfangene gemeldet hat.
+                {
+                    std::lock_guard<std::mutex> l (handleMutex);
+                    if (handle != nullptr)
+                        CancelIoEx (h, &ov);
+                }
                 DWORD verworfen = 0;
                 GetOverlappedResult (h, &ov, &verworfen, TRUE);
                 if (! abbruch.load())

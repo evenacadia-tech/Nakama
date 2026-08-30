@@ -187,6 +187,14 @@ public:
     /// ACK liegt dann beim Client, waehrend dessen P1-Weg vollaeuft. Genau in
     /// dieser Lage uebersprang die alte Fassung den Lesepfad.
     std::atomic<bool> nachErsterP0AntwortNichtLesen { false };
+    /// Zusammen mit `nichtLesen`: so viele Millisekunden nach dem welcome
+    /// einen UNGEFRAGTEN P0-ACK schicken (Matrix `B-CC-07`, NAK-104). Zu
+    /// diesem Zeitpunkt steht der Client bereits in seinem Write, weil der
+    /// Peer nicht liest — der ACK liegt also beim Client, WAEHREND dessen
+    /// Schreibfrist laeuft. Nur so wird der Fehlerpfad nach dem Zeitlimit
+    /// wirklich gefahren; `nachErsterP0AntwortNichtLesen` liefert den ACK
+    /// dagegen nach einem ERFOLGREICHEN Write.
+    std::atomic<int> ackNachNichtLesenMs { 0 };
     std::mutex textMutex;
     std::string letztesControlHello, letztesTelemetryHello, letzterAbweisungsgrund;
     /// Jeder empfangene P0-/P1-Payload, woertlich. Damit laesst sich pruefen,
@@ -508,6 +516,20 @@ private:
 
         if (nichtLesen.load())
         {
+            // `B-CC-07`: der ACK trifft ein, waehrend der Client schon
+            // schreibt. Erst warten, damit sein Sendeweg sicher steht.
+            if (const int nachMs = ackNachNichtLesenMs.load();
+                nachMs > 0 && ! istTelemetry)
+            {
+                std::this_thread::sleep_for (std::chrono::milliseconds (nachMs));
+                const std::string ack =
+                    "{\"type\":\"heartbeat_ack\",\"sequence\":7,\"duplicate_instance_id\":false}";
+                std::vector<std::uint8_t> rahmen;
+                envelopeSchreiben (Familie::p0, 0,
+                                   reinterpret_cast<const std::uint8_t*> (ack.data()),
+                                   ack.size(), rahmen);
+                schreiben (h, rahmen.data(), rahmen.size());
+            }
             while (laeuft.load())
                 std::this_thread::sleep_for (std::chrono::milliseconds (20));
             schliessen (h);
@@ -622,6 +644,42 @@ juce::File wurzel()
         d = d.getParentDirectory();
     return d;
 }
+
+//==============================================================================
+/// Testhaken der P2-Schleuse fuer `A-P2-04` (NAK-104): ein Verbraucher, der
+/// zwischen zwei Anspruchsversuchen des Erzeugers WEITERRUECKT.
+///
+/// Er tut nichts, was `abholen` nicht auch tut: den gehaltenen Platz
+/// freigeben, seinen Fortschritt melden, den naechsten beanspruchen — und er
+/// hoert auf, sobald seine Position `schreib` erreicht, denn darueber gibt es
+/// nichts zu holen. Genau daran scheitert eine feste Versuchsschranke.
+struct WandernderVerbraucher
+{
+    bool          aktiv    = false;
+    bool          haelt    = false;
+    std::uint64_t position = 0;
+    std::uint64_t grenze   = 0;
+    int           spruenge = 0;
+
+    template <class Schleuse>
+    void vorAnspruch (Schleuse& s, std::uint64_t) noexcept
+    {
+        if (! aktiv)
+            return;
+        if (haelt)
+        {
+            s.testSlotFreigeben (position);
+            ++position;
+            s.testVerbrauchtMelden (position);
+            haelt = false;
+        }
+        if (position >= grenze)
+            return;
+        haelt = s.testSlotBeanspruchen (position);
+        if (haelt)
+            ++spruenge;
+    }
+};
 } // namespace
 
 //==============================================================================
@@ -1367,6 +1425,77 @@ int main()
             pruefe (n == sizeof (f) && ziel[0] == 0xAB,
                     "der Verbraucher ueberspringt die Loecher und bekommt genau diesen Frame",
                     std::to_string (n) + " Bytes");
+        }
+
+        // ── Der WANDERNDE Verbraucher (`A-P2-04`, NAK-104) ────────────────
+        //
+        // Die Probe oben haelt zwei Plaetze gleichzeitig und laesst den dritten
+        // statisch frei. Sie zeigt nur, dass ZWEI Versuche zu wenig sind — das
+        // Wandern eines EINZELNEN Verbrauchers bildet sie nicht ab.
+        //
+        // Hier wandert er: er gibt zwischen zwei Anspruchsversuchen des
+        // Erzeugers seinen Platz frei, meldet seinen Fortschritt und
+        // beansprucht den naechsten Kandidaten. Genau das darf ein echter
+        // Verbraucher, und genau daran scheiterte die feste Schranke
+        // `kSlots * 2`: liegt er sechs Positionen zurueck, verbraucht er alle
+        // sechs Versuche, und der NEUESTE Frame fiel.
+        {
+            using Schleuse5 = P2Schleuse<256, WandernderVerbraucher>;
+            auto s5 = std::make_unique<Schleuse5>();
+            std::uint8_t f[64];
+            std::memset (f, 0xCD, sizeof (f));
+
+            // 1) Den Rueckstand aufbauen — mit demselben Mittel, das ihn im
+            //    Betrieb aufbaut: je ein Kollisionsloch je Veroeffentlichung
+            //    laesst `schreib` um zwei und `boden` nur um eins wachsen.
+            constexpr std::uint64_t kRueckstand = Schleuse5::kSlots * 2;  // die alte feste Schranke
+            int runden = 0;
+            while (s5->testSchreibstand() - s5->testBodenstand() < kRueckstand && runden < 64)
+            {
+                const auto stand = s5->testSchreibstand();
+                if (! s5->testSlotBeanspruchen (stand))
+                    break;
+                s5->veroeffentlichen (f, sizeof (f));
+                s5->testSlotFreigeben (stand);
+                ++runden;
+            }
+            const auto boden5   = s5->testBodenstand();
+            const auto schreib5 = s5->testSchreibstand();
+            const auto fenster  = schreib5 - boden5;
+            pruefe (fenster == kRueckstand && (fenster % Schleuse5::kSlots) == 0,
+                    "Kollisionsloecher lassen den Verbraucher wirklich zurueckfallen "
+                    "(schreib - boden waechst)",
+                    std::to_string (fenster) + " Positionen Rueckstand nach "
+                        + std::to_string (runden) + " Runden");
+
+            // 2) Jetzt WANDERT er: vor jedem Versuch des Erzeugers gibt er den
+            //    alten Platz frei und beansprucht den naechsten Kandidaten.
+            s5->haken.position = boden5;
+            s5->haken.grenze   = schreib5;
+            s5->haken.aktiv    = true;
+            const auto loecherVorher = s5->kollisionsLoecher();
+            // Eigene Fuellung: sonst waere die Abholprobe unten auch dann
+            // gruen, wenn ein Frame aus dem Aufbau geliefert wird.
+            std::uint8_t neuester[64];
+            std::memset (neuester, 0xE7, sizeof (neuester));
+            const bool uebernommen5 = s5->veroeffentlichen (neuester, sizeof (neuester));
+            s5->haken.aktiv = false;
+
+            pruefe (s5->haken.spruenge == static_cast<int> (kRueckstand),
+                    "der Verbraucher ist zwischen JEDEM Versuch weitergerueckt — "
+                    "kein statisch freier dritter Platz",
+                    std::to_string (s5->haken.spruenge) + " Spruenge");
+            pruefe (uebernommen5 && s5->beanspruchtVerworfen() == 0,
+                    "und der Erzeuger bekommt TROTZDEM einen Platz — garantiert, "
+                    "nicht begrenzt versucht",
+                    std::to_string (s5->beanspruchtVerworfen()) + " verworfen, "
+                        + std::to_string (s5->kollisionsLoecher() - loecherVorher)
+                        + " Loecher in dieser Veroeffentlichung");
+            std::uint8_t ziel5[256];
+            const auto n5 = s5->abholen (ziel5, sizeof (ziel5));
+            pruefe (n5 == sizeof (neuester) && ziel5[0] == 0xE7,
+                    "der neueste Frame liegt danach wirklich da, hinter allen Loechern",
+                    std::to_string (n5) + " Bytes");
         }
     }
 
@@ -2173,6 +2302,55 @@ int main()
         server.stoppen();
     }
 
+    abschnitt ("G16b · der ACK trifft ein, WAEHREND der Write in seine Frist laeuft");
+    {
+        // Matrix `B-CC-07` (NAK-104). G16 oben liefert den ACK nach einem
+        // ERFOLGREICHEN Write und erzwingt den Fehlerpfad damit nicht. Hier
+        // liest der Peer von Anfang an NICHT: der P1-Write des Clients laeuft
+        // in `kIoFristMs` (5000 ms), und der ACK kommt mitten hinein.
+        //
+        // Genau dort stand die Falle: das Zeitlimit des Schreibens setzte ueber
+        // `ioAbbrechen()` das Abbruchflag der GANZEN Verbindung, und der
+        // nachgelagerte Lesevorgang bekam sofort `LeseAusgang::fehler`. Der
+        // ACK, den `B-CC-07` noch melden will, war unerreichbar — und der
+        // Client verbindet danach neu und faellt in dieselbe Lage.
+        TestServer server (testPipeName ("ackimwrite"));
+        server.nichtLesen.store (true);
+        server.ackNachNichtLesenMs.store (400);
+        server.starten();
+
+        std::atomic<int> acks { 0 };
+        ControlClient control ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('4'));
+            return h;
+        }, server.pipeName(),
+           [&acks] (const std::string& t) {
+               if (t.find ("heartbeat_ack") != std::string::npos)
+                   ++acks;
+           });
+        control.start();
+        pruefe (warteAuf (5000, [&] {
+                    return control.snapshot().status == ControlClient::Status::verbunden;
+                }),
+                "Verbindung steht, und der Peer liest kein einziges Byte");
+
+        // Rueckstau, der den Sendepuffer sicher ueberschreitet: der zweite
+        // Write bleibt stehen, bis seine Frist ablaeuft.
+        for (int i = 0; i < 100; ++i)
+            control.sendeP1 ("", std::string (60000, 'x'));
+
+        const bool kam = warteAuf (9000, [&] { return acks.load() >= 1; });
+        pruefe (kam,
+                "ein vor dem Verbindungsende empfangener ACK geht nicht verloren — "
+                "auch nach einem Write-Zeitlimit",
+                std::to_string (acks.load()) + " ACKs, empfangen="
+                    + std::to_string (control.snapshot().empfangen) + ", "
+                    + control.snapshot().letzterFehler);
+        control.stop();
+        server.stoppen();
+    }
+
     abschnitt ("G17 · stop() kehrt in JEDEM Zustand zurueck");
     {
         // Matrix `B-CC-10`…`B-CC-12`, `B-TC-07`, `B-TC-09` (Regel 6).
@@ -2308,6 +2486,146 @@ int main()
                     std::to_string (stand.verbindungsVersuche) + " Versuche, "
                         + std::to_string (stand.stopFristUeberschritten)
                         + " Fristueberschreitungen");
+            server.stoppen();
+        }
+
+        // (2c) `B-CC-12` (NAK-104): der abgeloeste Lauf beruehrt die Verbindung
+        //      eines SPAETEREN Laufs nicht. (2b) gibt den alten Callback frei,
+        //      sobald `verbindungsVersuche` gewachsen ist — also schon, BEVOR
+        //      die neue Verbindung wirklich steht. Genau der Rueckfall danach
+        //      war der Befund: der alte Lauf erreichte sein unbedingtes
+        //      `verbindung.schliessen()` und trennte die frische Pipe.
+        //
+        //      Hier wird erst das neue `welcome` abgewartet (Status
+        //      `verbunden` gibt es nur nach vollstaendig geprueftem welcome)
+        //      und ERST DANN der alte Callback freigegeben.
+        {
+            TestServer server (testPipeName ("altlaufneu"));
+            server.starten();
+            auto blockiert  = std::make_shared<std::atomic<bool>> (true);
+            auto imCallback = std::make_shared<std::atomic<bool>> (false);
+            auto ersterRuf  = std::make_shared<std::atomic<bool>> (true);
+            auto acksNeu    = std::make_shared<std::atomic<int>> (0);
+            ControlClient control ([&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('b'));
+                return h;
+            }, server.pipeName(),
+               [blockiert, imCallback, ersterRuf, acksNeu] (const std::string&) {
+                   if (! ersterRuf->exchange (false))
+                   {
+                       acksNeu->fetch_add (1);   // Antworten des NEUEN Laufs
+                       return;
+                   }
+                   imCallback->store (true);
+                   const auto bis = Uhr::now() + std::chrono::seconds (20);
+                   while (blockiert->load() && Uhr::now() < bis)
+                       std::this_thread::sleep_for (std::chrono::milliseconds (5));
+               });
+            control.start();
+            pruefe (warteAuf (5000, [&] {
+                        return control.snapshot().status == ControlClient::Status::verbunden;
+                    }),
+                    "Verbindung steht");
+            control.sendeP0 ("{\"type\":\"heartbeat\",\"sequence\":1}");
+            pruefe (warteAuf (5000, [&] { return imCallback->load(); }),
+                    "der Callback blockiert wirklich");
+            control.stop();                    // loest den alten Lauf ab
+            control.start();                   // neuer Lauf, neue Verbindung
+            const bool neuVerbunden = warteAuf (8000, [&] {
+                return control.snapshot().status == ControlClient::Status::verbunden;
+            });
+            pruefe (neuVerbunden,
+                    "der neue Lauf steht NACHGEWIESEN — welcome geprueft, nicht nur "
+                    "ein Versuch gezaehlt");
+
+            const auto vorFreigabe      = control.snapshot();
+            const int  verbindungenVor  = server.verbindungen.load();
+            blockiert->store (false);          // JETZT kehrt der alte Callback zurueck
+            std::this_thread::sleep_for (std::chrono::milliseconds (1200));
+            const auto nachFreigabe = control.snapshot();
+
+            control.sendeP0 ("{\"type\":\"heartbeat\",\"sequence\":2}");
+            const bool antwortet = warteAuf (4000, [&] { return acksNeu->load() >= 1; });
+            control.stop();
+
+            pruefe (nachFreigabe.status == ControlClient::Status::verbunden
+                        && nachFreigabe.verbindungsVersuche == vorFreigabe.verbindungsVersuche
+                        && server.verbindungen.load() == verbindungenVor,
+                    "der zurueckkehrende alte Lauf trennt die neue Verbindung NICHT",
+                    std::to_string (nachFreigabe.verbindungsVersuche) + " Versuche (vorher "
+                        + std::to_string (vorFreigabe.verbindungsVersuche) + "), "
+                        + std::to_string (server.verbindungen.load()) + " Serververbindungen (vorher "
+                        + std::to_string (verbindungenVor) + "), Status "
+                        + (nachFreigabe.status == ControlClient::Status::verbunden
+                               ? "verbunden" : "NICHT verbunden"));
+            pruefe (antwortet,
+                    "und der neue Lauf beantwortet danach weiter P0",
+                    std::to_string (acksNeu->load()) + " ACKs");
+            server.stoppen();
+        }
+
+        // (2d) Dieselbe Zusage fuer den TelemetryClient (`B-TC-07`, NAK-104).
+        //      Sein blockierender Callback ist der `helloProvider`; er steht
+        //      VOR dem Oeffnen. Ein abgeloester Lauf, der danach weiterlaeuft,
+        //      riefe `oeffnen()` — und das schliesst zuerst. Auf einer
+        //      gemeinsamen Verbindung waere das die Pipe des neuen Laufs.
+        {
+            TestServer server (testPipeName ("telealtlauf"));
+            server.starten();
+            auto freigabe   = std::make_shared<std::atomic<bool>> (false);
+            auto imProvider = std::make_shared<std::atomic<bool>> (false);
+            auto rufNr      = std::make_shared<std::atomic<int>> (0);
+            TelemetryHello vorlage;
+            vorlage.adresse   = testAdresse (hex32 ('8'));
+            vorlage.linkId    = server.kopplungLinkId();
+            vorlage.challenge = server.kopplungChallenge();
+
+            TelemetryClient tele ([vorlage, freigabe, imProvider, rufNr] {
+                // Genau der ZWEITE Aufruf blockiert: der erste baut die
+                // Verbindung auf, der dritte gehoert dem neuen Lauf.
+                if (rufNr->fetch_add (1) == 1)
+                {
+                    imProvider->store (true);
+                    const auto bis = Uhr::now() + std::chrono::seconds (20);
+                    while (! freigabe->load() && Uhr::now() < bis)
+                        std::this_thread::sleep_for (std::chrono::milliseconds (5));
+                }
+                return vorlage;
+            }, server.pipeName());
+
+            tele.start();
+            pruefe (warteAuf (5000, [&] {
+                        return tele.snapshot().status == TelemetryClient::Status::verbunden;
+                    }),
+                    "die Telemetrie steht");
+            tele.reconnect();                  // zwingt den zweiten Provideraufruf
+            pruefe (warteAuf (5000, [&] { return imProvider->load(); }),
+                    "der helloProvider blockiert wirklich");
+            tele.stop();                       // loest den alten Lauf ab
+            tele.start();                      // neuer Lauf, neue Verbindung
+            const bool neuVerbunden = warteAuf (8000, [&] {
+                return tele.snapshot().status == TelemetryClient::Status::verbunden;
+            });
+            pruefe (neuVerbunden, "der neue Telemetrielauf steht nachgewiesen");
+
+            const auto vorFreigabe     = tele.snapshot();
+            const int  verbindungenVor = server.verbindungen.load();
+            freigabe->store (true);            // der alte Provider kehrt zurueck
+            std::this_thread::sleep_for (std::chrono::milliseconds (1200));
+            const auto nachFreigabe = tele.snapshot();
+            tele.stop();
+
+            pruefe (nachFreigabe.status == TelemetryClient::Status::verbunden
+                        && nachFreigabe.verbindungsVersuche == vorFreigabe.verbindungsVersuche
+                        && server.verbindungen.load() == verbindungenVor,
+                    "dieselbe Zusage gilt fuer den TelemetryClient",
+                    std::to_string (nachFreigabe.verbindungsVersuche) + " Versuche (vorher "
+                        + std::to_string (vorFreigabe.verbindungsVersuche) + "), "
+                        + std::to_string (server.verbindungen.load()) + " Serververbindungen (vorher "
+                        + std::to_string (verbindungenVor) + "), Status "
+                        + (nachFreigabe.status == TelemetryClient::Status::verbunden
+                               ? "verbunden" : "NICHT verbunden"));
             server.stoppen();
         }
 

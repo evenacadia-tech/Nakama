@@ -335,6 +335,21 @@ private:
     std::uint64_t abgewiesenZaehler = 0;
 };
 
+/// Kein Testhaken — die PRODUKTIONSFASSUNG des zweiten Templateparameters von
+/// `P2Schleuse`.
+///
+/// Der Haken laeuft vor jedem Anspruchsversuch des Erzeugers. In der
+/// Produktion ist er diese leere Struktur: der Aufruf hat keinen Rumpf, keinen
+/// Zweig und keinen Zeiger und verschwindet restlos — der Erzeugerpfad bleibt
+/// allokations-, lock- und wartefrei (§48.1). Ein Laufzeitzeiger haette
+/// dagegen in JEDER Veroeffentlichung eine Pruefung gekostet, nur damit ein
+/// Test etwas einhaengen kann.
+struct KeinP2Haken
+{
+    template <class Schleuse>
+    void vorAnspruch (Schleuse&, std::uint64_t) noexcept {}
+};
+
 /// P2-Schleuse: vorallokierte SPSC-Struktur zwischen dem erzeugenden Worker
 /// und dem Telemetriethread (§48.1 "Audio → Worker ausschliesslich ueber
 /// vorallokierte SPSC-Strukturen"; §53.9 "P2 je Sonde Cap 2, aeltesten
@@ -381,20 +396,34 @@ private:
 /// ein LOCH, das nie beschrieben wird, und der Frame geht in den naechsten
 /// Platz. Der Verbraucher erkennt das Loch daran, dass die Folgenummer im
 /// Platz nicht die erwartete ist — genau die Pruefung, die es ohnehin schon
-/// gibt —, und geht weiter. Der zweite Platz ist immer frei: es gibt genau
-/// EINEN Verbraucher, er haelt hoechstens einen Platz, und das war der erste.
+/// gibt —, und geht weiter. Dass am Ende IMMER ein Platz frei wird, ist keine
+/// Zaehlfrage, sondern bewiesen: der Verbraucher raeumt nur vorwaerts und nur
+/// unterhalb von `schreib`, sein Vorrat an Positionen ist also endlich (der
+/// Beweis steht bei der Schleife in `veroeffentlichen`).
 /// Der Verlust liegt damit wieder dort, wo die Politik ihn haben will, beim
 /// aeltesten wartenden Frame.
-template <std::size_t SlotBytes = 8192>
+template <std::size_t SlotBytes = 8192, class Haken = KeinP2Haken>
 class P2Schleuse
 {
 public:
     static constexpr std::size_t kSlots = kCapP2JeSonde + 1;
 
+    /// Der Testhaken (siehe `KeinP2Haken`). In der Produktion leer.
+    Haken haken {};
+
     /// Besitzzustaende eines Slots.
     static constexpr std::uint32_t kFrei        = 0;
     static constexpr std::uint32_t kVerbraucher = 1;
     static constexpr std::uint32_t kErzeuger    = 2;
+
+    /// So viele Fehlversuche OHNE jeden Fortschritt des Verbrauchers gelten
+    /// als gebrochene SPSC-Zusage (Begruendung in `veroeffentlichen`). Ein
+    /// lebender Verbraucher kann sie nicht erreichen: um kSlots Kandidaten
+    /// nacheinander zu blockieren, muss er kSlots-1 mal freigeben und neu
+    /// beanspruchen, und jede Freigabe meldet einen hoeheren Stand. Vier volle
+    /// Ringe ohne eine einzige Meldung sind kein Zeitfenster mehr, sondern ein
+    /// Stillstand.
+    static constexpr std::size_t kOhneFortschrittMax = kSlots * 4;
 
     P2Schleuse()
     {
@@ -418,9 +447,9 @@ public:
         // schon angehoben haette und dann nicht schreiben kann, haette einen
         // Frame zweimal verloren.
         //
-        // ── Warum GENUG Versuche, nicht zwei (Matrix `A-P2-04`) ───────────
+        // ── Warum GARANTIERT, nicht "begrenzt versucht" (Matrix `A-P2-04`) ─
         //
-        // Die vorige Fassung versuchte `p` und dann `p+1`. Der Verbraucher
+        // Die erste Fassung versuchte `p` und dann `p+1`. Der Verbraucher
         // haelt zwar hoechstens EINEN Platz — aber er kann ihn zwischen den
         // beiden Versuchen wechseln: er gibt `p` frei und beansprucht `p+1`,
         // und beide Versuche scheitern. Dann fiel der NEUESTE Frame, also
@@ -428,12 +457,55 @@ public:
         // (§53.9). Unter Baulast trat der Fall wirklich ein und riss B10 mit
         // "[2 neueste wegen fremden Anspruchs verworfen]" (NAK-98).
         //
-        // Der Erzeuger geht deshalb den ganzen Ring ab, und das zweimal: bei
-        // drei Slots und einem Verbraucher, der je Runde hoechstens einen
-        // Platz haelt, ist danach garantiert einer frei. Die Schleife ist fest
-        // begrenzt — wartefrei bleibt wartefrei.
-        for (std::size_t versuch = 0; versuch < kSlots * 2; ++versuch, ++p)
+        // Die zweite Fassung erhoehte auf `kSlots * 2` feste Versuche. Auch das
+        // ist nur begrenztes Versuchen: haelt der Verbraucher einen Platz
+        // lange, lassen die Kollisionsloecher das Fenster `schreib - boden`
+        // wachsen; liegt er danach mindestens sechs Positionen zurueck, kann er
+        // zwischen JEDEN zwei Versuchen den naechsten Kandidaten beanspruchen,
+        // und alle sechs scheitern (NAK-104, Pruefbefund vom 2026-08-30).
+        //
+        // Deshalb steht hier keine Zahl mehr, sondern eine BEWIESEN endende
+        // Schleife. Sie sperrt nicht, sie schlaeft nicht, sie allokiert nicht;
+        // sie gewinnt je Runde nachweislich Boden:
+        //
+        //   1. Es gibt genau EINEN Verbraucher, und er haelt je Zeitpunkt
+        //      hoechstens EINEN Platz (`abholen`: beanspruchen, kopieren,
+        //      freigeben).
+        //   2. Er beansprucht nur Positionen UNTERHALB von `schreib`; `schreib`
+        //      bewegt allein der Erzeuger, und der steht waehrend dieses
+        //      Aufrufs hier.
+        //   3. Scheitert der Versuch an Position `p+k`, dann haelt der
+        //      Verbraucher in diesem Augenblick eine Position `c` mit
+        //      `c ≡ p+k (mod kSlots)` und `c < schreib`.
+        //   4. Scheitert auch `p+k+1`, so ist die dann gehaltene Position
+        //      `c' ≢ c (mod kSlots)`, also `c' != c`; und weil der Verbraucher
+        //      ausschliesslich VORWAERTS raeumt (`lese = c + 1`), gilt
+        //      `c' > c`.
+        //   5. Die gehaltenen Positionen wachsen damit STRENG MONOTON und
+        //      bleiben unter `schreib`. Der Vorrat ist endlich: nach hoechstens
+        //      `schreib - Verbraucherstand` Fehlversuchen findet der
+        //      Verbraucher nichts mehr, haelt nichts mehr, und der naechste
+        //      Versuch gelingt.
+        //
+        // Im eingeschwungenen Betrieb ist dieser Vorrat `kCapP2JeSonde`, also
+        // zwei — die Schleife endet praktisch beim ersten oder zweiten Versuch.
+        //
+        // Bricht die SPSC-Zusage (zwei Verbraucher, oder einer, der einen Platz
+        // nie freigibt), traegt Punkt 5 nicht mehr. Dann darf hier nicht ewig
+        // gedreht werden: bleibt der gemeldete Verbraucherstand ueber
+        // `kOhneFortschrittMax` Fehlversuche hinweg stehen, ist bewiesen, dass
+        // niemand Boden gewinnt — der Frame faellt gezaehlt, statt den
+        // erzeugenden Worker festzuhalten. Die Zahl muss 0 bleiben; sie ist die
+        // Wache ueber genau diese Zusage.
+        //
+        // Der Verbraucherstand wird ERST beim ersten Fehlversuch gelesen. Der
+        // haeufige Weg — Platz frei, ein Versuch — kostet damit kein einziges
+        // Atomic mehr als vorher.
+        std::uint64_t standZuletzt = 0;
+        std::size_t   ohneFortschritt = 0;
+        for (;; ++p)
         {
+            haken.vorAnspruch (*this, p);
             Slot* kandidat = &slots[static_cast<std::size_t> (p % kSlots)];
             std::uint32_t erwartet = kFrei;
             if (kandidat->beansprucht.compare_exchange_strong (erwartet, kErzeuger,
@@ -449,25 +521,31 @@ public:
             // den naechsten Platz; der Verbraucher ueberspringt das Loch an
             // der nicht passenden Folgenummer.
             kollisionsLoecherZaehler.fetch_add (1, std::memory_order_relaxed);
-        }
-        if (s == nullptr)
-        {
-            // Unerreichbar, solange es genau EINEN Verbraucher gibt. Die Zahl
-            // ist der laufende Beleg dafuer — sie muss 0 bleiben.
+
+            const std::uint64_t stand = verbraucherstand();
+            if (ohneFortschritt == 0 || stand != standZuletzt)
+            {
+                standZuletzt = stand;
+                ohneFortschritt = 1;
+                continue;
+            }
+            if (++ohneFortschritt < kOhneFortschrittMax)
+                continue;
+            // Unerreichbar, solange es genau EINEN Verbraucher gibt und er
+            // jeden Platz wieder freigibt. Die Zahl ist der laufende Beleg
+            // dafuer — sie muss 0 bleiben.
             beanspruchtVerworfenZaehler.fetch_add (1, std::memory_order_relaxed);
             return false;
         }
 
         // Der aelteste NOCH WARTENDE Frame ist der spaetere von "was der
         // Verbraucher schon geholt hat" und "was der Erzeuger schon verworfen
-        // hat". Ohne den ersten Teil zaehlte jede Veroeffentlichung nach den
-        // ersten beiden als Ersetzung, auch wenn der Verbraucher laengst
-        // leergeraeumt hat — die Zahl waere eine Luege ueber den Rueckstau
-        // (gemessen am Lastbein: 133 056 "Ersetzungen" bei 133 120
-        // Veroeffentlichungen und 92 857 wirklich gesendeten Frames).
-        const std::uint64_t geholt = verbraucht.load (std::memory_order_acquire);
-        const std::uint64_t unten = boden.load (std::memory_order_acquire);
-        const std::uint64_t c = geholt > unten ? geholt : unten;
+        // hat" — genau `verbraucherstand()`. Ohne den ersten Teil zaehlte jede
+        // Veroeffentlichung nach den ersten beiden als Ersetzung, auch wenn der
+        // Verbraucher laengst leergeraeumt hat — die Zahl waere eine Luege ueber
+        // den Rueckstau (gemessen am Lastbein: 133 056 "Ersetzungen" bei
+        // 133 120 Veroeffentlichungen und 92 857 wirklich gesendeten Frames).
+        const std::uint64_t c = verbraucherstand();
         if (p - c >= kCapP2JeSonde)
         {
             // Voll: der AELTESTE ungesendete Frame weicht.
@@ -550,9 +628,11 @@ public:
     }
 
     /// Wie oft der Erzeuger GAR KEINEN Platz beanspruchen konnte und den
-    /// neuen Frame verwerfen musste. Bei einem Verbraucher ist das
-    /// unerreichbar; die Zahl muss 0 bleiben und ist damit die Wache ueber
-    /// „der neueste Frame faellt nie wegen einer Kollision".
+    /// neuen Frame verwerfen musste. Das setzt einen Verbraucher voraus, der
+    /// ueber `kOhneFortschrittMax` Fehlversuche hinweg keinen Fortschritt
+    /// meldet — also einen stehenden oder einen zweiten. Bei EINEM lebenden
+    /// Verbraucher ist es unerreichbar; die Zahl muss 0 bleiben und ist damit
+    /// die Wache ueber „der neueste Frame faellt nie wegen einer Kollision".
     std::uint64_t beanspruchtVerworfen() const noexcept
     {
         return beanspruchtVerworfenZaehler.load (std::memory_order_relaxed);
@@ -591,7 +671,35 @@ public:
         return schreib.load (std::memory_order_acquire);
     }
 
+    /// Aelteste Position, die der Verbraucher noch beanspruchen darf. Der
+    /// wandernde Testverbraucher aus `A-P2-04` braucht sie, um dort
+    /// anzufangen, wo ein echter Verbraucher anfinge.
+    std::uint64_t testBodenstand() const noexcept
+    {
+        return boden.load (std::memory_order_acquire);
+    }
+
+    /// Fortschritt melden wie `abholen` es nach jeder Freigabe tut. Ohne diese
+    /// Meldung waere der Testverbraucher kein wandernder Verbraucher, sondern
+    /// ein STEHENDER — und ein stehender ist genau der Fall, den die Wache
+    /// `beanspruchtVerworfen` abfangen soll.
+    void testVerbrauchtMelden (std::uint64_t position) noexcept
+    {
+        verbraucht.store (position, std::memory_order_release);
+    }
+
 private:
+    /// Aelteste Position, die noch auf den Verbraucher wartet: das spaetere
+    /// von "schon geholt" und "schon verworfen". Beide Seiten der Buchfuehrung
+    /// lesen dieselbe Groesse — zwei Fassungen davon liefen bisher
+    /// auseinander.
+    std::uint64_t verbraucherstand() const noexcept
+    {
+        const std::uint64_t geholt = verbraucht.load (std::memory_order_acquire);
+        const std::uint64_t unten  = boden.load (std::memory_order_acquire);
+        return geholt > unten ? geholt : unten;
+    }
+
     struct Slot
     {
         /// Folgenummer PLUS EINS des Frames, der hier liegt; 0 = nie

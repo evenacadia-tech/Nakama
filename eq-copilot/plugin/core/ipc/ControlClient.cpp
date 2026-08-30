@@ -147,9 +147,16 @@ struct ControlClient::Laufzeit
         : helloProvider (std::move (hp)), beiAntwort (std::move (ba)),
           pipeName (std::move (pn)) {}
 
-    void threadLauf (std::uint64_t meinLauf);
-    bool eineVerbindung (std::uint64_t generation);
+    void threadLauf (std::uint64_t meinLauf, std::shared_ptr<IpcVerbindung> meine);
+    bool eineVerbindung (std::uint64_t generation, std::uint64_t meinLauf,
+                         IpcVerbindung& verbindung);
     bool sollAbbrechen (std::uint64_t generation) const noexcept;
+    /// Ist dieser Lauf abgeloest? Ein abgeloester Lauf schreibt KEINEN
+    /// gemeinsamen Zustand mehr: sein `getrennt` waere sonst eine Aussage
+    /// ueber einen Lauf, den es nicht mehr gibt — und der neue steht
+    /// womoeglich gerade verbunden da (`B-CC-12`, NAK-104).
+    bool abgeloest (std::uint64_t meinLauf) const noexcept
+    { return lebenslauf.load() != meinLauf; }
     bool sendeP0 (const std::string& json);
     P1Ergebnis sendeP1 (const std::string& schluessel, const std::string& json);
     Snapshot snapshotIntern() const;
@@ -159,7 +166,41 @@ struct ControlClient::Laufzeit
     std::function<void (const std::string&)> beiAntwort;
     std::string pipeName;
 
-    IpcVerbindung verbindung;
+    /// Die Verbindung des LAUFENDEN Laufs. Jeder `start()` legt eine eigene an.
+    ///
+    /// Eine gemeinsame Verbindung je Laufzeit reichte nicht: ein nach
+    /// `kStopFristMs` ABGELOESTER Thread lebt weiter, bis sein Callback
+    /// zurueckkommt. Startet der Client bis dahin erneut, endet der alte Lauf
+    /// zwar (`lebenslauf`) — er erreicht aber noch das unbedingte
+    /// `verbindung.schliessen()` am Ende von `eineVerbindung` und trennte damit
+    /// die Pipe des NEUEN Laufs (NAK-104, Pruefbefund vom 2026-08-30). Und die
+    /// Pruefung `lebenslauf` allein waere ohnehin nur ein Check-then-use: der
+    /// alte Lauf haelt zwischen Pruefung und Zugriff Lese- und Schreibwege auf
+    /// derselben Pipe.
+    ///
+    /// Mit einer eigenen Verbindung je Lauf beruehrt ein abgeloester Lauf
+    /// ausschliesslich SEINE — der neue bleibt unangetastet. Der Zeiger wird
+    /// nie null: `stop()` vor dem ersten `start()` findet eine geschlossene,
+    /// gueltige Verbindung vor.
+    mutable std::mutex verbindungMutex;
+    /// NICHT direkt benutzen: `eineVerbindung` bekommt die Verbindung SEINES
+    /// Laufs als Parameter. Der eigene Name macht sichtbar, dass beides nicht
+    /// dasselbe ist.
+    std::shared_ptr<IpcVerbindung> laufendeVerbindung = std::make_shared<IpcVerbindung>();
+
+    std::shared_ptr<IpcVerbindung> aktuelleVerbindung() const
+    {
+        std::lock_guard<std::mutex> l (verbindungMutex);
+        return laufendeVerbindung;
+    }
+
+    std::shared_ptr<IpcVerbindung> neueVerbindung()
+    {
+        auto frisch = std::make_shared<IpcVerbindung>();
+        std::lock_guard<std::mutex> l (verbindungMutex);
+        laufendeVerbindung = frisch;
+        return frisch;
+    }
 
     std::atomic<bool> laeuft { false };
     /// Der Thread hat `threadLauf()` verlassen. `stop()` wartet darauf, statt
@@ -215,7 +256,12 @@ void ControlClient::start()
     k->fertig.store (false);
     auto kern = k;
     const auto meinLauf = kern->lebenslauf.fetch_add (1) + 1;
-    thread = std::thread ([kern, meinLauf] { kern->threadLauf (meinLauf); });
+    // Eigene Verbindung je Lauf (`B-CC-12`): der Thread bekommt sie direkt in
+    // die Hand, statt sie spaeter aus der Laufzeit zu holen.
+    auto meine = kern->neueVerbindung();
+    thread = std::thread ([kern, meinLauf, meine] {
+        kern->threadLauf (meinLauf, std::move (meine));
+    });
 }
 
 void ControlClient::stop()
@@ -225,9 +271,14 @@ void ControlClient::stop()
     // selbst zu joinen waere `std::system_error` und danach `std::terminate`.
     const bool ausDemClientthread = (std::this_thread::get_id() == k->threadId.load());
 
+    // Genau die Verbindung, die beim Aufruf die aktuelle war. Ein spaeterer
+    // `start()` legt eine neue an; diese hier zu schliessen darf jene nicht
+    // treffen.
+    auto verbindung = k->aktuelleVerbindung();
+
     k->laeuft.store (false);
     k->verbindungsGeneration.fetch_add (1);
-    k->verbindung.ioAbbrechen();
+    verbindung->ioAbbrechen();
     k->warte.notify_all();
     if (ausDemClientthread)
         return;
@@ -235,7 +286,7 @@ void ControlClient::stop()
     std::lock_guard<std::mutex> l (lebenslaufMutex);
     if (! thread.joinable())
     {
-        k->verbindung.schliessen();
+        verbindung->schliessen();
         std::lock_guard<std::mutex> z (k->zustandMutex);
         k->zustand.status = Status::getrennt;
         return;
@@ -261,7 +312,7 @@ void ControlClient::stop()
         std::this_thread::sleep_for (std::chrono::milliseconds (1));
     }
     thread.join();
-    k->verbindung.schliessen();
+    verbindung->schliessen();
     std::lock_guard<std::mutex> z (k->zustandMutex);
     k->zustand.status = Status::getrennt;
 }
@@ -269,7 +320,7 @@ void ControlClient::stop()
 void ControlClient::reconnect()
 {
     k->verbindungsGeneration.fetch_add (1);
-    k->verbindung.ioAbbrechen();
+    k->aktuelleVerbindung()->ioAbbrechen();
     k->warte.notify_all();
 }
 
@@ -322,7 +373,7 @@ bool ControlClient::Laufzeit::sendeP0 (const std::string& json)
         // (genau deshalb ist die Queue ja voll). Ohne diesen Abbruch merkte er
         // den Ueberlauf erst nach seiner Frist — und "Verbindung schliessen"
         // waere eine Zusage mit fuenf Sekunden Verspaetung.
-        verbindung.ioAbbrechen();
+        aktuelleVerbindung()->ioAbbrechen();
         return false;
     }
     return true;
@@ -361,14 +412,15 @@ bool ControlClient::Laufzeit::kopplung (std::string& linkId, std::string& challe
     return true;
 }
 
-void ControlClient::Laufzeit::threadLauf (std::uint64_t meinLauf)
+void ControlClient::Laufzeit::threadLauf (std::uint64_t meinLauf,
+                                         std::shared_ptr<IpcVerbindung> meine)
 {
     threadId.store (std::this_thread::get_id());
     int backoffMs = kBackoffStartMs;
     while (laeuft.load() && lebenslauf.load() == meinLauf)
     {
         const auto generation = verbindungsGeneration.load();
-        const bool stand = eineVerbindung (generation);
+        const bool stand = eineVerbindung (generation, meinLauf, *meine);
         if (! laeuft.load())
             break;
         if (stand)
@@ -395,7 +447,9 @@ void ControlClient::Laufzeit::threadLauf (std::uint64_t meinLauf)
         fertig.store (true);
 }
 
-bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation)
+bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
+                                             std::uint64_t meinLauf,
+                                             IpcVerbindung& verbindung)
 {
     {
         std::lock_guard<std::mutex> l (zustandMutex);
@@ -407,6 +461,13 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation)
         zustand.brokerVersion.clear();
     }
     const ControlHello hello = helloProvider ? helloProvider() : ControlHello();
+    // Der Provider ist FREMDER Code und darf beliebig lange stehen. In dieser
+    // Zeit kann `stop()` diesen Lauf abgeloest und ein neuer `start()` laengst
+    // verbunden haben. Dann wird hier NICHT mehr geoeffnet: ein abgeloester
+    // Lauf macht keine neue Pipe auf und meldet auch keinen Zustand mehr
+    // (`B-CC-12`/`B-CC-16`, NAK-104).
+    if (sollAbbrechen (generation))
+        return false;
     if (! adresseGueltig (hello.adresse))
     {
         std::lock_guard<std::mutex> l (zustandMutex);
@@ -747,6 +808,7 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation)
     }
 
     verbindung.schliessen();
+    if (! abgeloest (meinLauf))
     {
         std::lock_guard<std::mutex> l (zustandMutex);
         zustand.status = Status::getrennt;

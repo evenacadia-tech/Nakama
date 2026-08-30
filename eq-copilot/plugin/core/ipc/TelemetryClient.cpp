@@ -42,18 +42,46 @@ struct TelemetryClient::Laufzeit
     Laufzeit (std::function<TelemetryHello()> hp, std::string pn)
         : helloProvider (std::move (hp)), pipeName (std::move (pn)) {}
 
-    void threadLauf (std::uint64_t meinLauf);
-    bool eineVerbindung (std::uint64_t generation, const TelemetryHello& hello);
+    void threadLauf (std::uint64_t meinLauf, std::shared_ptr<IpcVerbindung> meine);
+    bool eineVerbindung (std::uint64_t generation, std::uint64_t meinLauf,
+                         const TelemetryHello& hello, IpcVerbindung& verbindung);
     bool leerlaufLesen (StromLeser& leser, Ratengrenze& rate,
                         std::chrono::steady_clock::time_point rateBeginn,
-                        std::uint64_t generation);
+                        std::uint64_t generation, IpcVerbindung& verbindung);
     bool sollAbbrechen (std::uint64_t generation) const noexcept;
+    /// Wie im `ControlClient`: ein abgeloester Lauf schreibt keinen
+    /// gemeinsamen Zustand mehr (`B-TC-07`, NAK-104).
+    bool abgeloest (std::uint64_t meinLauf) const noexcept
+    { return lebenslauf.load() != meinLauf; }
     Snapshot snapshotIntern() const;
 
     std::function<TelemetryHello()> helloProvider;
     std::string pipeName;
 
-    IpcVerbindung verbindung;
+    /// Die Verbindung des LAUFENDEN Laufs — wortgleich zum `ControlClient`
+    /// (`B-TC-07`, NAK-104): ein abgeloester Lauf darf die Pipe eines
+    /// spaeteren `start()` nicht schliessen, und `lebenslauf` allein waere nur
+    /// ein Check-then-use. Jeder Lauf bekommt deshalb seine eigene.
+    mutable std::mutex verbindungMutex;
+    /// NICHT direkt benutzen: `eineVerbindung` bekommt die Verbindung SEINES
+    /// Laufs als Parameter. Der eigene Name macht sichtbar, dass beides nicht
+    /// dasselbe ist.
+    std::shared_ptr<IpcVerbindung> laufendeVerbindung = std::make_shared<IpcVerbindung>();
+
+    std::shared_ptr<IpcVerbindung> aktuelleVerbindung() const
+    {
+        std::lock_guard<std::mutex> l (verbindungMutex);
+        return laufendeVerbindung;
+    }
+
+    std::shared_ptr<IpcVerbindung> neueVerbindung()
+    {
+        auto frisch = std::make_shared<IpcVerbindung>();
+        std::lock_guard<std::mutex> l (verbindungMutex);
+        laufendeVerbindung = frisch;
+        return frisch;
+    }
+
     P2Schleuse<8192> schleuse;
 
     std::atomic<bool> laeuft { false };
@@ -93,7 +121,10 @@ void TelemetryClient::start()
     k->fertig.store (false);
     auto kern = k;
     const auto meinLauf = kern->lebenslauf.fetch_add (1) + 1;
-    thread = std::thread ([kern, meinLauf] { kern->threadLauf (meinLauf); });
+    auto meine = kern->neueVerbindung();
+    thread = std::thread ([kern, meinLauf, meine] {
+        kern->threadLauf (meinLauf, std::move (meine));
+    });
 }
 
 void TelemetryClient::stop()
@@ -103,9 +134,12 @@ void TelemetryClient::stop()
     // `ioAbbrechen` sofort, nicht erst nach `kIoFristMs`.
     const bool ausDemClientthread = (std::this_thread::get_id() == k->threadId.load());
 
+    // Genau die Verbindung, die beim Aufruf die aktuelle war.
+    auto verbindung = k->aktuelleVerbindung();
+
     k->laeuft.store (false);
     k->verbindungsGeneration.fetch_add (1);
-    k->verbindung.ioAbbrechen();
+    verbindung->ioAbbrechen();
     k->warte.notify_all();
     if (ausDemClientthread)
         return;
@@ -113,7 +147,7 @@ void TelemetryClient::stop()
     std::lock_guard<std::mutex> l (lebenslaufMutex);
     if (! thread.joinable())
     {
-        k->verbindung.schliessen();
+        verbindung->schliessen();
         std::lock_guard<std::mutex> z (k->zustandMutex);
         k->zustand.status = Status::getrennt;
         return;
@@ -136,7 +170,7 @@ void TelemetryClient::stop()
         std::this_thread::sleep_for (std::chrono::milliseconds (1));
     }
     thread.join();
-    k->verbindung.schliessen();
+    verbindung->schliessen();
     std::lock_guard<std::mutex> z (k->zustandMutex);
     k->zustand.status = Status::getrennt;
 }
@@ -144,7 +178,7 @@ void TelemetryClient::stop()
 void TelemetryClient::reconnect()
 {
     k->verbindungsGeneration.fetch_add (1);
-    k->verbindung.ioAbbrechen();
+    k->aktuelleVerbindung()->ioAbbrechen();
     k->warte.notify_all();
 }
 
@@ -171,7 +205,8 @@ TelemetryClient::Snapshot TelemetryClient::Laufzeit::snapshotIntern() const
     return s;
 }
 
-void TelemetryClient::Laufzeit::threadLauf (std::uint64_t meinLauf)
+void TelemetryClient::Laufzeit::threadLauf (std::uint64_t meinLauf,
+                                           std::shared_ptr<IpcVerbindung> meine)
 {
     threadId.store (std::this_thread::get_id());
     int backoffMs = kBackoffStartMs;
@@ -179,6 +214,12 @@ void TelemetryClient::Laufzeit::threadLauf (std::uint64_t meinLauf)
     {
         const auto generation = verbindungsGeneration.load();
         const TelemetryHello hello = helloProvider ? helloProvider() : TelemetryHello();
+        // Der Provider ist fremder Code und darf beliebig lange stehen. Ist
+        // dieser Lauf in der Zeit abgeloest worden, wird NICHT mehr verbunden —
+        // sonst risse ein abgeloester Lauf die Pipe des neuen auf und mit ihr
+        // dessen Verbindung (`B-TC-07`, NAK-104).
+        if (! laeuft.load() || lebenslauf.load() != meinLauf)
+            break;
 
         if (! istHex32 (hello.linkId) || ! istHex32 (hello.challenge))
         {
@@ -198,7 +239,7 @@ void TelemetryClient::Laufzeit::threadLauf (std::uint64_t meinLauf)
             continue;
         }
 
-        const bool stand = eineVerbindung (generation, hello);
+        const bool stand = eineVerbindung (generation, meinLauf, hello, *meine);
         if (! laeuft.load())
             break;
         if (stand)
@@ -225,7 +266,8 @@ void TelemetryClient::Laufzeit::threadLauf (std::uint64_t meinLauf)
 
 bool TelemetryClient::Laufzeit::leerlaufLesen (StromLeser& leser, Ratengrenze& rate,
                                               std::chrono::steady_clock::time_point rateBeginn,
-                                              std::uint64_t generation)
+                                              std::uint64_t generation,
+                                              IpcVerbindung& verbindung)
 {
     std::uint8_t puffer[4096];
     std::size_t gelesen = 0;
@@ -293,7 +335,9 @@ bool TelemetryClient::Laufzeit::leerlaufLesen (StromLeser& leser, Ratengrenze& r
 }
 
 bool TelemetryClient::Laufzeit::eineVerbindung (std::uint64_t generation,
-                                                const TelemetryHello& hello)
+                                                std::uint64_t meinLauf,
+                                                const TelemetryHello& hello,
+                                                IpcVerbindung& verbindung)
 {
     {
         std::lock_guard<std::mutex> l (zustandMutex);
@@ -475,7 +519,7 @@ bool TelemetryClient::Laufzeit::eineVerbindung (std::uint64_t generation,
             // Pipe-Abschluss sehen, ein fristbegrenztes Lesen schon. `stop`
             // und `reconnect` brechen es ueber `ioAbbrechen` sofort ab, genau
             // wie sie vorher die Condvar weckten.
-            if (! leerlaufLesen (leser, rate, rateBeginn, generation))
+            if (! leerlaufLesen (leser, rate, rateBeginn, generation, verbindung))
                 break;
             continue;
         }
@@ -495,6 +539,7 @@ bool TelemetryClient::Laufzeit::eineVerbindung (std::uint64_t generation,
     }
 
     verbindung.schliessen();
+    if (! abgeloest (meinLauf))
     {
         std::lock_guard<std::mutex> l (zustandMutex);
         zustand.status = Status::getrennt;

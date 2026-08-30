@@ -2,6 +2,7 @@
 <!-- NAKAMA-URTEIL: T2 NEEDS_WORK 2026-08-23 nachgearbeitet -->
 <!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-24 offen -->
 <!-- NAKAMA-URTEIL: T3 NEEDS_WORK 2026-08-29 nachgearbeitet -->
+<!-- NAKAMA-URTEIL: T3 PASS 2026-08-30 -->
 
 > **T3 / Gate G1, 24.08.2026 — NEEDS_WORK.** Zwei Gruende: (1) die State-Haelfte
 > des Gate-7-Bruchs — eine Sonde mit nur einem Stereo-Bus
@@ -25034,3 +25035,19 @@ in einem einzigen Commit.
   ist byteweise unverändert; A16 zählt vor und nach dieser Runde 82 Prüfungen.
 * Kein Urteil. Wer repariert, urteilt nicht — die Urteilsmarken im Kopf sind
   unangetastet, ein PASS kann nur ein frischer Prüfer geben.
+
+---
+
+## Dirigentenstand — 2026-08-30 (Sitzung 3e24ab41): S9 `SONDE-007b` **T3 PASS** — NAK-88 geschlossen
+
+**Stand dieses Abschnitts:** `3687ea4` (Basis der Konvergenzrunde 4: `ab968b9`; Ticketbasis `eef0cbb`).
+
+**Runde 4 (Konvergenzrunde, Regel des Dirigenten):** Opus/max `nakama-s9-ab968b9-bau` (2bacd67b), Aufsicht ENG; Commits `1bfc8b0` (Textbegrenzung an drei Stellen, kein Produktcode) und `3687ea4` (Kanon-Kopf, Roh-Datei, Rundenabschnitt). Kanon GRÜN 32/32 auf `1bfc8b0` (`docs/beweise/roh/SONDE-007b-1bfc8b0.md`).
+
+**Abschlussprüfung:** Codex `gpt-5.6-sol`, Effort `high` (Doku-/Testtext, lokal begrenzt), frischer Thread `01a05286-a4f5-79f3-a574-1d3d1070e71c`, gebundener Auftrag nach Vorlage A über `git diff ab968b9...3687ea4 -- eq-copilot/plugin/tests/SondeNullTestMain.cpp tools/beweise.ps1`, HEAD vor/nach identisch `3687ea4`, 97 s — wörtlich:
+
+> URTEIL: PASS — kein DEFEKT; NAK-88 ist durch die Begrenzung auf das gemeinsame Ergebnis korrekt geschlossen. Geprüft: Diff, unveränderte vier Aufrufe und identischer NakamaState.cpp-Blob; A16 selbst ausgeführt: Exit 0, 82/82, HEAD vorher/nachher 3687ea4. Nicht erneut geprüft: kompletter Kanon sowie separate Identitäts-, Audio-Thread- und Migrationstests; deren Grünstand wurde nur aus dem kanonischen 32/32-Beleg gelesen.
+
+**Urteil des Dirigenten:** Die Marke `T3 PASS 2026-08-30` steht im Kopf. Prüferkette dieses Tickets: T2 zweimal (23.08.), T3 aus G1 (24.08.), T3 Runde 1–3 (29.08., je frischer Thread `01a04ace…`, `01a04ae3…`, `01a04b0e…`), Konvergenzentscheid 30.08. (NAK-88 = Lücke), Abschlussprüfer Runde 4 PASS. §55 Klausel 1 (Scan und Laden in FL) ist seit 29.08. gemessen (Abschnitt „FL-Termin — 2026-08-29"). Offen bleibt für die Phase nur der G1-Gate-Lauf (`docs/beweise/G1.md` §12).
+
+**Rundenbilanz** (`tools/dirigent/rundenbilanz.py`), nur die S9-eigenen Runden: R1 `eef0cbb..72146c1` Tests +150/−0, Prüfwerkzeug +1/−1; R2 `72146c1..d211431` Tests +53/−2, Prüfwerkzeug +1/−1; R4 `ab968b9..3687ea4` Tests +38/−25, Prüfwerkzeug +1/−1, Doku +3196/−6. Die Spanne `d211431..ab968b9` gehört anderen Tickets (S8, NAK-94/96/100) und zählt hier nicht. Produktcode wurde in keiner Nacharbeitsrunde geändert; die Runden 1–4 schlossen Beweisaussagen und Testmessungen.

@@ -1277,7 +1277,19 @@ kein Commit dieser Runde berührt etwas außerhalb von `docs/**`.
 | `61228c4` | Planedits und Register — B1 bis B4, B7 | `plan.json`, `bauaufteilung-sonden.md`, `offene-punkte.md` |
 | `2397790` | Karten — B5, B6 | `fragen.json` |
 | `c9eece7` | Manifest — §9, zwei Herstellerquellen, lebender Kopf | `beweise/PR1.md` |
-| — | gerechneter Planstand | `PLAN-STAND.md` |
+| `ca5a305` | gerechneter Planstand und dieser Nachlauf | `PLAN-STAND.md`, `beweise/PR1.md` |
+| letzter | Planstand ohne Arbeitsbaum-Warnung | `PLAN-STAND.md` |
+
+**Zur Reihenfolge, damit die Aussage oben nicht mehr sagt als die Messung.** Der Generator
+setzt die Warnung, solange unter `docs/plan/`, `docs/beweise/` oder `tools/plan/` etwas
+uncommittet liegt — und dieses Manifest liegt genau dort. Deshalb braucht ein
+warnungsfreies Blatt zwingend **zwei** Läufe: einen vor dem Manifest-Commit (der die
+Warnung trägt) und einen danach (der sie nicht mehr trägt). Die Rohausgabe oben ist der
+zweite Lauf. Der Stand `ca5a305` selbst trug im Blatt noch die Warnung, weil dieser
+Nachlaufabschnitt beim Rechnen noch nicht committet war; der letzte Commit der Runde
+ist deshalb ein reiner Planstand-Commit, und erst er trägt das warnungsfreie Blatt.
+Das ist keine Nachlässigkeit, sondern die einzige Reihenfolge, in der ein Manifest über
+seinen eigenen Planstand-Lauf berichten kann.
 
 
 **Keine Urteilsmarke.** Diese Runde setzt keine `NAKAMA-URTEIL`-Zeile; PR1 bleibt im

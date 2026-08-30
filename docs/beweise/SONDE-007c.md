@@ -19775,3 +19775,19 @@ Kanon-Abschlusslauf stehen im Abschluss-Commit dieser Runde.
 | **E** — „jede neue Prüfung einmal gebrochen" | drei Brüche, jeder trifft genau eine Zusage: Hülle auf Durchreichen → Exit 1 im Fuzz; `hashen` aus der Deckung → `[3c/0]` rot; `hashen` ohne Temp-Ziel → `[3c/1]` rot. Alle drei per sha256 zurückgenommen |
 | **E** — „Rohausgabe liegt bei" | der vollständige Lauf liegt als eigene Datei unter `docs/beweise/roh/`, nicht als Behauptung — genau der dritte Befund |
 | **F** — „Änderungssatz" | Skript, Skriptkopf, A17-Behauptung, dieser Abschnitt, die zwei datierten Korrekturen und der Registereintrag gehen zusammen |
+
+---
+
+### Endstand nach dem Kanon-Abschlusslauf
+
+Dieselbe Zählweise, dieselbe Quellenmenge, gemessen **nach** dem gemeinsamen
+Kanon-Abschlusslauf auf `219424f` (Manifest `docs/beweise/SONDE-007a.md`,
+Abschnitt „Kanon-Lauf - SONDE-007a Runde 16 + NAK-94 Nacharbeit 11 -
+Abschluss"; A17 dort **[OK] Exit 0, 48,59 s**).
+
+| Muster | Code | Man. lebend | Man. historisch | Register |
+|---|---|---|---|---|
+| `_geschuetzt` | 7 | 0 | 12 | 1 |
+| `FUZZ_OHNE_JSON` | 5 | 0 | 10 | 1 |
+| `[3c/1]` | 3 | 0 | 8 | 2 |
+| `--fuzz-voll` | 5 | 0 | 9 | 2 |

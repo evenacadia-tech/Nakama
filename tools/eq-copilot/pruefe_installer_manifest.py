@@ -89,6 +89,17 @@ DREI HAERTEGRADE FUER DENSELBEN HASH (NAK-94, 29.08.2026)
   Die Brueche B6-Z1..B6-Z7 stehen mit ROT und Ruecknahme in
   docs/beweise/SONDE-007c.md (NAK-94 Nacharbeit 6, 30.08.2026).
 
+  Z1 BRICHT AN EINEM GEAENDERTEN BYTE; EINE FEHLENDE PFLICHTDATEI BRICHT DEN
+  BLOCK AB (NAK-94 Nacharbeit 7, 30.08.2026). Beides ist ROT, aber es ist
+  nicht dasselbe: liegt die Datei vor und ist lesbar, weicht nur ihr SHA-256
+  ab, so faerbt das genau EINE Zeile - Z1 - und Z2..Z7 laufen auf dem
+  vollstaendigen Korpus gruen weiter. Fehlt die Datei, ist sie unlesbar oder
+  kein Journalobjekt, liegt eine verwaiste daneben oder fehlt eine
+  Statusklasse, dann haelt [3b] an (fail-closed), weil die uebrigen Zusagen
+  nichts Vollstaendiges mehr messen koennten. Belegt als B7-Z1 (Byte, zwei Stufen) und als eigene Probe
+  "Pflichtmenge" (Umbenennen -> Abbruch -> Ruecknahme) in
+  docs/beweise/SONDE-007c.md.
+
   ZWEI SORTEN PROBE-JOURNALE, seit NAK-94 Nacharbeit 5 (30.08.2026):
 
     Writer-Fixtur   von Install-Nakama.ps1 SELBST in der A18-Sandbox erzeugt
@@ -979,15 +990,33 @@ def _probelauf(arbeit) -> tuple[str, list[str]]:
     return puffer.getvalue(), gefunden
 
 
-def _writer_fixturen() -> tuple[dict[str, tuple[bytes, dict, dict]], list[str]]:
+def _writer_fixturen() -> tuple[dict[str, tuple[bytes, dict, dict]],
+                               list[str], list[str]]:
     """[3b] Z1: die eingefrorenen Writer-Journale laden - fail-closed.
 
-    Gibt `(korpus, klagen)` zurueck; `korpus` bildet je Fall auf
-    `(rohe Bytes, gelesener Kopf, MANIFEST-Eintrag)` ab. Eine nicht leere
-    Klagenliste heisst: der Korpus traegt [3b] nicht mehr. Der Aufrufer macht
-    daraus eine ROTE Zeile UND bricht den Block ab - eine stillschweigend
-    ausgelassene Gegenprobe ist schlimmer als keine (dieselbe Regel wie in
-    adversariale_strukturproben).
+    Gibt `(korpus, klagen, abbruch)` zurueck; `korpus` bildet je Fall auf
+    `(rohe Bytes, gelesener Kopf, MANIFEST-Eintrag)` ab. JEDE Klage macht Z1
+    ROT. `abbruch` ist die Teilmenge der Klagen, nach denen [3b] die
+    Writer-Form ueberhaupt nicht mehr messen kann; der Aufrufer haelt dann den
+    ganzen Block an - eine stillschweigend ausgelassene Gegenprobe ist
+    schlimmer als keine (dieselbe Regel wie in adversariale_strukturproben).
+
+    Der Schnitt zwischen beiden (NAK-94 Nacharbeit 7, 30.08.2026, Befund des
+    siebten Pruefers):
+
+      ABBRUCH  die Pflichtdatei FEHLT; sie liegt vor, ist aber nicht lesbar
+               oder kein Objekt; eine verwaiste Datei liegt daneben; eine
+               Statusklasse aus JOURNAL_PFLICHTSTATUS ist nicht mehr
+               vertreten; oder das MANIFEST selbst fehlt. Dann ist der Korpus
+               unvollstaendig oder unbestimmt, und Z2..Z7 haetten nichts
+               Vollstaendiges zu messen.
+
+      NUR ROT  die Datei LIEGT VOR und ist lesbar, ihr SHA-256 weicht aber vom
+               MANIFEST ab: sie ist keine eingefrorene Writer-Form mehr. Das
+               sagt Z1 - und nur Z1. Der Korpus ist vollstaendig, also laufen
+               Z2..Z7 auf ihm weiter und bleiben gruen. Genau das macht den
+               Bruch unterscheidbar: EIN geaendertes Byte faerbt eine einzige
+               Zusagenzeile.
 
     Pflicht ist JEDER in MANIFEST.json gefuehrte Fall; die Bytes werden vor
     der Benutzung gegen den dort festgeschriebenen SHA-256 nachgerechnet, und
@@ -1004,40 +1033,69 @@ def _writer_fixturen() -> tuple[dict[str, tuple[bytes, dict, dict]], list[str]]:
     Statusachse liegt ausserhalb des Korpus.
     """
     klagen: list[str] = []
+    abbruch: list[str] = []
+
+    def haltend(klage: str) -> None:
+        """Eine Klage, nach der [3b] nichts Vollstaendiges mehr messen kann."""
+        klagen.append(klage)
+        abbruch.append(klage)
+
     if not JOURNAL_FIXTUR_MANIFEST.is_file():
-        return {}, [
+        fehlt_manifest = (
             "der Writer-Journalkorpus fehlt "
             f"({JOURNAL_FIXTUR_MANIFEST.relative_to(WURZEL).as_posix()}) - "
-            "erzeugen mit: py -3.13 tools/eq-copilot/erzeuge_installer_journale.py"]
+            "erzeugen mit: py -3.13 tools/eq-copilot/erzeuge_installer_journale.py")
+        return {}, [fehlt_manifest], [fehlt_manifest]
     korpus = json.loads(JOURNAL_FIXTUR_MANIFEST.read_text(encoding="utf-8"))
     geladen: dict[str, tuple[bytes, dict, dict]] = {}
     for fall in korpus["faelle"]:
         weg = JOURNAL_FIXTUREN / fall["datei"]
         if not weg.is_file():
-            klagen.append(f"{fall['datei']}: im MANIFEST gefuehrt, liegt aber nicht vor")
+            haltend(f"{fall['datei']}: im MANIFEST gefuehrt, liegt aber nicht vor")
             continue
         rohe = weg.read_bytes()
         ist = hashlib.sha256(rohe).hexdigest().upper()
         if ist != fall["sha256"]:
+            # KEIN Abbruch: die Datei liegt vor. Sie ist keine eingefrorene
+            # Writer-Form mehr - das sagt Z1 -, aber der Korpus ist
+            # vollstaendig, also messen Z2..Z7 unten auf ihm weiter. Nur so
+            # faerbt ein geaendertes Byte genau EINE Zusagenzeile.
             klagen.append(
                 f"{fall['datei']}: SHA-256 {ist} statt {fall['sha256']} - von Hand "
                 "geaendert? Dann ist sie keine Writer-Form mehr")
+        try:
+            kopf = json.loads(rohe.decode("utf-8-sig"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as fehler:
+            # Liegt vor, ist aber nicht lesbar: hier hoert die Unterscheidung
+            # auf - ohne Kopf kann keine andere Zusage etwas ueber diesen Fall
+            # sagen, also bricht der Block ab.
+            haltend(f"{fall['datei']}: liegt vor, ist aber nicht lesbar "
+                    f"({type(fehler).__name__}) - ohne Kopf misst [3b] den Fall "
+                    "nicht mehr")
             continue
-        geladen[fall["datei"]] = (rohe, json.loads(rohe.decode("utf-8-sig")), fall)
+        if not isinstance(kopf, dict):
+            # Lesbar, aber kein Journalkopf. Ohne Abbruch liefe [3b] mit einem
+            # Nicht-Objekt im Korpus weiter und stuerbe unten mit einem
+            # Traceback - Unbekanntes ist ROT, nicht laut (Pruefliste D).
+            haltend(f"{fall['datei']}: liegt vor und ist lesbar, ist aber kein "
+                    f"Journalobjekt ({type(kopf).__name__}) - [3b] kann daran "
+                    "keine Zusage messen")
+            continue
+        geladen[fall["datei"]] = (rohe, kopf, fall)
     # Eine verwaiste Datei ist derselbe Befund wie eine fehlende: sie koennte
     # von Hand danebengelegt werden und saehe wie eine Writer-Fixtur aus.
     genannt = {fall["datei"] for fall in korpus["faelle"]}
     for weg in sorted(JOURNAL_FIXTUREN.glob("*.json")):
         if weg.name != "MANIFEST.json" and weg.name not in genannt:
-            klagen.append(f"{weg.name}: liegt im Korpus, steht in keinem MANIFEST-Fall")
+            haltend(f"{weg.name}: liegt im Korpus, steht in keinem MANIFEST-Fall")
     # Der Anker, den ein Loeschen im Korpus NICHT mitnimmt.
     vorhanden = {fall.get("status") for fall in korpus["faelle"]}
     fehlt = [s for s in JOURNAL_PFLICHTSTATUS if s not in vorhanden]
     if fehlt:
-        klagen.append(
+        haltend(
             f"kein Fall mit Journalstatus {', '.join(fehlt)} - [3b] behauptet "
             "sonst etwas ueber eine Statusklasse, die es nicht mehr misst")
-    return geladen, klagen
+    return geladen, klagen, abbruch
 
 
 def _manifest_zum_journal(manifest: dict, journal: dict) -> dict:
@@ -1083,6 +1141,14 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
     ueber mehrere Werte parametrisiert ist - das OK-Urteil ueber jede
     OK-Fixtur, die Statussperre ueber jeden Nicht-OK-Status -, ist EINE
     Zusage; ihre Werte zaehlt die Ausgabe, nicht dieser Text.
+
+    NAK-94 Nacharbeit 7 (30.08.2026), Befund des siebten Pruefers: bis dahin
+    hielt JEDE Z1-Klage den ganzen Block an, auch die an einem geaenderten
+    Byte - Z2..Z7 liefen dann gar nicht, statt gruen zu bleiben, und der Bruch
+    unterschied nichts. Jetzt trennt _writer_fixturen() zwischen "liegt vor,
+    aber geaendert" (nur Z1 rot) und "fehlt / unlesbar / verwaist / Statusachse
+    weg" (Abbruch). Der fail-closed Abbruch bleibt; er hat mit der Probe
+    "Pflichtmenge" seinen eigenen Bruch.
     """
     global INSTALL_ERGEBNIS
     print("\n[3b] Gegenproben zu [4] Auslieferungsstand und [4b] installiertem Stand")
@@ -1090,10 +1156,18 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
 
     # -- Z1: der Writer-Korpus ist vollstaendig und bytegleich --------------
     #
-    # Diese Zusage traegt alle anderen: ohne den Korpus misst [3b] die
-    # Writer-Form nicht. Sie steht deshalb VORN - ihr Bruch haelt den Block
-    # an, bevor eine andere Zusage ueberhaupt geprueft wird.
-    fixturen, korpusklagen = _writer_fixturen()
+    # Diese Zusage traegt alle anderen. Was danach passiert, haengt daran, WAS
+    # ihr fehlt (NAK-94 Nacharbeit 7, 30.08.2026):
+    #
+    #   ein geaendertes BYTE  Die Datei liegt vor und ist lesbar. Z1 wird rot,
+    #                         der Block laeuft weiter - Z2..Z7 messen auf dem
+    #                         VOLLSTAENDIGEN Korpus und bleiben gruen. So ist
+    #                         der Bruch unterscheidbar: eine Zusage, eine
+    #                         rote Zeile.
+    #   eine fehlende DATEI   Der Korpus ist unvollstaendig. Der Block bricht
+    #                         ab (fail-closed) - eine stillschweigend
+    #                         ausgelassene Gegenprobe ist schlimmer als keine.
+    fixturen, korpusklagen, korpusabbruch = _writer_fixturen()
     stati = sorted({e["status"] for _r, _k, e in fixturen.values()})
     pruefe(not korpusklagen,
            "Z1 [Writer-Korpus]: jeder in MANIFEST.json gefuehrte Fall liegt vor "
@@ -1101,11 +1175,16 @@ def gegenproben_nacharbeit(manifest: dict) -> None:
            f"Statusachse {', '.join(JOURNAL_PFLICHTSTATUS)} ist vertreten",
            " | ".join(korpusklagen) if korpusklagen
            else f"{len(fixturen)} Faelle, Status {', '.join(stati)}")
-    if korpusklagen:
+    if korpusabbruch:
         print("     [3b] bricht hier ab: ohne vollstaendigen Korpus misst der "
               "Block die Writer-Form nicht mehr, und eine stillschweigend "
-              "ausgelassene Gegenprobe ist schlimmer als keine.")
+              "ausgelassene Gegenprobe ist schlimmer als keine.  Grund: "
+              + " | ".join(korpusabbruch))
         return
+    if korpusklagen:
+        print("     [3b] laeuft weiter: die beanstandete(n) Datei(en) liegen vor "
+              "und sind lesbar, der Korpus ist also vollstaendig. Z2..Z7 messen "
+              "auf ihm weiter - rot ist damit genau eine Zusage: Z1.")
 
     # Die Fixturen der beiden Achsen kommen aus dem KORPUS, nicht aus einer
     # Namensliste im Skript: kommt eine fuenfte Fixtur dazu, faehrt [3b] sie

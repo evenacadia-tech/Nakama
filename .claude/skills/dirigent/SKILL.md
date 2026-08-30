@@ -156,7 +156,7 @@ Worker fertig, fehlgeschlagen, blockiert oder der Beobachter ausgefallen ist, be
 diesen Loop und führe den passenden Mess-, Nacharbeits- oder Haltpfad aus.
 ```
 
-Der Monitor ist der schnelle Weg, der Loop das zeitliche Sicherheitsnetz. Bei
+Der Monitor ist der schnelle Weg, der Loop das zeitliche Sicherheitsnetz: solange ein Monitor auf dem Beobachter scharf ist, laeuft der Loop unabhaengig von der Aufsichtsstufe nur stuendlich, und ein Tick ohne Befund wird mit einem Wort beantwortet — die Aufsichtsintervalle gelten nur, wenn kein Monitor moeglich ist (User 30.08.2026: alle 5 Minuten dasselbe zu schreiben ist absurde Tokenverschwendung). Bei
 Worker-Ende oder Halt: Beobachter beenden, `CronDelete` auf genau diese Task
 und mit `CronList` belegen, dass beides weg ist.
 
@@ -418,9 +418,12 @@ ist endlich. Der Lauf endet planmäßig an dieser Grenze, nicht an einem Fehler:
   beendet, Urteil im Manifest, Planstand gepusht, Loop/Beobachter/Worker
   abgeräumt) `tools/dirigent/start-dirigent.ps1` abgekoppelt starten, in
   `claude agents --json` prüfen, dass die neue Session läuft, dann die eigene
-  PID hart beenden. Messung: die native Statuszeile (`cockpit.ps1
-  -StatusLine`); Notbehelf ist die Größe des Session-Transkripts unter
-  `~/.claude/projects/<projekt>/<session-id>.jsonl`.
+  PID hart beenden. **Messung ausschließlich über die native Statuszeile**
+  (`cockpit.ps1 -StatusLine`, Feld `context_window.used_percentage`) oder die
+  vom User genannte Zahl. Der `<total_tokens>`-Restwert im Kontext ist ein
+  Sitzungsbudget und kein Kontextmaß; die Größe des Session-Transkripts ist es
+  ebenso wenig (30.08.2026: Fable meldete „rund 70k“, real waren es 385k).
+  Liegt keine Messung vor, heißt die Antwort „nicht gemessen“, nie eine Schätzung.
   Nach einer Compaction bleibt der Arbeitsanker unbestätigt, bis Planstand,
   Ticketquelle und HEAD erneut gelesen und abgeglichen sind.
 - Für Claude- und Codex-Kontingente gilt: ab 85 % warnen, ab 95 % keine neue

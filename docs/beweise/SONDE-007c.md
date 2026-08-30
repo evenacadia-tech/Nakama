@@ -18608,3 +18608,30 @@ als Messgröße — die Werte zählt die Laufausgabe.
 | **E** — „Jede neue Prüfung wurde einmal gebrochen" | `B7-Z1` in zwei Stufen, die Grenze in zwei weiteren, die Probe „Pflichtmenge" einmal — jeweils mit ROT, Rücknahme und grünem Nachlauf in der Rohausgabe |
 | **E** — Writer-Fixturen | Bytes am Ende unverändert: jede Änderung über eine `%TEMP%`-Kopie der Originalbytes, Rücknahme mit Bytevergleich und SHA-256 gegen `MANIFEST.json`, `git status` für `eq-copilot/fixtures/` leer |
 | **F** — „Änderungssatz" | Skript und A17-Behauptung im Runner liegen zusammen in `4c3fbf8`; Manifest und Register folgen im selben Commit-Paar |
+
+---
+
+### Kanon-Abschlusslauf
+
+Der gemeinsame Abschlusslauf steht in `docs/beweise/SONDE-007a.md`, Abschnitt
+„Kanon-Lauf - SONDE-007a Runde 12 + NAK-94 Nacharbeit 7 - Abschluss"; die
+Rohausgabe liegt unter `docs/beweise/roh/SONDE-007a-196f97e.md`. Urteil:
+**GRUEN — 32/32 Kanon-Läufe bestanden**, Exitcode 0, Beglaubigung nicht
+verweigert; A14 (`pruefe_kern_identitaetsfrei.py`), A17
+(`pruefe_installer_manifest.py`) und A18 (`pruefe_installer_gegenpfad.py`)
+alle Exit 0. Gefahren mit `-Bauen` auf dem committeten Endstand `196f97e`,
+Arbeitsbaum vorher sauber.
+
+**Bemerkung zum Lauf — bekannter Punkt „NAK-72", nicht neu.** Derselbe stille
+Hänger wie im Vorlauf, diesmal wieder mit Zeitstempeln gemessen statt geraten:
+Bau um 03:33:56 gestartet, letztes Bauartefakt 03:35:14, danach vierzehn
+Minuten **keine** Ausgabe. Gemessen um 03:48: kein `msbuild`, `cl` oder `link`
+mehr am Leben, die beiden Runner-`pwsh` bei 0,41 s und 0,58 s CPU in 14:42
+Laufzeit — also praktisch untätig —, und `vctip.exe` (MSVC-Telemetrie-Uploader,
+PID 11668) seit 03:33:59 weiter im Prozessbaum. `Fuehre-Aus` startet mit
+`Start-Process -Wait`, und das wartet in PowerShell auf den **ganzen**
+Prozessbaum. Nach dem Beenden dieses einen Fremdprozesses lief der Runner
+**sofort** weiter (das Log wuchs in derselben Sekunde) und ohne Neubau durch.
+Am Runner wurde nichts geändert; der Punkt steht seit 24.08.2026 als **NAK-72**
+im Register (`docs/offene-punkte.md`) samt seinen zwei Abhilfen und bleibt
+offen. Ein Eingriff in `Fuehre-Aus` liegt außerhalb dieser Ticketgrenze.

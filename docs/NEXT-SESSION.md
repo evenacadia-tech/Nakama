@@ -1,5 +1,15 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
+> ## ✅ NACHTRAG — 30.08.2026, Fable-Sitzung 9f06075a (ab 12:00) — S8 abgenommen, Prüfregeln umgebaut, NAK-100 als Rückbau
+>
+> **User-Wort 30.08.:** „wir hängen seit 19 wiederholungen bei phase 14/38, weil scheinbar jedes mal ein neues problem gefunden wird und es dann einzeln gefixt wird" · „ich erwarte dass du … ALLES so anpasst wie es gehört" · „macht der prüfskript überhaupt sinn? codex ist bekannt maximal zu übertreiben was tests angeht".
+>
+> **Diagnose (gemessen):** S8 Runden 7–19 = 79 Commits, 14 h, Produktdiff 17 Kommentarzeilen; Befunde seit Runde 8 nur am Prüfskript (K1b-Präprozessor-Nachbau) und am Manifesttext. Ursachen: Wiederprüfung über den ganzen, um Manifeste wachsenden Bereich `dafa5a5...HEAD` (522 Dateien); Manifestprosa als Befundfläche (Aussagen-Inventar, Klassifizierer); Befundklassen nicht angewendet; kein Rundenbudget; S8 + NAK-94 je Worker gekoppelt.
+>
+> **Erledigt:** (1) `7a87b7d` Regeln: Skill §3.4 (Wiederprüfung = Fixdiff + Befundliste + Gate-Text; `docs/**` keine Befundfläche; Rundenbudget 3 mit Konvergenzentscheid; Befund gegen Prüfwerkzeug mit Sabotage-Szenario = Härtung; ein Ticket je Worker), §3.5 lebender Manifestkopf, Prüfliste E ohne Inventar/Klassifizierer, Codex-Skill `sondenplan-audit` §3, Register **NAK-103** (K1b eingefroren). (2) Gebundener Abschlussprüfer S8 (Codex xhigh, Thread `01a0523e`, 334 s, nur S8-Pfade, Gate §53.4 wörtlich): **PASS** → Marke `T3 PASS 2026-08-30`, **S8 abgenommen**, Planstand 15/38. (3) Manifest-Diät: `SONDE-007a.md` 19 316 → 1 249 Zeilen (lebender Kopf, Kurztabelle der 20 Runden, jüngster Kanon, Abschluss); Verlauf unverändert in `SONDE-007a-verlauf.md`. (4) **NAK-100 umgewidmet**: Rückbau der Prüfskripte auf das Gate-Maß (A14 ≈ 800 statt 4 197 Zeilen; A17 analog) statt Aufteilung in Pakete — läuft in dieser Sitzung.
+>
+> **Als Nächstes (Reihenfolge):** NAK-100 Rückbau A14 → Kanon → gebundener Prüfer (high) → NAK-100 Rückbau A17 → gleiche Abnahme → Manifest-Diät `SONDE-007c.md`/`SONDE-010.md` → G1-Nacharbeit → S9, S9b, S14–15 je **eine** gebundene Abschlussprüfung → PR1. Der Dirigent startet auf User-Wort; sein Skill trägt die neuen Regeln.
+
 > ## ⏸ NACHTRAG — 30.08.2026, Dirigentenrunde 29.08. 22:00 – 30.08. 12:31 (Sitzung 054eedac) — STOPP auf User-Wort
 >
 > **User-Wort 30.08.:** „wenn die nächste aufgabe erledigt ist, machen wir hier mal ein stopp. ich muss ein paar dinge extern anpassen." Der nächste Dirigentenlauf beginnt erst auf sein Wort.

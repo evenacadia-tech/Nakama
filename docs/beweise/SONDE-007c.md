@@ -1168,6 +1168,8 @@ diesen Schaden nicht.
 <a id="nacharbeit-1"></a>
 ## 6. Nacharbeit Runde 1 — 2026-08-29
 
+**Stand dieses Abschnitts:** `043b48f` — Momentaufnahme dieses Laufs (Nennung im Abschnittskopf); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 > **Prüfer:** Codex `gpt-5.6-sol`, Stufe `xhigh`, Thread
 > `01a04b1e-cb90-7da2-bc16-3faccdb40bc5`, geprüft auf Stand `043b48f`.
 > Alle vier Befunde wurden vom Dirigenten an der Quelle bestätigt.
@@ -1328,6 +1330,8 @@ Vorführung gegen `043b48f`, in der dieselben zwei Mutationen mit
 <a id="nacharbeit-2"></a>
 ## 7. Nacharbeit Runde 2 — 2026-08-29 (T2-Prüfer Codex gpt-5.6-sol/xhigh, Thread 01a04b48-7130-7630-a094-04868a2205e0, Stand 05dbbb1)
 
+**Stand dieses Abschnitts:** `05dbbb1` — Momentaufnahme dieses Laufs (Nennung im Abschnittskopf); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 > **Prüfer:** Codex `gpt-5.6-sol`, Stufe `xhigh`, Thread
 > `01a04b48-7130-7630-a094-04868a2205e0`, geprüft auf Stand `05dbbb1`.
 > Beide Befunde wurden vom Dirigenten an der Quelle bestätigt und sind hier
@@ -1477,6 +1481,8 @@ leer, NAK-30 unberührt), `eq-copilot/install/nakama-installer-v1.json`,
 ---
 
 ## Kanon-Lauf - SONDE-007c
+
+**Stand dieses Abschnitts:** `9bb75ad` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Lauf:** 2026-08-29 00:26 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 28/28 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0
 
@@ -3909,6 +3915,8 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 ---
 
 ## Kanon-Lauf - SONDE-007c (nach Selbstaudit)
+
+**Stand dieses Abschnitts:** `9bb75ad` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Lauf:** 2026-08-29 00:33 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 28/28 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0
 
@@ -6346,6 +6354,8 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 ---
 
 ## Kanon-Lauf - SONDE-007c (Endstand vor Commit)
+
+**Stand dieses Abschnitts:** `9bb75ad` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Lauf:** 2026-08-29 00:37 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 28/28 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0
 
@@ -8786,6 +8796,8 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
 ## Kanon-Lauf - SONDE-007c auf a87d969
 
+**Stand dieses Abschnitts:** `a87d969` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 > **Zur Ueberschrift, die hier zuerst stand:** Ich hatte diesen Lauf
 > "sauberer Arbeitsbaum" genannt. Der Runner misst es selbst und sagt im Kopf
 > darunter das Gegenteil: **1 unbestaetigte Datei** - dieses Manifest, weil
@@ -11217,6 +11229,8 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 ---
 
 ## Kanon-Lauf - SONDE-007c Nacharbeit Runde 1 auf 85ad037
+
+**Stand dieses Abschnitts:** `85ad037` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Lauf:** 2026-08-29 04:05 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 28/28 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0
 
@@ -13721,6 +13735,8 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 ---
 
 ## Kanon-Lauf - SONDE-007c Nacharbeit Runde 2 auf b635c43
+
+**Stand dieses Abschnitts:** `b635c43` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Lauf:** 2026-08-29 04:52 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 28/28 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0
 
@@ -16258,6 +16274,8 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
 ## Abschluss der Dirigentenrunde — 2026-08-29: NEEDS_WORK, zweimal nachgearbeitet, Urteil offen
 
+**Stand dieses Abschnitts:** `cbb4239` — Momentaufnahme dieses Laufs (Nennung im Abschnittskopf); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 **Marke:** `T2 NEEDS_WORK 2026-08-29 nachgearbeitet` (unverändert). Stand `cbb4239`; Ticketbasis `9bb75ad`; Stand vor dieser Runde `043b48f`. Prüfer: Codex `gpt-5.6-sol`, Effort `xhigh`, drei frische Threads, jeder über den vollständigen Ticketbereich `git diff 9bb75ad...<Stand>`. Nacharbeit in zwei Runden durch je einen frischen Opus-Worker (`max`) im sichtbaren Checkout — die Codex-Sandbox fährt keinen Bau und keinen Kanonlauf (S8/S9-Präzedenz 28./29.08.); jede Runde hat auf dem committeten Stand den Kanon gefahren und angehängt.
 
 | Runde | Thread | Stand | Urteil | Befunde |
@@ -16678,6 +16696,8 @@ Wiederholung war deshalb nicht nötig; es steht genau ein Abschlusslauf hier.
 ---
 
 ## Kanon-Lauf - SONDE-007c NAK-94 vorgezogen - Abschluss
+
+**Stand dieses Abschnitts:** `9b4bb4d` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Lauf:** 2026-08-29 20:25 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/SONDE-007c-9b4bb4d.md](roh/SONDE-007c-9b4bb4d.md)
 
@@ -19804,3 +19824,135 @@ Abschluss"; A17 dort **[OK] Exit 0, 48,59 s**).
 **Einordnung:** Defekt, mittel (Prüfliste D/F: der Erzeuger ist der zweite Leser desselben Korpusmanifests und gehört in denselben Änderungssatz). **Regel des Dirigenten (Nacharbeit 12):** Der Erzeuger liest `journale/MANIFEST.json` über **dieselbe** Strukturprüfung wie A17 (Import von `_lies_geprueft`/Strukturvertrag aus `pruefe_installer_manifest.py` — keine zweite Kopie der Regeln); jeder Struktur- oder Dekodierfehler endet in `--pruefen` und beim Erzeugen kontrolliert mit Klartext und Exit 2, nie Traceback; der zentrale Fänger (`_geschuetzt`) legt sich auch um `main()` des Erzeugers. Die Fuzz-Deckung `[3c]` nimmt den Erzeuger-Leser (`pruefen()`) als Verbraucher auf, damit die Klasse dort gemessen ist. Proben: `"faelle"` → `"xaelle"` und ein ungültiges UTF-8-Byte → `--pruefen` Exit 2 mit Klartext, kein Traceback; Bruch (Import durch direkten Zugriff ersetzt → Traceback im Fuzz) und Rücknahme.
 
 **Nächster Schritt:** Nacharbeit 12 im selben Worker wie die nächste S8-Runde (falls Prüfer 17 Befunde hat; sonst allein), gemeinsamer Kanon, danach Prüfer 13 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.
+
+## NAK-94 Nacharbeit Runde 12 — 2026-08-30 (Prüfer-Thread `01a0516a-8842…`)
+
+**Stand dieses Abschnitts:** `ed08ff8` — der Codestand dieser Nacharbeit;
+Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
+Basis-SHA `75466c0`. Ein Befund, P2, bestätigt: **`journale/MANIFEST.json` hat
+zwei Leser, und nur einer hielt sich an den Strukturvertrag.** A17 liest die
+Datei seit Nacharbeit 9 über `_lies_geprueft`/`_journalkorpus_struktur`;
+`pruefen()` in `tools/eq-copilot/erzeuge_installer_journale.py` griff direkt zu.
+
+### Am Basis-Stand reproduziert
+
+Ohne Schreibzugriff auf das Repo, über die vorhandene In-Memory-Überlagerung
+`_dateien_ersetzt` aus A17 — dieselbe Mechanik, die `[3c]` benutzt. Gefahren
+wurde der echte Ausgang `--pruefen`; der sha256 der Fixturdatei steht vorher und
+nachher darunter und ist identisch.
+
+```
+--- "faelle" -> "xaelle" (eine Byteaenderung) ---
+    TRACEBACK        : KeyError: 'faelle'
+    ausgeloest in    : for fall in manifest["faelle"]:
+--- ein Byte auf 0xFF gekippt (kein gueltiges UTF-8) ---
+    TRACEBACK        : UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 20
+--- Wurzel ist kein Objekt ---
+    TRACEBACK        : TypeError: list indices must be integers or slices, not str
+    ausgeloest in    : for fall in manifest["faelle"]:
+--- unveraendert (Gegenprobe) ---
+    Exit             : 0
+```
+
+### Was jetzt gilt — eine Quelle, zwei Leser
+
+* `pruefen()` liest das Korpusmanifest über `_lies_geprueft` mit
+  `_journalkorpus_struktur` — **importiert** aus `pruefe_installer_manifest.py`,
+  nicht kopiert. Eine zweite Kopie der Regeln liefe früher oder später
+  auseinander, und dann sagte „dieselbe Prüfung" nichts mehr.
+* `main()` des Erzeugers liegt in `_geschuetzt()` — **derselben** Hülle, die
+  A17s `main()` und `[3c]` um jeden Fuzz-Fall legt. Struktur-, JSON- und
+  Dekodierfehler enden mit einer Klartextzeile auf stdout **und** stderr und
+  Exit 2; den Traceback gibt es nur mit dem neuen `--debug`.
+* Die Fuzz-Deckung `[3c]` nimmt `pruefen()` als **zweiten Verbraucher** auf
+  (`FUZZ_VERBRAUCHER`). `[3c/0]` rechnet über die Vereinigung beider und nennt
+  sie im Prüftext.
+
+**Warum ein eigener Verbraucher und kein angehängter Aufruf:**
+`_fuzz_verbraucher()` bricht bei einem Strukturhalt ab — und zwar an genau der
+Datei, um die es hier geht. Ein Aufruf am Ende jener Funktion wäre für jede
+Mutation des Korpusmanifests unerreichbar gewesen: eine Wache, die nichts
+misst. `_fuzz_einmal()` fährt deshalb **beide** Verbraucher je Fall, jeden in
+derselben Hülle `_geschuetzt()` — keine zweite Ausnahmebehandlung, das bleibt
+die Lehre aus Nacharbeit 11 — und die **schwerste** Klasse entscheidet
+(`_FUZZ_RANG`: `unkontrolliert` > `gegenprobe_unmoeglich` > `strukturhalt`).
+
+**Ein Modul, eine `Strukturhalt`-Klasse.** A17 läuft im Kanon als `__main__`.
+Ein Import des Erzeugers legte dabei eine **zweite** Kopie von
+`pruefe_installer_manifest` an; deren `Strukturhalt` wäre eine andere Klasse,
+`_geschuetzt()` finge sie nicht, und jeder Fuzz-Fall wäre falsch
+`unkontrolliert`. `_fuzz_erzeuger()` trägt das laufende Modul deshalb unter
+seinem Dateinamen in `sys.modules` ein, **bevor** importiert wird.
+
+### Proben über den echten Ausgang `--pruefen`
+
+Alle mit Exit **2**, Klartext, **kein** Traceback:
+
+| Mutation | Klartextzeile (gekürzt) |
+|---|---|
+| `"faelle"` → `"xaelle"` | `… MANIFEST.json: traegt nicht die von diesem Bein gelesene Struktur: keine nicht leere Liste 'faelle' (NoneType)` |
+| ein Byte auf `0xFF` | `… MANIFEST.json: keine gueltige UTF-8-Datei (UnicodeDecodeError: … byte 0xff in position 20 …)` |
+| Wurzel als Liste | `… MANIFEST.json: traegt nicht die von diesem Bein gelesene Struktur: Wurzel ist kein Objekt (list)` |
+| kein gültiges JSON | `… MANIFEST.json: kein gueltiges JSON (Expecting property name enclosed in double quotes: line 1 column 2)` |
+| ein Fall ohne `status` | `… faelle[0] ohne nicht leere Zeichenkette 'status' (NoneType); faelle[1] …` |
+| unverändert (Gegenprobe) | Exit **0**, `4 Writer-Fixturen bytegleich zum MANIFEST (Stand der Erzeugung: a010d64).` |
+
+### Bruch und Rücknahme — drei Brüche, jeder trifft genau eine Zusage
+
+Gebrochen wurde ohne Änderung im Baum; die sha256 beider Skripte und der
+Fixturbytes stehen vorher und nachher darunter und sind identisch.
+
+```
+=== A  Stand nach Nacharbeit 12 ===
+    Verbraucher: _fuzz_verbraucher, _fuzz_erzeuger   ungedeckte Bloecke: keine
+    "faelle" -> "xaelle"   -> strukturhalt     ... MANIFEST.json: traegt nicht die ... Struktur
+    Byte 20 auf 0xFF       -> strukturhalt     ... MANIFEST.json: keine gueltige UTF-8-Datei
+
+=== B  BRUCH 1: Erzeuger liest wieder direkt (json.loads) ===
+    "faelle" -> "xaelle"   -> unkontrolliert   KeyError: 'faelle' @ ...
+    Byte 20 auf 0xFF       -> unkontrolliert   UnicodeDecodeError: ... byte 0xff in position 20 ...
+
+=== C  BRUCH 2: der Erzeuger steht gar nicht mehr im Fuzz ===
+    Verbraucher: _fuzz_verbraucher   ungedeckte Bloecke: keine
+    "faelle" -> "xaelle"   -> befund           Z1 [Writer-Korpus]: jeder in MANIFEST.json ...
+
+=== D  RUECKNAHME ===
+    Verbraucher: _fuzz_verbraucher, _fuzz_erzeuger   ungedeckte Bloecke: keine
+    "faelle" -> "xaelle"   -> strukturhalt
+    Byte 20 auf 0xFF       -> strukturhalt
+
+sha256 NACHHER pruefe_installer_manifest.py:  ... unveraendert: True
+sha256 NACHHER erzeuge_installer_journale.py: ... unveraendert: True
+journale/MANIFEST.json unveraendert: True
+```
+
+Die drei Zeilen sind der ganze Punkt dieser Nacharbeit:
+
+* **B** zeigt, was die Strukturprüfung im Erzeuger *wirklich* bringt. Der
+  Exitcode wäre auch ohne sie 2 — dafür sorgt der zentrale Fänger. Die
+  **Klasse** aber wechselt von `strukturhalt` auf `unkontrolliert`, und
+  `unkontrolliert` ist die einzige, die `[3c]` rot färbt. Ohne den Vertrag ist
+  jeder solche Byte-Kipp ein Bruch der Zusage.
+* **C** zeigt, warum der zweite Verbraucher überhaupt nötig ist: **ohne** ihn
+  ist dieselbe Mutation nur ein `befund` von A17s Z1 — über den Erzeuger sagt
+  der Lauf dann gar nichts.
+* **A**/**D** zeigen den Zustand davor und danach, unverändert.
+
+Ein dritter Bruch liegt im Bau: wer `_geschuetzt()` in
+`pruefe_installer_manifest.py` auf Durchreichen stellt, macht damit
+zwangsläufig auch den Erzeuger laut — dieselbe Funktion, ein Import. Das ist
+die Wache aus Nacharbeit 11, jetzt mit einem zweiten Verbraucher dahinter.
+
+### Prüfliste D/F dieser Nacharbeit
+
+| Regel | wie eingehalten |
+|---|---|
+| **D** — „Unbekanntes ist ROT, fail-closed ohne Heuristik" | Der zweite Leser urteilt jetzt, statt zu sterben: Struktur-, JSON- und Dekodierfehler enden mit Klartext und Exit 2, in sechs Proben gemessen |
+| **E** — „Behauptung ≤ Messung" | A17-`Behauptung` und Runner-Kommentar nennen den zweiten Leser, den Import statt der Kopie und den Grund für die getrennten Verbraucher. `[3c/0]` druckt die Verbraucherliste im Prüftext mit |
+| **E** — „jede neue Prüfung einmal gebrochen" | Drei Brüche oben, jeder trifft genau eine Zusage; alle zurückgenommen, beide Skripte und die Fixturbytes danach bytegleich |
+| **F** — „Writer, Reader … eines Vertrags im selben Änderungssatz" | Genau der Befund: der zweite Leser desselben Korpusmanifests gehört in denselben Änderungssatz wie der erste. Regeln importiert, nicht kopiert |
+
+An `Install-Nakama.ps1`, den Fixturen und A18 wurde **nichts** geändert; das
+Installer-Manifest wurde weiterhin **nicht** neu gehasht. Die Marke von S9b
+bleibt unverändert; NAK-89 bleibt offen.

@@ -41,12 +41,14 @@ traegt der einleitende Satz den Stand.
 
 **Was gebaut wurde (Karte, keine Behauptung — Behauptungen stehen in §1):**
 
-**Stand dieser Karte:** `01c9cd3` — an diesem Stand sind ihre Anker geprüft
+**Stand dieser Karte:** `75466c0` — an diesem Stand sind ihre Anker geprüft
 (Runde 10: Zeile **K3/A14** trägt den Ausgang F13/F14/F15, Zeile
 **Tlog-Riegel** nennt keine Anzahl mehr; Runde 16: Zeile **K1b** nennt den
 K1-Fehlerkranz als einzige Quelle der Makroliste und führt die Kurzform
-`#ifdef`/`#ifndef` nicht mehr als erlaubten Kontext; die übrigen Anker sind an
-diesem Commit einzeln nachgeschlagen).
+`#ifdef`/`#ifndef` nicht mehr als erlaubten Kontext; Runde 17: dieselbe Zeile
+**K1b** nennt die beiden Vorstufen — fail-closed Kodierung mit BOM-Erkennung
+und Präprozessor-Phase-2-Faltung vor Kommentarentfernung und Tokenprüfung; die
+übrigen Anker sind an diesem Commit einzeln nachgeschlagen).
 Sie nennt bewusst **keine** Anzahlen (Befund B4, Runde 6): Quellen, Verbraucher
 und Makros stehen als Quellenanker da, weil jede abgeschriebene Zahl still
 falsch wird, sobald jemand eine Datei oder ein Ziel ergänzt.
@@ -77,7 +79,7 @@ unten bleiben datierte Belege ihres damaligen Quellstands:
 | | misst | sieht | sieht **nicht** |
 |---|---|---|---|
 | **K1** Präprozessor | Quelltext | die in `eq-copilot/plugin/state/NakamaKernRiegel.h` namentlich geführten `JucePlugin_*`-Makros — die Liste dort ist die Quelle, nicht diese Karte —, am Anfang **und Ende** jeder Kern-Übersetzungseinheit (gemessen aus `NAKAMA_KERN_QUELLEN`; die aktuelle Anzahl gibt der Messlauf aus); damit auch bis zum TU-Ende definierte Makros aus später eingebundenen eigenen/generierten Headern | Makronamen außerhalb der Liste und vor dem TU-Ende wieder entfernte Makros (der Präprozessor kann kein Präfix aufzählen; resultierende Identitätsbytes misst K3, den Quelltext selbst **K1b**) |
-| **K1b** Quelltext-Token | die tatsächlichen Compiler-Eingaben: jede Datei aus dem frisch geschriebenen `CL.read.1.tlog`, die **nicht** aus den JUCE-Modulen und nicht aus den Toolchain-/SDK-Wurzeln stammt — also `plugin/**` **und alles Übrige**, `/FI` und vorkompilierte Köpfe eingeschlossen —, plus die literale Include-Hülle als Gegenprobe; die namentlich erlaubten Systemdateien werden dabei roh in ASCII und UTF-16LE durchsucht statt als C++ geparst | jedes `JucePlugin_`-Token im Quelltext, unabhängig von `#define`/`#undef`; Kommentare werden vorher entfernt, Stringliterale nicht; einzige Ausnahme ist `NakamaKernRiegel.h`, gemessen und namentlich — und das heißt seit Runde 15 ein **Abgleich**, keine Freistellung: jedes ihrer Token muss in der Makroliste stehen, die K1 in **derselben** Datei abfragt (eine Quelle, zwei Verbraucher — die Liste dort ist die Quelle, nicht diese Karte), und in einem Riegelkontext. Diese Liste ist seit Runde 16 **ausschließlich** der eine `#if defined (…)`-Kranz, der in den K1-`#error` mündet — nicht mehr jede `#if`/`#elif`-Zeile der Datei; erlaubt sind nur `defined (…)` **in** diesem Kranz und das blosse Präfix in **seiner** `#error`-Meldung. Die Kurzform `#ifdef`/`#ifndef` ist damit kein erlaubter Kontext mehr: sie ist stets eine eigene Direktive und liegt außerhalb des Kranzes. Jeder andere Name, jedes Token außerhalb des Kranzes — auch ein **bekannter** Name in einem eigenen `#if defined (…)`-Block — und jedes `#undef` sind ROT und werden beim Namen genannt; ohne eindeutig ableitbare Makroliste ist die Ausnahme selbst ROT: kein Kranz mit `#error`, mehr als einer und eine unpaarige Bedingungsstruktur sind je für sich ROT. Die Zahlen (Token, abgeglichen, Makros) gibt der Messlauf aus | den Inhalt der JUCE-Module (dafür der JUCE-Baum-Riegel) und der Toolchain-/SDK-Header außerhalb des Repos (benannte Nichtzusage, kein Fingerprint); Makronamen, die erst durch Tokenverkettung entstehen. Lässt sich eine der drei Ausschlusswurzeln nicht ableiten, bildet K1b **keine** Menge, sondern klagt |
+| **K1b** Quelltext-Token | die tatsächlichen Compiler-Eingaben: jede Datei aus dem frisch geschriebenen `CL.read.1.tlog`, die **nicht** aus den JUCE-Modulen und nicht aus den Toolchain-/SDK-Wurzeln stammt — also `plugin/**` **und alles Übrige**, `/FI` und vorkompilierte Köpfe eingeschlossen —, plus die literale Include-Hülle als Gegenprobe; die namentlich erlaubten Systemdateien werden dabei roh in ASCII und UTF-16LE durchsucht statt als C++ geparst. Jede andere Eingabe geht seit Runde 17 durch dieselben zwei Vorstufen wie im Übersetzer, in dieser Reihenfolge: **fail-closed gelesen** — eine BOM entscheidet die Kodierung (UTF-8, UTF-16LE, UTF-16BE), ohne BOM gilt strikt UTF-8, und eine nicht sicher dekodierbare Eingabe ist eine **namentliche Klage** statt eines still ersetzten Zeichens —, danach **Präprozessor-Phase 2 gefaltet**: Backslash + Zeilenende (auch CRLF, auch mit Leerraum davor) verschwindet | jedes `JucePlugin_`-Token im Quelltext, unabhängig von `#define`/`#undef`; Kommentare werden vorher entfernt, Stringliterale nicht — und die Faltung läuft ihrerseits **vor** der Kommentarentfernung, wie im Übersetzer, so dass ein über ein Zeilenende geteiltes `JucePlugin_Name` und ein UTF-16-Kopf mit BOM ROT sind statt unsichtbar; einzige Ausnahme ist `NakamaKernRiegel.h`, gemessen und namentlich — und das heißt seit Runde 15 ein **Abgleich**, keine Freistellung: jedes ihrer Token muss in der Makroliste stehen, die K1 in **derselben** Datei abfragt (eine Quelle, zwei Verbraucher — die Liste dort ist die Quelle, nicht diese Karte), und in einem Riegelkontext. Diese Liste ist seit Runde 16 **ausschließlich** der eine `#if defined (…)`-Kranz, der in den K1-`#error` mündet — nicht mehr jede `#if`/`#elif`-Zeile der Datei; erlaubt sind nur `defined (…)` **in** diesem Kranz und das blosse Präfix in **seiner** `#error`-Meldung. Die Kurzform `#ifdef`/`#ifndef` ist damit kein erlaubter Kontext mehr: sie ist stets eine eigene Direktive und liegt außerhalb des Kranzes. Jeder andere Name, jedes Token außerhalb des Kranzes — auch ein **bekannter** Name in einem eigenen `#if defined (…)`-Block — und jedes `#undef` sind ROT und werden beim Namen genannt; ohne eindeutig ableitbare Makroliste ist die Ausnahme selbst ROT: kein Kranz mit `#error`, mehr als einer und eine unpaarige Bedingungsstruktur sind je für sich ROT. Die Zahlen (Token, abgeglichen, Makros) gibt der Messlauf aus | den Inhalt der JUCE-Module (dafür der JUCE-Baum-Riegel) und der Toolchain-/SDK-Header außerhalb des Repos (benannte Nichtzusage, kein Fingerprint); Makronamen, die erst durch Tokenverkettung entstehen. Lässt sich eine der drei Ausschlusswurzeln nicht ableiten, bildet K1b **keine** Menge, sondern klagt |
 | **K2** CMake-Konfigurierzeit | Kernziel plus dessen compilerwirksame Usage-Requirements-Hülle; Verbraucher nur bei einer echten fehlerhaften Rückkante; Ausführung verzögert bis zum Ende von `plugin/` nach allen Zieländerungen | jedes compilerwirksame `JucePlugin_` aus eigenen und transitiven `*_COMPILE_DEFINITIONS` sowie `-D`/`/D` in `*_COMPILE_OPTIONS`; direkte Zielnamen, `debug`/`optimized`/`general`-Kanten und die unten inventarisierten bedingten bzw. zielbezogenen Generatorausdrücke | Makros, die erst im C++-Quelltext entstehen (dafür K1/K3); String-Transformationen in Linkkanten und `MAP_IMPORTED_CONFIG_*` werden nicht ausgewertet, sondern ausdrücklich **ROT** gemeldet |
 | **K3/A14** Artefakt + Neubau | die `.lib`, die das Bein im selben Lauf selbst hat neu erzeugen lassen, dazu `.vcxproj`, `.tlog` und `lastbuildstate`; fehlt eine Voraussetzung, endet der Lauf über `voraussetzung_exit()` — ohne registrierten Befund **3**, mit registriertem Befund **2**, **nie 0**, und das an jedem Ausgang, den unmöglichen oder fehlgeschlagenen Bau eingeschlossen (Matrix F13/F14/F15, Runde 8/9; Proben `R8-1` und `P9-F13`) | jeden eingefrorenen Text als ASCII/UTF-16LE, Viercodes zusätzlich als 4-Byte-Integer in **beiden** Byteordnungen, CIDs roh/COM-vertauscht; dass Objekte, Tlogs und Lib vor der Messung gelöscht und vollständig neu erzeugt wurden (Zeitanker, Bauausgabe, Objektzahl) — damit ist „veraltetes Artefakt" keine Frage mehr; die früheren Frischewachen bleiben als Diagnose „womit wurde gebaut" | Baubeschreibung ohne resultierende Artefaktbytes (dafür K1/K1b/K2/K2b/K2c); ein Compilerwechsel innerhalb derselben `lastbuildstate`-Kennung (benannte Nichtzusage) |
 | **Tlog-Riegel** Leseorte | das frisch geschriebene `CL.read.1.tlog` des Kerns | aus welchen Orten der Compiler wirklich gelesen hat: erlaubt sind `plugin/**`, `juce-src/modules/**` ohne `juce_audio_plugin_client`, die **aus dem Bau abgeleiteten** MSVC- und Windows-SDK-Wurzeln und — **namentlich, nicht über ihr Verzeichnis** — die gemessenen Systemdateien unter `%SystemRoot%` (Liste `SYSTEMDATEIEN` im Skript — sie ist die Quelle, nicht diese Karte; ihre Namen stehen seit Runde 8 als eingefügte `CL.read.1.tlog`-Rohausgabe im Abschnitt „Nacharbeit Runde 8", Probe `P8-SYS`, ihre Anzahl gibt der Messlauf aus — vorher war die Liste eine Behauptung ohne Rohausgabe). Es gibt weder eine Endungsausnahme noch eine Ortserlaubnis für `%SystemRoot%`: jede andere Datei darunter, `<ziel>_artefacts/JuceLibraryCode/**` und alles Unbekannte sind ROT und werden namentlich genannt. Fehlt eine heutige Kernquelle als Marker, ist auch das ROT | den **Inhalt** der gelesenen Dateien (dafür K1b und der JUCE-Baum-Riegel) |
@@ -2276,6 +2278,8 @@ kein PASS eingetragen.**
 
 ## Kanon-Lauf - SONDE-007a T2-Nacharbeit
 
+**Stand dieses Abschnitts:** `75afae2` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 **Lauf:** 2026-08-23 00:32 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 19/19 Kanon-Laeufe bestanden | 4 geplante Pruefung(en) noch nicht gebaut | **Exitcode:** 0
 
 ### Kopf - woran gemessen wurde
@@ -3551,6 +3555,8 @@ wie T2-2 in NAK-58.
 ---
 
 ## Kanon-Lauf - S8 Dirigent 2026-08-28 - Kanon auf 3353fb6 vor T3-Urteil
+
+**Stand dieses Abschnitts:** `3353fb6` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Lauf:** 2026-08-28 21:01 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 29/29 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | **Exitcode:** 0
 
@@ -6049,6 +6055,8 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 ---
 
 ## Kanon-Lauf - S8 Dirigent 2026-08-28 - Kanon auf 374eea7 nach Nacharbeit
+
+**Stand dieses Abschnitts:** `374eea7` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Lauf:** 2026-08-28 23:09 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 29/29 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | **Exitcode:** 0
 
@@ -8556,6 +8564,8 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
 ## Kanon-Lauf - S8 Dirigent 2026-08-28 - Kanon auf 068c9ce nach Nacharbeit Runde 2
 
+**Stand dieses Abschnitts:** `068c9ce` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 **Lauf:** 2026-08-28 23:36 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 29/29 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | **Exitcode:** 0
 
 ### Kopf - woran gemessen wurde
@@ -11062,6 +11072,8 @@ MSBuild-Version 17.14.40+3e7442088 für .NET Framework
 
 ## Abschluss der Dirigentenrunde — 2026-08-28: NEEDS_WORK, nachgearbeitet, Urteil offen
 
+**Stand dieses Abschnitts:** `068c9ce` — Momentaufnahme dieses Laufs (Nennung im Abschnittskopf); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 **Marke:** `T3 NEEDS_WORK 2026-08-28 nachgearbeitet`. Stand `068c9ce`; Basis-SHA des Tickets `dafa5a5`. Prüfer: Codex `gpt-5.6-sol`, Effort `xhigh`, drei frische Threads; Nacharbeit in sechs Runden (Runden 2–5 waren Reparaturen der eigenen Nacharbeit, weil die Codex-Sandbox kein CMake fahren konnte und der echte Configure jeweils an einer weiteren JUCE-Generatorausdrucksform fiel).
 
 | Runde | Thread | Stand | Urteil | Befunde |
@@ -11482,6 +11494,8 @@ bei veraltetem Configure".
 ---
 
 ## Kanon-Lauf - SONDE-007a Nacharbeit Runde 3 - Abschluss
+
+**Stand dieses Abschnitts:** `b6003c1` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Lauf:** 2026-08-29 16:43 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/SONDE-007a-b6003c1.md](roh/SONDE-007a-b6003c1.md)
 
@@ -12031,6 +12045,8 @@ vollständiger Liste der nicht abgebildeten Elemente.
 ---
 
 ## Kanon-Lauf - SONDE-007a Nacharbeit Runde 4 - Abschluss
+
+**Stand dieses Abschnitts:** `0ea62e4` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Lauf:** 2026-08-29 17:45 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/SONDE-007a-0ea62e4.md](roh/SONDE-007a-0ea62e4.md)
 
@@ -13380,6 +13396,8 @@ Bereich dieser Runde, und die sind in allen drei Läufen grün.
 
 ## Kanon-Lauf - SONDE-007a Nacharbeit Runde 5 - Abschluss
 
+**Stand dieses Abschnitts:** `dd15bbb` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 **Lauf:** 2026-08-29 19:33 | **Runner:** `tools/beweise.ps1` | **Urteil:** ROT - 1 von 32 Kanon-Laeufen fehlgeschlagen | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 2 | **Rohausgabe:** [roh/SONDE-007a-dd15bbb.md](roh/SONDE-007a-dd15bbb.md)
 
 ### Kopf - woran gemessen wurde
@@ -13445,6 +13463,8 @@ Bereich dieser Runde, und die sind in allen drei Läufen grün.
 
 ## Kanon-Lauf - SONDE-007a Nacharbeit Runde 5 - Abschluss (Wiederholung)
 
+**Stand dieses Abschnitts:** `fc9a193` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 **Lauf:** 2026-08-29 19:45 | **Runner:** `tools/beweise.ps1` | **Urteil:** ROT - 1 von 32 Kanon-Laeufen fehlgeschlagen | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 2 | **Rohausgabe:** [roh/SONDE-007a-fc9a193-dirty.md](roh/SONDE-007a-fc9a193-dirty.md)
 
 ### Kopf - woran gemessen wurde
@@ -13509,6 +13529,8 @@ Bereich dieser Runde, und die sind in allen drei Läufen grün.
 ---
 
 ## Kanon-Lauf - SONDE-007a Nacharbeit Runde 5 - Abschluss (sauberer Baum)
+
+**Stand dieses Abschnitts:** `70ca7f0` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Lauf:** 2026-08-29 19:49 | **Runner:** `tools/beweise.ps1` | **Urteil:** ROT - 1 von 32 Kanon-Laeufen fehlgeschlagen | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 2 | **Rohausgabe:** [roh/SONDE-007a-70ca7f0.md](roh/SONDE-007a-70ca7f0.md)
 
@@ -13844,6 +13866,8 @@ dieser Runde gehört.
 ---
 
 ## Kanon-Lauf - SONDE-007a Runde 6 + NAK-94 Nacharbeit 1 - Abschluss
+
+**Stand dieses Abschnitts:** `370e513` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Lauf:** 2026-08-29 21:17 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/SONDE-007a-370e513.md](roh/SONDE-007a-370e513.md)
 
@@ -14250,6 +14274,8 @@ Sitzung selbst geschriebene Datei `C1083 ... No such file or directory`.
 ---
 
 ## Kanon-Lauf - SONDE-007a Runde 7 + NAK-94 Nacharbeit 2 - Abschluss
+
+**Stand dieses Abschnitts:** `5df7497` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Lauf:** 2026-08-29 22:40 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/SONDE-007a-5df7497.md](roh/SONDE-007a-5df7497.md)
 
@@ -14806,6 +14832,8 @@ der Bruch unten ist der gehärtete Lauf.
 
 ## Kanon-Lauf - SONDE-007a Runde 8 + NAK-94 Nacharbeit 3 - Abschluss
 
+**Stand dieses Abschnitts:** `93e8a7c` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 **Lauf:** 2026-08-29 23:54 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/SONDE-007a-93e8a7c.md](roh/SONDE-007a-93e8a7c.md)
 
 ### Kopf - woran gemessen wurde
@@ -15077,6 +15105,8 @@ ist exakt nachgezogen und sonst unverändert.
 
 ## Kanon-Lauf - SONDE-007a Runde 9 + NAK-94 Nacharbeit 4 - Abschluss
 
+**Stand dieses Abschnitts:** `d4f7ed3` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 **Lauf:** 2026-08-30 00:47 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/SONDE-007a-d4f7ed3.md](roh/SONDE-007a-d4f7ed3.md)
 
 ### Kopf - woran gemessen wurde
@@ -15347,6 +15377,8 @@ und sind dort einzeln gebrochen worden.
 ---
 
 ## Kanon-Lauf - SONDE-007a Runde 10 + NAK-94 Nacharbeit 5 - Abschluss
+
+**Stand dieses Abschnitts:** `00d2796` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Lauf:** 2026-08-30 01:46 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/SONDE-007a-00d2796.md](roh/SONDE-007a-00d2796.md)
 
@@ -15658,6 +15690,8 @@ sind dort einzeln gebrochen worden.
 ---
 
 ## Kanon-Lauf - SONDE-007a Runde 11 + NAK-94 Nacharbeit 6 - Abschluss
+
+**Stand dieses Abschnitts:** `9602d6c` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Lauf:** 2026-08-30 02:34 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/SONDE-007a-9602d6c.md](roh/SONDE-007a-9602d6c.md)
 
@@ -16136,6 +16170,8 @@ Die Änderung dieser Runde an `tools/beweise.ps1` gehört zu NAK-94 Nacharbeit 7
 
 ## Kanon-Lauf - SONDE-007a Runde 12 + NAK-94 Nacharbeit 7 - Abschluss
 
+**Stand dieses Abschnitts:** `196f97e` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 **Lauf:** 2026-08-30 03:33 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/SONDE-007a-196f97e.md](roh/SONDE-007a-196f97e.md)
 
 ### Kopf - woran gemessen wurde
@@ -16509,6 +16545,8 @@ Offen außerhalb der Grenze: NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.
 ---
 
 ## Kanon-Lauf - SONDE-007a Runde 13 + NAK-94 Nacharbeit 8 - Abschluss
+
+**Stand dieses Abschnitts:** `f423527` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Lauf:** 2026-08-30 04:24 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/SONDE-007a-f423527.md](roh/SONDE-007a-f423527.md)
 
@@ -16999,6 +17037,8 @@ git grep -c -F 'im gebauten' $E -- docs/beweise/SONDE-007a.md
 
 ## Kanon-Lauf - SONDE-007a Runde 14 + NAK-94 Nacharbeit 9 - Abschluss
 
+**Stand dieses Abschnitts:** `1991ff8` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 **Lauf:** 2026-08-30 05:28 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/SONDE-007a-1991ff8.md](roh/SONDE-007a-1991ff8.md)
 
 ### Kopf - woran gemessen wurde
@@ -17316,6 +17356,8 @@ Keine Fundstelle behauptet mehr eine Zählung; die alte Wortform
 ---
 
 ## Kanon-Lauf - SONDE-007a Runde 15 + NAK-94 Nacharbeit 10 - Abschluss
+
+**Stand dieses Abschnitts:** `12fcdab` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
 
 **Lauf:** 2026-08-30 07:05 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/SONDE-007a-12fcdab.md](roh/SONDE-007a-12fcdab.md)
 
@@ -17715,6 +17757,8 @@ Fundstellen.
 
 ## Kanon-Lauf - SONDE-007a Runde 16 + NAK-94 Nacharbeit 11 - Abschluss
 
+**Stand dieses Abschnitts:** `219424f` — Momentaufnahme dieses Laufs (Kopf-Tabelle des Laufs); Positionen ohne eigene Angabe sind an diesen Commit gebunden.
+
 **Lauf:** 2026-08-30 08:22 | **Runner:** `tools/beweise.ps1` | **Urteil:** GRUEN - 32/32 Kanon-Laeufe bestanden | 2 geplante Pruefung(en) noch nicht gebaut | 1 stillgelegte(s) Bein(e), siehe Uebersicht | **Exitcode:** 0 | **Rohausgabe:** [roh/SONDE-007a-219424f.md](roh/SONDE-007a-219424f.md)
 
 ### Kopf - woran gemessen wurde
@@ -17802,3 +17846,323 @@ Fundstellen.
 **Nächster Schritt:** Nacharbeits-Worker für S8 Runde 17 **und** NAK-94 Nacharbeit 12 (siehe `docs/beweise/SONDE-007c.md`, „Dirigentenstand NAK-94 … Prüfer 12"), gemeinsamer Kanon, dann Prüfer 18 (xhigh) für S8 und Prüfer 13 (high) für NAK-94 — je frischer Thread. Kein Halt.
 
 **Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.
+
+## Nacharbeit Runde 17 — 2026-08-30 (Prüfer-Thread `01a0516a-7e23…`)
+
+**Stand dieses Abschnitts:** `65e5b77` — der Codestand dieser Runde; Positionen
+ohne eigene Angabe sind an diesen Commit gebunden.
+
+Basis-SHA der Runde `75466c0`. Vier Befunde, zwei davon P1. Beide P1 betreffen
+dieselbe Lücke aus zwei Richtungen: **K1b begann seine Arbeit eine
+Übersetzungsphase zu spät.** Der Compiler dekodiert zuerst (Phase 1) und faltet
+dann Backslash-Zeilenenden (Phase 2); erst danach gibt es Kommentare und Token.
+K1b fing bei den Kommentaren an — und sah deshalb weder einen über ein
+Zeilenende geteilten Bezeichner noch einen UTF-16-Kopf.
+
+---
+
+### Befund P1-1 und P1-2 am Basis-Stand reproduziert
+
+Gefahren wurde die Fassung `75466c0` des Prüfskripts, aus git in eine Kopie
+unter `%TEMP%` geholt — der Arbeitsbaum wurde dafür nicht zurückgedreht. Alle
+Sonderbytes stammen aus `bytes([...])`, damit kein Werkzeug auf dem Weg ein
+Backslash-Literal umdeutet; die Bytezeile im Protokoll zeigt jeweils, was
+wirklich auf der Platte stand (`5c 0d 0a` = Backslash, CR, LF).
+
+```
+Skriptfassung : ...\basis\tools\eq-copilot\pruefe_kern_identitaetsfrei.py
+sha256        : 701cbb7b2be14a4b18489037df940e8615946f1430256b0a32d7b63267937396
+
+[1a] Bezeichner ueber Backslash + CRLF geteilt, definiert / in #if benutzt / wieder entfernt
+    Bytes    : 23 64 65 66 69 6e 65 20 4a 75 63 65 50 6c 75 67 5c 0d 0a 69 6e 5f 4e 61 6d 65 20 22 46 72 65 6d 64 22 0d 0a 23 69 66 20 64 65 66 69
+    Klagen   : []
+    ERGEBNIS : GRUEN - Befund reproduziert
+
+[1b] dasselbe mit Leerraum zwischen Backslash und Zeilenende
+    Bytes    : 23 64 65 66 69 6e 65 20 4a 75 63 65 50 6c 75 67 5c 20 20 09 0a 69 6e 5f 4e 61 6d 65 20 22 46 72 65 6d 64 22 0a
+    Klagen   : []
+    ERGEBNIS : GRUEN - Befund reproduziert
+
+[1c] GEGENPROBE - derselbe Bezeichner ungespalten
+    Bytes    : 23 64 65 66 69 6e 65 20 4a 75 63 65 50 6c 75 67 69 6e 5f 4e 61 6d 65 20 22 46 72 65 6d 64 22 0a
+    Klagen   : ['...\\Ungespalten.h: JucePlugin_-Token im Quelltext, Zeile(n) 1']
+    ERGEBNIS : ROT
+
+[2a] UTF-16LE mit BOM, definiert / benutzt / entfernt
+    Bytes    : ff fe 23 00 64 00 65 00 66 00 69 00 6e 00 65 00 20 00 4a 00 75 00 63 00 65 00 50 00 6c 00 75 00 67 00 69 00 6e 00 5f 00 4e 00 61 00
+    Klagen   : []
+    ERGEBNIS : GRUEN - Befund reproduziert
+
+[2b] UTF-16BE mit BOM
+    Bytes    : fe ff 00 23 00 64 00 65 00 66 00 69 00 6e 00 65 00 20 00 4a 00 75 00 63 00 65 00 50 00 6c 00 75 00 67 00 69 00 6e 00 5f 00 4e 00 61
+    Klagen   : []
+    ERGEBNIS : GRUEN - Befund reproduziert
+
+[2c] Bytes, die kein gueltiges UTF-8 sind
+    Bytes    : 2f 2f 20 68 61 72 6d 6c 6f 73 0a 80 81 fe 0a
+    Klagen   : []
+    ERGEBNIS : GRUEN - Befund reproduziert
+```
+
+`[1c]` ist der diskriminierende Beleg: **derselbe** Bezeichner ist ungespalten
+schon am Basis-Stand ROT. Der Unterschied ist allein das Backslash-Zeilenende —
+also genau die Übersetzungsphase, die fehlte. `[2c]` zeigt die zweite Hälfte:
+`errors="replace"` machte nicht dekodierbare Bytes still harmlos, statt zu
+klagen.
+
+**Dieselbe Probendatei am Endstand** (`f6ec395`… als sha256 des Skripts,
+identische Probenbytes): alle sechs ROT, `[2c]` mit der neuen namentlichen
+Klage.
+
+```
+[1a] Klagen : ['...\\GespaltenCrlf.h: JucePlugin_-Token im Quelltext, Zeile(n) 1, 3, 6']
+[1b] Klagen : ['...\\GespaltenLeerraum.h: JucePlugin_-Token im Quelltext, Zeile(n) 1']
+[1c] Klagen : ['...\\Ungespalten.h: JucePlugin_-Token im Quelltext, Zeile(n) 1']
+[2a] Klagen : ['...\\Utf16Le.h: JucePlugin_-Token im Quelltext, Zeile(n) 1, 2, 4']
+[2b] Klagen : ['...\\Utf16Be.h: JucePlugin_-Token im Quelltext, Zeile(n) 1']
+[2c] Klagen : ["...\\KeinUtf8.h: nicht als utf-8 dekodierbar (ohne BOM, strikt UTF-8:
+               'utf-8' codec can't decode byte 0x80 in position 11: invalid start byte)
+               - eine Compiler-Eingabe, deren Text nicht feststeht, ist ROT"]
+```
+
+---
+
+### Was jetzt gilt
+
+K1b bereitet jede Eingabe vor wie der Übersetzer, **in dieser Reihenfolge**
+(`k1b_riegel`, `pruefe_kern_identitaetsfrei.py`):
+
+| # | Stufe | Symbol | Regel |
+|---|---|---|---|
+| 1 | Kodierung, fail-closed | `lies_compiler_eingabe()` | Eine BOM entscheidet: `utf-8`, `utf-16-le`, `utf-16-be` — genau die drei, die MSVC ohne `/source-charset` erkennt. Ohne BOM gilt **strikt** UTF-8. Was sich so nicht dekodieren lässt, ist eine **namentliche Klage** (ROT); es gibt keinen dritten Ausgang und kein `errors="replace"` mehr |
+| 2 | Präprozessor-Phase 2 | `falte_zeilenfortsetzungen()` | Backslash + Zeilenende verschwindet — LF, CRLF und CR, auch mit Leerraum zwischen Backslash und Zeilenende, wie MSVC es akzeptiert. **Die Zeilenzahl bleibt erhalten**: der Inhalt der logischen Zeile steht danach auf der physischen Zeile, an der sie *beginnt*, die gefalteten Umbrüche werden dahinter als Leerzeilen nachgetragen. Eine Klage nennt damit den Anfang der logischen Zeile |
+| 3 | Kommentare | `ohne_kommentare()` | unverändert — aber jetzt **nach** der Faltung, was für Kommentare die einzig richtige Reihenfolge ist: ein `// …\`-Zeilenende zieht die Folgezeile *in* den Kommentar |
+| 4 | Tokenprüfung | `k1b_riegel()` / `k1b_ausnahme_abgleich()` | unverändert |
+
+Zwei Dinge bleiben ausdrücklich, wie sie waren:
+
+* Die namentlich erlaubten **Systemdateien** gehen weiter **roh** durch (ASCII
+  und UTF-16LE, `R7-3a`/`R7-3b`), nicht durch diesen Leser. Sie sind
+  Binärstoff ohne Textzusage.
+* **UTF-32-BOMs sind keine eigene Kodierung** (benannte Nichtzusage, in die
+  sichere Richtung): `ff fe 00 00` beginnt wie die UTF-16LE-BOM und wird wie
+  von MSVC als UTF-16LE gelesen. Eine echte UTF-32-Datei fällt damit entweder
+  als UTF-16LE auf oder ist nicht dekodierbar und damit ROT — in keinem Fall
+  still grün.
+
+`_logische_direktiven()` behält seine Backslash-Abbildung, obwohl der
+K1b-Text sie nach der Faltung nicht mehr braucht. Sie ist kein toter Zweig:
+die Gegenprobe `R16-1c` führt den früheren, **ungefalteten** Weg vor, und eine
+Funktion, die nur auf gefaltetem Text richtig rechnete, wäre genau dort still
+falsch.
+
+---
+
+### Bruch und Rücknahme
+
+Gebrochen wurde ohne jede Änderung im Baum: die beiden Vorstufen wurden im
+importierten Modul durch ihre frühere Fassung ersetzt, der Selbsttest
+gefahren, danach zurückgenommen. Der sha256 des Skripts steht vorher und
+nachher darunter — er ist identisch.
+
+```
+Skript sha256 VORHER : 57064d87470f3e0e50270bb0eecb43e61355d33417def98c3ebbf23c20503689
+
+=== B  BRUCH 1: Faltung entfernt (falte_zeilenfortsetzungen = Identitaet) ===
+  FEHLER  R17-1a: ein ueber Backslash + CRLF geteiltes JucePlugin_Name ist ROT ...  [keine Klage]
+  FEHLER  R17-1b: auch mit Leerraum zwischen Backslash und Zeilenende wird gefaltet ...  [keine Klage]
+  FEHLER  R17-1c: eine `//`-Zeile mit Fortsetzung verschluckt die Folgezeile ...  [...FortsetzungImKommentar.h: JucePlugin_-Token im Quelltext, Zeile(n) 2]
+  FEHLER  R17-1d: die Faltung erhaelt die Zeilenzahl ...  ['a\\\nb\nc\n']
+  ok      R17-2a (LE) | ok  R17-2a (BE) | ok  R17-2b | ok  R17-2c
+    -> 4 der beobachteten Proben ROT, 4 Fehler im ganzen Selbsttest
+
+=== C  BRUCH 2: Kodierung wieder errors="replace" (Stand vor Runde 17) ===
+  ok      R17-1a | ok  R17-1b | ok  R17-1c | ok  R17-1d
+  FEHLER  R17-2a: ein UTF-16-LE-Kopf mit BOM wird passend dekodiert ...  [keine Klage]
+  FEHLER  R17-2a: ein UTF-16-BE-Kopf mit BOM wird passend dekodiert ...  [keine Klage]
+  FEHLER  R17-2b: eine Eingabe, deren Text nicht feststeht, ist eine namentliche KLAGE ...  [keine Klage]
+  ok      R17-2c
+    -> 3 der beobachteten Proben ROT, 3 Fehler im ganzen Selbsttest
+
+=== D  RUECKNAHME beider Brueche - alle R17-Proben wieder gruen ===
+    -> 0 der beobachteten Proben ROT, 0 Fehler im ganzen Selbsttest
+
+Skript sha256 NACHHER: 57064d87470f3e0e50270bb0eecb43e61355d33417def98c3ebbf23c20503689
+unveraendert: True
+```
+
+Die zwei Brüche sind **orthogonal**: Bruch 1 färbt genau die vier
+Faltungsproben, Bruch 2 genau die drei Kodierungsproben. `R17-1c` fällt in
+Bruch 1 mit, und zwar mit dem richtigen Grund — ohne Faltung sieht der Scanner
+ein Token, das in Wahrheit im Kommentar steht.
+
+Die sieben Proben im `--selbsttest` von A14:
+
+| Probe | misst |
+|---|---|
+| `R17-1a` | `JucePlug` + Backslash + CRLF + `in_Name`, definiert, in `#if` benutzt, `#undef` — ROT |
+| `R17-1b` | dasselbe mit Leerzeichen und Tab zwischen Backslash und Zeilenende — ROT |
+| `R17-1c` | die **Reihenfolge**: eine `//`-Zeile mit Fortsetzung verschluckt die Folgezeile, also **keine** Klage — was der Übersetzer auch so sieht |
+| `R17-1d` | die Faltung erhält die Zeilenzahl und legt den Inhalt auf den *Anfang* der logischen Zeile |
+| `R17-2a` | UTF-16LE **und** UTF-16BE mit BOM: das `JucePlugin_Name` darin ist ROT, nicht unsichtbar |
+| `R17-2b` | nicht dekodierbare Bytes sind eine **namentliche Klage**, kein ersetztes Zeichen |
+| `R17-2c` | fail-closed heißt nicht fail-laut: gültiges UTF-8 **mit** BOM bleibt grün, die BOM wird abgezogen statt zu Text |
+
+---
+
+### Befund P2-3 — der Lebend/Historisch-Klassifizierer
+
+Der Prüfer hatte recht: der feste Schnitt vor `## 2. Rohe Ausgaben` zählte auch
+`## 1. Ticket-Behauptungen` zu den lebenden Stellen, obwohl dieser Abschnitt
+seit jeher `**Stand dieses Abschnitts:** 5d0e9fd` trägt. Der Klassifizierer
+arbeitet ab jetzt **ausschließlich** über diese Marke, ohne festen
+Zeilenschnitt, und ist damit auch nicht mehr an eine bestimmte Datei gebunden.
+
+Regeln, einmal festgelegt:
+
+1. Eine Überschrift ist **historisch**, wenn in ihrem Block eine Zeile **mit**
+   `**Stand dieses Abschnitts:**` **beginnt** — eine Erwähnung in einer
+   Tabellenzelle oder im Fließtext ist keine Angabe.
+2. Die Angabe **erbt** auf alle untergeordneten Überschriften, bis zur
+   nächsten gleich- oder höherrangigen.
+3. Überschriften **in Codeblöcken** zählen nicht (der Codezaun schaltet um) —
+   sonst machte jede eingefügte Rohausgabe ihre eigenen Abschnitte auf.
+4. Alles ohne Angabe ist **lebend** und muss stimmen.
+
+Das hatte eine Folge, die der feste Schnitt verdeckt hatte: **21 Abschnitte
+trugen gar keine Standangabe** — die Kanon-Lauf-Abschnitte und der
+Dirigenten-Abschluss vom 28.08. Nach der neuen Regel wären ihre 9 806 Zeilen
+Rohausgabe „lebend" gewesen. Die Prüfliste sagt für genau diesen Fall, was zu
+tun ist (E, NAK-85 Runde 4): die Zeile **ergänzen**, den historischen Text
+nicht umschreiben. Genau das ist geschehen — der Commit ist an diesen Stellen
+rein additiv, und **kein Stand ist erfunden**: er kommt aus der Kopf-Tabelle
+des Abschnitts selbst (`| Commit | <sha7> …`, 20 Abschnitte) bzw. aus der
+Standnennung im Abschnittskopf (1 Abschnitt, „Abschluss der Dirigentenrunde"
+mit `068c9ce`). In `docs/beweise/SONDE-007c.md` sind dieselben 10 Abschnitte
+ergänzt; die fünf Kopfabschnitte §1–§5 nennen keinen Commit und bleiben
+deshalb unangetastet und lebend.
+
+**Wirkung, gemessen:** lebend fällt von 9 906 auf **100** Zeilen — der Kopf mit
+Riegelmatrix und Riegelkarte, und nur er.
+
+---
+
+### Befund P2-4 — Muster mit optionalen Backticks
+
+Bestätigt. `#ifdef`/`#ifndef` steht im Code **zweimal**: einmal mit Backticks im
+Kommentarblock von `pruefe_kern_identitaetsfrei.py` und einmal **ohne** in der
+A14-`Behauptung` von `tools/beweise.ps1`. Die Runde-16-Zeile zählte 1, weil die
+Backticks Teil des Suchmusters waren.
+
+Die Zählweise normalisiert deshalb ab jetzt **auf beiden Seiten** — Text wie
+Muster — in drei Schritten: Backticks entfernt, Umlaute und `ß` auf ihre
+ASCII-Form gebracht, Leerraumfolgen auf ein Leerzeichen. Der zweite Schritt kam
+beim Rechnen dazu und ist kein Beiwerk: der Code schreibt
+`Praeprozessor-Phase 2`, die Doku schreibt es mit Umlaut — ohne diesen Schritt
+zählte dieselbe Aussage in einer der beiden Spalten strukturell **0**, also
+genau der Fehler, den P2-4 benennt, nur mit anderem Zeichen.
+
+---
+
+### Aussagen-Inventar — Runde 17
+
+**Klassifizierer und Zählung, ein Skript** (pwsh, aus dem Workspace-Root; nur
+`$muster` wechselt). Es hat keinen Dateibezug und läuft unverändert auf
+`docs/beweise/SONDE-007c.md`:
+
+```powershell
+function Klassifiziere($pfad) {
+  $lebend = [System.Text.StringBuilder]::new()
+  $hist   = [System.Text.StringBuilder]::new()
+  $block  = [System.Collections.Generic.List[string]]::new()
+  $rang = 0; $standRang = $null; $blockStand = $false; $imCode = $false
+  function Fluss($ziel) { $ziel.AppendLine(($block -join "`n")) | Out-Null; $block.Clear() }
+  foreach ($z in [System.IO.File]::ReadAllLines($pfad, [System.Text.Encoding]::UTF8)) {
+    if ($z -match '^\s*```') { $imCode = -not $imCode; $block.Add($z); continue }
+    if (-not $imCode -and $z -match '^(#{1,6}) ') {
+      Fluss $(if ($blockStand) { $hist } else { $lebend })
+      $r = $Matches[1].Length
+      if ($null -ne $standRang -and $r -le $standRang) { $standRang = $null }
+      $rang = $r; $blockStand = ($null -ne $standRang)
+    }
+    elseif (-not $imCode -and $z -match '^\*\*Stand dieses Abschnitts:\*\*') {
+      $standRang = $rang; $blockStand = $true
+    }
+    $block.Add($z)
+  }
+  Fluss $(if ($blockStand) { $hist } else { $lebend })
+  return @($lebend.ToString(), $hist.ToString())
+}
+function Norm($t) {
+  ($t -replace '`', '' -replace 'ä', 'ae' -replace 'ö', 'oe' -replace 'ü', 'ue' `
+      -replace 'Ä', 'Ae' -replace 'Ö', 'Oe' -replace 'Ü', 'Ue' `
+      -replace 'ß', 'ss') -replace '\s+', ' '
+}
+function Zaehl($t, $m) { ([regex]::Matches((Norm $t), [regex]::Escape((Norm $m)))).Count }
+
+$code = @('tools/beweise.ps1',
+          'tools/eq-copilot/pruefe_kern_identitaetsfrei.py',
+          'tools/eq-copilot/pruefe_installer_manifest.py',
+          'tools/eq-copilot/erzeuge_installer_journale.py',
+          'eq-copilot/plugin/state/NakamaKernRiegel.h',
+          'eq-copilot/cmake/NakamaKern.cmake')
+$k = Klassifiziere 'docs/beweise/SONDE-007a.md'
+$lebend, $hist = $k[0], $k[1]
+$muster = 'NakamaKernRiegel.h'
+$c = 0; foreach ($q in $code) { $c += Zaehl ([System.IO.File]::ReadAllText($q)) $muster }
+'{0,4} Code | {1,4} Man. lebend | {2,4} Man. historisch   {3}' -f $c, (Zaehl $lebend $muster), (Zaehl $hist $muster), $muster
+```
+
+Gezählt werden **Vorkommen**, nicht Zeilen; eine Aussage darf über eine
+Zeilengrenze laufen (Lehre aus Runde 14). Die Quellenmenge `$code` ist um
+`tools/eq-copilot/erzeuge_installer_journale.py` gewachsen — die NAK-94-Hälfte
+dieser Runde ändert dort Zusagen, und eine Datei, die Zusagen trägt, gehört in
+das Inventar.
+
+**Zahlen**, gemessen am Arbeitsbaum **dieses** Commits — Codestand `65e5b77`
+(S8) bzw. `ed08ff8` (NAK-94), Manifestkopf mit der neuen K1b-Zeile, und die
+historische Spalte **einschließlich** dieses Abschnitts, der seinen Stand selbst
+trägt. Die Zahlen nach dem Kanon-Abschlusslauf stehen im Abschluss-Commit
+dieser Runde.
+
+| Muster | Code | Man. lebend | Man. historisch | was die Zahl sagt |
+|---|---|---|---|---|
+| `Praeprozessor-Phase 2` | 8 | 1 | 4 | der neue Begriff: Skriptkopf, Kommentarblock, Runner-Kommentar und A14-Behauptung; lebend die K1b-Matrixzeile. Die Umlautnormalisierung ist hier die Voraussetzung — der Code schreibt ihn ohne, die Doku mit |
+| `falte_zeilenfortsetzungen` | 8 | 0 | 4 | das Symbol; nur Code — die Karte nennt die Regel, nicht den Funktionsnamen |
+| `lies_compiler_eingabe` | 4 | 0 | 3 | ebenso |
+| `dekodierbar` | 7 | 1 | 7 | die fail-closed-Zusage; lebend die K1b-Matrixzeile |
+| `strikt UTF-8` | 7 | 1 | 3 | die Regel ohne BOM, an denselben Stellen |
+| `BOM` | 29 | 4 | 25 | Code inkl. der drei `codecs.BOM_*`-Konstanten und der Tlog-Stellen |
+| `errors="replace"` | 19 | 0 | 5 | **die Zusage ist eng, nicht allgemein**: 3 der 19 sind Prosa *über* die Regel, 16 sind Aufrufe — `.vcxproj`/CMake/Stamps (6), MSVC-Tlogs in UTF-16LE (2), Listendatei (1), `subprocess`-Ausgabe (2), JUCE-Patch (1), Archivkopf (2) und die zwei **ausdrücklichen** Gegenproben `R15-1e`/`R16-1c`, die den früheren Weg nachbilden. **Keine** liegt im K1b-Eingabepfad |
+| `UTF-16LE` | 14 | 3 | 26 | die rohen Systemdateien und die neue BOM-Regel |
+| ``#ifdef`/`#ifndef`` | **2** | 2 | 13 | **Befund P2-4 bestätigt**: Runde 16 zählte 1, weil die Backticks im Muster standen. Die zweite Fundstelle ist die A14-`Behauptung` in `tools/beweise.ps1`, unformatiert. Beide lebenden Manifeststellen **verneinen** die Kurzform |
+| `NakamaKernRiegel.h` | 12 | 3 | 99 | Code und lebend **unverändert** zur Endstandtabelle der Runde 16 (12/3/95) — dieselbe Menge, nur anders eingeteilt; ein unabhängiger Beleg, dass der neue Klassifizierer nichts verliert. Historisch wächst um genau diesen Abschnitt |
+| `K1-Fehlerkranz` | 6 | 1 | 11 | der Begriff aus Runde 16, unverändert |
+| `keine Freistellung` | 4 | 1 | 13 | Runner, Skript (3×), Matrixzeile |
+| `für einen Namen, den der Kranz schon führt` | 0 | **0** | 5 | die alte Erlaubnis bleibt aus jeder lebenden Quelle verschwunden |
+| `_lies_geprueft` | 13 | 0 | 1 | NAK-94: eine Quelle, jetzt **zwei** Leser — A17 und der Erzeuger |
+| `_journalkorpus_struktur` | 8 | 0 | 1 | ebenso |
+| `FUZZ_VERBRAUCHER` | 5 | 0 | 1 | die neue Verbraucherliste von `[3c]` |
+| `Stand dieses Abschnitts` | 0 | 1 | 83 | die Marke des Klassifizierers selbst; die eine lebende Fundstelle ist ihre **Definition** in diesem Abschnitt |
+
+**Nicht nachgezogen, mit Grund:** `eq-copilot/plugin/state/NakamaKernRiegel.h`
+beschreibt in seinem K1b-Kopf („Kommentare werden vorher entfernt…") den Stand
+vor Runde 17. Die Aussage ist **unvollständig, nicht falsch** — sie schweigt
+über eine Verschärfung, statt eine zu behaupten. Plugin-Code einschließlich
+dieser Datei liegt ausdrücklich außerhalb der Ticketgrenze dieser Runde; der
+Punkt steht datiert in `docs/offene-punkte.md`.
+
+---
+
+### Prüfliste D/E dieser Runde
+
+| Regel | wie eingehalten |
+|---|---|
+| **D** — „Ein Riegel ist fail-closed ohne Rohtextheuristik: Unbekanntes ist ROT" | Eine Compiler-Eingabe, deren Text nicht feststeht, ist eine namentliche Klage — nicht geraten, nicht ersetzt (`R17-2b`). Die BOM-Erkennung deckt genau die drei Kodierungen, die MSVC kennt; UTF-32 ist als Nichtzusage benannt und fällt in beiden möglichen Ausgängen ROT, nie still grün |
+| **D** — für NAK-94 | Der zweite Leser des Korpusmanifests urteilt jetzt statt zu sterben: Struktur-, JSON- und Dekodierfehler enden mit Klartext und Exit 2 |
+| **E** — „Behauptung ≤ Messung" | Skriptkopf, Kommentarblock der K1b-Ausnahme, Runner-Kommentar, A14-`Behauptung` und Riegelkarte sagen genau, was die zwei Vorstufen tun — **in der Reihenfolge**, in der sie laufen. Die Systemdateien-Ausnahme und die UTF-32-Nichtzusage stehen ausdrücklich dabei |
+| **E** — „Zahlen sind gemessen" | Die Reproduktionszahlen kommen aus dem oben abgedruckten Lauf gegen die Skriptfassung `701cbb7…`; 4/3/0 aus dem Bruchprotokoll; die Inventartabelle aus dem abgedruckten Skript. Die Zeilenzahl-Behauptung im Docstring von `_logische_direktiven` („47 physische") ist entfallen, statt eine Zahl zu tragen, die nach der Faltung nicht mehr stimmt |
+| **E** — Positionen | Symbole (`lies_compiler_eingabe`, `falte_zeilenfortsetzungen`, `k1b_riegel`, `_logische_direktiven`) oder `Datei:Zeile @ sha7`; die wörtlichen Prüferzitate behalten ihre Zeilenangaben `@ 27865ca` |
+| **E** — „jede neue Prüfung einmal gebrochen" | Zwei orthogonale Brüche mit Rohausgabe oben (4 bzw. 3 Proben rot), beide zurückgenommen, Skript-sha256 vorher = nachher. Für NAK-94 drei Brüche, siehe `docs/beweise/SONDE-007c.md` |
+| **E** — Aussagen-Inventar | Tabelle oben; Quellenmenge um `erzeuge_installer_journale.py` erweitert, Klassifizierer als Skript abgedruckt, die eine **nicht** nachgezogene Stelle mit Grund benannt |
+| **F** — „Änderungssatz" | Lesen und Falten gehören zusammen und stehen in einem Commit mit ihren Proben und allen Behauptungen darüber; die Standzeilen und dieser Abschnitt gehen mit dem Klassifizierer, der sie braucht; die NAK-94-Hälfte liegt im Commit-Paar daneben |

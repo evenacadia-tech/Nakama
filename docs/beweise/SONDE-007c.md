@@ -18834,6 +18834,18 @@ tragen beide lebenden Quellen den neuen Wortlaut.
 | **E** — Behauptung ≤ Messung | ja: die neue Zusage steht in Skriptkopf und A17-Behauptung, ist mit `B8-Z1` a/b/c gebrochen und zurückgenommen, und das Aussagen-Inventar oben führt jede Stelle mit `Datei:Zeile @ sha7` oder Symbol. Keine Zahl im Skriptkopf: die Felder stehen als benannte Konstante `JOURNAL_EINTRAGSFELDER` (`:220 @ bce6af8`), der Lauf zählt. |
 | **F** — Änderungssatz | ja: Prüfung, Aufrufstelle, beide Behauptungen und die Proben liegen in `bce6af8`; Writer, Fixturen und Erzeuger sind unberührt, weil sich am Vertrag nichts geändert hat. |
 
+---
+
+### Kanon
+
+Gemeinsamer Abschlusslauf mit S8 Runde 13 auf dem committeten Stand
+`f423527`: **GRÜN — 32/32 Kanon-Läufe bestanden**, Exitcode 0, Beglaubigung
+nicht verweigert. Roh-Datei `docs/beweise/roh/SONDE-007a-f423527.md`; das
+Bein dieses Tickets ist dort **A17** (`pruefe_installer_manifest.py`,
+Exit 0, 0,94 s). Der Kanon-Block selbst hängt an
+`docs/beweise/SONDE-007a.md` („Kanon-Lauf - SONDE-007a Runde 13 + NAK-94
+Nacharbeit 8 - Abschluss").
+
 **Nicht berührt:** `Install-Nakama.ps1`, A18, die Fixturbytes, das
 Installer-Manifest (nicht neu gehasht), `tools/dirigent/**`. Offen außerhalb
 der Grenze: NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.

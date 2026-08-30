@@ -339,57 +339,16 @@ $kanon = @(
     # Rohfeld der Messung (docs/beweise/termin-a/, termin-b/) und an die
     # Vertragsform aus schemas/v3 ($defs/capabilities).
     [pscustomobject]@{ Kuerzel='A13'; Name='pruefe_host_capabilities.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Capabilityreport FL: die zehn Bits aus §53.6 entsprechen der v3-Vertragsform und stehen so, wie die Rohdaten der Termine A und B sie tragen; jedes supported hat einen Termin, jedes unsupported seinen festen Fallback.' }
-    # S8/SONDE-007a: K1 (Praeprozessor) und K2 (CMake) reden ueber die
+    # S8/SONDE-007a: K1 (Praeprozessor) und K2/K2b/K2c (CMake) reden ueber die
     # BAUBESCHREIBUNG und laufen beim Bauen mit. A14 ist der einzige Riegel, der
-    # das ARTEFAKT misst - und der einzige, der ein Stringliteral faende, das
-    # kein Makro ist. Er traegt seine eigene Gegenprobe: derselbe Scanner muss
-    # im gebauten EQ-Copilot-Bundle die PFLICHT-TEILMENGE der Nadeln FINDEN -
-    # hersteller.name, main.produktname, main.plugin_code, main.component_cid
-    # und main.controller_cid -, sonst ist sein Schweigen wertlos. Die Werte
-    # der Sonden-Ziele (Suna/Probeeq) werden dort ausdruecklich NICHT erwartet,
-    # und hersteller.code sowie main.bundle gehoeren nicht zur Pflichtmenge;
-    # gegen den KERN laeuft dagegen JEDE Nadel (Runde 14, 30.08.2026).
-    #
-    # FRISCHE, Runde 5 (29.08.2026): A14 baut den Kern SELBST vollstaendig neu,
-    # bevor es irgendetwas misst - Objekte, Tlogs und Lib des Kernverzeichnisses
-    # werden geloescht und von MSBuild aus der heutigen Projektdatei neu
-    # erzeugt. Die Dauer nennt die Laufausgabe (neubau['sekunden']); das gilt auch nach -Bauen, weil das
-    # Bein sonst wieder MSBuilds Frischeentscheidung NACHBAUEN muesste; vier
-    # Runden lang hat genau dieser Nachbau jedes Mal eine weitere Eingabeklasse
-    # uebersehen. Ohne moeglichen Neubau gibt es kein gruenes Urteil: der Lauf
-    # endet ueber voraussetzung_exit() - OHNE registrierten Befund mit 3, MIT
-    # registriertem Befund mit 2, NIE mit 0 (Matrix F13/F14/F15, Runde 8/9).
-    # Die frueheren Frischewachen bleiben als Diagnose ("womit wurde gebaut").
-    # Dazu kamen in derselben Runde K1b (kein JucePlugin_-Token im Quelltext der
-    # tatsaechlichen Compiler-Eingaben; die einzige Ausnahme
-    # NakamaKernRiegel.h wird seit Runde 15 nicht gezaehlt, sondern
-    # namentlich gegen die K1-Makroliste DERSELBEN Datei abgeglichen - und
-    # diese Liste kommt seit Runde 16 ausschliesslich aus dem einen
-    # #if-Kranz, der in den K1-#error muendet, nicht aus jedem #if-Block der
-    # Datei),
-    #
-    # RUNDE 17/18 (30.08.2026): K1b bereitet jede Eingabe vor wie der
-    # Uebersetzer - die vollstaendige Lesekette, in dieser Reihenfolge:
-    # Dekodierung, Praeprozessor-Phase 1, Praeprozessor-Phase 2,
-    # Kommentarentfernung, Tokenpruefung. Erstens fail-closed lesen (Runde 17):
-    # eine BOM entscheidet die Kodierung (UTF-8, UTF-16LE, UTF-16BE), ohne BOM
-    # gilt strikt UTF-8, und was sich so nicht dekodieren laesst, ist eine
-    # namentliche Klage statt eines still ersetzten Zeichens. Zweitens
-    # Praeprozessor-Phase 1 normalisieren (Runde 18): CRLF und einzelnes CR
-    # werden LF, ohne dass sich die Zeilenzahl aendert - danach kennt der
-    # Riegelweg nur noch ein Zeilenende. Drittens Praeprozessor-Phase 2 falten
-    # (Runde 17): Backslash + Zeilenende (auch CRLF, auch mit Leerraum davor)
-    # verschwindet. Erst danach laufen Kommentarentfernung und Tokenpruefung -
-    # sie sehen damit dieselben Zeilengrenzen und dieselben Token wie der
-    # Uebersetzer, und die Zeilenendform entscheidet nicht mehr ueber das
-    # Urteil. Jede der drei Vorstufen schloss einen Weg, auf dem ein Kopf ein
-    # Identitaetsmakro definieren, nur praeprozessor-gesteuert benutzen und
-    # wieder entfernen konnte, ohne K1, K1b, K2 oder K3 auszuloesen (Proben
-    # R17-1a..1d, R17-2a..2c und R18-1a..1d im --selbsttest),
-    # der Tlog-Ortsriegel (jede gelesene
-    # Datei aus einer aus dem Bau abgeleiteten Wurzel) und der JUCE-Baum-Riegel
-    # (juce-src = gepinnter Tag plus genau der eine Nakama-Patch).
-    [pscustomobject]@{ Kuerzel='A14'; Name='pruefe_kern_identitaetsfrei.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Der gemeinsame Kern traegt keine Bundle-Identitaet: NakamaKern.lib enthaelt keinen eingefrorenen Identitaetswert (Namen, Viercodes, CIDs roh und COM-vertauscht) und genau seine eigenen Uebersetzungseinheiten, kein JUCE-Modulobjekt; die Gegenprobe findet im gebauten EQ-Copilot-Bundle die Teilmenge der Nadeln, die dort stehen MUSS - hersteller.name, main.produktname, main.plugin_code, main.component_cid und main.controller_cid -, waehrend die Werte der Sonden-Ziele (Suna/Probeeq) dort ausdruecklich NICHT erwartet werden und hersteller.code sowie main.bundle nicht zur Pflichtmenge gehoeren; gegen den KERN laeuft dagegen jede Nadel der Identitaetsdatei, ihre Anzahl gibt der Lauf aus. Gemessen wird kein vorhandenes Artefakt: das Bein loescht vor jeder Messung Objekte, Tlogs und Lib des Kernverzeichnisses und laesst NakamaKern vollstaendig neu uebersetzen und linken (dabei laeuft ueber ZERO_CHECK auch das Configure samt K2/K2b/K2c mit); ob eine fruehere Lib veraltet war, ist damit keine Frage mehr. Ist der Neubau nicht moeglich oder schlaegt er fehl, ist das ein Voraussetzungs-Ausgang ueber voraussetzung_exit() und kein Urteil; dasselbe gilt, wenn kein schreibbares temporaeres Verzeichnis fuer den Sollindex des JUCE-Baums da ist; ohne Neubau (--nur-messen) gibt es kein gruenes Frische-Urteil. An JEDEM dieser Ausgaenge gewinnt ein bereits registrierter Befund: war vorher etwas rot, endet der Lauf mit 2 statt 3, und die VORAUSSETZUNG-Zeile bleibt zusaetzlich stehen - der unmoegliche oder fehlgeschlagene Bau eingeschlossen (Matrix F13/F14/F15, Runde 8/9). Zusaetzlich gemessen: keine der vom Compiler tatsaechlich gelesenen Dateien ausserhalb der JUCE-Module und der Toolchain-/SDK-Wurzeln - erzwungene Includes und vorkompilierte Koepfe eingeschlossen -, traegt das Token JucePlugin_ ausserhalb von NakamaKernRiegel.h, wobei die namentlich erlaubten Systemdateien roh in ASCII und UTF-16LE durchsucht werden; jede andere Eingabe geht dabei durch dieselben Vorstufen wie im Uebersetzer, und zwar in dieser Reihenfolge - fail-closed gelesen (eine BOM entscheidet die Kodierung: UTF-8, UTF-16LE oder UTF-16BE; ohne BOM gilt strikt UTF-8; eine nicht sicher dekodierbare Compiler-Eingabe ist eine NAMENTLICHE Klage, nie mehr ein still ersetztes Zeichen), danach Praeprozessor-Phase 1 normalisiert (CRLF und einzelnes CR werden LF, ohne dass sich die Zeilenzahl aendert) und erst dann Praeprozessor-Phase 2 gefaltet (Backslash plus Zeilenende verschwindet, auch als CRLF und auch mit Leerraum davor) VOR Kommentarentfernung und Tokenpruefung, so dass ein ueber ein Zeilenende geteiltes JucePlugin_Name, ein UTF-16-Kopf mit BOM und ein hinter // in einer CR-only-Datei verstecktes #define/#if/#undef ROT sind statt unsichtbar - die Zeilenendform entscheidet nicht mehr ueber das Urteil; und NakamaKernRiegel.h ist dabei keine Freistellung, sondern ein ABGLEICH - jedes ihrer JucePlugin_-Token wird namentlich gegen die Makroliste geprueft, die der Praeprozessor in DERSELBEN Datei abfragt, und muss in einem Riegelkontext stehen; diese Liste ist seit Runde 16 AUSSCHLIESSLICH der eine #if-Kranz, der in den K1-#error muendet - dieselbe Quelle, aus der K1 seine Wirkung bezieht -, und erlaubt sind nur defined(...) IN diesem Kranz sowie das blosse Praefix in SEINER #error-Meldung; jeder andere Name, jedes Token ausserhalb des Kranzes - auch ein bekannter Name in einem eigenen #if defined(...)-Block, auch die Kurzform #ifdef/#ifndef - und jedes #undef sind ROT und werden beim Namen genannt, und ohne eindeutig ableitbare Makroliste ist die Ausnahme selbst ROT: kein Kranz mit #error, mehr als einer und eine unpaarige Bedingungsstruktur sind je fuer sich ROT (Runde 15/16); die Zahl der abgeglichenen Token und der Makros gibt der Lauf aus; JEDE vom Compiler gelesene Datei - ohne Endungsausnahme - stammt aus einem erlaubten, aus dem Bau abgeleiteten Ort oder ist eine der NAMENTLICH gefuehrten Systemdateien unter %SystemRoot% - ihre Namen stammen aus einer im Manifest eingefuegten CL.read.1.tlog-Rohausgabe (Probe P8-SYS, Runde 8), ihre Anzahl gibt der Messlauf aus, wobei juce_audio_plugin_client, generierte JuceLibraryCode-Header, jede sonstige Datei unter %SystemRoot% und alles Unbekannte ROT sind; und der JUCE-Baum ist der gepinnte Tag plus genau der benannte Nakama-VST3-Patch, gemessen in drei Zeilen: HEAD IST der Commit des Tags 8.0.9 (verglichen, nicht nur beschrieben), ausserhalb der Patchdateien ist nichts geaendert, unverfolgt oder IGNORIERT, und die Patchdateien tragen genau den Patch - Inhalt gegen den in einem temporaeren Index gerechneten Sollzustand "Tag + Patch", nicht bloss rueckwaerts passende Hunks. Die eigenen Wachen des Beins (Configure-Stamps, vier Schalterklassen beidseitig, TU-Mengen, Linkfrische, lastbuildstate) belegen nur noch, WOMIT gebaut wurde; die AdditionalOptions-Klasse prueft dabei ausdruecklich nur Enthaltensein. Ausdruecklich nicht behauptet: der Inhalt der Toolchain- und SDK-Header ausserhalb des Repos (nur ihre Herkunft aus den abgeleiteten Wurzeln wird geprueft, kein Fingerprint), ein Compilerwechsel innerhalb derselben lastbuildstate-Kennung, der Inhalt im JUCE-Baum ausserhalb modules/** GELOESCHTER Dateien (sie werden benannt - eine geloeschte Datei kann keine Compiler-Eingabe werden), und die uebrigen ClCompile-Elemente der Projektdatei (Warnstufe, Optimierung, Laufzeitbibliothek und die anderen) - sie sind durch den Neubau gegenstandslos, aber nicht einzeln nachgebildet.' }
+    # das ARTEFAKT misst: es baut NakamaKern.lib im selben Lauf neu, durchsucht
+    # sie gegen jede Nadel der Identitaetsdatei, prueft die Archivmitglieder und
+    # traegt seine eigene Gegenprobe am Gen-Bundle. Der Skriptkopf nennt die
+    # Abschnitte [0]-[3] und die Exit-Semantik. NAK-100 (30.08.2026) hat das
+    # Bein auf dieses Gate-Mass zurueckgebaut (4197 -> ~750 Zeilen); der
+    # Rest - K1b-Textscan, Ortsriegel, JUCE-Baum-Riegel, Frischewachen - mass
+    # nicht das Gate und steht als Haertung im Register (NAK-103).
+    [pscustomobject]@{ Kuerzel='A14'; Name='pruefe_kern_identitaetsfrei.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Der gemeinsame Kern traegt keine Bundle-Identitaet (Entwurf §53.4): NakamaKern.lib wird vor der Messung geloescht und von MSBuild neu erzeugt (jede Kernquelle uebersetzt, Objekte und Lib juenger als der Zeitanker, Objektzahl = Quellzahl), enthaelt danach keinen eingefrorenen Identitaetswert aus plugin-identities-v1.json (Text in ASCII/UTF-16LE, Viercodes als Integer beider Byteordnungen, CIDs roh und COM-vertauscht) und genau die erwarteten Kernobjekte ohne JUCE-Modulobjekt; die Gegenprobe findet die Pflichtnadeln im gebauten Gen-Bundle, sonst waere das Schweigen ueber den Kern wertlos. Fehlende Voraussetzung (kein Neubau, Artefakt nicht auffindbar, --nur-messen) endet mit Exit 3, mit registriertem Befund mit 2, nie mit 0. Seit NAK-100 (30.08.2026) ohne K1b-Textscan, Ortsriegel, JUCE-Baum-Riegel und Frischewachen (Haertung NAK-103).' }
 
     # S9/SONDE-007b: das Grundgesetz gilt fuer JEDES Bundle, das Audio traegt.
     # Zwei Beine, weil die Produktklasse ein Uebersetzungsschalter ist - ein

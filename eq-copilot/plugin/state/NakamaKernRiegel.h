@@ -6,8 +6,9 @@
     eigener oder generierter, danach eingebundener Header definiert und bis
     zum TU-Ende definiert laesst. Ein `#pragma once` wuerde genau diese
     Endpruefung still ausschalten. Ein Makro, das vor dem TU-Ende wieder
-    entfernt wird, sieht dieser Riegel dagegen NICHT: dafuer K1b (Quelltext-
-    Token) und, sofern Bytes entstehen, K3 (gebautes Artefakt).
+    entfernt wird, sieht dieser Riegel nicht; entstehen daraus Bytes, sieht
+    es K3 (gebautes Artefakt). Der reine Quelltextfall ist seit NAK-100
+    (30.08.2026) eine registrierte Haertung (NAK-103), kein Riegel mehr.
 
     WOGEGEN DAS SCHUETZT (Entwurf §53.4, Static-Lib-Randbedingung):
 
@@ -27,48 +28,12 @@
     wuerde, traegt "Eqcp" fuer alle drei Apps in seinem Objektcode - und der
     Identitaets-Golden aus S2 faellt, sobald Probeeq oder Suna gebaut werden.
 
-    ACHT RIEGEL, ARBEITSTEILUNG (Manifest docs/beweise/SONDE-007a.md):
+    FUENF RIEGEL, ARBEITSTEILUNG (Manifest docs/beweise/SONDE-007a.md):
 
       K1 - dieser hier. Namentlich, im Uebersetzer, VOR dem Linken; ausgewertet
            am Anfang und Ende jeder Kern-Uebersetzungseinheit. Schnell und mit
            klarer Fehlermeldung, aber nur fuer die Makros, die unten stehen:
-           der Praeprozessor kann nicht auf ein Praefix pruefen - und er sieht
-           NICHT, was vor dem TU-Ende wieder entfernt wurde. Dafuer K1b.
-      K1b - der Quelltext-Riegel in tools/eq-copilot/pruefe_kern_identitaetsfrei.py
-           (S8/SONDE-007a Runde 5, 29.08.2026). Er scannt die TATSAECHLICHEN
-           Compiler-Eingaben unter plugin/ - alle Dateien aus dem frisch
-           geschriebenen CL.read.1.tlog, also auch erzwungene Includes und
-           vorkompilierte Koepfe - plus die literale Include-Huelle als
-           Gegenprobe. Verboten ist das Token JucePlugin_ im Quelltext,
-           unabhaengig von #define/#undef; Kommentare werden vorher entfernt,
-           Stringliterale nicht. Einzige Ausnahme: diese Datei hier, gemessen
-           und namentlich - seit Runde 15 kein Ueberspringen mehr, sondern ein
-           Abgleich gegen die Makroliste, die K1 unten fuehrt.
-           NACHTRAG RUNDE 7 (29.08.2026), er korrigiert das "unter plugin/"
-           im Satz weiter oben: geprueft wird die KOMPLEMENTMENGE des
-           Leseprotokolls, nicht ein Verzeichnis - JEDE gelesene Datei AUSSER
-           denen aus den JUCE-Modulen, der abgeleiteten MSVC-Toolchain und dem
-           abgeleiteten Windows-SDK. Das ist plugin/ UND alles Uebrige; genau
-           ein per /FI erzwungener Kopf ausserhalb plugin/ war der Weg, den
-           Runde 7 geschlossen hat. Die namentlich erlaubten Systemdateien
-           unter %SystemRoot% werden dabei nicht als C++ geparst, sondern ROH
-           in ASCII und UTF-16LE durchsucht; laesst sich eine der drei
-           Ausschlusswurzeln nicht ableiten, bildet K1b gar keine Menge,
-           sondern klagt (fail-closed). Nicht gesehen wird nur der Inhalt
-           dieser drei Wurzeln - dafuer der Tlog-Riegel und der
-           JUCE-Baum-Riegel.
-      Tlog-Riegel - im selben Skript: aus welchen Orten der Compiler wirklich
-           gelesen hat. Erlaubt sind plugin/, juce-src/modules/ OHNE
-           juce_audio_plugin_client (dort liegen alle `#define JucePlugin_` der
-           JUCE-Module) und die aus dem Bau abgeleiteten MSVC-/SDK-Wurzeln;
-           alles andere ist ROT. Er sieht den INHALT der gelesenen Dateien
-           nicht.
-      JUCE-Baum-Riegel - im selben Skript: juce-src ist der gepinnte Tag plus
-           genau der eine Nakama-VST3-Patch. Damit ist auch eine manipulierte
-           Kopie eines JUCE-Modulheaders abgedeckt, die definiert, benutzt und
-           wieder entfernt. Er sieht Loeschungen ausserhalb modules/ als
-           benannte Duldung und die Toolchain-/SDK-Header ausserhalb des Repos
-           gar nicht (ausdrueckliche Nichtzusage).
+           der Praeprozessor kann nicht auf ein Praefix pruefen.
       K2 - der Konfigurier-Riegel in cmake/NakamaKern.cmake. Laeuft die
            rekursive Linkhuelle je Konfiguration ab und faellt auf jedes
            compilerwirksame `JucePlugin_` aus Definitions- oder /D-/D-
@@ -78,12 +43,18 @@
            Verbraucher je Konfiguration als echte Mengengleichheit zusammen.
       K2c - haelt die rekursive Quelle der JUCE-Empfehlungsschalter je
            Konfiguration zusammen.
-      K3 - dasselbe Skript misst das GEBAUTE NakamaKern.lib gegen Text-,
-           Viercode-Integer- und CID-Bytes der eingefrorenen Identitaetswerte.
-           Erst das ist eine Aussage ueber das Artefakt statt die
-           Baubeschreibung. Seit Runde 5 laesst es die Lib dafuer im selben
-           Lauf vollstaendig neu erzeugen, statt die Frische einer vorhandenen
-           nachzurechnen.
+      K3 - tools/eq-copilot/pruefe_kern_identitaetsfrei.py (Kanon-Bein A14)
+           misst das GEBAUTE NakamaKern.lib gegen Text-, Viercode-Integer- und
+           CID-Bytes der eingefrorenen Identitaetswerte, prueft die
+           Archivmitglieder und traegt eine Gegenprobe am Gen-Bundle. Erst das
+           ist eine Aussage ueber das Artefakt statt die Baubeschreibung; die
+           Lib wird dafuer im selben Lauf vollstaendig neu erzeugt.
+
+      Bis NAK-100 (30.08.2026) standen hier drei weitere Riegel im selben
+      Skript (K1b-Quelltextscan, Tlog-Ortsriegel, JUCE-Baum-Riegel). Sie
+      massen nicht das Gate, sondern Umgehungen des Pruefskripts durch
+      absichtliche Sabotage in repo-eigenen Quellen - Haertung, Register
+      NAK-103; der JUCE-Baum wird vom Quellhash-Gate aus S3 (B3) bewacht.
 
     Der Riegel gilt nur beim Uebersetzen der Kern-Uebersetzungseinheiten
     (NAKAMA_KERN_UEBERSETZUNG, gesetzt von cmake/NakamaKern.cmake). Dieselben

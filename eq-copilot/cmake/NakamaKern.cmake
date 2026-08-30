@@ -51,7 +51,8 @@
 #       Linkhuellen von Kern und genau einem Verbraucher je Konfiguration.
 #   K3  tools/eq-copilot/pruefe_kern_identitaetsfrei.py — misst das GEBAUTE
 #       NakamaKern.lib gegen Text-, Viercode-Integer- und CID-Bytes aus
-#       eq-copilot/identity/plugin-identities-v1.json und bewacht seine Frische.
+#       eq-copilot/identity/plugin-identities-v1.json und erzeugt die Lib
+#       dafuer im selben Lauf neu (NAK-100: nur noch dieses Gate-Mass).
 #
 # K1/K2/K2b/K2c reden ueber Quell- und Baubeschreibung, K3 ueber das Artefakt.
 # Erst zusammen sind sie eine Aussage. Linkkanten werden bis zu direkten

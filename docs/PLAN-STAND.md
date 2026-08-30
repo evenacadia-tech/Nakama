@@ -1,6 +1,6 @@
 # Planstand Nakama
 
-<!-- quellstand: 6538e7c -->
+<!-- quellstand: 1ef8c06 -->
 
 > **Gerechnet, nicht gepflegt.** Dieses Blatt entsteht aus dem Repo:
 > `py -3.13 tools/plan/planstand.py`. Es wird **nie** von Hand editiert —
@@ -9,16 +9,16 @@
 > *abgenommen* erst, wenn dort eine Urteilsmarke der geforderten Prüfstufe
 > mit **PASS** steht. Fehlt sie, gilt der Schritt als nicht abgenommen.
 
-**Stand:** 2026-08-30 · Quellstand `6538e7c` · **19 von 38 abgenommen** · 1 gebaut · 18 offen
+**Stand:** 2026-08-30 · Quellstand `1ef8c06` · **19 von 38 abgenommen** · 1 gebaut · 18 offen
 
 > ⚠️ Gerechnet aus dem Arbeitsbaum: unter `docs/plan/`, `docs/beweise/`
-> oder `tools/plan/` liegen Änderungen, die noch nicht in `6538e7c` sind.
+> oder `tools/plan/` liegen Änderungen, die noch nicht in `1ef8c06` sind.
 
 `████████████████████▓░░░░░░░░░░░░░░░░░░░` 50 % abgenommen · 53 % gebaut
 
 **Als Nächstes:** **Nacharbeit an G1** — der Prüfer hat einen Befund offen gelassen (docs/beweise/G1.md).
 
-**Bei dir liegen 7 Fragen** — `U11, U13, U15, U16, U17, U18, U20`. Sie werden im Chat gestellt: Skill `/fragen`.
+**Bei dir liegen 6 Fragen** — `U11, U13, U15, U16, U17, U18`. Sie werden im Chat gestellt: Skill `/fragen`.
 
 ## Phasen auf einen Blick
 
@@ -105,7 +105,7 @@ flowchart LR
 
 *Gen zeigt alle Quellen mit Frische und Messpunkt — ehrlich, auch wenn etwas fehlt. Danach: Release R1.*
 
-- □ **S18–19** `SONDE-012` — Quellen verbinden und führen, Frische anzeigen, Messpunkt-Wahrheit, Fehlerzustände. NACHTRAG 30.08.2026 (PR1, Befunde D-2 und D-5): Der Landkarte fehlten nach dem ersten Durchgang zwei Wahrheiten; nach der Berichtigung am Ende dieses Textes bleibt eine. (1) Der Entscheid vom 23.08.2026 verlangt, dass der Sonden-Durchschalter die FL-Mixer-Reihenfolge hält und je Sonde nur den Bus-Namen zeigt (design/abnahmen/2026-08-23-interview-struktur.md, Festlegungen 11 und 12). Beides kann nur der Host liefern; der Weg wäre VST3 ChannelContext::IInfoListener, im gepinnten JUCE 8.0.9 als AudioProcessor::updateTrackProperties erreichbar. Ob FL Studio ihn bedient, ist nie gemessen worden, es gibt dafür kein Capabilitybit (§53.6 ist abschließend, NAK-27), und probe_descriptor im v3-Vertrag ist additionalProperties = false und ausdrücklich nicht additiv. S18–19 liefert deshalb: die Messung im echten FL, das zugehörige Capabilitybit und den Vertragsort — oder, falls FL nichts hergibt, den belegten Rückfall (Fragenkarte U20). Das Feld label bleibt User-Wort und ist keine Hostwahrheit. BERICHTIGT 30.08.2026 (PR1 Runde 1, Codex-Befund B4): Der früher hier stehende zweite Punkt — die Landkarte zeigt je Sonde, ob ihr EQ zugeschaltet ist — ist GESTRICHEN. Der dafür zitierte Entscheid vom 23.08.2026 (design/abnahmen/2026-08-23-interview-struktur.md, Fragen 13 und 16) bindet den roten oder grünen EQ-Punkt an Probeeqs lokale Rückfallfläche („Connected/Disconnected, Bypass, bei EQ on die Werte und der Mode der Probe“) und verlangt keine solche Anzeige auf Gens Landkarte; sie zu erfinden wäre eine sichtbare Funktion ohne Entscheid und hätte den strikten Descriptor unnötig versioniert. Was bleibt, ist Technik ohne Anzeige: Gen muss den Betriebszustand des Sonden-EQ für die Fernsteuerung kennen (S29–31). Der Feldname dafür wird in der v3-Vertragsrunde von S16–17 reserviert, Eigentümer S29–31. Register NAK-106 und NAK-107. (offen)
+- □ **S18–19** `SONDE-012` — Quellen verbinden und führen, Frische anzeigen, Messpunkt-Wahrheit, Fehlerzustände. NACHTRAG 30.08.2026 (PR1, Befunde D-2 und D-5): Der Landkarte fehlten nach dem ersten Durchgang zwei Wahrheiten; nach der Berichtigung am Ende dieses Textes bleibt eine. (1) Der Entscheid vom 23.08.2026 verlangt, dass der Sonden-Durchschalter die FL-Mixer-Reihenfolge hält und je Sonde nur den Bus-Namen zeigt (design/abnahmen/2026-08-23-interview-struktur.md, Festlegungen 11 und 12). Beides kann nur der Host liefern; der Weg wäre VST3 ChannelContext::IInfoListener, im gepinnten JUCE 8.0.9 als AudioProcessor::updateTrackProperties erreichbar. Ob FL Studio ihn bedient, ist nie gemessen worden, es gibt dafür kein Capabilitybit (§53.6 ist abschließend, NAK-27), und probe_descriptor im v3-Vertrag ist additionalProperties = false und ausdrücklich nicht additiv. S18–19 liefert deshalb: die Messung im echten FL, das zugehörige Capabilitybit und den Vertragsort — oder, falls FL nichts hergibt, den entschiedenen Rückfall (Antwort U20). Das Feld label bleibt User-Wort und ist keine Hostwahrheit. RÜCKFALL ENTSCHIEDEN 30.08.2026 (Antwort U20, Wahl „Eigener Name (Empfohlen)“): Gibt FL keinen Bus-Namen her, steht im Sonden-Durchschalter der Name, den der User je Sonde selbst vergibt — genau das heutige Feld label. Es bleibt damit User-Wort und untrusted: Länge begrenzen, nie als Hostwahrheit auszeichnen, nie als Pfad oder Markup deuten. Liefert FL den Bus-Namen doch, ersetzt er den selbst vergebenen Namen automatisch — der Hostwert hat Vorrang, der eigene Name bleibt gespeichert und trägt wieder, sobald der Host nichts mehr liefert. Ein Rückfall auf die Mixer-Nummer oder auf die Reihenfolge des Verbindens wird ausdrücklich NICHT gebaut. Die Anzeige selbst gehört zu S31b. Wortlaut: design/abnahmen/2026-08-30-fragenrunde-marktstandard.md. BERICHTIGT 30.08.2026 (PR1 Runde 1, Codex-Befund B4): Der früher hier stehende zweite Punkt — die Landkarte zeigt je Sonde, ob ihr EQ zugeschaltet ist — ist GESTRICHEN. Der dafür zitierte Entscheid vom 23.08.2026 (design/abnahmen/2026-08-23-interview-struktur.md, Fragen 13 und 16) bindet den roten oder grünen EQ-Punkt an Probeeqs lokale Rückfallfläche („Connected/Disconnected, Bypass, bei EQ on die Werte und der Mode der Probe“) und verlangt keine solche Anzeige auf Gens Landkarte; sie zu erfinden wäre eine sichtbare Funktion ohne Entscheid und hätte den strikten Descriptor unnötig versioniert. Was bleibt, ist Technik ohne Anzeige: Gen muss den Betriebszustand des Sonden-EQ für die Fernsteuerung kennen (S29–31). Der Feldname dafür wird in der v3-Vertragsrunde von S16–17 reserviert, Eigentümer S29–31. Register NAK-106 und NAK-107. (offen)
 - □ **G3** `Gate` — Rust-Review + Codex + 60-Minuten-Dauerlauf. Vorher fällig: deine fünf Entscheide aus U9. (offen)
 
 ### P4–P5 — Vergleichsevidenz und Ursachen  (0/4 abgenommen)

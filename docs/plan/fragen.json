@@ -74,18 +74,6 @@
    "seit": "2026-08-30",
    "bilder": [],
    "status": "offen"
-  },
-  {
-   "id": "U20",
-   "dringlichkeit": "vor Phase P3 (die Quellenübersicht)",
-   "art": "Produktentscheid mit Messung davor",
-   "titel": "Was zeigt der Sonden-Durchschalter, wenn FL Studio den Spurnamen nicht herausgibt?",
-   "was": "Du hast am 23.08. festgelegt: der Durchschalter auf der EQ-Seite hält die Reihenfolge des FL-Mixers und zeigt je Sonde nur den Namen des Busses, auf dem sie sitzt. Beim Nachprüfen ist aufgefallen: diese beiden Angaben kann nur FL selbst liefern, und es ist nie gemessen worden, ob FL sie überhaupt herausgibt. Es gibt einen dafür vorgesehenen Weg im Plugin-Standard, aber ob FL ihn bedient, steht in keiner Herstellerunterlage. Wir messen das. Die Frage an dich ist der Fall danach: **wenn FL nichts hergibt** — was soll dann im Durchschalter stehen? Möglich wären ein Name, den du selbst vergibst, die Nummer des Mixerkanals, sofern die ankommt, oder eine Reihenfolge nach dem Zeitpunkt des Verbindens.",
-   "warum": "Der Durchschalter ist laut deinem eigenen Wort der häufigste Handgriff auf der EQ-Seite („1 klick oder 3 klicks dazwischen liegen welten\"). Wenn dort ein Name fehlt oder die Reihenfolge springt, trifft es genau den Handgriff, auf den es dir ankommt. Und der Vertrag, in dem so ein Name reisen müsste, wird in den nächsten zwei Schritten festgeschrieben — danach ist eine Ergänzung deutlich teurer.",
-   "wo": "Betroffen: Nachrichtenvertrag, die Liste der gemessenen FL-Fähigkeiten und die Oberfläche. Tickets S18–19 und S31b. Beleg: docs/beweise/PR1.md Befund D-2; Wortlaut design/abnahmen/2026-08-23-interview-struktur.md, Festlegungen 11 und 12.",
-   "seit": "2026-08-30",
-   "bilder": [],
-   "status": "offen"
   }
  ],
  "beantwortet": {
@@ -390,6 +378,14 @@
    "datum": "2026-08-30 23:02",
    "status": "eingearbeitet",
    "ergebnis": "Referenz-Nachbilden (EQ-Match) bleibt Ausbau nach der vollen Fassung (Entwurf §47.5); die v3-Vertragsrunde von S16-17 reserviert nur den Familiennamen, Nutzlast erst mit dem Ausbau."
+  },
+  "U20": {
+   "frage": "Was zeigt der Sonden-Durchschalter, wenn FL Studio den Spurnamen nicht herausgibt?",
+   "wahl": "Eigener Name (Empfohlen)",
+   "text": "Eigener Name (Empfohlen) — du vergibst je Sonde einen Namen (wie heute das Label); liefert FL den Bus-Namen doch, ersetzt er ihn automatisch.",
+   "datum": "2026-08-30 23:02",
+   "status": "eingearbeitet",
+   "ergebnis": "Gibt FL keinen Bus-Namen her, zeigt der Sonden-Durchschalter den vom User je Sonde vergebenen Namen (heutiges label-Feld, User-Wort, untrusted); ein vom Host gelieferter Bus-Name ersetzt ihn automatisch. Mixer-Nummer und Verbindungsreihenfolge werden nicht als Rueckfall gebaut. S18-19 (Messung, Capabilitybit, Vertragsort) und S31b (Anzeige). [design/abnahmen/2026-08-30-fragenrunde-marktstandard.md]"
   }
  }
 }

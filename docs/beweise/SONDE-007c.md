@@ -18635,3 +18635,16 @@ Prozessbaum. Nach dem Beenden dieses einen Fremdprozesses lief der Runner
 Am Runner wurde nichts geändert; der Punkt steht seit 24.08.2026 als **NAK-72**
 im Register (`docs/offene-punkte.md`) samt seinen zwei Abhilfen und bleibt
 offen. Ein Eingriff in `Fuehre-Aus` liegt außerhalb dieser Ticketgrenze.
+
+## Dirigentenstand NAK-94 — 2026-08-30 04:02 (Sitzung 054eedac): Prüfer 8 NEEDS_WORK, offen — Nacharbeit 8
+
+**Stand dieses Abschnitts:** `d084296`
+
+**Nacharbeit 7:** Opus/max `nakama-s8r12-nak94r7-c915197-bau` (gemeinsam mit S8 Runde 12); B7-Z1 als Byteänderung, Pflichtmenge als eigene Probe; Kanon GRÜN 32/32 auf `196f97e` (Roh-Datei `docs/beweise/roh/SONDE-007a-196f97e.md`, Bein A17).
+**Prüfer 8:** Codex high `01a0505f-d981-7301-a2aa-3f5d242822e1`, lesend über `git diff da62dec...d084296`, HEAD vor/nach identisch — **NEEDS_WORK (1)**, wörtlich (`@ d084296`); der belegte B7-Bruch bestätigt funktionierend:
+
+> **[P2] Sperre semantisch veränderte Fixtures vor dem Weiterlauf** — `tools/eq-copilot/pruefe_installer_manifest.py:1058-1065`. Wenn eine vorhandene Fixture durch eine einzelne Byteänderung weiterhin ein JSON-Objekt bleibt, aber etwa `eintraege` zu `xntraege` wird, meldet dieser Zweig nur Z1 und lädt das Objekt trotzdem; anschließend endet `[3b]` bei `k["eintraege"]` mit `KeyError`, statt Z2–Z7 grün auszuführen oder kontrolliert abzubrechen. Damit ist die Behauptung „lesbares Objekt → genau Z1 rot" nicht allgemein erfüllt und Unbekanntes wird entgegen Prüfliste D laut statt ROT. Nur nach einer nachweislich semantikneutralen B7-Mutation weiterlaufen oder die von Z2–Z7 benötigte Writer-Struktur vorab prüfen und sonst `abbruch` setzen.
+
+**Einordnung:** Defekt, mittel (Prüfliste D: Unbekanntes ist ROT, nie ein Traceback). **Regel des Dirigenten (Nacharbeit 8):** Nach rotem Z1 (Hash-Abweichung) läuft `[3b]` nur weiter, wenn das geladene Objekt die von Z2–Z7 benötigte Writer-Struktur trägt — Strukturprüfung vorab (`schema`, `status`, `eintraege` als Liste mit den in Z2–Z7 gelesenen Feldern); fehlt etwas, endet `[3b]` mit kontrolliertem `abbruch` und Klartext („Fixture geändert und strukturell unbrauchbar"), nie mit Traceback. Proben: (a) semantikneutrale Byteänderung (z. B. Whitespace/Zeitstempel) → Z1 ROT, Z2–Z7 grün; (b) strukturverändernde Byteänderung (`eintraege` → `xntraege`) → Z1 ROT, kontrollierter Abbruch mit Klartext, Exit ≠ 0, kein Traceback; beide zurückgenommen, Hash belegt. Behauptung in `tools/beweise.ps1` und Skriptkopf: „nach rotem Z1 laufen Z2–Z7 nur auf strukturell gültigem Objekt weiter; sonst Abbruch".
+
+**Nächster Schritt:** Nacharbeit 8 im selben Worker wie die nächste S8-Runde (falls Prüfer 13 Befunde hat; sonst allein), gemeinsamer Kanon, danach Prüfer 9 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.

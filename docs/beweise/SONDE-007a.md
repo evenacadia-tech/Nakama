@@ -1248,3 +1248,119 @@ Textscanners K1b, die absichtliche Sabotage in repo-eigenen Quellen voraussetzen
 **Urteil des Dirigenten:** S8 `SONDE-007a` ist **abgenommen** — das Gate §53.4 („der gemeinsame Kern sieht keine `JucePlugin_*`-Konstanten") ist am Artefakt gemessen (A14: Neubau, Binärscan gegen jede Nadel, Gegenprobe am Bundle, Archivmitglieder) und am Bau bewacht (K1 `#error`, K2/K2b/K2c). Was darüber hinaus in den Runden 4–19 gebaut wurde (Frischewachen, K1b-Präprozessor-Nachbau, JUCE-Baum-Riegel, ihre Selbsttests), misst nicht das Gate und wird unter **NAK-100** (umgewidmet: Rückbau auf das Gate-Maß statt Aufteilung in Pakete) zurückgebaut — mit eigenem, gebundenem Prüfer.
 
 **Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99, NAK-100 (Rückbau), NAK-103 (Härtung, geparkt).
+
+## NAK-100 — Rückbau von A14 auf das Gate-Maß (30.08.2026)
+
+**Stand dieses Abschnitts:** `e2551a9`
+
+**Warum:** Prüfer 4–20 bauten `pruefe_kern_identitaetsfrei.py` von rund 900 auf 4 197 Zeilen aus — Frischewachen (seit Runde 5 gegenstandslos), K1b-Präprozessor-Nachbau, Tlog-Ortsriegel, JUCE-Baum-Riegel und ~1 300 Zeilen Selbsttests dieser Wachen. Am Gate §53.4 gemessen trugen ~800 Zeilen die Abnahme. User-Wort 30.08.: „macht der prüfskript überhaupt sinn? codex ist bekannt maximal zu übertreiben was tests angeht" — Register NAK-100 (umgewidmet), NAK-103 (K1b als Härtung).
+
+**Was A14 seit `e2551a9` misst (746 Zeilen):** [0] Neubau der `NakamaKern.lib` vor der Messung mit drei Belegen, [1] Gegenprobe der Pflichtnadeln am Gen-Bundle, [2] Binärscan gegen jede Nadel der Identitätsdatei in allen Byteformen, [3] Archivmitglieder = erwartete Kernobjekte, kein JUCE-Objekt. Exit-Semantik unverändert (0/2/3, registrierter Befund gewinnt). Entfernt: K1b, Ortsriegel, JUCE-Baum-Riegel (S3-Quellhash-Gate B3 bewacht den Baum), Frischewachen. Runner-Behauptung auf das Gate-Maß gekürzt; `NakamaKernRiegel.h` nur im Kommentar geändert (Makroliste und `#error` unverändert, `git diff` zeigt keine Direktive); `NakamaKern.cmake` K3-Kommentarzeile.
+
+### Selbsttest — jeder verbleibende Riegel einmal beim Fallen gesehen (`--selbsttest` @ `e2551a9`)
+
+```text
+A14-Selbsttest: jeder Riegel einmal beim Fallen gesehen (baulos)
+
+[S1] Nadelformen
+  ok      little-endian Immediate 0x45716370 wird gefunden
+  ok      big-endian Integerfolge 0x45716370 wird gefunden
+  ok      16-Byte-CID roh wird gefunden
+  ok      16-Byte-CID COM-vertauscht wird gefunden
+  ok      UTF-16LE-Text wird gefunden
+  ok      17 Nadeln aus der Identitaetsdatei, main.plugin_code dabei
+
+[S2] Gegenprobe - faellt, sobald eine Pflichtnadel fehlt
+  ok      Bundle mit allen Pflichtnadeln: Gegenprobe gruen
+  ok      Bundle ohne CIDs: genau die zwei CID-Zeilen fallen  [Gegenprobe findet main.component_cid = 'ABCDEF019182FAEB45766E6145716370' im gebauten Bundle; Gegenprobe findet main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' im gebauten Bundle]
+
+[S3] Kernscan - faellt bei jeder Nadelform
+  ok      sauberer Kern: alle Nadeln NICHT gefunden
+  ok      Kern mit eingepflanzter Nadel (ascii): Scan faellt und nennt die Form  [ascii]
+  ok      Kern mit eingepflanzter Nadel (fourcc-int-le): Scan faellt und nennt die Form  [fourcc-int-le]
+  ok      Kern mit eingepflanzter Nadel (roh16-com): Scan faellt und nennt die Form  [ascii,fourcc-int-be; roh16-com; ascii,fourcc-int-be]
+
+[S4] Bauform - Archivleser und Objektliste
+  ok      synthetisches Archiv mit Kurz- und Langnamen wird vollstaendig gelesen
+  ok      genau die Kernobjekte: Bauform gruen
+  ok      juce_core.obj im Archiv: beide Bauform-Zeilen fallen und nennen es
+  ok      kein Archiv: Bauform faellt
+  ok      Nicht-Archiv wird als None erkannt
+
+[S5] Neubau-Beleg - faellt bei altem Objekt, fehlender Lib, fehlender TU
+  ok      konsistenter Neubau: keine Klage
+  ok      Objekte und Lib aelter als der Zeitanker: beide Klagen  [Objekt aelter als der Neubau (nicht neu uebersetzt): A.obj, B.obj | NakamaKern.lib ist aelter als der Neubau - nicht neu gelinkt]
+  ok      Bauausgabe ohne B.cpp: Klage nennt B.cpp  [Bauausgabe nennt diese Uebersetzungseinheiten nicht: B.cpp]
+  ok      unbekannte Datei im Kernverzeichnis wird benannt  [Datei im Kernverzeichnis, die weder Bauausgabe noch bekannte Eingabe ist: x.bin]
+  ok      fehlende Lib nach Neubau: Klage  [NakamaKern.lib fehlt nach dem Neubau]
+  ok      Objektzahl ungleich Quellzahl: Klage  [1 Objekte, aber 2 Kernquellen | NakamaKern.lib fehlt nach dem Neubau]
+
+[S6] Kernquellen aus CMakeLists, Release-Wahl, Voraussetzungs-Ausgang
+  ok      NAKAMA_KERN_QUELLEN (9) und ERWARTETE_OBJEKTE decken sich  [ControlClient, IpcVerbindung, NakamaKanon, NakamaLebenslauf, NakamaParameter, NakamaState, NakamaVertrag, TelemetryClient, WireEnvelope]
+  ok      set(...)-Block wird ohne Kommentare und Anfuehrungszeichen gelesen
+  ok      fehlendes NAKAMA_KERN_QUELLEN ist ein Fehler, kein leeres Ergebnis
+  ok      Release gewinnt gegen Debug, unabhaengig von der Sortierung
+  ok      Voraussetzung fehlt: Exit 3 ohne, Exit 2 mit registriertem Befund
+
+28 ok, 0 Fehler
+selbsttest exit 0
+```
+
+### Messlauf mit Neubau (`py -3.13 tools/eq-copilot/pruefe_kern_identitaetsfrei.py` @ `e2551a9`)
+
+```text
+Kern      : eq-copilot\build\plugin\Release\NakamaKern.lib  (1218518 Byte)
+Gegenprobe: eq-copilot\build\plugin\EqCopilot_artefacts\Release\VST3\EQ-Copilot.vst3\Contents\x86_64-win\EQ-Copilot.vst3  (7105024 Byte)
+Nadeln    : 17 aus eq-copilot\identity\plugin-identities-v1.json
+
+[0] Frische - der Kern wurde fuer diese Messung neu gebaut
+  ok      Kernartefakte geloescht und in 30.1s neu erzeugt (22 Dateien entfernt, 9 Uebersetzungseinheiten, 9 Objekte, Lib neu gelinkt)
+
+[1] Gegenprobe - findet der Scanner die Werte dort, wo sie stehen muessen?
+  ok      Gegenprobe findet hersteller.name = 'evenacadia' im gebauten Bundle  [ascii,utf-16le]
+  ok      Gegenprobe findet main.produktname = 'EQ-Copilot' im gebauten Bundle  [ascii,utf-16le]
+  ok      Gegenprobe findet main.plugin_code = 'Eqcp' im gebauten Bundle  [ascii,fourcc-int-be]
+  ok      Gegenprobe findet main.component_cid = 'ABCDEF019182FAEB45766E6145716370' im gebauten Bundle  [roh16-com]
+  ok      Gegenprobe findet main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' im gebauten Bundle  [roh16-com]
+
+[2] Kern - keine dieser Nadeln darf im Objektcode des Kerns liegen
+  ok      NakamaKern.lib traegt active-probe.bundle = 'Nakama Probeeq.vst3' NICHT
+  ok      NakamaKern.lib traegt active-probe.component_cid = 'ABCDEF019182FAEB45766E614E6B4163' NICHT
+  ok      NakamaKern.lib traegt active-probe.controller_cid = 'ABCDEF011234ABCD45766E614E6B4163' NICHT
+  ok      NakamaKern.lib traegt active-probe.plugin_code = 'NkAc' NICHT
+  ok      NakamaKern.lib traegt active-probe.produktname = 'Nakama Probeeq' NICHT
+  ok      NakamaKern.lib traegt hersteller.code = 'Evna' NICHT
+  ok      NakamaKern.lib traegt hersteller.name = 'evenacadia' NICHT
+  ok      NakamaKern.lib traegt main.bundle = 'EQ-Copilot.vst3' NICHT
+  ok      NakamaKern.lib traegt main.component_cid = 'ABCDEF019182FAEB45766E6145716370' NICHT
+  ok      NakamaKern.lib traegt main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' NICHT
+  ok      NakamaKern.lib traegt main.plugin_code = 'Eqcp' NICHT
+  ok      NakamaKern.lib traegt main.produktname = 'EQ-Copilot' NICHT
+  ok      NakamaKern.lib traegt passive-probe.bundle = 'Nakama Suna.vst3' NICHT
+  ok      NakamaKern.lib traegt passive-probe.component_cid = 'ABCDEF019182FAEB45766E614E6B5072' NICHT
+  ok      NakamaKern.lib traegt passive-probe.controller_cid = 'ABCDEF011234ABCD45766E614E6B5072' NICHT
+  ok      NakamaKern.lib traegt passive-probe.plugin_code = 'NkPr' NICHT
+  ok      NakamaKern.lib traegt passive-probe.produktname = 'Nakama Suna' NICHT
+
+[3] Bauform - der Kern enthaelt genau seine eigenen Objekte
+  ok      Archivmitglieder sind genau die 9 Kernobjekte
+  ok      kein JUCE-Modulobjekt im Kern (die Kopf-Fassade haelt)
+
+25 ok, 0 Fehler
+messlauf exit 0
+```
+
+### Bruchproben am echten Artefakt — und Rücknahme
+
+Drei Brüche gegen die frisch gebaute Lib und das gebaute Bundle über die Modulfunktionen; danach dieselben Funktionen auf den unveränderten Artefakten:
+
+```text
+Lib: eq-copilot/build/plugin/Release/NakamaKern.lib 1218518 Byte; Archivmitglieder: ['ControlClient.obj', 'IpcVerbindung.obj', 'NakamaKanon.obj', 'NakamaLebenslauf.obj', 'NakamaParameter.obj', 'NakamaState.obj', 'NakamaVertrag.obj', 'TelemetryClient.obj', 'WireEnvelope.obj']
+Bruch B1 - 'Nakama Probeeq' als UTF-16LE an die echte Lib angehaengt: 1 rot -> ["NakamaKern.lib traegt active-probe.produktname = 'Nakama Probeeq' NICHT [utf-16le]"]
+Bruch B2 - Gegenprobe gegen die Kern-Lib statt des Bundles: 5 von 5 rot -> ["Gegenprobe findet hersteller.name = 'evenacadia' im gebauten Bundle", "Gegenprobe findet main.produktname = 'EQ-Copilot' im gebauten Bundle", "Gegenprobe findet main.plugin_code = 'Eqcp' im gebauten Bundle", "Gegenprobe findet main.component_cid = 'ABCDEF019182FAEB45766E6145716370' im gebauten Bundle", "Gegenprobe findet main.controller_cid = 'ABCDEF011234ABCD45766E6145716370' im gebauten Bundle"]
+Bruch B3 - juce_core.obj zu den echten Mitgliedern gelegt: 2 rot -> ['Archivmitglieder sind genau die 9 Kernobjekte [ControlClient.obj, IpcVerbindung.obj, NakamaKanon.obj, NakamaLebenslauf.obj, NakamaParameter.obj, NakamaState.obj, NakamaVertrag.obj, TelemetryClient.obj, WireEnvelope.obj, juce_core.obj]', 'kein JUCE-Modulobjekt im Kern (die Kopf-Fassade haelt) [juce_core.obj]']
+Ruecknahme - echte Lib, echtes Bundle: 0 rot im Kernscan, 0 rot in der Bauform
+```
+
+**Kanon:** folgt als Abschlusslauf nach dem Rückbau von A17 (NAK-100, zweiter Teil) — ein Lauf für beide.
+

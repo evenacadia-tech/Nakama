@@ -68,6 +68,230 @@ Ebene unter der Oberfläche. Stattdessen:
 
 ---
 
+## Verhaltensmatrix — Referenz seit 2026-08-30 (Ursachenrunde NAK-95/NAK-98)
+
+Die Spezifikation der Rückstau- und Lebenszykluspolitik des v3-Transports.
+**Anforderungsquellen sind ausschließlich** Gate-Text §65 `SONDE-010`
+(„CRC/Fuzz/Backpressure/Reconnect ohne P0-Starvation"), Entwurf §53.9
+(Queuetabelle, Bootstrapreihenfolge), §33.1 (Envelope, zwei Verbindungen) und
+die acht Regeln des Konvergenzentscheids am Ende dieses Manifests. Wo der
+Entwurf schweigt, gilt die dort genannte Regel des Dirigenten; wo auch die
+schweigt, steht die kleinste tragfähige Festlegung, markiert mit
+**(Festlegung Worker)**. Die Matrix erfindet nichts darüber hinaus.
+
+**Lesart der Spalten.** *Zusage* nennt, was passiert, was NIE passiert, und den
+Zähler, der es sichtbar macht. *Test* nennt die Stelle, die es misst; „(neu)"
+heißt: dieser Test existiert am Stand `05235cf` nicht und wird in Phase 2
+gebaut. C++-Beleg ist `eq-copilot/plugin/tests/IpcTestMain.cpp` (Kanon-Bein
+B10, Abschnitte A…H), Rust-Beleg der Modulname plus Testfunktion.
+
+**Geltungsbereich beider Sprachen.** C++ hält die Client-Hälfte
+(`eq-copilot/plugin/core/ipc/IpcQueues.h`), Rust die Broker-Hälfte
+(`broker/src/transport/warteschlange.rs`). Im Listener verdrahtet ist heute nur
+`IngressWarteschlange`; `P0/P1/P2Warteschlange` in Rust sind ausgelieferte
+Politik ohne Verbraucher (der Coordinator ist `SONDE-011`). Regel 3 gilt
+trotzdem: dieselbe Politik, derselbe Test, beidseitig.
+
+### Pflichtzeilen — wo die acht Befunde des Konvergenzentscheids stehen
+
+| Regel | Kurz | Zeile(n) |
+|---|---|---|
+| 1 | Wiederholpuffer fließt ohne Reconnect ab, in Annahmereihenfolge, vor jedem Neuzugang | `A-P1-06`, `A-P1-07` |
+| 2 | Schlüssel überlebt den Wiederholpuffer; Koaleszierung gilt auch dort | `A-P1-03` |
+| 3 | Rust verwirft nie Akzeptiertes; Politik identisch zu C++ | `A-P1-05` (und die Rust-Spalte jeder `A-P1`-Zeile) |
+| 4 | P0 wird gelesen und beantwortet, während P1 rückstaut | `B-CC-06`, `B-CC-07` |
+| 5 | Listener-Kopplung: Reihenfolge beim Verbinden und beim Trennen | `C-LS-02`, `C-LS-03`, `C-LS-04`, `C-LS-06` |
+| 6 | `stop()` kehrt immer zurück; kein Self-Join; Frist; danach kein Callback | `B-CC-10`, `B-CC-11`, `B-CC-12`, `B-TC-07` |
+| 7 | A21-Behauptung auf das Gemessene begrenzt | `D-A21-01` |
+| 8 | P2: es fällt nie der neueste Frame, auch bei Slot-Kollision | `A-P2-03`, `A-P2-04` |
+
+### Fristen und Kapazitäten dieser Matrix
+
+| Größe | Wert | Quelle / Begründung |
+|---|---:|---|
+| `kCapP0` / `CAP_P0` | 64 | §53.9 |
+| `kCapP1` / `CAP_P1` | 128 Hauptqueue + 128 Wiederholpuffer | §53.9; der Wiederholpuffer ist die Clienthälfte des Outboxgedankens |
+| `kCapP2JeSonde` / `CAP_P2_JE_SONDE` | 2 | §53.9; C++ hält 3 Slots — zwei wartende plus den, in den gerade geschrieben wird |
+| `CAP_INGRESS` | 256 | §53.9 |
+| `kIoFristMs` | 5000 ms | absolute Frist je Schreibvorgang und je Bootstrapantwort, `IpcVerbindung.h` |
+| `kLeseTaktMs` (Control) | 20 ms | Lesetakt, wenn nichts zu senden ist; kurz genug, dass ein P0-Befehl nicht hinter Stille wartet |
+| `kLeerlaufMs` (Telemetry) | 5 ms | Leerlauflesen statt Schlaf; bei 10 Hz Livekadenz (§33.2) reichlich |
+| Backoff | 500 ms, verdoppelt bis 8000 ms | `IpcVerbindung.h`, wie im v2-Client |
+| `SENKE_FRIST` (Rust) | 2000 ms | Frist auf jeden Lebenszyklus- und Diagnoseaufruf und auf jeden Join im Listener |
+| `kStopFristMs` (C++, neu) | 2000 ms | **(Festlegung Worker)** derselbe Wert wie `SENKE_FRIST`: beide Seiten geben fremdem Code dieselbe Gnadenfrist; lang genug für einen normalen Callback (Mikro- bis Millisekunden), kurz genug, dass das Schließen eines Plugins im Host nicht spürbar hängt |
+| Ratengrenze | 4000 Nachrichten je 1000 ms | `WireEnvelope.h`, §33.1 „Nachrichtenratenlimits", beidseitig gleich |
+
+---
+
+### A. Queues
+
+#### A.1 P0 Control — Cap 64, „nichts verwerfen; Verbindung schließen"
+
+| ID | Zustand | Ereignis | Zusage | Test C++ | Test Rust |
+|---|---|---|---|---|---|
+| `A-P0-01` | leer / teilweise | einreihen Ereignis | angenommen, ans Ende; Reihenfolge bleibt FIFO | E · „P0 nimmt 64 Nachrichten" | `warteschlange::p0_verwirft_nie_und_meldet_ueberlauf` |
+| `A-P0-02` | leer / teilweise | einreihen Snapshot mit Schlüssel | P0 kennt keinen Schlüssel: wie ein Ereignis behandelt, NIE koalesziert; Steuerung wird nicht zusammengefasst | Typebene: `P0Warteschlange::einreihen` nimmt gar keinen Schlüssel entgegen (Abgrenzung, kein Test) | dieselbe Signatur in Rust (Abgrenzung, kein Test) |
+| `A-P0-03` | voll (`groesse + inFlug == 64`) | einreihen | abgewiesen (`false` bzw. `Err(P0Ueberlauf)`); NIE fällt Akzeptiertes; Zähler `ueberlauf()`; die laufende Verbindung wird geschlossen | E · „die 65. meldet Ueberlauf (nichts verwerfen ⇒ Verbindung schliessen)" | `p0_verwirft_nie_und_meldet_ueberlauf` |
+| `A-P0-04` | teilweise / voll | entnehmen | Eintrag verlässt die Queue, sein Platz bleibt RESERVIERT (`inFlug` + 1) bis bestätigen oder zurücklegen; Invariante `groesse + inFlug` höchstens `kap` | E · „der Sender entnimmt den ersten Befehl und reserviert seinen Platz" | keine Entsprechung: die Rust-P0 ist Broker-Ingress ohne Writezusage (Abgrenzung) |
+| `A-P0-05` | reserviert | bestätigen (auf dem Draht) | Platz frei; `p0Gesendet` + 1 | E · „64 neue Befehle waehrend des Writes finden KEINEN Platz — ehrlich gezaehlt" | entfällt, siehe `A-P0-04` |
+| `A-P0-06` | reserviert | Verbindungsverlust oder gescheiterter Write | `zuruecklegen` an die ursprüngliche Position (vorn); dank der Reservierung ohne Fehlerfall; NIE geht ein entnommener Befehl verloren | E · „der gescheiterte Write legt ihn zurueck; die Queue traegt wieder genau 64" und „und zwar VORN — kein P0-Befehl ist verlorengegangen" | entfällt |
+| `A-P0-07` | beliebig | Reconnect | Inhalt bleibt unverändert; P0 hat keinen Wiederholpuffer, weil nie etwas verworfen wurde | G9 · „nach dem Reconnect kommt JEDER angenommene Befehl an — auch der, dessen Write scheiterte" | entfällt |
+| `A-P0-08` | beliebig | Stop | Inhalt bleibt im Objekt; nach `stop()` wird nichts mehr gesendet und nichts stillschweigend verworfen | G1 · „stop() trennt beide Verbindungen und kehrt zurueck" | entfällt |
+| `A-P0-09` | geschlossen | entnehmen | liefert nichts mehr; das Schließflag wird VOR dem Inhalt geprüft | entfällt (die Clientqueue kennt kein Schließen) | `server_v3::geschlossener_eingang_liefert_nichts_mehr` |
+
+#### A.2 P1 Zustand/Evidenz — Cap 128 plus Wiederholpuffer 128
+
+§53.9: „Snapshots nach Objektschlüssel koaleszieren; nicht koaleszierbare
+Events bei Überlauf über Reconnect/Outbox wiederholen." Die Outbox ist
+`SONDE-011`; hier gelten der Reconnect-Weg und Regel 1.
+
+| ID | Zustand | Ereignis | Zusage | Test C++ | Test Rust |
+|---|---|---|---|---|---|
+| `A-P1-01` | leer / teilweise | einreihen Ereignis (leerer Schlüssel) | angenommen, ans Ende; NIE überschrieben | E · „P1 nimmt Ereignis" | `warteschlange::p1_koalesziert_snapshots_an_ihrer_position` |
+| `A-P1-02` | teilweise, Schlüssel K liegt in der Hauptqueue | einreihen Snapshot K | koalesziert an seiner Position, Inhalt ist der neuere, die Länge wächst nicht | E · „ein zweiter Snapshot desselben Objekts koalesziert, ohne zu wachsen" und „Koaleszieren behaelt die Position, tauscht nur den Inhalt" | `p1_koalesziert_snapshots_an_ihrer_position` |
+| `A-P1-03` | **Regel 2** — Schlüssel K liegt im Wiederholpuffer | einreihen Snapshot K | koalesziert DORT, seine Position im Wiederholpuffer bleibt; der Schlüssel überlebt jeden Zwischenpuffer; NIE wird aus einem Snapshot ein schlüsselloses Ereignis, NIE wird der neuere Snapshot abgewiesen, während der ältere vorgehalten bleibt; kein Zähler wächst, Koaleszieren ist kein Überlauf | E · „ein Snapshot im Wiederholpuffer behaelt seinen Schluessel und koalesziert dort" (neu) | `p1_wiederholpuffer_haelt_den_schluessel` (neu) |
+| `A-P1-04` | Hauptqueue voll, Wiederholpuffer hat Platz | einreihen Ereignis | `zurWiederholung` bzw. `ZurWiederholung`; Zähler `wiederholungen()`; die Nachricht ist ANGENOMMEN und geht später raus | E · „nicht koaleszierbare Ereignisse gehen in den Wiederholpuffer" | `p1_haelt_ereignisse_fuer_den_reconnect_vor` (Erwartung wird nach `A-P1-05` berichtigt) |
+| `A-P1-05` | **Regel 3** — Hauptqueue voll UND Wiederholpuffer voll | einreihen | der NEUZUGANG wird abgewiesen (`abgewiesen`, in Rust gleichbedeutend), gezählt in `abgewiesene()`; NIE `pop_front()` auf dem Wiederholpuffer, NIE fällt Akzeptiertes; das Rust-Ergebnis `WiederholungVerdraengt` entfällt ersatzlos | E · „ein voller Wiederholpuffer weist das NEUE Ereignis ab, gezaehlt, nie still" | `p1_haelt_ereignisse_fuer_den_reconnect_vor` — muss auf Abweisen des Neuzugangs umgeschrieben werden; heute schreibt er den Verlust fest |
+| `A-P1-06` | **Regel 1** — Wiederholpuffer nicht leer | entnehmen oder bestätigen, also Platz wird frei | der Wiederholpuffer fließt sofort ab, ohne Reconnect: die älteste Wiederholung zuerst, ans Ende der Hauptqueue, solange Platz ist; NIE bleibt eine Wiederholung liegen, während die Hauptqueue Platz hat | E · „der Wiederholpuffer fliesst ab, sobald Platz frei wird — ohne Reconnect" (neu) | `p1_wiederholpuffer_fliesst_ohne_reconnect_ab` (neu) |
+| `A-P1-07` | **Regel 1** — Wiederholpuffer nicht leer, Hauptqueue hat Platz | einreihen (Neuzugang) | zuerst der Abfluss aus `A-P1-06`, dann das Urteil über den Neuzugang; ein Neuzugang überholt NIE eine bereits angenommene Wiederholung; damit gilt die Annahmereihenfolge über beide Puffer hinweg | E · „ein Neuzugang ueberholt keine Wiederholung" (neu) | `p1_neuzugang_ueberholt_keine_wiederholung` (neu) |
+| `A-P1-08` | teilweise / voll | entnehmen | liefert Objektschlüssel UND Nachricht; der Platz bleibt reserviert (`inFlug`) | E · „entnehmen liefert Objektschluessel UND Nachricht" | keine Reservierung in Rust (Abgrenzung) |
+| `A-P1-09` | reserviert, Ereignis | Write scheitert oder Verbindungsverlust | zurück an seine Position (vorn); dank der Reservierung ist dort Platz; kein Umweg über den Wiederholpuffer | E · „ein gescheiterter Write legt das Ereignis an seinen Platz zurueck" und „und es steht wieder VORN, nicht hinten" | entfällt |
+| `A-P1-10` | reserviert, Snapshot K, ein neuerer K wartet | Write scheitert | der zurückgelegte Snapshot weicht dem neueren (`koalesziert`); der einzige Fall, in dem Angenommenes fällt — und es fällt gegen seinen eigenen Nachfolger, nie gegen eine fremde Nachricht | E · „ein zurueckgelegter Snapshot weicht dem neueren, statt ihn zu verdraengen" | entfällt |
+| `A-P1-11` | Wiederholpuffer nicht leer | Reconnect | Sonderfall von `A-P1-06`: der Abfluss läuft beim Verbindungsaufbau erneut, in Annahmereihenfolge, vor jedem Neuzugang | E · „Reconnect holt beide zurueck" und „und zwar JEDES angenommene Ereignis, in der urspruenglichen Reihenfolge" | `p1_haelt_ereignisse_fuer_den_reconnect_vor` |
+| `A-P1-12` | beliebig | Stop | Inhalt und Wiederholpuffer bleiben im Objekt; nach `stop()` wird nichts mehr gesendet; NIE wird beim Stop verworfen | G1 · „stop() trennt beide Verbindungen und kehrt zurueck" | entfällt |
+| `A-P1-13` | beliebig | einreihen einer Nachricht über `kMaxPayloadBytes` | an der TÜR abgewiesen (`zuGross`), kommt nie in die Queue; sonst ließe sie jede neue Verbindung an derselben Stelle scheitern | G15 · „und ein P1 ebenso — der Aufrufer erfaehrt es sofort" | Längenriegel im Envelope: `v3::grenzen_des_rahmens` |
+
+#### A.3 P2 Live je Probe — Cap 2, „ältesten ungesendeten Frame ersetzen"
+
+C++ ist eine vorallokierte SPSC-Schleuse mit drei Slots und einem Besitz-Atomic
+je Slot (§48.1); Rust hält dieselbe Politik als Queue.
+
+| ID | Zustand | Ereignis | Zusage | Test C++ | Test Rust |
+|---|---|---|---|---|---|
+| `A-P2-01` | leer / teilweise | veröffentlichen | angenommen, ohne Allokation, ohne Lock, ohne Warten | E2 · „100 000 Uebergaben mit 0 Allokationen" samt Gegenprobe am selben Zähler | `warteschlange::p2_ersetzt_den_aeltesten_ungesendeten` |
+| `A-P2-02` | voll (zwei wartende Frames) | veröffentlichen | der ÄLTESTE ungesendete Frame weicht; der Zähler `ersetzt` ist eine OBERE Schranke und behauptet nie weniger Verlust als eingetreten ist | E2 · „der dritte Frame ersetzt den aeltesten ungesendeten (Cap 2)" und „abgeholt wird der zweite, nicht der erste" | `p2_ersetzt_den_aeltesten_ungesendeten` |
+| `A-P2-03` | **Regel 8** — der Zielplatz gehört gerade dem Verbraucher | veröffentlichen (Slot-Kollision) | die Position wird zum LOCH und der Frame geht in den nächsten Platz; der Verbraucher erkennt das Loch an der nicht passenden Folgenummer und überspringt es; NIE fällt der neueste Frame, NIE wird ein beanspruchter Platz beschrieben; der Zähler `kollisionsLoecher` belegt, dass der Fall wirklich eintritt | E2 · „der Erzeuger traf den beanspruchten Slot WIRKLICH — und hat ihn nicht beschrieben" | keine Entsprechung: die Rust-Queue liegt einthreadig hinter einem Mutex (Abgrenzung) |
+| `A-P2-04` | **Regel 8** — beide erreichbaren Plätze beansprucht, weil der Verbraucher zwischen den zwei Ansprüchen des Erzeugers weiterrückt | veröffentlichen | der Erzeuger bekommt IMMER einen Platz; `beanspruchtVerworfen` bleibt 0 und ist die Wache über „replace-oldest wird nie replace-newest"; der Kollisionsfall wird DETERMINISTISCH erzwungen statt unter Last erwartet — NAK-98: unter Baulast fiel der Test mit 2 verworfenen neuesten Frames, einzeln fünfmal grün | E2 · „der NEUESTE Frame faellt dabei NIE" bleibt als Lastwache; dazu E2 · „erzwungene Slot-Kollision: der neueste Frame findet immer einen Platz" (neu, ohne Zeitfensterzufall) | entfällt |
+| `A-P2-05` | beliebig | veröffentlichen eines Frames über der Slotgröße | gezählt verworfen (`zuGross`), NIE halb geschrieben | E2 · „ein Frame ueber der Slotgroesse wird gezaehlt verworfen, nie halb geschrieben" | Längenriegel im Envelope: `v3::grenzen_des_rahmens` |
+| `A-P2-06` | teilweise, ein Loch liegt vor | abholen bzw. entnehmen | das Loch wird übersprungen; kein zerrissener Frame, keine falsche Länge, keine rückläufige und keine doppelte Folgenummer | E2 · „und keine ruecklaeufige oder doppelte Folgenummer" | `p2_ersetzt_den_aeltesten_ungesendeten` |
+| `A-P2-07` | beliebig | Verbindungsverlust oder Reconnect | die Schleuse ist verbindungsunabhängig; was drin liegt, geht auf der neuen Verbindung raus; P2 ist per Vertrag verlusttolerant, sein Ausfall degradiert Analyse, nie Steuerung (§33.1) | G13 · „und koppelt sich mit ihnen neu — ohne dass je ein P2-Frame floss" | entfällt |
+| `A-P2-08` | beliebig | Stop | nach `stop()` wird nichts mehr abgeholt; `veroeffentlichen` bleibt erlaubt, zählt weiter und stürzt nie ab — der erzeugende Worker darf den Stop nicht bemerken müssen | G1 · „stop() trennt beide Verbindungen und kehrt zurueck" | entfällt |
+
+#### A.4 Broker-Ingress je Verbindung — Cap 256, „P2 zuerst droppen; P0-Überlauf trennt"
+
+Die vierte Politik aus §53.9. Sie hat bewusst kein C++-Gegenstück: ein Client,
+der seinen eigenen Ingress verwaltete, bildete eine Entscheidung des Servers nach.
+
+| ID | Zustand | Ereignis | Zusage | Test C++ | Test Rust |
+|---|---|---|---|---|---|
+| `A-IN-01` | teilweise | einreihen beliebiger Familie | angenommen; der Höchststand wird gemeldet | entfällt | `warteschlange::ingress_droppt_p2_zuerst_und_trennt_bei_p0` |
+| `A-IN-02` | voll, mindestens ein P2 enthalten | einreihen P0, P1 oder P2 | der ÄLTESTE P2 weicht, der Neuzugang wird angenommen; Zähler `p2_verworfen` | entfällt | `ingress_droppt_p2_zuerst_und_trennt_bei_p0`, `p2_flut_hungert_p0_nicht_aus` |
+| `A-IN-03` | voll, kein P2 enthalten | einreihen P0 | Client trennen; NIE einen P0 still verwerfen | entfällt | `server_v3::p0_ueberlauf_trennt_die_verbindung` |
+| `A-IN-04` | voll, kein P2 enthalten | einreihen P1 | die Nachricht fällt, gezählt in `p1_verworfen`, ohne die Verbindung zu beenden | entfällt | `ingress_droppt_p2_zuerst_und_trennt_bei_p0` |
+
+---
+
+### B. ControlClient und TelemetryClient
+
+Zustände: **gestoppt** · **verbindend** · **verbunden** · **rückstauend**
+(verbunden, aber ein Write steht oder eine Queue ist voll) · **stoppend**.
+Callbacks sind `beiAntwort` und der `helloProvider`; beide laufen auf dem
+Clientthread, nie im Audiothread.
+
+#### B.1 ControlClient (P0/P1)
+
+| ID | Zustand | Ereignis | Zusage, Callback-Reihenfolge, Frist | Test |
+|---|---|---|---|---|
+| `B-CC-01` | gestoppt | `start()` | Thread startet, Status `verbindet`; ein zweiter `start()` ist wirkungslos, NIE entsteht ein zweiter Thread | G1 · „Control verbindet und bekommt ein v3-gerahmtes welcome" |
+| `B-CC-02` | verbindend | Hello mit ungültiger Adresse oder nicht endlichen Audiofeldern | es wird gar nicht erst verbunden; `letzterFehler` nennt den Vertragsbruch; Status `getrennt`, danach Backoff; NIE wird NaN oder Inf vor der Prüfung gewandelt | G8 · „nicht endliche Audiofelder werden VOR der Wandlung verriegelt" |
+| `B-CC-03` | verbindend | `welcome` hält den vollständigen Vertrag | Status `verbunden`; erst danach liefert `kopplung()` `link_id` und `challenge`; vorher NIE erfundene Werte | G1 · „welcome liefert link_id und challenge"; G10 · vollständiger Vertrag |
+| `B-CC-04` | verbindend | `reject`, vertragswidriges `welcome`, falsche Familie oder keine Antwort binnen `kIoFristMs` (5000 ms) | schließen, Status `getrennt`, `letzterFehler` benennt den Grund; Wiederversuch nach Backoff 500 ms, verdoppelt bis 8000 ms | G10 · „beide Clients pruefen das welcome gegen den VOLLSTAENDIGEN Vertrag" |
+| `B-CC-05` | verbunden | Sendeentscheid je Runde | P0 zuerst, immer; P1 kommt erst dran, wenn P0 leer ist — die Clienthälfte von „kein P0 wartet hinter Daten" (§33.1) | G1 · „P0 kommt beim Server als P0-Familie an" und „P1 kommt als P1-Familie an" |
+| `B-CC-06` | **Regel 4** — verbunden oder rückstauend | ein P0-ACK liegt an, während P1-Nachrichten warten | der Lesepfad läuft in JEDER Runde, bevor der nächste Frame geschrieben wird; er wird NIE übersprungen, weil noch etwas zu senden ist. Frist: Poll mit 0 ms nach einem erfolgreichen Send **(Festlegung Worker** — hält den Durchsatz, weil kein Send auf den Lesetakt wartet**)**, `kLeseTaktMs` (20 ms) nur, wenn nichts zu senden ist. Ein bereits eingetroffener ACK erreicht `beiAntwort` spätestens nach dem laufenden Write, also höchstens `kIoFristMs` (5000 ms) nach seinem Eintreffen; Zähler `empfangen` | G16 · „ein P0-ACK kommt an, waehrend P1 rueckstaut" (neu); die Rust-Hälfte steht mit getrennten Leser-, Verbraucher- und Schreiberthreads: `server_v3::blockierende_senke_haelt_den_leser_nicht_auf` |
+| `B-CC-07` | **Regel 4** — rückstauend | P1-Write scheitert oder läuft in `kIoFristMs` | der Eintrag geht zurück (`A-P1-09` bzw. `A-P1-10`); die bereits vollständig empfangenen Frames werden noch gemeldet, BEVOR die Verbindung endet **(Festlegung Worker** — sonst ginge genau der ACK verloren, auf den der Aufrufer wartet**)**; danach schließen und Backoff | G16 · „ein vor dem Verbindungsende empfangener ACK geht nicht verloren" (neu) |
+| `B-CC-08` | verbunden | P0-Überlauf während der stehenden Verbindung | die Verbindung wird geschlossen statt still gekürzt; der Abbruch läuft sofort über `ioAbbrechen`, nicht erst nach `kIoFristMs`; Zähler `p0Ueberlaeufe` | G5 · „die Verbindung wird deswegen geschlossen, nicht stillschweigend gekuerzt" |
+| `B-CC-09` | verbunden | Envelope-Verstoß, P2 oder Nicht-JSON auf der Controlpipe, überschrittene Ratengrenze | Verbindung schließen; je eigener Zähler (`envelopeAbweisungen`, `familieAbweisungen`, `rateAbweisungen`); NIE erreicht ein Frame der falschen Familie den Aufrufer | G4, G11, G12 |
+| `B-CC-10` | **Regel 6** — verbunden, kein Callback läuft | `stop()` von außen | Generation hochzählen, I/O abbrechen, Thread joinen, Verbindung schließen, Status `getrennt`; nach Rückkehr von `stop()` wird KEIN Callback mehr gerufen; `stop()` ist idempotent, auch aus dem Destruktor | G1 · „stop() trennt beide Verbindungen und kehrt zurueck" |
+| `B-CC-11` | **Regel 6** — verbunden, der Aufruf kommt aus `beiAntwort` oder dem `helloProvider` | `stop()` (Reentranz) | KEIN Self-Join: der Aufruf markiert nur (`laeuft` auf false, Generation, `ioAbbrechen`) und kehrt sofort zurück; der Thread endet nach Rückkehr des Callbacks von selbst; den `join` holt der nächste `stop()` oder der Destruktor von außen nach; NIE `std::system_error` oder `std::terminate` | G17 · „stop() aus beiAntwort ist kein Self-Join und kehrt zurueck" (neu) |
+| `B-CC-12` | **Regel 6** — stoppend, ein Callback blockiert | `stop()` von außen | der Join hat die Frist `kStopFristMs` (2000 ms, Begründung oben); läuft sie ab, wird der Thread ABGELÖST statt gejoint, `stop()` kehrt trotzdem zurück; der abgelöste Thread berührt danach nur noch gemeinsam gehaltenen Zustand, nie den Client **(Festlegung Worker** — dasselbe Muster wie `Senkenruf` und `join_mit_frist` im Listener**)**; sichtbarer Zähler `stopFristUeberschritten` im Snapshot; nach Rückkehr von `stop()` kein Callback mehr | G17 · „ein blockierender Callback haelt stop() hoechstens die Frist auf" (neu) |
+| `B-CC-13` | gestoppt | `stop()` erneut, Destruktor | wirkungslos, kehrt sofort zurück | G1 · dieselbe Zeile |
+| `B-CC-14` | verbunden | `reconnect()` | Generation hochzählen, I/O abbrechen, sofort zurück; der nächste Durchlauf sendet ein frisches Hello, ohne den Backoff zu verlängern | G3 · „der Client verbindet von selbst wieder (Backoff 500..8000 ms)" |
+| `B-CC-15` | verbunden | Verbindungsverlust, Broker weg | Status `getrennt`, `letzterFehler`, `verbindungsVersuche` wächst ehrlich; P1-Wiederholpuffer und P0-Inhalt bleiben erhalten und gehen nach dem Reconnect raus | G3 · „nach dem Serverende faellt der Client auf getrennt" und „und zaehlt die Versuche ehrlich mit"; G6 · „das Ereignis, dessen Write scheiterte, kommt nach dem Reconnect an" |
+
+#### B.2 TelemetryClient (P2)
+
+| ID | Zustand | Ereignis | Zusage, Callback-Reihenfolge, Frist | Test |
+|---|---|---|---|---|
+| `B-TC-01` | gestoppt | `start()` ohne Kopplungswerte | Status `wartetAufKopplung` — ein EIGENER Zustand, nicht `getrennt`; es wird NICHT verbunden, weil ein ungekoppelter Connect geschlossen würde und nur einen Verbindungsslot verbrennt | G2 · „der Server weist die ungekoppelte Telemetrieverbindung ab" und „der Client gilt nicht als verbunden" |
+| `B-TC-02` | wartetAufKopplung | Control liefert `link_id` und `challenge` | verbindet mit beiden Werten und derselben `runtime_nonce`; NIE werden Kopplungswerte erfunden | G1 · „Telemetry koppelt mit link_id + challenge + derselben runtime_nonce" |
+| `B-TC-03` | verbindend | `welcome` mit fremder `link_id` oder Challenge | abgelehnt, die Verbindung endet; ein fremdes welcome bestätigt die Kopplung einer anderen Instanz | G7 · „der TelemetryClient prueft sein welcome vollstaendig" |
+| `B-TC-04` | verbunden, Schleuse leer | die Kopplung wechselt, weil Control neu verbunden hat | die Verbindung endet und koppelt neu, auch OHNE eine einzige Veröffentlichung; Zähler `kopplungswechsel` | G13 · „die Telemetrie bemerkt die neuen Kopplungswerte im Leerlauf" |
+| `B-TC-05` | verbunden, Schleuse leer | Leerlauf | LESEN mit `kLeerlaufMs` (5 ms) statt schlafen — ein Schlaf sähe den Pipe-Abschluss nicht; `stop` und `reconnect` brechen es über `ioAbbrechen` sofort ab | G13 · „ohne eine einzige Veroeffentlichung bemerkt der Client den Pipe-Abschluss" |
+| `B-TC-06` | verbunden | P0- oder P1-Frame auf der Telemetriepipe | Verbindung schließen, `familieAbweisungen`; spiegelbildlich zu `B-CC-09` und zur Gegenrichtung im Broker | G14 · „was der TelemetryClient auf SEINER Verbindung annimmt"; Rust: `server_v3::p0_auf_der_telemetriepipe_wird_abgewiesen` |
+| `B-TC-07` | **Regel 6** — verbunden oder stoppend | `stop()` von außen, `stop()` aus dem `helloProvider`, blockierender Provider | wortgleich zu `B-CC-10`, `B-CC-11` und `B-CC-12`: kein Self-Join, Frist `kStopFristMs` (2000 ms), Ablösen statt Joinen, Zähler `stopFristUeberschritten`, nach Rückkehr kein Callback mehr | G17 · „dieselbe Stop-Zusage gilt fuer den TelemetryClient" (neu) |
+| `B-TC-08` | beliebig | `veroeffentlichen()` aus dem erzeugenden Worker | allokationsfrei, lockfrei, wartefrei; kehrt IMMER sofort zurück, auch während Verbindungsaufbau, Rückstau und Stop; NIE blockiert die Erzeugerseite auf I/O | E2 · „100 000 Uebergaben mit 0 Allokationen" samt Gegenprobe |
+
+---
+
+### C. Listener `server_v3` — Bootstrap, Kopplung, Fristen
+
+Drahtreihenfolge nach §53.9: Control-Hello (`u32`-präfigiertes JSON, höchstens
+16 KiB) → v3-gerahmtes `welcome {link_id, challenge}` als P0-Frame → erst
+danach Telemetry-Hello mit `connection_kind=telemetry`, derselben
+`runtime_nonce`, `link_id` und der Challenge → dessen `welcome`, ebenfalls
+v3-gerahmt. Danach ausschließlich der 16-Byte-Header (§33.1).
+
+| ID | Zustand | Ereignis | Zusage, Reihenfolge, Frist | Test Rust |
+|---|---|---|---|---|
+| `C-LS-01` | horchend | ein Bootstrap-Hello trifft ein | `protocol=2` bleibt vollständig im v2-Parser und bekommt am v3-Endpunkt einen v2-gerahmten `reject`; ein Binärframe statt Hello und ein Hello über 16 KiB werden vor jeder Allokation geschlossen | `bootstrap::v2_hello_bleibt_v2`, `binaerframe_statt_hello_wird_abgelehnt`, `hello_ueber_16_kib_faellt_vor_dem_parser` |
+| `C-LS-02` | **Regel 5** — Control-Hello gültig | Kopplung anmelden | Reihenfolge: `control_anmelden` → `control_verbunden` ABGESCHLOSSEN → erst dann verlässt das Welcome den Draht. NIE geht das Welcome vor dem abgeschlossenen `control_verbunden` raus; damit kann `telemetrie_gekoppelt` nicht auf einem anderen Thread vorlaufen | `server_v3::welcome_folgt_dem_abgeschlossenen_control_verbunden` (neu) |
+| `C-LS-03` | **Regel 5** — `control_verbunden` blockiert | die Frist läuft ab | Frist `SENKE_FRIST` (2000 ms); danach wird der Aufruf abgelöst, es verlässt KEIN Welcome den Draht, die Kopplung wird über `kopplung_loesen` abgebaut, die Verbindung endet; `lebenszyklus_abgeloest` + 1; ein `control_getrennt` folgt bewusst NICHT, weil der abgelöste `control_verbunden` noch steht — sichtbar an `lebenszyklus_uebersprungen` | `server_v3::stoppen_endet_auch_bei_haengendem_lebenszyklusaufruf`; Ergänzung „kein Welcome bei abgeloestem control_verbunden" (neu) |
+| `C-LS-04` | **Regel 5** — Control gekoppelt, Telemetry-Hello trifft ein | koppeln | die Kopplung verlangt ALLE drei Merkmale (`link_id`, Challenge, gleiche `runtime_nonce`); Reihenfolge: koppeln → Welcome → `telemetrie_gekoppelt`; `telemetrie_gekoppelt` läuft NIE vor `control_verbunden` | `bootstrap::kopplung_verlangt_alle_drei_merkmale`; Reihenfolgeprobe in `welcome_folgt_dem_abgeschlossenen_control_verbunden` (neu) |
+| `C-LS-05` | horchend | ungekoppelter Telemetry-Connect | geschlossen, `abgewiesen` mit Grund; `geschlossen_bootstrap` + 1 | `bootstrap::kopplung_verlangt_alle_drei_merkmale`; C++-Gegenprobe G2 |
+| `C-LS-06` | **Regel 5** — verbunden | Verbindungsende der Control-Seite | Reihenfolge: Kopplung lösen VOR den fristbegrenzten Joins und die I/O der mitfallenden Telemetrieverbindung abbrechen → `telemetrie_getrennt` → `control_getrennt`; jeder Callback genau EINMAL. Die Control-Seite wartet dafür höchstens `SENKE_FRIST` (2000 ms) auf das `telemetrie_getrennt` der Telemetrieseite und meldet danach ihr `control_getrennt` in jedem Fall, gezählt in `lebenszyklus_reihenfolge_verletzt` **(Festlegung Worker** — ohne Wartepunkt ist die Reihenfolge zwischen zwei Verbindungsthreads unbestimmt, ohne Obergrenze wäre der Stop unbegrenzt**)**. Einzige Ausnahme von „genau einmal": ein früher ABGELÖSTER Lebenszyklusaufruf lässt die Folgeaufrufe ausfallen, sichtbar an `lebenszyklus_uebersprungen` | `server_v3::control_ende_beendet_die_telemetrie`, `kopplung_faellt_mit_dem_leserende_nicht_erst_nach_den_joins`; Reihenfolgeprobe `telemetrie_getrennt_kommt_vor_control_getrennt` (neu) |
+| `C-LS-07` | verbunden | die Senke blockiert in `p0`, `p1` oder `p2` | der Leser läuft weiter, der Ingress füllt sich bis 256 und droppt P2 zuerst; der Höchststand wird gemeldet; P0 hungert nicht aus | `server_v3::blockierende_senke_haelt_den_leser_nicht_auf` |
+| `C-LS-08` | verbunden | `stoppen()` bei hängender Senke oder hängendem Schreiber | jeder Join hat die Frist `SENKE_FRIST` (2000 ms); danach wird der Thread abgelöst statt gejoint (`senke_abgeloest`, `schreiber_abgeloest`); `stoppen()` kehrt IMMER zurück | `server_v3::stoppen_endet_auch_bei_haengender_senke`, `stoppen_endet_auch_bei_haengendem_lebenszyklusaufruf` |
+| `C-LS-09` | startend oder stoppend | Stop im Fenster vor der Bedienung; beendete Verbindungen | hängt nicht; beendete Verbindungsthreads werden geerntet, damit weder der Vektor noch die nativen Handles unbegrenzt wachsen | `server_v3::stop_im_fenster_vor_der_bedienung_haengt_nicht`, `beendete_verbindungen_werden_geerntet`, `acceptor_ueberlebt_die_verbindungsgrenze` |
+
+---
+
+### D. Prüfwerkzeug — die A21-Behauptung (Regel 7)
+
+| ID | Ort | Zusage | Test |
+|---|---|---|---|
+| `D-A21-01` | `tools/beweise.ps1`, Bein `A21` | Die Behauptung sagt nicht mehr, als der Test misst. Der Teilsatz „feindliche Laengen (0, 15, >Grenze, 0xFFFFFFFF) und die u32-Grenze von 16+payload_len loesen keine Allokation aus" lautet künftig **„feindliche Laengen (0, 15, ueber der Grenze, 0xFFFFFFFF) und die u32-Grenze von 16+payload_len enden in der erwarteten Fehlerklasse, ohne Absturz und ohne Eingabeallokation in Groesse der behaupteten Laenge"**. Kein Allokationszähler; der übrige Behauptungstext bleibt unverändert. Der Testname trägt dieselbe Begrenzung **(Festlegung Worker** — ein Testname ist dieselbe Art Behauptung wie die Runnerzeile**)** | heute `transport_fuzz::feindliche_laengen_loesen_keine_allokation_aus`; nach der Begrenzung `transport_fuzz::feindliche_laengen_enden_in_der_erwarteten_fehlerklasse` |
+
+---
+
+### Was die Matrix bewusst nicht festlegt
+
+* **Coordinator, Session, Store, Outbox** — `SONDE-011`. Der Wiederholpuffer
+  hier ist die Clienthälfte des Outboxgedankens; die Outbox selbst und die
+  at-least-once-Zustellung mit dem Killtest an jeder Outboxgrenze (§53.9)
+  gehören dorthin.
+* **Produktverdrahtung.** Gen und Probeeq sprechen weiterhin v2 über
+  `plugin/src/PipeClient`; wann der Broker die SID-gebundene v3-Pipe produktiv
+  öffnet, entscheidet `SONDE-011` (§0 dieses Manifests).
+* **HMAC, Pairing, Replaycache und die Impersonation-Kette** — `SONDE-016`
+  bzw. NAK-90. Die Kopplung hier ist `link_id + challenge + runtime_nonce` über
+  eine per DACL begrenzte Pipe und ersetzt keine Signatur.
+* **Broker→Main-Bündelung** mehrerer Quellen in einem Write (§33.1) und die
+  Landkarte, die diese Frames verteilt — `SONDE-012`. Der TelemetryClient zählt
+  sie heute und verwirft sie sichtbar.
+* **P1 unter Ende-zu-Ende-Last** — NAK-91. Das Lastbein A22 fährt P0 und P2;
+  die P1-Zeilen dieser Matrix sind Unittest- und Bein-Zusagen, keine Lastzusage.
+* **Zahlen für Durchsatz und Latenz** über die Schranke des Lastbeins hinaus
+  (P0-Antwortlatenz unter 1000 ms bei vollem P2-Rückstau). Die Matrix sagt,
+  WAS passiert, nicht wie schnell.
+* **Ein Race-Detector-Nachweis** für die P2-Schleuse. ThreadSanitizer gibt es
+  für MSVC nicht; der Beweis bleibt strukturell (ein Atomic je Slot) plus
+  äußere Vermessung (§6).
+* **Reihenfolge zwischen zwei unabhängigen Kopplungen.** Die Matrix ordnet
+  Callbacks nur INNERHALB einer `link_id`; zwischen verschiedenen Sitzungen
+  gibt es keine Reihenfolgezusage.
+
+---
+
 ## 1. Ticket-Behauptungen
 
 | # | Behauptung (Gate-Text §65 / Lieferumfang) | Befehl | Ergebnis | Rohausgabe |

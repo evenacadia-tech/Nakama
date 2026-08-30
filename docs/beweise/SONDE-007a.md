@@ -1362,5 +1362,58 @@ Bruch B3 - juce_core.obj zu den echten Mitgliedern gelegt: 2 rot -> ['Archivmitg
 Ruecknahme - echte Lib, echtes Bundle: 0 rot im Kernscan, 0 rot in der Bauform
 ```
 
-**Kanon:** folgt als Abschlusslauf nach dem Rückbau von A17 (NAK-100, zweiter Teil) — ein Lauf für beide.
+### NAK-100, zweiter Teil — Rückbau von A17 (`pruefe_installer_manifest.py`) @ `4c87aab`
+
+**Stand dieses Abschnitts:** `4c87aab`
+
+Dasselbe Maß wie bei A14. Gate von S9 Abschnitt 3 / S9b: eine Identität, ein Ort — Quellpfade nachgerechnet, Rückweg vollständig, Ordner-Hash in zwei Sprachen gleich, zwei Bundles plus Broker. Die Nacharbeiten 5–13 von NAK-94 hatten [3b] (Journal-Fixturen Z1..Z7 mit eigenem Erzeuger und eingefrorenem Korpus) und [3c] (Byte-Kipp-Fuzz über jede gelesene JSON-Datei mit Deckungsrechnung) angebaut: ~1 400 Zeilen, die die Robustheit des Prüfskripts gegen gekippte Bytes in seinen eigenen Eingaben maßen, nicht das Gate. Chirurgischer Schnitt (keine Regel angefasst): 2 884 → 1 587 Zeilen, Laufzeit 53 s → 1 s. Entfernt außerdem `tools/eq-copilot/erzeuge_installer_journale.py`, `eq-copilot/fixtures/installer/journale/**` und der `.gitattributes`-Block dazu. Die Zusagen aus NAK-94 ([4] weich im Kanon, hart mit `--release`; [4b] Bericht ohne Urteil, Status vor Liste) bleiben; A18 importiert weiter `datei_hash`/`ordner_hash`. Register: NAK-94 Nachtrag, NAK-100.
+
+Messlauf (`py -3.13 tools/eq-copilot/pruefe_installer_manifest.py` @ `4c87aab`, die 68 einzelnen Bruch-Zeilen von [2]/[3] sind in der Rohdatei des Kanons vollständig):
+
+```text
+Strukturvertrag: jede von diesem Bein gelesene JSON-Datei wird VOR dem ersten Zugriff strukturell geprueft;
+                 Verstoss = kontrollierter Abbruch mit Klartext, nie ein Traceback - im urteilsfreien [4b] ein Hinweis.
+[1] Struktur - eine Identitaet, ein Ort
+  ok      Manifest traegt das Vertragsschema nakama.installer/v1  [nakama.installer/v1]
+  ok      es zeigt auf die eingefrorene Identitaetsdatei  [eq-copilot/identity/plugin-identities-v1.json]
+  ok      jede `art` ist vst3 oder broker - eine geschlossene Menge
+  ok      Identitaet ist kollisionsfrei, schema=2 und jedes AKTIVE Ziel hat genau einen VST3-Eintrag  [2 vs 2 aktiv (3 Kennungen gesamt); identity=ok]
+  ok      jedes stillgelegte Ziel ist benannt (Datum, Grund, Umgang) und steht in keinem Artefakt
+  ok      jede Stilllegungsmarke ist lesbar - Objekt mit `am` und `entscheid`
+  ok      jeder Quellpfad ist der Bundle-ORDNER aus Ziel + Identitaet
+  ok      kein Viercode, keine Class-ID, kein Produkt- oder Bundlename im Installer-Manifest (ausser im Pfad)
+  ok      genau ein Broker-Artefakt, aus dem Release-Pfad der Crate  [broker/target/release/eqcop-broker.exe]
+  ok      der Broker-Binaername kommt aus broker/Cargo.toml  [eqcop-broker]
+  ok      VST3 nach Common Files, Broker geschuetzt unter Program Files  [C:/Program Files/Common Files/VST3 | C:/Program Files/evenacadia/Nakama]
+  ok      die Signaturzeile behauptet keine Pruefung ohne Mittel  [kein Zertifikat, Grund steht da]
+  ok      jedes sha256 ist null oder ein SHA-256 in Grossbuchstaben
+  ok      jeder bekannte Stand traegt Hash, hash_art, Ziel und state_schema
+  ok      der Rueckweg ist vollstaendig beschrieben (NAK-41 benannt)
+
+[2] Gegenprobe - dieselben Regeln an verdorbener Eingabe
+
+[3] Adversariale Pfad- und Identitaetsgegenproben
+
+[4] Auslieferungsstand  - Kanon: eine Abweichung ist ein Hinweis, kein Fehler
+  hinweis main: Bau weicht vom festgeschriebenen Paket ab (nach Relink erwartet; vor einer Auslieferung --hashen)  [Manifest AC8102F23EDC7D7C | gebaut CA7D261211611F47]
+  hinweis active-probe: Bau weicht vom festgeschriebenen Paket ab (nach Relink erwartet; vor einer Auslieferung --hashen)  [Manifest 1DDC92E3B8525F1F | gebaut 8E759B3904C96DDB]
+  ok      eqcop-broker.exe: gebautes Artefakt stimmt mit dem festgeschriebenen Hash  [21C7A8DC985BCA16]
+
+[4b] Installierter Stand  - Bericht, kein Urteil
+  Journal: status='OK'  zeit='2026-08-29T09:46:53.0057417Z'
+  hinweis main: installierter Stand ist ein anderer als der im Manifest festgeschriebene  [installiert 4E0BED966D834BC1 | Manifest AC8102F23EDC7D7C]  C:\Program Files\Common Files\VST3\EQ-Copilot.vst3
+  hinweis active-probe: installierter Stand ist ein anderer als der im Manifest festgeschriebene  [installiert AD7678B7C34A64FE | Manifest 1DDC92E3B8525F1F]  C:\Program Files\Common Files\VST3\Nakama Probeeq.vst3
+  hinweis eqcop-broker.exe: installierter Stand ist ein anderer als der im Manifest festgeschriebene  [installiert 53808359C59B5D09 | Manifest 21C7A8DC985BCA16]  C:\Program Files\evenacadia\Nakama\eqcop-broker.exe
+
+[5] Ordner-Hash v1 - Python gegen PowerShell
+  ok      die PowerShell-Haelfte laeuft durch
+  ok      Python liefert einen SHA-256  [9DF0E95A3747AFBA]
+  ok      beide Sprachen bilden BYTEGLEICH denselben Ordner-Hash  [py 9DF0E95A3747AFBA | ps 9DF0E95A3747AFBA]
+  ok      Nicht-ASCII im Pfad bricht ab (Python)
+  ok      Nicht-ASCII im Pfad bricht ab (PowerShell)  [Exit 1]
+
+95 ok, 0 Fehler
+```
+
+**Kanon:** ein Abschlusslauf für beide Rückbauten folgt direkt unten (`tools/beweise.ps1 -Bauen -Anhaengen`).
 

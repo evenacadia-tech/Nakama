@@ -84,7 +84,7 @@ Einzeln wäre jede Hälfte löchrig; zusammen ist die Aussage dicht.
 | `artefakte[].cmake_ziel` | nur bei `vst3`: das CMake-Ziel, aus dem der Pfad entsteht |
 | `artefakte[].quelle` | repo-relativer Pfad des gebauten Artefakts. Bei `vst3` der **Bundle-Ordner**, bei `broker` die Datei (§2.1) |
 | `artefakte[].sha256` | `null` oder SHA-256 in Großbuchstaben. Bei `vst3` der **Ordner-Hash** nach §2.1, bei `broker` der Dateihash |
-| `stillgelegte_ziele[]` | Ziele der Identitätsdatei, die **nicht mehr** ausgeliefert werden (§2.3). Pflichtfelder je Eintrag: `ziel_id`, `seit`, `warum`, `umgang_mit_altbestand`, `kennung_bleibt` |
+| `stillgelegte_ziele[]` | Ziele der Identitätsdatei, die **nicht mehr** ausgeliefert werden (§2.3). Pflichtfelder je Eintrag: `ziel_id`, `seit`, `warum`, `umgang_mit_altbestand`, `kennung_bleibt`; die letzten vier je eine **nichtleere Zeichenkette** (Typ je Feld in §2.3) |
 | `hashes_erzeugt_am` | UTC-Zeitpunkt des `--hashen`-Laufs |
 | `rueckweg.*` | siehe §5 |
 
@@ -205,11 +205,22 @@ trägt den Gegenpart `stillgelegte_ziele`. **A17 misst beide Richtungen:**
 | jedes Ziel **ohne** `stillgelegt` hat genau einen `vst3`-Eintrag | ein aktives Ziel fällt aus der Auslieferung |
 | jedes Ziel **mit** `stillgelegt` steht genau einmal in `stillgelegte_ziele` | eine Stilllegung geschieht **still** |
 | ein stillgelegtes Ziel hat **keinen** Artefakteintrag | ein stillgelegtes Bundle wird doch ausgeliefert |
-| jeder Eintrag trägt `seit`, `warum`, `umgang_mit_altbestand`, `kennung_bleibt` | „stillgelegt" ohne Grund und Datum |
+| jeder Eintrag trägt `seit`, `warum`, `umgang_mit_altbestand`, `kennung_bleibt` — je eine nichtleere Zeichenkette | „stillgelegt" ohne Grund und Datum |
 
 Ohne die zweite Zeile bliebe die erste zahnlos: wer nur den Artefakteintrag
 löscht, ließe Soll- und Ist-Menge **gemeinsam** schrumpfen, und der
 Mengenvergleich bliebe grün.
+
+**Typ je Pflichtfeld.** Genau das, was A17 misst — nicht strenger, nicht laxer:
+
+| Feld | Typ |
+|---|---|
+| `seit` | nichtleere Zeichenkette |
+| `warum` | nichtleere Zeichenkette |
+| `umgang_mit_altbestand` | nichtleere Zeichenkette |
+| `kennung_bleibt` | nichtleere Zeichenkette — ein Satz über die gesperrte Kennung, **kein** Boolean |
+
+> **Nachtrag 30.08.2026 (S9b `SONDE-007c`, Runde 4, NAK-89):** Diese vier Felder standen bis heute ohne Typ da, während A17 seit Runde 2 (29.08.2026) je Feld eine nichtleere Zeichenkette erzwingt — der Leser war strenger als sein Vertrag. Kein Versionsschritt: die Angabe schreibt den Typ nieder, den `eq-copilot/install/nakama-installer-v1.json` schon führt und A17 schon misst; Feldbedeutung und Riegel bleiben unverändert. Gemessen von `r_stillgelegte_benannt` — `tools/eq-copilot/pruefe_installer_manifest.py:476` (Feldliste `EINTRAG_PFLICHTFELDER`) und `:520-524` (`isinstance(wert, str) and wert.strip()`), Stand `36560b0`. Die eigene Gegenprobe ebenda (`:1008-1014`) fährt je Feld `null`, `[]`, `{}`, `""`, reinen Leerraum und eine Zahl einzeln gegen die Regel.
 
 #### Altbestand: melden, nicht löschen
 

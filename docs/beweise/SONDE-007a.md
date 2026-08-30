@@ -41,7 +41,7 @@ traegt der einleitende Satz den Stand.
 
 **Was gebaut wurde (Karte, keine Behauptung — Behauptungen stehen in §1):**
 
-**Stand dieser Karte:** `308947d` — an diesem Stand sind ihre Anker geprüft
+**Stand dieser Karte:** `c212280` — an diesem Stand sind ihre Anker geprüft
 (Runde 10: Zeile **K3/A14** trägt den Ausgang F13/F14/F15, Zeile
 **Tlog-Riegel** nennt keine Anzahl mehr; die übrigen Anker sind an diesem
 Commit einzeln nachgeschlagen).
@@ -75,7 +75,7 @@ unten bleiben datierte Belege ihres damaligen Quellstands:
 | | misst | sieht | sieht **nicht** |
 |---|---|---|---|
 | **K1** Präprozessor | Quelltext | die in `eq-copilot/plugin/state/NakamaKernRiegel.h` namentlich geführten `JucePlugin_*`-Makros — die Liste dort ist die Quelle, nicht diese Karte —, am Anfang **und Ende** jeder Kern-Übersetzungseinheit (gemessen aus `NAKAMA_KERN_QUELLEN`; die aktuelle Anzahl gibt der Messlauf aus); damit auch bis zum TU-Ende definierte Makros aus später eingebundenen eigenen/generierten Headern | Makronamen außerhalb der Liste und vor dem TU-Ende wieder entfernte Makros (der Präprozessor kann kein Präfix aufzählen; resultierende Identitätsbytes misst K3, den Quelltext selbst **K1b**) |
-| **K1b** Quelltext-Token | die tatsächlichen Compiler-Eingaben: jede Datei aus dem frisch geschriebenen `CL.read.1.tlog`, die **nicht** aus den JUCE-Modulen und nicht aus den Toolchain-/SDK-Wurzeln stammt — also `plugin/**` **und alles Übrige**, `/FI` und vorkompilierte Köpfe eingeschlossen —, plus die literale Include-Hülle als Gegenprobe; die namentlich erlaubten Systemdateien werden dabei roh in ASCII und UTF-16LE durchsucht statt als C++ geparst | jedes `JucePlugin_`-Token im Quelltext, unabhängig von `#define`/`#undef`; Kommentare werden vorher entfernt, Stringliterale nicht; einzige Ausnahme ist `NakamaKernRiegel.h`, gemessen und namentlich | den Inhalt der JUCE-Module (dafür der JUCE-Baum-Riegel) und der Toolchain-/SDK-Header außerhalb des Repos (benannte Nichtzusage, kein Fingerprint); Makronamen, die erst durch Tokenverkettung entstehen. Lässt sich eine der drei Ausschlusswurzeln nicht ableiten, bildet K1b **keine** Menge, sondern klagt |
+| **K1b** Quelltext-Token | die tatsächlichen Compiler-Eingaben: jede Datei aus dem frisch geschriebenen `CL.read.1.tlog`, die **nicht** aus den JUCE-Modulen und nicht aus den Toolchain-/SDK-Wurzeln stammt — also `plugin/**` **und alles Übrige**, `/FI` und vorkompilierte Köpfe eingeschlossen —, plus die literale Include-Hülle als Gegenprobe; die namentlich erlaubten Systemdateien werden dabei roh in ASCII und UTF-16LE durchsucht statt als C++ geparst | jedes `JucePlugin_`-Token im Quelltext, unabhängig von `#define`/`#undef`; Kommentare werden vorher entfernt, Stringliterale nicht; einzige Ausnahme ist `NakamaKernRiegel.h`, gemessen und namentlich — und das heißt seit Runde 15 ein **Abgleich**, keine Freistellung: jedes ihrer Token muss in der Makroliste stehen, die K1 in **derselben** Datei abfragt (eine Quelle, zwei Verbraucher — die Liste dort ist die Quelle, nicht diese Karte), und in einem Riegelkontext (`defined (…)` im `#if`-Kranz, `#ifdef`/`#ifndef` für einen Namen, den der Kranz schon führt, das blosse Präfix im `#error`-Fließtext). Jeder andere Name und jeder bekannte Name im falschen Kontext — ein `#undef` eingeschlossen — ist ROT und wird beim Namen genannt; ohne ableitbare Makroliste ist die Ausnahme selbst ROT. Die Zahlen (Token, abgeglichen, Makros) gibt der Messlauf aus | den Inhalt der JUCE-Module (dafür der JUCE-Baum-Riegel) und der Toolchain-/SDK-Header außerhalb des Repos (benannte Nichtzusage, kein Fingerprint); Makronamen, die erst durch Tokenverkettung entstehen. Lässt sich eine der drei Ausschlusswurzeln nicht ableiten, bildet K1b **keine** Menge, sondern klagt |
 | **K2** CMake-Konfigurierzeit | Kernziel plus dessen compilerwirksame Usage-Requirements-Hülle; Verbraucher nur bei einer echten fehlerhaften Rückkante; Ausführung verzögert bis zum Ende von `plugin/` nach allen Zieländerungen | jedes compilerwirksame `JucePlugin_` aus eigenen und transitiven `*_COMPILE_DEFINITIONS` sowie `-D`/`/D` in `*_COMPILE_OPTIONS`; direkte Zielnamen, `debug`/`optimized`/`general`-Kanten und die unten inventarisierten bedingten bzw. zielbezogenen Generatorausdrücke | Makros, die erst im C++-Quelltext entstehen (dafür K1/K3); String-Transformationen in Linkkanten und `MAP_IMPORTED_CONFIG_*` werden nicht ausgewertet, sondern ausdrücklich **ROT** gemeldet |
 | **K3/A14** Artefakt + Neubau | die `.lib`, die das Bein im selben Lauf selbst hat neu erzeugen lassen, dazu `.vcxproj`, `.tlog` und `lastbuildstate`; fehlt eine Voraussetzung, endet der Lauf über `voraussetzung_exit()` — ohne registrierten Befund **3**, mit registriertem Befund **2**, **nie 0**, und das an jedem Ausgang, den unmöglichen oder fehlgeschlagenen Bau eingeschlossen (Matrix F13/F14/F15, Runde 8/9; Proben `R8-1` und `P9-F13`) | jeden eingefrorenen Text als ASCII/UTF-16LE, Viercodes zusätzlich als 4-Byte-Integer in **beiden** Byteordnungen, CIDs roh/COM-vertauscht; dass Objekte, Tlogs und Lib vor der Messung gelöscht und vollständig neu erzeugt wurden (Zeitanker, Bauausgabe, Objektzahl) — damit ist „veraltetes Artefakt" keine Frage mehr; die früheren Frischewachen bleiben als Diagnose „womit wurde gebaut" | Baubeschreibung ohne resultierende Artefaktbytes (dafür K1/K1b/K2/K2b/K2c); ein Compilerwechsel innerhalb derselben `lastbuildstate`-Kennung (benannte Nichtzusage) |
 | **Tlog-Riegel** Leseorte | das frisch geschriebene `CL.read.1.tlog` des Kerns | aus welchen Orten der Compiler wirklich gelesen hat: erlaubt sind `plugin/**`, `juce-src/modules/**` ohne `juce_audio_plugin_client`, die **aus dem Bau abgeleiteten** MSVC- und Windows-SDK-Wurzeln und — **namentlich, nicht über ihr Verzeichnis** — die gemessenen Systemdateien unter `%SystemRoot%` (Liste `SYSTEMDATEIEN` im Skript — sie ist die Quelle, nicht diese Karte; ihre Namen stehen seit Runde 8 als eingefügte `CL.read.1.tlog`-Rohausgabe im Abschnitt „Nacharbeit Runde 8", Probe `P8-SYS`, ihre Anzahl gibt der Messlauf aus — vorher war die Liste eine Behauptung ohne Rohausgabe). Es gibt weder eine Endungsausnahme noch eine Ortserlaubnis für `%SystemRoot%`: jede andere Datei darunter, `<ziel>_artefacts/JuceLibraryCode/**` und alles Unbekannte sind ROT und werden namentlich genannt. Fehlt eine heutige Kernquelle als Marker, ist auch das ROT | den **Inhalt** der gelesenen Dateien (dafür K1b und der JUCE-Baum-Riegel) |
@@ -17078,3 +17078,235 @@ git grep -c -F 'im gebauten' $E -- docs/beweise/SONDE-007a.md
 **Nächster Schritt:** Nacharbeits-Worker für S8 Runde 15 **und** NAK-94 Nacharbeit 10 (Wegwechsel W3, siehe `docs/beweise/SONDE-007c.md`, „Dirigentenstand NAK-94 … Prüfer 10"), gemeinsamer Kanon, dann Prüfer 16 (xhigh) für S8 und Prüfer 11 (high) für NAK-94 — je frischer Thread. Kein Halt.
 
 **Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.
+
+---
+
+## Nacharbeit Runde 15 — 2026-08-30 (Prüfer-Thread `01a050ca-f5e2…`)
+
+**Stand dieses Abschnitts:** `c212280` — der Commit der Messarbeit dieser
+Runde. Positionen ohne eigene Angabe sind an diesem Stand gemessen; die
+Belegzahlen unten nennen ihren Stand jeweils selbst.
+
+Ein bestätigter Befund des fünfzehnten Prüfers (Codex xhigh, lesend über
+`git diff dafa5a5...713f0ae`), Regel des Dirigenten im Abschnitt
+„Dirigentenstand — 2026-08-30 06:01 (Sitzung 054eedac)". Er ist geschlossen.
+Es ist der **erste Verhaltensbefund seit Runde 8**: A14 misst danach anders,
+nicht nur genauer beschrieben. Der zweite Befundsatz derselben Runde (NAK-94,
+Prüfer 10) steht in `docs/beweise/SONDE-007c.md`, Abschnitt „NAK-94 Nacharbeit
+Runde 10".
+
+**Werkzeugregel dieser Runde:** kein löschender Aufruf, keine Datei unter
+`%SystemRoot%`. `eq-copilot/plugin/state/NakamaKernRiegel.h` wurde **nicht
+angefasst** — jede Probe arbeitet auf einer Kopie unter `%TEMP%`, und die
+Wache `R15-1g` hält den sha256 der Datei im Baum vor und nach dem Selbsttest
+dagegen (`a11fc7c406a9de69…`, beide Male derselbe).
+
+---
+
+### Der Befund — wörtlich
+
+> **[P1] Prüfe die K1b-Ausnahme namentlich statt nur ihre Trefferzahl** —
+> `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:1592-1594`. Wenn
+> `NakamaKernRiegel.h` einen zusätzlichen unbekannten
+> `JucePlugin_*`-Define/Use/Undef-Block enthält, zählt dieser Zweig lediglich
+> alle Vorkommen und überspringt die Datei; K1 kennt nur den bisherigen
+> Namensatz, K2 sieht keine interne Definition und K3 kann bei reiner
+> Präprozessor-Nutzung leer bleiben, sodass A14 fälschlich grün bleibt. Damit
+> sind die Aussagen „namentlich geprüft" in Runner und Riegelkarte unbelegt
+> und W5 sowie §53.4 verletzt; vergleiche die Ausnahme mit einer exakten
+> erlaubten Token-/Kontextmenge und ergänze einen roten Selbsttest für einen
+> unbekannten Namen.
+
+---
+
+### Reproduziert am Basis-Stand `0d5b7d5`
+
+Der Ausnahmezweig lautete dort:
+
+```python
+        if _normpfad(datei) == ausnahme_norm:
+            in_ausnahme = roh.count(_K1B_TOKEN)
+            continue
+```
+
+Eine **Zählung** kann sich nur ändern, wenn die Menge wächst — nie, wenn ein
+Name ausgetauscht wird; und selbst das Wachstum wurde gegen keine Sollzahl
+geprüft. Gemessen mit genau der Probe aus dem Befund (Kopie der Riegeldatei
+plus `#define JucePlugin_Fremd` / benutzen / `#undef`):
+
+```text
+Riegeldatei: C:\Users\phili\Projekte\Nakama\eq-copilot\plugin\state\NakamaKernRiegel.h
+sha256 vorher: a11fc7c406a9de69d0e23f1fdb94bd61e7128b07dde2852eb50a9ae94b335c90
+Kopie mit Fremdmakro: C:\Users\phili\AppData\Local\Temp\nakama-repro-k1b-a4n5moqx\NakamaKernRiegel.h
+klagen         = []
+geprueft       = 0
+in_ausnahme    = 59
+roh_geprueft   = 0
+
+BEFUND P1 reproduziert
+sha256 nachher: a11fc7c406a9de69d0e23f1fdb94bd61e7128b07dde2852eb50a9ae94b335c90
+```
+
+Null Klagen, und die einzige Zahl, die der Lauf ausgab (59 statt 56), stand in
+keinem Vergleich.
+
+---
+
+### Der Fix — eine Quelle, zwei Verbraucher
+
+`k1b_ausnahme_abgleich()` (`tools/eq-copilot/pruefe_kern_identitaetsfrei.py:1633
+@ c212280`) ersetzt die Zählung durch einen **Abgleich**. Die Makroliste wird
+nicht im Skript nachgepflegt, sondern aus den `defined (JucePlugin_*)`-Abfragen
+der `#if`/`#elif`-Zeilen **derselben Datei** gelesen: K1 (der Präprozessor) und
+K1b (das Skript) lesen dieselbe Liste und können nicht auseinanderlaufen.
+
+Zwei Hälften, beide tragend:
+
+| | verlangt | Beispiel für ROT |
+|---|---|---|
+| **Name** | jedes `JucePlugin_`-Token steht in der K1-Liste dieser Datei | `#define JucePlugin_Fremd 1` → `'JucePlugin_Fremd' steht nicht in der K1-Makroliste dieser Datei` |
+| **Kontext** | `defined (Name)` im `#if`-Kranz, `#ifdef`/`#ifndef` für einen Namen, den der Kranz schon führt, oder das blosse Präfix `JucePlugin_` im `#error`-Fließtext | `#undef JucePlugin_Name` → `'JucePlugin_Name' steht in der K1-Makroliste, aber in #undef` |
+
+`#define` und `#undef` sind **auch für bekannte Namen** ROT: ein `#undef
+JucePlugin_Name` vor dem Kranz entwaffnete K1 für genau dieses Makro. Die
+Kurzform trägt sich **nicht selbst** in die Liste ein — sonst wäre jeder Name
+durch seine eigene Benutzung legitimiert (`R15-1f`).
+
+Zwei fail-closed-Kanten: ohne ableitbare Makroliste ist die Ausnahme selbst ROT
+(`R15-1d`), und wenn die eigene Rechnung nicht aufgeht (`abgeglichen != code`),
+ebenfalls — sonst könnte ein verschachteltes Präfix still durchrutschen.
+
+Kommentare werden vorher entfernt, wie bei jeder anderen Datei auch; die rohe
+Zahl bleibt als **Diagnose** in der Ausgabe stehen, ist aber kein Urteil mehr.
+
+**Ausdrückliche Nichtzusage, in die sichere Richtung:** erkannt wird die
+Klammerform `defined (Name)`. Ein `defined Name` ohne Klammern — in C ebenfalls
+gültig — trägt sich **nicht** in die Liste ein; sein Vorkommen ist dann ROT
+(„steht nicht in der K1-Makroliste"), nicht still grün. Wer die Riegeldatei je
+auf die klammerlose Form umstellt, fällt hier auf und nicht irgendwo später.
+
+---
+
+### Gemessen am echten Riegel
+
+```text
+  ok      R15-1a: die echte Riegeldatei besteht den Abgleich - 48 Token im kommentarfreien Quelltext, alle gegen die 46 Makros der K1-Liste DERSELBEN Datei  [roh 56, code 48, abgeglichen 48]
+```
+
+48 = 46 Namen im `#if`-Kranz (`NakamaKernRiegel.h:83-128`) plus zwei blosse
+Präfixe `JucePlugin_*` im `#error`-Fließtext (`:130` und `:134`). 56 im Rohtext
+— die acht Differenzbytes stehen im Kopfkommentar der Datei.
+
+Die sieben Wachen des Selbsttests (`--selbsttest`, **89 ok, 0 Fehler**):
+
+```text
+  ok      R5-6a: Kommentare mit JucePlugin_ bleiben gruen, die Ausnahme wird namentlich abgeglichen  [Ausnahme: 1 Token, 1 abgeglichen, Makroliste ['JucePlugin_Name']]
+  ok      R15-1a: die echte Riegeldatei besteht den Abgleich - 48 Token im kommentarfreien Quelltext, alle gegen die 46 Makros der K1-Liste DERSELBEN Datei  [roh 56, code 48, abgeglichen 48]
+  ok      R15-1b: ein unbekanntes JucePlugin_Fremd in der Kopie der Riegeldatei ist ROT - namentlich, an jeder Fundstelle  [...Fremd.h: Zeile 140: 'JucePlugin_Fremd' steht nicht in der K1-Makroliste dieser Datei - die K1b-Ausnahme ist ein Abgleich, keine Freistellung | ... Zeile 141: ... | ... Zeile 143: ...]
+  ok      R15-1c: ein BEKANNTER Name im falschen Kontext (#undef vor dem Kranz) ist ROT - die Liste allein genuegt nicht  [...Entwaffnet.h: Zeile 1: 'JucePlugin_Name' steht in der K1-Makroliste, aber in #undef - die K1b-Ausnahme ist ein Abgleich, keine Freistellung]
+  ok      R15-1d: ohne ableitbare K1-Makroliste ist die Ausnahme ROT (fail-closed), nicht still gruen  [...OhneKranz.h: die K1-Makroliste ist aus dieser Datei nicht ableitbar - ohne sie ist die K1b-Ausnahme kein Abgleich]
+  ok      R15-1e: Gegenprobe zum Befund - die fruehere Zaehlung liefert an derselben Kopie 59 Treffer und keine einzige Klage, der Abgleich 3  [Zaehlung 59 Treffer / 0 Klagen, Abgleich 3 Klagen]
+  ok      R15-1f: auch die Kurzform `#ifdef JucePlugin_Fremd` ist ROT - eine Benutzung legitimiert keinen Namen  [...KurzFremd.h: Zeile 140: 'JucePlugin_Fremd' steht nicht in der K1-Makroliste dieser Datei - die K1b-Ausnahme ist ein Abgleich, keine Freistellung]
+  ok      R15-1g: die Riegeldatei im Baum ist unveraendert - sha256 a11fc7c406a9de69  [a11fc7c406a9de69 -> a11fc7c406a9de69]
+```
+
+`R15-1e` ist die stehende Gegenprobe zum Befund: an **derselben** Kopie liefert
+die frühere Zählung 59 Treffer und keine einzige Klage, der Abgleich drei
+namentliche.
+
+---
+
+### Bruch und Rücknahme — jede neue Wache einmal fallen gesehen
+
+Drei Brüche, je als exakte Byteersetzung in der Quelle gesetzt, als Subprozess
+gefahren (kein Import, damit kein `.pyc` des gebrochenen Standes gilt),
+byteweise zurückgenommen und wieder grün gefahren. Der Treiber nimmt in einem
+`finally`-Block zurück und belegt es per sha256.
+
+| Bruch | was er tut | wer fällt |
+|---|---|---|
+| `B15-1` | Abgleich wieder durch **Zählung** ersetzt — die Regression aus dem Befund | `R5-6a`, `R15-1a`, `R15-1b`, `R15-1c`, `R15-1d`, `R15-1e`, `R15-1f` (7 Fehler) |
+| `B15-2` | nur der **Name** wird geprüft, der Kontext nicht mehr | nur `R15-1c` |
+| `B15-3` | die Kurzform trägt sich wieder **selbst** in die Makroliste ein | nur `R15-1f` |
+
+```text
+Quelle : tools\eq-copilot\pruefe_kern_identitaetsfrei.py  sha256 b23776b68dffbf8a8a4e5fd1ac879398594bc67bd2592b17c57e765b5265d061
+
+### Grundstellung  Exit 0
+ 89 ok, 0 Fehler
+
+### B15-1  Abgleich wieder durch ZAEHLUNG ersetzt (die Regression aus dem Befund des fuenfzehnten Pruefers)
+  Bruch gesetzt in tools\eq-copilot\pruefe_kern_identitaetsfrei.py
+  -- ROT --  Exit 2
+     FEHLER  R15-1a: die echte Riegeldatei besteht den Abgleich - 0 Token im kommentarfreien Quelltext, alle gegen die 0 Makros der K1-Liste DERSELBEN Datei  [roh 56, code 0, abgeglichen 0]
+     FEHLER  R15-1b: ein unbekanntes JucePlugin_Fremd in der Kopie der Riegeldatei ist ROT - namentlich, an jeder Fundstelle  [keine Klage]
+     FEHLER  R15-1e: Gegenprobe zum Befund - die fruehere Zaehlung liefert an derselben Kopie 59 Treffer und keine einzige Klage, der Abgleich 0  [Zaehlung 59 Treffer / 0 Klagen, Abgleich 0 Klagen]
+   82 ok, 7 Fehler
+  Bruch zurueckgenommen (Bytes identisch: True, sha256 b23776b68dffbf8a)
+  -- GRUEN --  Exit 0
+   89 ok, 0 Fehler
+
+### B15-2  nur der NAME wird geprueft, der Kontext nicht mehr
+  -- ROT --  Exit 2
+     FEHLER  R15-1c: ein BEKANNTER Name im falschen Kontext (#undef vor dem Kranz) ist ROT - die Liste allein genuegt nicht  [keine Klage]
+   88 ok, 1 Fehler
+  Bruch zurueckgenommen (Bytes identisch: True, sha256 b23776b68dffbf8a)
+  -- GRUEN --  Exit 0  |  89 ok, 0 Fehler
+
+### B15-3  die Kurzform traegt sich wieder SELBST in die Makroliste ein
+  -- ROT --  Exit 2
+     FEHLER  R15-1f: auch die Kurzform `#ifdef JucePlugin_Fremd` ist ROT - eine Benutzung legitimiert keinen Namen  [keine Klage]
+   88 ok, 1 Fehler
+  Bruch zurueckgenommen (Bytes identisch: True, sha256 b23776b68dffbf8a)
+  -- GRUEN --  Exit 0  |  89 ok, 0 Fehler
+
+Endstand der Quelle: sha256 b23776b68dffbf8a8a4e5fd1ac879398594bc67bd2592b17c57e765b5265d061  (unveraendert: True)
+```
+
+---
+
+### Die nachgezogenen Aussagen
+
+| Stelle | vorher | jetzt |
+|---|---|---|
+| `tools/eq-copilot/pruefe_kern_identitaetsfrei.py:3460-3468 @ c212280` (A14-`pruefe`-Text) | „Ausnahme NakamaKernRiegel.h mit `{n}` Treffern" | „Ausnahme NakamaKernRiegel.h: `{code}` Token im kommentarfreien Quelltext, alle namentlich gegen die `{len(makros)}` Makros der K1-Liste DERSELBEN Datei abgeglichen und nur in Riegelkontexten (`{roh}` Token im Rohtext inkl. Kommentaren)"; war die Datei nicht in der Eingabemenge, sagt der Lauf ausdrücklich, dass er über sie nichts behauptet |
+| `…/pruefe_kern_identitaetsfrei.py:70-79` (Skriptkopf) | „Einzige Ausnahme: NakamaKernRiegel.h, gemessen und benannt." | nennt Abgleich, Makroliste, die drei erlaubten Kontexte und dass ein `#undef` ROT ist |
+| `tools/beweise.ps1:364-366` (Kommentar über A14) | „K1b (kein JucePlugin_-Token im Quelltext der tatsächlichen Compiler-Eingaben)" | dazu: „die einzige Ausnahme NakamaKernRiegel.h wird seit Runde 15 nicht gezählt, sondern namentlich gegen die K1-Makroliste DERSELBEN Datei abgeglichen" |
+| `tools/beweise.ps1:370` (A14-`Behauptung`) | „…trägt das Token JucePlugin_ ausserhalb von NakamaKernRiegel.h" | dazu der ganze Abgleich mit Kontextliste, `#undef`-Klausel und der fail-closed-Kante |
+| Riegelkarte, Zeile **K1b** (`docs/beweise/SONDE-007a.md:78`) | „einzige Ausnahme ist `NakamaKernRiegel.h`, gemessen und namentlich" | derselbe Satz, jetzt aufgelöst: Abgleich gegen die K1-Liste derselben Datei, drei erlaubte Kontexte, ROT mit Namen |
+| `eq-copilot/plugin/state/NakamaKernRiegel.h:44-45` | „Einzige Ausnahme: diese Datei hier, gemessen und namentlich." | **unverändert** — der Satz war die Absicht und ist seit dieser Runde die Messung. Die Datei wurde nicht angefasst (`R15-1g`) |
+
+---
+
+### Aussagen-Inventar
+
+Gezählt wird auf dem **whitespace-normalisierten** Text jeder lebenden Quelle,
+nicht zeilenweise: die Lehre aus Runde 14 gilt auch für Umbrüche mitten in
+einer Aussage (`NIE ein\n  Traceback`). Quellen: `tools/beweise.ps1`, die
+beiden Prüfskripte, `NakamaKernRiegel.h`, `cmake/NakamaKern.cmake`. Stand
+`c212280`.
+
+| Muster | Treffer | Orte (gekürzt) |
+|---|---|---|
+| `gemessen und namentlich` | 1 | `NakamaKernRiegel.h:44` — die Aussage, die jetzt gemessen ist |
+| `Einzige Ausnahme` | 2 | `pruefe_kern_identitaetsfrei.py:70`, `NakamaKernRiegel.h:44` |
+| `keine Freistellung` | 4 | `beweise.ps1:370`, `…:71`, `…:1699`, `…:2348` |
+| `Abgleich` | 10 | zehn Stellen im Skript |
+| `K1-Makroliste` | 10 | `beweise.ps1:366` und neun Stellen im Skript |
+| `namentlich gegen die` | 4 | `beweise.ps1:366`, `:370`, `…:1727`, `…:3469` |
+| `Riegelkontext` | 3 | `beweise.ps1:370`, `…:74`, `…:3471` |
+| `NakamaKernRiegel.h` | 11 | Runner (3), Skript (7), Header (1) |
+
+Keine Fundstelle behauptet mehr eine Zählung; die alte Wortform
+`NakamaKernRiegel.h mit … Treffern` kommt **0×** vor.
+
+---
+
+### Prüfliste D/E dieser Runde
+
+| Regel | wie eingehalten |
+|---|---|
+| **D** — „Unbekanntes ist ROT" | ein unbekannter Name, ein bekannter Name im falschen Kontext, eine nicht ableitbare Makroliste und eine nicht aufgehende eigene Rechnung sind alle vier ROT und benannt |
+| **E** — „Zahlen im Manifest sind gemessen, nicht abgeschrieben" | 46/48/56 stehen im Ausgabetext der Wache `R15-1a` und im A14-`pruefe`-Text; sie werden aus der Datei gerechnet, nicht im Skript gepflegt |
+| **E** — Aussagen-Inventar | Tabelle oben, whitespace-normalisiert über fünf lebende Quellen |
+| **F** — „Änderungssatz" | Skript, Runner-Kommentar, A14-Behauptung, Riegelkarte und dieser Abschnitt gehen zusammen; die NAK-94-Hälfte liegt im Commit-Paar daneben |

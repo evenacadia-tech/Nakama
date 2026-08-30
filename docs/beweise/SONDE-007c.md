@@ -19140,3 +19140,346 @@ NAK-99, NAK-100, NAK-101.
 4. Behauptung in `tools/beweise.ps1` und Skriptkopf: „jede gelesene JSON-Datei wird strukturell geprüft; jede unerwartete Ausnahme endet kontrolliert ohne Traceback — gemessen durch den Byte-Kipp-Fuzz `[3c]` über alle gelesenen Dateien".
 
 **Nächster Schritt:** Nacharbeit 10 im selben Worker wie die nächste S8-Runde (falls Prüfer 15 Befunde hat; sonst allein), gemeinsamer Kanon, danach Prüfer 11 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.
+
+---
+
+## NAK-94 Nacharbeit Runde 10 — 2026-08-30 (Prüfer-Thread `01a050cb-0182…`)
+
+**Stand dieses Abschnitts:** `805d51f` — der Commit der Messarbeit dieser
+Runde. Positionen ohne eigene Angabe sind an diesem Stand gemessen.
+
+Zwei bestätigte Befunde des zehnten Prüfers (Codex high, lesend über
+`git diff da62dec...713f0ae`), **Wegwechsel W3** des Dirigenten im Abschnitt
+„Dirigentenstand NAK-94 — 2026-08-30 06:01 (Sitzung 054eedac)". Beide sind
+geschlossen — und der Weg dorthin ist ein anderer als in den drei Runden
+davor. Die S8-Hälfte derselben Runde steht in `docs/beweise/SONDE-007a.md`,
+Abschnitt „Nacharbeit Runde 15".
+
+**Werkzeugregel dieser Runde:** kein löschender Aufruf, keine Datei unter
+`%SystemRoot%`. Die Fixturbytes wurden nicht angefasst — der Fuzz überlagert
+den *Inhalt* im Speicher, er schreibt keine Datei; `Install-Nakama.ps1`, die
+Identitäts-/Installer-Manifeste und A18 sind unverändert, das Manifest wurde
+**nicht** neu gehasht.
+
+---
+
+### Die Befunde — wörtlich
+
+> **[P2] Fange ungültige UTF-8-Bytes kontrolliert ab** —
+> `tools/eq-copilot/pruefe_installer_manifest.py:308`. Bei einer einzelnen
+> Byteänderung am Anfang einer über `_lies_geprueft` gelesenen JSON-Datei
+> (`0x7B` → `0xFF`) wirft `read_text(encoding="utf-8")` reproduzierbar einen
+> nicht erfassten `UnicodeDecodeError`; damit entsteht ein Traceback statt
+> `Strukturhalt`. Fange den Dekodierfehler hier ab und überführe ihn in den
+> kontrollierten Abbruch.
+>
+> **[P2] Prüfe `ziel_id` vor der adversarialen Benutzung** —
+> `tools/eq-copilot/pruefe_installer_manifest.py:340-346`. Wenn im ersten
+> VST3-Artefakt genau ein Byte von `"ziel_id"` zu `"xiel_id"` geändert wird,
+> liefert `_installermanifest_struktur()` weiterhin keine Klage; anschließend
+> endet `adversariale_strukturproben()` beim direkten Zugriff
+> `artefakt["ziel_id"]` in Zeile 1196 mit `KeyError`. Validiere die
+> VST3-Kennung hier als Zeichenkette oder vermeide den späteren direkten
+> Zugriff.
+
+---
+
+### Reproduziert am Basis-Stand `0d5b7d5`
+
+```text
+== [1] UnicodeDecodeError aus _lies_geprueft (Befund P2 a) ==
+  -> UNKONTROLLIERT UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte
+  BEFUND reproduziert (Traceback statt Strukturhalt)
+
+== [2] ziel_id -> xiel_id, KeyError in adversariale_strukturproben (Befund P2 b) ==
+  _installermanifest_struktur klagt: []
+  -> UNKONTROLLIERT KeyError: 'ziel_id' @ pruefe_installer_manifest.py:1196
+  BEFUND reproduziert
+```
+
+---
+
+### Warum ein Wegwechsel und nicht die vierte Einzelkorrektur
+
+Das ist die **dritte Runde derselben Klasse** „ein weiteres Byte → Traceback":
+Nacharbeit 9 zog `faelle`, `artefakte` und `ziele` nach, Nacharbeit 10 bekäme
+`ziel_id` und den Dekodierfehler. Feld für Feld nachzuziehen schließt die
+Klasse nicht — es verschiebt sie auf das nächste Feld. W3 schließt sie
+strukturell und **misst** das Ergebnis:
+
+| | was | wo |
+|---|---|---|
+| **Erste Verteidigung** | die Strukturverträge. Sie sagen im Klartext, WELCHE Datei welche Form nicht trägt | `_lies_geprueft:330`, `_installermanifest_struktur:361` |
+| **Zentraler Fänger** | jede Ausnahme, die kein `Strukturhalt` ist, wird eine Klartextzeile mit Typ, Meldung, Datei und Zeile des Auslösers, Exit 2, **kein** Traceback (nur mit `--debug`) | `main:2518`, `_abbruch_klartext:2499` |
+| **Messung** | `[3c]` Byte-Kipp-Fuzz über jede gelesene JSON-Datei | `byte_kipp_fuzz:2392` |
+
+`SystemExit` läuft absichtlich durch den Fänger: das ist der eigene, bereits
+kontrollierte Ausgang „Gegenprobe unmöglich" — er trägt seinen Klartext selbst
+und darf nicht als unerwartete Ausnahme erscheinen.
+
+---
+
+### (1) und (2) — die beiden Befunde, nach dem Fix gemessen
+
+```text
+== [P10-a] ungueltiges UTF-8-Byte am Dateianfang (0x7B -> 0xFF) ==
+  -> Strukturhalt: eq-copilot/install/nakama-installer-v1.json: keine gueltige UTF-8-Datei (UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte)
+
+== [P10-b] 'ziel_id' -> 'xiel_id' im ERSTEN VST3-Artefakt ==
+  VST3-Artefakte im Manifest: 2; '"ziel_id"' steht 5x in der Datei (auch unter stillgelegte_ziele, wo nur .get liest)
+  Byte 4773: 'z' -> 'x'  (Laenge gleich: True, ein Byte anders: 1)
+  -> Strukturhalt: eq-copilot/install/nakama-installer-v1.json: traegt nicht die von diesem Bein gelesene Struktur: artefakte[0] (vst3) ohne Zeichenkette 'ziel_id' (NoneType)
+
+  Gegenprobe, dass die Pruefung der Grund ist: dasselbe Objekt ohne _lies_geprueft direkt in [3]
+  _installermanifest_struktur klagt: ["artefakte[0] (vst3) ohne Zeichenkette 'ziel_id' (NoneType)"]
+  -> ohne die Pruefung stuerbe [3] an KeyError: 'ziel_id' @ tools/eq-copilot/pruefe_installer_manifest.py:1217
+
+== [P10-c] zentraler Faenger: unerwartete Ausnahme endet ohne Traceback ==
+  ohne --debug: Exit 2, Traceback stdout False, stderr False
+    stdout: ABGEBROCHEN - unerwartete Ausnahme, kontrolliert beendet: KeyError: 'erfundenes_feld' @ …\faenger_probe.py:5  (Traceback mit --debug)
+    stderr: ABGEBROCHEN - unerwartete Ausnahme, kontrolliert beendet: KeyError: 'erfundenes_feld' @ …\faenger_probe.py:5  (Traceback mit --debug)
+  mit --debug: Exit 2, Traceback stdout False, stderr True
+```
+
+`UnicodeDecodeError` ist ein `ValueError`, kein `OSError` — der Zweig darüber
+fing ihn deshalb nicht. Derselbe Fehler war auch in `[4b]` offen
+(`:2089`); beide sind jetzt gefangen.
+
+Der Strukturvertrag des Installer-Manifests verlangt an jedem VST3-Artefakt
+`ziel_id` **und** `cmake_ziel` als Zeichenkette. Beide liest `[3]` hart; die
+Auswahl `art == "vst3"` steht in der Prüfung genauso wie an der Lesestelle,
+denn eine Grobform-Regel darf nur verlangen, was wirklich gelesen wird.
+`"ziel_id"` steht 5× in der Datei — die Vorkommen unter `stillgelegte_ziele`
+laufen weiterhin nur über `.get` und werden deshalb **nicht** verlangt.
+
+---
+
+### Aussagen-Inventar: jeder direkte Schlüsselzugriff
+
+Der Dirigent verlangt den grep `\["[a-z_]+"\]` über die gelesenen Objekte und
+je Zugriff die vorgelagerte Prüfung. Der grep allein trifft auch Kommentare
+und Schreibzugriffe; gezählt wurde deshalb über den **AST** — jeder
+`x["feld"]` mit konstantem Schlüssel, mit Wurzelvariable, Zeile und Kontext.
+Beide Stände gemessen:
+
+```text
+713f0ae (vor der Arbeit): grep 91 Zeilen | AST 117 Zugriffe, davon  89 lesend
+805d51f (Endstand)      : grep 96 Zeilen | AST 135 Zugriffe, davon 103 lesend
+```
+
+Der grep zählt ZEILEN, der AST ZUGRIFFE — deshalb liegt er höher; und er
+trennt Lesen von Schreiben, denn nur ein lesender Zugriff kann mit `KeyError`
+sterben. Positionen unten am Endstand `805d51f`.
+
+Die lesenden Zugriffe auf Objekte aus gelesenen Dateien und ihre vorgelagerte
+Prüfung:
+
+| Zugriff | Wurzel | vorgelagerte Prüfung |
+|---|---|---|
+| `m["artefakte"]`, `k/kopie/probe/kaputt["artefakte"]` | Installer-Manifest | `_installermanifest_struktur`: nicht leere Liste von Objekten |
+| `a["quelle"]` (`:1849`, `:2020`, `:2028`) | Artefakt | ebd.: Zeichenkette `quelle` |
+| `artefakt["ziel_id"]` (`:1283`, `:1284`, `:1288`) | VST3-Artefakt | **neu** ebd.: Zeichenkette `ziel_id` an jedem VST3-Artefakt |
+| `artefakt["cmake_ziel"]` (`:1129`, `:1291`) | VST3-Artefakt | **neu** ebd.: Zeichenkette `cmake_ziel` — vom Fuzz gefunden, nicht vom Prüfer |
+| `m["rueckweg"]["bekannte_staende"]` (`:960`) | Installer-Manifest | ebd.: `rueckweg` Objekt mit Liste `bekannte_staende` |
+| `manifest["ziele"]` (`:1271`) | Installer-Manifest | ebd.: `ziele` Objekt |
+| `i["ziele"]`, `z["id"]`, `i["hersteller"]["code"]` | Identität | `_identitaet_struktur` |
+| `_aktive(i)[0]["produktname"]`/`["bundle"]` | aktives Ziel | ebd.: je AKTIVEM Ziel Zeichenketten |
+| `_ziele(i).get(artefakt["ziel_id"])`, `ziel.get("bundle")` (`:1282-1289`) | beliebiges Ziel | **neu** `_gegenprobe_braucht`: unbekannte Kennung und fehlender Bundlename sind ein kontrollierter Ausgang |
+| `korpus["stand"]`, `korpus["faelle"]`, `fall["datei"]`, `fall["fall"]`, `e["status"]` | Korpusmanifest | `_journalkorpus_struktur` |
+| `k["eintraege"][0]` | Writer-Fixtur | `_writer_struktur` (Nacharbeit 8) |
+| `manifest["stillgelegte_ziele"][…]` | Installer-Manifest | durch `if stillgelegte:` bzw. `_stillgelegte(i)` gedeckt; die Feldprüfung macht `r_stillgelegte_benannt` |
+| `s["authenticode_thumbprint"]` | Signatur | im selben Ausdruck `str(...)`-gewrappt; das Feld wird nie als Kennung benutzt |
+
+**Kein Zugriff ohne vorgelagerte Prüfung bleibt.** Das ist nicht diese
+Tabelle, sondern `[3c]`, das misst.
+
+---
+
+### (3) `[3c]` Byte-Kipp-Fuzz — die Zusage wird gemessen, nicht behauptet
+
+Jede von A17 gelesene JSON-Datei, jedes Byte einzeln auf `0xFF` (ungültiges
+UTF-8) und auf `0x20` (gültiges Zeichen, das Schlüssel, Zahlen und Trennzeichen
+zerlegt), **in-process** durch Lesen, Strukturprüfung und jeden verbrauchenden
+Block. Kein Subprozess je Byte: der Inhalt wird für die Dauer eines Laufs
+überlagert (`_dateien_ersetzt:2273`), und `artefakt_hash` wird während des Fuzz
+gemerkt — die gebauten Artefakte ändern sich dabei nicht, wohl aber die Frage,
+welches Artefakt gehasht wird.
+
+Fünf Ausgänge, alle gezählt:
+
+| Klasse | heißt |
+|---|---|
+| `strukturhalt` | die erste Verteidigung hat gegriffen |
+| `gegenprobe_unmoeglich` | eigener `SystemExit`: die Datenlage trägt eine Gegenprobe nicht mehr — kontrolliert, mit Klartext |
+| `befund` | ein regulärer roter Befund; genau dafür ist das Bein da |
+| `gruen` | die Änderung war für dieses Bein gegenstandslos |
+| **`unkontrolliert`** | **die Zusage gebrochen** — alles andere. `[3c]` ist dann ROT und nennt Datei, Byte, Kippwert, Ausnahmetyp und Auslöserzeile |
+
+**Das Kanon-Sample ist deterministisch und hat zwei Hälften.** Ein reines
+Stride-Sample ist strukturell blind für kurze Tokens: bei Schritt *n* kann
+jeder Schlüssel, der kürzer als *n* ist, vollständig zwischen zwei Stichproben
+liegen — und genau an Schlüsselnamen hingen die letzten drei Befunde
+(`faelle`, `artefakte`, `ziel_id`). Gefahren wird deshalb **jedes 24. Byte
+plus das erste Namensbyte jedes JSON-Schlüssels** (`fuzz_stellen:2236`); ein
+Kipp dort macht aus `"ziel_id"` genau das `"xiel_id"` des Prüfers.
+`--fuzz-voll` fährt jedes Byte, `--fuzz-schritt N` variiert *n*.
+
+Der Unterschied ist gemessen: mit reinem Stride 47 meldete `[3c]` **0**
+unkontrollierte Ausnahmen, mit Stride 24 plus Schlüsselbytes sofort **5** —
+Stellen, die kein Prüfer genannt hatte.
+
+**`[3c/0]` hält die Deckung.** Eine grüne Zahl aus einem veralteten Ausschnitt
+sagt nichts. `fuzz_deckung():2359` liest den eigenen AST und vergleicht, welche
+Blöcke `_lauf()` aufruft und welche `_fuzz_verbraucher()` fährt; die Differenz
+muss in `FUZZ_OHNE_JSON:2331` namentlich stehen (neun Namen, jeder mit Grund).
+
+---
+
+### Was der Fuzz selbst gefunden hat
+
+Fünf Stellen, die in keinem Prüferbefund standen:
+
+```text
+      BRUCH eq-copilot/install/nakama-installer-v1.json: Byte 5064 -> 0x20: StopIteration:  @ tools/eq-copilot/pruefe_installer_manifest.py:1101
+      BRUCH eq-copilot/install/nakama-installer-v1.json: Byte 5081 -> 0x20: KeyError: 'cmake_ziel' @ tools/eq-copilot/pruefe_installer_manifest.py:1103
+      BRUCH eq-copilot/install/nakama-installer-v1.json: Byte 5088 -> 0x20: KeyError: 'cmake_ziel' @ tools/eq-copilot/pruefe_installer_manifest.py:1103
+      BRUCH eq-copilot/identity/plugin-identities-v1.json: Byte 3398 -> 0x20: StopIteration:  @ tools/eq-copilot/pruefe_installer_manifest.py:1101
+      BRUCH eq-copilot/identity/plugin-identities-v1.json: Byte 3408 -> 0x20: StopIteration:  @ tools/eq-copilot/pruefe_installer_manifest.py:1101
+```
+
+Die Zeilennummern in dieser Rohausgabe gehören zum **Zwischenstand** — die
+beiden Prüferbefunde waren gefixt, `_gegenprobe_braucht` gab es noch nicht.
+Vier `next(...)`-Aufrufe ohne Vorgabe starben mit `StopIteration`, sobald eine
+Byteänderung die Zuordnung Artefakt↔Ziel zerriss; `cmake_ziel` fehlte im
+Strukturvertrag. Am Endstand `805d51f` stehen dieselben vier Stellen als
+`_gegenprobe_braucht`-Aufrufe in `:1123`, `:1151`, `:1249` und `:1276` (dazu `:1282` und `:1286` fuer Zielkennung und Bundlenamen). Beides läuft jetzt über `_gegenprobe_braucht():1080` in
+denselben kontrollierten Ausgang wie die beiden älteren Fälle „Gegenprobe
+unmöglich" — eine stillschweigend ausgelassene Gegenprobe wäre schlimmer als
+keine.
+
+---
+
+### Der Kanon-Lauf von `[3c]`
+
+```text
+[3c] Byte-Kipp-Fuzz - jede gelesene JSON-Datei, jedes Byte auf 0xFF und 0x20; Kanon-Sample: jedes 24. Byte PLUS das erste Namensbyte jedes JSON-Schluessels (--fuzz-voll faehrt alle)
+  ok      [3c/0] der Fuzz faehrt jeden Block aus _lauf(), der eine gelesene JSON-Datei anfassen kann - die uebrigen stehen namentlich in FUZZ_OHNE_JSON (9)
+      eq-copilot/install/nakama-installer-v1.json             961 Laeufe | Strukturhalt    538 | Gegenprobe unmoeglich     1 | Befund    18 | gruen   404 | UNKONTROLLIERT 0
+      eq-copilot/identity/plugin-identities-v1.json           639 Laeufe | Strukturhalt    369 | Gegenprobe unmoeglich     2 | Befund     0 | gruen   268 | UNKONTROLLIERT 0
+      eq-copilot/fixtures/installer/journale/MANIFEST.json    296 Laeufe | Strukturhalt      0 | Gegenprobe unmoeglich     0 | Befund   212 | gruen    84 | UNKONTROLLIERT 0
+      eq-copilot/fixtures/installer/journale/error-rueckgerollt.json    369 Laeufe | Strukturhalt      0 | Gegenprobe unmoeglich     0 | Befund   369 | gruen     0 | UNKONTROLLIERT 0
+      eq-copilot/fixtures/installer/journale/ok-erstinstallation.json    347 Laeufe | Strukturhalt      0 | Gegenprobe unmoeglich     0 | Befund   347 | gruen     0 | UNKONTROLLIERT 0
+      eq-copilot/fixtures/installer/journale/ok-nach-tausch.json    364 Laeufe | Strukturhalt      0 | Gegenprobe unmoeglich     0 | Befund   364 | gruen     0 | UNKONTROLLIERT 0
+      eq-copilot/fixtures/installer/journale/rueckweg-nach-gegenpfad.json     73 Laeufe | Strukturhalt      0 | Gegenprobe unmoeglich     0 | Befund    73 | gruen     0 | UNKONTROLLIERT 0
+      eq-copilot/install/install-ergebnis.json                305 Laeufe | Strukturhalt      0 | Gegenprobe unmoeglich     0 | Befund     0 | gruen   305 | UNKONTROLLIERT 0
+  ok      [3c] 8 gelesene JSON-Datei(en), 1780 gekippte Byte-Stellen, 3354 Laeufe: KEINE Ausnahme ausser Strukturhalt (907) und dem eigenen 'Gegenprobe unmoeglich' (3); Befund 1383, gruen 1061; Sample jedes 24. Byte plus jedes erste Schluesselnamensbyte  [41.4s]
+```
+
+---
+
+### Der vollständige Lauf — jedes Byte jeder gelesenen Datei
+
+Einmalig gefahren mit `--fuzz-voll` auf dem Stand `805d51f`; Rohausgabe unter
+`docs/beweise/roh/`.
+
+```text
+[3c] Byte-Kipp-Fuzz - jede gelesene JSON-Datei, jedes Byte auf 0xFF und 0x20
+  ok      [3c/0] der Fuzz faehrt jeden Block aus _lauf(), der eine gelesene JSON-Datei anfassen kann - die uebrigen stehen namentlich in FUZZ_OHNE_JSON (9)
+      eq-copilot/install/nakama-installer-v1.json           19700 Laeufe | Strukturhalt  11122 | Gegenprobe unmoeglich    16 | Befund   250 | gruen  8312 | UNKONTROLLIERT 0
+      eq-copilot/identity/plugin-identities-v1.json         12466 Laeufe | Strukturhalt   7257 | Gegenprobe unmoeglich    27 | Befund     0 | gruen  5182 | UNKONTROLLIERT 0
+      eq-copilot/fixtures/installer/journale/MANIFEST.json   5411 Laeufe | Strukturhalt      0 | Gegenprobe unmoeglich     0 | Befund  3681 | gruen  1730 | UNKONTROLLIERT 0
+      eq-copilot/fixtures/installer/journale/error-rueckgerollt.json   5977 Laeufe | Strukturhalt      0 | Gegenprobe unmoeglich     0 | Befund  5977 | gruen     0 | UNKONTROLLIERT 0
+      eq-copilot/fixtures/installer/journale/ok-erstinstallation.json   5785 Laeufe | Strukturhalt      0 | Gegenprobe unmoeglich     0 | Befund  5785 | gruen     0 | UNKONTROLLIERT 0
+      eq-copilot/fixtures/installer/journale/ok-nach-tausch.json   6139 Laeufe | Strukturhalt      0 | Gegenprobe unmoeglich     0 | Befund  6139 | gruen     0 | UNKONTROLLIERT 0
+      eq-copilot/fixtures/installer/journale/rueckweg-nach-gegenpfad.json   1431 Laeufe | Strukturhalt      0 | Gegenprobe unmoeglich     0 | Befund  1431 | gruen     0 | UNKONTROLLIERT 0
+      eq-copilot/install/install-ergebnis.json               4888 Laeufe | Strukturhalt      0 | Gegenprobe unmoeglich     0 | Befund     0 | gruen  4888 | UNKONTROLLIERT 0
+  ok      [3c] 8 gelesene JSON-Datei(en), 33304 gekippte Byte-Stellen, 61797 Laeufe: KEINE Ausnahme ausser Strukturhalt (18379) und dem eigenen 'Gegenprobe unmoeglich' (43); Befund 23263, gruen 20112  [724.9s]
+```
+
+---
+
+### Bruch und Rücknahme — jede neue Wache einmal fallen gesehen
+
+Fünf Brüche, je als exakte Byteersetzung gesetzt, gefahren, byteweise
+zurückgenommen und wieder grün gefahren; die Rücknahme steht in einem
+`finally`-Block und ist per sha256 belegt. Die `[3c]`-Läufe des Treibers
+fahren `--fuzz-schritt 200` — die Schlüsselnamensbytes sind **immer** im
+Sample, und nur auf sie kommt es bei diesen Brüchen an.
+
+| Bruch | was er tut | wer fällt |
+|---|---|---|
+| `B10-1` | der `UnicodeDecodeError`-Zweig in `_lies_geprueft` entfernt | `[3c]`: **269** unkontrollierte Ausnahmen |
+| `B10-2` | die `ziel_id`/`cmake_ziel`-Prüfung entfernt | `[3c]`: 2 (`KeyError: 'ziel_id'`, `KeyError: 'cmake_ziel'`) |
+| `B10-3` | `_gegenprobe_braucht` gibt auch `None` durch | `[3c]`: 2 (`TypeError: 'NoneType' object is not subscriptable`) |
+| `B10-4` | der zentrale Fänger in `main()` entfernt | Exit **1** statt 2, Traceback auf stderr, keine `ABGEBROCHEN`-Zeile |
+| `B10-5` | ein Block fällt aus `_fuzz_verbraucher` heraus | `[3c/0]` ROT — `[3c]` selbst bleibt grün, meldet aber statt 547 nur **6** Befunde: genau die Lücke, die eine grüne Zahl wertlos machte |
+
+```text
+Quelle : tools\eq-copilot\pruefe_installer_manifest.py  sha256 f923b10b6ed78099f52de168fe89672f65bbac79396512559a727f589ab77386
+
+### B10-1  der UnicodeDecodeError-Zweig in _lies_geprueft entfernt
+  -- ROT --  Exit 2
+     FEHLER  [3c] 8 gelesene JSON-Datei(en), 573 gekippte Byte-Stellen, 1117 Laeufe: KEINE Ausnahme ausser Strukturhalt (30) und dem eigenen 'Gegenprobe unmoeglich' (2); Befund 497, gruen 319  [269 unkontrollierte Ausnahme(n)]
+  Bruch zurueckgenommen (Bytes identisch: True, sha256 f923b10b6ed78099)
+  -- GRUEN --  Exit 0
+
+### B10-2  die ziel_id/cmake_ziel-Pruefung im Installer-Manifest entfernt
+  -- ROT --  Exit 2
+         BRUCH …/nakama-installer-v1.json: Byte 4773 -> 0x20: KeyError: 'ziel_id' @ …:1276
+         BRUCH …/nakama-installer-v1.json: Byte 5081 -> 0x20: KeyError: 'cmake_ziel' @ …:1122
+     FEHLER  [3c] … [2 unkontrollierte Ausnahme(n)]
+  Bruch zurueckgenommen (Bytes identisch: True, sha256 f923b10b6ed78099)
+  -- GRUEN --  Exit 0
+
+### B10-3  _gegenprobe_braucht gibt auch None durch (kein Ausgang mehr)
+  -- ROT --  Exit 2
+         BRUCH …/plugin-identities-v1.json: Byte 3398 -> 0x20: TypeError: 'NoneType' object is not subscriptable @ …:1126
+     FEHLER  [3c] … und dem eigenen 'Gegenprobe unmoeglich' (0) … [2 unkontrollierte Ausnahme(n)]
+  Bruch zurueckgenommen (Bytes identisch: True, sha256 f923b10b6ed78099)
+  -- GRUEN --  Exit 0
+
+### B10-5  ein Block faellt aus _fuzz_verbraucher heraus (Deckungsluecke)
+  -- ROT --  Exit 2
+     ok      [3c] 8 gelesene JSON-Datei(en), 573 gekippte Byte-Stellen, 1117 Laeufe: … Befund 6, gruen 860  [2.6s]
+   116 ok, 1 Fehler          <- der rote ist [3c/0]
+  Bruch zurueckgenommen (Bytes identisch: True, sha256 f923b10b6ed78099)
+  -- GRUEN --  Exit 0  |  117 ok, 0 Fehler
+
+### B10-4  der zentrale Faenger in main() entfernt
+  -- ROT --   Exit 1, Traceback stdout False, stderr True
+              (keine ABGEBROCHEN-Zeile)
+  Bruch zurueckgenommen (Bytes identisch: True, sha256 f923b10b6ed78099)
+  -- GRUEN -- Exit 2, Traceback stdout False, stderr False
+              ABGEBROCHEN - unerwartete Ausnahme, kontrolliert beendet: KeyError: 'erfundenes_feld' @ …\faenger_probe.py:5  (Traceback mit --debug)
+
+Endstand der Quelle: sha256 f923b10b6ed78099f52de168fe89672f65bbac79396512559a727f589ab77386  (unveraendert: True)
+```
+
+---
+
+### (4) Die nachgezogenen Aussagen
+
+| Stelle | jetzt |
+|---|---|
+| `tools/beweise.ps1:407` (A17-`Behauptung`) | nennt `ziel_id` im Strukturvertrag, den **zentralen Fänger** (Klartextzeile mit Typ, Meldung, Datei, Zeile; Exit 2; kein Traceback ohne `--debug`) und dass beides durch `[3c]` **gemessen** ist, mit Sample-Regel und `--fuzz-voll` |
+| `…/pruefe_installer_manifest.py:158-183` (Skriptkopf) | Abschnitt „WEGWECHSEL W3" mit den drei Ebenen erste Verteidigung / zentraler Fänger / Messung |
+| `_installermanifest_struktur:361` (Docstring) | nennt `ziel_id` und `cmake_ziel` und sagt, dass der zweite Fall aus dem Fuzz kam, nicht aus dem Befund |
+
+Inventar (whitespace-normalisiert über `tools/beweise.ps1` und die beiden
+Prüfskripte, Stand `805d51f`): `Byte-Kipp-Fuzz` 6×, `Gegenprobe unmoeglich`
+10×, `unkontrolliert` 8×, `ZENTRALER FAENGER`/`Zentraler Faenger` 1×/2×,
+`cmake_ziel` 16×, `--fuzz-voll` 5×, `--debug` 5×. Die alte Wortform
+„nie ein Traceback" steht weiterhin 2× (Runner, Skriptkopf) und
+„NIE ein Traceback" 1× — zeilenweises grep hätte die letzte übersehen, sie
+läuft über einen Umbruch.
+
+---
+
+### Prüfliste D/E dieser Runde
+
+| Regel | wie eingehalten |
+|---|---|
+| **D** — „Unbekanntes ist ROT" | dreistufig: Strukturvertrag, dann `_gegenprobe_braucht`, dann der zentrale Fänger. Keine Stufe schluckt etwas still |
+| **E** — „Zahlen im Manifest sind gemessen" | jede Zahl in diesem Abschnitt stammt aus einer Rohausgabe; die Dateiliste des Fuzz kommt aus dem Verzeichnis, nicht aus einer Liste im Skript |
+| **E** — Aussagen-Inventar | AST-Tabelle der Schlüsselzugriffe plus whitespace-normalisiertes Muster-Inventar |
+| **F** — „Änderungssatz" | Skript, A17-Behauptung, Skriptkopf und dieser Abschnitt gehen zusammen; die S8-Hälfte liegt im Commit-Paar daneben |

@@ -353,7 +353,7 @@ $kanon = @(
     # FRISCHE, Runde 5 (29.08.2026): A14 baut den Kern SELBST vollstaendig neu,
     # bevor es irgendetwas misst - Objekte, Tlogs und Lib des Kernverzeichnisses
     # werden geloescht und von MSBuild aus der heutigen Projektdatei neu
-    # erzeugt. Das kostet rund vier Sekunden und gilt auch nach -Bauen, weil das
+    # erzeugt. Die Dauer nennt die Laufausgabe (neubau['sekunden']); das gilt auch nach -Bauen, weil das
     # Bein sonst wieder MSBuilds Frischeentscheidung NACHBAUEN muesste; vier
     # Runden lang hat genau dieser Nachbau jedes Mal eine weitere Eingabeklasse
     # uebersehen. Ohne moeglichen Neubau gibt es kein gruenes Urteil: der Lauf

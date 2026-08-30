@@ -59,3 +59,34 @@ Bei der Behauptung „KI produziert minderwertigen Code“ stehen typische Fehle
 
 5. **Ergebnisbericht:**
    - Erstellung eines detaillierten Auditberichts als Markdown-Datei mit klickbaren Zeilenlinks, Schweregrad-Einstufung, Belegen und konkreten Handlungsempfehlungen.
+
+---
+
+## 3. Grenzen eines Ticketreviews im Dirigentenbetrieb (seit 30.08.2026)
+
+Ruft der Dirigent (`.claude/skills/dirigent/SKILL.md` §3.4) einen Review für
+**ein Ticket** auf, gilt statt §2.4 („Wiederholung bis lückenlos") dieser
+Rahmen — er ist die Lehre aus S8 `SONDE-007a`, das 19 Prüfrunden ohne
+Produktänderung durchlief:
+
+- **Prüfbereich = der im Prompt genannte Diff.** Erst- und Abschlussprüfung
+  sehen `basis...HEAD`, Wiederprüfungen nur den Fixdiff der Runde plus die
+  Befundliste. Nichts außerhalb des genannten Bereichs ist Befund.
+- **Anforderungsquelle = Gate-Text wörtlich, Verhaltensmatrix, Entwurf,
+  Invarianten aus `CLAUDE.md`.** `tools/dirigent/pruefliste.md` ist eine
+  Arbeitsliste des Workers, keine Anforderung. Was der Gate-Satz nicht
+  verlangt, ist keine Verletzung des Paragraphen, der ihn enthält.
+- **`docs/**` ist kein Prüfgegenstand.** Manifeste, Register und Planstand
+  sind Kontext; Prosa, Zeilenverweise, Trefferzahlen, Abschnittsstände und
+  Kommentar-Wortlaute erzeugen keinen Befund und kein `NEEDS_WORK`.
+- **Drei Klassen, eine Konsequenz:** *Defekt* (bricht Gate, Matrix, Test
+  oder Invariante — reproduzierbar, mit Kommando) → `NEEDS_WORK`; *Lücke*
+  (Gate und Entwurf schweigen) und *Härtung* (wünschenswert, nicht verlangt)
+  → benennen, `PASS` bleibt möglich. Ein Befund gegen ein Prüfwerkzeug, der
+  absichtliche Sabotage in repo-eigenen Quellen voraussetzt, ist Härtung.
+- **Im Register datierte Härtungen** (`docs/offene-punkte.md`), die der
+  Prompt nennt, sind erklärter Ausschluss und werden nicht erneut erhoben.
+- **Urteil in der ersten Zeile:** `URTEIL: PASS | NEEDS_WORK | BLOCKED`,
+  danach „geprüft" und „nicht geprüft" je ein Absatz.
+
+Gate-Audits (G0–G9) laufen weiter nach §1–§2.

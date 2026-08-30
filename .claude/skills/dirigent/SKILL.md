@@ -225,10 +225,10 @@ Die Thread-ID kommt aus dem JSONL; fehlt sie → `BLOCKED`. Urteil ist `PASS`,
 
 **Sol-Effort** (bei Review-Beginn wählen, im Manifest vermerken):
 
-- `high` nur bei kleiner, lokal begrenzter Änderung mit geringer Auswirkung
-  und eindeutiger Abnahme,
-- `xhigh` als Standard — und zwingend bei Audio-Thread, State/Migration,
-  IPC/Verträgen, Nebenläufigkeit, Sicherheit oder einem Phasengate.
+- `high` bei kleiner, lokal begrenzter Änderung mit eindeutiger Abnahme —
+  dazu zählen Prüfskripte, Runner, CMake-Riegel und Doku,
+- `xhigh` bei Audio-Thread, State/Migration, IPC/Verträgen, Nebenläufigkeit,
+  Sicherheit oder einem Phasengate.
 - Nacharbeit behält das Effort; eine Wiederprüfung senkt es nie ab.
 
 **Zulässige Befunde** müssen reproduzierbar sein und die Ticketabnahme
@@ -251,7 +251,12 @@ der Dirigent prüft die Einordnung an der Quelle:
 Der Prüfer erfindet keine Anforderung: was in Matrix, Gate, Entwurf und
 Invarianten nicht steht, ist Lücke, nicht Defekt. Ein Lauf ohne Defekt ist
 `PASS`, auch mit Lücken und Härtungen im Register. Der Review-Prompt nennt
-diese drei Klassen und die Matrix ausdrücklich.
+diese drei Klassen und die Matrix ausdrücklich, zitiert den Gate-Text
+**wörtlich**, schließt `docs/**` als Befundfläche aus, nennt die im Register
+datierten Härtungen als erklärten Ausschluss und stellt klar, dass
+`tools/dirigent/pruefliste.md` eine Arbeitsliste des Workers ist, keine
+Anforderungsquelle, und dass §2.4 des Codex-Skills `sondenplan-audit`
+(„Wiederholung bis lückenlos") für Gate-Audits gilt, nicht für Ticketreviews.
 
 Bestätigte Befunde behebt **derselbe** Thread:
 
@@ -273,22 +278,73 @@ Matrix und der Prüfliste — der Codex-Thread bleibt Prüfer. Nacharbeitsrunden
 fahren nur die betroffenen Beine; der volle Kanon läuft beim ersten Bau und
 beim Abschluss des Tickets. Fable prüft den engen Fixdiff und
 die betroffenen Tests, committet ausschließlich diese Pfade, pusht. Danach
-prüft ein **neuer** frischer Thread den ganzen Bereich vom ursprünglichen
-Basis-SHA bis zum neuen HEAD. Es gibt keine feste Rundenzahl und keine
-Freigabefrage an den User (User-Wort 29.08.2026: „offene technische probleme
-MÜSSEN gelöst werden und da gibt es keine notwendigkeit mich zu fragen. du
-musst die beste möglichtkeit finden WIE wir diese probleme lösen"). Legt
-jede Runde eine neue Schicht derselben Frage frei, wechselt der Dirigent den
-Weg statt blind weiterzupatchen: erst die Politik- oder Zustandsmatrix als
-Spezifikation mit Tests, dann eine Implementierung in allen betroffenen
-Sprachen, dann ein frischer Prüfer. Der Rest bleibt im Manifest datiert.
+prüft ein **neuer** frischer Thread — mit dem Prüfbereich der Wiederprüfung,
+nicht dem ganzen Ticket (unten). Es gibt keine Freigabefrage an den User
+(User-Wort 29.08.2026: „offene technische probleme MÜSSEN gelöst werden und
+da gibt es keine notwendigkeit mich zu fragen. du musst die beste
+möglichtkeit finden WIE wir diese probleme lösen").
+
+**Prüfbereich schrumpft, er wächst nie (seit 30.08.2026, Lehre aus S8
+Runde 1–19).** Nur die **Erstprüfung** und die **Abschlussprüfung** gehen
+über den ganzen Ticketbereich `basis...HEAD`. Jede **Wiederprüfung**
+dazwischen sieht ausschließlich den Fixdiff der Runde
+(`stand-vor-der-runde...HEAD`), die Befundliste, die sie schließen soll, und
+den Gate-Text; sie urteilt, ob die Befunde geschlossen sind und ob der Fix
+etwas gebrochen hat — nichts sonst. S8 lief 19 Runden, weil jeder Prüfer den
+vollen, um die Manifeste der Vorrunden angewachsenen Bereich neu las: 79
+Commits, 14 Stunden, 17 Kommentarzeilen Produktcode.
+
+**Manifeste sind kein Prüfgegenstand.** `docs/**` gehört nicht zur
+Befundfläche; der Review-Prompt schließt es ausdrücklich aus. Der Prüfer
+liest Manifeste als Kontext (Matrix, Gate, Urteilsmarken), erhebt aber keine
+Befunde über Prosa, Zeilenverweise, Trefferzahlen, Abschnittsstände oder
+Historie. Textinkonsistenzen, die dem Dirigenten auffallen, zieht der
+Abschluss-Worker im Abschluss-Commit nach — ohne Prüfrunde, nie als
+`NEEDS_WORK`. Ein Manifest hat genau **einen lebenden Kopf** (Urteilsmarken,
+Gate-Text, Riegelkarte oder Matrix, Kurztabelle der Runden, jüngster Kanon);
+alles darunter ist append-only Verlauf und wird nie umgeschrieben.
+
+**Rundenbudget und Konvergenz.** Drei Nacharbeitsrunden je Ticket sind das
+Budget. Endet die dritte Wiederprüfung ohne `PASS`, startet keine vierte
+Runde, sondern der **Konvergenzentscheid** des Dirigenten in derselben
+Sitzung: jeder offene Befund wird an der Quelle und am **wörtlichen**
+Gate-Text eingeordnet — **Defekt** nur, wenn ein Test, die Verhaltensmatrix
+oder ein Satz des Gate-Textes bricht; alles andere ist Lücke oder Härtung und
+geht datiert ins Register. Verbleibende Defekte bekommen genau **eine**
+weitere Runde mit der Ursache als Auftrag (Wegwechsel: Matrix als
+Spezifikation mit Tests, Implementierung in allen betroffenen Sprachen,
+frischer Prüfer), nicht mit Punktkorrekturen. Bleibt danach ein Defekt, wird
+seine Ursache als eigener Registerpunkt mit Matrix ausgegliedert, das Ticket
+bleibt `gebaut`, und der Dirigent zieht das nächste Ticket vor (User-Wort
+30.08.2026: „voranschreiten ist das wichtigste"). Ein Ticket wird nie durch
+Wegdeklarieren eines echten Defekts abgenommen.
+
+**Befunde gegen ein Prüfwerkzeug.** Ein Befund, der sich gegen ein
+Prüfskript, einen Riegel oder den Runner richtet und ein Szenario
+voraussetzt, das absichtliche Sabotage in repo-eigenen Quellen erfordert
+(Präprozessor-Tricks, exotische Kodierungen, verschleierte Direktiven), ist
+**Härtung**, nie Defekt — das Bedrohungsmodell der Riegel ist die
+versehentliche Regression, nicht der Angreifer mit Schreibrecht. Der Dirigent
+prüft jede Einordnung gegen den **wörtlichen** Gate-Text, nicht gegen die vom
+Prüfer zitierte Paragraphennummer: was der Satz nicht verlangt, ist keine
+Verletzung des Paragraphen.
+
+**Ein Ticket je Worker.** Nacharbeiten zweier Tickets laufen nie gekoppelt in
+einem Worker oder einem gemeinsamen Kanon; jedes Ticket konvergiert für
+sich.
 
 ### 3.5 Abschluss
 
 Kanon auf dem End-Stand. Rohausgaben von Kanonläufen gehören nicht in den
 Lesetext des Manifests: sie liegen unter `docs/beweise/roh/<TICKET>-<sha>.md`,
 im Manifest steht die Kopfzeile mit Verweis (Runner-Umbau NAK-96; bis dahin
-nur der Abschlusslauf angehängt, keine Zwischenläufe).
+nur der Abschlusslauf angehängt, keine Zwischenläufe). Beim Abschluss wird
+der lebende Kopf des Manifests nachgezogen (Prüfstufen-Zeile, Kurztabelle
+der Runden, Riegelkarte oder Matrix); übersteigt der Lesetext rund 3 000
+Zeilen, wandert der Rundenverlauf unverändert nach
+`docs/beweise/<TICKET>-verlauf.md` (append-only, kein Prüfgegenstand), der
+jüngste Kanon-Abschnitt bleibt im Manifest, weil `planstand.py` seine
+Bilanz dort liest.
 Urteil, Modell, Effort, Basis- und End-SHA sowie die tatsächlich gelaufenen
 Beweise ins **vorhandene** Manifest; Planstand neu rechnen; nur diese
 Abschlussdateien mit explizitem Pathspec committen und pushen. Dann: temporäre
@@ -395,3 +451,6 @@ Recovery-Datei bauen.
 - `git add -A`, `--amend`, fremde uncommittete Dateien anfassen.
 - `bypassPermissions` nutzen oder einen stillen Moduswechsel hinnehmen.
 - Ein zweites Protokoll, eine Statusdatei oder einen Ersatzkanal bauen.
+- Ein Manifest zum Prüfgegenstand machen, eine Wiederprüfung über den ganzen
+  Ticketbereich fahren oder eine vierte Nacharbeitsrunde ohne
+  Konvergenzentscheid starten.

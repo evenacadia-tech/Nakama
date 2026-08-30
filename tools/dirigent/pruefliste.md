@@ -3,9 +3,11 @@
 Gewonnen aus rund 40 bestätigten Prüferbefunden der Tickets S8, S9, S9b und
 S14–15 (Manifeste `docs/beweise/SONDE-007a/b/c.md`, `SONDE-010.md`; Register
 NAK-84 bis NAK-95). Jede Zeile ist eine Klasse, die mehrfach vorkam. Der Worker
-hakt sie vor dem Commit ab und nennt im Manifest, wo er sie gemessen hat; der
-Prüfer prüft zuerst gegen diese Liste und die Verhaltensmatrix des Tickets,
-dann erst frei.
+hakt sie vor dem Commit ab und nennt im Manifest, wo er sie gemessen hat. Für
+den Prüfer ist sie Kontext, **keine Anforderungsquelle**: Anforderungen sind
+allein Gate-Text, Verhaltensmatrix, Entwurf und die Invarianten aus
+`CLAUDE.md` (Dirigent §3.4, 30.08.2026). Manifestprosa unter `docs/**` ist
+kein Prüfgegenstand.
 
 ## A. Rückstau und Prioritätsklassen (IPC, Queues)
 
@@ -62,35 +64,25 @@ dann erst frei.
   gemessen" braucht die isolierte Probe).
 - Zahlen im Manifest (Beinanzahl, Verbraucher, Fixtures) sind gemessen, nicht
   aus einer anderen Datei abgeschrieben.
-- Positionen im Repo stehen im Manifest als Symbol/Anker oder als Zahl mit
-  Commit (`Datei:Zeile @ sha7`); eine nackte Zeilennummer altert mit dem
-  nächsten Edit und ist ein Befund (NAK-96 Nacharbeit 2, 29.08.2026). Die
-  Regel gilt für das **ganze** Manifest, nicht nur für den neuen Abschnitt.
-  Ausgenommen sind allein wörtlich zitierte Rohausgaben (Codeblöcke) und
-  wörtliche Zitate (`>`-Blöcke): dort bleibt die Zahl, wie das Werkzeug oder
-  die Quelle sie schrieb, und der **einleitende Satz** davor trägt den Commit
-  (NAK-96 Nacharbeit 3, 29.08.2026).
-- Ein Abschnitt, der in seinem Kopf seinen Stand (Commit) nennt, ist eine
-  Momentaufnahme @ diesem Stand; nackte Zeilennummern darunter gelten als
-  daran gebunden. Abschnitte ohne Standangabe binden jede Position einzeln
-  (`@ sha7` oder Symbol). Wer ein altes Manifest nachzieht, setzt deshalb
-  eine Zeile **Stand dieses Abschnitts:** `<sha7>` unter jede
-  Überschrift ohne Standangabe, statt hunderte Einzelpositionen zu
-  annotieren — und prüft, dass die genannten Positionen **an diesem
-  Commit** stimmen (NAK-85 Runde 4, 29.08.2026).
+- Positionen im **lebenden Kopf** eines Manifests stehen als Symbol/Anker;
+  im Verlauf gilt eine Zeilennummer zum Stand des Abschnitts, der sie trägt.
+  Kein Prüfer erhebt darüber Befunde (30.08.2026).
+- Der lebende Kopf eines Manifests (Urteilsmarken, Gate-Text, Riegelkarte
+  oder Matrix, Kurztabelle der Runden, jüngster Kanon) wird beim Abschluss
+  nachgezogen; alles darunter ist append-only Verlauf und wird nie
+  umgeschrieben.
 - Jede neue Prüfung wurde einmal absichtlich gebrochen; Rohausgabe des Rots
   liegt bei. Eine Probe, die auch ohne den Fix rot ist, heißt Regressionswache,
   nicht Beleg.
 
-- **Aussagen-Inventar (30.08.2026, S8 Runde 10 / NAK-94 Nacharbeit 5):** jede
-  geänderte Zusage wird vor dem Commit per grep an **allen** Stellen gesucht —
-  Skript- und Runnerköpfe, Kommentare, Docstrings, `tools/beweise.ps1`, Matrix,
-  Riegelkarte, lebende Manifestabschnitte — und als Tabelle „Stelle @ sha7 | alt
-  | neu | nachgezogen / historisch @ Stand" im Rundenabschnitt geführt. Eine
-  Stelle ohne Standangabe ist lebend und muss nachgezogen werden; historische
-  Abschnitte bekommen ihre Standangabe, statt umgeschrieben zu werden. Drei
-  Prüferrunden (S8 Prüfer 8–10) fanden ausschließlich nicht nachgezogene
-  Zweitstellen — das ist die häufigste Befundklasse überhaupt.
+- **Geänderte Zusage — drei Stellen, kein Inventar (30.08.2026):** wer eine
+  Zusage ändert, zieht Runnerkopf (`tools/beweise.ps1`), Skriptkopf und den
+  lebenden Manifestkopf nach; ein `git grep` nach dem Kernbegriff genügt als
+  Nachweis im Rundenabschnitt. Die Regel „Aussagen-Inventar" vom 30.08.
+  (S8 Runde 10) samt Lebend/Historisch-Klassifizierer ist **zurückgenommen**:
+  sie erzeugte in S8 Runde 10–19 ausschließlich Befunde über sich selbst
+  (Trefferzahlen, Abschnittsstände, Klassifizierer-Logik) und kein einziges
+  Produktverhalten.
 - **Writer-Fixtures statt Handschrift (30.08.2026, NAK-94 Nacharbeit 5):** ein
   Probe-Datensatz, der „in der Form des Writers" sein soll, wird vom Writer
   erzeugt (Sandbox, Rohausgabe, Stand, Befehl) und eingefroren; synthetische

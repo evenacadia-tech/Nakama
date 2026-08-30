@@ -54,13 +54,3 @@ eq-copilot/fixtures/state/** -text
 # eine Schleuse wuerde nicht blocken, sondern still scheitern. Deshalb LF
 # erzwungen (Regel uebernommen aus Nakama-Design/.gitattributes).
 *.sh text eol=lf
-
-# NAK-94 Nacharbeit 5 (30.08.2026): die Probe-Journale unter
-# eq-copilot/fixtures/installer/ sind BYTES, die Install-Nakama.ps1 selbst
-# geschrieben hat - Schreibe-JsonAtomar liefert UTF-8 ohne BOM mit CRLF, und
-# MANIFEST.json haelt je Datei einen SHA-256 darauf fest. Mit
-# core.autocrlf=true wuerde eine frische Klonung die Zeilenenden umschreiben
-# und jeden dieser Hashes brechen - auf genau dem Zweitrechner, auf dem es
-# niemand erwartet. `-text` haelt sie bytegleich, wie beim v3- und
-# State-Baum.
-eq-copilot/fixtures/installer/** -text

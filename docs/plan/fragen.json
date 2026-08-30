@@ -26,6 +26,78 @@
    "bilder": [],
    "status": "offen",
    "blockiert_durch": "NAK-57 — der Zähler analyseKontinuitaetsbrueche() hat keine Anzeige; ohne sie ist der Kurztermin nicht ablesbar (Dirigent 29.08.)"
+  },
+  {
+   "id": "U15",
+   "dringlichkeit": "vor Phase P6 (der EQ selbst)",
+   "art": "Produktentscheid",
+   "titel": "Soll der EQ eine zweite Betriebsart bekommen, die den Klang nicht zeitlich verschiebt?",
+   "was": "Heute ist geplant: ein einziger Filtertyp, der sofort reagiert und keine Verzögerung einbaut. Das ist die Bauart, die fast jeder EQ als Grundeinstellung hat. Pro-Q — dein genanntes Vorbild — bietet zusätzlich zwei andere Betriebsarten an. Die interessante davon verschiebt beim Filtern nichts im Zeitverlauf, sondern behandelt alle Frequenzen gleich. Das klingt beim harten Beschneiden sauberer, kostet aber zwei Dinge: das Plugin braucht dann eine feste Verzögerung (FL gleicht sie aus, aber alles wird ein Stück träger, und Live-Vorhören wird ungenauer), und vor sehr steilen Eingriffen kann ein leises Vorecho entstehen. Frage: soll Nakama diese zweite Betriebsart bekommen — als Umschalter, den du bewusst einschaltest?",
+   "warum": "Du hast am 23.08. gesagt: „er muss das rad nicht neu erfinden, aber vorbild ist auf jedenfall besagte eq\" und „alle gängigen filter die es gibt\". Der aktuelle Plan schließt diese Betriebsart ausdrücklich aus dem ersten Ausbau aus. Das ist kein Versehen, sondern eine bewusste Grenze — aber sie widerspricht deinem Vorbild an einer sichtbaren Stelle, deshalb legen wir sie dir vor, statt sie selbst zu entscheiden.",
+   "wo": "Betroffen: die Verzögerungsangabe an FL (Vertrag), ein neuer gespeicherter Wert (Zustand) und ein Umschalter (Oberfläche). Tickets S26–28, S28b und das Prüftor G6. Belege: docs/beweise/PR1.md Abschnitt 5.3; Entwurf §30.1 und §44.2.",
+   "seit": "2026-08-30",
+   "bilder": [],
+   "status": "offen"
+  },
+  {
+   "id": "U16",
+   "dringlichkeit": "vor Phase P5 (die Befunde)",
+   "art": "Produktentscheid",
+   "titel": "Soll Nakama zeigen, wo sich zwei Spuren im Frequenzbild gegenseitig zudecken — direkt im Kurvenbild?",
+   "was": "Geplant ist heute: Nakama sagt dir in Worten, dass zwei Quellen sich im selben Bereich streiten, mit Ort, Beleg und dem kleinsten Gegentest. Die vollständige Übersicht aller Paare ist als späterer Ausbau eingeplant. Was heute NICHT geplant ist: dass du beim Arbeiten am EQ direkt im Bild siehst, wo es sich zudeckt — etwa als farbige Zone auf der Kurve. Frage: soll das in die erste nützliche Fassung, oder reicht dir der Befund in Worten?",
+   "warum": "Bei drei von vier verglichenen Herstellern ist genau diese Anzeige Grundausstattung und nicht Zusatz: Pro-Q malt die Kollision rot in sein Spektrum, iZotope hat ein eigenes Anzeigeinstrument dafür, MeldaProduction ebenso. Nakama misst die Daten dafür ohnehin schon, es geht also um die Anzeige und darum, wann sie kommt.",
+   "wo": "Betroffen: vor allem die Oberfläche (Kurvenbild). Nur wenn die Anzeige laufend die Werte einer zweiten Sonde braucht, kommt der Nachrichtenvertrag dazu. Tickets S23–25 und S31b. Beleg: docs/beweise/PR1.md Abschnitt 5.2.",
+   "seit": "2026-08-30",
+   "bilder": [],
+   "status": "offen"
+  },
+  {
+   "id": "U17",
+   "dringlichkeit": "vor der Arbeit an der EQ-Fläche",
+   "art": "Produktentscheid (mehrere kleine Handgriffe, ein Entscheid)",
+   "titel": "Was soll das Kurvenbild außer der Kurve können?",
+   "was": "Vier Handgriffe, die vergleichbare EQs haben und Nakama heute nirgends vorsieht. (1) Aus dem Spektrum greifen: du fährst auf einen Berg im Frequenzbild, ziehst ihn herunter, und daraus entsteht das Filterband — statt erst ein Band anzulegen und dann zu suchen. (2) Festhalten: das Spektrum hört auf zu fallen und sammelt die Spitzenwerte, damit du in Ruhe hinsehen kannst. (3) Anzeige einstellen: wie hoch der Ausschlag geht, wie fein und wie schnell das Bild ist, und ob die Höhen optisch angehoben dargestellt werden. (4) Tonnamen: eine Klaviatur unter dem Bild, damit du siehst, welcher Ton eine Frequenz ist. Dazu eine fünfte Frage: die Lautheit misst Nakama bereits, angezeigt wird sie nirgends — soll sie sichtbar werden, und wo?",
+   "warum": "Du hast am 23.08. gesagt, die Überladen-Grenze werde „button für button\" geklärt und „so halb halb bringt das nix\". Das hier ist genau diese Liste: vier fehlende Handgriffe auf einmal statt vier Einzelfragen. Alle vier sind bei Pro-Q Grundausstattung; keiner davon steht heute im Plan.",
+   "wo": "Betroffen: die Oberfläche. Die Frequenzraster selbst bleiben unverändert, es geht nur um Darstellung und Handgriff. Ticket S31b (EQ-Fläche), die Lautheitsanzeige eher S18–19. Belege: docs/beweise/PR1.md Abschnitt 5.4; Register NAK-57.",
+   "seit": "2026-08-30",
+   "bilder": [],
+   "status": "offen"
+  },
+  {
+   "id": "U18",
+   "dringlichkeit": "vor Phase P6",
+   "art": "Produktentscheid",
+   "titel": "Soll es gespeicherte Voreinstellungen geben — und darf man Einstellungen von einer Sonde auf eine andere kopieren?",
+   "was": "Der Plan kennt heute keine Voreinstellungen. Dein Projekt speichert natürlich alles, was eingestellt ist, und FL kann den Zustand eines Plugins auch selbst als Datei ablegen. Was fehlt, ist beides andere: eine Liste mit Startpunkten zum Anklicken (mitgelieferte und eigene) und ein Weg, eine fertige EQ-Kurve von einer Sonde auf eine andere zu übertragen. Frage: soll Nakama das bekommen — und wenn ja, beides oder nur das Kopieren?",
+   "warum": "Voreinstellungen und Kopieren gehören bei jedem verglichenen Produkt zur Grundausstattung. Für uns ist es kein reines Bedienthema: eine Voreinstellung ist etwas anderes als der Projektzustand und braucht deshalb einen eigenen Platz im gespeicherten Format. Das jetzt zu klären ist billig; später ist es eine Formatänderung.",
+   "wo": "Betroffen: der gespeicherte Zustand und die Oberfläche. Tickets S26–28 (Format) und S31b (Bedienung). Beleg: docs/beweise/PR1.md Abschnitt 5.3 und Lücke L-3.",
+   "seit": "2026-08-30",
+   "bilder": [],
+   "status": "offen"
+  },
+  {
+   "id": "U19",
+   "dringlichkeit": "eilt nicht — betrifft den Ausbau nach der vollen Fassung",
+   "art": "Produktentscheid (Richtung, nicht Termin)",
+   "titel": "Soll Nakama den Klang eines anderen Busses oder einer Referenzaufnahme nachbilden können?",
+   "was": "Gemeint ist: du gibst Nakama eine Vorlage — eine andere Spur, einen fertigen Song, eine Datei — und Nakama baut daraus eine EQ-Kurve, die den gewählten Bus in diese Richtung bringt. Im Plan steht das heute weit hinten, nach der vollen Fassung. Frage: bleibt es dort, oder soll es früher kommen?",
+   "warum": "Bei Pro-Q und sonible ist das eine Grundfunktion und kein Ausbau; iZotope hat es ebenfalls. Es ist die einzige verbreitete Funktion, bei der Nakama deutlich später dran ist als der Markt. Wir fragen jetzt, weil eine frühere Einordnung den Nachrichtenvertrag betrifft, und der wird in den nächsten zwei Schritten festgeschrieben.",
+   "wo": "Betroffen: Nachrichtenvertrag, gespeicherter Zustand und Oberfläche. Heute eingeordnet als Ausbau nach der vollen Fassung (Entwurf §47.5). Beleg: docs/beweise/PR1.md Abschnitt 5.4.",
+   "seit": "2026-08-30",
+   "bilder": [],
+   "status": "offen"
+  },
+  {
+   "id": "U20",
+   "dringlichkeit": "vor Phase P3 (die Quellenübersicht)",
+   "art": "Produktentscheid mit Messung davor",
+   "titel": "Was zeigt der Sonden-Durchschalter, wenn FL Studio den Spurnamen nicht herausgibt?",
+   "was": "Du hast am 23.08. festgelegt: der Durchschalter auf der EQ-Seite hält die Reihenfolge des FL-Mixers und zeigt je Sonde nur den Namen des Busses, auf dem sie sitzt. Beim Nachprüfen ist aufgefallen: diese beiden Angaben kann nur FL selbst liefern, und es ist nie gemessen worden, ob FL sie überhaupt herausgibt. Es gibt einen dafür vorgesehenen Weg im Plugin-Standard, aber ob FL ihn bedient, steht in keiner Herstellerunterlage. Wir messen das. Die Frage an dich ist der Fall danach: **wenn FL nichts hergibt** — was soll dann im Durchschalter stehen? Möglich wären ein Name, den du selbst vergibst, die Nummer des Mixerkanals, sofern die ankommt, oder eine Reihenfolge nach dem Zeitpunkt des Verbindens.",
+   "warum": "Der Durchschalter ist laut deinem eigenen Wort der häufigste Handgriff auf der EQ-Seite („1 klick oder 3 klicks dazwischen liegen welten\"). Wenn dort ein Name fehlt oder die Reihenfolge springt, trifft es genau den Handgriff, auf den es dir ankommt. Und der Vertrag, in dem so ein Name reisen müsste, wird in den nächsten zwei Schritten festgeschrieben — danach ist eine Ergänzung deutlich teurer.",
+   "wo": "Betroffen: Nachrichtenvertrag, die Liste der gemessenen FL-Fähigkeiten und die Oberfläche. Tickets S18–19 und S31b. Beleg: docs/beweise/PR1.md Befund D-2; Wortlaut design/abnahmen/2026-08-23-interview-struktur.md, Festlegungen 11 und 12.",
+   "seit": "2026-08-30",
+   "bilder": [],
+   "status": "offen"
   }
  ],
  "beantwortet": {

@@ -292,6 +292,31 @@ Fernsteuerung lokal auf dem Bus aus. Vollständige Band-, Kurven- und
 Präzisionsbedienung liegt ausschließlich in Gens zweiter Oberfläche;
 Probeeq selbst erhält nur die kompakte Status- und Rückfallfläche.
 
+**(q) Zwei Folgen des 23.08.-Entscheids, nachgetragen mit der Planprüfung PR1 (30.08.2026,
+`beweise/PR1.md`).** Kein neuer Entscheid — beides zieht bestehende User-Entscheide an Stellen
+nach, die sie bisher nicht erreicht haben.
+
+- **Gens Master-EQ braucht einen Ort im gespeicherten Zustand.** Erratum (n) sagt „Parameter- und
+  Zustands-Hoheit bleibt in der Sonde (…; §53.8-State unverändert)". Der Satz gilt der **Sonde**:
+  er hält fest, dass Gen die Sonde fernsteuert und nicht deren Zustand besitzt. Er gilt **nicht**
+  für Gens eigenen Master-EQ. Gemessen am gebauten Vertrag: die Kind-Matrix in
+  `../eq-copilot/schemas/state/nakama-state-v2.md` §2.1 verbietet `plugin_kind = main` sowohl
+  `Parameters` als auch `Dsp`, und `nakama-parameter-v1.json` führt den Parameterbestand
+  ausdrücklich nur für `active_probe`. Ohne eine versionierte Erweiterung hätte Gens EQ weder
+  Hostautomation noch `state_hash`, Recall oder Undo-Ring (§44.3). Die Erweiterung ist eine
+  **Versionierung mit Beleg**, kein Edit, und liegt bei **S28b** (`SONDE-015b`); die eingefrorenen
+  Class-IDs bleiben unberührt (NAK-30), weil Gen heute null Hostparameter führt und sich kein
+  bestehender Index verschiebt. Register: NAK-105, Vorläufer NAK-81 (c).
+- **§44.2 behält seinen ±3-dB-Satz — er ist Verlauf, nicht Vorgabe.** „Remote-Proposals bleiben
+  auf ±3 dB und zunächst Q 0,4–2 begrenzt" steht unverändert in §44.2; **aufgehoben** ist er seit
+  dem Entscheid vom 23.08.2026 (U14: „ja draft reicht, aber die limitangabe oder das limit selbst
+  ist sinnlos geworden. das kann im eq dann ja angepasst werden von selbst"), siehe Erratum (n).
+  NAK-64 hatte seine **Streichung** zugesagt und wurde geschlossen, ohne sie auszuführen — die
+  Zusage war falsch: der Text unter diesem Block wird grundsätzlich nicht umgeschrieben, damit die
+  T2-Regel „Gate-Text aus dem Entwurf" einen stabilen Bezug behält (`bauaufteilung-sonden.md`
+  §6.4). Der Errata-Block hat Vorrang; Drafts nutzen die manuellen Bereiche (±12 dB, Q 0,15–24).
+  Register: NAK-108.
+
 ---
 
 ## 0. Zweck und Einordnung
@@ -3834,7 +3859,12 @@ ohne den Audiopfad zu verändern.
 **Nachtrag 28.08.2026 (User-Entscheid, `design/abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md`):**
 Seit dem 23.08.2026 gibt es zwei Ziele — Nakama Gen und Nakama Probeeq; Suna ist in Probeeq
 aufgegangen. Das dritte Ziel wird in `SONDE-007c` (S9b) stillgelegt. Klausel 1 des Exit-Gates gilt
-danach für **beide** verbleibenden Ziele.
+danach für **beide** verbleibenden Ziele. **Erweitert 30.08.2026 (PR1):** derselbe
+Entscheid gilt auch für den Lieferumfang oben — „drei VST3-Ziele" und „Installer-Manifest
+für alle drei Bundles" heißen ab S9b **zwei** Ziele und **zwei** Bundles plus Broker; im
+Exit-Gate unten heißt „Alle drei Ziele scannen und laden in FL" entsprechend **beide** Ziele.
+Der Text darunter bleibt stehen (§6.4 der Bauaufteilung: kein Umschreiben unter dem Block);
+dieser Nachtrag hat Vorrang.
 
 **Exit-Gate:** Alle drei Ziele scannen und laden in FL; Passive und Active-Hard-Bypass nullen;
 Schema-1-Fixtures migrieren deterministisch und erzeugen keine Brokerstarts im Scanner oder

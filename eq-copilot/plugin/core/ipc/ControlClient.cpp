@@ -19,6 +19,13 @@ namespace
 /// drankommen. Kurz genug, dass ein P0-Befehl nicht hinter Stille wartet.
 constexpr int kLeseTaktMs = 20;
 
+/// Frist, die `stop()` einem LAUFENDEN Callback noch laesst (Matrix
+/// `B-CC-12`). Derselbe Wert wie `SENKE_FRIST` im Rust-Listener: beide Seiten
+/// geben fremdem Code dieselbe Gnadenfrist. Lang genug fuer einen normalen
+/// Callback (Mikro- bis Millisekunden), kurz genug, dass das Schliessen eines
+/// Plugins im Host nicht spuerbar haengt.
+constexpr int kStopFristMs = 2000;
+
 std::string jsonString (const std::string& roh)
 {
     // Der Client erzeugt nur Werte aus dem eigenen Vertrag (hex32, SID,
@@ -127,12 +134,64 @@ bool adresseGueltig (const Adresse& a)
         && istHex32 (a.instanceId) && istHex32 (a.runtimeNonce);
 }
 
+//== Die geteilte Laufzeit ===================================================
+//
+// Alles, was der Clientthread anfasst. Der Client selbst haelt nur noch den
+// `shared_ptr` darauf, seinen Thread und den Lebenslaufmutex — die Begruendung
+// steht im Header (Regel 6, `B-CC-12`).
+struct ControlClient::Laufzeit
+{
+    Laufzeit (std::function<ControlHello()> hp,
+              std::string pn,
+              std::function<void (const std::string&)> ba)
+        : helloProvider (std::move (hp)), beiAntwort (std::move (ba)),
+          pipeName (std::move (pn)) {}
+
+    void threadLauf();
+    bool eineVerbindung (std::uint64_t generation);
+    bool sollAbbrechen (std::uint64_t generation) const noexcept;
+    bool sendeP0 (const std::string& json);
+    P1Ergebnis sendeP1 (const std::string& schluessel, const std::string& json);
+    Snapshot snapshotIntern() const;
+    bool kopplung (std::string& linkId, std::string& challenge) const;
+
+    std::function<ControlHello()> helloProvider;
+    std::function<void (const std::string&)> beiAntwort;
+    std::string pipeName;
+
+    IpcVerbindung verbindung;
+
+    std::atomic<bool> laeuft { false };
+    /// Der Thread hat `threadLauf()` verlassen. `stop()` wartet darauf, statt
+    /// blind zu joinen — nur so kann es nach der Frist abloesen.
+    std::atomic<bool> fertig { false };
+    /// Wer ist der Clientthread? `stop()` aus einem Callback heraus liefe
+    /// sonst in einen Self-Join (`B-CC-11`).
+    std::atomic<std::thread::id> threadId {};
+    std::atomic<std::uint64_t> verbindungsGeneration { 0 };
+    std::mutex   wartemutex;
+    std::condition_variable warte;
+
+    mutable std::mutex zustandMutex;
+    Snapshot zustand;
+
+    std::mutex sendeMutex;
+    P0Warteschlange p0;
+    P1Warteschlange p1;
+    /// Monoton wachsender Zaehler der P0-Ueberlaeufe. Die laufende Verbindung
+    /// merkt sich seinen Stand beim Verbinden und schliesst, sobald er waechst
+    /// (§53.9 "nichts verwerfen; Verbindung schliessen"). Ein Ueberlauf, der
+    /// VOR der Verbindung passiert ist, schliesst dagegen nichts — es gibt
+    /// nichts zu schliessen, und der Aufrufer hat sein `false` bereits.
+    std::atomic<std::uint64_t> p0UeberlaufZaehler { 0 };
+};
+
 ControlClient::ControlClient (std::function<ControlHello()> helloProviderIn,
                               std::string pipeNameIn,
                               std::function<void (const std::string&)> beiAntwortIn)
-    : helloProvider (std::move (helloProviderIn)),
-      beiAntwort (std::move (beiAntwortIn)),
-      pipeName (std::move (pipeNameIn))
+    : k (std::make_shared<Laufzeit> (std::move (helloProviderIn),
+                                     std::move (pipeNameIn),
+                                     std::move (beiAntwortIn)))
 {
 }
 
@@ -144,41 +203,89 @@ ControlClient::~ControlClient()
 void ControlClient::start()
 {
     std::lock_guard<std::mutex> l (lebenslaufMutex);
-    if (laeuft.load())
+    if (k->laeuft.load())
         return;
-    laeuft.store (true);
-    thread = std::thread ([this] { threadLauf(); });
+    k->laeuft.store (true);
+    k->fertig.store (false);
+    auto kern = k;
+    thread = std::thread ([kern] { kern->threadLauf(); });
 }
 
 void ControlClient::stop()
 {
-    std::lock_guard<std::mutex> l (lebenslaufMutex);
-    if (! laeuft.load() && ! thread.joinable())
+    // `B-CC-11`: aus einem Callback dieses Clients heraus wird nur markiert.
+    // Der Thread endet nach Rueckkehr des Callbacks von selbst; sich hier
+    // selbst zu joinen waere `std::system_error` und danach `std::terminate`.
+    const bool ausDemClientthread = (std::this_thread::get_id() == k->threadId.load());
+
+    k->laeuft.store (false);
+    k->verbindungsGeneration.fetch_add (1);
+    k->verbindung.ioAbbrechen();
+    k->warte.notify_all();
+    if (ausDemClientthread)
         return;
-    laeuft.store (false);
-    verbindungsGeneration.fetch_add (1);
-    verbindung.ioAbbrechen();
-    warte.notify_all();
-    if (thread.joinable())
-        thread.join();
-    verbindung.schliessen();
-    std::lock_guard<std::mutex> z (zustandMutex);
-    zustand.status = Status::getrennt;
+
+    std::lock_guard<std::mutex> l (lebenslaufMutex);
+    if (! thread.joinable())
+    {
+        k->verbindung.schliessen();
+        std::lock_guard<std::mutex> z (k->zustandMutex);
+        k->zustand.status = Status::getrennt;
+        return;
+    }
+
+    // `B-CC-12`: auf einen laufenden Callback wird hoechstens `kStopFristMs`
+    // gewartet. Danach wird der Thread ABGELOEST — er haelt die Laufzeit ueber
+    // seinen eigenen `shared_ptr` am Leben und beruehrt den Client nie.
+    const auto bis = std::chrono::steady_clock::now()
+                   + std::chrono::milliseconds (kStopFristMs);
+    while (! k->fertig.load())
+    {
+        if (std::chrono::steady_clock::now() >= bis)
+        {
+            {
+                std::lock_guard<std::mutex> z (k->zustandMutex);
+                ++k->zustand.stopFristUeberschritten;
+                k->zustand.status = Status::getrennt;
+            }
+            thread.detach();
+            return;
+        }
+        std::this_thread::sleep_for (std::chrono::milliseconds (1));
+    }
+    thread.join();
+    k->verbindung.schliessen();
+    std::lock_guard<std::mutex> z (k->zustandMutex);
+    k->zustand.status = Status::getrennt;
 }
 
 void ControlClient::reconnect()
 {
-    verbindungsGeneration.fetch_add (1);
-    verbindung.ioAbbrechen();
-    warte.notify_all();
+    k->verbindungsGeneration.fetch_add (1);
+    k->verbindung.ioAbbrechen();
+    k->warte.notify_all();
 }
 
-bool ControlClient::sollAbbrechen (std::uint64_t generation) const noexcept
+ControlClient::Snapshot ControlClient::snapshot() const { return k->snapshotIntern(); }
+
+bool ControlClient::sendeP0 (const std::string& json) { return k->sendeP0 (json); }
+
+P1Ergebnis ControlClient::sendeP1 (const std::string& schluessel, const std::string& json)
+{
+    return k->sendeP1 (schluessel, json);
+}
+
+bool ControlClient::kopplung (std::string& linkId, std::string& challenge) const
+{
+    return k->kopplung (linkId, challenge);
+}
+
+bool ControlClient::Laufzeit::sollAbbrechen (std::uint64_t generation) const noexcept
 {
     return ! laeuft.load() || verbindungsGeneration.load() != generation;
 }
 
-bool ControlClient::sendeP0 (const std::string& json)
+bool ControlClient::Laufzeit::sendeP0 (const std::string& json)
 {
     // An der TUER, nicht am Draht. Eine eingereihte Nachricht ueber der
     // Paketgrenze koennte NIE gesendet werden — sie bliebe dank der
@@ -214,7 +321,8 @@ bool ControlClient::sendeP0 (const std::string& json)
     return true;
 }
 
-P1Ergebnis ControlClient::sendeP1 (const std::string& schluessel, const std::string& json)
+P1Ergebnis ControlClient::Laufzeit::sendeP1 (const std::string& schluessel,
+                                            const std::string& json)
 {
     if (json.size() > kMaxPayloadBytes)
     {
@@ -230,13 +338,13 @@ P1Ergebnis ControlClient::sendeP1 (const std::string& schluessel, const std::str
     return e;
 }
 
-ControlClient::Snapshot ControlClient::snapshot() const
+ControlClient::Snapshot ControlClient::Laufzeit::snapshotIntern() const
 {
     std::lock_guard<std::mutex> l (zustandMutex);
     return zustand;
 }
 
-bool ControlClient::kopplung (std::string& linkId, std::string& challenge) const
+bool ControlClient::Laufzeit::kopplung (std::string& linkId, std::string& challenge) const
 {
     std::lock_guard<std::mutex> l (zustandMutex);
     if (zustand.status != Status::verbunden || zustand.linkId.empty())
@@ -246,8 +354,9 @@ bool ControlClient::kopplung (std::string& linkId, std::string& challenge) const
     return true;
 }
 
-void ControlClient::threadLauf()
+void ControlClient::Laufzeit::threadLauf()
 {
+    threadId.store (std::this_thread::get_id());
     int backoffMs = kBackoffStartMs;
     while (laeuft.load())
     {
@@ -271,9 +380,12 @@ void ControlClient::threadLauf()
         }
         backoffMs = std::min (backoffMs * 2, kBackoffMaxMs);
     }
+    // Erst JETZT ist der Thread fertig — `stop()` wartet auf genau dieses
+    // Zeichen und darf danach joinen (`B-CC-10`).
+    fertig.store (true);
 }
 
-bool ControlClient::eineVerbindung (std::uint64_t generation)
+bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation)
 {
     {
         std::lock_guard<std::mutex> l (zustandMutex);
@@ -451,6 +563,77 @@ bool ControlClient::eineVerbindung (std::uint64_t generation)
     Ratengrenze rate (kRateProSekunde, kRateFensterMs);
     const auto rateBeginn = std::chrono::steady_clock::now();
 
+    // `B-CC-06`/`B-CC-07` (Regel 4): der Empfangsweg als eigener Schritt.
+    // `false` heisst: die Verbindung ist zu beenden. Er wird in JEDER Runde
+    // gegangen — auch direkt nach einem Send — und einmal zusaetzlich, bevor
+    // ein gescheiterter Write die Verbindung schliesst.
+    bool leseFehler = false;
+    auto empfangenes = [&] (int fristMs) -> bool
+    {
+        std::size_t gelesen = 0;
+        const auto la = verbindung.lesen (puffer, sizeof (puffer), gelesen,
+                                          IpcVerbindung::fristIn (fristMs), fehler);
+        if (la == LeseAusgang::fehler || la == LeseAusgang::ende)
+        {
+            leseFehler = true;
+            return false;
+        }
+        if (la == LeseAusgang::daten && gelesen > 0)
+            leser.fuettern (puffer, gelesen);
+
+        for (;;)
+        {
+            const auto e = leser.naechster();
+            if (e.art == StromLeser::Art::unvollstaendig)
+                return true;
+            if (e.art == StromLeser::Art::verstoss)
+            {
+                std::lock_guard<std::mutex> l (zustandMutex);
+                zustand.letzterFehler = "Envelope abgelehnt — Verbindung wird geschlossen";
+                ++zustand.envelopeAbweisungen;
+                return false;
+            }
+            // Die Familienzuordnung des Vertrags gilt in BEIDE Richtungen:
+            // die Control-Verbindung traegt ausschliesslich P0/P1 (§33.1).
+            // Ohne diese Sperre reichte ein korrekt gerahmter P2-Frame vom
+            // Peer seine Binaerpayload an `beiAntwort` weiter, das JSON
+            // erwartet (T2-Befund 4 vom 2026-08-29).
+            if (e.kopf.familie == Familie::p2
+                || e.kopf.encoding != Kodierung::json)
+            {
+                std::lock_guard<std::mutex> l (zustandMutex);
+                zustand.letzterFehler =
+                    "P2 oder Nicht-JSON auf der Control-Verbindung — wird geschlossen";
+                ++zustand.familieAbweisungen;
+                return false;
+            }
+
+            // Ratengrenze VOR dem Callback: ein Peer, der hinter dem welcome
+            // beliebig viele Frames pipelined, darf den Aufrufer nicht damit
+            // fluten (§33.1, T2-Befund 5 vom 2026-08-29).
+            const auto jetztMs = static_cast<std::uint64_t> (
+                std::chrono::duration_cast<std::chrono::milliseconds> (
+                    std::chrono::steady_clock::now() - rateBeginn).count());
+            if (! rate.erlaubt (jetztMs))
+            {
+                std::lock_guard<std::mutex> l (zustandMutex);
+                zustand.letzterFehler =
+                    "Nachrichtenratengrenze ueberschritten — Verbindung wird geschlossen";
+                ++zustand.rateAbweisungen;
+                return false;
+            }
+
+            {
+                std::lock_guard<std::mutex> l (zustandMutex);
+                ++zustand.empfangen;
+            }
+            // Nach `stop()` wird kein Callback mehr gerufen (`B-CC-10`).
+            if (beiAntwort && ! sollAbbrechen (generation))
+                beiAntwort (std::string (reinterpret_cast<const char*> (e.payload),
+                                         e.payloadLaenge));
+        }
+    };
+
     std::vector<std::uint8_t> ausgang;
     while (! sollAbbrechen (generation))
     {
@@ -494,6 +677,12 @@ bool ControlClient::eineVerbindung (std::uint64_t generation)
                     std::lock_guard<std::mutex> z (zustandMutex);
                     zustand.p1Wiederholungen = p1.wiederholungen();
                 }
+                // `B-CC-07`: was schon vollstaendig empfangen wurde, wird
+                // noch GEMELDET, bevor die Verbindung endet. Sonst ginge genau
+                // der P0-ACK verloren, auf den der Aufrufer wartet — der Write
+                // scheiterte ja oft, weil der Peer nur nicht mehr liest.
+                empfangenes (0);
+
                 // Der Platz war bis hierher reserviert; `zuruecklegen` hat ihn
                 // wieder mit dem Eintrag belegt. Nichts ist verlorengegangen.
                 if (! sollAbbrechen (generation))
@@ -522,84 +711,29 @@ bool ControlClient::eineVerbindung (std::uint64_t generation)
                 ++zustand.p0Gesendet;
             else
                 ++zustand.p1Gesendet;
-            continue;  // erst alles Wartende senden, dann wieder lesen
+            // KEIN `continue` mehr. Die alte Fassung sprang hier zurueck an
+            // den Anfang und uebersprang den Lesepfad, solange irgendetwas
+            // wartete: ein bereits vorliegender P0-ACK wurde nicht verarbeitet,
+            // waehrend P1 rueckstaute, und ein blockierender P1-Write hungerte
+            // ihn ganz aus. Das bricht den Gate-Satz "ohne P0-Starvation"
+            // (NAK-95, Befund 4).
         }
 
-        // 2) Lesen mit kurzem Takt.
-        std::size_t gelesen = 0;
-        const auto la = verbindung.lesen (puffer, sizeof (puffer), gelesen,
-                                          IpcVerbindung::fristIn (kLeseTaktMs), fehler);
-        if (la == LeseAusgang::fehler || la == LeseAusgang::ende)
+        // 2) Lesen — IN JEDER RUNDE (`B-CC-06`). Direkt nach einem Send nur
+        //    kurz pollen, damit der Durchsatz nicht am Lesetakt haengt; ist
+        //    nichts zu senden, wird der volle Takt gewartet.
+        if (! empfangenes (etwasGesendet ? 0 : kLeseTaktMs))
         {
-            if (! sollAbbrechen (generation))
+            if (! sollAbbrechen (generation) && leseFehler)
             {
                 std::lock_guard<std::mutex> l (zustandMutex);
                 if (ueberlaufSeitVerbinden())
                     zustand.letzterFehler = "P0-Ueberlauf: Verbindung wird geschlossen";
-                else if (la == LeseAusgang::fehler && ! fehler.empty())
+                else if (! fehler.empty())
                     zustand.letzterFehler = fehler;
             }
             break;
         }
-        if (la == LeseAusgang::daten && gelesen > 0)
-            leser.fuettern (puffer, gelesen);
-
-        bool abbrechen = false;
-        for (;;)
-        {
-            const auto e = leser.naechster();
-            if (e.art == StromLeser::Art::unvollstaendig)
-                break;
-            if (e.art == StromLeser::Art::verstoss)
-            {
-                std::lock_guard<std::mutex> l (zustandMutex);
-                zustand.letzterFehler = "Envelope abgelehnt — Verbindung wird geschlossen";
-                ++zustand.envelopeAbweisungen;
-                abbrechen = true;
-                break;
-            }
-            // Die Familienzuordnung des Vertrags gilt in BEIDE Richtungen:
-            // die Control-Verbindung traegt ausschliesslich P0/P1 (§33.1).
-            // Ohne diese Sperre reichte ein korrekt gerahmter P2-Frame vom
-            // Peer seine Binaerpayload an `beiAntwort` weiter, das JSON
-            // erwartet (T2-Befund 4 vom 2026-08-29).
-            if (e.kopf.familie == Familie::p2
-                || e.kopf.encoding != Kodierung::json)
-            {
-                std::lock_guard<std::mutex> l (zustandMutex);
-                zustand.letzterFehler =
-                    "P2 oder Nicht-JSON auf der Control-Verbindung — wird geschlossen";
-                ++zustand.familieAbweisungen;
-                abbrechen = true;
-                break;
-            }
-
-            // Ratengrenze VOR dem Callback: ein Peer, der hinter dem welcome
-            // beliebig viele Frames pipelined, darf den Aufrufer nicht damit
-            // fluten (§33.1, T2-Befund 5 vom 2026-08-29).
-            const auto jetztMs = static_cast<std::uint64_t> (
-                std::chrono::duration_cast<std::chrono::milliseconds> (
-                    std::chrono::steady_clock::now() - rateBeginn).count());
-            if (! rate.erlaubt (jetztMs))
-            {
-                std::lock_guard<std::mutex> l (zustandMutex);
-                zustand.letzterFehler =
-                    "Nachrichtenratengrenze ueberschritten — Verbindung wird geschlossen";
-                ++zustand.rateAbweisungen;
-                abbrechen = true;
-                break;
-            }
-
-            {
-                std::lock_guard<std::mutex> l (zustandMutex);
-                ++zustand.empfangen;
-            }
-            if (beiAntwort)
-                beiAntwort (std::string (reinterpret_cast<const char*> (e.payload),
-                                         e.payloadLaenge));
-        }
-        if (abbrechen)
-            break;
     }
 
     verbindung.schliessen();

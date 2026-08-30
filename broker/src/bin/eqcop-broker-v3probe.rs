@@ -96,7 +96,7 @@ fn main() {
         "geschlossen_writer": s.geschlossen_writer.load(Ordering::SeqCst),
         "acceptor_wartet_auf_instanz": s.acceptor_wartet_auf_instanz.load(Ordering::SeqCst),
         "ingress_p2_verworfen": s.ingress_p2_verworfen.load(Ordering::SeqCst),
-        "ingress_p1_verworfen": s.ingress_p1_verworfen.load(Ordering::SeqCst),
+        "ingress_p1_ueberlauf_trennt": s.ingress_p1_ueberlauf_trennt.load(Ordering::SeqCst),
         "ingress_hoechststand": s.ingress_hoechststand.load(Ordering::SeqCst),
     });
     println!("{}", serde_json::to_string(&bericht).unwrap_or_default());

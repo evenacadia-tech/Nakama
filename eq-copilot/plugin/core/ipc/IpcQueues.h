@@ -121,7 +121,8 @@ enum class P1Ergebnis
     /// der Reihenfolge bleibt, nur der Inhalt ist der neuere.
     koalesziert,
     /// Kein Platz und nicht koaleszierbar: liegt jetzt im Wiederholpuffer und
-    /// geht nach dem naechsten Reconnect erneut raus.
+    /// fliesst wieder ab, sobald die Hauptqueue Platz hat (Matrix `A-P1-04`,
+    /// `A-P1-06`) — ein Reconnect ist dafuer nicht noetig.
     zurWiederholung,
     /// Auch der Wiederholpuffer ist voll: die NEUE Nachricht wird abgewiesen,
     /// gezaehlt, nie still. Was einmal angenommen wurde, bleibt angenommen.
@@ -169,12 +170,28 @@ public:
     P1Ergebnis einreihen (const std::string& schluessel, std::string nachricht)
     {
         if (! schluessel.empty())
+        {
             for (auto& e : inhalt)
                 if (e.schluessel == schluessel)
                 {
                     e.nachricht = std::move (nachricht);
                     return P1Ergebnis::koalesziert;
                 }
+            // Matrix `A-P1-03`: derselbe Schluessel im WIEDERHOLPUFFER
+            // koalesziert dort, an seiner Position. Die alte Fassung legte den
+            // Snapshot ohne Schluessel ab; ein neuerer Snapshot desselben
+            // Objekts fand nichts zum Koaleszieren, wurde abgewiesen, und nach
+            // dem Abfluss erschien der AELTERE als Ereignis. Das kehrt die
+            // Zusage aus §53.9 um (NAK-95, Befund 2).
+            for (auto& e : wiederholung)
+                if (e.schluessel == schluessel)
+                {
+                    e.nachricht = std::move (nachricht);
+                    return P1Ergebnis::koalesziert;
+                }
+        }
+
+        abfliessen();   // `A-P1-07`: Wiederholungen vor jedem Neuzugang
 
         if (inhalt.size() + reserviert < kap)
         {
@@ -188,7 +205,7 @@ public:
             ++abgewiesenZaehler;
             return P1Ergebnis::abgewiesen;
         }
-        wiederholung.push_back (std::move (nachricht));
+        wiederholung.push_back ({ schluessel, std::move (nachricht) });
         return P1Ergebnis::zurWiederholung;
     }
 
@@ -212,11 +229,14 @@ public:
         return true;
     }
 
-    /// Der Eintrag ist auf dem Draht: der reservierte Platz wird frei.
+    /// Der Eintrag ist auf dem Draht: der reservierte Platz wird frei — und
+    /// genau dort fliesst der Wiederholpuffer nach (`A-P1-06`). `entnehmen`
+    /// allein schafft keinen Platz: es RESERVIERT ihn.
     void bestaetigen() noexcept
     {
         if (reserviert > 0)
             --reserviert;
+        abfliessen();
     }
 
     /// Gegenstueck zu `entnehmen`: der Sender hat den Eintrag NICHT auf die
@@ -234,13 +254,26 @@ public:
     P1Ergebnis zuruecklegen (const std::string& schluessel, std::string nachricht)
     {
         if (! schluessel.empty())
+        {
             for (auto& e : inhalt)
                 if (e.schluessel == schluessel)
                 {
                     if (reserviert > 0)
                         --reserviert;
+                    abfliessen();
                     return P1Ergebnis::koalesziert;  // der neuere steht schon da
                 }
+            // Auch der Wiederholpuffer traegt jetzt Schluessel (`A-P1-03`);
+            // ein neuerer Snapshot kann dort liegen.
+            for (auto& e : wiederholung)
+                if (e.schluessel == schluessel)
+                {
+                    if (reserviert > 0)
+                        --reserviert;
+                    abfliessen();
+                    return P1Ergebnis::koalesziert;
+                }
+        }
 
         inhalt.push_front ({ schluessel, std::move (nachricht) });
         if (reserviert > 0)
@@ -248,18 +281,13 @@ public:
         return P1Ergebnis::eingereiht;
     }
 
-    /// Nach einem Reconnect: die vorgehaltenen Ereignisse wandern VOR den
-    /// laufenden Verkehr zurueck in die Queue, soweit Platz ist.
+    /// Nach einem Reconnect: derselbe Abfluss wie im laufenden Betrieb
+    /// (`A-P1-11` ist der Sonderfall von `A-P1-06`). Normalerweise ist der
+    /// Puffer hier schon leer; die Funktion bleibt, weil der Reconnect der vom
+    /// Entwurf ausdruecklich genannte Wiederholweg ist.
     std::size_t nachReconnectWiederholen()
     {
-        std::size_t zurueck = 0;
-        while (inhalt.size() < kap && ! wiederholung.empty())
-        {
-            inhalt.push_front ({ std::string(), std::move (wiederholung.back()) });
-            wiederholung.pop_back();
-            ++zurueck;
-        }
-        return zurueck;
+        return abfliessen();
     }
 
     std::size_t groesse()        const noexcept { return inhalt.size(); }
@@ -274,10 +302,36 @@ public:
 private:
     struct Eintrag { std::string schluessel; std::string nachricht; };
 
+    /// Abfluss des Wiederholpuffers OHNE Reconnect (Matrix `A-P1-06`,
+    /// Regel 1). Er laeuft an jeder Stelle, an der Platz entsteht
+    /// (`bestaetigen`, `zuruecklegen` mit Koaleszierung), und an jedem
+    /// `einreihen` VOR dem Urteil ueber den Neuzugang (`A-P1-07`).
+    ///
+    /// Die AELTESTE Wiederholung zuerst, ans ENDE der Hauptqueue: alles, was
+    /// dort steht, wurde vor ihr angenommen, und dank `A-P1-07` kann nichts
+    /// Spaeteres dort stehen. Damit gilt die Annahmereihenfolge ueber beide
+    /// Puffer hinweg.
+    ///
+    /// Vor der Ursachenrunde war `nachReconnectWiederholen()` der EINZIGE
+    /// Abfluss: bei nur voruebergehendem Rueckstau blieben akzeptierte
+    /// Ereignisse unbegrenzt liegen, waehrend spaetere sie ueberholten
+    /// (NAK-95, Befund 1).
+    std::size_t abfliessen()
+    {
+        std::size_t zurueck = 0;
+        while (inhalt.size() + reserviert < kap && ! wiederholung.empty())
+        {
+            inhalt.push_back (std::move (wiederholung.front()));
+            wiederholung.pop_front();
+            ++zurueck;
+        }
+        return zurueck;
+    }
+
     std::size_t kap, wkap;
     std::size_t reserviert = 0;
     std::deque<Eintrag> inhalt;
-    std::deque<std::string> wiederholung;
+    std::deque<Eintrag> wiederholung;
     std::uint64_t abgewiesenZaehler = 0;
 };
 
@@ -358,36 +412,50 @@ public:
             return false;
         }
         std::uint64_t p = schreib.load (std::memory_order_relaxed);
-        Slot* s = &slots[static_cast<std::size_t> (p % kSlots)];
+        Slot* s = nullptr;
 
         // Zuerst den Platz holen — VOR jeder Buchfuehrung. Wer den Boden
         // schon angehoben haette und dann nicht schreiben kann, haette einen
         // Frame zweimal verloren.
-        std::uint32_t erwartet = kFrei;
-        if (! s->beansprucht.compare_exchange_strong (erwartet, kErzeuger,
-                                                      std::memory_order_acq_rel,
-                                                      std::memory_order_relaxed))
+        //
+        // ── Warum GENUG Versuche, nicht zwei (Matrix `A-P2-04`) ───────────
+        //
+        // Die vorige Fassung versuchte `p` und dann `p+1`. Der Verbraucher
+        // haelt zwar hoechstens EINEN Platz — aber er kann ihn zwischen den
+        // beiden Versuchen wechseln: er gibt `p` frei und beansprucht `p+1`,
+        // und beide Versuche scheitern. Dann fiel der NEUESTE Frame, also
+        // genau die Umkehrung von "aeltesten ungesendeten Frame ersetzen"
+        // (§53.9). Unter Baulast trat der Fall wirklich ein und riss B10 mit
+        // "[2 neueste wegen fremden Anspruchs verworfen]" (NAK-98).
+        //
+        // Der Erzeuger geht deshalb den ganzen Ring ab, und das zweimal: bei
+        // drei Slots und einem Verbraucher, der je Runde hoechstens einen
+        // Platz haelt, ist danach garantiert einer frei. Die Schleife ist fest
+        // begrenzt — wartefrei bleibt wartefrei.
+        for (std::size_t versuch = 0; versuch < kSlots * 2; ++versuch, ++p)
         {
+            Slot* kandidat = &slots[static_cast<std::size_t> (p % kSlots)];
+            std::uint32_t erwartet = kFrei;
+            if (kandidat->beansprucht.compare_exchange_strong (erwartet, kErzeuger,
+                                                               std::memory_order_acq_rel,
+                                                               std::memory_order_relaxed))
+            {
+                s = kandidat;
+                break;
+            }
             // Der Verbraucher kopiert gerade daraus. Ein beanspruchter Slot
             // ist unveraenderlich — aber der NEUESTE Frame ist nicht der, der
-            // dafuer faellt (§53.9 "aeltesten ungesendeten Frame ersetzen").
-            // Position `p` wird deshalb zum Loch und der Frame geht in den
-            // naechsten Platz; der Verbraucher ueberspringt das Loch an der
-            // nicht passenden Folgenummer.
+            // dafuer faellt. Position `p` wird zum LOCH und der Frame geht in
+            // den naechsten Platz; der Verbraucher ueberspringt das Loch an
+            // der nicht passenden Folgenummer.
             kollisionsLoecherZaehler.fetch_add (1, std::memory_order_relaxed);
-            ++p;
-            s = &slots[static_cast<std::size_t> (p % kSlots)];
-            erwartet = kFrei;
-            if (! s->beansprucht.compare_exchange_strong (erwartet, kErzeuger,
-                                                          std::memory_order_acq_rel,
-                                                          std::memory_order_relaxed))
-            {
-                // Unerreichbar, solange es genau EINEN Verbraucher gibt: er
-                // haelt hoechstens einen Platz, und das war der vorige. Die
-                // Zahl ist der laufende Beleg dafuer — sie muss 0 bleiben.
-                beanspruchtVerworfenZaehler.fetch_add (1, std::memory_order_relaxed);
-                return false;
-            }
+        }
+        if (s == nullptr)
+        {
+            // Unerreichbar, solange es genau EINEN Verbraucher gibt. Die Zahl
+            // ist der laufende Beleg dafuer — sie muss 0 bleiben.
+            beanspruchtVerworfenZaehler.fetch_add (1, std::memory_order_relaxed);
+            return false;
         }
 
         // Der aelteste NOCH WARTENDE Frame ist der spaetere von "was der
@@ -490,6 +558,38 @@ public:
         return beanspruchtVerworfenZaehler.load (std::memory_order_relaxed);
     }
     std::size_t   slotGroesse()    const noexcept { return SlotBytes; }
+
+    /// ── Testhaken fuer die Slot-Kollision (Matrix `A-P2-04`) ─────────────
+    ///
+    /// Sie beanspruchen und geben einen Platz frei wie der Verbraucher es
+    /// tut. Der Kollisionsfall wird damit DETERMINISTISCH erzwungen, statt
+    /// unter Last erwartet: NAK-98 fiel genau deshalb nur sporadisch auf, und
+    /// eine Probe, die vom Zufall der Taktung abhaengt, ist kein Beweis.
+    ///
+    /// Sie sind kein toter Code und keine Hintertuer: sie benutzen dasselbe
+    /// Besitz-Atomic wie beide echten Seiten und koennen an der Politik nichts
+    /// aendern — ein beanspruchter Platz ist fuer JEDEN unveraenderlich.
+    bool testSlotBeanspruchen (std::uint64_t position) noexcept
+    {
+        std::uint32_t erwartet = kFrei;
+        return slots[static_cast<std::size_t> (position % kSlots)]
+            .beansprucht.compare_exchange_strong (erwartet, kVerbraucher,
+                                                  std::memory_order_acq_rel,
+                                                  std::memory_order_relaxed);
+    }
+
+    void testSlotFreigeben (std::uint64_t position) noexcept
+    {
+        slots[static_cast<std::size_t> (position % kSlots)]
+            .beansprucht.store (kFrei, std::memory_order_release);
+    }
+
+    /// Naechste Schreibposition — der Test muss wissen, WELCHEN Platz der
+    /// Erzeuger als naechstes nimmt, sonst beansprucht er den falschen.
+    std::uint64_t testSchreibstand() const noexcept
+    {
+        return schreib.load (std::memory_order_acquire);
+    }
 
 private:
     struct Slot

@@ -25,6 +25,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -76,6 +77,10 @@ public:
         /// Wie oft die Control-Verbindung neue Kopplungswerte hatte und diese
         /// Verbindung deshalb neu gekoppelt hat.
         std::uint64_t kopplungswechsel = 0;
+        /// Wie oft `stop()` den Clientthread ABGELOEST hat, statt ihn zu
+        /// joinen, weil ein Callback laenger als `kStopFristMs` stand
+        /// (Matrix `B-TC-07`). `stop()` kehrt trotzdem zurueck.
+        std::uint64_t stopFristUeberschritten = 0;
     };
 
     TelemetryClient (std::function<TelemetryHello()> helloProvider, std::string pipeName);
@@ -85,6 +90,13 @@ public:
     TelemetryClient& operator= (const TelemetryClient&) = delete;
 
     void start();
+
+    /// Kehrt IMMER zurueck (Matrix `B-TC-07`, `B-TC-09`, Regel 6) — in JEDEM
+    /// Zustand: `wartetAufKopplung`, `verbindend`, `verbunden` und
+    /// rueckstauend mit blockierendem P2-Write. Aus dem `helloProvider` heraus
+    /// ohne Self-Join, von aussen mit der Frist `kStopFristMs`; laeuft sie ab,
+    /// wird der Thread abgeloest und `Snapshot::stopFristUeberschritten`
+    /// waechst. Danach wird kein Callback mehr gerufen.
     void stop();
     void reconnect();
 
@@ -95,31 +107,14 @@ public:
     Snapshot snapshot() const;
 
 private:
-    void threadLauf();
-    bool eineVerbindung (std::uint64_t generation, const TelemetryHello& hello);
-    /// Leerlauf einer stehenden Verbindung: LIEST mit Frist, statt zu
-    /// schlafen. `false` ⇒ die Verbindung ist zu beenden (Pipe zu, Envelope
-    /// abgelehnt, falsche Familie oder Ratengrenze).
-    bool leerlaufLesen (StromLeser& leser, Ratengrenze& rate,
-                        std::chrono::steady_clock::time_point rateBeginn,
-                        std::uint64_t generation);
-    bool sollAbbrechen (std::uint64_t generation) const noexcept;
-
-    std::function<TelemetryHello()> helloProvider;
-    std::string pipeName;
-
-    IpcVerbindung verbindung;
-    P2Schleuse<8192> schleuse;
+    /// Wie beim `ControlClient`: alles, was der Clientthread anfasst, liegt
+    /// GETEILT hinter einem `shared_ptr`. Ein nach `kStopFristMs` abgeloester
+    /// Thread darf den Client danach nicht mehr beruehren.
+    struct Laufzeit;
+    std::shared_ptr<Laufzeit> k;
 
     std::mutex   lebenslaufMutex;
     std::thread  thread;
-    std::atomic<bool> laeuft { false };
-    std::atomic<std::uint64_t> verbindungsGeneration { 0 };
-    std::mutex   wartemutex;
-    std::condition_variable warte;
-
-    mutable std::mutex zustandMutex;
-    Snapshot zustand;
 };
 
 } // namespace nakama::ipc

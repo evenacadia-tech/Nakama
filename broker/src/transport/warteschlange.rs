@@ -78,25 +78,45 @@ pub enum P1Ergebnis {
     /// in der Reihenfolge bleibt, nur der Inhalt ist der neuere.
     Koalesziert,
     /// Kein Platz und nicht koaleszierbar: die Nachricht liegt jetzt im
-    /// Wiederholpuffer und geht nach dem naechsten Reconnect erneut raus.
+    /// Wiederholpuffer und fliesst wieder ab, sobald die Hauptqueue Platz hat
+    /// (Matrix `A-P1-04`, `A-P1-06`).
     ZurWiederholung,
-    /// Auch der Wiederholpuffer ist voll — die aelteste Wiederholung faellt.
-    /// Ehrlich gezaehlt, nie still.
-    WiederholungVerdraengt,
+    /// Hauptqueue UND Wiederholpuffer voll: der NEUZUGANG wird abgewiesen,
+    /// gezaehlt, nie still. Was einmal angenommen wurde, bleibt angenommen
+    /// (Matrix `A-P1-05`, Regel 3 des Konvergenzentscheids).
+    Abgewiesen,
 }
 
 /// P1-Queue: Snapshots koaleszieren nach Objektschluessel, Ereignisse nicht.
 ///
 /// Der Wiederholpuffer ist die CLIENT-Haelfte des Outbox-Gedankens aus §53.9.
 /// Die eigentliche Outbox im Broker ist SONDE-011; hier liegt nur, was ueber
-/// einen Reconnect hinweg erneut gesendet werden muss.
+/// einen Rueckstau hinweg erneut gesendet werden muss.
+///
+/// ── Warum der Wiederholpuffer SCHLUESSEL traegt (Matrix `A-P1-03`) ─────────
+///
+/// Die erste Fassung legte nur die Nachricht ab. Damit verlor ein Snapshot im
+/// Wiederholpuffer seine Objektidentitaet: ein neuerer Snapshot desselben
+/// Objekts fand nichts zum Koaleszieren, wurde abgewiesen, und nach dem
+/// Abfluss erschien der ALTE als schluessellsoses Ereignis. §53.9 sagt
+/// „Snapshots nach Objektschluessel koaleszieren" ohne Ausnahme fuer
+/// Zwischenpuffer — der Schluessel ueberlebt deshalb jeden Puffer.
+///
+/// ── Warum ein voller Wiederholpuffer den NEUZUGANG abweist (Regel 3) ───────
+///
+/// Die erste Fassung machte mit `pop_front()` Platz und loeschte damit ein
+/// bereits ANGENOMMENES Ereignis — bei Kapazitaet 2/2 und den Ereignissen 1…5
+/// genau die Nr. 3. §53.9 verlangt fuer P1 „nicht koaleszierbare Events bei
+/// Ueberlauf ueber Reconnect/Outbox WIEDERHOLEN", nicht verdraengen. Eine
+/// Annahme, die spaeter still zurueckgenommen wird, ist keine Annahme. Die
+/// C++-Haelfte hat das seit NAK-92 so; hier war es offen (NAK-95, Befund 3).
 #[derive(Debug)]
 pub struct P1Warteschlange<T> {
     kapazitaet: usize,
     wiederhol_kapazitaet: usize,
     inhalt: VecDeque<(Option<String>, T)>,
-    wiederholung: VecDeque<T>,
-    verdraengte_wiederholungen: u64,
+    wiederholung: VecDeque<(Option<String>, T)>,
+    abgewiesene: u64,
 }
 
 impl<T> P1Warteschlange<T> {
@@ -110,7 +130,7 @@ impl<T> P1Warteschlange<T> {
             wiederhol_kapazitaet,
             inhalt: VecDeque::with_capacity(kapazitaet),
             wiederholung: VecDeque::new(),
-            verdraengte_wiederholungen: 0,
+            abgewiesene: 0,
         }
     }
 
@@ -126,54 +146,86 @@ impl<T> P1Warteschlange<T> {
         self.wiederholung.len()
     }
 
-    pub fn verdraengte_wiederholungen(&self) -> u64 {
-        self.verdraengte_wiederholungen
+    /// Wie viele NEUE Nachrichten abgewiesen wurden, weil Hauptqueue UND
+    /// Wiederholpuffer voll waren. Angenommenes wird nie mitgezaehlt, weil
+    /// Angenommenes nie faellt.
+    pub fn abgewiesene(&self) -> u64 {
+        self.abgewiesene
     }
 
-    /// `schluessel = Some(...)` markiert einen Snapshot: er ersetzt einen
-    /// aelteren Snapshot desselben Objekts. `None` ist ein Ereignis und wird
-    /// nie ueberschrieben.
-    pub fn einreihen(&mut self, schluessel: Option<String>, wert: T) -> P1Ergebnis {
-        if let Some(ref s) = schluessel {
-            if let Some(platz) = self.inhalt.iter_mut().find(|(k, _)| k.as_deref() == Some(s)) {
-                platz.1 = wert;
-                return P1Ergebnis::Koalesziert;
-            }
-        }
-        if self.inhalt.len() < self.kapazitaet {
-            self.inhalt.push_back((schluessel, wert));
-            return P1Ergebnis::Eingereiht;
-        }
-        // Voll und nicht koaleszierbar.
-        if self.wiederholung.len() >= self.wiederhol_kapazitaet {
-            self.wiederholung.pop_front();
-            self.wiederholung.push_back(wert);
-            self.verdraengte_wiederholungen += 1;
-            return P1Ergebnis::WiederholungVerdraengt;
-        }
-        self.wiederholung.push_back(wert);
-        P1Ergebnis::ZurWiederholung
-    }
-
-    pub fn entnehmen(&mut self) -> Option<T> {
-        self.inhalt.pop_front().map(|(_, w)| w)
-    }
-
-    /// Nach einem Reconnect: die vorgehaltenen Ereignisse wandern VOR den
-    /// laufenden Verkehr zurueck in die Queue, soweit Platz ist. Was nicht
-    /// passt, bleibt im Wiederholpuffer und kommt beim naechsten Mal.
-    pub fn nach_reconnect_wiederholen(&mut self) -> usize {
+    /// Abfluss des Wiederholpuffers OHNE Reconnect (Matrix `A-P1-06`,
+    /// Regel 1). Er laeuft an jeder Stelle, an der Platz entsteht, und an
+    /// jedem `einreihen` VOR dem Urteil ueber den Neuzugang — damit gilt die
+    /// Annahmereihenfolge ueber beide Puffer hinweg und ein Neuzugang
+    /// ueberholt nie eine bereits angenommene Wiederholung.
+    ///
+    /// Die aelteste Wiederholung zuerst, ans ENDE der Hauptqueue: alles, was
+    /// dort steht, wurde vor ihr angenommen, alles Spaetere kann wegen
+    /// `A-P1-07` gar nicht dort stehen.
+    fn abfliessen(&mut self) -> usize {
         let mut zurueck = 0usize;
         while self.inhalt.len() < self.kapazitaet {
-            match self.wiederholung.pop_back() {
-                Some(w) => {
-                    self.inhalt.push_front((None, w));
+            match self.wiederholung.pop_front() {
+                Some(e) => {
+                    self.inhalt.push_back(e);
                     zurueck += 1;
                 }
                 None => break,
             }
         }
         zurueck
+    }
+
+    /// `schluessel = Some(...)` markiert einen Snapshot: er ersetzt einen
+    /// aelteren Snapshot desselben Objekts — auch einen im Wiederholpuffer.
+    /// `None` ist ein Ereignis und wird nie ueberschrieben.
+    pub fn einreihen(&mut self, schluessel: Option<String>, wert: T) -> P1Ergebnis {
+        if let Some(ref s) = schluessel {
+            if let Some(platz) = self.inhalt.iter_mut().find(|(k, _)| k.as_deref() == Some(s)) {
+                platz.1 = wert;
+                return P1Ergebnis::Koalesziert;
+            }
+            // `A-P1-03`: derselbe Schluessel im Wiederholpuffer koalesziert
+            // DORT, an seiner Position. Ohne diesen Zweig waere der neuere
+            // Snapshot abgewiesen worden, waehrend der aeltere vorgehalten
+            // bleibt — die Umkehrung der Zusage aus §53.9.
+            if let Some(platz) = self
+                .wiederholung
+                .iter_mut()
+                .find(|(k, _)| k.as_deref() == Some(s))
+            {
+                platz.1 = wert;
+                return P1Ergebnis::Koalesziert;
+            }
+        }
+        self.abfliessen(); // `A-P1-07`: Wiederholungen vor jedem Neuzugang
+        if self.inhalt.len() < self.kapazitaet {
+            self.inhalt.push_back((schluessel, wert));
+            return P1Ergebnis::Eingereiht;
+        }
+        // Voll und nicht koaleszierbar.
+        if self.wiederholung.len() >= self.wiederhol_kapazitaet {
+            // Voll heisst: abweisen. Kein `pop_front()` — das loeschte ein
+            // bereits angenommenes Ereignis (Regel 3).
+            self.abgewiesene += 1;
+            return P1Ergebnis::Abgewiesen;
+        }
+        self.wiederholung.push_back((schluessel, wert));
+        P1Ergebnis::ZurWiederholung
+    }
+
+    pub fn entnehmen(&mut self) -> Option<T> {
+        let e = self.inhalt.pop_front();
+        self.abfliessen(); // `A-P1-06`: der frei gewordene Platz wird sofort genutzt
+        e.map(|(_, w)| w)
+    }
+
+    /// Nach einem Reconnect: derselbe Abfluss wie im laufenden Betrieb
+    /// (Matrix `A-P1-11` ist der Sonderfall von `A-P1-06`). Normalerweise ist
+    /// der Puffer hier schon leer; die Funktion bleibt, weil der Reconnect der
+    /// vom Entwurf ausdruecklich genannte Wiederholweg ist.
+    pub fn nach_reconnect_wiederholen(&mut self) -> usize {
+        self.abfliessen()
     }
 }
 
@@ -239,10 +291,11 @@ pub enum IngressErgebnis {
     Eingereiht,
     /// Platz geschaffen, indem der aelteste P2-Frame gefallen ist.
     P2Verworfen,
-    /// P0 laeuft ueber und es gab kein P2 zum Verwerfen ⇒ Client trennen.
+    /// P0 ODER P1 laeuft ueber und es gab kein P2 zum Verwerfen ⇒ Client
+    /// trennen (Matrix `A-IN-03`, `A-IN-04`).
     ClientTrennen,
-    /// P1/P2 laeuft ueber und es gab kein P2 zum Verwerfen ⇒ diese
-    /// Nachricht faellt. P1 wird dabei gezaehlt, nie still verschluckt.
+    /// P2 laeuft ueber und es gab kein P2 zum Verwerfen ⇒ dieser Frame
+    /// faellt. P2 ist per Vertrag verlusttolerant (§33.1).
     Verworfen,
 }
 
@@ -253,7 +306,7 @@ pub struct IngressWarteschlange<T> {
     kapazitaet: usize,
     inhalt: VecDeque<(Familie, T)>,
     p2_verworfen: u64,
-    p1_verworfen: u64,
+    p1_ueberlauf_trennt: u64,
 }
 
 impl<T> IngressWarteschlange<T> {
@@ -266,7 +319,7 @@ impl<T> IngressWarteschlange<T> {
             kapazitaet,
             inhalt: VecDeque::with_capacity(kapazitaet),
             p2_verworfen: 0,
-            p1_verworfen: 0,
+            p1_ueberlauf_trennt: 0,
         }
     }
 
@@ -282,8 +335,11 @@ impl<T> IngressWarteschlange<T> {
         self.p2_verworfen
     }
 
-    pub fn p1_verworfen(&self) -> u64 {
-        self.p1_verworfen
+    /// Wie oft ein P1-Ueberlauf ohne P2 zum Verwerfen die Verbindung getrennt
+    /// hat (Matrix `A-IN-04`). Ein stilles Verwerfen bei gesund wirkender
+    /// Verbindung gibt es nicht: der Sender koennte sonst nicht wiederholen.
+    pub fn p1_ueberlauf_trennt(&self) -> u64 {
+        self.p1_ueberlauf_trennt
     }
 
     fn aeltesten_p2_verwerfen(&mut self) -> bool {
@@ -306,9 +362,14 @@ impl<T> IngressWarteschlange<T> {
         }
         match familie {
             Familie::P0 => IngressErgebnis::ClientTrennen,
+            // `A-IN-04`: P1 faellt NICHT still. §53.9 sagt fuer P1
+            // „ueber Reconnect/Outbox wiederholen"; ein Verwerfen bei offener,
+            // gesund wirkender Verbindung nimmt dem Sender genau diesen Weg.
+            // Die Ingresszeile von §53.9 schweigt zu P1, deshalb gilt hier die
+            // Regel des Dirigenten: trennen wie bei P0.
             Familie::P1 => {
-                self.p1_verworfen += 1;
-                IngressErgebnis::Verworfen
+                self.p1_ueberlauf_trennt += 1;
+                IngressErgebnis::ClientTrennen
             }
             Familie::P2 => {
                 self.p2_verworfen += 1;
@@ -319,6 +380,21 @@ impl<T> IngressWarteschlange<T> {
 
     pub fn entnehmen(&mut self) -> Option<(Familie, T)> {
         self.inhalt.pop_front()
+    }
+
+    /// Nur P0, aelteste zuerst. Der Listener bedient P0 auf einem EIGENEN
+    /// Verbraucherthread (Matrix `C-LS-07`): eine Senke, die in `p1` steht,
+    /// darf die Antwort auf einen bereits eingereihten P0-Frame nicht
+    /// aufhalten — genau das ist die Rust-Haelfte von „ohne P0-Starvation".
+    pub fn entnehmen_p0(&mut self) -> Option<(Familie, T)> {
+        let pos = self.inhalt.iter().position(|(f, _)| *f == Familie::P0)?;
+        self.inhalt.remove(pos)
+    }
+
+    /// Alles ausser P0, aelteste zuerst. Gegenstueck zu `entnehmen_p0`.
+    pub fn entnehmen_ohne_p0(&mut self) -> Option<(Familie, T)> {
+        let pos = self.inhalt.iter().position(|(f, _)| *f != Familie::P0)?;
+        self.inhalt.remove(pos)
     }
 }
 
@@ -355,6 +431,9 @@ mod tests {
         assert_eq!(q.entnehmen(), Some("b1"));
     }
 
+    /// Regel 3 (Matrix `A-P1-05`): voll heisst abweisen des NEUZUGANGS, nie
+    /// Loeschen von Akzeptiertem. Die alte Fassung schrieb hier den Verlust
+    /// der Nr. 3 fest — der Test kodifizierte den Fehler (NAK-95, Befund 3).
     #[test]
     fn p1_haelt_ereignisse_fuer_den_reconnect_vor() {
         let mut q: P1Warteschlange<u32> = P1Warteschlange::mit_kapazitaet(2, 2);
@@ -362,17 +441,73 @@ mod tests {
         assert_eq!(q.einreihen(None, 2), P1Ergebnis::Eingereiht);
         assert_eq!(q.einreihen(None, 3), P1Ergebnis::ZurWiederholung);
         assert_eq!(q.einreihen(None, 4), P1Ergebnis::ZurWiederholung);
-        assert_eq!(q.einreihen(None, 5), P1Ergebnis::WiederholungVerdraengt);
-        assert_eq!(q.verdraengte_wiederholungen(), 1);
-        assert_eq!(q.wiederholungen(), 2);
+        assert_eq!(q.einreihen(None, 5), P1Ergebnis::Abgewiesen);
+        assert_eq!(q.abgewiesene(), 1);
+        assert_eq!(q.wiederholungen(), 2, "3 und 4 bleiben angenommen");
 
-        // Queue leeren (Verbindung hat gesendet), dann Reconnect.
+        // Senden: jeder frei werdende Platz zieht sofort eine Wiederholung
+        // nach (`A-P1-06`) — ein Reconnect ist dafuer nicht noetig.
         assert_eq!(q.entnehmen(), Some(1));
         assert_eq!(q.entnehmen(), Some(2));
-        assert_eq!(q.nach_reconnect_wiederholen(), 2);
+        assert_eq!(q.wiederholungen(), 0, "der Puffer floss ohne Reconnect ab");
+        assert_eq!(q.nach_reconnect_wiederholen(), 0);
+        assert_eq!(q.entnehmen(), Some(3), "JEDES angenommene Ereignis kommt an");
         assert_eq!(q.entnehmen(), Some(4));
-        assert_eq!(q.entnehmen(), Some(5));
+        assert_eq!(q.entnehmen(), None);
+    }
+
+    /// Matrix `A-P1-06` / Regel 1: der Wiederholpuffer hat einen Abflussweg
+    /// OHNE Reconnect. „Nur beim Verbindungsaufbau leeren" ist ein Befund.
+    #[test]
+    fn p1_wiederholpuffer_fliesst_ohne_reconnect_ab() {
+        let mut q: P1Warteschlange<u32> = P1Warteschlange::mit_kapazitaet(1, 4);
+        assert_eq!(q.einreihen(None, 1), P1Ergebnis::Eingereiht);
+        assert_eq!(q.einreihen(None, 2), P1Ergebnis::ZurWiederholung);
+        assert_eq!(q.einreihen(None, 3), P1Ergebnis::ZurWiederholung);
+        assert_eq!(q.wiederholungen(), 2);
+
+        // Ein einziges Senden — ohne jeden Reconnect.
+        assert_eq!(q.entnehmen(), Some(1));
+        assert_eq!(q.wiederholungen(), 1, "genau eine Wiederholung ist nachgerueckt");
+        assert_eq!(q.len(), 1);
+        assert_eq!(q.entnehmen(), Some(2), "und zwar die AELTESTE zuerst");
+        assert_eq!(q.entnehmen(), Some(3));
         assert_eq!(q.wiederholungen(), 0);
+    }
+
+    /// Matrix `A-P1-07` / Regel 1: ein Neuzugang ueberholt nie eine bereits
+    /// angenommene Wiederholung. Die Annahmereihenfolge gilt ueber beide
+    /// Puffer hinweg.
+    #[test]
+    fn p1_neuzugang_ueberholt_keine_wiederholung() {
+        let mut q: P1Warteschlange<u32> = P1Warteschlange::mit_kapazitaet(1, 4);
+        assert_eq!(q.einreihen(None, 1), P1Ergebnis::Eingereiht);
+        assert_eq!(q.einreihen(None, 2), P1Ergebnis::ZurWiederholung);
+        assert_eq!(q.entnehmen(), Some(1)); // Platz frei, 2 rueckt nach
+        // Jetzt kommt ein NEUES Ereignis. Es darf sich nicht vor die 2 setzen.
+        assert_eq!(q.einreihen(None, 3), P1Ergebnis::ZurWiederholung);
+        assert_eq!(q.entnehmen(), Some(2));
+        assert_eq!(q.entnehmen(), Some(3));
+        assert_eq!(q.entnehmen(), None);
+    }
+
+    /// Matrix `A-P1-03` / Regel 2: der Objektschluessel ueberlebt den
+    /// Wiederholpuffer, und Koaleszierung gilt auch dort.
+    #[test]
+    fn p1_wiederholpuffer_haelt_den_schluessel() {
+        let mut q: P1Warteschlange<&str> = P1Warteschlange::mit_kapazitaet(1, 2);
+        // Ein fremder Eintrag haelt die Hauptqueue belegt.
+        assert_eq!(q.einreihen(None, "fremd"), P1Ergebnis::Eingereiht);
+        assert_eq!(q.einreihen(Some("k".into()), "alt"), P1Ergebnis::ZurWiederholung);
+        // Der NEUERE Snapshot desselben Objekts koalesziert im Puffer, statt
+        // abgewiesen zu werden.
+        assert_eq!(q.einreihen(Some("k".into()), "neu"), P1Ergebnis::Koalesziert);
+        assert_eq!(q.wiederholungen(), 1, "Koaleszieren waechst den Puffer nicht");
+        assert_eq!(q.abgewiesene(), 0, "Koaleszieren ist kein Ueberlauf");
+
+        assert_eq!(q.entnehmen(), Some("fremd"));
+        assert_eq!(q.entnehmen(), Some("neu"), "der aeltere ist ersetzt, nicht der neuere");
+        assert_eq!(q.entnehmen(), None);
     }
 
     #[test]
@@ -400,9 +535,44 @@ mod tests {
         assert_eq!(q.einreihen(Familie::P0, 6), IngressErgebnis::P2Verworfen);
         // Jetzt liegt kein P2 mehr drin — ein weiterer P0 trennt.
         assert_eq!(q.einreihen(Familie::P0, 7), IngressErgebnis::ClientTrennen);
-        // P1 in derselben Lage faellt gezaehlt, ohne die Verbindung zu toeten.
-        assert_eq!(q.einreihen(Familie::P1, 8), IngressErgebnis::Verworfen);
-        assert_eq!(q.p1_verworfen(), 1);
+    }
+
+    /// Matrix `A-IN-04`: P1 faellt bei vollem Ingress ohne P2 NICHT still —
+    /// die Verbindung wird getrennt wie bei P0. Ein stiller Verlust bei
+    /// gesund wirkender Verbindung naehme dem Sender den Wiederholweg aus
+    /// §53.9 („ueber Reconnect/Outbox wiederholen").
+    #[test]
+    fn ingress_voll_ohne_p2_trennt_auch_bei_p1() {
+        let mut q: IngressWarteschlange<u32> = IngressWarteschlange::mit_kapazitaet(2);
+        assert_eq!(q.einreihen(Familie::P1, 1), IngressErgebnis::Eingereiht);
+        assert_eq!(q.einreihen(Familie::P0, 2), IngressErgebnis::Eingereiht);
+        // Voll, kein P2 zum Verwerfen: P1 trennt, genau wie P0.
+        assert_eq!(q.einreihen(Familie::P1, 3), IngressErgebnis::ClientTrennen);
+        assert_eq!(q.p1_ueberlauf_trennt(), 1);
+        assert_eq!(q.einreihen(Familie::P0, 4), IngressErgebnis::ClientTrennen);
+        // Und nichts Angenommenes ist dabei verschwunden.
+        assert_eq!(q.len(), 2);
+        assert_eq!(q.entnehmen(), Some((Familie::P1, 1)));
+        assert_eq!(q.entnehmen(), Some((Familie::P0, 2)));
+    }
+
+    /// Matrix `C-LS-07`: der Listener holt P0 auf einem eigenen Thread ab.
+    /// Beide Sichten entnehmen aelteste zuerst und stehlen einander nichts.
+    #[test]
+    fn ingress_liefert_p0_getrennt_vom_rest() {
+        let mut q: IngressWarteschlange<u32> = IngressWarteschlange::mit_kapazitaet(8);
+        q.einreihen(Familie::P1, 1);
+        q.einreihen(Familie::P2, 2);
+        q.einreihen(Familie::P0, 3);
+        q.einreihen(Familie::P1, 4);
+        q.einreihen(Familie::P0, 5);
+        assert_eq!(q.entnehmen_p0(), Some((Familie::P0, 3)));
+        assert_eq!(q.entnehmen_ohne_p0(), Some((Familie::P1, 1)));
+        assert_eq!(q.entnehmen_p0(), Some((Familie::P0, 5)));
+        assert_eq!(q.entnehmen_p0(), None);
+        assert_eq!(q.entnehmen_ohne_p0(), Some((Familie::P2, 2)));
+        assert_eq!(q.entnehmen_ohne_p0(), Some((Familie::P1, 4)));
+        assert_eq!(q.entnehmen_ohne_p0(), None);
     }
 
     /// Der Kern des Gate-Textes: eine P2-Flut darf P0 nicht aushungern.

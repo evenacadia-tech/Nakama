@@ -48,7 +48,7 @@
 //! `FILE_FLAG_FIRST_PIPE_INSTANCE` wie beim v2-Server — die Helfer kommen aus
 //! `server.rs`, damit es nur EINE Wahrheit ueber die Pipe-Sicherheit gibt.
 
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
@@ -76,7 +76,7 @@ use crate::transport::bootstrap::{
 use crate::transport::v3::{
     envelope_schreiben, Familie, LeseErgebnis, Ratengrenze, StromLeser, MAX_FRAME_BYTES,
 };
-use crate::transport::warteschlange::{IngressErgebnis, IngressWarteschlange};
+use crate::transport::warteschlange::{IngressErgebnis, IngressWarteschlange, CAP_INGRESS};
 
 /// Hoechstens so viele gleichzeitige Verbindungen. Zwei je Instanz (Control +
 /// Telemetry) mal 32 Sonden plus Reserve.
@@ -370,7 +370,10 @@ impl Eingang {
             let mut g = self.inhalt.lock().unwrap_or_else(|x| x.into_inner());
             g.0.einreihen(familie, (familie, payload))
         };
-        self.signal.notify_one();
+        // `notify_all`, weil ZWEI Verbraucher warten (P0 und der Rest). Ein
+        // `notify_one` koennte den falschen wecken; der P0-Thread schliefe
+        // dann bis zum Wecktakt, obwohl seine Antwort schon anliegt.
+        self.signal.notify_all();
         e
     }
 
@@ -381,13 +384,31 @@ impl Eingang {
     /// eine Verbindung, deren Kopplung schon abgemeldet war. Die Frames
     /// gehoeren zu einer Sitzung, die es nicht mehr gibt; sie fallen mit ihr
     /// (T2-Befund 4 Runde 3 vom 2026-08-29).
-    fn entnehmen(&self) -> Option<(Familie, Vec<u8>)> {
+    /// Nur P0. Der P0-Verbraucher laeuft auf einem EIGENEN Thread
+    /// (Matrix `C-LS-07`): steht die Senke in `p1`, muss ein bereits
+    /// eingereihter P0-Frame trotzdem beantwortet werden — sonst haengt der
+    /// Antwortweg hinter fremdem Code, und genau das ist P0-Starvation.
+    fn entnehmen_p0(&self) -> Option<(Familie, Vec<u8>)> {
+        self.entnehmen_nach(true)
+    }
+
+    /// Alles ausser P0. Gegenstueck zu `entnehmen_p0`.
+    fn entnehmen_ohne_p0(&self) -> Option<(Familie, Vec<u8>)> {
+        self.entnehmen_nach(false)
+    }
+
+    fn entnehmen_nach(&self, p0: bool) -> Option<(Familie, Vec<u8>)> {
         let mut g = self.inhalt.lock().unwrap_or_else(|x| x.into_inner());
         loop {
             if g.1 {
                 return None;
             }
-            if let Some((_, wert)) = g.0.entnehmen() {
+            let treffer = if p0 {
+                g.0.entnehmen_p0()
+            } else {
+                g.0.entnehmen_ohne_p0()
+            };
+            if let Some((_, wert)) = treffer {
                 return Some(wert);
             }
             let (neu, _) = self
@@ -519,7 +540,11 @@ pub struct V3Statistik {
     /// darueber spraeche dann ueber nichts.
     pub acceptor_wartet_auf_instanz: AtomicU64,
     pub ingress_p2_verworfen: AtomicU64,
-    pub ingress_p1_verworfen: AtomicU64,
+    /// Wie oft ein P1-Ueberlauf ohne P2 zum Verwerfen die Verbindung getrennt
+    /// hat (Matrix `A-IN-04`). P1 faellt nie still: §53.9 gibt ihm den
+    /// Wiederholweg ueber Reconnect/Outbox, und den nimmt ihm ein stiller
+    /// Verlust bei offener Verbindung.
+    pub ingress_p1_ueberlauf_trennt: AtomicU64,
     /// Hoechststand der Ingressqueue ueber alle Verbindungen. Er ist der
     /// Beleg, dass der Leser nicht am ersten Frame haengt.
     pub ingress_hoechststand: AtomicU64,
@@ -540,6 +565,11 @@ pub struct V3Statistik {
     /// abgeloesten Aufruf schweigt die Verbindung gegenueber ihrer Senke,
     /// statt neben dem haengenden Aufruf in falscher Reihenfolge weiterzureden.
     pub lebenszyklus_uebersprungen: AtomicU64,
+    /// Wie oft die Control-Seite ihr `control_getrennt` melden musste, OHNE
+    /// dass das `telemetrie_getrennt` der Gegenseite binnen `SENKE_FRIST` kam
+    /// (Matrix `C-LS-06`). Die Meldung faellt nie aus — sie ist dann nur
+    /// nicht mehr geordnet, und genau das steht hier.
+    pub lebenszyklus_reihenfolge_verletzt: AtomicU64,
 }
 
 impl V3Statistik {
@@ -863,6 +893,8 @@ fn v3_server_starten_intern(
     let bootstraps: Arc<Mutex<Vec<(u64, Instant)>>> = Arc::new(Mutex::new(Vec::new()));
     let statistik = Arc::new(V3Statistik::default());
     let kopplungen = Arc::new(Mutex::new(Kopplungen::neu()));
+    // Wartepunkte der Trennreihenfolge, einer je lebender Kopplung (`C-LS-06`).
+    let trennmelder: TrennRegister = Arc::new(Mutex::new(HashMap::new()));
     let broker_epoch = neue_kennung();
 
     let mut name_w: Vec<u16> = pipe_name.encode_utf16().collect();
@@ -937,6 +969,7 @@ fn v3_server_starten_intern(
     let handles2 = handles.clone();
     let bootstraps2 = bootstraps.clone();
     let statistik2 = statistik.clone();
+    let trennmelder2 = trennmelder.clone();
     let acceptor = std::thread::Builder::new()
         .name("eqcop-v3-acceptor".into())
         .spawn(move || {
@@ -1008,6 +1041,7 @@ fn v3_server_starten_intern(
 
                 let senke = senke.clone();
                 let kopplungen = kopplungen.clone();
+                let trennmelder = trennmelder2.clone();
                 let handles = handles2.clone();
                 let bootstraps = bootstraps2.clone();
                 let statistik = statistik2.clone();
@@ -1025,8 +1059,8 @@ fn v3_server_starten_intern(
                             std::thread::sleep(Duration::from_millis(ms));
                         }
                         verbindung_bedienen(
-                            id, griff, senke, kopplungen, handles, bootstraps, statistik, bv, be,
-                            conn_stop, handle_eintrag,
+                            id, griff, senke, kopplungen, trennmelder, handles, bootstraps,
+                            statistik, bv, be, conn_stop, handle_eintrag,
                         );
                     }) {
                     Ok(j) => verbindungen2.lock().unwrap_or_else(|e| e.into_inner()).push(j),
@@ -1120,6 +1154,7 @@ fn verbindung_bedienen(
     griff: Arc<Verbindungsgriff>,
     senke: Arc<dyn Senke>,
     kopplungen: Arc<Mutex<Kopplungen>>,
+    trennmelder: TrennRegister,
     handles: Arc<Mutex<HandleRegister>>,
     bootstraps: Arc<Mutex<Vec<(u64, Instant)>>>,
     statistik: Arc<V3Statistik>,
@@ -1230,6 +1265,37 @@ fn verbindung_bedienen(
                     return;
                 }
             }
+            // `C-LS-02` (Regel 5): `control_verbunden` ist ABGESCHLOSSEN,
+            // bevor das Welcome den Draht verlaesst. Vorher lief es umgekehrt —
+            // der Peer bekam sein Welcome, koppelte seine Telemetrieverbindung,
+            // und `telemetrie_gekoppelt` erreichte die Senke auf dem anderen
+            // Verbindungsthread VOR `control_verbunden`. Die Senke sah den
+            // zweiten Teilnehmer einer Kopplung, die sie noch nicht kannte, und
+            // `telemetrie_gekoppelt` traegt nur die `link_id` — den fehlenden
+            // Kontext konnte sie nicht rekonstruieren (NAK-95, Befund 5).
+            //
+            // Kommt die Senke nicht binnen `SENKE_FRIST` zurueck, wird der
+            // Aufruf abgeloest; dann verlaesst KEIN Welcome den Draht und diese
+            // Verbindung endet (`C-LS-03`). Der Abbau laeuft ueber
+            // `kopplung_loesen`, nicht ueber ein blosses `control_abmelden`:
+            // die Kopplung steht schon im Register und muss ganz fallen.
+            //
+            // Ein `control_getrennt` folgt hier bewusst NICHT: der abgeloeste
+            // `control_verbunden` steht noch; ein Gegenstueck davor waere eine
+            // Luege ueber die Reihenfolge. Die Senke sieht ihren Verbindungs-
+            // beginn also ohne Ende — sichtbar an `lebenszyklus_abgeloest`.
+            let link_fuer_senke = link.clone();
+            let hello_fuer_senke = (*h).clone();
+            if !senkenruf.rufen(move |s| {
+                s.control_verbunden(&link_fuer_senke, &hello_fuer_senke)
+            }) {
+                kopplung_loesen(&kopplungen, &handles, &link, true);
+                return;
+            }
+            // Ab jetzt kann eine Telemetrieverbindung koppeln; ihr
+            // `telemetrie_getrennt` erwartet diese Seite beim Abbau.
+            trennmelder_anlegen(&trennmelder, &link);
+
             let welcome = Welcome {
                 typ: "welcome".into(),
                 protocol: 3,
@@ -1245,36 +1311,16 @@ fn verbindung_bedienen(
             match envelope_schreiben(Familie::P0, 0, &payload) {
                 Ok(frame) => {
                     if !ov_schreiben(griff.h, leseereignis.roh(), &frame) {
-                        let mut k = kopplungen.lock().unwrap_or_else(|e| e.into_inner());
-                        k.control_abmelden(&link);
+                        kopplung_loesen(&kopplungen, &handles, &link, true);
+                        melden_getrennt(&mut senkenruf, &link, true);
+                        trennmelder
+                            .lock()
+                            .unwrap_or_else(|e| e.into_inner())
+                            .remove(&link);
                         return;
                     }
                 }
                 Err(_) => return,
-            }
-            // Kommt die Senke hier nicht binnen Frist zurueck, wird der
-            // Aufruf abgeloest — und diese Verbindung endet, statt bedient zu
-            // werden: eine Senke, die den Verbindungsbeginn nicht annehmen
-            // kann, wird auch ihre Frames nicht annehmen. Der Platz wird
-            // sofort frei, statt bis zum Stop belegt zu bleiben.
-            //
-            // Der Abbau laeuft ueber `kopplung_loesen`, nicht ueber ein blosses
-            // `control_abmelden`: der Peer hat sein `welcome` schon, und in den
-            // bis zu `SENKE_FRIST` kann er die Telemetrieverbindung bereits
-            // gekoppelt haben. Sie faellt mit — sonst bliebe genau die halb
-            // offene Kopplung stehen, die Runde 1 geschlossen hat.
-            //
-            // Ein `control_getrennt` folgt hier bewusst NICHT: der abgeloeste
-            // `control_verbunden` steht noch; ein Gegenstueck davor waere eine
-            // Luege ueber die Reihenfolge. Die Senke sieht ihren Verbindungs-
-            // beginn also ohne Ende — sichtbar an `lebenszyklus_abgeloest`.
-            let link_fuer_senke = link.clone();
-            let hello_fuer_senke = (*h).clone();
-            if !senkenruf.rufen(move |s| {
-                s.control_verbunden(&link_fuer_senke, &hello_fuer_senke)
-            }) {
-                kopplung_loesen(&kopplungen, &handles, &link, true);
-                return;
             }
             (link, true)
         }
@@ -1340,7 +1386,13 @@ fn verbindung_bedienen(
             .ok()
     };
 
-    let verbraucher = {
+    // ZWEI Verbraucher, nicht einer (Matrix `C-LS-07`, Regel 4 auf der
+    // Rust-Seite). Mit einem einzigen Thread stand jeder eingereihte P0-Frame
+    // hinter einer Senke, die gerade in `p1` blockiert — die Antwort kam erst,
+    // wenn fremder Code zurueckkehrte. Das ist P0-Starvation, gleich wie
+    // schnell der Leser ist. Die Ingressqueue selbst bleibt EINE Queue mit
+    // Cap 256 und der Politik aus §53.9; nur die Sicht darauf ist getrennt.
+    let verbraucher_p0 = {
         let senke = senke.clone();
         let eingang = eingang.clone();
         let ausgang = ausgang.clone();
@@ -1349,30 +1401,43 @@ fn verbindung_bedienen(
         let ende = ende.clone();
         let link = link_id.clone();
         std::thread::Builder::new()
-            .name("eqcop-v3-ingress".into())
+            .name("eqcop-v3-ingress-p0".into())
             .spawn(move || {
-                while let Some((familie, payload)) = eingang.entnehmen() {
-                    match familie {
-                        Familie::P0 => {
-                            if let Some(antwort) = senke.p0(&link, &payload) {
-                                if let Ok(frame) = envelope_schreiben(Familie::P0, 0, &antwort) {
-                                    if !ausgang.einreihen(frame) {
-                                        // Der Peer holt seine Antworten nicht
-                                        // ab. Still weiterzaehlen waere eine
-                                        // Luege ueber "nichts verwerfen".
-                                        statistik
-                                            .geschlossen_writer
-                                            .fetch_add(1, Ordering::SeqCst);
-                                        senke.abgewiesen("writer: Antwortqueue laeuft ueber");
-                                        ende.store(true, Ordering::SeqCst);
-                                        io_abbrechen(&handles, id);
-                                        break;
-                                    }
-                                }
+                while let Some((_, payload)) = eingang.entnehmen_p0() {
+                    if let Some(antwort) = senke.p0(&link, &payload) {
+                        if let Ok(frame) = envelope_schreiben(Familie::P0, 0, &antwort) {
+                            if !ausgang.einreihen(frame) {
+                                // Der Peer holt seine Antworten nicht ab.
+                                // Still weiterzaehlen waere eine Luege ueber
+                                // "nichts verwerfen".
+                                statistik.geschlossen_writer.fetch_add(1, Ordering::SeqCst);
+                                senke.abgewiesen("writer: Antwortqueue laeuft ueber");
+                                ende.store(true, Ordering::SeqCst);
+                                io_abbrechen(&handles, id);
+                                break;
                             }
                         }
+                    }
+                }
+            })
+            .ok()
+    };
+
+    let verbraucher_rest = {
+        let senke = senke.clone();
+        let eingang = eingang.clone();
+        let link = link_id.clone();
+        std::thread::Builder::new()
+            .name("eqcop-v3-ingress-rest".into())
+            .spawn(move || {
+                while let Some((familie, payload)) = eingang.entnehmen_ohne_p0() {
+                    match familie {
                         Familie::P1 => senke.p1(&link, &payload),
                         Familie::P2 => senke.p2(&link, &payload),
+                        // `entnehmen_ohne_p0` liefert per Konstruktion kein
+                        // P0; der Arm ist der Riegel gegen eine spaetere
+                        // Aenderung, nicht toter Code.
+                        Familie::P0 => debug_assert!(false, "P0 gehoert dem eigenen Thread"),
                     }
                 }
             })
@@ -1443,16 +1508,24 @@ fn verbindung_bedienen(
                             statistik.ingress_p2_verworfen.fetch_add(1, Ordering::SeqCst);
                         }
                         IngressErgebnis::ClientTrennen => {
-                            statistik.geschlossen_p0_ueberlauf.fetch_add(1, Ordering::SeqCst);
-                            senkenruf.abweisen("ingress: P0-Ueberlauf");
+                            // `A-IN-03`/`A-IN-04`: P0 UND P1 trennen. Ein
+                            // stiller P1-Verlust bei gesund wirkender
+                            // Verbindung nimmt dem Sender den Wiederholweg.
+                            if familie == Familie::P1 {
+                                statistik
+                                    .ingress_p1_ueberlauf_trennt
+                                    .fetch_add(1, Ordering::SeqCst);
+                                senkenruf.abweisen("ingress: P1-Ueberlauf");
+                            } else {
+                                statistik
+                                    .geschlossen_p0_ueberlauf
+                                    .fetch_add(1, Ordering::SeqCst);
+                                senkenruf.abweisen("ingress: P0-Ueberlauf");
+                            }
                             break 'lesen;
                         }
                         IngressErgebnis::Verworfen => {
-                            if familie == Familie::P1 {
-                                statistik.ingress_p1_verworfen.fetch_add(1, Ordering::SeqCst);
-                            } else {
-                                statistik.ingress_p2_verworfen.fetch_add(1, Ordering::SeqCst);
-                            }
+                            statistik.ingress_p2_verworfen.fetch_add(1, Ordering::SeqCst);
                         }
                     }
                     statistik.hoechststand_melden(eingang.laenge());
@@ -1492,15 +1565,15 @@ fn verbindung_bedienen(
     // (T2-Befund 3 Runde 3 vom 2026-08-29). Der Registereintrag und der
     // Abbruch der Telemetrie-I/O gehoeren dabei zusammen: ohne den Abbruch
     // stuende der Telemetriearbeiter noch in seinem Read.
-    kopplung_loesen(&kopplungen, &handles, &link_id, ist_control);
+    let hatte_telemetrie = kopplung_loesen(&kopplungen, &handles, &link_id, ist_control);
     eingang.schliessen();
     ausgang.schliessen();
     io_abbrechen(&handles, id);
-    // Beide Joins haben eine FRIST. Steht der Verbraucher in einem
+    // Alle Joins haben eine FRIST. Steht ein Verbraucher in einem
     // Senkenaufruf oder der Schreiber in einem Write, den `CancelIoEx` nicht
     // loest, wird der Thread abgeloest statt gejoint — sonst waere `stoppen()`
     // ein unbegrenztes Warten auf fremden Code (T2-Befund 7 vom 2026-08-29).
-    if let Some(j) = verbraucher {
+    for j in [verbraucher_p0, verbraucher_rest].into_iter().flatten() {
         if !join_mit_frist(j, SENKE_FRIST, || {}) {
             statistik.senke_abgeloest.fetch_add(1, Ordering::SeqCst);
         }
@@ -1514,18 +1587,106 @@ fn verbindung_bedienen(
     // Erst JETZT die Senke benachrichtigen: waehrend der Joins konnte noch ein
     // `p0`/`p1`/`p2` derselben Verbindung laufen, und ein `*_getrennt` davor
     // waere eine Luege ueber die Reihenfolge.
+    //
+    // `C-LS-06`: die Control-Seite meldet ihr `control_getrennt` NACH dem
+    // `telemetrie_getrennt` der mitfallenden Telemetrieverbindung. Zwischen
+    // zwei Verbindungsthreads ist die Reihenfolge sonst unbestimmt; die Senke
+    // saehe das Ende der Kopplung vor dem Ende ihres Teilnehmers. Gewartet
+    // wird hoechstens `SENKE_FRIST` — laeuft sie ab (weil das
+    // `telemetrie_getrennt` der Gegenseite selbst abgeloest wurde), meldet
+    // diese Seite TROTZDEM: ein abgeloester Trenn-Callback zaehlt als
+    // gelaufen, es entfaellt keiner und keiner laeuft doppelt.
+    if ist_control && hatte_telemetrie {
+        auf_telemetrie_getrennt_warten(&trennmelder, &link_id, SENKE_FRIST, &statistik);
+    }
     melden_getrennt(&mut senkenruf, &link_id, ist_control);
+    if !ist_control {
+        telemetrie_getrennt_gemeldet(&trennmelder, &link_id);
+    } else {
+        trennmelder
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .remove(&link_id);
+    }
+}
+
+/// Wartepunkt fuer die Trennreihenfolge einer Kopplung (Matrix `C-LS-06`).
+/// Die Telemetrieseite setzt ihn, nachdem sie `telemetrie_getrennt` gemeldet
+/// hat; die Control-Seite wartet darauf, bevor sie `control_getrennt` meldet.
+#[derive(Default)]
+struct TrennMelder {
+    gemeldet: Mutex<bool>,
+    signal: Condvar,
+}
+
+/// Ein Melder je lebender Kopplung. Er wird mit `control_verbunden` angelegt
+/// und mit `control_getrennt` entfernt — derselbe Aenderungssatz wie das
+/// Register selbst.
+type TrennRegister = Arc<Mutex<HashMap<String, Arc<TrennMelder>>>>;
+
+fn trennmelder_anlegen(reg: &TrennRegister, link_id: &str) {
+    reg.lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .insert(link_id.to_string(), Arc::new(TrennMelder::default()));
+}
+
+fn telemetrie_getrennt_gemeldet(reg: &TrennRegister, link_id: &str) {
+    let m = reg
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .get(link_id)
+        .cloned();
+    if let Some(m) = m {
+        *m.gemeldet.lock().unwrap_or_else(|e| e.into_inner()) = true;
+        m.signal.notify_all();
+    }
+}
+
+/// `C-LS-06`: hoechstens `frist` warten, dann in jedem Fall weitermelden.
+fn auf_telemetrie_getrennt_warten(
+    reg: &TrennRegister,
+    link_id: &str,
+    frist: Duration,
+    statistik: &Arc<V3Statistik>,
+) {
+    let m = match reg
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .get(link_id)
+        .cloned()
+    {
+        Some(m) => m,
+        None => return,
+    };
+    let bis = Instant::now() + frist;
+    let mut g = m.gemeldet.lock().unwrap_or_else(|e| e.into_inner());
+    while !*g {
+        let rest = bis.saturating_duration_since(Instant::now());
+        if rest.is_zero() {
+            statistik
+                .lebenszyklus_reihenfolge_verletzt
+                .fetch_add(1, Ordering::SeqCst);
+            return;
+        }
+        let (neu, _) = m
+            .signal
+            .wait_timeout(g, rest)
+            .unwrap_or_else(|e| e.into_inner());
+        g = neu;
+    }
 }
 
 /// Nimmt die Kopplung aus dem Register und bricht die I/O der mitfallenden
 /// Telemetrieverbindung ab. Beruehrt die Senke NICHT — die Meldung folgt
-/// getrennt, nach den Joins (`melden_getrennt`).
+/// getrennt, nach den Joins (`melden_getrennt`). `true` = an dieser Kopplung
+/// hing eine Telemetrieverbindung, auf deren `telemetrie_getrennt` die
+/// Control-Seite nach `C-LS-06` wartet.
 fn kopplung_loesen(
     kopplungen: &Arc<Mutex<Kopplungen>>,
     handles: &Arc<Mutex<HandleRegister>>,
     link_id: &str,
     ist_control: bool,
-) {
+) -> bool {
     if ist_control {
         // Die Control-Verbindung besitzt die Kopplung: geht sie, geht auch
         // der Telemetrieplatz. Sonst bliebe eine halb offene Kopplung stehen
@@ -1539,10 +1700,13 @@ fn kopplung_loesen(
         };
         if let Some(v) = ab.telemetrie_verbindung {
             io_abbrechen(handles, v);
+            return true;
         }
+        false
     } else {
         let mut k = kopplungen.lock().unwrap_or_else(|e| e.into_inner());
         k.telemetrie_entkoppeln(link_id);
+        false
     }
 }
 
@@ -1858,14 +2022,26 @@ mod tests {
         assert!(steuer.schreiben(&control_hello(&"b".repeat(32))));
         assert!(welcome_lesen(&steuer).is_some());
 
-        // Erst den Ingress mit P1 fuellen (Cap 256), dann P0 nachlegen: es
-        // gibt kein P2 zum Verwerfen, also trennt der Broker.
+        // Erst den Ingress mit P1 fuellen (Cap 256) — aber KEINEN Frame
+        // weiter: seit `A-IN-04` traegt der 257. P1 selbst die Trennung, und
+        // dann spraeche dieser Test ueber den falschen Pfad. Deshalb wird bis
+        // zum Hoechststand getaktet und danach P0 nachgelegt.
+        let stat = griff.statistik.clone();
         let eins = p1("{\"type\":\"state_report\"}");
-        for _ in 0..300 {
+        for _ in 0..400 {
+            if stat.ingress_hoechststand.load(Ordering::SeqCst) >= CAP_INGRESS as u64 {
+                break;
+            }
             if !steuer.schreiben(&eins) {
                 break;
             }
+            std::thread::sleep(Duration::from_millis(1));
         }
+        assert_eq!(
+            stat.ingress_p1_ueberlauf_trennt.load(Ordering::SeqCst),
+            0,
+            "die Vorbereitung darf nicht schon ueber den P1-Pfad getrennt haben"
+        );
         let herz = p0("{\"type\":\"heartbeat\",\"sequence\":1}");
         for _ in 0..40 {
             if !steuer.schreiben(&herz) {
@@ -1873,11 +2049,10 @@ mod tests {
             }
         }
 
-        let stat = griff.statistik.clone();
         assert!(
             warte_auf(6000, || stat.geschlossen_p0_ueberlauf.load(Ordering::SeqCst) > 0),
-            "P0-Ueberlauf muss die Verbindung trennen (p1_verworfen={}, hoechststand={})",
-            stat.ingress_p1_verworfen.load(Ordering::SeqCst),
+            "P0-Ueberlauf muss die Verbindung trennen (p1_ueberlauf_trennt={}, hoechststand={})",
+            stat.ingress_p1_ueberlauf_trennt.load(Ordering::SeqCst),
             stat.ingress_hoechststand.load(Ordering::SeqCst)
         );
         senke.blockiert.store(false, Ordering::SeqCst);
@@ -2171,8 +2346,9 @@ mod tests {
         assert_eq!(e.laenge(), 2, "die Vorbedingung muss wirklich gefuellt sein");
 
         e.schliessen();
+        // BEIDE Sichten (`C-LS-07`) pruefen das Schliessflag vor dem Inhalt.
         assert!(
-            e.entnehmen().is_none(),
+            e.entnehmen_p0().is_none() && e.entnehmen_ohne_p0().is_none(),
             "nach dem Schliessen darf kein Eintrag mehr kommen — er gehoert zu \
              einer Sitzung, die es nicht mehr gibt"
         );
@@ -2337,5 +2513,349 @@ mod tests {
             "sie faellt erst nach {dauer:?} — die Kopplung haengt an den Joins \
              statt am Leserende (SENKE_FRIST {SENKE_FRIST:?})"
         );
+    }
+
+    //== Ursachenrunde 2026-08-30: die Zeilen der Verhaltensmatrix ============
+
+    /// Protokolliert die Lebenszyklus-Callbacks in ihrer Reihenfolge und kann
+    /// in genau einem von ihnen blockieren. Ohne Protokoll misst ein Test
+    /// ueber Reihenfolge nur seine eigene Hoffnung.
+    #[derive(Default)]
+    struct ReihenfolgeSenke {
+        zaehl: ZaehlSenke,
+        log: Mutex<Vec<String>>,
+        blockiert_in: Mutex<String>,
+        blockdauer_ms: AtomicU64,
+    }
+
+    impl ReihenfolgeSenke {
+        fn notieren(&self, was: &str) {
+            let blockieren = {
+                let b = self.blockiert_in.lock().unwrap_or_else(|e| e.into_inner());
+                *b == was
+            };
+            if blockieren {
+                let ms = self.blockdauer_ms.load(Ordering::SeqCst);
+                std::thread::sleep(Duration::from_millis(ms));
+            }
+            self.log
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .push(was.to_string());
+        }
+        fn eintraege(&self) -> Vec<String> {
+            self.log.lock().unwrap_or_else(|e| e.into_inner()).clone()
+        }
+        fn anzahl(&self, was: &str) -> usize {
+            self.eintraege().iter().filter(|x| x.as_str() == was).count()
+        }
+        fn stelle(&self, was: &str) -> Option<usize> {
+            self.eintraege().iter().position(|x| x.as_str() == was)
+        }
+    }
+
+    impl Senke for ReihenfolgeSenke {
+        fn control_verbunden(&self, l: &str, h: &HelloControl) {
+            self.zaehl.control_verbunden(l, h);
+            self.notieren("control_verbunden");
+        }
+        fn control_getrennt(&self, l: &str) {
+            self.zaehl.control_getrennt(l);
+            self.notieren("control_getrennt");
+        }
+        fn telemetrie_gekoppelt(&self, l: &str) {
+            self.zaehl.telemetrie_gekoppelt(l);
+            self.notieren("telemetrie_gekoppelt");
+        }
+        fn telemetrie_getrennt(&self, l: &str) {
+            self.zaehl.telemetrie_getrennt(l);
+            self.notieren("telemetrie_getrennt");
+        }
+        fn p0(&self, l: &str, p: &[u8]) -> Option<Vec<u8>> {
+            self.zaehl.p0(l, p)
+        }
+        fn p1(&self, l: &str, p: &[u8]) {
+            self.zaehl.p1(l, p);
+        }
+        fn p2(&self, l: &str, p: &[u8]) {
+            self.zaehl.p2(l, p);
+        }
+        fn abgewiesen(&self, g: &str) {
+            self.zaehl.abgewiesen(g);
+        }
+    }
+
+    /// Blockiert AUSSCHLIESSLICH in `p1`. Der Gegenspieler fuer `C-LS-07`:
+    /// eine Senke, die ueberall blockiert, kann nicht zeigen, dass P0
+    /// waehrenddessen beantwortet wird.
+    #[derive(Default)]
+    struct P1BlockSenke {
+        zaehl: ZaehlSenke,
+        blockiert: AtomicBool,
+        in_p1: AtomicBool,
+    }
+
+    impl Senke for P1BlockSenke {
+        fn control_verbunden(&self, l: &str, h: &HelloControl) {
+            self.zaehl.control_verbunden(l, h);
+        }
+        fn control_getrennt(&self, l: &str) {
+            self.zaehl.control_getrennt(l);
+        }
+        fn telemetrie_gekoppelt(&self, l: &str) {
+            self.zaehl.telemetrie_gekoppelt(l);
+        }
+        fn telemetrie_getrennt(&self, l: &str) {
+            self.zaehl.telemetrie_getrennt(l);
+        }
+        fn p0(&self, l: &str, p: &[u8]) -> Option<Vec<u8>> {
+            self.zaehl.p0(l, p)
+        }
+        fn p1(&self, l: &str, p: &[u8]) {
+            self.in_p1.store(true, Ordering::SeqCst);
+            let bis = Instant::now() + Duration::from_secs(20);
+            while self.blockiert.load(Ordering::SeqCst) && Instant::now() < bis {
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            self.in_p1.store(false, Ordering::SeqCst);
+            self.zaehl.p1(l, p);
+        }
+        fn p2(&self, l: &str, p: &[u8]) {
+            self.zaehl.p2(l, p);
+        }
+        fn abgewiesen(&self, g: &str) {
+            self.zaehl.abgewiesen(g);
+        }
+    }
+
+    /// Liest EINEN v3-gerahmten Frame und gibt seinen Payload als JSON.
+    fn frame_json_lesen(c: &Testclient) -> Option<serde_json::Value> {
+        let mut puffer = [0u8; 4096];
+        let mut roh: Vec<u8> = Vec::new();
+        for _ in 0..50 {
+            let n = c.lesen(&mut puffer);
+            if n == 0 {
+                return None;
+            }
+            roh.extend_from_slice(&puffer[..n]);
+            if let Ok(r) = crate::transport::v3::envelope_pruefen(&roh) {
+                return serde_json::from_slice(&r.payload).ok();
+            }
+        }
+        None
+    }
+
+    /// Matrix `C-LS-02`/`C-LS-04` (Regel 5): `control_verbunden` ist
+    /// ABGESCHLOSSEN, bevor das Welcome den Draht verlaesst — sonst kann
+    /// `telemetrie_gekoppelt` auf dem anderen Verbindungsthread vorlaufen.
+    #[test]
+    fn welcome_folgt_dem_abgeschlossenen_control_verbunden() {
+        let pipe = probe_pipe("cvvorwelcome");
+        let senke = Arc::new(ReihenfolgeSenke::default());
+        *senke.blockiert_in.lock().unwrap() = "control_verbunden".into();
+        senke.blockdauer_ms.store(400, Ordering::SeqCst);
+        let griff = v3_server_starten(&pipe, senke.clone(), "test".into()).unwrap();
+
+        let steuer = Testclient::neu(&pipe).unwrap();
+        let t0 = Instant::now();
+        assert!(steuer.schreiben(&control_hello(&"c".repeat(32))));
+        let (link, challenge) = welcome_lesen(&steuer).expect("welcome");
+        let dauer = t0.elapsed();
+        assert!(
+            dauer >= Duration::from_millis(350),
+            "das Welcome kam schon nach {dauer:?} — also VOR dem abgeschlossenen \
+             control_verbunden (die Senke haelt es 400 ms)"
+        );
+        assert_eq!(
+            senke.eintraege().first().map(String::as_str),
+            Some("control_verbunden"),
+            "erster Lebenszyklusaufruf muss control_verbunden sein"
+        );
+
+        let tele = Testclient::neu(&pipe).unwrap();
+        assert!(tele.schreiben(&telemetry_hello(&"c".repeat(32), &link, &challenge)));
+        assert!(welcome_lesen(&tele).is_some());
+        assert!(warte_auf(4000, || senke.anzahl("telemetrie_gekoppelt") == 1));
+        assert!(
+            senke.stelle("control_verbunden") < senke.stelle("telemetrie_gekoppelt"),
+            "telemetrie_gekoppelt lief vor control_verbunden: {:?}",
+            senke.eintraege()
+        );
+        drop(steuer);
+        drop(tele);
+        drop(griff);
+    }
+
+    /// Matrix `C-LS-02`/`C-LS-04`: je `link_id` genau ein
+    /// `control_verbunden` und hoechstens ein `telemetrie_gekoppelt`. Ein
+    /// zweites Telemetry-Hello auf dieselbe Kopplung wird abgewiesen, OHNE den
+    /// Callback erneut auszuloesen.
+    #[test]
+    fn connect_callbacks_je_kopplung_genau_einmal() {
+        let pipe = probe_pipe("connecteinmal");
+        let senke = Arc::new(ReihenfolgeSenke::default());
+        let griff = v3_server_starten(&pipe, senke.clone(), "test".into()).unwrap();
+
+        let steuer = Testclient::neu(&pipe).unwrap();
+        assert!(steuer.schreiben(&control_hello(&"d".repeat(32))));
+        let (link, challenge) = welcome_lesen(&steuer).expect("welcome");
+        let tele = Testclient::neu(&pipe).unwrap();
+        assert!(tele.schreiben(&telemetry_hello(&"d".repeat(32), &link, &challenge)));
+        assert!(welcome_lesen(&tele).is_some());
+        assert!(warte_auf(4000, || senke.anzahl("telemetrie_gekoppelt") == 1));
+
+        // Zweite Telemetrieverbindung auf dieselbe link_id: abgewiesen.
+        let zweite = Testclient::neu(&pipe).unwrap();
+        assert!(zweite.schreiben(&telemetry_hello(&"d".repeat(32), &link, &challenge)));
+        assert!(warte_auf(4000, || griff
+            .statistik
+            .geschlossen_bootstrap
+            .load(Ordering::SeqCst)
+            > 0));
+        std::thread::sleep(Duration::from_millis(200));
+        assert_eq!(senke.anzahl("control_verbunden"), 1);
+        assert_eq!(
+            senke.anzahl("telemetrie_gekoppelt"),
+            1,
+            "die abgewiesene zweite Verbindung darf den Callback nicht erneut ausloesen: {:?}",
+            senke.eintraege()
+        );
+        drop(steuer);
+        drop(tele);
+        drop(zweite);
+        drop(griff);
+    }
+
+    /// Matrix `C-LS-06` (Regel 5), Normalfall: Kopplung loesen →
+    /// `telemetrie_getrennt` → `control_getrennt`, je genau einmal.
+    #[test]
+    fn trennreihenfolge_je_callback_genau_einmal() {
+        let pipe = probe_pipe("trennreihe");
+        let senke = Arc::new(ReihenfolgeSenke::default());
+        let griff = v3_server_starten(&pipe, senke.clone(), "test".into()).unwrap();
+
+        let steuer = Testclient::neu(&pipe).unwrap();
+        assert!(steuer.schreiben(&control_hello(&"e".repeat(32))));
+        let (link, challenge) = welcome_lesen(&steuer).expect("welcome");
+        let tele = Testclient::neu(&pipe).unwrap();
+        assert!(tele.schreiben(&telemetry_hello(&"e".repeat(32), &link, &challenge)));
+        assert!(welcome_lesen(&tele).is_some());
+        assert!(warte_auf(4000, || senke.anzahl("telemetrie_gekoppelt") == 1));
+
+        drop(steuer); // Control-Ende reisst die Telemetrie mit
+        assert!(
+            warte_auf(8000, || senke.anzahl("control_getrennt") == 1),
+            "control_getrennt fehlt: {:?}",
+            senke.eintraege()
+        );
+        std::thread::sleep(Duration::from_millis(300));
+        let log = senke.eintraege();
+        assert_eq!(senke.anzahl("telemetrie_getrennt"), 1, "{log:?}");
+        assert_eq!(senke.anzahl("control_getrennt"), 1, "{log:?}");
+        assert!(
+            senke.stelle("telemetrie_getrennt") < senke.stelle("control_getrennt"),
+            "control_getrennt kam vor telemetrie_getrennt: {log:?}"
+        );
+        drop(tele);
+        drop(griff);
+    }
+
+    /// Matrix `C-LS-06`, Fristfall (Nachtrag der Wiederpruefung): ein
+    /// abgeloestes `telemetrie_getrennt` haelt `control_getrennt` NICHT auf.
+    /// Ein abgeloester Trenn-Callback zaehlt als gelaufen; es entfaellt keiner
+    /// und keiner laeuft doppelt.
+    #[test]
+    fn abgeloestes_telemetrie_getrennt_haelt_control_getrennt_nicht_auf() {
+        let pipe = probe_pipe("trennfrist");
+        let senke = Arc::new(ReihenfolgeSenke::default());
+        *senke.blockiert_in.lock().unwrap() = "telemetrie_getrennt".into();
+        senke
+            .blockdauer_ms
+            .store(SENKE_FRIST.as_millis() as u64 * 2, Ordering::SeqCst);
+        let griff = v3_server_starten(&pipe, senke.clone(), "test".into()).unwrap();
+
+        let steuer = Testclient::neu(&pipe).unwrap();
+        assert!(steuer.schreiben(&control_hello(&"f".repeat(32))));
+        let (link, challenge) = welcome_lesen(&steuer).expect("welcome");
+        let tele = Testclient::neu(&pipe).unwrap();
+        assert!(tele.schreiben(&telemetry_hello(&"f".repeat(32), &link, &challenge)));
+        assert!(welcome_lesen(&tele).is_some());
+        assert!(warte_auf(4000, || senke.anzahl("telemetrie_gekoppelt") == 1));
+
+        let beginn = Instant::now();
+        drop(steuer);
+        assert!(
+            warte_auf(SENKE_FRIST.as_millis() as u64 * 4, || senke
+                .anzahl("control_getrennt")
+                == 1),
+            "control_getrennt blieb aus, obwohl nur telemetrie_getrennt haengt: {:?}",
+            senke.eintraege()
+        );
+        let dauer = beginn.elapsed();
+        assert!(
+            dauer < SENKE_FRIST * 3,
+            "control_getrennt kam erst nach {dauer:?} — es haengt an der vollen \
+             Blockdauer statt an SENKE_FRIST ({SENKE_FRIST:?})"
+        );
+        assert!(
+            griff.statistik.lebenszyklus_abgeloest.load(Ordering::SeqCst) >= 1,
+            "der Fristfall muss als lebenszyklus_abgeloest sichtbar sein"
+        );
+        assert_eq!(senke.anzahl("control_getrennt"), 1, "nie doppelt");
+        drop(tele);
+        drop(griff);
+    }
+
+    /// Matrix `C-LS-07` (Regel 4 auf der Rust-Seite): blockiert die Senke in
+    /// `p1`, wird ein P0-Frame trotzdem gelesen UND BEANTWORTET. Zweiter Fall:
+    /// ist der Ingress voll und liegt kein P2 darin, greift `A-IN-03`/
+    /// `A-IN-04` — dann endet die Verbindung sichtbar, statt still zu hungern.
+    #[test]
+    fn p0_wird_beantwortet_waehrend_p1_die_senke_blockiert() {
+        let pipe = probe_pipe("p0trotzp1");
+        let senke = Arc::new(P1BlockSenke::default());
+        senke.blockiert.store(true, Ordering::SeqCst);
+        let griff = v3_server_starten(&pipe, senke.clone(), "test".into()).unwrap();
+
+        let steuer = Testclient::neu(&pipe).unwrap();
+        assert!(steuer.schreiben(&control_hello(&"9".repeat(32))));
+        assert!(welcome_lesen(&steuer).is_some());
+
+        // Die Senke steht in `p1` — die Vorbedingung wird gemessen, nicht
+        // gehofft.
+        assert!(steuer.schreiben(&p1("{\"type\":\"state_report\"}")));
+        assert!(
+            warte_auf(4000, || senke.in_p1.load(Ordering::SeqCst)),
+            "die Senke muss wirklich in p1 stehen"
+        );
+
+        // Fall 1: P0 kommt durch und wird beantwortet.
+        assert!(steuer.schreiben(&p0("{\"type\":\"heartbeat\",\"sequence\":7}")));
+        let antwort = frame_json_lesen(&steuer).expect("kein heartbeat_ack — P0 hungert");
+        assert_eq!(antwort.get("type").and_then(|v| v.as_str()), Some("heartbeat_ack"));
+        assert_eq!(antwort.get("sequence").and_then(|v| v.as_u64()), Some(7));
+        assert!(
+            senke.in_p1.load(Ordering::SeqCst),
+            "die Senke muss beim Eintreffen der Antwort NOCH in p1 stehen"
+        );
+
+        // Fall 2: der Ingress laeuft ohne P2 ueber — Trennen, nicht hungern.
+        let eins = p1("{\"type\":\"state_report\"}");
+        for _ in 0..(CAP_INGRESS + 60) {
+            if !steuer.schreiben(&eins) {
+                break;
+            }
+        }
+        let stat = griff.statistik.clone();
+        assert!(
+            warte_auf(8000, || stat
+                .ingress_p1_ueberlauf_trennt
+                .load(Ordering::SeqCst)
+                > 0),
+            "der volle Ingress ohne P2 muss nach A-IN-04 trennen"
+        );
+        senke.blockiert.store(false, Ordering::SeqCst);
+        drop(steuer);
+        drop(griff);
     }
 }

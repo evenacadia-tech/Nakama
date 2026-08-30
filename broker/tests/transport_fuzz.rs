@@ -137,9 +137,17 @@ fn jedes_gekippte_payloadbit_eines_p2_frames_faellt_an_der_crc() {
 }
 
 #[test]
-fn feindliche_laengen_loesen_keine_allokation_aus() {
+fn feindliche_laengen_enden_in_der_erwarteten_fehlerklasse() {
     // Ein 0xFFFFFFFF-Praefix darf keinen Riesenpuffer anfordern — dieselbe
     // Aussage wie im v2-Framing, hier fuer den v3-Kopf.
+    //
+    // Was dieser Test MISST (Matrix `D-A21-01`, Regel 7): die Fehlerklasse.
+    // Er zaehlt KEINE Allokationen. Der alte Name behauptete mehr als die
+    // Messung trug — `envelope_pruefen` erzeugt auf diesen Pfaden je ein
+    // `Vec<Verstoss>`, und eine neue, begrenzte Allokation anhand von
+    // `frame_len` bliebe hier gruen. Belegt ist: kein Absturz und keine
+    // Eingabeallokation in Groesse der behaupteten Laenge, weil die Laenge vor
+    // jeder Pufferanforderung faellt.
     for frame_len in [
         0u32,
         1,

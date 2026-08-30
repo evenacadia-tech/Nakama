@@ -183,6 +183,10 @@ public:
     /// Die naechste Telemetrieverbindung einmalig schliessen — der Fall, den
     /// der Leerlauf ohne Lesen nie bemerkte (T2-Befund 2).
     std::atomic<bool> telemetrieSchliessen { false };
+    /// Nach der ERSTEN P0-Antwort nicht mehr lesen (Matrix `B-CC-06`): der
+    /// ACK liegt dann beim Client, waehrend dessen P1-Weg vollaeuft. Genau in
+    /// dieser Lage uebersprang die alte Fassung den Lesepfad.
+    std::atomic<bool> nachErsterP0AntwortNichtLesen { false };
     std::mutex textMutex;
     std::string letztesControlHello, letztesTelemetryHello, letzterAbweisungsgrund;
     /// Jeder empfangene P0-/P1-Payload, woertlich. Damit laesst sich pruefen,
@@ -553,6 +557,14 @@ private:
                                            ack.size(), antwort);
                         if (! schreiben (h, antwort.data(), antwort.size()))
                         {
+                            schliessen (h);
+                            return;
+                        }
+                        if (nachErsterP0AntwortNichtLesen.load())
+                        {
+                            while (laeuft.load())
+                                std::this_thread::sleep_for (
+                                    std::chrono::milliseconds (20));
                             schliessen (h);
                             return;
                         }
@@ -1043,15 +1055,64 @@ int main()
                 "ein voller Wiederholpuffer weist das NEUE Ereignis ab, gezaehlt, nie still",
                 std::to_string (vorgehalten5) + " vorgehalten, "
                     + std::to_string (abgewiesen5) + " abgewiesen");
+        // `A-P1-06` (Regel 1): der Wiederholpuffer fliesst ab, sobald Platz
+        // frei wird — OHNE Reconnect. Vorher war `nachReconnectWiederholen()`
+        // sein einziger Abfluss; bei nur voruebergehendem Rueckstau blieben
+        // akzeptierte Ereignisse unbegrenzt liegen (NAK-95, Befund 1).
         std::string x;
         p1b.entnehmen (x); p1b.bestaetigen();
+        const auto nachErstemSenden = p1b.wiederholungen();
+        pruefe (nachErstemSenden == 1 && p1b.groesse() == 2,
+                "ein einziges Senden zieht eine Wiederholung nach — ohne Reconnect",
+                std::to_string (nachErstemSenden) + " noch vorgehalten");
         p1b.entnehmen (x); p1b.bestaetigen();
-        pruefe (p1b.nachReconnectWiederholen() == 2, "Reconnect holt beide zurueck");
+        pruefe (p1b.wiederholungen() == 0 && p1b.nachReconnectWiederholen() == 0,
+                "beim Reconnect ist nichts mehr nachzuholen — es floss schon ab");
         p1b.entnehmen (s1); p1b.bestaetigen();
         p1b.entnehmen (s2); p1b.bestaetigen();
         pruefe (s1 == "3" && s2 == "4" && p1b.wiederholungen() == 0,
                 "und zwar JEDES angenommene Ereignis, in der urspruenglichen Reihenfolge",
                 s1 + "," + s2);
+
+        // `A-P1-07` (Regel 1): ein Neuzugang ueberholt nie eine bereits
+        // angenommene Wiederholung.
+        {
+            P1Warteschlange q (1, 4);
+            q.einreihen ("", "1");
+            q.einreihen ("", "2");          // in den Wiederholpuffer
+            std::string weg;
+            q.entnehmen (weg); q.bestaetigen();   // Platz frei, "2" rueckt nach
+            pruefe (weg == "1" && q.einreihen ("", "3") == P1Ergebnis::zurWiederholung,
+                    "ein Neuzugang findet keinen Platz, solange eine Wiederholung wartet");
+            std::string a2, a3;
+            q.entnehmen (a2); q.bestaetigen();
+            q.entnehmen (a3); q.bestaetigen();
+            pruefe (a2 == "2" && a3 == "3",
+                    "und er ueberholt sie nicht — Annahmereihenfolge ueber beide Puffer",
+                    a2 + "," + a3);
+        }
+
+        // `A-P1-03` (Regel 2): der Objektschluessel ueberlebt den
+        // Wiederholpuffer, und Koaleszierung gilt auch dort. Vorher verlor der
+        // Snapshot dort seinen Schluessel; ein neuerer wurde abgewiesen und der
+        // AELTERE kam als Ereignis zurueck (NAK-95, Befund 2).
+        {
+            P1Warteschlange q (1, 2);
+            q.einreihen ("", "fremd");                       // haelt die Queue belegt
+            const auto alt = q.einreihen ("k", "alt");
+            const auto neu = q.einreihen ("k", "neu");
+            pruefe (alt == P1Ergebnis::zurWiederholung && neu == P1Ergebnis::koalesziert
+                        && q.wiederholungen() == 1 && q.abgewiesene() == 0,
+                    "ein Snapshot im Wiederholpuffer behaelt seinen Schluessel und "
+                    "koalesziert dort",
+                    std::to_string (q.wiederholungen()) + " vorgehalten, "
+                        + std::to_string (q.abgewiesene()) + " abgewiesen");
+            std::string e1, e2;
+            q.entnehmen (e1); q.bestaetigen();
+            q.entnehmen (e2); q.bestaetigen();
+            pruefe (e1 == "fremd" && e2 == "neu",
+                    "und der NEUERE geht raus, nicht der aeltere", e1 + "," + e2);
+        }
 
         // Entnommen, aber nicht geschrieben: der Eintrag muss zurueck. Ohne
         // diesen Weg verschwand ein P1-Ereignis endgueltig, wenn der Write
@@ -1270,6 +1331,42 @@ int main()
                     "wartende (replace-oldest, §53.9)",
                     std::to_string (s3->beanspruchtVerworfen())
                         + " neueste wegen fremden Anspruchs verworfen");
+        }
+
+        // ── Dieselbe Zusage, DETERMINISTISCH erzwungen (`A-P2-04`) ────────
+        //
+        // Die Lastprobe oben trifft die Kollision nur, wenn die Taktung
+        // mitspielt — genau deshalb fiel NAK-98 unter Baulast auf und war
+        // einzeln fuenfmal gruen. Hier werden die Plaetze mit dem Testhaken
+        // beansprucht: derselbe Fall, ohne Zufall. Beansprucht sind die BEIDEN
+        // Plaetze, auf die der Erzeuger zuerst laeuft — das ist die Lage, in
+        // der die alte Fassung (zwei Versuche) den neuesten Frame opferte.
+        {
+            auto s4 = std::make_unique<P2Schleuse<256>>();
+            const auto stand = s4->testSchreibstand();
+            const bool belegt = s4->testSlotBeanspruchen (stand)
+                             && s4->testSlotBeanspruchen (stand + 1);
+            pruefe (belegt, "Testhaken: die zwei naechsten Plaetze sind beansprucht");
+
+            std::uint8_t f[64];
+            std::memset (f, 0xAB, sizeof (f));
+            const bool uebernommen = s4->veroeffentlichen (f, sizeof (f));
+            pruefe (uebernommen && s4->beanspruchtVerworfen() == 0,
+                    "erzwungene Slot-Kollision: der neueste Frame findet immer einen Platz",
+                    std::to_string (s4->beanspruchtVerworfen())
+                        + " verworfen, " + std::to_string (s4->kollisionsLoecher())
+                        + " Loecher");
+            pruefe (s4->kollisionsLoecher() == 2,
+                    "und die beiden beanspruchten Positionen sind LOECHER, nicht Verluste",
+                    std::to_string (s4->kollisionsLoecher()));
+
+            s4->testSlotFreigeben (stand);
+            s4->testSlotFreigeben (stand + 1);
+            std::uint8_t ziel[256];
+            const auto n = s4->abholen (ziel, sizeof (ziel));
+            pruefe (n == sizeof (f) && ziel[0] == 0xAB,
+                    "der Verbraucher ueberspringt die Loecher und bekommt genau diesen Frame",
+                    std::to_string (n) + " Bytes");
         }
     }
 
@@ -2032,6 +2129,235 @@ int main()
     }
 
     // ── H · Bootstrapgrenze und der strenge kleine JSON-Leser ─────────────
+    abschnitt ("G16 · ein P0-ACK kommt an, waehrend P1 rueckstaut");
+    {
+        // Matrix `B-CC-06`/`B-CC-07`, Regel 4 und der Gate-Satz „ohne
+        // P0-Starvation": der Peer beantwortet den Heartbeat und liest danach
+        // NICHT mehr. Der P1-Weg des Clients laeuft damit voll, und der ACK
+        // liegt bereits da. Die alte Fassung sprang mit `continue` an den
+        // Lesepfad vorbei, solange irgendetwas zu senden war — der ACK wurde
+        // nie verarbeitet, die Verbindung lief in ihre Schreibfrist und fiel.
+        TestServer server (testPipeName ("p0trotzp1"));
+        server.nachErsterP0AntwortNichtLesen.store (true);
+        server.starten();
+
+        std::atomic<int> acks { 0 };
+        ControlClient control ([&] {
+            ControlHello h;
+            h.adresse = testAdresse (hex32 ('4'));
+            return h;
+        }, server.pipeName(),
+           [&acks] (const std::string& t) {
+               if (t.find ("heartbeat_ack") != std::string::npos)
+                   ++acks;
+           });
+        control.start();
+        pruefe (warteAuf (5000, [&] {
+                    return control.snapshot().status == ControlClient::Status::verbunden;
+                }),
+                "Verbindung steht");
+
+        // Erst der Rueckstau, dann der Heartbeat: P0 hat Vorrang und geht
+        // trotzdem zuerst raus, der Peer antwortet und verstummt.
+        for (int i = 0; i < 100; ++i)
+            control.sendeP1 ("", std::string (60000, 'x'));
+        pruefe (control.sendeP0 ("{\"type\":\"heartbeat\",\"sequence\":1}"),
+                "der Heartbeat wird eingereiht");
+
+        const bool kam = warteAuf (3000, [&] { return acks.load() >= 1; });
+        pruefe (kam, "der ACK erreicht beiAntwort, obwohl P1 rueckstaut",
+                std::to_string (acks.load()) + " ACKs, "
+                    + std::to_string (control.snapshot().p1Gesendet) + " P1 gesendet, "
+                    + control.snapshot().letzterFehler);
+        control.stop();
+        server.stoppen();
+    }
+
+    abschnitt ("G17 · stop() kehrt in JEDEM Zustand zurueck");
+    {
+        // Matrix `B-CC-10`…`B-CC-12`, `B-TC-07`, `B-TC-09` (Regel 6).
+        using Uhr = std::chrono::steady_clock;
+
+        // (1) stop() aus `beiAntwort` heraus: kein Self-Join.
+        {
+            TestServer server (testPipeName ("stopinnen"));
+            server.starten();
+            std::atomic<bool> gestoppt { false };
+            std::unique_ptr<ControlClient> control;
+            control = std::make_unique<ControlClient> ([&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('5'));
+                return h;
+            }, server.pipeName(),
+               [&] (const std::string&) {
+                   if (! gestoppt.exchange (true))
+                       control->stop();     // aus dem Clientthread heraus
+               });
+            control->start();
+            pruefe (warteAuf (5000, [&] {
+                        return control->snapshot().status == ControlClient::Status::verbunden;
+                    }),
+                    "Verbindung steht");
+            control->sendeP0 ("{\"type\":\"heartbeat\",\"sequence\":1}");
+            pruefe (warteAuf (5000, [&] { return gestoppt.load(); }),
+                    "stop() aus beiAntwort kehrt zurueck — kein Self-Join, kein terminate");
+            control->stop();   // von aussen, holt den join nach
+            pruefe (control->snapshot().status == ControlClient::Status::getrennt,
+                    "und danach ist der Client getrennt");
+            control.reset();
+            server.stoppen();
+        }
+
+        // (2) Ein blockierender Callback haelt stop() hoechstens die Frist auf.
+        {
+            TestServer server (testPipeName ("stopfrist"));
+            server.starten();
+            auto blockiert = std::make_shared<std::atomic<bool>> (true);
+            auto imCallback = std::make_shared<std::atomic<bool>> (false);
+            long long dauerMs = 0;
+            std::uint64_t abgeloest = 0;
+            {
+                ControlClient control ([&] {
+                    ControlHello h;
+                    h.adresse = testAdresse (hex32 ('6'));
+                    return h;
+                }, server.pipeName(),
+                   [blockiert, imCallback] (const std::string&) {
+                       imCallback->store (true);
+                       const auto bis = Uhr::now() + std::chrono::seconds (20);
+                       while (blockiert->load() && Uhr::now() < bis)
+                           std::this_thread::sleep_for (std::chrono::milliseconds (5));
+                   });
+                control.start();
+                pruefe (warteAuf (5000, [&] {
+                            return control.snapshot().status == ControlClient::Status::verbunden;
+                        }),
+                        "Verbindung steht");
+                control.sendeP0 ("{\"type\":\"heartbeat\",\"sequence\":1}");
+                pruefe (warteAuf (5000, [&] { return imCallback->load(); }),
+                        "der Callback blockiert wirklich");
+
+                const auto t0 = Uhr::now();
+                control.stop();
+                dauerMs = std::chrono::duration_cast<std::chrono::milliseconds> (
+                              Uhr::now() - t0).count();
+                abgeloest = control.snapshot().stopFristUeberschritten;
+            }
+            // Der Client ist zerstoert, der abgeloeste Thread laeuft noch: er
+            // haelt seine Laufzeit selbst und beruehrt den Client nicht mehr.
+            blockiert->store (false);
+            std::this_thread::sleep_for (std::chrono::milliseconds (300));
+            pruefe (dauerMs < 3500,
+                    "stop() kehrt trotz blockierendem Callback binnen Frist zurueck",
+                    std::to_string (dauerMs) + " ms");
+            pruefe (abgeloest >= 1,
+                    "und die Fristueberschreitung ist sichtbar gezaehlt",
+                    std::to_string (abgeloest));
+            server.stoppen();
+        }
+
+        // (3) TelemetryClient: stop() vor der Kopplung und waehrend eines
+        //     blockierenden P2-Writes (`B-TC-07`, `B-TC-09`).
+        {
+            TestServer server (testPipeName ("stoptele"));
+            server.nichtLesen.store (true);
+            server.starten();
+
+            {
+                TelemetryClient wartend ([] { return TelemetryHello(); },
+                                         server.pipeName());
+                wartend.start();
+                pruefe (warteAuf (3000, [&] {
+                            return wartend.snapshot().status
+                                   == TelemetryClient::Status::wartetAufKopplung;
+                        }),
+                        "die Telemetrie wartet auf ihre Kopplung");
+                const auto t0 = Uhr::now();
+                wartend.stop();
+                const auto ms = std::chrono::duration_cast<std::chrono::milliseconds> (
+                                    Uhr::now() - t0).count();
+                pruefe (ms < 2500, "stop() im Zustand wartetAufKopplung kehrt zurueck",
+                        std::to_string (ms) + " ms");
+            }
+
+            {
+                TelemetryHello vorlage;
+                vorlage.adresse = testAdresse (hex32 ('7'));
+                vorlage.linkId = server.kopplungLinkId();
+                vorlage.challenge = server.kopplungChallenge();
+                TelemetryClient tele ([&] { return vorlage; }, server.pipeName());
+                tele.start();
+                pruefe (warteAuf (5000, [&] {
+                            return tele.snapshot().status
+                                   == TelemetryClient::Status::verbunden;
+                        }),
+                        "die Telemetrie steht");
+                // Der Peer liest nicht: die Writes laufen in ihre Frist.
+                std::vector<std::uint8_t> gross (8000, 0x5A);
+                for (int i = 0; i < 200; ++i)
+                    tele.veroeffentlichen (gross.data(), gross.size());
+                std::this_thread::sleep_for (std::chrono::milliseconds (200));
+                const auto t0 = Uhr::now();
+                tele.stop();
+                const auto ms = std::chrono::duration_cast<std::chrono::milliseconds> (
+                                    Uhr::now() - t0).count();
+                pruefe (ms < 3500,
+                        "stop() waehrend eines blockierenden P2-Writes kehrt binnen "
+                        "Frist zurueck, nicht erst nach kIoFristMs",
+                        std::to_string (ms) + " ms");
+            }
+            server.stoppen();
+        }
+    }
+
+    abschnitt ("G18 · die Telemetrie verliert die Verbindung mitten im Write");
+    {
+        // Matrix `B-TC-10`: der Frame in Arbeit gilt als verloren (P2 ist
+        // verlusttolerant, §33.1), die Schleuse behaelt ihren Inhalt, die
+        // Verbindung endet ueber `ioAbbrechen` statt nach `kIoFristMs`, und
+        // der Reconnect laeuft mit den AKTUELLEN Kopplungswerten.
+        auto server = std::make_unique<TestServer> (testPipeName ("telewriteweg"));
+        server->nichtLesen.store (true);
+        server->starten();
+
+        TelemetryHello vorlage;
+        vorlage.adresse = testAdresse (hex32 ('8'));
+        vorlage.linkId = server->kopplungLinkId();
+        vorlage.challenge = server->kopplungChallenge();
+        TelemetryClient tele ([&] { return vorlage; }, server->pipeName());
+        tele.start();
+        pruefe (warteAuf (5000, [&] {
+                    return tele.snapshot().status == TelemetryClient::Status::verbunden;
+                }),
+                "die Telemetrie steht");
+        const int versucheVorher = tele.snapshot().verbindungsVersuche;
+
+        std::vector<std::uint8_t> gross (8000, 0x77);
+        for (int i = 0; i < 200; ++i)
+            tele.veroeffentlichen (gross.data(), gross.size());
+        std::this_thread::sleep_for (std::chrono::milliseconds (200));
+
+        const auto t0 = std::chrono::steady_clock::now();
+        server->stoppen();                 // Peer weg — mitten im Write
+        const bool bemerkt = warteAuf (4000, [&] {
+            return tele.snapshot().status != TelemetryClient::Status::verbunden;
+        });
+        const auto ms = std::chrono::duration_cast<std::chrono::milliseconds> (
+                            std::chrono::steady_clock::now() - t0).count();
+        pruefe (bemerkt, "der Verbindungsverlust im Write wird bemerkt",
+                std::to_string (ms) + " ms");
+
+        pruefe (warteAuf (12000, [&] {
+                    return tele.snapshot().verbindungsVersuche > versucheVorher;
+                }),
+                "und der Client zaehlt einen neuen Versuch — er koppelt von selbst neu",
+                std::to_string (tele.snapshot().verbindungsVersuche) + " Versuche");
+        pruefe (tele.veroeffentlichen (gross.data(), gross.size()),
+                "die Schleuse nimmt weiter an — der Erzeuger merkt vom Abbruch nichts");
+        tele.stop();
+        server.reset();
+    }
+
     abschnitt ("H · Bootstrapgrenze und JSON-Riegel");
     {
         std::vector<std::uint8_t> rahmen;

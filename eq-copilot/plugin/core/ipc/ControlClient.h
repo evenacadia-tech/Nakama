@@ -24,6 +24,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -115,6 +116,11 @@ public:
         /// eingereihte Nachricht, die nie auf den Draht passt, wuerde die
         /// Verbindung endlos schliessen und neu aufbauen.
         std::uint64_t zuGross = 0;
+        /// Wie oft `stop()` den Clientthread ABGELOEST hat, statt ihn zu
+        /// joinen, weil ein Callback laenger als `kStopFristMs` stand
+        /// (Matrix `B-CC-12`). `stop()` kehrt trotzdem zurueck; die Zahl ist
+        /// der sichtbare Preis dafuer.
+        std::uint64_t stopFristUeberschritten = 0;
     };
 
     /// `beiAntwort` wird auf dem Client-Thread gerufen, nie im Audiothread.
@@ -127,6 +133,16 @@ public:
     ControlClient& operator= (const ControlClient&) = delete;
 
     void start();
+
+    /// Kehrt IMMER zurueck (Matrix `B-CC-10`…`B-CC-12`, Regel 6):
+    ///
+    ///   * aus einem Callback dieses Clients heraus OHNE Self-Join — der
+    ///     Thread endet nach Rueckkehr des Callbacks von selbst, den `join`
+    ///     holt der naechste `stop()` oder der Destruktor von aussen nach;
+    ///   * von aussen mit der Frist `kStopFristMs` auf einen laufenden
+    ///     Callback; laeuft sie ab, wird der Thread ABGELOEST statt gejoint
+    ///     und `Snapshot::stopFristUeberschritten` waechst;
+    ///   * nach der Rueckkehr wird kein Callback mehr gerufen.
     void stop();
     /// Trennt die aktuelle Verbindung; die naechste Runde sendet ein frisches
     /// Hello. Kehrt sofort zurueck.
@@ -148,35 +164,21 @@ public:
     bool kopplung (std::string& linkId, std::string& challenge) const;
 
 private:
-    void threadLauf();
-    bool eineVerbindung (std::uint64_t generation);
-    bool sollAbbrechen (std::uint64_t generation) const noexcept;
-
-    std::function<ControlHello()> helloProvider;
-    std::function<void (const std::string&)> beiAntwort;
-    std::string pipeName;
-
-    IpcVerbindung verbindung;
+    /// Alles, was der Clientthread anfasst, liegt GETEILT hinter einem
+    /// `shared_ptr` — nicht im Client selbst.
+    ///
+    /// Der Grund ist Regel 6: `stop()` darf einen Thread, der in einem
+    /// blockierenden Callback steht, nach `kStopFristMs` ABLOESEN statt ihn zu
+    /// joinen. Ein abgeloester Thread, der danach noch Member des Clients
+    /// laese, waere undefiniertes Verhalten, sobald das Objekt zerstoert wird.
+    /// Mit der geteilten Laufzeit haelt der Thread seine eigene Referenz und
+    /// beruehrt den Client nie — dasselbe Muster wie `Senkenruf` und
+    /// `join_mit_frist` im Rust-Listener.
+    struct Laufzeit;
+    std::shared_ptr<Laufzeit> k;
 
     std::mutex   lebenslaufMutex;
     std::thread  thread;
-    std::atomic<bool> laeuft { false };
-    std::atomic<std::uint64_t> verbindungsGeneration { 0 };
-    std::mutex   wartemutex;
-    std::condition_variable warte;
-
-    mutable std::mutex zustandMutex;
-    Snapshot zustand;
-
-    std::mutex sendeMutex;
-    P0Warteschlange p0;
-    P1Warteschlange p1;
-    /// Monoton wachsender Zaehler der P0-Ueberlaeufe. Die laufende Verbindung
-    /// merkt sich seinen Stand beim Verbinden und schliesst, sobald er waechst
-    /// (§53.9 "nichts verwerfen; Verbindung schliessen"). Ein Ueberlauf, der
-    /// VOR der Verbindung passiert ist, schliesst dagegen nichts — es gibt
-    /// nichts zu schliessen, und der Aufrufer hat sein `false` bereits.
-    std::atomic<std::uint64_t> p0UeberlaufZaehler { 0 };
 };
 
 } // namespace nakama::ipc

@@ -20,6 +20,11 @@ namespace
 /// laenger wuerde die Latenz eines frischen Frames unnoetig strecken.
 constexpr int kLeerlaufMs = 5;
 
+/// Frist, die `stop()` einem LAUFENDEN Callback noch laesst (Matrix
+/// `B-TC-07`) — derselbe Wert wie im `ControlClient` und wie `SENKE_FRIST` im
+/// Rust-Listener.
+constexpr int kStopFristMs = 2000;
+
 std::string jsonStringSicher (const std::string& roh)
 {
     std::string aus = "\"";
@@ -31,10 +36,40 @@ std::string jsonStringSicher (const std::string& roh)
 }
 } // namespace
 
+//== Die geteilte Laufzeit ===================================================
+struct TelemetryClient::Laufzeit
+{
+    Laufzeit (std::function<TelemetryHello()> hp, std::string pn)
+        : helloProvider (std::move (hp)), pipeName (std::move (pn)) {}
+
+    void threadLauf();
+    bool eineVerbindung (std::uint64_t generation, const TelemetryHello& hello);
+    bool leerlaufLesen (StromLeser& leser, Ratengrenze& rate,
+                        std::chrono::steady_clock::time_point rateBeginn,
+                        std::uint64_t generation);
+    bool sollAbbrechen (std::uint64_t generation) const noexcept;
+    Snapshot snapshotIntern() const;
+
+    std::function<TelemetryHello()> helloProvider;
+    std::string pipeName;
+
+    IpcVerbindung verbindung;
+    P2Schleuse<8192> schleuse;
+
+    std::atomic<bool> laeuft { false };
+    std::atomic<bool> fertig { false };
+    std::atomic<std::thread::id> threadId {};
+    std::atomic<std::uint64_t> verbindungsGeneration { 0 };
+    std::mutex   wartemutex;
+    std::condition_variable warte;
+
+    mutable std::mutex zustandMutex;
+    Snapshot zustand;
+};
+
 TelemetryClient::TelemetryClient (std::function<TelemetryHello()> helloProviderIn,
                                   std::string pipeNameIn)
-    : helloProvider (std::move (helloProviderIn)),
-      pipeName (std::move (pipeNameIn))
+    : k (std::make_shared<Laufzeit> (std::move (helloProviderIn), std::move (pipeNameIn)))
 {
 }
 
@@ -46,46 +81,79 @@ TelemetryClient::~TelemetryClient()
 void TelemetryClient::start()
 {
     std::lock_guard<std::mutex> l (lebenslaufMutex);
-    if (laeuft.load())
+    if (k->laeuft.load())
         return;
-    laeuft.store (true);
-    thread = std::thread ([this] { threadLauf(); });
+    k->laeuft.store (true);
+    k->fertig.store (false);
+    auto kern = k;
+    thread = std::thread ([kern] { kern->threadLauf(); });
 }
 
 void TelemetryClient::stop()
 {
-    std::lock_guard<std::mutex> l (lebenslaufMutex);
-    if (! laeuft.load() && ! thread.joinable())
+    // Wortgleich zum `ControlClient` (`B-TC-07`): Reentranz ohne Self-Join,
+    // sonst Frist und Abloesen. Ein blockierender P2-Write faellt ueber
+    // `ioAbbrechen` sofort, nicht erst nach `kIoFristMs`.
+    const bool ausDemClientthread = (std::this_thread::get_id() == k->threadId.load());
+
+    k->laeuft.store (false);
+    k->verbindungsGeneration.fetch_add (1);
+    k->verbindung.ioAbbrechen();
+    k->warte.notify_all();
+    if (ausDemClientthread)
         return;
-    laeuft.store (false);
-    verbindungsGeneration.fetch_add (1);
-    verbindung.ioAbbrechen();
-    warte.notify_all();
-    if (thread.joinable())
-        thread.join();
-    verbindung.schliessen();
-    std::lock_guard<std::mutex> z (zustandMutex);
-    zustand.status = Status::getrennt;
+
+    std::lock_guard<std::mutex> l (lebenslaufMutex);
+    if (! thread.joinable())
+    {
+        k->verbindung.schliessen();
+        std::lock_guard<std::mutex> z (k->zustandMutex);
+        k->zustand.status = Status::getrennt;
+        return;
+    }
+
+    const auto bis = std::chrono::steady_clock::now()
+                   + std::chrono::milliseconds (kStopFristMs);
+    while (! k->fertig.load())
+    {
+        if (std::chrono::steady_clock::now() >= bis)
+        {
+            {
+                std::lock_guard<std::mutex> z (k->zustandMutex);
+                ++k->zustand.stopFristUeberschritten;
+                k->zustand.status = Status::getrennt;
+            }
+            thread.detach();
+            return;
+        }
+        std::this_thread::sleep_for (std::chrono::milliseconds (1));
+    }
+    thread.join();
+    k->verbindung.schliessen();
+    std::lock_guard<std::mutex> z (k->zustandMutex);
+    k->zustand.status = Status::getrennt;
 }
 
 void TelemetryClient::reconnect()
 {
-    verbindungsGeneration.fetch_add (1);
-    verbindung.ioAbbrechen();
-    warte.notify_all();
+    k->verbindungsGeneration.fetch_add (1);
+    k->verbindung.ioAbbrechen();
+    k->warte.notify_all();
 }
 
-bool TelemetryClient::sollAbbrechen (std::uint64_t generation) const noexcept
+bool TelemetryClient::Laufzeit::sollAbbrechen (std::uint64_t generation) const noexcept
 {
     return ! laeuft.load() || verbindungsGeneration.load() != generation;
 }
 
 bool TelemetryClient::veroeffentlichen (const std::uint8_t* daten, std::size_t laenge) noexcept
 {
-    return schleuse.veroeffentlichen (daten, laenge);
+    return k->schleuse.veroeffentlichen (daten, laenge);
 }
 
-TelemetryClient::Snapshot TelemetryClient::snapshot() const
+TelemetryClient::Snapshot TelemetryClient::snapshot() const { return k->snapshotIntern(); }
+
+TelemetryClient::Snapshot TelemetryClient::Laufzeit::snapshotIntern() const
 {
     std::lock_guard<std::mutex> l (zustandMutex);
     Snapshot s = zustand;
@@ -96,8 +164,9 @@ TelemetryClient::Snapshot TelemetryClient::snapshot() const
     return s;
 }
 
-void TelemetryClient::threadLauf()
+void TelemetryClient::Laufzeit::threadLauf()
 {
+    threadId.store (std::this_thread::get_id());
     int backoffMs = kBackoffStartMs;
     while (laeuft.load())
     {
@@ -141,11 +210,12 @@ void TelemetryClient::threadLauf()
         }
         backoffMs = std::min (backoffMs * 2, kBackoffMaxMs);
     }
+    fertig.store (true);
 }
 
-bool TelemetryClient::leerlaufLesen (StromLeser& leser, Ratengrenze& rate,
-                                     std::chrono::steady_clock::time_point rateBeginn,
-                                     std::uint64_t generation)
+bool TelemetryClient::Laufzeit::leerlaufLesen (StromLeser& leser, Ratengrenze& rate,
+                                              std::chrono::steady_clock::time_point rateBeginn,
+                                              std::uint64_t generation)
 {
     std::uint8_t puffer[4096];
     std::size_t gelesen = 0;
@@ -212,7 +282,8 @@ bool TelemetryClient::leerlaufLesen (StromLeser& leser, Ratengrenze& rate,
     }
 }
 
-bool TelemetryClient::eineVerbindung (std::uint64_t generation, const TelemetryHello& hello)
+bool TelemetryClient::Laufzeit::eineVerbindung (std::uint64_t generation,
+                                                const TelemetryHello& hello)
 {
     {
         std::lock_guard<std::mutex> l (zustandMutex);

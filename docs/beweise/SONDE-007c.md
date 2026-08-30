@@ -19119,3 +19119,24 @@ selbst.
 Installer-Manifest (nicht neu gehasht), die Identitätsdatei,
 `tools/dirigent/**`. Offen außerhalb der Grenze: NAK-89, NAK-93, NAK-98,
 NAK-99, NAK-100, NAK-101.
+
+## Dirigentenstand NAK-94 — 2026-08-30 06:01 (Sitzung 054eedac): Prüfer 10 NEEDS_WORK, offen — Wegwechsel W3, Nacharbeit 10
+
+**Stand dieses Abschnitts:** `713f0ae`
+
+**Nacharbeit 9:** Opus/max `nakama-s8r14-nak94r9-b8dcbe1-bau` (gemeinsam mit S8 Runde 14); Strukturprüfung für `journale/MANIFEST.json`, `_lies_geprueft` als gemeinsamer Leser; Kanon GRÜN 32/32 auf `1991ff8` (Roh-Datei `docs/beweise/roh/SONDE-007a-1991ff8.md`, Bein A17).
+**Prüfer 10:** Codex high `01a050cb-0182-7b31-9119-6feb25b93cc6`, lesend über `git diff da62dec...713f0ae`, HEAD vor/nach identisch — **NEEDS_WORK (2)**, wörtlich (`@ 713f0ae`); die Proben des Vorprüfers bestätigt geschlossen:
+
+> **[P2] Fange ungültige UTF-8-Bytes kontrolliert ab** — `tools/eq-copilot/pruefe_installer_manifest.py:308`. Bei einer einzelnen Byteänderung am Anfang einer über `_lies_geprueft` gelesenen JSON-Datei (`0x7B` → `0xFF`) wirft `read_text(encoding="utf-8")` reproduzierbar einen nicht erfassten `UnicodeDecodeError`; damit entsteht ein Traceback statt `Strukturhalt`. Fange den Dekodierfehler hier ab und überführe ihn in den kontrollierten Abbruch.
+>
+> **[P2] Prüfe `ziel_id` vor der adversarialen Benutzung** — `tools/eq-copilot/pruefe_installer_manifest.py:340-346`. Wenn im ersten VST3-Artefakt genau ein Byte von `"ziel_id"` zu `"xiel_id"` geändert wird, liefert `_installermanifest_struktur()` weiterhin keine Klage; anschließend endet `adversariale_strukturproben()` beim direkten Zugriff `artefakt["ziel_id"]` in Zeile 1196 mit `KeyError`. Validiere die VST3-Kennung hier als Zeichenkette oder vermeide den späteren direkten Zugriff.
+
+**Einordnung:** beide Defekt, mittel (Prüfliste D) — und die dritte Runde derselben Klasse „ein weiteres Byte → Traceback". Nach Skill §3.4 wechselt der Dirigent den Weg: die Klasse wird strukturell geschlossen und **gemessen**, statt Feld für Feld nachzuziehen.
+
+**Wegwechsel W3 (Regel des Dirigenten):**
+1. **Zentraler Fänger.** `main()` von A17 überführt jede Ausnahme, die kein `Strukturhalt` ist (`KeyError`, `TypeError`, `ValueError`, `UnicodeDecodeError`, `json.JSONDecodeError`, `OSError` …), in einen kontrollierten Abbruch: eine Klartextzeile mit Ausnahmetyp, Meldung, Datei und Zeile des Auslösers, Exit ≠ 0, **kein** Traceback auf stdout/stderr (Traceback nur mit `--debug`). Prüfliste D („Unbekanntes ist ROT") ist damit auch für Unerwartetes erfüllt; die bestehenden Strukturprüfungen bleiben die erste Verteidigung.
+2. **Die beiden Befunde gezielt:** `_lies_geprueft` fängt `UnicodeDecodeError` → `Strukturhalt`; `_installermanifest_struktur()` prüft `ziel_id` (und jedes Feld, das `adversariale_strukturproben()` oder ein anderer Block direkt liest) als Zeichenkette — der Worker grept alle direkten Schlüsselzugriffe auf gelesene Objekte (`\["[a-z_]+"\]`) und belegt je Zugriff die vorgelagerte Prüfung (Aussagen-Inventar).
+3. **Byte-Kipp-Fuzz als Probe `[3c]`.** Für jede von A17 gelesene JSON-Datei (Installer-Manifest, `journale/MANIFEST.json`, alle Writer-Fixtures) wird **jedes Byte** einzeln auf `0xFF` und auf `0x20` gekippt und die Datei **in-process** durch Lesen, Strukturprüfung und den verbrauchenden Block gefahren (Monkeypatch des Pfads/Inhalts, kein Subprozess je Byte); Zusage: 0 unkontrollierte Ausnahmen — nur `Strukturhalt` oder ein regulärer Befund. Rohausgabe: Dateien, Bytes, Läufe, unkontrollierte Ausnahmen = 0. Bruch: Fänger bzw. eine Strukturprüfung entfernt → der Fuzz zählt > 0 und ist ROT; Rücknahme. Läuft `[3c]` im Kanon zu lange (> 60 s), fährt der Kanon ein deterministisches Sample (jedes n-te Byte, n im Manifest) und der vollständige Lauf steht einmalig als Rohausgabe im Manifest.
+4. Behauptung in `tools/beweise.ps1` und Skriptkopf: „jede gelesene JSON-Datei wird strukturell geprüft; jede unerwartete Ausnahme endet kontrolliert ohne Traceback — gemessen durch den Byte-Kipp-Fuzz `[3c]` über alle gelesenen Dateien".
+
+**Nächster Schritt:** Nacharbeit 10 im selben Worker wie die nächste S8-Runde (falls Prüfer 15 Befunde hat; sonst allein), gemeinsamer Kanon, danach Prüfer 11 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.

@@ -18276,3 +18276,16 @@ geändert — das Register führt den Punkt seit 24.08.2026 als **NAK-72**
 (`docs/offene-punkte.md`), samt derselben zwei Abhilfen; er hat dort einen
 datierten Nachtrag mit den Zeitstempeln dieses Laufs bekommen und bleibt offen.
 Ein Eingriff in `Fuehre-Aus` liegt ausserhalb dieser Ticketgrenze.
+
+## Dirigentenstand NAK-94 — 2026-08-30 03:04 (Sitzung 054eedac): Prüfer 7 NEEDS_WORK, offen — Nacharbeit 7
+
+**Stand dieses Abschnitts:** `4a379bb`
+
+**Nacharbeit 6:** Opus/max `nakama-s8r11-nak94r6-165d9ae-bau` (gemeinsam mit S8 Runde 11); Pflichtmenge aus `MANIFEST.json`, `[3b]` nach Zusagen Z1–Z7 gegliedert; Kanon GRÜN 32/32 auf `9602d6c` (Roh-Datei `docs/beweise/roh/SONDE-007a-9602d6c.md`, Bein A17).
+**Prüfer 7:** Codex high `01a05029-53d4-71b2-b2ac-ead08e05251c`, lesend über `git diff da62dec...4a379bb`, HEAD vor/nach identisch — **NEEDS_WORK (1)**, wörtlich (`@ 4a379bb`); Pflichtmenge und Fehlverhalten bei fehlender Fixture bestätigt umgesetzt:
+
+> **[P2] Führe beim Z1-Bruch die übrigen Zusagen grün aus** — `docs/beweise/SONDE-007c.md:18064-18067`. Beim B6-Z1-Lauf bricht `[3b]` nach dem roten Z1 ab, sodass Z2–Z7 nicht grün bleiben, sondern überhaupt nicht ausgeführt werden. Damit erfüllt der Beleg nicht die verlangte Diskriminierung „nur diese Zusage rot, alle anderen grün". Behalte den fail-closed Produktabbruch bei, aber verwende für B6-Z1 einen isolierten Bruchtreiber, der Z1 fällt und Z2–Z7 auf dem vollständigen Korpus grün protokolliert, anschließend mit Rücknahmelauf.
+
+**Einordnung:** Defekt, mittel — die Regel aus Nacharbeit 6 verlangt je Zusage einen Bruch, der **nur** diese Zusage rot macht; ein Bruch durch Fehlen der Datei kann das für Z1 strukturell nicht leisten. **Regel des Dirigenten (Nacharbeit 7):** B6-Z1 bricht Z1 über eine **Byteänderung** eines vorhandenen Writer-Fixtures (SHA-256-Abweichung gegen `MANIFEST.json`) — Z1 ROT, Z2–Z7 laufen auf dem vollständigen Korpus grün durch, danach Rücknahme (Bytes identisch, belegt mit Hash). Der fail-closed Abbruch bei **fehlender** Datei bleibt und wird als eigene Probe „Pflichtmenge" (Umbenennen → Abbruch → Rücknahme) geführt, nicht als Zusage-Bruch. Manifest- und Runner-Behauptung entsprechend („Z1 bricht an einem geänderten Byte; eine fehlende Pflichtdatei bricht den Block ab").
+
+**Nächster Schritt:** Nacharbeit 7 im selben Worker wie die nächste S8-Runde (falls Prüfer 12 Befunde hat; sonst allein), gemeinsamer Kanon, danach Prüfer 8 (high, frischer Thread) über `da62dec...HEAD`. Die Marke von S9b bleibt unverändert; NAK-89 weiter offen.

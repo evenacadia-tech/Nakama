@@ -15704,3 +15704,24 @@ sind dort einzeln gebrochen worden.
 | B10 | v3-Envelope in C++ klassifiziert den Envelope-Korpus wie das Manifest (Urteil UND Verstossmenge, alle 14 Regeln mit Negativfixture); CRC32C trifft die RFC-3720-Vektoren, P0/P1 tragen CRC exakt 0, P2 die Pflichtsumme ueber genau die Payloadbytes; 40 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und 7671 angenommene EINBIT-Mutanten gueltiger Frames halten jede Kopfregel (reiner Zufall wird praktisch immer abgewiesen - die Invariante braucht deshalb die Mutanten, sonst spraeche sie ueber eine leere Menge), 3000 gekippte P2-Bits fallen einzeln, byteweise Zustellung liefert dieselben 40 Frames und ein kaputter Frame beendet den Strom; Pipetoken trifft das Golden aus §48.3 samt SHA-256- und RFC-4648-Vektoren; P0 verwirft nichts und meldet den 65. Eintrag, P1 koalesziert an der Position und haelt Ereignisse fuer den Reconnect vor, die P2-Schleuse ersetzt den aeltesten ungesendeten Frame, uebergibt 100 000 Frames mit 0 Allokationen (mit Gegenprobe am selben Zaehler) und liefert unter Flut keinen zerrissenen Frame; verdrahtet: Control koppelt Telemetry ueber link_id + challenge, ein ungekoppelter Telemetry-Connect wird geschlossen, der Client verbindet nach Serverneustart von selbst wieder, ein kaputter Envelope vom Server schliesst die Verbindung, und ein P0-Ueberlauf WAEHREND einer stehenden Verbindung schliesst sie ebenfalls statt still zu kuerzen. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 32,76 s | [B10](roh/SONDE-007a-9602d6c.md#b10) |
 | B8 | Lifecycle-Klassifikation §53.5: unclassified beim Laden und audio-neutral; Schema-1 sensor\|pre\|post -> legacy (immer passiv), hub bzw. bestaetigter Schema-2-Main-State -> main; ein Scannerlauf klassifiziert nicht; read-only nimmt die Klassifikation zurueck; Brokerstart nur fuer main mit offenem Editor; die Sondenbundles bleiben bis gueltigem State neutral und werden nie main. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,12 s | [B8](roh/SONDE-007a-9602d6c.md#b8) |
 
+
+## Dirigentenstand — 2026-08-30 03:04 (Sitzung 054eedac): Prüfer 12 NEEDS_WORK, offen — Runde 12
+
+**Stand dieses Abschnitts:** `4a379bb`
+
+**Marke unverändert** (`T3 NEEDS_WORK 2026-08-28 nachgearbeitet`). Ticketbasis `dafa5a5`; Stand `4a379bb` (= origin/master); Kanon GRÜN 32/32 auf `9602d6c` (Roh-Datei `docs/beweise/roh/SONDE-007a-9602d6c.md`).
+
+| Schritt | Worker / Prüfer | Stand | Ergebnis |
+|---|---|---|---|
+| Runde 11 (+ NAK-94 Nacharbeit 6) | Opus/max `nakama-s8r11-nak94r6-165d9ae-bau`, ENG | `b9f7ee1`…`4a379bb` | Exit-3-Aussagen nachgezogen, Inventar mit Schreibweisen; Kanon GRÜN 32/32 auf `9602d6c` |
+| Prüfer 12 | Codex xhigh `01a05029-4921-7313-a1ab-9e110d169ffb`, lesend über `git diff dafa5a5...4a379bb`, HEAD vor/nach identisch | `4a379bb` | **NEEDS_WORK (1)** — unten wörtlich; inhaltlich „keine pauschalen lebenden Exit-3-Aussagen" mehr, beide Voraussetzungs-Ausgänge bestätigt |
+
+**Befund des zwölften Prüfers, wörtlich (`@ 4a379bb`):**
+
+> **[P2] Ergänze den Manifest-Grep zum Vollständigkeitsbeleg** — `docs/beweise/SONDE-007a.md:15494-15498`. **Defekt, mittel.** Für Runde 11 verlangt das Aussagen-Inventar Befehle und Vorher-/Nachher-Trefferzahlen für alle Schreibweisen auch in den lebenden Manifestteilen; diese Zeilen schließen `docs/beweise/SONDE-007a.md` ausdrücklich aus, während der spätere Block nur `1 → 0` eines nicht angegebenen „Klassifizierers" liefert, sodass der Beleg nicht reproduzierbar ist — füge den exakten Manifest-Klassifizierer beziehungsweise grep-Befehl samt Zahlen je Schreibweise für `165d9ae` und den Nachziehstand ein.
+
+**Einordnung:** Defekt, mittel (Prüfliste E: Beleg nicht reproduzierbar). **Regel des Dirigenten (Runde 12):** Das Inventar nennt für das Manifest den exakten Befehl (z. B. `git grep -n -E '<Muster>' <sha> -- docs/beweise/SONDE-007a.md` je Schreibweise) und die Trefferzahl für `165d9ae` und den Endstand; ein „Klassifizierer" lebend/historisch ist als Skript oder als nachvollziehbare Regel (Treffer in Abschnitten mit `**Stand dieses Abschnitts:**` = historisch) angegeben, seine Zahlen sind mit den grep-Zahlen abgleichbar. Reine Belegarbeit, keine Verhaltensänderung.
+
+**Nächster Schritt:** Nacharbeits-Worker für S8 Runde 12 **und** NAK-94 Nacharbeit 7 (siehe `docs/beweise/SONDE-007c.md`, „Dirigentenstand NAK-94 … Prüfer 7"), gemeinsamer Kanon, dann Prüfer 13 (xhigh) für S8 und Prüfer 8 (high) für NAK-94 — je frischer Thread. Kein Halt.
+
+**Offen außerhalb der Grenze:** NAK-89, NAK-93, NAK-98, NAK-99, NAK-100.

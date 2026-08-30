@@ -19953,6 +19953,21 @@ die Wache aus Nacharbeit 11, jetzt mit einem zweiten Verbraucher dahinter.
 | **E** — „jede neue Prüfung einmal gebrochen" | Drei Brüche oben, jeder trifft genau eine Zusage; alle zurückgenommen, beide Skripte und die Fixturbytes danach bytegleich |
 | **F** — „Writer, Reader … eines Vertrags im selben Änderungssatz" | Genau der Befund: der zweite Leser desselben Korpusmanifests gehört in denselben Änderungssatz wie der erste. Regeln importiert, nicht kopiert |
 
+### Der vollständige Fuzz — und was die Zahlen sagen
+
+`py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --fuzz-voll` auf dem Messcode-Stand `ed08ff8`, Rohbeleg
+[roh/SONDE-007c-fuzz-ed08ff8.md](roh/SONDE-007c-fuzz-ed08ff8.md): **8 gelesene JSON-Dateien, 33 304 gekippte
+Byte-Stellen, 61 797 Läufe, UNKONTROLLIERT 0**, Bein 118 ok / 0 Fehler, 933,2 s.
+
+Gegenüber demselben vollständigen Lauf der Nacharbeit 11 ([roh/SONDE-007c-fuzz-01c9cd3.md](roh/SONDE-007c-fuzz-01c9cd3.md))
+sind Läufe, Byte-Stellen und das Urteil **identisch**. Verschoben hat sich genau eine Zahl: die
+5 411 Läufe über `journale/MANIFEST.json` liefern jetzt **3 557 `strukturhalt`** statt 0, und
+genau diese 3 557 fehlen in der Befund-Spalte — gesamt 21 936 statt 18 379 `strukturhalt`
+und 19 706 statt 23 263 `befund`. Das ist der zweite Verbraucher, in Zahlen: bis Nacharbeit 11
+sah nur A17s Z1 diese Mutationen und meldete sie als Befund; seit Nacharbeit 12 liest
+`pruefen()` des Erzeugers dieselbe Datei über denselben Strukturvertrag und fällt vorher
+kontrolliert. Die Differenz ist damit kein Rauschen, sondern die Messung dieser Nacharbeit.
+
 An `Install-Nakama.ps1`, den Fixturen und A18 wurde **nichts** geändert; das
 Installer-Manifest wurde weiterhin **nicht** neu gehasht. Die Marke von S9b
 bleibt unverändert; NAK-89 bleibt offen.

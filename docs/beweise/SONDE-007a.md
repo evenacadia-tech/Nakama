@@ -17934,8 +17934,8 @@ K1b bereitet jede Eingabe vor wie der Übersetzer, **in dieser Reihenfolge**
 
 | # | Stufe | Symbol | Regel |
 |---|---|---|---|
-| 1 | Kodierung, fail-closed | `lies_compiler_eingabe()` | Eine BOM entscheidet: `utf-8`, `utf-16-le`, `utf-16-be` — genau die drei, die MSVC ohne `/source-charset` erkennt. Ohne BOM gilt **strikt** UTF-8. Was sich so nicht dekodieren lässt, ist eine **namentliche Klage** (ROT); es gibt keinen dritten Ausgang und kein `errors="replace"` mehr |
-| 2 | Präprozessor-Phase 2 | `falte_zeilenfortsetzungen()` | Backslash + Zeilenende verschwindet — LF, CRLF und CR, auch mit Leerraum zwischen Backslash und Zeilenende, wie MSVC es akzeptiert. **Die Zeilenzahl bleibt erhalten**: der Inhalt der logischen Zeile steht danach auf der physischen Zeile, an der sie *beginnt*, die gefalteten Umbrüche werden dahinter als Leerzeilen nachgetragen. Eine Klage nennt damit den Anfang der logischen Zeile |
+| 1 | Kodierung, fail-closed | `lies_compiler_eingabe()` | Eine BOM entscheidet: `utf-8`, `utf-16-le`, `utf-16-be` — genau die drei, die MSVC ohne `/source-charset` erkennt (Beleg unten). Ohne BOM gilt **strikt** UTF-8. Was sich so nicht dekodieren lässt, ist eine **namentliche Klage** (ROT); es gibt keinen dritten Ausgang und kein `errors="replace"` mehr |
+| 2 | Präprozessor-Phase 2 | `falte_zeilenfortsetzungen()` | Backslash + Zeilenende verschwindet — LF, CRLF und CR, auch mit Leerraum zwischen Backslash und Zeilenende, wie MSVC es akzeptiert. **Die Zeilennummern bleiben die des Originals**: der Inhalt der logischen Zeile steht danach auf der physischen Zeile, an der sie *beginnt*, die gefalteten Umbrüche werden dahinter als Leerzeilen nachgetragen, und was danach kommt, behält seine Nummer. Eine Klage nennt damit den Anfang der logischen Zeile. Genau gesagt gilt das bis zur letzten Zeile **mit Inhalt**: endet eine Datei ohne abschließenden Umbruch **und** schließt ihre letzte Zeile eine Faltung ab, fehlen danach die leeren Nachtragszeilen — sie benennen nichts, und es folgt nichts mehr auf sie |
 | 3 | Kommentare | `ohne_kommentare()` | unverändert — aber jetzt **nach** der Faltung, was für Kommentare die einzig richtige Reihenfolge ist: ein `// …\`-Zeilenende zieht die Folgezeile *in* den Kommentar |
 | 4 | Tokenprüfung | `k1b_riegel()` / `k1b_ausnahme_abgleich()` | unverändert |
 
@@ -17949,6 +17949,23 @@ Zwei Dinge bleiben ausdrücklich, wie sie waren:
   von MSVC als UTF-16LE gelesen. Eine echte UTF-32-Datei fällt damit entweder
   als UTF-16LE auf oder ist nicht dekodierbar und damit ROT — in keinem Fall
   still grün.
+
+**Dass es genau diese drei Kodierungen sind, ist belegt, nicht angenommen:**
+
+* MSVC, `/source-charset` (learn.microsoft.com, Dokumentstand 2022-01-31, abgerufen
+  30.08.2026), **wörtlich**: „By default, Visual Studio detects a byte-order mark to
+  determine if the source file is in an encoded Unicode format, for example, UTF-16 or
+  UTF-8. If no byte-order mark is found, it assumes that the source file is encoded in the
+  current user code page, unless you use the `/source-charset` or `/utf-8` option“.
+* Der Kern wird **mit** `/utf-8` übersetzt — `eq-copilot/plugin/CMakeLists.txt`,
+  `target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")` —, und `/utf-8` **ist**
+  `/source-charset:utf-8 /execution-charset:utf-8`. Ohne BOM ist die Quelle für diesen
+  Übersetzer also ebenfalls UTF-8: der Riegel liest, was der Compiler liest.
+* Fällt dieser Schalter je weg, liest MSVC ohne BOM nach Codepage; der Riegel bliebe bei
+  striktem UTF-8 und wäre dann **strenger**, nie lockerer.
+* Eine UTF-16-Datei **ohne** BOM wird nicht erraten: sie zerfällt hier in
+  Buchstabe-NUL-Buchstabe-NUL — aber genau so zerfällt sie auch für den Präprozessor, der
+  daraus keinen Bezeichner bilden kann. Riegel und Übersetzer sehen dasselbe Nichts.
 
 `_logische_direktiven()` behält seine Backslash-Abbildung, obwohl der
 K1b-Text sie nach der Faltung nicht mehr braucht. Sie ist kein toter Zweig:
@@ -18003,7 +18020,7 @@ Die sieben Proben im `--selbsttest` von A14:
 | `R17-1a` | `JucePlug` + Backslash + CRLF + `in_Name`, definiert, in `#if` benutzt, `#undef` — ROT |
 | `R17-1b` | dasselbe mit Leerzeichen und Tab zwischen Backslash und Zeilenende — ROT |
 | `R17-1c` | die **Reihenfolge**: eine `//`-Zeile mit Fortsetzung verschluckt die Folgezeile, also **keine** Klage — was der Übersetzer auch so sieht |
-| `R17-1d` | die Faltung erhält die Zeilenzahl und legt den Inhalt auf den *Anfang* der logischen Zeile |
+| `R17-1d` | die Faltung erhält die **Zeilennummern**: der Inhalt liegt auf dem *Anfang* der logischen Zeile, und die Zeile danach behält ihre Nummer |
 | `R17-2a` | UTF-16LE **und** UTF-16BE mit BOM: das `JucePlugin_Name` darin ist ROT, nicht unsichtbar |
 | `R17-2b` | nicht dekodierbare Bytes sind eine **namentliche Klage**, kein ersetztes Zeichen |
 | `R17-2c` | fail-closed heißt nicht fail-laut: gültiges UTF-8 **mit** BOM bleibt grün, die BOM wird abgezogen statt zu Text |

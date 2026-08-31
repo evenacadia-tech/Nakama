@@ -1,6 +1,24 @@
 # NEXT-SESSION — Einstieg für die nächste Runde
 
-> ## ✅ NACHTRAG — 31.08.2026 spät, Fable-Sitzung 3233a71f (Dirigent), geordneter Terminalwechsel
+> ## ✅ NACHTRAG — 01.09.2026, Fable-Sitzung 6c9e2d4e (Dirigent): SONDE-011 ABGESCHLOSSEN
+>
+> **S16–17 `SONDE-011` trägt T2 PASS 2026-09-01** (Manifest-Kopf mit
+> Rundenübersicht: `docs/beweise/SONDE-011.md`). Phase B: Erstprüfung 19
+> Defekte → Nacharbeit 1 (16 zu) → Runde 2 (2 Folgedefekte) → Runde 3
+> (1 Folgedefekt, Budget erreicht) → Konvergenzentscheid (OR-Merge
+> `beitritt_bestaetigung_noetig`, B.9/L-13) → Wiederprüfung **PASS** auf
+> `f176f24`. Kanon GRÜN 33/33 beglaubigt
+> (`docs/beweise/roh/SONDE-011-f176f24-dirty.md`). Bauer durchgehend
+> Codex-Thread `01a0590d` (Sol max); der frühere unterbrochene
+> Worktree-Zwischenstand ist committet (`901598f`…`f176f24`).
+>
+> **Als Nächstes:** G2-Gate (volles Programm: C++-, Rust- und
+> Sicherheits-Review + Codex). Danach NAK-121 (Modul-Aufteilung der
+> Broker-Monolithen, verhaltensneutral, `docs/offene-punkte.md`).
+>
+> Der folgende Block vom 31.08. ist damit Verlauf.
+
+> ## NACHTRAG — 31.08.2026 spät, Fable-Sitzung 3233a71f (Dirigent), geordneter Terminalwechsel
 >
 > **User-Wort 31.08. spät:** „mach pause codex kann nicht löschen sonst" ·
 > „ich mache das terminal zu und danach ein frisches auf"

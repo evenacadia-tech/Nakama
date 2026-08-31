@@ -110,11 +110,13 @@ Zusammengefasst gilt:
   Gain, Q und Dynamic. Es wird am Bandpunkt je nach verfügbarem Raum ober- oder
   unterhalb platziert und an den Graphkanten innerhalb der Arbeitsfläche
   gehalten; eine feste horizontale Schiene ist verworfen.
-- Der Filtertyp wird über einen sichtbaren Handgriff im Mini-Panel und eine
-  kompakte 2×3-Auswahl der sechs vertraglichen Typen gewechselt. Der Band-Slot
-  bleibt dabei derselbe; ein neues Band beginnt als `bell`. Solange die
-  Typauswahl offen ist, ersetzt sie die Wertezeile im selben Grundkörper statt
-  das Panel zu einem weiteren großen Popup zu verlängern.
+- Der Filtertyp wird über sein Kurvensymbol im Mini-Panel und eine kompakte
+  2×3-Auswahl der sechs typischen Filterkurven gewechselt. Ausgeschriebene
+  All-Caps-Typnamen sind dort verworfen; die Namen bleiben als Tooltip und
+  zugängliche Control-Bezeichnung erhalten. Der Band-Slot bleibt beim Wechsel
+  derselbe; ein neues Band beginnt als `bell`. Solange die Typauswahl offen
+  ist, ersetzt sie die Wertezeile im selben Grundkörper statt das Panel zu
+  einem weiteren großen Popup zu verlängern.
 - Doppelklick auf eine freie Graphposition belegt dort den nächsten freien der
   acht Band-Slots, wählt ihn aus und öffnet dasselbe Mini-Panel. Sind alle acht
   Slots belegt, meldet die Oberfläche das am Graphen und überschreibt nichts.

@@ -95,3 +95,22 @@ Damit gilt für Gen Seite 2:
   Parametervertrag als `bell`.
 - Dynamic-Detail sowie endgültige Schließ- und Fokusregeln des Mini-Panels
   bleiben Gegenstand der folgenden Einzelentscheide.
+
+## Filterkurven statt All-Caps-Typnamen
+
+Zur sichtbaren Darstellung der sechs Typen präzisiert der User:
+
+> „jeder filter hat typische symbolik die platzsparendes ist als plump die
+> wörter hinzuschreiben in CAPS“
+
+Damit gilt:
+
+- Der aktuelle Filtertyp und alle sechs Auswahlziele werden sichtbar durch
+  ihre typischen Frequenzgang-Kurven dargestellt: Bell-Wölbung, Shelf-Stufen,
+  Notch-Senke sowie ansteigende oder fallende Cut-Kurven.
+- Die ausgeschriebenen Typnamen entfallen aus der sichtbaren Auswahl. Sie
+  bleiben auf jedem Symbol als englischer Tooltip und zugänglicher Name
+  erhalten, damit die platzsparende Expertenabkürzung nicht zum unbenannten
+  Control wird.
+- Auswahl und aktueller Zustand werden zusätzlich über den Buttonzustand
+  vermittelt; die Kurvenform bleibt der Bedeutungsträger des Filtertyps.

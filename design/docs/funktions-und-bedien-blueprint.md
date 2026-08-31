@@ -593,17 +593,20 @@ permanente rechte Transaktionsspalte und eine permanente Band-Parameterzeile
 sind verworfen. Der aktuelle Draft besitzt stattdessen eine kompakte Zeile
 unter dem Graphen, die ohne offenen Draft verschwindet. Doppelklick auf einen
 vorhandenen Bandpunkt öffnet ein objektgebundenes Mini-Panel für Filter Type,
-Frequency, Gain, Q und Dynamic. Der aktuelle Filtertyp steht als kompakter
-Handgriff im Panel; seine Aktivierung öffnet dort eine 2×3-Auswahl der sechs
-vertraglichen Typen. Während dieser Auswahl ersetzt die Typmatrix innerhalb
-desselben Grundkörpers die drei Wertefelder; sie verlängert das Panel nicht zu
-einem zweiten großen Popup. Das Panel ist zweidimensional kompakt statt als
-lange horizontale Leiste aufgebaut. Es verankert sich am betroffenen Bandpunkt
-und erscheint je nach freiem Raum ober- oder unterhalb; an den Graphkanten wird
-es innerhalb der Arbeitsfläche gehalten. Doppelklick auf eine freie
-Graphposition belegt dort den nächsten freien der acht Band-Slots als `bell`,
-wählt ihn und öffnet dasselbe Panel. Bei acht belegten Slots wird der Grenzfall
-sichtbar gemeldet; kein bestehendes Band wird still überschrieben.
+Frequency, Gain, Q und Dynamic. Der aktuelle Filtertyp steht als kompaktes
+Kurvensymbol im Panel; seine Aktivierung öffnet dort eine 2×3-Auswahl derselben
+sechs typischen Filterkurven. Sichtbar werden keine ausgeschriebenen
+All-Caps-Typnamen benötigt. Die englischen Namen bleiben als Tooltip und
+zugängliche Control-Bezeichnung erhalten. Während dieser Auswahl ersetzt die
+Typmatrix innerhalb desselben Grundkörpers die drei Wertefelder; sie verlängert
+das Panel nicht zu einem zweiten großen Popup. Das Panel ist zweidimensional
+kompakt statt als lange horizontale Leiste aufgebaut. Es verankert sich am
+betroffenen Bandpunkt und erscheint je nach freiem Raum ober- oder unterhalb;
+an den Graphkanten wird es innerhalb der Arbeitsfläche gehalten. Doppelklick
+auf eine freie Graphposition belegt dort den nächsten freien der acht
+Band-Slots als `bell`, wählt ihn und öffnet dasselbe Panel. Bei acht belegten
+Slots wird der Grenzfall sichtbar gemeldet; kein bestehendes Band wird still
+überschrieben.
 
 **[A]/[D] Zustandswahrheit:** Globale Zustände, aktiver Draft, Freeze,
 Automation und Preview dürfen nie spurlos eingeklappt sein. Der Filtertyp ist

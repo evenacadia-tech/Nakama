@@ -980,3 +980,31 @@ zurückgestuft; die I/O-Worker-Zusage trägt der neue `SV3`-Test.
 | B10 | C++-v3-Vertrag und SONDE-011 Phase B: Envelope/CRC/Pipetoken und begrenzte P0/P1/P2-Politiken bleiben gruen; das In-Flight-Register gibt persistente Befehle erst bei angewandt, idempotent_wiederholt oder endgueltigem Fehler frei und reiht vor ACK dieselbe command_id wieder ein; Autostart verbindet zuerst, prueft Manifest-SHA-256 und bei gesetztem Thumbprint WinVerifyTrust plus Signer, spawnt verborgen und mutex-idempotent, haelt Backoff/Timeout/Cooldown-Grenzen und beendet keinen Brokerprozess. | `eq-copilot\build\plugin\EqCopIpcTest_artefacts\Release\EqCopIpcTest.exe` | [OK] Exit 0 | 105,06 s | [B10](roh/SONDE-011-70301d8-dirty-3.md#b10) |
 | B8 | Lifecycle-Klassifikation §53.5 bleibt erhalten; SONDE-011 startet den Broker nur ueber state::Lebenslauf::darfBrokerStarten() bei Main plus offenem Editor. Alle Negativzustaende lassen den Launcher unberuehrt, und die instrumentierte Gegenprobe misst null Broker-Lifecycle-Aufrufe aus processBlock beziehungsweise dem Audiothread. | `eq-copilot\build\plugin\EqCopLebenslaufTest_artefacts\Release\EqCopLebenslaufTest.exe` | [OK] Exit 0 | 0,15 s | [B8](roh/SONDE-011-70301d8-dirty-3.md#b8) |
 
+
+# Phase B — Erstprüfung (2026-08-31, Dirigent, Session 3233a71f)
+
+**URTEIL: NEEDS_WORK** — 19 Defekte. Prüfer: frischer Codex-Review-Thread
+`01a058b4-6d2e-7e31-a859-48207f5dc912` (gpt-5.6-sol, max, read-only),
+Bereich `d172b0a...c8fc3c2`, gebundener Auftrag nach Vorlage A. Wörtliche
+Befundliste: `docs/beweise/roh/SONDE-011-erstpruefung-c8fc3c2.md`.
+
+**Gemeinsame Ursache:** Rust-Kern und Testwelten stehen, aber die produktive
+Ende-zu-Ende-Verdrahtung des v3-Pfads ist unvollständig — persistente
+P0-Befehle haben im Produkt-Coordinator keinen Handler (nur im
+Crash-Testworker), das Plugin sendet weder heartbeat noch state_report,
+Probeeq hat keinen Connector, die Projektbindung bleibt leer, der Kanon baut
+das Release-Broker-Artefakt nicht; dazu Projektions-/Push-Pfade ohne
+Abdichtung gegen Nebenläufigkeit und Brokerlaufgrenzen. Vom Dirigenten per
+grep an der Quelle bestätigt (B1, B12, B14, B16 direkt; Rest plausibel am
+Code).
+
+**Nacharbeit Runde 1:** Codex-Bauer-Thread
+`01a0590d-e354-7720-a255-e578b936aca6` (workspace-write, Sol max), Auftrag =
+Ursache + alle 19 Defekte wörtlich. Der Lauf wurde am Abend mehrfach durch
+eine externe Codex-Datenbereinigung unterbrochen; sein Zwischenstand liegt
+uncommittet im Worktree (broker-Kernpfade + ControlClient begonnen).
+Fortsetzung: denselben Thread resumen; der Prompt-Wortlaut liegt unter
+`%TEMP%
+akama-sonde011b-nacharbeit1*.jsonl`-Nachbarn bzw. ist aus diesem
+Abschnitt rekonstruierbar. Danach: Wiederprüfung (Variante B, nur Fixdiff +
+Befundliste), Kanon, ggf. Abschlussprüfung.

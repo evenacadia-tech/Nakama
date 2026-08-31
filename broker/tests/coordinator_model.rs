@@ -258,6 +258,27 @@ fn probe_ohne_eigene_epoche_uebernimmt_eindeutige_main_sitzung() {
 }
 
 #[test]
+fn join_reconnect_disconnect_setzt_sticky_unknown_bis_resync() {
+    let (c, _) = coordinator();
+    let probe = hello(1, 1, 102, 1002, "active_probe", Some(77));
+    anmelden(&c, "probe-alt", &probe);
+    let main = hello(1, 11, 101, 1001, "main", Some(77));
+    let main_anmeldung = c.control_hello_registrieren("main", &main);
+    assert!(main_anmeldung.angenommen);
+    assert_eq!(main_anmeldung.zu_schliessende_links, vec!["probe-alt"]);
+
+    // Auch der vom internen Join angestossene Control-Disconnect ist C-08:
+    // kein Begin/End muss vorher angekommen sein, damit Unknown sticky wird.
+    c.control_ende("probe-alt");
+    assert!(c.interventionssicht().unknown);
+    assert!(!c.interventionssicht().starke_evidenz_erlaubt);
+    c.hoermarkierung_v2("legacy", false);
+    assert!(c.interventionssicht().unknown);
+    assert!(c.neutral_resync("main", 0));
+    assert!(c.interventionssicht().starke_evidenz_erlaubt);
+}
+
+#[test]
 fn probe_join_bleibt_reihenfolgefest_und_bei_mehreren_mains_fail_closed() {
     // Probe zuerst: Sobald das Main erscheint, fordert der Coordinator einen
     // normalen Reconnect an. Erst dessen neues Hello wird kanonisch gebunden;

@@ -1176,3 +1176,36 @@ Symbolen und Rotlogs sowie diesem nachweislich append-only Abschnitt. F1/F2
 liegen im gemeinsam getesteten Connect/Reconnect-Weg und in der gemeinsamen
 Coordinator-/Store-Projektion samt Rebuild; Sender und Verbraucher des
 bestehenden Feldes sind im selben Änderungssatz.
+
+---
+
+## Phase B — Nacharbeit Runde 3 (Bau)
+
+**Stand:** Phase B: Nacharbeit Runde 3, in Wiederprüfung.
+
+Der Änderungssatz schließt ausschließlich die zwei Folgefehler der
+Runde-2-Wiederprüfung. Die Rotläufe entstanden vor den Produktfixes gegen den
+Wiederprüfungsstand `5882718`; ihre Rohlogs liegen nur unter `%TEMP%` als
+`sonde011-r3-red-live-joinbedarf.log` und
+`sonde011-r3-red-disconnect.log`.
+
+| # | Fix-Ort und geschlossene Wirkung | Belegender Test | Rotmutation und Fehlerstelle | Lauf-Schlusszeile im Endstand |
+|---:|---|---|---|---|
+| 1 | `broker/src/coordinator.rs` — `projektion_mit_aktuellem_lauf` übernimmt neben `broker_epoch`, Führung und Mitgliedern nun auch `beitritt_bestaetigung_noetig` aus dem aktuellen Livegraphen. Der übrige Projektionsschnitt stammt weiterhin aus der persistierten Projektion; die K-04/K-06/K-07-Wirkung wird nicht durch den leeren Laufgraphen ersetzt. | C-03/E-06/O-02: `store_crash_matrix::resubscribe_uebernimmt_live_bestaetigungsbedarf_waehrend_store_flush_blockiert` blockiert den Report-Flush deterministisch und resubscribed parallel. Die K-04/K-06/K-07-Gegenpfade prüfen zusätzlich, dass der gespeicherte Wirkungsmarker vor und nach dem Live-Merge erhalten bleibt. | Ausgangscode ohne das vierte Livefeld: **FAILED** in `store_crash_matrix.rs:664`, `left: Bool(false)`, `right: true`. | `store_crash_matrix`: **53 passed, 0 failed, 17 ignored**; separater SI-Lauf: **17 passed, 0 failed**. |
+| 2 | `broker/src/coordinator.rs` — `control_ende` räumt einen internen Join-Reconnect-Marker weiterhin auf, setzt danach aber ausnahmslos `intervention_state_unknown`; nur der vorhandene bestätigte Neutral-/Sequenz-Resync entsperrt. | 10-1/C-08: `coordinator_model::join_reconnect_disconnect_setzt_sticky_unknown_bis_resync` reproduziert Probe-vor-Main, schließt exakt den zurückgegebenen Probe-Link, prüft Sticky-Unknown und starke Evidenz sowie den allein entsperrenden Resync. | Ausgangscode mit Join-Reconnect-Ausnahme: **FAILED** in `coordinator_model.rs:273`, `assertion failed: c.interventionssicht().unknown`. | `coordinator_model`: **34 passed, 0 failed**; vollständige Rust-Lib: **186 passed, 0 failed**. |
+
+### Ausgeführte Läufe
+
+- `cargo test --manifest-path broker/Cargo.toml --color never --no-fail-fast`:
+  Rust-Lib 186/186, Broker-Idle 4/4, Cross-Language 9/9, Coordinator
+  34/34, Store 53/53 regulär bei 17 bewusst ignorierten SI-Fällen und
+  Transport-Fuzz 9/9; Exit 0.
+- `cargo test --manifest-path broker/Cargo.toml --test store_crash_matrix --
+  --ignored --test-threads=1`: 17/17 SI-Fälle; Exit 0.
+- Es wurde kein C++-Bein neu gefahren, weil Runde 3 weder C++-Quellen noch
+  C++-Tests ändert. Ein vollständiger Kanonlauf wurde für diesen auf zwei
+  Rust-Defekte begrenzten Auftrag nicht gefahren und wird nicht behauptet.
+
+`tools/dirigent/pruefliste.md` wurde nicht editiert. Die Messorte dieser Runde
+sind die beiden Tabellenzeilen und die unmittelbar darüber dokumentierten
+vollständigen Rust-/SI-Läufe.

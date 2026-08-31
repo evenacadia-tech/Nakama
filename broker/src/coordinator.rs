@@ -62,10 +62,16 @@ fn projektion_mit_aktuellem_lauf(gespeichert: &[u8], live: &[u8]) -> Option<Vec<
     let mut persistiert = v3_nachricht_lesen(gespeichert, "session_snapshot")?;
     let live = v3_nachricht_lesen(live, "session_snapshot")?;
     let objekt = persistiert.as_object_mut()?;
-    // Nur diese drei Felder gehoeren zum Brokerlauf. Der uebrige absolute
-    // Projektionsschnitt ist die committierte Wirkung und darf beim neuen
-    // Epoch nicht durch den anfangs leeren Laufgraphen ersetzt werden.
-    for feld in ["broker_epoch", "fuehrendes_main", "mitglieder"] {
+    // Diese Felder gehoeren zum aktuellen Brokerlauf; insbesondere entsteht
+    // der Bestaetigungsbedarf aus fluechtigen Join-Kandidaten. Der uebrige
+    // absolute Projektionsschnitt ist die committierte Wirkung und darf beim
+    // neuen Epoch nicht durch den anfangs leeren Laufgraphen ersetzt werden.
+    for feld in [
+        "broker_epoch",
+        "fuehrendes_main",
+        "beitritt_bestaetigung_noetig",
+        "mitglieder",
+    ] {
         objekt.insert(feld.into(), live.get(feld)?.clone());
     }
     serde_json::to_vec(&persistiert).ok()
@@ -673,20 +679,19 @@ impl Coordinator {
         let jetzt = self.clock.jetzt();
         let mut stand = self.stand.lock().expect("Coordinator vergiftet");
         let mut dirty = None;
-        let mut sauberer_join_reconnect = false;
         if let Some(link) = stand.links.remove(link_id) {
             self.alias_register.entferne(
                 &link.alias_adressraum,
                 &link.alias_besitzer,
                 &link.adresse.instance_id,
             );
-            sauberer_join_reconnect = link.join_neuverbinden
+            let join_reconnect_ohne_tombstone = link.join_neuverbinden
                 && link.letzte_event_sequence.is_none()
                 && !stand
                     .interventionen
                     .values()
                     .any(|intervention| intervention.link_id == link_id);
-            if sauberer_join_reconnect {
+            if join_reconnect_ohne_tombstone {
                 // Der Marker ist keine Sessionidentitaet und darf nach dem
                 // kontrollierten Reconnect keinen Phantom-Tombstone erzeugen.
                 stand.clients.remove(&link.client_key);
@@ -707,9 +712,9 @@ impl Coordinator {
         stand
             .interventionen
             .retain(|_, intervention| intervention.link_id != link_id);
-        if !sauberer_join_reconnect {
-            stand.intervention_state_unknown = true;
-        }
+        // C-08 gilt fuer jeden Control-Disconnect, auch wenn der interne
+        // Joinpfad den Reconnect angefordert hat. Nur neutral_resync loest.
+        stand.intervention_state_unknown = true;
     }
 
     fn subscription_abweisen(stand: &mut Stand, grund: &str) {

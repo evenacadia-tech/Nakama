@@ -103,6 +103,18 @@ fn snapshot_wirkung(wert: &Value) -> i64 {
         })
 }
 
+fn persistierte_snapshot_wirkung(writer: &StoreWriter) -> i64 {
+    let (_, payload) = writer
+        .handle()
+        .session_state_lesen(
+            "00000000000000000000000000000001",
+            "00000000000000000000000000000002",
+        )
+        .unwrap()
+        .unwrap();
+    snapshot_wirkung(&serde_json::from_slice(&payload).unwrap())
+}
+
 fn event(command: Option<&str>, sequence: i64, wirkung: i64, outbox: bool) -> StoreEvent {
     let mut event = StoreEvent::session_snapshot(
         "00000000000000000000000000000001",
@@ -598,6 +610,73 @@ fn brokerneustart_sendet_keine_laufgebundenen_felder_der_alten_projektion() {
     assert_eq!(snapshot["broker_epoch"], si_hex(91));
     assert!(snapshot["fuehrendes_main"].is_null());
     assert!(snapshot["mitglieder"].as_array().unwrap().is_empty());
+}
+
+#[test]
+fn resubscribe_uebernimmt_live_bestaetigungsbedarf_waehrend_store_flush_blockiert() {
+    let ordner = TestOrdner::neu("live-joinbedarf-vor-storeflush");
+    let writer = starten(&ordner.db());
+
+    // Der vorige Brokerlauf hinterlaesst fuer Main-Sitzung 2 eine gueltige
+    // Projektion ohne Bestätigungsbedarf.
+    let alt = Coordinator::mit_store(
+        Arc::new(ManualClock::default()),
+        si_hex(90),
+        &writer,
+    );
+    let main_a = si_hello(10, 100, "main");
+    assert!(alt.control_hello_registrieren("alt-main", &main_a).angenommen);
+    assert!(si_report(&alt, "alt-main", &main_a.adresse, 1));
+    let (_, alt_payload) = writer
+        .handle()
+        .session_state_lesen(&si_hex(1), &si_hex(2))
+        .unwrap()
+        .unwrap();
+    let alt_payload: Value = serde_json::from_slice(&alt_payload).unwrap();
+    assert_eq!(alt_payload["beitritt_bestaetigung_noetig"], false);
+    drop(alt);
+
+    // Im neuen Lauf machen zwei Main-Sitzungen denselben Probe-Kandidaten
+    // mehrdeutig. Sein Report berechnet live `true`, wird aber vor dem ersten
+    // Store-Commit deterministisch angehalten.
+    let coordinator = Arc::new(Coordinator::mit_store(
+        Arc::new(ManualClock::default()),
+        si_hex(99),
+        &writer,
+    ));
+    let push = Arc::new(PushProbe::neu(true));
+    coordinator.session_push_setzen(push.clone());
+    assert!(coordinator
+        .control_hello_registrieren("main-a", &main_a)
+        .angenommen);
+    let mut main_b = si_hello(11, 101, "main");
+    main_b.adresse.session_epoch = si_hex(3);
+    assert!(coordinator
+        .control_hello_registrieren("main-b", &main_b)
+        .angenommen);
+    let mut probe = si_hello(12, 102, "active_probe");
+    probe.adresse.session_epoch = probe.adresse.project_binding_id.clone();
+    assert!(coordinator
+        .control_hello_registrieren("probe", &probe)
+        .angenommen);
+
+    let haken = CoordinatorFlushTestHaken::default();
+    coordinator.flush_test_haken_setzen(haken.clone());
+    let c = coordinator.clone();
+    let probe_adresse = probe.adresse.clone();
+    let report = std::thread::spawn(move || si_report(&c, "probe", &probe_adresse, 1));
+    haken.warten_bis_erfasst();
+
+    assert!(si_subscribe(&coordinator, "main-a", &main_a.adresse));
+    let race_snapshot = push.snapshots().last().unwrap().1.clone();
+    haken.freigeben();
+    assert!(report.join().unwrap());
+
+    assert_eq!(race_snapshot["broker_epoch"], si_hex(99));
+    assert_eq!(race_snapshot["beitritt_bestaetigung_noetig"], true);
+    // Die alten laufgebundenen Mitglieder duerfen ebenso wenig austreten;
+    // der persistierte absolute Rest bleibt weiterhin die K-04-Wirkung.
+    assert!(race_snapshot["mitglieder"].as_array().unwrap().is_empty());
 }
 
 #[test]
@@ -1184,12 +1263,12 @@ fn alter_store_ueberschreibt_plugin_state_nicht() {
     // Der alte Projektionsschnitt bleibt haltbar, seine laufgebundenen
     // Felder werden beim neuen Coordinator aber auf dessen freie Baseline
     // gesetzt. Er ist kein MainProjectState-Ingress.
+    assert_eq!(persistierte_snapshot_wirkung(&writer), 1);
     assert!(si_subscribe(&coordinator, "probe", &client.adresse));
-    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 1);
-    assert_eq!(
-        push.snapshots().last().unwrap().1["broker_epoch"],
-        "00000000000000000000000000000063"
-    );
+    let snapshots = push.snapshots();
+    let resubscribe = &snapshots.last().unwrap().1;
+    assert_eq!(resubscribe["beitritt_bestaetigung_noetig"], false);
+    assert_eq!(resubscribe["broker_epoch"], si_hex(99));
 
     // Danach meldet das Plugin seinen neueren lokalen Zustand. Der
     // Coordinator darf ihn als Kontakt lesen, aber keines seiner DSP-Felder
@@ -1519,6 +1598,7 @@ fn kill_nach_store_commit_vor_snapshot_push() {
     crash(&ordner.db(), "nach_store_commit", "append");
     let writer = starten(&ordner.db());
     assert_eq!(writer.handle().outbox_lesen().unwrap().len(), 1);
+    assert_eq!(persistierte_snapshot_wirkung(&writer), 1);
     let clock = Arc::new(ManualClock::default());
     let coordinator = Coordinator::mit_store(clock, si_hex(99), &writer);
     let push = Arc::new(PushProbe::neu(true));
@@ -1531,8 +1611,11 @@ fn kill_nach_store_commit_vor_snapshot_push() {
     );
     assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
     assert_eq!(push.snapshots().len(), 1);
-    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 1);
-    assert_eq!(push.snapshots().last().unwrap().1["broker_epoch"], si_hex(99));
+    let snapshots = push.snapshots();
+    let resubscribe = &snapshots.last().unwrap().1;
+    assert_eq!(resubscribe["beitritt_bestaetigung_noetig"], false);
+    assert_eq!(resubscribe["broker_epoch"], si_hex(99));
+    assert_eq!(persistierte_snapshot_wirkung(&writer), 1);
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
 }
 
@@ -1572,6 +1655,7 @@ fn kill_vor_snapshot_outbox_kompaktierung() {
     crash(&ordner.db(), "vor_outbox_kompaktierung", "compact");
     let writer = starten(&ordner.db());
     assert_eq!(writer.handle().outbox_lesen().unwrap().len(), 1);
+    assert_eq!(persistierte_snapshot_wirkung(&writer), 1);
     let coordinator = Coordinator::mit_store(Arc::new(ManualClock::default()), si_hex(99), &writer);
     let push = Arc::new(PushProbe::neu(true));
     coordinator.session_push_setzen(push.clone());
@@ -1582,8 +1666,11 @@ fn kill_vor_snapshot_outbox_kompaktierung() {
             .angenommen
     );
     assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
-    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 1);
-    assert_eq!(push.snapshots().last().unwrap().1["broker_epoch"], si_hex(99));
+    let snapshots = push.snapshots();
+    let resubscribe = &snapshots.last().unwrap().1;
+    assert_eq!(resubscribe["beitritt_bestaetigung_noetig"], false);
+    assert_eq!(resubscribe["broker_epoch"], si_hex(99));
+    assert_eq!(persistierte_snapshot_wirkung(&writer), 1);
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
 }
 
@@ -1593,6 +1680,7 @@ fn kill_nach_snapshot_outbox_kompaktierung_snapshot_traegt_wirkung() {
     crash(&ordner.db(), "nach_outbox_kompaktierung", "compact");
     let writer = starten(&ordner.db());
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
+    assert_eq!(persistierte_snapshot_wirkung(&writer), 1);
     let coordinator = Coordinator::mit_store(Arc::new(ManualClock::default()), si_hex(99), &writer);
     let push = Arc::new(PushProbe::neu(true));
     coordinator.session_push_setzen(push.clone());
@@ -1603,8 +1691,11 @@ fn kill_nach_snapshot_outbox_kompaktierung_snapshot_traegt_wirkung() {
             .angenommen
     );
     assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
-    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 1);
-    assert_eq!(push.snapshots().last().unwrap().1["broker_epoch"], si_hex(99));
+    let snapshots = push.snapshots();
+    let resubscribe = &snapshots.last().unwrap().1;
+    assert_eq!(resubscribe["beitritt_bestaetigung_noetig"], false);
+    assert_eq!(resubscribe["broker_epoch"], si_hex(99));
+    assert_eq!(persistierte_snapshot_wirkung(&writer), 1);
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
 }
 
@@ -1707,6 +1798,7 @@ fn kill_waehrend_wal_replay() {
         event_ord
     );
     assert_eq!(writer.handle().outbox_lesen().unwrap().len(), 1);
+    assert_eq!(persistierte_snapshot_wirkung(&writer), 1);
 
     let coordinator = Arc::new(Coordinator::mit_store(
         Arc::new(ManualClock::default()),
@@ -1722,8 +1814,11 @@ fn kill_waehrend_wal_replay() {
             .angenommen
     );
     assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
-    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 1);
-    assert_eq!(push.snapshots().last().unwrap().1["broker_epoch"], si_hex(99));
+    let snapshots = push.snapshots();
+    let resubscribe = &snapshots.last().unwrap().1;
+    assert_eq!(resubscribe["beitritt_bestaetigung_noetig"], false);
+    assert_eq!(resubscribe["broker_epoch"], si_hex(99));
+    assert_eq!(persistierte_snapshot_wirkung(&writer), 1);
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
     assert!(recovery_testgrenze_bestanden(start.elapsed()));
 }

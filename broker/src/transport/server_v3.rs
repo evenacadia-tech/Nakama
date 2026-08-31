@@ -67,7 +67,9 @@ use windows_sys::Win32::System::Pipes::{
     ConnectNamedPipe, CreateNamedPipeW, DisconnectNamedPipe, PIPE_READMODE_BYTE,
     PIPE_REJECT_REMOTE_CLIENTS, PIPE_TYPE_BYTE, PIPE_WAIT,
 };
-use windows_sys::Win32::System::Threading::{CreateEventW, ResetEvent, WaitForSingleObject, INFINITE};
+use windows_sys::Win32::System::Threading::{
+    CreateEventW, ResetEvent, SetEvent, WaitForMultipleObjects, WaitForSingleObject, INFINITE,
+};
 use windows_sys::Win32::System::IO::{CancelIoEx, GetOverlappedResult, OVERLAPPED};
 
 use crate::transport::bootstrap::{
@@ -234,6 +236,52 @@ impl Drop for Ereignis {
     }
 }
 
+/// Dauerhaft gesetztes Lebenszyklus-Signal einer Verbindung. Anders als das
+/// private I/O-Event eines `Ereignis` wird dieses Event absichtlich zwischen
+/// Reader und Writer geteilt und nach dem Setzen nie zurueckgesetzt.
+struct EndeSignal(HANDLE);
+
+// SAFETY: Win32-Eventhandles sind prozessweite Kernel-Referenzen ohne
+// Thread-Affinitaet. `SetEvent` und die Wait-Funktionen duerfen dasselbe Handle
+// nebenlaeufig verwenden; `Drop` laeuft erst nach dem letzten `Arc`-Besitzer.
+unsafe impl Send for EndeSignal {}
+unsafe impl Sync for EndeSignal {}
+
+impl EndeSignal {
+    fn neu() -> Option<Self> {
+        // SAFETY: alle Zeiger sind null; das manuell zurueckgesetzte Event wird
+        // im Drop genau einmal geschlossen.
+        let h = unsafe { CreateEventW(std::ptr::null(), 1, 0, std::ptr::null()) };
+        if h.is_null() {
+            None
+        } else {
+            Some(Self(h))
+        }
+    }
+
+    fn setzen(&self) {
+        // SAFETY: `self.0` bleibt durch den aufrufenden `Arc` gueltig. SetEvent
+        // ist idempotent; dieses Signal wird absichtlich nie zurueckgesetzt.
+        unsafe { SetEvent(self.0) };
+    }
+
+    fn gesetzt(&self) -> bool {
+        // SAFETY: gueltiges Eventhandle; Timeout 0 blockiert nicht.
+        unsafe { WaitForSingleObject(self.0, 0) == WAIT_OBJECT_0 }
+    }
+
+    fn roh(&self) -> HANDLE {
+        self.0
+    }
+}
+
+impl Drop for EndeSignal {
+    fn drop(&mut self) {
+        // SAFETY: exklusiver Besitz beim letzten `Arc`, genau einmal geschlossen.
+        unsafe { CloseHandle(self.0) };
+    }
+}
+
 fn leeres_overlapped(e: HANDLE) -> OVERLAPPED {
     // SAFETY: OVERLAPPED ist ein reines POD-Feld ohne Invarianten; genullt ist
     // der von Win32 verlangte Startzustand.
@@ -260,13 +308,20 @@ fn io_fehler_deuten(f: u32) -> IoAusgang {
     }
 }
 
-/// Ein Lesevorgang. Er wartet unbegrenzt; beendet wird er durch `CancelIoEx`
-/// (Stop, Bootstrapfrist, Verbindungsende) — nicht durch einen Timeout, denn
-/// eine stille Sekunde ist kein Fehler.
-fn ov_lesen(h: HANDLE, e: HANDLE, ziel: &mut [u8]) -> IoAusgang {
+/// Ein Lesevorgang. Ohne lokales Ende-Signal wartet er bis zur I/O oder einem
+/// externen `CancelIoEx` (Bootstrap/Serverstopp). Im laufenden Verbindungsweg
+/// wartet er auf I/O UND das dauerhafte Ende-Signal. Dadurch bleibt auch ein
+/// Ende dicht, das zwischen dem letzten Zustandscheck und `ReadFile` eintritt.
+fn ov_lesen(
+    h: HANDLE,
+    e: HANDLE,
+    ende: Option<&EndeSignal>,
+    ziel: &mut [u8],
+) -> IoAusgang {
     // SAFETY: `h` ist ein gueltiges, overlapped geoeffnetes Pipe-Handle, `e`
-    // gehoert allein diesem Thread, `ov` lebt bis GetOverlappedResult zurueck
-    // ist, und `ziel` bleibt fuer die Dauer des Aufrufs gueltig.
+    // gehoert allein diesem Thread, und ein vorhandenes `ende` samt Handle lebt
+    // ueber den ganzen Aufruf. `ov`, Handle-Array und `ziel` bleiben gueltig,
+    // bis GetOverlappedResult beziehungsweise der Wait zurueck ist.
     unsafe {
         ResetEvent(e);
         let mut ov = leeres_overlapped(e);
@@ -283,7 +338,16 @@ fn ov_lesen(h: HANDLE, e: HANDLE, ziel: &mut [u8]) -> IoAusgang {
             if f != ERROR_IO_PENDING {
                 return io_fehler_deuten(f);
             }
-            if WaitForSingleObject(e, INFINITE) != WAIT_OBJECT_0 {
+            let gewartet = if let Some(ende) = ende {
+                let ereignisse = [e, ende.roh()];
+                WaitForMultipleObjects(ereignisse.len() as u32, ereignisse.as_ptr(), 0, INFINITE)
+            } else {
+                WaitForSingleObject(e, INFINITE)
+            };
+            if gewartet != WAIT_OBJECT_0 {
+                // Das Ende-Signal (Index 1) oder ein Wait-Fehler gewinnt gegen
+                // den noch ausstehenden Read. Die Operation muss abgeschlossen
+                // sein, bevor `ov` und `ziel` ihren Gueltigkeitsbereich verlassen.
                 CancelIoEx(h, &ov);
                 let _ = GetOverlappedResult(h, &ov, &mut n, 1);
                 return IoAusgang::Abgebrochen;
@@ -873,6 +937,16 @@ fn naechste_instanz(
     }
 }
 
+// Deterministische Testphase fuer das Cancel-vor-Read-Interleaving. Im
+// Produktpfad bleibt sie INAKTIV; ein Test armiert genau einen folgenden Read.
+const CANCEL_VOR_READ_BEREIT: u64 = 0;
+const CANCEL_VOR_READ_GELESEN: u64 = 1;
+const CANCEL_VOR_READ_READER: u64 = 2;
+const CANCEL_VOR_READ_WRITER: u64 = 3;
+const CANCEL_VOR_READ_FORTGESETZT: u64 = 4;
+const CANCEL_VOR_READ_INAKTIV: u64 = 5;
+const CANCEL_VOR_READ_FEHLER: u64 = 6;
+
 /// Startet den v3-Listener auf `pipe_name`.
 ///
 /// Der Aufrufer waehlt den Namen — im Test und in der Probe ist es ein
@@ -888,6 +962,7 @@ pub fn v3_server_starten(
         broker_version,
         Arc::new(AtomicU64::new(0)),
         Arc::new(AtomicBool::new(false)),
+        Arc::new(AtomicU64::new(CANCEL_VOR_READ_INAKTIV)),
     )
 }
 
@@ -901,6 +976,7 @@ fn v3_server_starten_intern(
     broker_version: String,
     probe_verzoegerung_ms: Arc<AtomicU64>,
     writer_fehler_erzwungen: Arc<AtomicBool>,
+    cancel_vor_read_phase: Arc<AtomicU64>,
 ) -> Result<V3Griff, String> {
     let sicherheit = crate::server::sicherheit_nur_user()?;
     let stop = Arc::new(AtomicBool::new(false));
@@ -1055,6 +1131,7 @@ fn v3_server_starten_intern(
                 let handle_eintrag = HandleEintrag { id, register: handles2.clone() };
                 let verzoegerung = probe_verzoegerung_ms.clone();
                 let writer_fehler = writer_fehler_erzwungen.clone();
+                let cancel_vor_read = cancel_vor_read_phase.clone();
 
                 let senke = senke.clone();
                 let kopplungen = kopplungen.clone();
@@ -1077,7 +1154,8 @@ fn v3_server_starten_intern(
                         }
                         verbindung_bedienen(
                             id, griff, senke, kopplungen, trennmelder, handles, bootstraps,
-                            statistik, bv, be, conn_stop, writer_fehler, handle_eintrag,
+                            statistik, bv, be, conn_stop, writer_fehler, cancel_vor_read,
+                            handle_eintrag,
                         );
                     }) {
                     Ok(j) => verbindungen2.lock().unwrap_or_else(|e| e.into_inner()).push(j),
@@ -1179,6 +1257,7 @@ fn verbindung_bedienen(
     broker_epoch: String,
     stop: Arc<AtomicBool>,
     writer_fehler_erzwungen: Arc<AtomicBool>,
+    cancel_vor_read_phase: Arc<AtomicU64>,
     handle_eintrag: HandleEintrag,
 ) {
     // Der Acceptor hat das Handle schon registriert; der Eintrag traegt es
@@ -1199,6 +1278,10 @@ fn verbindung_bedienen(
 
     let leseereignis = match Ereignis::neu() {
         Some(e) => e,
+        None => return,
+    };
+    let ende = match EndeSignal::neu() {
+        Some(e) => Arc::new(e),
         None => return,
     };
 
@@ -1223,7 +1306,7 @@ fn verbindung_bedienen(
                 return;
             }
         }
-        match ov_lesen(griff.h, leseereignis.roh(), &mut puffer) {
+        match ov_lesen(griff.h, leseereignis.roh(), None, &mut puffer) {
             IoAusgang::Ende => {
                 senkenruf.abweisen("bootstrap: Verbindung vor dem Hello beendet");
                 return;
@@ -1398,7 +1481,6 @@ fn verbindung_bedienen(
     };
 
     // ── Ab hier ausschliesslich v3-Frames, auf drei Threads ───────────────
-    let ende = Arc::new(AtomicBool::new(false));
     let eingang = Arc::new(Eingang::neu());
     let ausgang = Arc::new(Ausgang::neu());
 
@@ -1408,6 +1490,7 @@ fn verbindung_bedienen(
         let ende = ende.clone();
         let handles = handles.clone();
         let statistik = statistik.clone();
+        let cancel_vor_read_phase = cancel_vor_read_phase.clone();
         std::thread::Builder::new()
             .name("eqcop-v3-writer".into())
             .spawn(move || {
@@ -1415,18 +1498,41 @@ fn verbindung_bedienen(
                     Some(e) => e,
                     None => {
                         statistik.geschlossen_writer.fetch_add(1, Ordering::SeqCst);
-                        ende.store(true, Ordering::SeqCst);
+                        ende.setzen();
                         io_abbrechen(&handles, id);
                         return;
                     }
                 };
                 while let Some(frame) = ausgang.entnehmen() {
-                    if writer_fehler_erzwungen.swap(false, Ordering::SeqCst)
-                        || !ov_schreiben(griff.h, ereignis.roh(), &frame)
+                    let erzwungen = writer_fehler_erzwungen.swap(false, Ordering::SeqCst);
+                    if erzwungen
+                        && cancel_vor_read_phase.load(Ordering::SeqCst)
+                            != CANCEL_VOR_READ_INAKTIV
                     {
+                        let frist = Instant::now() + Duration::from_secs(5);
+                        while cancel_vor_read_phase.load(Ordering::SeqCst)
+                            != CANCEL_VOR_READ_READER
+                            && Instant::now() < frist
+                        {
+                            std::thread::yield_now();
+                        }
+                        if cancel_vor_read_phase.load(Ordering::SeqCst)
+                            != CANCEL_VOR_READ_READER
+                        {
+                            cancel_vor_read_phase
+                                .store(CANCEL_VOR_READ_FEHLER, Ordering::SeqCst);
+                        }
+                    }
+                    if erzwungen || !ov_schreiben(griff.h, ereignis.roh(), &frame) {
                         statistik.geschlossen_writer.fetch_add(1, Ordering::SeqCst);
-                        ende.store(true, Ordering::SeqCst);
+                        ende.setzen();
                         io_abbrechen(&handles, id);
+                        if cancel_vor_read_phase.load(Ordering::SeqCst)
+                            == CANCEL_VOR_READ_READER
+                        {
+                            cancel_vor_read_phase
+                                .store(CANCEL_VOR_READ_WRITER, Ordering::SeqCst);
+                        }
                         break;
                     }
                 }
@@ -1460,7 +1566,7 @@ fn verbindung_bedienen(
                                 // "nichts verwerfen".
                                 statistik.geschlossen_writer.fetch_add(1, Ordering::SeqCst);
                                 senke.abgewiesen("writer: Antwortqueue laeuft ueber");
-                                ende.store(true, Ordering::SeqCst);
+                                ende.setzen();
                                 io_abbrechen(&handles, id);
                                 break;
                             }
@@ -1496,6 +1602,7 @@ fn verbindung_bedienen(
     leser.fuettern(&roh);
     let mut rate = Ratengrenze::neu(RATE_PRO_SEKUNDE, 1000);
     let beginn = Instant::now();
+    let mut cancel_vor_read_barriere = false;
 
     'lesen: loop {
         loop {
@@ -1581,7 +1688,7 @@ fn verbindung_bedienen(
             }
         }
 
-        if stop.load(Ordering::SeqCst) || ende.load(Ordering::SeqCst) {
+        if stop.load(Ordering::SeqCst) || ende.gesetzt() {
             break;
         }
         // Harte Obergrenze fuer den Lesepuffer: ein Peer darf nicht beliebig
@@ -1591,8 +1698,48 @@ fn verbindung_bedienen(
             senkenruf.abweisen("envelope: Teilframe ueber der Paketgrenze");
             break;
         }
-        match ov_lesen(griff.h, leseereignis.roh(), &mut puffer) {
-            IoAusgang::Bytes(n) => leser.fuettern(&puffer[..n]),
+        if std::mem::take(&mut cancel_vor_read_barriere) {
+            // Deterministische Testbarriere fuer genau das verlorene
+            // Cancel-vor-Read-Fenster: Der letzte Ende-Check liegt hinter uns,
+            // der naechste Read wurde aber noch nicht abgesetzt.
+            if cancel_vor_read_phase
+                .compare_exchange(
+                    CANCEL_VOR_READ_GELESEN,
+                    CANCEL_VOR_READ_READER,
+                    Ordering::SeqCst,
+                    Ordering::SeqCst,
+                )
+                .is_err()
+            {
+                cancel_vor_read_phase.store(CANCEL_VOR_READ_FEHLER, Ordering::SeqCst);
+            }
+            let frist = Instant::now() + Duration::from_secs(5);
+            while cancel_vor_read_phase.load(Ordering::SeqCst) != CANCEL_VOR_READ_WRITER
+                && Instant::now() < frist
+            {
+                std::thread::yield_now();
+            }
+            let phase = if cancel_vor_read_phase.load(Ordering::SeqCst)
+                == CANCEL_VOR_READ_WRITER
+            {
+                CANCEL_VOR_READ_FORTGESETZT
+            } else {
+                CANCEL_VOR_READ_FEHLER
+            };
+            cancel_vor_read_phase.store(phase, Ordering::SeqCst);
+        }
+        match ov_lesen(griff.h, leseereignis.roh(), Some(&ende), &mut puffer) {
+            IoAusgang::Bytes(n) => {
+                leser.fuettern(&puffer[..n]);
+                cancel_vor_read_barriere = cancel_vor_read_phase
+                    .compare_exchange(
+                        CANCEL_VOR_READ_BEREIT,
+                        CANCEL_VOR_READ_GELESEN,
+                        Ordering::SeqCst,
+                        Ordering::SeqCst,
+                    )
+                    .is_ok();
+            }
             IoAusgang::Ende | IoAusgang::Abgebrochen => break,
             IoAusgang::Fehler(f) => {
                 senkenruf.abweisen(format!("lesen: Win32 {f}"));
@@ -1605,7 +1752,7 @@ fn verbindung_bedienen(
     // haengende I/O aufloesen, dann joinen. Ein Schreiber, der auf einen
     // stillen Peer wartet, muss abgebrochen werden — sonst waere `join` ein
     // Hang.
-    ende.store(true, Ordering::SeqCst);
+    ende.setzen();
     // 28-B: Kein neuer Ingress darf den atomaren Cleanup ueberholen. Ein
     // schon laufender Coordinator-Aufruf teilt dessen Lock; entweder commitet
     // er vorher und wird hier entfernt, oder er sieht danach `schliessend`.
@@ -2400,6 +2547,7 @@ mod tests {
             "test".into(),
             verzoegerung,
             Arc::new(AtomicBool::new(false)),
+            Arc::new(AtomicU64::new(CANCEL_VOR_READ_INAKTIV)),
         )
         .unwrap();
 
@@ -3330,6 +3478,7 @@ mod tests {
             let pipe = probe_pipe(&format!("subscriptioncleanup-{grund}"));
             let coordinator = Arc::new(crate::coordinator::Coordinator::default());
             let writer_fehler = Arc::new(AtomicBool::new(false));
+            let cancel_vor_read = Arc::new(AtomicU64::new(CANCEL_VOR_READ_INAKTIV));
             let mut griff = if grund == "Writefehler" {
                 v3_server_starten_intern(
                     &pipe,
@@ -3337,6 +3486,7 @@ mod tests {
                     "test".into(),
                     Arc::new(AtomicU64::new(0)),
                     writer_fehler.clone(),
+                    cancel_vor_read.clone(),
                 )
                 .unwrap()
             } else {
@@ -3361,10 +3511,13 @@ mod tests {
                 }
                 "Timeout" => coordinator.control_ende(&link),
                 "Writefehler" => {
-                    // Nur der Writer scheitert. Der Client bleibt offen, der
-                    // Reader steht in seinem naechsten Overlapped-Read. Erst
-                    // `ende` + `CancelIoEx` aus dem Writer darf den Cleanup
-                    // erreichen; EOF kann diesen Fall nicht gruenschaummeln.
+                    // Der naechste Read liefert den Heartbeat. Danach haelt die
+                    // Testnaht den Reader NACH seinem Ende-Check, aber VOR dem
+                    // folgenden ReadFile. Der Writer wartet genau darauf,
+                    // scheitert und setzt sein einmaliges Cancel ab. Erst dann
+                    // darf der Reader weiter: Das Ende-Event, nicht EOF oder
+                    // ein zufaellig bereits pending Read, muss ihn aufloesen.
+                    cancel_vor_read.store(CANCEL_VOR_READ_BEREIT, Ordering::SeqCst);
                     writer_fehler.store(true, Ordering::SeqCst);
                     assert!(client
                         .as_ref()
@@ -3374,6 +3527,11 @@ mod tests {
                         warte_auf(5000, || statistik.geschlossen_writer.load(Ordering::SeqCst)
                             == 1),
                         "Writerfehler wurde nicht erreicht"
+                    );
+                    assert!(
+                        warte_auf(5000, || cancel_vor_read.load(Ordering::SeqCst)
+                            == CANCEL_VOR_READ_FORTGESETZT),
+                        "Cancel muss VOR dem erst danach abgesetzten Read liegen"
                     );
                     assert!(
                         client.is_some(),

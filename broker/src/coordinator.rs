@@ -20,7 +20,7 @@ use crate::transport::bootstrap::{Adresse, AudioLage, HelloControl};
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, Condvar, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 const MAX_AKTIVE_INTERVENTIONEN: usize = 64;
@@ -48,10 +48,14 @@ fn v3_schema() -> &'static crate::vertrag::Schema {
 }
 
 fn v3_nachricht_lesen(payload: &[u8], erwarteter_typ: &str) -> Option<Value> {
+    let wert = v3_nachricht_lesen_beliebig(payload)?;
+    (wert.get("type").and_then(Value::as_str) == Some(erwarteter_typ)).then_some(wert)
+}
+
+fn v3_nachricht_lesen_beliebig(payload: &[u8]) -> Option<Value> {
     crate::vertrag::textriegel_bytes(payload).ok()?;
     let wert: Value = serde_json::from_slice(payload).ok()?;
-    (wert.get("type").and_then(Value::as_str) == Some(erwarteter_typ) && v3_schema().gueltig(&wert))
-        .then_some(wert)
+    v3_schema().gueltig(&wert).then_some(wert)
 }
 
 pub trait MonotonicClock: Send + Sync {
@@ -107,6 +111,42 @@ pub trait SessionPush: Send + Sync {
     fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool;
 }
 
+/// Einmalige, schlaflose Testnaht direkt nach dem Snapshot-Capture. Produktion
+/// setzt sie nie; sie macht die sonst mikroskopische Reihenfolge
+/// "alt erfasst, neu committed, alt committed" deterministisch pruefbar.
+#[doc(hidden)]
+#[derive(Clone, Default)]
+pub struct CoordinatorFlushTestHaken {
+    stand: Arc<(Mutex<(bool, bool)>, Condvar)>,
+}
+
+impl CoordinatorFlushTestHaken {
+    pub fn warten_bis_erfasst(&self) {
+        let (schloss, signal) = &*self.stand;
+        let mut stand = schloss.lock().unwrap_or_else(|e| e.into_inner());
+        while !stand.0 {
+            stand = signal.wait(stand).unwrap_or_else(|e| e.into_inner());
+        }
+    }
+
+    pub fn freigeben(&self) {
+        let (schloss, signal) = &*self.stand;
+        let mut stand = schloss.lock().unwrap_or_else(|e| e.into_inner());
+        stand.1 = true;
+        signal.notify_all();
+    }
+
+    fn erreichen(&self) {
+        let (schloss, signal) = &*self.stand;
+        let mut stand = schloss.lock().unwrap_or_else(|e| e.into_inner());
+        stand.0 = true;
+        signal.notify_all();
+        while !stand.1 {
+            stand = signal.wait(stand).unwrap_or_else(|e| e.into_inner());
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct ClientKey {
     logon_sid: String,
@@ -153,6 +193,10 @@ struct ClientStand {
     bestaetigt: bool,
     explizit_bestaetigt: bool,
     descriptor: Option<Value>,
+    state_revision: Option<u64>,
+    state_hash: Option<String>,
+    record_state_valid: bool,
+    recording: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -249,7 +293,14 @@ pub struct Coordinator {
     broker_epoch: String,
     event_sequence: AtomicU64,
     push: Mutex<Option<Arc<dyn SessionPush>>>,
+    /// Feste, begrenzte Shards serialisieren den Capture-/Commit-/Push-Pfad
+    /// derselben Session. So kann ein spaeter gestarteter Flush seinen
+    /// neueren Stand nie vor einem pausierten aelteren Flush committen.
+    session_flush_schloesser: Vec<Mutex<()>>,
+    flush_test_haken: Mutex<Option<CoordinatorFlushTestHaken>>,
 }
+
+const SESSION_FLUSH_SCHLOSS_ANZAHL: usize = 64;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ControlRegistrierung {
@@ -315,6 +366,10 @@ impl Coordinator {
             broker_epoch,
             event_sequence: AtomicU64::new(0),
             push: Mutex::new(None),
+            session_flush_schloesser: (0..SESSION_FLUSH_SCHLOSS_ANZAHL)
+                .map(|_| Mutex::new(()))
+                .collect(),
+            flush_test_haken: Mutex::new(None),
         }
     }
 
@@ -342,6 +397,10 @@ impl Coordinator {
             broker_epoch,
             event_sequence: AtomicU64::new(0),
             push: Mutex::new(None),
+            session_flush_schloesser: (0..SESSION_FLUSH_SCHLOSS_ANZAHL)
+                .map(|_| Mutex::new(()))
+                .collect(),
+            flush_test_haken: Mutex::new(None),
         }
     }
 
@@ -355,6 +414,14 @@ impl Coordinator {
 
     pub fn session_push_setzen(&self, push: Arc<dyn SessionPush>) {
         *self.push.lock().unwrap_or_else(|e| e.into_inner()) = Some(push);
+    }
+
+    #[doc(hidden)]
+    pub fn flush_test_haken_setzen(&self, haken: CoordinatorFlushTestHaken) {
+        *self
+            .flush_test_haken
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = Some(haken);
     }
 
     /// Kompatibler Phase-A-Einstieg fuer direkte Modelltests.
@@ -461,7 +528,11 @@ impl Coordinator {
             join_kandidat: geerbt.as_ref().is_some_and(|c| c.join_kandidat),
             bestaetigt: geerbt.as_ref().is_some_and(|c| c.bestaetigt),
             explizit_bestaetigt: geerbt.as_ref().is_some_and(|c| c.explizit_bestaetigt),
-            descriptor: geerbt.and_then(|c| c.descriptor),
+            descriptor: geerbt.as_ref().and_then(|c| c.descriptor.clone()),
+            state_revision: geerbt.as_ref().and_then(|c| c.state_revision),
+            state_hash: geerbt.as_ref().and_then(|c| c.state_hash.clone()),
+            record_state_valid: geerbt.as_ref().is_some_and(|c| c.record_state_valid),
+            recording: geerbt.as_ref().is_some_and(|c| c.recording),
         };
         stand.clients.insert(key.clone(), client);
         stand.sessions.entry(key.session()).or_default();
@@ -530,12 +601,9 @@ impl Coordinator {
     }
 
     pub fn subscribe_json(&self, link_id: &str, payload: &[u8]) -> bool {
-        let Ok(wert) = serde_json::from_slice::<Value>(payload) else {
+        let Some(wert) = v3_nachricht_lesen(payload, "subscribe_session") else {
             return false;
         };
-        if wert.get("type").and_then(Value::as_str) != Some("subscribe_session") {
-            return false;
-        }
         let Ok(adresse) = serde_json::from_value::<Adresse>(wert["adresse"].clone()) else {
             let mut stand = self.stand.lock().expect("Coordinator vergiftet");
             Self::subscription_abweisen(&mut stand, "subscribe: Adresse ungueltig");
@@ -622,15 +690,38 @@ impl Coordinator {
         // weder als neues Event persistieren noch ueber die bereits
         // committed Projektion schreiben: der letzte Projektionsschnitt ist
         // genau der haltbare absolute Resync-Stand aus L-10/K-04/K-07.
-        let projektion = self.store.as_ref().and_then(|store| {
-            store
+        let projektion = match &self.store {
+            Some(store) => match store
                 .session_state_lesen(&session.project_binding_id, &session.session_epoch)
-                .ok()
-                .flatten()
-        });
-        let (gedeckt_bis, payload) = projektion
-            .map(|(ord, payload)| (Some(ord), payload))
-            .unwrap_or((None, live_payload));
+            {
+                Ok(projektion) => projektion,
+                Err(_) => {
+                    self.routing_fail_closed("Sessionprojektion konnte nicht gelesen werden");
+                    return;
+                }
+            },
+            None => None,
+        };
+        let (gedeckt_bis, payload) = match projektion {
+            Some((ord, gespeichert)) => {
+                let Some(wert) = v3_nachricht_lesen(&gespeichert, "session_snapshot") else {
+                    self.routing_fail_closed("Sessionprojektion verletzt v3-Vertrag");
+                    return;
+                };
+                // Fuehrung, Mitglieder und broker_epoch gehoeren zum Lauf.
+                // Eine haltbare Projektion des vorigen Laufs ist kein
+                // MainProjectState-Ingress und wird deshalb mit dem aktuellen
+                // freien/lokal rekonstruierten Graphen ersetzt.
+                if wert.get("broker_epoch").and_then(Value::as_str)
+                    != Some(self.broker_epoch.as_str())
+                {
+                    (Some(ord), live_payload)
+                } else {
+                    (Some(ord), gespeichert)
+                }
+            }
+            None => (None, live_payload),
+        };
         if v3_nachricht_lesen(&payload, "session_snapshot").is_none() {
             // Eine beschaedigte Projektion darf nie als scheinbar gueltiger
             // Wirezustand austreten. Das ist Storedegradation, nicht ein
@@ -639,14 +730,46 @@ impl Coordinator {
             return;
         }
         let push = self.push.lock().unwrap_or_else(|e| e.into_inner()).clone();
-        let geschrieben = push
-            .as_ref()
-            .is_some_and(|push| push.snapshot_schreiben(link_id, &payload));
+        let geschrieben = self.push_ziel_noch_gueltig(link_id, &ziel)
+            && push
+                .as_ref()
+                .is_some_and(|push| push.snapshot_schreiben(link_id, &payload));
         if geschrieben {
             if let (Some(store), Some(ord)) = (&self.store, gedeckt_bis) {
                 let _ = store.snapshot_schuld_kompaktieren(ziel, ord);
             }
         }
+    }
+
+    /// Zweite Zielpruefung unmittelbar vor der externen Pipe-Arbeit. Die
+    /// erste Ermittlung ist nur ein Kandidat: Eviction, Disconnect,
+    /// Nonce-Verdraengung oder Aliasquarantaene koennen ihn danach entziehen.
+    fn push_ziel_noch_gueltig(&self, link_id: &str, ziel: &SnapshotZiel) -> bool {
+        let stand = self.stand.lock().expect("Coordinator vergiftet");
+        let Some(link) = stand.links.get(link_id) else {
+            return false;
+        };
+        let Some(sub) = stand.subscriptions.get(link_id) else {
+            return false;
+        };
+        !link.trennen
+            && stand.routing_bereit
+            && sub.adresse == link.adresse
+            && sub.adresse.project_binding_id == ziel.project_binding_id
+            && sub.session_epoch == ziel.session_epoch
+            && sub.adresse.instance_id == ziel.instance_id
+            && stand
+                .clients
+                .get(&link.client_key)
+                .is_some_and(|client| client.current_link.as_deref() == Some(link_id))
+            && !stand
+                .conflict_guards
+                .contains_key(&effektive_adresse(&link.adresse))
+            && self.alias_register.session_push_erlaubt(
+                &link.alias_adressraum,
+                &link.alias_besitzer,
+                &link.adresse.instance_id,
+            )
     }
 
     /// Liefert die Linkziele eines Pushs unter demselben Lock wie der
@@ -1020,15 +1143,35 @@ impl Coordinator {
         let Ok(adresse) = serde_json::from_value::<Adresse>(wert["adresse"].clone()) else {
             return false;
         };
-        if !self
-            .stand
-            .lock()
-            .expect("Coordinator vergiftet")
-            .links
-            .get(link_id)
-            .is_some_and(|link| link.adresse == adresse)
+        let revision = wert.get("state_revision").and_then(Value::as_u64);
+        let state_hash = wert
+            .get("state_hash")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+        let record_valid = wert
+            .pointer("/record_state/valid")
+            .and_then(Value::as_bool);
+        let recording = wert
+            .pointer("/record_state/recording")
+            .and_then(Value::as_bool);
         {
-            return false;
+            let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let Some(link) = stand.links.get(link_id).cloned() else {
+                return false;
+            };
+            if link.adresse != adresse {
+                return false;
+            }
+            let Some(client) = stand.clients.get_mut(&link.client_key) else {
+                return false;
+            };
+            if client.current_link.as_deref() != Some(link_id) {
+                return false;
+            }
+            client.state_revision = revision;
+            client.state_hash = state_hash;
+            client.record_state_valid = record_valid == Some(true);
+            client.recording = recording == Some(true);
         }
         self.heartbeat_kontakt(link_id, None)
     }
@@ -1380,6 +1523,19 @@ impl Coordinator {
     }
 
     fn flush_session(&self, session: &SessionKey, verursacher_link: Option<&str>) {
+        let mut shard = 0usize;
+        for byte in session
+            .project_binding_id
+            .bytes()
+            .chain(session.session_epoch.bytes())
+        {
+            shard = shard.wrapping_mul(16777619) ^ usize::from(byte);
+        }
+        let _flush_guard = self.session_flush_schloesser
+            [shard % self.session_flush_schloesser.len()]
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+
         let (payload, ziele) = {
             let mut stand = self.stand.lock().expect("Coordinator vergiftet");
             if !stand.dirty_sessions.remove(session) {
@@ -1420,6 +1576,15 @@ impl Coordinator {
             (payload, ziele)
         };
 
+        let test_haken = self
+            .flush_test_haken
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .take();
+        if let Some(haken) = test_haken {
+            haken.erreichen();
+        }
+
         let mut event_ord = None;
         if let Some(store) = &self.store {
             let sequence = self.event_sequence.fetch_add(1, Ordering::SeqCst);
@@ -1447,11 +1612,17 @@ impl Coordinator {
             }
         }
 
+        // Die Reihenfolge ist bis einschliesslich Store-/Outbox-Commit
+        // serialisiert. Externe Pipe-Arbeit laeuft danach ohne dieses Schloss;
+        // eine Senke darf den Coordinator reentrant beobachten, ohne dieselbe
+        // Session zu deadlocken.
+        drop(_flush_guard);
         let push = self.push.lock().unwrap_or_else(|e| e.into_inner()).clone();
         for (link_id, ziel) in ziele {
-            let geschrieben = push
-                .as_ref()
-                .is_some_and(|push| push.snapshot_schreiben(&link_id, &payload));
+            let geschrieben = self.push_ziel_noch_gueltig(&link_id, &ziel)
+                && push
+                    .as_ref()
+                    .is_some_and(|push| push.snapshot_schreiben(&link_id, &payload));
             if geschrieben {
                 if let (Some(store), Some(ord)) = (&self.store, event_ord) {
                     let _ = store.snapshot_schuld_kompaktieren(ziel, ord);
@@ -1557,6 +1728,10 @@ impl Coordinator {
             .get(intervention_id)
             .is_some_and(|i| i.link_id == link_id);
         if !passt {
+            // Ein End ohne bekanntes Begin ist gerade KEIN sauberer
+            // Neutralzustand: das Begin kann vor Reconnect/Overflow verloren
+            // gegangen sein. Nur `neutral_resync` darf dieses Urteil loesen.
+            stand.intervention_state_unknown = true;
             return false;
         }
         stand.interventionen.remove(intervention_id);
@@ -1585,6 +1760,14 @@ impl Coordinator {
         } else {
             stand.interventionen.remove(&id);
         }
+    }
+
+    pub fn hoermarkierung_v2_getrennt(&self, link_id: &str) {
+        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        stand
+            .interventionen
+            .retain(|_, intervention| intervention.link_id != link_id);
+        stand.intervention_state_unknown = true;
     }
 
     pub fn intervention_overflow(&self) {
@@ -1677,8 +1860,239 @@ impl Coordinator {
         erlaubt
     }
 
-    fn p0_json(&self, link_id: &str, payload: &[u8]) -> Option<Vec<u8>> {
+    fn command_ack(
+        command_id: &str,
+        ergebnis: &str,
+        state_revision: u64,
+        state_hash: Option<&str>,
+        code: Option<&str>,
+    ) -> Option<Vec<u8>> {
+        let mut objekt = serde_json::Map::from_iter([
+            ("type".into(), Value::String("command_ack".into())),
+            ("command_id".into(), Value::String(command_id.into())),
+            ("ergebnis".into(), Value::String(ergebnis.into())),
+            ("state_revision".into(), Value::from(state_revision)),
+        ]);
+        if let Some(hash) = state_hash {
+            objekt.insert("state_hash".into(), Value::String(hash.into()));
+        }
+        if let Some(code) = code {
+            objekt.insert("code".into(), Value::String(code.into()));
+        }
+        let payload = serde_json::to_vec(&Value::Object(objekt)).ok()?;
+        v3_nachricht_lesen(&payload, "command_ack").is_some().then_some(payload)
+    }
+
+    fn persistierte_command_wirkung(payload: &[u8]) -> Option<(Value, u64, String)> {
         let wert: Value = serde_json::from_slice(payload).ok()?;
+        if wert.get("type").and_then(Value::as_str) != Some("internal_p0_command") {
+            return None;
+        }
+        Some((
+            wert.get("command")?.clone(),
+            wert.get("state_revision")?.as_u64()?,
+            wert.get("state_hash")?.as_str()?.to_owned(),
+        ))
+    }
+
+    fn store_verweigert_fuer_link(&self, link_id: &str) {
+        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        stand.store_verweigerungen = stand.store_verweigerungen.saturating_add(1);
+        if let Some(link) = stand.links.get_mut(link_id) {
+            link.trennen = true;
+        }
+    }
+
+    fn persistenz_p0(&self, link_id: &str, wert: &Value) -> Option<Vec<u8>> {
+        let kopf = wert.get("kopf")?;
+        let command_id = kopf.get("command_id")?.as_str()?;
+        let base_revision = kopf.get("base_revision")?.as_u64()?;
+        let ziel: Adresse = serde_json::from_value(kopf.get("ziel")?.clone()).ok()?;
+        let Some(store) = &self.store else {
+            return Self::command_ack(
+                command_id,
+                "abgelehnt",
+                base_revision,
+                None,
+                Some("internal"),
+            );
+        };
+
+        // Idempotenz wird VOR der heutigen Link-/Record-Lage aufgeloest: ein
+        // bereits committeter Befehl bleibt auch nach Reconnect dieselbe
+        // Wirkung. Eine Wiederverwendung derselben ID fuer andere Bytes ist
+        // dagegen ein sichtbarer Konflikt.
+        match store.command_event_lesen(command_id) {
+            Ok(Some(payload)) => {
+                let (alt, revision, hash) = Self::persistierte_command_wirkung(&payload)?;
+                return if alt == *wert {
+                    Self::command_ack(
+                        command_id,
+                        "idempotent_wiederholt",
+                        revision,
+                        Some(&hash),
+                        None,
+                    )
+                } else {
+                    Self::command_ack(
+                        command_id,
+                        "konflikt",
+                        revision,
+                        Some(&hash),
+                        Some("revision_conflict"),
+                    )
+                };
+            }
+            Ok(None) => {}
+            Err(_) => {
+                self.store_verweigert_fuer_link(link_id);
+                return None;
+            }
+        }
+
+        let zielstand: Result<(u64, String), (u64, Option<String>, &'static str, &'static str)> = {
+            let stand = self.stand.lock().expect("Coordinator vergiftet");
+            let Some(sender_link) = stand.links.get(link_id) else {
+                return None;
+            };
+            let sender_erlaubt = stand
+                .clients
+                .get(&sender_link.client_key)
+                .is_some_and(|client| {
+                    client.plugin_kind == "main"
+                        && client.bestaetigt
+                        && stand
+                            .sessions
+                            .get(&sender_link.client_key.session())
+                            .and_then(|session| session.fuehrendes_main.as_deref())
+                            == Some(sender_link.client_key.instance_id.as_str())
+                        && self.dispatch_fuer_link_erlaubt_locked(&stand, sender_link)
+                });
+            if !sender_erlaubt {
+                Err((base_revision, None, "abgelehnt", "unauthorized"))
+            } else if let Some((ziel_link_id, ziel_link)) = stand.links.iter().find(|(_, link)| {
+                link.adresse == ziel
+                    && link.client_key.session() == sender_link.client_key.session()
+                    && !link.trennen
+            }) {
+                let Some(client) = stand.clients.get(&ziel_link.client_key) else {
+                    return Self::command_ack(
+                        command_id,
+                        "abgelehnt",
+                        base_revision,
+                        None,
+                        Some("unknown_target"),
+                    );
+                };
+                if client.current_link.as_deref() != Some(ziel_link_id.as_str())
+                    || client.stale
+                    || !self.dispatch_fuer_link_erlaubt_locked(&stand, ziel_link)
+                {
+                    Err((base_revision, None, "abgelehnt", "unknown_target"))
+                } else if !client.record_state_valid || client.state_revision.is_none() {
+                    Err((
+                        client.state_revision.unwrap_or(base_revision),
+                        client.state_hash.clone(),
+                        "abgelehnt",
+                        "record_state_unknown",
+                    ))
+                } else if client.recording {
+                    Err((
+                        client.state_revision.unwrap_or(base_revision),
+                        client.state_hash.clone(),
+                        "abgelehnt",
+                        "recording_active",
+                    ))
+                } else if client.state_hash.is_none() {
+                    Err((
+                        client.state_revision.unwrap_or(base_revision),
+                        None,
+                        "abgelehnt",
+                        "record_state_unknown",
+                    ))
+                } else {
+                    let revision = client.state_revision.unwrap_or(base_revision);
+                    let hash = client.state_hash.clone().expect("oben geprueft");
+                    if revision != base_revision {
+                        Err((revision, Some(hash), "konflikt", "revision_conflict"))
+                    } else {
+                        Ok((revision, hash))
+                    }
+                }
+            } else {
+                Err((base_revision, None, "abgelehnt", "unknown_target"))
+            }
+        };
+        let (revision, hash) = match zielstand {
+            Ok(wirkung) => wirkung,
+            Err((revision, hash, ergebnis, code)) => {
+                return Self::command_ack(
+                    command_id,
+                    ergebnis,
+                    revision,
+                    hash.as_deref(),
+                    Some(code),
+                );
+            }
+        };
+
+        let intern = serde_json::json!({
+            "type": "internal_p0_command",
+            "command": wert,
+            "state_revision": revision,
+            "state_hash": hash,
+        });
+        let payload_jcs = serde_json_canonicalizer::to_vec(&intern).ok()?;
+        let sequence = self.event_sequence.fetch_add(1, Ordering::SeqCst);
+        let mut event = StoreEvent::session_snapshot(
+            &ziel.project_binding_id,
+            &ziel.session_epoch,
+            &self.broker_epoch,
+            sequence.min(i64::MAX as u64) as i64,
+            payload_jcs,
+        );
+        event.command_id = Some(command_id.to_owned());
+        event.event_type = "command".into();
+        match store.append(vec![event]) {
+            Ok(ausgaenge) => match ausgaenge.first()? {
+                crate::store::AppendAusgang::Angewandt { .. } => Self::command_ack(
+                    command_id,
+                    "angewandt",
+                    revision,
+                    Some(&hash),
+                    None,
+                ),
+                crate::store::AppendAusgang::IdempotentWiederholt { .. } => {
+                    let payload = store.command_event_lesen(command_id).ok()??;
+                    let (alt, revision, hash) = Self::persistierte_command_wirkung(&payload)?;
+                    if alt != *wert {
+                        Self::command_ack(
+                            command_id,
+                            "konflikt",
+                            revision,
+                            Some(&hash),
+                            Some("revision_conflict"),
+                        )
+                    } else {
+                        Self::command_ack(
+                            command_id,
+                            "idempotent_wiederholt",
+                            revision,
+                            Some(&hash),
+                            None,
+                        )
+                    }
+                }
+            },
+            Err(_) => {
+                self.store_verweigert_fuer_link(link_id);
+                None
+            }
+        }
+    }
+
+    fn p0_json(&self, link_id: &str, payload: &[u8]) -> Option<Vec<u8>> {
+        let wert = v3_nachricht_lesen_beliebig(payload)?;
         match wert.get("type")?.as_str()? {
             "heartbeat" => {
                 let adresse: Adresse = serde_json::from_value(wert["adresse"].clone()).ok()?;
@@ -1710,9 +2124,6 @@ impl Coordinator {
                 )
             }
             "audible_intervention_begin" => {
-                if wert.get("art").and_then(Value::as_str) != Some("hoermarkierung") {
-                    return None;
-                }
                 let adresse: Adresse = serde_json::from_value(wert["adresse"].clone()).ok()?;
                 self.intervention_begin(
                     link_id,
@@ -1733,8 +2144,22 @@ impl Coordinator {
                 );
                 None
             }
+            "preview_begin" | "preview_renew" | "preview_end" => {
+                self.persistenz_p0(link_id, &wert)
+            }
             _ => None,
         }
+    }
+}
+
+#[cfg(windows)]
+impl crate::server::V2Interventionssenke for Coordinator {
+    fn hoermarkierung(&self, link_id: &str, aktiv: bool) {
+        Coordinator::hoermarkierung_v2(self, link_id, aktiv);
+    }
+
+    fn getrennt(&self, link_id: &str) {
+        Coordinator::hoermarkierung_v2_getrennt(self, link_id);
     }
 }
 
@@ -1791,7 +2216,10 @@ impl crate::transport::server_v3::Senke for Coordinator {
         }
     }
 
-    fn p2(&self, link_id: &str, _payload: &[u8]) {
+    fn p2(&self, link_id: &str, payload: &[u8]) {
+        if !crate::telemetrie::pruefe(payload).is_empty() {
+            return;
+        }
         {
             let mut stand = self.stand.lock().expect("Coordinator vergiftet");
             stand.p2_live_frames = stand.p2_live_frames.saturating_add(1);
@@ -1853,7 +2281,25 @@ mod tests {
         let payload = serde_json::to_vec(&serde_json::json!({
             "type": "heartbeat",
             "adresse": adresse,
-            "sequence": 1
+            "sequence": 1,
+            "state_revision": 0,
+            "capabilities": {
+                "host_context_presence": "unsupported",
+                "project_time_samples": "unsupported",
+                "sample_accurate_automation": "unsupported",
+                "presentation_latency": "unsupported",
+                "aux_compare_pre": "unsupported",
+                "aux_priority_sidechain": "unsupported",
+                "contribution_aux": "unsupported",
+                "float64_processing": "unsupported",
+                "binary_telemetry": "unsupported",
+                "remote_control": "unsupported"
+            },
+            "zaehler": {
+                "frames_dropped": 0,
+                "parse_errors": 0,
+                "queue_overflows": 0
+            }
         }))
         .unwrap();
         let ack = c.p0_json(link_id, &payload).expect("heartbeat_ack");
@@ -1986,6 +2432,17 @@ mod tests {
         assert!(!c.intervention_end("link-a", &a, &"2".repeat(32), 2, 0));
         assert_eq!(c.interventionssicht().aktive, 1);
         assert!(!c.evidence_dispatch());
+    }
+
+    #[test]
+    fn intervention_unbekanntes_erstes_end_setzt_sticky_unknown() {
+        let (c, a) = verbunden();
+        assert!(!c.intervention_end("link-a", &a, &"2".repeat(32), 1, 0));
+        assert_eq!(c.interventionssicht().aktive, 0);
+        assert!(c.interventionssicht().unknown);
+        assert!(!c.evidence_dispatch());
+        c.hoermarkierung_v2("link-a", false);
+        assert!(c.interventionssicht().unknown);
     }
 
     #[test]

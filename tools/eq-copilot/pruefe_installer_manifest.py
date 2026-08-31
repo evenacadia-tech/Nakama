@@ -105,6 +105,7 @@ IPC_TEST_EXE = (WURZEL / "eq-copilot" / "build" / "plugin"
 BROKER_BINDING = (WURZEL / "eq-copilot" / "build" / "plugin" / "generated"
                   / "nakama" / "BrokerInstallBinding.h")
 PLUGIN_CMAKE = WURZEL / "eq-copilot" / "plugin" / "CMakeLists.txt"
+BEWEIS_RUNNER = WURZEL / "tools" / "beweise.ps1"
 
 SCHEMA = "nakama.installer/v1"
 ERGEBNIS_SCHEMA = "nakama.install-ergebnis/v1"
@@ -695,6 +696,29 @@ def r_broker_heisst_wie_die_crate(m: dict, _i: dict):
         for a in eintraege
     )
     return passt, crate
+
+
+def _runner_baut_produktbroker(text: str) -> bool:
+    """Der eine Release-Cargo-Aufruf muss Probe UND Produkt bauen."""
+    treffer = re.search(
+        r"\$cargoRelease\s*=\s*Fuehre-Aus\s+-Datei\s+'cargo'\s+"
+        r"-Argumente\s+@\((.*?)\)", text, re.DOTALL)
+    if not treffer:
+        return False
+    block = treffer.group(1)
+    return ("'--bin', 'eqcop-broker-v3probe'" in block
+            and "'--bin', 'eqcop-broker'" in block)
+
+
+def runner_baut_produktbroker() -> None:
+    """A17-Riegel plus eingebaute Rotmutation fuer die saubere Checkout-Luecke."""
+    print("\n[3d] Kanon baut das releasefaehige Broker-Produktartefakt")
+    text = BEWEIS_RUNNER.read_text(encoding="utf-8")
+    pruefe(_runner_baut_produktbroker(text),
+           "tools/beweise.ps1 baut eqcop-broker-v3probe UND eqcop-broker")
+    mutant = text.replace("'--bin', 'eqcop-broker',", "", 1)
+    pruefe(not _runner_baut_produktbroker(mutant),
+           "Rotmutation: ohne Produkt --bin faellt der Runner-Riegel")
 
 
 def r_zielverzeichnisse(m: dict, _i: dict):
@@ -1663,6 +1687,7 @@ def _lauf(args) -> int:
         pruefe(not bedingung, "faellt an verdorbener Eingabe: " + text)
 
     adversariale_strukturproben(manifest, identitaet)
+    runner_baut_produktbroker()
 
     auslieferungsstand(manifest, hart=args.release)
     cmake_broker_startbindung(manifest)

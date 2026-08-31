@@ -649,8 +649,6 @@ void EqCopilotEditor::zeigeMesspunkt()
             const bool paar = (id == 3 || id == 4);
             const auto label = labelFeld.getText().substring (0, 120);
             const auto paarId = paar ? paarFeld.getText().substring (0, 60) : juce::String();
-            if (rolle == proz.holeRolle() && label == proz.holeLabel() && paarId == proz.holePaarId())
-                return;
             if (proz.setzeBindung (rolle, label, paarId) && geaendert)
                 geaendert();   // Kopfzeile (Rolle/Name) sofort nachziehen
         }

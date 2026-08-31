@@ -102,6 +102,22 @@ struct ControlHello
     std::uint32_t hostPid      = 0;
 };
 
+/// Laufender, vom Produkt verantworteter Zustand fuer `heartbeat` und
+/// `state_report`. Der Provider wird ausschliesslich auf dem Control-Thread
+/// aufgerufen. Ein leerer `stateHash` bedeutet vertragsgemaess JSON-null; der
+/// Client erfindet weder einen DSP-Stand noch einen Aufnahmezustand.
+struct ControlStatus
+{
+    std::uint32_t dspSchemaVersion = 1;
+    std::uint64_t stateRevision = 0;
+    std::string   stateHash;
+    bool          recordStateValid = false;
+    bool          recording = false;
+    std::uint64_t framesDropped = 0;
+    std::uint64_t parseErrors = 0;
+    std::uint64_t queueOverflows = 0;
+};
+
 class ControlClient
 {
 public:
@@ -147,10 +163,13 @@ public:
         std::uint64_t stopFristUeberschritten = 0;
     };
 
-    /// `beiAntwort` wird auf dem Client-Thread gerufen, nie im Audiothread.
+    /// `beiAntwort` und `statusProvider` werden auf dem Client-Thread gerufen,
+    /// nie im Audiothread. Ist kein Statusprovider gesetzt, bleibt der Client
+    /// ein manuell gespeister Transport wie vor Phase B.
     ControlClient (std::function<ControlHello()> helloProvider,
                    std::string pipeName,
-                   std::function<void (const std::string&)> beiAntwort = {});
+                   std::function<void (const std::string&)> beiAntwort = {},
+                   std::function<ControlStatus()> statusProvider = {});
     ~ControlClient();
 
     ControlClient (const ControlClient&) = delete;
@@ -188,6 +207,10 @@ public:
     P1Ergebnis sendeP1 (const std::string& schluessel, const std::string& json);
 
     Snapshot snapshot() const;
+
+    /// Diagnose-/Testaussage ueber die produktive 1-Hz-Quelle. Der Provider
+    /// ist nach dem Konstruktor unveraenderlich; die Abfrage startet nichts.
+    bool statusProviderGesetzt() const noexcept;
 
     /// Kopplungsdaten fuer den TelemetryClient. `false`, solange kein
     /// `welcome` angekommen ist — ein Telemetry-Connect ohne diese Werte wird

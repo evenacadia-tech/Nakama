@@ -2538,12 +2538,7 @@ mod tests {
     }
 
     fn heartbeat_fuer_adresse(adresse: &Adresse, sequence: u64) -> Vec<u8> {
-        p0(&serde_json::json!({
-            "type": "heartbeat",
-            "adresse": adresse,
-            "sequence": sequence
-        })
-        .to_string())
+        vollstaendiger_heartbeat(adresse, sequence)
     }
 
     fn vollstaendiger_heartbeat(adresse: &Adresse, sequence: u64) -> Vec<u8> {
@@ -2564,7 +2559,11 @@ mod tests {
                 "binary_telemetry": "supported",
                 "remote_control": "supported"
             },
-            "zaehler": {}
+            "zaehler": {
+                "frames_dropped": 0,
+                "parse_errors": 0,
+                "queue_overflows": 0
+            }
         })
         .to_string())
     }

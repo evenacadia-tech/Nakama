@@ -21,6 +21,12 @@ namespace
 /// drankommen. Kurz genug, dass ein P0-Befehl nicht hinter Stille wartet.
 constexpr int kLeseTaktMs = 20;
 
+/// Der Vertrag beschreibt Heartbeats mit 1 Hz. Ein erster wird unmittelbar
+/// nach dem welcome eingereiht, damit die 2,5-s-Stalegrenze nicht von einem
+/// zufaelligen Phasenversatz abhaengt.
+constexpr int kHeartbeatTaktMs = 1000;
+constexpr std::uint64_t kJsonSafeModulus = 9007199254740992ULL; // 2^53
+
 /// Frist, die `stop()` einem LAUFENDEN Callback noch laesst (Matrix
 /// `B-CC-12`). Derselbe Wert wie `SENKE_FRIST` im Rust-Listener: beide Seiten
 /// geben fremdem Code dieselbe Gnadenfrist. Lang genug fuer einen normalen
@@ -227,6 +233,64 @@ std::string jsonString (const std::string& roh)
     return aus;
 }
 
+std::uint64_t jsonSafe (std::uint64_t wert) noexcept
+{
+    return std::min (wert, kJsonSafeModulus - 1);
+}
+
+const char* boolJson (bool wert) noexcept { return wert ? "true" : "false"; }
+
+std::string capabilitiesJson()
+{
+    // Maschinenlesbare Wahrheit aus host-capabilities-fl-v1.json: zwei in FL
+    // gemessene Faehigkeiten, acht feste Fallbacks. Diese Funktion wird nur
+    // auf dem Clientthread gerufen.
+    return "{\"host_context_presence\":\"supported\","
+           "\"project_time_samples\":\"supported\","
+           "\"sample_accurate_automation\":\"unsupported\","
+           "\"presentation_latency\":\"unsupported\","
+           "\"aux_compare_pre\":\"unsupported\","
+           "\"aux_priority_sidechain\":\"unsupported\","
+           "\"contribution_aux\":\"unsupported\","
+           "\"float64_processing\":\"unsupported\","
+           "\"binary_telemetry\":\"unsupported\","
+           "\"remote_control\":\"unsupported\"}";
+}
+
+std::string stateHashJson (const std::string& hash)
+{
+    // Ein kaputter lokaler Hash darf nicht als scheinbar gueltiger Stand auf
+    // den Draht. null ist der schemafeste, fail-closed Wert.
+    return istHex64 (hash) ? jsonString (hash) : "null";
+}
+
+std::string heartbeatJson (const Adresse& adresse, std::uint64_t sequence,
+                           const ControlStatus& status)
+{
+    return std::string ("{\"type\":\"heartbeat\",\"adresse\":")
+         + adresseAlsJson (adresse)
+         + ",\"sequence\":" + std::to_string (sequence)
+         + ",\"state_revision\":" + std::to_string (jsonSafe (status.stateRevision))
+         + ",\"capabilities\":" + capabilitiesJson()
+         + ",\"zaehler\":{\"frames_dropped\":"
+         + std::to_string (jsonSafe (status.framesDropped))
+         + ",\"parse_errors\":" + std::to_string (jsonSafe (status.parseErrors))
+         + ",\"queue_overflows\":" + std::to_string (jsonSafe (status.queueOverflows))
+         + "}}";
+}
+
+std::string stateReportJson (const Adresse& adresse, const ControlStatus& status)
+{
+    const auto schema = std::max<std::uint32_t> (1, status.dspSchemaVersion);
+    return std::string ("{\"type\":\"state_report\",\"adresse\":")
+         + adresseAlsJson (adresse)
+         + ",\"dsp_schema_version\":" + std::to_string (schema)
+         + ",\"state_revision\":" + std::to_string (jsonSafe (status.stateRevision))
+         + ",\"state_hash\":" + stateHashJson (status.stateHash)
+         + ",\"record_state\":{\"valid\":" + boolJson (status.recordStateValid)
+         + ",\"recording\":" + boolJson (status.recording) + "}}";
+}
+
 /// Zahl aus einem Audiofeld. Sie wird NUR gerufen, nachdem `audioGueltig`
 /// zugestimmt hat — der Riegel steht trotzdem hier: eine Wandlung nach
 /// `long long` ist fuer NaN, ±Inf und alles ausserhalb des darstellbaren
@@ -357,9 +421,10 @@ struct ControlClient::Laufzeit
 {
     Laufzeit (std::function<ControlHello()> hp,
               std::string pn,
-              std::function<void (const std::string&)> ba)
+              std::function<void (const std::string&)> ba,
+              std::function<ControlStatus()> sp)
         : helloProvider (std::move (hp)), beiAntwort (std::move (ba)),
-          pipeName (std::move (pn)) {}
+          statusProvider (std::move (sp)), pipeName (std::move (pn)) {}
 
     void threadLauf (std::uint64_t meinLauf, std::shared_ptr<IpcVerbindung> meine);
     bool eineVerbindung (std::uint64_t generation, std::uint64_t meinLauf,
@@ -379,7 +444,9 @@ struct ControlClient::Laufzeit
 
     std::function<ControlHello()> helloProvider;
     std::function<void (const std::string&)> beiAntwort;
+    std::function<ControlStatus()> statusProvider;
     std::string pipeName;
+    std::atomic<std::uint64_t> heartbeatFolge { 0 };
 
     /// Die Verbindung des LAUFENDEN Laufs. Jeder `start()` legt eine eigene an.
     ///
@@ -467,10 +534,12 @@ struct ControlClient::Laufzeit
 
 ControlClient::ControlClient (std::function<ControlHello()> helloProviderIn,
                               std::string pipeNameIn,
-                              std::function<void (const std::string&)> beiAntwortIn)
+                              std::function<void (const std::string&)> beiAntwortIn,
+                              std::function<ControlStatus()> statusProviderIn)
     : k (std::make_shared<Laufzeit> (std::move (helloProviderIn),
                                      std::move (pipeNameIn),
-                                     std::move (beiAntwortIn)))
+                                     std::move (beiAntwortIn),
+                                     std::move (statusProviderIn)))
 {
 }
 
@@ -561,6 +630,11 @@ void ControlClient::reconnect()
 }
 
 ControlClient::Snapshot ControlClient::snapshot() const { return k->snapshotIntern(); }
+
+bool ControlClient::statusProviderGesetzt() const noexcept
+{
+    return static_cast<bool> (k->statusProvider);
+}
 
 bool ControlClient::sendeP0 (const std::string& json) { return k->sendeP0 (json); }
 
@@ -1000,6 +1074,13 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
     Ratengrenze rate (kRateProSekunde, kRateFensterMs);
     const auto rateBeginn = std::chrono::steady_clock::now();
 
+    // Produktstatus lebt nicht in der allgemeinen Userqueue: der Provider ist
+    // explizit und fehlt in Transport-/Fuzztests. Bei gesetztem Provider wird
+    // unmittelbar und danach im 1-Hz-Takt ein voller Heartbeat erzeugt. Der
+    // State-Report wird auf derselben Taktkante nur bei Aenderung koalesziert.
+    auto naechsterHeartbeat = std::chrono::steady_clock::now();
+    std::string letzterStateReport;
+
     // `B-CC-06`/`B-CC-07` (Regel 4): der Empfangsweg als eigener Schritt.
     // `false` heisst: die Verbindung ist zu beenden. Er wird in JEDER Runde
     // gegangen — auch direkt nach einem Send — und einmal zusaetzlich, bevor
@@ -1076,6 +1157,25 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
     std::vector<std::uint8_t> ausgang;
     while (! sollAbbrechen (generation))
     {
+        const auto jetzt = std::chrono::steady_clock::now();
+        if (statusProvider && jetzt >= naechsterHeartbeat)
+        {
+            const auto status = statusProvider();
+            if (sollAbbrechen (generation))
+                break;
+
+            const auto report = stateReportJson (hello.adresse, status);
+            if (report != letzterStateReport)
+            {
+                sendeP1 ("produkt-state-report", report);
+                letzterStateReport = report;
+            }
+
+            const auto sequence = heartbeatFolge.fetch_add (1) % kJsonSafeModulus;
+            sendeP0 (heartbeatJson (hello.adresse, sequence, status));
+            naechsterHeartbeat = jetzt + std::chrono::milliseconds (kHeartbeatTaktMs);
+        }
+
         if (ueberlaufSeitVerbinden())
         {
             std::lock_guard<std::mutex> l (zustandMutex);

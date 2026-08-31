@@ -1,5 +1,6 @@
 #include "NakamaKernRiegel.h"
 #include "BrokerLifecycle.h"
+#include "IpcVerbindung.h"
 
 #include <algorithm>
 #include <array>
@@ -466,6 +467,22 @@ void BrokerLifecycle::tick (std::uint64_t jetztMs)
         return;
     }
 
+    auto vorhandenePipeUebernehmen = [&] {
+        if (hooks.pipeName.empty() || ! namedPipeErreichbar (hooks.pipeName))
+            return false;
+        // Der Mutexgewinner hat den Broker bereits hergestellt; dieser
+        // Client kann noch den alten getrennten Cache tragen. Ein frischer
+        // Connect ersetzt den Cache, ein zweiter Prozess waere falsch.
+        if (hooks.reconnect)
+            hooks.reconnect();
+        phase = Phase::wartetAufConnect;
+        startMutexFreigeben();
+        std::lock_guard<std::mutex> l (zustandMutex);
+        zustand.wartetAufBereit = false;
+        zustand.imCooldown = false;
+        return true;
+    };
+
     if (phase == Phase::wartetAufBroker)
     {
         if (spawnBereitTimeoutAbgelaufen (jetztMs - spawnZeitMs))
@@ -525,6 +542,8 @@ void BrokerLifecycle::tick (std::uint64_t jetztMs)
         startMutexFreigeben();
         return;
     }
+    if (vorhandenePipeUebernehmen())
+        return;
 
     const auto bericht = hooks.pruefen ? hooks.pruefen() : BrokerPruefBericht {
         BrokerPruefFehler::dateiNichtLesbar };
@@ -542,6 +561,20 @@ void BrokerLifecycle::tick (std::uint64_t jetztMs)
         zustand.imCooldown = true;
         return;
     }
+
+
+    // Hash-/Signaturpruefung kann langsam sein. Rolle oder Editor duerfen in
+    // dieser Zeit kippen; unmittelbar vor CreateProcess gilt nur der frische
+    // Gatewert. Ebenso kann ein anderer berechtigter Starter inzwischen eine
+    // Pipe bereitgestellt haben.
+    if (! hooks.darfStarten || ! hooks.darfStarten())
+    {
+        phase = Phase::wartetAufConnect;
+        startMutexFreigeben();
+        return;
+    }
+    if (vorhandenePipeUebernehmen())
+        return;
 
     bool gestartet = false;
     {

@@ -1008,3 +1008,123 @@ Fortsetzung: denselben Thread resumen; der Prompt-Wortlaut liegt unter
 akama-sonde011b-nacharbeit1*.jsonl`-Nachbarn bzw. ist aus diesem
 Abschnitt rekonstruierbar. Danach: Wiederprüfung (Variante B, nur Fixdiff +
 Befundliste), Kanon, ggf. Abschlussprüfung.
+
+---
+
+## Phase B — Nacharbeit Runde 1 (Bau)
+
+**Stand:** Phase B: Nacharbeit Runde 1, in Wiederprüfung.
+
+**Bauurteil:** Die gemeinsame Ursache ist im Produktpfad geschlossen: Der
+produktive Rust-Coordinator verarbeitet und persistiert P0-Befehle, v2 und v3
+teilen den Interventionszustand, Projektion und Push sind gegen Laufgrenzen,
+Lesefehler und konkurrierende Flushes abgedichtet; Gen sendet Heartbeat und
+State-Report aus dem bestehenden State, eine explizite Main-Wahl erzeugt die
+persistierte Projektbindung, Probeeq ist reiner v3-Connector, und der Kanon
+baut das installierbare Broker-Binary. Es gab keine Wire-Schemaänderung, keine
+neue Familie und keinen MainProjectState-Ingress. NAK-119/NAK-120 bleiben
+ausgeschlossen.
+
+Der Auftrag dieser Runde verlangt ausdrücklich append-only und untersagt jede
+Umschreibung oberhalb dieses Abschnitts. Deshalb blieb die historische
+Kopfzeile `Stand` unverändert; die verlangte aktuelle Standzeile steht direkt
+oben in diesem Bauabschnitt.
+
+### Die 19 Erstprüfungsdefekte
+
+Jede neue Wache wurde im aktuellen Arbeitsbaum einmal gezielt gegen ihren Fix
+mutiert. Die Rotläufe lagen ausschließlich unter `%TEMP%` als
+`sonde011-mutation-*.log`; nach jedem Lauf wurde die Mutation per Patch
+zurückgenommen. `grün` in der letzten Spalte bezeichnet den danach erneut
+gebauten Endstand.
+
+| # | Fix-Ort und geschlossene Wirkung | Belegender Test | Rotmutation und beobachtete Schlusszeile | Lauf-Schlusszeile im Endstand |
+|---:|---|---|---|---|
+| 1 | `broker/src/coordinator.rs` — `p0_json`, `persistenz_p0`, `command_ack`; `broker/src/store.rs` — `command_event_lesen`: `preview_begin/renew/end` werden im Produkt-Coordinator validiert, atomar committed und bei Retry semantisch geackt. | `produkt_coordinator_committet_alle_persistenten_p0_befehle_und_ackt_retries` | Produktions-Matcharme auf `__preview_*` zurückmutiert: **FAILED**, `produktiver command_ack` fehlte. | `store_crash_matrix`: **52 passed, 0 failed**; A4-SI: **17 passed, 0 failed**. |
+| 2 | `broker/src/store.rs` — `projektionen_anwenden`: Nur `event_type == "session"` darf `sessions.state_jcs` schreiben; Domainprojektionen bleiben getrennt. | `domain_event_ueberschreibt_session_snapshot_auch_beim_reconnect_nicht` | Bedingung auf `true` mutiert: **FAILED**, Reconnect las `internal_evidence` statt `session_snapshot`. | `store_crash_matrix`: **52 passed, 0 failed**. |
+| 3 | `broker/src/coordinator.rs` — `resubscribe_snapshot_push`: Bei fremdem `broker_epoch` kommen die laufgebundenen Felder aus dem aktuellen freien Graphen. | `brokerneustart_sendet_keine_laufgebundenen_felder_der_alten_projektion` | Epochvergleich auf `false` mutiert: **FAILED**, alter Epoch `...5a` statt aktueller `...5b`. | `store_crash_matrix`: **52 passed, 0 failed**. |
+| 4 | `broker/src/coordinator.rs` — `resubscribe_snapshot_push`/`routing_fail_closed`: Store-Lesefehler sperren Routing und markieren den Link zum Trennen; kein leerer Fallback. | `projektionslesefehler_haelt_subscription_sichtbar_fail_closed` | `Err(_)` auf `None` mutiert: **FAILED**, `routing_bereit()` blieb fälschlich wahr. | `store_crash_matrix`: **52 passed, 0 failed**. |
+| 5 | `broker/src/coordinator.rs` — 64 feste `session_flush_schloesser`, gehalten von Erfassung bis Store-/Outbox-Commit; Testhaken gibt seinen eigenen Mutex vor dem Warten frei. | `snapshot_commit_bleibt_bei_konkurrierenden_flushes_monoton` | Session-Schloss entfernt: **FAILED**, final `alt-erfasst` statt `neu-committed`. | `store_crash_matrix`: **52 passed, 0 failed**. |
+| 6 | `broker/src/coordinator.rs` — `push_ziel_noch_gueltig` unmittelbar vor externem Write im Resubscribe- und normalen Flushpfad. | `cleanup_zwischen_zielermittlung_und_write_verhindert_den_alten_push` | Zweitprüfung im Flush entfernt: **FAILED**, 2 statt 1 Push. | `store_crash_matrix`: **52 passed, 0 failed**; A4-SI: **17 passed, 0 failed**. |
+| 7 | `broker/src/coordinator.rs` — `v3_nachricht_lesen_beliebig` nutzt Textriegel plus vollständiges eingefrorenes v3-Schema; P0 und Subscription laufen darüber. | `produktive_json_senken_verlangen_den_vollstaendigen_v3_vertrag` | `Schema::gueltig` überbrückt: **FAILED**, unvollständiger Heartbeat wurde bestätigt. | `coordinator_model`: **31 passed, 0 failed**. |
+| 8 | `broker/src/coordinator.rs` — schemafeste `audible_intervention_begin`-Arten laufen ohne zusätzlichen lokalen Art-Filter in denselben Interventionszustand. | `alle_schemafesten_interventionsarten_sperren_dieselbe_evidenz` | Alten Nur-`hoermarkierung`-Filter eingesetzt: **FAILED**, `preview` ergab 0 statt 1 aktive Intervention. | `coordinator_model`: **31 passed, 0 failed**. |
+| 9 | `broker/src/coordinator.rs` — `intervention_end`: unbekannte ID setzt das Sticky-Bit `intervention_state_unknown`. | `intervention_unbekanntes_erstes_end_setzt_sticky_unknown` | Sticky-Zuweisung entfernt: **FAILED**, `unknown` blieb falsch. | Rust-Lib: **186 passed, 0 failed**. |
+| 10 | `broker/src/coordinator.rs` — produktives `Senke::p2` ruft vor Zähler und Evidenzdispatch `telemetrie::pruefe` auf. | `p2_mutiert_erst_nach_flatbuffers_verifikation` | Verifier überbrückt: **FAILED**, `p2_live_frames` 1 statt 0. | `coordinator_model`: **31 passed, 0 failed**. |
+| 11 | `broker/src/lib.rs` startet v2 mit `server_starten_mit_interventionssenke(..., coordinator.clone())`; `broker/src/server.rs` meldet Markierungsbeginn, -ende und Disconnect an denselben Coordinator wie v3. | `produktiver_v2_server_speist_den_gemeinsamen_coordinator_interventionsriegel` | Produktstart auf separates `server_starten` zurückmutiert: **FAILED** am Produktverdrahtungs-Guard. | Rust-Lib: **186 passed, 0 failed**. |
+| 12 | `eq-copilot/plugin/core/ipc/ControlClient.*` sendet sofort und danach 1 Hz vollständige Heartbeats sowie koaleszierte State-Reports; `PluginProcessor.cpp` liefert den produktiven Statusprovider. | IPC-G1b `produkt_client_sendet_vollen_heartbeat_und_state_report`, `heartbeat_laeuft_1hz_state_report_bleibt_koalesziert`, `geaenderter_produktzustand_sendet_neuen_state_report`; Lebenslauf `Gen-ControlClient traegt ... Provider`. | Gen-Statusprovider auf leer mutiert: **LEBENSLAUF-TEST FEHLGESCHLAGEN**, Provider-Wache rot. | `EqCopIpcTest`: **245 Prüfungen, 0 Fehler**; `EqCopLebenslaufTest`: **77 Prüfungen, 0 Fehler**. |
+| 13 | `eq-copilot/plugin/src/PluginProcessor.cpp` — `setzeBindung`: Nur der sichtbare Main-Akt erzeugt bei leerem State eine Hex32-Bindung, schreibt sie in den vorhandenen Host-State, meldet Host-Dirty und reconnectet; Migration bleibt leer. `PluginEditor.cpp` lässt denselben Akt auch bei unveränderter Rolle bis zum Bindungscheck durch. | Lebenslauf `expliziter Main-Bindungsakt erzeugt die autoritative Projektbindung`, `frischer expliziter Main-Akt stellt vor dem Connect eine Bindung bereit`, Save/Load-Gegenpfad. | Bindungserzeugung deaktiviert: **LEBENSLAUF-TEST FEHLGESCHLAGEN**, beide Bindungswachen rot. | `EqCopLebenslaufTest`: **77 Prüfungen, 0 Fehler**. |
+| 14 | `eq-copilot/plugin/sonde/SondeProcessor.*` besitzt und startet Control- und TelemetryClient, verwendet ausschließlich die persistierte State-Bindung und enthält keinen Lifecycle-/Spawnpfad; `CMakeLists.txt` bindet die nötigen IPC-Quellen. | Probeeq-Nulltest `Testschale belegt beide Connectoren`, `Probeeq startet produktiv beide v3-Connectoren, aber niemals einen Broker`. | `controlV3.start()` entfernt: **SONDE-NULLTEST FEHLGESCHLAGEN**, genau der Produktquellen-Guard rot. | `EqCopProbeeqNullTest`: **87 Prüfungen, 0 Fehler**. |
+| 15 | `eq-copilot/plugin/core/ipc/IpcVerbindung.*` — `namedPipeErreichbar`; `BrokerLifecycle.cpp` prüft nach Mutexgewinn die reale Pipe vor Artefaktprüfung und reconnectet bei noch stalem Clientcache. | IPC-J `autostart_mutex_verlierer_prueft_reale_pipe_trotz_stalem_cache` und `autostart_parallel_startet_genau_einen_prozess`. | Erste reale Pipeprüfung entfernt: **FEHLER**, der Verlierer führte 1 unnötige Prüfung aus (`pruefungen=1`) und die drei Ein-Broker-Wachen wurden rot. | `EqCopIpcTest`: **245 Prüfungen, 0 Fehler**. |
+| 16 | `tools/beweise.ps1` baut im Release-Schritt `eqcop-broker-v3probe` **und** `eqcop-broker`; `tools/eq-copilot/pruefe_installer_manifest.py` Abschnitt `[3d]` verriegelt das. `eq-copilot/install/nakama-installer-v1.json` trägt den frisch gebauten Broker-Hash. | A17 `[3d]` plus A17 `[4]` normal und `--release`. | Produkt-`--bin` aus dem Runner entfernt: A17 **101 ok, 1 Fehler**, `tools/beweise.ps1 baut ... UND eqcop-broker` rot. | A17 normal und hart: jeweils **102 ok, 0 Fehler**; Broker-Hash `307F8BC275D39CB1…`. |
+| 17 | `broker/src/store.rs` — der Writer merkt Checkpoint/Guard/Shutdown als Barriere vor, wartet aber bis 50-ms-Fenster oder Cap; spätere Appends überholen die Barriere nicht. | `checkpoint_oder_guard_loest_offenes_append_fenster_nicht_aus` | Schleifenabbruch beim vorgemerkten Checkpoint wieder eingesetzt: **FAILED**, Commit schon nach 6,95 ms. | `store_crash_matrix`: **52 passed, 0 failed**. |
+| 18 | `broker/src/store.rs` — jeder logische Appendjob wird geordnet in Transaktionen von höchstens 64 Events geteilt; `append_gruppe` besitzt zusätzlich einen harten Cap-Riegel und `StoreSicht.groesster_commit` misst ihn. | `jeder_group_commit_bleibt_bei_hoechstens_64_events` | Nächsten Job wieder ungeteilt übernommen: **FAILED**, degradierter `Group-Commit mit 65 Events ... Cap 64`. | `store_crash_matrix`: **52 passed, 0 failed**. |
+| 19 | `eq-copilot/plugin/core/ipc/BrokerLifecycle.cpp` liest `darfStarten()` nach langsamer Hash-/Signaturprüfung unmittelbar vor Pipeprüfung und Spawn erneut. | IPC-J `lifecycle_gate_wird_unmittelbar_vor_spawn_neu_geprueft`. | Zweite Gateprüfung entfernt: **FEHLER**, Lifecycle-Gate-Wache rot und Spawnversuch sichtbar. | `EqCopIpcTest`: **245 Prüfungen, 0 Fehler**. |
+
+### Ausgeführte Bau- und Prüfläufe
+
+- `cargo test --manifest-path broker/Cargo.toml --color never --no-fail-fast`:
+  Rust-Lib 186/186, Broker-Idle 4/4 einschließlich echtem 60-s-Selbstende,
+  Cross-Language 9/9, Coordinator 31/31, Store 52/52 regulär bei 17 bewusst
+  ignorierten SI-Fällen, Transport-Fuzz 9/9; Exit 0.
+- `cargo test --manifest-path broker/Cargo.toml --color never --test
+  store_crash_matrix -- --ignored --test-threads=1`: 17/17 SI-Fälle, Exit 0,
+  einschließlich echtem C++-ControlClient und Kill-/Retrygrenzen.
+- CMake Release baute `EqCopIpcTest`, `EqCopLebenslaufTest`,
+  `EqCopProbeeqNullTest`, die Shared-Code-Ziele und die echten
+  `EqCopilot_VST3`-/`NakamaProbeeq_VST3`-Bundles. Schlusszeilen: IPC 245/245,
+  Lebenslauf 77/77, Probeeq 87/87.
+- `cargo build --release --manifest-path broker/Cargo.toml --bin
+  eqcop-broker-v3probe --bin eqcop-broker --color never`: Exit 0;
+  `eqcop-broker.exe` 3.508.224 Bytes, SHA-256
+  `307F8BC275D39CB1BA72FB184E40ADE47DD1B2B1EA25AE874E6A70B13CA9C5B8`.
+- A17 wurde als betroffener Runner-Abschnitt normal und mit `--release`
+  gefahren: jeweils 102/102; Main-Bundle
+  `D7D5DE75D7537B6E…`, Probeeq-Bundle `09211F448322C968…`, Broker
+  `307F8BC275D39CB1…`, generierter Produktheader identisch zum Manifest.
+- `cargo fmt --check` ist kein grüner Beleg: Es meldet den bereits vorhandenen
+  breiten Formatdrift einschließlich generierter/historischer Rust-Dateien.
+  Es wurde deshalb kein repositoryweiter Formatlauf ausgeführt und nichts
+  mechanisch umgeschrieben.
+- Der Windows-Python-Launcher konnte `py -3.13` nach der externen
+  Datenbereinigung nicht mehr starten (`Eine angegebene Anmeldesitzung ist
+  nicht vorhanden`). Der betroffene A17-Abschnitt lief deshalb mit dem lokal
+  verfügbaren `C:\Python314\python.exe`; normaler und harter Modus waren grün.
+  Ein vollständiger neuer Kanonlauf wurde nicht behauptet: Er hätte über den
+  fest verdrahteten 3.13-Launcher abgebrochen und zusätzlich eine neue
+  Rohausgabe außerhalb des hier erlaubten append-only Zielpfads angelegt.
+
+### Dirigenten-Prüfliste — Messorte je Zeile
+
+`tools/dirigent/pruefliste.md` wurde vor diesem Abschluss vollständig
+abgehakt. Die Kürzel folgen je Abschnitt der dortigen Reihenfolge.
+
+| Zeile | Wo in dieser Runde geprüft oder als nicht betroffen abgegrenzt |
+|---|---|
+| A1 | C++ IPC E/E2 und Rust `transport::warteschlange`: P0 voll = trennen, P1 = koaleszieren/wiederholen, P2 = replace-oldest. |
+| A2 | IPC E `p1_wiederholpuffer_fliesst_ohne_reconnect_ab` in C++ und Rust. |
+| A3 | IPC E und Rust `p1_wiederholpuffer_haelt_den_schluessel`/Snapshot-Outbox-Tests. |
+| A4 | IPC G16/G16b und Rust `p2_flut_hungert_p0_nicht_aus`; ACK bleibt vor blockiertem P1-Write lesbar. |
+| A5 | IPC E/E2 wertet Annahmen, Überläufe, Ersetzungen und Löcher aus; Rust-Sichtzähler und Store-Cap werden assertiert. |
+| A6 | C++ IPC 245/245, Rust-Lib 186/186 und Cross-Language 9/9 auf denselben Envelope-/Queueverträgen. |
+| B1 | Rust `welcome_folgt_dem_abgeschlossenen_control_verbunden` und C++ IPC G-Verbindungsaufbau. |
+| B2 | Rust `trennreihenfolge_*`, `subscription_cleanup_vor_weiterem_push` sowie C++ IPC G17. |
+| B3 | IPC G17 prüft Self-Join, blockierende Callbacks und harte Stopfristen für Control und Telemetry. |
+| B4 | Rust `geschlossener_eingang_liefert_nichts_mehr`. |
+| B5 | Rust `stop_im_fenster_vor_der_bedienung_haengt_nicht` und `acceptor_stop_und_sofortiger_neustart_verlieren_keinen_wakeup`. |
+| C1 | Cross-Language 9/9, Rust Protokoll-Längentests sowie IPC G10/H. |
+| C2 | Defekt-7-Rotmutation plus IPC G10/H und Rust Schema-/DTO-Korpus. |
+| C3 | IPC G11/G14 und Rust v3-/Server-Familientests. |
+| C4 | IPC G8 sowie Rust `hello_enum_und_audiofelder_werden_semantisch_begrenzt` und Messstand-Grenztests. |
+| D1 | Defekt-4-/7-Rotmutationen, A17-Gegenprobe an verdorbener Eingabe und fail-closed Store-/Schemawege. |
+| D2 | Tatsächlicher Release-Neubau; CMake lief wegen neuer Manifest-Configure-Dependency erneut. Die allgemeine Runner-mtime/Exit-3-Logik wurde im Diff geprüft, aber wegen des ausgefallenen 3.13-Launchers nicht als voller Kanonlauf beansprucht. |
+| D3 | Beide VST3-Bundles wurden relinkt; A17 normal und `--release` verglichen die danach festgeschriebenen Hashes weich beziehungsweise hart. |
+| D4 | A17 `[3d]` plus externe Rotmutation ohne Produkt-`--bin` (101 ok, 1 Fehler). |
+| E1 | Die 19 Tabellenzeilen oben koppeln jede Behauptung an genau den messenden Test; keine neue Wire- oder Authenticode-Zusage. |
+| E2 | Zahlen stammen aus den aktuellen Schlusszeilen 186/4/9/31/52/17/9, 245, 77, 87 und 102, nicht aus Altmanifesten. |
+| E3 | Dieser Abschnitt referenziert Symbole, Testnamen und Runner-Anker wie `[3d]`, keine vergänglichen Kopfzeilennummern. |
+| E4 | Explizite Auftragsabweichung geprüft: Der aktuelle Auftrag verbietet Änderungen oberhalb; `git diff` bestätigt append-only am Manifest. Die aktuelle Standzeile steht deshalb in diesem Abschnitt. |
+| E5 | Alle 19 neuen Defektwachen wurden gezielt rotmutiert; Ergebnis und Fehlerstelle stehen je Zeile, Rohlogs lagen unter `%TEMP%`. |
+| E6 | Geänderte Release-Zusage an drei Orten geprüft: `tools/beweise.ps1` (Bau), `pruefe_installer_manifest.py` `[3d]` (Riegel) und dieser Manifestabschnitt; `eqcop-broker` ist der gemeinsame Kernbegriff. |
+| E7 | Keine neue eingefrorene Writer-Fixture. Storetests erzeugen ihre Daten über den echten `StoreWriter`; Mutanten ändern genau eine Produktionsbedingung. |
+| F1 | Start/Stop gemeinsam: Gen-Control/Lifecycle und Probeeq-Control/Telemetry samt Destruktoren; Save/Load gemeinsam: Projektbindung im bestehenden State, Lebenslauf-Roundtrip grün. |
+| F2 | Keine Datei unter `eq-copilot/schemas/**` geändert; Rust-Reader, C++-Sender/Consumer und Cross-Language-Tests liegen im selben Änderungssatz und sind grün. |

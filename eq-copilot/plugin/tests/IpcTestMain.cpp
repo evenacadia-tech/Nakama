@@ -1860,6 +1860,84 @@ int main (int argc, char** argv)
         server.stoppen();
     }
 
+    abschnitt ("G1b · Produktstatus sendet Heartbeat und State-Report");
+    {
+        TestServer server (testPipeName ("produktstatus"));
+        server.starten();
+        std::atomic<std::uint64_t> revision { 7 };
+        ControlClient control (
+            [&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('4'));
+                h.pluginKind = "main";
+                return h;
+            },
+            server.pipeName(), {},
+            [&] {
+                ControlStatus s;
+                s.dspSchemaVersion = 1;
+                s.stateRevision = revision.load();
+                s.stateHash = std::string (64, revision.load() == 7 ? 'a' : 'b');
+                s.recordStateValid = true;
+                s.recording = false;
+                s.framesDropped = 3;
+                s.parseErrors = 4;
+                s.queueOverflows = 5;
+                return s;
+            });
+        control.start();
+        const bool ersteBeide = warteAuf (4000, [&] {
+            std::lock_guard<std::mutex> l (server.textMutex);
+            return ! server.p0Texte.empty() && ! server.p1Texte.empty();
+        });
+        bool heartbeatVoll = false, reportVoll = false;
+        int reportZahl = 0;
+        {
+            std::lock_guard<std::mutex> l (server.textMutex);
+            reportZahl = static_cast<int> (server.p1Texte.size());
+            for (const auto& t : server.p0Texte)
+                heartbeatVoll = heartbeatVoll
+                    || (t.find ("\"type\":\"heartbeat\"") != std::string::npos
+                        && t.find ("\"state_revision\":7") != std::string::npos
+                        && t.find ("\"host_context_presence\":\"supported\"") != std::string::npos
+                        && t.find ("\"remote_control\":\"unsupported\"") != std::string::npos
+                        && t.find ("\"frames_dropped\":3") != std::string::npos
+                        && t.find ("\"parse_errors\":4") != std::string::npos
+                        && t.find ("\"queue_overflows\":5") != std::string::npos);
+            for (const auto& t : server.p1Texte)
+                reportVoll = reportVoll
+                    || (t.find ("\"type\":\"state_report\"") != std::string::npos
+                        && t.find ("\"dsp_schema_version\":1") != std::string::npos
+                        && t.find ("\"state_hash\":\"" + std::string (64, 'a') + "\"")
+                               != std::string::npos
+                        && t.find ("\"record_state\":{\"valid\":true,\"recording\":false}")
+                               != std::string::npos);
+        }
+        pruefe (ersteBeide && heartbeatVoll && reportVoll,
+                "produkt_client_sendet_vollen_heartbeat_und_state_report");
+
+        const bool heartbeatWiederholt = warteAuf (2500, [&] {
+            return server.p0.load() >= 2;
+        });
+        int vorAenderung = 0;
+        {
+            std::lock_guard<std::mutex> l (server.textMutex);
+            vorAenderung = static_cast<int> (server.p1Texte.size());
+        }
+        pruefe (heartbeatWiederholt && vorAenderung == reportZahl,
+                "heartbeat_laeuft_1hz_state_report_bleibt_koalesziert");
+
+        revision.store (8);
+        const bool geaendert = warteAuf (2500, [&] {
+            std::lock_guard<std::mutex> l (server.textMutex);
+            return static_cast<int> (server.p1Texte.size()) > vorAenderung;
+        });
+        pruefe (geaendert,
+                "geaenderter_produktzustand_sendet_neuen_state_report");
+        control.stop();
+        server.stoppen();
+    }
+
     abschnitt ("G2 · ungekoppelter Telemetry-Connect wird geschlossen");
     {
         TestServer server (testPipeName ("ungekoppelt"));
@@ -3345,6 +3423,29 @@ int main (int argc, char** argv)
                 "autostart_hash_vor_signatur_vor_spawn");
 
         {
+            std::atomic<bool> gate { true };
+            int spawns = 0;
+            BrokerLifecycleHooks h;
+            h.verbunden = [] { return false; };
+            h.connectFehlgeschlagen = [] { return true; };
+            h.darfStarten = [&] { return gate.load(); };
+            h.pruefen = [&] {
+                // Das bildet Editor-zu/Rollenwechsel waehrend der langsamen
+                // Artefaktpruefung exakt nach.
+                gate.store (false);
+                return BrokerPruefBericht {};
+            };
+            h.spawn = [&] { ++spawns; return true; };
+            h.mutexName = L"Local\\Nakama.PhaseB.IpcTest.GateVorSpawn."
+                        + std::to_wstring (GetCurrentProcessId());
+            BrokerLifecycle lifecycle (std::move (h));
+            lifecycle.tickFuerTest (0);
+            pruefe (spawns == 0 && lifecycle.snapshot().spawnVersuche == 0
+                        && ! lifecycle.snapshot().imCooldown,
+                    "lifecycle_gate_wird_unmittelbar_vor_spawn_neu_geprueft");
+        }
+
+        {
             int retries = 0, spawns = 0;
             BrokerLifecycleHooks h;
             h.verbunden = [] { return false; };
@@ -3378,73 +3479,79 @@ int main (int argc, char** argv)
             const auto mutexName = L"Local\\Nakama.PhaseB.IpcTest.Parallel."
                                  + std::to_wstring (GetCurrentProcessId());
             std::atomic<int> spawns { 0 };
-            std::atomic<bool> verbindungFreigeben { false };
+            std::atomic<int> reconnectZwei { 0 };
+            std::atomic<bool> einsVerbunden { false };
             const auto pipe = testPipeName ("autostart-real-existing");
-            ControlClient clientEins ([&] {
-                ControlHello h;
-                h.adresse = testAdresse (hex32 ('8'));
-                return h;
-            }, pipe);
-            ControlClient clientZwei ([&] {
-                ControlHello h;
-                h.adresse = testAdresse (hex32 ('9'));
-                return h;
-            }, pipe);
-            clientEins.start();
-            clientZwei.start();
-            const bool beideSahenFehlendePipe = warteAuf (3000, [&] {
-                return clientEins.snapshot().brokerPipeFehlt
-                    && clientZwei.snapshot().brokerPipeFehlt;
-            });
             std::unique_ptr<TestServer> vorhandenerBroker;
-            auto hooks = [&] (ControlClient& client) {
-                BrokerLifecycleHooks h;
-                h.verbunden = [&, clientPtr = &client] {
-                    return verbindungFreigeben.load()
-                        && clientPtr->snapshot().status == ControlClient::Status::verbunden;
-                };
-                h.connectFehlgeschlagen = [] { return true; };
-                h.darfStarten = [] { return true; };
-                h.pruefen = [] { return BrokerPruefBericht {}; };
-                h.spawn = [&] {
-                    ++spawns;
-                    vorhandenerBroker = std::make_unique<TestServer> (pipe);
-                    return vorhandenerBroker->starten();
-                };
-                h.mutexName = mutexName;
-                return h;
+            BrokerLifecycleHooks h1;
+            h1.verbunden = [&] { return einsVerbunden.load(); };
+            h1.connectFehlgeschlagen = [] { return true; };
+            h1.darfStarten = [] { return true; };
+            h1.pruefen = [] { return BrokerPruefBericht {}; };
+            h1.spawn = [&] {
+                ++spawns;
+                vorhandenerBroker = std::make_unique<TestServer> (pipe);
+                return vorhandenerBroker->starten();
             };
-            BrokerLifecycle eins (hooks (clientEins)), zwei (hooks (clientZwei));
+            h1.mutexName = mutexName;
+            h1.pipeName = pipe;
+
+            BrokerLifecycleHooks h2;
+            // Absichtlich stale: der zweite ControlClient hat den neuen
+            // Broker noch nicht in seinem Cache gesehen.
+            h2.verbunden = [] { return false; };
+            h2.connectFehlgeschlagen = [] { return true; };
+            h2.darfStarten = [] { return true; };
+            h2.reconnect = [&] { ++reconnectZwei; };
+            h2.pruefen = [] { return BrokerPruefBericht {}; };
+            h2.spawn = [&] { ++spawns; return true; };
+            h2.mutexName = mutexName;
+            h2.pipeName = pipe;
+
+            BrokerLifecycle eins (std::move (h1)), zwei (std::move (h2));
             std::atomic<bool> einsHaelt { false }, einsFreigeben { false };
             std::thread besitzer ([&] {
-                eins.tickFuerTest (0);
+                eins.tickFuerTest (0);   // startet Broker und haelt Mutex
                 einsHaelt.store (true);
                 while (! einsFreigeben.load())
                     std::this_thread::sleep_for (std::chrono::milliseconds (1));
-                eins.tickFuerTest (1);
+                eins.tickFuerTest (1);   // gibt als verbundener Sieger frei
             });
-            const bool ersterHaelt = warteAuf (1000, [&] { return einsHaelt.load(); });
+            const bool ersterHaelt = warteAuf (1000, [&] {
+                return einsHaelt.load();
+            });
             zwei.tickFuerTest (0);
-            verbindungFreigeben.store (true);
-            const bool beideRealVerbunden = warteAuf (6000, [&] {
-                return clientEins.snapshot().status == ControlClient::Status::verbunden
-                    && clientZwei.snapshot().status == ControlClient::Status::verbunden;
+            const bool pipeReal = warteAuf (3000, [&] {
+                return namedPipeErreichbar (pipe);
             });
+            einsVerbunden.store (true);
             einsFreigeben.store (true);
             besitzer.join();
             zwei.tickFuerTest (1);
-            const bool genauEiner = ersterHaelt && beideSahenFehlendePipe
-                        && beideRealVerbunden
+            const bool genauEiner = ersterHaelt && pipeReal
                         && spawns.load() == static_cast<int> (BROKER_PRO_USER_MAX)
-                        && zwei.snapshot().mutexVerloren == 1;
+                        && zwei.snapshot().mutexVerloren == 1
+                        && reconnectZwei.load() == 1
+                        && zwei.snapshot().pruefungen == 0
+                        && zwei.snapshot().spawnVersuche == 0;
             pruefe (genauEiner,
-                    "autostart_parallel_startet_genau_einen_prozess");
+                    "autostart_parallel_startet_genau_einen_prozess",
+                    "haelt=" + std::to_string (ersterHaelt)
+                        + " pipe=" + std::to_string (pipeReal)
+                        + " spawns=" + std::to_string (spawns.load())
+                        + " mutexVerloren="
+                        + std::to_string (zwei.snapshot().mutexVerloren)
+                        + " reconnect=" + std::to_string (reconnectZwei.load())
+                        + " pruefungen="
+                        + std::to_string (zwei.snapshot().pruefungen)
+                        + " spawnVersuche="
+                        + std::to_string (zwei.snapshot().spawnVersuche));
             pruefe (genauEiner && spawns.load() == 1,
                     "autostart_mehrere_mains_ein_broker");
-            pruefe (beideRealVerbunden && zwei.snapshot().mutexVerloren == 1,
-                    "autostart_mutex_verlierer_verbindet_real_zum_vorhandenen_broker");
-            clientEins.stop();
-            clientZwei.stop();
+            pruefe (pipeReal && reconnectZwei.load() == 1
+                        && zwei.snapshot().pruefungen == 0
+                        && zwei.snapshot().spawnVersuche == 0,
+                    "autostart_mutex_verlierer_prueft_reale_pipe_trotz_stalem_cache");
             if (vorhandenerBroker != nullptr)
                 vorhandenerBroker->stoppen();
         }

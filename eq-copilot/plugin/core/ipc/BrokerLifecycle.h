@@ -73,6 +73,7 @@ struct BrokerLifecycleHooks
     std::function<BrokerPruefBericht()> pruefen;
     std::function<bool()> spawn;
     std::wstring mutexName;
+    std::string pipeName;
 };
 
 class BrokerLifecycle

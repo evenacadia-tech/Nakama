@@ -21,6 +21,9 @@ serde = { version = "1", features = ["derive"] }
 # nutzt dieselbe Crate weiter, jetzt ohne zweiten Eintrag.
 sha2 = "0.10"
 serde_json = "1"
+# SONDE-011 Phase B: produktive persistente P0-Events speichern ihre interne
+# Befehlswirkung als RFC-8785-kanonische Bytes fuer exakte Retry-Gleichheit.
+serde_json_canonicalizer = "0.3"
 uuid = { version = "1", features = ["v4"] }
 # SONDE-011 Phase B / V-01: SQLite ist Teil des Broker-Binaries. Die exakte
 # Version und `bundled` sind eine geprüfte Reproduzierbarkeitsgrenze der Matrix.
@@ -38,11 +41,3 @@ windows-sys = { version = "0.60", features = [
     "Win32_System_WindowsProgramming",
     "Win32_UI_Shell",
 ] }
-
-[dev-dependencies]
-# SONDE-006: Rust-Bein des RFC-8785-Kanons (state_hash). Heute nur im
-# Integrationstest gegen eq-copilot/fixtures/state/ - der Broker hasht in
-# Produktion erst ab SONDE-016 (apply_transaction); dann wandert die Crate in
-# [dependencies]. Bis dahin bleibt sie dev-only, damit die Binaries ehrlich
-# sagen, was sie koennen.
-serde_json_canonicalizer = "0.3"

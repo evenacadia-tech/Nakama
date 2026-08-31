@@ -448,6 +448,104 @@ fn state_report_erreicht_liveness_ueber_produktive_p1_senke() {
     assert!(!c.modell_sicht(&hex(1), &hex(2)).clients[0].stale);
 }
 
+#[cfg(windows)]
+#[test]
+fn produktive_json_senken_verlangen_den_vollstaendigen_v3_vertrag() {
+    let (c, _) = coordinator();
+    let h = hello(1, 2, 10, 100, "main", Some(9));
+    anmelden(&c, "main", &h);
+    let unvollstaendig = serde_json::to_vec(&json!({
+        "type": "heartbeat",
+        "adresse": h.adresse,
+        "sequence": 1
+    }))
+    .unwrap();
+    assert!(Senke::p0(&c, "main", &unvollstaendig).is_none());
+    assert!(!c.modell_sicht(&hex(1), &hex(2)).clients[0].join_kandidat);
+
+    let mit_zusatz = serde_json::to_vec(&json!({
+        "type": "heartbeat",
+        "adresse": h.adresse,
+        "sequence": 1,
+        "state_revision": 0,
+        "capabilities": capabilities(),
+        "zaehler": {
+            "frames_dropped": 0,
+            "parse_errors": 0,
+            "queue_overflows": 0
+        },
+        "cursor": hex(99)
+    }))
+    .unwrap();
+    assert!(Senke::p0(&c, "main", &mit_zusatz).is_none());
+    assert!(!c.modell_sicht(&hex(1), &hex(2)).clients[0].join_kandidat);
+
+    let subscribe_mit_cursor = serde_json::to_vec(&json!({
+        "type": "subscribe_session",
+        "adresse": h.adresse,
+        "session_epoch": h.adresse.session_epoch,
+        "cursor": hex(88)
+    }))
+    .unwrap();
+    Senke::p1(&c, "main", &subscribe_mit_cursor);
+    assert_eq!(c.subscription_anzahl(), 0);
+}
+
+#[cfg(windows)]
+#[test]
+fn alle_schemafesten_interventionsarten_sperren_dieselbe_evidenz() {
+    let (c, _) = coordinator();
+    let h = hello(1, 2, 10, 100, "active_probe", Some(9));
+    anmelden(&c, "probe", &h);
+    let mut sequence = 1u64;
+    for (index, art) in ["hoermarkierung", "preview", "focus_burst", "experiment"]
+        .into_iter()
+        .enumerate()
+    {
+        let id = hex(500 + index);
+        let begin = serde_json::to_vec(&json!({
+            "type": "audible_intervention_begin",
+            "intervention_id": id,
+            "adresse": h.adresse,
+            "event_sequence": sequence,
+            "art": art,
+            "project_sample_start": null
+        }))
+        .unwrap();
+        assert!(Senke::p0(&c, "probe", &begin).is_none());
+        assert_eq!(c.interventionssicht().aktive, 1, "{art}");
+        assert!(!c.evidence_dispatch(), "{art}");
+        sequence += 1;
+        let ende = serde_json::to_vec(&json!({
+            "type": "audible_intervention_end",
+            "intervention_id": id,
+            "adresse": h.adresse,
+            "event_sequence": sequence,
+            "project_sample_end": null,
+            "tail_samples": 0
+        }))
+        .unwrap();
+        assert!(Senke::p0(&c, "probe", &ende).is_none());
+        assert!(c.interventionssicht().starke_evidenz_erlaubt, "{art}");
+        sequence += 1;
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn p2_mutiert_erst_nach_flatbuffers_verifikation() {
+    let (c, _) = coordinator();
+    let h = hello(1, 2, 10, 100, "active_probe", Some(9));
+    anmelden(&c, "probe", &h);
+    Senke::p2(&c, "probe", b"kein FlatBuffer");
+    assert_eq!(c.p2_live_frames(), 0);
+    let gueltig = include_bytes!(
+        "../../eq-copilot/fixtures/v3/flatbuffers/gueltig/live-64-band.bin"
+    );
+    Senke::p2(&c, "probe", gueltig);
+    assert_eq!(c.p2_live_frames(), 1);
+}
+
 #[test]
 fn tombstone_grenze_entfernt_alle_fluechtigen_sichten_aber_keinen_dauerhaften_konfliktriegel() {
     let (c, clock) = coordinator();

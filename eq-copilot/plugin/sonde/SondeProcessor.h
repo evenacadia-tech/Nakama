@@ -54,6 +54,8 @@
 
 #include "NakamaLebenslauf.h"
 #include "NakamaState.h"
+#include "ControlClient.h"
+#include "TelemetryClient.h"
 
 // Genau EINE Produktklasse je Ziel - gesetzt von der duennen Target-Schicht
 // in plugin/CMakeLists.txt. Der Riegel ist kein Zierrat: ohne ihn uebersetzte
@@ -105,7 +107,7 @@ class SondeProcessor final : public juce::AudioProcessor
 {
 public:
     SondeProcessor();
-    ~SondeProcessor() override = default;
+    ~SondeProcessor() override;
 
     void prepareToPlay (double samplerate, int maxBlock) override;
     void releaseResources() override {}
@@ -169,10 +171,42 @@ public:
         return lebenslauf.darfBrokerStarten();
     }
 
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    nakama::ipc::ControlHello v3HelloFuerTest() const { return v3Hello(); }
+    nakama::ipc::ControlStatus v3StatusFuerTest() const { return v3Status(); }
+    nakama::ipc::ControlClient::Snapshot controlV3FuerTest() const
+    {
+        return controlV3.snapshot();
+    }
+    bool v3ProduktstatusVerdrahtetFuerTest() const
+    {
+        return controlV3.statusProviderGesetzt();
+    }
+    nakama::ipc::TelemetryClient::Snapshot telemetryV3FuerTest() const
+    {
+        return telemetryV3.snapshot();
+    }
+#endif
+
 private:
+    nakama::ipc::ControlHello v3Hello() const;
+    nakama::ipc::ControlStatus v3Status() const;
+    nakama::ipc::TelemetryHello v3TelemetryHello() const;
+
     nakama::state::Zustand zustand;
     nakama::state::Lebenslauf lebenslauf { kProduktklasse };
     juce::CriticalSection zustandSchloss;   ///< nur Nachrichten-/Hostthread, nie processBlock
+
+    const std::string v3LogonSid;
+    const std::string v3PipeName;
+    const std::string v3SessionEpoch;
+    const std::string v3RuntimeNonce;
+    std::atomic<double> v3Samplerate { 0.0 };
+    std::atomic<int> v3BlockSize { 0 };
+    std::atomic<int> v3Channels { 0 };
+    std::atomic<std::uint64_t> v3StateRevision { 0 };
+    nakama::ipc::ControlClient controlV3;
+    nakama::ipc::TelemetryClient telemetryV3;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SondeProcessor)
 };

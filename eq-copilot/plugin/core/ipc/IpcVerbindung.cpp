@@ -16,6 +16,20 @@
 namespace nakama::ipc
 {
 
+bool namedPipeErreichbar (const std::string& pipeName)
+{
+    if (pipeName.empty())
+        return false;
+    std::wstring breit;
+    breit.reserve (pipeName.size());
+    for (char c : pipeName)
+        breit.push_back (static_cast<wchar_t> (static_cast<unsigned char> (c)));
+    if (WaitNamedPipeW (breit.c_str(), 0) != FALSE)
+        return true;
+    const DWORD fehler = GetLastError();
+    return fehler == ERROR_PIPE_BUSY || fehler == ERROR_SEM_TIMEOUT;
+}
+
 IpcVerbindung::~IpcVerbindung()
 {
     schliessen();

@@ -289,6 +289,7 @@ function(nakama_sonde_ziel ziel identitaet klassendefine)
     )
 
     target_sources(${ziel} PRIVATE sonde/SondeProcessor.cpp sonde/SondeFactory.cpp)
+    target_sources(${ziel} PRIVATE core/ipc/PipeToken.cpp)
     target_include_directories(${ziel} PRIVATE sonde)
 
     # JUCE_VST3_CAN_REPLACE_VST2=0 gehoert zur eingefrorenen Identitaet, nicht
@@ -304,7 +305,7 @@ function(nakama_sonde_ziel ziel identitaet klassendefine)
     )
 
     target_link_libraries(${ziel}
-        PRIVATE juce::juce_audio_utils
+        PRIVATE juce::juce_audio_utils Advapi32
         PUBLIC  juce::juce_recommended_config_flags
                 juce::juce_recommended_lto_flags
                 juce::juce_recommended_warning_flags)
@@ -344,11 +345,12 @@ nakama_sonde_ziel(NakamaProbeeq active-probe  NAKAMA_SONDE_AKTIV)
 function(nakama_sonde_nulltest ziel klassendefine)
     juce_add_console_app(${ziel} PRODUCT_NAME "${ziel}")
     target_sources(${ziel} PRIVATE tests/SondeNullTestMain.cpp sonde/SondeProcessor.cpp)
+    target_sources(${ziel} PRIVATE core/ipc/PipeToken.cpp)
     target_include_directories(${ziel} PRIVATE sonde)
     target_compile_definitions(${ziel} PRIVATE
         JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0
-        ${klassendefine}=1)
-    target_link_libraries(${ziel} PRIVATE juce::juce_audio_utils
+        ${klassendefine}=1 NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
+    target_link_libraries(${ziel} PRIVATE juce::juce_audio_utils Advapi32
         PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
     nakama_kern_anbinden(${ziel})
 endfunction()

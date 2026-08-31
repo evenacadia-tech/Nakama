@@ -90,7 +90,8 @@ EqCopilotProcessor::EqCopilotProcessor()
             },
             [this] { return statsSnapshot(); },
             [this] { return messKompakt(); }),
-      controlV3 ([this] { return v3Hello(); }, v3PipeName),
+      controlV3 ([this] { return v3Hello(); }, v3PipeName, {},
+                 [this] { return v3Status(); }),
       brokerLifecycle (nakama::ipc::BrokerLifecycleHooks {
           [this] {
               return controlV3.snapshot().status
@@ -113,7 +114,8 @@ EqCopilotProcessor::EqCopilotProcessor()
               return nakama::ipc::brokerVerborgenStarten (
                   nakama::ipc::installbindung::brokerPfad);
           },
-          brokerStartMutexName (v3LogonSid) })
+          brokerStartMutexName (v3LogonSid),
+          v3PipeName })
 {
     // Frische Instanz (nie restauriert): legacy + insert, v2-Rolle "sensor".
     // Der Lebenslauf-Automat startet auf `unclassified` (§53.5) und bekommt
@@ -310,6 +312,8 @@ void EqCopilotProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     // mit der Brücke ist das erstmals unterscheidbar (NAK-24).
     hatTransport.store (stempel.spieltGueltig);
     transportSpielt.store (stempel.spieltGueltig && stempel.spielt);
+    aufnahmeGueltig.store (stempel.recordingGueltig);
+    aufnahmeAktiv.store (stempel.recordingGueltig && stempel.recording);
 
     // Hostzeit (M0-Prüfpunkt §9.3) — Projektzeit-Fenster der Messung (Plan
     // §5.7): nur während Play akkumulieren, der stehende Playhead ist kein
@@ -761,6 +765,26 @@ nakama::ipc::ControlHello EqCopilotProcessor::v3Hello() const
     return h;
 }
 
+nakama::ipc::ControlStatus EqCopilotProcessor::v3Status() const
+{
+    nakama::ipc::ControlStatus s;
+    s.dspSchemaVersion = 1;
+    s.stateRevision = v3StateRevision.load();
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.hatParameters && ! zustand.nurLesen)
+        {
+            juce::String hash, grund;
+            if (nakama::parameter::stateHash (zustand.parameters, hash, grund))
+                s.stateHash = hash.toStdString();
+        }
+    }
+    s.recordStateValid = aufnahmeGueltig.load();
+    s.recording = aufnahmeAktiv.load();
+    s.framesDropped = queue.verloreneFrames();
+    return s;
+}
+
 StatsSnapshot EqCopilotProcessor::statsSnapshot() const
 {
     StatsSnapshot s;
@@ -840,6 +864,7 @@ bool EqCopilotProcessor::neueSensorId()
         zustand.common.instanceId = juce::Uuid().toString();
     }
     meldeHostDirty();
+    v3StateRevision.fetch_add (1);
     pipe.reconnect();
     controlV3.reconnect();
     return true;
@@ -885,6 +910,7 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
             lebenslauf.stateRestauriert (ergebnis, geladen);
             spiegleKlassifikation();
         }
+        v3StateRevision.fetch_add (1);
         controlV3.reconnect();
         return;
     }
@@ -900,6 +926,7 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
     }
     pipe.start();       // No-Op, wenn sie laeuft; hebt einen frueheren read-only-Stopp auf
     pipe.reconnect();   // frisches hello mit der geladenen Bindung
+    v3StateRevision.fetch_add (1);
     controlV3.reconnect();
     // Kein Host-Dirty: Laden und Migration sind keine Aenderung des Users.
 }
@@ -1000,6 +1027,12 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
         neu.position = position;
         neu.label = lbl;
         neu.pairId = p;
+        // Die Projektbindung entsteht nur an diesem sichtbaren User-Akt.
+        // Frischzustand und Migration bleiben leer; der State selbst wird
+        // danach zur autoritativen, persistierten Quelle fuer alle Clients.
+        if (klasse == nakama::state::Klasse::main
+            && neu.projectBindingId.isEmpty())
+            neu.projectBindingId = juce::String (uuidHex32());
         if (neu == zustand.common)
             return false;   // keine Aenderung: kein Dirty, kein Reconnect-Geflacker
         zustand.common = neu;
@@ -1019,6 +1052,7 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
         spiegleKlassifikation();
     }
     meldeHostDirty();
+    v3StateRevision.fetch_add (1);
     pipe.reconnect();
     controlV3.reconnect();
     return true;

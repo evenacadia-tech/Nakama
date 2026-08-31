@@ -372,6 +372,8 @@ int main()
                     && produktHello.pluginKind == "main"
                     && produktHello.hostAngeben && produktHello.hostPid != 0,
                 "produkt_v3_hello_bindet_originalidentitaet_rolle_und_host");
+        pruefe (p.v3ProduktstatusVerdrahtetFuerTest(),
+                "Gen-ControlClient traegt den produktiven Heartbeat-/State-Report-Provider");
     }
 
     // P1 · Der Scannerlauf. Genau die Sequenz eines Plugin-Scanners:
@@ -429,10 +431,23 @@ int main()
 
         pruefe (p.holeKlassifikation() == Klassifikation::main,
                 "Altprojekt 'hub' -> main", nakama::state::wort (p.holeKlassifikation()));
+        pruefe (p.v3HelloFuerTest().adresse.projectBindingId.empty(),
+                "Schema-1-Migration erfindet keine Projektbindung");
         pruefe (! p.darfBrokerStarten(),
                 "main, aber Editor zu: noch kein Brokerstart");
         p.setzeEditorOffen (true);
         pruefe (p.darfBrokerStarten(), "main + offener Editor: Brokerstart erlaubt");
+        pruefe (p.setzeBindung ("hub", "Klavier", {})
+                    && nakama::ipc::istHex32 (
+                           p.v3HelloFuerTest().adresse.projectBindingId),
+                "expliziter Main-Bindungsakt erzeugt die autoritative Projektbindung");
+        const auto binding = p.v3HelloFuerTest().adresse.projectBindingId;
+        juce::MemoryBlock gespeichert;
+        p.getStateInformation (gespeichert);
+        EqCopilotProcessor erneut;
+        erneut.setStateInformation (gespeichert.getData(), (int) gespeichert.getSize());
+        pruefe (erneut.v3HelloFuerTest().adresse.projectBindingId == binding,
+                "Projektbindung reist im bestehenden Host-State verlustfrei");
         pruefe (faerbtAudio (p, fs, bs, 120),
                 "main: DIESELBE Markierung faerbt jetzt (der Riegel kann fallen)");
     }
@@ -450,6 +465,9 @@ int main()
         // Editor, dann der Akt. Umgekehrt lehnt der Automat ab - und genau
         // das misst die erste Zeile hier.
         pruefe (p.setzeBindung ("hub", {}, {}), "Vorbereitung: Rollenwahl aendert den Stand");
+        pruefe (nakama::ipc::istHex32 (
+                    p.v3HelloFuerTest().adresse.projectBindingId),
+                "frischer expliziter Main-Akt stellt vor dem Connect eine Bindung bereit");
         pruefe (p.holeKlassifikation() == Klassifikation::unclassified,
                 "Rollenwahl OHNE offenen Editor klassifiziert nicht (53.5)",
                 nakama::state::wort (p.holeKlassifikation()));

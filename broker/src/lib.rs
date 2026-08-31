@@ -877,12 +877,6 @@ pub fn broker_starten(bindungen_pfad: Option<PathBuf>) -> Result<(), String> {
             }
             let register = Arc::new(Mutex::new(register));
             let session_token = uuid::Uuid::new_v4().to_string();
-            let griff_v2 = server::server_starten(
-                PIPE_NAME,
-                register.clone(),
-                broker_version(),
-                session_token.clone(),
-            )?;
             let store = match store::StoreKonfiguration::standard() {
                 Ok(konfiguration) => store::StoreWriter::starten(konfiguration),
                 Err(fehler) => store::StoreWriter::degradiert_ohne_pfad(fehler.to_string()),
@@ -892,6 +886,13 @@ pub fn broker_starten(bindungen_pfad: Option<PathBuf>) -> Result<(), String> {
                 broker_epoch.clone(),
                 &store,
             ));
+            let griff_v2 = server::server_starten_mit_interventionssenke(
+                PIPE_NAME,
+                register.clone(),
+                broker_version(),
+                session_token.clone(),
+                coordinator.clone(),
+            )?;
             let sender = transport::server_v3::V3Sender::neu();
             coordinator.session_push_setzen(Arc::new(sender.clone()));
             let user_sid = server::aktueller_user_sid()?;

@@ -581,7 +581,8 @@ if ($Bauen) {
     # Release-Artefakt oder gar nicht - beides waere ein stiller Verlust.
     $cargoRelease = Fuehre-Aus -Datei 'cargo' -Argumente @(
         'build', '--release', '--manifest-path', 'broker/Cargo.toml',
-        '--bin', 'eqcop-broker-v3probe', '--color', 'never')
+        '--bin', 'eqcop-broker-v3probe', '--bin', 'eqcop-broker',
+        '--color', 'never')
     $bauProtokoll += [pscustomobject]@{ Schritt = 'cargo-release'; ExitCode = $cargoRelease.ExitCode; StdOut = $cargoRelease.StdOut; StdErr = $cargoRelease.StdErr; Sekunden = $cargoRelease.Sekunden }
     if ($cargoRelease.ExitCode -ne 0) { Bau-Abbruch -Schritt 'cargo-release' -Lauf $cargoRelease }
 }

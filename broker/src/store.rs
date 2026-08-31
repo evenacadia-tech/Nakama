@@ -304,6 +304,10 @@ pub struct StoreSicht {
     pub verweigert: u64,
     pub eingereiht: u64,
     pub commits: u64,
+    /// Groesste Zahl von Events, die seit dem Start in EINER SQLite-
+    /// Transaktion committed wurde. Der Wert macht die harte S-05-Grenze
+    /// auch im produktiven Lauf messbar.
+    pub groesster_commit: usize,
     pub sqlite_version: String,
     pub rusqlite_version: String,
     pub pragmas: Option<StorePragmas>,
@@ -317,6 +321,7 @@ impl Default for StoreSicht {
             verweigert: 0,
             eingereiht: 0,
             commits: 0,
+            groesster_commit: 0,
             sqlite_version: String::new(),
             rusqlite_version: RUSQLITE_VERSION.into(),
             pragmas: None,
@@ -545,6 +550,22 @@ impl StoreHandle {
         })
     }
 
+    /// Interne, haltbare Wirkung eines bereits bekannten P0-Befehls. Der
+    /// Coordinator vergleicht damit beim Retry nicht nur die `command_id`,
+    /// sondern auch den kanonischen Befehl und gibt exakt denselben
+    /// Revisions-/Hashstand zurueck.
+    pub fn command_event_lesen(&self, command_id: &str) -> Result<Option<Vec<u8>>, StoreFehler> {
+        kurze_leseconnection(&self.db_pfad, |conn| {
+            conn.query_row(
+                "SELECT payload_jcs FROM event_log WHERE command_id=?1",
+                params![command_id],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(StoreFehler::from)
+        })
+    }
+
     pub fn outbox_lesen(&self) -> Result<Vec<(SnapshotZiel, i64, i64)>, StoreFehler> {
         kurze_leseconnection(&self.db_pfad, |conn| {
             let mut stmt = conn.prepare(
@@ -723,9 +744,14 @@ enum WriterBefehl {
     Shutdown,
 }
 
-struct AppendJob {
-    events: Vec<StoreEvent>,
+struct AppendStand {
+    rest: VecDeque<StoreEvent>,
+    ergebnisse: Vec<AppendAusgang>,
     antwort: mpsc::Sender<Result<Vec<AppendAusgang>, StoreFehler>>,
+}
+
+struct CommitJob {
+    events: Vec<StoreEvent>,
 }
 
 fn writer_lauf(
@@ -764,51 +790,123 @@ fn writer_lauf(
 
         match befehl {
             WriterBefehl::AppendBatch { events, antwort } => {
-                let start = Instant::now();
-                let mut anzahl = events.len();
-                let mut jobs = vec![AppendJob { events, antwort }];
-                while anzahl < COMMIT_BATCH_MAX {
-                    let rest =
-                        Duration::from_millis(COMMIT_FENSTER_MS).saturating_sub(start.elapsed());
-                    if rest.is_zero() {
+                let mut aktiv = VecDeque::from([AppendStand {
+                    rest: events.into(),
+                    ergebnisse: Vec::new(),
+                    antwort,
+                }]);
+                let mut kanal_getrennt = false;
+
+                // Ein Aufrufer darf mehr als 64 Events als EINEN logischen
+                // Auftrag einreichen. Der Writer zerlegt ihn geordnet in
+                // mehrere harte Transaktionsabschnitte und antwortet erst,
+                // wenn alle Abschnitte committed sind.
+                while !aktiv.is_empty() {
+                    while aktiv.front().is_some_and(|job| job.rest.is_empty()) {
+                        if let Some(job) = aktiv.pop_front() {
+                            let _ = job.antwort.send(Ok(job.ergebnisse));
+                        }
+                    }
+                    if aktiv.is_empty() {
                         break;
                     }
-                    match receiver.recv_timeout(rest) {
-                        Ok(WriterBefehl::AppendBatch { events, antwort }) => {
-                            anzahl = anzahl.saturating_add(events.len());
-                            jobs.push(AppendJob { events, antwort });
+
+                    let start = Instant::now();
+                    let mut anzahl = 0usize;
+                    let mut commit_jobs = Vec::new();
+                    let mut zuordnung = Vec::new();
+                    let mut barriere_gesehen = false;
+
+                    loop {
+                        // Alles bereits Angenommene wird in Kanalreihenfolge
+                        // bis zur 64er-Grenze in diesen Commit gezogen.
+                        let mut index = 0usize;
+                        while anzahl < COMMIT_BATCH_MAX && index < aktiv.len() {
+                            let job = aktiv.get_mut(index).expect("Append-Index");
+                            if job.rest.is_empty() {
+                                index += 1;
+                                continue;
+                            }
+                            let nehmen = (COMMIT_BATCH_MAX - anzahl).min(job.rest.len());
+                            let events = job.rest.drain(..nehmen).collect::<Vec<_>>();
+                            anzahl += events.len();
+                            commit_jobs.push(CommitJob { events });
+                            zuordnung.push(index);
+                            index += 1;
                         }
-                        Ok(anderer) => {
-                            vorgemerkt.push_back(anderer);
+                        if anzahl >= COMMIT_BATCH_MAX {
                             break;
                         }
-                        Err(RecvTimeoutError::Timeout) => break,
-                        Err(RecvTimeoutError::Disconnected) => break,
+
+                        let rest = Duration::from_millis(COMMIT_FENSTER_MS)
+                            .saturating_sub(start.elapsed());
+                        if rest.is_zero() {
+                            break;
+                        }
+                        match receiver.recv_timeout(rest) {
+                            Ok(WriterBefehl::AppendBatch { events, antwort })
+                                if !barriere_gesehen =>
+                            {
+                                aktiv.push_back(AppendStand {
+                                    rest: events.into(),
+                                    ergebnisse: Vec::new(),
+                                    antwort,
+                                });
+                            }
+                            Ok(anderer) => {
+                                // Checkpoint, Guard oder Shutdown bleibt in
+                                // seiner Reihenfolge, beendet aber NICHT das
+                                // offene Append-Fenster. Nach der ersten
+                                // Barriere werden auch spaetere Appends nur
+                                // vorgemerkt, damit sie sie nicht ueberholen.
+                                barriere_gesehen = true;
+                                vorgemerkt.push_back(anderer);
+                            }
+                            Err(RecvTimeoutError::Timeout) => break,
+                            Err(RecvTimeoutError::Disconnected) => {
+                                kanal_getrennt = true;
+                                std::thread::sleep(rest);
+                                break;
+                            }
+                        }
+                    }
+
+                    if anzahl == 0 {
+                        continue;
+                    }
+                    let ergebnisse = append_gruppe(&mut conn, &commit_jobs, test_haken.as_ref());
+                    match ergebnisse {
+                        Ok(pro_job) => {
+                            for (index, ergebnis) in zuordnung.into_iter().zip(pro_job) {
+                                aktiv
+                                    .get_mut(index)
+                                    .expect("Append-Antwortzuordnung")
+                                    .ergebnisse
+                                    .extend(ergebnis);
+                            }
+                            if let Ok(mut s) = sicht.lock() {
+                                s.commits = s.commits.saturating_add(1);
+                                s.groesster_commit = s.groesster_commit.max(anzahl);
+                            }
+                            letztes_event = Instant::now();
+                            idle_checkpoint_gelaufen = false;
+                            if wal_groesse(&wal_pfad) >= WAL_SCHWELLE_BYTES {
+                                let _ = checkpoint(&conn, false);
+                            }
+                        }
+                        Err(fehler) => {
+                            degradiere(&sicht, fehler.to_string());
+                            for job in aktiv.drain(..) {
+                                let _ = job.antwort.send(Err(StoreFehler::Degradiert(
+                                    fehler.to_string(),
+                                )));
+                            }
+                            break;
+                        }
                     }
                 }
-                let ergebnisse = append_gruppe(&mut conn, &jobs, test_haken.as_ref());
-                match ergebnisse {
-                    Ok(pro_job) => {
-                        if let Ok(mut s) = sicht.lock() {
-                            s.commits = s.commits.saturating_add(1);
-                        }
-                        for (job, ergebnis) in jobs.into_iter().zip(pro_job) {
-                            let _ = job.antwort.send(Ok(ergebnis));
-                        }
-                        letztes_event = Instant::now();
-                        idle_checkpoint_gelaufen = false;
-                        if wal_groesse(&wal_pfad) >= WAL_SCHWELLE_BYTES {
-                            let _ = checkpoint(&conn, false);
-                        }
-                    }
-                    Err(fehler) => {
-                        degradiere(&sicht, fehler.to_string());
-                        for job in jobs {
-                            let _ = job
-                                .antwort
-                                .send(Err(StoreFehler::Degradiert(fehler.to_string())));
-                        }
-                    }
+                if kanal_getrennt {
+                    break;
                 }
             }
             WriterBefehl::CompactSnapshotDebt {
@@ -859,9 +957,15 @@ fn writer_lauf(
 
 fn append_gruppe(
     conn: &mut Connection,
-    jobs: &[AppendJob],
+    jobs: &[CommitJob],
     test_haken: Option<&StoreTestHaken>,
 ) -> Result<Vec<Vec<AppendAusgang>>, StoreFehler> {
+    let event_anzahl = jobs.iter().map(|job| job.events.len()).sum::<usize>();
+    if event_anzahl > COMMIT_BATCH_MAX {
+        return Err(StoreFehler::Sqlite(format!(
+            "Group-Commit mit {event_anzahl} Events ueberschreitet Cap {COMMIT_BATCH_MAX}"
+        )));
+    }
     let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
     let mut alle = Vec::with_capacity(jobs.len());
     for job in jobs {
@@ -957,19 +1061,24 @@ fn projektionen_anwenden(
          WHERE excluded.last_event_ord > projects.last_event_ord",
         params![event.project_binding_id, event_ord, event.payload_jcs],
     )?;
-    tx.execute(
-        "INSERT INTO sessions(project_binding_id,session_epoch,last_event_ord,state_jcs) \
-         VALUES(?1,?2,?3,?4) \
-         ON CONFLICT(project_binding_id,session_epoch) DO UPDATE SET \
-         last_event_ord=excluded.last_event_ord,state_jcs=excluded.state_jcs \
-         WHERE excluded.last_event_ord > sessions.last_event_ord",
-        params![
-            event.project_binding_id,
-            event.session_epoch,
-            event_ord,
-            event.payload_jcs,
-        ],
-    )?;
+    // `sessions.state_jcs` ist ausschliesslich die absolute
+    // `session_snapshot`-Projektion. Domain-Events derselben Session haben
+    // eigene Tabellen und duerfen diese Rekonstruktionsquelle nie ersetzen.
+    if event.event_type == "session" {
+        tx.execute(
+            "INSERT INTO sessions(project_binding_id,session_epoch,last_event_ord,state_jcs) \
+             VALUES(?1,?2,?3,?4) \
+             ON CONFLICT(project_binding_id,session_epoch) DO UPDATE SET \
+             last_event_ord=excluded.last_event_ord,state_jcs=excluded.state_jcs \
+             WHERE excluded.last_event_ord > sessions.last_event_ord",
+            params![
+                event.project_binding_id,
+                event.session_epoch,
+                event_ord,
+                event.payload_jcs,
+            ],
+        )?;
+    }
 
     let domain = match event.event_type.as_str() {
         "passage" => Some(("passages", "passage_id")),
@@ -1603,25 +1712,21 @@ mod tests {
         pragmas_setzen(&conn).unwrap();
         migration_1(&mut conn, None).unwrap();
 
-        let (antwort, _empfang) = mpsc::channel();
         SYNC_AUFRUFE.store(0, Ordering::SeqCst);
         append_gruppe(
             &mut conn,
-            &[AppendJob {
+            &[CommitJob {
                 events: vec![test_event(0)],
-                antwort,
             }],
             None,
         )
         .unwrap();
         let sync_ein_event = SYNC_AUFRUFE.swap(0, Ordering::SeqCst);
 
-        let (antwort, _empfang) = mpsc::channel();
         append_gruppe(
             &mut conn,
-            &[AppendJob {
+            &[CommitJob {
                 events: (1..=COMMIT_BATCH_MAX as i64).map(test_event).collect(),
-                antwort,
             }],
             None,
         )

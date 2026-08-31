@@ -1,5 +1,6 @@
 use eqcop_broker::coordinator::{
-    Coordinator, ManualClock, SessionPush, STALE_NACH_MS, TOMBSTONE_MS,
+    Coordinator, CoordinatorFlushTestHaken, ManualClock, SessionPush, STALE_NACH_MS,
+    TOMBSTONE_MS,
 };
 use eqcop_broker::store::{
     busy_timeout_abgelaufen, checkpoint_ausloesen, commit_ausloesen, migration_1_checksum,
@@ -338,6 +339,27 @@ fn si_report(coordinator: &Coordinator, link: &str, adresse: &Adresse, sequence:
     )
 }
 
+fn si_state_report(
+    coordinator: &Coordinator,
+    link: &str,
+    adresse: &Adresse,
+    revision: u64,
+) -> bool {
+    coordinator.state_report_json(
+        link,
+        &serde_json::to_vec(&json!({
+            "type": "state_report",
+            "adresse": adresse,
+            "dsp_schema_version": 1,
+            "state_revision": revision,
+            "state_hash": "d".repeat(64),
+            "record_state": {"valid": true, "recording": false},
+            "undo_tiefe": 0
+        }))
+        .unwrap(),
+    )
+}
+
 fn si_subscribe(coordinator: &Coordinator, link: &str, adresse: &Adresse) -> bool {
     coordinator.subscribe_json(
         link,
@@ -434,6 +456,210 @@ fn si_coordinator_mit_store(
     let push = Arc::new(PushProbe::neu(push_erfolgreich));
     coordinator.session_push_setzen(push.clone());
     (ordner, writer, coordinator, clock, push)
+}
+
+#[cfg(windows)]
+#[test]
+fn produkt_coordinator_committet_alle_persistenten_p0_befehle_und_ackt_retries() {
+    let (_ordner, writer, coordinator, _clock, _push) =
+        si_coordinator_mit_store("produkt-p0", true);
+    let main = si_hello(10, 100, "main");
+    let probe = si_hello(11, 101, "active_probe");
+    assert!(coordinator
+        .control_hello_registrieren("main", &main)
+        .angenommen);
+    assert!(si_report(&coordinator, "main", &main.adresse, 1));
+    assert!(coordinator
+        .control_hello_registrieren("probe", &probe)
+        .angenommen);
+    assert!(si_state_report(&coordinator, "probe", &probe.adresse, 13));
+
+    let kopf = |command_id: String| {
+        json!({
+            "command_id": command_id,
+            "ziel": probe.adresse,
+            "base_revision": 13,
+            "ttl_ms": 1000,
+            "schema_major": 3,
+            "schema_minor": 0
+        })
+    };
+    let befehle = vec![
+        json!({
+            "type": "preview_begin",
+            "kopf": kopf(si_hex(500)),
+            "lease_duration_ms": 200,
+            "renew_id": si_hex(600)
+        }),
+        json!({
+            "type": "preview_renew",
+            "kopf": kopf(si_hex(501)),
+            "renew_id": si_hex(601)
+        }),
+        json!({
+            "type": "preview_end",
+            "kopf": kopf(si_hex(502)),
+            "grund": "losgelassen"
+        }),
+    ];
+    for befehl in &befehle {
+        let ack = Senke::p0(
+            coordinator.as_ref(),
+            "main",
+            &serde_json::to_vec(befehl).unwrap(),
+        )
+        .expect("produktiver command_ack");
+        let ack: Value = serde_json::from_slice(&ack).unwrap();
+        assert_eq!(ack["ergebnis"], "angewandt");
+        assert_eq!(ack["state_revision"], 13);
+        assert_eq!(ack["state_hash"], "d".repeat(64));
+        assert!(ack.get("event_uuid").is_none());
+    }
+    let retry = Senke::p0(
+        coordinator.as_ref(),
+        "main",
+        &serde_json::to_vec(&befehle[0]).unwrap(),
+    )
+    .expect("idempotenter command_ack");
+    let retry: Value = serde_json::from_slice(&retry).unwrap();
+    assert_eq!(retry["ergebnis"], "idempotent_wiederholt");
+    assert_eq!(retry["state_revision"], 13);
+    assert_eq!(retry["state_hash"], "d".repeat(64));
+    assert_eq!(
+        scalar_i64(
+            writer.handle().db_pfad(),
+            "SELECT COUNT(*) FROM event_log WHERE event_type='command'"
+        ),
+        3
+    );
+}
+
+#[test]
+fn brokerneustart_sendet_keine_laufgebundenen_felder_der_alten_projektion() {
+    let ordner = TestOrdner::neu("projektion-neuer-brokerlauf");
+    let writer = starten(&ordner.db());
+    let alt = Arc::new(Coordinator::mit_store(
+        Arc::new(ManualClock::default()),
+        si_hex(90),
+        &writer,
+    ));
+    let main = si_hello(10, 100, "main");
+    assert!(alt.control_hello_registrieren("alt", &main).angenommen);
+    assert!(si_report(&alt, "alt", &main.adresse, 1));
+
+    let neu = Arc::new(Coordinator::mit_store(
+        Arc::new(ManualClock::default()),
+        si_hex(91),
+        &writer,
+    ));
+    let push = Arc::new(PushProbe::neu(true));
+    neu.session_push_setzen(push.clone());
+    assert!(neu.control_hello_registrieren("neu", &main).angenommen);
+    assert!(si_subscribe(&neu, "neu", &main.adresse));
+    let snapshot = push.snapshots().last().unwrap().1.clone();
+    assert_eq!(snapshot["broker_epoch"], si_hex(91));
+    assert!(snapshot["fuehrendes_main"].is_null());
+    assert!(snapshot["mitglieder"].as_array().unwrap().is_empty());
+}
+
+#[test]
+fn projektionslesefehler_haelt_subscription_sichtbar_fail_closed() {
+    let (ordner, mut writer, coordinator, _clock, push) =
+        si_coordinator_mit_store("projektion-lesefehler", true);
+    let main = si_hello(10, 100, "main");
+    assert!(coordinator
+        .control_hello_registrieren("main", &main)
+        .angenommen);
+    writer.stoppen();
+    std::fs::remove_file(ordner.db()).unwrap();
+    assert!(si_subscribe(&coordinator, "main", &main.adresse));
+    assert!(!coordinator.routing_bereit());
+    assert!(coordinator.verbindung_soll_trennen("main"));
+    assert!(push.snapshots().is_empty());
+}
+
+#[test]
+fn snapshot_commit_bleibt_bei_konkurrierenden_flushes_monoton() {
+    let (_ordner, writer, coordinator, _clock, _push) =
+        si_coordinator_mit_store("snapshot-commit-seriell", true);
+    let main = si_hello(10, 100, "main");
+    assert!(coordinator
+        .control_hello_registrieren("main", &main)
+        .angenommen);
+    assert!(si_report(&coordinator, "main", &main.adresse, 1));
+    let basis: Value = serde_json::from_slice(&coordinator.session_snapshot_json(
+        &main.adresse.project_binding_id,
+        &main.adresse.session_epoch,
+    ))
+    .unwrap();
+    let mut alt = basis["mitglieder"][0].clone();
+    alt["label"] = Value::String("alt-erfasst".into());
+    let mut neu = basis["mitglieder"][0].clone();
+    neu["label"] = Value::String("neu-committed".into());
+
+    let haken = CoordinatorFlushTestHaken::default();
+    coordinator.flush_test_haken_setzen(haken.clone());
+    let c = coordinator.clone();
+    let erster = std::thread::spawn(move || c.descriptor_setzen("main", alt));
+    haken.warten_bis_erfasst();
+    let c = coordinator.clone();
+    let (zweiter_fertig_tx, zweiter_fertig_rx) = std::sync::mpsc::channel();
+    let zweiter = std::thread::spawn(move || {
+        let ausgang = c.descriptor_setzen("main", neu);
+        let _ = zweiter_fertig_tx.send(());
+        ausgang
+    });
+    // Mit dem Session-Schloss wartet der zweite Flush hier. Ohne Schloss
+    // committed er nach seinem 50-ms-Fenster bereits den neueren Stand, so
+    // dass der anschliessend freigegebene alte Flush ihn reproduzierbar
+    // ueberholen wuerde.
+    let _ = zweiter_fertig_rx.recv_timeout(Duration::from_millis(COMMIT_FENSTER_MS * 10));
+    haken.freigeben();
+    assert!(erster.join().unwrap());
+    assert!(zweiter.join().unwrap());
+
+    let (_, payload) = writer
+        .handle()
+        .session_state_lesen(&si_hex(1), &si_hex(2))
+        .unwrap()
+        .unwrap();
+    let payload: Value = serde_json::from_slice(&payload).unwrap();
+    assert_eq!(payload["mitglieder"][0]["label"], "neu-committed");
+}
+
+#[test]
+fn cleanup_zwischen_zielermittlung_und_write_verhindert_den_alten_push() {
+    let ordner = TestOrdner::neu("pushziel-revalidieren");
+    let barriere = StoreStartBarriere::neu_blockiert();
+    let mut konfiguration = StoreKonfiguration::fuer_pfad(ordner.db());
+    konfiguration.remote_volume_override = Some(false);
+    konfiguration.start_barriere = Some(barriere.clone());
+    let writer = StoreWriter::starten(konfiguration);
+    let coordinator = Arc::new(Coordinator::mit_store(
+        Arc::new(ManualClock::default()),
+        si_hex(99),
+        &writer,
+    ));
+    let push = Arc::new(PushProbe::neu(true));
+    coordinator.session_push_setzen(push.clone());
+    let main = si_hello(10, 100, "main");
+    assert!(coordinator
+        .control_hello_registrieren("main", &main)
+        .angenommen);
+    assert!(si_subscribe(&coordinator, "main", &main.adresse));
+    let push_vorher = push.snapshots().len();
+    let c = coordinator.clone();
+    let adresse = main.adresse.clone();
+    let report = std::thread::spawn(move || si_report(&c, "main", &adresse, 1));
+    let frist = Instant::now() + Duration::from_secs(2);
+    while writer.handle().sicht().eingereiht == 0 && Instant::now() < frist {
+        std::thread::yield_now();
+    }
+    assert!(writer.handle().sicht().eingereiht > 0);
+    coordinator.control_ende("main");
+    barriere.freigeben();
+    assert!(report.join().unwrap());
+    assert_eq!(push.snapshots().len(), push_vorher);
 }
 
 #[test]
@@ -747,6 +973,60 @@ fn group_commit_faehrt_echten_batch_bis_commitgrenze() {
 }
 
 #[test]
+fn checkpoint_oder_guard_loest_offenes_append_fenster_nicht_aus() {
+    let ordner = TestOrdner::neu("group-commit-kein-fruehausloeser");
+    let writer = starten(&ordner.db());
+    let store = writer.handle();
+    let antwort = store
+        .append_einreihen(vec![event(None, 1, 1, false)])
+        .unwrap();
+    let start = Instant::now();
+    store.checkpoint(false).unwrap();
+    let vergangen = start.elapsed();
+    assert_eq!(antwort.recv().unwrap().unwrap().len(), 1);
+    assert!(
+        vergangen >= Duration::from_millis(COMMIT_FENSTER_MS - 10),
+        "Checkpoint loeste den Commit nach nur {vergangen:?} aus"
+    );
+}
+
+#[test]
+fn jeder_group_commit_bleibt_bei_hoechstens_64_events() {
+    let ordner = TestOrdner::neu("group-commit-harte-cap");
+    let writer = starten(&ordner.db());
+    let events = (0..=COMMIT_BATCH_MAX as i64)
+        .map(|i| event(None, i + 1, i + 1, false))
+        .collect::<Vec<_>>();
+    let ausgaenge = writer.handle().append(events).unwrap();
+    let sicht = writer.handle().sicht();
+    assert_eq!(ausgaenge.len(), COMMIT_BATCH_MAX + 1);
+    assert_eq!(sicht.commits, 2);
+    assert_eq!(sicht.groesster_commit, COMMIT_BATCH_MAX);
+
+    let ordner = TestOrdner::neu("group-commit-63-plus-2");
+    let writer = starten(&ordner.db());
+    let store = writer.handle();
+    let a = store
+        .append_einreihen(
+            (0..COMMIT_BATCH_MAX as i64 - 1)
+                .map(|i| event(None, i + 1, i + 1, false))
+                .collect(),
+        )
+        .unwrap();
+    let b = store
+        .append_einreihen(vec![
+            event(None, 10_000, 1, false),
+            event(None, 10_001, 2, false),
+        ])
+        .unwrap();
+    assert_eq!(a.recv().unwrap().unwrap().len(), COMMIT_BATCH_MAX - 1);
+    assert_eq!(b.recv().unwrap().unwrap().len(), 2);
+    let sicht = store.sicht();
+    assert_eq!(sicht.commits, 2);
+    assert_eq!(sicht.groesster_commit, COMMIT_BATCH_MAX);
+}
+
+#[test]
 fn busy_timeout_grenze() {
     assert!(!busy_timeout_abgelaufen(Duration::from_millis(
         BUSY_TIMEOUT_MS - 1
@@ -863,9 +1143,15 @@ fn alter_store_ueberschreibt_plugin_state_nicht() {
             .angenommen
     );
 
-    // Zuerst fliesst wirklich der AELTERE Projektionsschnitt aus dem Store.
+    // Der alte Projektionsschnitt bleibt haltbar, seine laufgebundenen
+    // Felder werden beim neuen Coordinator aber auf dessen freie Baseline
+    // gesetzt. Er ist kein MainProjectState-Ingress.
     assert!(si_subscribe(&coordinator, "probe", &client.adresse));
-    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 1);
+    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 0);
+    assert_eq!(
+        push.snapshots().last().unwrap().1["broker_epoch"],
+        "00000000000000000000000000000063"
+    );
 
     // Danach meldet das Plugin seinen neueren lokalen Zustand. Der
     // Coordinator darf ihn als Kontakt lesen, aber keines seiner DSP-Felder
@@ -956,6 +1242,48 @@ fn sessions_projection_composite_key_ohne_fuehrungsrestore() {
         .unwrap();
     assert!(sql.contains("PRIMARY KEY (project_binding_id, session_epoch)"));
     assert!(!sql.to_lowercase().contains("fuehr"));
+}
+
+#[test]
+fn domain_event_ueberschreibt_session_snapshot_auch_beim_reconnect_nicht() {
+    let ordner = TestOrdner::neu("session-projektion-domain-getrennt");
+    let writer = starten(&ordner.db());
+    let snapshot = event(None, 1, 42, false);
+    let erwartet = snapshot.payload_jcs.clone();
+    writer.handle().append(vec![snapshot]).unwrap();
+
+    let mut evidence = event(None, 2, 0, false);
+    evidence.event_type = "evidence".into();
+    evidence.payload_jcs = serde_json::to_vec(&json!({
+        "type": "internal_evidence",
+        "evidence_id": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "wert": 9
+    }))
+    .unwrap();
+    writer.handle().append(vec![evidence]).unwrap();
+
+    let (_, session_state) = writer
+        .handle()
+        .session_state_lesen(&si_hex(1), &si_hex(2))
+        .unwrap()
+        .expect("Sessionprojektion");
+    assert_eq!(session_state, erwartet);
+
+    let coordinator = Arc::new(Coordinator::mit_store(
+        Arc::new(ManualClock::default()),
+        si_hex(3),
+        &writer,
+    ));
+    let push = Arc::new(PushProbe::neu(true));
+    coordinator.session_push_setzen(push.clone());
+    let client = si_hello(4, 404, "main");
+    assert!(coordinator
+        .control_hello_registrieren("reconnect", &client)
+        .angenommen);
+    assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
+    let letzter = push.snapshots().last().unwrap().1.clone();
+    assert_eq!(letzter["type"], "session_snapshot");
+    assert_ne!(letzter["type"], "internal_evidence");
 }
 
 #[test]
@@ -1165,7 +1493,8 @@ fn kill_nach_store_commit_vor_snapshot_push() {
     );
     assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
     assert_eq!(push.snapshots().len(), 1);
-    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 1);
+    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 0);
+    assert_eq!(push.snapshots().last().unwrap().1["broker_epoch"], si_hex(99));
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
 }
 
@@ -1215,7 +1544,8 @@ fn kill_vor_snapshot_outbox_kompaktierung() {
             .angenommen
     );
     assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
-    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 1);
+    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 0);
+    assert_eq!(push.snapshots().last().unwrap().1["broker_epoch"], si_hex(99));
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
 }
 
@@ -1235,7 +1565,8 @@ fn kill_nach_snapshot_outbox_kompaktierung_snapshot_traegt_wirkung() {
             .angenommen
     );
     assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
-    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 1);
+    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 0);
+    assert_eq!(push.snapshots().last().unwrap().1["broker_epoch"], si_hex(99));
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
 }
 
@@ -1353,7 +1684,8 @@ fn kill_waehrend_wal_replay() {
             .angenommen
     );
     assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
-    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 1);
+    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 0);
+    assert_eq!(push.snapshots().last().unwrap().1["broker_epoch"], si_hex(99));
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
     assert!(recovery_testgrenze_bestanden(start.elapsed()));
 }
@@ -1751,7 +2083,13 @@ fn blockierter_store_writer_bestaetigt_nichts_und_p2_laeuft() {
     }
     assert!(writer.handle().sicht().eingereiht > 0);
     assert!(!heartbeat.is_finished());
-    Senke::p2(coordinator.as_ref(), "main", b"live");
+    Senke::p2(
+        coordinator.as_ref(),
+        "main",
+        include_bytes!(
+            "../../eq-copilot/fixtures/v3/flatbuffers/gueltig/live-64-band.bin"
+        ),
+    );
     assert_eq!(coordinator.p2_live_frames(), 1);
     assert_eq!(writer.handle().sicht().commits, 0);
     assert!(push.snapshots().is_empty());

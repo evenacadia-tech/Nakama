@@ -19,6 +19,7 @@
 
 #include "SondeProcessor.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <iostream>
@@ -42,6 +43,22 @@ void fuelle (juce::AudioBuffer<float>& puffer, juce::Random& wuerfel)
     for (int k = 0; k < puffer.getNumChannels(); ++k)
         for (int n = 0; n < puffer.getNumSamples(); ++n)
             puffer.setSample (k, n, wuerfel.nextFloat() * 2.0f - 1.0f);
+}
+
+bool istHex (const std::string& text, std::size_t laenge)
+{
+    return text.size() == laenge
+        && std::all_of (text.begin(), text.end(), [] (char c) {
+               return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+           });
+}
+
+juce::File wurzel()
+{
+    auto d = juce::File::getSpecialLocation (juce::File::currentExecutableFile);
+    while (d.exists() && ! d.getChildFile ("eq-copilot").isDirectory())
+        d = d.getParentDirectory();
+    return d;
 }
 
 } // namespace
@@ -175,6 +192,61 @@ int main()
         zweiter.getStateInformation (zurueck);
         pruefe (zurueck == bytes, "speichern -> laden -> speichern ist bytegleich",
                 juce::String ((int) zurueck.getSize()) + " Bytes");
+    }
+
+    // -- 5a. Probeeq ist ein gebundener reiner v3-Connector ---------------
+    // Die Testschale startet bewusst keine Produktpipe; sie greift aber auf
+    // die echten, im Produktprozessor gehaltenen Control-/Telemetry-Clients
+    // und deren echte Provider zu. Entfernt man die Verdrahtung, baut bzw.
+    // besteht dieser Block nicht mehr.
+    {
+        nakama::state::Zustand gebunden =
+            nakama::state::frisch ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        gebunden.common.klasse = nakama::state::Klasse::active_probe;
+        gebunden.common.projectBindingId = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        gebunden.hatParameters = true;
+        juce::MemoryBlock bytes;
+        nakama::state::speichere (gebunden, bytes);
+
+        nakama::sonde::SondeProcessor connector;
+        connector.setStateInformation (bytes.getData(), (int) bytes.getSize());
+        connector.setRateAndBufferSizeDetails (48000.0, 512);
+        connector.prepareToPlay (48000.0, 512);
+        const auto hello = connector.v3HelloFuerTest();
+        const auto status = connector.v3StatusFuerTest();
+        juce::String sollHash, grund;
+        const bool hashOk = nakama::parameter::stateHash (
+            gebunden.parameters, sollHash, grund);
+
+        pruefe (hello.adresse.projectBindingId
+                    == "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                    && hello.adresse.instanceId
+                    == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                    && hello.pluginKind == "active_probe"
+                    && istHex (hello.adresse.sessionEpoch, 32)
+                    && istHex (hello.adresse.runtimeNonce, 32),
+                "Probeeq-Controlprovider nutzt ausschliesslich die persistierte Bindung");
+        pruefe (status.dspSchemaVersion == nakama::parameter::kDspSchemaVersion
+                    && status.stateRevision == 1
+                    && hashOk && status.stateHash == sollHash.toStdString()
+                    && ! status.recordStateValid && ! status.recording,
+                "Probeeq-Stateprovider meldet echten Parameterhash und keinen erfundenen Record-State");
+        pruefe (connector.controlV3FuerTest().status
+                    == nakama::ipc::ControlClient::Status::getrennt
+                    && connector.telemetryV3FuerTest().status
+                    == nakama::ipc::TelemetryClient::Status::getrennt
+                    && ! connector.darfBrokerStarten(),
+                "Testschale belegt beide Connectoren; Probeeq besitzt keinen Startpfad");
+        pruefe (connector.v3ProduktstatusVerdrahtetFuerTest(),
+                "Probeeq-ControlClient traegt seinen produktiven Statusprovider");
+
+        const auto produktquelle = wurzel()
+            .getChildFile ("eq-copilot/plugin/sonde/SondeProcessor.cpp")
+            .loadFileAsString();
+        pruefe (produktquelle.contains ("controlV3.start();")
+                    && produktquelle.contains ("telemetryV3.start();")
+                    && ! produktquelle.contains ("BrokerLifecycle"),
+                "Probeeq startet produktiv beide v3-Connectoren, aber niemals einen Broker");
     }
 
     // -- 5b. Gate 7 auf State-Ebene, gemessen AM BUNDLE (G1 §4.2) ----------

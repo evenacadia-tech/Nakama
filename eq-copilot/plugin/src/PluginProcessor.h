@@ -174,6 +174,11 @@ public:
     { return brokerLifecycle.snapshot(); }
 #if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
     nakama::ipc::ControlHello v3HelloFuerTest() const { return v3Hello(); }
+    nakama::ipc::ControlStatus v3StatusFuerTest() const { return v3Status(); }
+    bool v3ProduktstatusVerdrahtetFuerTest() const
+    {
+        return controlV3.statusProviderGesetzt();
+    }
 #endif
     double holeSamplerate() const                          { return samplerateAtomic.load(); }
     int    holeBlockSize() const                           { return blockSizeAtomic.load(); }
@@ -221,6 +226,7 @@ public:
 private:
     void workerLauf();
     nakama::ipc::ControlHello v3Hello() const;
+    nakama::ipc::ControlStatus v3Status() const;
     // Lebenszeichen (Konzept v2 §4): „neutral, bis Echtzeit bewiesen" — nur
     // der Audiothread schreibt den Zustand; Ergebnis wandert als Atomic raus.
     void lebenszeichen (int samples, bool spielt);
@@ -256,8 +262,11 @@ private:
     // unterscheidbar (NAK-24).
     std::atomic<bool>   hatTransport { false };
     std::atomic<bool>   transportSpielt { false };
+    std::atomic<bool>   aufnahmeGueltig { false };
+    std::atomic<bool>   aufnahmeAktiv { false };
     std::atomic<bool>   projektZeitGueltig { false };
     std::atomic<juce::int64> projektZeitSamples { 0 };
+    std::atomic<std::uint64_t> v3StateRevision { 0 };
 
     // Projektzeit-Fenster der akkumulierten Messung (Plan §5.7): nur der
     // Audiothread schreibt (Single-Writer), nur während Transport läuft.

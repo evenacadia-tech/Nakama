@@ -38,6 +38,11 @@ inline constexpr int kBackoffMaxMs   = 8000;
 /// Absolute Frist je Schreibvorgang und je Bootstrap-Antwort.
 inline constexpr int kIoFristMs = 5000;
 
+/// Reine Existenzprobe fuer eine lokale Named Pipe. Sie oeffnet keine
+/// Verbindung und verbraucht deshalb keinen Server-Slot. `ERROR_PIPE_BUSY`
+/// bzw. das Nullzeitlimit bedeuten: Broker vorhanden, nur gerade belegt.
+bool namedPipeErreichbar (const std::string& pipeName);
+
 enum class LeseAusgang
 {
     daten,      ///< `gelesen` Bytes liegen vor.

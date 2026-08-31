@@ -299,6 +299,8 @@ struct RegistrierteVerbindung {
     register: Arc<Mutex<Register>>,
     sensor_id: String,
     nonce: String,
+    interventionssenke: Option<Arc<dyn V2Interventionssenke>>,
+    interventions_link_id: String,
 }
 
 impl Drop for RegistrierteVerbindung {
@@ -306,7 +308,18 @@ impl Drop for RegistrierteVerbindung {
         if let Ok(mut r) = self.register.lock() {
             r.sensor_trennen(&self.sensor_id, &self.nonce);
         }
+        if let Some(senke) = &self.interventionssenke {
+            senke.getrennt(&self.interventions_link_id);
+        }
     }
+}
+
+/// Schmale Bruecke vom bestehenden v2-Server in den produktiven
+/// Coordinator. Das Register bleibt v2-Sichtmodell; allein diese Senke macht
+/// den Interventionsriegel fuer v2 und v3 zu EINER Wahrheit.
+pub trait V2Interventionssenke: Send + Sync {
+    fn hoermarkierung(&self, link_id: &str, aktiv: bool);
+    fn getrennt(&self, link_id: &str);
 }
 
 pub struct ServerGriff {
@@ -364,6 +377,25 @@ pub fn server_starten(
         session_token,
         MAX_VERBINDUNGEN,
         MAX_SENSOR_IDS,
+        None,
+    )
+}
+
+pub fn server_starten_mit_interventionssenke(
+    pipe_name: &str,
+    register: Arc<Mutex<Register>>,
+    broker_version: String,
+    session_token: String,
+    interventionssenke: Arc<dyn V2Interventionssenke>,
+) -> Result<ServerGriff, String> {
+    server_starten_mit_grenzen(
+        pipe_name,
+        register,
+        broker_version,
+        session_token,
+        MAX_VERBINDUNGEN,
+        MAX_SENSOR_IDS,
+        Some(interventionssenke),
     )
 }
 
@@ -374,6 +406,7 @@ fn server_starten_mit_grenzen(
     session_token: String,
     max_verbindungen: usize,
     max_sensor_ids: usize,
+    interventionssenke: Option<Arc<dyn V2Interventionssenke>>,
 ) -> Result<ServerGriff, String> {
     if !(1..=255).contains(&max_verbindungen) {
         return Err(format!(
@@ -391,6 +424,7 @@ fn server_starten_mit_grenzen(
     let verbindungen2 = verbindungen.clone();
     let aktive_verbindungen2 = Arc::new(AtomicUsize::new(0));
     let register2 = register.clone();
+    let interventionssenke2 = interventionssenke.clone();
     let name = pipe_name.to_string();
     let mut name_w: Vec<u16> = name.encode_utf16().collect();
     name_w.push(0);
@@ -520,12 +554,21 @@ fn server_starten_mit_grenzen(
                 let tok = session_token.clone();
                 let conn_stop = stop2.clone();
                 let aktiv = aktive_verbindungen2.clone();
+                let interventionssenke = interventionssenke2.clone();
                 aktive_verbindungen2.fetch_add(1, Ordering::SeqCst);
                 match std::thread::Builder::new()
                     .name("eqcop-pipe-conn".into())
                     .spawn(move || {
                         let _aktiv = AktiveVerbindung(aktiv);
-                        verbindung_bedienen(datei, reg, bv, tok, conn_stop, max_sensor_ids);
+                        verbindung_bedienen(
+                            datei,
+                            reg,
+                            bv,
+                            tok,
+                            conn_stop,
+                            max_sensor_ids,
+                            interventionssenke,
+                        );
                     }) {
                     Ok(join) => verbindungen2
                         .lock()
@@ -562,6 +605,7 @@ fn verbindung_bedienen(
     session_token: String,
     stop: Arc<AtomicBool>,
     max_sensor_ids: usize,
+    interventionssenke: Option<Arc<dyn V2Interventionssenke>>,
 ) {
     // Erstes Paket muss ein gültiges hello sein — sonst Verbindung beenden.
     let erster = match frame_lesen(&mut datei) {
@@ -642,6 +686,8 @@ fn verbindung_bedienen(
         register: register.clone(),
         sensor_id: sensor_id.clone(),
         nonce: nonce.clone(),
+        interventionssenke: interventionssenke.clone(),
+        interventions_link_id: format!("v2:{}:{sensor_id}:{nonce}", sensor_id.len()),
     };
 
     let json = match serde_json::to_string(&antwort) {
@@ -715,6 +761,7 @@ fn verbindung_bedienen(
                         );
                         break;
                     }
+                    let hoermarkierung = hb.measurement.as_ref().map(|m| m.hoermarkierung);
                     let konflikt = match register.lock() {
                         Ok(mut r) => {
                             r.heartbeat(&sensor_id, &nonce, hb.stats, hb.measurement);
@@ -722,6 +769,11 @@ fn verbindung_bedienen(
                         }
                         Err(_) => false,
                     };
+                    if let (Some(senke), Some(aktiv)) =
+                        (&registrierung.interventionssenke, hoermarkierung)
+                    {
+                        senke.hoermarkierung(&registrierung.interventions_link_id, aktiv);
+                    }
                     if version >= 2 {
                         let ack = BrokerNachricht::HeartbeatAck {
                             seq: hb.seq,
@@ -1109,6 +1161,81 @@ mod tests {
     }
 
     #[test]
+    fn produktiver_v2_server_speist_den_gemeinsamen_coordinator_interventionsriegel() {
+        let produktquelle = include_str!("lib.rs")
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ");
+        assert!(produktquelle.contains(
+            "let griff_v2 = server::server_starten_mit_interventionssenke("
+        ));
+        assert!(produktquelle.contains("session_token.clone(), coordinator.clone(), )?;"));
+
+        let name = test_pipe_name("v2-coordinator-intervention");
+        let reg = Arc::new(Mutex::new(Register::default()));
+        let coordinator = Arc::new(crate::coordinator::Coordinator::default());
+        let mut griff = server_starten_mit_interventionssenke(
+            &name,
+            reg,
+            "test".into(),
+            "tok-v2-shared".into(),
+            coordinator.clone(),
+        )
+        .unwrap();
+        let mut client = verbinde_v2(
+            &name,
+            "tok-v2-shared",
+            "s-v2-shared",
+            "nonce-v2-shared",
+        );
+        frame_schreiben(
+            &mut client,
+            r#"{"type":"heartbeat","session_token":"tok-v2-shared","seq":1,
+            "measurement":{"zustand":"sammelt","metrics_version":"m1","hoermarkierung":true,
+            "aktiv_s":0.0,"gesamt_s":1.0}}"#,
+        )
+        .unwrap();
+        assert!(frame_lesen(&mut client)
+            .unwrap()
+            .contains(r#""type":"heartbeat_ack""#));
+        for _ in 0..100 {
+            if coordinator.interventionssicht().aktive == 1 {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert_eq!(coordinator.interventionssicht().aktive, 1);
+        assert!(!coordinator.evidence_dispatch());
+
+        frame_schreiben(
+            &mut client,
+            r#"{"type":"heartbeat","session_token":"tok-v2-shared","seq":2,
+            "measurement":{"zustand":"sammelt","metrics_version":"m1","hoermarkierung":false,
+            "aktiv_s":0.0,"gesamt_s":1.0}}"#,
+        )
+        .unwrap();
+        let _ = frame_lesen(&mut client).unwrap();
+        for _ in 0..100 {
+            if coordinator.interventionssicht().aktive == 0 {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert!(coordinator.interventionssicht().starke_evidenz_erlaubt);
+
+        drop(client);
+        for _ in 0..100 {
+            if coordinator.interventionssicht().unknown {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert!(coordinator.interventionssicht().unknown);
+        assert!(!coordinator.evidence_dispatch());
+        griff.stoppen();
+    }
+
+    #[test]
     fn ungueltige_messstaende_beenden_ohne_ack_und_entwerten_alte_evidenz() {
         let name = test_pipe_name("f");
         let reg = Arc::new(Mutex::new(Register::default()));
@@ -1394,7 +1521,9 @@ mod tests {
         let name = test_pipe_name("sensor-cap");
         let reg = Arc::new(Mutex::new(Register::default()));
         let mut griff =
-            server_starten_mit_grenzen(&name, reg.clone(), "test".into(), "tok-cap".into(), 4, 2)
+            server_starten_mit_grenzen(
+                &name, reg.clone(), "test".into(), "tok-cap".into(), 4, 2, None,
+            )
                 .unwrap();
 
         for (sensor_id, nonce) in [("s-cap-1", "nonce-cap-1"), ("s-cap-2", "nonce-cap-2")] {
@@ -1430,7 +1559,9 @@ mod tests {
         let name = test_pipe_name("connection-cap");
         let reg = Arc::new(Mutex::new(Register::default()));
         let mut griff =
-            server_starten_mit_grenzen(&name, reg, "test".into(), "tok-conn-cap".into(), 2, 8)
+            server_starten_mit_grenzen(
+                &name, reg, "test".into(), "tok-conn-cap".into(), 2, 8, None,
+            )
                 .unwrap();
 
         // Zwei Clients bleiben absichtlich schon vor hello stehen und binden
@@ -1496,7 +1627,9 @@ mod tests {
         let name = test_pipe_name("no-unbounded-flush");
         let reg = Arc::new(Mutex::new(Register::default()));
         let mut griff =
-            server_starten_mit_grenzen(&name, reg.clone(), "test".into(), "tok-flush".into(), 1, 8)
+            server_starten_mit_grenzen(
+                &name, reg.clone(), "test".into(), "tok-flush".into(), 1, 8, None,
+            )
                 .unwrap();
 
         let mut erster = client_oeffnen(&name);
@@ -1524,7 +1657,9 @@ mod tests {
         let name = test_pipe_name("bounded-reject-flush");
         let reg = Arc::new(Mutex::new(Register::default()));
         let mut griff =
-            server_starten_mit_grenzen(&name, reg, "test".into(), "tok-reject".into(), 1, 8)
+            server_starten_mit_grenzen(
+                &name, reg, "test".into(), "tok-reject".into(), 1, 8, None,
+            )
                 .unwrap();
 
         let mut erster = client_oeffnen(&name);

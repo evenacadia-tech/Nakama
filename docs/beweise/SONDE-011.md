@@ -7,7 +7,7 @@
 | Datum | 2026-08-31 |
 | Basis | `b75ea06` |
 | Prüfstufe | T1+T2 |
-| Stand | Phase B: Matrix nach Prüferrunde 2 revidiert, in Wiederprüfung |
+| Stand | Phase B: gebaut, Kanon und frischer Prüfer ausstehend |
 
 Dieses Manifest ist noch kein Umsetzungs- oder Abnahmeurteil. Die mit
 **ZUSAGE** bezeichneten Regeln und die in §9 zusammengefassten
@@ -617,3 +617,126 @@ und `docs/beweise/SONDE-011.md:617-618`.
 | **ENTSCHIEDEN L-10 — REVIDIERT 2026-08-31** | Outboxziel, Idempotenz, ACK, Retry, Ordnung und Snapshotpersistenz waren offen (`docs/FL-Nakama-Sonden-Design-Entwurf.md:3816-3819,4131`; `eq-copilot/schemas/v3/eq-ipc-v3.schema.json:845-876`). | **Ersetzt:** „Nach dem Snapshot folgen Subscriber-Events mit UUID-Dedupe.“ **Neue Regel:** `subscribe_session` und `session_snapshot` tragen keine Event-UUID. Einziger Phase-B-Wire-Abfluss der Session-Subscription ist der aktuelle absolute, idempotente `session_snapshot`: letzter Snapshot gewinnt; jeder Reconnect liefert den aktuellen Stand, daher geht keine committete Wirkung verloren und wiederholtes absolutes Setzen wirkt nicht doppelt. Es gibt keinen Event-Replay und kein Empfänger-Dedupe. `event_log` und die je Ziel/Objektschlüssel auf den neuesten geschuldeten Snapshot-Stand koaleszierte Outbox bleiben interne Store-Wahrheit; nach vollständigem Snapshot-Write darf die Schuld kompaktieren, Reconnect rekonstruiert weiter aus der Projektion. Nicht koaleszierbare Events haben in Phase B keinen Produkt-Consumer/Wire-Träger; Evidenz an Main und weitere Consumer gehören S18–19/S29–31. Dafür entsteht kein neuer Registerpunkt; NAK-120 (`docs/offene-punkte.md:15`) deckt die Rekonstruktionsseite. K-04 bis K-07 prüfen Commit vor Push, Subscriber vor/nach Anwendung und Outbox vor/nach Kompaktierung. |
 | **ENTSCHIEDEN L-11 — REVIDIERT 2026-08-31** | Vor Persist fehlte die durable Quelle (`docs/FL-Nakama-Sonden-Design-Entwurf.md:3816-3819`; `docs/beweise/SONDE-010.md:136-140,158-161,219-220`). | **Ersetzt:** „Ein nicht im Schema vorhandener Erfolgswert gab In-Flight frei und wurde beim Retry wiederholt.“ **Neue Regel:** SONDE-010 A-P0-05 bleibt wahr: Wire-Write gibt nur den Queueplatz frei. Das darüberliegende In-Flight-Register endet erfolgreich bei `command_ack(ergebnis = angewandt)` sowie nach Retry bei `ergebnis = idempotent_wiederholt`; `abgelehnt`, `konflikt` und `abgelaufen` beenden es endgültig ohne Erfolg. Verbindungsverlust vor einem ACK reiht dieselbe `command_id` erneut ein. Annahmegrenze bleibt der `BEGIN IMMEDIATE`-Commit; davor kein Erfolgs-ACK. Der Broker speichert `command_id → Event-UUID` persistent eindeutig, aber rein intern. Das ACK referenziert nur `command_id` und enthält nirgends die Event-UUID (`eq-copilot/schemas/v3/eq-ipc-v3.schema.json:1057-1125`). K-01/K-02 laufen mit echtem C++-Client; K-03 beweist nach verlorenem `angewandt` die Antwort `idempotent_wiederholt` ohne zweite Wirkung oder Wire-UUID. |
 | **ENTSCHIEDEN L-12 — REVIDIERT 2026-08-31** | Startverifikation, Fristen, Stoppbesitz und Installer-Autostart waren offen (`docs/FL-Nakama-Sonden-Design-Entwurf.md:3193-3201`; `eq-copilot/install/nakama-installer-v1.json:14-17`). | **Ersetzt:** „Phase B prüft nur SHA-256; Authenticode liegt vollständig in S34–35.“ **Neue Regel:** Phase B baut die vollständige Prüfkette: manifestgebundenes SHA-256 immer zuerst; bei gesetztem `authenticode_thumbprint` danach gültige `WinVerifyTrust`-Signatur plus exakter Thumbprint, sonst Start fail-closed. Bei heutigem `null` bleibt SHA-256 der Mindestschutz, weil S34–35/NAK-119 Zertifikat und befüllten Thumbprint liefern (`docs/offene-punkte.md:16`). Testzertifikat deckt gültig/fehlend/falsch ab. `SPAWN_CONNECT_BACKOFF_START_MS = 250`, `SPAWN_BEREIT_TIMEOUT_MS = 10000`, `SPAWN_COOLDOWN_MS = 30000`, `BROKER_IDLE_ENDE_MS = 60000`; B10 prüft jede Zeitgrenze minus eins/exakt. Stopp nur als Broker-Selbstende; kein fremder Brokerkill. `AUTOSTART_ARTEFAKTE_PHASE_B = 0`; A-06/A17/A18 prüfen null Installer-/Boot-Autostartartefakte, Prüfkette und Rückweg. |
+
+# Phase B — Bau (2026-08-31)
+
+## Commits
+
+Jeweils `git diff --shortstat <commit>^ <commit>`:
+
+| Rolle | Commit | Gemessene Summe |
+|---|---|---|
+| Basis / Verhaltensmatrix | `d172b0a` | 3 Dateien geändert, 158 Einfügungen, 7 Löschungen |
+| Teil 1 / Rust | `512790a` | 10 Dateien geändert, 6193 Einfügungen, 218 Löschungen |
+| Teil 2 / C++ | `d208ad8` | 16 Dateien geändert, 2327 Einfügungen, 56 Löschungen |
+
+## Matrix → Test
+
+Kürzel: `CM` = `broker/tests/coordinator_model.rs`, `SCM` =
+`broker/tests/store_crash_matrix.rs`, `SV3` =
+`broker/src/transport/server_v3.rs`, `BOOT` =
+`broker/src/transport/bootstrap.rs`, `CO` = `broker/src/coordinator.rs`,
+`WQ` = `broker/src/transport/warteschlange.rs`, `BI` =
+`broker/tests/broker_idle.rs`, `IPC` =
+`eq-copilot/plugin/tests/IpcTestMain.cpp`, `LZ` =
+`eq-copilot/plugin/tests/LebenslaufTestMain.cpp`. Die 17 mit `A4-SI`
+bezeichneten `SCM`-Tests sind im normalen `cargo test` ignoriert und wurden
+unten separat mit `--ignored --test-threads=1` gefahren.
+
+| ID | Jetzt messender Test mit Datei | Audit |
+|---|---|---|
+| C-01 | `BOOT::hello_ueber_16_kib_faellt_vor_dem_parser`; `CM::control_vor_welcome`; `SV3::welcome_folgt_dem_abgeschlossenen_control_verbunden`; `IPC` Abschnitt H | **TEIL — FEHLT:** `BOOTSTRAP_FRIST` und `SENKE_FRIST` jeweils minus eins/exakt. |
+| C-02 | `CM::telemetrie_einmalig_gekoppelt`; `SV3::connect_callbacks_je_kopplung_genau_einmal`; `BOOT::kopplung_verlangt_alle_drei_merkmale` | **TEIL — FEHLT:** exakter `SENKE_FRIST`-Grenztest. |
+| C-03 | `CM::join_nur_bei_eindeutigem_main`; A4-SI `SCM::session_snapshot_zeigt_join_kandidat_ohne_neue_familie` | **TEIL — FEHLT:** der benannte Test fährt Coordinator plus `PushProbe`, aber keinen Probe-Pipe-/Server-Wireweg und keine explizite Familienzählung. |
+| C-04 | `CM::{erstes_einziges_main_fuehrt_sonst_bestaetigung, fuehrung_stale_bis_eviction, reconnect_im_selben_brokerlauf_gibt_unuebergebene_fuehrung_zurueck, brokerneustart_ohne_mainprojectstate_ingress_gibt_fuehrung_frei, fuehrung_exklusiv_und_uebergabe}`; `SCM::sessions_projection_composite_key_ohne_fuehrungsrestore` | gemessen |
+| C-05 | `CM::{zwei_projekte_bleiben_getrennt, brokerneustart_behaelt_session_epoch, sichtgrenzen_und_wire_replay_null}` | **TEIL — FEHLT:** 16/32 werden nur als Konstanten verglichen; kein Verhaltensgrenztest, kein Ähnlichkeits-/`host_pid`-Gegenfall und kein `broker_epoch`-Wechseltest. |
+| C-06 | `SV3::{subscription_ist_an_eigenen_control_link_gebunden, subscription_cleanup_vor_weiterem_push, trennreihenfolge_je_callback_genau_einmal}`; `CM::trennen_bereinigt_vor_join` | **TEIL:** EOF, Protokoll-/Writefehler, deterministischer Timeout-Hook und Serverstopp sind gemessen; **FEHLT:** Frist minus eins/exakt. |
+| C-07 | `CO`-Tests `instance_alias_collision_*`; `CM::eviction_haelt_dauerhaften_konfliktriegel`; `SCM::{konfliktriegel_ueberlebt_neustart_mit_nur_einem_partner, routing_bleibt_zu_bis_konfliktriegel_restauriert}` | **TEIL — FEHLT:** ein Integrationstest für gleichzeitig gesperrten Dispatch, Telemetrie und Session-Push sowie die explizite Neu-ID-Auflösung. |
+| C-08 | `CO::{hoermarkierung_v2_v3_gleicher_zustand, intervention_overflow_setzt_sticky_unknown, intervention_sequenzluecke_setzt_sticky_unknown, intervention_control_disconnect_setzt_sticky_unknown, intervention_neutral_resync_entsperrt, hoermarkierung_tail_sperrt_bis_ende}`; `CM::eviction_loescht_intervention_unknown_nicht` | gemessen |
+| C-09 | `CM::io_worker_mutiert_keinen_sessiongraph`; A4-SI `SCM::blockierter_writer_haelt_coordinator_und_store_nicht`; `WQ::ingress_droppt_p2_zuerst_und_trennt_bei_p0`; `SV3::writerqueue_cap_und_cap_plus_eins` | **TEIL — FEHLT:** `io_worker_mutiert_keinen_sessiongraph` übergibt die erzeugten Bytes keinem I/O-Worker und beweist die alleinige Graphmutation durch den Coordinator nicht. |
+| C-10 | `CM::{neue_nonce_verdraengt_alte_sofort, verdraengte_nonce_report_sperrt_beide}`; A4-SI `SCM::nonce_verdraengung_cleanup_vor_altem_report` | gemessen |
+| E-01 | `CM::liveness_nur_instant`; älteres v2-Gegenbein `broker/src/lib.rs::stale_nutzt_monotone_zeit_und_ignoriert_wallclock_spruenge` | **FEHLT:** der Phase-B-Test verändert keine Wallclock und prüft weder Vor-/Rücksprung noch `letzter_kontakt_ms`; sein Name misst mehr als sein Körper. |
+| E-02 | `CM::{stale_konstanten_ableitung, stale_grenze_exklusiv_und_kontakt_setzt_zurueck, state_report_erreicht_liveness_ueber_produktive_p1_senke}` | gemessen |
+| E-03 | `CM::tombstone_grenze_entfernt_alle_fluechtigen_sichten_aber_keinen_dauerhaften_konfliktriegel`; A4-SI `SCM::eviction_cleanup_vor_push` | **TEIL — FEHLT:** der erste Test erzeugt keinen Konfliktriegel; Register-, Nonce-/Aliasindex und persistenter Projekt-/Plugin-State werden nach Eviction nicht vollständig abgefragt. |
+| E-04 | `CM::{session_und_global_cap, caps_stale_first_deterministisch}` | **TEIL — FEHLT:** stale-Opfer nur für Sessioncap; kein globales stale-Opfer, kein ältestes-`last_seen`-Fall und keine mehrfach permutierte Einfügereihenfolge. |
+| E-05 | `CM::eviction_haelt_phase_a_riegel`; A4-SI `SCM::eviction_cleanup_vor_push` | **TEIL — FEHLT:** Subscription und sticky unknown werden getrennt gemessen; Entfernung aktiver IDs plus unveränderte Alias-Konfliktwahrheit in derselben Eviction fehlt. |
+| E-06 | `CM::brokerneustart_ohne_mainprojectstate_ingress`; `SCM::{guard_restore_vor_routing, projektion_rebuild_nach_neustart_unter_testgrenze}` | **TEIL — FEHLT:** expliziter `broker_epoch`-Wechsel bei unveränderter Projektbindung/lokaler Identität. |
+| S-01 | `SCM::{migration_1_frisch_und_idempotent, store_pfad_nutzt_folderid_localappdata, remote_volume_degradiert_ohne_db_oder_wal, schema_major_1_schreibt_und_major_plus_1_degradiert_read_only}`; K-08/K-09 | gemessen |
+| S-02 | `SCM::{event_projection_snapshotschuld_command_id_atomare_transaktion, command_id_mappt_intern_auf_genau_eine_event_uuid, event_log_append_only_und_sequence_eindeutig}`; A4-SI `SCM::verlorenes_command_ack_retry_liefert_idempotent_wiederholt_ohne_wire_uuid`; K-01–K-03 | **TEIL — FEHLT:** kein fsync-Zähler für „kein Einzel-fsync je Event“. |
+| S-03 | `SCM::{store_kanal_cap_und_naechster_trennt, degradierter_store_verweigert_annahme_und_tick_trennt_verursacher, disk_full_io_kaputt_neues_schema_degradieren_ohne_brokerstop}`; A4-SI `SCM::blockierter_store_writer_bestaetigt_nichts_und_p2_laeuft` | gemessen |
+| S-04 | `SCM::projektion_rebuild_ist_deterministisch_und_unter_testgrenze` | gemessen |
+| S-05 | `SCM::{pragmas_exakt, commit_bei_fenster_oder_batch, busy_timeout_grenze}` | **TEIL — FEHLT:** die beiden Commitgrenzen prüfen nur die Triggerfunktion; kein echter Batch-/Commitlauf und kein fsync-Zähler. |
+| S-06 | `SCM::{passive_checkpoint_an_dualer_grenze, truncate_nur_in_ruhelage, leser_haelt_keine_transaktion_ueber_externe_arbeit}` | gemessen, einschließlich offener-Leser-Mutation |
+| S-07 | `SCM::alter_store_ueberschreibt_plugin_state_nicht` plus bestehendes B2-State-Roundtrip-Bein | **TEIL — FEHLT:** `AUDIO_THREAD_STORE_WAIT_MS_MAX` steht nur als Konstante im Produktcode; kein Test liest oder misst sie. |
+| O-01 | `IPC::{command_ack_angewandt_und_idempotent_wiederholt_geben_inflight_als_erfolg_frei, command_ack_endgueltige_fehler_geben_ohne_erfolg_frei, brokerkill_vor_ack_reiht_dieselbe_command_id_wieder_ein, command_ack_traegt_keine_event_uuid}`; A4-SI K-01–K-03 | gemessen |
+| O-02 | A4-SI `SCM::{session_subscription_sendet_nur_aktuellen_absoluten_snapshot, wiederholter_snapshot_letzter_gewinnt_idempotent, reconnect_snapshot_enthaelt_committete_wirkung_genau_einmal}`; `SCM::session_subscription_hat_keinen_event_uuid_wire_traeger`; K-04–K-07 | gemessen auf dem Phase-B-Testempfänger; kein Produkt-Consumer wird behauptet |
+| O-03 | `SCM::{outbox_koalesziert_letzten_snapshotstand_pro_ziel_und_objekt, snapshot_outbox_kompaktierung_verliert_committete_wirkung_nicht, recovery_unter_testgrenze}`; A4-SI `SCM::jeder_resubscribe_liefert_aktuellen_absoluten_snapshot` | gemessen |
+| O-04 | `WQ::{p1_wiederholpuffer_fliesst_ohne_reconnect_ab, p1_wiederholpuffer_haelt_den_schluessel}`; A4-SI `SCM::p1_snapshot_abfluss_ohne_reconnect_aber_writefehler_liefert_aktuellen_snapshot` | **TEIL — FEHLT:** `phase_b_hat_keinen_wire_consumer_fuer_nicht_koaleszierbare_events` legt kein nicht koaleszierbares Event an; die behauptete Produktgrenze bleibt damit ungemessen. |
+| K-01 | A4-SI `SCM::kill_vor_persist_mit_echtem_cpp_client_antwortet_angewandt_ohne_wire_uuid` | gemessen |
+| K-02 | A4-SI `SCM::kill_waehrend_commit_mit_echtem_cpp_client_antwortet_angewandt` | gemessen |
+| K-03 | A4-SI `SCM::kill_nach_commit_vor_command_ack_retry_antwortet_idempotent_wiederholt_ohne_wire_uuid` | gemessen |
+| K-04 | `SCM::kill_nach_store_commit_vor_snapshot_push` | gemessen |
+| K-05 | `SCM::subscriberkill_vor_und_nach_snapshot_anwendung_bleibt_idempotent` | gemessen am hart beendeten Test-Subscriber |
+| K-06 | `SCM::kill_vor_snapshot_outbox_kompaktierung` | gemessen |
+| K-07 | `SCM::kill_nach_snapshot_outbox_kompaktierung_snapshot_traegt_wirkung` | gemessen |
+| K-08 | `SCM::kill_waehrend_migration_1` | **TEIL — FEHLT:** vollständiger Vor-/Nach-Schemavergleich und „pending Events genau einmal“; der Killworker legt in dieser Variante kein pending Event an. |
+| K-09 | `SCM::kill_waehrend_wal_replay` | **TEIL — FEHLT:** uncommittete Transaktion, vollständige Projektion/`command_id`-Versöhnung und Snapshot-Cut; geprüft werden Integrität, ein committed Event, eine Outboxzeile und Zeitgrenze. |
+| A-01 | `IPC::{connect_without_spawn_kommt_zuerst, normaler_reconnect_backoff_start_und_max}`; `LZ::launcher_bleibt_vor_gate_unberuehrt` | gemessen |
+| A-02 | `LZ::brokerstart_gate_alle_negativzustaende`; `IPC::fehlender_broker_ist_notwendige_startbedingung` | gemessen |
+| A-03 | `IPC::{autostart_hash_vor_signatur_vor_spawn, thumbprint_null_erlaubt_nur_passenden_hash, thumbprint_gesetzt_verlangt_winverifytrust_und_exakten_signer_{fehlend,falsch,gueltig}, autostart_parallel_startet_genau_einen_prozess, spawn_retry_bereit_timeout_und_cooldown_grenzen_zustandsmaschine}` | gemessen mit unsigned Testbinary und OS-signierter Windows-Fixture; das Produktzertifikat bleibt NAK-119 |
+| A-04 | `IPC::autostart_mehrere_mains_ein_broker`; `LZ::brokerstart_gate_alle_negativzustaende` | **TEIL — FEHLT:** der Mutex-Hooktest zählt einen Spawn, lässt den Verlierer aber nicht zu einem realen vorhandenen Broker verbinden. |
+| A-05 | `BI::{letzter_client_idle_stop_an_grenze, aktiver_fremdclient_verhindert_stop, client_resetet_idlefrist}`; `IPC::stop_waehrend_spawn`; `LZ::brokerstop_nie_im_processblock` | **TEIL — FEHLT:** echter Brokerprozess-Selbstexit und Gegenprobe „Plugin killt fremden Broker nicht“. |
+| A-06 | `IPC::kein_installer_oder_boot_autostartartefakt` vergleicht nur die Konstante `AUTOSTART_ARTEFAKTE_PHASE_B == 0` | **FEHLT:** kein Test inventarisiert Installer-/Boot-Autostartartefakte oder verbindet deren Nullmenge mit A17/A18/Rückweg. |
+| A-07 | `LZ::broker_lifecycle_aufrufe_im_audiothread_null` samt positiver Gegenprobe; bestehende A1/B4-Audiobeine | **TEIL — FEHLT:** getrennte Messung für Datei-, Pipe-, Prozess- und Logoperationen; der neue Zähler zählt nur BrokerLifecycle-Aufrufe. |
+
+## Prüfliste `tools/dirigent/pruefliste.md`
+
+| Zeile | Messort oder Stand |
+|---|---|
+| A.1 Vollpolitik je P0/P1/P2 | `WQ::{p0_verwirft_nie_und_meldet_ueberlauf, p1_koalesziert_snapshots_an_ihrer_position, p2_ersetzt_den_aeltesten_ungesendeten}`; `IPC` Abschnitt E/E2. |
+| A.2 Abfluss ohne Reconnect | `WQ::p1_wiederholpuffer_fliesst_ohne_reconnect_ab`; `IPC` Abschnitt E. |
+| A.3 Schlüssel durch Zwischenpuffer | `WQ::p1_wiederholpuffer_haelt_den_schluessel`; `SV3::writerqueue_snapshot_koalesziert_nach_objektschluessel`; `SCM::outbox_koalesziert_letzten_snapshotstand_pro_ziel_und_objekt`. |
+| A.4 höhere Klasse trotz blockierter niedriger | `SV3::p0_wird_beantwortet_waehrend_p1_die_senke_blockiert`; `IPC` Abschnitt G16/G16b. |
+| A.5 Rückgabewerte und Zähler | `WQ::{p0_verwirft_nie_und_meldet_ueberlauf, ingress_droppt_p2_zuerst_und_trennt_bei_p0}`; `SCM::store_kanal_cap_und_naechster_trennt`; `IPC` Abschnitt E/E2. |
+| A.6 beide Sprachen und einmal gebrochen | Rust und C++ messen P0/P1/P2 sowie In-Flight; **OFFEN:** kein abgelegter Phase-B-Rotlauf belegt das einmalige absichtliche Brechen. |
+| B.1 Verbinden-Reihenfolge | `SV3::welcome_folgt_dem_abgeschlossenen_control_verbunden`. |
+| B.2 Trennen-Reihenfolge | `SV3::{subscription_cleanup_vor_weiterem_push, trennreihenfolge_je_callback_genau_einmal}`. |
+| B.3 Joinfrist/Self-Join | `SV3::{stoppen_endet_auch_bei_haengendem_lebenszyklusaufruf, abgeloestes_telemetrie_getrennt_haelt_control_getrennt_nicht_auf}`; `IPC` Abschnitt G17 und `stop_waehrend_spawn`. |
+| B.4 Queue nach Schließen leer | `SV3::geschlossener_eingang_liefert_nichts_mehr`. |
+| B.5 Registrierung im Stoppfenster | `SV3::stop_im_fenster_vor_der_bedienung_haengt_nicht`. |
+| C.1 Textlängen/Negativfixture je Feld | `broker/tests/contract_cross_language.rs::textriegel_deckt_die_gemeinsame_falltabelle`; `IPC` Abschnitt G10. **OFFEN:** kein eigener Nachweis „jedes Phase-B-Textfeld“. |
+| C.2 exakte Feldmenge C++/Rust | `contract_cross_language.rs::{korpus_klassifiziert_wie_das_manifest, envelope_korpus_klassifiziert_wie_das_manifest}`; `IPC::{nur_schemafestes_command_ack_gibt_inflight_frei}` und Abschnitt G10. |
+| C.3 Familie/Typ vor Inhalt, beide Richtungen | `SV3::{p0_auf_der_telemetriepipe_wird_abgewiesen, p2_auf_der_controlpipe_wird_abgewiesen}`; `IPC` Abschnitt G11/G14. |
+| C.4 NaN/Inf/Grenzen jeder Wire-Zahl | `IPC` Abschnitt G8 und Vertragskorpus. **OFFEN:** G8 deckt nur Hello-Audiofelder; „jede Zahl“ ist nicht inventarisiert. |
+| D.1 fail-closed, Unbekanntes rot | `broker/src/vertrag.rs::unbekanntes_schluesselwort_bricht_das_laden`; `IPC::nur_schemafestes_command_ack_gibt_inflight_frei`. |
+| D.2 Frische/Exit 3 | `tools/beweise.ps1:641-708,783-800`. |
+| D.3 Relink versus Auslieferungshash | `tools/eq-copilot/pruefe_installer_manifest.py:1225-1310`. |
+| D.4 nur Gebautes frisch bezeugen | `tools/beweise.ps1:465-492,560-708`. |
+| E.1 Behauptung ≤ Messung | **OFFEN:** insbesondere `tools/beweise.ps1:290` behauptet die vollständige monotone Liveness/Eviction; E-01, E-03, E-04, S-05 und S-07 sind oben nur teilweise gemessen. |
+| E.2 Zahlen selbst messen | Dieser Abschnitt: drei `git diff --shortstat`-Messungen und die untenstehenden frischen Lauf-Schlusszeilen. |
+| E.3 lebender Kopf als Symbol/Anker | `docs/beweise/SONDE-011.md:10`; historische Zeilen bleiben im append-only Abschnitt gebunden. |
+| E.4 lebenden Kopf nachziehen | Stand-Zeile im Kopf auf Phase-B-Bau/Kanon/Prüfer aktualisiert; übriger Verlauf nicht umgeschrieben. |
+| E.5 neue Prüfung einmal rot | **OFFEN:** für die Phase-B-Neutests liegt unter `docs/beweise/roh/` keine benannte Rot-Rohausgabe. |
+| E.6 geänderte Zusage an drei Stellen | `git grep` trifft Matrix/Entscheide in diesem Manifest, Runnerköpfe `tools/beweise.ps1:287-299,461-462` und Testköpfe/-namen in `SCM`, `IPC`, `LZ`. |
+| E.7 Writer-Fixtures statt Handschrift | K-01–K-09 laufen über `broker/src/bin/eqcop-store-crash-worker.rs` und den echten `StoreWriter`; K-01–K-03 zusätzlich über den echten C++-`ControlClient`. |
+| F.1 gekoppelte Lebenszyklen im Änderungssatz | Store Start/Stop/Recovery in `SCM`; Broker Start/Stop in `BI`, `IPC`, `LZ`; Installer/Rückweg bleiben in A17/A18. |
+| F.2 Writer/Reader/Migration/Cross-Language gemeinsam | Rust-Store/Coordinator in `SCM`, C++-ACK/In-Flight in `IPC`, verbunden durch A4-SI K-01–K-03; Phase B ist bewusst auf die zwei oben genannten Teilcommits verteilt. |
+
+## Bewusst nicht gebaut
+
+| Nicht gebaut | Eigentum |
+|---|---|
+| Wire-Ingress/Rekonstruktion `MainProjectState` → führendes Main | NAK-120; SONDE-012/S29–31 |
+| Beschaffung des Authenticode-Zertifikats und Befüllen von `authenticode_thumbprint` (heute `null`) | NAK-119; S34–35. Die SHA-256-/`WinVerifyTrust`-/Thumbprint-Prüfkette selbst ist Phase B. |
+| Produkt-Consumer/Wire-Träger für nicht koaleszierbare Events, insbesondere Evidenz an Main | S18–19/S29–31. Phase B liefert nur absolute `session_snapshot`-Pushes. |
+
+## Selbst gefahrene Läufe
+
+| Lauf | Ergebnis / Schlusszeile |
+|---|---|
+| `cargo test --manifest-path broker/Cargo.toml` | Exit 0. `src/lib.rs`: `180 passed; 0 failed`; `broker_idle`: `3 passed`; `contract_cross_language`: `9 passed`; `coordinator_model`: `28 passed`; `store_crash_matrix`: `42 passed; 0 failed; 17 ignored`; `transport_fuzz`: `9 passed`; Main/Bins/Doc-tests jeweils 0. |
+| A4-SI: `cargo test --manifest-path broker/Cargo.toml --color never --test store_crash_matrix -- --ignored --test-threads=1` | `test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 42 filtered out; finished in 7.09s` |
+| C++-Neubau über den in `eq-copilot/build/CMakeCache.txt` gebundenen absoluten `CMAKE_COMMAND` | Exit 0; `EqCopIpcTest` und `EqCopLebenslaufTest` frisch erzeugt. `cmake` allein war nicht im `PATH`; die Sandbox blockierte den absoluten Fallback nicht. |
+| `EqCopIpcTest.exe` | `ALLE PRUEFUNGEN GRUEN — 238 Pruefungen, 0 Fehler` |
+| `EqCopLebenslaufTest.exe` | `LEBENSLAUF-TEST OK - 67 Pruefungen ok, 0 Fehler` |
+| Nicht gefahren | vollständiger Kanon `tools/beweise.ps1`, A17/A18, Installation/Admin-Schritt und externer frischer Prüfer. |

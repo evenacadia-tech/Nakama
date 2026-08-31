@@ -617,6 +617,7 @@ und `docs/beweise/SONDE-011.md:617-618`.
 | **ENTSCHIEDEN L-10 — REVIDIERT 2026-08-31** | Outboxziel, Idempotenz, ACK, Retry, Ordnung und Snapshotpersistenz waren offen (`docs/FL-Nakama-Sonden-Design-Entwurf.md:3816-3819,4131`; `eq-copilot/schemas/v3/eq-ipc-v3.schema.json:845-876`). | **Ersetzt:** „Nach dem Snapshot folgen Subscriber-Events mit UUID-Dedupe.“ **Neue Regel:** `subscribe_session` und `session_snapshot` tragen keine Event-UUID. Einziger Phase-B-Wire-Abfluss der Session-Subscription ist der aktuelle absolute, idempotente `session_snapshot`: letzter Snapshot gewinnt; jeder Reconnect liefert den aktuellen Stand, daher geht keine committete Wirkung verloren und wiederholtes absolutes Setzen wirkt nicht doppelt. Es gibt keinen Event-Replay und kein Empfänger-Dedupe. `event_log` und die je Ziel/Objektschlüssel auf den neuesten geschuldeten Snapshot-Stand koaleszierte Outbox bleiben interne Store-Wahrheit; nach vollständigem Snapshot-Write darf die Schuld kompaktieren, Reconnect rekonstruiert weiter aus der Projektion. Nicht koaleszierbare Events haben in Phase B keinen Produkt-Consumer/Wire-Träger; Evidenz an Main und weitere Consumer gehören S18–19/S29–31. Dafür entsteht kein neuer Registerpunkt; NAK-120 (`docs/offene-punkte.md:15`) deckt die Rekonstruktionsseite. K-04 bis K-07 prüfen Commit vor Push, Subscriber vor/nach Anwendung und Outbox vor/nach Kompaktierung. |
 | **ENTSCHIEDEN L-11 — REVIDIERT 2026-08-31** | Vor Persist fehlte die durable Quelle (`docs/FL-Nakama-Sonden-Design-Entwurf.md:3816-3819`; `docs/beweise/SONDE-010.md:136-140,158-161,219-220`). | **Ersetzt:** „Ein nicht im Schema vorhandener Erfolgswert gab In-Flight frei und wurde beim Retry wiederholt.“ **Neue Regel:** SONDE-010 A-P0-05 bleibt wahr: Wire-Write gibt nur den Queueplatz frei. Das darüberliegende In-Flight-Register endet erfolgreich bei `command_ack(ergebnis = angewandt)` sowie nach Retry bei `ergebnis = idempotent_wiederholt`; `abgelehnt`, `konflikt` und `abgelaufen` beenden es endgültig ohne Erfolg. Verbindungsverlust vor einem ACK reiht dieselbe `command_id` erneut ein. Annahmegrenze bleibt der `BEGIN IMMEDIATE`-Commit; davor kein Erfolgs-ACK. Der Broker speichert `command_id → Event-UUID` persistent eindeutig, aber rein intern. Das ACK referenziert nur `command_id` und enthält nirgends die Event-UUID (`eq-copilot/schemas/v3/eq-ipc-v3.schema.json:1057-1125`). K-01/K-02 laufen mit echtem C++-Client; K-03 beweist nach verlorenem `angewandt` die Antwort `idempotent_wiederholt` ohne zweite Wirkung oder Wire-UUID. |
 | **ENTSCHIEDEN L-12 — REVIDIERT 2026-08-31** | Startverifikation, Fristen, Stoppbesitz und Installer-Autostart waren offen (`docs/FL-Nakama-Sonden-Design-Entwurf.md:3193-3201`; `eq-copilot/install/nakama-installer-v1.json:14-17`). | **Ersetzt:** „Phase B prüft nur SHA-256; Authenticode liegt vollständig in S34–35.“ **Neue Regel:** Phase B baut die vollständige Prüfkette: manifestgebundenes SHA-256 immer zuerst; bei gesetztem `authenticode_thumbprint` danach gültige `WinVerifyTrust`-Signatur plus exakter Thumbprint, sonst Start fail-closed. Bei heutigem `null` bleibt SHA-256 der Mindestschutz, weil S34–35/NAK-119 Zertifikat und befüllten Thumbprint liefern (`docs/offene-punkte.md:16`). Testzertifikat deckt gültig/fehlend/falsch ab. `SPAWN_CONNECT_BACKOFF_START_MS = 250`, `SPAWN_BEREIT_TIMEOUT_MS = 10000`, `SPAWN_COOLDOWN_MS = 30000`, `BROKER_IDLE_ENDE_MS = 60000`; B10 prüft jede Zeitgrenze minus eins/exakt. Stopp nur als Broker-Selbstende; kein fremder Brokerkill. `AUTOSTART_ARTEFAKTE_PHASE_B = 0`; A-06/A17/A18 prüfen null Installer-/Boot-Autostartartefakte, Prüfkette und Rückweg. |
+| **ENTSCHIEDEN L-13 — ERGÄNZT 2026-09-01** | `beitritt_bestaetigung_noetig` hat beim Broker-Epochwechsel zwei legitime Quellen: die committierte Projektion nach B.7 K-04/K-06/K-07 und den noch nicht committierten Livegraphen nach B.2 C-03. Eine exklusive Wahl verliert jeweils eine sichere `true`-Wirkung (`docs/beweise/SONDE-011.md:495,585,587-588`). | Beim Epoch-Merge gilt fail-closed `persistiert OR live`: veröffentlicht wird `true`, sobald eine der beiden Quellen Bestätigungsbedarf meldet, und nur bei zweimal `false` wird `false` veröffentlicht. Der Merge selbst entsperrt nie; Entsperren erfolgt ausschließlich über den regulären C-03-Weg mit eindeutiger Main-Sitzung und bestätigtem Beitritt. `broker_epoch`, `fuehrendes_main` und `mitglieder` bleiben rein laufgebunden; die übrige committierte Domänenwirkung bleibt nach L-10 persistiert. Die Push-Tests für `live=true/persistiert=false` und `persistiert=true/live=false` müssen beide die gepushte `snapshot_wirkung` prüfen. |
 
 # Phase B — Bau (2026-08-31)
 
@@ -1209,3 +1210,40 @@ Wiederprüfungsstand `5882718`; ihre Rohlogs liegen nur unter `%TEMP%` als
 `tools/dirigent/pruefliste.md` wurde nicht editiert. Die Messorte dieser Runde
 sind die beiden Tabellenzeilen und die unmittelbar darüber dokumentierten
 vollständigen Rust-/SI-Läufe.
+
+---
+
+## Phase B — Konvergenzrunde (Bau)
+
+**Stand:** Phase B: Konvergenzrunde, in Wiederprüfung.
+
+Der bindende Dirigentenentscheid vom 2026-09-01 steht append-only als
+`ENTSCHIEDEN L-13` in B.9: Beim Broker-Epochwechsel gilt für
+`beitritt_bestaetigung_noetig` fail-closed `persistiert OR live`; nur zweimal
+`false` veröffentlicht `false`. B.2/C-03 und B.7/K-04/K-06/K-07 bleiben
+unverändert und sind dort per Verweis angebunden.
+
+**Fix-Ort:** `broker/src/coordinator.rs`,
+`projektion_mit_aktuellem_lauf`: `broker_epoch`, `fuehrendes_main` und
+`mitglieder` werden weiterhin ausschließlich aus dem aktuellen Lauf
+übernommen. Der Bestätigungsbedarf wird aus beiden schema-validierten
+Snapshots ODER-verknüpft; der übrige persistierte Projektionsschnitt bleibt
+committierte Wirkung. Der Merge selbst enthält keinen Entsperrweg.
+
+| Richtung | Belegender Push-Test | Rotmutation gegen den Fix | Schlusszeile im Endstand |
+|---|---|---|---|
+| Persistiert `false`, live `true` | `store_crash_matrix::resubscribe_uebernimmt_live_bestaetigungsbedarf_waehrend_store_flush_blockiert` hält den Store-Flush an, resubscribed parallel und prüft am tatsächlich gepushten Snapshot `snapshot_wirkung(...) == 1` sowie `beitritt_bestaetigung_noetig == true`. | Mutation auf **nur persistiert**: **FAILED**, gepushte Wirkung `left: 0`, `right: 1`; Rohlog `%TEMP%\sonde011-konvergenz-redmutation-nur-persistiert.log`. | Gezielter Lauf: **1 passed, 0 failed**. |
+| Persistiert `true`, live `false` | K-04 `kill_nach_store_commit_vor_snapshot_push`, K-06 `kill_vor_snapshot_outbox_kompaktierung` und K-07 `kill_nach_snapshot_outbox_kompaktierung_snapshot_traegt_wirkung` prüfen jeweils genau einen Push, `snapshot_wirkung(...) == 1`, den gepushten Bestätigungsbedarf `true` und die jeweilige Outboxgrenze. `alter_store_ueberschreibt_plugin_state_nicht` und K-09 bleiben als Gegenpfade gleichgerichtet. | Mutation auf **nur live**: K-04 **FAILED**, gepushte Wirkung `left: 0`, `right: 1`; Rohlog `%TEMP%\sonde011-konvergenz-redmutation-nur-live.log`. | Gezielter K-04-Lauf: **1 passed, 0 failed**; vollständige Storematrix: **53 passed, 0 failed, 17 ignored**. |
+
+### Ausgeführte Läufe
+
+- `cargo test --manifest-path broker/Cargo.toml --test store_crash_matrix
+  --color never`: **53 passed, 0 failed, 17 ignored**; Exit 0.
+- `cargo test --manifest-path broker/Cargo.toml --color never
+  --no-fail-fast`: Rust-Lib 186/186, Broker-Idle 4/4, Cross-Language 9/9,
+  Coordinator 34/34, Store 53/53 regulär bei 17 nicht ausgeführten
+  Ignore-Beinen und Transport-Fuzz 9/9; Exit 0. Rohlog:
+  `%TEMP%\sonde011-konvergenz-cargo-final.log`.
+
+Es wurden keine C++-Quellen geändert und kein C++- oder Kanonbein gefahren.
+`tools/dirigent/pruefliste.md` wurde nicht editiert.

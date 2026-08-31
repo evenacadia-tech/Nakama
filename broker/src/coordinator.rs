@@ -61,19 +61,22 @@ fn v3_nachricht_lesen_beliebig(payload: &[u8]) -> Option<Value> {
 fn projektion_mit_aktuellem_lauf(gespeichert: &[u8], live: &[u8]) -> Option<Vec<u8>> {
     let mut persistiert = v3_nachricht_lesen(gespeichert, "session_snapshot")?;
     let live = v3_nachricht_lesen(live, "session_snapshot")?;
+    let beitritt_bestaetigung_noetig =
+        persistiert.get("beitritt_bestaetigung_noetig")?.as_bool()?
+            || live.get("beitritt_bestaetigung_noetig")?.as_bool()?;
     let objekt = persistiert.as_object_mut()?;
-    // Diese Felder gehoeren zum aktuellen Brokerlauf; insbesondere entsteht
-    // der Bestaetigungsbedarf aus fluechtigen Join-Kandidaten. Der uebrige
-    // absolute Projektionsschnitt ist die committierte Wirkung und darf beim
-    // neuen Epoch nicht durch den anfangs leeren Laufgraphen ersetzt werden.
-    for feld in [
-        "broker_epoch",
-        "fuehrendes_main",
-        "beitritt_bestaetigung_noetig",
-        "mitglieder",
-    ] {
+    // Diese drei Felder gehoeren ausschliesslich zum aktuellen Brokerlauf.
+    // Der Bestaetigungsbedarf hat dagegen zwei sichere Quellen: committierte
+    // Projektion und fluechtiger Join-Graph. Nur bei zweimal false wird false
+    // veroeffentlicht; persistiertes true loescht erst der regulaere C-03-Weg.
+    // Der uebrige Projektionsschnitt bleibt die committierte Wirkung.
+    for feld in ["broker_epoch", "fuehrendes_main", "mitglieder"] {
         objekt.insert(feld.into(), live.get(feld)?.clone());
     }
+    objekt.insert(
+        "beitritt_bestaetigung_noetig".into(),
+        Value::Bool(beitritt_bestaetigung_noetig),
+    );
     serde_json::to_vec(&persistiert).ok()
 }
 

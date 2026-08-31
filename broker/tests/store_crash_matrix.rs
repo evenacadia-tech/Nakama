@@ -673,6 +673,7 @@ fn resubscribe_uebernimmt_live_bestaetigungsbedarf_waehrend_store_flush_blockier
     assert!(report.join().unwrap());
 
     assert_eq!(race_snapshot["broker_epoch"], si_hex(99));
+    assert_eq!(snapshot_wirkung(&race_snapshot), 1);
     assert_eq!(race_snapshot["beitritt_bestaetigung_noetig"], true);
     // Die alten laufgebundenen Mitglieder duerfen ebenso wenig austreten;
     // der persistierte absolute Rest bleibt weiterhin die K-04-Wirkung.
@@ -1260,14 +1261,16 @@ fn alter_store_ueberschreibt_plugin_state_nicht() {
             .angenommen
     );
 
-    // Der alte Projektionsschnitt bleibt haltbar, seine laufgebundenen
-    // Felder werden beim neuen Coordinator aber auf dessen freie Baseline
-    // gesetzt. Er ist kein MainProjectState-Ingress.
+    // Der alte Projektionsschnitt bleibt haltbar. Rein laufgebundene Felder
+    // werden auf die neue Baseline gesetzt; der sichere Bestätigungsbedarf
+    // bleibt bis zum regulären C-03-Weg wahr. Das ist kein State-Ingress.
     assert_eq!(persistierte_snapshot_wirkung(&writer), 1);
     assert!(si_subscribe(&coordinator, "probe", &client.adresse));
     let snapshots = push.snapshots();
+    assert_eq!(snapshots.len(), 1);
     let resubscribe = &snapshots.last().unwrap().1;
-    assert_eq!(resubscribe["beitritt_bestaetigung_noetig"], false);
+    assert_eq!(snapshot_wirkung(resubscribe), 1);
+    assert_eq!(resubscribe["beitritt_bestaetigung_noetig"], true);
     assert_eq!(resubscribe["broker_epoch"], si_hex(99));
 
     // Danach meldet das Plugin seinen neueren lokalen Zustand. Der
@@ -1613,7 +1616,8 @@ fn kill_nach_store_commit_vor_snapshot_push() {
     assert_eq!(push.snapshots().len(), 1);
     let snapshots = push.snapshots();
     let resubscribe = &snapshots.last().unwrap().1;
-    assert_eq!(resubscribe["beitritt_bestaetigung_noetig"], false);
+    assert_eq!(snapshot_wirkung(resubscribe), 1);
+    assert_eq!(resubscribe["beitritt_bestaetigung_noetig"], true);
     assert_eq!(resubscribe["broker_epoch"], si_hex(99));
     assert_eq!(persistierte_snapshot_wirkung(&writer), 1);
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
@@ -1667,8 +1671,10 @@ fn kill_vor_snapshot_outbox_kompaktierung() {
     );
     assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
     let snapshots = push.snapshots();
+    assert_eq!(snapshots.len(), 1);
     let resubscribe = &snapshots.last().unwrap().1;
-    assert_eq!(resubscribe["beitritt_bestaetigung_noetig"], false);
+    assert_eq!(snapshot_wirkung(resubscribe), 1);
+    assert_eq!(resubscribe["beitritt_bestaetigung_noetig"], true);
     assert_eq!(resubscribe["broker_epoch"], si_hex(99));
     assert_eq!(persistierte_snapshot_wirkung(&writer), 1);
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
@@ -1692,8 +1698,10 @@ fn kill_nach_snapshot_outbox_kompaktierung_snapshot_traegt_wirkung() {
     );
     assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
     let snapshots = push.snapshots();
+    assert_eq!(snapshots.len(), 1);
     let resubscribe = &snapshots.last().unwrap().1;
-    assert_eq!(resubscribe["beitritt_bestaetigung_noetig"], false);
+    assert_eq!(snapshot_wirkung(resubscribe), 1);
+    assert_eq!(resubscribe["beitritt_bestaetigung_noetig"], true);
     assert_eq!(resubscribe["broker_epoch"], si_hex(99));
     assert_eq!(persistierte_snapshot_wirkung(&writer), 1);
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
@@ -1815,8 +1823,10 @@ fn kill_waehrend_wal_replay() {
     );
     assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
     let snapshots = push.snapshots();
+    assert_eq!(snapshots.len(), 1);
     let resubscribe = &snapshots.last().unwrap().1;
-    assert_eq!(resubscribe["beitritt_bestaetigung_noetig"], false);
+    assert_eq!(snapshot_wirkung(resubscribe), 1);
+    assert_eq!(resubscribe["beitritt_bestaetigung_noetig"], true);
     assert_eq!(resubscribe["broker_epoch"], si_hex(99));
     assert_eq!(persistierte_snapshot_wirkung(&writer), 1);
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());

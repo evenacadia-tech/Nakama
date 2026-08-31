@@ -14,12 +14,24 @@ aktuellen visuellen User-Vorgabe. Es wird KEIN Plugin-Code geschrieben — der l
 dürfen) und das Register der User-Entscheide stehen in `CLAUDE.md` an der
 Repo-Wurzel (Wahrheitskern); hier wird sie nicht abgeschrieben, nur verwiesen.
 
+## Funktionsneustart vom 31.08.2026
+
+Für die neue funktionale Designableitung gilt der direkte User-Auftrag vom
+31.08.2026: Der aktuelle Implementierungsplan wird in einen erweiterbaren
+Funktions- und Bedienvertrag übersetzt; bisher entworfene Designs werden dabei
+ignoriert. Der neue, designneutrale Einstieg ist
+[docs/funktions-und-bedien-blueprint.md](docs/funktions-und-bedien-blueprint.md).
+Er übernimmt keine Raster, Farben, Materialien, Icons oder Positionen aus den
+unten dokumentierten früheren visuellen Ständen. Diese bleiben Verlauf und
+dürfen den Blueprint nicht still ergänzen. Eine neue visuelle Vorgabe entsteht
+erst in einem eigenen Folgeschritt.
+
 ## Dein Job
 
-**Die aktuelle User-Vorgabe übersetzen, nicht Design erfinden.** Seit dem
-neuesten User-Entscheid vom 25.08. sind genau drei gelieferte PNGs die
-**aktuelle visuelle Wahrheit in progress** und die Grundlage des späteren
-großen Reworks:
+**Historischer visueller Arbeitsstand bis zum Funktionsneustart vom
+31.08.2026:** Seit dem damaligen User-Entscheid vom 25.08. waren genau drei
+gelieferte PNGs die **visuelle Wahrheit in progress** und die Grundlage des
+damals geplanten großen Reworks:
 
 - `assets/rework-basis-2026-08-25/gen-page-1-overview.png`
 - `assets/rework-basis-2026-08-25/gen-page-2-eq-center.png`
@@ -77,7 +89,11 @@ Referenzbilder** — Entscheide
 
 Die Projektquellen — vollständig, nichts von außen dazuholen:
 
-- **DIE VORGABE** (wie es aussieht): die drei Bilder unter
+- **FUNKTION UND BEDIENUNG NEU ABLEITEN:**
+  `docs/funktions-und-bedien-blueprint.md` — aktueller designneutraler Vertrag
+  aus Implementierungsplan, Wissensarchiv und geprüftem Marktvergleich.
+- **HISTORISCHE VISUELLE VORGABE** (nicht in den neuen Blueprint übernehmen):
+  die drei Bilder unter
   `assets/rework-basis-2026-08-25/`, gemäß
   `abnahmen/2026-08-25-rework-referenz-drei-designs.md`.
 - **WAS** jede Oberfläche zeigen muss: `docs/oberflaechen-spezifikation.md`
@@ -100,17 +116,17 @@ Die Projektquellen — vollständig, nichts von außen dazuholen:
   `docs/sondenplan.md` vermisst den verworfenen lokalen Voll-Editor und dient
   nur noch der Spurensuche, nicht als Arbeitsauftrag.
 
-Die Gestaltung kommt derzeit aus den drei aktuellen Rework-Bildern. Die
+Bis zum Funktionsneustart kam die Gestaltung aus den drei Rework-Bildern. Die
 grundlegende Struktur-, Skizzen- und Graybox-Phase war der erste Schritt am
 Projektanfang und ist abgeschlossen; sie ist kein wiederkehrendes Gate für
 die aktuelle Arbeit. Was die Bilder nicht zeigen, wird gezielt am konkreten
 Verhalten geklärt, ohne den Anfangsprozess neu zu starten
 (`abnahmen/2026-08-25-skizzen-vor-figma.md`, Nachtrag 26.08.).
 
-**Maßstab:** Die Umsetzung in FL Studio folgt der jeweils aktuellen
-User-Vorgabe und ihrer dokumentierten Abnahme. Seit dem 25.08.2026 sind dafür
-die drei Rework-Bilder maßgeblich; der frühere Figma-Stand und sein
-Pixelvergleich sind Verlauf
+**Historischer Maßstab bis zum Funktionsneustart:** Die Umsetzung in FL Studio
+folgte der jeweils aktuellen User-Vorgabe und ihrer dokumentierten Abnahme.
+Seit dem 25.08.2026 waren dafür die drei Rework-Bilder maßgeblich; der frühere
+Figma-Stand und sein Pixelvergleich waren Verlauf
 (`abnahmen/2026-08-22-erfolgskriterium-exakt-wie-figma.md`). Beweisziel und
 Vergleichsgröße werden aus dem aktuellen Auftrag abgeleitet, nicht aus diesem
 historischen Kriterium.

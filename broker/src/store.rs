@@ -1064,7 +1064,31 @@ fn projektionen_anwenden(
     // `sessions.state_jcs` ist ausschliesslich die absolute
     // `session_snapshot`-Projektion. Domain-Events derselben Session haben
     // eigene Tabellen und duerfen diese Rekonstruktionsquelle nie ersetzen.
-    if event.event_type == "session" {
+    // Ein persistenter P0-Befehl traegt seinen Snapshot deshalb ausdruecklich
+    // im internen Eventpayload: Eventwahrheit, Projektion und Outbox-Schuld
+    // bleiben ein einzelner Commit, ohne ein Domainpayload als Snapshot
+    // auszugeben. Der verschachtelte Schnitt bleibt im Eventlog erhalten und
+    // steht damit auch dem Projektions-Rebuild zur Verfuegung.
+    let session_payload = if event.event_type == "session" {
+        Some(event.payload_jcs.clone())
+    } else if event.event_type == "command" {
+        let intern: serde_json::Value = serde_json::from_slice(&event.payload_jcs)
+            .map_err(|e| StoreFehler::Sqlite(format!("Command-Projektionspayload: {e}")))?;
+        if intern.get("type").and_then(serde_json::Value::as_str)
+            == Some("internal_p0_command")
+        {
+            intern
+                .get("session_snapshot")
+                .map(serde_json::to_vec)
+                .transpose()
+                .map_err(|e| StoreFehler::Sqlite(format!("Command-Sessionprojektion: {e}")))?
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+    if let Some(session_payload) = session_payload {
         tx.execute(
             "INSERT INTO sessions(project_binding_id,session_epoch,last_event_ord,state_jcs) \
              VALUES(?1,?2,?3,?4) \
@@ -1075,7 +1099,7 @@ fn projektionen_anwenden(
                 event.project_binding_id,
                 event.session_epoch,
                 event_ord,
-                event.payload_jcs,
+                session_payload,
             ],
         )?;
     }

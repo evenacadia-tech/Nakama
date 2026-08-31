@@ -199,7 +199,6 @@ private:
 
     const std::string v3LogonSid;
     const std::string v3PipeName;
-    const std::string v3SessionEpoch;
     const std::string v3RuntimeNonce;
     std::atomic<double> v3Samplerate { 0.0 };
     std::atomic<int> v3BlockSize { 0 };

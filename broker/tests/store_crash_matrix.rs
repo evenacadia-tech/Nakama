@@ -94,7 +94,13 @@ fn snapshot_wirkung(wert: &Value) -> i64 {
     wert["fuehrendes_main"]
         .as_str()
         .map(|hex| i64::from_str_radix(hex, 16).unwrap())
-        .unwrap_or(0)
+        .unwrap_or_else(|| {
+            i64::from(
+                wert["beitritt_bestaetigung_noetig"]
+                    .as_bool()
+                    .unwrap_or(false),
+            )
+        })
 }
 
 fn event(command: Option<&str>, sequence: i64, wirkung: i64, outbox: bool) -> StoreEvent {
@@ -473,6 +479,7 @@ fn produkt_coordinator_committet_alle_persistenten_p0_befehle_und_ackt_retries()
         .control_hello_registrieren("probe", &probe)
         .angenommen);
     assert!(si_state_report(&coordinator, "probe", &probe.adresse, 13));
+    assert!(si_subscribe(&coordinator, "probe", &probe.adresse));
 
     let kopf = |command_id: String| {
         json!({
@@ -532,6 +539,37 @@ fn produkt_coordinator_committet_alle_persistenten_p0_befehle_und_ackt_retries()
         ),
         3
     );
+    let letzter_command_ord = scalar_i64(
+        writer.handle().db_pfad(),
+        "SELECT MAX(event_ord) FROM event_log WHERE event_type='command'",
+    );
+    assert_eq!(
+        scalar_i64(
+            writer.handle().db_pfad(),
+            "SELECT last_event_ord FROM sessions",
+        ),
+        letzter_command_ord,
+        "angewandt muss die Sessionprojektion im selben Commit fortschreiben"
+    );
+    assert_eq!(
+        scalar_i64(writer.handle().db_pfad(), "SELECT COUNT(*) FROM outbox"),
+        1,
+        "angewandt muss im selben Commit genau eine koaleszierte Snapshot-Schuld schreiben"
+    );
+    assert_eq!(
+        scalar_i64(
+            writer.handle().db_pfad(),
+            "SELECT snapshot_event_ord FROM outbox",
+        ),
+        letzter_command_ord,
+        "Projektion und Snapshot-Schuld muessen denselben Befehls-Commit decken"
+    );
+    let session_payload: Vec<u8> = Connection::open(writer.handle().db_pfad())
+        .unwrap()
+        .query_row("SELECT state_jcs FROM sessions", [], |row| row.get(0))
+        .unwrap();
+    let session_payload: Value = serde_json::from_slice(&session_payload).unwrap();
+    assert!(snapshot_schema().gueltig(&session_payload));
 }
 
 #[test]
@@ -1147,7 +1185,7 @@ fn alter_store_ueberschreibt_plugin_state_nicht() {
     // Felder werden beim neuen Coordinator aber auf dessen freie Baseline
     // gesetzt. Er ist kein MainProjectState-Ingress.
     assert!(si_subscribe(&coordinator, "probe", &client.adresse));
-    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 0);
+    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 1);
     assert_eq!(
         push.snapshots().last().unwrap().1["broker_epoch"],
         "00000000000000000000000000000063"
@@ -1493,7 +1531,7 @@ fn kill_nach_store_commit_vor_snapshot_push() {
     );
     assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
     assert_eq!(push.snapshots().len(), 1);
-    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 0);
+    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 1);
     assert_eq!(push.snapshots().last().unwrap().1["broker_epoch"], si_hex(99));
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
 }
@@ -1544,7 +1582,7 @@ fn kill_vor_snapshot_outbox_kompaktierung() {
             .angenommen
     );
     assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
-    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 0);
+    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 1);
     assert_eq!(push.snapshots().last().unwrap().1["broker_epoch"], si_hex(99));
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
 }
@@ -1565,7 +1603,7 @@ fn kill_nach_snapshot_outbox_kompaktierung_snapshot_traegt_wirkung() {
             .angenommen
     );
     assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
-    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 0);
+    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 1);
     assert_eq!(push.snapshots().last().unwrap().1["broker_epoch"], si_hex(99));
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
 }
@@ -1684,7 +1722,7 @@ fn kill_waehrend_wal_replay() {
             .angenommen
     );
     assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
-    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 0);
+    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 1);
     assert_eq!(push.snapshots().last().unwrap().1["broker_epoch"], si_hex(99));
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
     assert!(recovery_testgrenze_bestanden(start.elapsed()));

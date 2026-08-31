@@ -58,6 +58,19 @@ fn v3_nachricht_lesen_beliebig(payload: &[u8]) -> Option<Value> {
     v3_schema().gueltig(&wert).then_some(wert)
 }
 
+fn projektion_mit_aktuellem_lauf(gespeichert: &[u8], live: &[u8]) -> Option<Vec<u8>> {
+    let mut persistiert = v3_nachricht_lesen(gespeichert, "session_snapshot")?;
+    let live = v3_nachricht_lesen(live, "session_snapshot")?;
+    let objekt = persistiert.as_object_mut()?;
+    // Nur diese drei Felder gehoeren zum Brokerlauf. Der uebrige absolute
+    // Projektionsschnitt ist die committierte Wirkung und darf beim neuen
+    // Epoch nicht durch den anfangs leeren Laufgraphen ersetzt werden.
+    for feld in ["broker_epoch", "fuehrendes_main", "mitglieder"] {
+        objekt.insert(feld.into(), live.get(feld)?.clone());
+    }
+    serde_json::to_vec(&persistiert).ok()
+}
+
 pub trait MonotonicClock: Send + Sync {
     fn jetzt(&self) -> Duration;
 }
@@ -184,6 +197,7 @@ struct ClientStand {
     adresse: Adresse,
     plugin_kind: String,
     host_pid: Option<u32>,
+    session_ungebunden: bool,
     current_link: Option<String>,
     current_nonce: String,
     last_seen: Duration,
@@ -206,6 +220,11 @@ struct SessionStand {
 
 #[derive(Debug, Clone)]
 struct LinkStand {
+    /// Adresse, die der Peer auf dem Draht sendet. Bei einer Probe vor dem
+    /// Join traegt sie den projektgebundenen Join-Marker.
+    wire_adresse: Adresse,
+    /// Effektive Adresse im Sessiongraphen. Nach eindeutigem Auto-Join traegt
+    /// sie die vom Main erzeugte Session-Epoche.
     adresse: Adresse,
     client_key: ClientKey,
     alias_adressraum: Sitzungsadressraum,
@@ -213,6 +232,7 @@ struct LinkStand {
     letzte_event_sequence: Option<u64>,
     verdraengt: bool,
     trennen: bool,
+    join_neuverbinden: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -443,13 +463,79 @@ impl Coordinator {
         let _ = self.control_hello_registrieren(link_id, &hello);
     }
 
+    fn ist_ungebundene_probe(hello: &HelloControl) -> bool {
+        matches!(hello.plugin_kind.as_str(), "active_probe" | "passive_probe")
+            && hello.adresse.session_epoch == hello.adresse.project_binding_id
+    }
+
+    fn main_sessions_fuer_probe_locked(
+        stand: &Stand,
+        adresse: &Adresse,
+        host_pid: u32,
+    ) -> HashSet<SessionKey> {
+        stand
+            .clients
+            .iter()
+            .filter(|(key, client)| {
+                client.plugin_kind == "main"
+                    && client.host_pid == Some(host_pid)
+                    && key.logon_sid == adresse.logon_sid
+                    && key.project_binding_id == adresse.project_binding_id
+            })
+            .map(|(key, _)| key.session())
+            .collect()
+    }
+
+    fn eindeutige_main_session_locked(
+        stand: &Stand,
+        adresse: &Adresse,
+        host_pid: Option<u32>,
+    ) -> Option<SessionKey> {
+        let sessions = Self::main_sessions_fuer_probe_locked(stand, adresse, host_pid?);
+        (sessions.len() == 1).then(|| sessions.into_iter().next().expect("genau eine Session"))
+    }
+
+    fn ungebundene_links_mit_eindeutigem_main_locked(stand: &Stand) -> Vec<String> {
+        stand
+            .links
+            .iter()
+            .filter(|(_, link)| {
+                stand
+                    .clients
+                    .get(&link.client_key)
+                    .is_some_and(|client| {
+                        client.session_ungebunden
+                            && Self::eindeutige_main_session_locked(
+                                stand,
+                                &link.wire_adresse,
+                                client.host_pid,
+                            )
+                            .is_some()
+                    })
+            })
+            .map(|(link_id, _)| link_id.clone())
+            .collect()
+    }
+
     pub fn control_hello_registrieren(
         &self,
         link_id: &str,
         hello: &HelloControl,
     ) -> ControlRegistrierung {
         let jetzt = self.clock.jetzt();
-        let adresse = hello.adresse.clone();
+        let wire_adresse = hello.adresse.clone();
+        let host_pid = hello.host.as_ref().map(|h| h.pid);
+        let mut adresse = wire_adresse.clone();
+        let mut session_ungebunden = Self::ist_ungebundene_probe(hello);
+        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+        if session_ungebunden {
+            if let Some(main_session) =
+                Self::eindeutige_main_session_locked(&stand, &wire_adresse, host_pid)
+            {
+                adresse.session_epoch = main_session.session_epoch;
+                session_ungebunden = false;
+            }
+        }
         let key = ClientKey::aus_adresse(&adresse);
         let alias_adressraum = Sitzungsadressraum::neu(
             &adresse.logon_sid,
@@ -461,7 +547,6 @@ impl Coordinator {
         let mut guards_zu_persistieren = Vec::new();
         let mut schliessen = Vec::new();
 
-        let mut stand = self.stand.lock().expect("Coordinator vergiftet");
         Self::stale_aktualisieren_locked(&mut stand, jetzt);
         if !stand.clients.contains_key(&key) {
             if let Err(grund) = self.platz_schaffen_locked(&mut stand, &key, jetzt, &mut schliessen)
@@ -519,7 +604,8 @@ impl Coordinator {
         let client = ClientStand {
             adresse: adresse.clone(),
             plugin_kind: hello.plugin_kind.clone(),
-            host_pid: hello.host.as_ref().map(|h| h.pid),
+            host_pid,
+            session_ungebunden,
             current_link: Some(link_id.to_owned()),
             current_nonce: adresse.runtime_nonce.clone(),
             last_seen: jetzt,
@@ -539,6 +625,7 @@ impl Coordinator {
         stand.links.insert(
             link_id.to_owned(),
             LinkStand {
+                wire_adresse,
                 adresse,
                 client_key: key,
                 alias_adressraum,
@@ -546,8 +633,25 @@ impl Coordinator {
                 letzte_event_sequence: None,
                 verdraengt: false,
                 trennen: false,
+                join_neuverbinden: false,
             },
         );
+        // Kam die Probe vor dem Main, bleibt sie intern ungebundener Kandidat.
+        // Sobald genau eine passende Main-Sitzung existiert, schliesst der
+        // Coordinator den alten Link kontrolliert. Der normale Reconnect-Hello
+        // wird dann direkt mit der Main-Epoche registriert; keine Alias- oder
+        // Subscription-Hoheit wird unter einer laufenden Verbindung umgehängt.
+        for pending in Self::ungebundene_links_mit_eindeutigem_main_locked(&stand) {
+            if let Some(link) = stand.links.get_mut(&pending) {
+                if !link.trennen {
+                    link.trennen = true;
+                    link.join_neuverbinden = true;
+                }
+            }
+            schliessen.push(pending);
+        }
+        schliessen.sort();
+        schliessen.dedup();
         drop(stand);
 
         for guard in guards_zu_persistieren {
@@ -569,13 +673,24 @@ impl Coordinator {
         let jetzt = self.clock.jetzt();
         let mut stand = self.stand.lock().expect("Coordinator vergiftet");
         let mut dirty = None;
+        let mut sauberer_join_reconnect = false;
         if let Some(link) = stand.links.remove(link_id) {
             self.alias_register.entferne(
                 &link.alias_adressraum,
                 &link.alias_besitzer,
                 &link.adresse.instance_id,
             );
-            if let Some(client) = stand.clients.get_mut(&link.client_key) {
+            sauberer_join_reconnect = link.join_neuverbinden
+                && link.letzte_event_sequence.is_none()
+                && !stand
+                    .interventionen
+                    .values()
+                    .any(|intervention| intervention.link_id == link_id);
+            if sauberer_join_reconnect {
+                // Der Marker ist keine Sessionidentitaet und darf nach dem
+                // kontrollierten Reconnect keinen Phantom-Tombstone erzeugen.
+                stand.clients.remove(&link.client_key);
+            } else if let Some(client) = stand.clients.get_mut(&link.client_key) {
                 if client.current_link.as_deref() == Some(link_id) {
                     client.current_link = None;
                     client.stale = true;
@@ -592,7 +707,9 @@ impl Coordinator {
         stand
             .interventionen
             .retain(|_, intervention| intervention.link_id != link_id);
-        stand.intervention_state_unknown = true;
+        if !sauberer_join_reconnect {
+            stand.intervention_state_unknown = true;
+        }
     }
 
     fn subscription_abweisen(stand: &mut Stand, grund: &str) {
@@ -631,20 +748,23 @@ impl Coordinator {
             );
             return false;
         }
-        if link.adresse != adresse {
+        if link.wire_adresse != adresse {
             Self::subscription_abweisen(&mut stand, "subscribe: fremde effektive Adresse");
             return false;
         }
-        if session_epoch != link.adresse.session_epoch || session_epoch != adresse.session_epoch {
+        if session_epoch != link.wire_adresse.session_epoch
+            || session_epoch != adresse.session_epoch
+        {
             Self::subscription_abweisen(&mut stand, "subscribe: fremde Session");
             return false;
         }
-        let session = ClientKey::aus_adresse(&adresse).session();
+        let session = link.client_key.session();
+        let effektive_adresse = link.adresse.clone();
         stand.subscriptions.insert(
             link_id.to_owned(),
             Subscription {
-                adresse,
-                session_epoch: session_epoch.to_owned(),
+                adresse: effektive_adresse,
+                session_epoch: session.session_epoch.clone(),
             },
         );
         drop(stand);
@@ -709,13 +829,19 @@ impl Coordinator {
                     return;
                 };
                 // Fuehrung, Mitglieder und broker_epoch gehoeren zum Lauf.
-                // Eine haltbare Projektion des vorigen Laufs ist kein
-                // MainProjectState-Ingress und wird deshalb mit dem aktuellen
-                // freien/lokal rekonstruierten Graphen ersetzt.
+                // Nur sie werden aus dem aktuellen Graphen eingesetzt. Der
+                // uebrige absolute Projektionsschnitt bleibt die haltbare
+                // Wirkung fuer K-04/K-06/K-07.
                 if wert.get("broker_epoch").and_then(Value::as_str)
                     != Some(self.broker_epoch.as_str())
                 {
-                    (Some(ord), live_payload)
+                    let Some(aktualisiert) =
+                        projektion_mit_aktuellem_lauf(&gespeichert, &live_payload)
+                    else {
+                        self.routing_fail_closed("Sessionprojektion konnte nicht auf den aktuellen Lauf abgebildet werden");
+                        return;
+                    };
+                    (Some(ord), aktualisiert)
                 } else {
                     (Some(ord), gespeichert)
                 }
@@ -882,7 +1008,7 @@ impl Coordinator {
         stand
             .links
             .get(link_id)
-            .is_some_and(|link| &link.adresse == adresse)
+            .is_some_and(|link| &link.wire_adresse == adresse)
     }
 
     fn subscription_entfernen_locked(stand: &mut Stand, link_id: &str) {
@@ -1040,6 +1166,15 @@ impl Coordinator {
             for key in opfer {
                 schliessen.extend(self.client_eviktieren_locked(&mut stand, &key));
             }
+            for pending in Self::ungebundene_links_mit_eindeutigem_main_locked(&stand) {
+                if let Some(link) = stand.links.get_mut(&pending) {
+                    if !link.trennen {
+                        link.trennen = true;
+                        link.join_neuverbinden = true;
+                    }
+                }
+                schliessen.insert(pending);
+            }
             let dirty = stand.dirty_sessions.iter().cloned().collect::<Vec<_>>();
             let mut schliessen = schliessen.into_iter().collect::<Vec<_>>();
             schliessen.sort();
@@ -1054,13 +1189,13 @@ impl Coordinator {
     pub fn heartbeat_kontakt(&self, link_id: &str, wert: Option<&Value>) -> bool {
         let jetzt = self.clock.jetzt();
         let mut guards = Vec::new();
-        let session;
-        let aktiv = {
+        let (aktiv, dirty_sessions) = {
             let mut stand = self.stand.lock().expect("Coordinator vergiftet");
             let Some(link) = stand.links.get(link_id).cloned() else {
                 return false;
             };
-            session = link.client_key.session();
+            let session = link.client_key.session();
+            let mut dirty_sessions = vec![session.clone()];
             if link.verdraengt {
                 let effective = effektive_adresse(&link.adresse);
                 let neuer_owner = stand.clients.get(&link.client_key).map(|client| {
@@ -1101,7 +1236,7 @@ impl Coordinator {
                     }
                 }
                 stand.dirty_sessions.insert(session.clone());
-                false
+                (false, dirty_sessions)
             } else {
                 let plugin_kind = stand
                     .clients
@@ -1123,12 +1258,38 @@ impl Coordinator {
                     }
                 }
                 Self::auto_join_locked(&mut stand, &link.client_key);
+                if stand
+                    .clients
+                    .get(&link.client_key)
+                    .is_some_and(|client| client.session_ungebunden)
+                {
+                    if let Some(host_pid) = stand
+                        .clients
+                        .get(&link.client_key)
+                        .and_then(|client| client.host_pid)
+                    {
+                        dirty_sessions.extend(Self::main_sessions_fuer_probe_locked(
+                            &stand,
+                            &link.wire_adresse,
+                            host_pid,
+                        ));
+                    }
+                }
+                dirty_sessions.sort_by(|a, b| {
+                    a.project_binding_id
+                        .cmp(&b.project_binding_id)
+                        .then_with(|| a.session_epoch.cmp(&b.session_epoch))
+                });
+                dirty_sessions.dedup();
+                stand.dirty_sessions.extend(dirty_sessions.iter().cloned());
                 stand.dirty_sessions.insert(session.clone());
-                true
+                (true, dirty_sessions)
             }
         };
         self.guards_persistieren(guards);
-        self.flush_session(&session, Some(link_id));
+        for session in dirty_sessions {
+            self.flush_session(&session, Some(link_id));
+        }
         aktiv
     }
 
@@ -1159,7 +1320,7 @@ impl Coordinator {
             let Some(link) = stand.links.get(link_id).cloned() else {
                 return false;
             };
-            if link.adresse != adresse {
+            if link.wire_adresse != adresse {
                 return false;
             }
             let Some(client) = stand.clients.get_mut(&link.client_key) else {
@@ -1199,7 +1360,7 @@ impl Coordinator {
         }))
     }
 
-    pub fn descriptor_setzen(&self, link_id: &str, descriptor: Value) -> bool {
+    pub fn descriptor_setzen(&self, link_id: &str, mut descriptor: Value) -> bool {
         let session = {
             let mut stand = self.stand.lock().expect("Coordinator vergiftet");
             let Some(link) = stand.links.get(link_id).cloned() else {
@@ -1209,9 +1370,13 @@ impl Coordinator {
             else {
                 return false;
             };
-            if adresse != link.adresse {
+            if adresse != link.wire_adresse {
                 return false;
             }
+            let Ok(effektive_adresse) = serde_json::to_value(&link.adresse) else {
+                return false;
+            };
+            descriptor["adresse"] = effektive_adresse;
             if let Some(client) = stand.clients.get_mut(&link.client_key) {
                 client.descriptor = Some(descriptor);
                 client.join_kandidat = true;
@@ -1414,6 +1579,21 @@ impl Coordinator {
         }) {
             return true;
         }
+        let main_hosts: HashSet<u32> = stand
+            .clients
+            .iter()
+            .filter(|(key, client)| {
+                &key.session() == session && client.plugin_kind == "main"
+            })
+            .filter_map(|(_, client)| client.host_pid)
+            .collect();
+        if stand.clients.iter().any(|(key, client)| {
+            client.session_ungebunden
+                && key.project_binding_id == session.project_binding_id
+                && client.host_pid.is_some_and(|pid| main_hosts.contains(&pid))
+        }) {
+            return true;
+        }
         let mains: HashSet<&str> = clients
             .iter()
             .filter(|client| client.plugin_kind == "main" && client.bestaetigt)
@@ -1523,14 +1703,7 @@ impl Coordinator {
     }
 
     fn flush_session(&self, session: &SessionKey, verursacher_link: Option<&str>) {
-        let mut shard = 0usize;
-        for byte in session
-            .project_binding_id
-            .bytes()
-            .chain(session.session_epoch.bytes())
-        {
-            shard = shard.wrapping_mul(16777619) ^ usize::from(byte);
-        }
+        let shard = self.session_flush_shard(session);
         let _flush_guard = self.session_flush_schloesser
             [shard % self.session_flush_schloesser.len()]
             .lock()
@@ -1629,6 +1802,18 @@ impl Coordinator {
                 }
             }
         }
+    }
+
+    fn session_flush_shard(&self, session: &SessionKey) -> usize {
+        let mut shard = 0usize;
+        for byte in session
+            .project_binding_id
+            .bytes()
+            .chain(session.session_epoch.bytes())
+        {
+            shard = shard.wrapping_mul(16777619) ^ usize::from(byte);
+        }
+        shard
     }
 
     fn guards_persistieren(&self, guards: Vec<ConflictGuard>) {
@@ -1908,6 +2093,12 @@ impl Coordinator {
         let command_id = kopf.get("command_id")?.as_str()?;
         let base_revision = kopf.get("base_revision")?.as_u64()?;
         let ziel: Adresse = serde_json::from_value(kopf.get("ziel")?.clone()).ok()?;
+        let session = ClientKey::aus_adresse(&ziel).session();
+        let shard = self.session_flush_shard(&session);
+        let _commit_guard = self.session_flush_schloesser
+            [shard % self.session_flush_schloesser.len()]
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         let Some(store) = &self.store else {
             return Self::command_ack(
                 command_id,
@@ -1950,7 +2141,10 @@ impl Coordinator {
             }
         }
 
-        let zielstand: Result<(u64, String), (u64, Option<String>, &'static str, &'static str)> = {
+        let zielstand: Result<
+            (u64, String, Value, Vec<SnapshotZiel>),
+            (u64, Option<String>, &'static str, &'static str),
+        > = {
             let stand = self.stand.lock().expect("Coordinator vergiftet");
             let Some(sender_link) = stand.links.get(link_id) else {
                 return None;
@@ -2016,14 +2210,44 @@ impl Coordinator {
                     if revision != base_revision {
                         Err((revision, Some(hash), "konflikt", "revision_conflict"))
                     } else {
-                        Ok((revision, hash))
+                        let session_snapshot: Value =
+                            serde_json::from_slice(&self.snapshot_locked(&stand, &session))
+                                .expect("interner Session-Snapshot ist JSON");
+                        let snapshot_ziele = stand
+                            .subscriptions
+                            .iter()
+                            .filter(|(abo_link_id, sub)| {
+                                sub.session_epoch == session.session_epoch
+                                    && sub.adresse.project_binding_id
+                                        == session.project_binding_id
+                                    && stand.links.get(*abo_link_id).is_some_and(|link| {
+                                        !link.trennen
+                                            && stand.routing_bereit
+                                            && !stand.conflict_guards.contains_key(
+                                                &effektive_adresse(&link.adresse),
+                                            )
+                                            && self.alias_register.session_push_erlaubt(
+                                                &link.alias_adressraum,
+                                                &link.alias_besitzer,
+                                                &link.adresse.instance_id,
+                                            )
+                                    })
+                            })
+                            .map(|(_, sub)| SnapshotZiel {
+                                project_binding_id: session.project_binding_id.clone(),
+                                session_epoch: session.session_epoch.clone(),
+                                instance_id: sub.adresse.instance_id.clone(),
+                                object_key: "session_snapshot".into(),
+                            })
+                            .collect();
+                        Ok((revision, hash, session_snapshot, snapshot_ziele))
                     }
                 }
             } else {
                 Err((base_revision, None, "abgelehnt", "unknown_target"))
             }
         };
-        let (revision, hash) = match zielstand {
+        let (revision, hash, session_snapshot, snapshot_ziele) = match zielstand {
             Ok(wirkung) => wirkung,
             Err((revision, hash, ergebnis, code)) => {
                 return Self::command_ack(
@@ -2041,6 +2265,7 @@ impl Coordinator {
             "command": wert,
             "state_revision": revision,
             "state_hash": hash,
+            "session_snapshot": session_snapshot,
         });
         let payload_jcs = serde_json_canonicalizer::to_vec(&intern).ok()?;
         let sequence = self.event_sequence.fetch_add(1, Ordering::SeqCst);
@@ -2053,6 +2278,7 @@ impl Coordinator {
         );
         event.command_id = Some(command_id.to_owned());
         event.event_type = "command".into();
+        event.snapshot_ziele = snapshot_ziele;
         match store.append(vec![event]) {
             Ok(ausgaenge) => match ausgaenge.first()? {
                 crate::store::AppendAusgang::Angewandt { .. } => Self::command_ack(
@@ -2102,7 +2328,7 @@ impl Coordinator {
                     .expect("Coordinator vergiftet")
                     .links
                     .get(link_id)
-                    .is_some_and(|link| link.adresse == adresse)
+                    .is_some_and(|link| link.wire_adresse == adresse)
                 {
                     return None;
                 }

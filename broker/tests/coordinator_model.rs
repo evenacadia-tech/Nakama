@@ -214,6 +214,98 @@ fn join_nur_bei_eindeutigem_main() {
 }
 
 #[test]
+fn probe_ohne_eigene_epoche_uebernimmt_eindeutige_main_sitzung() {
+    let (c, _) = coordinator();
+    let main = hello(1, 11, 101, 1001, "main", Some(77));
+    anmelden(&c, "main", &main);
+    assert!(report(&c, "main", &main.adresse));
+
+    // Probeeq kennt beim Hello nur die persistierte Projektbindung. Derselbe
+    // hex32-Wert im bestehenden session_epoch-Feld ist der ungebundene
+    // Join-Marker, keine selbst erzeugte Sitzungsidentitaet.
+    let probe = hello(1, 1, 102, 1002, "active_probe", Some(77));
+    assert_eq!(
+        probe.adresse.session_epoch,
+        probe.adresse.project_binding_id
+    );
+    anmelden(&c, "probe", &probe);
+    assert!(report(&c, "probe", &probe.adresse));
+
+    let sicht = c.modell_sicht(&hex(1), &hex(11));
+    assert_eq!(sicht.clients.len(), 2);
+    assert_eq!(sicht.fuehrendes_main, Some(main.adresse.instance_id.clone()));
+    let probe_sicht = sicht
+        .clients
+        .iter()
+        .find(|client| client.adresse.instance_id == probe.adresse.instance_id)
+        .expect("Probeeq ist Mitglied der Main-Sitzung");
+    assert!(probe_sicht.bestaetigt);
+    assert_eq!(probe_sicht.adresse.session_epoch, main.adresse.session_epoch);
+    assert!(c.modell_sicht(&hex(1), &hex(1)).clients.is_empty());
+
+    let snapshot: Value = serde_json::from_slice(&c.session_snapshot_json(&hex(1), &hex(11)))
+        .unwrap();
+    let probe_adresse = snapshot["mitglieder"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|client| client["adresse"]["instance_id"] == probe.adresse.instance_id)
+        .expect("Probeeq erscheint im bestehenden session_snapshot");
+    assert_eq!(
+        probe_adresse["adresse"]["session_epoch"],
+        main.adresse.session_epoch
+    );
+}
+
+#[test]
+fn probe_join_bleibt_reihenfolgefest_und_bei_mehreren_mains_fail_closed() {
+    // Probe zuerst: Sobald das Main erscheint, fordert der Coordinator einen
+    // normalen Reconnect an. Erst dessen neues Hello wird kanonisch gebunden;
+    // der Marker hinterlaesst keinen Phantom-Tombstone.
+    let (c, _) = coordinator();
+    let probe = hello(1, 1, 102, 1002, "active_probe", Some(77));
+    anmelden(&c, "probe-alt", &probe);
+    assert!(report(&c, "probe-alt", &probe.adresse));
+    let main = hello(1, 11, 101, 1001, "main", Some(77));
+    let main_anmeldung = c.control_hello_registrieren("main", &main);
+    assert!(main_anmeldung.angenommen);
+    assert_eq!(main_anmeldung.zu_schliessende_links, vec!["probe-alt"]);
+    c.control_ende("probe-alt");
+    assert!(report(&c, "main", &main.adresse));
+    anmelden(&c, "probe-neu", &probe);
+    assert!(report(&c, "probe-neu", &probe.adresse));
+    assert!(c.modell_sicht(&hex(1), &hex(1)).clients.is_empty());
+    let sichtbar = c.modell_sicht(&hex(1), &hex(11));
+    assert_eq!(sichtbar.clients.len(), 2);
+    assert!(!sichtbar.beitritt_bestaetigung_noetig);
+
+    // Zwei Main-Sitzungen derselben Projektkopien im selben Host: kein
+    // heuristischer Beitritt. Der Kandidat bleibt intern ungebunden, und beide
+    // bestehenden Snapshots zeigen den Bestaetigungsbedarf.
+    let (mehrdeutig, _) = coordinator();
+    let main_a = hello(2, 21, 201, 2001, "main", Some(88));
+    let main_b = hello(2, 22, 202, 2002, "main", Some(88));
+    anmelden(&mehrdeutig, "main-a", &main_a);
+    assert!(report(&mehrdeutig, "main-a", &main_a.adresse));
+    anmelden(&mehrdeutig, "main-b", &main_b);
+    assert!(report(&mehrdeutig, "main-b", &main_b.adresse));
+    let probe = hello(2, 2, 203, 2003, "active_probe", Some(88));
+    let probe_anmeldung = mehrdeutig.control_hello_registrieren("probe", &probe);
+    assert!(probe_anmeldung.angenommen);
+    assert!(probe_anmeldung.zu_schliessende_links.is_empty());
+    assert!(report(&mehrdeutig, "probe", &probe.adresse));
+    assert!(mehrdeutig
+        .modell_sicht(&hex(2), &hex(21))
+        .beitritt_bestaetigung_noetig);
+    assert!(mehrdeutig
+        .modell_sicht(&hex(2), &hex(22))
+        .beitritt_bestaetigung_noetig);
+    let kandidat = mehrdeutig.modell_sicht(&hex(2), &hex(2));
+    assert_eq!(kandidat.clients.len(), 1);
+    assert!(!kandidat.clients[0].bestaetigt);
+}
+
+#[test]
 fn erstes_einziges_main_fuehrt_sonst_bestaetigung() {
     assert_eq!(FUEHRENDE_MAINS_PRO_SESSION, 1);
     let (c, _) = coordinator();

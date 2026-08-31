@@ -1128,3 +1128,51 @@ abgehakt. Die Kürzel folgen je Abschnitt der dortigen Reihenfolge.
 | E7 | Keine neue eingefrorene Writer-Fixture. Storetests erzeugen ihre Daten über den echten `StoreWriter`; Mutanten ändern genau eine Produktionsbedingung. |
 | F1 | Start/Stop gemeinsam: Gen-Control/Lifecycle und Probeeq-Control/Telemetry samt Destruktoren; Save/Load gemeinsam: Projektbindung im bestehenden State, Lebenslauf-Roundtrip grün. |
 | F2 | Keine Datei unter `eq-copilot/schemas/**` geändert; Rust-Reader, C++-Sender/Consumer und Cross-Language-Tests liegen im selben Änderungssatz und sind grün. |
+
+---
+
+## Phase B — Nacharbeit Runde 2 (Bau)
+
+**Stand:** Phase B: Nacharbeit Runde 2, in Wiederprüfung.
+
+Der Änderungssatz schließt ausschließlich die drei Defekte der Wiederprüfung.
+Die 16 geschlossenen Runde-1-Befunde, die eingefrorenen Wire-Verträge und der
+Audio-Callback bleiben unverändert; es gibt keine neue Nachrichtenfamilie und
+keinen MainProjectState-Wire-Weg. Die Rotläufe entstanden vor dem jeweiligen
+Produktfix gegen den gezielt beibehaltenen Wiederprüfungsstand `901598f`; ihre
+Rohlogs liegen nur unter `%TEMP%` als `sonde011-r2-red-*.log`.
+
+| # | Fix-Ort und geschlossene Wirkung | Belegender Test und Messort | Rotmutation und Fehlerstelle | Lauf-Schlusszeile im Endstand |
+|---:|---|---|---|---|
+| 1 | `broker/src/coordinator.rs` — `persistenz_p0` erfasst unter derselben Session-Serialisierung den absoluten Snapshot und die Snapshotziele; `broker/src/store.rs` — `projektionen_anwenden` projiziert bei `internal_p0_command` ausschließlich dessen verschachtelten `session_snapshot`. Event, `command_id`, Sessionprojektion und koaleszierte Outbox-Schuld werden damit gemeinsam committed; andere Domain-Events bleiben weiterhin von `sessions.state_jcs` getrennt. | S-02/K-03: `store_crash_matrix::produkt_coordinator_committet_alle_persistenten_p0_befehle_und_ackt_retries`; zusätzlich die echten C++-Retrybeine im ignorierten A4-SI-Lauf. | Rückmutation auf `event_type = "command"` ohne verschachtelten Snapshot und ohne `snapshot_ziele`: **FAILED** in `store_crash_matrix.rs:546`, Sessionordinal 2 statt Befehlsordinal 5 (`angewandt muss die Sessionprojektion im selben Commit fortschreiben`). | Regulär: `store_crash_matrix` **52 passed, 0 failed**; A4-SI: **17 passed, 0 failed**, einschließlich `result=idempotent_wiederholt ... wire_uuid=0`. |
+| 2 | `broker/src/coordinator.rs` — `projektion_mit_aktuellem_lauf` und `resubscribe_snapshot_push`: Beim neuen `broker_epoch` werden nur `broker_epoch`, `fuehrendes_main` und `mitglieder` aus dem aktuellen Lauf eingesetzt; die übrige committierte absolute Wirkung bleibt erhalten und deckt danach die Outbox-Schuld. | K-04/K-06/K-07: `store_crash_matrix::{kill_nach_store_commit_vor_snapshot_push,kill_vor_snapshot_outbox_kompaktierung,kill_nach_snapshot_outbox_kompaktierung_snapshot_traegt_wirkung}`; K-09 und `alter_store_ueberschreibt_plugin_state_nicht` als Gegenpfade. | Rückmutation des Epochzweigs auf die vollständige `live_payload`: **FAILED** in `store_crash_matrix.rs:1534`, Wirkung 0 statt 1. | Regulär: `store_crash_matrix` **52 passed, 0 failed**; A4-SI einschließlich `reconnect_snapshot_enthaelt_committete_wirkung_genau_einmal`: **17 passed, 0 failed**. |
+| 3 | `eq-copilot/plugin/sonde/SondeProcessor.cpp` — `v3Hello` sendet keine eigene Epoche, sondern die persistierte Projektbindung als erkennbaren ungebundenen Marker im vorhandenen Pflichtfeld. `broker/src/coordinator.rs` trennt Wire- von effektiver Adresse, übernimmt bei genau einer passenden Main-Sitzung deren Epoche, fordert bei Probe-vor-Main einen kontrollierten Reconnect an und bleibt bei mehreren Main-Sitzungen ungebunden/fail-closed; veröffentlicht wird nur der bestehende `session_snapshot`. | C-03/C-05/A-04: `coordinator_model::{probe_ohne_eigene_epoche_uebernimmt_eindeutige_main_sitzung,probe_join_bleibt_reihenfolgefest_und_bei_mehreren_mains_fail_closed}`; C++ `EqCopProbeeqNullTest`-Wache `Probeeq-Controlprovider erfindet keine eigene Session-Epoche`. | Rust ohne Coordinator-Zuordnung: **FAILED** in `coordinator_model.rs:235`, 1 statt 2 Mitglieder. C++ mit der alten `uuidHex32()`-Epoche: **SONDE-NULLTEST FEHLGESCHLAGEN**, 86 Prüfungen ok, 1 Fehler an der genannten Provider-Wache. | `coordinator_model`: **33 passed, 0 failed**; frisch gebauter `EqCopProbeeqNullTest`: **87 Prüfungen ok, 0 Fehler**. |
+
+### Ausgeführte Läufe
+
+- `cargo test --manifest-path broker/Cargo.toml --color never --no-fail-fast`:
+  Rust-Lib 186/186, Broker-Idle 4/4, Cross-Language 9/9, Coordinator
+  33/33, Store 52/52 regulär bei 17 bewusst ignorierten SI-Fällen und
+  Transport-Fuzz 9/9; Exit 0.
+- `cargo test --manifest-path broker/Cargo.toml --test store_crash_matrix --
+  --ignored --test-threads=1`: 17/17 SI-Fälle; Exit 0.
+- CMake Release baute `EqCopProbeeqNullTest` aus dem betroffenen Ziel; dessen
+  Schlusszeile lautet `SONDE-NULLTEST OK - 87 Pruefungen ok, 0 Fehler`.
+  Ein vollständiger Kanonlauf wurde für diesen auf drei Defekte begrenzten
+  Auftrag nicht gefahren und wird nicht behauptet.
+
+### Messorte der Dirigenten-Prüfliste
+
+`tools/dirigent/pruefliste.md` wurde nicht editiert. A1–A6 wurden durch die
+vollständigen Rust-Queue-/Outbox-/Cross-Language-Beine und bei A3/A6 zusätzlich
+durch Defekt 1 gemessen. B1–B5 liegen im vollständigen Server-Lebenszykluslauf
+und in den beiden reihenfolgefesten Probe-Join-Tests. C1–C4 liegen in den neun
+Cross-Language- und den vollständigen v3-Vertragstests; die hex32-Feldform und
+die Nachrichtenfamilien blieben unverändert. D1 liegt im mehrdeutigen
+fail-closed Join-Gegenfall; D2 im frischen Cargo-/CMake-Bau; D3/D4 sind nicht
+betroffen, weil weder Auslieferungshash noch Kanonbau geändert wurden. E1–E7
+liegen in den drei Tabellenzeilen, den aktuellen Schlusszahlen, den genannten
+Symbolen und Rotlogs sowie diesem nachweislich append-only Abschnitt. F1/F2
+liegen im gemeinsam getesteten Connect/Reconnect-Weg und in der gemeinsamen
+Coordinator-/Store-Projektion samt Rebuild; Sender und Verbraucher des
+bestehenden Feldes sind im selben Änderungssatz.

@@ -220,12 +220,13 @@ int main()
 
         pruefe (hello.adresse.projectBindingId
                     == "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-                    && hello.adresse.instanceId
+                 && hello.adresse.instanceId
                     == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                    && hello.pluginKind == "active_probe"
-                    && istHex (hello.adresse.sessionEpoch, 32)
-                    && istHex (hello.adresse.runtimeNonce, 32),
-                "Probeeq-Controlprovider nutzt ausschliesslich die persistierte Bindung");
+                 && hello.pluginKind == "active_probe"
+                 && hello.adresse.sessionEpoch
+                    == hello.adresse.projectBindingId
+                 && istHex (hello.adresse.runtimeNonce, 32),
+                "Probeeq-Controlprovider erfindet keine eigene Session-Epoche");
         pruefe (status.dspSchemaVersion == nakama::parameter::kDspSchemaVersion
                     && status.stateRevision == 1
                     && hashOk && status.stateHash == sollHash.toStdString()

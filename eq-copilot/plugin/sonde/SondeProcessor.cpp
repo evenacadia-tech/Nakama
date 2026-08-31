@@ -28,7 +28,6 @@ SondeProcessor::SondeProcessor()
           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       v3LogonSid (nakama::ipc::aktuelleLogonSid()),
       v3PipeName (nakama::ipc::pipeNameV3 (v3LogonSid)),
-      v3SessionEpoch (uuidHex32()),
       v3RuntimeNonce (uuidHex32()),
       controlV3 ([this] { return v3Hello(); }, v3PipeName, {},
                  [this] { return v3Status(); }),
@@ -150,7 +149,12 @@ nakama::ipc::ControlHello SondeProcessor::v3Hello() const
         const juce::ScopedLock l (zustandSchloss);
         h.adresse.logonSid = v3LogonSid;
         h.adresse.projectBindingId = zustand.common.projectBindingId.toStdString();
-        h.adresse.sessionEpoch = v3SessionEpoch;
+        // Eine Probe besitzt keine Session-Epoche. Bis zum internen C-03-Join
+        // traegt das bestehende Pflichtfeld denselben hex32-Wert wie die
+        // persistierte Projektbindung: ein erkennbarer Join-Marker, keine
+        // erfundene Sitzungsidentitaet. Nur der Coordinator darf ihn bei genau
+        // einer Main-Sitzung durch deren Epoche ersetzen.
+        h.adresse.sessionEpoch = h.adresse.projectBindingId;
         h.adresse.instanceId = zustand.common.instanceId.toStdString();
         h.adresse.runtimeNonce = v3RuntimeNonce;
         h.pluginKind = nakama::state::wort (zustand.common.klasse);

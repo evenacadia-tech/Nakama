@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cctype>
 
 namespace nakama::ipc
 {
@@ -26,6 +27,191 @@ constexpr int kLeseTaktMs = 20;
 /// Callback (Mikro- bis Millisekunden), kurz genug, dass das Schliessen eines
 /// Plugins im Host nicht spuerbar haengt.
 constexpr int kStopFristMs = 2000;
+
+enum class CommandAckArt
+{
+    keinAck,
+    angewandt,
+    abgelehnt,
+    konflikt,
+    abgelaufen,
+    idempotentWiederholt
+};
+
+bool istHex64 (const std::string& s) noexcept
+{
+    if (s.size() != 64)
+        return false;
+    for (char c : s)
+        if (! ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')))
+            return false;
+    return true;
+}
+
+bool nichtnegativeJsonGanzzahl (const std::string& s) noexcept
+{
+    if (s == "0")
+        return true;
+    if (s.empty() || s.front() < '1' || s.front() > '9')
+        return false;
+    for (char c : s)
+        if (c < '0' || c > '9')
+            return false;
+    return true;
+}
+
+bool fehlercodeHaeltVertrag (const std::string& code) noexcept
+{
+    return code == "protocol_mismatch" || code == "unknown_message"
+        || code == "schema_violation" || code == "unauthorized"
+        || code == "unknown_target" || code == "revision_conflict"
+        || code == "capability_missing" || code == "record_state_unknown"
+        || code == "recording_active" || code == "lease_expired"
+        || code == "rate_limited" || code == "internal";
+}
+
+bool brokerPipeFehltNachOeffnen (const std::string& fehler) noexcept
+{
+    // `IpcVerbindung::oeffnen` bildet den Win32-Code verlustfrei in genau
+    // diese interne Meldung ab. Nur ERROR_FILE_NOT_FOUND (2) bedeutet bei
+    // einer Named Pipe, dass kein Broker horcht. ERROR_PIPE_BUSY (231),
+    // Zugriff verweigert und jeder lokale Vertragsfehler sind ausdruecklich
+    // keine Startberechtigung.
+    return fehler == "Broker nicht erreichbar (Win32 2)";
+}
+
+// Liest einen JSON-String nur so weit, wie es fuer die eindeutige
+// `command_id`-Suche noetig ist. Escapes werden uebersprungen, aber nicht
+// interpretiert: weder ein Schluessel noch hex32 darf laut Vertrag ein Escape
+// benoetigen. Die vollstaendige Nachricht prueft weiterhin der Schemaweg.
+bool jsonStringToken (const std::string& text, std::size_t& position,
+                      std::string& wert, bool& hatteEscape)
+{
+    while (position < text.size()
+           && std::isspace (static_cast<unsigned char> (text[position])) != 0)
+        ++position;
+    if (position >= text.size() || text[position] != '"')
+        return false;
+    ++position;
+    wert.clear();
+    hatteEscape = false;
+    while (position < text.size())
+    {
+        const char c = text[position++];
+        if (c == '"')
+            return true;
+        if (c == '\\')
+        {
+            hatteEscape = true;
+            if (position >= text.size())
+                return false;
+            ++position;
+            continue;
+        }
+        if (static_cast<unsigned char> (c) < 0x20)
+            return false;
+        wert.push_back (c);
+    }
+    return false;
+}
+
+bool commandIdAusAuftrag (const std::string& text, std::string& commandId)
+{
+    std::size_t position = 0;
+    unsigned gefunden = 0;
+    while (position < text.size())
+    {
+        if (text[position] != '"')
+        {
+            ++position;
+            continue;
+        }
+
+        std::string token;
+        bool escape = false;
+        if (! jsonStringToken (text, position, token, escape))
+            return false;
+        std::size_t nachToken = position;
+        while (nachToken < text.size()
+               && std::isspace (static_cast<unsigned char> (text[nachToken])) != 0)
+            ++nachToken;
+        if (escape || token != "command_id"
+            || nachToken >= text.size() || text[nachToken] != ':')
+            continue;
+
+        position = nachToken + 1;
+        std::string wert;
+        bool wertEscape = false;
+        if (! jsonStringToken (text, position, wert, wertEscape)
+            || wertEscape || ! istHex32 (wert))
+            return false;
+        commandId = std::move (wert);
+        ++gefunden;
+        if (gefunden > 1)
+            return false;
+    }
+    return gefunden == 1;
+}
+
+CommandAckArt commandAckLesen (const std::string& text, std::string& commandId)
+{
+    std::vector<JsonFeld> felder;
+    std::string typ, ergebnis, revision;
+    if (! flachesJsonObjekt (text, felder)
+        || ! jsonText (felder, "type", typ) || typ != "command_ack"
+        || ! jsonText (felder, "command_id", commandId) || ! istHex32 (commandId)
+        || ! jsonText (felder, "ergebnis", ergebnis)
+        || ! jsonLiteral (felder, "state_revision", revision)
+        || ! nichtnegativeJsonGanzzahl (revision))
+        return CommandAckArt::keinAck;
+
+    // `event_uuid` ist intern. Auch ein ansonsten plausibles ACK darf das
+    // In-Flight-Register nicht ueber eine erfundene Wireform freigeben.
+    const JsonFeld* stateHash = nullptr;
+    const JsonFeld* code = nullptr;
+    for (const auto& feld : felder)
+    {
+        if (feld.name == "event_uuid")
+            return CommandAckArt::keinAck;
+        if (feld.name != "type" && feld.name != "command_id"
+            && feld.name != "ergebnis" && feld.name != "state_revision"
+            && feld.name != "state_hash" && feld.name != "code")
+            return CommandAckArt::keinAck;
+        if (feld.name == "state_hash")
+            stateHash = &feld;
+        else if (feld.name == "code")
+            code = &feld;
+    }
+
+    CommandAckArt art = CommandAckArt::keinAck;
+    if (ergebnis == "angewandt")                  art = CommandAckArt::angewandt;
+    else if (ergebnis == "abgelehnt")             art = CommandAckArt::abgelehnt;
+    else if (ergebnis == "konflikt")              art = CommandAckArt::konflikt;
+    else if (ergebnis == "abgelaufen")            art = CommandAckArt::abgelaufen;
+    else if (ergebnis == "idempotent_wiederholt") art = CommandAckArt::idempotentWiederholt;
+    if (art == CommandAckArt::keinAck)
+        return art;
+
+    const bool erfolg = art == CommandAckArt::angewandt
+                     || art == CommandAckArt::idempotentWiederholt;
+    if (erfolg)
+    {
+        if (stateHash == nullptr || ! stateHash->istString
+            || ! istHex64 (stateHash->wert))
+            return CommandAckArt::keinAck;
+    }
+    else if (stateHash != nullptr
+             && ! ((stateHash->istString && istHex64 (stateHash->wert))
+                   || (! stateHash->istString && stateHash->wert == "null")))
+    {
+        return CommandAckArt::keinAck;
+    }
+
+    if (code != nullptr
+        && (! code->istString || ! fehlercodeHaeltVertrag (code->wert)))
+        return CommandAckArt::keinAck;
+    return art;
+}
 
 std::string jsonString (const std::string& roh)
 {
@@ -186,6 +372,7 @@ struct ControlClient::Laufzeit
     bool abgeloest (std::uint64_t meinLauf) const noexcept
     { return lebenslauf.load() != meinLauf; }
     bool sendeP0 (const std::string& json);
+    bool sendePersistenzP0 (const std::string& json);
     P1Ergebnis sendeP1 (const std::string& schluessel, const std::string& json);
     Snapshot snapshotIntern() const;
     bool kopplung (std::string& linkId, std::string& challenge) const;
@@ -244,6 +431,11 @@ struct ControlClient::Laufzeit
     /// deshalb seine Nummer und endet, sobald sie nicht mehr die aktuelle ist.
     std::atomic<std::uint64_t> lebenslauf { 0 };
     std::atomic<std::uint64_t> verbindungsGeneration { 0 };
+    /// Anders als `verbindungsGeneration` (Abbruchsignal) waechst diese Zahl
+    /// bei JEDEM erfolgreichen Pipe-Neuaufbau. Ein ungeplanter Broker-Kill
+    /// aendert das Abbruchsignal nicht, muss In-Flight-Auftraege aber trotzdem
+    /// erneut senden.
+    std::atomic<std::uint64_t> wireGeneration { 0 };
     std::mutex   wartemutex;
     std::condition_variable warte;
 
@@ -253,6 +445,18 @@ struct ControlClient::Laufzeit
     std::mutex sendeMutex;
     P0Warteschlange p0;
     P1Warteschlange p1;
+    struct InFlightEintrag
+    {
+        std::string commandId;
+        std::string json;
+        std::uint64_t gesendetInGeneration = 0;
+        bool inQueue = true;
+    };
+    std::vector<InFlightEintrag> inFlight;
+
+    void inFlightNachReconnect (std::uint64_t generation);
+    void inFlightNachWireWrite (const std::string& json, std::uint64_t generation);
+    void inFlightAck (const std::string& json);
     /// Monoton wachsender Zaehler der P0-Ueberlaeufe. Die laufende Verbindung
     /// merkt sich seinen Stand beim Verbinden und schliesst, sobald er waechst
     /// (§53.9 "nichts verwerfen; Verbindung schliessen"). Ein Ueberlauf, der
@@ -347,6 +551,10 @@ void ControlClient::stop()
 
 void ControlClient::reconnect()
 {
+    {
+        std::lock_guard<std::mutex> l (k->zustandMutex);
+        k->zustand.brokerPipeFehlt = false;
+    }
     k->verbindungsGeneration.fetch_add (1);
     k->aktuelleVerbindung()->ioAbbrechen();
     k->warte.notify_all();
@@ -355,6 +563,11 @@ void ControlClient::reconnect()
 ControlClient::Snapshot ControlClient::snapshot() const { return k->snapshotIntern(); }
 
 bool ControlClient::sendeP0 (const std::string& json) { return k->sendeP0 (json); }
+
+bool ControlClient::sendePersistenzP0 (const std::string& json)
+{
+    return k->sendePersistenzP0 (json);
+}
 
 P1Ergebnis ControlClient::sendeP1 (const std::string& schluessel, const std::string& json)
 {
@@ -405,6 +618,122 @@ bool ControlClient::Laufzeit::sendeP0 (const std::string& json)
         return false;
     }
     return true;
+}
+
+bool ControlClient::Laufzeit::sendePersistenzP0 (const std::string& json)
+{
+    std::string commandId;
+    if (json.size() > kMaxPayloadBytes || ! commandIdAusAuftrag (json, commandId))
+    {
+        std::lock_guard<std::mutex> z (zustandMutex);
+        if (json.size() > kMaxPayloadBytes)
+            ++zustand.zuGross;
+        else
+            zustand.letzterFehler =
+                "Persistenzauftrag braucht genau eine gueltige command_id";
+        return false;
+    }
+
+    bool ueberlauf = false;
+    {
+        std::lock_guard<std::mutex> l (sendeMutex);
+        const auto bekannt = std::find_if (inFlight.begin(), inFlight.end(),
+            [&] (const InFlightEintrag& e) { return e.commandId == commandId; });
+        if (bekannt != inFlight.end())
+        {
+            // Derselbe logische Auftrag darf vom Aufrufer erneut angeboten
+            // werden, aber dieselbe ID darf nie zwei verschiedene Inhalte
+            // bedeuten. Die bereits gehaltene Fassung bleibt die Wahrheit.
+            return bekannt->json == json;
+        }
+        inFlight.push_back (InFlightEintrag { commandId, json, 0, true });
+        if (! p0.einreihen (json))
+        {
+            inFlight.pop_back();
+            ueberlauf = true;
+            p0UeberlaufZaehler.fetch_add (1);
+        }
+
+        std::lock_guard<std::mutex> z (zustandMutex);
+        zustand.p0Ueberlaeufe = p0.ueberlauf();
+        zustand.inFlight = static_cast<std::uint64_t> (inFlight.size());
+    }
+    if (ueberlauf)
+    {
+        aktuelleVerbindung()->ioAbbrechen();
+        return false;
+    }
+    return true;
+}
+
+void ControlClient::Laufzeit::inFlightNachReconnect (std::uint64_t generation)
+{
+    std::uint64_t wiederholt = 0;
+    std::uint64_t anzahl = 0;
+    {
+        std::lock_guard<std::mutex> l (sendeMutex);
+        for (auto& e : inFlight)
+        {
+            if (e.inQueue || e.gesendetInGeneration == generation)
+                continue;
+            if (! p0.einreihen (e.json))
+                break;
+            e.inQueue = true;
+            ++wiederholt;
+        }
+        anzahl = static_cast<std::uint64_t> (inFlight.size());
+    }
+    if (wiederholt != 0)
+    {
+        std::lock_guard<std::mutex> z (zustandMutex);
+        zustand.inFlight = anzahl;
+        zustand.inFlightWiederholungen += wiederholt;
+    }
+}
+
+void ControlClient::Laufzeit::inFlightNachWireWrite (const std::string& json,
+                                                      std::uint64_t generation)
+{
+    std::lock_guard<std::mutex> l (sendeMutex);
+    const auto eintrag = std::find_if (inFlight.begin(), inFlight.end(),
+        [&] (const InFlightEintrag& e) { return e.json == json && e.inQueue; });
+    if (eintrag != inFlight.end())
+    {
+        eintrag->inQueue = false;
+        eintrag->gesendetInGeneration = generation;
+    }
+}
+
+void ControlClient::Laufzeit::inFlightAck (const std::string& json)
+{
+    std::string commandId;
+    const auto art = commandAckLesen (json, commandId);
+    if (art == CommandAckArt::keinAck)
+        return;
+
+    bool gefunden = false;
+    std::uint64_t anzahl = 0;
+    {
+        std::lock_guard<std::mutex> l (sendeMutex);
+        const auto eintrag = std::find_if (inFlight.begin(), inFlight.end(),
+            [&] (const InFlightEintrag& e) { return e.commandId == commandId; });
+        if (eintrag != inFlight.end())
+        {
+            inFlight.erase (eintrag);
+            gefunden = true;
+        }
+        anzahl = static_cast<std::uint64_t> (inFlight.size());
+    }
+    if (! gefunden)
+        return;
+
+    std::lock_guard<std::mutex> z (zustandMutex);
+    zustand.inFlight = anzahl;
+    if (art == CommandAckArt::angewandt
+        || art == CommandAckArt::idempotentWiederholt)
+        ++zustand.inFlightErfolg;
+    else
+        ++zustand.inFlightEndgueltigOhneErfolg;
 }
 
 P1Ergebnis ControlClient::Laufzeit::sendeP1 (const std::string& schluessel,
@@ -482,6 +811,7 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
     {
         std::lock_guard<std::mutex> l (zustandMutex);
         zustand.status = Status::verbindet;
+        zustand.brokerPipeFehlt = false;
         ++zustand.verbindungsVersuche;
         zustand.linkId.clear();
         zustand.challenge.clear();
@@ -526,6 +856,7 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
     {
         std::lock_guard<std::mutex> l (zustandMutex);
         zustand.status = Status::getrennt;
+        zustand.brokerPipeFehlt = brokerPipeFehltNachOeffnen (fehler);
         if (! sollAbbrechen (generation))
             zustand.letzterFehler = fehler;
         return false;
@@ -646,6 +977,7 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
         zustand.brokerVersion = brokerVersion;
         zustand.letzterFehler.clear();
     }
+    const auto dieseWireGeneration = wireGeneration.fetch_add (1) + 1;
 
     // Was der letzte Verbindungsabbruch offen liess, geht jetzt zuerst raus
     // (§53.9 "nicht koaleszierbare Events bei Ueberlauf ueber Reconnect
@@ -654,6 +986,7 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
         std::lock_guard<std::mutex> l (sendeMutex);
         p1.nachReconnectWiederholen();
     }
+    inFlightNachReconnect (dieseWireGeneration);
 
     // Stand der P0-Ueberlaeufe beim Verbindungsaufbau. Waechst er waehrend
     // dieser Verbindung, wird sie geschlossen — nichts wird verworfen.
@@ -731,10 +1064,12 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
                 std::lock_guard<std::mutex> l (zustandMutex);
                 ++zustand.empfangen;
             }
+            const std::string antwort (reinterpret_cast<const char*> (e.payload),
+                                       e.payloadLaenge);
+            inFlightAck (antwort);
             // Nach `stop()` wird kein Callback mehr gerufen (`B-CC-10`).
             if (beiAntwort && ! sollAbbrechen (generation))
-                beiAntwort (std::string (reinterpret_cast<const char*> (e.payload),
-                                         e.payloadLaenge));
+                beiAntwort (antwort);
         }
     };
 
@@ -809,6 +1144,16 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
                     p0.bestaetigen();
                 else
                     p1.bestaetigen();
+            }
+            if (istP0)
+            {
+                inFlightNachWireWrite (nachricht, dieseWireGeneration);
+                // Ein Reconnect kann mehr semantisch offene Auftraege als
+                // P0-Plaetze vorfinden. Jeder frei gewordene Queueplatz zieht
+                // deshalb den naechsten alten In-Flight-Eintrag nach; Eintraege
+                // dieser Generation werden dabei nie ohne Verbindungsverlust
+                // erneut gesendet.
+                inFlightNachReconnect (dieseWireGeneration);
             }
             std::lock_guard<std::mutex> l (zustandMutex);
             if (istP0)

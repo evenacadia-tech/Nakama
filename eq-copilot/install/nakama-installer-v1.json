@@ -49,11 +49,11 @@
       "art": "broker",
       "name": "eqcop-broker.exe",
       "quelle": "broker/target/release/eqcop-broker.exe",
-      "sha256": "21C7A8DC985BCA16B7520DE11172ED5B0115BE25BE124EA30F11D5FB70850824",
-      "hinweis": "Der Broker wird heute von KEINEM Bundle gestartet - eine Suche ueber plugin/src findet keinen Spawn-Pfad (Befund SONDE-007b §1). Er gehoert trotzdem in dieses Manifest: die Auslieferung ist ein Paket, und ein Broker, der erst mit SONDE-010 spawnbar wird, muss VORHER an einem verifizierten Pfad liegen. Bis dahin ist er ein Programm, das der User von Hand starten kann."
+      "sha256": "F61AAD48E749B9D2B5C220215109F48E4BF92B698B2B4BFA815C894953D8AE30",
+      "hinweis": "Seit SONDE-011 Phase B startet ausschliesslich ein als Main klassifiziertes Plugin mit offenem Editor den Broker ueber den vorhandenen Lifecycle-Haken. Vor jedem Spawn prueft es diesen Manifest-Hash und bei gesetztem Thumbprint zusaetzlich WinVerifyTrust; das Plugin beendet keinen Brokerprozess, die Idle-Selbstende liegt im Broker."
     }
   ],
-  "hashes_erzeugt_am": "2026-08-29T10:50:02Z",
+  "hashes_erzeugt_am": "2026-08-31T09:51:12Z",
   "hashes_null_bedeutet": "NICHT AUSLIEFERBAR. `sha256: null` heisst 'dieses Artefakt wurde nie gegen einen Bau festgeschrieben'. Install-Nakama.ps1 bricht dann ab, statt irgendetwas zu kopieren - dieselbe Regel wie im Identitaetsleser (cmake/NakamaIdentitaet.cmake): ein Vorgabewert waere eine Auslieferung, die nirgends eingefroren ist. Gefuellt wird per `py -3.13 tools/eq-copilot/pruefe_installer_manifest.py --hashen` unmittelbar nach einem gruenen Kanon-Lauf.",
   "rueckweg": {
     "strategie": "vor-dem-tausch-sichern",
@@ -88,7 +88,7 @@
   },
   "nicht_teil_dieses_manifests": [
     "Repair ueber die Diagnose hinaus: `-Pruefen` vergleicht den installierten Stand gegen das Manifest und benennt aktuell / ABWEICHEND / nicht installiert. Ein eigener Reparaturdienst ist P9.",
-    "Update-Kanal, atomarer Austausch und Signatur-Kette: Distribution, P9 (§57 ff.).",
+    "Update-Kanal, atomarer Austausch sowie Beschaffung des Code-Signing-Zertifikats und Befuellen von authenticode_thumbprint: S34–35/NAK-119 (§57 ff.). Die SHA-256-/WinVerifyTrust-/Thumbprint-Pruefkette selbst ist seit SONDE-011 Phase B Produktcode.",
     "v2-Kompatibilitaetslistener (P1-Lieferumfang): gehoert zum Broker und kommt mit SONDE-010; hier steht kein Wort darueber, weil es kein Wort dazu zu sagen gibt.",
     "Die Installation selbst: sie bleibt ein Klick des Users mit Rechteerhoehung (NAK-32). Dieses Manifest wird von keiner Automatik ausgefuehrt."
   ]

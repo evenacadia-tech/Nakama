@@ -111,12 +111,22 @@ public:
     {
         Status        status = Status::getrennt;
         std::string   linkId, challenge, brokerEpoch, brokerVersion, letzterFehler;
+        /// Nur ein frischer `CreateFileW`-Fehler ERROR_FILE_NOT_FOUND setzt
+        /// dieses Bit. Adress-/Audiofehler, Rejects, kaputte Welcomes und eine
+        /// belegte Pipe duerfen den Lifecycle nie als "Broker fehlt" oeffnen.
+        bool          brokerPipeFehlt = false;
         int           verbindungsVersuche = 0;
         std::uint64_t p0Gesendet = 0;
         std::uint64_t p1Gesendet = 0;
         std::uint64_t empfangen = 0;
         std::uint64_t p0Ueberlaeufe = 0;
         std::uint64_t p1Wiederholungen = 0;
+        /// Persistenzpflichtige logische Auftraege oberhalb der P0-Queue.
+        /// Ein erfolgreicher Draht-Write veraendert diese Zahl nicht.
+        std::uint64_t inFlight = 0;
+        std::uint64_t inFlightErfolg = 0;
+        std::uint64_t inFlightEndgueltigOhneErfolg = 0;
+        std::uint64_t inFlightWiederholungen = 0;
         std::uint64_t envelopeAbweisungen = 0;
         /// Frames einer auf DIESER Verbindung unzulaessigen Familie. Control
         /// traegt ausschliesslich P0/P1 (§33.1); ein P2-Frame darf hier nicht
@@ -165,6 +175,13 @@ public:
     /// P0 einreihen. `false` = Ueberlauf der 64er-Queue ⇒ die Verbindung wird
     /// geschlossen (§53.9 "nichts verwerfen; Verbindung schliessen").
     bool sendeP0 (const std::string& json);
+
+    /// Persistenzpflichtiger P0-Auftrag. Der JSON-Text muss genau eine
+    /// gueltige `command_id` tragen. Sein Queueplatz wird nach dem Wire-Write
+    /// frei; logisch erledigt ist er erst durch ein schemafestes
+    /// `command_ack`. Bei Verbindungsverlust wird derselbe Text und damit
+    /// dieselbe ID erneut eingereiht.
+    bool sendePersistenzP0 (const std::string& json);
 
     /// P1 einreihen. Leerer `schluessel` = Ereignis; ein nicht leerer
     /// Schluessel koalesziert Snapshots desselben Objekts.

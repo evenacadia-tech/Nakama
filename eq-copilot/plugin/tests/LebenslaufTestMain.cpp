@@ -340,6 +340,32 @@ int main()
     // ═══ TEIL 2 — verdrahtet im echten Prozessor ════════════════════════════
     std::cout << "\n[2] Verdrahtet: EqCopilotProcessor (Gen)" << std::endl;
 
+    // Die Produkt-v3-Adresse wird an einem eigenen Prozessor gemessen. Dieser
+    // geladene Main-State darf den unmittelbar folgenden Scannerfall nicht
+    // vorab klassifizieren.
+    {
+        EqCopilotProcessor p;
+        auto z = nakama::state::frisch (
+            "99999999-8888-7777-6666-555555555555");
+        z.common.klasse = Klasse::main;
+        z.common.projectBindingId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        juce::MemoryBlock bytes;
+        nakama::state::speichere (z, bytes);
+        p.setStateInformation (bytes.getData(), static_cast<int> (bytes.getSize()));
+        const auto produktHello = p.v3HelloFuerTest();
+        pruefe (produktHello.adresse.projectBindingId
+                        == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                    && nakama::ipc::instanceAdresseAusState (
+                           produktHello.adresse.instanceId)
+                        == nakama::ipc::instanceAdresseAusState (
+                            "99999999-8888-7777-6666-555555555555")
+                    && nakama::ipc::istHex32 (produktHello.adresse.sessionEpoch)
+                    && nakama::ipc::istHex32 (produktHello.adresse.runtimeNonce)
+                    && produktHello.pluginKind == "main"
+                    && produktHello.hostAngeben && produktHello.hostPid != 0,
+                "produkt_v3_hello_bindet_originalidentitaet_rolle_und_host");
+    }
+
     // P1 · Der Scannerlauf. Genau die Sequenz eines Plugin-Scanners:
     // instanziieren, Busse/Parameter abfragen, verarbeiten, zerstoeren.
     {
@@ -458,6 +484,87 @@ int main()
         pruefe (! p.darfBrokerStarten(), "read-only: kein Brokerstart");
         p.markierungEinreichen (soloAuftrag (fs));
         pruefe (! faerbtAudio (p, fs, bs, 80), "read-only: wieder audio-neutral");
+    }
+
+    // NAK-13 / Phase B: Die Startfreigabe bleibt exakt der bestehende
+    // Lebenslauf-Haken; weder der Launcher noch der Audiothread besitzen eine
+    // zweite Rollenentscheidung.
+    std::cout << "\n[3] Phase B — Broker-Lifecycle-Gate und Audiothread-Nulltest"
+              << std::endl;
+    {
+        bool alleNegativ = true;
+        Lebenslauf scanner;
+        alleNegativ = alleNegativ && ! scanner.darfBrokerStarten();
+
+        Lebenslauf legacy;
+        durchLaufen (legacy, schema1 ("sensor"), eqcp);
+        legacy.editorOffen (true);
+        alleNegativ = alleNegativ && ! legacy.darfBrokerStarten();
+
+        Lebenslauf mainOhneEditor;
+        durchLaufen (mainOhneEditor, schema1 ("hub"), eqcp);
+        alleNegativ = alleNegativ && ! mainOhneEditor.darfBrokerStarten();
+
+        Lebenslauf passiv;
+        durchLaufen (passiv, schema2 (Klasse::passive_probe), nkpr);
+        passiv.editorOffen (true);
+        alleNegativ = alleNegativ && ! passiv.darfBrokerStarten();
+
+        Lebenslauf aktiv;
+        durchLaufen (aktiv, schema2 (Klasse::active_probe), nkac);
+        aktiv.editorOffen (true);
+        alleNegativ = alleNegativ && ! aktiv.darfBrokerStarten();
+
+        Lebenslauf unbekannt;
+        durchLaufen (unbekannt, fremdesMajor(), eqcp);
+        unbekannt.editorOffen (true);
+        alleNegativ = alleNegativ && ! unbekannt.darfBrokerStarten();
+        pruefe (alleNegativ, "brokerstart_gate_alle_negativzustaende");
+    }
+
+    {
+        std::atomic<int> pruefungen { 0 }, spawns { 0 };
+        nakama::ipc::BrokerLifecycleHooks hooks;
+        hooks.verbunden = [] { return false; };
+        hooks.connectFehlgeschlagen = [] { return true; };
+        hooks.darfStarten = [] { return false; };
+        hooks.pruefen = [&] { ++pruefungen; return nakama::ipc::BrokerPruefBericht {}; };
+        hooks.spawn = [&] { ++spawns; return true; };
+        hooks.mutexName = L"Local\\Nakama.PhaseB.LebenslaufTest";
+        nakama::ipc::BrokerLifecycle lifecycle (std::move (hooks));
+        lifecycle.tickFuerTest (0);
+        pruefe (pruefungen.load() == 0 && spawns.load() == 0,
+                "launcher_bleibt_vor_gate_unberuehrt");
+    }
+
+    {
+        EqCopilotProcessor p;
+        p.setPlayConfigDetails (2, 2, fs, bs);
+        p.prepareToPlay (fs, bs);
+        juce::AudioBuffer<float> puffer (2, bs);
+        juce::MidiBuffer midi;
+        puffer.clear();
+
+        nakama::ipc::brokerLifecycleAudioTestZaehlerLoeschen();
+        nakama::ipc::brokerLifecycleAudioTestBeginn();
+        for (int i = 0; i < 128; ++i)
+            p.processBlock (puffer, midi);
+        nakama::ipc::brokerLifecycleAudioTestEnde();
+        const auto audioOperationen =
+            nakama::ipc::brokerLifecycleOperationenImAudiothread();
+        pruefe (audioOperationen
+                    == nakama::ipc::AUDIO_THREAD_BROKER_OPERATIONEN_MAX,
+                "broker_lifecycle_aufrufe_im_audiothread_null");
+        pruefe (audioOperationen == 0,
+                "brokerstop_nie_im_processblock");
+
+        nakama::ipc::brokerLifecycleAudioTestZaehlerLoeschen();
+        nakama::ipc::brokerLifecycleAudioTestBeginn();
+        (void) p.brokerLifecycleSnapshot();
+        nakama::ipc::brokerLifecycleAudioTestEnde();
+        pruefe (nakama::ipc::brokerLifecycleOperationenImAudiothread() == 1,
+                "broker_lifecycle_aufrufe_im_audiothread_null Gegenprobe sieht echte Sperre");
+        nakama::ipc::brokerLifecycleAudioTestZaehlerLoeschen();
     }
 
     std::cout << std::endl;

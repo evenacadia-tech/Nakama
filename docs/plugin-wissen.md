@@ -1,8 +1,10 @@
 # Plugin-Wissen — wie Plugin, Broker und Verträge heute funktionieren
 
-> **Stand: 23.08.2026** (S12–13/SONDE-009: FeatureEngine v2, Zeit- und Bandverträge) · Version **0.3.0** (`project(… VERSION 0.3.0)` ==
+> **Stand: 31.08.2026** (S16–17/SONDE-011 Phase B: Coordinator, SQLite-Store,
+> Snapshot-Outbox und Broker-Lifecycle) · Version **0.3.0** (`project(… VERSION 0.3.0)` ==
 > `kPluginVersion`, Configure-Riegel `eq-copilot/CMakeLists.txt:3-22`) ·
-> metrics/diagnose `m4.1-2026-08-15` · Snapshot-Datei v3 · IPC-Protokoll v2 ·
+> metrics/diagnose `m4.1-2026-08-15` · Snapshot-Datei v3 · IPC v2-Legacy plus
+> produktiver SID-gebundener v3-Control-/Sessionpfad ·
 > **Host-State Schema 2** (`NakamaState`, seit SONDE-006 am 22.08.; liest Schema 1).
 > **Installiert in FL ist das Bundle vom 16.08.** (moduleinfo „0.1.0", Hash
 > `74D86BD5…`). Das Bundle im Build-Ordner (21.08. 21:11, mit Hostbrücke) ist
@@ -32,9 +34,10 @@
 > aktueller Implementierungsstand nicht vermischen. `EqCop*` / „EQ-Copilot" /
 > `Eqcp` bleiben bis NAK-30 Legacy.
 
-Vier Threads im Plugin: **Audiothread** (`processBlock`) · **Worker** (besitzt
-die AnalyseEngine) · **Pipe-Thread** (besitzt den PipeClient) · Message-Thread
-(Editor).
+Die relevanten Plugin-Threads: **Audiothread** (`processBlock`) ·
+**Analyse-Worker** · **v2-Pipe-Thread** · **v3-Control-Thread** ·
+**Broker-Lifecycle-Worker** · Message-Thread (Editor). Der Audiothread berührt
+keinen dieser Lifecycle-/IPC-Wege.
 
 ## 1 · Produkt-Plugin `plugin/src/`
 
@@ -286,12 +289,13 @@ schreiben. Die Regel folgt aus der Startbedingung: ein Scanner ruft nie
 Kind-Matrix §2.1 geprüft und damit ein `MainProject`-Kind gesehen, sonst wäre
 der Stand read-only. Eine zweite Prüfung im Automaten wäre eine Kopie.
 
-Zwei Verbraucher, mehr gibt es heute nicht: die Hör-Markierung (§1.2) und
-`darfBrokerStarten()` = `main` **und** offener Editor. Letzteres ist ein
-Vertrag ohne Pfad — in `plugin/src` gibt es keinen Spawn; `SONDE-010` hängt
-ihn dort an, statt eine zweite Bedingung zu erfinden. Der Automat ist **nicht**
-Teil des States: eine mitgespeicherte Klassifikation wäre eine zweite Wahrheit
-neben `plugin_kind`.
+Zwei Verbraucher: die Hör-Markierung (§1.2) und der Broker-Lifecycle.
+`darfBrokerStarten()` bleibt exakt `main` **und** offener Editor; SONDE-011
+verdrahtet diesen vorhandenen Haken mit einem eigenen Worker. Dieser verbindet
+immer zuerst, prüft vor einem Spawn Installer-Hash und gegebenenfalls
+Authenticode und startet verborgen. Der Automat ist **nicht** Teil des States:
+eine mitgespeicherte Klassifikation wäre eine zweite Wahrheit neben
+`plugin_kind`.
 - **Parameterbestand** (`schemas/state/nakama-parameter-v1.json`, C++-Tabelle
   `NakamaParameter.cpp`, deckungsgleich gemessen): 5 global + 8×13 = 109 IDs
   `v1.global.*` / `v1.band.<slot>.*`; heute trägt **kein** Bundle Hostparameter
@@ -317,9 +321,9 @@ Byte.
 
 ### 1.5b v3-IPC (`plugin/core/ipc/`, SONDE-010, 29.08.)
 
-**Der v2-PipeClient oben bleibt der Produktpfad.** Gen und Probeeq sprechen
-weiterhin v2; der v3-Weg liegt daneben, gebaut und bewiesen, aber noch nicht
-verdrahtet — das folgt mit Coordinator und Landkarte (SONDE-011/012).
+Der v2-PipeClient oben bleibt als Legacy-Produktpfad aktiv. Gen startet seit
+SONDE-011 zusätzlich den SID-gebundenen v3-ControlClient; die Landkarte und
+neue Consumer-Familien bleiben SONDE-012 beziehungsweise ihren Folgetickets.
 
 JUCE-frei wie der übrige `core/`-Baum, fünf Dateien:
 
@@ -397,7 +401,8 @@ JUCE-frei wie der übrige `core/`-Baum, fünf Dateien:
   `welcome{link_id, challenge, broker_epoch}`; erst damit koppelt sich die
   Telemetrieverbindung (link_id **und** challenge **und** dieselbe
   `runtime_nonce`). Ab dem Bootstrap trägt jede Nachricht den 16-Byte-Kopf.
-  Kein Prozessstart auf irgendeinem Pfad (§48.3).
+  Der Client selbst startet keinen Prozess; das besitzt ausschließlich der
+  getrennte `BrokerLifecycle`-Worker (§1.5c).
   **Beide Clients prüfen ihr `welcome` gegen denselben Vertragsprüfer**
   (`welcomeHaeltVertrag`, T2-Runde 1 + 2, 29.08.): P0-Familie, exakte Feldmenge,
   `type`, `protocol` als **Zahl** 3, `broker_version` als String der Länge
@@ -432,6 +437,27 @@ die dünne Zielschicht; der Kern bekommt den Pipenamen als Zeichenkette.
 `base32(first_128_bits(SHA-256("evenacadia.nakama|v3|" + SID)))`, Golden
 `S-1-5-21-111111111-222222222-333333333-1001 → BNSM62JZZCCXIDV3PJZAEHMZPA` —
 in C++ und Rust.
+
+### 1.5c Phase-B-In-Flight und Broker-Lifecycle (SONDE-011, 31.08.)
+
+`ControlClient` hält persistenzpflichtige P0-Befehle nach dem Draht-Write in
+einem begrenzten In-Flight-Register oberhalb der Queue. Erst
+`command_ack.ergebnis = angewandt` oder `idempotent_wiederholt` beendet den
+Auftrag erfolgreich; `abgelehnt`, `konflikt` und `abgelaufen` beenden ihn ohne
+Erfolg. Verbindungsverlust vor dem ACK reiht denselben Payload mit derselben
+`command_id` erneut ein. Die interne Event-UUID erscheint weder im ACK noch in
+einem Session-Push.
+
+`BrokerLifecycle` verbindet zuerst und darf nur nach einem echten Fehlversuch
+und `state::Lebenslauf::darfBrokerStarten()` spawnen. CMake bindet absoluten
+Brokerpfad, SHA-256 und optionalen `authenticode_thumbprint` aus
+`install/nakama-installer-v1.json` in `BrokerInstallBinding.h`: Hash immer,
+bei gesetztem Thumbprint zusätzlich WinVerifyTrust plus exakter Signer. Der
+Spawn läuft über `CreateProcessW` ohne Shell und verborgen; ein benannter
+per-User-Mutex verhindert Doppelstarts. Das Plugin beendet nie einen Broker.
+Der Broker beendet sich nach 60 s ohne v2- oder v3-Clients selbst. Konstruktor,
+Destruktor, Editor-/State-Ereignisse und Worker besitzen Start/Stop; in
+`processBlock` gibt es keinen Lifecycle-, Pipe-, Datei- oder Prozessaufruf.
 
 ### 1.6 Editor — Material-Kit-Front (Provisorium)
 
@@ -564,7 +590,8 @@ Crate `eqcop-broker` 0.1.0 (lib `eqcop_broker`). Module: `aggregat` ·
 `bindung` · `framing` (`MAX_FRAME_BYTES 262144`) · `generiert` (flatc-Code) ·
 `protokoll` (`PROTOKOLL_VERSION 2`, `MIN_PROTOKOLL 1`) · `telemetrie`
 (FlatBuffers-Leser) · `vertrag` (JSON-Schema-Engine) · **`transport`**
-(SONDE-010) · `server` (privat).
+(SONDE-010) · **`coordinator`** und **`store`** (SONDE-011) · `server`
+(v2-Legacy, privat).
 Binaries `eqcop-broker.exe [--bindungen <pfad>]` (Standard
 `%APPDATA%\evenacadia\nakama\eq-copilot-bindungen.json`),
 `eqcop-broker-probe.exe [sekunden] [pipe-name]` (Default `…m2probe`) und
@@ -632,14 +659,43 @@ Telemetry trägt P2**, unzulässige Familie schließt die Verbindung vor dem
 Ingress); und das Abmelden der Control-Verbindung bricht die hängende
 Telemetrieverbindung wirklich ab, statt nur ihren Registereintrag zu entfernen.
 
-**Der Broker öffnet in Produktion weiterhin nur die v2-Pipe.** Der
-SID-gebundene v3-Endpunkt bleibt zu, bis SONDE-011 den Coordinator bringt —
-ein Endpunkt, der annimmt und danach nichts tun kann, wäre ein totes Element.
-Der Listener wird deshalb über Probe-Namen gefahren; er benutzt dieselben
-Sicherheitshelfer (`sicherheit_nur_user`, SDDL nur aktueller User,
-`PIPE_REJECT_REMOTE_CLIENTS`, `FILE_FLAG_FIRST_PIPE_INSTANCE`) wie der
-v2-Server. Was ihm noch fehlt, steht als NAK-90 im Offen-Set: die
-Impersonation-Kette aus §48.4.
+**Der Broker öffnet in Produktion v2-Legacy und den SID-gebundenen v3-Endpunkt
+nebeneinander.** v3 hängt am produktiven Coordinator samt Store und
+Snapshot-Outbox. Tests starten denselben Listener ausschließlich über
+Probe-Namen; Sicherheitshelfer (`sicherheit_nur_user`, SDDL nur aktueller
+User, `PIPE_REJECT_REMOTE_CLIENTS`, `FILE_FLAG_FIRST_PIPE_INSTANCE`) bleiben
+mit dem v2-Server geteilt. Die weiter offene Impersonation-Kette aus §48.4
+steht als NAK-90 im Offen-Set.
+
+**Coordinator und Sessiongraph** (`coordinator.rs`): alleiniger Besitzer von
+Control-/Telemetry-Kopplung, Join-Kandidaten, internem Bestätigungsbedarf,
+Führung, Nonces, monotone Liveness und Subscriptionbesitz. Liveness verwendet
+nur `Instant`: fresh bis einschließlich 2500 ms, danach stale; Tombstone bei
+10 s. Caps sind 64 pro Session und 128 global; stale-first, dann ältestes
+`last_seen`, dann vollständige effektive Adresse, bei nur fresh wird der neue
+Client gezählt abgewiesen. Eviction entfernt alle flüchtigen Sichten, nicht
+sticky Hör- oder dauerhafte Alias-Konfliktwahrheit. Phase B hat bewusst keinen
+`MainProjectState`-Ingress und keine neue Join-/Führungsfamilie.
+
+**SQLite-Store** (`store.rs`): `rusqlite = "=0.40.2"` mit `bundled`, Migration
+1 und genau eine Writer-Connection auf einem eigenen Thread. DB/WAL liegen
+unter `%LOCALAPPDATA%\evenacadia\nakama-broker\nakama-broker.sqlite3`, nie
+auf einem Remote-Volume. `BEGIN IMMEDIATE` appendet `event_log`, aktualisiert
+Projektionen, bindet `command_id` intern eindeutig an eine Event-UUID und
+schreibt dieselbe Transaktion als koaleszierte Snapshot-Schuld in `outbox`.
+WAL, `synchronous=FULL`, `foreign_keys=ON`, 2-s-Busy-Timeout, duales
+Group-Commit (50 ms/64) und PASSIVE-Checkpoint an 4 MiB oder 5 s echter
+Ruhelage sind Teil des Storevertrags. Storefehler stoppen den Broker nicht:
+persistenzpflichtige Annahmen werden verweigert und der Verursacher getrennt,
+P2 kann sichtbar degradiert weiterlaufen.
+
+**Outbox/Wiregrenze:** `event_log` und Outbox sind interne Wahrheit. Der einzige
+Phase-B-Abfluss einer Session-Subscription ist ein absoluter,
+idempotenter `session_snapshot`; es gibt weder Event-Replay noch Event-UUID auf
+dem Wire. Je Ziel/Objektschlüssel bleibt nur der neueste geschuldete
+Snapshotstand. Nach vollständigem Write darf die Schuld kompaktieren; jeder
+Re-Subscribe rekonstruiert den aktuellen Stand aus der Projektion, sodass ein
+Kill vor/nach Push oder Kompaktierung keine committete Wirkung verliert.
 
 - Pipes: Produktion `\\.\pipe\evenacadia.eq-copilot.v1` (`lib.rs:29` ==
   `EqCopilotIds.h:18`), Probe `…m2probe`. Erste Instanz mit
@@ -654,14 +710,15 @@ Impersonation-Kette aus §48.4.
   Überlappung < 80 %, fremde `host_pid`, Aktivzeit-Differenz > 10 %) /
   `ausgerichtet`, `grund` nie leer. Aggregat atomisch nach
   `%LOCALAPPDATA%\evenacadia\EQ-Copilot\snapshots\aggregat-<ms>.json`.
-- Tests: **140** (`cargo test`, Lauf vom 29.08.2026 auf `f62b4fb`) — 122 Unit
-  (davon `transport::*` 32) + 9 Integration in `tests/contract_cross_language.rs`
-  + 9 in `tests/transport_fuzz.rs`; `telemetrie.rs` hat keine eigenen `#[test]`,
-  sein Beweis ist der Integrationstest.
-- Betriebsstand 21.08.: kein Broker läuft, keine `evenacadia`-Pipe offen,
+- Tests am Phase-B-Arbeitsstand vom 31.08.: `cargo test --all-targets` **266
+  grün, 17 isolationspflichtige Fälle ignoriert**; A4-SI fährt diese 17 danach
+  seriell und grün, darunter echte Broker-/C++-Client-Kills. Aufteilung:
+  177 Lib-Unit, 3 Idle, 9 Cross-Language, 27 Coordinator-Modell, 41 reguläre
+  Store-/Killmatrix, 9 Transport-Fuzz plus 17 A4-SI.
+- Historischer Betriebsstand 21.08.: kein Broker lief, keine `evenacadia`-Pipe offen,
   Bindungsdatei nie angelegt, letzte Snapshots vom 16.08.;
   `target/release/*.exe` (18.08. 11:43) älter als `lib.rs`/`vertrag.rs`/
-  `telemetrie.rs` (21.08.) — NAK-36; kein Autostart (NAK-13); das
+  `telemetrie.rs` (21.08.) — NAK-36; damals kein Autostart (NAK-13); das
   `hoermarkierung`-Flag wird nicht gelesen (NAK-10).
 
 ## 5 · Bauen und Beweisen
@@ -700,9 +757,10 @@ Configure-Ausgabe vom 29.08.2026, nicht abgeschrieben — sie folgt der Zahl der
 Ziele, seit S9b/`SONDE-007c` also zwei weniger). Vorher übersetzten
 sieben Ziele alle vier Quellen selbst (`nakama_state_anbinden()`) und
 `EqCopSchemaTest` eine davon — 29 Übersetzungen derselben vier Dateien, jetzt 4.
-Seit SONDE-010 trägt sie **neun** Übersetzungseinheiten: die vier alten plus
-`WireEnvelope`, `IpcVerbindung`, `ControlClient`, `TelemetryClient` und
-`NakamaLebenslauf`. `PipeToken.cpp` gehört ausdrücklich NICHT dazu (§1.5b).
+Seit SONDE-011 trägt sie **zehn** Übersetzungseinheiten: die vier alten plus
+`WireEnvelope`, `IpcVerbindung`, `BrokerLifecycle`, `ControlClient`,
+`TelemetryClient` und `NakamaLebenslauf`. `PipeToken.cpp` gehört ausdrücklich
+NICHT dazu (§1.5b).
 Ihre Übersetzungsschalter hängen seit dem T2-Lauf (23.08.) ausdrücklich am Kern
 (`juce_recommended_config_flags` + `_warning_flags`, **kein** `_lto_flags`):
 als eigene Lib erbt er die PUBLIC-Schalter seiner Verbraucher nicht mehr und
@@ -774,8 +832,9 @@ JSON-Korpus + MANIFEST · `erzeuge_fb_fixtures.py` Binärkorpus + MANIFEST (je
 - `tools/analyze-track.py` (Erzeuger der Golden-Referenz, `GoldenTestMain.cpp:3`)
   liegt nur in `C:\Users\phili\FL-Studio\tools\` — NAK-31.
 - HostProbeTest 85 vs. 89 — NAK-34 · `EqCopAuxSpikeTest` ohne Kanon-Bein —
-  NAK-37 · Broker-Binaries älter als Quellen — NAK-36 · kein Autostart —
-  NAK-13 · `hoermarkierung` ungelesen — NAK-10 · Sensorübersicht (`.svelte` ohne Zuhause; NAK-12 am 21.08. geschlossen: Hub-App kein Produktteil) —
+  NAK-37 · Broker-Binaries älter als Quellen — NAK-36 · Codesigning-Zertifikat
+  und befüllter Installer-Thumbprint — NAK-119 · `MainProjectState`-Ingress und
+  Führungsrestore nach Brokerneustart — NAK-120 · Sensorübersicht (`.svelte` ohne Zuhause; NAK-12 am 21.08. geschlossen: Hub-App kein Produktteil) —
   NAK-12 · Baustand-Riegel zu grob — NAK-25 · `pluginval` nur in `%TEMP%` —
   NAK-26. **`hatTransport` Tautologie (NAK-24) und das Markierungs-fail-open
   (NAK-35) sind seit SONDE-008 geschlossen.**

@@ -24,6 +24,8 @@
 #include "NakamaHostBridge.h"
 #include "StampedAudioQueue.h"
 #include "analysis/FeatureEngine.h"
+#include "BrokerLifecycle.h"
+#include "ControlClient.h"
 
 // ── S9/SONDE-007b Abschnitt 3: welches Bundle uebersetzt hier? ─────────────
 // Die duenne Target-Schicht sagt es (plugin/CMakeLists.txt), nicht dieser
@@ -166,6 +168,13 @@ public:
     // ── Live-Status für Editor/Heartbeat ──
     StatsSnapshot statsSnapshot() const;
     PipeClient::Snapshot pipeSnapshot() const             { return pipe.snapshot(); }
+    nakama::ipc::ControlClient::Snapshot controlV3Snapshot() const
+    { return controlV3.snapshot(); }
+    nakama::ipc::BrokerLifecycle::Snapshot brokerLifecycleSnapshot() const
+    { return brokerLifecycle.snapshot(); }
+#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    nakama::ipc::ControlHello v3HelloFuerTest() const { return v3Hello(); }
+#endif
     double holeSamplerate() const                          { return samplerateAtomic.load(); }
     int    holeBlockSize() const                           { return blockSizeAtomic.load(); }
 
@@ -211,6 +220,7 @@ public:
 
 private:
     void workerLauf();
+    nakama::ipc::ControlHello v3Hello() const;
     // Lebenszeichen (Konzept v2 §4): „neutral, bis Echtzeit bewiesen" — nur
     // der Audiothread schreibt den Zustand; Ergebnis wandert als Atomic raus.
     void lebenszeichen (int samples, bool spielt);
@@ -360,7 +370,16 @@ private:
     int  lzBestanden = 0;
     bool lzPrevSpielt = false;
 
+    // v3 verbindet immer zuerst. Nur der getrennte Lifecycle-Worker darf nach
+    // einem nachgewiesenen Fehlversuch und dem vorhandenen Lebenslauf-Gate den
+    // installierten Broker starten. Keiner dieser Member wird aus
+    // `processBlock` beruehrt.
+    const std::string v3LogonSid;
+    const std::string v3PipeName;
+    const std::string v3SessionEpoch;
     PipeClient pipe;
+    nakama::ipc::ControlClient controlV3;
+    nakama::ipc::BrokerLifecycle brokerLifecycle;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EqCopilotProcessor)
 };

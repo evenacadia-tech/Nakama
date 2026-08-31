@@ -33,12 +33,20 @@ DIE BLOECKE
                     mit --release HART. Fehlendes Artefakt oder nicht
                     bildbarer Ordner-Hash bleiben in beiden Modi Fehler
                     (NAK-94).
+  [4c] Startbindung  der von CMake erzeugte Produktheader stimmt in Pfad,
+                    SHA-256 und optionalem Thumbprint mit dem Manifest
+                    ueberein; Manifest-Aenderungen sind Configure-Depends.
   [4b] Installiert  Bericht ohne Urteil, der nie abbricht: entspricht der
                     installierte Stand (install-ergebnis.json) dem Manifest?
                     `ok` nur bei Journalstatus OK; Status vor Liste.
   [5] Kreuzprobe    Ordner-Hash v1 (Vertrag §2.1) in Python gegen die
                     PowerShell-Haelfte (NakamaOrdnerHash.ps1) an einem
                     synthetischen Ordner; Nicht-ASCII bricht beidseitig ab.
+  [6] Signatur      Das im Test aus einer signierten Windows-Systemfixture
+                    gelesene, OS-vertrauenswuerdige Signerzertifikat faehrt
+                    die produktive C++-WinVerifyTrust-Kette fuer gueltig und
+                    falschen Thumbprint; eine unsigned Temp-Kopie liefert
+                    den Fehlend-Fall. Kein Zertifikatsspeicher wird geaendert.
 
   Jede gelesene JSON-Datei geht VOR dem ersten Zugriff durch einen
   Strukturvertrag (Schluessel und Grobform); ein Verstoss ist ein
@@ -74,6 +82,7 @@ import copy
 import hashlib
 import json
 import ntpath
+import os
 import pathlib
 import re
 import shutil
@@ -91,6 +100,11 @@ INSTALLER = WURZEL / "eq-copilot" / "install" / "Install-Nakama.ps1"
 BROKER_CARGO = WURZEL / "broker" / "Cargo.toml"
 PS_ORDNERHASH = WURZEL / "eq-copilot" / "install" / "NakamaOrdnerHash.ps1"
 STATE_CPP = WURZEL / "eq-copilot" / "plugin" / "state" / "NakamaState.cpp"
+IPC_TEST_EXE = (WURZEL / "eq-copilot" / "build" / "plugin"
+                / "EqCopIpcTest_artefacts" / "Release" / "EqCopIpcTest.exe")
+BROKER_BINDING = (WURZEL / "eq-copilot" / "build" / "plugin" / "generated"
+                  / "nakama" / "BrokerInstallBinding.h")
+PLUGIN_CMAKE = WURZEL / "eq-copilot" / "plugin" / "CMakeLists.txt"
 
 SCHEMA = "nakama.installer/v1"
 ERGEBNIS_SCHEMA = "nakama.install-ergebnis/v1"
@@ -1311,6 +1325,45 @@ def installierter_stand(manifest: dict) -> None:
         print(f"  hinweis install-ergebnis.json nicht auswertbar: {e!r}")
 
 
+def cmake_broker_startbindung(manifest: dict) -> None:
+    """Der tatsaechlich kompilierte Header folgt dem Installer-Manifest.
+
+    Der Vergleich ist absichtlich NACH dem CMake-Lauf: eine bloss richtige
+    Template-Datei beweist nicht, dass ein geaenderter Manifesthash den Build
+    erreicht hat. `CMAKE_CONFIGURE_DEPENDS` schliesst genau dieses Stalefenster.
+    """
+    print("\n[4c] Manifestgebundene Broker-Startwerte")
+    broker = [a for a in manifest["artefakte"] if a.get("art") == "broker"]
+    if len(broker) != 1 or not BROKER_BINDING.is_file():
+        pruefe(False, "generierter BrokerInstallBinding-Header liegt vor",
+               str(BROKER_BINDING.relative_to(WURZEL)))
+        return
+
+    text = BROKER_BINDING.read_text(encoding="utf-8")
+
+    def literal(name: str) -> str | None:
+        treffer = re.search(rf"\b{re.escape(name)}\s*=\s*L?\"([^\"]*)\"\s*;", text)
+        return treffer.group(1) if treffer else None
+
+    artefakt = broker[0]
+    erwartet = (
+        manifest["ziele"].get("broker_verzeichnis", "").rstrip("/\\")
+        + "/" + str(artefakt.get("name", ""))
+    )
+    thumb = manifest.get("signatur", {}).get("authenticode_thumbprint") or ""
+    ist = (literal("brokerPfad"), literal("brokerSha256"),
+           literal("authenticodeThumbprint"))
+    soll = (erwartet, artefakt.get("sha256"), thumb)
+    pruefe(ist == soll,
+           "generierter Produktheader entspricht Pfad, Hash und Thumbprint des Manifests",
+           f"ist={ist!r} soll={soll!r}")
+
+    cmake = PLUGIN_CMAKE.read_text(encoding="utf-8")
+    pruefe("CMAKE_CONFIGURE_DEPENDS" in cmake
+               and '"${NAKAMA_INSTALLER_MANIFEST}"' in cmake,
+           "Installer-Manifest ist CMake-Configure-Dependency")
+
+
 def _installierter_stand(manifest: dict) -> None:
     """Entspricht der INSTALLIERTE Stand dem heutigen Manifest?
 
@@ -1436,6 +1489,48 @@ def _installierter_stand(manifest: dict) -> None:
         else:
             print(f"  hinweis {name}: installierter Stand ist ein anderer als der im Manifest "
                   f"festgeschriebene  [installiert {ist[:16]} | Manifest {soll[:16]}]  {ziel}")
+
+
+def authenticode_systemfixture():
+    """A17-Haelfte von L-12: die echte C++-Pruefkette gegen das fuer diesen
+    Test gelesene Signerzertifikat einer OS-vertrauenswuerdigen, signierten
+    Windows-Fixture. Eine unsigned Temp-Kopie liefert den Fehlend-Fall; der
+    falsche und der aus WinVerifyTrust gelesene echte Thumbprint liefern die
+    beiden anderen Urteile. Kein Zertifikatsspeicher wird veraendert."""
+    system_datei = pathlib.Path(os.environ.get("SystemRoot", r"C:\Windows")) \
+        / "System32" / "notepad.exe"
+    if not IPC_TEST_EXE.is_file() or not system_datei.is_file():
+        grund = (f"C++-Testprogramm fehlt: {IPC_TEST_EXE}"
+                 if not IPC_TEST_EXE.is_file()
+                 else f"signierte Windows-Fixture fehlt: {system_datei}")
+        pruefe(False, "Windows-Signaturfixture: WinVerifyTrust gueltig/fehlend/falsch", grund)
+        return
+
+    with tempfile.TemporaryDirectory(prefix="nakama-a17-authenticode-") as tmp:
+        unsigned = pathlib.Path(tmp) / "unsigned.exe"
+        shutil.copy2(IPC_TEST_EXE, unsigned)
+        def lauf(pfad: pathlib.Path, sha256: str, thumb: str, erwartet: str):
+            return subprocess.run(
+                [str(IPC_TEST_EXE), "--phase-b-verify-binary", str(pfad),
+                 sha256, thumb, erwartet], text=True, capture_output=True,
+                encoding="utf-8", errors="replace", check=False)
+
+        unsigned_hash = hashlib.sha256(unsigned.read_bytes()).hexdigest().upper()
+        system_hash = hashlib.sha256(system_datei.read_bytes()).hexdigest().upper()
+        fehlend = lauf(unsigned, unsigned_hash, "0" * 40,
+                       "signaturFehltOderUngueltig")
+        falsch = lauf(system_datei, system_hash, "0" * 40, "signerFalsch")
+        signer_treffer = re.search(r"\bsigner=([0-9A-F]{40}|[0-9A-F]{64})\b",
+                                   falsch.stdout)
+        gueltig = (lauf(system_datei, system_hash, signer_treffer.group(1), "ok")
+                   if signer_treffer else None)
+        laeufe = [fehlend, falsch] + ([gueltig] if gueltig is not None else [])
+        ausgabe = "\n".join(
+            x for run in laeufe for x in (run.stdout.strip(), run.stderr.strip()) if x)
+        pruefe(all(run.returncode == 0 for run in laeufe)
+                   and signer_treffer is not None and gueltig is not None,
+               "Windows-Signaturfixture: WinVerifyTrust gueltig/fehlend/falsch",
+               ausgabe[-1800:] if ausgabe else "keine Ausgabe")
 
 
 def _argumente(argv=None):
@@ -1570,9 +1665,12 @@ def _lauf(args) -> int:
     adversariale_strukturproben(manifest, identitaet)
 
     auslieferungsstand(manifest, hart=args.release)
+    cmake_broker_startbindung(manifest)
     installierter_stand(manifest)
 
     kreuzprobe()
+    print("\n[6] Authenticode-Pruefkette mit signierter Windows-Systemfixture")
+    authenticode_systemfixture()
 
     print(f"\n{ok} ok, {len(fehler)} Fehler")
     if fehler:

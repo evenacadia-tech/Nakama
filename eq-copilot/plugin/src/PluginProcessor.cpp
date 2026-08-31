@@ -3,9 +3,12 @@
 #include "EqCopilotIds.h"
 #include "Diagnose.h"
 #include "WorkerCadence.h"
+#include "BrokerInstallBinding.h"
+#include "PipeToken.h"
 #include <chrono>
 #include <cmath>
 #include <limits>
+#include <process.h>
 
 namespace eqcop
 {
@@ -29,12 +32,47 @@ bool projektAbstandGroesserAls64 (juce::int64 a, juce::int64 b) noexcept
     const auto ub = static_cast<std::uint64_t> (b) ^ bias;
     return (ua >= ub ? ua - ub : ub - ua) > 64u;
 }
+
+std::string uuidHex32()
+{
+    std::string roh = juce::Uuid().toString().toStdString();
+    std::string aus;
+    aus.reserve (32);
+    for (char c : roh)
+        if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))
+            aus.push_back (c);
+    return aus.size() == 32 ? aus
+                            : nakama::ipc::instanceAdresseAusState ("runtime:" + roh);
+}
+
+std::string alsHex32 (const juce::String& wert, const char* domain)
+{
+    std::string roh = wert.toStdString();
+    std::string aus;
+    aus.reserve (32);
+    for (char c : roh)
+        if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))
+            aus.push_back (c);
+    return aus.size() == 32 ? aus
+                            : nakama::ipc::instanceAdresseAusState (
+                                  std::string (domain) + ":" + roh);
+}
+
+std::wstring brokerStartMutexName (const std::string& sid)
+{
+    std::wstring aus = L"Local\\NakamaBrokerStart.";
+    aus.append (sid.begin(), sid.end());
+    return aus;
+}
 } // namespace
 
 EqCopilotProcessor::EqCopilotProcessor()
     : juce::AudioProcessor (BusesProperties()
           .withInput ("Eingang", juce::AudioChannelSet::stereo(), true)
           .withOutput ("Ausgang", juce::AudioChannelSet::stereo(), true)),
+      v3LogonSid (nakama::ipc::aktuelleLogonSid()),
+      v3PipeName (nakama::ipc::pipeNameV3 (v3LogonSid)),
+      v3SessionEpoch (uuidHex32()),
       pipe ([this] {
                 HelloInfo h;
                 {
@@ -51,7 +89,31 @@ EqCopilotProcessor::EqCopilotProcessor()
                 return h;
             },
             [this] { return statsSnapshot(); },
-            [this] { return messKompakt(); })
+            [this] { return messKompakt(); }),
+      controlV3 ([this] { return v3Hello(); }, v3PipeName),
+      brokerLifecycle (nakama::ipc::BrokerLifecycleHooks {
+          [this] {
+              return controlV3.snapshot().status
+                     == nakama::ipc::ControlClient::Status::verbunden;
+          },
+          [this] {
+              const auto s = controlV3.snapshot();
+              return s.status == nakama::ipc::ControlClient::Status::getrennt
+                  && s.brokerPipeFehlt;
+          },
+          [this] { return darfBrokerStarten(); },
+          [this] { controlV3.reconnect(); },
+          [] {
+              return nakama::ipc::brokerBinaryPruefen (
+                  nakama::ipc::installbindung::brokerPfad,
+                  nakama::ipc::installbindung::brokerSha256,
+                  nakama::ipc::installbindung::authenticodeThumbprint);
+          },
+          [] {
+              return nakama::ipc::brokerVerborgenStarten (
+                  nakama::ipc::installbindung::brokerPfad);
+          },
+          brokerStartMutexName (v3LogonSid) })
 {
     // Frische Instanz (nie restauriert): legacy + insert, v2-Rolle "sensor".
     // Der Lebenslauf-Automat startet auf `unclassified` (§53.5) und bekommt
@@ -69,10 +131,16 @@ EqCopilotProcessor::EqCopilotProcessor()
     workerLaeuft.store (true);
     worker = std::thread ([this] { workerLauf(); });
     pipe.start();
+#if ! defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    controlV3.start();
+    brokerLifecycle.start();
+#endif
 }
 
 EqCopilotProcessor::~EqCopilotProcessor()
 {
+    brokerLifecycle.stop();
+    controlV3.stop();
     pipe.stop();
     workerLaeuft.store (false);
     {
@@ -116,6 +184,9 @@ void EqCopilotProcessor::prepareToPlay (double samplerate, int maxBlock)
     lzLetzterNs = 0;
     lzBucketStartNs = 0;
     lzBucketSamples = 0;
+    // Der v3-Hello-Provider liest Samplerate/Block/Kanaele erst beim Aufbau.
+    // Prepare laeuft auf dem Host-/Nachrichtenthread, nie im Audiocallback.
+    controlV3.reconnect();
 }
 
 bool EqCopilotProcessor::isBusesLayoutSupported (const BusesLayout& layout) const
@@ -666,6 +737,30 @@ void EqCopilotProcessor::workerLauf()
     }
 }
 
+nakama::ipc::ControlHello EqCopilotProcessor::v3Hello() const
+{
+    nakama::ipc::ControlHello h;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        h.adresse.logonSid = v3LogonSid;
+        h.adresse.projectBindingId = zustand.common.projectBindingId.toStdString();
+        h.adresse.sessionEpoch = v3SessionEpoch;
+        // Die persistente Original-ID bleibt bis zur gemeinsamen v3-Grenze
+        // im ControlClient erhalten; erst dort wird der Phase-A-Wirealias
+        // gebildet. So kann er nie in den Host-State zurueckfliessen.
+        h.adresse.instanceId = zustand.common.instanceId.toStdString();
+        h.adresse.runtimeNonce = alsHex32 (instanceNonce, "runtime_nonce");
+        h.pluginKind = nakama::state::wort (zustand.common.klasse);
+    }
+    h.hostAngeben = true;
+    h.hostPid = static_cast<std::uint32_t> (_getpid());
+    h.pluginVersion = kPluginVersion;
+    h.samplerate = samplerateAtomic.load();
+    h.blockSize = blockSizeAtomic.load();
+    h.channels = kanaeleAtomic.load();
+    return h;
+}
+
 StatsSnapshot EqCopilotProcessor::statsSnapshot() const
 {
     StatsSnapshot s;
@@ -746,6 +841,7 @@ bool EqCopilotProcessor::neueSensorId()
     }
     meldeHostDirty();
     pipe.reconnect();
+    controlV3.reconnect();
     return true;
 }
 
@@ -781,12 +877,15 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
         // den Zustand im hello-Lambda - nach dem Tausch waere das ein hello
         // mit leerer instance_id (T2-Befund SONDE-006).
         pipe.stop();
-        std::lock_guard<std::mutex> l (bindungMutex);
-        zustand = geladen;
-        // §53.5: read-only ist kein vollstaendiger State-Restore. Zurueck auf
-        // neutral - auch aus einer frueheren positiven Klassifikation.
-        lebenslauf.stateRestauriert (ergebnis, geladen);
-        spiegleKlassifikation();
+        {
+            std::lock_guard<std::mutex> l (bindungMutex);
+            zustand = geladen;
+            // §53.5: read-only ist kein vollstaendiger State-Restore. Zurueck
+            // auf neutral - auch aus einer frueheren positiven Klassifikation.
+            lebenslauf.stateRestauriert (ergebnis, geladen);
+            spiegleKlassifikation();
+        }
+        controlV3.reconnect();
         return;
     }
 
@@ -801,6 +900,7 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
     }
     pipe.start();       // No-Op, wenn sie laeuft; hebt einen frueheren read-only-Stopp auf
     pipe.reconnect();   // frisches hello mit der geladenen Bindung
+    controlV3.reconnect();
     // Kein Host-Dirty: Laden und Migration sind keine Aenderung des Users.
 }
 
@@ -920,6 +1020,7 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
     }
     meldeHostDirty();
     pipe.reconnect();
+    controlV3.reconnect();
     return true;
 }
 

@@ -31,6 +31,63 @@
 # waere er eine Tautologie.
 nakama_identitaet_lesen(main NAKAMA_MAIN)
 
+# SONDE-011 Phase B / NAK-13: Der Plugin-Worker verifiziert nicht gegen eine
+# zweite Laufzeitdatei. CMake bindet die drei Startwerte unmittelbar aus dem
+# Installer-Manifest in einen generierten Header; unvollstaendige oder
+# mehrdeutige Brokerangaben sind ein Konfigurationsfehler statt ein spaeterer
+# unsicherer Vorgabewert.
+set(NAKAMA_INSTALLER_MANIFEST
+    "${CMAKE_CURRENT_SOURCE_DIR}/../install/nakama-installer-v1.json")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+             "${NAKAMA_INSTALLER_MANIFEST}")
+file(READ "${NAKAMA_INSTALLER_MANIFEST}" NAKAMA_INSTALLER_JSON)
+string(JSON NAKAMA_BROKER_VERZEICHNIS GET "${NAKAMA_INSTALLER_JSON}"
+       ziele broker_verzeichnis)
+string(JSON NAKAMA_ARTEFAKT_ANZAHL LENGTH "${NAKAMA_INSTALLER_JSON}" artefakte)
+set(NAKAMA_BROKER_GEFUNDEN 0)
+math(EXPR NAKAMA_ARTEFAKT_LETZTES "${NAKAMA_ARTEFAKT_ANZAHL} - 1")
+foreach(NAKAMA_ARTEFAKT_INDEX RANGE 0 ${NAKAMA_ARTEFAKT_LETZTES})
+    string(JSON NAKAMA_ARTEFAKT_ART GET "${NAKAMA_INSTALLER_JSON}"
+           artefakte ${NAKAMA_ARTEFAKT_INDEX} art)
+    if(NAKAMA_ARTEFAKT_ART STREQUAL "broker")
+        math(EXPR NAKAMA_BROKER_GEFUNDEN "${NAKAMA_BROKER_GEFUNDEN} + 1")
+        string(JSON NAKAMA_BROKER_NAME GET "${NAKAMA_INSTALLER_JSON}"
+               artefakte ${NAKAMA_ARTEFAKT_INDEX} name)
+        string(JSON NAKAMA_BROKER_SHA256 GET "${NAKAMA_INSTALLER_JSON}"
+               artefakte ${NAKAMA_ARTEFAKT_INDEX} sha256)
+    endif()
+endforeach()
+if(NOT NAKAMA_BROKER_GEFUNDEN EQUAL 1)
+    message(FATAL_ERROR
+        "nakama-installer-v1.json muss genau ein Broker-Artefakt enthalten")
+endif()
+string(LENGTH "${NAKAMA_BROKER_SHA256}" NAKAMA_BROKER_SHA256_LAENGE)
+if(NOT NAKAMA_BROKER_SHA256_LAENGE EQUAL 64
+   OR NOT NAKAMA_BROKER_SHA256 MATCHES "^[0-9A-Fa-f]+$")
+    message(FATAL_ERROR "Broker-SHA-256 im Installer-Manifest ist ungueltig")
+endif()
+string(JSON NAKAMA_BROKER_THUMBPRINT_TYP TYPE "${NAKAMA_INSTALLER_JSON}"
+       signatur authenticode_thumbprint)
+if(NAKAMA_BROKER_THUMBPRINT_TYP STREQUAL "NULL")
+    set(NAKAMA_BROKER_THUMBPRINT "")
+else()
+    string(JSON NAKAMA_BROKER_THUMBPRINT GET "${NAKAMA_INSTALLER_JSON}"
+           signatur authenticode_thumbprint)
+    string(LENGTH "${NAKAMA_BROKER_THUMBPRINT}"
+           NAKAMA_BROKER_THUMBPRINT_LAENGE)
+    if((NOT NAKAMA_BROKER_THUMBPRINT_LAENGE EQUAL 40
+        AND NOT NAKAMA_BROKER_THUMBPRINT_LAENGE EQUAL 64)
+       OR NOT NAKAMA_BROKER_THUMBPRINT MATCHES "^[0-9A-Fa-f]+$")
+        message(FATAL_ERROR "authenticode_thumbprint im Installer-Manifest ist ungueltig")
+    endif()
+endif()
+set(NAKAMA_BROKER_INSTALL_PFAD
+    "${NAKAMA_BROKER_VERZEICHNIS}/${NAKAMA_BROKER_NAME}")
+set(NAKAMA_BROKER_BINDING_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated/nakama")
+file(MAKE_DIRECTORY "${NAKAMA_BROKER_BINDING_DIR}")
+configure_file(core/ipc/BrokerInstallBinding.h.in
+               "${NAKAMA_BROKER_BINDING_DIR}/BrokerInstallBinding.h" @ONLY)
+
 juce_add_plugin(EqCopilot
     COMPANY_NAME "${NAKAMA_MAIN_HERSTELLER}"
     PRODUCT_NAME "${NAKAMA_MAIN_PRODUKTNAME}"
@@ -111,6 +168,7 @@ set(NAKAMA_KERN_QUELLEN
     vertrag/NakamaVertrag.cpp
     core/ipc/WireEnvelope.cpp
     core/ipc/IpcVerbindung.cpp
+    core/ipc/BrokerLifecycle.cpp
     core/ipc/ControlClient.cpp
     core/ipc/TelemetryClient.cpp
 )
@@ -137,7 +195,8 @@ add_library(NakamaKern STATIC ${NAKAMA_KERN_QUELLEN})
 target_include_directories(NakamaKern PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/state" "${CMAKE_CURRENT_SOURCE_DIR}/vertrag"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/ipc")
-target_link_libraries(NakamaKern PRIVATE NakamaKernJuce flatbuffers)
+target_link_libraries(NakamaKern PRIVATE NakamaKernJuce flatbuffers
+    PUBLIC Bcrypt Crypt32 Wintrust)
 # T2-Befund 23.08.: Diese beiden hingen bis dahin NICHT am Kern. Vor S8 lagen
 # die vier Quellen per target_sources() IN den Verbraucherzielen und erbten
 # deren PUBLIC-Empfehlungsschalter — allen voran /W4. Die Kopf-Fassade leitet
@@ -720,6 +779,30 @@ foreach(ziel EqCopilot
              EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopAnalysisGoldenTest)
     target_compile_definitions(${ziel} PRIVATE NAKAMA_BUNDLE_MAIN=1)
+endforeach()
+
+# Nur Ziele, die den Main-Prozessor wirklich uebersetzen, bekommen die duenne
+# Produkt-Pipeidentitaet und den aus dem Installer-Manifest generierten
+# Startvertrag. `PipeToken.cpp` bleibt bewusst ausserhalb von NakamaKern: sein
+# Hersteller-Namensraum ist Zielidentitaet, keine geteilte Kernwahrheit.
+foreach(ziel EqCopilot
+             EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
+             EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest
+             EqCopQueueStressTest EqCopAnalysisGoldenTest)
+    target_sources(${ziel} PRIVATE core/ipc/PipeToken.cpp)
+    target_include_directories(${ziel} PRIVATE "${NAKAMA_BROKER_BINDING_DIR}")
+    target_link_libraries(${ziel} PRIVATE Advapi32)
+endforeach()
+
+# Die Konsolentests instanziieren den echten Prozessor, duerfen dabei aber nie
+# die Produktions-v3-Pipe beruehren oder einen installierten Broker starten.
+# B8/B10 fahren den Lifecycle selbst mit Testhaken beziehungsweise PID-basierten
+# Probe-Pipenamen; nur das eigentliche Bundle aktiviert die Produktthreads.
+foreach(ziel EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
+             EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest
+             EqCopQueueStressTest EqCopAnalysisGoldenTest)
+    target_compile_definitions(${ziel} PRIVATE
+        NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
 endforeach()
 
 # ── S10-11/SONDE-008: Realtime-Core (plugin/core/) auf dem Suchpfad ─────────

@@ -12,6 +12,7 @@
 // Die Testpipe traegt IMMER PID und Zaehler im Namen; dieses Bein beruehrt
 // weder die Produktions- noch die v3-SID-Pipe.
 #include "ControlClient.h"
+#include "BrokerLifecycle.h"
 #include "IpcQueues.h"
 #include "IpcVerbindung.h"
 #include "PipeToken.h"
@@ -102,6 +103,33 @@ bool warteAuf (int millisekunden, Bedingung&& bedingung)
 }
 
 std::string hex32 (char fuellzeichen) { return std::string (32, fuellzeichen); }
+
+std::string commandIdAusJson (const std::string& text)
+{
+    constexpr const char* marker = "\"command_id\":\"";
+    const auto anfang = text.find (marker);
+    if (anfang == std::string::npos)
+        return {};
+    const auto wert = anfang + std::char_traits<char>::length (marker);
+    if (wert + 32 >= text.size() || text[wert + 32] != '"')
+        return {};
+    const auto id = text.substr (wert, 32);
+    return istHex32 (id) ? id : std::string {};
+}
+
+std::string persistenzBefehl (const std::string& commandId)
+{
+    return "{\"type\":\"preview_begin\",\"kopf\":{\"command_id\":\""
+         + commandId
+         + "\",\"ziel\":{\"logon_sid\":\"S-1-5-21-1-2-3-1001\","
+           "\"project_binding_id\":\"00000000000000000000000000000000\","
+           "\"session_epoch\":\"11111111111111111111111111111111\","
+           "\"instance_id\":\"22222222222222222222222222222222\","
+           "\"runtime_nonce\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},"
+           "\"base_revision\":0,\"ttl_ms\":10000,\"schema_major\":3,"
+           "\"schema_minor\":0},\"lease_duration_ms\":400,"
+           "\"renew_id\":\"33333333333333333333333333333333\"}";
+}
 
 Adresse testAdresse (const std::string& nonce)
 {
@@ -197,6 +225,16 @@ public:
     /// wirklich gefahren; `nachErsterP0AntwortNichtLesen` liefert den ACK
     /// dagegen nach einem ERFOLGREICHEN Write.
     std::atomic<int> ackNachNichtLesenMs { 0 };
+    /// Phase-B-Antworten auf persistenzpflichtige Befehle. 0 = keine,
+    /// 1..5 entsprechen der schemafesten Reihenfolge angewandt, abgelehnt,
+    /// konflikt, abgelaufen, idempotent_wiederholt.
+    std::atomic<int> commandAckArt { 0 };
+    std::atomic<int> commandAckVerzoegerungMs { 0 };
+    std::atomic<bool> commandVorAckSchliessen { false };
+    std::atomic<bool> commandAckMitEventUuid { false };
+    /// 1 = Revision mit fuehrender Null, 2 = numerischer Fehler-state_hash,
+    /// 3 = unbekannter Fehlercode, 4 = Erfolgs-ACK ohne Pflicht-Hash.
+    std::atomic<int> commandAckVertragsbruch { 0 };
     std::mutex textMutex;
     std::string letztesControlHello, letztesTelemetryHello, letzterAbweisungsgrund;
     /// Jeder empfangene P0-/P1-Payload, woertlich. Damit laesst sich pruefen,
@@ -623,6 +661,51 @@ private:
                             return;
                         }
                     }
+                    else if (const auto commandId = commandIdAusJson (text);
+                             ! commandId.empty())
+                    {
+                        if (commandVorAckSchliessen.exchange (false))
+                        {
+                            schliessen (h);
+                            return;
+                        }
+
+                        const int art = commandAckArt.load();
+                        if (art >= 1 && art <= 5)
+                        {
+                            if (const int pause = commandAckVerzoegerungMs.load(); pause > 0)
+                                std::this_thread::sleep_for (
+                                    std::chrono::milliseconds (pause));
+                            static constexpr const char* ergebnisse[] = {
+                                "", "angewandt", "abgelehnt", "konflikt",
+                                "abgelaufen", "idempotent_wiederholt"
+                            };
+                            const int bruch = commandAckVertragsbruch.load();
+                            std::string ack = "{\"type\":\"command_ack\",\"command_id\":\""
+                                + commandId + "\",\"ergebnis\":\"" + ergebnisse[art]
+                                + "\",\"state_revision\":"
+                                + (bruch == 1 ? "01" : "7");
+                            if ((art == 1 || art == 5) && bruch != 4)
+                                ack += ",\"state_hash\":\"" + std::string (64, 'd') + "\"";
+                            if (bruch == 2)
+                                ack += ",\"state_hash\":17";
+                            if (bruch == 3)
+                                ack += ",\"code\":\"nicht_im_schema\"";
+                            if (commandAckMitEventUuid.load())
+                                ack += ",\"event_uuid\":\"" + hex32 ('e') + "\"";
+                            ack += "}";
+
+                            std::vector<std::uint8_t> antwort;
+                            envelopeSchreiben (Familie::p0, 0,
+                                reinterpret_cast<const std::uint8_t*> (ack.data()),
+                                ack.size(), antwort);
+                            if (! schreiben (h, antwort.data(), antwort.size()))
+                            {
+                                schliessen (h);
+                                return;
+                            }
+                        }
+                    }
                 }
                 else if (e.kopf.familie == Familie::p1)
                 {
@@ -715,11 +798,99 @@ struct WandernderVerbraucher
             ++spruenge;
     }
 };
+
+int phaseBCommandClientMain (const std::string& pipeName,
+                             const std::string& commandId,
+                             const std::string& erwartetesErgebnis)
+{
+    if (! istHex32 (commandId))
+        return 20;
+    std::mutex ackMutex;
+    std::string letztesAck;
+    ControlClient control ([&] {
+        ControlHello h;
+        h.adresse = testAdresse (hex32 ('a'));
+        return h;
+    }, pipeName, [&] (const std::string& antwort) {
+        if (antwort.find ("\"type\":\"command_ack\"") != std::string::npos)
+        {
+            std::lock_guard<std::mutex> l (ackMutex);
+            letztesAck = antwort;
+        }
+    });
+    control.start();
+    const bool verbunden = warteAuf (10000, [&] {
+        return control.snapshot().status == ControlClient::Status::verbunden;
+    });
+    const bool eingereiht = verbunden
+                         && control.sendePersistenzP0 (persistenzBefehl (commandId));
+    const bool beantwortet = eingereiht && warteAuf (20000, [&] {
+        const auto s = control.snapshot();
+        std::lock_guard<std::mutex> l (ackMutex);
+        return s.inFlight == 0 && s.inFlightErfolg == 1
+            && letztesAck.find ("\"command_id\":\"" + commandId + "\"")
+                   != std::string::npos
+            && letztesAck.find ("\"ergebnis\":\"" + erwartetesErgebnis + "\"")
+                   != std::string::npos;
+    });
+    control.stop();
+    std::lock_guard<std::mutex> l (ackMutex);
+    const bool wireSauber = letztesAck.find ("event_uuid") == std::string::npos;
+    std::cout << "phase_b_command_client result=" << erwartetesErgebnis
+              << " connected=" << verbunden << " queued=" << eingereiht
+              << " answered=" << beantwortet << " wire_uuid=" << ! wireSauber
+              << std::endl;
+    return beantwortet && wireSauber ? 0 : 21;
+}
+
+const char* brokerPruefFehlerName (BrokerPruefFehler zustand) noexcept
+{
+    switch (zustand)
+    {
+        case BrokerPruefFehler::keiner: return "ok";
+        case BrokerPruefFehler::pfadNichtAbsolut: return "pfadNichtAbsolut";
+        case BrokerPruefFehler::dateiNichtLesbar: return "dateiNichtLesbar";
+        case BrokerPruefFehler::erwarteterHashUngueltig: return "erwarteterHashUngueltig";
+        case BrokerPruefFehler::hashFalsch: return "hashFalsch";
+        case BrokerPruefFehler::thumbprintUngueltig: return "thumbprintUngueltig";
+        case BrokerPruefFehler::signaturFehltOderUngueltig:
+            return "signaturFehltOderUngueltig";
+        case BrokerPruefFehler::signerFalsch: return "signerFalsch";
+    }
+    return "unbekannt";
+}
+
+int phaseBBinaryVerifyMain (const std::string& pfadUtf8,
+                            const std::string& erwarteterHash,
+                            const std::string& thumbprint,
+                            const std::string& erwartetesUrteil)
+{
+    const juce::String pfadText = juce::String::fromUTF8 (pfadUtf8.c_str());
+    const std::wstring pfad (pfadText.toWideCharPointer());
+    const auto bericht = brokerBinaryPruefen (pfad, erwarteterHash, thumbprint);
+    const std::string urteil = brokerPruefFehlerName (bericht.fehler);
+    const bool signaturErwartet = erwartetesUrteil == "ok"
+                               || erwartetesUrteil == "signerFalsch"
+                               || erwartetesUrteil == "signaturFehltOderUngueltig";
+    const bool ok = urteil == erwartetesUrteil && bericht.hashGeprueft
+                 && (! signaturErwartet || bericht.signaturGeprueft);
+    std::cout << "phase_b_binary_verify result=" << urteil
+              << " expected=" << erwartetesUrteil
+              << " hash_checked=" << bericht.hashGeprueft
+              << " signature_checked=" << bericht.signaturGeprueft
+              << " signer=" << bericht.signerThumbprint << std::endl;
+    return ok ? 0 : 22;
+}
 } // namespace
 
 //==============================================================================
-int main()
+int main (int argc, char** argv)
 {
+    if (argc == 5 && std::string (argv[1]) == "--phase-b-command-client")
+        return phaseBCommandClientMain (argv[2], argv[3], argv[4]);
+    if (argc == 6 && std::string (argv[1]) == "--phase-b-verify-binary")
+        return phaseBBinaryVerifyMain (argv[2], argv[3], argv[4], argv[5]);
+
     std::cout << "SONDE-010 | v3-Envelope, Pipetoken, Backpressure und die zwei Clients"
               << std::endl;
 
@@ -2865,6 +3036,466 @@ int main()
                 "Text hinter dem Objekt wird abgelehnt");
         pruefe (flachesJsonObjekt ("  { }  ", felder) && felder.empty(),
                 "das leere Objekt ist gueltig");
+    }
+
+    abschnitt ("I · Phase B: semantisches command_ack und In-Flight-Register");
+    {
+        bool alleAckWerte = true;
+        for (const auto [art, name] : std::vector<std::pair<int, const char*>> {
+                 { 1, "angewandt" }, { 5, "idempotent_wiederholt" } })
+        {
+            TestServer server (testPipeName (name));
+            server.commandAckArt.store (art);
+            server.starten();
+            const auto commandId = hex32 (art == 1 ? '1' : '5');
+            ControlClient control ([&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('a'));
+                return h;
+            }, server.pipeName());
+            control.start();
+            const bool verbunden = warteAuf (5000, [&] {
+                return control.snapshot().status == ControlClient::Status::verbunden;
+            });
+            const bool angenommen = verbunden
+                && control.sendePersistenzP0 (persistenzBefehl (commandId));
+            const bool frei = angenommen && warteAuf (3000, [&] {
+                const auto s = control.snapshot();
+                return s.inFlight == 0 && s.inFlightErfolg == 1;
+            });
+            pruefe (frei,
+                    "command_ack_angewandt_und_idempotent_wiederholt_geben_inflight_als_erfolg_frei",
+                    name);
+            alleAckWerte = alleAckWerte && frei;
+            control.stop();
+            server.stoppen();
+        }
+
+        bool alleEndgueltig = true;
+        for (const auto [art, name] : std::vector<std::pair<int, const char*>> {
+                 { 2, "abgelehnt" }, { 3, "konflikt" }, { 4, "abgelaufen" } })
+        {
+            TestServer server (testPipeName (name));
+            server.commandAckArt.store (art);
+            server.starten();
+            ControlClient control ([&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('b'));
+                return h;
+            }, server.pipeName());
+            control.start();
+            const bool verbunden = warteAuf (5000, [&] {
+                return control.snapshot().status == ControlClient::Status::verbunden;
+            });
+            const bool gesendet = verbunden && control.sendePersistenzP0 (
+                persistenzBefehl (hex32 (static_cast<char> ('5' + art))));
+            const bool frei = gesendet && warteAuf (3000, [&] {
+                const auto s = control.snapshot();
+                return s.inFlight == 0 && s.inFlightErfolg == 0
+                    && s.inFlightEndgueltigOhneErfolg == 1;
+            });
+            alleEndgueltig = alleEndgueltig && frei;
+            alleAckWerte = alleAckWerte && frei;
+            control.stop();
+            server.stoppen();
+        }
+        pruefe (alleEndgueltig,
+                "command_ack_endgueltige_fehler_geben_ohne_erfolg_frei");
+        pruefe (alleAckWerte,
+                "alle_command_ack_ergebnisse_beenden_inflight_korrekt");
+
+        {
+            TestServer server (testPipeName ("queue-vs-inflight"));
+            server.commandAckArt.store (1);
+            server.commandAckVerzoegerungMs.store (300);
+            server.starten();
+            ControlClient control ([&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('9'));
+                return h;
+            }, server.pipeName());
+            control.start();
+            const bool verbunden = warteAuf (5000, [&] {
+                return control.snapshot().status == ControlClient::Status::verbunden;
+            });
+            const bool gesendet = verbunden && control.sendePersistenzP0 (
+                persistenzBefehl (hex32 ('9')));
+            const bool queueFreiSemantikOffen = gesendet && warteAuf (1000, [&] {
+                const auto s = control.snapshot();
+                return server.p0.load() >= 1 && s.p0Gesendet >= 1 && s.inFlight == 1;
+            });
+            const bool danachFrei = warteAuf (3000, [&] {
+                const auto s = control.snapshot();
+                return s.inFlight == 0 && s.inFlightErfolg == 1;
+            });
+            pruefe (queueFreiSemantikOffen && danachFrei,
+                    "queueplatz_frei_aber_semantischer_auftrag_bleibt_inflight");
+            control.stop();
+            server.stoppen();
+        }
+
+        {
+            const auto name = testPipeName ("killvorack");
+            auto server1 = std::make_unique<TestServer> (name);
+            server1->commandVorAckSchliessen.store (true);
+            server1->starten();
+            const auto commandId = hex32 ('c');
+            const auto befehl = persistenzBefehl (commandId);
+            ControlClient control ([&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('c'));
+                return h;
+            }, name);
+            control.start();
+            const bool verbunden = warteAuf (5000, [&] {
+                return control.snapshot().status == ControlClient::Status::verbunden;
+            });
+            const bool gesendet = verbunden && control.sendePersistenzP0 (befehl);
+            const bool ersterVersuch = gesendet && warteAuf (3000, [&] {
+                return server1->p0.load() >= 1
+                    && control.snapshot().status != ControlClient::Status::verbunden;
+            });
+            server1->stoppen();
+            server1.reset();
+
+            auto server2 = std::make_unique<TestServer> (name);
+            server2->commandAckArt.store (1);
+            server2->starten();
+            const bool wiederholt = ersterVersuch && warteAuf (12000, [&] {
+                const auto s = control.snapshot();
+                return s.inFlight == 0 && s.inFlightErfolg == 1
+                    && s.inFlightWiederholungen >= 1;
+            });
+            bool gleicherText = false;
+            {
+                std::lock_guard<std::mutex> l (server2->textMutex);
+                gleicherText = std::find (server2->p0Texte.begin(), server2->p0Texte.end(),
+                                           befehl) != server2->p0Texte.end();
+            }
+            pruefe (wiederholt && gleicherText,
+                    "brokerkill_vor_ack_reiht_dieselbe_command_id_wieder_ein");
+            control.stop();
+            server2->stoppen();
+        }
+
+        {
+            TestServer server (testPipeName ("ackuuidfern"));
+            server.commandAckArt.store (1);
+            server.commandAckMitEventUuid.store (true);
+            server.starten();
+            ControlClient control ([&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('d'));
+                return h;
+            }, server.pipeName());
+            control.start();
+            const bool verbunden = warteAuf (5000, [&] {
+                return control.snapshot().status == ControlClient::Status::verbunden;
+            });
+            const bool gesendet = verbunden && control.sendePersistenzP0 (
+                persistenzBefehl (hex32 ('d')));
+            const bool ungueltigBleibt = gesendet && warteAuf (3000, [&] {
+                const auto s = control.snapshot();
+                return s.empfangen >= 1 && s.inFlight == 1 && s.inFlightErfolg == 0;
+            });
+            server.commandAckMitEventUuid.store (false);
+            server.commandAckArt.store (5);
+            control.reconnect();
+            const bool ohneUuidFrei = warteAuf (12000, [&] {
+                const auto s = control.snapshot();
+                return s.inFlight == 0 && s.inFlightErfolg == 1;
+            });
+            pruefe (ungueltigBleibt && ohneUuidFrei,
+                    "command_ack_traegt_keine_event_uuid");
+            control.stop();
+            server.stoppen();
+        }
+
+        {
+            struct VertragsbruchFall
+            {
+                int bruch;
+                int ackArt;
+                char commandZeichen;
+                const char* name;
+            };
+            const VertragsbruchFall faelle[] = {
+                { 1, 1, 'e', "revision-mit-fuehrender-null" },
+                { 2, 2, 'f', "state-hash-mit-falschem-typ" },
+                { 3, 2, 'a', "unbekannter-fehlercode" },
+                { 4, 1, 'b', "erfolg-ohne-pflicht-hash" },
+            };
+            bool alleAbgewiesen = true;
+            for (const auto& fall : faelle)
+            {
+                TestServer server (testPipeName (fall.name));
+                server.commandAckArt.store (fall.ackArt);
+                server.commandAckVertragsbruch.store (fall.bruch);
+                server.starten();
+                ControlClient control ([&] {
+                    ControlHello h;
+                    h.adresse = testAdresse (hex32 (fall.commandZeichen));
+                    return h;
+                }, server.pipeName());
+                control.start();
+                const bool verbunden = warteAuf (5000, [&] {
+                    return control.snapshot().status == ControlClient::Status::verbunden;
+                });
+                const bool gesendet = verbunden && control.sendePersistenzP0 (
+                    persistenzBefehl (hex32 (fall.commandZeichen)));
+                const bool bliebOffen = gesendet && warteAuf (3000, [&] {
+                    const auto s = control.snapshot();
+                    return s.empfangen >= 1 && s.inFlight == 1
+                        && s.inFlightErfolg == 0
+                        && s.inFlightEndgueltigOhneErfolg == 0;
+                });
+
+                server.commandAckVertragsbruch.store (0);
+                control.reconnect();
+                const bool danachFrei = bliebOffen && warteAuf (12000, [&] {
+                    const auto s = control.snapshot();
+                    return s.inFlight == 0
+                        && s.inFlightErfolg + s.inFlightEndgueltigOhneErfolg == 1;
+                });
+                alleAbgewiesen = alleAbgewiesen && bliebOffen && danachFrei;
+                control.stop();
+                server.stoppen();
+            }
+            pruefe (alleAbgewiesen,
+                    "nur_schemafestes_command_ack_gibt_inflight_frei");
+        }
+    }
+
+    abschnitt ("J · Phase B: Broker-Autostart und Signaturkette");
+    {
+        pruefe (! spawnRetryFaellig (SPAWN_CONNECT_BACKOFF_START_MS - 1)
+                    && spawnRetryFaellig (SPAWN_CONNECT_BACKOFF_START_MS)
+                    && ! spawnBereitTimeoutAbgelaufen (SPAWN_BEREIT_TIMEOUT_MS - 1)
+                    && spawnBereitTimeoutAbgelaufen (SPAWN_BEREIT_TIMEOUT_MS)
+                    && ! spawnCooldownAbgelaufen (SPAWN_COOLDOWN_MS - 1)
+                    && spawnCooldownAbgelaufen (SPAWN_COOLDOWN_MS),
+                "spawn_retry_bereit_timeout_und_cooldown_grenzen");
+        pruefe (kBackoffStartMs == 500 && kBackoffMaxMs == 8000,
+                "normaler_reconnect_backoff_start_und_max");
+        pruefe (! brokerIdleEndeErreicht (BROKER_IDLE_ENDE_MS - 1, 0)
+                    && brokerIdleEndeErreicht (BROKER_IDLE_ENDE_MS, 0),
+                "letzter_client_idle_stop_an_grenze");
+        pruefe (! brokerIdleEndeErreicht (BROKER_IDLE_ENDE_MS, BROKER_PRO_USER_MAX),
+                "aktiver_fremdclient_verhindert_stop");
+        pruefe (! brokerIdleEndeErreicht (0, 0)
+                    && ! brokerIdleEndeErreicht (BROKER_IDLE_ENDE_MS - 1, 0)
+                    && brokerIdleEndeErreicht (BROKER_IDLE_ENDE_MS, 0),
+                "client_resetet_idlefrist");
+
+        {
+            const auto name = testPipeName ("broker-fehlt-signal");
+            ControlClient fehlt ([&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('6'));
+                return h;
+            }, name);
+            fehlt.start();
+            const bool echteFehlendePipe = warteAuf (3000, [&] {
+                const auto s = fehlt.snapshot();
+                return s.status == ControlClient::Status::getrennt
+                    && s.brokerPipeFehlt;
+            });
+            fehlt.stop();
+
+            ControlClient lokalerVertragsfehler ([&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('7'));
+                h.samplerate = 0.0;
+                return h;
+            }, name);
+            lokalerVertragsfehler.start();
+            const bool keinFalschesFehltsignal = warteAuf (3000, [&] {
+                const auto s = lokalerVertragsfehler.snapshot();
+                return s.verbindungsVersuche > 0
+                    && s.status == ControlClient::Status::getrennt
+                    && ! s.brokerPipeFehlt;
+            });
+            lokalerVertragsfehler.stop();
+            pruefe (echteFehlendePipe && keinFalschesFehltsignal,
+                    "fehlender_broker_ist_notwendige_startbedingung");
+        }
+
+        std::vector<std::string> reihenfolge;
+        BrokerLifecycleHooks ordnung;
+        ordnung.verbunden = [&] { reihenfolge.emplace_back ("connect"); return false; };
+        ordnung.connectFehlgeschlagen = [&] {
+            reihenfolge.emplace_back ("connect_fehlgeschlagen"); return true;
+        };
+        ordnung.darfStarten = [&] { reihenfolge.emplace_back ("gate"); return true; };
+        ordnung.pruefen = [&] {
+            reihenfolge.emplace_back ("hash_signatur"); return BrokerPruefBericht {};
+        };
+        ordnung.spawn = [&] { reihenfolge.emplace_back ("spawn"); return true; };
+        ordnung.mutexName = L"Local\\Nakama.PhaseB.IpcTest.Reihenfolge."
+                          + std::to_wstring (GetCurrentProcessId());
+        BrokerLifecycle geordnet (std::move (ordnung));
+        geordnet.tickFuerTest (0);
+        const auto spawnPos = std::find (reihenfolge.begin(), reihenfolge.end(), "spawn");
+        const auto pruefPos = std::find (reihenfolge.begin(), reihenfolge.end(), "hash_signatur");
+        pruefe (! reihenfolge.empty() && reihenfolge.front() == "connect",
+                "connect_without_spawn_kommt_zuerst");
+        pruefe (pruefPos != reihenfolge.end() && spawnPos != reihenfolge.end()
+                    && pruefPos < spawnPos,
+                "autostart_hash_vor_signatur_vor_spawn");
+
+        {
+            int retries = 0, spawns = 0;
+            BrokerLifecycleHooks h;
+            h.verbunden = [] { return false; };
+            h.connectFehlgeschlagen = [] { return true; };
+            h.darfStarten = [] { return true; };
+            h.reconnect = [&] { ++retries; };
+            h.pruefen = [] { return BrokerPruefBericht {}; };
+            h.spawn = [&] { ++spawns; return true; };
+            h.mutexName = L"Local\\Nakama.PhaseB.IpcTest.Grenzen."
+                        + std::to_wstring (GetCurrentProcessId());
+            BrokerLifecycle lifecycle (std::move (h));
+            lifecycle.tickFuerTest (0);
+            lifecycle.tickFuerTest (SPAWN_CONNECT_BACKOFF_START_MS - 1);
+            const bool vorRetry = retries == 0;
+            lifecycle.tickFuerTest (SPAWN_CONNECT_BACKOFF_START_MS);
+            const bool retryAnGrenze = retries == 1;
+            lifecycle.tickFuerTest (SPAWN_BEREIT_TIMEOUT_MS - 1);
+            const bool vorTimeout = lifecycle.snapshot().wartetAufBereit;
+            lifecycle.tickFuerTest (SPAWN_BEREIT_TIMEOUT_MS);
+            const bool timeout = lifecycle.snapshot().imCooldown;
+            lifecycle.tickFuerTest (SPAWN_BEREIT_TIMEOUT_MS + SPAWN_COOLDOWN_MS - 1);
+            const bool vorCooldown = spawns == 1;
+            lifecycle.tickFuerTest (SPAWN_BEREIT_TIMEOUT_MS + SPAWN_COOLDOWN_MS);
+            lifecycle.tickFuerTest (SPAWN_BEREIT_TIMEOUT_MS + SPAWN_COOLDOWN_MS + 1);
+            pruefe (vorRetry && retryAnGrenze && retries >= 1 && vorTimeout && timeout
+                        && vorCooldown && spawns == 2,
+                    "spawn_retry_bereit_timeout_und_cooldown_grenzen_zustandsmaschine");
+        }
+
+        {
+            const auto mutexName = L"Local\\Nakama.PhaseB.IpcTest.Parallel."
+                                 + std::to_wstring (GetCurrentProcessId());
+            std::atomic<int> spawns { 0 };
+            std::atomic<bool> einsVerbunden { false };
+            auto hooks = [&] (bool istEins) {
+                BrokerLifecycleHooks h;
+                h.verbunden = [&, istEins] {
+                    return istEins && einsVerbunden.load();
+                };
+                h.connectFehlgeschlagen = [] { return true; };
+                h.darfStarten = [] { return true; };
+                h.pruefen = [] { return BrokerPruefBericht {}; };
+                h.spawn = [&] { ++spawns; return true; };
+                h.mutexName = mutexName;
+                return h;
+            };
+            BrokerLifecycle eins (hooks (true)), zwei (hooks (false));
+            std::atomic<bool> einsHaelt { false }, freigeben { false };
+            std::thread besitzer ([&] {
+                eins.tickFuerTest (0);
+                einsHaelt.store (true);
+                while (! freigeben.load())
+                    std::this_thread::sleep_for (std::chrono::milliseconds (1));
+                einsVerbunden.store (true);
+                eins.tickFuerTest (1);
+            });
+            const bool haelt = warteAuf (1000, [&] { return einsHaelt.load(); });
+            zwei.tickFuerTest (0);
+            const bool genauEiner = haelt
+                        && spawns.load() == static_cast<int> (BROKER_PRO_USER_MAX)
+                        && zwei.snapshot().mutexVerloren == 1;
+            freigeben.store (true);
+            besitzer.join();
+            pruefe (genauEiner
+                        && zwei.snapshot().mutexVerloren == 1,
+                    "autostart_parallel_startet_genau_einen_prozess");
+            pruefe (genauEiner && spawns.load() == 1,
+                    "autostart_mehrere_mains_ein_broker");
+        }
+
+        const auto testExeText = juce::File::getSpecialLocation (
+            juce::File::currentExecutableFile).getFullPathName();
+        const std::wstring testExe (testExeText.toWideCharPointer());
+        const auto testHashProbe = brokerBinaryPruefen (
+            testExe, std::string (64, '0'), "");
+        const auto hashVorSignatur = brokerBinaryPruefen (
+            testExe, std::string (64, '0'), std::string (40, '0'));
+        const auto hashNull = brokerBinaryPruefen (
+            testExe, testHashProbe.dateiSha256, "");
+        const auto signaturFehlt = brokerBinaryPruefen (
+            testExe, testHashProbe.dateiSha256, std::string (40, '0'));
+        pruefe (testHashProbe.hashGeprueft
+                    && testHashProbe.fehler == BrokerPruefFehler::hashFalsch
+                    && hashVorSignatur.fehler == BrokerPruefFehler::hashFalsch
+                    && ! hashVorSignatur.signaturGeprueft
+                    && hashNull.ok() && hashNull.hashGeprueft && ! hashNull.signaturGeprueft,
+                "thumbprint_null_erlaubt_nur_passenden_hash");
+        pruefe (signaturFehlt.fehler == BrokerPruefFehler::signaturFehltOderUngueltig,
+                "thumbprint_gesetzt_verlangt_winverifytrust_und_exakten_signer_fehlend");
+
+        wchar_t systemVerzeichnis[MAX_PATH] {};
+        const UINT systemLaenge = GetSystemDirectoryW (systemVerzeichnis, MAX_PATH);
+        const std::wstring signierteDatei = systemLaenge > 0 && systemLaenge < MAX_PATH
+            ? std::wstring (systemVerzeichnis, systemLaenge) + L"\\notepad.exe"
+            : std::wstring {};
+        const auto signiertHashProbe = brokerBinaryPruefen (
+            signierteDatei, std::string (64, '0'), "");
+        const auto falscherSigner = brokerBinaryPruefen (
+            signierteDatei, signiertHashProbe.dateiSha256, std::string (40, '0'));
+        const auto richtigerSigner = falscherSigner.signerThumbprint.empty()
+            ? BrokerPruefBericht { BrokerPruefFehler::signaturFehltOderUngueltig }
+            : brokerBinaryPruefen (signierteDatei, signiertHashProbe.dateiSha256,
+                                   falscherSigner.signerThumbprint);
+        pruefe (falscherSigner.fehler == BrokerPruefFehler::signerFalsch,
+                "thumbprint_gesetzt_verlangt_winverifytrust_und_exakten_signer_falsch");
+        pruefe (richtigerSigner.ok() && richtigerSigner.hashGeprueft
+                    && richtigerSigner.signaturGeprueft,
+                "thumbprint_gesetzt_verlangt_winverifytrust_und_exakten_signer_gueltig");
+        pruefe (signaturFehlt.fehler == BrokerPruefFehler::signaturFehltOderUngueltig
+                    && falscherSigner.fehler == BrokerPruefFehler::signerFalsch
+                    && richtigerSigner.ok() && richtigerSigner.hashGeprueft
+                    && richtigerSigner.signaturGeprueft,
+                "thumbprint_gesetzt_verlangt_winverifytrust_und_exakten_signer");
+
+        {
+            wchar_t systemPfad[MAX_PATH] {};
+            const UINT n = GetSystemDirectoryW (systemPfad, MAX_PATH);
+            const std::wstring helfer = n > 0 && n < MAX_PATH
+                ? std::wstring (systemPfad, n) + L"\\where.exe"
+                : std::wstring {};
+            pruefe (! brokerVerborgenStarten (L"where.exe")
+                        && ! helfer.empty() && brokerVerborgenStarten (helfer),
+                    "spawn_per_createprocessw_nur_absolut_und_verborgen");
+        }
+
+        {
+            std::atomic<bool> spawnBetreten { false };
+            BrokerLifecycleHooks h;
+            h.verbunden = [] { return false; };
+            h.connectFehlgeschlagen = [] { return true; };
+            h.darfStarten = [] { return true; };
+            h.pruefen = [] { return BrokerPruefBericht {}; };
+            h.spawn = [&] {
+                spawnBetreten.store (true);
+                std::this_thread::sleep_for (std::chrono::milliseconds (100));
+                return true;
+            };
+            h.mutexName = L"Local\\Nakama.PhaseB.IpcTest.StopSpawn."
+                        + std::to_wstring (GetCurrentProcessId());
+            BrokerLifecycle lifecycle (std::move (h));
+            lifecycle.start();
+            const bool betreten = warteAuf (1000, [&] { return spawnBetreten.load(); });
+            const auto t0 = std::chrono::steady_clock::now();
+            lifecycle.stop();
+            const auto stopMs = std::chrono::duration_cast<std::chrono::milliseconds> (
+                std::chrono::steady_clock::now() - t0).count();
+            pruefe (betreten && stopMs < 1000,
+                    "stop_waehrend_spawn");
+        }
+
+        pruefe (AUTOSTART_ARTEFAKTE_PHASE_B == 0,
+                "kein_installer_oder_boot_autostartartefakt");
     }
 
     std::cout << "\n" << (fehler == 0 ? "ALLE PRUEFUNGEN GRUEN" : "FEHLER")

@@ -89,6 +89,7 @@ ERWARTETE_OBJEKTE = {
     "NakamaVertrag.obj",
     "WireEnvelope.obj",
     "IpcVerbindung.obj",
+    "BrokerLifecycle.obj",
     "ControlClient.obj",
     "TelemetryClient.obj",
 }

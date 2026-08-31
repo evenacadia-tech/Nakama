@@ -16,7 +16,11 @@
 
 #include "../vertrag/NakamaVertrag.h"
 #include "../vertrag/NakamaTelemetrie.h"
+#include "../core/analysis/FeatureEngine.h"
+#include "../core/ipc/TelemetryClient.h"
+#include "../vertrag/generiert/nakama_telemetry_v1_generated.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -26,8 +30,54 @@ namespace
 {
 int bestanden = 0;
 int fehler = 0;
+void pruefe (bool ok, const juce::String& was, const juce::String& zusatz = {});
 
-void pruefe (bool ok, const juce::String& was, const juce::String& zusatz = {})
+void fahreBandStereoRoundtrip()
+{
+    nakama::analyse::FeatureFrame f {};
+    f.metricsVersion = 1;
+    f.transport.transport_epoch = 1;
+    f.transport.continuity_segment = 1;
+    f.transport.sequence = 1;
+    f.transport.zeitbasis = nakama::analyse::Zeitbasis::project_samples;
+    f.transport.project_sample_start_gesetzt = true;
+    f.transport.project_sample_start = 0;
+    f.transport.sample_count = 512;
+    f.transport.sample_rate = 48000.0;
+    f.transport.gueltigkeit = nakama::analyse::kGProjectTime;
+    f.transport.process_context_present_gesetzt = true;
+    f.transport.process_context_present = true;
+    f.live.gitter = nakama::analyse::GitterId::nakama_log64_v1;
+    f.live.encoding = nakama::analyse::BandEncoding::q_db_0p1_i16;
+    std::fill (std::begin (f.live.werte), std::end (f.live.werte), std::int16_t { -120 });
+    std::fill (std::begin (f.live.bitmap), std::end (f.live.bitmap), std::uint8_t { 0xff });
+    f.liveBreite[0] = 0.25f;
+    f.liveBreite[63] = 1.0f;
+    f.liveBreiteBitmap[0] = 0x01;
+    f.liveBreiteBitmap[7] = 0x80;
+
+    nakama::ipc::Adresse a {
+        "S-1-5-21-1", std::string (32, '1'), std::string (32, '2'),
+        std::string (32, '3'), std::string (32, '4')
+    };
+    std::vector<std::uint8_t> puffer;
+    const bool gebaut = nakama::ipc::featureFrameAlsFlatbuffer (f, a, puffer);
+    const auto verstoesse = gebaut
+        ? nakama::telemetrie::pruefe (puffer.data(), puffer.size())
+        : juce::Array<nakama::telemetrie::Verstoss> {};
+    const auto* batch = gebaut
+        ? evenacadia::nakama::v3::GetFeatureBatch (puffer.data()) : nullptr;
+    const auto* stereo = batch != nullptr && batch->eintraege()->size() == 1
+        ? batch->eintraege()->Get (0)->frame()->band_stereo() : nullptr;
+    pruefe (gebaut && verstoesse.isEmpty() && stereo != nullptr
+            && stereo->werte_f32() != nullptr && stereo->werte_f32()->size() == 64
+            && stereo->werte_i16() == nullptr && stereo->gueltig_bitmap()->size() == 8
+            && stereo->werte_f32()->Get (0) == 0.25f
+            && stereo->werte_f32()->Get (63) == 1.0f,
+            "band_stereo_featureframe_to_flatbuffer");
+}
+
+void pruefe (bool ok, const juce::String& was, const juce::String& zusatz)
 {
     std::cout << (ok ? "[ok]   " : "[ROT]  ") << was.toRawUTF8();
     if (zusatz.isNotEmpty())
@@ -747,6 +797,62 @@ void fahreRiegelproben()
             && fremd.getReference (0).schluessel == "oneOf",
             "unbekannter Discriminator wird abgelehnt");
 
+    const char* boolSchema = R"({
+      "type":"object","required":["flag"],"additionalProperties":false,
+      "properties":{"flag":{"type":"boolean"},"wahr":{"type":"integer"},"falsch":{"type":"integer"}},
+      "x-nakama-discriminator":"flag",
+      "oneOf":[
+        {"required":["wahr"],"properties":{"flag":{"const":true}}},
+        {"required":["falsch"],"properties":{"flag":{"const":false}}}
+      ]
+    })";
+    Schema bs; juce::String bf;
+    if (Schema::laden (ausText (boolSchema), bs, bf))
+    {
+        pruefe (bs.gueltig (ausText (R"({"flag":true,"wahr":1})"))
+                && bs.gueltig (ausText (R"({"flag":false,"falsch":1})"))
+                && ! bs.gueltig (ausText (R"({"flag":true,"falsch":1})")),
+                "discriminator_boolean_true_false");
+        const auto typ = bs.pruefe (ausText (R"({"flag":"true"})"));
+        pruefe (std::any_of (typ.begin(), typ.end(), [] (const auto& x)
+                { return x.instanz == "/flag" && x.schluessel == "oneOf"; }),
+                "discriminator_boolean_falscher_typ");
+        const auto ohne = bs.pruefe (ausText (R"({})"));
+        pruefe (std::any_of (ohne.begin(), ohne.end(), [] (const auto& x)
+                { return x.instanz == "/flag" && x.schluessel == "oneOf"; }),
+                "discriminator_boolean_fehlt");
+    }
+    else
+    {
+        pruefe (false, "Boolean-Discriminator-Probeschema laedt", bf);
+    }
+
+    const char* pointerSchema = R"({
+      "type":"object","required":["validity"],"additionalProperties":false,
+      "properties":{"validity":{"type":"object","required":["active"],"additionalProperties":false,
+        "properties":{"active":{"type":"boolean"}}}},
+      "x-nakama-discriminator":"/validity/active",
+      "oneOf":[
+        {"properties":{"validity":{"properties":{"active":{"const":true}}}}},
+        {"properties":{"validity":{"properties":{"active":{"const":false}}}}}
+      ]
+    })";
+    Schema ps; juce::String pf;
+    if (Schema::laden (ausText (pointerSchema), ps, pf))
+    {
+        pruefe (ps.gueltig (ausText (R"({"validity":{"active":true}})"))
+                && ps.gueltig (ausText (R"({"validity":{"active":false}})")),
+                "discriminator_json_pointer_boolean");
+        const auto segment = ps.pruefe (ausText (R"({"validity":{}})"));
+        pruefe (std::any_of (segment.begin(), segment.end(), [] (const auto& x)
+                { return x.instanz == "/validity/active" && x.schluessel == "oneOf"; }),
+                "discriminator_json_pointer_segment_fehlt");
+    }
+    else
+    {
+        pruefe (false, "RFC-6901-Discriminator-Probeschema laedt", pf);
+    }
+
     const auto wurzelString = s.pruefe (ausText (R"("a")"));
     pruefe (wurzelString.size() == 1 && wurzelString.getReference (0).instanz.isEmpty(),
             "Nicht-Objekt an der Wurzel meldet an der Instanz, nicht an /type");
@@ -818,6 +924,7 @@ int main (int, char*[])
     fahreRiegelproben();
     fahreFbKorpus();
     fahreBandwertgrenzen();
+    fahreBandStereoRoundtrip();
 
     bool ok = false;
     const auto schemaVar = lies ("eq-copilot/schemas/v3/eq-ipc-v3.schema.json", ok);

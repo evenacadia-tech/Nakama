@@ -1,19 +1,49 @@
 {
   "$id": "evenacadia.nakama.ipc.v3.reserviert",
   "titel": "Reservierte v3-Nachrichtenfamilien",
-  "zweck": "Entwurf §33.3 zaehlt 25 Nachrichtenfamilien auf. SONDE-005a definiert die 17, deren Datenmodell im Entwurf entschieden ist. Die uebrigen 8 tragen Nutzlasten aus spaeteren Phasen (Proposal, DSP-DTO, Experiment) — sie jetzt zu erfinden waere ein Vorgriff, den eine spaetere Phase teuer zuruecknehmen muesste (Bauaufteilung §6.2 'Kein Vorgriff').",
+  "zweck": "Entwurf §33.3 zaehlt nach dem SONDE-011-Entscheid 26 Nachrichtenfamilien auf. SONDE-005a definiert die 17, deren Datenmodell im Entwurf entschieden ist. Die uebrigen 9 tragen Nutzlasten aus spaeteren Phasen — sie jetzt zu erfinden waere ein Vorgriff, den eine spaetere Phase teuer zuruecknehmen muesste (Bauaufteilung §6.2 'Kein Vorgriff').",
   "regel": "Ihre NAMEN sind trotzdem jetzt vergeben. Ein reservierter Discriminator wird vom v3-Parser ABGELEHNT (er steht nicht im oneOf des Schemas) und darf von keinem spaeteren Ticket fuer etwas anderes verwendet werden. Genau das ist der Vertragsanteil, der spaeter bricht, wenn man ihn heute offen laesst.",
-  "pruefung": "pruefe_v3_vertrag.py prueft, dass sich reservierte und definierte Namen nicht ueberschneiden und dass die Summe 25 ergibt.",
+  "pruefung": "pruefe_v3_vertrag.py prueft, dass sich reservierte und definierte Namen nicht ueberschneiden, dass alle reservierten Namen ohne Nutzlast bleiben und dass die Summe 26 ergibt.",
   "reservierte_felder": [
     {
       "name": "evidence_snapshot.ereignisse",
       "eigentuemer": "SONDE-013 (P4)",
       "grund": "Entwurf §33.2 zaehlt 'Ereignisse' als Inhalt des Evidenzsnapshots auf, aber der DynamicsEvent-Strom entsteht erst in §39.1 mit dem Dynamik- und Experimentkern. Ihn hier zu erfinden waere ein Vorgriff (Bauaufteilung §6.2). Der NAME ist trotzdem vergeben: `evidence_snapshot` ist strikt, ein Feld dieses Namens wird heute abgelehnt, und kein spaeteres Ticket darf ihn fuer etwas anderes verwenden."
+    },
+    {
+      "name": "session_snapshot.contribution_inputs",
+      "eigentuemer": "SONDE-018",
+      "grund": "Spaeter genau ein Deskriptor je diskretem Gen-Eingang. Empfaenger ist Gen; keine Sondenklasse traegt dadurch post_fader_contribution. Nur der Name ist reserviert."
+    },
+    {
+      "name": "state_report.dsp",
+      "eigentuemer": "S26-28",
+      "grund": "Bestaetigter DSP samt Schutzgrenzen; DTO und Nutzlast entstehen erst mit ihrem Eigentuemerticket."
+    },
+    {
+      "name": "command_ack.applied_dsp",
+      "eigentuemer": "S26-28/S29-31",
+      "grund": "Bestaetigungsname fuer die tatsaechlich angewandten Werte einer apply_transaction; nur in spaeteren Erfolgszweigen."
+    },
+    {
+      "name": "state_report.eq_enabled",
+      "eigentuemer": "S29-31",
+      "grund": "Betriebszustand des Sonden-EQ; die Reservierung enthaelt ausdruecklich keine Anzeigezusage."
+    },
+    {
+      "name": "probe_descriptor.host_bus_name",
+      "eigentuemer": "S18-19",
+      "grund": "Optionaler hostgelieferter Busname. Fehlen bedeutet nur: der Host liefert keinen Wert. Typ und Befuellung sind nicht vorweggenommen."
+    },
+    {
+      "name": "probe_descriptor.host_mixer_index",
+      "eigentuemer": "S18-19",
+      "grund": "Optionaler hostgelieferter Mixerindex. Fehlen bedeutet nur: der Host liefert keinen Wert. Typ und Bereich sind nicht vorweggenommen."
     }
   ],
   "hinweis_felder": "Dieselbe Regel wie fuer die Nachrichtennamen, eine Ebene tiefer: der Vertragsanteil, der spaeter bricht, wenn man ihn heute offen laesst, ist der NAME - nicht die Nutzlast.",
 
-  "gesamt_erwartet": 25,
+  "gesamt_erwartet": 26,
   "definiert": [
     "hello",
     "welcome",
@@ -73,6 +103,11 @@
       "name": "user_verdict",
       "eigentuemer": "SONDE-014 (P5)",
       "grund": "Userurteil bindet an Finding/Proposal-IDs, die es vor P5 nicht gibt."
+    },
+    {
+      "name": "reference_match",
+      "eigentuemer": "hinten (U19, 30.08.2026)",
+      "grund": "Familienname fuer Referenz-Nachbilden/EQ-Match. Nur der Name; kein Request-, Result- oder Payloadmodell."
     }
   ]
 }

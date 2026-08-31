@@ -606,6 +606,10 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     ev["transport"]["output_presentation_latency"] = 512
     ev["transport"]["validity"] = dict(VALIDITY)
     ev["transport"]["validity"]["continuous_time"] = True
+    ev["transport"]["cycle"] = {
+        "active": True, "bounds_valid": False,
+        "start_ppq": 918.0, "end_ppq": 920.0,
+    }
     ev["transport"]["validity"]["input_presentation_latency"] = True
     ev["transport"]["validity"]["output_presentation_latency"] = True
     ev["konfidenz"] = {
@@ -629,12 +633,46 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
                    "§34.2 verlangt Ruecknahme per ID ODER Bereich - der Bereichszweig "
                    "kam im ganzen Korpus bisher in keinem gueltigen Fixture vor"))
 
-    # Beitragsklasse mit eigenem Aux-Bus.
+    # NAK-29: jede bedingte Transportaussage mit ihrem positiven Gegenstueck.
+    ev = copy.deepcopy(GRUND["evidence_snapshot"])
+    faelle.append(("transport-project-samples", ev,
+                   "project_samples mit project_time=true und project_sample_start"))
+
+    ev = copy.deepcopy(GRUND["evidence_snapshot"])
+    ev["transport"]["time_basis"] = "local_monotonic"
+    del ev["transport"]["project_sample_start"]
+    ev["transport"]["validity"]["project_time"] = False
+    faelle.append(("transport-local-monotonic", ev,
+                   "local_monotonic ohne Projektposition und mit project_time=false"))
+
+    ev = copy.deepcopy(GRUND["evidence_snapshot"])
+    ev["transport"]["validity"]["cycle_bounds"] = True
+    ev["transport"]["cycle"] = {
+        "active": False, "bounds_valid": False, "start_ppq": 5.0, "end_ppq": 6.0,
+    }
+    faelle.append(("validity-cycle-bounds-mit-ppq", ev,
+                   "cycle_bounds=true traegt beide rohen PPQ-Grenzen"))
+
+    ev = copy.deepcopy(GRUND["evidence_snapshot"])
+    ev["transport"]["validity"]["continuous_time"] = True
+    ev["transport"]["continuous_time_samples"] = 91238400
+    faelle.append(("validity-continuous-time-mit-wert", ev,
+                   "continuous_time=true traegt den zugehoerigen Samplewert"))
+
+    # NAK-114: die bislang fehlenden positiven Klassen-/Positionskombinationen.
     ss = copy.deepcopy(GRUND["session_snapshot"])
-    ss["mitglieder"][0]["measurement_position"] = "post_fader_contribution"
-    ss["mitglieder"][0]["aussageklasse"] = "beitrag"
-    faelle.append(("session-beitragsklasse", ss,
-                   "post_fader_contribution ist die einzige Position mit Beitragsaussage (§32.2)"))
+    ss["mitglieder"][0]["plugin_kind"] = "main"
+    faelle.append(("session-main-insert", ss, "main darf die Insertposition fuehren"))
+
+    ss = copy.deepcopy(GRUND["session_snapshot"])
+    ss["mitglieder"][0]["plugin_kind"] = "active_probe"
+    ss["mitglieder"][0]["measurement_position"] = "pre"
+    faelle.append(("session-active-probe-pre", ss, "active_probe darf PRE fuehren"))
+
+    ss = copy.deepcopy(GRUND["session_snapshot"])
+    ss["mitglieder"][0]["plugin_kind"] = "legacy"
+    ss["mitglieder"][0]["measurement_position"] = "post"
+    faelle.append(("session-legacy-post", ss, "legacy darf POST fuehren"))
 
     # Leere Sitzung.
     ss = copy.deepcopy(GRUND["session_snapshot"])
@@ -683,6 +721,41 @@ UNGUELTIG: list[tuple] = [
      [v("/type", "#/oneOf", "oneOf")],
      "telemetry_frame ist FlatBuffers (SONDE-005b), nie eine JSON-Familie"),
 
+    ("reservierter-typ-reference-match", "heartbeat", [setze("type", "reference_match")],
+     [v("/type", "#/oneOf", "oneOf")],
+     "reservierter Familienname fuer Referenz-Nachbilden/EQ-Match"),
+
+    ("reserviertes-feld-session-snapshot-contribution-inputs", "session_snapshot",
+     [setze("contribution_inputs", [])],
+     [v("/contribution_inputs", f"{S}/session_snapshot/additionalProperties",
+        "additionalProperties")],
+     "reservierter Name ohne Nutzlast; Empfaenger ist Gen, nicht eine Sondenklasse"),
+
+    ("reserviertes-feld-state-report-dsp", "state_report", [setze("dsp", {})],
+     [v("/dsp", f"{S}/state_report/additionalProperties", "additionalProperties")],
+     "reservierter Name fuer spaeter bestaetigten DSP"),
+
+    ("reserviertes-feld-command-ack-applied-dsp", "command_ack", [setze("applied_dsp", {})],
+     [v("/applied_dsp", f"{S}/command_ack/oneOf/0/additionalProperties",
+        "additionalProperties")],
+     "reservierter Bestaetigungsname fuer tatsaechlich angewandte Werte"),
+
+    ("reserviertes-feld-state-report-eq-enabled", "state_report", [setze("eq_enabled", True)],
+     [v("/eq_enabled", f"{S}/state_report/additionalProperties", "additionalProperties")],
+     "reservierter Betriebszustand ohne Anzeigezusage"),
+
+    ("reserviertes-feld-probe-descriptor-host-bus-name", "session_snapshot",
+     [setze("mitglieder", 0, "host_bus_name", "Bus 1")],
+     [v("/mitglieder/0/host_bus_name",
+        f"{S}/probe_descriptor_insert/additionalProperties", "additionalProperties")],
+     "reservierter optionaler Hostname ohne vorweggenommene Nutzlast"),
+
+    ("reserviertes-feld-probe-descriptor-host-mixer-index", "session_snapshot",
+     [setze("mitglieder", 0, "host_mixer_index", 7)],
+     [v("/mitglieder/0/host_mixer_index",
+        f"{S}/probe_descriptor_insert/additionalProperties", "additionalProperties")],
+     "reservierter optionaler Mixerindex ohne vorweggenommene Nutzlast"),
+
     ("typ-fehlt", "heartbeat", [loesche("type")],
      [v("/type", "#/oneOf", "oneOf")],
      "ohne Discriminator gibt es keinen Zweig"),
@@ -726,7 +799,9 @@ UNGUELTIG: list[tuple] = [
      "valid=true ist Vorbedingung fuer Remote-Apply"),
 
     ("transport-ohne-validity", "evidence_snapshot", [loesche("transport", "validity")],
-     [v("/transport", f"{S}/transportstempel/required/validity", "required")],
+     [v("/transport", f"{S}/transportstempel/required/validity", "required"),
+      v("/transport/validity/cycle_bounds",
+        f"{S}/transportstempel/oneOf/0/oneOf", "oneOf")],
      "ein Frame ohne Gueltigkeitsbits behauptet Zeit, die er nicht hat"),
 
     ("validity-ohne-record-state", "evidence_snapshot",
@@ -850,12 +925,17 @@ UNGUELTIG: list[tuple] = [
 
     # --- Enums und const --------------------------------------------------
     ("time-basis-erfunden", "evidence_snapshot", [setze("transport", "time_basis", "wallclock")],
-     [v("/transport/time_basis", f"{S}/transportstempel/properties/time_basis/enum", "enum")],
+     [v("/transport/time_basis", f"{S}/transportstempel/oneOf", "oneOf")],
      "Wandzeit misst nur IPC-Latenz und darf musikalische Frames nie ausrichten (§32.3)"),
 
     ("plugin-kind-erfunden", "session_snapshot", [setze("mitglieder", 0, "plugin_kind", "hub")],
-     [v("/mitglieder/0/plugin_kind", f"{S}/plugin_kind/enum", "enum")],
+     [v("/mitglieder/0/plugin_kind",
+        f"{S}/probe_descriptor_insert/properties/plugin_kind/enum", "enum")],
      "`hub` ist die v2-Rolle; v3 kennt main|passive_probe|active_probe|legacy (§32.2)"),
+
+    ("hello-plugin-kind-erfunden", "hello_control", [setze("plugin_kind", "hub")],
+     [v("/plugin_kind", f"{S}/plugin_kind/enum", "enum")],
+     "auch der Hello-Pfad misst den eingefrorenen plugin_kind-Wortschatz"),
 
     # Bis zum 24.08.2026 hiess dieses Fixture `aussageklasse-vermischt` und
     # versprach damit die Gate-7-Absicherung — sein Inhalt war aber ein
@@ -900,12 +980,70 @@ UNGUELTIG: list[tuple] = [
         f"{S}/probe_descriptor_post/properties/aussageklasse/const", "const")],
      "die POST-Haelfte eines Paares ist beobachtend (§32.2)"),
 
+    ("probe-descriptor-main-pre", "session_snapshot",
+     [setze("mitglieder", 0, "plugin_kind", "main"),
+      setze("mitglieder", 0, "measurement_position", "pre")],
+     [v("/mitglieder/0/plugin_kind",
+        f"{S}/probe_descriptor_pre/properties/plugin_kind/enum", "enum")],
+     "main darf laut State-v2-Matrix keine PRE-Position fuehren"),
+
+    ("probe-descriptor-main-post", "session_snapshot",
+     [setze("mitglieder", 0, "plugin_kind", "main"),
+      setze("mitglieder", 0, "measurement_position", "post")],
+     [v("/mitglieder/0/plugin_kind",
+        f"{S}/probe_descriptor_post/properties/plugin_kind/enum", "enum")],
+     "main darf laut State-v2-Matrix keine POST-Position fuehren"),
+
+    ("beitrag-plugin-kind-main", "session_snapshot",
+     [setze("mitglieder", 0, "plugin_kind", "main"),
+      setze("mitglieder", 0, "measurement_position", "post_fader_contribution"),
+      setze("mitglieder", 0, "aussageklasse", "beitrag")],
+     [v("/mitglieder/0/plugin_kind",
+        f"{S}/probe_descriptor_beitrag/properties/plugin_kind/maxLength", "maxLength")],
+     "keine heutige Klasse darf den Beitragszweig fuehren"),
+
+    ("beitrag-plugin-kind-legacy", "session_snapshot",
+     [setze("mitglieder", 0, "plugin_kind", "legacy"),
+      setze("mitglieder", 0, "measurement_position", "post_fader_contribution"),
+      setze("mitglieder", 0, "aussageklasse", "beitrag")],
+     [v("/mitglieder/0/plugin_kind",
+        f"{S}/probe_descriptor_beitrag/properties/plugin_kind/maxLength", "maxLength")],
+     "keine heutige Klasse darf den Beitragszweig fuehren"),
+
+    ("beitrag-plugin-kind-passive-probe", "session_snapshot",
+     [setze("mitglieder", 0, "plugin_kind", "passive_probe"),
+      setze("mitglieder", 0, "measurement_position", "post_fader_contribution"),
+      setze("mitglieder", 0, "aussageklasse", "beitrag")],
+     [v("/mitglieder/0/plugin_kind",
+        f"{S}/probe_descriptor_beitrag/properties/plugin_kind/maxLength", "maxLength")],
+     "das fruehere Positivfixture ist nach der bindenden Klassenmatrix negativ"),
+
+    ("beitrag-plugin-kind-active-probe", "session_snapshot",
+     [setze("mitglieder", 0, "plugin_kind", "active_probe"),
+      setze("mitglieder", 0, "measurement_position", "post_fader_contribution"),
+      setze("mitglieder", 0, "aussageklasse", "beitrag")],
+     [v("/mitglieder/0/plugin_kind",
+        f"{S}/probe_descriptor_beitrag/properties/plugin_kind/maxLength", "maxLength")],
+     "keine heutige Klasse darf den Beitragszweig fuehren"),
+
+    ("beitrag-plugin-kind-erfunden", "session_snapshot",
+     [setze("mitglieder", 0, "plugin_kind", "hub"),
+      setze("mitglieder", 0, "measurement_position", "post_fader_contribution"),
+      setze("mitglieder", 0, "aussageklasse", "beitrag")],
+     [v("/mitglieder/0/plugin_kind",
+        f"{S}/probe_descriptor_beitrag/properties/plugin_kind/enum", "enum"),
+      v("/mitglieder/0/plugin_kind",
+        f"{S}/probe_descriptor_beitrag/properties/plugin_kind/maxLength", "maxLength")],
+     "der unerfuellbare Zweig bleibt auch gegen erfundene Klassen strikt"),
+
     ("beitrag-ohne-contribution-aux", "session_snapshot",
      [setze("mitglieder", 0, "measurement_position", "post_fader_contribution"),
       setze("mitglieder", 0, "aussageklasse", "beitrag"),
       setze("mitglieder", 0, "capabilities", "contribution_aux", "unsupported")],
      [v("/mitglieder/0/capabilities/contribution_aux",
-        f"{S}/capabilities_beitrag/properties/contribution_aux/const", "const")],
+        f"{S}/capabilities_beitrag/properties/contribution_aux/const", "const"),
+      v("/mitglieder/0/plugin_kind",
+        f"{S}/probe_descriptor_beitrag/properties/plugin_kind/maxLength", "maxLength")],
      "eine Beitragsaussage setzt den diskreten Contribution-Aux-Bus nachweislich "
      "voraus; bei unsupported gilt nur Assoziation statt exakter Attribution (§53.6)"),
 
@@ -916,7 +1054,9 @@ UNGUELTIG: list[tuple] = [
     ("beitragsposition-beobachtend", "session_snapshot",
      [setze("mitglieder", 0, "measurement_position", "post_fader_contribution")],
      [v("/mitglieder/0/aussageklasse",
-        f"{S}/probe_descriptor_beitrag/properties/aussageklasse/const", "const")],
+        f"{S}/probe_descriptor_beitrag/properties/aussageklasse/const", "const"),
+      v("/mitglieder/0/plugin_kind",
+        f"{S}/probe_descriptor_beitrag/properties/plugin_kind/maxLength", "maxLength")],
      "post_fader_contribution ist die einzige Beitragsposition und traegt "
      "immer `beitrag` (§32.2)"),
 
@@ -949,6 +1089,81 @@ UNGUELTIG: list[tuple] = [
      [v("/transport/cycle/derived_sample_bounds/derivation",
         f"{S}/derived_sample_bounds/properties/derivation/enum", "enum")],
      "abgeleitete Samplegrenzen sind validiert oder unbewiesen — nichts dazwischen"),
+
+    # --- NAK-29: sechs bedingte Transportrelationen ----------------------
+    ("transport-project-samples-ohne-project-sample-start", "evidence_snapshot",
+     [loesche("transport", "project_sample_start")],
+     [v("/transport", f"{S}/transportstempel/oneOf/0/required/project_sample_start",
+        "required")],
+     "project_samples verlangt einen expliziten Projektstart"),
+
+    ("transport-project-samples-ohne-project-time", "evidence_snapshot",
+     [setze("transport", "validity", "project_time", False)],
+     [v("/transport/validity/project_time",
+        f"{S}/transportstempel/oneOf/0/properties/validity/properties/project_time/const",
+        "const")],
+     "project_samples verlangt project_time=true"),
+
+    ("transport-local-monotonic-mit-project-time", "evidence_snapshot",
+     [setze("transport", "time_basis", "local_monotonic"),
+      loesche("transport", "project_sample_start")],
+     [v("/transport/validity/project_time",
+        f"{S}/transportstempel/oneOf/1/properties/validity/properties/project_time/const",
+        "const")],
+     "local_monotonic verlangt project_time=false"),
+
+    ("transport-local-monotonic-mit-project-sample-start", "evidence_snapshot",
+     [setze("transport", "time_basis", "local_monotonic"),
+      setze("transport", "validity", "project_time", False)],
+     [v("/transport/project_sample_start",
+        f"{S}/transportstempel/oneOf/1/properties/project_sample_start/type", "type")],
+     "lokale Zeit darf keine Projektposition behaupten"),
+
+    ("cycle-bounds-valid-ohne-start-ppq", "evidence_snapshot",
+     [setze("transport", "cycle", {"active": True, "bounds_valid": True,
+                                    "end_ppq": 2.0})],
+     [v("/transport/cycle", f"{S}/cycle/oneOf/0/required/start_ppq", "required")],
+     "bounds_valid=true verlangt die linke PPQ-Grenze"),
+
+    ("cycle-bounds-valid-ohne-end-ppq", "evidence_snapshot",
+     [setze("transport", "cycle", {"active": True, "bounds_valid": True,
+                                    "start_ppq": 1.0})],
+     [v("/transport/cycle", f"{S}/cycle/oneOf/0/required/end_ppq", "required")],
+     "bounds_valid=true verlangt die rechte PPQ-Grenze"),
+
+    ("cycle-bounds-invalid-mit-validated-block-mapping", "evidence_snapshot",
+     [setze("transport", "cycle", {"active": False, "bounds_valid": False,
+                                    "derived_sample_bounds": {"start": 1, "end": 2,
+                                      "derivation": "validated_block_mapping"}})],
+     [v("/transport/cycle/derived_sample_bounds/derivation",
+        f"{S}/cycle/oneOf/1/properties/derived_sample_bounds/properties/derivation/const",
+        "const")],
+     "bounds_valid=false darf keine validierte Sampleableitung behaupten"),
+
+    ("validity-cycle-bounds-ohne-start-ppq", "evidence_snapshot",
+     [setze("transport", "validity", "cycle_bounds", True),
+      setze("transport", "cycle", {"active": False, "bounds_valid": False,
+                                    "end_ppq": 2.0})],
+     [v("/transport/cycle",
+        f"{S}/transportstempel/oneOf/0/oneOf/0/properties/cycle/required/start_ppq",
+        "required")],
+     "cycle_bounds-Bit bescheinigt beide rohen PPQ-Grenzen"),
+
+    ("validity-cycle-bounds-ohne-end-ppq", "evidence_snapshot",
+     [setze("transport", "validity", "cycle_bounds", True),
+      setze("transport", "cycle", {"active": False, "bounds_valid": False,
+                                    "start_ppq": 1.0})],
+     [v("/transport/cycle",
+        f"{S}/transportstempel/oneOf/0/oneOf/0/properties/cycle/required/end_ppq",
+        "required")],
+     "cycle_bounds-Bit bescheinigt beide rohen PPQ-Grenzen"),
+
+    ("validity-continuous-time-ohne-wert", "evidence_snapshot",
+     [setze("transport", "validity", "continuous_time", True)],
+     [v("/transport",
+        f"{S}/transportstempel/oneOf/0/oneOf/1/oneOf/0/required/continuous_time_samples",
+        "required")],
+     "continuous_time-Bit verlangt den optionalen Samplewert"),
 
     # --- Zahlengrenzen ----------------------------------------------------
     ("lease-ueber-400", "preview_begin", [setze("lease_duration_ms", 401)],
@@ -1252,6 +1467,7 @@ UNGUELTIG: list[tuple] = [
 
     ("derived-bounds-ohne-ende", "evidence_snapshot",
      [setze("transport", "cycle", {"active": True, "bounds_valid": True,
+                                   "start_ppq": 1.0, "end_ppq": 2.0,
                                    "derived_sample_bounds": {"start": 1,
                                                              "derivation": "validated_block_mapping"}})],
      [v("/transport/cycle/derived_sample_bounds",
@@ -1385,7 +1601,9 @@ UNGUELTIG: list[tuple] = [
 
     ("validity-ohne-continuous-time", "evidence_snapshot",
      [loesche("transport", "validity", "continuous_time")],
-     [v("/transport/validity", f"{S}/validity/required/continuous_time", "required")],
+     [v("/transport/validity", f"{S}/validity/required/continuous_time", "required"),
+      v("/transport/validity/continuous_time",
+        f"{S}/transportstempel/oneOf/0/oneOf/1/oneOf", "oneOf")],
      "§32.3 gibt continuous_time_samples ein EIGENES Gueltigkeitsbit"),
 
     ("validity-ohne-latenzbit", "evidence_snapshot",

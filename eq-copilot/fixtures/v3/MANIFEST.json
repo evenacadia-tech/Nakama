@@ -6,8 +6,8 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 42,
-  "anzahl_ungueltig": 147,
+  "anzahl_gueltig": 48,
+  "anzahl_ungueltig": 172,
   "fixtures": [
     {
       "datei": "gueltig/audible_intervention_begin.json",
@@ -226,15 +226,27 @@
       "verletzungen": []
     },
     {
-      "datei": "gueltig/session-beitragsklasse.json",
+      "datei": "gueltig/session-active-probe-pre.json",
       "urteil": "gueltig",
-      "warum": "post_fader_contribution ist die einzige Position mit Beitragsaussage (§32.2)",
+      "warum": "active_probe darf PRE fuehren",
       "verletzungen": []
     },
     {
       "datei": "gueltig/session-leer.json",
       "urteil": "gueltig",
       "warum": "minItems 0: eine Sitzung ohne Mitglieder ist gueltig",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/session-legacy-post.json",
+      "urteil": "gueltig",
+      "warum": "legacy darf POST fuehren",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/session-main-insert.json",
+      "urteil": "gueltig",
+      "warum": "main darf die Insertposition fuehren",
       "verletzungen": []
     },
     {
@@ -253,6 +265,30 @@
       "datei": "gueltig/subscribe_session.json",
       "urteil": "gueltig",
       "warum": "Grundform der Familie",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/transport-local-monotonic.json",
+      "urteil": "gueltig",
+      "warum": "local_monotonic ohne Projektposition und mit project_time=false",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/transport-project-samples.json",
+      "urteil": "gueltig",
+      "warum": "project_samples mit project_time=true und project_sample_start",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/validity-continuous-time-mit-wert.json",
+      "urteil": "gueltig",
+      "warum": "continuous_time=true traegt den zugehoerigen Samplewert",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/validity-cycle-bounds-mit-ppq.json",
+      "urteil": "gueltig",
+      "warum": "cycle_bounds=true traegt beide rohen PPQ-Grenzen",
       "verletzungen": []
     },
     {
@@ -534,6 +570,76 @@
           "instanz": "/mitglieder/0/capabilities/contribution_aux",
           "schema": "#/$defs/capabilities_beitrag/properties/contribution_aux/const",
           "schluessel": "const"
+        },
+        {
+          "instanz": "/mitglieder/0/plugin_kind",
+          "schema": "#/$defs/probe_descriptor_beitrag/properties/plugin_kind/maxLength",
+          "schluessel": "maxLength"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/beitrag-plugin-kind-active-probe.json",
+      "urteil": "ungueltig",
+      "warum": "keine heutige Klasse darf den Beitragszweig fuehren",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/plugin_kind",
+          "schema": "#/$defs/probe_descriptor_beitrag/properties/plugin_kind/maxLength",
+          "schluessel": "maxLength"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/beitrag-plugin-kind-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "der unerfuellbare Zweig bleibt auch gegen erfundene Klassen strikt",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/plugin_kind",
+          "schema": "#/$defs/probe_descriptor_beitrag/properties/plugin_kind/enum",
+          "schluessel": "enum"
+        },
+        {
+          "instanz": "/mitglieder/0/plugin_kind",
+          "schema": "#/$defs/probe_descriptor_beitrag/properties/plugin_kind/maxLength",
+          "schluessel": "maxLength"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/beitrag-plugin-kind-legacy.json",
+      "urteil": "ungueltig",
+      "warum": "keine heutige Klasse darf den Beitragszweig fuehren",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/plugin_kind",
+          "schema": "#/$defs/probe_descriptor_beitrag/properties/plugin_kind/maxLength",
+          "schluessel": "maxLength"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/beitrag-plugin-kind-main.json",
+      "urteil": "ungueltig",
+      "warum": "keine heutige Klasse darf den Beitragszweig fuehren",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/plugin_kind",
+          "schema": "#/$defs/probe_descriptor_beitrag/properties/plugin_kind/maxLength",
+          "schluessel": "maxLength"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/beitrag-plugin-kind-passive-probe.json",
+      "urteil": "ungueltig",
+      "warum": "das fruehere Positivfixture ist nach der bindenden Klassenmatrix negativ",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/plugin_kind",
+          "schema": "#/$defs/probe_descriptor_beitrag/properties/plugin_kind/maxLength",
+          "schluessel": "maxLength"
         }
       ]
     },
@@ -546,6 +652,11 @@
           "instanz": "/mitglieder/0/aussageklasse",
           "schema": "#/$defs/probe_descriptor_beitrag/properties/aussageklasse/const",
           "schluessel": "const"
+        },
+        {
+          "instanz": "/mitglieder/0/plugin_kind",
+          "schema": "#/$defs/probe_descriptor_beitrag/properties/plugin_kind/maxLength",
+          "schluessel": "maxLength"
         }
       ]
     },
@@ -791,6 +902,42 @@
       ]
     },
     {
+      "datei": "ungueltig/cycle-bounds-invalid-mit-validated-block-mapping.json",
+      "urteil": "ungueltig",
+      "warum": "bounds_valid=false darf keine validierte Sampleableitung behaupten",
+      "verletzungen": [
+        {
+          "instanz": "/transport/cycle/derived_sample_bounds/derivation",
+          "schema": "#/$defs/cycle/oneOf/1/properties/derived_sample_bounds/properties/derivation/const",
+          "schluessel": "const"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/cycle-bounds-valid-ohne-end-ppq.json",
+      "urteil": "ungueltig",
+      "warum": "bounds_valid=true verlangt die rechte PPQ-Grenze",
+      "verletzungen": [
+        {
+          "instanz": "/transport/cycle",
+          "schema": "#/$defs/cycle/oneOf/0/required/end_ppq",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/cycle-bounds-valid-ohne-start-ppq.json",
+      "urteil": "ungueltig",
+      "warum": "bounds_valid=true verlangt die linke PPQ-Grenze",
+      "verletzungen": [
+        {
+          "instanz": "/transport/cycle",
+          "schema": "#/$defs/cycle/oneOf/0/required/start_ppq",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/cycle-ohne-active.json",
       "urteil": "ungueltig",
       "warum": "ohne active ist unklar, ob ueberhaupt eine Schleife laeuft",
@@ -1003,6 +1150,18 @@
           "instanz": "/connection_kind",
           "schema": "#/$defs/hello/oneOf",
           "schluessel": "oneOf"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/hello-plugin-kind-erfunden.json",
+      "urteil": "ungueltig",
+      "warum": "auch der Hello-Pfad misst den eingefrorenen plugin_kind-Wortschatz",
+      "verletzungen": [
+        {
+          "instanz": "/plugin_kind",
+          "schema": "#/$defs/plugin_kind/enum",
+          "schluessel": "enum"
         }
       ]
     },
@@ -1407,7 +1566,7 @@
       "verletzungen": [
         {
           "instanz": "/mitglieder/0/plugin_kind",
-          "schema": "#/$defs/plugin_kind/enum",
+          "schema": "#/$defs/probe_descriptor_insert/properties/plugin_kind/enum",
           "schluessel": "enum"
         }
       ]
@@ -1461,6 +1620,30 @@
       ]
     },
     {
+      "datei": "ungueltig/probe-descriptor-main-post.json",
+      "urteil": "ungueltig",
+      "warum": "main darf laut State-v2-Matrix keine POST-Position fuehren",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/plugin_kind",
+          "schema": "#/$defs/probe_descriptor_post/properties/plugin_kind/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/probe-descriptor-main-pre.json",
+      "urteil": "ungueltig",
+      "warum": "main darf laut State-v2-Matrix keine PRE-Position fuehren",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/plugin_kind",
+          "schema": "#/$defs/probe_descriptor_pre/properties/plugin_kind/enum",
+          "schluessel": "enum"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/protokoll-2-auf-v3.json",
       "urteil": "ungueltig",
       "warum": "protocol=2 bleibt vollstaendig im v2-Parser (§33.1)",
@@ -1509,6 +1692,18 @@
       ]
     },
     {
+      "datei": "ungueltig/reservierter-typ-reference-match.json",
+      "urteil": "ungueltig",
+      "warum": "reservierter Familienname fuer Referenz-Nachbilden/EQ-Match",
+      "verletzungen": [
+        {
+          "instanz": "/type",
+          "schema": "#/oneOf",
+          "schluessel": "oneOf"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/reservierter-typ-telemetry.json",
       "urteil": "ungueltig",
       "warum": "telemetry_frame ist FlatBuffers (SONDE-005b), nie eine JSON-Familie",
@@ -1517,6 +1712,78 @@
           "instanz": "/type",
           "schema": "#/oneOf",
           "schluessel": "oneOf"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/reserviertes-feld-command-ack-applied-dsp.json",
+      "urteil": "ungueltig",
+      "warum": "reservierter Bestaetigungsname fuer tatsaechlich angewandte Werte",
+      "verletzungen": [
+        {
+          "instanz": "/applied_dsp",
+          "schema": "#/$defs/command_ack/oneOf/0/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/reserviertes-feld-probe-descriptor-host-bus-name.json",
+      "urteil": "ungueltig",
+      "warum": "reservierter optionaler Hostname ohne vorweggenommene Nutzlast",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/host_bus_name",
+          "schema": "#/$defs/probe_descriptor_insert/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/reserviertes-feld-probe-descriptor-host-mixer-index.json",
+      "urteil": "ungueltig",
+      "warum": "reservierter optionaler Mixerindex ohne vorweggenommene Nutzlast",
+      "verletzungen": [
+        {
+          "instanz": "/mitglieder/0/host_mixer_index",
+          "schema": "#/$defs/probe_descriptor_insert/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/reserviertes-feld-session-snapshot-contribution-inputs.json",
+      "urteil": "ungueltig",
+      "warum": "reservierter Name ohne Nutzlast; Empfaenger ist Gen, nicht eine Sondenklasse",
+      "verletzungen": [
+        {
+          "instanz": "/contribution_inputs",
+          "schema": "#/$defs/session_snapshot/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/reserviertes-feld-state-report-dsp.json",
+      "urteil": "ungueltig",
+      "warum": "reservierter Name fuer spaeter bestaetigten DSP",
+      "verletzungen": [
+        {
+          "instanz": "/dsp",
+          "schema": "#/$defs/state_report/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/reserviertes-feld-state-report-eq-enabled.json",
+      "urteil": "ungueltig",
+      "warum": "reservierter Betriebszustand ohne Anzeigezusage",
+      "verletzungen": [
+        {
+          "instanz": "/eq_enabled",
+          "schema": "#/$defs/state_report/additionalProperties",
+          "schluessel": "additionalProperties"
         }
       ]
     },
@@ -1765,8 +2032,32 @@
       "verletzungen": [
         {
           "instanz": "/transport/time_basis",
-          "schema": "#/$defs/transportstempel/properties/time_basis/enum",
-          "schluessel": "enum"
+          "schema": "#/$defs/transportstempel/oneOf",
+          "schluessel": "oneOf"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/transport-local-monotonic-mit-project-sample-start.json",
+      "urteil": "ungueltig",
+      "warum": "lokale Zeit darf keine Projektposition behaupten",
+      "verletzungen": [
+        {
+          "instanz": "/transport/project_sample_start",
+          "schema": "#/$defs/transportstempel/oneOf/1/properties/project_sample_start/type",
+          "schluessel": "type"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/transport-local-monotonic-mit-project-time.json",
+      "urteil": "ungueltig",
+      "warum": "local_monotonic verlangt project_time=false",
+      "verletzungen": [
+        {
+          "instanz": "/transport/validity/project_time",
+          "schema": "#/$defs/transportstempel/oneOf/1/properties/validity/properties/project_time/const",
+          "schluessel": "const"
         }
       ]
     },
@@ -1791,6 +2082,35 @@
           "instanz": "/transport",
           "schema": "#/$defs/transportstempel/required/validity",
           "schluessel": "required"
+        },
+        {
+          "instanz": "/transport/validity/cycle_bounds",
+          "schema": "#/$defs/transportstempel/oneOf/0/oneOf",
+          "schluessel": "oneOf"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/transport-project-samples-ohne-project-sample-start.json",
+      "urteil": "ungueltig",
+      "warum": "project_samples verlangt einen expliziten Projektstart",
+      "verletzungen": [
+        {
+          "instanz": "/transport",
+          "schema": "#/$defs/transportstempel/oneOf/0/required/project_sample_start",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/transport-project-samples-ohne-project-time.json",
+      "urteil": "ungueltig",
+      "warum": "project_samples verlangt project_time=true",
+      "verletzungen": [
+        {
+          "instanz": "/transport/validity/project_time",
+          "schema": "#/$defs/transportstempel/oneOf/0/properties/validity/properties/project_time/const",
+          "schluessel": "const"
         }
       ]
     },
@@ -1843,6 +2163,42 @@
       ]
     },
     {
+      "datei": "ungueltig/validity-continuous-time-ohne-wert.json",
+      "urteil": "ungueltig",
+      "warum": "continuous_time-Bit verlangt den optionalen Samplewert",
+      "verletzungen": [
+        {
+          "instanz": "/transport",
+          "schema": "#/$defs/transportstempel/oneOf/0/oneOf/1/oneOf/0/required/continuous_time_samples",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/validity-cycle-bounds-ohne-end-ppq.json",
+      "urteil": "ungueltig",
+      "warum": "cycle_bounds-Bit bescheinigt beide rohen PPQ-Grenzen",
+      "verletzungen": [
+        {
+          "instanz": "/transport/cycle",
+          "schema": "#/$defs/transportstempel/oneOf/0/oneOf/0/properties/cycle/required/end_ppq",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/validity-cycle-bounds-ohne-start-ppq.json",
+      "urteil": "ungueltig",
+      "warum": "cycle_bounds-Bit bescheinigt beide rohen PPQ-Grenzen",
+      "verletzungen": [
+        {
+          "instanz": "/transport/cycle",
+          "schema": "#/$defs/transportstempel/oneOf/0/oneOf/0/properties/cycle/required/start_ppq",
+          "schluessel": "required"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/validity-ohne-continuous-time.json",
       "urteil": "ungueltig",
       "warum": "§32.3 gibt continuous_time_samples ein EIGENES Gueltigkeitsbit",
@@ -1851,6 +2207,11 @@
           "instanz": "/transport/validity",
           "schema": "#/$defs/validity/required/continuous_time",
           "schluessel": "required"
+        },
+        {
+          "instanz": "/transport/validity/continuous_time",
+          "schema": "#/$defs/transportstempel/oneOf/0/oneOf/1/oneOf",
+          "schluessel": "oneOf"
         }
       ]
     },

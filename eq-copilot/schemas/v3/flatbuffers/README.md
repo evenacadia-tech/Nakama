@@ -153,6 +153,23 @@ abhängt.
 | `nicht_endlich` | NaN oder ±inf auf der Leitung. `quantisierung-v1.json` legt fest, dass Nichtendliches beim **Erzeugen** zu Wert 0 mit `gueltig=false` wird — auf der Leitung ist es ein Senderfehler und wird abgelehnt, nicht saniert. |
 | `korrelation_bereich` · `breite_negativ` | Korrelation außerhalb [-1, 1]; negative Breite. |
 | `grenzen_verdreht` | Abgeleitete Schleifengrenzen mit Ende vor Anfang. |
+| `ppq_verdreht` | Rohe PPQ-Schleifengrenzen mit Ende vor Anfang. |
+| `project_time_bit_fehlt` · `project_sample_start_fehlt` | `zeitbasis=project_samples` verlangt das Project-Time-Bit und `project_sample_start`. |
+| `local_project_time_bit` · `local_project_sample_start` | `zeitbasis=local_monotonic` verbietet Project-Time-Bit und `project_sample_start`. |
+| `cycle_start_ppq_fehlt` · `cycle_end_ppq_fehlt` | `schleife.bounds_valid=true` verlangt beide PPQ-Grenzen. |
+| `validated_mapping_ohne_bounds` | `bounds_valid=false` darf keine `validated_block_mapping`-Ableitung behaupten. |
+| `cycle_bounds_start_ppq_fehlt` · `cycle_bounds_end_ppq_fehlt` | Das `cycle_bounds`-Validity-Bit verlangt beide rohen PPQ-Grenzen. |
+| `continuous_time_samples_fehlt` | Das `continuous_time`-Validity-Bit verlangt `continuous_time_samples`. |
+| `band_stereo_gitter` · `band_stereo_encoding` · `band_stereo_werte_i16` | Das optionale ID-10-Feld benutzt ausschließlich `nakama_log64_v1`, `float32` und keinen i16-Träger. |
+| `band_stereo_bandzahl` · `band_stereo_bitmap_laenge` | Stereo trägt genau 64 Werte und ein passendes 8-Byte-Bitmap. |
+| `band_stereo_bereich` · `band_stereo_saturated` | Jeder im Bitmap gesetzte Stereoanteil ist endlich und in [0,1]; `saturated` bleibt false. `nicht_endlich` benennt wie bei allen float32-Werten NaN/±inf. |
+
+Die sechs Transportrelationen sind damit in JSON und FlatBuffers dieselbe
+Aussage. Jede Relation besitzt ein regenerierbares Binär-Negativfixture; beide
+handgeschriebenen Leser müssen dieselbe vollständige Verstoßmenge liefern.
+`band_stereo` ist als optionales Tabellenendfeld `(id: 10)` additiv, erhöht
+aber den tatsächlich gesendeten Envelope-`schema_minor` auf 1. Alte Frames
+ohne das Feld bleiben gültig.
 
 ### Warum `unbekannt = 0` in jedem Enum steht
 
@@ -171,6 +188,4 @@ Fall.
 |---|---|---|
 | `schema_major` / `schema_minor` im Payload | `SONDE-010` | Der 16-Byte-Envelope aus §33.1 trägt beide bereits. Sie hier zu wiederholen hieße, zwei Wahrheiten über dieselbe Zahl in denselben Frame zu legen. Die Formatidentität trägt `file_identifier`; die Feldevolution trägt die id-Disziplin. |
 | Der 16-Byte-Envelope und CRC32C | `SONDE-010` | Entwurf §65 gibt den Parser diesem Ticket. Fixtures ohne Implementierung wären toter Ballast. |
-| Bedingte Feldpflichten (`zeitbasis` ↔ `project_sample_start`, `bounds_valid` ↔ PPQ) | `SONDE-009` → **NAK-29** | Dieselbe Lücke besteht im JSON-Vertrag und wird dort genauso geführt. Die beiden Darstellungen sollen EINE Aussage sein — eine Regel, die nur auf einer Seite gilt, wäre der Anfang der Drift. |
-| Ein Erzeuger | `SONDE-009` | Heute spricht kein Produktionscode diesen Vertrag. Das ist Schnittgrenze, keine Lücke: der Vertrag ist prüfbar, bevor es einen Sprecher gibt. |
 | Ein produktiver **Aufrufer** der Leser | `SONDE-010` | `pruefe()` wird heute ausschließlich aus den beiden Testtreibern gerufen. Wo der Leser einmal steht — als Eingangsprüfung des IPC-Clients — ist damit noch nichts über sein Laufzeitverhalten unter Last gesagt; Ratengrenzen und Backpressure gehören dorthin. |

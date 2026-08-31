@@ -76,7 +76,9 @@ use crate::transport::bootstrap::{
 use crate::transport::v3::{
     envelope_schreiben, Familie, LeseErgebnis, Ratengrenze, StromLeser, MAX_FRAME_BYTES,
 };
-use crate::transport::warteschlange::{IngressErgebnis, IngressWarteschlange, CAP_INGRESS};
+use crate::transport::warteschlange::{IngressErgebnis, IngressWarteschlange};
+#[cfg(test)]
+use crate::transport::warteschlange::CAP_INGRESS;
 
 /// Hoechstens so viele gleichzeitige Verbindungen. Zwei je Instanz (Control +
 /// Telemetry) mal 32 Sonden plus Reserve.
@@ -115,6 +117,13 @@ pub const SENKE_FRIST: Duration = Duration::from_millis(2000);
 /// `Arc`s und endet von selbst, sobald der Fremdaufruf zurueckkommt.
 pub trait Senke: Send + Sync {
     fn control_verbunden(&self, link_id: &str, hello: &HelloControl);
+    /// Synchroner, atomarer Gegenpfad fuer linkgebundenen Zustand. Der Server
+    /// ruft ihn nach dem Schliessen des Ingress, aber VOR dem Entfernen der
+    /// Kopplung auf. Er muss kurz bleiben und darf nicht auf fremde I/O
+    /// warten: Subscription-Cleanup und Sticky-Interventionsbit sind reine
+    /// Mutex-Mutation. Ein bereits laufender P0/P1-Aufruf serialisiert sich
+    /// am selben Coordinator-Lock; ein spaeterer sieht den Link als schliessend.
+    fn control_schliesst(&self, _link_id: &str) {}
     fn control_getrennt(&self, link_id: &str);
     fn telemetrie_gekoppelt(&self, link_id: &str);
     fn telemetrie_getrennt(&self, link_id: &str);
@@ -1311,6 +1320,7 @@ fn verbindung_bedienen(
             match envelope_schreiben(Familie::P0, 0, &payload) {
                 Ok(frame) => {
                     if !ov_schreiben(griff.h, leseereignis.roh(), &frame) {
+                        senke.control_schliesst(&link);
                         kopplung_loesen(&kopplungen, &handles, &link, true);
                         melden_getrennt(&mut senkenruf, &link, true);
                         trennmelder
@@ -1574,15 +1584,22 @@ fn verbindung_bedienen(
     // stillen Peer wartet, muss abgebrochen werden — sonst waere `join` ein
     // Hang.
     ende.store(true, Ordering::SeqCst);
-    // Die KOPPLUNG faellt zuerst — vor den fristbegrenzten Joins, nicht nach
-    // ihnen. Sonst blieb sie bei langsamer Senke bis zu zweimal `SENKE_FRIST`
+    // 28-B: Kein neuer Ingress darf den atomaren Cleanup ueberholen. Ein
+    // schon laufender Coordinator-Aufruf teilt dessen Lock; entweder commitet
+    // er vorher und wird hier entfernt, oder er sieht danach `schliessend`.
+    eingang.schliessen();
+    if ist_control {
+        senke.control_schliesst(&link_id);
+    }
+    // Nach dem atomaren semantischen Gegenpfad faellt die KOPPLUNG ebenfalls
+    // vor den fristbegrenzten Joins, nicht nach ihnen. Sonst blieb sie bei
+    // langsamer Senke bis zu zweimal `SENKE_FRIST`
     // im Register, und ein Telemetrieframe passierte in dieser Zeit weiter
     // `telemetrie_lebt`, obwohl die Control-Verbindung schon fort war
     // (T2-Befund 3 Runde 3 vom 2026-08-29). Der Registereintrag und der
     // Abbruch der Telemetrie-I/O gehoeren dabei zusammen: ohne den Abbruch
     // stuende der Telemetriearbeiter noch in seinem Read.
     kopplung_loesen(&kopplungen, &handles, &link_id, ist_control);
-    eingang.schliessen();
     ausgang.schliessen();
     io_abbrechen(&handles, id);
     // Alle Joins haben eine FRIST. Steht ein Verbraucher in einem
@@ -1816,6 +1833,7 @@ fn melden_getrennt(senkenruf: &mut Senkenruf, link_id: &str, ist_control: bool) 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::transport::bootstrap::Adresse;
     use crate::transport::pipetoken::PROBE_PRAEFIX;
     use std::sync::atomic::AtomicUsize;
 
@@ -1944,6 +1962,36 @@ mod tests {
              \"audio\":{{\"samplerate\":48000,\"block_size\":512,\"channels\":2}}}}",
             a = adresse_json(nonce)
         ))
+    }
+
+    fn test_adresse(zeichen: char) -> Adresse {
+        Adresse {
+            logon_sid: "S-1-5-21-1-2-3-1001".into(),
+            project_binding_id: zeichen.to_string().repeat(32),
+            session_epoch: zeichen.to_string().repeat(32),
+            instance_id: zeichen.to_string().repeat(32),
+            runtime_nonce: zeichen.to_string().repeat(32),
+        }
+    }
+
+    fn control_hello_adresse(adresse: &Adresse) -> Vec<u8> {
+        praefix(&format!(
+            "{{\"type\":\"hello\",\"connection_kind\":\"control\",\"protocol\":3,\
+             \"plugin_version\":\"0.3.0\",\"plugin_kind\":\"active_probe\",\"adresse\":{},\
+             \"audio\":{{\"samplerate\":48000,\"block_size\":512,\"channels\":2}}}}",
+            serde_json::to_string(adresse).unwrap()
+        ))
+    }
+
+    fn subscribe(adresse: &Adresse) -> Vec<u8> {
+        p1(
+            &serde_json::json!({
+                "type": "subscribe_session",
+                "adresse": adresse,
+                "session_epoch": adresse.session_epoch.clone()
+            })
+            .to_string(),
+        )
     }
 
     fn telemetry_hello(nonce: &str, link: &str, challenge: &str) -> Vec<u8> {
@@ -3184,5 +3232,118 @@ mod tests {
         senke.blockiert.store(false, Ordering::SeqCst);
         drop(steuer);
         drop(griff);
+    }
+
+    /// SONDE-011 A4-SI / 28-B: Die semantische Bindung wird durch den echten
+    /// Listener, zwei echte Control-Pipes und dessen fruehen Cleanup-Hook
+    /// gefahren. A5/A8/B3c koennen dieses Linkeigentum nicht messen.
+    #[test]
+    fn subscription_ist_an_eigenen_control_link_gebunden() {
+        let pipe = probe_pipe("subscriptionbesitz");
+        let coordinator = Arc::new(crate::coordinator::Coordinator::default());
+        let griff = v3_server_starten(&pipe, coordinator.clone(), "test".into()).unwrap();
+        let adresse_a = test_adresse('a');
+        let adresse_b = test_adresse('b');
+
+        let control_a = Testclient::neu(&pipe).unwrap();
+        assert!(control_a.schreiben(&control_hello_adresse(&adresse_a)));
+        let (link_a, _) = welcome_lesen(&control_a).expect("welcome A");
+        let control_b = Testclient::neu(&pipe).unwrap();
+        assert!(control_b.schreiben(&control_hello_adresse(&adresse_b)));
+        let (_link_b, _) = welcome_lesen(&control_b).expect("welcome B");
+
+        // A versucht zuerst, die effektive Adresse/Session von B zu besitzen.
+        assert!(control_a.schreiben(&subscribe(&adresse_b)));
+        assert!(warte_auf(3000, || coordinator.subscription_abweisungen() == 1));
+        assert!(coordinator
+            .letzter_subscription_grund()
+            .contains("fremde effektive Adresse"));
+        assert_eq!(coordinator.subscription_anzahl(), 0);
+
+        assert!(control_a.schreiben(&subscribe(&adresse_a)));
+        assert!(control_b.schreiben(&subscribe(&adresse_b)));
+        assert!(warte_auf(3000, || coordinator.subscription_anzahl() == 2));
+
+        // Protokollfehler beendet B. A muss dabei exakt erhalten bleiben.
+        assert!(control_b.schreiben(&p2(b"falsche-familie")));
+        assert!(warte_auf(5000, || {
+            coordinator.subscription_anzahl() == 1
+                && coordinator.subscription_cleanups() == 1
+        }));
+        assert_eq!(
+            coordinator.session_push_ziele(&adresse_a.session_epoch, &adresse_a),
+            vec![link_a]
+        );
+        assert!(coordinator
+            .session_push_ziele(&adresse_b.session_epoch, &adresse_b)
+            .is_empty());
+
+        // EOF von A entfernt ausschliesslich A und genau einmal.
+        drop(control_a);
+        assert!(warte_auf(5000, || {
+            coordinator.subscription_anzahl() == 0
+                && coordinator.subscription_cleanups() == 2
+        }));
+        assert!(coordinator
+            .session_push_ziele(&adresse_a.session_epoch, &adresse_a)
+            .is_empty());
+        drop(control_b);
+        drop(griff);
+    }
+
+    /// SONDE-011 A4-SI / 28-B: Der Serverpfad faehrt EOF,
+    /// Protokoll-/Writefehler und Serverstopp wirklich. Ein Post-Welcome-
+    /// Idle-Timeout existiert heute nicht; dessen identischer atomarer Hook
+    /// wird deterministisch ausgeloest, statt im Test eine nicht existente
+    /// Transportfrist zu erfinden.
+    #[test]
+    fn subscription_cleanup_vor_weiterem_push() {
+        for grund in ["EOF", "Protokollfehler", "Timeout", "Writefehler", "Serverstopp"] {
+            let pipe = probe_pipe(&format!("subscriptioncleanup-{grund}"));
+            let coordinator = Arc::new(crate::coordinator::Coordinator::default());
+            let mut griff =
+                v3_server_starten(&pipe, coordinator.clone(), "test".into()).unwrap();
+            let adresse = test_adresse('c');
+            let client = Testclient::neu(&pipe).unwrap();
+            assert!(client.schreiben(&control_hello_adresse(&adresse)), "{grund}");
+            let (link, _) = welcome_lesen(&client).expect("welcome");
+            assert!(client.schreiben(&subscribe(&adresse)), "{grund}");
+            assert!(
+                warte_auf(3000, || coordinator.subscription_anzahl() == 1),
+                "{grund}"
+            );
+
+            let mut client = Some(client);
+            match grund {
+                "EOF" => drop(client.take()),
+                "Protokollfehler" => {
+                    assert!(client.as_ref().unwrap().schreiben(&p2(b"falsche-familie")));
+                }
+                "Timeout" => coordinator.control_ende(&link),
+                "Writefehler" => {
+                    assert!(client
+                        .as_ref()
+                        .unwrap()
+                        .schreiben(&p0("{\"type\":\"heartbeat\",\"sequence\":1}")));
+                    drop(client.take());
+                }
+                "Serverstopp" => griff.stoppen(),
+                _ => unreachable!(),
+            }
+
+            assert!(
+                warte_auf(5000, || coordinator.subscription_anzahl() == 0),
+                "{grund}: Subscription blieb stehen"
+            );
+            assert!(
+                coordinator
+                    .session_push_ziele(&adresse.session_epoch, &adresse)
+                    .is_empty(),
+                "{grund}: Push sah den geschlossenen Link"
+            );
+            assert_eq!(coordinator.subscription_cleanups(), 1, "{grund}");
+            drop(client);
+            griff.stoppen();
+        }
     }
 }

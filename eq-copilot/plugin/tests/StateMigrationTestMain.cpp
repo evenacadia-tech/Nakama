@@ -19,6 +19,7 @@
 #include "NakamaKanon.h"
 #include "NakamaParameter.h"
 #include "NakamaState.h"
+#include "ControlClient.h"
 #include "PluginProcessor.h"
 
 #include <algorithm>
@@ -874,7 +875,83 @@ int main (int argc, char* argv[])
                 juce::String (geprueft) + " Kombinationen aus Klasse x Messposition wie §2.2 - "
                 "post_fader_contribution fuer KEINE Klasse (contribution_aux unsupported)",
                 juce::String (ok));
+        pruefe (! state::positionErlaubt (state::Klasse::main, state::Messposition::post_fader_contribution)
+                    && ! state::positionErlaubt (state::Klasse::passive_probe, state::Messposition::post_fader_contribution)
+                    && ! state::positionErlaubt (state::Klasse::active_probe, state::Messposition::post_fader_contribution)
+                    && ! state::positionErlaubt (state::Klasse::legacy, state::Messposition::post_fader_contribution),
+                "post_fader_contribution_bleibt_fuer_alle_sondenklassen_gesperrt");
         a.schliesse ("Positionsmatrix vollstaendig, jede Klasse in ihrem Bundle");
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // G8c · NAK-40: persistente Original-ID ↔ abgeleitete v3-Wireadresse
+    // ══════════════════════════════════════════════════════════════════════
+    {
+        Abschnitt a;
+        bool fixtureOk = false;
+        const auto aliasFixture = ladeJson (
+            finde ("eq-copilot/fixtures/v3/instance-address-alias-v1.json"), fixtureOk);
+        int vektorenOk = 0;
+        if (fixtureOk)
+            if (const auto* vektoren = aliasFixture["vectors"].getArray())
+                for (const auto& v : *vektoren)
+                {
+                    const auto original = v["instance_id"].toString().toStdString();
+                    const auto erwartet = v["wire_instance_id"].toString().toStdString();
+                    if (nakama::ipc::instanceAdresseAusState (original) == erwartet)
+                        ++vektorenOk;
+                }
+        pruefe (fixtureOk && vektorenOk == 6,
+                "instance_address_alias_vectors", juce::String (vektorenOk) + "/6");
+
+        const std::string legacy = "11111111-2222-3333-4444-555555555555";
+        const std::string wire = "63de6caeedaa39f91a6e35a64de7fd7d";
+        pruefe (nakama::ipc::instanceAliasZielPasst (legacy, wire),
+                "instance_alias_target_recomputed_and_matched");
+        pruefe (! nakama::ipc::instanceAliasZielPasst (legacy,
+                    "ffffffffffffffffffffffffffffffff")
+                    && ! nakama::ipc::instanceAliasZielPasst ("", wire),
+                "instance_alias_unknown_fail_closed");
+
+        auto leererAltstand = saatSchema1 ("sensor", "", "");
+        {
+            auto baum = juce::ValueTree::readFromData (
+                leererAltstand.getData(), leererAltstand.getSize());
+            baum.removeProperty ("sensor_id", nullptr);
+            leererAltstand = alsBlock (baum);
+        }
+        state::Zustand frischAusLeer;
+        const auto leerErgebnis = state::lade (leererAltstand.getData(), leererAltstand.getSize(),
+                                               state::Bundle::eqcp(), frischAusLeer);
+        const auto frischeId = frischAusLeer.common.instanceId.toStdString();
+        pruefe (nakama::ipc::instanceAdresseAusState ("").empty()
+                    && leerErgebnis == state::LadeErgebnis::migriert
+                    && nakama::ipc::istHex32 (frischeId),
+                "instance_address_empty_uses_fresh_uuid", frischAusLeer.common.instanceId);
+
+        auto baum = schema2Baum ("legacy", "insert", false);
+        baum.getChildWithName ("Common").setProperty (
+            "instance_id", juce::String::fromUTF8 (legacy.c_str()), nullptr);
+        const auto originalBytes = alsBlock (baum);
+        state::Zustand geladen, erneut;
+        juce::MemoryBlock gespeichert, erneutGespeichert;
+        const auto geladenErgebnis = state::lade (originalBytes.getData(), originalBytes.getSize(),
+                                                  state::Bundle::eqcp(), geladen);
+        const auto adressiert = nakama::ipc::instanceAdresseAusState (
+            geladen.common.instanceId.toStdString());
+        state::speichere (geladen, gespeichert);
+        const auto erneutErgebnis = state::lade (gespeichert.getData(), gespeichert.getSize(),
+                                                 state::Bundle::eqcp(), erneut);
+        state::speichere (erneut, erneutGespeichert);
+        pruefe (geladenErgebnis == state::LadeErgebnis::geladen
+                    && erneutErgebnis == state::LadeErgebnis::geladen
+                    && adressiert == wire
+                    && geladen.common.instanceId.toStdString() == legacy
+                    && erneut.common.instanceId.toStdString() == legacy
+                    && gleich (originalBytes, gespeichert)
+                    && gleich (gespeichert, erneutGespeichert),
+                "legacy_instance_id_save_load_bytegleich");
+        a.schliesse ("NAK-40 Aliasvektoren, Zielvergleich und Save+Load");
     }
 
     // ══════════════════════════════════════════════════════════════════════

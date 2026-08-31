@@ -201,6 +201,25 @@
       "type": "object",
       "required": ["active", "bounds_valid"],
       "additionalProperties": false,
+      "x-nakama-discriminator": "bounds_valid",
+      "oneOf": [
+        {
+          "required": ["start_ppq", "end_ppq"],
+          "properties": {
+            "bounds_valid": { "const": true }
+          }
+        },
+        {
+          "properties": {
+            "bounds_valid": { "const": false },
+            "derived_sample_bounds": {
+              "properties": {
+                "derivation": { "const": "unproven" }
+              }
+            }
+          }
+        }
+      ],
       "properties": {
         "active": { "type": "boolean" },
         "bounds_valid": {
@@ -229,6 +248,93 @@
         "validity"
       ],
       "additionalProperties": false,
+      "x-nakama-discriminator": "time_basis",
+      "oneOf": [
+        {
+          "required": ["project_sample_start"],
+          "properties": {
+            "time_basis": { "const": "project_samples" },
+            "validity": { "properties": { "project_time": { "const": true } } }
+          },
+          "x-nakama-discriminator": "/validity/cycle_bounds",
+          "oneOf": [
+            {
+              "required": ["cycle"],
+              "properties": {
+                "validity": { "properties": { "cycle_bounds": { "const": true } } },
+                "cycle": { "required": ["start_ppq", "end_ppq"] }
+              },
+              "x-nakama-discriminator": "/validity/continuous_time",
+              "oneOf": [
+                {
+                  "required": ["continuous_time_samples"],
+                  "properties": { "validity": { "properties": { "continuous_time": { "const": true } } } }
+                },
+                {
+                  "properties": { "validity": { "properties": { "continuous_time": { "const": false } } } }
+                }
+              ]
+            },
+            {
+              "properties": {
+                "validity": { "properties": { "cycle_bounds": { "const": false } } }
+              },
+              "x-nakama-discriminator": "/validity/continuous_time",
+              "oneOf": [
+                {
+                  "required": ["continuous_time_samples"],
+                  "properties": { "validity": { "properties": { "continuous_time": { "const": true } } } }
+                },
+                {
+                  "properties": { "validity": { "properties": { "continuous_time": { "const": false } } } }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "properties": {
+            "time_basis": { "const": "local_monotonic" },
+            "project_sample_start": { "type": "null" },
+            "validity": { "properties": { "project_time": { "const": false } } }
+          },
+          "x-nakama-discriminator": "/validity/cycle_bounds",
+          "oneOf": [
+            {
+              "required": ["cycle"],
+              "properties": {
+                "validity": { "properties": { "cycle_bounds": { "const": true } } },
+                "cycle": { "required": ["start_ppq", "end_ppq"] }
+              },
+              "x-nakama-discriminator": "/validity/continuous_time",
+              "oneOf": [
+                {
+                  "required": ["continuous_time_samples"],
+                  "properties": { "validity": { "properties": { "continuous_time": { "const": true } } } }
+                },
+                {
+                  "properties": { "validity": { "properties": { "continuous_time": { "const": false } } } }
+                }
+              ]
+            },
+            {
+              "properties": {
+                "validity": { "properties": { "cycle_bounds": { "const": false } } }
+              },
+              "x-nakama-discriminator": "/validity/continuous_time",
+              "oneOf": [
+                {
+                  "required": ["continuous_time_samples"],
+                  "properties": { "validity": { "properties": { "continuous_time": { "const": true } } } }
+                },
+                {
+                  "properties": { "validity": { "properties": { "continuous_time": { "const": false } } } }
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "properties": {
         "process_context_present": {
           "$comment": "§32.3 woertlich: 'Die Wrapper-Bridge liefert deshalb process_context_present und unabhaengige Validity-Bits; ohne Bridge gilt Projektzeit als unbewiesen.' Ohne dieses Bit kann ein Empfaenger 'der Host hat GAR KEINEN ProcessContext angelegt' nicht von 'Projektzeit ist ungueltig' unterscheiden - und das sind zwei verschiedene Konfidenzaussagen. Es ist deshalb PFLICHT und kein Validity-Bit: es beschreibt nicht die Gueltigkeit EINES Feldes, sondern ob der Host ueberhaupt eine Zeitquelle bereitgestellt hat.",
@@ -241,7 +347,7 @@
           "minimum": 0
         },
         "sequence": { "type": "integer", "minimum": 0 },
-        "time_basis": { "enum": ["project_samples", "local_monotonic"] },
+        "time_basis": { "type": "string" },
         "project_sample_start": { "type": "integer" },
         "sample_count": { "type": "integer", "minimum": 0, "maximum": 1048576 },
         "sample_rate": { "type": "number", "exclusiveMinimum": 0, "maximum": 768000 },
@@ -488,7 +594,7 @@
       "additionalProperties": false,
       "properties": {
         "adresse": { "$ref": "#/$defs/adresse" },
-        "plugin_kind": { "$ref": "#/$defs/plugin_kind" },
+        "plugin_kind": { "type": "string", "enum": ["main", "passive_probe", "active_probe", "legacy"] },
         "measurement_position": { "const": "insert" },
         "aussageklasse": { "const": "beobachtend" },
         "label": { "$ref": "#/$defs/probe_label" },
@@ -513,7 +619,7 @@
       "additionalProperties": false,
       "properties": {
         "adresse": { "$ref": "#/$defs/adresse" },
-        "plugin_kind": { "$ref": "#/$defs/plugin_kind" },
+        "plugin_kind": { "type": "string", "enum": ["passive_probe", "active_probe", "legacy"] },
         "measurement_position": { "const": "pre" },
         "aussageklasse": { "const": "beobachtend" },
         "label": { "$ref": "#/$defs/probe_label" },
@@ -538,7 +644,7 @@
       "additionalProperties": false,
       "properties": {
         "adresse": { "$ref": "#/$defs/adresse" },
-        "plugin_kind": { "$ref": "#/$defs/plugin_kind" },
+        "plugin_kind": { "type": "string", "enum": ["passive_probe", "active_probe", "legacy"] },
         "measurement_position": { "const": "post" },
         "aussageklasse": { "const": "beobachtend" },
         "label": { "$ref": "#/$defs/probe_label" },
@@ -563,7 +669,7 @@
       "additionalProperties": false,
       "properties": {
         "adresse": { "$ref": "#/$defs/adresse" },
-        "plugin_kind": { "$ref": "#/$defs/plugin_kind" },
+        "plugin_kind": { "type": "string", "enum": ["main", "passive_probe", "active_probe", "legacy"], "maxLength": 0 },
         "measurement_position": { "const": "post_fader_contribution" },
         "aussageklasse": { "const": "beitrag" },
         "label": { "$ref": "#/$defs/probe_label" },

@@ -6,13 +6,37 @@
   "erzeugung": "Die .bin-Dateien entstehen mit dem GEPINNTEN flatc aus einer JSON-Beschreibung (flatc -b). Ein eigener Encoder waere eine dritte Implementierung des Formats, die niemand prueft.",
   "byte_mutation_von": "Markiert einen Puffer, den flatc nicht erzeugen KANN (falsche Dateikennung, abgeschnitten, zerstoerter Wurzeloffset). Er entsteht als Byte-Mutation des genannten gueltigen Puffers.",
   "regeln": "Die geschlossene Liste der Regelnamen steht in eq-copilot/schemas/v3/flatbuffers/README.md. Ein Verstoss ist (pfad, regel); die Menge wird kanonisch nach (pfad, regel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
-  "anzahl_gueltig": 9,
-  "anzahl_ungueltig": 53,
+  "anzahl_gueltig": 14,
+  "anzahl_ungueltig": 72,
   "fixtures": [
     {
       "datei": "gueltig/alle-validity-bits.bin",
       "urteil": "gueltig",
       "warum": "alle sieben Bits gesetzt (§32.3). Die Latenz 0 ist hier GEMESSEN und nicht 'unbekannt' - genau die Unterscheidung, fuer die das eigene Bit existiert",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/band-stereo-bitmap-alle-werte-ungueltig.bin",
+      "urteil": "gueltig",
+      "warum": "nicht gesetzte Bitmapwerte tragen keine Messbehauptung",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/band-stereo-fehlt-altframe.bin",
+      "urteil": "gueltig",
+      "warum": "altes Frame ohne optionales Feld bleibt gueltig",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/band-stereo-wert-0.bin",
+      "urteil": "gueltig",
+      "warum": "0 ist die einschliessliche Untergrenze",
+      "verstoesse": []
+    },
+    {
+      "datei": "gueltig/band-stereo-wert-1.bin",
+      "urteil": "gueltig",
+      "warum": "1 ist die einschliessliche Obergrenze",
       "verstoesse": []
     },
     {
@@ -64,6 +88,12 @@
       "verstoesse": []
     },
     {
+      "datei": "gueltig/transport-local-monotonic.bin",
+      "urteil": "gueltig",
+      "warum": "lokale Zeit traegt weder Projektbit noch Projektposition",
+      "verstoesse": []
+    },
+    {
       "datei": "ungueltig/abgeschnitten.bin",
       "urteil": "ungueltig",
       "warum": "die halbe Nachricht. Der Verifier ist der eine Punkt, an dem FlatBuffers wirklich hart ist - ohne ihn waere jeder Feldzugriff undefiniert",
@@ -83,6 +113,105 @@
         {
           "pfad": "/eintraege/0/frame/aktivitaet",
           "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/band-stereo-bitmap-laenge-falsch.bin",
+      "urteil": "ungueltig",
+      "warum": "64 Werte verlangen genau acht Bitmapbytes",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/band_stereo/gueltig_bitmap",
+          "regel": "band_stereo_bitmap_laenge"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/band-stereo-falsches-encoding.bin",
+      "urteil": "ungueltig",
+      "warum": "Band-Stereo wird nie quantisiert als dB gelesen",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/band_stereo/encoding",
+          "regel": "band_stereo_encoding"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/band-stereo-falsches-gitter.bin",
+      "urteil": "ungueltig",
+      "warum": "Band-Stereo ist fest an log64 gebunden",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/band_stereo/gitter",
+          "regel": "band_stereo_gitter"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/band-stereo-laenge-falsch.bin",
+      "urteil": "ungueltig",
+      "warum": "Band-Stereo traegt genau 64 Werte",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/band_stereo/werte_f32",
+          "regel": "band_stereo_bandzahl"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/band-stereo-nan.bin",
+      "urteil": "ungueltig",
+      "warum": "gesetzter Stereowert muss endlich sein",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/band_stereo/werte_f32/0",
+          "regel": "nicht_endlich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/band-stereo-saturated-true.bin",
+      "urteil": "ungueltig",
+      "warum": "Stereobreite kennt keine gesaettigte Kodierung",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/band_stereo/saturated",
+          "regel": "band_stereo_saturated"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/band-stereo-ueber-1.bin",
+      "urteil": "ungueltig",
+      "warum": "gesetzter Stereowert liegt ausserhalb [0,1]",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/band_stereo/werte_f32/0",
+          "regel": "band_stereo_bereich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/band-stereo-unter-0.bin",
+      "urteil": "ungueltig",
+      "warum": "gesetzter Stereowert liegt ausserhalb [0,1]",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/band_stereo/werte_f32/0",
+          "regel": "band_stereo_bereich"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/band-stereo-werte-i16-gesetzt.bin",
+      "urteil": "ungueltig",
+      "warum": "der i16-Traeger ist fuer Band-Stereo verboten",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/band_stereo/werte_i16",
+          "regel": "band_stereo_werte_i16"
         }
       ]
     },
@@ -547,6 +676,39 @@
       ]
     },
     {
+      "datei": "ungueltig/schleife-bounds-invalid-mit-validated-block-mapping.bin",
+      "urteil": "ungueltig",
+      "warum": "bounds_valid=false darf keine validierte Sampleableitung behaupten",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/schleife/abgeleitete_grenzen/herleitung",
+          "regel": "validated_mapping_ohne_bounds"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/schleife-bounds-valid-ohne-end-ppq.bin",
+      "urteil": "ungueltig",
+      "warum": "bounds_valid=true verlangt beide PPQ-Grenzen",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/schleife/end_ppq",
+          "regel": "cycle_end_ppq_fehlt"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/schleife-bounds-valid-ohne-start-ppq.bin",
+      "urteil": "ungueltig",
+      "warum": "bounds_valid=true verlangt beide PPQ-Grenzen",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/schleife/start_ppq",
+          "regel": "cycle_start_ppq_fehlt"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/sid-leer.bin",
       "urteil": "ungueltig",
       "warum": "die SID wird nie geparst, aber ohne sie gibt es keine Nutzergrenze",
@@ -617,6 +779,28 @@
       "byte_mutation_von": "gueltig/mit-schleife.bin"
     },
     {
+      "datei": "ungueltig/transport-local-monotonic-mit-project-sample-start.bin",
+      "urteil": "ungueltig",
+      "warum": "lokale Zeit darf keine Projektposition behaupten",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/project_sample_start",
+          "regel": "local_project_sample_start"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/transport-local-monotonic-mit-project-time-bit.bin",
+      "urteil": "ungueltig",
+      "warum": "local_monotonic verlangt ein geloeschtes project_time-Bit",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/gueltigkeit",
+          "regel": "local_project_time_bit"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/transport-ohne-context-bit.bin",
       "urteil": "ungueltig",
       "warum": "§32.3: ohne dieses Bit ist 'der Host hat GAR KEINEN ProcessContext angelegt' nicht von 'Projektzeit ist ungueltig' zu unterscheiden. Es ist ein Optional und kein bool mit Default - sonst waere sein Fehlen unsichtbar",
@@ -624,6 +808,61 @@
         {
           "pfad": "/eintraege/0/frame/transport/process_context_present",
           "regel": "context_bit_fehlt"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/transport-project-samples-ohne-project-sample-start.bin",
+      "urteil": "ungueltig",
+      "warum": "project_samples verlangt einen expliziten Projektstart",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/project_sample_start",
+          "regel": "project_sample_start_fehlt"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/transport-project-samples-ohne-project-time-bit.bin",
+      "urteil": "ungueltig",
+      "warum": "project_samples verlangt das project_time-Bit",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/gueltigkeit",
+          "regel": "project_time_bit_fehlt"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/validity-continuous-time-ohne-wert.bin",
+      "urteil": "ungueltig",
+      "warum": "continuous_time-Bit verlangt den optionalen Samplewert",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/continuous_time_samples",
+          "regel": "continuous_time_samples_fehlt"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/validity-cycle-bounds-ohne-end-ppq.bin",
+      "urteil": "ungueltig",
+      "warum": "cycle_bounds-Bit bescheinigt beide rohen PPQ-Grenzen",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/schleife/end_ppq",
+          "regel": "cycle_bounds_end_ppq_fehlt"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/validity-cycle-bounds-ohne-start-ppq.bin",
+      "urteil": "ungueltig",
+      "warum": "cycle_bounds-Bit bescheinigt beide rohen PPQ-Grenzen",
+      "verstoesse": [
+        {
+          "pfad": "/eintraege/0/frame/transport/schleife/start_ppq",
+          "regel": "cycle_bounds_start_ppq_fehlt"
         }
       ]
     },

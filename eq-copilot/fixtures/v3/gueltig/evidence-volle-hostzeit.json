@@ -30,7 +30,13 @@
     },
     "continuous_time_samples": 91238400,
     "input_presentation_latency": 0,
-    "output_presentation_latency": 512
+    "output_presentation_latency": 512,
+    "cycle": {
+      "active": true,
+      "bounds_valid": false,
+      "start_ppq": 918.0,
+      "end_ppq": 920.0
+    }
   },
   "metrics_version": 1,
   "baender": {

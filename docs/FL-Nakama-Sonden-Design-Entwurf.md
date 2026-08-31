@@ -1851,6 +1851,15 @@ IPC v3 benötigt mindestens:
 - `experiment_begin`, `experiment_abort`, `experiment_result`, `user_verdict`;
 - `error` mit maschinenlesbarem Code, betroffener Revision und Rückweg.
 
+**Festgehalten 31.08.2026 (SONDE-011, Entscheid 28-B):** Der Gegenpfad zu
+`subscribe_session` ist ausschließlich das Ende desselben Control-Links; eine
+Familie `unsubscribe_session` entsteht nicht. Eine Subscription darf nur die
+im Control-Hello gebundene effektive Adresse und Session tragen. EOF,
+Protokoll-/Writefehler, Timeout und Serverstopp entfernen nur die diesem Link
+gehörenden Subscriptions atomar vor einem späteren Push; ein Reconnect muss
+neu abonnieren. Der v3-Vertragsstand zählt damit 17 definierte und 9
+reservierte Familien, insgesamt **26** (einschließlich `reference_match`).
+
 Jede steuernde Nachricht trägt `command_id`, Zieladresse, `base_revision`, begrenzte `ttl_ms` und
 Schema-/Capability-Version. Die Probe leitet beim **ersten** Empfang eine Deadline aus ihrer
 eigenen monotonen Uhr (`steady_clock`/QPC) ab; Sender-Wandzeit darf nie einen Audio-Failsafe
@@ -3886,7 +3895,11 @@ Broker kann sie ohne Audiokopplung empfangen und rekonstruieren.
 - `HostBlockContext`, Ganzblock-SPSC, Quarantäne, Epoch-/Segmentlogik und Droptelemetrie;
 - fixed-memory `LoudnessAccumulator`; keine unbeschränkt wachsenden `kZellen` oder
   Projektzeitvektoren;
-- FeatureEngine für 64-Live- und 221-Evidenzbänder, Gültigkeitsbitmap, Band-Stereo und Ereignisse;
+- FeatureEngine für 64-Live- und 221-Evidenzbänder, Gültigkeitsbitmap und Ereignisse;
+  Band-Stereo reist optional als FlatBuffers-`Frame.band_stereo:Bandwerte`
+  mit Feld-ID 10 und Envelope-`schema_minor=1` (64 float32-Werte,
+  8-Byte-Gültigkeitsbitmap, `saturated=false`); alte Frames ohne das Feld
+  bleiben lesbar;
 - zwei gekoppelte v3-Verbindungen mit P0/P1/P2-Backpressure, CRC, Fuzzgrenzen und v2-Isolation;
 - Coordinator als alleiniger Sessionowner, monotone Liveness/Eviction und Store-Single-Writer;
 - SQLite-Migration 1, append-only Events, Projektionen und Outbox-Killtests;

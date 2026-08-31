@@ -17,9 +17,11 @@
 #include "PipeToken.h"
 #include "TelemetryClient.h"
 #include "WireEnvelope.h"
+#include "../core/analysis/FeatureEngine.h"
 
 #include <juce_core/juce_core.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
@@ -201,6 +203,10 @@ public:
     /// ob eine bestimmte Nachricht WIRKLICH angekommen ist — eine Zahl allein
     /// sagt nichts darueber, WELCHE fehlt.
     std::vector<std::string> p0Texte, p1Texte;
+    /// Vollstaendiger zuletzt empfangener Telemetrie-Wireframe inklusive
+    /// u32-Laengenpraefix. Damit misst der Sender-Test schema_minor an Offset
+    /// 7 des tatsaechlich geschriebenen Rahmens.
+    std::vector<std::uint8_t> letzterTelemetryWire;
 
     /// Kopplungswerte. Sie sind veraenderlich: eine neu aufgebaute
     /// Control-Verbindung bekommt beim echten Broker eine frische `link_id`,
@@ -538,6 +544,32 @@ private:
 
         // ── ab hier nur noch v3-Frames ────────────────────────────────────
         StromLeser leser;
+        std::vector<std::uint8_t> wirePuffer;
+        auto wireMerken = [&] (const std::uint8_t* daten, std::size_t n)
+        {
+            if (! istTelemetry || n == 0)
+                return;
+            wirePuffer.insert (wirePuffer.end(), daten, daten + n);
+            while (wirePuffer.size() >= 4)
+            {
+                const std::uint32_t frameLen = static_cast<std::uint32_t> (wirePuffer[0])
+                    | (static_cast<std::uint32_t> (wirePuffer[1]) << 8)
+                    | (static_cast<std::uint32_t> (wirePuffer[2]) << 16)
+                    | (static_cast<std::uint32_t> (wirePuffer[3]) << 24);
+                if (frameLen < kKopfBytes || frameLen > kMaxFrameBytes)
+                    return;
+                const auto gesamt = static_cast<std::size_t> (4u + frameLen);
+                if (wirePuffer.size() < gesamt)
+                    return;
+                {
+                    std::lock_guard<std::mutex> l (textMutex);
+                    letzterTelemetryWire.assign (wirePuffer.begin(),
+                                                   wirePuffer.begin() + gesamt);
+                }
+                wirePuffer.erase (wirePuffer.begin(), wirePuffer.begin() + gesamt);
+            }
+        };
+        wireMerken (roh.data(), roh.size());
         leser.fuettern (roh.data(), roh.size());
         while (laeuft.load())
         {
@@ -606,7 +638,10 @@ private:
             if (gelesen < 0)
                 break;
             if (gelesen > 0)
+            {
+                wireMerken (puffer, static_cast<std::size_t> (gelesen));
                 leser.fuettern (puffer, static_cast<std::size_t> (gelesen));
+            }
         }
         schliessen (h);
     }
@@ -1524,7 +1559,10 @@ int main()
         TestServer server (testPipeName ("kopplung"));
         server.starten();
 
-        const auto adresse = testAdresse (hex32 ('7'));
+        auto adresse = testAdresse (hex32 ('7'));
+        const std::string legacyInstanceId = "11111111-2222-3333-4444-555555555555";
+        const std::string wireInstanceId = "63de6caeedaa39f91a6e35a64de7fd7d";
+        adresse.instanceId = legacyInstanceId;
         ControlClient control ([&] {
             ControlHello h;
             h.adresse = adresse;
@@ -1560,6 +1598,35 @@ int main()
                 "Telemetry koppelt mit link_id + challenge + derselben runtime_nonce",
                 telemetrie.snapshot().letzterFehler);
 
+        nakama::analyse::FeatureFrame feature {};
+        feature.metricsVersion = 1;
+        feature.transport.transport_epoch = 1;
+        feature.transport.continuity_segment = 1;
+        feature.transport.sequence = 1;
+        feature.transport.zeitbasis = nakama::analyse::Zeitbasis::project_samples;
+        feature.transport.project_sample_start_gesetzt = true;
+        feature.transport.sample_count = 512;
+        feature.transport.sample_rate = 48000.0;
+        feature.transport.gueltigkeit = nakama::analyse::kGProjectTime;
+        feature.transport.process_context_present_gesetzt = true;
+        feature.transport.process_context_present = true;
+        feature.live.gitter = nakama::analyse::GitterId::nakama_log64_v1;
+        feature.live.encoding = nakama::analyse::BandEncoding::q_db_0p1_i16;
+        std::fill (std::begin (feature.live.bitmap), std::end (feature.live.bitmap),
+                   std::uint8_t { 0xff });
+        feature.liveBreite[0] = 0.5f;
+        feature.liveBreiteBitmap[0] = 0x01;
+        const bool featureAngenommen = telemetrie.veroeffentlichen (feature, adresse);
+        const bool featureGesendet = warteAuf (3000, [&] { return server.p2.load() >= 1; });
+        bool minorBeobachtet = false;
+        {
+            std::lock_guard<std::mutex> l (server.textMutex);
+            minorBeobachtet = server.letzterTelemetryWire.size() > 7
+                && server.letzterTelemetryWire[7] == kFeatureBatchSchemaMinor;
+        }
+        pruefe (featureAngenommen && featureGesendet && minorBeobachtet,
+                "band_stereo_sender_emittiert_erhoehten_schema_minor");
+
         // P0-Rundlauf.
         control.sendeP0 ("{\"type\":\"heartbeat\",\"sequence\":1}");
         pruefe (warteAuf (3000, [&] { return server.p0.load() >= 1; }),
@@ -1589,6 +1656,11 @@ int main()
             pruefe (server.letztesControlHello.find (nonce) != std::string::npos
                         && server.letztesTelemetryHello.find (nonce) != std::string::npos,
                     "beide Bootstrap-Hellos tragen dieselbe runtime_nonce");
+            const std::string alias = "\"instance_id\":\"" + wireInstanceId + "\"";
+            pruefe (server.letztesControlHello.find (alias) != std::string::npos
+                        && server.letztesTelemetryHello.find (alias) != std::string::npos
+                        && adresse.instanceId == legacyInstanceId,
+                    "instance_address_alias_is_on_actual_wire");
             pruefe (server.letztesControlHello.find ("\"protocol\":3") != std::string::npos,
                     "das Bootstrap-Hello ist v3 und nicht v2");
         }

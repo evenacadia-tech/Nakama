@@ -82,7 +82,8 @@
         "crest_db": 6,
         "psr_db": 7,
         "breite": 8,
-        "korrelation": 9
+        "korrelation": 9,
+        "band_stereo": 10
       },
       "verbrannt": []
     },
@@ -103,6 +104,6 @@
 
   "erwartet_gesamt": {
     "tabellen": 8,
-    "felder": 47
+    "felder": 48
   }
 }

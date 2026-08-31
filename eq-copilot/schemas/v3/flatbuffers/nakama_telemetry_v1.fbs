@@ -224,6 +224,10 @@ table Frame {
   psr_db:float = null (id: 7);
   breite:float = null (id: 8);
   korrelation:float = null (id: 9);
+  /// Optionale Band-Stereobreite auf dem festen 64er-Loggitter. Sie ist ein
+  /// eigener Bandsatz, nie eine Umdeutung von `breite`: float32, 64 Werte,
+  /// acht Bitmapbytes, gueltige Werte im Bereich [0, 1], saturated=false.
+  band_stereo:Bandwerte (id: 10);
 }
 
 /// Ein Eintrag des Batches: genau eine Quelle mit genau ihrem aktuellen Frame.

@@ -860,21 +860,64 @@ void aufloesen (const juce::var& wurzel, const juce::var& knoten, const juce::St
 
     Der Wert gilt nur, wenn ALLE Untervarianten denselben festlegen; sonst
     waere die Zuordnung mehrdeutig. */
-bool diskriminatorwert (const juce::var& wurzel, const juce::var& zweig,
-                        const juce::String& disc, juce::String& ergebnis)
+bool pointerSegment (const juce::String& roh, juce::String& out)
 {
-    const auto props = hole (zweig, "properties");
-    if (hatEigenschaft (props, disc))
+    out.clear();
+    for (int i = 0; i < roh.length(); ++i)
     {
-        const auto feld = hole (props, disc);
-        if (hatEigenschaft (feld, "const"))
+        if (roh[i] != '~')
         {
-            const auto k = hole (feld, "const");
-            if (k.isString())
-            {
-                ergebnis = k.toString();
-                return true;
-            }
+            out += roh[i];
+            continue;
+        }
+        if (++i >= roh.length())
+            return false;
+        if (roh[i] == '0') out += '~';
+        else if (roh[i] == '1') out += '/';
+        else return false;
+    }
+    return true;
+}
+
+bool diskriminatorSchema (const juce::var& wurzel, const juce::var& zweig,
+                          const juce::String& disc, juce::var& ergebnis)
+{
+    juce::StringArray segmente;
+    if (disc.startsWithChar ('/'))
+        segmente.addTokens (disc.substring (1), "/", "");
+    else
+        segmente.add (disc);
+
+    juce::var aktuell = zweig;
+    for (const auto& roh : segmente)
+    {
+        juce::var aufgeloest; juce::String pfad;
+        aufloesen (wurzel, aktuell, "#", aufgeloest, pfad);
+        juce::String segment;
+        if (! pointerSegment (roh, segment))
+            return false;
+        const auto props = hole (aufgeloest, "properties");
+        if (! hatEigenschaft (props, segment))
+            return false;
+        aktuell = hole (props, segment);
+    }
+    juce::String pfad;
+    aufloesen (wurzel, aktuell, "#", ergebnis, pfad);
+    return true;
+}
+
+bool diskriminatorwert (const juce::var& wurzel, const juce::var& zweig,
+                        const juce::String& disc, juce::var& ergebnis)
+{
+    juce::var feld;
+    if (diskriminatorSchema (wurzel, zweig, disc, feld)
+        && hatEigenschaft (feld, "const"))
+    {
+        const auto k = hole (feld, "const");
+        if (k.isString() || k.isBool())
+        {
+            ergebnis = k;
+            return true;
         }
     }
 
@@ -883,16 +926,16 @@ bool diskriminatorwert (const juce::var& wurzel, const juce::var& zweig,
         return false;
 
     bool erster = true;
-    juce::String gemeinsam;
+    juce::var gemeinsam;
     for (int i = 0; i < unter->size(); ++i)
     {
         juce::var ziel; juce::String zpfad;
         aufloesen (wurzel, (*unter)[i], "#", ziel, zpfad);
-        juce::String w;
+        juce::var w;
         if (! diskriminatorwert (wurzel, ziel, disc, w))
             return false;
         if (erster) { gemeinsam = w; erster = false; }
-        else if (gemeinsam != w) return false;
+        else if (! gleich (gemeinsam, w)) return false;
     }
     if (erster)
         return false;
@@ -916,32 +959,65 @@ void pruefeWert (const juce::var& wurzel, const juce::var& knotenRoh,
                             ? hole (knoten, "x-nakama-discriminator").toString()
                             : juce::String ("type");
 
-        juce::String wert;
-        const bool hatWert = istObjekt (daten) && hatEigenschaft (daten, disc)
-                             && hole (daten, disc).isString();
-        if (hatWert)
-            wert = hole (daten, disc).toString();
+        juce::var wert;
+        bool hatWert = false;
+        if (istObjekt (daten))
+        {
+            if (disc.startsWithChar ('/'))
+            {
+                juce::var aktuell = daten;
+                juce::StringArray segmente;
+                segmente.addTokens (disc.substring (1), "/", "");
+                hatWert = true;
+                for (const auto& roh : segmente)
+                {
+                    juce::String segment;
+                    if (! pointerSegment (roh, segment) || ! istObjekt (aktuell)
+                        || ! hatEigenschaft (aktuell, segment))
+                    {
+                        hatWert = false;
+                        break;
+                    }
+                    aktuell = hole (aktuell, segment);
+                }
+                if (hatWert)
+                    wert = aktuell;
+            }
+            else if (hatEigenschaft (daten, disc))
+            {
+                wert = hole (daten, disc);
+                hatWert = true;
+            }
+        }
+        hatWert = hatWert && (wert.isString() || wert.isBool());
 
+        bool getroffen = false;
         if (hatWert)
         {
             for (int i = 0; i < zweige->size(); ++i)
             {
                 juce::var ziel; juce::String zpfad;
                 aufloesen (wurzel, (*zweige)[i], sp + "/oneOf/" + juce::String (i), ziel, zpfad);
-                juce::String k;
-                if (diskriminatorwert (wurzel, ziel, disc, k) && k == wert)
+                juce::var k;
+                if (diskriminatorwert (wurzel, ziel, disc, k) && gleich (k, wert))
                 {
                     pruefeWert (wurzel, ziel, zpfad, daten, instanz, out);
-                    return;
+                    getroffen = true;
+                    break;
                 }
             }
         }
 
-        // Ist die Instanz gar kein Objekt, gibt es keine Eigenschaft, auf die
-        // der Pfad zeigen koennte - dann zeigt er auf die Instanz selbst.
-        out.push_back ({ istObjekt (daten) ? zeigerTeil (instanz, disc) : instanz,
-                         sp + "/oneOf", "oneOf" });
-        return;
+        if (! getroffen)
+        {
+            // Ist die Instanz gar kein Objekt, gibt es keine Eigenschaft, auf
+            // die der Pfad zeigen koennte - dann zeigt er auf die Instanz.
+            const auto ort = ! istObjekt (daten) ? instanz
+                             : disc.startsWithChar ('/') ? instanz + disc
+                             : zeigerTeil (instanz, disc);
+            out.push_back ({ ort, sp + "/oneOf", "oneOf" });
+            return;
+        }
     }
 
     // --- type ------------------------------------------------------------

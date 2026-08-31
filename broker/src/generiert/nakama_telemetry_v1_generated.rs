@@ -1483,6 +1483,7 @@ impl<'a> Frame<'a> {
   pub const VT_PSR_DB: ::flatbuffers::VOffsetT = 18;
   pub const VT_BREITE: ::flatbuffers::VOffsetT = 20;
   pub const VT_KORRELATION: ::flatbuffers::VOffsetT = 22;
+  pub const VT_BAND_STEREO: ::flatbuffers::VOffsetT = 24;
 
   #[inline]
   pub unsafe fn init_from_table(table: ::flatbuffers::Table<'a>) -> Self {
@@ -1494,6 +1495,7 @@ impl<'a> Frame<'a> {
     args: &'args FrameArgs<'args>
   ) -> ::flatbuffers::WIPOffset<Frame<'bldr>> {
     let mut builder = FrameBuilder::new(_fbb);
+    if let Some(x) = args.band_stereo { builder.add_band_stereo(x); }
     if let Some(x) = args.korrelation { builder.add_korrelation(x); }
     if let Some(x) = args.breite { builder.add_breite(x); }
     if let Some(x) = args.psr_db { builder.add_psr_db(x); }
@@ -1578,6 +1580,16 @@ impl<'a> Frame<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<f32>(Frame::VT_KORRELATION, None)}
   }
+  /// Optionale Band-Stereobreite auf dem festen 64er-Loggitter. Sie ist ein
+  /// eigener Bandsatz, nie eine Umdeutung von `breite`: float32, 64 Werte,
+  /// acht Bitmapbytes, gueltige Werte im Bereich [0, 1], saturated=false.
+  #[inline]
+  pub fn band_stereo(&self) -> Option<Bandwerte<'a>> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<::flatbuffers::ForwardsUOffset<Bandwerte>>(Frame::VT_BAND_STEREO, None)}
+  }
 }
 
 impl ::flatbuffers::Verifiable for Frame<'_> {
@@ -1596,6 +1608,7 @@ impl ::flatbuffers::Verifiable for Frame<'_> {
      .visit_field::<f32>("psr_db", Self::VT_PSR_DB, false)?
      .visit_field::<f32>("breite", Self::VT_BREITE, false)?
      .visit_field::<f32>("korrelation", Self::VT_KORRELATION, false)?
+     .visit_field::<::flatbuffers::ForwardsUOffset<Bandwerte>>("band_stereo", Self::VT_BAND_STEREO, false)?
      .finish();
     Ok(())
   }
@@ -1611,6 +1624,7 @@ pub struct FrameArgs<'a> {
     pub psr_db: Option<f32>,
     pub breite: Option<f32>,
     pub korrelation: Option<f32>,
+    pub band_stereo: Option<::flatbuffers::WIPOffset<Bandwerte<'a>>>,
 }
 impl<'a> Default for FrameArgs<'a> {
   #[inline]
@@ -1626,6 +1640,7 @@ impl<'a> Default for FrameArgs<'a> {
       psr_db: None,
       breite: None,
       korrelation: None,
+      band_stereo: None,
     }
   }
 }
@@ -1676,6 +1691,10 @@ impl<'a: 'b, 'b, A: ::flatbuffers::Allocator + 'a> FrameBuilder<'a, 'b, A> {
     self.fbb_.push_slot_always::<f32>(Frame::VT_KORRELATION, korrelation);
   }
   #[inline]
+  pub fn add_band_stereo(&mut self, band_stereo: ::flatbuffers::WIPOffset<Bandwerte<'b >>) {
+    self.fbb_.push_slot_always::<::flatbuffers::WIPOffset<Bandwerte>>(Frame::VT_BAND_STEREO, band_stereo);
+  }
+  #[inline]
   pub fn new(_fbb: &'b mut ::flatbuffers::FlatBufferBuilder<'a, A>) -> FrameBuilder<'a, 'b, A> {
     let start = _fbb.start_table();
     FrameBuilder {
@@ -1705,6 +1724,7 @@ impl ::core::fmt::Debug for Frame<'_> {
       ds.field("psr_db", &self.psr_db());
       ds.field("breite", &self.breite());
       ds.field("korrelation", &self.korrelation());
+      ds.field("band_stereo", &self.band_stereo());
       ds.finish()
   }
 }

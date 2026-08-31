@@ -287,7 +287,15 @@ $kanon = @(
         Art        = 'cargo'
         Argumente  = @('test', '--manifest-path', 'broker/Cargo.toml', '--color', 'never')
         AbPhase    = 'jetzt'
-        Behauptung = 'Broker-Vertragstests gruen (Framing, Protokoll, Bindung, Aggregat, Server).'
+        Behauptung = 'Broker-Vertragstests gruen (Framing, Protokoll, Bindung, Aggregat, Server, v3-Coordinator, NAK-40-Alias/Kollisionsquarantaene und sticky Interventionszustand).'
+    }
+    [pscustomobject]@{
+        Kuerzel    = 'A4-SI'
+        Name       = 'subscription_server_integration'
+        Art        = 'cargo'
+        Argumente  = @('test', '--manifest-path', 'broker/Cargo.toml', '--color', 'never', 'subscription_')
+        AbPhase    = 'jetzt'
+        Behauptung = 'SONDE-011/28-B Server-Integration auf Probe-Pipenamen: subscribe_session ist an Adresse, Session und eigenen Control-Link gebunden; Fremdadressen fallen; EOF, Protokoll-/Writefehler, Timeout-Hook und Serverstopp entfernen nur den eigenen Besitz atomar vor jedem spaeteren Push.'
     }
     [pscustomobject]@{
         Kuerzel    = 'A4b'
@@ -315,7 +323,7 @@ $kanon = @(
     # A9 prueft zusaetzlich, dass flatc, C++-Header und Rust-Crate dieselbe
     # Version tragen - der erzeugte Code ruft in diese Laufzeit.
     [pscustomobject]@{ Kuerzel='A9';  Name='pruefe_flatc_drift.py';  Art='python'; Argumente=@();            AbPhase='jetzt'; Behauptung='Codegen-Drift ist 0: die Neugenerierung aus dem .fbs ist bytegleich zum committeten C++- und Rust-Code; flatc, C++-Header und Rust-Crate tragen dieselbe gepinnte Version; jedes Tabellenfeld traegt eine explizite Feld-ID.' }
-    [pscustomobject]@{ Kuerzel='A10'; Name='erzeuge_fb_fixtures.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei.' }
+    [pscustomobject]@{ Kuerzel='A10'; Name='erzeuge_fb_fixtures.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='Binaerer Fixture-Korpus und sein MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; sechs NAK-29-Transportrelationen und band_stereo ID 10 samt saturated-/Grenzfaellen sind in beiden Lesern gedeckt.' }
 
     # --- v2-Vertraege (Kontext-Inventur 21.08.) --------------------------------
     #
@@ -412,7 +420,7 @@ $kanon = @(
     # --- geplant: laufen automatisch mit, sobald sie gebaut sind -------------
     [pscustomobject]@{ Kuerzel='B1'; Name='EqCopIdentityTest';       Art='plugin'; Argumente=@(); AbPhase='P0'; Behauptung='Bundle-Identitaet (CIDs, JUCE_VST3_CAN_REPLACE_VST2=0) eingefroren.' }
     # B2 wurde in P1 gebaut (SONDE-006): Schema 2, Parameterbestand, Migration, state_hash.
-    [pscustomobject]@{ Kuerzel='B2'; Name='EqCopStateMigrationTest'; Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='State-Schema 2: Roundtrip bytegleich, Schema-1-Migration rein und golden, unbekanntes Major read-only mit Originalbytes, Duplicate erkennbar (gleiche instance_id, verschiedene runtime_nonce) und aufloesbar, Host-Dirty; Parametertabelle deckungsgleich mit dem Vertrag; RFC-8785-state_hash bytegleich zu Python und Rust.' }
+    [pscustomobject]@{ Kuerzel='B2'; Name='EqCopStateMigrationTest'; Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='State-Schema 2: Roundtrip bytegleich, Schema-1-Migration rein und golden, unbekanntes Major read-only mit Originalbytes, Duplicate erkennbar und aufloesbar, Host-Dirty; alle vier Klassen sperren post_fader_contribution; NAK-40-Aliasvektoren adressieren die bytegleich erhaltene Legacy-instance_id ohne Alias im State; Parametertabelle und RFC-8785-state_hash sprachuebergreifend.' }
     # B3 wurde in P0 gebaut (SONDE-003, Bridge-Patch), nicht erst in P2 - die
     # Phase ist hier berichtigt, damit die Zeile nicht laenger "geplant" heisst,
     # waehrend das Ziel schon Pflicht ist.
@@ -421,7 +429,7 @@ $kanon = @(
     [pscustomobject]@{ Kuerzel='B3b'; Name='EqCopHostProbeTest';     Art='plugin'; Argumente=@(); AbPhase='P0'; Behauptung='Termin-B-Messgeraet: Passthrough bitgleich, Sprung-/Automations-/Latenzmessung inkl. Fehlalarm-Riegel, Bericht-Rueckweg, 0 Allokationen.' }
     # SONDE-005a: der v3-Vertrag. Das C++-Bein misst gegen dasselbe
     # handgeschriebene MANIFEST wie contract_cross_language auf der Rust-Seite.
-    [pscustomobject]@{ Kuerzel='B3c'; Name='EqCopSchemaTest';         Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='v3-Vertrag: C++ klassifiziert den Fixture-Korpus wie das Manifest (Urteil UND Verletzungsmenge), Bandgitter und Quantisierung bitgleich.' }
+    [pscustomobject]@{ Kuerzel='B3c'; Name='EqCopSchemaTest';         Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='v3-Vertrag: C++ klassifiziert JSON- und FlatBuffers-Korpus wie das Manifest (Urteil UND Verletzungsmenge), einschliesslich Boolean/RFC-6901-Discriminatoren, NAK-29 in beiden Darstellungen und band_stereo ID 10; Bandgitter und Quantisierung bitgleich.' }
     # S10-11/SONDE-008: B4 wird Pflicht. Zwei Ebenen in einem Bein - Queue und
     # Quarantaene pur (dort sind Ueberlauf, Wrap und Oversize deterministisch
     # herbeifuehrbar) UND derselbe Weg verdrahtet im echten Prozessor, dort an

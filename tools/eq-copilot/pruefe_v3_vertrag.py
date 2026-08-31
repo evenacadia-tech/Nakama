@@ -24,6 +24,7 @@ Aufruf:
 
 from __future__ import annotations
 
+import copy
 import json
 import math
 import pathlib
@@ -513,6 +514,80 @@ KOPPLUNG = {
     "probe_descriptor_beitrag": ("post_fader_contribution", "beitrag"),
 }
 
+PLUGIN_KIND_MATRIX = {
+    "probe_descriptor_insert": {
+        "type": "string",
+        "enum": ["main", "passive_probe", "active_probe", "legacy"],
+    },
+    "probe_descriptor_pre": {
+        "type": "string",
+        "enum": ["passive_probe", "active_probe", "legacy"],
+    },
+    "probe_descriptor_post": {
+        "type": "string",
+        "enum": ["passive_probe", "active_probe", "legacy"],
+    },
+    "probe_descriptor_beitrag": {
+        "type": "string",
+        "enum": ["main", "passive_probe", "active_probe", "legacy"],
+        "maxLength": 0,
+    },
+}
+
+
+def pruefe_discriminator_enginekante(lauf: Lauf) -> None:
+    """Direkte Referenzproben fuer Boolean und RFC-6901-Discriminator."""
+    boolean_schema = {
+        "type": "object",
+        "required": ["flag"],
+        "additionalProperties": False,
+        "properties": {
+            "flag": {"type": "boolean"},
+            "wahr": {"type": "integer"},
+            "falsch": {"type": "integer"},
+        },
+        "x-nakama-discriminator": "flag",
+        "oneOf": [
+            {"required": ["wahr"], "properties": {"flag": {"const": True}}},
+            {"required": ["falsch"], "properties": {"flag": {"const": False}}},
+        ],
+    }
+    b = jsonschema.Draft202012Validator(boolean_schema)
+    lauf.wahr("discriminator_boolean_true_false",
+              b.is_valid({"flag": True, "wahr": 1})
+              and b.is_valid({"flag": False, "falsch": 1})
+              and not b.is_valid({"flag": True, "falsch": 1}))
+    lauf.wahr("discriminator_boolean_falscher_typ",
+              not b.is_valid({"flag": "true"}))
+    lauf.wahr("discriminator_boolean_fehlt", not b.is_valid({}))
+
+    pointer_schema = {
+        "type": "object",
+        "required": ["validity"],
+        "additionalProperties": False,
+        "properties": {
+            "validity": {
+                "type": "object",
+                "required": ["active"],
+                "additionalProperties": False,
+                "properties": {"active": {"type": "boolean"}},
+            },
+        },
+        "x-nakama-discriminator": "/validity/active",
+        "oneOf": [
+            {"properties": {"validity": {"properties": {
+                "active": {"const": True}}}}},
+            {"properties": {"validity": {"properties": {
+                "active": {"const": False}}}}},
+        ],
+    }
+    p = jsonschema.Draft202012Validator(pointer_schema)
+    lauf.wahr("discriminator_json_pointer_boolean",
+              p.is_valid({"validity": {"active": True}})
+              and p.is_valid({"validity": {"active": False}}))
+    lauf.wahr("discriminator_json_pointer_segment_fehlt",
+              not p.is_valid({"validity": {}}))
+
 
 def pruefe_probe_descriptor(lauf: Lauf, schema: dict) -> None:
     """§32.2-Kopplung: Messposition bestimmt die Aussageklasse (G1-Befund §4.1).
@@ -564,6 +639,19 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict) -> None:
                   {"measurement_position", "aussageklasse"} <= set(zweig.get("required", [])))
         lauf.wahr(f"{name} ist strikt", zweig.get("additionalProperties") is False)
 
+    matrix_ok = all(defs[n].get("properties", {}).get("plugin_kind") == erwartet
+                    for n, erwartet in PLUGIN_KIND_MATRIX.items())
+    lauf.wahr("probe_descriptor_plugin_kind_matrix_ist_exakt", matrix_ok)
+    lauf.wahr("probe_descriptor_beitragszweig_bleibt_vorhanden",
+              "probe_descriptor_beitrag" in defs
+              and "#/$defs/probe_descriptor_beitrag"
+                  in {r.get("$ref") for r in wurzel.get("oneOf", [])})
+    beitrags_kind = defs["probe_descriptor_beitrag"]["properties"]["plugin_kind"]
+    lauf.wahr("beitragszweig_hat_keine_heutige_traegerklasse",
+              beitrags_kind == PLUGIN_KIND_MATRIX["probe_descriptor_beitrag"]
+              and all(len(wert) > beitrags_kind["maxLength"]
+                      for wert in beitrags_kind["enum"]))
+
     beitrag_capabilities_ref = (defs["probe_descriptor_beitrag"]
                                 .get("properties", {}).get("capabilities"))
     lauf.wahr("probe_descriptor_beitrag nutzt den eigenen Faehigkeitssatz",
@@ -571,7 +659,7 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict) -> None:
               repr(beitrag_capabilities_ref))
     beitrag_contribution_aux = (defs.get("capabilities_beitrag", {})
                                 .get("properties", {}).get("contribution_aux"))
-    lauf.wahr("Beitragszweig bindet contribution_aux ausdruecklich an supported",
+    lauf.wahr("beitragszweig_verlangt_contribution_aux_supported",
               beitrag_contribution_aux == {"const": "supported"},
               repr(beitrag_contribution_aux))
 
@@ -581,12 +669,13 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict) -> None:
     def rumpf(name: str) -> dict:
         z = {k: v for k, v in defs[name].items() if k != "description"}
         z["properties"] = {k: v for k, v in z["properties"].items()
-                           if k not in ("measurement_position", "aussageklasse", "capabilities")}
+                           if k not in ("measurement_position", "aussageklasse",
+                                        "capabilities", "plugin_kind")}
         return z
 
     erster = rumpf(next(iter(KOPPLUNG)))
     abweichend = [n for n in KOPPLUNG if rumpf(n) != erster]
-    lauf.wahr("die vier Zweige unterscheiden sich NUR in den zwei const und capabilities",
+    lauf.wahr("die vier Zweige unterscheiden sich NUR in const, capabilities und plugin_kind",
               not abweichend, ", ".join(abweichend))
 
     # Und die Gegenprobe zum Riegel selbst: er muss ueberhaupt etwas finden
@@ -596,6 +685,14 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict) -> None:
     verdorben["probe_descriptor_pre"]["required"] = ["adresse"]
     lauf.wahr("Gegenprobe: ein verdorbener Zweig faellt am selben Vergleich",
               any(v != erster for v in verdorben.values()))
+
+    matrix_drift = copy.deepcopy(PLUGIN_KIND_MATRIX)
+    matrix_drift["probe_descriptor_pre"]["enum"].append("main")
+    lauf.wahr("plugin_kind_matrix_drift_faellt", matrix_drift != PLUGIN_KIND_MATRIX)
+    beitragsriegel_gelockert = copy.deepcopy(beitrags_kind)
+    beitragsriegel_gelockert.pop("maxLength", None)
+    lauf.wahr("beitragsriegel_gelockert_faellt",
+              beitragsriegel_gelockert != PLUGIN_KIND_MATRIX["probe_descriptor_beitrag"])
 
 
 def zweige_nach_const(knoten: dict, discriminator: str) -> dict[str, dict]:
@@ -741,6 +838,43 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
               not any(n in schema["$defs"] for n in reserv))
     lauf.wahr("jedes Eigentuemerticket ist genannt",
               all(r.get("eigentuemer") and r.get("grund") for r in reserviert["reserviert"]))
+    lauf.wahr("reservierter_name_reference_match_wird_nicht_umgewidmet",
+              "reference_match" in reserv and "reference_match" not in zweige
+              and "reference_match" not in schema["$defs"])
+    lauf.wahr("kein_unsubscribe_session_name",
+              "unsubscribe_session" not in reserv and "unsubscribe_session" not in zweige
+              and "unsubscribe_session" not in schema["$defs"])
+
+    felder = reserviert.get("reservierte_felder", [])
+    lauf.wahr("reserviertes_feld_hat_keine_nutzlast",
+              all(set(f) == {"name", "eigentuemer", "grund"} for f in felder))
+    erwartete_felder = {
+        "evidence_snapshot.ereignisse",
+        "session_snapshot.contribution_inputs",
+        "state_report.dsp",
+        "command_ack.applied_dsp",
+        "state_report.eq_enabled",
+        "probe_descriptor.host_bus_name",
+        "probe_descriptor.host_mixer_index",
+    }
+    lauf.wahr("reservierte Feldnamen sind exakt und kollisionsfrei",
+              {f.get("name") for f in felder} == erwartete_felder)
+
+    def feld_fehlt(definition: str, feld: str) -> bool:
+        return feld not in schema["$defs"][definition].get("properties", {})
+
+    aktive_felder_fehlen = (
+        feld_fehlt("evidence_snapshot", "ereignisse")
+        and feld_fehlt("session_snapshot", "contribution_inputs")
+        and feld_fehlt("state_report", "dsp")
+        and feld_fehlt("state_report", "eq_enabled")
+        and all(feld_fehlt(n, f) for n in KOPPLUNG
+                for f in ("host_bus_name", "host_mixer_index"))
+        and all("applied_dsp" not in z.get("properties", {})
+                for z in schema["$defs"]["command_ack"].get("oneOf", []))
+    )
+    lauf.wahr("reservierte Felder sind im aktiven Vertrag weiter abgelehnt",
+              aktive_felder_fehlen)
 
 
 # ------------------------------------------------------------------ Fixturelauf
@@ -887,7 +1021,7 @@ def abdeckung(schema: dict, manifest: dict) -> tuple[list[str], dict[str, tuple[
 
     offene_defs = sorted(set(schema["$defs"]) - getroffen_defs)
 
-    diskriminatoren = {teil["x-nakama-discriminator"]
+    diskriminatoren = {teil["x-nakama-discriminator"].rsplit("/", 1)[-1]
                        for _, teil in teilschemata(schema, "#")
                        if "x-nakama-discriminator" in teil}
 
@@ -937,6 +1071,7 @@ def main(argv: list[str]) -> int:
     lauf = Lauf()
     pruefe_textriegel(lauf)
     pruefe_schema(lauf, schema)
+    pruefe_discriminator_enginekante(lauf)
     pruefe_namen(lauf, schema, reserviert)
     pruefe_probe_descriptor(lauf, schema)
     pruefe_bandkodierung(lauf, schema, quantisierung)

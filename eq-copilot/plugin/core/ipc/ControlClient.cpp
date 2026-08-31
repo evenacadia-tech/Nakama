@@ -5,6 +5,7 @@
 #include "NakamaKernRiegel.h"
 
 #include "ControlClient.h"
+#include "NakamaKanon.h"
 #include "WireEnvelope.h"
 
 #include <algorithm>
@@ -132,6 +133,33 @@ bool adresseGueltig (const Adresse& a)
     return ! a.logonSid.empty() && a.logonSid.size() <= 184
         && istHex32 (a.projectBindingId) && istHex32 (a.sessionEpoch)
         && istHex32 (a.instanceId) && istHex32 (a.runtimeNonce);
+}
+
+std::string instanceAdresseAusState (const std::string& instanceId)
+{
+    if (instanceId.empty() || istHex32 (instanceId))
+        return instanceId;
+
+    static constexpr char domain[] = "evenacadia.nakama.v3.instance-address.v1";
+    std::vector<std::uint8_t> eingang;
+    eingang.reserve (sizeof (domain) - 1 + 1 + 8 + instanceId.size());
+    eingang.insert (eingang.end(), domain, domain + sizeof (domain) - 1);
+    eingang.push_back (0);
+    const auto laenge = static_cast<std::uint64_t> (instanceId.size());
+    for (int verschiebung = 56; verschiebung >= 0; verschiebung -= 8)
+        eingang.push_back (static_cast<std::uint8_t> (laenge >> verschiebung));
+    eingang.insert (eingang.end(), instanceId.begin(), instanceId.end());
+
+    const auto hash = nakama::kanon::sha256Hex (eingang.data(), eingang.size());
+    return hash.substring (0, 32).toStdString();
+}
+
+bool instanceAliasZielPasst (const std::string& lokaleInstanceId,
+                             const std::string& wireInstanceId)
+{
+    return ! lokaleInstanceId.empty()
+        && istHex32 (wireInstanceId)
+        && instanceAdresseAusState (lokaleInstanceId) == wireInstanceId;
 }
 
 //== Die geteilte Laufzeit ===================================================
@@ -460,7 +488,12 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
         zustand.brokerEpoch.clear();
         zustand.brokerVersion.clear();
     }
-    const ControlHello hello = helloProvider ? helloProvider() : ControlHello();
+    ControlHello hello = helloProvider ? helloProvider() : ControlHello();
+    // NAK-40: Der Provider liefert die persistente Original-ID. Erst an der
+    // v3-Grenze entsteht der Wirealias; in den Host-State fliesst er nie
+    // zurueck. Leere bleibt leer und faellt weiter fail-closed — nur der
+    // State-Lader darf dafuer den bestehenden Frisch-UUID-Pfad waehlen.
+    hello.adresse.instanceId = instanceAdresseAusState (hello.adresse.instanceId);
     // Der Provider ist FREMDER Code und darf beliebig lange stehen. In dieser
     // Zeit kann `stop()` diesen Lauf abgeloest und ein neuer `start()` laengst
     // verbunden haben. Dann wird hier NICHT mehr geoeffnet: ein abgeloester

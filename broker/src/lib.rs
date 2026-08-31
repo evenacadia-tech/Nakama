@@ -9,9 +9,11 @@
 
 pub mod aggregat;
 pub mod bindung;
+pub mod coordinator;
 pub mod dto;
 pub mod framing;
 pub mod generiert;
+pub mod instance_alias;
 pub mod protokoll;
 pub mod telemetrie;
 pub mod transport;

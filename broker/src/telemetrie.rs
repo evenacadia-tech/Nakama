@@ -151,7 +151,7 @@ fn offset_nicht_null(tab: &::flatbuffers::Table, slot: ::flatbuffers::VOffsetT) 
     u32::from_le_bytes([buf[pos], buf[pos + 1], buf[pos + 2], buf[pos + 3]]) != 0
 }
 
-/// Alle 15 Offsetfelder des Vertrags, Tabelle für Tabelle.
+/// Alle 16 Offsetfelder des Vertrags, Tabelle für Tabelle.
 ///
 /// Der gemeldete Verstoß ist absichtlich derselbe wie auf der C++-Seite
 /// (`""` / `verifier`): dort fällt der Puffer im Verifier, hier gleich danach.
@@ -183,6 +183,7 @@ fn strukturriegel(batch: &fb::FeatureBatch) -> bool {
         let f = eintrag.frame();
         if !offset_nicht_null(&f._tab, fb::Frame::VT_TRANSPORT)
             || !offset_nicht_null(&f._tab, fb::Frame::VT_BAENDER)
+            || !offset_nicht_null(&f._tab, fb::Frame::VT_BAND_STEREO)
         {
             return false;
         }
@@ -207,6 +208,17 @@ fn strukturriegel(batch: &fb::FeatureBatch) -> bool {
         ] {
             if !offset_nicht_null(&b._tab, slot) {
                 return false;
+            }
+        }
+        if let Some(stereo) = f.band_stereo() {
+            for slot in [
+                fb::Bandwerte::VT_WERTE_I16,
+                fb::Bandwerte::VT_WERTE_F32,
+                fb::Bandwerte::VT_GUELTIG_BITMAP,
+            ] {
+                if !offset_nicht_null(&stereo._tab, slot) {
+                    return false;
+                }
             }
         }
     }
@@ -320,6 +332,9 @@ fn pruefe_frame(f: &fb::Frame, p: &str, out: &mut Vec<Verstoss>) {
 
     pruefe_transport(&f.transport(), &format!("{p}/transport"), out);
     pruefe_baender(&f.baender(), &format!("{p}/baender"), out);
+    if let Some(stereo) = f.band_stereo() {
+        pruefe_band_stereo(&stereo, &format!("{p}/band_stereo"), out);
+    }
 
     // Optionale Kennzahlen: ein nicht messbarer Wert wird WEGGELASSEN, nicht
     // als NaN gesendet (quantisierung-v1.json: Nichtendliches wird beim
@@ -383,6 +398,33 @@ fn pruefe_transport(t: &fb::Transportstempel, p: &str, out: &mut Vec<Verstoss>) 
         out.push(Verstoss::neu(&format!("{p}/gueltigkeit"), "validity_unbekanntes_bit"));
     }
 
+    let projektzeit = t.gueltigkeit().contains(fb::Gueltigkeit::project_time);
+    match t.zeitbasis() {
+        fb::Zeitbasis::project_samples => {
+            if !projektzeit {
+                out.push(Verstoss::neu(&format!("{p}/gueltigkeit"), "project_time_bit_fehlt"));
+            }
+            if t.project_sample_start().is_none() {
+                out.push(Verstoss::neu(
+                    &format!("{p}/project_sample_start"),
+                    "project_sample_start_fehlt",
+                ));
+            }
+        }
+        fb::Zeitbasis::local_monotonic => {
+            if projektzeit {
+                out.push(Verstoss::neu(&format!("{p}/gueltigkeit"), "local_project_time_bit"));
+            }
+            if t.project_sample_start().is_some() {
+                out.push(Verstoss::neu(
+                    &format!("{p}/project_sample_start"),
+                    "local_project_sample_start",
+                ));
+            }
+        }
+        _ => {}
+    }
+
     if let Some(s) = t.schleife() {
         // 🔑 G1-Befund §4.3, geschlossen am 24.08.2026. `start_ppq` und
         // `end_ppq` waren die zwei von vier Fliesskomma-Traegern des Vertrags,
@@ -403,6 +445,18 @@ fn pruefe_transport(t: &fb::Transportstempel, p: &str, out: &mut Vec<Verstoss>) 
         // behauptet §32.3 ueber die Grenzen nichts, und ein Vergleich waere
         // eine erfundene Zusage.
         if s.bounds_valid() {
+            if s.start_ppq().is_none() {
+                out.push(Verstoss::neu(
+                    &format!("{p}/schleife/start_ppq"),
+                    "cycle_start_ppq_fehlt",
+                ));
+            }
+            if s.end_ppq().is_none() {
+                out.push(Verstoss::neu(
+                    &format!("{p}/schleife/end_ppq"),
+                    "cycle_end_ppq_fehlt",
+                ));
+            }
             if let (Some(a), Some(b)) = (s.start_ppq(), s.end_ppq()) {
                 if a.is_finite() && b.is_finite() && b < a {
                     out.push(Verstoss::neu(&format!("{p}/schleife"), "ppq_verdreht"));
@@ -419,7 +473,37 @@ fn pruefe_transport(t: &fb::Transportstempel, p: &str, out: &mut Vec<Verstoss>) 
             if g.ende() < g.start() {
                 out.push(Verstoss::neu(&pg, "grenzen_verdreht"));
             }
+            if !s.bounds_valid() && g.herleitung() == fb::Herleitung::validated_block_mapping {
+                out.push(Verstoss::neu(
+                    &format!("{pg}/herleitung"),
+                    "validated_mapping_ohne_bounds",
+                ));
+            }
         }
+    }
+
+    if t.gueltigkeit().contains(fb::Gueltigkeit::cycle_bounds) {
+        let schleife = t.schleife();
+        if schleife.as_ref().is_none_or(|s| s.start_ppq().is_none()) {
+            out.push(Verstoss::neu(
+                &format!("{p}/schleife/start_ppq"),
+                "cycle_bounds_start_ppq_fehlt",
+            ));
+        }
+        if schleife.as_ref().is_none_or(|s| s.end_ppq().is_none()) {
+            out.push(Verstoss::neu(
+                &format!("{p}/schleife/end_ppq"),
+                "cycle_bounds_end_ppq_fehlt",
+            ));
+        }
+    }
+    if t.gueltigkeit().contains(fb::Gueltigkeit::continuous_time)
+        && t.continuous_time_samples().is_none()
+    {
+        out.push(Verstoss::neu(
+            &format!("{p}/continuous_time_samples"),
+            "continuous_time_samples_fehlt",
+        ));
     }
 }
 
@@ -517,5 +601,52 @@ fn pruefe_baender(b: &fb::Bandwerte, p: &str, out: &mut Vec<Verstoss>) {
                 break;
             }
         }
+    }
+}
+
+fn pruefe_band_stereo(b: &fb::Bandwerte, p: &str, out: &mut Vec<Verstoss>) {
+    if b.gitter() != fb::Bandgitter::nakama_log64_v1 {
+        out.push(Verstoss::neu(&format!("{p}/gitter"), "band_stereo_gitter"));
+    }
+    if b.encoding() != fb::BandEncoding::float32 {
+        out.push(Verstoss::neu(&format!("{p}/encoding"), "band_stereo_encoding"));
+    }
+    if b.werte_i16().is_some() {
+        out.push(Verstoss::neu(&format!("{p}/werte_i16"), "band_stereo_werte_i16"));
+    }
+
+    let werte = b.werte_f32();
+    if werte.as_ref().map_or(0, |w| w.len()) != BAENDER_GROB {
+        out.push(Verstoss::neu(&format!("{p}/werte_f32"), "band_stereo_bandzahl"));
+    }
+    let bitmap = b.gueltig_bitmap();
+    if bitmap.len() != 8 {
+        out.push(Verstoss::neu(
+            &format!("{p}/gueltig_bitmap"),
+            "band_stereo_bitmap_laenge",
+        ));
+    }
+    if let Some(werte) = werte {
+        for (i, wert) in werte.iter().enumerate() {
+            let gueltig = i / 8 < bitmap.len()
+                && bitmap.get(i / 8) & (1 << (i % 8)) != 0;
+            if !gueltig {
+                continue;
+            }
+            if !wert.is_finite() {
+                out.push(Verstoss::neu(&format!("{p}/werte_f32/{i}"), "nicht_endlich"));
+                break;
+            }
+            if !(0.0..=1.0).contains(&wert) {
+                out.push(Verstoss::neu(
+                    &format!("{p}/werte_f32/{i}"),
+                    "band_stereo_bereich",
+                ));
+                break;
+            }
+        }
+    }
+    if b.saturated() {
+        out.push(Verstoss::neu(&format!("{p}/saturated"), "band_stereo_saturated"));
     }
 }

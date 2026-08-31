@@ -29,9 +29,24 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <vector>
+
+namespace nakama::analyse { struct FeatureFrame; }
 
 namespace nakama::ipc
 {
+
+/// Minor 1 fuehrt Frame.band_stereo (Feld-ID 10) ein. Der echte P2-Sendepfad
+/// benutzt diese Konstante; Tests duerfen den Wert nicht am Envelope vorbei
+/// selbst einsetzen.
+inline constexpr std::uint8_t kFeatureBatchSchemaMinor = 1;
+
+/// Worker-seitige, allokierende Serialisierung eines Analyseframes. Der
+/// Audiothread ruft sie nicht; erst das fertige Bytefeld geht in die
+/// vorallokierte SPSC-Schleuse.
+bool featureFrameAlsFlatbuffer (const analyse::FeatureFrame& frame,
+                                const Adresse& quelle,
+                                std::vector<std::uint8_t>& ausgabe);
 
 struct TelemetryHello
 {
@@ -103,6 +118,10 @@ public:
     /// Erzeugerseite: allokationsfrei, lockfrei, wartefrei. Bei vollem Puffer
     /// weicht der AELTESTE ungesendete Frame (§53.9, Cap 2).
     bool veroeffentlichen (const std::uint8_t* daten, std::size_t laenge) noexcept;
+
+    /// Worker-Pfad: serialisiert den vollstaendigen FeatureFrame inklusive
+    /// optionalem band_stereo und veroeffentlicht danach die Bytes.
+    bool veroeffentlichen (const analyse::FeatureFrame& frame, const Adresse& quelle);
 
     Snapshot snapshot() const;
 

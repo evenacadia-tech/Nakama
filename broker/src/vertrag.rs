@@ -607,23 +607,54 @@ fn aufloesen<'a>(wurzel: &'a Value, knoten: &'a Value, pfad: &str) -> (&'a Value
 ///
 /// Der Wert gilt nur, wenn ALLE Untervarianten denselben festlegen; sonst
 /// waere die Zuordnung mehrdeutig und der Zweig kommt nicht in Frage.
-fn diskriminatorwert(wurzel: &Value, zweig: &Value, disc: &str) -> Option<String> {
-    if let Some(c) = zweig
-        .get("properties")
-        .and_then(|p| p.get(disc))
-        .and_then(|d| d.get("const"))
-        .and_then(|c| c.as_str())
-    {
-        return Some(c.to_string());
+fn pointer_segment(segment: &str) -> Option<String> {
+    let mut out = String::new();
+    let mut chars = segment.chars();
+    while let Some(c) = chars.next() {
+        if c != '~' {
+            out.push(c);
+            continue;
+        }
+        match chars.next() {
+            Some('0') => out.push('~'),
+            Some('1') => out.push('/'),
+            _ => return None,
+        }
+    }
+    Some(out)
+}
+
+/// Findet das Teilschema, das den Discriminator festlegt. Ein einfacher Name
+/// bezeichnet `properties/<name>`, ein fuehrender Slash einen RFC-6901-Pfad
+/// durch verschachtelte Objekt-`properties`.
+fn diskriminator_schema<'a>(wurzel: &'a Value, zweig: &'a Value, disc: &str) -> Option<&'a Value> {
+    let mut aktuell = zweig;
+    let segmente: Vec<String> = if let Some(rest) = disc.strip_prefix('/') {
+        rest.split('/').map(pointer_segment).collect::<Option<_>>()?
+    } else {
+        vec![disc.to_string()]
+    };
+    for segment in segmente {
+        aktuell = aufloesen(wurzel, aktuell, "#").0;
+        aktuell = aktuell.get("properties")?.get(&segment)?;
+    }
+    Some(aufloesen(wurzel, aktuell, "#").0)
+}
+
+fn diskriminatorwert(wurzel: &Value, zweig: &Value, disc: &str) -> Option<Value> {
+    if let Some(c) = diskriminator_schema(wurzel, zweig, disc).and_then(|d| d.get("const")) {
+        if c.is_string() || c.is_boolean() {
+            return Some(c.clone());
+        }
     }
     let unter = zweig.get("oneOf")?.as_array()?;
-    let mut gemeinsam: Option<String> = None;
+    let mut gemeinsam: Option<Value> = None;
     for u in unter {
         let (ziel, _) = aufloesen(wurzel, u, "#");
         let w = diskriminatorwert(wurzel, ziel, disc)?;
         match &gemeinsam {
             None => gemeinsam = Some(w),
-            Some(g) if *g == w => {}
+            Some(g) if gleich(g, &w) => {}
             Some(_) => return None,
         }
     }
@@ -700,7 +731,12 @@ fn pruefe_wert(
             .get("x-nakama-discriminator")
             .and_then(|v| v.as_str())
             .unwrap_or("type");
-        let wert = daten.get(disc).and_then(|v| v.as_str());
+        let wert = if disc.starts_with('/') {
+            daten.pointer(disc)
+        } else {
+            daten.get(disc)
+        }
+        .filter(|v| v.is_string() || v.is_boolean());
         // Den aufgeloesten Zweig gleich MITNEHMEN statt ihn aus dem Pfad
         // zurueckzurechnen: ein Zweig ohne `$ref` haette sonst einen Pfad
         // ohne "#/$defs/"-Praefix, und das Zurueckschneiden waere ein Panic
@@ -708,26 +744,36 @@ fn pruefe_wert(
         let treffer = wert.and_then(|w| {
             zweige.iter().enumerate().find_map(|(i, z)| {
                 let (ziel, zpfad) = aufloesen(wurzel, z, &format!("{sp}/oneOf/{i}"));
-                (diskriminatorwert(wurzel, ziel, disc) == Some(w.to_string()))
+                (diskriminatorwert(wurzel, ziel, disc).as_ref().is_some_and(|k| gleich(k, w)))
                     .then_some((ziel, zpfad))
             })
         });
-        match treffer {
-            Some((ziel, zpfad)) => pruefe_wert(ziel, &zpfad, daten, instanz, wurzel, out),
+        let gefunden = match treffer {
+            Some((ziel, zpfad)) => {
+                pruefe_wert(ziel, &zpfad, daten, instanz, wurzel, out);
+                true
+            }
             None => {
                 // Ist die Instanz gar kein Objekt, gibt es keine Eigenschaft,
                 // auf die der Pfad zeigen koennte — dann zeigt er auf die
                 // Instanz selbst. Ein "/type" an einem blossen String waere
                 // ein Pfad, den es nicht gibt.
                 let ort = if daten.is_object() {
-                    pfad_plus(instanz, disc)
+                    if disc.starts_with('/') {
+                        format!("{instanz}{disc}")
+                    } else {
+                        pfad_plus(instanz, disc)
+                    }
                 } else {
                     instanz.to_string()
                 };
                 out.push(Verletzung::neu(&ort, &format!("{sp}/oneOf"), "oneOf"));
+                false
             }
+        };
+        if !gefunden {
+            return;
         }
-        return;
     }
 
     // --- type ----------------------------------------------------------
@@ -980,6 +1026,79 @@ mod tests {
     fn unbekannter_discriminator_wird_abgelehnt() {
         let v = schema().pruefe(&json!({ "type": "b" }));
         assert_eq!(v, vec![Verletzung::neu("/type", "#/oneOf", "oneOf")]);
+    }
+
+    fn boolean_schema(discriminator: &str) -> Schema {
+        Schema::laden(json!({
+            "type": "object",
+            "required": ["flag"],
+            "additionalProperties": false,
+            "properties": {
+                "flag": { "type": "boolean" },
+                "wahr": { "type": "integer" },
+                "falsch": { "type": "integer" }
+            },
+            "x-nakama-discriminator": discriminator,
+            "oneOf": [
+                { "required": ["wahr"], "properties": { "flag": { "const": true } } },
+                { "required": ["falsch"], "properties": { "flag": { "const": false } } }
+            ]
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn discriminator_boolean_true_false() {
+        let s = boolean_schema("flag");
+        assert!(s.gueltig(&json!({ "flag": true, "wahr": 1 })));
+        assert!(s.gueltig(&json!({ "flag": false, "falsch": 1 })));
+        assert!(!s.gueltig(&json!({ "flag": true, "falsch": 1 })));
+    }
+
+    #[test]
+    fn discriminator_boolean_falscher_typ() {
+        let v = boolean_schema("flag").pruefe(&json!({ "flag": "true" }));
+        assert!(v.iter().any(|x| x.instanz == "/flag" && x.schluessel == "oneOf"), "{v:?}");
+    }
+
+    #[test]
+    fn discriminator_boolean_fehlt() {
+        let v = boolean_schema("flag").pruefe(&json!({}));
+        assert!(v.iter().any(|x| x.instanz == "/flag" && x.schluessel == "oneOf"), "{v:?}");
+    }
+
+    fn pointer_schema() -> Schema {
+        Schema::laden(json!({
+            "type": "object",
+            "required": ["validity"],
+            "additionalProperties": false,
+            "properties": {
+                "validity": {
+                    "type": "object",
+                    "required": ["active"],
+                    "additionalProperties": false,
+                    "properties": { "active": { "type": "boolean" } }
+                }
+            },
+            "x-nakama-discriminator": "/validity/active",
+            "oneOf": [
+                { "properties": { "validity": { "properties": { "active": { "const": true } } } } },
+                { "properties": { "validity": { "properties": { "active": { "const": false } } } } }
+            ]
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn discriminator_json_pointer_boolean() {
+        assert!(pointer_schema().gueltig(&json!({ "validity": { "active": true } })));
+        assert!(pointer_schema().gueltig(&json!({ "validity": { "active": false } })));
+    }
+
+    #[test]
+    fn discriminator_json_pointer_segment_fehlt() {
+        let v = pointer_schema().pruefe(&json!({ "validity": {} }));
+        assert!(v.iter().any(|x| x.instanz == "/validity/active" && x.schluessel == "oneOf"), "{v:?}");
     }
 
     #[test]

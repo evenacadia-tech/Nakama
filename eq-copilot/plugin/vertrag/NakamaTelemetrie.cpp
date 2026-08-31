@@ -209,6 +209,22 @@ void pruefeTransport (const fb::Transportstempel& t, const juce::String& p,
     if ((bits & static_cast<uint8_t> (~bekannt)) != 0)
         hinzu (out, p + "/gueltigkeit", "validity_unbekanntes_bit");
 
+    const bool projektzeit = (bits & static_cast<uint8_t> (fb::Gueltigkeit::project_time)) != 0;
+    if (t.zeitbasis() == fb::Zeitbasis::project_samples)
+    {
+        if (! projektzeit)
+            hinzu (out, p + "/gueltigkeit", "project_time_bit_fehlt");
+        if (! t.project_sample_start().has_value())
+            hinzu (out, p + "/project_sample_start", "project_sample_start_fehlt");
+    }
+    else if (t.zeitbasis() == fb::Zeitbasis::local_monotonic)
+    {
+        if (projektzeit)
+            hinzu (out, p + "/gueltigkeit", "local_project_time_bit");
+        if (t.project_sample_start().has_value())
+            hinzu (out, p + "/project_sample_start", "local_project_sample_start");
+    }
+
     if (const auto* s = t.schleife())
     {
         /*  🔑 G1-Befund §4.3, geschlossen am 24.08.2026. `start_ppq` und
@@ -234,6 +250,10 @@ void pruefeTransport (const fb::Transportstempel& t, const juce::String& p,
         {
             const auto a = s->start_ppq();
             const auto b = s->end_ppq();
+            if (! a.has_value())
+                hinzu (out, p + "/schleife/start_ppq", "cycle_start_ppq_fehlt");
+            if (! b.has_value())
+                hinzu (out, p + "/schleife/end_ppq", "cycle_end_ppq_fehlt");
             if (a && b && std::isfinite (*a) && std::isfinite (*b) && *b < *a)
                 hinzu (out, p + "/schleife", "ppq_verdreht");
         }
@@ -246,8 +266,24 @@ void pruefeTransport (const fb::Transportstempel& t, const juce::String& p,
                 hinzu (out, pg + "/herleitung", "enum_unbekannt");
             if (g->ende() < g->start())
                 hinzu (out, pg, "grenzen_verdreht");
+            if (! s->bounds_valid()
+                && g->herleitung() == fb::Herleitung::validated_block_mapping)
+                hinzu (out, pg + "/herleitung", "validated_mapping_ohne_bounds");
         }
     }
+
+    const bool ppqGueltig = (bits & static_cast<uint8_t> (fb::Gueltigkeit::cycle_bounds)) != 0;
+    if (ppqGueltig)
+    {
+        const auto* s = t.schleife();
+        if (s == nullptr || ! s->start_ppq().has_value())
+            hinzu (out, p + "/schleife/start_ppq", "cycle_bounds_start_ppq_fehlt");
+        if (s == nullptr || ! s->end_ppq().has_value())
+            hinzu (out, p + "/schleife/end_ppq", "cycle_bounds_end_ppq_fehlt");
+    }
+    const bool kontinuierlich = (bits & static_cast<uint8_t> (fb::Gueltigkeit::continuous_time)) != 0;
+    if (kontinuierlich && ! t.continuous_time_samples().has_value())
+        hinzu (out, p + "/continuous_time_samples", "continuous_time_samples_fehlt");
 }
 
 void pruefeBaender (const fb::Bandwerte& b, const juce::String& p, juce::Array<Verstoss>& out)
@@ -349,6 +385,50 @@ void pruefeBaender (const fb::Bandwerte& b, const juce::String& p, juce::Array<V
     }
 }
 
+void pruefeBandStereo (const fb::Bandwerte& b, const juce::String& p,
+                       juce::Array<Verstoss>& out)
+{
+    if (b.gitter() != fb::Bandgitter::nakama_log64_v1)
+        hinzu (out, p + "/gitter", "band_stereo_gitter");
+    if (b.encoding() != fb::BandEncoding::float32)
+        hinzu (out, p + "/encoding", "band_stereo_encoding");
+    if (b.werte_i16() != nullptr)
+        hinzu (out, p + "/werte_i16", "band_stereo_werte_i16");
+
+    const auto* werte = b.werte_f32();
+    const auto anzahl = werte == nullptr ? size_t { 0 } : static_cast<size_t> (werte->size());
+    if (anzahl != baenderGrob)
+        hinzu (out, p + "/werte_f32", "band_stereo_bandzahl");
+
+    const auto* bitmap = b.gueltig_bitmap();
+    if (bitmap == nullptr || bitmap->size() != 8u)
+        hinzu (out, p + "/gueltig_bitmap", "band_stereo_bitmap_laenge");
+
+    if (werte != nullptr)
+    {
+        for (flatbuffers::uoffset_t i = 0; i < werte->size(); ++i)
+        {
+            const bool gueltig = bitmap != nullptr && i / 8u < bitmap->size()
+                                 && (bitmap->Get (i / 8u) & (1u << (i % 8u))) != 0;
+            if (! gueltig)
+                continue;
+            const auto wert = werte->Get (i);
+            if (! std::isfinite (wert))
+            {
+                hinzu (out, p + "/werte_f32/" + juce::String ((int) i), "nicht_endlich");
+                break;
+            }
+            if (wert < 0.0f || wert > 1.0f)
+            {
+                hinzu (out, p + "/werte_f32/" + juce::String ((int) i), "band_stereo_bereich");
+                break;
+            }
+        }
+    }
+    if (b.saturated())
+        hinzu (out, p + "/saturated", "band_stereo_saturated");
+}
+
 void pruefeFrame (const fb::Frame& f, const juce::String& p, juce::Array<Verstoss>& out)
 {
     if (f.metrics_version() < 1u)
@@ -358,6 +438,8 @@ void pruefeFrame (const fb::Frame& f, const juce::String& p, juce::Array<Verstos
     // Anwesenheit garantiert.
     pruefeTransport (*f.transport(), p + "/transport", out);
     pruefeBaender (*f.baender(), p + "/baender", out);
+    if (const auto* stereo = f.band_stereo())
+        pruefeBandStereo (*stereo, p + "/band_stereo", out);
 
     // Optionale Kennzahlen: ein nicht messbarer Wert wird WEGGELASSEN, nicht
     // als NaN gesendet (quantisierung-v1.json). Ein NaN auf der Leitung ist

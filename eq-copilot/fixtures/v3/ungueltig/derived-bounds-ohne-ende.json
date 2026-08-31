@@ -31,6 +31,8 @@
     "cycle": {
       "active": true,
       "bounds_valid": true,
+      "start_ppq": 1.0,
+      "end_ppq": 2.0,
       "derived_sample_bounds": {
         "start": 1,
         "derivation": "validated_block_mapping"

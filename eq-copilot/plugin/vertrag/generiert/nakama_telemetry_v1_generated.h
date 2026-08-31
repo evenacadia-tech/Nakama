@@ -867,7 +867,8 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_CREST_DB = 16,
     VT_PSR_DB = 18,
     VT_BREITE = 20,
-    VT_KORRELATION = 22
+    VT_KORRELATION = 22,
+    VT_BAND_STEREO = 24
   };
   const evenacadia::nakama::v3::Transportstempel *transport() const {
     return GetPointer<const evenacadia::nakama::v3::Transportstempel *>(VT_TRANSPORT);
@@ -899,6 +900,12 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   ::flatbuffers::Optional<float> korrelation() const {
     return GetOptional<float, float>(VT_KORRELATION);
   }
+  /// Optionale Band-Stereobreite auf dem festen 64er-Loggitter. Sie ist ein
+  /// eigener Bandsatz, nie eine Umdeutung von `breite`: float32, 64 Werte,
+  /// acht Bitmapbytes, gueltige Werte im Bereich [0, 1], saturated=false.
+  const evenacadia::nakama::v3::Bandwerte *band_stereo() const {
+    return GetPointer<const evenacadia::nakama::v3::Bandwerte *>(VT_BAND_STEREO);
+  }
   template <bool B = false>
   bool Verify(::flatbuffers::VerifierTemplate<B> &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -914,6 +921,8 @@ struct Frame FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyField<float>(verifier, VT_PSR_DB, 4) &&
            VerifyField<float>(verifier, VT_BREITE, 4) &&
            VerifyField<float>(verifier, VT_KORRELATION, 4) &&
+           VerifyOffset(verifier, VT_BAND_STEREO) &&
+           verifier.VerifyTable(band_stereo()) &&
            verifier.EndTable();
   }
 };
@@ -952,6 +961,9 @@ struct FrameBuilder {
   void add_korrelation(float korrelation) {
     fbb_.AddElement<float>(Frame::VT_KORRELATION, korrelation);
   }
+  void add_band_stereo(::flatbuffers::Offset<evenacadia::nakama::v3::Bandwerte> band_stereo) {
+    fbb_.AddOffset(Frame::VT_BAND_STEREO, band_stereo);
+  }
   explicit FrameBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -976,8 +988,10 @@ inline ::flatbuffers::Offset<Frame> CreateFrame(
     ::flatbuffers::Optional<float> crest_db = ::flatbuffers::nullopt,
     ::flatbuffers::Optional<float> psr_db = ::flatbuffers::nullopt,
     ::flatbuffers::Optional<float> breite = ::flatbuffers::nullopt,
-    ::flatbuffers::Optional<float> korrelation = ::flatbuffers::nullopt) {
+    ::flatbuffers::Optional<float> korrelation = ::flatbuffers::nullopt,
+    ::flatbuffers::Offset<evenacadia::nakama::v3::Bandwerte> band_stereo = 0) {
   FrameBuilder builder_(_fbb);
+  builder_.add_band_stereo(band_stereo);
   if(korrelation) { builder_.add_korrelation(*korrelation); }
   if(breite) { builder_.add_breite(*breite); }
   if(psr_db) { builder_.add_psr_db(*psr_db); }

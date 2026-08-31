@@ -87,6 +87,16 @@ def baender(n: int, gitter: str, encoding: str = "q_db_0p1_i16") -> dict:
     return b
 
 
+def band_stereo(wert: float = 0.5, *, gueltig: bool = True) -> dict:
+    return {
+        "gitter": "nakama_log64_v1",
+        "encoding": "float32",
+        "werte_f32": [wert] * 64,
+        "gueltig_bitmap": bitmap(64) if gueltig else [0] * 8,
+        "saturated": False,
+    }
+
+
 TRANSPORT = {
     "process_context_present": True,
     "transport_epoch": 17,
@@ -195,6 +205,26 @@ def gueltige() -> list[tuple[str, dict, str]]:
                    "der Regelfall: Sonde->Broker, genau EIN Eintrag (§33.1: Queuecap 2, "
                    "replace-oldest - dort kann nie gebuendelt werden)"))
 
+    faelle.append(("band-stereo-fehlt-altframe", batch(eintrag()),
+                   "altes Frame ohne optionales Feld bleibt gueltig"))
+
+    for name, wert, gueltig, warum in [
+        ("band-stereo-bitmap-alle-werte-ungueltig", float("nan"), False,
+         "nicht gesetzte Bitmapwerte tragen keine Messbehauptung"),
+        ("band-stereo-wert-0", 0.0, True, "0 ist die einschliessliche Untergrenze"),
+        ("band-stereo-wert-1", 1.0, True, "1 ist die einschliessliche Obergrenze"),
+    ]:
+        e = eintrag()
+        e["frame"]["band_stereo"] = band_stereo(wert, gueltig=gueltig)
+        faelle.append((name, batch(e), warum))
+
+    lokal = eintrag()
+    lokal["frame"]["transport"]["zeitbasis"] = "local_monotonic"
+    del lokal["frame"]["transport"]["project_sample_start"]
+    lokal["frame"]["transport"]["gueltigkeit"] = "play_state record_state"
+    faelle.append(("transport-local-monotonic", batch(lokal),
+                   "lokale Zeit traegt weder Projektbit noch Projektposition"))
+
     faelle.append(("evidenz-221-band",
                    batch(eintrag(n=221, gitter="nakama_1_24_oct_30_18k_v1",
                                  encoding="q_db_0p01_i16")),
@@ -238,6 +268,10 @@ def gueltige() -> list[tuple[str, dict, str]]:
     volle_zeit["frame"]["transport"]["gueltigkeit"] = (
         "project_time play_state record_state cycle_bounds continuous_time "
         "input_presentation_latency output_presentation_latency")
+    volle_zeit["frame"]["transport"]["schleife"] = {
+        "active": False, "bounds_valid": False,
+        "start_ppq": 918.0, "end_ppq": 920.0,
+    }
     faelle.append(("alle-validity-bits", batch(volle_zeit),
                    "alle sieben Bits gesetzt (§32.3). Die Latenz 0 ist hier GEMESSEN "
                    "und nicht 'unbekannt' - genau die Unterscheidung, fuer die das "
@@ -401,12 +435,144 @@ def ungueltige() -> list[tuple[str, dict, list[dict], str]]:
         "und kein bool mit Default - sonst waere sein Fehlen unsichtbar"))
 
     b = batch(eintrag())
-    b["eintraege"][0]["frame"]["transport"]["gueltigkeit"] = 128
+    b["eintraege"][0]["frame"]["transport"]["gueltigkeit"] = 129
     faelle.append((
         "validity-unbekanntes-bit", b,
         [v(f"{P}/transport/gueltigkeit", "validity_unbekanntes_bit")],
         "Bit 7 ist keins der sieben aus §32.3. FlatBuffers prueft Bitflags beim "
         "Verifizieren NICHT - das muss der Leser tun"))
+
+    # --- NAK-29: dieselben sechs Relationen wie im JSON-Vertrag -----------
+    b = batch(eintrag())
+    del b["eintraege"][0]["frame"]["transport"]["project_sample_start"]
+    faelle.append((
+        "transport-project-samples-ohne-project-sample-start", b,
+        [v(f"{P}/transport/project_sample_start", "project_sample_start_fehlt")],
+        "project_samples verlangt einen expliziten Projektstart"))
+
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["transport"]["gueltigkeit"] = "play_state record_state"
+    faelle.append((
+        "transport-project-samples-ohne-project-time-bit", b,
+        [v(f"{P}/transport/gueltigkeit", "project_time_bit_fehlt")],
+        "project_samples verlangt das project_time-Bit"))
+
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["transport"]["zeitbasis"] = "local_monotonic"
+    del b["eintraege"][0]["frame"]["transport"]["project_sample_start"]
+    faelle.append((
+        "transport-local-monotonic-mit-project-time-bit", b,
+        [v(f"{P}/transport/gueltigkeit", "local_project_time_bit")],
+        "local_monotonic verlangt ein geloeschtes project_time-Bit"))
+
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["transport"]["zeitbasis"] = "local_monotonic"
+    b["eintraege"][0]["frame"]["transport"]["gueltigkeit"] = "play_state record_state"
+    faelle.append((
+        "transport-local-monotonic-mit-project-sample-start", b,
+        [v(f"{P}/transport/project_sample_start", "local_project_sample_start")],
+        "lokale Zeit darf keine Projektposition behaupten"))
+
+    for name, fehlt, regel in [
+        ("schleife-bounds-valid-ohne-start-ppq", "start_ppq", "cycle_start_ppq_fehlt"),
+        ("schleife-bounds-valid-ohne-end-ppq", "end_ppq", "cycle_end_ppq_fehlt"),
+    ]:
+        b = batch(eintrag())
+        s = {"active": True, "bounds_valid": True, "start_ppq": 1.0, "end_ppq": 2.0}
+        del s[fehlt]
+        b["eintraege"][0]["frame"]["transport"]["schleife"] = s
+        faelle.append((name, b, [v(f"{P}/transport/schleife/{fehlt}", regel)],
+                       "bounds_valid=true verlangt beide PPQ-Grenzen"))
+
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["transport"]["schleife"] = {
+        "active": False, "bounds_valid": False,
+        "abgeleitete_grenzen": {"start": 1, "ende": 2,
+                                "herleitung": "validated_block_mapping"},
+    }
+    faelle.append((
+        "schleife-bounds-invalid-mit-validated-block-mapping", b,
+        [v(f"{P}/transport/schleife/abgeleitete_grenzen/herleitung",
+           "validated_mapping_ohne_bounds")],
+        "bounds_valid=false darf keine validierte Sampleableitung behaupten"))
+
+    for name, fehlt, regel in [
+        ("validity-cycle-bounds-ohne-start-ppq", "start_ppq",
+         "cycle_bounds_start_ppq_fehlt"),
+        ("validity-cycle-bounds-ohne-end-ppq", "end_ppq",
+         "cycle_bounds_end_ppq_fehlt"),
+    ]:
+        b = batch(eintrag())
+        b["eintraege"][0]["frame"]["transport"]["gueltigkeit"] = (
+            "project_time play_state record_state cycle_bounds")
+        s = {"active": False, "bounds_valid": False, "start_ppq": 1.0, "end_ppq": 2.0}
+        del s[fehlt]
+        b["eintraege"][0]["frame"]["transport"]["schleife"] = s
+        faelle.append((name, b, [v(f"{P}/transport/schleife/{fehlt}", regel)],
+                       "cycle_bounds-Bit bescheinigt beide rohen PPQ-Grenzen"))
+
+    b = batch(eintrag())
+    b["eintraege"][0]["frame"]["transport"]["gueltigkeit"] = (
+        "project_time play_state record_state continuous_time")
+    faelle.append((
+        "validity-continuous-time-ohne-wert", b,
+        [v(f"{P}/transport/continuous_time_samples", "continuous_time_samples_fehlt")],
+        "continuous_time-Bit verlangt den optionalen Samplewert"))
+
+    # --- NAK-59: optionaler 64er-float32-Stereobandsatz ------------------
+    def stereo_fall() -> dict:
+        e = eintrag()
+        e["frame"]["band_stereo"] = band_stereo()
+        return batch(e)
+
+    b = stereo_fall()
+    b["eintraege"][0]["frame"]["band_stereo"]["werte_f32"][0] = float("nan")
+    faelle.append(("band-stereo-nan", b,
+                   [v(f"{P}/band_stereo/werte_f32/0", "nicht_endlich")],
+                   "gesetzter Stereowert muss endlich sein"))
+
+    for name, wert in [("band-stereo-unter-0", -0.01), ("band-stereo-ueber-1", 1.01)]:
+        b = stereo_fall()
+        b["eintraege"][0]["frame"]["band_stereo"]["werte_f32"][0] = wert
+        faelle.append((name, b,
+                       [v(f"{P}/band_stereo/werte_f32/0", "band_stereo_bereich")],
+                       "gesetzter Stereowert liegt ausserhalb [0,1]"))
+
+    b = stereo_fall()
+    b["eintraege"][0]["frame"]["band_stereo"]["saturated"] = True
+    faelle.append(("band-stereo-saturated-true", b,
+                   [v(f"{P}/band_stereo/saturated", "band_stereo_saturated")],
+                   "Stereobreite kennt keine gesaettigte Kodierung"))
+
+    b = stereo_fall()
+    b["eintraege"][0]["frame"]["band_stereo"]["gitter"] = "nakama_1_24_oct_30_18k_v1"
+    faelle.append(("band-stereo-falsches-gitter", b,
+                   [v(f"{P}/band_stereo/gitter", "band_stereo_gitter")],
+                   "Band-Stereo ist fest an log64 gebunden"))
+
+    b = stereo_fall()
+    b["eintraege"][0]["frame"]["band_stereo"]["encoding"] = "q_db_0p1_i16"
+    faelle.append(("band-stereo-falsches-encoding", b,
+                   [v(f"{P}/band_stereo/encoding", "band_stereo_encoding")],
+                   "Band-Stereo wird nie quantisiert als dB gelesen"))
+
+    b = stereo_fall()
+    b["eintraege"][0]["frame"]["band_stereo"]["werte_i16"] = [0] * 64
+    faelle.append(("band-stereo-werte-i16-gesetzt", b,
+                   [v(f"{P}/band_stereo/werte_i16", "band_stereo_werte_i16")],
+                   "der i16-Traeger ist fuer Band-Stereo verboten"))
+
+    b = stereo_fall()
+    b["eintraege"][0]["frame"]["band_stereo"]["werte_f32"] = [0.5] * 63
+    faelle.append(("band-stereo-laenge-falsch", b,
+                   [v(f"{P}/band_stereo/werte_f32", "band_stereo_bandzahl")],
+                   "Band-Stereo traegt genau 64 Werte"))
+
+    b = stereo_fall()
+    b["eintraege"][0]["frame"]["band_stereo"]["gueltig_bitmap"] = [0xff] * 7
+    faelle.append(("band-stereo-bitmap-laenge-falsch", b,
+                   [v(f"{P}/band_stereo/gueltig_bitmap", "band_stereo_bitmap_laenge")],
+                   "64 Werte verlangen genau acht Bitmapbytes"))
 
     # --- Zahlen- und Textgrenzen -------------------------------------------
     for name, feld, wert, regel, warum in [
@@ -526,6 +692,7 @@ def ungueltige() -> list[tuple[str, dict, list[dict], str]]:
     b = batch(eintrag())
     b["eintraege"][0]["frame"]["transport"]["schleife"] = {
         "active": True, "bounds_valid": True,
+        "start_ppq": 1.0, "end_ppq": 2.0,
         "abgeleitete_grenzen": {"start": 44500000, "ende": 44000000,
                                 "herleitung": "validated_block_mapping"}}
     faelle.append((
@@ -536,6 +703,7 @@ def ungueltige() -> list[tuple[str, dict, list[dict], str]]:
     b = batch(eintrag())
     b["eintraege"][0]["frame"]["transport"]["schleife"] = {
         "active": True, "bounds_valid": True,
+        "start_ppq": 1.0, "end_ppq": 2.0,
         "abgeleitete_grenzen": {"start": 1, "ende": 2, "herleitung": "unbekannt"}}
     faelle.append((
         "herleitung-unbekannt", b,

@@ -54,6 +54,20 @@ std::string adresseAlsJson (const Adresse& a);
 /// Muell sendet, verschleiert nur die Ursache.
 bool adresseGueltig (const Adresse& a);
 
+/// Bildet die gespeicherte `instance_id` auf das hex32-Feld der v3-Adresse
+/// ab (SONDE-011/NAK-40). Gueltiges hex32 bleibt bytegleich; jeder andere
+/// nichtleere Wert wird ohne Normalisierung domain-separiert und
+/// laengengebunden mit SHA-256/128 abgebildet. Ein leerer Wert bleibt leer,
+/// damit ausschliesslich der bestehende State-Lader den frischen UUID-Pfad
+/// waehlt. Nicht fuer den Audiothread: allokiert und hasht.
+std::string instanceAdresseAusState (const std::string& instanceId);
+
+/// Rueckweg der nicht umkehrbaren Abbildung: der Zielclient berechnet den
+/// Alias aus seiner lokalen Original-ID neu. Ein unbekannter Wirewert ist
+/// fail-closed; es gibt keine Dekodierung und keinen Alias im Host-State.
+bool instanceAliasZielPasst (const std::string& lokaleInstanceId,
+                             const std::string& wireInstanceId);
+
 /// Halten die Audiofelder den v3-Vertrag (`audio_lage` im Schema)? NaN, ±Inf
 /// und alles ausserhalb der Grenzen wird verriegelt, BEVOR irgendetwas davon
 /// in eine Ganzzahl gewandelt oder gesendet wird.

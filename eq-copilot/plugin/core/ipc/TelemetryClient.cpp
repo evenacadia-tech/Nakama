@@ -6,14 +6,18 @@
 
 #include "TelemetryClient.h"
 #include "WireEnvelope.h"
+#include "../analysis/FeatureEngine.h"
+#include "../../vertrag/generiert/nakama_telemetry_v1_generated.h"
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 
 namespace nakama::ipc
 {
 namespace
 {
+namespace fb = evenacadia::nakama::v3;
 /// Frist des Leerlauf-LESEVORGANGS, wenn die Schleuse leer ist. Er hat den
 /// Schlaf ersetzt: dieselbe Wartezeit, aber er sieht, wenn der Broker die
 /// Pipe schliesst. Bei 10 Hz Livekadenz (§33.2) ist die Frist reichlich;
@@ -35,6 +39,107 @@ std::string jsonStringSicher (const std::string& roh)
     return aus;
 }
 } // namespace
+
+bool featureFrameAlsFlatbuffer (const analyse::FeatureFrame& frame,
+                                const Adresse& quelle,
+                                std::vector<std::uint8_t>& ausgabe)
+{
+    ausgabe.clear();
+    Adresse wireQuelle = quelle;
+    wireQuelle.instanceId = instanceAdresseAusState (quelle.instanceId);
+    if (! adresseGueltig (wireQuelle) || frame.metricsVersion < 1u
+        || analyse::nak29Verstoss (frame.transport) != 0
+        || ! frame.transport.process_context_present_gesetzt)
+        return false;
+
+    bool stereoVorhanden = false;
+    for (int i = 0; i < analyse::Gitter::liveBaender; ++i)
+    {
+        if ((frame.liveBreiteBitmap[i / 8] & (1u << (i % 8))) == 0)
+            continue;
+        stereoVorhanden = true;
+        if (! std::isfinite (frame.liveBreite[i])
+            || frame.liveBreite[i] < 0.0f || frame.liveBreite[i] > 1.0f)
+            return false;
+    }
+
+    flatbuffers::FlatBufferBuilder b (4096);
+    const auto sid = b.CreateString (wireQuelle.logonSid);
+    const auto projekt = b.CreateString (wireQuelle.projectBindingId);
+    const auto epoche = b.CreateString (wireQuelle.sessionEpoch);
+    const auto instanz = b.CreateString (wireQuelle.instanceId);
+    const auto nonce = b.CreateString (wireQuelle.runtimeNonce);
+    const auto adresse = fb::CreateAdresse (b, sid, projekt, epoche, instanz, nonce);
+
+    flatbuffers::Offset<fb::Schleife> schleife;
+    const auto& t = frame.transport;
+    const bool schleifeVorhanden = t.cycle_active || t.cycle_bounds_valid
+        || t.cycle_start_ppq_gesetzt || t.cycle_end_ppq_gesetzt
+        || t.cycle_derivation != analyse::Herleitung::unbekannt;
+    if (schleifeVorhanden)
+    {
+        flatbuffers::Optional<double> start = flatbuffers::nullopt;
+        flatbuffers::Optional<double> ende = flatbuffers::nullopt;
+        if (t.cycle_start_ppq_gesetzt) start = t.cycle_start_ppq;
+        if (t.cycle_end_ppq_gesetzt) ende = t.cycle_end_ppq;
+        schleife = fb::CreateSchleife (b, t.cycle_active, t.cycle_bounds_valid,
+                                      start, ende, 0);
+    }
+
+    flatbuffers::Optional<std::int64_t> projektStart = flatbuffers::nullopt;
+    flatbuffers::Optional<std::int64_t> kontinuierlich = flatbuffers::nullopt;
+    flatbuffers::Optional<std::uint32_t> eingangLatenz = flatbuffers::nullopt;
+    flatbuffers::Optional<std::uint32_t> ausgangLatenz = flatbuffers::nullopt;
+    if (t.project_sample_start_gesetzt) projektStart = t.project_sample_start;
+    if (t.continuous_time_samples_gesetzt) kontinuierlich = t.continuous_time_samples;
+    if (t.input_presentation_latency_gesetzt) eingangLatenz = t.input_presentation_latency;
+    if (t.output_presentation_latency_gesetzt) ausgangLatenz = t.output_presentation_latency;
+    const auto transport = fb::CreateTransportstempel (
+        b, t.transport_epoch, t.continuity_segment, t.sequence,
+        static_cast<fb::Zeitbasis> (t.zeitbasis), projektStart,
+        t.sample_count, t.sample_rate, t.playing, t.recording, kontinuierlich,
+        schleife, eingangLatenz, ausgangLatenz,
+        static_cast<fb::Gueltigkeit> (t.gueltigkeit), t.process_context_present);
+
+    const auto liveWerte = b.CreateVector (frame.live.werte,
+                                           analyse::Gitter::liveBaender);
+    const auto liveBitmap = b.CreateVector (frame.live.bitmap,
+                                             sizeof frame.live.bitmap);
+    const auto live = fb::CreateBandwerte (
+        b, static_cast<fb::Bandgitter> (frame.live.gitter),
+        static_cast<fb::BandEncoding> (frame.live.encoding),
+        liveWerte, 0, liveBitmap, frame.live.saturated);
+
+    flatbuffers::Offset<fb::Bandwerte> stereo;
+    if (stereoVorhanden)
+    {
+        const auto werte = b.CreateVector (frame.liveBreite,
+                                           analyse::Gitter::liveBaender);
+        const auto bitmap = b.CreateVector (frame.liveBreiteBitmap,
+                                             sizeof frame.liveBreiteBitmap);
+        stereo = fb::CreateBandwerte (b, fb::Bandgitter::nakama_log64_v1,
+                                      fb::BandEncoding::float32, 0, werte,
+                                      bitmap, false);
+    }
+
+    auto optional = [] (bool gesetzt, float wert) -> flatbuffers::Optional<float>
+    { return gesetzt ? flatbuffers::Optional<float> (wert) : flatbuffers::nullopt; };
+    const auto frameFb = fb::CreateFrame (
+        b, transport, live, frame.metricsVersion,
+        optional (frame.aktivitaetGesetzt, frame.aktivitaet),
+        optional (frame.lufsSGesetzt, frame.lufsS),
+        optional (frame.peakGesetzt, frame.peakDb),
+        optional (frame.crestGesetzt, frame.crestDb),
+        optional (frame.psrGesetzt, frame.psrDb),
+        optional (frame.breiteGesetzt, frame.breite),
+        optional (frame.korrelationGesetzt, frame.korrelation), stereo);
+    const auto eintrag = fb::CreateQuellenEintrag (b, adresse, frameFb);
+    const auto eintraege = b.CreateVector (&eintrag, 1);
+    const auto batch = fb::CreateFeatureBatch (b, eintraege);
+    fb::FinishFeatureBatchBuffer (b, batch);
+    ausgabe.assign (b.GetBufferPointer(), b.GetBufferPointer() + b.GetSize());
+    return true;
+}
 
 //== Die geteilte Laufzeit ===================================================
 struct TelemetryClient::Laufzeit
@@ -192,6 +297,14 @@ bool TelemetryClient::veroeffentlichen (const std::uint8_t* daten, std::size_t l
     return k->schleuse.veroeffentlichen (daten, laenge);
 }
 
+bool TelemetryClient::veroeffentlichen (const analyse::FeatureFrame& frame,
+                                        const Adresse& quelle)
+{
+    std::vector<std::uint8_t> puffer;
+    return featureFrameAlsFlatbuffer (frame, quelle, puffer)
+        && veroeffentlichen (puffer.data(), puffer.size());
+}
+
 TelemetryClient::Snapshot TelemetryClient::snapshot() const { return k->snapshotIntern(); }
 
 TelemetryClient::Snapshot TelemetryClient::Laufzeit::snapshotIntern() const
@@ -213,7 +326,8 @@ void TelemetryClient::Laufzeit::threadLauf (std::uint64_t meinLauf,
     while (laeuft.load() && lebenslauf.load() == meinLauf)
     {
         const auto generation = verbindungsGeneration.load();
-        const TelemetryHello hello = helloProvider ? helloProvider() : TelemetryHello();
+        TelemetryHello hello = helloProvider ? helloProvider() : TelemetryHello();
+        hello.adresse.instanceId = instanceAdresseAusState (hello.adresse.instanceId);
         // Der Provider ist fremder Code und darf beliebig lange stehen. Ist
         // dieser Lauf in der Zeit abgeloest worden, wird NICHT mehr verbunden —
         // sonst risse ein abgeloester Lauf die Pipe des neuen auf und mit ihr
@@ -523,7 +637,8 @@ bool TelemetryClient::Laufzeit::eineVerbindung (std::uint64_t generation,
                 break;
             continue;
         }
-        if (! envelopeSchreiben (Familie::p2, 0, frame.data(), n, ausgang)
+        if (! envelopeSchreiben (Familie::p2, kFeatureBatchSchemaMinor,
+                                 frame.data(), n, ausgang)
             || ! verbindung.schreibenGenau (ausgang.data(), ausgang.size(),
                                             IpcVerbindung::fristIn (kIoFristMs), fehler))
         {

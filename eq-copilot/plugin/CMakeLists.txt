@@ -137,7 +137,7 @@ add_library(NakamaKern STATIC ${NAKAMA_KERN_QUELLEN})
 target_include_directories(NakamaKern PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/state" "${CMAKE_CURRENT_SOURCE_DIR}/vertrag"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/ipc")
-target_link_libraries(NakamaKern PRIVATE NakamaKernJuce)
+target_link_libraries(NakamaKern PRIVATE NakamaKernJuce flatbuffers)
 # T2-Befund 23.08.: Diese beiden hingen bis dahin NICHT am Kern. Vor S8 lagen
 # die vier Quellen per target_sources() IN den Verbraucherzielen und erbten
 # deren PUBLIC-Empfehlungsschalter — allen voran /W4. Die Kopf-Fassade leitet

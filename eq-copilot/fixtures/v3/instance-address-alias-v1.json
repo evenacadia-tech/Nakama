@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "domain": "evenacadia.nakama.v3.instance-address.v1",
+  "length_encoding": "u64be_exact_utf8_bytes",
+  "digest": "lower_hex_first_16_bytes_sha256",
+  "normalization": "none",
+  "vectors": [
+    {
+      "name": "hex32_identity",
+      "instance_id": "0123456789abcdef0123456789abcdef",
+      "wire_instance_id": "0123456789abcdef0123456789abcdef"
+    },
+    {
+      "name": "hyphenated_uuid",
+      "instance_id": "11111111-2222-3333-4444-555555555555",
+      "wire_instance_id": "63de6caeedaa39f91a6e35a64de7fd7d"
+    },
+    {
+      "name": "case_preserved_upper",
+      "instance_id": "ABCdef",
+      "wire_instance_id": "848b8ae85a61219eec7f27cd0ccdcd6b"
+    },
+    {
+      "name": "case_preserved_lower",
+      "instance_id": "abcdef",
+      "wire_instance_id": "9d0611852642757c123d8cd68d5ba844"
+    },
+    {
+      "name": "utf8_precomposed",
+      "instance_id": "Übergang",
+      "wire_instance_id": "908b0e02d1662093bc60af844d6bf0ae"
+    },
+    {
+      "name": "utf8_decomposed",
+      "instance_id": "übergang",
+      "wire_instance_id": "8e3859d8190bc6c4f9eb9a896e6820c6"
+    }
+  ],
+  "empty_instance_id": {
+    "instance_id": "",
+    "behavior": "fresh_uuid_not_hash"
+  }
+}

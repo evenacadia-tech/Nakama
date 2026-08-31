@@ -350,15 +350,9 @@ struct FeatureFrame
     /** Band-Stereo (§56): Seitenanteil je LIVE-Band, 0..1 — S/(M+S).
         Bitmap wie bei den Bandwerten: ein Band ohne Bit hat keinen Wert.
 
-        ⚠️ DIESES FELD HAT HEUTE KEINEN PLATZ AUF DER LEITUNG.  `table Frame`
-        des v3-Binaervertrags traegt genau EINEN `Bandwerte`-Satz je Frame und
-        `breite` nur als Skalar; ein zweiter bandaufgeloester Satz ist dort
-        nicht vorgesehen.  §56 verlangt Band-Stereo trotzdem ausdruecklich —
-        also wird es hier berechnet und geliefert, und die Luecke im Wire-
-        Vertrag steht als offener Punkt (NAK-59), statt still zu verschwinden.
-        Sie zu schliessen heisst `.fbs` aendern, neu generieren, Drift-Test und
-        beide handgeschriebenen Leser nachziehen — das ist SONDE-010-Arbeit und
-        nicht nebenbei zu machen.
+        Seit SONDE-011 liegt dieses Feld optional als `Frame.band_stereo`
+        (Feld-ID 10, schema_minor 1) auf der Leitung. Der Worker serialisiert
+        nur gesetzte Bitmapwerte; der Audiothread bleibt unberuehrt.
 
         Warum nur auf dem LIVE-Gitter: §33.2 fuehrt "Breite/Korrelation" bei der
         Live-Telemetrie und beim Evidenzsnapshot ausdruecklich NICHT. */

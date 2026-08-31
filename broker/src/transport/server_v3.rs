@@ -2304,6 +2304,34 @@ mod tests {
     static FOLGE: AtomicUsize = AtomicUsize::new(0);
 
     #[test]
+    fn bootstrap_und_senkenfrist_minus_eins_und_exakt_sind_inklusive() {
+        assert_eq!(BOOTSTRAP_FRIST, Duration::from_millis(5000));
+        assert_eq!(SENKE_FRIST, Duration::from_millis(2000));
+        let basis = Instant::now();
+        for frist in [BOOTSTRAP_FRIST, SENKE_FRIST] {
+            let deadline = basis + frist;
+            assert!(basis + frist - Duration::from_millis(1) < deadline);
+            assert!(basis + frist >= deadline);
+        }
+
+        let source = include_str!("server_v3.rs");
+        let testmodul_marker = ["\n#[cfg(test)]\n", "mod tests {"].concat();
+        let tests_beginn = source
+            .rfind(&testmodul_marker)
+            .expect("Testmodul-Marker im eigenen Quelltext");
+        let produkt = &source[..tests_beginn];
+        assert!(produkt.contains(".filter(|(_, f)| *f <= jetzt)"));
+        assert!(produkt.contains("if Instant::now() >= bis"));
+
+        let (blockieren, empfang) = std::sync::mpsc::channel::<()>();
+        let thread = std::thread::spawn(move || {
+            let _ = empfang.recv();
+        });
+        assert!(!join_mit_frist(thread, Duration::ZERO, || {}));
+        drop(blockieren);
+    }
+
+    #[test]
     fn writerqueue_snapshot_koalesziert_nach_objektschluessel() {
         let ausgang = Ausgang::neu();
         let alt = ausgang
@@ -2488,6 +2516,18 @@ mod tests {
         ))
     }
 
+    fn control_hello_fach(adresse: &Adresse, plugin_kind: &str, host_pid: Option<u32>) -> Vec<u8> {
+        let host = host_pid
+            .map(|pid| format!(",\"host\":{{\"pid\":{pid},\"name\":\"FL Studio\"}}"))
+            .unwrap_or_default();
+        praefix(&format!(
+            "{{\"type\":\"hello\",\"connection_kind\":\"control\",\"protocol\":3,\
+             \"plugin_version\":\"0.3.0\",\"plugin_kind\":\"{plugin_kind}\",\"adresse\":{}{host},\
+             \"audio\":{{\"samplerate\":48000,\"block_size\":512,\"channels\":2}}}}",
+            serde_json::to_string(adresse).unwrap()
+        ))
+    }
+
     fn subscribe(adresse: &Adresse) -> Vec<u8> {
         p1(&serde_json::json!({
             "type": "subscribe_session",
@@ -2502,6 +2542,29 @@ mod tests {
             "type": "heartbeat",
             "adresse": adresse,
             "sequence": sequence
+        })
+        .to_string())
+    }
+
+    fn vollstaendiger_heartbeat(adresse: &Adresse, sequence: u64) -> Vec<u8> {
+        p0(&serde_json::json!({
+            "type": "heartbeat",
+            "adresse": adresse,
+            "sequence": sequence,
+            "state_revision": 0,
+            "capabilities": {
+                "host_context_presence": "supported",
+                "project_time_samples": "supported",
+                "sample_accurate_automation": "supported",
+                "presentation_latency": "supported",
+                "aux_compare_pre": "unsupported",
+                "aux_priority_sidechain": "unsupported",
+                "contribution_aux": "unsupported",
+                "float64_processing": "supported",
+                "binary_telemetry": "supported",
+                "remote_control": "supported"
+            },
+            "zaehler": {}
         })
         .to_string())
     }
@@ -3485,11 +3548,11 @@ mod tests {
              Blockdauer statt an SENKE_FRIST ({SENKE_FRIST:?})"
         );
         assert!(
-            griff
+            warte_auf(SENKE_FRIST.as_millis() as u64 * 3, || griff
                 .statistik
                 .lebenszyklus_abgeloest
                 .load(Ordering::SeqCst)
-                >= 1,
+                >= 1),
             "der Fristfall muss als lebenszyklus_abgeloest sichtbar sein"
         );
         assert_eq!(senke.anzahl("control_getrennt"), 1, "nie doppelt");
@@ -3832,6 +3895,104 @@ mod tests {
             .session_push_ziele(&adresse_a.session_epoch, &adresse_a)
             .is_empty());
         drop(control_b);
+        drop(griff);
+    }
+
+    #[test]
+    fn join_kandidat_laeuft_ueber_probe_pipe_ohne_neue_nachrichtenfamilie() {
+        let pipe = probe_pipe("joinwire");
+        let coordinator = Arc::new(crate::coordinator::Coordinator::default());
+        let sender = V3Sender::neu();
+        coordinator.session_push_setzen(Arc::new(sender.clone()));
+        let griff = v3_server_starten_mit_epoch_und_sender(
+            &pipe,
+            coordinator.clone(),
+            "test".into(),
+            neue_kennung(),
+            sender,
+        )
+        .unwrap();
+
+        let mut main_adresse = test_adresse('a');
+        main_adresse.instance_id = "1".repeat(32);
+        main_adresse.runtime_nonce = "2".repeat(32);
+        let main = Testclient::neu(&pipe).unwrap();
+        assert!(main.schreiben(&control_hello_fach(&main_adresse, "main", Some(7711))));
+        assert!(welcome_lesen(&main).is_some());
+        assert!(main.schreiben(&vollstaendiger_heartbeat(&main_adresse, 1)));
+        assert!(frame_json_lesen(&main).is_some_and(|wert| wert["type"] == "heartbeat_ack"));
+        assert!(main.schreiben(&subscribe(&main_adresse)));
+        let erster = frame_json_lesen(&main).expect("erster session_snapshot");
+        assert_eq!(erster["type"], "session_snapshot");
+        assert_eq!(erster["mitglieder"].as_array().unwrap().len(), 1);
+
+        let mut bridge_adresse = main_adresse.clone();
+        bridge_adresse.instance_id = "3".repeat(32);
+        bridge_adresse.runtime_nonce = "4".repeat(32);
+        let bridge = Testclient::neu(&pipe).unwrap();
+        assert!(bridge.schreiben(&control_hello_fach(&bridge_adresse, "active_probe", None,)));
+        assert!(welcome_lesen(&bridge).is_some());
+        assert!(bridge.schreiben(&vollstaendiger_heartbeat(&bridge_adresse, 1)));
+        assert!(frame_json_lesen(&bridge).is_some_and(|wert| wert["type"] == "heartbeat_ack"));
+        let join_snapshot = frame_json_lesen(&main).expect("Join-Snapshot ueber Probe-Pipe");
+        assert_eq!(join_snapshot["type"], "session_snapshot");
+        assert_eq!(join_snapshot["mitglieder"].as_array().unwrap().len(), 2);
+        assert_eq!(join_snapshot["beitritt_bestaetigung_noetig"], true);
+        assert!(join_snapshot.get("join_candidate").is_none());
+
+        let schema: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../eq-copilot/schemas/v3/eq-ipc-v3.schema.json"
+        ))
+        .unwrap();
+        let reserviert: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../eq-copilot/schemas/v3/reservierte-nachrichten-v1.json"
+        ))
+        .unwrap();
+        let definiert = schema["oneOf"].as_array().unwrap().len();
+        let spaeter = reserviert["reserviert"].as_array().unwrap().len();
+        assert_eq!(definiert, 17);
+        assert_eq!(spaeter, 9);
+        assert_eq!(
+            definiert + spaeter,
+            reserviert["gesamt_erwartet"].as_u64().unwrap() as usize
+        );
+
+        drop(bridge);
+        drop(main);
+        drop(griff);
+    }
+
+    #[test]
+    fn io_worker_uebergibt_validierte_bytes_ausschliesslich_an_den_coordinator() {
+        let pipe = probe_pipe("ioworkergraph");
+        let coordinator = Arc::new(crate::coordinator::Coordinator::default());
+        let griff = v3_server_starten(&pipe, coordinator.clone(), "test".into()).unwrap();
+        let adresse = test_adresse('6');
+        assert_eq!(coordinator.client_anzahl(), 0);
+
+        let kaputt = Testclient::neu(&pipe).unwrap();
+        assert!(kaputt.schreiben(&praefix("{")));
+        assert!(warte_auf(3000, || griff
+            .statistik
+            .geschlossen_bootstrap
+            .load(Ordering::SeqCst)
+            >= 1));
+        assert_eq!(coordinator.client_anzahl(), 0);
+
+        let gueltig = Testclient::neu(&pipe).unwrap();
+        assert!(gueltig.schreiben(&control_hello_adresse(&adresse)));
+        assert!(welcome_lesen(&gueltig).is_some());
+        assert!(warte_auf(3000, || coordinator.client_anzahl() == 1));
+        assert_eq!(
+            coordinator
+                .modell_sicht(&adresse.project_binding_id, &adresse.session_epoch)
+                .clients[0]
+                .adresse,
+            adresse
+        );
+
+        drop(kaputt);
+        drop(gueltig);
         drop(griff);
     }
 

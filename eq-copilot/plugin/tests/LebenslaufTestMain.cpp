@@ -48,6 +48,14 @@ void pruefe (bool bedingung, const juce::String& text, const juce::String& zusat
     else           { ++fehlerZahl; std::cout << "  FEHLER  " << zeile << std::endl; }
 }
 
+juce::File wurzel()
+{
+    auto d = juce::File::getSpecialLocation (juce::File::currentExecutableFile);
+    while (d.exists() && ! d.getChildFile ("eq-copilot").isDirectory())
+        d = d.getParentDirectory();
+    return d;
+}
+
 // ── Staende bauen (bewusst mit den Vertrags-LITERALEN, nicht mit den
 //    internen Identifiern von NakamaState.cpp: dieses Bein misst den Vertrag
 //    von aussen, so wie ein fremdes Projekt es taete) ────────────────────────
@@ -565,6 +573,50 @@ int main()
         pruefe (nakama::ipc::brokerLifecycleOperationenImAudiothread() == 1,
                 "broker_lifecycle_aufrufe_im_audiothread_null Gegenprobe sieht echte Sperre");
         nakama::ipc::brokerLifecycleAudioTestZaehlerLoeschen();
+
+        const auto repo = wurzel();
+        const auto processorText = repo.getChildFile (
+            "eq-copilot/plugin/src/PluginProcessor.cpp").loadFileAsString().toStdString();
+        const auto anfang = processorText.find ("void EqCopilotProcessor::processBlock");
+        const auto ende = processorText.find (
+            "void EqCopilotProcessor::nakamaBlockEmpfangen", anfang);
+        const bool blockGefunden = anfang != std::string::npos
+                                && ende != std::string::npos && ende > anfang;
+        const auto block = blockGefunden
+            ? processorText.substr (anfang, ende - anfang) : std::string {};
+        auto freiVon = [&] (std::initializer_list<const char*> nadeln) {
+            if (! blockGefunden)
+                return false;
+            for (const auto* nadel : nadeln)
+                if (block.find (nadel) != std::string::npos)
+                    return false;
+            return true;
+        };
+        const bool dateiFrei = freiVon ({ "juce::File", "FileInputStream",
+                                          "FileOutputStream", "CreateFileW",
+                                          "ReadFile", "WriteFile", "std::fstream" });
+        const bool pipeFrei = freiVon ({ "ControlClient", "TelemetryClient",
+                                         "IpcVerbindung", "NamedPipe",
+                                         "CreateNamedPipeW" });
+        const bool prozessFrei = freiVon ({ "BrokerLifecycle", "CreateProcessW",
+                                            "brokerVerborgenStarten", "ShellExecute" });
+        const bool logFrei = freiVon ({ "juce::Logger", "std::cout", "printf (",
+                                        "fprintf (", "OutputDebugString" });
+        const auto storeText = repo.getChildFile ("broker/src/store.rs").loadFileAsString();
+        const bool storeNull = storeText.contains (
+            "pub const AUDIO_THREAD_STORE_WAIT_MS_MAX: u64 = 0;")
+                            && freiVon ({ "StoreWriter", "StoreHandle", "store.append",
+                                         "condition_variable", "wait_for" });
+        pruefe (audioOperationen == 0 && dateiFrei,
+                "processblock_quellschnitt_dateioperationen_null");
+        pruefe (audioOperationen == 0 && pipeFrei,
+                "processblock_quellschnitt_pipeoperationen_null");
+        pruefe (audioOperationen == 0 && prozessFrei,
+                "processblock_quellschnitt_prozessoperationen_null");
+        pruefe (audioOperationen == 0 && logFrei,
+                "processblock_quellschnitt_logoperationen_null");
+        pruefe (audioOperationen == 0 && storeNull,
+                "processblock_quellschnitt_store_wait_null");
     }
 
     std::cout << std::endl;

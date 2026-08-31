@@ -126,6 +126,22 @@ fn scalar_i64(db: &Path, sql: &str) -> i64 {
         .unwrap()
 }
 
+fn schema_signatur(db: &Path) -> Vec<(String, String, String, String)> {
+    let conn = Connection::open(db).unwrap();
+    let mut stmt = conn
+        .prepare(
+            "SELECT type,name,tbl_name,COALESCE(sql,'') FROM sqlite_master \
+             WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name,tbl_name,sql",
+        )
+        .unwrap();
+    stmt.query_map([], |row| {
+        Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+    })
+    .unwrap()
+    .collect::<Result<Vec<_>, _>>()
+    .unwrap()
+}
+
 fn child_starten(db: &Path, marker: &Path, punkt: &str, aktion: &str) -> Child {
     Command::new(env!("CARGO_BIN_EXE_eqcop-store-crash-worker"))
         .arg(db)
@@ -705,6 +721,32 @@ fn commit_bei_fenster_oder_batch() {
 }
 
 #[test]
+fn group_commit_faehrt_echten_batch_bis_commitgrenze() {
+    let ordner = TestOrdner::neu("group-commit-real");
+    let writer = starten(&ordner.db());
+    let start = Arc::new(Barrier::new(COMMIT_BATCH_MAX + 1));
+    let mut threads = Vec::with_capacity(COMMIT_BATCH_MAX);
+    for i in 0..COMMIT_BATCH_MAX {
+        let store = writer.handle();
+        let start = start.clone();
+        threads.push(std::thread::spawn(move || {
+            start.wait();
+            store.append(vec![event(None, i as i64, i as i64 + 1, false)])
+        }));
+    }
+    start.wait();
+    for thread in threads {
+        let ausgang = thread.join().unwrap().unwrap();
+        assert_eq!(ausgang.len(), 1);
+    }
+    assert_eq!(writer.handle().sicht().commits, 1);
+    assert_eq!(
+        scalar_i64(&ordner.db(), "SELECT COUNT(*) FROM event_log"),
+        COMMIT_BATCH_MAX as i64
+    );
+}
+
+#[test]
 fn busy_timeout_grenze() {
     assert!(!busy_timeout_abgelaufen(Duration::from_millis(
         BUSY_TIMEOUT_MS - 1
@@ -1122,6 +1164,7 @@ fn kill_nach_store_commit_vor_snapshot_push() {
             .angenommen
     );
     assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
+    assert_eq!(push.snapshots().len(), 1);
     assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 1);
     assert!(writer.handle().outbox_lesen().unwrap().is_empty());
 }
@@ -1200,12 +1243,45 @@ fn kill_nach_snapshot_outbox_kompaktierung_snapshot_traegt_wirkung() {
 fn kill_waehrend_migration_1() {
     let ordner = TestOrdner::neu("k08");
     crash(&ordner.db(), "waehrend_migration_1", "migration");
+    assert!(schema_signatur(&ordner.db()).is_empty());
+    let marker = ordner.db().with_extension("waehrend_migration_1.marker");
+    let pending: Value = serde_json::from_slice(
+        &std::fs::read(marker.with_extension("pending.json")).expect("Pending-Intent"),
+    )
+    .unwrap();
     let start = Instant::now();
     let writer = starten(&ordner.db());
     assert!(!writer.ist_degradiert());
     assert_eq!(
         scalar_i64(&ordner.db(), "SELECT major FROM schema_migrations"),
         STORE_SCHEMA_MAJOR
+    );
+    let referenz = TestOrdner::neu("k08-schema-reference");
+    let _referenz_writer = starten(&referenz.db());
+    assert_eq!(
+        schema_signatur(&ordner.db()),
+        schema_signatur(&referenz.db())
+    );
+
+    let command_id = pending["command_id"].as_str().unwrap();
+    let sequence = pending["sequence"].as_i64().unwrap();
+    let wirkung = pending["wirkung"].as_i64().unwrap();
+    let erster = writer
+        .handle()
+        .append(vec![event(Some(command_id), sequence, wirkung, true)])
+        .unwrap();
+    let retry = writer
+        .handle()
+        .append(vec![event(Some(command_id), sequence, wirkung, true)])
+        .unwrap();
+    assert!(matches!(erster[0], AppendAusgang::Angewandt { .. }));
+    assert!(matches!(
+        retry[0],
+        AppendAusgang::IdempotentWiederholt { .. }
+    ));
+    assert_eq!(
+        scalar_i64(&ordner.db(), "SELECT COUNT(*) FROM event_log"),
+        1
     );
     assert!(recovery_testgrenze_bestanden(start.elapsed()));
 }
@@ -1225,8 +1301,153 @@ fn kill_waehrend_wal_replay() {
         scalar_i64(&ordner.db(), "SELECT COUNT(*) FROM event_log"),
         1
     );
+    assert_eq!(
+        scalar_i64(
+            &ordner.db(),
+            "SELECT COUNT(*) FROM event_log WHERE command_id='00000000000000000000000000000005'"
+        ),
+        1
+    );
+    assert_eq!(
+        scalar_i64(
+            &ordner.db(),
+            "SELECT COUNT(*) FROM event_log WHERE command_id='00000000000000000000000000000006'"
+        ),
+        0
+    );
+    let (event_ord, event_payload): (i64, Vec<u8>) = conn
+        .query_row(
+            "SELECT event_ord,payload_jcs FROM event_log WHERE command_id='00000000000000000000000000000005'",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .unwrap();
+    for tabelle in ["projects", "sessions"] {
+        let (projektions_ord, payload): (i64, Vec<u8>) = conn
+            .query_row(
+                &format!("SELECT last_event_ord,state_jcs FROM {tabelle}"),
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(projektions_ord, event_ord, "{tabelle}");
+        assert_eq!(payload, event_payload, "{tabelle}");
+    }
+    assert_eq!(
+        scalar_i64(&ordner.db(), "SELECT snapshot_event_ord FROM outbox"),
+        event_ord
+    );
     assert_eq!(writer.handle().outbox_lesen().unwrap().len(), 1);
+
+    let coordinator = Arc::new(Coordinator::mit_store(
+        Arc::new(ManualClock::default()),
+        si_hex(99),
+        &writer,
+    ));
+    let push = Arc::new(PushProbe::neu(true));
+    coordinator.session_push_setzen(push.clone());
+    let client = si_hello(4, 404, "main");
+    assert!(
+        coordinator
+            .control_hello_registrieren("reconnect", &client)
+            .angenommen
+    );
+    assert!(si_subscribe(&coordinator, "reconnect", &client.adresse));
+    assert_eq!(snapshot_wirkung(&push.snapshots().last().unwrap().1), 1);
+    assert!(writer.handle().outbox_lesen().unwrap().is_empty());
     assert!(recovery_testgrenze_bestanden(start.elapsed()));
+}
+
+#[test]
+fn eviction_bewahrt_domainzustand_und_konfliktriegel_bei_vollstaendigem_cleanup() {
+    let (_ordner, writer, coordinator, clock, _push) =
+        si_coordinator_mit_store("eviction-domain-state", true);
+    let alt = si_hello(10, 100, "main");
+    let neu = si_hello(10, 101, "main");
+    assert!(
+        coordinator
+            .control_hello_registrieren("alt", &alt)
+            .angenommen
+    );
+    assert!(
+        coordinator
+            .control_hello_registrieren("neu", &neu)
+            .angenommen
+    );
+    assert!(si_subscribe(&coordinator, "neu", &neu.adresse));
+    assert!(coordinator.intervention_begin("neu", &neu.adresse, &si_hex(700), 1));
+    assert!(!si_report(&coordinator, "alt", &alt.adresse, 1));
+    assert_eq!(coordinator.subscription_anzahl(), 1);
+    assert_eq!(coordinator.interventionssicht().aktive, 1);
+
+    let mut plugin_state = event(None, 700, 0, false);
+    plugin_state.event_type = "proposal".into();
+    plugin_state.payload_jcs = serde_json::to_vec(&json!({
+        "type": "internal_plugin_state",
+        "proposal_id": "77777777777777777777777777777777",
+        "wert": 42
+    }))
+    .unwrap();
+    writer.handle().append(vec![plugin_state]).unwrap();
+    assert_eq!(
+        scalar_i64(
+            writer.handle().db_pfad(),
+            "SELECT COUNT(*) FROM projects WHERE project_binding_id='00000000000000000000000000000001'"
+        ),
+        1
+    );
+    let state_vorher: Vec<u8> = Connection::open(writer.handle().db_pfad())
+        .unwrap()
+        .query_row("SELECT state_jcs FROM proposals", [], |row| row.get(0))
+        .unwrap();
+
+    clock.setze_ms(STALE_NACH_MS + 1);
+    coordinator.liveness_tick();
+    clock.setze_ms(STALE_NACH_MS + 1 + TOMBSTONE_MS);
+    coordinator.liveness_tick();
+
+    assert!(coordinator
+        .modell_sicht(&si_hex(1), &si_hex(2))
+        .clients
+        .is_empty());
+    assert_eq!(coordinator.subscription_anzahl(), 0);
+    assert_eq!(coordinator.interventionssicht().aktive, 0);
+    assert!(coordinator.interventionssicht().unknown);
+    assert_eq!(
+        scalar_i64(
+            writer.handle().db_pfad(),
+            "SELECT COUNT(*) FROM projects WHERE project_binding_id='00000000000000000000000000000001'"
+        ),
+        1
+    );
+    assert_eq!(
+        scalar_i64(
+            writer.handle().db_pfad(),
+            "SELECT COUNT(*) FROM conflict_guards"
+        ),
+        2
+    );
+    let state_nachher: Vec<u8> = Connection::open(writer.handle().db_pfad())
+        .unwrap()
+        .query_row("SELECT state_jcs FROM proposals", [], |row| row.get(0))
+        .unwrap();
+    assert_eq!(state_nachher, state_vorher);
+
+    let rueckkehr = si_hello(10, 102, "main");
+    assert!(
+        coordinator
+            .control_hello_registrieren("rueckkehr", &rueckkehr)
+            .angenommen
+    );
+    assert!(!coordinator.dispatch_fuer_link_erlaubt("rueckkehr"));
+    let neue_id = si_hello(11, 103, "main");
+    assert!(
+        coordinator
+            .control_hello_registrieren("neue-id", &neue_id)
+            .angenommen
+    );
+    assert!(si_report(&coordinator, "neue-id", &neue_id.adresse, 1));
+    assert!(coordinator.dispatch_fuer_link_erlaubt("neue-id"));
 }
 
 #[test]
@@ -1472,6 +1693,16 @@ fn phase_b_hat_keinen_wire_consumer_fuer_nicht_koaleszierbare_events() {
     );
     assert!(si_report(&coordinator, "main", &main.adresse, 1));
     assert!(si_subscribe(&coordinator, "main", &main.adresse));
+    let push_vorher = push.snapshots().len();
+    let outbox_vorher = writer.handle().outbox_lesen().unwrap();
+    let mut nicht_koaleszierbar = event(None, 900, 0, false);
+    nicht_koaleszierbar.event_type = "evidence".into();
+    nicht_koaleszierbar.payload_jcs = serde_json::to_vec(&json!({
+        "type": "internal_evidence",
+        "evidence_id": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+    }))
+    .unwrap();
+    writer.handle().append(vec![nicht_koaleszierbar]).unwrap();
     assert!(push
         .snapshots()
         .iter()
@@ -1481,8 +1712,14 @@ fn phase_b_hat_keinen_wire_consumer_fuer_nicht_koaleszierbare_events() {
             writer.handle().db_pfad(),
             "SELECT COUNT(*) FROM event_log WHERE event_type <> 'session'"
         ),
-        0
+        1
     );
+    assert_eq!(
+        scalar_i64(writer.handle().db_pfad(), "SELECT COUNT(*) FROM evidence"),
+        1
+    );
+    assert_eq!(push.snapshots().len(), push_vorher);
+    assert_eq!(writer.handle().outbox_lesen().unwrap(), outbox_vorher);
 }
 
 #[cfg(windows)]

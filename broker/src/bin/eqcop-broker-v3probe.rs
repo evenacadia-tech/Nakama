@@ -6,7 +6,7 @@
 //! zwei Sprachen, ein Draht.
 //!
 //! Aufruf:
-//!   eqcop-broker-v3probe <pipe-name> [sekunden]
+//!   eqcop-broker-v3probe <pipe-name> [sekunden] [--idle-self-exit]
 //!
 //! Er meldet `BEREIT <pipe-name>` auf stdout, sobald der Listener steht, und
 //! beendet sich nach `sekunden` oder sobald eine Zeile `STOP` auf stdin
@@ -18,13 +18,14 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use eqcop_broker::broker_idle_aktualisieren;
 use eqcop_broker::transport::pipetoken::{ist_probe_pipename, PROBE_PRAEFIX};
 use eqcop_broker::transport::server_v3::{v3_server_starten, ZaehlSenke};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
-        eprintln!("Aufruf: eqcop-broker-v3probe <pipe-name> [sekunden]");
+        eprintln!("Aufruf: eqcop-broker-v3probe <pipe-name> [sekunden] [--idle-self-exit]");
         std::process::exit(2);
     }
     let pipe = args[1].clone();
@@ -39,6 +40,7 @@ fn main() {
         std::process::exit(3);
     }
     let sekunden: u64 = args.get(2).and_then(|s| s.parse().ok()).unwrap_or(30);
+    let idle_self_exit = args.iter().any(|arg| arg == "--idle-self-exit");
 
     let senke = Arc::new(ZaehlSenke::default());
     let mut griff = match v3_server_starten(&pipe, senke.clone(), "v3probe".into()) {
@@ -67,8 +69,21 @@ fn main() {
     });
 
     let ende = Instant::now() + Duration::from_secs(sekunden);
+    let mut idle_seit = None;
+    let mut ende_grund = "laufzeit";
     while Instant::now() < ende {
         if empfaenger.recv_timeout(Duration::from_millis(50)).is_ok() {
+            ende_grund = "stdin";
+            break;
+        }
+        if idle_self_exit
+            && broker_idle_aktualisieren(
+                &mut idle_seit,
+                Instant::now(),
+                griff.statistik.aktive_controls.load(Ordering::SeqCst) as usize,
+            )
+        {
+            ende_grund = "idle_self_exit";
             break;
         }
     }
@@ -76,6 +91,7 @@ fn main() {
     let s = &griff.statistik;
     let bericht = serde_json::json!({
         "pipe": pipe,
+        "ende_grund": ende_grund,
         "angenommen": s.angenommen.load(Ordering::SeqCst),
         "control_verbindungen": senke.control_verbindungen.load(Ordering::SeqCst),
         "telemetrie_verbindungen": senke.telemetrie_verbindungen.load(Ordering::SeqCst),

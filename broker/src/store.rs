@@ -1426,6 +1426,116 @@ pub fn store_pfad_ist_remote(_pfad: &Path) -> Result<bool, StoreFehler> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rusqlite::ffi;
+    use std::ffi::c_int;
+    use std::ptr;
+    use std::sync::atomic::{AtomicPtr, AtomicUsize};
+    use std::sync::Once;
+
+    static VFS_REGISTRIEREN: Once = Once::new();
+    static BASIS_VFS: AtomicPtr<ffi::sqlite3_vfs> = AtomicPtr::new(ptr::null_mut());
+    static BASIS_DATEIGROESSE: AtomicUsize = AtomicUsize::new(0);
+    static SYNC_AUFRUFE: AtomicUsize = AtomicUsize::new(0);
+    const ZAEHL_VFS: &str = "nakama-test-sync-counter";
+    const ZAEHL_VFS_C: &[u8] = b"nakama-test-sync-counter\0";
+
+    type SyncFn = unsafe extern "C" fn(*mut ffi::sqlite3_file, c_int) -> c_int;
+
+    #[repr(C)]
+    struct DateiAnhang {
+        methoden: ffi::sqlite3_io_methods,
+        original_sync: Option<SyncFn>,
+    }
+
+    fn anhang_offset() -> usize {
+        let basis = BASIS_DATEIGROESSE.load(Ordering::SeqCst);
+        let ausrichtung = std::mem::align_of::<DateiAnhang>();
+        (basis + ausrichtung - 1) & !(ausrichtung - 1)
+    }
+
+    unsafe fn anhang(datei: *mut ffi::sqlite3_file) -> *mut DateiAnhang {
+        // SAFETY: Der registrierte Wrapper vergroessert `szOsFile` exakt um
+        // diesen ausgerichteten Anhang; SQLite reicht denselben Puffer an alle
+        // I/O-Methoden weiter.
+        unsafe { (datei as *mut u8).add(anhang_offset()).cast() }
+    }
+
+    unsafe extern "C" fn sync_zaehlen(datei: *mut ffi::sqlite3_file, flags: c_int) -> c_int {
+        SYNC_AUFRUFE.fetch_add(1, Ordering::SeqCst);
+        // SAFETY: `zaehl_open` hat den Originalzeiger vor dem Ersetzen von
+        // `xSync` im dateieigenen Anhang abgelegt.
+        let original = unsafe { (*anhang(datei)).original_sync };
+        match original {
+            Some(sync) => unsafe { sync(datei, flags) },
+            None => ffi::SQLITE_IOERR,
+        }
+    }
+
+    unsafe extern "C" fn zaehl_open(
+        _wrapper: *mut ffi::sqlite3_vfs,
+        name: ffi::sqlite3_filename,
+        datei: *mut ffi::sqlite3_file,
+        flags: c_int,
+        aus_flags: *mut c_int,
+    ) -> c_int {
+        let basis = BASIS_VFS.load(Ordering::SeqCst);
+        if basis.is_null() {
+            return ffi::SQLITE_CANTOPEN;
+        }
+        // SAFETY: `BASIS_VFS` stammt aus `sqlite3_vfs_find(NULL)` und bleibt
+        // fuer die Prozesslebenszeit registriert.
+        let Some(open) = (unsafe { (*basis).xOpen }) else {
+            return ffi::SQLITE_CANTOPEN;
+        };
+        let rc = unsafe { open(basis, name, datei, flags, aus_flags) };
+        if rc != ffi::SQLITE_OK || unsafe { (*datei).pMethods.is_null() } {
+            return rc;
+        }
+        // SAFETY: Die Default-VFS hat den vorderen Dateipuffer initialisiert;
+        // ihr `sqlite3_io_methods` ist Copy und fuer die Dateilebenszeit
+        // gueltig. Nur xSync wird im dateieigenen Abbild ersetzt.
+        let original_methoden = unsafe { *(*datei).pMethods };
+        let ziel = unsafe { anhang(datei) };
+        unsafe {
+            ptr::write(
+                ziel,
+                DateiAnhang {
+                    original_sync: original_methoden.xSync,
+                    methoden: original_methoden,
+                },
+            );
+            (*ziel).methoden.xSync = Some(sync_zaehlen);
+            (*datei).pMethods = &(*ziel).methoden;
+        }
+        rc
+    }
+
+    fn zaehl_vfs_registrieren() {
+        VFS_REGISTRIEREN.call_once(|| unsafe {
+            let basis = ffi::sqlite3_vfs_find(ptr::null());
+            assert!(!basis.is_null(), "SQLite-Default-VFS fehlt");
+            BASIS_VFS.store(basis, Ordering::SeqCst);
+            BASIS_DATEIGROESSE.store((*basis).szOsFile as usize, Ordering::SeqCst);
+            let mut wrapper = *basis;
+            wrapper.pNext = ptr::null_mut();
+            wrapper.zName = ZAEHL_VFS_C.as_ptr().cast();
+            wrapper.szOsFile = (anhang_offset() + std::mem::size_of::<DateiAnhang>()) as c_int;
+            wrapper.xOpen = Some(zaehl_open);
+            let wrapper = Box::into_raw(Box::new(wrapper));
+            let rc = ffi::sqlite3_vfs_register(wrapper, 0);
+            assert_eq!(rc, ffi::SQLITE_OK, "Test-VFS registrieren");
+        });
+    }
+
+    fn test_event(sequence: i64) -> StoreEvent {
+        StoreEvent::session_snapshot(
+            "00000000000000000000000000000001",
+            "00000000000000000000000000000002",
+            "00000000000000000000000000000003",
+            sequence,
+            br#"{"type":"session_snapshot"}"#.to_vec(),
+        )
+    }
 
     #[test]
     fn konstante_trigger_haben_exakte_grenzen() {
@@ -1476,5 +1586,60 @@ mod tests {
             .expect("rusqlite-Abhaengigkeit fehlt");
         assert!(zeile.contains("version = \"=0.40.2\""));
         assert!(zeile.contains("features = [\"bundled\"]"));
+    }
+
+    #[test]
+    fn group_commit_batchcap_hat_keinen_einzel_fsync_je_event() {
+        zaehl_vfs_registrieren();
+        let pfad = std::env::temp_dir().join(format!(
+            "nakama-sync-counter-{}-{}.sqlite3",
+            std::process::id(),
+            uuid::Uuid::new_v4().simple()
+        ));
+        let flags = OpenFlags::SQLITE_OPEN_READ_WRITE
+            | OpenFlags::SQLITE_OPEN_CREATE
+            | OpenFlags::SQLITE_OPEN_NO_MUTEX;
+        let mut conn = Connection::open_with_flags_and_vfs(&pfad, flags, ZAEHL_VFS).unwrap();
+        pragmas_setzen(&conn).unwrap();
+        migration_1(&mut conn, None).unwrap();
+
+        let (antwort, _empfang) = mpsc::channel();
+        SYNC_AUFRUFE.store(0, Ordering::SeqCst);
+        append_gruppe(
+            &mut conn,
+            &[AppendJob {
+                events: vec![test_event(0)],
+                antwort,
+            }],
+            None,
+        )
+        .unwrap();
+        let sync_ein_event = SYNC_AUFRUFE.swap(0, Ordering::SeqCst);
+
+        let (antwort, _empfang) = mpsc::channel();
+        append_gruppe(
+            &mut conn,
+            &[AppendJob {
+                events: (1..=COMMIT_BATCH_MAX as i64).map(test_event).collect(),
+                antwort,
+            }],
+            None,
+        )
+        .unwrap();
+        let sync_voller_batch = SYNC_AUFRUFE.load(Ordering::SeqCst);
+        assert!(
+            sync_ein_event > 0,
+            "die VFS-Zaehlnadel sah keinen xSync-Aufruf"
+        );
+        assert_eq!(
+            sync_voller_batch, sync_ein_event,
+            "ein 64er Group-Commit muss dieselbe xSync-Zahl wie ein Einzelevent haben"
+        );
+        assert!(sync_voller_batch < COMMIT_BATCH_MAX);
+
+        drop(conn);
+        let _ = std::fs::remove_file(&pfad);
+        let _ = std::fs::remove_file(pfad.with_extension("sqlite3-wal"));
+        let _ = std::fs::remove_file(pfad.with_extension("sqlite3-shm"));
     }
 }

@@ -1,5 +1,5 @@
 use eqcop_broker::coordinator::{
-    Coordinator, ManualClock, FUEHRENDE_MAINS_PRO_SESSION, GLOBAL_CLIENT_CAP,
+    Coordinator, ManualClock, MonotonicClock, FUEHRENDE_MAINS_PRO_SESSION, GLOBAL_CLIENT_CAP,
     HEARTBEAT_INTERVAL_MS, LAST_SONDEN, SESSION_CLIENT_CAP, SESSION_SUBSCRIPTION_EVENT_REPLAY_MAX,
     SICHTBARE_SONDEN_NORMAL, STALE_JITTER_MS, STALE_NACH_MS, STALE_VERPASSTE_INTERVALLE,
     TOMBSTONE_MS,
@@ -8,7 +8,9 @@ use eqcop_broker::transport::bootstrap::{Adresse, AudioLage, HelloControl, HostA
 #[cfg(windows)]
 use eqcop_broker::transport::server_v3::Senke;
 use serde_json::{json, Value};
+use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
 use std::sync::Arc;
+use std::time::Duration;
 
 fn hex(n: usize) -> String {
     format!("{n:032x}")
@@ -107,6 +109,44 @@ fn coordinator() -> (Coordinator, Arc<ManualClock>) {
 fn anmelden(c: &Coordinator, link: &str, hello: &HelloControl) {
     let ausgang = c.control_hello_registrieren(link, hello);
     assert!(ausgang.angenommen, "{:?}", ausgang.grund);
+}
+
+fn abonnieren(c: &Coordinator, link: &str, adresse: &Adresse) -> bool {
+    c.subscribe_json(
+        link,
+        &serde_json::to_vec(&json!({
+            "type": "subscribe_session",
+            "adresse": adresse,
+            "session_epoch": adresse.session_epoch
+        }))
+        .unwrap(),
+    )
+}
+
+#[derive(Debug, Default)]
+struct GetrennteTestuhren {
+    monoton_ms: AtomicU64,
+    wanduhr_ms: AtomicI64,
+}
+
+impl GetrennteTestuhren {
+    fn monoton_setzen(&self, millis: u64) {
+        self.monoton_ms.store(millis, Ordering::SeqCst);
+    }
+
+    fn wanduhr_setzen(&self, millis: i64) {
+        self.wanduhr_ms.store(millis, Ordering::SeqCst);
+    }
+
+    fn wanduhr(&self) -> i64 {
+        self.wanduhr_ms.load(Ordering::SeqCst)
+    }
+}
+
+impl MonotonicClock for GetrennteTestuhren {
+    fn jetzt(&self) -> Duration {
+        Duration::from_millis(self.monoton_ms.load(Ordering::SeqCst))
+    }
 }
 
 #[test]
@@ -306,14 +346,57 @@ fn brokerneustart_behaelt_session_epoch() {
 
 #[test]
 fn liveness_nur_instant() {
-    let (c, clock) = coordinator();
+    let quelle = include_str!("../src/coordinator.rs");
+    let liveness_anfang = quelle
+        .find("    fn stale_aktualisieren_locked")
+        .expect("Liveness-Quellschnitt beginnt");
+    let liveness_ende = quelle[liveness_anfang..]
+        .find("    pub fn heartbeat_kontakt")
+        .map(|versatz| liveness_anfang + versatz)
+        .expect("Liveness-Quellschnitt endet");
+    let liveness_quelle = &quelle[liveness_anfang..liveness_ende];
+    assert!(liveness_quelle.contains("let jetzt = self.clock.jetzt();"));
+    assert!(!liveness_quelle.contains("SystemTime"));
+    assert!(!liveness_quelle.contains("UNIX_EPOCH"));
+    assert!(!liveness_quelle.contains("persistenz_utc_ms"));
+
+    let clock = Arc::new(GetrennteTestuhren::default());
+    let c = Coordinator::mit_uhr(clock.clone(), hex(0xbeef));
     let h = hello(1, 2, 10, 100, "main", Some(9));
     anmelden(&c, "a", &h);
-    report(&c, "a", &h.adresse);
-    clock.vor(HEARTBEAT_INTERVAL_MS);
+    assert!(report(&c, "a", &h.adresse));
+
+    clock.wanduhr_setzen(i64::MAX);
+    assert_eq!(clock.wanduhr(), i64::MAX);
+    clock.monoton_setzen(HEARTBEAT_INTERVAL_MS);
+    c.liveness_tick();
+    let sicht = c.modell_sicht(&hex(1), &hex(2));
+    assert!(!sicht.clients[0].stale);
+    assert_eq!(sicht.clients[0].letzter_kontakt_ms, HEARTBEAT_INTERVAL_MS);
+
+    clock.wanduhr_setzen(i64::MIN);
+    assert_eq!(clock.wanduhr(), i64::MIN);
+    clock.monoton_setzen(2 * HEARTBEAT_INTERVAL_MS);
+    c.liveness_tick();
+    let sicht = c.modell_sicht(&hex(1), &hex(2));
+    assert!(!sicht.clients[0].stale);
+    assert_eq!(
+        sicht.clients[0].letzter_kontakt_ms,
+        2 * HEARTBEAT_INTERVAL_MS
+    );
+
+    clock.wanduhr_setzen(0);
+    assert_eq!(clock.wanduhr(), 0);
+    clock.monoton_setzen(STALE_NACH_MS);
+    c.liveness_tick();
     assert!(!c.modell_sicht(&hex(1), &hex(2)).clients[0].stale);
-    clock.vor(HEARTBEAT_INTERVAL_MS);
-    assert!(!c.modell_sicht(&hex(1), &hex(2)).clients[0].stale);
+    clock.monoton_setzen(STALE_NACH_MS + 1);
+    c.liveness_tick();
+    assert!(c.modell_sicht(&hex(1), &hex(2)).clients[0].stale);
+    assert!(report(&c, "a", &h.adresse));
+    let sicht = c.modell_sicht(&hex(1), &hex(2));
+    assert!(!sicht.clients[0].stale);
+    assert_eq!(sicht.clients[0].letzter_kontakt_ms, 0);
 }
 
 #[test]
@@ -453,24 +536,87 @@ fn session_und_global_cap() {
 
 #[test]
 fn caps_stale_first_deterministisch() {
-    let (c, clock) = coordinator();
-    for i in (0..SESSION_CLIENT_CAP).rev() {
-        anmelden(
-            &c,
-            &format!("s{i}"),
-            &hello(1, 2, 1000 + i, 2000 + i, "active_probe", Some(1)),
-        );
+    fn session_opfer(reihenfolge: &[usize], aeltestes: usize) -> String {
+        let (c, clock) = coordinator();
+        for &i in reihenfolge {
+            clock.setze_ms(if i == aeltestes { 0 } else { 100 });
+            anmelden(
+                &c,
+                &format!("s{i}"),
+                &hello(1, 2, 1000 + i, 2000 + i, "active_probe", Some(1)),
+            );
+        }
+        clock.setze_ms(STALE_NACH_MS + 101);
+        c.liveness_tick();
+        let neu = hello(1, 2, 9999, 9998, "active_probe", Some(1));
+        assert!(c.control_hello_registrieren("neu", &neu).angenommen);
+        let sicht = c.modell_sicht(&hex(1), &hex(2));
+        assert_eq!(sicht.clients.len(), SESSION_CLIENT_CAP);
+        (0..SESSION_CLIENT_CAP)
+            .map(|i| hex(1000 + i))
+            .find(|id| {
+                !sicht
+                    .clients
+                    .iter()
+                    .any(|client| &client.adresse.instance_id == id)
+            })
+            .expect("genau ein Sessionopfer")
     }
-    clock.setze_ms(STALE_NACH_MS + 1);
-    c.liveness_tick();
-    let neu = hello(1, 2, 9999, 9998, "active_probe", Some(1));
-    assert!(c.control_hello_registrieren("neu", &neu).angenommen);
-    let sicht = c.modell_sicht(&hex(1), &hex(2));
-    assert_eq!(sicht.clients.len(), SESSION_CLIENT_CAP);
-    assert!(!sicht
-        .clients
-        .iter()
-        .any(|client| client.adresse.instance_id == hex(1000)));
+
+    let vorwaerts = (0..SESSION_CLIENT_CAP).collect::<Vec<_>>();
+    let rueckwaerts = (0..SESSION_CLIENT_CAP).rev().collect::<Vec<_>>();
+    let mut verschachtelt = (0..SESSION_CLIENT_CAP).step_by(2).collect::<Vec<_>>();
+    verschachtelt.extend((1..SESSION_CLIENT_CAP).step_by(2));
+    for reihenfolge in [&vorwaerts, &rueckwaerts, &verschachtelt] {
+        assert_eq!(session_opfer(reihenfolge, 37), hex(1037));
+    }
+
+    fn global_opfer(reihenfolge: &[usize]) -> String {
+        let (c, clock) = coordinator();
+        for &i in reihenfolge {
+            let projekt = 10 + i / SESSION_CLIENT_CAP;
+            let sitzung = 20 + i / SESSION_CLIENT_CAP;
+            anmelden(
+                &c,
+                &format!("g{i}"),
+                &hello(
+                    projekt,
+                    sitzung,
+                    1000 + i,
+                    3000 + i,
+                    "active_probe",
+                    Some(1),
+                ),
+            );
+        }
+        clock.setze_ms(STALE_NACH_MS + 1);
+        c.liveness_tick();
+        assert!(
+            c.control_hello_registrieren(
+                "global-neu",
+                &hello(99, 99, 9999, 9998, "active_probe", Some(1)),
+            )
+            .angenommen
+        );
+        for i in 0..GLOBAL_CLIENT_CAP {
+            let projekt = 10 + i / SESSION_CLIENT_CAP;
+            let sitzung = 20 + i / SESSION_CLIENT_CAP;
+            if !c
+                .modell_sicht(&hex(projekt), &hex(sitzung))
+                .clients
+                .iter()
+                .any(|client| client.adresse.instance_id == hex(1000 + i))
+            {
+                return hex(1000 + i);
+            }
+        }
+        panic!("globales stale-Opfer fehlt")
+    }
+
+    let global_vorwaerts = (0..GLOBAL_CLIENT_CAP).collect::<Vec<_>>();
+    let global_rueckwaerts = (0..GLOBAL_CLIENT_CAP).rev().collect::<Vec<_>>();
+    assert_eq!(global_opfer(&global_vorwaerts), hex(1000));
+    assert_eq!(global_opfer(&global_rueckwaerts), hex(1000));
 }
 
 #[test]
@@ -480,12 +626,37 @@ fn eviction_haelt_phase_a_riegel() {
     let neu = hello(1, 2, 10, 101, "main", Some(9));
     anmelden(&c, "alt", &alt);
     anmelden(&c, "neu", &neu);
-    report(&c, "alt", &alt.adresse);
-    c.control_ende("neu");
-    clock.setze_ms(TOMBSTONE_MS);
+    assert!(abonnieren(&c, "neu", &neu.adresse));
+    assert!(c.intervention_begin("neu", &neu.adresse, &hex(700), 1));
+    assert!(!report(&c, "alt", &alt.adresse));
+    assert!(!c.dispatch_fuer_link_erlaubt("alt"));
+    assert!(!c.dispatch_fuer_link_erlaubt("neu"));
+    assert!(c.session_push_ziele(&hex(2), &neu.adresse).is_empty());
+    assert_eq!(c.subscription_anzahl(), 1);
+    assert_eq!(c.interventionssicht().aktive, 1);
+
+    clock.setze_ms(STALE_NACH_MS + 1);
     c.liveness_tick();
+    clock.setze_ms(STALE_NACH_MS + 1 + TOMBSTONE_MS);
+    c.liveness_tick();
+    assert!(c.modell_sicht(&hex(1), &hex(2)).clients.is_empty());
+    assert_eq!(c.subscription_anzahl(), 0);
+    assert_eq!(c.interventionssicht().aktive, 0);
     assert!(!c.dispatch_fuer_link_erlaubt("alt"));
     assert!(c.interventionssicht().unknown);
+
+    let rueckkehr = hello(1, 2, 10, 102, "main", Some(9));
+    anmelden(&c, "rueckkehr", &rueckkehr);
+    assert!(!c.dispatch_fuer_link_erlaubt("rueckkehr"));
+    let neue_id = hello(1, 2, 11, 103, "main", Some(9));
+    anmelden(&c, "neue-id", &neue_id);
+    assert!(report(&c, "neue-id", &neue_id.adresse));
+    assert!(abonnieren(&c, "neue-id", &neue_id.adresse));
+    assert!(c.dispatch_fuer_link_erlaubt("neue-id"));
+    assert_eq!(
+        c.session_push_ziele(&hex(2), &neue_id.adresse),
+        vec!["neue-id"]
+    );
 }
 
 #[test]
@@ -521,7 +692,7 @@ fn trennen_bereinigt_vor_join() {
 }
 
 #[test]
-fn io_worker_mutiert_keinen_sessiongraph() {
+fn unverarbeitete_bytes_aendern_den_sessiongraphen_nicht() {
     let (c, _) = coordinator();
     let vorher = c.modell_sicht(&hex(1), &hex(2));
     let _nur_bytes = serde_json::to_vec(&json!({"type":"heartbeat"})).unwrap();
@@ -533,4 +704,55 @@ fn sichtgrenzen_und_wire_replay_null() {
     assert_eq!(SICHTBARE_SONDEN_NORMAL, 16);
     assert_eq!(LAST_SONDEN, 32);
     assert_eq!(SESSION_SUBSCRIPTION_EVENT_REPLAY_MAX, 0);
+
+    let (c, _) = coordinator();
+    for i in 0..LAST_SONDEN {
+        let h = hello(1, 2, 1000 + i, 2000 + i, "active_probe", Some(77));
+        anmelden(&c, &format!("sicht-{i}"), &h);
+        assert!(report(&c, &format!("sicht-{i}"), &h.adresse));
+        if i + 1 == SICHTBARE_SONDEN_NORMAL {
+            let snapshot: Value =
+                serde_json::from_slice(&c.session_snapshot_json(&hex(1), &hex(2))).unwrap();
+            assert_eq!(snapshot["mitglieder"].as_array().unwrap().len(), 16);
+        }
+    }
+    let snapshot: Value =
+        serde_json::from_slice(&c.session_snapshot_json(&hex(1), &hex(2))).unwrap();
+    assert_eq!(
+        snapshot["mitglieder"].as_array().unwrap().len(),
+        LAST_SONDEN
+    );
+
+    let gleich_host_a = hello(10, 20, 9000, 9100, "main", Some(4444));
+    let gleich_host_b = hello(11, 21, 9000, 9100, "main", Some(4444));
+    anmelden(&c, "gleich-host-a", &gleich_host_a);
+    anmelden(&c, "gleich-host-b", &gleich_host_b);
+    assert!(report(&c, "gleich-host-a", &gleich_host_a.adresse));
+    assert!(report(&c, "gleich-host-b", &gleich_host_b.adresse));
+    assert_eq!(c.modell_sicht(&hex(10), &hex(20)).clients.len(), 1);
+    assert_eq!(c.modell_sicht(&hex(11), &hex(21)).clients.len(), 1);
+
+    let identisch = hello(70, 71, 72, 73, "main", Some(4444));
+    let vor = Coordinator::mit_uhr(Arc::new(ManualClock::default()), hex(0xaaaa));
+    let nach = Coordinator::mit_uhr(Arc::new(ManualClock::default()), hex(0xbbbb));
+    anmelden(&vor, "identisch", &identisch);
+    anmelden(&nach, "identisch", &identisch);
+    assert!(report(&vor, "identisch", &identisch.adresse));
+    assert!(report(&nach, "identisch", &identisch.adresse));
+    let vor_snapshot: Value = serde_json::from_slice(&vor.session_snapshot_json(
+        &identisch.adresse.project_binding_id,
+        &identisch.adresse.session_epoch,
+    ))
+    .unwrap();
+    let nach_snapshot: Value = serde_json::from_slice(&nach.session_snapshot_json(
+        &identisch.adresse.project_binding_id,
+        &identisch.adresse.session_epoch,
+    ))
+    .unwrap();
+    assert_eq!(
+        vor_snapshot["session_epoch"],
+        nach_snapshot["session_epoch"]
+    );
+    assert_eq!(vor_snapshot["mitglieder"], nach_snapshot["mitglieder"]);
+    assert_ne!(vor_snapshot["broker_epoch"], nach_snapshot["broker_epoch"]);
 }

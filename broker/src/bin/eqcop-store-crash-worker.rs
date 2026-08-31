@@ -4,6 +4,7 @@ use eqcop_broker::store::{
     AppendAusgang, SnapshotZiel, StoreEvent, StoreHandle, StoreKonfiguration, StoreTestHaken,
     StoreWriter,
 };
+use rusqlite::{params, Connection};
 use std::path::PathBuf;
 #[cfg(windows)]
 use std::sync::Arc;
@@ -138,7 +139,7 @@ fn phase_b_si(args: &[std::ffi::OsString]) -> ! {
     let marker = PathBuf::from(&args[1]);
     let pipe = args[2].to_string_lossy().into_owned();
     let killpunkt = args[3].to_string_lossy().into_owned();
-    let mut konfiguration = StoreKonfiguration::fuer_pfad(db);
+    let mut konfiguration = StoreKonfiguration::fuer_pfad(&db);
     konfiguration.remote_volume_override = Some(false);
     if matches!(killpunkt.as_str(), "vor_store_commit" | "nach_store_commit") {
         konfiguration.test_haken = Some(StoreTestHaken {
@@ -183,7 +184,20 @@ fn main() {
         .into_owned();
     let aktion = args.next().expect("Aktion").to_string_lossy().into_owned();
 
-    let mut konfiguration = StoreKonfiguration::fuer_pfad(db);
+    if aktion == "migration" {
+        std::fs::write(
+            marker.with_extension("pending.json"),
+            serde_json::to_vec(&serde_json::json!({
+                "command_id": "00000000000000000000000000000008",
+                "sequence": 8,
+                "wirkung": 8
+            }))
+            .expect("Pending-Intent JSON"),
+        )
+        .expect("Pending-Intent vor Migration");
+    }
+
+    let mut konfiguration = StoreKonfiguration::fuer_pfad(&db);
     konfiguration.remote_volume_override = Some(false);
     if punkt != "wal_bereit" {
         konfiguration.test_haken = Some(StoreTestHaken {
@@ -220,7 +234,62 @@ fn main() {
             store
                 .append(vec![event("00000000000000000000000000000005", 1, true)])
                 .expect("WAL-Commit");
+            let uncommitted = event("00000000000000000000000000000006", 2, true);
+            let conn = Connection::open(&db).expect("zweite Crash-Connection");
+            conn.execute_batch("PRAGMA foreign_keys=ON; BEGIN IMMEDIATE")
+                .expect("uncommittete Transaktion beginnen");
+            conn.execute(
+                "INSERT INTO event_log(event_uuid,command_id,project_binding_id,session_epoch,utc_ms,broker_epoch,sequence,event_type,schema_major,schema_minor,payload_jcs) \
+                 VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)",
+                params![
+                    "00000000-0000-0000-0000-000000000006",
+                    uncommitted.command_id,
+                    uncommitted.project_binding_id,
+                    uncommitted.session_epoch,
+                    uncommitted.utc_ms,
+                    uncommitted.broker_epoch,
+                    uncommitted.sequence,
+                    uncommitted.event_type,
+                    uncommitted.schema_major,
+                    uncommitted.schema_minor,
+                    uncommitted.payload_jcs,
+                ],
+            )
+            .expect("uncommittetes Event");
+            let event_ord = conn.last_insert_rowid();
+            conn.execute(
+                "INSERT INTO projects(project_binding_id,last_event_ord,state_jcs) VALUES(?1,?2,?3) \
+                 ON CONFLICT(project_binding_id) DO UPDATE SET last_event_ord=excluded.last_event_ord,state_jcs=excluded.state_jcs",
+                params![uncommitted.project_binding_id, event_ord, uncommitted.payload_jcs],
+            )
+            .expect("uncommittete Projektprojektion");
+            conn.execute(
+                "INSERT INTO sessions(project_binding_id,session_epoch,last_event_ord,state_jcs) VALUES(?1,?2,?3,?4) \
+                 ON CONFLICT(project_binding_id,session_epoch) DO UPDATE SET last_event_ord=excluded.last_event_ord,state_jcs=excluded.state_jcs",
+                params![
+                    uncommitted.project_binding_id,
+                    uncommitted.session_epoch,
+                    event_ord,
+                    uncommitted.payload_jcs,
+                ],
+            )
+            .expect("uncommittete Sessionprojektion");
+            let ziel = &uncommitted.snapshot_ziele[0];
+            conn.execute(
+                "INSERT INTO outbox(target_project_binding_id,target_session_epoch,target_instance_id,object_key,snapshot_event_ord,write_attempts) \
+                 VALUES(?1,?2,?3,?4,?5,0) ON CONFLICT(target_project_binding_id,target_session_epoch,target_instance_id,object_key) \
+                 DO UPDATE SET snapshot_event_ord=excluded.snapshot_event_ord,write_attempts=0",
+                params![
+                    ziel.project_binding_id,
+                    ziel.session_epoch,
+                    ziel.instance_id,
+                    ziel.object_key,
+                    event_ord,
+                ],
+            )
+            .expect("uncommittete Outbox");
             std::fs::write(&marker, b"wal_bereit").expect("Marker");
+            let _uncommittete_connection_bleibt_offen = conn;
             warten();
         }
         _ => panic!("unbekannte Aktion {aktion}"),

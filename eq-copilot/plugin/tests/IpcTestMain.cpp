@@ -31,6 +31,7 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <string>
 #include <thread>
 #include <vector>
@@ -3377,41 +3378,75 @@ int main (int argc, char** argv)
             const auto mutexName = L"Local\\Nakama.PhaseB.IpcTest.Parallel."
                                  + std::to_wstring (GetCurrentProcessId());
             std::atomic<int> spawns { 0 };
-            std::atomic<bool> einsVerbunden { false };
-            auto hooks = [&] (bool istEins) {
+            std::atomic<bool> verbindungFreigeben { false };
+            const auto pipe = testPipeName ("autostart-real-existing");
+            ControlClient clientEins ([&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('8'));
+                return h;
+            }, pipe);
+            ControlClient clientZwei ([&] {
+                ControlHello h;
+                h.adresse = testAdresse (hex32 ('9'));
+                return h;
+            }, pipe);
+            clientEins.start();
+            clientZwei.start();
+            const bool beideSahenFehlendePipe = warteAuf (3000, [&] {
+                return clientEins.snapshot().brokerPipeFehlt
+                    && clientZwei.snapshot().brokerPipeFehlt;
+            });
+            std::unique_ptr<TestServer> vorhandenerBroker;
+            auto hooks = [&] (ControlClient& client) {
                 BrokerLifecycleHooks h;
-                h.verbunden = [&, istEins] {
-                    return istEins && einsVerbunden.load();
+                h.verbunden = [&, clientPtr = &client] {
+                    return verbindungFreigeben.load()
+                        && clientPtr->snapshot().status == ControlClient::Status::verbunden;
                 };
                 h.connectFehlgeschlagen = [] { return true; };
                 h.darfStarten = [] { return true; };
                 h.pruefen = [] { return BrokerPruefBericht {}; };
-                h.spawn = [&] { ++spawns; return true; };
+                h.spawn = [&] {
+                    ++spawns;
+                    vorhandenerBroker = std::make_unique<TestServer> (pipe);
+                    return vorhandenerBroker->starten();
+                };
                 h.mutexName = mutexName;
                 return h;
             };
-            BrokerLifecycle eins (hooks (true)), zwei (hooks (false));
-            std::atomic<bool> einsHaelt { false }, freigeben { false };
+            BrokerLifecycle eins (hooks (clientEins)), zwei (hooks (clientZwei));
+            std::atomic<bool> einsHaelt { false }, einsFreigeben { false };
             std::thread besitzer ([&] {
                 eins.tickFuerTest (0);
                 einsHaelt.store (true);
-                while (! freigeben.load())
+                while (! einsFreigeben.load())
                     std::this_thread::sleep_for (std::chrono::milliseconds (1));
-                einsVerbunden.store (true);
                 eins.tickFuerTest (1);
             });
-            const bool haelt = warteAuf (1000, [&] { return einsHaelt.load(); });
+            const bool ersterHaelt = warteAuf (1000, [&] { return einsHaelt.load(); });
             zwei.tickFuerTest (0);
-            const bool genauEiner = haelt
+            verbindungFreigeben.store (true);
+            const bool beideRealVerbunden = warteAuf (6000, [&] {
+                return clientEins.snapshot().status == ControlClient::Status::verbunden
+                    && clientZwei.snapshot().status == ControlClient::Status::verbunden;
+            });
+            einsFreigeben.store (true);
+            besitzer.join();
+            zwei.tickFuerTest (1);
+            const bool genauEiner = ersterHaelt && beideSahenFehlendePipe
+                        && beideRealVerbunden
                         && spawns.load() == static_cast<int> (BROKER_PRO_USER_MAX)
                         && zwei.snapshot().mutexVerloren == 1;
-            freigeben.store (true);
-            besitzer.join();
-            pruefe (genauEiner
-                        && zwei.snapshot().mutexVerloren == 1,
+            pruefe (genauEiner,
                     "autostart_parallel_startet_genau_einen_prozess");
             pruefe (genauEiner && spawns.load() == 1,
                     "autostart_mehrere_mains_ein_broker");
+            pruefe (beideRealVerbunden && zwei.snapshot().mutexVerloren == 1,
+                    "autostart_mutex_verlierer_verbindet_real_zum_vorhandenen_broker");
+            clientEins.stop();
+            clientZwei.stop();
+            if (vorhandenerBroker != nullptr)
+                vorhandenerBroker->stoppen();
         }
 
         const auto testExeText = juce::File::getSpecialLocation (
@@ -3494,8 +3529,121 @@ int main (int argc, char** argv)
                     "stop_waehrend_spawn");
         }
 
+        {
+            const auto brokerDatei = wurzel().getChildFile (
+                "broker/target/debug/eqcop-broker-v3probe.exe");
+            const std::wstring exe (brokerDatei.getFullPathName().toWideCharPointer());
+            const auto pipe = testPipeName ("foreign-broker-owner");
+            const std::wstring pipeW (pipe.begin(), pipe.end());
+            std::wstring befehl = L"\"" + exe + L"\" \"" + pipeW + L"\" 10";
+            SECURITY_ATTRIBUTES vererbbar {};
+            vererbbar.nLength = sizeof (vererbbar);
+            vererbbar.bInheritHandle = TRUE;
+            HANDLE stdinLesen = nullptr, stdinSchreiben = nullptr;
+            const BOOL stdinErzeugt = CreatePipe (
+                &stdinLesen, &stdinSchreiben, &vererbbar, 0);
+            if (stdinErzeugt != FALSE)
+                SetHandleInformation (stdinSchreiben, HANDLE_FLAG_INHERIT, 0);
+            STARTUPINFOW start {};
+            start.cb = sizeof (start);
+            start.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
+            start.wShowWindow = SW_HIDE;
+            start.hStdInput = stdinLesen;
+            start.hStdOutput = GetStdHandle (STD_OUTPUT_HANDLE);
+            start.hStdError = GetStdHandle (STD_ERROR_HANDLE);
+            PROCESS_INFORMATION fremd {};
+            const BOOL gestartet = stdinErzeugt != FALSE && brokerDatei.existsAsFile()
+                ? CreateProcessW (
+                exe.c_str(), befehl.data(), nullptr, nullptr, TRUE,
+                CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT,
+                nullptr, nullptr, &start, &fremd) : FALSE;
+            if (stdinLesen != nullptr)
+                CloseHandle (stdinLesen);
+            bool nachPluginStopLebendig = false;
+            bool realVerbunden = false;
+            if (gestartet != FALSE)
+            {
+                CloseHandle (fremd.hThread);
+                ControlClient client ([&] {
+                    ControlHello h;
+                    h.adresse = testAdresse (hex32 ('a'));
+                    return h;
+                }, pipe);
+                client.start();
+                realVerbunden = warteAuf (6000, [&] {
+                    return client.snapshot().status == ControlClient::Status::verbunden;
+                });
+                BrokerLifecycleHooks h;
+                h.verbunden = [&] {
+                    return client.snapshot().status == ControlClient::Status::verbunden;
+                };
+                BrokerLifecycle lifecycle (std::move (h));
+                lifecycle.start();
+                std::this_thread::sleep_for (std::chrono::milliseconds (50));
+                lifecycle.stop();
+                nachPluginStopLebendig = WaitForSingleObject (fremd.hProcess, 0) == WAIT_TIMEOUT;
+                client.stop();
+                DWORD geschrieben = 0;
+                const char stop[] = "STOP\n";
+                WriteFile (stdinSchreiben, stop, sizeof (stop) - 1, &geschrieben, nullptr);
+                if (WaitForSingleObject (fremd.hProcess, 3000) == WAIT_TIMEOUT)
+                {
+                    TerminateProcess (fremd.hProcess, 1);
+                    WaitForSingleObject (fremd.hProcess, 3000);
+                }
+                CloseHandle (fremd.hProcess);
+            }
+            if (stdinSchreiben != nullptr)
+                CloseHandle (stdinSchreiben);
+            pruefe (gestartet != FALSE && realVerbunden && nachPluginStopLebendig,
+                    "plugin_stoppt_keinen_fremden_brokerprozess");
+        }
+
         pruefe (AUTOSTART_ARTEFAKTE_PHASE_B == 0,
                 "kein_installer_oder_boot_autostartartefakt");
+        {
+            const auto repo = wurzel();
+            const auto install = repo.getChildFile ("eq-copilot/install");
+            const auto manifestDatei = install.getChildFile ("nakama-installer-v1.json");
+            const auto manifest = juce::JSON::parse (manifestDatei);
+            const auto* artefakte = manifest.getProperty ("artefakte", {}).getArray();
+            std::set<std::string> arten;
+            if (artefakte != nullptr)
+                for (const auto& artefakt : *artefakte)
+                    arten.insert (artefakt.getProperty ("art", "").toString().toStdString());
+
+            juce::Array<juce::File> dateien;
+            install.findChildFiles (dateien, juce::File::findFiles, true);
+            bool keineStartdatei = true;
+            bool keineStartanweisung = true;
+            for (const auto& datei : dateien)
+            {
+                const auto name = datei.getFileName().toLowerCase();
+                keineStartdatei = keineStartdatei
+                    && ! name.endsWith (".lnk") && ! name.endsWith (".url")
+                    && ! name.endsWith (".job") && ! name.contains ("startup");
+                if (datei.hasFileExtension ("ps1;cmd;bat"))
+                {
+                    const auto text = datei.loadFileAsString().toLowerCase();
+                    keineStartanweisung = keineStartanweisung
+                        && ! text.contains ("new-service")
+                        && ! text.contains ("schtasks")
+                        && ! text.contains ("currentversion\\run")
+                        && ! text.contains ("startup\\");
+                }
+            }
+            const auto runner = repo.getChildFile ("tools/beweise.ps1").loadFileAsString();
+            const auto installer = install.getChildFile ("Install-Nakama.ps1").loadFileAsString();
+            const bool rueckwegGebunden = runner.contains ("Kuerzel='A17'")
+                                      && runner.contains ("Kuerzel='A18'")
+                                      && installer.contains ("[switch]$Rueckweg")
+                                      && ! manifest.getProperty ("rueckweg", {}).isVoid();
+            pruefe (artefakte != nullptr && artefakte->size() == 3
+                        && arten == std::set<std::string> { "broker", "vst3" }
+                        && keineStartdatei && keineStartanweisung
+                        && rueckwegGebunden,
+                    "installer_boot_autostartinventar_ist_null_und_rueckweg_haengt_an_a17_a18");
+        }
     }
 
     std::cout << "\n" << (fehler == 0 ? "ALLE PRUEFUNGEN GRUEN" : "FEHLER")

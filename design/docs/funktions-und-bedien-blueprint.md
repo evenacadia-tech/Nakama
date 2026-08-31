@@ -592,16 +592,24 @@ Die Fläche braucht fünf funktionale Zonen:
 permanente rechte Transaktionsspalte und eine permanente Band-Parameterzeile
 sind verworfen. Der aktuelle Draft besitzt stattdessen eine kompakte Zeile
 unter dem Graphen, die ohne offenen Draft verschwindet. Doppelklick auf einen
-vorhandenen Bandpunkt öffnet ein objektgebundenes Mini-Panel für Frequency,
-Gain, Q und Dynamic. Doppelklick auf eine freie Graphposition belegt dort den
-nächsten freien der acht Band-Slots, wählt ihn und öffnet dasselbe Panel. Bei
-acht belegten Slots wird der Grenzfall sichtbar gemeldet; kein bestehendes Band
-wird still überschrieben.
+vorhandenen Bandpunkt öffnet ein objektgebundenes Mini-Panel für Filter Type,
+Frequency, Gain, Q und Dynamic. Der aktuelle Filtertyp steht als kompakter
+Handgriff im Panel; seine Aktivierung öffnet dort eine 2×3-Auswahl der sechs
+vertraglichen Typen. Während dieser Auswahl ersetzt die Typmatrix innerhalb
+desselben Grundkörpers die drei Wertefelder; sie verlängert das Panel nicht zu
+einem zweiten großen Popup. Das Panel ist zweidimensional kompakt statt als
+lange horizontale Leiste aufgebaut. Es verankert sich am betroffenen Bandpunkt
+und erscheint je nach freiem Raum ober- oder unterhalb; an den Graphkanten wird
+es innerhalb der Arbeitsfläche gehalten. Doppelklick auf eine freie
+Graphposition belegt dort den nächsten freien der acht Band-Slots als `bell`,
+wählt ihn und öffnet dasselbe Panel. Bei acht belegten Slots wird der Grenzfall
+sichtbar gemeldet; kein bestehendes Band wird still überschrieben.
 
 **[A]/[D] Zustandswahrheit:** Globale Zustände, aktiver Draft, Freeze,
-Automation und Preview dürfen nie spurlos eingeklappt sein. Filtertyp,
-Dynamic-Detail und endgültige Schließ-/Fokusregeln des Mini-Panels bleiben
-**[O]**.
+Automation und Preview dürfen nie spurlos eingeklappt sein. Der Filtertyp ist
+im objektgebundenen Mini-Panel sichtbar und diskret wechselbar; der feste
+Band-Slot bleibt dabei erhalten. Dynamic-Detail und endgültige
+Schließ-/Fokusregeln des Mini-Panels bleiben **[O]**.
 
 **[U] Zielwechsel:** Probeeq-Ziele folgen, soweit FL es belegt liefert, der
 Mixerreihenfolge. Der Master besitzt einen getrennten stabilen Einstieg und ist
@@ -1322,8 +1330,10 @@ wird zuerst die laufende Skizze aktualisiert und der User-Wortlaut unter
 `design/abnahmen/` festgehalten.
 
 Gen Fläche 1 und die Grundhierarchie von Gen Fläche 2 besitzen bereits den in
-Abschnitt 4 beschriebenen User-entschiedenen Stand. Die Fragenrunde setzt bei
-der offenen Filtertyp-Mechanik der EQ-Fläche fort, danach folgen Probeeq und
-die gemeinsamen Regeln. Objektbesitz, Fokus, Tastaturweg und Worst-Case-
-Zustände werden weiterhin am passenden Blatt geprüft. Farben, Material und
-visuelle Feinheiten bleiben bis zum ausdrücklichen Phasenwechsel getrennt.
+Abschnitt 4 beschriebenen User-entschiedenen Stand. Die Filtertyp-Mechanik und
+die freie Verankerung des kompakten Band-Panels sind entschieden. Die
+Fragenrunde setzt beim noch offenen Dynamic-Detail desselben Panels fort;
+danach folgen Probeeq und die gemeinsamen Regeln. Objektbesitz, Fokus,
+Tastaturweg und Worst-Case-Zustände werden weiterhin am passenden Blatt
+geprüft. Farben, Material und visuelle Feinheiten bleiben bis zum
+ausdrücklichen Phasenwechsel getrennt.

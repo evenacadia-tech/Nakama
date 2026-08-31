@@ -105,8 +105,16 @@ Zusammengefasst gilt:
   verworfen. Draft, Audition, Apply und Reject liegen kompakt unter dem Graphen
   und die Zeile verschwindet ohne offenen Draft.
 - Eine permanente Band-Parameterzeile ist verworfen.
-- Doppelklick auf einen vorhandenen Bandpunkt öffnet objektnahe Präzision für
-  Frequency, Gain, Q und Dynamic.
+- Doppelklick auf einen vorhandenen Bandpunkt öffnet ein kompaktes,
+  zweidimensionales und objektgebundenes Mini-Panel für Filter Type, Frequency,
+  Gain, Q und Dynamic. Es wird am Bandpunkt je nach verfügbarem Raum ober- oder
+  unterhalb platziert und an den Graphkanten innerhalb der Arbeitsfläche
+  gehalten; eine feste horizontale Schiene ist verworfen.
+- Der Filtertyp wird über einen sichtbaren Handgriff im Mini-Panel und eine
+  kompakte 2×3-Auswahl der sechs vertraglichen Typen gewechselt. Der Band-Slot
+  bleibt dabei derselbe; ein neues Band beginnt als `bell`. Solange die
+  Typauswahl offen ist, ersetzt sie die Wertezeile im selben Grundkörper statt
+  das Panel zu einem weiteren großen Popup zu verlängern.
 - Doppelklick auf eine freie Graphposition belegt dort den nächsten freien der
   acht Band-Slots, wählt ihn aus und öffnet dasselbe Mini-Panel. Sind alle acht
   Slots belegt, meldet die Oberfläche das am Graphen und überschreibt nichts.
@@ -116,13 +124,12 @@ Zusammengefasst gilt:
 - Gen Fläche 1: ob Finding-Belege und Alternativen durch Ansichtswechsel in
   derselben Fläche oder mit einem anderen Mechanismus erscheinen. Die dazu
   gestellte Frage wurde noch nicht beantwortet.
-- Gen Fläche 2: Ort und Mechanik des Filtertyps; Detailtiefe hinter `Dynamic`;
-  endgültige Schließ- und Fokusregeln des Mini-Panels.
+- Gen Fläche 2: Detailtiefe hinter `Dynamic`; endgültige Schließ- und
+  Fokusregeln des Mini-Panels.
 - Der Produktrückweg von Gen Fläche 2 zu Gen Fläche 1 ist durch den Entscheid
   zum einzigen **Vorwärtsweg** noch nicht festgelegt.
 - Probeeq und die gemeinsamen UI-Regeln wurden in dieser Runde noch nicht
   befragt.
 
-Die zuletzt vorbereitete, aber noch unbeantwortete Architekturfrage betrifft
-den Ort des Filtertyps. Sie bleibt offen und wird erst nach Wiederaufnahme der
-Fragenrunde gestellt.
+Die nächste Architekturfrage betrifft die noch offene Detailtiefe hinter
+`Dynamic` im kompakten Band-Panel.

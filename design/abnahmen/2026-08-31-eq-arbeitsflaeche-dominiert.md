@@ -64,5 +64,34 @@ für Q, Gain, Frequency und Dynamic geöffnet. Erzeugen, räumlich platzieren un
 präzise weiterarbeiten bilden damit einen einzigen Handgriff.
 
 Sind alle acht Slots belegt, meldet die Oberfläche diesen Zustand am Graphen
-ehrlich. Sie überschreibt kein bestehendes Band still. Filtertyp, exakte
-Schließgeste und die Detailtiefe hinter `Dyn` bleiben offen.
+ehrlich. Sie überschreibt kein bestehendes Band still. Exakte Schließgeste und
+die Detailtiefe hinter `Dyn` bleiben offen.
+
+## Filtertyp im frei verankerten Band-Panel
+
+Für die Frage, ob der Filtertyp im objektgebundenen Mini-Panel gewählt wird,
+entscheidet der User Variante A und präzisiert zugleich die Geometrie:
+
+> „A ja .  das popup fenster braucht aber noch arbeit, viel zu groß , es muss
+> frei nach oben und unten erscheinen können, jenachdem wo sich der klick
+> befindet. aktuell ist es auf schienen und ein langer waagrechter balken. dass
+> muss eleganter gehen“
+
+Damit gilt für Gen Seite 2:
+
+- Der Filtertyp gehört als sichtbarer, bandlokaler Handgriff in das Mini-Panel.
+  Seine Aktivierung öffnet eine kompakte 2×3-Auswahl der sechs vertraglichen
+  Typen `bell`, `low_shelf`, `high_shelf`, `notch`, `low_cut` und `high_cut`.
+  Die Typmatrix ersetzt für diesen kurzen Teilschritt die drei Wertefelder im
+  selben Panel; nach der Auswahl kehren die Werte zurück.
+- Das Mini-Panel ist kompakt zweidimensional aufgebaut. Die bisherige lange
+  horizontale Parameterleiste und ihre festen horizontalen Positionen sind
+  verworfen.
+- Das Panel verankert sich am ausgewählten oder neu angelegten Bandpunkt. Je
+  nach verfügbarem Raum erscheint es ober- oder unterhalb des Punkts; an der
+  linken und rechten Graphkante bleibt es innerhalb der Arbeitsfläche.
+- Ein Typwechsel verändert den Typ desselben festen Band-Slots diskret. Er ist
+  kein kontinuierliches Filter-Morphing. Neu angelegte Bänder beginnen gemäß
+  Parametervertrag als `bell`.
+- Dynamic-Detail sowie endgültige Schließ- und Fokusregeln des Mini-Panels
+  bleiben Gegenstand der folgenden Einzelentscheide.

@@ -1850,10 +1850,16 @@ int main()
         auto t1 = gut; t1.project_sample_start_gesetzt = false;
         pruefe (nak29Verstoss (t1) == 1,
                 "Fall 1: project_samples + Bit, aber KEIN project_sample_start");
+        auto t1Rueckrichtung = gut; t1Rueckrichtung.gueltigkeit &= ~kGProjectTime;
+        pruefe (nak29Verstoss (t1Rueckrichtung) == 1,
+                "Fall 1: project_samples + project_sample_start, aber KEIN project_time-Bit");
 
         auto t2 = gut; t2.zeitbasis = Zeitbasis::local_monotonic;
         pruefe (nak29Verstoss (t2) == 2,
                 "Fall 2: local_monotonic MIT project_time-Bit (Widerspruch zu §32.3)");
+        auto t2Rueckrichtung = t2; t2Rueckrichtung.gueltigkeit &= ~kGProjectTime;
+        pruefe (nak29Verstoss (t2Rueckrichtung) == 2,
+                "Fall 2: local_monotonic MIT project_sample_start (Widerspruch zu §32.3)");
 
         auto t3 = gut; t3.cycle_bounds_valid = true;
         pruefe (nak29Verstoss (t3) == 3,

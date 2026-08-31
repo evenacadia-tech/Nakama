@@ -75,6 +75,19 @@ void fahreBandStereoRoundtrip()
             && stereo->werte_f32()->Get (0) == 0.25f
             && stereo->werte_f32()->Get (63) == 1.0f,
             "band_stereo_featureframe_to_flatbuffer");
+
+    auto projektOhneBit = f;
+    projektOhneBit.transport.gueltigkeit &= ~nakama::analyse::kGProjectTime;
+    pruefe (nakama::analyse::nak29Verstoss (projektOhneBit.transport) == 1
+                && ! nakama::ipc::featureFrameAlsFlatbuffer (projektOhneBit, a, puffer),
+            "nak29_encoder_project_samples_ohne_project_time_bit");
+
+    auto lokalMitProjektstart = f;
+    lokalMitProjektstart.transport.zeitbasis = nakama::analyse::Zeitbasis::local_monotonic;
+    lokalMitProjektstart.transport.gueltigkeit &= ~nakama::analyse::kGProjectTime;
+    pruefe (nakama::analyse::nak29Verstoss (lokalMitProjektstart.transport) == 2
+                && ! nakama::ipc::featureFrameAlsFlatbuffer (lokalMitProjektstart, a, puffer),
+            "nak29_encoder_local_monotonic_mit_project_sample_start");
 }
 
 void pruefe (bool ok, const juce::String& was, const juce::String& zusatz)

@@ -189,9 +189,10 @@ struct Transportstempel
     das JSON-Schema heute alle durchlaesst, weil eine diskriminierte Union
     dafuer fehlt:
 
-      1. `time_basis=project_samples` + `validity.project_time=true`
-         OHNE `project_sample_start`;
-      2. `time_basis=local_monotonic` MIT `validity.project_time=true`
+      1. `time_basis=project_samples` verlangt gemeinsam
+         `validity.project_time=true` UND `project_sample_start`;
+      2. `time_basis=local_monotonic` verbietet sowohl
+         `validity.project_time=true` ALS AUCH `project_sample_start`
          (direkter Widerspruch zu §32.3);
       3. `cycle.bounds_valid=true` ohne `start_ppq`/`end_ppq`;
       4. `cycle.bounds_valid=false` mit `derivation=validated_block_mapping`.
@@ -210,10 +211,11 @@ inline int nak29Verstoss (const Transportstempel& t) noexcept
 {
     const bool zeitBitAn = (t.gueltigkeit & kGProjectTime) != 0;
 
-    if (t.zeitbasis == Zeitbasis::project_samples && zeitBitAn
-        && ! t.project_sample_start_gesetzt)
+    if (t.zeitbasis == Zeitbasis::project_samples
+        && (! zeitBitAn || ! t.project_sample_start_gesetzt))
         return 1;
-    if (t.zeitbasis == Zeitbasis::local_monotonic && zeitBitAn)
+    if (t.zeitbasis == Zeitbasis::local_monotonic
+        && (zeitBitAn || t.project_sample_start_gesetzt))
         return 2;
     if (t.cycle_bounds_valid
         && (! t.cycle_start_ppq_gesetzt || ! t.cycle_end_ppq_gesetzt))

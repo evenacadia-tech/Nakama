@@ -1616,6 +1616,21 @@ int main()
                    std::uint8_t { 0xff });
         feature.liveBreite[0] = 0.5f;
         feature.liveBreiteBitmap[0] = 0x01;
+
+        auto projektOhneBit = feature;
+        projektOhneBit.transport.gueltigkeit &= ~nakama::analyse::kGProjectTime;
+        pruefe (nakama::analyse::nak29Verstoss (projektOhneBit.transport) == 1
+                    && ! telemetrie.veroeffentlichen (projektOhneBit, adresse),
+                "nak29_sender_project_samples_ohne_project_time_bit");
+
+        auto lokalMitProjektstart = feature;
+        lokalMitProjektstart.transport.zeitbasis =
+            nakama::analyse::Zeitbasis::local_monotonic;
+        lokalMitProjektstart.transport.gueltigkeit &= ~nakama::analyse::kGProjectTime;
+        pruefe (nakama::analyse::nak29Verstoss (lokalMitProjektstart.transport) == 2
+                    && ! telemetrie.veroeffentlichen (lokalMitProjektstart, adresse),
+                "nak29_sender_local_monotonic_mit_project_sample_start");
+
         const bool featureAngenommen = telemetrie.veroeffentlichen (feature, adresse);
         const bool featureGesendet = warteAuf (3000, [&] { return server.p2.load() >= 1; });
         bool minorBeobachtet = false;

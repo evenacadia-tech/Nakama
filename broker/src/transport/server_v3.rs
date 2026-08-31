@@ -882,7 +882,13 @@ pub fn v3_server_starten(
     senke: Arc<dyn Senke>,
     broker_version: String,
 ) -> Result<V3Griff, String> {
-    v3_server_starten_intern(pipe_name, senke, broker_version, Arc::new(AtomicU64::new(0)))
+    v3_server_starten_intern(
+        pipe_name,
+        senke,
+        broker_version,
+        Arc::new(AtomicU64::new(0)),
+        Arc::new(AtomicBool::new(false)),
+    )
 }
 
 /// Wie `v3_server_starten`, aber mit einer Testnaht: `probe_verzoegerung_ms`
@@ -894,6 +900,7 @@ fn v3_server_starten_intern(
     senke: Arc<dyn Senke>,
     broker_version: String,
     probe_verzoegerung_ms: Arc<AtomicU64>,
+    writer_fehler_erzwungen: Arc<AtomicBool>,
 ) -> Result<V3Griff, String> {
     let sicherheit = crate::server::sicherheit_nur_user()?;
     let stop = Arc::new(AtomicBool::new(false));
@@ -1047,6 +1054,7 @@ fn v3_server_starten_intern(
                 // faellt die Closure samt Eintrag und traegt ihn wieder aus.
                 let handle_eintrag = HandleEintrag { id, register: handles2.clone() };
                 let verzoegerung = probe_verzoegerung_ms.clone();
+                let writer_fehler = writer_fehler_erzwungen.clone();
 
                 let senke = senke.clone();
                 let kopplungen = kopplungen.clone();
@@ -1069,7 +1077,7 @@ fn v3_server_starten_intern(
                         }
                         verbindung_bedienen(
                             id, griff, senke, kopplungen, trennmelder, handles, bootstraps,
-                            statistik, bv, be, conn_stop, handle_eintrag,
+                            statistik, bv, be, conn_stop, writer_fehler, handle_eintrag,
                         );
                     }) {
                     Ok(j) => verbindungen2.lock().unwrap_or_else(|e| e.into_inner()).push(j),
@@ -1170,6 +1178,7 @@ fn verbindung_bedienen(
     broker_version: String,
     broker_epoch: String,
     stop: Arc<AtomicBool>,
+    writer_fehler_erzwungen: Arc<AtomicBool>,
     handle_eintrag: HandleEintrag,
 ) {
     // Der Acceptor hat das Handle schon registriert; der Eintrag traegt es
@@ -1396,15 +1405,28 @@ fn verbindung_bedienen(
     let schreiber = {
         let griff = griff.clone();
         let ausgang = ausgang.clone();
+        let ende = ende.clone();
+        let handles = handles.clone();
+        let statistik = statistik.clone();
         std::thread::Builder::new()
             .name("eqcop-v3-writer".into())
             .spawn(move || {
                 let ereignis = match Ereignis::neu() {
                     Some(e) => e,
-                    None => return,
+                    None => {
+                        statistik.geschlossen_writer.fetch_add(1, Ordering::SeqCst);
+                        ende.store(true, Ordering::SeqCst);
+                        io_abbrechen(&handles, id);
+                        return;
+                    }
                 };
                 while let Some(frame) = ausgang.entnehmen() {
-                    if !ov_schreiben(griff.h, ereignis.roh(), &frame) {
+                    if writer_fehler_erzwungen.swap(false, Ordering::SeqCst)
+                        || !ov_schreiben(griff.h, ereignis.roh(), &frame)
+                    {
+                        statistik.geschlossen_writer.fetch_add(1, Ordering::SeqCst);
+                        ende.store(true, Ordering::SeqCst);
+                        io_abbrechen(&handles, id);
                         break;
                     }
                 }
@@ -2372,8 +2394,14 @@ mod tests {
         let pipe = probe_pipe("stopfenster");
         let verzoegerung = Arc::new(AtomicU64::new(600));
         let senke = Arc::new(ZaehlSenke::default());
-        let mut griff =
-            v3_server_starten_intern(&pipe, senke, "test".into(), verzoegerung).unwrap();
+        let mut griff = v3_server_starten_intern(
+            &pipe,
+            senke,
+            "test".into(),
+            verzoegerung,
+            Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap();
 
         // Verbinden, aber KEIN Hello senden: ohne den Fix legte sich der Thread
         // gleich danach in einen Read, den nach dem Stop niemand mehr aufloest.
@@ -3301,8 +3329,20 @@ mod tests {
         for grund in ["EOF", "Protokollfehler", "Timeout", "Writefehler", "Serverstopp"] {
             let pipe = probe_pipe(&format!("subscriptioncleanup-{grund}"));
             let coordinator = Arc::new(crate::coordinator::Coordinator::default());
-            let mut griff =
-                v3_server_starten(&pipe, coordinator.clone(), "test".into()).unwrap();
+            let writer_fehler = Arc::new(AtomicBool::new(false));
+            let mut griff = if grund == "Writefehler" {
+                v3_server_starten_intern(
+                    &pipe,
+                    coordinator.clone(),
+                    "test".into(),
+                    Arc::new(AtomicU64::new(0)),
+                    writer_fehler.clone(),
+                )
+                .unwrap()
+            } else {
+                v3_server_starten(&pipe, coordinator.clone(), "test".into()).unwrap()
+            };
+            let statistik = griff.statistik.clone();
             let adresse = test_adresse('c');
             let client = Testclient::neu(&pipe).unwrap();
             assert!(client.schreiben(&control_hello_adresse(&adresse)), "{grund}");
@@ -3321,11 +3361,24 @@ mod tests {
                 }
                 "Timeout" => coordinator.control_ende(&link),
                 "Writefehler" => {
+                    // Nur der Writer scheitert. Der Client bleibt offen, der
+                    // Reader steht in seinem naechsten Overlapped-Read. Erst
+                    // `ende` + `CancelIoEx` aus dem Writer darf den Cleanup
+                    // erreichen; EOF kann diesen Fall nicht gruenschaummeln.
+                    writer_fehler.store(true, Ordering::SeqCst);
                     assert!(client
                         .as_ref()
                         .unwrap()
                         .schreiben(&p0("{\"type\":\"heartbeat\",\"sequence\":1}")));
-                    drop(client.take());
+                    assert!(
+                        warte_auf(5000, || statistik.geschlossen_writer.load(Ordering::SeqCst)
+                            == 1),
+                        "Writerfehler wurde nicht erreicht"
+                    );
+                    assert!(
+                        client.is_some(),
+                        "Client muss fuer den isolierten Writerfehler offen bleiben"
+                    );
                 }
                 "Serverstopp" => griff.stoppen(),
                 _ => unreachable!(),

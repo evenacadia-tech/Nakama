@@ -65,11 +65,34 @@ pub enum Registrierung {
     Ungueltig,
 }
 
+/// Der stabile Adressraum, innerhalb dessen eine Wire-`instance_id` eindeutig
+/// sein muss. Zwei Projektkopien mit verschiedener Sitzung teilen weder
+/// Aliasindex noch Quarantaene.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Sitzungsadressraum {
+    logon_sid: String,
+    project_binding_id: String,
+    session_epoch: String,
+}
+
+impl Sitzungsadressraum {
+    pub fn neu(logon_sid: &str, project_binding_id: &str, session_epoch: &str) -> Self {
+        Self {
+            logon_sid: logon_sid.to_owned(),
+            project_binding_id: project_binding_id.to_owned(),
+            session_epoch: session_epoch.to_owned(),
+        }
+    }
+}
+
+type BesitzerSchluessel = (Sitzungsadressraum, String);
+type WireSchluessel = (Sitzungsadressraum, String);
+
 #[derive(Debug, Default)]
 struct AliasStand {
-    nach_wire: HashMap<String, String>,
-    nach_original: HashMap<String, String>,
-    quarantaene: HashSet<String>,
+    nach_wire: HashMap<WireSchluessel, String>,
+    nach_original: HashMap<BesitzerSchluessel, String>,
+    quarantaene: HashSet<BesitzerSchluessel>,
 }
 
 /// Ein Register fuer alle drei Zielwege (Dispatch, Telemetrie, Session-Push).
@@ -81,11 +104,19 @@ pub struct AliasRegister {
 }
 
 impl AliasRegister {
-    pub fn registriere(&self, original: &str) -> Registrierung {
+    fn besitzer_schluessel(adressraum: &Sitzungsadressraum, original: &str) -> BesitzerSchluessel {
+        (adressraum.clone(), original.to_owned())
+    }
+
+    fn wire_schluessel(adressraum: &Sitzungsadressraum, wire: &str) -> WireSchluessel {
+        (adressraum.clone(), wire.to_owned())
+    }
+
+    pub fn registriere(&self, adressraum: &Sitzungsadressraum, original: &str) -> Registrierung {
         let Some(wire) = instance_adresse_aus_state(original) else {
             return Registrierung::Ungueltig;
         };
-        self.registriere_wire_zuordnung(original, &wire)
+        self.registriere_wire_zuordnung(adressraum, original, &wire)
     }
 
     /// Registriert eine bereits auf der Wireseite beobachtete Zuordnung. Der
@@ -93,23 +124,30 @@ impl AliasRegister {
     /// `original` die eindeutige Besitzeridentitaet der Verbindung
     /// (Wire-instance_id + runtime_nonce). Zwei Besitzer desselben Wirewerts
     /// werden damit genauso fail-closed behandelt wie eine Hashkollision.
-    pub fn registriere_wire_zuordnung(&self, original: &str, wire: &str) -> Registrierung {
+    pub fn registriere_wire_zuordnung(
+        &self,
+        adressraum: &Sitzungsadressraum,
+        original: &str,
+        wire: &str,
+    ) -> Registrierung {
         if original.is_empty() || !ist_hex32(wire) {
             return Registrierung::Ungueltig;
         }
         let mut stand = self.stand.lock().expect("AliasRegister vergiftet");
-        if stand.quarantaene.contains(original) {
+        let besitzer = Self::besitzer_schluessel(adressraum, original);
+        let wire_schluessel = Self::wire_schluessel(adressraum, wire);
+        if stand.quarantaene.contains(&besitzer) {
             return Registrierung::Ungueltig;
         }
         if stand
             .nach_original
-            .get(original)
+            .get(&besitzer)
             .is_some_and(|bekannt| bekannt == wire)
         {
             return Registrierung::BereitsEingetragen;
         }
 
-        if let Some(erster) = stand.nach_wire.get(wire).cloned() {
+        if let Some(erster) = stand.nach_wire.get(&wire_schluessel).cloned() {
             if erster == original {
                 return Registrierung::BereitsEingetragen;
             }
@@ -118,33 +156,33 @@ impl AliasRegister {
             // sichtbaren Index entfernen, dann BEIDE Originale unter
             // demselben Lock quarantinisieren. Vor Lockfreigabe existiert
             // keine gewaehlte Zuordnung mehr.
-            stand.nach_wire.remove(wire);
-            stand.nach_original.remove(&erster);
-            stand.nach_original.remove(original);
-            stand.quarantaene.insert(erster);
-            stand.quarantaene.insert(original.to_owned());
+            let erster_besitzer = Self::besitzer_schluessel(adressraum, &erster);
+            stand.nach_wire.remove(&wire_schluessel);
+            stand.nach_original.remove(&erster_besitzer);
+            stand.nach_original.remove(&besitzer);
+            stand.quarantaene.insert(erster_besitzer);
+            stand.quarantaene.insert(besitzer);
             return Registrierung::KollisionBeideQuarantaenisiert;
         }
 
         // Ein Original darf nicht still von einer Zieladresse zu einer
         // anderen wandern. Das waere eine Identitaetsumschreibung.
-        if let Some(alter_wire) = stand.nach_original.get(original).cloned() {
-            stand.nach_original.remove(original);
+        if let Some(alter_wire) = stand.nach_original.get(&besitzer).cloned() {
+            stand.nach_original.remove(&besitzer);
+            let alter_wire_schluessel = Self::wire_schluessel(adressraum, &alter_wire);
             if stand
                 .nach_wire
-                .get(&alter_wire)
+                .get(&alter_wire_schluessel)
                 .is_some_and(|owner| owner == original)
             {
-                stand.nach_wire.remove(&alter_wire);
+                stand.nach_wire.remove(&alter_wire_schluessel);
             }
-            stand.quarantaene.insert(original.to_owned());
+            stand.quarantaene.insert(besitzer);
             return Registrierung::Ungueltig;
         }
 
-        stand.nach_wire.insert(wire.to_owned(), original.to_owned());
-        stand
-            .nach_original
-            .insert(original.to_owned(), wire.to_owned());
+        stand.nach_wire.insert(wire_schluessel, original.to_owned());
+        stand.nach_original.insert(besitzer, wire.to_owned());
         Registrierung::Eingetragen
     }
 
@@ -152,54 +190,79 @@ impl AliasRegister {
     /// Verbindungsende. Quarantaene bleibt dagegen bis zur expliziten Neu-ID-
     /// Aufloesung bestehen; ein Disconnect darf den sichtbaren Konflikt nicht
     /// waschen.
-    pub fn entferne(&self, original: &str, wire: &str) {
+    pub fn entferne(&self, adressraum: &Sitzungsadressraum, original: &str, wire: &str) {
         let mut stand = self.stand.lock().expect("AliasRegister vergiftet");
-        if stand.quarantaene.contains(original) {
+        let besitzer = Self::besitzer_schluessel(adressraum, original);
+        let wire_schluessel = Self::wire_schluessel(adressraum, wire);
+        if stand.quarantaene.contains(&besitzer) {
             return;
         }
         if stand
             .nach_original
-            .get(original)
+            .get(&besitzer)
             .is_some_and(|bekannt| bekannt == wire)
             && stand
                 .nach_wire
-                .get(wire)
+                .get(&wire_schluessel)
                 .is_some_and(|bekannt| bekannt == original)
         {
-            stand.nach_original.remove(original);
-            stand.nach_wire.remove(wire);
+            stand.nach_original.remove(&besitzer);
+            stand.nach_wire.remove(&wire_schluessel);
         }
     }
 
-    pub fn dispatch_erlaubt(&self, original: &str, wire: &str) -> bool {
+    pub fn dispatch_erlaubt(
+        &self,
+        adressraum: &Sitzungsadressraum,
+        original: &str,
+        wire: &str,
+    ) -> bool {
         let stand = self.stand.lock().expect("AliasRegister vergiftet");
-        !stand.quarantaene.contains(original)
-            && stand.nach_original.get(original).is_some_and(|w| w == wire)
-            && stand.nach_wire.get(wire).is_some_and(|o| o == original)
+        let besitzer = Self::besitzer_schluessel(adressraum, original);
+        let wire_schluessel = Self::wire_schluessel(adressraum, wire);
+        !stand.quarantaene.contains(&besitzer)
+            && stand
+                .nach_original
+                .get(&besitzer)
+                .is_some_and(|w| w == wire)
+            && stand
+                .nach_wire
+                .get(&wire_schluessel)
+                .is_some_and(|o| o == original)
     }
 
-    pub fn telemetrie_erlaubt(&self, original: &str, wire: &str) -> bool {
-        self.dispatch_erlaubt(original, wire)
+    pub fn telemetrie_erlaubt(
+        &self,
+        adressraum: &Sitzungsadressraum,
+        original: &str,
+        wire: &str,
+    ) -> bool {
+        self.dispatch_erlaubt(adressraum, original, wire)
     }
 
-    pub fn session_push_erlaubt(&self, original: &str, wire: &str) -> bool {
-        self.dispatch_erlaubt(original, wire)
+    pub fn session_push_erlaubt(
+        &self,
+        adressraum: &Sitzungsadressraum,
+        original: &str,
+        wire: &str,
+    ) -> bool {
+        self.dispatch_erlaubt(adressraum, original, wire)
     }
 
-    pub fn ist_quarantaenisiert(&self, original: &str) -> bool {
+    pub fn ist_quarantaenisiert(&self, adressraum: &Sitzungsadressraum, original: &str) -> bool {
         self.stand
             .lock()
             .expect("AliasRegister vergiftet")
             .quarantaene
-            .contains(original)
+            .contains(&Self::besitzer_schluessel(adressraum, original))
     }
 
-    pub fn aliasindex_hat(&self, wire: &str) -> bool {
+    pub fn aliasindex_hat(&self, adressraum: &Sitzungsadressraum, wire: &str) -> bool {
         self.stand
             .lock()
             .expect("AliasRegister vergiftet")
             .nach_wire
-            .contains_key(wire)
+            .contains_key(&Self::wire_schluessel(adressraum, wire))
     }
 }
 
@@ -227,6 +290,14 @@ mod tests {
             .join("../eq-copilot/fixtures/v3/instance-address-alias-v1.json");
         serde_json::from_slice(&fs::read(pfad).expect("Aliasfixture lesen"))
             .expect("Aliasfixture parsen")
+    }
+
+    fn adressraum() -> Sitzungsadressraum {
+        Sitzungsadressraum::neu(
+            "S-1-5-21-1-2-3-1001",
+            "11111111111111111111111111111111",
+            "22222222222222222222222222222222",
+        )
     }
 
     #[test]
@@ -264,73 +335,93 @@ mod tests {
     #[test]
     fn instance_alias_unknown_fail_closed() {
         let register = AliasRegister::default();
+        let adressraum = adressraum();
         let original = "11111111-2222-3333-4444-555555555555";
         let wire = instance_adresse_aus_state(original).unwrap();
-        assert!(!register.dispatch_erlaubt(original, &wire));
-        assert!(!register.telemetrie_erlaubt(original, &wire));
-        assert!(!register.session_push_erlaubt(original, &wire));
-        assert_eq!(register.registriere(original), Registrierung::Eingetragen);
-        assert!(register.dispatch_erlaubt(original, &wire));
-        assert!(!register.dispatch_erlaubt(original, "ffffffffffffffffffffffffffffffff"));
+        assert!(!register.dispatch_erlaubt(&adressraum, original, &wire));
+        assert!(!register.telemetrie_erlaubt(&adressraum, original, &wire));
+        assert!(!register.session_push_erlaubt(&adressraum, original, &wire));
+        assert_eq!(
+            register.registriere(&adressraum, original),
+            Registrierung::Eingetragen
+        );
+        assert!(register.dispatch_erlaubt(&adressraum, original, &wire));
+        assert!(!register.dispatch_erlaubt(
+            &adressraum,
+            original,
+            "ffffffffffffffffffffffffffffffff"
+        ));
     }
 
-    fn pruefe_kollision(register: &AliasRegister, a: &str, b: &str, wire: &str) {
-        assert!(!register.aliasindex_hat(wire));
-        assert!(register.ist_quarantaenisiert(a));
-        assert!(register.ist_quarantaenisiert(b));
+    fn pruefe_kollision(
+        register: &AliasRegister,
+        adressraum: &Sitzungsadressraum,
+        a: &str,
+        b: &str,
+        wire: &str,
+    ) {
+        assert!(!register.aliasindex_hat(adressraum, wire));
+        assert!(register.ist_quarantaenisiert(adressraum, a));
+        assert!(register.ist_quarantaenisiert(adressraum, b));
         for original in [a, b] {
-            assert!(!register.dispatch_erlaubt(original, wire));
-            assert!(!register.telemetrie_erlaubt(original, wire));
-            assert!(!register.session_push_erlaubt(original, wire));
+            assert!(!register.dispatch_erlaubt(adressraum, original, wire));
+            assert!(!register.telemetrie_erlaubt(adressraum, original, wire));
+            assert!(!register.session_push_erlaubt(adressraum, original, wire));
         }
     }
 
     #[test]
     fn instance_alias_collision_native_dann_abgeleitet_quarantaenisiert_beide() {
         let register = AliasRegister::default();
+        let adressraum = adressraum();
         let native = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let abgeleitet = "legacy-id-a";
-        assert_eq!(register.registriere(native), Registrierung::Eingetragen);
         assert_eq!(
-            register.registriere_wire_zuordnung(abgeleitet, native),
+            register.registriere(&adressraum, native),
+            Registrierung::Eingetragen
+        );
+        assert_eq!(
+            register.registriere_wire_zuordnung(&adressraum, abgeleitet, native),
             Registrierung::KollisionBeideQuarantaenisiert
         );
-        pruefe_kollision(&register, native, abgeleitet, native);
+        pruefe_kollision(&register, &adressraum, native, abgeleitet, native);
     }
 
     #[test]
     fn instance_alias_collision_abgeleitet_dann_native_quarantaenisiert_beide() {
         let register = AliasRegister::default();
+        let adressraum = adressraum();
         let native = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let abgeleitet = "legacy-id-a";
         assert_eq!(
-            register.registriere_wire_zuordnung(abgeleitet, native),
+            register.registriere_wire_zuordnung(&adressraum, abgeleitet, native),
             Registrierung::Eingetragen
         );
         assert_eq!(
-            register.registriere(native),
+            register.registriere(&adressraum, native),
             Registrierung::KollisionBeideQuarantaenisiert
         );
-        pruefe_kollision(&register, native, abgeleitet, native);
+        pruefe_kollision(&register, &adressraum, native, abgeleitet, native);
     }
 
     #[test]
     fn instance_alias_collision_zwei_ableitungen_quarantaenisiert_beide() {
         let wire = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        let adressraum = adressraum();
         for (erst, zweit) in [
             ("legacy-id-a", "legacy-id-b"),
             ("legacy-id-b", "legacy-id-a"),
         ] {
             let register = AliasRegister::default();
             assert_eq!(
-                register.registriere_wire_zuordnung(erst, wire),
+                register.registriere_wire_zuordnung(&adressraum, erst, wire),
                 Registrierung::Eingetragen
             );
             assert_eq!(
-                register.registriere_wire_zuordnung(zweit, wire),
+                register.registriere_wire_zuordnung(&adressraum, zweit, wire),
                 Registrierung::KollisionBeideQuarantaenisiert
             );
-            pruefe_kollision(&register, erst, zweit, wire);
+            pruefe_kollision(&register, &adressraum, erst, zweit, wire);
         }
     }
 }

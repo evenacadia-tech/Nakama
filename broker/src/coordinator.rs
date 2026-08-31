@@ -10,7 +10,7 @@
 //!   fail-closed Zustand. Overflow, Sequenzluecke und Control-Ende setzen ein
 //!   sticky Unknown-Bit; normale End-/False-Meldungen loeschen es nie.
 
-use crate::instance_alias::AliasRegister;
+use crate::instance_alias::{AliasRegister, Sitzungsadressraum};
 use crate::transport::bootstrap::{Adresse, HelloControl};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -21,6 +21,7 @@ const MAX_AKTIVE_INTERVENTIONEN: usize = 64;
 #[derive(Debug, Clone)]
 struct LinkStand {
     adresse: Adresse,
+    alias_adressraum: Sitzungsadressraum,
     alias_besitzer: String,
     letzte_event_sequence: Option<u64>,
 }
@@ -66,18 +67,26 @@ pub struct Coordinator {
 
 impl Coordinator {
     pub fn control_registrieren(&self, link_id: &str, adresse: Adresse) {
+        let alias_adressraum = Sitzungsadressraum::neu(
+            &adresse.logon_sid,
+            &adresse.project_binding_id,
+            &adresse.session_epoch,
+        );
         let alias_besitzer = format!("{}:{}", adresse.instance_id, adresse.runtime_nonce);
         // Lockreihenfolge im Coordinator ist immer Stand -> AliasRegister.
         // Push, Disconnect und Registrierung koennen dadurch nicht zyklisch
         // aufeinander warten.
         let mut stand = self.stand.lock().expect("Coordinator vergiftet");
-        let _ = self
-            .alias_register
-            .registriere_wire_zuordnung(&alias_besitzer, &adresse.instance_id);
+        let _ = self.alias_register.registriere_wire_zuordnung(
+            &alias_adressraum,
+            &alias_besitzer,
+            &adresse.instance_id,
+        );
         stand.links.insert(
             link_id.to_owned(),
             LinkStand {
                 adresse,
+                alias_adressraum,
                 alias_besitzer,
                 letzte_event_sequence: None,
             },
@@ -90,8 +99,11 @@ impl Coordinator {
     pub fn control_ende(&self, link_id: &str) {
         let mut stand = self.stand.lock().expect("Coordinator vergiftet");
         if let Some(link) = stand.links.remove(link_id) {
-            self.alias_register
-                .entferne(&link.alias_besitzer, &link.adresse.instance_id);
+            self.alias_register.entferne(
+                &link.alias_adressraum,
+                &link.alias_besitzer,
+                &link.adresse.instance_id,
+            );
         }
         if stand.subscriptions.remove(link_id).is_some() {
             stand.subscription_cleanups = stand.subscription_cleanups.saturating_add(1);
@@ -130,10 +142,11 @@ impl Coordinator {
             Self::subscription_abweisen(&mut stand, "subscribe: Control-Link unbekannt");
             return false;
         };
-        if !self
-            .alias_register
-            .session_push_erlaubt(&link.alias_besitzer, &link.adresse.instance_id)
-        {
+        if !self.alias_register.session_push_erlaubt(
+            &link.alias_adressraum,
+            &link.alias_besitzer,
+            &link.adresse.instance_id,
+        ) {
             Self::subscription_abweisen(
                 &mut stand,
                 "subscribe: Alias unbekannt oder quarantinisiert",
@@ -171,8 +184,11 @@ impl Coordinator {
                     && &sub.adresse == adresse
                     && stand.links.contains_key(*link_id)
                     && stand.links.get(*link_id).is_some_and(|link| {
-                        self.alias_register
-                            .session_push_erlaubt(&link.alias_besitzer, &link.adresse.instance_id)
+                        self.alias_register.session_push_erlaubt(
+                            &link.alias_adressraum,
+                            &link.alias_besitzer,
+                            &link.adresse.instance_id,
+                        )
                     })
             })
             .map(|(link_id, _)| link_id.clone())
@@ -356,8 +372,19 @@ impl Coordinator {
     pub fn dispatch_fuer_link_erlaubt(&self, link_id: &str) -> bool {
         let stand = self.stand.lock().expect("Coordinator vergiftet");
         stand.links.get(link_id).is_some_and(|link| {
+            self.alias_register.dispatch_erlaubt(
+                &link.alias_adressraum,
+                &link.alias_besitzer,
+                &link.adresse.instance_id,
+            )
+        })
+    }
+
+    fn alias_quarantaenisiert(&self, link_id: &str) -> bool {
+        let stand = self.stand.lock().expect("Coordinator vergiftet");
+        stand.links.get(link_id).is_some_and(|link| {
             self.alias_register
-                .dispatch_erlaubt(&link.alias_besitzer, &link.adresse.instance_id)
+                .ist_quarantaenisiert(&link.alias_adressraum, &link.alias_besitzer)
         })
     }
 
@@ -388,9 +415,10 @@ impl Coordinator {
                     self.intervention_overflow();
                 }
                 let sequence = wert.get("sequence")?.as_u64()?;
+                let duplicate_instance_id = self.alias_quarantaenisiert(link_id);
                 Some(
                     format!(
-                        "{{\"type\":\"heartbeat_ack\",\"sequence\":{sequence},\"duplicate_instance_id\":false}}"
+                        "{{\"type\":\"heartbeat_ack\",\"sequence\":{sequence},\"duplicate_instance_id\":{duplicate_instance_id}}}"
                     )
                     .into_bytes(),
                 )
@@ -474,6 +502,50 @@ mod tests {
         let a = adresse('a');
         coordinator.control_registrieren("link-a", a.clone());
         (coordinator, a)
+    }
+
+    fn heartbeat_duplicate(c: &Coordinator, link_id: &str) -> bool {
+        let ack = c
+            .p0_json(link_id, br#"{"type":"heartbeat","sequence":1}"#)
+            .expect("heartbeat_ack");
+        serde_json::from_slice::<Value>(&ack)
+            .expect("heartbeat_ack ist JSON")
+            .get("duplicate_instance_id")
+            .and_then(Value::as_bool)
+            .expect("duplicate_instance_id ist bool")
+    }
+
+    #[test]
+    fn instance_alias_gleiche_id_in_verschiedenen_sitzungsadressraeumen_kollidiert_nicht() {
+        let c = Coordinator::default();
+        let a = adresse('a');
+        let mut b = a.clone();
+        b.session_epoch = "b".repeat(32);
+        b.runtime_nonce = "b".repeat(32);
+
+        c.control_registrieren("link-a", a);
+        c.control_registrieren("link-b", b);
+
+        assert!(c.dispatch_fuer_link_erlaubt("link-a"));
+        assert!(c.dispatch_fuer_link_erlaubt("link-b"));
+        assert!(!heartbeat_duplicate(&c, "link-a"));
+        assert!(!heartbeat_duplicate(&c, "link-b"));
+    }
+
+    #[test]
+    fn heartbeat_ack_meldet_alias_quarantaene_fuer_beide_links() {
+        let c = Coordinator::default();
+        let a = adresse('a');
+        let mut b = a.clone();
+        b.runtime_nonce = "b".repeat(32);
+
+        c.control_registrieren("link-a", a);
+        c.control_registrieren("link-b", b);
+
+        assert!(!c.dispatch_fuer_link_erlaubt("link-a"));
+        assert!(!c.dispatch_fuer_link_erlaubt("link-b"));
+        assert!(heartbeat_duplicate(&c, "link-a"));
+        assert!(heartbeat_duplicate(&c, "link-b"));
     }
 
     #[test]

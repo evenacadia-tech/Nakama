@@ -2,8 +2,9 @@
 //!
 //! Der Worker entscheidet GENAU drei Dinge (Entwurf §53.9): Envelope,
 //! Grenzen und Authentisierung. Alles Weitere geht als typisiertes Ereignis
-//! an eine schmale `Senke`. Session, Eviction, Store und Outbox — also der
-//! `Coordinator` — sind SONDE-011 und stehen hier bewusst nicht.
+//! an eine schmale `Senke`. Session, Eviction, Store und Outbox liegen im
+//! `Coordinator`; der Transport bleibt auch im produktiven SONDE-011-Pfad
+//! auf diese schmale Schnittstelle begrenzt.
 //!
 //! ── Drei Threads je Verbindung, und warum ──────────────────────────────────
 //!
@@ -31,17 +32,12 @@
 //! I/O-Manager alle Operationen, ein haengender Read wuerde also einen Write
 //! blockieren — genau das, was die Trennung verhindern soll.
 //!
-//! ── Warum dieser Listener heute nur ueber einen PROBE-Namen laeuft ─────────
+//! ── Produktions- und Probe-Namen ───────────────────────────────────────────
 //!
-//! Der Broker oeffnet in Produktion weiterhin ausschliesslich die v2-Pipe.
-//! Einen SID-gebundenen v3-Endpunkt zusaetzlich zu oeffnen, waere heute ein
-//! Endpunkt, der Verbindungen annimmt und danach nichts damit anfangen kann:
-//! ohne Coordinator gibt es keine Session, kein Register und keinen Store.
-//! Das waere ein totes Element im Sinne des Grundgesetzes. Die Funktion
-//! `pipetoken::pipe_name_v3` liegt fertig und mit Golden bereit; der
-//! Produktivbetrieb schaltet sie in SONDE-011 zusammen mit dem Coordinator
-//! ein. Bis dahin faehrt der Listener ueber den Probe-Namen — nie ueber die
-//! Produktions-Pipe (CLAUDE.md, "Bauen und beweisen").
+//! Der Broker oeffnet in Produktion den SID-gebundenen v3-Endpunkt neben der
+//! v2-Legacy-Pipe und verdrahtet ihn mit Coordinator, Store und Outbox. Tests
+//! rufen denselben Listener ausschliesslich mit einem Probe-Namen auf — nie
+//! mit der Produktions-Pipe (CLAUDE.md, "Bauen und beweisen").
 //!
 //! Sicherheit ist trotzdem nicht Probe-Qualitaet: derselbe SDDL-Deskriptor
 //! ("nur der aktuelle User"), `PIPE_REJECT_REMOTE_CLIENTS` und
@@ -78,9 +74,9 @@ use crate::transport::bootstrap::{
 use crate::transport::v3::{
     envelope_schreiben, Familie, LeseErgebnis, Ratengrenze, StromLeser, MAX_FRAME_BYTES,
 };
-use crate::transport::warteschlange::{IngressErgebnis, IngressWarteschlange};
 #[cfg(test)]
 use crate::transport::warteschlange::CAP_INGRESS;
+use crate::transport::warteschlange::{IngressErgebnis, IngressWarteschlange};
 
 /// Hoechstens so viele gleichzeitige Verbindungen. Zwei je Instanz (Control +
 /// Telemetry) mal 32 Sonden plus Reserve.
@@ -106,6 +102,31 @@ pub const CAP_WRITER: usize = 256;
 /// laesst. Danach wird der Verbraucherthread abgeloest statt gejoint.
 pub const SENKE_FRIST: Duration = Duration::from_millis(2000);
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ControlAnmeldung {
+    pub angenommen: bool,
+    pub grund: Option<String>,
+    pub zu_schliessende_links: Vec<String>,
+}
+
+impl ControlAnmeldung {
+    pub fn angenommen() -> Self {
+        Self {
+            angenommen: true,
+            grund: None,
+            zu_schliessende_links: Vec::new(),
+        }
+    }
+
+    pub fn abgewiesen(grund: impl Into<String>) -> Self {
+        Self {
+            angenommen: false,
+            grund: Some(grund.into()),
+            zu_schliessende_links: Vec::new(),
+        }
+    }
+}
+
 /// Wohin der Listener seine Nachrichten uebergibt.
 ///
 /// **Senkenvertrag.** `p0`, `p1` und `p2` laufen auf dem Ingressthread der
@@ -118,7 +139,7 @@ pub const SENKE_FRIST: Duration = Duration::from_millis(2000);
 /// (T2-Befund 7 vom 2026-08-29). Ein abgeloester Thread haelt nur noch seine
 /// `Arc`s und endet von selbst, sobald der Fremdaufruf zurueckkommt.
 pub trait Senke: Send + Sync {
-    fn control_verbunden(&self, link_id: &str, hello: &HelloControl);
+    fn control_verbunden(&self, link_id: &str, hello: &HelloControl) -> ControlAnmeldung;
     /// Synchroner, atomarer Gegenpfad fuer linkgebundenen Zustand. Der Server
     /// ruft ihn nach dem Schliessen des Ingress, aber VOR dem Entfernen der
     /// Kopplung auf. Er muss kurz bleiben und darf nicht auf fremde I/O
@@ -155,8 +176,9 @@ pub struct ZaehlSenke {
 }
 
 impl Senke for ZaehlSenke {
-    fn control_verbunden(&self, _link_id: &str, _hello: &HelloControl) {
+    fn control_verbunden(&self, _link_id: &str, _hello: &HelloControl) -> ControlAnmeldung {
         self.control_verbindungen.fetch_add(1, Ordering::SeqCst);
+        ControlAnmeldung::angenommen()
     }
     fn control_getrennt(&self, _link_id: &str) {
         self.control_getrennt.fetch_add(1, Ordering::SeqCst);
@@ -181,8 +203,10 @@ impl Senke for ZaehlSenke {
         let seq = wert.get("sequence")?.as_u64()?;
         self.p0_beantwortet.fetch_add(1, Ordering::SeqCst);
         Some(
-            format!("{{\"type\":\"heartbeat_ack\",\"sequence\":{seq},\"duplicate_instance_id\":false}}")
-                .into_bytes(),
+            format!(
+                "{{\"type\":\"heartbeat_ack\",\"sequence\":{seq},\"duplicate_instance_id\":false}}"
+            )
+            .into_bytes(),
         )
     }
 
@@ -312,12 +336,7 @@ fn io_fehler_deuten(f: u32) -> IoAusgang {
 /// externen `CancelIoEx` (Bootstrap/Serverstopp). Im laufenden Verbindungsweg
 /// wartet er auf I/O UND das dauerhafte Ende-Signal. Dadurch bleibt auch ein
 /// Ende dicht, das zwischen dem letzten Zustandscheck und `ReadFile` eintritt.
-fn ov_lesen(
-    h: HANDLE,
-    e: HANDLE,
-    ende: Option<&EndeSignal>,
-    ziel: &mut [u8],
-) -> IoAusgang {
+fn ov_lesen(h: HANDLE, e: HANDLE, ende: Option<&EndeSignal>, ziel: &mut [u8]) -> IoAusgang {
     // SAFETY: `h` ist ein gueltiges, overlapped geoeffnetes Pipe-Handle, `e`
     // gehoert allein diesem Thread, und ein vorhandenes `ende` samt Handle lebt
     // ueber den ganzen Aufruf. `ov`, Handle-Array und `ziel` bleiben gueltig,
@@ -493,7 +512,11 @@ impl Eingang {
     }
 
     fn laenge(&self) -> usize {
-        self.inhalt.lock().unwrap_or_else(|x| x.into_inner()).0.len()
+        self.inhalt
+            .lock()
+            .unwrap_or_else(|x| x.into_inner())
+            .0
+            .len()
     }
 
     fn schliessen(&self) {
@@ -505,11 +528,24 @@ impl Eingang {
     }
 }
 
-/// Writerqueue je Verbindung (Cap `CAP_WRITER`). Nur der Verbraucher reiht
-/// ein, nur der Schreiber entnimmt.
+/// Writerqueue je Verbindung (Cap `CAP_WRITER`). P0-Antworten haben Vorrang;
+/// die Phase-B-P1-Ausgabe besteht ausschliesslich aus absoluten Snapshots und
+/// koalesziert auch in diesem letzten Pipe-Zwischenpuffer nach Objektschluessel.
 struct Ausgang {
-    inhalt: Mutex<(VecDeque<Vec<u8>>, bool)>,
+    inhalt: Mutex<(VecDeque<AusgangEintrag>, bool)>,
     signal: Condvar,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum Ausgangsart {
+    P0,
+    Snapshot(String),
+}
+
+struct AusgangEintrag {
+    art: Ausgangsart,
+    frame: Vec<u8>,
+    geschrieben: Option<std::sync::mpsc::SyncSender<bool>>,
 }
 
 impl Ausgang {
@@ -523,26 +559,78 @@ impl Ausgang {
     /// `false` = die Queue ist voll oder geschlossen. Voll heisst: der Peer
     /// holt seine Antworten nicht ab.
     fn einreihen(&self, frame: Vec<u8>) -> bool {
+        self.einreihen_eintrag(AusgangEintrag {
+            art: Ausgangsart::P0,
+            frame,
+            geschrieben: None,
+        })
+    }
+
+    fn snapshot_einreihen_mit_antwort(
+        &self,
+        objekt_schluessel: &str,
+        frame: Vec<u8>,
+    ) -> Option<std::sync::mpsc::Receiver<bool>> {
+        let (tx, rx) = std::sync::mpsc::sync_channel(1);
+        self.einreihen_eintrag(AusgangEintrag {
+            art: Ausgangsart::Snapshot(objekt_schluessel.to_owned()),
+            frame,
+            geschrieben: Some(tx),
+        })
+        .then_some(rx)
+    }
+
+    fn einreihen_eintrag(&self, eintrag: AusgangEintrag) -> bool {
+        let mut ersetzt = None;
         let ok = {
             let mut g = self.inhalt.lock().unwrap_or_else(|x| x.into_inner());
-            if g.1 || g.0.len() >= CAP_WRITER {
+            if g.1 {
+                false
+            } else if let Ausgangsart::Snapshot(objekt_schluessel) = &eintrag.art {
+                if let Some(position) = g.0.iter().position(|alt| {
+                    matches!(&alt.art, Ausgangsart::Snapshot(alt_schluessel)
+                        if alt_schluessel == objekt_schluessel)
+                }) {
+                    ersetzt = Some(std::mem::replace(&mut g.0[position], eintrag));
+                    true
+                } else if g.0.len() >= CAP_WRITER {
+                    false
+                } else {
+                    g.0.push_back(eintrag);
+                    true
+                }
+            } else if g.0.len() >= CAP_WRITER {
                 false
             } else {
-                g.0.push_back(frame);
+                g.0.push_back(eintrag);
                 true
             }
         };
+        if let Some(alt) = ersetzt {
+            // Der alte Snapshot ist absichtlich NICHT geschrieben. Seine
+            // Store-Schuld bleibt bestehen, bis der neuere absolute Stand
+            // erfolgreich geschrieben und bis zu dessen event_ord gedeckt ist.
+            if let Some(antwort) = alt.geschrieben {
+                let _ = antwort.send(false);
+            }
+        }
         if ok {
             self.signal.notify_one();
         }
         ok
     }
 
-    fn entnehmen(&self) -> Option<Vec<u8>> {
+    fn entnehmen(&self) -> Option<AusgangEintrag> {
         let mut g = self.inhalt.lock().unwrap_or_else(|x| x.into_inner());
         loop {
-            if let Some(f) = g.0.pop_front() {
-                return Some(f);
+            if let Some(position) =
+                g.0.iter()
+                    .position(|eintrag| eintrag.art == Ausgangsart::P0)
+            {
+                return g.0.remove(position);
+            }
+            if let Some(eintrag) = g.0.pop_front() {
+                return Some(eintrag);
             }
             if g.1 {
                 return None;
@@ -556,9 +644,15 @@ impl Ausgang {
     }
 
     fn schliessen(&self) {
-        {
+        let offen = {
             let mut g = self.inhalt.lock().unwrap_or_else(|x| x.into_inner());
             g.1 = true;
+            std::mem::take(&mut g.0)
+        };
+        for eintrag in offen {
+            if let Some(antwort) = eintrag.geschrieben {
+                let _ = antwort.send(false);
+            }
         }
         self.signal.notify_all();
     }
@@ -589,8 +683,62 @@ pub struct V3Griff {
     handles: Arc<Mutex<HandleRegister>>,
     /// Deadlines der noch nicht abgeschlossenen Bootstraps.
     bootstraps: Arc<Mutex<Vec<(u64, Instant)>>>,
+    closer: V3Closer,
     wachhund: Option<JoinHandle<()>>,
+    sender: V3Sender,
     pub statistik: Arc<V3Statistik>,
+}
+
+#[derive(Clone)]
+pub struct V3Closer {
+    kopplungen: Arc<Mutex<Kopplungen>>,
+    handles: Arc<Mutex<HandleRegister>>,
+}
+
+impl V3Closer {
+    pub fn link_schliessen(&self, link_id: &str) {
+        kopplung_loesen(&self.kopplungen, &self.handles, link_id, true);
+    }
+}
+
+#[derive(Clone)]
+pub struct V3Sender {
+    ausgaenge: Arc<Mutex<HashMap<String, Arc<Ausgang>>>>,
+}
+
+impl V3Sender {
+    pub fn neu() -> Self {
+        Self {
+            ausgaenge: Arc::new(Mutex::new(HashMap::new())),
+        }
+    }
+
+    pub fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool {
+        let frame = match envelope_schreiben(Familie::P1, 0, payload) {
+            Ok(frame) => frame,
+            Err(_) => return false,
+        };
+        let ausgang = self
+            .ausgaenge
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get(link_id)
+            .cloned();
+        let Some(ausgang) = ausgang else {
+            return false;
+        };
+        let Some(antwort) = ausgang.snapshot_einreihen_mit_antwort("session_snapshot", frame)
+        else {
+            return false;
+        };
+        antwort.recv_timeout(SENKE_FRIST).unwrap_or(false)
+    }
+}
+
+impl crate::coordinator::SessionPush for V3Sender {
+    fn snapshot_schreiben(&self, link_id: &str, payload: &[u8]) -> bool {
+        V3Sender::snapshot_schreiben(self, link_id, payload)
+    }
 }
 
 /// Zahlen des Listeners selbst (nicht der Senke).
@@ -643,6 +791,7 @@ pub struct V3Statistik {
     /// (Matrix `C-LS-06`). Die Meldung faellt nie aus — sie ist dann nur
     /// nicht mehr geordnet, und genau das steht hier.
     pub lebenszyklus_reihenfolge_verletzt: AtomicU64,
+    pub aktive_controls: AtomicU64,
 }
 
 impl V3Statistik {
@@ -672,14 +821,33 @@ impl V3Griff {
     /// werden laufend geerntet; die Zahl darf ueber viele Verbindungszyklen
     /// nicht wachsen (T2-Befund 8 vom 2026-08-29).
     pub fn gehaltene_verbindungen(&self) -> usize {
-        self.verbindungen.lock().unwrap_or_else(|e| e.into_inner()).len()
+        self.verbindungen
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .len()
     }
 
     /// Wie viele Verbindungshandles das Abbruchregister gerade fuehrt. Ein
     /// Handle steht dort, seit der Acceptor die Verbindung angenommen hat —
     /// NICHT erst, seit sein Thread laeuft (T2-Befund 6 vom 2026-08-29).
     pub fn gehaltene_handles(&self) -> usize {
-        self.handles.lock().unwrap_or_else(|e| e.into_inner()).offen.len()
+        self.handles
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .offen
+            .len()
+    }
+
+    pub fn sender(&self) -> V3Sender {
+        self.sender.clone()
+    }
+
+    pub fn closer(&self) -> V3Closer {
+        self.closer.clone()
+    }
+
+    pub fn aktive_controls(&self) -> u64 {
+        self.statistik.aktive_controls.load(Ordering::SeqCst)
     }
 
     /// Gegenpfad zu `v3_server_starten`. Setzt Stop, weckt den parkenden
@@ -755,11 +923,7 @@ fn io_abbrechen(handles: &Arc<Mutex<HandleRegister>>, id: u64) {
 ///
 /// `zwischendurch` laeuft in jeder Warterunde — der Schreiber braucht dort
 /// sein wiederholtes `CancelIoEx`, der Verbraucher nichts.
-fn join_mit_frist(
-    j: JoinHandle<()>,
-    frist: Duration,
-    mut zwischendurch: impl FnMut(),
-) -> bool {
+fn join_mit_frist(j: JoinHandle<()>, frist: Duration, mut zwischendurch: impl FnMut()) -> bool {
     let bis = Instant::now() + frist;
     while !j.is_finished() {
         if Instant::now() >= bis {
@@ -797,37 +961,53 @@ struct Senkenruf {
 
 impl Senkenruf {
     fn neu(senke: Arc<dyn Senke>, statistik: Arc<V3Statistik>) -> Self {
-        Self { senke, statistik, stumm: false }
+        Self {
+            senke,
+            statistik,
+            stumm: false,
+        }
     }
 
     /// `false` = der Aufruf kam nicht binnen Frist zurueck, oder er unterblieb,
     /// weil ein frueherer noch haengt.
     fn rufen(&mut self, f: impl FnOnce(&dyn Senke) + Send + 'static) -> bool {
+        self.rufen_mit_ergebnis(move |senke| {
+            f(senke);
+        })
+        .is_some()
+    }
+
+    fn rufen_mit_ergebnis<T: Send + 'static>(
+        &mut self,
+        f: impl FnOnce(&dyn Senke) -> T + Send + 'static,
+    ) -> Option<T> {
         if self.stumm {
             self.statistik
                 .lebenszyklus_uebersprungen
                 .fetch_add(1, Ordering::SeqCst);
-            return false;
+            return None;
         }
         let s = self.senke.clone();
+        let (antwort_tx, antwort_rx) = std::sync::mpsc::sync_channel(1);
         let j = match std::thread::Builder::new()
             .name("eqcop-v3-senkenruf".into())
-            .spawn(move || f(s.as_ref()))
-        {
+            .spawn(move || {
+                let _ = antwort_tx.send(f(s.as_ref()));
+            }) {
             Ok(j) => j,
             Err(_) => {
                 self.stumm = true;
-                return false;
+                return None;
             }
         };
         if join_mit_frist(j, SENKE_FRIST, || {}) {
-            return true;
+            return antwort_rx.try_recv().ok();
         }
         self.stumm = true;
         self.statistik
             .lebenszyklus_abgeloest
             .fetch_add(1, Ordering::SeqCst);
-        false
+        None
     }
 
     /// Kurzform fuer den haeufigsten Fall.
@@ -921,7 +1101,9 @@ fn naechste_instanz(
         // SAFETY: GetLastError liest nur den threadlokalen Fehlercode.
         let f = unsafe { GetLastError() };
         if f == ERROR_PIPE_BUSY {
-            statistik.acceptor_wartet_auf_instanz.fetch_add(1, Ordering::SeqCst);
+            statistik
+                .acceptor_wartet_auf_instanz
+                .fetch_add(1, Ordering::SeqCst);
         } else {
             // Nicht die Verbindungsgrenze, sondern etwas anderes. Ein paar
             // Versuche sind billig; endlos zu drehen waere ein stiller Hang.
@@ -956,10 +1138,37 @@ pub fn v3_server_starten(
     senke: Arc<dyn Senke>,
     broker_version: String,
 ) -> Result<V3Griff, String> {
+    v3_server_starten_mit_epoch(pipe_name, senke, broker_version, neue_kennung())
+}
+
+pub fn v3_server_starten_mit_epoch(
+    pipe_name: &str,
+    senke: Arc<dyn Senke>,
+    broker_version: String,
+    broker_epoch: String,
+) -> Result<V3Griff, String> {
+    v3_server_starten_mit_epoch_und_sender(
+        pipe_name,
+        senke,
+        broker_version,
+        broker_epoch,
+        V3Sender::neu(),
+    )
+}
+
+pub fn v3_server_starten_mit_epoch_und_sender(
+    pipe_name: &str,
+    senke: Arc<dyn Senke>,
+    broker_version: String,
+    broker_epoch: String,
+    sender: V3Sender,
+) -> Result<V3Griff, String> {
     v3_server_starten_intern(
         pipe_name,
         senke,
         broker_version,
+        broker_epoch,
+        sender,
         Arc::new(AtomicU64::new(0)),
         Arc::new(AtomicBool::new(false)),
         Arc::new(AtomicU64::new(CANCEL_VOR_READ_INAKTIV)),
@@ -974,6 +1183,8 @@ fn v3_server_starten_intern(
     pipe_name: &str,
     senke: Arc<dyn Senke>,
     broker_version: String,
+    broker_epoch: String,
+    sender: V3Sender,
     probe_verzoegerung_ms: Arc<AtomicU64>,
     writer_fehler_erzwungen: Arc<AtomicBool>,
     cancel_vor_read_phase: Arc<AtomicU64>,
@@ -985,9 +1196,13 @@ fn v3_server_starten_intern(
     let bootstraps: Arc<Mutex<Vec<(u64, Instant)>>> = Arc::new(Mutex::new(Vec::new()));
     let statistik = Arc::new(V3Statistik::default());
     let kopplungen = Arc::new(Mutex::new(Kopplungen::neu()));
+    let closer = V3Closer {
+        kopplungen: kopplungen.clone(),
+        handles: handles.clone(),
+    };
     // Wartepunkte der Trennreihenfolge, einer je lebender Kopplung (`C-LS-06`).
     let trennmelder: TrennRegister = Arc::new(Mutex::new(HashMap::new()));
-    let broker_epoch = neue_kennung();
+    let ausgaenge = sender.ausgaenge.clone();
 
     let mut name_w: Vec<u16> = pipe_name.encode_utf16().collect();
     name_w.push(0);
@@ -1033,7 +1248,10 @@ fn v3_server_starten_intern(
                 let jetzt = Instant::now();
                 let faellig: Vec<u64> = {
                     let b = bootstraps_w.lock().unwrap_or_else(|e| e.into_inner());
-                    b.iter().filter(|(_, f)| *f <= jetzt).map(|(id, _)| *id).collect()
+                    b.iter()
+                        .filter(|(_, f)| *f <= jetzt)
+                        .map(|(id, _)| *id)
+                        .collect()
                 };
                 if faellig.is_empty() {
                     continue;
@@ -1062,6 +1280,7 @@ fn v3_server_starten_intern(
     let bootstraps2 = bootstraps.clone();
     let statistik2 = statistik.clone();
     let trennmelder2 = trennmelder.clone();
+    let ausgaenge2 = ausgaenge.clone();
     let acceptor = std::thread::Builder::new()
         .name("eqcop-v3-acceptor".into())
         .spawn(move || {
@@ -1128,7 +1347,10 @@ fn v3_server_starten_intern(
                 }
                 // Der Eintrag gehoert ab hier dem Thread; scheitert `spawn`,
                 // faellt die Closure samt Eintrag und traegt ihn wieder aus.
-                let handle_eintrag = HandleEintrag { id, register: handles2.clone() };
+                let handle_eintrag = HandleEintrag {
+                    id,
+                    register: handles2.clone(),
+                };
                 let verzoegerung = probe_verzoegerung_ms.clone();
                 let writer_fehler = writer_fehler_erzwungen.clone();
                 let cancel_vor_read = cancel_vor_read_phase.clone();
@@ -1142,6 +1364,7 @@ fn v3_server_starten_intern(
                 let bv = broker_version.clone();
                 let be = broker_epoch.clone();
                 let conn_stop = stop2.clone();
+                let ausgaenge = ausgaenge2.clone();
                 match std::thread::Builder::new()
                     .name("eqcop-v3-conn".into())
                     .spawn(move || {
@@ -1153,12 +1376,27 @@ fn v3_server_starten_intern(
                             std::thread::sleep(Duration::from_millis(ms));
                         }
                         verbindung_bedienen(
-                            id, griff, senke, kopplungen, trennmelder, handles, bootstraps,
-                            statistik, bv, be, conn_stop, writer_fehler, cancel_vor_read,
+                            id,
+                            griff,
+                            senke,
+                            kopplungen,
+                            trennmelder,
+                            handles,
+                            bootstraps,
+                            statistik,
+                            bv,
+                            be,
+                            conn_stop,
+                            writer_fehler,
+                            cancel_vor_read,
+                            ausgaenge,
                             handle_eintrag,
                         );
                     }) {
-                    Ok(j) => verbindungen2.lock().unwrap_or_else(|e| e.into_inner()).push(j),
+                    Ok(j) => verbindungen2
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .push(j),
                     Err(_) => break,
                 }
 
@@ -1180,7 +1418,9 @@ fn v3_server_starten_intern(
         verbindungen,
         handles,
         bootstraps,
+        closer,
         wachhund: Some(wachhund),
+        sender,
         statistik,
     })
 }
@@ -1258,6 +1498,7 @@ fn verbindung_bedienen(
     stop: Arc<AtomicBool>,
     writer_fehler_erzwungen: Arc<AtomicBool>,
     cancel_vor_read_phase: Arc<AtomicU64>,
+    ausgaenge: Arc<Mutex<HashMap<String, Arc<Ausgang>>>>,
     handle_eintrag: HandleEintrag,
 ) {
     // Der Acceptor hat das Handle schon registriert; der Eintrag traegt es
@@ -1290,7 +1531,10 @@ fn verbindung_bedienen(
     if let Ok(mut b) = bootstraps.lock() {
         b.push((id, Instant::now() + BOOTSTRAP_FRIST));
     }
-    let frist = BootstrapFrist { id, liste: bootstraps.clone() };
+    let frist = BootstrapFrist {
+        id,
+        liste: bootstraps.clone(),
+    };
 
     let mut roh: Vec<u8> = Vec::with_capacity(4096);
     let mut puffer = [0u8; 4096];
@@ -1301,7 +1545,9 @@ fn verbindung_bedienen(
             Ok(x) => break x,
             Err(BootstrapFehler::PraefixUnvollstaendig) | Err(BootstrapFehler::Unvollstaendig) => {}
             Err(e) => {
-                statistik.geschlossen_bootstrap.fetch_add(1, Ordering::SeqCst);
+                statistik
+                    .geschlossen_bootstrap
+                    .fetch_add(1, Ordering::SeqCst);
                 senkenruf.abweisen(format!("bootstrap: {e:?}"));
                 return;
             }
@@ -1324,13 +1570,17 @@ fn verbindung_bedienen(
                 // Hello mit angehaengten Frames in einem einzigen Read
                 // abgewiesen.
                 if roh.len() > (crate::transport::v3::MAX_BOOTSTRAP_BYTES as usize) + 4 + 4096 {
-                    statistik.geschlossen_bootstrap.fetch_add(1, Ordering::SeqCst);
+                    statistik
+                        .geschlossen_bootstrap
+                        .fetch_add(1, Ordering::SeqCst);
                     senkenruf.abweisen("bootstrap: mehr Bytes als ein Hello tragen darf");
                     return;
                 }
             }
             IoAusgang::Abgebrochen | IoAusgang::Fehler(_) => {
-                statistik.geschlossen_bootstrap.fetch_add(1, Ordering::SeqCst);
+                statistik
+                    .geschlossen_bootstrap
+                    .fetch_add(1, Ordering::SeqCst);
                 senkenruf.abweisen("bootstrap: Lesefehler oder Frist abgelaufen");
                 return;
             }
@@ -1349,7 +1599,9 @@ fn verbindung_bedienen(
             let mut rahmen = (json.len() as u32).to_le_bytes().to_vec();
             rahmen.extend_from_slice(json.as_bytes());
             let _ = ov_schreiben(griff.h, leseereignis.roh(), &rahmen);
-            statistik.geschlossen_bootstrap.fetch_add(1, Ordering::SeqCst);
+            statistik
+                .geschlossen_bootstrap
+                .fetch_add(1, Ordering::SeqCst);
             senkenruf.abweisen("bootstrap: v2-Hello am v3-Endpunkt");
             return;
         }
@@ -1361,7 +1613,9 @@ fn verbindung_bedienen(
                 if k.control_anmelden(&h.adresse.runtime_nonce, link.clone(), challenge.clone())
                     .is_err()
                 {
-                    statistik.geschlossen_bootstrap.fetch_add(1, Ordering::SeqCst);
+                    statistik
+                        .geschlossen_bootstrap
+                        .fetch_add(1, Ordering::SeqCst);
                     senkenruf.abweisen("bootstrap: zu viele offene Kopplungen");
                     return;
                 }
@@ -1387,11 +1641,33 @@ fn verbindung_bedienen(
             // beginn also ohne Ende — sichtbar an `lebenszyklus_abgeloest`.
             let link_fuer_senke = link.clone();
             let hello_fuer_senke = (*h).clone();
-            if !senkenruf.rufen(move |s| {
+            let Some(anmeldung) = senkenruf.rufen_mit_ergebnis(move |s| {
                 s.control_verbunden(&link_fuer_senke, &hello_fuer_senke)
-            }) {
+            }) else {
                 kopplung_loesen(&kopplungen, &handles, &link, true);
                 return;
+            };
+            if !anmeldung.angenommen {
+                let grund = anmeldung
+                    .grund
+                    .unwrap_or_else(|| "Coordinator hat die Verbindung abgewiesen".into());
+                let payload = serde_json::json!({
+                    "type": "reject",
+                    "code": "rate_limited",
+                    "reason": grund.chars().take(500).collect::<String>()
+                });
+                if let Ok(payload) = serde_json::to_vec(&payload) {
+                    if let Ok(frame) = envelope_schreiben(Familie::P0, 0, &payload) {
+                        let _ = ov_schreiben(griff.h, leseereignis.roh(), &frame);
+                    }
+                }
+                kopplung_loesen(&kopplungen, &handles, &link, true);
+                return;
+            }
+            for alter_link in anmeldung.zu_schliessende_links {
+                if alter_link != link {
+                    kopplung_loesen(&kopplungen, &handles, &alter_link, true);
+                }
             }
             // Ab jetzt kann eine Telemetrieverbindung koppeln; ihr
             // `telemetrie_getrennt` erwartet diese Seite beim Abbau.
@@ -1432,7 +1708,9 @@ fn verbindung_bedienen(
                 k.telemetrie_koppeln(&h, id)
             };
             if let Err(e) = ok {
-                statistik.geschlossen_bootstrap.fetch_add(1, Ordering::SeqCst);
+                statistik
+                    .geschlossen_bootstrap
+                    .fetch_add(1, Ordering::SeqCst);
                 senkenruf.abweisen(format!("telemetry ungekoppelt: {e:?}"));
                 return;
             }
@@ -1483,6 +1761,13 @@ fn verbindung_bedienen(
     // ── Ab hier ausschliesslich v3-Frames, auf drei Threads ───────────────
     let eingang = Arc::new(Eingang::neu());
     let ausgang = Arc::new(Ausgang::neu());
+    if ist_control {
+        ausgaenge
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .insert(link_id.clone(), ausgang.clone());
+        statistik.aktive_controls.fetch_add(1, Ordering::SeqCst);
+    }
 
     let schreiber = {
         let griff = griff.clone();
@@ -1503,35 +1788,32 @@ fn verbindung_bedienen(
                         return;
                     }
                 };
-                while let Some(frame) = ausgang.entnehmen() {
+                while let Some(eintrag) = ausgang.entnehmen() {
                     let erzwungen = writer_fehler_erzwungen.swap(false, Ordering::SeqCst);
                     if erzwungen
-                        && cancel_vor_read_phase.load(Ordering::SeqCst)
-                            != CANCEL_VOR_READ_INAKTIV
+                        && cancel_vor_read_phase.load(Ordering::SeqCst) != CANCEL_VOR_READ_INAKTIV
                     {
                         let frist = Instant::now() + Duration::from_secs(5);
-                        while cancel_vor_read_phase.load(Ordering::SeqCst)
-                            != CANCEL_VOR_READ_READER
+                        while cancel_vor_read_phase.load(Ordering::SeqCst) != CANCEL_VOR_READ_READER
                             && Instant::now() < frist
                         {
                             std::thread::yield_now();
                         }
-                        if cancel_vor_read_phase.load(Ordering::SeqCst)
-                            != CANCEL_VOR_READ_READER
-                        {
-                            cancel_vor_read_phase
-                                .store(CANCEL_VOR_READ_FEHLER, Ordering::SeqCst);
+                        if cancel_vor_read_phase.load(Ordering::SeqCst) != CANCEL_VOR_READ_READER {
+                            cancel_vor_read_phase.store(CANCEL_VOR_READ_FEHLER, Ordering::SeqCst);
                         }
                     }
-                    if erzwungen || !ov_schreiben(griff.h, ereignis.roh(), &frame) {
+                    let geschrieben =
+                        !erzwungen && ov_schreiben(griff.h, ereignis.roh(), &eintrag.frame);
+                    if let Some(antwort) = eintrag.geschrieben {
+                        let _ = antwort.send(geschrieben);
+                    }
+                    if !geschrieben {
                         statistik.geschlossen_writer.fetch_add(1, Ordering::SeqCst);
                         ende.setzen();
                         io_abbrechen(&handles, id);
-                        if cancel_vor_read_phase.load(Ordering::SeqCst)
-                            == CANCEL_VOR_READ_READER
-                        {
-                            cancel_vor_read_phase
-                                .store(CANCEL_VOR_READ_WRITER, Ordering::SeqCst);
+                        if cancel_vor_read_phase.load(Ordering::SeqCst) == CANCEL_VOR_READ_READER {
+                            cancel_vor_read_phase.store(CANCEL_VOR_READ_WRITER, Ordering::SeqCst);
                         }
                         break;
                     }
@@ -1609,7 +1891,9 @@ fn verbindung_bedienen(
             match leser.naechster() {
                 LeseErgebnis::Unvollstaendig => break,
                 LeseErgebnis::Verstoesse(v) => {
-                    statistik.geschlossen_envelope.fetch_add(1, Ordering::SeqCst);
+                    statistik
+                        .geschlossen_envelope
+                        .fetch_add(1, Ordering::SeqCst);
                     let namen: Vec<&str> = v.iter().map(|x| x.name()).collect();
                     senkenruf.abweisen(format!("envelope: {}", namen.join(",")));
                     break 'lesen;
@@ -1651,7 +1935,9 @@ fn verbindung_bedienen(
                             k.telemetrie_lebt(&link_id, id)
                         };
                         if !lebt {
-                            statistik.geschlossen_kopplung.fetch_add(1, Ordering::SeqCst);
+                            statistik
+                                .geschlossen_kopplung
+                                .fetch_add(1, Ordering::SeqCst);
                             senkenruf.abweisen("kopplung: Control-Verbindung ist fort");
                             break 'lesen;
                         }
@@ -1660,7 +1946,9 @@ fn verbindung_bedienen(
                     match eingang.einreihen(familie, r.payload) {
                         IngressErgebnis::Eingereiht => {}
                         IngressErgebnis::P2Verworfen => {
-                            statistik.ingress_p2_verworfen.fetch_add(1, Ordering::SeqCst);
+                            statistik
+                                .ingress_p2_verworfen
+                                .fetch_add(1, Ordering::SeqCst);
                         }
                         IngressErgebnis::ClientTrennen => {
                             // `A-IN-03`/`A-IN-04`: P0 UND P1 trennen. Ein
@@ -1680,7 +1968,9 @@ fn verbindung_bedienen(
                             break 'lesen;
                         }
                         IngressErgebnis::Verworfen => {
-                            statistik.ingress_p2_verworfen.fetch_add(1, Ordering::SeqCst);
+                            statistik
+                                .ingress_p2_verworfen
+                                .fetch_add(1, Ordering::SeqCst);
                         }
                     }
                     statistik.hoechststand_melden(eingang.laenge());
@@ -1694,7 +1984,9 @@ fn verbindung_bedienen(
         // Harte Obergrenze fuer den Lesepuffer: ein Peer darf nicht beliebig
         // viele Teilbytes anhaeufen, ohne je einen Frame zu vollenden.
         if leser.offen() > MAX_FRAME_BYTES as usize + 4 {
-            statistik.geschlossen_envelope.fetch_add(1, Ordering::SeqCst);
+            statistik
+                .geschlossen_envelope
+                .fetch_add(1, Ordering::SeqCst);
             senkenruf.abweisen("envelope: Teilframe ueber der Paketgrenze");
             break;
         }
@@ -1719,9 +2011,7 @@ fn verbindung_bedienen(
             {
                 std::thread::yield_now();
             }
-            let phase = if cancel_vor_read_phase.load(Ordering::SeqCst)
-                == CANCEL_VOR_READ_WRITER
-            {
+            let phase = if cancel_vor_read_phase.load(Ordering::SeqCst) == CANCEL_VOR_READ_WRITER {
                 CANCEL_VOR_READ_FORTGESETZT
             } else {
                 CANCEL_VOR_READ_FEHLER
@@ -1758,6 +2048,11 @@ fn verbindung_bedienen(
     // er vorher und wird hier entfernt, oder er sieht danach `schliessend`.
     eingang.schliessen();
     if ist_control {
+        ausgaenge
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .remove(&link_id);
+        statistik.aktive_controls.fetch_sub(1, Ordering::SeqCst);
         senke.control_schliesst(&link_id);
     }
     // Nach dem atomaren semantischen Gegenpfad faellt die KOPPLUNG ebenfalls
@@ -2008,6 +2303,47 @@ mod tests {
 
     static FOLGE: AtomicUsize = AtomicUsize::new(0);
 
+    #[test]
+    fn writerqueue_snapshot_koalesziert_nach_objektschluessel() {
+        let ausgang = Ausgang::neu();
+        let alt = ausgang
+            .snapshot_einreihen_mit_antwort("session_snapshot", b"alt".to_vec())
+            .unwrap();
+        let neu = ausgang
+            .snapshot_einreihen_mit_antwort("session_snapshot", b"neu".to_vec())
+            .unwrap();
+        assert!(!alt.recv_timeout(Duration::from_secs(1)).unwrap());
+        let eintrag = ausgang.entnehmen().unwrap();
+        assert_eq!(eintrag.frame, b"neu");
+        eintrag.geschrieben.unwrap().send(true).unwrap();
+        assert!(neu.recv_timeout(Duration::from_secs(1)).unwrap());
+    }
+
+    #[test]
+    fn writerqueue_p0_ueberholt_snapshot_ohne_snapshotverlust() {
+        let ausgang = Ausgang::neu();
+        let snapshot = ausgang
+            .snapshot_einreihen_mit_antwort("session_snapshot", b"snapshot".to_vec())
+            .unwrap();
+        assert!(ausgang.einreihen(b"p0".to_vec()));
+        let p0 = ausgang.entnehmen().unwrap();
+        assert_eq!(p0.art, Ausgangsart::P0);
+        assert_eq!(p0.frame, b"p0");
+        let p1 = ausgang.entnehmen().unwrap();
+        assert_eq!(p1.frame, b"snapshot");
+        p1.geschrieben.unwrap().send(true).unwrap();
+        assert!(snapshot.recv_timeout(Duration::from_secs(1)).unwrap());
+    }
+
+    #[test]
+    fn writerqueue_cap_und_cap_plus_eins() {
+        let ausgang = Ausgang::neu();
+        for i in 0..CAP_WRITER {
+            assert!(ausgang.einreihen(vec![(i & 0xff) as u8]));
+        }
+        assert!(!ausgang.einreihen(b"cap-plus-eins".to_vec()));
+    }
+
     fn probe_pipe(fall: &str) -> String {
         format!(
             "{PROBE_PRAEFIX}srv.{}.{}.{fall}",
@@ -2153,14 +2489,21 @@ mod tests {
     }
 
     fn subscribe(adresse: &Adresse) -> Vec<u8> {
-        p1(
-            &serde_json::json!({
-                "type": "subscribe_session",
-                "adresse": adresse,
-                "session_epoch": adresse.session_epoch.clone()
-            })
-            .to_string(),
-        )
+        p1(&serde_json::json!({
+            "type": "subscribe_session",
+            "adresse": adresse,
+            "session_epoch": adresse.session_epoch.clone()
+        })
+        .to_string())
+    }
+
+    fn heartbeat_fuer_adresse(adresse: &Adresse, sequence: u64) -> Vec<u8> {
+        p0(&serde_json::json!({
+            "type": "heartbeat",
+            "adresse": adresse,
+            "sequence": sequence
+        })
+        .to_string())
     }
 
     fn telemetry_hello(nonce: &str, link: &str, challenge: &str) -> Vec<u8> {
@@ -2240,8 +2583,8 @@ mod tests {
     }
 
     impl Senke for BlockSenke {
-        fn control_verbunden(&self, l: &str, h: &HelloControl) {
-            self.zaehl.control_verbunden(l, h);
+        fn control_verbunden(&self, l: &str, h: &HelloControl) -> ControlAnmeldung {
+            self.zaehl.control_verbunden(l, h)
         }
         fn control_getrennt(&self, l: &str) {
             self.zaehl.control_getrennt(l);
@@ -2298,7 +2641,8 @@ mod tests {
 
         let stat = griff.statistik.clone();
         assert!(
-            warte_auf(5000, || stat.ingress_p2_verworfen.load(Ordering::SeqCst) > 0),
+            warte_auf(5000, || stat.ingress_p2_verworfen.load(Ordering::SeqCst)
+                > 0),
             "der Ingress muss ueberlaufen, sonst hat der Leser am ersten Frame gewartet"
         );
         assert!(
@@ -2350,7 +2694,10 @@ mod tests {
         }
 
         assert!(
-            warte_auf(6000, || stat.geschlossen_p0_ueberlauf.load(Ordering::SeqCst) > 0),
+            warte_auf(6000, || stat
+                .geschlossen_p0_ueberlauf
+                .load(Ordering::SeqCst)
+                > 0),
             "P0-Ueberlauf muss die Verbindung trennen (p1_ueberlauf_trennt={}, hoechststand={})",
             stat.ingress_p1_ueberlauf_trennt.load(Ordering::SeqCst),
             stat.ingress_hoechststand.load(Ordering::SeqCst)
@@ -2377,7 +2724,8 @@ mod tests {
 
         let stat = griff.statistik.clone();
         assert!(
-            warte_auf(4000, || stat.geschlossen_familie.load(Ordering::SeqCst) == 1),
+            warte_auf(4000, || stat.geschlossen_familie.load(Ordering::SeqCst)
+                == 1),
             "ein P0 auf der Telemetriepipe muss die Verbindung schliessen"
         );
         assert_eq!(
@@ -2401,7 +2749,8 @@ mod tests {
 
         let stat = griff.statistik.clone();
         assert!(
-            warte_auf(4000, || stat.geschlossen_familie.load(Ordering::SeqCst) == 1),
+            warte_auf(4000, || stat.geschlossen_familie.load(Ordering::SeqCst)
+                == 1),
             "ein P2 auf der Controlpipe muss die Verbindung schliessen"
         );
         assert_eq!(senke.p2.load(Ordering::SeqCst), 0);
@@ -2545,6 +2894,8 @@ mod tests {
             &pipe,
             senke,
             "test".into(),
+            neue_kennung(),
+            V3Sender::neu(),
             verzoegerung,
             Arc::new(AtomicBool::new(false)),
             Arc::new(AtomicU64::new(CANCEL_VOR_READ_INAKTIV)),
@@ -2613,7 +2964,9 @@ mod tests {
             let _ = tx.send(());
         });
         // Grosszuegig, aber ENDLICH: gemessen wird "endet", nicht "ist schnell".
-        let rechtzeitig = rx.recv_timeout(SENKE_FRIST + Duration::from_secs(8)).is_ok();
+        let rechtzeitig = rx
+            .recv_timeout(SENKE_FRIST + Duration::from_secs(8))
+            .is_ok();
         let abgeloest = stat.senke_abgeloest.load(Ordering::SeqCst);
         // Der SCHREIBER haengt nicht: ihn loest `CancelIoEx` sehr wohl. Die
         // Zahl trennt die beiden Faelle — sonst waere "abgeloest" ein
@@ -2650,7 +3003,11 @@ mod tests {
             e.einreihen(Familie::P1, b"b".to_vec()),
             IngressErgebnis::Eingereiht
         ));
-        assert_eq!(e.laenge(), 2, "die Vorbedingung muss wirklich gefuellt sein");
+        assert_eq!(
+            e.laenge(),
+            2,
+            "die Vorbedingung muss wirklich gefuellt sein"
+        );
 
         e.schliessen();
         // BEIDE Sichten (`C-LS-07`) pruefen das Schliessflag vor dem Inhalt.
@@ -2685,9 +3042,9 @@ mod tests {
     }
 
     impl Senke for LebenszyklusBlockSenke {
-        fn control_verbunden(&self, l: &str, h: &HelloControl) {
+        fn control_verbunden(&self, l: &str, h: &HelloControl) -> ControlAnmeldung {
             self.warten();
-            self.zaehl.control_verbunden(l, h);
+            self.zaehl.control_verbunden(l, h)
         }
         fn control_getrennt(&self, l: &str) {
             self.zaehl.control_getrennt(l);
@@ -2739,7 +3096,9 @@ mod tests {
             let _ = tx.send(());
         });
         // Grosszuegig, aber ENDLICH: gemessen wird "endet", nicht "ist schnell".
-        let rechtzeitig = rx.recv_timeout(SENKE_FRIST + Duration::from_secs(8)).is_ok();
+        let rechtzeitig = rx
+            .recv_timeout(SENKE_FRIST + Duration::from_secs(8))
+            .is_ok();
         let abgeloest = stat.lebenszyklus_abgeloest.load(Ordering::SeqCst);
         let verbraucher = stat.senke_abgeloest.load(Ordering::SeqCst);
         // Erst JETZT freigeben — vorher waere der Gegenpfad nicht gemessen.
@@ -2863,7 +3222,10 @@ mod tests {
             self.log.lock().unwrap_or_else(|e| e.into_inner()).clone()
         }
         fn anzahl(&self, was: &str) -> usize {
-            self.eintraege().iter().filter(|x| x.as_str() == was).count()
+            self.eintraege()
+                .iter()
+                .filter(|x| x.as_str() == was)
+                .count()
         }
         fn stelle(&self, was: &str) -> Option<usize> {
             self.eintraege().iter().position(|x| x.as_str() == was)
@@ -2879,9 +3241,10 @@ mod tests {
     }
 
     impl Senke for ReihenfolgeSenke {
-        fn control_verbunden(&self, l: &str, h: &HelloControl) {
-            self.zaehl.control_verbunden(l, h);
+        fn control_verbunden(&self, l: &str, h: &HelloControl) -> ControlAnmeldung {
+            let ausgang = self.zaehl.control_verbunden(l, h);
             self.notieren("control_verbunden");
+            ausgang
         }
         fn control_getrennt(&self, l: &str) {
             self.zaehl.control_getrennt(l);
@@ -2920,8 +3283,8 @@ mod tests {
     }
 
     impl Senke for P1BlockSenke {
-        fn control_verbunden(&self, l: &str, h: &HelloControl) {
-            self.zaehl.control_verbunden(l, h);
+        fn control_verbunden(&self, l: &str, h: &HelloControl) -> ControlAnmeldung {
+            self.zaehl.control_verbunden(l, h)
         }
         fn control_getrennt(&self, l: &str) {
             self.zaehl.control_getrennt(l);
@@ -3122,7 +3485,11 @@ mod tests {
              Blockdauer statt an SENKE_FRIST ({SENKE_FRIST:?})"
         );
         assert!(
-            griff.statistik.lebenszyklus_abgeloest.load(Ordering::SeqCst) >= 1,
+            griff
+                .statistik
+                .lebenszyklus_abgeloest
+                .load(Ordering::SeqCst)
+                >= 1,
             "der Fristfall muss als lebenszyklus_abgeloest sichtbar sein"
         );
         assert_eq!(senke.anzahl("control_getrennt"), 1, "nie doppelt");
@@ -3383,7 +3750,10 @@ mod tests {
         // Fall 1: P0 kommt durch und wird beantwortet.
         assert!(steuer.schreiben(&p0("{\"type\":\"heartbeat\",\"sequence\":7}")));
         let antwort = frame_json_lesen(&steuer).expect("kein heartbeat_ack — P0 hungert");
-        assert_eq!(antwort.get("type").and_then(|v| v.as_str()), Some("heartbeat_ack"));
+        assert_eq!(
+            antwort.get("type").and_then(|v| v.as_str()),
+            Some("heartbeat_ack")
+        );
         assert_eq!(antwort.get("sequence").and_then(|v| v.as_u64()), Some(7));
         assert!(
             senke.in_p1.load(Ordering::SeqCst),
@@ -3443,8 +3813,7 @@ mod tests {
         // Protokollfehler beendet B. A muss dabei exakt erhalten bleiben.
         assert!(control_b.schreiben(&p2(b"falsche-familie")));
         assert!(warte_auf(5000, || {
-            coordinator.subscription_anzahl() == 1
-                && coordinator.subscription_cleanups() == 1
+            coordinator.subscription_anzahl() == 1 && coordinator.subscription_cleanups() == 1
         }));
         assert_eq!(
             coordinator.session_push_ziele(&adresse_a.session_epoch, &adresse_a),
@@ -3457,8 +3826,7 @@ mod tests {
         // EOF von A entfernt ausschliesslich A und genau einmal.
         drop(control_a);
         assert!(warte_auf(5000, || {
-            coordinator.subscription_anzahl() == 0
-                && coordinator.subscription_cleanups() == 2
+            coordinator.subscription_anzahl() == 0 && coordinator.subscription_cleanups() == 2
         }));
         assert!(coordinator
             .session_push_ziele(&adresse_a.session_epoch, &adresse_a)
@@ -3474,7 +3842,13 @@ mod tests {
     /// Transportfrist zu erfinden.
     #[test]
     fn subscription_cleanup_vor_weiterem_push() {
-        for grund in ["EOF", "Protokollfehler", "Timeout", "Writefehler", "Serverstopp"] {
+        for grund in [
+            "EOF",
+            "Protokollfehler",
+            "Timeout",
+            "Writefehler",
+            "Serverstopp",
+        ] {
             let pipe = probe_pipe(&format!("subscriptioncleanup-{grund}"));
             let coordinator = Arc::new(crate::coordinator::Coordinator::default());
             let writer_fehler = Arc::new(AtomicBool::new(false));
@@ -3484,6 +3858,8 @@ mod tests {
                     &pipe,
                     coordinator.clone(),
                     "test".into(),
+                    neue_kennung(),
+                    V3Sender::neu(),
                     Arc::new(AtomicU64::new(0)),
                     writer_fehler.clone(),
                     cancel_vor_read.clone(),
@@ -3495,7 +3871,10 @@ mod tests {
             let statistik = griff.statistik.clone();
             let adresse = test_adresse('c');
             let client = Testclient::neu(&pipe).unwrap();
-            assert!(client.schreiben(&control_hello_adresse(&adresse)), "{grund}");
+            assert!(
+                client.schreiben(&control_hello_adresse(&adresse)),
+                "{grund}"
+            );
             let (link, _) = welcome_lesen(&client).expect("welcome");
             assert!(client.schreiben(&subscribe(&adresse)), "{grund}");
             assert!(
@@ -3522,7 +3901,7 @@ mod tests {
                     assert!(client
                         .as_ref()
                         .unwrap()
-                        .schreiben(&p0("{\"type\":\"heartbeat\",\"sequence\":1}")));
+                        .schreiben(&heartbeat_fuer_adresse(&adresse, 1)));
                     assert!(
                         warte_auf(5000, || statistik.geschlossen_writer.load(Ordering::SeqCst)
                             == 1),

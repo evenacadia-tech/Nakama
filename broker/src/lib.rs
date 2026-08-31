@@ -15,22 +15,28 @@ pub mod framing;
 pub mod generiert;
 pub mod instance_alias;
 pub mod protokoll;
+#[cfg(windows)]
+mod server;
+pub mod store;
 pub mod telemetrie;
 pub mod transport;
 pub mod vertrag;
-#[cfg(windows)]
-mod server;
 
 use protokoll::{HeartbeatStats, Hello, MessStand};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
+use std::thread::JoinHandle;
+use std::time::{Duration, Instant};
 
 /// Fester Pipename v1; Zugriff regelt die ACL (nur aktueller Windows-User).
 /// Muss mit eqcop::kPipeName im Plugin übereinstimmen. Der Name bleibt auch
 /// unter Protokoll v2 stabil — die Version handelt der Handshake aus.
 pub const PIPE_NAME: &str = r"\\.\pipe\evenacadia.eq-copilot.v1";
+pub const BROKER_PRO_USER_MAX: usize = 1;
+pub const BROKER_IDLE_ENDE_MS: u64 = 60_000;
 
 /// Verbunden, aber länger als das hier ohne Heartbeat ⇒ stale. Sichtbar
 /// markiert, nie still entfernt (Plan §11 M2-Abnahme).
@@ -61,7 +67,10 @@ struct Zeitstempel {
 
 impl Zeitstempel {
     fn jetzt() -> Self {
-        Self { utc_ms: jetzt_ms(), monoton_ms: monoton_ms() }
+        Self {
+            utc_ms: jetzt_ms(),
+            monoton_ms: monoton_ms(),
+        }
     }
 }
 
@@ -280,7 +289,9 @@ impl Register {
         messung: Option<MessStand>,
         zeit: Zeitstempel,
     ) {
-        let Some(e) = self.sensoren.get_mut(sensor_id) else { return };
+        let Some(e) = self.sensoren.get_mut(sensor_id) else {
+            return;
+        };
         let Some(verbindung) = e
             .verbindungs_metadaten
             .iter_mut()
@@ -329,7 +340,9 @@ impl Register {
         }
 
         let fremde_markierung = self.hat_fremde_hoermarkierung(sensor_id, nonce);
-        let Some(e) = self.sensoren.get_mut(sensor_id) else { return };
+        let Some(e) = self.sensoren.get_mut(sensor_id) else {
+            return;
+        };
         if !ist_besitzer {
             return;
         }
@@ -386,7 +399,10 @@ impl Register {
 
     /// Liefert das Konflikt-Flag für das heartbeat_ack der Verbindung.
     pub fn konflikt_von(&self, sensor_id: &str) -> bool {
-        self.sensoren.get(sensor_id).map(|e| e.konflikt).unwrap_or(false)
+        self.sensoren
+            .get(sensor_id)
+            .map(|e| e.konflikt)
+            .unwrap_or(false)
     }
 
     pub(crate) fn verbindung_ist_lebend(&self, sensor_id: &str, nonce: &str) -> bool {
@@ -541,7 +557,8 @@ pub fn sessions_bilden(sensoren: &[SensorEintrag]) -> Vec<SessionInfo> {
     }
     let mut liste: Vec<SessionInfo> = map.into_values().collect();
     for s in &mut liste {
-        s.samplerates.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        s.samplerates
+            .sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     }
     liste.sort_by_key(|s| s.host_pid);
     liste
@@ -603,7 +620,9 @@ fn aggregat_sperrgrund(sensoren: &[SensorEintrag]) -> Option<String> {
 pub fn paare_auswerten(sensoren: &[SensorEintrag]) -> Vec<PaarStatus> {
     let mut nach_paar: HashMap<&str, (Vec<&SensorEintrag>, Vec<&SensorEintrag>)> = HashMap::new();
     for s in sensoren {
-        let Some(pair) = s.pair_id.as_deref().filter(|p| !p.is_empty()) else { continue };
+        let Some(pair) = s.pair_id.as_deref().filter(|p| !p.is_empty()) else {
+            continue;
+        };
         let eintrag = nach_paar.entry(pair).or_default();
         match s.role.as_str() {
             "pre" => eintrag.0.push(s),
@@ -628,7 +647,9 @@ pub fn paare_auswerten(sensoren: &[SensorEintrag]) -> Vec<PaarStatus> {
 
         if pres.len() > 1 || posts.len() > 1 {
             let rolle = if pres.len() > 1 { "VORHER" } else { "NACHHER" };
-            p.grund = format!("mehrere {rolle}-Messpunkte teilen dieselbe Paar-Kennung — bitte eindeutig machen");
+            p.grund = format!(
+                "mehrere {rolle}-Messpunkte teilen dieselbe Paar-Kennung — bitte eindeutig machen"
+            );
             ergebnis.push(p);
             continue;
         }
@@ -658,9 +679,7 @@ pub fn paare_auswerten(sensoren: &[SensorEintrag]) -> Vec<PaarStatus> {
             ergebnis.push(p);
             continue;
         }
-        if pre.messung_gesperrt_durch_hoermarkierung
-            || post.messung_gesperrt_durch_hoermarkierung
-        {
+        if pre.messung_gesperrt_durch_hoermarkierung || post.messung_gesperrt_durch_hoermarkierung {
             unklar(
                 "Messung nach Hör-Markierung gesperrt — betroffene Messpunkte bitte neu messen"
                     .into(),
@@ -677,12 +696,18 @@ pub fn paare_auswerten(sensoren: &[SensorEintrag]) -> Vec<PaarStatus> {
         }
         if pre.stale || post.stale {
             let wer = if pre.stale { "VORHER" } else { "NACHHER" };
-            unklar(format!("{wer}-Messpunkt sendet nicht mehr (letztes Lebenszeichen zu alt)"), &mut p);
+            unklar(
+                format!("{wer}-Messpunkt sendet nicht mehr (letztes Lebenszeichen zu alt)"),
+                &mut p,
+            );
             ergebnis.push(p);
             continue;
         }
         if pre.samplerate != post.samplerate {
-            unklar("die beiden Messpunkte laufen mit verschiedenen Samplerates".into(), &mut p);
+            unklar(
+                "die beiden Messpunkte laufen mit verschiedenen Samplerates".into(),
+                &mut p,
+            );
             ergebnis.push(p);
             continue;
         }
@@ -700,20 +725,33 @@ pub fn paare_auswerten(sensoren: &[SensorEintrag]) -> Vec<PaarStatus> {
             continue;
         };
         if mp.zustand != "messbereit" || mq.zustand != "messbereit" {
-            let wer = if mp.zustand != "messbereit" { pre } else { post };
-            unklar(format!("»{}« sammelt noch — Messung nicht belastbar", wer.label), &mut p);
+            let wer = if mp.zustand != "messbereit" {
+                pre
+            } else {
+                post
+            };
+            unklar(
+                format!("»{}« sammelt noch — Messung nicht belastbar", wer.label),
+                &mut p,
+            );
             ergebnis.push(p);
             continue;
         }
         let (Some(fp), Some(fq)) = (mp.projekt_fenster, mq.projekt_fenster) else {
-            unklar("keine Projektzeit-Information — Messung lief ohne Transport?".into(), &mut p);
+            unklar(
+                "keine Projektzeit-Information — Messung lief ohne Transport?".into(),
+                &mut p,
+            );
             ergebnis.push(p);
             continue;
         };
         let len_p = fp.bis_samples.saturating_sub(fp.von_samples);
         let len_q = fq.bis_samples.saturating_sub(fq.von_samples);
         if len_p <= 0 || len_q <= 0 {
-            unklar("Messung lief ohne laufenden Transport — keine Projektzeit-Zuordnung".into(), &mut p);
+            unklar(
+                "Messung lief ohne laufenden Transport — keine Projektzeit-Zuordnung".into(),
+                &mut p,
+            );
             ergebnis.push(p);
             continue;
         }
@@ -725,7 +763,10 @@ pub fn paare_auswerten(sensoren: &[SensorEintrag]) -> Vec<PaarStatus> {
             .min(fq.bis_samples)
             .saturating_sub(fp.von_samples.max(fq.von_samples));
         if overlap <= 0 {
-            unklar("die Messfenster überlappen nicht — vermutlich verschiedene Passagen".into(), &mut p);
+            unklar(
+                "die Messfenster überlappen nicht — vermutlich verschiedene Passagen".into(),
+                &mut p,
+            );
             ergebnis.push(p);
             continue;
         }
@@ -734,11 +775,15 @@ pub fn paare_auswerten(sensoren: &[SensorEintrag]) -> Vec<PaarStatus> {
         let kuerzer = len_p.min(len_q);
         let mut wahrscheinlich: Option<String> = None;
         if fp.spruenge > 0 || fq.spruenge > 0 {
-            wahrscheinlich = Some("Loop-/Seek-Sprünge im Messfenster — Passagen nicht sicher deckungsgleich".into());
+            wahrscheinlich = Some(
+                "Loop-/Seek-Sprünge im Messfenster — Passagen nicht sicher deckungsgleich".into(),
+            );
         } else if (overlap as f64) < 0.8 * kuerzer as f64 {
             wahrscheinlich = Some("die Messfenster decken sich nur teilweise".into());
         } else if pre.host_pid != post.host_pid {
-            wahrscheinlich = Some("die Messpunkte laufen in verschiedenen Prozessen (Bridge oder zweites FL?)".into());
+            wahrscheinlich = Some(
+                "die Messpunkte laufen in verschiedenen Prozessen (Bridge oder zweites FL?)".into(),
+            );
         } else {
             let (a, g) = (mp.aktiv_s.min(mq.aktiv_s), mp.aktiv_s.max(mq.aktiv_s));
             if g > 0.0 && (g - a) > 0.1 * g {
@@ -777,13 +822,36 @@ pub struct BrokerStatus {
     pub paare: Vec<PaarStatus>,
 }
 
+struct BrokerSupervisor {
+    stop: Arc<AtomicBool>,
+    join: Option<JoinHandle<()>>,
+}
+
+impl Drop for BrokerSupervisor {
+    fn drop(&mut self) {
+        self.stop.store(true, Ordering::SeqCst);
+        if let Some(join) = self.join.take() {
+            let _ = join.join();
+        }
+    }
+}
+
 struct BrokerLauf {
     #[cfg(windows)]
-    _griff: server::ServerGriff,
+    _supervisor: BrokerSupervisor,
+    #[cfg(windows)]
+    _griff_v2: server::ServerGriff,
+    #[cfg(windows)]
+    _griff_v3: transport::server_v3::V3Griff,
+    #[cfg(windows)]
+    store: store::StoreWriter,
+    #[cfg(windows)]
+    coordinator: Arc<coordinator::Coordinator>,
     register: Arc<Mutex<Register>>,
     session_token: String,
     gestartet_ms: u64,
     bindungen_pfad: Option<PathBuf>,
+    idle_seit: Mutex<Option<Instant>>,
 }
 
 static BROKER: OnceLock<Result<BrokerLauf, String>> = OnceLock::new();
@@ -809,18 +877,61 @@ pub fn broker_starten(bindungen_pfad: Option<PathBuf>) -> Result<(), String> {
             }
             let register = Arc::new(Mutex::new(register));
             let session_token = uuid::Uuid::new_v4().to_string();
-            let griff = server::server_starten(
+            let griff_v2 = server::server_starten(
                 PIPE_NAME,
                 register.clone(),
                 broker_version(),
                 session_token.clone(),
             )?;
+            let store = match store::StoreKonfiguration::standard() {
+                Ok(konfiguration) => store::StoreWriter::starten(konfiguration),
+                Err(fehler) => store::StoreWriter::degradiert_ohne_pfad(fehler.to_string()),
+            };
+            let broker_epoch = uuid::Uuid::new_v4().simple().to_string();
+            let coordinator = Arc::new(coordinator::Coordinator::instant_mit_store(
+                broker_epoch.clone(),
+                &store,
+            ));
+            let sender = transport::server_v3::V3Sender::neu();
+            coordinator.session_push_setzen(Arc::new(sender.clone()));
+            let user_sid = server::aktueller_user_sid()?;
+            let pipe_v3 = transport::pipetoken::pipe_name_v3(&user_sid);
+            let griff_v3 = transport::server_v3::v3_server_starten_mit_epoch_und_sender(
+                &pipe_v3,
+                coordinator.clone(),
+                broker_version(),
+                broker_epoch,
+                sender,
+            )?;
+            let supervisor_stop = Arc::new(AtomicBool::new(false));
+            let stop_fuer_thread = supervisor_stop.clone();
+            let coordinator_fuer_thread = coordinator.clone();
+            let closer = griff_v3.closer();
+            let supervisor_join = std::thread::Builder::new()
+                .name("nakama-coordinator-tick".into())
+                .spawn(move || {
+                    while !stop_fuer_thread.load(Ordering::SeqCst) {
+                        std::thread::sleep(Duration::from_millis(100));
+                        for link_id in coordinator_fuer_thread.liveness_tick() {
+                            closer.link_schliessen(&link_id);
+                        }
+                    }
+                })
+                .map_err(|e| format!("Coordinator-Tick: {e}"))?;
             Ok(BrokerLauf {
-                _griff: griff,
+                _supervisor: BrokerSupervisor {
+                    stop: supervisor_stop,
+                    join: Some(supervisor_join),
+                },
+                _griff_v2: griff_v2,
+                _griff_v3: griff_v3,
+                store,
+                coordinator,
                 register,
                 session_token,
                 gestartet_ms: jetzt_ms(),
                 bindungen_pfad,
+                idle_seit: Mutex::new(Some(Instant::now())),
             })
         }
         #[cfg(not(windows))]
@@ -830,6 +941,59 @@ pub fn broker_starten(bindungen_pfad: Option<PathBuf>) -> Result<(), String> {
         }
     });
     ergebnis.as_ref().map(|_| ()).map_err(|e| e.clone())
+}
+
+pub fn broker_idle_ende_erreicht(idle: Duration, aktive_clients: usize) -> bool {
+    aktive_clients == 0 && idle >= Duration::from_millis(BROKER_IDLE_ENDE_MS)
+}
+
+pub fn broker_idle_aktualisieren(
+    idle_seit: &mut Option<Instant>,
+    jetzt: Instant,
+    aktive_clients: usize,
+) -> bool {
+    if aktive_clients != 0 {
+        *idle_seit = None;
+        return false;
+    }
+    let seit = idle_seit.get_or_insert(jetzt);
+    broker_idle_ende_erreicht(jetzt.saturating_duration_since(*seit), aktive_clients)
+}
+
+/// Monotone Selbstende-Bedingung des Brokerprozesses. Das Plugin beendet nie
+/// einen Prozess und besitzt deshalb keinen Stop-Pfad zu dieser Funktion.
+pub fn broker_soll_idle_enden() -> bool {
+    let Some(Ok(lauf)) = BROKER.get() else {
+        return false;
+    };
+    #[cfg(windows)]
+    let aktive_v3 = lauf.coordinator.client_anzahl();
+    #[cfg(not(windows))]
+    let aktive_v3 = 0usize;
+    let aktive_v2 = lauf
+        .register
+        .lock()
+        .expect("Register-Mutex")
+        .sensoren
+        .values()
+        .filter(|sensor| sensor.verbunden)
+        .count();
+    let aktive = aktive_v2.saturating_add(aktive_v3);
+    let mut idle = lauf.idle_seit.lock().unwrap_or_else(|e| e.into_inner());
+    broker_idle_aktualisieren(&mut idle, Instant::now(), aktive)
+}
+
+pub fn broker_store_sicht() -> Option<store::StoreSicht> {
+    let lauf = BROKER.get()?.as_ref().ok()?;
+    #[cfg(windows)]
+    {
+        return Some(lauf.store.handle().sicht());
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = lauf;
+        None
+    }
 }
 
 pub fn broker_status() -> BrokerStatus {
@@ -892,7 +1056,9 @@ pub fn probe_lauf(pipe_name: &str, sekunden: u64) -> Result<String, String> {
     )?;
     std::thread::sleep(std::time::Duration::from_secs(sekunden));
     let status = {
-        let r = register.lock().map_err(|_| "Register-Mutex vergiftet".to_string())?;
+        let r = register
+            .lock()
+            .map_err(|_| "Register-Mutex vergiftet".to_string())?;
         let sensoren = r.sensoren_snapshot(jetzt_ms());
         let sessions = sessions_bilden(&sensoren);
         let paare = paare_auswerten(&sensoren);
@@ -980,7 +1146,11 @@ mod register_tests {
                 label: label.into(),
                 pair_id: pair.map(|s| s.to_string()),
             },
-            audio: AudioAngabe { samplerate: 48000.0, block_size: 512, channels: 2 },
+            audio: AudioAngabe {
+                samplerate: 48000.0,
+                block_size: 512,
+                channels: 2,
+            },
         }
     }
 
@@ -996,7 +1166,11 @@ mod register_tests {
     }
 
     fn fenster(von: i64, bis: i64, spruenge: u32) -> ProjektFenster {
-        ProjektFenster { von_samples: von, bis_samples: bis, spruenge }
+        ProjektFenster {
+            von_samples: von,
+            bis_samples: bis,
+            spruenge,
+        }
     }
 
     #[test]
@@ -1043,15 +1217,39 @@ mod register_tests {
         r.sensor_verbinden(&hello("s-dup", "post", "PIANO Kopie", None, 1), "n-b");
         assert!(r.konflikt_von("s-dup"));
         // Nur der Besitzer (jüngstes hello = n-b) schreibt Werte.
-        r.heartbeat("s-dup", "n-a", Some(HeartbeatStats { rms_l: 0.9, ..Default::default() }), None);
-        r.heartbeat("s-dup", "n-b", Some(HeartbeatStats { rms_l: 0.2, ..Default::default() }), None);
+        r.heartbeat(
+            "s-dup",
+            "n-a",
+            Some(HeartbeatStats {
+                rms_l: 0.9,
+                ..Default::default()
+            }),
+            None,
+        );
+        r.heartbeat(
+            "s-dup",
+            "n-b",
+            Some(HeartbeatStats {
+                rms_l: 0.2,
+                ..Default::default()
+            }),
+            None,
+        );
         assert_eq!(r.sensoren["s-dup"].stats.rms_l, 0.2);
         // Eine Verbindung stirbt → Konflikt vorbei, Sensor bleibt verbunden.
         r.sensor_trennen("s-dup", "n-b");
         assert!(!r.konflikt_von("s-dup"));
         assert!(r.sensoren["s-dup"].verbunden);
         // Die überlebende Verbindung erbt die Schreibrechte.
-        r.heartbeat("s-dup", "n-a", Some(HeartbeatStats { rms_l: 0.7, ..Default::default() }), None);
+        r.heartbeat(
+            "s-dup",
+            "n-a",
+            Some(HeartbeatStats {
+                rms_l: 0.7,
+                ..Default::default()
+            }),
+            None,
+        );
         assert_eq!(r.sensoren["s-dup"].stats.rms_l, 0.7);
         r.sensor_trennen("s-dup", "n-a");
         assert!(!r.sensoren["s-dup"].verbunden);
@@ -1063,17 +1261,42 @@ mod register_tests {
         let mut r = Register::default();
         let mut a = hello("s-owner", "pre", "A", Some("paar-a"), 11);
         a.plugin_version = "plugin-a".into();
-        a.audio = AudioAngabe { samplerate: 44100.0, block_size: 256, channels: 1 };
+        a.audio = AudioAngabe {
+            samplerate: 44100.0,
+            block_size: 256,
+            channels: 1,
+        };
         let mut b = hello("s-owner", "post", "B", Some("paar-b"), 22);
         b.plugin_version = "plugin-b".into();
-        b.audio = AudioAngabe { samplerate: 96000.0, block_size: 1024, channels: 6 };
+        b.audio = AudioAngabe {
+            samplerate: 96000.0,
+            block_size: 1024,
+            channels: 6,
+        };
 
-        r.sensor_verbinden_zu(&a, "nonce-a", Zeitstempel { utc_ms: 100, monoton_ms: 10 });
-        r.sensor_verbinden_zu(&b, "nonce-b", Zeitstempel { utc_ms: 200, monoton_ms: 20 });
+        r.sensor_verbinden_zu(
+            &a,
+            "nonce-a",
+            Zeitstempel {
+                utc_ms: 100,
+                monoton_ms: 10,
+            },
+        );
+        r.sensor_verbinden_zu(
+            &b,
+            "nonce-b",
+            Zeitstempel {
+                utc_ms: 200,
+                monoton_ms: 20,
+            },
+        );
         r.heartbeat(
             "s-owner",
             "nonce-b",
-            Some(HeartbeatStats { rms_l: 0.2, ..Default::default() }),
+            Some(HeartbeatStats {
+                rms_l: 0.2,
+                ..Default::default()
+            }),
             Some(messbereit(None, 2.0)),
         );
         assert_eq!(r.sensoren["s-owner"].label, "B");
@@ -1100,18 +1323,27 @@ mod register_tests {
         r.heartbeat(
             "s-owner",
             "nonce-b",
-            Some(HeartbeatStats { rms_l: 0.9, ..Default::default() }),
+            Some(HeartbeatStats {
+                rms_l: 0.9,
+                ..Default::default()
+            }),
             Some(messbereit(None, 9.0)),
         );
         assert_eq!(r.sensoren["s-owner"].heartbeats, heartbeats_vorher);
         r.heartbeat(
             "s-owner",
             "nonce-a",
-            Some(HeartbeatStats { rms_l: 0.7, ..Default::default() }),
+            Some(HeartbeatStats {
+                rms_l: 0.7,
+                ..Default::default()
+            }),
             Some(messbereit(None, 3.0)),
         );
         assert_eq!(r.sensoren["s-owner"].stats.rms_l, 0.7);
-        assert_eq!(r.sensoren["s-owner"].messung.as_ref().unwrap().gesamt_s, 3.0);
+        assert_eq!(
+            r.sensoren["s-owner"].messung.as_ref().unwrap().gesamt_s,
+            3.0
+        );
     }
 
     #[test]
@@ -1120,7 +1352,10 @@ mod register_tests {
         r.sensor_verbinden_zu(
             &hello("s-1", "sensor", "CHOR", None, 1),
             "n-1",
-            Zeitstempel { utc_ms: 1_000_000, monoton_ms: 100 },
+            Zeitstempel {
+                utc_ms: 1_000_000,
+                monoton_ms: 100,
+            },
         );
         // Wallclock springt rückwärts, monotone Zeit läuft normal weiter.
         r.heartbeat_zu(
@@ -1128,11 +1363,17 @@ mod register_tests {
             "n-1",
             None,
             None,
-            Zeitstempel { utc_ms: 10, monoton_ms: 200 },
+            Zeitstempel {
+                utc_ms: 10,
+                monoton_ms: 200,
+            },
         );
         let snap = r.sensoren_snapshot_zu(200 + STALE_MS);
         assert!(!snap[0].stale);
-        assert_eq!(snap[0].last_seen_ms, 10, "sichtbares UTC bleibt Ausgabezeit");
+        assert_eq!(
+            snap[0].last_seen_ms, 10,
+            "sichtbares UTC bleibt Ausgabezeit"
+        );
 
         // Wallclock springt weit vorwärts: auch das macht nicht sofort stale.
         r.heartbeat_zu(
@@ -1140,7 +1381,10 @@ mod register_tests {
             "n-1",
             None,
             None,
-            Zeitstempel { utc_ms: u64::MAX - 1, monoton_ms: 300 },
+            Zeitstempel {
+                utc_ms: u64::MAX - 1,
+                monoton_ms: 300,
+            },
         );
         assert!(!r.sensoren_snapshot_zu(300)[0].stale);
         let snap = r.sensoren_snapshot_zu(300 + STALE_MS + 1);
@@ -1203,7 +1447,9 @@ mod register_tests {
         r.heartbeat("s-marker", "n-m", None, Some(marker_aus));
         let snapshot = r.sensoren_snapshot(jetzt_ms());
         assert!(hoermarkierungs_sperrgrund(&snapshot).is_none());
-        assert!(aggregat_sperrgrund(&snapshot).unwrap().contains("neu messen"));
+        assert!(aggregat_sperrgrund(&snapshot)
+            .unwrap()
+            .contains("neu messen"));
 
         // Der erste Stand nach beobachtetem false ist nur eine Basis. Erst ein
         // danach beobachteter Reset (leer oder Zählerrücklauf) beweist Sauberkeit.
@@ -1283,8 +1529,15 @@ mod register_tests {
         r.heartbeat("s-pre", "n-p", None, Some(messbereit(None, 2.0)));
         assert!(r.sensoren["s-pre"].messung_gesperrt_durch_hoermarkierung);
         let snapshot = r.sensoren_snapshot(jetzt_ms());
-        assert!(snapshot.iter().find(|s| s.sensor_id == "s-pre").unwrap().messung.is_none());
-        assert!(aggregat_sperrgrund(&snapshot).unwrap().contains("neu messen"));
+        assert!(snapshot
+            .iter()
+            .find(|s| s.sensor_id == "s-pre")
+            .unwrap()
+            .messung
+            .is_none());
+        assert!(aggregat_sperrgrund(&snapshot)
+            .unwrap()
+            .contains("neu messen"));
 
         let reset_nach_false = MessStand {
             zustand: "keine_daten".into(),
@@ -1350,7 +1603,10 @@ mod register_tests {
         let mut r = Register::default();
         r.sensor_verbinden(&hello("s-1", "sensor", "PIANO", None, 1), "n-1");
         r.profil_binden("s-1", Some("profil-even34".into()));
-        assert_eq!(r.sensoren["s-1"].profil_id.as_deref(), Some("profil-even34"));
+        assert_eq!(
+            r.sensoren["s-1"].profil_id.as_deref(),
+            Some("profil-even34")
+        );
         r.sensor_trennen("s-1", "n-1");
         r.sensor_verbinden(&hello("s-1", "sensor", "PIANO", None, 1), "n-2");
         assert_eq!(
@@ -1366,16 +1622,32 @@ mod register_tests {
     // ── Paar-Auswertung (Plan §5.7: Herabstufung bei jeder Unsicherheit) ──
 
     fn paar_basis(r: &mut Register) {
-        r.sensor_verbinden(&hello("s-pre", "pre", "PIANO VORHER", Some("paar-1"), 1), "n-p");
-        r.sensor_verbinden(&hello("s-post", "post", "PIANO NACHHER", Some("paar-1"), 1), "n-q");
+        r.sensor_verbinden(
+            &hello("s-pre", "pre", "PIANO VORHER", Some("paar-1"), 1),
+            "n-p",
+        );
+        r.sensor_verbinden(
+            &hello("s-post", "post", "PIANO NACHHER", Some("paar-1"), 1),
+            "n-q",
+        );
     }
 
     #[test]
     fn paar_ausgerichtet_bei_deckungsgleichen_fenstern() {
         let mut r = Register::default();
         paar_basis(&mut r);
-        r.heartbeat("s-pre", "n-p", None, Some(messbereit(Some(fenster(0, 480000, 0)), 10.0)));
-        r.heartbeat("s-post", "n-q", None, Some(messbereit(Some(fenster(0, 480000, 0)), 10.0)));
+        r.heartbeat(
+            "s-pre",
+            "n-p",
+            None,
+            Some(messbereit(Some(fenster(0, 480000, 0)), 10.0)),
+        );
+        r.heartbeat(
+            "s-post",
+            "n-q",
+            None,
+            Some(messbereit(Some(fenster(0, 480000, 0)), 10.0)),
+        );
         let paare = paare_auswerten(&r.sensoren_snapshot(jetzt_ms()));
         assert_eq!(paare.len(), 1);
         assert_eq!(paare[0].status, "vollstaendig");
@@ -1386,11 +1658,25 @@ mod register_tests {
     fn paar_wird_bei_spruengen_herabgestuft() {
         let mut r = Register::default();
         paar_basis(&mut r);
-        r.heartbeat("s-pre", "n-p", None, Some(messbereit(Some(fenster(0, 480000, 2)), 10.0)));
-        r.heartbeat("s-post", "n-q", None, Some(messbereit(Some(fenster(0, 480000, 0)), 10.0)));
+        r.heartbeat(
+            "s-pre",
+            "n-p",
+            None,
+            Some(messbereit(Some(fenster(0, 480000, 2)), 10.0)),
+        );
+        r.heartbeat(
+            "s-post",
+            "n-q",
+            None,
+            Some(messbereit(Some(fenster(0, 480000, 0)), 10.0)),
+        );
         let paare = paare_auswerten(&r.sensoren_snapshot(jetzt_ms()));
         assert_eq!(paare[0].timing, "wahrscheinlich");
-        assert!(paare[0].grund.contains("Sprünge"), "Grund war: {}", paare[0].grund);
+        assert!(
+            paare[0].grund.contains("Sprünge"),
+            "Grund war: {}",
+            paare[0].grund
+        );
     }
 
     #[test]
@@ -1398,12 +1684,27 @@ mod register_tests {
         let mut r = Register::default();
         paar_basis(&mut r);
         // 50 % Überlappung → wahrscheinlich.
-        r.heartbeat("s-pre", "n-p", None, Some(messbereit(Some(fenster(0, 100_000, 0)), 10.0)));
-        r.heartbeat("s-post", "n-q", None, Some(messbereit(Some(fenster(50_000, 150_000, 0)), 10.0)));
+        r.heartbeat(
+            "s-pre",
+            "n-p",
+            None,
+            Some(messbereit(Some(fenster(0, 100_000, 0)), 10.0)),
+        );
+        r.heartbeat(
+            "s-post",
+            "n-q",
+            None,
+            Some(messbereit(Some(fenster(50_000, 150_000, 0)), 10.0)),
+        );
         let paare = paare_auswerten(&r.sensoren_snapshot(jetzt_ms()));
         assert_eq!(paare[0].timing, "wahrscheinlich");
         // Keine Überlappung → unklar.
-        r.heartbeat("s-post", "n-q", None, Some(messbereit(Some(fenster(500_000, 600_000, 0)), 10.0)));
+        r.heartbeat(
+            "s-post",
+            "n-q",
+            None,
+            Some(messbereit(Some(fenster(500_000, 600_000, 0)), 10.0)),
+        );
         let paare = paare_auswerten(&r.sensoren_snapshot(jetzt_ms()));
         assert_eq!(paare[0].timing, "unklar");
         assert!(paare[0].grund.contains("überlappen nicht"));
@@ -1433,20 +1734,35 @@ mod register_tests {
     #[test]
     fn paar_mit_v1_partner_bleibt_unklar_mit_klarem_grund() {
         let mut r = Register::default();
-        r.sensor_verbinden(&hello("s-pre", "pre", "PIANO VORHER", Some("paar-1"), 1), "n-p");
+        r.sensor_verbinden(
+            &hello("s-pre", "pre", "PIANO VORHER", Some("paar-1"), 1),
+            "n-p",
+        );
         let mut alt = hello("s-post", "post", "PIANO NACHHER", Some("paar-1"), 1);
         alt.protocol_version = 1;
         r.sensor_verbinden(&alt, "n-q");
-        r.heartbeat("s-pre", "n-p", None, Some(messbereit(Some(fenster(0, 480000, 0)), 10.0)));
+        r.heartbeat(
+            "s-pre",
+            "n-p",
+            None,
+            Some(messbereit(Some(fenster(0, 480000, 0)), 10.0)),
+        );
         let paare = paare_auswerten(&r.sensoren_snapshot(jetzt_ms()));
         assert_eq!(paare[0].timing, "unklar");
-        assert!(paare[0].grund.contains("v1"), "Grund war: {}", paare[0].grund);
+        assert!(
+            paare[0].grund.contains("v1"),
+            "Grund war: {}",
+            paare[0].grund
+        );
     }
 
     #[test]
     fn paar_ohne_partner_ist_unvollstaendig() {
         let mut r = Register::default();
-        r.sensor_verbinden(&hello("s-pre", "pre", "PIANO VORHER", Some("paar-1"), 1), "n-p");
+        r.sensor_verbinden(
+            &hello("s-pre", "pre", "PIANO VORHER", Some("paar-1"), 1),
+            "n-p",
+        );
         let paare = paare_auswerten(&r.sensoren_snapshot(jetzt_ms()));
         assert_eq!(paare.len(), 1);
         assert_eq!(paare[0].status, "unvollstaendig");
@@ -1458,8 +1774,18 @@ mod register_tests {
         let mut r = Register::default();
         r.sensor_verbinden(&hello("s-pre", "pre", "V", Some("paar-1"), 111), "n-p");
         r.sensor_verbinden(&hello("s-post", "post", "N", Some("paar-1"), 222), "n-q");
-        r.heartbeat("s-pre", "n-p", None, Some(messbereit(Some(fenster(0, 480000, 0)), 10.0)));
-        r.heartbeat("s-post", "n-q", None, Some(messbereit(Some(fenster(0, 480000, 0)), 10.0)));
+        r.heartbeat(
+            "s-pre",
+            "n-p",
+            None,
+            Some(messbereit(Some(fenster(0, 480000, 0)), 10.0)),
+        );
+        r.heartbeat(
+            "s-post",
+            "n-q",
+            None,
+            Some(messbereit(Some(fenster(0, 480000, 0)), 10.0)),
+        );
         let paare = paare_auswerten(&r.sensoren_snapshot(jetzt_ms()));
         assert_eq!(paare[0].timing, "wahrscheinlich");
         assert!(paare[0].grund.contains("Prozessen"));

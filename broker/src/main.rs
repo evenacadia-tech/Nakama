@@ -5,9 +5,10 @@
 //!
 //! Ohne Argument liegen die persistenten Profilbindungen unter
 //! %APPDATA%\evenacadia\nakama\eq-copilot-bindungen.json (die Datei wird
-//! beim ersten Binden angelegt). Der Server läuft, bis der Prozess endet;
-//! FIRST_PIPE_INSTANCE verhindert einen zweiten Broker auf dem
-//! Produktionsnamen.
+//! beim ersten Binden angelegt). Der Broker bedient den v2-Legacy- und den
+//! SID-gebundenen v3-Endpunkt und beendet sich nach der festgelegten Idlefrist
+//! ohne Clients selbst. FIRST_PIPE_INSTANCE verhindert einen zweiten Broker
+//! auf den Produktionsnamen.
 
 use std::path::PathBuf;
 
@@ -57,7 +58,11 @@ fn main() {
                     .unwrap_or_else(|| "keine — nur im Speicher".into())
             );
             loop {
-                std::thread::sleep(std::time::Duration::from_secs(3600));
+                std::thread::sleep(std::time::Duration::from_millis(250));
+                if eqcop_broker::broker_soll_idle_enden() {
+                    println!("EQ-Copilot-Broker beendet sich nach lokaler Idlefrist selbst");
+                    break;
+                }
             }
         }
         Err(e) => {

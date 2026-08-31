@@ -15,7 +15,10 @@ abzuleiten, welche technische Funktion entsteht und wie ein Mensch sie erreichen
 verstehen, bedienen, abbrechen und rückgängig machen kann. Frühere visuelle
 Entwürfe sollen dafür ausdrücklich ignoriert werden. Dieser Blueprint übernimmt
 deshalb weder Aufbau, Raster, Farben, Material, Icons noch Positionsentscheidungen
-aus bisherigen Figma-Ständen, PNGs, Web-Prototypen oder Design-Abnahmen.
+aus bisherigen Figma-Ständen, PNGs, Web-Prototypen oder visuell gebundenen Teilen
+früherer Design-Abnahmen. Datiertes User-Wort zu Funktion und Verhalten bleibt
+dagegen bindend, soweit es im aktuellen Plan oder seinem Entscheidregister
+fortgeschrieben ist; seine Verwendung ist kein Import des früheren Designs.
 
 Bindender User-Wortlaut für die Quellenabgrenzung:
 „ignoriere bisherige design die entworfen wurden.“
@@ -32,6 +35,14 @@ Er ergänzt diese Quellen um den fehlenden Vertrag zwischen Technik und Bedienun
 Wenn Technik und Oberfläche widersprechen, entscheidet der aktuelle technische
 Vertrag über das Machbare; die Oberfläche darf den Widerspruch nicht kaschieren.
 
+[DESIGN.md](../../DESIGN.md) und [UX-CONTRACT.md](../../UX-CONTRACT.md)
+beschreiben noch die Oberfläche und den Web-Prototyp vor dem Funktionsneustart.
+`UX-CONTRACT.md` bleibt Beleg für bereits festgelegtes beobachtbares Verhalten,
+aber seine Figma-, Golden-, Raster- und Prototypfestlegungen werden nicht zur neuen
+Layoutquelle. Wo sein Verhalten nicht mit aktuellem Plan, aktuellem User-Wort oder
+heutigem v3-Vertrag zusammenpasst, bleibt der Konflikt offen und wird vor dem
+nächsten Prototyp ausdrücklich bereinigt; siehe Abschnitt 15.
+
 ### Evidenzmarken
 
 | Marke | Bedeutung |
@@ -46,12 +57,14 @@ Vertrag über das Machbare; die Oberfläche darf den Widerspruch nicht kaschiere
 
 - **[D]** Der gerechnete Plan führt 20 von 38 Schritten als abgenommen, keinen
   Schritt nur als gebaut und S16–17 als nächsten offenen Schritt.
-- **[B]** SONDE-011 Phase A ist gebaut und geprüft; die Phase-B-Matrix und
-  paralleler uncommitteter Broker-Code sind kein Abnahmebeleg. Der Blueprint
-  beschreibt sie daher nicht als fertige Produktfunktion.
+- **[B]** SONDE-011 Phase A ist mit einem grünen 33/33-Lauf belegt; das
+  [Manifest](../../docs/beweise/SONDE-011.md) erklärt das Ticket einschließlich
+  Phase B weiterhin als nicht abgenommen. Die Phase-B-Matrix und paralleler
+  uncommitteter Broker-Code sind kein Abnahmebeleg. Der Blueprint beschreibt sie
+  daher nicht als fertige Produktfunktion.
 - **[D]** Die neue v3-Leitung ist gebaut, aber noch nicht als produktiver Weg in
-  beide Plugins verdrahtet. Probeeq ist derzeit noch ein audioprüfbarer,
-  neutraler Shell; der aktive EQ entsteht erst in P6.
+  beide Plugins verdrahtet. Probeeq ist derzeit noch eine audioseitig prüfbare,
+  neutrale Shell; der aktive EQ entsteht erst in P6.
 - **[D]** Der heutige Material-Kit-Editor ist ein Provisorium und keine
   Gestaltungsquelle für diesen Blueprint.
 
@@ -110,6 +123,26 @@ Quelle beziehungsweise gerichtete Quellenbeziehung. Auf Gen Fläche 2 ist sie da
 aktuell ausgewählte DSP-Ziel und darin das ausgewählte Band. Ein generisches
 Dashboard ohne eindeutiges Objekt wäre keine ausreichende Umsetzung.
 
+### 1.3 Aufgabenrang und Recovery-Kosten
+
+Die Rangfolge trennt belegte Arbeitswege von noch zu prüfenden
+Häufigkeitsannahmen. Sie ist eine Eingabe für Zustandsentwürfe, keine Behauptung
+über bereits beobachtete Nutzerzahlen.
+
+| Rang | Job | Zeitdruck und Fehlerkosten | beobachtbarer Beweis | Marke |
+|---|---|---|---|---|
+| häufig | zwischen Probeeq-Zielen wechseln, Filter setzen und zum Master zurückkehren | kurz; ein falsches Ziel verändert den falschen Bus | Zielname und Writer bleiben vor, während und nach jeder Geste eindeutig; Wechsel braucht keinen Menüweg | **[U]** |
+| häufig | Quelle, Befund und Messqualität einordnen | mittel; stale oder unsichere Evidenz kann eine falsche Klangentscheidung auslösen | Nutzer erkennt Quelle, Frische, Support und Unsicherheit, bevor er einen Test startet | **[A]** |
+| häufig | Änderung hören, vergleichen, bestätigen oder verwerfen | hoch; Preview darf weder kleben bleiben noch als bestätigt erscheinen | Hold, Kandidat, Confirmed und wirksamer DSP werden im Zustandslauf korrekt benannt und verlassen | **[U]/[D]** |
+| gelegentlich | Passage, Intent, Preset, Copy, Analyzer und Evidenzdetails bearbeiten | mittel; Scope- oder Identitätsverlust erzeugt schwer erklärbare Folgefehler | Einstieg und Rückkehr behalten Quelle, Ziel, Passage und Revision | **[D]/[U]** |
+| Recovery | Disconnect, Automation, stale Revision, Ablauf, ungültigen State oder Schutzkonflikt beheben | sehr hoch; der sichere Klang und die Bedienhoheit dürfen nicht unklar sein | Oberfläche nennt autoritative Wahrheit, betroffenen Scope und den kleinsten sicheren Rückweg | **[D]** |
+| Betrieb | installieren, migrieren, reparieren, exportieren, löschen oder zurückrollen | selten, aber potenziell irreversibel | Version, Umfang, Wirkung und Rückweg sind vor Bestätigung prüfbar | **[D]** |
+
+**[A] Prüfpflicht:** Die beiden als häufig angenommenen Orientierungs- und
+Evidenzjobs werden im ersten Funktionsprototyp gegen reale Aufgaben geprüft.
+Erweisen sich Häufigkeit oder Zeitdruck als anders, ändert sich die
+Disclosure-Rangfolge, nicht still der Produktumfang.
+
 ## 2. Sonic Object Map und Zustandsautorität
 
 Jede Bedienung muss erkennen lassen, welches Objekt betroffen ist, wie weit die
@@ -119,7 +152,7 @@ Wirkung reicht und wer den bestätigten Zustand besitzt.
 |---|---|---|---|---|
 | Projekt | In welchem musikalischen Zusammenhang arbeite ich? | Projekt | persistenter Gen Main-State | Projektidentität, bestätigte Mitglieder, führendes Gen |
 | Session/Verbindung | Welche Instanzen gehören jetzt zusammen? | Session-Epoche | transienter Broker-Sessiongraph | Generation, Join-, Liveness- und Konfliktstatus |
-| Quelle/Probe | Welchen Bus höre oder untersuche ich? | eine Probeeq-Instanz | Pluginidentität plus bestätigte Mitgliedschaft | Hostname, sonst User-Label; nie Verbindungsreihenfolge als Ersatz |
+| Quelle/Probe | Welchen Bus höre oder untersuche ich? | eine Probeeq-Instanz | Pluginidentität plus bestätigte Mitgliedschaft | hostgelieferter Busname, sonst User-Label; nie Verbindungsreihenfolge als Ersatz |
 | Messpunkt | Wo in der Kette wurde gemessen? | Instanz und Signalposition | Probe-Descriptor und Host-Capability | Position und Herkunft, nicht als vermuteter Routingsatz |
 | Passage | Auf welchen Musikabschnitt gilt die Aussage? | Zeitfenster/Fingerprint | Gen Main-State | Name/Markierung, Dauer, Vergleichbarkeit |
 | Messung | Was hat das Plugin jetzt beobachtet? | Quelle, Zeitfenster, DSP-Revision | Plugin-Snapshot | Wert, Einheit, Support, Alter, Coverage, Unsicherheit |
@@ -204,9 +237,11 @@ hinter verlusttoleranter Telemetrie verschwinden.
 **Bedienvertrag**
 
 - Jede Quelle hat einen einzigen, stabilen Auswahl- und Fokuspunkt.
-- Hostname hat Vorrang; fehlt er, trägt das gespeicherte User-Label. Herkunft
-  und Rückfall dürfen intern nachvollziehbar sein, aber der sichtbare Name darf
-  nicht flackern oder aus der Verbindungsreihenfolge erfunden werden.
+- Der hostgelieferte Busname hat Vorrang; fehlt er, trägt das gespeicherte
+  User-Label. Das Label bleibt begrenzter, untrusted Usertext und wird nie als
+  Pfad, Markup oder Hostwahrheit behandelt. Herkunft und Rückfall müssen
+  nachvollziehbar sein, aber der sichtbare Name darf nicht flackern oder aus
+  der Verbindungsreihenfolge erfunden werden.
 - Lautheit steht bei der Quelle, nicht in der EQ-Fläche. Wert, Einheit,
   Messstatus und Unsicherheit bilden gemeinsam ein Control-/Statusobjekt.
 - Missing, no signal, measuring, fresh, partial, stale, disconnected,
@@ -306,7 +341,7 @@ Fehler kehren beim lokalen Hörmarker fail-closed zum Committed-Signal zurück.
 - lokaler dynamischer Bandmodus mit dynamic_enabled, Range, Threshold,
   Attack, Hold und Release; priority_sidechain bleibt bis P8
   capability-gated;
-- minimumphasiger Float-Kern ohne Lookahead und mit 0 gemeldeten Samples
+- minimalphasiger Float-Kern ohne Lookahead und mit 0 gemeldeten Samples
   Latenz. Double wird nur bei deklarierter Capability und eigenen Goldens
   aktiv; FL meldet diese Capability derzeit unsupported;
 - vorallokierte DSP-Bänke, State, Automation, Revision, Undo und Neutralize;
@@ -334,8 +369,9 @@ Fehler kehren beim lokalen Hörmarker fail-closed zum Committed-Signal zurück.
   dynamischem Modus. Eine nicht verfügbare priority_sidechain wird vor P8
   weder als scheinbar bedienbare Quelle noch als toter Modus gezeigt.
 - Presets tragen Klanginhalt, nie instance_id, Zieladresse, Busname oder Label.
-- Ein unbekannter oder ungültiger neuerer State lädt neutral und erklärt den
-  Zustand; er wird nicht halb angewandt.
+- Ein unbekannter oder ungültiger neuerer State lädt den Audiopfad neutral,
+  erklärt den Zustand und bewahrt die Originalbytes verlustfrei read-only für
+  Rückweg oder spätere Migration; er wird nicht halb angewandt.
 
 ### 3.6 P7 / S29–31 und S31b — zentrale EQ-Bedienung
 
@@ -385,6 +421,14 @@ Message-Familie, ACK, Ablauf, Reconnect, Prozesskill und Verhältnis zur
 Basisrevision definieren. Der erste Klick darf nicht still als permanentes
 apply_transaction implementiert werden.
 
+**[O] Direkte Bearbeitung:** Der Plan bindet von Gen erzeugte Klangänderungen an
+Preview und explizites Apply, legt aber noch nicht vollständig fest, wie
+Band-Drag, Textwert, Preset-Load und Curve-Copy beim Loslassen beziehungsweise
+Bestätigen in Hold-Preview, 10-s-Kandidat und neue Revision übergehen. Bis P7
+diese gemeinsame Transaktionsabbildung festlegt, darf die Oberfläche weder ein
+sofortiges permanentes Schreiben noch einen bloß dekorativen Confirm-Schritt
+vortäuschen.
+
 **Remote-Wahrheit**
 
 - Full manual range ist verfügbar; das frühere spezielle ±3-dB-Remote-Limit
@@ -425,7 +469,7 @@ apply_transaction implementiert werden.
 - Richtung wird immer als benannte Beziehung gezeigt, nicht nur durch zwei
   Farben oder Kurven.
 - Das P8-Limit bleibt von der entfernten manuellen EQ-Reichweite getrennt:
-  Defaultmaximum 1,5 dB, harte Obergrenze 3 dB, sofern der technische Plan
+  Standardmaximum 1,5 dB, harte Obergrenze 3 dB, sofern der technische Plan
   nicht ausdrücklich geändert wird.
 - Sidechainverlust, falsche Kanalzahl oder unbekannte PDC fahren Reduction
   kontrolliert auf 0 und zeigen degraded/unsupported.
@@ -471,6 +515,12 @@ drittes Produkt und keine dritte tägliche Audiofläche.
 Die folgende Struktur ist eine **[A] Layout-Hypothese**, kein Pixelentwurf.
 Sie folgt ausschließlich Objektbesitz, Häufigkeit und Zustandswahrheit.
 
+Sie verweigert bewusst drei Gleichzeitigkeitspakete: keine vollständige
+Diagnose neben dem Hörhandgriff, keine Detailwerte aller Quellen neben dem
+ausgewählten Befund und keine Präzisionscontrols aller Bänder oder Ziele
+zugleich. Persistente Identität, hörbarer Zustand, Sicherheit und Recovery
+bleiben stehen; Details werden aus ihrem Besitzer heraus geöffnet.
+
 ### 4.1 Gen Fläche 1 — Quellen und Evidenz
 
 Die Fläche braucht vier funktionale Zonen:
@@ -502,19 +552,33 @@ Die Fläche braucht fünf funktionale Zonen:
 
 1. **Persistenter Zielkontext:** Master oder benannte Probeeq, Pairing,
    Capability und bestätigte Revision.
-2. **Dominante akustische Arbeitsfläche:** Spektrum, Gesamtcurve, Bänder,
-   zweite Vergleichscurve und belegte Maskierungszone.
+2. **Dominante akustische Arbeitsfläche:** Spektrum des aktuellen
+   Bearbeitungsziels, Gesamtcurve, Bänder, optional eine zweite benannte Curve
+   und die belegte Maskierungszone. Bei zwei Curves bleibt das Bearbeitungsziel
+   zusätzlich zu Farbe eindeutig; das Live-Spektrum gehört nur zu diesem Ziel.
 3. **Objektpräzision:** exakte Werte und Aktionen nur für die aktuelle
    Bandauswahl beziehungsweise Relation.
 4. **Globaler Klangzustand:** Bypass, Mix, Auto-Gain/Output, A/B,
-   Preset/Copy und Revision/History.
-5. **Transaktionslocus:** Hold, 10-s-Kandidat, Confirm, Reject/Revert und
-   Blocking-Grund.
+   Preset/Copy und Revision/History. Die Global-Sektion ist **[U]** im
+   Ruhezustand eingeklappt. **[A]** Aktive Abweichungen bleiben am Einstieg
+   sichtbar, damit das Einklappen keine Klangwahrheit versteckt.
+5. **Transaktionslocus:** das Proposal/Draft des aktuellen Ziels mit Hold,
+   10-s-Kandidat, Confirm, Reject/Revert und Blocking-Grund. Dieser Locus ist
+   in jeder EQ-Zielansicht direkt erreichbar.
 
 **[A] Disclosure-Regel:** Der akustische Arbeitsraum dominiert im Ruhezustand.
 Bandpräzision erscheint bei Auswahl, bleibt räumlich beim Bandkontext und
 verschwindet nach Deselect. Globale Zustände, aktiver Draft, Freeze,
 Automation und Preview dürfen dagegen nie spurlos eingeklappt sein.
+
+**[U] Zielwechsel:** Probeeq-Ziele folgen, soweit FL es belegt liefert, der
+Mixerreihenfolge. Der Master besitzt einen getrennten stabilen Einstieg und ist
+kein weiterer Schritt in der Sondenfolge. Das Mausrad wechselt die Sonde nur,
+wenn nichts per Klick markiert ist.
+
+**[A] Radbesitz:** Ein fokussiertes oder markiertes Präzisionscontrol soll das
+Rad für seinen eigenen Wert beanspruchen. Diese Konkretisierung des
+„nichts-markiert“-Falls braucht im Prototyp einen Fehlbedienungstest.
 
 ### 4.3 Probeeq kompakt
 
@@ -523,8 +587,9 @@ Immer erreichbar:
 - Instanzidentität und sichtbarer Name;
 - Messpunkt/Signalstatus;
 - Verbindung, Pairing und Capability;
-- bestätigter EQ-/Bypasszustand;
+- bestätigter EQ-Ein/Aus-Zustand und Bypass als zwei getrennte Wahrheiten;
 - klarer Hinweis, ob Automation oder Remote-Transaktion wirkt;
+- der eigene Instanz-Mix, sobald sein P6-Parametervertrag existiert;
 - sicherer lokaler Bypass beziehungsweise Neutralize-Rückfall.
 
 Nicht enthalten:
@@ -534,8 +599,9 @@ Nicht enthalten:
 - zweite abweichende Preset- oder Copy-Logik;
 - eine alternative Fernsteuerungswahrheit.
 
-Welche zusätzlichen lokalen Notfallaktionen neben Bypass/Neutralize nötig
-sind, bleibt **[O]** und wird aus P6/P7-Recoverytests entschieden.
+Welche zusätzlichen lokalen Notfallaktionen neben Instanz-Mix,
+Bypass/Neutralize nötig sind, bleibt **[O]** und wird aus
+P6/P7-Recoverytests entschieden.
 
 ### 4.4 Betriebswege
 
@@ -550,6 +616,7 @@ erreichbar sein.
 |---|---:|---:|---:|---:|
 | ausgewähltes Ziel und Eigentümer | ✓ |  |  |  |
 | Confirmed/Draft/Automation/Preview | ✓, wenn relevant |  | Details |  |
+| zweite Curve | nur wenn aktiv, mit Name und Edit-Ziel | ✓ | Sichtbarkeit | sonst verborgen |
 | Quelle, Frische, Missing/Invalid | ✓ an der Quelle |  | Provenienz |  |
 | Lautheit plus Unsicherheit | ✓ auf Fläche 1 |  | Supportdetails |  |
 | genaue Bandwerte |  | ✓ | numerischer Editor |  |
@@ -561,6 +628,7 @@ erreichbar sein.
 | AssistantStep | aktueller Schritt | ✓ | Verlauf/Resume |  |
 | Pairing/Securitydetail | Status | bei Fehler | ✓ |  |
 | Undo/Revert/Revision | verfügbare Recovery | ✓ | Verlauf |  |
+| Probeeq EQ-Ein/Aus, Bypass und Instanz-Mix | ✓ auf Probeeq, sobald technisch vorhanden |  | genaue Werte | Voll-Editor nie |
 | Unmask-Controls | nur bei Capability/Relation | ✓ | technische Details | sonst kein Control |
 | Linear Phase |  |  |  | dauerhaft nie |
 | Klaviatur/Tonnamen |  |  |  | dauerhaft nie |
@@ -574,6 +642,7 @@ erreichbar sein.
 | Quellenstatus | Quellenname | Freshness ohne Besitzer ist wertlos | globale Ampel ohne betroffene Quelle |
 | Lautheit/Unsicherheit | derselbe Quellenwert | Präzision ohne Vertrauensgrenze erzeugt Scheinsicherheit | Unsicherheit nur in Diagnoseansicht |
 | Bandpräzision | ausgewähltes Band/Curve | direkte und numerische Bedienung müssen dasselbe Objekt besitzen | permanenter Inspector mit unklarem Fokus |
+| EQ-/Analyzer-Skalen | jeweilige Curve, Einheit und Achse | Analyzerpegel und EQ-Gain teilen Fläche, aber nicht Bedeutung | eine unbeschriftete dB-Achse für beide Systeme |
 | Transaktionsaktion | Proposal/Draft und Ziel | Hören, Kandidat und Apply müssen dieselbe Revision meinen | primärer Button wechselt Position oder Ziel |
 | Revert/History | Confirmed-Revision | Rückweg braucht die referenzierte Klangwahrheit | generisches Undo ohne Scope |
 | Maskierungszone | zwei benannte Quellen und Finding | die Zone ist Belegdarstellung, kein Dekor | farbige Fläche ohne Richtung/Quelle |
@@ -604,14 +673,23 @@ Abbruch/Rückweg und native JUCE-Semantik.
   auseinanderlaufen.
 - Meter werden für Hilfstechnik entprellt und auf Abruf zusammengefasst.
   Kritische Zustände wie Disconnect oder sicherer Abbruch haben Vorrang.
-- Escape beendet den aktuellen flüchtigen Modus. Nach Dialog, Deselect,
-  Apply, Reject oder Fehler kehrt der Fokus zum auslösenden Objekt zurück.
+- Nichtkritische Hinweise, Updates oder Onboarding stehlen während Drag,
+  Preview, Vergleich oder Texteingabe weder Fokus noch Eingabe. Ein
+  scope-relevanter Sicherheits-, Verbindungs- oder Statefehler darf
+  unterbrechen, beendet die flüchtige Klangwirkung sicher und gibt den Fokus
+  anschließend an einen vorhersehbaren Besitzer zurück.
+- Escape beendet den obersten flüchtigen Modus. **[A]** Beim 10-s-Kandidaten
+  kehrt der Klang zu Confirmed zurück, ohne den darunterliegenden Draft oder das
+  Proposal still zu verwerfen; diese Detailsemantik bleibt Teil des offenen
+  P7-Vertrags. Nach Dialog, Deselect, Apply, Reject oder Fehler kehrt der Fokus
+  zum auslösenden Objekt zurück.
 
 ### 7.2 Primäre Handlungen
 
 | Handlung | Pointer | Tastatur/Präzision | Abbruch/Reset | Semantik und Antwort |
 |---|---|---|---|---|
-| Quelle wählen | Klick auf Quellenobjekt | Pfeile/Quick-Jump, Enter wählt | Escape zur vorigen Auswahl | Name, Messpunkt, Frische und Signalstatus |
+| Quelle wählen | Klick auf Quellenobjekt | Pfeile/Quick-Jump, Enter wählt | Escape schließt Quick-Jump; bestätigte Auswahl bleibt | Name, Messpunkt, Frische und Signalstatus |
+| EQ-Ziel wechseln | Klick auf stabilen Zielpunkt; Mausrad nur, wenn nichts markiert ist | nächstes/vorheriges Probeeq-Ziel; Master separat | Abbruch lässt das bisherige Ziel aktiv | Zielname, Writer, Pairing, Revision und Bearbeitungsstatus |
 | Quelle benennen | Rename-Aktion | Textfeld, Enter speichert | Escape verwirft | Textfeld mit Herkunft Host/User; Länge validieren |
 | Passage wählen/markieren | Zeitbereich/Mark action | Start/Ende numerisch oder transportbezogene Aktion | Cancel entfernt Draft | Bereich, Fingerprint und Comparability |
 | Intent setzen | direkte Rollen-/Prioritätswahl | Radiogruppe/Combobox, Richtung separat | Reset auf ungesetzt | Funktion, Schutz, scope und Konflikte |
@@ -622,12 +700,12 @@ Abbruch/Rückweg und native JUCE-Semantik.
 | Banddynamik | Dynamic-Toggle am ausgewählten Band | Toggle plus Range/Threshold/Attack/Hold/Release-Felder | Disable/Reset | Aktivmarker und Gain-Bewegung; priority_sidechain erst bei Capability |
 | Schutzbereich setzen | Range-Handles | zwei numerische Endpunkte | Reset/Cancel | Lower/Upper, Gültigkeit und betroffene Aktion |
 | Preview halten | Press-and-hold | Key-down/up auf fokussierter Aktion | Release/Fokusverlust/Timeout | Momentary action, Lease und Ziel |
-| 10-s-Kandidat starten | Klick | Enter/Space activation | Reject/Escape/Expiry | Candidate state, Restzeit, Baseline |
+| 10-s-Kandidat starten | Klick | Enter/Space activation | **[A]** Escape/Expiry → Confirmed, Draft bleibt; Reject verwirft bewusst | Candidate state, Restzeit, Baseline; Detailsemantik noch **[O]** |
 | Kandidat bestätigen | zweiter Klick am stabilen Locus | Enter auf Confirm | Revert danach | pending audio, active, confirmed/applied values |
 | Freeze | Toggle/Hold | Space toggles; separate temporary action | Off/Release | Toggle state; Frozen ist dauerhaft markiert |
 | Analyzer einstellen | Panel/Popover | Tab/Arrows/Textwerte | Reset display defaults | ausschließlich Display state |
-| Preset laden/sichern | Browser/Liste | Suche, Pfeile, Enter | Cancel; Undo nach Load | Presetname/Version; Ziel separat |
-| Curve kopieren | Copy-Aktion | Quelle und Ziel als zwei Felder, Confirm | Cancel/Undo | Zusammenfassung: source → target; Identität bleibt |
+| Preset laden/sichern | Browser/Liste | Suche, Pfeile, Enter | Cancel; bestätigter Load erhält Revision/Rückweg | Presetname/Version; Ziel separat; Load-Transaktion noch **[O]** |
+| Curve kopieren | Copy-Aktion | Quelle und Ziel als zwei Felder, Confirm | Cancel; bestätigte Copy erhält Revision/Rückweg | Zusammenfassung: source → target; Identität bleibt; Transaktion noch **[O]** |
 | Unmask konfigurieren | Relation/Range/Controls | gerichtete Auswahl, numerische Werte | Disable/Revert | Capability, Richtung, Limit, Reduction, Fallback |
 
 ### 7.3 Offene Accessibility-Prüfung der Hold-Geste
@@ -681,7 +759,7 @@ visueller Stil.
 
 **Transfer zu Nakama [A]**
 
-- Hostname plus ehrlicher Fallback, Suche/Quick-Jump und progressive
+- hostgelieferter Busname plus ehrlicher Fallback, Suche/Quick-Jump und progressive
   Detailstufen für viele Quellen.
 - Akustische Fläche im Ruhezustand, objektnaher Präzisionsweg bei Auswahl.
 - Freeze/Spectrum Grab mit sichtbarem temporärem Modus und persistentem
@@ -889,7 +967,9 @@ Quellen: [Metric AB](https://www.plugin-alliance.com/products/metric-ab),
 - AI-generierte Klangziele oder Erklärungen;
 - automatische Gruppenänderung beim bloßen Umordnen;
 - Linear Phase, Piano-/Notenanzeige oder nicht geplante DSP-Modi;
-- Apply direkt aus einer Analyseanzeige;
+- kein permanentes Apply aus einer bloßen Analyseanzeige ohne benanntes
+  Proposal, Ziel, Baseline, Kandidatenstufe und Bestätigung; der entschiedene
+  Einstieg von Fläche 1 in genau diese Transaktion bleibt erlaubt;
 - Farbcodierung als alleinige Objekt- oder Fehleridentität;
 - ein lokaler Probeeq-Voll-Editor;
 - eine unverbindliche Collision-Visualisierung ohne Nakama-Evidence;
@@ -911,8 +991,9 @@ Windows und FL Studio zu beweisen.
 | Verbindung | unavailable / authenticating / half-open / joined / degraded / disconnected / incompatible | Status, betroffene Richtung, Reconnect-/Repairweg |
 | Mitgliedschaft | discovered / unclassified / confirmation required / joined / duplicate / tombstoned | keine automatische falsche Zuordnung |
 | Proposal | unavailable / more data / ready / stale / protection conflict / manual only | Grund und nächster kleinster Schritt |
-| Preview | arming / audible_ready / held / expired / blocked / aborted | Committed bleibt sichere Basis |
-| Apply | candidate / accepted_pending_audio / active / confirmed / clamped / conflict / reverted | angewandte Werte und Revision, nicht nur Hash |
+| Hold-Preview | arming / audible_ready / held / releasing / expired / blocked / aborted | Committed bleibt sichere Basis; Release ist sichtbar |
+| 10-s-Kandidat | ready / active / expiring / expired / rejected / conflict | Baseline, Kandidaten-ID, Restzeit und eindeutiger Rückfall |
+| Apply | accepted_pending_audio / active / confirmed / clamped / conflict / reverted | angewandte Werte und Revision, nicht nur Hash |
 | DSP | confirmed / bypassed / automation overlay / invalid state / neutral fallback | tatsächlich hörbarer Zustand |
 | Vergleich | unarmed / collecting / comparable / degraded / incomparable / judged | Passage, Match, Alignment, Guardrails |
 | Unmask | unsupported / routing incomplete / ready / active / sidechain lost / releasing to zero | Richtung, Capability, Reduction und Fallback |
@@ -941,16 +1022,31 @@ Die beschlossenen Skalierungsstufen 100, 125, 150 und 200 Prozent bleiben ein
 Implementierungsvertrag; Layout darf bei höherem Scale keine Funktion
 verschwinden lassen.
 
+Vor einem Layout werden reservierter Ziel-/Statusraum, verbleibende akustische
+Evidenzfläche und die logischen Rechtecke aller Primärziele im 760×430-Raum
+gemessen. Die 24×24 CSS-Pixel aus
+[WCAG 2.2, Target Size (Minimum)](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)
+dienen höchstens als dokumentierter Web-Risikovergleich, nicht als ungeprüftes
+Gesetz für JUCE. Entscheidend sind reale logische und physische Größe, Abstand,
+Präzisionsweg und äquivalenter Tastaturpfad in FL Studio bei allen
+Skalierungsstufen.
+
 ### 11.2 Reaktion
 
-- Pointer-/Tastaturinput aktualisiert Griff, Wert und Curve im selben
-  sichtbaren Frame.
-- Spektrum und Messdaten repainten nur bei neuer Revision; statische und
-  dynamische Ebenen werden getrennt invalidiert.
-- Im Stillstand entsteht keine versteckte Dauer-Paintlast.
-- Unter 16/32 Instanzen darf UI-Last die Audiofrist nicht gefährden. Bei
-  Überlast wird Analyse reduziert und als stale/degraded markiert; Audio
-  bleibt unverändert.
+- Pointer-/Tastaturinput bestätigt die Eingabe im selben sichtbaren Frame;
+  Griff, Wert und Curve bleiben dem hörbaren beziehungsweise
+  hostautoritativen Zustand zuordenbar.
+- Autoritative Spektrum- und Messwerte ändern sich nur mit einer neuen
+  Datenrevision. Eine rein visuelle Interpolation darf zwischen Revisionen
+  zeichnen, wird aber nie als neue Messung ausgegeben und nie auf
+  Parameterwerte angewandt.
+- Statische und dynamische Ebenen sowie Stillstandslast werden im Release-Build
+  gemessen. Der Blueprint schreibt vor diesem Profiling weder Cache- noch
+  Repaintarchitektur vor; im Stillstand darf keine unbegründete Dauerlast
+  verbleiben.
+- Im Lastfall mit 16 sichtbaren Quellen und bis zu 32 verbundenen Instanzen
+  darf UI-Last die Audiofrist nicht gefährden. Bei Überlast wird Analyse
+  reduziert und als stale/degraded markiert; Audio bleibt unverändert.
 - Gemessen werden Release-Build in FL Studio, alle Skalierungsstufen,
   Mehrinstanzlast, Stillstand, Fensterwiederherstellung und schlechtester
   Frame/Perzentile statt nur Durchschnitt.
@@ -960,7 +1056,8 @@ verschwinden lassen.
 ### 12.1 Gen Fläche 1
 
 - 0, 1, 16 sichtbare und 32 verbundene Quellen;
-- fehlender Hostname, wechselnder Hostname, langes User-Label, gleiche Namen;
+- fehlender oder wechselnder hostgelieferter Busname, langes User-Label,
+  gleiche Namen;
 - fresh, partial, stale, disconnected, suspended, invalid gleichzeitig;
 - Lautheit ohne Signal, mit hoher Unsicherheit und nach Seek/Loop/Drop;
 - zwei Projekte und doppelte Instanz-ID;
@@ -976,6 +1073,7 @@ verschwinden lassen.
 - Float-Pfad aktiv; fehlende Double-Capability erzeugt keinen Modusschalter;
 - direkte Manipulation und identisches Text-/Tastaturergebnis;
 - zwei Curves ohne Farbe, bei Farbsehschwäche und im Screenshot;
+- EQ-Gain- und Analyzerpegel-Skalen ohne Farbe und bei 760×430 eindeutig;
 - Spectrum Grab ohne freien Slot oder mit Schutzkonflikt;
 - Freeze aktiv nach Panel-Close;
 - Displayeinstellungen ändern keinen Finding-Test;
@@ -983,6 +1081,12 @@ verschwinden lassen.
 - Ablauf, Protection-Reject, zulässiger Werte-Clamp, stale Revision,
   Duplicate ACK und Revert;
 - Preset alt/neu/ungültig; Copy mit identischem Quelle/Ziel und Zielverlust;
+- Drag, Texteingabe, Preset und Copy durchlaufen nach Vertragsabschluss
+  dieselbe ehrliche Draft/Kandidat/Confirmed-Autorität;
+- nichtkritischer Hinweis während Drag/Preview/Textwert stiehlt keinen Fokus;
+  Disconnect oder Statefehler beendet nur den betroffenen flüchtigen Pfad;
+- wiederholte Controls behalten in idle, hover, pressed, selected und disabled
+  dasselbe Layoutrechteck und denselben gelernten Zielort;
 - mehrere Plugininstanzen, kleine Blocks und UI-Last.
 
 ### 12.3 Probeeq kompakt
@@ -990,7 +1094,8 @@ verschwinden lassen.
 - Broker nicht gestartet, inkompatibel, half-open und reconnect;
 - unpaired, paired, Remote-Preview und bestätigter DSP;
 - Hostautomation widerspricht Gen-Draft;
-- Bypass/Neutralize ohne Broker;
+- EQ-Ein/Aus, Bypass, Instanz-Mix und Neutralize ohne Broker, ohne ihre
+  Zustände zu vermischen;
 - Projekt-Reload mit gültigem, altem und unbekanntem State;
 - Editor geschlossen während Preview.
 
@@ -1008,18 +1113,36 @@ verschwinden lassen.
 
 ## 13. Definition of Ready und Definition of Done für UI-Tickets
 
-### Ready
+### Ready für Zustandsentwurf
 
-Eine Funktion darf erst visualisiert werden, wenn vorhanden sind:
+Eine Funktion darf als Wireframe oder Zustandsblatt untersucht werden, wenn:
 
-1. Objekt, Scope und autoritativer Writer;
-2. Capability und ehrlicher Unsupported-Fallback;
-3. Zustandsautomat einschließlich Invers- und Fehlerpfad;
-4. persistente/transiente Felder samt Versionierung;
-5. Testfixtures für Worst-Case-Zustände;
-6. englische Arbeitsbegriffe ohne erfundene Produktzusage;
-7. Pointer-, Tastatur-, Präzisions- und Accessibility-Weg;
-8. messbarer Reaktions- und Audio-Sicherheitsvertrag.
+1. menschlicher Job, Objekt, Scope und bekannte Autorität benannt sind;
+2. belegte Festlegung, Hypothese und offene Vertragsstelle getrennt sind;
+3. Erfolgs-, Invers-, Fehler- und unavailable-Zustand mindestens als ehrliche
+   Lücke darstellbar sind;
+4. persistente, kontextuelle, transiente und exceptional Informationen
+   klassifiziert sind;
+5. Zielgröße und schlimmster wahrer Zustand feststehen;
+6. der Entwurf keine fehlende Capability und keinen noch offenen Handgriff als
+   funktionsfähiges Control ausgibt.
+
+Ein frühes Zustandsblatt darf also eine Vertragslücke sichtbar machen. Es darf
+nicht von bereits gebauten Fixtures abhängen; sonst könnte es die Lücke erst
+zeigen, nachdem Technik und UI sie schon still entschieden haben.
+
+### Ready für native Implementierung
+
+Vor produktivem UI-Code müssen zusätzlich vorhanden sein:
+
+1. Capability und ehrlicher Unsupported-Fallback;
+2. abgeschlossener Zustandsautomat einschließlich Invers- und Fehlerpfad;
+3. persistente/transiente Felder samt Versionierung;
+4. Testfixtures für Worst-Case-Zustände;
+5. englische Arbeitsbegriffe ohne erfundene Produktzusage;
+6. Pointer-, Tastatur-, Präzisions- und Accessibility-Weg;
+7. messbarer Reaktions- und Audio-Sicherheitsvertrag;
+8. abgenommener Zustandsentwurf und geklärte Quellenautorität.
 
 ### Done
 
@@ -1081,8 +1204,9 @@ Schema:
 9. **[D] P9-Textpflege:** Der Produktumfang ist mit zwei Bundles plus Broker
    entschieden; nur der alte Drei-Bundle-Text ist zu bereinigen.
 10. **[O] Vertragliche Nutzlasten:** state_report.dsp,
-    command_ack.applied_dsp, EQ-Betriebszustand, Hostname/-index und
-    Contribution sind derzeit reserviert, nicht fertig nutzbar.
+    command_ack.applied_dsp, EQ-Betriebszustand,
+    probe_descriptor.host_bus_name/host_mixer_index und Contribution sind
+    derzeit reserviert, nicht fertig nutzbar.
 11. **[O] S31b-Quellenkonflikt:** PLAN-STAND verweist für die sichtbare
     Umsetzung noch auf frühere Figma-/PNG-Stände. Vor Beginn von S31b muss
     dieser Verweis in einem eigenen Planänderungssatz auf den Blueprint plus
@@ -1090,6 +1214,16 @@ Schema:
 12. **[O] 10-s-Kandidatenvertrag:** Kandidaten-ID, Timer, Message, ACK,
     Reconnect, Kill und Ablauf sind vor P7-UI zu spezifizieren; preview_begin
     und persistentes apply_transaction reichen dafür heute nicht.
+13. **[O] Router-Abgleich:** DESIGN.md und UX-CONTRACT.md tragen noch
+    Figma-/Golden-, Raster- und Prototypverträge des Stands vor dem
+    Funktionsneustart. Vor dem nächsten Prototyp werden ihre weiter geltenden
+    Verhaltensinvarianten vom überholten Layout getrennt und mit diesem
+    Blueprint abgeglichen.
+14. **[O] Direkte Edit-Transaktion:** Band-Drag, Textwert, Preset-Load und
+    Curve-Copy brauchen eine gemeinsame, widerspruchsfreie Abbildung auf
+    Preview, 10-s-Kandidat, Confirmed, Host-Geste, Cancel und Revert. Die
+    Drei-Stufen-Geste für Proposals beantwortet diesen Detailvertrag noch
+    nicht vollständig.
 
 Diese Punkte sind kein Freibrief für Platzhaltercontrols. Bis zur technischen
 oder User-Entscheidung bleibt die jeweilige Funktion ehrlich unavailable oder
@@ -1102,13 +1236,27 @@ außerhalb der Oberfläche.
 | Quelle | Verwendung |
 |---|---|
 | [CLAUDE.md](../../CLAUDE.md) | Produktidentität, Zwei-Flächen-Modell, harte Audio-/Hostinvarianten |
+| [design/LIES-MICH.md](../LIES-MICH.md) | Funktionsneustart, Abgrenzung von früheren visuellen Ständen |
+| [UX-CONTRACT.md](../../UX-CONTRACT.md) | bereits formulierter Verhaltensvertrag und zu bereinigende Prototypbindung |
+| [DESIGN.md](../../DESIGN.md) | 760×430-/Skalierungsvertrag und zu bereinigende frühere visuelle Autorität |
 | [PLAN-STAND.md](../../docs/PLAN-STAND.md) | gerechneter Status, Tickets und aktuelle Nachträge |
 | [FL-Nakama-Sonden-Design-Entwurf.md](../../docs/FL-Nakama-Sonden-Design-Entwurf.md) | technische Funktionen, Objekte, Zustände und P2–P9 |
 | [bauaufteilung-sonden.md](../../docs/bauaufteilung-sonden.md) | Ticketgrenzen und Verantwortungen |
 | [plugin-wissen.md](../../docs/plugin-wissen.md) | heutiger Codezustand und noch nicht verdrahtete Pfade |
+| [SONDE-011.md](../../docs/beweise/SONDE-011.md) | belegte Phase-A-Grenze und offener Phase-B-/Ticketstatus |
 | [fragen.json](../../docs/plan/fragen.json) | aktuelle Funktionsentscheide und offene Usertermine |
 
-### 16.2 Wissensarchiv
+### 16.2 Bindende User-Entscheide
+
+| Quelle | Verwendung |
+|---|---|
+| [Arbeitsfluss EQ-Zentrale, 23.08.2026](../abnahmen/2026-08-23-interview-struktur.md) | häufigster Zielwechsel, drei Stufen, zwei Curves, Master separat, Probeeq-Rückfall, Mix und globale Disclosure |
+| [Auto-Gain, 24.08.2026](../abnahmen/2026-08-24-auto-gain-schalter.md) | Schalter, Standard aus, sichtbarer Output-Ausgleich |
+| [Rollenpräzisierung, 27.08.2026](../abnahmen/2026-08-27-arbeitsnamen-und-probeeq-doppelrolle.md) | zwei Gen-Flächen, Probeeq-Doppelrolle, kein lokaler Voll-Editor |
+| [Suna-Stilllegung, 28.08.2026](../abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md) | zwei Produktbundles plus Broker |
+| [Marktstandard-Fragen, 30.08.2026](../abnahmen/2026-08-30-fragenrunde-marktstandard.md) | Busnamen-Fallback, Maskierungszone, Spectrum Grab/Freeze/Display, kein Piano/Linear Phase, Presets und Copy |
+
+### 16.3 Wissensarchiv
 
 Das Archiv liefert Transferwissen, nicht Produktwahrheit.
 
@@ -1126,22 +1274,25 @@ Das Archiv liefert Transferwissen, nicht Produktwahrheit.
 | w-2026-08-27-crashfester-store-und-outbox | mehrfach-belegt | [Eintrag](../../wissen/engineering/2026-08-27-crashfester-store-und-outbox.md) | pending/applied, Idempotenz und Crash-Recovery |
 | w-2026-08-27-json-vertraege-vor-dem-parser | mehrfach-belegt | [Eintrag](../../wissen/engineering/2026-08-27-json-vertraege-vor-dem-parser.md) | invalid/incompatible statt stiller Defaults |
 
-### 16.3 Marktquellen
+### 16.4 Marktquellen
 
 Alle Marktquellen wurden am 31.08.2026 in offiziellen Herstellerseiten oder
 Handbüchern geprüft. Ableitungen stehen in Abschnitt 8; sie sind keine
 Behauptung über Herstellerintention oder Marktanteil.
 
-## 17. Nächster Designschritt
+## 17. Nächster Designschritt nach dem Quellenabgleich
 
-Dieser Blueprint ist die Eingangsspezifikation für neue Wireframes. Der nächste
-Schritt ist nicht, ein früheres Bild zu korrigieren, sondern drei frische,
-graue Zustandsblätter aus denselben Objekten zu bauen:
+Dieser Blueprint ist die Eingangsspezifikation für neue Zustands-Wireframes.
+Vor ihrem Bau werden die offenen Quellenpunkte 11 und 13 aus Abschnitt 15
+bereinigt. Danach ist der nächste Schritt nicht, ein früheres Bild zu
+korrigieren oder die abgeschlossene allgemeine Graybox-Phase neu zu starten,
+sondern drei gezielte, graue Funktionsblätter aus denselben Objekten zu bauen:
 
 1. Gen Fläche 1: Ruhezustand, 16-Quellen-Grenze und ehrlicher Degraded-Fall.
 2. Gen Fläche 2: Confirmed, Bandfokus und Preview/10-s/Confirm-Transaktion.
 3. Probeeq kompakt: verbunden, Brokerverlust und lokaler sicherer Rückfall.
 
 Erst wenn Objektbesitz, Fokus, Tastaturweg und Worst-Case-Zustände darin
-passen, beginnt die visuelle Sprache. Stilfragen werden dann getrennt von
-Funktionsfragen entschieden.
+passen, wird die neue visuelle Richtung in einem eigenen User-Schritt
+festgelegt. Stilfragen bleiben getrennt von Funktionsfragen; dieser Blueprint
+entscheidet sie nicht.

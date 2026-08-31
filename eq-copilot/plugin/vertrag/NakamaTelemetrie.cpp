@@ -8,7 +8,7 @@
 
 namespace nakama::telemetrie
 {
-namespace fb = evenacadia::nakama::v3;
+namespace fb = ::nakama::v3;
 
 // ------------------------------------------------------------------ Verstoss
 

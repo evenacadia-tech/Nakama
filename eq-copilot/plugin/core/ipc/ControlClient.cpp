@@ -140,7 +140,7 @@ std::string instanceAdresseAusState (const std::string& instanceId)
     if (instanceId.empty() || istHex32 (instanceId))
         return instanceId;
 
-    static constexpr char domain[] = "evenacadia.nakama.v3.instance-address.v1";
+    static constexpr char domain[] = "nakama.v3.instance-address.v1";
     std::vector<std::uint8_t> eingang;
     eingang.reserve (sizeof (domain) - 1 + 1 + 8 + instanceId.size());
     eingang.insert (eingang.end(), domain, domain + sizeof (domain) - 1);

@@ -66,7 +66,7 @@ void fahreBandStereoRoundtrip()
         ? nakama::telemetrie::pruefe (puffer.data(), puffer.size())
         : juce::Array<nakama::telemetrie::Verstoss> {};
     const auto* batch = gebaut
-        ? evenacadia::nakama::v3::GetFeatureBatch (puffer.data()) : nullptr;
+        ? nakama::v3::GetFeatureBatch (puffer.data()) : nullptr;
     const auto* stereo = batch != nullptr && batch->eintraege()->size() == 1
         ? batch->eintraege()->Get (0)->frame()->band_stereo() : nullptr;
     pruefe (gebaut && verstoesse.isEmpty() && stereo != nullptr

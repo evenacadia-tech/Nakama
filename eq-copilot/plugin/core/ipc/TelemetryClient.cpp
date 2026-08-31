@@ -17,7 +17,7 @@ namespace nakama::ipc
 {
 namespace
 {
-namespace fb = evenacadia::nakama::v3;
+namespace fb = ::nakama::v3;
 /// Frist des Leerlauf-LESEVORGANGS, wenn die Schleuse leer ist. Er hat den
 /// Schlaf ersetzt: dieselbe Wartezeit, aber er sieht, wenn der Broker die
 /// Pipe schliesst. Bei 10 Hz Livekadenz (§33.2) ist die Frist reichlich;

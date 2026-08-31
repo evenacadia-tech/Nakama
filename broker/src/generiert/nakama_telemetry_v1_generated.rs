@@ -4,9 +4,6 @@ extern crate alloc;
 
 
 #[allow(unused_imports, dead_code)]
-pub mod evenacadia {
-
-#[allow(unused_imports, dead_code)]
 pub mod nakama {
 
 #[allow(unused_imports, dead_code)]
@@ -2042,5 +2039,4 @@ pub fn finish_size_prefixed_feature_batch_buffer<'a, 'b, A: ::flatbuffers::Alloc
 }
 }  // pub mod v3
 }  // pub mod nakama
-}  // pub mod evenacadia
 

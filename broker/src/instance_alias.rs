@@ -10,7 +10,7 @@ use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 
-const DOMAIN: &[u8] = b"evenacadia.nakama.v3.instance-address.v1";
+const DOMAIN: &[u8] = b"nakama.v3.instance-address.v1";
 
 fn ist_hex32(wert: &str) -> bool {
     wert.len() == 32
@@ -327,7 +327,7 @@ mod tests {
     #[test]
     fn instance_alias_target_recomputed_and_matched() {
         let original = "11111111-2222-3333-4444-555555555555";
-        let wire = "63de6caeedaa39f91a6e35a64de7fd7d";
+        let wire = "239953e95f122e18abb34ba1add46f9e";
         assert!(ziel_passt(original, wire));
         assert!(!ziel_passt("abcdef", wire));
     }

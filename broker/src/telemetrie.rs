@@ -21,7 +21,7 @@
 //! Bitmap ist `ceil(n/8)` Bytes. Ein Vertrag, der sie nur in seinen
 //! Kommentaren traegt, ist keiner.
 
-use crate::generiert::nakama_telemetry_v1_generated::evenacadia::nakama::v_3 as fb;
+use crate::generiert::nakama_telemetry_v1_generated::nakama::v_3 as fb;
 use std::collections::BTreeSet;
 
 /// Ein einzelner Vertragsverstoss.

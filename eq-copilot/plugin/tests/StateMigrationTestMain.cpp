@@ -905,7 +905,7 @@ int main (int argc, char* argv[])
                 "instance_address_alias_vectors", juce::String (vektorenOk) + "/6");
 
         const std::string legacy = "11111111-2222-3333-4444-555555555555";
-        const std::string wire = "63de6caeedaa39f91a6e35a64de7fd7d";
+        const std::string wire = "239953e95f122e18abb34ba1add46f9e";
         pruefe (nakama::ipc::instanceAliasZielPasst (legacy, wire),
                 "instance_alias_target_recomputed_and_matched");
         pruefe (! nakama::ipc::instanceAliasZielPasst (legacy,

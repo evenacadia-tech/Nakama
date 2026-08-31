@@ -32,7 +32,7 @@
 // sich. Die Formatidentitaet traegt `file_identifier`; die Feldevolution traegt
 // die id-Disziplin oben. Ein drittes Versionsfeld waere Zeremonie.
 
-namespace evenacadia.nakama.v3;
+namespace nakama.v3;
 
 // Vier Bytes an Offset 4 jedes Puffers. Ein Leser, der einen fremden Puffer
 // bekommt, sieht das VOR dem ersten Feldzugriff. Beide Beine pruefen ihn.

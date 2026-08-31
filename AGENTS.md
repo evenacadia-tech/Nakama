@@ -99,18 +99,25 @@ irreführende UI-Zustände lesen.
 Für Designaufgaben gilt zusätzlich diese Reihenfolge:
 
 1. `design/LIES-MICH.md` lesen.
-2. Die jüngste passende Abnahme unter `design/abnahmen/` lesen.
-3. Die drei Bilder unter `design/assets/rework-basis-2026-08-25/` samt
-   `design/abnahmen/2026-08-25-rework-referenz-drei-designs.md` als aktuelle
-   visuelle Wahrheit in progress behandeln.
-4. Strukturfragen zuerst als Skizze nach
-   `design/abnahmen/2026-08-25-skizzen-vor-figma.md` klären.
+2. Für die seit 31.08.2026 laufende funktionale UI-Ableitung zuerst
+   `design/docs/funktions-und-bedien-blueprint.md` und
+   `design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`
+   lesen; danach nur die jüngste passende Detailabnahme.
+3. Frühere Figma-Nodes, Exporte und die drei Rework-Bilder vom 25.08. sind für
+   diese designneutrale Phase Verlauf. Sie dürfen keine Raster-, Farb-,
+   Material- oder Positionsentscheidung still ergänzen. Eine neue visuelle
+   Richtung beginnt erst nach ausdrücklichem User-Wechsel in diese Phase.
+4. Genau eine echte, technisch noch offene UI-Architekturfrage stellen. Nach
+   jeder Antwort zuerst die laufende Skizze und die Abnahme aktualisieren,
+   bevor die nächste Frage folgt.
 5. Bei Audio-Plugin-Oberflächen den Skill `audio-plugin-ux` verwenden.
 
-Frühere Figma-Nodes und Exporte sind Verlauf. Keine geparkte Designrichtung und keine
-eigene Stilsuche ungefragt reaktivieren. Sichtbare Elemente müssen entweder einen
-Handgriff ausführen oder einen ehrlichen Zustand anzeigen. Erst eine dokumentierte
-Abnahme darf in den Produktcode gespiegelt werden.
+Technische Grenzen vor der Frage aus aktuellem Code, Tests und Verträgen
+ableiten; sie sind keine Geschmacksentscheidung des Users. Keine geparkte
+Designrichtung und keine eigene Stilsuche ungefragt reaktivieren. Sichtbare
+Elemente müssen entweder einen Handgriff ausführen oder einen ehrlichen Zustand
+anzeigen. Erst eine dokumentierte Abnahme darf in den Produktcode gespiegelt
+werden.
 
 ## Sprache und Abschluss
 

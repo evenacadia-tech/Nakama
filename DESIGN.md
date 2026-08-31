@@ -45,11 +45,23 @@ components:
 
 # Nakama Gen Design
 
-## Overview
+## Status after the functional restart
 
-Nakama Gen is a compact studio instrument, not a generic dashboard. Its visual north star is the current dark Figma unibody: one continuous matte-polycarbonate shell, flush smoked glass, engraved-looking typography and restrained wine-red emitted light. The memorable signature is the material continuity around a dense measurement surface. Restraint wins everywhere else: no floating card collection, no decorative status lights, no neon cyberpunk treatment and no unrelated visual metaphor.
+This file records the visual system of the pre-31-August-2026 simulator. It is
+retained as historical implementation and comparison context, not as the
+layout, color, material or position authority for the current functional UI
+architecture. The current target is routed through
+`design/LIES-MICH.md`, `design/docs/funktions-und-bedien-blueprint.md` and the
+newer dated files under `design/abnahmen/`. A new visual system begins only
+after an explicit user decision to enter that phase.
 
-The visible-pixel authority is the two user exports registered in `design/prototyp/contract/asset-manifest.json`. Figma remains the editable source for future visual changes. This file records the accepted design system; it does not outrank a newer, explicitly approved Figma revision.
+## Historical overview
+
+The prior Nakama Gen direction described a compact studio instrument rather
+than a generic dashboard. Its former visual north star was the dark Figma
+unibody and the two exports registered in
+`design/prototyp/contract/asset-manifest.json`. The sections below document
+that legacy simulator contract and must not silently supply the new design.
 
 The surface is a product register. It is optimized for a producer working inside FL Studio at a fixed 760×430 logical size. Product text is English; surrounding prototype tooling is German.
 

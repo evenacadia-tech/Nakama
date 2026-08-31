@@ -26,6 +26,17 @@ unten dokumentierten früheren visuellen Ständen. Diese bleiben Verlauf und
 dürfen den Blueprint nicht still ergänzen. Eine neue visuelle Vorgabe entsteht
 erst in einem eigenen Folgeschritt.
 
+## Laufende technische UI-Architektur vom 31.08.2026
+
+Arbeitsmodus, bestätigter Strukturstand und die bewusst offenen nächsten
+Entscheide stehen in
+[`abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`](abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md).
+Für diese Phase gilt: genau eine echte UI-Architekturfrage nach der anderen,
+technische Grenzen vorher selbst aus aktuellen Quellen ableiten und nach jeder
+Antwort zuerst die sichtbare Skizze sowie die Abnahme aktualisieren. Farben,
+Material und visuelle Feinheiten bleiben bis zum ausdrücklichen Wechsel der
+Phase außen vor.
+
 ## Dein Job
 
 **Historischer visueller Arbeitsstand bis zum Funktionsneustart vom
@@ -133,12 +144,13 @@ historischen Kriterium.
 
 ## Harte Regeln (nicht verhandelbar)
 
-1. **Assettruhe zuerst.** `assets/` ist die erste Anlaufstelle vor JEDER
-   Gestaltungsentscheidung; aktuell sind die drei Bilder unter
-   `assets/rework-basis-2026-08-25/` ihr wichtigster Inhalt. Was dort liegt,
-   wird verwendet — nicht neu
-   erfunden. Fehlt etwas, den User fragen statt improvisieren. Die Truhe
-   wird nie ungefragt verändert.
+1. **Aktuelle Phase zuerst.** Für die funktionale UI-Architektur seit
+   31.08.2026 sind Blueprint und neue datierte Abnahmen die erste
+   Anlaufstelle. `assets/` und die drei Bilder unter
+   `assets/rework-basis-2026-08-25/` bleiben unverändert als Verlauf erhalten,
+   liefern in dieser Phase aber weder Layout noch Stil. Erst nach einem
+   ausdrücklichen Wechsel in die visuelle Phase wird die dann vom User
+   benannte Assetquelle wieder verbindlich.
 2. **Ein Schritt pro Runde.** Genau eine Frage öffnen, am lebenden Blatt
    zeigen, User-Urteil einholen, festhalten — dann die nächste. Keine
    Groß-Lieferungen mit zehn gleichzeitigen Entscheidungen.
@@ -169,16 +181,15 @@ historischen Kriterium.
 6. **Ehrliche Blätter.** In 2 Sekunden ablesbar ist der Maßstab. Nie
    einen Zustand zeigen, den die Spezifikation nicht kennt. Demo-Daten
    sind erlaubt, aber realistisch UND sichtbar als Demo gekennzeichnet.
-7. **Kein Kontext-Import aus dem Verlauf.** Für Gestaltung zählen nur
-   dieser Ordner, die drei aktuellen Rework-Bilder und neuere ausdrückliche
-   User-Entscheide. Die übrigen Design-Orte
-   des Repos sind Verlauf, kein Referenzmaterial: `docs/archiv/`,
-   `eq-copilot/design/archive/`, die geparkte Prisma-Studie
+7. **Kein Kontext-Import aus dem Verlauf.** Für die aktuelle
+   Funktionsarchitektur zählen der Blueprint und neuere ausdrückliche
+   User-Entscheide. Die drei Rework-Bilder, frühere Figma-Stände sowie
+   `docs/archiv/`, `eq-copilot/design/archive/`, die geparkte Prisma-Studie
    (`eq-copilot/design/prisma-studie/`) und das Material-Kit-Provisorium
-   (`eq-copilot/design/` Wurzel). Aus ihnen wird keine Richtung, Metapher
-   oder Farbwelt geholt (User 21.08.: „alle alten sind alt"). Der
-   Wahrheitskern in `CLAUDE.md` gilt der Produktwahrheit, nicht der
-   Gestaltung.
+   (`eq-copilot/design/` Wurzel) sind Verlauf. Aus ihnen wird keine
+   Anordnung, Richtung, Metapher oder Farbwelt geholt. Der Wahrheitskern in
+   `CLAUDE.md` gilt der Produktwahrheit; die neue visuelle Richtung gehört
+   einem späteren ausdrücklichen User-Schritt.
 8. **Nur soviel sichtbar wie der aktuelle Handgriff braucht.** Alles
    andere ist einen Schritt entfernt — nicht weg, aber nicht da.
    Beim Übersetzen: jedes Element des Stands muss beantworten, welchen

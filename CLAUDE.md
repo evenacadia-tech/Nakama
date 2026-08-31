@@ -39,13 +39,18 @@ Commits gehen ohne Rückfrage raus.
   schlägt nur vor. Audio-Thread: keine Sperren, Allokationen, Datei-, Pipe- oder
   Netz-Zugriffe und kein Logging; Überlast verwirft Analyseframes, nie Audio.
 - **Keine KI-Erklärschicht** im Produkt. Der Advisor ist regelbasiert.
-- **Aktuelle visuelle Wahrheit in progress:** Seit dem User-Entscheid vom
-  25.08.2026 sind ausschließlich die drei Bilder unter
-  `design/assets/rework-basis-2026-08-25/` Grundlage des großen Reworks.
-  Wortlaut und Leseregel stehen in
-  `design/abnahmen/2026-08-25-rework-referenz-drei-designs.md`. Frühere
-  Figma-Nodes und Exporte sind Verlauf. Keine eigene Stilsuche.
-  Produktsprache Englisch; Docs, Commits und Gespräch Deutsch.
+- **Funktionsneustart der UI:** Seit dem ausdrücklichen User-Auftrag vom
+  31.08.2026 wird die grundlegende UI-Architektur designneutral aus
+  `design/docs/funktions-und-bedien-blueprint.md` und den neuen datierten
+  Abnahmen abgeleitet. Frühere Figma-Nodes, Exporte und die drei Rework-Bilder
+  vom 25.08. sind dafür Verlauf und liefern weder Raster noch Farben, Material
+  oder Positionen. Eine neue visuelle Richtung entsteht erst in einem eigenen
+  User-Schritt. Produktsprache Englisch; Docs, Commits und Gespräch Deutsch.
+- **Aktueller UI-Arbeitsmodus:** Pro Oberfläche genau eine echte offene
+  Architekturfrage. Technische Grenzen vorher selbst aus Code, Tests und
+  Verträgen ableiten; nach jeder Antwort zuerst Skizze und Abnahme
+  aktualisieren. Der Wortlaut und aktuelle Stand stehen in
+  `design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`.
 - **Keine toten UI-Elemente.** Jedes sichtbare Element führt einen Handgriff
   aus oder meldet ehrlich einen Zustand.
 - **Geparkt:** Material-Kit-Front ist ein nie abgenommenes Provisorium. Prisma,
@@ -95,7 +100,7 @@ Commits gehen ohne Rückfrage raus.
 | State / Migration | `eq-copilot/schemas/state/`, `eq-copilot/plugin/state/`, `eq-copilot/fixtures/state/` |
 | Beweise | jüngstes passendes Manifest in `docs/beweise/` |
 | FL-Capabilities | `eq-copilot/identity/host-capabilities-fl-v1.json`, `docs/beweise/termin-a/`, `docs/beweise/termin-b/` |
-| App-Design | `design/LIES-MICH.md`, relevante Datei in `design/abnahmen/` und die drei aktuellen Rework-Bilder |
+| App-Design | `design/LIES-MICH.md`, `design/docs/funktions-und-bedien-blueprint.md` und die jüngste passende Datei in `design/abnahmen/` |
 | Externes Wissen | `wissen/INDEX.md`, danach der passende Wissensbereich |
 | Verlauf, nie Vorgabe | `docs/archiv/`, `eq-copilot/design/archive/`, `eq-copilot/design/prisma-studie/STATUS.md` |
 
@@ -166,20 +171,21 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
 
 ## Design-Arbeitsmodell
 
-1. Die drei aktuellen Rework-Bilder und ihren bindenden Abnahmetext lesen;
-   sie bestimmen Look und Identität in progress.
-2. Die grundlegende Struktur-, Skizzen- und Graybox-Phase ist abgeschlossen;
-   sie war der erste Projektschritt und wird nicht als laufendes Gate
-   wiederholt (`design/abnahmen/2026-08-25-skizzen-vor-figma.md`, Nachtrag
-   26.08.2026). Nur konkrete Lücken oder Widersprüche der aktuellen Arbeit
-   werden dem User einzeln vorgelegt.
-3. `design/` übersetzt die Vorgabe in funktionierende Blätter und
-   dokumentiert Zustände, Größen und Grenzfälle. User-Wortlaut kommt nach
-   `design/abnahmen/`.
-4. Erst eine Abnahme erlaubt die Spiegelung in `eq-copilot/`.
-5. `eq-copilot/design/` ist Altbestand/Studie. Aktive Arbeitsanweisung und Git
-   schützen diese alte Fläche. Der normale Prototyp unter `design/prototyp/`
-   ist frei; die frühere Prototyp-Schleuse ist seit 24.08.2026 stillgelegt.
+1. Für die laufende Funktionsarchitektur den Blueprint und
+   `design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`
+   lesen. Frühere visuelle Entwürfe sind in dieser Phase keine Vorgabe.
+2. Pro Oberfläche genau eine noch offene Frage zu Aufbau, Hierarchie,
+   Sichtbarkeit, Objektbesitz oder Disclosure stellen. Funktionsumfang und
+   technische Grenzen vorher selbst aus aktuellen Quellen klären.
+3. Nach jeder Antwort zuerst die laufende technische Skizze sichtbar
+   aktualisieren und den User-Wortlaut unter `design/abnahmen/` festhalten;
+   bereits Geschlossenes nicht erneut öffnen.
+4. Farben, Material, Typografie und visuelle Feinheiten beginnen erst nach
+   ausdrücklichem Wechsel in die visuelle Phase. Erst eine dokumentierte
+   Abnahme erlaubt die Spiegelung in `eq-copilot/`.
+5. `eq-copilot/design/`, frühere Figma-Stände und die drei Rework-Bilder sind
+   Verlauf/Studie. Sie dürfen zur Spurensuche dienen, aber die neue
+   Funktionsarchitektur nicht still ergänzen.
 
 ## Maschinen-Landminen
 

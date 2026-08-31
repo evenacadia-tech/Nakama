@@ -512,8 +512,12 @@ drittes Produkt und keine dritte tägliche Audiofläche.
 
 ## 4. Informationsarchitektur ohne Alt-Design
 
-Die folgende Struktur ist eine **[A] Layout-Hypothese**, kein Pixelentwurf.
-Sie folgt ausschließlich Objektbesitz, Häufigkeit und Zustandswahrheit.
+Die folgende Struktur ist kein Pixelentwurf. Mit **[U]** markierte Teile wurden
+in der technischen UI-Fragenrunde vom 31.08.2026 entschieden; die übrigen
+Anteile bleiben **[A] Layout-Hypothesen**. Arbeitsmodus, Wortlaut und offener
+Stand sind in
+[`2026-08-31-technische-ui-architektur-arbeitsmodus.md`](../abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md)
+festgehalten.
 
 Sie verweigert bewusst drei Gleichzeitigkeitspakete: keine vollständige
 Diagnose neben dem Hörhandgriff, keine Detailwerte aller Quellen neben dem
@@ -534,6 +538,24 @@ Die Fläche braucht vier funktionale Zonen:
 4. **Nächster Schritt:** AssistantStep beziehungsweise Proposal mit
    Vorbedingung, Test, Abbruch, Zurück und Resume.
 
+**[U] Abgenommene Grundarchitektur:** Eine vertikale Sources-Spalte bleibt
+links über die nutzbare Höhe stehen. Rechts nutzt die Frequenzvisualisierung
+die verfügbare Breite; darunter liegt eine waagerechte Findings-Fläche mit
+fester Höhe. Der frühere rechte Inspector ist verworfen. Genau ein Finding ist
+im Fokus; Navigation und Gesamtübersicht wechseln den Inhalt innerhalb dieser
+festen Fläche. Finding-Auswahl markiert den betroffenen Frequenzbereich, ohne
+Achsen, Ausschnitt oder Graphgröße automatisch zu verändern. Inhalt liegt links
+und eine stabile Aktionszone rechts.
+
+**[U] Quellen- und Aktionsbesitz:** Jede Quellenzeile zeigt Identität,
+Signalstatus, Messaktualität und Anzahl offener Findings. Genau eine Quelle ist
+Hauptziel; weitere Quellen sind nur benannte Referenzen und keine Mitbesitzer
+der Aktionen.
+
+**[U] Übergang:** Ausschließlich `SEND DRAFT` führt im Produkt von dieser
+Fläche zur EQ-Fläche. Der Umschalter einer externen Skizzen- oder
+Prüfoberfläche gehört nicht zum Produkt. Der Rückweg ist noch **[O]**.
+
 Ruhezustand: Quellenorientierung.
 
 Auswahlzustand: eine Quelle oder Beziehung.
@@ -541,10 +563,10 @@ Auswahlzustand: eine Quelle oder Beziehung.
 Fehlerzustand: betroffene Quelle bleibt an derselben Stelle und erklärt ihren
 Status; sie verschwindet nicht hinter einem globalen Toast.
 
-Bei 16 sichtbaren und 32 angeschlossenen Probes muss die Fläche Überblick,
-Suche/Quick-Jump und eine stabile Auswahl erlauben. Ob dies Liste, Matrix oder
-semantischer Zoom wird, ist **[O]** und wird erst mit frischen Wireframes
-entschieden.
+Bei 16 sichtbaren und 32 angeschlossenen Probes muss die festgelegte vertikale
+Sources-Spalte Überblick, Suche/Quick-Jump und eine stabile Auswahl erlauben.
+Zeilendichte, Scroll-/Suchmechanik und der ehrliche 32-Probes-Grenzfall bleiben
+**[O]** und werden am belasteten Funktionsblatt geprüft.
 
 ### 4.2 Gen Fläche 2 — EQ und Transaktion
 
@@ -566,10 +588,20 @@ Die Fläche braucht fünf funktionale Zonen:
    10-s-Kandidat, Confirm, Reject/Revert und Blocking-Grund. Dieser Locus ist
    in jeder EQ-Zielansicht direkt erreichbar.
 
-**[A] Disclosure-Regel:** Der akustische Arbeitsraum dominiert im Ruhezustand.
-Bandpräzision erscheint bei Auswahl, bleibt räumlich beim Bandkontext und
-verschwindet nach Deselect. Globale Zustände, aktiver Draft, Freeze,
-Automation und Preview dürfen dagegen nie spurlos eingeklappt sein.
+**[U] Arbeitsflächen- und Disclosure-Regel:** Der EQ-Graph dominiert. Eine
+permanente rechte Transaktionsspalte und eine permanente Band-Parameterzeile
+sind verworfen. Der aktuelle Draft besitzt stattdessen eine kompakte Zeile
+unter dem Graphen, die ohne offenen Draft verschwindet. Doppelklick auf einen
+vorhandenen Bandpunkt öffnet ein objektgebundenes Mini-Panel für Frequency,
+Gain, Q und Dynamic. Doppelklick auf eine freie Graphposition belegt dort den
+nächsten freien der acht Band-Slots, wählt ihn und öffnet dasselbe Panel. Bei
+acht belegten Slots wird der Grenzfall sichtbar gemeldet; kein bestehendes Band
+wird still überschrieben.
+
+**[A]/[D] Zustandswahrheit:** Globale Zustände, aktiver Draft, Freeze,
+Automation und Preview dürfen nie spurlos eingeklappt sein. Filtertyp,
+Dynamic-Detail und endgültige Schließ-/Fokusregeln des Mini-Panels bleiben
+**[O]**.
 
 **[U] Zielwechsel:** Probeeq-Ziele folgen, soweit FL es belegt liefert, der
 Mixerreihenfolge. Der Master besitzt einen getrennten stabilen Einstieg und ist
@@ -1280,19 +1312,18 @@ Alle Marktquellen wurden am 31.08.2026 in offiziellen Herstellerseiten oder
 Handbüchern geprüft. Ableitungen stehen in Abschnitt 8; sie sind keine
 Behauptung über Herstellerintention oder Marktanteil.
 
-## 17. Nächster Designschritt nach dem Quellenabgleich
+## 17. Laufende technische UI-Ableitung
 
-Dieser Blueprint ist die Eingangsspezifikation für neue Zustands-Wireframes.
-Vor ihrem Bau werden die offenen Quellenpunkte 11 und 13 aus Abschnitt 15
-bereinigt. Danach ist der nächste Schritt nicht, ein früheres Bild zu
-korrigieren oder die abgeschlossene allgemeine Graybox-Phase neu zu starten,
-sondern drei gezielte, graue Funktionsblätter aus denselben Objekten zu bauen:
+Die gezielten grauen Funktionsblätter werden in einer fortlaufenden
+Architektur-Fragenrunde konkretisiert. Es wird immer genau eine noch offene
+räumliche oder bedienerische Frage gestellt; technische Grenzen werden vorher
+aus den aktuellen Verträgen, Quellen und Tests abgeleitet. Nach jeder Antwort
+wird zuerst die laufende Skizze aktualisiert und der User-Wortlaut unter
+`design/abnahmen/` festgehalten.
 
-1. Gen Fläche 1: Ruhezustand, 16-Quellen-Grenze und ehrlicher Degraded-Fall.
-2. Gen Fläche 2: Confirmed, Bandfokus und Preview/10-s/Confirm-Transaktion.
-3. Probeeq kompakt: verbunden, Brokerverlust und lokaler sicherer Rückfall.
-
-Erst wenn Objektbesitz, Fokus, Tastaturweg und Worst-Case-Zustände darin
-passen, wird die neue visuelle Richtung in einem eigenen User-Schritt
-festgelegt. Stilfragen bleiben getrennt von Funktionsfragen; dieser Blueprint
-entscheidet sie nicht.
+Gen Fläche 1 und die Grundhierarchie von Gen Fläche 2 besitzen bereits den in
+Abschnitt 4 beschriebenen User-entschiedenen Stand. Die Fragenrunde setzt bei
+der offenen Filtertyp-Mechanik der EQ-Fläche fort, danach folgen Probeeq und
+die gemeinsamen Regeln. Objektbesitz, Fokus, Tastaturweg und Worst-Case-
+Zustände werden weiterhin am passenden Blatt geprüft. Farben, Material und
+visuelle Feinheiten bleiben bis zum ausdrücklichen Phasenwechsel getrennt.

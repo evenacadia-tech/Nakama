@@ -2,11 +2,18 @@
 
 This is the durable observable-behavior contract for the web simulator and the later native editor. Visual intent lives in `DESIGN.md`; machine-readable names and invariants live in `design/prototyp/contract/ui-contract.json`. This contract is internal UI behavior, not a replacement for Nakama IPC, processor state or the 109-parameter host contract.
 
+The checked-in simulator predates the functional restart of 31 August 2026.
+Where it still exposes the former peer-page tabs or another superseded layout,
+the current target behavior is owned by
+`design/docs/funktions-und-bedien-blueprint.md` and the newer dated acceptance
+files. The old simulator remains comparison evidence until its bounded
+replacement; it is not allowed to reopen those decisions.
+
 ## Canonical UI map
 
 | Capability | Canonical owner | Allowed variants | Verification |
 |---|---|---|---|
-| Page tabs | Shared shell tablist | Overview / EQ Center | keyboard + browser state test |
+| Forward transition to Gen EQ | Gen Sources `SEND DRAFT` | only with a valid unconfirmed draft | state + focus test |
 | Source switcher | Shared source-strip controller | 1–16 probes; separate Master | overflow + auto-scroll test |
 | Band selection | EQ graph/controller | pointer, BAND control, keyboard | geometry + input-equivalence test |
 | Parameter input | Shared parameter-field behavior | drag, numeric input, native named select | range + protected-zone tests |
@@ -27,10 +34,9 @@ The browser uses a deterministic `DemoAdapter`. The future VST3 editor will use 
 
 | Operation | Trigger | Pending/held state | Success | Failure/recovery | Focus outcome |
 |---|---|---|---|---|---|
-| Switch page | OVERVIEW / EQ CENTER | 180ms glass-content change | selected page visible | none | selected tab |
 | Select source | source name | immediate | graph/finding target changes | disconnected source is read-only with reason | selected source |
 | Audition | HOLD TO AUDITION press | active only while held | release returns to confirmed sound | blocked by stopped/recording/unknown transport; connection loss ends safely | hold control |
-| Send draft | Overview APPLY | DRAFT SENT / WAITING FOR PROBEEQ | EQ opens with an unconfirmed draft | disconnected target retains finding and offers recovery | originating action or EQ draft |
+| Send draft and open Gen EQ | SEND DRAFT | DRAFT SENT / WAITING FOR PROBEEQ | Gen EQ opens with the same unconfirmed draft | disconnected target retains finding and offers recovery | originating action or EQ draft |
 | Temporary apply | EQ APPLY | ten-second lease and visible confirmation action | second activation confirms and creates one revision | reject, expiry, invalid transport or connection loss reverts | Apply/Confirm control |
 | Reject | REJECT | none | draft removed without revision | none | stable graph context |
 | Undo | undo control | none | last confirmed source revision restored | disabled with reason when ring empty | undo control |
@@ -38,7 +44,8 @@ The browser uses a deterministic `DemoAdapter`. The future VST3 editor will use 
 
 ## Hard invariants
 
-- Overview APPLY sends a draft; it never confirms EQ.
+- `SEND DRAFT` sends an unconfirmed draft; it never confirms EQ.
+- `SEND DRAFT` is the only product action that opens Gen EQ from Gen Sources.
 - Audition and draft states never enter the revision ring or saved project state.
 - EQ Apply is two-stage: temporary lease first, explicit confirmation second within ten seconds.
 - Preview is permitted only while playing and never while recording or record state is unknown.
@@ -53,7 +60,15 @@ The browser uses a deterministic `DemoAdapter`. The future VST3 editor will use 
 
 ## Navigation and input
 
-The two peer views use a real tablist. Arrow keys move between tabs and selection follows immediately because both panels are local. Source overflow scrolls horizontally and keeps the selected source visible. Every drag has a BAND selector, keyboard arrows and/or numeric entry alternative. Escape closes the topmost non-modal panel or cancels an in-progress numeric edit; it never silently rejects a draft.
+Gen Sources has no direct product tab or second navigation action for opening
+Gen EQ. `SEND DRAFT` is the sole forward transition and carries the same
+unconfirmed draft into the EQ surface. A surface switcher in an external
+inspection or sketch tool is tooling, not product UI. The product return path
+from Gen EQ remains open and must not be invented from the legacy tablist.
+Source overflow keeps the selected source visible. Every drag has a BAND
+selector, keyboard arrows and/or numeric entry alternative. Escape closes the
+topmost non-modal panel or cancels an in-progress numeric edit; it never
+silently rejects a draft.
 
 The fixed plug-in stage does not reflow. The surrounding inspection tool does. At 200% the whole stage is intentionally larger, matching the plug-in scale tier rather than behaving like a responsive website.
 

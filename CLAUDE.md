@@ -56,8 +56,19 @@ Commits gehen ohne Rückfrage raus.
   nach der fünften werden Skizze, Abnahmen und Blueprint gemeinsam
   aktualisiert und sichtbar geprüft. Der Wortlaut und aktuelle Stand stehen in
   `design/abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`.
+  Die technische Skizze liegt ausschließlich in `design/skizze/` und ist der
+  derzeitige Stand, nicht der finale: Design ist ein laufender Prozess wie
+  die Implementierung (User-Wort 02.09.2026). Skizze und Blueprint werden
+  nie als fertig oder abgenommen bezeichnet; bindend sind nur die datierten
+  Abnahmen.
 - **Keine toten UI-Elemente.** Jedes sichtbare Element führt einen Handgriff
   aus oder meldet ehrlich einen Zustand.
+- **Tasten sind Material.** User-Gesetz 25.08.2026: „ein button ist ein
+  material das niemals einfach die breite verändert". Zustände wie hover,
+  pressed, selected oder disabled wechseln Fläche, Schatten, Farbe oder
+  Transform, nie die Maße; Beweis am gemessenen Layoutrechteck (bei
+  skalierter Bühne `offsetWidth`/`offsetHeight`, nicht das transformierte
+  `getBoundingClientRect`).
 - **Geparkt:** Material-Kit-Front ist ein nie abgenommenes Provisorium. Prisma,
   Hörkompass, Glas/Licht, Tiefenfeld, Bauplan 2.0, Kunstwerk und Feld-Alphabet
   sind Archiv oder Studie, nicht Produktvorgabe; nie ungefragt reaktivieren.
@@ -91,7 +102,27 @@ Commits gehen ohne Rückfrage raus.
 - Im Dirigentenbetrieb schreibt genau ein Hintergrundworker im sichtbaren
   Checkout. `worktree.bgIsolation = "none"` ist nur zusammen mit dieser
   Ein-Schreiber-Regel zulässig; Fable bleibt währenddessen bei Repo-Dateien
-  lesend.
+  lesend. Muss eine zweite Session währenddessen Repo-Dateien ändern
+  (Design, Doku), arbeitet sie in einer eigenen lokalen Arbeitskopie
+  (`git clone --local -c core.longpaths=true` an einen kurzen Pfad, kein
+  `git worktree`, das Cockpit meldet Worktrees als Störung), committet dort
+  mit Pathspec und pusht nach origin; der sichtbare Checkout holt den Stand
+  beim nächsten Pull des Dirigenten. Screenshots und andere temporäre
+  Dateien nie in den Repo-Root legen.
+- Sicherheitsarbeit (Reviews, Audits, Härtung an Pipes, Impersonation,
+  Signaturen) wird nie im Gesprächs- oder Dirigentenkontext selbst
+  ausgeführt, sondern an Worker, Codex oder Review-Skills delegiert
+  (User-Wort 01.09.2026).
+- Der User ist Projektleiter und Musiker, kein Programmierer. Technische
+  Wege (Crates, Schemas, Tests, Pfade, Werkzeuge) entscheidet Claude selbst
+  und legt sie nie als Menü vor; dem User werden nur Produktwirkung sowie
+  Design- und Produktfragen vorgelegt.
+- Rechnerwechsel: Der User arbeitet an PC und Laptop. Memory und die
+  globale `~/.claude/CLAUDE.md` sind rechnerlokal. Alles, was eine Session
+  auf dem anderen Rechner braucht, steht in dieser Datei, im Skill oder in
+  einer Repo-Datei und ist gepusht. Ein Artefakt, das nur in einem
+  Werkzeugordner liegt (`~/.codex/visualizations/`, `.playwright-mcp/`,
+  Scratchpad), gilt nicht als geliefert.
 
 ## Lesen vor der Arbeit
 
@@ -105,7 +136,7 @@ Commits gehen ohne Rückfrage raus.
 | State / Migration | `eq-copilot/schemas/state/`, `eq-copilot/plugin/state/`, `eq-copilot/fixtures/state/` |
 | Beweise | jüngstes passendes Manifest in `docs/beweise/` |
 | FL-Capabilities | `eq-copilot/identity/host-capabilities-fl-v1.json`, `docs/beweise/termin-a/`, `docs/beweise/termin-b/` |
-| App-Design | `design/LIES-MICH.md`, `design/docs/funktions-und-bedien-blueprint.md` und die jüngste passende Datei in `design/abnahmen/` |
+| App-Design | `design/LIES-MICH.md`, `design/docs/funktions-und-bedien-blueprint.md`, `design/skizze/LIES-MICH.md` (laufende technische Skizze) und die jüngste passende Datei in `design/abnahmen/` |
 | Externes Wissen | `wissen/INDEX.md`, danach der passende Wissensbereich |
 | Verlauf, nie Vorgabe | `docs/archiv/`, `eq-copilot/design/archive/`, `eq-copilot/design/prisma-studie/STATUS.md` |
 
@@ -122,7 +153,9 @@ vor.
 - `eq-copilot/install/`: manifestgetriebener Installer und Rückweg.
 - `broker/`: eigenständiger Rust-Broker `eqcop-broker.exe`.
 - `tools/beweise.ps1`: kanonischer lokaler Beweis-Runner.
-- `design/`: Übersetzung der aktuellen User-Vorgabe, Prototyp, Abnahmen und Designregeln.
+- `design/`: Übersetzung der aktuellen User-Vorgabe, laufende technische
+  Skizze (`skizze/`), Abnahmen, Designregeln und der historische Web-Prototyp
+  (`prototyp/`, Verlauf).
 - `wissen/`: eingeordnetes externes Wissen und visuelle Belege; keine
   parallelen Produktentscheide und keine Roh-PDFs.
 - `docs/beweise/`: rohe, ticketspezifische Belegmanifeste.
@@ -184,9 +217,11 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
    technische Grenzen vorher selbst aus aktuellen Quellen klären.
 3. Antworten in einem laufenden Fünferblock sammeln und den User-Wortlaut in
    dessen Entscheidungsprotokoll sichern. Nach der fünften Antwort die
-   technische Skizze, die betroffenen Abnahmen und den Blueprint gemeinsam
-   aktualisieren und sichtbar prüfen; bereits Geschlossenes nicht erneut
-   öffnen.
+   technische Skizze (`design/skizze/nakama-ui-technical-sketch.html`, im
+   Repo, nie nur in einem Werkzeugordner), die betroffenen Abnahmen und den
+   Blueprint gemeinsam aktualisieren, sichtbar prüfen (Screenshot nach
+   `design/skizze/belege/`) und committen; bereits Geschlossenes nicht
+   erneut öffnen.
 4. Farben, Material, Typografie und visuelle Feinheiten beginnen erst nach
    ausdrücklichem Wechsel in die visuelle Phase. Erst eine dokumentierte
    Abnahme erlaubt die Spiegelung in `eq-copilot/`.
@@ -204,3 +239,13 @@ State-Migrationsstand und den letzten Installationsbeweis prüfen.
   `.gitattributes`-Regeln.
 - Keine GPU-Batch-Render-Loops auf der Arc A770; Renderprüfung einzeln oder per
   CPU/Software.
+- Playwright-MCP lädt keine `file://`-Adressen und legt relative
+  Screenshot-Pfade im Repo-Root ab: lokalen HTTP-Server im Zielordner
+  starten (`py -3.13 -m http.server <port> --bind 127.0.0.1`), Bilder sofort
+  in den Zielordner verschieben, danach `git status --short` lesen.
+- Codex legt Visualisierungen unter `~/.codex/visualizations/` ab, nicht im
+  Repo. Nach Codex-Design-Arbeit prüfen, dass jedes in Abnahmen referenzierte
+  Artefakt committet ist (`grep -rn "codex.visualizations\|127.0.0.1" design/`).
+- Ein `git clone` dieses Repos braucht `-c core.longpaths=true` und einen
+  kurzen Zielpfad, sonst bricht der Checkout unter `tools/codex-plugins/` mit
+  „Filename too long" ab.

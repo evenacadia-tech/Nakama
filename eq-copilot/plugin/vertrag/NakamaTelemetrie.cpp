@@ -584,4 +584,49 @@ juce::Array<Verstoss> pruefe (const uint8_t* puffer, size_t laenge)
     return kanonisch (out);
 }
 
+bool lese (const uint8_t* puffer, size_t laenge,
+           std::vector<Empfangsframe>& aus,
+           juce::Array<Verstoss>& verstoesse)
+{
+    aus.clear();
+    verstoesse = pruefe (puffer, laenge);
+    if (! verstoesse.isEmpty())
+        return false;
+
+    const auto* batch = fb::GetFeatureBatch (puffer);
+    const auto* eintraege = batch->eintraege();
+    aus.reserve (eintraege->size());
+    for (flatbuffers::uoffset_t i = 0; i < eintraege->size(); ++i)
+    {
+        const auto* eintrag = eintraege->Get (i);
+        const auto* adresse = eintrag->quelle();
+        const auto* frame = eintrag->frame();
+        const auto* transport = frame->transport();
+
+        Empfangsframe kopie;
+        kopie.projectBindingId = adresse->project_binding_id()->str();
+        kopie.sessionEpoch = adresse->session_epoch()->str();
+        kopie.instanceId = adresse->instance_id()->str();
+        kopie.runtimeNonce = adresse->runtime_nonce()->str();
+        kopie.transportEpoch = transport->transport_epoch();
+        kopie.continuitySegment = transport->continuity_segment();
+        kopie.sequence = transport->sequence();
+        kopie.sampleCount = transport->sample_count();
+        kopie.sampleRate = transport->sample_rate();
+
+        const auto lufs = frame->lufs_i();
+        const auto unsicherheit = frame->lufs_i_unsicherheit_lu();
+        kopie.lufsPaar = lufs.has_value() && unsicherheit.has_value();
+        if (kopie.lufsPaar)
+        {
+            kopie.lufsI = *lufs;
+            kopie.lufsIUnsicherheitLu = *unsicherheit;
+        }
+        if (const auto status = frame->lufs_i_status(); status.has_value())
+            kopie.lufsIStatus = static_cast<int> (*status);
+        aus.push_back (std::move (kopie));
+    }
+    return true;
+}
+
 } // namespace nakama::telemetrie

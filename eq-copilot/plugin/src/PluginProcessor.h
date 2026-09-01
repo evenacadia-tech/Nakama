@@ -26,6 +26,11 @@
 #include "analysis/FeatureEngine.h"
 #include "BrokerLifecycle.h"
 #include "ControlClient.h"
+#include "TelemetryClient.h"
+#include "SourcesModel.h"
+
+#include <map>
+#include <vector>
 
 // ── S9/SONDE-007b Abschnitt 3: welches Bundle uebersetzt hier? ─────────────
 // Die duenne Target-Schicht sagt es (plugin/CMakeLists.txt), nicht dieser
@@ -172,6 +177,15 @@ public:
     { return controlV3.snapshot(); }
     nakama::ipc::BrokerLifecycle::Snapshot brokerLifecycleSnapshot() const
     { return brokerLifecycle.snapshot(); }
+    SourcesModel::Sicht sourcesSicht() const             { return sourcesModel.sicht(); }
+    void sourcesTick();
+    bool waehleSourcesHauptziel (const std::string& instanceId)
+    { return sourcesModel.waehleHauptziel (instanceId); }
+    bool bindeSourcesHauptziel (const std::string& erwarteteInstanceId);
+    bool benenneSourcesHauptziel (const std::string& erwarteteInstanceId,
+                                  const juce::String& label);
+    bool entferneSourcesHauptziel (const std::string& erwarteteInstanceId);
+    void reconnectSources();
 #if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
     nakama::ipc::ControlHello v3HelloFuerTest() const { return v3Hello(); }
     nakama::ipc::ControlStatus v3StatusFuerTest() const { return v3Status(); }
@@ -179,6 +193,12 @@ public:
     {
         return controlV3.statusProviderGesetzt();
     }
+    std::string v3SubscribeFuerTest() const { return v3SubscribeJson(); }
+    void v3LinkFuerTest (bool verbunden) { v3ControlLink (verbunden); }
+    void v3AntwortFuerTest (const std::string& json) { v3Antwort (json); }
+    void setzeSourcesFixtureFuerTest (SourcesModel::Sicht fixture)
+    { sourcesModel.setzeFixtureFuerTest (std::move (fixture)); }
+    std::string ausstehenderSourcesCommandFuerTest() const;
 #endif
     double holeSamplerate() const                          { return samplerateAtomic.load(); }
     int    holeBlockSize() const                           { return blockSizeAtomic.load(); }
@@ -227,6 +247,19 @@ private:
     void workerLauf();
     nakama::ipc::ControlHello v3Hello() const;
     nakama::ipc::ControlStatus v3Status() const;
+    nakama::ipc::TelemetryHello v3TelemetryHello() const;
+    std::string v3SubscribeJson() const;
+    void v3ControlLink (bool verbunden);
+    void v3Antwort (const std::string& json);
+    void v3Frame (const std::uint8_t*, std::size_t, std::uint8_t schemaMinor);
+    enum class SourcesCommandArt { confirmJoin, unbindProbe };
+    struct SourcesCommand
+    {
+        SourcesCommandArt art = SourcesCommandArt::confirmJoin;
+        std::string commandId, instanceId, projectBindingId, sessionEpoch, json;
+    };
+    bool sendeSourcesCommand (SourcesCommandArt, const std::string& erwarteteInstanceId);
+    void wendeBestaetigteSourcesCommandsAn();
     // Lebenszeichen (Konzept v2 §4): „neutral, bis Echtzeit bewiesen" — nur
     // der Audiothread schreibt den Zustand; Ergebnis wandert als Atomic raus.
     void lebenszeichen (int samples, bool spielt);
@@ -236,6 +269,10 @@ private:
     // Eqcp darf die Klassen main und legacy laden.
     mutable std::mutex bindungMutex;
     nakama::state::Zustand zustand;
+    SourcesModel sourcesModel;
+    mutable std::mutex sourcesCommandMutex;
+    std::map<std::string, SourcesCommand> ausstehendeSourcesCommands;
+    std::vector<SourcesCommand> bestaetigteSourcesCommands;
     // §53.5-Automat. Er wird ausschliesslich unter `bindungMutex` gefuehrt
     // (Nachrichten-/Hostthread); der Audiothread liest nie ihn, sondern die
     // Atomic-Spiegelung `istMainKlassifiziert` darunter.
@@ -388,6 +425,7 @@ private:
     const std::string v3SessionEpoch;
     PipeClient pipe;
     nakama::ipc::ControlClient controlV3;
+    nakama::ipc::TelemetryClient telemetryV3;
     nakama::ipc::BrokerLifecycle brokerLifecycle;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EqCopilotProcessor)

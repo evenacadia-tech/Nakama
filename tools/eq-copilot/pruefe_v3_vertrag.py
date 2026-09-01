@@ -685,6 +685,8 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict, reserviert: dict) -> None:
               and fassungen.get("1", {}).get("heartbeat_runtime") is True
               and fassungen.get("1", {}).get("session_mitglied_probe_descriptor_optional") is True
               and fassungen.get("1", {}).get("session_mitglied_p2_reject") is True
+              and fassungen.get("1", {}).get("session_command") is True
+              and fassungen.get("1", {}).get("session_snapshot_store_degraded") is True
               and "schema_minor" in version.get("auswahlregel", "")
               and "Wire-Envelope" in version.get("auswahlregel", ""))
     lauf.wahr("probe_descriptor erfindet kein Versions- oder Namespacefeld",
@@ -711,6 +713,11 @@ def pruefe_probe_descriptor(lauf: Lauf, schema: dict, reserviert: dict) -> None:
         for feld in HOST_DESCRIPTOR_FELDER:
             schema_minor_0["$defs"][name]["properties"].pop(feld, None)
     schema_minor_0["$defs"]["heartbeat"]["properties"].pop("runtime", None)
+    schema_minor_0["oneOf"] = [r for r in schema_minor_0["oneOf"]
+                                if r.get("$ref") != "#/$defs/session_command"]
+    schema_minor_0["$defs"].pop("session_command", None)
+    schema_minor_0["$defs"]["session_snapshot"]["properties"].pop(
+        "store_degraded", None)
     schema_minor_0["$defs"]["session_snapshot"]["properties"]["mitglieder"]["items"] = {
         "$ref": "#/$defs/probe_descriptor"
     }
@@ -866,6 +873,64 @@ def pruefe_runtime_und_p2_reject(lauf: Lauf, schema: dict) -> None:
               verlangt <= fixture_namen, ", ".join(sorted(verlangt - fixture_namen)))
 
 
+def pruefe_session_command_und_store(lauf: Lauf, schema: dict) -> None:
+    """SONDE-012 E-L18/L04 und E-L15-Store, ohne neue Wire-Version."""
+    defs = schema["$defs"]
+    command = defs.get("session_command", {})
+    lauf.wahr("session_command diskriminiert geschlossen ueber command",
+              command.get("x-nakama-discriminator") == "command"
+              and set(command) == {"description", "x-nakama-discriminator", "oneOf"})
+    zweige = zweige_nach_const(command, "command")
+    lauf.wahr("session_command kennt genau confirm_join und unbind_probe",
+              set(zweige) == {"confirm_join", "unbind_probe"}, repr(sorted(zweige)))
+    pflicht = {"type", "command", "command_id", "ziel", "session_epoch"}
+    for art, zweig in zweige.items():
+        props = zweig.get("properties", {})
+        lauf.wahr(f"session_command/{art} ist strikt und vollstaendig",
+                  zweig.get("additionalProperties") is False
+                  and set(zweig.get("required", [])) == pflicht
+                  and set(props) == pflicht)
+        lauf.wahr(f"session_command/{art} nutzt Zieladresse und Hexbezug",
+                  props.get("type") == {"const": "session_command"}
+                  and props.get("command_id") == {"$ref": "#/$defs/hex32"}
+                  and props.get("ziel") == {"$ref": "#/$defs/adresse"}
+                  and props.get("session_epoch") == {"$ref": "#/$defs/hex32"}
+                  and "sender" not in props and "schema_minor" not in props)
+
+    store = defs.get("session_snapshot", {}).get("properties", {}).get(
+        "store_degraded", {})
+    lauf.wahr("store_degraded ist optional und nur true darf reisen",
+              store == {"$comment": store.get("$comment"),
+                        "type": "boolean", "const": True}
+              and "store_degraded" not in defs["session_snapshot"].get("required", []))
+    store_pruefer = jsonschema.Draft202012Validator(schema)
+    basis = json_laden_strikt((FIXTURES / "gueltig/session_snapshot.json")
+                              .read_text(encoding="utf-8"))
+    mit_true = copy.deepcopy(basis)
+    mit_true["store_degraded"] = True
+    mit_false = copy.deepcopy(basis)
+    mit_false["store_degraded"] = False
+    lauf.wahr("store_degraded true/abwesend gueltig, false ungueltig",
+              store_pruefer.is_valid(basis) and store_pruefer.is_valid(mit_true)
+              and not store_pruefer.is_valid(mit_false))
+
+    fixture_namen = {
+        p.name for p in (FIXTURES / "gueltig").glob("*.json")
+    } | {p.name for p in (FIXTURES / "ungueltig").glob("*.json")}
+    verlangt = {
+        "session_command.json",
+        "session-command-unbind.json",
+        "session-command-fremdes-main-vertragsform.json",
+        "session-command-fremdes-main-senderfeld.json",
+        "session-command-falsche-epoche-vertragsform.json",
+        "session-command-unbekannter-zweig.json",
+        "session-snapshot-store-degraded.json",
+        "session-snapshot-store-degraded-false.json",
+    }
+    lauf.wahr("B3c-Cross-Language-Fixtures decken Commands und Storezustand",
+              verlangt <= fixture_namen, ", ".join(sorted(verlangt - fixture_namen)))
+
+
 def zweige_nach_const(knoten: dict, discriminator: str) -> dict[str, dict]:
     """Ordnet vollstaendige oneOf-Zweige ihrem Discriminator-const zu."""
     ergebnis: dict[str, dict] = {}
@@ -995,12 +1060,13 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
     zweige = [r["$ref"].removeprefix("#/$defs/") for r in schema["oneOf"]]
     definiert = reserviert["definiert"]
     reserv = [r["name"] for r in reserviert["reserviert"]]
+    belegt_nachrichten = reserviert.get("belegte_nachrichten", [])
 
     lauf.wahr("oneOf-Zweige == definierte Liste", zweige == definiert,
               f"{set(zweige) ^ set(definiert)}")
     lauf.wahr("definiert und reserviert sind disjunkt",
               not (set(definiert) & set(reserv)), f"{set(definiert) & set(reserv)}")
-    lauf.wahr(f"Summe ist {reserviert['gesamt_erwartet']} Familien (Entwurf §33.3)",
+    lauf.wahr(f"Summe ist {reserviert['gesamt_erwartet']} registrierte Familien",
               len(definiert) + len(reserv) == reserviert["gesamt_erwartet"],
               f"{len(definiert)} + {len(reserv)}")
     lauf.wahr("jede definierte Familie hat ein $defs",
@@ -1009,6 +1075,12 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
               not any(n in schema["$defs"] for n in reserv))
     lauf.wahr("jedes Eigentuemerticket ist genannt",
               all(r.get("eigentuemer") and r.get("grund") for r in reserviert["reserviert"]))
+    lauf.wahr("belegte Nachricht folgt der Regelform und ist aktiv definiert",
+              all(set(n) == {"name", "eigentuemer", "grund"}
+                  for n in belegt_nachrichten)
+              and {n.get("name") for n in belegt_nachrichten} == {"session_command"}
+              and all(n.get("name") in definiert and n.get("name") not in reserv
+                      for n in belegt_nachrichten))
     lauf.wahr("reservierter_name_reference_match_wird_nicht_umgewidmet",
               "reference_match" in reserv and "reference_match" not in zweige
               and "reference_match" not in schema["$defs"])
@@ -1037,6 +1109,7 @@ def pruefe_namen(lauf: Lauf, schema: dict, reserviert: dict) -> None:
         "heartbeat.runtime",
         "session_snapshot.mitglieder[].probe_descriptor",
         "session_snapshot.mitglieder[].p2_reject",
+        "session_snapshot.store_degraded",
     }
     lauf.wahr("SONDE-012-Minor-1-Felder sind als belegt fortgeschrieben",
               {f.get("name") for f in belegt} == erwartete_belegte
@@ -1258,6 +1331,7 @@ def main(argv: list[str]) -> int:
     pruefe_namen(lauf, schema, reserviert)
     pruefe_probe_descriptor(lauf, schema, reserviert)
     pruefe_runtime_und_p2_reject(lauf, schema)
+    pruefe_session_command_und_store(lauf, schema)
     pruefe_bandkodierung(lauf, schema, quantisierung)
     pruefe_command_ack(lauf, schema)
     pruefe_fixtures(lauf, schema, manifest)

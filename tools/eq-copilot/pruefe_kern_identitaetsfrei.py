@@ -87,6 +87,7 @@ ERWARTETE_OBJEKTE = {
     "NakamaParameter.obj",
     "NakamaState.obj",
     "NakamaVertrag.obj",
+    "NakamaTelemetrie.obj",
     "WireEnvelope.obj",
     "IpcVerbindung.obj",
     "BrokerLifecycle.obj",

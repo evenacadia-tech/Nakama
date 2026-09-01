@@ -3,6 +3,7 @@
 use eqcop_broker::coordinator::{
     Coordinator, Lautheitszustand, ManualClock, SessionPush, STALE_NACH_MS, TOMBSTONE_MS,
 };
+use eqcop_broker::store::StoreWriter;
 use eqcop_broker::generiert::nakama_telemetry_v1_generated::nakama::v_3 as fb;
 use eqcop_broker::transport::bootstrap::{Adresse, AudioLage, HelloControl, HostAngabe};
 use eqcop_broker::transport::server_v3::Senke;
@@ -141,6 +142,26 @@ fn abonnieren(c: &Coordinator, link: &str, adresse: &Adresse) -> bool {
         }))
         .unwrap(),
     )
+}
+
+fn session_command(
+    c: &Coordinator,
+    link: &str,
+    command: &str,
+    command_id: usize,
+    ziel: &Adresse,
+    session_epoch: &str,
+) -> Value {
+    let payload = serde_json::to_vec(&json!({
+        "type": "session_command",
+        "command": command,
+        "command_id": hex(command_id),
+        "ziel": ziel,
+        "session_epoch": session_epoch
+    }))
+    .unwrap();
+    let ack = Senke::p0(c, link, &payload).expect("session_command antwortet mit command_ack");
+    serde_json::from_slice(&ack).expect("command_ack ist JSON")
 }
 
 fn feature_batch(
@@ -990,4 +1011,107 @@ fn eviction_removes_volatile_measurement_projection() {
     clock.setze_ms(TOMBSTONE_MS);
     c.liveness_tick();
     assert!(c.messsicht(&hex(1), &hex(2), &hex(20)).is_none());
+}
+
+#[test]
+fn confirm_join_and_unbind_full_roundtrip() {
+    let (c, _clock, push) = coordinator();
+    let main = adresse(1, 2, 10, 100);
+    let source = adresse(1, 2, 20, 200);
+    anmelden(&c, "main", &main, "main", Some(77));
+    assert!(heartbeat(&c, "main", &main, 1));
+    let _ = c.beitritt_bestaetigen(&hex(1), &hex(2), &hex(10));
+    assert!(c.fuehrung_uebergeben(&hex(1), &hex(2), &hex(10)));
+    anmelden(&c, "probe", &source, "active_probe", Some(9001));
+    assert!(heartbeat(&c, "probe", &source, 1));
+    assert!(abonnieren(&c, "main", &main));
+
+    let confirm = session_command(&c, "main", "confirm_join", 700, &source, &hex(2));
+    assert_eq!(confirm["type"], "command_ack");
+    assert_eq!(confirm["ergebnis"], "angewandt");
+    assert_eq!(confirm["state_hash"].as_str().unwrap().len(), 64);
+    assert!(c
+        .modell_sicht(&hex(1), &hex(2))
+        .clients
+        .iter()
+        .find(|client| client.adresse.instance_id == source.instance_id)
+        .unwrap()
+        .bestaetigt);
+    assert_eq!(
+        push.snapshots().last().unwrap().1["beitritt_bestaetigung_noetig"],
+        false
+    );
+
+    let retry = session_command(&c, "main", "confirm_join", 700, &source, &hex(2));
+    assert_eq!(retry["ergebnis"], "idempotent_wiederholt");
+    assert_eq!(retry["state_hash"], confirm["state_hash"]);
+
+    let unbind = session_command(&c, "main", "unbind_probe", 701, &source, &hex(2));
+    assert_eq!(unbind["ergebnis"], "angewandt");
+    assert!(!c
+        .modell_sicht(&hex(1), &hex(2))
+        .clients
+        .iter()
+        .find(|client| client.adresse.instance_id == source.instance_id)
+        .unwrap()
+        .bestaetigt);
+    assert_eq!(
+        push.snapshots().last().unwrap().1["beitritt_bestaetigung_noetig"],
+        true
+    );
+
+    let wrong_epoch = session_command(&c, "main", "confirm_join", 702, &source, &hex(3));
+    assert_eq!(wrong_epoch["ergebnis"], "abgelehnt");
+    assert_eq!(wrong_epoch["code"], "unauthorized");
+}
+
+#[test]
+fn foreign_main_command_is_rejected() {
+    let (c, _clock, _push) = coordinator();
+    let main_a = adresse(1, 2, 10, 100);
+    let main_b = adresse(1, 2, 11, 101);
+    let source = adresse(1, 2, 20, 200);
+    anmelden(&c, "main-a", &main_a, "main", Some(77));
+    anmelden(&c, "main-b", &main_b, "main", Some(77));
+    let _ = c.beitritt_bestaetigen(&hex(1), &hex(2), &hex(10));
+    let _ = c.beitritt_bestaetigen(&hex(1), &hex(2), &hex(11));
+    assert!(c.fuehrung_uebergeben(&hex(1), &hex(2), &hex(10)));
+    anmelden(&c, "probe", &source, "active_probe", Some(9001));
+
+    let ack = session_command(&c, "main-b", "confirm_join", 710, &source, &hex(2));
+    assert_eq!(ack["ergebnis"], "abgelehnt");
+    assert_eq!(ack["code"], "unauthorized");
+    assert!(!c
+        .modell_sicht(&hex(1), &hex(2))
+        .clients
+        .iter()
+        .find(|client| client.adresse.instance_id == source.instance_id)
+        .unwrap()
+        .bestaetigt);
+}
+
+#[test]
+fn store_degraded_travels_only_as_true() {
+    let clock = Arc::new(ManualClock::default());
+    let writer = StoreWriter::degradiert_ohne_pfad("sonde012-test");
+    let c = Coordinator::mit_store(clock, hex(0xbeef), &writer);
+    let push = Arc::new(PushProbe::default());
+    c.session_push_setzen(push.clone());
+    let main = adresse(1, 2, 10, 100);
+    anmelden(&c, "main", &main, "main", Some(77));
+    assert!(abonnieren(&c, "main", &main));
+    let snapshots = push.snapshots();
+    assert!(
+        !snapshots.is_empty(),
+        "diagnostic snapshot was not pushed; disconnect={} payload={}",
+        c.verbindung_soll_trennen("main"),
+        String::from_utf8_lossy(&c.session_snapshot_json(&hex(1), &hex(2)))
+    );
+    assert_eq!(snapshots.last().unwrap().1["store_degraded"], true);
+
+    let (normal, _normal_clock, _) = coordinator();
+    assert!(normal
+        .session_snapshot_json(&hex(1), &hex(2))
+        .windows(b"store_degraded".len())
+        .all(|w| w != b"store_degraded"));
 }

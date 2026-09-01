@@ -4018,7 +4018,7 @@ mod tests {
     }
 
     #[test]
-    fn join_kandidat_laeuft_ueber_probe_pipe_ohne_neue_nachrichtenfamilie() {
+    fn join_kandidat_laeuft_ueber_probe_pipe_ohne_join_candidate_nachrichtenfamilie() {
         let pipe = probe_pipe("joinwire");
         let coordinator = Arc::new(crate::coordinator::Coordinator::default());
         let sender = V3Sender::neu();
@@ -4069,7 +4069,7 @@ mod tests {
         .unwrap();
         let definiert = schema["oneOf"].as_array().unwrap().len();
         let spaeter = reserviert["reserviert"].as_array().unwrap().len();
-        assert_eq!(definiert, 17);
+        assert_eq!(definiert, 18);
         assert_eq!(spaeter, 9);
         assert_eq!(
             definiert + spaeter,

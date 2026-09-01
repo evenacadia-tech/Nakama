@@ -27,6 +27,7 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <memory>
 
 using namespace eqcop;
 namespace kanon = nakama::kanon;
@@ -358,6 +359,10 @@ juce::MemoryBlock baumMitGesamteintraegen (int gesamt)
 
 } // namespace
 
+// AudioProcessor-Instanzen werden auch vom Host auf dem Heap erzeugt. Das ist
+// hier zugleich ein Sicherheitsriegel: mehrere EqCopilotProcessor als lokale
+// main()-Objekte liessen dem bewusst gefahrenen ValueTree-Tiefenrand keinen
+// verlaesslichen Stack mehr.
 int main (int argc, char* argv[])
 {
     juce::ScopedJuceInitialiser_GUI juceStart;
@@ -845,13 +850,13 @@ int main (int argc, char* argv[])
                 state::speichere (zurueck, rueckweg);
                 rueckwegOk = gleich (rueckweg, roh);
 
-                EqCopilotProcessor p;
+                auto p = std::make_unique<EqCopilotProcessor>();
                 DirtyZaehler dirty;
-                p.addListener (&dirty);
-                p.setStateInformation (roh.getData(), (int) roh.getSize());
-                hostReadOnlyOk = p.stateNurLesen();
+                p->addListener (&dirty);
+                p->setStateInformation (roh.getData(), (int) roh.getSize());
+                hostReadOnlyOk = p->stateNurLesen();
                 hostDirtyOk = dirty.nonParam == 0;
-                p.removeListener (&dirty);
+                p->removeListener (&dirty);
             }
 
             const bool fallOk = erg == erwartet && zustandOk && rueckwegOk
@@ -997,16 +1002,16 @@ int main (int argc, char* argv[])
             const bool bibOk = erg == state::LadeErgebnis::nurLesen && z.nurLesen && gleich (zurueck, bytes) && z.grund.isNotEmpty();
 
             // Produkt: Prozessor wird read-only, gibt Originalbytes zurueck, verweigert Aenderungen ohne Host-Dirty.
-            EqCopilotProcessor p;
+            auto p = std::make_unique<EqCopilotProcessor>();
             DirtyZaehler dirty;
-            p.addListener (&dirty);
-            p.setStateInformation (bytes.getData(), (int) bytes.getSize());
+            p->addListener (&dirty);
+            p->setStateInformation (bytes.getData(), (int) bytes.getSize());
             juce::MemoryBlock heraus;
-            p.getStateInformation (heraus);
-            const bool verweigert = ! p.setzeBindung ("hub", "Kaperung", "") && ! p.neueSensorId();
-            const bool prozOk = p.stateNurLesen() && p.holeStateHerkunft() == state::Herkunft::nurLesen
+            p->getStateInformation (heraus);
+            const bool verweigert = ! p->setzeBindung ("hub", "Kaperung", "") && ! p->neueSensorId();
+            const bool prozOk = p->stateNurLesen() && p->holeStateHerkunft() == state::Herkunft::nurLesen
                                 && gleich (heraus, bytes) && verweigert && dirty.nonParam == 0;
-            p.removeListener (&dirty);
+            p->removeListener (&dirty);
 
             if (bibOk && prozOk) ++readOnly;
             else pruefe (false, "read-only-Fall: " + f.name,
@@ -1118,7 +1123,26 @@ int main (int argc, char* argv[])
         // Ergebnis beim naechsten Load faelschlich read-only machen.
         {
             constexpr size_t maxState = 16u * 1024u * 1024u;
-            constexpr size_t maxSchreibbarerInput = maxState - 4096u;
+            auto istSchreibbar = [] (size_t ziel)
+            {
+                const auto kandidat = stateMitZielgroesse (ziel);
+                state::Zustand probe;
+                return kandidat.getSize() == ziel
+                    && state::lade (kandidat.getData(), kandidat.getSize(),
+                                    state::Bundle::eqcp(), probe)
+                        == state::LadeErgebnis::geladen;
+            };
+            size_t unten = 1024u;
+            size_t oben = maxState;
+            while (unten < oben)
+            {
+                const auto mitte = unten + (oben - unten + 1u) / 2u;
+                if (istSchreibbar (mitte))
+                    unten = mitte;
+                else
+                    oben = mitte - 1u;
+            }
+            const auto maxSchreibbarerInput = unten;
             const auto rand = stateMitZielgroesse (maxSchreibbarerInput);
             pruefe (rand.getSize() == maxSchreibbarerInput,
                     "Teststate trifft die schreibbare Bytegrenze exakt",
@@ -1131,8 +1155,15 @@ int main (int argc, char* argv[])
                 static_cast<juce::juce_wchar> (0x10ffff));
             for (int i = 0; i < 120; ++i) langesLabel += vierByte;
             for (int i = 0; i < 60; ++i) langesPaar += vierByte;
+            z.common.klasse = state::Klasse::main;
+            z.common.position = state::Messposition::insert;
             z.common.label = langesLabel;
             z.common.pairId = langesPaar;
+            z.mainProjectMitglieder.clear();
+            for (int i = 0; i < state::maxMainProjectMitglieder; ++i)
+                z.mainProjectMitglieder.push_back ({
+                    juce::String::toHexString (i + 1).paddedLeft ('0', 32), langesLabel
+                });
             juce::MemoryBlock geschrieben;
             state::speichere (z, geschrieben);
             state::Zustand erneut;
@@ -1210,14 +1241,14 @@ int main (int argc, char* argv[])
 
         // Ein read-only-Prozessor wird durch einen gueltigen Stand wieder schreibbar.
         {
-            EqCopilotProcessor p;
+            auto p = std::make_unique<EqCopilotProcessor>();
             auto v = schema2Baum ("legacy", "insert", false); v.setProperty ("schema", 3, nullptr);
             const auto bytes = alsBlock (v);
-            p.setStateInformation (bytes.getData(), (int) bytes.getSize());
-            pruefe (p.stateNurLesen(), "read-only gesetzt");
+            p->setStateInformation (bytes.getData(), (int) bytes.getSize());
+            pruefe (p->stateNurLesen(), "read-only gesetzt");
             const auto saat = saatSchema1 ("sensor", "Klavier A", "");
-            p.setStateInformation (saat.getData(), (int) saat.getSize());
-            pruefe (! p.stateNurLesen() && p.holeLabel() == "Klavier A", "gueltiger Stand hebt read-only wieder auf");
+            p->setStateInformation (saat.getData(), (int) saat.getSize());
+            pruefe (! p->stateNurLesen() && p->holeLabel() == "Klavier A", "gueltiger Stand hebt read-only wieder auf");
         }
         a.schliesse ("Unbekanntes Major: " + juce::String (readOnly) + " Faelle read-only, Originalbytes bytegleich zurueck");
     }
@@ -1228,24 +1259,26 @@ int main (int argc, char* argv[])
     {
         Abschnitt a;
         const auto saat = saatSchema1 ("sensor", "Klavier A", "");
-        EqCopilotProcessor p1, p2;
-        p1.setStateInformation (saat.getData(), (int) saat.getSize());
-        p2.setStateInformation (saat.getData(), (int) saat.getSize());
-        pruefe (p1.holeSensorId() == p2.holeSensorId(), "Duplikat: gleiche instance_id (der State IST der Messpunkt)", p1.holeSensorId());
-        pruefe (p1.holeRuntimeNonce() != p2.holeRuntimeNonce() && p1.holeRuntimeNonce().isNotEmpty(), "Duplikat: verschiedene runtime_nonce");
+        auto p1 = std::make_unique<EqCopilotProcessor>();
+        auto p2 = std::make_unique<EqCopilotProcessor>();
+        p1->setStateInformation (saat.getData(), (int) saat.getSize());
+        p2->setStateInformation (saat.getData(), (int) saat.getSize());
+        pruefe (p1->holeSensorId() == p2->holeSensorId(), "Duplikat: gleiche instance_id (der State IST der Messpunkt)", p1->holeSensorId());
+        pruefe (p1->holeRuntimeNonce() != p2->holeRuntimeNonce() && p1->holeRuntimeNonce().isNotEmpty(), "Duplikat: verschiedene runtime_nonce");
         DirtyZaehler dirty;
-        p2.addListener (&dirty);
-        const auto vorher = p2.holeSensorId();
-        pruefe (p2.neueSensorId(), "neueSensorId loest auf");
-        pruefe (p2.holeSensorId() != vorher && p2.holeSensorId() != p1.holeSensorId() && p2.holeSensorId().length() == 32,
-                "neue instance_id: 32 Hex, verschieden von beiden", p2.holeSensorId());
-        pruefe (p2.holeLabel() == "Klavier A" && p2.holeRolle() == "sensor", "Label und Rolle bleiben bei der Aufloesung");
+        p2->addListener (&dirty);
+        const auto vorher = p2->holeSensorId();
+        pruefe (p2->neueSensorId(), "neueSensorId loest auf");
+        pruefe (p2->holeSensorId() != vorher && p2->holeSensorId() != p1->holeSensorId() && p2->holeSensorId().length() == 32,
+                "neue instance_id: 32 Hex, verschieden von beiden", p2->holeSensorId());
+        pruefe (p2->holeLabel() == "Klavier A" && p2->holeRolle() == "sensor", "Label und Rolle bleiben bei der Aufloesung");
         pruefe (dirty.nonParam == 1, "Aufloesung meldet genau einmal Host-Dirty", juce::String (dirty.nonParam));
-        p2.removeListener (&dirty);
+        p2->removeListener (&dirty);
         // Die neue ID reist mit dem naechsten Save.
-        juce::MemoryBlock b; p2.getStateInformation (b);
-        EqCopilotProcessor p3; p3.setStateInformation (b.getData(), (int) b.getSize());
-        pruefe (p3.holeSensorId() == p2.holeSensorId(), "neue instance_id wird gespeichert und geladen");
+        juce::MemoryBlock b; p2->getStateInformation (b);
+        auto p3 = std::make_unique<EqCopilotProcessor>();
+        p3->setStateInformation (b.getData(), (int) b.getSize());
+        pruefe (p3->holeSensorId() == p2->holeSensorId(), "neue instance_id wird gespeichert und geladen");
         a.schliesse ("Duplicate: gleiche instance_id, verschiedene runtime_nonce, Aufloesung mit Host-Dirty");
     }
 
@@ -1254,44 +1287,44 @@ int main (int argc, char* argv[])
     // ══════════════════════════════════════════════════════════════════════
     {
         Abschnitt a;
-        EqCopilotProcessor p;
+        auto p = std::make_unique<EqCopilotProcessor>();
         DirtyZaehler dirty;
-        p.addListener (&dirty);
+        p->addListener (&dirty);
 
         const auto saat = saatSchema1 ("pre", "Chor PRE", "paar-chor");
-        p.setStateInformation (saat.getData(), (int) saat.getSize());
+        p->setStateInformation (saat.getData(), (int) saat.getSize());
         pruefe (dirty.nonParam == 0, "Laden + Migration melden NICHT dirty", juce::String (dirty.nonParam));
-        pruefe (p.holeStateHerkunft() == state::Herkunft::schema1Migriert, "Herkunft schema1Migriert");
+        pruefe (p->holeStateHerkunft() == state::Herkunft::schema1Migriert, "Herkunft schema1Migriert");
 
-        pruefe (! p.setzeBindung ("pre", "Chor PRE", "paar-chor") && dirty.nonParam == 0, "setzeBindung ohne Aenderung: keine Meldung");
-        pruefe (p.setzeBindung ("post", "Chor POST", "paar-chor") && dirty.nonParam == 1, "setzeBindung mit Aenderung: genau eine Meldung", juce::String (dirty.nonParam));
-        pruefe (p.holeRolle() == "post" && p.holeLabel() == "Chor POST", "Aenderung kam an");
-        pruefe (p.setzeBindung ("hub", "Leitstand", "") && dirty.nonParam == 2, "Rollenwechsel zu hub: zweite Meldung");
-        juce::MemoryBlock b; p.getStateInformation (b);
+        pruefe (! p->setzeBindung ("pre", "Chor PRE", "paar-chor") && dirty.nonParam == 0, "setzeBindung ohne Aenderung: keine Meldung");
+        pruefe (p->setzeBindung ("post", "Chor POST", "paar-chor") && dirty.nonParam == 1, "setzeBindung mit Aenderung: genau eine Meldung", juce::String (dirty.nonParam));
+        pruefe (p->holeRolle() == "post" && p->holeLabel() == "Chor POST", "Aenderung kam an");
+        pruefe (p->setzeBindung ("hub", "Leitstand", "") && dirty.nonParam == 2, "Rollenwechsel zu hub: zweite Meldung");
+        juce::MemoryBlock b; p->getStateInformation (b);
         const auto v = juce::ValueTree::readFromData (b.getData(), b.getSize());
         pruefe (v.getChildWithName ("MainProject").isValid() && ! v.getChildWithName ("Common").hasProperty ("pair_id"),
                 "hub speichert MainProject und kein pair_id");
 
-        juce::MemoryBlock b2; p.getStateInformation (b2);
+        juce::MemoryBlock b2; p->getStateInformation (b2);
         pruefe (dirty.nonParam == 2, "getStateInformation meldet nichts");
 
-        pruefe (! p.setzeBindung ("dirigent", "x", "") && dirty.nonParam == 2, "unbekannte v2-Rolle wird verweigert, keine Meldung");
+        pruefe (! p->setzeBindung ("dirigent", "x", "") && dirty.nonParam == 2, "unbekannte v2-Rolle wird verweigert, keine Meldung");
 
         juce::String zuLangesLabel, zuLangesPaar;
         for (int i = 0; i < 121; ++i) zuLangesLabel += "L";
         for (int i = 0; i < 61; ++i) zuLangesPaar += "P";
-        pruefe (! p.setzeBindung ("hub", zuLangesLabel, "")
-                && ! p.setzeBindung ("pre", "ok", zuLangesPaar)
-                && dirty.nonParam == 2 && p.holeLabel() == "Leitstand",
+        pruefe (! p->setzeBindung ("hub", zuLangesLabel, "")
+                && ! p->setzeBindung ("pre", "ok", zuLangesPaar)
+                && dirty.nonParam == 2 && p->holeLabel() == "Leitstand",
                 "Writer-API erzwingt 120/60-Zeichen-Grenzen ohne Dirty oder Teilmutation");
 
         // read-only verweigert ohne Meldung
         auto ro = schema2Baum ("legacy", "insert", false); ro.setProperty ("schema", 9, nullptr);
         const auto rb = alsBlock (ro);
-        p.setStateInformation (rb.getData(), (int) rb.getSize());
-        pruefe (p.stateNurLesen() && p.holeStateFremdesMajor() == 9, "read-only mit fremdem Major 9", juce::String (p.holeStateFremdesMajor()));
-        pruefe (! p.setzeBindung ("hub", "x", "") && ! p.neueSensorId() && dirty.nonParam == 2, "read-only verweigert setzeBindung und neueSensorId ohne Meldung");
-        p.removeListener (&dirty);
+        p->setStateInformation (rb.getData(), (int) rb.getSize());
+        pruefe (p->stateNurLesen() && p->holeStateFremdesMajor() == 9, "read-only mit fremdem Major 9", juce::String (p->holeStateFremdesMajor()));
+        pruefe (! p->setzeBindung ("hub", "x", "") && ! p->neueSensorId() && dirty.nonParam == 2, "read-only verweigert setzeBindung und neueSensorId ohne Meldung");
+        p->removeListener (&dirty);
         a.schliesse ("Host-Dirty: Aenderung meldet, Laden schweigt, read-only verweigert");
     }
 
@@ -1300,11 +1333,11 @@ int main (int argc, char* argv[])
     // ══════════════════════════════════════════════════════════════════════
     {
         Abschnitt a;
-        EqCopilotProcessor p;
-        pruefe (p.holeStateHerkunft() == state::Herkunft::frisch && ! p.stateNurLesen(), "nie restauriert: Herkunft frisch");
-        pruefe (p.holeRolle() == "sensor" && p.holeLabel().isEmpty() && p.holePaarId().isEmpty(), "frisch: legacy+insert = v2 'sensor', leeres Label");
-        pruefe (p.holeSensorId().length() == 32 && p.holeSensorId().containsOnly ("0123456789abcdef"), "frisch: instance_id ist hex32", p.holeSensorId());
-        juce::MemoryBlock b; p.getStateInformation (b);
+        auto p = std::make_unique<EqCopilotProcessor>();
+        pruefe (p->holeStateHerkunft() == state::Herkunft::frisch && ! p->stateNurLesen(), "nie restauriert: Herkunft frisch");
+        pruefe (p->holeRolle() == "sensor" && p->holeLabel().isEmpty() && p->holePaarId().isEmpty(), "frisch: legacy+insert = v2 'sensor', leeres Label");
+        pruefe (p->holeSensorId().length() == 32 && p->holeSensorId().containsOnly ("0123456789abcdef"), "frisch: instance_id ist hex32", p->holeSensorId());
+        juce::MemoryBlock b; p->getStateInformation (b);
         const auto v = juce::ValueTree::readFromData (b.getData(), b.getSize());
         pruefe (v.hasType ("NakamaState") && (int) v.getProperty ("schema") == 2
                 && v.getChildWithName ("Common").getProperty ("plugin_kind").toString() == "legacy",
@@ -1315,13 +1348,13 @@ int main (int argc, char* argv[])
         juce::MemoryBlock gb;
         if (golden.existsAsFile() && golden.loadFileAsData (gb))
         {
-            EqCopilotProcessor frisch;
-            frisch.setStateInformation (gb.getData(), (int) gb.getSize());
-            pruefe (frisch.holeRolle() == "post" && frisch.holeLabel() == "Chor POST" && frisch.holePaarId() == "paar-chor"
-                    && frisch.holeSensorId() == "11111111-2222-3333-4444-555555555555"
-                    && frisch.holeStateHerkunft() == state::Herkunft::schema2Geladen,
+            auto frisch = std::make_unique<EqCopilotProcessor>();
+            frisch->setStateInformation (gb.getData(), (int) gb.getSize());
+            pruefe (frisch->holeRolle() == "post" && frisch->holeLabel() == "Chor POST" && frisch->holePaarId() == "paar-chor"
+                    && frisch->holeSensorId() == "11111111-2222-3333-4444-555555555555"
+                    && frisch->holeStateHerkunft() == state::Herkunft::schema2Geladen,
                     "Recall: Schema-2-Golden laedt feldgleich in eine frische Instanz");
-            juce::MemoryBlock wieder; frisch.getStateInformation (wieder);
+            juce::MemoryBlock wieder; frisch->getStateInformation (wieder);
             pruefe (gleich (wieder, gb), "Recall: Save nach Recall ist bytegleich zum Golden");
         }
         else

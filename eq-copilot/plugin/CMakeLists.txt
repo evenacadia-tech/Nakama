@@ -166,6 +166,7 @@ set(NAKAMA_KERN_QUELLEN
     state/NakamaParameter.cpp
     state/NakamaState.cpp
     vertrag/NakamaVertrag.cpp
+    vertrag/NakamaTelemetrie.cpp
     core/ipc/WireEnvelope.cpp
     core/ipc/IpcVerbindung.cpp
     core/ipc/BrokerLifecycle.cpp
@@ -396,6 +397,55 @@ nakama_sonde012_test(EqCopSonde012HostChannelContextTest
                      tests/Sonde012HostChannelContextTest.cpp)
 nakama_sonde012_test(EqCopSonde012LoudnessSourceTest
                      tests/Sonde012LoudnessSourceTest.cpp)
+
+# ── SONDE-012 B3b: Main-Quellenmodell und Save/Load-Gegenpfad ─────────────
+juce_add_console_app(EqCopSonde012SourcesModelTest
+                     PRODUCT_NAME "eqcop-sonde012-sourcesmodeltest")
+target_sources(EqCopSonde012SourcesModelTest PRIVATE
+    tests/Sonde012SourcesModelTest.cpp
+    src/SourcesModel.cpp)
+target_include_directories(EqCopSonde012SourcesModelTest PRIVATE src vertrag core)
+target_compile_definitions(EqCopSonde012SourcesModelTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0
+    NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
+target_link_libraries(EqCopSonde012SourcesModelTest PRIVATE juce::juce_core flatbuffers
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopSonde012SourcesModelTest)
+
+juce_add_console_app(EqCopSonde012ProjectReloadTest
+                     PRODUCT_NAME "eqcop-sonde012-projectreloadtest")
+target_sources(EqCopSonde012ProjectReloadTest PRIVATE
+    tests/Sonde012ProjectReloadTest.cpp
+    src/PluginProcessor.cpp
+    src/PluginEditor.cpp
+    src/PipeClient.cpp
+    src/AnalyseEngine.cpp
+    src/Diagnose.cpp)
+target_include_directories(EqCopSonde012ProjectReloadTest PRIVATE src)
+target_compile_definitions(EqCopSonde012ProjectReloadTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0)
+target_link_libraries(EqCopSonde012ProjectReloadTest PRIVATE
+    juce::juce_audio_utils juce::juce_dsp
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopSonde012ProjectReloadTest)
+
+# B3c / E-L06: von A23 gegen den echten Rust-Coordinator auf einer Probe-Pipe
+# gestartet. Das Programm ist kein isoliertes Kanonbein; der Python-Runner
+# besitzt Prozesslebenszyklus, Pipenamen-Riegel und das p95-Urteil.
+juce_add_console_app(EqCopSonde012SourcesLatencyTest
+                     PRODUCT_NAME "eqcop-sonde012-sourceslatencytest")
+target_sources(EqCopSonde012SourcesLatencyTest PRIVATE
+    tests/Sonde012SourcesLatencyTest.cpp
+    src/SourcesModel.cpp
+    core/ipc/PipeToken.cpp)
+target_include_directories(EqCopSonde012SourcesLatencyTest PRIVATE src core vertrag)
+target_compile_definitions(EqCopSonde012SourcesLatencyTest PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0
+    NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
+target_link_libraries(EqCopSonde012SourcesLatencyTest PRIVATE
+    juce::juce_core flatbuffers Advapi32
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+nakama_kern_anbinden(EqCopSonde012SourcesLatencyTest)
 
 # ── Konsolen-Probe: Ende-zu-Ende-Handshake ohne FL ──────────────────────────
 juce_add_console_app(EqCopPipeProbe PRODUCT_NAME "eqcop-pipe-probe")
@@ -781,12 +831,11 @@ target_link_libraries(EqCopHostContextTest PRIVATE juce::juce_core juce::juce_cr
 # ECHTEN Quellpfad (plugin/vertrag/), keine Testkopie - ab SONDE-010 ist das
 # die Eingangspruefung des C++-IPC-Clients.
 juce_add_console_app(EqCopSchemaTest PRODUCT_NAME "eqcop-schematest")
-# NakamaVertrag.cpp kommt seit S8 aus NakamaKern (eine Uebersetzung statt zwei);
-# NakamaTelemetrie.cpp bleibt hier, weil es die FlatBuffers-Laufzeit braucht und
-# heute nur dieses Ziel es liest — sein Umzug in den Kern gehoert zu SONDE-010.
+# Beide handgeschriebenen Vertragsleser kommen aus NakamaKern. Seit SONDE-012
+# konsumiert auch Gen/Main die typisierte FlatBuffers-Kopie; eine zweite
+# Uebersetzung nur fuer den Schematest waere wieder zwei Leserstaende.
 target_sources(EqCopSchemaTest PRIVATE
     tests/SchemaTestMain.cpp
-    vertrag/NakamaTelemetrie.cpp
 )
 target_include_directories(EqCopSchemaTest PRIVATE vertrag)
 target_compile_definitions(EqCopSchemaTest PRIVATE
@@ -813,8 +862,19 @@ nakama_kern_anbinden(EqCopSchemaTest)
 foreach(ziel EqCopilot
              EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest
-             EqCopQueueStressTest EqCopAnalysisGoldenTest)
+             EqCopQueueStressTest EqCopAnalysisGoldenTest
+             EqCopSonde012ProjectReloadTest)
     target_compile_definitions(${ziel} PRIVATE NAKAMA_BUNDLE_MAIN=1)
+endforeach()
+
+# Das Quellenmodell ist Produktcode der Main-Schale. Jedes Ziel, das den
+# echten Main-Prozessor uebersetzt, bekommt exakt dieselbe Uebersetzungseinheit.
+foreach(ziel EqCopilot
+             EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
+             EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest
+             EqCopQueueStressTest EqCopAnalysisGoldenTest
+             EqCopSonde012ProjectReloadTest)
+    target_sources(${ziel} PRIVATE src/SourcesModel.cpp)
 endforeach()
 
 # Nur Ziele, die den Main-Prozessor wirklich uebersetzen, bekommen die duenne
@@ -824,7 +884,8 @@ endforeach()
 foreach(ziel EqCopilot
              EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest
-             EqCopQueueStressTest EqCopAnalysisGoldenTest)
+             EqCopQueueStressTest EqCopAnalysisGoldenTest
+             EqCopSonde012ProjectReloadTest)
     target_sources(${ziel} PRIVATE core/ipc/PipeToken.cpp)
     target_include_directories(${ziel} PRIVATE "${NAKAMA_BROKER_BINDING_DIR}")
     target_link_libraries(${ziel} PRIVATE Advapi32)
@@ -836,7 +897,8 @@ endforeach()
 # Probe-Pipenamen; nur das eigentliche Bundle aktiviert die Produktthreads.
 foreach(ziel EqCopNullTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest
-             EqCopQueueStressTest EqCopAnalysisGoldenTest)
+             EqCopQueueStressTest EqCopAnalysisGoldenTest
+             EqCopSonde012ProjectReloadTest)
     target_compile_definitions(${ziel} PRIVATE
         NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
 endforeach()
@@ -851,7 +913,8 @@ endforeach()
 foreach(ziel EqCopilot
              EqCopNullTest EqCopGoldenTest EqCopMarkierungTest EqCopShot EqCopPaintBench
              EqCopIdentityTest EqCopStateMigrationTest EqCopLebenslaufTest
-             EqCopQueueStressTest EqCopLoudnessGoldenTest EqCopAnalysisGoldenTest)
+             EqCopQueueStressTest EqCopLoudnessGoldenTest EqCopAnalysisGoldenTest
+             EqCopSonde012ProjectReloadTest EqCopSonde012SourcesModelTest)
     target_include_directories(${ziel} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/core"
         "${CMAKE_CURRENT_SOURCE_DIR}/hostbridge")
@@ -867,7 +930,9 @@ foreach(ziel NakamaKern
              EqCopQueueStressTest EqCopLoudnessGoldenTest EqCopAnalysisGoldenTest
              EqCopHostProbe EqCopHostProbeTest
              NakamaProbeeq EqCopProbeeqNullTest
-             EqCopSonde012HostChannelContextTest EqCopSonde012LoudnessSourceTest)
+             EqCopSonde012HostChannelContextTest EqCopSonde012LoudnessSourceTest
+             EqCopSonde012SourcesModelTest EqCopSonde012ProjectReloadTest
+             EqCopSonde012SourcesLatencyTest)
     target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endforeach()
 

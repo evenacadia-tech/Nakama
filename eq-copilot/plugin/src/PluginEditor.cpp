@@ -1,6 +1,7 @@
 #include "PluginEditor.h"
 #include "LeitstandTokens.h"
 #include "EqCopilotIds.h"
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
@@ -175,6 +176,43 @@ EqCopilotEditor::EqCopilotEditor (EqCopilotProcessor& p)
     markierungAusKnopf.setColour (juce::TextButton::textColourOffId, farbe (leitstand::copilot_accent_soft));
     markierungAusKnopf.setVisible (false);
 
+    initKnopf (sourcesAktionKnopf, "Bind source", [this]
+    {
+        const auto ziel = sourcesAktionsZiel; // Aktions-Snapshot (U03).
+        const auto it = std::find_if (sourcesAnzeige.quellen.begin(),
+                                      sourcesAnzeige.quellen.end(),
+            [&] (const auto& q) { return q.instanceId == ziel && q.hauptziel; });
+        if (it == sourcesAnzeige.quellen.end())
+            return;
+        if (it->mitgliedschaft == SourcesModel::Mitgliedschaft::bestaetigt)
+            processor.entferneSourcesHauptziel (ziel);
+        else
+            processor.bindeSourcesHauptziel (ziel);
+        uiDirty = true;
+    });
+    initKnopf (sourcesRecoveryKnopf, "Reconnect", [this]
+    {
+        processor.reconnectSources();
+        uiDirty = true;
+    });
+    sourcesLabelFeld.setInputRestrictions (120);
+    sourcesLabelFeld.setTextToShowWhenEmpty ("Stored fallback label",
+                                             juce::Colours::grey);
+    sourcesLabelFeld.setColour (juce::TextEditor::backgroundColourId,
+                                juce::Colours::black.withAlpha (0.35f));
+    sourcesLabelFeld.setColour (juce::TextEditor::textColourId,
+                                juce::Colours::white);
+    sourcesLabelFeld.setColour (juce::TextEditor::outlineColourId,
+                                juce::Colours::grey);
+    sourcesLabelFeld.setColour (juce::TextEditor::focusedOutlineColourId,
+                                juce::Colours::white);
+    sourcesLabelFeld.onReturnKey = [this] { uebernehmeSourcesLabel(); };
+    sourcesLabelFeld.onFocusLost = [this] { uebernehmeSourcesLabel(); };
+    addAndMakeVisible (sourcesLabelFeld);
+    sourcesAktionKnopf.setVisible (false);
+    sourcesRecoveryKnopf.setVisible (false);
+    sourcesLabelFeld.setVisible (false);
+
     processor.setzeEditorOffen (true);
     letzteInteraktionMs = juce::Time::getMillisecondCounter();
     addMouseListener (this, true);   // Totmannschalter: jede Bedienung zählt
@@ -188,6 +226,7 @@ EqCopilotEditor::EqCopilotEditor (EqCopilotProcessor& p)
     // 1200 px ist die neue Qualitäts-/Lesebasis; auf kleineren Displays kann
     // der Host weiterhin bis 600 px verkleinern.
     setSize (1200, 832);
+    wechsleFlaecheWennNoetig();
     startTimerHz (30);
 }
 
@@ -202,6 +241,22 @@ EqCopilotEditor::~EqCopilotEditor()
 
 void EqCopilotEditor::timerCallback()
 {
+    wechsleFlaecheWennNoetig();
+    if (mainFlaecheAktiv)
+    {
+        processor.sourcesTick();
+        auto frisch = processor.sourcesSicht();
+        if (frisch.revision != sourcesRevision || uiDirty)
+        {
+            sourcesRevision = frisch.revision;
+            sourcesAnzeige = std::move (frisch);
+            aktualisiereSourcesSteuerung();
+            uiDirty = false;
+            repaint();
+        }
+        return;
+    }
+
     vergleichWegKnopf.setEnabled (vergleichAktiv);
     vergleichWegKnopf.setToggleState (vergleichAktiv, juce::dontSendNotification);
     vergleichWegKnopf.setButtonText (vergleichAktiv ? "Vergleich aus" : "Vergleich leer");
@@ -770,14 +825,139 @@ void EqCopilotEditor::markierungBeenden (const juce::String& grund)
     uiDirty = true;
 }
 
+bool EqCopilotEditor::istMainFlaeche() const
+{
+    return processor.holeRolle() == "hub" && ! processor.stateNurLesen();
+}
+
+void EqCopilotEditor::wechsleFlaecheWennNoetig()
+{
+    const bool sollMain = istMainFlaeche();
+    if (sollMain == mainFlaecheAktiv)
+        return;
+    mainFlaecheAktiv = sollMain;
+
+    juce::Component* legacy[] = {
+        &glaettungWahl, &ansichtKnopf, &festhaltenKnopf, &vergleichWegKnopf,
+        &resetKnopf, &hinweisKnopf, &messpunktKnopf, &konfliktKnopf,
+        &markierungAusKnopf
+    };
+    for (auto* c : legacy)
+        c->setVisible (! sollMain);
+    sourcesAktionKnopf.setVisible (sollMain);
+    sourcesRecoveryKnopf.setVisible (false);
+    sourcesLabelFeld.setVisible (sollMain);
+
+    if (sollMain)
+    {
+        // Die abgenommene funktionale Pruefflaeche hat genau dieses Mass.
+        // Keine daraus abgeleitete Stil- oder Responsiventscheidung.
+        if (auto* c = getConstrainer())
+            c->setFixedAspectRatio (0.0);
+        setResizable (false, false);
+        setSize (760, 430);
+        sourcesAnzeige = processor.sourcesSicht();
+        sourcesRevision = sourcesAnzeige.revision;
+        aktualisiereSourcesSteuerung();
+    }
+    else
+    {
+        setResizable (true, true);
+        setResizeLimits (600, 416, 1950, 1352);
+        if (auto* c = getConstrainer())
+            c->setFixedAspectRatio ((double) skin::kEinheitB / (double) skin::kEinheitH);
+    }
+    resized();
+    repaint();
+}
+
+void EqCopilotEditor::uebernehmeSourcesLabel()
+{
+    if (! mainFlaecheAktiv || sourcesAktionsZiel.empty())
+        return;
+    const auto ziel = sourcesAktionsZiel;
+    const auto it = std::find_if (sourcesAnzeige.quellen.begin(),
+                                  sourcesAnzeige.quellen.end(),
+        [&] (const auto& q) { return q.instanceId == ziel && q.hauptziel; });
+    if (it == sourcesAnzeige.quellen.end()
+        || it->mitgliedschaft != SourcesModel::Mitgliedschaft::bestaetigt)
+        return;
+    processor.benenneSourcesHauptziel (ziel,
+        sourcesLabelFeld.getText().substring (0, 120));
+    uiDirty = true;
+}
+
+void EqCopilotEditor::aktualisiereSourcesSteuerung()
+{
+    const auto it = std::find_if (sourcesAnzeige.quellen.begin(),
+                                  sourcesAnzeige.quellen.end(),
+        [] (const auto& q) { return q.hauptziel; });
+    sourcesAktionsZiel = it == sourcesAnzeige.quellen.end()
+                           ? std::string() : it->instanceId;
+    const bool hatZiel = it != sourcesAnzeige.quellen.end();
+    const bool bestaetigt = hatZiel
+        && it->mitgliedschaft == SourcesModel::Mitgliedschaft::bestaetigt;
+    sourcesAktionKnopf.setButtonText (bestaetigt ? "Remove source" : "Bind source");
+    sourcesAktionKnopf.setEnabled (hatZiel && sourcesAnzeige.mainDarfSchreiben
+        && (sourcesAnzeige.diagnose != SourcesModel::Diagnose::confirmationRequired
+            || sourcesAnzeige.diagnoseHatHandgriff));
+    sourcesAktionKnopf.setVisible (mainFlaecheAktiv && hatZiel);
+    sourcesLabelFeld.setEnabled (bestaetigt);
+    sourcesLabelFeld.setVisible (mainFlaecheAktiv && hatZiel);
+    if (hatZiel && ! sourcesLabelFeld.hasKeyboardFocus (true)
+        && sourcesLabelFeld.getText() != it->userLabel)
+        sourcesLabelFeld.setText (it->userLabel, juce::dontSendNotification);
+
+    // L15: nur Broker-unavailable hat in diesem Client einen echten,
+    // vollstaendigen Recovery-Handgriff. Die anderen Diagnosen bleiben Text.
+    sourcesRecoveryKnopf.setVisible (
+        mainFlaecheAktiv
+        && sourcesAnzeige.diagnose == SourcesModel::Diagnose::brokerUnavailable
+        && sourcesAnzeige.diagnoseHatHandgriff);
+}
+
+juce::Rectangle<int> EqCopilotEditor::sourcesSpalte() const
+{
+    return { 0, 0, juce::jmin (310, getWidth()), getHeight() };
+}
+
+std::vector<juce::Rectangle<int>> EqCopilotEditor::sourcesZeilen() const
+{
+    std::vector<juce::Rectangle<int>> aus;
+    if (sourcesAnzeige.quellen.empty())
+        return aus;
+    auto r = sourcesSpalte().reduced (8);
+    r.removeFromTop (48);
+    const int h = juce::jlimit (18, 34,
+        r.getHeight() / juce::jmax (1, (int) sourcesAnzeige.quellen.size()));
+    for (size_t i = 0; i < sourcesAnzeige.quellen.size(); ++i)
+    {
+        if (r.getHeight() < h)
+            break;
+        aus.push_back (r.removeFromTop (h));
+    }
+    return aus;
+}
+
 void EqCopilotEditor::mouseMove (const juce::MouseEvent&)
 {
     letzteInteraktionMs = juce::Time::getMillisecondCounter();
 }
 
-void EqCopilotEditor::mouseDown (const juce::MouseEvent&)
+void EqCopilotEditor::mouseDown (const juce::MouseEvent& e)
 {
     letzteInteraktionMs = juce::Time::getMillisecondCounter();
+    if (! mainFlaecheAktiv)
+        return;
+    const auto p = e.getEventRelativeTo (this).getPosition();
+    const auto zeilen = sourcesZeilen();
+    for (size_t i = 0; i < zeilen.size(); ++i)
+        if (zeilen[i].contains (p))
+        {
+            processor.waehleSourcesHauptziel (sourcesAnzeige.quellen[i].instanceId);
+            uiDirty = true;
+            return;
+        }
 }
 
 juce::Rectangle<int> EqCopilotEditor::graphFlaeche() const
@@ -788,6 +968,19 @@ juce::Rectangle<int> EqCopilotEditor::graphFlaeche() const
 
 void EqCopilotEditor::resized()
 {
+    if (mainFlaecheAktiv)
+    {
+        const int links = sourcesSpalte().getRight();
+        auto rechts = getLocalBounds().withLeft (links).reduced (12);
+        auto unten = rechts.removeFromBottom (30);
+        sourcesRecoveryKnopf.setBounds (unten.removeFromRight (104));
+        unten.removeFromRight (8);
+        sourcesAktionKnopf.setBounds (unten.removeFromRight (112));
+        unten.removeFromRight (8);
+        sourcesLabelFeld.setBounds (unten.removeFromRight (190));
+        return;
+    }
+
     lnf.faktor = ui();   // ComboBox-/Knopf-/Popup-Schriften wachsen mit
     front.stelleSicher (getWidth(), getHeight());
 
@@ -878,8 +1071,237 @@ void EqCopilotEditor::zeichneKurve (juce::Graphics& g, const MessSnapshot& m,
                                               juce::PathStrokeType::rounded));
 }
 
+void EqCopilotEditor::paintMainFlaeche (juce::Graphics& g)
+{
+    const auto hintergrund = juce::Colour::fromRGB (31, 33, 36);
+    const auto spaltenGrund = juce::Colour::fromRGB (24, 26, 29);
+    const auto feld = juce::Colour::fromRGB (43, 46, 50);
+    const auto linie = juce::Colour::fromRGB (86, 90, 96);
+    const auto text = juce::Colours::whitesmoke;
+    const auto leise = juce::Colour::fromRGB (183, 187, 193);
+    const auto hinweis = juce::Colour::fromRGB (226, 201, 129);
+
+    g.fillAll (hintergrund);
+    const auto links = sourcesSpalte();
+    g.setColour (spaltenGrund);
+    g.fillRect (links);
+    g.setColour (linie);
+    g.drawVerticalLine (links.getRight() - 1, 0.0f, (float) getHeight());
+
+    g.setColour (text);
+    g.setFont (juce::FontOptions (16.0f));
+    g.drawText ("Sources", links.reduced (10).removeFromTop (22),
+                juce::Justification::centredLeft);
+    g.setColour (leise);
+    g.setFont (juce::FontOptions (10.0f));
+    auto kopf = links.reduced (8);
+    kopf.removeFromTop (25);
+    auto kopfzeile = kopf.removeFromTop (22);
+    g.drawText ("Identity", kopfzeile.removeFromLeft (120),
+                juce::Justification::centredLeft);
+    g.drawText ("Signal", kopfzeile.removeFromLeft (58),
+                juce::Justification::centredLeft);
+    g.drawText ("Measurement / age", kopfzeile.removeFromLeft (82),
+                juce::Justification::centredLeft);
+    g.drawText ("Findings", kopfzeile, juce::Justification::centredRight);
+
+    const auto zeilen = sourcesZeilen();
+    for (size_t i = 0; i < zeilen.size(); ++i)
+    {
+        const auto& q = sourcesAnzeige.quellen[i];
+        auto r = zeilen[i];
+        if (q.hauptziel)
+        {
+            g.setColour (feld);
+            g.fillRect (r);
+            g.setColour (juce::Colours::white.withAlpha (0.8f));
+            g.drawRect (r, 1);
+        }
+        g.setColour (linie.withAlpha (0.55f));
+        g.drawHorizontalLine (r.getBottom() - 1, (float) r.getX(), (float) r.getRight());
+
+        const char* herkunft = q.namensherkunft == SourcesModel::Namensherkunft::host
+                                   ? "H"
+                             : q.namensherkunft == SourcesModel::Namensherkunft::userLabel
+                                   ? "U" : "?";
+        juce::String identitaet = "[" + juce::String (herkunft) + "] "
+                               + q.sichtbarerName;
+        identitaet += q.hauptziel ? "  MAIN" : "  REF";
+
+        juce::String signal;
+        if (q.betrieb == SourcesModel::Betrieb::suspended
+                 || q.betrieb == SourcesModel::Betrieb::offline)
+            signal = wort (q.betrieb);
+        else
+            signal = wort (q.control);
+
+        juce::String messung = q.descriptorVorhanden
+                                 ? juce::String (wort (q.messung))
+                                 : juce::String ("missing / unclassified");
+        if (q.messung != SourcesModel::Messung::missing)
+            messung += " " + juce::String ((juce::int64) q.messAlterMs) + " ms";
+
+        g.setFont (juce::FontOptions (10.5f));
+        g.setColour (text);
+        g.drawFittedText (identitaet, r.removeFromLeft (120),
+                          juce::Justification::centredLeft, 1, 0.72f);
+        g.setColour (signal == "connected" || signal == "active" ? text : hinweis);
+        g.drawFittedText (signal, r.removeFromLeft (58),
+                          juce::Justification::centredLeft, 1, 0.72f);
+        g.setColour (q.messung == SourcesModel::Messung::fresh ? text : hinweis);
+        g.drawFittedText (messung, r.removeFromLeft (82),
+                          juce::Justification::centredLeft, 1, 0.68f);
+        g.setColour (text);
+        g.drawText (juce::String (q.findingsOffen), r,
+                    juce::Justification::centredRight);
+    }
+    if (sourcesAnzeige.quellen.empty())
+    {
+        g.setColour (leise);
+        g.setFont (juce::FontOptions (12.0f));
+        g.drawFittedText ("No sources in the absolute session snapshot.",
+                          links.reduced (12).withTrimmedTop (58),
+                          juce::Justification::centredTop, 2);
+    }
+
+    auto rechts = getLocalBounds().withLeft (links.getRight()).reduced (14);
+    auto titel = rechts.removeFromTop (32);
+    g.setColour (text);
+    g.setFont (juce::FontOptions (17.0f));
+    g.drawText ("Gen / Surface 1", titel, juce::Justification::centredLeft);
+
+    if (sourcesAnzeige.diagnose != SourcesModel::Diagnose::keine)
+    {
+        auto diagnose = rechts.removeFromTop (34).reduced (0, 3);
+        g.setColour (feld);
+        g.fillRect (diagnose);
+        g.setColour (hinweis);
+        g.setFont (juce::FontOptions (12.0f));
+        auto diagnoseText = juce::String (wort (sourcesAnzeige.diagnose));
+        if (sourcesAnzeige.diagnose == SourcesModel::Diagnose::confirmationRequired)
+            diagnoseText += sourcesAnzeige.diagnoseHatHandgriff
+                              ? " - choose a source and bind it"
+                              : " - only the leading Main can resolve it";
+        else if (sourcesAnzeige.diagnose == SourcesModel::Diagnose::storeDegraded)
+            diagnoseText += " - no client recovery command";
+        g.drawFittedText (diagnoseText, diagnose.reduced (8),
+                          juce::Justification::centredLeft, 2, 0.75f);
+    }
+
+    auto ziel = std::find_if (sourcesAnzeige.quellen.begin(),
+                              sourcesAnzeige.quellen.end(),
+                              [] (const auto& q) { return q.hauptziel; });
+    if (ziel == sourcesAnzeige.quellen.end())
+    {
+        g.setColour (leise);
+        g.setFont (juce::FontOptions (13.0f));
+        g.drawText ("No main target. Source actions are unavailable.", rechts,
+                    juce::Justification::centred);
+        return;
+    }
+
+    g.setColour (text);
+    g.setFont (juce::FontOptions (15.0f));
+    g.drawFittedText (ziel->sichtbarerName, rechts.removeFromTop (25),
+                      juce::Justification::centredLeft, 1);
+    g.setColour (leise);
+    g.setFont (juce::FontOptions (11.0f));
+    const auto idKurz = juce::String (ziel->instanceId).substring (0, 8);
+    g.drawText (juce::String (wort (ziel->namensherkunft)) + " / " + idKurz
+                + " / " + (ziel->hauptziel ? "Main target" : "Reference"),
+                rechts.removeFromTop (18), juce::Justification::centredLeft);
+
+    juce::String fuehrung;
+    if (sourcesAnzeige.fuehrendesMain.empty())
+        fuehrung = "No leading Main";
+    else if (sourcesAnzeige.mainDarfSchreiben)
+        fuehrung = "This Main holds the write handover";
+    else
+        fuehrung = "Reference view - leading Main "
+                 + juce::String (sourcesAnzeige.fuehrendesMain).substring (0, 8);
+    g.setColour (sourcesAnzeige.mainDarfSchreiben ? text : hinweis);
+    g.drawText (fuehrung, rechts.removeFromTop (19),
+                juce::Justification::centredLeft);
+
+    auto statusBox = rechts.removeFromTop (94).reduced (0, 5);
+    g.setColour (feld);
+    g.fillRect (statusBox);
+    statusBox.reduce (9, 6);
+    g.setColour (text);
+    const juce::String control = "Signal: " + juce::String (wort (ziel->control))
+        + " / operation: " + wort (ziel->betrieb)
+        + " / point: " + wort (ziel->messpunkt);
+    g.drawText (control, statusBox.removeFromTop (18),
+                juce::Justification::centredLeft);
+    juce::String mess = "Measurement: " + juce::String (wort (ziel->messung));
+    if (ziel->messung != SourcesModel::Messung::missing)
+        mess += " / age " + juce::String ((juce::int64) ziel->messAlterMs)
+              + " ms / window " + juce::String (ziel->fensterDauerMs, 1) + " ms";
+    g.setColour (ziel->messung == SourcesModel::Messung::fresh ? text : hinweis);
+    g.drawText (mess, statusBox.removeFromTop (18),
+                juce::Justification::centredLeft);
+    const char* evidenz = ziel->capabilityEvidenz == SourcesModel::CapabilityEvidenz::gemessenJa
+                            ? "measured: yes"
+                        : ziel->capabilityEvidenz == SourcesModel::CapabilityEvidenz::gemessenNein
+                            ? "measured: no" : "not measured";
+    g.setColour (leise);
+    g.drawText ("Host channel context evidence: " + juce::String (evidenz),
+                statusBox.removeFromTop (18), juce::Justification::centredLeft);
+    if (ziel->p2RejectAktiv)
+    {
+        g.setColour (hinweis);
+        g.drawText ("P2 rejected: " + ziel->p2RejectGrund + " (#"
+                    + juce::String ((juce::int64) ziel->p2RejectZaehler) + ")",
+                    statusBox.removeFromTop (18), juce::Justification::centredLeft);
+    }
+
+    auto lautheitBox = rechts.removeFromTop (61).reduced (0, 5);
+    g.setColour (feld);
+    g.fillRect (lautheitBox);
+    lautheitBox.reduce (9, 6);
+    g.setColour (leise);
+    g.drawText ("Integrated loudness", lautheitBox.removeFromTop (16),
+                juce::Justification::centredLeft);
+    const bool paarEhrlich = ziel->lufsPaarVorhanden
+                          && std::isfinite (ziel->lufsI)
+                          && std::isfinite (ziel->lufsIUnsicherheitLu)
+                          && ziel->lautheit == SourcesModel::Lautheit::gueltig
+                          && ziel->messung != SourcesModel::Messung::invalid;
+    g.setColour (paarEhrlich ? text : hinweis);
+    const auto lautheit = paarEhrlich
+        ? juce::String (ziel->lufsI, 1) + " LUFS  +/- "
+          + juce::String (ziel->lufsIUnsicherheitLu, 2) + " LU"
+        : juce::String (wort (ziel->lautheit)) + " - no value without confidence";
+    g.setFont (juce::FontOptions (13.0f));
+    g.drawText (lautheit, lautheitBox.removeFromTop (23),
+                juce::Justification::centredLeft);
+
+    auto findings = rechts.removeFromTop (46).reduced (0, 4);
+    g.setColour (feld);
+    g.fillRect (findings);
+    g.setColour (text);
+    g.setFont (juce::FontOptions (12.0f));
+    const auto findingsText = ziel->findingsOffen == 0
+        ? juce::String ("Findings: 0 - no findings yet")
+        : "Findings: " + juce::String (ziel->findingsOffen) + " open";
+    g.drawText (findingsText, findings.reduced (9),
+                juce::Justification::centredLeft);
+
+    g.setColour (leise);
+    g.setFont (juce::FontOptions (9.5f));
+    g.drawText ("Stored label fallback (untrusted user text)",
+                juce::Rectangle<int> { links.getRight() + 14, getHeight() - 57, 190, 14 },
+                juce::Justification::centredLeft);
+}
+
 void EqCopilotEditor::paint (juce::Graphics& g)
 {
+    if (mainFlaecheAktiv)
+    {
+        paintMainFlaeche (g);
+        return;
+    }
+
     const float s = ui();          // Schriftskala (Lesegröße wie bisher)
     const float gs = geraet();     // Geräteeinheiten → Pixel
 

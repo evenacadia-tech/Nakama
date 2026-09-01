@@ -407,6 +407,13 @@ GRUND: dict[str, dict] = {
         "adresse": ADRESSE,
         "session_epoch": "22222222222222222222222222222222",
     },
+    "session_command": {
+        "type": "session_command",
+        "command": "confirm_join",
+        "command_id": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "ziel": ADRESSE,
+        "session_epoch": "22222222222222222222222222222222",
+    },
     "session_snapshot": {
         "type": "session_snapshot",
         "session_epoch": "22222222222222222222222222222222",
@@ -751,6 +758,25 @@ def zusatz_gueltig() -> list[tuple[str, dict, str]]:
     faelle.append(("session-mitglied-unclassified", ss,
                    "E-M01/L23: Mitglied ohne gemeldeten Messpunkt bleibt ohne Descriptor sichtbar"))
 
+    command = copy.deepcopy(GRUND["session_command"])
+    command["command"] = "unbind_probe"
+    faelle.append(("session-command-unbind", command,
+                   "E-L18: unbind_probe ist der zweite und einzige Gegenpfad im geschlossenen Zweigsatz"))
+
+    command = copy.deepcopy(GRUND["session_command"])
+    faelle.append(("session-command-fremdes-main-vertragsform", command,
+                   "Die JSON-Form kennt keinen selbst behaupteten Sender; ob der sendende Link das fuehrende Main ist, entscheidet ausschliesslich der Broker"))
+
+    command = copy.deepcopy(GRUND["session_command"])
+    command["session_epoch"] = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    faelle.append(("session-command-falsche-epoche-vertragsform", command,
+                   "Beide Epochen sind einzeln hex32; ihre fail-closed Gleichheitsrelation zum Ziel und Sender-Link ist eine Brokerregel und kein mit draft 2020-12 ausdrueckbarer JSON-Typ"))
+
+    ss = copy.deepcopy(GRUND["session_snapshot"])
+    ss["store_degraded"] = True
+    faelle.append(("session-snapshot-store-degraded", ss,
+                   "E-L15-Store: nur der positive Diagnosebefund true reist"))
+
     # Leere Sitzung.
     ss = copy.deepcopy(GRUND["session_snapshot"])
     ss["mitglieder"] = []
@@ -796,6 +822,24 @@ def vm(instanz: str, schema: str, schluessel: str) -> dict:
 
 
 UNGUELTIG: list[tuple] = [
+    # --- SONDE-012 Sessionbefehle und Storediagnose ----------------------
+    ("session-command-fremdes-main-senderfeld", "session_command",
+     [setze("sender", ADRESSE)],
+     [v("/sender", f"{S}/session_command/oneOf/0/additionalProperties",
+        "additionalProperties")],
+     "Der Sender ist der autoritative Control-Link; ein fremdes Main darf sich nicht per Nutzlastfeld selbst autorisieren"),
+
+    ("session-command-unbekannter-zweig", "session_command",
+     [setze("command", "rename_probe")],
+     [v("/command", f"{S}/session_command/oneOf", "oneOf")],
+     "E-L18/L04 schliesst den Zweigsatz auf confirm_join und unbind_probe"),
+
+    ("session-snapshot-store-degraded-false", "session_snapshot",
+     [setze("store_degraded", False)],
+     [v("/store_degraded",
+        f"{S}/session_snapshot/properties/store_degraded/const", "const")],
+     "E-L15-Store: false reist nicht; Abwesenheit bleibt die einzige nicht-positive Form"),
+
     # --- SONDE-012 Runtime und P2-Fehlerkanal ----------------------------
     ("heartbeat-runtime-ohne-messpunkt", "heartbeat",
      [setze("runtime", {"betrieb": "active"})],

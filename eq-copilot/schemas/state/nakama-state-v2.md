@@ -21,7 +21,7 @@ NakamaState                               schema = 2  (int)
 │     pair_id              string   NUR wenn nicht leer (fehlt = kein Paar; eigener Writer höchstens 60 Zeichen)
 │     project_binding_id   string   NUR wenn bestätigt gebunden (hex32); wird NIE still erzeugt (§32.2)
 ├── MainProject                           schema = 1  (int)   nur plugin_kind = main (Pflicht dort)
-│     (heute keine weiteren Eigenschaften; Intent/Mitgliedschaft/Passage/AssistantStep/Outbox ergänzen P3/P5 ADDITIV)
+│     confirmed_members_v1  array   optional; flach [instance_id, label, ...], höchstens 64 Paare
 ├── Parameters                            schema = 1  (int)   nur plugin_kind = active_probe (Pflicht dort)
 │     109 Eigenschaften mit den IDs aus nakama-parameter-v1.json, in Vertragsreihenfolge
 │     bool → bool · float → double (bit-exakt) · enum → string (Enumwort)
@@ -41,6 +41,14 @@ Reihenfolge beim Schreiben: für Stände, die **dieser Schreiber** erzeugt (fris
 | `active_probe` | Pflicht | verboten | **Pflicht** | ab SONDE-015 (heute: nicht lesbar ⇒ read-only) | ab SONDE-016 (heute: nicht lesbar ⇒ read-only) |
 
 Ein Kind mit unbekanntem Namen ⇒ read-only (ein neues Kind ist eine Root-Versionierung, keine Minor-Erweiterung). Eine **unbekannte Eigenschaft** in einem bekannten Kind desselben Majors ⇒ additiv, wird erhalten.
+
+`MainProject.confirmed_members_v1` ist seit SONDE-012 die additive, persistente
+Mitgliedschaftswahrheit. Jedes Paar besteht aus einer eindeutigen hex32-`instance_id`
+und dem zugehörigen User-Label (String, auch leer, höchstens 120 Unicode-Codepoints).
+Die Reihenfolge auf der Leitung ist `instance_id`-aufsteigend und trägt keine
+Mixer- oder Verbindungsreihenfolge. Fehlt die Eigenschaft, ist die bestätigte
+Menge leer. Runtime-Nonce, PID, Control-Liveness, Frische, Descriptor, Hostname,
+Frames, Lautheit und Fehlergründe sind ausdrücklich **kein** Host-State.
 
 ### 2.2 Messposition je Klasse
 

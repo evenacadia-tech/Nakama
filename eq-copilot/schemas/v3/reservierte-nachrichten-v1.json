@@ -1,9 +1,9 @@
 {
   "$id": "evenacadia.nakama.ipc.v3.reserviert",
   "titel": "Reservierte v3-Nachrichtenfamilien",
-  "zweck": "Entwurf §33.3 zaehlt nach dem SONDE-011-Entscheid 26 Nachrichtenfamilien auf. SONDE-005a definiert die 17, deren Datenmodell im Entwurf entschieden ist. Die uebrigen 9 tragen Nutzlasten aus spaeteren Phasen — sie jetzt zu erfinden waere ein Vorgriff, den eine spaetere Phase teuer zuruecknehmen muesste (Bauaufteilung §6.2 'Kein Vorgriff').",
+  "zweck": "Entwurf §33.3 zaehlt nach dem SONDE-011-Entscheid 26 Nachrichtenfamilien auf. Der bindende SONDE-012-Entscheid E-L18/L04 vom 01.09.2026 belegt zusaetzlich `session_command`; damit umfasst das Register heute 27 Namen. Die uebrigen 9 reservierten Familien tragen weiterhin Nutzlasten aus spaeteren Phasen — sie jetzt zu erfinden waere ein Vorgriff, den eine spaetere Phase teuer zuruecknehmen muesste (Bauaufteilung §6.2 'Kein Vorgriff').",
   "regel": "Ihre NAMEN sind trotzdem jetzt vergeben. Ein reservierter Discriminator wird vom v3-Parser ABGELEHNT (er steht nicht im oneOf des Schemas) und darf von keinem spaeteren Ticket fuer etwas anderes verwendet werden. Genau das ist der Vertragsanteil, der spaeter bricht, wenn man ihn heute offen laesst.",
-  "pruefung": "pruefe_v3_vertrag.py prueft, dass sich reservierte und definierte Namen nicht ueberschneiden, dass alle reservierten Namen ohne Nutzlast bleiben und dass die Summe 26 ergibt.",
+  "pruefung": "pruefe_v3_vertrag.py prueft, dass sich reservierte, belegte und definierte Namen konsistent verhalten, dass alle reservierten Namen ohne Nutzlast bleiben und dass die Summe 27 ergibt.",
   "wire_envelope_schema_minor": {
     "familie": "P1",
     "vorher": 0,
@@ -20,10 +20,19 @@
         ],
         "heartbeat_runtime": true,
         "session_mitglied_probe_descriptor_optional": true,
-        "session_mitglied_p2_reject": true
+        "session_mitglied_p2_reject": true,
+        "session_command": true,
+        "session_snapshot_store_degraded": true
       }
     }
   },
+  "belegte_nachrichten": [
+    {
+      "name": "session_command",
+      "eigentuemer": "SONDE-012 (S18-19)",
+      "grund": "Seit Wire-Envelope-schema_minor 1 belegt: geschlossener Sessiongraph-Befehl confirm_join oder unbind_probe; die Autorisierung stammt ausschliesslich vom fuehrenden gebundenen Main-Link derselben Session."
+    }
+  ],
   "belegte_felder": [
     {
       "name": "probe_descriptor.host_bus_name",
@@ -49,6 +58,11 @@
       "name": "session_snapshot.mitglieder[].p2_reject",
       "eigentuemer": "SONDE-012 (S18-19)",
       "grund": "Seit Wire-Envelope-schema_minor 1 optional belegt: geschlossener Broker-Ablehnungsgrund und laufgebundener Zaehler ab 1; kein Freitext und keine Aenderung des letzten gueltigen Frames."
+    },
+    {
+      "name": "session_snapshot.store_degraded",
+      "eigentuemer": "SONDE-012 (S18-19)",
+      "grund": "Seit Wire-Envelope-schema_minor 1 optional belegt: nur true reist als positiver Store-Diagnosebefund; Abwesenheit behauptet keinen gesunden Store."
     }
   ],
   "reservierte_felder": [
@@ -80,7 +94,7 @@
   ],
   "hinweis_felder": "Dieselbe Regel wie fuer die Nachrichtennamen, eine Ebene tiefer: der Vertragsanteil, der spaeter bricht, wenn man ihn heute offen laesst, ist der NAME - nicht die Nutzlast.",
 
-  "gesamt_erwartet": 26,
+  "gesamt_erwartet": 27,
   "definiert": [
     "hello",
     "welcome",
@@ -88,6 +102,7 @@
     "heartbeat",
     "heartbeat_ack",
     "subscribe_session",
+    "session_command",
     "session_snapshot",
     "evidence_snapshot",
     "audible_intervention_begin",

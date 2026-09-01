@@ -80,10 +80,8 @@ public:
         /// darueber, dass replace-oldest nie zu replace-newest wird.
         std::uint64_t beanspruchtVerworfen = 0;
         std::uint64_t envelopeAbweisungen = 0;
-        /// Broker→Main-Liveupdates, die auf dieser Verbindung ankamen. Sie
-        /// sind vertragsgemaess (§33.1), haben in diesem Ticket aber noch
-        /// keinen Verbraucher — die Landkarte ist `SONDE-012`. Die Zahl macht
-        /// sichtbar, dass sie verworfen werden.
+        /// Broker→Main-Liveupdates, die dem optionalen Verbraucher auf dieser
+        /// Verbindung zugestellt wurden.
         std::uint64_t empfangen = 0;
         /// P0/P1 auf der Telemetrieverbindung — vertragswidrig, schliesst.
         std::uint64_t familieAbweisungen = 0;
@@ -99,7 +97,10 @@ public:
         std::uint64_t stopFristUeberschritten = 0;
     };
 
-    TelemetryClient (std::function<TelemetryHello()> helloProvider, std::string pipeName);
+    TelemetryClient (std::function<TelemetryHello()> helloProvider,
+                     std::string pipeName,
+                     std::function<void (const std::uint8_t*, std::size_t,
+                                         std::uint8_t schemaMinor)> beiFrame = {});
     ~TelemetryClient();
 
     TelemetryClient (const TelemetryClient&) = delete;

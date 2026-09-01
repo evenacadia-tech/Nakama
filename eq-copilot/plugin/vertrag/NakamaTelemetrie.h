@@ -28,6 +28,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
+#include <vector>
 
 namespace nakama::telemetrie
 {
@@ -84,5 +86,29 @@ inline bool gueltig (const uint8_t* puffer, size_t laenge)
 {
     return pruefe (puffer, laenge).isEmpty();
 }
+
+/** Typisierte, eigentuemerhaltende Kopie eines gueltigen Broker->Main-Frames.
+
+    Die FlatBuffers-Zeiger leben nur so lange wie der Eingangspuffer. Das
+    Main-Modell arbeitet asynchron zur Pipe und bekommt deshalb ausschliesslich
+    diese Kopie; kein generierter Zeiger verlaesst den Leser. */
+struct Empfangsframe
+{
+    std::string projectBindingId, sessionEpoch, instanceId, runtimeNonce;
+    std::uint64_t transportEpoch = 0, continuitySegment = 0, sequence = 0;
+    std::uint32_t sampleCount = 0;
+    double sampleRate = 0.0;
+    bool lufsPaar = false;
+    float lufsI = 0.0f, lufsIUnsicherheitLu = 0.0f;
+    int lufsIStatus = 0;  ///< 0=fehlt, 1=collecting, 2=gated
+};
+
+/** Prueft und kopiert einen FeatureBatch in einem Zug.
+
+    Bei Vertragsverletzung bleibt `aus` leer und `verstoesse` nennt dieselbe
+    kanonische Menge wie `pruefe()`. */
+bool lese (const uint8_t* puffer, size_t laenge,
+           std::vector<Empfangsframe>& aus,
+           juce::Array<Verstoss>& verstoesse);
 
 } // namespace nakama::telemetrie

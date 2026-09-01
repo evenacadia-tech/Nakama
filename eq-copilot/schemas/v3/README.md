@@ -6,8 +6,8 @@ falsch — nie der Vertrag.
 
 | Datei | Was |
 |---|---|
-| `eq-ipc-v3.schema.json` | Die 17 definierten JSON-Nachrichtenfamilien (P0/P1) |
-| `reservierte-nachrichten-v1.json` | Die 9 reservierten Familiennamen, reservierte Feldnamen + ihr Eigentuemerticket |
+| `eq-ipc-v3.schema.json` | Die 18 definierten JSON-Nachrichtenfamilien (P0/P1) |
+| `reservierte-nachrichten-v1.json` | Die 9 reservierten sowie die spaeter belegten Familien-/Feldnamen + ihr Eigentuemerticket |
 | `quantisierung-v1.json` | Kodierung der Bandwerte + 61 Testvektoren |
 | `bandgitter/nakama_1_24_oct_30_18k_v1.json` | 221 Baender (Evidenz, 1–4 Hz) |
 | `bandgitter/nakama_log64_v1.json` | 64 Gruppen (Live, 10 Hz) |
@@ -358,7 +358,7 @@ Damit niemand danach sucht:
 | 16-Byte-Envelope + CRC32C-Parser | `SONDE-010` | Der Entwurf gibt den Parser ausdruecklich diesem Ticket (§65). Fixtures ohne Implementierung waeren toter Ballast. |
 | FlatBuffers-`FeatureBatch`, `flatc`-Pinning, Codegen-Drift | `SONDE-005b` (S6) | Zweite Haelfte desselben Entwurfstickets, eigener Sessionschnitt. |
 | RFC-8785-Kanonisierung und `state_hash` | `SONDE-006` (S7) | Wird dort erstmals verbraucht. Die ES6-Zahlenserialisierung ist eine eigene Beweisflaeche und gehoert nicht als Anhaengsel hierher. |
-| Die 9 reservierten Nachrichtenfamilien und reservierten Feldnamen | siehe `reservierte-nachrichten-v1.json` | Ihre Nutzlasten sind ihren spaeteren Eigentuemertickets zugewiesen; bis dahin lehnt der aktive strikte Vertrag sie ab. |
+| Die 9 weiterhin reservierten Nachrichtenfamilien und reservierten Feldnamen | siehe `reservierte-nachrichten-v1.json` | Ihre Nutzlasten sind ihren spaeteren Eigentuemertickets zugewiesen; bis dahin lehnt der aktive strikte Vertrag sie ab. Bereits von einem Eigentuemerticket belegte Namen stehen getrennt im selben Register. |
 | `evidence_snapshot.ereignisse` | `SONDE-013` (P4, §39.1) | §33.2 zaehlt „Ereignisse" als Inhalt des Snapshots auf. Der `DynamicsEvent`-Strom entsteht aber erst mit dem Dynamik-/Experimentkern; ihn hier zu erfinden waere der Vorgriff, den Bauaufteilung §6.2 verbietet. Der **Feldname** ist in `reservierte-nachrichten-v1.json` verbrannt, damit ihn kein anderes Ticket belegt, und `additionalProperties: false` lehnt ihn heute ab. |
 | Die Domain-Objekte aus §34.1 | `SONDE-012` / `SONDE-014` | §65 nennt „v3-**Domain**-/JSON-/FlatBuffers-Schemas". Von den elf Kernobjekten aus §34.1 ist hier genau eines als Schema da (`probe_descriptor`), weil nur es ueber IPC laeuft. `Evidence`, `Passage`, `SourceIntent`, `Finding`, `AssistantStep` und `FeatureFrame` sind Store-/Domainobjekte; sie entstehen mit ihren Tickets. Der Sessionschnitt (`bauaufteilung-sonden.md` §3) gibt `SONDE-005a` ausdruecklich nur „v3-JSON-Schemas + Bandgitter + Fixtures". |
 | Der Herkunftstag `host\|local_ui\|remote_transaction\|state_restore` (§33.4) | `SONDE-006` (S7) | Er beschreibt, WOHER eine Parameteraenderung kam, und lebt im Plugin-State, nicht in einer IPC-Nachricht. |

@@ -13,6 +13,7 @@
     { "$ref": "#/$defs/heartbeat" },
     { "$ref": "#/$defs/heartbeat_ack" },
     { "$ref": "#/$defs/subscribe_session" },
+    { "$ref": "#/$defs/session_command" },
     { "$ref": "#/$defs/session_snapshot" },
     { "$ref": "#/$defs/evidence_snapshot" },
     { "$ref": "#/$defs/audible_intervention_begin" },
@@ -37,7 +38,7 @@
     },
 
     "state_hash": {
-      "description": "SHA-256 ueber den RFC-8785-Kanon des Parameter-DTOs (SONDE-006), 64 Kleinbuchstaben-Hexziffern, oder `null`, wenn die Instanz keinen Stand zu melden hat. Bis zum 24.08.2026 stand hier nur die LAENGE 64 — damit galten 64 beliebige Zeichen (`z` × 64) als SHA-256. Ein Empfaenger, der zwei Hashes vergleicht, um eine Transaktion zu akzeptieren (§33.5), haette so einen Wert verglichen, der keiner ist. Befund des Gate-Laufs G1 (§4.5). Das Muster ist dieselbe Antwort, die `hex32` fuer `command_id` schon traegt.",
+      "description": "SHA-256 ueber den RFC-8785-Kanon des vom Befehl bestaetigten Zustands, 64 Kleinbuchstaben-Hexziffern, oder `null`, wenn kein Stand gemeldet werden kann. Bei DSP-Befehlen ist das weiterhin das Parameter-DTO aus SONDE-006; bei `session_command` ist es der im selben Coordinator-Lock unmittelbar nach der Wirkung gebildete absolute `session_snapshot`-Stand. Ein parallel anschliessender Zustandswechsel darf den tatsaechlich gepushten absoluten Snapshot bereits fortschreiben; die Wiederholung desselben command_id bestaetigt weiterhin exakt den urspruenglichen Wirkungsschnitt. Die Nachrichtenfamilie des zugehoerigen Auftrags bestimmt den Hashraum, ein neues Wire-Feld entsteht nicht. Bis zum 24.08.2026 stand hier nur die LAENGE 64 — damit galten 64 beliebige Zeichen (`z` × 64) als SHA-256. Ein Empfaenger, der zwei Hashes vergleicht, um eine Transaktion zu akzeptieren (§33.5), haette so einen Wert verglichen, der keiner ist. Befund des Gate-Laufs G1 (§4.5). Das Muster ist dieselbe Antwort, die `hex32` fuer `command_id` schon traegt.",
       "type": ["string", "null"],
       "minLength": 64,
       "maxLength": 64,
@@ -45,7 +46,7 @@
     },
 
     "state_hash_erfolg": {
-      "description": "Nicht-null SHA-256 fuer einen erfolgreichen command_ack. Laenge und Alphabet sind absichtlich dieselben wie bei state_hash; nur `null` ist hier ausgeschlossen, weil Erfolg einen konkreten angewandten Stand bestaetigt.",
+      "description": "Nicht-null SHA-256 fuer einen erfolgreichen command_ack. Laenge und Alphabet sind absichtlich dieselben wie bei state_hash; nur `null` ist hier ausgeschlossen, weil Erfolg einen konkreten angewandten DSP- oder Sessionstand bestaetigt.",
       "type": "string",
       "minLength": 64,
       "maxLength": 64,
@@ -938,6 +939,37 @@
       }
     },
 
+    "session_command": {
+      "description": "SONDE-012 E-L18/L04: genau zwei Sessiongraph-Befehle. Die Zieladresse benennt die Probe vollstaendig; `session_epoch` wiederholt die Sitzung absichtlich als fail-closed Relation, die der Broker gegen Zieladresse und autoritativen Sender-Link prueft. Nur der fuehrende gebundene Main-Link derselben Session darf wirken. Der Sender steht nicht in der Nutzlast und kann sich seine Autorisierung daher nicht selbst zuschreiben.",
+      "x-nakama-discriminator": "command",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "command", "command_id", "ziel", "session_epoch"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "const": "session_command" },
+            "command": { "const": "confirm_join" },
+            "command_id": { "$ref": "#/$defs/hex32" },
+            "ziel": { "$ref": "#/$defs/adresse" },
+            "session_epoch": { "$ref": "#/$defs/hex32" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type", "command", "command_id", "ziel", "session_epoch"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "const": "session_command" },
+            "command": { "const": "unbind_probe" },
+            "command_id": { "$ref": "#/$defs/hex32" },
+            "ziel": { "$ref": "#/$defs/adresse" },
+            "session_epoch": { "$ref": "#/$defs/hex32" }
+          }
+        }
+      ]
+    },
+
     "session_snapshot": {
       "description": "Der Sessiongraph, wie der Broker ihn sieht. Fluechtiger Brokerzustand — aus Plugin-Reports, Main-State und Store rekonstruierbar (§33.5).",
       "type": "object",
@@ -951,6 +983,11 @@
         "beitritt_bestaetigung_noetig": {
           "$comment": "Pflicht bei Bridge, zwei offenen Projekten oder duplizierten IDs (§32.1). Eine fremde Sonde wird NIE durch heuristische Aehnlichkeit steuerbar.",
           "type": "boolean"
+        },
+        "store_degraded": {
+          "$comment": "SONDE-012 E-L15-Store: nur der positive Diagnosebefund reist. Abwesenheit ist keine Gesundheitsaussage und bleibt mit aelteren Brokern kompatibel.",
+          "type": "boolean",
+          "const": true
         },
         "mitglieder": {
           "type": "array",
@@ -1140,7 +1177,7 @@
     },
 
     "command_ack": {
-      "description": "Bestaetigung einer steuernden Nachricht, diskriminiert ueber `ergebnis`. Bei `angewandt` ist `state_hash` Pflicht und nicht null: Apply schreibt laut Entwurf §33.4 eine neue Revision und bestaetigt den Hash plus die tatsaechlich angewandten Werte. `idempotent_wiederholt` traegt dieselbe Pflicht, weil die Wiederholung keinen neuen Zustand erzeugt, sondern denselben bereits angewandten Befehl und damit denselben konkreten Stand bestaetigt. Ablehnung, Konflikt und Ablauf duerfen ohne Hash antworten. Bis zum 28.08.2026 war state_hash in jedem Ergebnis optional und nullable. Am 28.08.2026 mit `git grep` bestaetigt: kein Produktionscode im Baum erzeugt v3-Nachrichten; nach G1 §10.0 wird diese Verschaerfung deshalb ohne Versionsanhebung eingetragen. `state_hash` umfasst ausschliesslich das validierte DSP-DTO in RFC-8785-kanonischem JSON (§53.8); erzeugt und geprueft wird er in SONDE-006.",
+      "description": "Bestaetigung einer steuernden Nachricht, diskriminiert ueber `ergebnis`. Bei `angewandt` ist `state_hash` Pflicht und nicht null: ein DSP-Apply bestaetigt sein validiertes Parameter-DTO, ein `session_command` den unmittelbar nach seiner Wirkung atomar gebildeten absoluten Session-Snapshot-Stand. `idempotent_wiederholt` traegt dieselbe Pflicht, weil die Wiederholung keinen neuen Zustand erzeugt, sondern denselben bereits angewandten Befehl und damit denselben konkreten Wirkungsschnitt bestaetigt. Ablehnung, Konflikt und Ablauf duerfen ohne Hash antworten. Das bestehende Ack-Muster und sein `command_id`-Bezug bleiben unveraendert; es gibt kein neues Scope- oder Versionsfeld. Bis zum 28.08.2026 war state_hash in jedem Ergebnis optional und nullable.",
       "x-nakama-discriminator": "ergebnis",
       "oneOf": [
         {

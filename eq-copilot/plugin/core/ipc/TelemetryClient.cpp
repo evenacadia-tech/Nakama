@@ -159,8 +159,11 @@ bool featureFrameAlsFlatbuffer (const analyse::FeatureFrame& frame,
 //== Die geteilte Laufzeit ===================================================
 struct TelemetryClient::Laufzeit
 {
-    Laufzeit (std::function<TelemetryHello()> hp, std::string pn)
-        : helloProvider (std::move (hp)), pipeName (std::move (pn)) {}
+    Laufzeit (std::function<TelemetryHello()> hp, std::string pn,
+              std::function<void (const std::uint8_t*, std::size_t,
+                                  std::uint8_t)> bf)
+        : helloProvider (std::move (hp)), beiFrame (std::move (bf)),
+          pipeName (std::move (pn)) {}
 
     void threadLauf (std::uint64_t meinLauf, std::shared_ptr<IpcVerbindung> meine);
     bool eineVerbindung (std::uint64_t generation, std::uint64_t meinLauf,
@@ -176,6 +179,7 @@ struct TelemetryClient::Laufzeit
     Snapshot snapshotIntern() const;
 
     std::function<TelemetryHello()> helloProvider;
+    std::function<void (const std::uint8_t*, std::size_t, std::uint8_t)> beiFrame;
     std::string pipeName;
 
     /// Die Verbindung des LAUFENDEN Laufs — wortgleich zum `ControlClient`
@@ -222,8 +226,12 @@ struct TelemetryClient::Laufzeit
 };
 
 TelemetryClient::TelemetryClient (std::function<TelemetryHello()> helloProviderIn,
-                                  std::string pipeNameIn)
-    : k (std::make_shared<Laufzeit> (std::move (helloProviderIn), std::move (pipeNameIn)))
+                                  std::string pipeNameIn,
+                                  std::function<void (const std::uint8_t*, std::size_t,
+                                                      std::uint8_t)> beiFrameIn)
+    : k (std::make_shared<Laufzeit> (std::move (helloProviderIn),
+                                     std::move (pipeNameIn),
+                                     std::move (beiFrameIn)))
 {
 }
 
@@ -454,12 +462,17 @@ bool TelemetryClient::Laufzeit::leerlaufLesen (StromLeser& leser, Ratengrenze& r
             return false;
         }
 
-        // Broker→Main-Liveupdates (§33.1) sind auf DIESER Verbindung
-        // vertragsgemaess, haben in diesem Ticket aber noch keinen Verbraucher:
-        // die Landkarte, die sie verteilt, ist SONDE-012. Sie werden deshalb
-        // gezaehlt und verworfen — sichtbar, nicht still.
-        std::lock_guard<std::mutex> l (zustandMutex);
-        ++zustand.empfangen;
+        // Der Payloadzeiger gilt ausschliesslich waehrend des Callbacks. Das
+        // Main-Modell kopiert die typisierten Felder; generierte
+        // FlatBuffers-Zeiger verlassen den Pipe-Thread nie.
+        if (beiFrame && ! sollAbbrechen (generation))
+            beiFrame (e.payload, e.payloadLaenge, e.kopf.schemaMinor);
+        if (sollAbbrechen (generation))
+            return false;
+        {
+            std::lock_guard<std::mutex> l (zustandMutex);
+            ++zustand.empfangen;
+        }
     }
 }
 

@@ -60,6 +60,22 @@ struct Common
     bool operator!= (const Common& a) const noexcept { return ! (*this == a); }
 };
 
+/** Persistente MainProject-Wahrheit einer bestaetigten Quelle (SONDE-012).
+
+    Nur stabile Identitaet und das vom User vergebene, untrusted Label reisen
+    im Host-State. Control-Liveness, Runtime-Nonce, Descriptor und Messframes
+    bleiben absichtlich ausserhalb dieses Typs. */
+struct MainProjectMitglied
+{
+    juce::String instanceId;  ///< effektive, stabile hex32-Quellidentitaet
+    juce::String label;       ///< User-Wort, hoechstens 120 Codepoints
+
+    bool operator== (const MainProjectMitglied& a) const noexcept
+    { return instanceId == a.instanceId && label == a.label; }
+};
+
+inline constexpr int maxMainProjectMitglieder = 64;
+
 /** Welche Klassen ein Bundle laden darf (§2.3 des Vertrags). */
 struct Bundle
 {
@@ -76,6 +92,7 @@ struct Zustand
         Build nicht kennt - sie werden beim Speichern zurueckgeschrieben. */
     juce::ValueTree baum;
     Common common;
+    std::vector<MainProjectMitglied> mainProjectMitglieder;
     bool hatParameters = false;
 
     /*  Der NEUTRALE Satz, nicht Nullen. `Satz` ist ein std::array; ein

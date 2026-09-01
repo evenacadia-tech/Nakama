@@ -2,10 +2,12 @@
 #include "NakamaState.h"
 #include "NakamaUtf8.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <limits>
 #include <new>
+#include <set>
 
 namespace nakama::state
 {
@@ -26,6 +28,7 @@ const juce::Identifier kPosition    ("measurement_position");
 const juce::Identifier kLabel       ("label");
 const juce::Identifier kPairId      ("pair_id");
 const juce::Identifier kBinding     ("project_binding_id");
+const juce::Identifier kMainMitglieder ("confirmed_members_v1");
 // Schema 1
 const juce::Identifier kSensorId    ("sensor_id");
 const juce::Identifier kRole        ("role");
@@ -482,6 +485,26 @@ juce::ValueTree synchronisiert (const Zustand& z)
             kopie.appendChild (mainProject, nullptr);
         }
         mainProject.setProperty (kSchema, kMainSchema, nullptr);
+        if (z.mainProjectMitglieder.empty())
+        {
+            mainProject.removeProperty (kMainMitglieder, nullptr);
+        }
+        else
+        {
+            auto mitglieder = z.mainProjectMitglieder;
+            std::sort (mitglieder.begin(), mitglieder.end(), [] (const auto& a, const auto& b)
+            {
+                return a.instanceId.compare (b.instanceId) < 0;
+            });
+            juce::Array<juce::var> flach;
+            flach.ensureStorageAllocated (static_cast<int> (mitglieder.size() * 2));
+            for (const auto& m : mitglieder)
+            {
+                flach.add (m.instanceId);
+                flach.add (m.label);
+            }
+            mainProject.setProperty (kMainMitglieder, juce::var (flach), nullptr);
+        }
     }
     else if (mainProject.isValid())
     {
@@ -552,6 +575,13 @@ bool hatWriterHeadroom (const Zustand& eingang, const Bundle& bundle)
     kandidat.common.pairId = laenger (eingang.common.pairId, maximalerText (60));
     kandidat.common.projectBindingId = laenger (
         eingang.common.projectBindingId, "ffffffffffffffffffffffffffffffff");
+    kandidat.mainProjectMitglieder.clear();
+    for (int i = 0; i < maxMainProjectMitglieder; ++i)
+    {
+        kandidat.mainProjectMitglieder.push_back ({
+            juce::String::toHexString (i + 1).paddedLeft ('0', 32), maximalerText (120)
+        });
+    }
 
     // Eqcp kann zwischen main und legacy sowie allen heute erlaubten v2-
     // Positionen wechseln. Fuer Sonden ist die Menge kleiner; die Schleife
@@ -662,6 +692,42 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
         grund = "MainProject schema is unknown to this version (it reads schema 1)"; return false;
     }
 
+    std::vector<MainProjectMitglied> mainMitglieder;
+    if (istMain)
+    {
+        const auto mainProject = v.getChildWithName (kMainProject);
+        if (mainProject.hasProperty (kMainMitglieder))
+        {
+            const auto wert = mainProject.getProperty (kMainMitglieder);
+            const auto* flach = wert.getArray();
+            if (flach == nullptr || flach->size() % 2 != 0
+                || flach->size() > maxMainProjectMitglieder * 2)
+            {
+                grund = "MainProject.confirmed_members_v1 must be an even array with at most 64 pairs";
+                return false;
+            }
+            std::set<std::string> gesehen;
+            for (int i = 0; i < flach->size(); i += 2)
+            {
+                const auto idWert = flach->getReference (i);
+                const auto labelWert = flach->getReference (i + 1);
+                if (! idWert.isString() || ! labelWert.isString()
+                    || ! istHex32 (idWert.toString()) || labelWert.toString().length() > 120)
+                {
+                    grund = "MainProject.confirmed_members_v1 contains an invalid instance_id or label";
+                    return false;
+                }
+                const auto idBytes = idWert.toString().toStdString();
+                if (! gesehen.insert (idBytes).second)
+                {
+                    grund = "MainProject.confirmed_members_v1 contains a duplicate instance_id";
+                    return false;
+                }
+                mainMitglieder.push_back ({ idWert.toString(), labelWert.toString() });
+            }
+        }
+    }
+
     parameter::Satz satz {};
     if (istAktiv)
     {
@@ -672,6 +738,7 @@ bool leseSchema2 (const juce::ValueTree& v, const Bundle& bundle, Zustand& aus, 
 
     aus.baum = v;
     aus.common = c;
+    aus.mainProjectMitglieder = std::move (mainMitglieder);
     aus.hatParameters = istAktiv;
     aus.parameters = satz;
     aus.nurLesen = false;

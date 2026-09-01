@@ -66,6 +66,18 @@ private:
     void zeigeMesspunkt();
     juce::Rectangle<int> graphFlaeche() const;
 
+    // SONDE-012, Gen Flaeche 1. Diese Ansicht ist absichtlich eine
+    // funktionale Instrumentenskizze: keine visuelle Richtung, aber jede
+    // sichtbare Information hat eine Quelle und jeder Knopf einen echten
+    // Gegenpfad.
+    bool istMainFlaeche() const;
+    void wechsleFlaecheWennNoetig();
+    void aktualisiereSourcesSteuerung();
+    void uebernehmeSourcesLabel();
+    void paintMainFlaeche (juce::Graphics&);
+    juce::Rectangle<int> sourcesSpalte() const;
+    std::vector<juce::Rectangle<int>> sourcesZeilen() const;
+
     // ── Hör-Markierung (Konzept v2 §6): Latch lebt im Editor ──
     // Klick auf [Solo]/[Puls] einer Befundkarte = Latch an/aus; endet hart bei
     // Fensterschluss, Samplerate-Wechsel, Freilauf-Meldung und 10-min-Totmann.
@@ -102,6 +114,15 @@ private:
     // M2: erscheint NUR, wenn der Broker per heartbeat_ack einen Kennungs-
     // Konflikt meldet (FL-Duplikation) — rot, nie still (Plan §8.4).
     juce::TextButton konfliktKnopf;
+
+    // Genau ein gemeinsamer Aktionssatz fuer genau das aktuelle Hauptziel.
+    // Referenzzeilen tragen nie eigene, spaeter veraltende Knopf-Callbacks.
+    juce::TextButton sourcesAktionKnopf, sourcesRecoveryKnopf;
+    juce::TextEditor sourcesLabelFeld;
+    SourcesModel::Sicht sourcesAnzeige;
+    juce::uint64 sourcesRevision = 0;
+    std::string sourcesAktionsZiel;
+    bool mainFlaecheAktiv = false;
 
     // M3: Diagnose-Cache — 1×/s auf der Snapshot-Kopie neu gerechnet
     // (Anzeige-Takt ist 30 Hz; die Regeln brauchen ihn nicht).

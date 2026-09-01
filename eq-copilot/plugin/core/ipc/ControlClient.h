@@ -140,6 +140,17 @@ struct ControlStatus
 std::string heartbeatAlsJson (const Adresse&, std::uint64_t sequence,
                               const ControlStatus&);
 
+struct GelesenesCommandAck
+{
+    std::string commandId;
+    bool erfolgreich = false;
+};
+
+/// Strikter handgeschriebener Leser fuer das gemeinsame `command_ack`-
+/// Muster. `true` bedeutet ein vollstaendiges finales ACK; `erfolgreich`
+/// unterscheidet angewandt/idempotent von allen fail-closed Endzustaenden.
+bool commandAckHaeltVertrag (const std::string&, GelesenesCommandAck&);
+
 class ControlClient
 {
 public:
@@ -185,13 +196,18 @@ public:
         std::uint64_t stopFristUeberschritten = 0;
     };
 
-    /// `beiAntwort` und `statusProvider` werden auf dem Client-Thread gerufen,
-    /// nie im Audiothread. Ist kein Statusprovider gesetzt, bleibt der Client
-    /// ein manuell gespeister Transport wie vor Phase B.
+    /// `beiAntwort`, `statusProvider` und der positive `beiLinkStatus` werden
+    /// auf dem Client-Thread gerufen. Der negative Linkstatus kommt bei einem
+    /// expliziten `reconnect()`/`stop()` synchron auf dessen Aufruferthread,
+    /// damit die Subscription vor der Rueckkehr bereits ungueltig ist; beim
+    /// unerwarteten Ende kommt er vom Client-Thread. Keiner dieser Aufrufe
+    /// stammt aus dem Audiothread. Ist kein Statusprovider gesetzt, bleibt der
+    /// Client ein manuell gespeister Transport wie vor Phase B.
     ControlClient (std::function<ControlHello()> helloProvider,
                    std::string pipeName,
                    std::function<void (const std::string&)> beiAntwort = {},
-                   std::function<ControlStatus()> statusProvider = {});
+                   std::function<ControlStatus()> statusProvider = {},
+                   std::function<void (bool verbunden)> beiLinkStatus = {});
     ~ControlClient();
 
     ControlClient (const ControlClient&) = delete;

@@ -400,6 +400,7 @@ $kanon = @(
     [pscustomobject]@{ Kuerzel='A20'; Name='erzeuge_envelope_fixtures.py'; Art='python'; Argumente=@('--pruefen'); AbPhase='jetzt'; Behauptung='Envelope-Fixture-Korpus und MANIFEST bytegleich zur Neuerzeugung; keine verwaiste Datei; jede der 14 Envelope-Regeln hat mindestens ein Negativfixture.' }
     [pscustomobject]@{ Kuerzel='A21'; Name='transport_fuzz'; Art='cargo'; Argumente=@('test', '--manifest-path', 'broker/Cargo.toml', '--test', 'transport_fuzz', '--color', 'never'); AbPhase='jetzt'; Behauptung='v3-Envelope unter Zufall: 20 000 Zufallspuffer bringen den Pruefer nie aus dem Tritt und JEDER angenommene Frame erfuellt jede Kopfregel; 3000 gekippte P2-Payloadbits fallen einzeln an der CRC; feindliche Laengen (0, 15, ueber der Grenze, 0xFFFFFFFF) und die u32-Grenze von 16+payload_len enden in der erwarteten Fehlerklasse, ohne Absturz und ohne Eingabeallokation in Groesse der behaupteten Laenge; 300 Runden Fragmentierung (byteweise und in Zufallshaeppchen) liefern exakt dieselben Frames; ein kaputter Frame beendet den Strom statt zu resynchronisieren; die Ratengrenze haelt unter Flut.' }
     [pscustomobject]@{ Kuerzel='A22'; Name='pruefe_ipc_last.py'; Art='python'; Argumente=@(); AbPhase='jetzt'; Behauptung='Ende-zu-Ende ueber die PROBE-Pipe, zwei Sprachen ein Draht: 32 echte C++-Sondenpaare koppeln sich am echten Rust-Listener (32 Control + 32 Telemetry, jede Telemetrieverbindung ueber link_id + challenge + gleiche runtime_nonce), fluten P2 bis die Schleuse mit Cap 2 nachweislich ersetzt, und WAEHRENDDESSEN geht kein einziger P0-Frame verloren; die P0-Antwortlatenz bleibt unter der Schranke. Keine Verbindung wird wegen Envelope, Rate oder P0-Ueberlauf geschlossen.' }
+    [pscustomobject]@{ Kuerzel='A23'; Name='pruefe_sonde012_sources_latency.py'; Art='python'; Argumente=@(); AbPhase='P3'; Behauptung='SONDE-012 E-L06 integriert ueber eine ausschliessliche Probe-Pipe: synthetische C++-Quellen senden vollstaendige Messfenster durch den echten Rust-Coordinator an das echte Main-SourcesModel. Der Endpunkt ist dessen Revision samt Anzeige-Invalidierung. Bei 16 und 32 Quellen liegt p95 fuer 2048/4096 Samples unter 300 ms und fuer 16384 Samples unter 750 ms, jeweils ab dem ersten Sample des Fensters.' }
 
     # ── STILLGELEGT 28.08.2026 (S9b/SONDE-007c) ────────────────────────────
     # Die Zeile bleibt STEHEN. Ein Runner, der ein Bein einfach loescht, meldet
@@ -464,6 +465,9 @@ $kanon = @(
     # Prozessor, starten im Test aber niemals die Produktions-v3-Pipe.
     [pscustomobject]@{ Kuerzel='B11'; Name='EqCopSonde012HostChannelContextTest'; Art='plugin'; Argumente=@(); AbPhase='P3'; Behauptung='Probeeq uebernimmt JUCE updateTrackProperties ausschliesslich auf dem Message-Thread; gueltige Hostnamen reisen codepointgetreu in heartbeat.runtime, leer/Whitespace/121 Codepoints/C0/C1 gelten als Fehlen; Hostvorrang veraendert das gespeicherte User-Label nicht, Clear stellt dessen Rueckfall her. Persistierte Messpunkte insert/pre/post und Betrieb active/suspended/offline reisen ohne Synthese; der lokale C++-Pfad behauptet nicht, dass FL den Callback liefert.' }
     [pscustomobject]@{ Kuerzel='B12'; Name='EqCopSonde012LoudnessSourceTest'; Art='plugin'; Argumente=@(); AbPhase='P3'; Behauptung='Probeeq fuehrt Audio ueber die vorallokierte Ganzblockqueue zum Analyseworker und P2: LUFS-I reist nur atomar mit endlicher unsicherheitLu und ohne Status; collecting/gated reisen ohne Zahlenpaar; halbe, nichtendliche oder statusbehaftete Paare werden nicht serialisiert. Seek, Loop, Oversize-Drop und Kontinuitaetsbruch starten eine leere Reihe; der gemessene Audiopfad alloziert dabei 0-mal und verwirft bei Ueberlast nur Analyse.' }
+    [pscustomobject]@{ Kuerzel='B13'; Name='EqCopSonde012SourcesModelTest'; Art='plugin'; Argumente=@(); AbPhase='P3'; Behauptung='Gen/Main ersetzt sein Quellenmodell durch absolute session_snapshot-Sichten und haelt Mitgliedschaft, Control, Messung, Namensherkunft und Capability-Evidenz getrennt; Frischegrenzen, Messpunkte, Betrieb, Fehlerkanal, Lautheitspaar, Hostvorrang, Sortierung und Hauptziel werden einzeln gemessen. Die integrierte 16-/32-Quellen-Zeitmessung gehoert A23.' }
+    [pscustomobject]@{ Kuerzel='B14'; Name='EqCopSonde012ProjectReloadTest'; Art='plugin'; Argumente=@(); AbPhase='P3'; Behauptung='MainProject Save/Load erhaelt bestaetigte Quellidentitaet und User-Label, aber weder Control-Liveness noch Runtime-Nonce oder Messframe; Join, Benennen und Unbind melden je echte persistente Aenderung Host-Dirty, No-op, Save und Load nicht; Reload baut einen frischen subscribe_session-Auftrag.' }
+    [pscustomobject]@{ Kuerzel='B15'; Name='EqCopShot'; Art='plugin'; Argumente=@('--sonde012-suite', 'eq-copilot/build/sonde012-shots'); AbPhase='P3'; Behauptung='EqCopShot rendert den deklarierten SONDE-012-Sichtsatz bei exakt 760x430: 0/1/16 Quellen, fresh/partial/stale/disconnected/invalid, Namens- und Lautheitsgegenpfade, alle Diagnosezustaende, Label-/Unnamed-Rueckfall, Findings sowie genau ein Hauptziel mit Referenzen.' }
     [pscustomobject]@{ Kuerzel='B8'; Name='EqCopLebenslaufTest';     Art='plugin'; Argumente=@(); AbPhase='P1'; Behauptung='Lifecycle-Klassifikation §53.5 bleibt erhalten; SONDE-011 startet den Broker nur ueber state::Lebenslauf::darfBrokerStarten() bei Main plus offenem Editor. Alle Negativzustaende lassen den Launcher unberuehrt, und die instrumentierte Gegenprobe misst null Broker-Lifecycle-Aufrufe aus processBlock beziehungsweise dem Audiothread.' }
 )
 
@@ -499,6 +503,11 @@ $gemesseneZiele = @(
         Ziel   = 'EqCopIpcLast'
         Marker = 'juce_add_console_app(EqCopIpcLast'
         Wegen  = 'A22 (pruefe_ipc_last.py) faehrt dieses Programm gegen den Rust-Listener'
+    }
+    [pscustomobject]@{
+        Ziel   = 'EqCopSonde012SourcesLatencyTest'
+        Marker = 'juce_add_console_app(EqCopSonde012SourcesLatencyTest'
+        Wegen  = 'A23 faehrt dieses Main-Modell gegen den echten Rust-Coordinator auf Probe-Pipe'
     }
     [pscustomobject]@{
         Ziel   = 'NakamaProbeeq_VST3'
@@ -586,7 +595,8 @@ if ($Bauen) {
     # Release-Artefakt oder gar nicht - beides waere ein stiller Verlust.
     $cargoRelease = Fuehre-Aus -Datei 'cargo' -Argumente @(
         'build', '--release', '--manifest-path', 'broker/Cargo.toml',
-        '--bin', 'eqcop-broker-v3probe', '--bin', 'eqcop-broker',
+        '--bin', 'eqcop-broker-v3probe', '--bin', 'eqcop-broker-sonde012-probe',
+        '--bin', 'eqcop-broker',
         '--color', 'never')
     $bauProtokoll += [pscustomobject]@{ Schritt = 'cargo-release'; ExitCode = $cargoRelease.ExitCode; StdOut = $cargoRelease.StdOut; StdErr = $cargoRelease.StdErr; Sekunden = $cargoRelease.Sekunden }
     if ($cargoRelease.ExitCode -ne 0) { Bau-Abbruch -Schritt 'cargo-release' -Lauf $cargoRelease }

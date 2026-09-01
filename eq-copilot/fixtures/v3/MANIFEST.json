@@ -6,8 +6,8 @@
   "wurzel_skalar": "Markiert ein Fixture, dessen Wurzel weder Objekt noch Array ist. JUCEs JSON-Leser folgt RFC 4627 und lehnt es schon im PARSER ab; serde_json und Python folgen RFC 8259 und lehnen es erst am Schema ab. Beide Wege sind eine Ablehnung, nur an verschiedenen Stellen - die Verletzungsmenge gilt daher nur fuer die Beine mit RFC-8259-Parser.",
   "sortierung": "Verletzungen sind kanonisch nach (instanz, schema, schluessel) sortiert, damit der Vergleich nicht von der Auswertungsreihenfolge abhaengt.",
   "textriegel_lehnt_ab": "Markiert ein Fixture, das der TEXTRIEGEL abweist, BEVOR ein Parser es sieht. Diese Fixtures tragen keine Verletzungsmenge, weil sie das Schema nie erreichen — eine erfundene waere eine Luege ueber den Ort der Ablehnung. Regeln und Begruendung: schemas/v3/README.md.",
-  "anzahl_gueltig": 54,
-  "anzahl_ungueltig": 185,
+  "anzahl_gueltig": 59,
+  "anzahl_ungueltig": 188,
   "fixtures": [
     {
       "datei": "gueltig/audible_intervention_begin.json",
@@ -256,6 +256,24 @@
       "verletzungen": []
     },
     {
+      "datei": "gueltig/session-command-falsche-epoche-vertragsform.json",
+      "urteil": "gueltig",
+      "warum": "Beide Epochen sind einzeln hex32; ihre fail-closed Gleichheitsrelation zum Ziel und Sender-Link ist eine Brokerregel und kein mit draft 2020-12 ausdrueckbarer JSON-Typ",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/session-command-fremdes-main-vertragsform.json",
+      "urteil": "gueltig",
+      "warum": "Die JSON-Form kennt keinen selbst behaupteten Sender; ob der sendende Link das fuehrende Main ist, entscheidet ausschliesslich der Broker",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/session-command-unbind.json",
+      "urteil": "gueltig",
+      "warum": "E-L18: unbind_probe ist der zweite und einzige Gegenpfad im geschlossenen Zweigsatz",
+      "verletzungen": []
+    },
+    {
       "datei": "gueltig/session-leer.json",
       "urteil": "gueltig",
       "warum": "minItems 0: eine Sitzung ohne Mitglieder ist gueltig",
@@ -283,6 +301,18 @@
       "datei": "gueltig/session-p2-reject.json",
       "urteil": "gueltig",
       "warum": "E-L14: geschlossener Ablehnungsgrund und Zaehler ab 1 reisen je Quelle",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/session-snapshot-store-degraded.json",
+      "urteil": "gueltig",
+      "warum": "E-L15-Store: nur der positive Diagnosebefund true reist",
+      "verletzungen": []
+    },
+    {
+      "datei": "gueltig/session_command.json",
+      "urteil": "gueltig",
+      "warum": "Grundform der Familie",
       "verletzungen": []
     },
     {
@@ -2043,6 +2073,30 @@
       ]
     },
     {
+      "datei": "ungueltig/session-command-fremdes-main-senderfeld.json",
+      "urteil": "ungueltig",
+      "warum": "Der Sender ist der autoritative Control-Link; ein fremdes Main darf sich nicht per Nutzlastfeld selbst autorisieren",
+      "verletzungen": [
+        {
+          "instanz": "/sender",
+          "schema": "#/$defs/session_command/oneOf/0/additionalProperties",
+          "schluessel": "additionalProperties"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/session-command-unbekannter-zweig.json",
+      "urteil": "ungueltig",
+      "warum": "E-L18/L04 schliesst den Zweigsatz auf confirm_join und unbind_probe",
+      "verletzungen": [
+        {
+          "instanz": "/command",
+          "schema": "#/$defs/session_command/oneOf",
+          "schluessel": "oneOf"
+        }
+      ]
+    },
+    {
       "datei": "ungueltig/session-p2-reject-freitext.json",
       "urteil": "ungueltig",
       "warum": "E-L14 verbietet Freitextgruende auf dem Wire",
@@ -2063,6 +2117,18 @@
           "instanz": "/mitglieder/0/p2_reject/zaehler",
           "schema": "#/$defs/p2_reject/properties/zaehler/minimum",
           "schluessel": "minimum"
+        }
+      ]
+    },
+    {
+      "datei": "ungueltig/session-snapshot-store-degraded-false.json",
+      "urteil": "ungueltig",
+      "warum": "E-L15-Store: false reist nicht; Abwesenheit bleibt die einzige nicht-positive Form",
+      "verletzungen": [
+        {
+          "instanz": "/store_degraded",
+          "schema": "#/$defs/session_snapshot/properties/store_degraded/const",
+          "schluessel": "const"
         }
       ]
     },

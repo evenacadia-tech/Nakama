@@ -18,7 +18,8 @@ use crate::store::{
 };
 use crate::transport::bootstrap::{Adresse, AudioLage, HelloControl};
 use serde_json::Value;
-use std::collections::{HashMap, HashSet};
+use sha2::{Digest, Sha256};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, OnceLock};
 use std::time::{Duration, Instant};
@@ -35,6 +36,7 @@ pub const FUEHRENDE_MAINS_PRO_SESSION: usize = 1;
 pub const SICHTBARE_SONDEN_NORMAL: usize = 16;
 pub const LAST_SONDEN: usize = 32;
 pub const SESSION_SUBSCRIPTION_EVENT_REPLAY_MAX: usize = 0;
+const SESSION_COMMAND_REGISTER_MAX: usize = SESSION_CLIENT_CAP * SESSION_CLIENT_CAP;
 
 fn v3_schema() -> &'static crate::vertrag::Schema {
     static SCHEMA: OnceLock<crate::vertrag::Schema> = OnceLock::new();
@@ -343,6 +345,15 @@ struct Stand {
     conflict_guards: HashMap<String, HashSet<String>>,
     routing_bereit: bool,
     dirty_sessions: HashSet<SessionKey>,
+    session_commands: HashMap<String, SessionCommandWirkung>,
+    session_command_reihenfolge: VecDeque<String>,
+}
+
+#[derive(Debug, Clone)]
+struct SessionCommandWirkung {
+    kanonischer_auftrag: Vec<u8>,
+    state_revision: u64,
+    state_hash: String,
 }
 
 impl Default for Stand {
@@ -371,6 +382,8 @@ impl Default for Stand {
             conflict_guards: HashMap::new(),
             routing_bereit: true,
             dirty_sessions: HashSet::new(),
+            session_commands: HashMap::new(),
+            session_command_reihenfolge: VecDeque::new(),
         }
     }
 }
@@ -487,6 +500,12 @@ impl Default for Coordinator {
 }
 
 impl Coordinator {
+    fn store_degradiert(&self) -> bool {
+        self.store
+            .as_ref()
+            .is_some_and(|store| store.sicht().degradiert)
+    }
+
     pub fn mit_uhr(clock: Arc<dyn MonotonicClock>, broker_epoch: String) -> Self {
         Self {
             stand: Mutex::new(Stand::default()),
@@ -903,7 +922,7 @@ impl Coordinator {
                 return;
             };
             if link.trennen
-                || !stand.routing_bereit
+                || (!stand.routing_bereit && !self.store_degradiert())
                 || stand
                     .conflict_guards
                     .contains_key(&effektive_adresse(&link.adresse))
@@ -931,17 +950,21 @@ impl Coordinator {
         // weder als neues Event persistieren noch ueber die bereits
         // committed Projektion schreiben: der letzte Projektionsschnitt ist
         // genau der haltbare absolute Resync-Stand aus L-10/K-04/K-07.
-        let projektion = match &self.store {
-            Some(store) => match store
-                .session_state_lesen(&session.project_binding_id, &session.session_epoch)
-            {
-                Ok(projektion) => projektion,
-                Err(_) => {
-                    self.routing_fail_closed("Sessionprojektion konnte nicht gelesen werden");
-                    return;
-                }
-            },
-            None => None,
+        let projektion = if self.store_degradiert() {
+            None
+        } else {
+            match &self.store {
+                Some(store) => match store
+                    .session_state_lesen(&session.project_binding_id, &session.session_epoch)
+                {
+                    Ok(projektion) => projektion,
+                    Err(_) => {
+                        self.routing_fail_closed("Sessionprojektion konnte nicht gelesen werden");
+                        return;
+                    }
+                },
+                None => None,
+            }
         };
         let (gedeckt_bis, payload) = match projektion {
             Some((ord, gespeichert)) => {
@@ -1038,7 +1061,7 @@ impl Coordinator {
             return false;
         };
         !link.trennen
-            && stand.routing_bereit
+            && (stand.routing_bereit || self.store_degradiert())
             && sub.adresse == link.adresse
             && sub.adresse.project_binding_id == ziel.project_binding_id
             && sub.session_epoch == ziel.session_epoch
@@ -1786,16 +1809,24 @@ impl Coordinator {
                 .find(|key| &key.session() == &session && key.instance_id == instance_id)
                 .cloned();
             let Some(key) = key else { return false };
-            let client = stand.clients.get_mut(&key).expect("Clientschluessel");
-            let geaendert = !client.bestaetigt;
-            client.join_kandidat = true;
-            client.bestaetigt = true;
-            client.explizit_bestaetigt = true;
-            Self::fuehrung_neu_bewerten_locked(&mut stand, &session);
-            stand.dirty_sessions.insert(session.clone());
-            geaendert
+            Self::beitritt_bestaetigen_locked(&mut stand, &session, &key)
         };
         self.flush_session(&session, None);
+        geaendert
+    }
+
+    fn beitritt_bestaetigen_locked(
+        stand: &mut Stand,
+        session: &SessionKey,
+        key: &ClientKey,
+    ) -> bool {
+        let client = stand.clients.get_mut(key).expect("Clientschluessel");
+        let geaendert = !client.bestaetigt;
+        client.join_kandidat = true;
+        client.bestaetigt = true;
+        client.explizit_bestaetigt = true;
+        Self::fuehrung_neu_bewerten_locked(stand, session);
+        stand.dirty_sessions.insert(session.clone());
         geaendert
     }
 
@@ -1821,16 +1852,24 @@ impl Coordinator {
                 .find(|key| &key.session() == &session && key.instance_id == instance_id)
                 .cloned();
             let Some(key) = key else { return false };
-            let client = stand.clients.get_mut(&key).expect("Clientschluessel");
-            let geaendert = client.bestaetigt || client.explizit_bestaetigt;
-            client.bestaetigt = false;
-            client.explizit_bestaetigt = false;
-            client.join_kandidat = true;
-            Self::fuehrung_neu_bewerten_locked(&mut stand, &session);
-            stand.dirty_sessions.insert(session.clone());
-            geaendert
+            Self::beitritt_aufheben_locked(&mut stand, &session, &key)
         };
         self.flush_session(&session, None);
+        geaendert
+    }
+
+    fn beitritt_aufheben_locked(
+        stand: &mut Stand,
+        session: &SessionKey,
+        key: &ClientKey,
+    ) -> bool {
+        let client = stand.clients.get_mut(key).expect("Clientschluessel");
+        let geaendert = client.bestaetigt || client.explizit_bestaetigt;
+        client.bestaetigt = false;
+        client.explizit_bestaetigt = false;
+        client.join_kandidat = true;
+        Self::fuehrung_neu_bewerten_locked(stand, session);
+        stand.dirty_sessions.insert(session.clone());
         geaendert
     }
 
@@ -2033,7 +2072,7 @@ impl Coordinator {
             })
             .collect();
         mitglieder.sort_by(|a, b| a.0.cmp(&b.0));
-        let payload = serde_json::json!({
+        let mut payload = serde_json::json!({
             "type": "session_snapshot",
             "session_epoch": session.session_epoch,
             "broker_epoch": self.broker_epoch,
@@ -2044,6 +2083,12 @@ impl Coordinator {
             "beitritt_bestaetigung_noetig": Self::beitritt_noetig_locked(stand, session),
             "mitglieder": mitglieder.into_iter().map(|(_, wert)| wert).collect::<Vec<_>>()
         });
+        if self.store_degradiert() {
+            payload
+                .as_object_mut()
+                .expect("session_snapshot ist ein Objekt")
+                .insert("store_degraded".into(), Value::Bool(true));
+        }
         serde_json::to_vec(&payload).unwrap_or_else(|_| b"{}".to_vec())
     }
 
@@ -2659,6 +2704,142 @@ impl Coordinator {
         }
     }
 
+    fn session_command(&self, link_id: &str, wert: &Value) -> Option<Vec<u8>> {
+        let command_id = wert.get("command_id")?.as_str()?;
+        let command = wert.get("command")?.as_str()?;
+        let session_epoch = wert.get("session_epoch")?.as_str()?;
+        let ziel: Adresse = serde_json::from_value(wert.get("ziel")?.clone()).ok()?;
+        let kanonischer_auftrag = serde_json_canonicalizer::to_vec(wert).ok()?;
+
+        let (session, revision, hash) = {
+            let mut stand = self.stand.lock().expect("Coordinator vergiftet");
+            let Some(sender_link) = stand.links.get(link_id) else {
+                return None;
+            };
+            let sender_session = sender_link.client_key.session();
+            let sender_instance = sender_link.client_key.instance_id.clone();
+            let sender_erlaubt = stand
+                .clients
+                .get(&sender_link.client_key)
+                .is_some_and(|client| {
+                    client.plugin_kind == "main"
+                        && client.bestaetigt
+                        && stand
+                            .sessions
+                            .get(&sender_session)
+                            .and_then(|session| session.fuehrendes_main.as_deref())
+                            == Some(sender_instance.as_str())
+                        && self.dispatch_fuer_link_erlaubt_locked(&stand, sender_link)
+                });
+            if !sender_erlaubt {
+                return Self::command_ack(
+                    command_id,
+                    "abgelehnt",
+                    0,
+                    None,
+                    Some("unauthorized"),
+                );
+            }
+            if session_epoch != sender_session.session_epoch
+                || ziel.project_binding_id != sender_session.project_binding_id
+                || ziel.session_epoch != sender_session.session_epoch
+                || ziel.logon_sid != sender_link.adresse.logon_sid
+            {
+                return Self::command_ack(
+                    command_id,
+                    "abgelehnt",
+                    0,
+                    None,
+                    Some("unauthorized"),
+                );
+            }
+
+            if let Some(alt) = stand.session_commands.get(command_id) {
+                return if alt.kanonischer_auftrag == kanonischer_auftrag {
+                    Self::command_ack(
+                        command_id,
+                        "idempotent_wiederholt",
+                        alt.state_revision,
+                        Some(&alt.state_hash),
+                        None,
+                    )
+                } else {
+                    Self::command_ack(
+                        command_id,
+                        "konflikt",
+                        alt.state_revision,
+                        Some(&alt.state_hash),
+                        Some("revision_conflict"),
+                    )
+                };
+            }
+
+            let ziel_key = stand
+                .clients
+                .iter()
+                .find(|(key, client)| {
+                    &key.session() == &sender_session
+                        && client.adresse == ziel
+                        && matches!(client.plugin_kind.as_str(), "active_probe" | "passive_probe")
+                })
+                .map(|(key, _)| key.clone());
+            let Some(ziel_key) = ziel_key else {
+                return Self::command_ack(
+                    command_id,
+                    "abgelehnt",
+                    0,
+                    None,
+                    Some("unknown_target"),
+                );
+            };
+            match command {
+                "confirm_join" => {
+                    Self::beitritt_bestaetigen_locked(
+                        &mut stand,
+                        &sender_session,
+                        &ziel_key,
+                    );
+                }
+                "unbind_probe" => {
+                    Self::beitritt_aufheben_locked(&mut stand, &sender_session, &ziel_key);
+                }
+                _ => return None, // Der strikte v3-Zweig haette das bereits abgelehnt.
+            }
+
+            let snapshot = self.snapshot_locked(&stand, &sender_session);
+            let snapshot_wert: Value = serde_json::from_slice(&snapshot).ok()?;
+            let snapshot_jcs = serde_json_canonicalizer::to_vec(&snapshot_wert).ok()?;
+            let hash = format!("{:x}", Sha256::digest(&snapshot_jcs));
+            let revision = self
+                .event_sequence
+                .fetch_add(1, Ordering::SeqCst)
+                .saturating_add(1)
+                .min(9_007_199_254_740_991);
+            while stand.session_command_reihenfolge.len() >= SESSION_COMMAND_REGISTER_MAX {
+                if let Some(alt) = stand.session_command_reihenfolge.pop_front() {
+                    stand.session_commands.remove(&alt);
+                }
+            }
+            stand.session_command_reihenfolge.push_back(command_id.to_owned());
+            stand.session_commands.insert(
+                command_id.to_owned(),
+                SessionCommandWirkung {
+                    kanonischer_auftrag,
+                    state_revision: revision,
+                    state_hash: hash.clone(),
+                },
+            );
+            (sender_session, revision, hash)
+        };
+
+        // Die absolute Sicht wird vor dem ACK erzeugt und in P1 eingereiht.
+        // P0 darf sie nach der bestehenden Rueckstauregel auf dem Draht
+        // ueberholen; beide Nachrichten tragen deshalb einen absoluten bzw.
+        // idempotenten Stand und setzen keine Zustellreihenfolge voraus.
+        self.flush_session(&session, Some(link_id));
+        Self::command_ack(command_id, "angewandt", revision, Some(&hash), None)
+    }
+
     fn p0_json(&self, link_id: &str, payload: &[u8]) -> Option<Vec<u8>> {
         let wert = v3_nachricht_lesen_beliebig(payload)?;
         match wert.get("type")?.as_str()? {
@@ -2712,6 +2893,7 @@ impl Coordinator {
                 );
                 None
             }
+            "session_command" => self.session_command(link_id, &wert),
             "preview_begin" | "preview_renew" | "preview_end" => self.persistenz_p0(link_id, &wert),
             _ => None,
         }

@@ -5,6 +5,7 @@
 #include "WorkerCadence.h"
 #include "BrokerInstallBinding.h"
 #include "PipeToken.h"
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <limits>
@@ -90,8 +91,14 @@ EqCopilotProcessor::EqCopilotProcessor()
             },
             [this] { return statsSnapshot(); },
             [this] { return messKompakt(); }),
-      controlV3 ([this] { return v3Hello(); }, v3PipeName, {},
-                 [this] { return v3Status(); }),
+      controlV3 ([this] { return v3Hello(); }, v3PipeName,
+                 [this] (const std::string& json) { v3Antwort (json); },
+                 [this] { return v3Status(); },
+                 [this] (bool verbunden) { v3ControlLink (verbunden); }),
+      telemetryV3 ([this] { return v3TelemetryHello(); }, v3PipeName,
+                   [this] (const std::uint8_t* daten, std::size_t laenge,
+                           std::uint8_t minor)
+                   { v3Frame (daten, laenge, minor); }),
       brokerLifecycle (nakama::ipc::BrokerLifecycleHooks {
           [this] {
               return controlV3.snapshot().status
@@ -135,6 +142,7 @@ EqCopilotProcessor::EqCopilotProcessor()
     pipe.start();
 #if ! defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
     controlV3.start();
+    telemetryV3.start();
     brokerLifecycle.start();
 #endif
 }
@@ -142,6 +150,7 @@ EqCopilotProcessor::EqCopilotProcessor()
 EqCopilotProcessor::~EqCopilotProcessor()
 {
     brokerLifecycle.stop();
+    telemetryV3.stop();
     controlV3.stop();
     pipe.stop();
     workerLaeuft.store (false);
@@ -785,6 +794,102 @@ nakama::ipc::ControlStatus EqCopilotProcessor::v3Status() const
     return s;
 }
 
+nakama::ipc::TelemetryHello EqCopilotProcessor::v3TelemetryHello() const
+{
+    nakama::ipc::TelemetryHello t;
+    const auto h = v3Hello();
+    t.adresse = h.adresse;
+    t.pluginVersion = h.pluginVersion;
+    controlV3.kopplung (t.linkId, t.challenge);
+    return t;
+}
+
+std::string EqCopilotProcessor::v3SubscribeJson() const
+{
+    auto h = v3Hello();
+    h.adresse.instanceId = nakama::ipc::instanceAdresseAusState (h.adresse.instanceId);
+    if (h.pluginKind != "main" || ! nakama::ipc::adresseGueltig (h.adresse))
+        return {};
+    return std::string ("{\"type\":\"subscribe_session\",\"adresse\":")
+         + nakama::ipc::adresseAlsJson (h.adresse)
+         + ",\"session_epoch\":\"" + h.adresse.sessionEpoch + "\"}";
+}
+
+void EqCopilotProcessor::v3ControlLink (bool verbunden)
+{
+    if (! verbunden)
+    {
+        sourcesModel.controlEnde();
+        telemetryV3.reconnect();
+        return;
+    }
+
+    auto h = v3Hello();
+    h.adresse.instanceId = nakama::ipc::instanceAdresseAusState (h.adresse.instanceId);
+    if (h.pluginKind != "main" || ! nakama::ipc::adresseGueltig (h.adresse))
+        return;
+    sourcesModel.beginneSubscription (h.adresse.projectBindingId,
+                                      h.adresse.sessionEpoch,
+                                      h.adresse.instanceId);
+    const auto subscribe = v3SubscribeJson();
+    const auto ergebnis = subscribe.empty()
+        ? nakama::ipc::P1Ergebnis::abgewiesen
+        : controlV3.sendeP1 ("subscribe_session", subscribe);
+    if (ergebnis == nakama::ipc::P1Ergebnis::abgewiesen
+        || ergebnis == nakama::ipc::P1Ergebnis::zuGross)
+    {
+        sourcesModel.controlEnde();
+        controlV3.reconnect();
+        return;
+    }
+    telemetryV3.reconnect();
+}
+
+void EqCopilotProcessor::v3Antwort (const std::string& json)
+{
+    nakama::ipc::GelesenesCommandAck ack;
+    if (nakama::ipc::commandAckHaeltVertrag (json, ack))
+    {
+        std::lock_guard<std::mutex> l (sourcesCommandMutex);
+        const auto it = ausstehendeSourcesCommands.find (ack.commandId);
+        if (it != ausstehendeSourcesCommands.end())
+        {
+            if (ack.erfolgreich)
+                bestaetigteSourcesCommands.push_back (it->second);
+            ausstehendeSourcesCommands.erase (it);
+        }
+        return;
+    }
+    juce::String fehler;
+    const auto ergebnis = sourcesModel.uebernehmeSessionSnapshot (
+        json, SourcesModel::Uhr::now(), fehler);
+    if (ergebnis == SourcesModel::SnapshotErgebnis::ungueltig)
+        sourcesModel.setzeDiagnoseFuerSichtbeweis (
+            SourcesModel::Diagnose::incompatible, false);
+}
+
+void EqCopilotProcessor::v3Frame (const std::uint8_t* daten, std::size_t laenge,
+                                  std::uint8_t schemaMinor)
+{
+    juce::String fehler;
+    sourcesModel.uebernehmeP2 (daten, laenge, schemaMinor,
+                               SourcesModel::Uhr::now(), fehler);
+}
+
+void EqCopilotProcessor::sourcesTick()
+{
+    wendeBestaetigteSourcesCommandsAn();
+#if ! defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    sourcesModel.tick (SourcesModel::Uhr::now());
+    sourcesModel.setzeControlTransport (controlV3.snapshot());
+#endif
+}
+
+void EqCopilotProcessor::reconnectSources()
+{
+    controlV3.reconnect();
+}
+
 StatsSnapshot EqCopilotProcessor::statsSnapshot() const
 {
     StatsSnapshot s;
@@ -894,6 +999,11 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
     const auto ergebnis = nakama::state::lade (daten, (size_t) groesse, bundleVertrag(), geladen);
     if (ergebnis == nakama::state::LadeErgebnis::ignoriert)
         return;   // fremder Baumtyp / Muell: Zustand bleibt (wie seit 0.1)
+    {
+        std::lock_guard<std::mutex> l (sourcesCommandMutex);
+        ausstehendeSourcesCommands.clear();
+        bestaetigteSourcesCommands.clear();
+    }
 
     if (ergebnis == nakama::state::LadeErgebnis::nurLesen)
     {
@@ -910,6 +1020,7 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
             lebenslauf.stateRestauriert (ergebnis, geladen);
             spiegleKlassifikation();
         }
+        sourcesModel.projektReload ({});
         v3StateRevision.fetch_add (1);
         controlV3.reconnect();
         return;
@@ -924,6 +1035,7 @@ void EqCopilotProcessor::setStateInformation (const void* daten, int groesse)
         lebenslauf.stateRestauriert (ergebnis, geladen);
         spiegleKlassifikation();
     }
+    sourcesModel.projektReload (geladen.mainProjectMitglieder);
     pipe.start();       // No-Op, wenn sie laeuft; hebt einen frueheren read-only-Stopp auf
     pipe.reconnect();   // frisches hello mit der geladenen Bindung
     v3StateRevision.fetch_add (1);
@@ -1018,6 +1130,7 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
     if (! nakama::state::ausV2Rolle (r, klasse, position))
         return false;
 
+    std::vector<nakama::state::MainProjectMitglied> mainMitglieder;
     {
         std::lock_guard<std::mutex> l (bindungMutex);
         if (zustand.nurLesen)
@@ -1036,6 +1149,9 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
         if (neu == zustand.common)
             return false;   // keine Aenderung: kein Dirty, kein Reconnect-Geflacker
         zustand.common = neu;
+        if (klasse != nakama::state::Klasse::main)
+            zustand.mainProjectMitglieder.clear();
+        mainMitglieder = zustand.mainProjectMitglieder;
 
         // §53.5, dritter Punkt: "leerer, nie gespeicherter Altstate → Main
         // erst nach geoeffnetem Editor UND expliziter Initialisierung". Genau
@@ -1051,12 +1167,162 @@ bool EqCopilotProcessor::setzeBindung (const juce::String& r, const juce::String
         lebenslauf.expliziteInitialisierung (zustand);
         spiegleKlassifikation();
     }
+    sourcesModel.setzePersistenteMitglieder (mainMitglieder);
     meldeHostDirty();
     v3StateRevision.fetch_add (1);
     pipe.reconnect();
     controlV3.reconnect();
     return true;
 }
+
+bool EqCopilotProcessor::bindeSourcesHauptziel (const std::string& erwarteteInstanceId)
+{
+    return sendeSourcesCommand (SourcesCommandArt::confirmJoin, erwarteteInstanceId);
+}
+
+bool EqCopilotProcessor::benenneSourcesHauptziel (const std::string& erwarteteInstanceId,
+                                                  const juce::String& label)
+{
+    if (label.length() > 120 || ! sourcesModel.istAktuellesHauptziel (erwarteteInstanceId)
+        || ! sourcesModel.sicht().mainDarfSchreiben)
+        return false;
+    std::vector<nakama::state::MainProjectMitglied> kopie;
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main
+            || ! sourcesModel.istAktuellesHauptziel (erwarteteInstanceId))
+            return false;
+        const auto gefunden = std::find_if (
+            zustand.mainProjectMitglieder.begin(), zustand.mainProjectMitglieder.end(),
+            [&] (const auto& m) { return m.instanceId.toStdString() == erwarteteInstanceId; });
+        if (gefunden == zustand.mainProjectMitglieder.end() || gefunden->label == label)
+            return false;
+        gefunden->label = label;
+        kopie = zustand.mainProjectMitglieder;
+    }
+    sourcesModel.setzePersistenteMitglieder (kopie);
+    meldeHostDirty();
+    v3StateRevision.fetch_add (1);
+    return true;
+}
+
+bool EqCopilotProcessor::entferneSourcesHauptziel (const std::string& erwarteteInstanceId)
+{
+    return sendeSourcesCommand (SourcesCommandArt::unbindProbe, erwarteteInstanceId);
+}
+
+bool EqCopilotProcessor::sendeSourcesCommand (SourcesCommandArt art,
+                                               const std::string& erwarteteInstanceId)
+{
+    const auto sicht = sourcesModel.sicht();
+    if (! sicht.mainDarfSchreiben || ! sourcesModel.istAktuellesHauptziel (erwarteteInstanceId)
+        || ! nakama::ipc::istHex32 (erwarteteInstanceId))
+        return false;
+    const auto quelle = std::find_if (sicht.quellen.begin(), sicht.quellen.end(),
+        [&] (const auto& q) { return q.instanceId == erwarteteInstanceId && q.hauptziel; });
+    if (quelle == sicht.quellen.end() || ! nakama::ipc::istHex32 (quelle->runtimeNonce))
+        return false; // Ohne aktuellen Brokeradressaten kein behaupteter Wire-Unbind.
+
+    {
+        std::lock_guard<std::mutex> l (bindungMutex);
+        if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main)
+            return false;
+        const auto hat = std::any_of (
+            zustand.mainProjectMitglieder.begin(), zustand.mainProjectMitglieder.end(),
+            [&] (const auto& m) { return m.instanceId.toStdString() == erwarteteInstanceId; });
+        if ((art == SourcesCommandArt::confirmJoin && (hat
+                || zustand.mainProjectMitglieder.size()
+                    >= static_cast<std::size_t> (nakama::state::maxMainProjectMitglieder)))
+            || (art == SourcesCommandArt::unbindProbe && ! hat))
+            return false;
+    }
+
+    auto h = v3Hello();
+    h.adresse.instanceId = erwarteteInstanceId;
+    h.adresse.runtimeNonce = quelle->runtimeNonce;
+    if (! nakama::ipc::adresseGueltig (h.adresse))
+        return false;
+    SourcesCommand auftrag;
+    auftrag.art = art;
+    auftrag.commandId = uuidHex32();
+    auftrag.instanceId = erwarteteInstanceId;
+    auftrag.projectBindingId = h.adresse.projectBindingId;
+    auftrag.sessionEpoch = h.adresse.sessionEpoch;
+    const char* command = art == SourcesCommandArt::confirmJoin
+                            ? "confirm_join" : "unbind_probe";
+    auftrag.json = std::string ("{\"type\":\"session_command\",\"command\":\"")
+                 + command + "\",\"command_id\":\"" + auftrag.commandId
+                 + "\",\"ziel\":" + nakama::ipc::adresseAlsJson (h.adresse)
+                 + ",\"session_epoch\":\"" + h.adresse.sessionEpoch + "\"}";
+    {
+        std::lock_guard<std::mutex> l (sourcesCommandMutex);
+        if (std::any_of (ausstehendeSourcesCommands.begin(),
+                         ausstehendeSourcesCommands.end(),
+                         [&] (const auto& paar) {
+                             return paar.second.instanceId == erwarteteInstanceId;
+                         }))
+            return false;
+        ausstehendeSourcesCommands.emplace (auftrag.commandId, auftrag);
+    }
+    if (controlV3.sendePersistenzP0 (auftrag.json))
+        return true;
+    std::lock_guard<std::mutex> l (sourcesCommandMutex);
+    ausstehendeSourcesCommands.erase (auftrag.commandId);
+    return false;
+}
+
+void EqCopilotProcessor::wendeBestaetigteSourcesCommandsAn()
+{
+    std::vector<SourcesCommand> befehle;
+    {
+        std::lock_guard<std::mutex> l (sourcesCommandMutex);
+        befehle.swap (bestaetigteSourcesCommands);
+    }
+    for (const auto& befehl : befehle)
+    {
+        std::vector<nakama::state::MainProjectMitglied> kopie;
+        bool geaendert = false;
+        {
+            std::lock_guard<std::mutex> l (bindungMutex);
+            if (zustand.nurLesen || zustand.common.klasse != nakama::state::Klasse::main
+                || zustand.common.projectBindingId.toStdString() != befehl.projectBindingId
+                || v3SessionEpoch != befehl.sessionEpoch)
+                continue; // ACK eines vor Reload gueltigen Laufs mutiert den neuen State nie.
+            auto gefunden = std::find_if (
+                zustand.mainProjectMitglieder.begin(), zustand.mainProjectMitglieder.end(),
+                [&] (const auto& m) { return m.instanceId.toStdString() == befehl.instanceId; });
+            if (befehl.art == SourcesCommandArt::confirmJoin
+                && gefunden == zustand.mainProjectMitglieder.end()
+                && zustand.mainProjectMitglieder.size()
+                    < static_cast<std::size_t> (nakama::state::maxMainProjectMitglieder))
+            {
+                zustand.mainProjectMitglieder.push_back ({ juce::String (befehl.instanceId), {} });
+                geaendert = true;
+            }
+            else if (befehl.art == SourcesCommandArt::unbindProbe
+                     && gefunden != zustand.mainProjectMitglieder.end())
+            {
+                zustand.mainProjectMitglieder.erase (gefunden);
+                geaendert = true;
+            }
+            kopie = zustand.mainProjectMitglieder;
+        }
+        if (! geaendert)
+            continue;
+        sourcesModel.setzePersistenteMitglieder (kopie);
+        meldeHostDirty();
+        v3StateRevision.fetch_add (1);
+    }
+}
+
+#if defined(NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+std::string EqCopilotProcessor::ausstehenderSourcesCommandFuerTest() const
+{
+    std::lock_guard<std::mutex> l (sourcesCommandMutex);
+    return ausstehendeSourcesCommands.empty()
+             ? std::string() : ausstehendeSourcesCommands.begin()->second.json;
+}
+#endif
 
 // ── Lokaler Mess-Snapshot als Datei (M1 §11: "lokale Snapshot-Erfassung") ──
 // Kein Roh-Audio, keine Historie im Plugin-State — nur der Messstand.

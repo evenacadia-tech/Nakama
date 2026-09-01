@@ -159,7 +159,7 @@ bool commandIdAusAuftrag (const std::string& text, std::string& commandId)
     return gefunden == 1;
 }
 
-CommandAckArt commandAckLesen (const std::string& text, std::string& commandId)
+CommandAckArt commandAckArtLesen (const std::string& text, std::string& commandId)
 {
     std::vector<JsonFeld> felder;
     std::string typ, ergebnis, revision;
@@ -349,6 +349,19 @@ std::string zahl (double w)
 }
 } // namespace
 
+bool commandAckHaeltVertrag (const std::string& text, GelesenesCommandAck& gelesen)
+{
+    gelesen = {};
+    std::string commandId;
+    const auto art = commandAckArtLesen (text, commandId);
+    if (art == CommandAckArt::keinAck)
+        return false;
+    gelesen.commandId = std::move (commandId);
+    gelesen.erfolgreich = art == CommandAckArt::angewandt
+                       || art == CommandAckArt::idempotentWiederholt;
+    return true;
+}
+
 std::string heartbeatAlsJson (const Adresse& adresse, std::uint64_t sequence,
                               const ControlStatus& status)
 {
@@ -479,9 +492,11 @@ struct ControlClient::Laufzeit
     Laufzeit (std::function<ControlHello()> hp,
               std::string pn,
               std::function<void (const std::string&)> ba,
-              std::function<ControlStatus()> sp)
+              std::function<ControlStatus()> sp,
+              std::function<void (bool)> bl)
         : helloProvider (std::move (hp)), beiAntwort (std::move (ba)),
-          statusProvider (std::move (sp)), pipeName (std::move (pn)) {}
+          statusProvider (std::move (sp)), beiLinkStatus (std::move (bl)),
+          pipeName (std::move (pn)) {}
 
     void threadLauf (std::uint64_t meinLauf, std::shared_ptr<IpcVerbindung> meine);
     bool eineVerbindung (std::uint64_t generation, std::uint64_t meinLauf,
@@ -498,10 +513,13 @@ struct ControlClient::Laufzeit
     P1Ergebnis sendeP1 (const std::string& schluessel, const std::string& json);
     Snapshot snapshotIntern() const;
     bool kopplung (std::string& linkId, std::string& challenge) const;
+    void meldeLinkStatus (bool verbunden);
 
     std::function<ControlHello()> helloProvider;
     std::function<void (const std::string&)> beiAntwort;
     std::function<ControlStatus()> statusProvider;
+    std::function<void (bool)> beiLinkStatus;
+    std::atomic<bool> linkAlsVerbundenGemeldet { false };
     std::string pipeName;
     std::atomic<std::uint64_t> heartbeatFolge { 0 };
 
@@ -592,11 +610,13 @@ struct ControlClient::Laufzeit
 ControlClient::ControlClient (std::function<ControlHello()> helloProviderIn,
                               std::string pipeNameIn,
                               std::function<void (const std::string&)> beiAntwortIn,
-                              std::function<ControlStatus()> statusProviderIn)
+                              std::function<ControlStatus()> statusProviderIn,
+                              std::function<void (bool)> beiLinkStatusIn)
     : k (std::make_shared<Laufzeit> (std::move (helloProviderIn),
                                      std::move (pipeNameIn),
                                      std::move (beiAntwortIn),
-                                     std::move (statusProviderIn)))
+                                     std::move (statusProviderIn),
+                                     std::move (beiLinkStatusIn)))
 {
 }
 
@@ -635,6 +655,7 @@ void ControlClient::stop()
     auto verbindung = k->aktuelleVerbindung();
 
     k->laeuft.store (false);
+    k->meldeLinkStatus (false);
     k->verbindungsGeneration.fetch_add (1);
     verbindung->ioAbbrechen();
     k->warte.notify_all();
@@ -677,6 +698,7 @@ void ControlClient::stop()
 
 void ControlClient::reconnect()
 {
+    k->meldeLinkStatus (false);
     {
         std::lock_guard<std::mutex> l (k->zustandMutex);
         k->zustand.brokerPipeFehlt = false;
@@ -838,7 +860,7 @@ void ControlClient::Laufzeit::inFlightNachWireWrite (const std::string& json,
 void ControlClient::Laufzeit::inFlightAck (const std::string& json)
 {
     std::string commandId;
-    const auto art = commandAckLesen (json, commandId);
+    const auto art = commandAckArtLesen (json, commandId);
     if (art == CommandAckArt::keinAck)
         return;
 
@@ -898,6 +920,16 @@ bool ControlClient::Laufzeit::kopplung (std::string& linkId, std::string& challe
     linkId = zustand.linkId;
     challenge = zustand.challenge;
     return true;
+}
+
+void ControlClient::Laufzeit::meldeLinkStatus (bool verbunden)
+{
+    // Ein Reconnect/stop darf die Subscription sofort entwerten, auch wenn
+    // der blockierte Read erst danach zurueckkehrt. `exchange` verhindert den
+    // spaeteren doppelten Ende-Callback aus `eineVerbindung`.
+    const bool vorher = linkAlsVerbundenGemeldet.exchange (verbunden);
+    if (vorher != verbunden && beiLinkStatus)
+        beiLinkStatus (verbunden);
 }
 
 void ControlClient::Laufzeit::threadLauf (std::uint64_t meinLauf,
@@ -1108,6 +1140,7 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
         zustand.brokerVersion = brokerVersion;
         zustand.letzterFehler.clear();
     }
+    meldeLinkStatus (true);
     const auto dieseWireGeneration = wireGeneration.fetch_add (1) + 1;
 
     // Was der letzte Verbindungsabbruch offen liess, geht jetzt zuerst raus
@@ -1345,8 +1378,11 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
     verbindung.schliessen();
     if (! abgeloest (meinLauf))
     {
-        std::lock_guard<std::mutex> l (zustandMutex);
-        zustand.status = Status::getrennt;
+        {
+            std::lock_guard<std::mutex> l (zustandMutex);
+            zustand.status = Status::getrennt;
+        }
+        meldeLinkStatus (false);
     }
     return true;
 }

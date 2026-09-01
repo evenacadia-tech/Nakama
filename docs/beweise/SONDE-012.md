@@ -1,20 +1,27 @@
 # SONDE-012 — S18–19: Alle Quellen mit Messpunkt, Frische und Fehlerzustand zeigen
 
+<!-- NAKAMA-URTEIL: T2 PASS 2026-09-01 -->
+
 | Merkmal | Wert |
 |---|---|
 | Ticket | S18–19, SONDE-012 |
-| Lieferumfang | Phase A — Verhaltensmatrix für den passiven Quellen-Slice bis Main; kein Produktcode |
-| Basis-SHA | 9abb66f |
+| Prüfstufe | T1+T2 gefordert — Abschluss **T2 PASS 2026-09-01** (Wiederprüfung Runde 1, frischer Codex-Prüfer Sol max) |
+| Basis-SHA | 9abb66f · End-SHA c978148 |
+| Bauer | ein Codex-Thread (gpt-5.6-sol, Effort max, workspace-write), Etappen A/B1/B2/B2b/B3a–B3d/NR1; Kanon, Commits und Push: Fable (Dirigent) |
 | Gate-Text (wörtlich aus docs/bauaufteilung-sonden.md) | T1+T2 |
-| Status | Phase A abgeschlossen: Verhaltensmatrix (47 Zeilen) **PASS** 2026-09-01 · Phase B (Bau) offen |
+| Jüngster Kanon | GRUEN 39/39 auf 9667a9f-dirty (= End-Stand c978148), Rohdatei docs/beweise/roh/SONDE-012-9667a9f-dirty.md |
+| Rundenbilanz kumuliert (9abb66f→c978148) | Produkt +10.055/−2.179 über 159 Dateiänderungen · Tests +3.553/−160 · Prüfwerkzeug +781/−42 · Doku +26.248/−37 |
+| Offen (kein Defekt) | FL-User-Termin für den Host-Kanalkontext (Matrixzeilen C02/C03 samt H01/H02/H05-Messanteil): erst er setzt den `host_channel_context`-Eintrag; bis dahin gilt der U20-Rückfall |
 
-**Prüfrunden Phase A** (Prüfer: je ein frischer lesender Codex-Thread, Sol max):
+**Prüfrunden** (je ein frischer lesender Codex-Thread, Sol max):
 
 | Runde | Gegenstand | Urteil |
 |---|---|---|
-| 1 | Matrix vollständig gegen Tickettext, Entwurf, Abnahmen, Verträge, Code | NEEDS_WORK — 8 Defektgruppen |
-| 2 | Nacharbeit des Bauthreads (D1–D8) | NEEDS_WORK — Rest D5 (Versionsort) |
-| 3 | Korrektur E-H02/H02 (Envelope-`schema_minor`) | **PASS** |
+| Phase A/1 | Matrix vollständig gegen Tickettext, Entwurf, Abnahmen, Verträge, Code | NEEDS_WORK — 8 Defektgruppen |
+| Phase A/2 | Nacharbeit des Bauthreads (D1–D8) | NEEDS_WORK — Rest D5 (Versionsort) |
+| Phase A/3 | Korrektur E-H02/H02 (Envelope-`schema_minor`) | **PASS** |
+| Erstprüfung (T2) | ganzer Ticketbereich 9abb66f...e84cff3 | NEEDS_WORK — 6 Defekte (Minor-Auswertung, Label-Ingress, Lautheits-Endzustand, Unbind-Persistenz, totes Label-Feld, Remove nur-persistenter Mitglieder) |
+| Wiederprüfung 1 | Fixdiff e84cff3...c978148 | **PASS** — alle sechs geschlossen, nichts gebrochen |
 
 Dieses Manifest ist weder Bau- noch Prüfurteil. Es friert die aus den
 verbindlichen Quellen belegbare Verhaltensgrenze ein und benennt Stellen, an

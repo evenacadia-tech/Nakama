@@ -5,11 +5,12 @@
 **Methode:** Audio-Plugin-UX-Skill mit Evidenzklassen, Listening-Loop, Sonic-Object-Map, Placement Proofs, Zustandsmatrix und Host-Testplan.
 
 > **Fortschreibung 01.09.2026:** Diese Analyse bleibt ein Befund ihres
-> Prüfdatums. Ihre Aussagen, 760×430 sei die einzige aktuelle Gen-Größe und
-> Fenster-Resize sei noch offen, sind durch
-> [`../abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md`](../abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md)
-> abgelöst: 760×430 ist das kompakte Minimum, 950×538 der Standard im festen
-> 76:43-Rahmen. Native Umsetzung und FL-Prüfung bleiben offen.
+> Prüfdatums. Der aktuelle Vertrag verwendet für beide Gen-Flächen genau eine
+> logische Arbeitsgröße von 950×538; Compact, Fenster-Resize und
+> größenabhängiger Reflow sind bis nach Fertigstellung der Standard-UI vertagt.
+> UI-Skalierung rendert dieselbe Geometrie größer. Native Umsetzung und
+> FL-Prüfung bleiben offen. Quelle:
+> [`../abnahmen/2026-09-01-gen-nur-standardgroesse.md`](../abnahmen/2026-09-01-gen-nur-standardgroesse.md).
 
 ## Kurzurteil
 

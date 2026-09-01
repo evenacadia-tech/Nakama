@@ -5,11 +5,11 @@ authority:
   visualSystem: "historical-pre-2026-08-31"
 functionalSizing:
   genStage:
-    compactMinimum: "760x430 logical px"
-    default: "950x538 logical px"
-    fixedAspectRatio: "76:43"
-    resizeBehavior: "workspace grows; graph/evidence first"
-    uiScale: "independent"
+    logicalSize: "950x538 logical px"
+    layoutModes: "standard only"
+    compact: "deferred until the standard UI is complete"
+    resize: "deferred"
+    uiScale: "same geometry; independent rendering scale"
 colors:
   shell: "#1b1d1f"
   glass: "#0c0e10"
@@ -67,15 +67,14 @@ after an explicit user decision to enter that phase.
 
 ## Current functional sizing contract
 
-Both Gen surfaces share one fixed-aspect, resizable editor stage. Its compact
-minimum is 760×430 logical pixels; its default is 950×538, the integer-rounded
-size at the same 76:43 aspect ratio. Resizing buys information area rather than
-uniform zoom: the graph or acoustic evidence receives additional room first,
-while established rails and control targets retain their logical geometry.
-The 100/125/150/200-percent UI scale is a separate accessibility/rendering
-mechanism and may not remove functionality. This decision does not set the
-size of the compact Probeeq fallback surface. The binding wording is recorded
-in `design/abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md`.
+Both Gen surfaces use exactly one logical editor size: 950×538 pixels. There
+is no current compact layout and no size-dependent reflow or workspace-resize
+contract. Compact may be reconsidered only after the standard interface is
+complete. The 100/125/150/200-percent UI scale remains a separate
+accessibility/rendering mechanism that enlarges the same geometry and may not
+remove functionality. This decision does not set the size of the Probeeq
+fallback surface. The binding wording is recorded in
+`design/abnahmen/2026-09-01-gen-nur-standardgroesse.md`.
 
 ## Historical overview
 

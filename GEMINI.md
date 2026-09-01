@@ -12,10 +12,10 @@ Diese Datei definiert die verbindliche Rolle, Arbeitsweise, Grenzen und den Proj
 1. **Nakama Gen (Zentrale):**
    - Besitzt zwei gleich große Oberflächen: Analyse/Befunde/Advisor und
      zentrale Sonden-/EQ-Fernsteuerung inkl. Master-EQ. Beide teilen einen
-     vergrößerbaren 76:43-Rahmen; 760×430 ist das kompakte Minimum und 950×538
-     die Standardgröße. Zusätzliche Fläche wächst zuerst Graph beziehungsweise
-     akustischer Evidenz zu; UI-Skalierung bleibt getrennt
-     (`design/abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md`).
+     einzige logische Standardgröße von 950×538. Eine Compact-Fassung und
+     größenabhängiges Layout sind bis nach Fertigstellung vertagt;
+     UI-Skalierung vergrößert nur dieselbe Geometrie
+     (`design/abnahmen/2026-09-01-gen-nur-standardgroesse.md`).
    - Steuert verbundene Sonden zentral fern.
 2. **Nakama Probeeq (Sonde / Satellit):**
    - Sitzt auf einzelnen Mixer-Bussen.

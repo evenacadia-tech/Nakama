@@ -55,10 +55,9 @@ ein Entwurf gegen ein Maß, das der Editor nicht rendert.
 
 ## Fortschreibung vom 01.09.2026
 
-Der damalige Aufschub des Resize ist durch den neueren Userentscheid teilweise
-abgelöst. Das feste Seitenverhältnis bleibt; der Gen-Rahmen darf nun innerhalb
-dieses Verhältnisses wachsen. 760×430 ist die kompakte Mindestgröße,
-950×538 die Standardgröße. Wachstum erzeugt Informationsfläche für Graph
-beziehungsweise akustische Evidenz und ist nicht mehr bloß proportionaler
-Zoom. Bindend ist
-[`2026-09-01-gen-fenstergroesse-und-resize.md`](2026-09-01-gen-fenstergroesse-und-resize.md).
+Der aktuelle Userentscheid vereinfacht diese Frage weiter: Gen erhält genau
+eine logische Standardgröße von 950×538. Weil im aktuellen Ziel kein
+Fenster-Resize und keine Compact-Fassung existieren, ist ein aktiver
+Seitenverhältnisvertrag für mehrere Größen derzeit unnötig. UI-Skalierung
+vergrößert dieselbe Geometrie. Bindend ist
+[`2026-09-01-gen-nur-standardgroesse.md`](2026-09-01-gen-nur-standardgroesse.md).

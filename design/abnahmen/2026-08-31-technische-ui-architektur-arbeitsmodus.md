@@ -225,10 +225,16 @@ sofort und querschnittlich einzubauen:
 > an, Kontext darf nicht driften das ist das wichtigste“
 
 Diese Anweisung ist eine bewusste Ausnahme vom Fünfer-Takt, keine Rückkehr
-zum Umbau nach jeder Einzelantwort. Der bindende Entscheid steht in
-[`2026-09-01-gen-fenstergroesse-und-resize.md`](2026-09-01-gen-fenstergroesse-und-resize.md):
-Beide Gen-Flächen teilen den vergrößerbaren 76:43-Rahmen, 760×430 ist das
-kompakte Minimum und 950×538 die Standardgröße; zusätzliche Fläche wächst
-zuerst Graph beziehungsweise akustischer Evidenz zu. UI-Skalierung bleibt
-davon getrennt. Der nächste reguläre Entscheid beginnt wieder einen
-Fünferblock und öffnet diese Größenfrage nicht erneut.
+zum Umbau nach jeder Einzelantwort. Der erste Größenentscheid wurde später am
+selben Tag durch den vereinfachenden Userentscheid ersetzt:
+
+> „compact und standard wird zu kompliziert. es ist schon schwer genug ein
+> gutes UI layout zu erstellen. es wird eine größe nämlich standard geben.
+> compact kann eventuell iwann wenn alles fertig ist angegangen werden.“
+
+Bindend ist
+[`2026-09-01-gen-nur-standardgroesse.md`](2026-09-01-gen-nur-standardgroesse.md):
+Beide Gen-Flächen verwenden genau eine logische Größe von 950×538. Compact,
+Fenster-Resize und eine zweite Layoutfassung sind vertagt; UI-Skalierung
+vergrößert nur dieselbe Geometrie. Der nächste reguläre Entscheid beginnt
+wieder einen Fünferblock und öffnet diese Größenfrage nicht erneut.

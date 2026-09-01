@@ -67,8 +67,8 @@ Optik-, Komponenten- und Motion-Abnahme bleibt offen. Vollständiger Beleg:
 
 Die Gleichheit beider Gen-Flächen bleibt bindend. Die damalige Festlegung auf
 760×430 als einzige Größe ist jedoch durch
-[`2026-09-01-gen-fenstergroesse-und-resize.md`](2026-09-01-gen-fenstergroesse-und-resize.md)
-präzisiert: 760×430 ist nun das kompakte Minimum, 950×538 die Standardgröße,
-beide im festen Verhältnis 76:43. Die hier gemessenen Figma-Artboards bleiben
-historische Belege des damaligen Stands und bestimmen nicht den aktuellen
-Funktionsentwurf.
+[`2026-09-01-gen-nur-standardgroesse.md`](2026-09-01-gen-nur-standardgroesse.md)
+ersetzt: Beide Flächen verwenden im aktuellen Funktionsentwurf genau eine
+logische Größe von 950×538. Compact und größenabhängiges Layout sind vertagt.
+Die hier gemessenen Figma-Artboards bleiben historische Belege des damaligen
+Stands und bestimmen nicht den aktuellen Funktionsentwurf.

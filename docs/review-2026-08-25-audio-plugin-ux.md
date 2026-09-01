@@ -13,11 +13,11 @@
   Repo-Quelle geprüft.
 
 > **Fortschreibung 01.09.2026:** Der Review bleibt historischer Beleg für Skill
-> 0.1.0. Seine damalige Größenfeststellung ist nicht mehr der aktuelle
-> Produktvertrag: 760×430 ist jetzt das kompakte Gen-Minimum, 950×538 der
-> Standard im festen 76:43-Rahmen; Fenster-Resize vergrößert zuerst die
-> Arbeitsfläche und UI-Skalierung bleibt separat. Quelle:
-> `../design/abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md`.
+> 0.1.0. Aktuell verwenden beide Gen-Flächen genau eine logische Arbeitsgröße
+> von 950×538. Compact, Fenster-Resize und größenabhängiger Reflow sind bis
+> nach Fertigstellung der Standard-UI vertagt; UI-Skalierung rendert dieselbe
+> Geometrie größer. Quelle:
+> `../design/abnahmen/2026-09-01-gen-nur-standardgroesse.md`.
 
 ## Urteil
 

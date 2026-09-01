@@ -31,13 +31,13 @@
    Übergänge sind Seitenwechsel, keine Popups mit Eigenleben.
 2. **Produktsprache Englisch** (Register 21.08.); dunkel verbindlich,
    hell geplant (Figma-Depot 22.08.).
-3. **Größen:** Beide Gen-Seiten bleiben gleich groß und teilen das feste
-   Verhältnis 76:43. Seit dem Entscheid 01.09. ist 760×430 die kompakte
-   Mindestgröße und 950×538 die Standardgröße. Fenster-Resize wächst zuerst
-   Graph beziehungsweise akustischer Evidenz zu; UI-Skalierung bleibt davon
-   getrennt. Der funktionale Gen-Hauptpfad ist im Code weiterhin fest auf
-   760×430 und muss den neuen Vertrag erst nativ beweisen. Wortlaut und
-   Grenzen: `../abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md`.
+3. **Größe:** Beide Gen-Seiten verwenden genau eine logische Arbeitsgröße von
+   950×538. Compact, größenabhängiger Reflow und Fenster-Resize sind bis nach
+   Fertigstellung der Standard-UI vertagt. Die UI-Skalierung bleibt davon
+   getrennt und vergrößert dieselbe Geometrie. Der funktionale Gen-Hauptpfad
+   ist im Code weiterhin fest auf 760×430 und muss auf 950×538 umgestellt und
+   nativ bewiesen werden. Wortlaut und Grenzen:
+   `../abnahmen/2026-09-01-gen-nur-standardgroesse.md`.
 4. **Aktuelle visuelle Grundlage:** die drei Rework-Bilder vom 25.08.; der
    frühere Probeeq-Figma-Stand ist Verlauf. Handling-Referenzen wie Smooth
    Operator Pro oder Pro-Q dürfen Bedienlogik erklären, nie die User-Optik
@@ -255,10 +255,10 @@
 **Nachtrag 24.08. (Rückmeldung auf den ersten Figma-Umbau, Wortlaut
 `../abnahmen/2026-08-24-seite2-groesse-keine-toten-elemente.md`):**
 
-45. **Beide Seiten gleich groß:** Seite 1 und Seite 2 teilen denselben
-    76:43-Rahmen; 760×430 gilt als kompaktes Minimum, 950×538 als Standard.
-    Zusätzliche Fläche vergrößert zuerst Evidenz beziehungsweise Graph, nicht
-    alle Bedienelemente proportional (Fortschreibung 01.09.; Regel 3).
+45. **Beide Seiten gleich groß:** Seite 1 und Seite 2 verwenden genau
+    950×538 logische Pixel. Es gibt aktuell weder Compact-Layout noch
+    Fenster-Resize oder größenabhängigen Reflow. Die UI-Skalierung rendert
+    dieselbe Geometrie größer (Fortschreibung 01.09.; Regel 3).
 46. **Keine toten Elemente** (Entscheid: „die schlimmste ui/ux sünde sind
     sinnlose tote elemente"): jedes sichtbare Element bedient einen
     Handgriff oder meldet ehrlich einen Zustand. Folgen für die
@@ -296,7 +296,7 @@
 | Was | Wo |
 |---|---|
 | ~~Sidechain-Quelle je Band~~ — beantwortet 24.08.: im ersten Release unsichtbar, Parameter bleibt mit Default `none` gespeichert | **U5 / NAK-33 geschlossen** |
-| ~~Gleiche Größe beider Gen-Seiten~~ — präzisiert 01.09.: 76:43, kompakt 760×430, Standard 950×538, Regel 45. Native Resize-/Reopen-Prüfung bleibt Bauarbeit; Probeeq-Rückfallfläche ist ein eigener Umfang. | **NAK-65 / NAK-82** |
+| ~~Gleiche Größe beider Gen-Seiten~~ — abschließend präzisiert 01.09.: genau eine logische Größe 950×538, kein aktuelles Compact-/Resize-/Reflow-System, Regel 45. Native Umstellung auf 950×538 sowie Reopen- und UI-Skalierungsprüfung bleiben Bauarbeit; Probeeq-Rückfallfläche ist ein eigener Umfang. | **NAK-65 / NAK-82** |
 | ~~Undo-Form auf Gen Seite 1~~ — beantwortet 24.08.: kleines Symbol öffnet echten Revisionsverlauf | **U2.8 geschlossen** |
 | Mix/Dry-Wet: versionierte Parameter-Erweiterung, zweistufig global↔Spur (beschlossen, ungebaut) | Plan S26–28/S29–31 (`SONDE-015`/`016`) · Regeln 32/42 |
 | ~~Umschnitt Bauaufteilung/P6–P7~~ — **gefahren 23.08.** (`e3dbad4`): S28b Gen-Master-EQ, S31b EQ-Zentrale-UI, Schutz-Zonen und Mix in S26–31 eingeplant | NAK-64 geschlossen |

@@ -161,9 +161,11 @@ einen Sonde** (**Probeeq** — Suna ist in Probeeq aufgegangen; die alte
 Suna-Kachel-Arbeit und ihre offenen U6-Punkte gelten für die Rückfallfläche
 weiter, soweit sie eine behält). Die funktionale UI kommt aus
 `design/docs/funktions-und-bedien-blueprint.md` und den jüngsten Abnahmen unter
-`design/abnahmen/`; frühere Figma-Stände sind Verlauf. Beide Gen-Seiten teilen
-einen vergrößerbaren 76:43-Rahmen: 760×430 ist das kompakte Minimum und
-950×538 die Standardgröße (Entscheid 01.09.2026). Der
+`design/abnahmen/`; frühere Figma-Stände sind Verlauf. Beide Gen-Seiten
+verwenden genau eine logische Arbeitsgröße von 950×538 (Entscheid
+01.09.2026). Compact, Fenster-Resize und größenabhängiger Reflow sind bis nach
+Fertigstellung dieser Standard-UI vertagt; UI-Skalierung rendert dieselbe
+Geometrie größer. Der
 Probeeq-Stand 700×420 ist nur noch historisches **Working Design** der
 EQ-Fläche (User 23.08.), als eigenständige Voll-UI Verlauf. Offen in NAK-65
 bleibt der Umbau und die visuelle Abnahme der minimalen
@@ -171,7 +173,7 @@ Probeeq-Rückfallfläche; Ausgangsbasis ist der aktuelle Suna-Entwurf
 `Nakama-Design` Node `6:2864` (260×84).
 Prüfmaßstab jeder UI-Fassung zusätzlich:
 `../design/docs/ui-spielregeln-eq-zentrale.md` und
-`../design/abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md`. Vorschlag (nicht
+`../design/abnahmen/2026-09-01-gen-nur-standardgroesse.md`. Vorschlag (nicht
 abgenommen): `SONDE-007b` baut keine eigene Kachelgestaltung, sondern den
 Vertrag (Zustände, Pflichtinhalt) und nimmt die Gestaltung aus dem
 Figma-Stand — Entwurf-Errata (h)/(j).

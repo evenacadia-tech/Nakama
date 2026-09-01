@@ -64,9 +64,8 @@ sind drei Vorschläge, keine abgenommene Richtung.
 
 ## Fortschreibung vom 01.09.2026
 
-Der Satz „760×430 für beide Seiten bleibt gesetzt“ gilt weiterhin für die
-Gleichheit beider Gen-Flächen und nun als kompaktes Minimum, nicht mehr als
-einzige Fenstergröße. Der neuere Userentscheid setzt 950×538 als Standard im
-festen 76:43-Rahmen; zusätzlicher Raum wächst zuerst Graph beziehungsweise
-akustischer Evidenz zu. Bindend ist
-[`2026-09-01-gen-fenstergroesse-und-resize.md`](2026-09-01-gen-fenstergroesse-und-resize.md).
+Der Satz „760×430 für beide Seiten bleibt gesetzt“ ist durch den neueren
+Userentscheid ersetzt. Die Gleichheit beider Gen-Flächen bleibt; beide
+verwenden jetzt genau eine logische Standardgröße von 950×538. Compact und
+größenabhängiges Layout sind bis nach Fertigstellung vertagt. Bindend ist
+[`2026-09-01-gen-nur-standardgroesse.md`](2026-09-01-gen-nur-standardgroesse.md).

@@ -4,10 +4,12 @@ Der Simulator ist ein historischer, ausführbarer Referenzstand für Zustände,
 Gesten und Motion der damaligen festen 760×430-Oberfläche. Er verwendet
 deterministische Demo-Daten und ist weder eine DSP-Referenz noch eine später in
 das Plug-in eingebettete Webseite. Der aktuelle funktionale Größenvertrag steht
-in `../abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md` und im
-maschinenlesbaren `contract/ui-contract.json`: kompakt 760×430, Standard
-950×538, festes Verhältnis 76:43 und Arbeitsflächenwachstum statt Bedienzoom.
-Die laufende technische Skizze, nicht dieser Legacy-Simulator, bildet ihn ab.
+in `../abnahmen/2026-09-01-gen-nur-standardgroesse.md` und im
+maschinenlesbaren `contract/ui-contract.json`: Beide Gen-Flächen verwenden
+genau 950×538 logische Pixel. Compact, Fenster-Resize und größenabhängiger
+Reflow sind bis nach Fertigstellung der Standard-UI vertagt; UI-Skalierung
+rendert dieselbe Geometrie größer. Die laufende technische Skizze, nicht dieser
+Legacy-Simulator, bildet ihn ab.
 
 ## Status der Figma-Baseline
 

@@ -193,11 +193,10 @@ bis zu einem versionierten Slot- und Undo-Vertrag eine technische Lücke.
 
 ## Größenfortschreibung vom 01.09.2026
 
-Die Dominanz der EQ-Arbeitsfläche gilt nun ausdrücklich über den
-vergrößerbaren Gen-Rahmen hinweg. Gemäß
-[`2026-09-01-gen-fenstergroesse-und-resize.md`](2026-09-01-gen-fenstergroesse-und-resize.md)
-ist 760×430 das kompakte Minimum und 950×538 die Standardgröße bei festem
-Verhältnis 76:43. Zusätzliche Fläche wächst zuerst dem Graphen zu; Bandziele,
-Parameterfelder und Rails werden dadurch nicht proportional aufgeblasen. Das
-objektgebundene Panel bleibt am Bandpunkt verankert und muss an allen
-Graphkanten in beiden Vertragsgrößen vollständig erreichbar sein.
+Die Dominanz der EQ-Arbeitsfläche gilt auf der einzigen logischen Gen-Größe
+950×538. Gemäß
+[`2026-09-01-gen-nur-standardgroesse.md`](2026-09-01-gen-nur-standardgroesse.md)
+werden weder eine Compact-Fassung noch größenabhängiges Reflow parallel
+entworfen. Bandziele, Parameterfelder und Rails besitzen deshalb genau eine zu
+prüfende Geometrie. Das objektgebundene Panel bleibt am Bandpunkt verankert und
+muss an allen Graphkanten dieser Standardfläche vollständig erreichbar sein.

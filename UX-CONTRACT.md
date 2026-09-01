@@ -15,7 +15,7 @@ replacement; it is not allowed to reopen those decisions.
 |---|---|---|---|
 | Forward transition to Gen EQ | Gen Sources `SEND DRAFT` | only with a valid unconfirmed draft | state + focus test |
 | Source switcher | Shared source-strip controller | 1–16 probes; separate Master | overflow + auto-scroll test |
-| Gen editor sizing | Shared Gen stage across both surfaces | compact 760×430; default 950×538; fixed 76:43 resize | compact/default geometry + native-host resize test |
+| Gen editor sizing | Shared Gen stage across both surfaces | one logical layout at 950×538; Compact and layout resize deferred | standard geometry + native-host open/reopen test |
 | Band selection | EQ graph/controller | pointer, BAND control, keyboard | geometry + input-equivalence test |
 | Band precision panel | selected EQ band | object-anchored Enabled/Type/Channel/Frequency/Gain/Q/Dynamic views plus separate Remove | disclosure + focus + graph-edge + rebind test |
 | Parameter input | Shared parameter-field behavior | drag, numeric input, native named select | range + protected-zone tests |
@@ -43,7 +43,6 @@ The browser uses a deterministic `DemoAdapter`. The future VST3 editor will use 
 | Reject | REJECT | none | draft removed without revision | none | stable graph context |
 | Undo | undo control | none | last confirmed source revision restored | disabled with reason when ring empty | undo control |
 | External automation | inspection scenario | immediate authoritative value/curve change | confirmed state reflects host | open draft becomes stale; protected violation is shown, not hidden | current control unchanged |
-| Resize Gen editor | host-supported editor edge | view-only transaction; no domain or audio change | both Gen surfaces keep 76:43; graph/evidence receives added area first | clamp at compact minimum or available host/display work area | currently focused sonic object/control remains focused |
 | Rebind an open band panel | single-click another occupied band point | owner changes atomically; no values move | same panel anchors to the new point and shows its basic view | no stale writes to the previous slot | newly selected band point for pointer; first basic control when invoked by keyboard |
 | Change band channel mode | compact current-mode control in the panel head | only `channel_mode` changes at the block edge | same panel returns from its five-option view to Frequency/Gain/Q | unavailable modes are omitted with an explicit reason; no implicit Stereo fallback | current-mode control |
 | Disable or enable a band | stable `ON/OFF` control in every panel view | only `enabled` changes at the block edge | values, slot ID, channel mode and Dynamic state remain; disabled point stays reachable | unavailable/offline is explained without hiding the recovery control | `ON/OFF` control |
@@ -64,11 +63,11 @@ The browser uses a deterministic `DemoAdapter`. The future VST3 editor will use 
 - External automation is authoritative and makes an open draft stale.
 - Undo is scoped to the selected probe; Master and each probe keep separate revision history.
 - Master is not part of source wheel order.
-- Both Gen surfaces share the same editor size and fixed 76:43 aspect ratio.
-- 760×430 is the compact minimum and 950×538 the integer-rounded default.
-- Window resizing and UI scaling are separate: extra window area grows the
-  graph/evidence first and never becomes a second path to otherwise missing
-  functionality.
+- Both Gen surfaces use the same single logical editor size of 950×538.
+- Compact, responsive reflow and workspace resize are not part of the current
+  target; Compact may be reconsidered only after the standard UI is complete.
+- UI scaling enlarges the same logical geometry and never becomes a second
+  layout or a path to otherwise missing functionality.
 - Mix remains `PLANNED` and explains the missing versioned parameter contract.
 - Sidechain source remains absent until its placement decision is approved.
 - Opening, leaving or closing the Dynamic view never disables an already active
@@ -106,17 +105,15 @@ through every subview. Remove is a separate named action and requires an
 immediate Undo route; modifier gestures may supplement, but never replace,
 these accessible controls.
 
-The two Gen surfaces use one fixed-aspect, resizable plug-in stage. Its compact
-minimum is 760×430 logical pixels; its default is 950×538, rounded from the
-same 76:43 ratio. Resizing reallocates information area without changing the
-surface hierarchy: fixed rails and established targets retain their logical
-size, while the EQ graph on Gen surface 2 and the acoustic evidence on Gen
-surface 1 receive additional room first. Every function remains reachable at
-the compact minimum. UI scale at 100/125/150/200 percent remains a separate
-whole-interface accessibility/render tier. The surrounding inspection tool
-may reflow, but its controls are not product UI. Probeeq sizing is outside this
-Gen decision. Native resize negotiation, reopen behavior and bounds still
-require proof in the Windows Release VST3 inside FL Studio.
+The two Gen surfaces use exactly one logical plug-in stage at 950×538. There
+is no current Compact variant, responsive reflow or workspace-resize behavior
+to design and maintain. UI scale at 100/125/150/200 percent remains a separate
+whole-interface accessibility/render tier: it enlarges the same geometry and
+does not create another layout. The surrounding inspection tool may scale the
+complete stage to fit its browser column, but its controls and fit transform
+are not product UI. Probeeq sizing is outside this Gen decision. Native open,
+reopen, focus retention and every UI-scale tier still require proof in the
+Windows Release VST3 inside FL Studio.
 
 ## Feedback, offline and conflict
 
@@ -140,8 +137,8 @@ mode.
 ## Approval gate
 
 The native JUCE editor must not adopt this surface until both pages, required
-negative states, compact 760×430, default 950×538 and the named web release
-candidate have been visually accepted against the current functional target.
+negative states, the single 950×538 layout and the named web release candidate
+have been visually accepted against the current functional target.
 That approval starts the VST3 transfer; it is not implied by passing automated
-tests. Native host proof must additionally cover resize, reopen, focus
-retention and all UI-scale tiers.
+tests. Native host proof must additionally cover reopen, focus retention and
+all UI-scale tiers.

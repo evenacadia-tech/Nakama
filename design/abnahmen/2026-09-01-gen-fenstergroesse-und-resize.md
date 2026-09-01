@@ -1,5 +1,13 @@
 # 2026-09-01 — Gen-Fenster wird größer und bleibt kompakt nutzbar
 
+> **Status: am 01.09.2026 durch einen neueren Userentscheid abgelöst.** Der
+> aktuelle Vertrag steht in
+> [`2026-09-01-gen-nur-standardgroesse.md`](2026-09-01-gen-nur-standardgroesse.md):
+> genau eine logische Gen-Größe von 950×538; Compact und Resize sind bis nach
+> Fertigstellung der Standardoberfläche vertagt. Der Text unten bleibt als
+> Entscheidungsverlauf erhalten und darf nicht als aktueller Größenvertrag
+> gelesen werden.
+
 ## Anlass und User-Wortlaut
 
 Der User stellt die bisherige feste 760×430-Fläche wegen des knappen

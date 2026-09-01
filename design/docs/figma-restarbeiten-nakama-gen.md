@@ -7,10 +7,12 @@
 - **Nicht im Geltungsbereich:** DSP-Implementierung, Broker/IPC, JUCE-Bau und helle Produktfassung
 
 Der aktuelle funktionale Größenvertrag steht in
-[`../abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md`](../abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md):
-760×430 ist das kompakte Minimum, 950×538 die Standardgröße im festen
-76:43-Rahmen. Die Maße und Figma-Nodes unten bleiben Belege des Stands vom
-24.08. und dürfen diese neuere Entscheidung nicht überschreiben.
+[`../abnahmen/2026-09-01-gen-nur-standardgroesse.md`](../abnahmen/2026-09-01-gen-nur-standardgroesse.md):
+Beide Gen-Flächen verwenden genau 950×538 logische Pixel. Compact,
+Fenster-Resize und größenabhängiger Reflow sind bis nach Fertigstellung der
+Standard-UI vertagt; UI-Skalierung rendert dieselbe Geometrie größer. Die Maße
+und Figma-Nodes unten bleiben historische Belege des Stands vom 24.08. und
+dürfen diese neuere Entscheidung nicht überschreiben.
 
 ## 1. Kurzurteil
 

@@ -472,12 +472,13 @@ oder Meldungsfenster — im Leerlauf malt er nichts. paint() kostet 2,47 ms @
 Der funktionale Gen-Hauptpfad ist davon getrennt: In
 `PluginEditor.cpp:851-858` ist er am 01.09.2026 noch mit
 `setResizable(false, false)` auf 760×430 festgesetzt. Der aktuelle Zielvertrag
-fordert für beide Gen-Flächen dagegen einen vergrößerbaren 76:43-Rahmen mit
-760×430 als kompaktem Minimum und 950×538 als Standard; zusätzliche Fläche
-geht zuerst an Graph beziehungsweise akustische Evidenz, UI-Skalierung bleibt
-separat. Die ältere 750:520-Materialfront beweist diese Umsetzung nicht. Der
-native FL-Studio-Beleg bleibt Eigentum der UI-Implementierungsphase S31b;
-Quelle: `../design/abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md`.
+fordert für beide Gen-Flächen genau eine logische Arbeitsgröße von 950×538;
+Compact, Fenster-Resize und größenabhängiger Reflow sind bis nach
+Fertigstellung der Standard-UI vertagt. UI-Skalierung rendert dieselbe
+Geometrie größer. Die ältere 750:520-Materialfront beweist diese Umsetzung
+nicht. Der native FL-Studio-Beleg bleibt Eigentum der
+UI-Implementierungsphase S31b; Quelle:
+`../design/abnahmen/2026-09-01-gen-nur-standardgroesse.md`.
 
 ## 2 · Hostbrücke und Wegwerf-Messgeräte
 

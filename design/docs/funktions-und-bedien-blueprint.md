@@ -608,6 +608,29 @@ Band-Slots als `bell`, wählt ihn und öffnet dasselbe Panel. Bei acht belegten
 Slots wird der Grenzfall sichtbar gemeldet; kein bestehendes Band wird still
 überschrieben.
 
+**[U]/[D] Bandbesitz, Kanalmodus und Aktivierung:** Ist das Mini-Panel bereits
+offen, bindet ein einfacher Klick auf einen anderen belegten Bandpunkt den
+gleichen Panelkörper atomar an diesen Slot und setzt nur die flüchtige
+Unteransicht auf `Frequency`, `Gain` und `Q` zurück. Werte oder Zustände werden
+nicht zwischen Bändern kopiert. Der aktuelle `channel_mode` bleibt als
+kompakter Zustandscontrol im Panelkopf sichtbar; seine Aktivierung ersetzt die
+drei Wertefelder vorübergehend durch `Stereo`, `Left`, `Right`, `Mid` und
+`Side`. Eine Wahl ändert nur `channel_mode` und kehrt zur Grundansicht zurück.
+Der ebenfalls stabile `ON/OFF`-Control ändert ausschließlich `enabled`. Ein
+ausgeschaltetes belegtes Band bleibt als nicht nur farblich gekennzeichnetes,
+auswählbares Objekt mit unveränderter ID und allen Werten im Graphen. Bypass
+gibt keinen Slot frei.
+
+**[U]/[O] Band entfernen:** `Remove Band` ist eine eigene Aktion am Rand des
+Panelkopfs und von `ON/OFF`, Dynamic und Schließen getrennt. Nur Remove darf
+einen der acht Slots freigeben; es schließt das Panel, entfernt den Punkt und
+nummeriert andere Band-IDs nicht um. Ein unmittelbarer Undo-Rückweg stellt das
+vollständige Band unter derselben ID wieder her. Der 109-Parametervertrag
+besitzt derzeit kein persistentes Occupancy-/Remove-Feld. Bis Slotfreigabe,
+Edit-Transaktion und Undo versioniert sind, bleibt der produktive native
+Remove-Control deshalb technisch unavailable; die technische Skizze zeigt das
+abgenommene Zielverhalten.
+
 **[U]/[D] Dynamic-Disclosure:** Globale Zustände, aktiver Draft, Freeze,
 Automation und Preview dürfen nie spurlos eingeklappt sein. Der Filtertyp ist
 im objektgebundenen Mini-Panel sichtbar und diskret wechselbar; der feste
@@ -767,7 +790,10 @@ Abbruch/Rückweg und native JUCE-Semantik.
 | Band auswählen | Node/Curve | Bandliste oder nächstes/vorheriges Band | Deselect | Band-ID, Typ und aktiver Zustand |
 | Band anlegen | Klick/Drag oder Spectrum Grab | Add-Band-Aktion plus Frequenzfeld | Escape verwirft Draft | Ziel, Frequenz, Gain, Q, Slotverfügbarkeit |
 | Band formen | Drag und modifizierte Feingeste | Pfeile grob/fein, Textwerte | Default/Undo | Wert, Einheit, Grenzen, Clamp und Automation |
+| Bandkanal wählen | kompakter aktueller Modus im Panelkopf | fünf benannte Optionen im selben Panelkörper | Escape schließt Unteransicht ohne Wertänderung | `channel_mode` des festen Slots; keine Übernahme vom vorherigen Band |
+| Band umgehen | stabiler `ON/OFF`-Control im Panelkopf | Space/Enter auf demselben Control | erneutes Aktivieren; Werte bleiben | nur `enabled`; inaktiver Punkt bleibt sichtbar und belegt den Slot |
 | Banddynamik | `DYN · OFF` aktiviert und öffnet; `DYN · ON` öffnet/verlässt nur die Ansicht | Zustandscontrol plus Range/Threshold/Attack/Hold/Release in zwei Reihen | Ausschalten erhält Werte und stellt Frequency/Gain/Q wieder her; Escape verwirft Zahleneingabe oder schließt | zweite Kontur belegt Aktivzustand und Sollposition; innerer Punkt und Kurvenzug folgen erst mit nutzbarer autoritativer Live-Telemetrie der Gain-Auslenkung; priority_sidechain erst bei Capability |
+| Band entfernen | getrennte `Remove Band`-Aktion | benannter Tastaturcontrol; kein modifier-only Hauptweg | Undo stellt vollständiges Band mit gleicher ID wieder her | einzige Slotfreigabe; native Umsetzung wartet auf versionierten Occupancy-/Undo-Vertrag |
 | Schutzbereich setzen | Range-Handles | zwei numerische Endpunkte | Reset/Cancel | Lower/Upper, Gültigkeit und betroffene Aktion |
 | Preview halten | Press-and-hold | Key-down/up auf fokussierter Aktion | Release/Fokusverlust/Timeout | Momentary action, Lease und Ziel |
 | 10-s-Kandidat starten | Klick | Enter/Space activation | **[A]** Escape/Expiry → Confirmed, Draft bleibt; Reject verwirft bewusst | Candidate state, Restzeit, Baseline; Detailsemantik noch **[O]** |
@@ -1301,6 +1327,13 @@ Schema:
     Bandpunkt und Kurvenzug muss der Probeeq-Featureframe-Weg beziehungsweise
     der lokale Master-Weg gebaut und gegen stale sowie nicht-endliche Werte
     abgesichert werden.
+16. **[O] Band-Occupancy und Remove-Undo:** `enabled` ist im aktuellen
+    109-Parametervertrag nur der reversible Band-Bypass. Für die abgenommene
+    getrennte Remove-Aktion fehlen ein persistenter Belegungszustand, die
+    atomare Slotfreigabe und die Einordnung in die direkte Edit-/Undo-
+    Transaktion. Vor nativer Anzeige müssen Save/Load, Host-Automation,
+    Migration und Wiederherstellung unter derselben festen Band-ID gemeinsam
+    versioniert und getestet werden.
 
 Diese Punkte sind kein Freibrief für Platzhaltercontrols. Bis zur technischen
 oder User-Entscheidung bleibt die jeweilige Funktion ehrlich unavailable oder
@@ -1353,9 +1386,17 @@ Das Archiv liefert Transferwissen, nicht Produktwahrheit.
 
 ### 16.4 Marktquellen
 
-Alle Marktquellen wurden am 31.08.2026 in offiziellen Herstellerseiten oder
-Handbüchern geprüft. Ableitungen stehen in Abschnitt 8; sie sind keine
+Alle Marktquellen wurden am 31.08. und 01.09.2026 in offiziellen
+Herstellerseiten oder Handbüchern geprüft. Die Ableitungen sind keine
 Behauptung über Herstellerintention oder Marktanteil.
+
+| Quelle | Verwendete übertragbare Regel |
+|---|---|
+| [TDR Nova Manual](https://docs.tokyodawn.net/nova-manual/) | direkter Graphzugriff; Auswahl und Aktivierung getrennt; versteckte inaktive Punkte nur zusammen mit permanentem Rückweg |
+| [FabFilter Pro-Q 4 — Band Controls](https://www.fabfilter.com/help/pro-q/using/bandcontrols) | objektnahe Controls; Bypass, Delete und Stereo Placement als getrennte Bandhandlungen |
+| [FabFilter Pro-Q 4 — EQ Display](https://www.fabfilter.com/help/pro-q/using/eqdisplay) | Parameterkontext am ausgewählten Punkt; Modifikatortasten nur als zusätzliche Schnellwege |
+| [FabFilter Pro-Q 4 — Undo and Redo](https://www.fabfilter.com/help/pro-q/using/undoredo) | stabiler Wiederherstellungsweg für UI-Änderungen |
+| [Kirchhoff-EQ Manual](https://files.plugin-alliance.com/products/tbt_kirchhoff-eq/tbt_kirchhoff-eq_manual.pdf) | Enable/Disable, Dynamic, Stereo Mode, Bandnavigation und Remove bleiben semantisch getrennt |
 
 ## 17. Laufende technische UI-Ableitung
 
@@ -1372,19 +1413,19 @@ steht in der jüngsten Datei `technische-ui-architektur-fuenferblock-*.md` unter
 `design/abnahmen/`. Bis zum Abschluss des Blocks kann er den Detailabschnitten
 dieses Blueprints zeitlich voraus sein.
 
-Gen Fläche 1 und die Grundhierarchie von Gen Fläche 2 besitzen bereits den in
-Abschnitt 4 beschriebenen User-entschiedenen Stand. Die Filtertyp-Mechanik,
-die freie Verankerung des kompakten Band-Panels, Dynamic-Aktivierung und
--Ausschalten, Rückweg, Schließen/Fokus sowie der sichtbare Aktivbeleg sind mit
-Fünferblock 01 gemeinsam integriert und im internen Browser geprüft. Die
-fortlaufende Live-Auslenkung bleibt eine technische Vertragslücke, keine
-offene Geschmacksfrage.
+Gen Fläche 1 und die Grundhierarchie von Gen Fläche 2 besitzen den in Abschnitt
+4 beschriebenen User-entschiedenen Stand. Fünferblock 01 integriert
+Filtertyp-Mechanik, freie Panelverankerung, Dynamic-Aktivierung und
+-Ausschalten, Rückweg, Schließen/Fokus sowie den sichtbaren Aktivbeleg.
+Fünferblock 02 integriert atomaren Panelbesitz beim Bandwechsel, den
+bandlokalen Kanalmodus, den stabilen Band-Bypass sowie die Trennung von
+Disable und wiederherstellbarem Remove. Beide Blöcke wurden in der laufenden
+Skizze und im internen Browser geprüft.
 
-Als nächste echte Architekturfrage ist zu klären, was mit dem bereits
-geöffneten Mini-Panel geschieht, wenn ein anderer vorhandener Bandpunkt
-ausgewählt wird. Das Panel darf technisch nicht still auf dem alten Band
-weiterschreiben; Mitwandern und Schließen sind die noch offenen
-Bedienmodelle. Diese Antwort beginnt Fünferblock 02. Objektbesitz, Fokus,
-Tastaturweg und Worst-Case-Zustände werden weiterhin am passenden Blatt
-geprüft. Farben, Material und visuelle Feinheiten bleiben bis zum
-ausdrücklichen Phasenwechsel getrennt.
+Die fortlaufende Dynamic-Auslenkung und die native Remove-/Undo-Transaktion
+bleiben benannte technische Vertragslücken, keine offenen Geschmacksfragen.
+Vor einer weiteren Architekturfrage wird ein neuer Block aus einem wirklich
+noch offenen Bedienbereich begonnen. Objektbesitz, Fokus, Tastaturweg und
+Worst-Case-Zustände werden weiterhin am passenden Blatt geprüft. Farben,
+Material und visuelle Feinheiten bleiben bis zum ausdrücklichen Phasenwechsel
+getrennt.

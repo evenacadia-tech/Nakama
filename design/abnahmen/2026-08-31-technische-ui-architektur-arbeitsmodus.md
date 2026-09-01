@@ -84,6 +84,24 @@ Der erste abgeschlossene Block steht in
 Der nächste Block erhält sein Protokoll mit der ersten beantworteten Frage;
 vorher wird keine leere Entscheidungsdatei angelegt.
 
+## Delegierte Ableitung am 01.09.2026
+
+Für die restlichen Fragen des laufenden zweiten Fünferblocks gibt der User den
+zeitlichen Dialog ausdrücklich an eine belegte Ableitung aus etablierten
+EQ-Handbüchern ab:
+
+> „bitte schaue dir die manuals von TDR Nova FABFILTER und bekannten eq an und
+> leite sinnvolle UX freundliche methoden ab zu den weiteren fragen, habe keine
+> zeit mehr“
+
+Codex schließt die drei ausstehenden Fragen dieses Blocks daher ohne weitere
+Auswahlaufforderung. Maßgeblich sind offizielle Herstellerhandbücher, der
+aktuelle Nakama-Parametervertrag und die bereits bestätigten graphdominanten
+Panelregeln. Übertragbar sind wiederkehrende Bedienprinzipien, nicht Farben,
+Material, Maße oder die Markenoptik der Referenzprodukte. Die konkrete
+Ableitung und ihr Quellenledger stehen in
+[`2026-09-01-technische-ui-architektur-fuenferblock-02.md`](2026-09-01-technische-ui-architektur-fuenferblock-02.md).
+
 ## Abgenommener Stand — Gen Fläche 1
 
 Die bisher einzeln bestätigten Strukturentscheide ergeben:
@@ -168,21 +186,32 @@ Zusammengefasst gilt:
   `Frame.band_dynamic_gain_db` ist dafür als Name reserviert; Feld-ID und
   Runtime-Nutzlast entstehen erst mit S26–28 und dürfen vorher nicht simuliert
   werden.
+- Ein geöffnetes Band-Panel bindet sich bei Auswahl eines anderen vorhandenen
+  Bands atomar an dieses Band und kehrt in dessen Grundansicht zurück. Der
+  bandlokale Kanalmodus bleibt dort als kompakter Zustandscontrol sichtbar und
+  öffnet die fünf vertraglichen Modi im selben Panelkörper.
+- `enabled` besitzt im Panelkopf einen stabilen `ON/OFF`-Control. Ein
+  ausgeschaltetes Band bleibt als eindeutig inaktives, auswählbares Objekt im
+  Graphen sichtbar; seine Werte und seine Slot-ID bleiben erhalten.
+- `Remove Band` ist eine getrennte, wiederherstellbare Aktion. Nur sie gibt
+  einen der acht Slots frei; weder Bypass noch Panel-Schließen tun das. Der
+  native Remove-Weg bleibt bis zu einem versionierten Slot-/Undo-Vertrag
+  technisch blockiert.
 
 ## Bewusst offen
 
 - Gen Fläche 1: ob Finding-Belege und Alternativen durch Ansichtswechsel in
   derselben Fläche oder mit einem anderen Mechanismus erscheinen. Die dazu
   gestellte Frage wurde noch nicht beantwortet.
-- Gen Fläche 2: Noch offen ist das Verhalten des bereits geöffneten
-  Mini-Panels, wenn der User einen anderen vorhandenen Bandpunkt auswählt.
-  Technisch darf das Panel danach nicht still auf dem alten Band schreiben;
-  ob es zum neuen Band mitwandert oder schließt, ist eine echte
-  Bedienarchitekturfrage.
+- Gen Fläche 2: Die ersten zehn Detailfragen sind mit Fünferblock 01 und 02
+  integriert. Offen bleiben technische Vertragsarbeit für Remove/Undo und
+  weitere noch nicht abgeleitete Bedienbereiche; bereits entschiedene
+  Panelregeln werden nicht erneut geöffnet.
 - Der Produktrückweg von Gen Fläche 2 zu Gen Fläche 1 ist durch den Entscheid
   zum einzigen **Vorwärtsweg** noch nicht festgelegt.
 - Probeeq und die gemeinsamen UI-Regeln wurden in dieser Runde noch nicht
   befragt.
 
-Die nächste Architekturfrage betrifft den Auswahlwechsel zu einem anderen
-Band bei geöffnetem Mini-Panel. Sie ist Frage 1/5 des nächsten Blocks.
+Vor einer weiteren Architekturfrage wird zunächst ein neuer Block aus einem
+noch offenen Bedienbereich begonnen; durch die Delegation dieses Abschnitts
+ist keine weitere Userantwort für Fünferblock 02 erforderlich.

@@ -162,3 +162,31 @@ IPC. Bis dieser Weg gebaut ist, bleibt die laufende Bewegung eine benannte
 technische Lücke und darf nicht aus Einstellwerten erfunden werden. Im
 Funktionsblatt ist nur eine endliche Bewegungsprobe des Zielverhaltens
 enthalten.
+
+## Integrierter Bandkontext-Fünferblock vom 01.09.2026
+
+Der abgeschlossene
+[`2026-09-01-technische-ui-architektur-fuenferblock-02.md`](2026-09-01-technische-ui-architektur-fuenferblock-02.md)
+ergänzt das objektgebundene Mini-Panel um die verbleibenden bandlokalen
+Grundhandlungen:
+
+- Ein einmal ausgewählter anderer Bandpunkt übernimmt das bereits geöffnete
+  Panel atomar. Das Panel verankert sich am neuen Punkt, zeigt dessen
+  Grundansicht und schreibt ausschließlich auf diesen Slot.
+- Der aktuelle Kanalmodus bleibt als kompakter Control in der Grundansicht
+  sichtbar. Seine Aktivierung ersetzt die drei Wertefelder im selben
+  Panelkörper durch `Stereo`, `Left`, `Right`, `Mid` und `Side`; danach kehrt
+  die Grundansicht zurück.
+- `enabled` ist ein eigener, in allen Panelansichten stabiler `ON/OFF`-Control.
+  Ein ausgeschaltetes Band bleibt ohne reine Farbcodierung sichtbar,
+  auswählbar und mit unveränderten Werten demselben Slot zugeordnet.
+- Entfernen ist von Bypass, Dynamic und Schließen getrennt. Nur `Remove Band`
+  gibt einen der acht Plätze frei, schließt das Panel und entfernt den Punkt;
+  Undo stellt das vollständige Band mit derselben ID wieder her.
+
+Diese Regeln übertragen die wiederkehrende Trennung von Auswahl, Bypass,
+Kanalplatzierung und Delete aus den offiziellen Handbüchern von TDR Nova,
+FabFilter Pro-Q 4 und Kirchhoff-EQ. Sie übernehmen keine visuelle Sprache der
+Referenzprodukte. Der aktuelle Parametervertrag besitzt noch keinen
+persistenten Occupancy-/Remove-Zustand; daher ist die native Remove-Transaktion
+bis zu einem versionierten Slot- und Undo-Vertrag eine technische Lücke.

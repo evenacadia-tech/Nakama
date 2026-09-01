@@ -16,7 +16,7 @@ replacement; it is not allowed to reopen those decisions.
 | Forward transition to Gen EQ | Gen Sources `SEND DRAFT` | only with a valid unconfirmed draft | state + focus test |
 | Source switcher | Shared source-strip controller | 1–16 probes; separate Master | overflow + auto-scroll test |
 | Band selection | EQ graph/controller | pointer, BAND control, keyboard | geometry + input-equivalence test |
-| Band precision panel | selected EQ band | object-anchored Type/Frequency/Gain/Q/Dynamic views | disclosure + focus + graph-edge test |
+| Band precision panel | selected EQ band | object-anchored Enabled/Type/Channel/Frequency/Gain/Q/Dynamic views plus separate Remove | disclosure + focus + graph-edge + rebind test |
 | Parameter input | Shared parameter-field behavior | drag, numeric input, native named select | range + protected-zone tests |
 | Status feedback | Shared in-glass status/live region | neutral, warning, error | state + accessibility test |
 | Scrollbar | Global prototype stylesheet | stable-gutter exceptions only | computed-style/browser check |
@@ -42,8 +42,12 @@ The browser uses a deterministic `DemoAdapter`. The future VST3 editor will use 
 | Reject | REJECT | none | draft removed without revision | none | stable graph context |
 | Undo | undo control | none | last confirmed source revision restored | disabled with reason when ring empty | undo control |
 | External automation | inspection scenario | immediate authoritative value/curve change | confirmed state reflects host | open draft becomes stale; protected violation is shown, not hidden | current control unchanged |
+| Rebind an open band panel | single-click another occupied band point | owner changes atomically; no values move | same panel anchors to the new point and shows its basic view | no stale writes to the previous slot | newly selected band point for pointer; first basic control when invoked by keyboard |
+| Change band channel mode | compact current-mode control in the panel head | only `channel_mode` changes at the block edge | same panel returns from its five-option view to Frequency/Gain/Q | unavailable modes are omitted with an explicit reason; no implicit Stereo fallback | current-mode control |
+| Disable or enable a band | stable `ON/OFF` control in every panel view | only `enabled` changes at the block edge | values, slot ID, channel mode and Dynamic state remain; disabled point stays reachable | unavailable/offline is explained without hiding the recovery control | `ON/OFF` control |
 | Open Dynamic for an inactive band | `DYN · OFF` | `dynamic_enabled` changes at the block edge | the same panel opens its Dynamic view; stored values remain | unavailable/offline is explained without a false open state | Range field |
 | Disable Dynamic | leading state control in the Dynamic view | only `dynamic_enabled` changes | the same panel returns to Frequency/Gain/Q | five Dynamic values are retained | `DYN · OFF` |
+| Remove band | separate `Remove Band` action at the panel perimeter | atomic slot-release transaction; not band bypass | point disappears, panel closes, other band IDs remain stable | Undo restores the complete band under the same ID; native action unavailable until slot/undo contract exists | stable Undo recovery locus |
 | Close band precision panel | explicit close control; Escape outside a dirty numeric edit | none | panel closes without parameter change | first Escape restores a dirty numeric field instead | owning band point |
 
 ## Hard invariants
@@ -66,6 +70,12 @@ The browser uses a deterministic `DemoAdapter`. The future VST3 editor will use 
   panel or change its owning band.
 - Active Dynamic remains evident without text or color through a second contour
   at the configured band position.
+- Band `enabled`, `dynamic_enabled`, channel mode, Remove and panel Close are
+  separate actions. None may silently stand in for another.
+- `enabled = false` never frees an automation slot. A disabled occupied band
+  stays visible, selectable and recoverable without relying on color.
+- Removing a band never renumbers another band. Restore returns the full state
+  to the same fixed band ID.
 - No visible element is a dead decoration except material and product identity.
 
 ## Navigation and input
@@ -81,6 +91,13 @@ field, the first Escape restores the entry value and keeps the panel open;
 otherwise Escape closes the topmost non-modal panel and returns focus to its
 owning object. It never silently rejects a draft. The EQ band panel also has an
 explicit close control; an empty-graph single click is not a close gesture.
+While the panel is open, selecting a different occupied point atomically moves
+the panel owner and resets only its transient subview to the basic controls.
+The compact current-channel control opens `Stereo`, `Left`, `Right`, `Mid` and
+`Side` inside the same panel body. `ON/OFF` remains at a stable header position
+through every subview. Remove is a separate named action and requires an
+immediate Undo route; modifier gestures may supplement, but never replace,
+these accessible controls.
 
 The fixed plug-in stage does not reflow. The surrounding inspection tool does. At 200% the whole stage is intentionally larger, matching the plug-in scale tier rather than behaving like a responsive website.
 

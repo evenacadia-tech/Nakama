@@ -2,7 +2,7 @@
 
 ## Status
 
-**1 von 5 Entscheidungen gesammelt.** Der gemeinsame Umbau, die vollständige
+**2 von 5 Entscheidungen gesammelt.** Der gemeinsame Umbau, die vollständige
 Sichtprüfung und die Integration in die Detailabnahmen sowie den Blueprint
 folgen nach Entscheidung 5.
 
@@ -38,3 +38,23 @@ Vor Eingang der Taktänderung war dieser erste Übergang in der laufenden Skizze
 bereits begonnen und an einem zuvor inaktiven Band geprüft worden. Der
 kohärente Fünfer-Umbau samt vollständigem Sichtbeleg und Repo-Integration bleibt
 trotzdem bis 5/5 zurückgestellt.
+
+## 2/5 — Ausschalten am Anfang der Dynamic-Ansicht
+
+Auf die Frage nach dem ausdrücklichen Bedienort zum Ausschalten eines aktiven
+Dynamic-Bands wählt der User:
+
+> „A“
+
+Damit ist für Gen Fläche 2 gesammelt:
+
+- Am Anfang der geöffneten Dynamic-Werteansicht sitzt ein kompakter
+  `dynamic_enabled`-Zustandscontrol für das ausgewählte Band.
+- Dieser Control ist der ausdrückliche Ein-/Ausschalter. Der bereits
+  entschiedene `DYN`-Control im Panelkopf bleibt Einstieg und Disclosure und
+  schaltet ein aktives Dynamic-Band nicht durch bloßes Öffnen oder Verlassen
+  der Ansicht aus.
+- Ausschalten ändert ausschließlich `dynamic_enabled`; die fünf gespeicherten
+  Dynamic-Werte bleiben erhalten.
+- Welche Ansicht unmittelbar nach dem Ausschalten bestehen bleibt und wohin
+  der Fokus geht, bleibt als nächste Architekturfrage offen.

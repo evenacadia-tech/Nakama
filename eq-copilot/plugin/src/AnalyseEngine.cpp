@@ -707,6 +707,34 @@ void AnalyseEngine::finalisiereLoudness (MessSnapshot& s) const
     }
 }
 
+LautheitsTelemetrie AnalyseEngine::lautheitFuerTelemetrie() const noexcept
+{
+    LautheitsTelemetrie aus;
+    double wert = 0.0;
+    const bool integriert = loudness.integriert (wert);
+    const double unsicherheit = loudness.unsicherheitLu();
+
+    if (integriert && std::isfinite (wert) && std::isfinite (unsicherheit))
+    {
+        const float wireWert = static_cast<float> (wert);
+        const float wireUnsicherheit = static_cast<float> (unsicherheit);
+        if (std::isfinite (wireWert) && std::isfinite (wireUnsicherheit))
+        {
+            aus.paar = true;
+            aus.lufsI = wireWert;
+            aus.unsicherheitLu = wireUnsicherheit;
+            return aus;
+        }
+    }
+
+    // Ein vollstaendiger 400-ms-Block, der keinen integrierten Wert liefert,
+    // ist gegatet (kein Signal ueber der gueltigen Auswahl). Vor dem ersten
+    // solchen Block sowie bei einer nicht endlichen Konfidenz wird weiter
+    // ehrlich gesammelt; es entsteht weder 0 LUFS noch ein halbes Paar.
+    aus.status = (! integriert && loudness.bloeckeGesamt() > 0) ? 2 : 1;
+    return aus;
+}
+
 // ── Leicht-Teil beider Auswertungen (m4): EINE Quelle für Zustand, Sekunden,
 //    Live-Kurve und die schnellen Skalare — der 20-Hz-Pfad kann so nie von
 //    der 250-ms-Auswertung abweichen. ───────────────────────────────────────

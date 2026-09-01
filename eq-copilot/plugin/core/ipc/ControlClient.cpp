@@ -233,6 +233,40 @@ std::string jsonString (const std::string& roh)
     return aus;
 }
 
+std::string jsonStringUntrusted (const std::string& roh)
+{
+    static constexpr char hex[] = "0123456789abcdef";
+    std::string aus = "\"";
+    aus.reserve (roh.size() + 2);
+    for (const unsigned char c : roh)
+    {
+        switch (c)
+        {
+            case '"':  aus += "\\\""; break;
+            case '\\': aus += "\\\\"; break;
+            case '\b': aus += "\\b";  break;
+            case '\f': aus += "\\f";  break;
+            case '\n': aus += "\\n";  break;
+            case '\r': aus += "\\r";  break;
+            case '\t': aus += "\\t";  break;
+            default:
+                if (c < 0x20)
+                {
+                    aus += "\\u00";
+                    aus.push_back (hex[c >> 4]);
+                    aus.push_back (hex[c & 0x0f]);
+                }
+                else
+                {
+                    aus.push_back (static_cast<char> (c));
+                }
+                break;
+        }
+    }
+    aus.push_back ('"');
+    return aus;
+}
+
 std::uint64_t jsonSafe (std::uint64_t wert) noexcept
 {
     return std::min (wert, kJsonSafeModulus - 1);
@@ -264,19 +298,27 @@ std::string stateHashJson (const std::string& hash)
     return istHex64 (hash) ? jsonString (hash) : "null";
 }
 
-std::string heartbeatJson (const Adresse& adresse, std::uint64_t sequence,
-                           const ControlStatus& status)
+std::string runtimeJson (const ControlRuntime& runtime)
 {
-    return std::string ("{\"type\":\"heartbeat\",\"adresse\":")
-         + adresseAlsJson (adresse)
-         + ",\"sequence\":" + std::to_string (sequence)
-         + ",\"state_revision\":" + std::to_string (jsonSafe (status.stateRevision))
-         + ",\"capabilities\":" + capabilitiesJson()
-         + ",\"zaehler\":{\"frames_dropped\":"
-         + std::to_string (jsonSafe (status.framesDropped))
-         + ",\"parse_errors\":" + std::to_string (jsonSafe (status.parseErrors))
-         + ",\"queue_overflows\":" + std::to_string (jsonSafe (status.queueOverflows))
-         + "}}";
+    if (! runtime.gemeldet
+        || (runtime.messpunkt != "insert" && runtime.messpunkt != "pre"
+            && runtime.messpunkt != "post")
+        || (runtime.betrieb != "active" && runtime.betrieb != "suspended"
+            && runtime.betrieb != "offline"))
+        return {};
+
+    std::string aus = ",\"runtime\":{\"messpunkt\":"
+                    + jsonString (runtime.messpunkt)
+                    + ",\"betrieb\":" + jsonString (runtime.betrieb);
+    // Ein ungueltiger optionaler Hostwert ist semantisch "nicht geliefert":
+    // der vollstaendige Messpunkt-/Betriebsblock darf deshalb weiter reisen.
+    if (runtime.hostBusNameGemeldet && ! runtime.hostBusName.empty())
+        aus += ",\"host_bus_name\":" + jsonStringUntrusted (runtime.hostBusName);
+    if (runtime.hostMixerIndexGemeldet && runtime.hostMixerIndex >= 1
+        && runtime.hostMixerIndex <= 9007199254740991ULL)
+        aus += ",\"host_mixer_index\":" + std::to_string (runtime.hostMixerIndex);
+    aus += "}";
+    return aus;
 }
 
 std::string stateReportJson (const Adresse& adresse, const ControlStatus& status)
@@ -306,6 +348,21 @@ std::string zahl (double w)
     return std::to_string (w);
 }
 } // namespace
+
+std::string heartbeatAlsJson (const Adresse& adresse, std::uint64_t sequence,
+                              const ControlStatus& status)
+{
+    return std::string ("{\"type\":\"heartbeat\",\"adresse\":")
+         + adresseAlsJson (adresse)
+         + ",\"sequence\":" + std::to_string (jsonSafe (sequence))
+         + ",\"state_revision\":" + std::to_string (jsonSafe (status.stateRevision))
+         + ",\"capabilities\":" + capabilitiesJson()
+         + ",\"zaehler\":{\"frames_dropped\":"
+         + std::to_string (jsonSafe (status.framesDropped))
+         + ",\"parse_errors\":" + std::to_string (jsonSafe (status.parseErrors))
+         + ",\"queue_overflows\":" + std::to_string (jsonSafe (status.queueOverflows))
+         + "}" + runtimeJson (status.runtime) + "}";
+}
 
 /// Haelt ein `welcome` den VOLLSTAENDIGEN Vertrag aus
 /// `eq-copilot/schemas/v3/eq-ipc-v3.schema.json`?
@@ -1172,7 +1229,7 @@ bool ControlClient::Laufzeit::eineVerbindung (std::uint64_t generation,
             }
 
             const auto sequence = heartbeatFolge.fetch_add (1) % kJsonSafeModulus;
-            sendeP0 (heartbeatJson (hello.adresse, sequence, status));
+            sendeP0 (heartbeatAlsJson (hello.adresse, sequence, status));
             naechsterHeartbeat = jetzt + std::chrono::milliseconds (kHeartbeatTaktMs);
         }
 

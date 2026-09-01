@@ -36,9 +36,10 @@ namespace nakama::analyse { struct FeatureFrame; }
 namespace nakama::ipc
 {
 
-/// Minor 1 fuehrt Frame.band_stereo (Feld-ID 10) ein. Der echte P2-Sendepfad
-/// benutzt diese Konstante; Tests duerfen den Wert nicht am Envelope vorbei
-/// selbst einsetzen.
+/// Minor 1 fuehrt Frame.band_stereo (Feld-ID 10) sowie das optionale
+/// LUFS-I-Paar und seinen Gegenstatus (Feld-IDs 11..13) ein. Der echte
+/// P2-Sendepfad benutzt diese Konstante; Tests duerfen den Wert nicht am
+/// Envelope vorbei selbst einsetzen.
 inline constexpr std::uint8_t kFeatureBatchSchemaMinor = 1;
 
 /// Worker-seitige, allokierende Serialisierung eines Analyseframes. Der

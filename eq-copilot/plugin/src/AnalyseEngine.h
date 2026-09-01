@@ -36,6 +36,7 @@
 #include "analysis/KGewichtung.h"
 #include "analysis/LoudnessAccumulator.h"
 #include <array>
+#include <cstdint>
 #include <limits>
 #include <mutex>
 #include <vector>
@@ -161,6 +162,17 @@ struct MessSnapshot
     juce::uint64 nanErsetzt = 0;
 };
 
+/** Worker-seitige Sicht auf den fixed-memory-LoudnessAccumulator fuer P2.
+    Ein Paar ist bereits auf die wire-faehigen float-Werte begrenzt. Ohne
+    Paar ist `status` genau 1 (collecting) oder 2 (gated). */
+struct LautheitsTelemetrie
+{
+    bool  paar { false };
+    float lufsI { 0.0f };
+    float unsicherheitLu { 0.0f };
+    std::uint8_t status { 1 };
+};
+
 class AnalyseEngine
 {
 public:
@@ -187,6 +199,10 @@ public:
     // nichts (Revision steht ⇒ der Editor malt im Leerlauf nicht).
     // Gleicher Single-Writer-Kontrakt wie auswerten().
     void auswertenLeicht();
+
+    /** Nur vom Single-Writer-Analyseworker aufrufen. Kein Lock, keine
+        Allokation: liest denselben Accumulator, den `verarbeite()` fuellt. */
+    LautheitsTelemetrie lautheitFuerTelemetrie() const noexcept;
 
     MessSnapshot snapshot() const;   // beliebiger Thread
 

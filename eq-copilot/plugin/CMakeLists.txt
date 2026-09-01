@@ -288,9 +288,12 @@ function(nakama_sonde_ziel ziel identitaet klassendefine)
         COPY_PLUGIN_AFTER_BUILD FALSE
     )
 
-    target_sources(${ziel} PRIVATE sonde/SondeProcessor.cpp sonde/SondeFactory.cpp)
+    target_sources(${ziel} PRIVATE
+        sonde/SondeProcessor.cpp
+        sonde/SondeFactory.cpp
+        src/AnalyseEngine.cpp)
     target_sources(${ziel} PRIVATE core/ipc/PipeToken.cpp)
-    target_include_directories(${ziel} PRIVATE sonde)
+    target_include_directories(${ziel} PRIVATE sonde src core hostbridge)
 
     # JUCE_VST3_CAN_REPLACE_VST2=0 gehoert zur eingefrorenen Identitaet, nicht
     # zu den Bauoptionen: mit 1 leitete JUCE die Class-ID aus einer ANDEREN
@@ -301,11 +304,12 @@ function(nakama_sonde_ziel ziel identitaet klassendefine)
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
         JUCE_DISPLAY_SPLASH_SCREEN=0
+        NAKAMA_HOST_BRIDGE=1
         ${klassendefine}=1
     )
 
     target_link_libraries(${ziel}
-        PRIVATE juce::juce_audio_utils Advapi32
+        PRIVATE juce::juce_audio_utils juce::juce_dsp Advapi32
         PUBLIC  juce::juce_recommended_config_flags
                 juce::juce_recommended_lto_flags
                 juce::juce_recommended_warning_flags)
@@ -344,13 +348,16 @@ nakama_sonde_ziel(NakamaProbeeq active-probe  NAKAMA_SONDE_AKTIV)
 # Uebersetzungsschalter: ein Lauf misst genau eine.
 function(nakama_sonde_nulltest ziel klassendefine)
     juce_add_console_app(${ziel} PRODUCT_NAME "${ziel}")
-    target_sources(${ziel} PRIVATE tests/SondeNullTestMain.cpp sonde/SondeProcessor.cpp)
+    target_sources(${ziel} PRIVATE
+        tests/SondeNullTestMain.cpp
+        sonde/SondeProcessor.cpp
+        src/AnalyseEngine.cpp)
     target_sources(${ziel} PRIVATE core/ipc/PipeToken.cpp)
-    target_include_directories(${ziel} PRIVATE sonde)
+    target_include_directories(${ziel} PRIVATE sonde src core hostbridge)
     target_compile_definitions(${ziel} PRIVATE
         JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0
         ${klassendefine}=1 NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
-    target_link_libraries(${ziel} PRIVATE juce::juce_audio_utils Advapi32
+    target_link_libraries(${ziel} PRIVATE juce::juce_audio_utils juce::juce_dsp Advapi32
         PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
     nakama_kern_anbinden(${ziel})
 endfunction()
@@ -362,6 +369,33 @@ endfunction()
 # A15 weiter, ausdruecklich als stillgelegt markiert: der Runner darf eine
 # Pruefung nie STILL verlieren, sonst sinkt die Zahl und niemand weiss warum.
 nakama_sonde_nulltest(EqCopProbeeqNullTest NAKAMA_SONDE_AKTIV)
+
+# ── SONDE-012 B3a: Probeeq-Producer und lokaler ChannelContext ─────────────
+# Zwei deklarierte Beine statt eines Sammeltests: Host-/Message-Thread und
+# Audioqueue-/Analyseworker haben verschiedene Fehlermodi und muessen im Kanon
+# einzeln rot werden koennen.
+function(nakama_sonde012_test ziel quelle)
+    juce_add_console_app(${ziel} PRODUCT_NAME "${ziel}")
+    target_sources(${ziel} PRIVATE
+        ${quelle}
+        sonde/SondeProcessor.cpp
+        src/AnalyseEngine.cpp
+        core/ipc/PipeToken.cpp)
+    target_include_directories(${ziel} PRIVATE sonde src core hostbridge vertrag)
+    target_compile_definitions(${ziel} PRIVATE
+        JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_DISPLAY_SPLASH_SCREEN=0
+        NAKAMA_SONDE_AKTIV=1 NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3=1)
+    target_link_libraries(${ziel} PRIVATE
+        juce::juce_audio_utils juce::juce_dsp flatbuffers Advapi32
+        PUBLIC juce::juce_recommended_config_flags
+               juce::juce_recommended_warning_flags)
+    nakama_kern_anbinden(${ziel})
+endfunction()
+
+nakama_sonde012_test(EqCopSonde012HostChannelContextTest
+                     tests/Sonde012HostChannelContextTest.cpp)
+nakama_sonde012_test(EqCopSonde012LoudnessSourceTest
+                     tests/Sonde012LoudnessSourceTest.cpp)
 
 # ── Konsolen-Probe: Ende-zu-Ende-Handshake ohne FL ──────────────────────────
 juce_add_console_app(EqCopPipeProbe PRODUCT_NAME "eqcop-pipe-probe")
@@ -832,7 +866,8 @@ foreach(ziel NakamaKern
              EqCopSchemaTest EqCopStateMigrationTest EqCopLebenslaufTest
              EqCopQueueStressTest EqCopLoudnessGoldenTest EqCopAnalysisGoldenTest
              EqCopHostProbe EqCopHostProbeTest
-             NakamaProbeeq EqCopProbeeqNullTest)
+             NakamaProbeeq EqCopProbeeqNullTest
+             EqCopSonde012HostChannelContextTest EqCopSonde012LoudnessSourceTest)
     target_compile_options(${ziel} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endforeach()
 

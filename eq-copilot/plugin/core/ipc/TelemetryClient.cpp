@@ -63,6 +63,15 @@ bool featureFrameAlsFlatbuffer (const analyse::FeatureFrame& frame,
             return false;
     }
 
+    const bool lufsIHalb = frame.lufsIGesetzt != frame.lufsIUnsicherheitGesetzt;
+    const bool lufsIPaar = frame.lufsIGesetzt && frame.lufsIUnsicherheitGesetzt;
+    if (lufsIHalb
+        || (lufsIPaar && (! std::isfinite (frame.lufsI)
+                          || ! std::isfinite (frame.lufsIUnsicherheit)))
+        || (frame.lufsIStatusGesetzt
+            && (frame.lufsIStatus < 1 || frame.lufsIStatus > 2 || lufsIPaar)))
+        return false;
+
     flatbuffers::FlatBufferBuilder b (4096);
     const auto sid = b.CreateString (wireQuelle.logonSid);
     const auto projekt = b.CreateString (wireQuelle.projectBindingId);
@@ -124,6 +133,9 @@ bool featureFrameAlsFlatbuffer (const analyse::FeatureFrame& frame,
 
     auto optional = [] (bool gesetzt, float wert) -> flatbuffers::Optional<float>
     { return gesetzt ? flatbuffers::Optional<float> (wert) : flatbuffers::nullopt; };
+    const auto lufsIStatus = frame.lufsIStatusGesetzt
+        ? flatbuffers::Optional<std::uint8_t> (frame.lufsIStatus)
+        : flatbuffers::nullopt;
     const auto frameFb = fb::CreateFrame (
         b, transport, live, frame.metricsVersion,
         optional (frame.aktivitaetGesetzt, frame.aktivitaet),
@@ -132,7 +144,10 @@ bool featureFrameAlsFlatbuffer (const analyse::FeatureFrame& frame,
         optional (frame.crestGesetzt, frame.crestDb),
         optional (frame.psrGesetzt, frame.psrDb),
         optional (frame.breiteGesetzt, frame.breite),
-        optional (frame.korrelationGesetzt, frame.korrelation), stereo);
+        optional (frame.korrelationGesetzt, frame.korrelation), stereo,
+        optional (frame.lufsIGesetzt, frame.lufsI),
+        optional (frame.lufsIUnsicherheitGesetzt, frame.lufsIUnsicherheit),
+        lufsIStatus);
     const auto eintrag = fb::CreateQuellenEintrag (b, adresse, frameFb);
     const auto eintraege = b.CreateVector (&eintrag, 1);
     const auto batch = fb::CreateFeatureBatch (b, eintraege);

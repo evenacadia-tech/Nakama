@@ -102,6 +102,21 @@ struct ControlHello
     std::uint32_t hostPid      = 0;
 };
 
+/** Optionaler, vollstaendiger `heartbeat.runtime`-Block (SONDE-012 E-M01).
+    `gemeldet == false` laesst den ganzen Block weg; einzelne Hostfelder sind
+    davon getrennt optional. Der Mixerindex bleibt leer, solange der lokale
+    Hostwrapper ihn nicht beobachtet. */
+struct ControlRuntime
+{
+    bool          gemeldet = false;
+    std::string   messpunkt;
+    std::string   betrieb;
+    bool          hostBusNameGemeldet = false;
+    std::string   hostBusName;
+    bool          hostMixerIndexGemeldet = false;
+    std::uint64_t hostMixerIndex = 0;
+};
+
 /// Laufender, vom Produkt verantworteter Zustand fuer `heartbeat` und
 /// `state_report`. Der Provider wird ausschliesslich auf dem Control-Thread
 /// aufgerufen. Ein leerer `stateHash` bedeutet vertragsgemaess JSON-null; der
@@ -116,7 +131,14 @@ struct ControlStatus
     std::uint64_t framesDropped = 0;
     std::uint64_t parseErrors = 0;
     std::uint64_t queueOverflows = 0;
+    ControlRuntime runtime;
 };
+
+/** Der produktive Heartbeat-Writer, zugleich direkter C++-Beweispunkt fuer
+    die optionale Runtime-Praesenz. Ein unbekannter Messpunkt/Betrieb laesst
+    den Block fail-closed weg; es entsteht nie ein halber Runtime-Block. */
+std::string heartbeatAlsJson (const Adresse&, std::uint64_t sequence,
+                              const ControlStatus&);
 
 class ControlClient
 {

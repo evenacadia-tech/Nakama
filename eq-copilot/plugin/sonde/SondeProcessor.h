@@ -31,12 +31,11 @@
     gelinkt. Der Umzug hinter die §53.4-Verzeichnisgrenzen bleibt
     inkrementell.
 
-    GRUNDGESETZ (CLAUDE.md, Wahrheitskern): Gen und Suna beraten nur -
+    GRUNDGESETZ (CLAUDE.md, Wahrheitskern): Gen und Probeeq beraten nur -
     Passthrough sampleidentisch, 0 Samples Latenz, kein Tail. `processBlock`
     haelt keine Sperre, allokiert nicht, protokolliert nicht und fasst keine
-    Datei an. Hier ist das leicht einzuhalten, weil er nichts tut; wer je
-    etwas hinzufuegt, faellt unter denselben Beweisstandard wie die
-    Hoer-Markierung von Gen.
+    Datei an. Seit SONDE-012 kopiert er Audio nur in die vorallokierte
+    Analysequeue; Auswertung, Serialisierung und I/O bleiben im Worker.
 
     KEINE HOSTPARAMETER: Beide Bundles melden dem Host heute keinen einzigen
     Parameter. Fuer Suna ist das dauerhaft so (Bauaufteilung: "Suna-Kachel,
@@ -54,8 +53,18 @@
 
 #include "NakamaLebenslauf.h"
 #include "NakamaState.h"
+#include "AnalyseEngine.h"
 #include "ControlClient.h"
+#include "NakamaHostBridge.h"
+#include "StampedAudioQueue.h"
 #include "TelemetryClient.h"
+#include "analysis/FeatureEngine.h"
+
+#include <atomic>
+#include <condition_variable>
+#include <cstdint>
+#include <mutex>
+#include <thread>
 
 // Genau EINE Produktklasse je Ziel - gesetzt von der duennen Target-Schicht
 // in plugin/CMakeLists.txt. Der Riegel ist kein Zierrat: ohne ihn uebersetzte
@@ -103,7 +112,8 @@ inline nakama::state::Bundle bundleVertrag()
    #endif
 }
 
-class SondeProcessor final : public juce::AudioProcessor
+class SondeProcessor final : public juce::AudioProcessor,
+                             public eqcop::hostbruecke::Senke
 {
 public:
     SondeProcessor();
@@ -113,6 +123,12 @@ public:
     void releaseResources() override {}
     bool isBusesLayoutSupported (const BusesLayout& layout) const override;
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+    void nakamaBlockEmpfangen (const eqcop::hostbruecke::Blockbefund&) noexcept override;
+
+    /** JUCE/VST3 ChannelContext. Laut JUCE-Vertrag nur Message-Thread; ein
+        lokaler Verstoss wird fail-closed ignoriert statt in den Runtime-
+        Zustand hineinzuracen. */
+    void updateTrackProperties (const TrackProperties&) override;
 
     juce::AudioProcessorEditor* createEditor() override { return nullptr; }
     bool hasEditor() const override                     { return false; }
@@ -186,9 +202,28 @@ public:
     {
         return telemetryV3.snapshot();
     }
+    bool letzterProducerFrameFuerTest (nakama::analyse::FeatureFrame&) const;
+    std::uint64_t producerPublikationenFuerTest() const noexcept
+    {
+        return producerPublikationen.load();
+    }
+    std::uint64_t analyseDropsUeberlaufFuerTest() const noexcept
+    {
+        return analyseQueue.dropsUeberlauf();
+    }
+    std::uint64_t analyseDropsOversizeFuerTest() const noexcept
+    {
+        return analyseQueue.dropsOversize();
+    }
+    bool hostCallbackAufMessageThreadFuerTest() const noexcept
+    {
+        return hostCallbackAufMessageThread.load();
+    }
 #endif
 
 private:
+    void workerLauf();
+    void producerStandLeeren() noexcept;
     nakama::ipc::ControlHello v3Hello() const;
     nakama::ipc::ControlStatus v3Status() const;
     nakama::ipc::TelemetryHello v3TelemetryHello() const;
@@ -196,6 +231,41 @@ private:
     nakama::state::Zustand zustand;
     nakama::state::Lebenslauf lebenslauf { kProduktklasse };
     juce::CriticalSection zustandSchloss;   ///< nur Nachrichten-/Hostthread, nie processBlock
+
+    /** Hostname ist Message-Thread-Zustand, wird aber vom Control-Thread
+        gelesen. Er bleibt strikt getrennt vom persistenten User-Label. */
+    mutable juce::CriticalSection hostKontextSchloss;
+    bool hostBusNameGemeldet = false;
+    std::string hostBusName;
+
+    // Audiothread -> Analyseworker: derselbe vorallokierte Ganzblockweg wie
+    // Gen. Der Audiothread beruehrt weder Engine noch TelemetryClient.
+    using Strom = nakama::echtzeit::GenStrom;
+    using AnalyseQueue = nakama::echtzeit::StampedAudioQueue<Strom>;
+    AnalyseQueue analyseQueue;
+    nakama::echtzeit::Blockquarantaene<Strom> quarantaene;
+    eqcop::AnalyseEngine analyseEngine;
+    nakama::analyse::FeatureEngine merkmale;
+    mutable std::mutex analyseSchloss;
+    std::mutex workerWarteSchloss;
+    std::condition_variable workerWarte;
+    std::atomic<bool> workerLaeuft { false };
+    std::thread worker;
+    nakama::analyse::FeatureFrame letzterProducerFrame;
+    bool letzterProducerFrameVorhanden = false;
+    std::atomic<std::uint64_t> producerPublikationen { 0 };
+
+    // Der gepatchte Wrapper liefert diesen Stand unmittelbar vor demselben
+    // Audioblock. Deshalb kein Atomic und kein Lock.
+    struct BrueckeStand
+    {
+        nakama::echtzeit::Stempel stempel;
+        bool frisch = false;
+    } brueckeStand;
+
+#if defined (NAKAMA_PHASE_B_TEST_NO_PRODUCT_V3)
+    std::atomic<bool> hostCallbackAufMessageThread { false };
+#endif
 
     const std::string v3LogonSid;
     const std::string v3PipeName;

@@ -371,6 +371,14 @@ struct FeatureFrame
     bool  breiteGesetzt      { false };  float breite      { 0.0f };
     bool  korrelationGesetzt { false };  float korrelation { 0.0f };
 
+    /** SONDE-012 / E-A02: integrierte Lautheit reist nur als atomares Paar.
+        Die drei Praesenzbits bilden FlatBuffers `= null` ab; ein numerischer
+        Vorgabewert ist ohne sein Bit keine Messung. `lufsIStatus` ist genau
+        1 (collecting) oder 2 (gated) und fehlt bei einem gueltigen Paar. */
+    bool  lufsIGesetzt             { false };  float lufsI             { 0.0f };
+    bool  lufsIUnsicherheitGesetzt { false };  float lufsIUnsicherheit { 0.0f };
+    bool  lufsIStatusGesetzt       { false };  std::uint8_t lufsIStatus { 0 };
+
     /** ZWEI FRAMES SIND GLEICH, WENN JEDES FELD GLEICH IST — und welche Felder
         es gibt, weiss der Compiler, nicht eine Liste (T2R2-1, 24.08.).
 

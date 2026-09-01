@@ -35,13 +35,13 @@ Er ergänzt diese Quellen um den fehlenden Vertrag zwischen Technik und Bedienun
 Wenn Technik und Oberfläche widersprechen, entscheidet der aktuelle technische
 Vertrag über das Machbare; die Oberfläche darf den Widerspruch nicht kaschieren.
 
-[DESIGN.md](../../DESIGN.md) und [UX-CONTRACT.md](../../UX-CONTRACT.md)
-beschreiben noch die Oberfläche und den Web-Prototyp vor dem Funktionsneustart.
-`UX-CONTRACT.md` bleibt Beleg für bereits festgelegtes beobachtbares Verhalten,
-aber seine Figma-, Golden-, Raster- und Prototypfestlegungen werden nicht zur neuen
-Layoutquelle. Wo sein Verhalten nicht mit aktuellem Plan, aktuellem User-Wort oder
-heutigem v3-Vertrag zusammenpasst, bleibt der Konflikt offen und wird vor dem
-nächsten Prototyp ausdrücklich bereinigt; siehe Abschnitt 15.
+[DESIGN.md](../../DESIGN.md) trennt seit 01.09.2026 den aktuellen funktionalen
+Größenvertrag von seinem historischen visuellen System. [UX-CONTRACT.md](../../UX-CONTRACT.md)
+führt den aktuellen Größen- und Verhaltensvertrag; seine weiterhin enthaltenen
+Figma-, Golden-, Raster- und Legacy-Prototypfestlegungen werden nicht zur neuen
+Layoutquelle. Wo Verhalten nicht mit aktuellem Plan, aktuellem User-Wort oder
+heutigem v3-Vertrag zusammenpasst, bleibt der Konflikt offen und wird vor der
+nativen Übernahme ausdrücklich bereinigt; siehe Abschnitt 15.
 
 ### Evidenzmarken
 
@@ -1102,9 +1102,14 @@ nach Ablauf der Meldung weiterhin wahr ist, braucht einen persistenten Ort.
 
 ### 11.1 Fenster
 
-**[D]** Beide Gen-Flächen arbeiten im aktuellen Produktvertrag auf 760 × 430
-logischen Pixeln. Der Blueprint vergibt bewusst keine historischen Pixelwerte.
-Die frische visuelle Phase muss zuerst bei 100 Prozent beweisen:
+**[U]** Beide Gen-Flächen teilen einen größenveränderbaren Arbeitsrahmen mit
+festem Verhältnis 76:43. 760×430 logische Pixel sind die kompakte
+Mindestgröße, 950×538 die ganzzahlig gerundete Standardgröße. Zusätzlicher
+Fensterraum wird nicht als proportionaler Zoom verteilt: Auf Fläche 2 wächst
+zuerst der EQ-Graph, auf Fläche 1 die akustische Evidenz. Stabile Rails und
+Bedienziele behalten ihre logischen Maße. Der Blueprint vergibt darüber hinaus
+bewusst keine visuellen Pixelwerte. Die frische visuelle Phase muss zuerst bei
+100 Prozent und bereits am kompakten Minimum beweisen:
 
 - 16 Quellen plus stabile Auswahl;
 - acht aktive EQ-Bänder;
@@ -1115,12 +1120,13 @@ Die frische visuelle Phase muss zuerst bei 100 Prozent beweisen:
 - vollständigen Tastaturfokus ohne abgeschnittene Werte.
 
 Die beschlossenen Skalierungsstufen 100, 125, 150 und 200 Prozent bleiben ein
-Implementierungsvertrag; Layout darf bei höherem Scale keine Funktion
-verschwinden lassen.
+vom Fenster-Resize getrennter Implementierungsvertrag; weder Resize noch Scale
+darf eine Funktion verschwinden lassen. Ein sichtbarer Größenwahlschalter im
+Produkt und Vollbild sind damit nicht entschieden.
 
 Vor einem Layout werden reservierter Ziel-/Statusraum, verbleibende akustische
-Evidenzfläche und die logischen Rechtecke aller Primärziele im 760×430-Raum
-gemessen. Die 24×24 CSS-Pixel aus
+Evidenzfläche und die logischen Rechtecke aller Primärziele bei 760×430 und
+950×538 sowie während eines Zwischen-Resize gemessen. Die 24×24 CSS-Pixel aus
 [WCAG 2.2, Target Size (Minimum)](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)
 dienen höchstens als dokumentierter Web-Risikovergleich, nicht als ungeprüftes
 Gesetz für JUCE. Entscheidend sind reale logische und physische Größe, Abstand,
@@ -1169,7 +1175,8 @@ Skalierungsstufen.
 - Float-Pfad aktiv; fehlende Double-Capability erzeugt keinen Modusschalter;
 - direkte Manipulation und identisches Text-/Tastaturergebnis;
 - zwei Curves ohne Farbe, bei Farbsehschwäche und im Screenshot;
-- EQ-Gain- und Analyzerpegel-Skalen ohne Farbe und bei 760×430 eindeutig;
+- EQ-Gain- und Analyzerpegel-Skalen ohne Farbe bei 760×430 und 950×538
+  eindeutig;
 - Spectrum Grab ohne freien Slot oder mit Schutzkonflikt;
 - Freeze aktiv nach Panel-Close;
 - Displayeinstellungen ändern keinen Finding-Test;
@@ -1247,7 +1254,8 @@ Eine UI-Funktion ist erst fertig, wenn:
 - jede sichtbare Aktion echte Technik erreicht;
 - Confirmed, Draft, Automation und Fehler gegeneinander getestet sind;
 - Fokus, Semantik, Werte, Grenzen und Reset nativ geprüft sind;
-- 100/125/150/200 Prozent und 760 × 430 visuell bestehen;
+- 760×430, 950×538 und mindestens ein Zwischen-Resize bei 100/125/150/200
+  Prozent visuell bestehen und dieselben Funktionen erreichbar halten;
 - FL Studio Release-Build und Mehrinstanzlast gemessen sind;
 - Loslassen, Cancel, Revert, Disconnect, Reload und Crash einen eindeutigen
   Zustand hinterlassen;
@@ -1310,11 +1318,11 @@ Schema:
 12. **[O] 10-s-Kandidatenvertrag:** Kandidaten-ID, Timer, Message, ACK,
     Reconnect, Kill und Ablauf sind vor P7-UI zu spezifizieren; preview_begin
     und persistentes apply_transaction reichen dafür heute nicht.
-13. **[O] Router-Abgleich:** DESIGN.md und UX-CONTRACT.md tragen noch
-    Figma-/Golden-, Raster- und Prototypverträge des Stands vor dem
-    Funktionsneustart. Vor dem nächsten Prototyp werden ihre weiter geltenden
-    Verhaltensinvarianten vom überholten Layout getrennt und mit diesem
-    Blueprint abgeglichen.
+13. **[O] Router-Abgleich:** Der Größenvertrag ist seit 01.09.2026 in
+    DESIGN.md, UX-CONTRACT.md und dem maschinenlesbaren UI-Vertrag vom
+    historischen 760×430-Artefaktbestand getrennt. Offen bleibt die vollständige
+    Bereinigung ihrer Figma-/Golden-/Raster- und Legacy-Prototypbindungen vor
+    der nativen Übernahme.
 14. **[O] Direkte Edit-Transaktion:** Band-Drag, Textwert, Preset-Load und
     Curve-Copy brauchen eine gemeinsame, widerspruchsfreie Abbildung auf
     Preview, 10-s-Kandidat, Confirmed, Host-Geste, Cancel und Revert. Die
@@ -1347,8 +1355,8 @@ außerhalb der Oberfläche.
 |---|---|
 | [CLAUDE.md](../../CLAUDE.md) | Produktidentität, Zwei-Flächen-Modell, harte Audio-/Hostinvarianten |
 | [design/LIES-MICH.md](../LIES-MICH.md) | Funktionsneustart, Abgrenzung von früheren visuellen Ständen |
-| [UX-CONTRACT.md](../../UX-CONTRACT.md) | bereits formulierter Verhaltensvertrag und zu bereinigende Prototypbindung |
-| [DESIGN.md](../../DESIGN.md) | 760×430-/Skalierungsvertrag und zu bereinigende frühere visuelle Autorität |
+| [UX-CONTRACT.md](../../UX-CONTRACT.md) | aktueller Größen-/Verhaltensvertrag und weiterhin zu bereinigende Legacy-Prototypbindung |
+| [DESIGN.md](../../DESIGN.md) | aktueller funktionaler Größenvertrag, getrennt von der früheren visuellen Autorität |
 | [PLAN-STAND.md](../../docs/PLAN-STAND.md) | gerechneter Status, Tickets und aktuelle Nachträge |
 | [FL-Nakama-Sonden-Design-Entwurf.md](../../docs/FL-Nakama-Sonden-Design-Entwurf.md) | technische Funktionen, Objekte, Zustände und P2–P9 |
 | [bauaufteilung-sonden.md](../../docs/bauaufteilung-sonden.md) | Ticketgrenzen und Verantwortungen |
@@ -1365,6 +1373,7 @@ außerhalb der Oberfläche.
 | [Rollenpräzisierung, 27.08.2026](../abnahmen/2026-08-27-arbeitsnamen-und-probeeq-doppelrolle.md) | zwei Gen-Flächen, Probeeq-Doppelrolle, kein lokaler Voll-Editor |
 | [Suna-Stilllegung, 28.08.2026](../abnahmen/2026-08-28-suna-stilllegung-vorgezogen.md) | zwei Produktbundles plus Broker |
 | [Marktstandard-Fragen, 30.08.2026](../abnahmen/2026-08-30-fragenrunde-marktstandard.md) | Busnamen-Fallback, Maskierungszone, Spectrum Grab/Freeze/Display, kein Piano/Linear Phase, Presets und Copy |
+| [Gen-Fenstergröße und Resize, 01.09.2026](../abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md) | beide Gen-Flächen 76:43; 760×430 kompakt, 950×538 Standard; Graph/Evidenz wächst zuerst; UI-Scale getrennt |
 
 ### 16.3 Wissensarchiv
 
@@ -1392,11 +1401,13 @@ Behauptung über Herstellerintention oder Marktanteil.
 
 | Quelle | Verwendete übertragbare Regel |
 |---|---|
-| [TDR Nova Manual](https://docs.tokyodawn.net/nova-manual/) | direkter Graphzugriff; Auswahl und Aktivierung getrennt; versteckte inaktive Punkte nur zusammen mit permanentem Rückweg |
+| [TDR Nova Manual](https://docs.tokyodawn.net/nova-manual/) | direkter Graphzugriff; Auswahl und Aktivierung getrennt; feste UI-Skalierung als anderer Mechanismus als zusätzliche Informationsfläche |
 | [FabFilter Pro-Q 4 — Band Controls](https://www.fabfilter.com/help/pro-q/using/bandcontrols) | objektnahe Controls; Bypass, Delete und Stereo Placement als getrennte Bandhandlungen |
 | [FabFilter Pro-Q 4 — EQ Display](https://www.fabfilter.com/help/pro-q/using/eqdisplay) | Parameterkontext am ausgewählten Punkt; Modifikatortasten nur als zusätzliche Schnellwege |
+| [FabFilter Pro-Q 4 — Full Screen, Resizing and Scaling](https://www.fabfilter.com/help/pro-q/using/fullscreenandresize) | Fenstergröße und UI-Skalierung sind getrennte Bedienmechanismen; zusätzliche Fläche kann dem EQ-Display zugutekommen |
 | [FabFilter Pro-Q 4 — Undo and Redo](https://www.fabfilter.com/help/pro-q/using/undoredo) | stabiler Wiederherstellungsweg für UI-Änderungen |
 | [Kirchhoff-EQ Manual](https://files.plugin-alliance.com/products/tbt_kirchhoff-eq/tbt_kirchhoff-eq_manual.pdf) | Enable/Disable, Dynamic, Stereo Mode, Bandnavigation und Remove bleiben semantisch getrennt |
+| [DMG EQuilibrium Manual](https://dmgaudio.com/dl/DMGAudio_EQuilibrium_Manual.pdf) | freie Fenstergröße und separat konfigurierbare Arbeitsmodule als Beleg für Informationsflächenwachstum statt reinen Zoom |
 
 ## 17. Laufende technische UI-Ableitung
 
@@ -1407,6 +1418,10 @@ aus den aktuellen Verträgen, Quellen und Tests abgeleitet. Antworten werden in
 festen Fünferblöcken gesammelt. Nach der fünften Antwort werden die laufende
 Skizze, die betroffenen Abnahmen und dieser Blueprint gemeinsam aktualisiert
 und sichtbar geprüft; erst danach beginnt der nächste Block.
+
+Der Größenentscheid vom 01.09.2026 wurde auf ausdrückliche Useranweisung
+vorgezogen querschnittlich integriert, damit der Vertrag nicht driftet. Das
+ändert den Fünfer-Takt für die folgenden Fragen nicht.
 
 Der jeweils laufende, noch nicht batchweise integrierte Entscheidungsstand
 steht in der jüngsten Datei `technische-ui-architektur-fuenferblock-*.md` unter
@@ -1421,6 +1436,11 @@ Fünferblock 02 integriert atomaren Panelbesitz beim Bandwechsel, den
 bandlokalen Kanalmodus, den stabilen Band-Bypass sowie die Trennung von
 Disable und wiederherstellbarem Remove. Beide Blöcke wurden in der laufenden
 Skizze und im internen Browser geprüft.
+
+Der Größenentscheid ergänzt beide Gen-Flächen um den gemeinsamen 76:43-Rahmen
+mit 760×430 als kompaktem Minimum und 950×538 als Standard. Fensterwachstum
+geht zuerst an Graph beziehungsweise akustische Evidenz; UI-Skalierung bleibt
+ein separater Mechanismus. Probeeq bleibt von diesem Entscheid unberührt.
 
 Die fortlaufende Dynamic-Auslenkung und die native Remove-/Undo-Transaktion
 bleiben benannte technische Vertragslücken, keine offenen Geschmacksfragen.

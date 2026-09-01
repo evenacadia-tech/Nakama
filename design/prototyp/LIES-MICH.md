@@ -1,8 +1,13 @@
 # Nakama Gen Web-Simulator
 
-Der Simulator ist die ausführbare Referenz für Zustände, Gesten und Motion der
-760×430-Oberfläche. Er verwendet deterministische Demo-Daten und ist weder eine
-DSP-Referenz noch eine später in das Plug-in eingebettete Webseite.
+Der Simulator ist ein historischer, ausführbarer Referenzstand für Zustände,
+Gesten und Motion der damaligen festen 760×430-Oberfläche. Er verwendet
+deterministische Demo-Daten und ist weder eine DSP-Referenz noch eine später in
+das Plug-in eingebettete Webseite. Der aktuelle funktionale Größenvertrag steht
+in `../abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md` und im
+maschinenlesbaren `contract/ui-contract.json`: kompakt 760×430, Standard
+950×538, festes Verhältnis 76:43 und Arbeitsflächenwachstum statt Bedienzoom.
+Die laufende technische Skizze, nicht dieser Legacy-Simulator, bildet ihn ab.
 
 ## Status der Figma-Baseline
 
@@ -12,13 +17,14 @@ Die einzige aktuelle Designquelle ist immer `Nakama-Design`, Key
 eingeordneten Copy-Datei erzeugt. Seine Hashes und Tests bleiben als Beleg des
 gebauten Snapshots gültig, es ist aber keine aktuelle Figma-Baseline.
 
-Live-Stand im verbindlichen Depot am 24.08.: Overview `25:444` = 760×430,
+Historischer Live-Stand im damaligen verbindlichen Depot am 24.08.: Overview `25:444` = 760×430,
 EQ Center `28:994` = 760×430. Die Größenkorrektur ist damit im Figma
-erledigt. Der Suna-Entwurf `6:2864` = 260×84 ist die aktuelle visuelle Basis
+für diesen Stand belegt. Der Suna-Entwurf `6:2864` = 260×84 ist die historische visuelle Basis
 für die Probeeq-Rückfallfläche. Vor dem nächsten Pixelabgleich muss der
 korrigierte aktuelle Stand neu exportiert und daraus ein neues
 Asset-/Golden-Paket erzeugt werden; das vorhandene Paket bleibt ein
-historischer Build-Snapshot.
+historischer Build-Snapshot. Seit dem Funktionsneustart vom 31.08. ist dieser
+Figma-Stand keine aktuelle Layoutautorität.
 
 ## Öffnen
 

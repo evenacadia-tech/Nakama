@@ -4,6 +4,13 @@
 **Geltungsbereich:** aktueller JUCE-Editor, Nakama-Produktvertrag und der geplante Gen-/Probeeq-Workflow  
 **Methode:** Audio-Plugin-UX-Skill mit Evidenzklassen, Listening-Loop, Sonic-Object-Map, Placement Proofs, Zustandsmatrix und Host-Testplan.
 
+> **Fortschreibung 01.09.2026:** Diese Analyse bleibt ein Befund ihres
+> Prüfdatums. Ihre Aussagen, 760×430 sei die einzige aktuelle Gen-Größe und
+> Fenster-Resize sei noch offen, sind durch
+> [`../abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md`](../abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md)
+> abgelöst: 760×430 ist das kompakte Minimum, 950×538 der Standard im festen
+> 76:43-Rahmen. Native Umsetzung und FL-Prüfung bleiben offen.
+
 ## Kurzurteil
 
 **Observed:** Der aktuell gebaute `EqCopilotEditor` ist als Mess- und Diagnosewerkzeug brauchbar: Er zeigt eine LTAS-Kurve, Messstatus, LUFS/True-Peak/Dynamik, Befunde, Vergleich, Reset, Bindung und eine Hör-Markierung. Der Offscreen-Sichttest rendert bei 1200×832 und 600×416.

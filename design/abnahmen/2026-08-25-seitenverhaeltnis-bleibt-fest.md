@@ -52,3 +52,13 @@ ein Entwurf gegen ein Maß, das der Editor nicht rendert.
 - `docs/review-2026-08-25-audio-plugin-ux.md` (Befund B6)
 - `design/abnahmen/2026-08-20-groessen-alle-drei.md` (Ursprung der Maße)
 - `design/docs/ui-spielregeln-eq-zentrale.md` Regel 3
+
+## Fortschreibung vom 01.09.2026
+
+Der damalige Aufschub des Resize ist durch den neueren Userentscheid teilweise
+abgelöst. Das feste Seitenverhältnis bleibt; der Gen-Rahmen darf nun innerhalb
+dieses Verhältnisses wachsen. 760×430 ist die kompakte Mindestgröße,
+950×538 die Standardgröße. Wachstum erzeugt Informationsfläche für Graph
+beziehungsweise akustische Evidenz und ist nicht mehr bloß proportionaler
+Zoom. Bindend ist
+[`2026-09-01-gen-fenstergroesse-und-resize.md`](2026-09-01-gen-fenstergroesse-und-resize.md).

@@ -1,9 +1,16 @@
 # Nakama Gen – offene Figma-Arbeiten und Übergabekriterien
 
 - **Stand:** 24.08.2026
-- **Status dieses Dokuments:** Arbeits- und Übergabeliste, keine Designabnahme
+- **Status dieses Dokuments:** Historische Arbeits- und Übergabeliste, seit dem
+  Funktionsneustart vom 31.08.2026 keine aktuelle Layoutautorität
 - **Geltungsbereich:** Nakama Gen Seite 1 „Overview“, Seite 2 „EQ Center“, die zugehörigen Zustände und Motion-Demos sowie die minimale Rückfallfläche von Nakama Probeeq
 - **Nicht im Geltungsbereich:** DSP-Implementierung, Broker/IPC, JUCE-Bau und helle Produktfassung
+
+Der aktuelle funktionale Größenvertrag steht in
+[`../abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md`](../abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md):
+760×430 ist das kompakte Minimum, 950×538 die Standardgröße im festen
+76:43-Rahmen. Die Maße und Figma-Nodes unten bleiben Belege des Stands vom
+24.08. und dürfen diese neuere Entscheidung nicht überschreiben.
 
 ## 1. Kurzurteil
 

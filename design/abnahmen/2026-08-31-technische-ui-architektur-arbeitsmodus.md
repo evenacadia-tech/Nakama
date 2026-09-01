@@ -215,3 +215,20 @@ Zusammengefasst gilt:
 Vor einer weiteren Architekturfrage wird zunächst ein neuer Block aus einem
 noch offenen Bedienbereich begonnen; durch die Delegation dieses Abschnitts
 ist keine weitere Userantwort für Fünferblock 02 erforderlich.
+
+## Vorgezogener Größenentscheid vom 01.09.2026
+
+Der User hat nach Fünferblock 02 ausdrücklich erlaubt, den Größenentscheid
+sofort und querschnittlich einzubauen:
+
+> „ja und passe alle relevanten stellen im vertrag und wo es noch nötig ist
+> an, Kontext darf nicht driften das ist das wichtigste“
+
+Diese Anweisung ist eine bewusste Ausnahme vom Fünfer-Takt, keine Rückkehr
+zum Umbau nach jeder Einzelantwort. Der bindende Entscheid steht in
+[`2026-09-01-gen-fenstergroesse-und-resize.md`](2026-09-01-gen-fenstergroesse-und-resize.md):
+Beide Gen-Flächen teilen den vergrößerbaren 76:43-Rahmen, 760×430 ist das
+kompakte Minimum und 950×538 die Standardgröße; zusätzliche Fläche wächst
+zuerst Graph beziehungsweise akustischer Evidenz zu. UI-Skalierung bleibt
+davon getrennt. Der nächste reguläre Entscheid beginnt wieder einen
+Fünferblock und öffnet diese Größenfrage nicht erneut.

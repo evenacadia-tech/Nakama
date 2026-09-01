@@ -31,6 +31,10 @@ erst in einem eigenen Folgeschritt.
 Arbeitsmodus, bestätigter Strukturstand und die bewusst offenen nächsten
 Entscheide stehen in
 [`abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md`](abnahmen/2026-08-31-technische-ui-architektur-arbeitsmodus.md).
+Der aktuelle Größenvertrag für beide Gen-Flächen steht in
+[`abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md`](abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md):
+kompakte Mindestgröße 760×430, Standardgröße 950×538, festes Verhältnis
+76:43 und Arbeitsflächenwachstum statt proportionalem Bedienzoom.
 Für diese Phase gilt: genau eine echte UI-Architekturfrage nach der anderen
 und technische Grenzen vorher selbst aus aktuellen Quellen ableiten. Die
 Antworten werden in festen Fünferblöcken gesammelt; nach der fünften Antwort

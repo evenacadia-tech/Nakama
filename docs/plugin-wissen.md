@@ -469,6 +469,16 @@ Tick; `repaint()` nur bei neuer `revision`, UI-Änderung, Pipe-Statuswechsel
 oder Meldungsfenster — im Leerlauf malt er nichts. paint() kostet 2,47 ms @
 1200×832 — nie der Engpass.
 
+Der funktionale Gen-Hauptpfad ist davon getrennt: In
+`PluginEditor.cpp:851-858` ist er am 01.09.2026 noch mit
+`setResizable(false, false)` auf 760×430 festgesetzt. Der aktuelle Zielvertrag
+fordert für beide Gen-Flächen dagegen einen vergrößerbaren 76:43-Rahmen mit
+760×430 als kompaktem Minimum und 950×538 als Standard; zusätzliche Fläche
+geht zuerst an Graph beziehungsweise akustische Evidenz, UI-Skalierung bleibt
+separat. Die ältere 750:520-Materialfront beweist diese Umsetzung nicht. Der
+native FL-Studio-Beleg bleibt Eigentum der UI-Implementierungsphase S31b;
+Quelle: `../design/abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md`.
+
 ## 2 · Hostbrücke und Wegwerf-Messgeräte
 
 ### 2.1 Hostbrücke (SONDE-003)

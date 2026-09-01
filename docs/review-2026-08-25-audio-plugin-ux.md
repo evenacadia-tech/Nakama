@@ -12,6 +12,13 @@
   Quellen live nachgeschlagen; jede Nakama-Behauptung gegen die
   Repo-Quelle geprüft.
 
+> **Fortschreibung 01.09.2026:** Der Review bleibt historischer Beleg für Skill
+> 0.1.0. Seine damalige Größenfeststellung ist nicht mehr der aktuelle
+> Produktvertrag: 760×430 ist jetzt das kompakte Gen-Minimum, 950×538 der
+> Standard im festen 76:43-Rahmen; Fenster-Resize vergrößert zuerst die
+> Arbeitsfläche und UI-Skalierung bleibt separat. Quelle:
+> `../design/abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md`.
+
 ## Urteil
 
 Der generische Teil erfüllt seinen Zweck und liegt über dem, was ein

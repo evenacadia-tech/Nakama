@@ -11,7 +11,8 @@ const uiContract = JSON.parse(fs.readFileSync(path.join(contractRoot, "ui-contra
 const motion = JSON.parse(fs.readFileSync(path.join(contractRoot, "motion-tokens.json"), "utf8"));
 const assets = JSON.parse(fs.readFileSync(path.join(contractRoot, "asset-manifest.json"), "utf8"));
 
-assert.equal(uiContract.schemaVersion, 1);
+assert.equal(uiContract.schemaVersion, 2);
+assert.equal(uiContract.contractId, "nakama-gen-ui-v2");
 assert.equal(assets.schemaVersion, 1);
 assert.equal(motion.schemaVersion, 1);
 assert.deepEqual(assets.logicalStage, { width: 760, height: 430, unit: "css-px" });
@@ -40,6 +41,23 @@ assert.equal(motion.spectrumDataHz, 20);
 assert.equal(motion.easing, "cubic-bezier(0.22, 1, 0.36, 1)");
 assert.ok(uiContract.invariants.some((rule) => rule.includes("ten-second temporary lease")));
 assert.ok(uiContract.invariants.some((rule) => rule.includes("Mix remains planned")));
+assert.deepEqual(uiContract.surfaceSizing.gen.surfaces, ["overview", "eq-center"]);
+assert.deepEqual(uiContract.surfaceSizing.gen.compactMinimum, {
+  width: 760,
+  height: 430,
+  unit: "logical-px",
+});
+assert.deepEqual(uiContract.surfaceSizing.gen.default, {
+  width: 950,
+  height: 538,
+  unit: "logical-px",
+});
+assert.deepEqual(uiContract.surfaceSizing.gen.fixedAspectRatio, { width: 76, height: 43 });
+assert.equal(uiContract.surfaceSizing.gen.resizeBehavior, "fixed-aspect-graph-evidence-first");
+assert.equal(uiContract.surfaceSizing.gen.uiScaleIndependent, true);
+assert.equal(uiContract.surfaceSizing.gen.functionParityRequired, true);
+assert.equal(uiContract.surfaceSizing.gen.nativeHostVerification, "required");
+assert.ok(uiContract.invariants.some((rule) => rule.includes("compact minimum")));
 
 for (const [surfaceName, surface] of Object.entries(assets.surfaces)) {
   assert.equal(surface.figmaStructureControl.isPixelGolden, false);

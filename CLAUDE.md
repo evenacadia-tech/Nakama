@@ -27,7 +27,11 @@ Commits gehen ohne Rückfrage raus.
   vollwertigen Master-EQ. „Overview" und „EQ-Zentrale" sind nur Arbeitsnamen,
   keine festgelegten Produktnamen. Die Sonden werden direkt auf der zweiten
   Oberfläche durchgeschaltet; zwei EQ-Spuren liegen farblich unterscheidbar im
-  selben Graph. Beide Gen-Oberflächen sind 760×430. Probeeq misst auf den
+  selben Graph. Beide Gen-Oberflächen teilen einen im Seitenverhältnis 76:43
+  vergrößerbaren Arbeitsrahmen: 760×430 ist die kompakte Mindestgröße,
+  950×538 die gerundete Standardgröße. Zusätzliche Fensterfläche wächst
+  zuerst dem Graphen beziehungsweise der akustischen Evidenz zu; Bedienziele
+  wachsen nur über die davon getrennte UI-Skalierung. Probeeq misst auf den
   Bussen passiv und beliefert Gen. Wird ihr EQ zugeschaltet, führt dieselbe
   Instanz die von Gen ferngesteuerten Eingriffe auf ihrem Bus aus; Messsonde
   und EQ-Ausführer sind keine alternativen Produktrollen. Die vollständige

@@ -61,3 +61,12 @@ Antwort des Users (25.08.2026, über Matrix), vollständig:
 Der Entscheid ist verbindlich und betrifft **den Plan**, nicht die Fläche. Die
 visuelle Abnahme der Gen-Seiten steht weiterhin aus; drei geplante Varianten
 sind drei Vorschläge, keine abgenommene Richtung.
+
+## Fortschreibung vom 01.09.2026
+
+Der Satz „760×430 für beide Seiten bleibt gesetzt“ gilt weiterhin für die
+Gleichheit beider Gen-Flächen und nun als kompaktes Minimum, nicht mehr als
+einzige Fenstergröße. Der neuere Userentscheid setzt 950×538 als Standard im
+festen 76:43-Rahmen; zusätzlicher Raum wächst zuerst Graph beziehungsweise
+akustischer Evidenz zu. Bindend ist
+[`2026-09-01-gen-fenstergroesse-und-resize.md`](2026-09-01-gen-fenstergroesse-und-resize.md).

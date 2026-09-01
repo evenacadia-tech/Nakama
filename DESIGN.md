@@ -1,5 +1,15 @@
 ---
 version: alpha
+authority:
+  functionalSizing: "current"
+  visualSystem: "historical-pre-2026-08-31"
+functionalSizing:
+  genStage:
+    compactMinimum: "760x430 logical px"
+    default: "950x538 logical px"
+    fixedAspectRatio: "76:43"
+    resizeBehavior: "workspace grows; graph/evidence first"
+    uiScale: "independent"
 colors:
   shell: "#1b1d1f"
   glass: "#0c0e10"
@@ -55,6 +65,18 @@ architecture. The current target is routed through
 newer dated files under `design/abnahmen/`. A new visual system begins only
 after an explicit user decision to enter that phase.
 
+## Current functional sizing contract
+
+Both Gen surfaces share one fixed-aspect, resizable editor stage. Its compact
+minimum is 760×430 logical pixels; its default is 950×538, the integer-rounded
+size at the same 76:43 aspect ratio. Resizing buys information area rather than
+uniform zoom: the graph or acoustic evidence receives additional room first,
+while established rails and control targets retain their logical geometry.
+The 100/125/150/200-percent UI scale is a separate accessibility/rendering
+mechanism and may not remove functionality. This decision does not set the
+size of the compact Probeeq fallback surface. The binding wording is recorded
+in `design/abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md`.
+
 ## Historical overview
 
 The prior Nakama Gen direction described a compact studio instrument rather
@@ -63,7 +85,9 @@ unibody and the two exports registered in
 `design/prototyp/contract/asset-manifest.json`. The sections below document
 that legacy simulator contract and must not silently supply the new design.
 
-The surface is a product register. It is optimized for a producer working inside FL Studio at a fixed 760×430 logical size. Product text is English; surrounding prototype tooling is German.
+The legacy surface was a product register optimized for a producer working
+inside FL Studio at a fixed 760×430 logical size. Product text is English;
+surrounding prototype tooling is German.
 
 ## Colors
 
@@ -79,11 +103,11 @@ The NAKAMA GEN wordmark is a baked Figma export. It is not reconstructed as runt
 
 ## Layout
 
-The logical editor is always 760×430. The 7px shell inset and the 2px glass inset define one shared coordinate system for both pages. Shell, wordmark, tabs and material lighting remain spatially fixed during page changes; only the glass content changes.
+The legacy logical editor was always 760×430. The 7px shell inset and the 2px glass inset define one shared coordinate system for both pages. Shell, wordmark, tabs and material lighting remain spatially fixed during page changes; only the glass content changes.
 
 Overview uses one full-width probe field above one advisor workspace. EQ Center uses one 652×270 graph, a single precision parameter row and a compact bottom utility row. Repeated functions share one owner rather than gaining page-local variants. Up to 16 sources scroll horizontally in the existing source strip; Master remains a separate control.
 
-The simulator may scale to 100%, 125%, 150% and 200%, but all geometry remains defined in logical pixels. Each reference raster tier is derived directly from the four-times user golden, never enlarged from the 100% image.
+The legacy simulator may scale to 100%, 125%, 150% and 200%, but all geometry remains defined in logical pixels. Each reference raster tier is derived directly from the four-times user golden, never enlarged from the 100% image.
 
 ## Elevation & Depth
 

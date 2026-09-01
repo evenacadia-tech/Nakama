@@ -1,7 +1,33 @@
 {
-  "schemaVersion": 1,
-  "contractId": "nakama-gen-ui-v1",
+  "schemaVersion": 2,
+  "contractId": "nakama-gen-ui-v2",
   "scope": "Internal UI reference contract; not IPC, host state or a new plug-in parameter schema.",
+  "surfaceSizing": {
+    "gen": {
+      "surfaces": ["overview", "eq-center"],
+      "compactMinimum": {
+        "width": 760,
+        "height": 430,
+        "unit": "logical-px"
+      },
+      "default": {
+        "width": 950,
+        "height": 538,
+        "unit": "logical-px"
+      },
+      "fixedAspectRatio": {
+        "width": 76,
+        "height": 43
+      },
+      "resizeBehavior": "fixed-aspect-graph-evidence-first",
+      "uiScaleIndependent": true,
+      "functionParityRequired": true,
+      "nativeHostVerification": "required"
+    },
+    "probeeq": {
+      "status": "unchanged-by-2026-09-01-gen-sizing-decision"
+    }
+  },
   "types": {
     "AssetManifest": {
       "source": "asset-manifest.json"
@@ -93,6 +119,9 @@
     "External automation makes any open draft stale.",
     "Undo is scoped to the selected source and confirmed revisions only.",
     "Master is separate from the source switcher and source wheel order.",
+    "Both Gen surfaces keep a fixed 76:43 aspect ratio with 760x430 as compact minimum and 950x538 as default.",
+    "Window resizing grows the graph or acoustic evidence first; UI scale remains independent.",
+    "All functions available at the default Gen size remain reachable at the compact minimum.",
     "Mix remains planned until a versioned parameter contract exists.",
     "Every visible non-identity element is either an operating control or an honest state/value."
   ]

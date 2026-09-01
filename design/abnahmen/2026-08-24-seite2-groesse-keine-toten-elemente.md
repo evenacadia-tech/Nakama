@@ -62,3 +62,13 @@ Pfeil nicht mehr vorhanden; GLOBAL ist ein beschrifteter Button mit Chevron
 und OVERVIEW/EQ CENTER sind als Tab-Paar dargestellt. Die vollständige
 Optik-, Komponenten- und Motion-Abnahme bleibt offen. Vollständiger Beleg:
 `2026-08-24-figma-depot-immer-aktuell.md`.
+
+## Fortschreibung vom 01.09.2026
+
+Die Gleichheit beider Gen-Flächen bleibt bindend. Die damalige Festlegung auf
+760×430 als einzige Größe ist jedoch durch
+[`2026-09-01-gen-fenstergroesse-und-resize.md`](2026-09-01-gen-fenstergroesse-und-resize.md)
+präzisiert: 760×430 ist nun das kompakte Minimum, 950×538 die Standardgröße,
+beide im festen Verhältnis 76:43. Die hier gemessenen Figma-Artboards bleiben
+historische Belege des damaligen Stands und bestimmen nicht den aktuellen
+Funktionsentwurf.

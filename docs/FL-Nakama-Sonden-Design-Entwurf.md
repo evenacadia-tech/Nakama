@@ -160,7 +160,13 @@ Figma → Design-Repo → dieser Block. Gemessene Abweichungen zum Design-Stand
   der Kurve, nicht in der Zeile. **Offen: NAK-33**, hier nicht entschieden.
 - **Größen** (Entscheid 20.08., „so passt es 3 größen",
   `abnahmen/2026-08-20-groessen-alle-drei.md`): Gen 760×430 · Probeeq 700×420
-  · Suna-Kachel 260×84. Stand bisher in keinem Technik-Dokument.
+  · Suna-Kachel 260×84. Dieser Satz dokumentiert den damaligen Stand.
+  **Fortschreibung 01.09.2026:** Für beide Gen-Flächen ist 760×430 nun die
+  kompakte Mindestgröße und 950×538 die Standardgröße bei festem Verhältnis
+  76:43. Resize wächst zuerst Graph beziehungsweise akustischer Evidenz zu;
+  UI-Skalierung bleibt getrennt. Probeeq wird durch diesen Entscheid nicht
+  neu dimensioniert. Bindend:
+  `../design/abnahmen/2026-09-01-gen-fenstergroesse-und-resize.md`.
 
 **(i) §53.4, §65, §66.1 sind von der Realität überholt** (Befund, gelesen
 21.08.). Pfade real: `eq-copilot/identity/plugin-identities-v1.json` (nicht

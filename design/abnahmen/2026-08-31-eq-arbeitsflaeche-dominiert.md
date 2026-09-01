@@ -190,3 +190,14 @@ FabFilter Pro-Q 4 und Kirchhoff-EQ. Sie übernehmen keine visuelle Sprache der
 Referenzprodukte. Der aktuelle Parametervertrag besitzt noch keinen
 persistenten Occupancy-/Remove-Zustand; daher ist die native Remove-Transaktion
 bis zu einem versionierten Slot- und Undo-Vertrag eine technische Lücke.
+
+## Größenfortschreibung vom 01.09.2026
+
+Die Dominanz der EQ-Arbeitsfläche gilt nun ausdrücklich über den
+vergrößerbaren Gen-Rahmen hinweg. Gemäß
+[`2026-09-01-gen-fenstergroesse-und-resize.md`](2026-09-01-gen-fenstergroesse-und-resize.md)
+ist 760×430 das kompakte Minimum und 950×538 die Standardgröße bei festem
+Verhältnis 76:43. Zusätzliche Fläche wächst zuerst dem Graphen zu; Bandziele,
+Parameterfelder und Rails werden dadurch nicht proportional aufgeblasen. Das
+objektgebundene Panel bleibt am Bandpunkt verankert und muss an allen
+Graphkanten in beiden Vertragsgrößen vollständig erreichbar sein.
